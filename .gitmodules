@@ -1,0 +1,4 @@
+[submodule "prop"]
+	path = prop
+	url = https://github.com/ripieces/advancedfx.git
+	branch = prop
