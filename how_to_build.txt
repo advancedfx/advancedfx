@@ -1,0 +1,198 @@
+Notice:
+  We recommend using GIT Bash of https://git-scm.com/ to obtain the HLAE source
+  code and also for applying the .patch files to libraries where neccessary.
+
+
+[X] Download and install Microsoft Visual Studio 2015 Community, which you can
+    obtain for free from http://www.microsoft.com .
+    You need to adjust the installer to install Visual C++ and all sub-options
+    (okay you don't really need MFC, but it won't hurt that much I guess).
+
+[X] Download the Half-Life SDK from
+    http://github.com/ValveSoftware/halflife
+    and install it into C:\Libraries\halflife
+
+[X] Obtain and install CMAKE from http://www.cmake.org/
+    We currently use "cmake-3.5.2-win32-x86.msi".
+
+[X] Obtain the HLAE source code from https://github.com/ripieces/advancedfx-mit into a
+    folder you like, we'll call it <HLAESRC> from now on (by that I mean
+    extract it so that you end up with the files like advancedfx.sln and directories
+    in C:\<HLAESRC>\advancedfx-mit folder).
+    We recommend using the GIT Bash to obtain the source code, so you can
+    easily fetch and merge updates from the advancedfx repository.
+
+[X] Obtain the following files from http://openexr.com/ :
+    ilmbase-2.2.0.tar.gz, openexr-2.2.0.tar.gz and extract their contents
+    into "C:\Libraries"
+
+[X] Obtain zlib-1.2.8.tar.gz from http://zlib.net and extract it into
+    "C:\Libraries"
+
+[X] Open the GIT Bash we recommended above in order to apply the patches
+    for the ilmbase library:
+    cd /c/Libraries/ilmbase-2.2.0/
+    patch CMakeLists.txt /c/<HLAESRC>/advancedfx-mit/patches/ilmbase-2.2.0/CMakeLists.txt.patch
+
+[X] Build ilmbase solutions using cmake:
+    Enter the "C:\Libraries\ilmbase-2.2.0" directory and execute
+    setlocal
+    del /f CMakeCache.txt
+    cmake "-DCMAKE_INSTALL_PREFIX=C:\<HLAESRC>\ilmbase-build" -G "Visual Studio 14 2015" -T "v140_xp"
+
+[X] Open the C:\Libraries\ilmbase-2.2.0\ilmbase.sln created in the previous step
+    Select the Release configuration.
+    Then build the Solution.
+    After that build the INSTALL project in the solution.
+
+[X] Open the GIT Bash we recommended above in order to apply the patches
+    for the zlib library:
+    cd /c/Libraries/zlib-1.2.8/win32/
+    patch Makefile.msc /c/<HLAESRC>/advancedfx-mit/patches/zlib-1.2.8/win32/Makefile.msc.patch
+
+[X] Build zlib using nmake:
+    Open the Developer Command Prompt for VS2015 and enter the
+    "C:\Libraries\zlib-1.2.8" directory and execute
+    nmake -f win32/Makefile.msc zlib1.dll
+    nmake -f win32/Makefile.msc example_d.exe
+    example_d.exe (To see if the zlib1.dll is okay.)
+
+[X] Open the GIT Bash we recommended above in order to apply the patches
+    for the openexr library:
+    cd /c/Libraries/openexr-2.2.0/
+    patch CMakeLists.txt /c/<HLAESRC>/advancedfx-mit/patches/openexr-2.2.0/CMakeLists.txt.patch
+
+[X] Build openexr solutions using cmake:
+    Enter the "C:\Libraries\openexr-2.2.0" directory and execute
+    setlocal
+    del /f CMakeCache.txt
+    cmake "-DZLIB_ROOT=C:\Libraries\zlib-1.2.8" "-DILMBASE_PACKAGE_PREFIX=C:\<HLAESRC>\ilmbase-build" "-DCMAKE_INSTALL_PREFIX=C:\<HLAESRC>\openexr-build" -G "Visual Studio 14 2015" -T "v140_xp"
+
+[X] Open the C:\Libraries\openexr-2.2.0\openexr.sln created in the previous step
+    Select the Release configuration.
+    Build the projects b44ExpLogTable and dwaLookups.
+    Then copy the .dll files in "C:\<HLAESRC>\ilmbase-build\lib"
+    to "C:\Libraries\openexr-2.2.0\IlmImf\Release"!
+    Then build the Solution.
+    After that build the INSTALL project in the solution.
+    If you want to use the .exe files in "C:\<HLAESRC>\openexr-build\bin",
+    then you need to copy all DLL files from
+    "C:\<HLAESRC>\ilmbase-build\lib", "C:\<HLAESRC>\openexr-build\lib" and
+    "C:\Libraries\zlib-1.2.8" there.
+
+[ ] This step is currently not required!
+    Obtain the SharpDX SDK 2.6.3 from
+    https://github.com/sharpdx/SharpDX/releases/tag/2.6.3
+    and extract it into a folder named "SharpDX" in the same folder where the
+    HLAE source code folder is located.
+
+[ ] This step is currently not required!
+    Compile and run the ShaderBuilder project (requires the SharpDX SDK) and
+    compile the following Shaders to the "shaders\build" folder:
+    - shaders\afxHook_splinerope_ps2x.fxc:
+      - to afxHook_splinerope_ps20 (profile ps_2_0)
+      - to afxHook_splinerope_ps20b (profile ps_2_b)
+    - shaders\afxHook_splinecard_vsxx.fxc:
+      - to afxHook_splinecard_vs20 (profile vs_2_0)
+    - shaders\afxHook_spritecard_vsxx.fxc:
+      - to afxHook_spritecard_vs20 (profile vs_2_0)
+    - shaders\afxHook_spritecard_ps2x.fxc:
+      - to afxHook_spritecard_ps20 (profile ps_2_0)
+      - to afxHook_spritecard_ps20b (profile ps_2_b)
+    - shaders\afxHook_vertexlit_and_unlit_generic_ps2x.fxc:
+      - to afxHook_vertexlit_and_unlit_generic_ps20 (profile ps_2_0)
+      - to afxHook_vertexlit_and_unlit_generic_ps20b (profile ps_2_b)
+      - to afxHook_vertexlit_and_unlit_generic_ps30 (profile ps_3_0)
+    The .h and .acs files build this way are required by the AfxHookSource
+    project.
+
+[X] AfxHook\recompile.bat, move AfxHook.dat into build\Release\bin\
+
+[X] Open advancedfx.sln in the HLAE source code ("C:\<HLAESRC>\advancedfx-mit" folder)
+    and Build (Configuration=Release) in this order:
+    prop/AfxHookGoldSrc, prop/AfxHookSource, prop/AfxCppCli, AfxGui
+
+[X] Use "C:\<HLAESRC>\advancedfx-mit\copy_resources_release.bat""
+    to copy required files and folders to the
+    "C:\<HLAESRC>\advancedfx-mit\build\Release\bin" folder.
+
+[X] Copy all files
+    form "C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x86"
+    to "C:\<HLAESRC>\advancedfx-mit\build\Release\bin"
+
+[X] Copy all files
+    form "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\redist\x86\Microsoft.VC140.CRT"
+    to "C:\<HLAESRC>\advancedfx-mit\build\Release\bin"
+	
+[X] Copy all DLL files from
+    "C:\<HLAESRC>\ilmbase-build\lib",
+    "C:\source<HLAESRC>\openexr-build\lib" (except "IlmImfUtil-2_2.dll") and
+    "C:\Libraries\zlib-1.2.8"
+    to "C:\<HLAESRC>\advancedfx-mit\build\Release\bin"
+
+[X] You currently need to package the following files and folders in the final
+    .ZIP file:
+	resources, (You can currently leave out *.acs files in resources\AfxHookSource\shaders)
+	advancedfx.org.url,
+	AfxCppCli.dll,
+	AfxHook.dat,
+	AfxHookGoldSrc.dll,
+	AfxHookGoldSrc_changelog.xml,
+	AfxHookSource.dll,
+	AfxHookSource_changelog.xml,
+	api-ms-win-core-console-l1-1-0.dll,
+	api-ms-win-core-datetime-l1-1-0.dll,
+	api-ms-win-core-debug-l1-1-0.dll,
+	api-ms-win-core-errorhandling-l1-1-0.dll,
+	api-ms-win-core-file-l1-1-0.dll,
+	api-ms-win-core-file-l1-2-0.dll,
+	api-ms-win-core-file-l2-1-0.dll,
+	api-ms-win-core-handle-l1-1-0.dll,
+	api-ms-win-core-heap-l1-1-0.dll,
+	api-ms-win-core-interlocked-l1-1-0.dll,
+	api-ms-win-core-libraryloader-l1-1-0.dll,
+	api-ms-win-core-localization-l1-2-0.dll,
+	api-ms-win-core-memory-l1-1-0.dll,
+	api-ms-win-core-namedpipe-l1-1-0.dll,
+	api-ms-win-core-processenvironment-l1-1-0.dll,
+	api-ms-win-core-processthreads-l1-1-0.dll,
+	api-ms-win-core-processthreads-l1-1-1.dll,
+	api-ms-win-core-profile-l1-1-0.dll,
+	api-ms-win-core-rtlsupport-l1-1-0.dll,
+	api-ms-win-core-string-l1-1-0.dll,
+	api-ms-win-core-synch-l1-1-0.dll,
+	api-ms-win-core-synch-l1-2-0.dll,
+	api-ms-win-core-sysinfo-l1-1-0.dll,
+	api-ms-win-core-timezone-l1-1-0.dll,
+	api-ms-win-core-util-l1-1-0.dll,
+	api-ms-win-crt-conio-l1-1-0.dll,
+	api-ms-win-crt-convert-l1-1-0.dll,
+	api-ms-win-crt-environment-l1-1-0.dll,
+	api-ms-win-crt-filesystem-l1-1-0.dll,
+	api-ms-win-crt-heap-l1-1-0.dll,
+	api-ms-win-crt-locale-l1-1-0.dll,
+	api-ms-win-crt-math-l1-1-0.dll,
+	api-ms-win-crt-multibyte-l1-1-0.dll,
+	api-ms-win-crt-private-l1-1-0.dll,
+	api-ms-win-crt-process-l1-1-0.dll,
+	api-ms-win-crt-runtime-l1-1-0.dll,
+	api-ms-win-crt-stdio-l1-1-0.dll,
+	api-ms-win-crt-string-l1-1-0.dll,
+	api-ms-win-crt-time-l1-1-0.dll,
+	api-ms-win-crt-utility-l1-1-0.dll,
+	changelog.xml,
+	changelog.xsl,
+	concrt140.dll
+	Half.dll,
+	HLAE.exe,
+	Iex-2_2.dll,
+	IexMath-2_2.dll,
+	IlmImf-2_2.dll,
+	IlmThread-2_2.dll,
+	Imath-2_2.dll,
+	msvcp140.dll,
+	readme.txt,
+	ucrtbase.dll,
+	vccorlib140.dll,
+	vcruntime140.dll,
+	zlib1.dll
