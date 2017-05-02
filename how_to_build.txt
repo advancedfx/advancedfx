@@ -109,8 +109,8 @@ Notice:
 [X] AfxHook\recompile.bat, move AfxHook.dat into build\Release\bin\
 
 [X] Open advancedfx.sln in the HLAE source code ("C:\<HLAESRC>\advancedfx-mit" folder)
-    and Build (Configuration=Release) in this order:
-    prop/AfxHookGoldSrc, prop/AfxHookSource, prop/AfxCppCli, AfxGui
+    and Build (Configuration=Release, Platform=x86) in this order:
+    prop/AfxHookGoldSrc, prop/AfxHookSource, prop/AfxCppCli, injector, hlae
 
 [X] Use "C:\<HLAESRC>\advancedfx-mit\copy_resources_release.bat""
     to copy required files and folders to the
@@ -190,6 +190,7 @@ Notice:
 	IlmImf-2_2.dll,
 	IlmThread-2_2.dll,
 	Imath-2_2.dll,
+	injector.exe,
 	msvcp140.dll,
 	readme.txt,
 	ucrtbase.dll,

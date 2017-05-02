@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Half-Life Advanced Effects")]
+[assembly: AssemblyTitle("injector")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("advancedfx.org")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("f4ed9ec8-07e5-4138-a79f-ade4d2878b4e")]
+[assembly: Guid("59ae6fda-b952-434e-b899-1fd9d778a930")]
 
 // Version information for an assembly consists of the following four values:
 //

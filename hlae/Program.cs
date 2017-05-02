@@ -341,7 +341,7 @@ namespace AfxGui
             // start-up CustomLoader if requested (i.e. by command line)
             if (Globals.AutoStartCustomLoader)
             {
-                if (!AfxCppCli.AfxHook.LauchAndHook(GlobalConfig.Instance.Settings.CustomLoader.ProgramPath, GlobalConfig.Instance.Settings.CustomLoader.CmdLine, GlobalConfig.Instance.Settings.CustomLoader.HookDllPath))
+                if (!Loader.Load(isProcess64Bit => GlobalConfig.Instance.Settings.CustomLoader.HookDllPath, GlobalConfig.Instance.Settings.CustomLoader.ProgramPath, GlobalConfig.Instance.Settings.CustomLoader.CmdLine))
                     bOk = false;
             }
 

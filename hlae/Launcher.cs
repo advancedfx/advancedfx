@@ -45,8 +45,15 @@ class Launcher
 
     }
 
-    public static bool Launch(CfgLauncher cfg)
-    {
+        private static string GetHookPath(bool isProcess64Bit)
+        {
+            if (isProcess64Bit) throw new System.ApplicationException("64 Bit GoldSrc is not supported.");
+
+            return System.Windows.Forms.Application.StartupPath + "\\AfxHookGoldSrc.dll";
+        }
+
+        public static bool Launch(CfgLauncher cfg)
+        {
             if (0 < System.Diagnostics.Process.GetProcessesByName("hl").Length)
                 return false;
 
@@ -99,19 +106,8 @@ class Launcher
             //
             // Launch:
 
-            if (!AfxCppCli.AfxHook.LauchAndHook(
-                cfg.GamePath,
-                cmds,
-                System.Windows.Forms.Application.StartupPath + "\\AfxHookGoldSrc.dll"
-            ))
-            {
-                return false;
-            }
-
-            return true;
+            return Loader.Load(GetHookPath, cfg.GamePath, cmds);
         }
-
-
 }
 
 } // namespace AfxGui {

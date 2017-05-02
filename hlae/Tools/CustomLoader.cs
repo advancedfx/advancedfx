@@ -30,7 +30,7 @@ class CustomLoader
 
                 GlobalConfig.Instance.BackUp();
 
-                bOk = AfxCppCli.AfxHook.LauchAndHook(frm.Program, frm.CmdLine, frm.HookDll);
+                bOk = Loader.Load(isProcess64Bit => frm.HookDll, frm.Program, frm.CmdLine);
 
                 if (!bOk)
                     MessageBox.Show("CustomLoader failed", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);

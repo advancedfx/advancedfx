@@ -43,6 +43,13 @@ namespace AfxGui
             return bOk;
         }
 
+        private static string GetHookPath(bool isProcess64Bit)
+        {
+            if (isProcess64Bit) throw new System.ApplicationException("64 Bit CS:GO is not supported.");
+
+            return System.Windows.Forms.Application.StartupPath + "\\AfxHookSource.dll";
+        }
+
         public static bool Launch(CfgLauncherCsgo config)
         {
             String environment = null;
@@ -71,12 +78,7 @@ namespace AfxGui
                 environment += "\0\0";
             }
 
-            return AfxCppCli.AfxHook.LauchAndHook(
-                programPath,
-                cmdLine,
-                System.Windows.Forms.Application.StartupPath + "\\AfxHookSource.dll",
-                environment
-                );
+            return Loader.Load(GetHookPath, programPath, cmdLine, environment);
         }
 
     }
