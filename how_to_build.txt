@@ -106,11 +106,15 @@ Notice:
     The .h and .acs files build this way are required by the AfxHookSource
     project.
 
-[X] AfxHook\recompile.bat, move AfxHook.dat into build\Release\bin\
+[X] AfxHook\recompile_586.bat, move AfxHook.dat into build\Release\bin\
+
+[X] AfxHook\recompile_x64.bat, move AfxHook.dat into build\Release\bin\x64\
 
 [X] Open advancedfx.sln in the HLAE source code ("C:\<HLAESRC>\advancedfx-mit" folder)
     and Build (Configuration=Release, Platform=x86) in this order:
     prop/AfxHookGoldSrc, prop/AfxHookSource, prop/AfxCppCli, injector, hlae
+	and Build (Configuration=Release, Platform=x64) in this order:
+	injector
 
 [X] Use "C:\<HLAESRC>\advancedfx-mit\copy_resources_release.bat""
     to copy required files and folders to the
@@ -130,9 +134,11 @@ Notice:
     "C:\Libraries\zlib-1.2.8"
     to "C:\<HLAESRC>\advancedfx-mit\build\Release\bin"
 
-[X] You currently need to package the following files and folders in the final
+[X] You currently need to package the following files in the final
     .ZIP file:
-	resources, (You can currently leave out *.acs files in resources\AfxHookSource\shaders)
+	resources\*,
+	x64\AfxHook.dat,
+	x64\injector.exe,
 	advancedfx.org.url,
 	AfxCppCli.dll,
 	AfxHook.dat,
