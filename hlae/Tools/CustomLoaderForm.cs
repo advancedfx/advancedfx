@@ -24,10 +24,9 @@ namespace AfxGui.Tools
             this.openFileDialog.InitialDirectory = AfxGui.Program.BaseDir;
         }
         
-        internal String HookDll
+        internal ListBox.ObjectCollection HookDlls
         {
-            get { return this.textDll.Text; }
-			set { this.textDll.Text = value; }
+            get { return listBoxHookDlls.Items; }
 		}
 
         internal String Program
@@ -45,20 +44,133 @@ namespace AfxGui.Tools
         //
         // Private memebers:
 
-        private void buttonSelectHook_Click(object sender, EventArgs e)
-        {
-		    openFileDialog.DefaultExt = "*.dll";
-		    openFileDialog.Filter = "Hook DLL (.dll)|*.dll";
-		    if(DialogResult.OK == openFileDialog.ShowDialog(this))
-			    this.textDll.Text = openFileDialog.FileName;
-        }
-
         private void buttonSelectProgram_Click(object sender, EventArgs e)
         {
 		    openFileDialog.DefaultExt = "*.exe";
 		    openFileDialog.Filter = "Program to launch and hook (.exe)|*.exe";
 		    if(DialogResult.OK == openFileDialog.ShowDialog(this))
 			    this.textProgram.Text = openFileDialog.FileName;
+        }
+
+        private void buttonHookBrowse_Click(object sender, EventArgs e)
+        {
+            openFileDialog.DefaultExt = "*.dll";
+            openFileDialog.Filter = "Hook DLL (.dll)|*.dll";
+            if (DialogResult.OK == openFileDialog.ShowDialog(this))
+            {
+                this.listBoxHookDlls.Items.Add(openFileDialog.FileName);
+            }
+        }
+
+        private void HookDeleteSelected()
+        {
+            listBoxHookDlls.BeginUpdate();
+            while (0 < listBoxHookDlls.SelectedIndices.Count)
+                listBoxHookDlls.Items.RemoveAt(listBoxHookDlls.SelectedIndices[0]);
+            listBoxHookDlls.EndUpdate();
+        }
+
+        private void HookMoveSelected(int index)
+        {
+            if(0 < listBoxHookDlls.SelectedIndices.Count && 0 <= index && index <= listBoxHookDlls.Items.Count)
+            {
+                listBoxHookDlls.BeginUpdate();
+
+                List<object> objs = new List<object>();
+
+                while(0 < listBoxHookDlls.SelectedIndices.Count)
+                {
+                    if (index > listBoxHookDlls.SelectedIndices[0])
+                        --index;
+
+                    object obj = listBoxHookDlls.SelectedItems[0];
+
+                    objs.Insert(0, obj);
+                    listBoxHookDlls.Items.RemoveAt(listBoxHookDlls.SelectedIndices[0]);
+                }
+
+                foreach (object obj in objs)
+                {
+                    listBoxHookDlls.Items.Insert(index, obj);
+                    listBoxHookDlls.SetSelected(index, true);
+                }
+
+                listBoxHookDlls.EndUpdate();
+            }
+        }
+
+        private void buttonHookDelete_Click(object sender, EventArgs e)
+        {
+            HookDeleteSelected();
+        }
+
+        private void listBoxHookDlls_DragEnter(object sender, DragEventArgs e)
+        {
+            if(e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effect = DragDropEffects.Link;
+            }
+        }
+
+        private void listBoxHookDlls_DragDrop(object sender, DragEventArgs e)
+        {
+            if(e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                listBoxHookDlls.BeginUpdate();
+                try
+                {
+                    string[] files = e.Data.GetData(DataFormats.FileDrop) as string[];
+                    if(null != files)
+                    {
+                        foreach(string file in files)
+                        {
+                            listBoxHookDlls.Items.Add(file);
+                        }                        
+                    }
+                }
+                catch
+                {
+                }
+                listBoxHookDlls.EndUpdate();
+            }
+        }
+
+        private void listBoxHookDlls_KeyDown(object sender, KeyEventArgs e)
+        {
+            if(e.Control && e.KeyCode == Keys.A)
+            {
+                listBoxHookDlls.BeginUpdate();
+
+                if (listBoxHookDlls.SelectedIndices.Count < listBoxHookDlls.Items.Count)
+                {
+                    for (int i = 0; i < listBoxHookDlls.Items.Count; ++i)
+                        if (!listBoxHookDlls.GetSelected(i)) listBoxHookDlls.SetSelected(i, true);
+                }
+                else
+                    listBoxHookDlls.ClearSelected();
+
+                listBoxHookDlls.EndUpdate();
+            }
+            else if(e.KeyCode == Keys.Delete)
+            {
+                HookDeleteSelected();
+            }
+        }
+
+        private void buttonHookUp_Click(object sender, EventArgs e)
+        {
+            if (0 < listBoxHookDlls.SelectedItems.Count)
+            {
+                HookMoveSelected(Math.Max(listBoxHookDlls.SelectedIndices[0] -1, 0));
+            }
+        }
+
+        private void buttonHookDown_Click(object sender, EventArgs e)
+        {
+            if (0 < listBoxHookDlls.SelectedItems.Count)
+            {
+                HookMoveSelected(Math.Min(listBoxHookDlls.SelectedIndices[listBoxHookDlls.SelectedIndices.Count-1] +2, listBoxHookDlls.Items.Count));
+            }
         }
     }
 }

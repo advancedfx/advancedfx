@@ -13,6 +13,13 @@ namespace AfxGui
 
         public static bool Load(GetHookPathDelegate getHookPath, string programPath, string cmdLine, string environment = null)
         {
+           return Load(new GetHookPathDelegate[] { getHookPath }, programPath, cmdLine, environment);
+        }
+
+        public static bool Load(IEnumerable<GetHookPathDelegate> getHookPathCollection, string programPath, string cmdLine, string environment = null)
+        {
+            bool bOk = true;
+
             try
             {
                 string programOptions = "\"" + programPath + "\" " + cmdLine;
@@ -46,20 +53,29 @@ namespace AfxGui
                 try
                 {
                     bool isProcess64Bit = IsProcess64Bit(processInfo.hProcess);
-                    string hookPath = getHookPath(isProcess64Bit);
 
-                    System.Diagnostics.Process injector = new System.Diagnostics.Process();
+                    foreach (GetHookPathDelegate getHookPath in getHookPathCollection)
+                    {
+                        string hookPath = getHookPath(isProcess64Bit);
 
-                    injector.StartInfo.UseShellExecute = false;
-                    injector.StartInfo.FileName = System.AppDomain.CurrentDomain.BaseDirectory + (isProcess64Bit ? "\\x64" : "") + "\\injector.exe";
-                    injector.StartInfo.CreateNoWindow = true;
-                    injector.StartInfo.Arguments = processInfo.dwProcessId.ToString() + " " + hookPath;
+                        using (System.Diagnostics.Process injector = new System.Diagnostics.Process())
+                        {
 
-                    injector.Start();
-                    injector.WaitForExit();
+                            injector.StartInfo.UseShellExecute = false;
+                            injector.StartInfo.FileName = System.AppDomain.CurrentDomain.BaseDirectory + (isProcess64Bit ? "\\x64" : "") + "\\injector.exe";
+                            injector.StartInfo.CreateNoWindow = true;
+                            injector.StartInfo.Arguments = processInfo.dwProcessId.ToString() + " " + hookPath;
 
-                    if (0 != injector.ExitCode)
-                        throw new System.ApplicationException("Injector (" + (isProcess64Bit ? "x64" : "x86") + ") failed.");
+                            injector.Start();
+                            injector.WaitForExit();
+
+                            if (0 != injector.ExitCode)
+                            {
+                                MessageBox.Show("Could not inject \"" + hookPath + "\".", "Injector (" + (isProcess64Bit ? "x64" : "x86") + ") failed.", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                bOk = false;
+                            }
+                        }
+                    }
                 }
                 finally
                 {
@@ -79,7 +95,7 @@ namespace AfxGui
                 return false;
             }
 
-            return true;
+            return bOk;
         }
 
         private const uint CREATE_SUSPENDED = 0x00000004;

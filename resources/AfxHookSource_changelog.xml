@@ -1,0 +1,2425 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="changelog.xsl"?>
+
+<changelog>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.16.5</version>
+<time>2017-05-09T13:22Z</time>
+<changes>
+<change type="fixed">
+Fixed hlae_log_LibraryHooksA.txt and hlae_log_LibraryHooksW.txt debug files being written to csgo.exe folder (you can remove them if you want).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.16.4</version>
+<time>2017-05-04T08:25Z</time>
+<changes>
+<change type="fixed">
+Adjusted to 5/3/2017 CS:GO update.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.16.3</version>
+<time>2017-04-13T09:01Z</time>
+<changes>
+<change type="fixed">
+Adjusted to 4/12/2017 CS:GO update.
+</change>
+<change type="fixed">
+Fixed mirv_snd_timescale not working due to CS:GO update.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.16.2</version>
+<time>2017-03-28T16:32Z</time>
+<changes>
+<change type="updated">
+Adjusted afx/wh.cfg to new models (can be loaded as before with exec afx/wh).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.16.1</version>
+<time>2017-03-17T16:30Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_fix playerAnimState related console spam (now every 10 seconds maximum).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.16.0</version>
+<time>2017-03-15T08:12Z</time>
+<changes>
+<change type="added">
+Added mirv_fix playerAnimState, please see https://github.com/ripieces/advancedfx/wiki/Source%3ASmoother-Demos .
+</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookSource</name>
+<version>1.15.0</version>
+<time>2017-02-04T13:07Z</time>
+<changes>
+<change type="fixed">
+Adjusted to 3 Feb 2017 CS:GO update.
+</change>
+<change type="fixed">
+Fixed mirv_deathmsg highLightId not working anymore due to CS:GO update.
+</change>
+<change type="added">
+Added HLAE wildcard support to mirv_streams edit (you can edit multiple streams at once, in case they are compatible).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.14.0</version>
+<time>2017-01-22T18:21Z</time>
+<changes>
+<change type="added">
+Added mirv_fix physicsMaxFps, allows to raise / set the FPS limit for physics (i.e. rag dolls, so they don't freeze upon high host_framerate).
+</change>
+<change type="fixed">
+Minor fixes (i.e. changed enable to enabled in some mirv_ sub commands for higher command convergence (old version is silently supported)).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.13.2</version>
+<time>2017-01-07T15:47Z</time>
+<changes>
+</changes>
+<comments>
+No relevant changes.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.13.1</version>
+<time>2016-12-18T19:13Z</time>
+<changes>
+<change type="fixed">
+Fixed shader register number used for overrideColor and overrideBlend options of replace based actions (which many are).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.13.0</version>
+<time>2016-12-18T16:32Z</time>
+<changes>
+<change type="fixed">
+Fixed mistakes in d3d9 related code, causing invalid / unwanted render states (could cause i.e. missing decals textures etc.).
+</change>
+<change type="added">
+Added actionFilter addEx property on baseFx streams for actionFilter (takes i.e. entity handle as option).
+</change>
+<change type="added">
+Added picker property on baseFx streams, allows finding visible entity handle(s) / material(s).
+</change>
+<change type="fixed">
+Various minor fixes.
+</change>
+</changes>
+<comments>
+Advanced excercise for you: Try to use the new features to hide only the shadow of exactly one alive player.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.12.1</version>
+<time>2016-12-08T15:17Z</time>
+<changes>
+<change type="fixed">
+Fixed Problem in addresses.cpp:402 error (affected mirv_replace_name).
+</change>
+<change type="fixed">
+Fixed mirv_streams edit causing to hang the whole game when editing a stream that was recorded / in preview and had attachCommands / detachCommands. Thanks to https://twitter.com/DanielZ1337 .
+</change>
+<change type="added">
+Added mirv_vpanel command for testing. It's probably not useful and thus not planned to stay. An example for it would be<br />
+mirv_streams edit streamNameHere attachCommands "mirv_vpanel hide HudZoom"<br />
+This will hide the scope overlay of the Hud and leave the other HUD untouched.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.12.0</version>
+<time>2016-11-30T21:21Z</time>
+<changes>
+<change type="fixed">
+Fixed typo in afx/wh.cfg causing the per stream shouldForceNoVisOverride option not to be set to 1.
+</change>
+<change type="updated">
+Updated afx/wh.cfg to give maximum wallhack: Added special commands r_occlusion 0 and r_portalsopenall 1 (unlocked with mirv_cvar_unhide_all) to the config, thanks to twitter.com/over_fuze for helping to find them.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.11.1</version>
+<time>2016-11-29T06:54Z</time>
+<changes>
+<change type="fixed">
+Adjusted to 28 Nov 2016 CS:GO update / fixed Error addresses.cpp:1528 (removed non-required shader hooking code (non-required, because Valve ignored our requests for updated stdshader source code since Februrary :( )).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.11.0</version>
+<time>2016-11-16T17:57Z</time>
+<changes>
+<change type="added">
+Added shouldForceNoVisOverride to mirv_streams edit for baseFx based streams (which most are). When set to 1 specifies visibility extension (disabling of visiblity checks) per stream (still not perfect, but okay I guess) and replaces the r_novis console variable method, that would affect all streams and thus could have unwanted side-effects. The afx/wh cfg was updated accordingly, people with custom cfgs might need to add this new setting to their cfgs.
+</change>
+<change type="fixed">
+Fixed mirv_streams crashes due to material creation and class variable initialization issues.
+Moved material initialization onto the main thread, because it seems the CS:GO material system FindMaterial function can crash when called from different threads, especially when called at the same time.
+</change>
+<change type="fixed">
+Fixed ripieces/advancedfx#28 : mirv_campath edit start delta+/delta- sub-commands not working correctly.
+</change>
+<change type="fixed">
+Fixed mirv_campath edit interp rotation, expecting cubic instead of intended sCubic, thanks to cZF.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.10.0</version>
+<time>2016-11-06T19:21Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_deathsmg mem remove sub command not working.
+</change>
+<change type="added">
+Added mirv_fix oldDuckFix, requested by @gsrqq. Can fix player stuck in duck for older demos without losing sound like the old method - unwanted side effects currently unknown or none.
+</change>
+</changes>
+<comments>
+What would you like to see next in HLAE?<br />
+You can tell us on Twitter: https://twitter.com/dtugend/status/794921631525310464<br />
+Or on the forum: http://advancedfx.style-productions.net/forum/viewtopic.php?f=17&amp;t=1877
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.9.0</version>
+<time>2016-11-05T20:30Z</time>
+<changes>
+<change type="added">
+Added mirv_deathsmg fake sub command. Suggest by several people, including @C9Calle. I didn't want to add it, because last time we did that for GoldSrc engine, we caused a lot of fakes, but it has been requested several times now and more importantly, GOTV demos can miss player_death game event messages (used for the death notification), because those are not transmitted realibaly.
+</change>
+</changes>
+<comments>
+What would you like to see next in HLAE?<br />
+You can tell us on Twitter: https://twitter.com/dtugend/status/794921631525310464<br />
+Or on the forum: http://advancedfx.style-productions.net/forum/viewtopic.php?f=17&amp;t=1877
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.8.0</version>
+<time>2016-11-04T11:19Z</time>
+<changes>
+<change type="fixed">
+Fixed hang / crash i.e. on Windows XP upon startup (moved thread synchcronization out of being run during DllMain).
+</change>
+<change type="added">
+Added mirv_input mem sub command, allows to store, use, save and load states (view position, angles and fov) when using mirv_input camera. (Requested by cZF.)
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.7.5</version>
+<time>2016-11-01T16:31Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams property smokeOverlayAlphaFactor not working properly. Fix was a bit tricky, but it should work now :-)
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.7.4</version>
+<time>2016-10-30T08:12Z</time>
+<changes>
+<change type="fixed">
+This should fix a lot of crashes: fixed AfxHookSource render context call queue wrapping causing a memory leak among other things due to a typo (wrong variable name) (already wrapped queues weren't detected most of the time due to that and wrapped again).
+</change>
+</changes>
+<comments>
+Please report any new HLAE problems you didn't experience before AfxHookSource 1.7.1 / the 28 Oct 2016 CS:GO update!
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.7.3</version>
+<time>2016-10-29T12:16Z</time>
+<changes>
+<change type="added">
+Added mirv_fix blockObserverTarget - For CS:GO only, fixes unwanted player switching (spec lag/spin) i.e. upon bomb plant (blocks C_BasePlayer::RecvProxy_ObserverTarget).
+</change>
+</changes>
+<comments>
+Please report any new HLAE problems you didn't experience before AfxHookSource 1.7.1 / the 28 Oct 2016 CS:GO update!
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.7.2</version>
+<time>2016-10-29T06:51Z</time>
+<changes>
+<change type="fixed">
+Adjusted interface name to newer CS:GO VEngineClient018 version.
+</change>
+</changes>
+<comments>
+This is a quick hack, things might have slipped through / there might be still new problems. Please report any new problems!
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.7.1</version>
+<time>2016-10-12T08:10Z</time>
+<changes>
+<change type="fixed">
+Fixed alphaMatteEntity streams not working, thanks to https://twitter.com/Barabulyko
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.7.0</version>
+<time>2016-10-09T16:54Z</time>
+<changes>
+<change type="updated">
+Many changes under the hood, i.e. HLAE is now handling mat_queue_mode (mutli threading / queueing) and thus hopefully less bugs.
+</change>
+<change type="fixed">
+Issue 22 fixed, by telling the materialsystem to end frame and begin new
+frame, otherwise it would have too much on the IMatRenderContext queue
+and run out of memory and thus HLAE would crash the game.
+</change>
+</changes>
+<comments>
+Please report new bugs / errors you encounter, due to the many changes, new bugs are possible!
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.6.6</version>
+<time>2016-10-07T08:50Z</time>
+<changes>
+<change type="fixed">
+Fixed error Problem in addressescpp:392, which affected mirv_replace_name. (Backported from sourceStreamFixes branch.)
+</change>
+<change type="fixed">
+Fixed mistake in asmClassTools.h with the class pointer (wrong offset), which
+will cause trouble in cases where those JMP_..._OFS... functions are used
+with a non-zero offset (I.e. can cause crashes on CAfxMesh::IndexCount). (Backported from sourceStreamFixes branch.)
+</change>
+</changes>
+<comments>
+Please report errors / bugs, that HLAE didn't have before the update in the HLAE / advancedfx.org forum, because some
+changes affecting HLAE might have slipped through, thanks.
+Thanks to psh.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.6.5</version>
+<time>2016-08-08T13:37Z</time>
+<changes>
+<change type="fixed">
+Fixed HLAE not working on Windows XP.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.6.4</version>
+<time>2016-08-06T18:50Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams being affected by Valve's super duper ConVar value cheat protection (I hope they don't start a stupid cat and mice game here that HLAE will lose and real cheats will keep up with).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.6.3</version>
+<time>2016-08-06T08:08Z</time>
+<changes>
+<change type="updated">
+Adjusted to 5th Aug 2016 CS:GO update.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.6.2</version>
+<time>2016-08-04T08:45Z</time>
+<changes>
+<change type="updated">
+Adjusted to 3rd Aug 2016 CS:GO update. Please report things that worked before and might not work yet (some things might have slipped through.)
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.6.1</version>
+<time>2016-07-18T18:07Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams record agr command: newly created entities could slip through in their first frame (causing i.e. rag dolls to display a frame too late).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.6.0</version>
+<time>2016-07-15T19:56Z</time>
+<changes>
+<change type="added">
+Improved mirv_streams record agr command (game state recording in CS:GO, still in developement), now tracks entity deletions. Can be imported with https://github.com/ripieces/afx-sfm-scripts version 1.2.0 or newer into Source FilmMaker.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.5.0</version>
+<time>2016-07-15T13:20Z</time>
+<changes>
+<change type="added">
+Added mirv_streams record agr command (still in developement). For testing game state recording in CS:GO. Can be imported with https://github.com/ripieces/afx-sfm-scripts into Source FilmMaker.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.4.0</version>
+<time>2016-06-26T18:05Z</time>
+<changes>
+<change type="added">
+Added mirv_streams previewEnd command to make scripting easier.
+</change>
+<change type="added">
+Added mirv_streams record startMovieWav 0|1 (default 1), when enabled automatically uses startmovie/endmovie to capture a WAV file to the take folder.
+</change>
+<change type="added">
+Added mirv_streams record bvh, allows to control recording of HLAE BVH camera motion data files for main camera and multiple entities at once (You can use mirv_listentites or voice_show_mute for a list of entity / player indexes).
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.3.2</version>
+<time>2016-06-12T12:08Z</time>
+<changes>
+<change type="updated">
+Testing workaround for UCRT problems with SetDllDirectory (using SetCurrentDirectory instead).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource lite</name>
+<version>1.3.1.0</version>
+<time>2016-05-15T17:28Z</time>
+<changes>
+<change type="updated">
+Updated build environment to Visual Studio 2015, should still run on Windows XP (target is v140_xp).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource lite</name>
+<version>1.3.0.0</version>
+<time>2016-05-02T17:51Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_input camera input focus loss detection (i.e. on ALT_TAB) (now uses WM_ACTIVATE message instread), thanks to anthony.
+</change>
+<change type="added">
+Added smoother aiming (using a 2nd order motion profile) to mirv_aim (disabled by default, to enable enter mirv_aim snapTo 0).
+</change>
+<change type="updated">
+Updated smoke texture and materials used by afx/wh config (enter exec afx/wh into console to load the config), thanks to Suky.
+</change>
+<change type="updated">
+Reintegrated updateWorkaround into mirv_streams add (meaning you can add stream templates more easily again, no need to use the
+afx/updateWorkaround config). Of course this still has the usual limitations due to the 17 Feb 2016 CS:GO update :-(
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource lite</name>
+<version>1.3.0.0</version>
+<time>2016-05-02T17:51Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_input camera input focus loss detection (i.e. on ALT_TAB) (now uses WM_ACTIVATE message instread), thanks to anthony.
+</change>
+<change type="added">
+Added smoother aiming (using a 2nd order motion profile) to mirv_aim (disabled by default, to enable enter mirv_aim snapTo 0).
+</change>
+<change type="updated">
+Updated smoke texture and materials used by afx/wh config (enter exec afx/wh into console to load the config), thanks to Suky.
+</change>
+<change type="updated">
+Reintegrated updateWorkaround into mirv_streams add (meaning you can add stream templates more easily again, no need to use the
+afx/updateWorkaround config). Of course this still has the usual limitations due to the 17 Feb 2016 CS:GO update :-(
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource lite</name>
+<version>1.2.0.0</version>
+<time>2016-04-15T17:39Z</time>
+<changes>
+<change type="added">
+Added mirv_camimport toCamPath - enter mirv_camimport for more help on the command.
+</change>
+<change type="added">
+Added mirv_listentites - Very basic list of current entities, enter the command for more help.
+</change>
+<change type="added">
+Added mirv_aim - Overrides the camera angles and points the camera at a target, enter the command for more help.
+The aiming is currently not smooth (snaps to the target), sorry for disobeying the Twitter poll, but the mirv_camimport toCamPath feature was urgent and mirv_aim is already a bit implemented.
+</change>
+<change type="added">
+Added mirv_cmd - For timed command execution, it's not superior to Valve's demoui PlayCommands appart from being able to save and load (XML format), enter the command for more help.
+</change>
+</changes>
+<comments>
+For those that don't know, AfxHookSource lite has rudimentary mirv_streams support (but still no proper support again and Valve didn't reply so far), see: http://advancedfx.style-productions.net/forum/viewtopic.php?p=5475#p5475<br />
+Also you can find us on Twitter here: https://twitter.com/dtugend<br />
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource lite</name>
+<version>1.1.5.0</version>
+<time>2016-03-23T18:47Z</time>
+<changes>
+<change type="added">
+Added mirv_campath edit interp options and added support for linear interpolation (works with 2 keyframes already).
+I doubt this is useful but it was requested.
+</change>
+</changes>
+<comments>
+For those that don't know, AfxHookSource lite has rudimentary mirv_streams support (but still no proper support again and Valve didn't reply so far), see: http://advancedfx.style-productions.net/forum/viewtopic.php?p=5475#p5475<br />
+Also you can find us on Twitter here: https://twitter.com/dtugend<br />
+</comments>
+</release>
+
+
+
+<release>
+<name>AfxHookSource lite</name>
+<version>1.1.4.0</version>
+<time>2016-03-13T20:18Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams noDraw action not working, because I forgot to comment in code again (stupid me!).
+</change>
+</changes>
+<comments>
+For those that don't know, AfxHookSource lite has rudimentary mirv_streams support (but still no proper support again and Valve didn't reply so far), see: http://advancedfx.style-productions.net/forum/viewtopic.php?p=5475#p5475<br />
+Also you can find us on Twitter here: https://twitter.com/dtugend<br />
+Also read the previous release notes here: https://github.com/ripieces/advancedfx/releases
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource lite</name>
+<version>1.1.3.0</version>
+<time>2016-03-13T19:13Z</time>
+<changes>
+<change type="added">
+Added mirv_streams record presentOnScreen. Allows to turn on on-screen preview (where applicable) during recording (Not recommended, might cause epileptic seizures, thus default is off!).
+</change>
+<change type="added">
+Added forcing of mat_force_tonemap_scale to 1.0 during recording with mirv_streams record for better results (i.e. no more random brightness on bomb plant etc.). Can be controlled through mirv_streams record matForceTonemapScale.
+</change>
+<change type="fixed">
+Fixed incorrect tracking of i.e. D3DRS_ALPHABLENDENABLE state due to CS:GO using Direct3D9 state blocks (IDirect3DStateBlock9), which could i.e. cause elements to be missing from screen, when using actions that change the Direct3D9 render state (i.e. noDraw action).
+Thanks to anthony for providing a demo with the bug being reproduceable!
+</change>
+<change type="fixed">
+Fixed mirv_streams not de-referencing actions properly when a stream was removed (caused actions to not be removeable due to wrongly reported dependencies).
+</change>
+</changes>
+<comments>
+For those that don't know, AfxHookSource lite has rudimentary mirv_streams support (but still no proper support again and Valve didn't reply so far), see: http://advancedfx.style-productions.net/forum/viewtopic.php?p=5475#p5475<br />
+Also you can find us on Twitter here: https://twitter.com/dtugend
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource lite</name>
+<version>1.1.2.1</version>
+<time>2016-02-28T16:51Z</time>
+<changes>
+<change type="added">
+Added support for really old engine version (i.e. CSS 1.0.0.34). To enable it add -afxV34 to the command line options in Custom Loader (case sensitive).
+</change>
+</changes>
+<comments>
+Thanks to Contrastniy for helping with debugging.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource lite</name>
+<version>1.1.2.0</version>
+<time>2016-02-27T15:46Z</time>
+<changes>
+<change type="added">
+Added a cfg with RUDIMENTARY matte/depth streams support, enter<br />
+exec afx/updateWorkaround<br />
+into console once and read instructions on stream.
+</change>
+</changes>
+<comments>
+We'd like to bring you better streams as they were before again, but that might be very difficult without the updated shader source
+(there were heavy changes and additions to those shaders we used to hook).<br />
+If you want to support us with asking Valve for help, follow us i.e. on Twitter: https://twitter.com/dtugend
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource lite</name>
+<version>1.1.1.0</version>
+<time>2016-02-18T15:35Z</time>
+<changes>
+<change type="updated">
+Updated AfxHookSource to work with the 17 Feb 2016 CS:GO update.<br />
+I called this AfxHookSource lite version, because you won't be able to use matte / depth / alpha streams or actions related to those. It might
+take quite a while until those features work as good as they did before again, because Valve updated the shaders that HLAE partially hooks
+with replacement shaders and there is no proper source code available (closest is still the old Alien Swarm SDK)
+and I don't know yet how complicated their new changes / additions are.<br />
+All other features should hopefully work (even the new easy wallhack effect added in AfxHookSource 1.1).
+</change>
+</changes>
+<comments>
+Please note that the game can crash for AMD users, which is not the fault of HLAE:<br />
+https://www.reddit.com/r/AMDHelp/comments/46d193/counterstrike_global_offensive_operation_wildfire/
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.1.0.0</version>
+<time>2016-02-16T18:43Z</time>
+<changes>
+<change type="added">
+Added several options to mirv_streams actions add replace.
+</change>
+<change type="added">
+Added smokeOverlayAlphaFactor to mirv_streams baseFx based streams.
+</change>
+<change type="added">
+Added easy on-screen wallhack config complete with material and texture files.<br />
+This is really easy, just enter the following into console (will print help):<br />
+exec afx/wh<br />
+This also serves as sample how to use the new features added recently (just have a look at the files in the resources folder).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.0.0.3</version>
+<time>2016-02-14T11:52Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams actions being case sensitive in some cases (now are fully non-case sensitive again).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.0.0.2</version>
+<time>2016-02-14T07:34Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams missing invisible action, which can be a problem for users still relaying on it, however it's actually just a noDraw action these days.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.0.0.1</version>
+<time>2016-02-13T21:15Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams actions like mask/drawDepth/white/... having problems with Sprite_DX9 shader (those actions will fallback to noDraw action for this shader now, should mostly affect light glows etc. only).
+</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookSource</name>
+<version>1.0.0.0</version>
+<time>2016-02-13T13:21Z</time>
+<changes>
+<change type="added">
+Added mirv_fov handleZoom, which allows to enable zoom handling for mirv_fov (so it doesn't override the fov when zoomed).
+For CS:GO you only need to do mirv_fov handleZoom enabled 1. For other mods not using a default 90.0 fov you might need to set the threshold with
+mirv_fov handleZoom minUnzoomedFov.
+</change>
+<change type="updated">
+Updated mirv_streams heavily to support mirv_streams actions.
+</change>
+<change type="added">
+Added a mirv_streams actions, which is the ability to add custom actions that can be used as action for baseFx based streams (currently all streams except
+developer and normal stream). There is currently only on custom action to add, which is the replace action, which allows to define a replacement material
+for an action. While HLAE does basic checks if the material is compatible with the one replaced, there might still be console errors or even crashes, if
+the material is not compatible, so use with care.<br />
+The replace action basically replaces the material ("texture") of a model, but not the model itself. So pelase don't get too excited!
+</change>
+<change type="added">
+Added a actionFilter command to mirv_streams baseFx streams. Command has built-in help. It allows to filter by material name (even using wild cards) and set an action for that material.
+Be careful, for example replacing the vgui materials will mess up your console! (Well it mostly just does what you ask it to.)
+</change>
+<change type="added">
+Added otherAction to mirv_streams, this will hoepfully improve handling of unknown materials on custom maps for the various stream templates.
+(Also added a few readonly actions that are of no real use but used internally.)
+</change>
+</changes>
+<comments>
+For custom replacement materials it's a good idea to use the resources\AfxHookSource\assets\csgo\materials folder in the HLAE installation
+directory, because HLAE mounts the whole resources\AfxHookSource\assets\csgo folder into the game. That way you won't mess up your game.
+Since the HLAE mounted directory has lowest priority, you need to use a material name that is not already used for your custom materials,
+meaning the best idea is to place them in a custom sub-directory, i.e. resources\AfxHookSource\assets\csgo\materials\my.<br />
+Good luck, have fun, happy testing!
+</comments>
+</release>
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.16.0</version>
+<time>2016-02-06T09:00Z</time>
+<changes>
+<change type="updated">
+Updated mirv_streams: Reduced potential for epileptic seizures upon recording again. (Now only main game view should be shown now, really.)
+</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.15.0</version>
+<time>2016-02-06T03:50Z</time>
+<changes>
+<change type="added">
+Added writeZAction in mirv_streams, this allows to properly remove level walls from drawing and blocking the view.
+Basically you add a alphaMatte and an alphaEntity stream and set for each stream
+the writeZAction to noDraw (this removes the clip planes from i.e. the level walls) and i.e. the
+worldTexturesAction, staticPropTexturesAction, otherModelsAction, cableAction, clientEffectTexturesAction,
+decalTexturesAction, effectsAction, otherParticleAction, errorMaterialAction, weaponModelsAction
+to noDraw and set the r_novis console variable to 1 (to disable the visbility checks). Also on de_dust2 you might
+need to use a special depth stream in order to mask what I call the castle in the sky, which is basically a far
+away version of de_dust2 (doesn't happen on other maps usually, you can use the fact that's it further away than 16384 inches)).
+We'll try to make a tutorial and link it here: TUTORIAL INK TBA
+</change>
+<change type="added">
+Exposed errorMaterialAction in mirv_streams.
+</change>
+<change type="updated">
+Updated mirv_streams noDraw action to be more aggressive, it should work on all materials now.
+</change>
+<change type="removed">
+Removed mirv_streams invisible action. It's still accepted as valid input, but will be mapped to noDraw instantly.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.14.0</version>
+<time>2016-02-05T17:41Z</time>
+<changes>
+<change type="added">
+Added depthF and depthFZIP capture types to mirv_streams: Those are the preferred capture types for OpenEXR / high precision depth captures now.
+However they might require a quite recent graphic card in order to work.<br />
+Example:<br />
+mirv_streams add depth myDepthF<br />
+mirv_streams edit myDepthF depthValMax 8192<br />
+mirv_streams edit myDepthF captureType depthF
+</change>
+<change type="fixed">
+Fixed depth24 action: No alpha blending anymore, that would lead to inaccurate results, (binary) alpha testing instead.
+</change>
+<change type="updated">
+Updated mirv_streams: Reduced potential for epileptic seizures upon recording. (Only main game view should be shown now and it might jump between two succeeding frames a bit.)
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.11.0</version>
+<time>2016-01-28T18:33Z</time>
+<changes>
+<change type="fixed">
+Fixed huge OpenEXR / depth24 export inaccuracies due to a wrong formular causing huge problems in precision dependant post processing.
+Please also read the comments at the end of this changelog entry.
+</change>
+<change type="fixed">
+Fixed the on-screen drawing of the campath (mirv_campath draw) being off by one frame (hardly noticeable).
+</change>
+<change type="fixed">
+Renamed mirv_streams stattrackAction to statTrakAction (old spelling will still be accepted).
+</change>
+</changes>
+<comments>
+Please note: It is highly recommended to turn off in-game Anti Aliasing when using depth24 / OpenEXR support, because several anti aliasing methods used are not neutral to the colour hue.<br />
+Also please note, while the export is named depth24, the actual accuracy is 23 bits maximum. Depending on your garphic card and drivers the accuracy can be much lower, however with modern cards and drivers you should be close to the 23 bit maximum accuracy.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.10.0</version>
+<time>2016-01-20T11:30Z</time>
+<changes>
+<change type="added">
+Added depth24 (OpenEXR) support to mirv_streams, example commands to add a depth24 stream:<br />
+mirv_streams add depth mydepth24<br />
+mirv_streams edit mydepth24 depthValMax 8192.0<br />
+mirv_streams edit mydepth24 mod toDepth24<br />
+If you want to have the OpenEXR files with ZIP compression (probably slower) use toDepth24ZIP instead of toDepth24.
+</change>
+<change type="fixed">
+Fixed missing code causing SplineRope based materials to not work properly with mirv_streams anymore.
+</change>
+<change type="fixed">
+Fixed mirv_streams affecting the HUD. Currently mirv_streams should not affect the HUD (if working properly). Maybe in future updates we will handle the HUD too with replacement shaders, but not for now.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.9.0</version>
+<time>2016-01-17T19:22Z</time>
+<changes>
+<change type="added">
+Added mirv_deathmsg modTime - allows to set a multiplier value for displaytime of a deathmessage, it is smilar to mirv_deathmsg block, except
+that it takes an additional argument (floating point value) for the multiplier
+(a negative multiplier value will make it behave like mirv_deathmsg block).
+The resulting display time for a matched notification is [mirv_deathmsg cfg noticeLifeTime] * [multiplier value].
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.8.1</version>
+<time>2016-01-15T14:44Z</time>
+<changes>
+<change type="fixed">
+Fixed problems with AfxHookSource 0.2.8.0.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.8.0</version>
+<time>2016-01-12T13:53Z</time>
+<changes>
+<change type="added">
+Added mirv_skip, allows to skip approximate demo ticks / demo time (front-end to demo_gototick command).
+</change>
+<change type="added">
+Updated the mirv_streams system: It's far more accurate in many cases now, because it comes with
+replacement shaders for SplineRope, SpriteCard, VertexLitGeneric (only non-bumped and non-phong shaders atm)
+and UnlitGeneric (only non-bumped and non-phong shaders atm) and also uses UnlitGeneric as fallback material shader now.
+Please note that the installation size increased heavily due to the shaders (196MB increase).
+</change>
+</changes>
+<comments>
+Please note: advancedfx.org recommends using alphaWorld and alphaMatteEntity (alphaMatte + alphaEntity) stream above matteWorld and matteEntity stream, since those are far superior!<br />
+TODO: Add OpenEXR support for supporting the new depth24 action (24 bit depth streams export).
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.7.3</version>
+<time>2015-12-26T18:13Z</time>
+<changes>
+<change type="fixed">
+Fixed render state problems once and for all hopefully (i.e. with D3DRS_SRGBWRITEENABLE state causing i.e. black console):
+The render state or vertex / pixel shader constants overrides should now be properly transparent to the game (meaning the Get* actions
+will feed the game with its own original values).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.7.2</version>
+<time>2015-12-21T03:10Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams console warning / error spam about missing afx_* shaders that were not used anyway (unless you had set the hidden testAction to 1).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.7.1</version>
+<time>2015-12-20T16:42Z</time>
+<changes>
+<change type="fixed">
+Fixed and re-added forcing of D3DRS_SRGBWRITEENABLE state for mirv_streams actions that require it (should fix i.e. wrong console colour).
+</change>
+<change type="added">
+Added mirv_streams action stattrackAction for baseFx based streams (which most stream types except normal currently are).
+Allows to fine tune the streams behaviour for the Stattrack weapon module and i.e. allows to make it invisible
+( mirv_streams edit streamNameHere stattrackAction invisible ).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.7.0</version>
+<time>2015-12-10T05:24Z</time>
+<changes>
+<change type="updated">
+Updated AfxHookSource: Adjusted to 9th Dec 2015 CS:GO update (affects mirv_deathmsg).
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.6.10</version>
+<time>2015-11-11T16:45Z</time>
+<changes>
+<change type="updated">
+Updated AfxHookSource: Adjusted addresses according to 10th Nov 2015 CS:GO update. Also improved detection of m_skybox3d.scale to be more stable against CS:GO updates.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.6.9</version>
+<time>2015-11-03T17:31Z</time>
+<changes>
+<change type="updated">
+Updated mirv_deathmsg highLightId: now works more POV demo alike: if the highlighted player dies the background is red.
+</change>
+<change type="added">
+Added mirv_deathmsg highLightAssister: Whether or not to highlight kill assists for highLightId.
+</change>
+</changes>
+<comments>
+Just so you know spddl released v1.0.0 of MMHud (the MovieMaker Hud to be used with HLAE).<br />
+You can get it from here: http://mmhud.spddl.de/<br />
+He is waiting for feedback, you should contact him here:
+https://twitter.com/spddlde or http://www.spddl.de
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.6.8</version>
+<time>2015-10-21T07:42Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams: Adjusted m_SkyBox3d.scale offset address according to 20th Oct 2015 CS:GO update, important for proper 3D skybox scaling in depth dump.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.6.7</version>
+<time>2015-10-14T10:58Z</time>
+<changes>
+<change type="added">
+Added properties position, angles and fov to mirv_input, that can be used to set position / view angles / fov directly when in mirv_input camera mode.
+</change>
+<change type="updated">
+Updated ScaleformUI override features. Will be documented in HLAE Manual as soon as appropiate - we are in contact with spddl.de regarding a special movie maker GUI :-)
+(HLAE will automatically redirect requests from the game's folder csgo\resource\flash to a sub-folder path relative to HLAE.exe
+called resources\AfxHookSource\assets\csgo\resource\afxFlash, but only if the file requested exists in the folder structure requested.)
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.6.6</version>
+<time>2015-10-13T18:02Z</time>
+<changes>
+<change type="added">
+Added feature that overrides the ScaleformUI SWF file checksum checks, so you should be able to use custom HUDs / heavily customize your HUD. I am currently trying to contact someone that does custom HUDs in order to work out, if a special movie maker HUD can be made, but I am not in contact yet, let's see.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.6.5</version>
+<time>2015-10-12T19:50Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams: Now forces motion blur off, in order to avoid problems with it  (The motion blur is not good anyway, you should add it in post production, if you want any.).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.6.4</version>
+<time>2015-10-11T18:35Z</time>
+<changes>
+<change type="added">
+Added options to mirv_campath edit start: You can now give an absolute value or an delta value, enter mirv_campath edit into console for further help.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.6.3</version>
+<time>2015-10-07T12:30Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams: Epileptic seizures are back, because off-screen rendering doesn't work well for streams that want the HUD to be drawn (drawHud 1), because the ScaleformUI doesn't obey the render target.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.6.2</version>
+<time>2015-10-05T18:41Z</time>
+<changes>
+<change type="added">
+Added attachCommands and detachCommands properties to mirv_streams stream properties (allows executing commands when the stream is attached / detached), use at your own risk!
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.6.1</version>
+<time>2015-10-04T19:17Z</time>
+<changes>
+<change type="added">
+Add mirv_deathmsg highLightId - allows to disable frag highlighting or to set for which player id to highlight.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.6.0</version>
+<time>2015-10-01T14:15Z</time>
+<changes>
+<change type="added">
+Add mirv_snd_filter.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.5.1</version>
+<time>2015-09-29T14:19Z</time>
+<changes>
+<change type="updated">
+Updated mirv_streams: alphaMatte and alphaEntity defaults (and thus alphaMatteEntity defaults) changed.
+</change>
+<change type="fixed">
+Fixed mirv_streams edit not working properly in AfxHookSource 0.2.5.0.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.5.0</version>
+<time>2015-09-29T06:32Z</time>
+<changes>
+<change type="updated">
+Updated mirv_streams record to give you less epileptic seizures (images are rendered off-screen now).
+</change>
+<change type="added">
+Added alphaMatteEntity twin stream to mirv_streams, basically an entity stream with alpha channel (dumped in TGA format only).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.4.7</version>
+<time>2015-09-25T12:55Z</time>
+<changes>
+<change type="updated">
+Adjusted AfxHookSource to 24th September 2015 CS:GO update (Affected depth stream skybox elements scaling, due to changes in CBasePlayer object.).
+</change>
+<change type="added">
+Added several options for fine tuning mirv_input behaviour to mirv_input cfg.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.4.6</version>
+<time>2015-09-20T20:09Z</time>
+<changes>
+<change type="updated">
+Updated mirv_streams: matteEntity stream clientEffectTexturesAction now defaults to noDraw in order to avoid problems with keying due to glow textures.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.4.5</version>
+<time>2015-09-20T16:47Z</time>
+<changes>
+<change type="fixed">
+Fixed TGA file output header, which could cause problems i.e. in FFmpeg.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.4.4</version>
+<time>2015-09-20T13:06Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams: Fixed D3DRS_SRGBWRITEENABLE FALSE state forcing, it's now on again on all stream actions that relay on it (depth, matte, black, white), since we can't relay on the engine at all to do it properly.
+</change>
+</changes>
+<comments>
+Okay, hopefully this is the last fix of that type, at least for today :(
+Sorry.
+Happy testing, loool :D
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.4.3</version>
+<time>2015-09-20T10:36Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams: Fixed D3DRS_SRGBWRITEENABLE state forcing (now forces the state both through IShaderShadow and manually, because the engine doesn't always update the state but still tracks it internally and updates it sometimes).
+</change>
+<change type="fixed">
+Fixed mirv_streams: Adjusted m_SkyBox3d.scale offset address according to CS:GO update, important for proper 3D skybox scaling in depth dump.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.4.2</version>
+<time>2015-09-20T09:02Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams: Fixed D3DRS_SRGBWRITEENABLE state forcing (now goes through IShaderShadow API and only for DebugDepth shader, so that shader state should get maintained by engine more properly), no more random colours and brightness hopefully.
+</change>
+</changes>
+<comments>
+Oh boy was AfxHookSource 0.2.4.1 bugged, sorry for releasing it :/
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.4.1</version>
+<time>2015-09-19T15:18Z</time>
+<changes>
+<change type="updated">
+Updated mirv_streams: Now handles error material (some fences on de_overpass have that currently).
+</change>
+<change type="updated">
+Updated mirv_streams: Added alphaMatte, alphaEntity and alphaWorld streams (If you need alphaWorld depends on what you want to do.).
+</change>
+<change type="updated">
+Updated mirv_streams: Most actions force D3DRS_SRGBWRITEENABLE state as required, to avoid random color states caused by the engine i.e. when decals are drawn in-between (until now only drawDepth action had this).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.4.0</version>
+<time>2015-09-19T04:32Z</time>
+<changes>
+<change type="updated">
+Updated mirv_streams record: The recorded stream FOV will now match the game FOV.
+</change>
+<change type="updated">
+Updated mirv_streams record name: is now a folder name, can be a full folder path (i.e. d:\myFoldeName). Default value is untitled_rec, which is a folder created where the csgo.exe is located.
+</change>
+<change type="updated">
+Updated mirv_streams record: Take sub-folders will be automatically created in the folder specified by mirv_streams record name. The streams will go into sub-folders of the take folder accordingly.
+</change>
+<change type="added">
+Added mirv_streams record format: Can be tga (default) or bmp.
+</change>
+<change type="added">
+Added mirv_streams edit options for all streams: drawHud (default is 0), drawViewmodel (default is 1).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.3.5</version>
+<time>2015-09-16T10:31Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams not handling auto bound materials in IMatRenderContext functions GetDynamicMesh and GetDynamicMeshEx.
+</change>
+</changes>
+<comments>
+No HLAE problems with the latest 15th September 2015 CS:GO Update were found so far.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.3.4</version>
+<time>2015-09-13T19:49Z</time>
+<changes>
+<change type="fixed">
+Fixed a mistake in code that should not affect users.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.3.3</version>
+<time>2015-09-13T18:18Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams screen flashing due to histogram adaption. For now HLAE will force mat_dynamic_tonemapping 0 when using mirv_streams until there is more fine grained RenderView access. Thanks to suky for providing a demo and cfg with the problem.
+</change>
+<change type="fixed">
+Fixed mirv_streams models or other content flashing black due to color modulation render state (happened on de_cache a lot for example). Thanks to FGW for providing a demo with the problem.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.3.2</version>
+<time>2015-09-11T15:03Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_input camera reacting even when input focus was lost (i.e. due to ALT+TAB).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.3.1</version>
+<time>2015-09-06T13:54Z</time>
+<changes>
+<change type="fixed">
+Fixed game visuals becoming inresponsive after graphic device was lost (i.e. due to alt-tabbing out of fullscreen) after mirv_campath draw had been enabled earlier.
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.3.0</version>
+<time>2015-08-29T10:32Z</time>
+<changes>
+<change type="fixed">
+Fixed bug in conversion between quaternion and quake engine view angles that could cause wrong campath camera view angles
+epsecially when the camera was rolled.
+</change>
+<change type="fixed">
+Fixed mirv_campath edit rotate to update the view angles also, otherwise it's not useful.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.2.6</version>
+<time>2015-08-19T19:00Z</time>
+<changes>
+<change type="added">
+Added mirv_cvar_hack (for CS:GO only) - allows forcing values for some cvars (not cmds) directly, use with caution!
+Please note: currently there will be neither an error (if you do a typo) nor an success message.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.2.5</version>
+<time>2015-08-17T15:40Z</time>
+<changes>
+<change type="fixed">
+Fixed / improved accuracy of demo tick display in mirv_campath print.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.2.4</version>
+<time>2015-08-17T13:08Z</time>
+<changes>
+<change type="fixed">
+Fixed help text of mirv_campath edit for mirv_campath edit position not being accurate.
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.2.3</version>
+<time>2015-08-17T12:46Z</time>
+<changes>
+<change type="fixed">
+Fixed small memory / object leak in mirv_campath edit functions when a proper subset of points was selected.
+</change>
+<change type="updated">
+Updated mirv_campath edit position: If multiple keyframes are selected the movement now applies to the middle of their bounding box (which hopefully is more useful for users).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.2.2</version>
+<time>2015-08-15T13:49Z</time>
+<changes>
+<change type="added">
+Added mirv_campath edit options for editing position, rotation and FOV of selected keyframes or even rotating all or selected keyframes.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.2.1</version>
+<time>2015-08-15T08:56Z</time>
+<changes>
+<change type="updated">
+Updated and clarified time codes for mirv_campath print and mirv_campath select.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.2.0</version>
+<time>2015-08-14T17:28Z</time>
+<changes>
+<change type="added">
+Added displaying of approximate demo tick for each keyframe to mirv_campath print.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.1.0</version>
+<time>2015-08-13T15:17Z</time>
+<changes>
+<change type="added">
+Added mirv_campath draw support for CS:S (Counter-Strike Source) and similar Source SDK 2013 based games.
+Please let us know if it works in your mod too :-)
+</change>
+</changes>
+<comments>
+We noticed during mirv_campath draw development, that data exported by mirv_camexport might be off (not accurate enough).
+If you used the data in a 3D program and can check whether or not there is a problem when syncing it to game footage,
+please let us know!
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.0.3</version>
+<time>2015-08-13T06:34Z</time>
+<changes>
+<change type="fixed">
+Fixed LU decomposition finally, might affect very rare cases of mirv_campath draw drawing.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.0.2</version>
+<time>2015-08-12T10:20Z</time>
+<changes>
+<change type="fixed">
+Bug in LU-decomposition pivotisation fixed causing bugs in line clipping.
+Other minor fixes.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.0.1</version>
+<time>2015-08-11T17:31Z</time>
+<changes>
+<change type="fixed">
+Bug fixes mostly related to drawing.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.2.0.0</version>
+<time>2015-08-11T15:12Z</time>
+<changes>
+<change type="added">
+Added mirv_campath draw. This _might_ work in other modifications than CS:GO too.
+</change>
+<change type="added">
+Added mirv_campath select.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.1.0.0</version>
+<time>2015-07-27T09:07Z</time>
+<changes>
+<change type="added">
+Added mirv_streams officially (renamed from __mirv_streams). The system still has it's limitations, but is now in a state where it makes sense
+to offer it to more users. A few examples for this command will be added to the HLAE Manual hopefully.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.13.7</version>
+<time>2015-07-24T17:30Z</time>
+<changes>
+<change type="fixed">
+Fixed crashes due to class pointer not being offset according to used interface in case of multiple inheritance in CAfxMesh (IMesh wrapper).
+Thanks to the great and mighty anthony for providing a demo with the problem.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.13.6</version>
+<time>2015-07-17T18:00Z</time>
+<changes>
+<change type="updated">
+Updated mirv_fov, when enabled it now has a higher priority and is only superseded by mirv_input camera and otherwise supersedes any other FOV setting (i.e. by the game or mirv_campath).
+</change>
+<change type="updated">
+Updated and fixed __mirv_streams a bit. Depth streams are still heavily bugged though, especially when using Effect Detail higher than Low.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.13.5</version>
+<time>2015-07-16T17:33Z</time>
+<changes>
+<change type="updated">
+Updated __mirv_streams.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.13.4</version>
+<time>2015-07-14T12:02Z</time>
+<changes>
+<change type="updated">
+Updated __mirv_streams: Better default behaviour for matteStreams now. Also exposed lots of matteStream settings to the console
+(use __mirv_streams edit),
+i.e. worldTexturesAction, skyBoxTexturesAction, staticPropTexturesAction, cableAction, playerModelsAction, weaponModelsAction, shellModelsAction,
+otherModelsAction, decalTexturesAction, effectsAction, shellParticleAction, otherParticleAction, stickerAction.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.13.3</version>
+<time>2015-07-13T18:17Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_input camera sometimes reacting to mouse movements when console is open.
+</change>
+<change type="updated">
+Increased default mirv_input cfg msens to 0.1.
+</change>
+<change type="updated">
+Updated __mirv_streams: No need to copy (2) assets anymore, HLAE will mount them in the game file system instead.
+For more info about testing the matte system in a early stage refer to: http://advancedfx.style-productions.net/forum/viewtopic.php?f=17&amp;t=1693
+Please be aware that __mirv_streams is for testing only and subject to change.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.13.1</version>
+<time>2015-07-01T17:13Z</time>
+<changes>
+<change type="updated">
+Adjusted AfxHookSource to 30th June 2015 CS:GO update.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.13.0</version>
+<time>2015-06-15T19:14Z</time>
+<changes>
+<change type="added">
+Added mirv_gameoverlay command for lazy people (you know who you are) that allows to disable / enable the gameoverlay.
+This command is useful in AfxHookSource, since the gameoverlay will be recorded with startmovie otherwise.
+Please note that this will not disable Steam notification sounds, but those are not recorded by startmovie anyway.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.12.1</version>
+<time>2015-06-09T11:59Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_input camera mouse being trapped in window for POV demos.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.12.0</version>
+<time>2015-06-09T07:45Z</time>
+<changes>
+<change type="added">
+Added mirv_input for input control (i.e. of camera), the command will be documented in the HLAE Manual.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.11.3</version>
+<time>2015-05-27T14:05Z</time>
+<changes>
+<change type="updated">
+Adjusted AfxHookSource to 26th May 2015 CS:GO update.
+</change>
+<change type="updated">
+Limited usable fov (Field Of View) range (affects mirv_fov and mirv_campath) to between 1 degree to 179 degrees.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.11.2</version>
+<time>2015-05-08T20:10Z</time>
+<changes>
+<change type="updated">
+Turns out Visual Studio 2010 SP1 was not properly installed on the build computer, reinstalled it and updated or
+rebuild all files included in the HLAE download accordingly.
+Hopefully this fixes some problems on Windows 8 some users
+are experiencing i.e. with AfxHookSource (but maybe not).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.11.1</version>
+<time>2015-04-07T17:53Z</time>
+<changes>
+<change type="added">
+Added mirv_fov, allows to override the games FOV (Field Of View).
+The features related to mirv_campath will now pick up and interpolate the FOV.
+Please note that for technical reasons mirv_camexport and mirv_camimport will ignore the FOV.
+</change>
+</changes>
+<comments>
+Thanks to xyanide for suggesting this feature.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.10.2</version>
+<time>2015-03-30T15:29Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_deathmsg block not ORing the blocks in the list (the last one always determined the outcome).
+</change>
+</changes>
+<comments>
+Thanks to tweeday for finding this bug.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.10.1</version>
+<time>2015-01-25T19:54Z</time>
+<changes>
+<change type="fixed">
+Fixed unitialized C++ class members leading to a crash when using mirv_campath edit functions.
+</change>
+</changes>
+<comments>
+Thanks to xyanide for testing.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.9.0</version>
+<time>2015-01-22T08:50Z</time>
+<changes>
+<change type="added">
+Added mirv_snd_timescale. Allows to set the timescale for the sound system independently of host_timescale. Useful for GOTV demos with startmovie and high host_framerate where host_timescale 0 is required in order to avoid lag / skipping in recoding (set mirv_snd_timescale to 1.0).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.7.2</version>
+<time>2014-11-13T20:47Z</time>
+<changes>
+<change type="updated">
+Fixed random crashes i.e. when loading a differet demo.
+</change>
+</changes>
+<comments>
+Thanks to flippoz for helping.
+</comments>
+</release>
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.7.1</version>
+<time>2014-11-13T13:37Z</time>
+<changes>
+<change type="updated">
+Fixed mirv_cvar_unhide_all crashing.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.7.0</version>
+<time>2014-11-12T17:28Z</time>
+<changes>
+<change type="added">
+Added mirv_cvar_unhide_all for CS:GO, which when executed unhides all cvars (inlcuding development cvars).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.6.0</version>
+<time>2014-11-07T19:32Z</time>
+<changes>
+<change type="added">
+Added mirv_campath for creating campaths easily.
+If there is a bug, then please save the campath using mirv_campath save test.xml (will go to the folder of the game.exe file) and report with that file.
+</change>
+</changes>
+<comments>
+Thanks to James McEnnan for sharing qspline under the CC0 license and helping with problems!
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.5.1</version>
+<time>2014-10-28T21:10Z</time>
+<changes>
+<change type="updated">
+Made AfxHookSource / mirv_deathmsg more stable against minor CS:GO client.dll updates.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.5.0</version>
+<time>2014-10-22T12:06Z</time>
+<changes>
+<change type="added">
+Added mirv_deathmsg for CS:GO. Please note this will break with the next CS:GO update and either needs to be updated or hardened againt further updates then.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.4.5</version>
+<time>2014-04-30T19:21Z</time>
+<changes>
+<change type="updated">
+Updated AfxHookSource to support 23 Apr 2014 CS:GO update.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.4.4</version>
+<time>2014-04-11T18:21Z</time>
+<changes>
+<change type="updated">
+Updated AfxHookSource to support 26 Mar 2014 CS:GO update.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.4.3</version>
+<time>2014-02-08T12:20Z</time>
+<changes>
+<change type="updated">
+Updated AfxHookSource to support 05 Feb 2014 CS:GO update.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.4.2</version>
+<time>2014-01-03T11:37Z</time>
+<changes>
+<change type="updated">
+Updated AfxHookSource to support CS:GO again.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.4.1</version>
+<time>2013-06-12T17:40Z</time>
+<changes>
+<change type="updated">
+Fixed CS:GO crashing in some situations.
+</change>
+</changes>
+<comments>Thanks and greetings to how-hiGh!</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.4.0</version>
+<time>2013-06-11T19:15Z</time>
+<changes>
+<change type="updated">
+Updated AfxHookSource to support more modifications for Camera Motion Data I/O.
+Also made AfxHookSource more stable against game updates.
+The exact Source engine modifications supported are unknown at the moment and need to be tested.
+Currently known to work: Counter-Strike:Source, Counter-Strike:Global Offensive.
+Please note: Currently CS:GO will crash when the demo end is reached, we couldn't fix this so far.
+</change>
+</changes>
+<comments>Thanks and greetings to Dec and how-hiGh!</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.34</version>
+<time>2013-05-26T14:34Z</time>
+<changes>
+<change type="updated">
+Adjusted to 20 May 2013 CSS update.
+</change>
+</changes>
+<comments>Thanks and greetings to how-hiGh!</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.33</version>
+<time>2013-05-14T17:23Z</time>
+<changes>
+<change type="updated">
+Adjusted to 29 Apr 2013 CSS update.
+</change>
+</changes>
+<comments>Thanks and greetings to xQd!</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.32</version>
+<time>2013-03-23T19:48Z</time>
+<changes>
+<change type="updated">
+Adjusted to 20 Mar 2013 CSS update.
+</change>
+</changes>
+<comments>Thanks and greetings to how-hiGh!</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.31</version>
+<time>2013-02-09T14:14Z</time>
+<changes>
+<change type="updated">
+Adjusted to 5 Feb 2013 CSS update.
+</change>
+</changes>
+<comments>Thanks and greetings to how-hiGh!</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.30</version>
+<time>2012-10-13T17:48Z</time>
+<changes>
+<change type="updated">
+Adjusted to 24 Sep 2012 CSS update.
+</change>
+</changes>
+<comments>Thanks and greetings to Dec!</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.29</version>
+<time>2012-09-14T18:28Z</time>
+<changes>
+<change type="updated">
+Adjusted to 11 Sep 2012 CSS update.
+</change>
+</changes>
+<comments>Thanks and greetings to how-hiGh!</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.28</version>
+<time>2012-08-25T18:24Z</time>
+<changes>
+<change type="updated">
+Adjusted to 22 Aug 2012 CSS update.
+</change>
+</changes>
+<comments>Thanks and greetings to how-hiGh!</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.27</version>
+<time>2012-07-04T16:43Z</time>
+<changes>
+<change type="updated">
+Adjusted to 03 Jul 2012 CSS update.
+</change>
+</changes>
+<comments>Thanks and greetings to how-hiGh!</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.26</version>
+<time>2012-05-27T17:11Z</time>
+<changes>
+<change type="updated">
+Adjusted to 22 May 2012 CSS update.
+</change>
+</changes>
+<comments>Thanks and greetings to how-hiGh!</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.25</version>
+<time>2012-02-12T14:51Z</time>
+<changes>
+<change type="updated">
+Adjusted to 09 Feb 2012 CSS update.
+</change>
+</changes>
+<comments>Thanks and greetings to Dec!</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.24</version>
+<time>2011-12-24T16:36Z</time>
+<changes>
+<change type="updated">
+Adjusted to 22 Dec 2011 CSS update.
+</change>
+</changes>
+<comments>Thanks and greetings to how-hiGh!</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.23</version>
+<time>2011-12-21T14:29Z</time>
+<changes>
+<change type="updated">
+Adjusted to 16 Dec 2011 CSS update.
+</change>
+</changes>
+<comments>Thanks and greetings to Dec!</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.22</version>
+<time>2011-11-15T17:24Z</time>
+<changes>
+<change type="updated">
+Adjusted to 08 Nov 2011 CSS update.
+</change>
+</changes>
+<comments>Thanks and greetings to Dec!</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.21</version>
+<time>2011-10-30T17:59Z</time>
+<changes>
+<change type="updated">
+Adjusted to 26 Oct 2011 CSS update.
+</change>
+</changes>
+<comments>Thanks and greetings to Dec!</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.20</version>
+<time>2011-09-29T13:38Z</time>
+<changes>
+<change type="updated">
+Adjusted to 17 Sep 2011 CSS update.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.19</version>
+<time>2011-08-26T13:31Z</time>
+<changes>
+<change type="updated">
+Adjusted to 04 Aug 2011 CSS update.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.18</version>
+<time>2011-07-08T17:31Z</time>
+<changes>
+<change type="updated">
+Adjusted to 08 July 2011 CSS update.
+</change>
+</changes>
+<comments>Thanks and greetings to Dec!</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.17</version>
+<time>2011-06-28T19:02Z</time>
+<changes>
+<change type="updated">
+Adjusted to 28 June 2011 CSS update.
+</change>
+</changes>
+<comments>Thanks and greetings to Dec!</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.16</version>
+<time>2011-05-10T21:46Z</time>
+<changes>
+<change type="updated">
+Adjusted to 10 May 2011 CSS update.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.15</version>
+<time>2011-04-24T18:50Z</time>
+<changes>
+<change type="updated">
+Adjusted to 21 Apr 2011 CSS update.
+</change>
+</changes>
+<comments>Thanks to ne0n for helping!</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.14</version>
+<time>2011-04-18T18:44Z</time>
+<changes>
+<change type="updated">
+Adjusted to 15 Apr 2011 CSS update.
+</change>
+</changes>
+<comments>Thanks again to Shift for helping!</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.13</version>
+<time>2011-03-05T18:20Z</time>
+<changes>
+<change type="updated">
+Adjusted to 04 Mar 2011 CSS update.
+</change>
+</changes>
+<comments>Thanks to Shift for helping!</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.12</version>
+<time>2010-12-22T18:44Z</time>
+<changes>
+<change type="updated">
+Adjusted to 22 Dec 2010 CSS update.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.11</version>
+<time>2010-12-20T20:21Z</time>
+<changes>
+<change type="updated">
+Adjusted to 18 Dec 2010 CSS update.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.10</version>
+<time>2010-10-31T17:50Z</time>
+<changes>
+<change type="updated">
+Adjusted to 30 Oct 2010 CSS update.
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.9</version>
+<time>2010-10-07T17:30Z</time>
+<changes>
+<change type="updated">
+Adjusted to 07 Oct 2010 CSS update.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.8</version>
+<time>2010-09-10T09:56Z</time>
+<changes>
+<change type="updated">
+Adjusted to 09 Sep 2010 CSS update.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.7</version>
+<time>2010-09-01T15:49Z</time>
+<changes>
+<change type="updated">
+Adjusted to 01 Sep 2010 CSS update.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.6</version>
+<time>2010-08-31T12:37Z</time>
+<changes>
+<change type="updated">
+Adjusted to 30 Aug 2010 CSS update.
+</change>
+</changes>
+<comments>
+Playing demos and using the hook with those should work.
+Joing servers might crash the game or get you banned.
+Please launch CSS at least once without HLAE.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.5</version>
+<time>2010-06-28T08:50Z</time>
+<changes>
+<change type="updated">
+Adjusted to 26 Jun 2010 CSS update.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.4</version>
+<time>2010-06-24T22:23Z</time>
+<changes>
+<change type="updated">
+Adjusted to 23 Jun 2010 CSS update.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.3</version>
+<time>2010-06-01T22:53Z</time>
+<changes>
+<change type="fixed">
+Fixed cam motion file import.
+</change>
+</changes>
+<comments>
+Thanks to chetaah.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.2</version>
+<time>2010-05-20T17:32Z</time>
+<changes>
+<change type="removed">
+Removed mirv_allowcheats (sv_cheats always works in demos in Source).
+</change>
+<change type="updated">
+Switched to VC100.
+</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.3.1</version>
+<time>2010-04-04T19:11Z</time>
+<changes>
+<change type="added">
+Added mirv_allowcheats (cstrike, ep2), unblocks sv_cheats and related commands.
+</change>
+<change type="added">
+Extended mirv_camexport, mirv_camimport to work with ep2.
+</change>
+</changes>
+<comments>
+Greetz / thx to msthavoc, Austin Killey, nemoic.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.2.1</version>
+<time>2009-12-22T10:13Z</time>
+<changes>
+<change type="updated">
+Minor tweak in camimport to reduce rounding error.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.2.0</version>
+<time>2009-11-02T14:00Z</time>
+<changes>
+<change type="added">
+Added mirv_camexport, mirv_camimport (Counter-Strike Source only).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>0.0.0.1</version>
+<time>2009-09-29T22:00Z</time>
+<changes>
+<change type="added">
+First version.
+</change>
+</changes>
+</release>
+
+
+</changelog>

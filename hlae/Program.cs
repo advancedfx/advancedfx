@@ -33,6 +33,7 @@ namespace AfxGui
 
         static String m_BaseDir;
         static System.Drawing.Icon m_Icon;
+        static bool m_CustomLoaderHadHookDllPath = false;
 
         static void ProcessArgsAfxHookGoldSrc(string[] args)
         {
@@ -159,8 +160,19 @@ namespace AfxGui
                     case "-hookDllPath":
                         if (i + 1 < args.Length)
                         {
-                            GlobalConfig.Instance.Settings.CustomLoader.HookDllPath = args[i + 1];
+                            if(!m_CustomLoaderHadHookDllPath)
+                            {
+                                GlobalConfig.Instance.Settings.CustomLoader.InjectDlls.Clear();
+
+                                m_CustomLoaderHadHookDllPath = true;
+                            }
+
+                            CfgInjectDll dll = new CfgInjectDll();
+
+                            dll.Path = args[i + 1];
                             i++;
+
+                            GlobalConfig.Instance.Settings.CustomLoader.InjectDlls.Add(dll);
                         }
                         break;
                     case "-programPath":
@@ -341,7 +353,10 @@ namespace AfxGui
             // start-up CustomLoader if requested (i.e. by command line)
             if (Globals.AutoStartCustomLoader)
             {
-                if (!Loader.Load(isProcess64Bit => GlobalConfig.Instance.Settings.CustomLoader.HookDllPath, GlobalConfig.Instance.Settings.CustomLoader.ProgramPath, GlobalConfig.Instance.Settings.CustomLoader.CmdLine))
+                List<Loader.GetHookPathDelegate> getHookPaths = new List<Loader.GetHookPathDelegate>();
+                foreach (CfgInjectDll dll in GlobalConfig.Instance.Settings.CustomLoader.InjectDlls) getHookPaths.Add(isProcess64Bit => dll.Path);
+
+                if (!Loader.Load(getHookPaths, GlobalConfig.Instance.Settings.CustomLoader.ProgramPath, GlobalConfig.Instance.Settings.CustomLoader.CmdLine))
                     bOk = false;
             }
 

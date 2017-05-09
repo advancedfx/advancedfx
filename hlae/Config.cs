@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Threading;
@@ -68,12 +69,24 @@ public class CfgLauncher
     }
 }
 
+    public class CfgInjectDll
+    {
+        public String Path;
+    }
 
 public class CfgCustomLoader
 {
 	public String CmdLine;
-    public String HookDllPath;
+
+        /// <summary>
+        /// Do NOT USE. For backwards compat only.
+        /// </summary>
+        public String HookDllPath;
+
     public String ProgramPath;
+
+        [XmlArrayItem("Dll")]
+        public List<CfgInjectDll> InjectDlls;
 
     public CfgCustomLoader()
     {
@@ -85,12 +98,34 @@ public class CfgCustomLoader
         ThisDefault();
     }
 
+        internal void OnDeserialized()
+        {
+            if(null != this.HookDllPath)
+            {
+                CfgInjectDll cfgInjectDll = new CfgInjectDll();
+                cfgInjectDll.Path = this.HookDllPath;
+
+                this.InjectDlls.Add(cfgInjectDll);
+
+                this.HookDllPath = null;
+            }
+        }
+
+        internal static void OnSerializeOverrides(XmlAttributeOverrides overrides)
+        {
+            XmlAttributes attrs = new XmlAttributes();
+            attrs.XmlIgnore = true;
+
+            overrides.Add(typeof(CfgCustomLoader), "HookDllPath", attrs);
+        }
+
     private void ThisDefault()
 	{
-		HookDllPath = "";
+		HookDllPath = null;
 		ProgramPath = "";
 		CmdLine = "-steam -insecure +sv_lan 1 -window -console -game csgo";
-	}
+        InjectDlls = new List<CfgInjectDll>();
+    }
 }
 
 
@@ -172,6 +207,16 @@ public class CfgSettings
         ThisDefault();
 	}
 
+        internal void OnDeserialized()
+        {
+            CustomLoader.OnDeserialized();
+        }
+
+        internal static void OnSerializeOverrides(XmlAttributeOverrides overrides)
+        {
+            CfgCustomLoader.OnSerializeOverrides(overrides);
+        }
+
     internal void Default()
 	{
         LauncherCsgo.Default();
@@ -236,6 +281,8 @@ public class Config
     			fs = new FileStream( cfgPath, FileMode.Open );
 
                 config = serializer.Deserialize(fs) as Config;
+
+                    config.OnDeserialized();
             }
             catch(Exception)
             {
@@ -262,7 +309,17 @@ public class Config
 		return WriteToFile( filePath );
 	}
 
-    internal void Default()
+        internal void OnDeserialized()
+        {
+            Settings.OnDeserialized();
+        }
+
+        internal static void OnSerializeOverrides(XmlAttributeOverrides overrides)
+        {
+            CfgSettings.OnSerializeOverrides(overrides);
+        }
+
+        internal void Default()
     {
         Settings.Default();
         ThisDefault();
@@ -301,7 +358,12 @@ public class Config
 
 		try
 		{
-			XmlSerializer serializer = new XmlSerializer( typeof(Config) );
+                XmlAttributeOverrides xOver = new XmlAttributeOverrides();
+
+                OnSerializeOverrides(xOver);
+
+                XmlSerializer serializer = new XmlSerializer( typeof(Config), xOver );
+
             writer = new StreamWriter(filePath);
 
 			serializer.Serialize( writer, this );
