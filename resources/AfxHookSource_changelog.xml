@@ -6,6 +6,23 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.16.6</version>
+<time>2017-05-13T20:45Z</time>
+<changes>
+<change type="fixed">
+Adjusted to 5/12/2017 CS:GO update.
+</change>
+</changes>
+<comments>
+Please note: The towers on mirage being grey on high or very high shader settings is not an HLAE bug, please report it to Valve instead.<br />
+Plesae report any new problems with HLAE that are not known yet:<br />
+Known Problems: New commands mirv_camio and mirv_streams record cam don't work yet.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.16.5</version>
 <time>2017-05-09T13:22Z</time>
 <changes>
