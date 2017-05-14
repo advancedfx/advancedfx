@@ -6,6 +6,28 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.16.7</version>
+<time>2017-05-14T09:45Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_fix playerAnimState not working.
+</change>
+<change type="fixed">
+Fixed smoke overlay always missing / mirv_streams stream property smokeOverlayAlphaFactor not working.
+</change>
+<change type="fixed">
+Fixed new commands mirv_camio and mirv_streams record cam not working properly (those are custom files somewhat similar to bvh, but with time and FOV info, atm there are no plugins that support importing them, but it shouldn't be too hard).
+</change>
+</changes>
+<comments>
+Please note: The towers on mirage being grey on high or very high shader settings is not an HLAE bug, it's a CS:GO bug.<br />
+Plesae report any new problems with HLAE that are not known yet.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.16.6</version>
 <time>2017-05-13T20:45Z</time>
 <changes>
