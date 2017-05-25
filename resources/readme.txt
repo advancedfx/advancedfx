@@ -42,14 +42,6 @@ AlliedModders
   For csgo hl2sdk.
   http://alliedmods.net
 
-FreeType
-  For the FreeType library.
-  http://freetype.org/
-  (Currently not used in Release build.).
-  
-  Portions of this software are copyright © 2015 The FreeType
-  Project (www.freetype.org).  All rights reserved.
-  
 GitHub
   For hosting the project.
   http://github.com/
@@ -100,11 +92,6 @@ Microsoft
   For VC++, MSDN Library, ... .
   http://www.microsoft.com/
   
-Mozilla
-  For SpiderMonkey
-  http://www.mozilla.org/
-  (Currently not used in Release build.).
-  
 NASM
   For NASM.
   http://www.nasm.us/
@@ -146,23 +133,48 @@ Valve
   For various SDKs.
   http://www.valvesoftware.com/
   
-id Software
-  For Quake 1 source code.
-  http://www.idsoftware.com/
+advancedfx-mit
+  https://github.com/ripieces/advancedfx-mit
   
-libRocket
-  http://librocket.com/
-  (Currently not used in Release build.).
+  MIT License
   
-  Copyright (c) 2008-2014 CodePoint Ltd, Shift Technology Ltd, and contributors
- 
+  Copyright (c) 2007-2017 Dominik Tugend ( https://github.com/ripieces )
+  Copyright (c) 2016-2017 Ivan Molodetskikh ( https://github.com/YaLTeR )
+  Copyright (c) 2015-2015 Niklas Koep ( https://github.com/nkoep )
+  Copyright (c) 2004-2009 Gavin Bramhill ( http://www.madabouthats.org/ )
+  
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
   in the Software without restriction, including without limitation the rights
   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
   copies of the Software, and to permit persons to whom the Software is
   furnished to do so, subject to the following conditions:
-
+  
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+  
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+  
+easywsclient
+  https://github.com/dhbaird/easywsclient
+  
+  The MIT License (MIT)
+  
+  Copyright (c) 2012, 2013 <dhbaird@gmail.com>
+  
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+  
   The above copyright notice and this permission notice shall be included in
   all copies or substantial portions of the Software.
   
@@ -173,7 +185,11 @@ libRocket
   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
-
+  
+id Software
+  For Quake 1 source code.
+  http://www.idsoftware.com/
+  
 qspline CC0
   Thanks to James McEnnan for putting essential parts of qspline under the CC0
   license.

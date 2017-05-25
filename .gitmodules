@@ -2,3 +2,7 @@
 	path = prop
 	url = https://github.com/ripieces/advancedfx.git
 	branch = prop
+[submodule "shared/easywsclient"]
+	path = shared/easywsclient
+	url = https://github.com/ripieces/easywsclient.git
+	branch = master
