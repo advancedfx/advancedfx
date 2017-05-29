@@ -114,7 +114,7 @@ wss.on('connection', function(newWs) {
 								var version = buffer.readUInt32LE(idx);
 								wsConsole.print('version = '+version);
 								idx += 4;
-								if(0 == version)
+								if(1 == version)
 									continue;
 							}
 							break;
@@ -134,32 +134,32 @@ wss.on('connection', function(newWs) {
 							continue;
 							break;
 						case 'cam':
-							if(8*8 <= buffer.length -idx)
+							if(8*4 <= buffer.length -idx)
 							{
-								var time = buffer.readDoubleLE(idx);
+								var time = buffer.readFloatLE(idx);
 								wsConsole.print('time = '+time);
-								idx += 8;
-								var xPosition = buffer.readDoubleLE(idx);
+								idx += 4;
+								var xPosition = buffer.readFloatLE(idx);
 								wsConsole.print('xPosition = '+xPosition);
-								idx += 8;
-								var yPosition = buffer.readDoubleLE(idx);
+								idx += 4;
+								var yPosition = buffer.readFloatLE(idx);
 								wsConsole.print('yPosition = '+yPosition);
-								idx += 8;
-								var zPosition = buffer.readDoubleLE(idx);
+								idx += 4;
+								var zPosition = buffer.readFloatLE(idx);
 								wsConsole.print('zPosition = '+zPosition);
-								idx += 8;
-								var xRotation = buffer.readDoubleLE(idx);
+								idx += 4;
+								var xRotation = buffer.readFloatLE(idx);
 								wsConsole.print('xRotation = '+xRotation);
-								idx += 8;
-								var yRotation = buffer.readDoubleLE(idx);
+								idx += 4;
+								var yRotation = buffer.readFloatLE(idx);
 								wsConsole.print('yRotation = '+yRotation);
-								idx += 8;
-								var zRotation = buffer.readDoubleLE(idx);
+								idx += 4;
+								var zRotation = buffer.readFloatLE(idx);
 								wsConsole.print('zRotation = '+zRotation);
-								idx += 8;
-								var fov = buffer.readDoubleLE(idx);
+								idx += 4;
+								var fov = buffer.readFloatLE(idx);
 								wsConsole.print('fov = '+fov);
-								idx += 8;
+								idx += 4;
 								continue;
 							}
 							break;
@@ -183,4 +183,4 @@ wss.on('connection', function(newWs) {
     });
 });
 server.listen(31337);
-wsConsole.print('Listening on port 31337...');
+wsConsole.print('Listening on port 31337, path /mirv ...');
