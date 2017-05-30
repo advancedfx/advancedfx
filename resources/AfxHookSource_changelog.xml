@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.19.0</version>
+<time>2017-05-30T17:38Z</time>
+<changes>
+<change type="updated">
+Updated mirv_streams actionFilter: actionFilter decisions are now cached too to improve performance.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.18.0</version>
 <time>2017-05-29T19:23Z</time>
 <changes>

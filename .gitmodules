@@ -1,6 +1,6 @@
 [submodule "prop"]
 	path = prop
-	url = https://github.com/ripieces/advancedfx.git
+	url = https://github.com/ripieces/advancedfx-prop.git
 	branch = prop
 [submodule "shared/easywsclient"]
 	path = shared/easywsclient
