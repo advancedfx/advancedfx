@@ -6,6 +6,25 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.20.0</version>
+<time>2017-06-01T14:30Z</time>
+<changes>
+<change type="updated">
+Updated mirv_streams: Imporved preformance (for live preview of streams).
+</change>
+<change type="updated">
+Updated build environment to Visual Studio 2017.
+</change>
+</changes>
+<comments>
+Thanks to https://twitter.com/VisualStudio for hinting that std::shared_timed_mutex is available even when targeting Windows XP in VC++ 2017
+(wanted to use std::shared_mutex originally, which is not available then).
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.19.0</version>
 <time>2017-05-30T17:38Z</time>
 <changes>

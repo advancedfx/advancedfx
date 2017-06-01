@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.5.1</version>
+<time>2017-06-01T14:30Z</time>
+<changes>
+<change type="updated">
+Updated build environment to Visual Studio 2017.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.5.0</version>
 <time>2017-04-08T18:40Z</time>
 <changes>
