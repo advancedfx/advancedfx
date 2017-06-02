@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.20.1</version>
+<time>2017-06-02T20:28Z</time>
+<changes>
+<change type="fixed">
+Fixed potential mistake in caching of mirv_streams actions that could affect actionFilter usage.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.20.0</version>
 <time>2017-06-01T14:30Z</time>
 <changes>
