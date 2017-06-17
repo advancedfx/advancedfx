@@ -6,6 +6,18 @@
 
 <release>
 <name>HLAE</name>
+<version>2.30.4</version>
+<time>2017-06-17T18:26Z</time>
+<changes>
+<change type="fixed">
+Fixed mistake in 2.30.3 that would cause HLAE launching not to work at all. Sorry for this embarassing mistake. Thanks to those that notified me early, so the malfunctioning version could be retracted fastly.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.30.3</version>
 <time>2017-06-17T13:47Z</time>
 <changes>

@@ -106,7 +106,7 @@ namespace injector
                                     bOk = false;
 
                                     if (1 <= exitCode && exitCode <= 15)
-                                        error = InjectorErrors.GetById((int)exitCode);
+                                        error = InjectorErrors.Instance.GetById((int)exitCode);
                                     else
                                     {
                                         error = InjectorErrors.AfxHookUnknown;

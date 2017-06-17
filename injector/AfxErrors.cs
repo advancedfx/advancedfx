@@ -5,17 +5,30 @@ using System.Text;
 
 namespace advancedfx
 {
-    class Errors
+    internal class Errors
     {
-        protected const string NoSolutionKnown = "No Solution known.";
+        public static Errors Instance
+        {
+            get
+            {
+                if (null == m_Instance) m_Instance = new Errors();
 
-        public static readonly Error Unknown = new Error(-1, "Unknown error", NoSolutionKnown);
+                return m_Instance;
+            }
+        }
 
-        public static Error GetById(int id)
+        protected class ErrorStrings
+        {
+            public const string NoSolutionKnown = "No Solution known.";
+        }
+        
+        public static readonly Error Unknown = new Error(-1, "Unknown error", ErrorStrings.NoSolutionKnown);
+
+        public Error GetById(int id)
         {
             Error error;
 
-            if (!m_Errors.TryGetValue(id, out error))
+            if (!Init.m_Errors.TryGetValue(id, out error))
                 error = Unknown;
 
             return error;
@@ -28,14 +41,14 @@ namespace advancedfx
                 if (0 == code)
                     throw new System.ApplicationException("Programming error: Code " + code + " is reserved.");
 
-                if (Errors.m_Errors.Keys.Contains(code))
+                if (Init.m_Errors.Keys.Contains(code))
                     throw new System.ApplicationException("Programming error: Code " + code + " already in use.");
 
                 m_Code = code;
                 m_Text = text;
                 m_Solution = solution;
 
-                Errors.m_Errors[code] = this;
+                Init.m_Errors[code] = this;
             }
 
             public int Code { get { return m_Code; } }
@@ -49,6 +62,15 @@ namespace advancedfx
             private string m_Solution;
         }
 
-        private static Dictionary<int, Error> m_Errors = new Dictionary<int, Error>();
+        protected Errors()
+        {
+        }
+
+        private class Init
+        {
+            public static Dictionary<int, Error> m_Errors = new Dictionary<int, Error>();
+        }
+
+        private static Errors m_Instance;
     }
 }

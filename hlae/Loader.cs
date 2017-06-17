@@ -85,7 +85,7 @@ namespace AfxGui
 
                             if (0 != injector.ExitCode)
                             {
-                                InjectorErrors.Error error = InjectorErrors.GetById(injector.ExitCode);
+                                InjectorErrors.Error error = InjectorErrors.Instance.GetById(injector.ExitCode);
 
                                 throw new System.AccessViolationException(
                                     "Injector(" + (isProcess64Bit ? "x64" : "x86") + ") failed," + Environment.NewLine
