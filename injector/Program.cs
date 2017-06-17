@@ -7,7 +7,7 @@ namespace injector
     {
         static int Main(string[] args)
         {
-            bool bOk = false;
+            InjectorErrors.Error result = null;
 
             string strArgs = string.Join(" ", args);
 
@@ -19,15 +19,15 @@ namespace injector
 
                 string strDllPath = strArgs.Substring(delimiterPos + 1);
 
-                bOk = advancedfx.Injector.Inject(dwProcessId, strDllPath);
+                result = Injector.Inject(dwProcessId, strDllPath);
             }
             catch(Exception e)
             {
                 System.Windows.Forms.MessageBox.Show(e.ToString(), "injector Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return 1;
+                result = InjectorErrors.Unknown;
             }
 
-            return bOk ? 0 : 1;
+            return (int)(null == result ? 0 : result.Code);
         }
     }
 }

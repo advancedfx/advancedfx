@@ -6,6 +6,22 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.20.2</version>
+<time>2017-06-17T13:37Z</time>
+<changes>
+<change type="fixed">
+Fixed materials being hold on for too long (until level change), which caused out of memory errors (csgo.exe crash), when mirv_streams was active a long time.
+</change>
+<change type="fixed">
+Fixed various bugs, that went through unnoticed so far.
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.20.1</version>
 <time>2017-06-02T20:28Z</time>
 <changes>

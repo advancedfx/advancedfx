@@ -80,6 +80,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\injector\AfxErrors.cs">
+      <Link>AfxErrors.cs</Link>
+    </Compile>
+    <Compile Include="..\injector\InjectorErrors.cs">
+      <Link>InjectorErrors.cs</Link>
+    </Compile>
     <Compile Include="Config.cs" />
     <Compile Include="Globals.cs" />
     <Compile Include="LaunchCsgo.cs" />

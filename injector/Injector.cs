@@ -5,18 +5,30 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
 
-namespace advancedfx
+namespace injector
 {
     internal class Injector
     {
-        static public bool Inject(UInt32 dwProcessId, string dllPath)
+        private static bool CheckError(bool condition, InjectorErrors.Error onError, ref InjectorErrors.Error resultError)
+        {
+            if(null != resultError)
+                return false;
+
+            if (condition)
+                return true;
+
+            resultError = onError;
+            return false;
+        }
+
+        public static InjectorErrors.Error Inject(UInt32 dwProcessId, string dllPath)
         {
 
             string baseDirectory = System.IO.Path.GetDirectoryName(dllPath);
 
             byte[] datDllPath = Encoding.Unicode.GetBytes(dllPath + "\0");
             byte[] datBaseDirectory = Encoding.Unicode.GetBytes(baseDirectory + "\0");
-            byte[] image;
+            byte[] image = null;
 
             IntPtr argDllDir = IntPtr.Zero;
             IntPtr argDllFilePath = IntPtr.Zero;
@@ -27,28 +39,29 @@ namespace advancedfx
             IntPtr hThread = IntPtr.Zero;
             IntPtr imageAfxHook = IntPtr.Zero;
 
-            bool bOk = false;
+            InjectorErrors.Error error = null;
+            bool bOk = true;
 
             try
             {
                 bOk = true
-                    && (IntPtr.Zero != (hProc = OpenProcess(createThreadAccess, false, dwProcessId)))
-                    && (IntPtr.Zero != (argDllDir = VirtualAllocEx(hProc, IntPtr.Zero, dllDirectorySz, AllocationType.Reserve | AllocationType.Commit, MemoryProtection.ReadWrite)))
-                    && (IntPtr.Zero != (argDllFilePath = VirtualAllocEx(hProc, IntPtr.Zero, dllFilePathSz, AllocationType.Reserve | AllocationType.Commit, MemoryProtection.ReadWrite)))
+                    && CheckError(IntPtr.Zero != (hProc = OpenProcess(createThreadAccess, false, dwProcessId)), InjectorErrors.OpenProcessFailed, ref error)
+                    && CheckError(IntPtr.Zero != (argDllDir = VirtualAllocEx(hProc, IntPtr.Zero, dllDirectorySz, AllocationType.Reserve | AllocationType.Commit, MemoryProtection.ReadWrite)), InjectorErrors.VirtualAllocExReadWriteFailed, ref error)
+                    && CheckError(IntPtr.Zero != (argDllFilePath = VirtualAllocEx(hProc, IntPtr.Zero, dllFilePathSz, AllocationType.Reserve | AllocationType.Commit, MemoryProtection.ReadWrite)), InjectorErrors.VirtualAllocExReadWriteFailed, ref error)
+                    && CheckError(null != (image = GetImage(m_PGetModuleHandleW, m_PGetProcAddress, argDllDir, argDllFilePath)), InjectorErrors.GetImageFailed, ref error)
                 ;
 
                 if (bOk)
                 {
-                    image = GetImage(m_PGetModuleHandleW, m_PGetProcAddress, argDllDir, argDllFilePath);
                     imageSz = new UIntPtr((ulong)image.LongLength);
 
                     bOk = true
-                        && (IntPtr.Zero != (imageAfxHook = VirtualAllocEx(hProc, IntPtr.Zero, imageSz, AllocationType.Reserve | AllocationType.Commit, MemoryProtection.ExecuteReadWrite)))
-                        && WriteProcessMemory(hProc, argDllDir, datBaseDirectory, dllDirectorySz, IntPtr.Zero)
-                        && WriteProcessMemory(hProc, argDllFilePath, datDllPath, dllFilePathSz, IntPtr.Zero)
-                        && WriteProcessMemory(hProc, imageAfxHook, image, imageSz, IntPtr.Zero)
-                        && FlushInstructionCache(hProc, imageAfxHook, imageSz)
-                        && (IntPtr.Zero != (hThread = CreateRemoteThread(hProc, IntPtr.Zero, UIntPtr.Zero, imageAfxHook, IntPtr.Zero, 0, IntPtr.Zero)))
+                        && CheckError(IntPtr.Zero != (imageAfxHook = VirtualAllocEx(hProc, IntPtr.Zero, imageSz, AllocationType.Reserve | AllocationType.Commit, MemoryProtection.ExecuteReadWrite)), InjectorErrors.VirtualAllocExReadWriteExecuteFailed, ref error)
+                        && CheckError(WriteProcessMemory(hProc, argDllDir, datBaseDirectory, dllDirectorySz, IntPtr.Zero), InjectorErrors.WriteProcessMemoryFailed, ref error)
+                        && CheckError(WriteProcessMemory(hProc, argDllFilePath, datDllPath, dllFilePathSz, IntPtr.Zero), InjectorErrors.WriteProcessMemoryFailed, ref error)
+                        && CheckError(WriteProcessMemory(hProc, imageAfxHook, image, imageSz, IntPtr.Zero), InjectorErrors.WriteProcessMemoryFailed, ref error)
+                        && CheckError(FlushInstructionCache(hProc, imageAfxHook, imageSz), InjectorErrors.FlushInstructionCacheFailed, ref error)
+                        && CheckError(IntPtr.Zero != (hThread = CreateRemoteThread(hProc, IntPtr.Zero, UIntPtr.Zero, imageAfxHook, IntPtr.Zero, 0, IntPtr.Zero)), InjectorErrors.CreateRemoteThreadFailed, ref error)
                     ;
 
                     if (bOk)
@@ -92,7 +105,13 @@ namespace advancedfx
                                 {
                                     bOk = false;
 
-                                    MessageBox.Show("Exit code: " + exitCode.ToString(), "injector Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    if (1 <= exitCode && exitCode <= 15)
+                                        error = InjectorErrors.GetById((int)exitCode);
+                                    else
+                                    {
+                                        error = InjectorErrors.AfxHookUnknown;
+                                        MessageBox.Show("Unknown AfxHook exit code: " + exitCode.ToString(), "injector Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    }
                                 }
                             }
                         }
@@ -111,30 +130,40 @@ namespace advancedfx
                 if (IntPtr.Zero != hProc) CloseHandle(hProc);
             }
 
-            return bOk;
+            CheckError(bOk, InjectorErrors.Unknown, ref error);
+
+            return error;
         }
 
-        static private byte[] GetImage(IntPtr pGetModuleHandleW, IntPtr pGetProcAddress, IntPtr pBaseDirectory, IntPtr pDllFilePath)
+        private static byte[] GetImage(IntPtr pGetModuleHandleW, IntPtr pGetProcAddress, IntPtr pBaseDirectory, IntPtr pDllFilePath)
         {
-            byte[] image = System.IO.File.ReadAllBytes(System.AppDomain.CurrentDomain.BaseDirectory + "\\AfxHook.dat");
+            byte[] image = null;
 
-            const int argOfs = 32;
-
-            if(IntPtr.Size == sizeof(UInt32))
+            try
             {
-                BitConverter.GetBytes(pGetModuleHandleW.ToInt32()).CopyTo(image, argOfs + 0 * IntPtr.Size);
-                BitConverter.GetBytes(pGetProcAddress.ToInt32()).CopyTo(image, argOfs + 1 * IntPtr.Size);
-                BitConverter.GetBytes(pBaseDirectory.ToInt32()).CopyTo(image, argOfs + 2 * IntPtr.Size);
-                BitConverter.GetBytes(pDllFilePath.ToInt32()).CopyTo(image, argOfs + 3 * IntPtr.Size);
-            }
-            else
-            {
-                BitConverter.GetBytes(pGetModuleHandleW.ToInt64()).CopyTo(image, argOfs + 0 * IntPtr.Size);
-                BitConverter.GetBytes(pGetProcAddress.ToInt64()).CopyTo(image, argOfs + 1 * IntPtr.Size);
-                BitConverter.GetBytes(pBaseDirectory.ToInt64()).CopyTo(image, argOfs + 2 * IntPtr.Size);
-                BitConverter.GetBytes(pDllFilePath.ToInt64()).CopyTo(image, argOfs + 3 * IntPtr.Size);
-            }
+                image = System.IO.File.ReadAllBytes(System.AppDomain.CurrentDomain.BaseDirectory + "\\AfxHook.dat");
 
+                const int argOfs = 32;
+
+                if (IntPtr.Size == sizeof(UInt32))
+                {
+                    BitConverter.GetBytes(pGetModuleHandleW.ToInt32()).CopyTo(image, argOfs + 0 * IntPtr.Size);
+                    BitConverter.GetBytes(pGetProcAddress.ToInt32()).CopyTo(image, argOfs + 1 * IntPtr.Size);
+                    BitConverter.GetBytes(pBaseDirectory.ToInt32()).CopyTo(image, argOfs + 2 * IntPtr.Size);
+                    BitConverter.GetBytes(pDllFilePath.ToInt32()).CopyTo(image, argOfs + 3 * IntPtr.Size);
+                }
+                else
+                {
+                    BitConverter.GetBytes(pGetModuleHandleW.ToInt64()).CopyTo(image, argOfs + 0 * IntPtr.Size);
+                    BitConverter.GetBytes(pGetProcAddress.ToInt64()).CopyTo(image, argOfs + 1 * IntPtr.Size);
+                    BitConverter.GetBytes(pBaseDirectory.ToInt64()).CopyTo(image, argOfs + 2 * IntPtr.Size);
+                    BitConverter.GetBytes(pDllFilePath.ToInt64()).CopyTo(image, argOfs + 3 * IntPtr.Size);
+                }
+            }
+            catch(Exception)
+            {
+                return null;
+            }
 
             return image;
         }

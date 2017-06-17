@@ -5,6 +5,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
 
+using injector;
+
 namespace AfxGui
 {
     internal class Loader
@@ -66,13 +68,31 @@ namespace AfxGui
                             injector.StartInfo.CreateNoWindow = true;
                             injector.StartInfo.Arguments = processInfo.dwProcessId.ToString() + " " + hookPath;
 
-                            injector.Start();
+                            try
+                            {
+                                injector.Start();
+                            }
+                            catch(Exception e)
+                            {
+                                throw new System.AccessViolationException(
+                                    "Failed to start injector: "+ injector.StartInfo.FileName +"." + Environment.NewLine
+                                    + "Error: "+e.ToString()
+                                    + "Solution: Check that you Anti Virus did not remove it due to a false positive. If so restore it and add an exception for injector / the HLAE folder."
+                               );
+                            }
+
                             injector.WaitForExit();
 
                             if (0 != injector.ExitCode)
                             {
-                                MessageBox.Show("Could not inject \"" + hookPath + "\".", "Injector (" + (isProcess64Bit ? "x64" : "x86") + ") failed.", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                bOk = false;
+                                InjectorErrors.Error error = InjectorErrors.GetById(injector.ExitCode);
+
+                                throw new System.AccessViolationException(
+                                    "Injector(" + (isProcess64Bit ? "x64" : "x86") + ") failed," + Environment.NewLine
+                                    + "Could not inject \"" + hookPath + "\"." + Environment.NewLine
+                                    + "Error: "+error.Text+ Environment.NewLine
+                                    + "Solution: "+error.Solution
+                                );
                             }
                         }
                     }
