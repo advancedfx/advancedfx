@@ -6,11 +6,23 @@
 
 <release>
 <name>HLAE</name>
+<version>2.31.0</version>
+<time>2017-06-18T15:37Z</time>
+<changes>
+<change type="updated">
+Included AfxHookSource 1.21.0 (2017-06-18T15:37Z).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.30.4</version>
 <time>2017-06-17T18:26Z</time>
 <changes>
 <change type="fixed">
-Fixed mistake in 2.30.3 that would cause HLAE launching not to work at all. Sorry for this embarassing mistake. Thanks to those that notified me early, so the malfunctioning version could be retracted fastly.
+Fixed mistake in 2.30.3 that would cause HLAE launching not to work at all. Sorry for this embarrassing mistake. Thanks to those that notified me early, so the malfunctioning version could be retracted quickly.
 </change>
 </changes>
 </release>
@@ -22,7 +34,7 @@ Fixed mistake in 2.30.3 that would cause HLAE launching not to work at all. Sorr
 <time>2017-06-17T13:47Z</time>
 <changes>
 <change type="updated">
-Included AfxHookSource 1.20.2 (22017-06-17T13:37Z).
+Included AfxHookSource 1.20.2 (2017-06-17T13:37Z).
 </change>
 <change type="fixed">
 Updated injector.exe, x64\injector.exe and HLAE.exe to have more helpful error information for users (hopefully).

@@ -114,9 +114,15 @@ wss.on('connection', function(newWs) {
 								var version = buffer.readUInt32LE(idx);
 								wsConsole.print('version = '+version);
 								idx += 4;
-								if(1 == version)
+								if(2 == version)
 									continue;
 							}
+							break;
+						case 'dataStart':
+							continue;
+							break;
+						case 'dataStop':
+							continue;
 							break;
 						case 'levelInit':
 							{

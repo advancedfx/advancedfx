@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.21.0</version>
+<time>2017-06-18T15:37Z</time>
+<changes>
+<change type="added">
+Updated mirv_pgl to version 2, read header file prop/AfxHookSource/MirvPgl.h for more info as always.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.20.2</version>
 <time>2017-06-17T13:37Z</time>
 <changes>
