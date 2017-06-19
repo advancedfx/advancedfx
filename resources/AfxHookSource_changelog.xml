@@ -6,10 +6,25 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.22.0</version>
+<time>2017-06-19T19:11Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_aim crashing under some conditions.
+</change>
+<change type="added">
+Added mirv_cam, allows offseting in local space and grab the source angles and position of an entity (by handle) or one of it's attachments.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.21.0</version>
 <time>2017-06-18T15:37Z</time>
 <changes>
-<change type="added">
+<change type="updated">
 Updated mirv_pgl to version 2, read header file prop/AfxHookSource/MirvPgl.h for more info as always.
 </change>
 </changes>
