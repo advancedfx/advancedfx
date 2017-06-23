@@ -1,0 +1,126 @@
+Version: May 16 update
+
+Modules:
+client 0d1c0000 - 0d31d000
+
+Clues:
+
+0:000>  s -a client L1000000 "cl_crosshair_size"
+0d2a7d28  63 6c 5f 63 72 6f 73 73-68 61 69 72 5f 73 69 7a  cl_crosshair_siz
+0d2a7f03  63 6c 5f 63 72 6f 73 73-68 61 69 72 5f 73 69 7a  cl_crosshair_siz
+0d412a44  63 6c 5f 63 72 6f 73 73-68 61 69 72 5f 73 69 7a  cl_crosshair_siz
+0d412a68  63 6c 5f 63 72 6f 73 73-68 61 69 72 5f 73 69 7a  cl_crosshair_siz
+0d412a80  63 6c 5f 63 72 6f 73 73-68 61 69 72 5f 73 69 7a  cl_crosshair_siz
+0d412aac  63 6c 5f 63 72 6f 73 73-68 61 69 72 5f 73 69 7a  cl_crosshair_siz
+0d412ad4  63 6c 5f 63 72 6f 73 73-68 61 69 72 5f 73 69 7a  cl_crosshair_siz
+
+first match:
+0:000> s client L1000000 28 7d 2a 0d
+0d1ff8e8  28 7d 2a 0d ff 15 98 4c-2e 0d 8b 46 10 b9 40 0a  (}*....L...F..@.
+0d200a47  28 7d 2a 0d 89 74 24 10-ff 15 a0 4c 2e 0d 8b e8  (}*..t$....L....
+
+the first address belongs to a function that set's the default
+cl_crosshair_size value.
+the second address belongs to a function that handles the switching of the
+crosshair based on cl_crosshair_size during hud drawing.
+it seems to do some adjustments based on the resolution used.
+
+second match:
+is just a usage string that is spammed into the console by the function above
+
+i.e. this is what the function does when cl_crosshair_size is auto:
+
+0d200af9 a1084a2e0d      mov     eax,dword ptr [client!V_CalcRefdef+0xb8488 (0d2e4a08)]
+0d200afe 3d80020000      cmp     eax,offset <Unloaded_ud.drv>+0x27f (00000280)
+0d200b03 7e18            jle     client!IN_ClearStates+0x127cd (0d200b1d)
+0d200b05 3d00040000      cmp     eax,offset <Unloaded_ud.drv>+0x3ff (00000400)
+0d200b0a 7c22            jl      client!IN_ClearStates+0x127de (0d200b2e)
+0d200b0c c7466c80020000  mov     dword ptr [esi+6Ch],offset <Unloaded_ud.drv>+0x27f (00000280)
+0d200b13 5e              pop     esi
+0d200b14 5d              pop     ebp
+0d200b15 5b              pop     ebx
+0d200b16 59              pop     ecx
+0d200b17 c3              ret
+
+This is where the function is called:
+
+0d2018f4 8bcb            mov     ecx,ebx
+0d2018f6 e845f1ffff      call    client!IN_ClearStates+0x126f0 (0d200a40)
+0d2018fb 8b7b6c          mov     edi,dword ptr [ebx+6Ch]
+
+anways, this function is called by a more ecomplex unknown function that is called as follows:
+
+0d200fd2 50              push    eax
+0d200fd3 56              push    esi
+0d200fd4 8bcd            mov     ecx,ebp
+0d200fd6 e865060000      call    client!IN_ClearStates+0x132f0 (0d201640)
+0d200fdb 391d48022c0d    cmp     dword ptr [client!V_CalcRefdef+0x93cc8 (0d2c0248)],ebx
+
+this is actually a class function (probably client hud class or s.th.)
+which gets passed two parameters, one seems to be the time, the other the weaponcode (id):
+
+0d201640 8b442408        mov     eax,dword ptr [esp+8]
+0d201644 83ec0c          sub     esp,0Ch
+0d201647 ba04000000      mov     edx,offset <Unloaded_ud.drv>+0x3 (00000004)
+0d20164c 53              push    ebx
+0d20164d 55              push    ebp
+0d20164e 56              push    esi
+0d20164f 57              push    edi
+0d201650 8d78ff          lea     edi,[eax-1]
+0d201653 8bd9            mov     ebx,ecx
+0d201655 83ff1d          cmp     edi,1Dh
+0d201658 be05000000      mov     esi,offset <Unloaded_ud.drv>+0x4 (00000005)
+0d20165d 0f8791000000    ja      client!IN_ClearStates+0x133a4 (0d2016f4)
+
+// here it would do some adjustments accordings to the weapon
+...
+
+// this checks cl_dynamic crosshair:
+
+0d201717 a184032e0d      mov     eax,dword ptr [client!V_CalcRefdef+0xb3e04 (0d2e0384)]
+0d20171c 85c0            test    eax,eax
+0d20171e 0f84ce000000    je      client!IN_ClearStates+0x134a2 (0d2017f2)
+0d201724 d9400c          fld     dword ptr [eax+0Ch]
+0d201727 d81d2432280d    fcomp   dword ptr [client!V_CalcRefdef+0x56ca4 (0d283224)]
+0d20172d dfe0            fnstsw  ax
+...
+
+// i.e. here it checks some walking stuff:
+0d2017f2 8b0d44032e0d    mov     ecx,dword ptr [client!V_CalcRefdef+0xb3dc4 (0d2e0344)]
+0d2017f8 8b4340          mov     eax,dword ptr [ebx+40h]
+0d2017fb 3bc8            cmp     ecx,eax
+...
+
+// here it loads from the class pointer (edi) the old drawing position (so it always draws a delta somewhat)
+0d201838 d94344          fld     dword ptr [ebx+44h]
+0d20183b dd05c8d4280d    fld     qword ptr [client!V_CalcRefdef+0x60f48 (0d28d4c8)]
+0d201841 d8c9            fmul    st,st(1)
+0d201843 83c002          add     eax,2
+0d201846 894348          mov     dword ptr [ebx+48h],eax
+0d201849 dc05c832280d    fadd    qword ptr [client!V_CalcRefdef+0x56d48 (0d2832c8)]
+
+// as you can see two constants get used here, one for multiplication (fmul) and one for addition (fadd)
+
+// this is what we need to patch upon fps change
+
+// and here is where the drawing function is called:
+
+...
+0d201ac3 a1084a2e0d      mov     eax,dword ptr [client!V_CalcRefdef+0xb8488 (0d2e4a08)]
+0d201ac8 99              cdq
+0d201ac9 2bc2            sub     eax,edx
+0d201acb d1f8            sar     eax,1
+0d201acd 50              push    eax
+0d201ace ff158c4c2e0d    call    dword ptr [client!V_CalcRefdef+0xb870c (0d2e4c8c)]
+0d201ad4 83c440          add     esp,40h
+0d201ad7 b801000000      mov     eax,offset <Unloaded_ud.drv> (00000001)
+0d201adc 5f              pop     edi
+0d201add 5e              pop     esi
+0d201ade 5d              pop     ebp
+0d201adf 5b              pop     ebx
+0d201ae0 83c40c          add     esp,0Ch
+0d201ae3 c20800          ret     8
+
+So what you need to do is detour the class function
+and access the two parameters (fmul) and (fadd),
+see above.

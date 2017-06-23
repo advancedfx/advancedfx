@@ -1,0 +1,57 @@
+/// <summary>AfxHookGoldSrc.</summary>
+interface AfxHookGoldSrc
+{
+	Mirv Mirv { get; }
+}
+
+
+/// <summary>Replaces old console commands.</summary>
+interface Mirv
+{
+	Aiming Aim { get; }
+}
+
+
+/// <summary>Aiming camera modifier, this modifier changes the orientation of the camera but not it's location.</summary>
+interface Aiming
+{
+	/// <remarks>Only used when SnapTo is not enabled.</remarks>
+	/// <summary>Aiming acceleration.</summary>
+	[DefaultValue("20.0")]
+	double Accel { get; set; }
+
+	/// <remarks>Only used when SnapTo is not enabled.</remarks>
+	/// <summary>Aiming deacceleration.</summary>
+	[DefaultValue("10.0")]
+	double Deaccel { get; set; }
+	
+	/// <summary>Time to spend before changing target after the current target becomes inactive.</summary>
+	[DefaultValue("50")]	
+	int LingerTime { get; set; }
+	
+	/// <remarks>Only used when SnapTo is not enabled.</remarks>
+	/// <summary>Maximum aiming speed.</summary>
+	[DefaultValue("3.0")]
+	double MaxSpeed { get; set; }
+	
+	/// <summary>Allows to set an offset relative to the target entities origin and orientation.</summary>
+	RelativeOffset Offset { get; }
+	
+	/// <summary>If enabled then when using target aiming the camera will never be able to aim at something that is lower down the list than the current target, even if the current target disappears.</summary>
+	[DefaultValue("false")]
+	bool OneWay; { get; set; }
+}
+
+
+/// <summary>Offset in local space.</summary>
+interface RelativeOffset
+{
+	[DefaultValue("0.0")]
+	double Forward { get; set; }
+
+	[DefaultValue("0.0")]
+	double Right { get; set; }
+
+	[DefaultValue("0.0")]
+	double Up { get; set; }
+}

@@ -1,0 +1,18 @@
+[file]
+header
+tableEntry* // ordered increasing after numStaicCombo
+junkData*
+compressedShaderData*
+
+[header]
+int version = 06
+int staticCombos;
+int dynamicCombos;
+int reserved;
+int reserved2;
+int numTableEntries;
+int unknownStamp;
+
+[talbeEntry]
+int numStaicCombo; // -1 for last
+int fileOffset; // fileSize for last

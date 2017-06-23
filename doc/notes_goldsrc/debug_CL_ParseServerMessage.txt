@@ -1,0 +1,57 @@
+Version: Sep 02 update
+
+For more information see:
+C:\Libraries\q1source\QW\client\cl_parse.c
+
+Modules
+hw 01d00000
+
+sample svc_voicdata (including message code):
+35 10 14 00 19 c5 67 32 bb ff f1 c2 9f 6c 26 87 9b bf 3f f2 b4 50 29 53
+(unsigend char) 0x35 --> svc_voicedata
+(unsigned short) 0x0014 --> 14 bytes of data follow
+... data 
+
+0:000> s -a hw L1000000 "CL_ParseServerMessage: Bad server"
+01e3a2dc  43 4c 5f 50 61 72 73 65-53 65 72 76 65 72 4d 65  CL_ParseServerMe
+0:000> s hw L1000000 dc a2 e3 01
+01d1cfb4  dc a2 e3 01 e8 53 7d 03-00 8b 3d 28 4d d0 02 83  .....S}...=(M...
+
+01d1cfb3 68dca2e301      push    offset hw!vgui::Frame::`vftable'+0x1d578 (01e3a2dc)
+01d1cfb8 e8537d0300      call    hw+0x54d10 (01d54d10)
+01d1cfbd 8b3d284dd002    mov     edi,dword ptr [hw!qwglMakeCurrent+0x57621c (02d04d28)]
+01d1cfc3 83c404          add     esp,4
+01d1cfc6 8bdf            mov     ebx,edi
+01d1cfc8 e8e3cf0000      call    hw+0x29fb0 (01d29fb0)
+01d1cfcd 8bf0            mov     esi,eax
+01d1cfcf 83feff          cmp     esi,0FFFFFFFFh
+01d1cfd2 0f8498020000    je      hw+0x1d270 (01d1d270)
+...
+01d1d31d 83c408          add     esp,8
+01d1d320 5f              pop     edi
+01d1d321 5e              pop     esi
+01d1d322 5b              pop     ebx
+01d1d323 8be5            mov     esp,ebp
+01d1d325 5d              pop     ebp
+01d1d326 c3              ret
+
+==>
+01d1cfc8 => 01d29fb0 is MSG_ReadByte
+[01d1cfc6...01d1cfcd) is where we detour cmd_read so we can fetch the server messages (our code is specific to this snippet and needs to be checked too on a update).
+
+01d29fb0 MSG_ReadByte
+01d29fb0 a1284dd002      mov     eax,dword ptr [hw!qwglMakeCurrent+0x57621c (02d04d28)]
+01d29fb5 8b1530f27902    mov     edx,dword ptr [hw!qwglMakeCurrent+0x10724 (0279f230)]
+01d29fbb 8d4801          lea     ecx,[eax+1]
+01d29fbe 3bca            cmp     ecx,edx
+01d29fc0 7e0e            jle     hw+0x29fd0 (01d29fd0)
+01d29fc2 c7052c4dd00201000000 mov dword ptr [hw!qwglMakeCurrent+0x576220 (02d04d2c)],offset <Unloaded_ud.drv> (00000001)
+01d29fcc 83c8ff          or      eax,0FFFFFFFFh
+01d29fcf c3              ret
+01d29fd0 56              push    esi
+01d29fd1 8b3528f27902    mov     esi,dword ptr [hw!qwglMakeCurrent+0x1071c (0279f228)]
+
+==>
+01d29fb0 => 02d04d28 is msg_readcount
+01d29fb5 => 0279f230 is net_message.cursize
+         => 0279f230 -0x10 is netmessage

@@ -1,0 +1,90 @@
+Version: Sep 02 update
+
+Modules:
+hw 01d00000
+
+Locate Host_Frame:
+
+0:000> s -a hw L1000000 "host_speeds"
+01e47158  68 6f 73 74 5f 73 70 65-65 64 73 00 30 00 00 00  host_speeds.0...
+
+(01e47158 +E +E == 01e47174  is host_speeds.value and E bytes after the end of "host_speeds" "0" texts.)
+
+0:000> s hw L1000000 74 71 e4 01
+01d55f70  74 71 e4 01 d8 1d 48 b0-e1 01 df e0 f6 c4 44 7b  tq....H.......D{
+
+01d55f6e == 01d55f70 -2:
+01d55f6e d9057471e401    fld     dword ptr [hw!vgui::Frame::`vftable'+0x2a410 (01e47174)]
+01d55f74 d81d48b0e101    fcomp   dword ptr [hw!vgui::Frame::operator=+0x5c3b8 (01e1b048)]
+01d55f7a dfe0            fnstsw  ax
+01d55f7c f6c444          test    ah,44h
+01d55f7f 7b5b            jnp     hw+0x55fdc (01d55fdc)
+
+This is inside a sub function, set a breakpoint and follow till ret.
+
+Then you are inside Host_Frame, follow till ret again and you will get the Host_Frame call address:
+
+01d561e0 is Host_Frame
+01d561e0 55              push    ebp
+01d561e1 8bec            mov     ebp,esp
+01d561e3 6a00            push    0
+028761e5 6840402d03      push    offset hw!qwglMakeCurrent+0x25534 (032d4040)
+028761ea e865120b00      call    hw!vgui::Frame::operator=+0x48784 (02927454)
+028761ef 83c408          add     esp,8
+028761f2 85c0            test    eax,eax
+028761f4 0f859c010000    jne     hw+0x56396 (02876396)
+028761fa e8510afeff      call    hw+0x36c50 (02856c50)
+028761ff 8b4508          mov     eax,dword ptr [ebp+8]
+02876202 50              push    eax
+02876203 e848f9ffff      call    hw+0x55b50 (02875b50)
+02876208 83c404          add     esp,4
+0287620b 85c0            test    eax,eax
+0287620d 0f8483010000    je      hw+0x56396 (02876396) 
+...
+01d562ab 83c408          add     esp,8
+01d562ae e88da0fcff      call    hw+0x20340 (01d20340)
+01d562b3 e8980bfcff      call    hw+0x16e50 (01d16e50)
+01d562b8 e893a0fcff      call    hw+0x20350 (01d20350)
+01d562bd e81efeffff      call    hw+0x560e0 (01d560e0)
+01d562c2 e869e7fbff      call    hw+0x14a30 (01d14a30)
+01d562c7 e80419fcff      call    hw+0x17bd0 (01d17bd0)
+01d562cc e8ff59fcff      call    hw+0x1bcd0 (01d1bcd0)
+01d562d1 85c0            test    eax,eax
+01d562d3 75f7            jne     hw+0x562cc (01d562cc)
+01d562d5 e806eefbff      call    hw+0x150e0 (01d150e0)
+01d562da e8a1feffff      call    hw+0x56180 (01d56180)
+01d562df e87c17feff      call    hw+0x37a60 (01d37a60)
+01d562e4 e897ce0400      call    hw!CreateInterface+0x460d0 (01da3180)
+01d562e9 e85258fbff      call    hw+0xbb40 (01d0bb40)
+01d562ee e8ada3fcff      call    hw+0x206a0 (01d206a0)
+01d562f3 e818230500      call    hw!CreateInterface+0x4b560 (01da8610)
+01d562f8 dd1df8003402    fstp    qword ptr [hw!vgui::Frame::`vftable'+0x523394 (023400f8)]
+01d562fe e80dfdffff      call    hw+0x56010 (01d56010)
+...
+==>
+02876203 => 02875b50 is the function that decides whether or not Host_Frame is returned
+                     (or continues to run furhter engine code)
+                     and calculates the host_frametime etc.
+01d562c2 => 01d14a30 is CL_EmitEntities
+01d562fe => calls 01d56010 where SCR_UpdateScreen is called
+
+02875b50
+...
+02875d2a ded9            fcompp
+02875d2c dfe0            fnstsw  ax
+02875d2e 2500410000      and     eax,4100h
+02875d33 7506            jne     hw+0x55d3b (02875d3b)                   [br=1]
+02875d35 33c0            xor     eax,eax
+02875d37 8be5            mov     esp,ebp
+02875d39 5d              pop     ebp
+02875d3a c3              ret
+02875d3b dd0500412d03    fld     qword ptr [hw!qwglMakeCurrent+0x255f4 (032d4100)]
+02875d41 dc2598402d03    fsub    qword ptr [hw!qwglMakeCurrent+0x2558c (032d4098)]
+02875d47 8b0d00412d03    mov     ecx,dword ptr [hw!qwglMakeCurrent+0x255f4 (032d4100)]
+02875d4d 8b1504412d03    mov     edx,dword ptr [hw!qwglMakeCurrent+0x255f8 (032d4104)]
+02875d53 890d98402d03    mov     dword ptr [hw!qwglMakeCurrent+0x2558c (032d4098)],ecx
+02875d59 89159c402d03    mov     dword ptr [hw!qwglMakeCurrent+0x25590 (032d409c)],edx
+02875d5f dd1d28402d03    fstp    qword ptr [hw!qwglMakeCurrent+0x2551c (032d4028)]
+02875d65 dd0528402d03    fld     qword ptr [hw!qwglMakeCurrent+0x2551c (032d4028)]
+...
+02875d5f => 032d4028 is double (64 bit) host_frametime

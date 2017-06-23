@@ -1,0 +1,51 @@
+Per xlevel means the theoretical one,
+not the current implementation.
+
+Per glPrimitive modifiers:
+- lightmap
+  - glBindTexture
+  - glTexEnvi
+- wallhack
+  
+- matte (keying / alpha)
+
+Per render pass:
+- decalfilter
+- specmenu
+- noblend
+- sky
+- xtendvis (or is this global?)
+- matte color (clearcolor)
+- Camera modifiers:
+  - Aiming
+  - Zooming
+  - Import
+  - Offset
+  (- Entity jump/look)
+- HUD related[?]
+  
+  
+Per engine frame:
+
+
+Global modifiers:
+- crosshair
+- deathmsg
+- smoke
+- demoedit fix
+- demo zoom
+- autodirector
+- thirdperson
+- fps/sps (when to request frames)
+
+Global Outputs:
+- sound
+- hud
+
+Capture modifiers:
+- Cropping
+
+Captures:
+- depth
+- image (rgb)
+- alpha (hud)

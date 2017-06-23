@@ -1,0 +1,75 @@
+Version: Sep 02 update
+
+See:
+C:\Libraries\halflife\cl_dll\vgui_TeamFortressViewport.cpp
+
+Game:
+tfc
+
+Modules:
+client 0f270000 - 0f35c000
+
+0:017> s -a client L1000000 "#Spec_Mode%d"
+0f2fb074  23 53 70 65 63 5f 4d 6f-64 65 25 64 00 00 00 00  #Spec_Mode%d....
+
+0:017> s client L1000000 74 b0 2f 0f
+0f280a7b  74 b0 2f 0f 50 e8 2c 61-04 00 8d 4c 24 34 51 e8  t./.P.,a...L$4Q.
+0f2be92d  74 b0 2f 0f 51 e8 7a 82-00 00 8b 15 c4 21 33 0f  t./.Q.z......!3.
+0f2be946  74 b0 2f 0f 50 e8 61 82-00 00 83 c4 18 ff 15 d0  t./.P.a.........
+
+0f2be92d -1 is inside TeamFortressViewport::UpdateSpectatorPanel
+
+0f2be830 is TeamFortressViewport::UpdateSpectatorPanel
+0f2be830 a1c421330f      mov     eax,dword ptr [client!`string'+0x2cd90 (0f3321c4)]
+0f2be835 81ec44020000    sub     esp,offset <Unloaded_ud.drv>+0x243 (00000244)
+0f2be83b 56              push    esi
+0f2be83c 8bf1            mov     esi,ecx
+0f2be83e 898624020000    mov     dword ptr <Unloaded_ud.drv>+0x223 (00000224)[esi],eax
+0f2be844 8b0dc821330f    mov     ecx,dword ptr [client!`string'+0x2cd94 (0f3321c8)]
+0f2be84a 898e28020000    mov     dword ptr <Unloaded_ud.drv>+0x227 (00000228)[esi],ecx
+0f2be850 8b8e180a0000    mov     ecx,dword ptr <Unloaded_ud.drv>+0xa17 (00000a18)[esi]
+0f2be856 8b15cc21330f    mov     edx,dword ptr [client!`string'+0x2cd98 (0f3321cc)]
+
+// 	if (!m_pSpectatorPanel)
+// 		return;
+0f2be85c 85c9            test    ecx,ecx
+0f2be85e 89962c020000    mov     dword ptr <Unloaded_ud.drv>+0x22b (0000022c)[esi],edx
+0f2be864 0f84b0030000    je      client!vgui::BuildGroup::operator=+0x2bba (0f2bec1a)
+
+// 	if ( g_iUser1 && gHUD.m_pCvarDraw->value && !gHUD.m_iIntermission)	// don't draw in dev_overview mode
+0f2be86a a1c421330f      mov     eax,dword ptr [client!`string'+0x2cd90 (0f3321c4)]
+0f2be86f 85c0            test    eax,eax
+0f2be871 0f846e030000    je      client!vgui::BuildGroup::operator=+0x2b85 (0f2bebe5)
+...
+
+// 	else
+//	{
+//		if ( m_pSpectatorPanel->isVisible() )
+//		{
+//			m_pSpectatorPanel->setVisible( false );
+//			m_pSpectatorPanel->ShowMenu( false );	// dsiable all menus/buttons
+//		}
+//	}
+0f2bebe7 ff5228          call    dword ptr [edx+28h]
+0f2bebea 84c0            test    al,al
+0f2bebec 741a            je      client!vgui::BuildGroup::operator=+0x2ba8 (0f2bec08)
+0f2bebee 8b8e180a0000    mov     ecx,dword ptr <Unloaded_ud.drv>+0xa17 (00000a18)[esi]
+0f2bebf4 6a00            push    0
+0f2bebf6 8b01            mov     eax,dword ptr [ecx]
+0f2bebf8 ff5024          call    dword ptr [eax+24h]
+0f2bebfb 8b8e180a0000    mov     ecx,dword ptr <Unloaded_ud.drv>+0xa17 (00000a18)[esi]
+0f2bec01 6a00            push    0
+0f2bec03 e8b852fdff      call    client!HUD_ChatInputPosition+0x1aa0 (0f293ec0)
+0f2bebe7 ff5228          call    dword ptr [edx+28h]
+0f2bebea 84c0            test    al,al
+0f2bebec 741a            je      client!vgui::BuildGroup::operator=+0x2ba8 (0f2bec08)
+0f2bebee 8b8e180a0000    mov     ecx,dword ptr <Unloaded_ud.drv>+0xa17 (00000a18)[esi]
+0f2bebf4 6a00            push    0
+0f2bebf6 8b01            mov     eax,dword ptr [ecx]
+0f2bebf8 ff5024          call    dword ptr [eax+24h]
+0f2bebfb 8b8e180a0000    mov     ecx,dword ptr <Unloaded_ud.drv>+0xa17 (00000a18)[esi]
+0f2bec01 6a00            push    0
+0f2bec03 e8b852fdff      call    client!HUD_ChatInputPosition+0x1aa0 (0f293ec0)
+0f2bec08 ....
+
+==> we detour TeamFortressViewport::UpdateSpectatorPanel and tweak the hud_draw cvar value

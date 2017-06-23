@@ -1,0 +1,21 @@
+Version: May 16 update
+
+Modules
+hw 07520000
+
+
+pEngfuncs->pEfxAPI->R_DecalShoot
+= poi(poi(pEngfuncs +14c)+d4)
+= 0x075698d0
+
+0x075698d0 R_DecalShoot
+075698d0 55              push    ebp
+075698d1 8bec            mov     ebp,esp
+075698d3 56              push    esi
+075698d4 8b7508          mov     esi,dword ptr [ebp+8]
+075698d7 56              push    esi
+075698d8 e80350feff      call    hw+0x2e8e0 (0754e8e0)
+...
+
+
+0754e8e0 is UnkGetDecalTexture, which is also called during DecalDrawing

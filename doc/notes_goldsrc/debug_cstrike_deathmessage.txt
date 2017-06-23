@@ -1,0 +1,169 @@
+Version: May 16 update
+
+See Half-Life SDK:
+C:\Libraries\hlsdk\multiplayer\cl_dll\death.cpp
+
+Modules
+client 0d1c0000 - 0d31d000
+
+0:000> s -a client L1000000 "DeathMsg"
+0d2a870c  44 65 61 74 68 4d 73 67-00 00 00 00 64 5f 73 6b  DeathMsg....d_sk
+
+0:000> s client L1000000 0c 87 2a 0d
+0d204514  0c 87 2a 0d ff 15 a8 4c-2e 0d 6a 00 68 08 87 2a  ..*....L..j.h..*
+
+0d20450e 689044200d      push    offset client!F+0x910 (0d204490)
+0d204513 680c872a0d      push    offset client!V_CalcRefdef+0x7c18c (0d2a870c)
+0d204518 ff15a84c2e0d    call    dword ptr [client!V_CalcRefdef+0xb8728 (0d2e4ca8)]
+
+==>
+0d20450e => 0d204490 is the DeatMsg func (see DECLARE_MESSAGE macro in HLSDK):
+
+DECLARE_MESSAGE( m_DeathNotice, DeathMsg );
+
+// int __MsgFunc_DeathMsg(const char *pszName, int iSize, void *pbuf)
+// {
+// 	return gHUD.m_DeathNotice.MsgFunc_DeathMsg(pszName, iSize, pbuf );
+// }
+//
+0d204490 8b44240c        mov     eax,dword ptr [esp+0Ch]
+0d204494 8b4c2408        mov     ecx,dword ptr [esp+8]
+0d204498 8b542404        mov     edx,dword ptr [esp+4]
+0d20449c 50              push    eax
+0d20449d 51              push    ecx
+0d20449e 52              push    edx
+0d20449f b9d8422e0d      mov     ecx,offset client!V_CalcRefdef+0xb7d58 (0d2e42d8)
+0d2044a4 e8c7040000      call    client!F+0xdf0 (0d204970)
+0d2044a9 c3              ret
+
+==>
+0d2044a4 => 0d204970 is CHudDeathNotice :: MsgFunc_DeathMsg
+
+0d204970
+...
+
+// >>
+
+//	for ( int i = 0; i < MAX_DEATHNOTICES; i++ )
+//	{
+//		if ( rgDeathNoticeList[i].iId == 0 )
+//			break;
+//	}
+// asm code looks a bit different, probably due to optimization:
+0d2049f4 33f6            xor     esi,esi
+0d2049f6 b8404f2e0d      mov     eax,offset client!V_CalcRefdef+0xb89c0 (0d2e4f40)
+0d2049fb 833800          cmp     dword ptr [eax],0
+0d2049fe 740d            je      client!F+0xe8d (0d204a0d)
+0d204a00 05a0000000      add     eax,0A0h
+0d204a05 46              inc     esi
+0d204a06 3dc0512e0d      cmp     eax,offset client!V_CalcRefdef+0xb8c40 (0d2e51c0)
+0d204a0b 7cee            jl      client!F+0xe7b (0d2049fb)
+
+--> 0d2e4f40 -0x80 == rgDeathNoticeList
+
+//	if ( i == MAX_DEATHNOTICES )
+//	{ // move the rest of the list forward to make room for this item
+//		memmove( rgDeathNoticeList, rgDeathNoticeList+1, sizeof(DeathNoticeItem) * MAX_DEATHNOTICES );
+//		i = MAX_DEATHNOTICES - 1;
+//	}
+0d204a0d 83fe04          cmp     esi,4
+0d204a10 751c            jne     client!F+0xeae (0d204a2e)
+0d204a12 6880020000      push    280h
+0d204a17 68604f2e0d      push    offset client!V_CalcRefdef+0xb89e0 (0d2e4f60)
+0d204a1c 68c04e2e0d      push    offset client!V_CalcRefdef+0xb8940 (0d2e4ec0)
+0d204a21 e8ea5c0600      call    client!V_CalcRefdef+0x3e190 (0d26a710)
+0d204a26 83c40c          add     esp,0Ch
+0d204a29 be03000000      mov     esi,3
+
+// << 
+
+--> 0d2e4ec0 is rgDeathNoticeList
+
+next thing to patch is the drawing function, so we search for acces rgDeathNoticeList.iId:
+
+0:000> s client L1000000 40 4f 2e 0d
+0d204662  40 4f 2e 0d 85 c0 0f 84-f0 02 00 00 d9 87 54 4f  @O............TO
+0d204710  40 4f 2e 0d 03 ea 83 f8-ff 75 09 8b 4e 14 89 4c  @O.......u..N..L
+0d2049f7  40 4f 2e 0d 83 38 00 74-0d 05 a0 00 00 00 46 3d  @O...8.t......F=
+0d204bb6  40 4f 2e 0d 85 ff 74 17-68 d0 87 2a 0d b9 d0 04  @O....t.h..*....
+
+==>
+0d204662 -2 = 0d204660 is inside CHudDeathNotice :: Draw
+
+0d2045f0 CHudDeathNotice :: Draw
+...
+// 		if ( rgDeathNoticeList[i].iId == 0 )
+// 			break;  // we've gone through them all
+0d204660 8b87404f2e0d    mov     eax,dword ptr client!V_CalcRefdef+0xb89c0 (0d2e4f40)[edi]
+0d204666 85c0            test    eax,eax
+0d204668 0f84f0020000    je      client!F+0xdde (0d20495e)
+
+// 		if ( rgDeathNoticeList[i].flDisplayTime < flTime )
+// 		{ // display time has expired
+// 			// remove the current item from the list
+// 			memmove( &rgDeathNoticeList[i], &rgDeathNoticeList[i+1], sizeof(DeathNoticeItem) * (MAX_DEATHNOTICES - i) );
+// 			i--;  // continue on the next item;  stop the counter getting incremented
+// 			continue;
+// 		}
+0d20466e d987544f2e0d    fld     dword ptr client!V_CalcRefdef+0xb89d4 (0d2e4f54)[edi]
+0d204674 d85c2450        fcomp   dword ptr [esp+50h]
+0d204678 dfe0            fnstsw  ax
+0d20467a f6c405          test    ah,5
+0d20467d 7a41            jp      client!F+0xb40 (0d2046c0)
+0d20467f 8b6c2420        mov     ebp,dword ptr [esp+20h]
+0d204683 8b542414        mov     edx,dword ptr [esp+14h]
+0d204687 b980020000      mov     ecx,280h
+0d20468c 2bcf            sub     ecx,edi
+0d20468e 51              push    ecx
+0d20468f 55              push    ebp
+0d204690 52              push    edx
+0d204691 e87a600600      call    client!V_CalcRefdef+0x3e190 (0d26a710)
+0d204696 8b542420        mov     edx,dword ptr [esp+20h]
+0d20469a 8b4c2428        mov     ecx,dword ptr [esp+28h]
+0d20469e b8a0000000      mov     eax,0A0h
+0d2046a3 83c40c          add     esp,0Ch
+0d2046a6 4b              dec     ebx
+0d2046a7 2bf8            sub     edi,eax
+0d2046a9 2be8            sub     ebp,eax
+0d2046ab 2bd0            sub     edx,eax
+0d2046ad 2bc8            sub     ecx,eax
+0d2046af 896c2420        mov     dword ptr [esp+20h],ebp
+0d2046b3 89542414        mov     dword ptr [esp+14h],edx
+0d2046b7 894c241c        mov     dword ptr [esp+1Ch],ecx
+0d2046bb e96c020000      jmp     client!F+0xdac (0d20492c)
+
+// 		rgDeathNoticeList[i].flDisplayTime = min( rgDeathNoticeList[i].flDisplayTime, gHUD.m_flTime + DEATHNOTICE_DISPLAY_TIME );
+0d2046c0 db05b0862a0d    fild    dword ptr [client!V_CalcRefdef+0x7c130 (0d2a86b0)]
+0d2046c6 d805f4042e0d    fadd    dword ptr [client!V_CalcRefdef+0xb3f74 (0d2e04f4)]
+0d2046cc d987544f2e0d    fld     dword ptr client!V_CalcRefdef+0xb89d4 (0d2e4f54)[edi]
+0d2046d2 d8d9            fcomp   st(1)
+0d2046d4 dfe0            fnstsw  ax
+0d2046d6 f6c405          test    ah,5
+0d2046d9 7a08            jp      client!F+0xb63 (0d2046e3)
+0d2046db ddd8            fstp    st(0)
+0d2046dd d987544f2e0d    fld     dword ptr client!V_CalcRefdef+0xb89d4 (0d2e4f54)[edi]
+0d2046e3 8b0de839300d    mov     ecx,dword ptr [client!V_CalcRefdef+0xd7468 (0d3039e8)]
+0d2046e9 d99f544f2e0d    fstp    dword ptr client!V_CalcRefdef+0xb89d4 (0d2e4f54)[edi]
+
+// 		if ( gViewPort && gViewPort->AllowedToPrintText() )
+0d2046ef 85c9            test    ecx,ecx
+0d2046f1 0f8430020000    je      client!F+0xda7 (0d204927)
+0d2046f7 8b01            mov     eax,dword ptr [ecx]
+0d2046f9 ff500c          call    dword ptr [eax+0Ch]
+0d2046fc 84c0            test    al,al
+0d2046fe 0f8423020000    je      client!F+0xda7 (0d204927)
+
+// 	y = YRES(DEATHNOTICE_TOP) + 2 + (20 * i);  //!!!
+0d204704 8b6e18          mov     ebp,dword ptr [esi+18h]
+0d204707 8b542438        mov     edx,dword ptr [esp+38h]
+0d20470b 0fafeb          imul    ebp,ebx
+
+// 	int id = (rgDeathNoticeList[i].iId == -1) ? m_HUD_d_skull : rgDeathNoticeList[i].iId;
+0d20470e 8b87404f2e0d    mov     eax,dword ptr client!V_CalcRefdef+0xb89c0 (0d2e4f40)[edi]
+0d204714 03ea            add     ebp,edx
+0d204716 83f8ff          cmp     eax,0FFFFFFFFh
+...
+
+Note:
+In the code we also patch the YRES drawing part (cstrike_DeathMsg_DrawHelperY),
+this might need to be adjusted too upon updates.

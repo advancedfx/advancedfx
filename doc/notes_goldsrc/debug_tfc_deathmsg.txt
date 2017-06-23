@@ -1,0 +1,179 @@
+Version: May 16 update
+
+See:
+debug_cstrike_crosshair.txt
+C:\Libraries\halflife\cl_dll\death.cpp
+
+This is just notes based on debug_cstrike_crosshair.txt,
+which is more complete, so for updating refer to that
+txt instead.
+
+Modules
+client 0f270000 - 0f35c000
+
+0:017> s -a client L1000000 "DeathMsg"
+0f2fd1b0  44 65 61 74 68 4d 73 67-00 00 00 00 64 5f 73 6b  DeathMsg....d_sk
+
+0:017> s client L1000000 b0 d1 2f 0f
+0f297ff1  b0 d1 2f 0f ff 15 b8 77-31 0f 6a 00 68 ac d1 2f  ../....w1.j.h../
+
+0f297feb 68607f290f      push    offset client!F+0x620 (0f297f60)
+0f297ff0 68b0d12f0f      push    offset client!vgui::BuildGroup::`vftable'+0x17f30 (0f2fd1b0)
+0f297ff5 ff15b877310f    call    dword ptr [client!`string'+0x12384 (0f3177b8)]
+
+==>
+0f297feb => 0f297f60 is the DeatMsg func (see DECLARE_MESSAGE macro in HLSDK):
+
+DECLARE_MESSAGE( m_DeathNotice, DeathMsg );
+
+// int __MsgFunc_DeathMsg(const char *pszName, int iSize, void *pbuf)
+// {
+// 	return gHUD.m_DeathNotice.MsgFunc_DeathMsg(pszName, iSize, pbuf );
+// }
+//
+0f297f60 8b44240c        mov     eax,dword ptr [esp+0Ch]
+0f297f64 8b4c2408        mov     ecx,dword ptr [esp+8]
+0f297f68 8b542404        mov     edx,dword ptr [esp+4]
+0f297f6c 50              push    eax
+0f297f6d 51              push    ecx
+0f297f6e 52              push    edx
+0f297f6f b97473310f      mov     ecx,offset client!`string'+0x11f40 (0f317374)
+0f297f74 e887030000      call    client!F+0x9c0 (0f298300)
+0f297f79 c3              ret
+
+==>
+0f297f74 => 0f298300 is CHudDeathNotice :: MsgFunc_DeathMsg
+
+0f298300
+...
+//	if ( i == MAX_DEATHNOTICES )
+//	{ // move the rest of the list forward to make room for this item
+//		memmove( rgDeathNoticeList, rgDeathNoticeList+1, sizeof(DeathNoticeItem) * MAX_DEATHNOTICES );
+//		i = MAX_DEATHNOTICES - 1;
+//	}
+0f29838f 83fe04          cmp     esi,4
+0f298392 751c            jne     client!F+0xa70 (0f2983b0)
+0f298394 6870020000      push    offset <Unloaded_ud.drv>+0x26f (00000270)
+0f298399 684c7a310f      push    offset client!`string'+0x12618 (0f317a4c)
+0f29839e 68b079310f      push    offset client!`string'+0x1257c (0f3179b0)
+0f2983a3 e878f40200      call    client!V_CalcRefdef+0x3770 (0f2c7820)
+0f2983a8 83c40c          add     esp,0Ch
+0f2983ab be03000000      mov     esi,offset <Unloaded_ud.drv>+0x2 (00000003)
+
+--> 0f3179b0 is rgDeathNoticeList
+--> 0f3179b0 +80 == +0f317a30 is rgDeathNoticeList[0].iId
+
+next thing to patch is the drawing function, so we search for acces rgDeathNoticeList.iId:
+
+0:017> s client L1000000 30 7a 31 0f
+0f298094  30 7a 31 0f 85 c0 0f 84-4e 02 00 00 d9 87 40 7a  0z1.....N.....@z
+0f298149  30 7a 31 0f 83 f8 ff 75-0d 8b 4c 24 2c 8b 51 14  0z1....u..L$,.Q.
+0f298379  30 7a 31 0f 83 38 00 74-0d 05 9c 00 00 00 46 3d  0z1..8.t......F=
+0f2984cc  30 7a 31 0f ff 15 ac 77-31 0f 83 c4 04 e8 26 e7  0z1....w1.....&.
+
+==>
+0f298094 -2 = 0f298092 is inside CHudDeathNotice :: Draw
+
+0f298060 CHudDeathNotice :: Draw
+0f298060 83ec30          sub     esp,30h
+0f298063 53              push    ebx
+0f298064 55              push    ebp
+0f298065 56              push    esi
+0f298066 57              push    edi
+0f298067 33ff            xor     edi,edi
+0f298069 bd22000000      mov     ebp,offset <Unloaded_ud.drv>+0x21 (00000022)
+0f29806e 894c242c        mov     dword ptr [esp+2Ch],ecx
+0f298072 897c2418        mov     dword ptr [esp+18h],edi
+0f298076 c7442414f079310f mov     dword ptr [esp+14h],offset client!`string'+0x125bc (0f3179f0)
+0f29807e c7442410b079310f mov     dword ptr [esp+10h],offset client!`string'+0x1257c (0f3179b0)
+0f298086 896c2428        mov     dword ptr [esp+28h],ebp
+0f29808a c744241c4c7a310f mov     dword ptr [esp+1Ch],offset client!`string'+0x12618 (0f317a4c)
+
+// 		if ( rgDeathNoticeList[i].iId == 0 )
+// 			break;  // we've gone through them all
+0f298092 8b87307a310f    mov     eax,dword ptr client!`string'+0x125fc (0f317a30)[edi]
+0f298098 85c0            test    eax,eax
+
+// 		if ( rgDeathNoticeList[i].flDisplayTime < flTime )
+// 		{ // display time has expired
+// 			// remove the current item from the list
+// 			memmove( &rgDeathNoticeList[i], &rgDeathNoticeList[i+1], sizeof(DeathNoticeItem) * (MAX_DEATHNOTICES - i) );
+// 			i--;  // continue on the next item;  stop the counter getting incremented
+// 			continue;
+// 		}
+0f29809a 0f844e020000    je      client!F+0x9ae (0f2982ee)
+0f2980a0 d987407a310f    fld     dword ptr client!`string'+0x1260c (0f317a40)[edi]
+0f2980a6 d85c2444        fcomp   dword ptr [esp+44h]
+0f2980aa dfe0            fnstsw  ax
+0f2980ac f6c405          test    ah,5
+0f2980af 7a52            jp      client!F+0x7c3 (0f298103)
+0f2980b1 8b74241c        mov     esi,dword ptr [esp+1Ch]
+0f2980b5 8b5c2410        mov     ebx,dword ptr [esp+10h]
+0f2980b9 b870020000      mov     eax,offset <Unloaded_ud.drv>+0x26f (00000270)
+0f2980be 2bc7            sub     eax,edi
+0f2980c0 50              push    eax
+0f2980c1 56              push    esi
+0f2980c2 53              push    ebx
+0f2980c3 e858f70200      call    client!V_CalcRefdef+0x3770 (0f2c7820)
+0f2980c8 8b542424        mov     edx,dword ptr [esp+24h]
+0f2980cc 8b442420        mov     eax,dword ptr [esp+20h]
+0f2980d0 83c40c          add     esp,0Ch
+0f2980d3 4a              dec     edx
+0f2980d4 83ed14          sub     ebp,14h
+0f2980d7 81ef9c000000    sub     edi,offset <Unloaded_ud.drv>+0x9b (0000009c)
+0f2980dd 81ee9c000000    sub     esi,offset <Unloaded_ud.drv>+0x9b (0000009c)
+0f2980e3 81eb9c000000    sub     ebx,offset <Unloaded_ud.drv>+0x9b (0000009c)
+0f2980e9 2d9c000000      sub     eax,offset <Unloaded_ud.drv>+0x9b (0000009c)
+0f2980ee 89542418        mov     dword ptr [esp+18h],edx
+0f2980f2 8974241c        mov     dword ptr [esp+1Ch],esi
+0f2980f6 895c2410        mov     dword ptr [esp+10h],ebx
+0f2980fa 89442414        mov     dword ptr [esp+14h],eax
+0f2980fe e9ad010000      jmp     client!F+0x970 (0f2982b0)
+
+// 		rgDeathNoticeList[i].flDisplayTime = min( rgDeathNoticeList[i].flDisplayTime, gHUD.m_flTime + DEATHNOTICE_DISPLAY_TIME );
+0f298103 db0554d12f0f    fild    dword ptr [client!vgui::BuildGroup::`vftable'+0x17ed4 (0f2fd154)]
+0f298109 d805bc55310f    fadd    dword ptr [client!`string'+0x10188 (0f3155bc)]
+0f29810f d987407a310f    fld     dword ptr client!`string'+0x1260c (0f317a40)[edi]
+0f298115 d8d9            fcomp   st(1)
+0f298117 dfe0            fnstsw  ax
+0f298119 f6c405          test    ah,5
+0f29811c 7a08            jp      client!F+0x7e6 (0f298126)
+0f29811e ddd8            fstp    st(0)
+0f298120 d987407a310f    fld     dword ptr client!`string'+0x1260c (0f317a40)[edi]
+0f298126 8b0d8879310f    mov     ecx,dword ptr [client!`string'+0x12554 (0f317988)]
+0f29812c d99f407a310f    fstp    dword ptr client!`string'+0x1260c (0f317a40)[edi]
+
+// 		if ( gViewPort && gViewPort->AllowedToPrintText() )
+0f298132 85c9            test    ecx,ecx
+0f298134 0f8476010000    je      client!F+0x970 (0f2982b0)
+0f29813a e831740200      call    client!vgui::BuildGroup::operator=+0x3510 (0f2bf570)
+0f29813f 84c0            test    al,al
+0f298141 0f8469010000    je      client!F+0x970 (0f2982b0)
+
+// 	int id = (rgDeathNoticeList[i].iId == -1) ? m_HUD_d_skull : rgDeathNoticeList[i].iId;
+0f298147 8b87307a310f    mov     eax,dword ptr client!`string'+0x125fc (0f317a30)[edi]
+0f29814d 83f8ff          cmp     eax,0FFFFFFFFh
+0f298150 750d            jne     client!F+0x81f (0f29815f)
+0f298152 8b4c242c        mov     ecx,dword ptr [esp+2Ch]
+0f298156 8b5114          mov     edx,dword ptr [ecx+14h]
+0f298159 89542420        mov     dword ptr [esp+20h],edx
+0f29815d eb04            jmp     client!F+0x823 (0f298163)
+0f29815f 89442420        mov     dword ptr [esp+20h],eax
+0f298163 
+
+//
+...
+
+// SPR_DrawAdditive( 0, x, y, &gHUD.GetSpriteRect(id) );
+0f298251 8b150c56310f    mov     edx,dword ptr [client!`string'+0x101d8 (0f31560c)]
+0f298257 8d0413          lea     eax,[ebx+edx]
+0f29825a 50              push    eax
+0f29825b 55              push    ebp
+0f29825c 56              push    esi
+0f29825d 6a00            push    0
+0f29825f ff158c77310f    call    dword ptr [client!`string'+0x12358 (0f31778c)]
+...
+
+Note:
+In the code we also patch the y-value which is initalized at 0f298069.
+(Initalized to 0x22 = 32+2 and every new line has an offset of 0x14).

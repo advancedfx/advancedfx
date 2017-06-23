@@ -1,0 +1,14 @@
+Version: May 16 update
+
+This requires a modification that loads a client.dll (i.e. cstrike).
+
+Break on loading of client.dll and add the following breakpoints:
+
+Break on client!Initialize:
+[esp+4] is p_cl_enginefuncs_s.
+
+Break on client!HUD_PlayerMoveInit:
+[esp+4] is p_playermove_s.
+
+Break on client!HUD_GetStudioModelInterface:
+[esp+C] is p_engine_studio_api_s.

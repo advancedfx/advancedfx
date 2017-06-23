@@ -1,0 +1,272 @@
+Version: Sep 02 update
+
+For more info about whats going on here see:
+C:\Libraries\q1source\QW\client\snd_mix.c
+C:\Libraries\q1source\QW\client\snd_dma.c
+
+Modules loaded:
+01d00000 hw
+
+
+First we try to locate S_Update_ :
+
+0:000> s -a hw L1000000 "Couldn't get sound buffer status\n"
+01e51828  43 6f 75 6c 64 6e 27 74-20 67 65 74 20 73 6f 75  Couldn't get sou
+0:000> s hw L1000000 28 18 e5 01
+01d8b321  28 18 e5 01 e8 56 0d fa-ff 83 c4 04 f6 45 fc 02  (....V.......E..
+
+01d8b319 ff5124          call    dword ptr [ecx+24h]
+01d8b31c 85c0            test    eax,eax
+01d8b31e 740d            je      hw!CreateInterface+0x2e27d (01d8b32d)
+01d8b320 682818e501      push    offset hw!vgui::Frame::`vftable'+0x34ac4 (01e51828)
+
+break on 01d8b31e and follow till ret:
+
+01d8b127 5b              pop     ebx
+01d8b128 e863010000      call    hw!CreateInterface+0x2e1e0 (01d8b290)
+01d8b12d 5f              pop     edi
+01d8b12e 5e              pop     esi
+01d8b12f 5d              pop     ebp
+01d8b130 c3              ret
+
+01d8b128 => 01d8b290 is S_Update_
+
+// S_Update_
+//
+01d8b290 55              push    ebp
+01d8b291 8bec            mov     ebp,esp
+01d8b293 51              push    ecx
+01d8b294 a1dc7c3b02      mov     eax,dword ptr [hw!vgui::Frame::`vftable'+0x59af78 (023b7cdc)]
+01d8b299 85c0            test    eax,eax
+01d8b29b 0f84c6000000    je      hw!CreateInterface+0x2e2b7 (01d8b367)
+01d8b2a1 a1d07c3b02      mov     eax,dword ptr [hw!vgui::Frame::`vftable'+0x59af6c (023b7cd0)]
+01d8b2a6 85c0            test    eax,eax
+01d8b2a8 0f8fb9000000    jg      hw!CreateInterface+0x2e2b7 (01d8b367)
+01d8b2ae 56              push    esi
+01d8b2af 57              push    edi
+//
+// GetSoundtime();
+01d8b2b0 e88bfeffff      call    hw!CreateInterface+0x2e090 (01d8b140)
+...
+01d8b319 ff5124          call    dword ptr [ecx+24h]
+01d8b31c 85c0            test    eax,eax
+01d8b31e 740d            je      hw!CreateInterface+0x2e27d (01d8b32d)
+01d8b320 682818e501      push    offset hw!vgui::Frame::`vftable'+0x34ac4 (01e51828)
+...
+// 	S_PaintChannels (endtime);
+//
+// 	SNDDMA_Submit ();
+01d8b355 d1ef            shr     edi,1
+01d8b357 57              push    edi
+01d8b358 e8031a0000      call    hw!CreateInterface+0x2fcb0 (01d8cd60)
+01d8b35d 83c404          add     esp,4
+01d8b360 e84b4d0000      call    hw!CreateInterface+0x33000 (01d900b0)
+01d8b365 5f              pop     edi
+01d8b366 5e              pop     esi
+01d8b367 8be5            mov     esp,ebp
+01d8b369 5d              pop     ebp
+01d8b36a c3              ret
+
+==>
+01d8b2b0 => 01d8b140 is void GetSoundtime(void)
+01d8b358 => 01d8cd60 is void S_PaintChannels(int endtime)
+
+// void GetSoundtime(void)
+//
+01d8b140 55              push    ebp
+01d8b141 8bec            mov     ebp,esp
+01d8b143 51              push    ecx
+01d8b144 8b0dd87c3b02    mov     ecx,dword ptr [hw!vgui::Frame::`vftable'+0x59af74 (023b7cd8)]
+01d8b14a 56              push    esi
+01d8b14b 85c9            test    ecx,ecx
+01d8b14d 57              push    edi
+01d8b14e 740b            je      hw!CreateInterface+0x2e0ab (01d8b15b)
+01d8b150 8b4110          mov     eax,dword ptr [ecx+10h]
+01d8b153 99              cdq
+01d8b154 f7790c          idiv    eax,dword ptr [ecx+0Ch]
+01d8b157 8bf8            mov     edi,eax
+01d8b159 eb03            jmp     hw!CreateInterface+0x2e0ae (01d8b15e)
+01d8b15b 8b7dfc          mov     edi,dword ptr [ebp-4]
+01d8b15e e8dd4e0000      call    hw!CreateInterface+0x32f90 (01d90040)
+01d8b163 8bf0            mov     esi,eax
+01d8b165 a1c87c3b02      mov     eax,dword ptr [hw!vgui::Frame::`vftable'+0x59af64 (023b7cc8)]
+01d8b16a 3bf0            cmp     esi,eax
+01d8b16c 7d33            jge     hw!CreateInterface+0x2e0f1 (01d8b1a1)
+01d8b16e 8b0dcc7c3b02    mov     ecx,dword ptr [hw!vgui::Frame::`vftable'+0x59af68 (023b7ccc)]
+//
+//		buffers++;					// buffer wrapped
+//		
+//		if (paintedtime > 0x40000000)
+01d8b174 a160b87202      mov     eax,dword ptr [hw!vgui::Frame::`vftable'+0x90eafc (0272b860)]
+01d8b179 41              inc     ecx
+01d8b17a 3d00000040      cmp     eax,offset <Unloaded_ud.drv>+0x3fffffff (40000000)
+//
+01d8b17f 890dcc7c3b02    mov     dword ptr [hw!vgui::Frame::`vftable'+0x59af68 (023b7ccc)],ecx
+01d8b185 7e1a            jle     hw!CreateInterface+0x2e0f1 (01d8b1a1)
+01d8b187 6a01            push    1
+01d8b189 c705cc7c3b0200000000 mov dword ptr [hw!vgui::Frame::`vftable'+0x59af68 (023b7ccc)],0
+01d8b193 893d60b87202    mov     dword ptr [hw!vgui::Frame::`vftable'+0x90eafc (0272b860)],edi
+01d8b199 e832fbffff      call    hw!CreateInterface+0x2dc20 (01d8acd0)
+01d8b19e 83c404          add     esp,4
+01d8b1a1 8b0dd87c3b02    mov     ecx,dword ptr [hw!vgui::Frame::`vftable'+0x59af74 (023b7cd8)]
+01d8b1a7 8935c87c3b02    mov     dword ptr [hw!vgui::Frame::`vftable'+0x59af64 (023b7cc8)],esi
+01d8b1ad 85c9            test    ecx,ecx
+01d8b1af 7418            je      hw!CreateInterface+0x2e119 (01d8b1c9)
+01d8b1b1 8bc6            mov     eax,esi
+01d8b1b3 99              cdq
+01d8b1b4 f7790c          idiv    eax,dword ptr [ecx+0Ch]
+01d8b1b7 8bc8            mov     ecx,eax
+01d8b1b9 a1cc7c3b02      mov     eax,dword ptr [hw!vgui::Frame::`vftable'+0x59af68 (023b7ccc)]
+01d8b1be 0fafc7          imul    eax,edi
+01d8b1c1 03c8            add     ecx,eax
+01d8b1c3 890d5cb87202    mov     dword ptr [hw!vgui::Frame::`vftable'+0x90eaf8 (0272b85c)],ecx
+01d8b1c9 5f              pop     edi
+01d8b1ca 5e              pop     esi
+01d8b1cb 8be5            mov     esp,ebp
+01d8b1cd 5d              pop     ebp
+01d8b1ce c3              ret
+
+==>
+01d8b174 => 0272b860 is paintedtime
+01d8b1a1 => 023b7cd8 is shm
+01d8b1c3 => 0272b85c is soundtime
+
+// void S_PaintChannels(int endtime)
+// {
+// 	while (paintedtime < endtime)
+// 	{
+01d8cd60 55              push    ebp
+01d8cd61 8bec            mov     ebp,esp
+01d8cd63 a160b87202      mov     eax,dword ptr [hw!vgui::Frame::`vftable'+0x90eafc (0272b860)]
+01d8cd68 53              push    ebx
+01d8cd69 8b5d08          mov     ebx,dword ptr [ebp+8]
+01d8cd6c 3bc3            cmp     eax,ebx
+01d8cd6e 0f8d7f010000    jge     hw!CreateInterface+0x2fe43 (01d8cef3)
+//
+01d8cd74 56              push    esi
+01d8cd75 57              push    edi
+01d8cd76 eb03            jmp     hw!CreateInterface+0x2fccb (01d8cd7b)
+01d8cd78 8b5d08          mov     ebx,dword ptr [ebp+8]
+01d8cd7b 8bcb            mov     ecx,ebx
+01d8cd7d 2bc8            sub     ecx,eax
+01d8cd7f 81f900020000    cmp     ecx,offset <Unloaded_ud.drv>+0x1ff (00000200)
+01d8cd85 7e06            jle     hw!CreateInterface+0x2fcdd (01d8cd8d)
+01d8cd87 8d9800020000    lea     ebx,<Unloaded_ud.drv>+0x1ff (00000200)[eax]
+01d8cd8d 8bf3            mov     esi,ebx
+01d8cd8f 2bf0            sub     esi,eax
+01d8cd91 8d14f500000000  lea     edx,[esi*8]
+//
+// Q_memset(paintbuffer, 0, (end - paintedtime) * sizeof(portable_samplepair_t));
+01d8cd98 52              push    edx
+01d8cd99 6a00            push    0
+01d8cd9b 6820177202      push    offset hw!vgui::Frame::`vftable'+0x9049bc (02721720)
+01d8cda0 e8abbcf9ff      call    hw+0x28a50 (01d28a50)
+...
+01d8ced3 83c40c          add     esp,0Ch
+01d8ced6 53              push    ebx
+01d8ced7 e824f9ffff      call    hw!CreateInterface+0x2f750 (01d8c800)
+01d8cedc 8b4d08          mov     ecx,dword ptr [ebp+8]
+01d8cedf 83c404          add     esp,4
+01d8cee2 8bc3            mov     eax,ebx
+01d8cee4 3bd9            cmp     ebx,ecx
+01d8cee6 a360b87202      mov     dword ptr [hw!vgui::Frame::`vftable'+0x90eafc (0272b860)],eax
+01d8ceeb 0f8c87feffff    jl      hw!CreateInterface+0x2fcc8 (01d8cd78)
+01d8cef1 5f              pop     edi
+01d8cef2 5e              pop     esi
+01d8cef3 5b              pop     ebx
+01d8cef4 5d              pop     ebp
+01d8cef5 c3              ret
+
+==>
+01d8cd9b => 02721720 is paintbuffer
+01d8ced7 => 01d8c800 is void S_TransferPaintBuffer(int endtime)
+
+
+Now we try to locate SND_PickChannel:
+It's called in S_StartSound, thus we try to locate S_StartSound first:
+S_Startsound is called in S_LocalSound:
+
+0:000> s -a hw L1000000 "S_LocalSound: can't cache %s\n"
+01e51888  53 5f 4c 6f 63 61 6c 53-6f 75 6e 64 3a 20 63 61  S_LocalSound: ca
+0:000> s hw L1000000 88 18 e5 01
+01d8b612  88 18 e5 01 e8 65 0a fa-ff 83 c4 08 5e 5d c3 6a  .....e......^].j
+
+01d8b612 -1 == is inside S_LocalSound
+
+// S_LocalSound
+//
+...
+// 		Con_Printf ("S_LocalSound: can't cache %s\n", sound);
+01d8b610 56              push    esi
+01d8b611 688818e501      push    offset hw!vgui::Frame::`vftable'+0x34b24 (01e51888)
+01d8b616 e8650afaff      call    hw+0x2c080 (01d2c080)
+//		return;
+01d8b61b 83c408          add     esp,8
+01d8b61e 5e              pop     esi
+01d8b61f 5d              pop     ebp
+01d8b620 c3              ret
+//
+// 	}
+// 	S_StartSound (cl.viewentity, -1, sfx, vec3_origin, 1, 1, 0, 0x64);
+01d8b621 6a64            push    64h
+01d8b623 6a00            push    0
+01d8b625 680000803f      push    offset <Unloaded_ud.drv>+0x3f7fffff (3f800000)
+01d8b62a 680000803f      push    offset <Unloaded_ud.drv>+0x3f7fffff (3f800000)
+01d8b62f 68940d3402      push    offset hw!vgui::Frame::`vftable'+0x524030 (02340d94)
+01d8b634 50              push    eax
+01d8b635 a1ac02f002      mov     eax,dword ptr [hw!qwglMakeCurrent+0x7717a0 (02f002ac)]
+01d8b63a 6aff            push    0FFFFFFFFh
+01d8b63c 50              push    eax
+01d8b63d e8aef1ffff      call    hw!CreateInterface+0x2d740 (01d8a7f0)
+01d8b642 83c420          add     esp,20h
+01d8b645 5e              pop     esi
+01d8b646 5d              pop     ebp
+01d8b647 c3              ret
+
+==>
+01d8b63d => 01d8a7f0 is S_StartSound with two more params, Half-Life calls it S_StartDynamicSound
+
+// S_StartSound / S_StartDynamicSound
+//
+01d8a7f0 55              push    ebp
+01d8a7f1 8bec            mov     ebp,esp
+01d8a7f3 83ec48          sub     esp,48h
+...
+01d8a8c9 85c0            test    eax,eax
+01d8a8cb 7514            jne     hw!CreateInterface+0x2d831 (01d8a8e1)
+01d8a8cd 68cc16e501      push    offset hw!vgui::Frame::`vftable'+0x34968 (01e516cc)
+01d8a8d2 e8c918faff      call    hw+0x2c1a0 (01d2c1a0)
+01d8a8d7 83c404          add     esp,4
+01d8a8da 5f              pop     edi
+01d8a8db 5e              pop     esi
+01d8a8dc 5b              pop     ebx
+01d8a8dd 8be5            mov     esp,ebp
+01d8a8df 5d              pop     ebp
+01d8a8e0 c3              ret
+01d8a8e1 d9057070e401    fld     dword ptr [hw!vgui::Frame::`vftable'+0x2a30c (01e47070)]
+01d8a8e7 d80504b2e101    fadd    dword ptr [hw!vgui::Frame::operator=+0x5c574 (01e1b204)]
+01d8a8ed db4524          fild    dword ptr [ebp+24h]
+01d8a8f0 d95d24          fstp    dword ptr [ebp+24h]
+01d8a8f3 d84d24          fmul    dword ptr [ebp+24h]
+01d8a8f6 d80d5cbae101    fmul    dword ptr [hw!vgui::Frame::operator=+0x5cdcc (01e1ba5c)]
+01d8a8fc e807a80700      call    hw!vgui::Frame::operator=+0x46478 (01e05108)
+01d8a901 8b550c          mov     edx,dword ptr [ebp+0Ch]
+01d8a904 56              push    esi
+01d8a905 52              push    edx
+01d8a906 53              push    ebx
+01d8a907 894524          mov     dword ptr [ebp+24h],eax
+01d8a90a e8d1faffff      call    hw!CreateInterface+0x2d330 (01d8a3e0)
+01d8a90f 8bf0            mov     esi,eax
+01d8a911 83c40c          add     esp,0Ch
+01d8a914 85f6            test    esi,esi
+01d8a916 0f847a010000    je      hw!CreateInterface+0x2d9e6 (01d8aa96)
+...
+01d8aa96 5f              pop     edi
+01d8aa97 5e              pop     esi
+01d8aa98 5b              pop     ebx
+01d8aa99 8be5            mov     esp,ebp
+01d8aa9b 5d              pop     ebp
+01d8aa9c c3              ret
+
+==>
+01d8a90a => 01d8a3e0 is SND_Pickchannel with two more params

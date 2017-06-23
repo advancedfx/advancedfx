@@ -1,0 +1,164 @@
+Note:
+We only hook EV_CreateSmoke, for which you can find
+debugging information at the end of this file.
+
+(For debugging use listenserver)
+
+> s -a client L4000000 "events/createsmoke.sc"
+0d0e26ec  65 76 65 6e 74 73 2f 63-72 65 61 74 65 73 6d 6f  events/createsmo
+0fd2173c  65 76 65 6e 74 73 2f 63-72 65 61 74 65 73 6d 6f  events/createsmo
+
+follow the 2nd match (0fd2173c) into
+mp.dll:
+
+> s mp L4000000 3c 17 d2 0f
+0fc1ece0  3c 17 d2 0f 6a 01 ff 15-28 25 d7 0f 83 c4 18 66  <...j...(%.....f
+
+no we are in a
+smokesth::Precache class func:
+
+0fc1ecb0 56              push    esi
+0fc1ecb1 8bf1            mov     esi,ecx
+0fc1ecb3 689417d20f      push    offset mp!`string'+0x564 (0fd21794)
+0fc1ecb8 ff154023d70f    call    dword ptr [mp!g_flTimeLimit+0x44d8 (0fd72340)]
+0fc1ecbe 686c17d20f      push    offset mp!`string'+0x53c (0fd2176c)
+0fc1ecc3 ff154023d70f    call    dword ptr [mp!g_flTimeLimit+0x44d8 (0fd72340)]
+0fc1ecc9 680c08d20f      push    offset mp!`string'+0x60 (0fd2080c)
+0fc1ecce ff154423d70f    call    dword ptr [mp!g_flTimeLimit+0x44dc (0fd72344)]
+0fc1ecd4 685417d20f      push    offset mp!`string'+0x524 (0fd21754)
+0fc1ecd9 ff154423d70f    call    dword ptr [mp!g_flTimeLimit+0x44dc (0fd72344)]
+0fc1ecdf 683c17d20f      push    offset mp!`string'+0x50c (0fd2173c)
+0fc1ece4 6a01            push    1
+0fc1ece6 ff152825d70f    call    dword ptr [mp!g_flTimeLimit+0x46c0 (0fd72528)]
+0fc1ecec 83c418          add     esp,18h
+0fc1ecef 66898638010000  mov     word ptr [esi+138h],ax   ds:0023:047ab168=0000
+0fc1ecf6 5e              pop     esi
+0fc1ecf7 c3              ret
+
+// esi is the class ptr
+// teh last call is the event precache and stores the index ( index = PRECACHE_EVENT())
+
+but we are more interested in that:
+
+0fc1ecd4 685417d20f      push    offset mp!`string'+0x524 (0fd21754)
+0fd21754 weapons/sg_explode.wav
+
+> s -a client L4000000 "weapons/sg_explode.wav"
+0d0e2704  77 65 61 70 6f 6e 73 2f-73 67 5f 65 78 70 6c 6f  weapons/sg_explo
+0fd21754  77 65 61 70 6f 6e 73 2f-73 67 5f 65 78 70 6c 6f  weapons/sg_explo
+
+we are still interested in the match in mp.dll:
+
+> s client L4000000 54 17 d2 0f
+0fc1ecd5  54 17 d2 0f ff 15 44 23-d7 0f 68 3c 17 d2 0f 6a  T.....D#..h<...j
+0fc99fe4  54 17 d2 0f 6a 01 51 e8-10 8e 03 00 68 b4 fd d1  T...j.Q.....h...
+
+in that code the client.dll handles the spawning of the smoke
+and thus plays the sound:
+
+0fc99ef0 mp!CGrenade::SG_Detonate:
+0fc99ef0 83ec5c          sub     esp,5Ch
+....
+// plays the sound:
+0fc99fde 680000803f      push    3F800000h
+0fc99fe3 685417d20f      push    offset mp!`string'+0x524 (0fd21754)
+0fc99fe8 6a01            push    1
+0fc99fea 51              push    ecx
+0fc99feb e8108e0300      call    mp!env_sound+0x14a0 (0fcd2e00)
+...
+// some find entity by classname stuff or s.th. or create named entity:
+0fc9a092 ddd8            fstp    st(0)
+0fc9a094 68b4fdd10f      push    offset mp!worldspawn+0x32bd4 (0fd1fdb4)
+0fc9a099 68fc7ad20f      push    offset mp!`string'+0x634c (0fd27afc)
+0fc9a09e 57              push    edi
+0fc9a09f ff157823d70f    call    dword ptr [mp!g_flTimeLimit+0x4510 (0fd72378)]
+...
+// anyways, it seems to start to create the smoke somewhen:
+0fc9a0ad 8b4e04          mov     ecx,dword ptr [esi+4]
+0fc9a0b0 33c0            xor     eax,eax
+0fc9a0b2 8a86ca010000    mov     al,byte ptr [esi+1CAh]     ds:0023:047b84da=00
+0fc9a0b8 668b96c8010000  mov     dx,word ptr [esi+1C8h]
+0fc9a0bf 6a00            push    0
+0fc9a0c1 50              push    eax
+0fc9a0c2 6a01            push    1
+0fc9a0c4 6a00            push    0
+0fc9a0c6 6a00            push    0
+0fc9a0c8 6a00            push    0
+0fc9a0ca 83c108          add     ecx,8
+0fc9a0cd 681023d70f      push    offset mp!g_flTimeLimit+0x44a8 (0fd72310)
+0fc9a0d2 51              push    ecx
+0fc9a0d3 6a00            push    0
+0fc9a0d5 52              push    edx
+0fc9a0d6 6a00            push    0
+0fc9a0d8 6a00            push    0
+0fc9a0da c686cb01000001  mov     byte ptr [esi+1CBh],1
+0fc9a0e1 ff152c25d70f    call    dword ptr [mp!g_flTimeLimit+0x46c4 (0fd7252c)] ds:0023:0fd7252c=035a2f60
+
+esp before call: 0012f830
+after call: 0012f830
+so we can simply block smoke by blocking / restoring the call :)
+
+
+// now let's see if this call is a known interface func:
+0fd7252c 60 2f 5a 03 50 2c 5d 03 70 2d 5d 03 e0 35 5d 03 50 d4 55 03 70 d4 55 03
+
+> s hw L4000000 60 2f 5a 03
+036abbdc  60 2f 5a 03 50 2c 5d 03-70 2d 5d 03 e0 35 5d 03
+
+// so yes it is probably some known interface, let's see which one:
+
+036ab9ec 00 00 00 00 d0 33 5a 03 90 2b 5a 03 00 11 5a 03 a0 11 5a 03 b0 11 5a 03  .....3Z..+Z...Z...Z...Z.
+036aba04 e0 10 5a 03 80 4b 5a 03 50 4b 5a 03 30 62 5a 03 40 13 5a 03 d0 13 5a 03  ..Z..KZ.PKZ.0bZ.@.Z...Z.
+
+// may be it starts at 036ab9f0?
+
+0:003> s hw L4000000 f0 b9 6a 03
+035e495b  f0 b9 6a 03 ff d0 a1 a4-7d c6 03 83 f8 32 75 17  ..j.....}....2u.
+ff 15 2c 25 d7 0f
+
+// Yes! The interface seems to begin at 036ab9f0  (hw+ 18B9F0)
+
+
+
+And yes we know this interface:
+
+p_enginefuncs_s = _HW_DLL + 0x18B9F0
+p_globalvars_s = _HW_DLL + 0x7CD0E0
+
+
+The function called is base +1EC,
+so the 123+1th function:
+	void		(*pfnPlaybackEvent)			( int flags, const edict_t *pInvoker, unsigned short eventindex, float delay, float *origin, float *angles, float fparam1, float fparam2, int iparam1, int iparam2, int bparam1, int bparam2 );
+
+
+and guess what?!
+
+this jus play the "events/createsmoke.sc"
+event
+
+ok, now let's get the hooking function :
+
+for this we go into the pfnHookEvent function,
+which has index 69 in the cl_enginefuncs_s:
+hw +0x166A98 +4*45
+(for this we need to restart the game ofc)
+
+0354bd40 8d442408        lea     eax,[esp+8]
+we break here and fetch the args:
+0354bd40 8d442408        lea     eax,[esp+8] 
+poi(esp+4) events/createsmoke.sc --> poi(esp+8) = 0d00a420 (client +A420)
+
+
+and there we are: (client +A420)
+
+0d00a420 83ec30          sub     esp,30h
+0d00a423 56              push    esi
+0d00a424 ff15f08d130d    call    dword ptr [client!V_CalcRefdef+0xca970 (0d138df0)]
+0d00a42a 85c0            test    eax,eax
+0d00a42c 8b442438        mov     eax,dword ptr [esp+38h]
+0d00a430 7414            je      client+0xa446 (0d00a446)
+0d00a432 83783c01        cmp     dword ptr [eax+3Ch],1
+0d00a436 750e            jne     client+0xa446 (0d00a446)
+0d00a438 50              push    eax
+0d00a439 e852f9ffff      call    client+0x9d90 (0d009d90)
+0d00a43e 83c404          add     esp,4

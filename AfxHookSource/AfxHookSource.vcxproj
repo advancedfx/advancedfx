@@ -1,0 +1,269 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{3B8B10B2-05E6-4D15-8022-65D3D60DCCCD}</ProjectGuid>
+    <RootNamespace>AfxHookSource</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v141_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v141_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141_xp</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\$(Configuration)\bin\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\$(Configuration)\$(RootNamespace)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\$(Configuration)\bin\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\$(Configuration)\$(RootNamespace)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <AdditionalIncludeDirectories>./;../prop/AfxHookSource;../;../prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalLibraryDirectories>../../openexr-build/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>IlmImf-2_2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SubSystem>Windows</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>./;../prop/AfxHookSource;../;../prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>../../openexr-build/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>IlmImf-2_2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SubSystem>Windows</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>./;../prop/AfxHookSource;../;../prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalLibraryDirectories>../../openexr-build/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>IlmImf-2_2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SubSystem>Windows</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>./;../prop/AfxHookSource;../;../prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <AdditionalLibraryDirectories>../../openexr-build/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>IlmImf-2_2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SubSystem>Windows</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\prop\shared\AfxMath.cpp" />
+    <ClCompile Include="..\shared\binutils.cpp" />
+    <ClCompile Include="..\shared\bvhexport.cpp" />
+    <ClCompile Include="..\shared\bvhimport.cpp" />
+    <ClCompile Include="..\shared\CamPath.cpp" />
+    <ClCompile Include="..\prop\shared\detours.cpp" />
+    <ClCompile Include="..\shared\FileTools.cpp" />
+    <ClCompile Include="..\shared\hooks\gameOverlayRenderer.cpp" />
+    <ClCompile Include="..\shared\OpenExrOutput.cpp" />
+    <ClCompile Include="..\shared\RawOutput.cpp" />
+    <ClCompile Include="..\shared\RefCounted.cpp" />
+    <ClCompile Include="..\shared\vcpp\AfxAddr.cpp" />
+    <ClCompile Include="addresses.cpp" />
+    <ClCompile Include="AfxClasses.cpp" />
+    <ClCompile Include="AfxHookSourceInput.cpp" />
+    <ClCompile Include="AfxShaders.cpp" />
+    <ClCompile Include="AfxStreams.cpp" />
+    <ClCompile Include="aiming.cpp" />
+    <ClCompile Include="CamIO.cpp" />
+    <ClCompile Include="CampathDrawer.cpp" />
+    <ClCompile Include="ClientTools.cpp" />
+    <ClCompile Include="CommandSystem.cpp" />
+    <ClCompile Include="csgo_CBasePlayer.cpp" />
+    <ClCompile Include="csgo_CHudDeathNotice.cpp" />
+    <ClCompile Include="csgo_CCSGameMovement.cpp" />
+    <ClCompile Include="csgo_CSkyBoxView.cpp" />
+    <ClCompile Include="csgo_CViewRender.cpp" />
+    <ClCompile Include="csgo_c_baseanimatingoverlay.cpp" />
+    <ClCompile Include="csgo_GetPlayerName.cpp" />
+    <ClCompile Include="csgo_MemAlloc.cpp" />
+    <ClCompile Include="csgo_ScaleForm_Hooks.cpp" />
+    <ClCompile Include="csgo_SndMixTimeScalePatch.cpp" />
+    <ClCompile Include="csgo_Stdshader_dx9_Hooks.cpp" />
+    <ClCompile Include="csgo_S_StartSound.cpp" />
+    <ClCompile Include="csgo_view.cpp" />
+    <ClCompile Include="csgo_vphysics.cpp" />
+    <ClCompile Include="csgo_writeWaveConsoleCheck.cpp" />
+    <ClCompile Include="d3d9Hooks.cpp" />
+    <ClCompile Include="hlaeFolder.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="MatRenderContextHook.cpp" />
+    <ClCompile Include="MirvCam.cpp" />
+    <ClCompile Include="MirvCommands.cpp" />
+    <ClCompile Include="MirvCalcs.cpp" />
+    <ClCompile Include="MirvInputMem.cpp" />
+    <ClCompile Include="MirvPgl.cpp" />
+    <ClCompile Include="RenderView.cpp" />
+    <ClCompile Include="..\prop\AfxHookSource\SourceInterfaces.cpp" />
+    <ClCompile Include="WrpConsole.cpp" />
+    <ClCompile Include="WrpGlobals.cpp" />
+    <ClCompile Include="WrpVEngineClient.cpp" />
+    <ClCompile Include="..\shared\StringTools.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\prop\shared\AfxMath.h" />
+    <ClInclude Include="..\shared\binutils.h" />
+    <ClInclude Include="..\shared\bvhexport.h" />
+    <ClInclude Include="..\shared\bvhimport.h" />
+    <ClInclude Include="..\shared\CamPath.h" />
+    <ClInclude Include="..\prop\shared\detours.h" />
+    <ClInclude Include="..\shared\FileTools.h" />
+    <ClInclude Include="..\shared\hooks\gameOverlayRenderer.h" />
+    <ClInclude Include="..\shared\OpenExrOutput.h" />
+    <ClInclude Include="..\prop\shared\rapidxml\rapidxml.hpp" />
+    <ClInclude Include="..\prop\shared\rapidxml\rapidxml_iterators.hpp" />
+    <ClInclude Include="..\prop\shared\rapidxml\rapidxml_print.hpp" />
+    <ClInclude Include="..\prop\shared\rapidxml\rapidxml_utils.hpp" />
+    <ClInclude Include="..\shared\RawOutput.h" />
+    <ClInclude Include="..\shared\RefCounted.h" />
+    <ClInclude Include="..\shared\vcpp\AfxAddr.h" />
+    <ClInclude Include="addresses.h" />
+    <ClInclude Include="AfxClasses.h" />
+    <ClInclude Include="AfxHookSourceInput.h" />
+    <ClInclude Include="AfxInterfaces.h" />
+    <ClInclude Include="AfxShaders.h" />
+    <ClInclude Include="AfxStreams.h" />
+    <ClInclude Include="aiming.h" />
+    <ClInclude Include="CamIO.h" />
+    <ClInclude Include="CampathDrawer.h" />
+    <ClInclude Include="asmClassTools.h" />
+    <ClInclude Include="ClientTools.h" />
+    <ClInclude Include="CommandSystem.h" />
+    <ClInclude Include="csgo_CBasePlayer.h" />
+    <ClInclude Include="csgo_CHudDeathNotice.h" />
+    <ClInclude Include="csgo_CCSGameMovement.h" />
+    <ClInclude Include="csgo_CSkyBoxView.h" />
+    <ClInclude Include="csgo_CViewRender.h" />
+    <ClInclude Include="csgo_c_baseanimatingoverlay.h" />
+    <ClInclude Include="csgo_GetPlayerName.h" />
+    <ClInclude Include="csgo_MemAlloc.h" />
+    <ClInclude Include="csgo_ScaleForm_Hooks.h" />
+    <ClInclude Include="csgo_SndMixTimeScalePatch.h" />
+    <ClInclude Include="csgo_Stdshader_dx9_Hooks.h" />
+    <ClInclude Include="csgo_S_StartSound.h" />
+    <ClInclude Include="csgo_view.h" />
+    <ClInclude Include="csgo_vphysics.h" />
+    <ClInclude Include="csgo_writeWaveConsoleCheck.h" />
+    <ClInclude Include="d3d9Hooks.h" />
+    <ClInclude Include="hlaeFolder.h" />
+    <ClInclude Include="MatRenderContextHook.h" />
+    <ClInclude Include="MirvCam.h" />
+    <ClInclude Include="MirvCalcs.h" />
+    <ClInclude Include="MirvInputMem.h" />
+    <ClInclude Include="MirvPgl.h" />
+    <ClInclude Include="RenderView.h" />
+    <ClInclude Include="..\prop\AfxHookSource\SourceInterfaces.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="WrpConsole.h" />
+    <ClInclude Include="WrpGlobals.h" />
+    <ClInclude Include="WrpVEngineClient.h" />
+    <ClInclude Include="..\shared\StringTools.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

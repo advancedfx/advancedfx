@@ -1,0 +1,13 @@
+Version: May 16 update
+
+Modules:
+hw.dll at 01d00000
+
+- search "Hud_UpdateClientData" c-string
+- go to first reference of it
+- this is where it does GetProcAddress for client!Hud_UpdateClientData
+- select the variable where result is stored
+- go to first reference, where it is moved into eax
+- look at block after call of eax
+- the fov is moved into edx and then the last mov in that block is edx into fov global
+- if you found the right global it should be located before "scr_centertime" c-string.

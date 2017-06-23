@@ -1,0 +1,50 @@
+#include "stdafx.h"
+
+#include "OpenExrOutput.h"
+
+#include "StringTools.h"
+
+#include <ImfNamespace.h>
+#include <ImfOutputFile.h>
+#include <ImfChannelList.h>
+
+namespace IMF = OPENEXR_IMF_NAMESPACE;
+
+using namespace IMF;
+
+bool WriteFloatZOpenExr(
+	wchar_t const * fileName,
+	unsigned char const * pData,
+	int width,
+	int height,
+	int xStride,
+	int yStride,
+	WriteFloatZOpenExrCompression compression)
+{
+	std::string ansiFileName;
+
+	if(!WideStringToAnsiString(fileName, ansiFileName))
+		return false;
+
+	try
+	{
+		Header header (width, height);
+		header.channels().insert ("Z", Channel (IMF::FLOAT));
+		header.compression() = WFZOEC_Zip == compression ? ZIP_COMPRESSION : NO_COMPRESSION;
+
+		OutputFile file (ansiFileName.c_str(), header);
+
+		FrameBuffer frameBuffer;
+
+		frameBuffer.insert ("Z", Slice (IMF::FLOAT, (char *) pData, xStride, yStride));
+
+		file.setFrameBuffer (frameBuffer);
+		file.writePixels (height);
+	}
+	catch(...)
+	{
+		return false;
+	}
+
+	return true;
+}

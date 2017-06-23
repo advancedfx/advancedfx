@@ -1,0 +1,29 @@
+- has to get memory for the capture and capture to it
+- postprocess on separate thread / main thread if number of threads is 0
+
+Postprocess: Sampling / Streams
+
+- For Stream oriented classes we depend on the right order of images.
+- we need to join in queue for sampling for example:
+  - framenumber determines who is next
+  - every thread enters the queue and if it cannot run instantly it get's a event
+    handle to wait for, those handles are stored in the queue (what if we are on
+    main thread? that one shouldn't get enqueued, since we are only on main
+    thread if we have no other threads)
+  - if thread leaves, signaling for next thread has to be done (if any are waiting)
+  - check if that is a known monitor scheme
+  - encapsulate in class functions: enqueue(id), dequeue(id?)
+   
+=> Every image is asserted to a stream, every image has a framenumber
+=> processing chain, parallel processing and serial, queued priority
+   (framemnumber) based processing (see above)
+=> class for holding image memory block, that is used by a thread and given back
+   when processing is finished for reuse
+=> we need a thread pool or s.th. like that
+   
+1) Main thread picks a stream, get's memory block, captures, calls Process()
+   (a thread is picked from the thread pool (or we wait until one becomes
+   available or if there are no threads processing happens on the main thread)
+
+2) After Filiming ends Join() is called, which waits for all threads to end processing
+

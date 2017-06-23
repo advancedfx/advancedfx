@@ -1,0 +1,360 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="AfxHookSource">
+      <UniqueIdentifier>{3f97863e-150a-40ba-9637-3339a961d0a5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shared">
+      <UniqueIdentifier>{2c2ebb9f-0d53-4964-9634-7d46c48d15f5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shared\vcpp">
+      <UniqueIdentifier>{e3023297-861a-49fe-96b9-a38e1f33d3b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shared\hooks">
+      <UniqueIdentifier>{7c634ae7-379f-48e5-b446-bd992d03a428}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop">
+      <UniqueIdentifier>{2c79369e-082a-43c4-9f0a-abcaa115fed3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\shared">
+      <UniqueIdentifier>{846254d9-48cb-47a6-ad65-ea03b5a61cd0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\shared\rapidxml">
+      <UniqueIdentifier>{354e9d3b-f0ce-481c-afa3-245f414e0bb7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource">
+      <UniqueIdentifier>{71347936-3615-40c3-9176-b40656efd2c1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\shared\bvhexport.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\bvhimport.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="MirvCommands.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderView.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="WrpConsole.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="WrpVEngineClient.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\StringTools.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\vcpp\AfxAddr.cpp">
+      <Filter>shared\vcpp</Filter>
+    </ClCompile>
+    <ClCompile Include="addresses.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="WrpGlobals.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo_CHudDeathNotice.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\binutils.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\CamPath.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo_GetPlayerName.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo_SndMixTimeScalePatch.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="AfxHookSourceInput.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\hooks\gameOverlayRenderer.cpp">
+      <Filter>shared\hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="hlaeFolder.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="AfxStreams.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="AfxClasses.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="d3d9Hooks.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo_CSkyBoxView.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="CampathDrawer.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo_view.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\FileTools.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\RawOutput.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo_S_StartSound.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo_ScaleForm_Hooks.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="AfxShaders.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo_CViewRender.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\OpenExrOutput.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\RefCounted.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="aiming.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="CommandSystem.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo_writeWaveConsoleCheck.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientTools.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="MatRenderContextHook.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo_CBasePlayer.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="MirvInputMem.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo_CCSGameMovement.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo_vphysics.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo_c_baseanimatingoverlay.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="CamIO.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="MirvPgl.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo_Stdshader_dx9_Hooks.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo_MemAlloc.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="MirvCam.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="MirvCalcs.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\prop\shared\detours.cpp">
+      <Filter>prop\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\prop\shared\AfxMath.cpp">
+      <Filter>prop\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\prop\AfxHookSource\SourceInterfaces.cpp">
+      <Filter>prop\AfxHookSource</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\shared\bvhexport.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\bvhimport.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderView.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="WrpConsole.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="WrpVEngineClient.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\StringTools.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\vcpp\AfxAddr.h">
+      <Filter>shared\vcpp</Filter>
+    </ClInclude>
+    <ClInclude Include="addresses.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="WrpGlobals.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo_CHudDeathNotice.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\binutils.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\CamPath.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo_GetPlayerName.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo_SndMixTimeScalePatch.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="AfxHookSourceInput.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\hooks\gameOverlayRenderer.h">
+      <Filter>shared\hooks</Filter>
+    </ClInclude>
+    <ClInclude Include="hlaeFolder.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="AfxInterfaces.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="AfxStreams.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="AfxClasses.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="d3d9Hooks.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo_CSkyBoxView.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="CampathDrawer.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo_view.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\FileTools.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\RawOutput.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo_S_StartSound.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo_ScaleForm_Hooks.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="AfxShaders.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="asmClassTools.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo_CViewRender.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\OpenExrOutput.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\RefCounted.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="aiming.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="CommandSystem.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo_writeWaveConsoleCheck.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientTools.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="MatRenderContextHook.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo_CBasePlayer.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="MirvInputMem.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo_CCSGameMovement.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo_vphysics.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo_c_baseanimatingoverlay.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="CamIO.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="MirvPgl.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo_Stdshader_dx9_Hooks.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo_MemAlloc.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="MirvCam.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="MirvCalcs.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\shared\detours.h">
+      <Filter>prop\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\shared\AfxMath.h">
+      <Filter>prop\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\shared\rapidxml\rapidxml_utils.hpp">
+      <Filter>prop\shared\rapidxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\shared\rapidxml\rapidxml_print.hpp">
+      <Filter>prop\shared\rapidxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\shared\rapidxml\rapidxml_iterators.hpp">
+      <Filter>prop\shared\rapidxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\shared\rapidxml\rapidxml.hpp">
+      <Filter>prop\shared\rapidxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\SourceInterfaces.h">
+      <Filter>prop\AfxHookSource</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

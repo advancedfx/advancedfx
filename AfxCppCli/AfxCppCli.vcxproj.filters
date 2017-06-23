@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="AfxCppCli">
+      <UniqueIdentifier>{dede903d-973b-46e3-bdf3-c5fba1738fc5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AfxCppCli\old">
+      <UniqueIdentifier>{9baf9160-fcc2-4977-b9cf-09bfed0d1de2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AfxCppCli\old\tools">
+      <UniqueIdentifier>{7720f6f5-5632-40d0-b61d-94cb62dc14ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AfxCppCli\old\tools\skymanager">
+      <UniqueIdentifier>{d2251b78-56e8-4119-b807-0b90a189bbe3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AfxCppCli\old\tools\demotools">
+      <UniqueIdentifier>{86900a05-1a77-41f4-8d2b-65ecf33c9307}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h">
+      <Filter>AfxCppCli</Filter>
+    </ClInclude>
+    <ClInclude Include="old\tools\skymanager\skymanager.h">
+      <Filter>AfxCppCli\old\tools\skymanager</Filter>
+    </ClInclude>
+    <ClInclude Include="old\tools\demotools\DemoToolsProgressForm.h">
+      <Filter>AfxCppCli\old\tools\demotools</Filter>
+    </ClInclude>
+    <ClInclude Include="old\tools\demotools\DemoToolsWiz1.h">
+      <Filter>AfxCppCli\old\tools\demotools</Filter>
+    </ClInclude>
+    <ClInclude Include="old\tools\demotools\DemoToolsWiz2.h">
+      <Filter>AfxCppCli\old\tools\demotools</Filter>
+    </ClInclude>
+    <ClInclude Include="old\tools\demotools\DemoToolsWiz3.h">
+      <Filter>AfxCppCli\old\tools\demotools</Filter>
+    </ClInclude>
+    <ClInclude Include="old\tools\demotools\demotoolswizard.h">
+      <Filter>AfxCppCli\old\tools\demotools</Filter>
+    </ClInclude>
+    <ClInclude Include="old\tools\demotools\demotools.h">
+      <Filter>AfxCppCli\old\tools\demotools</Filter>
+    </ClInclude>
+    <ClInclude Include="old\tools\demotools\OverwriteDialog.h">
+      <Filter>AfxCppCli\old\tools\demotools</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="AssemblyInfo.cpp">
+      <Filter>AfxCppCli</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>AfxCppCli</Filter>
+    </ClCompile>
+    <ClCompile Include="old\tools\skymanager\skymanager.cpp">
+      <Filter>AfxCppCli\old\tools\skymanager</Filter>
+    </ClCompile>
+    <ClCompile Include="old\tools\demotools\demotoolswizard.cpp">
+      <Filter>AfxCppCli\old\tools\demotools</Filter>
+    </ClCompile>
+    <ClCompile Include="old\tools\demotools\demotools.cpp">
+      <Filter>AfxCppCli\old\tools\demotools</Filter>
+    </ClCompile>
+    <ClCompile Include="old\tools\demotools\DemoToolsProgressForm.cpp">
+      <Filter>AfxCppCli\old\tools\demotools</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="old\tools\demotools\DemoToolsProgressForm.resx" />
+    <EmbeddedResource Include="old\tools\demotools\DemoToolsWiz1.resx" />
+    <EmbeddedResource Include="old\tools\demotools\DemoToolsWiz2.resx" />
+    <EmbeddedResource Include="old\tools\demotools\DemoToolsWiz3.resx" />
+    <EmbeddedResource Include="old\tools\demotools\OverwriteDialog.resx" />
+    <EmbeddedResource Include="old\tools\skymanager\skymanager.resx" />
+  </ItemGroup>
+</Project>

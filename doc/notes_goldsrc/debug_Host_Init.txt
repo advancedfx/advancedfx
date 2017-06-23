@@ -1,0 +1,21 @@
+Version: current
+
+Modules:
+hw 03690000 
+
+0:000> s -a hw L1000000 "exec valve.rc"
+037d7a38  65 78 65 63 20 76 61 6c-76 65 2e 72 63 0a 00 00  exec valve.rc...
+
+0:000> s hw L100000 38 7a 7d 03
+036e6ba5  38 7a 7d 03 e8 02 02 fd-ff a1 c0 65 6e 04 83 c4  8z}........en...
+
+Wait for loading of clientd.dll and set a breakpoint at 036e6ba5-1 (the push of the string).
+
+Then step out of that function to get the Host_Init call:
+
+...
+0373a347 6880401404      push    offset hw!qwglMakeCurrent+0x25574 (04144080)
+0373a34c e89fc5faff      call    hw+0x568f0 (036e68f0)
+0373a351 a12c09cd03      mov     eax,dword ptr [hw!vgui::Frame::`vftable'+0x523bc8 (03cd092c)]
+...
+=> 0373a347 => 036e68f0 is Host_Init.

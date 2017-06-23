@@ -1,0 +1,50 @@
+Version: Sep 02 update
+
+Modules:
+hw 01d00000
+
+0:000> s -a hw L1000000 "HUD_PlayerMove"
+01e346ec  48 55 44 5f 50 6c 61 79-65 72 4d 6f 76 65 00 00  HUD_PlayerMove..
+01e3471f  48 55 44 5f 50 6c 61 79-65 72 4d 6f 76 65 0a 00  HUD_PlayerMove..
+01e34730  48 55 44 5f 50 6c 61 79-65 72 4d 6f 76 65 49 6e  HUD_PlayerMoveIn
+01e34767  48 55 44 5f 50 6c 61 79-65 72 4d 6f 76 65 49 6e  HUD_PlayerMoveIn
+01e3477c  48 55 44 5f 50 6c 61 79-65 72 4d 6f 76 65 54 65  HUD_PlayerMoveTe
+01e347b7  48 55 44 5f 50 6c 61 79-65 72 4d 6f 76 65 54 65  HUD_PlayerMoveTe
+
+0:000> s hw L1000000 ec 46 e3 01
+01d0b2f3  ec 46 e3 01 52 ff d6 85-c0 a3 58 f5 f2 02 75 0d  .F..R.....X...u.
+
+01d0b2f3 -1 == 01d0b2f2 is inside the function that builds the ClientFunctionTable
+
+01d0b1e0 UnkBuildClientFunctionTable
+01d0b1e0 55              push    ebp
+01d0b1e1 8bec            mov     ebp,esp
+01d0b1e3 56              push    esi
+01d0b1e4 8b7508          mov     esi,dword ptr [ebp+8]
+01d0b1e7 56              push    esi
+01d0b1e8 e8a3fe0200      call    hw+0x3b090 (01d3b090)
+01d0b1ed 83c404          add     esp,4
+01d0b1f0 a30059e601      mov     dword ptr [hw!vgui::Frame::`vftable'+0x48b9c (01e65900)],eax
+01d0b1f5 85c0            test    eax,eax
+01d0b1f7 7513            jne     hw+0xb20c (01d0b20c)
+01d0b1f9 56              push    esi
+01d0b1fa 685045e301      push    offset hw!vgui::Frame::`vftable'+0x177ec (01e34550)
+01d0b1ff e84cd20900      call    hw!CreateInterface+0x4b3a0 (01da8450)
+01d0b204 a10059e601      mov     eax,dword ptr [hw!vgui::Frame::`vftable'+0x48b9c (01e65900)]
+01d0b209 83c408          add     esp,8
+01d0b20c 8b3514a1e101    mov     esi,dword ptr [hw!vgui::Frame::operator=+0x5b484 (01e1a114)]
+01d0b212 686c45e301      push    offset hw!vgui::Frame::`vftable'+0x17808 (01e3456c) // "Initialize"
+01d0b217 50              push    eax
+01d0b218 c705fc58e60101000000 mov dword ptr [hw!vgui::Frame::`vftable'+0x48b98 (01e658fc)],offset <Unloaded_ud.drv> (00000001)
+01d0b222 ffd6            call    esi
+01d0b224 85c0            test    eax,eax
+01d0b226 a340f5f202      mov     dword ptr [hw!qwglMakeCurrent+0x7a0a34 (02f2f540)],eax
+...
+01d0b2f2 68ec46e301      push    offset hw!vgui::Frame::`vftable'+0x17988 (01e346ec) // "HUD_PlayerMove"
+01d0b2f7 52              push    edx
+01d0b2f8 ffd6            call    esi
+01d0b2fa 85c0            test    eax,eax
+01d0b2fc a358f5f202      mov     dword ptr [hw!qwglMakeCurrent+0x7a0a4c (02f2f558)],eax
+
+==>
+01d0b226 => 02f2f540 is ClientFunctionTable

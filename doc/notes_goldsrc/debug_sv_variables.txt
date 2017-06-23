@@ -1,0 +1,15 @@
+Version: dunno yet
+
+This requires a modification that loads a mp.dll and that has Server_GetBlendingInterface(i.e. cstrike).
+
+Break on loading of client.dll and add the following breakpoints:
+
+Break on mp!GiveFnPtrsToDll:
+[esp+4] is p_sv_enginefuncs.
+
+Break on mp!Server_GetBlendingInterface:
+[esp+5*4] is p_sv_enginefuncs.
+(Compare
+http://www.mail-archive.com/hlcoders@list.valvesoftware.com/msg01224.html
+http://www.mail-archive.com/hlcoders@list.valvesoftware.com/msg02724.html
+)
