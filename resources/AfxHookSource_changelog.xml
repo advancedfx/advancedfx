@@ -6,6 +6,32 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.23.0</version>
+<time>2017-06-23T09:04Z</time>
+<changes>
+<change type="added">
+Added mirv_calcs.
+</change>
+<change type="added">
+Added mirv_calc support to mirv_cam source.
+</change>
+<change type="added">
+Added mirv_calc support to mirv_aim.
+</change>
+</changes>
+<comments>
+The system is pretty advanced and complex (please use the built-in command help and some guessing, also notice the vacAng or calc can be very helpful), here is an example (to get valid attachments you need to look at the model source code (.qc), examples are primary / facemask on players, muzzle_flash on guns, weapon_hand_R / camera_inventory / camera_buymenu on knifes and guns):<br />
+mirv_calcs handle add key key0 0<br />
+mirv_calcs vecAng add handleAttachment key0 key0 facemask<br />
+mirv_calcs vecAng add value ofsFaceMask 67 0 0 0 0 179.9<br />
+mirv_calcs vecAng add offset ofsKey0 key0 ofsFaceMask 1<br />
+mirv_cam source calcVecAng ofsKey0<br />
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.22.0</version>
 <time>2017-06-19T19:11Z</time>
 <changes>
