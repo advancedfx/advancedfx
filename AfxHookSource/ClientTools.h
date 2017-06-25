@@ -25,6 +25,36 @@ public:
 	void StartRecording(wchar_t const * fileName);
 	void EndRecording();
 
+	bool RecordWeapons_get(void)
+	{
+		return m_RecordWeapons;
+	}
+
+	void RecordWeapons_set(bool value)
+	{
+		m_RecordWeapons = value;
+	}
+
+	bool RecordPlayers_get(void)
+	{
+		return m_RecordPlayers;
+	}
+
+	void RecordPlayers_set(bool value)
+	{
+		m_RecordPlayers = value;
+	}
+
+	bool RecordCamera_get(void)
+	{
+		return m_RecordCamrea;
+	}
+
+	void RecordCamera_set(bool value)
+	{
+		m_RecordCamrea = value;
+	}
+
 
 private:
 	std::map<std::string, int> m_Dictionary;
@@ -33,6 +63,10 @@ private:
 	bool m_Recording;
 	SOURCESDK::CSGO::IClientTools * m_ClientTools;
 	FILE * m_File;
+
+	bool m_RecordCamrea = true;
+	bool m_RecordPlayers = true;
+	bool m_RecordWeapons = true;
 
 	void UpdateRecording();
 
@@ -61,6 +95,7 @@ private:
 
 	void Write(bool value);
 	void Write(int value);
+	void Write(float value);
 	void Write(double value);
 	void Write(char const * value); // Consider using WriteDictionary instead (if string is long enough and likely to repeat often).
 	void Write(SOURCESDK::Vector const & value);

@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.24.0</version>
+<time>2017-06-25T17:26Z</time>
+<changes>
+<change type="updated">
+Updated mirv_streams record agr to version 1. Now also exports weapons (expiremental) and camera by default. What is exported can be controlled with mirv_streams record agr sub-commands, the more is enabled, the longer importing will take! Also AGR file size has been reduced. Requires the updated AGR import plugins for importing of course.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.23.0</version>
 <time>2017-06-23T09:04Z</time>
 <changes>

@@ -4,6 +4,8 @@
 
 #include "addresses.h"
 #include "RenderView.h"
+#include "CamIO.h"
+
 #include <shared/detours.h>
 #include <shared/StringTools.h>
 
@@ -100,22 +102,53 @@ void ClientTools::OnPostToolMessage(SOURCESDK::CSGO::HTOOLHANDLE hEntity, SOURCE
 		char const * className = be ? be->GetClassname() : 0;
 
 		if (ce
-			&& (m_ClientTools->IsPlayer(ent)
-				//|| m_ClientTools->IsViewModel(ent)
-				|| m_ClientTools->IsRagdoll(ent)
-				//|| m_ClientTools->IsWeapon(ent)
-				|| (className && (
-					!strcmp(className, "class C_CSRagdoll")
-					//|| StringBeginsWith(className ,"weapon") && !m_ClientTools->IsViewModel(ent)
-				))
+			&& (
+				m_RecordPlayers && (
+					m_ClientTools->IsPlayer(ent)
+					|| m_ClientTools->IsRagdoll(ent)
+					|| className && !strcmp(className, "class C_CSRagdoll")
+				)
+				|| m_RecordWeapons && (
+					m_ClientTools->IsWeapon(ent)
+					|| className && !strcmp(className ,"weaponworldmodel")
+				)
 			)
 		)
 		{
+			if (m_ClientTools->IsWeapon(ent))
+			{
+				if (be && -1 != AFXADDR_GET(csgo_C_BaseCombatWeapon_m_iState))
+				{
+
+					SOURCESDK::C_BaseCombatWeapon_csgo * weapon = reinterpret_cast<SOURCESDK::C_BaseCombatWeapon_csgo *>(ent);
+					int state = *(int *)((char const *)weapon + AFXADDR_GET(csgo_C_BaseCombatWeapon_m_iState));
+
+					if (SOURCESDK_CSGO_WEAPON_NOT_CARRIED != state)
+					{
+						// TODO: Weapon not on ground, delete if was present, so it can be marked as invisible.
+
+						std::map<SOURCESDK::CSGO::HTOOLHANDLE, int>::iterator it = m_TrackedHandles.find(hEntity);
+						if (it != m_TrackedHandles.end())
+						{
+							WriteDictionary("deleted");
+							Write((int)(it->second));
+							Write((float)g_Hook_VClient_RenderView.GetGlobals()->curtime_get());
+
+							m_TrackedHandles.erase(it);
+						}
+
+						return;
+					}
+				}
+				else
+					return;
+			}
+
 			int handle = ce->GetRefEHandle().ToInt();
 
 			m_TrackedHandles[hEntity] = handle;
 
-			if (!msg->GetPtr("baseentity") && m_ClientTools->IsWeapon(ent) && StringBeginsWith(className, "weapon"))
+			if (!msg->GetPtr("baseentity") && m_ClientTools->IsWeapon(ent))
 			{
 				// Fix up broken overloaded C_BaseCombatWeapon code as good as we can:
 				Call_CBaseAnimating_GetToolRecordingState(be, msg);
@@ -133,22 +166,17 @@ void ClientTools::OnPostToolMessage(SOURCESDK::CSGO::HTOOLHANDLE hEntity, SOURCE
 			*/
 
 			WriteDictionary("entity_state");
-			WriteDictionary("handle"); Write((int)handle);
+			Write((int)handle);
 			{
 				SOURCESDK::CSGO::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::CSGO::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity"));
 				if (pBaseEntityRs)
 				{
 					WriteDictionary("baseentity");
-					WriteDictionary("time"); Write((double)pBaseEntityRs->m_flTime);
-					WriteDictionary("modelName"); WriteDictionary(pBaseEntityRs->m_pModelName);
-					WriteDictionary("visible"); Write((bool)pBaseEntityRs->m_bVisible);
-					WriteDictionary("renderOrigin"); Write(pBaseEntityRs->m_vecRenderOrigin);
-					WriteDictionary("renderAngles"); Write(pBaseEntityRs->m_vecRenderAngles);
-					WriteDictionary("/");
-
-					//Tier0_Msg("IsViewModel: %i\n", m_ClientTools->IsViewModel(ent) ? 1 : 0);
-					//Tier0_Msg("modelName: %s\n", pBaseEntityRs->m_pModelName);
-
+					Write((float)pBaseEntityRs->m_flTime);
+					WriteDictionary(pBaseEntityRs->m_pModelName);
+					Write((bool)pBaseEntityRs->m_bVisible);
+					Write(pBaseEntityRs->m_vecRenderOrigin);
+					Write(pBaseEntityRs->m_vecRenderAngles);
 				}
 			}
 
@@ -157,22 +185,22 @@ void ClientTools::OnPostToolMessage(SOURCESDK::CSGO::HTOOLHANDLE hEntity, SOURCE
 				if (pBaseAnimatingRs)
 				{
 					WriteDictionary("baseanimating");
-					WriteDictionary("skin"); Write((int)pBaseAnimatingRs->m_nSkin);
-					WriteDictionary("body"); Write((int)pBaseAnimatingRs->m_nBody);
-					WriteDictionary("sequence"); Write((int)pBaseAnimatingRs->m_nSequence);
+					Write((int)pBaseAnimatingRs->m_nSkin);
+					Write((int)pBaseAnimatingRs->m_nBody);
+					Write((int)pBaseAnimatingRs->m_nSequence);
+					Write((bool)(0 != pBaseAnimatingRs->m_pBoneList));
 					if (pBaseAnimatingRs->m_pBoneList)
 					{
-						WriteDictionary("boneList"); Write(pBaseAnimatingRs->m_pBoneList);
+						Write(pBaseAnimatingRs->m_pBoneList);
 					}
-					WriteDictionary("/");
 				}
 			}
 
+			WriteDictionary("/");
+
 			bool viewModel = msg->GetBool("viewmodel");
 
-			WriteDictionary("viewmodel"); Write((bool)viewModel);
-
-			WriteDictionary("/");
+			Write((bool)viewModel);
 		}
 	}
 	else
@@ -186,7 +214,7 @@ void ClientTools::OnPostToolMessage(SOURCESDK::CSGO::HTOOLHANDLE hEntity, SOURCE
 		{
 			WriteDictionary("deleted");
 			Write((int)(it->second));
-			Write((double)g_Hook_VClient_RenderView.GetGlobals()->curtime_get());
+			Write((float)g_Hook_VClient_RenderView.GetGlobals()->curtime_get());
 
 			m_TrackedHandles.erase(it);
 		}
@@ -196,6 +224,19 @@ void ClientTools::OnPostToolMessage(SOURCESDK::CSGO::HTOOLHANDLE hEntity, SOURCE
 void ClientTools::OnC_BaseEntity_ToolRecordEntities(void)
 {
 	UpdateRecording();
+
+	if(m_RecordCamrea)
+	{
+		WriteDictionary("afxCam");
+		Write((float)g_Hook_VClient_RenderView.GetGlobals()->curtime_get());
+		Write((float)g_Hook_VClient_RenderView.LastCameraOrigin[0]);
+		Write((float)g_Hook_VClient_RenderView.LastCameraOrigin[1]);
+		Write((float)g_Hook_VClient_RenderView.LastCameraOrigin[2]);
+		Write((float)g_Hook_VClient_RenderView.LastCameraAngles[0]);
+		Write((float)g_Hook_VClient_RenderView.LastCameraAngles[1]);
+		Write((float)g_Hook_VClient_RenderView.LastCameraAngles[2]);
+		Write((float)AlienSwarm_FovScaling(g_Hook_VClient_RenderView.LastWidth, g_Hook_VClient_RenderView.LastHeight, g_Hook_VClient_RenderView.LastCameraFov));
+	}
 }
 
 bool ClientTools::GetRecording(void)
@@ -218,7 +259,7 @@ void ClientTools::StartRecording(wchar_t const * fileName)
 	{
 		fputs("afxGameRecord", m_File);
 		fputc('\0', m_File);
-		int version = 0;
+		int version = 1;
 		fwrite(&version, sizeof(version), 1, m_File);
 	}
 	else
@@ -300,6 +341,11 @@ void ClientTools::Write(int value)
 	fwrite(&value, sizeof(value), 1, m_File);
 }
 
+void ClientTools::Write(float value)
+{
+	fwrite(&value, sizeof(value), 1, m_File);
+}
+
 void ClientTools::Write(double value)
 {
 	fwrite(&value, sizeof(value), 1, m_File);
@@ -313,19 +359,19 @@ void ClientTools::Write(char const * value)
 
 void ClientTools::Write(SOURCESDK::Vector const & value)
 {
-	Write((double)value.x);
-	Write((double)value.y);
-	Write((double)value.z);
+	Write((float)value.x);
+	Write((float)value.y);
+	Write((float)value.z);
 }
 
 void ClientTools::Write(SOURCESDK::QAngle const & value)
 {
-	Write((double)value.x);
-	Write((double)value.y);
-	Write((double)value.z);
+	Write((float)value.x);
+	Write((float)value.y);
+	Write((float)value.z);
 }
 
-void ClientTools::Write(SOURCESDK::CSGO::CBoneList const * value)
+void ClientTools::Write	(SOURCESDK::CSGO::CBoneList const * value)
 {
 	Write((int)value->m_nBones);
 
@@ -338,10 +384,10 @@ void ClientTools::Write(SOURCESDK::CSGO::CBoneList const * value)
 
 void ClientTools::Write(SOURCESDK::Quaternion const & value)
 {
-	Write((double)value.x);
-	Write((double)value.y);
-	Write((double)value.z);
-	Write((double)value.w);
+	Write((float)value.x);
+	Write((float)value.y);
+	Write((float)value.z);
+	Write((float)value.w);
 }
 
 void ClientTools::DebugEntIndex(int index)

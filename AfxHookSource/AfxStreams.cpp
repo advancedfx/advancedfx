@@ -6178,10 +6178,70 @@ void CAfxStreams::Console_GameRecording(IWrpCommandArgs * args)
 			);
 			return;
 		}
+		else if (0 == _stricmp("recordCamera", cmd1))
+		{
+			if (3 <= argc)
+			{
+				char const * cmd2 = args->ArgV(2);
+
+				g_ClientTools.RecordCamera_set(0 != atoi(cmd2));
+				return;
+			}
+
+			Tier0_Msg(
+				"%s recordCamera 0|1 - Enable (1) / Disable (0) recording of main camera (includes FOV).\n"
+				"Current value: %i.\n"
+				, prefix
+				, g_ClientTools.RecordCamera_get() ? 1 : 0
+			);
+			return;
+		}
+		else if (0 == _stricmp("recordPlayers", cmd1))
+		{
+			if (3 <= argc)
+			{
+				char const * cmd2 = args->ArgV(2);
+
+				g_ClientTools.RecordPlayers_set(0 != atoi(cmd2));
+				return;
+			}
+
+			Tier0_Msg(
+				"%s recordPlayers 0|1 - Enable (1) / Disable (0) recording of players.\n"
+				"Current value: %i.\n"
+				, prefix
+				, g_ClientTools.RecordPlayers_get() ? 1 : 0
+			);
+			return;
+		}
+		else if (0 == _stricmp("recordWeapons", cmd1))
+		{
+			if (3 <= argc)
+			{
+				char const * cmd2 = args->ArgV(2);
+
+				g_ClientTools.RecordWeapons_set(0 != atoi(cmd2));
+				return;
+			}
+
+			Tier0_Msg(
+				"%s recordWeapons 0|1 - Enable (1) / Disable (0) recording of weapons.\n"
+				"Current value: %i.\n"
+				, prefix
+				, g_ClientTools.RecordWeapons_get() ? 1 : 0
+			);
+			return;
+		}
 	}
 
 	Tier0_Msg(
 		"%s enabled [...]\n"
+		"%s recordCamera [...]\n"
+		"%s recordPlayers [...]\n"
+		"%s recordWeapons [...]\n"
+		, prefix
+		, prefix
+		, prefix
 		, prefix
 	);
 }
