@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.24.1</version>
+<time>2017-06-26T12:15Z</time>
+<changes>
+<change type="updated">
+Updated mirv_streams record agr: now also exports projectiles (i.e. thrown grenades).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.24.0</version>
 <time>2017-06-25T17:26Z</time>
 <changes>

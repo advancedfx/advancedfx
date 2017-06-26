@@ -111,6 +111,7 @@ void ClientTools::OnPostToolMessage(SOURCESDK::CSGO::HTOOLHANDLE hEntity, SOURCE
 				|| m_RecordWeapons && (
 					m_ClientTools->IsWeapon(ent)
 					|| className && !strcmp(className ,"weaponworldmodel")
+					|| className && StringEndsWith(className, "Projectile")
 				)
 			)
 		)
