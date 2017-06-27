@@ -149,7 +149,7 @@ CON_COMMAND(mirv_cam, "Control camera source entity and offset.")
 					}
 
 					Tier0_Msg(
-						"mirv_cam source handle none|<n> - Handle to use as source, use mirv_listentites to find the entityHandle or mirv_streams ... picker.\n"
+						"mirv_cam source handle none|<n> - Handle to use as source, use mirv_listentities to find the entityHandle or mirv_streams ... picker.\n"
 						"Handle: %i%s\n"
 						, g_MirvCam.m_SourceHandle.ToInt()
 						, g_MirvCam.m_SourceHandle.IsValid() ? "" : " (none)"

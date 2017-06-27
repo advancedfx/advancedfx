@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.24.2</version>
+<time>2017-06-27T17:20Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_camio import quaternions for rotation not always being the shortest path.
+</change>
+<change type="added">
+Added mirv_record agr recordProjectiles, allows to control recording of i.e. grenades separately from weapons.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.24.1</version>
 <time>2017-06-26T12:15Z</time>
 <changes>

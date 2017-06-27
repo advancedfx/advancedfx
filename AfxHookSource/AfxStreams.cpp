@@ -6232,6 +6232,42 @@ void CAfxStreams::Console_GameRecording(IWrpCommandArgs * args)
 			);
 			return;
 		}
+		else if (0 == _stricmp("recordProjectiles", cmd1))
+		{
+			if (3 <= argc)
+			{
+				char const * cmd2 = args->ArgV(2);
+
+				g_ClientTools.RecordProjectiles_set(0 != atoi(cmd2));
+				return;
+			}
+
+			Tier0_Msg(
+				"%s recordProjectiles 0|1 - Enable (1) / Disable (0) recording of Projectiles.\n"
+				"Current value: %i.\n"
+				, prefix
+				, g_ClientTools.RecordProjectiles_get() ? 1 : 0
+			);
+			return;
+		}
+		else if (0 == _stricmp("recordViewModel", cmd1))
+		{
+			if (3 <= argc)
+			{
+				char const * cmd2 = args->ArgV(2);
+
+				g_ClientTools.RecordViewModel_set(0 != atoi(cmd2));
+				return;
+			}
+
+			Tier0_Msg(
+				"%s recordViewModel 0|1 - Enable (1) / Disable (0) recording of view models.\n"
+				"Current value: %i.\n"
+				, prefix
+				, g_ClientTools.RecordViewModel_get() ? 1 : 0
+			);
+			return;
+		}
 	}
 
 	Tier0_Msg(
@@ -6239,10 +6275,14 @@ void CAfxStreams::Console_GameRecording(IWrpCommandArgs * args)
 		"%s recordCamera [...]\n"
 		"%s recordPlayers [...]\n"
 		"%s recordWeapons [...]\n"
+		"%s recordProjectiles [...]\n"
+		//"%s recordViewModel [...]\n"
 		, prefix
 		, prefix
 		, prefix
 		, prefix
+		, prefix
+		//, prefix
 	);
 }
 

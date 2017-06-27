@@ -160,6 +160,13 @@ bool CamImport::GetCamData(double time, double width, double height, CamData & o
 		if (!ReadDataLine(m_NextFrame))
 			return false;
 		m_NextQuat = Afx::Math::Quaternion::FromQREulerAngles(Afx::Math::QREulerAngles::FromQEulerAngles(Afx::Math::QEulerAngles(m_NextFrame.YRotation, m_NextFrame.ZRotation, m_NextFrame.XRotation)));
+
+		// Make sure we will travel the short way:
+		double dotProduct = DotProduct(m_NextQuat, m_LastQuat);
+		if (dotProduct<0.0)
+		{
+			m_NextQuat = -1.0 * m_NextQuat;
+		}
 	}
 
 	double orgTime = time - m_StartTime + m_FirstFrameTime;

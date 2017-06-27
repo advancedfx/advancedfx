@@ -101,9 +101,37 @@ void ClientTools::OnPostToolMessage(SOURCESDK::CSGO::HTOOLHANDLE hEntity, SOURCE
 
 		char const * className = be ? be->GetClassname() : 0;
 
+		bool isRecordedCurrentViewModelOrAttachment = false;
+		/*if (
+			m_RecordViewModel && (
+				m_ClientTools->IsViewModelOrAttachment(ent)
+				|| className && !strcmp(className, "class C_ViewmodelAttachmentModel")
+			)
+		)
+		{
+			if (be)
+			{
+				if (!be->ShouldDraw())
+				{
+					std::map<SOURCESDK::CSGO::HTOOLHANDLE, int>::iterator it = m_TrackedHandles.find(hEntity);
+					if (it != m_TrackedHandles.end())
+					{
+						WriteDictionary("deleted");
+						Write((int)(it->second));
+						Write((float)g_Hook_VClient_RenderView.GetGlobals()->curtime_get());
+
+						m_TrackedHandles.erase(it);
+					}
+				}
+				else
+					isRecordedCurrentViewModelOrAttachment = true;
+			}
+		}*/
+
 		if (ce
 			&& (
-				m_RecordPlayers && (
+				isRecordedCurrentViewModelOrAttachment
+				|| m_RecordPlayers && (
 					m_ClientTools->IsPlayer(ent)
 					|| m_ClientTools->IsRagdoll(ent)
 					|| className && !strcmp(className, "class C_CSRagdoll")
@@ -111,7 +139,9 @@ void ClientTools::OnPostToolMessage(SOURCESDK::CSGO::HTOOLHANDLE hEntity, SOURCE
 				|| m_RecordWeapons && (
 					m_ClientTools->IsWeapon(ent)
 					|| className && !strcmp(className ,"weaponworldmodel")
-					|| className && StringEndsWith(className, "Projectile")
+				)
+				|| m_RecordProjectiles && (
+					className && StringEndsWith(className, "Projectile")
 				)
 			)
 		)
@@ -226,7 +256,7 @@ void ClientTools::OnC_BaseEntity_ToolRecordEntities(void)
 {
 	UpdateRecording();
 
-	if(m_RecordCamrea)
+	if(m_RecordCamera)
 	{
 		WriteDictionary("afxCam");
 		Write((float)g_Hook_VClient_RenderView.GetGlobals()->curtime_get());

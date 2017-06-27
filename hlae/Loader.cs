@@ -76,8 +76,8 @@ namespace AfxGui
                             {
                                 throw new System.AccessViolationException(
                                     "Failed to start injector: "+ injector.StartInfo.FileName +"." + Environment.NewLine
-                                    + "Error: "+e.ToString()
-                                    + "Solution: Check that you Anti Virus did not remove it due to a false positive. If so restore it and add an exception for injector / the HLAE folder."
+                                    + "Error: "+e.ToString() + Environment.NewLine
+                                    + "Solution: Check that your Anti Virus did not remove it due to a false positive. If so restore it and add an exception for injector / the HLAE folder."
                                );
                             }
 

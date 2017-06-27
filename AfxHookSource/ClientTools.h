@@ -35,6 +35,16 @@ public:
 		m_RecordWeapons = value;
 	}
 
+	bool RecordProjectiles_get(void)
+	{
+		return m_RecordProjectiles;
+	}
+
+	void RecordProjectiles_set(bool value)
+	{
+		m_RecordProjectiles = value;
+	}
+
 	bool RecordPlayers_get(void)
 	{
 		return m_RecordPlayers;
@@ -47,12 +57,22 @@ public:
 
 	bool RecordCamera_get(void)
 	{
-		return m_RecordCamrea;
+		return m_RecordCamera;
 	}
 
 	void RecordCamera_set(bool value)
 	{
-		m_RecordCamrea = value;
+		m_RecordCamera = value;
+	}
+
+	bool RecordViewModel_get(void)
+	{
+		return m_RecordViewModel;
+	}
+
+	void RecordViewModel_set(bool value)
+	{
+		m_RecordViewModel = value;
 	}
 
 
@@ -64,9 +84,11 @@ private:
 	SOURCESDK::CSGO::IClientTools * m_ClientTools;
 	FILE * m_File;
 
-	bool m_RecordCamrea = true;
+	bool m_RecordCamera = true;
 	bool m_RecordPlayers = true;
 	bool m_RecordWeapons = true;
+	bool m_RecordProjectiles = true;
+	bool m_RecordViewModel = true;
 
 	void UpdateRecording();
 
