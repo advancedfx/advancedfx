@@ -15,23 +15,16 @@ void CMirvCam::ApplySource(float & x, float & y, float & z, float & xRotation, f
 		SOURCESDK::Vector o;
 		SOURCESDK::QAngle a;
 
-		if (!m_Source->CalcVecAng(o, a))
+		if (m_Source->CalcVecAng(o, a))
 		{
-			o.x = x;
-			o.y = y;
-			o.z = z;
-			a.x = xRotation;
-			a.y = yRotation;
-			a.z = zRotation;
+			if (m_SourceUseX) x = o.x;
+			if (m_SourceUseY) y = o.y;
+			if (m_SourceUseZ) z = o.z;
+
+			if (m_SourceUseXRotation) xRotation = a.z;
+			if (m_SourceUseYRotation) yRotation = a.x;
+			if (m_SourceUseZRotation) zRotation = a.y;
 		}
-
-		if (m_SourceUseX) x = o.x;
-		if (m_SourceUseY) y = o.y;
-		if (m_SourceUseZ) z = o.z;
-
-		if (m_SourceUseXRotation) xRotation = a.z;
-		if (m_SourceUseYRotation) yRotation = a.x;
-		if (m_SourceUseZRotation) zRotation = a.y;
 	}
 }
 

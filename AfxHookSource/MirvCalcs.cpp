@@ -1279,7 +1279,7 @@ bool CMirvHandleCalcs::Console_CheckName(char const * name)
 
 	if (GetByName(name))
 	{
-		Tier0_Warning("Error: Name is already in use.");
+		Tier0_Warning("Error: Name is already in use.\n");
 		return false;
 	}
 
@@ -1502,7 +1502,7 @@ bool CMirvVecAngCalcs::Console_CheckName(char const * name)
 
 	if (GetByName(name))
 	{
-		Tier0_Warning("Error: Name is already in use.");
+		Tier0_Warning("Error: Name is already in use.\n");
 		return false;
 	}
 
@@ -1679,7 +1679,7 @@ bool CMirvBoolCalcs::Console_CheckName(char const * name)
 
 	if (GetByName(name))
 	{
-		Tier0_Warning("Error: Name is already in use.");
+		Tier0_Warning("Error: Name is already in use.\n");
 		return false;
 	}
 

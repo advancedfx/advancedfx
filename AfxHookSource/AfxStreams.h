@@ -178,6 +178,10 @@ class CAfxRecordStream;
 class CAfxStreamShared
 {
 public:
+	virtual ~CAfxStreamShared()
+	{
+	}
+
 	//
 	// Reference counting:
 

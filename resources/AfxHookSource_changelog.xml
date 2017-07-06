@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.24.3</version>
+<time>2017-07-06T16:30Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_cam using wrong angles in case the calcVecAng doesn't return successfully.
+</change>
+<change type="fixed">
+Fixed mirv_streams and their actions not being properly freed.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.24.2</version>
 <time>2017-06-27T17:20Z</time>
 <changes>
