@@ -106,26 +106,26 @@ bool Aiming::Aim(double deltaT, Vector3 const camOrigin, double & yPitch, double
 	double targetZYaw = zYaw;
 	double targetXRoll = xRoll;
 
-	if(Active && m_Source)
+	if(Active)
 	{
-		SOURCESDK::Vector o;
-		SOURCESDK::QAngle a;
-
-		if (m_Source->CalcVecAng(o, a))
+		if (m_Source)
 		{
-			double forward[3], right[3], up[3];
 
-			MakeVectors(a.z, a.x, a.y, forward, right, up);
+			SOURCESDK::Vector o;
+			SOURCESDK::QAngle a;
 
-			LastTargetOrigin = Vector3(
-				o.x + OffSet.X * forward[0] + OffSet.Y * right[0] + OffSet.Z * up[0],
-				o.y + OffSet.X * forward[1] + OffSet.Y * right[1] + OffSet.Z * up[1],
-				o.z + OffSet.X * forward[2] + OffSet.Y * right[2] + OffSet.Z * up[2]
-			);
-		}
-		else
-		{
-			LastTargetOrigin = camOrigin;
+			if (m_Source->CalcVecAng(o, a))
+			{
+				double forward[3], right[3], up[3];
+
+				MakeVectors(a.z, a.x, a.y, forward, right, up);
+
+				LastTargetOrigin = Vector3(
+					o.x + OffSet.X * forward[0] + OffSet.Y * right[0] + OffSet.Z * up[0],
+					o.y + OffSet.X * forward[1] + OffSet.Y * right[1] + OffSet.Z * up[1],
+					o.z + OffSet.X * forward[2] + OffSet.Y * right[2] + OffSet.Z * up[2]
+				);
+			}
 		}
 	}
 	else
