@@ -74,7 +74,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, bool isCsgo)
 {
 	if(isCsgo)
 	{
-		// csgo_snd_mix_timescale_patch: // Checked 2017-05-13.
+		// csgo_snd_mix_timescale_patch: // Checked 2017-07-08.
 		{
 			DWORD addr = 0;
 			DWORD strAddr = 0;
@@ -112,7 +112,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, bool isCsgo)
 						tempAddr = tempAddr + 4 + *(DWORD *)tempAddr;
 						// in MIX_PaintChannels now.
 
-						tempAddr = tempAddr + 0x283;
+						tempAddr = tempAddr + 0x273;
 
 						MemRange result = FindPatternString(MemRange(tempAddr - 7, tempAddr - 7 + 7), "8D 8D 50 FE FF FF E8");
 						if (!result.IsEmpty())
@@ -222,6 +222,8 @@ void Addresses_InitEngineDll(AfxAddr engineDll, bool isCsgo)
 		// refrence of that function.
 		{
 			DWORD addr = 0;
+			// Valve must have accidentally removed code for recording WAV audio with startmovie, not much I can do about now:
+			if(false) // !!!
 			{
 				ImageSectionsReader sections((HMODULE)engineDll);
 				if (!sections.Eof())
@@ -257,6 +259,8 @@ void Addresses_InitEngineDll(AfxAddr engineDll, bool isCsgo)
 		// frame / whatever count as our function does.
 		{
 			DWORD addr = 0;
+			// Valve must have accidentally removed code for recording WAV audio with startmovie, not much I can do about now:
+			if (false) // !!!
 			{
 				ImageSectionsReader sections((HMODULE)engineDll);
 				if (!sections.Eof())
@@ -472,7 +476,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, bool isCsgo)
 			AFXADDR_SET(csgo_CHudDeathNotice_FireGameEvent, addr);
 		}
 
-		// csgo_CHudDeathNotice_UnkAddDeathNotice: // Checked 2017-05-13.
+		// csgo_CHudDeathNotice_UnkAddDeathNotice: // Checked 2017-07-08.
 		//
 		// This function is called at the end of csgo_CHudDeathNotice_FireGameEvent,
 		// however we search for the string near the call instead to be more stable
@@ -508,7 +512,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, bool isCsgo)
 				{
 					DWORD tmpAddr = result.Start +0x2E;
 
-					if (result = FindPatternString(MemRange(tmpAddr - 0xB, tmpAddr + 0x4), "FF 74 24 1C FF 74 24 28 50 E8 ?? ?? ?? ??"), !result.IsEmpty())
+					if (result = FindPatternString(MemRange(tmpAddr - 0xB, tmpAddr + 0x4), "FF 74 24 20 FF 74 24 28 50 E8 ?? ?? ?? ??"), !result.IsEmpty())
 					{
 						tmpAddr = tmpAddr + 4 + *(DWORD *)tmpAddr; // get call address.
 

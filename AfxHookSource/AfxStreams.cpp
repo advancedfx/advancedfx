@@ -4549,7 +4549,8 @@ void CAfxStreams::Console_Record_Start()
 
 				g_VEngineClient->ExecuteClientCmd(startMovieWaveCmd.c_str());
 
-				Tier0_Msg("Contrary to what is said nearby, recording will start instantly! :-)\n");
+				//Tier0_Msg("Contrary to what is said nearby, recording will start instantly! :-)\n");
+				Tier0_Warning("The audio might be empty, because Valve removed code from startmovie for appending data to the WAV file!\n");
 			}
 		}
 		else

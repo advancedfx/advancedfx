@@ -6,6 +6,22 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.24.4</version>
+<time>2017-07-08T08:00Z</time>
+<changes>
+<change type="fixed">
+Adjusted to 7/7/2017 CS:GO update.
+</change>
+</changes>
+<comments>
+ATTENTION: mirv_streams audio recordings will result into an empty (44 Bytes) .WAV file, just like for startmovie, because Valve accidentally removed important code from startmovie for appending the audio data.
+In case Valve fixes that problem, you will need to close the console for the audio being recorded until an further HLAE update, because HLAE won't know the hooks yet for the console open check.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.24.3</version>
 <time>2017-07-06T16:30Z</time>
 <changes>

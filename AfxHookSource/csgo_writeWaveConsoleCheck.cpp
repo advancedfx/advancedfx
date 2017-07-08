@@ -67,7 +67,7 @@ bool Hook_csgo_writeWaveConsoleCheck(void)
 	if (!firstRun) return firstResult;
 	firstRun = false;
 
-	if (AFXADDR_GET(csgo_writeWaveConsoleOpenJNZ))
+	if (AFXADDR_GET(csgo_writeWaveConsoleOpenJNZ) && AFXADDR_GET(csgo_DS_CanRecord_ConsoleOpenCall))
 	{
 		DWORD addr_csgo_writeWaveConsoleOpenJNZ = AFXADDR_GET(csgo_writeWaveConsoleOpenJNZ);
 		csgo_writeWaveConsoleOpenJNZ_CONTINUE = addr_csgo_writeWaveConsoleOpenJNZ + 6;
