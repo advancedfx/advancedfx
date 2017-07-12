@@ -3,15 +3,11 @@
 class Globals
 {
     internal static bool AutoStartCsgo { get { return m_AutoStartCsgo; } set { m_AutoStartCsgo = value; } }
-    internal static bool AutoStartAfxHookGoldSrc { get { return m_AutoStartAfxHookGoldSrc; } set { m_AutoStartAfxHookGoldSrc = value; } }
     internal static bool AutoStartCustomLoader { get { return m_AutoStartCustomLoader; } set { m_AutoStartCustomLoader = value; } }
-    internal static bool EnableHlaeRemote { get { return m_EnableHlaeRemote; } set { m_EnableHlaeRemote = value; } }
     internal static bool NoGui { get { return m_NoGui; } set { m_NoGui = value; } }
 
     static bool m_AutoStartCsgo;
-    static bool m_AutoStartAfxHookGoldSrc;
     static bool m_AutoStartCustomLoader;
-    static bool m_EnableHlaeRemote;
     static bool m_NoGui;
 }
 

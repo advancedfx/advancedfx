@@ -28,7 +28,6 @@ namespace AfxGui
         //
         // Private members:
 
-        hlae.remoting.HlaeRemoting m_HlaeRemoting;
         Guid m_LastUpdateGuid;
         UpdateCheckNotificationTarget m_UpdateCheckNotification;
 
@@ -88,23 +87,23 @@ namespace AfxGui
 			GlobalUpdateCheck.Instance.StartCheck();
         }
 
-        private void menuFileSize_Click(object sender, EventArgs e)
+        private void MenuFileSize_Click(object sender, EventArgs e)
         {
             (new Tools.Calculator()).Show();
         }
 
-        private void menuAdvancedFxOrg_Click(object sender, EventArgs e)
+        private void MenuAdvancedFxOrg_Click(object sender, EventArgs e)
         {
             System.Diagnostics.Process.Start("http://advancedfx.org/");
         }
 
-        private void checkNowToolStripMenuItem_Click(object sender, EventArgs e)
+        private void CheckNowToolStripMenuItem_Click(object sender, EventArgs e)
         {
             StartUpdateCheck();
             this.statusStrip.Visible = true;
         }
 
-        private void statusBarToolStripMenuItem_Click(object sender, EventArgs e)
+        private void StatusBarToolStripMenuItem_Click(object sender, EventArgs e)
         {
             this.statusStrip.Visible = !this.menuStatusBar.Checked;
         }
@@ -122,23 +121,14 @@ namespace AfxGui
             {
                 this.stripEnableUpdateCheck.Visible = true;
             }
-
-	        // start up public remoting system (if requested):
-            if (Globals.EnableHlaeRemote)
-            {
-                m_HlaeRemoting = new hlae.remoting.HlaeRemoting(this);
-            }
         }
 
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
         {
-            // close down remoting:
-            if (null != m_HlaeRemoting) m_HlaeRemoting.Dispose();
-
             GlobalUpdateCheck.Instance.EndCheckedNotification(m_UpdateCheckNotification);
         }
 
-        private void statusLabelUpdate_Click(object sender, EventArgs e)
+        private void StatusLabelUpdate_Click(object sender, EventArgs e)
         {
 			 if(statusLabelUpdate.IsLink)
              {
@@ -148,17 +138,17 @@ namespace AfxGui
 			 }
         }
 
-        private void statusStrip_VisibleChanged(object sender, EventArgs e)
+        private void StatusStrip_VisibleChanged(object sender, EventArgs e)
         {
             this.menuStatusBar.Checked = this.statusStrip.Visible;
         }
 
-        private void statusLabelHide_Click(object sender, EventArgs e)
+        private void StatusLabelHide_Click(object sender, EventArgs e)
         {
             this.statusStrip.Visible = false;
         }
 
-        private void menuAutoUpdateCheck_Click(object sender, EventArgs e)
+        private void MenuAutoUpdateCheck_Click(object sender, EventArgs e)
         {
             this.stripEnableUpdateCheck.Visible = false;
 
@@ -166,7 +156,7 @@ namespace AfxGui
             GlobalConfig.Instance.Settings.UpdateCheck = (SByte)(menuAutoUpdateCheck.Checked ? 1 : -1);
         }
 
-        private void statusLabelAuto_Click(object sender, EventArgs e)
+        private void StatusLabelAuto_Click(object sender, EventArgs e)
         {
             this.stripEnableUpdateCheck.Visible = false;
 
@@ -181,76 +171,34 @@ namespace AfxGui
             }
         }
 
-        private void demoToolsToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-	        AfxCppCli.old.tools.DemoToolsWizard demoWiz = new AfxCppCli.old.tools.DemoToolsWizard();
-
-            demoWiz.OutputPath = GlobalConfig.Instance.Settings.DemoTools.OutputFolder;
-
-            demoWiz.ShowDialog(this);
-
-            GlobalConfig.Instance.Settings.DemoTools.OutputFolder = demoWiz.OutputPath;
-            GlobalConfig.Instance.BackUp();
-
-            //demoWiz.Dispose();
-        }
-
-        private void skyToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            AfxCppCli.old.tools.skymanager sm = new AfxCppCli.old.tools.skymanager(GlobalConfig.Instance.Settings.Launcher.GamePath);
-			sm.Show(this);
-        }
-
-        private void menuExit_Click(object sender, EventArgs e)
+        private void MenuExit_Click(object sender, EventArgs e)
         {
             this.Close();
         }
 
-        private void menuCustomLoader_Click(object sender, EventArgs e)
+        private void MenuCustomLoader_Click(object sender, EventArgs e)
         {
             AfxGui.Tools.CustomLoader.RunCustomLoader(this);
         }
 
-        private void menuLaunch_Click(object sender, EventArgs e)
-        {
-            Launcher.RunLauncherDialog(this);
-        }
-
-        private void menuGuidToClipBoard_Click(object sender, EventArgs e)
+        private void MenuGuidToClipBoard_Click(object sender, EventArgs e)
         {
             Clipboard.SetText(GlobalUpdateCheck.Instance.Guid.ToString());           
         }
 
-        private void statusLabelIgnore_Click(object sender, EventArgs e)
+        private void StatusLabelIgnore_Click(object sender, EventArgs e)
         {
             GlobalConfig.Instance.Settings.IgnoreUpdateGuid = m_LastUpdateGuid;
             this.statusStrip.Visible = false;
             this.statusLabelIgnore.Visible = false;
         }
 
-        private void openContestLink()
-        {
-            System.Diagnostics.Process.Start(
-                 "http://www.style-productions.net/index.php?page=read_article&id=560&p=1"
-            );
-        }
-
-        private void pictureBox1_Click(object sender, EventArgs e)
-        {
-            openContestLink();
-        }
-
-        private void linkLabelContest_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            openContestLink();
-        }
-
-        private void menuNewGuidToClipBoard_Click(object sender, EventArgs e)
+        private void MenuNewGuidToClipBoard_Click(object sender, EventArgs e)
         {
             Clipboard.SetText(Guid.NewGuid().ToString()); 
         }
 
-        private void menuLaunchCSGO_Click(object sender, EventArgs e)
+        private void MenuLaunchCSGO_Click(object sender, EventArgs e)
         {
             LaunchCsgo.RunLauncherDialog(this);
         }

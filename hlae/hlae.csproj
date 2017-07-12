@@ -95,13 +95,6 @@
     <Compile Include="LaunchCsgoForm.Designer.cs">
       <DependentUpon>LaunchCsgoForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Launcher.cs" />
-    <Compile Include="LauncherForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="LauncherForm.Designer.cs">
-      <DependentUpon>LauncherForm.cs</DependentUpon>
-    </Compile>
     <Compile Include="Loader.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
@@ -111,7 +104,6 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Remoting.cs" />
     <Compile Include="Tools\Calculator.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -128,9 +120,6 @@
     <Compile Include="UpdateCheck.cs" />
     <EmbeddedResource Include="LaunchCsgoForm.resx">
       <DependentUpon>LaunchCsgoForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="LauncherForm.resx">
-      <DependentUpon>LauncherForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
@@ -188,12 +177,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\AfxCppCli\AfxCppCli.vcxproj">
-      <Project>{98ecbbb4-6be2-42e2-8754-e18827852534}</Project>
-      <Name>AfxCppCli</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

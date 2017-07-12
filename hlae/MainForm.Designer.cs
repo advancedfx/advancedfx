@@ -31,16 +31,13 @@
             this.mainMenu = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuLaunchCSGO = new System.Windows.Forms.ToolStripMenuItem();
-            this.menuLaunch = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
             this.menuExit = new System.Windows.Forms.ToolStripMenuItem();
             this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStatusBar = new System.Windows.Forms.ToolStripMenuItem();
             this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.demoToolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.calculatorsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuFileSize = new System.Windows.Forms.ToolStripMenuItem();
-            this.skyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
             this.developerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuCustomLoader = new System.Windows.Forms.ToolStripMenuItem();
@@ -83,7 +80,6 @@
             // 
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.menuLaunchCSGO,
-            this.menuLaunch,
             this.toolStripMenuItem1,
             this.menuExit});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
@@ -93,28 +89,21 @@
             // menuLaunchCSGO
             // 
             this.menuLaunchCSGO.Name = "menuLaunchCSGO";
-            this.menuLaunchCSGO.Size = new System.Drawing.Size(204, 22);
+            this.menuLaunchCSGO.Size = new System.Drawing.Size(152, 22);
             this.menuLaunchCSGO.Text = "Launch CS:GO";
-            this.menuLaunchCSGO.Click += new System.EventHandler(this.menuLaunchCSGO_Click);
-            // 
-            // menuLaunch
-            // 
-            this.menuLaunch.Name = "menuLaunch";
-            this.menuLaunch.Size = new System.Drawing.Size(204, 22);
-            this.menuLaunch.Text = "Launch GoldSrc (HL1, ...)";
-            this.menuLaunch.Click += new System.EventHandler(this.menuLaunch_Click);
+            this.menuLaunchCSGO.Click += new System.EventHandler(this.MenuLaunchCSGO_Click);
             // 
             // toolStripMenuItem1
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(201, 6);
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(149, 6);
             // 
             // menuExit
             // 
             this.menuExit.Name = "menuExit";
-            this.menuExit.Size = new System.Drawing.Size(204, 22);
+            this.menuExit.Size = new System.Drawing.Size(152, 22);
             this.menuExit.Text = "Exit";
-            this.menuExit.Click += new System.EventHandler(this.menuExit_Click);
+            this.menuExit.Click += new System.EventHandler(this.MenuExit_Click);
             // 
             // viewToolStripMenuItem
             // 
@@ -129,33 +118,24 @@
             this.menuStatusBar.Name = "menuStatusBar";
             this.menuStatusBar.Size = new System.Drawing.Size(126, 22);
             this.menuStatusBar.Text = "Status Bar";
-            this.menuStatusBar.Click += new System.EventHandler(this.statusBarToolStripMenuItem_Click);
+            this.menuStatusBar.Click += new System.EventHandler(this.StatusBarToolStripMenuItem_Click);
             // 
             // toolsToolStripMenuItem
             // 
             this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.demoToolsToolStripMenuItem,
             this.calculatorsToolStripMenuItem,
-            this.skyToolStripMenuItem,
             this.toolStripMenuItem2,
             this.developerToolStripMenuItem});
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             this.toolsToolStripMenuItem.Size = new System.Drawing.Size(47, 20);
             this.toolsToolStripMenuItem.Text = "Tools";
             // 
-            // demoToolsToolStripMenuItem
-            // 
-            this.demoToolsToolStripMenuItem.Name = "demoToolsToolStripMenuItem";
-            this.demoToolsToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.demoToolsToolStripMenuItem.Text = "Demo Tools";
-            this.demoToolsToolStripMenuItem.Click += new System.EventHandler(this.demoToolsToolStripMenuItem_Click);
-            // 
             // calculatorsToolStripMenuItem
             // 
             this.calculatorsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.menuFileSize});
             this.calculatorsToolStripMenuItem.Name = "calculatorsToolStripMenuItem";
-            this.calculatorsToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.calculatorsToolStripMenuItem.Size = new System.Drawing.Size(133, 22);
             this.calculatorsToolStripMenuItem.Text = "Calculators";
             // 
             // menuFileSize
@@ -163,19 +143,12 @@
             this.menuFileSize.Name = "menuFileSize";
             this.menuFileSize.Size = new System.Drawing.Size(115, 22);
             this.menuFileSize.Text = "File Size";
-            this.menuFileSize.Click += new System.EventHandler(this.menuFileSize_Click);
-            // 
-            // skyToolStripMenuItem
-            // 
-            this.skyToolStripMenuItem.Name = "skyToolStripMenuItem";
-            this.skyToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.skyToolStripMenuItem.Text = "Sky Manager";
-            this.skyToolStripMenuItem.Click += new System.EventHandler(this.skyToolStripMenuItem_Click);
+            this.menuFileSize.Click += new System.EventHandler(this.MenuFileSize_Click);
             // 
             // toolStripMenuItem2
             // 
             this.toolStripMenuItem2.Name = "toolStripMenuItem2";
-            this.toolStripMenuItem2.Size = new System.Drawing.Size(149, 6);
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(130, 6);
             // 
             // developerToolStripMenuItem
             // 
@@ -185,7 +158,7 @@
             this.menuGuidToClipBoard,
             this.menuNewGuidToClipBoard});
             this.developerToolStripMenuItem.Name = "developerToolStripMenuItem";
-            this.developerToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.developerToolStripMenuItem.Size = new System.Drawing.Size(133, 22);
             this.developerToolStripMenuItem.Text = "Developer";
             // 
             // menuCustomLoader
@@ -193,7 +166,7 @@
             this.menuCustomLoader.Name = "menuCustomLoader";
             this.menuCustomLoader.Size = new System.Drawing.Size(198, 22);
             this.menuCustomLoader.Text = "Custom Loader";
-            this.menuCustomLoader.Click += new System.EventHandler(this.menuCustomLoader_Click);
+            this.menuCustomLoader.Click += new System.EventHandler(this.MenuCustomLoader_Click);
             // 
             // toolStripMenuItem4
             // 
@@ -205,14 +178,14 @@
             this.menuGuidToClipBoard.Name = "menuGuidToClipBoard";
             this.menuGuidToClipBoard.Size = new System.Drawing.Size(198, 22);
             this.menuGuidToClipBoard.Text = "Own GUID to ClipBoard";
-            this.menuGuidToClipBoard.Click += new System.EventHandler(this.menuGuidToClipBoard_Click);
+            this.menuGuidToClipBoard.Click += new System.EventHandler(this.MenuGuidToClipBoard_Click);
             // 
             // menuNewGuidToClipBoard
             // 
             this.menuNewGuidToClipBoard.Name = "menuNewGuidToClipBoard";
             this.menuNewGuidToClipBoard.Size = new System.Drawing.Size(198, 22);
             this.menuNewGuidToClipBoard.Text = "New GUID to ClipBoard";
-            this.menuNewGuidToClipBoard.Click += new System.EventHandler(this.menuNewGuidToClipBoard_Click);
+            this.menuNewGuidToClipBoard.Click += new System.EventHandler(this.MenuNewGuidToClipBoard_Click);
             // 
             // helpToolStripMenuItem
             // 
@@ -230,7 +203,7 @@
             this.menuAdvancedFxOrg.Name = "menuAdvancedFxOrg";
             this.menuAdvancedFxOrg.Size = new System.Drawing.Size(171, 22);
             this.menuAdvancedFxOrg.Text = "advancedfx.org";
-            this.menuAdvancedFxOrg.Click += new System.EventHandler(this.menuAdvancedFxOrg_Click);
+            this.menuAdvancedFxOrg.Click += new System.EventHandler(this.MenuAdvancedFxOrg_Click);
             // 
             // toolStripMenuItem3
             // 
@@ -251,14 +224,14 @@
             this.menuAutoUpdateCheck.Name = "menuAutoUpdateCheck";
             this.menuAutoUpdateCheck.Size = new System.Drawing.Size(136, 22);
             this.menuAutoUpdateCheck.Text = "Auto Check";
-            this.menuAutoUpdateCheck.Click += new System.EventHandler(this.menuAutoUpdateCheck_Click);
+            this.menuAutoUpdateCheck.Click += new System.EventHandler(this.MenuAutoUpdateCheck_Click);
             // 
             // checkNowToolStripMenuItem
             // 
             this.checkNowToolStripMenuItem.Name = "checkNowToolStripMenuItem";
             this.checkNowToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.checkNowToolStripMenuItem.Text = "Check Now";
-            this.checkNowToolStripMenuItem.Click += new System.EventHandler(this.checkNowToolStripMenuItem_Click);
+            this.checkNowToolStripMenuItem.Click += new System.EventHandler(this.CheckNowToolStripMenuItem_Click);
             // 
             // statusStrip
             // 
@@ -272,7 +245,7 @@
             this.statusStrip.TabIndex = 1;
             this.statusStrip.Text = "statusStrip1";
             this.statusStrip.Visible = false;
-            this.statusStrip.VisibleChanged += new System.EventHandler(this.statusStrip_VisibleChanged);
+            this.statusStrip.VisibleChanged += new System.EventHandler(this.StatusStrip_VisibleChanged);
             // 
             // statusLabelUpdate
             // 
@@ -280,7 +253,7 @@
             this.statusLabelUpdate.Size = new System.Drawing.Size(284, 17);
             this.statusLabelUpdate.Spring = true;
             this.statusLabelUpdate.Text = "Update status known";
-            this.statusLabelUpdate.Click += new System.EventHandler(this.statusLabelUpdate_Click);
+            this.statusLabelUpdate.Click += new System.EventHandler(this.StatusLabelUpdate_Click);
             // 
             // statusLabelIgnore
             // 
@@ -291,7 +264,7 @@
             this.statusLabelIgnore.Size = new System.Drawing.Size(45, 17);
             this.statusLabelIgnore.Text = "Ignore";
             this.statusLabelIgnore.Visible = false;
-            this.statusLabelIgnore.Click += new System.EventHandler(this.statusLabelIgnore_Click);
+            this.statusLabelIgnore.Click += new System.EventHandler(this.StatusLabelIgnore_Click);
             // 
             // statusLabelHide
             // 
@@ -301,7 +274,7 @@
             this.statusLabelHide.Name = "statusLabelHide";
             this.statusLabelHide.Size = new System.Drawing.Size(26, 17);
             this.statusLabelHide.Text = "Ok";
-            this.statusLabelHide.Click += new System.EventHandler(this.statusLabelHide_Click);
+            this.statusLabelHide.Click += new System.EventHandler(this.StatusLabelHide_Click);
             // 
             // stripEnableUpdateCheck
             // 
@@ -335,7 +308,7 @@
             this.statusLabelAutoYes.Name = "statusLabelAutoYes";
             this.statusLabelAutoYes.Size = new System.Drawing.Size(28, 17);
             this.statusLabelAutoYes.Text = "Yes";
-            this.statusLabelAutoYes.Click += new System.EventHandler(this.statusLabelAuto_Click);
+            this.statusLabelAutoYes.Click += new System.EventHandler(this.StatusLabelAuto_Click);
             // 
             // statusLabelAutoNo
             // 
@@ -345,7 +318,7 @@
             this.statusLabelAutoNo.Name = "statusLabelAutoNo";
             this.statusLabelAutoNo.Size = new System.Drawing.Size(27, 17);
             this.statusLabelAutoNo.Text = "No";
-            this.statusLabelAutoNo.Click += new System.EventHandler(this.statusLabelAuto_Click);
+            this.statusLabelAutoNo.Click += new System.EventHandler(this.StatusLabelAuto_Click);
             // 
             // MainForm
             // 
@@ -375,16 +348,13 @@
 
         private System.Windows.Forms.MenuStrip mainMenu;
         private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem menuLaunch;
         private System.Windows.Forms.ToolStripSeparator toolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem menuExit;
         private System.Windows.Forms.ToolStripMenuItem viewToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem menuStatusBar;
         private System.Windows.Forms.ToolStripMenuItem toolsToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem demoToolsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem calculatorsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem menuFileSize;
-        private System.Windows.Forms.ToolStripMenuItem skyToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripMenuItem2;
         private System.Windows.Forms.ToolStripMenuItem developerToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem menuCustomLoader;
