@@ -173,6 +173,7 @@
     <ClCompile Include="CampathDrawer.cpp" />
     <ClCompile Include="ClientTools.cpp" />
     <ClCompile Include="CommandSystem.cpp" />
+    <ClCompile Include="csgo_Audio.cpp" />
     <ClCompile Include="csgo_CBasePlayer.cpp" />
     <ClCompile Include="csgo_CHudDeathNotice.cpp" />
     <ClCompile Include="csgo_CCSGameMovement.cpp" />
@@ -187,7 +188,6 @@
     <ClCompile Include="csgo_S_StartSound.cpp" />
     <ClCompile Include="csgo_view.cpp" />
     <ClCompile Include="csgo_vphysics.cpp" />
-    <ClCompile Include="csgo_writeWaveConsoleCheck.cpp" />
     <ClCompile Include="d3d9Hooks.cpp" />
     <ClCompile Include="hlaeFolder.cpp" />
     <ClCompile Include="main.cpp" />
@@ -233,6 +233,7 @@
     <ClInclude Include="asmClassTools.h" />
     <ClInclude Include="ClientTools.h" />
     <ClInclude Include="CommandSystem.h" />
+    <ClInclude Include="csgo_Audio.h" />
     <ClInclude Include="csgo_CBasePlayer.h" />
     <ClInclude Include="csgo_CHudDeathNotice.h" />
     <ClInclude Include="csgo_CCSGameMovement.h" />
@@ -247,7 +248,6 @@
     <ClInclude Include="csgo_S_StartSound.h" />
     <ClInclude Include="csgo_view.h" />
     <ClInclude Include="csgo_vphysics.h" />
-    <ClInclude Include="csgo_writeWaveConsoleCheck.h" />
     <ClInclude Include="d3d9Hooks.h" />
     <ClInclude Include="hlaeFolder.h" />
     <ClInclude Include="MatRenderContextHook.h" />

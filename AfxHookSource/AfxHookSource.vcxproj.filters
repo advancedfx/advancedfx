@@ -132,9 +132,6 @@
     <ClCompile Include="CommandSystem.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
-    <ClCompile Include="csgo_writeWaveConsoleCheck.cpp">
-      <Filter>AfxHookSource</Filter>
-    </ClCompile>
     <ClCompile Include="ClientTools.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
@@ -182,6 +179,9 @@
     </ClCompile>
     <ClCompile Include="..\prop\AfxHookSource\SourceInterfaces.cpp">
       <Filter>prop\AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo_Audio.cpp">
+      <Filter>AfxHookSource</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -293,9 +293,6 @@
     <ClInclude Include="CommandSystem.h">
       <Filter>AfxHookSource</Filter>
     </ClInclude>
-    <ClInclude Include="csgo_writeWaveConsoleCheck.h">
-      <Filter>AfxHookSource</Filter>
-    </ClInclude>
     <ClInclude Include="ClientTools.h">
       <Filter>AfxHookSource</Filter>
     </ClInclude>
@@ -355,6 +352,9 @@
     </ClInclude>
     <ClInclude Include="..\prop\AfxHookSource\SourceInterfaces.h">
       <Filter>prop\AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo_Audio.h">
+      <Filter>AfxHookSource</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

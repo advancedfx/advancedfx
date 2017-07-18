@@ -7,12 +7,12 @@
 #include "csgo_CSkyBoxView.h"
 #include "csgo_view.h"
 #include "csgo_CViewRender.h"
-#include "csgo_writeWaveConsoleCheck.h"
 #include "RenderView.h"
 #include "ClientTools.h"
 #include "d3d9Hooks.h"
 #include "csgo_GlowOverlay.h"
 #include "MirvPgl.h"
+#include "csgo_Audio.h"
 
 #include <shared/StringTools.h>
 #include <shared/FileTools.h>
@@ -4538,19 +4538,10 @@ void CAfxStreams::Console_Record_Start()
 		{
 			m_StartMovieWavUsed = m_StartMovieWav;
 
-
 			if (m_StartMovieWavUsed)
 			{
-				csgo_writeWaveConsoleCheckOverride = true;
-
-				std::string startMovieWaveCmd("startmovie \"");
-				startMovieWaveCmd.append(ansiTakeDir);
-				startMovieWaveCmd.append("\\audio.wav\" wav");
-
-				g_VEngineClient->ExecuteClientCmd(startMovieWaveCmd.c_str());
-
-				//Tier0_Msg("Contrary to what is said nearby, recording will start instantly! :-)\n");
-				Tier0_Warning("The audio might be empty, because Valve removed code from startmovie for appending data to the WAV file!\n");
+				if (!csgo_Audio_StartRecording(ansiTakeDir.c_str()))
+					Tier0_Warning("Error: Could not start WAV audio recording!\n");
 			}
 		}
 		else
@@ -4571,8 +4562,7 @@ void CAfxStreams::Console_Record_End()
 
 		if (m_StartMovieWavUsed)
 		{
-			g_VEngineClient->ExecuteClientCmd("endmovie");
-			csgo_writeWaveConsoleCheckOverride = false;
+			csgo_Audio_EndRecording();
 		}
 
 		if (m_CamExportObj)
@@ -6821,6 +6811,8 @@ void CAfxStreams::BackUpMatVars()
 	m_OldMatDynamicTonemapping = m_MatDynamicTonemappingRef->GetInt();
 	m_OldMatMotionBlurEnabled = m_MatMotionBlurEnabledRef->GetInt();
 	m_OldMatForceTonemapScale = m_MatForceTonemapScale->GetFloat();
+	m_OldSndMuteLosefocus = m_SndMuteLosefocus->GetInt();
+	m_OldSndMixAsync = m_SndMixAsync->GetInt();
 }
 
 void CAfxStreams::SetMatVarsForStreams()
@@ -6831,6 +6823,8 @@ void CAfxStreams::SetMatVarsForStreams()
 	m_MatDynamicTonemappingRef->SetValue(0.0f);
 	m_MatMotionBlurEnabledRef->SetValue(0.0f);
 	m_MatForceTonemapScale->SetValue(m_NewMatForceTonemapScale);
+	m_SndMuteLosefocus->SetValue(0.0f);
+	m_SndMixAsync->SetValue(0.0f);
 }
 
 void CAfxStreams::RestoreMatVars()
@@ -6841,6 +6835,8 @@ void CAfxStreams::RestoreMatVars()
 	m_MatDynamicTonemappingRef->SetValue((float)m_OldMatDynamicTonemapping);
 	m_MatMotionBlurEnabledRef->SetValue((float)m_OldMatMotionBlurEnabled);
 	m_MatForceTonemapScale->SetValue(m_OldMatForceTonemapScale);
+	m_SndMuteLosefocus->SetValue((float)m_OldSndMuteLosefocus);
+	m_SndMixAsync->SetValue((float)m_OldSndMixAsync);
 }
 
 void CAfxStreams::EnsureMatVars()
@@ -6849,6 +6845,8 @@ void CAfxStreams::EnsureMatVars()
 	if(!m_MatDynamicTonemappingRef) m_MatDynamicTonemappingRef = new WrpConVarRef("mat_dynamic_tonemapping");
 	if(!m_MatMotionBlurEnabledRef) m_MatMotionBlurEnabledRef = new WrpConVarRef("mat_motion_blur_enabled");
 	if(!m_MatForceTonemapScale) m_MatForceTonemapScale = new WrpConVarRef("mat_force_tonemap_scale");
+	if (!m_SndMuteLosefocus) m_SndMuteLosefocus = new WrpConVarRef("snd_mute_losefocus");
+	if (!m_SndMixAsync) m_SndMixAsync = new WrpConVarRef("snd_mix_async");
 }
 
 void CAfxStreams::AddStream(CAfxRecordStream * stream)

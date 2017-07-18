@@ -43,7 +43,9 @@ AFXADDR_DEF(csgo_CSkyboxView_Draw_DSZ)
 //AFXADDR_DEF(csgo_CViewRender_Render)
 //AFXADDR_DEF(csgo_CViewRender_Render_DSZ)
 AFXADDR_DEF(csgo_CViewRender_RenderView_AfterVGui_DrawHud)
-AFXADDR_DEF(csgo_DS_CanRecord_ConsoleOpenCall)
+AFXADDR_DEF(csgo_CAudioXAudio2_vtable)
+AFXADDR_DEF(csgo_MIX_PaintChannels)
+AFXADDR_DEF(csgo_MIX_PaintChannels_DSZ)
 AFXADDR_DEF(csgo_SplineRope_CShader_vtable)
 AFXADDR_DEF(csgo_Spritecard_CShader_vtable)
 AFXADDR_DEF(csgo_UnlitGeneric_CShader_vtable)
@@ -58,7 +60,6 @@ AFXADDR_DEF(csgo_pLocalPlayer)
 AFXADDR_DEF(csgo_snd_mix_timescale_patch)
 AFXADDR_DEF(csgo_snd_mix_timescale_patch_DSZ)
 AFXADDR_DEF(csgo_view)
-AFXADDR_DEF(csgo_writeWaveConsoleOpenJNZ)
 AFXADDR_DEF(cstrike_gpGlobals_OFS_absoluteframetime)
 AFXADDR_DEF(cstrike_gpGlobals_OFS_curtime)
 AFXADDR_DEF(cstrike_gpGlobals_OFS_interpolation_amount)
@@ -213,85 +214,113 @@ void Addresses_InitEngineDll(AfxAddr engineDll, bool isCsgo)
 			}
 		}
 
-		// csgo_writeWaveConsoleOpenJNZ: // Checked 2017-05-13.
-		//
-		// The pattern seached is the check for the console being open at the beginning of a function
-		// that calls the function to write the WAV file (in case startmovie was told to do so) and
-		// that WAV write function refrences the ".WAV" string the _2nd_ time.
-		// So to get the function in IDA search for second usage of ".WAV" and search for
-		// refrence of that function.
+		// csgo_CAudioXAudio2_vtable: // Checked 2017-07-18.
 		{
 			DWORD addr = 0;
-			// Valve must have accidentally removed code for recording WAV audio with startmovie, not much I can do about now:
-			if(false) // !!!
 			{
 				ImageSectionsReader sections((HMODULE)engineDll);
 				if (!sections.Eof())
 				{
-					MemRange result = FindPatternString(sections.GetMemRange(), "55 8B EC 80 3D ?? ?? ?? ?? 00 53 56 57 0F 84 ?? ?? ?? ?? A1 ?? ?? ?? ?? B9 ?? ?? ?? ?? 8b 40 48 FF D0 84 C0 0F 85 ?? ?? ?? ??");
-					if (!result.IsEmpty())
+					sections.Next(); // skip .text
+					if (!sections.Eof())
 					{
-						addr = result.End - 6;
+						MemRange firstDataRange = sections.GetMemRange();
+
+						sections.Next(); // skip first .data
+						if (!sections.Eof())
+						{
+							MemRange result = FindCString(sections.GetMemRange(), ".?AVCAudioXAudio2@@");
+							if (!result.IsEmpty())
+							{
+								DWORD tmpAddr = result.Start;
+								tmpAddr -= 0x8;
+
+								result = FindBytes(firstDataRange, (char const *)&tmpAddr, sizeof(tmpAddr));
+								if (!result.IsEmpty())
+								{
+									DWORD tmpAddr = result.Start;
+									tmpAddr -= 0xC;
+
+									result = FindBytes(firstDataRange, (char const *)&tmpAddr, sizeof(tmpAddr));
+									if (!result.IsEmpty())
+									{
+										DWORD tmpAddr = result.Start;
+										tmpAddr += (1) * 4;
+
+										addr = tmpAddr;
+									}
+									else ErrorBox(MkErrStr(__FILE__, __LINE__));
+								}
+								else ErrorBox(MkErrStr(__FILE__, __LINE__));
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
 					}
 					else ErrorBox(MkErrStr(__FILE__, __LINE__));
 				}
 				else ErrorBox(MkErrStr(__FILE__, __LINE__));
 			}
-			if (addr)
-			{
-				AFXADDR_SET(csgo_writeWaveConsoleOpenJNZ, addr);
-			}
-			else
-			{
-				AFXADDR_SET(csgo_writeWaveConsoleOpenJNZ, 0x0);
-			}
+			AFXADDR_SET(csgo_CAudioXAudio2_vtable, addr);
 		}
 
-		// csgo_DS_CanRecord_ConsoleOpenCall: // Checked 2017-05-13.
-		//
-		// This is inside a function that is called in the CAudioDirectSound class
-		// (9th in vtable) before the "DS_STEREO" string reference and before
-		// the function that calls csgo_writeWaveConsoleOpenJNZ is called.
-		// It checks if a recording name has been set and if the console is open
-		// and a few other things.
-		// We match a pattern longer a bit in order to be able to tell it apart from
-		// a similar inlined version for screenshots, that doesn't check the time /
-		// frame / whatever count as our function does.
+		// csgo_MIX_PaintChannels: // Checked 2017-07-18.
 		{
 			DWORD addr = 0;
-			// Valve must have accidentally removed code for recording WAV audio with startmovie, not much I can do about now:
-			if (false) // !!!
 			{
 				ImageSectionsReader sections((HMODULE)engineDll);
 				if (!sections.Eof())
 				{
-					MemRange result = FindPatternString(sections.GetMemRange(), "80 3D ?? ?? ?? ?? 00 74 ?? A1 ?? ?? ?? ?? B9 ?? ?? ?? ?? 8B 40 48 FF D0 84 C0 75 ?? A1 ?? ?? ?? ?? 3B 05 ?? ?? ?? ??");
-					if (!result.IsEmpty())
+					MemRange textRange = sections.GetMemRange();
+					sections.Next(); // skip .text
+					if (!sections.Eof())
 					{
-						addr = result.End - 17;
+						MemRange firstDataRange = sections.GetMemRange();
+
+						MemRange result = FindCString(sections.GetMemRange(), "%d milliseconds \n");
+						if (!result.IsEmpty())
+						{
+							DWORD tmpAddr = result.Start;
+
+							result = FindBytes(textRange, (char const *)&tmpAddr, sizeof(tmpAddr));
+							if (!result.IsEmpty())
+							{
+								result = FindBytes(MemRange(result.End, textRange.End), (char const *)&tmpAddr, sizeof(tmpAddr));
+								if (!result.IsEmpty())
+								{
+									DWORD tmpAddr = result.Start;
+									tmpAddr -= 0xA;
+
+									result = FindPatternString(MemRange(tmpAddr - 0x1, tmpAddr - 0x1 + 0x7), "E8 ?? ?? ?? ?? FF D6");
+									if (!result.IsEmpty())
+									{
+										addr = tmpAddr;
+										addr = addr + 4 + *(DWORD *)addr; // get CALL address
+									}
+									else ErrorBox(MkErrStr(__FILE__, __LINE__));
+								}
+								else ErrorBox(MkErrStr(__FILE__, __LINE__));
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
 					}
 					else ErrorBox(MkErrStr(__FILE__, __LINE__));
 				}
 				else ErrorBox(MkErrStr(__FILE__, __LINE__));
 			}
-			if (addr)
-			{
-				AFXADDR_SET(csgo_DS_CanRecord_ConsoleOpenCall, addr);
-			}
-			else
-			{
-				AFXADDR_SET(csgo_DS_CanRecord_ConsoleOpenCall, 0x0);
-			}
+			AFXADDR_SET(csgo_MIX_PaintChannels, addr);
 		}
 	}
 	else
 	{
 		AFXADDR_SET(csgo_snd_mix_timescale_patch, 0x0);
 		AFXADDR_SET(csgo_S_StartSound_StringConversion, 0x0);
-		AFXADDR_SET(csgo_writeWaveConsoleOpenJNZ, 0x0);
-		AFXADDR_SET(csgo_DS_CanRecord_ConsoleOpenCall, 0x0);
+		AFXADDR_SET(csgo_CAudioXAudio2_vtable, 0x0);
+		AFXADDR_SET(csgo_MIX_PaintChannels, 0x0);
 	}
 	AFXADDR_SET(csgo_snd_mix_timescale_patch_DSZ, 0x08);
+	AFXADDR_SET(csgo_MIX_PaintChannels_DSZ, 0x9);
 }
 
 void Addresses_InitScaleformuiDll(AfxAddr scaleformuiDll, bool isCsgo)

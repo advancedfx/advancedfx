@@ -2311,10 +2311,6 @@ public:
 	/// <summary>Carry out initalization that cannot be done in DllMain</summary>
 	static void AfxStreamsInit(void);
 
-	/// <summary>Carry out shutdown that cannot be done in DllMain</summary>
-	static void AfxStreamsShutdown(void);
-
-
 	void OnMaterialSystem(SOURCESDK::IMaterialSystem_csgo * value);
 	void OnAfxBaseClientDll(IAfxBaseClientDll * value);
 	void OnShaderShadow(SOURCESDK::IShaderShadow_csgo * value);
@@ -2475,6 +2471,10 @@ private:
 	WrpConVarRef * m_MatMotionBlurEnabledRef;
 	int m_OldMatMotionBlurEnabled;
 	WrpConVarRef * m_MatForceTonemapScale;
+	int m_OldSndMuteLosefocus;
+	WrpConVarRef * m_SndMuteLosefocus;
+	int m_OldSndMixAsync;
+	WrpConVarRef * m_SndMixAsync;
 	float m_OldMatForceTonemapScale;
 	float m_NewMatForceTonemapScale;
 	float m_OriginalColorModulation[4];

@@ -29,13 +29,13 @@
 #include "AfxShaders.h"
 #include "csgo_CViewRender.h"
 #include "CommandSystem.h"
-#include "csgo_writeWaveConsoleCheck.h"
 #include "ClientTools.h"
 #include "MatRenderContextHook.h"
 //#include "csgo_IPrediction.h"
 #include "csgo_MemAlloc.h"
 #include "csgo_c_baseanimatingoverlay.h"
 #include "MirvPgl.h"
+#include "csgo_Audio.h"
 
 #include <set>
 #include <map>
@@ -767,6 +767,7 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 		MirvPgl::CheckStartedAndRestoreIfDown();
 		MirvPgl::ExecuteQueuedCommands();
 #endif
+		csgo_Audio_FRAME_START();
 		break;
 	case SOURCESDK::CSGO::FRAME_NET_UPDATE_START:
 		break;
@@ -1501,6 +1502,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 
 		// Init the hook early, so we don't run into issues with threading:
 		Hook_csgo_SndMixTimeScalePatch();
+		csgo_Audio_Install();
 	}
 	else
 	if(bFirstInputsystem && StringEndsWith( lpLibFileName, "inputsystem.dll"))
@@ -1544,7 +1546,6 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 
 		csgo_CSkyBoxView_Draw_Install();
 		csgo_CViewRender_Install();
-		Hook_csgo_writeWaveConsoleCheck();
 		Hook_C_BaseEntity_ToolRecordEnties();
 		Hook_csgo_PlayerAnimStateFix();
 	}
