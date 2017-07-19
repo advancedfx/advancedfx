@@ -1,5 +1,4 @@
 x64\injector.pdb
-AfxCppCli.pdb
 AfxHookSource.pdb
 HLAE.pdb
 injector.pdb

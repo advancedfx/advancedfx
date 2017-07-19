@@ -2,7 +2,6 @@ resources\*
 x64\AfxHook.dat
 x64\injector.exe
 advancedfx.org.url
-AfxCppCli.dll
 AfxHook.dat
 AfxHookSource.dll
 AfxHookSource_changelog.xml

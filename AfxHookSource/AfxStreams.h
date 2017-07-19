@@ -2342,6 +2342,15 @@ public:
 	void Console_StartMovieWav_set(bool value);
 	bool Console_StartMovieWav_get();	
 
+	void Console_MatPostprocessEnable_set(int value);
+	int Console_MatPostprocessEnable_get();
+
+	void Console_MatDynamicToneMapping_set(int value);
+	int Console_MatDynamicToneMapping_get();
+
+	void Console_MatMotionBlurEnabled_set(int value);
+	int Console_MatMotionBlurEnabled_get();
+
 	void Console_MatForceTonemapScale_set(float value);
 	float Console_MatForceTonemapScale_get();
 
@@ -2463,24 +2472,30 @@ private:
 	bool m_GameRecording;
 
 	WrpConVarRef * m_HostFrameRate;
-	int m_OldMatQueueMode;
+
 	WrpConVarRef * m_MatPostProcessEnableRef;
 	int m_OldMatPostProcessEnable;
+	int m_NewMatPostProcessEnable = 0;
+
 	WrpConVarRef * m_MatDynamicTonemappingRef;
 	int m_OldMatDynamicTonemapping;
+	int m_NewMatDynamicTonemapping = 0;
+
 	WrpConVarRef * m_MatMotionBlurEnabledRef;
 	int m_OldMatMotionBlurEnabled;
+	int m_NewMatMotionBlurEnabled = 0;
+
 	WrpConVarRef * m_MatForceTonemapScale;
-	int m_OldSndMuteLosefocus;
-	WrpConVarRef * m_SndMuteLosefocus;
-	int m_OldSndMixAsync;
-	WrpConVarRef * m_SndMixAsync;
 	float m_OldMatForceTonemapScale;
-	float m_NewMatForceTonemapScale;
-	float m_OriginalColorModulation[4];
-	bool m_ColorModulationOverride;
-	bool m_BlendOverride;
-	float m_OverrideColor[4];
+	float m_NewMatForceTonemapScale = 1.0f;
+
+	WrpConVarRef * m_SndMuteLosefocus;
+	int m_OldSndMuteLosefocus;
+
+	WrpConVarRef * m_SndMixAsync;
+	int m_OldSndMixAsync;
+
+
 	std::wstring m_TakeDir;
 	//ITexture_csgo * m_RgbaRenderTarget;
 	SOURCESDK::ITexture_csgo * m_RenderTargetDepthF;

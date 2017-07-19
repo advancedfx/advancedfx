@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.25.0</version>
+<time>2017-07-18T09:29Z</time>
+<changes>
+<change type="added">
+Added own audio recording to mirv_streams, since Valve's startmovie wav audio is still broken. Please note: It is yet unknown if this works on all Windows operating systems, it might not work i.e. when DirectSound is used instead of XAudio2. Also please note that it's not possible to mix exactly the length of the recording, up to 12 ms might be missing at the end of the recording.
+</change>
+<change type="added">
+Exposed matPostprocessEnable, matDynamicTonemapping, matMotionBlurEnabled to mirv_streams record. 
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.24.5</version>
 <time>2017-07-08T14:48Z</time>
 <changes>

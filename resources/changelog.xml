@@ -6,16 +6,18 @@
 
 <release>
 <name>HLAE</name>
-<version>2.x.x</version>
-<time>2017-07-12T20:09Z</time>
+<version>2.35.0</version>
+<time>2017-07-18T09:29Z</time>
 <changes>
+<change type="updated">
+Included AfxHookSource 1.25.0 (2017-07-18T09:29Z).
+</change>
 <change type="removed">
 Removed AfxHookGoldSrc and all related tools: https://twitter.com/dtugend/status/884780856929341442<br />
 The code and downloads of the last version with AfxHookGoldSrc support can be found here: https://github.com/ripieces/advancedfx/tree/v2.34.5
 </change>
 </changes>
 </release>
-
 
 
 <release>

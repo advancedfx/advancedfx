@@ -4266,9 +4266,6 @@ CAfxStreams::CAfxStreams()
 , m_MatDynamicTonemappingRef(0)
 , m_MatMotionBlurEnabledRef(0)
 , m_MatForceTonemapScale(0)
-, m_NewMatForceTonemapScale(1.0f)
-, m_ColorModulationOverride(false)
-, m_BlendOverride(false)
 , m_FormatBmpAndNotTga(false)
 , m_Current_View_Render_ThreadId(0)
 //, m_RgbaRenderTarget(0)
@@ -4277,14 +4274,6 @@ CAfxStreams::CAfxStreams()
 , m_HostFrameRate(0)
 , m_GameRecording(false)
 {
-	m_OverrideColor[0] =
-	m_OverrideColor[1] =
-	m_OverrideColor[2] =
-	m_OverrideColor[3] =
-	m_OriginalColorModulation[0] =
-	m_OriginalColorModulation[1] =
-	m_OriginalColorModulation[2] =
-	m_OriginalColorModulation[3] = 1;
 }
 
 CAfxStreams::~CAfxStreams()
@@ -4442,6 +4431,35 @@ bool CAfxStreams::Console_StartMovieWav_get()
 	return m_StartMovieWav;
 }
 
+void CAfxStreams::Console_MatPostprocessEnable_set(int value)
+{
+	m_NewMatPostProcessEnable = value;
+}
+
+int CAfxStreams::Console_MatPostprocessEnable_get()
+{
+	return m_NewMatPostProcessEnable;
+}
+
+void CAfxStreams::Console_MatDynamicToneMapping_set(int value)
+{
+	m_NewMatDynamicTonemapping = value;
+}
+
+int CAfxStreams::Console_MatDynamicToneMapping_get()
+{
+	return m_NewMatDynamicTonemapping;
+}
+
+void CAfxStreams::Console_MatMotionBlurEnabled_set(int value)
+{
+	m_NewMatMotionBlurEnabled = value;
+}
+
+int CAfxStreams::Console_MatMotionBlurEnabled_get()
+{
+	return m_NewMatMotionBlurEnabled;
+}
 
 void CAfxStreams::Console_MatForceTonemapScale_set(float value)
 {
@@ -6819,9 +6837,9 @@ void CAfxStreams::SetMatVarsForStreams()
 {
 	EnsureMatVars();
 
-	m_MatPostProcessEnableRef->SetValue(0.0f);
-	m_MatDynamicTonemappingRef->SetValue(0.0f);
-	m_MatMotionBlurEnabledRef->SetValue(0.0f);
+	m_MatPostProcessEnableRef->SetValue((float)m_NewMatPostProcessEnable);
+	m_MatDynamicTonemappingRef->SetValue((float)m_NewMatDynamicTonemapping);
+	m_MatMotionBlurEnabledRef->SetValue((float)m_NewMatMotionBlurEnabled);
 	m_MatForceTonemapScale->SetValue(m_NewMatForceTonemapScale);
 	m_SndMuteLosefocus->SetValue(0.0f);
 	m_SndMixAsync->SetValue(0.0f);

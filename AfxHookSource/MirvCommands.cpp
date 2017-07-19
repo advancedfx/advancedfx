@@ -685,8 +685,55 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					);
 					return;
 				}
-				else
-				if(!_stricmp(cmd2, "matForceTonemapScale"))
+				else if (!_stricmp(cmd2, "matPostprocessEnable"))
+				{
+					if (4 <= argc)
+					{
+						char const * cmd3 = args->ArgV(3);
+						g_AfxStreams.Console_MatPostprocessEnable_set(atoi(cmd3));
+						return;
+					}
+
+					Tier0_Msg(
+						"mirv_streams record matPostprocessEnable <iValue> - Force integer value <iValue> for mat_postprocess_enable during recording (changing not recommended).\n"
+						"Current value: %i.\n",
+						g_AfxStreams.Console_MatPostprocessEnable_get()
+					);
+					return;
+				}
+				else if (!_stricmp(cmd2, "matDynamicTonemapping"))
+				{
+					if (4 <= argc)
+					{
+						char const * cmd3 = args->ArgV(3);
+						g_AfxStreams.Console_MatDynamicToneMapping_set(atoi(cmd3));
+						return;
+					}
+
+					Tier0_Msg(
+						"mirv_streams record matDynamicTonemapping <iValue> - Force integer value <iValue> for mat_dynamic_tonemapping during recording (changing not recommended).\n"
+						"Current value: %i.\n",
+						g_AfxStreams.Console_MatDynamicToneMapping_get()
+					);
+					return;
+				}
+				else if (!_stricmp(cmd2, "matMotionBlurEnabled"))
+				{
+					if (4 <= argc)
+					{
+						char const * cmd3 = args->ArgV(3);
+						g_AfxStreams.Console_MatMotionBlurEnabled_set(atoi(cmd3));
+						return;
+					}
+
+					Tier0_Msg(
+						"mirv_streams record matMotionBlurEnabled <iValue> - Force integer value <iValue> for mat_motion_blur_enabled during recording (changing not recommended).\n"
+						"Current value: %i.\n",
+						g_AfxStreams.Console_MatMotionBlurEnabled_get()
+					);
+					return;
+				}
+				else if(!_stricmp(cmd2, "matForceTonemapScale"))
 				{
 					if(4 <= argc)
 					{
@@ -696,7 +743,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					}
 
 					Tier0_Msg(
-						"mirv_streams record matForceTonemapScale <fValue> - Force floating point value <fValue> for mat_force_tonemap_scale during recording.\n"
+						"mirv_streams record matForceTonemapScale <fValue> - Force floating point value <fValue> for mat_force_tonemap_scale during recording (value > 0 recommended).\n"
 						"Current value: %f.\n",
 						g_AfxStreams.Console_MatForceTonemapScale_get()
 					);
@@ -788,8 +835,11 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 				"mirv_streams record end - End recording.\n" // line rewritten 2017-05-01T16:20Z to avoid trivial copyright issues.
 				"mirv_streams record format [...] - Set/get file format.\n"
 				"mirv_streams record presentOnScreen [...] - Controls screen presentation during recording.\n"
-				"mirv_streams record matForceTonemapScale [...] - Controls mat_force_tonemap_scale variable during recording.\n"
-				"mirv_streams record startMovieWav [...] - Controls whether startmovie shall be used for automatically recording audio.\n"
+				"mirv_streams record matPostprocessEnable [...] - Control forcing of mat_postprocess_enable.\n"
+				"mirv_streams record matDynamicTonemapping [...] - Control forcing of mat_dynamic_tonemapping.\n"
+				"mirv_streams record matMotionBlurEnabled [...] - Control forcing of mat_motion_blur_enabled.\n"
+				"mirv_streams record matForceTonemapScale [...] - Control forcing of mat_force_tonemap_scale.\n"
+				"mirv_streams record startMovieWav [...] - Controls WAV audio recording.\n"
 				"mirv_streams record bvh [...] - Controls the HLAE/BVH Camera motion data capture output.\n"
 				"mirv_streams record cam [...] - Controls the camera motion data capture output (can be imported with mirv_camio).\n"
 				"mirv_streams record agr [...] - Controls afxGameRecord (.agr) game state recording [still in developement, file format will have breaking changes].\n"
