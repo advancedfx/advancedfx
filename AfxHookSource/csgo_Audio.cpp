@@ -160,7 +160,7 @@ void __stdcall touring_CAudioXAudio2_UnkSupplyAudio(DWORD * this_ptr, int numCha
 			os << g_CAudioXAudio2_RecordAudio_Dir << "\\audio_" << this_ptr << ".wav";
 			std::string fileName = os.str();
 
-			it = g_CAudioXAudio2_RecordAudio_Files.emplace(std::piecewise_construct, std::forward_as_tuple(this_ptr), std::forward_as_tuple(fileName.c_str(), numChannels + 2)).first;
+			it = g_CAudioXAudio2_RecordAudio_Files.emplace(std::piecewise_construct, std::forward_as_tuple(this_ptr), std::forward_as_tuple(fileName.c_str(), numChannels)).first;
 		}
 
 		const int samples = 512;
