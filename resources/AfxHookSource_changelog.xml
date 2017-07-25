@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.25.2</version>
+<time>2017-07-25T16:01Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_calcs handle key calc: Should now defer the screen player side correctly (added a new hook into the CS:GO client.dll for that).
+</change>
+<change type="fixed">
+Fixed AfxHookSource not working with TF2 at all (even those commands that should work) and similar Source engine games. Please note: This will not fix L4D2 and GMOD, this is a different issue (interface name collision / wrong interface layout in AfxHookSource for those games).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.25.1</version>
 <time>2017-07-18T09:46Z</time>
 <changes>

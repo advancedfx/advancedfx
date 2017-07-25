@@ -49,6 +49,7 @@ AFXADDR_DEF(csgo_MIX_PaintChannels_DSZ)
 AFXADDR_DEF(csgo_SplineRope_CShader_vtable)
 AFXADDR_DEF(csgo_Spritecard_CShader_vtable)
 AFXADDR_DEF(csgo_UnlitGeneric_CShader_vtable)
+AFXADDR_DEF(csgo_Unknown_GetTeamsSwappedOnScreen)
 AFXADDR_DEF(csgo_VertexLitGeneric_CShader_vtable)
 AFXADDR_DEF(csgo_S_StartSound_StringConversion)
 AFXADDR_DEF(csgo_Scaleformui_CUnkown_Loader)
@@ -1801,6 +1802,32 @@ void Addresses_InitClientDll(AfxAddr clientDll, bool isCsgo)
 			AFXADDR_SET(csgo_mystique_animation, addr);
 		}
 		*/
+
+		
+		// csgo_Unknown_GetTeamsSwappedOnScreen:
+		//
+		// This function holds the second and third reference to global class pointer of "cl_spec_swapplayersides".
+		// It's most reliable to find it by pattern matching I think :/
+		{
+			DWORD addr = 0;
+
+			ImageSectionsReader sections((HMODULE)clientDll);
+			if (!sections.Eof())
+			{
+				MemRange textRange = sections.GetMemRange();
+
+				MemRange result = FindPatternString(textRange, "8B 0D ?? ?? ?? ?? 53 56 E8 ?? ?? ?? ?? 8B 15 ?? ?? ?? ??");
+
+				if (!result.IsEmpty())
+					addr = result.Start;
+				else
+					ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			AFXADDR_SET(csgo_Unknown_GetTeamsSwappedOnScreen, addr);
+		}
+
 	}
 	else
 	{
@@ -1833,6 +1860,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, bool isCsgo)
 		AFXADDR_SET(csgo_CCSViewRender_RenderSmokeOverlay_OnCompareAlphaBeforeDraw, 0x0);
 		AFXADDR_SET(csgo_CCSViewRender_RenderSmokeOverlay_OnBeforeExitFunc, 0x0);
 		//AFXADDR_SET(csgo_mystique_animation, 0x0);
+		AFXADDR_SET(csgo_Unknown_GetTeamsSwappedOnScreen, 0x0);
 	}
 
 	//AFXADDR_SET(csgo_CPredictionCopy_TransferData_DSZ, 0x0a);

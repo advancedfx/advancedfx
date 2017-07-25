@@ -241,6 +241,8 @@ private:
 	int m_Index;
 };
 
+typedef bool(*csgon_fnPlayerSidesWappedOnScreen_t)(void);
+
 class CMirvHandleKeyCalc : public CMirvHandleCalc
 {
 public:
@@ -254,17 +256,21 @@ public:
 
 	virtual bool CalcHandle(SOURCESDK::CSGO::CBaseHandle & outHandle)
 	{
-		bool swapPlayerSide = 0 < m_ClSpecSwapPlayerSides.GetInt();
+		// Left screen side keys: 1, 2, 3, 4, 5
+		// Right screen side keys: 6, 7, 8, 9, 0
+
+		csgon_fnPlayerSidesWappedOnScreen_t fnPlayerSidesWappedOnScreen = (csgon_fnPlayerSidesWappedOnScreen_t)AFXADDR_GET(csgo_Unknown_GetTeamsSwappedOnScreen);
+
+		bool swapPlayerSide = fnPlayerSidesWappedOnScreen && fnPlayerSidesWappedOnScreen();
 
 		int nr = ((m_Key +9) % 10);
 
-		if (swapPlayerSide) nr = (nr + 5) % 10; // yes this is lazy but gets the job done I guess.
+		bool isOtherScreenSide = 0 != ((nr / 5) % 2);
 
-		int team = (nr / 5) % 2;
 		int slot = (nr % 5);
 
-		int ctSlot = 0;
-		int tSlot = 0;
+		int slotCT = 0;
+		int slotT = 0;
 
 		WrpGlobals * gl = g_Hook_VClient_RenderView.GetGlobals();
 		int imax = gl ? gl->maxclients_get() : 0;
@@ -277,23 +283,25 @@ public:
 			{
 				int be_team = be->GetTeamNumber();
 
-				if (3 == be_team)
+				if (3 == be_team) // CT
 				{
-					if (0 == team && ctSlot == slot)
+					if (isOtherScreenSide == swapPlayerSide && slotCT == slot)
 					{
 						outHandle = ce->GetRefEHandle();
 						return true;
 					}
-					++ctSlot;
+
+					++slotCT;
 				}
-				else if (2 == be_team)
+				else if (2 == be_team) // T
 				{
-					if (1 == team && tSlot == slot)
+					if (isOtherScreenSide != swapPlayerSide && slotT == slot)
 					{
 						outHandle = ce->GetRefEHandle();
 						return true;
 					}
-					++tSlot;
+
+					++slotT;
 				}
 			}
 		}

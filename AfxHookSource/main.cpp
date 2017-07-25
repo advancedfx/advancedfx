@@ -1439,6 +1439,7 @@ void CommonHooks()
 
 void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 {
+	static bool bFirstLauncher = true;
 	static bool bFirstClient = true;
 	static bool bFirstEngine = true;
 	static bool bFirstInputsystem = true;
@@ -1462,6 +1463,14 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 	fflush(f1);
 #endif
 
+	if (bFirstLauncher && StringEndsWith(lpLibFileName, "launcher.dll"))
+	{
+		bFirstLauncher = false;
+
+		InterceptDllCall(hModule, "Kernel32.dll", "LoadLibraryExA", (DWORD)&new_LoadLibraryExA);
+		InterceptDllCall(hModule, "Kernel32.dll", "LoadLibraryA", (DWORD)&new_LoadLibraryA);
+	}
+	else
 	if(bFirstfilesystem_stdio && StringEndsWith( lpLibFileName, "filesystem_steam.dll")) // v34
 	{
 		bFirstfilesystem_stdio = false;
