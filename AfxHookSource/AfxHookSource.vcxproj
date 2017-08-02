@@ -151,6 +151,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\prop\AfxHookSource\SourceSdkShared.cpp" />
     <ClCompile Include="..\prop\shared\AfxMath.cpp" />
     <ClCompile Include="..\shared\binutils.cpp" />
     <ClCompile Include="..\shared\bvhexport.cpp" />
@@ -173,6 +174,7 @@
     <ClCompile Include="CampathDrawer.cpp" />
     <ClCompile Include="ClientTools.cpp" />
     <ClCompile Include="CommandSystem.cpp" />
+    <ClCompile Include="csgo\ClientToolsCsgo.cpp" />
     <ClCompile Include="csgo_Audio.cpp" />
     <ClCompile Include="csgo_CBasePlayer.cpp" />
     <ClCompile Include="csgo_CHudDeathNotice.cpp" />
@@ -205,6 +207,14 @@
     <ClCompile Include="..\shared\StringTools.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\prop\AfxHookSource\SourceSdkShared.h" />
+    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\basehandle.h" />
+    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\const.h" />
+    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\engine\ishadowmgr.h" />
+    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\iclientrenderable.h" />
+    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\ihandleentity.h" />
+    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\toolframework\itoolentity.h" />
+    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\toolframework\itoolframework.h" />
     <ClInclude Include="..\prop\shared\AfxMath.h" />
     <ClInclude Include="..\shared\binutils.h" />
     <ClInclude Include="..\shared\bvhexport.h" />
@@ -233,6 +243,7 @@
     <ClInclude Include="asmClassTools.h" />
     <ClInclude Include="ClientTools.h" />
     <ClInclude Include="CommandSystem.h" />
+    <ClInclude Include="csgo\ClientToolsCsgo.h" />
     <ClInclude Include="csgo_Audio.h" />
     <ClInclude Include="csgo_CBasePlayer.h" />
     <ClInclude Include="csgo_CHudDeathNotice.h" />

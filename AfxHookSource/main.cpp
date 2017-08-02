@@ -30,6 +30,7 @@
 #include "csgo_CViewRender.h"
 #include "CommandSystem.h"
 #include "ClientTools.h"
+#include "csgo/ClientToolsCsgo.h"
 #include "MatRenderContextHook.h"
 //#include "csgo_IPrediction.h"
 #include "csgo_MemAlloc.h"
@@ -109,7 +110,8 @@ public:
 
 	virtual void PostToolMessage(SOURCESDK::HTOOLHANDLE hEntity, SOURCESDK::KeyValues_something *msg )
 	{
-		g_ClientTools.OnPostToolMessage((SOURCESDK::CSGO::HTOOLHANDLE)hEntity, (SOURCESDK::CSGO::KeyValues *)msg);
+		if(CClientTools * instance = CClientTools::Instance()) instance->OnPostToolMessage(hEntity, msg);
+
 		g_Engine_ClientEngineTools->PostToolMessage(hEntity, msg);
 	}
 	virtual void AdjustEngineViewport( int& x, int& y, int& width, int& height )
@@ -151,7 +153,13 @@ public:
 
 	virtual bool InToolMode()
 	{
-		return g_Engine_ClientEngineTools->InToolMode() || g_ClientTools.GetRecording();
+		if (CClientTools * instance = CClientTools::Instance())
+		{
+			if (instance->GetRecording())
+				return true;
+		}
+
+		return g_Engine_ClientEngineTools->InToolMode();
 	}
 
 } g_ClientEngineTools;
@@ -372,6 +380,21 @@ void * HookInterfaceFn(void * iface, int idx, void * fn)
 	}
 
 	return ret;
+}
+
+void Shared_BeforeFrameRenderStart(void)
+{
+	if (CClientTools * instance = CClientTools::Instance()) instance->OnBeforeFrameRenderStart();
+}
+
+void Shared_AfterFrameRenderEnd(void)
+{
+	if (CClientTools * instance = CClientTools::Instance()) instance->OnAfterFrameRenderEnd();
+}
+
+void Shared_Shutdown(void)
+{
+	if (CClientTools * instance = CClientTools::Instance()) delete instance;
 }
 
 bool g_DebugEnabled = false;
@@ -609,7 +632,9 @@ void CAfxBaseClientDll::Shutdown(void)
 
 #ifdef AFX_MIRV_PGL
 	MirvPgl::Shutdown();
-#endif	
+#endif
+
+	Shared_Shutdown();
 
 	m_Parent->Shutdown();
 }
@@ -775,6 +800,8 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 		firstFrameAfterNetUpdateEnd = true;
 		break;
 	case SOURCESDK::CSGO::FRAME_RENDER_START:
+		Shared_BeforeFrameRenderStart();
+
 		g_csgo_FirstFrameAfterNetUpdateEnd = firstFrameAfterNetUpdateEnd;
 		firstFrameAfterNetUpdateEnd = false;
 
@@ -789,6 +816,7 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 	switch (curStage)
 	{
 	case SOURCESDK::CSGO::FRAME_RENDER_END:
+		Shared_AfterFrameRenderEnd();
 		break;
 	}
 }
@@ -1138,7 +1166,8 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 
 			SOURCESDK::g_Entitylist_csgo = (SOURCESDK::IClientEntityList_csgo *)old_Client_CreateInterface(VCLIENTENTITYLIST_INTERFACE_VERSION_CSGO, NULL);
 
-			g_ClientTools.SetClientTools((SOURCESDK::CSGO::IClientTools *)old_Client_CreateInterface(SOURCESDK_CSGO_VCLIENTTOOLS_INTERFACE_VERSION, NULL));
+			if (SOURCESDK::CSGO::IClientTools * iface = (SOURCESDK::CSGO::IClientTools *)old_Client_CreateInterface(SOURCESDK_CSGO_VCLIENTTOOLS_INTERFACE_VERSION, NULL))
+				new CClientToolsCsgo(iface);
 		}
 	}
 
@@ -1555,7 +1584,6 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 
 		csgo_CSkyBoxView_Draw_Install();
 		csgo_CViewRender_Install();
-		Hook_C_BaseEntity_ToolRecordEnties();
 		Hook_csgo_PlayerAnimStateFix();
 	}
 	else

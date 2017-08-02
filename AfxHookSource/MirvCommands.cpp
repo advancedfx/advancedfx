@@ -21,7 +21,7 @@
 #include "aiming.h"
 #include "CommandSystem.h"
 #include <shared/binutils.h>
-#include "ClientTools.h"
+#include "csgo/ClientToolsCSgo.h"
 #include "csgo_CBasePlayer.h"
 #include "MirvInputMem.h"
 #include "csgo_CCSGameMovement.h"
@@ -187,26 +187,15 @@ CON_COMMAND(__mirv_ct, "")
 	{
 		char const * cmd1 = args->ArgV(1);
 
-		if (!_stricmp("start", cmd1))
-		{
-
-			g_ClientTools.StartRecording(L"afxGameRecord.agr");
-		}
-		else
-		if (!_stricmp("end", cmd1))
-		{
-			g_ClientTools.EndRecording();
-		}
-		else
 		if (!_stricmp("debug", cmd1) && 3 <= argc)
 		{
-			g_ClientTools.DebugEntIndex(atoi(args->ArgV(2)));
+			if(CClientToolsCsgo * instance = CClientToolsCsgo::Instance()) instance->DebugEntIndex(atoi(args->ArgV(2)));
 		}
 
 	}
 }
 
-CON_COMMAND(__mirv_test5, "")
+CON_COMMAND(__mirv_addr, "")
 {
 	int argc = args->ArgC();
 
@@ -257,6 +246,8 @@ CON_COMMAND(__mirv_test5, "")
 			}
 		}
 	}
+	else
+		Tier0_Msg("__mirv_addr <moduleName> <hexPatternString>\n");
 }
 
 CON_COMMAND(__mirv_test4, "")

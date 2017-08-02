@@ -9,6 +9,7 @@
 #include "csgo_CViewRender.h"
 #include "RenderView.h"
 #include "ClientTools.h"
+#include "csgo/ClientToolsCsgo.h"
 #include "d3d9Hooks.h"
 #include "csgo_GlowOverlay.h"
 #include "MirvPgl.h"
@@ -4524,7 +4525,7 @@ void CAfxStreams::Console_Record_Start()
 			std::wstring fileName(m_TakeDir);
 			fileName.append(L"\\afxGameRecord.agr");
 
-			g_ClientTools.StartRecording(fileName.c_str());
+			if(CClientTools * instance = CClientTools::Instance()) instance->StartRecording(fileName.c_str());
 		}
 
 		if (m_CamBvh)
@@ -4601,7 +4602,7 @@ void CAfxStreams::Console_Record_End()
 
 		if (m_GameRecording)
 		{
-			g_ClientTools.EndRecording();
+			if (CClientTools * instance = CClientTools::Instance()) instance->EndRecording();
 		}
 
 		for(std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
@@ -6165,6 +6166,14 @@ void CAfxStreams::Console_GameRecording(IWrpCommandArgs * args)
 		return;
 	}
 
+	CClientToolsCsgo * clientTools = CClientToolsCsgo::Instance();
+
+	if (!clientTools)
+	{
+		Tier0_Warning("Error: Feature not available!\n");
+		return;
+	}
+
 	if (2 <= argc)
 	{
 		char const * cmd1 = args->ArgV(1);
@@ -6193,7 +6202,7 @@ void CAfxStreams::Console_GameRecording(IWrpCommandArgs * args)
 			{
 				char const * cmd2 = args->ArgV(2);
 
-				g_ClientTools.RecordCamera_set(0 != atoi(cmd2));
+				clientTools->RecordCamera_set(0 != atoi(cmd2));
 				return;
 			}
 
@@ -6201,7 +6210,7 @@ void CAfxStreams::Console_GameRecording(IWrpCommandArgs * args)
 				"%s recordCamera 0|1 - Enable (1) / Disable (0) recording of main camera (includes FOV).\n"
 				"Current value: %i.\n"
 				, prefix
-				, g_ClientTools.RecordCamera_get() ? 1 : 0
+				, clientTools->RecordCamera_get() ? 1 : 0
 			);
 			return;
 		}
@@ -6211,7 +6220,7 @@ void CAfxStreams::Console_GameRecording(IWrpCommandArgs * args)
 			{
 				char const * cmd2 = args->ArgV(2);
 
-				g_ClientTools.RecordPlayers_set(0 != atoi(cmd2));
+				clientTools->RecordPlayers_set(0 != atoi(cmd2));
 				return;
 			}
 
@@ -6219,7 +6228,7 @@ void CAfxStreams::Console_GameRecording(IWrpCommandArgs * args)
 				"%s recordPlayers 0|1 - Enable (1) / Disable (0) recording of players.\n"
 				"Current value: %i.\n"
 				, prefix
-				, g_ClientTools.RecordPlayers_get() ? 1 : 0
+				, clientTools->RecordPlayers_get() ? 1 : 0
 			);
 			return;
 		}
@@ -6229,7 +6238,7 @@ void CAfxStreams::Console_GameRecording(IWrpCommandArgs * args)
 			{
 				char const * cmd2 = args->ArgV(2);
 
-				g_ClientTools.RecordWeapons_set(0 != atoi(cmd2));
+				clientTools->RecordWeapons_set(0 != atoi(cmd2));
 				return;
 			}
 
@@ -6237,7 +6246,7 @@ void CAfxStreams::Console_GameRecording(IWrpCommandArgs * args)
 				"%s recordWeapons 0|1 - Enable (1) / Disable (0) recording of weapons.\n"
 				"Current value: %i.\n"
 				, prefix
-				, g_ClientTools.RecordWeapons_get() ? 1 : 0
+				, clientTools->RecordWeapons_get() ? 1 : 0
 			);
 			return;
 		}
@@ -6247,7 +6256,7 @@ void CAfxStreams::Console_GameRecording(IWrpCommandArgs * args)
 			{
 				char const * cmd2 = args->ArgV(2);
 
-				g_ClientTools.RecordProjectiles_set(0 != atoi(cmd2));
+				clientTools->RecordProjectiles_set(0 != atoi(cmd2));
 				return;
 			}
 
@@ -6255,7 +6264,7 @@ void CAfxStreams::Console_GameRecording(IWrpCommandArgs * args)
 				"%s recordProjectiles 0|1 - Enable (1) / Disable (0) recording of Projectiles.\n"
 				"Current value: %i.\n"
 				, prefix
-				, g_ClientTools.RecordProjectiles_get() ? 1 : 0
+				, clientTools->RecordProjectiles_get() ? 1 : 0
 			);
 			return;
 		}
@@ -6265,7 +6274,7 @@ void CAfxStreams::Console_GameRecording(IWrpCommandArgs * args)
 			{
 				char const * cmd2 = args->ArgV(2);
 
-				g_ClientTools.RecordViewModel_set(0 != atoi(cmd2));
+				clientTools->RecordViewModel_set(0 != atoi(cmd2));
 				return;
 			}
 
@@ -6273,7 +6282,7 @@ void CAfxStreams::Console_GameRecording(IWrpCommandArgs * args)
 				"%s recordViewModel 0|1 - Enable (1) / Disable (0) recording of view models.\n"
 				"Current value: %i.\n"
 				, prefix
-				, g_ClientTools.RecordViewModel_get() ? 1 : 0
+				, clientTools->RecordViewModel_get() ? 1 : 0
 			);
 			return;
 		}
@@ -6281,17 +6290,16 @@ void CAfxStreams::Console_GameRecording(IWrpCommandArgs * args)
 
 	Tier0_Msg(
 		"%s enabled [...]\n"
+		"-- Options bellow for backward compatibility only, use mirv_agr instead to configure newer options: --\n"
 		"%s recordCamera [...]\n"
 		"%s recordPlayers [...]\n"
 		"%s recordWeapons [...]\n"
 		"%s recordProjectiles [...]\n"
-		//"%s recordViewModel [...]\n"
 		, prefix
 		, prefix
 		, prefix
 		, prefix
 		, prefix
-		//, prefix
 	);
 }
 

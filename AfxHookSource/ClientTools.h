@@ -5,25 +5,28 @@
 #include <string>
 #include <map>
 
-bool Hook_C_BaseEntity_ToolRecordEnties(void);
-
-class ClientTools
+class CClientTools abstract
 {
 public:
-	ClientTools();
+	static inline CClientTools * Instance(void)
+	{
+		return m_Instance;
+	}
 
-	void DebugEntIndex(int index);
+	CClientTools();
+	virtual ~CClientTools();
 
-	void SetClientTools(SOURCESDK::CSGO::IClientTools * clientTools);
+	virtual void OnPostToolMessage(void * hEntity, void * msg);
 
-	void OnPostToolMessage(SOURCESDK::CSGO::HTOOLHANDLE hEntity, SOURCESDK::CSGO::KeyValues * msg);
+	virtual void OnBeforeFrameRenderStart(void);
 
-	void OnC_BaseEntity_ToolRecordEntities(void);
+	virtual void OnAfterFrameRenderEnd(void);
 
 	bool GetRecording(void);
 
-	void StartRecording(wchar_t const * fileName);
-	void EndRecording();
+	virtual void StartRecording(wchar_t const * fileName);
+
+	virtual void EndRecording();
 
 	bool RecordWeapons_get(void)
 	{
@@ -75,13 +78,24 @@ public:
 		m_RecordViewModel = value;
 	}
 
+protected:
+	void WriteDictionary(char const * value);
+
+	void Write(bool value);
+	void Write(int value);
+	void Write(float value);
+	void Write(double value);
+	void Write(char const * value); // Consider using WriteDictionary instead (if string is long enough and likely to repeat often).
+	void Write(SOURCESDK::Vector const & value);
+	void Write(SOURCESDK::QAngle const & value);
+	void Write(SOURCESDK::Quaternion const & value);
 
 private:
+	static CClientTools * m_Instance;
+
 	std::map<std::string, int> m_Dictionary;
-	std::map<SOURCESDK::CSGO::HTOOLHANDLE, int> m_TrackedHandles;
 
 	bool m_Recording;
-	SOURCESDK::CSGO::IClientTools * m_ClientTools;
 	FILE * m_File;
 
 	bool m_RecordCamera = true;
@@ -89,8 +103,6 @@ private:
 	bool m_RecordWeapons = true;
 	bool m_RecordProjectiles = true;
 	bool m_RecordViewModel = true;
-
-	void UpdateRecording();
 
 	void Dictionary_Clear()
 	{
@@ -112,18 +124,5 @@ private:
 		m_Dictionary[sValue] = m_Dictionary.size();
 		return -1;
 	}
-
-	void WriteDictionary(char const * value);
-
-	void Write(bool value);
-	void Write(int value);
-	void Write(float value);
-	void Write(double value);
-	void Write(char const * value); // Consider using WriteDictionary instead (if string is long enough and likely to repeat often).
-	void Write(SOURCESDK::Vector const & value);
-	void Write(SOURCESDK::QAngle const & value);
-	void Write(SOURCESDK::Quaternion const & value);
-	void Write(SOURCESDK::CSGO::CBoneList const * value);
 };
 
-extern ClientTools g_ClientTools;

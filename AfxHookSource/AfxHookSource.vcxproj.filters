@@ -25,6 +25,48 @@
     <Filter Include="prop\AfxHookSource">
       <UniqueIdentifier>{71347936-3615-40c3-9176-b40656efd2c1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="prop\AfxHookSource\csgo">
+      <UniqueIdentifier>{0285dd76-b380-446a-8273-76e374cbae08}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\css">
+      <UniqueIdentifier>{aecfea7e-4960-4d2e-8abb-e2ec561a90d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\tf2">
+      <UniqueIdentifier>{f1fd1053-13bd-4e50-b0a8-289b92753542}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AfxHookSource\csgo">
+      <UniqueIdentifier>{20d707f9-e03c-4fc7-be5e-25e6860de1b6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AfxHookSource\css">
+      <UniqueIdentifier>{d238df75-30d1-4169-9ecd-7d78bb06b430}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AfxHookSource\tf2">
+      <UniqueIdentifier>{893953cb-3fd1-472a-bfbc-29dac105e26a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\tf2\sdk_src">
+      <UniqueIdentifier>{f608dc38-d74f-43fa-9df3-37bba2d1b046}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\tf2\sdk_src\public">
+      <UniqueIdentifier>{503732a3-01b8-44c2-93e8-1315ebb90827}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\tf2\sdk_src\public\toolframework">
+      <UniqueIdentifier>{72a42bdc-b41a-43e3-a509-b61415b6ac50}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\css\sdk_src">
+      <UniqueIdentifier>{c025075d-44ec-4893-9f19-4fdd7d434f49}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\css\sdk_src\public">
+      <UniqueIdentifier>{fa7190ba-5245-4a59-b42f-40d74743d315}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\css\sdk_src\public\toolframework">
+      <UniqueIdentifier>{1f32ba19-7969-4332-a8ae-b386b56bb4d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\tf2\sdk_src\public\engine">
+      <UniqueIdentifier>{518eddb5-9fb7-4975-b5fb-031e96dc5fe6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\css\sdk_src\engine">
+      <UniqueIdentifier>{a661d733-badf-4678-8dd4-6b56d2dab6d6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\bvhexport.cpp">
@@ -183,6 +225,12 @@
     <ClCompile Include="csgo_Audio.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
+    <ClCompile Include="csgo\ClientToolsCsgo.cpp">
+      <Filter>AfxHookSource\csgo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\prop\AfxHookSource\SourceSdkShared.cpp">
+      <Filter>prop\AfxHookSource</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\bvhexport.h">
@@ -293,9 +341,6 @@
     <ClInclude Include="CommandSystem.h">
       <Filter>AfxHookSource</Filter>
     </ClInclude>
-    <ClInclude Include="ClientTools.h">
-      <Filter>AfxHookSource</Filter>
-    </ClInclude>
     <ClInclude Include="MatRenderContextHook.h">
       <Filter>AfxHookSource</Filter>
     </ClInclude>
@@ -355,6 +400,36 @@
     </ClInclude>
     <ClInclude Include="csgo_Audio.h">
       <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\toolframework\itoolentity.h">
+      <Filter>prop\AfxHookSource\tf2\sdk_src\public\toolframework</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\engine\ishadowmgr.h">
+      <Filter>prop\AfxHookSource\tf2\sdk_src\public\engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\toolframework\itoolframework.h">
+      <Filter>prop\AfxHookSource\tf2\sdk_src\public\toolframework</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\iclientrenderable.h">
+      <Filter>prop\AfxHookSource\tf2\sdk_src\public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\basehandle.h">
+      <Filter>prop\AfxHookSource\tf2\sdk_src\public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\const.h">
+      <Filter>prop\AfxHookSource\tf2\sdk_src\public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\ihandleentity.h">
+      <Filter>prop\AfxHookSource\tf2\sdk_src\public</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientTools.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo\ClientToolsCsgo.h">
+      <Filter>AfxHookSource\csgo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\SourceSdkShared.h">
+      <Filter>prop\AfxHookSource</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
