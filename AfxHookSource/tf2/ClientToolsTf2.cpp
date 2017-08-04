@@ -71,7 +71,10 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 
 		bool isWeapon =
 			false
-			|| className && StringBeginsWith(className, "tf_weapon_")
+			|| className && (
+				StringBeginsWith(className, "tf_weapon_")
+				|| !strcmp(className, "grenade")
+				)
 			;
 
 		bool isProjectile =

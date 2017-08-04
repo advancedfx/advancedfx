@@ -6,14 +6,15 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>1.26.0</version>
-<time>2017-08-04T14:44Z</time>
+<version>1.26.1</version>
+<time>2017-08-04T15:32Z</time>
 <changes>
 <change type="updated">
 Updated AGR version to 2 (fixes some bugs).
 </change>
 <change type="added">
-Added mirv_agr command (in CS:GO you can still use the mirv_streams record agr one), which additionally to CS:GO also supports TF2 now.
+Added mirv_agr command (in CS:GO you can still use the mirv_streams record agr one), which additionally to CS:GO also supports TF2 now.<br />
+Please note: The AGR support in TF2 is roughly the same as in CS:GO and since the medigun uses particles, those are of course missing.
 </change>
 </changes>
 </release>
