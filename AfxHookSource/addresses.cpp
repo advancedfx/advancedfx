@@ -4,6 +4,8 @@
 
 #include <shared/binutils.h>
 
+SourceSdkVer g_SourceSdkVer = SourceSdkVer_Unknonw;
+
 using namespace Afx::BinUtils;
 
 //AFXADDR_DEF(csgo_CPredictionCopy_TransferData)
@@ -72,9 +74,9 @@ void ErrorBox(char const * messageText);
 #define STRINGIZE2(x) #x
 #define MkErrStr(file,line) "Problem in " file ":" STRINGIZE(line)
 
-void Addresses_InitEngineDll(AfxAddr engineDll, bool isCsgo)
+void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 {
-	if(isCsgo)
+	if(SourceSdkVer_CSGO == sourceSdkVer)
 	{
 		// csgo_snd_mix_timescale_patch: // Checked 2017-07-08.
 		{
@@ -324,9 +326,9 @@ void Addresses_InitEngineDll(AfxAddr engineDll, bool isCsgo)
 	AFXADDR_SET(csgo_MIX_PaintChannels_DSZ, 0x9);
 }
 
-void Addresses_InitScaleformuiDll(AfxAddr scaleformuiDll, bool isCsgo)
+void Addresses_InitScaleformuiDll(AfxAddr scaleformuiDll, SourceSdkVer sourceSdkVer)
 {
-	if(isCsgo)
+	if(SourceSdkVer_CSGO == sourceSdkVer)
 	{
 		// csgo_Scaleformui_CUnkown_Loader: // Checked 2017-05-13.
 		{
@@ -392,9 +394,9 @@ void Addresses_InitScaleformuiDll(AfxAddr scaleformuiDll, bool isCsgo)
 	AFXADDR_SET(csgo_Scaleformui_CUnkown_Loader_DSZ, 0x9);
 }
 
-void Addresses_InitClientDll(AfxAddr clientDll, bool isCsgo)
+void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 {
-	if(isCsgo)
+	if(SourceSdkVer_CSGO == sourceSdkVer)
 	{
 		// csgo_CUnknown_GetPlayerName: // Checked 2017-05-13.
 		{

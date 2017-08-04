@@ -152,6 +152,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\prop\AfxHookSource\SourceSdkShared.cpp" />
+    <ClCompile Include="..\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.cpp" />
+    <ClCompile Include="..\prop\AfxHookSource\tf2\sdk_src\tier1\KeyValues.cpp" />
     <ClCompile Include="..\prop\shared\AfxMath.cpp" />
     <ClCompile Include="..\shared\binutils.cpp" />
     <ClCompile Include="..\shared\bvhexport.cpp" />
@@ -201,6 +203,7 @@
     <ClCompile Include="MirvPgl.cpp" />
     <ClCompile Include="RenderView.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\SourceInterfaces.cpp" />
+    <ClCompile Include="tf2\ClientToolsTf2.cpp" />
     <ClCompile Include="WrpConsole.cpp" />
     <ClCompile Include="WrpGlobals.cpp" />
     <ClCompile Include="WrpVEngineClient.cpp" />
@@ -213,8 +216,11 @@
     <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\engine\ishadowmgr.h" />
     <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\iclientrenderable.h" />
     <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\ihandleentity.h" />
+    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\tier1\KeyValues.h" />
     <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\toolframework\itoolentity.h" />
     <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\toolframework\itoolframework.h" />
+    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.h" />
+    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\vstdlib\IKeyValuesSystem.h" />
     <ClInclude Include="..\prop\shared\AfxMath.h" />
     <ClInclude Include="..\shared\binutils.h" />
     <ClInclude Include="..\shared\bvhexport.h" />
@@ -269,6 +275,7 @@
     <ClInclude Include="RenderView.h" />
     <ClInclude Include="..\prop\AfxHookSource\SourceInterfaces.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="tf2\ClientToolsTf2.h" />
     <ClInclude Include="WrpConsole.h" />
     <ClInclude Include="WrpGlobals.h" />
     <ClInclude Include="WrpVEngineClient.h" />

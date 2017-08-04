@@ -67,6 +67,18 @@
     <Filter Include="prop\AfxHookSource\css\sdk_src\engine">
       <UniqueIdentifier>{a661d733-badf-4678-8dd4-6b56d2dab6d6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="prop\AfxHookSource\tf2\sdk_src\public\tier1">
+      <UniqueIdentifier>{900f95bf-6aa8-4761-b1cc-b7ac0d1e7de4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\tf2\sdk_src\tier1">
+      <UniqueIdentifier>{2d14fd8a-93a1-4753-8afc-efdd4e371f29}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\tf2\sdk_src\public\vstdlib">
+      <UniqueIdentifier>{867ed517-56e4-4085-8048-703e5f088113}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\tf2\sdk_src\public\tools">
+      <UniqueIdentifier>{74c259a2-fd30-4bde-9926-a78254fc378c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\bvhexport.cpp">
@@ -230,6 +242,15 @@
     </ClCompile>
     <ClCompile Include="..\prop\AfxHookSource\SourceSdkShared.cpp">
       <Filter>prop\AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="tf2\ClientToolsTf2.cpp">
+      <Filter>AfxHookSource\tf2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\prop\AfxHookSource\tf2\sdk_src\tier1\KeyValues.cpp">
+      <Filter>prop\AfxHookSource\tf2\sdk_src\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.cpp">
+      <Filter>prop\AfxHookSource\tf2\sdk_src\public\tools</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -430,6 +451,18 @@
     </ClInclude>
     <ClInclude Include="..\prop\AfxHookSource\SourceSdkShared.h">
       <Filter>prop\AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="tf2\ClientToolsTf2.h">
+      <Filter>AfxHookSource\tf2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\tier1\KeyValues.h">
+      <Filter>prop\AfxHookSource\tf2\sdk_src\public\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\vstdlib\IKeyValuesSystem.h">
+      <Filter>prop\AfxHookSource\tf2\sdk_src\public\vstdlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.h">
+      <Filter>prop\AfxHookSource\tf2\sdk_src\public\tools</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

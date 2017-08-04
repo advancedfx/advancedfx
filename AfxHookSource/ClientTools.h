@@ -28,6 +28,16 @@ public:
 
 	virtual void EndRecording();
 
+	int Debug_get(void)
+	{
+		return m_Debug;
+	}
+
+	void Debug_set(int value)
+	{
+		m_Debug = value;
+	}
+
 	bool RecordWeapons_get(void)
 	{
 		return m_RecordWeapons;
@@ -98,6 +108,7 @@ private:
 	bool m_Recording;
 	FILE * m_File;
 
+	int m_Debug = 0;
 	bool m_RecordCamera = true;
 	bool m_RecordPlayers = true;
 	bool m_RecordWeapons = true;

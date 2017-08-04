@@ -312,6 +312,24 @@ CON_COMMAND(mirv_agr, "AFX GameRecord")
 			);
 			return;
 		}
+		else if (0 == _stricmp("debug", cmd1))
+		{
+			if (3 <= argc)
+			{
+				char const * cmd2 = args->ArgV(2);
+
+				clientTools->Debug_set(atoi(cmd2));
+				return;
+			}
+
+			Tier0_Msg(
+				"%s debug 0|1|2 - Debug level.\n"
+				"Current value: %i.\n"
+				, prefix
+				, clientTools->Debug_get()
+			);
+			return;
+		}
 	}
 
 	Tier0_Msg(
@@ -321,6 +339,8 @@ CON_COMMAND(mirv_agr, "AFX GameRecord")
 		"%s recordPlayers [...]\n"
 		"%s recordWeapons [...]\n"
 		"%s recordProjectiles [...]\n"
+		"%s debug [...]\n"
+		, prefix
 		, prefix
 		, prefix
 		, prefix

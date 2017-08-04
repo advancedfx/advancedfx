@@ -58,12 +58,28 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 
 	if (!strcmp("entity_state", msgName))
 	{
+		char const * className = m_ClientTools->GetClassname(hEntity);
+
+		if (0 != Debug_get())
+		{
+			if (2 <= Debug_get())
+			{
+				Tier0_Msg("-- %s (%i) --\n", className, hEntity);
+				for (SOURCESDK::CSGO::KeyValues * subKey = msg->GetFirstSubKey(); 0 != subKey; subKey = subKey->GetNextKey())
+					Tier0_Msg("%s,\n", subKey->GetName());
+				Tier0_Msg("----\n");
+			}
+
+			if (SOURCESDK::CSGO::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::CSGO::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity")))
+			{
+				Tier0_Msg("%i: %s: %s\n", hEntity, className, pBaseEntityRs->m_pModelName);
+			}
+		}
+
 		SOURCESDK::CSGO::EntitySearchResult ent = m_ClientTools->GetEntity(hEntity);
 
 		SOURCESDK::C_BaseEntity_csgo * be = reinterpret_cast<SOURCESDK::C_BaseEntity_csgo *>(ent);
 		SOURCESDK::IClientEntity_csgo * ce = be ? be->GetIClientEntity() : 0;
-
-		char const * className = be ? be->GetClassname() : 0;
 
 		bool isRecordedCurrentViewModelOrAttachment = false;
 		/*if (
@@ -153,15 +169,6 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 
 				// Btw.: We don't need to call CBaseAnimating::CleanupToolRecordingState afterwards, because that code is still fully functional / function not overloaded.
 			}
-			/*
-			{
-			Tier0_Msg("-- %s @0x%08x--\n", className, be);
-			for (SOURCESDK::CSGO::KeyValues * subKey = msg->GetFirstSubKey(); 0 != subKey; subKey = subKey->GetNextKey())
-			Tier0_Msg("%s,\n", subKey->GetName());
-
-			Tier0_Msg("----\n");
-			}
-			*/
 
 			SOURCESDK::CSGO::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::CSGO::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity"));
 

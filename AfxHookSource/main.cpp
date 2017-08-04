@@ -31,6 +31,7 @@
 #include "CommandSystem.h"
 #include "ClientTools.h"
 #include "csgo/ClientToolsCsgo.h"
+#include "tf2/ClientToolsTf2.h"
 #include "MatRenderContextHook.h"
 //#include "csgo_IPrediction.h"
 #include "csgo_MemAlloc.h"
@@ -166,9 +167,6 @@ public:
 
 SOURCESDK::CreateInterfaceFn g_AppSystemFactory = 0;
 
-bool isCsgo = false;
-bool isV34 = false;
-
 SOURCESDK::IMaterialSystem_csgo * g_MaterialSystem_csgo = 0;
 
 SOURCESDK::IFileSystem_csgo * g_FileSystem_csgo = 0;
@@ -190,7 +188,7 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 
 		g_AppSystemFactory = appSystemFactory;
 
-		if (!isCsgo && (iface = appSystemFactory(VENGINE_CLIENT_INTERFACE_VERSION_015, NULL)))
+		if (SourceSdkVer_CSGO != g_SourceSdkVer && (iface = appSystemFactory(VENGINE_CLIENT_INTERFACE_VERSION_015, NULL)))
 		{
 			// This is not really 100% backward compatible, there is a problem with the CVAR interface or s.th..
 			// But the guy that tested it wasn't available for further debugging, so I'll just leave it as
@@ -201,7 +199,7 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 			g_VEngineClient = new WrpVEngineClient_013((SOURCESDK::IVEngineClient_013 *)iface);
 		}
 		else
-		if(isCsgo && (iface = appSystemFactory(VENGINE_CLIENT_INTERFACE_VERSION_014_CSGO, NULL)))
+		if(SourceSdkVer_CSGO == g_SourceSdkVer && (iface = appSystemFactory(VENGINE_CLIENT_INTERFACE_VERSION_014_CSGO, NULL)))
 		{
 			g_Info_VEngineClient = VENGINE_CLIENT_INTERFACE_VERSION_014_CSGO " (CS:GO)";
 			g_VEngineClient = new WrpVEngineClient_014_csgo((SOURCESDK::IVEngineClient_014_csgo *)iface);
@@ -249,7 +247,7 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 			ErrorBox("Could not get a supported VClientEngineTools interface.");
 		}
 
-		if(isCsgo)
+		if(SourceSdkVer_CSGO == g_SourceSdkVer)
 		{
 			if(iface = appSystemFactory(MATERIAL_SYSTEM_INTERFACE_VERSION_CSGO_80, NULL))
 			{
@@ -315,11 +313,14 @@ void* AppSystemFactory_ForClient(const char *pName, int *pReturnCode)
 	return g_AppSystemFactory(pName, pReturnCode);
 }
 
-void * old_Client_Init;
+//:009
+typedef int(__stdcall * CVClient_Init_Unknown_t)(DWORD *this_ptr, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CreateInterfaceFn physicsFactory, SOURCESDK::CGlobalVarsBase *pGlobals);
 
-int __stdcall new_Client_Init(DWORD *this_ptr, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CreateInterfaceFn physicsFactory, SOURCESDK::CGlobalVarsBase *pGlobals) {
+CVClient_Init_Unknown_t old_CVClient_Init_Unkown;
+
+int __stdcall new_CVClient_Init_Unknown(DWORD *this_ptr, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CreateInterfaceFn physicsFactory, SOURCESDK::CGlobalVarsBase *pGlobals)
+{
 	static bool bFirstCall = true;
-	int myret;
 
 	if(bFirstCall) {
 		bFirstCall = false;
@@ -327,59 +328,7 @@ int __stdcall new_Client_Init(DWORD *this_ptr, SOURCESDK::CreateInterfaceFn appS
 		MySetup(appSystemFactory, new WrpGlobalsOther(pGlobals));
 	}
 
-	__asm {
-		MOV ecx, pGlobals
-		PUSH ecx
-		MOV ecx, physicsFactory
-		PUSH ecx
-		MOV ecx, AppSystemFactory_ForClient
-		PUSH ecx
-
-		MOV ecx, this_ptr		
-		CALL old_Client_Init
-		MOV	myret, eax
-	}
-
-	return myret;
-}
-
-__declspec(naked) void hook_Client_Init() {
-	static unsigned char * tempMem[8];
-	__asm {
-		POP eax
-		MOV tempMem[0], eax
-		MOV tempMem[4], ecx
-
-		PUSH ecx
-		CALL new_Client_Init
-
-		MOV ecx, tempMem[4]
-		PUSH 0
-		PUSH eax
-		MOV eax, tempMem[0]
-		MOV [esp+4], eax
-		POP eax
-
-		RET
-	}
-}
-
-
-void * HookInterfaceFn(void * iface, int idx, void * fn)
-{
-	MdtMemBlockInfos mbis;
-	void * ret = 0;
-
-	if(iface)
-	{
-		void **padr =  *(void ***)iface;
-		ret = *(padr+idx);
-		MdtMemAccessBegin((padr+idx), sizeof(void *), &mbis);
-		*padr = fn;
-		MdtMemAccessEnd(&mbis);
-	}
-
-	return ret;
+	return old_CVClient_Init_Unkown(this_ptr, AppSystemFactory_ForClient, physicsFactory, pGlobals);
 }
 
 void Shared_BeforeFrameRenderStart(void)
@@ -395,6 +344,39 @@ void Shared_AfterFrameRenderEnd(void)
 void Shared_Shutdown(void)
 {
 	if (CClientTools * instance = CClientTools::Instance()) delete instance;
+}
+
+typedef void(__stdcall * CVClient_Shutdown_TF2_t)(DWORD *this_ptr);
+
+CVClient_Shutdown_TF2_t old_CVClient_Shutdown_TF2;
+
+void __stdcall new_CVClient_Shutdown_TF2(DWORD *this_ptr)
+{
+	Shared_Shutdown();
+
+	old_CVClient_Shutdown_TF2(this_ptr);
+}
+
+typedef void (__stdcall * CVClient_FrameStageNotify_TF2_t)(DWORD *this_ptr, SOURCESDK::TF2::ClientFrameStage_t curStage);
+
+CVClient_FrameStageNotify_TF2_t old_CVClient_FrameStageNotify_TF2;
+
+// Notification that we're moving into another stage during the frame.
+void _stdcall new_CVClient_FrameStageNotify_TF2(DWORD *this_ptr, SOURCESDK::TF2::ClientFrameStage_t curStage)
+{
+	switch (curStage)
+	{
+	case SOURCESDK::TF2::FRAME_RENDER_START:
+		Shared_BeforeFrameRenderStart();
+	}
+
+	old_CVClient_FrameStageNotify_TF2(this_ptr, curStage);
+
+	switch (curStage)
+	{
+	case SOURCESDK::TF2::FRAME_RENDER_END:
+		Shared_AfterFrameRenderEnd();
+	}
 }
 
 bool g_DebugEnabled = false;
@@ -1105,7 +1087,9 @@ __declspec(naked) void CAfxBaseClientDll::_UNKOWN_130(void)
 
 void HookClientDllInterface_011_Init(void * iface)
 {
-	old_Client_Init = HookInterfaceFn(iface, 0, (void *)hook_Client_Init);
+	int * vtable = *(int**)iface;
+
+	DetourIfacePtr((DWORD *)&(vtable[0]), new_CVClient_Init_Unknown, (DetourIfacePtr_fn &)old_CVClient_Init_Unkown);
 }
 
 SOURCESDK::IClientEntityList_csgo * SOURCESDK::g_Entitylist_csgo = 0;
@@ -1124,7 +1108,7 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 
 		void * iface = NULL;
 		
-		if(!isCsgo)
+		if(SourceSdkVer_CSGO != g_SourceSdkVer)
 		{
 			if (iface = old_Client_CreateInterface(CLIENT_DLL_INTERFACE_VERSION_018, NULL)) {
 				g_Info_VClient = CLIENT_DLL_INTERFACE_VERSION_018;
@@ -1159,8 +1143,16 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 			{
 				ErrorBox("Could not get a supported VClient interface.");
 			}
+
+			if (iface && SourceSdkVer_TF2 == g_SourceSdkVer)
+			{
+				int * vtable = *(int**)iface;
+
+				DetourIfacePtr((DWORD *)&(vtable[2]), new_CVClient_Shutdown_TF2, (DetourIfacePtr_fn &)old_CVClient_Shutdown_TF2);
+				DetourIfacePtr((DWORD *)&(vtable[35]), new_CVClient_FrameStageNotify_TF2, (DetourIfacePtr_fn &)old_CVClient_FrameStageNotify_TF2);
+			}
 		}
-		else
+		if(SourceSdkVer_CSGO == g_SourceSdkVer)
 		{
 			// isCsgo.
 
@@ -1169,9 +1161,15 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 			if (SOURCESDK::CSGO::IClientTools * iface = (SOURCESDK::CSGO::IClientTools *)old_Client_CreateInterface(SOURCESDK_CSGO_VCLIENTTOOLS_INTERFACE_VERSION, NULL))
 				new CClientToolsCsgo(iface);
 		}
+		if (SourceSdkVer_TF2 == g_SourceSdkVer)
+		{
+
+			if (SOURCESDK::TF2::IClientTools * iface = (SOURCESDK::TF2::IClientTools *)old_Client_CreateInterface(SOURCESDK_TF2_VCLIENTTOOLS_INTERFACE_VERSION, NULL))
+				new CClientToolsTf2(iface);
+		}
 	}
 
-	if(isCsgo)
+	if(SourceSdkVer_CSGO == g_SourceSdkVer)
 	{
 		if(!g_AfxBaseClientDll && !strcmp(pName, CLIENT_DLL_INTERFACE_VERSION_CSGO_018))
 		{
@@ -1367,7 +1365,7 @@ BOOL WINAPI new_SetCursorPos(
 
 void AfxV34HookWindow(void)
 {
-	if(isV34)
+	if(SourceSdkVer_CSS_V34 == g_SourceSdkVer)
 	{
 		HWND hWnd = FindWindowW(L"Valve001",NULL);
 
@@ -1421,14 +1419,21 @@ void CommonHooks()
 		char filePath[MAX_PATH] = { 0 };
 		GetModuleFileName(0, filePath, MAX_PATH);
 
-		if (StringEndsWith(filePath, "csgo.exe"))
-		{
-			isCsgo = true;
-		}
-
 		if (wcsstr(GetCommandLineW(), L"-afxV34"))
 		{
-			isV34 = true;
+			g_SourceSdkVer = SourceSdkVer_CSS_V34;
+		}
+		else if (StringEndsWith(filePath, "csgo.exe"))
+		{
+			g_SourceSdkVer = SourceSdkVer_CSGO;
+		}
+		else if (wcsstr(GetCommandLineW(), L"-game tf"))
+		{
+			g_SourceSdkVer = SourceSdkVer_TF2;
+		}
+		else if (wcsstr(GetCommandLineW(), L"-game cstrike"))
+		{
+			g_SourceSdkVer = SourceSdkVer_CSS;
 		}
 
 		//ScriptEngine_StartUp();
@@ -1452,7 +1457,7 @@ void CommonHooks()
 			Tier0_ConWarning = (Tier0MsgFn)GetProcAddress(hTier0, "ConWarning");
 			Tier0_ConLog = (Tier0MsgFn)GetProcAddress(hTier0, "ConLog");
 
-			if (isV34)
+			if (SourceSdkVer_CSS_V34 == g_SourceSdkVer)
 			{
 				InterceptDllCall(hTier0, "USER32.dll", "GetCursorPos", (DWORD)&new_GetCursorPos);
 				InterceptDllCall(hTier0, "USER32.dll", "SetCursorPos", (DWORD)&new_SetCursorPos);
@@ -1522,7 +1527,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 
 		g_H_EngineDll = hModule;
 
-		Addresses_InitEngineDll((AfxAddr)hModule, isCsgo);
+		Addresses_InitEngineDll((AfxAddr)hModule, g_SourceSdkVer);
 
 		InterceptDllCall(hModule, "Kernel32.dll", "GetProcAddress", (DWORD) &new_Engine_GetProcAddress);
 		InterceptDllCall(hModule, "Kernel32.dll", "LoadLibraryExA", (DWORD) &new_LoadLibraryExA);
@@ -1532,7 +1537,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		InterceptDllCall(hModule, "USER32.dll", "GetWindowLongW", (DWORD) &new_GetWindowLongW);
 		InterceptDllCall(hModule, "USER32.dll", "SetWindowLongW", (DWORD) &new_SetWindowLongW);
 
-		if(isV34)
+		if(SourceSdkVer_CSS_V34 == g_SourceSdkVer)
 		{
 			InterceptDllCall(hModule, "USER32.dll", "GetCursorPos", (DWORD) &new_GetCursorPos);
 			InterceptDllCall(hModule, "USER32.dll", "SetCursorPos", (DWORD) &new_SetCursorPos);
@@ -1577,7 +1582,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 
 		g_H_ClientDll = hModule;
 
-		Addresses_InitClientDll((AfxAddr)g_H_ClientDll, isCsgo);
+		Addresses_InitClientDll((AfxAddr)g_H_ClientDll, g_SourceSdkVer);
 
 		//
 		// Install early hooks:
@@ -1591,7 +1596,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 	{
 		bFirstScaleformui = false;
 
-		Addresses_InitScaleformuiDll((AfxAddr)hModule, isCsgo);
+		Addresses_InitScaleformuiDll((AfxAddr)hModule, g_SourceSdkVer);
 
 		//
 		// Install early hooks:

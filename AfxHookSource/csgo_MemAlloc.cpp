@@ -2,6 +2,7 @@
 
 #include "csgo_MemAlloc.h"
 
+#include "addresses.h"
 #include "SourceInterfaces.h"
 
 #include <shared/detours.h>
@@ -103,8 +104,6 @@ void __stdcall touring_Tier0_CMemAlloc_Free(DWORD * this_ptr, void *pMem)
 	g_Tier0_CMemAlloc_Free(this_ptr, pMem);
 }
 
-extern bool isCsgo;
-
 bool Hook_csgo_MemAlloc(void)
 {
 	static bool firstResult = false;
@@ -112,7 +111,7 @@ bool Hook_csgo_MemAlloc(void)
 	if (!firstRun) return firstResult;
 	firstRun = false;
 
-	if (isCsgo)
+	if (SourceSdkVer_CSGO == g_SourceSdkVer)
 	{
 		if (SOURCESDK::IMemAlloc_csgo * iface = SOURCESDK::Get_g_pMemAlloc())
 		{

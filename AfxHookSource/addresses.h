@@ -2,6 +2,17 @@
 
 #include <shared/vcpp/AfxAddr.h>
 
+enum SourceSdkVer
+{
+	SourceSdkVer_Unknonw,
+	SourceSdkVer_CSGO,
+	SourceSdkVer_CSS_V34,
+	SourceSdkVer_TF2,
+	SourceSdkVer_CSS
+};
+
+extern SourceSdkVer g_SourceSdkVer;
+
 //AFXADDR_DECL(csgo_CPredictionCopy_TransferData)
 //AFXADDR_DECL(csgo_CPredictionCopy_TransferData_DSZ)
 AFXADDR_DECL(csgo_C_BaseAnimating_vtable)
@@ -60,7 +71,7 @@ AFXADDR_DECL(cstrike_gpGlobals_OFS_curtime)
 AFXADDR_DECL(cstrike_gpGlobals_OFS_interpolation_amount)
 AFXADDR_DECL(cstrike_gpGlobals_OFS_interval_per_tick)
 
-void Addresses_InitEngineDll(AfxAddr engineDll, bool isCsgo);
-void Addresses_InitScaleformuiDll(AfxAddr scaleformuiDll, bool isCsgo);
-void Addresses_InitClientDll(AfxAddr clientDll, bool isCsgo);
+void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
+void Addresses_InitScaleformuiDll(AfxAddr scaleformuiDll, SourceSdkVer sourceSdkVer);
+void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer);
 //void Addresses_InitStdshader_dx9Dll(AfxAddr stdshader_dx9Dll, bool isCsgo);

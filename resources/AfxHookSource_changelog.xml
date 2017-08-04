@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.26.0</version>
+<time>2017-08-04T14:44Z</time>
+<changes>
+<change type="updated">
+Updated AGR version to 2 (fixes some bugs).
+</change>
+<change type="added">
+Added mirv_agr command (in CS:GO you can still use the mirv_streams record agr one), which additionally to CS:GO also supports TF2 now.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.25.2</version>
 <time>2017-07-25T16:01Z</time>
 <changes>
