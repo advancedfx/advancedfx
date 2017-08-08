@@ -140,8 +140,8 @@ CAudioXAudio2_UnkSupplyAudio_t detoured_CAudioXAudio2_UnkSupplyAudio;
 csgo_MIX_PaintChannels_t detoured_csgo_MIX_PaintChannels;
 
 std::mutex g_csgo_Audio_Mutex;
+double g_csgo_Audio_TimeDue = 0;
 double g_csgo_Audio_Remainder = 0;
-bool g_csgo_Audio_FRAME_START = false;
 bool g_CAudioXAudio2_RecordAudio_Active = false;
 std::string g_CAudioXAudio2_RecordAudio_Dir;
 std::map<DWORD *, CCsgoAudioWaveFile> g_CAudioXAudio2_RecordAudio_Files;
@@ -152,6 +152,8 @@ void __stdcall touring_CAudioXAudio2_UnkSupplyAudio(DWORD * this_ptr, int numCha
 {
 	if (g_CAudioXAudio2_RecordAudio_Active)
 	{
+		//Tier0_Msg("Calling CAudioXAudio2_UnkSupplyAudio.\n");
+
 		std::map<DWORD *, CCsgoAudioWaveFile>::iterator it = g_CAudioXAudio2_RecordAudio_Files.find(this_ptr);
 
 		if (it == g_CAudioXAudio2_RecordAudio_Files.end())
@@ -184,43 +186,38 @@ void __stdcall touring_CAudioXAudio2_UnkSupplyAudio(DWORD * this_ptr, int numCha
 		}
 
 	}
-
-	detoured_CAudioXAudio2_UnkSupplyAudio(this_ptr, numChannels, audioData);
+	else
+	{	
+		// sorry, but we can't forward mutliple calls in a loop, that will overrun buffers!
+		detoured_CAudioXAudio2_UnkSupplyAudio(this_ptr, numChannels, audioData);
+	}
 }
 
 
-void __cdecl touring_csgo_MIX_PaintChannels(int paintCountTarget, int unknown)
+void __cdecl touring_csgo_MIX_PaintChannels(int endtime, int unknown)
 {
 	std::unique_lock<std::mutex> lock(g_csgo_Audio_Mutex);
 
 	if (!g_CAudioXAudio2_RecordAudio_Active)
 	{
-		detoured_csgo_MIX_PaintChannels(paintCountTarget, unknown);
+		detoured_csgo_MIX_PaintChannels(endtime, unknown);
 		return;
 	}
 
-	if (!g_csgo_Audio_FRAME_START)
+	if (g_csgo_Audio_TimeDue <= 0)
 		return;
 
-	g_csgo_Audio_FRAME_START = false;
+	double fDeltaTime = g_csgo_Audio_TimeDue*44100.0 + g_csgo_Audio_Remainder;
+	g_csgo_Audio_TimeDue = 0;
+	int deltaTime = (int)(fDeltaTime);
+	deltaTime = deltaTime - (deltaTime % 512);
+	g_csgo_Audio_Remainder = fDeltaTime - deltaTime;
 
-	WrpGlobals * glob = g_Hook_VClient_RenderView.GetGlobals();
-
-	if (!glob)
-		return;
-
-	float frameTime = glob->absoluteframetime_get();
-
-	double fNumCalls = (frameTime * 44100.0 / 512.0) + g_csgo_Audio_Remainder;
-	int numCalls = (int)fNumCalls;
-	g_csgo_Audio_Remainder = fNumCalls - numCalls;
-
-	while (0 < numCalls)
+	while (0 < deltaTime)
 	{
-		--numCalls;
-		detoured_csgo_MIX_PaintChannels(paintCountTarget, unknown);
-
-		paintCountTarget += 512;
+		detoured_csgo_MIX_PaintChannels(endtime, unknown);
+		deltaTime -= 512;
+		endtime += 512;
 	}
 }
 
@@ -258,6 +255,7 @@ bool csgo_Audio_StartRecording(char const * ansiTakeDir)
 
 	g_CAudioXAudio2_RecordAudio_Dir = ansiTakeDir;
 	g_CAudioXAudio2_RecordAudio_Active = true;
+	g_csgo_Audio_TimeDue = 0;
 	g_csgo_Audio_Remainder = 0;
 
 	return true;
@@ -275,9 +273,14 @@ void csgo_Audio_EndRecording(void)
 	g_CAudioXAudio2_RecordAudio_Active = false;
 }
 
-void csgo_Audio_FRAME_START(void)
+void csgo_Audio_FRAME_RENDEREND(void)
 {
 	std::unique_lock<std::mutex> lock(g_csgo_Audio_Mutex);
 
-	g_csgo_Audio_FRAME_START = true;
+	WrpGlobals * glob = g_Hook_VClient_RenderView.GetGlobals();
+
+	if (!glob)
+		return;
+
+	g_csgo_Audio_TimeDue += glob->frametime_get();
 }

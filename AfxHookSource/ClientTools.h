@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SourceInterfaces.h"
+#include "WrpConsole.h"
 
 #include <string>
 #include <map>
@@ -113,7 +114,7 @@ private:
 	bool m_RecordPlayers = true;
 	bool m_RecordWeapons = true;
 	bool m_RecordProjectiles = true;
-	bool m_RecordViewModel = true;
+	bool m_RecordViewModel = false;
 
 	void Dictionary_Clear()
 	{
@@ -137,3 +138,4 @@ private:
 	}
 };
 
+bool ClientTools_Console_Cfg(IWrpCommandArgs * args);

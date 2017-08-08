@@ -116,11 +116,21 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 
 		bool isWeapon =
 			m_ClientTools->IsWeapon(ent)
-			|| className && !strcmp(className, "weaponworldmodel")
+			|| className && (
+				!strcmp(className, "weaponworldmodel")
+				// cannot allow this for now, import plugins will cause model spam the way they work currently: // || !strcmp(className, "class C_PlayerAddonModel")
+				)
 			;
 
 		bool isProjectile =
 			className && StringEndsWith(className, "Projectile")
+			;
+
+		bool isViewModel =
+			className && (
+				!strcmp(className, "predicted_viewmodel")
+				|| !strcmp(className, "class C_ViewmodelAttachmentModel")
+				)
 			;
 
 		if (ce
@@ -129,6 +139,7 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 				|| RecordPlayers_get() && isPlayer
 				|| RecordWeapons_get() && isWeapon
 				|| RecordProjectiles_get() && isProjectile
+				|| RecordViewModel_get() && isViewModel
 				)
 			)
 		{

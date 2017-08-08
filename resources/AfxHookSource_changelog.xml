@@ -6,6 +6,19 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.26.2</version>
+<time>2017-08-08T13:23Z</time>
+<changes>
+<change type="fixed">
+Adjusted to 8/7/2017 CS:GO update:<br />
+Fixed mirv_streams sound recording not working (please note: for technical reasons the sound will be mute during recording).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.26.1</version>
 <time>2017-08-04T15:32Z</time>
 <changes>

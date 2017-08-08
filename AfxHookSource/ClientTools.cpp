@@ -170,6 +170,157 @@ void CClientTools::Write(SOURCESDK::Quaternion const & value)
 
 ////////////////////////////////////////////////////////////////////////////////
 
+bool ClientTools_Console_Cfg(IWrpCommandArgs * args)
+{
+	CClientTools * clientTools = CClientTools::Instance();
+
+	if (!clientTools)
+	{
+		//Tier0_Warning("Error: Feature not available!\n");
+		return false;
+	}
+
+	int argc = args->ArgC();
+
+	char const * prefix = args->ArgV(0);
+
+	if (2 <= argc)
+	{
+		char const * cmd1 = args->ArgV(1);
+
+		if (0 == _stricmp("recordCamera", cmd1))
+		{
+			if (3 <= argc)
+			{
+				char const * cmd2 = args->ArgV(2);
+
+				clientTools->RecordCamera_set(0 != atoi(cmd2));
+				return true;
+			}
+
+			Tier0_Msg(
+				"%s recordCamera 0|1 - Enable (1) / Disable (0) recording of main camera (includes FOV).\n"
+				"Current value: %i.\n"
+				, prefix
+				, clientTools->RecordCamera_get() ? 1 : 0
+			);
+			return true;
+		}
+		else if (0 == _stricmp("recordPlayers", cmd1))
+		{
+			if (3 <= argc)
+			{
+				char const * cmd2 = args->ArgV(2);
+
+				clientTools->RecordPlayers_set(0 != atoi(cmd2));
+				return true;
+			}
+
+			Tier0_Msg(
+				"%s recordPlayers 0|1 - Enable (1) / Disable (0) recording of players.\n"
+				"Current value: %i.\n"
+				, prefix
+				, clientTools->RecordPlayers_get() ? 1 : 0
+			);
+			return true;
+		}
+		else if (0 == _stricmp("recordWeapons", cmd1))
+		{
+			if (3 <= argc)
+			{
+				char const * cmd2 = args->ArgV(2);
+
+				clientTools->RecordWeapons_set(0 != atoi(cmd2));
+				return true;
+			}
+
+			Tier0_Msg(
+				"%s recordWeapons 0|1 - Enable (1) / Disable (0) recording of weapons.\n"
+				"Current value: %i.\n"
+				, prefix
+				, clientTools->RecordWeapons_get() ? 1 : 0
+			);
+			return true;
+		}
+		else if (0 == _stricmp("recordProjectiles", cmd1))
+		{
+			if (3 <= argc)
+			{
+				char const * cmd2 = args->ArgV(2);
+
+				clientTools->RecordProjectiles_set(0 != atoi(cmd2));
+				return true;
+			}
+
+			Tier0_Msg(
+				"%s recordProjectiles 0|1 - Enable (1) / Disable (0) recording of Projectiles.\n"
+				"Current value: %i.\n"
+				, prefix
+				, clientTools->RecordProjectiles_get() ? 1 : 0
+			);
+			return true;
+		}
+		else if (0 == _stricmp("recordViewModel", cmd1))
+		{
+			if (3 <= argc)
+			{
+				char const * cmd2 = args->ArgV(2);
+
+				clientTools->RecordViewModel_set(0 != atoi(cmd2));
+				return true;
+			}
+
+			Tier0_Msg(
+				"%s recordViewModel 0|1 - Enable (1) / Disable (0) recording of view models.\n"
+				"Current value: %i.\n"
+				, prefix
+				, clientTools->RecordViewModel_get() ? 1 : 0
+			);
+			Tier0_Warning(
+				"This feature is not fully supported, will only work in CS:GO and will have the following problems:\n"
+				"- You'll need to set cl_custom_material_override 0.\n"
+				"- Most import plugins won't know how to handle the viewmodel FOV properly, meaning it will look different from in-game.\n"
+			);
+			return true;
+		}
+		else if (0 == _stricmp("debug", cmd1))
+		{
+			if (3 <= argc)
+			{
+				char const * cmd2 = args->ArgV(2);
+
+				clientTools->Debug_set(atoi(cmd2));
+				return true;
+			}
+
+			Tier0_Msg(
+				"%s debug 0|1|2 - Debug level.\n"
+				"Current value: %i.\n"
+				, prefix
+				, clientTools->Debug_get()
+			);
+			return true;
+		}
+	}
+
+	Tier0_Msg(
+		"%s recordCamera [...]\n"
+		"%s recordPlayers [...]\n"
+		"%s recordWeapons [...]\n"
+		"%s recordProjectiles [...]\n"
+		//"%s recordViewmodel [...]\n"
+		"%s debug [...]\n"
+		, prefix
+		, prefix
+		, prefix
+		, prefix
+		//, prefix
+		, prefix
+	);
+
+	return false;
+}
+
 CON_COMMAND(mirv_agr, "AFX GameRecord")
 {
 	CClientTools * clientTools = CClientTools::Instance();
@@ -222,129 +373,14 @@ CON_COMMAND(mirv_agr, "AFX GameRecord")
 			);
 			return;
 		}
-		else if (0 == _stricmp("recordCamera", cmd1))
-		{
-			if (3 <= argc)
-			{
-				char const * cmd2 = args->ArgV(2);
-
-				clientTools->RecordCamera_set(0 != atoi(cmd2));
-				return;
-			}
-
-			Tier0_Msg(
-				"%s recordCamera 0|1 - Enable (1) / Disable (0) recording of main camera (includes FOV).\n"
-				"Current value: %i.\n"
-				, prefix
-				, clientTools->RecordCamera_get() ? 1 : 0
-			);
-			return;
-		}
-		else if (0 == _stricmp("recordPlayers", cmd1))
-		{
-			if (3 <= argc)
-			{
-				char const * cmd2 = args->ArgV(2);
-
-				clientTools->RecordPlayers_set(0 != atoi(cmd2));
-				return;
-			}
-
-			Tier0_Msg(
-				"%s recordPlayers 0|1 - Enable (1) / Disable (0) recording of players.\n"
-				"Current value: %i.\n"
-				, prefix
-				, clientTools->RecordPlayers_get() ? 1 : 0
-			);
-			return;
-		}
-		else if (0 == _stricmp("recordWeapons", cmd1))
-		{
-			if (3 <= argc)
-			{
-				char const * cmd2 = args->ArgV(2);
-
-				clientTools->RecordWeapons_set(0 != atoi(cmd2));
-				return;
-			}
-
-			Tier0_Msg(
-				"%s recordWeapons 0|1 - Enable (1) / Disable (0) recording of weapons.\n"
-				"Current value: %i.\n"
-				, prefix
-				, clientTools->RecordWeapons_get() ? 1 : 0
-			);
-			return;
-		}
-		else if (0 == _stricmp("recordProjectiles", cmd1))
-		{
-			if (3 <= argc)
-			{
-				char const * cmd2 = args->ArgV(2);
-
-				clientTools->RecordProjectiles_set(0 != atoi(cmd2));
-				return;
-			}
-
-			Tier0_Msg(
-				"%s recordProjectiles 0|1 - Enable (1) / Disable (0) recording of Projectiles.\n"
-				"Current value: %i.\n"
-				, prefix
-				, clientTools->RecordProjectiles_get() ? 1 : 0
-			);
-			return;
-		}
-		else if (0 == _stricmp("recordViewModel", cmd1))
-		{
-			if (3 <= argc)
-			{
-				char const * cmd2 = args->ArgV(2);
-
-				clientTools->RecordViewModel_set(0 != atoi(cmd2));
-				return;
-			}
-
-			Tier0_Msg(
-				"%s recordViewModel 0|1 - Enable (1) / Disable (0) recording of view models.\n"
-				"Current value: %i.\n"
-				, prefix
-				, clientTools->RecordViewModel_get() ? 1 : 0
-			);
-			return;
-		}
-		else if (0 == _stricmp("debug", cmd1))
-		{
-			if (3 <= argc)
-			{
-				char const * cmd2 = args->ArgV(2);
-
-				clientTools->Debug_set(atoi(cmd2));
-				return;
-			}
-
-			Tier0_Msg(
-				"%s debug 0|1|2 - Debug level.\n"
-				"Current value: %i.\n"
-				, prefix
-				, clientTools->Debug_get()
-			);
-			return;
-		}
 	}
+
+	if (ClientTools_Console_Cfg(args))
+		return;
 
 	Tier0_Msg(
 		"%s start <sFilePath> - Start recording to file <sFilePath>, you should set a low host_framerate before (i.e. 30) and give the \".agr\" file extension.\n"
 		"%s stop - Stop recording.\n"
-		"%s recordCamera [...]\n"
-		"%s recordPlayers [...]\n"
-		"%s recordWeapons [...]\n"
-		"%s recordProjectiles [...]\n"
-		"%s debug [...]\n"
-		, prefix
-		, prefix
-		, prefix
-		, prefix
-		, prefix
 		, prefix
 		, prefix
 	);

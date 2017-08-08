@@ -238,7 +238,13 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 								DWORD tmpAddr = result.Start;
 								tmpAddr -= 0x8;
 
-								result = FindBytes(firstDataRange, (char const *)&tmpAddr, sizeof(tmpAddr));
+								result.End = firstDataRange.Start;
+
+								for (int i = 0; i < 2; ++i)
+								{
+									result = FindBytes(MemRange(result.End, firstDataRange.End), (char const *)&tmpAddr, sizeof(tmpAddr));
+								}
+
 								if (!result.IsEmpty())
 								{
 									DWORD tmpAddr = result.Start;

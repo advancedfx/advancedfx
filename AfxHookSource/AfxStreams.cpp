@@ -9,7 +9,6 @@
 #include "csgo_CViewRender.h"
 #include "RenderView.h"
 #include "ClientTools.h"
-#include "csgo/ClientToolsCsgo.h"
 #include "d3d9Hooks.h"
 #include "csgo_GlowOverlay.h"
 #include "MirvPgl.h"
@@ -6166,7 +6165,7 @@ void CAfxStreams::Console_GameRecording(IWrpCommandArgs * args)
 		return;
 	}
 
-	CClientToolsCsgo * clientTools = CClientToolsCsgo::Instance();
+	CClientTools * clientTools = CClientTools::Instance();
 
 	if (!clientTools)
 	{
@@ -6196,109 +6195,13 @@ void CAfxStreams::Console_GameRecording(IWrpCommandArgs * args)
 			);
 			return;
 		}
-		else if (0 == _stricmp("recordCamera", cmd1))
-		{
-			if (3 <= argc)
-			{
-				char const * cmd2 = args->ArgV(2);
-
-				clientTools->RecordCamera_set(0 != atoi(cmd2));
-				return;
-			}
-
-			Tier0_Msg(
-				"%s recordCamera 0|1 - Enable (1) / Disable (0) recording of main camera (includes FOV).\n"
-				"Current value: %i.\n"
-				, prefix
-				, clientTools->RecordCamera_get() ? 1 : 0
-			);
-			return;
-		}
-		else if (0 == _stricmp("recordPlayers", cmd1))
-		{
-			if (3 <= argc)
-			{
-				char const * cmd2 = args->ArgV(2);
-
-				clientTools->RecordPlayers_set(0 != atoi(cmd2));
-				return;
-			}
-
-			Tier0_Msg(
-				"%s recordPlayers 0|1 - Enable (1) / Disable (0) recording of players.\n"
-				"Current value: %i.\n"
-				, prefix
-				, clientTools->RecordPlayers_get() ? 1 : 0
-			);
-			return;
-		}
-		else if (0 == _stricmp("recordWeapons", cmd1))
-		{
-			if (3 <= argc)
-			{
-				char const * cmd2 = args->ArgV(2);
-
-				clientTools->RecordWeapons_set(0 != atoi(cmd2));
-				return;
-			}
-
-			Tier0_Msg(
-				"%s recordWeapons 0|1 - Enable (1) / Disable (0) recording of weapons.\n"
-				"Current value: %i.\n"
-				, prefix
-				, clientTools->RecordWeapons_get() ? 1 : 0
-			);
-			return;
-		}
-		else if (0 == _stricmp("recordProjectiles", cmd1))
-		{
-			if (3 <= argc)
-			{
-				char const * cmd2 = args->ArgV(2);
-
-				clientTools->RecordProjectiles_set(0 != atoi(cmd2));
-				return;
-			}
-
-			Tier0_Msg(
-				"%s recordProjectiles 0|1 - Enable (1) / Disable (0) recording of Projectiles.\n"
-				"Current value: %i.\n"
-				, prefix
-				, clientTools->RecordProjectiles_get() ? 1 : 0
-			);
-			return;
-		}
-		else if (0 == _stricmp("recordViewModel", cmd1))
-		{
-			if (3 <= argc)
-			{
-				char const * cmd2 = args->ArgV(2);
-
-				clientTools->RecordViewModel_set(0 != atoi(cmd2));
-				return;
-			}
-
-			Tier0_Msg(
-				"%s recordViewModel 0|1 - Enable (1) / Disable (0) recording of view models.\n"
-				"Current value: %i.\n"
-				, prefix
-				, clientTools->RecordViewModel_get() ? 1 : 0
-			);
-			return;
-		}
 	}
+
+	if (ClientTools_Console_Cfg(args))
+		return;
 
 	Tier0_Msg(
 		"%s enabled [...]\n"
-		"-- Options bellow for backward compatibility only, use mirv_agr instead to configure newer options: --\n"
-		"%s recordCamera [...]\n"
-		"%s recordPlayers [...]\n"
-		"%s recordWeapons [...]\n"
-		"%s recordProjectiles [...]\n"
-		, prefix
-		, prefix
-		, prefix
-		, prefix
 		, prefix
 	);
 }

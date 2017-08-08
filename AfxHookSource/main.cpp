@@ -770,11 +770,11 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 	switch (curStage)
 	{
 	case SOURCESDK::CSGO::FRAME_START:
+		//Tier0_Msg("FRAME_START\n");
 #ifdef AFX_MIRV_PGL
 		MirvPgl::CheckStartedAndRestoreIfDown();
 		MirvPgl::ExecuteQueuedCommands();
 #endif
-		csgo_Audio_FRAME_START();
 		break;
 	case SOURCESDK::CSGO::FRAME_NET_UPDATE_START:
 		break;
@@ -798,6 +798,7 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 	switch (curStage)
 	{
 	case SOURCESDK::CSGO::FRAME_RENDER_END:
+		csgo_Audio_FRAME_RENDEREND();
 		Shared_AfterFrameRenderEnd();
 		break;
 	}
