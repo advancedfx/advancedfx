@@ -3,6 +3,7 @@
 #include "CommandSystem.h"
 
 #include "WrpVEngineClient.h"
+#include "RenderView.h"
 
 #include <shared/rapidxml/rapidxml.hpp>
 #include <shared/rapidxml/rapidxml_print.hpp>
@@ -14,20 +15,30 @@ CommandSystem g_CommandSystem;
 
 CommandSystem::CommandSystem()
 : Enabled(true)
-, m_LastTime(0)
+, m_LastTime(-1)
+, m_LastTick(-1)
 {
 
 }
 
-void CommandSystem::Add(double time, char const * command)
+void CommandSystem::Add(char const * command)
 {
+	if (!IsSupportedByTime())
+	{
+		Tier0_Warning("Error: Missing hooks for supporting scheduling by time.\n");
+		return;
+	}
+
+	double time = m_LastTime;
+
 	std::map<double, std::string>::iterator it = m_Map.find(time);
 
 	std::string cmds("");
 
 	if(it != m_Map.end())
 	{
-		cmds.append(" ");
+		cmds.append(it->second);
+		cmds.append("; ");
 	}
 
 	cmds.append(command);
@@ -35,18 +46,64 @@ void CommandSystem::Add(double time, char const * command)
 	m_Map[time] = cmds;
 }
 
+void CommandSystem::AddTick(char const * command)
+{
+	if (!IsSupportedByTick())
+	{
+		Tier0_Warning("Error: Missing hooks for supporting scheduling by tick.\n");
+		return;
+	}
+
+	int tick = m_LastTick;
+
+	std::map<int, std::string>::iterator it = m_TickMap.find(tick);
+
+	std::string cmds("");
+
+	if (it != m_TickMap.end())
+	{
+		cmds.append(it->second);
+		cmds.append("; ");
+	}
+
+	cmds.append(command);
+
+	m_TickMap[tick] = cmds;
+}
+
 bool CommandSystem::Remove(int index)
 {
-	int idx = 0;
-	for(std::map<double, std::string>::iterator it = m_Map.begin(); it != m_Map.end(); ++it)
+	if (index < (int)m_TickMap.size())
 	{
-		if(idx == index)
-		{
-			m_Map.erase(it);
-			return true;
-		}
+		int idx = 0;
 
-		++idx;
+		for (std::map<int, std::string>::iterator it = m_TickMap.begin(); it != m_TickMap.end(); ++it)
+		{
+			if (idx == index)
+			{
+				m_TickMap.erase(it);
+				return true;
+			}
+
+			++idx;
+		}
+	}
+	else
+	{
+		index -= m_TickMap.size();
+
+		int idx = 0;
+
+		for (std::map<double, std::string>::iterator it = m_Map.begin(); it != m_Map.end(); ++it)
+		{
+			if (idx == index)
+			{
+				m_Map.erase(it);
+				return true;
+			}
+
+			++idx;
+		}
 	}
 
 	return false;
@@ -54,10 +111,18 @@ bool CommandSystem::Remove(int index)
 
 void CommandSystem::Clear(void)
 {
+	m_TickMap.clear();
 	m_Map.clear();
 }
 
 namespace CommandSystemXML {
+
+char * int2xml(rapidxml::xml_document<> & doc, int value)
+{
+	char szTmp[12];
+	_snprintf_s(szTmp, _TRUNCATE, "%i", value);
+	return doc.allocate_string(szTmp);
+}
 
 char * double2xml(rapidxml::xml_document<> & doc, double value)
 {
@@ -84,6 +149,16 @@ bool CommandSystem::Save(wchar_t const * fileName)
 
 	rapidxml::xml_node<> * cmds = doc.allocate_node(rapidxml::node_element, "commands");
 	commandSystem->append_node(cmds);
+
+	for (std::map<int, std::string>::iterator it = m_TickMap.begin(); it != m_TickMap.end(); ++it)
+	{
+		int tick = it->first;
+
+		rapidxml::xml_node<> * cmd = doc.allocate_node(rapidxml::node_element, "c", it->second.c_str());
+		cmd->append_attribute(doc.allocate_attribute("tick", int2xml(doc, it->first)));
+
+		cmds->append_node(cmd);
+	}
 
 	for(std::map<double, std::string>::iterator it = m_Map.begin(); it != m_Map.end(); ++it)
 	{
@@ -114,6 +189,8 @@ bool CommandSystem::Save(wchar_t const * fileName)
 bool CommandSystem::Load(wchar_t const * fileName)
 {
 	bool bOk = false;
+	bool bUsedByTick = false;
+	bool bUsedByTime = false;
 
 	FILE * pFile = 0;
 
@@ -151,10 +228,17 @@ bool CommandSystem::Load(wchar_t const * fileName)
 
 				for(cur_node = cur_node->first_node("c"); cur_node; cur_node = cur_node->next_sibling("c"))
 				{
-					rapidxml::xml_attribute<> * timeAttr = cur_node->first_attribute("t");
-					if(!timeAttr) continue;
+					if (rapidxml::xml_attribute<> * tickAttr = cur_node->first_attribute("tick"))
+					{
+						bUsedByTick = true;
+						m_TickMap[atoi(tickAttr->value())] = std::string(cur_node->value());
+					}
 
-					m_Map[atof(timeAttr->value())] = std::string(cur_node->value());
+					if (rapidxml::xml_attribute<> * timeAttr = cur_node->first_attribute("t"))
+					{
+						bUsedByTime = true;
+						m_Map[atof(timeAttr->value())] = std::string(cur_node->value());
+					}
 				}
 			}
 			while (false);
@@ -169,14 +253,38 @@ bool CommandSystem::Load(wchar_t const * fileName)
 
 	fclose(pFile);
 
+	if (bUsedByTick && !IsSupportedByTick())
+	{
+		Tier0_Warning("Error: Missing hooks for supporting scheduling by tick.\n");
+	}
+	if (bUsedByTick && !IsSupportedByTime())
+	{
+		Tier0_Warning("Error: Missing hooks for supporting scheduling by time.\n");
+	}
+
 	return bOk;
 }
 
 void CommandSystem::Console_List(void)
 {
+	int idx = 0;
+
+	Tier0_Msg("index: tick -> command\n");
+
+	for (std::map<int, std::string>::iterator it = m_TickMap.begin(); it != m_TickMap.end(); ++it)
+	{
+		Tier0_Msg("%i: %i -> %s\n",
+			idx,
+			it->first,
+			it->second.c_str());
+
+		++idx;
+	}
+
+	Tier0_Msg("----\n");
+
 	Tier0_Msg("index: time -> command\n");
 
-	int idx = 0;
 	for(std::map<double, std::string>::iterator it = m_Map.begin(); it != m_Map.end(); ++it)
 	{
 		Tier0_Msg("%i: %f -> %s\n",
@@ -190,18 +298,57 @@ void CommandSystem::Console_List(void)
 	Tier0_Msg("----\n");
 }
 
-void CommandSystem::Do_Queue_Commands(double time)
+void CommandSystem::Do_Commands(void)
 {
-	if(g_VEngineClient && Enabled)
+	if (IsSupportedByTick())
 	{
-		for(
-			std::map<double, std::string>::iterator it = m_Map.upper_bound(m_LastTime);
-			it != m_Map.end() && it->first <= time;
-			++it)
+		int tick = g_VEngineClient->GetDemoInfoEx()->GetDemoPlaybackTick();
+
+		if (Enabled && 0 < m_TickMap.size())
 		{
-			g_VEngineClient->ClientCmd_Unrestricted(it->second.c_str());
+			for (
+				std::map<int, std::string>::iterator it = m_TickMap.upper_bound(m_LastTick);
+				it != m_TickMap.end() && it->first <= tick;
+				++it)
+			{
+				g_VEngineClient->ExecuteClientCmd(it->second.c_str());
+			}
 		}
+
+		m_LastTick = tick;
 	}
 
-	m_LastTime = time;
+	if (IsSupportedByTime())
+	{
+		double time = g_Hook_VClient_RenderView.GetGlobals()->curtime_get();
+
+		if (Enabled && 0 < m_Map.size())
+		{
+			for (
+				std::map<double, std::string>::iterator it = m_Map.upper_bound(m_LastTime);
+				it != m_Map.end() && it->first <= time;
+				++it)
+			{
+				g_VEngineClient->ExecuteClientCmd(it->second.c_str());
+			}
+		}
+
+		m_LastTime = time;
+	}
+}
+
+void CommandSystem::OnLevelInitPreEntityAllTools(void)
+{
+	m_LastTime = -1;
+	m_LastTick = -1;
+}
+
+bool CommandSystem::IsSupportedByTime(void)
+{
+	return 0 != g_VEngineClient && 0 != g_Hook_VClient_RenderView.GetGlobals();
+}
+
+bool CommandSystem::IsSupportedByTick(void)
+{
+	return 0 != g_VEngineClient && 0 != g_VEngineClient->GetDemoInfoEx();
 }

@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.27.0</version>
+<time>2017-08-18T17:50Z</time>
+<changes>
+<change type="fixed">
+Adjusted to 8/17/2017 CS:GO update:<br />
+Fixed Problem in addresses.cpp:1363, affected mirv_fix blockObserverTarget.
+</change>
+<change type="added">
+Added mirv_cmd addTick (mirv_cmd now supports ticks), also minor improvements, the commands will be executed as early as possible, however please note that the actual result tick and time depend on your frame rate (since there can be multiple demo ticks per frame).
+</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookSource</name>
 <version>1.26.2</version>
 <time>2017-08-08T13:23Z</time>
 <changes>

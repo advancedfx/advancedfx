@@ -118,7 +118,6 @@ CON_COMMAND(__mirv_test8, "")
 	}
 }
 
-
 CON_COMMAND(__mirv_test6, "")
 {
 	int argc = args->ArgC();
@@ -193,6 +192,11 @@ CON_COMMAND(__mirv_ct, "")
 		}
 
 	}
+}
+
+CON_COMMAND(__mirv_test5, "")
+{
+	g_VEngineClient->ClientCmd_Unrestricted("echo test");
 }
 
 CON_COMMAND(__mirv_addr, "")
@@ -3384,19 +3388,29 @@ CON_COMMAND(mirv_aim, "Aiming system control.")
 
 CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 {
-	if(!g_Hook_VClient_RenderView.IsInstalled() || !g_VEngineClient)
-	{
-		Tier0_Warning("Error: Required hooks not installed.\n");
-		return;
-	}
-
 	int argc = args->ArgC();
 
 	if(2 <= argc)
 	{
 		char const * subcmd = args->ArgV(1);
 
-		if(!_stricmp("add", subcmd))
+		if (!_stricmp("addTick", subcmd))
+		{
+			std::string cmds("");
+
+			for (int i = 2; i < args->ArgC(); ++i)
+			{
+				if (2 < i) cmds.append(" ");
+
+				cmds.append(args->ArgV(i));
+			}
+
+			g_CommandSystem.AddTick(
+				cmds.c_str()
+			);
+			return;
+		}
+		else if(!_stricmp("add", subcmd))
 		{
 			std::string cmds("");
 
@@ -3408,8 +3422,7 @@ CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 			}
 
 			g_CommandSystem.Add(
-				g_Hook_VClient_RenderView.GetCurTime()
-				, cmds.c_str()
+				cmds.c_str()
 			);
 			return;
 		}
@@ -3476,7 +3489,8 @@ CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 
 	Tier0_Msg(
 		"mirv_cmd enabled [...] - Control if command system is enabled (by default it is).\n"
-		"mirv_cmd add [command1] [command2] ... [commandN] - Adds/appends one or multiple commands at the current time.\n"
+		"mirv_cmd addTick [commandPart1] [commandPart2] ... [commandPartN] - Adds/appends a commands at the current tick.\n"
+		"mirv_cmd add [commandPart1] [commandPart2] ... [commandPartN] - Adds/appends a command at the current time.\n"
 		"mirv_cmd clear - Removes all commands.\n"
 		"mirv_cmd print - Prints commands / state.\n"
 		"mirv_cmd remove <index> - Removes a command by it's index.\n"

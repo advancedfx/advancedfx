@@ -83,13 +83,21 @@ class ClientEngineTools : public SOURCESDK::IClientEngineTools_001
 public:
 	// TODO: we should call the destructor of g_Engine_ClientEngineTools on destuction?
 
-	virtual void LevelInitPreEntityAllTools() { g_Engine_ClientEngineTools->LevelInitPreEntityAllTools(); }
+	virtual void LevelInitPreEntityAllTools()
+	{
+		g_CommandSystem.OnLevelInitPreEntityAllTools();
+
+		g_Engine_ClientEngineTools->LevelInitPreEntityAllTools();
+	}
 	virtual void LevelInitPostEntityAllTools() { g_Engine_ClientEngineTools->LevelInitPostEntityAllTools(); }
 	virtual void LevelShutdownPreEntityAllTools() { g_Engine_ClientEngineTools->LevelShutdownPreEntityAllTools(); }
 	virtual void LevelShutdownPostEntityAllTools() { g_Engine_ClientEngineTools->LevelShutdownPostEntityAllTools(); }
 	virtual void PreRenderAllTools()
 	{
 		//Tier0_Msg("ClientEngineTools::PreRenderAllTools\n");
+
+		g_CommandSystem.Do_Commands();
+
 		g_Engine_ClientEngineTools->PreRenderAllTools();
 	}
 	
@@ -100,11 +108,6 @@ public:
 		//Tier0_Msg("ClientEngineTools::PostRenderAllTools\n");
 
 		g_CampathDrawer.OnPostRenderAllTools();
-
-		if(g_Hook_VClient_RenderView.IsInstalled())
-		{
-			g_CommandSystem.Do_Queue_Commands(g_Hook_VClient_RenderView.GetCurTime());
-		}
 
 		g_Engine_ClientEngineTools->PostRenderAllTools();
 	}

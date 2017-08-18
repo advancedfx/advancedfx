@@ -10,7 +10,9 @@ public:
 
 	CommandSystem();
 
-	void Add(double time, char const * command);
+	void Add(char const * command);
+	void AddTick(char const * command);
+
 	bool Remove(int index);
 
 	void Clear(void);
@@ -20,12 +22,19 @@ public:
 
 	void Console_List(void);
 
-	void Do_Queue_Commands(double time);
+	void Do_Commands(void);
+
+	void OnLevelInitPreEntityAllTools(void);
 
 private:
+	std::map<int, std::string> m_TickMap;
 	std::map<double,std::string> m_Map;
 
 	double m_LastTime;
+	int m_LastTick;
+
+	bool IsSupportedByTime(void);
+	bool IsSupportedByTick(void);
 };
 
 extern CommandSystem g_CommandSystem;

@@ -1318,7 +1318,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			AFXADDR_SET(csgo_C_BaseEntity_ToolRecordEnties, addr);
 		}
 
-		// csgo_C_BasePlayer_RecvProxy_ObserverTarget: // Checked 2017-05-13.
+		// csgo_C_BasePlayer_RecvProxy_ObserverTarget: // Fixed 2017-08-18.
 		{
 			DWORD addr = 0;
 			DWORD strAddr = 0;
@@ -1354,7 +1354,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 					{
 						DWORD tmpAddr = result.Start - 0xf;
 
-						result = FindPatternString(MemRange(tmpAddr, result.End), "68 ?? ?? ?? ?? 6A 00 6A  04 68 80 33 00 00");
+						result = FindPatternString(MemRange(tmpAddr, result.End), "68 ?? ?? ?? ?? 6A 00 6A 04 68 60 33 00 00");
 
 						if (!result.IsEmpty() && result.Start == tmpAddr)
 						{
