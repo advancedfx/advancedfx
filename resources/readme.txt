@@ -243,7 +243,7 @@ Sebastian 'msthavoc' H.
   Since August 2007.
   http://www.mst-gaming.de/
   
-Peter 'psh' Paunchev
+Peter 'psh' P.
   Technical support, IRC.
   Since January 2016
   http://steamcommunity.com/id/psh4president
