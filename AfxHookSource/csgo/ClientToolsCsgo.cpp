@@ -183,7 +183,7 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 
 			SOURCESDK::CSGO::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::CSGO::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity"));
 
-			if (!(pBaseEntityRs && pBaseEntityRs->m_bVisible))
+			if (!RecordInvisible_get() && !(pBaseEntityRs && pBaseEntityRs->m_bVisible))
 			{
 				// Entity not visible, avoid trash data:
 
@@ -200,7 +200,7 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 				return;
 			}
 
-			m_TrackedHandles[hEntity] = true;
+			bool wasVisible = false;
 
 			WriteDictionary("entity_state");
 			Write((int)hEntity);
@@ -211,11 +211,15 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 					WriteDictionary("baseentity");
 					Write((float)pBaseEntityRs->m_flTime);
 					WriteDictionary(pBaseEntityRs->m_pModelName);
-					//Write((bool)pBaseEntityRs->m_bVisible);
+					Write((bool)pBaseEntityRs->m_bVisible);
 					Write(pBaseEntityRs->m_vecRenderOrigin);
 					Write(pBaseEntityRs->m_vecRenderAngles);
+
+					wasVisible = pBaseEntityRs->m_bVisible;
 				}
 			}
+
+			m_TrackedHandles[hEntity] = wasVisible;
 
 			{
 				SOURCESDK::CSGO::BaseAnimatingRecordingState_t * pBaseAnimatingRs = (SOURCESDK::CSGO::BaseAnimatingRecordingState_t *)(msg->GetPtr("baseanimating"));

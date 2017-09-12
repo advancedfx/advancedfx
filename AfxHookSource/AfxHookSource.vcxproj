@@ -80,6 +80,7 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <AdditionalIncludeDirectories>./;../prop/AfxHookSource;../;../prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
+      <ObjectFileName>$(IntDir)%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -99,6 +100,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalIncludeDirectories>./;../prop/AfxHookSource;../;../prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
+      <ObjectFileName>$(IntDir)%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -118,6 +120,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalIncludeDirectories>./;../prop/AfxHookSource;../;../prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
+      <ObjectFileName>$(IntDir)%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -140,6 +143,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalIncludeDirectories>./;../prop/AfxHookSource;../;../prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
+      <ObjectFileName>$(IntDir)%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -151,6 +155,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\prop\AfxHookSource\cssV34\sdk_src\public\tools\bonelist.cpp" />
+    <ClCompile Include="..\prop\AfxHookSource\cssV34\sdk_src\tier1\keyvalues.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\SourceSdkShared.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\tf2\sdk_src\tier1\KeyValues.cpp" />
@@ -192,6 +198,7 @@
     <ClCompile Include="csgo_S_StartSound.cpp" />
     <ClCompile Include="csgo_view.cpp" />
     <ClCompile Include="csgo_vphysics.cpp" />
+    <ClCompile Include="cssV34\ClientToolsCssV34.cpp" />
     <ClCompile Include="d3d9Hooks.cpp" />
     <ClCompile Include="hlaeFolder.cpp" />
     <ClCompile Include="main.cpp" />
@@ -210,6 +217,16 @@
     <ClCompile Include="..\shared\StringTools.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\basehandle.h" />
+    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\const.h" />
+    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\engine\ishadowmgr.h" />
+    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\iclientrenderable.h" />
+    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\ihandleentity.h" />
+    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\tier1\keyvalues.h" />
+    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\toolframework\itoolentity.h" />
+    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\toolframework\itoolframework.h" />
+    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\tools\bonelist.h" />
+    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\vstdlib\ikeyvaluessystem.h" />
     <ClInclude Include="..\prop\AfxHookSource\SourceSdkShared.h" />
     <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\basehandle.h" />
     <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\const.h" />
@@ -265,6 +282,7 @@
     <ClInclude Include="csgo_S_StartSound.h" />
     <ClInclude Include="csgo_view.h" />
     <ClInclude Include="csgo_vphysics.h" />
+    <ClInclude Include="cssV34\ClientToolsCssV34.h" />
     <ClInclude Include="d3d9Hooks.h" />
     <ClInclude Include="hlaeFolder.h" />
     <ClInclude Include="MatRenderContextHook.h" />

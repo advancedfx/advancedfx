@@ -32,6 +32,7 @@
 #include "ClientTools.h"
 #include "csgo/ClientToolsCsgo.h"
 #include "tf2/ClientToolsTf2.h"
+#include "cssV34/ClientToolsCssV34.h"
 #include "MatRenderContextHook.h"
 //#include "csgo_IPrediction.h"
 #include "csgo_MemAlloc.h"
@@ -378,6 +379,39 @@ void _stdcall new_CVClient_FrameStageNotify_TF2(DWORD *this_ptr, SOURCESDK::TF2:
 	switch (curStage)
 	{
 	case SOURCESDK::TF2::FRAME_RENDER_END:
+		Shared_AfterFrameRenderEnd();
+	}
+}
+
+typedef void(__stdcall * CVClient_Shutdown_CSSV34_t)(DWORD *this_ptr);
+
+CVClient_Shutdown_CSSV34_t old_CVClient_Shutdown_CSSV34;
+
+void __stdcall new_CVClient_Shutdown_CSSV34(DWORD *this_ptr)
+{
+	Shared_Shutdown();
+
+	old_CVClient_Shutdown_CSSV34(this_ptr);
+}
+
+typedef void (__stdcall * CVClient_FrameStageNotify_CSSV34_t)(DWORD *this_ptr, SOURCESDK::CSSV34::ClientFrameStage_t curStage);
+
+CVClient_FrameStageNotify_CSSV34_t old_CVClient_FrameStageNotify_CSSV34;
+
+// Notification that we're moving into another stage during the frame.
+void _stdcall new_CVClient_FrameStageNotify_CSSV34(DWORD *this_ptr, SOURCESDK::CSSV34::ClientFrameStage_t curStage)
+{
+	switch (curStage)
+	{
+	case SOURCESDK::CSSV34::FRAME_RENDER_START:
+		Shared_BeforeFrameRenderStart();
+	}
+
+	old_CVClient_FrameStageNotify_CSSV34(this_ptr, curStage);
+
+	switch (curStage)
+	{
+	case SOURCESDK::CSSV34::FRAME_RENDER_END:
 		Shared_AfterFrameRenderEnd();
 	}
 }
@@ -1155,6 +1189,14 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 				DetourIfacePtr((DWORD *)&(vtable[2]), new_CVClient_Shutdown_TF2, (DetourIfacePtr_fn &)old_CVClient_Shutdown_TF2);
 				DetourIfacePtr((DWORD *)&(vtable[35]), new_CVClient_FrameStageNotify_TF2, (DetourIfacePtr_fn &)old_CVClient_FrameStageNotify_TF2);
 			}
+
+			if (iface && SourceSdkVer_CSSV34 == g_SourceSdkVer)
+			{
+				int * vtable = *(int**)iface;
+
+				DetourIfacePtr((DWORD *)&(vtable[1]), new_CVClient_Shutdown_CSSV34, (DetourIfacePtr_fn &)old_CVClient_Shutdown_CSSV34);
+				DetourIfacePtr((DWORD *)&(vtable[32]), new_CVClient_FrameStageNotify_CSSV34, (DetourIfacePtr_fn &)old_CVClient_FrameStageNotify_CSSV34);
+			}
 		}
 		if(SourceSdkVer_CSGO == g_SourceSdkVer)
 		{
@@ -1170,6 +1212,12 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 
 			if (SOURCESDK::TF2::IClientTools * iface = (SOURCESDK::TF2::IClientTools *)old_Client_CreateInterface(SOURCESDK_TF2_VCLIENTTOOLS_INTERFACE_VERSION, NULL))
 				new CClientToolsTf2(iface);
+		}
+		if(SourceSdkVer_CSSV34 == g_SourceSdkVer)
+		{
+
+			if (SOURCESDK::CSSV34::IClientTools * iface = (SOURCESDK::CSSV34::IClientTools *)old_Client_CreateInterface(SOURCESDK_CSSV34_VCLIENTTOOLS_INTERFACE_VERSION, NULL))
+				new CClientToolsCssV34(iface);
 		}
 	}
 
@@ -1369,7 +1417,7 @@ BOOL WINAPI new_SetCursorPos(
 
 void AfxV34HookWindow(void)
 {
-	if(SourceSdkVer_CSS_V34 == g_SourceSdkVer)
+	if(SourceSdkVer_CSSV34 == g_SourceSdkVer)
 	{
 		HWND hWnd = FindWindowW(L"Valve001",NULL);
 
@@ -1425,7 +1473,7 @@ void CommonHooks()
 
 		if (wcsstr(GetCommandLineW(), L"-afxV34"))
 		{
-			g_SourceSdkVer = SourceSdkVer_CSS_V34;
+			g_SourceSdkVer = SourceSdkVer_CSSV34;
 		}
 		else if (StringEndsWith(filePath, "csgo.exe"))
 		{
@@ -1461,7 +1509,7 @@ void CommonHooks()
 			Tier0_ConWarning = (Tier0MsgFn)GetProcAddress(hTier0, "ConWarning");
 			Tier0_ConLog = (Tier0MsgFn)GetProcAddress(hTier0, "ConLog");
 
-			if (SourceSdkVer_CSS_V34 == g_SourceSdkVer)
+			if (SourceSdkVer_CSSV34 == g_SourceSdkVer)
 			{
 				InterceptDllCall(hTier0, "USER32.dll", "GetCursorPos", (DWORD)&new_GetCursorPos);
 				InterceptDllCall(hTier0, "USER32.dll", "SetCursorPos", (DWORD)&new_SetCursorPos);
@@ -1541,7 +1589,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		InterceptDllCall(hModule, "USER32.dll", "GetWindowLongW", (DWORD) &new_GetWindowLongW);
 		InterceptDllCall(hModule, "USER32.dll", "SetWindowLongW", (DWORD) &new_SetWindowLongW);
 
-		if(SourceSdkVer_CSS_V34 == g_SourceSdkVer)
+		if(SourceSdkVer_CSSV34 == g_SourceSdkVer)
 		{
 			InterceptDllCall(hModule, "USER32.dll", "GetCursorPos", (DWORD) &new_GetCursorPos);
 			InterceptDllCall(hModule, "USER32.dll", "SetCursorPos", (DWORD) &new_SetCursorPos);

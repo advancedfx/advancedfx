@@ -89,6 +89,16 @@ public:
 		m_RecordViewModel = value;
 	}
 
+	bool RecordInvisible_get(void)
+	{
+		return m_RecordInvisible;
+	}
+
+	void RecordInvisible_set(bool value)
+	{
+		m_RecordInvisible = value;
+	}
+
 protected:
 	void WriteDictionary(char const * value);
 
@@ -115,6 +125,7 @@ private:
 	bool m_RecordWeapons = true;
 	bool m_RecordProjectiles = true;
 	bool m_RecordViewModel = false;
+	bool m_RecordInvisible = false;
 
 	void Dictionary_Clear()
 	{

@@ -76,7 +76,7 @@ void CClientTools::StartRecording(wchar_t const * fileName)
 	{
 		fputs("afxGameRecord", m_File);
 		fputc('\0', m_File);
-		int version = 2;
+		int version = 3;
 		fwrite(&version, sizeof(version), 1, m_File);
 	}
 	else
@@ -280,6 +280,25 @@ bool ClientTools_Console_Cfg(IWrpCommandArgs * args)
 				"This feature is not fully supported, will only work in CS:GO and will have the following problems:\n"
 				"- You'll need to set cl_custom_material_override 0.\n"
 				"- Most import plugins won't know how to handle the viewmodel FOV properly, meaning it will look different from in-game.\n"
+				"- You will need to enable recordInvisible, since HLAE can't accurately tell if its visible or not."
+			);
+			return true;
+		}
+		else if (0 == _stricmp("recordInvisible", cmd1))
+		{
+			if (3 <= argc)
+			{
+				char const * cmd2 = args->ArgV(2);
+
+				clientTools->RecordInvisible_set(0 != atoi(cmd2));
+				return true;
+			}
+
+			Tier0_Msg(
+				"%s recordInvisible 0|1 - Enable (1) / Disable (0) recording of invisible entities. (Enabling it can cause AGRs with trash data.)\n"
+				"Current value: %i.\n"
+				, prefix
+				, clientTools->RecordInvisible_get() ? 1 : 0
 			);
 			return true;
 		}
@@ -308,13 +327,15 @@ bool ClientTools_Console_Cfg(IWrpCommandArgs * args)
 		"%s recordPlayers [...]\n"
 		"%s recordWeapons [...]\n"
 		"%s recordProjectiles [...]\n"
-		//"%s recordViewmodel [...]\n"
+		"%s recordViewmodel [...] - (not recommended)\n"
+		"%s recordInvisible [...] - (not recommended)\n"
 		"%s debug [...]\n"
 		, prefix
 		, prefix
 		, prefix
 		, prefix
-		//, prefix
+		, prefix
+		, prefix
 		, prefix
 	);
 

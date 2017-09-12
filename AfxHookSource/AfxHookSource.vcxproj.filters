@@ -25,20 +25,11 @@
     <Filter Include="prop\AfxHookSource">
       <UniqueIdentifier>{71347936-3615-40c3-9176-b40656efd2c1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="prop\AfxHookSource\csgo">
-      <UniqueIdentifier>{0285dd76-b380-446a-8273-76e374cbae08}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="prop\AfxHookSource\css">
-      <UniqueIdentifier>{aecfea7e-4960-4d2e-8abb-e2ec561a90d8}</UniqueIdentifier>
-    </Filter>
     <Filter Include="prop\AfxHookSource\tf2">
       <UniqueIdentifier>{f1fd1053-13bd-4e50-b0a8-289b92753542}</UniqueIdentifier>
     </Filter>
     <Filter Include="AfxHookSource\csgo">
       <UniqueIdentifier>{20d707f9-e03c-4fc7-be5e-25e6860de1b6}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="AfxHookSource\css">
-      <UniqueIdentifier>{d238df75-30d1-4169-9ecd-7d78bb06b430}</UniqueIdentifier>
     </Filter>
     <Filter Include="AfxHookSource\tf2">
       <UniqueIdentifier>{893953cb-3fd1-472a-bfbc-29dac105e26a}</UniqueIdentifier>
@@ -52,20 +43,8 @@
     <Filter Include="prop\AfxHookSource\tf2\sdk_src\public\toolframework">
       <UniqueIdentifier>{72a42bdc-b41a-43e3-a509-b61415b6ac50}</UniqueIdentifier>
     </Filter>
-    <Filter Include="prop\AfxHookSource\css\sdk_src">
-      <UniqueIdentifier>{c025075d-44ec-4893-9f19-4fdd7d434f49}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="prop\AfxHookSource\css\sdk_src\public">
-      <UniqueIdentifier>{fa7190ba-5245-4a59-b42f-40d74743d315}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="prop\AfxHookSource\css\sdk_src\public\toolframework">
-      <UniqueIdentifier>{1f32ba19-7969-4332-a8ae-b386b56bb4d1}</UniqueIdentifier>
-    </Filter>
     <Filter Include="prop\AfxHookSource\tf2\sdk_src\public\engine">
       <UniqueIdentifier>{518eddb5-9fb7-4975-b5fb-031e96dc5fe6}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="prop\AfxHookSource\css\sdk_src\engine">
-      <UniqueIdentifier>{a661d733-badf-4678-8dd4-6b56d2dab6d6}</UniqueIdentifier>
     </Filter>
     <Filter Include="prop\AfxHookSource\tf2\sdk_src\public\tier1">
       <UniqueIdentifier>{900f95bf-6aa8-4761-b1cc-b7ac0d1e7de4}</UniqueIdentifier>
@@ -78,6 +57,36 @@
     </Filter>
     <Filter Include="prop\AfxHookSource\tf2\sdk_src\public\tools">
       <UniqueIdentifier>{74c259a2-fd30-4bde-9926-a78254fc378c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AfxHookSource\cssV34">
+      <UniqueIdentifier>{d238df75-30d1-4169-9ecd-7d78bb06b430}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\cssV34">
+      <UniqueIdentifier>{69f81927-4973-4858-b058-54f7ad644587}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\cssV34\sdk_src">
+      <UniqueIdentifier>{48a28d04-4c64-4277-aaa2-874a84be6132}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\cssV34\sdk_src\public">
+      <UniqueIdentifier>{9f590147-19b0-4f1b-adff-08ad2360f8dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\cssV34\sdk_src\public\toolframework">
+      <UniqueIdentifier>{77f22d89-0eab-4edb-8ed3-8fc51ace3d32}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\cssV34\sdk_src\public\engine">
+      <UniqueIdentifier>{8c436896-f82f-4fbd-9bcc-5e7eb7d2c3b7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\cssV34\sdk_src\public\tier1">
+      <UniqueIdentifier>{a0cc0d1f-a236-47f7-88c6-3cdd63b61b20}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\cssV34\sdk_src\public\tools">
+      <UniqueIdentifier>{fd185cae-14ea-47af-8139-a82a6e697876}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\cssV34\sdk_src\public\vstdlib">
+      <UniqueIdentifier>{59aef25b-0f24-4f21-9136-81273a3d7682}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\cssV34\sdk_src\tier1">
+      <UniqueIdentifier>{1d7943ac-34f6-46f1-a19f-c4f21be91199}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -251,6 +260,15 @@
     </ClCompile>
     <ClCompile Include="..\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.cpp">
       <Filter>prop\AfxHookSource\tf2\sdk_src\public\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="cssV34\ClientToolsCssV34.cpp">
+      <Filter>AfxHookSource\cssV34</Filter>
+    </ClCompile>
+    <ClCompile Include="..\prop\AfxHookSource\cssV34\sdk_src\tier1\keyvalues.cpp">
+      <Filter>prop\AfxHookSource\cssV34\sdk_src\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\prop\AfxHookSource\cssV34\sdk_src\public\tools\bonelist.cpp">
+      <Filter>prop\AfxHookSource\cssV34\sdk_src\public\tools</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -463,6 +481,39 @@
     </ClInclude>
     <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.h">
       <Filter>prop\AfxHookSource\tf2\sdk_src\public\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="cssV34\ClientToolsCssV34.h">
+      <Filter>AfxHookSource\cssV34</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\toolframework\itoolentity.h">
+      <Filter>prop\AfxHookSource\cssV34\sdk_src\public\toolframework</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\toolframework\itoolframework.h">
+      <Filter>prop\AfxHookSource\cssV34\sdk_src\public\toolframework</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\engine\ishadowmgr.h">
+      <Filter>prop\AfxHookSource\cssV34\sdk_src\public\engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\tier1\keyvalues.h">
+      <Filter>prop\AfxHookSource\cssV34\sdk_src\public\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\tools\bonelist.h">
+      <Filter>prop\AfxHookSource\cssV34\sdk_src\public\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\vstdlib\ikeyvaluessystem.h">
+      <Filter>prop\AfxHookSource\cssV34\sdk_src\public\vstdlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\basehandle.h">
+      <Filter>prop\AfxHookSource\cssV34\sdk_src\public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\const.h">
+      <Filter>prop\AfxHookSource\cssV34\sdk_src\public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\iclientrenderable.h">
+      <Filter>prop\AfxHookSource\cssV34\sdk_src\public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\ihandleentity.h">
+      <Filter>prop\AfxHookSource\cssV34\sdk_src\public</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

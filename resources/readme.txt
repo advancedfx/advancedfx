@@ -251,7 +251,7 @@ Brett 'xNWP'
 Peter 'psh' P.
 	Technical support, former IRC, Discord admin.
 	Since January 2016
-	http://steamcommunity.com/id/psh4president
+	https://twitter.com/_peterpsh_
 
 Sebastian 'msthavoc' H.
 	Programming of additional tools, testing, community relations, documentation and tutorials.
@@ -260,7 +260,7 @@ Sebastian 'msthavoc' H.
 
 '1suky1'
 	Discord moderator.
-	ince July 2017.
+	Since July 2017.
 	https://twitter.com/1suky1
 
 'fuze'

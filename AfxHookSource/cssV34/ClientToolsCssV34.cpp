@@ -1,42 +1,44 @@
 #include "stdafx.h"
 
-#include "ClientToolsTf2.h"
+#include "ClientToolsCssV34.h"
 
 #include "addresses.h"
 #include "RenderView.h"
 
-#include <tf2/sdk_src/public/tier1/KeyValues.h>
-#include <tf2/sdk_src/public/tools/bonelist.h>
+#include <cssV34/sdk_src/public/tier1/KeyValues.h>
+#include <cssV34/sdk_src/public/tools/bonelist.h>
 
 #include <shared/StringTools.h>
 
-CClientToolsTf2 * CClientToolsTf2::m_Instance = 0;
+using namespace SOURCESDK::CSSV34;
 
-CClientToolsTf2::CClientToolsTf2(SOURCESDK::TF2::IClientTools * clientTools)
+CClientToolsCssV34 * CClientToolsCssV34::m_Instance = 0;
+
+CClientToolsCssV34::CClientToolsCssV34(SOURCESDK::CSSV34::IClientTools * clientTools)
 	: CClientTools()
 	, m_ClientTools(clientTools)
 {
 	m_Instance = this;
 }
 
-CClientToolsTf2::~CClientToolsTf2()
+CClientToolsCssV34::~CClientToolsCssV34()
 {
 	m_Instance = 0;
 }
 
-void CClientToolsTf2::OnPostToolMessage(void * hEntity, void * msg)
+void CClientToolsCssV34::OnPostToolMessage(void * hEntity, void * msg)
 {
 	CClientTools::OnPostToolMessage(hEntity, msg);
 
-	OnPostToolMessageTf2(reinterpret_cast<SOURCESDK::TF2::HTOOLHANDLE>(hEntity), reinterpret_cast<SOURCESDK::TF2::KeyValues *>(msg));
+	OnPostToolMessageCssV34(reinterpret_cast<SOURCESDK::CSSV34::HTOOLHANDLE>(hEntity), reinterpret_cast<SOURCESDK::CSSV34::KeyValues *>(msg));
 }
 
-void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, SOURCESDK::TF2::KeyValues * msg)
+void CClientToolsCssV34::OnPostToolMessageCssV34(SOURCESDK::CSSV34::HTOOLHANDLE hEntity, SOURCESDK::CSSV34::KeyValues * msg)
 {
 	if (!GetRecording())
 		return;
 
-	if (!(hEntity != SOURCESDK::CSGO::HTOOLHANDLE_INVALID) && msg)
+	if (!(hEntity != SOURCESDK::CSSV34::HTOOLHANDLE_INVALID) && msg)
 		return;
 
 	char const * msgName = msg->GetName();
@@ -47,15 +49,15 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 
 		if (0 != Debug_get())
 		{
-			if(2 <= Debug_get())
+			if (2 <= Debug_get())
 			{
 				Tier0_Msg("-- %s (%i) --\n", className, hEntity);
-				for (SOURCESDK::TF2::KeyValues * subKey = msg->GetFirstSubKey(); 0 != subKey; subKey = subKey->GetNextKey())
+				for (SOURCESDK::CSSV34::KeyValues * subKey = msg->GetFirstSubKey(); 0 != subKey; subKey = subKey->GetNextKey())
 					Tier0_Msg("%s,\n", subKey->GetName());
 				Tier0_Msg("----\n");
 			}
-			
-			if (SOURCESDK::TF2::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::TF2::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity")))
+
+			if (SOURCESDK::CSSV34::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::CSSV34::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity")))
 			{
 				Tier0_Msg("%i: %s: %s\n", hEntity, className, pBaseEntityRs->m_pModelName);
 			}
@@ -63,23 +65,26 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 
 		bool isPlayer =
 			false
-			|| className && (
-				!strcmp(className, "class C_TFPlayer")
-				|| !strcmp(className, "class C_TFRagdoll")
-				)
+			|| className && !strcmp(className, "class C_CSRagdoll")
 			;
 
 		bool isWeapon =
 			false
 			|| className && (
-				StringBeginsWith(className, "tf_weapon_")
-				|| !strcmp(className, "grenade")
+				!strcmp(className, "weaponworldmodel")
+				// cannot allow this for now, import plugins will cause model spam the way they work currently: // || !strcmp(className, "class C_PlayerAddonModel")
 				)
 			;
 
 		bool isProjectile =
-			false
-			|| className && StringBeginsWith(className, "class C_TFProjectile_")
+			className && StringEndsWith(className, "Projectile")
+			;
+
+		bool isViewModel =
+			className && (
+				!strcmp(className, "predicted_viewmodel")
+				|| !strcmp(className, "class C_ViewmodelAttachmentModel")
+				)
 			;
 
 		if (false
@@ -88,14 +93,13 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 			|| RecordProjectiles_get() && isProjectile
 			)
 		{
-
-			SOURCESDK::TF2::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::TF2::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity"));
+			SOURCESDK::CSSV34::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::CSSV34::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity"));
 
 			if (!RecordInvisible_get() && !(pBaseEntityRs && pBaseEntityRs->m_bVisible))
 			{
 				// Entity not visible, avoid trash data:
 
-				std::map<SOURCESDK::TF2::HTOOLHANDLE,bool>::iterator it = m_TrackedHandles.find(hEntity);
+				std::map<SOURCESDK::CSSV34::HTOOLHANDLE,bool>::iterator it = m_TrackedHandles.find(hEntity);
 				if (it != m_TrackedHandles.end() && it->second)
 				{
 					WriteDictionary("afxHidden");
@@ -113,7 +117,7 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 			WriteDictionary("entity_state");
 			Write((int)hEntity);
 			{
-				SOURCESDK::TF2::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::TF2::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity"));
+				SOURCESDK::CSSV34::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::CSSV34::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity"));
 				if (pBaseEntityRs)
 				{
 					WriteDictionary("baseentity");
@@ -127,10 +131,10 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 				}
 			}
 
-			m_TrackedHandles[hEntity] = true;
+			m_TrackedHandles[hEntity] = wasVisible;
 
 			{
-				SOURCESDK::TF2::BaseAnimatingRecordingState_t * pBaseAnimatingRs = (SOURCESDK::TF2::BaseAnimatingRecordingState_t *)(msg->GetPtr("baseanimating"));
+				SOURCESDK::CSSV34::BaseAnimatingRecordingState_t * pBaseAnimatingRs = (SOURCESDK::CSSV34::BaseAnimatingRecordingState_t *)(msg->GetPtr("baseanimating"));
 				if (pBaseAnimatingRs)
 				{
 					WriteDictionary("baseanimating");
@@ -147,7 +151,7 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 
 			WriteDictionary("/");
 
-			bool viewModel = msg->GetBool("viewmodel");
+			bool viewModel = 0 != msg->GetInt("viewmodel");
 
 			Write((bool)viewModel);
 		}
@@ -155,7 +159,7 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 	else
 		if (!strcmp("deleted", msgName))
 		{
-			std::map<SOURCESDK::TF2::HTOOLHANDLE,bool>::iterator it = m_TrackedHandles.find(hEntity);
+			std::map<SOURCESDK::CSSV34::HTOOLHANDLE,bool>::iterator it = m_TrackedHandles.find(hEntity);
 			if (it != m_TrackedHandles.end())
 			{
 				WriteDictionary("deleted");
@@ -167,18 +171,18 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 		}
 }
 
-void CClientToolsTf2::OnBeforeFrameRenderStart(void)
+void CClientToolsCssV34::OnBeforeFrameRenderStart(void)
 {
 	CClientTools::OnBeforeFrameRenderStart();
 
 	if (!GetRecording())
 		return;
 
-	for (SOURCESDK::TF2::EntitySearchResult ent = m_ClientTools->FirstEntity(); 0 != ent; ent = m_ClientTools->NextEntity(ent))
+	for (EntitySearchResult ent = m_ClientTools->FirstEntity(); 0 != ent; ent = m_ClientTools->NextEntity(ent))
 	{
-		SOURCESDK::TF2::HTOOLHANDLE hEnt = m_ClientTools->AttachToEntity(ent);
+		SOURCESDK::CSSV34::HTOOLHANDLE hEnt = m_ClientTools->AttachToEntity(ent);
 
-		if (hEnt != SOURCESDK::CSGO::HTOOLHANDLE_INVALID && m_ClientTools->ShouldRecord(hEnt))
+		if (hEnt != SOURCESDK::CSSV34::HTOOLHANDLE_INVALID)// && m_ClientTools->ShouldRecord(hEnt))
 		{
 			m_ClientTools->SetRecording(hEnt, true);
 		}
@@ -189,13 +193,13 @@ void CClientToolsTf2::OnBeforeFrameRenderStart(void)
 
 }
 
-void CClientToolsTf2::OnAfterFrameRenderEnd(void)
+void CClientToolsCssV34::OnAfterFrameRenderEnd(void)
 {
 
 	CClientTools::OnAfterFrameRenderEnd();
 }
 
-void CClientToolsTf2::StartRecording(wchar_t const * fileName)
+void CClientToolsCssV34::StartRecording(wchar_t const * fileName)
 {
 	CClientTools::StartRecording(fileName);
 
@@ -205,7 +209,7 @@ void CClientToolsTf2::StartRecording(wchar_t const * fileName)
 	}
 }
 
-void CClientToolsTf2::EndRecording()
+void CClientToolsCssV34::EndRecording()
 {
 	if (GetRecording())
 	{
@@ -215,7 +219,7 @@ void CClientToolsTf2::EndRecording()
 	CClientTools::EndRecording();
 }
 
-void CClientToolsTf2::Write(SOURCESDK::TF2::CBoneList const * value)
+void CClientToolsCssV34::Write(SOURCESDK::CSSV34::CBoneList const * value)
 {
 	Write((int)value->m_nBones);
 
