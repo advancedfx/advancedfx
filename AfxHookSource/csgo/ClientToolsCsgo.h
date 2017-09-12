@@ -27,6 +27,8 @@ public:
 	void DebugEntIndex(int index);
 
 protected:
+	virtual float ScaleFov(int width, int height, float fov);
+
 	using CClientTools::Write;
 
 private:

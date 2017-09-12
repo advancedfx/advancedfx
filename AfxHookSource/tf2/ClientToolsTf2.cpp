@@ -98,9 +98,7 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 				std::map<SOURCESDK::TF2::HTOOLHANDLE,bool>::iterator it = m_TrackedHandles.find(hEntity);
 				if (it != m_TrackedHandles.end() && it->second)
 				{
-					WriteDictionary("afxHidden");
-					Write((int)(it->first));
-					Write((float)g_Hook_VClient_RenderView.GetGlobals()->curtime_get());
+					MarkHidden((int)(it->first));
 
 					it->second = false;
 				}
@@ -152,19 +150,18 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 			Write((bool)viewModel);
 		}
 	}
-	else
-		if (!strcmp("deleted", msgName))
+	else if (!strcmp("deleted", msgName))
+	{
+		std::map<SOURCESDK::TF2::HTOOLHANDLE,bool>::iterator it = m_TrackedHandles.find(hEntity);
+		if (it != m_TrackedHandles.end())
 		{
-			std::map<SOURCESDK::TF2::HTOOLHANDLE,bool>::iterator it = m_TrackedHandles.find(hEntity);
-			if (it != m_TrackedHandles.end())
-			{
-				WriteDictionary("deleted");
-				Write((int)(it->first));
-				Write((float)g_Hook_VClient_RenderView.GetGlobals()->curtime_get());
+			WriteDictionary("deleted");
+			Write((int)(it->first));
+			Write((float)g_Hook_VClient_RenderView.GetGlobals()->curtime_get());
 
-				m_TrackedHandles.erase(it);
-			}
+			m_TrackedHandles.erase(it);
 		}
+	}
 }
 
 void CClientToolsTf2::OnBeforeFrameRenderStart(void)
@@ -213,6 +210,11 @@ void CClientToolsTf2::EndRecording()
 	}
 
 	CClientTools::EndRecording();
+}
+
+float CClientToolsTf2::ScaleFov(int width, int height, float fov)
+{
+	return (float)AlienSwarm_FovScaling(g_Hook_VClient_RenderView.LastWidth, g_Hook_VClient_RenderView.LastHeight, g_Hook_VClient_RenderView.LastCameraFov);
 }
 
 void CClientToolsTf2::Write(SOURCESDK::TF2::CBoneList const * value)

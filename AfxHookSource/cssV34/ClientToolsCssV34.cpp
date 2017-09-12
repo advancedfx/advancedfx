@@ -72,7 +72,7 @@ void CClientToolsCssV34::OnPostToolMessageCssV34(SOURCESDK::CSSV34::HTOOLHANDLE 
 			false
 			|| className && (
 				!strcmp(className, "weaponworldmodel")
-				// cannot allow this for now, import plugins will cause model spam the way they work currently: // || !strcmp(className, "class C_PlayerAddonModel")
+				|| !strcmp(className, "class C_PlayerAddonModel")
 				)
 			;
 
@@ -102,9 +102,7 @@ void CClientToolsCssV34::OnPostToolMessageCssV34(SOURCESDK::CSSV34::HTOOLHANDLE 
 				std::map<SOURCESDK::CSSV34::HTOOLHANDLE,bool>::iterator it = m_TrackedHandles.find(hEntity);
 				if (it != m_TrackedHandles.end() && it->second)
 				{
-					WriteDictionary("afxHidden");
-					Write((int)(it->first));
-					Write((float)g_Hook_VClient_RenderView.GetGlobals()->curtime_get());
+					MarkHidden((int)(it->first));
 
 					it->second = false;
 				}
@@ -156,19 +154,18 @@ void CClientToolsCssV34::OnPostToolMessageCssV34(SOURCESDK::CSSV34::HTOOLHANDLE 
 			Write((bool)viewModel);
 		}
 	}
-	else
-		if (!strcmp("deleted", msgName))
+	else if (!strcmp("deleted", msgName))
+	{
+		std::map<SOURCESDK::CSSV34::HTOOLHANDLE,bool>::iterator it = m_TrackedHandles.find(hEntity);
+		if (it != m_TrackedHandles.end())
 		{
-			std::map<SOURCESDK::CSSV34::HTOOLHANDLE,bool>::iterator it = m_TrackedHandles.find(hEntity);
-			if (it != m_TrackedHandles.end())
-			{
-				WriteDictionary("deleted");
-				Write((int)(it->first));
-				Write((float)g_Hook_VClient_RenderView.GetGlobals()->curtime_get());
+			WriteDictionary("deleted");
+			Write((int)(it->first));
+			Write((float)g_Hook_VClient_RenderView.GetGlobals()->curtime_get());
 
-				m_TrackedHandles.erase(it);
-			}
+			m_TrackedHandles.erase(it);
 		}
+	}
 }
 
 void CClientToolsCssV34::OnBeforeFrameRenderStart(void)

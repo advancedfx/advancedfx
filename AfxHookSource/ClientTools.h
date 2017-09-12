@@ -4,6 +4,7 @@
 #include "WrpConsole.h"
 
 #include <string>
+#include <set>
 #include <map>
 
 class CClientTools abstract
@@ -100,6 +101,8 @@ public:
 	}
 
 protected:
+	virtual float ScaleFov(int width, int height, float fov) { return fov; }
+
 	void WriteDictionary(char const * value);
 
 	void Write(bool value);
@@ -111,10 +114,15 @@ protected:
 	void Write(SOURCESDK::QAngle const & value);
 	void Write(SOURCESDK::Quaternion const & value);
 
+	void MarkHidden(int value);
+
 private:
 	static CClientTools * m_Instance;
 
 	std::map<std::string, int> m_Dictionary;
+
+	size_t m_HiddenFileOffset;
+	std::set<int> m_Hidden;
 
 	bool m_Recording;
 	FILE * m_File;

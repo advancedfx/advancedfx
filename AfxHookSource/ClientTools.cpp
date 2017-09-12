@@ -35,6 +35,16 @@ void CClientTools::OnPostToolMessage(void * hEntity, void * msg)
 
 void CClientTools::OnBeforeFrameRenderStart(void)
 {
+	if (!m_Recording)
+		return;
+
+	if (m_File)
+	{
+		WriteDictionary("afxHiddenOffset");
+		m_HiddenFileOffset = ftell(m_File);
+		Write((int)0);
+	}
+	
 }
 
 void CClientTools::OnAfterFrameRenderEnd(void)
@@ -52,7 +62,32 @@ void CClientTools::OnAfterFrameRenderEnd(void)
 		Write((float)g_Hook_VClient_RenderView.LastCameraAngles[0]);
 		Write((float)g_Hook_VClient_RenderView.LastCameraAngles[1]);
 		Write((float)g_Hook_VClient_RenderView.LastCameraAngles[2]);
-		Write((float)AlienSwarm_FovScaling(g_Hook_VClient_RenderView.LastWidth, g_Hook_VClient_RenderView.LastHeight, g_Hook_VClient_RenderView.LastCameraFov));
+		Write((float)ScaleFov(g_Hook_VClient_RenderView.LastWidth, g_Hook_VClient_RenderView.LastHeight, (float)g_Hook_VClient_RenderView.LastCameraFov));
+	}
+
+	if (m_File && m_HiddenFileOffset && 0 < m_Hidden.size())
+	{
+		WriteDictionary("afxHidden");
+
+		size_t curOffset = ftell(m_File);
+
+		int offset = (int)(curOffset - m_HiddenFileOffset);
+
+		fseek(m_File, m_HiddenFileOffset, SEEK_SET);
+		Write((int)offset);
+		fseek(m_File, curOffset, SEEK_SET);
+
+		Write((float)g_Hook_VClient_RenderView.GetGlobals()->curtime_get());
+
+		Write((int)m_Hidden.size());
+
+		for (std::set<int>::iterator it = m_Hidden.begin(); it != m_Hidden.end(); ++it)
+		{
+			Write((int)(*it));
+		}
+
+		m_Hidden.clear();
+		m_HiddenFileOffset = 0;
 	}
 }
 
@@ -69,6 +104,9 @@ void CClientTools::StartRecording(wchar_t const * fileName)
 
 	Dictionary_Clear();
 	m_File = 0;
+
+	m_HiddenFileOffset = 0;
+	m_Hidden.clear();
 
 	_wfopen_s(&m_File, fileName, L"wb");
 
@@ -166,6 +204,11 @@ void CClientTools::Write(SOURCESDK::Quaternion const & value)
 	Write((float)value.y);
 	Write((float)value.z);
 	Write((float)value.w);
+}
+
+void CClientTools::MarkHidden(int value)
+{
+	m_Hidden.insert(value);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -280,7 +323,7 @@ bool ClientTools_Console_Cfg(IWrpCommandArgs * args)
 				"This feature is not fully supported, will only work in CS:GO and will have the following problems:\n"
 				"- You'll need to set cl_custom_material_override 0.\n"
 				"- Most import plugins won't know how to handle the viewmodel FOV properly, meaning it will look different from in-game.\n"
-				"- You will need to enable recordInvisible, since HLAE can't accurately tell if its visible or not."
+				"- You will need to enable recordInvisible, since HLAE can't accurately tell if attachments of it are visible or not."
 			);
 			return true;
 		}

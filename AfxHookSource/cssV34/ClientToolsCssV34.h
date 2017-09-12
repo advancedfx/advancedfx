@@ -25,8 +25,6 @@ public:
 
 	virtual void EndRecording();
 
-	void DebugEntIndex(int index);
-
 protected:
 	using CClientTools::Write;
 
