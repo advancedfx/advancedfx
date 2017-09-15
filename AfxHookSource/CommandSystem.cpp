@@ -304,23 +304,32 @@ void CommandSystem::Do_Commands(void)
 	{
 		int tick = g_VEngineClient->GetDemoInfoEx()->GetDemoPlaybackTick();
 
-		if (Enabled && 0 < m_TickMap.size())
-		{
-			for (
-				std::map<int, std::string>::iterator it = m_TickMap.upper_bound(m_LastTick);
-				it != m_TickMap.end() && it->first <= tick;
-				++it)
-			{
-				g_VEngineClient->ExecuteClientCmd(it->second.c_str());
-			}
-		}
+		//Tier0_Msg("%i\n", tick);
 
-		m_LastTick = tick;
+		if (0 != tick) // this can happen when using the prev-tick button on demoui
+		{
+
+			if (Enabled && 0 < m_TickMap.size())
+			{
+				for (
+					std::map<int, std::string>::iterator it = m_TickMap.upper_bound(m_LastTick);
+					it != m_TickMap.end() && it->first <= tick;
+					++it)
+				{
+					//Tier0_Msg("%i < %i <= %i\n", m_LastTick, it->first, tick);
+					g_VEngineClient->ExecuteClientCmd(it->second.c_str());
+				}
+			}
+
+			m_LastTick = tick;
+		}
 	}
 
 	if (IsSupportedByTime())
 	{
 		double time = g_Hook_VClient_RenderView.GetGlobals()->curtime_get();
+
+		//Tier0_Msg("%f\n", time);
 
 		if (Enabled && 0 < m_Map.size())
 		{

@@ -6,6 +6,25 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.28.0</version>
+<time>2017-09-15T10:26Z</time>
+<changes>
+<change type="fixed">
+Adjusted to 9/14/2017 CS:GO update:<br />
+Fixed Problem in addresses.cpp:261, caused mirv_streams sound recording not working.
+</change>
+<change type="fixed">
+Fixed infinite loop in mirv_cmd when using ticks and using the demoui previous tick button (as noted somewhere else, you should not use the tick buttons in demoui, those are bugged).
+</change>
+<change type="updated">
+Updated to AGR version 3: Allows model-reuse for import tools, enabled player attachments in CS:GO, added sub-options recordViewmodel (not recommended, enter without options for reasons, needs recordInvisible, default 0 (off)) and recordInvisible (not recommended, since it will record trash data, even though the AGR 3 import tools try to dampen it a bit, default 0 (off)).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.27.0</version>
 <time>2017-08-18T17:50Z</time>
 <changes>
