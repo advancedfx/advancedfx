@@ -6,6 +6,19 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.29.0</version>
+<time>2017-09-15T18:25Z</time>
+<changes>
+<change type="added">
+Added AGR support for CSSV34. Thanks to fuze ( https://twitter.com/over_fuze ) for helping with developement and testing. Also thanks to Contrastniy ( https://twitter.com/Contrastniy )for helping find the right Source SDK (2006).
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.28.0</version>
 <time>2017-09-15T10:26Z</time>
 <changes>

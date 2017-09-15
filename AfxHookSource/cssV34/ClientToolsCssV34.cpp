@@ -65,25 +65,27 @@ void CClientToolsCssV34::OnPostToolMessageCssV34(SOURCESDK::CSSV34::HTOOLHANDLE 
 
 		bool isPlayer =
 			false
-			|| className && !strcmp(className, "class C_CSRagdoll")
+			|| className && (
+				!strcmp(className, "class C_CSPlayer")
+				|| !strcmp(className, "class C_CSRagdoll")
+				)
 			;
 
 		bool isWeapon =
 			false
 			|| className && (
-				!strcmp(className, "weaponworldmodel")
-				|| !strcmp(className, "class C_PlayerAddonModel")
+				StringBeginsWith(className, "weapon_")
+				|| !strcmp(className, "class C_BreakableProp")
 				)
 			;
 
 		bool isProjectile =
-			className && StringEndsWith(className, "Projectile")
+			className && !strcmp(className, "grenade")
 			;
 
 		bool isViewModel =
 			className && (
-				!strcmp(className, "predicted_viewmodel")
-				|| !strcmp(className, "class C_ViewmodelAttachmentModel")
+				!strcmp(className, "viewmodel")
 				)
 			;
 
@@ -91,6 +93,7 @@ void CClientToolsCssV34::OnPostToolMessageCssV34(SOURCESDK::CSSV34::HTOOLHANDLE 
 			|| RecordPlayers_get() && isPlayer
 			|| RecordWeapons_get() && isWeapon
 			|| RecordProjectiles_get() && isProjectile
+			|| RecordViewModel_get() && isViewModel
 			)
 		{
 			SOURCESDK::CSSV34::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::CSSV34::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity"));
