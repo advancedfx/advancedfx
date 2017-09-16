@@ -115,7 +115,7 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 				if (pBaseEntityRs)
 				{
 					WriteDictionary("baseentity");
-					Write((float)pBaseEntityRs->m_flTime);
+					//Write((float)pBaseEntityRs->m_flTime);
 					WriteDictionary(pBaseEntityRs->m_pModelName);
 					Write((bool)pBaseEntityRs->m_bVisible);
 					Write(pBaseEntityRs->m_vecRenderOrigin);
@@ -157,7 +157,6 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 		{
 			WriteDictionary("deleted");
 			Write((int)(it->first));
-			Write((float)g_Hook_VClient_RenderView.GetGlobals()->curtime_get());
 
 			m_TrackedHandles.erase(it);
 		}

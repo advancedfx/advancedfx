@@ -40,7 +40,8 @@ void CClientTools::OnBeforeFrameRenderStart(void)
 
 	if (m_File)
 	{
-		WriteDictionary("afxHiddenOffset");
+		WriteDictionary("afxFrame");
+		Write((float)g_Hook_VClient_RenderView.GetGlobals()->absoluteframetime_get());
 		m_HiddenFileOffset = ftell(m_File);
 		Write((int)0);
 	}
@@ -55,7 +56,6 @@ void CClientTools::OnAfterFrameRenderEnd(void)
 	if(m_RecordCamera)
 	{
 		WriteDictionary("afxCam");
-		Write((float)g_Hook_VClient_RenderView.GetGlobals()->curtime_get());
 		Write((float)g_Hook_VClient_RenderView.LastCameraOrigin[0]);
 		Write((float)g_Hook_VClient_RenderView.LastCameraOrigin[1]);
 		Write((float)g_Hook_VClient_RenderView.LastCameraOrigin[2]);
@@ -77,8 +77,6 @@ void CClientTools::OnAfterFrameRenderEnd(void)
 		Write((int)offset);
 		fseek(m_File, curOffset, SEEK_SET);
 
-		Write((float)g_Hook_VClient_RenderView.GetGlobals()->curtime_get());
-
 		Write((int)m_Hidden.size());
 
 		for (std::set<int>::iterator it = m_Hidden.begin(); it != m_Hidden.end(); ++it)
@@ -89,6 +87,8 @@ void CClientTools::OnAfterFrameRenderEnd(void)
 		m_Hidden.clear();
 		m_HiddenFileOffset = 0;
 	}
+
+	WriteDictionary("afxFrameEnd");
 }
 
 bool CClientTools::GetRecording(void)
@@ -114,7 +114,7 @@ void CClientTools::StartRecording(wchar_t const * fileName)
 	{
 		fputs("afxGameRecord", m_File);
 		fputc('\0', m_File);
-		int version = 3;
+		int version = 4;
 		fwrite(&version, sizeof(version), 1, m_File);
 	}
 	else

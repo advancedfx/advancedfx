@@ -6,6 +6,19 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.30.0</version>
+<time>2017-09-16T22:00Z</time>
+<changes>
+<change type="updated">
+Updated AGR to version 4 (is frame based now, which solves quite a few problems, also the import plugin(s) have several bug-fixes).
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.29.0</version>
 <time>2017-09-15T18:25Z</time>
 <changes>

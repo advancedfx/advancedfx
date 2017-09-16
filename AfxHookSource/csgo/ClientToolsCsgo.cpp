@@ -119,6 +119,7 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 			|| className && (
 				!strcmp(className, "weaponworldmodel")
 				|| !strcmp(className, "class C_PlayerAddonModel")
+				|| !strcmp(className, "class C_PlantedC4")
 				)
 			;
 
@@ -205,7 +206,7 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 				if (pBaseEntityRs)
 				{
 					WriteDictionary("baseentity");
-					Write((float)pBaseEntityRs->m_flTime);
+					//Write((float)pBaseEntityRs->m_flTime);
 					WriteDictionary(pBaseEntityRs->m_pModelName);
 					Write((bool)pBaseEntityRs->m_bVisible);
 					Write(pBaseEntityRs->m_vecRenderOrigin);
@@ -247,7 +248,6 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 		{
 			WriteDictionary("deleted");
 			Write((int)(it->first));
-			Write((float)g_Hook_VClient_RenderView.GetGlobals()->curtime_get());
 
 			m_TrackedHandles.erase(it);
 		}
