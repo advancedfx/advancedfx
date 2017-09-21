@@ -6,6 +6,26 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.31.0</version>
+<time>2017-09-16T22:00Z</time>
+<changes>
+<change type="addded">
+Added mirv_voice record / mirv_streams record voices commands (you can use the one your prefer), allow writing of player voice in CS:GO into separate files. The voice delay can be controlled with mirv_voice record timePadding (default is game value of 0.2).<br />
+If you want the game sound withou the voices you can use: sv_cheats 1; snd_setmixer voip vol 0; (The default vol is 0.7.)
+</change>
+<change type="addded">
+Added mirv_voice block command, allows blocking of player voice in CS:GO.
+</change>
+<change type="updated">
+Updated AGR export:<br />
+For CS:GO: recordViewmodels doesn't require recordInvisible anymore, however all viewmodels and their parts will be marked as always visible for now.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.30.0</version>
 <time>2017-09-16T22:00Z</time>
 <changes>

@@ -320,10 +320,12 @@ bool ClientTools_Console_Cfg(IWrpCommandArgs * args)
 				, clientTools->RecordViewModel_get() ? 1 : 0
 			);
 			Tier0_Warning(
-				"This feature is not fully supported, will only work in CS:GO and will have the following problems:\n"
-				"- You'll need to set cl_custom_material_override 0.\n"
+				"This feature is not fully supported, will only work in CSSV34 and CS:GO at the moment.\n"
+				"It has the following general problems:\n"
 				"- Most import plugins won't know how to handle the viewmodel FOV properly, meaning it will look different from in-game.\n"
-				"- You will need to enable recordInvisible, since HLAE can't accurately tell if attachments of it are visible or not."
+				"In CS:GO it will have the following problems:\n"
+				"- You'll need to set cl_custom_material_override 0.\n"
+				"- There will be several trash viewmodels, not much we can do about."
 			);
 			return true;
 		}

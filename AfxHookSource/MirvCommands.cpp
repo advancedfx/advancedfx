@@ -761,6 +761,22 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					);
 					return;
 				}
+				else if (!_stricmp(cmd2, "voices"))
+				{
+					if (4 <= argc)
+					{
+						char const * cmd3 = args->ArgV(3);
+						g_AfxStreams.Console_RecordVoices_set(0 != atoi(cmd3));
+						return;
+					}
+
+					Tier0_Msg(
+						"mirv_streams record voices 0|1 - Whether to record voice WAV audio into separate files (1) or not (0).\n"
+						"Current value: %s.\n",
+						g_AfxStreams.Console_RecordVoices_get() ? "1" : "0"
+					);
+					return;
+				}
 				else
 				if (!_stricmp(cmd2, "bvh"))
 				{
@@ -835,6 +851,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 				"mirv_streams record matMotionBlurEnabled [...] - Control forcing of mat_motion_blur_enabled.\n"
 				"mirv_streams record matForceTonemapScale [...] - Control forcing of mat_force_tonemap_scale.\n"
 				"mirv_streams record startMovieWav [...] - Controls WAV audio recording.\n"
+				"mirv_streams record voices [...] - Controls voice WAV audio recording.\n"
 				"mirv_streams record bvh [...] - Controls the HLAE/BVH Camera motion data capture output.\n"
 				"mirv_streams record cam [...] - Controls the camera motion data capture output (can be imported with mirv_camio).\n"
 				"mirv_streams record agr [...] - Controls afxGameRecord (.agr) game state recording [still in developement, file format will have breaking changes].\n"
@@ -3654,6 +3671,39 @@ bool MirvVPanelSetVisible(char const * panelName, bool visible)
 	return false;
 }
 
+void MirvVPanelOnCommand(SOURCESDK::CSGO::vgui::Panel * panel, char const * command)
+{
+	int * vtable = *(int**)panel;
+
+	void * onCommand = (void *)vtable[277];
+
+	__asm push command
+	__asm mov ecx, panel
+	__asm call onCommand
+}
+
+void MirvDoVPanelOnCommand(char const * panelName, char const * panelCommand)
+{
+	if (!(g_pVGuiSurface_csgo && g_pVGuiPanel_csgo))
+	{
+		Tier0_Warning("Errror: Missing dependencies.\n");
+		return;
+	}
+
+	SOURCESDK::CSGO::vgui::VPANEL vpanel;
+
+	if (MirvFindVPanel(g_pVGuiSurface_csgo->GetEmbeddedPanel(), panelName, &vpanel))
+	{
+		SOURCESDK::CSGO::vgui::Panel * panel = g_pVGuiPanel_csgo->GetPanel(vpanel, "ClientDLL");
+		if (panel)
+			MirvVPanelOnCommand(panel, panelCommand);
+		else
+			Tier0_Warning("Error: GetPanel failed for %s\n", panelName);
+	}
+	else
+		Tier0_Warning("Error: Invalid panel name %s\n", panelName);
+}
+
 CON_COMMAND(mirv_vpanel, "VGUI Panel access")
 {
 	if (!(g_pVGuiSurface_csgo && g_pVGuiPanel_csgo))
@@ -3706,11 +3756,28 @@ CON_COMMAND(mirv_vpanel, "VGUI Panel access")
 			);
 			return;
 		}
+		else if (!_stricmp("command", cmd1))
+		{
+			if (4 <= argc)
+			{
+				char const * panelName = args->ArgV(2);
+				char const * panelCommand = args->ArgV(2);
+
+				MirvDoVPanelOnCommand(panelName, panelCommand);
+				return;
+			}
+
+			Tier0_Msg(
+				"mirv_vpanel command <panelName> <comand>\n"
+			);
+			return;
+		}
 	}
 
 	Tier0_Msg(
 		"mirv_vpanel hide [...]\n"
 		"mirv_vpanel show [...]\n"
+		"mirv_vpanel command [...]\n"
 		"Hint: To find panel names use vgui_drawtree 1.\n"
 	);
 }

@@ -39,6 +39,7 @@
 #include "csgo_c_baseanimatingoverlay.h"
 #include "MirvPgl.h"
 #include "csgo_Audio.h"
+#include "mirv_voice.h"
 
 #include <set>
 #include <map>
@@ -343,6 +344,7 @@ void Shared_BeforeFrameRenderStart(void)
 void Shared_AfterFrameRenderEnd(void)
 {
 	if (CClientTools * instance = CClientTools::Instance()) instance->OnAfterFrameRenderEnd();
+	Mirv_Voice_OnAfterFrameRenderEnd();
 }
 
 void Shared_Shutdown(void)

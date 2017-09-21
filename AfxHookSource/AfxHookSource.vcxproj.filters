@@ -270,6 +270,12 @@
     <ClCompile Include="..\prop\AfxHookSource\cssV34\sdk_src\public\tools\bonelist.cpp">
       <Filter>prop\AfxHookSource\cssV34\sdk_src\public\tools</Filter>
     </ClCompile>
+    <ClCompile Include="mirv_voice.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="MirvWav.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\bvhexport.h">
@@ -514,6 +520,12 @@
     </ClInclude>
     <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\ihandleentity.h">
       <Filter>prop\AfxHookSource\cssV34\sdk_src\public</Filter>
+    </ClInclude>
+    <ClInclude Include="MirvWav.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="mirv_voice.h">
+      <Filter>AfxHookSource</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

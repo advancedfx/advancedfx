@@ -2342,6 +2342,9 @@ public:
 	void Console_StartMovieWav_set(bool value);
 	bool Console_StartMovieWav_get();	
 
+	void Console_RecordVoices_set(bool value);
+	bool Console_RecordVoices_get();
+
 	void Console_MatPostprocessEnable_set(int value);
 	int Console_MatPostprocessEnable_get();
 
@@ -2457,6 +2460,10 @@ private:
 	bool m_PresentRecordOnScreen;
 	bool m_StartMovieWav;
 	bool m_StartMovieWavUsed;
+
+	bool m_RecordVoices;
+	bool m_RecordVoicesUsed;
+
 	SOURCESDK::IMaterialSystem_csgo * m_MaterialSystem;
 	IAfxBaseClientDll * m_AfxBaseClientDll;
 	SOURCESDK::IShaderShadow_csgo * m_ShaderShadow;

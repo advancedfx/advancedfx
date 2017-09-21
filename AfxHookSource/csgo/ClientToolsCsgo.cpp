@@ -182,7 +182,7 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 
 			SOURCESDK::CSGO::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::CSGO::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity"));
 
-			if (!RecordInvisible_get() && !(pBaseEntityRs && pBaseEntityRs->m_bVisible))
+			if (!RecordInvisible_get() && !(pBaseEntityRs && pBaseEntityRs->m_bVisible) && !isViewModel)
 			{
 				// Entity not visible, avoid trash data:
 
@@ -205,14 +205,14 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 				SOURCESDK::CSGO::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::CSGO::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity"));
 				if (pBaseEntityRs)
 				{
+					wasVisible = pBaseEntityRs->m_bVisible || isViewModel;
+
 					WriteDictionary("baseentity");
 					//Write((float)pBaseEntityRs->m_flTime);
 					WriteDictionary(pBaseEntityRs->m_pModelName);
-					Write((bool)pBaseEntityRs->m_bVisible);
+					Write((bool)wasVisible);
 					Write(pBaseEntityRs->m_vecRenderOrigin);
 					Write(pBaseEntityRs->m_vecRenderAngles);
-
-					wasVisible = pBaseEntityRs->m_bVisible;
 				}
 			}
 

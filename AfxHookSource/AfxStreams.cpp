@@ -13,6 +13,7 @@
 #include "csgo_GlowOverlay.h"
 #include "MirvPgl.h"
 #include "csgo_Audio.h"
+#include "mirv_voice.h"
 
 #include <shared/StringTools.h>
 #include <shared/FileTools.h>
@@ -4256,6 +4257,7 @@ CAfxStreams::CAfxStreams()
 : m_RecordName("untitled_rec")
 , m_PresentRecordOnScreen(false)
 , m_StartMovieWav(true)
+, m_RecordVoices(false)
 , m_MaterialSystem(0)
 , m_AfxBaseClientDll(0)
 , m_ShaderShadow(0)
@@ -4431,6 +4433,16 @@ bool CAfxStreams::Console_StartMovieWav_get()
 	return m_StartMovieWav;
 }
 
+void CAfxStreams::Console_RecordVoices_set(bool value)
+{
+	m_RecordVoices = value;
+}
+
+bool CAfxStreams::Console_RecordVoices_get()
+{
+	return m_RecordVoices;
+}
+
 void CAfxStreams::Console_MatPostprocessEnable_set(int value)
 {
 	m_NewMatPostProcessEnable = value;
@@ -4561,6 +4573,15 @@ void CAfxStreams::Console_Record_Start()
 				if (!csgo_Audio_StartRecording(ansiTakeDir.c_str()))
 					Tier0_Warning("Error: Could not start WAV audio recording!\n");
 			}
+
+			m_RecordVoicesUsed = m_RecordVoices;
+
+			if (m_RecordVoicesUsed)
+			{
+				if(!Mirv_Voice_StartRecording(ansiTakeDir.c_str()))
+					Tier0_Warning("Error: Could not start voice recording!\n");
+
+			}
 		}
 		else
 			Tier0_Warning("Error: Cannot convert take directory to ansi string. I.e. sound recording might be affected!\n");
@@ -4577,6 +4598,11 @@ void CAfxStreams::Console_Record_End()
 	if(m_Recording)
 	{
 		Tier0_Msg("Finishing recording ... ");
+
+		if (m_RecordVoicesUsed)
+		{
+			Mirv_Voice_EndRecording();
+		}
 
 		if (m_StartMovieWavUsed)
 		{

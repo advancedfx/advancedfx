@@ -208,6 +208,8 @@
     <ClCompile Include="MirvCalcs.cpp" />
     <ClCompile Include="MirvInputMem.cpp" />
     <ClCompile Include="MirvPgl.cpp" />
+    <ClCompile Include="MirvWav.cpp" />
+    <ClCompile Include="mirv_voice.cpp" />
     <ClCompile Include="RenderView.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\SourceInterfaces.cpp" />
     <ClCompile Include="tf2\ClientToolsTf2.cpp" />
@@ -290,6 +292,8 @@
     <ClInclude Include="MirvCalcs.h" />
     <ClInclude Include="MirvInputMem.h" />
     <ClInclude Include="MirvPgl.h" />
+    <ClInclude Include="MirvWav.h" />
+    <ClInclude Include="mirv_voice.h" />
     <ClInclude Include="RenderView.h" />
     <ClInclude Include="..\prop\AfxHookSource\SourceInterfaces.h" />
     <ClInclude Include="stdafx.h" />

@@ -67,6 +67,11 @@ AFXADDR_DEF(cstrike_gpGlobals_OFS_absoluteframetime)
 AFXADDR_DEF(cstrike_gpGlobals_OFS_curtime)
 AFXADDR_DEF(cstrike_gpGlobals_OFS_interpolation_amount)
 AFXADDR_DEF(cstrike_gpGlobals_OFS_interval_per_tick)
+AFXADDR_DEF(csgo_CClientState_ProcessVoiceData)
+AFXADDR_DEF(csgo_CClientState_ProcessVoiceData_DSZ)
+AFXADDR_DEF(csgo_CVoiceWriter_AddDecompressedData)
+AFXADDR_DEF(csgo_CVoiceWriter_AddDecompressedData_DSZ)
+
 
 void ErrorBox(char const * messageText);
 
@@ -320,6 +325,91 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 			}
 			AFXADDR_SET(csgo_MIX_PaintChannels, addr);
 		}
+
+		// csgo_CClientState_ProcessVoiceData: // Checked 2017-09-21.
+		{
+			DWORD addr = 0;
+			{
+				ImageSectionsReader sections((HMODULE)engineDll);
+				if (!sections.Eof())
+				{
+					MemRange textRange = sections.GetMemRange();
+					sections.Next(); // skip .text
+					if (!sections.Eof())
+					{
+						MemRange firstDataRange = sections.GetMemRange();
+
+						MemRange result = FindCString(sections.GetMemRange(), "Received voice from: %d\n");
+						if (!result.IsEmpty())
+						{
+							DWORD tmpAddr = result.Start;
+
+							result = FindBytes(textRange, (char const *)&tmpAddr, sizeof(tmpAddr));
+							if (!result.IsEmpty())
+							{
+								DWORD tmpAddr = result.Start;
+								tmpAddr -= 0x2B;
+
+								result = FindPatternString(MemRange(tmpAddr, tmpAddr + 0x6), "55 8B EC 83 E4 F8");
+								if (!result.IsEmpty())
+								{
+									addr = tmpAddr;
+								}
+								else ErrorBox(MkErrStr(__FILE__, __LINE__));
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			AFXADDR_SET(csgo_CClientState_ProcessVoiceData, addr);
+
+			// csgo_CVoiceWriter_AddDecompressedData: // Checked 2017-09-21.
+			{
+				DWORD addr = 0;
+				{
+					ImageSectionsReader sections((HMODULE)engineDll);
+					if (!sections.Eof())
+					{
+						MemRange textRange = sections.GetMemRange();
+						sections.Next(); // skip .text
+						if (!sections.Eof())
+						{
+							MemRange firstDataRange = sections.GetMemRange();
+
+							MemRange result = FindCString(sections.GetMemRange(), "Voice channel %d circular buffer overflow!\n");
+							if (!result.IsEmpty())
+							{
+								DWORD tmpAddr = result.Start;
+
+								result = FindBytes(textRange, (char const *)&tmpAddr, sizeof(tmpAddr));
+								if (!result.IsEmpty())
+								{
+									DWORD tmpAddr = result.Start;
+									tmpAddr -= 0x26;
+
+									result = FindPatternString(MemRange(tmpAddr - 0x1, tmpAddr - 0x1 + 0x5), "E8 ?? ?? ?? ??");
+									if (!result.IsEmpty())
+									{
+										addr = tmpAddr;
+										addr = addr + 4 + *(DWORD *)addr; // get CALL address
+									}
+									else ErrorBox(MkErrStr(__FILE__, __LINE__));
+								}
+								else ErrorBox(MkErrStr(__FILE__, __LINE__));
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				AFXADDR_SET(csgo_CVoiceWriter_AddDecompressedData, addr);
+			}
+		}
 	}
 	else
 	{
@@ -327,9 +417,13 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_S_StartSound_StringConversion, 0x0);
 		AFXADDR_SET(csgo_CAudioXAudio2_vtable, 0x0);
 		AFXADDR_SET(csgo_MIX_PaintChannels, 0x0);
+		AFXADDR_SET(csgo_CClientState_ProcessVoiceData, 0x0);
+		AFXADDR_SET(csgo_CVoiceWriter_AddDecompressedData, 0x0);
 	}
 	AFXADDR_SET(csgo_snd_mix_timescale_patch_DSZ, 0x08);
 	AFXADDR_SET(csgo_MIX_PaintChannels_DSZ, 0x9);
+	AFXADDR_SET(csgo_CClientState_ProcessVoiceData_DSZ, 0x6);
+	AFXADDR_SET(csgo_CVoiceWriter_AddDecompressedData_DSZ, 0x8);
 }
 
 void Addresses_InitScaleformuiDll(AfxAddr scaleformuiDll, SourceSdkVer sourceSdkVer)

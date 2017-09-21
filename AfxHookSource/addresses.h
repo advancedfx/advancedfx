@@ -70,6 +70,10 @@ AFXADDR_DECL(cstrike_gpGlobals_OFS_absoluteframetime)
 AFXADDR_DECL(cstrike_gpGlobals_OFS_curtime)
 AFXADDR_DECL(cstrike_gpGlobals_OFS_interpolation_amount)
 AFXADDR_DECL(cstrike_gpGlobals_OFS_interval_per_tick)
+AFXADDR_DECL(csgo_CClientState_ProcessVoiceData)
+AFXADDR_DECL(csgo_CClientState_ProcessVoiceData_DSZ)
+AFXADDR_DECL(csgo_CVoiceWriter_AddDecompressedData)
+AFXADDR_DECL(csgo_CVoiceWriter_AddDecompressedData_DSZ)
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitScaleformuiDll(AfxAddr scaleformuiDll, SourceSdkVer sourceSdkVer);
