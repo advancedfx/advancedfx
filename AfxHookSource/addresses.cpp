@@ -222,7 +222,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 			}
 		}
 
-		// csgo_CAudioXAudio2_vtable: // Checked 2017-07-18.
+		// csgo_CAudioXAudio2_vtable: // Checked 2017-09-25.
 		{
 			DWORD addr = 0;
 			{
@@ -245,7 +245,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 
 								result.End = firstDataRange.Start;
 
-								for (int i = 0; i < 1; ++i)
+								for (int i = 0; i < 2; ++i)
 								{
 									result = FindBytes(MemRange(result.End, firstDataRange.End), (char const *)&tmpAddr, sizeof(tmpAddr));
 								}

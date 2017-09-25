@@ -6,14 +6,28 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>1.31.0</version>
-<time>2017-09-16T22:00Z</time>
+<version>1.31.1</version>
+<time>2017-09-25T17:55Z</time>
 <changes>
-<change type="addded">
+<change type="fixed">
+Adjusted to latest CS:GO update:<br />
+Fixed mirv_streams sound recording not working.
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.31.0</version>
+<time>2017-09-21T16:30Z</time>
+<changes>
+<change type="added">
 Added mirv_voice record / mirv_streams record voices commands (you can use the one your prefer), allow writing of player voice in CS:GO into separate files. The voice delay can be controlled with mirv_voice record timePadding (default is game value of 0.2).<br />
 If you want the game sound withou the voices you can use: sv_cheats 1; snd_setmixer voip vol 0; (The default vol is 0.7.)
 </change>
-<change type="addded">
+<change type="added">
 Added mirv_voice block command, allows blocking of player voice in CS:GO.
 </change>
 <change type="updated">
