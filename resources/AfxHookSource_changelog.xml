@@ -6,6 +6,19 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.31.2</version>
+<time>2017-10-04T14:57Z</time>
+<changes>
+<change type="fixed">
+Fixed a possible crash in CSSV34 upon startup, thanks to https://twitter.com/xKrasheR for helping with testing.
+(Crash on shutdown remains unfixed.)
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.31.1</version>
 <time>2017-09-25T17:55Z</time>
 <changes>

@@ -179,8 +179,6 @@ SOURCESDK::IFileSystem_csgo * g_FileSystem_csgo = 0;
 SOURCESDK::CSGO::vgui::IPanel * g_pVGuiPanel_csgo = 0;
 SOURCESDK::CSGO::vgui::ISurface *g_pVGuiSurface_csgo = 0;
 
-void AfxV34HookWindow(void);
-
 void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals)
 {
 	static bool bFirstRun = true;
@@ -298,7 +296,7 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 		
 		g_Hook_VClient_RenderView.Install(pGlobals);
 
-		AfxV34HookWindow();
+		//AfxV34HookWindow();
 
 		PrintInfo();
 	}
@@ -1396,6 +1394,51 @@ LONG WINAPI new_SetWindowLongW(
 	return SetWindowLongW(hWnd, nIndex, dwNewLong);
 }
 
+// TODO: this is risky, actually we should track the hWnd maybe.
+LONG WINAPI new_GetWindowLongA(
+	__in HWND hWnd,
+	__in int nIndex
+)
+{
+	if (nIndex == GWL_WNDPROC)
+	{
+		if (g_afxWindowProcSet)
+		{
+			return (LONG)g_NextWindProc;
+		}
+	}
+
+	return GetWindowLongA(hWnd, nIndex);
+}
+
+// TODO: this is risky, actually we should track the hWnd maybe.
+LONG WINAPI new_SetWindowLongA(
+	__in HWND hWnd,
+	__in int nIndex,
+	__in LONG dwNewLong
+)
+{
+	if (nIndex == GWL_WNDPROC)
+	{
+		LONG lResult = SetWindowLongA(hWnd, nIndex, (LONG)new_Afx_WindowProc);
+
+		if (!g_afxWindowProcSet)
+		{
+			g_afxWindowProcSet = true;
+		}
+		else
+		{
+			lResult = (LONG)g_NextWindProc;
+		}
+
+		g_NextWindProc = (WNDPROC)dwNewLong;
+
+		return lResult;
+	}
+
+	return SetWindowLongA(hWnd, nIndex, dwNewLong);
+}
+
 BOOL WINAPI new_GetCursorPos(
 	__out LPPOINT lpPoint
 )
@@ -1415,19 +1458,6 @@ BOOL WINAPI new_SetCursorPos(
 	g_AfxHookSourceInput.Supply_SetCursorPos(X,Y);
 
 	return SetCursorPos(X,Y);
-}
-
-void AfxV34HookWindow(void)
-{
-	if(SourceSdkVer_CSSV34 == g_SourceSdkVer)
-	{
-		HWND hWnd = FindWindowW(L"Valve001",NULL);
-
-		if(!hWnd)
-			ErrorBox("AfxV34HookWindow: FindWindowW failed.");
-		else
-			g_NextWindProc = (WNDPROC)SetWindowLongW(hWnd,GWL_WNDPROC,(LONG)new_Afx_WindowProc);
-	}
 }
 
 FARPROC WINAPI new_shaderapidx9_GetProcAddress(HMODULE hModule, LPCSTR lpProcName)
@@ -1514,7 +1544,7 @@ void CommonHooks()
 			if (SourceSdkVer_CSSV34 == g_SourceSdkVer)
 			{
 				InterceptDllCall(hTier0, "USER32.dll", "GetCursorPos", (DWORD)&new_GetCursorPos);
-				InterceptDllCall(hTier0, "USER32.dll", "SetCursorPos", (DWORD)&new_SetCursorPos);
+				InterceptDllCall(hTier0, "USER32.dll", "SetCursorPos", (DWORD)&new_SetCursorPos); // not there, but heh.
 			}
 
 			//if (!Hook_csgo_MemAlloc())
@@ -1591,10 +1621,10 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		InterceptDllCall(hModule, "USER32.dll", "GetWindowLongW", (DWORD) &new_GetWindowLongW);
 		InterceptDllCall(hModule, "USER32.dll", "SetWindowLongW", (DWORD) &new_SetWindowLongW);
 
-		if(SourceSdkVer_CSSV34 == g_SourceSdkVer)
+		if (SourceSdkVer_CSSV34 == g_SourceSdkVer)
 		{
-			InterceptDllCall(hModule, "USER32.dll", "GetCursorPos", (DWORD) &new_GetCursorPos);
-			InterceptDllCall(hModule, "USER32.dll", "SetCursorPos", (DWORD) &new_SetCursorPos);
+			InterceptDllCall(hModule, "USER32.dll", "GetCursorPos", (DWORD)&new_GetCursorPos); // not there, but heh.
+			InterceptDllCall(hModule, "USER32.dll", "SetCursorPos", (DWORD)&new_SetCursorPos);
 		}
 
 		// Init the hook early, so we don't run into issues with threading:
@@ -1608,6 +1638,12 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 
 		InterceptDllCall(hModule, "USER32.dll", "GetWindowLongW", (DWORD) &new_GetWindowLongW);
 		InterceptDllCall(hModule, "USER32.dll", "SetWindowLongW", (DWORD) &new_SetWindowLongW);
+
+		if (SourceSdkVer_CSSV34 == g_SourceSdkVer)
+		{
+			InterceptDllCall(hModule, "USER32.dll", "GetWindowLongA", (DWORD)&new_GetWindowLongA);
+			InterceptDllCall(hModule, "USER32.dll", "SetWindowLongA", (DWORD)&new_SetWindowLongA);
+		}
 
 		InterceptDllCall(hModule, "USER32.dll", "GetCursorPos", (DWORD) &new_GetCursorPos);
 		InterceptDllCall(hModule, "USER32.dll", "SetCursorPos", (DWORD) &new_SetCursorPos);

@@ -243,7 +243,7 @@ Dominik 'ripieces' Tugend
 	Since March 2007.
 	http://dominik.matrixstorm.com/
 
-Brett 'xNWP'
+Brett 'xNWP' Anthony
 	Programming of additional tools, Discord moderator.
 	Since June 2017.
 	https://twitter.com/ThatNWP
