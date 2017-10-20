@@ -3630,7 +3630,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 		"mirv_fix physicsMaxFps [...] - Can raise the FPS limit for physics (i.e. rag dolls, so they don't freeze upon high host_framerate).\n"
 		"mirv_fix blockObserverTarget [...] - Fixes unwanted player switching i.e. upon bomb plant (blocks C_BasePlayer::RecvProxy_ObserverTarget).\n"
 		"mirv_fix oldDuckFix [...] - Can fix player stuck in duck for old demos.\n"
-		"mirv_fix playerAnimState [...] - Fixes twitching of player arms/legs, see https://github.com/ripieces/advancedfx/wiki/Source%%3ASmoother-Demos ."
+		"mirv_fix playerAnimState [...] - Fixes twitching of player arms/legs, see https://github.com/ripieces/advancedfx/wiki/Source%%3ASmoother-Demos .\n"
 	);
 	return;
 }

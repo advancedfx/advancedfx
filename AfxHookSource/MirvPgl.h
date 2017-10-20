@@ -1,7 +1,5 @@
 #pragma once
 
-#define AFX_MIRV_PGL
-
 #ifdef AFX_MIRV_PGL
 
 /*
@@ -146,6 +144,7 @@ Ideas for the future:
 
 */
 
+#include <d3d9.h>
 #include <vector>
 
 namespace MirvPgl
@@ -182,16 +181,21 @@ namespace MirvPgl
 	void DataStop();
 
 	bool IsDataActive();
+	bool IsDrawingActive();
 
 	void CheckStartedAndRestoreIfDown();
 	void ExecuteQueuedCommands();
 	void QueueThreadDataForDrawingThread(void);
+	void QueueDrawing(CamData const & camData);
 
 	void SupplyLevelInit(char const * mapName);
 	void SupplyLevelShutdown();
 
-
 	// On Drawing thead:
+
+	void D3D9_BeginDevice(IDirect3DDevice9 * device);
+	void D3D9_EndDevice();
+	void D3D9_Reset();
 
 	void DrawingThread_SupplyCamData(CamData const & camData);
 

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "MirvPgl.h"
-
 #include <d3d9.h>
 
 typedef IDirect3D9 * (WINAPI * Direct3DCreate9_t)(UINT SDKVersion);

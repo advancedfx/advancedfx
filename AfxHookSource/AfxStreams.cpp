@@ -6388,7 +6388,7 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 	cl->GetParent()->View_Render(rect);
 
 #ifdef AFX_MIRV_PGL
-	if (MirvPgl::IsDataActive())
+	if (MirvPgl::IsDataActive() || MirvPgl::IsDrawingActive())
 	{
 		MirvPgl::CamData camData(
 			g_Hook_VClient_RenderView.GetCurTime(),
@@ -6401,7 +6401,8 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 			(float)(AlienSwarm_FovScaling(rect->width, rect->height, g_Hook_VClient_RenderView.LastCameraFov))
 		);
 
-		QueueOrExecute(ctxp, new CAfxLeafExecute_Functor(new AfxSupplyCamData_Functor(camData)));
+		if (MirvPgl::IsDataActive()) QueueOrExecute(ctxp, new CAfxLeafExecute_Functor(new AfxSupplyCamData_Functor(camData)));
+		if (MirvPgl::IsDrawingActive()) MirvPgl::QueueDrawing(camData);
 	}
 #endif
 

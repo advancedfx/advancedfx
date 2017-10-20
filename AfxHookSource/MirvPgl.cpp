@@ -1,14 +1,16 @@
 #include "stdafx.h"
 
+#ifdef AFX_MIRV_PGL
+// Shit needs to be included for d3d9.h or we a doomed (great!):
+#include "../../shared/easywsclient/easywsclient.hpp"
+#include "../../shared/easywsclient/easywsclient.cpp"
+#pragma comment( lib, "ws2_32" )
+#include <WinSock2.h>
+#endif
+
 #include "MirvPgl.h"
 
 #ifdef AFX_MIRV_PGL
-
-#include "../../shared/easywsclient/easywsclient.hpp"
-#include "../../shared/easywsclient/easywsclient.cpp"
-
-#pragma comment( lib, "ws2_32" )
-#include <WinSock2.h>
 
 #include "WrpVEngineClient.h"
 #include "WrpConsole.h"
@@ -23,9 +25,9 @@
 
 #include <atomic>
 #include <mutex>
+#include <shared_mutex>
 #include <condition_variable>
 #include <chrono>
-
 
 extern WrpVEngineClient * g_VEngineClient;
 
@@ -36,9 +38,692 @@ using easywsclient::WebSocket;
 
 namespace MirvPgl
 {
+	const D3DVERTEXELEMENT9 g_Drawing_VBDecl_Geometry[] =
+	{
+		{ 0,  0, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITIONT, 0 },
+		D3DDECL_END()
+	};
+
+	const D3DVERTEXELEMENT9 g_Drawing_VBDecl_InstanceData[] =
+	{
+		{ 1, 0,  D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
+		D3DDECL_END()
+	};
+
+	const D3DVERTEXELEMENT9 g_Drawing_VDecl[] =
+	{
+		{ 0, 0, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITIONT, 0 },
+		{ 1, 0,  D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
+		D3DDECL_END()
+	};
+
+	const int g_Drawing_nNumBatchInstance = 120;
+
 	const int m_CheckRestoreEveryTicks = 5000;
 	const int m_ThreadSleepMsIfNoData = 1;
 	const uint32_t m_Version = 2;
+
+	class CDrawing_Functor
+		: public CAfxFunctor
+	{
+	private:
+		class CStatic
+		{
+		public:
+			CStatic()
+			{
+				Update();
+			}
+
+			bool Active_get(void)
+			{
+				return m_Active;
+			}
+
+			void Console(IWrpCommandArgs * args)
+			{
+				m_Mutex.lock();
+
+				if(DoConsole(args)) Update();
+
+				m_Mutex.unlock();
+			}
+
+			void Draw(CDrawing_Functor const & functor)
+			{
+				m_Mutex.lock_shared();
+
+				if (m_Active && m_Device)
+				{
+					if (m_Dirty)
+					{
+						CreateBuffers();
+						m_Dirty = false;
+					}
+
+					if (m_GeometryVertexBuffer && m_InstanceVertexBuffer && m_IndexBuffer && m_VertexDecl)
+					{
+						if (UpdateInstanceDataBuffer(functor))
+						{
+							// Set up the geometry data stream
+							m_Device->SetStreamSourceFreq(0, (D3DSTREAMSOURCE_INDEXEDDATA | m_RectsCount));
+							m_Device->SetStreamSource(0, m_GeometryVertexBuffer, 0, sizeof(g_Drawing_VBDecl_Geometry));
+
+							// Set up the instance data stream
+							m_Device->SetStreamSourceFreq(1, (D3DSTREAMSOURCE_INSTANCEDATA | 1));
+							m_Device->SetStreamSource(1, m_InstanceVertexBuffer, 0, sizeof(g_Drawing_VBDecl_InstanceData));
+
+							m_Device->SetVertexDeclaration(m_VertexDecl);
+							m_Device->SetIndices(m_IndexBuffer);
+
+							m_Device->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, 4 * m_RectsCount, 0, 2 * m_RectsCount);
+						}
+					}
+				}
+
+				m_Mutex.unlock_shared();
+			}
+
+			void D3D9_BeginDevice(IDirect3DDevice9 * device)
+			{
+				D3D9_EndDevice();
+
+				if (0 == device)
+					return;
+
+				device->AddRef();
+
+				m_Device = device;
+
+				m_Dirty = true;
+			}
+
+			void D3D9_EndDevice()
+			{
+				if (0 == m_Device)
+					return;
+
+				DestroyBuffers();
+
+				m_Device->Release();
+				m_Device = 0;
+			}
+
+			void D3D9_Reset()
+			{
+				DestroyBuffers();
+			}
+
+		private:
+			struct VertexGeometry
+			{
+				FLOAT x, y, z, rhw; // Position of current line point
+			};
+			struct VertexInstance
+			{
+				FLOAT r, g, b, a; // Diffuse color of current line point
+			};
+
+			bool m_Active = false;
+			bool m_Dirty;
+			IDirect3DDevice9 * m_Device = 0;
+
+			std::shared_timed_mutex m_Mutex;
+
+			class CChannel
+			{
+			public:
+				bool Console(IWrpCommandArgs * args)
+				{
+					int argc = args->ArgC();
+
+					char const * cmd0 = args->ArgV(0);
+
+					if (5 <= argc)
+					{
+						m_Bits = min(1, (unsigned short int)atoi(args->ArgV(4)));
+						m_Lo = (float)atof(args->ArgV(2));
+						m_Hi = (float)atof(args->ArgV(3));
+					}
+
+					Tier0_Msg(
+						"%s <fLo> <fHi> <iBits> - Set low value, high value and number of level bits for this channel.\n"
+						"Current value: %f %f %u"
+						, cmd0
+						, m_Lo
+						, m_Hi
+						, m_Bits
+					);
+
+
+					return false;
+				}
+
+				unsigned short int Bits_get() const
+				{
+					return m_Bits;
+				}
+
+				float Encode(unsigned int value) const
+				{
+					return m_Lo + value / (float)((1L << m_Bits) - 1) * (m_Hi - m_Lo);
+				}
+
+			private:
+				float m_Lo = 16.0f / 255.0f;
+				float m_Hi = 235.0f / 255.0f;
+				unsigned short int m_Bits = 6;
+			};
+
+			CChannel m_Red;
+			CChannel m_Green;
+			CChannel m_Blue;
+
+			bool DoConsole(IWrpCommandArgs * args)
+			{
+				int argc = args->ArgC();
+
+				char const * cmd0 = args->ArgV(0);
+
+				if (2 <= argc)
+				{
+					char const * cmd1 = args->ArgV(1);
+
+					if (0 == _stricmp("start", cmd1))
+					{
+						m_Active = true;
+						return true;
+					}
+					else if (0 == _stricmp("stop", cmd1))
+					{
+						m_Active = false;
+						return true;
+					}
+					else if (0 == _stricmp("rectsPerRow", cmd1))
+					{
+						if (3 <= argc)
+						{
+							m_RectsPerRow = min(1, (size_t)atoi(args->ArgV(2)));
+							return true;
+						}
+
+						Tier0_Msg(
+							"%s rectsPerRow <i> - Number of rectangles per row\n"
+							"Current value: %u"
+							, cmd0
+							, m_RectsPerRow
+						);
+						return false;
+					}
+					else if (0 == _stricmp("rectWidth", cmd1))
+					{
+						if (3 <= argc)
+						{
+							m_RectWidth = (float)atof(args->ArgV(2));
+							return true;
+						}
+
+						Tier0_Msg(
+							"%s rectWidth <f> - Rectangle width.\n"
+							"Current value: %f"
+							, cmd0
+							, m_RectWidth
+						);
+						return false;
+					}
+					else if (0 == _stricmp("rectHeight", cmd1))
+					{
+						if (3 <= argc)
+						{
+							m_RectHeight = (float)atof(args->ArgV(2));
+							return true;
+						}
+
+						Tier0_Msg(
+							"%s rectHeight <f> - Rectangle height.\n"
+							"Current value: %f"
+							, cmd0
+							, m_RectHeight
+						);
+						return false;
+					}
+					else if (0 == _stricmp("top", cmd1))
+					{
+						if (3 <= argc)
+						{
+							m_Top = (float)atof(args->ArgV(2));
+							return true;
+						}
+
+						Tier0_Msg(
+							"%s top <f> - Top of output.\n"
+							"Current value: %f"
+							, cmd0
+							, m_Top
+						);
+						return false;
+					}
+					else if (0 == _stricmp("left", cmd1))
+					{
+						if (3 <= argc)
+						{
+							m_Left = (float)atof(args->ArgV(2));
+							return true;
+						}
+
+						Tier0_Msg(
+							"%s left <f> - Left of output.\n"
+							"Current value: %f"
+							, cmd0
+							, m_Left
+						);
+						return false;
+					}
+					else if (0 == _stricmp("red", cmd1))
+					{
+						CSubWrpCommandArgs subArgs(args, 2);
+
+						return m_Red.Console(&subArgs);
+					}
+					else if (0 == _stricmp("green", cmd1))
+					{
+						CSubWrpCommandArgs subArgs(args, 2);
+
+						return m_Green.Console(&subArgs);
+					}
+					else if (0 == _stricmp("blue", cmd1))
+					{
+						CSubWrpCommandArgs subArgs(args, 2);
+
+						return m_Blue.Console(&subArgs);
+					}
+				}
+
+				Tier0_Msg(
+					"%s start - start drawing\n"
+					"%s stop - stop drawing\n"
+					"%s rectsPerRow [...]\n"
+					"%s rectWidth [...]\n"
+					"%s rectHeight [...]\n"
+					"%s top [...]\n"
+					"%s left [...]\n"
+					"%s red [...]\n"
+					"%s green [...]\n"
+					"%s blue [...]\n"
+					, cmd0
+					, cmd0
+					, cmd0
+					, cmd0
+					, cmd0
+					, cmd0
+					, cmd0
+					, cmd0
+					, cmd0
+					, cmd0
+				);
+				return false;
+			}
+
+			size_t m_RectsPerRow = 90;
+			float m_RectWidth = 4.0f;
+			float m_RectHeight = 4.0f;
+			float m_Top = 75.0f;
+			float m_Left = 10.0f;
+
+			size_t m_RectsCount = 0;
+
+			void Update()
+			{
+				m_Dirty = true;
+
+				// If this gets larger, you need to make sure that the worst case bits doesn't blow up the indexbuffer!
+				size_t bits = 0
+					+3*22 // position x y z
+					+3*16 // rotation x y z
+					+14 // fov
+				; // == 128 bit == 8 byte
+
+				size_t bitsPerRect = (size_t)m_Red.Bits_get() + (size_t)m_Green.Bits_get() + (size_t)m_Blue.Bits_get();
+				
+				m_RectsCount = bits / bitsPerRect + (0 != (bits % bitsPerRect) ? 1 : 0);
+			}
+
+			IDirect3DIndexBuffer9 * m_IndexBuffer = 0;
+			IDirect3DVertexBuffer9 * m_GeometryVertexBuffer = 0;
+			IDirect3DVertexBuffer9 * m_InstanceVertexBuffer = 0;
+			IDirect3DVertexDeclaration9 * m_VertexDecl = 0;
+
+			void Pack(float value, float min, float max, unsigned char bits, size_t bitOfs, unsigned char * data)
+			{
+				value = 2.0f * (value - min) / (max - min) - 1.0f;
+
+				unsigned int result;
+
+				Assert(sizeof(unsigned int) == sizeof(float));
+
+				memcpy(&result, &value, sizeof(unsigned int));
+				
+				result = result & 0x80000000 | ((result & 0x7FFFFF) << 8);
+
+
+				while (bits)
+				{
+					size_t numByte = bitOfs / 8;
+					size_t numBit = 7 - (bitOfs % 8);
+
+					data[numByte] = (data[numByte] & ~(1 << numBit)) | (((result & 0x80000000) >> 31) << numBit);
+
+					--bits;
+					++bitOfs;
+					result = result << 1;
+				}
+			}
+
+			size_t Encode(CChannel const & channel, float & outValue, unsigned char * data, size_t maxBits, size_t bitOfs)
+			{
+				unsigned short int bits = channel.Bits_get();
+
+				unsigned int value = 0;
+
+				while (bits && bitOfs < maxBits)
+				{
+					size_t numByte = bitOfs / 8;
+					size_t numBit = 7 - (bitOfs % 8);
+
+					value = (value << 1) | ((data[numByte] & (1 << numBit)) >> numBit);
+
+					++bitOfs;
+					--bits;
+				}
+
+				outValue = channel.Encode(value);
+
+				return bitOfs;
+			}
+
+			bool UpdateInstanceDataBuffer(CDrawing_Functor const & functor)
+			{
+				VertexInstance * lockedInstanceBuffer;
+
+				if(FAILED(m_InstanceVertexBuffer->Lock(
+					0,
+					4 * m_RectsCount * sizeof(VertexGeometry),
+					(void **)&lockedInstanceBuffer, 0
+				)))
+				{
+					return false;
+				}
+				else
+				{
+					unsigned char data[8];
+
+					Pack(functor.m_CamData.XPosition, -16384, 16384, 22, 0, data);
+					Pack(functor.m_CamData.YPosition, -16384, 16384, 22, 22, data);
+					Pack(functor.m_CamData.ZPosition, -16384, 16384, 22, 44, data);
+					Pack(fmod(functor.m_CamData.XRotation +180.0f, 360.0f) - 180.0f, -180, 180, 16, 66, data);
+					Pack(fmod(functor.m_CamData.YRotation + 180.0f, 360.0f) - 180.0f, -180, 180, 16, 82, data);
+					Pack(fmod(functor.m_CamData.ZRotation + 180.0f, 360.0f) - 180.0f, -180, 180, 16, 98, data);
+					Pack(functor.m_CamData.Fov, 0, 180, 14, 114, data);
+
+					size_t vertex = 0;
+					size_t bitOfs = 0;
+					for (size_t rect = 0; rect < m_RectsCount; ++rect)
+					{
+						float red, green, blue;
+
+						bitOfs = Encode(m_Red, red, data, 128,
+							Encode(m_Green, green, data, 128,
+								Encode(m_Blue, blue, data, 128, bitOfs)
+							)
+						);
+
+						lockedInstanceBuffer[vertex + 0].r = red;
+						lockedInstanceBuffer[vertex + 0].g = green;
+						lockedInstanceBuffer[vertex + 0].b = blue;
+						lockedInstanceBuffer[vertex + 0].a = 1.0f;
+
+						lockedInstanceBuffer[vertex + 1].r = red;
+						lockedInstanceBuffer[vertex + 1].g = green;
+						lockedInstanceBuffer[vertex + 1].b = blue;
+						lockedInstanceBuffer[vertex + 1].a = 1.0f;
+
+						lockedInstanceBuffer[vertex + 2].r = red;
+						lockedInstanceBuffer[vertex + 2].g = green;
+						lockedInstanceBuffer[vertex + 2].b = blue;
+						lockedInstanceBuffer[vertex + 2].a = 1.0f;
+
+						lockedInstanceBuffer[vertex + 3].r = red;
+						lockedInstanceBuffer[vertex + 3].g = green;
+						lockedInstanceBuffer[vertex + 3].b = blue;
+						lockedInstanceBuffer[vertex + 3].a = 1.0f;
+
+						vertex += 4;
+					}
+
+					m_InstanceVertexBuffer->Unlock();
+				}
+
+				return false;
+			}
+
+			void DestroyBuffers(void)
+			{
+				if (m_VertexDecl)
+				{
+					m_VertexDecl->Release();
+					m_VertexDecl = 0;
+				}
+
+				if (m_GeometryVertexBuffer)
+				{
+					m_GeometryVertexBuffer->Release();
+					m_GeometryVertexBuffer = 0;
+				}
+
+				if (m_InstanceVertexBuffer)
+				{
+					m_InstanceVertexBuffer->Release();
+					m_InstanceVertexBuffer = 0;
+				}
+
+				if (m_IndexBuffer)
+				{
+					m_IndexBuffer->Release();
+					m_IndexBuffer = 0;
+				}
+			}
+
+			void CreateBuffers(void)
+			{
+				DestroyBuffers();
+
+				if (FAILED(m_Device->CreateVertexDeclaration(g_Drawing_VDecl, &m_VertexDecl)))
+				{
+					if (m_VertexDecl)
+					{
+						m_VertexDecl->Release();
+						m_VertexDecl = 0;
+					}
+				}
+
+				size_t vertexCount = 4 * m_RectsCount;
+
+				VertexGeometry * lockedGemometryBuffer;
+
+				if (FAILED(m_Device->CreateVertexBuffer(
+					vertexCount * sizeof(VertexGeometry),
+					D3DUSAGE_WRITEONLY,
+					0,
+					D3DPOOL_DEFAULT,
+					&m_GeometryVertexBuffer,
+					NULL
+				)) || FAILED(m_GeometryVertexBuffer->Lock(
+					0,
+					vertexCount * sizeof(VertexGeometry),
+					(void **)&lockedGemometryBuffer, 0
+				)))
+				{
+					if (m_GeometryVertexBuffer)
+					{
+						m_GeometryVertexBuffer->Release();
+						m_GeometryVertexBuffer = 0;
+					}
+				}
+				else
+				{
+					size_t row = 0;
+					size_t col = 0;
+					size_t vertex = 0;
+					for (size_t rect = 0; rect < m_RectsCount; ++rect)
+					{
+						float top = -0.5f + m_Top + m_RectHeight * row;
+						float left = -0.5f + m_Left + m_RectWidth * col;
+
+						lockedGemometryBuffer[vertex + 0].x = left;
+						lockedGemometryBuffer[vertex + 0].y = top;
+						lockedGemometryBuffer[vertex + 0].z = 0.0f;
+						lockedGemometryBuffer[vertex + 0].rhw = 1.0f;
+
+						lockedGemometryBuffer[vertex + 1].x = left +0.5f;
+						lockedGemometryBuffer[vertex + 1].y = top;
+						lockedGemometryBuffer[vertex + 1].z = 0.0f;
+						lockedGemometryBuffer[vertex + 1].rhw = 1.0f;
+
+						lockedGemometryBuffer[vertex + 2].x = left;
+						lockedGemometryBuffer[vertex + 2].y = top +0.5f;
+						lockedGemometryBuffer[vertex + 2].z = 0.0f;
+						lockedGemometryBuffer[vertex + 2].rhw = 1.0f;
+
+						lockedGemometryBuffer[vertex + 3].x = left +0.5f;
+						lockedGemometryBuffer[vertex + 3].y = top +0.5f;
+						lockedGemometryBuffer[vertex + 3].z = 0.0f;
+						lockedGemometryBuffer[vertex + 3].rhw = 1.0f;
+
+						vertex += 4;
+
+						++col;
+
+						if (col % m_RectsPerRow == 0)
+						{
+							++row;
+							col = 0;
+						}
+					}
+
+					m_GeometryVertexBuffer->Unlock();
+				}
+
+				if (FAILED(m_Device->CreateVertexBuffer(
+					vertexCount * sizeof(VertexInstance),
+					D3DUSAGE_WRITEONLY,
+					0,
+					D3DPOOL_DEFAULT,
+					&m_InstanceVertexBuffer,
+					NULL
+				)))
+				{
+					if (m_InstanceVertexBuffer)
+					{
+						m_InstanceVertexBuffer->Release();
+						m_InstanceVertexBuffer = 0;
+					}
+				}
+
+
+				size_t indexCount = 2 * 3 * m_RectsCount;
+
+				if (65537 < indexCount)
+					// Not possible on several graphic cards, sorry.
+					return;
+
+				WORD * lockedIndexBuffer;
+
+				if (FAILED(m_Device->CreateIndexBuffer(
+					indexCount * sizeof(WORD),
+					D3DUSAGE_WRITEONLY,
+					D3DFMT_INDEX16,
+					D3DPOOL_DEFAULT,
+					&m_IndexBuffer,
+					NULL
+				)) || FAILED(m_IndexBuffer->Lock(
+					0,
+					indexCount * sizeof(WORD),
+					(void **)&lockedIndexBuffer,
+					0
+				)))
+				{
+					if (m_IndexBuffer)
+					{
+						m_IndexBuffer->Release();
+						m_IndexBuffer = 0;
+					}
+				}
+				else
+				{
+					WORD index = 0;
+					for (WORD rect = 0; rect < m_RectsCount; ++rect)
+					{
+						lockedIndexBuffer[index + 0] = 4 * rect + 0;
+						lockedIndexBuffer[index + 1] = 4 * rect + 1;
+						lockedIndexBuffer[index + 2] = 4 * rect + 2;
+						lockedIndexBuffer[index + 3] = 4 * rect + 1;
+						lockedIndexBuffer[index + 4] = 4 * rect + 3;
+						lockedIndexBuffer[index + 5] = 4 * rect + 2;
+
+						index += 6;
+					}
+
+					m_IndexBuffer->Unlock();
+				}
+			}
+
+
+		};
+		
+	private:
+		static CStatic m_Static;
+
+	public:
+		static bool Active_get(void)
+		{
+			return m_Static.Active_get();
+		}
+
+		static void Console(IWrpCommandArgs * args)
+		{
+			m_Static.Console(args);
+		}
+
+		static void D3D9_BeginDevice(IDirect3DDevice9 * device)
+		{
+			m_Static.D3D9_BeginDevice(device);
+		}
+
+		static void D3D9_EndDevice()
+		{
+			m_Static.D3D9_EndDevice();
+		}
+
+		static void D3D9_Reset()
+		{
+			m_Static.D3D9_Reset();
+		}
+
+		CDrawing_Functor(CamData const & camData)
+			: m_CamData(camData)
+		{
+		}
+
+		virtual void operator()()
+		{
+			m_Static.Draw(*this);
+		}
+
+	private:
+		CamData m_CamData;
+	};
+
+	MirvPgl::CDrawing_Functor::CStatic MirvPgl::CDrawing_Functor::m_Static;
 
 	CamData::CamData()
 	{
@@ -471,6 +1156,11 @@ namespace MirvPgl
 		return m_DataActive;
 	}
 
+	bool IsDrawingActive()
+	{
+		return CDrawing_Functor::Active_get();
+	}
+
 	void CheckStartedAndRestoreIfDown()
 	{
 		if (m_WantWs)
@@ -500,6 +1190,11 @@ namespace MirvPgl
 	{
 		if(m_DataActive || !m_ThreadDataPool.AccessNextThreadData().empty())
 			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CSupplyThreadData_Functor(m_ThreadDataPool.Acquire())));
+	}
+
+	void QueueDrawing(CamData const & camData)
+	{
+		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CDrawing_Functor(camData)));
 	}
 
 	void SupplyLevelInit(char const * mapName)
@@ -554,6 +1249,21 @@ namespace MirvPgl
 		m_DrawingThread_ThreadData = threadData;
 	}
 
+	void D3D9_BeginDevice(IDirect3DDevice9 * device)
+	{
+		CDrawing_Functor::D3D9_BeginDevice(device);
+	}
+
+	void D3D9_EndDevice()
+	{
+		CDrawing_Functor::D3D9_EndDevice();
+	}
+	
+	void D3D9_Reset()
+	{
+		CDrawing_Functor::D3D9_Reset();
+	}
+
 	void DrawingThread_SupplyCamData(CamData const & camData)
 	{
 		if(m_DrawingThread_ThreadData)
@@ -589,12 +1299,6 @@ namespace MirvPgl
 
 CON_COMMAND(mirv_pgl, "PGL")
 {
-	if (!MirvPgl::m_WsaActive)
-	{
-		Tier0_Warning("Error: WinSock(2.2) not active, feature not available!\n");
-		return;
-	}
-
 	int argc = args->ArgC();
 
 	if (2 <= argc)
@@ -603,6 +1307,12 @@ CON_COMMAND(mirv_pgl, "PGL")
 
 		if (0 == _stricmp("start", cmd1))
 		{
+			if (!MirvPgl::m_WsaActive)
+			{
+				Tier0_Warning("Error: WinSock(2.2) not active, feature not available!\n");
+				return;
+			}
+
 			MirvPgl::Start();
 			return;
 		}
@@ -636,6 +1346,14 @@ CON_COMMAND(mirv_pgl, "PGL")
 			);
 			return;
 		}
+		else if (0 == _stricmp("draw", cmd1))
+		{
+			CSubWrpCommandArgs subArgs(args, 2);
+
+			MirvPgl::CDrawing_Functor::Console(&subArgs);
+
+			return;
+		}
 
 	}
 
@@ -645,6 +1363,7 @@ CON_COMMAND(mirv_pgl, "PGL")
 		"mirv_pgl dataStart - Start sending data.\n"
 		"mirv_pgl dataStop - Stop sending data.\n"
 		"mirv_pgl url [...] - Set url to use with start.\n"
+		"mirv_pgl draw [...] - Controls on-screen data drawing.\n"
 	);
 
 }

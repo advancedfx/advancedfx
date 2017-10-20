@@ -722,6 +722,7 @@ public:
 		{
 			g_CampathDrawer.EndDevice();
 			g_AfxShaders.EndDevice();
+			MirvPgl::D3D9_EndDevice();
 
 			if(m_Original_VertexShader)
 			{
@@ -759,6 +760,7 @@ public:
 	STDMETHOD(Reset)(THIS_ D3DPRESENT_PARAMETERS* pPresentationParameters)
 	{
 		g_CampathDrawer.Reset();
+		MirvPgl::D3D9_Reset();
 
 		return g_OldDirect3DDevice9->Reset(pPresentationParameters);
 	}
@@ -1846,6 +1848,7 @@ struct NewDirect3D9
 			
 			g_AfxShaders.BeginDevice(g_OldDirect3DDevice9);
 			g_CampathDrawer.BeginDevice(g_OldDirect3DDevice9);
+			MirvPgl::D3D9_BeginDevice(g_OldDirect3DDevice9);
 
 			*ppReturnedDeviceInterface = reinterpret_cast<IDirect3DDevice9 *>(&g_NewDirect3DDevice9);
 		}
