@@ -6402,7 +6402,7 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 		);
 
 		if (MirvPgl::IsDataActive()) QueueOrExecute(ctxp, new CAfxLeafExecute_Functor(new AfxSupplyCamData_Functor(camData)));
-		if (MirvPgl::IsDrawingActive()) MirvPgl::QueueDrawing(camData);
+		if (MirvPgl::IsDrawingActive()) MirvPgl::QueueDrawing(camData, rect->width, rect->height);
 	}
 #endif
 

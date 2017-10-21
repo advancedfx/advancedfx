@@ -186,7 +186,7 @@ namespace MirvPgl
 	void CheckStartedAndRestoreIfDown();
 	void ExecuteQueuedCommands();
 	void QueueThreadDataForDrawingThread(void);
-	void QueueDrawing(CamData const & camData);
+	void QueueDrawing(CamData const & camData, int width, int height);
 
 	void SupplyLevelInit(char const * mapName);
 	void SupplyLevelShutdown();

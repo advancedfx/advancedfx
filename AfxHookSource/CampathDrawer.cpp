@@ -246,7 +246,7 @@ void CCampathDrawer::OnPostRenderAllTools()
 	}
 	IDirect3DPixelShader9 * pixelShader = m_PixelShader->GetPixelShader();
 
-	if(!(m_Device && vertexShader && m_PixelShader && g_VEngineClient))
+	if(!(m_Device && vertexShader && pixelShader && g_VEngineClient))
 	{
 		static bool firstError = true;
 

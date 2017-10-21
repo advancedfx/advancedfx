@@ -84,8 +84,7 @@ Notice:
     "C:\<HLAESRC>\ilmbase-build\lib", "C:\<HLAESRC>\openexr-build\lib" and
     "C:\Libraries\zlib-1.2.11" there.
 
-[ ] This step is currently not required!
-    Obtain the SharpDX SDK 2.6.3 from
+[X] Obtain the SharpDX SDK 2.6.3 from
     https://github.com/sharpdx/SharpDX/releases/tag/2.6.3
     and extract it into a folder named "SharpDX" in the same folder where the
     HLAE source code folder is located.
@@ -109,6 +108,13 @@ Notice:
       - to afxHook_vertexlit_and_unlit_generic_ps30 (profile ps_3_0)
     The .h and .acs files build this way are required by the AfxHookSource
     project.
+
+[X] Compile and run the prop\ShaderBuilder project (requires the SharpDX SDK) and
+    compile the following Shaders to the "prop\shaders\build" folder:
+    - shaders\afx_pgldraw_vs20.fxc:
+      - to afx_pgldraw_vs20 (profile vs_2_0)
+    - shaders\afx_pgldraw_ps20.fxc:
+      - to afx_pgldraw_ps20 (profile ps_2_0)
 
 [X] AfxHook\recompile_586.bat, move AfxHook.dat into build\Release\bin\
 

@@ -15,6 +15,7 @@
 #include "WrpVEngineClient.h"
 #include "WrpConsole.h"
 #include "AfxStreams.h"
+#include "AfxShaders.h"
 
 #include <math.h>
 
@@ -38,22 +39,22 @@ using easywsclient::WebSocket;
 
 namespace MirvPgl
 {
-	const D3DVERTEXELEMENT9 g_Drawing_VBDecl_Geometry[] =
+	const D3DVERTEXELEMENT9 g_Drawing_VBDecl_Position[] =
 	{
-		{ 0,  0, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITIONT, 0 },
+		{ 0, 0, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
 		D3DDECL_END()
 	};
 
-	const D3DVERTEXELEMENT9 g_Drawing_VBDecl_InstanceData[] =
+	const D3DVERTEXELEMENT9 g_Drawing_VBDecl_Color[] =
 	{
-		{ 1, 0,  D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
+		{ 1, 0, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
 		D3DDECL_END()
 	};
 
 	const D3DVERTEXELEMENT9 g_Drawing_VDecl[] =
 	{
-		{ 0, 0, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITIONT, 0 },
-		{ 1, 0,  D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
+		{ 0, 0, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+		{ 1, 0, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
 		D3DDECL_END()
 	};
 
@@ -75,6 +76,12 @@ namespace MirvPgl
 				Update();
 			}
 
+			~CStatic()
+			{
+				if (m_VertexShader) m_VertexShader->Release();
+				if (m_PixelShader) m_PixelShader->Release();
+			}
+
 			bool Active_get(void)
 			{
 				return m_Active;
@@ -93,7 +100,7 @@ namespace MirvPgl
 			{
 				m_Mutex.lock_shared();
 
-				if (m_Active && m_Device)
+				if (m_Active && m_Device && 0 < functor.m_Width && 0 < functor.m_Height)
 				{
 					if (m_Dirty)
 					{
@@ -101,22 +108,134 @@ namespace MirvPgl
 						m_Dirty = false;
 					}
 
-					if (m_GeometryVertexBuffer && m_InstanceVertexBuffer && m_IndexBuffer && m_VertexDecl)
+					if (m_PositionVertexBuffer && m_ColorVertexBuffer && m_IndexBuffer && m_VertexDecl)
 					{
-						if (UpdateInstanceDataBuffer(functor))
+						if (!m_VertexShader) m_VertexShader = g_AfxShaders.GetAcsVertexShader("afx_pgldraw_vs20.acs", 0);
+						if (!m_PixelShader) m_PixelShader = g_AfxShaders.GetAcsPixelShader("afx_pgldraw_ps20.acs", 0);
+
+						IDirect3DVertexShader9 * vertexShader = m_VertexShader->GetVertexShader();
+						IDirect3DPixelShader9 * pixelShader = m_PixelShader->GetPixelShader();
+
+						if (vertexShader && pixelShader && UpdateCollorVertexBuffer(functor))
 						{
-							// Set up the geometry data stream
-							m_Device->SetStreamSourceFreq(0, (D3DSTREAMSOURCE_INDEXEDDATA | m_RectsCount));
-							m_Device->SetStreamSource(0, m_GeometryVertexBuffer, 0, sizeof(g_Drawing_VBDecl_Geometry));
+							// Save device state:
 
-							// Set up the instance data stream
-							m_Device->SetStreamSourceFreq(1, (D3DSTREAMSOURCE_INSTANCEDATA | 1));
-							m_Device->SetStreamSource(1, m_InstanceVertexBuffer, 0, sizeof(g_Drawing_VBDecl_InstanceData));
+							IDirect3DPixelShader9 * oldPixelShader = 0;
+							m_Device->GetPixelShader(&oldPixelShader);
+							if (oldPixelShader) oldPixelShader->AddRef();
 
-							m_Device->SetVertexDeclaration(m_VertexDecl);
-							m_Device->SetIndices(m_IndexBuffer);
+							IDirect3DVertexShader9 * oldVertexShader = 0;
+							m_Device->GetVertexShader(&oldVertexShader);
+							if (oldVertexShader) oldVertexShader->AddRef();
 
-							m_Device->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, 4 * m_RectsCount, 0, 2 * m_RectsCount);
+							IDirect3DVertexBuffer9 * oldVertexBuffer0 = 0;
+							UINT oldVertexBuffer0Offset;
+							UINT oldVertexBuffer0Stride;
+							m_Device->GetStreamSource(0, &oldVertexBuffer0, &oldVertexBuffer0Offset, &oldVertexBuffer0Stride);
+							// this is done already according to doc: // if(oldVertexBuffer0) oldVertexBuffer0->AddRef();
+
+							IDirect3DVertexBuffer9 * oldVertexBuffer1 = 0;
+							UINT oldVertexBuffer1Offset;
+							UINT oldVertexBuffer1Stride;
+							m_Device->GetStreamSource(1, &oldVertexBuffer1, &oldVertexBuffer1Offset, &oldVertexBuffer1Stride);
+							// this is done already according to doc: // if(oldVertexBuffer1) oldVertexBuffer1->AddRef();
+
+							IDirect3DIndexBuffer9 * oldIndexBuffer = 0;
+							m_Device->GetIndices(&oldIndexBuffer);
+							// this is done already according to doc: // if(oldIndexBuffer) oldIndexBuffer->AddRef();
+
+							IDirect3DVertexDeclaration9 * oldDeclaration;
+							m_Device->GetVertexDeclaration(&oldDeclaration);
+							if (oldDeclaration) oldDeclaration->AddRef();
+
+							FLOAT oldCScreenInfo[4];
+							m_Device->GetVertexShaderConstantF(48, oldCScreenInfo, 1);
+
+							DWORD oldFVF;
+							m_Device->GetFVF(&oldFVF);
+
+							DWORD oldSrgbWriteEnable;
+							m_Device->GetRenderState(D3DRS_SRGBWRITEENABLE, &oldSrgbWriteEnable);
+
+							DWORD oldColorWriteEnable;
+							m_Device->GetRenderState(D3DRS_COLORWRITEENABLE, &oldColorWriteEnable);
+
+							DWORD oldZEnable;
+							m_Device->GetRenderState(D3DRS_ZENABLE, &oldZEnable);
+
+							DWORD oldAlphaTestEnable;
+							m_Device->GetRenderState(D3DRS_ALPHATESTENABLE, &oldAlphaTestEnable);
+
+							DWORD oldSeparateAlphaBlendEnable;
+							m_Device->GetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, &oldSeparateAlphaBlendEnable);
+
+							DWORD oldAlphaBlendEnable;
+							m_Device->GetRenderState(D3DRS_ALPHABLENDENABLE, &oldAlphaBlendEnable);
+
+							DWORD oldCullMode;
+							m_Device->GetRenderState(D3DRS_CULLMODE, &oldCullMode);
+
+							DWORD oldMultiSampleAnitAlias;
+							m_Device->GetRenderState(D3DRS_MULTISAMPLEANTIALIAS, &oldMultiSampleAnitAlias);
+
+							// Draw:
+							{
+								FLOAT newCScreenInfo[4] = { 2.0f / functor.m_Width, 2.0f / functor.m_Height, 0.0f, 0.0f };
+								m_Device->SetVertexShaderConstantF(48, newCScreenInfo, 1);
+
+								m_Device->SetRenderState(D3DRS_SRGBWRITEENABLE, FALSE);
+								m_Device->SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_RED);
+								m_Device->SetRenderState(D3DRS_ZENABLE, D3DZB_FALSE);
+								m_Device->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+								m_Device->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
+								m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+								m_Device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+								m_Device->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, FALSE);
+
+								m_Device->SetStreamSource(0, m_PositionVertexBuffer, 0, sizeof(VertexPosition));
+								m_Device->SetStreamSource(1, m_ColorVertexBuffer, 0, sizeof(VertexColor));
+
+								m_Device->SetVertexDeclaration(m_VertexDecl);
+								m_Device->SetIndices(m_IndexBuffer);
+
+								m_Device->SetVertexShader(vertexShader);
+								m_Device->SetPixelShader(pixelShader);
+
+								m_Device->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, 6 * m_RectsCount, 0, 2 * m_RectsCount);
+							}
+
+							// Restore device state:
+
+							m_Device->SetPixelShader(oldPixelShader);
+							if (oldPixelShader) oldPixelShader->Release();
+
+							m_Device->SetVertexShader(oldVertexShader);
+							if (oldVertexShader) oldVertexShader->Release();
+
+							m_Device->SetStreamSource(1, oldVertexBuffer1, oldVertexBuffer1Offset, oldVertexBuffer1Stride);
+							if (oldVertexBuffer1) oldVertexBuffer1->Release();
+
+							m_Device->SetStreamSource(0, oldVertexBuffer0, oldVertexBuffer0Offset, oldVertexBuffer0Stride);
+							if (oldVertexBuffer0) oldVertexBuffer0->Release();
+
+							m_Device->SetIndices(oldIndexBuffer);
+							if (oldIndexBuffer) oldIndexBuffer->Release();
+
+							m_Device->SetFVF(oldFVF);
+
+							m_Device->SetVertexDeclaration(oldDeclaration);
+							if (oldDeclaration) oldDeclaration->Release();
+
+							m_Device->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, oldMultiSampleAnitAlias);
+							m_Device->SetRenderState(D3DRS_CULLMODE, oldCullMode);
+							m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, oldAlphaBlendEnable);
+							m_Device->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, oldSeparateAlphaBlendEnable);
+							m_Device->SetRenderState(D3DRS_ALPHATESTENABLE, oldAlphaTestEnable);
+							m_Device->SetRenderState(D3DRS_ZENABLE, oldZEnable);
+							m_Device->SetRenderState(D3DRS_COLORWRITEENABLE, oldColorWriteEnable);
+							m_Device->SetRenderState(D3DRS_SRGBWRITEENABLE, oldSrgbWriteEnable);
+
+							m_Device->SetVertexShaderConstantF(48, oldCScreenInfo, 1);
 						}
 					}
 				}
@@ -155,11 +274,11 @@ namespace MirvPgl
 			}
 
 		private:
-			struct VertexGeometry
+			struct VertexPosition
 			{
-				FLOAT x, y, z, rhw; // Position of current line point
+				FLOAT x, y; // Position of current line point
 			};
-			struct VertexInstance
+			struct VertexColor
 			{
 				FLOAT r, g, b, a; // Diffuse color of current line point
 			};
@@ -167,6 +286,8 @@ namespace MirvPgl
 			bool m_Active = false;
 			bool m_Dirty;
 			IDirect3DDevice9 * m_Device = 0;
+			IAfxVertexShader * m_VertexShader = 0;
+			IAfxPixelShader * m_PixelShader = 0;
 
 			std::shared_timed_mutex m_Mutex;
 
@@ -188,7 +309,7 @@ namespace MirvPgl
 
 					Tier0_Msg(
 						"%s <fLo> <fHi> <iBits> - Set low value, high value and number of level bits for this channel.\n"
-						"Current value: %f %f %u"
+						"Current value: %f %f %u\n"
 						, cmd0
 						, m_Lo
 						, m_Hi
@@ -243,13 +364,13 @@ namespace MirvPgl
 					{
 						if (3 <= argc)
 						{
-							m_RectsPerRow = min(1, (size_t)atoi(args->ArgV(2)));
+							m_RectsPerRow = max(1, (size_t)atoi(args->ArgV(2)));
 							return true;
 						}
 
 						Tier0_Msg(
 							"%s rectsPerRow <i> - Number of rectangles per row\n"
-							"Current value: %u"
+							"Current value: %u\n"
 							, cmd0
 							, m_RectsPerRow
 						);
@@ -265,7 +386,7 @@ namespace MirvPgl
 
 						Tier0_Msg(
 							"%s rectWidth <f> - Rectangle width.\n"
-							"Current value: %f"
+							"Current value: %f\n"
 							, cmd0
 							, m_RectWidth
 						);
@@ -281,7 +402,7 @@ namespace MirvPgl
 
 						Tier0_Msg(
 							"%s rectHeight <f> - Rectangle height.\n"
-							"Current value: %f"
+							"Current value: %f\n"
 							, cmd0
 							, m_RectHeight
 						);
@@ -297,7 +418,7 @@ namespace MirvPgl
 
 						Tier0_Msg(
 							"%s top <f> - Top of output.\n"
-							"Current value: %f"
+							"Current value: %f\n"
 							, cmd0
 							, m_Top
 						);
@@ -313,7 +434,7 @@ namespace MirvPgl
 
 						Tier0_Msg(
 							"%s left <f> - Left of output.\n"
-							"Current value: %f"
+							"Current value: %f\n"
 							, cmd0
 							, m_Left
 						);
@@ -389,8 +510,8 @@ namespace MirvPgl
 			}
 
 			IDirect3DIndexBuffer9 * m_IndexBuffer = 0;
-			IDirect3DVertexBuffer9 * m_GeometryVertexBuffer = 0;
-			IDirect3DVertexBuffer9 * m_InstanceVertexBuffer = 0;
+			IDirect3DVertexBuffer9 * m_PositionVertexBuffer = 0;
+			IDirect3DVertexBuffer9 * m_ColorVertexBuffer = 0;
 			IDirect3DVertexDeclaration9 * m_VertexDecl = 0;
 
 			void Pack(float value, float min, float max, unsigned char bits, size_t bitOfs, unsigned char * data)
@@ -441,69 +562,67 @@ namespace MirvPgl
 				return bitOfs;
 			}
 
-			bool UpdateInstanceDataBuffer(CDrawing_Functor const & functor)
+			bool UpdateCollorVertexBuffer(CDrawing_Functor const & functor)
 			{
-				VertexInstance * lockedInstanceBuffer;
+				VertexColor * lockedColorBuffer;
 
-				if(FAILED(m_InstanceVertexBuffer->Lock(
+				if(FAILED(m_ColorVertexBuffer->Lock(
 					0,
-					4 * m_RectsCount * sizeof(VertexGeometry),
-					(void **)&lockedInstanceBuffer, 0
+					4 * m_RectsCount * sizeof(VertexColor),
+					(void **)&lockedColorBuffer, 0
 				)))
 				{
 					return false;
 				}
-				else
+
+				unsigned char data[16];
+
+				Pack(functor.m_CamData.XPosition, -16384, 16384, 22, 0, data);
+				Pack(functor.m_CamData.YPosition, -16384, 16384, 22, 22, data);
+				Pack(functor.m_CamData.ZPosition, -16384, 16384, 22, 44, data);
+				Pack(fmod(functor.m_CamData.XRotation +180.0f, 360.0f) - 180.0f, -180, 180, 16, 66, data);
+				Pack(fmod(functor.m_CamData.YRotation + 180.0f, 360.0f) - 180.0f, -180, 180, 16, 82, data);
+				Pack(fmod(functor.m_CamData.ZRotation + 180.0f, 360.0f) - 180.0f, -180, 180, 16, 98, data);
+				Pack(functor.m_CamData.Fov, 0, 180, 14, 114, data);
+
+				size_t vertex = 0;
+				size_t bitOfs = 0;
+				for (size_t rect = 0; rect < m_RectsCount; ++rect)
 				{
-					unsigned char data[8];
+					float red, green, blue;
 
-					Pack(functor.m_CamData.XPosition, -16384, 16384, 22, 0, data);
-					Pack(functor.m_CamData.YPosition, -16384, 16384, 22, 22, data);
-					Pack(functor.m_CamData.ZPosition, -16384, 16384, 22, 44, data);
-					Pack(fmod(functor.m_CamData.XRotation +180.0f, 360.0f) - 180.0f, -180, 180, 16, 66, data);
-					Pack(fmod(functor.m_CamData.YRotation + 180.0f, 360.0f) - 180.0f, -180, 180, 16, 82, data);
-					Pack(fmod(functor.m_CamData.ZRotation + 180.0f, 360.0f) - 180.0f, -180, 180, 16, 98, data);
-					Pack(functor.m_CamData.Fov, 0, 180, 14, 114, data);
+					bitOfs = Encode(m_Red, red, data, 128,
+						Encode(m_Green, green, data, 128,
+							Encode(m_Blue, blue, data, 128, bitOfs)
+						)
+					);
 
-					size_t vertex = 0;
-					size_t bitOfs = 0;
-					for (size_t rect = 0; rect < m_RectsCount; ++rect)
-					{
-						float red, green, blue;
+					lockedColorBuffer[vertex + 0].r = red;
+					lockedColorBuffer[vertex + 0].g = green;
+					lockedColorBuffer[vertex + 0].b = blue;
+					lockedColorBuffer[vertex + 0].a = 1;
 
-						bitOfs = Encode(m_Red, red, data, 128,
-							Encode(m_Green, green, data, 128,
-								Encode(m_Blue, blue, data, 128, bitOfs)
-							)
-						);
+					lockedColorBuffer[vertex + 1].r = red;
+					lockedColorBuffer[vertex + 1].g = green;
+					lockedColorBuffer[vertex + 1].b = blue;
+					lockedColorBuffer[vertex + 1].a = 1;
 
-						lockedInstanceBuffer[vertex + 0].r = red;
-						lockedInstanceBuffer[vertex + 0].g = green;
-						lockedInstanceBuffer[vertex + 0].b = blue;
-						lockedInstanceBuffer[vertex + 0].a = 1.0f;
+					lockedColorBuffer[vertex + 2].r = red;
+					lockedColorBuffer[vertex + 2].g = green;
+					lockedColorBuffer[vertex + 2].b = blue;
+					lockedColorBuffer[vertex + 2].a = 1;
 
-						lockedInstanceBuffer[vertex + 1].r = red;
-						lockedInstanceBuffer[vertex + 1].g = green;
-						lockedInstanceBuffer[vertex + 1].b = blue;
-						lockedInstanceBuffer[vertex + 1].a = 1.0f;
+					lockedColorBuffer[vertex + 3].r = red;
+					lockedColorBuffer[vertex + 3].g = green;
+					lockedColorBuffer[vertex + 3].b = blue;
+					lockedColorBuffer[vertex + 3].a = 1;
 
-						lockedInstanceBuffer[vertex + 2].r = red;
-						lockedInstanceBuffer[vertex + 2].g = green;
-						lockedInstanceBuffer[vertex + 2].b = blue;
-						lockedInstanceBuffer[vertex + 2].a = 1.0f;
-
-						lockedInstanceBuffer[vertex + 3].r = red;
-						lockedInstanceBuffer[vertex + 3].g = green;
-						lockedInstanceBuffer[vertex + 3].b = blue;
-						lockedInstanceBuffer[vertex + 3].a = 1.0f;
-
-						vertex += 4;
-					}
-
-					m_InstanceVertexBuffer->Unlock();
+					vertex += 4;
 				}
 
-				return false;
+				m_ColorVertexBuffer->Unlock();
+
+				return true;
 			}
 
 			void DestroyBuffers(void)
@@ -514,16 +633,16 @@ namespace MirvPgl
 					m_VertexDecl = 0;
 				}
 
-				if (m_GeometryVertexBuffer)
+				if (m_PositionVertexBuffer)
 				{
-					m_GeometryVertexBuffer->Release();
-					m_GeometryVertexBuffer = 0;
+					m_PositionVertexBuffer->Release();
+					m_PositionVertexBuffer = 0;
 				}
 
-				if (m_InstanceVertexBuffer)
+				if (m_ColorVertexBuffer)
 				{
-					m_InstanceVertexBuffer->Release();
-					m_InstanceVertexBuffer = 0;
+					m_ColorVertexBuffer->Release();
+					m_ColorVertexBuffer = 0;
 				}
 
 				if (m_IndexBuffer)
@@ -548,25 +667,25 @@ namespace MirvPgl
 
 				size_t vertexCount = 4 * m_RectsCount;
 
-				VertexGeometry * lockedGemometryBuffer;
+				VertexPosition * lockedPositionBuffer;
 
 				if (FAILED(m_Device->CreateVertexBuffer(
-					vertexCount * sizeof(VertexGeometry),
+					vertexCount * sizeof(VertexPosition),
 					D3DUSAGE_WRITEONLY,
 					0,
 					D3DPOOL_DEFAULT,
-					&m_GeometryVertexBuffer,
+					&m_PositionVertexBuffer,
 					NULL
-				)) || FAILED(m_GeometryVertexBuffer->Lock(
+				)) || FAILED(m_PositionVertexBuffer->Lock(
 					0,
-					vertexCount * sizeof(VertexGeometry),
-					(void **)&lockedGemometryBuffer, 0
+					vertexCount * sizeof(VertexPosition),
+					(void **)&lockedPositionBuffer, 0
 				)))
 				{
-					if (m_GeometryVertexBuffer)
+					if (m_PositionVertexBuffer)
 					{
-						m_GeometryVertexBuffer->Release();
-						m_GeometryVertexBuffer = 0;
+						m_PositionVertexBuffer->Release();
+						m_PositionVertexBuffer = 0;
 					}
 				}
 				else
@@ -579,25 +698,17 @@ namespace MirvPgl
 						float top = -0.5f + m_Top + m_RectHeight * row;
 						float left = -0.5f + m_Left + m_RectWidth * col;
 
-						lockedGemometryBuffer[vertex + 0].x = left;
-						lockedGemometryBuffer[vertex + 0].y = top;
-						lockedGemometryBuffer[vertex + 0].z = 0.0f;
-						lockedGemometryBuffer[vertex + 0].rhw = 1.0f;
+						lockedPositionBuffer[vertex + 0].x = left;
+						lockedPositionBuffer[vertex + 0].y = top;
 
-						lockedGemometryBuffer[vertex + 1].x = left +0.5f;
-						lockedGemometryBuffer[vertex + 1].y = top;
-						lockedGemometryBuffer[vertex + 1].z = 0.0f;
-						lockedGemometryBuffer[vertex + 1].rhw = 1.0f;
+						lockedPositionBuffer[vertex + 1].x = left + m_RectWidth;
+						lockedPositionBuffer[vertex + 1].y = top;
 
-						lockedGemometryBuffer[vertex + 2].x = left;
-						lockedGemometryBuffer[vertex + 2].y = top +0.5f;
-						lockedGemometryBuffer[vertex + 2].z = 0.0f;
-						lockedGemometryBuffer[vertex + 2].rhw = 1.0f;
+						lockedPositionBuffer[vertex + 2].x = left;
+						lockedPositionBuffer[vertex + 2].y = top + m_RectHeight;
 
-						lockedGemometryBuffer[vertex + 3].x = left +0.5f;
-						lockedGemometryBuffer[vertex + 3].y = top +0.5f;
-						lockedGemometryBuffer[vertex + 3].z = 0.0f;
-						lockedGemometryBuffer[vertex + 3].rhw = 1.0f;
+						lockedPositionBuffer[vertex + 3].x = left + m_RectWidth;
+						lockedPositionBuffer[vertex + 3].y = top + m_RectHeight;
 
 						vertex += 4;
 
@@ -610,22 +721,22 @@ namespace MirvPgl
 						}
 					}
 
-					m_GeometryVertexBuffer->Unlock();
+					m_PositionVertexBuffer->Unlock();
 				}
 
 				if (FAILED(m_Device->CreateVertexBuffer(
-					vertexCount * sizeof(VertexInstance),
+					vertexCount * sizeof(VertexColor),
 					D3DUSAGE_WRITEONLY,
 					0,
 					D3DPOOL_DEFAULT,
-					&m_InstanceVertexBuffer,
+					&m_ColorVertexBuffer,
 					NULL
 				)))
 				{
-					if (m_InstanceVertexBuffer)
+					if (m_ColorVertexBuffer)
 					{
-						m_InstanceVertexBuffer->Release();
-						m_InstanceVertexBuffer = 0;
+						m_ColorVertexBuffer->Release();
+						m_ColorVertexBuffer = 0;
 					}
 				}
 
@@ -709,8 +820,10 @@ namespace MirvPgl
 			m_Static.D3D9_Reset();
 		}
 
-		CDrawing_Functor(CamData const & camData)
+		CDrawing_Functor(CamData const & camData, int width, int height)
 			: m_CamData(camData)
+			, m_Width(width)
+			, m_Height(height)
 		{
 		}
 
@@ -721,6 +834,8 @@ namespace MirvPgl
 
 	private:
 		CamData m_CamData;
+		int m_Width;
+		int m_Height;
 	};
 
 	MirvPgl::CDrawing_Functor::CStatic MirvPgl::CDrawing_Functor::m_Static;
@@ -1192,9 +1307,9 @@ namespace MirvPgl
 			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CSupplyThreadData_Functor(m_ThreadDataPool.Acquire())));
 	}
 
-	void QueueDrawing(CamData const & camData)
+	void QueueDrawing(CamData const & camData, int width, int height)
 	{
-		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CDrawing_Functor(camData)));
+		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CDrawing_Functor(camData, width, height)));
 	}
 
 	void SupplyLevelInit(char const * mapName)
