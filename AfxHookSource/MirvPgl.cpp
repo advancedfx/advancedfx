@@ -47,14 +47,14 @@ namespace MirvPgl
 
 	const D3DVERTEXELEMENT9 g_Drawing_VBDecl_Color[] =
 	{
-		{ 1, 0, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
+		{ 1, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
 		D3DDECL_END()
 	};
 
 	const D3DVERTEXELEMENT9 g_Drawing_VDecl[] =
 	{
 		{ 0, 0, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-		{ 1, 0, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
+		{ 1, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
 		D3DDECL_END()
 	};
 
@@ -280,7 +280,7 @@ namespace MirvPgl
 			};
 			struct VertexColor
 			{
-				FLOAT r, g, b, a; // Diffuse color of current line point
+				FLOAT r, g, b; // Diffuse color of current line point
 			};
 
 			bool m_Active = false;
@@ -516,7 +516,7 @@ namespace MirvPgl
 
 			void Pack(float value, float min, float max, unsigned char bits, size_t bitOfs, unsigned char * data)
 			{
-				value = 2.0f * (value - min) / (max - min) - 1.0f;
+				value = (value - min) / (max - min);
 
 				unsigned int result;
 
@@ -524,15 +524,12 @@ namespace MirvPgl
 
 				memcpy(&result, &value, sizeof(unsigned int));
 				
-				result = result & 0x80000000 | ((result & 0x7FFFFF) << 8);
-
-
 				while (bits)
 				{
 					size_t numByte = bitOfs / 8;
 					size_t numBit = 7 - (bitOfs % 8);
 
-					data[numByte] = (data[numByte] & ~(1 << numBit)) | (((result & 0x80000000) >> 31) << numBit);
+					data[numByte] = (data[numByte] & ~(1 << numBit)) | (((result & 0x00ffffff) >> 23) << numBit); ERROR: // TODO, need to account for exponent ;) LUL forgot
 
 					--bits;
 					++bitOfs;
@@ -600,22 +597,18 @@ namespace MirvPgl
 					lockedColorBuffer[vertex + 0].r = red;
 					lockedColorBuffer[vertex + 0].g = green;
 					lockedColorBuffer[vertex + 0].b = blue;
-					lockedColorBuffer[vertex + 0].a = 1;
 
 					lockedColorBuffer[vertex + 1].r = red;
 					lockedColorBuffer[vertex + 1].g = green;
 					lockedColorBuffer[vertex + 1].b = blue;
-					lockedColorBuffer[vertex + 1].a = 1;
 
 					lockedColorBuffer[vertex + 2].r = red;
 					lockedColorBuffer[vertex + 2].g = green;
 					lockedColorBuffer[vertex + 2].b = blue;
-					lockedColorBuffer[vertex + 2].a = 1;
 
 					lockedColorBuffer[vertex + 3].r = red;
 					lockedColorBuffer[vertex + 3].g = green;
 					lockedColorBuffer[vertex + 3].b = blue;
-					lockedColorBuffer[vertex + 3].a = 1;
 
 					vertex += 4;
 				}
