@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Drawing;
 using advancedfx.PGL;
 
@@ -45,7 +41,7 @@ namespace MirvPglDrawTest
     {
         static void Main(string[] args)
         {
-            EasyDecoder decoder = EasyDecoder.Default();
+            EasyDecoder decoder = EasyDecoder.Default(bitsPerChannel:6, fullRange:false);
             EasyData data = null;
 
             try

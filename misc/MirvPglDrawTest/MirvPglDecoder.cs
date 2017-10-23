@@ -1,10 +1,13 @@
-﻿// You only need to implement IImageData and use it with EasyDecoder.Decode (get one from EasyDecoder.Default), BUT don't forget to handle possible exceptions!
+﻿// Version: 1.0.0 (2017-10-23T19:26Z)
+//
+// You only need to implement IImageData and use it with EasyDecoder.Decode (get one from EasyDecoder.Default), BUT don't forget to handle possible exceptions!
 // See Program.cs for example.
+//
+// Notes:
+// Often 0 won't be really 0, this is due to the encoding scheme and rounding errors.
+// This will in example result in a tiny camera roll.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace advancedfx.PGL {
 
@@ -54,15 +57,15 @@ namespace advancedfx.PGL {
 
     class EasyDecoder : IPixelDecoder
     {
-        public static EasyDecoder Default()
+        public static EasyDecoder Default(int rectsPerRow = 90, int rectWidth = 4, int rectHeight = 4, byte bitsPerChannel = 6, bool fullRange = false)
         {
             return new EasyDecoder(
-                90,
-                4,
-                4,
-                ChannelSettings.Default(),
-                ChannelSettings.Default(),
-                ChannelSettings.Default());
+                rectsPerRow,
+                rectWidth,
+                rectHeight,
+                ChannelSettings.Default(bitsPerChannel, fullRange),
+                ChannelSettings.Default(bitsPerChannel, fullRange),
+                ChannelSettings.Default(bitsPerChannel, fullRange));
         }
 
         public EasyDecoder(
@@ -159,9 +162,9 @@ namespace advancedfx.PGL {
 
     class ChannelSettings
     {
-        public static ChannelSettings Default()
+        public static ChannelSettings Default(byte bits = 6, bool fullrange = false)
         {
-            return new ChannelSettings(6, 16.0f / 255.0f, 235.0f / 255.0f);
+            return new ChannelSettings(bits, (fullrange ? 0.0f : 16.0f) / 255.0f, (fullrange ? 255.0f : 235.0f) / 255.0f);
         }
 
         public ChannelSettings(byte bits, float lo, float hi)
@@ -233,7 +236,7 @@ namespace advancedfx.PGL {
                     bits -= minBits;
                     while (0 < minBits)
                     {
-                        result = (result << 1) | ((m_BlueValue >> (m_Blue.Bits - 1)) & 0x1);
+                        result = (result << 1) | ((m_BlueValue & (0x1u << (m_Blue.Bits -1))) >> (m_Blue.Bits - 1));
                         --m_BlueBitsLeft;
                         m_BlueValue = m_BlueValue << 1;
                         --minBits;
@@ -245,7 +248,7 @@ namespace advancedfx.PGL {
                     bits -= minBits;
                     while (0 < minBits)
                     {
-                        result = (result << 1) | ((m_GreenValue >> (m_Green.Bits - 1)) & 0x1);
+                        result = (result << 1) | ((m_GreenValue & (0x1u << (m_Green.Bits - 1))) >> (m_Green.Bits - 1));
                         --m_GreenBitsLeft;
                         m_GreenValue = m_GreenValue << 1;
                         --minBits;
@@ -257,7 +260,7 @@ namespace advancedfx.PGL {
                     bits -= minBits;
                     while (0 < minBits)
                     {
-                        result = (result << 1) | ((m_RedValue >> (m_Red.Bits - 1)) & 0x1);
+                        result = (result << 1) | ((m_RedValue & (0x1u << (m_Red.Bits - 1))) >> (m_Red.Bits - 1));
                         --m_RedBitsLeft;
                         m_RedValue = m_RedValue << 1;
                         --minBits;
@@ -292,6 +295,8 @@ namespace advancedfx.PGL {
 
     class DataDecoder
     {
+        public const float FLT_EPSILON = 1.192092896e-07F;
+
         public DataDecoder(BitsDecoder bitsDecoder)
         {
             m_BitsDecoder = bitsDecoder;
@@ -309,9 +314,7 @@ namespace advancedfx.PGL {
 
             uint data = m_BitsDecoder.DecodeBitsToUInt32(bits);
 
-            data = (data << (23-bits)) | 0x3f000000;
-
-            float value = BitConverter.ToSingle(BitConverter.GetBytes(data), 0);
+            float value = (float)data / ((1u << bits) - 1);
 
             return value * (max - min) + min;
         }

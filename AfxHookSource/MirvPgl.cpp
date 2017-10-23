@@ -64,6 +64,8 @@ namespace MirvPgl
 	const int m_ThreadSleepMsIfNoData = 1;
 	const uint32_t m_Version = 2;
 
+	// Version: 1.0.0 (2017-10-23T19:26Z)
+	// 
 	class CDrawing_Functor
 		: public CAfxFunctor
 	{
@@ -300,22 +302,22 @@ namespace MirvPgl
 
 					char const * cmd0 = args->ArgV(0);
 
-					if (5 <= argc)
+					if (4 <= argc)
 					{
-						m_Bits = min(1, (unsigned short int)atoi(args->ArgV(4)));
+						m_Bits = max(1, (unsigned char)atoi(args->ArgV(1)));
 						m_Lo = (float)atof(args->ArgV(2));
 						m_Hi = (float)atof(args->ArgV(3));
+						return true;
 					}
 
 					Tier0_Msg(
-						"%s <fLo> <fHi> <iBits> - Set low value, high value and number of level bits for this channel.\n"
-						"Current value: %f %f %u\n"
+						"%s <iBits> <fLo> <fHi> - Set number of level bits, low value and high value for this channel.\n"
+						"Current value: %u %f %f\n"
 						, cmd0
+						, m_Bits
 						, m_Lo
 						, m_Hi
-						, m_Bits
 					);
-
 
 					return false;
 				}
@@ -327,13 +329,17 @@ namespace MirvPgl
 
 				float Encode(unsigned int value) const
 				{
-					return m_Lo + value / (float)((1L << m_Bits) - 1) * (m_Hi - m_Lo);
+					return m_Lo + value / (float)((1u << m_Bits) - 1) * (m_Hi - m_Lo);
 				}
 
 			private:
+				//float m_Lo = 0.0f / 255.0f;
+				//float m_Hi = 255.0f / 255.0f;
+				//unsigned short int m_Bits = 8;
+
 				float m_Lo = 16.0f / 255.0f;
 				float m_Hi = 235.0f / 255.0f;
-				unsigned short int m_Bits = 6;
+				unsigned char m_Bits = 6;
 			};
 
 			CChannel m_Red;
@@ -518,20 +524,15 @@ namespace MirvPgl
 			{
 				value = (value - min) / (max - min);
 
-				unsigned int result;
-
-				Assert(sizeof(unsigned int) == sizeof(float));
-
-				memcpy(&result, &value, sizeof(unsigned int));
+				unsigned int result = (unsigned int)std::round(value * ((1u << bits)-1));
 				
-				while (bits)
+				for (int bit = 0; bit < bits; ++bit)
 				{
 					size_t numByte = bitOfs / 8;
-					size_t numBit = 7 - (bitOfs % 8);
+					size_t numBit = (7 - bitOfs) % 8;
 
-					data[numByte] = (data[numByte] & ~(1 << numBit)) | (((result & 0x00ffffff) >> 23) << numBit); ERROR: // TODO, need to account for exponent ;) LUL forgot
+					data[numByte] = (data[numByte] & ~(1u << numBit)) | (((result & (1u << (bits-1))) >> (bits -1)) << numBit);
 
-					--bits;
 					++bitOfs;
 					result = result << 1;
 				}
@@ -546,7 +547,7 @@ namespace MirvPgl
 				while (bits && bitOfs < maxBits)
 				{
 					size_t numByte = bitOfs / 8;
-					size_t numBit = 7 - (bitOfs % 8);
+					size_t numBit = (7 - bitOfs) % 8;
 
 					value = (value << 1) | ((data[numByte] & (1 << numBit)) >> numBit);
 
