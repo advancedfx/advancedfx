@@ -64,7 +64,7 @@ namespace MirvPgl
 	const int m_ThreadSleepMsIfNoData = 1;
 	const uint32_t m_Version = 2;
 
-	// Version: 1.0.0 (2017-10-23T19:26Z)
+	// Version: 2.0.0 (2017-10-24T08:45Z)
 	// 
 	class CDrawing_Functor
 		: public CAfxFunctor
@@ -538,6 +538,26 @@ namespace MirvPgl
 				}
 			}
 
+			void Pack(float value, size_t bitOfs, unsigned char * data)
+			{
+				unsigned int result;
+
+				Assert(sizeof(unsigned int) == sizeof(float));
+
+				memcpy(&result, &value, sizeof(unsigned int));
+
+				for (int bit = 0; bit < 32; ++bit)
+				{
+					size_t numByte = bitOfs / 8;
+					size_t numBit = (7 - bitOfs) % 8;
+
+					data[numByte] = (data[numByte] & ~(1u << numBit)) | (((result & (1u << (32 - 1))) >> (32 - 1)) << numBit);
+
+					++bitOfs;
+					result = result << 1;
+				}
+			}
+
 			size_t Encode(CChannel const & channel, float & outValue, unsigned char * data, size_t maxBits, size_t bitOfs)
 			{
 				unsigned short int bits = channel.Bits_get();
@@ -573,15 +593,16 @@ namespace MirvPgl
 					return false;
 				}
 
-				unsigned char data[16];
+				unsigned char data[20];
 
-				Pack(functor.m_CamData.XPosition, -16384, 16384, 22, 0, data);
-				Pack(functor.m_CamData.YPosition, -16384, 16384, 22, 22, data);
-				Pack(functor.m_CamData.ZPosition, -16384, 16384, 22, 44, data);
-				Pack(fmod(functor.m_CamData.XRotation +180.0f, 360.0f) - 180.0f, -180, 180, 16, 66, data);
-				Pack(fmod(functor.m_CamData.YRotation + 180.0f, 360.0f) - 180.0f, -180, 180, 16, 82, data);
-				Pack(fmod(functor.m_CamData.ZRotation + 180.0f, 360.0f) - 180.0f, -180, 180, 16, 98, data);
-				Pack(functor.m_CamData.Fov, 0, 180, 14, 114, data);
+				Pack(functor.m_CamData.Time, 0, data);
+				Pack(functor.m_CamData.XPosition, -16384, 16384, 22, 32, data);
+				Pack(functor.m_CamData.YPosition, -16384, 16384, 22, 54, data);
+				Pack(functor.m_CamData.ZPosition, -16384, 16384, 22, 76, data);
+				Pack(fmod(functor.m_CamData.XRotation +180.0f, 360.0f) - 180.0f, -180, 180, 16, 98, data);
+				Pack(fmod(functor.m_CamData.YRotation + 180.0f, 360.0f) - 180.0f, -180, 180, 16, 114, data);
+				Pack(fmod(functor.m_CamData.ZRotation + 180.0f, 360.0f) - 180.0f, -180, 180, 16, 130, data);
+				Pack(functor.m_CamData.Fov, 0, 180, 14, 146, data);
 
 				size_t vertex = 0;
 				size_t bitOfs = 0;

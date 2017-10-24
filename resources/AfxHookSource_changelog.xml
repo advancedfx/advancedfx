@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.33.0</version>
+<time>2017-10-24T09:04Z</time>
+<changes>
+<change type="added">
+Added timecode to mirv_pgl draw. Sample is in misc/MirvPglDrawTest/.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.32.0</version>
 <time>2017-10-23T19:32Z</time>
 <changes>

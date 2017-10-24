@@ -58,7 +58,7 @@ namespace MirvPglDrawTest
             {
                 CameraData cameraData = data.CameraData;
 
-                Console.Out.WriteLine("X={0}, Y={1}, Z={2}, XR={3}, YR={4}, ZR={5}, FOV={6}", cameraData.XPosition, cameraData.YPosition, cameraData.ZPosition, cameraData.XRotation, cameraData.YRotation, cameraData.ZRotation, cameraData.Fov);
+                Console.Out.WriteLine("T={0}, X={1}, Y={2}, Z={3}, XR={4}, YR={5}, ZR={6}, FOV={7}", cameraData.Time, cameraData.XPosition, cameraData.YPosition, cameraData.ZPosition, cameraData.XRotation, cameraData.YRotation, cameraData.ZRotation, cameraData.Fov);
             }
 
             System.Console.ReadLine();

@@ -1,4 +1,4 @@
-﻿// Version: 1.0.0 (2017-10-23T19:26Z)
+﻿// Version: 2.0.0 (2017-10-24T08:45Z)
 //
 // You only need to implement IImageData and use it with EasyDecoder.Decode (get one from EasyDecoder.Default), BUT don't forget to handle possible exceptions!
 // See Program.cs for example.
@@ -319,12 +319,21 @@ namespace advancedfx.PGL {
             return value * (max - min) + min;
         }
 
+        public float DecodeSingle()
+        {
+            uint data = m_BitsDecoder.DecodeBitsToUInt32(32);
+
+            return BitConverter.ToSingle(BitConverter.GetBytes(data), 0);
+
+        }
+
         BitsDecoder m_BitsDecoder;
     }
 
 
     struct CameraData
     {
+        public float Time;
         public float XPosition;
         public float YPosition;
         public float ZPosition;
@@ -350,6 +359,7 @@ namespace advancedfx.PGL {
         {
             CameraData result;
 
+            result.Time = m_DataDecoder.DecodeSingle();
             result.XPosition = m_DataDecoder.DecodeSingle(-16384, 16384, 22);
             result.YPosition = m_DataDecoder.DecodeSingle(-16384, 16384, 22);
             result.ZPosition = m_DataDecoder.DecodeSingle(-16384, 16384, 22);
