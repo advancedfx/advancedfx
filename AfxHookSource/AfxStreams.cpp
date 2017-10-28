@@ -6504,7 +6504,7 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 
 IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(CAfxRenderViewStream * stream, CAfxRecordStream * captureTarget, bool isInPreview, bool first, bool last)
 {
-	if (!m_PresentRecordOnScreen)
+	if (!m_PresentBlocked)
 	{
 		m_MaterialSystem->SwapBuffers();
 	}
