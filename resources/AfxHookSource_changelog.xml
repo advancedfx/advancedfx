@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.33.2</version>
+<time>2017-10-28T16:20Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_pgl_draw not working after ALT+TAB and bugs in the encoder, also changed encoding scheme a bit to have am exact value for 0, sample is in misc/MirvPglDrawTest/.
+</change>
+<change type="updated">
+Updated the build with the latest Visual Studio 2017 version / UCRT / ....
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.33.1</version>
 <time>2017-10-28T08:37Z</time>
 <changes>

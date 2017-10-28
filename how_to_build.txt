@@ -10,10 +10,6 @@ Notice:
 [X] Download and install Microsoft Visual Studio 2017 Community, which you can
     obtain for free from https://www.visualstudio.com/downloads/ .
 
-[X] Download the Half-Life SDK from
-    http://github.com/ValveSoftware/halflife
-    and install it into C:\Libraries\halflife
-
 [X] Obtain and install CMAKE from http://www.cmake.org/
     We currently use "cmake-3.8.1-win64-x64.msi".
 
@@ -135,7 +131,7 @@ Notice:
     to "C:\<HLAESRC>\advancedfx\build\Release\bin"
 
 [X] Copy all files
-    form "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Redist\MSVC\14.10.25008\x86\Microsoft.VC150.CRT"
+    form "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Redist\MSVC\14.11.25325\x86\Microsoft.VC141.CRT"
     to "C:\<HLAESRC>\advancedfx\build\Release\bin"
 
 [X] Copy all DLL files from

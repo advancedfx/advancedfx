@@ -64,7 +64,7 @@ namespace MirvPgl
 	const int m_ThreadSleepMsIfNoData = 1;
 	const uint32_t m_Version = 2;
 
-	// Version: 2.0.0 (2017-10-24T08:45Z)
+	// Version: 3.0.0 (2017-10-28T14:56Z)
 	// 
 	class CDrawing_Functor
 		: public CAfxFunctor
@@ -252,11 +252,15 @@ namespace MirvPgl
 				if (0 == device)
 					return;
 
-				device->AddRef();
+				{
+					std::unique_lock<std::shared_timed_mutex> lock(m_Mutex);
 
-				m_Device = device;
+					device->AddRef();
 
-				m_Dirty = true;
+					m_Device = device;
+
+					m_Dirty = true;
+				}
 			}
 
 			void D3D9_EndDevice()
@@ -264,15 +268,24 @@ namespace MirvPgl
 				if (0 == m_Device)
 					return;
 
-				DestroyBuffers();
+				{
+					std::unique_lock<std::shared_timed_mutex> lock(m_Mutex);
 
-				m_Device->Release();
-				m_Device = 0;
+					DestroyBuffers();
+
+					m_Device->Release();
+					m_Device = 0;
+				}
 			}
 
 			void D3D9_Reset()
 			{
-				DestroyBuffers();
+				{
+					std::unique_lock<std::shared_timed_mutex> lock(m_Mutex);
+
+					DestroyBuffers();
+					m_Dirty = true;
+				}
 			}
 
 		private:
@@ -505,10 +518,11 @@ namespace MirvPgl
 
 				// If this gets larger, you need to make sure that the worst case bits doesn't blow up the indexbuffer!
 				size_t bits = 0
+					+1*32 // time
 					+3*22 // position x y z
 					+3*16 // rotation x y z
 					+14 // fov
-				; // == 128 bit == 8 byte
+				; // == 160 bit == 20 byte
 
 				size_t bitsPerRect = (size_t)m_Red.Bits_get() + (size_t)m_Green.Bits_get() + (size_t)m_Blue.Bits_get();
 				
@@ -520,11 +534,11 @@ namespace MirvPgl
 			IDirect3DVertexBuffer9 * m_ColorVertexBuffer = 0;
 			IDirect3DVertexDeclaration9 * m_VertexDecl = 0;
 
-			void Pack(float value, float min, float max, unsigned char bits, size_t bitOfs, unsigned char * data)
+			void Pack(float value, float min, float maxExclusive, unsigned char bits, size_t bitOfs, unsigned char * data)
 			{
-				value = (value - min) / (max - min);
+				value = (value - min) / (maxExclusive - min);
 
-				unsigned int result = (unsigned int)std::round(value * ((1u << bits)-1));
+				unsigned int result = (unsigned int)std::floor(value * (1u << bits));
 				
 				for (int bit = 0; bit < bits; ++bit)
 				{
@@ -596,9 +610,9 @@ namespace MirvPgl
 				unsigned char data[20];
 
 				Pack(functor.m_CamData.Time, 0, data);
-				Pack(functor.m_CamData.XPosition, -16384, 16384, 22, 32, data);
-				Pack(functor.m_CamData.YPosition, -16384, 16384, 22, 54, data);
-				Pack(functor.m_CamData.ZPosition, -16384, 16384, 22, 76, data);
+				Pack(functor.m_CamData.XPosition, -16384, 16384 + FLT_EPSILON, 22, 32, data);
+				Pack(functor.m_CamData.YPosition, -16384, 16384 + FLT_EPSILON, 22, 54, data);
+				Pack(functor.m_CamData.ZPosition, -16384, 16384 + FLT_EPSILON, 22, 76, data);
 				Pack(fmod(functor.m_CamData.XRotation +180.0f, 360.0f) - 180.0f, -180, 180, 16, 98, data);
 				Pack(fmod(functor.m_CamData.YRotation + 180.0f, 360.0f) - 180.0f, -180, 180, 16, 114, data);
 				Pack(fmod(functor.m_CamData.ZRotation + 180.0f, 360.0f) - 180.0f, -180, 180, 16, 130, data);
@@ -610,9 +624,9 @@ namespace MirvPgl
 				{
 					float red, green, blue;
 
-					bitOfs = Encode(m_Red, red, data, 128,
-						Encode(m_Green, green, data, 128,
-							Encode(m_Blue, blue, data, 128, bitOfs)
+					bitOfs = Encode(m_Red, red, data, 160,
+						Encode(m_Green, green, data, 160,
+							Encode(m_Blue, blue, data, 160, bitOfs)
 						)
 					);
 

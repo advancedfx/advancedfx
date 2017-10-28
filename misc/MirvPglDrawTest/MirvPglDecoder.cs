@@ -1,4 +1,4 @@
-﻿// Version: 2.0.0 (2017-10-24T08:45Z)
+﻿// Version: 3.0.0 (2017-10-28T14:56Z)
 //
 // You only need to implement IImageData and use it with EasyDecoder.Decode (get one from EasyDecoder.Default), BUT don't forget to handle possible exceptions!
 // See Program.cs for example.
@@ -307,16 +307,16 @@ namespace advancedfx.PGL {
             m_BitsDecoder.Flush();
         }
 
-        public float DecodeSingle(float min, float max, byte bits)
+        public float DecodeSingle(float min, float maxExclusive, byte bits)
         {
             if (bits < 2) throw new System.ArgumentException("bits must be at least 2.");
             else if(24 < bits) throw new System.ArgumentException("bits must be less or equal to 24.");
 
             uint data = m_BitsDecoder.DecodeBitsToUInt32(bits);
 
-            float value = (float)data / ((1u << bits) - 1);
+            float value = (float)data / (1u << bits);
 
-            return value * (max - min) + min;
+            return value * (maxExclusive - min) + min;
         }
 
         public float DecodeSingle()
@@ -360,9 +360,9 @@ namespace advancedfx.PGL {
             CameraData result;
 
             result.Time = m_DataDecoder.DecodeSingle();
-            result.XPosition = m_DataDecoder.DecodeSingle(-16384, 16384, 22);
-            result.YPosition = m_DataDecoder.DecodeSingle(-16384, 16384, 22);
-            result.ZPosition = m_DataDecoder.DecodeSingle(-16384, 16384, 22);
+            result.XPosition = m_DataDecoder.DecodeSingle(-16384, 16384 + DataDecoder.FLT_EPSILON, 22);
+            result.YPosition = m_DataDecoder.DecodeSingle(-16384, 16384 + DataDecoder.FLT_EPSILON, 22);
+            result.ZPosition = m_DataDecoder.DecodeSingle(-16384, 16384 + DataDecoder.FLT_EPSILON, 22);
             result.XRotation = m_DataDecoder.DecodeSingle(-180, 180, 16);
             result.YRotation = m_DataDecoder.DecodeSingle(-180, 180, 16);
             result.ZRotation = m_DataDecoder.DecodeSingle(-180, 180, 16);
