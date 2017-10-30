@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.33.3</version>
+<time>2017-10-30T08:25Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams bug, due to change in code not always swapping buffers before next stream is rendered, causing state problems in material system.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.33.2</version>
 <time>2017-10-28T16:20Z</time>
 <changes>

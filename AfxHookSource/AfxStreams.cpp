@@ -6504,10 +6504,8 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 
 IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(CAfxRenderViewStream * stream, CAfxRecordStream * captureTarget, bool isInPreview, bool first, bool last)
 {
-	if (!m_PresentBlocked)
-	{
-		m_MaterialSystem->SwapBuffers();
-	}
+	// Apparently we have to do this always, otherwise the state is messed up:
+	m_MaterialSystem->SwapBuffers();
 
 	// Work around game running out of memory because of too much shit on the queue
 	// aka issue ripieces/advancedfx#22 :
