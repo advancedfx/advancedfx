@@ -1,4 +1,4 @@
-﻿// Version: 3.0.0 (2017-10-28T14:56Z)
+﻿// Version: 3.0.1 (2017-10-28T14:56Z)
 //
 // You only need to implement IImageData and use it with EasyDecoder.Decode (get one from EasyDecoder.Default), BUT don't forget to handle possible exceptions!
 // See Program.cs for example.
@@ -187,6 +187,8 @@ namespace advancedfx.PGL {
 
         public uint Decode(float value)
         {
+            value = Math.Min(Math.Max(m_Lo, value), m_Hi);
+
             value -= m_Lo;
             value /= m_Hi - m_Lo;
             value *= (float)((1L << m_Bits) - 1);
