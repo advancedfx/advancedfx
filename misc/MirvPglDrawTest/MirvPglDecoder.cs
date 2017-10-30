@@ -1,4 +1,4 @@
-﻿// Version: 3.0.1 (2017-10-28T14:56Z)
+﻿// Version: 3.0.2 (2017-10-30T19:05Z)
 //
 // You only need to implement IImageData and use it with EasyDecoder.Decode (get one from EasyDecoder.Default), BUT don't forget to handle possible exceptions!
 // See Program.cs for example.
