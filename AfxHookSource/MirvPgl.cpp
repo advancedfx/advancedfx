@@ -64,7 +64,7 @@ namespace MirvPgl
 	const int m_ThreadSleepMsIfNoData = 1;
 	const uint32_t m_Version = 2;
 
-	// Version: 3.0.0 (2017-10-28T14:56Z)
+	// Version: 3.0.3 (2017-10-31T10:37Z)
 	// 
 	class CDrawing_Functor
 		: public CAfxFunctor
@@ -538,7 +538,7 @@ namespace MirvPgl
 			{
 				value = (value - min) / (maxExclusive - min);
 
-				unsigned int result = (unsigned int)std::floor(value * (1u << bits));
+				unsigned int result = (unsigned int)min(max(std::floor(value * (1u << bits)),0), (1u << bits)-1);
 				
 				for (int bit = 0; bit < bits; ++bit)
 				{
