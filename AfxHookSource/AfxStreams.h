@@ -1667,7 +1667,7 @@ private:
 				handleStr = std::to_string(m_Handle.ToInt());
 			}
 
-			Tier0_Msg("id=%i, entityHandle=%s, materialName=\"%s\", textureGroupName=\"%s\", shaderName=\"%s\", isErrorMaterial=%s, action=\"%s\"\n",
+			Tier0_Msg("id=%i, \"handle=%s\", \"name=%s\", \"textureGroup=%s\", \"shader=%s\", \"isErrrorMaterial=%s\", \"action=%s\"\n",
 				id,
 				handleStr.c_str(),
 				m_Name.c_str(),
