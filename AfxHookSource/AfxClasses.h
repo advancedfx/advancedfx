@@ -77,7 +77,7 @@ private:
 
 	static void __stdcall CAfxTrackedMaterial::Material_InterlockedDecrement(DWORD *this_ptr);
 
-	static void OnMaterialFree(SOURCESDK::IMaterial_csgo * material);
+	static void OnMaterialInterlockedDecrement(SOURCESDK::IMaterial_csgo * material);
 
 	IAfxMaterialFree * m_Notifyee;
 };

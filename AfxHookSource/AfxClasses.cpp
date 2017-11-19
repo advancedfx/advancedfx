@@ -83,7 +83,7 @@ void CAfxTrackedMaterial::RemoveNotifyee(SOURCESDK::IMaterial_csgo * material, C
 std::map<int *, CAfxTrackedMaterial::CMaterialDetours> CAfxTrackedMaterial::m_VtableMap;
 std::shared_timed_mutex CAfxTrackedMaterial::m_VtableMapMutex;
 
-void CAfxTrackedMaterial::OnMaterialFree(SOURCESDK::IMaterial_csgo * material)
+void CAfxTrackedMaterial::OnMaterialInterlockedDecrement(SOURCESDK::IMaterial_csgo * material)
 {
 	int refCount = material->Probably_GetReferenceCount();
 	bool will_become_zero = 1 == refCount;
@@ -115,7 +115,7 @@ void __stdcall CAfxTrackedMaterial::Material_InterlockedDecrement(DWORD *this_pt
 
 	if (it != m_VtableMap.end())
 	{
-		OnMaterialFree((SOURCESDK::IMaterial_csgo *) this_ptr);
+		OnMaterialInterlockedDecrement((SOURCESDK::IMaterial_csgo *) this_ptr);
 
 		it->second.InterlockedDecrement(this_ptr);
 	}

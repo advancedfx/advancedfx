@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.34.0</version>
+<time>2017-11-19T15:45Z</time>
+<changes>
+<change type="fixed">
+Fixed several mirv_streams bugs.
+</change>
+<change type="added">
+Extended possible values for drawViewmodel (new default -1) and drawHud (default unchanged at 0) mirv_streams stream properties: -1 = no change, 0 = don't draw, 1 = draw.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.33.6</version>
 <time>2017-11-09T06:15Z</time>
 <changes>

@@ -460,6 +460,13 @@ public:
 		SCT_DepthFZIP
 	};
 
+	enum DrawType
+	{
+		DT_NoChange,
+		DT_Draw,
+		DT_NoDraw
+	};
+
 	CAfxRenderViewStream();
 
 	//
@@ -475,11 +482,11 @@ public:
 	char const * DetachCommands_get(void);
 	void DetachCommands_set(char const * value);
 
-	bool DrawHud_get(void);
-	void DrawHud_set(bool value);
+	DrawType DrawHud_get(void);
+	void DrawHud_set(DrawType value);
 
-	bool DrawViewModel_get(void);
-	void DrawViewModel_set(bool value);
+	DrawType DrawViewModel_get(void);
+	void DrawViewModel_set(DrawType value);
 
 	StreamCaptureType StreamCaptureType_get(void);
 	void StreamCaptureType_set(StreamCaptureType value);
@@ -525,8 +532,8 @@ private:
 		int m_Height;
 	};
 
-	bool m_DrawViewModel;
-	bool m_DrawHud;
+	DrawType m_DrawViewModel;
+	DrawType m_DrawHud;
 	std::string m_AttachCommands;
 	std::string m_DetachCommands;
 
@@ -1644,6 +1651,8 @@ private:
 
 		CActionFilterValue & operator= (const CActionFilterValue & x)
 		{
+			if (m_MatchAction) m_MatchAction->Release();
+
 			this->m_UseHandle = x.m_UseHandle;
 			this->m_Handle = x.m_Handle;
 			this->m_Name = x.m_Name;
@@ -1653,6 +1662,7 @@ private:
 			this->m_MatchAction = x.m_MatchAction;
 			
 			if(m_MatchAction) m_MatchAction->AddRef();
+
 			return *this;
 		}
 
@@ -1817,6 +1827,7 @@ private:
 		CAfxBaseFxStream::CAction * m_CurrentAction;
 		SOURCESDK::CSGO::CBaseHandle m_CurrentEntityHandle;
 		bool m_IsRootCtx;
+		bool m_InCall = false;
 
 		void BindAction(CAction * action)
 		{
@@ -1861,7 +1872,20 @@ private:
 		{
 			std::unique_lock<std::shared_timed_mutex> unique_lock(m_Stream->m_MapMutex);
 
-			m_Stream->m_Map.erase(*material);
+			std::map<CAfxTrackedMaterial, CCacheEntry>::iterator it = m_Stream->m_Map.find(*material);
+
+			if (it != m_Stream->m_Map.end())
+			{
+
+				for (std::map<SOURCESDK::CSGO::CBaseHandle, CAction *>::iterator itIt = it->second.EntityActions.begin(); itIt != it->second.EntityActions.end(); ++itIt)
+				{
+					itIt->second->Release();
+				}
+
+				it->second.DefaultAction->Release();
+
+				m_Stream->m_Map.erase(it);
+			}
 		}
 
 	private:
@@ -2323,7 +2347,7 @@ public:
 	void OnSetPixelShader(CAfx_csgo_ShaderState & state);
 #endif
 
-	float OnRenderSmokeOverlayAlphaMod(void);
+	void OnRenderView(int whatToDraw, float & outAfxSmokeOverlayAlphaMod);
 
 	bool OnViewRenderShouldForceNoVis(bool orgValue);
 
@@ -2463,6 +2487,9 @@ private:
 
 	bool m_RecordVoices;
 	bool m_RecordVoicesUsed;
+
+	bool m_OnRenderViewCalled = false;
+	int m_WhatToDraw;
 
 	SOURCESDK::IMaterialSystem_csgo * m_MaterialSystem;
 	IAfxBaseClientDll * m_AfxBaseClientDll;

@@ -35,7 +35,7 @@ void _stdcall touring_CCSViewRender_RenderView(DWORD * this_ptr, const SOURCESDK
 
 	g_csgo_OldSmokeOverlayAlphaFactor = *smokeOverlayAlphaFactor;
 
-	g_csgo_AfxSmokeOverlayAlphaMod = g_AfxStreams.OnRenderSmokeOverlayAlphaMod();
+	g_AfxStreams.OnRenderView(whatToDraw, g_csgo_AfxSmokeOverlayAlphaMod);
 
 	if(g_csgo_AfxSmokeOverlayAlphaMod < 1.0f)
 		*smokeOverlayAlphaFactor = 0.0f; // force drawing world

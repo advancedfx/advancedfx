@@ -469,8 +469,8 @@ void CAfxFileTracker::WaitForFiles(unsigned int maxUnfinishedFiles)
 // CAfxRenderViewStream ////////////////////////////////////////////////////////
 
 CAfxRenderViewStream::CAfxRenderViewStream()
-: m_DrawViewModel(true)
-, m_DrawHud(false)
+: m_DrawViewModel(DT_NoChange)
+, m_DrawHud(DT_NoDraw)
 , m_StreamCaptureType(SCT_Normal)
 {
 }
@@ -499,22 +499,22 @@ void CAfxRenderViewStream::DetachCommands_set(char const * value)
 	m_DetachCommands.assign(value);
 }
 
-bool CAfxRenderViewStream::DrawHud_get(void)
+CAfxRenderViewStream::DrawType CAfxRenderViewStream::DrawHud_get(void)
 {
 	return m_DrawHud;
 }
 
-void CAfxRenderViewStream::DrawHud_set(bool value)
+void CAfxRenderViewStream::DrawHud_set(DrawType value)
 {
 	m_DrawHud = value;
 }
 
-bool CAfxRenderViewStream::DrawViewModel_get(void)
+CAfxRenderViewStream::DrawType CAfxRenderViewStream::DrawViewModel_get(void)
 {
 	return m_DrawViewModel;
 }
 
-void CAfxRenderViewStream::DrawViewModel_set(bool value)
+void CAfxRenderViewStream::DrawViewModel_set(DrawType value)
 {
 	m_DrawViewModel = value;
 }
@@ -1239,7 +1239,7 @@ void CAfxBaseFxStream::MainThreadInitialize(void)
 void CAfxBaseFxStream::LevelShutdown(void)
 {
 	Picker_Stop();
-	// no resaon to do that anymore // InvalidateMap();
+	InvalidateMap(); // required because cached entity handles are only unique per demo!
 	m_Shared.LevelShutdown();
 }
 
@@ -1349,8 +1349,9 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::RetrieveAction(SOURCESDK::IMateria
 									action = itAction;
 								}
 							}
+
+							break;
 						}
-						break;
 					}
 				}
 
@@ -1785,7 +1786,8 @@ void CAfxBaseFxStream::InvalidateMap(void)
 {
 	m_MapMutex.lock();
 
-	if(m_DebugPrint) Tier0_Msg("Stream: Invalidating material cache.\n");
+	if(m_DebugPrint)
+		Tier0_Msg("Stream: Invalidating material cache.\n");
 
 	for(std::map<CAfxTrackedMaterial, CCacheEntry>::iterator it = m_Map.begin(); it != m_Map.end(); ++it)
 	{
@@ -2368,7 +2370,7 @@ void CAfxBaseFxStream::CShared::Console_ListActions(void)
 {
 	for(std::map<CActionKey, CAction *>::iterator it = m_Actions.begin(); it != m_Actions.end(); ++it)
 	{
-		Tier0_Msg("%s%s\n", it->second->Key_get().m_Name.c_str(), it->second->IsStockAction_get() ? " (stock action)" : "");
+		Tier0_Msg("%s%s (%i more dependencies)\n", it->second->Key_get().m_Name.c_str(), it->second->IsStockAction_get() ? " (stock action)" : "", it->second->GetRefCount() - 1);
 	}
 }
 
@@ -2499,7 +2501,7 @@ bool CAfxBaseFxStream::CShared::RemoveAction(CActionKey const & key)
 				return true;
 			}
 			else
-				Tier0_Warning("Action cannot be removed due to dependencies.\n");
+				Tier0_Warning("Action cannot be removed due to %i more dependencies.\n", it->second->GetRefCount() -1);
 		}
 		else
 			Tier0_Warning("Stock actions cannot be removed!\n");		
@@ -4358,14 +4360,13 @@ void CAfxStreams::OnSetPixelShader(CAfx_csgo_ShaderState & state)
 }
 #endif
 
-float CAfxStreams::OnRenderSmokeOverlayAlphaMod(void)
+void CAfxStreams::OnRenderView(int whatToDraw, float & outAfxSmokeOverlayAlphaMod)
 {
+	m_OnRenderViewCalled = true;
+	m_WhatToDraw = whatToDraw;
+	
 	IAfxContextHook * hook = FindHook(GetCurrentContext());
-
-	if (hook)
-		return hook->RenderSmokeOverlayAlphaMod();
-
-	return 1.0f;
+	outAfxSmokeOverlayAlphaMod = hook ? hook->RenderSmokeOverlayAlphaMod() : 1.0f;
 }
 
 bool CAfxStreams::OnViewRenderShouldForceNoVis(bool orgValue)
@@ -5092,16 +5093,20 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 				{
 					char const * cmd1 = args->ArgV(argcOffset +1);
 
-					curRenderView->DrawHud_set(atoi(cmd1) != 0 ? true : false);
+					int iCmd1 = atoi(cmd1);
+
+					curRenderView->DrawHud_set(iCmd1 < 0 ? CAfxRenderViewStream::DT_NoChange : iCmd1 < 1 ? CAfxRenderViewStream::DT_NoDraw : CAfxRenderViewStream::DT_Draw);
 
 					return true;
 				}
 
+				CAfxRenderViewStream::DrawType eVal = curRenderView->DrawHud_get();
+
 				Tier0_Msg(
-					"%s drawHud 0|1 - Whether to draw HUD for this stream - 0 = don't draw, 1 = draw.\n"
-					"Current value: %s.\n"
+					"%s drawHud -1|0|1 - Whether to draw HUD for this stream - -1 = no change, 0 = don't draw, 1 = draw.\n"
+					"Current value: %i.\n"
 					, cmdPrefix
-					, curRenderView->DrawHud_get() ? "1" : "0"
+					, (eVal == CAfxRenderViewStream::DT_NoChange ? -1 : eVal == CAfxRenderViewStream::DT_NoDraw ? 0 : 1)
 				);
 				return true;
 			}
@@ -5112,16 +5117,20 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 				{
 					char const * cmd1 = args->ArgV(argcOffset +1);
 
-					curRenderView->DrawViewModel_set(atoi(cmd1) != 0 ? true : false);
+					int iCmd1 = atoi(cmd1);
+
+					curRenderView->DrawViewModel_set(iCmd1 < 0 ? CAfxRenderViewStream::DT_NoChange : iCmd1 < 1 ? CAfxRenderViewStream::DT_NoDraw : CAfxRenderViewStream::DT_Draw);
 
 					return true;
 				}
 
+				CAfxRenderViewStream::DrawType eVal = curRenderView->DrawViewModel_get();
+
 				Tier0_Msg(
-					"%s drawViewModel 0|1 - Whether to draw view model (in-eye weapon) for this stream - 0 = don't draw, 1 = draw.\n"
-					"Current value: %s.\n"
+					"%s drawViewModel -1|0|1 - Whether to draw view model (in-eye weapon) for this stream - -1 = no change, 0 = don't draw, 1 = draw.\n"
+					"Current value: %i.\n"
 					, cmdPrefix
-					, curRenderView->DrawViewModel_get() ? "1" : "0"
+					, (eVal == CAfxRenderViewStream::DT_NoChange ? -1 : eVal == CAfxRenderViewStream::DT_NoDraw ? 0 : 1)
 				);
 				return true;
 			}
@@ -6572,8 +6581,44 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(CAfxRenderViewStrea
 
 	int whatToDraw = SOURCESDK::RENDERVIEW_UNSPECIFIED;
 
-	if(stream->DrawHud_get()) whatToDraw |= SOURCESDK::RENDERVIEW_DRAWHUD;
-	if(stream->DrawViewModel_get()) whatToDraw |= SOURCESDK::RENDERVIEW_DRAWVIEWMODEL;
+	if (m_OnRenderViewCalled)
+	{
+		// Use game default if hook is available:
+		whatToDraw |= m_WhatToDraw & SOURCESDK::RENDERVIEW_DRAWHUD;
+		whatToDraw |= m_WhatToDraw & SOURCESDK::RENDERVIEW_DRAWVIEWMODEL;
+	}
+	else
+	{
+		// Hook not available, assume default:
+		whatToDraw |= SOURCESDK::RENDERVIEW_DRAWHUD;
+		whatToDraw |= SOURCESDK::RENDERVIEW_DRAWVIEWMODEL;
+	}
+
+	switch (stream->DrawHud_get())
+	{
+	case CAfxRenderViewStream::DT_Draw:
+			whatToDraw |= SOURCESDK::RENDERVIEW_DRAWHUD;
+			break;
+	case CAfxRenderViewStream::DT_NoDraw:
+			whatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWHUD;
+			break;
+	case CAfxRenderViewStream::DT_NoChange:
+	default:
+		break;
+	}
+
+	switch (stream->DrawViewModel_get())
+	{
+	case CAfxRenderViewStream::DT_Draw:
+		whatToDraw |= SOURCESDK::RENDERVIEW_DRAWVIEWMODEL;
+		break;
+	case CAfxRenderViewStream::DT_NoDraw:
+		whatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWVIEWMODEL;
+		break;
+	case CAfxRenderViewStream::DT_NoChange:
+	default:
+		break;
+	}
 
 	ctxp->ClearColor4ub(0,0,0,0);
 	ctxp->ClearBuffers(true,false,false);
