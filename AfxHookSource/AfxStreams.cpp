@@ -211,26 +211,6 @@ void QueueOrExecute(IAfxMatRenderContextOrg * ctx, SOURCESDK::CSGO::CFunctor * f
 	}
 }
 
-class AfxD3D9PushOverrideState_Functor
-	: public CAfxFunctor
-{
-public:
-	virtual void operator()()
-	{
-		AfxD3D9PushOverrideState();
-	}
-};
-
-class AfxD3D9PopOverrideState_Functor
-	: public CAfxFunctor
-{
-public:
-	virtual void operator()()
-	{
-		AfxD3D9PopOverrideState();
-	}
-};
-
 class AfxD3D9OverrideEnd_ModulationColor_Functor
 	: public CAfxFunctor
 {
@@ -1249,20 +1229,14 @@ void CAfxBaseFxStream::OnRenderBegin(void)
 
 	this->InterLockIncrement();
 
-	CAfxBaseFxStreamContextHook * ch = new CAfxBaseFxStreamContextHook(this, 0);
+	m_ActiveStreamContext = m_Shared.RequestStreamContext();
 
-	ch->RenderBegin(GetCurrentContext());
+	m_ActiveStreamContext->RenderBegin(this);
 }
 
 void CAfxBaseFxStream::OnRenderEnd()
 {
-	if (IAfxMatRenderContext * ctx = GetCurrentContext())
-	{
-		if (IAfxContextHook * hook = ctx->Hook_get())
-		{
-			hook->RenderEnd();
-		}
-	}
+	m_ActiveStreamContext->RenderEnd();
 
 	CAfxRenderViewStream::OnRenderEnd();
 }
@@ -2104,140 +2078,146 @@ void CAfxBaseFxStream::SetAction(CAction * & target, CAction * src)
 	target = src;
 }
 
-// CAfxBaseFxStream::CAfxBaseFxStreamContextHook ///////////////////////////////
+// CAfxBaseFxStream::CAfxBaseFxStreamContext ///////////////////////////////
 
-void CAfxBaseFxStream::CAfxBaseFxStreamContextHook::RenderBegin(IAfxMatRenderContext * ctx)
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin(bool isRoot)
 {
-	m_Ctx = ctx;
-
-	if (0 != m_Ctx->Hook_get())
-		Tier0_Warning("CAfxBaseFxStream::CAfxBaseFxStreamContextHook::RenderBegin: Error ctx already hooked!\n");
+	m_Ctx = GetCurrentContext();
+	m_IsRootCtx = isRoot;
 
 	m_Ctx->Hook_set(this);
 
-	QueueOrExecute(m_Ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9PushOverrideState_Functor()));
+	if (SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue())
+	{
+		m_Stream->InterLockIncrement(); // Increment for next context queue.
+
+		queue->QueueFunctor(new CQueueBeginFunctor(this));
+	}
+	else
+	{
+		// Is leaf context.
+
+		AfxD3D9PushOverrideState();
+	}
 }
 
-void CAfxBaseFxStream::CAfxBaseFxStreamContextHook::RenderEnd(void)
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd()
 {
+	// These need to happen before switching to new Queue of course:
 	BindAction(0);
-
-	QueueOrExecute(m_Ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9PopOverrideState_Functor()));
-	
+	SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue();
 	m_Ctx->Hook_set(0);
-
 	m_Ctx = 0;
+
+	if (queue)
+	{
+		queue->QueueFunctor(new CQueueEndFunctor(this));
+	}
+	else
+	{
+		// Is leaf context.
+
+		AfxD3D9PopOverrideState();
+	}
 
 	m_Stream->InterLockDecrement();
 
-	delete this;
+	if (!queue)
+	{
+		// Is leaf context.
+
+		m_Stream->Release();
+
+		CAfxBaseFxStream::m_Shared.ReturnStreamContext(this);
+	}
 }
 
-void CAfxBaseFxStream::CAfxBaseFxStreamContextHook::QueueFunctorInternal(IAfxCallQueue * aq, SOURCESDK::CSGO::CFunctor *pFunctor)
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderBegin(CAfxBaseFxStream * stream)
+{
+	m_Stream = stream;
+
+	m_Stream->AddRef();
+	m_Stream->InterLockIncrement(); // Increment for next context queue.
+
+	QueueBegin(true);
+}
+
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderEnd(void)
+{
+	QueueEnd();
+}
+
+/*
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueFunctorInternal(IAfxCallQueue * aq, SOURCESDK::CSGO::CFunctor *pFunctor)
 {
 	SOURCESDK::CSGO::ICallQueue * q = aq->GetParent();
 
-	CAfxBaseFxStreamContextHook * ch = new CAfxBaseFxStreamContextHook(m_Stream, this);
+	CAfxBaseFxStreamContext * ch = new CAfxBaseFxStreamContext(m_Stream, this);
 
 	m_Stream->InterLockIncrement();
 	q->QueueFunctor(new CRenderBeginFunctor(ch));
 	q->QueueFunctorInternal(pFunctor);
 	q->QueueFunctor(new CRenderEndFunctor());
 }
+*/
 
-float CAfxBaseFxStream::CAfxBaseFxStreamContextHook::RenderSmokeOverlayAlphaMod(void)
+float CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderSmokeOverlayAlphaMod(void)
 {
 	return m_Stream->m_SmokeOverlayAlphaFactor;
 }
 
 
-bool CAfxBaseFxStream::CAfxBaseFxStreamContextHook::ViewRenderShouldForceNoVis(bool orgValue)
+bool CAfxBaseFxStream::CAfxBaseFxStreamContext::ViewRenderShouldForceNoVis(bool orgValue)
 {
 	return m_Stream->m_ShouldForceNoVisOverride ? true : orgValue;
 }
 
-void CAfxBaseFxStream::CAfxBaseFxStreamContextHook::DrawingHudBegin(void)
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 {
 	BindAction(0); // We don't handle HUD atm.
+
+	if (SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue())
+	{
+		// Bubble into child contexts:
+
+		queue->QueueFunctor(new CDrawingHudBeginFunctor(this));
+	}
 }
 
-void CAfxBaseFxStream::CAfxBaseFxStreamContextHook::DrawingSkyBoxViewBegin(void)
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewBegin(void)
 {
 	m_DrawingSkyBoxView = true;
+
+	if (SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue())
+	{
+		// Bubble into child contexts:
+
+		queue->QueueFunctor(new CDrawingSkyBoxViewBeginFunctor(this));
+	}
 }
 
-void CAfxBaseFxStream::CAfxBaseFxStreamContextHook::DrawingSkyBoxViewEnd(void)
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 {
 	m_DrawingSkyBoxView = false;
-}
 
-SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContextHook::MaterialHook(SOURCESDK::IMaterial_csgo * material)
-{
-	CAction * action = m_Stream->RetrieveAction(
-		material,
-		GetCurrentEntityHandle()
-	);
-
-	BindAction(action);
-
-	if (m_CurrentAction)
-		return m_CurrentAction->MaterialHook(this, material);
-
-	return material;
-}
-
-void CAfxBaseFxStream::CAfxBaseFxStreamContextHook::DrawInstances(int nInstanceCount, const SOURCESDK::MeshInstanceData_t_csgo *pInstance)
-{
-	if (m_CurrentAction)
-		m_CurrentAction->DrawInstances(this, nInstanceCount, pInstance);
-	else
-		m_Ctx->GetOrg()->DrawInstances(nInstanceCount, pInstance);
-}
-
-void CAfxBaseFxStream::CAfxBaseFxStreamContextHook::Draw(IAfxMesh * am, int firstIndex, int numIndices)
-{
-	if (m_CurrentAction)
-		m_CurrentAction->Draw(this, am, firstIndex, numIndices);
-	else
-		am->GetParent()->Draw(firstIndex, numIndices);
-}
-
-void CAfxBaseFxStream::CAfxBaseFxStreamContextHook::Draw_2(IAfxMesh * am, SOURCESDK::CPrimList_csgo *pLists, int nLists)
-{
-	if (m_CurrentAction)
-		m_CurrentAction->Draw_2(this, am, pLists, nLists);
-	else
-		am->GetParent()->Draw(pLists, nLists);
-}
-
-void CAfxBaseFxStream::CAfxBaseFxStreamContextHook::DrawModulated(IAfxMesh * am, const SOURCESDK::Vector4D_csgo &vecDiffuseModulation, int firstIndex, int numIndices)
-{
-	if (m_CurrentAction)
-		m_CurrentAction->DrawModulated(this, am, vecDiffuseModulation, firstIndex, numIndices);
-	else
-		am->GetParent()->DrawModulated(vecDiffuseModulation, firstIndex, numIndices);
-}
-
-#if AFX_SHADERS_CSGO
-void CAfxBaseFxStream::CAfxBaseFxStreamContextHook::SetVertexShader(CAfx_csgo_ShaderState & state)
-{
-	if (m_CurrentAction)
-		m_CurrentAction->SetVertexShader(this, state);
-}
-
-void CAfxBaseFxStream::CAfxBaseFxStreamContextHook::SetPixelShader(CAfx_csgo_ShaderState & state)
-{
-	if (m_CurrentAction)
-		m_CurrentAction->SetPixelShader(this, state);
-}
-#endif
-
-SOURCESDK::CSGO::CBaseHandle const & CAfxBaseFxStream::CAfxBaseFxStreamContextHook::GetCurrentEntityHandle()
-{
-	if (m_IsRootCtx)
+	if (SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue())
 	{
-		// If we are on main thread, we can update with the current value, otherwise we have to use the last value.
+		// Bubble into child contexts:
 
+		queue->QueueFunctor(new CDrawingSkyBoxViewEndFunctor(this));
+	}
+}
+
+SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::MaterialHook(SOURCESDK::IMaterial_csgo * material, void * proxyData)
+{
+	std::map<void *, SOURCESDK::CSGO::CBaseHandle>::iterator it = m_ProxyDataToEntityHandle.find(proxyData);
+
+	if (it != m_ProxyDataToEntityHandle.end())
+	{
+		m_CurrentEntityHandle.AfxAssign(it->second);
+	}
+	else if (m_IsRootCtx)
+	{
 		SOURCESDK::CSGO::CBaseHandle handle;
 
 		if (SOURCESDK::IViewRender_csgo * view = GetView_csgo())
@@ -2251,30 +2231,77 @@ SOURCESDK::CSGO::CBaseHandle const & CAfxBaseFxStream::CAfxBaseFxStreamContextHo
 		m_CurrentEntityHandle.AfxAssign(handle);
 	}
 
-	return m_CurrentEntityHandle;
+	CAction * action = m_Stream->RetrieveAction(
+		material,
+		m_CurrentEntityHandle
+	);
+
+	BindAction(action);
+
+	if (m_CurrentAction)
+		return m_CurrentAction->MaterialHook(this, material);
+
+	return material;
 }
 
-// CAfxBaseFxStream::CAfxBaseFxStreamContextHook::CRenderBeginFunctor //////////
-
-void CAfxBaseFxStream::CAfxBaseFxStreamContextHook::CRenderBeginFunctor::operator()()
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawInstances(int nInstanceCount, const SOURCESDK::MeshInstanceData_t_csgo *pInstance)
 {
-	if (IAfxMatRenderContext * ctx = GetCurrentContext())
-	{
-		m_Ch->RenderBegin(ctx);
-	}
+	if (m_CurrentAction)
+		m_CurrentAction->DrawInstances(this, nInstanceCount, pInstance);
+	else
+		m_Ctx->GetOrg()->DrawInstances(nInstanceCount, pInstance);
 }
 
-// CAfxBaseFxStream::CAfxBaseFxStreamContextHook::CRenderEndFunctor ////////////
-
-void CAfxBaseFxStream::CAfxBaseFxStreamContextHook::CRenderEndFunctor::operator()()
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::Draw(IAfxMesh * am, int firstIndex, int numIndices)
 {
-	if (IAfxMatRenderContext * ctx = GetCurrentContext())
-	{
-		if (IAfxContextHook * hook = ctx->Hook_get())
-		{
-			hook->RenderEnd();
-		}
-	}
+	if (m_CurrentAction)
+		m_CurrentAction->Draw(this, am, firstIndex, numIndices);
+	else
+		am->GetParent()->Draw(firstIndex, numIndices);
+}
+
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::Draw_2(IAfxMesh * am, SOURCESDK::CPrimList_csgo *pLists, int nLists)
+{
+	if (m_CurrentAction)
+		m_CurrentAction->Draw_2(this, am, pLists, nLists);
+	else
+		am->GetParent()->Draw(pLists, nLists);
+}
+
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawModulated(IAfxMesh * am, const SOURCESDK::Vector4D_csgo &vecDiffuseModulation, int firstIndex, int numIndices)
+{
+	if (m_CurrentAction)
+		m_CurrentAction->DrawModulated(this, am, vecDiffuseModulation, firstIndex, numIndices);
+	else
+		am->GetParent()->DrawModulated(vecDiffuseModulation, firstIndex, numIndices);
+}
+
+#if AFX_SHADERS_CSGO
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::SetVertexShader(CAfx_csgo_ShaderState & state)
+{
+	if (m_CurrentAction)
+		m_CurrentAction->SetVertexShader(this, state);
+}
+
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::SetPixelShader(CAfx_csgo_ShaderState & state)
+{
+	if (m_CurrentAction)
+		m_CurrentAction->SetPixelShader(this, state);
+}
+#endif
+
+// CAfxBaseFxStream::CAfxBaseFxStreamContext::CQueueBeginFunctor ///////////////
+
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::CQueueBeginFunctor::operator()()
+{
+	m_StreamContext->QueueBegin(false);
+}
+
+// CAfxBaseFxStream::CAfxBaseFxStreamContext::CQueueEndFunctor /////////////////
+
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::CQueueEndFunctor::operator()()
+{
+	m_StreamContext->QueueEnd();
 }
 
 // CAfxBaseFxStream::CActionKey ////////////////////////////////////////////////
@@ -2292,6 +2319,35 @@ CAfxBaseFxStream::CShared::CShared()
 
 CAfxBaseFxStream::CShared::~CShared()
 {
+	{
+		std::unique_lock<std::mutex> lock(m_StreamContextsMutex);
+		while (!m_StreamContexts.empty())
+		{
+			CAfxBaseFxStreamContext * ctx = m_StreamContexts.front();
+			m_StreamContexts.pop();
+			delete ctx;
+		}
+	}
+}
+
+CAfxBaseFxStream::CAfxBaseFxStreamContext * CAfxBaseFxStream::CShared::RequestStreamContext(void)
+{
+	std::unique_lock<std::mutex> lock(m_StreamContextsMutex);
+
+	if (m_StreamContexts.empty())
+		return new CAfxBaseFxStreamContext();
+
+	CAfxBaseFxStreamContext * streamContext = m_StreamContexts.front();
+	m_StreamContexts.pop();
+
+	return streamContext;
+}
+
+void CAfxBaseFxStream::CShared::ReturnStreamContext(CAfxBaseFxStreamContext * streamContext)
+{
+	std::unique_lock<std::mutex> lock(m_StreamContextsMutex);
+
+	m_StreamContexts.push(streamContext);
 }
 
 void CAfxBaseFxStream::CShared::AfxStreamsInit(void)
@@ -2798,11 +2854,11 @@ void CAfxBaseFxStream::CActionDebugDepth::MainThreadInitialize(void)
 	}
 }
 
-void CAfxBaseFxStream::CActionDebugDepth::AfxUnbind(CAfxBaseFxStreamContextHook * ch)
+void CAfxBaseFxStream::CActionDebugDepth::AfxUnbind(CAfxBaseFxStreamContext * ch)
 {
 }
 
-SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CActionDebugDepth::MaterialHook(CAfxBaseFxStreamContextHook * ch, SOURCESDK::IMaterial_csgo * material)
+SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CActionDebugDepth::MaterialHook(CAfxBaseFxStreamContext * ch, SOURCESDK::IMaterial_csgo * material)
 {
 	if (!m_DebugDepthMaterial)		
 		return material; // Should not happen, but you never know.
@@ -2833,7 +2889,7 @@ void CAfxBaseFxStream::CActionDebugDepth::CStatic::SetDepthVal(float min, float 
 
 // CAfxBaseFxStream::CActionDebugDump //////////////////////////////////////////
 
-void CAfxBaseFxStream::CActionDebugDump::AfxUnbind(CAfxBaseFxStreamContextHook * ch)
+void CAfxBaseFxStream::CActionDebugDump::AfxUnbind(CAfxBaseFxStreamContext * ch)
 {
 	g_AfxStreams.DebugDump(ch->GetCtx()->GetOrg());
 }
@@ -2889,10 +2945,10 @@ void CAfxBaseFxStream::CActionReplace::MainThreadInitialize(void)
 	}
 }
 
-void CAfxBaseFxStream::CActionReplace::AfxUnbind(CAfxBaseFxStreamContextHook * ch)
+void CAfxBaseFxStream::CActionReplace::AfxUnbind(CAfxBaseFxStreamContext * ch)
 {
 	IAfxMatRenderContext * ctx = ch->GetCtx();
-	IAfxContextHook * ctxh = ctx->Hook_get();
+	IAfxStreamContext * ctxh = ctx->Hook_get();
 
 	if (m_OverrideColor)
 		QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideEnd_ModulationColor_Functor()));
@@ -2904,10 +2960,10 @@ void CAfxBaseFxStream::CActionReplace::AfxUnbind(CAfxBaseFxStreamContextHook * c
 		QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideEnd_D3DRS_ZWRITEENABLE_Functor()));
 }
 
-SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CActionReplace::MaterialHook(CAfxBaseFxStreamContextHook * ch, SOURCESDK::IMaterial_csgo * material)
+SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CActionReplace::MaterialHook(CAfxBaseFxStreamContext * ch, SOURCESDK::IMaterial_csgo * material)
 {
 	IAfxMatRenderContext * ctx = ch->GetCtx();
-	IAfxContextHook * ctxh = ctx->Hook_get();
+	IAfxStreamContext * ctxh = ctx->Hook_get();
 
 	if (m_OverrideBlend)
 		QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideBegin_ModulationBlend_Functor(m_Blend)));
@@ -3535,10 +3591,10 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::CActionStandardResolve::ResolveAct
 
 // CAfxBaseFxStream::CActionNoDraw /////////////////////////////////////////////
 
-void CAfxBaseFxStream::CActionNoDraw::AfxUnbind(CAfxBaseFxStreamContextHook * ch)
+void CAfxBaseFxStream::CActionNoDraw::AfxUnbind(CAfxBaseFxStreamContext * ch)
 {
 	IAfxMatRenderContext * ctx = ch->GetCtx();
-	IAfxContextHook * ctxh = ctx->Hook_get();
+	IAfxStreamContext * ctxh = ctx->Hook_get();
 
 	QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideEnd_D3DRS_ZWRITEENABLE_Functor()));
 	QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideEnd_D3DRS_DESTBLEND_Functor()));
@@ -3546,10 +3602,10 @@ void CAfxBaseFxStream::CActionNoDraw::AfxUnbind(CAfxBaseFxStreamContextHook * ch
 	QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideEnd_D3DRS_ALPHABLENDENABLE_Functor()));
 }
 
-SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CActionNoDraw::MaterialHook(CAfxBaseFxStreamContextHook * ch, SOURCESDK::IMaterial_csgo * material)
+SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CActionNoDraw::MaterialHook(CAfxBaseFxStreamContext * ch, SOURCESDK::IMaterial_csgo * material)
 {
 	IAfxMatRenderContext * ctx = ch->GetCtx();
-	IAfxContextHook * ctxh = ctx->Hook_get();
+	IAfxStreamContext * ctxh = ctx->Hook_get();
 
 	QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideBegin_D3DRS_ALPHABLENDENABLE_Functor(TRUE)));
 	QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideBegin_D3DRS_SRCBLEND_Functor(D3DBLEND_ZERO)));
@@ -4345,7 +4401,7 @@ void CAfxStreams::OnShaderShadow(SOURCESDK::IShaderShadow_csgo * value)
 #if AFX_SHADERS_CSGO
 void CAfxStreams::OnSetVertexShader(CAfx_csgo_ShaderState & state)
 {
-	IAfxContextHook * hook = FindHook(GetCurrentContext());
+	IAfxStreamContext * hook = FindStreamContext(GetCurrentContext());
 
 	if (hook)
 		hook->SetVertexShader(state);
@@ -4353,7 +4409,7 @@ void CAfxStreams::OnSetVertexShader(CAfx_csgo_ShaderState & state)
 
 void CAfxStreams::OnSetPixelShader(CAfx_csgo_ShaderState & state)
 {
-	IAfxContextHook * hook = FindHook(GetCurrentContext());
+	IAfxStreamContext * hook = FindStreamContext(GetCurrentContext());
 
 	if (hook)
 		hook->SetPixelShader(state);
@@ -4365,13 +4421,13 @@ void CAfxStreams::OnRenderView(int whatToDraw, float & outAfxSmokeOverlayAlphaMo
 	m_OnRenderViewCalled = true;
 	m_WhatToDraw = whatToDraw;
 	
-	IAfxContextHook * hook = FindHook(GetCurrentContext());
+	IAfxStreamContext * hook = FindStreamContext(GetCurrentContext());
 	outAfxSmokeOverlayAlphaMod = hook ? hook->RenderSmokeOverlayAlphaMod() : 1.0f;
 }
 
 bool CAfxStreams::OnViewRenderShouldForceNoVis(bool orgValue)
 {
-	IAfxContextHook * hook = FindHook(GetCurrentContext());
+	IAfxStreamContext * hook = FindStreamContext(GetCurrentContext());
 
 	if (hook)
 		return hook->ViewRenderShouldForceNoVis(orgValue);
@@ -4381,7 +4437,7 @@ bool CAfxStreams::OnViewRenderShouldForceNoVis(bool orgValue)
 
 void CAfxStreams::OnDrawingHud(void)
 {
-	IAfxContextHook * hook = FindHook(GetCurrentContext());
+	IAfxStreamContext * hook = FindStreamContext(GetCurrentContext());
 
 	if (hook)
 		hook->DrawingHudBegin();
@@ -4389,7 +4445,7 @@ void CAfxStreams::OnDrawingHud(void)
 
 void CAfxStreams::OnDrawingSkyBoxViewBegin(void)
 {
-	IAfxContextHook * hook = FindHook(GetCurrentContext());
+	IAfxStreamContext * hook = FindStreamContext(GetCurrentContext());
 
 	if (hook)
 		hook->DrawingSkyBoxViewBegin();
@@ -4397,7 +4453,7 @@ void CAfxStreams::OnDrawingSkyBoxViewBegin(void)
 
 void CAfxStreams::OnDrawingSkyBoxViewEnd(void)
 {
-	IAfxContextHook * hook = FindHook(GetCurrentContext());
+	IAfxStreamContext * hook = FindStreamContext(GetCurrentContext());
 
 	if (hook)
 		hook->DrawingSkyBoxViewEnd();
@@ -6886,7 +6942,7 @@ void CAfxStreams::CreateRenderTargets(SOURCESDK::IMaterialSystem_csgo * material
 
 }
 
-IAfxContextHook * CAfxStreams::FindHook(IAfxMatRenderContext * ctx)
+IAfxStreamContext * CAfxStreams::FindStreamContext(IAfxMatRenderContext * ctx)
 {
 	if (!ctx)
 		return 0;

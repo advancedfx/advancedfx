@@ -2,6 +2,7 @@
 
 #include "d3d9Hooks.h"
 
+#include "Gui.h"
 #include "SourceInterfaces.h"
 #include "CampathDrawer.h"
 #include "AfxShaders.h"
@@ -98,7 +99,68 @@ private:
 };
 
 UINT g_Adapter = D3DADAPTER_DEFAULT;
-D3DFORMAT g_AdapterFormat = D3DFMT_R8G8B8;
+
+void Shared_Direct3DDevice9_Init(
+	UINT adapter,
+	HWND hDeviceWindow,
+	IDirect3DDevice9 * device
+)
+{
+	g_Adapter = adapter;
+
+#ifdef AFX_MIRV_PGL
+	MirvPgl::D3D9_BeginDevice(device);
+#endif
+
+	AfxHookSource::Gui::On_Direct3DDevice9_Init(hDeviceWindow, device);
+
+	g_AfxShaders.BeginDevice(device);
+
+	g_CampathDrawer.BeginDevice(device);
+}
+
+void Shared_Direct3DDevice9_Shutdown()
+{
+	g_CampathDrawer.EndDevice();
+
+	g_AfxShaders.EndDevice();
+
+	AfxHookSource::Gui::On_Direct3DDevice9_Shutdown();
+
+#ifdef AFX_MIRV_PGL
+	MirvPgl::D3D9_EndDevice();
+#endif
+}
+
+void Shared_Direct3DDevice9_EndScene()
+{
+	AfxHookSource::Gui::On_Direct3DDevice9_EndScene();
+}
+
+void Shared_Direct3DDevice9_Present(bool deviceLost)
+{
+	AfxHookSource::Gui::On_Direct3DDevice9_Present(deviceLost);
+
+#ifdef AFX_MIRV_PGL
+	MirvPgl::DrawingThread_PresentedUnleashDataOnFirstCall();
+#endif
+}
+
+void Shared_Direct3DDevice9_Reset_Before()
+{
+#ifdef AFX_MIRV_PGL
+	MirvPgl::D3D9_Reset();
+#endif
+
+	AfxHookSource::Gui::On_Direct3DDevice9_Reset_Before();
+
+	g_CampathDrawer.Reset();
+}
+
+void Shared_Direct3DDevice9_Reset_After()
+{
+	AfxHookSource::Gui::On_Direct3DDevice9_Reset_After();
+}
 
 ULONG g_NewDirect3DDevice9_RefCount = 1;
 IDirect3DDevice9 * g_OldDirect3DDevice9 = 0;
@@ -720,9 +782,7 @@ public:
 
 		if(0 == g_NewDirect3DDevice9_RefCount)
 		{
-			g_CampathDrawer.EndDevice();
-			g_AfxShaders.EndDevice();
-			MirvPgl::D3D9_EndDevice();
+			Shared_Direct3DDevice9_Shutdown();
 
 			if(m_Original_VertexShader)
 			{
@@ -759,19 +819,20 @@ public:
     
 	STDMETHOD(Reset)(THIS_ D3DPRESENT_PARAMETERS* pPresentationParameters)
 	{
-		g_CampathDrawer.Reset();
-		MirvPgl::D3D9_Reset();
+		Shared_Direct3DDevice9_Reset_Before();
 
-		return g_OldDirect3DDevice9->Reset(pPresentationParameters);
+		HRESULT hResult = g_OldDirect3DDevice9->Reset(pPresentationParameters);
+
+		Shared_Direct3DDevice9_Reset_After();
+
+		return hResult;
 	}
 
     STDMETHOD(Present)(THIS_ CONST RECT* pSourceRect,CONST RECT* pDestRect,HWND hDestWindowOverride,CONST RGNDATA* pDirtyRegion)
 	{
 		HRESULT result = m_Block_Present ? D3D_OK : g_OldDirect3DDevice9->Present(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 
-#ifdef AFX_MIRV_PGL
-		MirvPgl::DrawingThread_PresentedUnleashDataOnFirstCall();
-#endif
+		Shared_Direct3DDevice9_Present(result == D3DERR_DEVICELOST);
 
 		return result;
 	}
@@ -807,7 +868,7 @@ public:
 
     STDMETHOD(EndScene)(THIS)
 	{
-		//g_CampathDrawer.OnEndScene();
+		Shared_Direct3DDevice9_EndScene();
 
 		g_bD3D9DebugPrint = false;
 
@@ -1519,8 +1580,7 @@ public:
 
 		if(0 == g_NewDirect3DDevice9Ex_RefCount)
 		{
-			g_CampathDrawer.EndDevice();
-			g_AfxShaders.EndDevice();
+			Shared_Direct3DDevice9_Shutdown();
 		}
 
 		return g_OldDirect3DDevice9Ex->Release();
@@ -1543,12 +1603,24 @@ public:
     
 	STDMETHOD(Reset)(THIS_ D3DPRESENT_PARAMETERS* pPresentationParameters)
 	{
-		g_CampathDrawer.Reset();
+		Shared_Direct3DDevice9_Reset_Before();
 
-		return g_OldDirect3DDevice9Ex->Reset(pPresentationParameters);
+		HRESULT hResult = g_OldDirect3DDevice9Ex->Reset(pPresentationParameters);
+
+		Shared_Direct3DDevice9_Reset_After();
+
+		return hResult;
 	}
 
-	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, Present);
+	STDMETHOD(Present)(THIS_ CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion)
+	{
+		HRESULT hResult = g_OldDirect3DDevice9Ex->Present(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
+
+		Shared_Direct3DDevice9_Present(D3DERR_DEVICELOST == hResult);
+
+		return hResult;
+	}
+
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, GetBackBuffer);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, GetRasterStatus);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, SetDialogBoxMode);
@@ -1573,7 +1645,14 @@ public:
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, SetDepthStencilSurface);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, GetDepthStencilSurface);
 	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, BeginScene);
-    IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, EndScene);
+    
+	STDMETHOD(EndScene)(THIS)
+	{
+		Shared_Direct3DDevice9_EndScene();
+
+		return g_OldDirect3DDevice9Ex->EndScene();
+	}
+
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, Clear);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, SetTransform);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, GetTransform);
@@ -1654,7 +1733,16 @@ public:
     /*** IDirect3DDevice9Ex methods ***/
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, SetConvolutionMonoKernel);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, ComposeRects);
-    IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, PresentEx);
+    
+	STDMETHOD(PresentEx)(THIS_ CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion, DWORD dwFlags)
+	{
+		HRESULT hResult = g_OldDirect3DDevice9Ex->PresentEx(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, dwFlags);
+
+		Shared_Direct3DDevice9_Present(D3DERR_DEVICELOST == hResult);
+
+		return hResult;
+	}
+
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, GetGPUThreadPriority);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, SetGPUThreadPriority);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, WaitForVBlank);
@@ -1668,9 +1756,13 @@ public:
     
 	STDMETHOD(ResetEx)(THIS_ D3DPRESENT_PARAMETERS* pPresentationParameters,D3DDISPLAYMODEEX *pFullscreenDisplayMode)
 	{
-		g_CampathDrawer.Reset();
+		Shared_Direct3DDevice9_Reset_Before();
 
-		return g_OldDirect3DDevice9Ex->ResetEx(pPresentationParameters, pFullscreenDisplayMode);
+		HRESULT hResult = g_OldDirect3DDevice9Ex->ResetEx(pPresentationParameters, pFullscreenDisplayMode);
+
+		Shared_Direct3DDevice9_Reset_After();
+
+		return hResult;
 	}
 
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, GetDisplayModeEx);
@@ -1690,7 +1782,6 @@ IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, ShowCursor, NewDirect3DDevice9Ex, g_Ol
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, CreateAdditionalSwapChain, NewDirect3DDevice9Ex, g_OldDirect3DDevice9Ex);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, GetSwapChain, NewDirect3DDevice9Ex, g_OldDirect3DDevice9Ex);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, GetNumberOfSwapChains, NewDirect3DDevice9Ex, g_OldDirect3DDevice9Ex);
-IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, Present, NewDirect3DDevice9Ex, g_OldDirect3DDevice9Ex);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, GetBackBuffer, NewDirect3DDevice9Ex, g_OldDirect3DDevice9Ex);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, GetRasterStatus, NewDirect3DDevice9Ex, g_OldDirect3DDevice9Ex);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, SetDialogBoxMode, NewDirect3DDevice9Ex, g_OldDirect3DDevice9Ex);
@@ -1715,7 +1806,6 @@ IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, GetRenderTarget, NewDirect3DDevice9Ex,
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, SetDepthStencilSurface, NewDirect3DDevice9Ex, g_OldDirect3DDevice9Ex);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, GetDepthStencilSurface, NewDirect3DDevice9Ex, g_OldDirect3DDevice9Ex);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, BeginScene, NewDirect3DDevice9Ex, g_OldDirect3DDevice9Ex);
-IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, EndScene, NewDirect3DDevice9Ex, g_OldDirect3DDevice9Ex);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, Clear, NewDirect3DDevice9Ex, g_OldDirect3DDevice9Ex);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, SetTransform, NewDirect3DDevice9Ex, g_OldDirect3DDevice9Ex);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, GetTransform, NewDirect3DDevice9Ex, g_OldDirect3DDevice9Ex);
@@ -1794,7 +1884,6 @@ IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, DeletePatch, NewDirect3DDevice9Ex, g_O
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, CreateQuery, NewDirect3DDevice9Ex, g_OldDirect3DDevice9Ex);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, SetConvolutionMonoKernel, NewDirect3DDevice9Ex, g_OldDirect3DDevice9Ex);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, ComposeRects, NewDirect3DDevice9Ex, g_OldDirect3DDevice9Ex);
-IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, PresentEx, NewDirect3DDevice9Ex, g_OldDirect3DDevice9Ex);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, GetGPUThreadPriority, NewDirect3DDevice9Ex, g_OldDirect3DDevice9Ex);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, SetGPUThreadPriority, NewDirect3DDevice9Ex, g_OldDirect3DDevice9Ex);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, WaitForVBlank, NewDirect3DDevice9Ex, g_OldDirect3DDevice9Ex);
@@ -1835,20 +1924,12 @@ struct NewDirect3D9
 	{
 		HRESULT hRet = g_OldDirect3D9->CreateDevice(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
 
-		g_Adapter = Adapter;
 
-		if(pPresentationParameters)
-		{
-			g_AdapterFormat = pPresentationParameters->BackBufferFormat;
-		}
-
-		if(ppReturnedDeviceInterface)
+		if(SUCCEEDED(hRet) && pPresentationParameters && ppReturnedDeviceInterface)
 		{
 			g_OldDirect3DDevice9 = *ppReturnedDeviceInterface;
-			
-			g_AfxShaders.BeginDevice(g_OldDirect3DDevice9);
-			g_CampathDrawer.BeginDevice(g_OldDirect3DDevice9);
-			MirvPgl::D3D9_BeginDevice(g_OldDirect3DDevice9);
+
+			Shared_Direct3DDevice9_Init(Adapter, pPresentationParameters->hDeviceWindow, g_OldDirect3DDevice9);
 
 			*ppReturnedDeviceInterface = reinterpret_cast<IDirect3DDevice9 *>(&g_NewDirect3DDevice9);
 		}
@@ -1903,14 +1984,11 @@ struct NewDirect3D9Ex
 	{
 		HRESULT hRet = g_OldDirect3D9Ex->CreateDevice(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
 
-		g_Adapter = Adapter;
-
-		if(ppReturnedDeviceInterface)
+		if (SUCCEEDED(hRet) && pPresentationParameters && ppReturnedDeviceInterface)
 		{
 			g_OldDirect3DDevice9 = *ppReturnedDeviceInterface;
 
-			g_AfxShaders.BeginDevice(g_OldDirect3DDevice9);
-			g_CampathDrawer.BeginDevice(g_OldDirect3DDevice9);
+			Shared_Direct3DDevice9_Init(Adapter, pPresentationParameters->hDeviceWindow, g_OldDirect3DDevice9);
 
 			*ppReturnedDeviceInterface = reinterpret_cast<IDirect3DDevice9 *>(&g_NewDirect3DDevice9);
 		}
@@ -1927,19 +2005,12 @@ struct NewDirect3D9Ex
 	{
 		HRESULT hRet = g_OldDirect3D9Ex->CreateDeviceEx(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, pFullscreenDisplayMode, ppReturnedDeviceInterface);
 
-		g_Adapter = Adapter;
 
-		if(pPresentationParameters)
-		{
-			g_AdapterFormat = pPresentationParameters->BackBufferFormat;
-		}
-
-		if(ppReturnedDeviceInterface)
+		if (SUCCEEDED(hRet) && pPresentationParameters && ppReturnedDeviceInterface)
 		{
 			g_OldDirect3DDevice9Ex = *ppReturnedDeviceInterface;
 
-			g_AfxShaders.BeginDevice(g_OldDirect3DDevice9Ex);
-			g_CampathDrawer.BeginDevice(g_OldDirect3DDevice9Ex);
+			Shared_Direct3DDevice9_Init(Adapter, pPresentationParameters->hDeviceWindow, g_OldDirect3DDevice9Ex);
 
 			*ppReturnedDeviceInterface = reinterpret_cast<IDirect3DDevice9Ex *>(&g_NewDirect3DDevice9Ex);
 		}

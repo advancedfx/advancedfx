@@ -6,3 +6,7 @@
 	path = shared/easywsclient
 	url = https://github.com/ripieces/easywsclient.git
 	branch = master
+[submodule "shared/imgui"]
+	path = shared/imgui
+	url = https://github.com/ripieces/imgui.git
+	branch = master

@@ -168,6 +168,9 @@
     <ClCompile Include="..\prop\shared\detours.cpp" />
     <ClCompile Include="..\shared\FileTools.cpp" />
     <ClCompile Include="..\shared\hooks\gameOverlayRenderer.cpp" />
+    <ClCompile Include="..\shared\imgui\imgui.cpp" />
+    <ClCompile Include="..\shared\imgui\imgui_demo.cpp" />
+    <ClCompile Include="..\shared\imgui\imgui_draw.cpp" />
     <ClCompile Include="..\shared\OpenExrOutput.cpp" />
     <ClCompile Include="..\shared\RawOutput.cpp" />
     <ClCompile Include="..\shared\RefCounted.cpp" />
@@ -200,6 +203,7 @@
     <ClCompile Include="csgo_vphysics.cpp" />
     <ClCompile Include="cssV34\ClientToolsCssV34.cpp" />
     <ClCompile Include="d3d9Hooks.cpp" />
+    <ClCompile Include="Gui.cpp" />
     <ClCompile Include="hlaeFolder.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MatRenderContextHook.cpp" />
@@ -248,6 +252,9 @@
     <ClInclude Include="..\prop\shared\detours.h" />
     <ClInclude Include="..\shared\FileTools.h" />
     <ClInclude Include="..\shared\hooks\gameOverlayRenderer.h" />
+    <ClInclude Include="..\shared\imgui\imconfig.h" />
+    <ClInclude Include="..\shared\imgui\imgui.h" />
+    <ClInclude Include="..\shared\imgui\imgui_internal.h" />
     <ClInclude Include="..\shared\OpenExrOutput.h" />
     <ClInclude Include="..\prop\shared\rapidxml\rapidxml.hpp" />
     <ClInclude Include="..\prop\shared\rapidxml\rapidxml_iterators.hpp" />
@@ -286,6 +293,7 @@
     <ClInclude Include="csgo_vphysics.h" />
     <ClInclude Include="cssV34\ClientToolsCssV34.h" />
     <ClInclude Include="d3d9Hooks.h" />
+    <ClInclude Include="Gui.h" />
     <ClInclude Include="hlaeFolder.h" />
     <ClInclude Include="MatRenderContextHook.h" />
     <ClInclude Include="MirvCam.h" />

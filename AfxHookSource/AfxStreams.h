@@ -44,22 +44,18 @@ class CAfxStreams;
 extern CAfxStreams g_AfxStreams;
 
 
-class IAfxContextHook abstract
+class IAfxStreamContext abstract
 {
 public:
 	//
-	// General state:
-	//
-	// These functions should be synced into child queues / contexts by the implementation
-	// because all contexts might need to know about these global states.
-
-	virtual void RenderBegin(IAfxMatRenderContext * ctx) = 0;
-
-	virtual void RenderEnd(void) = 0;
+	// Stream settings info
 
 	virtual float RenderSmokeOverlayAlphaMod(void) = 0;
 
 	virtual bool ViewRenderShouldForceNoVis(bool orgValue) = 0;
+
+	//
+	// General state:
 
 	virtual void DrawingHudBegin(void) = 0;
 
@@ -71,7 +67,7 @@ public:
 	// Context specific functions:
 
 	/// <returns>Return the material you want to use (instead).</returns>
-	virtual SOURCESDK::IMaterial_csgo * MaterialHook(SOURCESDK::IMaterial_csgo * material) = 0;
+	virtual SOURCESDK::IMaterial_csgo * MaterialHook(SOURCESDK::IMaterial_csgo * material, void * proxyData) = 0;
 
 	virtual void DrawInstances(int nInstanceCount, const SOURCESDK::MeshInstanceData_t_csgo *pInstance) = 0;
 
@@ -81,6 +77,7 @@ public:
 
 	virtual void DrawModulated(IAfxMesh * am, const SOURCESDK::Vector4D_csgo &vecDiffuseModulation, int firstIndex = -1, int numIndices = 0) = 0;
 
+	/*
 	/// <remarks>
 	/// This is a good chance for an implmentation
 	//  to hook and follow the subcontext actually,
@@ -88,6 +85,7 @@ public:
 	/// (so we get to know about the sub-queue / sub-context).
 	/// </remarks>
 	virtual void QueueFunctorInternal(IAfxCallQueue * aq, SOURCESDK::CSGO::CFunctor *pFunctor) = 0;
+	*/
 
 #if AFX_SHADERS_CSGO
 	virtual void SetVertexShader(CAfx_csgo_ShaderState & state) = 0;
@@ -788,7 +786,7 @@ public:
 	};
 
 private:
-	class CAfxBaseFxStreamContextHook;
+	class CAfxBaseFxStreamContext;
 
 public:
 
@@ -840,41 +838,41 @@ public:
 		{
 		}
 
-		virtual void AfxUnbind(CAfxBaseFxStreamContextHook * ch)
+		virtual void AfxUnbind(CAfxBaseFxStreamContext * ch)
 		{
 		}
 
-		virtual SOURCESDK::IMaterial_csgo * MaterialHook(CAfxBaseFxStreamContextHook * ch, SOURCESDK::IMaterial_csgo * material)
+		virtual SOURCESDK::IMaterial_csgo * MaterialHook(CAfxBaseFxStreamContext * ch, SOURCESDK::IMaterial_csgo * material)
 		{
 			return material;
 		}
 
-		virtual void DrawInstances(CAfxBaseFxStreamContextHook * ch, int nInstanceCount, const SOURCESDK::MeshInstanceData_t_csgo *pInstance )
+		virtual void DrawInstances(CAfxBaseFxStreamContext * ch, int nInstanceCount, const SOURCESDK::MeshInstanceData_t_csgo *pInstance )
 		{
 			ch->GetCtx()->GetOrg()->DrawInstances(nInstanceCount, pInstance);
 		}
 
-		virtual void Draw(CAfxBaseFxStreamContextHook * ch, IAfxMesh * am, int firstIndex = -1, int numIndices = 0)
+		virtual void Draw(CAfxBaseFxStreamContext * ch, IAfxMesh * am, int firstIndex = -1, int numIndices = 0)
 		{
 			am->GetParent()->Draw(firstIndex, numIndices);
 		}
 
-		virtual void Draw_2(CAfxBaseFxStreamContextHook * ch, IAfxMesh * am, SOURCESDK::CPrimList_csgo *pLists, int nLists)
+		virtual void Draw_2(CAfxBaseFxStreamContext * ch, IAfxMesh * am, SOURCESDK::CPrimList_csgo *pLists, int nLists)
 		{
 			am->GetParent()->Draw(pLists, nLists);
 		}
 
-		virtual void DrawModulated(CAfxBaseFxStreamContextHook * ch, IAfxMesh * am, const SOURCESDK::Vector4D_csgo &vecDiffuseModulation, int firstIndex = -1, int numIndices = 0 )
+		virtual void DrawModulated(CAfxBaseFxStreamContext * ch, IAfxMesh * am, const SOURCESDK::Vector4D_csgo &vecDiffuseModulation, int firstIndex = -1, int numIndices = 0 )
 		{
 			am->GetParent()->DrawModulated(vecDiffuseModulation, firstIndex, numIndices);
 		}
 
 #if AFX_SHADERS_CSGO
-		virtual void SetVertexShader(CAfxBaseFxStreamContextHook * ch, CAfx_csgo_ShaderState & state)
+		virtual void SetVertexShader(CAfxBaseFxStreamContext * ch, CAfx_csgo_ShaderState & state)
 		{
 		}
 
-		virtual void SetPixelShader(CAfxBaseFxStreamContextHook * ch, CAfx_csgo_ShaderState & state)
+		virtual void SetPixelShader(CAfxBaseFxStreamContext * ch, CAfx_csgo_ShaderState & state)
 		{
 		}
 #endif
@@ -1059,7 +1057,9 @@ protected:
 
 		void LevelShutdown(void);
 
-		//CAfxBaseFxStream * m_ActiveBaseFxStream;
+		CAfxBaseFxStreamContext * RequestStreamContext(void);
+		void ReturnStreamContext(CAfxBaseFxStreamContext * streamContext);
+
 
 		CAction * DrawAction_get(void);
 		CAction * NoDrawAction_get(void);
@@ -1070,6 +1070,9 @@ protected:
 		CAction * BlackAction_get(void);
 	
 	private:
+		std::mutex m_StreamContextsMutex;
+		std::queue<CAfxBaseFxStreamContext *> m_StreamContexts;
+
 		int m_RefCount = 0;
 		int m_MainThreadInitalizeLevel = 0;
 		int m_ShutDownLevel = 0;
@@ -1132,7 +1135,7 @@ private:
 		{
 		}
 
-		virtual void AfxUnbind(CAfxBaseFxStreamContextHook * ch);
+		virtual void AfxUnbind(CAfxBaseFxStreamContext * ch);
 	};
 
 #if AFX_SHADERS_CSGO
@@ -1225,9 +1228,9 @@ private:
 		{
 		}
 
-		virtual void AfxUnbind(CAfxBaseFxStreamContextHook * ch);
+		virtual void AfxUnbind(CAfxBaseFxStreamContext * ch);
 
-		virtual SOURCESDK::IMaterial_csgo * MaterialHook(CAfxBaseFxStreamContextHook * ch, SOURCESDK::IMaterial_csgo * material);
+		virtual SOURCESDK::IMaterial_csgo * MaterialHook(CAfxBaseFxStreamContext * ch, SOURCESDK::IMaterial_csgo * material);
 
 /*		We could speed up a bit here, but I am not sure if it's safe to do this,
         so we just let it draw for now and block the drawing instead.
@@ -1408,11 +1411,11 @@ private:
 
 		virtual void MainThreadInitialize(void);
 
-		virtual void AfxUnbind(CAfxBaseFxStreamContextHook * ch);
+		virtual void AfxUnbind(CAfxBaseFxStreamContext * ch);
 
-		virtual SOURCESDK::IMaterial_csgo * MaterialHook(CAfxBaseFxStreamContextHook * ch, SOURCESDK::IMaterial_csgo * material);
+		virtual SOURCESDK::IMaterial_csgo * MaterialHook(CAfxBaseFxStreamContext * ch, SOURCESDK::IMaterial_csgo * material);
 
- 		virtual void DrawInstances(CAfxBaseFxStreamContextHook * ch, int nInstanceCount, const SOURCESDK::MeshInstanceData_t_csgo *pInstance )
+ 		virtual void DrawInstances(CAfxBaseFxStreamContext * ch, int nInstanceCount, const SOURCESDK::MeshInstanceData_t_csgo *pInstance )
 		{
 			if(m_OverrideColor || m_OverrideBlend)
 			{
@@ -1465,9 +1468,9 @@ private:
 
 		virtual void MainThreadInitialize(void);
 
-		virtual void AfxUnbind(CAfxBaseFxStreamContextHook * ch);
+		virtual void AfxUnbind(CAfxBaseFxStreamContext * ch);
 
-		virtual SOURCESDK::IMaterial_csgo * MaterialHook(CAfxBaseFxStreamContextHook * ch, SOURCESDK::IMaterial_csgo * material);
+		virtual SOURCESDK::IMaterial_csgo * MaterialHook(CAfxBaseFxStreamContext * ch, SOURCESDK::IMaterial_csgo * material);
 
 	protected:
 		~CActionDebugDepth();
@@ -1715,28 +1718,17 @@ private:
 		CAction * m_MatchAction;
 	};
 
-	class CAfxBaseFxStreamContextHook
-		: public IAfxContextHook
+	class CAfxBaseFxStreamContext
+		: public IAfxStreamContext
 	{
 	public:
-		CAfxBaseFxStreamContextHook(CAfxBaseFxStream * stream, CAfxBaseFxStreamContextHook * cloneFrom)
-			: m_Stream(stream)
-			, m_CurrentAction(0)
+		CAfxBaseFxStreamContext()
+			: m_CurrentAction(0)
 		{
-			stream->AddRef();
+		}
 
-			if (cloneFrom)
-			{
-				m_IsRootCtx = false;
-				m_DrawingSkyBoxView = cloneFrom->m_DrawingSkyBoxView;				
-				m_CurrentEntityHandle.AfxAssign(cloneFrom->GetCurrentEntityHandle()); // Either cached value or last chance to get the current value.
-			}
-			else
-			{
-				m_IsRootCtx = true;
-				m_DrawingSkyBoxView = false;
-				m_CurrentEntityHandle.AfxAssign(GetCurrentEntityHandle()); // Last chance to get the current value.
-			}
+		~CAfxBaseFxStreamContext()
+		{
 		}
 
 		CAfxBaseFxStream * GetStream()
@@ -1754,12 +1746,12 @@ private:
 			return m_DrawingSkyBoxView;
 		}
 
+		void RenderBegin(CAfxBaseFxStream * stream);
+
+		void RenderEnd(void);
+
 		//
-		// IAfxContextHook:
-
-		virtual void RenderBegin(IAfxMatRenderContext * ctx);
-
-		virtual void RenderEnd(void);
+		// IAfxStreamContext:
 
 		virtual float RenderSmokeOverlayAlphaMod(void);
 
@@ -1771,7 +1763,7 @@ private:
 
 		virtual void DrawingSkyBoxViewEnd(void);
 
-		virtual SOURCESDK::IMaterial_csgo * MaterialHook(SOURCESDK::IMaterial_csgo * material);
+		virtual SOURCESDK::IMaterial_csgo * MaterialHook(SOURCESDK::IMaterial_csgo * material, void * proxyData);
 
 		virtual void DrawInstances(int nInstanceCount, const SOURCESDK::MeshInstanceData_t_csgo *pInstance);
 
@@ -1781,7 +1773,7 @@ private:
 
 		virtual void DrawModulated(IAfxMesh * am, const SOURCESDK::Vector4D_csgo &vecDiffuseModulation, int firstIndex = -1, int numIndices = 0);
 
-		virtual void QueueFunctorInternal(IAfxCallQueue * aq, SOURCESDK::CSGO::CFunctor *pFunctor);
+		//virtual void QueueFunctorInternal(IAfxCallQueue * aq, SOURCESDK::CSGO::CFunctor *pFunctor);
 
 #if AFX_SHADERS_CSGO
 		virtual void SetVertexShader(CAfx_csgo_ShaderState & state);
@@ -1789,45 +1781,101 @@ private:
 		virtual void SetPixelShader(CAfx_csgo_ShaderState & state);
 #endif
 
-	protected:
-		~CAfxBaseFxStreamContextHook()
-		{
-			m_Stream->Release();
-		}
-
 	private:
-		class CRenderBeginFunctor
+		class CQueueBeginFunctor
 			: public CAfxFunctor
 		{
 		public:
-			CRenderBeginFunctor(CAfxBaseFxStreamContextHook * ch)
-				: m_Ch(ch)
+			CQueueBeginFunctor(CAfxBaseFxStreamContext * streamContext)
+				: m_StreamContext(streamContext)
 			{
-
 			}
-
-
+			
 			virtual void operator()();
 		
 		private:
-			CAfxBaseFxStreamContextHook * m_Ch;
-
+			CAfxBaseFxStreamContext * m_StreamContext;
 		};
 
-		class CRenderEndFunctor
+		class CQueueEndFunctor
 			: public CAfxFunctor
 		{
 		public:
+			CQueueEndFunctor(CAfxBaseFxStreamContext * streamContext)
+				: m_StreamContext(streamContext)
+			{
+			}
+
 			virtual void operator()();
+
+		private:
+			CAfxBaseFxStreamContext * m_StreamContext;
+		};
+
+		class CDrawingHudBeginFunctor
+			: public CAfxFunctor
+		{
+		public:
+			CDrawingHudBeginFunctor(CAfxBaseFxStreamContext * streamContext)
+				: m_StreamContext(streamContext)
+			{
+			}
+
+			virtual void operator()()
+			{
+				m_StreamContext->DrawingHudBegin();
+			}
+
+		private:
+			CAfxBaseFxStreamContext * m_StreamContext;
+		};
+
+		class CDrawingSkyBoxViewBeginFunctor
+			: public CAfxFunctor
+		{
+		public:
+			CDrawingSkyBoxViewBeginFunctor(CAfxBaseFxStreamContext * streamContext)
+				: m_StreamContext(streamContext)
+			{
+			}
+
+			virtual void operator()()
+			{
+				m_StreamContext->DrawingSkyBoxViewBegin();
+			}
+
+		private:
+			CAfxBaseFxStreamContext * m_StreamContext;
+		};
+
+		class CDrawingSkyBoxViewEndFunctor
+			: public CAfxFunctor
+		{
+		public:
+			CDrawingSkyBoxViewEndFunctor(CAfxBaseFxStreamContext * streamContext)
+				: m_StreamContext(streamContext)
+			{
+			}
+
+			virtual void operator()()
+			{
+				m_StreamContext->DrawingSkyBoxViewEnd();
+			}
+
+		private:
+			CAfxBaseFxStreamContext * m_StreamContext;
 		};
 
 		CAfxBaseFxStream * m_Stream;
-		IAfxMatRenderContext * m_Ctx;
+		IAfxMatRenderContext * m_Ctx = 0;
+		bool m_IsRootCtx;
 		bool m_DrawingSkyBoxView;
 		CAfxBaseFxStream::CAction * m_CurrentAction;
 		SOURCESDK::CSGO::CBaseHandle m_CurrentEntityHandle;
-		bool m_IsRootCtx;
-		bool m_InCall = false;
+		std::map<void *, SOURCESDK::CSGO::CBaseHandle> m_ProxyDataToEntityHandle;
+
+		void QueueBegin(bool isRoot);
+		void QueueEnd();
 
 		void BindAction(CAction * action)
 		{
@@ -1842,9 +1890,9 @@ private:
 			}
 			m_CurrentAction = action;
 		}
-
-		SOURCESDK::CSGO::CBaseHandle const & GetCurrentEntityHandle();
 	};
+
+	CAfxBaseFxStreamContext * m_ActiveStreamContext;
 
 	bool m_DebugPrint;
 	struct CCacheEntry
@@ -2569,7 +2617,7 @@ private:
 
 	IAfxMatRenderContextOrg *  CaptureStreamToBuffer(CAfxRenderViewStream * stream, CAfxRecordStream * captureTarget, bool isInPreview, bool first, bool last);
 
-	IAfxContextHook * FindHook(IAfxMatRenderContext * ctx);
+	IAfxStreamContext * FindStreamContext(IAfxMatRenderContext * ctx);
 
 	void BlockPresent(IAfxMatRenderContextOrg * ctx, bool value);
 };

@@ -40,6 +40,7 @@
 #include "MirvPgl.h"
 #include "csgo_Audio.h"
 #include "mirv_voice.h"
+#include "Gui.h"
 
 #include <set>
 #include <map>
@@ -1283,6 +1284,9 @@ LRESULT CALLBACK new_Afx_WindowProc(
 	__in LPARAM lParam
 )
 {
+	if (AfxHookSource::Gui::WndProcHandler(hwnd, uMsg, wParam, lParam))
+		return 0;
+
 	switch(uMsg)
 	{
 	case WM_ACTIVATE:
