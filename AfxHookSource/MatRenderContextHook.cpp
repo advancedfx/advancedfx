@@ -372,7 +372,7 @@ std::map<SOURCESDK::IMeshEx_csgo *, CAfxMesh *> g_MeshMap_csgo;
 std::stack<CAfxMesh *> g_MeshHooks_csgo;
 std::shared_timed_mutex g_MeshMap_csgo_Mutex;
 
-/*
+
 class CAfxCallQueue
 	: public SOURCESDK::CSGO::ICallQueue
 	, public IAfxCallQueue
@@ -418,7 +418,6 @@ private:
 std::map<SOURCESDK::CSGO::ICallQueue *, CAfxCallQueue *> g_CallQueueMap_csgo;
 std::stack<CAfxCallQueue *> g_CallQueueHooks_csgo;
 std::shared_timed_mutex g_CallQueueMap_csgo_Mutex;
-*/
 
 //:009
 typedef void (__stdcall * MatRenderContextHook_Bind_t)(
@@ -486,7 +485,7 @@ struct CMatRenderContextDetours
 	MatRenderContextHook_DrawScreenSpaceRectangle_t DrawScreenSpaceRectangle;
 
 	//:150
-	//MatRenderContextHook_GetCallQueue_t GetCallQueue;
+	MatRenderContextHook_GetCallQueue_t GetCallQueue;
 
 	//:167
 	MatRenderContextHook_GetDynamicMeshEx_t GetDynamicMeshEx;
@@ -611,13 +610,10 @@ public:
 
 	virtual SOURCESDK::CSGO::ICallQueue *GetCallQueue()
 	{
-		/*
 		// This is hooked, so use detour:
 
 		return m_Detours->GetCallQueue((DWORD *)m_Ctx);
-		*/
 
-		return m_Ctx->GetCallQueue();
 	}
 
 	virtual void DrawInstances(int nInstanceCount, const SOURCESDK::MeshInstanceData_t_csgo *pInstance)
@@ -685,14 +681,12 @@ public:
 			nYDice);
 	}
 
-	/*
 	SOURCESDK::CSGO::ICallQueue * Hook_GetCallQueue()
 	{
 		SOURCESDK::CSGO::ICallQueue * callQueue = m_Detours->GetCallQueue((DWORD *)m_Ctx);
 
 		return AfxWrapCallQueue(callQueue);
 	}
-	*/
 
 	SOURCESDK::IMeshEx_csgo* Hook_GetDynamicMeshEx(
 		SOURCESDK::VertexFormat_t_csgo vertexFormat,
@@ -786,7 +780,6 @@ private:
 		return afxMesh;
 	}
 
-	/*
 	SOURCESDK::CSGO::ICallQueue * AfxWrapCallQueue(SOURCESDK::CSGO::ICallQueue * callQueue)
 	{
 		if (!callQueue)
@@ -832,7 +825,6 @@ private:
 
 		return afxCallQueue;
 	}
-	*/
 
 	SOURCESDK::IMaterial_csgo * DoOnMaterialHook(SOURCESDK::IMaterial_csgo * value, void * proxyData)
 	{
@@ -903,14 +895,12 @@ void _stdcall MatRenderContextHook_DrawScreenSpaceRectangle(
 		nYDice);
 }
 
-/*
 SOURCESDK::CSGO::ICallQueue * _stdcall MatRenderContextHook_GetCallQueue(
 	DWORD *this_ptr)
 {
 	CMatRenderContextHook * ctxh = CMatRenderContextHook::GetMatRenderContextHook((SOURCESDK::IMatRenderContext_csgo *)this_ptr);
 	return ctxh->Hook_GetCallQueue();
 }
-*/
 
 SOURCESDK::IMeshEx_csgo* _stdcall MatRenderContextHook_GetDynamicMeshEx(
 	DWORD *this_ptr,
@@ -959,7 +949,7 @@ void CMatRenderContextHook::HooKVtable(SOURCESDK::IMatRenderContext_csgo * orgCt
 	DetourIfacePtr((DWORD *)&(vtable[62]), MatRenderContextHook_GetDynamicMesh, (DetourIfacePtr_fn &)m_Detours->GetDynamicMesh);
 	DetourIfacePtr((DWORD *)&(vtable[81]), MatRenderContextHook_DrawScreenSpaceQuad, (DetourIfacePtr_fn &)m_Detours->DrawScreenSpaceQuad);
 	DetourIfacePtr((DWORD *)&(vtable[113]), MatRenderContextHook_DrawScreenSpaceRectangle, (DetourIfacePtr_fn &)m_Detours->DrawScreenSpaceRectangle);
-	//DetourIfacePtr((DWORD *)&(vtable[150]), MatRenderContextHook_GetCallQueue, (DetourIfacePtr_fn &)m_Detours->GetCallQueue);
+	DetourIfacePtr((DWORD *)&(vtable[150]), MatRenderContextHook_GetCallQueue, (DetourIfacePtr_fn &)m_Detours->GetCallQueue);
 	DetourIfacePtr((DWORD *)&(vtable[167]), MatRenderContextHook_GetDynamicMeshEx, (DetourIfacePtr_fn &)m_Detours->GetDynamicMeshEx);
 	DetourIfacePtr((DWORD *)&(vtable[192]), MatRenderContextHook_DrawInstances, (DetourIfacePtr_fn &)m_Detours->DrawInstances);
 	//OutputDebugString("HooKVtable DETOUR END\n");
@@ -981,13 +971,11 @@ void MatRenderContextHook_Shutdown(void)
 		g_MeshHooks_csgo.pop();
 	}
 
-	/*
 	while (!g_CallQueueHooks_csgo.empty())
 	{
 		delete g_CallQueueHooks_csgo.top();
 		g_CallQueueHooks_csgo.pop();
 	}
-	*/
 
 	for (std::map<SOURCESDK::IMatRenderContext_csgo *, CMatRenderContextHook *>::iterator it = CMatRenderContextHook::m_Map.begin(); it != CMatRenderContextHook::m_Map.end(); ++it)
 	{

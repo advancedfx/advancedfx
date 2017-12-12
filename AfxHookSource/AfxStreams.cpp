@@ -200,7 +200,7 @@ void QueueOrExecute(IAfxMatRenderContextOrg * ctx, SOURCESDK::CSGO::CFunctor * f
 	SOURCESDK::CSGO::ICallQueue * queue = ctx->GetCallQueue();
 
 	if (!queue)
-{	
+	{	
 		functor->AddRef();
 		(*functor)();
 		functor->Release();
@@ -1227,8 +1227,6 @@ void CAfxBaseFxStream::OnRenderBegin(void)
 {
 	CAfxRenderViewStream::OnRenderBegin();
 
-	this->InterLockIncrement();
-
 	m_ActiveStreamContext = m_Shared.RequestStreamContext();
 
 	m_ActiveStreamContext->RenderBegin(this);
@@ -2139,6 +2137,32 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderBegin(CAfxBaseFxStream * s
 	m_Stream->AddRef();
 	m_Stream->InterLockIncrement(); // Increment for next context queue.
 
+	/*
+	// Make potential proxyData -> entityHandle map for later use in MaterialHook:
+	
+	m_ProxyDataToEntityHandle.clear();
+
+	if (SOURCESDK::g_Entitylist_csgo)
+	{
+		int imax = SOURCESDK::g_Entitylist_csgo->GetHighestEntityIndex();
+
+		for (int i = 0; i <= imax; ++i)
+		{
+			if (SOURCESDK::IClientEntity_csgo * ce = SOURCESDK::g_Entitylist_csgo->GetClientEntity(i))
+			{
+				SOURCESDK::CSGO::CBaseHandle handle = ce->GetRefEHandle();
+
+				m_ProxyDataToEntityHandle[ce] = handle;
+			}
+		}
+	}
+	*/
+
+	// Set up other inital queue state:
+
+	m_QueueState->DrawingSkyBoxView = false;
+	m_QueueState->CurrentEntityHandle = SOURCESDK_CSGO_INVALID_EHANDLE_INDEX;
+
 	QueueBegin(true);
 }
 
@@ -2147,19 +2171,10 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderEnd(void)
 	QueueEnd();
 }
 
-/*
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueFunctorInternal(IAfxCallQueue * aq, SOURCESDK::CSGO::CFunctor *pFunctor)
 {
-	SOURCESDK::CSGO::ICallQueue * q = aq->GetParent();
-
-	CAfxBaseFxStreamContext * ch = new CAfxBaseFxStreamContext(m_Stream, this);
-
-	m_Stream->InterLockIncrement();
-	q->QueueFunctor(new CRenderBeginFunctor(ch));
-	q->QueueFunctorInternal(pFunctor);
-	q->QueueFunctor(new CRenderEndFunctor());
+	aq->GetParent()->QueueFunctor(new CQueueInternalWrapFunctor(this, pFunctor));
 }
-*/
 
 float CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderSmokeOverlayAlphaMod(void)
 {
@@ -2186,37 +2201,17 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewBegin(void)
 {
-	m_DrawingSkyBoxView = true;
-
-	if (SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue())
-	{
-		// Bubble into child contexts:
-
-		queue->QueueFunctor(new CDrawingSkyBoxViewBeginFunctor(this));
-	}
+	m_QueueState->DrawingSkyBoxView = true;
 }
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 {
-	m_DrawingSkyBoxView = false;
-
-	if (SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue())
-	{
-		// Bubble into child contexts:
-
-		queue->QueueFunctor(new CDrawingSkyBoxViewEndFunctor(this));
-	}
+	m_QueueState->DrawingSkyBoxView = false;
 }
 
-SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::MaterialHook(SOURCESDK::IMaterial_csgo * material, void * proxyData)
+bool CAfxBaseFxStream::CAfxBaseFxStreamContext::IfRootThenUpdateCurrentEntityHandle()
 {
-	std::map<void *, SOURCESDK::CSGO::CBaseHandle>::iterator it = m_ProxyDataToEntityHandle.find(proxyData);
-
-	if (it != m_ProxyDataToEntityHandle.end())
-	{
-		m_CurrentEntityHandle.AfxAssign(it->second);
-	}
-	else if (m_IsRootCtx)
+	if (m_IsRootCtx)
 	{
 		SOURCESDK::CSGO::CBaseHandle handle;
 
@@ -2228,12 +2223,34 @@ SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::MaterialH
 			}
 		}
 
-		m_CurrentEntityHandle.AfxAssign(handle);
+		m_QueueState->CurrentEntityHandle.AfxAssign(handle);
+		
+		return true;
 	}
+
+	return false;
+}
+
+SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::MaterialHook(SOURCESDK::IMaterial_csgo * material, void * proxyData)
+{
+	/*
+	std::map<void *, SOURCESDK::CSGO::CBaseHandle>::iterator it = m_ProxyDataToEntityHandle.find(proxyData);
+
+	if (it != m_ProxyDataToEntityHandle.end())
+	{
+		Tier0_Msg("FOUND: 0x%08x\n", proxyData);
+		m_QueueState->CurrentEntityHandle.AfxAssign(it->second);
+	}
+	else
+	{
+		if(proxyData) Tier0_Msg("Miss: 0x%08x: %s\n", proxyData, *(*(*((char ****)proxyData) - 1) + 3) + 8);
+		IfRootThenUpdateCurrentEntityHandle();
+	}
+	*/
 
 	CAction * action = m_Stream->RetrieveAction(
 		material,
-		m_CurrentEntityHandle
+		m_QueueState->CurrentEntityHandle
 	);
 
 	BindAction(action);
@@ -2289,6 +2306,20 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::SetPixelShader(CAfx_csgo_ShaderS
 		m_CurrentAction->SetPixelShader(this, state);
 }
 #endif
+
+// CAfxBaseFxStream::CAfxBaseFxStreamContext::CQueueInternalWrapFunctor ////////
+
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::CQueueInternalWrapFunctor::operator()()
+{
+	QueueState_s * parentQueueState = m_StreamContext->m_QueueState;
+
+	m_StreamContext->m_QueueState = &m_QueueState;
+
+	(*m_Functor)();
+	m_Functor->Release();
+
+	m_StreamContext->m_QueueState = parentQueueState;
+}
 
 // CAfxBaseFxStream::CAfxBaseFxStreamContext::CQueueBeginFunctor ///////////////
 

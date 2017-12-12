@@ -77,7 +77,6 @@ public:
 
 	virtual void DrawModulated(IAfxMesh * am, const SOURCESDK::Vector4D_csgo &vecDiffuseModulation, int firstIndex = -1, int numIndices = 0) = 0;
 
-	/*
 	/// <remarks>
 	/// This is a good chance for an implmentation
 	//  to hook and follow the subcontext actually,
@@ -85,7 +84,6 @@ public:
 	/// (so we get to know about the sub-queue / sub-context).
 	/// </remarks>
 	virtual void QueueFunctorInternal(IAfxCallQueue * aq, SOURCESDK::CSGO::CFunctor *pFunctor) = 0;
-	*/
 
 #if AFX_SHADERS_CSGO
 	virtual void SetVertexShader(CAfx_csgo_ShaderState & state) = 0;
@@ -249,6 +247,11 @@ public:
 
 		if (notify)
 			m_LockCondition.notify_one();
+	}
+
+protected:
+	int LockCount_get(void) {
+		return m_LockCount;
 	}
 
 private:
@@ -1725,10 +1728,12 @@ private:
 		CAfxBaseFxStreamContext()
 			: m_CurrentAction(0)
 		{
+			m_QueueState = new QueueState_s();
 		}
 
 		~CAfxBaseFxStreamContext()
 		{
+			delete m_QueueState;
 		}
 
 		CAfxBaseFxStream * GetStream()
@@ -1743,7 +1748,7 @@ private:
 
 		bool DrawingSkyBoxView_get(void)
 		{
-			return m_DrawingSkyBoxView;
+			return m_QueueState->DrawingSkyBoxView;
 		}
 
 		void RenderBegin(CAfxBaseFxStream * stream);
@@ -1773,7 +1778,7 @@ private:
 
 		virtual void DrawModulated(IAfxMesh * am, const SOURCESDK::Vector4D_csgo &vecDiffuseModulation, int firstIndex = -1, int numIndices = 0);
 
-		//virtual void QueueFunctorInternal(IAfxCallQueue * aq, SOURCESDK::CSGO::CFunctor *pFunctor);
+		virtual void QueueFunctorInternal(IAfxCallQueue * aq, SOURCESDK::CSGO::CFunctor *pFunctor);
 
 #if AFX_SHADERS_CSGO
 		virtual void SetVertexShader(CAfx_csgo_ShaderState & state);
@@ -1782,6 +1787,38 @@ private:
 #endif
 
 	private:
+		struct QueueState_s {
+			bool DrawingSkyBoxView;
+			SOURCESDK::CSGO::CBaseHandle CurrentEntityHandle;
+		};
+
+		class CQueueInternalWrapFunctor
+			: public CAfxFunctor
+		{
+		public:
+			CQueueInternalWrapFunctor(CAfxBaseFxStreamContext * streamContext, SOURCESDK::CSGO::CFunctor * pFunctor)
+				: m_StreamContext(streamContext)
+				, m_Functor(pFunctor)
+			{
+				m_StreamContext->IfRootThenUpdateCurrentEntityHandle();
+
+				m_QueueState = *(m_StreamContext->m_QueueState);
+			}
+
+			virtual void operator()();
+
+		protected:
+			virtual ~CQueueInternalWrapFunctor()
+			{
+
+			}
+		
+		private:
+			CAfxBaseFxStreamContext * m_StreamContext;
+			SOURCESDK::CSGO::CFunctor * m_Functor;
+			QueueState_s m_QueueState;
+		};
+
 		class CQueueBeginFunctor
 			: public CAfxFunctor
 		{
@@ -1790,9 +1827,9 @@ private:
 				: m_StreamContext(streamContext)
 			{
 			}
-			
+
 			virtual void operator()();
-		
+
 		private:
 			CAfxBaseFxStreamContext * m_StreamContext;
 		};
@@ -1866,13 +1903,12 @@ private:
 			CAfxBaseFxStreamContext * m_StreamContext;
 		};
 
+		QueueState_s * m_QueueState;
 		CAfxBaseFxStream * m_Stream;
 		IAfxMatRenderContext * m_Ctx = 0;
 		bool m_IsRootCtx;
-		bool m_DrawingSkyBoxView;
 		CAfxBaseFxStream::CAction * m_CurrentAction;
-		SOURCESDK::CSGO::CBaseHandle m_CurrentEntityHandle;
-		std::map<void *, SOURCESDK::CSGO::CBaseHandle> m_ProxyDataToEntityHandle;
+		//std::map<void *, SOURCESDK::CSGO::CBaseHandle> m_ProxyDataToEntityHandle;
 
 		void QueueBegin(bool isRoot);
 		void QueueEnd();
@@ -1890,6 +1926,8 @@ private:
 			}
 			m_CurrentAction = action;
 		}
+
+		bool IfRootThenUpdateCurrentEntityHandle();
 	};
 
 	CAfxBaseFxStreamContext * m_ActiveStreamContext;
