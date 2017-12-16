@@ -1447,6 +1447,9 @@ BOOL WINAPI new_GetCursorPos(
 	__out LPPOINT lpPoint
 )
 {
+	if (AfxHookSource::Gui::OnGetCursorPos(lpPoint))
+		return TRUE;
+
 	BOOL result = GetCursorPos(lpPoint);
 
 	g_AfxHookSourceInput.Supply_GetCursorPos(lpPoint);
@@ -1459,9 +1462,22 @@ BOOL WINAPI new_SetCursorPos(
 	__in int Y
 )
 {
+	if (AfxHookSource::Gui::OnSetCursorPos(X, Y))
+		return TRUE;
+
 	g_AfxHookSourceInput.Supply_SetCursorPos(X,Y);
 
 	return SetCursorPos(X,Y);
+}
+
+HCURSOR WINAPI new_SetCursor(__in_opt HCURSOR hCursor)
+{
+	HCURSOR result;
+
+	if (AfxHookSource::Gui::OnSetCursor(hCursor, result))
+		return result;
+
+	return SetCursor(hCursor);
 }
 
 FARPROC WINAPI new_shaderapidx9_GetProcAddress(HMODULE hModule, LPCSTR lpProcName)
@@ -1571,6 +1587,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 	static bool bFirstMaterialsystem = true;
 	static bool bFirstScaleformui = true;
 	static bool bFirstStdshader_dx9 = true;
+	static bool bFirstVgui2 = true;
 
 	CommonHooks();
 
@@ -1631,6 +1648,8 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 			InterceptDllCall(hModule, "USER32.dll", "SetCursorPos", (DWORD)&new_SetCursorPos);
 		}
 
+		InterceptDllCall(hModule, "USER32.dll", "SetCursor", (DWORD)&new_SetCursor);
+
 		// Init the hook early, so we don't run into issues with threading:
 		Hook_csgo_SndMixTimeScalePatch();
 		csgo_Audio_Install();
@@ -1651,6 +1670,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 
 		InterceptDllCall(hModule, "USER32.dll", "GetCursorPos", (DWORD) &new_GetCursorPos);
 		InterceptDllCall(hModule, "USER32.dll", "SetCursorPos", (DWORD) &new_SetCursorPos);
+		InterceptDllCall(hModule, "USER32.dll", "SetCursor", (DWORD)&new_SetCursor);
 	}
 	else
 	if(bFirstMaterialsystem && StringEndsWith( lpLibFileName, "materialsystem.dll"))
@@ -1708,6 +1728,15 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		// Install early hooks:
 
 		//csgo_Stdshader_dx9_Hooks_Init();
+	}
+	else
+	if(bFirstVgui2 && StringEndsWith( lpLibFileName, "vgui2.dll"))
+	{
+		bFirstVgui2 = false;
+
+		InterceptDllCall(hModule, "USER32.dll", "GetCursorPos", (DWORD) &new_GetCursorPos);
+		InterceptDllCall(hModule, "USER32.dll", "SetCursorPos", (DWORD) &new_SetCursorPos);
+		InterceptDllCall(hModule, "USER32.dll", "SetCursor", (DWORD)&new_SetCursor);
 	}
 }
 

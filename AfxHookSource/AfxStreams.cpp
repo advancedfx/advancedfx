@@ -2248,6 +2248,8 @@ SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::MaterialH
 	}
 	*/
 
+	IfRootThenUpdateCurrentEntityHandle();
+
 	CAction * action = m_Stream->RetrieveAction(
 		material,
 		m_QueueState->CurrentEntityHandle

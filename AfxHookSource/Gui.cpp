@@ -9,11 +9,18 @@
 #include "Gui.h"
 
 #include <shared/imgui/imgui.h>
+
+#include "addresses.h"
 #include "hlaeFolder.h"
 #include <string>
 
+
+extern SourceSdkVer g_SourceSdkVer;
+
 namespace AfxHookSource {
 namespace Gui {
+
+bool m_Active = true;
 
 // Data
 static HWND                     g_hWnd = 0;
@@ -32,6 +39,11 @@ struct CUSTOMVERTEX
 	float    uv[2];
 };
 #define D3DFVF_CUSTOMVERTEX (D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1)
+
+bool IsSupported()
+{
+	return SourceSdkVer_CSGO == g_SourceSdkVer;
+}
 
 // This is the main rendering function that you have to implement and provide to ImGui (via setting up 'RenderDrawListsFn' in the ImGuiIO structure)
 // If text or lines are blurry when integrating ImGui in your engine:
@@ -104,18 +116,23 @@ void ImGui_ImplDX9_RenderDrawLists(ImDrawData* draw_data)
 	vp.MaxZ = 1.0f;
 	g_pd3dDevice->SetViewport(&vp);
 
+	// Additional state (added):
+	g_pd3dDevice->SetRenderState(D3DRS_SRGBWRITEENABLE, FALSE);
+	g_pd3dDevice->SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_RED);
+	g_pd3dDevice->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
+
 	// Setup render state: fixed-pipeline, alpha-blending, no face culling, no depth testing
 	g_pd3dDevice->SetPixelShader(NULL);
 	g_pd3dDevice->SetVertexShader(NULL);
 	g_pd3dDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
-	g_pd3dDevice->SetRenderState(D3DRS_LIGHTING, false);
-	g_pd3dDevice->SetRenderState(D3DRS_ZENABLE, false);
-	g_pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
-	g_pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, false);
+	g_pd3dDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
+	g_pd3dDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
+	g_pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+	g_pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
 	g_pd3dDevice->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
 	g_pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 	g_pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-	g_pd3dDevice->SetRenderState(D3DRS_SCISSORTESTENABLE, true);
+	g_pd3dDevice->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
 	g_pd3dDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
 	g_pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
 	g_pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
@@ -124,6 +141,7 @@ void ImGui_ImplDX9_RenderDrawLists(ImDrawData* draw_data)
 	g_pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
 	g_pd3dDevice->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
 	g_pd3dDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+
 
 	// Setup orthographic projection matrix
 	// Being agnostic of whether <d3dx9.h> or <DirectXMath.h> can be used, we aren't relying on D3DXMatrixIdentity()/D3DXMatrixOrthoOffCenterLH() or DirectX::XMMatrixIdentity()/DirectX::XMMatrixOrthographicOffCenterLH()
@@ -185,35 +203,46 @@ bool m_KeyDownEaten[512] = {};
 
 bool WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	if (!IsSupported())
+		return false;
+
+	if (!m_Active)
+		return false;
+
 	ImGuiIO& io = ImGui::GetIO();
 	switch (msg)
 	{
+	case WM_LBUTTONDBLCLK:
+	case WM_RBUTTONDBLCLK:
+	case WM_MBUTTONDBLCLK:
+		return io.WantCaptureMouse;
+
 	case WM_LBUTTONDOWN:
 	case WM_RBUTTONDOWN:
 	case WM_MBUTTONDOWN:
-	{
-		int button = 0;
-		if (msg == WM_LBUTTONDOWN) button = 0;
-		if (msg == WM_RBUTTONDOWN) button = 1;
-		if (msg == WM_MBUTTONDOWN) button = 2;
-		if (!IsAnyMouseButtonDown() && GetCapture() == NULL)
-			SetCapture(hwnd);
-		io.MouseDown[button] = true;
-		return io.WantCaptureMouse;
-	}
+		{
+			int button = 0;
+			if (msg == WM_LBUTTONDOWN) button = 0;
+			if (msg == WM_RBUTTONDOWN) button = 1;
+			if (msg == WM_MBUTTONDOWN) button = 2;
+			if (!IsAnyMouseButtonDown() && GetCapture() == NULL)
+				SetCapture(hwnd);
+			io.MouseDown[button] = true;
+			return io.WantCaptureMouse;
+		}
 	case WM_LBUTTONUP:
 	case WM_RBUTTONUP:
 	case WM_MBUTTONUP:
-	{
-		int button = 0;
-		if (msg == WM_LBUTTONUP) button = 0;
-		if (msg == WM_RBUTTONUP) button = 1;
-		if (msg == WM_MBUTTONUP) button = 2;
-		io.MouseDown[button] = false;
-		if (!IsAnyMouseButtonDown() && GetCapture() == hwnd)
-			ReleaseCapture();
-		return io.WantCaptureMouse;
-	}
+		{
+			int button = 0;
+			if (msg == WM_LBUTTONUP) button = 0;
+			if (msg == WM_RBUTTONUP) button = 1;
+			if (msg == WM_MBUTTONUP) button = 2;
+			io.MouseDown[button] = false;
+			if (!IsAnyMouseButtonDown() && GetCapture() == hwnd)
+				ReleaseCapture();
+			return io.WantCaptureMouse;
+		}
 	case WM_MOUSEWHEEL:
 		io.MouseWheel += GET_WHEEL_DELTA_WPARAM(wParam) > 0 ? +1.0f : -1.0f;
 		return io.WantCaptureMouse;
@@ -231,23 +260,96 @@ bool WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		return io.WantCaptureKeyboard;
 	case WM_KEYUP:
 	case WM_SYSKEYUP:
-	{
-		bool wasKeyDownEaten = false;
-		if (wParam < 256)
 		{
-			io.KeysDown[wParam] = 0;
-			wasKeyDownEaten = m_KeyDownEaten[wParam];
-			m_KeyDownEaten[wParam] = false;
+			bool wasKeyDownEaten = false;
+			if (wParam < 256)
+			{
+				io.KeysDown[wParam] = 0;
+				wasKeyDownEaten = m_KeyDownEaten[wParam];
+				m_KeyDownEaten[wParam] = false;
+			}
+			return io.WantCaptureKeyboard || wasKeyDownEaten;
 		}
-		return io.WantCaptureKeyboard || wasKeyDownEaten;
-	}
 	case WM_CHAR:
 		// You can also use ToAscii()+GetKeyboardState() to retrieve characters.
 		if (wParam > 0 && wParam < 0x10000)
 			io.AddInputCharacter((unsigned short)wParam);
 		return io.WantCaptureKeyboard;
+	case WM_INPUT:
+		{
+			HRAWINPUT hRawInput = (HRAWINPUT)lParam;
+			RAWINPUT inp;
+			UINT size = sizeof(inp);
+
+			GetRawInputData(hRawInput, RID_INPUT, &inp, &size, sizeof(RAWINPUTHEADER));
+
+			switch (inp.header.dwType)
+			{
+			case RIM_TYPEMOUSE:
+				return true;
+			case RIM_TYPEKEYBOARD:
+				return true;
+			}
+			return false;
+		}
 	}
 	return false;
+}
+
+POINT m_CursorPos = { 0, 0 };
+
+bool OnSetCursorPos(__in int X, __in int Y)
+{
+	if (!IsSupported())
+		return false;
+
+	m_CursorPos.x = X;
+	m_CursorPos.y = Y;
+
+	return m_Active;
+}
+
+bool OnGetCursorPos(__out LPPOINT lpPoint)
+{
+	if (!IsSupported())
+		return false;
+
+	if (!m_Active)
+		return false;
+
+	if (lpPoint)
+	{
+		lpPoint->x = m_CursorPos.x;
+		lpPoint->y = m_CursorPos.y;
+	}
+
+	return true;
+}
+
+HCURSOR m_Cursor = 0;
+bool m_CursorSet = false;
+
+bool OnSetCursor(__in_opt HCURSOR hCursor, HCURSOR & result)
+{
+	if (!IsSupported())
+		return false;
+
+	if (!m_CursorSet)
+	{
+		m_Cursor = GetCursor();
+		m_CursorSet = true;
+	}
+
+	HCURSOR oldCursor = m_Cursor;
+
+	m_Cursor = hCursor;
+
+	if (!m_Active)
+		return false;
+
+	result = oldCursor;
+
+	return true;
 }
 
 std::string m_IniFilename;
@@ -255,6 +357,9 @@ std::string m_LogFileName;
 
 bool On_Direct3DDevice9_Init(void* hwnd, IDirect3DDevice9* device)
 {
+	if (!IsSupported())
+		return false;
+
 	g_hWnd = (HWND)hwnd;
 	g_pd3dDevice = device;
 
@@ -438,6 +543,9 @@ void DoFrame()
 
 void On_Direct3DDevice9_Shutdown()
 {
+	if (!IsSupported())
+		return;
+
 	DX9_InvalidateDeviceObjects();
 	ImGui::Shutdown();
 	g_pd3dDevice = NULL;
@@ -449,7 +557,10 @@ bool m_FirstEndScene = true;
 
 void On_Direct3DDevice9_EndScene()
 {
-	if(false)//if(m_FirstEndScene)
+	if (!IsSupported())
+		return;
+
+	if(m_FirstEndScene)
 	{
 		m_FirstEndScene = false;
 		
@@ -465,16 +576,25 @@ void On_Direct3DDevice9_EndScene()
 
 void On_Direct3DDevice9_Present(bool deviceLost)
 {
+	if (!IsSupported())
+		return;
+
 	m_FirstEndScene = true;
 }
 
 void On_Direct3DDevice9_Reset_Before()
 {
+	if (!IsSupported())
+		return;
+
 	DX9_InvalidateDeviceObjects();
 }
 
 void On_Direct3DDevice9_Reset_After()
 {
+	if (!IsSupported())
+		return;
+
 	DX9_CreateDeviceObjects();
 }
 
