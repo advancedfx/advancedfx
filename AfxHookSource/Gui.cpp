@@ -1,26 +1,41 @@
 #include "stdafx.h"
 
 // TODO:
-// - Implement better state changes and reversal.
-// - Determine if the game shows a cursor in order to decide which mode the GUI is in ("passthrough stuff" or "click and drag to change view" or whatever and also override the game's behaviour regarding these modes)
 // - Address potential threading issues between message pump IO and drawing thread.
 // - Lots.
+// - Maybe handle RawInput mouse buttons in drag mode (so the game doesn't see them, but currently it doesn't care about them anyway.).
 
 #include "Gui.h"
 
 #include <shared/imgui/imgui.h>
 
+#include <SourceInterfaces.h>
+#include "WrpVEngineClient.h"
 #include "addresses.h"
 #include "hlaeFolder.h"
 #include <string>
 
 
 extern SourceSdkVer g_SourceSdkVer;
+extern WrpVEngineClient * g_VEngineClient;
 
 namespace AfxHookSource {
 namespace Gui {
 
 bool m_Active = true;
+bool m_KeyDownEaten[512] = {};
+bool m_PassThrough = false;
+POINT m_GameCursorPos = { 0, 0 };
+POINT m_OldCursorPos = { 0, 0 };
+HCURSOR m_OwnCursor = 0;
+HCURSOR m_GameCursor = 0;
+bool m_CursorSet = false;
+std::string m_IniFilename;
+std::string m_LogFileName;
+bool m_FirstEndScene = true;
+bool m_GameCaptured = false;
+bool m_InMouseLook = false;
+bool m_HadSetCursorMouseLook = false;
 
 // Data
 static HWND                     g_hWnd = 0;
@@ -32,6 +47,55 @@ static LPDIRECT3DINDEXBUFFER9   g_pIB = NULL;
 static LPDIRECT3DTEXTURE9       g_FontTexture = NULL;
 static int                      g_VertexBufferSize = 5000, g_IndexBufferSize = 10000;
 
+static class Cursors_s
+{
+private:
+	HCURSOR m_None = 0;
+	HCURSOR m_Arrow = LoadCursor(NULL, IDC_ARROW);
+	HCURSOR m_TextInput = LoadCursor(NULL, IDC_IBEAM);
+	HCURSOR m_Move = LoadCursor(NULL, IDC_SIZEALL);
+	HCURSOR m_ResizeNS = LoadCursor(NULL, IDC_SIZENS);
+	HCURSOR m_ResizeEW = LoadCursor(NULL, IDC_SIZEWE);
+	HCURSOR m_ResizeNESW = LoadCursor(NULL, IDC_SIZENESW);
+	HCURSOR m_ResizeNWSE = LoadCursor(NULL, IDC_SIZENWSE);
+
+	HCURSOR m_Hand = LoadCursor(NULL, IDC_HAND);
+
+public:
+	HCURSOR GetCursor(ImGuiMouseCursor imGuiMouseCursor)
+	{
+		switch (imGuiMouseCursor)
+		{
+		case ImGuiMouseCursor_None:
+			return m_None;
+		case ImGuiMouseCursor_Arrow:
+			return m_Arrow;
+		case ImGuiMouseCursor_TextInput:
+			return m_TextInput;
+		case ImGuiMouseCursor_Move:
+			return m_Move;
+		case ImGuiMouseCursor_ResizeNS:
+			return m_ResizeNS;
+		case ImGuiMouseCursor_ResizeEW:
+			return m_ResizeEW;
+		case ImGuiMouseCursor_ResizeNESW:
+			return m_ResizeNESW;
+		case ImGuiMouseCursor_ResizeNWSE:
+			return m_ResizeNWSE;
+		}
+
+		return m_Arrow;
+	}
+
+	HCURSOR GetFromGame(HCURSOR gameCursor, bool inMouseLook)
+	{
+		if (!inMouseLook || gameCursor)
+			return gameCursor;
+		return m_Hand;
+	}
+
+} m_Cursors;
+
 struct CUSTOMVERTEX
 {
 	float    pos[3];
@@ -42,7 +106,13 @@ struct CUSTOMVERTEX
 
 bool IsSupported()
 {
+	//return false;
 	return SourceSdkVer_CSGO == g_SourceSdkVer;
+}
+
+bool IsInMouseLook()
+{
+	return m_InMouseLook;
 }
 
 // This is the main rendering function that you have to implement and provide to ImGui (via setting up 'RenderDrawListsFn' in the ImGuiIO structure)
@@ -199,15 +269,71 @@ static bool IsAnyMouseButtonDown()
 	return false;
 }
 
-bool m_KeyDownEaten[512] = {};
+enum EndPassThrougButtonUp
+{
+	EPTBU_Left,
+	EPTBU_Right,
+	EPTBU_Middle
+};
+EndPassThrougButtonUp m_EndPassThroughButtonUp = EPTBU_Left;
+bool m_IgnoreNextWM_MOUSEMOVE = false;
 
-bool WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+bool WndProcHandler(HWND hwnd, UINT msg, WPARAM & wParam, LPARAM & lParam)
 {
 	if (!IsSupported())
 		return false;
 
 	if (!m_Active)
 		return false;
+
+	if (m_PassThrough)
+	{
+		bool end = false;
+
+		switch (msg)
+		{
+		case WM_LBUTTONUP:
+			if (m_EndPassThroughButtonUp == EPTBU_Left) end = true;
+			break;
+		case WM_RBUTTONUP:
+			if (m_EndPassThroughButtonUp == EPTBU_Right) end = true;
+			break;
+		case WM_MBUTTONUP:
+			if (m_EndPassThroughButtonUp == EPTBU_Middle) end = true;
+			break;
+		case WM_MOUSEMOVE:
+			switch (m_EndPassThroughButtonUp)
+			{
+			case EPTBU_Left:
+				wParam &= ~(WPARAM)MK_LBUTTON;
+				break;
+			case EPTBU_Right:
+				wParam &= ~(WPARAM)MK_RBUTTON;
+				break;
+			case EPTBU_Middle:
+				wParam &= ~(WPARAM)MK_MBUTTON;
+				break;
+			}
+			break;
+		}
+
+		if (end)
+		{
+			GetCursorPos(&m_GameCursorPos);
+
+			m_PassThrough = false;
+
+			SetCursor(m_OwnCursor);
+			SetCursorPos(m_OldCursorPos.x, m_OldCursorPos.y);
+
+			if (m_GameCaptured && GetCapture() == hwnd)
+				ReleaseCapture();
+
+			return true;
+		}
+
+		return false;
+	}
 
 	ImGuiIO& io = ImGui::GetIO();
 	switch (msg)
@@ -221,6 +347,43 @@ bool WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_RBUTTONDOWN:
 	case WM_MBUTTONDOWN:
 		{
+			if (!io.WantCaptureMouse && IsInMouseLook())
+			{
+				bool start = false;
+
+				switch (msg)
+				{
+				case WM_LBUTTONDOWN:
+					start = true;
+					m_EndPassThroughButtonUp = EPTBU_Left;
+					break;
+				case WM_RBUTTONDOWN:
+					start = true;
+					m_EndPassThroughButtonUp = EPTBU_Right;
+					break;
+				case WM_MBUTTONDOWN:
+					start = true;
+					m_EndPassThroughButtonUp = EPTBU_Middle;
+					break;
+				}
+				
+				if (start)
+				{
+					GetCursorPos(&m_OldCursorPos);
+
+					m_IgnoreNextWM_MOUSEMOVE = m_OldCursorPos.x != m_GameCursorPos.x || m_OldCursorPos.y != m_GameCursorPos.y;
+
+					SetCursor(m_GameCursor);
+					SetCursorPos(m_GameCursorPos.x, m_GameCursorPos.y);
+
+					if (m_GameCaptured && GetCapture() == NULL)
+						SetCapture(hwnd);
+
+					m_PassThrough = true;
+					return true;
+				}
+			}
+		
 			int button = 0;
 			if (msg == WM_LBUTTONDOWN) button = 0;
 			if (msg == WM_RBUTTONDOWN) button = 1;
@@ -228,7 +391,7 @@ bool WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			if (!IsAnyMouseButtonDown() && GetCapture() == NULL)
 				SetCapture(hwnd);
 			io.MouseDown[button] = true;
-			return io.WantCaptureMouse;
+			return io.WantCaptureMouse || IsInMouseLook();
 		}
 	case WM_LBUTTONUP:
 	case WM_RBUTTONUP:
@@ -241,15 +404,15 @@ bool WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			io.MouseDown[button] = false;
 			if (!IsAnyMouseButtonDown() && GetCapture() == hwnd)
 				ReleaseCapture();
-			return io.WantCaptureMouse;
+			return io.WantCaptureMouse || IsInMouseLook();
 		}
 	case WM_MOUSEWHEEL:
 		io.MouseWheel += GET_WHEEL_DELTA_WPARAM(wParam) > 0 ? +1.0f : -1.0f;
-		return io.WantCaptureMouse;
+		return io.WantCaptureMouse || IsInMouseLook();
 	case WM_MOUSEMOVE:
 		io.MousePos.x = (signed short)(lParam);
 		io.MousePos.y = (signed short)(lParam >> 16);
-		return io.WantCaptureMouse;
+		return io.WantCaptureMouse || IsInMouseLook();
 	case WM_KEYDOWN:
 	case WM_SYSKEYDOWN:
 		if (wParam < 256)
@@ -286,9 +449,9 @@ bool WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			switch (inp.header.dwType)
 			{
 			case RIM_TYPEMOUSE:
-				return true;
+				return IsInMouseLook();
 			case RIM_TYPEKEYBOARD:
-				return true;
+				return io.WantCaptureKeyboard;
 			}
 			return false;
 		}
@@ -296,20 +459,7 @@ bool WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return false;
 }
 
-POINT m_CursorPos = { 0, 0 };
-
-bool OnSetCursorPos(__in int X, __in int Y)
-{
-	if (!IsSupported())
-		return false;
-
-	m_CursorPos.x = X;
-	m_CursorPos.y = Y;
-
-	return m_Active;
-}
-
-bool OnGetCursorPos(__out LPPOINT lpPoint)
+bool OnGameFrameStart()
 {
 	if (!IsSupported())
 		return false;
@@ -317,17 +467,124 @@ bool OnGetCursorPos(__out LPPOINT lpPoint)
 	if (!m_Active)
 		return false;
 
-	if (lpPoint)
+	ImGuiIO& io = ImGui::GetIO();
+
+	// Setup time step
+	INT64 current_time;
+	QueryPerformanceCounter((LARGE_INTEGER *)&current_time);
+	io.DeltaTime = (float)(current_time - g_Time) / g_TicksPerSecond;
+	g_Time = current_time;
+
+	// Setup display size (every frame to accommodate for window resizing)
+	RECT rect;
+	GetClientRect(g_hWnd, &rect);
+	io.DisplaySize = ImVec2((float)(rect.right - rect.left), (float)(rect.bottom - rect.top));
+
+	// Read keyboard modifiers inputs
+	io.KeyCtrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+	io.KeyShift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
+	io.KeyAlt = (GetKeyState(VK_MENU) & 0x8000) != 0;
+	io.KeySuper = false;
+	// io.KeysDown : filled by WM_KEYDOWN/WM_KEYUP events
+	// io.MousePos : filled by WM_MOUSEMOVE events
+	// io.MouseDown : filled by WM_*BUTTON* events
+	// io.MouseWheel : filled by WM_MOUSEWHEEL events
+
+	// Set OS mouse position if requested last frame by io.WantMoveMouse flag (used when io.NavMovesTrue is enabled by user and using directional navigation)
+	if (io.WantMoveMouse)
 	{
-		lpPoint->x = m_CursorPos.x;
-		lpPoint->y = m_CursorPos.y;
+		POINT pos = { (int)io.MousePos.x, (int)io.MousePos.y };
+		ClientToScreen(g_hWnd, &pos);
+		SetCursorPos(pos.x, pos.y);
 	}
+
+	//// Hide OS mouse cursor if ImGui is drawing it
+	//if (io.MouseDrawCursor)
+	//	SetCursor(NULL);
+
+	HCURSOR cursor = 0;
+
+	if (io.WantCaptureMouse)
+	{
+		cursor = m_Cursors.GetCursor(ImGui::GetMouseCursor());
+	}
+	else
+	{
+		cursor = m_Cursors.GetFromGame(m_GameCursor, IsInMouseLook());
+	}
+
+	if (m_OwnCursor != cursor)
+	{
+		m_OwnCursor = cursor;
+		SetCursor(m_OwnCursor);
+	}
+
+	m_InMouseLook = m_HadSetCursorMouseLook;
+	m_HadSetCursorMouseLook = false;
 
 	return true;
 }
 
-HCURSOR m_Cursor = 0;
-bool m_CursorSet = false;
+bool OnSetCursorPos(__in int X, __in int Y)
+{
+	if (!IsSupported())
+		return false;
+
+	if (g_hWnd && m_GameCaptured && g_VEngineClient)
+	{
+		int width, height;
+		POINT clientPoint = { X , Y };
+
+		g_VEngineClient->GetScreenSize(width, height);
+
+		ScreenToClient(g_hWnd, &clientPoint);
+
+		m_HadSetCursorMouseLook = ((width >> 1) == clientPoint.x) && ((height >> 1) == clientPoint.y);
+
+		//Tier0_Msg("%i == %i, %i == %i + (%i, %i) --> %i\n", width >> 1, clientPoint.x, height >> 1, clientPoint.y, X, Y, m_InMouseLook ? 1 : 0);
+	}
+	else
+		m_HadSetCursorMouseLook = false;
+
+	m_GameCursorPos.x = X;
+	m_GameCursorPos.y = Y;
+
+	if (!m_Active)
+		return false;
+
+	if (m_PassThrough)
+		return false;
+
+	if (!IsInMouseLook())
+		return false;
+
+	return true;
+}
+
+bool OnGetCursorPos(__out LPPOINT lpPoint)
+{
+	if (!IsSupported())
+		return false;
+
+	if (!m_Active || m_PassThrough || !IsInMouseLook())
+	{
+		if (lpPoint)
+		{
+			m_GameCursorPos.x = lpPoint->x;
+			m_GameCursorPos.y = lpPoint->y;
+		}
+
+		return false;
+	}
+
+	if (lpPoint)
+	{
+		lpPoint->x = m_GameCursorPos.x;
+		lpPoint->y = m_GameCursorPos.y;
+	}
+
+	return true;
+}
 
 bool OnSetCursor(__in_opt HCURSOR hCursor, HCURSOR & result)
 {
@@ -336,24 +593,72 @@ bool OnSetCursor(__in_opt HCURSOR hCursor, HCURSOR & result)
 
 	if (!m_CursorSet)
 	{
-		m_Cursor = GetCursor();
+		m_GameCursor = GetCursor();
 		m_CursorSet = true;
 	}
 
-	HCURSOR oldCursor = m_Cursor;
+	HCURSOR oldCursor = m_GameCursor;
 
-	m_Cursor = hCursor;
+	m_GameCursor = hCursor;
 
 	if (!m_Active)
 		return false;
 
+	if (m_PassThrough)
+		return false;
+
+	if (!ImGui::GetIO().WantCaptureMouse)
+	{
+		m_OwnCursor = m_Cursors.GetFromGame(hCursor, IsInMouseLook());
+	}
+
 	result = oldCursor;
+	SetCursor(m_OwnCursor);
 
 	return true;
 }
 
-std::string m_IniFilename;
-std::string m_LogFileName;
+bool OnSetCapture(HWND hWnd, HWND & result)
+{
+	if (!IsSupported())
+		return false;
+
+	m_GameCaptured = hWnd && hWnd == g_hWnd;
+
+	if (!m_Active)
+		return false;
+
+	if (m_PassThrough)
+		return false;
+
+	if (!IsInMouseLook())
+		return false;
+
+	result = 0; // TODO: maybe some smartass logic here to determine something (not really worth it probably atm)?
+	return true;
+}
+
+bool OnReleaseCapture()
+{
+	if (!IsSupported())
+		return false;
+
+	bool wasInMouseLook = IsInMouseLook();
+
+	m_GameCaptured = false;
+	m_InMouseLook = false;
+
+	if (!m_Active)
+		return false;
+
+	if (m_PassThrough)
+		return false;
+
+	if (!wasInMouseLook)
+		return false;
+
+	return true;
+}
 
 bool On_Direct3DDevice9_Init(void* hwnd, IDirect3DDevice9* device)
 {
@@ -470,41 +775,6 @@ void DX9_NewFrame()
 	if (!g_FontTexture)
 		DX9_CreateDeviceObjects();
 
-	ImGuiIO& io = ImGui::GetIO();
-
-	// Setup display size (every frame to accommodate for window resizing)
-	RECT rect;
-	GetClientRect(g_hWnd, &rect);
-	io.DisplaySize = ImVec2((float)(rect.right - rect.left), (float)(rect.bottom - rect.top));
-
-	// Setup time step
-	INT64 current_time;
-	QueryPerformanceCounter((LARGE_INTEGER *)&current_time);
-	io.DeltaTime = (float)(current_time - g_Time) / g_TicksPerSecond;
-	g_Time = current_time;
-
-	// Read keyboard modifiers inputs
-	io.KeyCtrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
-	io.KeyShift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
-	io.KeyAlt = (GetKeyState(VK_MENU) & 0x8000) != 0;
-	io.KeySuper = false;
-	// io.KeysDown : filled by WM_KEYDOWN/WM_KEYUP events
-	// io.MousePos : filled by WM_MOUSEMOVE events
-	// io.MouseDown : filled by WM_*BUTTON* events
-	// io.MouseWheel : filled by WM_MOUSEWHEEL events
-
-	// Set OS mouse position if requested last frame by io.WantMoveMouse flag (used when io.NavMovesTrue is enabled by user and using directional navigation)
-	if (io.WantMoveMouse)
-	{
-		POINT pos = { (int)io.MousePos.x, (int)io.MousePos.y };
-		ClientToScreen(g_hWnd, &pos);
-		SetCursorPos(pos.x, pos.y);
-	}
-
-	// Hide OS mouse cursor if ImGui is drawing it
-	if (io.MouseDrawCursor)
-		SetCursor(NULL);
-
 	// Start the frame. This call will update the io.WantCaptureMouse, io.WantCaptureKeyboard flag that you can use to dispatch inputs (or not) to your application.
 	ImGui::NewFrame();
 }
@@ -523,6 +793,7 @@ void DoFrame()
 		if (ImGui::Button("Test Window")) show_test_window ^= 1;
 		if (ImGui::Button("Another Window")) show_another_window ^= 1;
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+		ImGui::Text("Look: %i | Want: %i | Through: %i\n", IsInMouseLook() ? 1 : 0, ImGui::GetIO().WantCaptureMouse ? 1 : 0, m_PassThrough ? 1 : 0);
 	}
 
 	// 2. Show another simple window. In most cases you will use an explicit Begin/End pair to name the window.
@@ -553,14 +824,12 @@ void On_Direct3DDevice9_Shutdown()
 }
 
 
-bool m_FirstEndScene = true;
-
 void On_Direct3DDevice9_EndScene()
 {
 	if (!IsSupported())
 		return;
 
-	if(m_FirstEndScene)
+	if(m_FirstEndScene && m_Active)
 	{
 		m_FirstEndScene = false;
 		

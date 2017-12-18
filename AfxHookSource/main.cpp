@@ -473,8 +473,10 @@ public:
 	virtual void _UNKOWN_012(void);
 	virtual void _UNKOWN_013(void);
 	virtual void _UNKOWN_014(void);
-	virtual void _UNKOWN_015(void);
-	virtual void _UNKOWN_016(void);
+
+	virtual void IN_ActivateMouse(void);
+	virtual void IN_DeactivateMouse(void);
+
 	virtual void _UNKOWN_017(void);
 	virtual void _UNKOWN_018(void);
 	virtual void _UNKOWN_019(void);
@@ -713,10 +715,10 @@ __declspec(naked) void CAfxBaseClientDll::_UNKOWN_013(void)
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_014(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 14) }
 
-__declspec(naked) void CAfxBaseClientDll::_UNKOWN_015(void)
+__declspec(naked) void CAfxBaseClientDll::IN_ActivateMouse(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 15) }
 
-__declspec(naked) void CAfxBaseClientDll::_UNKOWN_016(void)
+__declspec(naked) void CAfxBaseClientDll::IN_DeactivateMouse(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 16) }
 
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_017(void)
@@ -813,6 +815,7 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 		MirvPgl::CheckStartedAndRestoreIfDown();
 		MirvPgl::ExecuteQueuedCommands();
 #endif
+		AfxHookSource::Gui::OnGameFrameStart();
 		break;
 	case SOURCESDK::CSGO::FRAME_NET_UPDATE_START:
 		break;
@@ -1287,6 +1290,43 @@ LRESULT CALLBACK new_Afx_WindowProc(
 	if (AfxHookSource::Gui::WndProcHandler(hwnd, uMsg, wParam, lParam))
 		return 0;
 
+	switch (uMsg)
+	{
+
+	case WM_LBUTTONDOWN:
+	case WM_RBUTTONDOWN:
+	case WM_MBUTTONDOWN:
+		Tier0_Msg("Button down!\n");
+		break;
+	case WM_LBUTTONUP:
+	case WM_RBUTTONUP:
+	case WM_MBUTTONUP:
+		Tier0_Msg("Button up!\n");
+		break;
+
+	case WM_INPUT:
+		{
+			HRAWINPUT hRawInput = (HRAWINPUT)lParam;
+			RAWINPUT inp;
+			UINT size = sizeof(inp);
+
+			GetRawInputData(hRawInput, RID_INPUT, &inp, &size, sizeof(RAWINPUTHEADER));
+
+			if (inp.header.dwType == RIM_TYPEMOUSE)
+			{
+				if (inp.data.mouse.ulButtons & RI_MOUSE_LEFT_BUTTON_DOWN)  Tier0_Msg("RI_MOUSE_LEFT_BUTTON_DOWN\n");
+				if (inp.data.mouse.ulButtons & RI_MOUSE_LEFT_BUTTON_UP)  Tier0_Msg("RI_MOUSE_LEFT_BUTTON_UP\n");
+				if (inp.data.mouse.ulButtons & RI_MOUSE_RIGHT_BUTTON_DOWN)  Tier0_Msg("RI_MOUSE_RIGHT_BUTTON_DOWN\n");
+				if (inp.data.mouse.ulButtons & RI_MOUSE_RIGHT_BUTTON_UP)  Tier0_Msg("RI_MOUSE_RIGHT_BUTTON_UP\n");
+				if (inp.data.mouse.ulButtons & RI_MOUSE_MIDDLE_BUTTON_DOWN)  Tier0_Msg("RI_MOUSE_MIDDLE_BUTTON_DOWN\n");
+				if (inp.data.mouse.ulButtons & RI_MOUSE_MIDDLE_BUTTON_UP)  Tier0_Msg("RI_MOUSE_MIDDLE_BUTTON_UP\n");
+			}
+		}
+		break;
+	default:
+		Tier0_Msg("Message: %u\n", uMsg);
+	}
+
 	switch(uMsg)
 	{
 	case WM_ACTIVATE:
@@ -1447,10 +1487,10 @@ BOOL WINAPI new_GetCursorPos(
 	__out LPPOINT lpPoint
 )
 {
+	BOOL result = GetCursorPos(lpPoint);
+
 	if (AfxHookSource::Gui::OnGetCursorPos(lpPoint))
 		return TRUE;
-
-	BOOL result = GetCursorPos(lpPoint);
 
 	g_AfxHookSourceInput.Supply_GetCursorPos(lpPoint);
 
@@ -1478,6 +1518,24 @@ HCURSOR WINAPI new_SetCursor(__in_opt HCURSOR hCursor)
 		return result;
 
 	return SetCursor(hCursor);
+}
+
+HWND WINAPI new_SetCapture(__in HWND hWnd)
+{
+	HWND result;
+
+	if (AfxHookSource::Gui::OnSetCapture(hWnd, result))
+		return result;
+
+	return SetCapture(hWnd);
+}
+
+BOOL WINAPI new_ReleaseCapture()
+{
+	if (AfxHookSource::Gui::OnReleaseCapture())
+		return TRUE;
+
+	return ReleaseCapture();
 }
 
 FARPROC WINAPI new_shaderapidx9_GetProcAddress(HMODULE hModule, LPCSTR lpProcName)
@@ -1649,6 +1707,8 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		}
 
 		InterceptDllCall(hModule, "USER32.dll", "SetCursor", (DWORD)&new_SetCursor);
+		InterceptDllCall(hModule, "USER32.dll", "SetCapture", (DWORD)&new_SetCapture);
+		InterceptDllCall(hModule, "USER32.dll", "ReleaseCapture", (DWORD)&new_ReleaseCapture);
 
 		// Init the hook early, so we don't run into issues with threading:
 		Hook_csgo_SndMixTimeScalePatch();
@@ -1671,6 +1731,9 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		InterceptDllCall(hModule, "USER32.dll", "GetCursorPos", (DWORD) &new_GetCursorPos);
 		InterceptDllCall(hModule, "USER32.dll", "SetCursorPos", (DWORD) &new_SetCursorPos);
 		InterceptDllCall(hModule, "USER32.dll", "SetCursor", (DWORD)&new_SetCursor);
+		InterceptDllCall(hModule, "USER32.dll", "SetCapture", (DWORD)&new_SetCapture);
+		InterceptDllCall(hModule, "USER32.dll", "ReleaseCapture", (DWORD)&new_ReleaseCapture);
+
 	}
 	else
 	if(bFirstMaterialsystem && StringEndsWith( lpLibFileName, "materialsystem.dll"))
@@ -1737,6 +1800,8 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		InterceptDllCall(hModule, "USER32.dll", "GetCursorPos", (DWORD) &new_GetCursorPos);
 		InterceptDllCall(hModule, "USER32.dll", "SetCursorPos", (DWORD) &new_SetCursorPos);
 		InterceptDllCall(hModule, "USER32.dll", "SetCursor", (DWORD)&new_SetCursor);
+		InterceptDllCall(hModule, "USER32.dll", "SetCapture", (DWORD)&new_SetCapture);
+		InterceptDllCall(hModule, "USER32.dll", "ReleaseCapture", (DWORD)&new_ReleaseCapture);
 	}
 }
 
