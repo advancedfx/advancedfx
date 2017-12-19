@@ -14,7 +14,7 @@ bool OnGetCursorPos(__out LPPOINT lpPoint);
 bool OnSetCursor(__in_opt HCURSOR hCursor, HCURSOR & result);
 bool OnSetCapture(HWND hWnd, HWND & result);
 bool OnReleaseCapture();
-bool OnGameFrameStart();
+bool OnGameFrameRenderEnd();
 
 bool On_Direct3DDevice9_Init(void* hwnd, IDirect3DDevice9* device);
 void On_Direct3DDevice9_Shutdown();

@@ -344,6 +344,7 @@ void Shared_AfterFrameRenderEnd(void)
 {
 	if (CClientTools * instance = CClientTools::Instance()) instance->OnAfterFrameRenderEnd();
 	Mirv_Voice_OnAfterFrameRenderEnd();
+	AfxHookSource::Gui::OnGameFrameRenderEnd();
 }
 
 void Shared_Shutdown(void)
@@ -815,7 +816,6 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 		MirvPgl::CheckStartedAndRestoreIfDown();
 		MirvPgl::ExecuteQueuedCommands();
 #endif
-		AfxHookSource::Gui::OnGameFrameStart();
 		break;
 	case SOURCESDK::CSGO::FRAME_NET_UPDATE_START:
 		break;
