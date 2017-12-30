@@ -104,7 +104,7 @@ struct CUSTOMVERTEX
 
 bool IsSupported()
 {
-	//return false;
+	return false;
 	return SourceSdkVer_CSGO == g_SourceSdkVer;
 }
 

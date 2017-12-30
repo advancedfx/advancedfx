@@ -515,17 +515,21 @@ public:
 	virtual void _UNKOWN_051(void);
 	virtual void _UNKOWN_052(void);
 	virtual void _UNKOWN_053(void);
-	virtual void _UNKOWN_054(void);
+	
+	virtual void OnDemoPlaybackStart(char const* pDemoBaseName);
+
 	virtual void _UNKOWN_055(void);
-	virtual void _UNKOWN_056(void);
+
+	virtual void OnDemoPlaybackStop();
+	
 	virtual void _UNKOWN_057(void);
 	virtual void _UNKOWN_058(void);
 	virtual void _UNKOWN_059(void);
 	virtual void _UNKOWN_060(void);
 	virtual void _UNKOWN_061(void);
 	virtual void _UNKOWN_062(void);
-	virtual void _UNUSED_GetScreenWidth(void);
-	virtual void _UNUSED_GetScreenHeight(void);
+	virtual void _UNKOWN_063(void);
+	virtual void _UNKOWN_064(void);
 	virtual void WriteSaveGameScreenshotOfSize(const char *pFilename, int width, int height, bool bCreatePowerOf2Padded = false, bool bWriteVTF = false);
 	virtual void _UNKOWN_066(void);
 	virtual void _UNKOWN_067(void);
@@ -896,14 +900,22 @@ __declspec(naked) void CAfxBaseClientDll::_UNKOWN_052(void)
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_053(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 53) }
 
-__declspec(naked) void CAfxBaseClientDll::_UNKOWN_054(void)
-{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 54) }
+//__declspec(naked)
+void CAfxBaseClientDll::OnDemoPlaybackStart(char const* pDemoBaseName)
+{ //NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 54)
+	
+	m_Parent->OnDemoPlaybackStart(pDemoBaseName);
+}
 
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_055(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 55) }
 
-__declspec(naked) void CAfxBaseClientDll::_UNKOWN_056(void)
-{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 56) }
+//__declspec(naked)
+void CAfxBaseClientDll::OnDemoPlaybackStop()
+{ // NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 56)
+
+	m_Parent->OnDemoPlaybackStop();
+}
 
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_057(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 57) }
@@ -923,10 +935,10 @@ __declspec(naked) void CAfxBaseClientDll::_UNKOWN_061(void)
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_062(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 62) }
 
-__declspec(naked) void CAfxBaseClientDll::_UNUSED_GetScreenWidth(void)
+__declspec(naked) void CAfxBaseClientDll::_UNKOWN_063(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 63) }
 
-__declspec(naked) void CAfxBaseClientDll::_UNUSED_GetScreenHeight(void)
+__declspec(naked) void CAfxBaseClientDll::_UNKOWN_064(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 64) }
 
 __declspec(naked) void CAfxBaseClientDll::WriteSaveGameScreenshotOfSize(const char *pFilename, int width, int height, bool bCreatePowerOf2Padded, bool bWriteVTF)
@@ -1289,43 +1301,6 @@ LRESULT CALLBACK new_Afx_WindowProc(
 {
 	if (AfxHookSource::Gui::WndProcHandler(hwnd, uMsg, wParam, lParam))
 		return 0;
-
-	switch (uMsg)
-	{
-
-	case WM_LBUTTONDOWN:
-	case WM_RBUTTONDOWN:
-	case WM_MBUTTONDOWN:
-		Tier0_Msg("Button down!\n");
-		break;
-	case WM_LBUTTONUP:
-	case WM_RBUTTONUP:
-	case WM_MBUTTONUP:
-		Tier0_Msg("Button up!\n");
-		break;
-
-	case WM_INPUT:
-		{
-			HRAWINPUT hRawInput = (HRAWINPUT)lParam;
-			RAWINPUT inp;
-			UINT size = sizeof(inp);
-
-			GetRawInputData(hRawInput, RID_INPUT, &inp, &size, sizeof(RAWINPUTHEADER));
-
-			if (inp.header.dwType == RIM_TYPEMOUSE)
-			{
-				if (inp.data.mouse.ulButtons & RI_MOUSE_LEFT_BUTTON_DOWN)  Tier0_Msg("RI_MOUSE_LEFT_BUTTON_DOWN\n");
-				if (inp.data.mouse.ulButtons & RI_MOUSE_LEFT_BUTTON_UP)  Tier0_Msg("RI_MOUSE_LEFT_BUTTON_UP\n");
-				if (inp.data.mouse.ulButtons & RI_MOUSE_RIGHT_BUTTON_DOWN)  Tier0_Msg("RI_MOUSE_RIGHT_BUTTON_DOWN\n");
-				if (inp.data.mouse.ulButtons & RI_MOUSE_RIGHT_BUTTON_UP)  Tier0_Msg("RI_MOUSE_RIGHT_BUTTON_UP\n");
-				if (inp.data.mouse.ulButtons & RI_MOUSE_MIDDLE_BUTTON_DOWN)  Tier0_Msg("RI_MOUSE_MIDDLE_BUTTON_DOWN\n");
-				if (inp.data.mouse.ulButtons & RI_MOUSE_MIDDLE_BUTTON_UP)  Tier0_Msg("RI_MOUSE_MIDDLE_BUTTON_UP\n");
-			}
-		}
-		break;
-	default:
-		Tier0_Msg("Message: %u\n", uMsg);
-	}
 
 	switch(uMsg)
 	{

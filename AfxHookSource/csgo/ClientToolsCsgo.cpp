@@ -72,7 +72,10 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 
 			if (SOURCESDK::CSGO::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::CSGO::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity")))
 			{
-				Tier0_Msg("%i: %s: %s\n", hEntity, className, pBaseEntityRs->m_pModelName);
+				SOURCESDK::CSGO::EntitySearchResult ent = m_ClientTools->GetEntity(hEntity);
+				SOURCESDK::C_BaseEntity_csgo * be = reinterpret_cast<SOURCESDK::C_BaseEntity_csgo *>(ent);
+
+				Tier0_Msg("%i (%i): %s: %s\n", hEntity, be ? be->GetRefEHandle().ToInt() : HTOOLHANDLE_INVALID, className, pBaseEntityRs->m_pModelName);
 			}
 		}
 
