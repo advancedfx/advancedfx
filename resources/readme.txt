@@ -167,6 +167,7 @@ advancedfx
 	SOFTWARE.
 
 dear imgui
+	(Currently in development, not available in release version.)
 	https://github.com/ocornut/imgui
 	
 	The MIT License (MIT)
@@ -278,11 +279,6 @@ Peter 'psh' P.
 	Since January 2016
 	https://twitter.com/_peterpsh_
 
-Sebastian 'msthavoc' H.
-	Programming of additional tools, testing, community relations, documentation and tutorials.
-	Since August 2007.
-	http://www.mst-gaming.de/
-
 '1suky1'
 	Discord moderator.
 	Since July 2017.
@@ -292,11 +288,11 @@ Sebastian 'msthavoc' H.
 	Discord moderator.
 	Since July 2017.
 	https://twitter.com/over_fuze
-
-Perra 'akdios' Anderson
-	Discord moderator.
-	Since July 2017.
-	https://twitter.com/NiPakidos
+	
+'Devostated.'
+	Discord moderator, community help.
+	Since December 2017
+	https://twitter.com/Devomvm
 
 Past members:
 
@@ -317,6 +313,17 @@ Fabian 'neomic'
 	Forum, IRC, Discord moderator.
 	March 2011 - August 2016.
 	http://www.youtube.com/AMDECKARN
+	
+Sebastian 'msthavoc' H.
+	Programming of additional tools, testing, community relations, documentation and tutorials.
+	August 2007 - December 2017.
+	http://www.mst-gaming.de/
+	
+Perra 'akdios' Anderson
+	Discord moderator.
+	Since July 2017 - December 2017.
+	https://twitter.com/NiPakidos
+
 
 Other contributors:
 
