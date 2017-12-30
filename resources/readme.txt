@@ -166,6 +166,32 @@ advancedfx
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 	SOFTWARE.
 
+dear imgui
+	(Currently in development, not available in release version.)
+	https://github.com/ocornut/imgui
+	
+	The MIT License (MIT)
+	
+	Copyright (c) 2014-2017 Omar Cornut and ImGui contributors
+	
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+	
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+	
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+
 easywsclient
 	https://github.com/dhbaird/easywsclient
 	
@@ -253,11 +279,6 @@ Peter 'psh' P.
 	Since January 2016
 	https://twitter.com/_peterpsh_
 
-Sebastian 'msthavoc' H.
-	Programming of additional tools, testing, community relations, documentation and tutorials.
-	Since August 2007.
-	http://www.mst-gaming.de/
-
 '1suky1'
 	Discord moderator.
 	Since July 2017.
@@ -267,11 +288,11 @@ Sebastian 'msthavoc' H.
 	Discord moderator.
 	Since July 2017.
 	https://twitter.com/over_fuze
-
-Perra 'akdios' Anderson
-	Discord moderator.
-	Since July 2017.
-	https://twitter.com/NiPakidos
+	
+'Devostated.'
+	Discord moderator, community help.
+	Since December 2017
+	https://twitter.com/Devomvm
 
 Past members:
 
@@ -292,6 +313,17 @@ Fabian 'neomic'
 	Forum, IRC, Discord moderator.
 	March 2011 - August 2016.
 	http://www.youtube.com/AMDECKARN
+	
+Sebastian 'msthavoc' H.
+	Programming of additional tools, testing, community relations, documentation and tutorials.
+	August 2007 - December 2017.
+	http://www.mst-gaming.de/
+	
+Perra 'akdios' Anderson
+	Discord moderator.
+	Since July 2017 - December 2017.
+	https://twitter.com/NiPakidos
+
 
 Other contributors:
 
