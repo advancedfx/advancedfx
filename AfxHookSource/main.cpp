@@ -40,6 +40,7 @@
 #include "MirvPgl.h"
 #include "csgo_Audio.h"
 #include "mirv_voice.h"
+#include "Gui.h"
 
 #include <set>
 #include <map>
@@ -161,8 +162,7 @@ public:
 	{
 		if (CClientTools * instance = CClientTools::Instance())
 		{
-			if (instance->GetRecording())
-				return true;
+			return true;
 		}
 
 		return g_Engine_ClientEngineTools->InToolMode();
@@ -343,6 +343,7 @@ void Shared_AfterFrameRenderEnd(void)
 {
 	if (CClientTools * instance = CClientTools::Instance()) instance->OnAfterFrameRenderEnd();
 	Mirv_Voice_OnAfterFrameRenderEnd();
+	AfxHookSource::Gui::OnGameFrameRenderEnd();
 }
 
 void Shared_Shutdown(void)
@@ -472,8 +473,10 @@ public:
 	virtual void _UNKOWN_012(void);
 	virtual void _UNKOWN_013(void);
 	virtual void _UNKOWN_014(void);
-	virtual void _UNKOWN_015(void);
-	virtual void _UNKOWN_016(void);
+
+	virtual void IN_ActivateMouse(void);
+	virtual void IN_DeactivateMouse(void);
+
 	virtual void _UNKOWN_017(void);
 	virtual void _UNKOWN_018(void);
 	virtual void _UNKOWN_019(void);
@@ -511,17 +514,21 @@ public:
 	virtual void _UNKOWN_051(void);
 	virtual void _UNKOWN_052(void);
 	virtual void _UNKOWN_053(void);
-	virtual void _UNKOWN_054(void);
+	
+	virtual void OnDemoPlaybackStart(char const* pDemoBaseName);
+
 	virtual void _UNKOWN_055(void);
-	virtual void _UNKOWN_056(void);
+
+	virtual void OnDemoPlaybackStop();
+	
 	virtual void _UNKOWN_057(void);
 	virtual void _UNKOWN_058(void);
 	virtual void _UNKOWN_059(void);
 	virtual void _UNKOWN_060(void);
 	virtual void _UNKOWN_061(void);
 	virtual void _UNKOWN_062(void);
-	virtual void _UNUSED_GetScreenWidth(void);
-	virtual void _UNUSED_GetScreenHeight(void);
+	virtual void _UNKOWN_063(void);
+	virtual void _UNKOWN_064(void);
 	virtual void WriteSaveGameScreenshotOfSize(const char *pFilename, int width, int height, bool bCreatePowerOf2Padded = false, bool bWriteVTF = false);
 	virtual void _UNKOWN_066(void);
 	virtual void _UNKOWN_067(void);
@@ -712,10 +719,10 @@ __declspec(naked) void CAfxBaseClientDll::_UNKOWN_013(void)
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_014(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 14) }
 
-__declspec(naked) void CAfxBaseClientDll::_UNKOWN_015(void)
+__declspec(naked) void CAfxBaseClientDll::IN_ActivateMouse(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 15) }
 
-__declspec(naked) void CAfxBaseClientDll::_UNKOWN_016(void)
+__declspec(naked) void CAfxBaseClientDll::IN_DeactivateMouse(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 16) }
 
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_017(void)
@@ -892,14 +899,22 @@ __declspec(naked) void CAfxBaseClientDll::_UNKOWN_052(void)
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_053(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 53) }
 
-__declspec(naked) void CAfxBaseClientDll::_UNKOWN_054(void)
-{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 54) }
+//__declspec(naked)
+void CAfxBaseClientDll::OnDemoPlaybackStart(char const* pDemoBaseName)
+{ //NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 54)
+	
+	m_Parent->OnDemoPlaybackStart(pDemoBaseName);
+}
 
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_055(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 55) }
 
-__declspec(naked) void CAfxBaseClientDll::_UNKOWN_056(void)
-{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 56) }
+//__declspec(naked)
+void CAfxBaseClientDll::OnDemoPlaybackStop()
+{ // NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 56)
+
+	m_Parent->OnDemoPlaybackStop();
+}
 
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_057(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 57) }
@@ -919,10 +934,10 @@ __declspec(naked) void CAfxBaseClientDll::_UNKOWN_061(void)
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_062(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 62) }
 
-__declspec(naked) void CAfxBaseClientDll::_UNUSED_GetScreenWidth(void)
+__declspec(naked) void CAfxBaseClientDll::_UNKOWN_063(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 63) }
 
-__declspec(naked) void CAfxBaseClientDll::_UNUSED_GetScreenHeight(void)
+__declspec(naked) void CAfxBaseClientDll::_UNKOWN_064(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 64) }
 
 __declspec(naked) void CAfxBaseClientDll::WriteSaveGameScreenshotOfSize(const char *pFilename, int width, int height, bool bCreatePowerOf2Padded, bool bWriteVTF)
@@ -1283,6 +1298,9 @@ LRESULT CALLBACK new_Afx_WindowProc(
 	__in LPARAM lParam
 )
 {
+	if (AfxHookSource::Gui::WndProcHandler(hwnd, uMsg, wParam, lParam))
+		return 0;
+
 	switch(uMsg)
 	{
 	case WM_ACTIVATE:
@@ -1445,6 +1463,9 @@ BOOL WINAPI new_GetCursorPos(
 {
 	BOOL result = GetCursorPos(lpPoint);
 
+	if (AfxHookSource::Gui::OnGetCursorPos(lpPoint))
+		return TRUE;
+
 	g_AfxHookSourceInput.Supply_GetCursorPos(lpPoint);
 
 	return result;
@@ -1455,9 +1476,40 @@ BOOL WINAPI new_SetCursorPos(
 	__in int Y
 )
 {
+	if (AfxHookSource::Gui::OnSetCursorPos(X, Y))
+		return TRUE;
+
 	g_AfxHookSourceInput.Supply_SetCursorPos(X,Y);
 
 	return SetCursorPos(X,Y);
+}
+
+HCURSOR WINAPI new_SetCursor(__in_opt HCURSOR hCursor)
+{
+	HCURSOR result;
+
+	if (AfxHookSource::Gui::OnSetCursor(hCursor, result))
+		return result;
+
+	return SetCursor(hCursor);
+}
+
+HWND WINAPI new_SetCapture(__in HWND hWnd)
+{
+	HWND result;
+
+	if (AfxHookSource::Gui::OnSetCapture(hWnd, result))
+		return result;
+
+	return SetCapture(hWnd);
+}
+
+BOOL WINAPI new_ReleaseCapture()
+{
+	if (AfxHookSource::Gui::OnReleaseCapture())
+		return TRUE;
+
+	return ReleaseCapture();
 }
 
 FARPROC WINAPI new_shaderapidx9_GetProcAddress(HMODULE hModule, LPCSTR lpProcName)
@@ -1567,6 +1619,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 	static bool bFirstMaterialsystem = true;
 	static bool bFirstScaleformui = true;
 	static bool bFirstStdshader_dx9 = true;
+	static bool bFirstVgui2 = true;
 
 	CommonHooks();
 
@@ -1627,6 +1680,10 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 			InterceptDllCall(hModule, "USER32.dll", "SetCursorPos", (DWORD)&new_SetCursorPos);
 		}
 
+		InterceptDllCall(hModule, "USER32.dll", "SetCursor", (DWORD)&new_SetCursor);
+		InterceptDllCall(hModule, "USER32.dll", "SetCapture", (DWORD)&new_SetCapture);
+		InterceptDllCall(hModule, "USER32.dll", "ReleaseCapture", (DWORD)&new_ReleaseCapture);
+
 		// Init the hook early, so we don't run into issues with threading:
 		Hook_csgo_SndMixTimeScalePatch();
 		csgo_Audio_Install();
@@ -1647,6 +1704,10 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 
 		InterceptDllCall(hModule, "USER32.dll", "GetCursorPos", (DWORD) &new_GetCursorPos);
 		InterceptDllCall(hModule, "USER32.dll", "SetCursorPos", (DWORD) &new_SetCursorPos);
+		InterceptDllCall(hModule, "USER32.dll", "SetCursor", (DWORD)&new_SetCursor);
+		InterceptDllCall(hModule, "USER32.dll", "SetCapture", (DWORD)&new_SetCapture);
+		InterceptDllCall(hModule, "USER32.dll", "ReleaseCapture", (DWORD)&new_ReleaseCapture);
+
 	}
 	else
 	if(bFirstMaterialsystem && StringEndsWith( lpLibFileName, "materialsystem.dll"))
@@ -1704,6 +1765,17 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		// Install early hooks:
 
 		//csgo_Stdshader_dx9_Hooks_Init();
+	}
+	else
+	if(bFirstVgui2 && StringEndsWith( lpLibFileName, "vgui2.dll"))
+	{
+		bFirstVgui2 = false;
+
+		InterceptDllCall(hModule, "USER32.dll", "GetCursorPos", (DWORD) &new_GetCursorPos);
+		InterceptDllCall(hModule, "USER32.dll", "SetCursorPos", (DWORD) &new_SetCursorPos);
+		InterceptDllCall(hModule, "USER32.dll", "SetCursor", (DWORD)&new_SetCursor);
+		InterceptDllCall(hModule, "USER32.dll", "SetCapture", (DWORD)&new_SetCapture);
+		InterceptDllCall(hModule, "USER32.dll", "ReleaseCapture", (DWORD)&new_ReleaseCapture);
 	}
 }
 

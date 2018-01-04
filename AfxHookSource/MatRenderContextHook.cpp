@@ -177,7 +177,7 @@ void CAfxMesh::Draw(int firstIndex, int numIndices)
 
 	Debug(0, 12);
 
-	IAfxContextHook * stream = m_AfxMatRenderContext->Hook_get();
+	IAfxStreamContext * stream = m_AfxMatRenderContext->Hook_get();
 
 	if (stream)
 		stream->Draw(this, firstIndex, numIndices);
@@ -194,7 +194,7 @@ void CAfxMesh::Draw(SOURCESDK::CPrimList_csgo *pLists, int nLists)
 
 	Debug(0, 11);
 
-	IAfxContextHook * stream = m_AfxMatRenderContext->Hook_get();
+	IAfxStreamContext * stream = m_AfxMatRenderContext->Hook_get();
 
 	if (stream)
 		stream->Draw_2(this, pLists, nLists);
@@ -239,7 +239,7 @@ __declspec(naked) void CAfxMesh::MarkAsDrawn()
 void CAfxMesh::DrawModulated(const SOURCESDK::Vector4D_csgo &vecDiffuseModulation, int firstIndex, int numIndices)
 { // NAKED_JMP_CLASSMEMBERIFACE_OFS_FN_DBG(CAfxMesh,m_Parent,0,25)
 
-	IAfxContextHook * stream = m_AfxMatRenderContext->Hook_get();
+	IAfxStreamContext * stream = m_AfxMatRenderContext->Hook_get();
 
 	if (stream)
 		stream->DrawModulated(this, vecDiffuseModulation, firstIndex, numIndices);
@@ -402,7 +402,7 @@ public:
 protected:
 	virtual void QueueFunctorInternal(SOURCESDK::CSGO::CFunctor *pFunctor)
 	{
-		IAfxContextHook * stream = m_AfxMatRenderContext->Hook_get();
+		IAfxStreamContext * stream = m_AfxMatRenderContext->Hook_get();
 
 		if (stream)
 			stream->QueueFunctorInternal(this, pFunctor);
@@ -418,7 +418,6 @@ private:
 std::map<SOURCESDK::CSGO::ICallQueue *, CAfxCallQueue *> g_CallQueueMap_csgo;
 std::stack<CAfxCallQueue *> g_CallQueueHooks_csgo;
 std::shared_timed_mutex g_CallQueueMap_csgo_Mutex;
-
 
 //:009
 typedef void (__stdcall * MatRenderContextHook_Bind_t)(
@@ -560,12 +559,12 @@ public:
 		return this;
 	}
 
-	virtual IAfxContextHook * Hook_get(void)
+	virtual IAfxStreamContext * Hook_get(void)
 	{
 		return m_Hook;
 	}
 
-	virtual void Hook_set(IAfxContextHook * value)
+	virtual void Hook_set(IAfxStreamContext * value)
 	{
 		m_Hook = value;
 
@@ -614,6 +613,7 @@ public:
 		// This is hooked, so use detour:
 
 		return m_Detours->GetCallQueue((DWORD *)m_Ctx);
+
 	}
 
 	virtual void DrawInstances(int nInstanceCount, const SOURCESDK::MeshInstanceData_t_csgo *pInstance)
@@ -632,7 +632,7 @@ public:
 		SOURCESDK::IMaterial_csgo * material,
 		void *proxyData)
 	{
-		m_Detours->Bind((DWORD *)m_Ctx, DoOnMaterialHook(material), proxyData);
+		m_Detours->Bind((DWORD *)m_Ctx, DoOnMaterialHook(material, proxyData), proxyData);
 	}
 
 	SOURCESDK::IMeshEx_csgo* Hook_GetDynamicMesh(
@@ -645,7 +645,7 @@ public:
 			buffered,
 			pVertexOverride,
 			pIndexOverride,
-			DoOnMaterialHook(pAutoBind));
+			DoOnMaterialHook(pAutoBind, 0));
 
 		return AfxWrapMesh(iMesh);
 	}
@@ -654,7 +654,7 @@ public:
 		SOURCESDK::IMaterial_csgo * pMaterial)
 	{
 		m_Detours->DrawScreenSpaceQuad((DWORD *)m_Ctx,
-			DoOnMaterialHook(pMaterial)
+			DoOnMaterialHook(pMaterial, 0)
 		);
 	}
 
@@ -670,7 +670,7 @@ public:
 		int nYDice)
 	{
 		m_Detours->DrawScreenSpaceRectangle((DWORD *)m_Ctx,
-			DoOnMaterialHook(pMaterial),
+			DoOnMaterialHook(pMaterial, pClientRenderable),
 			destx, desty,
 			width, height,
 			src_texture_x0, src_texture_y0,
@@ -700,7 +700,7 @@ public:
 			buffered,
 			pVertexOverride,
 			pIndexOverride,
-			DoOnMaterialHook(pAutoBind));
+			DoOnMaterialHook(pAutoBind,0));
 
 		return AfxWrapMesh(iMesh);
 	}
@@ -709,7 +709,7 @@ public:
 		int nInstanceCount,
 		const SOURCESDK::MeshInstanceData_t_csgo *pInstance)
 	{
-		IAfxContextHook * afxStream = Hook_get();
+		IAfxStreamContext * afxStream = Hook_get();
 
 		if (afxStream)
 		{
@@ -729,7 +729,7 @@ private:
 
 	SOURCESDK::IMatRenderContext_csgo * m_Ctx;
 	CMatRenderContextDetours * m_Detours;
-	IAfxContextHook * m_Hook;
+	IAfxStreamContext * m_Hook;
 
 	void HooKVtable(SOURCESDK::IMatRenderContext_csgo * orgCtx);
 
@@ -826,11 +826,11 @@ private:
 		return afxCallQueue;
 	}
 
-	SOURCESDK::IMaterial_csgo * DoOnMaterialHook(SOURCESDK::IMaterial_csgo * value)
+	SOURCESDK::IMaterial_csgo * DoOnMaterialHook(SOURCESDK::IMaterial_csgo * value, void * proxyData)
 	{
-		IAfxContextHook * afxStream = Hook_get();
+		IAfxStreamContext * afxStream = Hook_get();
 		if (afxStream && value)
-			return afxStream->MaterialHook(value);
+			return afxStream->MaterialHook(value, proxyData);
 
 		return value;
 	}

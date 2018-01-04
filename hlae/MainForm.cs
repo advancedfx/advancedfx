@@ -162,11 +162,13 @@ namespace AfxGui
 
             if (this.statusLabelAutoYes == sender)
             {
+                menuAutoUpdateCheck.Checked = true;
                 GlobalConfig.Instance.Settings.UpdateCheck = (SByte)1;
                 StartUpdateCheck();
             }
             else
             {
+                menuAutoUpdateCheck.Checked = false;
                 GlobalConfig.Instance.Settings.UpdateCheck = (SByte)(-1);
             }
         }

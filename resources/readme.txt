@@ -270,7 +270,7 @@ Dominik 'ripieces' Tugend
 	http://dominik.matrixstorm.com/
 
 Brett 'xNWP' Anthony
-	Programming of additional tools, Discord moderator.
+	Programming of additional tools, Discord moderator, helping with HLAE manual.
 	Since June 2017.
 	https://twitter.com/ThatNWP
 

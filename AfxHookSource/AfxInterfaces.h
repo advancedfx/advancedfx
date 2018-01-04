@@ -26,23 +26,7 @@ public:
 };
 
 
-class IAfxMatRenderContext;
-class IAfxStream;
-
-class IAfxMatRenderContextMaterialHook abstract
-{
-public:
-	/// <returns>Return the material you want to use (instead).</returns>
-	virtual SOURCESDK::IMaterial_csgo * MaterialHook(IAfxMatRenderContext * ctx, SOURCESDK::IMaterial_csgo * material) = 0;
-};
-
-class IAfxMatRenderContextDrawInstances abstract
-{
-public:
-	virtual void DrawInstances(IAfxMatRenderContext * ctx, int nInstanceCount, const SOURCESDK::MeshInstanceData_t_csgo *pInstance) = 0;
-};
-
-class IAfxContextHook;
+class IAfxStreamContext;
 class CAfxMatRenderContext;
 
 class IAfxMatRenderContextOrg abstract
@@ -68,9 +52,9 @@ class IAfxMatRenderContext abstract
 public:
 	virtual IAfxMatRenderContextOrg * GetOrg(void) = 0;
 
-	virtual IAfxContextHook * Hook_get(void) = 0;
+	virtual IAfxStreamContext * Hook_get(void) = 0;
 
-	virtual void Hook_set(IAfxContextHook * value) = 0;
+	virtual void Hook_set(IAfxStreamContext * value) = 0;
 
 	//virtual void * HookData_get(void) = 0;
 

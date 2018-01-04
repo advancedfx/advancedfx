@@ -72,9 +72,6 @@ private:
 	float m_ImportBaseTime;
 	bool m_IsInstalled;
 
-	void Install_cstrike(void);
-	void Install_ep2(void);
-
 	CamExport * m_CamExport = 0;
 	CamImport * m_CamImport = 0;
 };

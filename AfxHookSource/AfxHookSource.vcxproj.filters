@@ -88,6 +88,9 @@
     <Filter Include="prop\AfxHookSource\cssV34\sdk_src\tier1">
       <UniqueIdentifier>{1d7943ac-34f6-46f1-a19f-c4f21be91199}</UniqueIdentifier>
     </Filter>
+    <Filter Include="shared\imgui">
+      <UniqueIdentifier>{a6353ed1-167c-4006-8b4e-d636e036af02}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\bvhexport.cpp">
@@ -274,6 +277,18 @@
       <Filter>AfxHookSource</Filter>
     </ClCompile>
     <ClCompile Include="MirvWav.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\imgui\imgui.cpp">
+      <Filter>shared\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\imgui\imgui_demo.cpp">
+      <Filter>shared\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\imgui\imgui_draw.cpp">
+      <Filter>shared\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Gui.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
   </ItemGroup>
@@ -525,6 +540,18 @@
       <Filter>AfxHookSource</Filter>
     </ClInclude>
     <ClInclude Include="mirv_voice.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\imgui\imconfig.h">
+      <Filter>shared\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\imgui\imgui.h">
+      <Filter>shared\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\imgui\imgui_internal.h">
+      <Filter>shared\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Gui.h">
       <Filter>AfxHookSource</Filter>
     </ClInclude>
   </ItemGroup>
