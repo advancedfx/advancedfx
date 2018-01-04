@@ -162,8 +162,7 @@ public:
 	{
 		if (CClientTools * instance = CClientTools::Instance())
 		{
-			if (instance->GetRecording())
-				return true;
+			return true;
 		}
 
 		return g_Engine_ClientEngineTools->InToolMode();

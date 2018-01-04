@@ -6,6 +6,21 @@
 
 <release>
 <name>HLAE</name>
+<version>2.44.1</version>
+<time>2018-01-04T16:48Z</time>
+<changes>
+<change type="fixed">
+Fixed cosmetic problem of auto update check not being ticked accordingly in menu, when user answers the question if to enable auto updates.
+</change>
+<change type="updated">
+Included AfxHookSource 1.34.1 (2018-01-04T16:48Z).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.44.0</version>
 <time>2017-11-19T15:45Z</time>
 <changes>

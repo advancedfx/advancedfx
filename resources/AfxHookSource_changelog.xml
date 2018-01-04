@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.34.1</version>
+<time>2018-01-04T16:48Z</time>
+<changes>
+<change type="fixed">
+Fixed AGR bugs: Certain demos with bots should work now, hopefully also broken bone data on 3rd person weapon world models is fixed now.
+</change>
+<change type="updated">
+Updated mirv_streams internally (changes are hopefully mostly transparent to the user, appart from bug fixes).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.34.0</version>
 <time>2017-11-19T15:45Z</time>
 <changes>
