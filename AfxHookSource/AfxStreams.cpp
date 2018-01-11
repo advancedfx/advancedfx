@@ -1223,13 +1223,13 @@ void CAfxBaseFxStream::LevelShutdown(void)
 	m_Shared.LevelShutdown();
 }
 
-void CAfxBaseFxStream::OnRenderBegin(void)
+void CAfxBaseFxStream::OnRenderBegin(SOURCESDK::vrect_t_csgo * orgViewRect)
 {
-	CAfxRenderViewStream::OnRenderBegin();
+	CAfxRenderViewStream::OnRenderBegin(orgViewRect);
 
 	m_ActiveStreamContext = m_Shared.RequestStreamContext();
 
-	m_ActiveStreamContext->RenderBegin(this);
+	m_ActiveStreamContext->RenderBegin(this, orgViewRect);
 }
 
 void CAfxBaseFxStream::OnRenderEnd()
@@ -2130,9 +2130,18 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd()
 	}
 }
 
-void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderBegin(CAfxBaseFxStream * stream)
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderBegin(CAfxBaseFxStream * stream, SOURCESDK::vrect_t_csgo * orgViewport)
 {
 	m_Stream = stream;
+	if (orgViewport)
+	{
+		m_OrgViewport = *orgViewport;
+	}
+	else
+	{
+		m_OrgViewport.height = m_OrgViewport.width = 0;
+	}
+
 
 	m_Stream->AddRef();
 	m_Stream->InterLockIncrement(); // Increment for next context queue.
@@ -2208,6 +2217,37 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 {
 	m_QueueState->DrawingSkyBoxView = false;
 }
+
+bool Pt_Inside(int x, int y, SOURCESDK::vrect_t_csgo * rect)
+{
+	return
+		x >= rect->x
+		&& y >= rect->y
+		&& x < (rect->x + rect->width)
+		&& y < (rect->y + rect->height);
+
+}
+/*
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::Viewport(int x, int y, int width, int height)
+{
+	m_Ctx->GetOrg()->Viewport(x, y, width, height);
+	return;
+
+	if (m_OrgViewport.width && m_OrgViewport.height)
+	{
+		bool inside =
+			Pt_Inside(x, y, &m_OrgViewport)
+			&& Pt_Inside(x + width - 1, y + width - y, &m_OrgViewport)
+		;
+
+		if (inside)
+		{
+			m_Ctx->GetOrg()->Viewport(x, y, width, height);
+		}
+
+	}
+}
+*/
 
 bool CAfxBaseFxStream::CAfxBaseFxStreamContext::IfRootThenUpdateCurrentEntityHandle()
 {
@@ -4352,7 +4392,6 @@ CAfxStreams::CAfxStreams()
 , m_MaterialSystem(0)
 , m_AfxBaseClientDll(0)
 , m_ShaderShadow(0)
-, m_PreviewStream(0)
 , m_Recording(false)
 , m_Frame(0)
 , m_MatPostProcessEnableRef(0)
@@ -4449,13 +4488,225 @@ void CAfxStreams::OnSetPixelShader(CAfx_csgo_ShaderState & state)
 }
 #endif
 
-void CAfxStreams::OnRenderView(int whatToDraw, float & outAfxSmokeOverlayAlphaMod)
+/*
+void CAfxStreams::OnRender(CCSViewRender_Render_t fn, void * this_ptr, const SOURCESDK::vrect_t_csgo * rect)
 {
-	m_OnRenderViewCalled = true;
-	m_WhatToDraw = whatToDraw;
-	
+	fn(this_ptr, rect);
+}
+*/
+extern SOURCESDK::CSGO::IScaleformUI * g_pScaleformUI_csgo;
+
+class CAfxScaleformUIFixFunctor : public CAfxFunctor
+{
+public:
+	CAfxScaleformUIFixFunctor()
+	{
+
+	}
+
+	virtual void operator()()
+	{
+		if (g_pScaleformUI_csgo)
+		{
+			g_pScaleformUI_csgo->BeginEndFrame(1);
+			g_pScaleformUI_csgo->BeginEndFrame(0);
+		}
+	}
+
+};
+
+void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
+{
+	static SOURCESDK::CViewSetup_csgo orgView;
+	static SOURCESDK::CViewSetup_csgo orgHudView;
+
 	IAfxStreamContext * hook = FindStreamContext(GetCurrentContext());
-	outAfxSmokeOverlayAlphaMod = hook ? hook->RenderSmokeOverlayAlphaMod() : 1.0f;
+	smokeOverlayAlphaFactorMultiplyer = hook ? hook->RenderSmokeOverlayAlphaMod() : 1.0f;
+	if (smokeOverlayAlphaFactorMultiplyer < 1)
+		*smokeOverlayAlphaFactor = 0;
+
+	if (m_OnRenderViewFirstCall)
+	{
+		m_OnRenderViewFirstCall = false;
+
+		m_OnRenderViewCalled = true;
+		m_WhatToDraw = whatToDraw;
+	}
+
+	if (m_SuspendPreview)
+	{
+		fn(this_ptr, view, hudViewSetup, nClearFlags, whatToDraw);
+		return;
+	}
+
+	int previewNumSlots = 0;
+	std::map<int, CAfxRenderViewStream *> previewStreams;
+
+	for (int i = 0; i < 16; ++i)
+	{
+		if (m_PreviewStreams[i])
+		{
+			if (CAfxSingleStream * singleStream = m_PreviewStreams[i]->AsAfxSingleStream())
+			{
+				previewNumSlots = 1 + i;
+				previewStreams[i] = singleStream->Stream_get();
+			}
+		}
+	}
+
+	if (previewNumSlots <= 0)
+	{
+		fn(this_ptr, view, hudViewSetup, nClearFlags, whatToDraw);
+		return;
+	}
+
+	if (!CheckCanFeedStreams())
+	{
+		Tier0_Warning("Error: Cannot preview stream(s) due to missing dependencies!\n");
+		fn(this_ptr, view, hudViewSetup, nClearFlags, whatToDraw);
+		return;
+	}
+
+	SetMatVarsForStreams(); // keep them set in case a mofo resets them.
+
+	IAfxMatRenderContextOrg * ctxp = GetCurrentContext()->GetOrg();
+
+	int cols = 1;
+
+	if (4 < previewNumSlots)
+		cols = 4;
+	else if (1 < previewNumSlots)
+		cols = 2;
+
+	int num = 0;
+
+	orgView = view;
+	orgHudView = hudViewSetup;
+
+	bool hudDrawn = false;
+
+	for (std::map<int, CAfxRenderViewStream *>::iterator it = previewStreams.begin(); it != previewStreams.end(); ++it)
+	{
+		ctxp = GetCurrentContext()->GetOrg(); // We are on potentially a new context now!
+
+		int slot = it->first;
+
+		slot = cols*cols - slot - 1; // We draw backwards (bottom,right) -> (top,left) in order to solve some weird problem.
+
+		CAfxRenderViewStream * previewStream = it->second;
+
+		if (0 < strlen(previewStream->AttachCommands_get()))
+			g_VEngineClient->ExecuteClientCmd(previewStream->AttachCommands_get()); // Execute commands before we lock the stream!
+
+		previewStream->OnRenderBegin();
+
+		if (num + 1 < (int)previewStreams.size())
+		{
+			BlockPresent(ctxp, true);
+			m_PresentBlocked = true;
+		}
+		else
+		{
+			BlockPresent(ctxp, false);
+			m_PresentBlocked = false;
+		}
+
+		int whatToDraw = SOURCESDK::RENDERVIEW_UNSPECIFIED;
+
+		// Use game default if hook is available:
+		whatToDraw |= m_WhatToDraw & SOURCESDK::RENDERVIEW_DRAWHUD;
+		whatToDraw |= m_WhatToDraw & SOURCESDK::RENDERVIEW_DRAWVIEWMODEL;
+
+		switch (previewStream->DrawHud_get())
+		{
+		case CAfxRenderViewStream::DT_Draw:
+			whatToDraw |= SOURCESDK::RENDERVIEW_DRAWHUD;
+			break;
+		case CAfxRenderViewStream::DT_NoDraw:
+			whatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWHUD;
+			break;
+		case CAfxRenderViewStream::DT_NoChange:
+		default:
+			break;
+		}
+
+		switch (previewStream->DrawViewModel_get())
+		{
+		case CAfxRenderViewStream::DT_Draw:
+			whatToDraw |= SOURCESDK::RENDERVIEW_DRAWVIEWMODEL;
+			break;
+		case CAfxRenderViewStream::DT_NoDraw:
+			whatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWVIEWMODEL;
+			break;
+		case CAfxRenderViewStream::DT_NoChange:
+		default:
+			break;
+		}
+
+		SOURCESDK::CViewSetup_csgo newView = orgView;
+		SOURCESDK::CViewSetup_csgo newHudView = orgHudView;
+
+		int col = slot % cols;
+		int row = slot / cols;
+
+		newView.m_nUnscaledWidth /= cols;
+		newView.m_nUnscaledHeight /= cols;
+		newView.m_nUnscaledX += col * newView.m_nUnscaledWidth;
+		newView.m_nUnscaledY += row * newView.m_nUnscaledHeight;
+		newView.width /= cols;
+		newView.height /= cols;
+		newView.x += col * newView.width;
+		newView.y += row * newView.height;
+
+		newHudView.m_nUnscaledWidth /= cols;
+		newHudView.m_nUnscaledHeight /= cols;
+		newHudView.m_nUnscaledX += col * newHudView.m_nUnscaledWidth;
+		newHudView.m_nUnscaledY += row * newHudView.m_nUnscaledHeight;
+		newHudView.width /= cols;
+		newHudView.height /= cols;
+		newHudView.x += col * newHudView.width;
+		newHudView.y += row * newHudView.height;
+
+		ctxp->PushRenderTargetAndViewport(0, 0, newView.m_nUnscaledX, newView.m_nUnscaledY, newView.m_nUnscaledWidth, newView	.m_nUnscaledHeight);
+
+		if (/*!g_pScaleformUI_csgo &&  */ 1 < cols && (hudDrawn || m_Recording))
+		{
+			// Work around ScaleformUI HUD data not being flushed (do not allow to render the HUD in different positions per frame):
+			whatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWHUD;
+		}
+		else
+		{
+			hudDrawn = hudDrawn || (whatToDraw & SOURCESDK::RENDERVIEW_DRAWHUD);
+		}
+
+		fn(this_ptr, newView, newHudView, nClearFlags, whatToDraw);
+
+		/* Does not fix anything.
+		if (0 < num)
+		{
+			QueueOrExecute(ctxp, new CAfxLeafExecute_Functor(new CAfxScaleformUIFixFunctor()));
+		}
+		*/
+
+		ctxp->PopRenderTargetAndViewport();
+
+		previewStream->OnRenderEnd();
+
+		if (0 < strlen(previewStream->DetachCommands_get()))
+			g_VEngineClient->ExecuteClientCmd(previewStream->DetachCommands_get()); // Execute commands after we unlocked the stream!
+
+		if (num + 1 < (int)previewStreams.size())
+		{
+			// Work around game running out of memory because of too much shit on the queue
+			// aka issue ripieces/advancedfx-prop#22 :
+			m_MaterialSystem->EndFrame();
+			m_MaterialSystem->SwapBuffers(); // Apparently we have to do this always, otherwise the state is messed up.
+			m_MaterialSystem->BeginFrame(0);
+		}
+
+		++num;
+
+	}
 }
 
 bool CAfxStreams::OnViewRenderShouldForceNoVis(bool orgValue)
@@ -4512,6 +4763,17 @@ bool CAfxStreams::Console_PresentRecordOnScreen_get()
 {
 	return m_PresentRecordOnScreen;
 }
+
+void CAfxStreams::Console_PreviewSuspend_set(bool value)
+{
+	m_SuspendPreview = value;
+}
+
+bool CAfxStreams::Console_PreviewSuspend_get()
+{
+	return m_SuspendPreview;
+}
+
 
 void CAfxStreams::Console_StartMovieWav_set(bool value)
 {
@@ -4777,7 +5039,7 @@ void CAfxStreams::Console_AddDepthWorldStream(const char * streamName)
 {
 	Tier0_Warning("Warning: Due to CS:GO 17th Ferbuary 2016 update this stream is not working perfectly.\n");
 
-	if(!Console_CheckStreamName(streamName))
+	if (!Console_CheckStreamName(streamName))
 		return;
 
 	AddStream(new CAfxSingleStream(streamName, new CAfxDepthWorldStream()));
@@ -4787,7 +5049,7 @@ void CAfxStreams::Console_AddMatteEntityStream(const char * streamName)
 {
 	Tier0_Warning("Warning: Due to CS:GO 17th Ferbuary 2016 update this stream is not working perfectly.\n");
 
-	if(!Console_CheckStreamName(streamName))
+	if (!Console_CheckStreamName(streamName))
 		return;
 
 	AddStream(new CAfxSingleStream(streamName, new CAfxMatteEntityStream()));
@@ -4799,7 +5061,7 @@ void CAfxStreams::Console_AddDepthEntityStream(const char * streamName)
 {
 	Tier0_Warning("Warning: Due to CS:GO 17th Ferbuary 2016 update this stream is not working perfectly.\n");
 
-	if(!Console_CheckStreamName(streamName))
+	if (!Console_CheckStreamName(streamName))
 		return;
 
 	AddStream(new CAfxSingleStream(streamName, new CAfxDepthEntityStream()));
@@ -4809,7 +5071,7 @@ void CAfxStreams::Console_AddAlphaMatteStream(const char * streamName)
 {
 	Tier0_Warning("Warning: Due to CS:GO 17th Ferbuary 2016 update this stream is not working perfectly.\n");
 
-	if(!Console_CheckStreamName(streamName))
+	if (!Console_CheckStreamName(streamName))
 		return;
 
 	AddStream(new CAfxSingleStream(streamName, new CAfxAlphaMatteStream()));
@@ -4819,7 +5081,7 @@ void CAfxStreams::Console_AddAlphaEntityStream(const char * streamName)
 {
 	Tier0_Warning("Warning: Due to CS:GO 17th Ferbuary 2016 update this stream is not working perfectly.\n");
 
-	if(!Console_CheckStreamName(streamName))
+	if (!Console_CheckStreamName(streamName))
 		return;
 
 	AddStream(new CAfxSingleStream(streamName, new CAfxAlphaEntityStream()));
@@ -4829,7 +5091,7 @@ void CAfxStreams::Console_AddAlphaWorldStream(const char * streamName)
 {
 	Tier0_Warning("Warning: Due to CS:GO 17th Ferbuary 2016 update this stream is not working perfectly.\n");
 
-	if(!Console_CheckStreamName(streamName))
+	if (!Console_CheckStreamName(streamName))
 		return;
 
 	AddStream(new CAfxSingleStream(streamName, new CAfxAlphaWorldStream()));
@@ -4839,7 +5101,7 @@ void CAfxStreams::Console_AddAlphaMatteEntityStream(const char * streamName)
 {
 	Tier0_Warning("Warning: Due to CS:GO 17th Ferbuary 2016 update this stream is not working perfectly.\n");
 
-	if(!Console_CheckStreamName(streamName))
+	if (!Console_CheckStreamName(streamName))
 		return;
 
 	AddStream(new CAfxTwinStream(streamName, new CAfxAlphaMatteStream(), new CAfxAlphaEntityStream(), CAfxTwinStream::SCT_ARedAsAlphaBColor));
@@ -4849,7 +5111,7 @@ void CAfxStreams::Console_PrintStreams()
 {
 	Tier0_Msg("index: name -> recorded?\n");
 	int index = 0;
-	for(std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
+	for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
 	{
 		Tier0_Msg("%i: %s -> %s\n", index, (*it)->StreamName_get(), (*it)->Record_get() ? "RECORD ON (1)" : "record off (0)");
 		++index;
@@ -4862,15 +5124,21 @@ void CAfxStreams::Console_PrintStreams()
 
 void CAfxStreams::Console_RemoveStream(const char * streamName)
 {
-	for(std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
+	for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
 	{
-		if(!_stricmp(streamName, (*it)->StreamName_get()))
+		if (!_stricmp(streamName, (*it)->StreamName_get()))
 		{
 			CAfxRecordStream * cur = *it;
 
-			if(m_Recording) cur->RecordEnd();
+			if (m_Recording) cur->RecordEnd();
 
-			if(m_PreviewStream == cur) m_PreviewStream = 0;
+			for (int i = 0; i < (int)(sizeof(m_PreviewStreams) / sizeof(m_PreviewStreams[0])); ++i)
+			{
+				if (m_PreviewStreams[i] == cur)
+				{
+					Console_PreviewStream("", i);
+				}
+			}
 
 			FinishStreamForGlowOverlayFix(cur);
 
@@ -4884,15 +5152,48 @@ void CAfxStreams::Console_RemoveStream(const char * streamName)
 	Tier0_Msg("Error: invalid streamName.\n");
 }
 
-void CAfxStreams::Console_PreviewStream(const char * streamName)
+void CAfxStreams::Console_PreviewStream(const char * streamName, int slot)
 {
+	if (slot >= (int)(sizeof(m_PreviewStreams) / sizeof(m_PreviewStreams[0])))
+	{
+		Tier0_Warning("Error: invalid slot %i.\n", slot);
+		return;
+	}
+
 	if(StringIsEmpty(streamName))
 	{
-		if(m_PreviewStream)
+
+		if(slot < 0)
+		{
+			for (int i = 0; i < (int)(sizeof(m_PreviewStreams) / sizeof(m_PreviewStreams[0])); ++i)
+				m_PreviewStreams[i] = 0;
+		}
+		else
+		{
+			m_PreviewStreams[slot] = 0;
+		}
+
+		bool allEmpty = true;
+
+		for (int i = 0; i < (int)(sizeof(m_PreviewStreams) / sizeof(m_PreviewStreams[0])); ++i)
+		{
+			if (m_PreviewStreams[i])
+			{
+				allEmpty = false;
+				break;
+			}
+		}
+
+		if(allEmpty)
 		{
 			if(!m_Recording) RestoreMatVars();
 		}
-		m_PreviewStream = 0;
+		return;
+	}
+
+	if (slot < 0)
+	{
+		Tier0_Warning("Error: invalid slot %i.\n", slot);
 		return;
 	}
 
@@ -4907,12 +5208,13 @@ void CAfxStreams::Console_PreviewStream(const char * streamName)
 			}
 
 			CAfxRecordStream * cur = *it;
-			m_PreviewStream = cur;
+			m_PreviewStreams[slot] = cur;
 			if(!m_Recording) BackUpMatVars();
 			SetMatVarsForStreams();
 			return;
 		}
 	}
+
 	Tier0_Msg("Error: invalid streamName.\n");
 }
 
@@ -6450,38 +6752,9 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 
 	SetCurrent_View_Render_ThreadId(GetCurrentThreadId());
 
-	bool canFeed = CheckCanFeedStreams();
-
-	CAfxRenderViewStream * previewStream = 0;
-	if(m_PreviewStream)
-	{
-		if(CAfxSingleStream * singleStream = m_PreviewStream->AsAfxSingleStream())
-		{
-			previewStream = singleStream->Stream_get();
-		}
-	}
-
-	bool previewStreamWillRecord = false;
-
-	if(previewStream)
-	{
-		if(!canFeed)
-			Tier0_Warning("Error: Cannot preview stream %s due to missing dependencies!\n", m_PreviewStream->StreamName_get());
-		else
-		{
-			SetMatVarsForStreams(); // keep them set in case a mofo resets them.
-
-			if (0 < strlen(previewStream->AttachCommands_get()))
-				g_VEngineClient->ExecuteClientCmd(previewStream->AttachCommands_get()); // Execute commands before we lock the stream!
-
-			previewStream->OnRenderBegin();
-
-			ctxp->ClearColor4ub(0,0,0,0);
-			ctxp->ClearBuffers(true,false,false);
-		}
-	}
-
 	//GetCsgoCGlowOverlayFix()->OnMainViewRenderBegin();
+
+	m_OnRenderViewFirstCall = true;
 
 	cl->GetParent()->View_Render(rect);
 
@@ -6527,19 +6800,9 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 		(*it)->CaptureFrame();
 	}
 
-	if(previewStream && canFeed)
-	{
-		previewStreamWillRecord = m_Recording && canFeed && m_PreviewStream->Record_get();
-
-		previewStream->OnRenderEnd();
-
-		if (0 < strlen(previewStream->DetachCommands_get()))
-			g_VEngineClient->ExecuteClientCmd(previewStream->DetachCommands_get()); // Execute commands after we unlocked the stream!
-	}
-
 	if(m_Recording)
 	{
-		if(!canFeed)
+		if(!CheckCanFeedStreams())
 		{
 			Tier0_Warning("Error: Cannot record streams due to missing dependencies!\n");
 		}
@@ -6584,12 +6847,12 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 
 				if(streamA)
 				{
-					ctxp = CaptureStreamToBuffer(streamA, (*it), streamA == previewStream && previewStreamWillRecord, true, !streamB);
+					ctxp = CaptureStreamToBuffer(streamA, (*it), true, !streamB);
 				}
 
 				if(streamB)
 				{
-					ctxp = CaptureStreamToBuffer(streamB, (*it), streamB == previewStream && previewStreamWillRecord, !streamA, true);
+					ctxp = CaptureStreamToBuffer(streamB, (*it), !streamA, true);
 				}
 			}
 		}
@@ -6600,14 +6863,12 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 	SetCurrent_View_Render_ThreadId(0);
 }
 
-IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(CAfxRenderViewStream * stream, CAfxRecordStream * captureTarget, bool isInPreview, bool first, bool last)
+IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(CAfxRenderViewStream * stream, CAfxRecordStream * captureTarget, bool first, bool last)
 {
-	// Apparently we have to do this always, otherwise the state is messed up:
-	m_MaterialSystem->SwapBuffers();
-
 	// Work around game running out of memory because of too much shit on the queue
-	// aka issue ripieces/advancedfx#22 :
+	// aka issue ripieces/advancedfx-prop#22 :
 	m_MaterialSystem->EndFrame();
+	m_MaterialSystem->SwapBuffers(); // Apparently we have to do this always, otherwise the state is messed up.
 	m_MaterialSystem->BeginFrame(0);
 
 	//

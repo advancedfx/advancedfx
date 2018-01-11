@@ -179,6 +179,10 @@ SOURCESDK::IFileSystem_csgo * g_FileSystem_csgo = 0;
 SOURCESDK::CSGO::vgui::IPanel * g_pVGuiPanel_csgo = 0;
 SOURCESDK::CSGO::vgui::ISurface *g_pVGuiSurface_csgo = 0;
 
+//SOURCESDK::CSGO::IScaleformUI * g_pScaleformUI_csgo = 0;
+
+//SOURCESDK::IVRenderView_csgo * g_pVRenderView_csgo = 0;
+
 void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals)
 {
 	static bool bFirstRun = true;
@@ -292,6 +296,26 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 			else {
 				ErrorBox("Could not get a supported ShaderShadow interface.");
 			}
+
+			/*
+			if (iface = appSystemFactory(SOURCESDK_CSGO_SCALEFORM_ITERNFACE_VERSION, NULL))
+			{
+				g_pScaleformUI_csgo = (SOURCESDK::CSGO::IScaleformUI *)iface;
+			}
+			else {
+				ErrorBox("Could not get a supported ScaleformUI interface.");
+			}
+			*/
+
+			/*
+			if (iface = appSystemFactory(SOURCESDK_CSGO_SCALEFORM_ITERNFACE_VERSION, NULL))
+			{
+				g_pVRenderView_csgo = (SOURCESDK::IVRenderView_csgo *)iface;
+			}
+			else {
+				ErrorBox("Could not get a supported VRenderView interface.");
+			}
+			*/
 		}
 		
 		g_Hook_VClient_RenderView.Install(pGlobals);

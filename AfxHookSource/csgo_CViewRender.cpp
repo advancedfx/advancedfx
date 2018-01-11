@@ -2,7 +2,6 @@
 
 #include "csgo_CViewRender.h"
 
-#include "SourceInterfaces.h"
 #include "AfxStreams.h"
 #include "addresses.h"
 #include <shared/detours.h>
@@ -22,25 +21,28 @@ void __declspec(naked) touring_csgo_CViewRender_RenderView_AfterVGui_DrawHud(voi
 	__asm jmp detoured_csgo_CViewRender_RenderView_AfterVGui_DrawHud
 }
 
-typedef void (__stdcall * CCSViewRender_RenderView_t)(DWORD * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw);
+/*
+CCSViewRender_Render_t detoured_CCSViewRender_Render;
+
+void __stdcall touring_CCSViewRender_Render(void * this_ptr, const SOURCESDK::vrect_t_csgo * rect)
+{
+	g_AfxStreams.OnRender(detoured_CCSViewRender_Render, this_ptr, rect);
+	//detoured_CCSViewRender_Render(this_ptr, rect);
+}
+*/
 
 CCSViewRender_RenderView_t detoured_CCSViewRender_RenderView;
 
 float g_csgo_OldSmokeOverlayAlphaFactor;
 float g_csgo_AfxSmokeOverlayAlphaMod = 1.0f;
 
-void _stdcall touring_CCSViewRender_RenderView(DWORD * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw)
+void __stdcall touring_CCSViewRender_RenderView(void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw)
 {
 	float * smokeOverlayAlphaFactor = (float *)((const char *)this_ptr + 0x588);
 
 	g_csgo_OldSmokeOverlayAlphaFactor = *smokeOverlayAlphaFactor;
 
-	g_AfxStreams.OnRenderView(whatToDraw, g_csgo_AfxSmokeOverlayAlphaMod);
-
-	if(g_csgo_AfxSmokeOverlayAlphaMod < 1.0f)
-		*smokeOverlayAlphaFactor = 0.0f; // force drawing world
-
-	return detoured_CCSViewRender_RenderView(this_ptr, view, hudViewSetup, nClearFlags, whatToDraw);
+	g_AfxStreams.OnRenderView(detoured_CCSViewRender_RenderView, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, g_csgo_AfxSmokeOverlayAlphaMod);
 }
 
 void * detoured_csgo_CViewRender_RenderSmokeOverlay_OnLoadOldAlpha;
@@ -111,13 +113,17 @@ bool csgo_CViewRender_Install(void)
 	else
 		firstResult = false;
 
-	if (AFXADDR_GET(csgo_CCSViewRender_RenderSmokeOverlay_OnLoadOldAlpha)
-		&& AFXADDR_GET(csgo_CCSViewRender_RenderView)
+	if (AFXADDR_GET(csgo_CCSViewRender_vtable)
+		&& AFXADDR_GET(csgo_CCSViewRender_RenderSmokeOverlay_OnLoadOldAlpha)
 		&& AFXADDR_GET(csgo_CCSViewRender_RenderSmokeOverlay_OnCompareAlphaBeforeDraw)
 		&& AFXADDR_GET(csgo_CCSViewRender_RenderSmokeOverlay_OnBeforeExitFunc))
 	{
-		detoured_csgo_CViewRender_RenderSmokeOverlay_OnLoadOldAlpha = (void *)DetourApply((BYTE *)AFXADDR_GET(csgo_CCSViewRender_RenderSmokeOverlay_OnLoadOldAlpha), (BYTE *)touring_csgo_CViewRender_RenderSmokeOverlay_OnLoadOldAlpha, 8);
-		detoured_CCSViewRender_RenderView = (CCSViewRender_RenderView_t)DetourClassFunc((BYTE *)AFXADDR_GET(csgo_CCSViewRender_RenderView), (BYTE *)touring_CCSViewRender_RenderView, (int)AFXADDR_GET(csgo_CCSViewRender_RenderView_DSZ));
+		int * vtable = (int*)AFXADDR_GET(csgo_CCSViewRender_vtable);
+
+		//DetourIfacePtr((DWORD *)&(vtable[5]), touring_CCSViewRender_Render, (DetourIfacePtr_fn &)detoured_CCSViewRender_Render);
+		DetourIfacePtr((DWORD *)&(vtable[6]), touring_CCSViewRender_RenderView, (DetourIfacePtr_fn &)detoured_CCSViewRender_RenderView);
+
+		detoured_csgo_CViewRender_RenderSmokeOverlay_OnLoadOldAlpha = (void *)DetourApply((BYTE *)AFXADDR_GET(csgo_CCSViewRender_RenderSmokeOverlay_OnLoadOldAlpha), (BYTE *)touring_csgo_CViewRender_RenderSmokeOverlay_OnLoadOldAlpha, 8);	
 		detoured_csgo_CViewRender_RenderSmokeOverlay_OnCompareAlphaBeforeDraw = (void *)DetourApply((BYTE *)AFXADDR_GET(csgo_CCSViewRender_RenderSmokeOverlay_OnCompareAlphaBeforeDraw), (BYTE *)touring_csgo_CViewRender_RenderSmokeOverlay_OnCompareAlphaBeforeDraw, 7);
 		detoured_csgo_CViewRender_RenderSmokeOverlay_OnBeforeExitFunc = (void *)DetourApply((BYTE *)AFXADDR_GET(csgo_CCSViewRender_RenderSmokeOverlay_OnBeforeExitFunc), (BYTE *)touring_csgo_CViewRender_RenderSmokeOverlay_OnBeforeExitFunc, 8);
 	}

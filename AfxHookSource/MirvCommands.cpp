@@ -587,23 +587,49 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			if(3 <= argc)
 			{
 				char const * cmd2 = args->ArgV(2);
+
+				if (4 <= argc)
+				{
+					g_AfxStreams.Console_PreviewStream(cmd2, atoi(args->ArgV(3)));
+					return;
+				}
 				
-				g_AfxStreams.Console_PreviewStream(cmd2);
+				g_AfxStreams.Console_PreviewStream(cmd2, 0);
 				return;
 			}
 
 			Tier0_Msg(
-				"mirv_streams preview <streamName> - Preview the stream with name <streamName>, you can get the value from mirv_streams print. To end previewing enter \"\" (empty string) for <streamName>!\n"
+				"mirv_streams preview <streamName> [<iSlot>]- Preview the stream with name <streamName>, you can get the value from mirv_streams print. To end previewing enter \"\" (empty string) for <streamName>!\n"
 			);
 			return;
 		}
 		else
 		if(!_stricmp(cmd1, "previewEnd"))
 		{
-			g_AfxStreams.Console_PreviewStream("");
+			if (3 <= argc)
+			{
+				g_AfxStreams.Console_PreviewStream("", atoi(args->ArgV(2)));
+				return;
+			}
+
+			g_AfxStreams.Console_PreviewStream("", -1);
 			return;
 		}
+		else
+		if (!_stricmp(cmd1, "previewSuspend"))
+		{
+			if (3 <= argc)
+			{
+				g_AfxStreams.Console_PreviewSuspend_set(0 != atoi(args->ArgV(2)));
+				return;
+			}
 
+			Tier0_Msg(
+				"mirv_streams previewSuspend 0|1 - If to suspend preview of all streams.\n"
+				"Current value: %i\n",
+				g_AfxStreams.Console_PreviewSuspend_get() != 0 ? 1 : 0);
+			return;
+		}
 		else
 		if(!_stricmp(cmd1, "print"))
 		{
@@ -916,7 +942,8 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 		"mirv_streams edit [...]- Edit a stream.\n"
 		"mirv_streams remove [...] - Remove a stream.\n"
 		"mirv_streams preview [...] - Preview a stream.\n"
-		"mirv_streams previewEnd - End preview.\n"
+		"mirv_streams previewEnd [<iSlot>] - End preview.\n"
+		"mirv_streams previewSuspend [...] - Suspend all previews.\n"
 		"mirv_streams print - Print current streams.\n"
 		"mirv_streams record [...] - Recording control.\n"
 		"mirv_streams actions [...] - Actions control (for baseFx based streams).\n"

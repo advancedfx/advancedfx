@@ -425,6 +425,13 @@ typedef void (__stdcall * MatRenderContextHook_Bind_t)(
 	SOURCESDK::IMaterial_csgo * material,
 	void *proxyData);
 
+/*
+//:040
+typedef void(__stdcall * MatRenderContextHook_Viewport_t)(
+	DWORD *this_ptr,
+	int x, int y, int width, int height);
+*/
+
 //:062
 typedef SOURCESDK::IMeshEx_csgo* (_stdcall * MatRenderContextHook_GetDynamicMesh_t)(
 	DWORD *this_ptr,
@@ -474,6 +481,11 @@ struct CMatRenderContextDetours
 {
 	//:009
 	MatRenderContextHook_Bind_t Bind;
+
+	/*
+	// :040
+	MatRenderContextHook_Viewport_t Viewport;
+	*/
 
 	//:062
 	MatRenderContextHook_GetDynamicMesh_t GetDynamicMesh;
@@ -587,6 +599,15 @@ public:
 		m_Ctx->ReadPixels(x, y, width, height, data, dstFormat, _unknown7);
 	}
 
+	/*
+	virtual void Viewport(int x, int y, int width, int height)
+	{
+		// This is hooked, so use detour:
+
+		m_Detours->Viewport((DWORD *)m_Ctx, x, y, width, height);
+	}
+	*/
+
 	virtual void ClearColor4ub(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 	{
 		// This is unhooked, so pass through:
@@ -634,6 +655,25 @@ public:
 	{
 		m_Detours->Bind((DWORD *)m_Ctx, DoOnMaterialHook(material, proxyData), proxyData);
 	}
+
+	/*
+	void Hook_Viewport(
+		int x, int y, int width, int height)
+	{
+		IAfxStreamContext * afxStream = Hook_get();
+
+		if (afxStream)
+		{
+
+			afxStream->Viewport(x, y, width, height);
+		}
+		else
+		{
+			m_Detours->Viewport((DWORD *)m_Ctx,
+				x, y, width, height);
+		}
+	}
+	*/
 
 	SOURCESDK::IMeshEx_csgo* Hook_GetDynamicMesh(
 		bool buffered,
@@ -851,6 +891,16 @@ void __stdcall MatRenderContextHook_Bind(
 	return ctxh->Hook_Bind(material, proxyData);
 }
 
+/*
+void __stdcall MatRenderContextHook_Viewport(
+	DWORD *this_ptr,
+	int x, int y, int width, int height)
+{
+	CMatRenderContextHook * ctxh = CMatRenderContextHook::GetMatRenderContextHook((SOURCESDK::IMatRenderContext_csgo *)this_ptr);
+	return ctxh->Hook_Viewport(x, y, width, height);
+}
+*/
+
 SOURCESDK::IMeshEx_csgo* _stdcall MatRenderContextHook_GetDynamicMesh(
 	DWORD *this_ptr,
 	bool buffered,
@@ -946,6 +996,7 @@ void CMatRenderContextHook::HooKVtable(SOURCESDK::IMatRenderContext_csgo * orgCt
 
 	//OutputDebugString("HooKVtable DETOUR BEGIN\n");
 	DetourIfacePtr((DWORD *)&(vtable[9]), MatRenderContextHook_Bind, (DetourIfacePtr_fn &)m_Detours->Bind);
+	//DetourIfacePtr((DWORD *)&(vtable[40]), MatRenderContextHook_Viewport, (DetourIfacePtr_fn &)m_Detours->Viewport);
 	DetourIfacePtr((DWORD *)&(vtable[62]), MatRenderContextHook_GetDynamicMesh, (DetourIfacePtr_fn &)m_Detours->GetDynamicMesh);
 	DetourIfacePtr((DWORD *)&(vtable[81]), MatRenderContextHook_DrawScreenSpaceQuad, (DetourIfacePtr_fn &)m_Detours->DrawScreenSpaceQuad);
 	DetourIfacePtr((DWORD *)&(vtable[113]), MatRenderContextHook_DrawScreenSpaceRectangle, (DetourIfacePtr_fn &)m_Detours->DrawScreenSpaceRectangle);

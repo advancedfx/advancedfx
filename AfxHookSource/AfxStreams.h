@@ -38,6 +38,8 @@
 #include <mutex>
 #include <condition_variable>
 
+typedef void(__stdcall * CCSViewRender_Render_t)(void * this_ptr, const SOURCESDK::vrect_t_csgo * rect);
+typedef void(__stdcall * CCSViewRender_RenderView_t)(void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw);
 
 class CAfxStreams;
 
@@ -65,6 +67,8 @@ public:
 
 	//
 	// Context specific functions:
+
+	//virtual void Viewport(int x, int y, int width, int height) = 0;
 
 	/// <returns>Return the material you want to use (instead).</returns>
 	virtual SOURCESDK::IMaterial_csgo * MaterialHook(SOURCESDK::IMaterial_csgo * material, void * proxyData) = 0;
@@ -501,7 +505,7 @@ public:
 	//
 	// State information:
 
-	virtual void OnRenderBegin()
+	virtual void OnRenderBegin(SOURCESDK::vrect_t_csgo * orgViewRect = 0)
 	{
 	}
 
@@ -927,7 +931,7 @@ public:
 
 	static void MainThreadInitialize(void);
 
-	virtual void OnRenderBegin(void);
+	virtual void OnRenderBegin(SOURCESDK::vrect_t_csgo * orgViewRect);
 
 	virtual void OnRenderEnd(void);
 
@@ -1751,7 +1755,7 @@ private:
 			return m_QueueState->DrawingSkyBoxView;
 		}
 
-		void RenderBegin(CAfxBaseFxStream * stream);
+		void RenderBegin(CAfxBaseFxStream * stream, SOURCESDK::vrect_t_csgo * orgViewport = 0);
 
 		void RenderEnd(void);
 
@@ -1767,6 +1771,8 @@ private:
 		virtual void DrawingSkyBoxViewBegin(void);
 
 		virtual void DrawingSkyBoxViewEnd(void);
+
+		//virtual void Viewport(int x, int y, int width, int height);
 
 		virtual SOURCESDK::IMaterial_csgo * MaterialHook(SOURCESDK::IMaterial_csgo * material, void * proxyData);
 
@@ -1909,6 +1915,7 @@ private:
 		bool m_IsRootCtx;
 		CAfxBaseFxStream::CAction * m_CurrentAction;
 		//std::map<void *, SOURCESDK::CSGO::CBaseHandle> m_ProxyDataToEntityHandle;
+		SOURCESDK::vrect_t_csgo m_OrgViewport;
 
 		void QueueBegin(bool isRoot);
 		void QueueEnd();
@@ -2433,7 +2440,8 @@ public:
 	void OnSetPixelShader(CAfx_csgo_ShaderState & state);
 #endif
 
-	void OnRenderView(int whatToDraw, float & outAfxSmokeOverlayAlphaMod);
+	//void OnRender(CCSViewRender_Render_t fn, void * this_ptr, const SOURCESDK::vrect_t_csgo * rect);
+	void OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer );
 
 	bool OnViewRenderShouldForceNoVis(bool orgValue);
 
@@ -2470,6 +2478,9 @@ public:
 	void Console_RecordFormat_set(const char * value);
 	const char * Console_RecordFormat_get();
 
+	void Console_PreviewSuspend_set(bool value);
+	bool Console_PreviewSuspend_get();
+
 	void Console_Record_Start();
 	void Console_Record_End();
 	void Console_AddStream(const char * streamName);
@@ -2497,8 +2508,9 @@ public:
 
 	void Console_GameRecording(IWrpCommandArgs * args);
 
-	/// <param name="index">stream name to preview or empty string if to preview nothing.</param>
-	void Console_PreviewStream(const char * streamName);
+	/// <param name="streamName">stream name to preview or empty string if to preview nothing.</param>
+	/// <param name="slot">-1 means all slots if streamName is emtpy.</param>
+	void Console_PreviewStream(const char * streamName, int slot);
 
 	bool Console_ToAfxAction(char const * value, CAfxBaseFxStream::CAction * & action);
 	char const * Console_FromAfxAction(CAfxBaseFxStream::CAction * action);
@@ -2567,6 +2579,7 @@ private:
 	};
 
 	std::string m_RecordName;
+	bool m_SuspendPreview = false;
 	bool m_PresentRecordOnScreen;
 	bool m_StartMovieWav;
 	bool m_StartMovieWavUsed;
@@ -2574,6 +2587,7 @@ private:
 	bool m_RecordVoices;
 	bool m_RecordVoicesUsed;
 
+	bool m_OnRenderViewFirstCall;
 	bool m_OnRenderViewCalled = false;
 	int m_WhatToDraw;
 
@@ -2581,7 +2595,7 @@ private:
 	IAfxBaseClientDll * m_AfxBaseClientDll;
 	SOURCESDK::IShaderShadow_csgo * m_ShaderShadow;
 	std::list<CAfxRecordStream *> m_Streams;
-	CAfxRecordStream * m_PreviewStream;
+	CAfxRecordStream * m_PreviewStreams[16] = { };
 	bool m_Recording;
 	int m_Frame;
 	bool m_CamBvh;
@@ -2653,7 +2667,7 @@ private:
 
 	void CreateRenderTargets(SOURCESDK::IMaterialSystem_csgo * materialSystem);
 
-	IAfxMatRenderContextOrg *  CaptureStreamToBuffer(CAfxRenderViewStream * stream, CAfxRecordStream * captureTarget, bool isInPreview, bool first, bool last);
+	IAfxMatRenderContextOrg * CaptureStreamToBuffer(CAfxRenderViewStream * stream, CAfxRecordStream * captureTarget, bool first, bool last);
 
 	IAfxStreamContext * FindStreamContext(IAfxMatRenderContext * ctx);
 

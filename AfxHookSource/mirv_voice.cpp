@@ -106,7 +106,7 @@ public:
 
 	void TimePadding_set(double value)
 	{
-		m_TimePadding = value;
+		m_TimePadding = (float)value;
 	}
 
 	double TimePadding_get(void)
@@ -117,7 +117,7 @@ public:
 private:
 	static const size_t m_OutSampleRate = 22050;
 	static const size_t m_VoiceSampleRate = 22050;
-	float m_TimePadding = 0.2;
+	float m_TimePadding = 0.2f;
 	bool m_Recording = false;
 	int m_EntityIndex = 0;
 	double m_Time = 0;
