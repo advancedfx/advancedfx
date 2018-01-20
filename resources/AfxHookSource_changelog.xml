@@ -6,6 +6,24 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.35.1</version>
+<time>2018-01-20T08:31Z</time>
+<changes>
+<change type="fixed">
+Adjusted to 1/19/2017 CS:GO update:<br />
+Fixed mirv_streams sound recording not working.
+</change>
+</changes>
+<comments>
+While this version still contains the AfxHookSource 1.35.0 mirv_streams multi preview feature, we recommend to only use slot 0 for previewing (1x1 grid), except if you can deal with the following known problems:<br />
+- HUD will only work properly in the top left slot, so if HUD is drawn in any other preview slot, there will be problems.<br />
+- Reflections, i.e. in water are very inaccurate if using other slots than 0.<br />
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.35.0</version>
 <time>2018-01-11T16:16Z</time>
 <changes>
