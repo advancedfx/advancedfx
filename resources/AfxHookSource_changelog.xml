@@ -6,11 +6,23 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.35.2</version>
+<time>2018-01-21T19:55Z</time>
+<changes>
+<change type="fixed">
+Fixed crash bug when previewing while recording mirv_streams, due to mistake in new code. Thanks to https://twitter.com/danielhagelin for reporting it and narrowing it down.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.35.1</version>
 <time>2018-01-20T08:31Z</time>
 <changes>
 <change type="fixed">
-Adjusted to 1/19/2017 CS:GO update:<br />
+Adjusted to 1/19/2018 CS:GO update:<br />
 Fixed mirv_streams sound recording not working.
 </change>
 </changes>

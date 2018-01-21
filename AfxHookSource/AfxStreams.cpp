@@ -4532,6 +4532,11 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 		m_OnRenderViewCalled = true;
 		m_WhatToDraw = whatToDraw;
 	}
+	else
+	{
+		fn(this_ptr, view, hudViewSetup, nClearFlags, whatToDraw);
+		return;
+	}
 
 	if (m_SuspendPreview)
 	{
