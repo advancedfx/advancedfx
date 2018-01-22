@@ -6,6 +6,19 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.35.3</version>
+<time>2018-01-22T17:47Z</time>
+<changes>
+<change type="fixed">
+Fixed bug in mirv_streams that could cause incorrect render state (i.e. green ragdolls on greenscreen).
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.35.2</version>
 <time>2018-01-21T19:55Z</time>
 <changes>
