@@ -91,6 +91,12 @@
     <Filter Include="shared\imgui">
       <UniqueIdentifier>{a6353ed1-167c-4006-8b4e-d636e036af02}</UniqueIdentifier>
     </Filter>
+    <Filter Include="AfxHookSource\Model">
+      <UniqueIdentifier>{a4cc8591-8907-4694-a46f-f13fa19603de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AfxHookSource\Model\Tasks">
+      <UniqueIdentifier>{55c50603-0060-48cc-82f0-67e415a76b7f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\bvhexport.cpp">
@@ -553,6 +559,27 @@
     </ClInclude>
     <ClInclude Include="Gui.h">
       <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Schedule.h">
+      <Filter>AfxHookSource\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Tasks\Task.h">
+      <Filter>AfxHookSource\Model\Tasks</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Tasks\Record.h">
+      <Filter>AfxHookSource\Model\Tasks</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Events.h">
+      <Filter>AfxHookSource\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Properties.h">
+      <Filter>AfxHookSource\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Dependencies.h">
+      <Filter>AfxHookSource\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Model.h">
+      <Filter>AfxHookSource\Model</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

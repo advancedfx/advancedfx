@@ -6,6 +6,8 @@
 
 #include "Gui.h"
 
+#define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
+
 #include <shared/imgui/imgui.h>
 
 #include <SourceInterfaces.h>
@@ -912,7 +914,7 @@ void DX9_InvalidateDeviceObjects()
 
 void DoFrame()
 {
-	static bool show_test_window = true;
+	static bool show_demo_window = true;
 	static bool show_another_window = false;
 	static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
@@ -921,7 +923,7 @@ void DoFrame()
 		ImGui::Text("Hello, world!");
 		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
 		ImGui::ColorEdit3("clear color", (float*)&clear_color);
-		if (ImGui::Button("Test Window")) show_test_window ^= 1;
+		if (ImGui::Button("Demo Window")) show_demo_window ^= 1;
 		if (ImGui::Button("Another Window")) show_another_window ^= 1;
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 		ImGui::Text("Look: %i | Want: %i | Through: %i\n", IsInMouseLook() ? 1 : 0, ImGui::GetIO().WantCaptureMouse ? 1 : 0, m_PassThrough ? 1 : 0);
@@ -936,10 +938,10 @@ void DoFrame()
 	}
 
 	// 3. Show the ImGui test window. Most of the sample code is in ImGui::ShowTestWindow().
-	if (show_test_window)
+	if (show_demo_window)
 	{
 		ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver);
-		ImGui::ShowTestWindow(&show_test_window);
+		ImGui::ShowDemoWindow(&show_demo_window);
 	}
 }
 

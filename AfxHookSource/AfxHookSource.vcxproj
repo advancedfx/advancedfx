@@ -302,6 +302,13 @@
     <ClInclude Include="MirvPgl.h" />
     <ClInclude Include="MirvWav.h" />
     <ClInclude Include="mirv_voice.h" />
+    <ClInclude Include="Model.h" />
+    <ClInclude Include="Model\Dependencies.h" />
+    <ClInclude Include="Model\Events.h" />
+    <ClInclude Include="Model\Properties.h" />
+    <ClInclude Include="Model\Schedule.h" />
+    <ClInclude Include="Model\Tasks\Record.h" />
+    <ClInclude Include="Model\Tasks\Task.h" />
     <ClInclude Include="RenderView.h" />
     <ClInclude Include="..\prop\AfxHookSource\SourceInterfaces.h" />
     <ClInclude Include="stdafx.h" />

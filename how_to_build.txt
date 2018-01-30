@@ -131,7 +131,7 @@ Notice:
     to "C:\<HLAESRC>\advancedfx\build\Release\bin"
 
 [X] Copy all files
-    form "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Redist\MSVC\14.11.25325\x86\Microsoft.VC141.CRT"
+    form "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Redist\MSVC\14.12.25810\x86\Microsoft.VC141.CRT"
     to "C:\<HLAESRC>\advancedfx\build\Release\bin"
 
 [X] Copy all DLL files from
