@@ -19,6 +19,8 @@
 #include <vector>
 #include <mutex>
 
+#include "Model/Schedule.h"
+
 extern SourceSdkVer g_SourceSdkVer;
 extern WrpVEngineClient * g_VEngineClient;
 
@@ -39,6 +41,8 @@ bool m_FirstEndScene = true;
 bool m_GameCaptured = false;
 bool m_InMouseLook = false;
 bool m_HadSetCursorMouseLook = false;
+
+//Model::CSchedule m_Schedule(nullptr, "Schedule", "");
 
 // Data
 static HWND                     g_hWnd = 0;

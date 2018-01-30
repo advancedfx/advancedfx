@@ -1,43 +1,47 @@
 #pragma once
 
 #include "../Properties.h"
+#include "../Model.h"
 
-namespace advancedfx {
+namespace AfxHookSource {
 namespace Model {
 namespace Tasks {
 
 class CRecord;
 
 class CTask
+	: public CClass
 {
 public:
-	enum EType
+	CTask(CClass * parent,
+		const char * title, const char * description)
+		: CClass(parent)
+		, m_Title(this, title)
+		, m_Description(this, description)
 	{
-		EType_Task,
-		EType_Record
-	};
+	}
 
 	virtual EType GetType() const
 	{
 		return EType_Task;
 	}
 
-	CString * GetTitle()
+	CStringProperty * GetTitle()
 	{
 		return &m_Title;
 	}
 
-	CString * GetDescription()
+	CStringProperty * GetDescription()
 	{
 		return &m_Description;
 	}
 
 private:
-	CString m_Title;
-	CString m_Description;
+	CStringProperty m_Title;
+	CStringProperty m_Description;
 };
 
 
 } // namespace Tasks {
 } // namespace Model {
-} // namespace advancedfx {
+} // namespace AfxHookSource {

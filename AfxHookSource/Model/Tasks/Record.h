@@ -2,69 +2,29 @@
 
 #include "Task.h"
 #include "../Properties.h"
-#include "../Events.h"
+#include "../DemoTime.h"
 
-namespace advancedfx {
+namespace AfxHookSource {
 namespace Model {
 namespace Tasks {
-
 
 class CRecord : public CTask
 {
 public:
-	class CTimePoint
+	typedef CStringProperty CDemo;
+
+	CRecord(CClass * parent,
+		const char * title, const char * description,
+		const char * demo,
+		int beginTick, float beginTime, CDemoTime::EMode beginMode,
+		int endTick, float endTime, CDemoTime::EMode endMode)
+		: CTask(parent, title, description)
+		, m_Demo(this, demo)
+		, m_Begin(this, beginTick, beginTime, beginMode)
+		, m_End(this, endTick, endTime, endMode)
 	{
-	public:
-		enum EMode
-		{
-			EMode_Tick,
-			EMode_Time
-		};
 
-		class CTick : public CProperty<int>
-		{
-		public:
-
-		};
-
-		class CTime : public CProperty<double>
-		{
-		public:
-
-		};
-
-		class CMode : public CProperty<EMode>
-		{
-		public:
-
-		};
-
-		CTick * GetTick()
-		{
-			return &m_Tick;
-		}
-
-		CTime * GetTime()
-		{
-			return &m_Time;
-		}
-
-		CMode * GetMode()
-		{
-			return &m_Mode;
-		}
-
-	private:
-		CTick m_Tick;
-		CTime m_Time;
-		CMode m_Mode;
-	};
-
-	class CDemo : public CString
-	{
-	public:
-
-	};
+	}
 
 	virtual EType GetType() const
 	{
@@ -76,22 +36,22 @@ public:
 		return &m_Demo;
 	}
 
-	CTimePoint * GetBegin()
+	CDemoTime * GetBegin()
 	{
 		return &m_Begin;
 	}
 
-	CTimePoint * GetEnd()
+	CDemoTime * GetEnd()
 	{
 		return &m_End;
 	}
 
 private:
 	CDemo m_Demo;
-	CTimePoint m_Begin;
-	CTimePoint m_End;
+	CDemoTime m_Begin;
+	CDemoTime m_End;
 };
 
 } // namespace Tasks {
 } // namespace Model {
-} // namespace advancedfx {
+} // namespace AfxHookSource {

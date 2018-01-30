@@ -2,21 +2,34 @@
 
 #include "Events.h"
 
-namespace advancedfx {
+namespace AfxHookSource {
 namespace Model {
 	
-template <class T>
-class CProperty : public CEventSource
+template<typename T, CClass::EType ET>
+class CProperty : public CClass
 {
 public:
-	CProperty()
+	CProperty(CClass * parent)
+		: CClass(parent)
+		, m_EventSource(this)
 	{
-
 	}
 
-	CProperty(T value)
+	CProperty(CClass * parent, T value)
+		: CClass(parent)
+		, m_EventSource(this)
 	{
 		m_Value = value;
+	}
+
+	virtual EType GetType() const
+	{
+		return ET;
+	}
+
+	CEventSource<CProperty> & GetSetEventSource()
+	{
+		return m_SetEventSource;
 	}
 
 	virtual T Get()
@@ -27,15 +40,49 @@ public:
 	virtual void Set(T value)
 	{
 		m_Value = value;
-		Notify();
+		m_SetEventSource.Notify();
 	}
 
 protected:
 	T m_Value;
+
+private:
+	CEventSource<CProperty> m_SetEventSource;
 };
 
-class CString : public CEventSource
+typedef CProperty<bool, CClass::EType_BoolProperty> CBoolProperty;
+typedef CProperty<int, CClass::EType_IntProperty> CIntProperty;
+typedef CProperty<float, CClass::EType_FloatProperty> CFloatProperty;
+typedef CProperty<double, CClass::EType_DoubleProperty> CDoubleProperty;
+
+
+class CStringProperty : public CClass
 {
+public:
+	CStringProperty(CClass * parent)
+		: CClass(parent)
+		, m_EventSource(this)
+	{
+	}
+
+	CStringProperty(CClass * parent, char const * value)
+		: CClass(parent)
+		, m_EventSource(this)
+	{
+		m_Value = value;
+	}
+
+	virtual EType GetType() const
+	{
+		return EType_StringProperty;
+	}
+	
+	CEventSource<CStringProperty> & GetSetEventSource()
+	{
+		return m_SetEventSource;
+	}
+	
+
 	virtual const char * Get()
 	{
 		return m_Value.c_str();
@@ -44,11 +91,14 @@ class CString : public CEventSource
 	virtual void Set(const char * value)
 	{
 		m_Value = value;
-		Notify();
+		m_SetEventSource.Notify();
 	}
 
 protected:
 	std::string m_Value;
+
+private:
+	CEventSource<CStringProperty> m_SetEventSource;
 };
 
 } // namespace Model {

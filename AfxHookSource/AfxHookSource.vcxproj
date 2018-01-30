@@ -303,7 +303,7 @@
     <ClInclude Include="MirvWav.h" />
     <ClInclude Include="mirv_voice.h" />
     <ClInclude Include="Model.h" />
-    <ClInclude Include="Model\Dependencies.h" />
+    <ClInclude Include="Model\DemoTime.h" />
     <ClInclude Include="Model\Events.h" />
     <ClInclude Include="Model\Properties.h" />
     <ClInclude Include="Model\Schedule.h" />
