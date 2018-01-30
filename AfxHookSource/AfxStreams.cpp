@@ -211,6 +211,26 @@ void QueueOrExecute(IAfxMatRenderContextOrg * ctx, SOURCESDK::CSGO::CFunctor * f
 	}
 }
 
+class CAfxD3D9PushOverrideState_Functor
+	: public CAfxFunctor
+{
+public:
+	virtual void operator()()
+	{
+		AfxD3D9PushOverrideState();
+	}
+};
+
+class CAfxD3D9PopOverrideState_Functor
+	: public CAfxFunctor
+{
+public:
+	virtual void operator()()
+	{
+		AfxD3D9PopOverrideState();
+	}
+};
+
 class AfxD3D9OverrideEnd_ModulationColor_Functor
 	: public CAfxFunctor
 {
@@ -2182,7 +2202,9 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderEnd(void)
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueFunctorInternal(IAfxCallQueue * aq, SOURCESDK::CSGO::CFunctor *pFunctor)
 {
+	aq->GetParent()->QueueFunctor(new CAfxLeafExecute_Functor(new CAfxD3D9PushOverrideState_Functor));
 	aq->GetParent()->QueueFunctor(new CQueueInternalWrapFunctor(this, pFunctor));
+	aq->GetParent()->QueueFunctor(new CAfxLeafExecute_Functor(new CAfxD3D9PopOverrideState_Functor));
 }
 
 float CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderSmokeOverlayAlphaMod(void)
@@ -4531,6 +4553,11 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 
 		m_OnRenderViewCalled = true;
 		m_WhatToDraw = whatToDraw;
+	}
+	else
+	{
+		fn(this_ptr, view, hudViewSetup, nClearFlags, whatToDraw);
+		return;
 	}
 
 	if (m_SuspendPreview)
