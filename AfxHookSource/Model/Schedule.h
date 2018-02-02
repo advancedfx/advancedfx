@@ -63,7 +63,7 @@ private:
 
 	void OnTaskDeleting(Tasks::CTask * source, CClass * cause)
 	{
-
+		m_Tasks.erase(source);
 	}
 };
 
