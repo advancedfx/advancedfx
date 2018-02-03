@@ -34,6 +34,7 @@ void __stdcall touring_CCSViewRender_Render(void * this_ptr, const SOURCESDK::vr
 CCSViewRender_RenderView_t detoured_CCSViewRender_RenderView;
 
 float g_csgo_OldSmokeOverlayAlphaFactor;
+float g_csgo_NewSmokeOverlayAlphaFactor;
 float g_csgo_AfxSmokeOverlayAlphaMod = 1.0f;
 
 void __stdcall touring_CCSViewRender_RenderView(void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw)
@@ -43,6 +44,8 @@ void __stdcall touring_CCSViewRender_RenderView(void * this_ptr, const SOURCESDK
 	g_csgo_OldSmokeOverlayAlphaFactor = *smokeOverlayAlphaFactor;
 
 	g_AfxStreams.OnRenderView(detoured_CCSViewRender_RenderView, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, g_csgo_AfxSmokeOverlayAlphaMod);
+
+	*smokeOverlayAlphaFactor = g_csgo_NewSmokeOverlayAlphaFactor;
 }
 
 void * detoured_csgo_CViewRender_RenderSmokeOverlay_OnLoadOldAlpha;
@@ -65,7 +68,7 @@ void __declspec(naked) touring_csgo_CViewRender_RenderSmokeOverlay_OnCompareAlph
 	// store new old value:
 	__asm push eax
 	__asm mov eax, dword ptr[edx + 588h]
-	__asm mov g_csgo_OldSmokeOverlayAlphaFactor, eax
+	__asm mov g_csgo_NewSmokeOverlayAlphaFactor, eax
 	__asm pop eax
 
 	// calculate target value:

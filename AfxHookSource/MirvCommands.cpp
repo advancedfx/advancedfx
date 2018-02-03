@@ -377,6 +377,54 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					);
 					return;
 				}
+				else if (!_stricmp(cmd2, "hud"))
+				{
+					if (4 <= argc)
+					{
+						char const * cmd3 = args->ArgV(3);
+
+						g_AfxStreams.Console_AddHudStream(cmd3);
+
+						return;
+					}
+
+					Tier0_Msg(
+						"mirv_streams add hud <name> - Add a hud (RGBA) stream with name <name>.\n"
+					);
+					return;
+				}
+				else if (!_stricmp(cmd2, "hudWhite"))
+				{
+					if (4 <= argc)
+					{
+						char const * cmd3 = args->ArgV(3);
+
+						g_AfxStreams.Console_AddHudWhiteStream(cmd3);
+
+						return;
+					}
+
+					Tier0_Msg(
+						"mirv_streams add hudWhite <name> - Add a hud stream on white background with name <name>.\n"
+					);
+					return;
+				}
+				else if (!_stricmp(cmd2, "hudBlack"))
+				{
+					if (4 <= argc)
+					{
+						char const * cmd3 = args->ArgV(3);
+
+						g_AfxStreams.Console_AddHudBlackStream(cmd3);
+
+						return;
+					}
+
+					Tier0_Msg(
+						"mirv_streams add hudBlack <name> - Add a hud stream on black background with name <name>.\n"
+					);
+					return;
+				}
 				else
 				if(!_stricmp(cmd2, "depth"))
 				{
@@ -535,6 +583,9 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			Tier0_Msg(
 				"mirv_streams add normal [...] - Add a normal stream.\n"
 				"mirv_streams add baseFx [...] - Add a stream that allows effects, but should not look different from normal stream unless you edit its settings.\n"
+				//"mirv_streams add hud [...] - Add a HUD stream (this is two streams (hudWhite / hudBlack) combined into one (RGBA)).\n"
+				"mirv_streams add hudWhite [...] - Add a HUD stream on white background.\n"
+				"mirv_streams add hudBlack [...] - Add a HUD stream on black background.\n"
 				"mirv_streams add depth [...] - Add a depth stream. WILL NOT WORK PROPERLY ATM!\n"
 				"mirv_streams add matteWorld [...] - Add a matte world stream.\n"
 				"mirv_streams add depthWorld [...] - Add a depth world stream. WILL NOT WORK PROPERLY ATM!\n"

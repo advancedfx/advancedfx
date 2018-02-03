@@ -65,7 +65,7 @@ bool CClientToolsCsgo::IsViewmodel(SOURCESDK::CSGO::HTOOLHANDLE hEntity)
 
 void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntity, SOURCESDK::CSGO::KeyValues * msg)
 {
-	if (!(hEntity != SOURCESDK::CSGO::HTOOLHANDLE_INVALID) && msg)
+	if (!(hEntity != SOURCESDK::CSGO::HTOOLHANDLE_INVALID && msg))
 		return;
 
 	char const * msgName = msg->GetName();
