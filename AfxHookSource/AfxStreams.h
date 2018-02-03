@@ -52,8 +52,6 @@ public:
 	//
 	// Stream settings info
 
-	virtual float RenderSmokeOverlayAlphaMod(void) = 0;
-
 	virtual bool ViewRenderShouldForceNoVis(bool orgValue) = 0;
 
 	//
@@ -493,6 +491,11 @@ public:
 	DrawType DrawViewModel_get(void);
 	void DrawViewModel_set(DrawType value);
 
+	virtual float SmokeOverlayAlphaFactor_get(void)
+	{
+		return 1.0f;
+	}
+
 	StreamCaptureType StreamCaptureType_get(void);
 	void StreamCaptureType_set(StreamCaptureType value);
 
@@ -715,7 +718,8 @@ public:
 	enum StreamCombineType
 	{
 		SCT_ARedAsAlphaBColor,
-		SCT_AColorBRedAsAlpha
+		SCT_AColorBRedAsAlpha,
+		SCT_AHudWhiteBHudBlack
 	};
 
 	/// <remarks>Takes ownership of given streams.</remarks>
@@ -1009,6 +1013,16 @@ public:
 
 	CAction * VguiAction_get(void);
 
+	enum EClearBeforeHud
+	{
+		EClearBeforeHud_No,
+		EClearBeforeHud_Black,
+		EClearBeforeHud_White
+	};
+
+	EClearBeforeHud ClearBeforeHud_get(void);
+	void ClearBeforeHud_set(EClearBeforeHud value);
+
 	bool TestAction_get(void);
 	void TestAction_set(bool value);
 
@@ -1018,7 +1032,7 @@ public:
 	float DepthValMax_get(void);
 	void DepthValMax_set(float value);
 
-	float SmokeOverlayAlphaFactor_get(void);
+	virtual float SmokeOverlayAlphaFactor_get(void);
 	void SmokeOverlayAlphaFactor_set(float value);
 
 	bool ShouldForceNoVisOverride_get(void);
@@ -1127,6 +1141,8 @@ protected:
 	float m_DepthValMax;
 	float m_SmokeOverlayAlphaFactor;
 	bool m_ShouldForceNoVisOverride;
+
+	EClearBeforeHud m_ClearBeforeHud = EClearBeforeHud_No;
 
 	virtual ~CAfxBaseFxStream();
 
@@ -1761,8 +1777,6 @@ private:
 
 		//
 		// IAfxStreamContext:
-
-		virtual float RenderSmokeOverlayAlphaMod(void);
 
 		virtual bool ViewRenderShouldForceNoVis(bool orgValue);
 
@@ -2399,6 +2413,66 @@ protected:
 	virtual ~CAfxAlphaWorldStream() {}
 };
 
+class CAfxHudWhiteStream
+	: public CAfxBaseFxStream
+{
+public:
+	CAfxHudWhiteStream()
+		: CAfxBaseFxStream()
+	{
+		SetAction(m_ClientEffectTexturesAction, m_Shared.NoDrawAction_get());
+		SetAction(m_WorldTexturesAction, m_Shared.NoDrawAction_get());
+		SetAction(m_SkyBoxTexturesAction, m_Shared.NoDrawAction_get());
+		SetAction(m_StaticPropTexturesAction, m_Shared.NoDrawAction_get());
+		SetAction(m_CableAction, m_Shared.NoDrawAction_get());
+		SetAction(m_PlayerModelsAction, m_Shared.NoDrawAction_get());
+		SetAction(m_WeaponModelsAction, m_Shared.NoDrawAction_get());
+		SetAction(m_StatTrakAction, m_Shared.NoDrawAction_get());
+		SetAction(m_ShellModelsAction, m_Shared.NoDrawAction_get());
+		SetAction(m_OtherModelsAction, m_Shared.NoDrawAction_get());
+		SetAction(m_DecalTexturesAction, m_Shared.NoDrawAction_get());
+		SetAction(m_EffectsAction, m_Shared.NoDrawAction_get());
+		SetAction(m_ShellParticleAction, m_Shared.NoDrawAction_get());
+		SetAction(m_OtherParticleAction, m_Shared.NoDrawAction_get());
+		SetAction(m_StickerAction, m_Shared.NoDrawAction_get());
+		SetAction(m_ErrorMaterialAction, m_Shared.NoDrawAction_get());
+		SetAction(m_OtherAction, m_Shared.NoDrawAction_get());
+
+		DrawHud_set(DT_NoChange);
+		ClearBeforeHud_set(EClearBeforeHud_White);
+	}
+};
+
+class CAfxHudBlackStream
+	: public CAfxBaseFxStream
+{
+public:
+	CAfxHudBlackStream()
+		: CAfxBaseFxStream()
+	{
+		SetAction(m_ClientEffectTexturesAction, m_Shared.NoDrawAction_get());
+		SetAction(m_WorldTexturesAction, m_Shared.NoDrawAction_get());
+		SetAction(m_SkyBoxTexturesAction, m_Shared.NoDrawAction_get());
+		SetAction(m_StaticPropTexturesAction, m_Shared.NoDrawAction_get());
+		SetAction(m_CableAction, m_Shared.NoDrawAction_get());
+		SetAction(m_PlayerModelsAction, m_Shared.NoDrawAction_get());
+		SetAction(m_WeaponModelsAction, m_Shared.NoDrawAction_get());
+		SetAction(m_StatTrakAction, m_Shared.NoDrawAction_get());
+		SetAction(m_ShellModelsAction, m_Shared.NoDrawAction_get());
+		SetAction(m_OtherModelsAction, m_Shared.NoDrawAction_get());
+		SetAction(m_DecalTexturesAction, m_Shared.NoDrawAction_get());
+		SetAction(m_EffectsAction, m_Shared.NoDrawAction_get());
+		SetAction(m_ShellParticleAction, m_Shared.NoDrawAction_get());
+		SetAction(m_OtherParticleAction, m_Shared.NoDrawAction_get());
+		SetAction(m_StickerAction, m_Shared.NoDrawAction_get());
+		SetAction(m_ErrorMaterialAction, m_Shared.NoDrawAction_get());
+		SetAction(m_OtherAction, m_Shared.NoDrawAction_get());
+
+		DrawHud_set(DT_NoChange);
+		ClearBeforeHud_set(EClearBeforeHud_Black);
+	}
+};
+
 class CAfxFileTracker
 {
 public:
@@ -2441,7 +2515,7 @@ public:
 #endif
 
 	//void OnRender(CCSViewRender_Render_t fn, void * this_ptr, const SOURCESDK::vrect_t_csgo * rect);
-	void OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer );
+	void OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer);
 
 	bool OnViewRenderShouldForceNoVis(bool orgValue);
 
@@ -2494,6 +2568,9 @@ public:
 	void Console_AddAlphaEntityStream(const char * streamName);
 	void Console_AddAlphaWorldStream(const char * streamName);
 	void Console_AddAlphaMatteEntityStream(const char * streamName);
+	void Console_AddHudStream(const char * streamName);
+	void Console_AddHudWhiteStream(const char * streamName);
+	void Console_AddHudBlackStream(const char * streamName);
 	void Console_PrintStreams();
 	void Console_RemoveStream(const char * streamName);
 	void Console_EditStream(const char * streamName, IWrpCommandArgs * args);
@@ -2588,8 +2665,6 @@ private:
 	bool m_RecordVoicesUsed;
 
 	bool m_OnRenderViewFirstCall;
-	bool m_OnRenderViewCalled = false;
-	int m_WhatToDraw;
 
 	SOURCESDK::IMaterialSystem_csgo * m_MaterialSystem;
 	IAfxBaseClientDll * m_AfxBaseClientDll;
@@ -2635,7 +2710,7 @@ private:
 	SOURCESDK::ITexture_csgo * m_RenderTargetDepthF;
 	//CAfxMaterial * m_ShowzMaterial;
 	DWORD m_Current_View_Render_ThreadId;
-	bool m_PresentBlocked;
+	bool m_PresentBlocked = false;
 	bool m_ShutDown = false;
 
 	void SetCurrent_View_Render_ThreadId(DWORD id);
@@ -2667,7 +2742,7 @@ private:
 
 	void CreateRenderTargets(SOURCESDK::IMaterialSystem_csgo * materialSystem);
 
-	IAfxMatRenderContextOrg * CaptureStreamToBuffer(CAfxRenderViewStream * stream, CAfxRecordStream * captureTarget, bool first, bool last);
+	IAfxMatRenderContextOrg * CaptureStreamToBuffer(IAfxMatRenderContextOrg * ctxp, CAfxRenderViewStream * stream, CAfxRecordStream * captureTarget, bool first, bool last, CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer);
 
 	IAfxStreamContext * FindStreamContext(IAfxMatRenderContext * ctx);
 

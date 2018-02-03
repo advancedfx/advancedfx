@@ -6,6 +6,27 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.35.5</version>
+<time>2018-02-03T15:32Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams smokeOverlayAlphaFactor stream property not working properly (in preview / when having mutliple streams recorded).
+</change>
+<change type="fixed">
+Fixed mirv_agr not working properly in CSSV34 / CS:GO.
+</change>
+</changes>
+<comments>
+Greetings:<br />
+- https://twitter.com/SPestrux<br />
+- https://twitter.com/CSGODemoManager<br />
+- You :-)
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.35.4</version>
 <time>2018-01-30T09:17Z</time>
 <changes>

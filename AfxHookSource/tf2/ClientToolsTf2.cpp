@@ -33,7 +33,7 @@ void CClientToolsTf2::OnPostToolMessage(void * hEntity, void * msg)
 
 void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, SOURCESDK::TF2::KeyValues * msg)
 {
-	if (!(hEntity != SOURCESDK::CSGO::HTOOLHANDLE_INVALID) && msg)
+	if (!(hEntity != SOURCESDK::CSGO::HTOOLHANDLE_INVALID && msg))
 		return;
 
 	char const * msgName = msg->GetName();

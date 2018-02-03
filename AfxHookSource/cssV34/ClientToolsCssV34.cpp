@@ -35,7 +35,7 @@ void CClientToolsCssV34::OnPostToolMessage(void * hEntity, void * msg)
 
 void CClientToolsCssV34::OnPostToolMessageCssV34(SOURCESDK::CSSV34::HTOOLHANDLE hEntity, SOURCESDK::CSSV34::KeyValues * msg)
 {
-	if (!(hEntity != SOURCESDK::CSSV34::HTOOLHANDLE_INVALID) && msg)
+	if (!(hEntity != SOURCESDK::CSSV34::HTOOLHANDLE_INVALID && msg))
 		return;
 
 	char const * msgName = msg->GetName();
