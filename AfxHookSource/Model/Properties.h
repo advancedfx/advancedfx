@@ -9,15 +9,15 @@ template<typename T, CClass::EType ET>
 class CProperty : public CClass
 {
 public:
-	CProperty(CClass * parent)
-		: CClass(parent)
-		, m_EventSource(this)
+	CProperty(CClass * memberOf)
+		: CClass(memberOf)
+		, m_SetEventSource(this, this)
 	{
 	}
 
-	CProperty(CClass * parent, T value)
-		: CClass(parent)
-		, m_EventSource(this)
+	CProperty(CClass * memberOf, T value)
+		: CClass(memberOf)
+		, m_SetEventSource(this, this)
 	{
 		m_Value = value;
 	}
@@ -59,15 +59,15 @@ typedef CProperty<double, CClass::EType_DoubleProperty> CDoubleProperty;
 class CStringProperty : public CClass
 {
 public:
-	CStringProperty(CClass * parent)
-		: CClass(parent)
-		, m_EventSource(this)
+	CStringProperty(CClass * memberOf)
+		: CClass(memberOf)
+		, m_SetEventSource(this, this)
 	{
 	}
 
-	CStringProperty(CClass * parent, char const * value)
-		: CClass(parent)
-		, m_EventSource(this)
+	CStringProperty(CClass * memberOf, char const * value)
+		: CClass(memberOf)
+		, m_SetEventSource(this, this)
 	{
 		m_Value = value;
 	}

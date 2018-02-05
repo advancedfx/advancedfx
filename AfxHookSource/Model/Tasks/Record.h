@@ -13,12 +13,12 @@ class CRecord : public CTask
 public:
 	typedef CStringProperty CDemo;
 
-	CRecord(CClass * parent,
+	CRecord(CClass * memberOf,
 		const char * title, const char * description,
 		const char * demo,
 		int beginTick, float beginTime, CDemoTime::EMode beginMode,
 		int endTick, float endTime, CDemoTime::EMode endMode)
-		: CTask(parent, title, description)
+		: CTask(memberOf, title, description)
 		, m_Demo(this, demo)
 		, m_Begin(this, beginTick, beginTime, beginMode)
 		, m_End(this, endTick, endTime, endMode)

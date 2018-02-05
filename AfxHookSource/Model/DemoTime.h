@@ -19,9 +19,9 @@ public:
 	typedef CFloatProperty CTime;
 	typedef CProperty<EMode, EType_DemoTime_Mode> CMode;
 
-	CDemoTime(CClass * parent,
+	CDemoTime(CClass * memberOf,
 		int tick, float time, EMode mode)
-		: CClass(parent)
+		: CClass(memberOf)
 		, m_Mode(this, mode)
 		, m_Tick(this, tick)
 		, m_Time(this, time)

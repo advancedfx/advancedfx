@@ -35,13 +35,18 @@ public:
 		EType_Record
 	};
 
-	/// <param name="parent">Initial dependency, only roots can have nullptr as parent.</param>
+	/// <param name="memberOf">
+	/// If memberOf is not nullptr, then this instance will depend on memberOf
+	/// and requesting deletion of this instance will make sure
+	/// that deletion of memberOf is triggered first.
+	///</param>
 	/// <remarks>Circular dependencies must not be created.</remarks>
-	CClass(CClass * parent)
+	CClass(CClass * memberOf)
+		: m_MemberOf(memberOf)
 	{
-		if (parent)
+		if (m_MemberOf)
 		{
-			Depend(parent);
+			Depend(m_MemberOf);
 		}
 	}
 
@@ -86,25 +91,32 @@ public:
 
 
 protected:
-	~CClass()
+	virtual ~CClass()
 	{
 	}
 
 	void Delete(CClass * cause)
 	{
-		OnDeleting(cause);
-
-		while (!m_Dependents.empty())
+		if (cause != m_MemberOf)
 		{
-			(*m_Dependents.begin())->Delete(this);
+			m_MemberOf->Delete(this);
 		}
-
-		while (!m_Dependencies.empty())
+		else
 		{
-			Undepend(*m_Dependencies.begin());
-		}
+			OnDeleting(cause);
 
-		delete this;
+			while (!m_Dependents.empty())
+			{
+				(*m_Dependents.begin())->Delete(this);
+			}
+
+			while (!m_Dependencies.empty())
+			{
+				Undepend(*m_Dependencies.begin());
+			}
+
+			delete this;
+		}
 	}
 
 	/// <remarks>Circular dependencies must not be created.</remarks>
@@ -131,6 +143,7 @@ protected:
 	}
 
 private:
+	CClass * m_MemberOf;
 	std::set<CClass *> m_Dependents;
 	std::set<CClass *> m_Dependencies;
 

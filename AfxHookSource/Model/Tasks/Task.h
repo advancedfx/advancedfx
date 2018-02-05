@@ -13,9 +13,9 @@ class CTask
 	: public CClass
 {
 public:
-	CTask(CClass * parent,
+	CTask(CClass * memberOf,
 		const char * title, const char * description)
-		: CClass(parent)
+		: CClass(memberOf)
 		, m_Title(this, title)
 		, m_Description(this, description)
 	{

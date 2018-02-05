@@ -575,10 +575,10 @@
     <ClInclude Include="Model\Properties.h">
       <Filter>AfxHookSource\Model</Filter>
     </ClInclude>
-    <ClInclude Include="Model.h">
+    <ClInclude Include="Model\DemoTime.h">
       <Filter>AfxHookSource\Model</Filter>
     </ClInclude>
-    <ClInclude Include="Model\DemoTime.h">
+    <ClInclude Include="Model\Model.h">
       <Filter>AfxHookSource\Model</Filter>
     </ClInclude>
   </ItemGroup>

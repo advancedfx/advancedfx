@@ -14,11 +14,13 @@ public:
 	typedef void (Target::*NotificationFn_t)(Source * source, CClass * cause);
 
 	CDeletedNotifier(Target * target, NotificationFn_t fn, Source * source)
-		: CClass(target)
+		: CClass(nullptr)
 		, m_Target(target)
 		, m_Fn(fn)
+		, m_Source(source)
 	{
-		Depend(source);
+		Depend(m_Target);
+		Depend(m_Source);
 	}
 
 	virtual EType GetType() const
@@ -38,6 +40,10 @@ protected:
 	}
 
 private:
+	virtual ~CDeletedNotifier()
+	{
+	}
+
 	Target * m_Target;
 	NotificationFn_t m_Fn;
 	Source * m_Source;
@@ -50,12 +56,12 @@ public:
 	class CNotifierBase : public CClass
 	{
 	public:
-		CNotifierBase(CEventSource * parent)
-			: CClass(parent)
+		CNotifierBase(CClass * memberOf)
+			: CClass(memberOf)
 		{
 		}
 
-		virtual void Notify() abstract = 0;
+		virtual void Notify(Source * source) abstract = 0;
 	};
 
 	template<class Target>
@@ -64,14 +70,12 @@ public:
 	public:
 		typedef void (Target::*NotificationFn_t)(Source * source);
 
-		CNotifier(CEventSource * parent
-			, Target * target, NotificationFn_t fn, Source * source)
-			: CNotifierBase(parent)
-			, m_Parent(parent)
+		CNotifier(CEventSource * eventSource, Target * target, NotificationFn_t fn)
+			: CNotifierBase(nullptr)
+			, m_EventSource(eventSource)
 			, m_Target(target)
 			, m_Fn(fn)
 		{
-			Depend(source);
 			Depend(target);
 		}
 
@@ -89,22 +93,28 @@ public:
 
 		virtual void OnDeleting(CClass * cause)
 		{
-			m_Parent->OnNotifierDeleting(this);
+			m_EventSource->OnNotifierDeleting(this);
 
 			CClass::OnDeleting(cause);
 		}
 
 	private:
-		CEventSource * m_Parent;
+		virtual ~CNotifier()
+		{
+		}
+
+		CEventSource * m_EventSource;
 		Target * m_Target;
 		NotificationFn_t m_Fn;
 
 	};
 
-	CEventSource(Source * source)
-		: CClass(source)
+	CEventSource(CClass * memberOf, Source * source)
+		: CClass(memberOf)
 		, m_Source(source)
 	{
+		if (memberOf != m_Source) Depend(m_Source);
+
 		m_SinksIterator = m_Sinks.begin();
 	}
 
@@ -113,15 +123,9 @@ public:
 		return EType_EventSource;
 	}
 
-	/// <remarks>You can only have one notification function per notifyee.</remarks>
 	void AddNotifier(CNotifierBase * notifier)
 	{
-		if (m_Sinks.insert(std::pair<CClass *, CEventNotifier *>(new CEventNotifier(notifyee, fn, this))).second)
-		{
-#ifdef _DEBUG
-			throw "advancedfx::Model:CEventSource must have only one notification function per notifyee!";
-#endif
-		}
+		m_Sinks.insert(notifier);
 	}
 
 	void RemoveNotifier(CNotifierBase * notifier)
@@ -134,7 +138,7 @@ public:
 	{
 		for (m_SinksIterator = m_Sinks.begin(); m_SinksIterator != m_Sinks.end(); )
 		{
-			(*m_SinksIterator)->Notify();
+			(*m_SinksIterator)->Notify(m_Source);
 			if (m_RemovedCurrent)
 			{
 				m_RemovedCurrent = false;

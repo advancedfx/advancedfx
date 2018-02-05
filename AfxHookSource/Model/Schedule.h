@@ -13,9 +13,9 @@ class CSchedule
 	: public CClass
 {
 public:
-	CSchedule(CClass * parent,
+	CSchedule(CClass * memberOf,
 		const char * title, const char * description)
-		: CClass(parent)
+		: CClass(memberOf)
 		, m_Title(this, title)
 		, m_Description(this, description)
 	{
