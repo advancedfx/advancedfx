@@ -499,6 +499,16 @@ public:
 	StreamCaptureType StreamCaptureType_get(void);
 	void StreamCaptureType_set(StreamCaptureType value);
 
+	bool ForceBuildingCubemaps_get(void)
+	{
+		return m_ForceBuildingCubemaps;
+	}
+
+	void ForceBuildingCubemaps_set(bool value)
+	{
+		m_ForceBuildingCubemaps = value;
+	}
+
 	virtual void LevelShutdown(void)
 	{
 	}
@@ -517,6 +527,7 @@ public:
 	}
 
 protected:
+	bool m_ForceBuildingCubemaps = false;
 	StreamCaptureType m_StreamCaptureType;
 	bool m_DrawingSkyBox;
 
@@ -539,6 +550,8 @@ private:
 		int m_Width;
 		int m_Height;
 	};
+
+	static CAfxRenderViewStream * m_MainStream;
 
 	DrawType m_DrawViewModel;
 	DrawType m_DrawHud;
@@ -2085,6 +2098,8 @@ class CAfxDepthStream
 public:
 	CAfxDepthStream() : CAfxBaseFxStream()
 	{
+		ForceBuildingCubemaps_set(true);
+
 		/*
 		SetAction(m_ClientEffectTexturesAction, m_Shared.DepthAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.DepthAction_get());
@@ -2134,6 +2149,8 @@ class CAfxMatteWorldStream
 public:
 	CAfxMatteWorldStream() : CAfxBaseFxStream()
 	{
+		ForceBuildingCubemaps_set(true);
+
 		/*
 		SetAction(m_ClientEffectTexturesAction, m_Shared.DrawAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.DrawAction_get());
@@ -2183,6 +2200,8 @@ class CAfxDepthWorldStream
 public:
 	CAfxDepthWorldStream() : CAfxBaseFxStream()
 	{
+		ForceBuildingCubemaps_set(true);
+
 		/*
 		SetAction(m_ClientEffectTexturesAction, m_Shared.DepthAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.DepthAction_get());
@@ -2232,6 +2251,8 @@ class CAfxMatteEntityStream
 public:
 	CAfxMatteEntityStream() : CAfxBaseFxStream()
 	{
+		ForceBuildingCubemaps_set(true);
+
 		/*
 		SetAction(m_ClientEffectTexturesAction, m_Shared.MaskAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.MaskAction_get());
@@ -2289,6 +2310,8 @@ class CAfxAlphaMatteStream
 public:
 	CAfxAlphaMatteStream() : CAfxBaseFxStream()
 	{
+		ForceBuildingCubemaps_set(true);
+
 		/*
 		SetAction(m_ClientEffectTexturesAction, m_Shared.BlackAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.BlackAction_get());
@@ -2340,6 +2363,8 @@ class CAfxAlphaEntityStream
 public:
 	CAfxAlphaEntityStream() : CAfxBaseFxStream()
 	{
+		ForceBuildingCubemaps_set(true);
+
 		SetAction(m_ClientEffectTexturesAction, m_Shared.DrawAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.DrawAction_get());
 		SetAction(m_SkyBoxTexturesAction, m_Shared.DrawAction_get());
@@ -2370,6 +2395,8 @@ class CAfxAlphaWorldStream
 public:
 	CAfxAlphaWorldStream() : CAfxBaseFxStream()
 	{
+		ForceBuildingCubemaps_set(true);
+
 		/*
 		SetAction(m_ClientEffectTexturesAction, m_Shared.DrawAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.DrawAction_get());
@@ -2420,6 +2447,8 @@ public:
 	CAfxHudWhiteStream()
 		: CAfxBaseFxStream()
 	{
+		ForceBuildingCubemaps_set(true);
+
 		SetAction(m_ClientEffectTexturesAction, m_Shared.NoDrawAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.NoDrawAction_get());
 		SetAction(m_SkyBoxTexturesAction, m_Shared.NoDrawAction_get());
@@ -2450,6 +2479,8 @@ public:
 	CAfxHudBlackStream()
 		: CAfxBaseFxStream()
 	{
+		ForceBuildingCubemaps_set(true);
+
 		SetAction(m_ClientEffectTexturesAction, m_Shared.NoDrawAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.NoDrawAction_get());
 		SetAction(m_SkyBoxTexturesAction, m_Shared.NoDrawAction_get());
@@ -2486,10 +2517,11 @@ private:
 };
 
 class CAfxStreams
-: public IAfxBaseClientDllLevelShutdown
-, public IAfxBaseClientDllView_Render
+: public IAfxBaseClientDllView_Render
 {
 public:
+	typedef SOURCESDK::IMatRenderContext_csgo CMatQueuedRenderContext_csgo;
+
 	CAfxImageBufferPool ImageBufferPool;
 
 	bool m_FormatBmpAndNotTga;
@@ -2572,6 +2604,7 @@ public:
 	void Console_AddHudWhiteStream(const char * streamName);
 	void Console_AddHudBlackStream(const char * streamName);
 	void Console_PrintStreams();
+	void Console_MoveStream(IWrpCommandArgs * args);
 	void Console_RemoveStream(const char * streamName);
 	void Console_EditStream(const char * streamName, IWrpCommandArgs * args);
 	void Console_ListActions(void);
@@ -2599,7 +2632,8 @@ public:
 
 	virtual std::wstring GetTakeDir(void);
 
-	virtual void LevelShutdown(IAfxBaseClientDll * cl);
+	void LevelInitPostEntity(void);
+	void LevelShutdown(void);
 
 	virtual void View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *rect);
 
@@ -2656,6 +2690,8 @@ private:
 	};
 
 	std::string m_RecordName;
+	bool m_FirstRenderAfterLevelInit = true;
+	bool m_FirstStreamToBeRendered;
 	bool m_SuspendPreview = false;
 	bool m_PresentRecordOnScreen;
 	bool m_StartMovieWav;
@@ -2680,30 +2716,32 @@ private:
 	CamExport * m_CamExportObj = 0;
 	bool m_GameRecording;
 
-	WrpConVarRef * m_HostFrameRate;
+	WrpConVarRef * m_HostFrameRate = nullptr;
 
-	WrpConVarRef * m_MatPostProcessEnableRef;
+	WrpConVarRef * m_MatPostProcessEnableRef = nullptr;
 	int m_OldMatPostProcessEnable;
-	int m_NewMatPostProcessEnable = 0;
+	int m_NewMatPostProcessEnable = -1;
 
-	WrpConVarRef * m_MatDynamicTonemappingRef;
+	WrpConVarRef * m_MatDynamicTonemappingRef = nullptr;
 	int m_OldMatDynamicTonemapping;
-	int m_NewMatDynamicTonemapping = 0;
+	int m_NewMatDynamicTonemapping = -1;
 
-	WrpConVarRef * m_MatMotionBlurEnabledRef;
+	WrpConVarRef * m_MatMotionBlurEnabledRef = nullptr;
 	int m_OldMatMotionBlurEnabled;
-	int m_NewMatMotionBlurEnabled = 0;
+	int m_NewMatMotionBlurEnabled = -1;
 
-	WrpConVarRef * m_MatForceTonemapScale;
+	WrpConVarRef * m_MatForceTonemapScale = nullptr;
 	float m_OldMatForceTonemapScale;
-	float m_NewMatForceTonemapScale = 1.0f;
+	float m_NewMatForceTonemapScale = -1;
 
-	WrpConVarRef * m_SndMuteLosefocus;
+	WrpConVarRef * m_SndMuteLosefocus = nullptr;
 	int m_OldSndMuteLosefocus;
 
-	WrpConVarRef * m_SndMixAsync;
+	WrpConVarRef * m_SndMixAsync = nullptr;
 	int m_OldSndMixAsync;
 
+	WrpConVarRef * m_BuildingCubemaps = nullptr;
+	int m_OldBuildingCubemaps;
 
 	std::wstring m_TakeDir;
 	//ITexture_csgo * m_RgbaRenderTarget;
@@ -2742,7 +2780,10 @@ private:
 
 	void CreateRenderTargets(SOURCESDK::IMaterialSystem_csgo * materialSystem);
 
+	IAfxMatRenderContextOrg * CaptureStream(IAfxMatRenderContextOrg * ctxp, CAfxRecordStream * stream, CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer);
 	IAfxMatRenderContextOrg * CaptureStreamToBuffer(IAfxMatRenderContextOrg * ctxp, CAfxRenderViewStream * stream, CAfxRecordStream * captureTarget, bool first, bool last, CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer);
+
+	IAfxMatRenderContextOrg * PreviewStream(IAfxMatRenderContextOrg * ctxp, CAfxRenderViewStream * previewStream, bool isLast, int slot, int cols, bool & hudDrawn, CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer);
 
 	IAfxStreamContext * FindStreamContext(IAfxMatRenderContext * ctx);
 

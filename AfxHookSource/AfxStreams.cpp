@@ -14,6 +14,7 @@
 #include "MirvPgl.h"
 #include "csgo_Audio.h"
 #include "mirv_voice.h"
+#include "addresses.h"
 
 #include <shared/StringTools.h>
 #include <shared/FileTools.h>
@@ -467,6 +468,8 @@ void CAfxFileTracker::WaitForFiles(unsigned int maxUnfinishedFiles)
 }
 
 // CAfxRenderViewStream ////////////////////////////////////////////////////////
+
+CAfxRenderViewStream * CAfxRenderViewStream::m_MainStream = 0;
 
 CAfxRenderViewStream::CAfxRenderViewStream()
 : m_DrawViewModel(DT_NoChange)
@@ -1184,6 +1187,8 @@ CAfxBaseFxStream::CAfxBaseFxStream()
 , m_VguiAction(0)
 {
 	m_Shared.AddRef();
+
+	ForceBuildingCubemaps_set(true);
 
 	SetAction(m_ClientEffectTexturesAction, m_Shared.DrawAction_get());
 	SetAction(m_WorldTexturesAction, m_Shared.DrawAction_get());
@@ -4546,16 +4551,11 @@ CAfxStreams::CAfxStreams()
 , m_ShaderShadow(0)
 , m_Recording(false)
 , m_Frame(0)
-, m_MatPostProcessEnableRef(0)
-, m_MatDynamicTonemappingRef(0)
-, m_MatMotionBlurEnabledRef(0)
-, m_MatForceTonemapScale(0)
 , m_FormatBmpAndNotTga(false)
 , m_Current_View_Render_ThreadId(0)
 //, m_RgbaRenderTarget(0)
 , m_RenderTargetDepthF(0)
 , m_CamBvh(false)
-, m_HostFrameRate(0)
 , m_GameRecording(false)
 {
 }
@@ -4589,7 +4589,6 @@ void CAfxStreams::OnAfxBaseClientDll(IAfxBaseClientDll * value)
 	m_AfxBaseClientDll = value;
 	if(m_AfxBaseClientDll)
 	{
-		m_AfxBaseClientDll->OnLevelShutdown_set(this);
 		m_AfxBaseClientDll->OnView_Render_set(this);
 	}
 }
@@ -4612,7 +4611,6 @@ void CAfxStreams::OnAfxBaseClientDll_Free(void)
 	if(m_AfxBaseClientDll)
 	{
 		m_AfxBaseClientDll->OnView_Render_set(0);
-		m_AfxBaseClientDll->OnLevelShutdown_set(0);
 		m_AfxBaseClientDll = 0;
 	}
 }
@@ -4667,16 +4665,248 @@ public:
 
 };
 
+IAfxMatRenderContextOrg * CAfxStreams::CaptureStream(IAfxMatRenderContextOrg * ctxp, CAfxRecordStream * stream, CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
+{
+	//
+	// Render a stream and queue capturing etc.:
+
+	CAfxRenderViewStream * streamA = 0;
+	CAfxRenderViewStream * streamB = 0;
+	bool streamAOk = false;
+	bool streamBOk = false;
+
+	CAfxSingleStream * curSingle = stream->AsAfxSingleStream();
+	CAfxTwinStream * curTwin = stream->AsAfxTwinStream();
+
+	if (curSingle)
+	{
+		streamA = curSingle->Stream_get();
+	}
+	else if (curTwin)
+	{
+		CAfxTwinStream::StreamCombineType streamCombineType = curTwin->StreamCombineType_get();
+
+		switch (streamCombineType)
+		{
+		case CAfxTwinStream::SCT_ARedAsAlphaBColor:
+		{
+			streamA = curTwin->StreamB_get();
+			streamB = curTwin->StreamA_get();
+		}
+		break;
+		case CAfxTwinStream::SCT_AColorBRedAsAlpha:
+		{
+			streamA = curTwin->StreamA_get();
+			streamB = curTwin->StreamB_get();
+		}
+		break;
+		case CAfxTwinStream::SCT_AHudWhiteBHudBlack:
+		{
+			streamA = curTwin->StreamA_get();
+			streamB = curTwin->StreamB_get();
+		}
+		break;
+		}
+	}
+
+	if (streamA)
+	{
+		ctxp = CaptureStreamToBuffer(ctxp, streamA, stream, true, !streamB, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+	}
+
+	if (streamB)
+	{
+		ctxp = CaptureStreamToBuffer(ctxp, streamB, stream, !streamA, true, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+	}
+
+	return ctxp;
+}
+
+IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * ctxp, CAfxRenderViewStream * previewStream, bool isLast, int slot, int cols, bool & hudDrawn, CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
+{
+	if (0 < strlen(previewStream->AttachCommands_get()))
+		g_VEngineClient->ExecuteClientCmd(previewStream->AttachCommands_get()); // Execute commands before we lock the stream!
+
+	previewStream->OnRenderBegin();
+
+	int myWhatToDraw = whatToDraw;
+
+	switch (previewStream->DrawHud_get())
+	{
+	case CAfxRenderViewStream::DT_Draw:
+		myWhatToDraw |= SOURCESDK::RENDERVIEW_DRAWHUD;
+		break;
+	case CAfxRenderViewStream::DT_NoDraw:
+		myWhatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWHUD;
+		break;
+	case CAfxRenderViewStream::DT_NoChange:
+	default:
+		break;
+	}
+
+	switch (previewStream->DrawViewModel_get())
+	{
+	case CAfxRenderViewStream::DT_Draw:
+		myWhatToDraw |= SOURCESDK::RENDERVIEW_DRAWVIEWMODEL;
+		break;
+	case CAfxRenderViewStream::DT_NoDraw:
+		myWhatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWVIEWMODEL;
+		break;
+	case CAfxRenderViewStream::DT_NoChange:
+	default:
+		break;
+	}
+
+	SOURCESDK::CViewSetup_csgo newView = view;
+	SOURCESDK::CViewSetup_csgo newHudView = hudViewSetup;
+
+	int col = slot % cols;
+	int row = slot / cols;
+
+	newView.m_nUnscaledWidth /= cols;
+	newView.m_nUnscaledHeight /= cols;
+	newView.m_nUnscaledX += col * newView.m_nUnscaledWidth;
+	newView.m_nUnscaledY += row * newView.m_nUnscaledHeight;
+	newView.width /= cols;
+	newView.height /= cols;
+	newView.x += col * newView.width;
+	newView.y += row * newView.height;
+
+	newHudView.m_nUnscaledWidth /= cols;
+	newHudView.m_nUnscaledHeight /= cols;
+	newHudView.m_nUnscaledX += col * newHudView.m_nUnscaledWidth;
+	newHudView.m_nUnscaledY += row * newHudView.m_nUnscaledHeight;
+	newHudView.width /= cols;
+	newHudView.height /= cols;
+	newHudView.x += col * newHudView.width;
+	newHudView.y += row * newHudView.height;
+
+	ctxp->PushRenderTargetAndViewport(0, 0, newView.m_nUnscaledX, newView.m_nUnscaledY, newView.m_nUnscaledWidth, newView.m_nUnscaledHeight);
+
+	if (/*!g_pScaleformUI_csgo &&  */ 1 < cols && (hudDrawn || m_Recording))
+	{
+		// Work around ScaleformUI HUD data not being flushed (do not allow to render the HUD in different positions per frame):
+		myWhatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWHUD;
+	}
+	else
+	{
+		hudDrawn = hudDrawn || (myWhatToDraw & SOURCESDK::RENDERVIEW_DRAWHUD);
+	}
+
+	float oldSmokeOverlayAlphaFactor = *smokeOverlayAlphaFactor;
+	smokeOverlayAlphaFactorMultiplyer = previewStream->SmokeOverlayAlphaFactor_get();
+	if (smokeOverlayAlphaFactorMultiplyer < 1) *smokeOverlayAlphaFactor = 0;
+
+	{
+		bool forceBuildingCubeMaps = true;
+
+		float oldFrameTime;
+		int oldBuildingCubeMaps;
+
+		if (m_FirstStreamToBeRendered)
+		{
+			forceBuildingCubeMaps = previewStream->ForceBuildingCubemaps_get();
+		}
+		else
+		{
+			oldFrameTime = g_Hook_VClient_RenderView.GetGlobals()->frametime_get();
+			g_Hook_VClient_RenderView.GetGlobals()->frametime_set(0);
+		}
+
+		if (forceBuildingCubeMaps)
+		{
+			oldBuildingCubeMaps = m_BuildingCubemaps->GetInt();
+			m_BuildingCubemaps->SetValue(1.0f);
+		}
+
+		fn(this_ptr, newView, newHudView, nClearFlags, myWhatToDraw);
+
+		if (forceBuildingCubeMaps)
+		{
+			m_BuildingCubemaps->SetValue((float)oldBuildingCubeMaps);
+		}
+
+		if (m_FirstStreamToBeRendered)
+		{
+			m_FirstStreamToBeRendered = false;
+		}
+		else
+		{
+			g_Hook_VClient_RenderView.GetGlobals()->frametime_set(oldFrameTime);
+		}
+	}
+
+	*smokeOverlayAlphaFactor = oldSmokeOverlayAlphaFactor;
+
+	/* Does not fix anything.
+	if (0 < num)
+	{
+	QueueOrExecute(ctxp, new CAfxLeafExecute_Functor(new CAfxScaleformUIFixFunctor()));
+	}
+	*/
+
+	ctxp->PopRenderTargetAndViewport();
+
+	previewStream->OnRenderEnd();
+
+	if (0 < strlen(previewStream->DetachCommands_get()))
+		g_VEngineClient->ExecuteClientCmd(previewStream->DetachCommands_get()); // Execute commands after we unlocked the stream!
+
+	if (isLast)
+	{
+		if (m_PresentBlocked)
+		{
+			BlockPresent(ctxp, false);
+			m_PresentBlocked = false;
+		}
+	}
+	else
+	{
+		if (!m_PresentBlocked)
+		{
+			BlockPresent(ctxp, true);
+			m_PresentBlocked = true;
+		}
+
+		// Work around game running out of memory because of too much shit on the queue
+		// aka issue ripieces/advancedfx-prop#22 by using a sub-context:
+		m_MaterialSystem->EndFrame();
+		m_MaterialSystem->SwapBuffers(); // Apparently we have to do this always, otherwise the state is messed up.
+		m_MaterialSystem->BeginFrame(0);
+
+		ctxp = GetCurrentContext()->GetOrg(); // We are potentially on a new context now
+	}
+	
+
+	//m_MaterialSystem->SetRenderContext(orgCtx);
+	//orgCtx->Release();  // SetRenderContext calls AddRef
+	//ctxp = orgCtxp;
+	//
+	//QueueOrExecute(ctxp, new CAfxSubContextEndQueue_Functor(subCtx));
+
+	//QueueOrExecute(orgCtxp, new CAfxSubContextEndQueue_Functor(subCtx));
+
+	return ctxp;
+}
+
+
 void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
 {
-	static SOURCESDK::CViewSetup_csgo orgView;
-	static SOURCESDK::CViewSetup_csgo orgHudView;
-
 	smokeOverlayAlphaFactorMultiplyer = 1;
 
 	if (m_OnRenderViewFirstCall)
 	{
 		m_OnRenderViewFirstCall = false;
+
+		if(m_FirstRenderAfterLevelInit)
+		{
+			// HACK: Rendering streams during map load will crash things, so don't do that.
+
+			m_FirstRenderAfterLevelInit = false;
+
+			fn(this_ptr, view, hudViewSetup, nClearFlags, whatToDraw);
+			return;
+		}
 	}
 	else
 	{
@@ -4686,6 +4916,9 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 
 	IAfxMatRenderContextOrg * ctxp = GetCurrentContext()->GetOrg();
 
+	CAfxRecordStream * mainStream = nullptr;
+	m_FirstStreamToBeRendered = true;
+
 	if (m_Recording)
 	{
 		if (!CheckCanFeedStreams())
@@ -4694,61 +4927,38 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 		}
 		else
 		{
+			/*
 			for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
 			{
-				if (!(*it)->Record_get()) continue;
-
-				//
-				// Render a stream and queue capturing etc.:
-
-				CAfxRenderViewStream * streamA = 0;
-				CAfxRenderViewStream * streamB = 0;
-				bool streamAOk = false;
-				bool streamBOk = false;
-
-				CAfxSingleStream * curSingle = (*it)->AsAfxSingleStream();
-				CAfxTwinStream * curTwin = (*it)->AsAfxTwinStream();
-
-				if (curSingle)
+				if (CAfxSingleStream * curSingle = (*it)->AsAfxSingleStream())
 				{
-					streamA = curSingle->Stream_get();
-				}
-				else if (curTwin)
-				{
-					CAfxTwinStream::StreamCombineType streamCombineType = curTwin->StreamCombineType_get();
-
-					switch (streamCombineType)
+					if (curSingle->Stream_get()->IsMainStream())
 					{
-					case CAfxTwinStream::SCT_ARedAsAlphaBColor:
-					{
-						streamA = curTwin->StreamB_get();
-						streamB = curTwin->StreamA_get();
-					}
-					break;
-					case CAfxTwinStream::SCT_AColorBRedAsAlpha:
-					{
-						streamA = curTwin->StreamA_get();
-						streamB = curTwin->StreamB_get();
-					}
-					break;
-					case CAfxTwinStream::SCT_AHudWhiteBHudBlack:
-					{
-						streamA = curTwin->StreamA_get();
-						streamB = curTwin->StreamB_get();
-					}
-					break;
+						mainStream = (*it);
+						break;
 					}
 				}
-
-				if (streamA)
+				if (CAfxTwinStream * curTwin = (*it)->AsAfxTwinStream())
 				{
-					ctxp = CaptureStreamToBuffer(ctxp, streamA, (*it), true, !streamB, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+					if (curTwin->StreamA_get()->IsMainStream() || curTwin->StreamB_get()->IsMainStream())
+					{
+						mainStream = (*it);
+						break;
+					}
 				}
+			}
+			*/
 
-				if (streamB)
-				{
-					ctxp = CaptureStreamToBuffer(ctxp, streamB, (*it), !streamA, true, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
-				}
+			if (mainStream && mainStream->Record_get())
+			{
+				ctxp = CaptureStream(ctxp, mainStream, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+			}
+
+			for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
+			{
+				if (!(*it)->Record_get() || (*it) == mainStream) continue;
+
+				ctxp = CaptureStream(ctxp, (*it), fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
 			}
 		}
 
@@ -4791,6 +5001,7 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 				BlockPresent(ctxp, false);
 				m_PresentBlocked = false;
 			}
+
 			fn(this_ptr, view, hudViewSetup, nClearFlags, whatToDraw);
 		}
 		else
@@ -4814,9 +5025,6 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 
 			int num = 0;
 
-			orgView = view;
-			orgHudView = hudViewSetup;
-
 			bool hudDrawn = false;
 
 			for (std::map<int, CAfxRenderViewStream *>::iterator it = previewStreams.begin(); it != previewStreams.end(); ++it)
@@ -4827,119 +5035,7 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 
 				CAfxRenderViewStream * previewStream = it->second;
 
-				if (0 < strlen(previewStream->AttachCommands_get()))
-					g_VEngineClient->ExecuteClientCmd(previewStream->AttachCommands_get()); // Execute commands before we lock the stream!
-
-				previewStream->OnRenderBegin();
-
-				if (num + 1 < (int)previewStreams.size())
-				{
-					BlockPresent(ctxp, true);
-					m_PresentBlocked = true;
-				}
-				else if(m_PresentBlocked)
-				{
-					BlockPresent(ctxp, false);
-					m_PresentBlocked = false;
-				}
-
-				int myWhatToDraw = whatToDraw;
-
-				switch (previewStream->DrawHud_get())
-				{
-				case CAfxRenderViewStream::DT_Draw:
-					myWhatToDraw |= SOURCESDK::RENDERVIEW_DRAWHUD;
-					break;
-				case CAfxRenderViewStream::DT_NoDraw:
-					myWhatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWHUD;
-					break;
-				case CAfxRenderViewStream::DT_NoChange:
-				default:
-					break;
-				}
-
-				switch (previewStream->DrawViewModel_get())
-				{
-				case CAfxRenderViewStream::DT_Draw:
-					myWhatToDraw |= SOURCESDK::RENDERVIEW_DRAWVIEWMODEL;
-					break;
-				case CAfxRenderViewStream::DT_NoDraw:
-					myWhatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWVIEWMODEL;
-					break;
-				case CAfxRenderViewStream::DT_NoChange:
-				default:
-					break;
-				}
-
-				SOURCESDK::CViewSetup_csgo newView = orgView;
-				SOURCESDK::CViewSetup_csgo newHudView = orgHudView;
-
-				int col = slot % cols;
-				int row = slot / cols;
-
-				newView.m_nUnscaledWidth /= cols;
-				newView.m_nUnscaledHeight /= cols;
-				newView.m_nUnscaledX += col * newView.m_nUnscaledWidth;
-				newView.m_nUnscaledY += row * newView.m_nUnscaledHeight;
-				newView.width /= cols;
-				newView.height /= cols;
-				newView.x += col * newView.width;
-				newView.y += row * newView.height;
-
-				newHudView.m_nUnscaledWidth /= cols;
-				newHudView.m_nUnscaledHeight /= cols;
-				newHudView.m_nUnscaledX += col * newHudView.m_nUnscaledWidth;
-				newHudView.m_nUnscaledY += row * newHudView.m_nUnscaledHeight;
-				newHudView.width /= cols;
-				newHudView.height /= cols;
-				newHudView.x += col * newHudView.width;
-				newHudView.y += row * newHudView.height;
-
-				ctxp->PushRenderTargetAndViewport(0, 0, newView.m_nUnscaledX, newView.m_nUnscaledY, newView.m_nUnscaledWidth, newView.m_nUnscaledHeight);
-
-				if (/*!g_pScaleformUI_csgo &&  */ 1 < cols && (hudDrawn || m_Recording))
-				{
-					// Work around ScaleformUI HUD data not being flushed (do not allow to render the HUD in different positions per frame):
-					myWhatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWHUD;
-				}
-				else
-				{
-					hudDrawn = hudDrawn || (myWhatToDraw & SOURCESDK::RENDERVIEW_DRAWHUD);
-				}
-
-				float oldSmokeOverlayAlphaFactor = *smokeOverlayAlphaFactor;
-				smokeOverlayAlphaFactorMultiplyer = previewStream->SmokeOverlayAlphaFactor_get();
-				if (smokeOverlayAlphaFactorMultiplyer < 1) *smokeOverlayAlphaFactor = 0;
-
-				fn(this_ptr, newView, newHudView, nClearFlags, myWhatToDraw);
-
-				*smokeOverlayAlphaFactor = oldSmokeOverlayAlphaFactor;
-
-				/* Does not fix anything.
-				if (0 < num)
-				{
-					QueueOrExecute(ctxp, new CAfxLeafExecute_Functor(new CAfxScaleformUIFixFunctor()));
-				}
-				*/
-
-				ctxp->PopRenderTargetAndViewport();
-
-				previewStream->OnRenderEnd();
-
-				if (0 < strlen(previewStream->DetachCommands_get()))
-					g_VEngineClient->ExecuteClientCmd(previewStream->DetachCommands_get()); // Execute commands after we unlocked the stream!
-
-				if (num + 1 < (int)previewStreams.size())
-				{
-					// Work around game running out of memory because of too much shit on the queue
-					// aka issue ripieces/advancedfx-prop#22 :
-					m_MaterialSystem->EndFrame();
-					m_MaterialSystem->SwapBuffers(); // Apparently we have to do this always, otherwise the state is messed up.
-					m_MaterialSystem->BeginFrame(0);
-
-					// We are potentially on a new context now!:
-					ctxp = GetCurrentContext()->GetOrg();
-				}
+				ctxp = PreviewStream(ctxp, previewStream, num + 1 == (int)previewStreams.size(), slot, cols, hudDrawn, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
 
 				++num;
 			}
@@ -5372,16 +5468,115 @@ void CAfxStreams::Console_AddHudBlackStream(const char * streamName)
 
 void CAfxStreams::Console_PrintStreams()
 {
-	Tier0_Msg("index: name -> recorded?\n");
+	Tier0_Msg("index: name -> recorded?, preview?\n");
 	int index = 0;
 	for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
 	{
-		Tier0_Msg("%i: %s -> %s\n", index, (*it)->StreamName_get(), (*it)->Record_get() ? "RECORD ON (1)" : "record off (0)");
+		int previewSlot = -1;
+		
+		if (CAfxSingleStream * singleStream = (*it)->AsAfxSingleStream())
+		{
+			for (int i = 0; i < (int)(sizeof(m_PreviewStreams) / sizeof(m_PreviewStreams[0])); ++i)
+			{
+				if (m_PreviewStreams[i] == singleStream)
+				{
+					previewSlot = i;
+					break;
+				}
+			}
+		}
+
+		char inPreview[44] = "IN PREVIEW (";
+
+		itoa(previewSlot, inPreview + 12, 10);
+
+		strcpy(inPreview + strlen(inPreview), ")");
+
+		Tier0_Msg(
+			"%i: %s -> %s, %s\n",
+			index,
+			(*it)->StreamName_get(),
+			(*it)->Record_get()
+				? "RECORD ON (1)"
+				: "record off (0)",
+			0 <= previewSlot
+				? inPreview
+				: "no preview");
 		++index;
 	}
 	Tier0_Msg(
 		"=== Total streams: %i ===\n",
 		index
+	);
+}
+
+void CAfxStreams::Console_MoveStream(IWrpCommandArgs * args)
+{
+	int argC = args->ArgC();
+
+	if (3 <= argC)
+	{
+		char const * inputName = args->ArgV(1);
+		std::string sInputName(inputName);
+		std::transform(sInputName.begin(), sInputName.end(), sInputName.begin(), ::tolower);
+
+		int moveBeforeId = atoi(args->ArgV(2));
+
+		CAfxRecordStream * stream;
+
+		if (moveBeforeId < 0 || moveBeforeId >(int)m_Streams.size())
+		{
+			Tier0_Msg("Error: %i is not in valid range for <targetId>\n");
+			return;
+		}
+
+		{
+			int curId = 0;
+			std::list<CAfxRecordStream *>::iterator it = m_Streams.begin();
+			while (it != m_Streams.end())
+			{
+				char const * targetName = (*it)->StreamName_get();
+				std::string sTargetName(targetName);
+				std::transform(sTargetName.begin(), sTargetName.end(), sTargetName.begin(), ::tolower);
+
+				if (sInputName == sTargetName)
+					break;
+
+				++curId;
+				++it;
+			}
+
+			if (it == m_Streams.end())
+			{
+				Tier0_Warning("Error: \"%s\" is not a valid stream name!\n", inputName);
+				return;
+			}
+
+			stream = *it;
+
+			m_Streams.erase(it);
+		}
+
+		{
+			int curId = 0;
+			std::list<CAfxRecordStream *>::iterator it = m_Streams.begin();
+			while (curId < moveBeforeId && it != m_Streams.end())
+			{
+				++curId;
+				++it;
+			}
+
+			m_Streams.insert(it, stream);
+		}
+
+		return;
+	}
+
+	char const * arg0 = args->ArgV(0);
+
+	Tier0_Msg(
+		"%s <streamName> <moveBeforeId> - Move stream before <moveBeforeId>, get the ID from mirv_streams print (first column).\n"
+		, arg0
 	);
 }
 
@@ -5786,6 +5981,27 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 					"Current value: %i.\n"
 					, cmdPrefix
 					, (eVal == CAfxRenderViewStream::DT_NoChange ? -1 : eVal == CAfxRenderViewStream::DT_NoDraw ? 0 : 1)
+				);
+				return true;
+			}
+			else if(!_stricmp(cmd0, "forceBuildingCubeMaps"))
+			{
+				if(2 <= argc)
+				{
+					char const * cmd1 = args->ArgV(argcOffset +1);
+
+					int iCmd1 = atoi(cmd1);
+
+					curRenderView->ForceBuildingCubemaps_set(0 != iCmd1);
+
+					return true;
+				}
+
+				Tier0_Msg(
+					"%s forceBuildingCubeMaps - 0|1 - Whether to always force building_cubemaps 1 for this stream or let HLAE decide.\n"
+					"Current value: %i.\n"
+					, cmdPrefix
+					, curRenderView->ForceBuildingCubemaps_get() ? 1 : 0
 				);
 				return true;
 			}
@@ -6640,6 +6856,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 		Tier0_Msg("%s detachCommands [...] - Commands to be executed when stream is detached. WARNING. Use at your own risk, game may crash!\n", cmdPrefix);
 		Tier0_Msg("%s drawHud [...] - Controlls whether or not HUD is drawn for this stream.\n", cmdPrefix);
 		Tier0_Msg("%s drawViewModel [...] - Controls whether or not view model (in-eye weapon) is drawn for this stream.\n", cmdPrefix);
+		Tier0_Msg("%s forceBuildingCubeMaps [...] - Control if to enable force building_cubemaps to 1. This should be set on all streams that are composited with other streams or should not have any postprocessing. For technical reasons only the first stream rendered (recorded or previewd) will obey this option, others always force this.\n", cmdPrefix);
 		Tier0_Msg("%s captureType [...] - Stream capture type.\n", cmdPrefix);
 	}
 
@@ -6911,12 +7128,19 @@ std::wstring CAfxStreams::GetTakeDir(void)
 	return m_TakeDir;
 }
 
-void CAfxStreams::LevelShutdown(IAfxBaseClientDll * cl)
+void CAfxStreams :: LevelInitPostEntity(void)
+{
+
+}
+
+void CAfxStreams::LevelShutdown()
 {
 	for(std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
 	{
 		(*it)->LevelShutdown();
 	}
+
+	m_FirstRenderAfterLevelInit = true;
 }
 
 extern bool g_bD3D9DebugPrint;
@@ -7093,11 +7317,6 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 			return false;
 		}
 	}
-	else
-	{
-		//if(m_PresentRecordOnScreen)
-		//	m_MaterialSystem->SwapBuffers();
-	}
 
 	SetMatVarsForStreams(); // keep them set in case a mofo resets them.
 
@@ -7144,7 +7363,44 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 	smokeOverlayAlphaFactorMultiplyer = stream->SmokeOverlayAlphaFactor_get();
 	if (smokeOverlayAlphaFactorMultiplyer < 1) *smokeOverlayAlphaFactor = 0;
 
-	fn(this_ptr, view, hudViewSetup, SOURCESDK::VIEW_CLEAR_STENCIL | SOURCESDK::VIEW_CLEAR_DEPTH, myWhatToDraw);
+	{
+		bool forceBuildingCubeMaps = true;
+
+		float oldFrameTime;
+		int oldBuildingCubeMaps;
+
+		if (m_FirstStreamToBeRendered)
+		{
+			forceBuildingCubeMaps = stream->ForceBuildingCubemaps_get();
+		}
+		else
+		{
+			oldFrameTime = g_Hook_VClient_RenderView.GetGlobals()->frametime_get();
+			g_Hook_VClient_RenderView.GetGlobals()->frametime_set(0);
+		}
+
+		if(forceBuildingCubeMaps)
+		{
+			oldBuildingCubeMaps = m_BuildingCubemaps->GetInt();
+			m_BuildingCubemaps->SetValue(1.0f);
+		}
+
+		fn(this_ptr, view, hudViewSetup, SOURCESDK::VIEW_CLEAR_STENCIL | SOURCESDK::VIEW_CLEAR_DEPTH, myWhatToDraw);
+
+		if (forceBuildingCubeMaps)
+		{
+			m_BuildingCubemaps->SetValue((float)oldBuildingCubeMaps);
+		}
+
+		if (m_FirstStreamToBeRendered)
+		{
+			m_FirstStreamToBeRendered = false;
+		}
+		else
+		{
+			g_Hook_VClient_RenderView.GetGlobals()->frametime_set(oldFrameTime);
+		}
+	}
 
 	*smokeOverlayAlphaFactor = oldSmokeOverlayAlphaFactor;
 
@@ -7177,15 +7433,19 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 		BlockPresent(ctxp, true);
 		m_PresentBlocked = true;
 	}
+	else if (m_PresentBlocked)
+	{
+		BlockPresent(ctxp, false);
+		m_PresentBlocked = false;
+	}
 
 	// Work around game running out of memory because of too much shit on the queue
-	// aka issue ripieces/advancedfx-prop#22 :
+	// aka issue ripieces/advancedfx-prop#22 by using a sub-context:
 	m_MaterialSystem->EndFrame();
 	m_MaterialSystem->SwapBuffers(); // Apparently we have to do this always, otherwise the state is messed up.
 	m_MaterialSystem->BeginFrame(0);
 
-	// We are potentially on a new context now!:
-	ctxp = GetCurrentContext()->GetOrg();
+	ctxp = GetCurrentContext()->GetOrg(); // We are potentially on a new context now
 
 	return ctxp;
 }
@@ -7361,10 +7621,11 @@ void CAfxStreams::SetMatVarsForStreams()
 {
 	EnsureMatVars();
 
-	m_MatPostProcessEnableRef->SetValue((float)m_NewMatPostProcessEnable);
-	m_MatDynamicTonemappingRef->SetValue((float)m_NewMatDynamicTonemapping);
-	m_MatMotionBlurEnabledRef->SetValue((float)m_NewMatMotionBlurEnabled);
-	m_MatForceTonemapScale->SetValue(m_NewMatForceTonemapScale);
+	if (0 <= m_NewMatPostProcessEnable) m_MatPostProcessEnableRef->SetValue((float)m_NewMatPostProcessEnable);
+	if (0 <= m_NewMatDynamicTonemapping) m_MatDynamicTonemappingRef->SetValue((float)m_NewMatDynamicTonemapping);
+	if (0 <= m_NewMatMotionBlurEnabled) m_MatMotionBlurEnabledRef->SetValue((float)m_NewMatMotionBlurEnabled);
+	if (0 <= m_NewMatForceTonemapScale) m_MatForceTonemapScale->SetValue(m_NewMatForceTonemapScale);
+
 	m_SndMuteLosefocus->SetValue(0.0f);
 	m_SndMixAsync->SetValue(0.0f);
 }
@@ -7389,6 +7650,7 @@ void CAfxStreams::EnsureMatVars()
 	if(!m_MatForceTonemapScale) m_MatForceTonemapScale = new WrpConVarRef("mat_force_tonemap_scale");
 	if (!m_SndMuteLosefocus) m_SndMuteLosefocus = new WrpConVarRef("snd_mute_losefocus");
 	if (!m_SndMixAsync) m_SndMixAsync = new WrpConVarRef("snd_mix_async");
+	if (!m_BuildingCubemaps) m_BuildingCubemaps = new WrpConVarRef("building_cubemaps");
 }
 
 void CAfxStreams::AddStream(CAfxRecordStream * stream)

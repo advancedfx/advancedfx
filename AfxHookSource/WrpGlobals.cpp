@@ -26,7 +26,10 @@ int WrpGlobalsCsGo::maxclients_get(void)
 	return *(int *)((unsigned char *)m_pGlobals + 0x18);
 }
 
-
+int WrpGlobalsCsGo::framecount_get(void)
+{
+	return *(int *)((unsigned char *)m_pGlobals + 0x4);
+}
 
 float WrpGlobalsCsGo::absoluteframetime_get(void)
 {
@@ -60,6 +63,11 @@ float WrpGlobalsCsGo::interpolation_amount_get(void)
 WrpGlobalsOther::WrpGlobalsOther(void * pGlobals)
 {
 	m_pGlobals = pGlobals;
+}
+
+int WrpGlobalsOther::framecount_get(void)
+{
+	return *(int *)((unsigned char *)m_pGlobals + 0x4);
 }
 
 float WrpGlobalsOther::absoluteframetime_get(void)

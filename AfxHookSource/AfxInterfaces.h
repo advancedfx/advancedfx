@@ -71,12 +71,6 @@ public:
 	virtual void Shutdown(IAfxBaseClientDll * cl) = 0;
 };
 
-class IAfxBaseClientDllLevelShutdown abstract
-{
-public:
-	virtual void LevelShutdown(IAfxBaseClientDll * cl) = 0;
-};
-
 class IAfxBaseClientDllView_Render abstract
 {
 public:
@@ -88,7 +82,6 @@ class IAfxBaseClientDll abstract
 public:
 	virtual SOURCESDK::IBaseClientDLL_csgo * GetParent() = 0;
 
-	virtual void OnLevelShutdown_set(IAfxBaseClientDllLevelShutdown * value) = 0;
 	virtual void OnView_Render_set(IAfxBaseClientDllView_Render * value) = 0;
 };
 

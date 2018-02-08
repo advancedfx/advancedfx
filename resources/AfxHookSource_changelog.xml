@@ -6,6 +6,37 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.36.0</version>
+<time>2018-02-08T13:37Z</time>
+<changes>
+<change type="added">
+Added mirv_streams stream property forceBuildingCubemaps, which is 0 (off) for normal stream and 1 (on) on all other stream classes and templates by default.<br />
+When forceBuildingCubemaps is 1 or implied to 1 by mirv_streams (see bellow), then this disables dynamic tone-mapping and glow change filtering and other effects that depend on the previous state.
+</change>
+<change type="added">
+Added mirv_streams move, which can be used to change the order of streams.
+</change>
+<change type="updated">
+Updated mirv_streams:<br />
+- matPostprocessEnable, matDynamicTonemapping, matMotionBlurEnabled, matForceTonemapScale are -1 by default now, which means try to use game defaults whenever possible. Please note you might still want to set matForceTonemapScale to a value between 1.0 and 2.0 in order to fix random bomb plant brightness (if required), but that will disable dynamic brightness of course.<br />
+- For the first stream rendered (recorded / previewed) it obeys forceBuildingCubemaps, for all other streams it renders as if forceBuildingCubemaps is 1. Recorded streams are rendered first, before the preview(s) are rendered, previews are rendered in order of their preview slot number.<br />
+<br />
+The idea behind this change is to allow having the ability to have a normal stream rendered first that represents the original game view, including dynamic brightness and glow filtering.<br />
+<br />
+Example:<br />
+mirv_streams add normal myNormal
+mirv_streams edit myNormal drawHud -1 // enable HUD according to game defaults
+mirv_streams move myNormal 0 // move it to the begin of the list, in case other streams have been rendered already.
+</change>
+<change type="fixed">
+Various internal fixes and improvements.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.35.5</version>
 <time>2018-02-03T15:32Z</time>
 <changes>

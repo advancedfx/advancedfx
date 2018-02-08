@@ -452,7 +452,6 @@ class CAfxBaseClientDll
 public:
 	CAfxBaseClientDll(IBaseClientDLL_csgo * parent)
 	: m_Parent(parent)
-	, m_OnLevelShutdown(0)
 	, m_OnView_Render(0)
 	{
 	}
@@ -467,11 +466,6 @@ public:
 	virtual IBaseClientDLL_csgo * GetParent()
 	{
 		return m_Parent;
-	}
-
-	virtual void OnLevelShutdown_set(IAfxBaseClientDllLevelShutdown * value)
-	{
-		m_OnLevelShutdown = value;
 	}
 
 	virtual void OnView_Render_set(IAfxBaseClientDllView_Render * value)
@@ -625,7 +619,6 @@ public:
 
 private:
 	IBaseClientDLL_csgo * m_Parent;
-	IAfxBaseClientDllLevelShutdown * m_OnLevelShutdown;
 	IAfxBaseClientDllView_Render * m_OnView_Render;
 };
 
@@ -693,21 +686,25 @@ void CAfxBaseClientDll::Shutdown(void)
 void CAfxBaseClientDll::LevelInitPreEntity(char const* pMapName)
 { // NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 5)
 
+	m_Parent->LevelInitPreEntity(pMapName);
+
 #ifdef AFX_MIRV_PGL
 	MirvPgl::SupplyLevelInit(pMapName);
-#endif	
-
-	m_Parent->LevelInitPreEntity(pMapName);
+#endif
 }
 
-__declspec(naked) void CAfxBaseClientDll::LevelInitPostEntity()
-{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 6) }
+void CAfxBaseClientDll::LevelInitPostEntity()
+{ // NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 6)
+
+	m_Parent->LevelInitPostEntity();
+
+	g_AfxStreams.LevelInitPostEntity();
+}
 
 //__declspec(naked) 
 void CAfxBaseClientDll::LevelShutdown(void)
 { // NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 7)
-
-	if (m_OnLevelShutdown) m_OnLevelShutdown->LevelShutdown(this);
+	g_AfxStreams.LevelShutdown();
 
 #if AFX_SHADERS_CSGO
 	csgo_Stdshader_dx9_Hooks_OnLevelShutdown();

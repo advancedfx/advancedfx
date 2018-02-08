@@ -377,6 +377,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					);
 					return;
 				}
+				/*
 				else if (!_stricmp(cmd2, "hud"))
 				{
 					if (4 <= argc)
@@ -393,6 +394,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					);
 					return;
 				}
+				*/
 				else if (!_stricmp(cmd2, "hudWhite"))
 				{
 					if (4 <= argc)
@@ -616,6 +618,13 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			);
 			return;
 		}
+		else if (!_stricmp(cmd1, "move"))
+		{
+			CSubWrpCommandArgs subArgs(args, 2);
+
+			g_AfxStreams.Console_MoveStream(&subArgs);
+			return;
+		}
 		else
 		if(!_stricmp(cmd1, "remove"))
 		{
@@ -767,7 +776,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					}
 
 					Tier0_Msg(
-						"mirv_streams record matPostprocessEnable <iValue> - Force integer value <iValue> for mat_postprocess_enable during recording (changing not recommended).\n"
+						"mirv_streams record matPostprocessEnable <iValue> - Positive value: Force integer value <iValue> for mat_postprocess_enable during recording (changing not recommended).\n"
 						"Current value: %i.\n",
 						g_AfxStreams.Console_MatPostprocessEnable_get()
 					);
@@ -783,7 +792,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					}
 
 					Tier0_Msg(
-						"mirv_streams record matDynamicTonemapping <iValue> - Force integer value <iValue> for mat_dynamic_tonemapping during recording (changing not recommended).\n"
+						"mirv_streams record matDynamicTonemapping <iValue> - Positive value: Force integer value <iValue> for mat_dynamic_tonemapping during recording (changing not recommended).\n"
 						"Current value: %i.\n",
 						g_AfxStreams.Console_MatDynamicToneMapping_get()
 					);
@@ -799,7 +808,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					}
 
 					Tier0_Msg(
-						"mirv_streams record matMotionBlurEnabled <iValue> - Force integer value <iValue> for mat_motion_blur_enabled during recording (changing not recommended).\n"
+						"mirv_streams record matMotionBlurEnabled <iValue> - Positive value: Force integer value <iValue> for mat_motion_blur_enabled during recording (changing not recommended).\n"
 						"Current value: %i.\n",
 						g_AfxStreams.Console_MatMotionBlurEnabled_get()
 					);
@@ -815,7 +824,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					}
 
 					Tier0_Msg(
-						"mirv_streams record matForceTonemapScale <fValue> - Force floating point value <fValue> for mat_force_tonemap_scale during recording (value > 0 recommended).\n"
+						"mirv_streams record matForceTonemapScale <fValue> - Positive value: Force floating point value <fValue> for mat_force_tonemap_scale during recording (can fix random bomb plan birghtness if enabled, but breaks auto brightness adjustment).\n"
 						"Current value: %f.\n",
 						g_AfxStreams.Console_MatForceTonemapScale_get()
 					);
@@ -991,6 +1000,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 	Tier0_Msg(
 		"mirv_streams add [...]- Add a stream.\n"
 		"mirv_streams edit [...]- Edit a stream.\n"
+		"mirv_streams move [...] - Move a stream in the list.\n"
 		"mirv_streams remove [...] - Remove a stream.\n"
 		"mirv_streams preview [...] - Preview a stream.\n"
 		"mirv_streams previewEnd [<iSlot>] - End preview.\n"

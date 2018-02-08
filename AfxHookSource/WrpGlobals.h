@@ -8,6 +8,7 @@ public:
 	virtual void curtime_set(float value) { } // csgo only
 	virtual int maxclients_get(void) { return 0; } // csgo only
 
+	virtual int framecount_get(void) abstract = 0;
 	virtual float absoluteframetime_get(void) abstract = 0;
 	virtual float curtime_get(void) abstract = 0;
 	virtual float interval_per_tick_get(void) abstract = 0;
@@ -24,6 +25,7 @@ public:
 	virtual void curtime_set(float value);
 	virtual int maxclients_get(void);
 
+	virtual int framecount_get(void);
 	virtual float absoluteframetime_get(void);
 	virtual float curtime_get(void);
 	virtual float interval_per_tick_get(void);
@@ -38,6 +40,7 @@ class WrpGlobalsOther : public WrpGlobals
 public:
 	WrpGlobalsOther(void * pGlobals);
 
+	virtual int framecount_get(void);
 	virtual float absoluteframetime_get(void);
 	virtual float curtime_get(void);
 	virtual float interval_per_tick_get(void);

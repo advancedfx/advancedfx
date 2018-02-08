@@ -852,7 +852,7 @@ private:
 			{
 				afxCallQueue = new CAfxCallQueue(callQueue);
 
-				g_CallQueueMap_csgo[callQueue] = afxCallQueue; // track new mesh
+				g_CallQueueMap_csgo[callQueue] = afxCallQueue; // track new queue
 				g_CallQueueMap_csgo[afxCallQueue] = afxCallQueue; // make sure we won't wrap ourself!
 				g_CallQueueHooks_csgo.push(afxCallQueue);
 			}
@@ -1006,12 +1006,17 @@ void CMatRenderContextHook::HooKVtable(SOURCESDK::IMatRenderContext_csgo * orgCt
 	//OutputDebugString("HooKVtable DETOUR END\n");
 }
 
+IAfxMatRenderContext * MatRenderContextHook(SOURCESDK::IMatRenderContext_csgo *  ctx)
+{
+	return CMatRenderContextHook::GetMatRenderContextHook(ctx);
+}
+
 IAfxMatRenderContext * MatRenderContextHook(SOURCESDK::IMaterialSystem_csgo * materialSystem)
 {
 	SOURCESDK::IMatRenderContext_csgo * ctx = materialSystem->GetRenderContext();
 	ctx->Release(); // GetRenderContext calls AddRef on Returned.
 
-	return CMatRenderContextHook::GetMatRenderContextHook(ctx);
+	return MatRenderContextHook(ctx);
 }
 
 void MatRenderContextHook_Shutdown(void)

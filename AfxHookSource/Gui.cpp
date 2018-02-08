@@ -6,6 +6,12 @@
 
 #include "Gui.h"
 
+#ifndef AFX_ENABLE_GUI
+#define AFX_ENABLE_GUI 0
+#endif
+
+#if AFX_ENABLE_GUI
+
 #define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
 
 #include <shared/imgui/imgui.h>
@@ -1076,3 +1082,83 @@ bool OnGameFrameRenderEnd()
 
 } // namespace Gui {
 } // namespace AfxHookSource {
+
+#else
+
+#include "Gui.h"
+
+namespace AfxHookSource {
+namespace Gui {
+
+bool WndProcHandler(HWND hwnd, UINT msg, WPARAM & wParam, LPARAM & lParam)
+{
+	return false;
+}
+
+bool OnSetCursorPos(__in int X, __in int Y)
+{
+	return false;
+}
+
+bool OnGetCursorPos(__out LPPOINT lpPoint)
+{
+	return false;
+}
+
+bool OnSetCursor(__in_opt HCURSOR hCursor, HCURSOR & result)
+{
+	return false;
+}
+
+bool OnSetCapture(HWND hWnd, HWND & result)
+{
+	return false;
+}
+
+bool OnReleaseCapture()
+{
+	return false;
+}
+
+bool OnGameFrameRenderEnd()
+{
+	return false;
+}
+
+bool On_Direct3DDevice9_Init(void* hwnd, IDirect3DDevice9* device)
+{
+	return false;
+}
+
+void On_Direct3DDevice9_Shutdown()
+{
+
+}
+
+void On_Direct3DDevice9_EndScene()
+{
+
+}
+
+void On_Direct3DDevice9_Present(bool deviceLost)
+{
+
+}
+
+void On_Direct3DDevice9_Reset_Before()
+{
+
+}
+
+void On_Direct3DDevice9_Reset_After()
+{
+
+}
+
+
+
+} // namespace Gui {
+} // namespace AfxHookSource {
+
+
+#endif
