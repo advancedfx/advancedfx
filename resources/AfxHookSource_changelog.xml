@@ -24,8 +24,8 @@ Updated mirv_streams:<br />
 The idea behind this change is to allow having the ability to have a normal stream rendered first that represents the original game view, including dynamic brightness and glow filtering.<br />
 <br />
 Example:<br />
-mirv_streams add normal myNormal
-mirv_streams edit myNormal drawHud -1 // enable HUD according to game defaults
+mirv_streams add normal myNormal<br />
+mirv_streams edit myNormal drawHud -1 // enable HUD according to game defaults<br />
 mirv_streams move myNormal 0 // move it to the begin of the list, in case other streams have been rendered already.
 </change>
 <change type="fixed">
