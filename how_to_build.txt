@@ -13,14 +13,14 @@ Notice:
 [X] Obtain and install CMAKE from http://www.cmake.org/
     We currently use "cmake-3.8.1-win64-x64.msi".
 
-[X] Obtain the HLAE source code from https://github.com/ripieces/advancedfx into a
+[X] Obtain the HLAE source code from https://github.com/advancedfx/advancedfx into a
     folder you like, we'll call it <HLAESRC> from now on (by that I mean
     extract it so that you end up with the files like advancedfx.sln and directories
     in C:\<HLAESRC>\advancedfx folder).
     We recommend using the GIT Bash to obtain the source code, so you can
     easily fetch and merge updates from the advancedfx repository:
     cd /c/source
-    git clone --recursive https://github.com/ripieces/advancedfx.git
+    git clone --recursive https://github.com/advancedfx/advancedfx.git
 
 [X] Obtain the following files from http://openexr.com/ :
     ilmbase-2.2.0.tar.gz, openexr-2.2.0.tar.gz and extract their contents
