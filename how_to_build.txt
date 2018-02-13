@@ -19,7 +19,7 @@ Notice:
     in C:\<HLAESRC>\advancedfx folder).
     We recommend using the GIT Bash to obtain the source code, so you can
     easily fetch and merge updates from the advancedfx repository:
-    cd /c/source
+    cd /c/<HLAESRC>
     git clone --recursive https://github.com/advancedfx/advancedfx.git
 
 [X] Obtain the following files from http://openexr.com/ :

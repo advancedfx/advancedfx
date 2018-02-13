@@ -4638,33 +4638,6 @@ void CAfxStreams::OnSetPixelShader(CAfx_csgo_ShaderState & state)
 }
 #endif
 
-/*
-void CAfxStreams::OnRender(CCSViewRender_Render_t fn, void * this_ptr, const SOURCESDK::vrect_t_csgo * rect)
-{
-	fn(this_ptr, rect);
-}
-*/
-extern SOURCESDK::CSGO::IScaleformUI * g_pScaleformUI_csgo;
-
-class CAfxScaleformUIFixFunctor : public CAfxFunctor
-{
-public:
-	CAfxScaleformUIFixFunctor()
-	{
-
-	}
-
-	virtual void operator()()
-	{
-		if (g_pScaleformUI_csgo)
-		{
-			g_pScaleformUI_csgo->BeginEndFrame(1);
-			g_pScaleformUI_csgo->BeginEndFrame(0);
-		}
-	}
-
-};
-
 IAfxMatRenderContextOrg * CAfxStreams::CaptureStream(IAfxMatRenderContextOrg * ctxp, CAfxRecordStream * stream, CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
 {
 	//
