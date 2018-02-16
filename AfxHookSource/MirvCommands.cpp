@@ -2140,7 +2140,20 @@ CON_COMMAND(mirv_deathmsg, "controls death notification options")
 	{
 		char const * arg1 = args->ArgV(1);
 
-		if(0 == _stricmp("debug", arg1))
+		if (0 == _stricmp("help", arg1))
+		{
+			if (3 <= argc && 0 == _stricmp("id", args->ArgV(2)))
+			{
+				Tier0_Msg(
+					"mirv_deathmsg accepts the following as <id...>:\n"
+					"<number> - UserID, Example: 2\n"
+					"x<number> - XUID, Example: x76561197961927915\n"
+					"We recommend getting the numbers from the output of \"mirv_listentities isPlayer=1\".\n"
+				);
+				return;
+			}
+		}
+		else if(0 == _stricmp("debug", arg1))
 		{
 			if(3 <= argc)
 			{
@@ -2188,13 +2201,13 @@ CON_COMMAND(mirv_deathmsg, "controls death notification options")
 			}
 			Tier0_Msg(
 				"Usage:\n"
-				"mirv_deathmsg block <uidAttacker> <uidVictim> - block these ids\n"
-				"\tRemarks: * to match any uid, use !x to match any uid apart from x.\n"
-				"mirv_deathmsg block <uidAttacker> <uidVictim> <uidAssister> - block these ids\n"
-				"\tRemarks: * to match any uid, use !x to match any uid apart from x.\n"
+				"mirv_deathmsg block <idAttacker> <idVictim> - block these ids\n"
+				"\tRemarks: * to match any uid, use !x to match any id apart from x.\n"
+				"mirv_deathmsg block <idAttacker> <idVictim> <idAssister> - block these ids\n"
+				"\tRemarks: * to match any uid, use !x to match any id apart from x.\n"
 				"mirv_deathmsg block list - list current blocks\n"
 				"mirv_deathmsg block clear - clear current blocks\n"
-				"(Use mirv_deathmsg debug 1 to get the uids.)\n"
+				"(Use mirv_deathmsg help id to get help on the ids.)\n"
 			);
 			return;
 		}
@@ -2234,30 +2247,21 @@ CON_COMMAND(mirv_deathmsg, "controls death notification options")
 			}
 			Tier0_Msg(
 				"Usage:\n"
-				"mirv_deathmsg modTime <uidAttacker> <uidVictim> <modTime> - use <modTime> multiplier for matche ids\n"
-				"\tRemarks: * to match any uid, use !x to match any uid apart from x.\n"
-				"mirv_deathmsg modTime <uidAttacker> <uidVictim> <uidAssister> <modTime> - use <modTime> multiplier for matche ids\n"
-				"\tRemarks: * to match any uid, use !x to match any uid apart from x.\n"
+				"mirv_deathmsg modTime <idAttacker> <idVictim> <modTime> - use <modTime> multiplier for matche ids\n"
+				"\tRemarks: * to match any id, use !x to match any id apart from x.\n"
+				"mirv_deathmsg modTime <idAttacker> <idVictim> <idAssister> <modTime> - use <modTime> multiplier for matche ids\n"
+				"\tRemarks: * to match any uid, use !x to match any id apart from x.\n"
 				"mirv_deathmsg modTime list - list current modifiers\n"
 				"mirv_deathmsg modTime clear - clear current modifiers\n"
-				"(Use mirv_deathmsg debug 1 to get the uids.)\n"
+				"(Use mirv_deathmsg help id to get help on the ids.)\n"
 			);
 			return;
 		}
 		else
 		if(0 == _stricmp("highLightId", arg1))
 		{
-			if(3 <= argc)
-			{
-				csgo_CHudDeathNotice_HighLightId = atoi(args->ArgV(2));
-				return;
-			}
-			Tier0_Msg(
-				"Usage:\n"
-				"mirv_deathmsg highLightId -1|0|<id> - -1 is default behaviour, 0 is never highlight, otherwise <id> is the ID (you can get it from mirv_deathmsg debug) of the player you want to highlight.\n"
-				"Current setting: %i\n",
-				csgo_CHudDeathNotice_HighLightId
-			);
+			CSubWrpCommandArgs subArgs(args, 2);
+			Console_csgo_CHudDeathNotice_HighLightId(&subArgs);
 			return;
 		}
 		else
@@ -2349,11 +2353,12 @@ CON_COMMAND(mirv_deathmsg, "controls death notification options")
 		"Usage:\n"
 		"mirv_deathmsg block [...] - block specific death messages.\n"
 		"mirv_deathmsg cfg [...] - configure death message properties, i.e. noticeLifeTime.\n"
-		"mirv_deathmsg debug [...] - enable debug message in cosnole (allows finding player IDs).\n"
 		"mirv_deathmsg highLightId [...] - control highlighting.\n"
 		"mirv_deathmsg highLightAssists [...] - Whether to highlight assists for highLightId.\n"
 		"mirv_deathmsg modTime [...] - allows to set a display time multiplier for a message.\n"
 		"mirv_deathmsg fake [...] - Fake a death message.\n"
+		"mirv_deathmsg help id - Display help on the ids that can be used."
+		"mirv_deathmsg debug [...] - enable debug message in console.\n"
 	);
 }
 
@@ -3038,8 +3043,15 @@ CON_COMMAND(mirv_listentities, "Print info about currently active entites. (CS:G
 		return;
 	}
 
+	bool onlyPlayer = false;
+	
+	if (2 <= args->ArgC())
+	{
+		onlyPlayer = 0 == _stricmp("isPlayer=1", args->ArgV(1));
+	}
+
 	Tier0_Msg(
-		"index (distance): className::enitityName playerName :entityHandle\n"
+		"index (distance): className::enitityName :entityHandle\n"
 	);
 
 	Vector3 cameraOrigin(
@@ -3057,27 +3069,49 @@ CON_COMMAND(mirv_listentities, "Print info about currently active entites. (CS:G
 
 		if(be)
 		{
-			SOURCESDK::Vector vEntOrigin = be->GetAbsOrigin();
-			Vector3 entOrigin(vEntOrigin.x, vEntOrigin.y, vEntOrigin.z);
+			if (!onlyPlayer || be->IsPlayer())
+			{
 
-			double dist = (entOrigin -cameraOrigin).Length();
+				SOURCESDK::Vector vEntOrigin = be->GetAbsOrigin();
+				Vector3 entOrigin(vEntOrigin.x, vEntOrigin.y, vEntOrigin.z);
 
-			// This won't work, because Valve doesn't overload the const function:
-			//char const * playerName = be->GetPlayerName();
-			//if(!playerName) playerName = "(null)";
+				double dist = (entOrigin - cameraOrigin).Length();
 
-			char const * playerName = "[n/a]";
-
-			Tier0_Msg(
-				"%i (%f): %s::%s %s :%i |%i\n"
-				, i
-				, dist
-				, be->GetClassname()
-				, be->GetEntityName()
-				, playerName
-				, be->GetRefEHandle().ToInt()
-				, be->GetTeamNumber()
+				Tier0_Msg(
+					"%i (%f): %s::%s :%i\n"
+					, i
+					, dist
+					, be->GetClassname()
+					, be->GetEntityName()
+					, be->GetRefEHandle().ToInt()
 				);
+
+				if (be->IsPlayer() && g_VEngineClient)
+				{
+					if (SOURCESDK::IVEngineClient_014_csgo * pEngineCsgo = g_VEngineClient->GetVEngineClient_csgo())
+					{
+
+						SOURCESDK::player_info_t_csgo pInfo;
+						if (pEngineCsgo->GetPlayerInfo(i, &pInfo))
+						{
+							std::ostringstream oss;
+
+							oss << pInfo.xuid;
+
+							Tier0_Msg(
+								"\tplayerInfo.xuid: %s\n"
+								"\tplayerInfo.name: %s\n"
+								"\tplayerInfo.userID: %i\n"
+								"\tplayerInfo.guid: %s\n"
+								, oss.str().c_str()
+								, pInfo.name
+								, pInfo.userID
+								, pInfo.guid
+							);
+						}
+					}
+				}
+			}
 		}
 	}
 }

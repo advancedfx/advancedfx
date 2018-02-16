@@ -275,7 +275,7 @@ public:
 		WrpGlobals * gl = g_Hook_VClient_RenderView.GetGlobals();
 		int imax = gl ? gl->maxclients_get() : 0;
 
-		for (int i = 0; i <= imax; ++i)
+		for (int i = 1; i <= imax; ++i)
 		{
 			SOURCESDK::IClientEntity_csgo * ce = SOURCESDK::g_Entitylist_csgo->GetClientEntity(i);
 			SOURCESDK::C_BaseEntity_csgo * be = ce ? ce->GetBaseEntity() : 0;

@@ -2,7 +2,6 @@
 
 #include "WrpConsole.h"
 
-extern int csgo_CHudDeathNotice_HighLightId;
 extern bool csgo_CHudDeathNotice_HighLightAssists;
 extern int csgo_debug_CHudDeathNotice_FireGameEvent;
 
@@ -19,3 +18,5 @@ void csgo_CHudDeathNotice_Block_List(void);
 void csgo_CHudDeathNotice_Block_Clear(void);
 
 void Console_csgo_CHudDeathNotice_Fake(char const * htmlString, bool bIsVictim, bool bIsKiller);
+
+void Console_csgo_CHudDeathNotice_HighLightId(IWrpCommandArgs * args);

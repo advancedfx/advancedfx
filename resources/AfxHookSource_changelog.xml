@@ -6,6 +6,25 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.37.0</version>
+<time>2018-02-16T17:54Z</time>
+<changes>
+<change type="added">
+Added player info display (XUID, name, UserID, GUID) to mirv_listentites for player entities.
+</change>
+<change type="added">
+Added isPlayer=1 option to mirv_listentites so it only displays player entities.
+</change>
+<change type="updated">
+Updated mirv_deathmsg, now you can optionally specify an XUID (prefix with x) as an ID to the command (no prefix = UserID), see mirv_deathmsg help id for more details.
+The advantage of an XUID is that it won't change with an reconnect, this feature has mainly been added as convenience feature to support the csgo-demos-manager.com movie mode.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.36.1</version>
 <time>2018-02-16T08:50Z</time>
 <changes>

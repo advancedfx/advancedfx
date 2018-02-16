@@ -4,11 +4,16 @@
 
 #include "addresses.h"
 #include "SourceInterfaces.h"
+#include "WrpVEngineClient.h"
+#include "RenderView.h"
 
 #include <shared/detours.h>
 #include <shared/StringTools.h>
 
 #include <list>
+#include <sstream>
+
+extern WrpVEngineClient * g_VEngineClient;
 
 typedef void (__stdcall *csgo_CHudDeathNotice_FireGameEvent_t)(DWORD *this_ptr, SOURCESDK::CSGO::IGameEvent * event);
 
@@ -29,18 +34,112 @@ enum DeathMsgBlockAction
 	DMBA_MODTIME
 };
 
+struct DeathMsgId
+{
+	union {
+		int userId;
+		unsigned long long xuid;
+	} Id;
+	enum {
+		Id_UserId,
+		Id_Xuid
+	} Mode;
+
+	DeathMsgId()
+	{
+		Mode = Id_UserId;
+		Id.userId = 0;
+	}
+
+	DeathMsgId(int userId)
+	{
+		Mode = Id_UserId;
+		Id.userId = userId;
+
+	}
+	DeathMsgId(unsigned long long xuid)
+	{
+		Mode = Id_Xuid;
+		Id.xuid = xuid;
+	}
+
+	void operator =(const int userId)
+	{
+		Mode = Id_UserId;
+		Id.userId = userId;
+	}
+
+	void operator =(const unsigned long long xuid)
+	{
+		Mode = Id_Xuid;
+		Id.xuid = xuid;
+	}
+
+	void operator =(char const * consoleValue)
+	{
+		if (!consoleValue)
+			return;
+
+		if (StringBeginsWith(consoleValue, "x"))
+		{
+			unsigned long long val = strtoull(consoleValue + 1, 0, 10);
+			this->operator=(val);
+		}
+		else
+		{
+			this->operator=((int)atoi(consoleValue));
+		}
+	}
+
+	void Console_Print()
+	{
+		if (Mode == Id_Xuid)
+		{
+			std::ostringstream oss;
+
+			oss << Id.xuid;
+
+			Tier0_Msg("x%s", oss.str().c_str());
+		}
+		else
+		{
+			Tier0_Msg("%i", Id.userId);
+		}
+	}
+
+	bool EqualsUserId(int userId)
+	{
+		if (Mode == Id_UserId) return userId == Id.userId;
+
+		if (userId < 1)
+			return false;
+
+		if (g_VEngineClient)
+		{
+			if (SOURCESDK::IVEngineClient_014_csgo * pEngine = g_VEngineClient->GetVEngineClient_csgo())
+			{
+				SOURCESDK::player_info_t_csgo pInfo;
+				return (pEngine->GetPlayerInfo(pEngine->GetPlayerForUserID(userId), &pInfo) && pInfo.xuid == Id.xuid);
+			}
+		}
+
+		return false;
+	}
+};
+
+
 struct DeathMsgBlockEntry
 {
-	int attackerId;
+	DeathMsgId attackerId;
 	DeathMsgBlockMode attackerMode;
-	int victimId;
+	DeathMsgId victimId;
 	DeathMsgBlockMode victimMode;
-	int assisterId;
+	DeathMsgId assisterId;
 	DeathMsgBlockMode assisterMode;
 	float modTime;
 };
 
-std::list<DeathMsgBlockEntry> deathMessageBlock;
+std::list<DeathMsgBlockEntry> deathMessageBlock((int)0);
 
 float csgo_CHudDeathNotice_nScrollInTime = -1;
 float csgo_CHudDeathNotice_nFadeOutTime = -1;
@@ -52,7 +151,7 @@ float org_CHudDeathNotice_nFadeOutTime;
 float org_CHudDeathNotice_nNoticeLifeTime;
 float org_CHudDeathNotice_nLocalPlayerLifeTimeMod;
 
-int csgo_CHudDeathNotice_HighLightId = -1;
+DeathMsgId csgo_CHudDeathNotice_HighLightId = -1;
 bool csgo_CHudDeathNotice_HighLightAssists = true;
 
 bool csgo_CHudDeathNotice_HighLightId_matchedVictim;
@@ -84,13 +183,14 @@ void __stdcall touring_csgo_CHudDeathNotice_FireGameEvent(DWORD *this_ptr, SOURC
 	int uidAssister = event->GetInt("assister");
 	bool blocked = false;
 
-	csgo_CHudDeathNotice_HighLightId_matchedAttacker = csgo_CHudDeathNotice_HighLightId == uidAttacker;
-	csgo_CHudDeathNotice_HighLightId_matchedVictim = csgo_CHudDeathNotice_HighLightId == uidVictim;
-	csgo_CHudDeathNotice_HighLightId_matchedAssister = csgo_CHudDeathNotice_HighLightId == uidAssister;
+	csgo_CHudDeathNotice_HighLightId_matchedAttacker = csgo_CHudDeathNotice_HighLightId.EqualsUserId(uidAttacker);
+	csgo_CHudDeathNotice_HighLightId_matchedVictim = csgo_CHudDeathNotice_HighLightId.EqualsUserId(uidVictim);
+	csgo_CHudDeathNotice_HighLightId_matchedAssister = csgo_CHudDeathNotice_HighLightId.EqualsUserId(uidAssister);
 
 	if(0 < csgo_debug_CHudDeathNotice_FireGameEvent)
 	{
 		Tier0_Msg("CHudDeathNotice::FireGameEvent: uidAttaker=%i, uidVictim=%i, uidAssister=%i\n", uidAttacker, uidVictim, uidAssister);
+
 		if(2 <= csgo_debug_CHudDeathNotice_FireGameEvent)
 			Tier0_Msg(
 				"org_scrollInTime=%f,org_fadeOutTime=%f,org_noticeLifeTime=%f,org_localPlayerLifeTimeMod=%f\n",
@@ -114,11 +214,11 @@ void __stdcall touring_csgo_CHudDeathNotice_FireGameEvent(DWORD *this_ptr, SOURC
 			attackerBlocked = true;
 			break;
 		case DMBM_EXCEPT:
-			attackerBlocked = e.attackerId != uidAttacker;
+			attackerBlocked = !e.attackerId.EqualsUserId(uidAttacker);
 			break;
 		case DMBM_EQUAL:
 		default:
-			attackerBlocked = e.attackerId == uidAttacker;
+			attackerBlocked = e.attackerId.EqualsUserId(uidAttacker);
 			break;
 		}
 
@@ -129,11 +229,11 @@ void __stdcall touring_csgo_CHudDeathNotice_FireGameEvent(DWORD *this_ptr, SOURC
 			victimBlocked = true;
 			break;
 		case DMBM_EXCEPT:
-			victimBlocked = e.victimId != uidVictim;
+			victimBlocked = !e.victimId.EqualsUserId(uidVictim);
 			break;
 		case DMBM_EQUAL:
 		default:
-			victimBlocked = e.victimId == uidVictim;
+			victimBlocked = e.victimId.EqualsUserId(uidVictim);
 			break;
 		}
 
@@ -144,11 +244,11 @@ void __stdcall touring_csgo_CHudDeathNotice_FireGameEvent(DWORD *this_ptr, SOURC
 			assisterBlocked = true;
 			break;
 		case DMBM_EXCEPT:
-			assisterBlocked = e.assisterId != uidAssister;
+			assisterBlocked = !e.assisterId.EqualsUserId(uidAssister);
 			break;
 		case DMBM_EQUAL:
 		default:
-			assisterBlocked = e.assisterId == uidAssister;
+			assisterBlocked = e.assisterId.EqualsUserId(uidAssister);
 			break;
 		}
 
@@ -175,7 +275,8 @@ void __stdcall touring_csgo_CHudDeathNotice_UnkAddDeathNotice(DWORD *this_ptr, v
 {
 	csgo_CHudDeathNotice_UnkAddDeathNotice_last_this_ptr = this_ptr;
 
-	if(0 < csgo_CHudDeathNotice_HighLightId)
+	if(csgo_CHudDeathNotice_HighLightId.Mode == DeathMsgId::Id_UserId && 0 < csgo_CHudDeathNotice_HighLightId.Id.userId
+		|| csgo_CHudDeathNotice_HighLightId.Mode != DeathMsgId::Id_UserId)
 	{
 		detoured_csgo_CHudDeathNotice_UnkAddDeathNotice(this_ptr, arg0,
 			csgo_CHudDeathNotice_HighLightId_matchedVictim,
@@ -183,7 +284,7 @@ void __stdcall touring_csgo_CHudDeathNotice_UnkAddDeathNotice(DWORD *this_ptr, v
 		return;
 	}
 	else
-	if(0 == csgo_CHudDeathNotice_HighLightId)
+	if(csgo_CHudDeathNotice_HighLightId.Mode == DeathMsgId::Id_UserId && 0 == csgo_CHudDeathNotice_HighLightId.Id.userId)
 	{
 		detoured_csgo_CHudDeathNotice_UnkAddDeathNotice(this_ptr, arg0, false, false);
 		return;
@@ -229,24 +330,24 @@ bool csgo_CHudDeathNotice_Install(void)
 void csgo_CHudDeathNotice_Block(char const * uidAttacker, char const * uidVictim, char const * uidAssister, float modTime)
 {
 	char const * acmd;
-	int attackerId = -1;
-	int victimId = -1;
-	int assisterId = -1;
+	DeathMsgId attackerId = (int)-1;
+	DeathMsgId victimId = (int)-1;
+	DeathMsgId assisterId = (int)-1;
 
 	acmd = uidAttacker;
 	bool anyAttacker = !strcmp("*", acmd);
 	bool notAttacker = StringBeginsWith(acmd, "!");
-	if(!anyAttacker) attackerId = atoi(notAttacker ? (acmd +1) : acmd);
+	if(!anyAttacker) attackerId = notAttacker ? (acmd +1) : acmd;
 
 	acmd = uidVictim;
 	bool anyVictim = !strcmp("*", acmd);
 	bool notVictim = StringBeginsWith(acmd, "!");
-	if(!anyVictim) victimId = atoi(notVictim ? (acmd +1) : acmd);
+	if(!anyVictim) victimId = notVictim ? (acmd +1) : acmd;
 
 	acmd = uidAssister;
 	bool anyAssister = !strcmp("*", acmd);
 	bool notAssister = StringBeginsWith(acmd, "!");
-	if(!anyAssister) assisterId = atoi(notAssister ? (acmd +1) : acmd);
+	if(!anyAssister) assisterId = notAssister ? (acmd +1) : acmd;
 
 	DeathMsgBlockEntry entry = {
 		attackerId,
@@ -263,7 +364,7 @@ void csgo_CHudDeathNotice_Block(char const * uidAttacker, char const * uidVictim
 
 void csgo_CHudDeathNotice_Block_List(void)
 {
-	Tier0_Msg("uidAttacker,uidVictim,uidAssister,modTime(<0 means block):\n");
+	Tier0_Msg("idAttacker,idVictim,idAssister,modTime(<0 means block):\n");
 	for(std::list<DeathMsgBlockEntry>::iterator it = deathMessageBlock.begin(); it != deathMessageBlock.end(); it++)
 	{
 		DeathMsgBlockEntry e = *it;
@@ -276,7 +377,7 @@ void csgo_CHudDeathNotice_Block_List(void)
 			{
 				Tier0_Msg("!");
 			}
-			Tier0_Msg("%i", e.attackerId);
+			e.attackerId.Console_Print();
 		}
 		Tier0_Msg(",");
 		if(DMBM_ANY == e.victimMode)
@@ -287,7 +388,7 @@ void csgo_CHudDeathNotice_Block_List(void)
 			{
 				Tier0_Msg("!");
 			}
-			Tier0_Msg("%i", e.victimId);
+			e.victimId.Console_Print();
 		}
 		Tier0_Msg(",");
 		if(DMBM_ANY == e.assisterMode)
@@ -298,7 +399,7 @@ void csgo_CHudDeathNotice_Block_List(void)
 			{
 				Tier0_Msg("!");
 			}
-			Tier0_Msg("%i", e.assisterId);
+			e.assisterId.Console_Print();
 		}
 		Tier0_Msg(",%f\n", e.modTime);
 	}
@@ -323,4 +424,28 @@ void Console_csgo_CHudDeathNotice_Fake(char const * htmlString, bool bIsVictim, 
 		Tier0_Warning("Error upon converting \"%s\" to a wide string.\n", htmlString);
 	else
 		detoured_csgo_CHudDeathNotice_UnkAddDeathNotice(csgo_CHudDeathNotice_UnkAddDeathNotice_last_this_ptr, (void *)wideString.c_str(), bIsVictim, bIsKiller);
+}
+
+void Console_csgo_CHudDeathNotice_HighLightId(IWrpCommandArgs * args)
+{
+	int argc = args->ArgC();
+	const char * arg0 = args->ArgV(0);
+
+	if (2 <= argc)
+	{
+		csgo_CHudDeathNotice_HighLightId = args->ArgV(1);
+		return;
+	}
+
+	Tier0_Msg(
+		"Usage:\n"
+		"%s -1|0|<id> - -1 is default behaviour, 0 is never highlight, otherwise <id> is the ID (you can get it from mirv_deathmsg debug) of the player you want to highlight.\n"
+		"Current setting: ",
+		arg0
+	);
+	csgo_CHudDeathNotice_HighLightId.Console_Print();
+	Tier0_Msg(
+		"\n"
+	);
+	return;
 }
