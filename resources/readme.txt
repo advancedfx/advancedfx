@@ -48,7 +48,7 @@ AlliedModders
 	http://alliedmods.net
 
 GitHub
-	For hosting the project.
+	For hosting the downloads, wiki and source code repository.
 	http://github.com/
 
 Hex-Rays
@@ -129,10 +129,6 @@ SharpDX
 	For the SharpDX SDK
 	(Used by HLAE developers to build the AfxHookSource shaders.)
 	http://sharpdx.org/
-
-Style-Productions
-	For hosting the advancedfx forum.
-	http://www.style-productions.net/
 
 Valve
 	For various SDKs.
@@ -251,6 +247,10 @@ zLib
 
 	  Jean-loup Gailly        Mark Adler
 	  jloup@gzip.org          madler@alumni.caltech.edu
+
+ואגס VGS
+	For hosting the advancedfx website and forum.
+	http://www.vagas.co.il/
 
 And everyone that feels he/she/it should have been mentioned here.
 

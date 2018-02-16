@@ -124,6 +124,8 @@ CON_COMMAND(mirv_cam, "Control camera source entity and offset.")
 				else if (0 == _stricmp("calcVecAngClear", arg2))
 				{
 					g_MirvCam.Source_set(0);	
+
+					return;
 				}
 				else if (0 == _stricmp("handle", arg2))
 				{
