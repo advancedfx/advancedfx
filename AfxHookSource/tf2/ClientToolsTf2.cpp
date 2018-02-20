@@ -17,10 +17,14 @@ CClientToolsTf2::CClientToolsTf2(SOURCESDK::TF2::IClientTools * clientTools)
 	, m_ClientTools(clientTools)
 {
 	m_Instance = this;
+
+	m_ClientTools->EnableRecordingMode(true);
 }
 
 CClientToolsTf2::~CClientToolsTf2()
 {
+	m_ClientTools->EnableRecordingMode(false);
+
 	m_Instance = 0;
 }
 
@@ -38,9 +42,9 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 
 	char const * msgName = msg->GetName();
 
-	if (GetRecording())
+	if (!strcmp("entity_state", msgName))
 	{
-		if (!strcmp("entity_state", msgName))
+		if (GetRecording())
 		{
 			char const * className = m_ClientTools->GetClassname(hEntity);
 
@@ -149,20 +153,22 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 				Write((bool)viewModel);
 			}
 		}
-		else if (!strcmp("deleted", msgName))
+	}
+	else if (!strcmp("deleted", msgName))
+	{
+		std::map<SOURCESDK::TF2::HTOOLHANDLE, bool>::iterator it = m_TrackedHandles.find(hEntity);
+		if (it != m_TrackedHandles.end())
 		{
-			std::map<SOURCESDK::TF2::HTOOLHANDLE, bool>::iterator it = m_TrackedHandles.find(hEntity);
-			if (it != m_TrackedHandles.end())
+			if (GetRecording())
 			{
 				WriteDictionary("deleted");
 				Write((int)(it->first));
-
-				m_TrackedHandles.erase(it);
 			}
+
+			m_TrackedHandles.erase(it);
 		}
 	}
-
-	if (!strcmp("created", msgName))
+	else if (!strcmp("created", msgName))
 	{
 		if (0 != Debug_get() && hEntity != SOURCESDK::CSGO::HTOOLHANDLE_INVALID)
 		{
@@ -171,7 +177,8 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 
 		if (hEntity != SOURCESDK::CSGO::HTOOLHANDLE_INVALID && m_ClientTools->ShouldRecord(hEntity))
 		{
-			m_ClientTools->SetRecording(hEntity, true);
+			m_TrackedHandles[hEntity] = false;
+			if (GetRecording()) m_ClientTools->SetRecording(hEntity, true);
 		}
 	}
 }
@@ -194,7 +201,10 @@ void CClientToolsTf2::StartRecording(wchar_t const * fileName)
 
 	if (GetRecording())
 	{
-		m_ClientTools->EnableRecordingMode(true);
+		for (std::map<SOURCESDK::TF2::HTOOLHANDLE, bool>::iterator it = m_TrackedHandles.begin(); it != m_TrackedHandles.end(); ++it)
+		{
+			m_ClientTools->SetRecording(it->first, true);
+		}
 	}
 }
 
@@ -202,7 +212,10 @@ void CClientToolsTf2::EndRecording()
 {
 	if (GetRecording())
 	{
-		m_ClientTools->EnableRecordingMode(false);
+		for (std::map<SOURCESDK::TF2::HTOOLHANDLE, bool>::iterator it = m_TrackedHandles.begin(); it != m_TrackedHandles.end(); ++it)
+		{
+			m_ClientTools->SetRecording(it->first, false);
+		}
 	}
 
 	CClientTools::EndRecording();

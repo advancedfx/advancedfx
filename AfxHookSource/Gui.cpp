@@ -12,8 +12,6 @@
 
 #if AFX_ENABLE_GUI
 
-#define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
-
 #include <shared/imgui/imgui.h>
 
 #include <SourceInterfaces.h>
@@ -63,7 +61,7 @@ private:
 	HCURSOR m_None = 0;
 	HCURSOR m_Arrow = LoadCursor(NULL, IDC_ARROW);
 	HCURSOR m_TextInput = LoadCursor(NULL, IDC_IBEAM);
-	HCURSOR m_Move = LoadCursor(NULL, IDC_SIZEALL);
+	HCURSOR m_ResizeAll = LoadCursor(NULL, IDC_SIZEALL);
 	HCURSOR m_ResizeNS = LoadCursor(NULL, IDC_SIZENS);
 	HCURSOR m_ResizeEW = LoadCursor(NULL, IDC_SIZEWE);
 	HCURSOR m_ResizeNESW = LoadCursor(NULL, IDC_SIZENESW);
@@ -82,8 +80,8 @@ public:
 			return m_Arrow;
 		case ImGuiMouseCursor_TextInput:
 			return m_TextInput;
-		case ImGuiMouseCursor_Move:
-			return m_Move;
+		case ImGuiMouseCursor_ResizeAll:
+			return m_ResizeAll;
 		case ImGuiMouseCursor_ResizeNS:
 			return m_ResizeNS;
 		case ImGuiMouseCursor_ResizeEW:
@@ -116,7 +114,7 @@ struct CUSTOMVERTEX
 
 bool IsSupported()
 {
-	return false;
+	//return false;
 	return SourceSdkVer_CSGO == g_SourceSdkVer;
 }
 
@@ -853,6 +851,16 @@ bool DX9_CreateDeviceObjects()
 	return true;
 }
 
+void DllProcessAttach(void)
+{
+	ImGui::SetCurrentContext(ImGui::CreateContext());
+}
+
+void DllProcessDetach(void)
+{
+	ImGui::DestroyContext(ImGui::GetCurrentContext());
+}
+
 bool On_Direct3DDevice9_Init(void* hwnd, IDirect3DDevice9* device)
 {
 	if (!IsSupported())
@@ -871,12 +879,12 @@ bool On_Direct3DDevice9_Init(void* hwnd, IDirect3DDevice9* device)
 	std::string hlaeFolderPath(GetHlaeFolder());
 	
 	m_IniFilename = hlaeFolderPath;
-	m_IniFilename.append("\\AfxHookmSource_imgui.ini");
+	m_IniFilename.append("\\AfxHookSource_imgui.ini");
 
 	io.IniFilename = m_IniFilename.c_str();
 
 	m_LogFileName = hlaeFolderPath;
-	m_LogFileName.append("\\AfxHookmSource_imgui_log.txt");
+	m_LogFileName.append("\\AfxHookmource_imgui_log.txt");
 	io.LogFilename = m_LogFileName.c_str();
 
 	io.KeyMap[ImGuiKey_Tab] = VK_TAB;                       // Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array that we will update during the application lifetime.
@@ -899,7 +907,6 @@ bool On_Direct3DDevice9_Init(void* hwnd, IDirect3DDevice9* device)
 	io.KeyMap[ImGuiKey_Y] = 'Y';
 	io.KeyMap[ImGuiKey_Z] = 'Z';
 
-	io.RenderDrawListsFn = CacheRenderDrawData;   // Alternatively you can set this to NULL and call ImGui::GetDrawData() after ImGui::Render() to get the same ImDrawData pointer.
 	io.ImeWindowHandle = g_hWnd;
 
 	DX9_CreateDeviceObjects();
@@ -961,7 +968,6 @@ void On_Direct3DDevice9_Shutdown()
 		return;
 
 	DX9_InvalidateDeviceObjects();
-	ImGui::Shutdown();
 	g_pd3dDevice = NULL;
 	g_hWnd = 0;
 }
@@ -1077,6 +1083,8 @@ bool OnGameFrameRenderEnd()
 
 	ImGui::Render();
 
+	CacheRenderDrawData(ImGui::GetDrawData());
+
 	return true;
 }
 
@@ -1089,6 +1097,14 @@ bool OnGameFrameRenderEnd()
 
 namespace AfxHookSource {
 namespace Gui {
+
+void DllProcessAttach(void)
+{
+}
+
+void DllProcessDetach(void)
+{
+}
 
 bool WndProcHandler(HWND hwnd, UINT msg, WPARAM & wParam, LPARAM & lParam)
 {

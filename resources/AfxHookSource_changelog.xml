@@ -6,6 +6,19 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.37.1</version>
+<time>2018-02-20T17:10Z</time>
+<changes>
+<change type="fixed">
+Fixed AGR recording in TF2 and CSSV34, thanks to https://twitter.com/frostleanMan for helping with that!
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.37.0</version>
 <time>2018-02-16T17:54Z</time>
 <changes>

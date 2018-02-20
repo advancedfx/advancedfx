@@ -70,9 +70,9 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 
 	char const * msgName = msg->GetName();
 
-	if (GetRecording())
+	if (!strcmp("entity_state", msgName))
 	{
-		if (!strcmp("entity_state", msgName))
+		if (GetRecording())
 		{
 			char const * className = m_ClientTools->GetClassname(hEntity);
 
@@ -121,8 +121,8 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 					|| RecordWeapons_get() && isWeapon
 					|| RecordProjectiles_get() && isProjectile
 					|| RecordViewModel_get() && isViewModel
+					)
 				)
-			)
 			{
 				// This code is only relevant for weapon entities that can have multiple models depending on their state:
 				if (m_ClientTools->IsWeapon(ent))
@@ -166,7 +166,7 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 					(
 						!RecordInvisible_get()
 						|| !strcmp("weaponworldmodel", className) // never parse invsibile worldmodels, these will have trash data.
-					) && !(pBaseEntityRs && pBaseEntityRs->m_bVisible) && !IsViewmodel(hEntity))
+						) && !(pBaseEntityRs && pBaseEntityRs->m_bVisible) && !IsViewmodel(hEntity))
 				{
 					// Entity not visible, avoid trash data:
 
@@ -225,20 +225,22 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 				Write((bool)viewModel);
 			}
 		}
-		else if (GetRecording() && !strcmp("deleted", msgName))
+	}
+	else if (!strcmp("deleted", msgName))
+	{
+		std::map<SOURCESDK::CSGO::HTOOLHANDLE, bool>::iterator it = m_TrackedHandles.find(hEntity);
+		if (it != m_TrackedHandles.end())
 		{
-			std::map<SOURCESDK::CSGO::HTOOLHANDLE, bool>::iterator it = m_TrackedHandles.find(hEntity);
-			if (it != m_TrackedHandles.end())
+			if (GetRecording())
 			{
 				WriteDictionary("deleted");
 				Write((int)(it->first));
-
-				m_TrackedHandles.erase(it);
 			}
+
+			m_TrackedHandles.erase(it);
 		}
 	}
-	
-	if (!strcmp("created", msgName))
+	else if (!strcmp("created", msgName))
 	{
 		if (0 != Debug_get() && hEntity != SOURCESDK::CSGO::HTOOLHANDLE_INVALID)
 		{

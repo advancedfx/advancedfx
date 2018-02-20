@@ -1878,6 +1878,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 			// things here that would have problems with that.
 			//
 
+			AfxHookSource::Gui::DllProcessAttach();
+
 			break;
 		}
 		case DLL_PROCESS_DETACH:
@@ -1887,6 +1889,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 			MatRenderContextHook_Shutdown();
 
 			if(g_AfxBaseClientDll) { delete g_AfxBaseClientDll; g_AfxBaseClientDll = 0; }
+
+			AfxHookSource::Gui::DllProcessDetach();
 
 #ifdef _DEBUG
 			_CrtDumpMemoryLeaks();

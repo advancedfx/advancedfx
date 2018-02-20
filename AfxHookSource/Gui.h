@@ -7,6 +7,9 @@ namespace Gui {
 
 //bool SetActive(bool value);
 
+void DllProcessAttach(void);
+void DllProcessDetach(void);
+
 /// <returns>Whether the event was already handled or not.</returns>
 bool WndProcHandler(HWND hwnd, UINT msg, WPARAM & wParam, LPARAM & lParam);
 bool OnSetCursorPos(__in int X, __in int Y);
