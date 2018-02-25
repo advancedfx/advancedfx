@@ -6,8 +6,8 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>1.37.2</version>
-<time>2018-02-25T12:53Z</time>
+<version>1.37.3</version>
+<time>2018-02-25T15:32Z</time>
 <changes>
 <change type="added">
 Added mirv_campath edit anchor - allows to easily edit the campath position and rotation using an reference anchor and an destination.<br />
