@@ -132,6 +132,8 @@ public:
 
 	void Rotate(double yPitch, double zYaw, double xRoll);
 
+	void AnchorTransform(double anchorX, double anchorY, double anchorZ, double anchorYPitch, double anchorZYaw, double anchorXRoll, double destX, double destY, double destZ, double destYPitch, double destZYaw, double destXRoll);
+
 	size_t SelectAll();
 
 	void SelectNone();

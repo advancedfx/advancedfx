@@ -1671,6 +1671,119 @@ CON_COMMAND(mirv_campath,"camera paths")
 					);
 					return;
 				}
+				else if (!_stricmp(arg2, "anchor"))
+				{
+					int argOfs = 3;
+
+					if (argOfs < argc)
+					{
+						bool bOk = true;
+
+						double anchorX;
+						double anchorY;
+						double anchorZ;
+						double anchorYPitch;
+						double anchorZYaw;
+						double anchorXRoll;
+						double destX;
+						double destY;
+						double destZ;
+						double destYPitch;
+						double destZYaw;
+						double destXRoll;
+
+						char const * curArg = args->ArgV(argOfs);
+
+						if (StringBeginsWith(curArg, "#"))
+						{
+							curArg += 1;
+							argOfs += 1;
+
+							int anchorId = atoi(curArg);
+
+							if (0 <= anchorId < g_Hook_VClient_RenderView.m_CamPath.GetSize())
+							{
+								int itId = 0;
+								for (CamPathIterator it = g_Hook_VClient_RenderView.m_CamPath.GetBegin(); it != g_Hook_VClient_RenderView.m_CamPath.GetEnd(); ++it)
+								{
+									if (itId == anchorId)
+									{
+										CamPathValue val = it.GetValue();
+
+										anchorX = val.X;
+										anchorY = val.Y;
+										anchorZ = val.Z;
+
+										Afx::Math::QEulerAngles angs = val.R.ToQREulerAngles().ToQEulerAngles();
+
+										anchorYPitch = angs.Pitch;
+										anchorZYaw = angs.Yaw;
+										anchorXRoll = angs.Roll;
+
+										break;
+									}
+
+									++itId;
+								}
+							}
+							else
+								bOk = false;
+						}
+						else if (argOfs + 5 < argc)
+						{
+							anchorX = atof(curArg);
+							anchorY = atof(args->ArgV(argOfs + 1));
+							anchorZ = atof(args->ArgV(argOfs + 2));
+							anchorYPitch = atof(args->ArgV(argOfs + 3));
+							anchorZYaw = atof(args->ArgV(argOfs + 4));
+							anchorXRoll = atof(args->ArgV(argOfs + 5));
+
+							argOfs += 6;
+						}
+						else
+							bOk = false;
+
+						if (bOk && argOfs < argc)
+						{
+							char const * curArg = args->ArgV(argOfs);
+
+							if (!_stricmp("current", curArg))
+							{
+								destX = g_Hook_VClient_RenderView.LastCameraOrigin[0];
+								destY = g_Hook_VClient_RenderView.LastCameraOrigin[1];
+								destZ = g_Hook_VClient_RenderView.LastCameraOrigin[2];
+								destYPitch = g_Hook_VClient_RenderView.LastCameraAngles[0];
+								destZYaw = g_Hook_VClient_RenderView.LastCameraAngles[1];
+								destXRoll = g_Hook_VClient_RenderView.LastCameraAngles[2];
+
+								argOfs += 1;
+							}
+							else if (argOfs + 5 < argc)
+							{
+								destX = atof(curArg);
+								destY = atof(args->ArgV(argOfs + 1));
+								destZ = atof(args->ArgV(argOfs + 2));
+								destYPitch = atof(args->ArgV(argOfs + 3));
+								destZYaw = atof(args->ArgV(argOfs + 4));
+								destXRoll = atof(args->ArgV(argOfs + 5));
+
+								argOfs += 6;
+							}
+							else
+								bOk = false;
+
+							if (bOk && argOfs == argc)
+							{
+								g_Hook_VClient_RenderView.m_CamPath.AnchorTransform(
+									anchorX, anchorY, anchorZ, anchorYPitch, anchorZYaw, anchorXRoll
+									, destX, destY, destZ, destYPitch, destZYaw, destXRoll
+								);
+
+								return;
+							}
+						}
+					}
+				}
 				else
 				if(!_stricmp(arg2, "interp"))
 				{
@@ -1775,6 +1888,7 @@ CON_COMMAND(mirv_campath,"camera paths")
 				"mirv_campath edit angles current|(<dPitchY> <dYawZ> <dRollX>) - Edit angles of the path [or selected keyframes]. All keyframes are assigned the same angles. Current uses the current camera angles, otherwise you can give the exact angles.\n"
 				"mirv_campath edit fov current|<dFov> - Similar to mirv_campath edit angles, except for field of view (fov).\n"
 				"mirv_campath edit rotate <dPitchY> <dYawZ> <dRollX> - Rotate path [or selected keyframes] around the middle of their bounding box by the given angles in degrees.\n"
+				"mirv_campath edit anchor #<anchorId>|(<anchorX > <anchorY> <anchorZ> <anchorPitchY> <anchorYawZ> <anchorRollX>) current|(<destX > <destY> <destZ> <destPitchY> <destYawZ> <destRollX>) - This translates and rotates a path using a given anchor (either a keyframe ID or actual values) and a destination for the anchor (use current for current camera view).\n"
 				"mirv_campath edit interp [...] - Edit interpolation properties.\n"
 			);
 			return;

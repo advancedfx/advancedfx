@@ -334,7 +334,7 @@ public:
 				}
 
 				Tier0_Msg(
-					"%s index <iKey> - Set new value.\n"
+					"%s key <iKey> - Set new value.\n"
 					"Current value: %i\n"
 					, arg0
 					, m_Key
@@ -435,7 +435,7 @@ public:
 		}
 
 		Tier0_Msg(
-			"%s key [...]\n"
+			"%s getWorld [...]\n"
 			, arg0
 		);
 	}

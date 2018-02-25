@@ -6,6 +6,23 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.37.2</version>
+<time>2018-02-25T12:53Z</time>
+<changes>
+<change type="added">
+Added mirv_campath edit anchor - allows to easily edit the campath position and rotation using an reference anchor and an destination.<br />
+Example: To use keyframe 0 as anchor and thus make the campath start from the current camera position use: mirv_campath edit anchor #0 current
+</change>
+</changes>
+<comments>
+Greetings:<br />
+- https://twitter.com/spczf
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.37.1</version>
 <time>2018-02-20T17:10Z</time>
 <changes>

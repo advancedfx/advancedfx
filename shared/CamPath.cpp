@@ -1076,6 +1076,117 @@ void CamPath::Rotate(double yPitch, double zYaw, double xRoll)
 	Changed();
 }
 
+void CamPath::AnchorTransform(double anchorX, double anchorY, double anchorZ, double anchorYPitch, double anchorZYaw, double anchorXRoll, double destX, double destY, double destZ, double destYPitch, double destZYaw, double destXRoll)
+{
+	if(m_Map.size()<1) return;
+
+	bool selectAll = true;
+
+	for(CInterpolationMap<CamPathValue>::const_iterator it = m_Map.begin(); it != m_Map.end(); ++it)
+	{
+		if(it->second.Selected)
+		{
+			if(selectAll)
+			{
+				selectAll = false;
+				break;
+			}
+		}
+	}
+
+	Quaternion quatAnchor = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(anchorYPitch, anchorZYaw, anchorXRoll)));
+	Quaternion quatDest = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(destYPitch, destZYaw, destXRoll)));
+
+	// Make sure we take the shortest path:
+	double dotProduct = DotProduct(quatDest, quatAnchor);
+	if (dotProduct<0.0)
+	{
+		quatAnchor = -1.0 * quatAnchor;
+	}
+
+	Quaternion quatR = quatDest * (quatAnchor.Norm() * quatAnchor.Conjugate());
+
+	QEulerAngles angles = quatR.ToQREulerAngles().ToQEulerAngles();
+
+	double yPitch = angles.Pitch;
+	double zYaw = angles.Yaw;
+	double xRoll = angles.Roll;
+
+	// build rotation matrix:
+	double R[3][3];
+	{
+		double angle;
+		double sr, sp, sy, cr, cp, cy;
+
+		angle = zYaw * (M_PI*2 / 360);
+		sy = sin(angle);
+		cy = cos(angle);
+		angle = yPitch * (M_PI*2 / 360);
+		sp = sin(angle);
+		cp = cos(angle);
+		angle = xRoll * (M_PI*2 / 360);
+		sr = sin(angle);
+		cr = cos(angle);
+
+		// R = YAW * (PITCH * ROLL)
+		R[0][0] = cy*cp;
+		R[0][1] = cy*sp*sr -sy*cr;
+		R[0][2] = cy*sp*cr +sy*sr;
+		R[1][0] = sy*cp;
+		R[1][1] = sy*sp*sr +cy*cr;
+		R[1][2] = sy*sp*cr +cy*-sr;
+		R[2][0] = -sp;
+		R[2][1] = cp*sr;
+		R[2][2] = cp*cr;
+	}
+
+	// rotate:
+
+	for(CInterpolationMap<CamPathValue>::iterator it = m_Map.begin(); it != m_Map.end(); ++it)
+	{
+		double curT = it->first;
+		CamPathValue curValue = it->second;
+
+		if(selectAll || curValue.Selected)
+		{
+			// update position:
+			{
+				// translate into anchor:
+				double x = curValue.X -anchorX;
+				double y = curValue.Y -anchorY;
+				double z = curValue.Z -anchorZ;
+
+				// rotate:
+				double Rx = R[0][0]*x +R[0][1]*y +R[0][2]*z;
+				double Ry = R[1][0]*x +R[1][1]*y +R[1][2]*z;
+				double Rz = R[2][0]*x +R[2][1]*y +R[2][2]*z;
+
+				// translate into destination:
+				curValue.X = Rx +destX;
+				curValue.Y = Ry +destY;
+				curValue.Z = Rz +destZ;
+			}
+
+			// update rotation:
+			{
+				Quaternion quatQ = curValue.R;
+
+				curValue.R = quatR * quatQ;
+			}
+
+			// update:
+			it->second = curValue;
+		}
+
+	}
+
+	m_XInterp->InterpolationMapChanged();
+	m_YInterp->InterpolationMapChanged();
+	m_ZInterp->InterpolationMapChanged();
+	m_RInterp->InterpolationMapChanged();
+
+	Changed();
+}
 
 void CamPath::CopyMap(CInterpolationMap<CamPathValue> & dst, CInterpolationMap<CamPathValue> & src)
 {
