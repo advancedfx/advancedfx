@@ -68,7 +68,6 @@ public:
 
 	//virtual void Viewport(int x, int y, int width, int height) = 0;
 
-	/// <summary>This is only called on the root context on the rendering thread in the final bind, return the new material you want.</summary>
 	virtual SOURCESDK::IMaterial_csgo * MaterialHook(SOURCESDK::IMaterial_csgo * material, void * proxyData) = 0;
 
 	virtual void DrawInstances(int nInstanceCount, const SOURCESDK::MeshInstanceData_t_csgo *pInstance) = 0;
