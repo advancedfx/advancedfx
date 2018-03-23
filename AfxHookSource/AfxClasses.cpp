@@ -50,34 +50,52 @@ bool CAfxMaterialKey::operator < (const CAfxMaterialKey & y) const
 
 // CAfxTracedMaterial //////////////////////////////////////////////////////////
 
-std::map<SOURCESDK::IMaterial_csgo *, std::set<CAfxTrackedMaterial *>> CAfxTrackedMaterial::m_Notifyees;
-std::mutex CAfxTrackedMaterial::m_NotifyeesMutex;
+std::map<SOURCESDK::IMaterial_csgo *, CAfxTrackedMaterial *> CAfxTrackedMaterial::m_Trackeds;
+std::shared_timed_mutex CAfxTrackedMaterial::m_TrackedsMutex;
 
-void CAfxTrackedMaterial::AddNotifyee(SOURCESDK::IMaterial_csgo * material, CAfxTrackedMaterial * notifyee)
+CAfxTrackedMaterial * CAfxTrackedMaterial::TrackMaterial(SOURCESDK::IMaterial_csgo * material)
 {
-	{
-		std::unique_lock<std::mutex> lock(m_NotifyeesMutex);
+	CAfxTrackedMaterial * result = 0;
 
-		m_Notifyees[material].insert(notifyee);
+	{
+		std::shared_lock<std::shared_timed_mutex> shared_lock(m_TrackedsMutex);
+
+		std::map<SOURCESDK::IMaterial_csgo *, CAfxTrackedMaterial *>::iterator it = m_Trackeds.find(material);
+
+		if (it != m_Trackeds.end())
+		{
+			result = it->second;
+		}
+	}
+
+	if (0 == result)
+	{
+		std::unique_lock<std::shared_timed_mutex> lock(m_TrackedsMutex);
+
+		std::map<SOURCESDK::IMaterial_csgo *, CAfxTrackedMaterial *>::iterator it = m_Trackeds.find(material);
+
+		if (it != m_Trackeds.end())
+		{
+			result = it->second;
+		}
+		else
+		{
+			result = new CAfxTrackedMaterial(material);
+
+			m_Trackeds[material] = result;
+		}
 	}
 
 	HooKVtable(material);
+
+	return result;
 }
 
 void CAfxTrackedMaterial::RemoveNotifyee(SOURCESDK::IMaterial_csgo * material, CAfxTrackedMaterial * notifyee)
 {
-	std::unique_lock<std::mutex> lock(m_NotifyeesMutex);
+	std::unique_lock<std::shared_timed_mutex> lock(m_TrackedsMutex);
 
-	std::map<SOURCESDK::IMaterial_csgo *, std::set<CAfxTrackedMaterial *>>::iterator it = m_Notifyees.find(material);
-
-	if (it != m_Notifyees.end())
-	{
-		it->second.erase(notifyee);
-		if (it->second.empty())
-		{
-			m_Notifyees.erase(it);
-		}
-	}
+	m_Trackeds.erase(material);
 }
 
 std::map<int *, CAfxTrackedMaterial::CMaterialDetours> CAfxTrackedMaterial::m_VtableMap;
@@ -90,17 +108,15 @@ void CAfxTrackedMaterial::OnMaterialInterlockedDecrement(SOURCESDK::IMaterial_cs
 
 	if (will_become_zero)
 	{
-		std::unique_lock<std::mutex> lock(m_NotifyeesMutex);
+		std::unique_lock<std::shared_timed_mutex> lock(m_TrackedsMutex);
 
-		std::map<SOURCESDK::IMaterial_csgo *, std::set<CAfxTrackedMaterial *>>::iterator it = m_Notifyees.find(material);
+		std::map<SOURCESDK::IMaterial_csgo *, CAfxTrackedMaterial *>::iterator it = m_Trackeds.find(material);
 
-		if (it != m_Notifyees.end())
+		if (it != m_Trackeds.end())
 		{
-			for (std::set<CAfxTrackedMaterial *>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
-			{
-				(*it2)->AfxMaterialFree();
-			}
-			m_Notifyees.erase(it);
+			it->second->AfxMaterialFree();
+
+			m_Trackeds.erase(it);
 		}
 	}
 }
@@ -159,23 +175,18 @@ void CAfxTrackedMaterial::HooKVtable(SOURCESDK::IMaterial_csgo * orgMaterial)
 }
 
 
-CAfxTrackedMaterial::CAfxTrackedMaterial(SOURCESDK::IMaterial_csgo * material, IAfxMaterialFree * notifyee)
-	: CAfxMaterialKey(material), m_Notifyee(notifyee)
+CAfxTrackedMaterial::CAfxTrackedMaterial(SOURCESDK::IMaterial_csgo * material)
+	: CAfxMaterialKey(material)
 {
-	if (m_Notifyee) AddNotifyee(m_Material, this);
 }
 
 CAfxTrackedMaterial::~CAfxTrackedMaterial()
 {
-	if (m_Notifyee)
-	{
 #ifdef _DEBUG
-		Tier0_Msg("CAfxTrackedMaterial::~CAfxTrackedMaterial 0x%08x -> %s (PRE-FREE)\n", this, m_Material->GetName());
+	Tier0_Msg("CAfxTrackedMaterial::~CAfxTrackedMaterial 0x%08x -> %s (PRE-FREE)\n", this, m_Material->GetName());
 #endif
 
-		m_Notifyee = 0;
-		RemoveNotifyee(m_Material, this);
-	}
+	RemoveNotifyee(m_Material, this);
 }
 
 void CAfxTrackedMaterial::AfxMaterialFree(void)
@@ -184,12 +195,23 @@ void CAfxTrackedMaterial::AfxMaterialFree(void)
 	Tier0_Msg("CAfxTrackedMaterial::AfxMaterialFree 0x%08x -> %s (%s)\n", this, m_Material->GetName(), m_Notifyee ? "notifying" : "NOT NOTIFYING");
 #endif
 
-	if (m_Notifyee)
+	while (!m_ThisNotifyees.empty())
 	{
-		IAfxMaterialFree * notifyee = m_Notifyee;
-		m_Notifyee = 0;
+		std::set<IAfxMaterialFree *>::iterator it = m_ThisNotifyees.begin();
+		IAfxMaterialFree * notifyee = *it;
+		m_ThisNotifyees.erase(it);
 		notifyee->AfxMaterialFree(this);
 	}
+}
+
+void CAfxTrackedMaterial::AddNotifyee(IAfxMaterialFree * notifyee)
+{
+	m_ThisNotifyees.insert(notifyee);
+}
+
+void CAfxTrackedMaterial::RemoveNotifyee(IAfxMaterialFree * notifyee)
+{
+	m_ThisNotifyees.erase(notifyee);
 }
 
 

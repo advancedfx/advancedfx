@@ -1701,7 +1701,7 @@ CON_COMMAND(mirv_campath,"camera paths")
 
 							int anchorId = atoi(curArg);
 
-							if (0 <= anchorId < g_Hook_VClient_RenderView.m_CamPath.GetSize())
+							if (0 <= anchorId && anchorId < (int)g_Hook_VClient_RenderView.m_CamPath.GetSize())
 							{
 								int itId = 0;
 								for (CamPathIterator it = g_Hook_VClient_RenderView.m_CamPath.GetBegin(); it != g_Hook_VClient_RenderView.m_CamPath.GetEnd(); ++it)

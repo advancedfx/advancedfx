@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.37.5</version>
+<time>2018-03-23T05:35Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams stream picker not working properly, this should bring slight performance improvements and reduce memory footprint and fragmentation a bit for streams.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.37.4</version>
 <time>2018-03-01T07:30Z</time>
 <changes>

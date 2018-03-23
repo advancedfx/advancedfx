@@ -69,12 +69,83 @@ AFXADDR_DEF(csgo_CClientState_ProcessVoiceData_DSZ)
 AFXADDR_DEF(csgo_CVoiceWriter_AddDecompressedData)
 AFXADDR_DEF(csgo_CVoiceWriter_AddDecompressedData_DSZ)
 
-
 void ErrorBox(char const * messageText);
 
 #define STRINGIZE(x) STRINGIZE2(x)
 #define STRINGIZE2(x) #x
 #define MkErrStr(file,line) "Problem in " file ":" STRINGIZE(line)
+
+/*
+void Addresses_InitShaderApiDll(AfxAddr shaderApiDll, SourceSdkVer sourceSdkVer)
+{
+	AFXADDR_SET(csgo_CShaderAPIDx8_vtable, 0);
+
+	if (SourceSdkVer_CSGO == sourceSdkVer)
+	{
+		{
+			ImageSectionsReader sections((HMODULE)shaderApiDll);
+			if (!sections.Eof())
+			{
+				// Now in .text (1)
+
+				sections.Next();
+
+				if (!sections.Eof())
+				{
+					// Now in .idata / .rdata (2)
+					
+					MemRange section2 = sections.GetMemRange();
+
+					sections.Next();
+
+					if (!sections.Eof())
+					{
+						// Now in .data (3).
+
+						MemRange result = FindCString(sections.GetMemRange(), ".?AVCShaderAPIDx8@@");
+						if (!result.IsEmpty())
+						{
+							DWORD tmpAddr = result.Start - 0x8;
+
+							result.End = section2.Start;
+
+							for (int i = 0; i < 2; ++i)
+							{
+								result = FindBytes(MemRange(result.End, section2.End), (char const *)&tmpAddr, sizeof(tmpAddr));
+							}
+
+							if (!result.IsEmpty())
+							{
+								DWORD tmpAddr = result.Start - 0xC;
+
+								result.End = section2.Start;
+
+								for (int i = 0; i < 1; ++i)
+								{
+									result = FindBytes(MemRange(result.End, section2.End), (char const *)&tmpAddr, sizeof(tmpAddr));
+								}
+
+								if (!result.IsEmpty())
+								{
+									DWORD tmpAddr = result.Start + (DWORD)sizeof(void *);
+
+									AFXADDR_SET(csgo_CShaderAPIDx8_vtable, tmpAddr);
+								}
+								else ErrorBox(MkErrStr(__FILE__, __LINE__));
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+	}
+}
+*/
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 {

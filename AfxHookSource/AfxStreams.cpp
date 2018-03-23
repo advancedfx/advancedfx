@@ -232,170 +232,6 @@ public:
 	}
 };
 
-class AfxD3D9OverrideEnd_ModulationColor_Functor
-	: public CAfxFunctor
-{
-public:
-	virtual void operator()()
-	{
-		AfxD3D9OverrideEnd_ModulationColor();
-	}
-};
-
-class AfxD3D9OverrideEnd_ModulationBlend_Functor
-	: public CAfxFunctor
-{
-public:
-	virtual void operator()()
-	{
-		AfxD3D9OverrideEnd_ModulationBlend();
-	}
-};
-
-class AfxD3D9OverrideEnd_D3DRS_ZWRITEENABLE_Functor
-	: public CAfxFunctor
-{
-public:
-	virtual void operator()()
-	{
-		AfxD3D9OverrideEnd_D3DRS_ZWRITEENABLE();
-	}
-};
-
-class AfxD3D9OverrideBegin_ModulationBlend_Functor
-	: public CAfxFunctor
-{
-public:
-	AfxD3D9OverrideBegin_ModulationBlend_Functor(float blend)
-		: m_Blend(blend)
-	{
-	}
-
-	virtual void operator()()
-	{
-		AfxD3D9OverrideBegin_ModulationBlend(m_Blend);
-	}
-private:
-	float m_Blend;
-};
-
-class AfxD3D9OverrideBegin_ModulationColor_Functor
-	: public CAfxFunctor
-{
-public:
-	AfxD3D9OverrideBegin_ModulationColor_Functor(float color[3])
-	{
-		m_Color[0] = color[0];
-		m_Color[1] = color[1];
-		m_Color[2] = color[2];
-	}
-
-	virtual void operator()()
-	{
-		AfxD3D9OverrideBegin_ModulationColor(m_Color);
-	}
-private:
-	float m_Color[3];
-};
-
-
-class AfxD3D9OverrideBegin_D3DRS_ZWRITEENABLE_Functor
-	: public CAfxFunctor
-{
-public:
-	AfxD3D9OverrideBegin_D3DRS_ZWRITEENABLE_Functor(DWORD enable)
-		: m_Enable(enable)
-	{
-	}
-
-	virtual void operator()()
-	{
-		AfxD3D9OverrideBegin_D3DRS_ZWRITEENABLE(m_Enable);
-	}
-private:
-	DWORD m_Enable;
-};
-
-class AfxD3D9OverrideEnd_D3DRS_DESTBLEND_Functor
-	: public CAfxFunctor
-{
-public:
-	virtual void operator()()
-	{
-		AfxD3D9OverrideEnd_D3DRS_DESTBLEND();
-	}
-};
-
-class AfxD3D9OverrideEnd_D3DRS_SRCBLEND_Functor
-	: public CAfxFunctor
-{
-public:
-	virtual void operator()()
-	{
-		AfxD3D9OverrideEnd_D3DRS_SRCBLEND();
-	}
-};
-
-class AfxD3D9OverrideEnd_D3DRS_ALPHABLENDENABLE_Functor
-	: public CAfxFunctor
-{
-public:
-	virtual void operator()()
-	{
-		AfxD3D9OverrideEnd_D3DRS_ALPHABLENDENABLE();
-	}
-};
-
-class AfxD3D9OverrideBegin_D3DRS_ALPHABLENDENABLE_Functor
-	: public CAfxFunctor
-{
-public:
-	AfxD3D9OverrideBegin_D3DRS_ALPHABLENDENABLE_Functor(DWORD value)
-		: m_Value(value)
-	{
-	}
-
-	virtual void operator()()
-	{
-		AfxD3D9OverrideBegin_D3DRS_ALPHABLENDENABLE(m_Value);
-	}
-private:
-	DWORD m_Value;
-};
-
-class AfxD3D9OverrideBegin_D3DRS_SRCBLEND_Functor
-	: public CAfxFunctor
-{
-public:
-	AfxD3D9OverrideBegin_D3DRS_SRCBLEND_Functor(DWORD value)
-		: m_Value(value)
-	{
-	}
-
-	virtual void operator()()
-	{
-		AfxD3D9OverrideBegin_D3DRS_SRCBLEND(m_Value);
-	}
-private:
-	DWORD m_Value;
-};
-
-class AfxD3D9OverrideBegin_D3DRS_DESTBLEND_Functor
-	: public CAfxFunctor
-{
-public:
-	AfxD3D9OverrideBegin_D3DRS_DESTBLEND_Functor(DWORD value)
-		: m_Value(value)
-	{
-	}
-
-	virtual void operator()()
-	{
-		AfxD3D9OverrideBegin_D3DRS_DESTBLEND(m_Value);
-	}
-private:
-	DWORD m_Value;
-};
 
 class AfxD3D9BlockPresent_Functor
 	: public CAfxFunctor
@@ -1155,8 +991,6 @@ CAfxBaseFxStream::CShared CAfxBaseFxStream::m_Shared;
 
 CAfxBaseFxStream::CAfxBaseFxStream()
 : CAfxRenderViewStream()
-, m_MapRleaseNotification(this)
-, m_PickerMaterialsRleaseNotification(this)
 , m_TestAction(false)
 , m_DepthVal(1)
 , m_DepthValMax(1024)
@@ -1186,6 +1020,9 @@ CAfxBaseFxStream::CAfxBaseFxStream()
 , m_OtherSpecialAction(0)
 , m_VguiAction(0)
 {
+	m_MapRleaseNotification = new CMapRleaseNotification(this);
+	m_PickerMaterialsRleaseNotification = new CPickerMaterialsRleaseNotification(this);
+
 	m_Shared.AddRef();
 
 	ForceBuildingCubemaps_set(true);
@@ -1242,6 +1079,9 @@ CAfxBaseFxStream::~CAfxBaseFxStream()
 	SetAction(m_VguiAction, 0);
 
 	m_Shared.Release();
+
+	delete m_PickerMaterialsRleaseNotification;
+	delete m_MapRleaseNotification;
 }
 
 void CAfxBaseFxStream::AfxStreamsInit(void)
@@ -1374,22 +1214,22 @@ void CAfxBaseFxStream::OnRenderEnd()
 	CAfxRenderViewStream::OnRenderEnd();
 }
 
-CAfxBaseFxStream::CAction * CAfxBaseFxStream::RetrieveAction(SOURCESDK::IMaterial_csgo * material, SOURCESDK::CSGO::CBaseHandle const & entityHandle)
+CAfxBaseFxStream::CAction * CAfxBaseFxStream::RetrieveAction(CAfxTrackedMaterial * tackedMaterial, SOURCESDK::CSGO::CBaseHandle const & entityHandle)
 {
+	SOURCESDK::IMaterialInternal_csgo * material = tackedMaterial->GetMaterial();
+
 	CAction * action = 0;
 
-	if (Picker_GetHidden(entityHandle, material))
+	if (Picker_GetHidden(entityHandle, tackedMaterial))
 	{
-		action = GetAction(material, m_Shared.NoDrawAction_get());
+		action = GetAction(tackedMaterial, m_Shared.NoDrawAction_get());
 	}
 
 	if (!action)
 	{
-		CAfxTrackedMaterial findKey(material, 0);
-
 		m_MapMutex.lock_shared();
 
-		std::map<CAfxTrackedMaterial, CCacheEntry>::iterator it = m_Map.find(findKey);
+		std::map<CAfxTrackedMaterial *, CCacheEntry>::iterator it = m_Map.find(tackedMaterial);
 
 		if (it != m_Map.end())
 		{
@@ -1406,7 +1246,7 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::RetrieveAction(SOURCESDK::IMateria
 			m_MapMutex.unlock_shared();
 			m_MapMutex.lock();
 
-			it = m_Map.find(findKey);
+			it = m_Map.find(tackedMaterial);
 
 			if (it != m_Map.end())
 			{
@@ -1421,11 +1261,13 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::RetrieveAction(SOURCESDK::IMateria
 			{
 				// determine current action and cache it.
 
-				CCacheEntry & entry = m_Map.emplace(std::piecewise_construct, std::forward_as_tuple(material, &m_MapRleaseNotification),std::forward_as_tuple()).first->second;
+				CCacheEntry & entry = m_Map[tackedMaterial];
+
+				tackedMaterial->AddNotifyee(m_MapRleaseNotification);
 
 				for (std::list<CActionFilterValue>::iterator it = m_ActionFilter.begin(); it != m_ActionFilter.end(); ++it)
 				{
-					if (it->CalcMatch_Material(material))
+					if (it->CalcMatch_Material(tackedMaterial))
 					{
 						if (it->GetUseHandle())
 						{
@@ -1433,7 +1275,7 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::RetrieveAction(SOURCESDK::IMateria
 
 							if (entry.EntityActions.end() == entry.EntityActions.find(itHandle))
 							{
-								CAction * itAction = GetAction(material, it->GetMatchAction());
+								CAction * itAction = GetAction(tackedMaterial, it->GetMatchAction());
 								itAction->AddRef();
 								entry.EntityActions[itHandle] = itAction;
 
@@ -1447,7 +1289,7 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::RetrieveAction(SOURCESDK::IMateria
 						{
 							if (!entry.DefaultAction)
 							{
-								CAction * itAction = GetAction(material, it->GetMatchAction());
+								CAction * itAction = GetAction(tackedMaterial, it->GetMatchAction());
 								itAction->AddRef();
 								entry.DefaultAction = itAction;
 
@@ -1464,7 +1306,7 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::RetrieveAction(SOURCESDK::IMateria
 
 				if (!entry.DefaultAction)
 				{
-					CAction * itAction = GetAction(material);
+					CAction * itAction = GetAction(tackedMaterial);
 					itAction->AddRef();
 					entry.DefaultAction = itAction;
 
@@ -1514,116 +1356,118 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::RetrieveAction(SOURCESDK::IMateria
 	return action;
 }
 
-CAfxBaseFxStream::CAction * CAfxBaseFxStream::GetAction(SOURCESDK::IMaterial_csgo * material)
+CAfxBaseFxStream::CAction * CAfxBaseFxStream::GetAction(CAfxTrackedMaterial * trackedMaterial)
 {
+	SOURCESDK::IMaterial_csgo * material = trackedMaterial->GetMaterial();
+
 	const char * groupName =  material->GetTextureGroupName();
 	const char * name = material->GetName();
 	//const char * shaderName = material->GetShaderName();
 	bool isErrorMaterial = material->IsErrorMaterial();
 
 	if(isErrorMaterial)
-		return GetAction(material, m_ErrorMaterialAction);
+		return GetAction(trackedMaterial, m_ErrorMaterialAction);
 	else
 	if(!strcmp("ClientEffect textures", groupName))
-		return GetAction(material, m_ClientEffectTexturesAction);
+		return GetAction(trackedMaterial, m_ClientEffectTexturesAction);
 	else
 	if(!strcmp("Decal textures", groupName))
-		return GetAction(material, m_DecalTexturesAction);
+		return GetAction(trackedMaterial, m_DecalTexturesAction);
 	else
 	if(!strcmp("World textures", groupName))
-		return GetAction(material, m_WorldTexturesAction);
+		return GetAction(trackedMaterial, m_WorldTexturesAction);
 	else
 	if(!strcmp("SkyBox textures", groupName))
-		return GetAction(material, m_SkyBoxTexturesAction);
+		return GetAction(trackedMaterial, m_SkyBoxTexturesAction);
 	else
 	if(!strcmp("StaticProp textures", groupName))
 	{
 		if(StringBeginsWith(name, "models/weapons/"))
-			return GetAction(material, m_WeaponModelsAction);
+			return GetAction(trackedMaterial, m_WeaponModelsAction);
 		else
-			return GetAction(material, m_StaticPropTexturesAction);
+			return GetAction(trackedMaterial, m_StaticPropTexturesAction);
 	}
 	else
 	if(!strcmp("Model textures", groupName))
 	{
 		if(StringBeginsWith(name, "models/player/"))
-			return GetAction(material, m_PlayerModelsAction);
+			return GetAction(trackedMaterial, m_PlayerModelsAction);
 		else
 		if(StringBeginsWith(name, "models/weapons/"))
 		{
 			if(StringBeginsWith(name, "models/weapons/stattrack/"))
-				return GetAction(material, m_StatTrakAction);
+				return GetAction(trackedMaterial, m_StatTrakAction);
 			else
-				return GetAction(material, m_WeaponModelsAction);
+				return GetAction(trackedMaterial, m_WeaponModelsAction);
 		}
 		else
 		if(StringBeginsWith(name, "models/shells/"))
-			return GetAction(material, m_ShellModelsAction);
+			return GetAction(trackedMaterial, m_ShellModelsAction);
 		else
-			return GetAction(material, m_OtherModelsAction);
+			return GetAction(trackedMaterial, m_OtherModelsAction);
 	}
 	else
 	if(!strcmp("Other textures", groupName)
 		||!strcmp("Precached", groupName))
 	{
 		if(StringBeginsWith(name, "__"))
-			return GetAction(material, m_OtherSpecialAction);
+			return GetAction(trackedMaterial, m_OtherSpecialAction);
 		else
 		if(StringBeginsWith(name, "cable/"))
-			return GetAction(material, m_CableAction);
+			return GetAction(trackedMaterial, m_CableAction);
 		else
 		if(StringBeginsWith(name, "cs_custom_material_"))
-			return GetAction(material, m_WeaponModelsAction);
+			return GetAction(trackedMaterial, m_WeaponModelsAction);
 		else
 		if(StringBeginsWith(name, "engine/"))
 		{
 			if(!strcmp(name, "engine/writez"))
-				return GetAction(material, m_WriteZAction);
+				return GetAction(trackedMaterial, m_WriteZAction);
 			else
-				return GetAction(material, m_OtherEngineAction);
+				return GetAction(trackedMaterial, m_OtherEngineAction);
 		}
 		else
 		if(StringBeginsWith(name, "effects/"))
-			return GetAction(material, m_EffectsAction);
+			return GetAction(trackedMaterial, m_EffectsAction);
 		else
 		if(StringBeginsWith(name, "dev/"))
-			return GetAction(material, m_DevAction);
+			return GetAction(trackedMaterial, m_DevAction);
 		else
 		if(StringBeginsWith(name, "particle/"))
 		{
 			if(StringBeginsWith(name, "particle/shells/"))
-				return GetAction(material, m_ShellParticleAction);
+				return GetAction(trackedMaterial, m_ShellParticleAction);
 			else
-				return GetAction(material, m_OtherParticleAction);
+				return GetAction(trackedMaterial, m_OtherParticleAction);
 		}
 		else
 		if(StringBeginsWith(name, "sticker_"))
-			return GetAction(material, m_StickerAction);
+			return GetAction(trackedMaterial, m_StickerAction);
 		else
 		if(StringBeginsWith(name, "vgui"))
-			return GetAction(material, m_VguiAction);
+			return GetAction(trackedMaterial, m_VguiAction);
 		else
-			return GetAction(material, m_OtherAction);
+			return GetAction(trackedMaterial, m_OtherAction);
 	}
 	else
 	if(!strcmp("Particle textures", groupName))
 	{
 		if(StringBeginsWith(name, "particle/shells/"))
-			return GetAction(material, m_ShellParticleAction);
+			return GetAction(trackedMaterial, m_ShellParticleAction);
 		else
-			return GetAction(material, m_OtherParticleAction);
+			return GetAction(trackedMaterial, m_OtherParticleAction);
 	}
 	else
 	if(!strcmp(groupName, "VGUI textures"))
-		return GetAction(material, m_VguiAction);
+		return GetAction(trackedMaterial, m_VguiAction);
 
-	return GetAction(material, 0);
+	return GetAction(trackedMaterial, 0);
 }
 
-CAfxBaseFxStream::CAction * CAfxBaseFxStream::GetAction(SOURCESDK::IMaterial_csgo * material, CAction * action)
+CAfxBaseFxStream::CAction * CAfxBaseFxStream::GetAction(CAfxTrackedMaterial * trackedMaterial, CAction * action)
 {
 	if(!action) action = m_Shared.DrawAction_get();
-	action = action->ResolveAction(material);
+	action = action->ResolveAction(trackedMaterial);
 	return action;
 }
 
@@ -1906,7 +1750,7 @@ void CAfxBaseFxStream::InvalidateMap(void)
 	if(m_DebugPrint)
 		Tier0_Msg("Stream: Invalidating material cache.\n");
 
-	for(std::map<CAfxTrackedMaterial, CCacheEntry>::iterator it = m_Map.begin(); it != m_Map.end(); ++it)
+	for(std::map<CAfxTrackedMaterial *, CCacheEntry>::iterator it = m_Map.begin(); it != m_Map.end(); ++it)
 	{
 		for (std::map<SOURCESDK::CSGO::CBaseHandle, CAction *>::iterator itIt = it->second.EntityActions.begin(); itIt != it->second.EntityActions.end(); ++itIt)
 		{
@@ -1914,6 +1758,7 @@ void CAfxBaseFxStream::InvalidateMap(void)
 		}
 
 		it->second.DefaultAction->Release();
+		it->first->RemoveNotifyee(m_MapRleaseNotification);
 	}
 	m_Map.clear();
 
@@ -1926,7 +1771,12 @@ void CAfxBaseFxStream::Picker_Stop(void)
 
 	if(m_PickerActive)
 	{
+		for (std::map<CAfxTrackedMaterial *, CPickerMatValue>::iterator it = m_PickerMaterials.begin(); it != m_PickerMaterials.end(); ++it)
+		{
+			it->first->RemoveNotifyee(m_PickerMaterialsRleaseNotification);
+		}
 		m_PickerMaterials.clear();
+
 		m_PickerEntities.clear();
 
 		m_PickerActive = false;
@@ -1940,13 +1790,13 @@ void CAfxBaseFxStream::Picker_Print(void)
 	std::shared_lock<std::shared_timed_mutex> lock(m_PickerMutex);
 
 	Tier0_Msg("---- Materials: ----\n");
-	for (std::map<CAfxTrackedMaterial, CPickerMatValue>::iterator it = m_PickerMaterials.begin(); it != m_PickerMaterials.end(); ++it)
+	for (std::map<CAfxTrackedMaterial *, CPickerMatValue>::iterator it = m_PickerMaterials.begin(); it != m_PickerMaterials.end(); ++it)
 	{
 		int idx = it->second.Index;
 
-		CAfxTrackedMaterial const & mat = it->first;
+		CAfxTrackedMaterial const * trackedMat = it->first;
 
-		SOURCESDK::IMaterial_csgo * material = mat.GetMaterial();
+		SOURCESDK::IMaterial_csgo * material = trackedMat->GetMaterial();
 
 		Tier0_Msg("\"name=%s\" \"textureGroup=%s\" \"shader=%s\" \"isErrorMaterial=%i\" (%s)\n", material->GetName(), material->GetTextureGroupName(), material->GetShaderName(), material->IsErrorMaterial() ? 1 : 0, m_PickingMaterials && (1 == (idx & 0x1)) ? "hidden" : "visible");
 	}
@@ -1975,7 +1825,7 @@ void CAfxBaseFxStream::Picker_Pick(bool pickEntityNotMaterial, bool wasVisible)
 
 		if (m_PickingEntities)
 		{
-			std::set<CAfxMaterialKey> usedMats;
+			std::set<CAfxMaterialKey *> usedMats;
 			int index = 0;
 
 			for (std::map<int, CPickerEntValue>::iterator it = m_PickerEntities.begin(); it != m_PickerEntities.end(); )
@@ -1995,12 +1845,15 @@ void CAfxBaseFxStream::Picker_Pick(bool pickEntityNotMaterial, bool wasVisible)
 				}
 			}
 
-			for(std::map<CAfxTrackedMaterial,CPickerMatValue>::iterator it = m_PickerMaterials.begin(); it != m_PickerMaterials.end(); )
+			for(std::map<CAfxTrackedMaterial *,CPickerMatValue>::iterator it = m_PickerMaterials.begin(); it != m_PickerMaterials.end(); )
 			{
 				if (usedMats.end() != usedMats.find(it->first))
 					++it;
 				else
+				{
+					it->first->RemoveNotifyee(m_PickerMaterialsRleaseNotification);
 					it = m_PickerMaterials.erase(it);
+				}
 			}
 		}
 
@@ -2009,12 +1862,13 @@ void CAfxBaseFxStream::Picker_Pick(bool pickEntityNotMaterial, bool wasVisible)
 			std::set<int> usedEnts;
 			int index = 0;
 
-			for (std::map<CAfxTrackedMaterial, CPickerMatValue>::iterator it = m_PickerMaterials.begin(); it != m_PickerMaterials.end(); )
+			for (std::map<CAfxTrackedMaterial *, CPickerMatValue>::iterator it = m_PickerMaterials.begin(); it != m_PickerMaterials.end(); )
 			{
 				int oldIndex = it->second.Index;
 
 				if ((1 == (oldIndex & 0x1)) == wasVisible)
 				{
+					it->first->RemoveNotifyee(m_PickerMaterialsRleaseNotification);
 					it = m_PickerMaterials.erase(it);
 				}
 				else
@@ -2068,7 +1922,7 @@ void CAfxBaseFxStream::Picker_Pick(bool pickEntityNotMaterial, bool wasVisible)
 	m_PickingMaterials = !pickEntityNotMaterial;
 }
 
-bool CAfxBaseFxStream::Picker_GetHidden(SOURCESDK::CSGO::CBaseHandle const & entityHandle, SOURCESDK::IMaterial_csgo * material)
+bool CAfxBaseFxStream::Picker_GetHidden(SOURCESDK::CSGO::CBaseHandle const & entityHandle, CAfxTrackedMaterial * tackedMaterial)
 {
 	if (!m_PickerActive)
 		return false;
@@ -2096,13 +1950,12 @@ bool CAfxBaseFxStream::Picker_GetHidden(SOURCESDK::CSGO::CBaseHandle const & ent
 	if (m_PickerActive)
 	{
 		int ent = entityHandle.ToInt();
-		CAfxTrackedMaterial findMat(material, 0);
 
 		if (!m_PickerCollecting)
 		{
 			if (!hidden && m_PickingMaterials)
 			{
-				std::map<CAfxTrackedMaterial, CPickerMatValue>::iterator itMat = m_PickerMaterials.find(findMat);
+				std::map<CAfxTrackedMaterial *, CPickerMatValue>::iterator itMat = m_PickerMaterials.find(tackedMaterial);
 				hidden = (m_PickerMaterials.end() != itMat) && (((itMat->second.Index) & 0x1) == 1);
 			}
 			if (!hidden && m_PickingEntities)
@@ -2113,10 +1966,11 @@ bool CAfxBaseFxStream::Picker_GetHidden(SOURCESDK::CSGO::CBaseHandle const & ent
 		}
 		else
 		{
-			std::map<CAfxTrackedMaterial, CPickerMatValue>::iterator itMat = m_PickerMaterials.lower_bound(findMat);
-			if (itMat == m_PickerMaterials.end() || (findMat < itMat->first))
+			std::map<CAfxTrackedMaterial *, CPickerMatValue>::iterator itMat = m_PickerMaterials.lower_bound(tackedMaterial);
+			if (itMat == m_PickerMaterials.end() || (tackedMaterial < itMat->first))
 			{
-				itMat = m_PickerMaterials.emplace_hint(itMat,std::piecewise_construct, std::forward_as_tuple(material, &m_PickerMaterialsRleaseNotification), std::forward_as_tuple(m_PickerMaterials.size(), ent));
+				itMat = m_PickerMaterials.emplace_hint(itMat,std::piecewise_construct, std::forward_as_tuple(tackedMaterial), std::forward_as_tuple(m_PickerMaterials.size(), ent));
+				tackedMaterial->AddNotifyee(m_PickerMaterialsRleaseNotification);
 			}
 			else
 			{
@@ -2126,13 +1980,16 @@ bool CAfxBaseFxStream::Picker_GetHidden(SOURCESDK::CSGO::CBaseHandle const & ent
 			std::map<int, CPickerEntValue>::iterator itEnt = m_PickerEntities.lower_bound(ent);
 			if (itEnt == m_PickerEntities.end() || (ent < itEnt->first))
 			{
-				itEnt = m_PickerEntities.emplace_hint(itEnt, std::piecewise_construct, std::forward_as_tuple(ent), std::forward_as_tuple(this, m_PickerEntities.size(), material));
+				itEnt = m_PickerEntities.emplace_hint(itEnt, std::piecewise_construct, std::forward_as_tuple(ent), std::forward_as_tuple(this, m_PickerEntities.size(), tackedMaterial));
 			}
 			else
 			{
-				std::set<CAfxTrackedMaterial>::iterator itEntMats = itEnt->second.Materials.lower_bound(findMat);
-				if (itEntMats == itEnt->second.Materials.end() || (findMat < *itEntMats))
-					itEnt->second.Materials.emplace_hint(itEntMats, material, &(itEnt->second));
+				std::set<CAfxTrackedMaterial *>::iterator itEntMats = itEnt->second.Materials.lower_bound(tackedMaterial);
+				if (itEntMats == itEnt->second.Materials.end() || (tackedMaterial < *itEntMats))
+				{
+					itEnt->second.Materials.emplace_hint(itEntMats, tackedMaterial);
+					tackedMaterial->AddNotifyee(&(itEnt->second));
+				}
 			}
 
 			hidden =
@@ -2447,15 +2304,27 @@ SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::MaterialH
 
 	IfRootThenUpdateCurrentEntityHandle();
 
-	CAction * action = m_Stream->RetrieveAction(
-		material,
-		m_QueueState->CurrentEntityHandle
-	);
+	if (!this->GetCtx()->GetOrg()->GetCallQueue())
+	{
+		// This means we are on the rendering thread and can go through with the current material.
 
-	BindAction(action);
+		CAfxTrackedMaterial * trackedMaterial = CAfxTrackedMaterial::TrackMaterial(material);
 
-	if (m_CurrentAction)
-		return m_CurrentAction->MaterialHook(this, material);
+		CAction * action = m_Stream->RetrieveAction(
+			trackedMaterial,
+			m_QueueState->CurrentEntityHandle
+		);
+
+		BindAction(action);
+
+		if (m_CurrentAction)
+		{
+			m_CurrentAction->MaterialHook(this, trackedMaterial);
+		}
+
+		if (SOURCESDK::IMaterial_csgo * replacementMaterial = trackedMaterial->GetReplacement())
+			return replacementMaterial;
+	}
 
 	return material;
 }
@@ -3007,8 +2876,10 @@ CAfxBaseFxStream::CActionFilterValue * CAfxBaseFxStream::CActionFilterValue::Con
 	return result;
 }
 
-bool CAfxBaseFxStream::CActionFilterValue::CalcMatch_Material(SOURCESDK::IMaterial_csgo * material)
+bool CAfxBaseFxStream::CActionFilterValue::CalcMatch_Material(CAfxTrackedMaterial * trackedMaterial)
 {
+	SOURCESDK::IMaterial_csgo * material = trackedMaterial->GetMaterial();
+		
 	if (!material)
 		return false;
 
@@ -3017,6 +2888,12 @@ bool CAfxBaseFxStream::CActionFilterValue::CalcMatch_Material(SOURCESDK::IMateri
 		&& StringWildCard1Matched(m_TextureGroupName.c_str(), material->GetTextureGroupName())
 		&& StringWildCard1Matched(m_ShaderName.c_str(), material->GetShaderName())
 		&& (m_IsErrorMaterial == TS_True ? (material->IsErrorMaterial() == true) : (m_IsErrorMaterial == TS_False ? (material->IsErrorMaterial() == false) : true));
+}
+
+// CAfxBaseFxStream::CAction /////////////////////////////////////////
+
+void CAfxBaseFxStream::CAction::MaterialHook(CAfxBaseFxStreamContext * ch, CAfxTrackedMaterial * trackedMaterial)
+{
 }
 
 // CAfxBaseFxStream::CActionDebugDepth /////////////////////////////////////////
@@ -3035,8 +2912,9 @@ CAfxBaseFxStream::CActionDebugDepth::~CActionDebugDepth()
 	if(m_FallBackAction) m_FallBackAction->Release();
 }
 
-CAfxBaseFxStream::CAction * CAfxBaseFxStream::CActionDebugDepth::ResolveAction(SOURCESDK::IMaterial_csgo * material)
+CAfxBaseFxStream::CAction * CAfxBaseFxStream::CActionDebugDepth::ResolveAction(CAfxTrackedMaterial * trackedMaterial)
 {
+	SOURCESDK::IMaterial_csgo * material = trackedMaterial->GetMaterial();
 	bool splinetype = false;
 	bool useinstancing = false;
 
@@ -3071,7 +2949,7 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::CActionDebugDepth::ResolveAction(S
 	}
 
 	if(splinetype || useinstancing)
-		return SafeSubResolveAction(m_FallBackAction, material);
+		return SafeSubResolveAction(m_FallBackAction, trackedMaterial);
 
 	return this;
 }
@@ -3086,20 +2964,22 @@ void CAfxBaseFxStream::CActionDebugDepth::MainThreadInitialize(void)
 
 void CAfxBaseFxStream::CActionDebugDepth::AfxUnbind(CAfxBaseFxStreamContext * ch)
 {
+	m_TrackedMaterial->SetReplacement(nullptr);
 }
 
-SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CActionDebugDepth::MaterialHook(CAfxBaseFxStreamContext * ch, SOURCESDK::IMaterial_csgo * material)
+void CAfxBaseFxStream::CActionDebugDepth::MaterialHook(CAfxBaseFxStreamContext * ch, CAfxTrackedMaterial * trackedMaterial)
 {
 	if (!m_DebugDepthMaterial)		
-		return material; // Should not happen, but you never know.
+		return; // Should not happen, but you never know.
+
+	m_TrackedMaterial = trackedMaterial;
 
 	float scale = ch->DrawingSkyBoxView_get() ? csgo_CSkyBoxView_GetScale() : 1.0f;
 	float flDepthFactor = scale * ch->GetStream()->m_DepthVal;
 	float flDepthFactorMax = scale * ch->GetStream()->m_DepthValMax;
 
-	QueueOrExecute(ch->GetCtx()->GetOrg(), new CAfxLeafExecute_Functor(new CDepthValFunctor(flDepthFactor, flDepthFactorMax)));
-
-	return m_DebugDepthMaterial->GetMaterial();
+	m_TrackedMaterial->SetReplacement(m_DebugDepthMaterial->GetMaterial());
+	m_Static.SetDepthVal(flDepthFactor, flDepthFactorMax);
 }
 
 CAfxBaseFxStream::CActionDebugDepth::CStatic CAfxBaseFxStream::CActionDebugDepth::m_Static;
@@ -3146,8 +3026,10 @@ CAfxBaseFxStream::CActionReplace::~CActionReplace()
 	if(m_Material) delete m_Material;
 }
 
-CAfxBaseFxStream::CAction * CAfxBaseFxStream::CActionReplace::ResolveAction(SOURCESDK::IMaterial_csgo * material)
+CAfxBaseFxStream::CAction * CAfxBaseFxStream::CActionReplace::ResolveAction(CAfxTrackedMaterial * trackedMaterial)
 {
+	SOURCESDK::IMaterial_csgo * material = trackedMaterial->GetMaterial();
+
 	if (m_Material)
 	{
 		bool srcSplinetype;
@@ -3164,7 +3046,7 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::CActionReplace::ResolveAction(SOUR
 			return this;
 	}
 
-	return SafeSubResolveAction(m_FallBackAction, material);
+	return SafeSubResolveAction(m_FallBackAction, trackedMaterial);
 }
 
 void CAfxBaseFxStream::CActionReplace::MainThreadInitialize(void)
@@ -3177,34 +3059,38 @@ void CAfxBaseFxStream::CActionReplace::MainThreadInitialize(void)
 
 void CAfxBaseFxStream::CActionReplace::AfxUnbind(CAfxBaseFxStreamContext * ch)
 {
-	IAfxMatRenderContext * ctx = ch->GetCtx();
-	IAfxStreamContext * ctxh = ctx->Hook_get();
+	IAfxMatRenderContextOrg * ctxo = ch->GetCtx()->GetOrg();
 
-	if (m_OverrideColor)
-		QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideEnd_ModulationColor_Functor()));
+	if (m_OverrideColor) AfxD3D9OverrideEnd_ModulationColor();
 
-	if (m_OverrideBlend)
-		QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideEnd_ModulationBlend_Functor()));
+	if (m_OverrideBlend) AfxD3D9OverrideEnd_ModulationBlend();
 
-	if (m_OverrideDepthWrite)
-		QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideEnd_D3DRS_ZWRITEENABLE_Functor()));
+	if (m_OverrideDepthWrite) AfxD3D9OverrideEnd_D3DRS_ZWRITEENABLE();
+
+	if (m_TrackedMaterial)
+	{
+		m_TrackedMaterial->SetReplacement(nullptr);
+	}
 }
 
-SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CActionReplace::MaterialHook(CAfxBaseFxStreamContext * ch, SOURCESDK::IMaterial_csgo * material)
+void CAfxBaseFxStream::CActionReplace::MaterialHook(CAfxBaseFxStreamContext * ch, CAfxTrackedMaterial * trackedMaterial)
 {
-	IAfxMatRenderContext * ctx = ch->GetCtx();
-	IAfxStreamContext * ctxh = ctx->Hook_get();
+	IAfxMatRenderContextOrg * ctxo = ch->GetCtx()->GetOrg();
 
-	if (m_OverrideBlend)
-		QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideBegin_ModulationBlend_Functor(m_Blend)));
+	if (m_Material)
+	{
+		m_TrackedMaterial = trackedMaterial;
+		m_TrackedMaterial->SetReplacement(m_Material->GetMaterial());
 
-	if (m_OverrideColor)
-		QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideBegin_ModulationColor_Functor(m_Color)));
+	}
+	else m_TrackedMaterial = nullptr;
 
-	if(m_OverrideDepthWrite)
-		QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideBegin_D3DRS_ZWRITEENABLE_Functor(m_DepthWrite ? TRUE : FALSE)));
+	if (m_OverrideBlend) AfxD3D9OverrideBegin_ModulationBlend(m_Blend);
 
-	return m_Material ? m_Material->GetMaterial() : material;
+	if (m_OverrideColor) AfxD3D9OverrideBegin_ModulationColor(m_Color);
+
+	if(m_OverrideDepthWrite) AfxD3D9OverrideBegin_D3DRS_ZWRITEENABLE(m_DepthWrite ? TRUE : FALSE);
+
 }
 
 void CAfxBaseFxStream::CActionReplace::ExamineMaterial(SOURCESDK::IMaterial_csgo * material, bool & outSplinetype, bool & outUseinstancing)
@@ -3823,26 +3709,22 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::CActionStandardResolve::ResolveAct
 
 void CAfxBaseFxStream::CActionNoDraw::AfxUnbind(CAfxBaseFxStreamContext * ch)
 {
-	IAfxMatRenderContext * ctx = ch->GetCtx();
-	IAfxStreamContext * ctxh = ctx->Hook_get();
+	IAfxMatRenderContextOrg * ctxo = ch->GetCtx()->GetOrg();
 
-	QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideEnd_D3DRS_ZWRITEENABLE_Functor()));
-	QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideEnd_D3DRS_DESTBLEND_Functor()));
-	QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideEnd_D3DRS_SRCBLEND_Functor()));
-	QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideEnd_D3DRS_ALPHABLENDENABLE_Functor()));
+	AfxD3D9OverrideEnd_D3DRS_ZWRITEENABLE();
+	AfxD3D9OverrideEnd_D3DRS_DESTBLEND();
+	AfxD3D9OverrideEnd_D3DRS_SRCBLEND();
+	AfxD3D9OverrideEnd_D3DRS_ALPHABLENDENABLE();
 }
 
-SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CActionNoDraw::MaterialHook(CAfxBaseFxStreamContext * ch, SOURCESDK::IMaterial_csgo * material)
+void CAfxBaseFxStream::CActionNoDraw::MaterialHook(CAfxBaseFxStreamContext * ch, CAfxTrackedMaterial * trackedMaterial)
 {
-	IAfxMatRenderContext * ctx = ch->GetCtx();
-	IAfxStreamContext * ctxh = ctx->Hook_get();
+	IAfxMatRenderContextOrg * ctxo = ch->GetCtx()->GetOrg();
 
-	QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideBegin_D3DRS_ALPHABLENDENABLE_Functor(TRUE)));
-	QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideBegin_D3DRS_SRCBLEND_Functor(D3DBLEND_ZERO)));
-	QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideBegin_D3DRS_DESTBLEND_Functor(D3DBLEND_ONE)));
-	QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new AfxD3D9OverrideBegin_D3DRS_ZWRITEENABLE_Functor(FALSE)));
-
-	return material;
+	AfxD3D9OverrideBegin_D3DRS_ALPHABLENDENABLE(TRUE);
+	AfxD3D9OverrideBegin_D3DRS_SRCBLEND(D3DBLEND_ZERO);
+	AfxD3D9OverrideBegin_D3DRS_DESTBLEND(D3DBLEND_ONE);
+	AfxD3D9OverrideBegin_D3DRS_ZWRITEENABLE(FALSE);
 }
 
 // CAfxBaseFxStream::CActionAfxVertexLitGenericHook ////////////////////////////
@@ -5461,7 +5343,7 @@ void CAfxStreams::Console_PrintStreams()
 
 		char inPreview[44] = "IN PREVIEW (";
 
-		itoa(previewSlot, inPreview + 12, 10);
+		_itoa(previewSlot, inPreview + 12, 10);
 
 		strcpy(inPreview + strlen(inPreview), ")");
 

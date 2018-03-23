@@ -685,7 +685,7 @@ public:
 			buffered,
 			pVertexOverride,
 			pIndexOverride,
-			DoOnMaterialHook(pAutoBind, 0));
+			pAutoBind);
 
 		return AfxWrapMesh(iMesh);
 	}
@@ -694,7 +694,7 @@ public:
 		SOURCESDK::IMaterial_csgo * pMaterial)
 	{
 		m_Detours->DrawScreenSpaceQuad((DWORD *)m_Ctx,
-			DoOnMaterialHook(pMaterial, 0)
+			pMaterial
 		);
 	}
 
@@ -710,7 +710,7 @@ public:
 		int nYDice)
 	{
 		m_Detours->DrawScreenSpaceRectangle((DWORD *)m_Ctx,
-			DoOnMaterialHook(pMaterial, pClientRenderable),
+			pMaterial,
 			destx, desty,
 			width, height,
 			src_texture_x0, src_texture_y0,
@@ -740,7 +740,7 @@ public:
 			buffered,
 			pVertexOverride,
 			pIndexOverride,
-			DoOnMaterialHook(pAutoBind,0));
+			pAutoBind);
 
 		return AfxWrapMesh(iMesh);
 	}
