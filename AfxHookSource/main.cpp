@@ -183,6 +183,8 @@ SOURCESDK::CSGO::vgui::ISurface *g_pVGuiSurface_csgo = 0;
 
 //SOURCESDK::IVRenderView_csgo * g_pVRenderView_csgo = 0;
 
+SOURCESDK::CSGO::IEngineTrace * g_pClientEngineTrace = 0;
+
 void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals)
 {
 	static bool bFirstRun = true;
@@ -295,6 +297,15 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 			}
 			else {
 				ErrorBox("Could not get a supported ShaderShadow interface.");
+			}
+
+
+			if (iface = appSystemFactory(SOURCESDK_CSGO_INTERFACEVERSION_ENGINETRACE_CLIENT, NULL))
+			{
+				g_pClientEngineTrace = (SOURCESDK::CSGO::IEngineTrace *)iface;
+			}
+			else {
+				ErrorBox("Could not get a supported client engine trace interface.");
 			}
 
 			/*

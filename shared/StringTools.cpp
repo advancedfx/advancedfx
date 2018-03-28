@@ -117,6 +117,21 @@ bool StringBeginsWith(char const * target, char const * beginning) {
 	return true;
 }
 
+bool StringIBeginsWith(char const * target, char const * beginning)
+{
+	while (*target && *beginning) {
+		if (tolower(*beginning) != tolower(*target))
+			return false;
+		target++;
+		beginning++;
+	}
+
+	if (*beginning && !*target)
+		return false;
+
+	return true;
+}
+
 bool StringIsAlphas(char const * value)
 {
 	if(StringIsEmpty(value)) return true;

@@ -95,16 +95,12 @@ protected:
 
 	virtual ~CAfxTrackedMaterial();
 
-	void AfxMaterialFree(void);
-
 private:
 	static std::map<SOURCESDK::IMaterial_csgo *, CAfxTrackedMaterial *> m_Trackeds;
 	static std::shared_timed_mutex m_TrackedsMutex;
 
 	static std::map<int *, CMaterialDetours> m_VtableMap;
 	static std::shared_timed_mutex m_VtableMapMutex;
-
-	static void RemoveNotifyee(SOURCESDK::IMaterial_csgo * material, CAfxTrackedMaterial * notifyee);
 
 	static void HooKVtable(SOURCESDK::IMaterial_csgo * orgMaterial);
 

@@ -25,6 +25,7 @@ std::mutex g_csgo_Audio_Mutex;
 double g_csgo_Audio_TimeDue = 0;
 double g_csgo_Audio_Remainder = 0;
 bool g_CAudioXAudio2_RecordAudio_Active = false;
+bool g_CAudioXAudio2_FirstCallInLoop = true;
 std::string g_CAudioXAudio2_RecordAudio_Dir;
 std::map<DWORD *, CMirvWav> g_CAudioXAudio2_RecordAudio_Files;
 
@@ -68,11 +69,10 @@ void __stdcall touring_CAudioXAudio2_UnkSupplyAudio(DWORD * this_ptr, int numCha
 		}
 
 	}
-	else
-	{	
-		// sorry, but we can't forward mutliple calls in a loop, that will overrun buffers!
+
+	// sorry, but we can't forward mutliple calls in a loop, that will overrun buffers!
+	if(g_CAudioXAudio2_FirstCallInLoop)
 		detoured_CAudioXAudio2_UnkSupplyAudio(this_ptr, numChannels, audioData);
-	}
 }
 
 
@@ -100,7 +100,11 @@ void __cdecl touring_csgo_MIX_PaintChannels(int endtime, int unknown)
 		detoured_csgo_MIX_PaintChannels(endtime, unknown);
 		deltaTime -= 512;
 		endtime += 512;
+
+		g_CAudioXAudio2_FirstCallInLoop = false;
 	}
+
+	g_CAudioXAudio2_FirstCallInLoop = true;
 }
 
 

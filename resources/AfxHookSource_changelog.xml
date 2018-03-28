@@ -6,6 +6,27 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.38.0</version>
+<time>2018-03-28T20:25Z</time>
+<changes>
+<change type="fixed">
+Fixed small memory leak when using mirv_streams (tracker class for materials was not freed when material was released).
+</change>
+<change type="updated">
+Updated mirv_streams picker to print intermediate results when current picking mode has determined the intermediate result (depending on the mode / results you can still continue picking with another mode).
+</change>
+<change type="added">
+Added more options to mirv_listentites (sorting by distance and filtering by entity class), enter mirv_listentites and see the end of the output for more info.
+</change>
+<change type="added">
+Added mirv_traceentity, traces entity from current view position (middle of the screen), ignores "local player" (self).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.37.5</version>
 <time>2018-03-23T05:35Z</time>
 <changes>

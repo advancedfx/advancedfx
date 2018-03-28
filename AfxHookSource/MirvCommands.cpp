@@ -3149,6 +3149,65 @@ CON_COMMAND(mirv_snd_filter, "Sound control (i.e. blocking sounds).")
 	);
 }
 
+typedef struct MirvListEntitiesEntry_s {
+	int idx;
+	double dist;
+	SOURCESDK::C_BaseEntity_csgo * be;
+	
+	MirvListEntitiesEntry_s(int _idx, double _dist, SOURCESDK::C_BaseEntity_csgo * _be)
+		: idx(_idx)
+		, dist(_dist)
+		, be(_be)
+	{
+
+	}
+
+} MirvListEntitiesEntry_t;
+
+bool mirv_listentities_dist_compare(const MirvListEntitiesEntry_t & first, const MirvListEntitiesEntry_t & second)
+{
+	return first.dist < second.dist;
+}
+
+void mirv_print_entity(int index, double dist, SOURCESDK::C_BaseEntity_csgo * be)
+{
+	Tier0_Msg(
+		"%i (%f): %s::%s :%i\n"
+		, index
+		, dist
+		, be->GetClassname()
+		, be->GetEntityName()
+		, be->GetRefEHandle().ToInt()
+	);
+
+	if (be->IsPlayer() && g_VEngineClient)
+	{
+		if (SOURCESDK::IVEngineClient_014_csgo * pEngineCsgo = g_VEngineClient->GetVEngineClient_csgo())
+		{
+
+			SOURCESDK::player_info_t_csgo pInfo;
+			if (pEngineCsgo->GetPlayerInfo(index, &pInfo))
+			{
+				std::ostringstream oss;
+
+				oss << pInfo.xuid;
+
+				Tier0_Msg(
+					"\tplayerInfo.xuid: %s\n"
+					"\tplayerInfo.name: %s\n"
+					"\tplayerInfo.userID: %i\n"
+					"\tplayerInfo.guid: %s\n"
+					, oss.str().c_str()
+					, pInfo.name
+					, pInfo.userID
+					, pInfo.guid
+				);
+			}
+		}
+	}
+}
+
+
 CON_COMMAND(mirv_listentities, "Print info about currently active entites. (CS:GO only)")
 {
 	if(!SOURCESDK::g_Entitylist_csgo)
@@ -3158,15 +3217,29 @@ CON_COMMAND(mirv_listentities, "Print info about currently active entites. (CS:G
 	}
 
 	bool onlyPlayer = false;
+	bool sortByDistance = false;
+	const char * classWildCard = "\\*";
 	
-	if (2 <= args->ArgC())
+	for (int i = 1; i < args->ArgC(); ++i)
 	{
-		onlyPlayer = 0 == _stricmp("isPlayer=1", args->ArgV(1));
+		const char * argI = args->ArgV(i);
+		size_t argILen = strlen(argI);
+
+		if (0 == _stricmp(argI, "isPlayer=1"))
+		{
+			onlyPlayer = true;
+		}
+		else if (0 == _stricmp(argI, "sort=distance"))
+		{
+			sortByDistance = true;
+		}
+		else if (StringIBeginsWith(argI, "class="))
+		{
+			classWildCard = argI + strlen("class=");
+		}
 	}
 
-	Tier0_Msg(
-		"index (distance): className::enitityName :entityHandle\n"
-	);
+	std::list<MirvListEntitiesEntry_t> result;
 
 	Vector3 cameraOrigin(
 		g_Hook_VClient_RenderView.LastCameraOrigin[0],
@@ -3176,14 +3249,14 @@ CON_COMMAND(mirv_listentities, "Print info about currently active entites. (CS:G
 
 	int imax = SOURCESDK::g_Entitylist_csgo->GetHighestEntityIndex();
 
-	for(int i=0; i<= imax; ++i)
+	for (int i = 0; i <= imax; ++i)
 	{
 		SOURCESDK::IClientEntity_csgo * ce = SOURCESDK::g_Entitylist_csgo->GetClientEntity(i);
 		SOURCESDK::C_BaseEntity_csgo * be = ce ? ce->GetBaseEntity() : 0;
 
-		if(be)
+		if (be)
 		{
-			if (!onlyPlayer || be->IsPlayer())
+			if ((!onlyPlayer || be->IsPlayer()) && StringWildCard1Matched(classWildCard, be->GetClassname()))
 			{
 
 				SOURCESDK::Vector vEntOrigin = be->GetAbsOrigin();
@@ -3191,42 +3264,109 @@ CON_COMMAND(mirv_listentities, "Print info about currently active entites. (CS:G
 
 				double dist = (entOrigin - cameraOrigin).Length();
 
-				Tier0_Msg(
-					"%i (%f): %s::%s :%i\n"
-					, i
-					, dist
-					, be->GetClassname()
-					, be->GetEntityName()
-					, be->GetRefEHandle().ToInt()
-				);
-
-				if (be->IsPlayer() && g_VEngineClient)
-				{
-					if (SOURCESDK::IVEngineClient_014_csgo * pEngineCsgo = g_VEngineClient->GetVEngineClient_csgo())
-					{
-
-						SOURCESDK::player_info_t_csgo pInfo;
-						if (pEngineCsgo->GetPlayerInfo(i, &pInfo))
-						{
-							std::ostringstream oss;
-
-							oss << pInfo.xuid;
-
-							Tier0_Msg(
-								"\tplayerInfo.xuid: %s\n"
-								"\tplayerInfo.name: %s\n"
-								"\tplayerInfo.userID: %i\n"
-								"\tplayerInfo.guid: %s\n"
-								, oss.str().c_str()
-								, pInfo.name
-								, pInfo.userID
-								, pInfo.guid
-							);
-						}
-					}
-				}
+				result.emplace_back(i, dist, be);
 			}
 		}
+	}
+
+	if(sortByDistance)
+		result.sort(mirv_listentities_dist_compare);
+
+	Tier0_Msg(
+		"Results:\n"
+		"index (distance): className::enitityName :entityHandle\n"
+	);
+
+
+	for(std::list<MirvListEntitiesEntry_t>::iterator it = result.begin(); it != result.end(); ++it)
+	{
+		int i = it->idx;
+		SOURCESDK::C_BaseEntity_csgo * be = it->be;
+		double dist = it->dist;
+
+		mirv_print_entity(i, dist, be);
+	}
+
+	Tier0_Msg(
+		"\n"
+		"Usage:\n"
+		"mirv_listentites [isPlayer=1] [sort=distance] [class=<wildCardString(\\* = wildcard, \\\\ = \\)>]"
+	);
+
+
+}
+
+extern SOURCESDK::CSGO::IEngineTrace * g_pClientEngineTrace;
+
+class CMirvTraceFilter : public SOURCESDK::CSGO::CTraceFilter
+{
+public:
+	CMirvTraceFilter(const SOURCESDK::CSGO::IHandleEntity *passentity);
+	virtual bool ShouldHitEntity(SOURCESDK::CSGO::IHandleEntity *pHandleEntity, int contentsMask);
+
+private:
+	const SOURCESDK::CSGO::IHandleEntity *m_pPassEnt;
+};
+
+CMirvTraceFilter::CMirvTraceFilter(const SOURCESDK::CSGO::IHandleEntity *passedict)
+{
+	m_pPassEnt = passedict;
+}
+
+bool CMirvTraceFilter::ShouldHitEntity(SOURCESDK::CSGO::IHandleEntity *pHandleEntity, int contentsMask)
+{
+	return pHandleEntity && pHandleEntity != m_pPassEnt;
+}
+
+CON_COMMAND(mirv_traceentity, "Trace entity from current view position")
+{
+	if (!(SOURCESDK::g_Entitylist_csgo && CClientToolsCsgo::Instance() && g_pClientEngineTrace))
+	{
+		Tier0_Warning("Not supported for your engine / missing hooks,!\n");
+		return;
+	}
+
+	double forward[3], right[3], up[3];
+
+	double Rx = (g_Hook_VClient_RenderView.LastCameraAngles[0]);
+	double Ry = (g_Hook_VClient_RenderView.LastCameraAngles[1]);
+	double Rz = (g_Hook_VClient_RenderView.LastCameraAngles[2]);
+	
+	MakeVectors(Rz, Rx, Ry, forward, right, up);
+
+	double Tx = (g_Hook_VClient_RenderView.LastCameraOrigin[0] + SOURCESDK_CSGO_MAX_TRACE_LENGTH * forward[0] - 0 * right[0] + 0 * up[0]);
+	double Ty = (g_Hook_VClient_RenderView.LastCameraOrigin[1] + SOURCESDK_CSGO_MAX_TRACE_LENGTH * forward[1] - 0 * right[1] + 0 * up[1]);
+	double Tz = (g_Hook_VClient_RenderView.LastCameraOrigin[2] + SOURCESDK_CSGO_MAX_TRACE_LENGTH * forward[2] - 0 * right[2] + 0 * up[2]);
+
+	SOURCESDK::Vector vecAbsStart;
+	vecAbsStart.Init((float)g_Hook_VClient_RenderView.LastCameraOrigin[0], (float)g_Hook_VClient_RenderView.LastCameraOrigin[1], (float)g_Hook_VClient_RenderView.LastCameraOrigin[2]);
+
+	SOURCESDK::Vector vecAbsEnd;
+	vecAbsEnd.Init((float)Tx, (float)Ty, (float)Tz);
+
+	SOURCESDK::CSGO::Ray_t ray;
+	ray.Init(vecAbsStart, vecAbsEnd);
+	
+	SOURCESDK::C_BaseEntity_csgo * localPlayer = reinterpret_cast<SOURCESDK::C_BaseEntity_csgo *>(CClientToolsCsgo::Instance()->GetClientToolsInterface()->GetLocalPlayer());
+	CMirvTraceFilter traceFilter(localPlayer);
+
+	SOURCESDK::CSGO::trace_t tr;
+
+	g_pClientEngineTrace->TraceRay(ray, SOURCESDK_CSGO_MASK_ALL, &traceFilter, &tr);
+
+	Tier0_Msg(
+		"Result:\n"
+		"index (distance): className::enitityName :entityHandle\n"
+	);
+
+
+	if (tr.DidHit() && tr.m_pEnt)
+	{
+		SOURCESDK::Vector vecSE;
+
+		SOURCESDK::CSGO::VectorSubtract(tr.endpos, vecAbsStart, vecSE);
+
+		mirv_print_entity(tr.GetEntityIndex(), vecSE.LengthSqr(), tr.m_pEnt);
 	}
 }
 

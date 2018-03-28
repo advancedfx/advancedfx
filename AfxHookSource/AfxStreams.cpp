@@ -1899,6 +1899,7 @@ void CAfxBaseFxStream::Picker_Pick(bool pickEntityNotMaterial, bool wasVisible)
 				m_PickingEntities = false;
 				m_PickingMaterials = false;
 
+				Picker_Print();
 				Tier0_Warning("==== Entity%s determined! ====\n", determinedMaterials ? " and Material" : "");
 				if (g_VEngineClient && !g_VEngineClient->Con_IsVisible()) g_VEngineClient->ClientCmd_Unrestricted("toggleconsole");
 				return;
@@ -1911,6 +1912,7 @@ void CAfxBaseFxStream::Picker_Pick(bool pickEntityNotMaterial, bool wasVisible)
 				m_PickingEntities = false;
 				m_PickingMaterials = false;
 
+				Picker_Print();
 				Tier0_Warning("==== %sMaterial determined! ====\n", determinedEntities ? "Entity and " : "");
 				if (g_VEngineClient && !g_VEngineClient->Con_IsVisible()) g_VEngineClient->ClientCmd_Unrestricted("toggleconsole");
 				return;
@@ -7469,7 +7471,6 @@ void CAfxStreams::BackUpMatVars()
 	m_OldMatMotionBlurEnabled = m_MatMotionBlurEnabledRef->GetInt();
 	m_OldMatForceTonemapScale = m_MatForceTonemapScale->GetFloat();
 	m_OldSndMuteLosefocus = m_SndMuteLosefocus->GetInt();
-	m_OldSndMixAsync = m_SndMixAsync->GetInt();
 }
 
 void CAfxStreams::SetMatVarsForStreams()
@@ -7482,7 +7483,6 @@ void CAfxStreams::SetMatVarsForStreams()
 	if (0 <= m_NewMatForceTonemapScale) m_MatForceTonemapScale->SetValue(m_NewMatForceTonemapScale);
 
 	m_SndMuteLosefocus->SetValue(0.0f);
-	m_SndMixAsync->SetValue(0.0f);
 }
 
 void CAfxStreams::RestoreMatVars()
@@ -7494,7 +7494,6 @@ void CAfxStreams::RestoreMatVars()
 	m_MatMotionBlurEnabledRef->SetValue((float)m_OldMatMotionBlurEnabled);
 	m_MatForceTonemapScale->SetValue(m_OldMatForceTonemapScale);
 	m_SndMuteLosefocus->SetValue((float)m_OldSndMuteLosefocus);
-	m_SndMixAsync->SetValue((float)m_OldSndMixAsync);
 }
 
 void CAfxStreams::EnsureMatVars()
@@ -7504,7 +7503,6 @@ void CAfxStreams::EnsureMatVars()
 	if(!m_MatMotionBlurEnabledRef) m_MatMotionBlurEnabledRef = new WrpConVarRef("mat_motion_blur_enabled");
 	if(!m_MatForceTonemapScale) m_MatForceTonemapScale = new WrpConVarRef("mat_force_tonemap_scale");
 	if (!m_SndMuteLosefocus) m_SndMuteLosefocus = new WrpConVarRef("snd_mute_losefocus");
-	if (!m_SndMixAsync) m_SndMixAsync = new WrpConVarRef("snd_mix_async");
 	if (!m_BuildingCubemaps) m_BuildingCubemaps = new WrpConVarRef("building_cubemaps");
 }
 

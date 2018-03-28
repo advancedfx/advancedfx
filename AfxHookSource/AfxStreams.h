@@ -2748,9 +2748,6 @@ private:
 	WrpConVarRef * m_SndMuteLosefocus = nullptr;
 	int m_OldSndMuteLosefocus;
 
-	WrpConVarRef * m_SndMixAsync = nullptr;
-	int m_OldSndMixAsync;
-
 	WrpConVarRef * m_BuildingCubemaps = nullptr;
 	int m_OldBuildingCubemaps;
 

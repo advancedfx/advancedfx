@@ -26,6 +26,11 @@ public:
 
 	void DebugEntIndex(int index);
 
+	SOURCESDK::CSGO::IClientTools * GetClientToolsInterface()
+	{
+		return m_ClientTools;
+	}
+
 protected:
 	virtual float ScaleFov(int width, int height, float fov);
 

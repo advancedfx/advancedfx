@@ -12,6 +12,9 @@ bool StringEndsWithW(wchar_t const * target, wchar_t const * ending);
 
 bool StringBeginsWith(char const * target, char const * beginning);
 
+/// <summary>Case insensitve StringBeginsWith</summary>
+bool StringIBeginsWith(char const * target, char const * beginning);
+
 bool StringIsAlphas(char const * value);
 
 bool StringIsDigits(char const * value);
