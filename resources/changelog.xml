@@ -6,6 +6,18 @@
 
 <release>
 <name>HLAE</name>
+<version>2.48.1</version>
+<time>2018-03-29T09:41Z</time>
+<changes>
+<change type="updated">
+Included AfxHookSource 1.38.1 (2018-03-29T09:41Z).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.48.0</version>
 <time>2018-03-28T20:25Z</time>
 <changes>

@@ -1899,6 +1899,7 @@ void CAfxBaseFxStream::Picker_Pick(bool pickEntityNotMaterial, bool wasVisible)
 				m_PickingEntities = false;
 				m_PickingMaterials = false;
 
+				lock.unlock();
 				Picker_Print();
 				Tier0_Warning("==== Entity%s determined! ====\n", determinedMaterials ? " and Material" : "");
 				if (g_VEngineClient && !g_VEngineClient->Con_IsVisible()) g_VEngineClient->ClientCmd_Unrestricted("toggleconsole");
@@ -1912,6 +1913,7 @@ void CAfxBaseFxStream::Picker_Pick(bool pickEntityNotMaterial, bool wasVisible)
 				m_PickingEntities = false;
 				m_PickingMaterials = false;
 
+				lock.unlock();
 				Picker_Print();
 				Tier0_Warning("==== %sMaterial determined! ====\n", determinedEntities ? "Entity and " : "");
 				if (g_VEngineClient && !g_VEngineClient->Con_IsVisible()) g_VEngineClient->ClientCmd_Unrestricted("toggleconsole");
