@@ -508,7 +508,7 @@ bool CamPath::Load(wchar_t const * fileName)
 
 				rapidxml::xml_attribute<> * fovInterpA = cur_node->first_attribute("fovInterp");
 				DoubleInterp fovInterp = DI_DEFAULT;
-				if(fovInterpA) DoubleInterp_FromString(fovInterpA->value(), positionInterp);
+				if(fovInterpA) DoubleInterp_FromString(fovInterpA->value(), fovInterp);
 				FovInterpMethod_set(fovInterp);
 
 				cur_node = cur_node->first_node("points");
