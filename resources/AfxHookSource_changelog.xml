@@ -7,11 +7,11 @@
 <release>
 <name>AfxHookSource</name>
 <version>1.38.2</version>
-<time>2018-03-30T12:30Z</time>
+<time>2018-03-30T11:30Z</time>
 <changes>
 <change type="fixed">
 Adjusted to CS:GO update 3/29/2018 (1.36.3.1):<br />
-Fixed mirv_streams sound recording not working (related to error in addresses.cpp:263). Since Valve fixed the surround sound with the CS:GO update, it's also possible to properly record surround sound with mirv_streams again.
+Fixed mirv_streams sound recording not working (related to error in addresses.cpp:334). Since Valve fixed the surround sound with the CS:GO update, it's also possible to properly record surround sound with mirv_streams again.
 </change>
 <change type="fixed">
 Fixed mirv_campath not loading FOV interp setting.
