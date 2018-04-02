@@ -17,12 +17,7 @@ namespace advancedfx
             }
         }
 
-        protected class ErrorStrings
-        {
-            public const string NoSolutionKnown = "No Solution known.";
-        }
-        
-        public static readonly Error Unknown = new Error(-1, "Unknown error", ErrorStrings.NoSolutionKnown);
+        public static readonly Error Unknown = new Error(-1);
 
         public Error GetById(int id)
         {
@@ -34,9 +29,10 @@ namespace advancedfx
             return error;
         }
 
-        public class Error
+        public class Error : Exception
         {
-            public Error(int code, string text, string solution)
+            public Error(int code, string title = null, string description = null, string solution = null, Exception innerException = null)
+                : base("AfxError", innerException)
             {
                 if (0 == code)
                     throw new System.ApplicationException("Programming error: Code " + code + " is reserved.");
@@ -45,7 +41,8 @@ namespace advancedfx
                     throw new System.ApplicationException("Programming error: Code " + code + " already in use.");
 
                 m_Code = code;
-                m_Text = text;
+                m_Title = title;
+                m_Description = description;
                 m_Solution = solution;
 
                 Init.m_Errors[code] = this;
@@ -53,12 +50,37 @@ namespace advancedfx
 
             public int Code { get { return m_Code; } }
 
-            public string Text { get { return m_Text; } }
+            /// <remarks>
+            /// Can be null to indicate no description.
+            /// </remarks>
+            public string Description { get { return m_Description; } }
 
+            /// <remarks>
+            /// Can be null to indicate no title.
+            /// </remarks>
+            public string Title { get { return m_Title;  } }
+
+            /// <remarks>
+            /// Can be null to indicate no solution.
+            /// </remarks>
             public string Solution { get { return m_Solution; } }
 
+            public override string ToString()
+            {
+                StringBuilder stringBuilder = new StringBuilder();
+
+                stringBuilder.AppendLine("AfxError #"+ m_Code.ToString()+": ");
+                if (null != m_Title) { stringBuilder.Append("Title: "); stringBuilder.AppendLine(m_Title); }
+                if (null != m_Description) { stringBuilder.Append("Description: "); stringBuilder.AppendLine(m_Description); }
+                if (null != m_Solution) { stringBuilder.Append("Solution: "); stringBuilder.AppendLine(m_Solution); }
+                if (null != this.InnerException) { stringBuilder.Append("Inner exception: "); stringBuilder.AppendLine(this.InnerException.ToString()); }
+
+                return stringBuilder.ToString();
+            }
+
             private int m_Code;
-            private string m_Text;
+            private string m_Description;
+            private string m_Title;
             private string m_Solution;
         }
 

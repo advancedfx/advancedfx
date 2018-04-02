@@ -13,12 +13,12 @@ namespace AfxGui
     {
         public delegate string GetHookPathDelegate(bool isProcess64Bit);
 
-        public static bool Load(GetHookPathDelegate getHookPath, string programPath, string cmdLine, string environment = null)
+        public static bool Load(GetHookPathDelegate getHookPath, string programPath, string cmdLine, string environment = null, bool showErrorMessage = true)
         {
-           return Load(new GetHookPathDelegate[] { getHookPath }, programPath, cmdLine, environment);
+           return Load(new GetHookPathDelegate[] { getHookPath }, programPath, cmdLine, environment, showErrorMessage);
         }
 
-        public static bool Load(IEnumerable<GetHookPathDelegate> getHookPathCollection, string programPath, string cmdLine, string environment = null)
+        public static bool Load(IEnumerable<GetHookPathDelegate> getHookPathCollection, string programPath, string cmdLine, string environment = null, bool showErrorMessage = true)
         {
             bool bOk = true;
 
@@ -74,10 +74,9 @@ namespace AfxGui
                             }
                             catch(Exception e)
                             {
-                                throw new System.AccessViolationException(
-                                    "Failed to start injector: "+ injector.StartInfo.FileName +"." + Environment.NewLine
-                                    + "Error: "+e.ToString() + Environment.NewLine
-                                    + "Solution: Check that your Anti Virus did not remove it due to a false positive. If so restore it and add an exception for injector / the HLAE folder."
+                                throw HlaeErrors.InjectorStartException(
+                                    injector.StartInfo.FileName,
+                                    e
                                );
                             }
 
@@ -85,14 +84,7 @@ namespace AfxGui
 
                             if (0 != injector.ExitCode)
                             {
-                                InjectorErrors.Error error = InjectorErrors.Instance.GetById(injector.ExitCode);
-
-                                throw new System.AccessViolationException(
-                                    "Injector(" + (isProcess64Bit ? "x64" : "x86") + ") failed," + Environment.NewLine
-                                    + "Could not inject \"" + hookPath + "\"." + Environment.NewLine
-                                    + "Error: "+error.Text+ Environment.NewLine
-                                    + "Solution: "+error.Solution
-                                );
+                                throw InjectorErrors.Instance.GetById(injector.ExitCode);
                             }
                         }
                     }
@@ -110,7 +102,14 @@ namespace AfxGui
             }
             catch(Exception e)
             {
-                MessageBox.Show(e.ToString(), "Loader failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if(showErrorMessage)
+                {
+                    using (ErrorDialogue frm = new ErrorDialogue())
+                    {
+                        frm.Error = HlaeErrors.LoaderException(e);
+                        frm.ShowDialog();
+                    }
+                }
 
                 return false;
             }

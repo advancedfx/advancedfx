@@ -14,6 +14,8 @@ namespace AfxGui
         public LaunchCsgoForm()
         {
             InitializeComponent();
+
+            this.Icon = Program.Icon;
         }
 
         internal CfgLauncherCsgo Config

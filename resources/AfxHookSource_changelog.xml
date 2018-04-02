@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.38.3</version>
+<time>2018-xx-xxTxx:xxZ</time>
+<changes>
+<change type="updated">
+Updated HLAE.exe to have an (hopefully) better error dialogue.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.38.2</version>
 <time>2018-03-30T11:30Z</time>
 <changes>
