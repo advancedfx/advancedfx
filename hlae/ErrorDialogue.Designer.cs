@@ -103,6 +103,7 @@
             this.textBoxDescription.Multiline = true;
             this.textBoxDescription.Name = "textBoxDescription";
             this.textBoxDescription.ReadOnly = true;
+            this.textBoxDescription.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.textBoxDescription.Size = new System.Drawing.Size(560, 48);
             this.textBoxDescription.TabIndex = 6;
             this.textBoxDescription.TabStop = false;
@@ -135,6 +136,7 @@
             this.textBoxSolution.Multiline = true;
             this.textBoxSolution.Name = "textBoxSolution";
             this.textBoxSolution.ReadOnly = true;
+            this.textBoxSolution.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.textBoxSolution.Size = new System.Drawing.Size(560, 61);
             this.textBoxSolution.TabIndex = 8;
             this.textBoxSolution.TabStop = false;
@@ -170,6 +172,7 @@
             this.Controls.Add(this.labelCodeValue);
             this.Controls.Add(this.labelCode);
             this.Controls.Add(this.pictureBoxIcon);
+            this.MinimizeBox = false;
             this.MinimumSize = new System.Drawing.Size(600, 400);
             this.Name = "ErrorDialogue";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;

@@ -80,8 +80,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\injector\AfxErrors.cs">
-      <Link>AfxErrors.cs</Link>
+    <Compile Include="..\injector\AfxError.cs">
+      <Link>AfxError.cs</Link>
     </Compile>
     <Compile Include="..\injector\InjectorErrors.cs">
       <Link>InjectorErrors.cs</Link>

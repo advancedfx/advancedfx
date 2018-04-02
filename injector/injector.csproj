@@ -72,7 +72,7 @@
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AfxErrors.cs" />
+    <Compile Include="AfxError.cs" />
     <Compile Include="Injector.cs" />
     <Compile Include="InjectorErrors.cs" />
     <Compile Include="Program.cs" />

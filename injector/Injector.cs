@@ -9,7 +9,7 @@ namespace injector
 {
     internal class Injector
     {
-        private static bool CheckError(bool condition, InjectorErrors.Error onError, ref InjectorErrors.Error resultError)
+        private static bool CheckError(bool condition, InjectorErrors.InjectorError onError, ref InjectorErrors.InjectorError resultError)
         {
             if(null != resultError)
                 return false;
@@ -21,7 +21,7 @@ namespace injector
             return false;
         }
 
-        public static InjectorErrors.Error Inject(UInt32 dwProcessId, string dllPath)
+        public static InjectorErrors.InjectorError Inject(UInt32 dwProcessId, string dllPath)
         {
 
             string baseDirectory = System.IO.Path.GetDirectoryName(dllPath);
@@ -39,7 +39,7 @@ namespace injector
             IntPtr hThread = IntPtr.Zero;
             IntPtr imageAfxHook = IntPtr.Zero;
 
-            InjectorErrors.Error error = null;
+            InjectorErrors.InjectorError error = null;
             bool bOk = true;
 
             try
@@ -95,9 +95,7 @@ namespace injector
                         }
                         else
                         {
-                            UInt32 exitCode;
-
-                            bOk = GetExitCodeThread(hThread, out exitCode);
+                            bOk = GetExitCodeThread(hThread, out UInt32 exitCode);
 
                             if (bOk)
                             {

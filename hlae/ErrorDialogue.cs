@@ -26,7 +26,7 @@ namespace AfxGui
             m_NoSolutionForeColor = this.textBoxSolution.ForeColor;
         }
 
-        internal advancedfx.Errors.Error Error {
+        internal advancedfx.AfxError Error {
             get
             {
                 return m_Error;
@@ -36,9 +36,9 @@ namespace AfxGui
             {
                 m_Error = value;
 
-                this.labelTitle.Text = null != m_Error.Title ? m_Error.Title : m_NoTitleString;
+                this.labelTitle.Text = m_Error.Title ?? m_NoTitleString;
                 this.labelCodeValue.Text = m_Error.Code.ToString();
-                this.textBoxDescription.Text = null != m_Error.Description ? m_Error.Description : m_NoDescriptionString;
+                this.textBoxDescription.Text = m_Error.Description ?? m_NoDescriptionString;
                 
                 if(null != m_Error.Solution)
                 {
@@ -62,7 +62,7 @@ namespace AfxGui
         private Color m_NoSolutionBackColor;
         private Color m_NoSolutionForeColor;
 
-        private advancedfx.Errors.Error m_Error;
+        private advancedfx.AfxError m_Error;
 
         private void buttonCopyToClipboard_Click(object sender, EventArgs e)
         {
