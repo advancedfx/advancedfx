@@ -279,11 +279,6 @@ Peter 'psh' P.
 	Since January 2016
 	https://twitter.com/_peterpsh_
 
-'1suky1'
-	Discord moderator.
-	Since July 2017.
-	https://twitter.com/1suky1
-
 'fuze'
 	Discord moderator.
 	Since July 2017.
@@ -323,6 +318,11 @@ Perra 'akdios' Anderson
 	Discord moderator.
 	Since July 2017 - December 2017.
 	https://twitter.com/NiPakidos
+
+'1suky1'
+	Discord moderator.
+	Since July 2017 - April 2018.
+	https://twitter.com/1suky1
 
 
 Other contributors:
