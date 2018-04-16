@@ -5,9 +5,25 @@ using System.Text;
 
 namespace injector
 {
-    internal class InjectorErrors : advancedfx.Errors
+    internal class InjectorErrors
     {
-        public static new InjectorErrors Instance
+        public class InjectorError : advancedfx.AfxError
+        {
+            public InjectorError(int code, string title = null, string description = null, string solution = null, Exception innerException = null)
+                : base(code, title, description, solution, innerException)
+            {
+                if (0 == code)
+                    throw new System.ApplicationException("Programming error: Code " + code + " is reserved.");
+
+                if (Init.m_Errors.Keys.Contains(code))
+                    throw new System.ApplicationException("Programming error: Code " + code + " already in use.");
+
+
+                Init.m_Errors[code] = this;
+            }
+        }
+
+        public static InjectorErrors Instance
         {
             get
             {
@@ -17,41 +33,56 @@ namespace injector
             }
         }
 
+        public InjectorError GetById(int id)
+        {
+            if (!Init.m_Errors.TryGetValue(id, out InjectorError error))
+                error = Unknown;
+
+            return error;
+        }
+
         protected class InjectorErrorStrings
         {
+            public const string AfxHookError = "AfxHook error";
             public const string AccessRightsSolution = "Make sure you run the injector and the program to inject with same access rights and that no anti virus / anti cheat is blocking its calls.";
         }
 
-        public static readonly Error AfxHook1 = new Error(1, "AfxHook error: 1", ErrorStrings.NoSolutionKnown);
-        public static readonly Error AfxHook2 = new Error(2, "AfxHook error: 2", ErrorStrings.NoSolutionKnown);
-        public static readonly Error AfxHook3 = new Error(3, "AfxHook error: 3", ErrorStrings.NoSolutionKnown);
-        public static readonly Error AfxHook4 = new Error(4, "AfxHook error: 4", ErrorStrings.NoSolutionKnown);
-        public static readonly Error AfxHook5 = new Error(5, "AfxHook error: 5", ErrorStrings.NoSolutionKnown);
-        public static readonly Error AfxHook6 = new Error(6, "AfxHook error: 6", ErrorStrings.NoSolutionKnown);
-        public static readonly Error AfxHook7 = new Error(7, "AfxHook error: 7", ErrorStrings.NoSolutionKnown);
-        public static readonly Error AfxHook8 = new Error(8, "AfxHook error: 8", ErrorStrings.NoSolutionKnown);
-        public static readonly Error AfxHook9 = new Error(9, "AfxHook error: 9", ErrorStrings.NoSolutionKnown);
-        public static readonly Error AfxHook10 = new Error(10, "AfxHook error: 10", ErrorStrings.NoSolutionKnown);
-        public static readonly Error AfxHook11 = new Error(11, "AfxHook error: 11", ErrorStrings.NoSolutionKnown);
-        public static readonly Error AfxHook12 = new Error(12, "AfxHook error: 12", ErrorStrings.NoSolutionKnown);
-        public static readonly Error AfxHook13 = new Error(13, "AfxHook error: 13", ErrorStrings.NoSolutionKnown);
-        public static readonly Error AfxHook14 = new Error(14, "AfxHook error: 14", ErrorStrings.NoSolutionKnown);
-        public static readonly Error AfxHook15 = new Error(15, "AfxHook error: 15", ErrorStrings.NoSolutionKnown);
+        public static readonly InjectorError Unknown = new InjectorError(-1);
+        public static readonly InjectorError AfxHook1 = new InjectorError(1, InjectorErrorStrings.AfxHookError);
+        public static readonly InjectorError AfxHook2 = new InjectorError(2, InjectorErrorStrings.AfxHookError);
+        public static readonly InjectorError AfxHook3 = new InjectorError(3, InjectorErrorStrings.AfxHookError);
+        public static readonly InjectorError AfxHook4 = new InjectorError(4, InjectorErrorStrings.AfxHookError);
+        public static readonly InjectorError AfxHook5 = new InjectorError(5, InjectorErrorStrings.AfxHookError);
+        public static readonly InjectorError AfxHook6 = new InjectorError(6, InjectorErrorStrings.AfxHookError);
+        public static readonly InjectorError AfxHook7 = new InjectorError(7, InjectorErrorStrings.AfxHookError);
+        public static readonly InjectorError AfxHook8 = new InjectorError(8, InjectorErrorStrings.AfxHookError);
+        public static readonly InjectorError AfxHook9 = new InjectorError(9, InjectorErrorStrings.AfxHookError);
+        public static readonly InjectorError AfxHook10 = new InjectorError(10, InjectorErrorStrings.AfxHookError);
+        public static readonly InjectorError AfxHook11 = new InjectorError(11, InjectorErrorStrings.AfxHookError);
+        public static readonly InjectorError AfxHook12 = new InjectorError(12, InjectorErrorStrings.AfxHookError);
+        public static readonly InjectorError AfxHook13 = new InjectorError(13, InjectorErrorStrings.AfxHookError);
+        public static readonly InjectorError AfxHook14 = new InjectorError(14, InjectorErrorStrings.AfxHookError);
+        public static readonly InjectorError AfxHook15 = new InjectorError(15, InjectorErrorStrings.AfxHookError);
 
-        public static readonly Error OpenProcessFailed = new Error(1000, "OpenProcess failed", InjectorErrorStrings.AccessRightsSolution);
-        public static readonly Error VirtualAllocExReadWriteFailed = new Error(1001, "VirtualAllocEx read|write allocation failed.", InjectorErrorStrings.AccessRightsSolution);
-        public static readonly Error GetImageFailed = new Error(1002, "GetImage failed.", "Make sure that AfxHook.dat is not missing / broken and accessible.");
-        public static readonly Error VirtualAllocExReadWriteExecuteFailed = new Error(1003, "VirtualAllocEx read|write|execute allocation failed.", InjectorErrorStrings.AccessRightsSolution);
-        public static readonly Error WriteProcessMemoryFailed = new Error(1004, "WriteProcessMemory failed.", InjectorErrorStrings.AccessRightsSolution);
-        public static readonly Error FlushInstructionCacheFailed = new Error(1005, "FlushInstructionCache failed.", InjectorErrorStrings.AccessRightsSolution);
-        public static readonly Error CreateRemoteThreadFailed = new Error(1006, "CreateRemoteThread failed.", InjectorErrorStrings.AccessRightsSolution);
-        public static readonly Error AfxHookUnknown = new Error(1007, "AfxHook error: Unknown error code.", ErrorStrings.NoSolutionKnown);
-
-        private static InjectorErrors m_Instance;
+        public static readonly InjectorError OpenProcessFailed = new InjectorError(1000, "OpenProcess failed", null, InjectorErrorStrings.AccessRightsSolution);
+        public static readonly InjectorError VirtualAllocExReadWriteFailed = new InjectorError(1001, "VirtualAllocEx read|write allocation failed.", null, InjectorErrorStrings.AccessRightsSolution);
+        public static readonly InjectorError GetImageFailed = new InjectorError(1002, "GetImage failed.", null, "Make sure that AfxHook.dat is not missing / broken and accessible.");
+        public static readonly InjectorError VirtualAllocExReadWriteExecuteFailed = new InjectorError(1003, "VirtualAllocEx read|write|execute allocation failed.", null, InjectorErrorStrings.AccessRightsSolution);
+        public static readonly InjectorError WriteProcessMemoryFailed = new InjectorError(1004, "WriteProcessMemory failed.", null, InjectorErrorStrings.AccessRightsSolution);
+        public static readonly InjectorError FlushInstructionCacheFailed = new InjectorError(1005, "FlushInstructionCache failed.", null, InjectorErrorStrings.AccessRightsSolution);
+        public static readonly InjectorError CreateRemoteThreadFailed = new InjectorError(1006, "CreateRemoteThread failed.", null, InjectorErrorStrings.AccessRightsSolution);
+        public static readonly InjectorError AfxHookUnknown = new InjectorError(1007, "AfxHook error: Unknown error code.");
 
         protected InjectorErrors()
         {
 
         }
+
+        private class Init
+        {
+            public static Dictionary<int, InjectorError> m_Errors = new Dictionary<int, InjectorError>();
+        }
+
+        private static InjectorErrors m_Instance;
     }
 }

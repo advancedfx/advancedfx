@@ -101,7 +101,7 @@
             this.groupBoxGame.Controls.Add(this.labelExe);
             this.groupBoxGame.Location = new System.Drawing.Point(12, 12);
             this.groupBoxGame.Name = "groupBoxGame";
-            this.groupBoxGame.Size = new System.Drawing.Size(560, 48);
+            this.groupBoxGame.Size = new System.Drawing.Size(564, 48);
             this.groupBoxGame.TabIndex = 3;
             this.groupBoxGame.TabStop = false;
             this.groupBoxGame.Text = "Game";
@@ -109,7 +109,7 @@
             // buttonExe
             // 
             this.buttonExe.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonExe.Location = new System.Drawing.Point(458, 15);
+            this.buttonExe.Location = new System.Drawing.Point(462, 15);
             this.buttonExe.Name = "buttonExe";
             this.buttonExe.Size = new System.Drawing.Size(96, 23);
             this.buttonExe.TabIndex = 1;
@@ -123,7 +123,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.textBoxExe.Location = new System.Drawing.Point(112, 17);
             this.textBoxExe.Name = "textBoxExe";
-            this.textBoxExe.Size = new System.Drawing.Size(340, 20);
+            this.textBoxExe.Size = new System.Drawing.Size(344, 20);
             this.textBoxExe.TabIndex = 2;
             // 
             // labelExe
@@ -141,7 +141,7 @@
             this.groupBoxCmdOpts.Controls.Add(this.textBoxCustomCmd);
             this.groupBoxCmdOpts.Location = new System.Drawing.Point(12, 244);
             this.groupBoxCmdOpts.Name = "groupBoxCmdOpts";
-            this.groupBoxCmdOpts.Size = new System.Drawing.Size(560, 71);
+            this.groupBoxCmdOpts.Size = new System.Drawing.Size(564, 71);
             this.groupBoxCmdOpts.TabIndex = 6;
             this.groupBoxCmdOpts.TabStop = false;
             this.groupBoxCmdOpts.Text = "Custom command line options";
@@ -163,7 +163,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.textBoxCustomCmd.Location = new System.Drawing.Point(10, 19);
             this.textBoxCustomCmd.Name = "textBoxCustomCmd";
-            this.textBoxCustomCmd.Size = new System.Drawing.Size(543, 20);
+            this.textBoxCustomCmd.Size = new System.Drawing.Size(547, 20);
             this.textBoxCustomCmd.TabIndex = 1;
             // 
             // groupBoxRes
@@ -179,7 +179,7 @@
             this.groupBoxRes.Controls.Add(this.labelGfxWidth);
             this.groupBoxRes.Location = new System.Drawing.Point(12, 145);
             this.groupBoxRes.Name = "groupBoxRes";
-            this.groupBoxRes.Size = new System.Drawing.Size(560, 93);
+            this.groupBoxRes.Size = new System.Drawing.Size(564, 93);
             this.groupBoxRes.TabIndex = 5;
             this.groupBoxRes.TabStop = false;
             this.groupBoxRes.Text = "Graphic Resolution";
@@ -201,7 +201,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.labelGfxInfo.Location = new System.Drawing.Point(245, 46);
             this.labelGfxInfo.Name = "labelGfxInfo";
-            this.labelGfxInfo.Size = new System.Drawing.Size(309, 35);
+            this.labelGfxInfo.Size = new System.Drawing.Size(313, 35);
             this.labelGfxInfo.TabIndex = 6;
             this.labelGfxInfo.Text = "Actual results depend on the game.";
             // 
@@ -255,7 +255,7 @@
             this.groupBox1.Controls.Add(this.textBoxMmcfg);
             this.groupBox1.Location = new System.Drawing.Point(12, 66);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(560, 73);
+            this.groupBox1.Size = new System.Drawing.Size(564, 73);
             this.groupBox1.TabIndex = 4;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Movie making config parent folder";
@@ -266,7 +266,7 @@
             this.buttonMmcfgInfo.BackColor = System.Drawing.SystemColors.Highlight;
             this.buttonMmcfgInfo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.buttonMmcfgInfo.ForeColor = System.Drawing.SystemColors.HighlightText;
-            this.buttonMmcfgInfo.Location = new System.Drawing.Point(458, 15);
+            this.buttonMmcfgInfo.Location = new System.Drawing.Point(462, 15);
             this.buttonMmcfgInfo.Name = "buttonMmcfgInfo";
             this.buttonMmcfgInfo.Size = new System.Drawing.Size(95, 23);
             this.buttonMmcfgInfo.TabIndex = 1;
@@ -288,7 +288,7 @@
             // buttonMmcfg
             // 
             this.buttonMmcfg.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonMmcfg.Location = new System.Drawing.Point(458, 44);
+            this.buttonMmcfg.Location = new System.Drawing.Point(462, 44);
             this.buttonMmcfg.Name = "buttonMmcfg";
             this.buttonMmcfg.Size = new System.Drawing.Size(96, 23);
             this.buttonMmcfg.TabIndex = 2;
@@ -302,7 +302,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.textBoxMmcfg.Location = new System.Drawing.Point(10, 46);
             this.textBoxMmcfg.Name = "textBoxMmcfg";
-            this.textBoxMmcfg.Size = new System.Drawing.Size(442, 20);
+            this.textBoxMmcfg.Size = new System.Drawing.Size(446, 20);
             this.textBoxMmcfg.TabIndex = 3;
             // 
             // openFileDialogExe
@@ -329,9 +329,12 @@
             this.Controls.Add(this.buttonCancel);
             this.Controls.Add(this.buttonOK);
             this.Controls.Add(this.checkBoxRemeber);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
             this.MinimumSize = new System.Drawing.Size(600, 400);
             this.Name = "LaunchCsgoForm";
-            this.ShowIcon = false;
+            this.ShowInTaskbar = false;
             this.Text = "Launch CS:GO ...";
             this.groupBoxGame.ResumeLayout(false);
             this.groupBoxGame.PerformLayout();

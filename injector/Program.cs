@@ -7,7 +7,7 @@ namespace injector
     {
         static int Main(string[] args)
         {
-            InjectorErrors.Error result = null;
+            InjectorErrors.InjectorError result = null;
 
             string strArgs = string.Join(" ", args);
 

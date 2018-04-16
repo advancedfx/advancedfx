@@ -12,9 +12,6 @@ namespace AfxGui
 
             using (LaunchCsgoForm frm = new LaunchCsgoForm())
             {
-                frm.Icon = Program.Icon;
-                frm.ShowInTaskbar = false;
-
                 frm.Config = GlobalConfig.Instance.Settings.LauncherCsgo;
 
                 if (DialogResult.OK == frm.ShowDialog(dialogOwner))
@@ -32,9 +29,6 @@ namespace AfxGui
                     }
 
                     bOk = Launch(cfg);
-
-                    if (!bOk)
-                        MessageBox.Show("Launching failed.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 else
                     bOk = true;

@@ -6,6 +6,21 @@
 
 <release>
 <name>HLAE</name>
+<version>2.49.0</version>
+<time>2018-04-16T20:00Z</time>
+<changes>
+<change type="updated">
+Included AfxHookSource 1.39.0 (2018-03-30T11:30Z).
+</change>
+<change type="updated">
+Updated HLAE.exe to have an (hopefully) better error dialogue.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.48.2</version>
 <time>2018-03-30T11:30Z</time>
 <changes>

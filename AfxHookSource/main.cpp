@@ -41,6 +41,10 @@
 #include "csgo_Audio.h"
 #include "mirv_voice.h"
 #include "Gui.h"
+#include <csgo/sdk_src/public/tier0/memalloc.h>
+#include <csgo/sdk_src/public/tier1/convar.h>
+#include <swarm/sdk_src/public/tier0/memalloc.h>
+#include <swarm/sdk_src/public/tier1/convar.h>
 
 #include <set>
 #include <map>
@@ -48,6 +52,15 @@
 
 WrpVEngineClient * g_VEngineClient = 0;
 SOURCESDK::ICvar_003 * g_Cvar = 0;
+
+SOURCESDK::CSGO::IMemAlloc *SOURCESDK::CSGO::g_pMemAlloc = 0;
+SOURCESDK::CSGO::ICvar * SOURCESDK::CSGO::cvar = 0;
+SOURCESDK::CSGO::ICvar * SOURCESDK::CSGO::g_pCVar = 0;
+
+SOURCESDK::SWARM::IMemAlloc *SOURCESDK::SWARM::g_pMemAlloc = 0;
+SOURCESDK::SWARM::ICvar * SOURCESDK::SWARM::cvar = 0;
+SOURCESDK::SWARM::ICvar * SOURCESDK::SWARM::g_pCVar = 0;
+
 
 
 void ErrorBox(char const * messageText) {
@@ -74,7 +87,6 @@ void PrintInfo() {
 	Tier0_Msg("| VEngineClient: %s\n", g_Info_VEngineClient);
 	Tier0_Msg("| VEngineCvar: %s\n", g_Info_VEngineCvar);
 	Tier0_Msg("| GameDirectory: %s\n", g_VEngineClient ? g_VEngineClient->GetGameDirectory() : "n/a");
-	Tier0_Msg("| WrpConCommands::GetVEngineCvar007() == 0x%08x\n", WrpConCommands::GetVEngineCvar007());
 
 	Tier0_Msg("|" "\n");
 }
@@ -227,10 +239,19 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 			ErrorBox("Could not get a supported VEngineClient interface.");
 		}
 
-		if((iface = appSystemFactory( CVAR_INTERFACE_VERSION_007, NULL )))
+		if(SourceSdkVer_CSGO == g_SourceSdkVer && (iface = appSystemFactory( SOURCESDK_CSGO_CVAR_INTERFACE_VERSION, NULL )))
 		{
-			g_Info_VEngineCvar = CVAR_INTERFACE_VERSION_007;
-			WrpConCommands::RegisterCommands((SOURCESDK::ICvar_007 *)iface);
+			g_Info_VEngineCvar = SOURCESDK_CSGO_CVAR_INTERFACE_VERSION " (CS:GO)";
+			SOURCESDK::CSGO::g_pCVar = SOURCESDK::CSGO::cvar = (SOURCESDK::CSGO::ICvar *)iface;
+
+			WrpConCommands::RegisterCommands(SOURCESDK::CSGO::g_pCVar);
+		}
+		else if((iface = appSystemFactory(SOURCESDK_SWARM_CVAR_INTERFACE_VERSION, NULL)))
+		{
+			g_Info_VEngineCvar = SOURCESDK_SWARM_CVAR_INTERFACE_VERSION " (Alien Swarm)";
+			SOURCESDK::SWARM::g_pCVar = SOURCESDK::SWARM::cvar = (SOURCESDK::SWARM::ICvar *)iface;
+
+			WrpConCommands::RegisterCommands(SOURCESDK::SWARM::g_pCVar);
 		}
 		else if((iface = appSystemFactory( VENGINE_CVAR_INTERFACE_VERSION_004, NULL )))
 		{
@@ -351,7 +372,6 @@ void* AppSystemFactory_ForClient(const char *pName, int *pReturnCode)
 	return g_AppSystemFactory(pName, pReturnCode);
 }
 
-//:009
 typedef int(__stdcall * CVClient_Init_Unknown_t)(DWORD *this_ptr, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CreateInterfaceFn physicsFactory, SOURCESDK::CGlobalVarsBase *pGlobals);
 
 CVClient_Init_Unknown_t old_CVClient_Init_Unkown;
@@ -360,13 +380,30 @@ int __stdcall new_CVClient_Init_Unknown(DWORD *this_ptr, SOURCESDK::CreateInterf
 {
 	static bool bFirstCall = true;
 
-	if(bFirstCall) {
+	if (bFirstCall) {
 		bFirstCall = false;
 
 		MySetup(appSystemFactory, new WrpGlobalsOther(pGlobals));
 	}
 
 	return old_CVClient_Init_Unkown(this_ptr, AppSystemFactory_ForClient, physicsFactory, pGlobals);
+}
+
+typedef int(__stdcall * CVClient_Init_Swarm_t)(DWORD *this_ptr, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CGlobalVarsBase *pGlobals);
+
+CVClient_Init_Swarm_t old_CVClient_Init_Swarm;
+
+int __stdcall new_CVClient_Init_Swarm(DWORD *this_ptr, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CGlobalVarsBase *pGlobals)
+{
+	static bool bFirstCall = true;
+
+	if (bFirstCall) {
+		bFirstCall = false;
+
+		MySetup(appSystemFactory, new WrpGlobalsOther(pGlobals));
+	}
+
+	return old_CVClient_Init_Swarm(this_ptr, AppSystemFactory_ForClient, pGlobals);
 }
 
 void Shared_BeforeFrameRenderStart(void)
@@ -1177,6 +1214,14 @@ void HookClientDllInterface_011_Init(void * iface)
 	DetourIfacePtr((DWORD *)&(vtable[0]), new_CVClient_Init_Unknown, (DetourIfacePtr_fn &)old_CVClient_Init_Unkown);
 }
 
+void HookClientDllInterface_Swarm_Init(void * iface)
+{
+	int * vtable = *(int**)iface;
+
+	DetourIfacePtr((DWORD *)&(vtable[1]), new_CVClient_Init_Swarm, (DetourIfacePtr_fn &)old_CVClient_Init_Swarm);
+}
+
+
 SOURCESDK::IClientEntityList_csgo * SOURCESDK::g_Entitylist_csgo = 0;
 
 SOURCESDK::CreateInterfaceFn old_Client_CreateInterface = 0;
@@ -1205,8 +1250,16 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 				HookClientDllInterface_011_Init(iface);
 			}
 			else if(iface = old_Client_CreateInterface(CLIENT_DLL_INTERFACE_VERSION_016, NULL)) {
-				g_Info_VClient = CLIENT_DLL_INTERFACE_VERSION_016;
-				HookClientDllInterface_011_Init(iface);
+				if (SourceSdkVer_SWARM == g_SourceSdkVer)
+				{
+					g_Info_VClient = CLIENT_DLL_INTERFACE_VERSION_016 " (Alien Swarm)";
+					HookClientDllInterface_Swarm_Init(iface);
+				}
+				else
+				{
+					g_Info_VClient = CLIENT_DLL_INTERFACE_VERSION_016;
+					HookClientDllInterface_011_Init(iface);
+				}
 			}
 			else if(iface = old_Client_CreateInterface(CLIENT_DLL_INTERFACE_VERSION_015, NULL)) {
 				g_Info_VClient = CLIENT_DLL_INTERFACE_VERSION_015;
@@ -1595,6 +1648,10 @@ void CommonHooks()
 		{
 			g_SourceSdkVer = SourceSdkVer_CSGO;
 		}
+		else if (StringEndsWith(filePath, "swarm.exe"))
+		{
+			g_SourceSdkVer = SourceSdkVer_SWARM;
+		}
 		else if (wcsstr(GetCommandLineW(), L"-game tf"))
 		{
 			g_SourceSdkVer = SourceSdkVer_TF2;
@@ -1631,10 +1688,17 @@ void CommonHooks()
 				InterceptDllCall(hTier0, "USER32.dll", "SetCursorPos", (DWORD)&new_SetCursorPos); // not there, but heh.
 			}
 
-			//if (!Hook_csgo_MemAlloc())
-			//{
-			//	ErrorBox("Error: Hook_csgo_MemAlloc failed. This can cause mayor bugs!");
-			//}
+			if (SourceSdkVer_CSGO == g_SourceSdkVer)
+			{
+				SOURCESDK::CSGO::g_pMemAlloc = *(SOURCESDK::CSGO::IMemAlloc **)GetProcAddress(hTier0, "g_pMemAlloc");
+			}
+			else
+			{
+				if (SOURCESDK::SWARM::IMemAlloc ** ppMemalloc = (SOURCESDK::SWARM::IMemAlloc **)GetProcAddress(hTier0, "g_pMemAlloc"))
+				{
+					SOURCESDK::SWARM::g_pMemAlloc = *ppMemalloc;
+				}
+			}
 		}
 	}
 }

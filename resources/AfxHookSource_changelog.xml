@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.39.0</version>
+<time>2018-04-16T20:00Z</time>
+<changes>
+<change type="fixed">
+Fixed basic general features (campath / mirv_input camera) not working in Alien Swarm.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.38.2</version>
 <time>2018-03-30T11:30Z</time>
 <changes>

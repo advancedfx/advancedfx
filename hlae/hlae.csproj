@@ -80,14 +80,21 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\injector\AfxErrors.cs">
-      <Link>AfxErrors.cs</Link>
+    <Compile Include="..\injector\AfxError.cs">
+      <Link>AfxError.cs</Link>
     </Compile>
     <Compile Include="..\injector\InjectorErrors.cs">
       <Link>InjectorErrors.cs</Link>
     </Compile>
     <Compile Include="Config.cs" />
+    <Compile Include="ErrorDialogue.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ErrorDialogue.Designer.cs">
+      <DependentUpon>ErrorDialogue.cs</DependentUpon>
+    </Compile>
     <Compile Include="Globals.cs" />
+    <Compile Include="HlaeErrors.cs" />
     <Compile Include="LaunchCsgo.cs" />
     <Compile Include="LaunchCsgoForm.cs">
       <SubType>Form</SubType>
@@ -118,6 +125,9 @@
       <DependentUpon>CustomLoaderForm.cs</DependentUpon>
     </Compile>
     <Compile Include="UpdateCheck.cs" />
+    <EmbeddedResource Include="ErrorDialogue.resx">
+      <DependentUpon>ErrorDialogue.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="LaunchCsgoForm.resx">
       <DependentUpon>LaunchCsgoForm.cs</DependentUpon>
     </EmbeddedResource>
