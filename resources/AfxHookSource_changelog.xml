@@ -7,12 +7,16 @@
 <release>
 <name>AfxHookSource</name>
 <version>1.39.0</version>
-<time>2018-04-16T20:00Z</time>
+<time>2018-04-16T22:00Z</time>
 <changes>
 <change type="fixed">
-Fixed basic general features (campath / mirv_input camera) not working in Alien Swarm.
+Fixed basic general features (campath / mirv_input camera) not working in Alien Swarm and Left 4 Dead 2.
 </change>
 </changes>
+<comments>
+Thanks for helping with testing to:<br />
+- https://twitter.com/Devomvm
+</comments>
 </release>
 
 

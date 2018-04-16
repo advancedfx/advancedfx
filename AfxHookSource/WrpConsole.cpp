@@ -50,6 +50,7 @@ SOURCESDK::ICvar_003 * WrpConCommands::m_CvarIface_003 = 0;
 SOURCESDK::ICvar_004 * WrpConCommands::m_CvarIface_004 = 0;
 SOURCESDK::CSGO::ICvar * WrpConCommands::m_CvarIface_CSGO = 0;
 SOURCESDK::SWARM::ICvar * WrpConCommands::m_CvarIface_SWARM = 0;
+SOURCESDK::L4D2::ICvar * WrpConCommands::m_CvarIface_L4D2 = 0;
 WrpConCommandsListEntry * WrpConCommands::m_CommandListRoot = 0;
 SOURCESDK::IVEngineClient_012 * WrpConCommands::m_VEngineClient_012 = 0;
 
@@ -127,6 +128,22 @@ void WrpConCommands::RegisterCommands(SOURCESDK::SWARM::ICvar * cvarIface) {
 	}
 }
 
+void WrpConCommands::RegisterCommands(SOURCESDK::L4D2::ICvar * cvarIface) {
+	if (m_CvarIface_L4D2)
+		// already registered the current list
+		return;
+
+	m_CvarIface_L4D2 = cvarIface;
+	SOURCESDK::L4D2::ConVar_Register(0, new WrpConCommandsRegistrar_L4D2());
+
+	for (WrpConCommandsListEntry * entry = m_CommandListRoot; entry; entry = entry->Next) {
+		WrpConCommand * cmd = entry->Command;
+
+		// will init themself since s_pAccessor is set:
+		new SOURCESDK::L4D2::ConCommand(cmd->GetName(), cmd, cmd->GetHelpString(), SOURCESDK_L4D2_FCVAR_CLIENTDLL);
+	}
+}
+
 void WrpConCommands::WrpConCommand_Register(WrpConCommand * cmd) {
 	WrpConCommandsListEntry * entry = new WrpConCommandsListEntry();
 	entry->Command = cmd;
@@ -140,6 +157,8 @@ void WrpConCommands::WrpConCommand_Register(WrpConCommand * cmd) {
 		new SOURCESDK::CSGO::ConCommand(cmd->GetName(), cmd, cmd->GetHelpString(), SOURCESDK_CSGO_FCVAR_CLIENTDLL);
 	else if (m_CvarIface_SWARM)
 		new SOURCESDK::SWARM::ConCommand(cmd->GetName(), cmd, cmd->GetHelpString(), SOURCESDK_SWARM_FCVAR_CLIENTDLL);
+	else if (m_CvarIface_L4D2)
+		new SOURCESDK::L4D2::ConCommand(cmd->GetName(), cmd, cmd->GetHelpString(), SOURCESDK_L4D2_FCVAR_CLIENTDLL);
 	else if(m_CvarIface_004)
 		new SOURCESDK::ConCommand_004(cmd->GetName(), cmd->GetCallback(), cmd->GetHelpString());
 	else if(m_CvarIface_003)
@@ -199,6 +218,15 @@ bool WrpConCommands::WrpConCommandsRegistrar_SWARM_Register(SOURCESDK::SWARM::Co
 	return true;
 }
 
+bool WrpConCommands::WrpConCommandsRegistrar_L4D2_Register(SOURCESDK::L4D2::ConCommandBase *pVar) {
+	if (!m_CvarIface_L4D2)
+		return false;
+
+	//	MessageBox(0, "WrpConCommands::WrpConCommandsRegistrar_007_Register", "AFX_DEBUG", MB_OK);
+
+	m_CvarIface_L4D2->RegisterConCommand(pVar);
+	return true;
+}
 
 // WrpConCommandsRegistrar_003 ////////////////////////////////////////////////////
 
@@ -223,6 +251,13 @@ bool WrpConCommandsRegistrar_CSGO::RegisterConCommandBase(SOURCESDK::CSGO::ConCo
 bool WrpConCommandsRegistrar_SWARM::RegisterConCommandBase(SOURCESDK::SWARM::ConCommandBase *pVar) {
 	return WrpConCommands::WrpConCommandsRegistrar_SWARM_Register(pVar);
 }
+
+// WrpConCommandsRegistrar_L4D2 ////////////////////////////////////////////////////
+
+bool WrpConCommandsRegistrar_L4D2::RegisterConCommandBase(SOURCESDK::L4D2::ConCommandBase *pVar) {
+	return WrpConCommands::WrpConCommandsRegistrar_L4D2_Register(pVar);
+}
+
 
 // WrpConVar ///////////////////////////////////////////////////////////////////
 

@@ -6,6 +6,7 @@
 #include <SourceInterfaces.h>
 #include <csgo/sdk_src/public/tier1/convar.h>
 #include <swarm/sdk_src/public/tier1/convar.h>
+#include <l4d2/sdk_src/public/tier1/convar.h>
 
 #include <string>
 
@@ -48,6 +49,7 @@ private:
 class WrpConCommand
 	: public SOURCESDK::CSGO::ICommandCallback
 	, public SOURCESDK::SWARM::ICommandCallback
+	, public SOURCESDK::L4D2::ICommandCallback
 {
 public:
 	WrpConCommand(char const * name, WrpCommandCallback callback, char const * helpString = 0);
@@ -67,6 +69,13 @@ public:
 	virtual void SOURCESDK::SWARM::ICommandCallback::CommandCallback(const SOURCESDK::SWARM::CCommand &command)
 	{
 		ArgsFromCCommand_SWARM args(command);
+
+		m_Callback(&args);
+	}
+
+	virtual void SOURCESDK::L4D2::ICommandCallback::CommandCallback(const SOURCESDK::L4D2::CCommand &command)
+	{
+		ArgsFromCCommand_L4D2 args(command);
 
 		m_Callback(&args);
 	}
@@ -122,6 +131,31 @@ private:
 		const SOURCESDK::SWARM::CCommand & m_Command;
 	};
 
+	class ArgsFromCCommand_L4D2 :
+		public IWrpCommandArgs
+	{
+	public:
+		ArgsFromCCommand_L4D2(const SOURCESDK::L4D2::CCommand &command)
+			: m_Command(command)
+		{
+
+		}
+
+		/// <comments> implements IWrpCommandArgs </comments>
+		virtual int ArgC()
+		{
+			return m_Command.ArgC();
+		}
+
+		/// <comments> implements IWrpCommandArgs </comments>
+		virtual char const * ArgV(int i)
+		{
+			return (m_Command.ArgV())[i];
+		}
+	private:
+		const SOURCESDK::L4D2::CCommand & m_Command;
+	};
+
 	WrpCommandCallback m_Callback;
 	char * m_HelpString;
 	char * m_Name;
@@ -164,6 +198,14 @@ public:
 	virtual bool RegisterConCommandBase(SOURCESDK::SWARM::ConCommandBase *pVar);
 };
 
+// WrpConCommandsRegistrar_L4D2 /////////////////////////////////////////////////
+
+class WrpConCommandsRegistrar_L4D2 :
+	public SOURCESDK::L4D2::IConCommandBaseAccessor
+{
+public:
+	virtual bool RegisterConCommandBase(SOURCESDK::L4D2::ConCommandBase *pVar);
+};
 
 // WrpConCommands //////////////////////////////////////////////////////////////
 
@@ -185,6 +227,7 @@ public:
 	static void RegisterCommands(SOURCESDK::ICvar_004 * cvarIface);
 	static void RegisterCommands(SOURCESDK::CSGO::ICvar * cvarIface);
 	static void RegisterCommands(SOURCESDK::SWARM::ICvar * cvarIface);
+	static void RegisterCommands(SOURCESDK::L4D2::ICvar * cvarIface);
 
 	static void WrpConCommand_Register(WrpConCommand * cmd);
 	static void WrpConCommand_Unregister(WrpConCommand * cmd);
@@ -193,12 +236,14 @@ public:
 	static bool WrpConCommandsRegistrar_004_Register(SOURCESDK::ConCommandBase_004 *pVar);
 	static bool WrpConCommandsRegistrar_CSGO_Register(SOURCESDK::CSGO::ConCommandBase *pVar);
 	static bool WrpConCommandsRegistrar_SWARM_Register(SOURCESDK::SWARM::ConCommandBase *pVar);
+	static bool WrpConCommandsRegistrar_L4D2_Register(SOURCESDK::L4D2::ConCommandBase *pVar);
 
 private:
 	static SOURCESDK::ICvar_003 * m_CvarIface_003;
 	static SOURCESDK::ICvar_004 * m_CvarIface_004;
 	static SOURCESDK::CSGO::ICvar * m_CvarIface_CSGO;
 	static SOURCESDK::SWARM::ICvar * m_CvarIface_SWARM;
+	static SOURCESDK::L4D2::ICvar * m_CvarIface_L4D2;
 	static WrpConCommandsListEntry * m_CommandListRoot;
 	static SOURCESDK::IVEngineClient_012 * m_VEngineClient_012;
 };

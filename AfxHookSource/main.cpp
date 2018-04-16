@@ -45,6 +45,8 @@
 #include <csgo/sdk_src/public/tier1/convar.h>
 #include <swarm/sdk_src/public/tier0/memalloc.h>
 #include <swarm/sdk_src/public/tier1/convar.h>
+#include <l4d2/sdk_src/public/tier0/memalloc.h>
+#include <l4d2/sdk_src/public/tier1/convar.h>
 
 #include <set>
 #include <map>
@@ -61,6 +63,9 @@ SOURCESDK::SWARM::IMemAlloc *SOURCESDK::SWARM::g_pMemAlloc = 0;
 SOURCESDK::SWARM::ICvar * SOURCESDK::SWARM::cvar = 0;
 SOURCESDK::SWARM::ICvar * SOURCESDK::SWARM::g_pCVar = 0;
 
+SOURCESDK::L4D2::IMemAlloc *SOURCESDK::L4D2::g_pMemAlloc = 0;
+SOURCESDK::L4D2::ICvar * SOURCESDK::L4D2::cvar = 0;
+SOURCESDK::L4D2::ICvar * SOURCESDK::L4D2::g_pCVar = 0;
 
 
 void ErrorBox(char const * messageText) {
@@ -239,19 +244,26 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 			ErrorBox("Could not get a supported VEngineClient interface.");
 		}
 
-		if(SourceSdkVer_CSGO == g_SourceSdkVer && (iface = appSystemFactory( SOURCESDK_CSGO_CVAR_INTERFACE_VERSION, NULL )))
+		if((SourceSdkVer_CSGO == g_SourceSdkVer) && (iface = appSystemFactory( SOURCESDK_CSGO_CVAR_INTERFACE_VERSION, NULL )))
 		{
 			g_Info_VEngineCvar = SOURCESDK_CSGO_CVAR_INTERFACE_VERSION " (CS:GO)";
 			SOURCESDK::CSGO::g_pCVar = SOURCESDK::CSGO::cvar = (SOURCESDK::CSGO::ICvar *)iface;
 
 			WrpConCommands::RegisterCommands(SOURCESDK::CSGO::g_pCVar);
 		}
-		else if((iface = appSystemFactory(SOURCESDK_SWARM_CVAR_INTERFACE_VERSION, NULL)))
+		else if((SourceSdkVer_SWARM == g_SourceSdkVer) && (iface = appSystemFactory(SOURCESDK_SWARM_CVAR_INTERFACE_VERSION, NULL)))
 		{
 			g_Info_VEngineCvar = SOURCESDK_SWARM_CVAR_INTERFACE_VERSION " (Alien Swarm)";
 			SOURCESDK::SWARM::g_pCVar = SOURCESDK::SWARM::cvar = (SOURCESDK::SWARM::ICvar *)iface;
 
 			WrpConCommands::RegisterCommands(SOURCESDK::SWARM::g_pCVar);
+		}
+		else if ((iface = appSystemFactory(SOURCESDK_L4D2_CVAR_INTERFACE_VERSION, NULL)))
+		{
+			g_Info_VEngineCvar = SOURCESDK_L4D2_CVAR_INTERFACE_VERSION " (Left 4 Dead 2)";
+			SOURCESDK::L4D2::g_pCVar = SOURCESDK::L4D2::cvar = (SOURCESDK::L4D2::ICvar *)iface;
+
+			WrpConCommands::RegisterCommands(SOURCESDK::L4D2::g_pCVar);
 		}
 		else if((iface = appSystemFactory( VENGINE_CVAR_INTERFACE_VERSION_004, NULL )))
 		{
@@ -1250,9 +1262,9 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 				HookClientDllInterface_011_Init(iface);
 			}
 			else if(iface = old_Client_CreateInterface(CLIENT_DLL_INTERFACE_VERSION_016, NULL)) {
-				if (SourceSdkVer_SWARM == g_SourceSdkVer)
+				if (SourceSdkVer_SWARM == g_SourceSdkVer || SourceSdkVer_L4D2 == g_SourceSdkVer)
 				{
-					g_Info_VClient = CLIENT_DLL_INTERFACE_VERSION_016 " (Alien Swarm)";
+					g_Info_VClient = CLIENT_DLL_INTERFACE_VERSION_016 " (Alien Swarm / Left 4 Dead 2)";
 					HookClientDllInterface_Swarm_Init(iface);
 				}
 				else
@@ -1652,6 +1664,10 @@ void CommonHooks()
 		{
 			g_SourceSdkVer = SourceSdkVer_SWARM;
 		}
+		else if (StringEndsWith(filePath, "left4dead2.exe"))
+		{
+			g_SourceSdkVer = SourceSdkVer_L4D2;
+		}
 		else if (wcsstr(GetCommandLineW(), L"-game tf"))
 		{
 			g_SourceSdkVer = SourceSdkVer_TF2;
@@ -1692,11 +1708,15 @@ void CommonHooks()
 			{
 				SOURCESDK::CSGO::g_pMemAlloc = *(SOURCESDK::CSGO::IMemAlloc **)GetProcAddress(hTier0, "g_pMemAlloc");
 			}
+			if (SourceSdkVer_SWARM == g_SourceSdkVer)
+			{
+				SOURCESDK::SWARM::g_pMemAlloc = *(SOURCESDK::SWARM::IMemAlloc **)GetProcAddress(hTier0, "g_pMemAlloc");
+			}
 			else
 			{
-				if (SOURCESDK::SWARM::IMemAlloc ** ppMemalloc = (SOURCESDK::SWARM::IMemAlloc **)GetProcAddress(hTier0, "g_pMemAlloc"))
+				if (SOURCESDK::L4D2::IMemAlloc ** ppMemalloc = (SOURCESDK::L4D2::IMemAlloc **)GetProcAddress(hTier0, "g_pMemAlloc"))
 				{
-					SOURCESDK::SWARM::g_pMemAlloc = *ppMemalloc;
+					SOURCESDK::L4D2::g_pMemAlloc = *ppMemalloc;
 				}
 			}
 		}

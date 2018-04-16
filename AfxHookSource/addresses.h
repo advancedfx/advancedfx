@@ -9,7 +9,8 @@ enum SourceSdkVer
 	SourceSdkVer_CSSV34,
 	SourceSdkVer_TF2,
 	SourceSdkVer_CSS,
-	SourceSdkVer_SWARM
+	SourceSdkVer_SWARM,
+	SourceSdkVer_L4D2,
 };
 
 extern SourceSdkVer g_SourceSdkVer;
