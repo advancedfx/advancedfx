@@ -48,7 +48,8 @@ char const * WrpConCommand::GetName() {
 
 SOURCESDK::ICvar_003 * WrpConCommands::m_CvarIface_003 = 0;
 SOURCESDK::ICvar_004 * WrpConCommands::m_CvarIface_004 = 0;
-SOURCESDK::ICvar_007 * WrpConCommands::m_CvarIface_007 = 0;
+SOURCESDK::CSGO::ICvar * WrpConCommands::m_CvarIface_CSGO = 0;
+SOURCESDK::SWARM::ICvar * WrpConCommands::m_CvarIface_SWARM = 0;
 WrpConCommandsListEntry * WrpConCommands::m_CommandListRoot = 0;
 SOURCESDK::IVEngineClient_012 * WrpConCommands::m_VEngineClient_012 = 0;
 
@@ -56,9 +57,9 @@ SOURCESDK::IVEngineClient_012 * WrpConCommands::GetVEngineClient_012() {
 	return m_VEngineClient_012;
 }
 
-SOURCESDK::ICvar_007 * WrpConCommands::GetVEngineCvar007()
+SOURCESDK::CSGO::ICvar * WrpConCommands::GetVEngineCvar_CSGO()
 {
-	return m_CvarIface_007;
+	return m_CvarIface_CSGO;
 }
 
 void WrpConCommands::RegisterCommands(SOURCESDK::ICvar_003 * cvarIface, SOURCESDK::IVEngineClient_012 * vEngineClientInterface) {
@@ -94,19 +95,35 @@ void WrpConCommands::RegisterCommands(SOURCESDK::ICvar_004 * cvarIface) {
 	}
 }
 
-void WrpConCommands::RegisterCommands(SOURCESDK::ICvar_007 * cvarIface) {
-	if(m_CvarIface_007)
+void WrpConCommands::RegisterCommands(SOURCESDK::CSGO::ICvar * cvarIface) {
+	if(m_CvarIface_CSGO)
 		// already registered the current list
 		return;
 
-	m_CvarIface_007 = cvarIface;
-	SOURCESDK::ConCommandBase_007::s_pAccessor = new WrpConCommandsRegistrar_007();
+	m_CvarIface_CSGO = cvarIface;
+	SOURCESDK::CSGO::ConVar_Register(0, new WrpConCommandsRegistrar_CSGO());
 
 	for(WrpConCommandsListEntry * entry = m_CommandListRoot; entry; entry = entry->Next) {
 		WrpConCommand * cmd = entry->Command;
 
 		// will init themself since s_pAccessor is set:
-		new SOURCESDK::ConCommand_007(cmd->GetName(), cmd->GetCallback(), cmd->GetHelpString(), FCVAR_CLIENTDLL);
+		new SOURCESDK::CSGO::ConCommand(cmd->GetName(), cmd, cmd->GetHelpString(), SOURCESDK_CSGO_FCVAR_CLIENTDLL);
+	}
+}
+
+void WrpConCommands::RegisterCommands(SOURCESDK::SWARM::ICvar * cvarIface) {
+	if (m_CvarIface_SWARM)
+		// already registered the current list
+		return;
+
+	m_CvarIface_SWARM = cvarIface;
+	SOURCESDK::SWARM::ConVar_Register(0, new WrpConCommandsRegistrar_SWARM());
+
+	for (WrpConCommandsListEntry * entry = m_CommandListRoot; entry; entry = entry->Next) {
+		WrpConCommand * cmd = entry->Command;
+
+		// will init themself since s_pAccessor is set:
+		new SOURCESDK::SWARM::ConCommand(cmd->GetName(), cmd, cmd->GetHelpString(), SOURCESDK_SWARM_FCVAR_CLIENTDLL);
 	}
 }
 
@@ -119,8 +136,10 @@ void WrpConCommands::WrpConCommand_Register(WrpConCommand * cmd) {
 	// if the list is already live, create (and thus register) the command instantly
 	// in the engine:
 
-	if(m_CvarIface_007)
-		new SOURCESDK::ConCommand_007(cmd->GetName(), cmd->GetCallback(), cmd->GetHelpString());
+	if(m_CvarIface_CSGO)
+		new SOURCESDK::CSGO::ConCommand(cmd->GetName(), cmd, cmd->GetHelpString(), SOURCESDK_CSGO_FCVAR_CLIENTDLL);
+	else if (m_CvarIface_SWARM)
+		new SOURCESDK::SWARM::ConCommand(cmd->GetName(), cmd, cmd->GetHelpString(), SOURCESDK_SWARM_FCVAR_CLIENTDLL);
 	else if(m_CvarIface_004)
 		new SOURCESDK::ConCommand_004(cmd->GetName(), cmd->GetCallback(), cmd->GetHelpString());
 	else if(m_CvarIface_003)
@@ -160,13 +179,23 @@ bool WrpConCommands::WrpConCommandsRegistrar_004_Register(SOURCESDK::ConCommandB
 	return true;
 }
 
-bool WrpConCommands::WrpConCommandsRegistrar_007_Register(SOURCESDK::ConCommandBase_007 *pVar ) {
-	if(!m_CvarIface_007)
+bool WrpConCommands::WrpConCommandsRegistrar_CSGO_Register(SOURCESDK::CSGO::ConCommandBase *pVar ) {
+	if(!m_CvarIface_CSGO)
 		return false;
 
 //	MessageBox(0, "WrpConCommands::WrpConCommandsRegistrar_007_Register", "AFX_DEBUG", MB_OK);
 
-	m_CvarIface_007->RegisterConCommand(pVar);
+	m_CvarIface_CSGO->RegisterConCommand(pVar);
+	return true;
+}
+
+bool WrpConCommands::WrpConCommandsRegistrar_SWARM_Register(SOURCESDK::SWARM::ConCommandBase *pVar) {
+	if (!m_CvarIface_SWARM)
+		return false;
+
+	//	MessageBox(0, "WrpConCommands::WrpConCommandsRegistrar_007_Register", "AFX_DEBUG", MB_OK);
+
+	m_CvarIface_SWARM->RegisterConCommand(pVar);
 	return true;
 }
 
@@ -183,10 +212,16 @@ bool WrpConCommandsRegistrar_004::RegisterConCommandBase(SOURCESDK::ConCommandBa
 	return WrpConCommands::WrpConCommandsRegistrar_004_Register(pVar);
 }
 
-// WrpConCommandsRegistrar_007 ////////////////////////////////////////////////////
+// WrpConCommandsRegistrar_CSGO ////////////////////////////////////////////////////
 
-bool WrpConCommandsRegistrar_007::RegisterConCommandBase(SOURCESDK::ConCommandBase_007 *pVar ) {
-	return WrpConCommands::WrpConCommandsRegistrar_007_Register(pVar);
+bool WrpConCommandsRegistrar_CSGO::RegisterConCommandBase(SOURCESDK::CSGO::ConCommandBase *pVar ) {
+	return WrpConCommands::WrpConCommandsRegistrar_CSGO_Register(pVar);
+}
+
+// WrpConCommandsRegistrar_SWARM ////////////////////////////////////////////////////
+
+bool WrpConCommandsRegistrar_SWARM::RegisterConCommandBase(SOURCESDK::SWARM::ConCommandBase *pVar) {
+	return WrpConCommands::WrpConCommandsRegistrar_SWARM_Register(pVar);
 }
 
 // WrpConVar ///////////////////////////////////////////////////////////////////
@@ -194,10 +229,9 @@ bool WrpConCommandsRegistrar_007::RegisterConCommandBase(SOURCESDK::ConCommandBa
 WrpConVarRef::WrpConVarRef(char const * pName)
 : m_pConVar007(0)
 {
-	SOURCESDK::ICvar_007 * iCvar007 = WrpConCommands::GetVEngineCvar007();
-	if(iCvar007)
+	if(SOURCESDK::CSGO::g_pCVar)
 	{
-		m_pConVar007 = iCvar007->FindVar(pName);
+		m_pConVar007 = SOURCESDK::CSGO::g_pCVar->FindVar(pName);
 	}
 
 	if(!m_pConVar007)

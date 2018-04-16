@@ -2193,20 +2193,20 @@ CON_COMMAND(mirv_camimport, "controls camera motion data import") {
 
 CON_COMMAND(mirv_cvar_unhide_all,"(CS:GO only) removes hidden and development only flags from all cvars.")
 {
-	SOURCESDK::ICvar_007 * pCvar = WrpConCommands::GetVEngineCvar007();
+	SOURCESDK::CSGO::ICvar * pCvar = WrpConCommands::GetVEngineCvar_CSGO();
 	if(!pCvar)
 	{
 		Tier0_Warning("Error: No suitable Cvar interface found.\n");
 		return;
 	}
 
-	SOURCESDK::ICvar_007::Iterator iter(pCvar);
+	SOURCESDK::CSGO::ICvar::Iterator iter(pCvar);
 
 	int nUnhidden = 0;
 
 	for(iter.SetFirst(); iter.IsValid(); iter.Next())
 	{
-		SOURCESDK::ConCommandBase_007 * cmd = iter.Get();
+		SOURCESDK::CSGO::ConCommandBase * cmd = iter.Get();
 
 		if(cmd->IsFlagSet(FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN))
 			nUnhidden++;

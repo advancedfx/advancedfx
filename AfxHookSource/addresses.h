@@ -8,7 +8,8 @@ enum SourceSdkVer
 	SourceSdkVer_CSGO,
 	SourceSdkVer_CSSV34,
 	SourceSdkVer_TF2,
-	SourceSdkVer_CSS
+	SourceSdkVer_CSS,
+	SourceSdkVer_SWARM
 };
 
 extern SourceSdkVer g_SourceSdkVer;

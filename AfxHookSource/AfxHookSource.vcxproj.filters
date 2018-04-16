@@ -97,6 +97,45 @@
     <Filter Include="AfxHookSource\Model\Tasks">
       <UniqueIdentifier>{55c50603-0060-48cc-82f0-67e415a76b7f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="prop\AfxHookSource\csgo">
+      <UniqueIdentifier>{2ee3f593-782d-4977-af12-85b29786e24a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\csgo\sdk_src">
+      <UniqueIdentifier>{b7691e58-395d-4e94-91a9-db564b673c05}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\csgo\sdk_src\public">
+      <UniqueIdentifier>{63227a6e-3850-48e1-8dec-0929eeae71ff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\csgo\sdk_src\public\tier1">
+      <UniqueIdentifier>{e5bd3852-373e-4a2a-9253-eb98a7e5fc88}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\csgo\sdk_src\public\tier0">
+      <UniqueIdentifier>{f9825239-4e37-4377-b07d-e4405cc365f0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\csgo\sdk_src\public\appframework">
+      <UniqueIdentifier>{88fb477f-528b-4788-8024-4a423f9d006c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\csgo\sdk_src\public\interfaces">
+      <UniqueIdentifier>{78b26f52-998e-4281-9901-81e73cf270a6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\swarm">
+      <UniqueIdentifier>{c4d76367-e1fb-4c99-b085-902523ef566b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\swarm\public">
+      <UniqueIdentifier>{79957499-419f-4702-bd9a-c53e5e7e928c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\swarm\public\appframework">
+      <UniqueIdentifier>{80fea483-dfe2-4f71-bef9-d54bbd270574}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\swarm\public\interfaces">
+      <UniqueIdentifier>{296b72be-61c2-4a3f-9c97-565a83823452}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\swarm\public\tier1">
+      <UniqueIdentifier>{526945e0-b249-4446-b765-8857c6d6dc99}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\swarm\public\tier0">
+      <UniqueIdentifier>{b42a526a-6d5c-4bef-a0cf-2f301aea7040}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\bvhexport.cpp">
@@ -234,9 +273,6 @@
     <ClCompile Include="csgo_Stdshader_dx9_Hooks.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
-    <ClCompile Include="csgo_MemAlloc.cpp">
-      <Filter>AfxHookSource</Filter>
-    </ClCompile>
     <ClCompile Include="MirvCam.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
@@ -296,6 +332,12 @@
     </ClCompile>
     <ClCompile Include="Gui.cpp">
       <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier1\convar.cpp">
+      <Filter>prop\AfxHookSource\csgo\sdk_src\public\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\prop\AfxHookSource\swarm\sdk_src\public\tier1\convar.cpp">
+      <Filter>prop\AfxHookSource\swarm\public\tier1</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -432,9 +474,6 @@
       <Filter>AfxHookSource</Filter>
     </ClInclude>
     <ClInclude Include="csgo_Stdshader_dx9_Hooks.h">
-      <Filter>AfxHookSource</Filter>
-    </ClInclude>
-    <ClInclude Include="csgo_MemAlloc.h">
       <Filter>AfxHookSource</Filter>
     </ClInclude>
     <ClInclude Include="MirvCam.h">
@@ -580,6 +619,42 @@
     </ClInclude>
     <ClInclude Include="Model\Model.h">
       <Filter>AfxHookSource\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier0\memalloc.h">
+      <Filter>prop\AfxHookSource\csgo\sdk_src\public\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier1\convar.h">
+      <Filter>prop\AfxHookSource\csgo\sdk_src\public\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier1\iconvar.h">
+      <Filter>prop\AfxHookSource\csgo\sdk_src\public\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\icvar.h">
+      <Filter>prop\AfxHookSource\csgo\sdk_src\public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\appframework\IAppSystem.h">
+      <Filter>prop\AfxHookSource\csgo\sdk_src\public\appframework</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\interfaces\interfaces.h">
+      <Filter>prop\AfxHookSource\csgo\sdk_src\public\interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\swarm\sdk_src\public\appframework\IAppSystem.h">
+      <Filter>prop\AfxHookSource\swarm\public\appframework</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\swarm\sdk_src\public\interfaces\interfaces.h">
+      <Filter>prop\AfxHookSource\swarm\public\interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\swarm\sdk_src\public\tier0\memalloc.h">
+      <Filter>prop\AfxHookSource\swarm\public\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\swarm\sdk_src\public\tier1\convar.h">
+      <Filter>prop\AfxHookSource\swarm\public\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\swarm\sdk_src\public\tier1\iconvar.h">
+      <Filter>prop\AfxHookSource\swarm\public\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\swarm\sdk_src\public\icvar.h">
+      <Filter>prop\AfxHookSource\swarm\public</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

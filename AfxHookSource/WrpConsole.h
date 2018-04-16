@@ -3,7 +3,9 @@
 // Description:
 // Wrapper(s) for Source engine ConCommands and ConVars.
 
-#include "SourceInterfaces.h"
+#include <SourceInterfaces.h>
+#include <csgo/sdk_src/public/tier1/convar.h>
+#include <swarm/sdk_src/public/tier1/convar.h>
 
 #include <string>
 
@@ -44,6 +46,8 @@ private:
 // WrpConCommand ///////////////////////////////////////////////////////////////
 
 class WrpConCommand
+	: public SOURCESDK::CSGO::ICommandCallback
+	, public SOURCESDK::SWARM::ICommandCallback
 {
 public:
 	WrpConCommand(char const * name, WrpCommandCallback callback, char const * helpString = 0);
@@ -53,7 +57,71 @@ public:
 	char const * GetHelpString();
 	char const * GetName();
 
+	virtual void SOURCESDK::CSGO::ICommandCallback::CommandCallback(const SOURCESDK::CSGO::CCommand &command)
+	{
+		ArgsFromCCommand_CSGO args(command);
+
+		m_Callback(&args);
+	}
+
+	virtual void SOURCESDK::SWARM::ICommandCallback::CommandCallback(const SOURCESDK::SWARM::CCommand &command)
+	{
+		ArgsFromCCommand_SWARM args(command);
+
+		m_Callback(&args);
+	}
+
 private:
+	class ArgsFromCCommand_CSGO :
+		public IWrpCommandArgs
+	{
+	public:
+		ArgsFromCCommand_CSGO(const SOURCESDK::CSGO::CCommand &command)
+			: m_Command(command)
+		{
+
+		}
+
+		/// <comments> implements IWrpCommandArgs </comments>
+		virtual int ArgC()
+		{
+			return m_Command.ArgC();
+		}
+
+		/// <comments> implements IWrpCommandArgs </comments>
+		virtual char const * ArgV(int i)
+		{
+			return (m_Command.ArgV())[i];
+		}
+	private:
+		const SOURCESDK::CSGO::CCommand & m_Command;
+	};
+
+	class ArgsFromCCommand_SWARM :
+		public IWrpCommandArgs
+	{
+	public:
+		ArgsFromCCommand_SWARM(const SOURCESDK::SWARM::CCommand &command)
+			: m_Command(command)
+		{
+
+		}
+
+		/// <comments> implements IWrpCommandArgs </comments>
+		virtual int ArgC()
+		{
+			return m_Command.ArgC();
+		}
+
+		/// <comments> implements IWrpCommandArgs </comments>
+		virtual char const * ArgV(int i)
+		{
+			return (m_Command.ArgV())[i];
+		}
+	private:
+		const SOURCESDK::SWARM::CCommand & m_Command;
+	};
+
 	WrpCommandCallback m_Callback;
 	char * m_HelpString;
 	char * m_Name;
@@ -78,13 +146,22 @@ public:
 	virtual bool RegisterConCommandBase(SOURCESDK::ConCommandBase_004 *pVar);
 };
 
-// WrpConCommandsRegistrar_007 /////////////////////////////////////////////////
+// WrpConCommandsRegistrar_CSGO /////////////////////////////////////////////////
 
-class WrpConCommandsRegistrar_007 :
-	public SOURCESDK::IConCommandBaseAccessor_007
+class WrpConCommandsRegistrar_CSGO :
+	public SOURCESDK::CSGO::IConCommandBaseAccessor
 {
 public:
-	virtual bool RegisterConCommandBase(SOURCESDK::ConCommandBase_007 *pVar);
+	virtual bool RegisterConCommandBase(SOURCESDK::CSGO::ConCommandBase *pVar);
+};
+
+// WrpConCommandsRegistrar_SWARM /////////////////////////////////////////////////
+
+class WrpConCommandsRegistrar_SWARM :
+	public SOURCESDK::SWARM::IConCommandBaseAccessor
+{
+public:
+	virtual bool RegisterConCommandBase(SOURCESDK::SWARM::ConCommandBase *pVar);
 };
 
 
@@ -101,24 +178,27 @@ public:
 	/// <remarks> only valid when Registered with ICvar_003 </remarks>
 	static SOURCESDK::IVEngineClient_012 * GetVEngineClient_012();
 	
-	/// <remarks> only valid when Registered with ICvar_007 </remarks>
-	static SOURCESDK::ICvar_007 * GetVEngineCvar007();
+	/// <remarks> only valid when Registered with SOURCESDK::CSGO::ICvar </remarks>
+	static SOURCESDK::CSGO::ICvar * GetVEngineCvar_CSGO();
 
 	static void RegisterCommands(SOURCESDK::ICvar_003 * cvarIface, SOURCESDK::IVEngineClient_012 * vEngineClientInterface);
 	static void RegisterCommands(SOURCESDK::ICvar_004 * cvarIface);
-	static void RegisterCommands(SOURCESDK::ICvar_007 * cvarIface);
+	static void RegisterCommands(SOURCESDK::CSGO::ICvar * cvarIface);
+	static void RegisterCommands(SOURCESDK::SWARM::ICvar * cvarIface);
 
 	static void WrpConCommand_Register(WrpConCommand * cmd);
 	static void WrpConCommand_Unregister(WrpConCommand * cmd);
 
 	static bool WrpConCommandsRegistrar_003_Register(SOURCESDK::ConCommandBase_003 *pVar);
 	static bool WrpConCommandsRegistrar_004_Register(SOURCESDK::ConCommandBase_004 *pVar);
-	static bool WrpConCommandsRegistrar_007_Register(SOURCESDK::ConCommandBase_007 *pVar);
+	static bool WrpConCommandsRegistrar_CSGO_Register(SOURCESDK::CSGO::ConCommandBase *pVar);
+	static bool WrpConCommandsRegistrar_SWARM_Register(SOURCESDK::SWARM::ConCommandBase *pVar);
 
 private:
 	static SOURCESDK::ICvar_003 * m_CvarIface_003;
 	static SOURCESDK::ICvar_004 * m_CvarIface_004;
-	static SOURCESDK::ICvar_007 * m_CvarIface_007;
+	static SOURCESDK::CSGO::ICvar * m_CvarIface_CSGO;
+	static SOURCESDK::SWARM::ICvar * m_CvarIface_SWARM;
 	static WrpConCommandsListEntry * m_CommandListRoot;
 	static SOURCESDK::IVEngineClient_012 * m_VEngineClient_012;
 };
@@ -154,6 +234,6 @@ public:
 	void SetDirectHack(float value);
 
 private:
-	SOURCESDK::ConVar_007 * m_pConVar007;
+	SOURCESDK::CSGO::ConVar * m_pConVar007;
 
 };

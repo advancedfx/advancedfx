@@ -72,7 +72,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>AFX_MIRV_PGL;IMGUI_DISABLE_OBSOLETE_FUNCTIONS;WIN32;_DEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>AFX_MIRV_PGL;IMGUI_DISABLE_OBSOLETE_FUNCTIONS;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -93,7 +93,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>AFX_MIRV_PGL;IMGUI_DISABLE_OBSOLETE_FUNCTIONS;WIN32;_DEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>AFX_MIRV_PGL;IMGUI_DISABLE_OBSOLETE_FUNCTIONS;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
@@ -113,7 +113,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>AFX_MIRV_PGL;IMGUI_DISABLE_OBSOLETE_FUNCTIONS;WIN32;NDEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>AFX_MIRV_PGL;IMGUI_DISABLE_OBSOLETE_FUNCTIONS;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <WarningLevel>Level3</WarningLevel>
@@ -136,7 +136,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>AFX_MIRV_PGL;IMGUI_DISABLE_OBSOLETE_FUNCTIONS;WIN32;NDEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>AFX_MIRV_PGL;IMGUI_DISABLE_OBSOLETE_FUNCTIONS;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <WarningLevel>Level3</WarningLevel>
@@ -155,9 +155,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier1\convar.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\cssV34\sdk_src\public\tools\bonelist.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\cssV34\sdk_src\tier1\keyvalues.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\SourceSdkShared.cpp" />
+    <ClCompile Include="..\prop\AfxHookSource\swarm\sdk_src\public\tier1\convar.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\tf2\sdk_src\tier1\KeyValues.cpp" />
     <ClCompile Include="..\prop\shared\AfxMath.cpp" />
@@ -194,7 +196,6 @@
     <ClCompile Include="csgo_CViewRender.cpp" />
     <ClCompile Include="csgo_c_baseanimatingoverlay.cpp" />
     <ClCompile Include="csgo_GetPlayerName.cpp" />
-    <ClCompile Include="csgo_MemAlloc.cpp" />
     <ClCompile Include="csgo_ScaleForm_Hooks.cpp" />
     <ClCompile Include="csgo_SndMixTimeScalePatch.cpp" />
     <ClCompile Include="csgo_Stdshader_dx9_Hooks.cpp" />
@@ -223,6 +224,12 @@
     <ClCompile Include="..\shared\StringTools.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\appframework\IAppSystem.h" />
+    <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\icvar.h" />
+    <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\interfaces\interfaces.h" />
+    <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier0\memalloc.h" />
+    <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier1\convar.h" />
+    <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier1\iconvar.h" />
     <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\basehandle.h" />
     <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\const.h" />
     <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\engine\ishadowmgr.h" />
@@ -234,6 +241,12 @@
     <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\tools\bonelist.h" />
     <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\vstdlib\ikeyvaluessystem.h" />
     <ClInclude Include="..\prop\AfxHookSource\SourceSdkShared.h" />
+    <ClInclude Include="..\prop\AfxHookSource\swarm\sdk_src\public\appframework\IAppSystem.h" />
+    <ClInclude Include="..\prop\AfxHookSource\swarm\sdk_src\public\icvar.h" />
+    <ClInclude Include="..\prop\AfxHookSource\swarm\sdk_src\public\interfaces\interfaces.h" />
+    <ClInclude Include="..\prop\AfxHookSource\swarm\sdk_src\public\tier0\memalloc.h" />
+    <ClInclude Include="..\prop\AfxHookSource\swarm\sdk_src\public\tier1\convar.h" />
+    <ClInclude Include="..\prop\AfxHookSource\swarm\sdk_src\public\tier1\iconvar.h" />
     <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\basehandle.h" />
     <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\const.h" />
     <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\engine\ishadowmgr.h" />
@@ -284,7 +297,6 @@
     <ClInclude Include="csgo_CViewRender.h" />
     <ClInclude Include="csgo_c_baseanimatingoverlay.h" />
     <ClInclude Include="csgo_GetPlayerName.h" />
-    <ClInclude Include="csgo_MemAlloc.h" />
     <ClInclude Include="csgo_ScaleForm_Hooks.h" />
     <ClInclude Include="csgo_SndMixTimeScalePatch.h" />
     <ClInclude Include="csgo_Stdshader_dx9_Hooks.h" />
