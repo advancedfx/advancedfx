@@ -6,6 +6,22 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.39.1</version>
+<time>2018-04-18T10:34Z</time>
+<changes>
+<change type="fixed">
+Fixed rmirv_cvar_unhide_all not working anymore in CS:GO.
+</change>
+</changes>
+<comments>
+Thanks to:<br />
+- https://github.com/PcDivision
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.39.0</version>
 <time>2018-04-16T22:00Z</time>
 <changes>
