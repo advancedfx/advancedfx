@@ -264,7 +264,7 @@ The HLAE Team:
 
 Current members:
 
-Dominik 'ripieces' Tugend
+Dominik 'dtugend' Tugend
 	Lead programmer.
 	Since March 2007.
 	http://dominik.matrixstorm.com/

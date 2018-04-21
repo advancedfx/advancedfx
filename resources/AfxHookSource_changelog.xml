@@ -6,11 +6,24 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.39.2</version>
+<time>2018-04-21T09:29Z</time>
+<changes>
+<change type="fixed">
+Adjusted to CS:GO update 4/20/18 (4/21/18 UTC, 1.36.3.2):<br />
+Fixed mirv_streams sound recording not working .
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.39.1</version>
 <time>2018-04-18T10:34Z</time>
 <changes>
 <change type="fixed">
-Fixed rmirv_cvar_unhide_all not working anymore in CS:GO.
+Fixed mirv_cvar_unhide_all not working anymore in CS:GO.
 </change>
 </changes>
 <comments>
