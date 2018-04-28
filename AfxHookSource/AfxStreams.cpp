@@ -2084,23 +2084,29 @@ void CAfxBaseFxStream::SetAction(CAction * & target, CAction * src)
 
 // CAfxBaseFxStream::CAfxBaseFxStreamContext ///////////////////////////////
 
-void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin(bool isRoot)
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin()
 {
-	m_Ctx = GetCurrentContext();
-	m_IsRootCtx = isRoot;
+	m_DrawingSkyBoxView = false;
+	m_CurrentEntityHandle = SOURCESDK_CSGO_INVALID_EHANDLE_INDEX;
 
+	m_Ctx = GetCurrentContext();
 	m_Ctx->Hook_set(this);
 
 	if (SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue())
 	{
-		m_Stream->InterLockIncrement(); // Increment for next context queue.
+		m_ChildContext = CAfxBaseFxStream::m_Shared.RequestStreamContext();
 
-		queue->QueueFunctor(new CQueueBeginFunctor(this));
+		m_ChildContext->m_IsRootCtx = false;
+		m_ChildContext->m_Stream = this->m_Stream;
+		m_ChildContext->m_OrgViewport = this->m_OrgViewport;
+
+		queue->QueueFunctor(new CQueueBeginFunctor(m_ChildContext));
 	}
 	else
 	{
 		// Is leaf context.
 
+		m_ChildContext = 0;
 		AfxD3D9PushOverrideState();
 	}
 }
@@ -2115,7 +2121,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd()
 
 	if (queue)
 	{
-		queue->QueueFunctor(new CQueueEndFunctor(this));
+		queue->QueueFunctor(new CQueueEndFunctor(m_ChildContext));
 	}
 	else
 	{
@@ -2124,20 +2130,20 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd()
 		AfxD3D9PopOverrideState();
 	}
 
-	m_Stream->InterLockDecrement();
-
 	if (!queue)
 	{
 		// Is leaf context.
 
+		m_Stream->InterLockDecrement();
 		m_Stream->Release();
-
-		CAfxBaseFxStream::m_Shared.ReturnStreamContext(this);
 	}
+
+	CAfxBaseFxStream::m_Shared.ReturnStreamContext(this);
 }
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderBegin(CAfxBaseFxStream * stream, SOURCESDK::vrect_t_csgo * orgViewport)
 {
+	m_IsRootCtx = true;
 	m_Stream = stream;
 	if (orgViewport)
 	{
@@ -2148,37 +2154,10 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderBegin(CAfxBaseFxStream * s
 		m_OrgViewport.height = m_OrgViewport.width = 0;
 	}
 
-
 	m_Stream->AddRef();
-	m_Stream->InterLockIncrement(); // Increment for next context queue.
+	m_Stream->InterLockIncrement();
 
-	/*
-	// Make potential proxyData -> entityHandle map for later use in MaterialHook:
-	
-	m_ProxyDataToEntityHandle.clear();
-
-	if (SOURCESDK::g_Entitylist_csgo)
-	{
-		int imax = SOURCESDK::g_Entitylist_csgo->GetHighestEntityIndex();
-
-		for (int i = 0; i <= imax; ++i)
-		{
-			if (SOURCESDK::IClientEntity_csgo * ce = SOURCESDK::g_Entitylist_csgo->GetClientEntity(i))
-			{
-				SOURCESDK::CSGO::CBaseHandle handle = ce->GetRefEHandle();
-
-				m_ProxyDataToEntityHandle[ce] = handle;
-			}
-		}
-	}
-	*/
-
-	// Set up other inital queue state:
-
-	m_QueueState->DrawingSkyBoxView = false;
-	m_QueueState->CurrentEntityHandle = SOURCESDK_CSGO_INVALID_EHANDLE_INDEX;
-
-	QueueBegin(true);
+	QueueBegin();
 }
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderEnd(void)
@@ -2188,8 +2167,9 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderEnd(void)
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueFunctorInternal(IAfxCallQueue * aq, SOURCESDK::CSGO::CFunctor *pFunctor)
 {
+	this->IfRootThenUpdateCurrentEntityHandle();
 	aq->GetParent()->QueueFunctor(new CAfxLeafExecute_Functor(new CAfxD3D9PushOverrideState_Functor));
-	aq->GetParent()->QueueFunctor(new CQueueInternalWrapFunctor(this, pFunctor));
+	aq->GetParent()->QueueFunctor(pFunctor);
 	aq->GetParent()->QueueFunctor(new CAfxLeafExecute_Functor(new CAfxD3D9PopOverrideState_Functor));
 }
 
@@ -2206,7 +2186,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 	{
 		// Bubble into child contexts:
 
-		queue->QueueFunctor(new CDrawingHudBeginFunctor(this));
+		queue->QueueFunctor(new CDrawingHudBeginFunctor(this->m_ChildContext));
 	}
 	else
 	{
@@ -2228,12 +2208,34 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewBegin(void)
 {
-	m_QueueState->DrawingSkyBoxView = true;
+	m_DrawingSkyBoxView = true;
+
+	if (SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue())
+	{
+		// Bubble into child contexts:
+
+		queue->QueueFunctor(new CDrawingSkyBoxViewBeginFunctor(this->m_ChildContext));
+	}
+	else
+	{
+		// Leaf context
+	}
 }
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 {
-	m_QueueState->DrawingSkyBoxView = false;
+	if (SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue())
+	{
+		// Bubble into child contexts:
+
+		queue->QueueFunctor(new CDrawingSkyBoxViewEndFunctor(this->m_ChildContext));
+	}
+	else
+	{
+		// Leaf context
+	}
+
+	m_DrawingSkyBoxView = false;
 }
 
 bool Pt_Inside(int x, int y, SOURCESDK::vrect_t_csgo * rect)
@@ -2267,6 +2269,22 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::Viewport(int x, int y, int width
 }
 */
 
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::UpdateCurrentEntityHandle(SOURCESDK::CSGO::CBaseHandle handle)
+{
+	m_CurrentEntityHandle = handle;
+
+	if (SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue())
+	{
+		// Bubble into child contexts:
+
+		queue->QueueFunctor(new CUpdateCurrentEnitityHandleFunctor(this->m_ChildContext, handle));
+	}
+	else
+	{
+		// Leaf context
+	}
+}
+
 bool CAfxBaseFxStream::CAfxBaseFxStreamContext::IfRootThenUpdateCurrentEntityHandle()
 {
 	if (m_IsRootCtx)
@@ -2281,7 +2299,8 @@ bool CAfxBaseFxStream::CAfxBaseFxStreamContext::IfRootThenUpdateCurrentEntityHan
 			}
 		}
 
-		m_QueueState->CurrentEntityHandle.AfxAssign(handle);
+		if(handle != m_CurrentEntityHandle)
+			UpdateCurrentEntityHandle(handle);
 		
 		return true;
 	}
@@ -2316,7 +2335,7 @@ SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::MaterialH
 
 		CAction * action = m_Stream->RetrieveAction(
 			trackedMaterial,
-			m_QueueState->CurrentEntityHandle
+			m_CurrentEntityHandle
 		);
 
 		BindAction(action);
@@ -2379,25 +2398,11 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::SetPixelShader(CAfx_csgo_ShaderS
 }
 #endif
 
-// CAfxBaseFxStream::CAfxBaseFxStreamContext::CQueueInternalWrapFunctor ////////
-
-void CAfxBaseFxStream::CAfxBaseFxStreamContext::CQueueInternalWrapFunctor::operator()()
-{
-	QueueState_s * parentQueueState = m_StreamContext->m_QueueState;
-
-	m_StreamContext->m_QueueState = &m_QueueState;
-
-	(*m_Functor)();
-	m_Functor->Release();
-
-	m_StreamContext->m_QueueState = parentQueueState;
-}
-
 // CAfxBaseFxStream::CAfxBaseFxStreamContext::CQueueBeginFunctor ///////////////
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::CQueueBeginFunctor::operator()()
 {
-	m_StreamContext->QueueBegin(false);
+	m_StreamContext->QueueBegin();
 }
 
 // CAfxBaseFxStream::CAfxBaseFxStreamContext::CQueueEndFunctor /////////////////

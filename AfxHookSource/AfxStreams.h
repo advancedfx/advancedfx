@@ -1738,12 +1738,10 @@ private:
 		CAfxBaseFxStreamContext()
 			: m_CurrentAction(0)
 		{
-			m_QueueState = new QueueState_s();
 		}
 
 		~CAfxBaseFxStreamContext()
 		{
-			delete m_QueueState;
 		}
 
 		CAfxBaseFxStream * GetStream()
@@ -1758,7 +1756,7 @@ private:
 
 		bool DrawingSkyBoxView_get(void)
 		{
-			return m_QueueState->DrawingSkyBoxView;
+			return m_DrawingSkyBoxView;
 		}
 
 		void RenderBegin(CAfxBaseFxStream * stream, SOURCESDK::vrect_t_csgo * orgViewport = 0);
@@ -1797,37 +1795,8 @@ private:
 #endif
 
 	private:
-		struct QueueState_s {
-			bool DrawingSkyBoxView;
-			SOURCESDK::CSGO::CBaseHandle CurrentEntityHandle;
-		};
-
-		class CQueueInternalWrapFunctor
-			: public CAfxFunctor
-		{
-		public:
-			CQueueInternalWrapFunctor(CAfxBaseFxStreamContext * streamContext, SOURCESDK::CSGO::CFunctor * pFunctor)
-				: m_StreamContext(streamContext)
-				, m_Functor(pFunctor)
-			{
-				m_StreamContext->IfRootThenUpdateCurrentEntityHandle();
-
-				m_QueueState = *(m_StreamContext->m_QueueState);
-			}
-
-			virtual void operator()();
-
-		protected:
-			virtual ~CQueueInternalWrapFunctor()
-			{
-
-			}
-		
-		private:
-			CAfxBaseFxStreamContext * m_StreamContext;
-			SOURCESDK::CSGO::CFunctor * m_Functor;
-			QueueState_s m_QueueState;
-		};
+		bool m_DrawingSkyBoxView;
+		SOURCESDK::CSGO::CBaseHandle m_CurrentEntityHandle;
 
 		class CQueueBeginFunctor
 			: public CAfxFunctor
@@ -1913,15 +1882,35 @@ private:
 			CAfxBaseFxStreamContext * m_StreamContext;
 		};
 
-		QueueState_s * m_QueueState;
+		class CUpdateCurrentEnitityHandleFunctor
+			: public CAfxFunctor
+		{
+		public:
+			CUpdateCurrentEnitityHandleFunctor(CAfxBaseFxStreamContext * streamContext, SOURCESDK::CSGO::CBaseHandle handle)
+				: m_StreamContext(streamContext)
+				, m_Handle(handle)
+			{
+			}
+
+			virtual void operator()()
+			{
+				m_StreamContext->UpdateCurrentEntityHandle(m_Handle);
+			}
+
+		private:
+			CAfxBaseFxStreamContext * m_StreamContext;
+			SOURCESDK::CSGO::CBaseHandle m_Handle;
+		};
+
 		CAfxBaseFxStream * m_Stream;
 		IAfxMatRenderContext * m_Ctx = 0;
+		CAfxBaseFxStreamContext * m_ChildContext;
 		bool m_IsRootCtx;
 		CAfxBaseFxStream::CAction * m_CurrentAction;
 		//std::map<void *, SOURCESDK::CSGO::CBaseHandle> m_ProxyDataToEntityHandle;
 		SOURCESDK::vrect_t_csgo m_OrgViewport;
 
-		void QueueBegin(bool isRoot);
+		void QueueBegin();
 		void QueueEnd();
 
 		void BindAction(CAction * action)
@@ -1939,6 +1928,8 @@ private:
 		}
 
 		bool IfRootThenUpdateCurrentEntityHandle();
+
+		void UpdateCurrentEntityHandle(SOURCESDK::CSGO::CBaseHandle handle);
 	};
 
 	CAfxBaseFxStreamContext * m_ActiveStreamContext;
