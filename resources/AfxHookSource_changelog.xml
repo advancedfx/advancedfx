@@ -6,6 +6,19 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.39.4</version>
+<time>2018-05-01T06:31Z</time>
+<changes>
+<change type="fixed">
+Adjusted to CS:GO update 4/30/18 (5/1/18 UTC, 1.36.3.3):<br />
+Fixed error in addresses.cpp / mirv_streams sound recording not working .
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.39.3</version>
 <time>2018-04-28T10:40Z</time>
 <changes>
