@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.39.5</version>
+<time>2018-05-4T13:38Z</time>
+<changes>
+<change type="fixed">
+Fixed smoke overlay alpha factor state problems caused by HLAE (mostly had an impact on FPS inside smokes when using HLAE live).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.39.4</version>
 <time>2018-05-01T06:31Z</time>
 <changes>

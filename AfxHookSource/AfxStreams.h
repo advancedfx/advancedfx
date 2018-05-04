@@ -2702,8 +2702,6 @@ private:
 	bool m_RecordVoices;
 	bool m_RecordVoicesUsed;
 
-	bool m_OnRenderViewFirstCall;
-
 	SOURCESDK::IMaterialSystem_csgo * m_MaterialSystem;
 	IAfxBaseClientDll * m_AfxBaseClientDll;
 	SOURCESDK::IShaderShadow_csgo * m_ShaderShadow;

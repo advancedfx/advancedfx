@@ -4758,22 +4758,12 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 {
 	smokeOverlayAlphaFactorMultiplyer = 1;
 
-	if (m_OnRenderViewFirstCall)
+	if(m_FirstRenderAfterLevelInit)
 	{
-		m_OnRenderViewFirstCall = false;
+		// HACK: Rendering streams during map load will crash things, so don't do that.
 
-		if(m_FirstRenderAfterLevelInit)
-		{
-			// HACK: Rendering streams during map load will crash things, so don't do that.
+		m_FirstRenderAfterLevelInit = false;
 
-			m_FirstRenderAfterLevelInit = false;
-
-			fn(this_ptr, view, hudViewSetup, nClearFlags, whatToDraw);
-			return;
-		}
-	}
-	else
-	{
 		fn(this_ptr, view, hudViewSetup, nClearFlags, whatToDraw);
 		return;
 	}
@@ -7100,8 +7090,6 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 	SetCurrent_View_Render_ThreadId(GetCurrentThreadId());
 
 	//GetCsgoCGlowOverlayFix()->OnMainViewRenderBegin();
-
-	m_OnRenderViewFirstCall = true;
 
 	cl->GetParent()->View_Render(rect);
 
