@@ -2169,7 +2169,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueFunctorInternal(IAfxCallQue
 {
 	this->IfRootThenUpdateCurrentEntityHandle();
 	aq->GetParent()->QueueFunctor(new CAfxLeafExecute_Functor(new CAfxD3D9PushOverrideState_Functor));
-	aq->GetParent()->QueueFunctor(pFunctor);
+	aq->GetParent()->QueueFunctorInternal(pFunctor);
 	aq->GetParent()->QueueFunctor(new CAfxLeafExecute_Functor(new CAfxD3D9PopOverrideState_Functor));
 }
 

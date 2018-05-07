@@ -6,8 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.39.6</version>
+<time>2018-05-07T14:35Z</time>
+<changes>
+<change type="fixed">
+Fixed engine memory (functor) leak in mirv_streams baseFx based streams cause by HLAE.
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.39.5</version>
-<time>2018-05-4T13:38Z</time>
+<time>2018-05-04T13:38Z</time>
 <changes>
 <change type="fixed">
 Fixed smoke overlay alpha factor state problems caused by HLAE (mostly had an impact on FPS inside smokes when using HLAE live).
