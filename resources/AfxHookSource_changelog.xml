@@ -10,7 +10,7 @@
 <time>2018-05-07T14:35Z</time>
 <changes>
 <change type="fixed">
-Fixed engine memory (functor) leak in mirv_streams baseFx based streams cause by HLAE.
+Fixed engine memory (functor) leak in mirv_streams baseFx based streams caused by HLAE.
 </change>
 </changes>
 </release>
