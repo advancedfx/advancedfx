@@ -23,6 +23,8 @@ public:
 
 	void ApplyOffset(float & x, float & y, float & z, float & xRotation, float & yRotation, float & zRotation);
 
+	void ApplyFov(float & fov);
+
 public:
 	SOURCESDK::CSGO::CBaseHandle m_SourceHandle;
 	Origin_e m_SourceOrigin = O_View;
@@ -61,9 +63,21 @@ public:
 		if (m_Source) m_Source->AddRef();
 	}
 
+	IMirvFovCalc * Fov_get(void)
+	{
+		return m_Fov;
+	}
+
+	void Fov_set(IMirvFovCalc * value)
+	{
+		if (m_Fov) m_Fov->Release();
+		m_Fov = value;
+		if (m_Fov) m_Fov->AddRef();
+	}
+
 private:
 	IMirvVecAngCalc * m_Source = 0;
-
+	IMirvFovCalc * m_Fov = 0;
 };
 
 extern CMirvCam g_MirvCam;

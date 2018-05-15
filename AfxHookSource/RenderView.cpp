@@ -164,6 +164,14 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 {
 	float curTime = GetCurTime();
 
+	GameCameraOrigin[0] = Tx;
+	GameCameraOrigin[1] = Ty;
+	GameCameraOrigin[2] = Tz;
+	GameCameraAngles[0] = Rx;
+	GameCameraAngles[1] = Ry;
+	GameCameraAngles[2] = Rz;
+	GameCameraFov = Fov;
+
 	g_MirvCam.ApplySource(Tx, Ty, Tz, Rz, Rx, Ry);
 
 	if(m_CamPath.Enabled_get() && m_CamPath.CanEval())
@@ -275,6 +283,8 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 	}
 
 	g_MirvCam.ApplyOffset(Tx, Ty, Tz, Rz, Rx, Ry);
+
+	g_MirvCam.ApplyFov(Fov);
 
 	if(m_Export) {
 		g_BvhExport->WriteFrame(

@@ -6,6 +6,7 @@
 #include "WrpConsole.h"
 #include "RenderView.h"
 #include "addresses.h"
+#include "CamIO.h"
 
 #include <shared/StringTools.h>
 #include <ctype.h>
@@ -14,6 +15,8 @@ extern WrpVEngineClient * g_VEngineClient;
 
 CMirvHandleCalcs g_MirvHandleCalcs;
 CMirvVecAngCalcs g_MirvVecAngCalcs;
+CMirvCamCalcs g_MirvCamCalcs;
+CMirvFovCalcs g_MirvFovCalcs;
 
 class CMirvCalc
 {
@@ -54,7 +57,7 @@ public:
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
 	{
-		Tier0_Msg("No editable options.");
+		Tier0_Msg("No editable options.\n");
 	}
 
 protected:
@@ -499,6 +502,96 @@ public:
 };
 
 
+class CMirvCamCalc : public CMirvCalc, public IMirvCamCalc
+{
+public:
+	CMirvCamCalc(char const * name)
+		: CMirvCalc(name)
+	{
+
+	}
+
+	virtual void AddRef(void)
+	{
+		CMirvCalc::AddRef();
+	}
+
+	virtual void Release(void)
+	{
+		CMirvCalc::Release();
+	}
+
+	virtual int GetRefCount(void)
+	{
+		return CMirvCalc::GetRefCount();
+	}
+
+	virtual  char const * GetName(void)
+	{
+		return CMirvCalc::GetName();
+	}
+
+	virtual void Console_Print(void)
+	{
+		CMirvCalc::Console_Print();
+	}
+
+	virtual bool CalcFov(float & outFov)
+	{
+		return false;
+	}
+
+	virtual void Console_Edit(IWrpCommandArgs * args)
+	{
+		CMirvCalc::Console_Edit(args);
+	}
+};
+
+class CMirvFovCalc : public CMirvCalc, public IMirvFovCalc
+{
+public:
+	CMirvFovCalc(char const * name)
+		: CMirvCalc(name)
+	{
+
+	}
+
+	virtual void AddRef(void)
+	{
+		CMirvCalc::AddRef();
+	}
+
+	virtual void Release(void)
+	{
+		CMirvCalc::Release();
+	}
+
+	virtual int GetRefCount(void)
+	{
+		return CMirvCalc::GetRefCount();
+	}
+
+	virtual  char const * GetName(void)
+	{
+		return CMirvCalc::GetName();
+	}
+
+	virtual void Console_Print(void)
+	{
+		CMirvCalc::Console_Print();
+	}
+
+	virtual bool CalcFov(float & outFov)
+	{
+		return false;
+	}
+
+	virtual void Console_Edit(IWrpCommandArgs * args)
+	{
+		CMirvCalc::Console_Edit(args);
+	}
+};
+
 class CMirvVecAngValueCalc : public CMirvVecAngCalc
 {
 public:
@@ -771,7 +864,7 @@ public:
 	}
 
 protected:
-	~CMirvVecAngOffsetCalc()
+	virtual ~CMirvVecAngOffsetCalc()
 	{
 		m_Offset->Release();
 		m_Parent->Release();
@@ -871,7 +964,7 @@ public:
 	}
 
 protected:
-	~CMirvVecAngHandleCalcEx()
+	virtual ~CMirvVecAngHandleCalcEx()
 	{
 		m_Handle->Release();
 	}
@@ -952,7 +1045,7 @@ public:
 	}
 
 protected:
-	~CMirvVecAngHandleAttachmentCalc()
+	virtual ~CMirvVecAngHandleAttachmentCalc()
 	{
 		m_Handle->Release();
 	}
@@ -991,7 +1084,7 @@ public:
 	}
 
 protected:
-	~CMirvVecAngIfCalc()
+	virtual ~CMirvVecAngIfCalc()
 	{
 		m_CondFalse->Release();
 		m_CondTrue->Release();
@@ -1030,7 +1123,7 @@ public:
 	}
 
 protected:
-	~CMirvVecAngOrCalc()
+	virtual ~CMirvVecAngOrCalc()
 	{
 		m_B->Release();
 		m_A->Release();
@@ -1041,6 +1134,235 @@ private:
 	IMirvVecAngCalc * m_B;
 };
 
+class CMirvCamCamCalc : public CMirvCamCalc
+{
+public:
+	CMirvCamCamCalc(char const * name, const char * camFileName, const char * startClientTime)
+		: CMirvCamCalc(name)
+		, m_CamFileName(camFileName)
+		, m_StartClientTime(StartClientTimeFromString(startClientTime))
+	{
+		m_CamImport = new CamImport(m_CamFileName.c_str(), m_StartClientTime);
+	}
+
+	virtual void Console_Print(void)
+	{
+		CMirvCamCalc::Console_Print();
+
+		Tier0_Msg(" type=cam camFileName=\"%s\" startClientTime=%f", m_CamFileName.c_str(), m_StartClientTime);
+	}
+
+	virtual void Console_Edit(IWrpCommandArgs * args)
+	{
+		int argc = args->ArgC();
+		char const * arg0 = args->ArgV(0);
+
+		if (2 <= argc)
+		{
+			char const * arg1 = args->ArgV(1);
+
+			if (0 == _stricmp("filePath", arg1))
+			{
+				if (3 <= argc)
+				{
+					m_CamFileName = args->ArgV(2);
+					delete m_CamImport;
+					m_CamImport = new CamImport(m_CamFileName.c_str(), m_StartClientTime);
+					return;
+				}
+
+				Tier0_Msg(
+					"%s filePath <sFilePath> - Set mirv_camio input file name / path.\n"
+					"Current value: %s\n"
+					, arg0
+					, m_CamFileName.c_str()
+				);
+				return;
+			}
+			else if (0 == _stricmp("startTime", arg1))
+			{
+				if (3 <= argc)
+				{
+					m_StartClientTime = StartClientTimeFromString(args->ArgV(2));
+					m_CamImport->SetStart(m_StartClientTime);
+					return;
+				}
+
+				Tier0_Msg(
+					"%s startTime <fStartTime>|current - Set mirv_camio input file name / path.\n"
+					"Current value: %f\n"
+					, arg0
+					, m_StartClientTime
+				);
+				return;
+			}
+		}
+
+		Tier0_Msg(
+			"%s filePath [...]\n"
+			"%s startTime [...]\n"
+			, arg0
+			, arg0
+		);
+	}
+
+	virtual bool CalcCam(SOURCESDK::Vector & outVector, SOURCESDK::QAngle & outAngles, float & outFov)
+	{
+		CamIO::CamData outCamData;
+
+		if (m_CamImport->GetCamData(g_Hook_VClient_RenderView.GetCurTime(), g_Hook_VClient_RenderView.LastWidth, g_Hook_VClient_RenderView.LastHeight, outCamData))
+		{
+			outVector.x = (float)outCamData.XPosition;
+			outVector.y = (float)outCamData.YPosition;
+			outVector.z = (float)outCamData.ZPosition;
+			outAngles.x = (float)outCamData.YRotation;
+			outAngles.y = (float)outCamData.ZRotation;
+			outAngles.z = (float)outCamData.XRotation;
+			outFov = (float)outCamData.Fov;
+
+			return true;
+		}
+
+		return false;
+	}
+
+protected:
+	virtual ~CMirvCamCamCalc()
+	{
+		delete m_CamImport;
+	}
+
+private:
+	CamImport * m_CamImport;
+	std::string m_CamFileName;
+	double m_StartClientTime;
+
+	double StartClientTimeFromString(const char * startClientTime)
+	{
+		return 0 == _stricmp(startClientTime, "current") ? g_Hook_VClient_RenderView.GetCurTime() : atof(startClientTime);
+	}
+};
+
+class CMirvCamGameCalc : public CMirvCamCalc
+{
+public:
+	CMirvCamGameCalc(char const * name)
+		: CMirvCamCalc(name)
+	{
+	}
+
+	virtual void Console_Print(void)
+	{
+		CMirvCamCalc::Console_Print();
+
+		Tier0_Msg(" type=game");
+	}
+
+	virtual void Console_Edit(IWrpCommandArgs * args)
+	{
+		CMirvCamCalc::Console_Edit(args);
+	}
+
+	virtual bool CalcCam(SOURCESDK::Vector & outVector, SOURCESDK::QAngle & outAngles, float & outFov)
+	{
+		outVector.x = g_Hook_VClient_RenderView.GameCameraOrigin[0];
+		outVector.y = g_Hook_VClient_RenderView.GameCameraOrigin[1];
+		outVector.z = g_Hook_VClient_RenderView.GameCameraOrigin[2];
+		outAngles.x = g_Hook_VClient_RenderView.GameCameraAngles[0];
+		outAngles.y = g_Hook_VClient_RenderView.GameCameraAngles[1];
+		outAngles.z = g_Hook_VClient_RenderView.GameCameraAngles[2];
+		outFov = g_Hook_VClient_RenderView.GameCameraFov;
+
+		return true;
+	}
+
+protected:
+	virtual ~CMirvCamGameCalc()
+	{
+	}
+
+private:
+
+};
+
+class CMirvVecAngCamCalc : public CMirvVecAngCalc
+{
+public:
+	CMirvVecAngCamCalc(char const * name, IMirvCamCalc * cam)
+		: CMirvVecAngCalc(name)
+		, m_Cam(cam)
+	{
+		m_Cam->AddRef();
+	}
+
+	virtual void Console_Print(void)
+	{
+		CMirvVecAngCalc::Console_Print();
+
+		Tier0_Msg(" type=cam cam=\"%s\"", m_Cam->GetName());
+	}
+
+	virtual void Console_Edit(IWrpCommandArgs * args)
+	{
+		CMirvVecAngCalc::Console_Edit(args);
+	}
+
+	virtual bool CalcVecAng(SOURCESDK::Vector & outVector, SOURCESDK::QAngle & outAngles)
+	{
+		float dummyFov;
+
+		return m_Cam->CalcCam(outVector, outAngles, dummyFov);
+	}
+
+protected:
+	virtual ~CMirvVecAngCamCalc()
+	{
+		m_Cam->Release();
+	}
+
+private:
+	IMirvCamCalc * m_Cam;
+};
+
+class CMirvFovCamCalc : public CMirvFovCalc
+{
+public:
+	CMirvFovCamCalc(char const * name, IMirvCamCalc * cam)
+		: CMirvFovCalc(name)
+		, m_Cam(cam)
+	{
+		m_Cam->AddRef();
+	}
+
+	virtual void Console_Print(void)
+	{
+		CMirvFovCalc::Console_Print();
+
+		Tier0_Msg(" type=cam cam=\"%s\"", m_Cam->GetName());
+	}
+
+	virtual void Console_Edit(IWrpCommandArgs * args)
+	{
+		CMirvFovCalc::Console_Edit(args);
+	}
+
+	virtual bool CalcFov(float & outFov)
+	{
+		SOURCESDK::Vector dummyVector;
+		SOURCESDK::QAngle dummyAngles;
+
+		return m_Cam->CalcCam(dummyVector, dummyAngles, outFov);
+	}
+
+protected:
+	virtual ~CMirvFovCamCalc()
+	{
+		m_Cam->Release();
+	}
+
+private:
+	IMirvCamCalc * m_Cam;
+};
 
 class CMirvBoolCalc : public CMirvCalc, public IMirvBoolCalc
 {
@@ -1112,7 +1434,7 @@ public:
 	}
 
 protected:
-	~CMirvBoolHandleCalc()
+	virtual ~CMirvBoolHandleCalc()
 	{
 		m_Handle->Release();
 	}
@@ -1147,7 +1469,7 @@ public:
 	}
 
 protected:
-	~CMirvBoolVecAngCalc()
+	virtual ~CMirvBoolVecAngCalc()
 	{
 		m_VecAng->Release();
 	}
@@ -1468,6 +1790,23 @@ IMirvVecAngCalc * CMirvVecAngCalcs::NewOrCalc(char const * name, IMirvVecAngCalc
 	return result;
 }
 
+IMirvVecAngCalc * CMirvVecAngCalcs::NewCamCalc(char const * name, IMirvCamCalc * src)
+{
+	if (name && !Console_CheckName(name))
+		return 0;
+
+	IMirvVecAngCalc * result = new CMirvVecAngCamCalc(name, src);
+
+	if (name)
+	{
+		result->AddRef();
+
+		m_Calcs.push_back(result);
+	}
+
+	return result;
+}
+
 void CMirvVecAngCalcs::Console_Remove(char const * name)
 {
 	std::list<IMirvVecAngCalc *>::iterator it;
@@ -1534,6 +1873,232 @@ void CMirvVecAngCalcs::GetIteratorByName(char const * name, std::list<IMirvVecAn
 	}
 }
 
+
+
+CMirvCamCalcs::~CMirvCamCalcs()
+{
+	for (std::list<IMirvCamCalc *>::iterator it = m_Calcs.begin(); it != m_Calcs.end(); ++it)
+	{
+		(*it)->Release();
+	}
+}
+
+IMirvCamCalc * CMirvCamCalcs::GetByName(char const * name)
+{
+	std::list<IMirvCamCalc *>::iterator it;
+	GetIteratorByName(name, it);
+	if (it != m_Calcs.end())
+	{
+		return *it;
+	}
+
+	return 0;
+}
+
+IMirvCamCalc * CMirvCamCalcs::NewCamCalc(char const * name, const char * camFileName, const char * startClientTime)
+{
+	if (name && !Console_CheckName(name))
+		return 0;
+
+	IMirvCamCalc * result = new CMirvCamCamCalc(name, camFileName, startClientTime);
+
+	if (name)
+	{
+		result->AddRef();
+
+		m_Calcs.push_back(result);
+	}
+
+	return result;
+}
+
+IMirvCamCalc * CMirvCamCalcs::NewGameCalc(char const * name)
+{
+	if (name && !Console_CheckName(name))
+		return 0;
+
+	IMirvCamCalc * result = new CMirvCamGameCalc(name);
+
+	if (name)
+	{
+		result->AddRef();
+
+		m_Calcs.push_back(result);
+	}
+
+	return result;
+}
+
+
+void CMirvCamCalcs::Console_Remove(char const * name)
+{
+	std::list<IMirvCamCalc *>::iterator it;
+	GetIteratorByName(name, it);
+	if (it != m_Calcs.end())
+	{
+		if (1 == (*it)->GetRefCount())
+		{
+			(*it)->Release();
+			m_Calcs.erase(it);
+		}
+		else
+			Tier0_Warning("Error: Cannot remove %s: Still in use.\n", (*it)->GetName());
+	}
+	else
+	{
+		Tier0_Warning("Error: No Calc named \"%s\" found.\n", name);
+	}
+}
+
+bool CMirvCamCalcs::Console_CheckName(char const * name)
+{
+	if (!name)
+	{
+		Tier0_Warning("Error: Name cannot be null pointer.\n");
+		return false;
+	}
+
+	if (!isalpha(*name))
+	{
+		Tier0_Warning("Error: Name has to begin with an alphabet letter.\n");
+		return false;
+	}
+
+	if (!StringIsAlNum(name))
+	{
+		Tier0_Warning("Error: Name has to be alpha-numeric (letters and digits).\n");
+		return false;
+	}
+
+	if (GetByName(name))
+	{
+		Tier0_Warning("Error: Name is already in use.\n");
+		return false;
+	}
+
+	return true;
+}
+
+void CMirvCamCalcs::Console_Print(void)
+{
+	for (std::list<IMirvCamCalc *>::iterator it = m_Calcs.begin(); it != m_Calcs.end(); ++it)
+	{
+		(*it)->Console_Print(); Tier0_Msg(";\n");
+	}
+}
+
+void CMirvCamCalcs::GetIteratorByName(char const * name, std::list<IMirvCamCalc *>::iterator & outIt)
+{
+	for (outIt = m_Calcs.begin(); outIt != m_Calcs.end(); ++outIt)
+	{
+		if (0 == _stricmp(name, (*outIt)->GetName()))
+			break;
+	}
+}
+
+
+CMirvFovCalcs::~CMirvFovCalcs()
+{
+	for (std::list<IMirvFovCalc *>::iterator it = m_Calcs.begin(); it != m_Calcs.end(); ++it)
+	{
+		(*it)->Release();
+	}
+}
+
+IMirvFovCalc * CMirvFovCalcs::GetByName(char const * name)
+{
+	std::list<IMirvFovCalc *>::iterator it;
+	GetIteratorByName(name, it);
+	if (it != m_Calcs.end())
+	{
+		return *it;
+	}
+
+	return 0;
+}
+
+IMirvFovCalc * CMirvFovCalcs::NewCamCalc(char const * name, IMirvCamCalc * src)
+{
+	if (name && !Console_CheckName(name))
+		return 0;
+
+	IMirvFovCalc * result = new CMirvFovCamCalc(name, src);
+
+	if (name)
+	{
+		result->AddRef();
+
+		m_Calcs.push_back(result);
+	}
+
+	return result;
+}
+
+void CMirvFovCalcs::Console_Remove(char const * name)
+{
+	std::list<IMirvFovCalc *>::iterator it;
+	GetIteratorByName(name, it);
+	if (it != m_Calcs.end())
+	{
+		if (1 == (*it)->GetRefCount())
+		{
+			(*it)->Release();
+			m_Calcs.erase(it);
+		}
+		else
+			Tier0_Warning("Error: Cannot remove %s: Still in use.\n", (*it)->GetName());
+	}
+	else
+	{
+		Tier0_Warning("Error: No Calc named \"%s\" found.\n", name);
+	}
+}
+
+bool CMirvFovCalcs::Console_CheckName(char const * name)
+{
+	if (!name)
+	{
+		Tier0_Warning("Error: Name cannot be null pointer.\n");
+		return false;
+	}
+
+	if (!isalpha(*name))
+	{
+		Tier0_Warning("Error: Name has to begin with an alphabet letter.\n");
+		return false;
+	}
+
+	if (!StringIsAlNum(name))
+	{
+		Tier0_Warning("Error: Name has to be alpha-numeric (letters and digits).\n");
+		return false;
+	}
+
+	if (GetByName(name))
+	{
+		Tier0_Warning("Error: Name is already in use.\n");
+		return false;
+	}
+
+	return true;
+}
+
+void CMirvFovCalcs::Console_Print(void)
+{
+	for (std::list<IMirvFovCalc *>::iterator it = m_Calcs.begin(); it != m_Calcs.end(); ++it)
+	{
+		(*it)->Console_Print(); Tier0_Msg(";\n");
+	}
+}
+
+void CMirvFovCalcs::GetIteratorByName(char const * name, std::list<IMirvFovCalc *>::iterator & outIt)
+{
+	for (outIt = m_Calcs.begin(); outIt != m_Calcs.end(); ++outIt)
+	{
+		if (0 == _stricmp(name, (*outIt)->GetName()))
+			break;
+	}
+}
 
 
 CMirvBoolCalcs::~CMirvBoolCalcs()
@@ -1751,7 +2316,7 @@ void mirv_calcs_handle(IWrpCommandArgs * args)
 					if (parentCalc)
 						g_MirvHandleCalcs.NewActiveWeaponCalc(args->ArgV(3), parentCalc, 0 != atoi(args->ArgV(5)));
 					else
-						Tier0_Warning("Error: No handle calc with name \"%s\" found.", parentCalcName);
+						Tier0_Warning("Error: No handle calc with name \"%s\" found.\n", parentCalcName);
 
 					return;
 				}
@@ -1798,7 +2363,7 @@ void mirv_calcs_handle(IWrpCommandArgs * args)
 					Tier0_Msg("\nResult: false\n");
 			}
 			else
-				Tier0_Warning("Error: No calc with name \"%s\" found.", parentCalcName);
+				Tier0_Warning("Error: No calc with name \"%s\" found.\n", parentCalcName);
 
 			return;
 		}
@@ -1815,7 +2380,7 @@ void mirv_calcs_handle(IWrpCommandArgs * args)
 				return;
 			}
 			else
-				Tier0_Warning("Error: No calc with name \"%s\" found.", parentCalcName);
+				Tier0_Warning("Error: No calc with name \"%s\" found.\n", parentCalcName);
 
 			return;
 		}
@@ -1871,10 +2436,10 @@ void mirv_calcs_vecang(IWrpCommandArgs * args)
 							g_MirvVecAngCalcs.NewOffsetCalc(args->ArgV(3), calcA, calcB, 0 != atoi(args->ArgV(6)));
 						}
 						else
-							Tier0_Warning("Error: No handle parent with name \"%s\" found.", calcBName);
+							Tier0_Warning("Error: No handle parent with name \"%s\" found.\n", calcBName);
 					}
 					else
-						Tier0_Warning("Error: No handle offset with name \"%s\" found.", calcAName);
+						Tier0_Warning("Error: No handle offset with name \"%s\" found.\n", calcAName);
 
 					return;
 				}
@@ -1887,7 +2452,7 @@ void mirv_calcs_vecang(IWrpCommandArgs * args)
 					if (parentCalc)
 						g_MirvVecAngCalcs.NewHandleCalc(args->ArgV(3), parentCalc);
 					else
-						Tier0_Warning("Error: No handle calc with name \"%s\" found.", parentCalcName);
+						Tier0_Warning("Error: No handle calc with name \"%s\" found.\n", parentCalcName);
 
 					return;
 				}
@@ -1900,7 +2465,7 @@ void mirv_calcs_vecang(IWrpCommandArgs * args)
 					if (parentCalc)
 						g_MirvVecAngCalcs.NewHandleEyeCalc(args->ArgV(3), parentCalc);
 					else
-						Tier0_Warning("Error: No handle calc with name \"%s\" found.", parentCalcName);
+						Tier0_Warning("Error: No handle calc with name \"%s\" found.\n", parentCalcName);
 
 					return;
 				}
@@ -1913,7 +2478,7 @@ void mirv_calcs_vecang(IWrpCommandArgs * args)
 					if (parentCalc)
 						g_MirvVecAngCalcs.NewHandleAttachmentCalc(args->ArgV(3), parentCalc, args->ArgV(5));
 					else
-						Tier0_Warning("Error: No handle calc with name \"%s\" found.", parentCalcName);
+						Tier0_Warning("Error: No handle calc with name \"%s\" found.\n", parentCalcName);
 
 					return;
 				}
@@ -1932,10 +2497,23 @@ void mirv_calcs_vecang(IWrpCommandArgs * args)
 							g_MirvVecAngCalcs.NewOrCalc(args->ArgV(3), calcA, calcB);
 						}
 						else
-							Tier0_Warning("Error: No handle calcB with name \"%s\" found.", calcBName);
+							Tier0_Warning("Error: No handle calcB with name \"%s\" found.\n", calcBName);
 					}
 					else
-						Tier0_Warning("Error: No handle calcA with name \"%s\" found.", calcAName);
+						Tier0_Warning("Error: No handle calcA with name \"%s\" found.\n", calcAName);
+
+					return;
+				}
+				else if (0 == _stricmp("cam", arg2) && 5 <= argc)
+				{
+					char const * parentCalcName = args->ArgV(4);
+
+					IMirvCamCalc * parentCalc = g_MirvCamCalcs.GetByName(parentCalcName);
+
+					if (parentCalc)
+						g_MirvVecAngCalcs.NewCamCalc(args->ArgV(3), parentCalc);
+					else
+						Tier0_Warning("Error: No cam calc with name \"%s\" found.\n", parentCalcName);
 
 					return;
 				}
@@ -1948,6 +2526,8 @@ void mirv_calcs_vecang(IWrpCommandArgs * args)
 				"%s add handleEye <sName> <sHandleCalcName> - Add an calc that gets its values from an entity's eye point using a handle calc named <sHandleCalcName>.\n"
 				"%s add handleAttachment <sName> <sHandleCalcName> <sAttachMentName> - Add an calc that gets its values from an entity's attachment.\n"
 				"%s add or <sName> <sAName> <sBName> - Add an OR calc.\n"
+				"%s add cam <sName> <sCamCalName> - Adds a calc that gets its values from an cam calc named <sCamCalName>.\n"
+				, arg0
 				, arg0
 				, arg0
 				, arg0
@@ -1987,7 +2567,7 @@ void mirv_calcs_vecang(IWrpCommandArgs * args)
 					Tier0_Msg("\nResult: false\n");
 			}
 			else
-				Tier0_Warning("Error: No calc with name \"%s\" found.", parentCalcName);
+				Tier0_Warning("Error: No calc with name \"%s\" found.\n", parentCalcName);
 
 			return;
 		}
@@ -2004,7 +2584,7 @@ void mirv_calcs_vecang(IWrpCommandArgs * args)
 				return;
 			}
 			else
-				Tier0_Warning("Error: No calc with name \"%s\" found.", parentCalcName);
+				Tier0_Warning("Error: No calc with name \"%s\" found.\n", parentCalcName);
 
 			return;
 		}
@@ -2024,7 +2604,223 @@ void mirv_calcs_vecang(IWrpCommandArgs * args)
 	);
 }
 
-CON_COMMAND(mirv_calcs, "Do stuff.")
+
+void mirv_calcs_cam(IWrpCommandArgs * args)
+{
+	int argc = args->ArgC();
+
+	char const * arg0 = args->ArgV(0);
+
+	if (2 <= argc)
+	{
+		char const * arg1 = args->ArgV(1);
+
+		if (0 == _stricmp("add", arg1))
+		{
+			if (3 <= argc)
+			{
+				char const * arg2 = args->ArgV(2);
+
+				if (0 == _stricmp("cam", arg2) && 6 <= argc)
+				{
+					char const * camFileName = args->ArgV(4);
+					char const * szStartClientTime = args->ArgV(5);
+
+					g_MirvCamCalcs.NewCamCalc(args->ArgV(3), camFileName, szStartClientTime);
+
+					return;
+				}
+				else if (0 == _stricmp("game", arg2))
+				{
+					g_MirvCamCalcs.NewGameCalc(args->ArgV(3));
+
+					return;
+				}
+			}
+
+			Tier0_Msg(
+				"%s add cam <sName> <sfilePath> <fStartTime>|current - Adds an mirv_camio file as calc.\n"
+				"%s add game <sName> - Current game camera.\n"
+				, arg0
+				, arg0
+			);
+			return;
+		}
+		else if (0 == _stricmp("remove", arg1) && 3 <= argc)
+		{
+			g_MirvCamCalcs.Console_Remove(args->ArgV(2));
+			return;
+		}
+		else if (0 == _stricmp("print", arg1))
+		{
+			g_MirvCamCalcs.Console_Print();
+			return;
+		}
+		else if (0 == _stricmp("test", arg1) && 3 <= argc)
+		{
+			char const * parentCalcName = args->ArgV(2);
+
+			IMirvCamCalc * parentCalc = g_MirvCamCalcs.GetByName(parentCalcName);
+
+			if (parentCalc)
+			{
+				SOURCESDK::Vector vec;
+				SOURCESDK::QAngle ang;
+				float fov;
+				bool calced = parentCalc->CalcCam(vec, ang, fov);
+
+				Tier0_Msg("Calc: ");
+				parentCalc->Console_Print();
+				if (calced)
+					Tier0_Msg("\nResult: true, vec=(%f, %f, %f), ang=(%f, %f, %f), fov=%f\n", vec.x, vec.y, vec.z, ang.z, ang.x, ang.y, fov);
+				else
+					Tier0_Msg("\nResult: false\n");
+			}
+			else
+				Tier0_Warning("Error: No calc with name \"%s\" found.\n", parentCalcName);
+
+			return;
+		}
+		else if (0 == _stricmp("edit", arg1) && 3 <= argc)
+		{
+			char const * parentCalcName = args->ArgV(2);
+
+			IMirvCamCalc * parentCalc = g_MirvCamCalcs.GetByName(parentCalcName);
+
+			if (parentCalc)
+			{
+				CSubWrpCommandArgs sub(args, 3);
+				parentCalc->Console_Edit(&sub);
+				return;
+			}
+			else
+				Tier0_Warning("Error: No calc with name \"%s\" found.\n", parentCalcName);
+
+			return;
+		}
+	}
+
+	Tier0_Msg(
+		"%s add [...] - Add a new calc.\n"
+		"%s remove <sCalcName> - Remove calc with name <sCalcName>.\n"
+		"%s print - Print calcs.\n"
+		"%s test <sCalcName> - Test a calc.\n"
+		"%s edit <sCalcName> [...] - Edit a calc.\n"
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+	);
+}
+
+
+
+void mirv_calcs_fov(IWrpCommandArgs * args)
+{
+	int argc = args->ArgC();
+
+	char const * arg0 = args->ArgV(0);
+
+	if (2 <= argc)
+	{
+		char const * arg1 = args->ArgV(1);
+
+		if (0 == _stricmp("add", arg1))
+		{
+			if (3 <= argc)
+			{
+				char const * arg2 = args->ArgV(2);
+
+				if (0 == _stricmp("cam", arg2) && 5 <= argc)
+				{
+					char const * parentCalcName = args->ArgV(4);
+
+					IMirvCamCalc * parentCalc = g_MirvCamCalcs.GetByName(parentCalcName);
+
+					if (parentCalc)
+						g_MirvFovCalcs.NewCamCalc(args->ArgV(3), parentCalc);
+					else
+						Tier0_Warning("Error: No cam calc with name \"%s\" found.\n", parentCalcName);
+
+					return;
+				}
+			}
+
+			Tier0_Msg(
+				"%s add cam <sName> <sCamCalName> - Adds a calc that gets its values from an cam calc named <sCamCalName>.\n"
+				, arg0
+			);
+			return;
+		}
+		else if (0 == _stricmp("remove", arg1) && 3 <= argc)
+		{
+			g_MirvFovCalcs.Console_Remove(args->ArgV(2));
+			return;
+		}
+		else if (0 == _stricmp("print", arg1))
+		{
+			g_MirvFovCalcs.Console_Print();
+			return;
+		}
+		else if (0 == _stricmp("test", arg1) && 3 <= argc)
+		{
+			char const * parentCalcName = args->ArgV(2);
+
+			IMirvFovCalc * parentCalc = g_MirvFovCalcs.GetByName(parentCalcName);
+
+			if (parentCalc)
+			{
+				float fov;
+				bool calced = parentCalc->CalcFov(fov);
+
+				Tier0_Msg("Calc: ");
+				parentCalc->Console_Print();
+				if (calced)
+					Tier0_Msg("\nResult: true, fov=%f\n", fov);
+				else
+					Tier0_Msg("\nResult: false\n");
+			}
+			else
+				Tier0_Warning("Error: No calc with name \"%s\" found.\n", parentCalcName);
+
+			return;
+		}
+		else if (0 == _stricmp("edit", arg1) && 3 <= argc)
+		{
+			char const * parentCalcName = args->ArgV(2);
+
+			IMirvFovCalc * parentCalc = g_MirvFovCalcs.GetByName(parentCalcName);
+
+			if (parentCalc)
+			{
+				CSubWrpCommandArgs sub(args, 3);
+				parentCalc->Console_Edit(&sub);
+				return;
+			}
+			else
+				Tier0_Warning("Error: No calc with name \"%s\" found.\n", parentCalcName);
+
+			return;
+		}
+	}
+
+	Tier0_Msg(
+		"%s add [...] - Add a new calc.\n"
+		"%s remove <sCalcName> - Remove calc with name <sCalcName>.\n"
+		"%s print - Print calcs.\n"
+		"%s test <sCalcName> - Test a calc.\n"
+		"%s edit <sCalcName> [...] - Edit a calc.\n"
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+	);
+}
+
+
+CON_COMMAND(mirv_calcs, "Expressions, currently mainly for usage mirv_calcs, mirv_cam, mirv_aim")
 {
 	int argc = args->ArgC();
 	char const * arg0 = args->ArgV(0);
@@ -2039,10 +2835,22 @@ CON_COMMAND(mirv_calcs, "Do stuff.")
 			mirv_calcs_handle(&sub);
 			return;
 		}
-		if (0 == _stricmp("vecAng", arg1))
+		else if (0 == _stricmp("vecAng", arg1))
 		{
 			CSubWrpCommandArgs sub(args, 2);
 			mirv_calcs_vecang(&sub);
+			return;
+		}
+		else if (0 == _stricmp("fov", arg1))
+		{
+			CSubWrpCommandArgs sub(args, 2);
+			mirv_calcs_fov(&sub);
+			return;
+		}
+		else if (0 == _stricmp("cam", arg1))
+		{
+			CSubWrpCommandArgs sub(args, 2);
+			mirv_calcs_cam(&sub);
 			return;
 		}
 	}
@@ -2050,6 +2858,10 @@ CON_COMMAND(mirv_calcs, "Do stuff.")
 	Tier0_Msg(
 		"%s handle [...] - Calcs that return an entity handle.\n"
 		"%s vecAng [...] - Calcs that return VecAng (location and rotation).\n"
+		"%s fov [...] - Calcs that return FOV (field of view).\n"
+		"%s cam [...] - Calcs that return a view (location, rotation and FOV).\n"
+		, arg0
+		, arg0
 		, arg0
 		, arg0
 	);

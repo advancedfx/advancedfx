@@ -40,6 +40,42 @@ public:
 	virtual void Console_Edit(IWrpCommandArgs * args) abstract = 0;
 };
 
+class IMirvCamCalc abstract
+{
+public:
+	virtual void AddRef(void) abstract = 0;
+	virtual void Release(void) abstract = 0;;
+
+	virtual int GetRefCount(void) abstract = 0;
+
+	virtual bool CalcCam(SOURCESDK::Vector & outVector, SOURCESDK::QAngle & outAngles, float & outFov) abstract = 0;
+
+	virtual  char const * GetName(void) abstract = 0;
+
+	virtual void Console_Print(void) abstract = 0;
+
+	virtual void Console_Edit(IWrpCommandArgs * args) abstract = 0;
+};
+
+class IMirvFovCalc abstract
+{
+public:
+	virtual void AddRef(void) abstract = 0;
+	virtual void Release(void) abstract = 0;;
+
+	virtual int GetRefCount(void) abstract = 0;
+
+	virtual bool CalcFov(float & outFov) abstract = 0;
+
+	virtual  char const * GetName(void) abstract = 0;
+
+	virtual void Console_Print(void) abstract = 0;
+
+	virtual void Console_Edit(IWrpCommandArgs * args) abstract = 0;
+};
+
+
+
 class IMirvBoolCalc abstract
 {
 public:
@@ -97,6 +133,7 @@ public:
 	IMirvVecAngCalc * NewHandleAttachmentCalc(char const * name, IMirvHandleCalc * handle, char const * attachmentName);
 	IMirvVecAngCalc * NewIfCalc(char const * name, IMirvBoolCalc * condition, IMirvVecAngCalc * condTrue, IMirvVecAngCalc * condFalse);
 	IMirvVecAngCalc * NewOrCalc(char const * name, IMirvVecAngCalc * a, IMirvVecAngCalc * b);
+	IMirvVecAngCalc * NewCamCalc(char const * name, IMirvCamCalc * src);
 
 	bool Console_CheckName(char const * name);
 	void Console_Remove(char const * name);
@@ -109,6 +146,52 @@ private:
 };
 
 extern CMirvVecAngCalcs g_MirvVecAngCalcs;
+
+
+class CMirvCamCalcs
+{
+public:
+	~CMirvCamCalcs();
+
+	IMirvCamCalc * GetByName(char const * name);
+
+	IMirvCamCalc * NewCamCalc(char const * name, const char * camFileName, const char * startClientTime);
+	IMirvCamCalc * NewGameCalc(char const * name);
+
+	bool Console_CheckName(char const * name);
+	void Console_Remove(char const * name);
+	void Console_Print(void);
+
+private:
+	std::list<IMirvCamCalc *> m_Calcs;
+
+	void GetIteratorByName(char const * name, std::list<IMirvCamCalc *>::iterator & outIt);
+};
+
+extern CMirvCamCalcs g_MirvCamCalcs;
+
+
+class CMirvFovCalcs
+{
+public:
+	~CMirvFovCalcs();
+
+	IMirvFovCalc * GetByName(char const * name);
+
+	IMirvFovCalc * NewCamCalc(char const * name, IMirvCamCalc * src);
+
+	bool Console_CheckName(char const * name);
+	void Console_Remove(char const * name);
+	void Console_Print(void);
+
+private:
+	std::list<IMirvFovCalc *> m_Calcs;
+
+	void GetIteratorByName(char const * name, std::list<IMirvFovCalc *>::iterator & outIt);
+};
+
+extern CMirvFovCalcs g_MirvFovCalcs;
+
 
 
 class CMirvBoolCalcs

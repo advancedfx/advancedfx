@@ -6,6 +6,7 @@
 #include <math.h>
 #include <string>
 #include <sstream>
+#include <share.h>
 
 double AlienSwarm_FovScaling(double width, double height, double fov)
 {
@@ -75,7 +76,7 @@ void CamExport::WriteFrame(double width, double height, const CamData & camData)
 
 
 CamImport::CamImport(char const * fileName, double startTime)
-	: m_Ifs(fileName, std::ifstream::in)
+	: m_Ifs(fileName, std::ifstream::in, _SH_DENYWR)
 	, m_StartTime(startTime)
 {
 	int version = 0;
@@ -116,9 +117,10 @@ CamImport::CamImport(char const * fileName, double startTime)
 		}
 	}
 
-	if(1 != version) m_Ifs.clear(m_Ifs.rdstate() | std::ifstream::badbit);
+	if(1 != version) m_Ifs.setstate(m_Ifs.rdstate() | std::ifstream::badbit);
 
 	m_DataStart = m_Ifs.tellg();
+	m_FileStartOk = !m_Ifs.fail();
 }
 
 CamImport::~CamImport()
@@ -129,6 +131,12 @@ CamImport::~CamImport()
 void CamImport::SetStart(double startTime)
 {
 	m_StartTime = startTime;
+	if (m_FileStartOk)
+	{
+		m_HasLastFrame = false;
+		m_Ifs.clear();
+		m_Ifs.seekg(m_DataStart);
+	}
 }
 
 bool CamImport::GetCamData(double time, double width, double height, CamData & outCamData)

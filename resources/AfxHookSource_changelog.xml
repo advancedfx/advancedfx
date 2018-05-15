@@ -6,6 +6,60 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.40.0</version>
+<time>2018-05-15T11:14Z</time>
+<changes>
+<change type="fixed">
+Fixed bugs in mirv_calcs and mirv_camio.
+</change>
+<change type="added">
+Added mirv_calcs cam (cam (camio camera) and game (game view camera) calc) calcs.
+</change>
+<change type="added">
+Added mirv_calcs vecAng cam (uses the location and rotation of a cam calc) calc.
+</change>
+<change type="added">
+Added mirv_calcs fov cam (uses the FOV of a cam calc) calc.
+</change>
+<change type="added">
+Added mirv_cam fov - can be used to set a fov calc.
+</change>
+</changes>
+<comments>
+This should allow various live camera effects:<br />
+<br />
+// Example config:<br />
+// Offset from player on spectator key 1:<br />
+//<br />
+mirv_calcs cam add cam cam test.cam current // (test.cam should be a mirv_camio cam file in local space)<br />
+mirv_calcs fov add cam cam cam<br />
+mirv_calcs vecAng add cam cam cam<br />
+mirv_calcs handle add key key 1<br />
+mirv_calcs vecAng add handleEye keyEye key<br />
+mirv_calcs vecAng add offset keyCam keyEye cam 1<br />
+mirv_cam source calcVecAng keyCam<br />
+mirv_cam fov calc cam // Use fov of camio<br />
+<br />
+// Example config:<br />
+// Offset from game camera (use i.e. to add camera shake data live):<br />
+//<br />
+mirv_calcs cam add cam cam test.cam current // (test.cam should be a mirv_camio cam file in local space)<br />
+mirv_calcs cam add game game<br />
+mirv_calcs vecAng add cam cam cam<br />
+mirv_calcs vecAng add cam game game<br />
+mirv_calcs vecAng add offset gameCam game cam 1<br />
+mirv_cam source calcVecAng gameCam<br />
+mirv_cam fov calcClear // don't override fov<br />
+<br />
+// To restart the path use this:<br />
+mirv_calcs cam edit cam startTime current<br />
+</comments>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.39.6</version>
 <time>2018-05-07T14:35Z</time>
 <changes>
@@ -14,7 +68,6 @@ Fixed engine memory (functor) leak in mirv_streams baseFx based streams caused b
 </change>
 </changes>
 </release>
-
 
 
 <release>

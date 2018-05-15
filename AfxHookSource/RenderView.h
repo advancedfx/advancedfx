@@ -17,6 +17,11 @@ class Hook_VClient_RenderView
 {
 public:
 	CamPath m_CamPath;
+
+	float GameCameraOrigin[3] = { 0.0f, 0.0f, 0.0f };
+	float GameCameraAngles[3] = { 0.0f, 0.0f, 0.0f };
+	float GameCameraFov = 90.0f;
+
 	double LastCameraOrigin[3];
 	double LastCameraAngles[3];
 	double LastCameraFov;

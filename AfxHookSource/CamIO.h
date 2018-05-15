@@ -69,6 +69,7 @@ public:
 	bool GetCamData(double time, double width, double height, CamData & outCamData);
 
 private:
+	bool m_FileStartOk;
 	std::ifstream m_Ifs;
 	double m_StartTime;
 	std::streampos m_DataStart;

@@ -54,6 +54,19 @@ void CMirvCam::ApplyOffset(float & x, float & y, float & z, float & xRotation, f
 	}
 }
 
+void CMirvCam::ApplyFov(float & fov)
+{
+	if (m_Fov)
+	{
+		float tFov;
+
+		if (m_Fov->CalcFov(tFov))
+		{
+			fov = tFov;
+		}
+	}
+}
+
 void CMirvCam::RebuildCalc(void)
 {
 	IMirvHandleCalc * handleCalc = g_MirvHandleCalcs.NewValueCalc(0, m_SourceHandle.ToInt());
@@ -317,6 +330,53 @@ CON_COMMAND(mirv_cam, "Control camera source entity and offset.")
 			);
 			return;
 		}
+		else if (0 == _stricmp("fov", arg1))
+		{
+			if (3 <= argc)
+			{
+				char const * arg2 = args->ArgV(2);
+
+				if (0 == _stricmp("calc", arg2))
+				{
+					if (4 <= argc)
+					{
+						IMirvFovCalc * calc = g_MirvFovCalcs.GetByName(args->ArgV(3));
+
+						if (!calc)
+							Tier0_Warning("No fov calc \"%s\" exists.\n", args->ArgV(3));
+
+						g_MirvCam.Fov_set(calc);
+
+						return;
+					}
+
+					IMirvFovCalc * calc = g_MirvCam.Fov_get();
+
+					Tier0_Msg(
+						"mirv_cam fov calc <sFovCalcName> - Calc to use as source (<sFovCalcName> is name form mirv_calcs fov).\n"
+						"Cuurent value: %s"
+						, calc ? "" : "(none)"
+					);
+
+					if (calc) calc->Console_Print();
+					Tier0_Msg("\n");
+
+					return;
+				}
+				else if (0 == _stricmp("calcClear", arg2))
+				{
+					g_MirvCam.Fov_set(0);
+
+					return;
+				}
+			}
+
+			Tier0_Msg(
+				"mirv_cam fov calc [...] - Calc to use for fov.\n"
+				"mirv_cam fov calcClear - Clear calc.\n"
+			);
+			return;
+		}
 		else if (0 == _stricmp("offset", arg1))
 		{
 			if (5 <= argc)
@@ -359,7 +419,8 @@ CON_COMMAND(mirv_cam, "Control camera source entity and offset.")
 	}
 
 	Tier0_Msg(
-		"mirv_cam source [...] - Control camera source entity.\n"
+		"mirv_cam source [...] - Control camera location.\n"
+		"mirv_cam fov [...] - Controul camera fov.\n"
 		"mirv_cam offset [...] - Control camera offset (in local space).\n"
 	);
 }
