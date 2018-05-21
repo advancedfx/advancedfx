@@ -420,7 +420,7 @@ CON_COMMAND(mirv_cam, "Control camera source entity and offset.")
 
 	Tier0_Msg(
 		"mirv_cam source [...] - Control camera location.\n"
-		"mirv_cam fov [...] - Controul camera fov.\n"
+		"mirv_cam fov [...] - Control camera fov.\n"
 		"mirv_cam offset [...] - Control camera offset (in local space).\n"
 	);
 }
