@@ -275,6 +275,7 @@
     <ClInclude Include="..\shared\imgui\imconfig.h" />
     <ClInclude Include="..\shared\imgui\imgui.h" />
     <ClInclude Include="..\shared\imgui\imgui_internal.h" />
+    <ClInclude Include="..\shared\interfaces\AfxHookSource.h" />
     <ClInclude Include="..\shared\OpenExrOutput.h" />
     <ClInclude Include="..\prop\shared\rapidxml\rapidxml.hpp" />
     <ClInclude Include="..\prop\shared\rapidxml\rapidxml_iterators.hpp" />

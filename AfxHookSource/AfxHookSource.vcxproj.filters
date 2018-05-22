@@ -157,6 +157,9 @@
     <Filter Include="prop\AfxHookSource\l4d2\sdk_src\public\tier1">
       <UniqueIdentifier>{43d04db8-21c5-4641-bedb-bca4db8a52a6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="shared\interfaces">
+      <UniqueIdentifier>{28dec554-a160-4538-9d2a-69bfaef2cd22}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\bvhexport.cpp">
@@ -697,6 +700,9 @@
     </ClInclude>
     <ClInclude Include="..\prop\AfxHookSource\l4d2\sdk_src\public\icvar.h">
       <Filter>prop\AfxHookSource\l4d2\sdk_src\public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\interfaces\AfxHookSource.h">
+      <Filter>shared\interfaces</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
