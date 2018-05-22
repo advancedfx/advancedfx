@@ -6,6 +6,22 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.40.1</version>
+<time>2018-05-22T03:57Z</time>
+<changes>
+<change type="fixed">
+Adjusted to CS:GO update for 5/21/18 (1.36.3.6):<br />
+Fixed error mirv_streams sound recording not working.
+</change>
+<change type="updated">
+Removed mirv_fix playerAnimState console spam.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.40.0</version>
 <time>2018-05-15T11:14Z</time>
 <changes>
