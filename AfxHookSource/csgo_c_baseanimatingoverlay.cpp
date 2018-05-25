@@ -191,10 +191,10 @@ void touring_csgo__RecvProxy_m_flCycle(const csgo_CRecvProxyData_t *pData, void 
 
 	DWORD tickCount = GetTickCount();
 
-	if(broken && (lastTickCount +10000 <= tickCount || tickCount <= lastTickCount -10000))
+	if(0 < g_csgo_PlayerAnimStateFix && broken && (lastTickCount +10000 <= tickCount || tickCount <= lastTickCount -10000))
 	{
 	
-		Tier0_Warning("touring_csgo__RecvProxy_m_flCycle: HLAE detected cycle inconsistency at 0x%08x: %f -> %f! You may want to use \"mirv_fix playerAnimState 1\"! (Supressing warnings for 10 seconds.)\n", pOut, oldCycle, newCycle);
+		Tier0_Warning("touring_csgo__RecvProxy_m_flCycle: HLAE detected cycle inconsistency at 0x%08x: %f -> %f! (Supressing warnings for 10 seconds.)\n", pOut, oldCycle, newCycle);
 		lastTickCount = tickCount;
 	}
 
