@@ -3290,7 +3290,7 @@ CON_COMMAND(mirv_listentities, "Print info about currently active entites. (CS:G
 	Tier0_Msg(
 		"\n"
 		"Usage:\n"
-		"mirv_listentites [isPlayer=1] [sort=distance] [class=<wildCardString(\\* = wildcard, \\\\ = \\)>]"
+		"mirv_listentites [isPlayer=1] [sort=distance] [class=<wildCardString(\\* = wildcard, \\\\ = \\)>]\n"
 	);
 
 

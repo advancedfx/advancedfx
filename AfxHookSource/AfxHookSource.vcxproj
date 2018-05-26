@@ -225,6 +225,7 @@
     <ClCompile Include="..\shared\StringTools.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\interfaces\c\AfxHookSource.h" />
     <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\appframework\IAppSystem.h" />
     <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\icvar.h" />
     <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\interfaces\interfaces.h" />
@@ -275,7 +276,6 @@
     <ClInclude Include="..\shared\imgui\imconfig.h" />
     <ClInclude Include="..\shared\imgui\imgui.h" />
     <ClInclude Include="..\shared\imgui\imgui_internal.h" />
-    <ClInclude Include="..\shared\interfaces\AfxHookSource.h" />
     <ClInclude Include="..\shared\OpenExrOutput.h" />
     <ClInclude Include="..\prop\shared\rapidxml\rapidxml.hpp" />
     <ClInclude Include="..\prop\shared\rapidxml\rapidxml_iterators.hpp" />

@@ -157,8 +157,17 @@
     <Filter Include="prop\AfxHookSource\l4d2\sdk_src\public\tier1">
       <UniqueIdentifier>{43d04db8-21c5-4641-bedb-bca4db8a52a6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="shared\interfaces">
-      <UniqueIdentifier>{28dec554-a160-4538-9d2a-69bfaef2cd22}</UniqueIdentifier>
+    <Filter Include="interfaces">
+      <UniqueIdentifier>{fd3279bd-298a-45ca-8335-92e8c0e7ef1c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="interfaces\c">
+      <UniqueIdentifier>{c4b62cbe-42a8-4391-841a-7d6faf3cba23}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="interfaces\support">
+      <UniqueIdentifier>{b526537c-808a-4ad1-9cb6-080ecf5388a4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="interfaces\support\c">
+      <UniqueIdentifier>{7dfbe5a3-def8-4728-b9c3-f907a6514aaf}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -701,8 +710,8 @@
     <ClInclude Include="..\prop\AfxHookSource\l4d2\sdk_src\public\icvar.h">
       <Filter>prop\AfxHookSource\l4d2\sdk_src\public</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared\interfaces\AfxHookSource.h">
-      <Filter>shared\interfaces</Filter>
+    <ClInclude Include="..\interfaces\c\AfxHookSource.h">
+      <Filter>interfaces\c</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

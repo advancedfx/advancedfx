@@ -990,7 +990,7 @@ public:
 	{
 		CMirvVecAngCalc::Console_Print();
 
-		Tier0_Msg(" type=handleAttachment handle=\"%s\" attachmenName=\"%s\"", m_Handle->GetName(), m_AttachmentName.c_str());
+		Tier0_Msg(" type=handleAttachment handle=\"%s\" attachmentName=\"%s\"", m_Handle->GetName(), m_AttachmentName.c_str());
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
