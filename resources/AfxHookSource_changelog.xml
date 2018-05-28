@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.40.2</version>
+<time>2018-05-28T19:21Z</time>
+<changes>
+<change type="added">
+Added mirv_loadlibrary command.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.40.1</version>
 <time>2018-05-22T03:57Z</time>
 <changes>

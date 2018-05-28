@@ -4162,3 +4162,28 @@ CON_COMMAND(mirv_camio, "New camera motion data import / export.")
 {
 	g_Hook_VClient_RenderView.Console_CamIO(args);
 }
+
+CON_COMMAND(mirv_loadlibrary, "Load a DLL.")
+{
+	int argc = args->ArgC();
+
+	if (2 <= argc)
+	{
+		char const * cmd1 = args->ArgV(1);
+
+		if (0 != LoadLibraryA(cmd1))
+		{
+			Tier0_Msg("LoadLibraryA OK.\n");
+		}
+		else
+		{
+			Tier0_Warning("LoadLibraryA failed.\n");
+		}
+
+		return;
+	}
+
+	Tier0_Msg(
+		"mirv_loadlibrary <sDllFilePath> - Load DLL at given path.\n"
+	);
+}
