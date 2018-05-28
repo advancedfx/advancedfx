@@ -11,19 +11,24 @@ extern "C"
 typedef int advancedfx_LocaleID;
 
 
-#define ADVANCEDFX_VERSION_IAFXHOOKSOURCE 0
+#define ADVANCEDFX_LIBRARY_INTERFACE_VERSION_1 1
 
-typedef int advancefx_AfxHookSourceVersion;
+typedef int advancedfx_LibraryInterfaceVersion;
 
-struct advancedfx_IModule {
-	advancefx_AfxHookSourceVersion(*AfxHookSourceVersion)(advancedfx_IModule * This);
-	void(*Connect)(advancedfx_IModule * This, void * afxHookSource);
-	void(*Disonnect)(advancedfx_IModule * This, void * aAfxHookSource);
+struct advancedfx_ILibrary {
+
+	advancedfx_LibraryInterfaceVersion(*AfxHookSourceVersion)();
+
+	/**
+	 * @param afxHookSource IAfxHookSource_xxx according to LibraryInterfaceVersion.
+	 * @returns IAssembly_xxx according to advancedfx_LibraryInterfaceVersion.
+	 */
+	void *(*Construct)(void * afxHookSource);
 };
 
 #define ADVANCEDFX_OBJECTTYPE_IOBJECT 0
 
-typedef int advancefx_ObjectType;
+typedef int advancedfx_ObjectType;
 
 
 #define ADVANCEDFX_JITTYPE_LOADLIBARY 0
@@ -67,7 +72,7 @@ struct advancedfx_IObject {
 	 */
 	bool(*Delete)(advancedfx_IObject * This);
 
-	advancefx_ObjectType(*Type)(advancedfx_IObject * This);
+	advancedfx_ObjectType(*Type)(advancedfx_IObject * This);
 	
 	/**
 	 * @returns Pointer to the Object of type IObject.Type.
@@ -100,14 +105,20 @@ struct advancedfx_IDependents {
 	void(*AddBeginChanged)(advancedfx_IDependents * This, advancedfx_IDependentsNotifyee * notifyee);
 };
 
-struct advancedfx_IAfxHookSource;
+struct advancedfx_IAssembly_1
+{
+	advancedfx_IObject IObject;
+};
 
 struct advancedfx_IJit {
 	advancedfx_IObject IObject;
 
 	int(*Type)(advancedfx_IJit * This);
 
-	bool(*Execute)(advancedfx_IJit * This, advancedfx_IAfxHookSource * afxHookSource, char const * code, advancedfx_IString ** outErrorString /* can be 0 */);
+	/**
+	 * @returns 0 upon error, assembly otherwise.
+	 */
+	advancedfx_IAssembly_1 *(*Execute)(advancedfx_IJit * This, char const * code, advancedfx_IString ** outErrorString /* can be 0 */);
 };
 
 struct advancedfx_IJitsNode {
@@ -201,34 +212,34 @@ struct advancedfx_ISetupEngineViewHandlers {
 };
 
 
-struct IAfxHookSource {
+struct advancedfx_IAfxHookSource_1 {
 	advancedfx_IObject IObject;
 
 
 	// Tools:
 
-	advancedfx_LocaleID(*LocaleID)(IAfxHookSource * This);
+	advancedfx_LocaleID(*LocaleID)(advancedfx_IAfxHookSource_1 * This);
 
 
 	// SetupEngineViewHandler:
 
-	advancedfx_ISetupEngineViewHandlersNode * (*SetupEngineViewHandlers)(IAfxHookSource * This);
+	advancedfx_ISetupEngineViewHandlersNode * (*SetupEngineViewHandlers)(advancedfx_IAfxHookSource_1 * This);
 
 
 	// Entities:
 
-	advancedfx_IEntities *(*Entities)(IAfxHookSource * This);
+	advancedfx_IEntities *(*Entities)(advancedfx_IAfxHookSource_1 * This);
 
-	advancedfx_IEntity *(*EntityFromHandle)(IAfxHookSource * This, advancedfx_EntityHandle handle);
+	advancedfx_IEntity *(*EntityFromHandle)(advancedfx_IAfxHookSource_1 * This, advancedfx_EntityHandle handle);
 
-	advancedfx_IEntity *(*EntityFromIndex)(IAfxHookSource * This, int index);
+	advancedfx_IEntity *(*EntityFromIndex)(advancedfx_IAfxHookSource_1 * This, int index);
 
-	advancedfx_IEntity *(*EntityFromSpecKey)(IAfxHookSource * This, int keyNumber);
+	advancedfx_IEntity *(*EntityFromSpecKey)(advancedfx_IAfxHookSource_1 * This, int keyNumber);
 
 
 	// Jits
 
-	advancedfx_IJits *(*Jits)(IAfxHookSource * This);
+	advancedfx_IJits *(*Jits)(advancedfx_IAfxHookSource_1 * This);
 };
 
 
