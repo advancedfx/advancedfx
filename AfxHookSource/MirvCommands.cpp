@@ -2471,7 +2471,7 @@ CON_COMMAND(mirv_deathmsg, "controls death notification options")
 		"mirv_deathmsg highLightAssists [...] - Whether to highlight assists for highLightId.\n"
 		"mirv_deathmsg modTime [...] - allows to set a display time multiplier for a message.\n"
 		"mirv_deathmsg fake [...] - Fake a death message.\n"
-		"mirv_deathmsg help id - Display help on the ids that can be used."
+		"mirv_deathmsg help id - Display help on the ids that can be used.\n"
 		"mirv_deathmsg debug [...] - enable debug message in console.\n"
 	);
 }
@@ -3290,7 +3290,7 @@ CON_COMMAND(mirv_listentities, "Print info about currently active entites. (CS:G
 	Tier0_Msg(
 		"\n"
 		"Usage:\n"
-		"mirv_listentites [isPlayer=1] [sort=distance] [class=<wildCardString(\\* = wildcard, \\\\ = \\)>]"
+		"mirv_listentites [isPlayer=1] [sort=distance] [class=<wildCardString(\\* = wildcard, \\\\ = \\)>]\n"
 	);
 
 

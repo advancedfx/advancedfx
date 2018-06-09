@@ -23,7 +23,7 @@ Notice:
     git clone --recursive https://github.com/advancedfx/advancedfx.git
 
 [X] Obtain the following files from http://openexr.com/ :
-    ilmbase-2.2.0.tar.gz, openexr-2.2.0.tar.gz and extract their contents
+    ilmbase-2.2.1.tar.gz, openexr-2.2.1.tar.gz and extract their contents
     into "C:\Libraries"
 
 [X] Obtain zlib-1.2.11.tar.gz from http://zlib.net and extract it into
@@ -31,16 +31,16 @@ Notice:
 
 [X] Open the GIT Bash we recommended above in order to apply the patches
     for the ilmbase library:
-    cd /c/Libraries/ilmbase-2.2.0/
-    patch CMakeLists.txt /c/<HLAESRC>/advancedfx/patches/ilmbase-2.2.0/CMakeLists.txt.patch
+    cd /c/Libraries/ilmbase-2.2.1/
+    patch CMakeLists.txt /c/<HLAESRC>/advancedfx/patches/ilmbase-2.2.1/CMakeLists.txt.patch
 
 [X] Build ilmbase solutions using cmake:
-    Enter the "C:\Libraries\ilmbase-2.2.0" directory and execute
+    Enter the "C:\Libraries\ilmbase-2.2.1" directory and execute
     setlocal
     del /f CMakeCache.txt
     cmake "-DCMAKE_INSTALL_PREFIX=C:\<HLAESRC>\ilmbase-build" -G "Visual Studio 15 2017" -T "v141_xp"
 
-[X] Open the C:\Libraries\ilmbase-2.2.0\ilmbase.sln created in the previous step
+[X] Open the C:\Libraries\ilmbase-2.2.1\ilmbase.sln created in the previous step
     Select the Release configuration.
     Then build the Solution.
     After that build the INSTALL project in the solution.
@@ -59,20 +59,20 @@ Notice:
 
 [X] Open the GIT Bash we recommended above in order to apply the patches
     for the openexr library:
-    cd /c/Libraries/openexr-2.2.0/
-    patch CMakeLists.txt /c/<HLAESRC>/advancedfx/patches/openexr-2.2.0/CMakeLists.txt.patch
+    cd /c/Libraries/openexr-2.2.1/
+    patch CMakeLists.txt /c/<HLAESRC>/advancedfx/patches/openexr-2.2.1/CMakeLists.txt.patch
 
 [X] Build openexr solutions using cmake:
-    Enter the "C:\Libraries\openexr-2.2.0" directory and execute
+    Enter the "C:\Libraries\openexr-2.2.1" directory and execute
     setlocal
     del /f CMakeCache.txt
     cmake "-DZLIB_ROOT=C:\Libraries\zlib-1.2.11" "-DILMBASE_PACKAGE_PREFIX=C:\<HLAESRC>\ilmbase-build" "-DCMAKE_INSTALL_PREFIX=C:\<HLAESRC>\openexr-build" -G "Visual Studio 15 2017" -T "v141_xp"
 
-[X] Open the C:\Libraries\openexr-2.2.0\openexr.sln created in the previous step
+[X] Open the C:\Libraries\openexr-2.2.1\openexr.sln created in the previous step
     Select the Release configuration.
     Build the projects b44ExpLogTable and dwaLookups.
     Then copy the .dll files in "C:\<HLAESRC>\ilmbase-build\lib"
-    to "C:\Libraries\openexr-2.2.0\IlmImf\Release"!
+    to "C:\Libraries\openexr-2.2.1\IlmImf\Release"!
     Then build the Solution.
     After that build the INSTALL project in the solution.
     If you want to use the .exe files in "C:\<HLAESRC>\openexr-build\bin",
@@ -118,7 +118,7 @@ Notice:
 
 [X] Open advancedfx.sln in the HLAE source code ("C:\<HLAESRC>\advancedfx" folder)
     and Build (Configuration=Release, Platform=x86) in this order:
-    prop/AfxHookGoldSrc, prop/AfxHookSource, prop/AfxCppCli, injector, hlae
+    AfxHookSource, injector, hlae
     and Build (Configuration=Release, Platform=x64) in this order:
     injector
 
@@ -131,7 +131,7 @@ Notice:
     to "C:\<HLAESRC>\advancedfx\build\Release\bin"
 
 [X] Copy all files
-    form "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Redist\MSVC\14.12.25810\x86\Microsoft.VC141.CRT"
+    form "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Redist\MSVC\14.14.26405\x86\Microsoft.VC141.CRT"
     to "C:\<HLAESRC>\advancedfx\build\Release\bin"
 
 [X] Copy all DLL files from

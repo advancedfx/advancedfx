@@ -683,7 +683,7 @@ public:
 			{
 				if (3 <= argc)
 				{
-					m_Vec.z = (float)atof(args->ArgV(2));
+					m_Ang.z = (float)atof(args->ArgV(2));
 					return;
 				}
 
@@ -691,7 +691,7 @@ public:
 					"%s rX <fValue> - Set new value.\n"
 					"Current value: %f\n"
 					, arg0
-					, m_Vec.z
+					, m_Ang.z
 				);
 				return;
 			}
@@ -699,7 +699,7 @@ public:
 			{
 				if (3 <= argc)
 				{
-					m_Vec.x = (float)atof(args->ArgV(2));
+					m_Ang.x = (float)atof(args->ArgV(2));
 					return;
 				}
 
@@ -707,7 +707,7 @@ public:
 					"%s rY <fValue> - Set new value.\n"
 					"Current value: %f\n"
 					, arg0
-					, m_Vec.x
+					, m_Ang.x
 				);
 				return;
 			}
@@ -715,7 +715,7 @@ public:
 			{
 				if (3 <= argc)
 				{
-					m_Vec.y = (float)atof(args->ArgV(2));
+					m_Ang.y = (float)atof(args->ArgV(2));
 					return;
 				}
 
@@ -723,7 +723,7 @@ public:
 					"%s rZ <fValue> - Set new value.\n"
 					"Current value: %f\n"
 					, arg0
-					, m_Vec.y
+					, m_Ang.y
 				);
 				return;
 			}
