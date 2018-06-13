@@ -1,6 +1,6 @@
 # Contributing to advancedfx
 
-By contributing to https://github.com/advancedfx/advancedfx you agree to have your contributions licensed under the [MIT license](https://github.com/advancedfx/advancedfx/blob/master/LICENSE).
+By contributing to _this repository_ you agree to have your contributions licensed under the [MIT license](https://github.com/advancedfx/advancedfx/blob/master/LICENSE).
 
 Contributions include but are not limited to code and manual (Wiki) contriutions.
 
