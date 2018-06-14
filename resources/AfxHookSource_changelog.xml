@@ -6,6 +6,48 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.xx.x</version>
+<time>2018-06-xxTxx:xxZ</time>
+<changes>
+<change type="added">
+Added possibility to use * as argument instead of a value in mirv_input position / mirv_input angles, which means do not change that component / value.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.40.3</version>
+<time>2018-06-09T13:51Z</time>
+<changes>
+<change type="fixed">
+Fixed a few bugs (i.e. mirv_calcs edit vecAng edit nor working correctly for value calc rotation properties.) and typos.
+</change>
+<change type="updated">
+Updated to Microsoft Visual Studio 2017 version 15.7.3 and updated uCRT/CRT DLLs. OpenEXR libraries updated to 2.2.1 version. Rebuild.
+</change>
+</changes>
+<comments>
+HLAE team member Dec added a HLAE manual entry for mirv_calcs, you can find it here: https://github.com/advancedfx/advancedfx/wiki/Source%3Amirv_calcs
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.40.2</version>
+<time>2018-05-28T19:21Z</time>
+<changes>
+<change type="added">
+Added mirv_loadlibrary command.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.40.1</version>
 <time>2018-05-22T03:57Z</time>
 <changes>

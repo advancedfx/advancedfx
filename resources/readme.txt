@@ -283,6 +283,12 @@ Peter 'psh' P.
 	Discord moderator, community help.
 	Since December 2017
 	https://twitter.com/Devomvm
+	
+'Dec'
+	Helping wiuth HLAE manual, Discord moderator. Past: Forum, IRC.
+	Since March 2011
+	http://www.youtube.com/AMDECKARN
+
 
 Past members:
 
@@ -299,11 +305,6 @@ Fabian 'neomic'
 	Forum, community relations, testing, tutorials.
 	March 2008 - January 2010.
 
-'Dec'
-	Forum, IRC, Discord moderator.
-	March 2011 - August 2016.
-	http://www.youtube.com/AMDECKARN
-	
 Sebastian 'msthavoc' H.
 	Programming of additional tools, testing, community relations, documentation and tutorials.
 	August 2007 - December 2017.
@@ -311,12 +312,12 @@ Sebastian 'msthavoc' H.
 	
 Perra 'akdios' Anderson
 	Discord moderator.
-	Since July 2017 - December 2017.
+	July 2017 - December 2017.
 	https://twitter.com/NiPakidos
 
 '1suky1'
 	Discord moderator.
-	Since July 2017 - April 2018.
+	July 2017 - April 2018.
 	https://twitter.com/1suky1
 
 'fuze'

@@ -6,6 +6,33 @@
 
 <release>
 <name>HLAE</name>
+<version>2.50.3</version>
+<time>2018-06-09T13:51Z</time>
+<changes>
+<change type="updated">
+Included AfxHookSource 1.40.3 (2018-06-09T13:51Z).
+</change>
+<change type="updated">
+Updated to Microsoft Visual Studio 2017 version 15.7.3. Rebuild.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
+<version>2.50.2</version>
+<time>2018-05-28T19:21Z</time>
+<changes>
+<change type="updated">
+Included AfxHookSource 1.40.2 (2018-05-28T19:21Z).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.50.1</version>
 <time>2018-05-22T03:57Z</time>
 <changes>
