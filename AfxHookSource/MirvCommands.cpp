@@ -2936,14 +2936,14 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 				char const * arg3 = args->ArgV(3);
 				char const * arg4 = args->ArgV(4);
 	
-				g_Hook_VClient_RenderView.LastCameraOrigin[0] = atof(arg2);
-				g_Hook_VClient_RenderView.LastCameraOrigin[1] = atof(arg3);
-				g_Hook_VClient_RenderView.LastCameraOrigin[2] = atof(arg4);
+				if(0 != stricmp("*", arg2)) g_Hook_VClient_RenderView.LastCameraOrigin[0] = atof(arg2);
+				if (0 != stricmp("*", arg3))g_Hook_VClient_RenderView.LastCameraOrigin[1] = atof(arg3);
+				if (0 != stricmp("*", arg4)) g_Hook_VClient_RenderView.LastCameraOrigin[2] = atof(arg4);
 				return;
 			}
 
 			Tier0_Msg(
-				"mirv_input position <x> <y> <z> - Set new position (only useful in camera input mode).\n"
+				"mirv_input position <x> <y> <z> - Set new position (only useful in camera input mode), use * where you don't want changes.\n"
 				"Current value: %f %f %f\n"
 				, g_Hook_VClient_RenderView.LastCameraOrigin[0]
 				, g_Hook_VClient_RenderView.LastCameraOrigin[1]
@@ -2960,14 +2960,14 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 				char const * arg3 = args->ArgV(3);
 				char const * arg4 = args->ArgV(4);
 	
-				g_Hook_VClient_RenderView.LastCameraAngles[0] = atof(arg2);
-				g_Hook_VClient_RenderView.LastCameraAngles[1] = atof(arg3);
-				g_Hook_VClient_RenderView.LastCameraAngles[2] = atof(arg4);
+				if (0 != stricmp("*", arg2)) g_Hook_VClient_RenderView.LastCameraAngles[0] = atof(arg2);
+				if (0 != stricmp("*", arg3)) g_Hook_VClient_RenderView.LastCameraAngles[1] = atof(arg3);
+				if (0 != stricmp("*", arg4)) g_Hook_VClient_RenderView.LastCameraAngles[2] = atof(arg4);
 				return;
 			}
 
 			Tier0_Msg(
-				"mirv_input angles <yPitch> <xRoll> <zYaw> - Set new angles (only useful in camera input mode).\n"
+				"mirv_input angles <yPitch> <xRoll> <zYaw> - Set new angles (only useful in camera input mode), use * where you don't want changes.\n"
 				"Current value: %f %f %f\n"
 				, g_Hook_VClient_RenderView.LastCameraAngles[0]
 				, g_Hook_VClient_RenderView.LastCameraAngles[1]

@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.xx.x</version>
+<time>2018-06-xxTxx:xxZ</time>
+<changes>
+<change type="added">
+Added possibility to use * as argument instead of a value in mirv_input position / mirv_input angles, which means do not change that component / value.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.40.3</version>
 <time>2018-06-09T13:51Z</time>
 <changes>
