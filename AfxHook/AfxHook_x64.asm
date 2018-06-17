@@ -206,7 +206,7 @@ labelCont11:
 labelCont12:
 	
 	; LoadLibraryExW:
-	mov r8b, 0x00000008 ; LOAD_WITH_ALTERED_SEARCH_PATH
+	mov r8d, 0x00000008 ; LOAD_WITH_ALTERED_SEARCH_PATH
 	mov rdx, 0
 	mov rcx, [argDllFilePath]
 	call [rbp -0x38]

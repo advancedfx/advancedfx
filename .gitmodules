@@ -10,3 +10,6 @@
 	path = shared/imgui
 	url = https://github.com/advancedfx/imgui.git
 	branch = master
+[submodule "shared/Detours"]
+	path = shared/Detours
+	url = https://github.com/advancedfx/Detours
