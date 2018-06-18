@@ -13,3 +13,4 @@
 [submodule "shared/Detours"]
 	path = shared/Detours
 	url = https://github.com/advancedfx/Detours
+	branch = master

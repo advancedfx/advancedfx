@@ -375,6 +375,7 @@
     <ClCompile Include="..\prop\AfxHookSource\l4d2\sdk_src\public\tier1\convar.cpp">
       <Filter>prop\AfxHookSource\l4d2\sdk_src\public\tier1</Filter>
     </ClCompile>
+    <ClCompile Include="UnityInterop.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\bvhexport.h">
@@ -713,5 +714,6 @@
     <ClInclude Include="..\interfaces\c\AfxHookSource.h">
       <Filter>interfaces\c</Filter>
     </ClInclude>
+    <ClInclude Include="UnityInterop.h" />
   </ItemGroup>
 </Project>
