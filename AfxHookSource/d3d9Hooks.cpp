@@ -137,12 +137,12 @@ void Shared_Direct3DDevice9_EndScene()
 	AfxHookSource::Gui::On_Direct3DDevice9_EndScene();
 }
 
-void Shared_Direct3DDevice9_Present(bool deviceLost)
+void Shared_Direct3DDevice9_Present(bool deviceLost, bool presentBlocked)
 {
 	AfxHookSource::Gui::On_Direct3DDevice9_Present(deviceLost);
 
 #ifdef AFX_MIRV_PGL
-	MirvPgl::DrawingThread_PresentedUnleashDataIfOkay();
+	if(!presentBlocked) MirvPgl::DrawingThread_UnleashData();
 #endif
 }
 
@@ -832,7 +832,7 @@ public:
 	{
 		HRESULT result = m_Block_Present ? D3D_OK : g_OldDirect3DDevice9->Present(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 
-		Shared_Direct3DDevice9_Present(result == D3DERR_DEVICELOST);
+		Shared_Direct3DDevice9_Present(result == D3DERR_DEVICELOST, m_Block_Present);
 
 		return result;
 	}
@@ -1616,7 +1616,7 @@ public:
 	{
 		HRESULT hResult = g_OldDirect3DDevice9Ex->Present(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 
-		Shared_Direct3DDevice9_Present(D3DERR_DEVICELOST == hResult);
+		Shared_Direct3DDevice9_Present(D3DERR_DEVICELOST == hResult, false);
 
 		return hResult;
 	}
@@ -1738,7 +1738,7 @@ public:
 	{
 		HRESULT hResult = g_OldDirect3DDevice9Ex->PresentEx(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, dwFlags);
 
-		Shared_Direct3DDevice9_Present(D3DERR_DEVICELOST == hResult);
+		Shared_Direct3DDevice9_Present(D3DERR_DEVICELOST == hResult, false);
 
 		return hResult;
 	}

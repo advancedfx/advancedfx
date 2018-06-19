@@ -254,11 +254,11 @@ private:
 
 #ifdef AFX_MIRV_PGL
 
-class AfxSupplyCamDataAndAllowUnleash_Functor
+class AfxSupplyCamData_Functor
 	: public CAfxFunctor
 {
 public:
-	AfxSupplyCamDataAndAllowUnleash_Functor(MirvPgl::CamData const & value)
+	AfxSupplyCamData_Functor(MirvPgl::CamData const & value)
 		: m_Value(value)
 	{
 	}
@@ -266,7 +266,6 @@ public:
 	virtual void operator()()
 	{
 		MirvPgl::DrawingThread_SupplyCamData(m_Value);
-		MirvPgl::DrawingThread_AllowUnleash();
 	}
 
 private:
@@ -7116,6 +7115,19 @@ void CAfxStreams::DebugDump(IAfxMatRenderContextOrg * ctxp)
 
 }
 
+MirvPgl::CamData GetMirvPglCamData(SOURCESDK::vrect_t_csgo *rect) {
+	return MirvPgl::CamData(
+		g_Hook_VClient_RenderView.GetCurTime(),
+		(float)g_Hook_VClient_RenderView.LastCameraOrigin[0],
+		(float)g_Hook_VClient_RenderView.LastCameraOrigin[1],
+		(float)g_Hook_VClient_RenderView.LastCameraOrigin[2],
+		(float)g_Hook_VClient_RenderView.LastCameraAngles[2],
+		(float)g_Hook_VClient_RenderView.LastCameraAngles[0],
+		(float)g_Hook_VClient_RenderView.LastCameraAngles[1],
+		(float)(AlienSwarm_FovScaling(rect->width, rect->height, g_Hook_VClient_RenderView.LastCameraFov))
+	);
+}
+
 void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *rect)
 {
 	CAfxBaseFxStream::MainThreadInitialize();
@@ -7124,26 +7136,19 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 
 	//GetCsgoCGlowOverlayFix()->OnMainViewRenderBegin();
 
+	if (MirvPgl::IsDataActive())
+	{
+		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new AfxSupplyCamData_Functor(GetMirvPglCamData(rect))));
+	}
+
 	cl->GetParent()->View_Render(rect);
 
 	IAfxMatRenderContextOrg * ctxp = GetCurrentContext()->GetOrg(); // We are on potentially a new context now!
 
 #ifdef AFX_MIRV_PGL
-	if (MirvPgl::IsDataActive() || MirvPgl::IsDrawingActive())
+	if (MirvPgl::IsDrawingActive())
 	{
-		MirvPgl::CamData camData(
-			g_Hook_VClient_RenderView.GetCurTime(),
-			(float)g_Hook_VClient_RenderView.LastCameraOrigin[0],
-			(float)g_Hook_VClient_RenderView.LastCameraOrigin[1],
-			(float)g_Hook_VClient_RenderView.LastCameraOrigin[2],
-			(float)g_Hook_VClient_RenderView.LastCameraAngles[2],
-			(float)g_Hook_VClient_RenderView.LastCameraAngles[0],
-			(float)g_Hook_VClient_RenderView.LastCameraAngles[1],
-			(float)(AlienSwarm_FovScaling(rect->width, rect->height, g_Hook_VClient_RenderView.LastCameraFov))
-		);
-
-		if (MirvPgl::IsDataActive()) QueueOrExecute(ctxp, new CAfxLeafExecute_Functor(new AfxSupplyCamDataAndAllowUnleash_Functor(camData)));
-		if (MirvPgl::IsDrawingActive()) MirvPgl::QueueDrawing(camData, rect->width, rect->height);
+		if (MirvPgl::IsDrawingActive()) MirvPgl::QueueDrawing(GetMirvPglCamData(rect), rect->width, rect->height);
 	}
 #endif
 

@@ -4,9 +4,9 @@
 
 /*
 
-Changes from version 2 to version 2(.0.1):
+Changes from version 2 to version 2(.0.2):
 
-- "cam" message is sent after last stream has been renderred.
+- "cam" message is sent the first time the current game frame is presented on-screen.
 - Fixed "cam" message not sent when multiple streams are renderred.
 
 Changes from version 1 to version 2:
@@ -205,8 +205,7 @@ namespace MirvPgl
 
 	void DrawingThread_SupplyCamData(CamData const & camData);
 
-	void DrawingThread_AllowUnleash();
-	void DrawingThread_PresentedUnleashDataIfOkay();
+	void DrawingThread_UnleashData();
 }
 
 #endif
