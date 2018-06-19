@@ -142,7 +142,7 @@ void Shared_Direct3DDevice9_Present(bool deviceLost)
 	AfxHookSource::Gui::On_Direct3DDevice9_Present(deviceLost);
 
 #ifdef AFX_MIRV_PGL
-	MirvPgl::DrawingThread_PresentedUnleashDataOnFirstCall();
+	MirvPgl::DrawingThread_PresentedUnleashDataIfOkay();
 #endif
 }
 

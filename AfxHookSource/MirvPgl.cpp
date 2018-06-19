@@ -1024,6 +1024,7 @@ namespace MirvPgl
 
 	DWORD m_LastCheckRestoreTick = 0;
 
+	bool m_UnleashAllowed = false;
 	CThreadData * m_DrawingThread_ThreadData = 0;
 
 	std::string m_CurrentLevel;
@@ -1419,9 +1420,9 @@ namespace MirvPgl
 		}
 	}
 
-	void DrawingThread_PresentedUnleashDataOnFirstCall()
+	void DrawingThread_PresentedUnleashDataIfOkay()
 	{
-		if (m_DrawingThread_ThreadData && !m_DrawingThread_ThreadData->IsCancelled())
+		if (m_UnleashAllowed && m_DrawingThread_ThreadData && !m_DrawingThread_ThreadData->IsCancelled())
 		{
 			std::vector<uint8_t> & data = m_DrawingThread_ThreadData->AccessData();
 
@@ -1436,7 +1437,13 @@ namespace MirvPgl
 			m_ThreadDataPool.Return(m_DrawingThread_ThreadData);
 
 			m_DrawingThread_ThreadData = 0;
+
+			m_UnleashAllowed = false;
 		}
+	}
+
+	void DrawingThread_AllowUnleash() {
+		m_UnleashAllowed = true;
 	}
 
 }

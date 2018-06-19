@@ -38,7 +38,7 @@
 #include "csgo_MemAlloc.h"
 #include "csgo_c_baseanimatingoverlay.h"
 #include "MirvPgl.h"
-#include "UnityInterop.h"
+#include "AfxInterop.h"
 #include "csgo_Audio.h"
 #include "mirv_voice.h"
 #include "Gui.h"
@@ -738,8 +738,8 @@ void CAfxBaseClientDll::Shutdown(void)
 	MirvPgl::Shutdown();
 #endif
 
-#ifdef AFX_UNITYINTEROP
-	UnityInterop::Shutdown();
+#ifdef AFX_INTEROP
+	AfxInterop::Shutdown();
 #endif
 
 	Shared_Shutdown();
@@ -753,8 +753,8 @@ void CAfxBaseClientDll::LevelInitPreEntity(char const* pMapName)
 
 	m_Parent->LevelInitPreEntity(pMapName);
 
-#ifdef AFX_UNITYINTEROP
-	UnityInterop::LevelInitPreEntity(pMapName);
+#ifdef AFX_INTEROP
+	AfxInterop::LevelInitPreEntity(pMapName);
 #endif
 
 #ifdef AFX_MIRV_PGL
@@ -785,8 +785,8 @@ void CAfxBaseClientDll::LevelShutdown(void)
 	MirvPgl::SupplyLevelShutdown();
 #endif
 
-#ifdef AFX_UNITYINTEROP
-	UnityInterop::LevelShutdown();
+#ifdef AFX_INTEROP
+	AfxInterop::LevelShutdown();
 #endif
 
 	m_Parent->LevelShutdown();
@@ -910,8 +910,8 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 	case SOURCESDK::CSGO::FRAME_START:
 		//Tier0_Msg("FRAME_START\n");
 
-#ifdef AFX_UNITYINTEROP
-		UnityInterop::BeforeFrameStart();
+#ifdef AFX_INTEROP
+		AfxInterop::BeforeFrameStart();
 #endif
 
 #ifdef AFX_MIRV_PGL
@@ -930,8 +930,8 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 		g_csgo_FirstFrameAfterNetUpdateEnd = firstFrameAfterNetUpdateEnd;
 		firstFrameAfterNetUpdateEnd = false;
 
-#ifdef AFX_UNITYINTEROP
-		UnityInterop::BeforeFrameRenderStart();
+#ifdef AFX_INTEROP
+		AfxInterop::BeforeFrameRenderStart();
 #endif
 
 #ifdef AFX_MIRV_PGL
@@ -1995,8 +1995,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 			// things here that would have problems with that.
 			//
 
-#ifdef AFX_UNITYINTEROP
-			UnityInterop::DllProcessAttach();
+#ifdef AFX_INTEROP
+			AfxInterop::DllProcessAttach();
 #endif
 
 			AfxHookSource::Gui::DllProcessAttach();

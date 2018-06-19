@@ -4,6 +4,11 @@
 
 /*
 
+Changes from version 2 to version 2(.0.1):
+
+- "cam" message is sent after last stream has been renderred.
+- Fixed "cam" message not sent when multiple streams are renderred.
+
 Changes from version 1 to version 2:
 
 - Added messages "dataStart" and "dataStop"
@@ -113,6 +118,7 @@ Purpose:
   Is sent after "levelInit" after the frame has been presented on screen.
   The data content is from when the frame presented has been calculated by the engine.
   The fov is currently automatically converted according to Alien Swarm SDK (suitable for CS:GO).
+  If multiple streams are renderred it is sent after the last stream has been presented.
 Format:
   CString cmd = "cam";
   Float time;
@@ -199,7 +205,8 @@ namespace MirvPgl
 
 	void DrawingThread_SupplyCamData(CamData const & camData);
 
-	void DrawingThread_PresentedUnleashDataOnFirstCall();
+	void DrawingThread_AllowUnleash();
+	void DrawingThread_PresentedUnleashDataIfOkay();
 }
 
 #endif

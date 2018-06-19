@@ -12,6 +12,7 @@
 #include "d3d9Hooks.h"
 #include "csgo_GlowOverlay.h"
 #include "MirvPgl.h"
+#include "AfxInterop.h"
 #include "csgo_Audio.h"
 #include "mirv_voice.h"
 #include "addresses.h"
@@ -253,11 +254,11 @@ private:
 
 #ifdef AFX_MIRV_PGL
 
-class AfxSupplyCamData_Functor
+class AfxSupplyCamDataAndAllowUnleash_Functor
 	: public CAfxFunctor
 {
 public:
-	AfxSupplyCamData_Functor(MirvPgl::CamData const & value)
+	AfxSupplyCamDataAndAllowUnleash_Functor(MirvPgl::CamData const & value)
 		: m_Value(value)
 	{
 	}
@@ -265,10 +266,31 @@ public:
 	virtual void operator()()
 	{
 		MirvPgl::DrawingThread_SupplyCamData(m_Value);
+		MirvPgl::DrawingThread_AllowUnleash();
 	}
 
 private:
 	MirvPgl::CamData m_Value;
+};
+
+#endif
+
+#ifdef AFX_INTEROP
+
+class AfxInteropDrawingThreadBeforeHud_Functor
+	: public CAfxFunctor
+{
+public:
+	AfxInteropDrawingThreadBeforeHud_Functor()
+	{
+	}
+
+	virtual void operator()()
+	{
+		AfxInterop::DrawingThreadBeforeHud();
+	}
+
+private:
 };
 
 #endif
@@ -4909,7 +4931,18 @@ bool CAfxStreams::OnViewRenderShouldForceNoVis(bool orgValue)
 
 void CAfxStreams::OnDrawingHud(void)
 {
-	IAfxStreamContext * hook = FindStreamContext(GetCurrentContext());
+	IAfxMatRenderContext * afxMatRenderContext = GetCurrentContext();
+
+#ifdef AFX_INTEROP
+	if (AfxInterop::Enabled())
+	{
+		IAfxMatRenderContextOrg * orgCtx = afxMatRenderContext->GetOrg();
+
+		QueueOrExecute(orgCtx, new AfxInteropDrawingThreadBeforeHud_Functor());
+	}
+#endif
+
+	IAfxStreamContext * hook = FindStreamContext(afxMatRenderContext);
 
 	if (hook)
 		hook->DrawingHudBegin();
@@ -7109,7 +7142,7 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 			(float)(AlienSwarm_FovScaling(rect->width, rect->height, g_Hook_VClient_RenderView.LastCameraFov))
 		);
 
-		if (MirvPgl::IsDataActive()) QueueOrExecute(ctxp, new CAfxLeafExecute_Functor(new AfxSupplyCamData_Functor(camData)));
+		if (MirvPgl::IsDataActive()) QueueOrExecute(ctxp, new CAfxLeafExecute_Functor(new AfxSupplyCamDataAndAllowUnleash_Functor(camData)));
 		if (MirvPgl::IsDrawingActive()) MirvPgl::QueueDrawing(camData, rect->width, rect->height);
 	}
 #endif
