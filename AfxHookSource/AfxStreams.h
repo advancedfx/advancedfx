@@ -2536,6 +2536,11 @@ public:
 	/// <summary>Carry out initalization that cannot be done in DllMain</summary>
 	static void AfxStreamsInit(void);
 
+	static void MainThreadInitialize(void)
+	{
+		CAfxBaseFxStream::MainThreadInitialize();
+	}
+
 	void OnMaterialSystem(SOURCESDK::IMaterialSystem_csgo * value);
 	void OnAfxBaseClientDll(IAfxBaseClientDll * value);
 	void OnShaderShadow(SOURCESDK::IShaderShadow_csgo * value);

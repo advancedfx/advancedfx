@@ -552,11 +552,11 @@ public:
 	virtual void _UNKOWN_012(void);
 	virtual void _UNKOWN_013(void);
 	virtual void _UNKOWN_014(void);
+	virtual void _UNKOWN_015(void);
 
 	virtual void IN_ActivateMouse(void);
 	virtual void IN_DeactivateMouse(void);
 
-	virtual void _UNKOWN_017(void);
 	virtual void _UNKOWN_018(void);
 	virtual void _UNKOWN_019(void);
 	virtual void _UNKOWN_020(void);
@@ -565,9 +565,9 @@ public:
 	virtual void _UNKOWN_023(void);
 	virtual void _UNKOWN_024(void);
 	virtual void _UNKOWN_025(void);
+	virtual void _UNKOWN_026(void);
 	virtual void View_Render(SOURCESDK::vrect_t_csgo *rect);
 	virtual void RenderView(const SOURCESDK::CViewSetup_csgo &view, int nClearFlags, int whatToDraw);
-	virtual void _UNKOWN_028(void);
 	virtual void _UNKOWN_029(void);
 	virtual void _UNKOWN_030(void);
 	virtual void _UNKOWN_031(void);
@@ -575,8 +575,8 @@ public:
 	virtual void _UNKOWN_033(void);
 	virtual void _UNKOWN_034(void);
 	virtual void _UNKOWN_035(void);
+	virtual void _UNKOWN_036(void);
 	virtual void FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t curStage);
-	virtual void _UNKOWN_037(void);
 	virtual void _UNKOWN_038(void);
 	virtual void _UNKOWN_039(void);
 	virtual void _UNKOWN_040(void);
@@ -593,14 +593,14 @@ public:
 	virtual void _UNKOWN_051(void);
 	virtual void _UNKOWN_052(void);
 	virtual void _UNKOWN_053(void);
-	
+	virtual void _UNKOWN_054(void);
+
 	virtual void OnDemoPlaybackStart(char const* pDemoBaseName);
 
-	virtual void _UNKOWN_055(void);
+	virtual void _UNKOWN_056(void);
 
 	virtual void OnDemoPlaybackStop();
 	
-	virtual void _UNKOWN_057(void);
 	virtual void _UNKOWN_058(void);
 	virtual void _UNKOWN_059(void);
 	virtual void _UNKOWN_060(void);
@@ -608,8 +608,8 @@ public:
 	virtual void _UNKOWN_062(void);
 	virtual void _UNKOWN_063(void);
 	virtual void _UNKOWN_064(void);
+	virtual void _UNKOWN_065(void);
 	virtual void WriteSaveGameScreenshotOfSize(const char *pFilename, int width, int height, bool bCreatePowerOf2Padded = false, bool bWriteVTF = false);
-	virtual void _UNKOWN_066(void);
 	virtual void _UNKOWN_067(void);
 	virtual void _UNKOWN_068(void);
 	virtual void _UNKOWN_069(void);
@@ -654,9 +654,6 @@ public:
 	virtual void _UNKOWN_108(void);
 	virtual void _UNKOWN_109(void);
 	virtual void _UNKOWN_110(void);
-
-	// and a few more to be save from updates:
-
 	virtual void _UNKOWN_111(void);
 	virtual void _UNKOWN_112(void);
 	virtual void _UNKOWN_113(void);
@@ -677,6 +674,15 @@ public:
 	virtual void _UNKOWN_128(void);
 	virtual void _UNKOWN_129(void);
 	virtual void _UNKOWN_130(void);
+	virtual void _UNKOWN_131(void);
+	virtual void _UNKOWN_132(void);
+	virtual void _UNKOWN_133(void);
+	virtual void _UNKOWN_134(void);
+	virtual void _UNKOWN_135(void);
+	virtual void _UNKOWN_136(void);
+	virtual void _UNKOWN_137(void);
+	virtual void _UNKOWN_138(void);
+	virtual void _UNKOWN_139(void);
 
 private:
 	IBaseClientDLL_csgo * m_Parent;
@@ -813,13 +819,13 @@ __declspec(naked) void CAfxBaseClientDll::_UNKOWN_013(void)
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_014(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 14) }
 
-__declspec(naked) void CAfxBaseClientDll::IN_ActivateMouse(void)
+__declspec(naked) void CAfxBaseClientDll::_UNKOWN_015(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 15) }
 
-__declspec(naked) void CAfxBaseClientDll::IN_DeactivateMouse(void)
+__declspec(naked) void CAfxBaseClientDll::IN_ActivateMouse(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 16) }
 
-__declspec(naked) void CAfxBaseClientDll::_UNKOWN_017(void)
+__declspec(naked) void CAfxBaseClientDll::IN_DeactivateMouse(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 17) }
 
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_018(void)
@@ -846,9 +852,12 @@ __declspec(naked) void CAfxBaseClientDll::_UNKOWN_024(void)
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_025(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 25) }
 
+__declspec(naked) void CAfxBaseClientDll::_UNKOWN_026(void)
+{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 26) }
+
 //__declspec(naked) 
 void CAfxBaseClientDll::View_Render(SOURCESDK::vrect_t_csgo *rect)
-{ // NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 26)
+{ // NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 27)
 
 	//Tier0_Msg("---- View_Render ----\n");
 
@@ -873,9 +882,6 @@ void CAfxBaseClientDll::View_Render(SOURCESDK::vrect_t_csgo *rect)
 }
 
 __declspec(naked) void CAfxBaseClientDll::RenderView(const SOURCESDK::CViewSetup_csgo &view, int nClearFlags, int whatToDraw)
-{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 27) }
-
-__declspec(naked) void CAfxBaseClientDll::_UNKOWN_028(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 28) }
 
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_029(void)
@@ -899,9 +905,12 @@ __declspec(naked) void CAfxBaseClientDll::_UNKOWN_034(void)
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_035(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 35) }
 
+__declspec(naked) void CAfxBaseClientDll::_UNKOWN_036(void)
+{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 36) }
+
 //__declspec(naked)
 void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t curStage)
-{ // NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 36)
+{ // NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 37)
 
 	static bool firstFrameAfterNetUpdateEnd = false;
 
@@ -937,6 +946,8 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 #ifdef AFX_MIRV_PGL
 		MirvPgl::QueueThreadDataForDrawingThread();
 #endif
+		CAfxStreams::MainThreadInitialize();
+
 		break;
 	}
 
@@ -951,9 +962,6 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 		break;
 	}
 }
-
-__declspec(naked) void CAfxBaseClientDll::_UNKOWN_037(void)
-{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 37) }
 
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_038(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 38) }
@@ -1003,25 +1011,25 @@ __declspec(naked) void CAfxBaseClientDll::_UNKOWN_052(void)
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_053(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 53) }
 
+__declspec(naked) void CAfxBaseClientDll::_UNKOWN_054(void)
+{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 54) }
+
 //__declspec(naked)
 void CAfxBaseClientDll::OnDemoPlaybackStart(char const* pDemoBaseName)
-{ //NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 54)
+{ //NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 55)
 	
 	m_Parent->OnDemoPlaybackStart(pDemoBaseName);
 }
 
-__declspec(naked) void CAfxBaseClientDll::_UNKOWN_055(void)
-{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 55) }
+__declspec(naked) void CAfxBaseClientDll::_UNKOWN_056(void)
+{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 56) }
 
 //__declspec(naked)
 void CAfxBaseClientDll::OnDemoPlaybackStop()
-{ // NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 56)
+{ // NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 57)
 
 	m_Parent->OnDemoPlaybackStop();
 }
-
-__declspec(naked) void CAfxBaseClientDll::_UNKOWN_057(void)
-{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 57) }
 
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_058(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 58) }
@@ -1044,10 +1052,10 @@ __declspec(naked) void CAfxBaseClientDll::_UNKOWN_063(void)
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_064(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 64) }
 
-__declspec(naked) void CAfxBaseClientDll::WriteSaveGameScreenshotOfSize(const char *pFilename, int width, int height, bool bCreatePowerOf2Padded, bool bWriteVTF)
+__declspec(naked) void CAfxBaseClientDll::_UNKOWN_065(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 65) }
 
-__declspec(naked) void CAfxBaseClientDll::_UNKOWN_066(void)
+__declspec(naked) void CAfxBaseClientDll::WriteSaveGameScreenshotOfSize(const char *pFilename, int width, int height, bool bCreatePowerOf2Padded, bool bWriteVTF)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 66) }
 
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_067(void)
@@ -1241,6 +1249,33 @@ __declspec(naked) void CAfxBaseClientDll::_UNKOWN_129(void)
 
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_130(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 130) }
+
+__declspec(naked) void CAfxBaseClientDll::_UNKOWN_131(void)
+{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 131) }
+
+__declspec(naked) void CAfxBaseClientDll::_UNKOWN_132(void)
+{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 132) }
+
+__declspec(naked) void CAfxBaseClientDll::_UNKOWN_133(void)
+{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 133) }
+
+__declspec(naked) void CAfxBaseClientDll::_UNKOWN_134(void)
+{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 134) }
+
+__declspec(naked) void CAfxBaseClientDll::_UNKOWN_135(void)
+{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 135) }
+
+__declspec(naked) void CAfxBaseClientDll::_UNKOWN_136(void)
+{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 136) }
+
+__declspec(naked) void CAfxBaseClientDll::_UNKOWN_137(void)
+{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 137) }
+
+__declspec(naked) void CAfxBaseClientDll::_UNKOWN_138(void)
+{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 138) }
+
+__declspec(naked) void CAfxBaseClientDll::_UNKOWN_139(void)
+{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 139) }
 
 void HookClientDllInterface_011_Init(void * iface)
 {
@@ -1866,7 +1901,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		old_Direct3DCreate9 = (Direct3DCreate9_t)InterceptDllCall(hModule, "d3d9.dll", "Direct3DCreate9", (DWORD) &new_Direct3DCreate9);
 	}
 	else
-	if(bFirstClient && StringEndsWith( lpLibFileName, "client.dll"))
+	if(bFirstClient && StringEndsWith( lpLibFileName, "client_panorama.dll"))
 	{
 		bFirstClient = false;
 

@@ -6,11 +6,20 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>1.xx.x</version>
-<time>2018-06-xxTxx:xxZ</time>
+<version>1.40.4</version>
+<time>2018-06-20T09:12Z</time>
 <changes>
+<change type="fixed">
+Fixed mirv_streams and other features not working on 6/19/2018 version 1.36.3.9 CS:GO #PanoramaUI branch.
+</change>
+<change type="removed">
+Temporarily removed mirv_deathmsg features (we are trying to bring them back, but it's unsure to which extend it is possible.
+</change>
 <change type="added">
 Added possibility to use * as argument instead of a value in mirv_input position / mirv_input angles, which means do not change that component / value.
+</change>
+<change type="fixed">
+Fixed mirv_pgl websocket not sending data when recording or multi-preview.
 </change>
 </changes>
 </release>

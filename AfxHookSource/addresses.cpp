@@ -566,7 +566,9 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 {
 	if(SourceSdkVer_CSGO == sourceSdkVer)
 	{
-		// csgo_CUnknown_GetPlayerName: // Checked 2017-05-13.
+		// csgo_CUnknown_GetPlayerName: // TODO: broken
+		AFXADDR_SET(csgo_CUnknown_GetPlayerName, 0);
+		if(false)
 		{
 			DWORD addr = 0;
 			DWORD strAddr = 0;
@@ -607,7 +609,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 					if(result.Start != patternRange.Start || result.End != patternRange.End)
 					{
 						addr = 0;
-						ErrorBox(MkErrStr(__FILE__,__LINE__));
+						ErrorBox(MkErrStr(__FILE__, __LINE__));
 					}
 				}
 				else ErrorBox(MkErrStr(__FILE__,__LINE__));
@@ -622,7 +624,9 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			}
 		}
 
-		// csgo_CHudDeathNotice_FireGameEvent: // Checked 2017-05-13.
+		// csgo_CHudDeathNotice_FireGameEvent: // TODO: broken
+		AFXADDR_SET(csgo_CHudDeathNotice_FireGameEvent, 0);
+		if (false)
 		{
 			DWORD addr = 0;
 			DWORD strAddr = 0;
@@ -663,7 +667,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 					if(result.Start != patternRange.Start || result.End != patternRange.End)
 					{
 						addr = 0;
-						ErrorBox(MkErrStr(__FILE__,__LINE__));
+						ErrorBox(MkErrStr(__FILE__, __LINE__));
 					}
 					else
 					{
@@ -676,11 +680,13 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			AFXADDR_SET(csgo_CHudDeathNotice_FireGameEvent, addr);
 		}
 
-		// csgo_CHudDeathNotice_UnkAddDeathNotice: // Checked 2017-07-08.
+		// csgo_CHudDeathNotice_UnkAddDeathNotice: // TODO: broken
 		//
 		// This function is called at the end of csgo_CHudDeathNotice_FireGameEvent,
 		// however we search for the string near the call instead to be more stable
 		// against updates.
+		AFXADDR_SET(csgo_CHudDeathNotice_UnkAddDeathNotice, 0);
+		if (false)
 		{
 			DWORD addr = 0;
 			DWORD strAddr = 0;
@@ -732,12 +738,14 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			AFXADDR_SET(csgo_CHudDeathNotice_UnkAddDeathNotice, addr);
 		}
 
-		// csgo_CHudDeathNotice_UnkAddDeathNotice_AddMovie_AfterModTime: // Checked 2017-05-13.
+		// csgo_CHudDeathNotice_UnkAddDeathNotice_AddMovie_AfterModTime: // TODO: broken
 		//
 		// The function csgo_CHudDeathNotice_UnkAddDeathNotice_AddMovie
 		// is called at the end of csgo_CHudDeathNotice_UnkAddDeathNotice
 		// however we search for the string near the desired detour location
 		// to be more stable agains updates.
+		AFXADDR_SET(csgo_CHudDeathNotice_UnkAddDeathNotice_AddMovie_AfterModTime, 0);
+		if (false)
 		{
 			DWORD addr = 0;
 			DWORD strAddr = 0;
@@ -962,7 +970,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 					DWORD tmpAddr = result.Start;
 					tmpAddr += 0xe;
 
-					if (!FindPatternString(MemRange(tmpAddr-1, tmpAddr + 10 -1), "A1 ?? ?? ?? ?? C6 44 24 28 00").IsEmpty())
+					if (!FindPatternString(MemRange(tmpAddr-1, tmpAddr + 10 -1), "A1 ?? ?? ?? ?? C6 44 ?? ?? 00").IsEmpty())
 					{
 						addr = *(DWORD *)tmpAddr;
 					}

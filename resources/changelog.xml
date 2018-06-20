@@ -6,6 +6,28 @@
 
 <release>
 <name>HLAE</name>
+<version>2.50.5-panoramaui</version>
+<time>2018-06-20T09:12Z</time>
+<changes>
+<change type="updated">
+Included AfxHookSource 1.40.4-panoramaui (2018-06-20T09:12Z).
+</change>
+<change type="fixed">
+Fixed mistake in x64/AfxHook.dat preventing injection to work on 64 bit processes.
+</change>
+</changes>
+<comments>
+This release is for the #PanoramaUI branch.<br />
+<br />
+Please help testing it and report (new) issues not known yet on GitHub:<br />
+https://github.com/advancedfx/advancedfx/issues<br />
+(The mirv_deathmsg features have been temporarily disabled until we manage to fix them.)
+</comments>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.50.3</version>
 <time>2018-06-09T13:51Z</time>
 <changes>

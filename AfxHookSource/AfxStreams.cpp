@@ -2994,21 +2994,28 @@ void CAfxBaseFxStream::CActionDebugDepth::MainThreadInitialize(void)
 
 void CAfxBaseFxStream::CActionDebugDepth::AfxUnbind(CAfxBaseFxStreamContext * ch)
 {
-	m_TrackedMaterial->SetReplacement(nullptr);
+	if (m_TrackedMaterial)
+	{
+		m_TrackedMaterial->SetReplacement(nullptr);
+	}
 }
 
 void CAfxBaseFxStream::CActionDebugDepth::MaterialHook(CAfxBaseFxStreamContext * ch, CAfxTrackedMaterial * trackedMaterial)
 {
-	if (!m_DebugDepthMaterial)		
-		return; // Should not happen, but you never know.
-
-	m_TrackedMaterial = trackedMaterial;
+	
 
 	float scale = ch->DrawingSkyBoxView_get() ? csgo_CSkyBoxView_GetScale() : 1.0f;
 	float flDepthFactor = scale * ch->GetStream()->m_DepthVal;
 	float flDepthFactorMax = scale * ch->GetStream()->m_DepthValMax;
 
-	m_TrackedMaterial->SetReplacement(m_DebugDepthMaterial->GetMaterial());
+	if (m_DebugDepthMaterial)
+	{
+		m_TrackedMaterial = trackedMaterial;
+		m_TrackedMaterial->SetReplacement(m_DebugDepthMaterial->GetMaterial());
+	}
+	else
+		m_TrackedMaterial = nullptr;
+
 	m_Static.SetDepthVal(flDepthFactor, flDepthFactorMax);
 }
 
@@ -3113,7 +3120,8 @@ void CAfxBaseFxStream::CActionReplace::MaterialHook(CAfxBaseFxStreamContext * ch
 		m_TrackedMaterial->SetReplacement(m_Material->GetMaterial());
 
 	}
-	else m_TrackedMaterial = nullptr;
+	else
+		m_TrackedMaterial = nullptr;
 
 	if (m_OverrideBlend) AfxD3D9OverrideBegin_ModulationBlend(m_Blend);
 
@@ -7130,8 +7138,6 @@ MirvPgl::CamData GetMirvPglCamData(SOURCESDK::vrect_t_csgo *rect) {
 
 void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *rect)
 {
-	CAfxBaseFxStream::MainThreadInitialize();
-	
 	SetCurrent_View_Render_ThreadId(GetCurrentThreadId());
 
 	//GetCsgoCGlowOverlayFix()->OnMainViewRenderBegin();

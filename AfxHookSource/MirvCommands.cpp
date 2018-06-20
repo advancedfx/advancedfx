@@ -2936,9 +2936,9 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 				char const * arg3 = args->ArgV(3);
 				char const * arg4 = args->ArgV(4);
 	
-				if(0 != stricmp("*", arg2)) g_Hook_VClient_RenderView.LastCameraOrigin[0] = atof(arg2);
-				if (0 != stricmp("*", arg3))g_Hook_VClient_RenderView.LastCameraOrigin[1] = atof(arg3);
-				if (0 != stricmp("*", arg4)) g_Hook_VClient_RenderView.LastCameraOrigin[2] = atof(arg4);
+				if(0 != _stricmp("*", arg2)) g_Hook_VClient_RenderView.LastCameraOrigin[0] = atof(arg2);
+				if (0 != _stricmp("*", arg3))g_Hook_VClient_RenderView.LastCameraOrigin[1] = atof(arg3);
+				if (0 != _stricmp("*", arg4)) g_Hook_VClient_RenderView.LastCameraOrigin[2] = atof(arg4);
 				return;
 			}
 
@@ -2960,9 +2960,9 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 				char const * arg3 = args->ArgV(3);
 				char const * arg4 = args->ArgV(4);
 	
-				if (0 != stricmp("*", arg2)) g_Hook_VClient_RenderView.LastCameraAngles[0] = atof(arg2);
-				if (0 != stricmp("*", arg3)) g_Hook_VClient_RenderView.LastCameraAngles[1] = atof(arg3);
-				if (0 != stricmp("*", arg4)) g_Hook_VClient_RenderView.LastCameraAngles[2] = atof(arg4);
+				if (0 != _stricmp("*", arg2)) g_Hook_VClient_RenderView.LastCameraAngles[0] = atof(arg2);
+				if (0 != _stricmp("*", arg3)) g_Hook_VClient_RenderView.LastCameraAngles[1] = atof(arg3);
+				if (0 != _stricmp("*", arg4)) g_Hook_VClient_RenderView.LastCameraAngles[2] = atof(arg4);
 				return;
 			}
 
