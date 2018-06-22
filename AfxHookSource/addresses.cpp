@@ -36,8 +36,6 @@ AFXADDR_DEF(csgo_CHudDeathNotice_FireGameEvent_DSZ)
 AFXADDR_DEF(csgo_CHudDeathNotice_UnkAddDeathNotice)
 AFXADDR_DEF(csgo_CHudDeathNotice_UnkAddDeathNotice_DSZ)
 AFXADDR_DEF(csgo_CHudDeathNotice_UnkAddDeathNotice_AddMovie_AfterModTime)
-//AFXADDR_DEF(csgo_CScaleformSlotInitControllerClientImpl_UnkCheckSwf)
-//AFXADDR_DEF(csgo_CScaleformSlotInitControllerClientImpl_UnkCheckSwf_DSZ)
 AFXADDR_DEF(csgo_CCSGameMovement_vtable)
 AFXADDR_DEF(csgo_CSkyboxView_Draw)
 AFXADDR_DEF(csgo_CSkyboxView_Draw_DSZ)
@@ -51,8 +49,6 @@ AFXADDR_DEF(csgo_UnlitGeneric_CShader_vtable)
 AFXADDR_DEF(csgo_Unknown_GetTeamsSwappedOnScreen)
 AFXADDR_DEF(csgo_VertexLitGeneric_CShader_vtable)
 AFXADDR_DEF(csgo_S_StartSound_StringConversion)
-AFXADDR_DEF(csgo_Scaleformui_CUnkown_Loader)
-AFXADDR_DEF(csgo_Scaleformui_CUnkown_Loader_DSZ)
 AFXADDR_DEF(csgo_gpGlobals_OFS_curtime)
 AFXADDR_DEF(csgo_gpGlobals_OFS_interpolation_amount)
 AFXADDR_DEF(csgo_gpGlobals_OFS_interval_per_tick)
@@ -494,72 +490,14 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 	AFXADDR_SET(csgo_CVoiceWriter_AddDecompressedData_DSZ, 0x8);
 }
 
-void Addresses_InitScaleformuiDll(AfxAddr scaleformuiDll, SourceSdkVer sourceSdkVer)
+void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer)
 {
 	if(SourceSdkVer_CSGO == sourceSdkVer)
 	{
-		// csgo_Scaleformui_CUnkown_Loader: // Checked 2017-05-13.
-		{
-			DWORD addr = 0;
-			DWORD strAddr = 0;
-			{
-				ImageSectionsReader sections((HMODULE)scaleformuiDll);
-				if(!sections.Eof())
-				{
-					sections.Next(); // skip .text
-					if(!sections.Eof())
-					{
-						MemRange result = FindCString(sections.GetMemRange(), "Loader failed to open '%s', FileOpener not installe");
-						if(!result.IsEmpty())
-						{
-							strAddr = result.Start;
-						}
-						else ErrorBox(MkErrStr(__FILE__,__LINE__));
-					}
-					else ErrorBox(MkErrStr(__FILE__,__LINE__));
-				}
-				else ErrorBox(MkErrStr(__FILE__,__LINE__));
-			}
-			if(strAddr)
-			{
-				ImageSectionsReader sections((HMODULE)scaleformuiDll);
-			
-				MemRange baseRange = sections.GetMemRange();
-				MemRange result = FindBytes(baseRange, (char const *)&strAddr, sizeof(strAddr));
-				if(!result.IsEmpty())
-				{
-					addr = result.Start -0x26;
-
-					// check for pattern to see if it is the right address:
-					unsigned char pattern[3] = { 0x55, 0x8B, 0xEC };
-
-					DWORD patternSize = sizeof(pattern)/sizeof(pattern[0]);
-					MemRange patternRange(addr, addr+patternSize);
-					MemRange result = FindBytes(patternRange, (char *)pattern, patternSize);
-					if(result.Start != patternRange.Start || result.End != patternRange.End)
-					{
-						addr = 0;
-						ErrorBox(MkErrStr(__FILE__,__LINE__));
-					}
-				}
-				else ErrorBox(MkErrStr(__FILE__,__LINE__));
-			}
-			if(addr)
-			{
-				AFXADDR_SET(csgo_Scaleformui_CUnkown_Loader, addr);
-			}
-			else
-			{
-				AFXADDR_SET(csgo_Scaleformui_CUnkown_Loader, 0x0);
-			}
-		}
 	}
 	else
 	{
-		AFXADDR_SET(csgo_Scaleformui_CUnkown_Loader, 0x0);
 	}
-
-	AFXADDR_SET(csgo_Scaleformui_CUnkown_Loader_DSZ, 0x9);
 }
 
 void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
@@ -1080,53 +1018,6 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			}
 			AFXADDR_SET(csgo_view, addr);
 		}
-
-		/*
-		// csgo_CScaleformSlotInitControllerClientImpl_UnkCheckSwf
-		{
-			DWORD addr = 0;
-			DWORD strAddr = 0;
-			{
-				ImageSectionsReader sections((HMODULE)clientDll);
-				if(!sections.Eof())
-				{
-					sections.Next(); // skip .text
-					if(!sections.Eof())
-					{
-						MemRange result = FindCString(sections.GetMemRange(), "resource/flash/");
-						if(!result.IsEmpty())
-						{
-							strAddr = result.Start;
-						}
-						else ErrorBox(MkErrStr(__FILE__,__LINE__));
-					}
-					else ErrorBox(MkErrStr(__FILE__,__LINE__));
-				}
-				else ErrorBox(MkErrStr(__FILE__,__LINE__));
-			}
-			if(strAddr)
-			{
-				ImageSectionsReader sections((HMODULE)clientDll);
-			
-				MemRange baseRange = sections.GetMemRange();
-				MemRange result = FindBytes(baseRange, (char const *)&strAddr, sizeof(strAddr));
-				if(!result.IsEmpty())
-				{
-					addr = result.Start;
-					addr -= 0x10;
-				}
-				else ErrorBox(MkErrStr(__FILE__,__LINE__));
-			}
-			if(addr)
-			{
-				AFXADDR_SET(csgo_CScaleformSlotInitControllerClientImpl_UnkCheckSwf, addr);
-			}
-			else
-			{
-				AFXADDR_SET(csgo_CScaleformSlotInitControllerClientImpl_UnkCheckSwf, 0x0);
-			}
-		}
-		*/
 
 		// csgo_C_BasePlayer_OFS_m_skybox3d_scale // Checked 2017-05-13.
 		//
@@ -1972,7 +1863,6 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_CHudDeathNotice_FireGameEvent, 0x0);
 		AFXADDR_SET(csgo_CHudDeathNotice_UnkAddDeathNotice, 0x0);
 		AFXADDR_SET(csgo_CHudDeathNotice_UnkAddDeathNotice_AddMovie_AfterModTime, 0x0);
-		//AFXADDR_SET(csgo_CScaleformSlotInitControllerClientImpl_UnkCheckSwf, 0x0);
 		AFXADDR_SET(csgo_CCSGameMovement_vtable, 0x0);
 		AFXADDR_SET(csgo_CSkyboxView_Draw, 0x0);
 		//AFXADDR_SET(csgo_CViewRender_Render, 0x0);
@@ -1993,7 +1883,6 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 	AFXADDR_SET(csgo_CUnknown_GetPlayerName_DSZ, 0x0b);
 	AFXADDR_SET(csgo_CHudDeathNotice_FireGameEvent_DSZ, 0x0b);
 	AFXADDR_SET(csgo_CHudDeathNotice_UnkAddDeathNotice_DSZ, 0x09);
-	//AFXADDR_SET(csgo_CScaleformSlotInitControllerClientImpl_UnkCheckSwf_DSZ,0x0c);
 	AFXADDR_SET(csgo_CSkyboxView_Draw_DSZ, 0x0a);
 	AFXADDR_SET(csgo_gpGlobals_OFS_curtime, 4*4);
 	AFXADDR_SET(csgo_gpGlobals_OFS_interpolation_amount, 9*4);

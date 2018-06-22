@@ -4676,10 +4676,10 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 
 	ctxp->PushRenderTargetAndViewport(0, 0, newView.m_nUnscaledX, newView.m_nUnscaledY, newView.m_nUnscaledWidth, newView.m_nUnscaledHeight);
 
-	if (/*!g_pScaleformUI_csgo &&  */ 1 < cols && (hudDrawn || m_Recording))
+	if (1 < cols && (hudDrawn || m_Recording))
 	{
-		// Work around ScaleformUI HUD data not being flushed (do not allow to render the HUD in different positions per frame):
-		myWhatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWHUD;
+		// Would not allow to render the HUD in different passses per frame):
+		//myWhatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWHUD;
 	}
 	else
 	{
@@ -4730,13 +4730,6 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 	}
 
 	*smokeOverlayAlphaFactor = oldSmokeOverlayAlphaFactor;
-
-	/* Does not fix anything.
-	if (0 < num)
-	{
-	QueueOrExecute(ctxp, new CAfxLeafExecute_Functor(new CAfxScaleformUIFixFunctor()));
-	}
-	*/
 
 	ctxp->PopRenderTargetAndViewport();
 

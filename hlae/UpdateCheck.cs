@@ -244,7 +244,7 @@ namespace AfxGui
         }
 
         const int m_MaxRedirects = 1;
-        const String m_Url = "http://update.matrixstorm.com/61b65ac26b714c41a1d998af3c5bd6dd.xml";
+        const String m_Url = "http://www.advancedfx.org/update/61b65ac26b714c41a1d998af3c5bd6dd.xml";
 
 	    Thread m_CheckThread;
 	    bool m_CheckThreadQuit;

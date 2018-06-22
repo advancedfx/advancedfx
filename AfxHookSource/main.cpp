@@ -23,7 +23,6 @@
 #include "AfxStreams.h"
 #include "hlaeFolder.h"
 #include "CampathDrawer.h"
-#include "csgo_ScaleForm_Hooks.h"
 #include "asmClassTools.h"
 #include "csgo_Stdshader_dx9_Hooks.h"
 #include "AfxShaders.h"
@@ -41,6 +40,7 @@
 #include "AfxInterop.h"
 #include "csgo_Audio.h"
 #include "mirv_voice.h"
+#include "csgo/PanoramaHooks.h"
 #include "Gui.h"
 #include <csgo/sdk_src/public/tier0/memalloc.h>
 #include <csgo/sdk_src/public/tier1/convar.h>
@@ -197,8 +197,6 @@ SOURCESDK::IFileSystem_csgo * g_FileSystem_csgo = 0;
 SOURCESDK::CSGO::vgui::IPanel * g_pVGuiPanel_csgo = 0;
 SOURCESDK::CSGO::vgui::ISurface *g_pVGuiSurface_csgo = 0;
 
-//SOURCESDK::CSGO::IScaleformUI * g_pScaleformUI_csgo = 0;
-
 //SOURCESDK::IVRenderView_csgo * g_pVRenderView_csgo = 0;
 
 SOURCESDK::CSGO::IEngineTrace * g_pClientEngineTrace = 0;
@@ -341,26 +339,6 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 			else {
 				ErrorBox("Could not get a supported client engine trace interface.");
 			}
-
-			/*
-			if (iface = appSystemFactory(SOURCESDK_CSGO_SCALEFORM_ITERNFACE_VERSION, NULL))
-			{
-				g_pScaleformUI_csgo = (SOURCESDK::CSGO::IScaleformUI *)iface;
-			}
-			else {
-				ErrorBox("Could not get a supported ScaleformUI interface.");
-			}
-			*/
-
-			/*
-			if (iface = appSystemFactory(SOURCESDK_CSGO_SCALEFORM_ITERNFACE_VERSION, NULL))
-			{
-				g_pVRenderView_csgo = (SOURCESDK::IVRenderView_csgo *)iface;
-			}
-			else {
-				ErrorBox("Could not get a supported VRenderView interface.");
-			}
-			*/
 		}
 		
 		g_Hook_VClient_RenderView.Install(pGlobals);
@@ -1791,7 +1769,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 	static bool bFirstfilesystem_stdio = true;
 	static bool bFirstShaderapidx9 = true;
 	static bool bFirstMaterialsystem = true;
-	static bool bFirstScaleformui = true;
+	static bool bFirstPanorama = true;
 	static bool bFirstStdshader_dx9 = true;
 	static bool bFirstVgui2 = true;
 
@@ -1917,16 +1895,16 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		Hook_csgo_PlayerAnimStateFix();
 	}
 	else
-	if(bFirstScaleformui && StringEndsWith( lpLibFileName, "scaleformui.dll"))
+	if(bFirstPanorama && StringEndsWith( lpLibFileName, "panorama.dll"))
 	{
-		bFirstScaleformui = false;
+		bFirstPanorama = false;
 
-		Addresses_InitScaleformuiDll((AfxAddr)hModule, g_SourceSdkVer);
+		Addresses_InitPanoramaDll((AfxAddr)hModule, g_SourceSdkVer);
 
 		//
 		// Install early hooks:
 
-		csgo_ScaleFormDll_Hooks_Init();
+		csgo_PanoramaHooks_Init();
 	}
 	else
 	if(bFirstStdshader_dx9 && StringEndsWith( lpLibFileName, "stdshader_dx9.dll"))

@@ -41,8 +41,6 @@ AFXADDR_DECL(csgo_CHudDeathNotice_FireGameEvent_DSZ)
 AFXADDR_DECL(csgo_CHudDeathNotice_UnkAddDeathNotice)
 AFXADDR_DECL(csgo_CHudDeathNotice_UnkAddDeathNotice_DSZ)
 AFXADDR_DECL(csgo_CHudDeathNotice_UnkAddDeathNotice_AddMovie_AfterModTime)
-//AFXADDR_DECL(csgo_CScaleformSlotInitControllerClientImpl_UnkCheckSwf)
-//AFXADDR_DECL(csgo_CScaleformSlotInitControllerClientImpl_UnkCheckSwf_DSZ)
 AFXADDR_DECL(csgo_CCSGameMovement_vtable)
 AFXADDR_DECL(csgo_CSkyboxView_Draw)
 AFXADDR_DECL(csgo_CSkyboxView_Draw_DSZ)
@@ -56,8 +54,6 @@ AFXADDR_DECL(csgo_UnlitGeneric_CShader_vtable)
 AFXADDR_DECL(csgo_Unknown_GetTeamsSwappedOnScreen)
 AFXADDR_DECL(csgo_VertexLitGeneric_CShader_vtable)
 AFXADDR_DECL(csgo_S_StartSound_StringConversion)
-AFXADDR_DECL(csgo_Scaleformui_CUnkown_Loader)
-AFXADDR_DECL(csgo_Scaleformui_CUnkown_Loader_DSZ)
 AFXADDR_DECL(csgo_gpGlobals_OFS_curtime)
 AFXADDR_DECL(csgo_gpGlobals_OFS_interpolation_amount)
 AFXADDR_DECL(csgo_gpGlobals_OFS_interval_per_tick)
@@ -75,6 +71,6 @@ AFXADDR_DECL(csgo_CVoiceWriter_AddDecompressedData)
 AFXADDR_DECL(csgo_CVoiceWriter_AddDecompressedData_DSZ)
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
-void Addresses_InitScaleformuiDll(AfxAddr scaleformuiDll, SourceSdkVer sourceSdkVer);
+void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer);
 //void Addresses_InitStdshader_dx9Dll(AfxAddr stdshader_dx9Dll, bool isCsgo);

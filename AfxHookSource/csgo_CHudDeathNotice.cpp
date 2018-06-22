@@ -13,25 +13,44 @@
 #include <list>
 #include <sstream>
 
+/*
+
+sub_1011CD40
+
+void CHudBaseDeathNotice::FireGameEvent_UnkDoNotice( IGameEvent *event )
+
+event->GetInt("attacker",0) -> VEngineClient014->GetPlayerForUserID --> VEngineClient014->GetPlayerInfo,  IClientNetworkable::entindex((IClientNetworkable)localPlayer)
+event->GetInt("userid",0) -> VEngineClient014->GetPlayerForUserID --> VEngineClient014->GetPlayerInfo
+event->GetInt("assister",0) -> VEngineClient014->GetPlayerForUserID --> VEngineClient014->GetPlayerInfo,  IClientNetworkable::entindex((IClientNetworkable)localPlayer)
+event->GetString("weapon",0)
+event->GetInt("headshot",0)
+event->GetInt("penetrated",0)
+event->GetInt("dominated",0)
+event->GetInt("revenge",0)
+
+- SpawnTime
+- Lifetime
+- LifetimeMod
+".?AVCUIPanel@panorama@@" (2nd ref) [282] UnkSetFloatProp(word propId, float value)
+
+
+*/
+
 extern WrpVEngineClient * g_VEngineClient;
 
-typedef void (__stdcall *csgo_CHudDeathNotice_FireGameEvent_t)(DWORD *this_ptr, SOURCESDK::CSGO::IGameEvent * event);
+typedef void csgo_CHudBaseDeathNotice_t;
 
-csgo_CHudDeathNotice_FireGameEvent_t detoured_csgo_CHudDeathNotice_FireGameEvent;
+typedef void (__stdcall *csgo_CHudBaseDeathNotice_FireGameEvent_UnkDoNotice_t)(csgo_CHudBaseDeathNotice_t * This, SOURCESDK::CSGO::IGameEvent * event);
 
-int csgo_debug_CHudDeathNotice_FireGameEvent = 0;
+csgo_CHudBaseDeathNotice_FireGameEvent_UnkDoNotice_t Realcsgo_CHudBaseDeathNotice_FireGameEvent_UnkDoNotice = 0;
 
-enum DeathMsgBlockMode
+csgo_CHudBaseDeathNotice_t * csgo_CHudBaseDeathNotice_FireGameEvent_UnkDoNotice_This = 0;
+
+enum DeathMsgIdMatchMode
 {
 	DMBM_EQUAL,
 	DMBM_EXCEPT,
 	DMBM_ANY
-};
-
-enum DeathMsgBlockAction
-{
-	DMBA_BLOCK,
-	DMBA_MODTIME
 };
 
 struct DeathMsgId
@@ -128,41 +147,101 @@ struct DeathMsgId
 };
 
 
-struct DeathMsgBlockEntry
+struct DeathMsgFilterEntry
 {
-	DeathMsgId attackerId;
-	DeathMsgBlockMode attackerMode;
-	DeathMsgId victimId;
-	DeathMsgBlockMode victimMode;
-	DeathMsgId assisterId;
-	DeathMsgBlockMode assisterMode;
-	float modTime;
+	struct PlayerEntry
+	{
+		DeathMsgIdMatchMode mode;
+		DeathMsgId id;
+
+		bool useName;
+		std::string name;
+
+		bool isLocal;
+	};
+
+	struct IntEntry
+	{
+		bool use;
+		int value;
+	};
+
+	struct FloatEntry
+	{
+		bool use;
+		float value;
+	};
+
+	PlayerEntry attacker;
+	PlayerEntry victim;
+	PlayerEntry assister;
+
+	IntEntry headshot;
+
+	IntEntry penetrated;
+
+	IntEntry dominated;
+
+	IntEntry revenge;
+
+	FloatEntry lifetime;
+
+	FloatEntry lifetimeMod;
+
+	bool block;
+
+	bool lastRule;
+
+	void Console_Print()
+	{
+
+	}
+
+	void Console_Edit(IWrpCommandArgs * args)
+	{
+		int argc = args->ArgC();
+		char const * arg0 = args->ArgV(0);
+
+		if (2 <= argc)
+		{
+
+		}
+
+		Tier0_Msg(
+			"%s attacker [...]\n"
+			"%s victim [...]\n"
+			"%s assister [...]\n"
+			"%s headshot [...]\n"
+			"%s penetrated [...]\n"
+			"%s dominated [...]\n"
+			"%s revenge [...]\n"
+			"%s lifetime [...]\n"
+			"%s lifetimeMod [...]\n"
+			"%s block [...]\n"
+			"%s lastRule [...]\n"
+		);
+	}
 };
 
-std::list<DeathMsgBlockEntry> deathMessageBlock((int)0);
+static std::list<DeathMsgFilterEntry> deathMessageFilter;
 
-float csgo_CHudDeathNotice_nScrollInTime = -1;
-float csgo_CHudDeathNotice_nFadeOutTime = -1;
-float csgo_CHudDeathNotice_nNoticeLifeTime = -1;
-float csgo_CHudDeathNotice_nLocalPlayerLifeTimeMod = -1;
-
-float org_CHudDeathNotice_nScrollInTime;
-float org_CHudDeathNotice_nFadeOutTime;
-float org_CHudDeathNotice_nNoticeLifeTime;
-float org_CHudDeathNotice_nLocalPlayerLifeTimeMod;
-
-DeathMsgId csgo_CHudDeathNotice_HighLightId = -1;
-bool csgo_CHudDeathNotice_HighLightAssists = true;
-
-bool csgo_CHudDeathNotice_HighLightId_matchedVictim;
-bool csgo_CHudDeathNotice_HighLightId_matchedAssister;
-bool csgo_CHudDeathNotice_HighLightId_matchedAttacker;
-
-bool csgo_CHudDeathNotice_ModTime_set;
-float csgo_CHudDeathNotice_ModTime;
-
-void __stdcall touring_csgo_CHudDeathNotice_FireGameEvent(DWORD *this_ptr, SOURCESDK::CSGO::IGameEvent * event)
+class MyGameEventWrapper : SOURCESDK::CSGO::IGameEvent
 {
+public:
+	MyGameEventWrapper(SOURCESDK::CSGO::IGameEvent * event)
+	{
+
+	}
+
+private:
+
+	SOURCESDK::CSGO::IGameEvent * m_Event;
+}
+
+void __stdcall Mycsgo_CHudBaseDeathNotice_FireGameEvent_UnkDoNotice(csgo_CHudBaseDeathNotice_t * This, SOURCESDK::CSGO::IGameEvent * event)
+{
+	csgo_CHudBaseDeathNotice_FireGameEvent_UnkDoNotice_This = This;
+
 	static bool firstRun = true;
 	if(firstRun)
 	{

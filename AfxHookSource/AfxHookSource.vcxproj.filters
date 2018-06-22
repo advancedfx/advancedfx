@@ -255,9 +255,6 @@
     <ClCompile Include="csgo_S_StartSound.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
-    <ClCompile Include="csgo_ScaleForm_Hooks.cpp">
-      <Filter>AfxHookSource</Filter>
-    </ClCompile>
     <ClCompile Include="AfxShaders.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
@@ -378,6 +375,9 @@
     <ClCompile Include="AfxInterop.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
+    <ClCompile Include="csgo\PanoramaHooks.cpp">
+      <Filter>AfxHookSource\csgo</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\bvhexport.h">
@@ -462,9 +462,6 @@
       <Filter>shared</Filter>
     </ClInclude>
     <ClInclude Include="csgo_S_StartSound.h">
-      <Filter>AfxHookSource</Filter>
-    </ClInclude>
-    <ClInclude Include="csgo_ScaleForm_Hooks.h">
       <Filter>AfxHookSource</Filter>
     </ClInclude>
     <ClInclude Include="AfxShaders.h">
@@ -718,6 +715,9 @@
     </ClInclude>
     <ClInclude Include="AfxInterop.h">
       <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo\PanoramaHooks.h">
+      <Filter>AfxHookSource\csgo</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
