@@ -169,6 +169,15 @@
     <ClCompile Include="..\shared\bvhimport.cpp" />
     <ClCompile Include="..\shared\CamPath.cpp" />
     <ClCompile Include="..\prop\shared\detours.cpp" />
+    <ClCompile Include="..\shared\Detours\src\detours.cpp" />
+    <ClCompile Include="..\shared\Detours\src\disasm.cpp" />
+    <ClCompile Include="..\shared\Detours\src\disolarm.cpp" />
+    <ClCompile Include="..\shared\Detours\src\disolarm64.cpp" />
+    <ClCompile Include="..\shared\Detours\src\disolia64.cpp" />
+    <ClCompile Include="..\shared\Detours\src\disolx64.cpp" />
+    <ClCompile Include="..\shared\Detours\src\disolx86.cpp" />
+    <ClCompile Include="..\shared\Detours\src\image.cpp" />
+    <ClCompile Include="..\shared\Detours\src\modules.cpp" />
     <ClCompile Include="..\shared\FileTools.cpp" />
     <ClCompile Include="..\shared\hooks\gameOverlayRenderer.cpp" />
     <ClCompile Include="..\shared\imgui\imgui.cpp" />
@@ -197,7 +206,6 @@
     <ClCompile Include="csgo_CSkyBoxView.cpp" />
     <ClCompile Include="csgo_CViewRender.cpp" />
     <ClCompile Include="csgo_c_baseanimatingoverlay.cpp" />
-    <ClCompile Include="csgo_GetPlayerName.cpp" />
     <ClCompile Include="csgo_SndMixTimeScalePatch.cpp" />
     <ClCompile Include="csgo_Stdshader_dx9_Hooks.cpp" />
     <ClCompile Include="csgo_S_StartSound.cpp" />
@@ -272,6 +280,8 @@
     <ClInclude Include="..\shared\bvhimport.h" />
     <ClInclude Include="..\shared\CamPath.h" />
     <ClInclude Include="..\prop\shared\detours.h" />
+    <ClInclude Include="..\shared\Detours\src\detours.h" />
+    <ClInclude Include="..\shared\Detours\src\detver.h" />
     <ClInclude Include="..\shared\FileTools.h" />
     <ClInclude Include="..\shared\hooks\gameOverlayRenderer.h" />
     <ClInclude Include="..\shared\imgui\imconfig.h" />
@@ -306,7 +316,6 @@
     <ClInclude Include="csgo_CSkyBoxView.h" />
     <ClInclude Include="csgo_CViewRender.h" />
     <ClInclude Include="csgo_c_baseanimatingoverlay.h" />
-    <ClInclude Include="csgo_GetPlayerName.h" />
     <ClInclude Include="csgo_SndMixTimeScalePatch.h" />
     <ClInclude Include="csgo_Stdshader_dx9_Hooks.h" />
     <ClInclude Include="csgo_S_StartSound.h" />

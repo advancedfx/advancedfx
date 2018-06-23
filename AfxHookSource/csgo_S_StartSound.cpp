@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-#include "csgo_GetPlayerName.h"
+#include "csgo_S_StartSound.h"
 
 #include "addresses.h"
 #include "SourceInterfaces.h"

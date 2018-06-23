@@ -169,6 +169,12 @@
     <Filter Include="interfaces\support\c">
       <UniqueIdentifier>{7dfbe5a3-def8-4728-b9c3-f907a6514aaf}</UniqueIdentifier>
     </Filter>
+    <Filter Include="shared\Detours">
+      <UniqueIdentifier>{a00372c9-e182-48de-a4e5-f496755b2814}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shared\Detours\src">
+      <UniqueIdentifier>{34b3b323-d378-40da-aa26-50a38883f92b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\bvhexport.cpp">
@@ -212,9 +218,6 @@
     </ClCompile>
     <ClCompile Include="..\shared\CamPath.cpp">
       <Filter>shared</Filter>
-    </ClCompile>
-    <ClCompile Include="csgo_GetPlayerName.cpp">
-      <Filter>AfxHookSource</Filter>
     </ClCompile>
     <ClCompile Include="csgo_SndMixTimeScalePatch.cpp">
       <Filter>AfxHookSource</Filter>
@@ -378,6 +381,33 @@
     <ClCompile Include="csgo\PanoramaHooks.cpp">
       <Filter>AfxHookSource\csgo</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared\Detours\src\detours.cpp">
+      <Filter>shared\Detours\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Detours\src\disasm.cpp">
+      <Filter>shared\Detours\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Detours\src\disolarm.cpp">
+      <Filter>shared\Detours\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Detours\src\disolarm64.cpp">
+      <Filter>shared\Detours\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Detours\src\disolia64.cpp">
+      <Filter>shared\Detours\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Detours\src\disolx64.cpp">
+      <Filter>shared\Detours\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Detours\src\disolx86.cpp">
+      <Filter>shared\Detours\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Detours\src\image.cpp">
+      <Filter>shared\Detours\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Detours\src\modules.cpp">
+      <Filter>shared\Detours\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\bvhexport.h">
@@ -418,9 +448,6 @@
     </ClInclude>
     <ClInclude Include="..\shared\CamPath.h">
       <Filter>shared</Filter>
-    </ClInclude>
-    <ClInclude Include="csgo_GetPlayerName.h">
-      <Filter>AfxHookSource</Filter>
     </ClInclude>
     <ClInclude Include="csgo_SndMixTimeScalePatch.h">
       <Filter>AfxHookSource</Filter>
@@ -718,6 +745,12 @@
     </ClInclude>
     <ClInclude Include="csgo\PanoramaHooks.h">
       <Filter>AfxHookSource\csgo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Detours\src\detours.h">
+      <Filter>shared\Detours\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Detours\src\detver.h">
+      <Filter>shared\Detours\src</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
