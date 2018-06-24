@@ -59,6 +59,7 @@ AFXADDR_DEF(csgo_CClientState_ProcessVoiceData_DSZ)
 AFXADDR_DEF(csgo_CVoiceWriter_AddDecompressedData)
 AFXADDR_DEF(csgo_CVoiceWriter_AddDecompressedData_DSZ)
 AFXADDR_DEF(csgo_panorama_AVCUIPanel_UnkSetFloatProp)
+AFXADDR_DEF(csgo_C_CSPlayer_IClientNetworkable_entindex)
 
 void ErrorBox(char const * messageText);
 
@@ -529,7 +530,7 @@ void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer)
 										DWORD tmpAddr = result.Start;
 										tmpAddr += (1) * 4;
 
-										addr = *(((DWORD **)tmpAddr)[282]);
+										addr = ((DWORD *)tmpAddr)[282];
 									}
 									else ErrorBox(MkErrStr(__FILE__, __LINE__));
 								}
@@ -1440,6 +1441,68 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			AFXADDR_SET(csgo_CCSViewRender_vtable, addr);
 		}
 
+		// csgo_C_CSPlayer_IClientNetworkable_entindex:
+		{
+			DWORD addr = 0;
+			{
+				ImageSectionsReader sections((HMODULE)clientDll);
+				if (!sections.Eof())
+				{
+					MemRange textRange = sections.GetMemRange();
+
+					sections.Next(); // skip .text
+					if (!sections.Eof())
+					{
+						MemRange firstDataRange = sections.GetMemRange();
+
+						sections.Next(); // skip first .data
+						if (!sections.Eof())
+						{
+							MemRange result = FindCString(sections.GetMemRange(), ".?AVC_CSPlayer@@");
+							if (!result.IsEmpty())
+							{
+								DWORD tmpAddr = result.Start;
+								tmpAddr -= 0x8;
+
+								result.Start = firstDataRange.Start;
+								result.End = firstDataRange.Start;
+
+								for (int i = 0; i < 4; ++i)
+								{
+									result = FindBytes(MemRange(result.End, firstDataRange.End), (char const *)&tmpAddr, sizeof(tmpAddr));
+								}
+
+								if (!result.IsEmpty())
+								{
+									DWORD tmpAddr = result.Start;
+									tmpAddr -= 0xC;
+
+									result = FindBytes(firstDataRange, (char const *)&tmpAddr, sizeof(tmpAddr));
+									if (!result.IsEmpty())
+									{
+										DWORD tmpAddr = result.Start;
+										tmpAddr += (1) * 4;
+
+										tmpAddr = ((DWORD *)tmpAddr)[10];
+
+										addr = tmpAddr;
+									}
+									else ErrorBox(MkErrStr(__FILE__, __LINE__));
+								}
+								else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			AFXADDR_SET(csgo_C_CSPlayer_IClientNetworkable_entindex, addr);
+		}
+
 		/*
 		// csgo_CPredictionCopy_TransferData:
 		{
@@ -1753,6 +1816,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_CCSViewRender_RenderSmokeOverlay_OnBeforeExitFunc, 0x0);
 		//AFXADDR_SET(csgo_mystique_animation, 0x0);
 		AFXADDR_SET(csgo_Unknown_GetTeamsSwappedOnScreen, 0x0);
+		AFXADDR_SET(csgo_C_CSPlayer_IClientNetworkable_entindex, 0x0);
 	}
 
 	//AFXADDR_SET(csgo_CPredictionCopy_TransferData_DSZ, 0x0a);

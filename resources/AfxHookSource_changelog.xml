@@ -6,7 +6,33 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>1.40.4</version>
+<version>1.40.6-panoramaui</version>
+<time>2018-06-24T14:30Z</time>
+<changes>
+<change type="added">
+Readded mirv_deathmsg, the interface changed, but it has all features it used to have (even more, i.e. every id can be userID or XUID of a player, also trace (userId) or xTrace (XUID) to use current POV, see mirv_deathmsg help id for more info).<br />
+Examples:<br />
+1) mirv_deathmsg fake attackerId=4 victimId=5 weapon=ak47 headshot=1 // will make a death notice for the player with userID 4 killing the player with userId 5 with an headshot from ak47, will only work if one death message has been shown already.<br />
+2) mirv_deathsmg localPlayer xTrace // sets the current POV player as localPlayer by their XUID.<br />
+3) mirv_deathsmg lifeTime 100.5 // sets the next default death notice life time to 100.5 seconds, to clear notices jump back to i.e. round start.<br />
+4) mirv_deathsmg lifeTimeMod 1.0 // sets the next default death notice life time multiplier for local player time 1.<br />
+5) mirv_deathsmg lifeTimeMod default // Restores default life time multiplier.<br />
+6) mirv_deathmsg filter add attackerMatch=!xTrace victimMatch=!xTrace block=1 lastRule=1 // block all death messages except of the player by XUID in the current POV.
+</change>
+<change type="added">
+Readded mirv_replace_name, the interface changed, but it has all features it used to have (even more, i.e. every id can be userID or XUID of a player, also trace (userId) or xTrace (XUID) to use current POV, see mirv_replace_name help id for more info).
+</change>
+</changes>
+<comments>
+Known problems:<br />
+mirv_streams preview drawHud will always draw the PanoramaUI HUD on the full screen, if it hasn't been drawn yet: https://github.com/advancedfx/advancedfx/issues/60<br />
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.40.4-panoramaui</version>
 <time>2018-06-20T09:12Z</time>
 <changes>
 <change type="fixed">

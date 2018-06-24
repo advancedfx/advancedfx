@@ -7470,7 +7470,7 @@ char const * CAfxStreams::Console_FromStreamCaptureType(CAfxRenderViewStream::St
 	switch(StreamCaptureType)
 	{
 	case CAfxRenderViewStream::SCT_Normal:
-		return "nomral";
+		return "normal";
 	case CAfxRenderViewStream::SCT_Depth24:
 		return "depth24";
 	case CAfxRenderViewStream::SCT_Depth24ZIP:

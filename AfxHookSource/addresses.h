@@ -64,6 +64,7 @@ AFXADDR_DECL(csgo_CClientState_ProcessVoiceData_DSZ)
 AFXADDR_DECL(csgo_CVoiceWriter_AddDecompressedData)
 AFXADDR_DECL(csgo_CVoiceWriter_AddDecompressedData_DSZ)
 AFXADDR_DECL(csgo_panorama_AVCUIPanel_UnkSetFloatProp)
+AFXADDR_DECL(csgo_C_CSPlayer_IClientNetworkable_entindex)
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);
