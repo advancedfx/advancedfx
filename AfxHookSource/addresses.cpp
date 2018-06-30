@@ -1441,7 +1441,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			AFXADDR_SET(csgo_CCSViewRender_vtable, addr);
 		}
 
-		// csgo_C_CSPlayer_IClientNetworkable_entindex:
+		// csgo_C_CSPlayer_IClientNetworkable_entindex: // Checked: 2018-06-30.
 		{
 			DWORD addr = 0;
 			{
@@ -1464,12 +1464,18 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 								DWORD tmpAddr = result.Start;
 								tmpAddr -= 0x8;
 
-								result.Start = firstDataRange.Start;
-								result.End = firstDataRange.Start;
-
-								for (int i = 0; i < 4; ++i)
+								for(result = MemRange(firstDataRange.Start, firstDataRange.End);
+									!result.IsEmpty();
+									result = MemRange(result.End, firstDataRange.End))
 								{
-									result = FindBytes(MemRange(result.End, firstDataRange.End), (char const *)&tmpAddr, sizeof(tmpAddr));
+									result = FindBytes(result, (char const *)&tmpAddr, sizeof(tmpAddr));
+
+									if (result.IsEmpty()) break;
+
+									if (
+										result.Start - 0x8 >= firstDataRange.Start
+										&& (2) * sizeof(DWORD) == *((DWORD *)(result.Start - 0x8))
+									) break;
 								}
 
 								if (!result.IsEmpty())

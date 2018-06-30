@@ -378,9 +378,6 @@
     <ClCompile Include="AfxInterop.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
-    <ClCompile Include="csgo\PanoramaHooks.cpp">
-      <Filter>AfxHookSource\csgo</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared\Detours\src\detours.cpp">
       <Filter>shared\Detours\src</Filter>
     </ClCompile>
@@ -742,9 +739,6 @@
     </ClInclude>
     <ClInclude Include="AfxInterop.h">
       <Filter>AfxHookSource</Filter>
-    </ClInclude>
-    <ClInclude Include="csgo\PanoramaHooks.h">
-      <Filter>AfxHookSource\csgo</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\Detours\src\detours.h">
       <Filter>shared\Detours\src</Filter>

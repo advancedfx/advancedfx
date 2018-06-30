@@ -36,11 +36,11 @@
 //#include "csgo_IPrediction.h"
 #include "csgo_MemAlloc.h"
 #include "csgo_c_baseanimatingoverlay.h"
+#include "csgo_CHudDeathNotice.h"
 #include "MirvPgl.h"
 #include "AfxInterop.h"
 #include "csgo_Audio.h"
 #include "mirv_voice.h"
-#include "csgo/PanoramaHooks.h"
 #include "Gui.h"
 #include <csgo/sdk_src/public/tier0/memalloc.h>
 #include <csgo/sdk_src/public/tier1/convar.h>
@@ -686,6 +686,11 @@ int CAfxBaseClientDll::Init(SOURCESDK::CreateInterfaceFn appSystemFactory, SOURC
 		bFirstCall = false;
 
 		MySetup(appSystemFactory, new WrpGlobalsCsGo(pGlobals));
+
+		//
+		// Install early hooks:
+
+		csgo_CHudDeathNotice_Install();
 	}
 
 	int result = m_Parent->Init(AppSystemFactory_ForClient, pGlobals);
@@ -1900,11 +1905,6 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		bFirstPanorama = false;
 
 		Addresses_InitPanoramaDll((AfxAddr)hModule, g_SourceSdkVer);
-
-		//
-		// Install early hooks:
-
-		csgo_PanoramaHooks_Init();
 	}
 	else
 	if(bFirstStdshader_dx9 && StringEndsWith( lpLibFileName, "stdshader_dx9.dll"))

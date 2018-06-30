@@ -198,7 +198,6 @@
     <ClCompile Include="ClientTools.cpp" />
     <ClCompile Include="CommandSystem.cpp" />
     <ClCompile Include="csgo\ClientToolsCsgo.cpp" />
-    <ClCompile Include="csgo\PanoramaHooks.cpp" />
     <ClCompile Include="csgo_Audio.cpp" />
     <ClCompile Include="csgo_CBasePlayer.cpp" />
     <ClCompile Include="csgo_CHudDeathNotice.cpp" />
@@ -308,7 +307,6 @@
     <ClInclude Include="ClientTools.h" />
     <ClInclude Include="CommandSystem.h" />
     <ClInclude Include="csgo\ClientToolsCsgo.h" />
-    <ClInclude Include="csgo\PanoramaHooks.h" />
     <ClInclude Include="csgo_Audio.h" />
     <ClInclude Include="csgo_CBasePlayer.h" />
     <ClInclude Include="csgo_CHudDeathNotice.h" />

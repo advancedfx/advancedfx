@@ -6,6 +6,25 @@
 
 <release>
 <name>HLAE</name>
+<version>2.50.7-panoramaui</version>
+<time>2018-06-30T06:52Z</time>
+<changes>
+<change type="updated">
+Included AfxHookSource 1.40.7-panoramaui (2018-06-30T06:52Z).
+</change>
+</changes>
+<comments>
+This release is for the #PanoramaUI CS:GO branch .<br />
+<br />
+Please help testing it and report (new) issues not known yet on GitHub:<br />
+https://github.com/advancedfx/advancedfx/issues<br />
+https://github.com/advancedfx/advancedfx/projects/1
+</comments>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.50.6-panoramaui</version>
 <time>2018-06-24T14:30Z</time>
 <changes>

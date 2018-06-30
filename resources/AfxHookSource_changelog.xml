@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.40.7-panoramaui</version>
+<time>2018-06-30T06:52Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_deathmsg crash / adjusted to CS:GO update 6/25/18 (1.36.3.9).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.40.6-panoramaui</version>
 <time>2018-06-24T14:30Z</time>
 <changes>
