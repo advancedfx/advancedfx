@@ -413,7 +413,7 @@ CON_COMMAND(mirv_agr, "AFX GameRecord")
 
 				std::wstring wideFilePath;
 
-				if (AnsiStringToWideString(cmd2, wideFilePath))
+				if (UTF8StringToWideString(cmd2, wideFilePath))
 				{
 					clientTools->StartRecording(wideFilePath.c_str());
 				}

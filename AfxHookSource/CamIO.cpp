@@ -49,7 +49,7 @@ double CamIO::UndoFovScaling(double width, double height, double fov)
 }
 
 
-CamExport::CamExport(char const * fileName, ScaleFov scaleFov)
+CamExport::CamExport(const wchar_t * fileName, ScaleFov scaleFov)
 	: m_Ofs(fileName, std::ofstream::out | std::ofstream::trunc)
 {
 	m_ScaleFov = scaleFov;

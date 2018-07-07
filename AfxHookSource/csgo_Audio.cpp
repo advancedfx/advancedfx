@@ -26,7 +26,7 @@ double g_csgo_Audio_TimeDue = 0;
 double g_csgo_Audio_Remainder = 0;
 bool g_CAudioXAudio2_RecordAudio_Active = false;
 bool g_CAudioXAudio2_FirstCallInLoop = true;
-std::string g_CAudioXAudio2_RecordAudio_Dir;
+std::wstring g_CAudioXAudio2_RecordAudio_Dir;
 std::map<DWORD *, CMirvWav> g_CAudioXAudio2_RecordAudio_Files;
 
 std::vector<WORD> g_CAudioXAudio2_ChannelData;
@@ -41,9 +41,9 @@ void __stdcall touring_CAudioXAudio2_UnkSupplyAudio(DWORD * this_ptr, int numCha
 
 		if (it == g_CAudioXAudio2_RecordAudio_Files.end())
 		{
-			std::ostringstream os;
-			os << g_CAudioXAudio2_RecordAudio_Dir << "\\audio_" << this_ptr << ".wav";
-			std::string fileName = os.str();
+			std::wostringstream os;
+			os << g_CAudioXAudio2_RecordAudio_Dir << L"\\audio_" << this_ptr << L".wav";
+			std::wstring fileName = os.str();
 
 			it = g_CAudioXAudio2_RecordAudio_Files.emplace(std::piecewise_construct, std::forward_as_tuple(this_ptr), std::forward_as_tuple(fileName.c_str(), numChannels, 44100)).first;
 		}
@@ -130,7 +130,7 @@ bool csgo_Audio_Install(void)
 	return firstResult;
 }
 
-bool csgo_Audio_StartRecording(char const * ansiTakeDir)
+bool csgo_Audio_StartRecording(const wchar_t * ansiTakeDir)
 {
 	if (!csgo_Audio_Install())
 		return false;

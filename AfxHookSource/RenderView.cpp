@@ -374,7 +374,15 @@ void Hook_VClient_RenderView::Console_CamIO(IWrpCommandArgs * args)
 						m_CamExport = 0;
 					}
 
-					m_CamExport = new CamExport(args->ArgV(3), 0 == _stricmp("alienSwarm", args->ArgV(4)) ? CamExport::SF_AlienSwarm : CamExport::SF_None);
+					std::wstring fileName(L"");
+
+					if (UTF8StringToWideString(args->ArgV(3), fileName))
+					{
+						m_CamExport = new CamExport(fileName.c_str(), 0 == _stricmp("alienSwarm", args->ArgV(4)) ? CamExport::SF_AlienSwarm : CamExport::SF_None);
+					}
+					else
+						Tier0_Warning("Error: Can not convert \"%s\" from UTF-8 to WideString.\n", args->ArgV(3));
+
 
 					return;
 				}

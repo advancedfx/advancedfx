@@ -9,6 +9,7 @@
 #include "MirvWav.h"
 
 #include <shared/detours.h>
+#include <shared/StringTools.h>
 
 #include <list>
 #include <set>
@@ -64,7 +65,7 @@ public:
 		}
 	}
 
-	void Start(char const * directoryPath)
+	void Start(const wchar_t * directoryPath)
 	{
 		Stop();
 
@@ -94,9 +95,9 @@ public:
 		std::map<int, CEntityMixData>::iterator it = m_EntityMixData.find(m_EntityIndex);
 		if (it == m_EntityMixData.end())
 		{
-			std::ostringstream os;
-			os << m_Directory << "\\entity_" << m_EntityIndex << ".wav";
-			std::string fileName = os.str();
+			std::wostringstream os;
+			os << m_Directory << L"\\entity_" << m_EntityIndex << L".wav";
+			std::wstring fileName = os.str();
 
 			it = m_EntityMixData.emplace(std::piecewise_construct, std::forward_as_tuple(m_EntityIndex), std::forward_as_tuple(m_Time, fileName.c_str())).first;
 		}
@@ -121,7 +122,7 @@ private:
 	bool m_Recording = false;
 	int m_EntityIndex = 0;
 	double m_Time = 0;
-	std::string m_Directory;
+	std::wstring m_Directory;
 
 	class CMixData
 	{
@@ -188,7 +189,7 @@ private:
 	class CEntityMixData
 	{
 	public:
-		CEntityMixData(double time, char const * fileName)
+		CEntityMixData(double time, const wchar_t * fileName)
 			: m_Wav(fileName, 1, m_OutSampleRate)
 		{
 			// New file, add intital silence if requrired:
@@ -326,7 +327,7 @@ void Mirv_Voice_OnAfterFrameRenderEnd(void)
 	g_MirvVoiceWriter.OnAfterFrameRenderEnd();
 }
 
-bool Mirv_Voice_StartRecording(char const * directoryPath)
+bool Mirv_Voice_StartRecording(const wchar_t * directoryPath)
 {
 	bool result = Hook_CVoiceWriter_AddDecompressedData();
 
@@ -433,7 +434,15 @@ CON_COMMAND(mirv_voice, "Controls voice data related features.")
 				}
 				else if (!_stricmp("start", cmd2))
 				{
-					Mirv_Voice_StartRecording(4 <= argC ? args->ArgV(3) : "");
+					std::wstring directorPath(L"");
+
+					if (4 <= argC)
+					{
+						if (!UTF8StringToWideString(args->ArgV(3), directorPath))
+							Tier0_Warning("Error: Can not convert \"%s\" from UTF-8 to WideString.\n", args->ArgV(3));
+					}
+
+					Mirv_Voice_StartRecording(directorPath.c_str());
 					return;
 				}
 				else if (!_stricmp("stop", cmd2))

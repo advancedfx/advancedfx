@@ -602,7 +602,7 @@ bool CAfxRecordStream::CreateCapturePath(const std::wstring & takeDir, int frame
 	{
 		m_TriedCreatePath = true;
 		std::wstring wideStreamName;
-		if(AnsiStringToWideString(m_StreamName.c_str(), wideStreamName))
+		if(UTF8StringToWideString(m_StreamName.c_str(), wideStreamName))
 		{
 			m_CapturePath = takeDir;
 			m_CapturePath.append(L"\\");
@@ -5078,7 +5078,7 @@ void CAfxStreams::Console_Record_Start()
 
 	Tier0_Msg("Starting recording ... ");
 	
-	if(AnsiStringToWideString(m_RecordName.c_str(), m_TakeDir)
+	if(UTF8StringToWideString(m_RecordName.c_str(), m_TakeDir)
 		&& (m_TakeDir.append(L"\\take"), SuggestTakePath(m_TakeDir.c_str(), 4, m_TakeDir))
 		&& CreatePath(m_TakeDir.c_str(), m_TakeDir)
 	)
@@ -5087,8 +5087,8 @@ void CAfxStreams::Console_Record_Start()
 		m_Frame = 0;
 		m_StartMovieWavUsed = false;
 
-		std::string ansiTakeDir;
-		bool ansiTakeDirOk = WideStringToAnsiString(m_TakeDir.c_str(), ansiTakeDir);
+		std::string utf8TakeDir;
+		bool utf8TakeDirOk = WideStringToUTF8String(m_TakeDir.c_str(), utf8TakeDir);
 
 		BackUpMatVars();
 		SetMatVarsForStreams();
@@ -5125,39 +5125,34 @@ void CAfxStreams::Console_Record_Start()
 			(*it)->StartCapture(m_TakeDir, frameTime);
 		}
 
-		if (m_CamExport && ansiTakeDirOk)
+		if (m_CamExport)
 		{
-			std::string camFileName(ansiTakeDir);
-			camFileName.append("\\cam_main.cam");
+			std::wstring camFileName(m_TakeDir);
+			camFileName.append(L"\\cam_main.cam");
 
 			m_CamExportObj = new CamExport(camFileName.c_str(), m_CamExportScaleFov);
 		}
 
 		Tier0_Msg("done.\n");
 
-		Tier0_Msg("Recording to \"%s\".\n", ansiTakeDirOk ? ansiTakeDir.c_str() : "?");
+		Tier0_Msg("Recording to \"%s\".\n", utf8TakeDirOk ? utf8TakeDir.c_str() : "?");
 
-		if (ansiTakeDirOk)
+		m_StartMovieWavUsed = m_StartMovieWav;
+
+		if (m_StartMovieWavUsed)
 		{
-			m_StartMovieWavUsed = m_StartMovieWav;
-
-			if (m_StartMovieWavUsed)
-			{
-				if (!csgo_Audio_StartRecording(ansiTakeDir.c_str()))
-					Tier0_Warning("Error: Could not start WAV audio recording!\n");
-			}
-
-			m_RecordVoicesUsed = m_RecordVoices;
-
-			if (m_RecordVoicesUsed)
-			{
-				if(!Mirv_Voice_StartRecording(ansiTakeDir.c_str()))
-					Tier0_Warning("Error: Could not start voice recording!\n");
-
-			}
+			if (!csgo_Audio_StartRecording(m_TakeDir.c_str()))
+				Tier0_Warning("Error: Could not start WAV audio recording!\n");
 		}
-		else
-			Tier0_Warning("Error: Cannot convert take directory to ansi string. I.e. sound recording might be affected!\n");
+
+		m_RecordVoicesUsed = m_RecordVoices;
+
+		if (m_RecordVoicesUsed)
+		{
+			if(!Mirv_Voice_StartRecording(m_TakeDir.c_str()))
+				Tier0_Warning("Error: Could not start voice recording!\n");
+
+		}
 	}
 	else
 	{

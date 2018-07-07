@@ -23,7 +23,7 @@ bool WriteFloatZOpenExr(
 {
 	std::string ansiFileName;
 
-	if(!WideStringToAnsiString(fileName, ansiFileName))
+	if(!WideStringToUTF8String(fileName, ansiFileName))
 		return false;
 
 	try

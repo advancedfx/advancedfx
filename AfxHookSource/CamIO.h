@@ -42,7 +42,7 @@ protected:
 class CamExport : public CamIO
 {
 public:
-	CamExport(char const * fileName, ScaleFov scaleFov);
+	CamExport(const wchar_t * fileName, ScaleFov scaleFov);
 
 	~CamExport();
 

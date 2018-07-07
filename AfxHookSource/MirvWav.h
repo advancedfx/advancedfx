@@ -6,7 +6,7 @@
 class CMirvWav
 {
 public:
-	CMirvWav(char const * fileName, int numChannels, DWORD samplesPerSec);
+	CMirvWav(const wchar_t * fileName, int numChannels, DWORD samplesPerSec);
 
 	void Append(int numChannels, WORD * data);
 

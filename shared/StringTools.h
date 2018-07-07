@@ -2,8 +2,14 @@
 
 #include <string>
 
+bool WideStringToUTF8String(wchar_t const * wideChars, std::string & outAnsiString);
+
+bool UTF8StringToWideString(char const * ansiChars, std::wstring & outWideString);
+
+/// <remarks>Not recommended, use UT8 whenerver possible.</remarks>
 bool WideStringToAnsiString(wchar_t const * wideChars, std::string & outAnsiString);
 
+/// <remarks>Not recommended, use UT8 whenerver possible.</remarks>
 bool AnsiStringToWideString(char const * ansiChars, std::wstring & outWideString);
 
 

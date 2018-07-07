@@ -135,7 +135,7 @@ void MirvInputMem::Console(IWrpCommandArgs * args)
 			char const * name = args->ArgV(2);
 
 			std::wstring wideString;
-			bool bOk = AnsiStringToWideString(name, wideString)
+			bool bOk = UTF8StringToWideString(name, wideString)
 				&& Save(wideString.c_str());
 
 			Tier0_Msg("Saving: %s.\n", bOk ? "OK" : "ERROR");
@@ -147,7 +147,7 @@ void MirvInputMem::Console(IWrpCommandArgs * args)
 			char const * name = args->ArgV(2);
 
 			std::wstring wideString;
-			bool bOk = AnsiStringToWideString(name, wideString)
+			bool bOk = UTF8StringToWideString(name, wideString)
 				&& Load(wideString.c_str());
 
 			Tier0_Msg("Loading: %s.\n", bOk ? "OK" : "ERROR");

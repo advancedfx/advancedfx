@@ -6,6 +6,84 @@
 
 #include <list>
 
+
+bool UTF8StringToWideString(char const * ansiChars, std::wstring & outWideString)
+{
+	LPWSTR wideChars;
+	int length;
+	bool bOk;
+
+	if (0 == (length = MultiByteToWideChar(
+		CP_UTF8,
+		0,
+		ansiChars,
+		-1,
+		NULL,
+		0
+	)))
+		return false;
+
+	if (!(wideChars = (LPWSTR)malloc(sizeof(WCHAR) * length)))
+		return false;
+
+	bOk = length == MultiByteToWideChar(
+		CP_UTF8,
+		0,
+		ansiChars,
+		-1,
+		wideChars,
+		length
+	);
+
+	if (bOk)
+		outWideString.assign(wideChars);
+
+	free(wideChars);
+
+	return bOk;
+}
+
+bool WideStringToUTF8String(wchar_t const * wideChars, std::string & outAnsiString)
+{
+	LPSTR ansiChars;
+	int length;
+	bool bOk;
+
+	if (0 == (length = WideCharToMultiByte(
+		CP_UTF8,
+		0,
+		wideChars,
+		-1,
+		NULL,
+		0,
+		NULL,
+		NULL
+	)))
+		return false;
+
+	if (!(ansiChars = (LPSTR)malloc(sizeof(CHAR) * length)))
+		return false;
+
+	bOk = length == WideCharToMultiByte(
+		CP_UTF8,
+		0,
+		wideChars,
+		-1,
+		ansiChars,
+		sizeof(CHAR) * length,
+		NULL,
+		NULL
+	);
+
+	if (bOk)
+		outAnsiString.assign(ansiChars);
+
+	free(ansiChars);
+
+	return bOk;
+}
+
+
 bool AnsiStringToWideString(char const * ansiChars, std::wstring & outWideString)
 {
 	LPWSTR wideChars;

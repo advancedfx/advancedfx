@@ -1485,7 +1485,7 @@ CON_COMMAND(mirv_campath,"camera paths")
 		else if(!_stricmp("load", subcmd) && 3 == argc)
 		{	
 			std::wstring wideString;
-			bool bOk = AnsiStringToWideString(args->ArgV(2), wideString)
+			bool bOk = UTF8StringToWideString(args->ArgV(2), wideString)
 				&& g_Hook_VClient_RenderView.m_CamPath.Load(wideString.c_str())
 			;
 
@@ -1496,7 +1496,7 @@ CON_COMMAND(mirv_campath,"camera paths")
 		else if(!_stricmp("save", subcmd) && 3 == argc)
 		{	
 			std::wstring wideString;
-			bool bOk = AnsiStringToWideString(args->ArgV(2), wideString)
+			bool bOk = UTF8StringToWideString(args->ArgV(2), wideString)
 				&& g_Hook_VClient_RenderView.m_CamPath.Save(wideString.c_str())
 			;
 
@@ -2100,7 +2100,7 @@ CON_COMMAND(mirv_camexport, "controls camera motion data export") {
 
 			std::wstring wideFileName;
 			if(
-				!AnsiStringToWideString(fileName, wideFileName)
+				!UTF8StringToWideString(fileName, wideFileName)
 				|| !g_Hook_VClient_RenderView.ExportBegin(wideFileName.c_str(), 1.0/fps)
 			)
 				Tier0_Msg("Error: exporting failed.");
@@ -2145,7 +2145,7 @@ CON_COMMAND(mirv_camimport, "controls camera motion data import") {
 			g_Hook_VClient_RenderView.SetImportBaseTime(g_Hook_VClient_RenderView.GetCurTime());
 
 			std::wstring wideFileName;
-			if(!AnsiStringToWideString(fileName, wideFileName)
+			if(!UTF8StringToWideString(fileName, wideFileName)
 				|| !g_Hook_VClient_RenderView.ImportBegin(wideFileName.c_str())
 			)
 				Tier0_Msg("Loading failed.");
@@ -3572,7 +3572,7 @@ CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 		else if(!_stricmp("load", subcmd) && 3 == argc)
 		{	
 			std::wstring wideString;
-			bool bOk = AnsiStringToWideString(args->ArgV(2), wideString)
+			bool bOk = UTF8StringToWideString(args->ArgV(2), wideString)
 				&& g_CommandSystem.Load(wideString.c_str())
 			;
 
@@ -3583,7 +3583,7 @@ CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 		else if(!_stricmp("save", subcmd) && 3 == argc)
 		{	
 			std::wstring wideString;
-			bool bOk = AnsiStringToWideString(args->ArgV(2), wideString)
+			bool bOk = UTF8StringToWideString(args->ArgV(2), wideString)
 				&& g_CommandSystem.Save(wideString.c_str())
 			;
 

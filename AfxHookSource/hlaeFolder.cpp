@@ -2,30 +2,41 @@
 
 #include "hlaeFolder.h"
 
+#include <shared/StringTools.h>
+
 #include <Windows.h>
 #include <string>
 
-#define DLL_NAME	"AfxHookSource.dll"
+#define DLL_NAME	L"AfxHookSource.dll"
 
+std::wstring g_HlaeFolderW(L"");
 std::string g_HlaeFolder("");
 
-void CalculateHlaeFolder()
+void CalculateHlaeFolderOnce()
 {
-	LPSTR fileName = 0;
+	static bool firstRun = true;
+	if (firstRun)
+	{
+		firstRun = false;
+	}
+	else
+		return;
+
+	LPWSTR fileName = 0;
 	HMODULE hm;
 	DWORD length;
 
 	bool bOk =
-		0 != (hm = GetModuleHandle(DLL_NAME))
+		0 != (hm = GetModuleHandleW(DLL_NAME))
 	;
 
 	if(hm)
 	{
 		length = 100;
-		fileName = (LPSTR)malloc(length);
+		fileName = (LPWSTR)malloc(length*sizeof(WCHAR));
 
-		while(fileName && length == GetModuleFileNameA(hm, fileName, length))
-			fileName = (LPSTR)realloc(fileName, (length += 100));
+		while(fileName && length == GetModuleFileNameW(hm, fileName, length))
+			fileName = (LPWSTR)realloc(fileName, (length += 100)*sizeof(WCHAR));
 
 		if(!fileName)
 			return;
@@ -35,13 +46,15 @@ void CalculateHlaeFolder()
 
 	if(bOk)
 	{
-		g_HlaeFolder.assign(fileName);
+		g_HlaeFolderW.assign(fileName);
 
-		size_t fp = g_HlaeFolder.find_last_of('\\');
+		size_t fp = g_HlaeFolderW.find_last_of(L'\\');
 		if(std::string::npos != fp)
 		{
-			g_HlaeFolder.resize(fp+1);
+			g_HlaeFolderW.resize(fp+1, L'\\');
 		}
+		
+		WideStringToUTF8String(g_HlaeFolderW.c_str(), g_HlaeFolder);
 	}
 
 	free(fileName);
@@ -49,14 +62,16 @@ void CalculateHlaeFolder()
 	return;
 }
 
-char const * GetHlaeFolder()
+const char * GetHlaeFolder()
 {
-	static bool firstRun = true;
-	if(firstRun)
-	{
-		firstRun = false;
-		CalculateHlaeFolder();
-	}
+	CalculateHlaeFolderOnce();
 
 	return g_HlaeFolder.c_str();
+}
+
+const wchar_t * GetHlaeFolderW()
+{
+	CalculateHlaeFolderOnce();
+
+	return g_HlaeFolderW.c_str();
 }

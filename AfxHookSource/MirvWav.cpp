@@ -2,13 +2,13 @@
 
 #include "MirvWav.h"
 
-CMirvWav::CMirvWav(char const * fileName, int numChannels, DWORD dwSamplesPerSec)
+CMirvWav::CMirvWav(const wchar_t * fileName, int numChannels, DWORD dwSamplesPerSec)
 {
 	memset(&m_WaveHeader, 0, sizeof(m_WaveHeader)); // clear header
 
 	m_WaveSamplesWritten = 0; // clear written samples num
 
-	m_File = fopen(fileName, "wb");
+	m_File = _wfopen(fileName, L"wb");
 
 	if (!m_File)
 	{
