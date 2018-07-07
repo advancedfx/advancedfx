@@ -1884,13 +1884,29 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		old_Direct3DCreate9 = (Direct3DCreate9_t)InterceptDllCall(hModule, "d3d9.dll", "Direct3DCreate9", (DWORD) &new_Direct3DCreate9);
 	}
 	else
+	if (bFirstClient && StringEndsWith(lpLibFileName, "client.dll") && !StringEndsWith(lpLibFileName, "panoramauiclient.dll"))
+	{
+		bFirstClient = false;
+
+		g_H_ClientDll = hModule;
+
+		Addresses_InitClientDll((AfxAddr)g_H_ClientDll, g_SourceSdkVer, false);
+
+		//
+		// Install early hooks:
+
+		csgo_CSkyBoxView_Draw_Install();
+		csgo_CViewRender_Install();
+		Hook_csgo_PlayerAnimStateFix();
+	}
+	else
 	if(bFirstClient && StringEndsWith( lpLibFileName, "client_panorama.dll"))
 	{
 		bFirstClient = false;
 
 		g_H_ClientDll = hModule;
 
-		Addresses_InitClientDll((AfxAddr)g_H_ClientDll, g_SourceSdkVer);
+		Addresses_InitClientDll((AfxAddr)g_H_ClientDll, g_SourceSdkVer, true);
 
 		//
 		// Install early hooks:

@@ -6,6 +6,18 @@
 
 <release>
 <name>HLAE</name>
+<version>2.51.0</version>
+<time>2018-07-07T12:44Z</time>
+<changes>
+<change type="updated">
+Included AfxHookSource 1.41.0 (2018-07-07T12:44Z).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.50.7-panoramaui</version>
 <time>2018-06-30T06:52Z</time>
 <changes>

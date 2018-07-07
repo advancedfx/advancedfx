@@ -30,6 +30,8 @@ AFXADDR_DEF(csgo_CCSViewRender_RenderSmokeOverlay_OnBeforeExitFunc)
 AFXADDR_DEF(csgo_CGlowOverlay_Draw)
 AFXADDR_DEF(csgo_CGlowOverlay_Draw_DSZ)
 AFXADDR_DEF(csgo_CCSGO_HudDeathNotice_FireGameEvent)
+AFXADDR_DEF(csgo_CUnknown_GetPlayerName)
+AFXADDR_DEF(csgo_CUnknown_GetPlayerName_DSZ)
 AFXADDR_DEF(csgo_CCSGameMovement_vtable)
 AFXADDR_DEF(csgo_CSkyboxView_Draw)
 AFXADDR_DEF(csgo_CSkyboxView_Draw_DSZ)
@@ -60,6 +62,8 @@ AFXADDR_DEF(csgo_CVoiceWriter_AddDecompressedData)
 AFXADDR_DEF(csgo_CVoiceWriter_AddDecompressedData_DSZ)
 AFXADDR_DEF(csgo_panorama_AVCUIPanel_UnkSetFloatProp)
 AFXADDR_DEF(csgo_C_CSPlayer_IClientNetworkable_entindex)
+
+bool g_Adresses_ClientIsPanorama = true;
 
 void ErrorBox(char const * messageText);
 
@@ -553,51 +557,58 @@ void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer)
 	}
 }
 
-void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
+void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer, bool isPanorama)
 {
 	if(SourceSdkVer_CSGO == sourceSdkVer)
 	{
-		// csgo_CCSGO_HudDeathNotice_FireGameEvent // Checked 2018-06-23.
+		g_Adresses_ClientIsPanorama = isPanorama;
+
+		if (isPanorama)
 		{
-			DWORD addr = 0;
+
+			// csgo_CCSGO_HudDeathNotice_FireGameEvent // Checked 2018-06-23.
 			{
-				ImageSectionsReader sections((HMODULE)clientDll);
-				if (!sections.Eof())
+				DWORD addr = 0;
 				{
-					sections.Next(); // skip .text
+					ImageSectionsReader sections((HMODULE)clientDll);
 					if (!sections.Eof())
 					{
-						MemRange firstDataRange = sections.GetMemRange();
-
-						sections.Next(); // skip first .data
+						sections.Next(); // skip .text
 						if (!sections.Eof())
 						{
-							MemRange result = FindCString(sections.GetMemRange(), ".?AVCCSGO_HudDeathNotice@@");
-							if (!result.IsEmpty())
+							MemRange firstDataRange = sections.GetMemRange();
+
+							sections.Next(); // skip first .data
+							if (!sections.Eof())
 							{
-								DWORD tmpAddr = result.Start;
-								tmpAddr -= 0x8;
-
-								result.Start = firstDataRange.Start;
-								result.End = firstDataRange.Start;
-
-								for (int i = 0; i < 2; ++i)
-								{
-									result = FindBytes(MemRange(result.End, firstDataRange.End), (char const *)&tmpAddr, sizeof(tmpAddr));
-								}
-
+								MemRange result = FindCString(sections.GetMemRange(), ".?AVCCSGO_HudDeathNotice@@");
 								if (!result.IsEmpty())
 								{
 									DWORD tmpAddr = result.Start;
-									tmpAddr -= 0xC;
+									tmpAddr -= 0x8;
 
-									result = FindBytes(firstDataRange, (char const *)&tmpAddr, sizeof(tmpAddr));
+									result.Start = firstDataRange.Start;
+									result.End = firstDataRange.Start;
+
+									for (int i = 0; i < 2; ++i)
+									{
+										result = FindBytes(MemRange(result.End, firstDataRange.End), (char const *)&tmpAddr, sizeof(tmpAddr));
+									}
+
 									if (!result.IsEmpty())
 									{
 										DWORD tmpAddr = result.Start;
-										tmpAddr += (1) * 4;
+										tmpAddr -= 0xC;
 
-										addr = ((DWORD *)tmpAddr)[1];
+										result = FindBytes(firstDataRange, (char const *)&tmpAddr, sizeof(tmpAddr));
+										if (!result.IsEmpty())
+										{
+											DWORD tmpAddr = result.Start;
+											tmpAddr += (1) * 4;
+
+											addr = ((DWORD *)tmpAddr)[1];
+										}
+										else ErrorBox(MkErrStr(__FILE__, __LINE__));
 									}
 									else ErrorBox(MkErrStr(__FILE__, __LINE__));
 								}
@@ -609,9 +620,127 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 					}
 					else ErrorBox(MkErrStr(__FILE__, __LINE__));
 				}
-				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				AFXADDR_SET(csgo_CCSGO_HudDeathNotice_FireGameEvent, addr);
 			}
-			AFXADDR_SET(csgo_CCSGO_HudDeathNotice_FireGameEvent, addr);
+		}
+		else {
+			// csgo_CCSGO_HudDeathNotice_FireGameEvent: // Checked 2017-05-13.
+			{
+				DWORD addr = 0;
+				DWORD strAddr = 0;
+				{
+					ImageSectionsReader sections((HMODULE)clientDll);
+					if (!sections.Eof())
+					{
+						sections.Next(); // skip .text
+						if (!sections.Eof())
+						{
+							MemRange result = FindCString(sections.GetMemRange(), "realtime_passthrough");
+							if (!result.IsEmpty())
+							{
+								strAddr = result.Start;
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				if (strAddr)
+				{
+					ImageSectionsReader sections((HMODULE)clientDll);
+
+					MemRange baseRange = sections.GetMemRange();
+					MemRange result = FindBytes(baseRange, (char const *)&strAddr, sizeof(strAddr));
+					if (!result.IsEmpty())
+					{
+						addr = result.Start + 0x0D;
+
+						// check for pattern to see if it is the right address:
+						unsigned char pattern[4] = { 0x56, 0x8B, 0xCF, 0xE8 };
+
+						DWORD patternSize = sizeof(pattern) / sizeof(pattern[0]);
+						MemRange patternRange(addr, addr + patternSize);
+						MemRange result = FindBytes(patternRange, (char *)pattern, patternSize);
+						if (result.Start != patternRange.Start || result.End != patternRange.End)
+						{
+							addr = 0;
+							ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+						else
+						{
+							addr += patternSize;
+							addr = addr + 4 + *(DWORD *)addr; // get CALL address
+						}
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				AFXADDR_SET(csgo_CCSGO_HudDeathNotice_FireGameEvent, addr);
+			}
+
+		}
+
+		if (!isPanorama)
+		{
+			// csgo_CUnknown_GetPlayerName: // Checked 2018-07-07.
+			{
+				DWORD addr = 0;
+				DWORD strAddr = 0;
+				{
+					ImageSectionsReader sections((HMODULE)clientDll);
+					if (!sections.Eof())
+					{
+						sections.Next(); // skip .text
+						if (!sections.Eof())
+						{
+							MemRange result = FindCString(sections.GetMemRange(), "#SFUI_bot_controlled_by");
+							if (!result.IsEmpty())
+							{
+								strAddr = result.Start;
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				if (strAddr)
+				{
+					ImageSectionsReader sections((HMODULE)clientDll);
+
+					MemRange baseRange = sections.GetMemRange();
+					MemRange result = FindBytes(baseRange, (char const *)&strAddr, sizeof(strAddr));
+					if (!result.IsEmpty())
+					{
+						addr = result.Start - 0x396;
+
+						// check for pattern to see if it is the right address:
+						unsigned char pattern[3] = { 0x55, 0x8B, 0xEC };
+
+						DWORD patternSize = sizeof(pattern) / sizeof(pattern[0]);
+						MemRange patternRange(addr, addr + patternSize);
+						MemRange result = FindBytes(patternRange, (char *)pattern, patternSize);
+						if (result.Start != patternRange.Start || result.End != patternRange.End)
+						{
+							addr = 0;
+							ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				if (addr)
+				{
+					AFXADDR_SET(csgo_CUnknown_GetPlayerName, addr);
+				}
+				else
+				{
+					AFXADDR_SET(csgo_CUnknown_GetPlayerName, 0x0);
+				}
+			}
+					}
+		else
+		{
+			AFXADDR_SET(csgo_CUnknown_GetPlayerName, 0x0);
 		}
 
 		// csgo_CViewRender_RenderView_AfterVGui_DrawHud: // Checked 2017-05-13.
@@ -1810,6 +1939,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_C_BasePlayer_RecvProxy_ObserverTarget, 0x0);
 		AFXADDR_SET(csgo_CGlowOverlay_Draw, 0x0);
 		AFXADDR_SET(csgo_CCSGO_HudDeathNotice_FireGameEvent, 0x0);
+		AFXADDR_SET(csgo_CUnknown_GetPlayerName, 0x0);
 		AFXADDR_SET(csgo_CCSGameMovement_vtable, 0x0);
 		AFXADDR_SET(csgo_CSkyboxView_Draw, 0x0);
 		//AFXADDR_SET(csgo_CViewRender_Render, 0x0);
@@ -1837,6 +1967,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 	AFXADDR_SET(cstrike_gpGlobals_OFS_absoluteframetime, 2*4);
 	AFXADDR_SET(cstrike_gpGlobals_OFS_interpolation_amount, 8*4);
 	AFXADDR_SET(cstrike_gpGlobals_OFS_interval_per_tick, 7*4);
+	AFXADDR_SET(csgo_CUnknown_GetPlayerName_DSZ, 0x08);
 }
 
 /*

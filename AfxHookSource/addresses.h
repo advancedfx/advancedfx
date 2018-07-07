@@ -35,6 +35,8 @@ AFXADDR_DECL(csgo_CCSViewRender_RenderSmokeOverlay_OnBeforeExitFunc)
 AFXADDR_DECL(csgo_CGlowOverlay_Draw)
 AFXADDR_DECL(csgo_CGlowOverlay_Draw_DSZ)
 AFXADDR_DECL(csgo_CCSGO_HudDeathNotice_FireGameEvent)
+AFXADDR_DECL(csgo_CUnknown_GetPlayerName) // ScaleformUI only.
+AFXADDR_DECL(csgo_CUnknown_GetPlayerName_DSZ) // ScaleformUI only.
 AFXADDR_DECL(csgo_CCSGameMovement_vtable)
 AFXADDR_DECL(csgo_CSkyboxView_Draw)
 AFXADDR_DECL(csgo_CSkyboxView_Draw_DSZ)
@@ -66,7 +68,9 @@ AFXADDR_DECL(csgo_CVoiceWriter_AddDecompressedData_DSZ)
 AFXADDR_DECL(csgo_panorama_AVCUIPanel_UnkSetFloatProp)
 AFXADDR_DECL(csgo_C_CSPlayer_IClientNetworkable_entindex)
 
+extern bool g_Adresses_ClientIsPanorama;
+
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);
-void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer);
+void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer, bool isPanorama);
 //void Addresses_InitStdshader_dx9Dll(AfxAddr stdshader_dx9Dll, bool isCsgo);

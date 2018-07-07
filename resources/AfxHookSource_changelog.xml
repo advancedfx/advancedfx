@@ -3,6 +3,34 @@
 
 <changelog>
 
+<release>
+<name>AfxHookSource</name>
+<version>1.41.0</version>
+<time>2018-07-07T12:44Z</time>
+<changes>
+<change type="fixed">
+Adjusted (again) to CS:GO 7/6/2018 (version 1.36.4.0).<br />
+Now automatically detects if ScaleformUI or PanoramaUI and should work with both.
+</change>
+</changes>
+<comments>
+ATTENTION, the ScaleformUI update now uses the new interface for mirv_deathmsg and mirv_replace_name, which replicate again bellow for your convenience:<br />
+<br />
+Readded mirv_deathmsg, the interface changed, but it has all features it used to have (even more, i.e. every id can be userID or XUID of a player, also trace (userId) or xTrace (XUID) to use current POV, see mirv_deathmsg help id for more info).<br />
+Examples:<br />
+1) mirv_deathmsg fake attackerId=4 victimId=5 weapon=ak47 headshot=1 // will make a death notice for the player with userID 4 killing the player with userId 5 with an headshot from ak47, will only work if one death message has been shown already.<br />
+2) mirv_deathsmg localPlayer xTrace // sets the current POV player as localPlayer by their XUID.<br />
+3) mirv_deathsmg lifeTime 100.5 // sets the next default death notice life time to 100.5 seconds, to clear notices jump back to i.e. round start.<br />
+4) mirv_deathsmg lifeTimeMod 1.0 // sets the next default death notice life time multiplier for local player time 1.<br />
+5) mirv_deathsmg lifeTimeMod default // Restores default life time multiplier.<br />
+6) mirv_deathmsg filter add attackerMatch=!xTrace victimMatch=!xTrace block=1 lastRule=1 // block all death messages except of the player by XUID in the current POV.<br />
+<br />
+Readded mirv_replace_name, the interface changed, but it has all features it used to have (even more, i.e. every id can be userID or XUID of a player, also trace (userId) or xTrace (XUID) to use current POV, see mirv_replace_name help id for more info).<br />
+<br />
+Known problems:<br />
+mirv_streams preview drawHud will always draw the PanoramaUI HUD on the full screen, if it hasn't been drawn yet: https://github.com/advancedfx/advancedfx/issues/60<br />
+</comments>
+</release>
 
 <release>
 <name>AfxHookSource</name>

@@ -1157,6 +1157,23 @@ struct CHudDeathNoticeHookGlobals {
 
 } g_HudDeathNoticeHookGlobals;
 
+void SetLifetimeClassValues(DWORD this_ptr)
+{
+	static float org_CHudDeathNotice_nNoticeLifeTime = *(float *)((BYTE *)this_ptr + 0x58);
+	static float org_CHudDeathNotice_nLocalPlayerLifeTimeMod = *(float *)((BYTE *)this_ptr + 0x68);
+
+	if (g_HudDeathNoticeHookGlobals.activeWrapper)
+	{
+		*(float *)((BYTE *)this_ptr + 0x58) = g_HudDeathNoticeHookGlobals.activeWrapper->lifetime.value;
+		*(float *)((BYTE *)this_ptr + 0x68) = g_HudDeathNoticeHookGlobals.activeWrapper->lifetimeMod.value;
+	}
+	else
+	{
+		*(float *)((BYTE *)this_ptr + 0x58) = org_CHudDeathNotice_nNoticeLifeTime;
+		*(float *)((BYTE *)this_ptr + 0x68) = org_CHudDeathNotice_nLocalPlayerLifeTimeMod;
+	}
+}
+
 void __fastcall MyCCSGO_HudDeathNotice_FireGameEvent(CCSGO_HudDeathNotice_t * This, void * edx, SOURCESDK::CSGO::IGameEvent * event)
 {
 	CCSGO_HudDeathNotice_FireGameEvent_This = This;
@@ -1285,6 +1302,11 @@ void __fastcall MyCCSGO_HudDeathNotice_FireGameEvent(CCSGO_HudDeathNotice_t * Th
 		if (curAttackerId) g_HudDeathNoticeHookGlobals.nextRealEntindexState.push(2);
 		if (curUserId) g_HudDeathNoticeHookGlobals.nextRealEntindexState.push(1);
 
+		if (!g_Adresses_ClientIsPanorama)
+		{
+			SetLifetimeClassValues((DWORD)This);
+		}
+
 		TrueCCSGO_HudDeathNotice_FireGameEvent(This, edx, &myWrapper);
 	}
 
@@ -1395,7 +1417,7 @@ int __fastcall Mycsgo_VEngineClient_GetPlayerForUserID(SOURCESDK::IVEngineClient
 
 bool __fastcall Mycsgo_VEngineClient_GetPlayerInfo(SOURCESDK::IVEngineClient_014_csgo * This, void * edx, int ent_num, SOURCESDK::player_info_t_csgo *pinfo) {
 
-	if(!g_HudDeathNoticeHookGlobals.activeWrapper || g_HudDeathNoticeHookGlobals.inPlayerInfoCall)
+	if(g_HudDeathNoticeHookGlobals.inPlayerInfoCall)
 		return Truecsgo_VEngineClient_GetPlayerInfo(This, edx, ent_num, pinfo);
 
 	MyDeathMsgPlayerEntry * playerEntry = nullptr;
@@ -1423,19 +1445,18 @@ bool __fastcall Mycsgo_VEngineClient_GetPlayerInfo(SOURCESDK::IVEngineClient_014
 
 	if (pinfo)
 	{
+		for (std::list<CCsgoReplaceNameEntry>::iterator it = g_csgo_ReplaceNameList.begin(); it != g_csgo_ReplaceNameList.end(); ++it) {
+			CCsgoReplaceNameEntry & e = *it;
+
+			if ((e.id.Mode == DeathMsgId::Id_UserId && e.id.Id.userId == pinfo->userID) || (e.id.Mode == DeathMsgId::Id_Xuid && e.id.Id.xuid == pinfo->xuid))
+			{
+				strcpy_s(pinfo->name, e.name.c_str());
+				break;
+			}
+		}
+
 		if (playerEntry && playerEntry->name.use) {
 			strcpy_s(pinfo->name, playerEntry->name.value);
-		}
-		else {
-			for (std::list<CCsgoReplaceNameEntry>::iterator it = g_csgo_ReplaceNameList.begin(); it != g_csgo_ReplaceNameList.end(); ++it) {
-				CCsgoReplaceNameEntry & e = *it;
-
-				if ((e.id.Mode == DeathMsgId::Id_UserId && e.id.Id.userId == pinfo->userID) || (e.id.Mode == DeathMsgId::Id_Xuid && e.id.Id.xuid == pinfo->xuid))
-				{
-					strcpy_s(pinfo->name, e.name.c_str());
-					break;
-				}
-			}
 		}
 	}
 
@@ -1468,6 +1489,88 @@ int __fastcall Mycsgo_C_CSPlayer_IClientNetworkable_entindex(csgo_C_CSPlayer_IUn
 	return Truecsgo_C_CSPlayer_IClientNetworkable_entindex(This, edx);
 }
 
+
+// >>> ScalfromUI only >>> /////////////////////////////////////////////////////
+//
+
+typedef wchar_t * (__stdcall *csgo_CUnknown_GetPlayerName_t)(DWORD *this_ptr, int entIndex, wchar_t * targetBuffer, DWORD targetByteCount, DWORD unknownArg1);
+
+csgo_CUnknown_GetPlayerName_t detoured_csgo_CUnknown_GetPlayerName;
+
+wchar_t * __stdcall touring_csgo_CUnknown_GetPlayerName(DWORD *this_ptr, int entIndex, wchar_t * targetBuffer, DWORD targetByteCount, DWORD unknownArg1)
+{
+	wchar_t * result = detoured_csgo_CUnknown_GetPlayerName(this_ptr, entIndex, targetBuffer, targetByteCount, unknownArg1);
+
+	SOURCESDK::player_info_t_csgo pinfo;
+	MyDeathMsgPlayerEntry * playerEntry = nullptr;
+
+	if (g_HudDeathNoticeHookGlobals.activeWrapper && !g_HudDeathNoticeHookGlobals.nextRealPlayerInfoState.empty())
+	{
+		int state = g_HudDeathNoticeHookGlobals.nextRealPlayerInfoState.front();
+		g_HudDeathNoticeHookGlobals.nextRealPlayerInfoState.pop();
+
+		switch (state)
+		{
+		case 1:
+			playerEntry = &(g_HudDeathNoticeHookGlobals.activeWrapper->attacker);
+			break;
+		case 2:
+			playerEntry = &(g_HudDeathNoticeHookGlobals.activeWrapper->victim);
+			break;
+		case 3:
+			playerEntry = &(g_HudDeathNoticeHookGlobals.activeWrapper->assister);
+			break;
+		}
+	}
+
+	if (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(entIndex, &pinfo))
+	{
+		for (std::list<CCsgoReplaceNameEntry>::iterator it = g_csgo_ReplaceNameList.begin(); it != g_csgo_ReplaceNameList.end(); ++it) {
+			CCsgoReplaceNameEntry & e = *it;
+
+			if ((e.id.Mode == DeathMsgId::Id_UserId && e.id.Id.userId == pinfo.userID) || (e.id.Mode == DeathMsgId::Id_Xuid && e.id.Id.xuid == pinfo.xuid))
+			{
+				std::wstring widePlayerName;
+				if (UTF8StringToWideString(it->name.c_str(), widePlayerName))
+				{
+					wcscpy_s(targetBuffer, targetByteCount, widePlayerName.c_str());
+				}
+				break;
+			}
+		}
+
+		if (playerEntry && playerEntry->name.use) {
+			std::wstring widePlayerName;
+			if (UTF8StringToWideString(playerEntry->name.value, widePlayerName))
+			{
+				wcscpy_s(targetBuffer, targetByteCount, widePlayerName.c_str());
+			}
+		}
+	}
+
+	return result;
+}
+
+bool csgo_GetPlayerName_Install_Scaleform(void)
+{
+	static bool firstResult = false;
+	static bool firstRun = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	if (AFXADDR_GET(csgo_CUnknown_GetPlayerName))
+	{
+		detoured_csgo_CUnknown_GetPlayerName = (csgo_CUnknown_GetPlayerName_t)DetourClassFunc((BYTE *)AFXADDR_GET(csgo_CUnknown_GetPlayerName), (BYTE *)touring_csgo_CUnknown_GetPlayerName, (int)AFXADDR_GET(csgo_CUnknown_GetPlayerName_DSZ));
+
+		firstResult = true;
+	}
+
+	return firstResult;
+}
+
+//
+// <<< ScaleformUI only <<< ////////////////////////////////////////////////////
+
 bool csgo_ReplaceName_Install(void)
 {
 	static bool firstResult = false;
@@ -1480,6 +1583,7 @@ bool csgo_ReplaceName_Install(void)
 	if (
 		g_VEngineClient
 		&& (nativeEngineClient = g_VEngineClient->GetVEngineClient_csgo())
+		&& (g_Adresses_ClientIsPanorama || csgo_GetPlayerName_Install_Scaleform())
 	) {
 		LONG error = NO_ERROR;
 
@@ -1495,6 +1599,7 @@ bool csgo_ReplaceName_Install(void)
 
 	return firstResult;
 }
+
 
 void __fastcall Mycsgo_panorama_CUIPanel_UnkSetFloatProp(csgo_panorama_CUIPanel * This, void * edx, WORD propId, float value) {
 
@@ -1521,7 +1626,7 @@ void __fastcall Mycsgo_panorama_CUIPanel_UnkSetFloatProp(csgo_panorama_CUIPanel 
 	Truecsgo_panorama_CUIPanel_UnkSetFloatProp(This, edx, propId, value);
 }
 
-bool csgo_CHudDeathNotice_Install(void)
+bool csgo_CHudDeathNotice_Install_Panorama(void)
 {
 	static bool firstResult = false;
 	static bool firstRun = true;
@@ -1558,6 +1663,47 @@ bool csgo_CHudDeathNotice_Install(void)
 	}
 
 	return firstResult;
+}
+
+bool csgo_CHudDeathNotice_Install_Scaleform(void)
+{
+	static bool firstResult = false;
+	static bool firstRun = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	SOURCESDK::IVEngineClient_014_csgo * nativeEngineClient;
+
+	if (
+		csgo_ReplaceName_Install()
+		&& g_VEngineClient
+		&& (nativeEngineClient = g_VEngineClient->GetVEngineClient_csgo())
+		&& AFXADDR_GET(csgo_CCSGO_HudDeathNotice_FireGameEvent)
+		&& AFXADDR_GET(csgo_C_CSPlayer_IClientNetworkable_entindex)
+		)
+	{
+		LONG error = NO_ERROR;
+
+		Truecsgo_VEngineClient_GetPlayerForUserID = (csgo_VEngineClient_GetPlayerForUserID_t)(*(void **)((*(char **)(nativeEngineClient)) + sizeof(void *) * 9));
+		TrueCCSGO_HudDeathNotice_FireGameEvent = (CCSGO_HudDeathNotice_FireGameEvent_t)AFXADDR_GET(csgo_CCSGO_HudDeathNotice_FireGameEvent);
+		Truecsgo_C_CSPlayer_IClientNetworkable_entindex = (csgo_C_CSPlayer_IClientNetworkable_entindex_t)AFXADDR_GET(csgo_C_CSPlayer_IClientNetworkable_entindex);
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)Truecsgo_VEngineClient_GetPlayerForUserID, Mycsgo_VEngineClient_GetPlayerForUserID);
+		DetourAttach(&(PVOID&)TrueCCSGO_HudDeathNotice_FireGameEvent, MyCCSGO_HudDeathNotice_FireGameEvent);
+		DetourAttach(&(PVOID&)Truecsgo_C_CSPlayer_IClientNetworkable_entindex, Mycsgo_C_CSPlayer_IClientNetworkable_entindex);
+		error = DetourTransactionCommit();
+
+		firstResult = NO_ERROR == error;
+	}
+
+	return firstResult;
+}
+
+bool csgo_CHudDeathNotice_Install(void)
+{
+	return g_Adresses_ClientIsPanorama ? csgo_CHudDeathNotice_Install_Panorama() : csgo_CHudDeathNotice_Install_Scaleform();
 }
 
 void Console_DeathMsgId_PrintHelp(const char * cmd)

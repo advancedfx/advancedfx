@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using System.Net;
 
 namespace AfxGui
 {
@@ -205,6 +206,8 @@ namespace AfxGui
         [STAThread]
         static int Main()
         {
+            ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // Force TLS v1.2 (Will only work where .NET 4.5 is installed).
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
