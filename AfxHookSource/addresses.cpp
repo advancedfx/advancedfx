@@ -566,7 +566,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 {
 	if(SourceSdkVer_CSGO == sourceSdkVer)
 	{
-		// csgo_CUnknown_GetPlayerName: // Checked 2017-05-13.
+		// csgo_CUnknown_GetPlayerName: // Checked 2018-07-07.
 		{
 			DWORD addr = 0;
 			DWORD strAddr = 0;
@@ -596,7 +596,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 				MemRange result = FindBytes(baseRange, (char const *)&strAddr, sizeof(strAddr));
 				if(!result.IsEmpty())
 				{
-					addr = result.Start -0x3C8;
+					addr = result.Start -0x396;
 
 					// check for pattern to see if it is the right address:
 					unsigned char pattern[3] = { 0x55, 0x8B, 0xEC };
@@ -732,7 +732,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			AFXADDR_SET(csgo_CHudDeathNotice_UnkAddDeathNotice, addr);
 		}
 
-		// csgo_CHudDeathNotice_UnkAddDeathNotice_AddMovie_AfterModTime: // Checked 2017-05-13.
+		// csgo_CHudDeathNotice_UnkAddDeathNotice_AddMovie_AfterModTime: // Checked 2018-07-07
 		//
 		// The function csgo_CHudDeathNotice_UnkAddDeathNotice_AddMovie
 		// is called at the end of csgo_CHudDeathNotice_UnkAddDeathNotice
@@ -770,7 +770,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 					DWORD tmpAddr = result.Start +0x6a;
 
 					// check for pattern to see if it is the right address:
-					unsigned char pattern[12] = { 0x8D, 0x4B, 0x7C, 0x57, 0xF3, 0x0F, 0x11, 0x87, 0x18, 0x04, 0x00, 0x00 };
+					unsigned char pattern[15] = { 0x8D, 0x8B, 0x80, 0x00, 0x00, 0x00, 0x57, 0xF3, 0x0F, 0x11, 0x87, 0x18, 0x04, 0x00, 0x00 };
 
 					DWORD patternSize = sizeof(pattern)/sizeof(pattern[0]);
 					MemRange patternRange(tmpAddr +0x05, tmpAddr +0x05 +patternSize);
@@ -1982,7 +1982,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 	//AFXADDR_SET(csgo_CPredictionCopy_TransferData_DSZ, 0x0a);
 	AFXADDR_SET(csgo_C_BaseEntity_ToolRecordEnties_DSZ, 0xd);
 	AFXADDR_SET(csgo_CGlowOverlay_Draw_DSZ, 0xc);
-	AFXADDR_SET(csgo_CUnknown_GetPlayerName_DSZ, 0x0b);
+	AFXADDR_SET(csgo_CUnknown_GetPlayerName_DSZ, 0x08);
 	AFXADDR_SET(csgo_CHudDeathNotice_FireGameEvent_DSZ, 0x0b);
 	AFXADDR_SET(csgo_CHudDeathNotice_UnkAddDeathNotice_DSZ, 0x09);
 	//AFXADDR_SET(csgo_CScaleformSlotInitControllerClientImpl_UnkCheckSwf_DSZ,0x0c);

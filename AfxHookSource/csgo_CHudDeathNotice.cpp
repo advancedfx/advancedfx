@@ -167,16 +167,16 @@ void __stdcall touring_csgo_CHudDeathNotice_FireGameEvent(DWORD *this_ptr, SOURC
 	if(firstRun)
 	{
 		firstRun = false;
-		org_CHudDeathNotice_nScrollInTime = *(float *)((BYTE *)this_ptr+0x5c);
-		org_CHudDeathNotice_nFadeOutTime = *(float *)((BYTE *)this_ptr+0x58);
-		org_CHudDeathNotice_nNoticeLifeTime = *(float *)((BYTE *)this_ptr+0x54);
-		org_CHudDeathNotice_nLocalPlayerLifeTimeMod = *(float *)((BYTE *)this_ptr+0x64);
+		org_CHudDeathNotice_nScrollInTime = *(float *)((BYTE *)this_ptr+0x60);
+		org_CHudDeathNotice_nFadeOutTime = *(float *)((BYTE *)this_ptr+0x5c);
+		org_CHudDeathNotice_nNoticeLifeTime = *(float *)((BYTE *)this_ptr+0x58);
+		org_CHudDeathNotice_nLocalPlayerLifeTimeMod = *(float *)((BYTE *)this_ptr+0x68);
 	}
 
-	*(float *)((BYTE *)this_ptr+0x5c) = 0 <= csgo_CHudDeathNotice_nScrollInTime ? csgo_CHudDeathNotice_nScrollInTime : org_CHudDeathNotice_nScrollInTime;
-	*(float *)((BYTE *)this_ptr+0x58) = 0 <= csgo_CHudDeathNotice_nFadeOutTime ? csgo_CHudDeathNotice_nFadeOutTime : org_CHudDeathNotice_nFadeOutTime;
-	*(float *)((BYTE *)this_ptr+0x54) = 0 <= csgo_CHudDeathNotice_nNoticeLifeTime ? csgo_CHudDeathNotice_nNoticeLifeTime : org_CHudDeathNotice_nNoticeLifeTime;
-	*(float *)((BYTE *)this_ptr+0x64) = 0 <= csgo_CHudDeathNotice_nLocalPlayerLifeTimeMod ? csgo_CHudDeathNotice_nLocalPlayerLifeTimeMod : org_CHudDeathNotice_nLocalPlayerLifeTimeMod;
+	*(float *)((BYTE *)this_ptr+0x60) = 0 <= csgo_CHudDeathNotice_nScrollInTime ? csgo_CHudDeathNotice_nScrollInTime : org_CHudDeathNotice_nScrollInTime;
+	*(float *)((BYTE *)this_ptr+0x5c) = 0 <= csgo_CHudDeathNotice_nFadeOutTime ? csgo_CHudDeathNotice_nFadeOutTime : org_CHudDeathNotice_nFadeOutTime;
+	*(float *)((BYTE *)this_ptr+0x58) = 0 <= csgo_CHudDeathNotice_nNoticeLifeTime ? csgo_CHudDeathNotice_nNoticeLifeTime : org_CHudDeathNotice_nNoticeLifeTime;
+	*(float *)((BYTE *)this_ptr+0x68) = 0 <= csgo_CHudDeathNotice_nLocalPlayerLifeTimeMod ? csgo_CHudDeathNotice_nLocalPlayerLifeTimeMod : org_CHudDeathNotice_nLocalPlayerLifeTimeMod;
 	
 	int uidAttacker = event->GetInt("attacker");
 	int uidVictim = event->GetInt("userid");
@@ -319,7 +319,7 @@ bool csgo_CHudDeathNotice_Install(void)
 	{
 		detoured_csgo_CHudDeathNotice_FireGameEvent = (csgo_CHudDeathNotice_FireGameEvent_t)DetourClassFunc((BYTE *)AFXADDR_GET(csgo_CHudDeathNotice_FireGameEvent), (BYTE *)touring_csgo_CHudDeathNotice_FireGameEvent, (int)AFXADDR_GET(csgo_CHudDeathNotice_FireGameEvent_DSZ));
 		detoured_csgo_CHudDeathNotice_UnkAddDeathNotice = (csgo_CHudDeathNotice_UnkAddDeathNotice_t)DetourClassFunc((BYTE *)AFXADDR_GET(csgo_CHudDeathNotice_UnkAddDeathNotice), (BYTE *)touring_csgo_CHudDeathNotice_UnkAddDeathNotice, (int)AFXADDR_GET(csgo_CHudDeathNotice_UnkAddDeathNotice_DSZ));
-		detoured_csgo_CHudDeathNotice_UnkAddDeathNotice_AddMovie_AfterModTime = (void *)DetourApply((BYTE *)AFXADDR_GET(csgo_CHudDeathNotice_UnkAddDeathNotice_AddMovie_AfterModTime), (BYTE *)touring_csgo_CHudDeathNotice_UnkAddDeathNotice_AddMovie_AfterModTime, 0x11);
+		detoured_csgo_CHudDeathNotice_UnkAddDeathNotice_AddMovie_AfterModTime = (void *)DetourApply((BYTE *)AFXADDR_GET(csgo_CHudDeathNotice_UnkAddDeathNotice_AddMovie_AfterModTime), (BYTE *)touring_csgo_CHudDeathNotice_UnkAddDeathNotice_AddMovie_AfterModTime, 0xB);
 
 		firstResult = true;
 	}
