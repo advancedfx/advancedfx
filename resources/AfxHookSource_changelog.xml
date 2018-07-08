@@ -19,10 +19,10 @@ ATTENTION, the ScaleformUI update now uses the new interface for mirv_deathmsg a
 Readded mirv_deathmsg, the interface changed, but it has all features it used to have (even more, i.e. every id can be userID or XUID of a player, also trace (userId) or xTrace (XUID) to use current POV, see mirv_deathmsg help id for more info).<br />
 Examples:<br />
 1) mirv_deathmsg fake attackerId=4 victimId=5 weapon=ak47 headshot=1 // will make a death notice for the player with userID 4 killing the player with userId 5 with an headshot from ak47, will only work if one death message has been shown already.<br />
-2) mirv_deathsmg localPlayer xTrace // sets the current POV player as localPlayer by their XUID.<br />
-3) mirv_deathsmg lifeTime 100.5 // sets the next default death notice life time to 100.5 seconds, to clear notices jump back to i.e. round start.<br />
-4) mirv_deathsmg lifeTimeMod 1.0 // sets the next default death notice life time multiplier for local player time 1.<br />
-5) mirv_deathsmg lifeTimeMod default // Restores default life time multiplier.<br />
+2) mirv_deathmsg localPlayer xTrace // sets the current POV player as localPlayer by their XUID.<br />
+3) mirv_deathmsg lifeTime 100.5 // sets the next default death notice life time to 100.5 seconds, to clear notices jump back to i.e. round start.<br />
+4) mirv_deathmsg lifeTimeMod 1.0 // sets the next default death notice life time multiplier for local player time 1.<br />
+5) mirv_deathmsg lifeTimeMod default // Restores default life time multiplier.<br />
 6) mirv_deathmsg filter add attackerMatch=!xTrace victimMatch=!xTrace block=1 lastRule=1 // block all death messages except of the player by XUID in the current POV.<br />
 <br />
 Readded mirv_replace_name, the interface changed, but it has all features it used to have (even more, i.e. every id can be userID or XUID of a player, also trace (userId) or xTrace (XUID) to use current POV, see mirv_replace_name help id for more info).<br />
@@ -53,10 +53,10 @@ Fixed mirv_deathmsg crash / adjusted to CS:GO update 6/25/18 (1.36.3.9).
 Readded mirv_deathmsg, the interface changed, but it has all features it used to have (even more, i.e. every id can be userID or XUID of a player, also trace (userId) or xTrace (XUID) to use current POV, see mirv_deathmsg help id for more info).<br />
 Examples:<br />
 1) mirv_deathmsg fake attackerId=4 victimId=5 weapon=ak47 headshot=1 // will make a death notice for the player with userID 4 killing the player with userId 5 with an headshot from ak47, will only work if one death message has been shown already.<br />
-2) mirv_deathsmg localPlayer xTrace // sets the current POV player as localPlayer by their XUID.<br />
-3) mirv_deathsmg lifeTime 100.5 // sets the next default death notice life time to 100.5 seconds, to clear notices jump back to i.e. round start.<br />
-4) mirv_deathsmg lifeTimeMod 1.0 // sets the next default death notice life time multiplier for local player time 1.<br />
-5) mirv_deathsmg lifeTimeMod default // Restores default life time multiplier.<br />
+2) mirv_deathmsg localPlayer xTrace // sets the current POV player as localPlayer by their XUID.<br />
+3) mirv_deathmsg lifeTime 100.5 // sets the next default death notice life time to 100.5 seconds, to clear notices jump back to i.e. round start.<br />
+4) mirv_deathmsg lifeTimeMod 1.0 // sets the next default death notice life time multiplier for local player time 1.<br />
+5) mirv_deathmsg lifeTimeMod default // Restores default life time multiplier.<br />
 6) mirv_deathmsg filter add attackerMatch=!xTrace victimMatch=!xTrace block=1 lastRule=1 // block all death messages except of the player by XUID in the current POV.
 </change>
 <change type="added">
@@ -1361,7 +1361,7 @@ Fixed mirv_campath edit interp rotation, expecting cubic instead of intended sCu
 <time>2016-11-06T19:21Z</time>
 <changes>
 <change type="fixed">
-Fixed mirv_deathsmg mem remove sub command not working.
+Fixed mirv_deathmsg mem remove sub command not working.
 </change>
 <change type="added">
 Added mirv_fix oldDuckFix, requested by @gsrqq. Can fix player stuck in duck for older demos without losing sound like the old method - unwanted side effects currently unknown or none.
@@ -1381,7 +1381,7 @@ Or on the forum: http://advancedfx.style-productions.net/forum/viewtopic.php?f=1
 <time>2016-11-05T20:30Z</time>
 <changes>
 <change type="added">
-Added mirv_deathsmg fake sub command. Suggest by several people, including @C9Calle. I didn't want to add it, because last time we did that for GoldSrc engine, we caused a lot of fakes, but it has been requested several times now and more importantly, GOTV demos can miss player_death game event messages (used for the death notification), because those are not transmitted realibaly.
+Added mirv_deathmsg fake sub command. Suggest by several people, including @C9Calle. I didn't want to add it, because last time we did that for GoldSrc engine, we caused a lot of fakes, but it has been requested several times now and more importantly, GOTV demos can miss player_death game event messages (used for the death notification), because those are not transmitted realibaly.
 </change>
 </changes>
 <comments>

@@ -298,7 +298,7 @@ Dominik 'dtugend' Tugend
 	http://dominik.matrixstorm.com/
 
 Brett 'xNWP' Anthony
-	Programming of additional tools, Discord moderator, helping with HLAE manual.
+	Programming of additional tools, Discord moderator, Reddit moderator.
 	Since June 2017.
 	https://twitter.com/ThatNWP
 
@@ -308,12 +308,12 @@ Peter 'psh' P.
 	https://twitter.com/_peterpsh_
 
 'Devostated.'
-	Discord moderator, community help.
+	Discord moderator, Reddit moderator, community help.
 	Since December 2017
 	https://twitter.com/Devomvm
 	
 'Dec'
-	Helping wiuth HLAE manual, Discord moderator. Past: Forum, IRC.
+	Helping wiuth HLAE manual, Discord moderator, Reddit moderator. Past: Forum, IRC.
 	Since March 2011
 	http://www.youtube.com/AMDECKARN
 
