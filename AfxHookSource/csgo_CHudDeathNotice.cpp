@@ -44,13 +44,6 @@ event->GetInt("revenge",0)
 extern WrpVEngineClient * g_VEngineClient;
 
 
-typedef bool(__fastcall * csgo_VEngineClient_GetPlayerInfo_t)(SOURCESDK::IVEngineClient_014_csgo * This, void * edx, int ent_num, SOURCESDK::player_info_t_csgo *pinfo);
-csgo_VEngineClient_GetPlayerInfo_t Truecsgo_VEngineClient_GetPlayerInfo = 0;
-
-typedef int(__fastcall * csgo_VEngineClient_GetPlayerForUserID_t)(SOURCESDK::IVEngineClient_014_csgo * This, void * edx, int userID);
-csgo_VEngineClient_GetPlayerForUserID_t Truecsgo_VEngineClient_GetPlayerForUserID = 0;
-
-
 typedef void csgo_C_CSPlayer_IUnk_t;
 typedef int(__fastcall * csgo_C_CSPlayer_IClientNetworkable_entindex_t)(csgo_C_CSPlayer_IUnk_t * This, void * edx);
 csgo_C_CSPlayer_IClientNetworkable_entindex_t Truecsgo_C_CSPlayer_IClientNetworkable_entindex = 0;
@@ -193,7 +186,7 @@ struct DeathMsgId
 			{
 				SOURCESDK::player_info_t_csgo pinfo;
 
-				if (Truecsgo_VEngineClient_GetPlayerInfo(g_VEngineClient->GetVEngineClient_csgo(), 0, EntIndexFromTrace(), &pinfo))
+				if (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(EntIndexFromTrace(), &pinfo))
 				{
 					val = pinfo.xuid;
 				}
@@ -213,7 +206,7 @@ struct DeathMsgId
 			{
 				SOURCESDK::player_info_t_csgo pinfo;
 
-				if (Truecsgo_VEngineClient_GetPlayerInfo(g_VEngineClient->GetVEngineClient_csgo(), 0, EntIndexFromTrace(), &pinfo))
+				if (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(EntIndexFromTrace(), &pinfo))
 				{
 					val = pinfo.userID;
 				}
@@ -236,7 +229,7 @@ struct DeathMsgId
 			int maxClients = g_VEngineClient->GetMaxClients();
 			for (int i = 0; i < maxClients; ++i)
 			{
-				if (Truecsgo_VEngineClient_GetPlayerInfo(vengineClient, 0, i, &pinfo) && pinfo.xuid == Id.xuid)
+				if (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(i, &pinfo) && pinfo.xuid == Id.xuid)
 				{
 					return pinfo.userID;
 				}
@@ -276,7 +269,7 @@ struct DeathMsgId
 			if (SOURCESDK::IVEngineClient_014_csgo * pEngine = g_VEngineClient->GetVEngineClient_csgo())
 			{
 				SOURCESDK::player_info_t_csgo pInfo;
-				return (Truecsgo_VEngineClient_GetPlayerInfo(g_VEngineClient->GetVEngineClient_csgo(), 0, Truecsgo_VEngineClient_GetPlayerForUserID(g_VEngineClient->GetVEngineClient_csgo(), 0, userId), &pInfo) && pInfo.xuid == Id.xuid);
+				return (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(g_VEngineClient->GetVEngineClient_csgo()->GetPlayerForUserID(userId), &pInfo) && pInfo.xuid == Id.xuid);
 			}
 		}
 
@@ -290,7 +283,7 @@ struct MyDeathMsgBoolEntry
 	bool value;
 
 	bool Console_Set(char const * value) {
-		if (0 == strcmp("default", value))
+		if (0 == _stricmp("default", value))
 		{
 			this->use = false;
 			return true;
@@ -336,7 +329,7 @@ struct MyDeathMsgIntEntry
 	int value;
 
 	bool Console_Set(char const * value) {
-		if (0 == strcmp("default", value))
+		if (0 == _stricmp("default", value))
 		{
 			this->use = false;
 			return true;
@@ -382,7 +375,7 @@ struct MyDeathMsgFloatEntry
 	float value;
 
 	bool Console_Set(char const * value) {
-		if (0 == strcmp("default", value))
+		if (0 == _stricmp("default", value))
 		{
 			this->use = false;
 			return true;
@@ -434,7 +427,7 @@ struct MyDeathMsgIdEntry
 	DeathMsgId value;
 
 	bool Console_Set(char const * value) {
-		if (0 == strcmp("default", value))
+		if (0 == _stricmp("default", value))
 		{
 			this->use = false;
 			return true;
@@ -511,11 +504,11 @@ struct DeathMsgFilterEntry
 			{
 				char const * arg1 = args->ArgV(1);
 
-				if (3 <= argc && 0 == strcmp("set", arg1))
+				if (3 <= argc && 0 == _stricmp("set", arg1))
 				{
 					char const * arg2 = args->ArgV(2);
 
-					if (0 == strcmp("default", arg2))
+					if (0 == _stricmp("default", arg2))
 					{
 						this->use = false;
 						return;
@@ -539,7 +532,7 @@ struct DeathMsgFilterEntry
 
 		void Console_Print() {
 			if (!use) Tier0_Msg("default");
-			else Tier0_Msg("\"%s\"", value);
+			else Tier0_Msg("\"%s\"", value.c_str());
 		}
 	};
 
@@ -906,9 +899,9 @@ struct DeathMsgFilterEntry
 		assister.newId.Console_Print();
 		Tier0_Msg("\n");
 
-		Tier0_Msg("%s assisterIsLocal [...] = ", arg0);
-		assister.isLocal.Console_Print();
-		Tier0_Msg("\n");
+		//Tier0_Msg("%s assisterIsLocal [...] = ", arg0);
+		//assister.isLocal.Console_Print();
+		//Tier0_Msg("\n");
 
 		Tier0_Msg("%s victimMatch [...] = ", arg0);
 		victim.Console_MatchPrint();
@@ -1150,9 +1143,7 @@ struct CHudDeathNoticeHookGlobals {
 	int entindex_callnum;
 	int panorama_CUIPanel_UnkSetFloatProp_callnum;
 
-	bool inPlayerInfoCall = false;
-
-	std::queue<int> nextRealPlayerInfoState;
+	std::queue<int> nextRealCUnknownGetPlayerNameState;
 	std::queue<int> nextRealEntindexState;
 
 } g_HudDeathNoticeHookGlobals;
@@ -1164,8 +1155,8 @@ void SetLifetimeClassValues(DWORD this_ptr)
 
 	if (g_HudDeathNoticeHookGlobals.activeWrapper)
 	{
-		*(float *)((BYTE *)this_ptr + 0x58) = g_HudDeathNoticeHookGlobals.activeWrapper->lifetime.value;
-		*(float *)((BYTE *)this_ptr + 0x68) = g_HudDeathNoticeHookGlobals.activeWrapper->lifetimeMod.value;
+		*(float *)((BYTE *)this_ptr + 0x58) = g_HudDeathNoticeHookGlobals.activeWrapper->lifetime.use ? g_HudDeathNoticeHookGlobals.activeWrapper->lifetime.value : org_CHudDeathNotice_nNoticeLifeTime;
+		*(float *)((BYTE *)this_ptr + 0x68) = g_HudDeathNoticeHookGlobals.activeWrapper->lifetimeMod.use ? g_HudDeathNoticeHookGlobals.activeWrapper->lifetimeMod.value : org_CHudDeathNotice_nLocalPlayerLifeTimeMod;
 	}
 	else
 	{
@@ -1283,15 +1274,15 @@ void __fastcall MyCCSGO_HudDeathNotice_FireGameEvent(CCSGO_HudDeathNotice_t * Th
 
 	if (!(myWrapper.block.use && myWrapper.block.value) ) {
 
-		while (!g_HudDeathNoticeHookGlobals.nextRealPlayerInfoState.empty())
+		while (!g_HudDeathNoticeHookGlobals.nextRealCUnknownGetPlayerNameState.empty())
 		{
 			Assert(0);
-			g_HudDeathNoticeHookGlobals.nextRealPlayerInfoState.pop();
+			g_HudDeathNoticeHookGlobals.nextRealCUnknownGetPlayerNameState.pop();
 		}
 
-		if (curAttackerId) g_HudDeathNoticeHookGlobals.nextRealPlayerInfoState.push(1);
-		if (curUserId) g_HudDeathNoticeHookGlobals.nextRealPlayerInfoState.push(2);
-		if (curAssisterId) g_HudDeathNoticeHookGlobals.nextRealPlayerInfoState.push(3);
+		if (curAttackerId) g_HudDeathNoticeHookGlobals.nextRealCUnknownGetPlayerNameState.push(1);
+		if (curUserId) g_HudDeathNoticeHookGlobals.nextRealCUnknownGetPlayerNameState.push(2);
+		if (curAssisterId) g_HudDeathNoticeHookGlobals.nextRealCUnknownGetPlayerNameState.push(3);
 
 		while(!g_HudDeathNoticeHookGlobals.nextRealEntindexState.empty())
 		{
@@ -1399,69 +1390,6 @@ struct CCsgoReplaceNameEntry
 
 std::list<CCsgoReplaceNameEntry> g_csgo_ReplaceNameList;
 
-int __fastcall Mycsgo_VEngineClient_GetPlayerForUserID(SOURCESDK::IVEngineClient_014_csgo * This, void * edx, int userID)
-{
-	if (!g_HudDeathNoticeHookGlobals.activeWrapper)
-		return Truecsgo_VEngineClient_GetPlayerForUserID(This, edx, userID);
-
-	g_HudDeathNoticeHookGlobals.inPlayerInfoCall = true;
-
-	int result = Truecsgo_VEngineClient_GetPlayerForUserID(This, edx, userID);
-
-	g_HudDeathNoticeHookGlobals.inPlayerInfoCall = false;
-
-	return result;
-}
-
-
-
-bool __fastcall Mycsgo_VEngineClient_GetPlayerInfo(SOURCESDK::IVEngineClient_014_csgo * This, void * edx, int ent_num, SOURCESDK::player_info_t_csgo *pinfo) {
-
-	if(g_HudDeathNoticeHookGlobals.inPlayerInfoCall)
-		return Truecsgo_VEngineClient_GetPlayerInfo(This, edx, ent_num, pinfo);
-
-	MyDeathMsgPlayerEntry * playerEntry = nullptr;
-
-	if (g_HudDeathNoticeHookGlobals.activeWrapper && !g_HudDeathNoticeHookGlobals.nextRealPlayerInfoState.empty())
-	{
-		int state = g_HudDeathNoticeHookGlobals.nextRealPlayerInfoState.front();
-		g_HudDeathNoticeHookGlobals.nextRealPlayerInfoState.pop();
-
-		switch (state)
-		{
-		case 1:
-			playerEntry = &(g_HudDeathNoticeHookGlobals.activeWrapper->attacker);
-			break;
-		case 2:
-			playerEntry = &(g_HudDeathNoticeHookGlobals.activeWrapper->victim);
-			break;
-		case 3:
-			playerEntry = &(g_HudDeathNoticeHookGlobals.activeWrapper->assister);
-			break;
-		}		
-	}
-
-	bool result = Truecsgo_VEngineClient_GetPlayerInfo(This, edx, ent_num, pinfo);
-
-	if (pinfo)
-	{
-		for (std::list<CCsgoReplaceNameEntry>::iterator it = g_csgo_ReplaceNameList.begin(); it != g_csgo_ReplaceNameList.end(); ++it) {
-			CCsgoReplaceNameEntry & e = *it;
-
-			if ((e.id.Mode == DeathMsgId::Id_UserId && e.id.Id.userId == pinfo->userID) || (e.id.Mode == DeathMsgId::Id_Xuid && e.id.Id.xuid == pinfo->xuid))
-			{
-				strcpy_s(pinfo->name, e.name.c_str());
-				break;
-			}
-		}
-
-		if (playerEntry && playerEntry->name.use) {
-			strcpy_s(pinfo->name, playerEntry->name.value);
-		}
-	}
-
-	return result;
-}
 
 int __fastcall Mycsgo_C_CSPlayer_IClientNetworkable_entindex(csgo_C_CSPlayer_IUnk_t * This, void * edx) {
 
@@ -1476,11 +1404,11 @@ int __fastcall Mycsgo_C_CSPlayer_IClientNetworkable_entindex(csgo_C_CSPlayer_IUn
 			{
 			case 1:
 				if (g_HudDeathNoticeHookGlobals.activeWrapper->attacker.isLocal.use)
-					return g_HudDeathNoticeHookGlobals.activeWrapper->attacker.isLocal.value ? Truecsgo_VEngineClient_GetPlayerForUserID(g_VEngineClient->GetVEngineClient_csgo(), 0, g_HudDeathNoticeHookGlobals.activeWrapper->GetInt("attacker", 0)) : 0;
+					return g_HudDeathNoticeHookGlobals.activeWrapper->attacker.isLocal.value ? g_VEngineClient->GetVEngineClient_csgo()->GetPlayerForUserID(g_HudDeathNoticeHookGlobals.activeWrapper->GetInt("attacker", 0)) : 0;
 				break;
 			case 2:
 				if (g_HudDeathNoticeHookGlobals.activeWrapper->victim.isLocal.use)
-					return g_HudDeathNoticeHookGlobals.activeWrapper->victim.isLocal.value ? Truecsgo_VEngineClient_GetPlayerForUserID(g_VEngineClient->GetVEngineClient_csgo(), 0, g_HudDeathNoticeHookGlobals.activeWrapper->GetInt("userid", 0)) : 0;
+					return g_HudDeathNoticeHookGlobals.activeWrapper->victim.isLocal.value ? g_VEngineClient->GetVEngineClient_csgo()->GetPlayerForUserID(g_HudDeathNoticeHookGlobals.activeWrapper->GetInt("userid", 0)) : 0;
 				break;
 			}
 		}
@@ -1489,9 +1417,6 @@ int __fastcall Mycsgo_C_CSPlayer_IClientNetworkable_entindex(csgo_C_CSPlayer_IUn
 	return Truecsgo_C_CSPlayer_IClientNetworkable_entindex(This, edx);
 }
 
-
-// >>> ScalfromUI only >>> /////////////////////////////////////////////////////
-//
 
 typedef wchar_t * (__stdcall *csgo_CUnknown_GetPlayerName_t)(DWORD *this_ptr, int entIndex, wchar_t * targetBuffer, DWORD targetByteCount, DWORD unknownArg1);
 
@@ -1504,10 +1429,10 @@ wchar_t * __stdcall touring_csgo_CUnknown_GetPlayerName(DWORD *this_ptr, int ent
 	SOURCESDK::player_info_t_csgo pinfo;
 	MyDeathMsgPlayerEntry * playerEntry = nullptr;
 
-	if (g_HudDeathNoticeHookGlobals.activeWrapper && !g_HudDeathNoticeHookGlobals.nextRealPlayerInfoState.empty())
+	if (g_HudDeathNoticeHookGlobals.activeWrapper && !g_HudDeathNoticeHookGlobals.nextRealCUnknownGetPlayerNameState.empty())
 	{
-		int state = g_HudDeathNoticeHookGlobals.nextRealPlayerInfoState.front();
-		g_HudDeathNoticeHookGlobals.nextRealPlayerInfoState.pop();
+		int state = g_HudDeathNoticeHookGlobals.nextRealCUnknownGetPlayerNameState.front();
+		g_HudDeathNoticeHookGlobals.nextRealCUnknownGetPlayerNameState.pop();
 
 		switch (state)
 		{
@@ -1551,7 +1476,8 @@ wchar_t * __stdcall touring_csgo_CUnknown_GetPlayerName(DWORD *this_ptr, int ent
 	return result;
 }
 
-bool csgo_GetPlayerName_Install_Scaleform(void)
+
+bool csgo_GetPlayerName_Install(void)
 {
 	static bool firstResult = false;
 	static bool firstRun = true;
@@ -1563,38 +1489,6 @@ bool csgo_GetPlayerName_Install_Scaleform(void)
 		detoured_csgo_CUnknown_GetPlayerName = (csgo_CUnknown_GetPlayerName_t)DetourClassFunc((BYTE *)AFXADDR_GET(csgo_CUnknown_GetPlayerName), (BYTE *)touring_csgo_CUnknown_GetPlayerName, (int)AFXADDR_GET(csgo_CUnknown_GetPlayerName_DSZ));
 
 		firstResult = true;
-	}
-
-	return firstResult;
-}
-
-//
-// <<< ScaleformUI only <<< ////////////////////////////////////////////////////
-
-bool csgo_ReplaceName_Install(void)
-{
-	static bool firstResult = false;
-	static bool firstRun = true;
-	if (!firstRun) return firstResult;
-	firstRun = false;
-
-	SOURCESDK::IVEngineClient_014_csgo * nativeEngineClient;
-
-	if (
-		g_VEngineClient
-		&& (nativeEngineClient = g_VEngineClient->GetVEngineClient_csgo())
-		&& (g_Adresses_ClientIsPanorama || csgo_GetPlayerName_Install_Scaleform())
-	) {
-		LONG error = NO_ERROR;
-
-		Truecsgo_VEngineClient_GetPlayerInfo = (csgo_VEngineClient_GetPlayerInfo_t)(*(void **)((*(char **)(nativeEngineClient)) + sizeof(void *) * 8));
-
-		DetourTransactionBegin();
-		DetourUpdateThread(GetCurrentThread());
-		DetourAttach(&(PVOID&)Truecsgo_VEngineClient_GetPlayerInfo, Mycsgo_VEngineClient_GetPlayerInfo);
-		error = DetourTransactionCommit();
-
-		firstResult = NO_ERROR == error;
 	}
 
 	return firstResult;
@@ -1636,7 +1530,7 @@ bool csgo_CHudDeathNotice_Install_Panorama(void)
 	SOURCESDK::IVEngineClient_014_csgo * nativeEngineClient;
 
 	if(
-		csgo_ReplaceName_Install()
+		csgo_GetPlayerName_Install()
 		&& g_VEngineClient
 		&& (nativeEngineClient = g_VEngineClient->GetVEngineClient_csgo())
 		&& AFXADDR_GET(csgo_CCSGO_HudDeathNotice_FireGameEvent)
@@ -1646,14 +1540,12 @@ bool csgo_CHudDeathNotice_Install_Panorama(void)
 	{
 		LONG error = NO_ERROR;
 
-		Truecsgo_VEngineClient_GetPlayerForUserID = (csgo_VEngineClient_GetPlayerForUserID_t)(*(void **)((*(char **)(nativeEngineClient)) + sizeof(void *) * 9));
 		TrueCCSGO_HudDeathNotice_FireGameEvent = (CCSGO_HudDeathNotice_FireGameEvent_t)AFXADDR_GET(csgo_CCSGO_HudDeathNotice_FireGameEvent);
 		Truecsgo_panorama_CUIPanel_UnkSetFloatProp = (csgo_panorama_CUIPanel_UnkSetFloatProp_t)AFXADDR_GET(csgo_panorama_AVCUIPanel_UnkSetFloatProp);
 		Truecsgo_C_CSPlayer_IClientNetworkable_entindex = (csgo_C_CSPlayer_IClientNetworkable_entindex_t)AFXADDR_GET(csgo_C_CSPlayer_IClientNetworkable_entindex);
 
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
-		DetourAttach(&(PVOID&)Truecsgo_VEngineClient_GetPlayerForUserID, Mycsgo_VEngineClient_GetPlayerForUserID);
 		DetourAttach(&(PVOID&)TrueCCSGO_HudDeathNotice_FireGameEvent, MyCCSGO_HudDeathNotice_FireGameEvent);
 		DetourAttach(&(PVOID&)Truecsgo_panorama_CUIPanel_UnkSetFloatProp, Mycsgo_panorama_CUIPanel_UnkSetFloatProp);
 		DetourAttach(&(PVOID&)Truecsgo_C_CSPlayer_IClientNetworkable_entindex, Mycsgo_C_CSPlayer_IClientNetworkable_entindex);
@@ -1675,7 +1567,7 @@ bool csgo_CHudDeathNotice_Install_Scaleform(void)
 	SOURCESDK::IVEngineClient_014_csgo * nativeEngineClient;
 
 	if (
-		csgo_ReplaceName_Install()
+		csgo_GetPlayerName_Install()
 		&& g_VEngineClient
 		&& (nativeEngineClient = g_VEngineClient->GetVEngineClient_csgo())
 		&& AFXADDR_GET(csgo_CCSGO_HudDeathNotice_FireGameEvent)
@@ -1684,13 +1576,11 @@ bool csgo_CHudDeathNotice_Install_Scaleform(void)
 	{
 		LONG error = NO_ERROR;
 
-		Truecsgo_VEngineClient_GetPlayerForUserID = (csgo_VEngineClient_GetPlayerForUserID_t)(*(void **)((*(char **)(nativeEngineClient)) + sizeof(void *) * 9));
 		TrueCCSGO_HudDeathNotice_FireGameEvent = (CCSGO_HudDeathNotice_FireGameEvent_t)AFXADDR_GET(csgo_CCSGO_HudDeathNotice_FireGameEvent);
 		Truecsgo_C_CSPlayer_IClientNetworkable_entindex = (csgo_C_CSPlayer_IClientNetworkable_entindex_t)AFXADDR_GET(csgo_C_CSPlayer_IClientNetworkable_entindex);
 
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
-		DetourAttach(&(PVOID&)Truecsgo_VEngineClient_GetPlayerForUserID, Mycsgo_VEngineClient_GetPlayerForUserID);
 		DetourAttach(&(PVOID&)TrueCCSGO_HudDeathNotice_FireGameEvent, MyCCSGO_HudDeathNotice_FireGameEvent);
 		DetourAttach(&(PVOID&)Truecsgo_C_CSPlayer_IClientNetworkable_entindex, Mycsgo_C_CSPlayer_IClientNetworkable_entindex);
 		error = DetourTransactionCommit();
@@ -1731,7 +1621,7 @@ void Console_DeathMsgArgs_PrintHelp(const char * cmd, bool showMatch)
 		"%s"
 		"\t\"assisterName=<sName>\" - New assister name.\n"
 		"\t\"assisterId=<id>\" - New assister id.\n"
-		"\t\"assisterIsLocal=(0|1)\" - If to be considered local player.\n"
+		//"\t\"assisterIsLocal=(0|1)\" - If to be considered local player.\n"
 		"%s"
 		"\t\"victimName=<sName>\" - New victim name.\n"
 		"\t\"victimId=<id>\" - New victim id.\n"
@@ -1800,13 +1690,13 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 
 						if (listNr < 0 || listNr >= (int)g_HudDeathNoticeHookGlobals.Filter.size())
 						{
-							Tier0_Msg("Error: %i is not in valid range for <listNr>\n", listNr);
+							Tier0_Warning("Error: %i is not invalid range for <listNr>\n", listNr);
 							return true;
 						}
 
 						if (targetNr < 0 || targetNr > (int)g_HudDeathNoticeHookGlobals.Filter.size())
 						{
-							Tier0_Msg("Error: %i is not in valid range for <tragetNr>\n", targetNr);
+							Tier0_Warning("Error: %i is not invalid range for <tragetNr>\n", targetNr);
 							return true;
 						}
 
@@ -1852,7 +1742,7 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 
 						if (listNr < 0 || listNr >= (int)g_HudDeathNoticeHookGlobals.Filter.size())
 						{
-							Tier0_Msg("Error: %i is not in valid range for <listNr>\n", listNr);
+							Tier0_Warning("Error: %i is not invalid range for <listNr>\n", listNr);
 							return true;
 						}
 						std::list<DeathMsgFilterEntry>::iterator sourceIt = g_HudDeathNoticeHookGlobals.Filter.begin();
@@ -1882,7 +1772,7 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 
 						if (listNr < 0 || listNr >= (int)g_HudDeathNoticeHookGlobals.Filter.size())
 						{
-							Tier0_Msg("Error: %i is not in valid range for <listNr>\n", listNr);
+							Tier0_Warning("Error: %i is not invalid range for <listNr>\n", listNr);
 							return true;
 						}
 						std::list<DeathMsgFilterEntry>::iterator sourceIt = g_HudDeathNoticeHookGlobals.Filter.begin();
@@ -2080,7 +1970,7 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 
 bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 
-	if (!csgo_ReplaceName_Install())
+	if (!csgo_GetPlayerName_Install())
 	{
 		Tier0_Warning("Error: Required hooks not installed.\n");
 		return true;
@@ -2184,13 +2074,13 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 
 						if (listNr < 0 || listNr >= (int)g_csgo_ReplaceNameList.size())
 						{
-							Tier0_Msg("Error: %i is not in valid range for <listNr>\n", listNr);
+							Tier0_Warning("Error: %i is not invalid range for <listNr>\n", listNr);
 							return true;
 						}
 
 						if (targetNr < 0 || targetNr > (int)g_csgo_ReplaceNameList.size())
 						{
-							Tier0_Msg("Error: %i is not in valid range for <tragetNr>\n", targetNr);
+							Tier0_Warning("Error: %i is not invalid range for <tragetNr>\n", targetNr);
 							return true;
 						}
 
@@ -2236,7 +2126,7 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 
 						if (listNr < 0 || listNr >= (int)g_csgo_ReplaceNameList.size())
 						{
-							Tier0_Msg("Error: %i is not in valid range for <listNr>\n", listNr);
+							Tier0_Warning("Error: %i is not invalid range for <listNr>\n", listNr);
 							return true;
 						}
 						std::list<CCsgoReplaceNameEntry>::iterator sourceIt = g_csgo_ReplaceNameList.begin();

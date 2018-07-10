@@ -680,67 +680,60 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer, bool 
 
 		}
 
-		if (!isPanorama)
+		// csgo_CUnknown_GetPlayerName: // Checked 2018-07-10.
 		{
-			// csgo_CUnknown_GetPlayerName: // Checked 2018-07-07.
+			DWORD addr = 0;
+			DWORD strAddr = 0;
 			{
-				DWORD addr = 0;
-				DWORD strAddr = 0;
+				ImageSectionsReader sections((HMODULE)clientDll);
+				if (!sections.Eof())
 				{
-					ImageSectionsReader sections((HMODULE)clientDll);
+					sections.Next(); // skip .text
 					if (!sections.Eof())
 					{
-						sections.Next(); // skip .text
-						if (!sections.Eof())
+						MemRange result = FindCString(sections.GetMemRange(), "#SFUI_bot_controlled_by");
+						if (!result.IsEmpty())
 						{
-							MemRange result = FindCString(sections.GetMemRange(), "#SFUI_bot_controlled_by");
-							if (!result.IsEmpty())
-							{
-								strAddr = result.Start;
-							}
-							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+							strAddr = result.Start;
 						}
 						else ErrorBox(MkErrStr(__FILE__, __LINE__));
 					}
 					else ErrorBox(MkErrStr(__FILE__, __LINE__));
 				}
-				if (strAddr)
-				{
-					ImageSectionsReader sections((HMODULE)clientDll);
-
-					MemRange baseRange = sections.GetMemRange();
-					MemRange result = FindBytes(baseRange, (char const *)&strAddr, sizeof(strAddr));
-					if (!result.IsEmpty())
-					{
-						addr = result.Start - 0x396;
-
-						// check for pattern to see if it is the right address:
-						unsigned char pattern[3] = { 0x55, 0x8B, 0xEC };
-
-						DWORD patternSize = sizeof(pattern) / sizeof(pattern[0]);
-						MemRange patternRange(addr, addr + patternSize);
-						MemRange result = FindBytes(patternRange, (char *)pattern, patternSize);
-						if (result.Start != patternRange.Start || result.End != patternRange.End)
-						{
-							addr = 0;
-							ErrorBox(MkErrStr(__FILE__, __LINE__));
-						}
-					}
-					else ErrorBox(MkErrStr(__FILE__, __LINE__));
-				}
-				if (addr)
-				{
-					AFXADDR_SET(csgo_CUnknown_GetPlayerName, addr);
-				}
-				else
-				{
-					AFXADDR_SET(csgo_CUnknown_GetPlayerName, 0x0);
-				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
 			}
+			if (strAddr)
+			{
+				ImageSectionsReader sections((HMODULE)clientDll);
+
+				MemRange baseRange = sections.GetMemRange();
+				MemRange result = FindBytes(baseRange, (char const *)&strAddr, sizeof(strAddr));
+				if (!result.IsEmpty())
+				{
+					addr = result.Start - 0x396;
+
+					// check for pattern to see if it is the right address:
+					unsigned char pattern[3] = { 0x55, 0x8B, 0xEC };
+
+					DWORD patternSize = sizeof(pattern) / sizeof(pattern[0]);
+					MemRange patternRange(addr, addr + patternSize);
+					MemRange result = FindBytes(patternRange, (char *)pattern, patternSize);
+					if (result.Start != patternRange.Start || result.End != patternRange.End)
+					{
+						addr = 0;
+						ErrorBox(MkErrStr(__FILE__, __LINE__));
 					}
-		else
-		{
-			AFXADDR_SET(csgo_CUnknown_GetPlayerName, 0x0);
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			if (addr)
+			{
+				AFXADDR_SET(csgo_CUnknown_GetPlayerName, addr);
+			}
+			else
+			{
+				AFXADDR_SET(csgo_CUnknown_GetPlayerName, 0x0);
+			}
 		}
 
 		// csgo_CViewRender_RenderView_AfterVGui_DrawHud: // Checked 2017-05-13.

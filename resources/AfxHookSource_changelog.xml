@@ -3,6 +3,19 @@
 
 <changelog>
 
+
+<release>
+<name>AfxHookSource</name>
+<version>1.41.1</version>
+<time>2018-07-10T09:44Z</time>
+<changes>
+<change type="fixed">
+Fixed multiple bugs in mirv_deathmg.
+</change>
+</changes>
+</release>
+
+
 <release>
 <name>AfxHookSource</name>
 <version>1.41.0</version>
