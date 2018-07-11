@@ -1527,12 +1527,8 @@ bool csgo_CHudDeathNotice_Install_Panorama(void)
 	if(!firstRun) return firstResult;
 	firstRun = false;
 	
-	SOURCESDK::IVEngineClient_014_csgo * nativeEngineClient;
-
 	if(
 		csgo_GetPlayerName_Install()
-		&& g_VEngineClient
-		&& (nativeEngineClient = g_VEngineClient->GetVEngineClient_csgo())
 		&& AFXADDR_GET(csgo_CCSGO_HudDeathNotice_FireGameEvent)
 		&& AFXADDR_GET(csgo_panorama_AVCUIPanel_UnkSetFloatProp)
 		&& AFXADDR_GET(csgo_C_CSPlayer_IClientNetworkable_entindex)
@@ -1564,12 +1560,8 @@ bool csgo_CHudDeathNotice_Install_Scaleform(void)
 	if (!firstRun) return firstResult;
 	firstRun = false;
 
-	SOURCESDK::IVEngineClient_014_csgo * nativeEngineClient;
-
 	if (
 		csgo_GetPlayerName_Install()
-		&& g_VEngineClient
-		&& (nativeEngineClient = g_VEngineClient->GetVEngineClient_csgo())
 		&& AFXADDR_GET(csgo_CCSGO_HudDeathNotice_FireGameEvent)
 		&& AFXADDR_GET(csgo_C_CSPlayer_IClientNetworkable_entindex)
 		)
@@ -1690,13 +1682,13 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 
 						if (listNr < 0 || listNr >= (int)g_HudDeathNoticeHookGlobals.Filter.size())
 						{
-							Tier0_Warning("Error: %i is not invalid range for <listNr>\n", listNr);
+							Tier0_Warning("Error: %i is not in valid range for <listNr>\n", listNr);
 							return true;
 						}
 
 						if (targetNr < 0 || targetNr > (int)g_HudDeathNoticeHookGlobals.Filter.size())
 						{
-							Tier0_Warning("Error: %i is not invalid range for <tragetNr>\n", targetNr);
+							Tier0_Warning("Error: %i is not in valid range for <tragetNr>\n", targetNr);
 							return true;
 						}
 
@@ -1742,7 +1734,7 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 
 						if (listNr < 0 || listNr >= (int)g_HudDeathNoticeHookGlobals.Filter.size())
 						{
-							Tier0_Warning("Error: %i is not invalid range for <listNr>\n", listNr);
+							Tier0_Warning("Error: %i is not in valid range for <listNr>\n", listNr);
 							return true;
 						}
 						std::list<DeathMsgFilterEntry>::iterator sourceIt = g_HudDeathNoticeHookGlobals.Filter.begin();
@@ -1772,7 +1764,7 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 
 						if (listNr < 0 || listNr >= (int)g_HudDeathNoticeHookGlobals.Filter.size())
 						{
-							Tier0_Warning("Error: %i is not invalid range for <listNr>\n", listNr);
+							Tier0_Warning("Error: %i is not in valid range for <listNr>\n", listNr);
 							return true;
 						}
 						std::list<DeathMsgFilterEntry>::iterator sourceIt = g_HudDeathNoticeHookGlobals.Filter.begin();
@@ -2074,13 +2066,13 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 
 						if (listNr < 0 || listNr >= (int)g_csgo_ReplaceNameList.size())
 						{
-							Tier0_Warning("Error: %i is not invalid range for <listNr>\n", listNr);
+							Tier0_Warning("Error: %i is not in valid range for <listNr>\n", listNr);
 							return true;
 						}
 
 						if (targetNr < 0 || targetNr > (int)g_csgo_ReplaceNameList.size())
 						{
-							Tier0_Warning("Error: %i is not invalid range for <tragetNr>\n", targetNr);
+							Tier0_Warning("Error: %i is not in valid range for <tragetNr>\n", targetNr);
 							return true;
 						}
 
@@ -2126,7 +2118,7 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 
 						if (listNr < 0 || listNr >= (int)g_csgo_ReplaceNameList.size())
 						{
-							Tier0_Warning("Error: %i is not invalid range for <listNr>\n", listNr);
+							Tier0_Warning("Error: %i is not in valid range for <listNr>\n", listNr);
 							return true;
 						}
 						std::list<CCsgoReplaceNameEntry>::iterator sourceIt = g_csgo_ReplaceNameList.begin();

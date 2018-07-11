@@ -48,6 +48,7 @@
 #include <swarm/sdk_src/public/tier1/convar.h>
 #include <l4d2/sdk_src/public/tier0/memalloc.h>
 #include <l4d2/sdk_src/public/tier1/convar.h>
+#include <csgo/Panorama.h>
 
 #include <set>
 #include <map>
@@ -1921,6 +1922,11 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		bFirstPanorama = false;
 
 		Addresses_InitPanoramaDll((AfxAddr)hModule, g_SourceSdkVer);
+
+		//
+		// Install hooks:
+
+		PanoramaHooks_Install();
 	}
 	else
 	if(bFirstStdshader_dx9 && StringEndsWith( lpLibFileName, "stdshader_dx9.dll"))
@@ -2008,7 +2014,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 	{ 
 		case DLL_PROCESS_ATTACH:
 		{
-#if 0
+#ifdef _DEBUG
 			MessageBox(0,"DLL_PROCESS_ATTACH","MDT_DEBUG",MB_OK);
 #endif
 

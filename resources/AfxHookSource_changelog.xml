@@ -6,11 +6,30 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.42.0</version>
+<time>2018-07-11T16:48Z</time>
+<changes>
+<change type="added">
+Added -afxDetourPanorama (case sensitive!) command line option, which allows to modify Panorama UI.<br />
+When the game is loaded with the Panorama UI, this will create a panorama.org.zip in the HLAE.exe folder.<br />
+Extract the panorama folder in it with 7z ( https://www.7-zip.org/ ) and make your changes.<br />
+Then use 7z, create a new ZIP archive named panorama.my.zip with the folder: right click the panorama folder, Add To Archive, select format zip, select compression level store, and insert these in the Parameters box: x=0 m=Copy cp=20127 tc- cl- cu- tc-<br/>
+Then hit okay and let it create the ZIP file and restart the game (still with -afxDetourPanorama option). 
+</change>
+</changes>
+<comments>
+Thanks to https://twitter.com/ChetdeJong for testing.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.41.1</version>
 <time>2018-07-10T09:44Z</time>
 <changes>
 <change type="fixed">
-Fixed multiple bugs in mirv_deathmg.
+Fixed multiple bugs in mirv_deathmsg.
 </change>
 </changes>
 </release>

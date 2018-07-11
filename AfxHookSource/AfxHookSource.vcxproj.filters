@@ -405,6 +405,9 @@
     <ClCompile Include="..\shared\Detours\src\modules.cpp">
       <Filter>shared\Detours\src</Filter>
     </ClCompile>
+    <ClCompile Include="csgo\Panorama.cpp">
+      <Filter>AfxHookSource\csgo</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\bvhexport.h">
@@ -745,6 +748,9 @@
     </ClInclude>
     <ClInclude Include="..\shared\Detours\src\detver.h">
       <Filter>shared\Detours\src</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo\Panorama.h">
+      <Filter>AfxHookSource\csgo</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

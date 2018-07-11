@@ -61,6 +61,7 @@ AFXADDR_DEF(csgo_CClientState_ProcessVoiceData_DSZ)
 AFXADDR_DEF(csgo_CVoiceWriter_AddDecompressedData)
 AFXADDR_DEF(csgo_CVoiceWriter_AddDecompressedData_DSZ)
 AFXADDR_DEF(csgo_panorama_AVCUIPanel_UnkSetFloatProp)
+AFXADDR_DEF(csgo_panorama_CZip_UnkLoadFiles)
 AFXADDR_DEF(csgo_C_CSPlayer_IClientNetworkable_entindex)
 
 bool g_Adresses_ClientIsPanorama = true;
@@ -550,10 +551,68 @@ void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer)
 			}
 			AFXADDR_SET(csgo_panorama_AVCUIPanel_UnkSetFloatProp, addr);
 		}
+
+		// csgo_panorama_CZip_UnkLoadFiles // Checked 2018-07-11.
+		{
+			DWORD addr = 0;
+			{
+				ImageSectionsReader sections((HMODULE)panoramaDll);
+				if (!sections.Eof())
+				{
+					sections.Next(); // skip .text
+					if (!sections.Eof())
+					{
+						MemRange firstDataRange = sections.GetMemRange();
+
+						sections.Next(); // skip first .data
+						if (!sections.Eof())
+						{
+							MemRange result = FindCString(sections.GetMemRange(), ".?AVCZip@@");
+							if (!result.IsEmpty())
+							{
+								DWORD tmpAddr = result.Start;
+								tmpAddr -= 0x8;
+
+								result.Start = firstDataRange.Start;
+								result.End = firstDataRange.Start;
+
+								for (int i = 0; i < 2; ++i)
+								{
+									result = FindBytes(MemRange(result.End, firstDataRange.End), (char const *)&tmpAddr, sizeof(tmpAddr));
+								}
+
+								if (!result.IsEmpty())
+								{
+									DWORD tmpAddr = result.Start;
+									tmpAddr -= 0xC;
+
+									result = FindBytes(firstDataRange, (char const *)&tmpAddr, sizeof(tmpAddr));
+									if (!result.IsEmpty())
+									{
+										DWORD tmpAddr = result.Start;
+										tmpAddr += (1) * 4;
+
+										addr = ((DWORD *)tmpAddr)[13];
+									}
+									else ErrorBox(MkErrStr(__FILE__, __LINE__));
+								}
+								else ErrorBox(MkErrStr(__FILE__, __LINE__));
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			AFXADDR_SET(csgo_panorama_CZip_UnkLoadFiles, addr);
+		}
 	}
 	else
 	{
 		AFXADDR_SET(csgo_panorama_AVCUIPanel_UnkSetFloatProp, 0);
+		AFXADDR_SET(csgo_panorama_CZip_UnkLoadFiles, 0);
 	}
 }
 

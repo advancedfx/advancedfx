@@ -303,7 +303,7 @@ Brett 'xNWP' Anthony
 	https://twitter.com/ThatNWP
 
 Peter 'psh' P.
-	Technical support, former IRC, Discord admin.
+	Technical support, former IRC, Discord admin, Reddit moderator.
 	Since January 2016
 	https://twitter.com/_peterpsh_
 
