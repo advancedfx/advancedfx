@@ -2,7 +2,7 @@ Dear Half-Life Advanced Effects (HLAE) user,
 
 
 You can retrieve the latest HLAE, infos, report bugs and post suggestions here:
-http://www.advancedfx.org/
+https://www.advancedfx.org/
 
 
 Epilepsy warning:
@@ -45,7 +45,7 @@ people, companies, organizations and projects:
 
 AlliedModders
 	For csgo hl2sdk.
-	http://alliedmods.net
+	https://alliedmods.net
 	
 Detours
 	https://github.com/Microsoft/Detours/
@@ -76,15 +76,15 @@ Detours
 
 GitHub
 	For hosting the downloads, wiki and source code repository.
-	http://github.com/
+	https://github.com/
 
 Hex-Rays
 	For IDA v5.0 free
-	http://www.hex-rays.com/
+	https://www.hex-rays.com/
 
 Industrial Light & Magic
 	For OpenEXR.
-	http://openexr.com/
+	https://openexr.com/
 	
 	Copyright (c) 2006, Industrial Light & Magic, a division of Lucasfilm
 	Entertainment Company Ltd.  Portions contributed and copyright held by
@@ -122,12 +122,12 @@ Industrial Light & Magic
 
 Microsoft
 	For VC++, MSDN Library, ... .
-	http://www.microsoft.com/
+	https://www.microsoft.com/
 	
 NASM
 	For NASM.
 	(Used by HLAE developers to build the injected loader code AfxHook.dat.)
-	http://www.nasm.us/
+	https://www.nasm.us/
 
 RapidXml
 	http://rapidxml.sourceforge.net/
@@ -159,7 +159,7 @@ SharpDX
 
 Valve
 	For various SDKs.
-	http://www.valvesoftware.com/
+	https://www.valvesoftware.com/
 
 advancedfx
 	https://github.com/ripieces/advancedfx
@@ -169,8 +169,8 @@ advancedfx
 	Copyright (c) 2007-2018 Dominik Tugend ( https://github.com/ripieces )
 	Copyright (c) 2018-2018 Anders 'Dec' ( https://github.com/fj0d09r )
 	Copyright (c) 2016-2017 Ivan Molodetskikh ( https://github.com/YaLTeR )
-	Copyright (c) 2015-2015 Niklas Koep ( https://github.com/nkoep )
-	Copyright (c) 2004-2009 Gavin Bramhill ( http://www.madabouthats.org/ )
+	Copyright (c) 2004-2009 Gavin Bramhill ( https://www.madabouthats.org/ )
+	Copyright (c) 2015-2015 Niklas Koep ( http://github.com/nkoep )
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -243,17 +243,17 @@ easywsclient
 
 id Software
 	For Quake 1 source code.
-	http://www.idsoftware.com/
+	https://www.idsoftware.com/
 
 qspline CC0
 	Thanks to James McEnnan for putting essential parts of qspline under the CC0
 	license.
 	http://qspline.sourceforge.net/
-	http://sourceforge.net/projects/qspline-cc0
+	https://sourceforge.net/projects/qspline-cc0
 
 zLib
 	For zLib.
-	http://zlib.net/
+	https://zlib.net/
 	
 	 (C) 1995-2017 Jean-loup Gailly and Mark Adler
 
@@ -276,10 +276,6 @@ zLib
 	  Jean-loup Gailly        Mark Adler
 	  jloup@gzip.org          madler@alumni.caltech.edu
 
-ואגס VGS
-	For hosting the advancedfx website and forum.
-	http://www.vagas.co.il/
-
 And everyone that feels he/she/it should have been mentioned here.
 
 
@@ -295,7 +291,7 @@ Current members:
 Dominik 'dtugend' Tugend
 	Lead programmer.
 	Since March 2007.
-	http://dominik.matrixstorm.com/
+	https://github.com/dtugend
 
 Brett 'xNWP' Anthony
 	Programming of additional tools, Discord moderator, Reddit moderator.
@@ -313,9 +309,9 @@ Peter 'psh' P.
 	https://twitter.com/Devomvm
 	
 'Dec'
-	Helping wiuth HLAE manual, Discord moderator, Reddit moderator. Past: Forum, IRC.
+	Helping with HLAE manual, Discord moderator, Reddit moderator. Past: Forum, IRC.
 	Since March 2011
-	http://www.youtube.com/AMDECKARN
+	https://www.youtube.com/AMDECKARN
 
 
 Past members:
