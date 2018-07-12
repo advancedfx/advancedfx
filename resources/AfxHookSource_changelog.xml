@@ -6,15 +6,15 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>1.42.2</version>
+<version>1.42.3</version>
 <time>2018-07-12T06:26Z</time>
 <changes>
 <change type="fixed">
-Adjusted (again) to CS:GO 7/6/2018 (version 1.36.4.0).
+Adjusted (again) to CS:GO 7/11/2018 (1.36.4.1).
 </change>
 </changes>
 <comments>
-Thanks to https://twitter.com/ChetdeJong for testing.<br />
+Thanks to https://twitter.com/ThatNWP for testing.<br />
 If you already modded PanoramaUI, don't forget to reapply your changes to the latest panorama.org.zip (there were quite some changes).
 </comments>
 </release>
