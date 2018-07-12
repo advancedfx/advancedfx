@@ -495,7 +495,7 @@ void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer)
 {
 	if(SourceSdkVer_CSGO == sourceSdkVer)
 	{
-		// csgo_panorama_AVCUIPanel_UnkSetFloatProp // Checked 2018-06-23.
+		// csgo_panorama_AVCUIPanel_UnkSetFloatProp // Checked 2018-07-12.
 		{
 			DWORD addr = 0;
 			{
@@ -535,7 +535,7 @@ void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer)
 										DWORD tmpAddr = result.Start;
 										tmpAddr += (1) * 4;
 
-										addr = ((DWORD *)tmpAddr)[282];
+										addr = ((DWORD *)tmpAddr)[283];
 									}
 									else ErrorBox(MkErrStr(__FILE__, __LINE__));
 								}
@@ -625,7 +625,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer, bool 
 		if (isPanorama)
 		{
 
-			// csgo_CCSGO_HudDeathNotice_FireGameEvent // Checked 2018-06-23.
+			// csgo_CCSGO_HudDeathNotice_FireGameEvent // Checked 2018-07-12.
 			{
 				DWORD addr = 0;
 				{
@@ -646,12 +646,23 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer, bool 
 									DWORD tmpAddr = result.Start;
 									tmpAddr -= 0x8;
 
-									result.Start = firstDataRange.Start;
-									result.End = firstDataRange.Start;
+									int i = 0;
 
-									for (int i = 0; i < 2; ++i)
+									for (result = MemRange(firstDataRange.Start, firstDataRange.End);
+										!result.IsEmpty();
+										result = MemRange(result.End, firstDataRange.End))
 									{
-										result = FindBytes(MemRange(result.End, firstDataRange.End), (char const *)&tmpAddr, sizeof(tmpAddr));
+										result = FindBytes(result, (char const *)&tmpAddr, sizeof(tmpAddr));
+
+										if (result.IsEmpty()) break;
+
+										if (
+											0 < i
+											&& result.Start - 0x8 >= firstDataRange.Start
+											&& 0x14 == *((DWORD *)(result.Start - 0x8))
+											) break;
+
+										++i;
 									}
 
 									if (!result.IsEmpty())
@@ -1645,6 +1656,8 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer, bool 
 								DWORD tmpAddr = result.Start;
 								tmpAddr -= 0x8;
 
+								int i = 0;
+
 								for(result = MemRange(firstDataRange.Start, firstDataRange.End);
 									!result.IsEmpty();
 									result = MemRange(result.End, firstDataRange.End))
@@ -1654,9 +1667,12 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer, bool 
 									if (result.IsEmpty()) break;
 
 									if (
-										result.Start - 0x8 >= firstDataRange.Start
-										&& (2) * sizeof(DWORD) == *((DWORD *)(result.Start - 0x8))
+										0 < i
+										&& result.Start - 0x8 >= firstDataRange.Start
+										&& 0x8 == *((DWORD *)(result.Start - 0x8))
 									) break;
+
+									++i;
 								}
 
 								if (!result.IsEmpty())
