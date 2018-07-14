@@ -49,6 +49,7 @@
 #include <l4d2/sdk_src/public/tier0/memalloc.h>
 #include <l4d2/sdk_src/public/tier1/convar.h>
 #include <csgo/Panorama.h>
+#include <csgo/hooks/engine.h>
 
 #include <set>
 #include <map>
@@ -1843,6 +1844,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		InterceptDllCall(hModule, "USER32.dll", "ReleaseCapture", (DWORD)&new_ReleaseCapture);
 
 		// Init the hook early, so we don't run into issues with threading:
+		EngineHooks_Install();
 		Hook_csgo_SndMixTimeScalePatch();
 		csgo_Audio_Install();
 	}
@@ -2014,7 +2016,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 	{ 
 		case DLL_PROCESS_ATTACH:
 		{
-#if _DEBUG
+#ifdef _DEBUG
 			MessageBox(0,"DLL_PROCESS_ATTACH","MDT_DEBUG",MB_OK);
 #endif
 

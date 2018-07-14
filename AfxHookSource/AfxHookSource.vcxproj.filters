@@ -175,6 +175,9 @@
     <Filter Include="shared\Detours\src">
       <UniqueIdentifier>{34b3b323-d378-40da-aa26-50a38883f92b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="AfxHookSource\csgo\hooks">
+      <UniqueIdentifier>{eed7fb6d-936e-41f5-823f-82f0fdffc7c1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\bvhexport.cpp">
@@ -407,6 +410,9 @@
     </ClCompile>
     <ClCompile Include="csgo\Panorama.cpp">
       <Filter>AfxHookSource\csgo</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo\hooks\engine.cpp">
+      <Filter>AfxHookSource\csgo\hooks</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -751,6 +757,9 @@
     </ClInclude>
     <ClInclude Include="csgo\Panorama.h">
       <Filter>AfxHookSource\csgo</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo\hooks\engine.h">
+      <Filter>AfxHookSource\csgo\hooks</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

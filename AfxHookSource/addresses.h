@@ -68,6 +68,7 @@ AFXADDR_DECL(csgo_CVoiceWriter_AddDecompressedData_DSZ)
 AFXADDR_DECL(csgo_panorama_AVCUIPanel_UnkSetFloatProp)
 AFXADDR_DECL(csgo_panorama_CZip_UnkLoadFiles)
 AFXADDR_DECL(csgo_C_CSPlayer_IClientNetworkable_entindex)
+AFXADDR_DECL(csgo_engine_RegisterForUnhandledEvent_ToggleDebugger_BeforeCall)
 
 extern bool g_Adresses_ClientIsPanorama;
 

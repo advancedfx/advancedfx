@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.42.5</version>
+<time>2018-07-14T08:48Z</time>
+<changes>
+<change type="added">
+Added mirv_panorama_toggledebugger - This command is not officially supported by us, it may or may not work. Please note the debugger won't save changes until the paths in csgo/panorama/ are present. Also please note that the changes won't be live in next load, until you package them and tell HLAE to make CS:GO use them (See HLAE 2.52.0 (2018-07-11T16:48Z) / AfxHookSource 1.42.0 (2018-07-11T16:48Z).)
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.42.4</version>
 <time>2018-07-14T06:31Z</time>
 <changes>

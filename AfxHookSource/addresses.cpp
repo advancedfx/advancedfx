@@ -63,6 +63,7 @@ AFXADDR_DEF(csgo_CVoiceWriter_AddDecompressedData_DSZ)
 AFXADDR_DEF(csgo_panorama_AVCUIPanel_UnkSetFloatProp)
 AFXADDR_DEF(csgo_panorama_CZip_UnkLoadFiles)
 AFXADDR_DEF(csgo_C_CSPlayer_IClientNetworkable_entindex)
+AFXADDR_DEF(csgo_engine_RegisterForUnhandledEvent_ToggleDebugger_BeforeCall)
 
 bool g_Adresses_ClientIsPanorama = true;
 
@@ -474,6 +475,48 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 				}
 				AFXADDR_SET(csgo_CVoiceWriter_AddDecompressedData, addr);
 			}
+
+			// csgo_engine_RegisterForUnhandledEvent_ToggleDebugger_BeforeCall: // Checked 2018-07-14.
+			{
+				DWORD addr = 0;
+				{
+					ImageSectionsReader sections((HMODULE)engineDll);
+					if (!sections.Eof())
+					{
+						MemRange textRange = sections.GetMemRange();
+						sections.Next(); // skip .text
+						if (!sections.Eof())
+						{
+							MemRange firstDataRange = sections.GetMemRange();
+
+							MemRange result = FindCString(sections.GetMemRange(), "ToggleDebugger");
+							if (!result.IsEmpty())
+							{
+								DWORD tmpAddr = result.Start;
+
+								result = FindBytes(textRange, (char const *)&tmpAddr, sizeof(tmpAddr));
+								if (!result.IsEmpty())
+								{
+									DWORD tmpAddr = result.Start;
+									tmpAddr += 0x26;
+
+									result = FindPatternString(MemRange(tmpAddr, tmpAddr + 0x6), "FF 90 B8 00 00  00");
+									if (!result.IsEmpty())
+									{
+										addr = tmpAddr;
+									}
+									else ErrorBox(MkErrStr(__FILE__, __LINE__));
+								}
+								else ErrorBox(MkErrStr(__FILE__, __LINE__));
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				AFXADDR_SET(csgo_engine_RegisterForUnhandledEvent_ToggleDebugger_BeforeCall, addr);
+			}
 		}
 	}
 	else
@@ -484,6 +527,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_MIX_PaintChannels, 0x0);
 		AFXADDR_SET(csgo_CClientState_ProcessVoiceData, 0x0);
 		AFXADDR_SET(csgo_CVoiceWriter_AddDecompressedData, 0x0);
+		AFXADDR_SET(csgo_engine_RegisterForUnhandledEvent_ToggleDebugger_BeforeCall, 0x0);
 	}
 	AFXADDR_SET(csgo_snd_mix_timescale_patch_DSZ, 0x08);
 	AFXADDR_SET(csgo_MIX_PaintChannels_DSZ, 0x9);
