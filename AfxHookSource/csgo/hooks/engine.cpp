@@ -50,12 +50,32 @@ bool EngineHooks_Install()
 	return firstResult;
 }
 
+extern SOURCESDK::CSGO::vgui::ISurface *g_pVGuiSurface_csgo;
+
+bool EngineHooks_PanoramaDebuggerActive()
+{
+	if(g_Engine_ToggleDebugger_This) return 0 != *((BYTE *)g_Engine_ToggleDebugger_This + 0x1d);
+	
+	return false;
+}
+
+
+void OnPanoramaDebuggerOpened();
+
+
+void OnPanoramaDebuggerClosed();
+
 CON_COMMAND(mirv_panorama_toggledebugger, "Toggle Panorama UI debugger") {
-	if (!EngineHooks_Install() || nullptr == g_Engine_ToggleDebugger_This)
+	if (!EngineHooks_Install() || nullptr == g_Engine_ToggleDebugger_This || nullptr == g_pVGuiSurface_csgo)
 	{
 		Tier0_Warning("Error: Required hooks not installed.\n");
 		return;
 	}
 
 	g_Engine_ToggleDebugger(g_Engine_ToggleDebugger_This, 0);
+
+	if (EngineHooks_PanoramaDebuggerActive())
+		OnPanoramaDebuggerOpened();
+	else
+		OnPanoramaDebuggerClosed();
 }

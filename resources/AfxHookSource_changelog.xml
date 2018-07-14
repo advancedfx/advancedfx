@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.42.6</version>
+<time>2018-07-14T14:24Z</time>
+<changes>
+<change type="added">
+Added support code to accompany mirv_panorama_toggledebugger in order to avoid mouse state problems.
+</change>
+</changes>
+<comments>
+A tutorial for mirv_panorama_toggledebugger usage is in the works.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.42.5</version>
 <time>2018-07-14T08:48Z</time>
 <changes>

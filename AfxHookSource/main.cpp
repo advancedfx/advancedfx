@@ -501,6 +501,23 @@ public:
 	{
 	}
 
+	void OnPanoramaDebuggerOpened()
+	{
+		if (m_IN_MouseActive)
+		{
+			m_Parent->IN_DeactivateMouse();
+			ReleaseCapture();
+		}
+	}
+
+	void OnPanoramaDebuggerClosed()
+	{
+		if (m_IN_MouseActive)
+		{
+			m_Parent->IN_ActivateMouse();
+		}
+	}
+
 	//
 	// IAfxBaseClientDll:
 
@@ -667,9 +684,20 @@ public:
 private:
 	IBaseClientDLL_csgo * m_Parent;
 	IAfxBaseClientDllView_Render * m_OnView_Render;
+	bool m_IN_MouseActive = false;
 };
 
 CAfxBaseClientDll * g_AfxBaseClientDll = 0;
+
+
+void OnPanoramaDebuggerOpened() {
+	g_AfxBaseClientDll->OnPanoramaDebuggerOpened();
+}
+
+void OnPanoramaDebuggerClosed() {
+	g_AfxBaseClientDll->OnPanoramaDebuggerClosed();
+}
+
 
 __declspec(naked) int CAfxBaseClientDll::Connect(SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CGlobalVarsBase *pGlobals)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 0) }
@@ -807,11 +835,25 @@ __declspec(naked) void CAfxBaseClientDll::_UNKOWN_014(void)
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_015(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 15) }
 
-__declspec(naked) void CAfxBaseClientDll::IN_ActivateMouse(void)
-{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 16) }
+void CAfxBaseClientDll::IN_ActivateMouse(void)
+{ // NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 16)
 
-__declspec(naked) void CAfxBaseClientDll::IN_DeactivateMouse(void)
-{ NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 17) }
+	m_IN_MouseActive = true;
+
+	if (EngineHooks_PanoramaDebuggerActive())
+	{
+		m_Parent->IN_DeactivateMouse();
+		ReleaseCapture();
+	}
+	else 
+		m_Parent->IN_ActivateMouse();
+}
+
+void CAfxBaseClientDll::IN_DeactivateMouse(void)
+{ // NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 17)
+
+	m_IN_MouseActive = false;	
+}
 
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_018(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 18) }
