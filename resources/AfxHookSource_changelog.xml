@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.42.7</version>
+<time>2018-07-19T05:52Z</time>
+<changes>
+<change type="fixed">
+Adjusted to CS:GO 7/18/2018.
+</change>
+</changes>
+<comments>
+If you modded Panorama UI with HLAE, don't forget to delete panorama.my.zip and to reapply your changes: https://github.com/advancedfx/advancedfx/wiki/How-to-change-Panorama-UI
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.42.6</version>
 <time>2018-07-14T14:24Z</time>
 <changes>
