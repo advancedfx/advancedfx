@@ -79,7 +79,7 @@ GitHub
 	https://github.com/
 
 Hex-Rays
-	For IDA v5.0 free
+	For IDA v7.0 free
 	https://www.hex-rays.com/
 
 Industrial Light & Magic
