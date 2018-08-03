@@ -7,6 +7,8 @@ namespace BinUtils {
 
 struct MemRange
 {
+	static MemRange FromSize(DWORD address, DWORD size);
+
 	// inclusive
 	DWORD Start;
 
@@ -16,7 +18,9 @@ struct MemRange
 	MemRange();
 	MemRange(DWORD start, DWORD end);
 
-	bool IsEmpty(void);
+	bool IsEmpty(void) const;
+
+	MemRange And(const MemRange & range) const;
 };
 
 class ImageSectionsReader
@@ -58,6 +62,9 @@ MemRange FindWCString(MemRange memRange, wchar_t const * pattern);
 /// can be unexpected.
 /// </param>
 MemRange FindPatternString(MemRange memRange, char const * hexBytePattern);
+
+/// <returns>0 if not found, otherwise address of vtable</returns>
+DWORD FindClassVtable(HMODULE hModule, const char * name, DWORD rttiBaseClassArrayOffset, DWORD completeObjectLocatorOffset);
 
 } // namespace Afx {
 } // namespace BinUtils {

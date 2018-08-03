@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>TODO</version>
+<time>TODO</time>
+<changes>
+<change type="updated">
+Made RTTI based hooks more stable against updates.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.42.9</version>
 <time>2018-07-26T07:25Z</time>
 <changes>

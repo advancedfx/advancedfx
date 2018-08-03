@@ -6,6 +6,18 @@
 
 <release>
 <name>HLAE</name>
+<version>TODO</version>
+<time>TODO</time>
+<changes>
+<change type="updated">
+Included AfxHookSource TODO (TODO).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.52.9</version>
 <time>2018-07-26T07:25Z</time>
 <changes>

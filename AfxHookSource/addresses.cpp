@@ -288,61 +288,9 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 			}
 		}
 
-		// csgo_CAudioXAudio2_vtable: // Checked 2018-05-22.
-		{
-			DWORD addr = 0;
-			{
-				ImageSectionsReader sections((HMODULE)engineDll);
-				if (!sections.Eof())
-				{
-					sections.Next(); // skip .text
-					if (!sections.Eof())
-					{
-						MemRange firstDataRange = sections.GetMemRange();
-
-						sections.Next(); // skip first .data
-						if (!sections.Eof())
-						{
-							MemRange result = FindCString(sections.GetMemRange(), ".?AVCAudioXAudio2@@");
-							if (!result.IsEmpty())
-							{
-								DWORD tmpAddr = result.Start;
-								tmpAddr -= 0x8;
-
-								result.End = firstDataRange.Start;
-
-								for (int i = 0; i < 2; ++i)
-								{
-									result = FindBytes(MemRange(result.End, firstDataRange.End), (char const *)&tmpAddr, sizeof(tmpAddr));
-								}
-
-								if (!result.IsEmpty())
-								{
-									DWORD tmpAddr = result.Start;
-									tmpAddr -= 0xC;
-
-									result = FindBytes(firstDataRange, (char const *)&tmpAddr, sizeof(tmpAddr));
-									if (!result.IsEmpty())
-									{
-										DWORD tmpAddr = result.Start;
-										tmpAddr += (1) * 4;
-
-										addr = tmpAddr;
-									}
-									else ErrorBox(MkErrStr(__FILE__, __LINE__));
-								}
-								else ErrorBox(MkErrStr(__FILE__, __LINE__));
-							}
-							else ErrorBox(MkErrStr(__FILE__, __LINE__));
-						}
-						else ErrorBox(MkErrStr(__FILE__, __LINE__));
-					}
-					else ErrorBox(MkErrStr(__FILE__, __LINE__));
-				}
-				else ErrorBox(MkErrStr(__FILE__, __LINE__));
-			}
-			AFXADDR_SET(csgo_CAudioXAudio2_vtable, addr);
-		}
+		// csgo_CAudioXAudio2_vtable: // Checked 2018-08-03.
+		AFXADDR_SET(csgo_CAudioXAudio2_vtable, FindClassVtable((HMODULE)engineDll, ".?AVCAudioXAudio2@@", 0, 0x0));
+		if(!AFXADDR_GET(csgo_CAudioXAudio2_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 		// csgo_MIX_PaintChannels: // Checked 2017-07-18.
 		{
@@ -539,117 +487,27 @@ void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer)
 {
 	if(SourceSdkVer_CSGO == sourceSdkVer)
 	{
-		// csgo_panorama_AVCUIPanel_UnkSetFloatProp // Checked 2018-07-12.
+		// csgo_panorama_AVCUIPanel_UnkSetFloatProp // Checked 2018-08-03.
 		{
 			DWORD addr = 0;
-			{
-				ImageSectionsReader sections((HMODULE)panoramaDll);
-				if (!sections.Eof())
-				{
-					sections.Next(); // skip .text
-					if (!sections.Eof())
-					{
-						MemRange firstDataRange = sections.GetMemRange();
-
-						sections.Next(); // skip first .data
-						if (!sections.Eof())
-						{
-							MemRange result = FindCString(sections.GetMemRange(), ".?AVCUIPanel@panorama@@");
-							if (!result.IsEmpty())
-							{
-								DWORD tmpAddr = result.Start;
-								tmpAddr -= 0x8;
-
-								result.Start = firstDataRange.Start;
-								result.End = firstDataRange.Start;
-
-								for (int i = 0; i < 2; ++i)
-								{
-									result = FindBytes(MemRange(result.End, firstDataRange.End), (char const *)&tmpAddr, sizeof(tmpAddr));
-								}
-
-								if (!result.IsEmpty())
-								{
-									DWORD tmpAddr = result.Start;
-									tmpAddr -= 0xC;
-
-									result = FindBytes(firstDataRange, (char const *)&tmpAddr, sizeof(tmpAddr));
-									if (!result.IsEmpty())
-									{
-										DWORD tmpAddr = result.Start;
-										tmpAddr += (1) * 4;
-
-										addr = ((DWORD *)tmpAddr)[283];
-									}
-									else ErrorBox(MkErrStr(__FILE__, __LINE__));
-								}
-								else ErrorBox(MkErrStr(__FILE__, __LINE__));
-							}
-							else ErrorBox(MkErrStr(__FILE__, __LINE__));
-						}
-						else ErrorBox(MkErrStr(__FILE__, __LINE__));
-					}
-					else ErrorBox(MkErrStr(__FILE__, __LINE__));
-				}
-				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			DWORD tmpAddr = FindClassVtable((HMODULE)panoramaDll, ".?AVCUIPanel@panorama@@", 0, 0x0);
+			if (tmpAddr) {
+				addr = ((DWORD *)tmpAddr)[283];
 			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
 			AFXADDR_SET(csgo_panorama_AVCUIPanel_UnkSetFloatProp, addr);
 		}
 
-		// csgo_panorama_CZip_UnkLoadFiles // Checked 2018-07-11.
+		// csgo_panorama_CZip_UnkLoadFiles // Checked 2018-08-03.
 		{
 			DWORD addr = 0;
-			{
-				ImageSectionsReader sections((HMODULE)panoramaDll);
-				if (!sections.Eof())
-				{
-					sections.Next(); // skip .text
-					if (!sections.Eof())
-					{
-						MemRange firstDataRange = sections.GetMemRange();
-
-						sections.Next(); // skip first .data
-						if (!sections.Eof())
-						{
-							MemRange result = FindCString(sections.GetMemRange(), ".?AVCZip@@");
-							if (!result.IsEmpty())
-							{
-								DWORD tmpAddr = result.Start;
-								tmpAddr -= 0x8;
-
-								result.Start = firstDataRange.Start;
-								result.End = firstDataRange.Start;
-
-								for (int i = 0; i < 2; ++i)
-								{
-									result = FindBytes(MemRange(result.End, firstDataRange.End), (char const *)&tmpAddr, sizeof(tmpAddr));
-								}
-
-								if (!result.IsEmpty())
-								{
-									DWORD tmpAddr = result.Start;
-									tmpAddr -= 0xC;
-
-									result = FindBytes(firstDataRange, (char const *)&tmpAddr, sizeof(tmpAddr));
-									if (!result.IsEmpty())
-									{
-										DWORD tmpAddr = result.Start;
-										tmpAddr += (1) * 4;
-
-										addr = ((DWORD *)tmpAddr)[13];
-									}
-									else ErrorBox(MkErrStr(__FILE__, __LINE__));
-								}
-								else ErrorBox(MkErrStr(__FILE__, __LINE__));
-							}
-							else ErrorBox(MkErrStr(__FILE__, __LINE__));
-						}
-						else ErrorBox(MkErrStr(__FILE__, __LINE__));
-					}
-					else ErrorBox(MkErrStr(__FILE__, __LINE__));
-				}
-				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			DWORD tmpAddr = FindClassVtable((HMODULE)panoramaDll, ".?AVCZip@@", 0, 0x0);
+			if (tmpAddr) {
+				addr = ((DWORD *)tmpAddr)[13];
 			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
 			AFXADDR_SET(csgo_panorama_CZip_UnkLoadFiles, addr);
 		}
 	}
@@ -668,72 +526,15 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer, bool 
 
 		if (isPanorama)
 		{
-
-			// csgo_CCSGO_HudDeathNotice_FireGameEvent // Checked 2018-07-12.
+			// csgo_CCSGO_HudDeathNotice_FireGameEvent // Checked 2018-08-03.
 			{
 				DWORD addr = 0;
-				{
-					ImageSectionsReader sections((HMODULE)clientDll);
-					if (!sections.Eof())
-					{
-						sections.Next(); // skip .text
-						if (!sections.Eof())
-						{
-							MemRange firstDataRange = sections.GetMemRange();
-
-							sections.Next(); // skip first .data
-							if (!sections.Eof())
-							{
-								MemRange result = FindCString(sections.GetMemRange(), ".?AVCCSGO_HudDeathNotice@@");
-								if (!result.IsEmpty())
-								{
-									DWORD tmpAddr = result.Start;
-									tmpAddr -= 0x8;
-
-									int i = 0;
-
-									for (result = MemRange(firstDataRange.Start, firstDataRange.End);
-										!result.IsEmpty();
-										result = MemRange(result.End, firstDataRange.End))
-									{
-										result = FindBytes(result, (char const *)&tmpAddr, sizeof(tmpAddr));
-
-										if (result.IsEmpty()) break;
-
-										if (
-											0 < i
-											&& result.Start - 0x8 >= firstDataRange.Start
-											&& 0x14 == *((DWORD *)(result.Start - 0x8))
-											) break;
-
-										++i;
-									}
-
-									if (!result.IsEmpty())
-									{
-										DWORD tmpAddr = result.Start;
-										tmpAddr -= 0xC;
-
-										result = FindBytes(firstDataRange, (char const *)&tmpAddr, sizeof(tmpAddr));
-										if (!result.IsEmpty())
-										{
-											DWORD tmpAddr = result.Start;
-											tmpAddr += (1) * 4;
-
-											addr = ((DWORD *)tmpAddr)[1];
-										}
-										else ErrorBox(MkErrStr(__FILE__, __LINE__));
-									}
-									else ErrorBox(MkErrStr(__FILE__, __LINE__));
-								}
-								else ErrorBox(MkErrStr(__FILE__, __LINE__));
-							}
-							else ErrorBox(MkErrStr(__FILE__, __LINE__));
-						}
-						else ErrorBox(MkErrStr(__FILE__, __LINE__));
-					}
-					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				DWORD tmpAddr = FindClassVtable((HMODULE)clientDll, ".?AVCCSGO_HudDeathNotice@@", 0, 0x14);
+				if (tmpAddr) {
+					addr = ((DWORD *)tmpAddr)[1];
 				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
 				AFXADDR_SET(csgo_CCSGO_HudDeathNotice_FireGameEvent, addr);
 			}
 		}
@@ -1620,133 +1421,19 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer, bool 
 		}
 		*/
 
-		// csgo_CCSViewRender_vtable: // Checked 2017-05-13.
+		// csgo_CCSViewRender_vtable // Checked 2018-08-03.
+		AFXADDR_SET(csgo_CCSViewRender_vtable, FindClassVtable((HMODULE)clientDll, ".?AVCCSViewRender@@", 0, 0x0));
+		if(!AFXADDR_GET(csgo_CCSViewRender_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+		// csgo_C_CSPlayer_IClientNetworkable_entindex // Checked 2018-08-03.
 		{
 			DWORD addr = 0;
-			{
-				ImageSectionsReader sections((HMODULE)clientDll);
-				if (!sections.Eof())
-				{
-					MemRange textRange = sections.GetMemRange();
-
-					sections.Next(); // skip .text
-					if (!sections.Eof())
-					{
-						MemRange firstDataRange = sections.GetMemRange();
-
-						sections.Next(); // skip first .data
-						if (!sections.Eof())
-						{
-							MemRange result = FindCString(sections.GetMemRange(), ".?AVCCSViewRender@@");
-							if (!result.IsEmpty())
-							{
-								DWORD tmpAddr = result.Start;
-								tmpAddr -= 0x8;
-
-								result = FindBytes(firstDataRange, (char const *)&tmpAddr, sizeof(tmpAddr));
-								if (!result.IsEmpty())
-								{
-									result = FindBytes(MemRange(result.End, firstDataRange.End), (char const *)&tmpAddr, sizeof(tmpAddr));
-									if (!result.IsEmpty())
-									{
-										DWORD tmpAddr = result.Start;
-										tmpAddr -= 0xC;
-
-										result = FindBytes(firstDataRange, (char const *)&tmpAddr, sizeof(tmpAddr));
-										if (!result.IsEmpty())
-										{
-											DWORD tmpAddr = result.Start;
-											tmpAddr += (1) * 4;
-
-											addr = tmpAddr;
-										}
-										else ErrorBox(MkErrStr(__FILE__, __LINE__));
-									}
-									else ErrorBox(MkErrStr(__FILE__, __LINE__));
-								}
-								else ErrorBox(MkErrStr(__FILE__, __LINE__));
-							}
-							else ErrorBox(MkErrStr(__FILE__, __LINE__));
-						}
-						else ErrorBox(MkErrStr(__FILE__, __LINE__));
-					}
-					else ErrorBox(MkErrStr(__FILE__, __LINE__));
-				}
-				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			DWORD tmpAddr = FindClassVtable((HMODULE)clientDll, ".?AVC_CSPlayer@@", 0, 0x08);
+			if (tmpAddr) {
+				addr = ((DWORD *)tmpAddr)[10];
 			}
-			AFXADDR_SET(csgo_CCSViewRender_vtable, addr);
-		}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-		// csgo_C_CSPlayer_IClientNetworkable_entindex: // Checked: 2018-06-30.
-		{
-			DWORD addr = 0;
-			{
-				ImageSectionsReader sections((HMODULE)clientDll);
-				if (!sections.Eof())
-				{
-					MemRange textRange = sections.GetMemRange();
-
-					sections.Next(); // skip .text
-					if (!sections.Eof())
-					{
-						MemRange firstDataRange = sections.GetMemRange();
-
-						sections.Next(); // skip first .data
-						if (!sections.Eof())
-						{
-							MemRange result = FindCString(sections.GetMemRange(), ".?AVC_CSPlayer@@");
-							if (!result.IsEmpty())
-							{
-								DWORD tmpAddr = result.Start;
-								tmpAddr -= 0x8;
-
-								int i = 0;
-
-								for(result = MemRange(firstDataRange.Start, firstDataRange.End);
-									!result.IsEmpty();
-									result = MemRange(result.End, firstDataRange.End))
-								{
-									result = FindBytes(result, (char const *)&tmpAddr, sizeof(tmpAddr));
-
-									if (result.IsEmpty()) break;
-
-									if (
-										0 < i
-										&& result.Start - 0x8 >= firstDataRange.Start
-										&& 0x8 == *((DWORD *)(result.Start - 0x8))
-									) break;
-
-									++i;
-								}
-
-								if (!result.IsEmpty())
-								{
-									DWORD tmpAddr = result.Start;
-									tmpAddr -= 0xC;
-
-									result = FindBytes(firstDataRange, (char const *)&tmpAddr, sizeof(tmpAddr));
-									if (!result.IsEmpty())
-									{
-										DWORD tmpAddr = result.Start;
-										tmpAddr += (1) * 4;
-
-										tmpAddr = ((DWORD *)tmpAddr)[10];
-
-										addr = tmpAddr;
-									}
-									else ErrorBox(MkErrStr(__FILE__, __LINE__));
-								}
-								else ErrorBox(MkErrStr(__FILE__, __LINE__));
-
-							}
-							else ErrorBox(MkErrStr(__FILE__, __LINE__));
-						}
-						else ErrorBox(MkErrStr(__FILE__, __LINE__));
-					}
-					else ErrorBox(MkErrStr(__FILE__, __LINE__));
-				}
-				else ErrorBox(MkErrStr(__FILE__, __LINE__));
-			}
 			AFXADDR_SET(csgo_C_CSPlayer_IClientNetworkable_entindex, addr);
 		}
 
@@ -1805,118 +1492,13 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer, bool 
 		}
 		*/
 
-		// csgo_CCSGameMovement_vtable: // Checked 2017-05-13.
-		{
-			DWORD addr = 0;
-			{
-				ImageSectionsReader sections((HMODULE)clientDll);
-				if (!sections.Eof())
-				{
-					sections.Next(); // skip .text
-					if (!sections.Eof())
-					{
-						MemRange firstDataRange = sections.GetMemRange();
+		// csgo_CCSGameMovement_vtable // Checked 2018-08-03.
+		AFXADDR_SET(csgo_CCSGameMovement_vtable, FindClassVtable((HMODULE)clientDll, ".?AVCCSGameMovement@@", 0, 0x0));
+		if (!AFXADDR_GET(csgo_CCSGameMovement_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-						sections.Next(); // skip first .data
-						if (!sections.Eof())
-						{
-							MemRange result = FindCString(sections.GetMemRange(), ".?AVCCSGameMovement@@");
-							if (!result.IsEmpty())
-							{
-								DWORD tmpAddr = result.Start;
-								tmpAddr -= 0x8;
-
-								result = FindBytes(firstDataRange, (char const *)&tmpAddr, sizeof(tmpAddr));
-								if (!result.IsEmpty())
-								{
-									result = FindBytes(MemRange(result.End, firstDataRange.End), (char const *)&tmpAddr, sizeof(tmpAddr));
-
-									if (!result.IsEmpty())
-									{
-										DWORD tmpAddr = result.Start;
-										tmpAddr -= 0xC;
-
-										result = FindBytes(firstDataRange, (char const *)&tmpAddr, sizeof(tmpAddr));
-										if (!result.IsEmpty())
-										{
-											DWORD tmpAddr = result.Start;
-											tmpAddr += (1) * 4;
-
-											addr = tmpAddr;
-										}
-										else ErrorBox(MkErrStr(__FILE__, __LINE__));
-									}
-									else ErrorBox(MkErrStr(__FILE__, __LINE__));
-								}
-								else ErrorBox(MkErrStr(__FILE__, __LINE__));
-							}
-							else ErrorBox(MkErrStr(__FILE__, __LINE__));
-						}
-						else ErrorBox(MkErrStr(__FILE__, __LINE__));
-					}
-					else ErrorBox(MkErrStr(__FILE__, __LINE__));
-				}
-				else ErrorBox(MkErrStr(__FILE__, __LINE__));
-			}
-			AFXADDR_SET(csgo_CCSGameMovement_vtable, addr);
-		}
-
-		// csgo_C_BaseAnimating_vtable: // Checked 2017-05-13. // This is used in code, but the code will never be active in runtime atm (re-check if it can be removed later).
-		{
-			DWORD addr = 0;
-			{
-				ImageSectionsReader sections((HMODULE)clientDll);
-				if (!sections.Eof())
-				{
-					sections.Next(); // skip .text
-					if (!sections.Eof())
-					{
-						MemRange firstDataRange = sections.GetMemRange();
-
-						sections.Next(); // skip first .data
-						if (!sections.Eof())
-						{
-							MemRange result = FindCString(sections.GetMemRange(), ".?AVC_BaseAnimating@@");
-							if (!result.IsEmpty())
-							{
-								DWORD tmpAddr = result.Start;
-								tmpAddr -= 0x8;
-
-								result.Start = firstDataRange.Start;
-								result.End = firstDataRange.Start;
-
-								for (int i = 0; i < 7; ++i)
-								{
-									result = FindBytes(MemRange(result.End, firstDataRange.End), (char const *)&tmpAddr, sizeof(tmpAddr));
-								}
-
-								if (!result.IsEmpty())
-								{
-									DWORD tmpAddr = result.Start;
-									tmpAddr -= 0xC;
-
-									result = FindBytes(firstDataRange, (char const *)&tmpAddr, sizeof(tmpAddr));
-									if (!result.IsEmpty())
-									{
-										DWORD tmpAddr = result.Start;
-										tmpAddr += (1) * 4;
-
-										addr = tmpAddr;
-									}
-									else ErrorBox(MkErrStr(__FILE__, __LINE__));
-								}
-								else ErrorBox(MkErrStr(__FILE__, __LINE__));
-							}
-							else ErrorBox(MkErrStr(__FILE__, __LINE__));
-						}
-						else ErrorBox(MkErrStr(__FILE__, __LINE__));
-					}
-					else ErrorBox(MkErrStr(__FILE__, __LINE__));
-				}
-				else ErrorBox(MkErrStr(__FILE__, __LINE__));
-			}
-			AFXADDR_SET(csgo_C_BaseAnimating_vtable, addr);
-		}
+		// csgo_C_BaseAnimating_vtable // Checked 2018-08-03.
+		AFXADDR_SET(csgo_CCSGameMovement_vtable, FindClassVtable((HMODULE)clientDll, ".?AVC_BaseAnimating@@", 0, 0x10));
+		if (!AFXADDR_GET(csgo_CCSGameMovement_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 		// csgo_CGlowOverlay_Destructor, csgo_CGlowOverlay_Draw:
 		{
