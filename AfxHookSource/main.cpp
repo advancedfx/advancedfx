@@ -50,6 +50,7 @@
 #include <l4d2/sdk_src/public/tier1/convar.h>
 #include <csgo/Panorama.h>
 #include <csgo/hooks/engine.h>
+#include "csgo_ScaleForm_Hooks.h"
 
 #include <set>
 #include <map>
@@ -1821,6 +1822,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 	static bool bFirstPanorama = true;
 	static bool bFirstStdshader_dx9 = true;
 	static bool bFirstVgui2 = true;
+	static bool bFirstScaleformui = true;
 
 	CommonHooks();
 
@@ -1994,6 +1996,16 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		InterceptDllCall(hModule, "USER32.dll", "SetCursor", (DWORD)&new_SetCursor);
 		InterceptDllCall(hModule, "USER32.dll", "SetCapture", (DWORD)&new_SetCapture);
 		InterceptDllCall(hModule, "USER32.dll", "ReleaseCapture", (DWORD)&new_ReleaseCapture);
+	}
+	else if (bFirstScaleformui && StringEndsWith(lpLibFileName, "scaleformui.dll")) {
+		bFirstScaleformui = false;
+
+		Addresses_InitScaleformuiDll((AfxAddr)hModule, g_SourceSdkVer);
+
+		//
+		// Install early hooks:
+
+		csgo_ScaleFormDll_Hooks_Init();
 	}
 }
 

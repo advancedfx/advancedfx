@@ -64,6 +64,8 @@ AFXADDR_DEF(csgo_panorama_AVCUIPanel_UnkSetFloatProp)
 AFXADDR_DEF(csgo_panorama_CZip_UnkLoadFiles)
 AFXADDR_DEF(csgo_C_CSPlayer_IClientNetworkable_entindex)
 AFXADDR_DEF(csgo_engine_RegisterForUnhandledEvent_ToggleDebugger_BeforeCall)
+AFXADDR_DEF(csgo_Scaleformui_CUnkown_Loader)
+AFXADDR_DEF(csgo_Scaleformui_CUnkown_Loader_DSZ)
 
 bool g_Adresses_ClientIsPanorama = true;
 
@@ -1662,6 +1664,74 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer, bool 
 	AFXADDR_SET(cstrike_gpGlobals_OFS_interpolation_amount, 8*4);
 	AFXADDR_SET(cstrike_gpGlobals_OFS_interval_per_tick, 7*4);
 	AFXADDR_SET(csgo_CUnknown_GetPlayerName_DSZ, 0x08);
+}
+
+void Addresses_InitScaleformuiDll(AfxAddr scaleformuiDll, SourceSdkVer sourceSdkVer)
+{
+	if (SourceSdkVer_CSGO == sourceSdkVer)
+	{
+		// csgo_Scaleformui_CUnkown_Loader: // Checked 2017-05-13.
+		{
+			DWORD addr = 0;
+			DWORD strAddr = 0;
+			{
+				ImageSectionsReader sections((HMODULE)scaleformuiDll);
+				if (!sections.Eof())
+				{
+					sections.Next(); // skip .text
+					if (!sections.Eof())
+					{
+						MemRange result = FindCString(sections.GetMemRange(), "Loader failed to open '%s', FileOpener not installe");
+						if (!result.IsEmpty())
+						{
+							strAddr = result.Start;
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			if (strAddr)
+			{
+				ImageSectionsReader sections((HMODULE)scaleformuiDll);
+
+				MemRange baseRange = sections.GetMemRange();
+				MemRange result = FindBytes(baseRange, (char const *)&strAddr, sizeof(strAddr));
+				if (!result.IsEmpty())
+				{
+					addr = result.Start - 0x26;
+
+					// check for pattern to see if it is the right address:
+					unsigned char pattern[3] = { 0x55, 0x8B, 0xEC };
+
+					DWORD patternSize = sizeof(pattern) / sizeof(pattern[0]);
+					MemRange patternRange(addr, addr + patternSize);
+					MemRange result = FindBytes(patternRange, (char *)pattern, patternSize);
+					if (result.Start != patternRange.Start || result.End != patternRange.End)
+					{
+						addr = 0;
+						ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			if (addr)
+			{
+				AFXADDR_SET(csgo_Scaleformui_CUnkown_Loader, addr);
+			}
+			else
+			{
+				AFXADDR_SET(csgo_Scaleformui_CUnkown_Loader, 0x0);
+			}
+		}
+	}
+	else
+	{
+		AFXADDR_SET(csgo_Scaleformui_CUnkown_Loader, 0x0);
+	}
+
+	AFXADDR_SET(csgo_Scaleformui_CUnkown_Loader_DSZ, 0x9);
 }
 
 /*

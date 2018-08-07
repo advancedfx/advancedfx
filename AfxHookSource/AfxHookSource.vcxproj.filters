@@ -414,6 +414,9 @@
     <ClCompile Include="csgo\hooks\engine.cpp">
       <Filter>AfxHookSource\csgo\hooks</Filter>
     </ClCompile>
+    <ClCompile Include="csgo_ScaleForm_Hooks.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\bvhexport.h">
@@ -760,6 +763,9 @@
     </ClInclude>
     <ClInclude Include="csgo\hooks\engine.h">
       <Filter>AfxHookSource\csgo\hooks</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo_ScaleForm_Hooks.h">
+      <Filter>AfxHookSource</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

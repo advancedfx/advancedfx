@@ -6,11 +6,11 @@
 
 <release>
 <name>HLAE</name>
-<version>TODO</version>
-<time>TODO</time>
+<version>2.53.0</version>
+<time>2018-08-07T06:05Z</time>
 <changes>
 <change type="updated">
-Included AfxHookSource TODO (TODO).
+Included AfxHookSource 1.43.0 (2018-08-07T06:05Z).
 </change>
 </changes>
 </release>

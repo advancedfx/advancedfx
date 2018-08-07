@@ -6,11 +6,14 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>TODO</version>
-<time>TODO</time>
+<version>1.43.0</version>
+<time>2018-08-07T06:05Z</time>
 <changes>
 <change type="updated">
 Made RTTI based hooks more stable against updates.
+</change>
+<change type="added">
+Re-added support for https://mmhud.spddl.de/ for old SclaeformUI (needs -scaleform in launch options).
 </change>
 </changes>
 </release>
