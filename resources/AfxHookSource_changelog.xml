@@ -6,8 +6,8 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>1.43.0</version>
-<time>2018-08-07T06:05Z</time>
+<version>1.43.1</version>
+<time>2018-08-07T06:15Z</time>
 <changes>
 <change type="updated">
 Made RTTI based hooks more stable against updates.
