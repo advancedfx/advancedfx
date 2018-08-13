@@ -5,6 +5,7 @@
 #include "AfxStreams.h"
 #include "asmClassTools.h"
 #include <shared/detours.h>
+#include "d3d9Hooks.h"
 
 #include <map>
 #include <stack>
@@ -477,6 +478,16 @@ typedef void (_stdcall * MatRenderContextHook_DrawInstances_t)(
 	int nInstanceCount,
 	const SOURCESDK::MeshInstanceData_t_csgo *pInstance);
 
+//:212
+typedef void(_stdcall * MatRenderContextHook_UnkDrawVguiA_t)(
+	DWORD *this_ptr,
+	bool notInRenderView);
+
+//:213
+typedef void(_stdcall * MatRenderContextHook_UnkDrawVguiB_t)(
+	DWORD *this_ptr,
+	bool notInRenderView);
+
 struct CMatRenderContextDetours
 {
 	//:009
@@ -504,6 +515,12 @@ struct CMatRenderContextDetours
 
 	//:192
 	MatRenderContextHook_DrawInstances_t DrawInstances;
+
+	//:212
+	MatRenderContextHook_UnkDrawVguiA_t UnkDrawVguiA;
+
+	//:213
+	MatRenderContextHook_UnkDrawVguiB_t UnkDrawVguiB;
 };
 
 
@@ -764,6 +781,57 @@ public:
 		}
 	}
 
+	class CAfxBlockFunctor
+		: public CAfxFunctor
+	{
+	public:
+		CAfxBlockFunctor(bool block)
+			: m_Block(block)
+		{
+
+		}
+
+		virtual void operator()()
+		{
+			if (m_Block)
+			{
+				AfxD3D9OverrideBegin_D3DRS_ALPHABLENDENABLE(TRUE);
+				AfxD3D9OverrideBegin_D3DRS_SRCBLEND(D3DBLEND_ZERO);
+				AfxD3D9OverrideBegin_D3DRS_DESTBLEND(D3DBLEND_ONE);
+				AfxD3D9OverrideBegin_D3DRS_ZWRITEENABLE(FALSE);
+			}
+			else {
+				AfxD3D9OverrideEnd_D3DRS_ZWRITEENABLE();
+				AfxD3D9OverrideEnd_D3DRS_DESTBLEND();
+				AfxD3D9OverrideEnd_D3DRS_SRCBLEND();
+				AfxD3D9OverrideEnd_D3DRS_ALPHABLENDENABLE();
+			}
+		}
+
+	private:
+		bool m_Block;
+	};
+
+	void Hook_UnkDrawVguiA(
+		bool notInRenderView)
+	{
+		if (g_AfxStreams.AbortUnkDrawVguiA(notInRenderView)) {
+			QueueOrExecute(GetOrg(), new CAfxLeafExecute_Functor(new CAfxBlockFunctor(true)));
+		}
+
+		m_Detours->UnkDrawVguiA((DWORD *)m_Ctx, notInRenderView);
+	}
+
+	void Hook_UnkDrawVguiB(
+		bool notInRenderView)
+	{
+		m_Detours->UnkDrawVguiB((DWORD *)m_Ctx, notInRenderView);
+
+		if (g_AfxStreams.AbortUnkDrawVguiB(notInRenderView)) {
+			QueueOrExecute(GetOrg(), new CAfxLeafExecute_Functor(new CAfxBlockFunctor(false)));
+		}
+	}
+
 private:
 	static std::map<int *, CMatRenderContextDetours> m_VtableMap;
 
@@ -980,6 +1048,25 @@ void _stdcall MatRenderContextHook_DrawInstances(
 		pInstance);
 }
 
+void _stdcall MatRenderContextHook_UnkDrawVguiA(
+	DWORD *this_ptr,
+	bool notInRenderView)
+{
+	CMatRenderContextHook * ctxh = CMatRenderContextHook::GetMatRenderContextHook((SOURCESDK::IMatRenderContext_csgo *)this_ptr);
+	return ctxh->Hook_UnkDrawVguiA(
+		notInRenderView);
+}
+
+void _stdcall MatRenderContextHook_UnkDrawVguiB(
+	DWORD *this_ptr,
+	bool notInRenderView)
+{
+	CMatRenderContextHook * ctxh = CMatRenderContextHook::GetMatRenderContextHook((SOURCESDK::IMatRenderContext_csgo *)this_ptr);
+	return ctxh->Hook_UnkDrawVguiB(
+		notInRenderView);
+}
+
+
 void CMatRenderContextHook::HooKVtable(SOURCESDK::IMatRenderContext_csgo * orgCtx)
 {
 	int * vtable = *(int**)orgCtx;
@@ -1003,6 +1090,8 @@ void CMatRenderContextHook::HooKVtable(SOURCESDK::IMatRenderContext_csgo * orgCt
 	DetourIfacePtr((DWORD *)&(vtable[150]), MatRenderContextHook_GetCallQueue, (DetourIfacePtr_fn &)m_Detours->GetCallQueue);
 	DetourIfacePtr((DWORD *)&(vtable[168]), MatRenderContextHook_GetDynamicMeshEx, (DetourIfacePtr_fn &)m_Detours->GetDynamicMeshEx);
 	DetourIfacePtr((DWORD *)&(vtable[193]), MatRenderContextHook_DrawInstances, (DetourIfacePtr_fn &)m_Detours->DrawInstances);
+	DetourIfacePtr((DWORD *)&(vtable[212]), MatRenderContextHook_UnkDrawVguiA, (DetourIfacePtr_fn &)m_Detours->UnkDrawVguiA);
+	DetourIfacePtr((DWORD *)&(vtable[213]), MatRenderContextHook_UnkDrawVguiB, (DetourIfacePtr_fn &)m_Detours->UnkDrawVguiB);
 	//OutputDebugString("HooKVtable DETOUR END\n");
 }
 

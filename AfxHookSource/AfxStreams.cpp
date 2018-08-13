@@ -330,7 +330,7 @@ CAfxRenderViewStream * CAfxRenderViewStream::m_MainStream = 0;
 
 CAfxRenderViewStream::CAfxRenderViewStream()
 : m_DrawViewModel(DT_NoChange)
-, m_DrawHud(DT_NoDraw)
+, m_DrawHud(DT_NoChange)
 , m_StreamCaptureType(SCT_Normal)
 {
 }
@@ -2135,7 +2135,6 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin()
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd()
 {
 	// These need to happen before switching to new Queue of course:
-	BindAction(0);
 	SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue();
 	m_Ctx->Hook_set(0);
 	m_Ctx = 0;
@@ -2147,6 +2146,8 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd()
 	else
 	{
 		// Is leaf context.
+
+		BindAction(0);
 
 		AfxD3D9PopOverrideState();
 	}
@@ -2201,8 +2202,6 @@ bool CAfxBaseFxStream::CAfxBaseFxStreamContext::ViewRenderShouldForceNoVis(bool 
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 {
-	BindAction(0); // We don't handle HUD atm.
-
 	if (SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue())
 	{
 		// Bubble into child contexts:
@@ -2212,6 +2211,8 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 	else
 	{
 		// Leaf context, do the clearing if wanted:
+
+		BindAction(0); // We don't handle HUD atm.
 
 		switch (m_Stream->m_ClearBeforeHud)
 		{
@@ -2932,6 +2933,7 @@ CAfxBaseFxStream::CActionDebugDepth::CActionDebugDepth(CAction * fallBackAction)
 : CAction()
 , m_FallBackAction(fallBackAction)
 , m_DebugDepthMaterial(0)
+, m_TrackedMaterial(nullptr)
 {
 	if(fallBackAction) fallBackAction->AddRef();
 }
@@ -3052,6 +3054,7 @@ CAfxBaseFxStream::CActionReplace::CActionReplace(
 , m_OverrideColor(false)
 , m_OverrideBlend(false)
 , m_OverrideDepthWrite(false)
+, m_TrackedMaterial(nullptr)
 {
 	if(fallBackAction) fallBackAction->AddRef();
 	m_FallBackAction = fallBackAction;
@@ -4679,7 +4682,7 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 	if (1 < cols && (hudDrawn || m_Recording))
 	{
 		// Would not allow to render the HUD in different passses per frame):
-		//myWhatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWHUD;
+		myWhatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWHUD;
 	}
 	else
 	{
@@ -4711,6 +4714,8 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 			oldBuildingCubeMaps = m_BuildingCubemaps->GetInt();
 			m_BuildingCubemaps->SetValue(1.0f);
 		}
+
+		if(isLast && !(myWhatToDraw & SOURCESDK::RENDERVIEW_DRAWHUD)) m_LastPreviewWithNoHud = true;
 
 		fn(this_ptr, newView, newHudView, nClearFlags, myWhatToDraw);
 

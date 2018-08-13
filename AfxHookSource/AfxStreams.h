@@ -91,6 +91,7 @@ public:
 
 	virtual void SetPixelShader(CAfx_csgo_ShaderState & state) = 0;
 #endif
+
 };
 
 #if AFXSTREAMS_REFTRACKER
@@ -2102,26 +2103,6 @@ public:
 	{
 		ForceBuildingCubemaps_set(true);
 
-		/*
-		SetAction(m_ClientEffectTexturesAction, m_Shared.DepthAction_get());
-		SetAction(m_WorldTexturesAction, m_Shared.DepthAction_get());
-		SetAction(m_SkyBoxTexturesAction, m_Shared.DepthAction_get());
-		SetAction(m_StaticPropTexturesAction, m_Shared.DepthAction_get());
-		SetAction(m_CableAction, m_Shared.DepthAction_get());
-		SetAction(m_PlayerModelsAction, m_Shared.DepthAction_get());
-		SetAction(m_WeaponModelsAction, m_Shared.DepthAction_get());
-		SetAction(m_StatTrakAction, m_Shared.DepthAction_get());
-		SetAction(m_ShellModelsAction, m_Shared.DepthAction_get());
-		SetAction(m_OtherModelsAction, m_Shared.DepthAction_get());
-		SetAction(m_DecalTexturesAction, m_Shared.DepthAction_get());
-		SetAction(m_EffectsAction, m_Shared.DepthAction_get());
-		SetAction(m_ShellParticleAction, m_Shared.DepthAction_get());
-		SetAction(m_OtherParticleAction, m_Shared.DepthAction_get());
-		SetAction(m_StickerAction, m_Shared.DepthAction_get());
-		SetAction(m_ErrorMaterialAction, m_Shared.DepthAction_get());
-		SetAction(m_OtherAction, m_Shared.DepthAction_get());
-		*/
-
 		SetAction(m_ClientEffectTexturesAction, m_Shared.NoDrawAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.DepthAction_get());
 		SetAction(m_SkyBoxTexturesAction, m_Shared.DepthAction_get());
@@ -2139,6 +2120,8 @@ public:
 		SetAction(m_StickerAction, m_Shared.NoDrawAction_get());
 		SetAction(m_ErrorMaterialAction, m_Shared.DepthAction_get());
 		SetAction(m_OtherAction, m_Shared.DepthAction_get());
+
+		DrawHud_set(DT_NoDraw);
 	}
 
 protected:
@@ -2153,7 +2136,6 @@ public:
 	{
 		ForceBuildingCubemaps_set(true);
 
-		/*
 		SetAction(m_ClientEffectTexturesAction, m_Shared.DrawAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.DrawAction_get());
 		SetAction(m_SkyBoxTexturesAction, m_Shared.DrawAction_get());
@@ -2171,25 +2153,8 @@ public:
 		SetAction(m_StickerAction, m_Shared.NoDrawAction_get());
 		SetAction(m_ErrorMaterialAction, m_Shared.DrawAction_get());
 		SetAction(m_OtherAction, m_Shared.DrawAction_get());
-		*/
 
-		SetAction(m_ClientEffectTexturesAction, m_Shared.DrawAction_get());
-		SetAction(m_WorldTexturesAction, m_Shared.DrawAction_get());
-		SetAction(m_SkyBoxTexturesAction, m_Shared.DrawAction_get());
-		SetAction(m_StaticPropTexturesAction, m_Shared.DrawAction_get());
-		SetAction(m_CableAction,  m_Shared.DrawAction_get());
-		SetAction(m_PlayerModelsAction, m_Shared.NoDrawAction_get());
-		SetAction(m_WeaponModelsAction, m_Shared.NoDrawAction_get());
-		SetAction(m_StatTrakAction, m_Shared.NoDrawAction_get());
-		SetAction(m_ShellModelsAction, m_Shared.NoDrawAction_get());
-		SetAction(m_OtherModelsAction, m_Shared.DrawAction_get());
-		SetAction(m_DecalTexturesAction, m_Shared.DrawAction_get());
-		SetAction(m_EffectsAction, m_Shared.DrawAction_get());
-		SetAction(m_ShellParticleAction, m_Shared.NoDrawAction_get());
-		SetAction(m_OtherParticleAction, m_Shared.DrawAction_get());
-		SetAction(m_StickerAction, m_Shared.NoDrawAction_get());
-		SetAction(m_ErrorMaterialAction, m_Shared.DrawAction_get());
-		SetAction(m_OtherAction, m_Shared.DrawAction_get());
+		DrawHud_set(DT_NoDraw);
 	}
 
 protected:
@@ -2203,26 +2168,6 @@ public:
 	CAfxDepthWorldStream() : CAfxBaseFxStream()
 	{
 		ForceBuildingCubemaps_set(true);
-
-		/*
-		SetAction(m_ClientEffectTexturesAction, m_Shared.DepthAction_get());
-		SetAction(m_WorldTexturesAction, m_Shared.DepthAction_get());
-		SetAction(m_SkyBoxTexturesAction, m_Shared.DepthAction_get());
-		SetAction(m_StaticPropTexturesAction, m_Shared.DepthAction_get());
-		SetAction(m_CableAction, m_Shared.DepthAction_get());
-		SetAction(m_PlayerModelsAction, m_Shared.NoDrawAction_get());
-		SetAction(m_WeaponModelsAction, m_Shared.NoDrawAction_get());
-		SetAction(m_StatTrakAction, m_Shared.NoDrawAction_get());
-		SetAction(m_ShellModelsAction, m_Shared.NoDrawAction_get());
-		SetAction(m_OtherModelsAction, m_Shared.DepthAction_get());
-		SetAction(m_DecalTexturesAction, m_Shared.DepthAction_get());
-		SetAction(m_EffectsAction, m_Shared.DepthAction_get());
-		SetAction(m_ShellParticleAction, m_Shared.NoDrawAction_get());
-		SetAction(m_OtherParticleAction, m_Shared.DepthAction_get());
-		SetAction(m_StickerAction, m_Shared.NoDrawAction_get());
-		SetAction(m_ErrorMaterialAction, m_Shared.DepthAction_get());
-		SetAction(m_OtherAction, m_Shared.DepthAction_get());
-		*/
 
 		SetAction(m_ClientEffectTexturesAction, m_Shared.NoDrawAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.DepthAction_get());
@@ -2241,6 +2186,8 @@ public:
 		SetAction(m_StickerAction, m_Shared.NoDrawAction_get());
 		SetAction(m_ErrorMaterialAction, m_Shared.DepthAction_get());
 		SetAction(m_OtherAction, m_Shared.DepthAction_get());
+
+		DrawHud_set(DT_NoDraw);
 	}
 
 protected:
@@ -2254,26 +2201,6 @@ public:
 	CAfxMatteEntityStream() : CAfxBaseFxStream()
 	{
 		ForceBuildingCubemaps_set(true);
-
-		/*
-		SetAction(m_ClientEffectTexturesAction, m_Shared.MaskAction_get());
-		SetAction(m_WorldTexturesAction, m_Shared.MaskAction_get());
-		SetAction(m_SkyBoxTexturesAction, m_Shared.MaskAction_get());
-		SetAction(m_StaticPropTexturesAction, m_Shared.MaskAction_get());
-		SetAction(m_CableAction, m_Shared.MaskAction_get());
-		SetAction(m_PlayerModelsAction, m_Shared.DrawAction_get());
-		SetAction(m_WeaponModelsAction, m_Shared.DrawAction_get());
-		SetAction(m_StatTrakAction, m_Shared.DrawAction_get());
-		SetAction(m_ShellModelsAction, m_Shared.DrawAction_get());
-		SetAction(m_OtherModelsAction, m_Shared.MaskAction_get());
-		SetAction(m_DecalTexturesAction, m_Shared.MaskAction_get());
-		SetAction(m_EffectsAction, m_Shared.MaskAction_get());
-		SetAction(m_ShellParticleAction, m_Shared.DrawAction_get());
-		SetAction(m_OtherParticleAction, m_Shared.MaskAction_get());
-		SetAction(m_StickerAction, m_Shared.DrawAction_get());
-		SetAction(m_ErrorMaterialAction, m_Shared.MaskAction_get());
-		SetAction(m_OtherAction, m_Shared.MaskAction_get());
-		*/
 
 		SetAction(m_ClientEffectTexturesAction, m_Shared.NoDrawAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.MaskAction_get());
@@ -2292,6 +2219,8 @@ public:
 		SetAction(m_StickerAction, m_Shared.DrawAction_get());
 		SetAction(m_ErrorMaterialAction, m_Shared.MaskAction_get());
 		SetAction(m_OtherAction, m_Shared.NoDrawAction_get());
+
+		DrawHud_set(DT_NoDraw);
 
 		this->SmokeOverlayAlphaFactor_set(0.01f);
 		Console_ActionFilter_Add("effects/overlaysmoke", m_Shared.NoDrawAction_get());
@@ -2314,25 +2243,6 @@ public:
 	{
 		ForceBuildingCubemaps_set(true);
 
-		/*
-		SetAction(m_ClientEffectTexturesAction, m_Shared.BlackAction_get());
-		SetAction(m_WorldTexturesAction, m_Shared.BlackAction_get());
-		SetAction(m_SkyBoxTexturesAction, m_Shared.BlackAction_get());
-		SetAction(m_StaticPropTexturesAction, m_Shared.BlackAction_get());
-		SetAction(m_CableAction, m_Shared.BlackAction_get());
-		SetAction(m_PlayerModelsAction, m_Shared.WhiteAction_get());
-		SetAction(m_WeaponModelsAction, m_Shared.WhiteAction_get());
-		SetAction(m_StatTrakAction, m_Shared.WhiteAction_get());
-		SetAction(m_ShellModelsAction, m_Shared.WhiteAction_get());
-		SetAction(m_OtherModelsAction, m_Shared.BlackAction_get());
-		SetAction(m_DecalTexturesAction, m_Shared.BlackAction_get());
-		SetAction(m_EffectsAction, m_Shared.BlackAction_get());
-		SetAction(m_ShellParticleAction, m_Shared.WhiteAction_get());
-		SetAction(m_OtherParticleAction, m_Shared.BlackAction_get());
-		SetAction(m_StickerAction, m_Shared.WhiteAction_get());
-		SetAction(m_ErrorMaterialAction, m_Shared.BlackAction_get());
-		SetAction(m_OtherAction, m_Shared.BlackAction_get());
-		*/
 		SetAction(m_ClientEffectTexturesAction, m_Shared.NoDrawAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.BlackAction_get());
 		SetAction(m_SkyBoxTexturesAction, m_Shared.BlackAction_get());
@@ -2350,6 +2260,8 @@ public:
 		SetAction(m_StickerAction, m_Shared.WhiteAction_get());
 		SetAction(m_ErrorMaterialAction, m_Shared.BlackAction_get());
 		SetAction(m_OtherAction, m_Shared.BlackAction_get());
+
+		DrawHud_set(DT_NoDraw);
 
 		this->SmokeOverlayAlphaFactor_set(0.01f);
 		Console_ActionFilter_Add("effects/overlaysmoke", m_Shared.NoDrawAction_get());
@@ -2385,6 +2297,8 @@ public:
 		SetAction(m_ErrorMaterialAction, m_Shared.DrawAction_get());
 		SetAction(m_WriteZAction, m_Shared.DrawAction_get());
 		SetAction(m_OtherAction, m_Shared.DrawAction_get());
+
+		DrawHud_set(DT_NoDraw);
 	}
 
 protected:
@@ -2398,26 +2312,6 @@ public:
 	CAfxAlphaWorldStream() : CAfxBaseFxStream()
 	{
 		ForceBuildingCubemaps_set(true);
-
-		/*
-		SetAction(m_ClientEffectTexturesAction, m_Shared.DrawAction_get());
-		SetAction(m_WorldTexturesAction, m_Shared.DrawAction_get());
-		SetAction(m_SkyBoxTexturesAction, m_Shared.DrawAction_get());
-		SetAction(m_StaticPropTexturesAction, m_Shared.DrawAction_get());
-		SetAction(m_CableAction, m_Shared.DrawAction_get());
-		SetAction(m_PlayerModelsAction, m_Shared.NoDrawAction_get());
-		SetAction(m_WeaponModelsAction, m_Shared.NoDrawAction_get());
-		SetAction(m_StatTrakAction, m_Shared.NoDrawAction_get());
-		SetAction(m_ShellModelsAction,  m_Shared.NoDrawAction_get());
-		SetAction(m_OtherModelsAction,  m_Shared.DrawAction_get());
-		SetAction(m_DecalTexturesAction, m_Shared.DrawAction_get());
-		SetAction(m_EffectsAction, m_Shared.DrawAction_get());
-		SetAction(m_ShellParticleAction, m_Shared.NoDrawAction_get());
-		SetAction(m_OtherParticleAction, m_Shared.DrawAction_get());
-		SetAction(m_StickerAction, m_Shared.NoDrawAction_get());
-		SetAction(m_ErrorMaterialAction, m_Shared.DrawAction_get());
-		SetAction(m_OtherAction, m_Shared.DrawAction_get());
-		*/
 
 		SetAction(m_ClientEffectTexturesAction, m_Shared.DrawAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.DrawAction_get());
@@ -2436,6 +2330,8 @@ public:
 		SetAction(m_StickerAction, m_Shared.NoDrawAction_get());
 		SetAction(m_ErrorMaterialAction, m_Shared.DrawAction_get());
 		SetAction(m_OtherAction, m_Shared.DrawAction_get());
+
+		DrawHud_set(DT_NoDraw);
 	}
 
 protected:
@@ -2644,6 +2540,22 @@ public:
 
 	virtual void View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *rect);
 
+	bool AbortUnkDrawVguiA(bool notInRenderView) {
+		if (GetCurrentThreadId() != GetCurrent_View_Render_ThreadId())
+			return false;
+
+		return notInRenderView && m_LastPreviewWithNoHud;
+	}
+
+	bool AbortUnkDrawVguiB(bool notInRenderView) {
+		if (GetCurrentThreadId() != GetCurrent_View_Render_ThreadId())
+			return false;
+
+		bool wasLastPreviewWithNoHud = m_LastPreviewWithNoHud;
+		m_LastPreviewWithNoHud = false;
+		return notInRenderView && wasLastPreviewWithNoHud;
+	}
+
 private:
 	class CEntityBvhCapture
 	{
@@ -2706,6 +2618,8 @@ private:
 
 	bool m_RecordVoices;
 	bool m_RecordVoicesUsed;
+
+	bool m_LastPreviewWithNoHud;
 
 	SOURCESDK::IMaterialSystem_csgo * m_MaterialSystem;
 	IAfxBaseClientDll * m_AfxBaseClientDll;

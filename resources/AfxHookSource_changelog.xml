@@ -6,6 +6,24 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.43.2</version>
+<time>2018-08-13T19:46Z</time>
+<changes>
+<change type="updated">
+Changed drawHud defaults for normal and baseFx stream templates to -1 (means game default), all other templates have drawHud 1. This restores the old behavior from several months ago.
+</change>
+<change type="fixed">
+Fixed drawHud preview not working.
+</change>
+<change type="fixed">
+Other fixes.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.43.1</version>
 <time>2018-08-07T06:15Z</time>
 <changes>
