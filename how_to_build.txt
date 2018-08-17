@@ -9,6 +9,7 @@ Notice:
 
 [X] Download and install Microsoft Visual Studio 2017 Community, which you can
     obtain for free from https://www.visualstudio.com/downloads/ .
+    (We are using 15.8 at the moment.)
 
 [X] Obtain and install CMAKE from http://www.cmake.org/
     We currently use "cmake-3.8.1-win64-x64.msi".
@@ -131,7 +132,7 @@ Notice:
     to "C:\<HLAESRC>\advancedfx\build\Release\bin"
 
 [X] Copy all files
-    form "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Redist\MSVC\14.14.26405\x86\Microsoft.VC141.CRT"
+    form "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Redist\MSVC\14.15.26706\x86\Microsoft.VC141.CRT"
     to "C:\<HLAESRC>\advancedfx\build\Release\bin"
 
 [X] Copy all DLL files from

@@ -1168,6 +1168,7 @@ public:
 					m_CamFileName = args->ArgV(2);
 					delete m_CamImport;
 					m_CamImport = new CamImport(m_CamFileName.c_str(), m_StartClientTime);
+					if(m_CamImport->IsBad()) Tier0_Warning("Error importing CAM file \"%s\"\n", m_CamFileName.c_str());
 					return;
 				}
 
@@ -1224,6 +1225,10 @@ public:
 		}
 
 		return false;
+	}
+
+	virtual bool IsBad() {
+		return m_CamImport->IsBad();
 	}
 
 protected:
@@ -1900,7 +1905,9 @@ IMirvCamCalc * CMirvCamCalcs::NewCamCalc(char const * name, const char * camFile
 	if (name && !Console_CheckName(name))
 		return 0;
 
-	IMirvCamCalc * result = new CMirvCamCamCalc(name, camFileName, startClientTime);
+	CMirvCamCamCalc * result = new CMirvCamCamCalc(name, camFileName, startClientTime);
+
+	if(result->IsBad()) Tier0_Warning("Error importing CAM file \"%s\"\n", name);
 
 	if (name)
 	{

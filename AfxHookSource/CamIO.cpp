@@ -50,7 +50,7 @@ double CamIO::UndoFovScaling(double width, double height, double fov)
 
 
 CamExport::CamExport(const wchar_t * fileName, ScaleFov scaleFov)
-	: m_Ofs(fileName, std::ofstream::out | std::ofstream::trunc)
+	: m_Ofs(fileName, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc)
 {
 	m_ScaleFov = scaleFov;
 
@@ -74,25 +74,29 @@ void CamExport::WriteFrame(double width, double height, const CamData & camData)
 	m_Ofs << camData.Time << " " << camData.XPosition << " " << camData.YPosition << " " << camData.ZPosition << " " << camData.XRotation << " " << camData.YRotation << " " << camData.ZRotation << " " << DoFovScaling(width, height, camData.Fov) << std::endl;
 }
 
+void afx_std_string_remove_CR(std::string & inOutValue) {
+	if (!inOutValue.empty() && '\r' == *(--inOutValue.end()))
+		inOutValue.erase(--inOutValue.end());
+}
 
 CamImport::CamImport(char const * fileName, double startTime)
-	: m_Ifs(fileName, std::ifstream::in, _SH_DENYWR)
+	: m_Ifs(fileName, std::ifstream::in | std::ofstream::binary, _SH_DENYWR )
 	, m_StartTime(startTime)
 {
 	int version = 0;
 	m_ScaleFov = SF_None;
 
-	char magic[15] = { 0 };
+	char magic[14+1+1] = { 0 };
 
-	m_Ifs.getline(magic, sizeof(magic)/sizeof(char));
-	if (0 != strcmp(magic, "advancedfx Cam")) m_Ifs.clear(m_Ifs.rdstate() | std::ifstream::badbit);
+	m_Ifs.getline(magic, sizeof(magic) / sizeof(char), '\n'); if ('\r' == magic[14]) magic[14] = '\0';
+	if (0 != strcmp(magic, "advancedfx Cam"))m_Ifs.clear(m_Ifs.rdstate() | std::ifstream::badbit);
 	
 
 	while (m_Ifs.good())
 	{
 		std::string line;
 
-		std::getline(m_Ifs, line);
+		std::getline(m_Ifs, line, '\n'); afx_std_string_remove_CR(line);
 
 		std::istringstream iss(line);
 
@@ -131,12 +135,6 @@ CamImport::~CamImport()
 void CamImport::SetStart(double startTime)
 {
 	m_StartTime = startTime;
-	if (m_FileStartOk)
-	{
-		m_HasLastFrame = false;
-		m_Ifs.clear();
-		m_Ifs.seekg(m_DataStart);
-	}
 }
 
 bool CamImport::GetCamData(double time, double width, double height, CamData & outCamData)
@@ -144,29 +142,37 @@ bool CamImport::GetCamData(double time, double width, double height, CamData & o
 	if (m_Ifs.bad())
 		return false;
 
-	if (m_HasLastFrame && time - m_StartTime < m_LastFrame.Time - m_FirstFrameTime)
+	if (time - m_StartTime < 0)
+		return false;
+
+	if (m_HasFinalFrame && m_FinalFrameTime - m_FirstFrameTime < time - m_StartTime)
+		return false;
+
+	if (!m_HasLastFrame || m_LastFrameTime - m_FirstFrameTime > time - m_StartTime)
 	{
 		m_Ifs.seekg(m_DataStart);
-		m_HasLastFrame = false;
-	}
-
-	if (!m_HasLastFrame)
-	{
+		
 		m_HasLastFrame = ReadDataLine(m_LastFrame);
 		if (!m_HasLastFrame)
 			return false;
+
 		m_FirstFrameTime = m_LastFrame.Time;
 		m_LastQuat = Afx::Math::Quaternion::FromQREulerAngles(Afx::Math::QREulerAngles::FromQEulerAngles(Afx::Math::QEulerAngles(m_LastFrame.YRotation, m_LastFrame.ZRotation, m_LastFrame.XRotation)));
 		m_NextFrame = m_LastFrame;
 		m_NextQuat = m_LastQuat;
+
 	}
-	
+
 	while (m_NextFrame.Time - m_FirstFrameTime < time - m_StartTime)
 	{
 		m_LastFrame = m_NextFrame;
 		m_LastQuat = m_NextQuat;
-		if (!ReadDataLine(m_NextFrame))
+		
+		if (!ReadDataLine(m_NextFrame)) {
+			m_FinalFrameTime = m_LastFrame.Time;
+			m_HasFinalFrame = true;
 			return false;
+		}
 		m_NextQuat = Afx::Math::Quaternion::FromQREulerAngles(Afx::Math::QREulerAngles::FromQEulerAngles(Afx::Math::QEulerAngles(m_NextFrame.YRotation, m_NextFrame.ZRotation, m_NextFrame.XRotation)));
 
 		// Make sure we will travel the short way:
@@ -191,7 +197,7 @@ bool CamImport::GetCamData(double time, double width, double height, CamData & o
 	outCamData.XRotation = rot.Roll;
 	outCamData.YRotation = rot.Pitch;
 	outCamData.ZRotation = rot.Yaw;
-	outCamData.Fov = (1 - t) * UndoFovScaling(width, height, m_LastFrame.Fov) + t * UndoFovScaling(width, height, m_NextFrame.Fov); // this maybe won't result in linear perception, maybe fix it when time.
+	outCamData.Fov = (1 - t) * UndoFovScaling(width, height, m_LastFrame.Fov) + t * UndoFovScaling(width, height, m_NextFrame.Fov); // TODO: this maybe won't result in linear perception, maybe fix it when time.
 
 	return true;
 }
@@ -200,8 +206,10 @@ bool CamImport::ReadDataLine(CamData & outCamData)
 {
 	std::string line;
 
-	if (!std::getline(m_Ifs, line))
+	if (!std::getline(m_Ifs, line, '\n'))
 		return false;
+
+	afx_std_string_remove_CR(line);
 
 	std::istringstream iss(line);
 

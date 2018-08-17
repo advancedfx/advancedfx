@@ -68,6 +68,8 @@ public:
 	/// <remarks>If the function fails outCamData content is undefined.</remarks>
 	bool GetCamData(double time, double width, double height, CamData & outCamData);
 
+	bool IsBad() { return m_Ifs.bad(); }
+
 private:
 	bool m_FileStartOk;
 	std::ifstream m_Ifs;
@@ -75,6 +77,9 @@ private:
 	std::streampos m_DataStart;
 	double m_FirstFrameTime;
 	bool m_HasLastFrame = false;
+	bool m_LastFrameTime;
+	double m_FinalFrameTime;
+	bool m_HasFinalFrame = false;
 	CamData m_LastFrame;
 	Afx::Math::Quaternion m_LastQuat;
 	CamData m_NextFrame;

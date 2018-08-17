@@ -30,6 +30,7 @@ api-ms-win-core-synch-l1-2-0.dll
 api-ms-win-core-sysinfo-l1-1-0.dll
 api-ms-win-core-timezone-l1-1-0.dll
 api-ms-win-core-util-l1-1-0.dll
+API-MS-Win-core-xstate-l2-1-0.dll
 api-ms-win-crt-conio-l1-1-0.dll
 api-ms-win-crt-convert-l1-1-0.dll
 api-ms-win-crt-environment-l1-1-0.dll
@@ -57,6 +58,8 @@ IlmThread-2_2.dll
 Imath-2_2.dll
 injector.exe
 msvcp140.dll
+msvcp140_1.dll
+msvcp140_2.dll
 readme.txt
 ucrtbase.dll
 vccorlib140.dll

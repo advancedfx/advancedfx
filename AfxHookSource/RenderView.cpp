@@ -423,6 +423,7 @@ void Hook_VClient_RenderView::Console_CamIO(IWrpCommandArgs * args)
 					}
 
 					m_CamImport = new CamImport(args->ArgV(3), GetCurTime());
+					if (m_CamImport->IsBad()) Tier0_Warning("Error importing CAM file \"%s\"\n", args->ArgV(3));
 					return;
 				}
 				else if (0 == _stricmp("end", cmd2))
