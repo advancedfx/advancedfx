@@ -6,13 +6,22 @@
 
 <release>
 <name>HLAE</name>
-<version>2.53.2</version>
-<time>2018-08-13T19:46Z</time>
+<version>2.54.0</version>
+<time>2018-08-17T20:06Z</time>
 <changes>
 <change type="updated">
-Included AfxHookSource 1.43.2 (2018-08-13T19:46Z).
+Included AfxHookSource 1.44.0 (2018-08-17T20:06Z).
 </change>
 </changes>
+<comments>
+Since this is a full rebuild (including the injector.exe and x64/injector.exe), several anti-virus programs might report false positives!<br />
+If this is a problem for you, or you are unsure, you can use the previous HLAE 2.53.1 (2018-08-07T06:15Z) until the situation calms down.<br />
+<br />
+If you are using Windows Defender and run into problems:<br />
+1) Make sure to install the latest definitions: https://www.microsoft.com/en-us/wdsi/definitions<br />
+2) Reboot.<br />
+3) Re-download and re-extract HLAE in your HLAE folder.
+</comments>
 </release>
 
 

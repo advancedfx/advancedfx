@@ -1388,6 +1388,7 @@ struct CCsgoReplaceNameEntry
 	}
 };
 
+bool g_csgo_ReplaceNameDebug = false;
 std::list<CCsgoReplaceNameEntry> g_csgo_ReplaceNameList;
 
 
@@ -1450,6 +1451,16 @@ wchar_t * __stdcall touring_csgo_CUnknown_GetPlayerName(DWORD *this_ptr, int ent
 
 	if (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(entIndex, &pinfo))
 	{
+		if (g_csgo_ReplaceNameDebug) {
+
+			std::string utf8PlayerName;
+
+			if (WideStringToUTF8String(result, utf8PlayerName))
+				Tier0_Msg("CUnknown::GetPlayerName: %i -> %s\n", pinfo.userID, utf8PlayerName.c_str());
+			else
+				Tier0_Msg("CUnknown::GetPlayerName: %i ERROR: could not get UTF8-String for player name.\n", pinfo.userID);
+		}
+
 		for (std::list<CCsgoReplaceNameEntry>::iterator it = g_csgo_ReplaceNameList.begin(); it != g_csgo_ReplaceNameList.end(); ++it) {
 			CCsgoReplaceNameEntry & e = *it;
 
@@ -1929,10 +1940,189 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 			}
 
 			Tier0_Msg(
-				"%s localPlayer default|<id>\n"
+				"%s debug 0|1\n"
 				"Current value: %i\n"
 				, arg0
 				, g_HudDeathNoticeHookGlobals.Settings.Debug
+			);
+			return true;
+		}
+		else if (0 == _stricmp("deprecated", arg1)) {
+
+			Tier0_Warning("This command is deprecated.\n"); // Deprecated.
+
+			Tier0_Msg(
+					"Usage:\n"
+					"mirv_deathmsg block [...] - block specific death messages.\n"
+					"mirv_deathmsg cfg [...] - configure death message properties, i.e. noticeLifeTime.\n"
+					"mirv_deathmsg highLightId [...] - control highlighting.\n"
+					"mirv_deathmsg help id - Display help on the ids that can be used.\n"
+					"mirv_deathmsg debug [...] - enable debug message in console.\n"
+			);
+
+			return true;
+		}
+		else if(0 == _stricmp("block", arg1)) {
+
+			Tier0_Warning("This command is deprecated.\n"); // Deprecated.
+
+			if(4 <= argc)
+			{
+				char const * uidAttacker = args->ArgV(2);
+				char const * uidVictim = args->ArgV(3);
+				char const * uidAssister = 5 <= argc ? args->ArgV(4) : "*";
+
+				CFakeWrpCommandArgs fakeArgs("mirv_deathmsg");
+				fakeArgs.AddArg("filter");
+				fakeArgs.AddArg("add");
+
+				std::string arg;				
+				
+				arg = "attackerMatch=";
+				arg += uidAttacker;
+				fakeArgs.AddArg(arg.c_str());
+
+				arg = "victimMatch=";
+				arg += uidVictim;
+				fakeArgs.AddArg(arg.c_str());
+
+				arg = "assisterMatch=";
+				arg += uidAssister;
+				fakeArgs.AddArg(arg.c_str());
+
+				fakeArgs.AddArg("block=1");
+
+				csgo_CHudDeathNotice_Console(&fakeArgs);
+
+				return true;
+			}
+			else
+			if(3 <= argc)
+			{
+				char const * arg2 = args->ArgV(2);
+
+				if(0 == _stricmp("list", arg2))
+				{
+					CFakeWrpCommandArgs fakeArgs("mirv_deathmsg");
+					fakeArgs.AddArg("filter");
+					fakeArgs.AddArg("print");
+					csgo_CHudDeathNotice_Console(&fakeArgs);
+
+					return true;
+				}
+				else
+				if(0 == _stricmp("clear", arg2))
+				{
+					CFakeWrpCommandArgs fakeArgs("mirv_deathmsg");
+					fakeArgs.AddArg("filter");
+					fakeArgs.AddArg("clear");
+					csgo_CHudDeathNotice_Console(&fakeArgs);
+
+					return true;
+				}
+				
+			}
+			Tier0_Msg(
+				"Usage:\n"
+				"mirv_deathmsg block <idAttacker> <idVictim> - block these ids\n"
+				"\tRemarks: * to match any uid, use !x to match any id apart from x.\n"
+				"mirv_deathmsg block <idAttacker> <idVictim> <idAssister> - block these ids\n"
+				"\tRemarks: * to match any uid, use !x to match any id apart from x.\n"
+				"mirv_deathmsg block list - list current blocks\n"
+				"mirv_deathmsg block clear - clear current blocks\n"
+				"(Use mirv_deathmsg help id to get help on the ids.)\n"
+			);
+			return true;
+		}
+		else
+		if(0 == _stricmp("modTime", arg1))
+		{
+			Tier0_Warning("This command has been removed.\n");
+
+			return true;
+		}
+		else
+		if(0 == _stricmp("highLightId", arg1))
+		{
+			Tier0_Warning("This command is deprecated.\n"); // Deprecated.
+
+			int argc = args->ArgC();
+			const char * arg0 = args->ArgV(0);
+
+			if (3 <= argc)
+			{
+				const char * arg2 = args->ArgV(2);
+
+				if (atoi(arg2) < 0)
+				{
+					g_HudDeathNoticeHookGlobals.useHighlightId = false;
+				}
+				else
+				{
+					g_HudDeathNoticeHookGlobals.useHighlightId = true;
+					g_HudDeathNoticeHookGlobals.highlightId = arg2;
+				}
+
+				return true;
+			}
+
+			Tier0_Msg(
+				"Usage:\n"
+				"%s -1|0|<id> - -1 is default behaviour, 0 is never highlight, otherwise <id> is the ID (you can get it from mirv_deathmsg debug) of the player you want to highlight.\n"
+				"Current setting: ",
+				arg0
+			);
+			if (!g_HudDeathNoticeHookGlobals.useHighlightId) Tier0_Msg("-1");
+			else g_HudDeathNoticeHookGlobals.highlightId.Console_Print();
+			Tier0_Msg(
+				"\n"
+			);
+			return true;
+		}
+		else
+		if(0 == _stricmp("highLightAssists", arg1))
+		{
+			Tier0_Warning("This command has been removed.\n");
+
+			return true;
+		}
+		else
+		if(0 == _stricmp("cfg", arg1))
+		{
+			Tier0_Warning("This command is deprecated.\n"); // Deprecated.
+
+			if(4 <= argc)
+			{
+				char const * arg2 = args->ArgV(2);
+				float arg3 = (float)atof(args->ArgV(3));
+
+				if(0 == _stricmp("noticeLifeTime", arg2))
+				{
+					CFakeWrpCommandArgs fakeArgs("mirv_deathmsg");
+					fakeArgs.AddArg("lifetime");
+					fakeArgs.AddArg(arg3 < 0 ? "default" : args->ArgV(3));
+					csgo_CHudDeathNotice_Console(&fakeArgs);
+
+					return true;
+				}
+				else
+				if(0 == _stricmp("localPlayerLifeTimeMod", arg2))
+				{
+					CFakeWrpCommandArgs fakeArgs("mirv_deathmsg");
+					fakeArgs.AddArg("lifetimeMod");
+					fakeArgs.AddArg(arg3 < 0 ? "default" : args->ArgV(3));
+					csgo_CHudDeathNotice_Console(&fakeArgs);
+
+					return true;
+				}
+			}
+			Tier0_Msg(
+				"Usage:\n"
+				"mirv_deathmsg cfg noticeLifeTime f - This is what you want. Current: %f\n"
+				"mirv_deathmsg cfg localPlayerLifeTimeMod f - Current: %f\n"
+				"Where f is a floating point value in seconds. Use -1 (a negative value) to use the orginal value instead.\n",
+				g_HudDeathNoticeHookGlobals.Lifetime.use ? g_HudDeathNoticeHookGlobals.Lifetime.value : -1,
+				g_HudDeathNoticeHookGlobals.LifetimeMod.use ? g_HudDeathNoticeHookGlobals.LifetimeMod.value : -1
 			);
 			return true;
 		}
@@ -1947,7 +2137,9 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 		"%s lifetimeMod [...] - Controls lifetime modifier of deathmessages for the \"local\" player.\n"
 		"%s localPlayer [...] - Controls what is considered \"local\" player (and thus highlighted in death notices).\n"
 		"%s debug [...] - Enable / Disable debug spew upon death messages.\n"
+		"%s deprecated - Print deprecated commands.\n"
 		"Hint: Jump back in demo (i.e. to round start) to clear death messages.\n"
+		, arg0
 		, arg0
 		, arg0
 		, arg0
@@ -2194,13 +2386,92 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 				}
 			}
 		}
+		else if (0 == _stricmp("deprecated", arg1))
+		{
+			Tier0_Warning("This command is deprecated.\n"); // Deprecated.
+
+			Tier0_Msg(
+				"Usage:\n"
+				"mirv_replace_name <playerId> <name> - replace <playerId> with given <name>.\n"
+				"mirv_replace_name debug 0|1 - print <playerId> -> <name> pairs into console as they get queried by the game.\n"
+				"mirv_replace_name delete <playerId> - delete replacement for <playerId>.\n"
+				"mirv_replace_name list - list all <playerId> -> <name> replacements currently active.\n"
+				"mirv_replace_name clear - clear all replacements.\n"
+			);
+			return true;
+		}
+		else if (0 == _stricmp("list", arg1)) {
+
+			Tier0_Warning("This command is deprecated.\n"); // Deprecated.
+
+			CFakeWrpCommandArgs fakeArgs("mirv_replace_name");
+			fakeArgs.AddArg("filter");
+			fakeArgs.AddArg("print");
+
+			csgo_ReplaceName_Console(&fakeArgs);
+
+			return true;
+		}
+		else if (0 == _stricmp("clear", arg1)) {
+
+			Tier0_Warning("This command is deprecated.\n"); // Deprecated.
+
+			CFakeWrpCommandArgs fakeArgs("mirv_replace_name");
+			fakeArgs.AddArg("filter");
+			fakeArgs.AddArg("clear");
+
+			csgo_ReplaceName_Console(&fakeArgs);
+
+			return true;
+		}
+		else if (3 <= argc)
+		{
+			const char * arg2 = args->ArgV(2);
+
+			if (0 == _stricmp("debug", arg1))
+			{
+				Tier0_Warning("This command is deprecated.\n"); // Deprecated.
+
+				g_csgo_ReplaceNameDebug = 0 != atoi(arg2);
+				return true;
+			}
+			else if (0 == _stricmp("delete", arg1)) {
+
+				Tier0_Warning("This command is deprecated.\n"); // Deprecated.
+
+				int id = atoi(arg2);
+
+				for (std::list<CCsgoReplaceNameEntry>::iterator it = g_csgo_ReplaceNameList.begin(); it != g_csgo_ReplaceNameList.end(); ++it)
+				{
+					CCsgoReplaceNameEntry & entry = *it;
+
+					if(id == entry.id.ResolveToUserId())
+					{
+						it = g_csgo_ReplaceNameList.erase(it);
+						if (it == g_csgo_ReplaceNameList.end())
+							break;
+					}
+				}
+				return true;
+			}
+			else if (1 <= strlen(arg1) && (isdigit(arg1[0]) || 'x' == tolower(arg1[0]))) {
+
+				Tier0_Warning("This command is deprecated.\n"); // Deprecated.
+
+				g_csgo_ReplaceNameList.emplace_back(arg1, arg2);
+				return true;
+
+			}
+		}
 	}
 
 
 	Tier0_Msg(
 		"%s filter [...] - Filter names.\n"
 		"%s help id [...]- Print help on <id...> usage.\n"
-		"Please note: The engine might cache names, so set th filter up early enough!\n"
+		"%s deprecated - Print deprecated commands.\n"
+		"Please note: The engine might cache names, so set the filter up early enough!\n"
+		, arg0
 		, arg0
 		, arg0
 	);

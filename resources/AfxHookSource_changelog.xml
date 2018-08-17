@@ -6,8 +6,8 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>TODO</version>
-<time>TODO</time>
+<version>1.44.0</version>
+<time>2018-08-17T20:06Z</time>
 <changes>
 <change type="fixed">
 Fixed CS:GO AGR weapon export potentially not working correctly and mirv_fix oldDuckFix not working or crashing due to copy and paste mistake.
@@ -17,6 +17,9 @@ Fixed mirv_camimport start not working under some conditions, i.e. when demo was
 </change>
 <change type="added">
 Added console warnings to cam import commands when they already fail upon reading the file header.
+</change>
+<change type="added">
+Added partial backward compatibility support to mirv_deathmsg and mirv_replace_name (old commands supported can be listed with deprecated sub-command).
 </change>
 </changes>
 </release>
