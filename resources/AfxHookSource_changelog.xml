@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.44.1</version>
+<time>2018-08-18T07:10Z</time>
+<changes>
+<change type="fixed">
+Fixed annoying HLAE mouse cursor bug (mouse not getting released when CS:GO window loses focus).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.44.0</version>
 <time>2018-08-17T20:06Z</time>
 <changes>

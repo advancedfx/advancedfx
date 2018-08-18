@@ -853,6 +853,8 @@ void CAfxBaseClientDll::IN_ActivateMouse(void)
 void CAfxBaseClientDll::IN_DeactivateMouse(void)
 { // NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 17)
 
+	m_Parent->IN_DeactivateMouse();
+
 	m_IN_MouseActive = false;	
 }
 
