@@ -13,7 +13,7 @@
 Fixed crash in AGR export in CS:GO when using recordViewmodel 1.
 </change>
 <change type="updated">
-Removed deprecated warnings from mirv_deathmsg / mirv_replace_name that confused users.
+Removed deprecation warnings from mirv_deathmsg / mirv_replace_name that confused users.
 </change>
 </changes>
 </release>
