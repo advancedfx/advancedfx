@@ -1949,7 +1949,7 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 		}
 		else if (0 == _stricmp("deprecated", arg1)) {
 
-			Tier0_Warning("This command is deprecated.\n"); // Deprecated.
+			//Tier0_Warning("This command is deprecated.\n"); // Deprecated.
 
 			Tier0_Msg(
 					"Usage:\n"
@@ -1964,7 +1964,7 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 		}
 		else if(0 == _stricmp("block", arg1)) {
 
-			Tier0_Warning("This command is deprecated.\n"); // Deprecated.
+			//Tier0_Warning("This command is deprecated.\n"); // Deprecated.
 
 			if(4 <= argc)
 			{
@@ -2044,7 +2044,7 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 		else
 		if(0 == _stricmp("highLightId", arg1))
 		{
-			Tier0_Warning("This command is deprecated.\n"); // Deprecated.
+			//Tier0_Warning("This command is deprecated.\n"); // Deprecated.
 
 			int argc = args->ArgC();
 			const char * arg0 = args->ArgV(0);
@@ -2089,7 +2089,7 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 		else
 		if(0 == _stricmp("cfg", arg1))
 		{
-			Tier0_Warning("This command is deprecated.\n"); // Deprecated.
+			//Tier0_Warning("This command is deprecated.\n"); // Deprecated.
 
 			if(4 <= argc)
 			{
@@ -2388,7 +2388,7 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 		}
 		else if (0 == _stricmp("deprecated", arg1))
 		{
-			Tier0_Warning("This command is deprecated.\n"); // Deprecated.
+			//Tier0_Warning("This command is deprecated.\n"); // Deprecated.
 
 			Tier0_Msg(
 				"Usage:\n"
@@ -2402,7 +2402,7 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 		}
 		else if (0 == _stricmp("list", arg1)) {
 
-			Tier0_Warning("This command is deprecated.\n"); // Deprecated.
+			//Tier0_Warning("This command is deprecated.\n"); // Deprecated.
 
 			CFakeWrpCommandArgs fakeArgs("mirv_replace_name");
 			fakeArgs.AddArg("filter");
@@ -2414,7 +2414,7 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 		}
 		else if (0 == _stricmp("clear", arg1)) {
 
-			Tier0_Warning("This command is deprecated.\n"); // Deprecated.
+			//Tier0_Warning("This command is deprecated.\n"); // Deprecated.
 
 			CFakeWrpCommandArgs fakeArgs("mirv_replace_name");
 			fakeArgs.AddArg("filter");
@@ -2430,14 +2430,14 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 
 			if (0 == _stricmp("debug", arg1))
 			{
-				Tier0_Warning("This command is deprecated.\n"); // Deprecated.
+				//Tier0_Warning("This command is deprecated.\n"); // Deprecated.
 
 				g_csgo_ReplaceNameDebug = 0 != atoi(arg2);
 				return true;
 			}
 			else if (0 == _stricmp("delete", arg1)) {
 
-				Tier0_Warning("This command is deprecated.\n"); // Deprecated.
+				//Tier0_Warning("This command is deprecated.\n"); // Deprecated.
 
 				int id = atoi(arg2);
 
@@ -2456,7 +2456,7 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 			}
 			else if (1 <= strlen(arg1) && (isdigit(arg1[0]) || 'x' == tolower(arg1[0]))) {
 
-				Tier0_Warning("This command is deprecated.\n"); // Deprecated.
+				//Tier0_Warning("This command is deprecated.\n"); // Deprecated.
 
 				g_csgo_ReplaceNameList.emplace_back(arg1, arg2);
 				return true;
