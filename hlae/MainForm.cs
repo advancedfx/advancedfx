@@ -21,7 +21,7 @@ namespace AfxGui
         {
             InitializeComponent();
             this.Icon = Program.Icon;
- 
+
             m_UpdateCheckNotification = new UpdateCheckNotificationTarget(this, new UpdateCheckedDelegate(OnUpdateChecked));
         }
 
@@ -33,12 +33,12 @@ namespace AfxGui
 
         void OnUpdateChecked(object o, IUpdateCheckResult checkResult)
         {
-	        if(null != checkResult)
+            if (null != checkResult)
             {
-		        // Has result:
-		        if(checkResult.IsUpdated) 
+                // Has result:
+                if (checkResult.IsUpdated)
                 {
-			        // Updated:
+                    // Updated:
 
                     m_LastUpdateGuid = checkResult.Guid;
 
@@ -48,43 +48,43 @@ namespace AfxGui
 
                     statusLabelIgnore.Visible = notIgnored;
                     statusStrip.Visible = statusStrip.Visible || notIgnored;
-			        statusLabelUpdate.IsLink = true;
-			        statusLabelUpdate.Tag = null != checkResult.Uri ? checkResult.Uri.ToString() : "http://advancedfx.org/";
-			        statusLabelUpdate.Text = "Update available!";
-			        statusLabelUpdate.ForeColor = Color.Black;
-			        statusLabelUpdate.BackColor = Color.Orange;
-		        }
-		        else
+                    statusLabelUpdate.IsLink = true;
+                    statusLabelUpdate.Tag = null != checkResult.Uri ? checkResult.Uri.ToString() : "http://advancedfx.org/";
+                    statusLabelUpdate.Text = "Update available!";
+                    statusLabelUpdate.ForeColor = Color.Black;
+                    statusLabelUpdate.BackColor = Color.Orange;
+                }
+                else
                 {
-			        // Is recent:
+                    // Is recent:
                     statusLabelIgnore.Visible = false;
                     statusLabelUpdate.IsLink = false;
-			        statusLabelUpdate.Text = "Your version is up to date :)";
-			        statusLabelUpdate.ForeColor = Color.Black;
-			        statusLabelUpdate.BackColor = Color.LightGreen;
-		        }
-	        }
-	        else
+                    statusLabelUpdate.Text = "Your version is up to date :)";
+                    statusLabelUpdate.ForeColor = Color.Black;
+                    statusLabelUpdate.BackColor = Color.LightGreen;
+                }
+            }
+            else
             {
-		        // Has no result (s.th. went wrong):
+                // Has no result (s.th. went wrong):
                 statusLabelIgnore.Visible = false;
                 statusStrip.Visible = true;
-		        statusLabelUpdate.IsLink = true;
-		        statusLabelUpdate.Tag = "http://advancedfx.org/";
-		        statusLabelUpdate.Text = "Update check failed :(";
-		        statusLabelUpdate.ForeColor = Color.Black;
-		        statusLabelUpdate.BackColor = Color.LightCoral;
-	        }
+                statusLabelUpdate.IsLink = true;
+                statusLabelUpdate.Tag = "http://advancedfx.org/";
+                statusLabelUpdate.Text = "Update check failed :(";
+                statusLabelUpdate.ForeColor = Color.Black;
+                statusLabelUpdate.BackColor = Color.LightCoral;
+            }
         }
 
         void StartUpdateCheck()
         {
-			this.statusLabelUpdate.IsLink = false;
-			this.statusLabelUpdate.Text = "Checking for updates ...";
-			this.statusLabelUpdate.ForeColor = Color.FromKnownColor(KnownColor.ControlText);
-			this.statusLabelUpdate.BackColor = Color.FromKnownColor(KnownColor.Control);
+            this.statusLabelUpdate.IsLink = false;
+            this.statusLabelUpdate.Text = "Checking for updates ...";
+            this.statusLabelUpdate.ForeColor = Color.FromKnownColor(KnownColor.ControlText);
+            this.statusLabelUpdate.BackColor = Color.FromKnownColor(KnownColor.Control);
 
-			GlobalUpdateCheck.Instance.StartCheck();
+            GlobalUpdateCheck.Instance.StartCheck();
         }
 
         private void MenuFileSize_Click(object sender, EventArgs e)
@@ -130,12 +130,12 @@ namespace AfxGui
 
         private void StatusLabelUpdate_Click(object sender, EventArgs e)
         {
-			 if(statusLabelUpdate.IsLink)
-             {
+            if (statusLabelUpdate.IsLink)
+            {
                 System.Diagnostics.Process.Start(
-					 statusLabelUpdate.Tag.ToString()
-				);
-			 }
+                     statusLabelUpdate.Tag.ToString()
+                );
+            }
         }
 
         private void StatusStrip_VisibleChanged(object sender, EventArgs e)
@@ -185,7 +185,7 @@ namespace AfxGui
 
         private void MenuGuidToClipBoard_Click(object sender, EventArgs e)
         {
-            Clipboard.SetText(GlobalUpdateCheck.Instance.Guid.ToString());           
+            Clipboard.SetText(GlobalUpdateCheck.Instance.Guid.ToString());
         }
 
         private void StatusLabelIgnore_Click(object sender, EventArgs e)
@@ -197,7 +197,7 @@ namespace AfxGui
 
         private void MenuNewGuidToClipBoard_Click(object sender, EventArgs e)
         {
-            Clipboard.SetText(Guid.NewGuid().ToString()); 
+            Clipboard.SetText(Guid.NewGuid().ToString());
         }
 
         private void MenuLaunchCSGO_Click(object sender, EventArgs e)
@@ -205,5 +205,29 @@ namespace AfxGui
             LaunchCsgo.RunLauncherDialog(this);
         }
 
+        private void MenuLaunchGoldSrc_Click(object sender, EventArgs e)
+        {
+            Launcher.RunLauncherDialog(this);
+        }
+
+        private void MenuToolsGoldSrcDemoTools_Click(object sender, EventArgs e)
+        {
+            AfxCppCli.old.tools.DemoToolsWizard demoWiz = new AfxCppCli.old.tools.DemoToolsWizard();
+
+            demoWiz.OutputPath = GlobalConfig.Instance.Settings.DemoTools.OutputFolder;
+
+            demoWiz.ShowDialog(this);
+
+            GlobalConfig.Instance.Settings.DemoTools.OutputFolder = demoWiz.OutputPath;
+            GlobalConfig.Instance.BackUp();
+
+            //demoWiz.Dispose();
+        }
+
+        private void MenuToolsGoldSrcSkyManager_Click(object sender, EventArgs e)
+        {
+            AfxCppCli.old.tools.skymanager sm = new AfxCppCli.old.tools.skymanager(GlobalConfig.Instance.Settings.Launcher.GamePath);
+            sm.Show(this);
+        }
     }
 }

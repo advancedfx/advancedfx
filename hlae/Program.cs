@@ -36,6 +36,115 @@ namespace AfxGui
         static System.Drawing.Icon m_Icon;
         static bool m_CustomLoaderHadHookDllPath = false;
 
+        static void ProcessArgsAfxHookGoldSrc(string[] args)
+        {
+            for (int i = 0; i < args.Length; i++)
+            {
+                string arg = args[i];
+                switch (arg)
+                {
+                    case "-autoStart":
+                        Globals.AutoStartAfxHookGoldSrc = true;
+                        break;
+                    case "-noGui":
+                        Globals.NoGui = true;
+                        break;
+                    case "-gamePath":
+                        if (i + 1 < args.Length)
+                        {
+                            GlobalConfig.Instance.Settings.Launcher.GamePath = args[i + 1];
+                            i++;
+                        }
+                        break;
+                    case "-modification":
+                        if (i + 1 < args.Length)
+                        {
+                            GlobalConfig.Instance.Settings.Launcher.Modification = args[i + 1];
+                            i++;
+                        }
+                        break;
+                    case "-customCmdLine":
+                        if (i + 1 < args.Length)
+                        {
+                            GlobalConfig.Instance.Settings.Launcher.CustomCmdLine = args[i + 1];
+                            i++;
+                        }
+                        break;
+                    case "-gfxForce":
+                        if (i + 1 < args.Length)
+                        {
+                            Boolean.TryParse(args[i + 1], out GlobalConfig.Instance.Settings.Launcher.GfxForce);
+                            i++;
+                        }
+                        break;
+                    case "-gfxWidth":
+                        if (i + 1 < args.Length)
+                        {
+                            UInt16.TryParse(args[i + 1], out GlobalConfig.Instance.Settings.Launcher.GfxWidth);
+                            i++;
+                        }
+                        break;
+                    case "-gfxHeight":
+                        if (i + 1 < args.Length)
+                        {
+                            UInt16.TryParse(args[i + 1], out GlobalConfig.Instance.Settings.Launcher.GfxHeight);
+                            i++;
+                        }
+                        break;
+                    case "-gfxBpp":
+                        if (i + 1 < args.Length)
+                        {
+                            Byte.TryParse(args[i + 1], out GlobalConfig.Instance.Settings.Launcher.GfxBpp);
+                            i++;
+                        }
+                        break;
+                    //case "-rememberChanges":
+                    case "-foreceAlpha":
+                    case "-forceAlpha":
+                        if (arg == "-foreceAlpha")
+                            MessageBox.Show("-foreceAlpha is deprecated, use -forceAlpha instead!", "Deprecated launch option!", MessageBoxButtons.OK, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1);
+
+                        if (i + 1 < args.Length)
+                        {
+                            Boolean.TryParse(args[i + 1], out GlobalConfig.Instance.Settings.Launcher.ForceAlpha);
+                            i++;
+                        }
+                        break;
+                    case "-optimizeDesktopRes":
+                        if (i + 1 < args.Length)
+                        {
+                            Boolean.TryParse(args[i + 1], out GlobalConfig.Instance.Settings.Launcher.OptimizeDesktopRes);
+                            i++;
+                        }
+                        break;
+                    case "-optimizeVisibilty":
+                        if (i + 1 < args.Length)
+                        {
+                            Boolean.TryParse(args[i + 1], out GlobalConfig.Instance.Settings.Launcher.OptimizeVisibilty);
+                            i++;
+                        }
+                        break;
+                    case "-fullScreen":
+                        if (i + 1 < args.Length)
+                        {
+                            Boolean.TryParse(args[i + 1], out GlobalConfig.Instance.Settings.Launcher.FullScreen);
+                            i++;
+                        }
+                        break;
+                    case "-renderMode":
+                        if (i + 1 < args.Length)
+                        {
+                            Byte.TryParse(args[i + 1], out GlobalConfig.Instance.Settings.Launcher.RenderMode);
+                            i++;
+                        }
+                        break;
+                }
+            }
+
+            // backup potential config changes:
+            GlobalConfig.Instance.BackUp();
+        }
+
         static void ProcessArgsCustomLoader(string[] args)
         {
             for (int i = 0; i < args.Length; i++)
@@ -228,6 +337,13 @@ namespace AfxGui
             if (Globals.AutoStartCsgo)
             {
                 if (!LaunchCsgo.Launch(GlobalConfig.Instance.Settings.LauncherCsgo))
+                    bOk = false;
+            }
+
+            // start-up AfxHookGoldSrc if requested (i.e. by command line)
+            if (Globals.AutoStartAfxHookGoldSrc)
+            {
+                if (!Launcher.Launch(GlobalConfig.Instance.Settings.Launcher))
                     bOk = false;
             }
 

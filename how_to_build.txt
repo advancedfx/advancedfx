@@ -119,7 +119,7 @@ Notice:
 
 [X] Open advancedfx.sln in the HLAE source code ("C:\<HLAESRC>\advancedfx" folder)
     and Build (Configuration=Release, Platform=x86) in this order:
-    AfxHookSource, injector, hlae
+    AfxHookGoldSrc, AfxHookSource, AfxCppCli, injector, hlae
     and Build (Configuration=Release, Platform=x64) in this order:
     injector
 

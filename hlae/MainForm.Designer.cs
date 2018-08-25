@@ -31,6 +31,7 @@
             this.mainMenu = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuLaunchCSGO = new System.Windows.Forms.ToolStripMenuItem();
+            this.launchGoldSrcToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
             this.menuExit = new System.Windows.Forms.ToolStripMenuItem();
             this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -58,6 +59,9 @@
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.statusLabelAutoYes = new System.Windows.Forms.ToolStripStatusLabel();
             this.statusLabelAutoNo = new System.Windows.Forms.ToolStripStatusLabel();
+            this.goldSrcToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.demoToolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.skyManagerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.mainMenu.SuspendLayout();
             this.statusStrip.SuspendLayout();
             this.stripEnableUpdateCheck.SuspendLayout();
@@ -80,6 +84,7 @@
             // 
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.menuLaunchCSGO,
+            this.launchGoldSrcToolStripMenuItem,
             this.toolStripMenuItem1,
             this.menuExit});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
@@ -89,19 +94,26 @@
             // menuLaunchCSGO
             // 
             this.menuLaunchCSGO.Name = "menuLaunchCSGO";
-            this.menuLaunchCSGO.Size = new System.Drawing.Size(152, 22);
+            this.menuLaunchCSGO.Size = new System.Drawing.Size(180, 22);
             this.menuLaunchCSGO.Text = "Launch CS:GO";
             this.menuLaunchCSGO.Click += new System.EventHandler(this.MenuLaunchCSGO_Click);
+            // 
+            // launchGoldSrcToolStripMenuItem
+            // 
+            this.launchGoldSrcToolStripMenuItem.Name = "launchGoldSrcToolStripMenuItem";
+            this.launchGoldSrcToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.launchGoldSrcToolStripMenuItem.Text = "Launch GoldSrc";
+            this.launchGoldSrcToolStripMenuItem.Click += new System.EventHandler(this.MenuLaunchGoldSrc_Click);
             // 
             // toolStripMenuItem1
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(149, 6);
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(177, 6);
             // 
             // menuExit
             // 
             this.menuExit.Name = "menuExit";
-            this.menuExit.Size = new System.Drawing.Size(152, 22);
+            this.menuExit.Size = new System.Drawing.Size(180, 22);
             this.menuExit.Text = "Exit";
             this.menuExit.Click += new System.EventHandler(this.MenuExit_Click);
             // 
@@ -116,7 +128,7 @@
             // menuStatusBar
             // 
             this.menuStatusBar.Name = "menuStatusBar";
-            this.menuStatusBar.Size = new System.Drawing.Size(126, 22);
+            this.menuStatusBar.Size = new System.Drawing.Size(180, 22);
             this.menuStatusBar.Text = "Status Bar";
             this.menuStatusBar.Click += new System.EventHandler(this.StatusBarToolStripMenuItem_Click);
             // 
@@ -124,6 +136,7 @@
             // 
             this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.calculatorsToolStripMenuItem,
+            this.goldSrcToolStripMenuItem,
             this.toolStripMenuItem2,
             this.developerToolStripMenuItem});
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
@@ -135,7 +148,7 @@
             this.calculatorsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.menuFileSize});
             this.calculatorsToolStripMenuItem.Name = "calculatorsToolStripMenuItem";
-            this.calculatorsToolStripMenuItem.Size = new System.Drawing.Size(133, 22);
+            this.calculatorsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.calculatorsToolStripMenuItem.Text = "Calculators";
             // 
             // menuFileSize
@@ -148,7 +161,7 @@
             // toolStripMenuItem2
             // 
             this.toolStripMenuItem2.Name = "toolStripMenuItem2";
-            this.toolStripMenuItem2.Size = new System.Drawing.Size(130, 6);
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(177, 6);
             // 
             // developerToolStripMenuItem
             // 
@@ -158,7 +171,7 @@
             this.menuGuidToClipBoard,
             this.menuNewGuidToClipBoard});
             this.developerToolStripMenuItem.Name = "developerToolStripMenuItem";
-            this.developerToolStripMenuItem.Size = new System.Drawing.Size(133, 22);
+            this.developerToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.developerToolStripMenuItem.Text = "Developer";
             // 
             // menuCustomLoader
@@ -201,14 +214,14 @@
             // 
             this.menuAdvancedFxOrg.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Underline);
             this.menuAdvancedFxOrg.Name = "menuAdvancedFxOrg";
-            this.menuAdvancedFxOrg.Size = new System.Drawing.Size(171, 22);
+            this.menuAdvancedFxOrg.Size = new System.Drawing.Size(180, 22);
             this.menuAdvancedFxOrg.Text = "advancedfx.org";
             this.menuAdvancedFxOrg.Click += new System.EventHandler(this.MenuAdvancedFxOrg_Click);
             // 
             // toolStripMenuItem3
             // 
             this.toolStripMenuItem3.Name = "toolStripMenuItem3";
-            this.toolStripMenuItem3.Size = new System.Drawing.Size(168, 6);
+            this.toolStripMenuItem3.Size = new System.Drawing.Size(177, 6);
             // 
             // checkForUpdatesToolStripMenuItem
             // 
@@ -216,7 +229,7 @@
             this.menuAutoUpdateCheck,
             this.checkNowToolStripMenuItem});
             this.checkForUpdatesToolStripMenuItem.Name = "checkForUpdatesToolStripMenuItem";
-            this.checkForUpdatesToolStripMenuItem.Size = new System.Drawing.Size(171, 22);
+            this.checkForUpdatesToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.checkForUpdatesToolStripMenuItem.Text = "Check for Updates";
             // 
             // menuAutoUpdateCheck
@@ -320,6 +333,29 @@
             this.statusLabelAutoNo.Text = "No";
             this.statusLabelAutoNo.Click += new System.EventHandler(this.StatusLabelAuto_Click);
             // 
+            // goldSrcToolStripMenuItem
+            // 
+            this.goldSrcToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.demoToolsToolStripMenuItem,
+            this.skyManagerToolStripMenuItem});
+            this.goldSrcToolStripMenuItem.Name = "goldSrcToolStripMenuItem";
+            this.goldSrcToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.goldSrcToolStripMenuItem.Text = "GoldSrc";
+            // 
+            // demoToolsToolStripMenuItem
+            // 
+            this.demoToolsToolStripMenuItem.Name = "demoToolsToolStripMenuItem";
+            this.demoToolsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.demoToolsToolStripMenuItem.Text = "Demo Tools";
+            this.demoToolsToolStripMenuItem.Click += new System.EventHandler(this.MenuToolsGoldSrcDemoTools_Click);
+            // 
+            // skyManagerToolStripMenuItem
+            // 
+            this.skyManagerToolStripMenuItem.Name = "skyManagerToolStripMenuItem";
+            this.skyManagerToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.skyManagerToolStripMenuItem.Text = "Sky Manager";
+            this.skyManagerToolStripMenuItem.Click += new System.EventHandler(this.MenuToolsGoldSrcSkyManager_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -376,5 +412,9 @@
         private System.Windows.Forms.ToolStripSeparator toolStripMenuItem4;
         private System.Windows.Forms.ToolStripMenuItem menuNewGuidToClipBoard;
         private System.Windows.Forms.ToolStripMenuItem menuLaunchCSGO;
+        private System.Windows.Forms.ToolStripMenuItem launchGoldSrcToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem goldSrcToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem demoToolsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem skyManagerToolStripMenuItem;
     }
 }

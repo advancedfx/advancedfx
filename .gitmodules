@@ -14,3 +14,7 @@
 	path = shared/Detours
 	url = https://github.com/advancedfx/Detours
 	branch = master
+[submodule "shared/halflife"]
+	path = shared/halflife
+	url = https://github.com/advancedfx/halflife.git
+	branch = advancedfx

@@ -1,0 +1,367 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{B5B38F84-EE5E-4B8E-A0B3-5AE3DC669896}</ProjectGuid>
+    <RootNamespace>AfxHookGoldSrc</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141_xp</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\$(Configuration)\bin\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)build\$(Configuration)\$(RootNamespace)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\$(Configuration)\bin\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\$(Configuration)\$(RootNamespace)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>./;../;../prop;../shared/halflife/common;../shared/halflife/engine;../shared/halflife/pm_shared;../shared/halflife/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <OutputFile>$(OutDir)AfxHookGoldSrc.dll</OutputFile>
+      <AdditionalLibraryDirectories>C:\Libraries\js\lib;C:\Libraries\libRocket\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(OutDir)AfxHookGoldSrc.pdb</ProgramDatabaseFile>
+      <SubSystem>Windows</SubSystem>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>
+      </DataExecutionPrevention>
+      <ImportLibrary>$(OutDir)AfxHookGoldSrc.lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>./;../;../prop;../shared/halflife/common;../shared/halflife/engine;../shared/halflife/pm_shared;../shared/halflife/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <OutputFile>$(OutDir)AfxHookGoldSrc.dll</OutputFile>
+      <AdditionalLibraryDirectories>C:\Libraries\js\lib;C:\Libraries\libRocket\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(OutDir)AfxHookGoldSrc.pdb</ProgramDatabaseFile>
+      <SubSystem>Windows</SubSystem>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>
+      </DataExecutionPrevention>
+      <ImportLibrary>$(OutDir)AfxHookGoldSrc.lib</ImportLibrary>
+    </Link>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <ClCompile>
+      <AdditionalIncludeDirectories>./;../;../prop;../shared/halflife/common;../shared/halflife/engine;../shared/halflife/pm_shared;../shared/halflife/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <OutputFile>$(OutDir)AfxHookGoldSrc.dll</OutputFile>
+      <AdditionalLibraryDirectories>C:\Libraries\js\lib;C:\Libraries\libRocket\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>
+      </DataExecutionPrevention>
+      <ImportLibrary>$(OutDir)AfxHookGoldSrc.lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <ClCompile>
+      <AdditionalIncludeDirectories>./;../;../prop;../shared/halflife/common;../shared/halflife/engine;../shared/halflife/pm_shared;../shared/halflife/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <OutputFile>$(OutDir)AfxHookGoldSrc.dll</OutputFile>
+      <AdditionalLibraryDirectories>C:\Libraries\js\lib;C:\Libraries\libRocket\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>
+      </DataExecutionPrevention>
+      <ImportLibrary>$(OutDir)AfxHookGoldSrc.lib</ImportLibrary>
+    </Link>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\prop\shared\AfxMath.cpp" />
+    <ClCompile Include="..\shared\binutils.cpp" />
+    <ClCompile Include="..\shared\CamPath.cpp" />
+    <ClCompile Include="..\shared\FileTools.cpp" />
+    <ClCompile Include="..\shared\hooks\gameOverlayRenderer.cpp" />
+    <ClCompile Include="..\shared\StringTools.cpp" />
+    <ClCompile Include="..\shared\vcpp\AfxAddr.cpp" />
+    <ClCompile Include="AfxGlImage.cpp" />
+    <ClCompile Include="AfxImageUtils.cpp" />
+    <ClCompile Include="AfxMemory.cpp" />
+    <ClCompile Include="AfxSettings.cpp" />
+    <ClCompile Include="aiming.cpp" />
+    <ClCompile Include="camexport.cpp" />
+    <ClCompile Include="camimport.cpp" />
+    <ClCompile Include="cmd_tools.cpp" />
+    <ClCompile Include="cstrike_ch.cpp" />
+    <ClCompile Include="cstrike_deathmsg.cpp" />
+    <ClCompile Include="cstrike_smoke.cpp" />
+    <ClCompile Include="decals_hook.cpp" />
+    <ClCompile Include="demo_tools.cpp" />
+    <ClCompile Include="demozoom.cpp" />
+    <ClCompile Include="disable_spec_menu.cpp" />
+    <ClCompile Include="EasySampler.cpp" />
+    <ClCompile Include="film_sound.cpp" />
+    <ClCompile Include="filming.cpp" />
+    <ClCompile Include="forcePlayersSolid.cpp" />
+    <ClCompile Include="fx_noblend.cpp" />
+    <ClCompile Include="GlPrimMods.cpp" />
+    <ClCompile Include="hlaeFolder.cpp" />
+    <ClCompile Include="hl_addresses.cpp" />
+    <ClCompile Include="HltvFix.cpp" />
+    <ClCompile Include="hooks\client\cstrike\CrossHairFix.cpp" />
+    <ClCompile Include="hooks\client\HookClient.cpp" />
+    <ClCompile Include="hooks\DemoPlayer\DemoPlayer.cpp" />
+    <ClCompile Include="hooks\hw\ClientFunctions.cpp" />
+    <ClCompile Include="hooks\hw\CL_Disconnect.cpp" />
+    <ClCompile Include="hooks\hw\Host_Init.cpp" />
+    <ClCompile Include="hooks\hw\R_DrawSkyBoxEx.cpp" />
+    <ClCompile Include="hooks\hw\R_RenderView.cpp" />
+    <ClCompile Include="hooks\hw\UnkDrawHud.cpp" />
+    <ClCompile Include="hooks\interface.cpp" />
+    <ClCompile Include="hooks\svdll\GiveFnptrsToDll.cpp" />
+    <ClCompile Include="hooks\svdll\Server_GetBlendingInterface.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="mdt_media.cpp" />
+    <ClCompile Include="mirv_campath.cpp" />
+    <ClCompile Include="mirv_commands.cpp" />
+    <ClCompile Include="mirv_glext.cpp" />
+    <ClCompile Include="mirv_info.cpp" />
+    <ClCompile Include="move_to.cpp" />
+    <ClCompile Include="newsky.cpp" />
+    <ClCompile Include="stdafx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">stdafx.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">stdafx.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">stdafx.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdafx.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <ClCompile Include="Store.cpp" />
+    <ClCompile Include="supportrender.cpp" />
+    <ClCompile Include="sv_hitboxes.cpp" />
+    <ClCompile Include="temporary_dominik_0005.cpp" />
+    <ClCompile Include="variousCommands.cpp" />
+    <ClCompile Include="zooming.cpp" />
+    <ClCompile Include="hooks\gdi32Hooks.cpp" />
+    <ClCompile Include="hooks\HookGameLoaded.cpp" />
+    <ClCompile Include="hooks\HookHl.cpp" />
+    <ClCompile Include="hooks\HookHw.cpp" />
+    <ClCompile Include="hooks\OpenGl32Hooks.cpp" />
+    <ClCompile Include="hooks\user32Hooks.cpp" />
+    <ClCompile Include="hooks\hw\Host_Frame.cpp" />
+    <ClCompile Include="hooks\hw\Mod_LeafPvs.cpp" />
+    <ClCompile Include="hooks\hw\R_DrawEntitiesOnList.cpp" />
+    <ClCompile Include="hooks\hw\R_DrawParticles.cpp" />
+    <ClCompile Include="hooks\hw\R_DrawViewModel.cpp" />
+    <ClCompile Include="hooks\hw\R_PolyBlend.cpp" />
+    <ClCompile Include="..\shared\bvhexport.cpp" />
+    <ClCompile Include="..\shared\bvhimport.cpp" />
+    <ClCompile Include="..\prop\shared\detours.cpp" />
+    <ClCompile Include="..\shared\RawOutput.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\prop\shared\AfxMath.h" />
+    <ClInclude Include="..\shared\binutils.h" />
+    <ClInclude Include="..\shared\CamPath.h" />
+    <ClInclude Include="..\shared\FileTools.h" />
+    <ClInclude Include="..\shared\hooks\gameOverlayRenderer.h" />
+    <ClInclude Include="..\prop\shared\rapidxml\rapidxml.hpp" />
+    <ClInclude Include="..\prop\shared\rapidxml\rapidxml_iterators.hpp" />
+    <ClInclude Include="..\prop\shared\rapidxml\rapidxml_print.hpp" />
+    <ClInclude Include="..\prop\shared\rapidxml\rapidxml_utils.hpp" />
+    <ClInclude Include="..\shared\StringTools.h" />
+    <ClInclude Include="..\shared\vcpp\AfxAddr.h" />
+    <ClInclude Include="AfxGlImage.h" />
+    <ClInclude Include="AfxImageUtils.h" />
+    <ClInclude Include="AfxMemory.h" />
+    <ClInclude Include="AfxSettings.h" />
+    <ClInclude Include="aiming.h" />
+    <ClInclude Include="camexport.h" />
+    <ClInclude Include="camimport.h" />
+    <ClInclude Include="cmd_tools.h" />
+    <ClInclude Include="cmdregister.h" />
+    <ClInclude Include="EasySampler.h" />
+    <ClInclude Include="film_sound.h" />
+    <ClInclude Include="filming.h" />
+    <ClInclude Include="GlPrimMods.h" />
+    <ClInclude Include="hlaeFolder.h" />
+    <ClInclude Include="hl_addresses.h" />
+    <ClInclude Include="hlsdk.h" />
+    <ClInclude Include="HltvFix.h" />
+    <ClInclude Include="hooks\client\cstrike\CrossHairFix.h" />
+    <ClInclude Include="hooks\client\HookClient.h" />
+    <ClInclude Include="hooks\DemoPlayer\DemoPlayer.h" />
+    <ClInclude Include="hooks\hw\ClientFunctions.h" />
+    <ClInclude Include="hooks\hw\CL_Disconnect.h" />
+    <ClInclude Include="hooks\hw\Host_Init.h" />
+    <ClInclude Include="hooks\hw\R_DrawSkyBoxEx.h" />
+    <ClInclude Include="hooks\hw\R_RenderView.h" />
+    <ClInclude Include="hooks\hw\UnkDrawHud.h" />
+    <ClInclude Include="hooks\interface.h" />
+    <ClInclude Include="hooks\svdll\GiveFnptrsToDll.h" />
+    <ClInclude Include="hooks\svdll\Server_GetBlendingInterface.h" />
+    <ClInclude Include="mdt_media.h" />
+    <ClInclude Include="mirv_commands.h" />
+    <ClInclude Include="mirv_glext.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="Store.h" />
+    <ClInclude Include="supportrender.h" />
+    <ClInclude Include="sv_hitboxes.h" />
+    <ClInclude Include="zooming.h" />
+    <ClInclude Include="hooks\gdi32Hooks.h" />
+    <ClInclude Include="hooks\HookGameLoaded.h" />
+    <ClInclude Include="hooks\HookHl.h" />
+    <ClInclude Include="hooks\HookHw.h" />
+    <ClInclude Include="hooks\OpenGl32Hooks.h" />
+    <ClInclude Include="hooks\user32Hooks.h" />
+    <ClInclude Include="hooks\hw\Host_Frame.h" />
+    <ClInclude Include="hooks\hw\Mod_LeafPvs.h" />
+    <ClInclude Include="hooks\hw\R_DrawEntitiesOnList.h" />
+    <ClInclude Include="hooks\hw\R_DrawParticles.h" />
+    <ClInclude Include="hooks\hw\R_DrawViewModel.h" />
+    <ClInclude Include="hooks\hw\R_PolyBlend.h" />
+    <ClInclude Include="..\shared\bvhexport.h" />
+    <ClInclude Include="..\shared\bvhimport.h" />
+    <ClInclude Include="..\prop\shared\detours.h" />
+    <ClInclude Include="..\shared\RawOutput.h" />
+    <ClInclude Include="..\shared\hldemo\hldemo.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
