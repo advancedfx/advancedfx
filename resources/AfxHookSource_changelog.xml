@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.44.3</version>
+<time>2018-08-30T05:57Z</time>
+<changes>
+<change type="fixed">
+Adjusted to CS:GO update 8/29/2018 1.36.5.1, fixes mirv_replace_name not working anymore.
+</change>
+</changes>
+<comments>
+We did not have time to test all combinations, if you find new HLAE breakage with the CS:GO update please inform us.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.44.2</version>
 <time>2018-08-24T16:45Z</time>
 <changes>
