@@ -1,0 +1,3101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="changelog.xsl"?>
+
+<changelog>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.5.1</version>
+<time>2017-06-01T14:30Z</time>
+<changes>
+<change type="updated">
+Updated build environment to Visual Studio 2017.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.5.0</version>
+<time>2017-04-08T18:40Z</time>
+<changes>
+<change type="updated">
+Added mirv_tas_mode, added by YaLTeR (thanks).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.4.13</version>
+<time>2017-01-07T15:47Z</time>
+<changes>
+<change type="updated">
+Removed PipeCom system and replaced it by simple command line parameters.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.4.12</version>
+<time>2016-08-08T13:37Z</time>
+<changes>
+<change type="fixed">
+Fixed HLAE not working on Windows XP.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.4.11</version>
+<time>2016-06-12T12:08Z</time>
+<changes>
+<change type="updated">
+Testing workaround for UCRT problems with SetDllDirectory (using SetCurrentDirectory instead).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.4.10.0</version>
+<time>2016-05-15T17:28Z</time>
+<changes>
+<change type="updated">
+Updated build environment to Visual Studio 2015, should still run on Windows XP (target is v140_xp).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.4.9.0</version>
+<time>2016-01-17T16:38Z</time>
+<changes>
+<change type="added">
+Added mirv_fx_viewmodel_lightmap, does the same like mirv_fx_lightmap but for the viewmodel (in-eye weapon model).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.4.8.1</version>
+<time>2015-09-20T16:47Z</time>
+<changes>
+<change type="fixed">
+Fixed TGA file output header, which could cause problems i.e. in FFmpeg.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.4.8.0</version>
+<time>2015-08-29T10:32Z</time>
+<changes>
+<change type="fixed">
+Fixed bug in conversion between quaternion and quake engine view angles that could cause wrong campath camera view angles
+epsecially when the camera was rolled.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.4.7.2</version>
+<time>2015-07-29T17:00Z</time>
+<changes>
+<change type="updated">
+Updated to register mirv_* commands earlier, so that you can already use them in the launch options / command line.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.4.7.1</version>
+<time>2015-07-26T18:10Z</time>
+<changes>
+<change type="fixed">
+Fixed crosshair fix when previewing (aka not recording) not using the correct host_frametime.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.4.7.0</version>
+<time>2015-06-15T19:14Z</time>
+<changes>
+<change type="added">
+Added mirv_gameoverlay command for lazy people (you know who you are) that allows to disable / enable the gameoverlay.
+This command is problably not useful in AfxHookGoldSrc, since the gameoverlay will not be recorded by HLAE anyway probably.
+Please note that this will not disable Steam notification sounds, but those are not recorded by HLAE anyway.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.4.6.2</version>
+<time>2015-05-08T20:10Z</time>
+<changes>
+<change type="updated">
+Turns out Visual Studio 2010 SP1 was not properly installed on the build computer, reinstalled it and updated or
+rebuild all files included in the HLAE download accordingly.
+Hopefully this fixes some problems on Windows 8 some users
+are experiencing i.e. with AfxHookSource (but maybe not).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.4.6.1</version>
+<time>2015-04-13T19:24Z</time>
+<changes>
+<change type="added">
+Added mirv_fov command for AfxHookGoldSrc, mirv_campath will use it, just as in AfxHookSource. For technical reasons mirv_cameport and mirv_camimport don't honour the fov setting.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.4.6.0</version>
+<time>2015-04-13T07:27Z</time>
+<changes>
+<change type="added">
+Added mirv_movie_sound_extra, if greater than 0 (and sound export is enabled) an sound_extra.wav will be created,
+which is mixing out the soundbuffer for the specified number of seconds after the recording has been stopped.
+</change>
+<change type="updated">
+Updated mirv_movie_playdemostop.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.4.5.2</version>
+<time>2015-04-12T16:48Z</time>
+<changes>
+<change type="fixed">
+Fixed timing precision being too low for longer recordings (i.e. 20 Minutes of game footage).
+</change>
+</changes>
+<comments>
+Thanks to YaLTeR for reporting these problems and testing.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.4.4.1</version>
+<time>2015-01-25T19:55Z</time>
+<changes>
+<change type="fixed">
+Fixed unitialized C++ class members leading to a crash when using mirv_campath edit functions.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.4.4.0</version>
+<time>2015-01-24T15:50Z</time>
+<changes>
+<change type="added">
+Added mirv_campath edit start and mirv_campath edit duration commands for easy campath timing editing.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.4.0.0</version>
+<time>2014-11-07T19:38Z</time>
+<changes>s
+<change type="added">
+Added mirv_campath for creating campaths easily. As the command says you currently should use it in combination with mirv_fx_xtendvis 1, so that player models will be drawn regardless of original camera position.
+If there is a bug, then please save the campath using mirv_campath save test.xml (will go to the folder of the game.exe file) and report with that file.
+</change>
+</changes>
+<comments>
+Thanks to James McEnnan for sharing qspline under the CC0 license and helping with problems!
+Greetings to all #hlae members, especially Dec and how-hiGh.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.19.1</version>
+<time>2014-10-19T16:04Z</time>
+<changes>
+<change type="fixed">
+Fixed mistake in mirv_voice_block crashing/closing demos when being used.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.19.0</version>
+<time>2014-09-22T15:55Z</time>
+<changes>
+<change type="added">
+Added mirv_draw_sv_hitboxes_ignore1 0|1 cvar (whether to ignore palyer 1 or not).
+</change>
+<change type="added">
+Added mirv_draw_sv_hitboxes_seticolor r g b command (takes 3 values from 0 to 255, sets the inactive/hold color).
+</change>
+<change type="added">
+Added mirv_draw_sv_hitboxes_setucolor r g b command (takes 3 values from 0 to 255, sets the refresh/update color).
+</change>
+<change type="updated">
+Renamed mirv_draw_sv_hitboxes to mirv_draw_sv_hitboxes_enable in order to avoid problems with auto console completion.
+</change>
+<change type="removed">
+Removed mirv_draw_sv_hitboxes_setcolor.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.18.3</version>
+<time>2014-09-21T16:39Z</time>
+<changes>
+<change type="added">
+Added mirv_draw_sv_hitboxes_width f cvar (takes a floating point number as line width).
+</change>
+<change type="added">
+Added mirv_draw_sv_hitboxes_setcolor r g b command (takes 3 values from 0 to 255).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.18.0</version>
+<time>2014-08-15T19:53Z</time>
+<changes>
+<change type="fixed">
+Fixed __mirv_sample_frame_strength (controls cross-frame motion blur) not working as expected.
+</change>
+</changes>
+<comments>
+Greetings and thanks to Dec.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.16.0</version>
+<time>2014-04-23T06:32Z</time>
+<changes>
+<change type="added">
+Added mirv_draw_sv_hitboxes. This will draw the serve-side hitboxes (for the listenserver / New Game), when the
+engine offers the server DLL (mp.dll for cstrike) them through the SV_StudioSetupBones blending interface function.
+In order for this to work you need at least another player looking at a player. Also you will notice the hitboxes
+to be flashing then, this is because the server doesn't call the function before every client.dll frame (only for a
+share of frames). Please make sure that VAC is disabled when creating a New Game / joining the listenserver (which
+is usually the case), otherwise you might get VAC banned.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.15.1</version>
+<time>2014-03-14T19:49Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_deathmsg not working correctly in TFC (thanks to Rojola for testing).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.15.0</version>
+<time>2014-03-13T10:21Z</time>
+<changes>
+<change type="added">
+Added mirv_disable_specmenu 0|1, for modifications tfc and valve. Normaly you would use mirv_movie_hidepanels instead,
+however adding this for Rojola, because CGshader won't work with mirv_movie_hidepanels 1.
+</change>
+<change type="added">
+Added mirv_deathmsg. This has the same functionality as mirv_cstrike_deathmsg had, however it also supports TFC now.
+Also it won't crash anymore in case the modification used is not supported.
+</change>
+<change type="updated">
+Updated mirv_cstrike_deathmsg: it is now only an alias to mirv_deathmsg.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.14.0</version>
+<time>2014-02-28T17:51Z</time>
+<changes>
+<change type="added">
+Added __mirv_force_players_solid, which can be 0 (default) or 1. Set to 1 if you have HLTV recordings on KZ maps
+with Kreetz plugins that force the players to be not solid. Setting to 1 allows them to be spectated normally
+(which would not work otherwise). Might allow to spectate dead players lol.
+</change>
+</changes>
+<comments>
+Greetings to [ru]Evgeny and HLAE crew (#hlae on QuakeNet.org).
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.13.3</version>
+<time>2014-02-08T12:21Z</time>
+<changes>
+<change type="fixed">
+Fixed __mirv_demozoom set being incorectly labelled in the command help.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.13.1</version>
+<time>2013-12-15T09:09Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_cstrike_deathmsg screwing up when suicides occour.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.13.0</version>
+<time>2013-12-02T20:47Z</time>
+<changes>
+<change type="fixed">
+Fixed flashlight not showing for mirv_movie_splitstreams / mirv_movie_separate_hud.
+</change>
+<change type="added">
+Added mirv_movie_playdemostop: If set (not 0) it stops any recording at the end of a demo played with playdemo.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.12.2</version>
+<time>2013-11-30T13:44Z</time>
+<changes>
+<change type="fixed">
+Fixed HLAE crashing with R_RenderView: NULL worldmodel when no level was loaded / level was changed when mirv_movie_separate_hud or mirv_movie_splitstreams was used.
+For now it will record blank streams during level change / when no level is loaded.
+If you don't like this behaviour, please don't use mirv_movie_splitstreams / mirv_movie_separate_hud.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.12.0</version>
+<time>2013-09-14T19:58Z</time>
+<changes>
+<change type="added">
+mirv_cstrike_deathmsg block now allows blocking frags except of one player (by putting a ! before the id), see HLAE online Manual for examples.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.11.1</version>
+<time>2013-09-13T19:15Z</time>
+<changes>
+<change type="fixed">
+Fixed bugs that could affect ability to use Memory DC Render Mode.
+Please be aware that Memory DC will usually fall back to the Microsoft GDI Generic (software) renderer and thus things will be very slow and some features like Half-Life's detail textures and HLAE's alpha matte won't work (since that renderer doesn't have the required extensions).
+</change>
+</changes>
+<comments>
+Thanks and greetings to how-hiGh for helping with testing.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.11.0</version>
+<time>2013-09-04T17:33Z</time>
+<changes>
+<change type="updated">
+Adjusted addresses and hooks to September 02 Steam Half-Life update.
+</change>
+<change type="updated">
+HLAE now always forces gl_ztrick_old 0 (controlled by __mirv_gl_force_noztrick) to avoid image flickering and depthdump problems.
+</change>
+</changes>
+<comments>
+Thanks to Dec for testing.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.10.0</version>
+<time>2013-08-30T08:10Z</time>
+<changes>
+<change type="removed">
+Removed inactive mirv_demoedit_fix tfc code, this feature is obsolete, since Valve recently added native CAMPATH support to Half-Life 1 (valve) and Team Fortress Classic (tfc).
+</change>
+<change type="removed">
+Removed mirv_disable_specmenu, since this is obsolete due to mirv_movie_hidepanels.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.8.2</version>
+<time>2013-06-29T09:37Z</time>
+<changes>
+<change type="fixed">
+Fixed crosshair sprite missing for mirv_movie_separate_hud and mirv_movie_hidepanels.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.8.1</version>
+<time>2013-06-26T05:17Z</time>
+<changes>
+<change type="fixed">
+Fixed mistake in mirv_cstrike_deathmsg offset affecting mirv_cstrike_deathmsg max.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.8.0</version>
+<time>2013-06-18T17:42Z</time>
+<changes>
+<change type="added">
+Added mirv_cstrike_deathmsg offset command, allows to set the screen offset of the deathmessages.
+Set to 40 if you want same height for HLTV-demos as in in-eye demos (useful with mirv_movie_hidepanels 1).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.6.2</version>
+<time>2013-06-04T19:58Z</time>
+<changes>
+<change type="updated">
+HLAE now adds -nofbo to the launch options to prevent FBO related problems in fullscreen.
+</change>
+<change type="fixed">
+Fixed mirv_decalfilter mask wildcard matching being incorrect for advanced cases.
+</change>
+<change type="removed">
+Removed JavaScript features (afx command).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.6.0</version>
+<time>2013-05-19T18:25Z</time>
+<changes>
+<change type="updated">
+Adjusted addresses and hooks to May 16 Steam Counter-Strike and Half-Life updates.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.4.3</version>
+<time>2013-04-30T17:00Z</time>
+<changes>
+<change type="fixed">
+Fixed images being distorted for resolution widths not dividable by 4.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.4.2</version>
+<time>2013-04-10T16:20Z</time>
+<changes>
+<change type="fixed">
+Fixed force 8 bit alpha channel not working.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.4.1</version>
+<time>2013-04-03T17:51Z</time>
+<changes>
+<change type="updated">
+Adjusted addresses and hooks to April 02 Steam Counter-Strike and Half-Life updates.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.3.0</version>
+<time>2013-03-17T13:30Z</time>
+<changes>
+<change type="added">
+Added mirv_movie_hidepanels (if set to 1 hides panels such as spectator menu from the capture).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.2.0</version>
+<time>2013-03-13T19:00Z</time>
+<changes>
+<change type="added">
+Readded decal filtering (mirv_decalfilter, mirv_noadverts).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.1.0</version>
+<time>2013-03-08T17:24Z</time>
+<changes>
+<change type="updated">
+Adjusted addresses and hooks to March 06 Steam Counter-Strike and Half-Life updates.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.0.3</version>
+<time>2013-03-02T12:27Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_fx_skyhd not working.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.0.2</version>
+<time>2013-03-01T21:23Z</time>
+<changes>
+<change type="fixed">
+Fixed image being cropped incorrectly when optimze vis was enabled.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.0.1</version>
+<time>2013-03-01T18:55Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_movie_separatehud.
+</change>
+<change type="fixed">
+Fixed mirv_cstrike_deathmsg.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.3.0.0</version>
+<time>2013-02-28T18:44Z</time>
+<changes>
+<change type="updated">
+Adjusted addresses and hooks to February 20 Steam Counter-Strike and Half-Life updates.
+</change>
+<change type="removed">
+Temporarily removed decal filtering (mirv_decalfilter, mirv_noadverts).
+</change>
+<change type="removed">
+Removed cstrike team color hook (mirv_playercolors).
+</change>
+<change type="removed">
+Removed res forcing code, HLAE will fully relay on Valve's new -forceres code.
+</change>
+<change type="removed">
+Currently the game won't dock inside the HLAE GUI anymore.
+</change>
+<change type="removed">
+Temporarily removed mirv_demoeditfix tfc and mirv_disable_specmenu for TFC, since TFC is not updated by Valve yet.
+</change>
+</changes>
+<comments>
+Please remember that the launch path changed to s.th. like
+C:\Programs\Steam\steamapps\common\Half-Life.
+We could not fully test HLAE, please report bugs in the forum.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.21.10</version>
+<time>2012-08-20T18:09Z</time>
+<changes>
+<change type="fixed">
+Fixed base interception failing on some systems (new import address table hooking code).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.21.0</version>
+<time>2011-07-12T13:37Z</time>
+<changes>
+<change type="fixed">
+Fixed sampling system sample interpolation weight formulae to prevent artifacts, increase image quality and allow proper blending of samples.
+</change>
+</changes>
+<comments>Greetings to Dec!</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.20.12</version>
+<time>2011-07-02T15:52Z</time>
+<changes>
+<change type="fixed">
+Fixed hudalpha stream interfering with past frames on some setups.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.20.6</version>
+<time>2010-12-24T02:58Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_movie_splitstreams 2 (again).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.20.0</version>
+<time>2010-10-02T11:00Z</time>
+<changes>
+<change type="fixed">
+Fixed bug that affected crosshair color upon low FPS captures.
+</change>
+<change type="updated">
+Enabled depth sampling.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.19.7</version>
+<time>2010-10-01T20:20Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_movie_splitstreams 2.
+</change>
+</changes>
+<comments>Greetz to Anthony.</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.19.6</version>
+<time>2010-09-29T13:23Z</time>
+<changes>
+<change type="updated">
+Internal changes.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.18.6</version>
+<time>2010-08-20T18:20Z</time>
+<changes>
+<change type="fixed">
+Fixed cstrike crosshair fix. Changed __mirv_cstrike_ch_fps standard value to 100.0.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.18.4</version>
+<time>2010-08-07T08:25Z</time>
+<changes>
+<change type="added">
+Added __mirv_moveto.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.18.3</version>
+<time>2010-08-01T19:50Z</time>
+<changes>
+<change type="updated">
+Counter-Strike 1.6 (cstrike) cross-hair fix is now auto-enabled (__mirv_cstrike_ch_fps 72.0).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.18.2</version>
+<time>2010-07-26T10:09Z</time>
+<changes>
+<change type="updated">
+Hardened mirv_fx_sky_hd (sky replacement feature).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.18.1</version>
+<time>2010-07-24T12:47Z</time>
+<changes>
+<change type="updated">
+Updated dem_forcehltv fix to work with all mods again.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE venture</name>
+<version>2.2.18.0</version>
+<time>2010-07-19T09:55Z</time>
+<changes>
+<change type="updated">
+Sampling system changes and optimizations.
+</change>
+<change type="added">
+Added mirv_sample_exposure.
+</change>
+</changes>
+<comments>Greetz to spunge.</comments>
+</release>
+
+
+<release>
+<name>HLAE venture</name>
+<version>2.2.17.5</version>
+<time>2010-07-09T12:34Z</time>
+<changes>
+<change type="updated">
+Aiming system changes.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE venture</name>
+<version>2.2.17.1</version>
+<time>2010-07-05T22:00Z</time>
+<changes>
+<change type="removed">
+Removed __mirv_sample_overlap, __mirv_sample_overlapfuture.
+</change>
+<change type="added">
+Added __mirv_sample_fac_leakage (in-ter sample signal loss), __mirv_sample_fac_frame (inter-frame blur / signal strength).
+</change>
+<change type="updated">
+Changed sampling model.
+</change>
+</changes>
+<comments>Please note the new model is yet unoptimized and a bit slower than the old one.</comments>
+</release>
+
+
+<release>
+<name>HLAE venture</name>
+<version>2.2.17.0</version>
+<time>2010-07-04T19:50Z</time>
+<changes>
+<change type="added">
+Sampling is now supported for all non-detph image streams.
+</change>
+<change type="updated">
+Set mirv_movie_splitstreams 4 if you don't want any of the main streams.
+</change>
+<change type="updated">
+Removed mirv_movie_simualte 2, please use mirv_movie_simulate 1 and mirv_movie_splitstreams 4 instead.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.16.5</version>
+<time>2010-07-04T10:10Z</time>
+<changes>
+<change type="updated">
+Alpha matte method now obeys mirv_matte_xray.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.15.1</version>
+<time>2010-06-15T20:39Z</time>
+<changes>
+<change type="added">
+Added mirv_matte_method, set this to 2 to re-create the alpha matte feature from the old HLAE beta (suggested by spunge).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.14.5</version>
+<time>2010-06-01T22:53Z</time>
+<changes>
+<change type="fixed">
+Fixed cam motion file import.
+</change>
+</changes>
+<comments>
+Thanks to cheetah.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.14.4</version>
+<time>2010-05-21T14:14Z</time>
+<changes>
+<change type="fixed">
+Fixed file names.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.14.3</version>
+<time>2010-05-20T20:40Z</time>
+<changes>
+</changes>
+</release>
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.14.2</version>
+<time>2010-05-20T17:47Z</time>
+<changes>
+<change type="updated">
+Switched to VC100.
+</change>
+<change type="updated">
+Improved handling of mirv_movie_filename (now tries to continue take count).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.14.1</version>
+<time>2010-05-02T09:10Z</time>
+<changes>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.14.0</version>
+<time>2010-05-01T15:40Z</time>
+<changes>
+<change type="fixed">
+Fixes in sampling system.
+</change>
+<change type="fixed">
+Other internal changes.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.13.7</version>
+<time>2010-04-22T13:18Z</time>
+<changes>
+<change type="fixed">
+Update dem_forcehltv 1 fix to fix in-eye weapon models not showing.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.13.6</version>
+<time>2010-04-12T18:58Z</time>
+<changes>
+<change type="fixed">
+Fixed force alpha 8 option.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.13.5</version>
+<time>2010-03-26T21:17Z</time>
+<changes>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.13.4</version>
+<time>2010-03-26T13:14Z</time>
+<changes>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.13.3</version>
+<time>2010-03-26T07:35Z</time>
+<changes>
+<change type="updated">
+Numerous internal changes, including sampling system speed-up and fixes (no new features).
+</change>
+<change type="removed">
+Removed __mirv_sample_colorh.
+Removed __mirv_sample_addoverlap
+</change>
+<change type="added">
+Added __mirv_sample_overlap, __mirv_sample_overlapfuture.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.12.2</version>
+<time>2010-01-22T19:13Z</time>
+<changes>
+<change type="updated">
+Updated dem_forcehltv fix.
+</change>
+<change type="updated">
+Changed default mirv_movie_stereo_yawdegrees to 0.0.
+</change>
+</changes>
+<comments>
+*sigh*
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.12.0</version>
+<time>2010-01-17T18:22Z</time>
+<changes>
+<change type="added">
+Added mirv_cstrike_deathmsg command which allows to block, fake and show more(!) frag / deathmsg rows in the hud.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.10.4</version>
+<time>2010-01-04T22:22Z</time>
+<changes>
+<change type="updated">
+Added new resforce support code to allow exceeding screen resolutions limits again.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.10.3</version>
+<time>2010-01-02T15:26Z</time>
+<changes>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.10.2</version>
+<time>2010-01-01T12:37Z</time>
+<changes>
+<change type="fixed">
+Minor tweaks.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.10.1</version>
+<time>2009-12-22T11:08Z</time>
+<changes>
+<change type="fixed">
+Changed HLAE sound capturing in order to cope with rare sound engine quirks during splitstreams, now also
+allowing the engine to push more sound updates during a frame. Improved sound playback during and after
+capturing.
+</change>
+<change type="updated">
+Minor tweak in camimport to reduce rounding error.
+</change>
+</changes>
+<comments>
+Many thanks to hyber1z0r for noticing, reporting and helping to squash the problem
+by extensive testing.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.9.2</version>
+<time>2009-12-12T18:15Z</time>
+<changes>
+<change type="fixed">
+Fixed HLAE hook failing i.e. on Windows Vista due to an invalid element in a
+side-by-side assembly manifest.
+</change>
+</changes>
+<comments>
+Very big thanks to qujon from www.style-productions.net for helping to nail
+down the problem!
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.9.1</version>
+<time>2009-12-11T12:50Z</time>
+<changes>
+<change type="updated">
+Changed mirv_movie_filename: now specifies a folder path.
+If all or parts of the path do not exist, HLAE will try to create the folder(s) for you.
+</change>
+<change type="updated">
+Renamed __mirv_listplayers to mirv_listplayers.
+</change>
+<change type="updated">
+Exposed undocumented feature as __mirv_demozoom (allows overriding weapon zooming in in-eye demos).
+</change>
+<change type="updated">
+Screen resolution forcing now uses (recently added?) native GoldSrc engine features instead of a custom hack.
+This may result in less supported full screen resolutions but allows more windowed resolutions
+and is more stable.
+</change>
+</changes>
+<comments>
+Greetz to: msthavoc, xorN.<br />
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.8.0</version>
+<time>2009-11-27T15:37Z</time>
+<changes>
+<change type="added">
+Added mirv_camexport_timeinfo.
+</change>
+<change type="added">
+Added afx command for script engine access and some test objects.
+</change>
+<change type="updated">
+Replaced old mdt_addresses.ini system with a start-up script filling the addr script object.
+</change>
+</changes>
+<comments>
+This is release is for testing HLAE in combination with the
+SpiderMonkey script engine.<br />
+The SpiderMonkey source code can be obtained from http://www.mozilla.org/js/spidermonkey/ .<br />
+<br />
+Based on HLAE Rouge 2.2.7.1 (2009-11-16T18:15Z) - 2.2.7.6 (2009-11-21T14:41Z).
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.7.0</version>
+<time>2009-10-21T19:48Z</time>
+<changes>
+<change type="added">
+Added mirv_cstrike_smoke command, allows blocking smoke and also creating smoke on demand.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.6.1</version>
+<time>2009-10-19T22:45Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_camexport_mode behaviour for multi-stream captures.
+</change>
+<change type="fixed">
+Fixed depthdump image row alignment for non-standard image widths.
+</change>
+<change type="added">
+Readded __mirv_depth_bpp (8, 16, 24).
+</change>
+<change type="added">
+Added __mirv_depth_slice_lo, __mirv_depth_slice_hi for retrieving only a slice of the depth (only useful when dumping with low precision, i.e. 8bit).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.6.0</version>
+<time>2009-10-17T18:25Z</time>
+<changes>
+<change type="updated">
+Updated mirv_movie_depthdump (0 off, 1 linear, 2 logarithmic, 3 inverse (OpenGL)).
+</change>
+<change type="added">
+Added __mirv_depth_info.
+</change>
+<change type="removed">
+Removed __mirv_depth_scale, mirv_depth_logarithmic, __mirv_depth_bpp, __mirv_depth_bias.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.5.17</version>
+<time>2009-10-11T21:49Z</time>
+<changes>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.5.16</version>
+<time>2009-10-06T13:37Z</time>
+<changes>
+<change type="updated">
+Improved detection of entities, etc. for the splitstreams features.
+</change>
+<change type="added">
+Added mirv_matte_enetityquads (i.e. blood sprites),
+mirv_matte_particles, mirv_matte_viewmodel (i.e. in-eye weapon),
+mirv_matte_worldmodels (i.e. doors and some boxes) to allow more fine grained control.<br />
+In general for those 0 means never draw, 1 prefer in world, 2 prefer in entity, 3 always draw.
+For more detailed behaviour look the commands up in the HLAE manual.
+</change>
+<change type="removed">
+Removed mirv_movie_swapweapon, replaced by mirv_matte_viewmodel.
+</change>
+<change type="removed">
+Removed mirv_movie_swapdoors, replaced by mirv_matte_worldmodels.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.5.15</version>
+<time>2009-09-25T11:11Z</time>
+<changes>
+</changes>
+<comments>
+Thanks to: Joakim, juGGaKNot, msthavoc
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.5.14</version>
+<time>2009-09-01T07:26Z</time>
+<changes>
+<change type="added">
+added mirv_camimport_* features from HLAE BETA branch
+</change>
+<change type="updated">
+replaced mirv_movie_export_cammotion with mirv_camexport_*
+</change>
+<change type="fixed">
+fixed sign of Xposition and Xrotation
+The HLAE camera motion import plugins need to be updated.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.5.12</version>
+<time>2009-07-17T06:22Z</time>
+<changes>
+<change type="fixed">
+fixed typo in an address which would affect mirv_voice_block
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.5.11</version>
+<time>2009-07-16T18:18Z</time>
+<changes>
+<change type="updated">
+adapted addresses to Steam update (15th of July 2009)
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.5.10</version>
+<time>2009-07-11T16:00Z</time>
+<changes>
+<change type="fixed">
+fixed further related quirks
+</change>
+</changes>
+<comments>
+Thanks to RobuLuS for helping with testing.
+</comments>
+</release>
+
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.5.9</version>
+<time>2009-07-11T07:40Z</time>
+<changes>
+<change type="fixed">
+addressed flaw(s) with memory access protection handling
+which could cause HLAE to crash
+</change>
+<change type="added">
+added __mirv_gl_previewclear (default 1) so wireframe can be previewed
+without having to use mirv_movie_simulate 1
+</change>
+</changes>
+<comments>
+Thanks to RADiANCE.atom0s (eXtalia.Wiccaan).
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.5.8</version>
+<time>2009-05-22T15:29Z</time>
+<changes>
+<change type="added">
+added mirv_zoom_digital_x, mirv_zoom_digital_y
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.5.7</version>
+<time>2009-05-20T07:50Z</time>
+<changes>
+<change type="updated">
+adapted mdt_addresses.ini to Steam / CS 1.6 Update (19th May 2009)
+</change>
+</changes>
+<comments>
+We did not have time for testing the new addresses, please report broken
+features that worked previously.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.5.6</version>
+<time>2009-04-23T20:25Z</time>
+<changes>
+<change type="fixed">
+squashed old bugs related to using a width not dividable by 4
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.5.5</version>
+<time>2009-04-23T14:21Z</time>
+<changes>
+<change type="fixed">
+fixed mistake in R_RenderView address
+</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.5.4</version>
+<time>2009-04-23</time>
+<changes>
+<change type="updated">
+adapted to Counter-Strike 1.6 update (22th April 2009)
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.5.3</version>
+<time>2009-04-22</time>
+<changes>
+<change type="updated">
+adapted to Steam Update (20th April 2009)
+</change>
+<change type="updated">
+changed some address label names in mdt_addresses.ini
+</change>
+</changes>
+<comments>
+Thanks to forum users that helped testing the unofficial nightly build:<br />
+neyloc, Zealot, endless, ...<br />
+<br />
+If you still happen to find features not working,
+please contact us in the Bug Reporting forums.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.5.1</version>
+<time>2009-04-13</time>
+<changes>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.5.0</version>
+<time>2009-04-13</time>
+<changes>
+<change type="updated">
+mirv_fx_skyhd: fixed 24rgb bitmap loading bug
+</change>
+<change type="updated">
+mirv_fx_skyhd:<br />
+  1 - load sky from files (HLAE Sky Manger + Terragen compatible)<br />
+  2 - for loading old HLAE skies<br />
+</change>
+</changes>
+<comments>
+Thx to msthavoc and juGGaKNot for testing.
+</comments>
+</release>
+
+  
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.3.6</version>
+<time>2009-02-13</time>
+<changes>
+<change type="updated">
+improved mirv_voice_block
+</change> 
+<change type="updated">
+changed IDE to VC++ 2008 Express Ed.
+</change>
+<change type="fixed">
+fixed private side by side CRT assembly version mismatch
+</change>
+</changes>
+</release>
+  
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.3.4</version>
+<time>2009-02-05</time>
+<changes>
+<change type="fixed">
+fixed and improved mirv_crosshair_fps (cstrike crosshair fix):<br />
+  - it should be accurate now<br />
+  - when enabled there should be no difference between hudalpha and hudcolor
+    streams<br />
+  For more information read the online manual / command reference.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.3.3</version>
+<time>2009-01-29</time>
+<changes>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.3.2</version>
+<time>2009-01-25</time>
+<changes>
+<change type="fixed">
+changed mirv_movie_separate_hud (should fix missing awp ch problem)
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.3.1</version>
+<time>2009-01-19</time>
+<changes>
+<change type="added">
+added mirv_movie_bmp,
+  if set to 1 mirv will export Windows V3 bitmaps (.bmp)
+  instead of tgas with best effort
+</change>
+<change type="updated">
+tweaked TGA header output (palette entry size as suggested by msthavoc)
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.2.0</version>
+<time>2009-01-04</time>
+<changes>
+<change type="added">
+added mirv_noadverts, replaces and fixes mirv_movie_noadverts.
+  In order for this to work the map must be loaded / you must be ingame.
+</change>
+<change type="added">
+added mirv_decalfilter
+</change>
+<change type="updated">
+internal tweaks
+</change>
+</changes>
+<comments>
+Greetings:
+  Anthony Perfetto (style-productions.net)
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.2.1.0</version>
+<time>2008-11-15</time>
+<changes>
+<change type="added">
+added cstrike crosshair fix:<br />
+  <br />
+  mirv_crosshair_fps n<br />
+    set n to the fps (sps in case you use the sampling system)
+    you will be recording your movie at.<br />
+    <br />
+    Related debug command: __mirv_crosshair_base_fps
+    (HLAE / Mirv will scale the crosshair cool-down from
+    __mirv_crosshair_base_fps to mirv_crosshair_fps)<br />
+	<br />
+	Well you wanted it, there you have it.
+</change>
+<change type="updated">
+various tweaks
+</change>
+<change type="fixed">
+restored mirv_playercolors_cs
+  (In case no one claims to use this command we'll most likely remove
+  it sooner or later, since updating it is a mess :)
+</change>
+</changes>
+<comments>
+Greetings:<br />
+  Mirvin_Monkey (where ever you may sneak around)<br />
+  FragMonkey, juGGaKNot, msthavoc<br />
+  S.o. related to 1999-2001 (I am not 100% sure who is who).
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.1.6.0</version>
+<time>2008-11-10</time>
+<changes>
+<change type="fixed">
+fixed potential flaw that could lead to matte color not being
+  reforced as glClearColor (thanks to user "yes.")
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.1.5.13</version>
+<time>2008-11-02</time>
+<changes>
+<change type="fixed">
+fixed wrong p_playermove_s address:
+  (affects aiming system and 1st person detection in fixforcehltv mode)
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.1.5.12</version>
+<time>2008-10-29</time>
+<changes>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.1.5.11</version>
+<time>2008-10-28</time>
+<changes>
+<change type="fixed">
+fixed mirv_fx_noblend address
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.1.5.10</version>
+<time>2008-10-27</time>
+<changes>
+<change type="updated">
+changed behavior upon game connecting to a server
+  (More safety for those that prefer working airbags in case sanity fails. :)
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.1.5.9</version>
+<time>2008-10-26</time>
+<changes>
+<change type="fixed">
+fixed miscalculated p_r_refdef value for in the mdt_addresses.ini
+  that could cause a crash upon recording
+</change>
+</changes>
+<comments>
+Updating is recommended!<br />
+Thanks to "spunge" for reporting the bug on the forums
+and helping us debugging it down! :)
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.1.5.8</version>
+<time>2008-10-25</time>
+<changes>
+<change type="updated">
+updated addresses (second 2008-10-24 Steam HL1 Engine update)
+</change>
+</changes>
+<comments>
+Greetings:<br />
+  Mirvin_Monkey, FragMonkey and 5.5.<br />
+<br />
+Thanks to:<br />
+  juGGaKNot (HLAE Team) and msthavoc (HLAE Team)
+  for helping with testing.<br />
+<br />
+Tip:<br />
+  You can also use FragMonkeys COL DemoPlayer to convert old demos:<br /> http://lacomplexity.thecgs.com/coL_16_Player_-_Update_Proof<br />
+  HLAE has such a feature too, but it is not 100% complete yet and
+  might not work in some cases.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.1.5.6</version>
+<time>2008-10-25</time>
+<changes>
+<change type="updated">
+updated hooking functions and addresses system
+  (2008-10-24 Steam HL1 Engine update)
+</change>
+</changes>
+<comments>
+Please note:
+  mirv_playercolors_cs might be temporarily inavailable
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.1.0.1</version>
+<time>2008-10-14</time>
+<changes>
+<change type="updated">
+simplified mirv_movie_depthdump behavior (moved old logic to
+  new deug command __mirv_depth_bpp)
+</change>
+<change type="added">  
+added __mirv_depth_bpp
+</change>
+<change type="added">
+added mirv_depth_streams, allows to mask out streams
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.1.0.0</version>
+<time>2008-09-28</time>
+<changes>
+<change type="fixed">
+fixed potential flaws related to the matte system,
+  thus upgrading is recommended
+</change>
+<change type="removed">
+removed mirv_movie_oldmatte
+</change>
+<change type="updated">
+Improved the wallhack / vision extension.
+  Users should notice complete visibility of players for HLTV demos
+  when using the wh effect i.e. (the way it was intended to be in the first
+  place :)
+</change>
+<change type="added">
+added mirv_fx_xtendvis, default 0
+  Can be used to extend the vision (i.e. useful for HLTV demos)
+  when mirv_wh_enable is 0, otherwise it will be overridden.
+</change>
+<change type="added">
+added mirv_matte_xray, default 0
+  If enabled elements otherwise masked (i.e. walls) will be completely hidden
+  from the entity stream
+  could be useful in combination with mirv_fx_xtendvis!
+</change>
+<change type="added">
+extended mirv_movie_swapweapon: 2 will force it to the entity stream
+</change>
+</changes>
+<comments>
+Check HLAE's Command Reference in the online manual for more information
+(see http://advancedfx.org/ ).
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.0.3.0</version>
+<time>2008-09-18</time>
+<changes>
+<change type="added">
+Added ability to block screen blends: mirv_fx_noblend 1
+  This will i.e. block Counter-Strike 1.6 flash grenades.
+</change>
+<change type="updated">
+appended historical changelogs to the changelog
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.0.2.3</version>
+<time>2008-08-17</time>
+<changes>
+<change type="removed">
+removed code that was probably never used in practical operation,
+  that would support reading from other buffers than GL_BACK
+</change>
+<change type="updated">  
+when splitstreams is 2 the world frame that still gets rendered for
+  technical reasons is not displayed anymore to avoid user confusion
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.0.2.2</version>
+<time>2008-08-10</time>
+<changes>
+<change type="added">  
+added mirv_disable_specmenu 0|1<br />
+  Supported modifications: ag, tfc, ns, valve(Half-Life).
+  The mods cstrike and dod are not supported since they don't use the old
+  specmenu and i.e. for cstrike the specmenu can be hidden by modifying a
+  .res file (see various game movie making sites for more info).
+</change>
+<change type="removed">
+removed mirv_tfc_specmenu command which is replaced by mirv_disable_specmenu
+</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.0.2.1</version>
+<time>2008-08-01</time>
+<changes>
+<change type="updated">  
+improved dem_forcehltv 1 fix behaviour: the player that recorded the
+  in-eye demo may also now be seen from other's in-eye as users would
+  expect from the fix
+</change>
+<change type="fixed">  
+fixed typo / bug that would waste rendering time and might enable depth
+  comparison in unwanted situations
+</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.0.2.0</version>
+<time>2008-07-25</time>
+<changes>
+<change type="added">  
+Added EXPERIMENTAL sampling system (main image stream only).
+  A short description is appended bellow, a more extended description
+  can be found in the HLAE Wiki (not finished yet) in Manual named
+  'Sampling System' soon.<br />
+<br />
+The sampling system only works when no additional image streams
+  are enabled. (At least for now)<br />
+<br />
+mirv_movie_fps<br />
+  determines the fps outputted (default 30)<br />
+
+mirv_sample_enable<br />
+  0: disabled (default)<br />
+  1: enable test sampling system<br />
+<br />
+mirv_sammple_sps<br />
+  Samples Per Second, this is the FPS the game
+  will be captured at (default 180)<br />
+<br />
+__mirv_sample_smethod<br />
+  Integral approximation method<br />
+  0: 1 point (rectangle)<br />
+  1: 2 point (trapezoid) (default)<br />
+<br />
+__mirv_sample_ffunc<br />
+  FrameFunction, rates the significance of a sample based on
+  when in relation to the middle of the frame it comes in.<br />
+  0: const / rectangle (default)<br />
+  1: gauss like (linearly interpolated table with 2*128 entries)<br />
+<br />
+__mirv_sample_colorh<br />
+  0: RedGreenBlue are handled independent (default)<br />
+  1: RGB are equally scaled by their average (not sure why I added this)<br />
+  2: RGB are equally scaled by their sRGB Luma value (not sure why I added this)<br />
+<br />
+__mirv_sample_addoverlap<br />
+  Additionally overlaps the frames.
+  Actually this makes sense for the gauss frame function only
+  in my opinion (you might want to add 1-2 additionally here for gauss),<br />
+</change>
+</changes>
+<comments>
+Thanks to Martin Vaissie for beta testing.
+There was no time for spell checking this changelog entry, sorry.<br />
+Greetz:
+  Martin Vaissie
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.0.1.8</version>
+<time>2008-07-15</time>
+<changes>
+<change type="removed">  
+removed __mirv_movie_fpscap - fps are not capped anymore by default, users
+  may now set as they want or till the program blows up or causes a division
+  by zero error :)
+</change>  
+<change type="updated">  
+matte system changes:
+  The matte system has undergone slight internal changes in oder to prepare
+  planned features and also to fix the annoyances / problems of the
+  previous implementations
+</change>  
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.0.1.7</version>
+<time>2008-05-05</time>
+<changes>
+<change type="added">  
+Added mirv_tfc_specmenu - allows to disable and enable spectator menu in Team Fortress Classic
+</change>  
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.0.1.6</version>
+<time>2008-05-03</time>
+<changes>
+<change type="added">  
+Added mirv_matte_entities to improve and thus replace mirv_movie_onlyentity,
+  enter mirv_matte_entities into console for more info.
+</change>
+<change type="removed">  
+Removed mirv_movie_onlyentity
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.0.1.5</version>
+<time>2008-04-29</time>
+<changes>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.0.1.4</version>
+<time>2008-04-27</time>
+<changes>
+<change type="fixed">  
+Fixed -hlaealpha8 not working
+</change>
+<change type="added">  
+Added __mirv_movie_fpscap<br />
+    1: default<br />
+    0: disables the 1000 fps cap on mirv_movie_fps for testing purposes
+</change>
+</changes>
+<comments>
+Greetz and thanks to:
+  MN|VadoskiN, juGGaKNot, you.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.0.1.3</version>
+<time>2008-04-21</time>
+<changes>
+<change type="updated">  
+Improved behaviour of 'Undock' capture mode.
+</change>
+<change type="fixed">  
+Fixed game behaviour when window is deactivated (i.e. due to windows key,
+  etc.).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.0.1.2</version>
+<time>2008-04-19</time>
+<changes>
+<change type="fixed">  
+Fixed:
+  Bug that affected performance when using FBO (still bad FPS after filming
+  was stopped in case switching FBOs is slow on the gfx card).
+</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.0.1.1</version>
+<time>2008-04-17</time>
+<changes>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.0.1.0</version>
+<time>2008-04-17</time>
+<changes>
+<change type="added">  
+Added:
+  Support for rendering to other targets than the default window buffer.
+  The most important one is EXT_framebuffer_object, which allows off-screen
+  rendering for cards that support it:
+  This fixes problems with missing contents in the capture (i.e. due parts of
+  the window not being visible), which especially happened to NVIDIA card
+  users.
+  The new target(s) can be selected from the HLAE File->Launch dialog.
+</change>
+<change type="added">  
+Added:
+  HLAE hooks the connect command, to warn the user in case the user selects to
+  join a server while HLAE is running (which is strongly not recommended).
+  HLAE may fetch some but not all attempts, so as always: better count on your
+  brain before you have to count on the airbag ;)
+</change>
+<change type="added">  
+Added:
+  -hlaealpha8 launchoption<br />
+  This is only relevant in case you capture the hud_alpha stream atm.
+  It's not required in case you already use EXT_framebuffer_object.
+  If you don't have problems with the hud_alpha stream, don't use this option.
+</change>
+<change type="updated">  
+Renamed:
+  mirv_placyercolors to mirv_placercolors_cs
+</change>
+<change type="removed">  
+Removed:
+  __mirv_movie_oldcapture, mirv_movie_customdump, mirv_menu
+</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.0.0.3</version>
+<time>2008-04-06</time>
+<changes>
+<change type="updated">  
+Adapted HLAE to the 2008-04-14 H-L engine update
+  (updated mdt_addresses.ini)
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.0.0.2</version>
+<time>2008-04-06</time>
+<changes>
+<change type="added">  
+Added: mirv_playercolors<br />
+  This allows to control the hudtext player colors per playerid.<br />
+  For each playerid the following colors can be controlled independently:
+    attacker's deathnotice color,
+    victim's deathnotice color,
+    head-up color (overview + playername head-up).<br />
+  For more information enter the command into console or see HLAE wiki.
+</change>
+</changes>
+<comments>
+This time we got some colors for L. 'spunge' M..
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.0.0.0</version>
+<time>2008-03-21</time>
+<changes>
+<change type="added">  
+Added: mirv_voice_block (for John 'VAFarmboy' D.)<br />
+         this command allows blocking the voice data of specific players
+</change>
+<change type="updated">  
+Changed: mirv_fixforcehltv defaults to 0 again, mirv will try to autodetect
+           the dem_forcehltv setting and set fixforcehltv accordingly
+</change>
+<change type="added">  
+Added: command hooks: dem_forcehltv, startmovie, endmovie
+</change>
+<change type="added">  
+Added: __mirv_listplayers, __mirv_debug_cmdaddress,
+         __mirv_debug_devicecontext
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.1.3.97</version>
+<time>2008-02-06</time>
+<changes>
+<change type="updated">  
+Changed: Exposed more of MDTs internas to the mdt_addresses.ini to make it
+           more community friendly and increase potential for customization
+</change>  
+</changes>
+</release>
+
+		   
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.1.3.95</version>
+<time>2008-02-06</time>
+<changes>
+<change type="fixed">  
+Fixed: fixed the fix
+</change>  
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.1.3.93</version>
+<time>2008-02-05</time>
+<changes>
+<change type="fixed">  
+Fixed: Problems / crashes with resolutions when the width was not dividable
+         by 4. MDT should handle those properly now, however the performance
+         of those may be a bit worse than those that are dividable by 4. (Bug
+         reported by s0nkite). Please be aware that several codecs and video
+         editing programs might not support these resolutions. 
+</change>  
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.1.3.46</version>
+<time>2008-02-01</time>
+<changes>
+<change type="added">
+Added: mirv_aim_offset right up forward<br />
+         Allows to set a offset relative to the entities origin and orientation.
+         Example: mirv_aim_offset 0 16.5 -20 would aim behind a players head
+</change>  
+<change type="added">
+Added: __mirv_aim_maxspeed, __mirv_aim_accel, __mirv_aim_deaccel<br />
+         Those allow to adjust the camera man aiming simulation parameters.
+         (Only used when mirv_aim_snapto is 0)
+</change>  
+</changes>
+</release>
+
+		 
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.1.3.1</version>
+<time>2008-01-31</time>
+<changes>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.1.3.0</version>
+<time>2008-01-26</time>
+<changes>
+<change type="added">
+Added: mirv_fx_skyhd 0|1<br />
+         0 - off<br />
+         1 - on:<br />
+         MDT will look in the folder where the HL.exe of your game is located
+         for the files mdtskyrt.bmp, mdtskybk.bmp, mdtskylf.bmp, mdtskyft.bmp,
+         mdtskyup.bmp, mdtskydn.bmp and use those to replace the skybox.
+         Those work basically the same like the original skies, except that they
+         are 24 bit TrueColor bitmaps, can have a higher resolution
+         (i.e. 512x512) and are turned upside-down.
+         This MDT version will include a example sky for testing and
+         understanding. For later versions refer to the HLAEwiki instead then.
+</change>  
+</changes>
+<comments>
+Greetz: C-M | s0nkite for going on my nerves and wanting a friggin
+          High Defintion skybox feature in MDT and creating the example sky.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.1.2.21</version>
+<time>2008-01-10</time>
+<changes>
+<change type="fixed">
+Fixed: crashbug after recording when using sound export with the latest
+         Steam update.
+</change>
+</changes>
+</release>
+
+		 
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.1.2.20</version>
+<time>2008-01-10</time>
+<changes>
+<change type="fixed">
+Fixed: adapted MDT to the latest Steam update.
+         If you happen to find features of MDT that are still broken, then
+         please report those to the forum:
+         http://www.madabouthats.org/code-mdt/index.php
+</change>
+<change type="fixed">
+Fixed: some minor changes in the handling of the mdt_addresses.ini
+</change>
+</changes>
+<comments>
+With kind regards
+the MDT team.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.1.2.0</version>
+<time>2008-01-10</time>
+<changes>
+<change type="added">
+Added: mirv_movie_noadverts 0|1<br />
+         You need to start recording before you can see a difference.
+         This allows to remove the InGame Advertisements (IGAs) in levels
+         during movie recording.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.1.1.96</version>
+<time>2008-01-05</time>
+<changes>
+<change type="fixed">
+Fixed: Flaw in new matte system that would cause problems with detail
+  textures.
+</change>
+</changes>
+<comments>
+Note, you might need to disable r_detailtextures in case you use the
+mirv_fx_lightmap feature.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.1.1.87</version>
+<time>2007-12-30</time>
+<changes>
+<change type="updated">
+Changed: The matte system to avoid some problems with players not masked in
+           the entity stream. In case the new method is causing problems you
+           can use the old method by setting __mirv_movie_oldmatte 1
+</change>
+<change type="updated">
+Changed: mirv_movie_simulate<br />
+   0 - anything is saved to disk<br />
+   1 - nothing is saved to disk(only simulate)<br />
+   2 - except the splitstreams (all / world / matte) anything
+	   additionally activated is still exported, useful if you only
+	   want to capture sound i.e. and don't want the images (although
+	   I wonder why you want sound without images)
+</change>
+<change type="added">
+Added: mirv_fx_lightmap (experimental)<br />
+         0 = off (default), 1 = show light maps, 2 = fullbright (no light maps)
+</change>
+<change type="updated">
+Changed: mirv_movie_only_entity now tries to mask other entities instead of
+    hiding them
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.1.1.0</version>
+<time>2007-12-24</time>
+<changes>
+<change type="added">
+mirv_fx_wh_enable 0|1<br />
+  Default: 0<br />
+  Enable / Disable built in wh system.<br />
+  <br />
+  The wall hack system WILL ONLY WORK PROPERLY WHEN MDT IS IN RECORDING MODE:
+  To preview the final result you can use mirv_movie_simulate 1 (please
+  reffer to the HLAEwiki entry for more info on that command).<br />
+  <br />
+  All transparency stuff is not applied to the entity stream, but all other
+  streams. So there will be problems with the world depthdump when the wh is
+  enabled, because the z-Buffer check on walls is disabled to make the wh work.
+</change>
+<change type="added">
+mirv:fx_wh_alpha 0.0 - 1.0<br />
+  Default: 0.5<br />
+  Controls the alpha blending value of the walls (higher value = less
+  transparency)
+</change>
+<change type="added">
+mirv_fx_wh_additive 0|1<br />
+  Default: 1<br />
+  If enabled this blends the walls additive. The non additive mode (0) might
+  look a bit wrong in some cases due to OpenGL limitations (polygons overlap
+  in wrong order) but still looks good I guess, so try both : )
+</change>
+<change type="added">
+mirv_fx_wh_noquads 0|1<br />
+  Default: 0<br />
+  If enabled it makes some things like sprites etc. completely invisible.
+</change>
+<change type="added">
+mirv_fx_wh_tint_enable 0|1<br />
+  Default: 0<br />
+  If enabled the walls etc. will be tinted in a specific color you
+  can supply with the mirv_fx_wh_tint_colorf command.
+</change>
+<change type="added">
+mirv_fx_wh_tint_colorf 0.0-1.0 0.0-1.0 0.0-1.0<br />
+  Default: 0.0 0.5 1.0<br />
+  Allows to set a specific color for tinting the walls.
+  The 3 values are floating point values between 0.0 and 1.0
+  The order is R G B.
+</change>
+<change type="added">
+mirv_fx_wh_xtendvis 0|1<br />
+  Default: 1<br />
+  When enabled, this forces Half-Life to ignore the visibility checks.
+  This means you can see all walls and this is especially helpful
+  for HLTV demos, because in those you can see the CTs at their spawn
+  from the T spawn on de_dust2 and so on xD
+  (The use for in-eye demos is limited, except that your player hacked the
+  server :P
+  So in case the wh shows too much walls, then set it to 0, so you will
+  have the default H-L vis check enabled again :)
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.1.0.29</version>
+<time>2007-12-08</time>
+<changes>
+<change type="fixed">
+Fixed: Various bugs that would affect stereo camera captures and
+         mirv_movie_cameraofs_cs.
+</change>
+<change type="fixed">
+Fixed: Bug that would cause MDT to ignore the pEngfuncs entry in the
+         addresses.ini config file on initialization.
+</change>
+<change type="updated">
+Changed: Default values for stereo cam mode, but you might want to use your
+           own anyways.
+</change>
+</changes>
+<comments>
+Thanks: msthavoc (mst-gaming.de) for testing.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.1.0.25</version>
+<time>2007-11-02</time>
+<changes>
+<change type="fixed">
+Fixed: Typo that would prevent the aiming system from ever being turned off.
+</change>
+<change type="fixed">
+Fixed: The aiming system assumed entities to be dead too early due to lack of
+         updates from the H-L network stream when it was paused (i.e. due to
+         dem_pause 1).
+         The aiming system now tries to detect, if the stream is paused.
+         However the detection is not perfect yet plus there might be still
+         problems when using very high fps when recording.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.1.0.0</version>
+<time>2007-10-25</time>
+<changes>
+<change type="added">
+Added: mirv_movie_export_sound 0|1<br />
+         If set to 1 the experimental sound recording system is enabled which
+         will record the sound to a .wav in 22.050 kHz 16 Bit stereo quality.
+         It is recommended to turn s_eax and s_a3d of (set both to 0.0),
+         because it wasn't designed for those, but you can try if you want :)
+         With mirv_sound_volume (default 0.5) you can control the
+         clamping of the sound before it is outputted (this is necessary to
+         avoid hitting the peeks). The default value should be ok.
+</change>
+</changes>
+<comments>
+Well there have been so many additions to MDT in the past, so that is why we
+are counting the minor version number 1up :)<br />
+<br />
+But even better there is some candy in it.<br />
+<br />
+Greetz: everyone that wants to be greeted + GabeN + MartinO :P<br />
+<br />
+Cheers!
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.0.60.251</version>
+<time>2007-10-20</time>
+<changes>
+<change type="added">
+Added: mirv_movie_simulate 0|1<br />
+	If set to 1 recording will not create any files (simulation mode), if
+	it runs too fast you can supply an additional delay in milli seconds
+	with mirv_movie_simulate_delay (1000 ms = 1 sec), be careful with
+	the delay ;)
+</change>
+</changes>
+<comments>
+Thanks: cRZYFST (style-productions.net)
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.0.60.249</version>
+<time>2007-10-18</time>
+<changes>
+<change type="updated">
+Changed: exporting motion data in stereo mode will create two files now since
+	several programs had problems with handling BVH files with two roots
+	(not to mention an typo that was present in stereo mode heh).
+</change>
+</changes>
+<comments>
+Thanks: msthavoc for testing.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.0.60.248</version>
+<time>2007-10-18</time>
+<changes>
+<change type="updated">
+Changed: internal changes to the address config system.
+</change>
+<change type="updated">
+Changed: removed dependency on msvcp71.dll
+</change>
+<change type="added">
+Added: mirv_movie_export_cammotion 0|1<br />
+	creates Biovision (BVH) compatible motion data that can be imported
+	i.e. in Blender and 3ds Max.
+	The file will contain one root / bone named MdtCam in normal mode or
+	two roots / bones named MdtCamLeft and MdtCamRight in stereo mode.
+	The bone origin (head) is the view origin and the bone's end site (tip)
+	points 1 Unit into the forward direction.
+	Valve defines 1 Unit in H-L 1 / CS 1.6 as 1 Inch.
+</change>
+</changes>
+</release>
+        
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.0.60.152</version>
+<time>2007-09-27</time>
+<changes>
+<change type="added">
+Added: mirv_movie_separate_hud 0|1|2<br />
+         Set to 1 if you want to have an separate hud stream (, there should be
+         no hud on any of the other streams then).
+         By default there is also an "hudalpha" stream which you should use
+         to blend an black layer bellow and draw the "hudcolor" stream additive
+         onto it (since not all HUD elements are additive).
+         You can turn the hudalpha stream off if you don't need it by using
+	     mirv_movie_separate_hud 2 instead.
+</change>
+<change type="updated">
+Changed: Naming of output files to:
+           Name_Take#_StreamType[_StereoType]_Frame#.tga
+</change>
+</changes>
+<comments>        
+I'd say one of the craziest versions ever : P
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.0.60.41</version>
+<time>2007-09-23</time>
+<changes>
+<change type="updated">
+Changed: New stream capturing system, now there will be no delay (was 1ms)
+           between the streams anymore.
+           If there are problems u can use the old one with
+           __mirv_movie_oldcapture 1 (is 0 by default).
+</change>
+<change type="added">
+Added: mirv_movie_stereomode, mirv_movie_stereo_centerdist and
+         mirv_movie_stereo_yawdegrees for faking stereo captures.
+         (True stereo captures would require adjustments of the projection.)
+         Set mirv_movie_stereomode 1 to enable stereo capturing.
+</change>
+</changes>
+<comments>
+The HUD problems (only the (left) worldstream has the HUD if it is enabled)
+are not solved yet and remain the same as in previous versions.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.0.60.9</version>
+<time>2007-09-21</time>
+<changes>
+<change type="added">
+Added: Ini system draft. Currently addresses can be changed manually.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.0.60.7</version>
+<time>2007-09-13</time>
+<changes>
+<change type="fixed">
+Fixed: Valve's Steam community release broke MDT.
+         We (MIRVIN_Monkey, ripieces, neomic) hope this update makes MDT
+         working for you again :)
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.0.60.0</version>
+<time>2007-09-11</time>
+<changes>
+<change type="added">
+Added: Capability to force resolutions, currently focused on windowed mode.
+	The loader has been extended to reflect and support those additions.
+	You will find a GUI for forcing specific resolutions when you switch
+	the MDT loader to extended mode.
+	Note: There are problems with forcing fullscreen (windowed mode is
+	recommended). Also the color depth seems to be limited to the desktop
+	depth or the last depth you selected in your game. And the Height has
+	to be 480 Pixels or greater. And the ingame isn't adjusted (You will
+	see what I mean when using an extreme Widht and a small Height).
+	However the bottom line is: You wanted to be able to force wide
+	screen resolutions (i.e. 800x500) and here it is (and it wasn't 
+	too easy :)
+</change>
+</changes>
+<comments>
+Thanks: msthavoc (Cyanide-Pictures.de) for testing<br />
+Greets: code-mdt forum Guys :)
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.0.59.0</version>
+<time>2007-09-03</time>
+<changes>
+<change type="updated">
+Changed: changed the capture point of images and the matte color clearing
+</change>
+<change type="updated">
+Changed: modified detection of game resolution
+</change>
+<change type="updated">
+Changed: MDT now automatically forces gl_ztrick 0 by default in order to make
+  sure depthdumps retrieve normalized depthdata
+</change>
+<change type="added">
+Added: __mirv_gl_force_noztrick, __mirv_gl_noclear for debugging (you should
+  leave them on the default values)
+</change>
+<change type="removed">
+Removed: __mirv_depth_fixempty
+</change>
+</changes>
+<comments>
+Thanks: really big thanks to msthavoc (Cyanide-Pictures.de) for helping with
+          testing and providing his system for tests :-)
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.0.58.309</version>
+<time>2007-08-28</time>
+<changes>
+<change type="fixed">
+Fixed: mirv_cameraofs_cs should now work in ineye demos too
+</change>
+</changes>
+<comments>
+Thanks: msthavoc (Cyanide-Pictures.de) for testing
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.0.58.268</version>
+<time>2007-08-26</time>
+<changes>
+<change type="added">
+Added: mirv_cameraofs_cs
+         Can be used in Counter-Strike 1.6 to move the final view in x y z,
+         I.e. mirv_cameraofs_cs 1.5 0 -10 would move the view 1.5 units to the
+         right and 10 units backwards.
+         This can be usefull if you want to do stereo captures, because in this
+         case you could record a scene twice and use a negative x value in the
+         first pass to move the camera slighlty left and a positive x value in
+         the second pass to move the camera slightly right.
+</change>
+</changes>
+<comments>
+Thanks: msthavoc (Cyanide-Pictures.de)
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.0.58.158</version>
+<time>2007-08-03</time>
+<changes>
+<change type="added">
+Added: __mirv_depth_fixempty (default 0)<br />
+	If you have one of those card's where you get an empty DepthDump
+	(because those have problems with GL_FLOAT) you can try
+	__mirv_depth_fixempty 1
+	GL (this will try to retrieve the depth with GL_UNSIGNED_INT instead
+	However if 0 works fine for you take 0, 1 is slower!
+</change>
+<change type="updated">
+Changed: tried to reduce impact of Half-Life Client timing problems on the
+	mirv_zoom_ stuff by preventing changes when deltatime gets negative
+	(meaning the zoom will not pop back anymore and will stay fully
+	zoomed when u are zoomed in, however on zooming stuttering can
+	still occur)
+</change>
+<change type="added">
+Added: mirv_crop_height (default -1)<br />
+	-1 means no (height) cropping will be applied
+	you can specify an outputheight you want the images to be cropped to.
+	(if you have a black line at the top of your images you can use this
+	to cut it off by suppling the correct value (you can leave
+	mirv_crop_yofs on -1 in this case)).
+</change>
+<change type="added">
+Added: mirv_crop_yofs (default -1)<br />
+	-1 will automatically center any cropping action (so you can easily
+	crop 4:3 down to 16:9 and stuff like that), other values crop value
+	lines of from the top
+</change>
+<change type="updated">
+Changed: mirv_matte_setcolor (renamed from the BE mirv_matte_setcolour) now
+           accepts values from 0 - 255 (r g b), like it was before MDT 1.0
+</change>
+<change type="added">
+Added: mirv_matte_setcolorf - this allows directly setting the color using
+         the usual GL float values (0.0 - 1.0)
+</change>
+<change type="added">
+Added: In order to improve the fix for avoiding empty dumps that occurred on
+         some grfx cards (ATI Radeon X800, ASUS ATI x1600xt, Geforce FX 5600,
+         ...) a system has been added to force GL to read from and draw to
+         specific buffers. This system is enabled by default now and set to
+         work on the GL_BACK buffer. You can control and even turn off this
+         system with the new __mirv_forcebuffers command (type it in console
+         and press enter for more infos)
+</change>
+<change type="removed">
+Removed: mirv_movie_fixemptydumps is now obsolete (due to the new system)
+</change>
+<change type="added">
+Added: __mirv_info:<br />
+         People should use this command and copy the info it prints to the
+         console when reporting bugs.
+</change>
+</changes>
+<comments>
+Hint: this seems to be a common problem with HLTV demos, althoug it's hardly
+	noticeable:
+	the client timing problems (which also happen when not using MDT) can
+	also cause player models to stutter etc. (we don't know if and when we
+	can fix it, since the origin of the problem is probably on Valve's end).
+	However you can reduce stuttering when setting cl_clockreset to a value
+	higher than the number of seconds the scene you want to record lasts.
+	(I.e. if you plan to record bellow 1 minute you can set it to 60,
+	however we have no idea what side effects this could cause, so may be
+	note the default value first before changing it (I think it's 0.1 or
+	so)).<br />
+<br />
+Thanks: For testing and reporting details about bugs:
+          msthavoc (Cyanide-Pictures.de), dios (hanshenschel.de)
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.0.58.87</version>
+<time>2007-07-10</time>
+<changes>
+<change type="added">
+Added: mirv_fixemptydumps:<br />
+	Several ATI card users reported problems with empty MDT output when
+	AntiAliasing is enabled (i.e. ATI Radeon X800 or  asus ati x1600xt
+	both Catalys 7.6). This hopefully fixes it, you can also try this
+	option if you have problems with other cards.
+	values: 0(Default), 1=enable fix (seems to work fine with AAx2 and
+	AAx4 however on a Radeon X800 there are problems with AAx6 (messed
+	up image)
+</change>
+<change type="added">
+Added: mirv_depth_logarithmic; Values:  0 = use linear scale (old method),
+         any other x = use a logrithmic scale where x specifies how fast the
+         distance grows, default     : 32
+</change>
+</changes>
+<comments>
+Thanks: Thanks to Slize (Creative-Movies.de) for testing and feedback and
+	especially entrioN (AirWalk-Media.com) for a massive amount of testing
+	related to the empty dumps problem, thx guys!
+</comments>
+</release>
+
+
+<h1>Historical changelogs bellow</h1>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>1.0.57.0</version>
+<time>2007-05-30</time>
+<changes>
+<change type="fixed">
+Fixed: MDT has had a pretty big rewrite and so a lot of bugs are now fixed. If
+       you've ever had problems with matte, splitstreams, zooming, or anything
+       else then give these another try.
+</change>
+<change type="added">
+Added: mirv_fixforcehltv 0|1 cvar.
+       This fixes the fact that if you watch one of your own demos with
+       dem_forcehltv 1 (which lets you watch it as if its a hltv demo) you
+       can't see your own player. Now you can, hurray.
+</change>
+<change type="added">
+Added: mirv_movie_wireframe 0|1|2|3 cvar.
+       mirv_movie_wireframelength n
+       Lets you draw the world (1), entities (2) or everything (3) in retro
+       wireframes.
+</change>
+<change type="updated">
+Changed: Depth dumping now dumps separate world and entity dumps if you are
+         using splitstreams.
+</change>
+<change type="updated">
+Changed: mirv_matte_setcolor r g b
+         Now takes values from 0 to 100.
+</change>
+<change type="updated">
+Changed: mirv_zoom_max n
+         This has now become: mirv_zoom_optical n and
+                              mirv_zoom_digital n
+         Both takes values 0 to 100.
+</change>
+<change type="updated">
+Changed: mirv_movie_customdumps
+         This is now ON by default.
+</change>
+<change type="updated">
+Changed: mirv_movie_clearscreen
+         This is now OFF by default
+</change>
+</changes>
+</release>
+
+         
+<release>
+<name>AfxHookGoldSrc</name>
+<version>0.44</version>
+<time>2007-05-24</time>
+<changes>
+<change type="added">
+Added: mirv_fixforcehltv - draws your player model when dem_forcehltv is enabled with
+       viewdemo. Now you can have hltv-style shots from your very own first person demos!
+</change>
+<change type="updated">
+Change: Various improvements under the hood
+</change>
+<change type="fixed">
+Fixed: Viewport getting out of sync
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>0.43</version>
+<time>2007-05-21</time>
+<changes>
+<change type="removed">
+Change: Removed the singleplayer-only cvar fix since it broke some demos.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>0.42</version>
+<time>2007-05-17</time>
+<changes>
+<change type="added">
+Added: Allowed singleplayer-only cvars to work while playing demos
+       (e.g. gl_wireframe, gl_drawentities, etc)
+</change>
+<change type="fixed">
+Fixed: Some buffer overflows
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>0.41</version>
+<time>2007-04-19</time>
+<changes>
+<change type="added">
+Added: mirv_disableautodirector - set this to 1 if autospectator keeps stealing control from you.
+       This was on by default in previous mirvs, now you'll need to set it explicitly.
+</change>
+<change type="added">
+Added: mirv_demoedit_fix tfc - use this command to fix the demoedit interface in TFC - thanks to ripieces
+       for his involvement with this
+</change>
+</changes>
+</release>
+
+         
+<release>
+<name>AfxHookGoldSrc</name>
+<version>0.37</version>
+<time>2007-03-14</time>
+<changes>
+<change type="updated">
+Updated offsets. Still not got round to storing them in external file.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>0.36</version>
+<time>2006-10-30</time>
+<changes>
+<change type="updated">
+Updated offsets. I should store them in an external file to save having to recompile each time, really.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>0.35</version>
+<time>2006-07-14</time>
+<changes>
+<change type="added">
+Added mirv_movie_fps for custom dump movies
+</change>
+<change type="added">
+Added mirv_movie_clearscreen to disable HUD removal
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>0.34</version>
+<time>2006-03-19</time>
+<changes>
+<change type="updated">
+Updated offsets, yarrrr
+</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>0.33</version>
+<time>2006-01-17</time>
+<changes>
+<change type="updated">
+Updated offsets
+</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>0.32</version>
+<time>2005-12-05</time>
+<changes>
+<change type="updated">
+Updated offsets
+</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>0.31</version>
+<time>2005-11-26</time>
+<changes>
+<change type="updated">
+Updated offsets
+</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>0.3</version>
+<time>2005-09-24</time>
+<changes>
+<change type="fixed">
+Fixed issue with aiming with multiple entities
+</change>
+<change type="fixed">
+Fixed issue with swapweapon breaking
+</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>0.26</version>
+<time>2005-09-24</time>
+<changes>
+<change type="updated">
+Updated offsets, updated SDK version
+</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>0.25</version>
+<time>2005-08-30</time>
+<changes>
+<change type="added">
+Added zooming (see instructions below)
+</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>0.21</version>
+<time>2005-08-17</time>
+<changes>
+<change type="updated">
+Updated offsets
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>0.2</version>
+<time>2005-06-11</time>
+<changes>
+<change type="updated">
+Updated offsets
+</change>
+</changes>
+</release>
+
+</changelog>
