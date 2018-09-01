@@ -597,7 +597,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer, bool 
 
 		}
 
-		// csgo_CUnknown_GetPlayerName: // Checked 2018-07-10.
+		// csgo_CUnknown_GetPlayerName: // Checked 2018-08-30.
 		{
 			DWORD addr = 0;
 			DWORD strAddr = 0;
@@ -608,7 +608,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer, bool 
 					sections.Next(); // skip .text
 					if (!sections.Eof())
 					{
-						MemRange result = FindCString(sections.GetMemRange(), "#SFUI_bot_controlled_by");
+						MemRange result = FindCString(sections.GetMemRange(), "#SFUI_coach_name_ct");
 						if (!result.IsEmpty())
 						{
 							strAddr = result.Start;
@@ -627,7 +627,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer, bool 
 				MemRange result = FindBytes(baseRange, (char const *)&strAddr, sizeof(strAddr));
 				if (!result.IsEmpty())
 				{
-					addr = result.Start - 0x396;
+					addr = result.Start - 0x183;
 
 					// check for pattern to see if it is the right address:
 					unsigned char pattern[3] = { 0x55, 0x8B, 0xEC };

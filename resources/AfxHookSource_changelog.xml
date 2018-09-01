@@ -6,6 +6,37 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.44.4</version>
+<time>2018-09-01T06:55Z</time>
+<changes>
+<change type="fixed">
+Fixed crash in mirv_streams, that could be observed i.e. when using the streams picker tool.<br />
+Thanks to https://www.reddit.com/r/advancedfx/comments/9by4pe/using_matent_picker_crashes_the_game/ for reporting it.
+</change>
+<change type="fixed">
+Added missing sv_cheats 1 in included afx/wh.cfg.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.44.3</version>
+<time>2018-08-30T05:57Z</time>
+<changes>
+<change type="fixed">
+Adjusted to CS:GO update 8/29/2018 1.36.5.1, fixes mirv_replace_name not working anymore.
+</change>
+</changes>
+<comments>
+We did not have time to test all combinations, if you find new HLAE breakage with the CS:GO update please inform us.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.44.2</version>
 <time>2018-08-24T16:45Z</time>
 <changes>

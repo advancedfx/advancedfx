@@ -2136,8 +2136,6 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd()
 {
 	// These need to happen before switching to new Queue of course:
 	SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue();
-	m_Ctx->Hook_set(0);
-	m_Ctx = 0;
 
 	if (queue)
 	{
@@ -2151,6 +2149,9 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd()
 
 		AfxD3D9PopOverrideState();
 	}
+
+	m_Ctx->Hook_set(0);
+	m_Ctx = 0;
 
 	if (!queue)
 	{
