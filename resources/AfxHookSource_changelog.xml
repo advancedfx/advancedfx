@@ -6,6 +6,22 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.44.4</version>
+<time>2018-09-01T06:55Z</time>
+<changes>
+<change type="fixed">
+Fixed crash in mirv_streams, that could be observed i.e. when using the streams picker tool.<br />
+Thanks to https://www.reddit.com/r/advancedfx/comments/9by4pe/using_matent_picker_crashes_the_game/ for reporting it.
+</change>
+<change type="fixed">
+Added missing sv_cheats 1 in included afx/wh.cfg.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.44.3</version>
 <time>2018-08-30T05:57Z</time>
 <changes>
