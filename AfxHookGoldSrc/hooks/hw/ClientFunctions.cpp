@@ -5,8 +5,6 @@
 #include "../../hl_addresses.h"
 #include <shared/detours.h>
 
-#include "../client/HookClient.h"
-
 void * * g_ClientFunctionTable = 0;
 
 void * GetClientFunction(ClientFunctionTableEntry entry)
@@ -20,9 +18,7 @@ void HookClientFunctions()
 	if(!firstRun) return;
 	firstRun = true;
 
-	g_ClientFunctionTable = (void * *)HL_ADDR_GET(ClientFunctionTable);
-
-	HookClient();
+	g_ClientFunctionTable = (void * *)AFXADDR_GET(engine_ClientFunctionTable);
 }
 
 void ReplaceClientFunction(ClientFunctionTableEntry entry, void * newFunction)

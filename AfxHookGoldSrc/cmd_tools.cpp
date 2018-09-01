@@ -9,29 +9,8 @@
 #include "cmd_tools.h"
 
 void *getCommandTreeBasePtr(void* pfnAddCommand)
-// WARNING: not x64 safe!
 {
-	char *addr = (char *)pfnAddCommand; // pfnAddCommand = poi(pEngfuncs +0x44)
-	DWORD tint;
-
-	// get addr of second function call in pfnAddCommnad:
-	addr += AFXADDR_GET(CmdTools_Ofs1);
-	tint = *(DWORD *)(addr+0x01); 
-	addr += tint + 0x05; // relative call (0xe8)
-
-	// in that function get address of the first and only function call:
-	// relative call (0xe8)
-	addr += AFXADDR_GET(CmdTools_Ofs2);
-	tint = *(DWORD *)(addr+0x01);
-	addr += tint + 0x05; // relative call (0xe8)
-
-	// now we are in a function that is similar to Cmd_AddCommand in Quake 1 cmd.c!
-	// and in that function we retrive the cmd_functions base pointer:
-	addr += AFXADDR_GET(CmdTools_Ofs3);
-	tint = *(DWORD *)(addr+0x02);
-	addr = (char *)tint; // mov esi,[absolute address] (0x8b35)
-
-	return addr;
+	return (void*)AFXADDR_GET(p_cmd_functions);
 }
 
 CHlaeCmdTools::CHlaeCmdTools()

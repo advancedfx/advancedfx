@@ -1,5 +1,8 @@
 #pragma once
 
+// TODO:
+// It says Host_Frame here, but it is actually _Host_Frame!
+
 // pointer on double host_frametime:
 // this is the real frame time and can be much lower than g_Host_Frame_time
 extern double * g_phost_frametime;
@@ -10,4 +13,4 @@ extern double * g_phost_frametime;
 
 extern bool g_Host_Frame_Called;
 
-void Hook_Host_Frame();
+bool Hook_Host_Frame();

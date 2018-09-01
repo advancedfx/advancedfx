@@ -1,3 +1,3 @@
 #pragma once
 
-void Hook_CL_Disconnect();
+bool Hook_CL_Disconnect();

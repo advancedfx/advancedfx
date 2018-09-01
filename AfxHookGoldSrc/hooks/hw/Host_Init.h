@@ -1,3 +1,3 @@
 #pragma once
 
-void Hook_Host_Init();
+bool Hook_Host_Init();

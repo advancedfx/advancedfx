@@ -12,6 +12,7 @@
 #include "user32Hooks.h"
 
 #include "DemoPlayer/DemoPlayer.h"
+#include "hw/ClientFunctions.h"
 #include "hw/CL_Disconnect.h"
 #include "hw/Host_Init.h"
 #include "hw/Host_Frame.h"
@@ -23,6 +24,7 @@
 #include "hw/R_PolyBlend.h"
 #include "hw/R_RenderView.h"
 #include "hw/UnkDrawHud.h"
+#include "client/HookClient.h"
 
 #include "svdll/Server_GetBlendingInterface.h"
 #include "svdll/GiveFnptrsToDll.h"
@@ -31,6 +33,9 @@
 #ifdef AFX_GUI
 #include "../gui/Gui.h"
 #endif // AFX_GUI
+
+#include <Windows.h>
+#include <shared/Detours/src/detours.h>
 
 struct cl_enginefuncs_s * pEngfuncs		= (struct cl_enginefuncs_s *)0;
 struct engine_studio_api_s * pEngStudio	= (struct engine_studio_api_s *)0;
@@ -194,16 +199,92 @@ HMODULE WINAPI NewHwLoadLibraryA( LPCSTR lpLibFileName )
 	return hRet;
 }
 
+typedef int(*Client_Initialize_t)(cl_enginefunc_t *pEnginefuncs, int iVersion);
+
+Client_Initialize_t True_Client_Initialize;
+
+int My_Client_Initialize(cl_enginefunc_t *pEnginefuncs, int iVersion)
+{
+	::pEngfuncs = pEnginefuncs;
+
+	return True_Client_Initialize(pEnginefuncs, iVersion);
+}
+
+typedef void (*Client_HUD_PlayerMoveInit_t)(struct playermove_s *ppmove);
+
+Client_HUD_PlayerMoveInit_t True_Client_HUD_PlayerMoveInit;
+
+void My_Client_HUD_PlayerMoveInit_t(struct playermove_s *ppmove)
+{
+	::ppmove = ppmove;
+
+	return True_Client_HUD_PlayerMoveInit(ppmove);
+}
+
+typedef int (*Client_HUD_GetStudioModelInterface_t)(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio);
+
+Client_HUD_GetStudioModelInterface_t True_Client_HUD_GetStudioModelInterface;
+
+int My_Client_HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
+{
+	::pEngStudio = pstudio;
+
+	return True_Client_HUD_GetStudioModelInterface(version, ppinterface, pstudio);
+}
+
+
+typedef void(*Engine_LoadClientLibrary)(const char * lpLibFilename);
+
+Engine_LoadClientLibrary True_Engine_LoadClientLibrary;
+
+void MyEngine_LoadClientLibrary(const char * lpLibFilename) {
+	True_Engine_LoadClientLibrary(lpLibFilename);
+
+	HookClientFunctions();
+
+	if (True_Client_Initialize = (Client_Initialize_t)GetClientFunction(CFTE_Initialize))
+		ReplaceClientFunction(CFTE_Initialize, My_Client_Initialize);
+
+	if (True_Client_HUD_PlayerMoveInit = (Client_HUD_PlayerMoveInit_t)GetClientFunction(CFTE_HUD_PlayerMoveInit))
+		ReplaceClientFunction(CFTE_HUD_PlayerMoveInit, My_Client_HUD_PlayerMoveInit_t);
+
+	if (True_Client_HUD_GetStudioModelInterface = (Client_HUD_GetStudioModelInterface_t)GetClientFunction(CFTE_HUD_GetStudioModelInterface))
+		ReplaceClientFunction(CFTE_HUD_GetStudioModelInterface, My_Client_HUD_GetStudioModelInterface);
+
+	//
+
+	HookClient();
+}
+
 void HookHw(HMODULE hHw)
 {
+	static bool firstRun = true;
+	static bool firstResult = true;
+	if (!firstRun) return;
+	firstRun = false;
+
 	bool bIcepOk = true;
 
 	Addresses_InitHwDll((AfxAddr)hHw);
 
-	// hw.dll:
-	pEngfuncs		= (cl_enginefuncs_s*)HL_ADDR_GET(p_cl_enginefuncs_s);
-	pEngStudio	= (engine_studio_api_s*)HL_ADDR_GET(p_engine_studio_api_s);
-	ppmove			= (playermove_s*)HL_ADDR_GET(p_playermove_s);
+	if (AFXADDR_GET(engine_LoadClientLibrary) && AFXADDR_GET(engine_ClientFunctionTable))
+	{
+		LONG error = NO_ERROR;
+
+		True_Engine_LoadClientLibrary = (Engine_LoadClientLibrary)AFXADDR_GET(engine_LoadClientLibrary);
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)True_Engine_LoadClientLibrary, MyEngine_LoadClientLibrary);
+		error = DetourTransactionCommit();
+
+		if (NO_ERROR != error)
+		{
+			firstResult = false;
+			ErrorBox("Interception failed:\nhw.dll:LoadClientLibrary");
+		}
+	}
+	else firstResult = false;
 
 	// Kernel32.dll:
 	if(!InterceptDllCall(hHw, "Kernel32.dll", "LoadLibraryA", (DWORD) &NewHwLoadLibraryA)) { bIcepOk = false; MessageBox(0,"Interception failed:\nhw.dll:Kernel32.dll!LoadLibraryA","MDT_ERROR",MB_OK|MB_ICONHAND); }

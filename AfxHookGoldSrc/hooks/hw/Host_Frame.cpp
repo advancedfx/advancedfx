@@ -4,7 +4,9 @@
 #include <hl_addresses.h>
 #include "../HookGameLoaded.h"
 
-#include <shared/detours.h>
+#include <Windows.h>
+#include <shared/Detours/src/detours.h>
+
 
 typedef void (*Host_Frame_t) (float time);
 
@@ -21,11 +23,27 @@ void New_Host_Frame (float time)
 	g_Old_HostFrame(time);
 }
 
-void Hook_Host_Frame()
+bool Hook_Host_Frame()
 {
-	if( !g_Old_HostFrame && 0 != HL_ADDR_GET(Host_Frame) )
+	static bool firstRun = true;
+	static bool firstResult = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	LONG error = NO_ERROR;
+
+	g_Old_HostFrame = (Host_Frame_t)AFXADDR_GET(Host_Frame);
+
+	DetourTransactionBegin();
+	DetourUpdateThread(GetCurrentThread());
+	DetourAttach(&(PVOID&)g_Old_HostFrame, New_Host_Frame);
+	error = DetourTransactionCommit();
+
+	if (NO_ERROR != error)
 	{
-		g_phost_frametime = (double *)HL_ADDR_GET(host_frametime);
-		g_Old_HostFrame = (Host_Frame_t) DetourApply((BYTE *)HL_ADDR_GET(Host_Frame), (BYTE *)New_Host_Frame, (int)HL_ADDR_GET(Host_Frame_DSZ));
+		firstResult = false;
+		ErrorBox("Interception failed:\nhw.dll:Host_Frame");
 	}
+
+	return firstResult;
 }

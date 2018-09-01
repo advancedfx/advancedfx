@@ -2,16 +2,17 @@
 
 #include "hl_addresses.h"
 
+#include <shared/binutils.h>
+
+using namespace Afx::BinUtils;
+
+AFXADDR_DEF(engine_LoadClientLibrary)
+AFXADDR_DEF(engine_ClientFunctionTable)
 AFXADDR_DEF(CL_Disconnect)
-AFXADDR_DEF(CL_Disconnect_DSZ)
 AFXADDR_DEF(CL_EmitEntities)
-AFXADDR_DEF(CL_EmitEntities_DSZ)
 AFXADDR_DEF(CL_ParseServerMessage_CmdRead)
 AFXADDR_DEF(CL_ParseServerMessage_CmdRead_DSZ)
-AFXADDR_DEF(ClientFunctionTable)
-AFXADDR_DEF(CmdTools_Ofs1)
-AFXADDR_DEF(CmdTools_Ofs2)
-AFXADDR_DEF(CmdTools_Ofs3)
+AFXADDR_DEF(p_cmd_functions)
 AFXADDR_DEF(DTOURSZ_GetSoundtime)
 AFXADDR_DEF(DTOURSZ_Mod_LeafPVS)
 AFXADDR_DEF(DTOURSZ_R_DrawEntitiesOnList)
@@ -23,10 +24,8 @@ AFXADDR_DEF(DTOURSZ_SND_PickChannel)
 AFXADDR_DEF(DTOURSZ_S_PaintChannels)
 AFXADDR_DEF(DTOURSZ_S_TransferPaintBuffer)
 AFXADDR_DEF(GetSoundtime)
-AFXADDR_DEF(Host_Frame)
-AFXADDR_DEF(Host_Frame_DSZ)
+AFXADDR_DEF(_Host_Frame)
 AFXADDR_DEF(Host_Init)
-AFXADDR_DEF(Host_Init_DSZ)
 AFXADDR_DEF(Mod_LeafPVS)
 AFXADDR_DEF(R_DrawEntitiesOnList)
 AFXADDR_DEF(R_DrawParticles)
@@ -67,9 +66,6 @@ AFXADDR_DEF(hwDll)
 AFXADDR_DEF(host_frametime)
 AFXADDR_DEF(msg_readcount)
 AFXADDR_DEF(net_message)
-AFXADDR_DEF(p_cl_enginefuncs_s)
-AFXADDR_DEF(p_engine_studio_api_s)
-AFXADDR_DEF(p_playermove_s)
 AFXADDR_DEF(paintbuffer)
 AFXADDR_DEF(paintedtime)
 AFXADDR_DEF(r_refdef)
@@ -95,62 +91,255 @@ AFXADDR_DEF(valve_TeamFortressViewport_UpdateSpecatorPanel_DSZ)
 // o[2] doc/notes_goldsrc/debug_cstrike_deathmessage.txt
 // n[3] doc/notes_goldsrc/debug_cstrike_smoke.txt
 // *[4] doc/notes_goldsrc/debug_tfc_UpdateSpectatorPanel.txt
-// *[5] doc/notes_goldsrc/debug_engine_ifaces.txt
+// [5] doc/notes_goldsrc/debug_engine_ifaces.txt
 // *[6] doc/notes_goldsrc/debug_sound.txt
 // *[7] doc/notes_goldsrc/debug_SCR_UpdateScreen.txt
-// *[8] doc/notes_goldsrc/debug_Host_Frame.txt
-// *[9] doc/notes_goldsrc/debug_ClientFunctionTable
+// [8] doc/notes_goldsrc/debug_Host_Frame.txt
+// [9] doc/notes_goldsrc/debug_ClientFunctionTable
 // *[10] doc/notes_goldsrc/debug_CL_ParseServerMessage.txt
 // *[11] doc/notes_goldsrc/debug_R_DrawWorld_and_sky.txt
 // n[12] doc/notes_goldsrc/debug_R_DecalShoot.txt
-// *[13] AfxHookGoldSrc/cmd_tools.cpp/getCommandTreeBasePtr
 // *[14] doc/notes_goldsrc/debug_tfc_deathmessage.txt
 // *[15] doc/notes_goldsrc/debug_sv_variables.txt
-// n[16] doc/notes_goldsrc/debug_CL_Disconnect.txt
+// [16] doc/notes_goldsrc/debug_CL_Disconnect.txt
 // n[17] doc/notes_goldsrc/debug_fov.txt
-// n[18] doc/notes_goldsrc/debug_Host_Init.txt
+// [18] doc/notes_goldsrc/debug_Host_Init.txt
 
 void Addresses_InitHlExe(AfxAddr hlExe)
 {
 	AFXADDR_SET(hlExe, hlExe);
 }
 
+void ErrorBox(char const * messageText)
+{
+	MessageBox(0, messageText, "AfxHookGoldSrc Error", MB_OK | MB_ICONERROR);
+}
+
+#define STRINGIZE(x) STRINGIZE2(x)
+#define STRINGIZE2(x) #x
+#define MkErrStr(file,line) "Problem in " file ":" STRINGIZE(line)
+
 void Addresses_InitHwDll(AfxAddr hwDll)
 {
 	AFXADDR_SET(hwDll, hwDll);
 
-	//
-	// Engine-to-client interfaces:
-	//
-	
-	AFXADDR_SET(p_cl_enginefuncs_s, hwDll + 0x134260); // *[5]
-	AFXADDR_SET(p_playermove_s, hwDll + 0x1006AE0); // *[5]
-	AFXADDR_SET(p_engine_studio_api_s, hwDll + 0x1502F0); // *[5]
-	
+	MemRange textRange = MemRange(0, 0);
+	MemRange data1Range = MemRange(0, 0);
+	MemRange data2Range = MemRange(0, 0);
+	{
+		ImageSectionsReader imageSectionsReader((HMODULE)hwDll);
+		if (!imageSectionsReader.Eof())
+		{
+			textRange = imageSectionsReader.GetMemRange();
+			imageSectionsReader.Next();
+
+			if (!imageSectionsReader.Eof())
+			{
+				data1Range = imageSectionsReader.GetMemRange();
+				imageSectionsReader.Next();
+
+				if (!imageSectionsReader.Eof())
+				{
+					data2Range = imageSectionsReader.GetMemRange();
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
+
+	// engine_LoadClientLibrary // [9] // Checked: 2018-09-01
+	// engine_ClientFunctionTable // [9] // Checked: 2018-09-01
+	{
+		MemRange tmp1 = FindCString(data2Range, "Initialize");
+		if (!tmp1.IsEmpty())
+		{
+			MemRange refTmp1 = FindBytes(textRange, (const char *)&tmp1.Start, sizeof(tmp1.Start));
+			if (!refTmp1.IsEmpty())
+			{
+				{
+					MemRange tmp2 = tmp1.And(MemRange(refTmp1.Start - 0x33, refTmp1.Start - 0x33 + 0x3));
+					if (!tmp2.IsEmpty())
+					{
+						if (!FindPatternString(tmp2, "55 8B EC").IsEmpty())
+						{
+							AFXADDR_SET(engine_LoadClientLibrary, tmp2.Start);
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+
+				{
+					MemRange tmp2 = tmp1.And(MemRange(refTmp1.Start + 0x11, refTmp1.Start + 0x11 + 0x7));
+					if (!tmp2.IsEmpty())
+					{
+						if (!FindPatternString(tmp2, "85 C0 A3 ?? ?? ?? ??").IsEmpty())
+						{
+							AFXADDR_SET(engine_ClientFunctionTable, *(DWORD *)(tmp2.Start + 0x3));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
+
 	//
 	// General engine hooks:
 	//
 
-	AFXADDR_SET(Host_Init, hwDll +0x568F0); // *[18]
-	AFXADDR_SET(Host_Init_DSZ, 0x09); // *[18]
-	
-	AFXADDR_SET(Host_Frame, hwDll +0x561E0); // *[8]
-	AFXADDR_SET(Host_Frame_DSZ, 0x05); // *[8]
+	// Host_Init [18] // Checked: 2018-09-01
+	{
+		MemRange tmp1 = FindCString(data2Range, "-console");
+		if (!tmp1.IsEmpty())
+		{
+			MemRange refTmp1 = FindBytes(textRange, (const char *)&tmp1.Start, sizeof(tmp1.Start));
+			if (!refTmp1.IsEmpty())
+			{
+				{
+					MemRange tmp2 = tmp1.And(MemRange(refTmp1.Start - 0x66, refTmp1.Start - 0x66 + 0x3));
+					if (!tmp2.IsEmpty())
+					{
+						if (!FindPatternString(tmp2, "55 8B EC").IsEmpty())
+						{
+							AFXADDR_SET(Host_Init, tmp2.Start);
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
 
-	AFXADDR_SET(host_frametime, hwDll +0xAB4028); // *[8]
-	
-	AFXADDR_SET(CL_EmitEntities, hwDll + 0x14A30); // *[8]
-	AFXADDR_SET(CL_EmitEntities_DSZ, 0x05); // *[8]
+	// _Host_Frame [8] // Checked: 2018-09-01
+	// host_frametime [8] // Checked: 2018-09-01
+	// CL_EmitEntities // [8] // Checked: 2018-09-01
+	{
+		MemRange tmp1 = FindCString(data2Range, "host_killtime");
+		if (!tmp1.IsEmpty())
+		{
+			MemRange refTmp1 = FindBytes(data2Range, (const char *)&tmp1.Start, sizeof(tmp1.Start));
+			if (!refTmp1.IsEmpty())
+			{
+				DWORD tmpAddr = data2Range.Start + 0x0C;
 
-	AFXADDR_SET(CL_Disconnect, hwDll + 0x17470); // *[16]
-	AFXADDR_SET(CL_Disconnect_DSZ, 0x06); // *[16]
+				MemRange refTmp2 = FindBytes(textRange, (const char *)&tmpAddr, sizeof(tmpAddr));
+				if (!refTmp2.IsEmpty())
+				{
+
+					MemRange tmp2 = tmp1.And(MemRange(tmp1.Start - 0x18D, tmp1.Start - 0x18D + 0x3));
+					if (!tmp2.IsEmpty())
+					{
+						if (!FindPatternString(tmp2, "55 8B EC").IsEmpty())
+						{
+							AFXADDR_SET(_Host_Frame, tmp2.Start);
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+/*
+.text:01D562B9     loc_1D562B9:                            ; CODE XREF: sub_1D56200+...
+.text:01D562B9 004                 mov     edx, dword ptr dbl_27B4068+4
+.text:01D562BF 004                 mov     eax, dword ptr dbl_27B4068
+.text:01D562C4 004                 push    edx
+.text:01D562C5 008                 push    eax
+.text:01D562C6 00C                 call    sub_1D0BE00 // ClientDLL_Frame(host_frametime);
+.text:01D562CB 00C                 add     esp, 8
+.text:01D562CE 004                 call    sub_1D20340
+.text:01D562D3 004                 call    sub_1D16E50
+.text:01D562D8 004                 call    sub_1D20350
+.text:01D562DD 004                 call    sub_1D56100
+.text:01D562E2 004                 call    sub_1D14A30 // CL_EmitEntities
+.text:01D562E7 004                 call    sub_1D17BD0
+.text:01D562EC
+.text:01D562EC     loc_1D562EC:                            ; CODE XREF: sub_1D56200+...
+*/
+
+					tmp2 = tmp1.And(MemRange(tmp1.Start - 0x0D4, tmp1.Start - 0x0D4 + 0x33));
+					if (!tmp2.IsEmpty())
+					{
+						if (!FindPatternString(tmp2, "8B 15 ?? ?? ?? ?? A1 ?? ?? ?? ?? 52 50 E8 ?? ?? ?? ?? 83 C4 08 E8 ?? ?? ?? ?? E8 ?? ?? ?? ??  E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? E8 ?? ?? ?? ??").IsEmpty())
+						{
+							AFXADDR_SET(host_frametime, *(DWORD *)(tmp2.Start +0x7));
+							AFXADDR_SET(CL_EmitEntities, *(DWORD *)(tmp2.Start + 0x33 -0x5 -0x4));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+				}
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
+
+	// CL_Disconnect // [16] // Checked: 2018-09-01
+	{
+		MemRange tmp1 = FindCString(data2Range, "cd stop\n");
+		if (!tmp1.IsEmpty())
+		{
+			MemRange refTmp1 = FindBytes(textRange, (const char *)&tmp1.Start, sizeof(tmp1.Start));
+			if (!refTmp1.IsEmpty())
+			{
+				MemRange tmp2 = tmp1.And(MemRange(tmp1.Start - 0x6, tmp1.Start - 0x6 + 0x5));
+				if (!tmp2.IsEmpty())
+				{
+					if (!FindPatternString(tmp2, "E8 ?? ?? ?? ??").IsEmpty())
+					{
+						AFXADDR_SET(CL_Disconnect, *(DWORD *)(tmp2.Start + 0x1));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
 	
-	AFXADDR_SET(ClientFunctionTable, hwDll +0x122F540); // *[9]
-	
-	AFXADDR_SET(CmdTools_Ofs1, 0x19); // *[13]
-	AFXADDR_SET(CmdTools_Ofs2, 0x0D); // *[13]
-	AFXADDR_SET(CmdTools_Ofs3, 0x29); // *[13]
-	
+	// p_cmd_functions // Checked: 2018-09-01
+	// We are actually at the inlined Cmd_Exists in Cmd_AddCommand (shortly before the string we search) in order to get the cmd_functions root:
+	{
+		MemRange tmp1 = FindCString(data2Range, "Cmd_AddCommand: %s already defined\n");
+		if (!tmp1.IsEmpty())
+		{
+			MemRange refTmp1 = FindBytes(textRange, (const char *)&tmp1.Start, sizeof(tmp1.Start));
+			if (!refTmp1.IsEmpty())
+			{
+				MemRange tmp2 = tmp1.And(MemRange(tmp1.Start - 0x42, tmp1.Start - 0x42 + 0x8));
+				if (!tmp2.IsEmpty())
+				{
+/*
+.text:01D279A6     loc_1D279A6:                            ; CODE XREF: sub_1D27960+...
+.text:01D279A6 020                 mov     esi, dword_1FE08A0
+.text:01D279AC 020                 test    esi, esi
+.text:01D279AE 020                 jz      short loc_1D279C7
+.text:01D279B0
+.text:01D279B0     loc_1D279B0:                            ; CODE XREF: sub_1D27960+...
+*/
+					if (!FindPatternString(tmp2, "8B 35 ?? ?? ?? ?? 85 F6").IsEmpty())
+					{
+						AFXADDR_SET(p_cmd_functions, *(DWORD *)(tmp2.Start + 0x2));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
+
 	//
 	// Rendering related:
 	//

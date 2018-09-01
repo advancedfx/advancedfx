@@ -22,6 +22,8 @@ Locate Host_Frame:
 
 This is inside a sub function, set a breakpoint and follow till ret.
 
+NOTE: We call it Host_Frame in this doc further on, but actually it is _Host_Frame!
+
 Then you are inside Host_Frame, follow till ret again and you will get the Host_Frame call address:
 
 01d561e0 is Host_Frame

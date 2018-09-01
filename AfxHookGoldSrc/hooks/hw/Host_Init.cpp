@@ -4,7 +4,8 @@
 #include <hl_addresses.h>
 #include "../HookGameLoaded.h"
 
-#include <shared/detours.h>
+#include <Windows.h>
+#include <shared/Detours/src/detours.h>
 
 struct quakeparms_t;
 
@@ -26,10 +27,27 @@ void New_Host_Init(quakeparms_t *parms)
 	}
 }
 
-void Hook_Host_Init()
+bool Hook_Host_Init()
 {
-	if( !g_Old_Host_Init && 0 != HL_ADDR_GET(Host_Init) )
+	static bool firstRun = true;
+	static bool firstResult = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	LONG error = NO_ERROR;
+
+	g_Old_Host_Init = (Host_Init_t)AFXADDR_GET(Host_Init);
+
+	DetourTransactionBegin();
+	DetourUpdateThread(GetCurrentThread());
+	DetourAttach(&(PVOID&)g_Old_Host_Init, New_Host_Init);
+	error = DetourTransactionCommit();
+
+	if (NO_ERROR != error)
 	{
-		g_Old_Host_Init = (Host_Init_t) DetourApply((BYTE *)HL_ADDR_GET(Host_Init), (BYTE *)New_Host_Init, (int)HL_ADDR_GET(Host_Init_DSZ));
+		firstResult = false;
+		ErrorBox("Interception failed:\nhw.dll:Host_Init");
 	}
+	
+	return firstResult;
 }
