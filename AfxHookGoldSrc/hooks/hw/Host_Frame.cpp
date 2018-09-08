@@ -32,7 +32,7 @@ bool Hook_Host_Frame()
 
 	LONG error = NO_ERROR;
 
-	g_Old_HostFrame = (Host_Frame_t)AFXADDR_GET(Host_Frame);
+	g_Old_HostFrame = (Host_Frame_t)AFXADDR_GET(_Host_Frame);
 
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());

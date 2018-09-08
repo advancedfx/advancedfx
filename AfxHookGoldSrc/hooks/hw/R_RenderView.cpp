@@ -2,11 +2,13 @@
 
 #include "R_RenderView.h"
 
-#include <shared/detours.h>
 #include <hl_addresses.h>
 
 #include "../HookHw.h"
 #include "../../filming.h"
+
+#include <Windows.h>
+#include <shared/Detours/src/detours.h>
 
 // hack hack hack (make it use correct definition):
 typedef float vec_t;
@@ -131,14 +133,35 @@ void Reset_R_RenderViewCalledFromEngine()
 	g_R_RenderViewCalledFromEngine = false;
 }
 
-void Hook_R_RenderView()
+bool Hook_R_RenderView()
 {
 	static bool firstRun = true;
-	if(!firstRun) return;
+	static bool firstResult = true;
+	if (!firstRun) return firstResult;
 	firstRun = false;
 
-	if(!HL_ADDR_GET(R_RenderView) || !HL_ADDR_GET(R_PushDlights)) return;
+	if (!(HL_ADDR_GET(R_RenderView) && HL_ADDR_GET(R_PushDlights))) {
+		firstResult = false;
+	}
+	else
+	{
+		g_R_PushDlights = (R_PushDlights_t)HL_ADDR_GET(R_PushDlights);
 
-	g_Old_R_RenderView = (R_RenderView_t)DetourApply((BYTE *)HL_ADDR_GET(R_RenderView), (BYTE *)New_R_RenderView, (int)HL_ADDR_GET(DTOURSZ_R_RenderView));
-	g_R_PushDlights = (R_PushDlights_t)HL_ADDR_GET(R_PushDlights);
+		LONG error = NO_ERROR;
+
+		g_Old_R_RenderView = (R_RenderView_t)AFXADDR_GET(R_RenderView);
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)g_Old_R_RenderView, New_R_RenderView);
+		error = DetourTransactionCommit();
+
+		if (NO_ERROR != error)
+		{
+			firstResult = false;
+			ErrorBox("Interception failed:\nHook_R_RenderView");
+		}
+	}
+
+	return firstResult;
 }

@@ -5,6 +5,8 @@
 #include <hl_addresses.h>
 #include <shared/detours.h>
 
+#include <Windows.h>
+#include <shared/Detours/src/detours.h>
 
 typedef void (*R_DrawSkyBoxEx_t) (void);
 R_DrawSkyBoxEx_t g_Old_R_DrawSkyBoxEx = 0;
@@ -47,10 +49,32 @@ void New_R_DrawSkyBoxEx (void)
 }
 
 
-void Hook_R_DrawSkyBoxEx()
+bool Hook_R_DrawSkyBoxEx()
 {
-	if( !g_Old_R_DrawSkyBoxEx && 0 != HL_ADDR_GET(R_DrawSkyBoxEx) )
+	static bool firstRun = true;
+	static bool firstResult = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	if ( HL_ADDR_GET(R_DrawSkyBoxEx) )
 	{
-		g_Old_R_DrawSkyBoxEx = (R_DrawSkyBoxEx_t) DetourApply((BYTE *)HL_ADDR_GET(R_DrawSkyBoxEx), (BYTE *)New_R_DrawSkyBoxEx, (int)HL_ADDR_GET(R_DrawSkyBoxEx_DSZ));
+		LONG error = NO_ERROR;
+
+		g_Old_R_DrawSkyBoxEx = (R_DrawSkyBoxEx_t)AFXADDR_GET(R_DrawSkyBoxEx);
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)g_Old_R_DrawSkyBoxEx, New_R_DrawSkyBoxEx);
+		error = DetourTransactionCommit();
+
+		if (NO_ERROR != error)
+		{
+			firstResult = false;
+			ErrorBox("Interception failed:\nHook_R_DrawSkyBoxEx");
+		}
 	}
+	else
+		firstResult = false;
+	
+	return firstResult;
 }

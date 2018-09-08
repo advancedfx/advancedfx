@@ -3,4 +3,4 @@
 
 extern bool g_Mod_LeafPvs_NoVis;
 
-void Hook_Mod_LeafPvs();
+bool Hook_Mod_LeafPvs();

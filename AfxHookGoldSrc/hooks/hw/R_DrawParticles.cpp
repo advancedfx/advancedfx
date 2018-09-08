@@ -4,7 +4,8 @@
 
 #include <hl_addresses.h>
 
-#include <shared/detours.h>
+#include <Windows.h>
+#include <shared/Detours/src/detours.h>
 
 bool g_In_R_DrawParticles = false;
 
@@ -18,10 +19,32 @@ void New_R_DrawParticles (void)
 	g_In_R_DrawParticles = false;
 }
 
-void Hook_R_DrawParticles()
+bool Hook_R_DrawParticles()
 {
-	if( !g_Old_R_DrawParticles && 0 != HL_ADDR_GET(R_DrawParticles) )
+	static bool firstRun = true;
+	static bool firstResult = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	if (HL_ADDR_GET(R_DrawParticles))
 	{
-		g_Old_R_DrawParticles = (R_DrawParticles_t) DetourApply((BYTE *)HL_ADDR_GET(R_DrawParticles), (BYTE *)New_R_DrawParticles, (int)HL_ADDR_GET(DTOURSZ_R_DrawParticles));
+		LONG error = NO_ERROR;
+
+		g_Old_R_DrawParticles = (R_DrawParticles_t)AFXADDR_GET(R_DrawParticles);
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)g_Old_R_DrawParticles, New_R_DrawParticles);
+		error = DetourTransactionCommit();
+
+		if (NO_ERROR != error)
+		{
+			firstResult = false;
+			ErrorBox("Interception failed:\nHook_R_DrawParticles");
+		}
 	}
+	else
+		firstResult = false;
+
+	return firstResult;
 }

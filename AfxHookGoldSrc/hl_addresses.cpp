@@ -14,12 +14,6 @@ AFXADDR_DEF(CL_ParseServerMessage_CmdRead)
 AFXADDR_DEF(CL_ParseServerMessage_CmdRead_DSZ)
 AFXADDR_DEF(p_cmd_functions)
 AFXADDR_DEF(DTOURSZ_GetSoundtime)
-AFXADDR_DEF(DTOURSZ_Mod_LeafPVS)
-AFXADDR_DEF(DTOURSZ_R_DrawEntitiesOnList)
-AFXADDR_DEF(DTOURSZ_R_DrawParticles)
-AFXADDR_DEF(DTOURSZ_R_DrawViewModel)
-AFXADDR_DEF(DTOURSZ_R_PolyBlend)
-AFXADDR_DEF(DTOURSZ_R_RenderView)
 AFXADDR_DEF(DTOURSZ_SND_PickChannel)
 AFXADDR_DEF(DTOURSZ_S_PaintChannels)
 AFXADDR_DEF(DTOURSZ_S_TransferPaintBuffer)
@@ -30,7 +24,6 @@ AFXADDR_DEF(Mod_LeafPVS)
 AFXADDR_DEF(R_DrawEntitiesOnList)
 AFXADDR_DEF(R_DrawParticles)
 AFXADDR_DEF(R_DrawSkyBoxEx)
-AFXADDR_DEF(R_DrawSkyBoxEx_DSZ)
 AFXADDR_DEF(R_DrawViewModel)
 AFXADDR_DEF(R_PolyBlend)
 AFXADDR_DEF(R_PushDlights)
@@ -93,11 +86,11 @@ AFXADDR_DEF(valve_TeamFortressViewport_UpdateSpecatorPanel_DSZ)
 // *[4] doc/notes_goldsrc/debug_tfc_UpdateSpectatorPanel.txt
 // [5] doc/notes_goldsrc/debug_engine_ifaces.txt
 // *[6] doc/notes_goldsrc/debug_sound.txt
-// *[7] doc/notes_goldsrc/debug_SCR_UpdateScreen.txt
+// [7] doc/notes_goldsrc/debug_SCR_UpdateScreen.txt
 // [8] doc/notes_goldsrc/debug_Host_Frame.txt
 // [9] doc/notes_goldsrc/debug_ClientFunctionTable
 // *[10] doc/notes_goldsrc/debug_CL_ParseServerMessage.txt
-// *[11] doc/notes_goldsrc/debug_R_DrawWorld_and_sky.txt
+// [11] doc/notes_goldsrc/debug_R_DrawWorld_and_sky.txt
 // n[12] doc/notes_goldsrc/debug_R_DecalShoot.txt
 // *[14] doc/notes_goldsrc/debug_tfc_deathmessage.txt
 // *[15] doc/notes_goldsrc/debug_sv_variables.txt
@@ -159,7 +152,7 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 			if (!refTmp1.IsEmpty())
 			{
 				{
-					MemRange tmp2 = tmp1.And(MemRange(refTmp1.Start - 0x33, refTmp1.Start - 0x33 + 0x3));
+					MemRange tmp2 = textRange.And(MemRange(refTmp1.Start - 0x33, refTmp1.Start - 0x33 + 0x3));
 					if (!tmp2.IsEmpty())
 					{
 						if (!FindPatternString(tmp2, "55 8B EC").IsEmpty())
@@ -172,7 +165,7 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 				}
 
 				{
-					MemRange tmp2 = tmp1.And(MemRange(refTmp1.Start + 0x11, refTmp1.Start + 0x11 + 0x7));
+					MemRange tmp2 = textRange.And(MemRange(refTmp1.Start + 0x11, refTmp1.Start + 0x11 + 0x7));
 					if (!tmp2.IsEmpty())
 					{
 						if (!FindPatternString(tmp2, "85 C0 A3 ?? ?? ?? ??").IsEmpty())
@@ -202,7 +195,7 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 			if (!refTmp1.IsEmpty())
 			{
 				{
-					MemRange tmp2 = tmp1.And(MemRange(refTmp1.Start - 0x66, refTmp1.Start - 0x66 + 0x3));
+					MemRange tmp2 = textRange.And(MemRange(refTmp1.Start - 0x66, refTmp1.Start - 0x66 + 0x3));
 					if (!tmp2.IsEmpty())
 					{
 						if (!FindPatternString(tmp2, "55 8B EC").IsEmpty())
@@ -235,7 +228,7 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 				if (!refTmp2.IsEmpty())
 				{
 
-					MemRange tmp2 = tmp1.And(MemRange(tmp1.Start - 0x18D, tmp1.Start - 0x18D + 0x3));
+					MemRange tmp2 = textRange.And(MemRange(refTmp2.Start - 0x18D, refTmp2.Start - 0x18D + 0x3));
 					if (!tmp2.IsEmpty())
 					{
 						if (!FindPatternString(tmp2, "55 8B EC").IsEmpty())
@@ -264,7 +257,7 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 .text:01D562EC     loc_1D562EC:                            ; CODE XREF: sub_1D56200+...
 */
 
-					tmp2 = tmp1.And(MemRange(tmp1.Start - 0x0D4, tmp1.Start - 0x0D4 + 0x33));
+					tmp2 = textRange.And(MemRange(refTmp2.Start - 0x0D4, refTmp2.Start - 0x0D4 + 0x33));
 					if (!tmp2.IsEmpty())
 					{
 						if (!FindPatternString(tmp2, "8B 15 ?? ?? ?? ?? A1 ?? ?? ?? ?? 52 50 E8 ?? ?? ?? ?? 83 C4 08 E8 ?? ?? ?? ?? E8 ?? ?? ?? ??  E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? E8 ?? ?? ?? ??").IsEmpty())
@@ -291,7 +284,7 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 			MemRange refTmp1 = FindBytes(textRange, (const char *)&tmp1.Start, sizeof(tmp1.Start));
 			if (!refTmp1.IsEmpty())
 			{
-				MemRange tmp2 = tmp1.And(MemRange(tmp1.Start - 0x6, tmp1.Start - 0x6 + 0x5));
+				MemRange tmp2 = textRange.And(MemRange(refTmp1.Start - 0x6, refTmp1.Start - 0x6 + 0x5));
 				if (!tmp2.IsEmpty())
 				{
 					if (!FindPatternString(tmp2, "E8 ?? ?? ?? ??").IsEmpty())
@@ -316,7 +309,7 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 			MemRange refTmp1 = FindBytes(textRange, (const char *)&tmp1.Start, sizeof(tmp1.Start));
 			if (!refTmp1.IsEmpty())
 			{
-				MemRange tmp2 = tmp1.And(MemRange(tmp1.Start - 0x42, tmp1.Start - 0x42 + 0x8));
+				MemRange tmp2 = textRange.And(MemRange(refTmp1.Start - 0x42, refTmp1.Start - 0x42 + 0x8));
 				if (!tmp2.IsEmpty())
 				{
 /*
@@ -344,40 +337,140 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 	// Rendering related:
 	//
 
-	AFXADDR_SET(UnkDrawHudInCall, hwDll +0x4F780); // *[7]
-	AFXADDR_SET(UnkDrawHudOutCall, hwDll +0x4F950); // *[7]
-	AFXADDR_SET(UnkDrawHudIn, hwDll +0xB52B4); // *[7]
-	AFXADDR_SET(UnkDrawHudInContinue, AFXADDR_GET(UnkDrawHudIn) + 0x5); // *[7]
-	AFXADDR_SET(UnkDrawHudOut, hwDll +0xB5339); // *[7]
-	AFXADDR_SET(UnkDrawHudOutContinue, AFXADDR_GET(UnkDrawHudOut) + 0x5); // *[7]
-		
-	AFXADDR_SET(R_PushDlights, hwDll + 0x42290); // *[7]
+	// UnkDrawHud* // [7] // Checked 2018-09-08
+	{
+		MemRange r1 = FindPatternString(textRange, "E8 ?? ?? ?? ?? A1 ?? ?? ?? ?? BF 05 00 00 00 3B C7 75 39 83 3D ?? ?? ?? ?? 02 75 30 A1 ?? ?? ?? ?? 88 5D FC 83 F8 01 75 04 C6 45 FC 01 53 E8 ?? ?? ?? ?? 8B 4D FC 81 E1 FF 00 00 00 51 E8 ?? ?? ?? ?? 6A 01 E8 ?? ?? ?? ?? 83 C4 0C 39 1D ?? ?? ?? ?? 75 16 83 3D ?? ?? ?? ?? 01 75 08 39 1D ?? ?? ?? ?? 74 05 E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? 39 3D ?? ?? ?? ?? 75 0E 83 3D ?? ?? ?? ?? 02 75 05 E8 ?? ?? ?? ?? E8 ?? ?? ?? ??");
 
-	AFXADDR_SET(R_RenderView, hwDll + 0x452E0); // *[7]
-	AFXADDR_SET(DTOURSZ_R_RenderView, 0x6); // *[7]
-	
-	AFXADDR_SET(R_DrawViewModel, hwDll +0x43990); // *[7]
-	AFXADDR_SET(DTOURSZ_R_DrawViewModel, 0x06); // *[7]
-	
-	AFXADDR_SET(R_PolyBlend, hwDll +0x43EF0); // *[7]
-	AFXADDR_SET(DTOURSZ_R_PolyBlend, 0x06); // *[7]
-	
-	AFXADDR_SET(r_refdef, hwDll + 0xEC61E0); // *[7]
-	
-	AFXADDR_SET(Mod_LeafPVS, hwDll + 0x28270); // *[7]
-	AFXADDR_SET(DTOURSZ_Mod_LeafPVS, 0x06); // *[7]
-	
-	AFXADDR_SET(R_DrawEntitiesOnList, hwDll + 0x43750); // *[7]
-	AFXADDR_SET(DTOURSZ_R_DrawEntitiesOnList, 0x06); // *[7]
-	
-	AFXADDR_SET(R_DrawParticles, hwDll + 0x7B1B0); // *[7]
-	AFXADDR_SET(DTOURSZ_R_DrawParticles, 0x06); // *[7]
-	
-	AFXADDR_SET(R_DrawSkyBoxEx, hwDll + 0x4F55E); // *[11]
-	AFXADDR_SET(R_DrawSkyBoxEx_DSZ,  0x06); // *[11]
-	
-	AFXADDR_SET(skytextures, hwDll + 0x63FF48); // *[11]
-	
+		if (!r1.IsEmpty())
+		{
+			AFXADDR_SET(UnkDrawHudInCall, *(DWORD *)(r1.Start + 1)); // [7]
+			AFXADDR_SET(UnkDrawHudOutCall, *(DWORD *)(r1.Start + 134)); // [7]
+
+			AFXADDR_SET(UnkDrawHudIn, r1.Start); // [7]
+			AFXADDR_SET(UnkDrawHudInContinue, AFXADDR_GET(UnkDrawHudIn) + 0x5); // [7]
+			AFXADDR_SET(UnkDrawHudOut, r1.Start + 133); // [7]
+			AFXADDR_SET(UnkDrawHudOutContinue, AFXADDR_GET(UnkDrawHudOut) + 0x5); // [7]
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
+
+	// R_PushDlights // [7] // Checked 2018-09-08
+	{
+		MemRange r1 = FindPatternString(textRange, "D9 05 ?? ?? ?? ?? D8 1D ?? ?? ?? ?? DF E0 F6 C4 44 7A 61 A1 ?? ?? ?? ?? 56 40 57 A3 ?? ?? ?? ?? 33 F6 BF ?? ?? ?? ??");
+
+		if (!r1.IsEmpty())
+		{
+			AFXADDR_SET(R_PushDlights, r1.Start); // [7]
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
+
+	// R_RenderView // [7] // Checked: 2018-09-08
+	// R_DrawViewModel // [7] // Checked: 2018-09-08
+	// R_PolyBlend // [7] // Checked: 2018-09-08
+	// R_DrawEntitiesOnList // [7] // Checked: 2018-09-08
+	// R_DrawParticles // [7] // Checked: 2018-09-08
+	// r_refdef // [7] // Checked: 2018-09-08
+	// Mod_LeafPVS // [7] // Checked: 2018-09-08
+	{
+		MemRange tmp1 = FindCString(data2Range, "R_RenderView: NULL worldmodel");
+		if (!tmp1.IsEmpty())
+		{
+			MemRange refTmp1 = FindBytes(textRange, (const char *)&tmp1.Start, sizeof(tmp1.Start));
+			if (!refTmp1.IsEmpty())
+			{
+				{
+					MemRange tmp2 = textRange.And(MemRange(refTmp1.Start - 0x30, refTmp1.Start - 0x30 + 0x3));
+					if (!tmp2.IsEmpty())
+					{
+						if (!FindPatternString(tmp2, "55 8B EC").IsEmpty())
+						{
+							AFXADDR_SET(R_RenderView, tmp2.Start);
+
+							// Search "inside" R_RenderView function:
+							MemRange tmp3 = FindPatternString(MemRange(AFXADDR_GET(R_RenderView), textRange.End), "E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? A1 ?? ?? ?? ?? 85 C0 75 0A E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? E8 ?? ?? ?? ??");
+
+							if (!tmp3.IsEmpty())
+							{
+								DWORD addr_R_RenderScene = *(DWORD *)(tmp3.Start + 6);
+								AFXADDR_SET(R_DrawViewModel, *(DWORD *)(tmp3.Start + 20));
+								AFXADDR_SET(R_PolyBlend, *(DWORD *)(tmp3.Start + 25));
+
+								// Look into R_RenderScene:
+								MemRange range_R_RenderScene = textRange.And(MemRange(addr_R_RenderScene, addr_R_RenderScene +0x0DD));
+								MemRange tmp4 = FindPatternString(range_R_RenderScene, "83 C4 04 E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? E8 ?? ?? ?? ??");
+								if (!tmp4.IsEmpty())
+								{
+									DWORD addr_R_SetupGL = *(DWORD *)(tmp4.Start + 14);
+									DWORD addr_R_MarkLeaves = *(DWORD *)(tmp4.Start + 19);
+
+									MemRange tmp5 = FindPatternString(MemRange(tmp4.End, range_R_RenderScene.End), "E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? A1 ?? ?? ?? ?? 85 C0 74 05");
+									if (!tmp5.IsEmpty())
+									{
+										//DWORD addr_R_DrawWorld = *(DWORD *)(tmp5.Start + 1);
+
+										AFXADDR_SET(R_DrawEntitiesOnList, *(DWORD *)(tmp5.Start + 11));
+
+										MemRange tmp6 = FindPatternString(MemRange(tmp5.End, range_R_RenderScene.End), "A1 ?? ?? ?? ?? 85 C0 75 0F E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? E9 ?? ?? ?? ??");
+										if (!tmp6.IsEmpty())
+										{
+											AFXADDR_SET(R_DrawParticles, *(DWORD *)(tmp6.Start + 11) + (DWORD)(tmp6.Start + 15)); // (Decod E9 JMP into R_DrawParticles sub).
+										}
+										else ErrorBox(MkErrStr(__FILE__, __LINE__));
+									}
+									else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+									// Look into R_SetupGL:
+									MemRange tmp7 = FindPatternString(textRange.And(MemRange(addr_R_SetupGL, addr_R_SetupGL + 0x3FB)), "8B 1D ?? ?? ?? ?? 8B 3D ?? ?? ?? ?? A1 ?? ?? ?? ?? 8B 15 ?? ?? ?? ??");
+									if (!tmp7.IsEmpty())
+									{
+										AFXADDR_SET(r_refdef, *(DWORD *)(tmp7.Start + 11));
+									}
+									else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+									// Look into R_MarkLeaves:
+									MemRange tmp8 = FindPatternString(textRange.And(MemRange(addr_R_MarkLeaves, addr_R_MarkLeaves +0x106)), "51 68 FF 00 00 00 52 E8 ?? ?? ?? ?? 83 C4 0C EB 0C 50 51 E8 ?? ?? ?? ??");
+									if (!tmp8.IsEmpty())
+									{
+										AFXADDR_SET(Mod_LeafPVS, *(DWORD *)(tmp8.Start + 20));
+									}
+									else ErrorBox(MkErrStr(__FILE__, __LINE__));
+								}
+								else ErrorBox(MkErrStr(__FILE__, __LINE__));
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
+
+	// R_DrawSkyBoxEx // [11] // Checked: 2018-09-08
+	// skytextures // [11] // Checked: 2018-09-08
+	{
+		MemRange r1 = FindPatternString(textRange, "55 8B EC 83 EC 1C A1 ?? ?? ?? ?? 53 56 BB 00 00 80 3F 57 C7 45 F8 00 00 00 00 85 C0");
+		if (!r1.IsEmpty())
+		{
+			AFXADDR_SET(R_DrawSkyBoxEx, r1.Start);
+
+			MemRange range_R_DrawSkyBoxEx = textRange.And(MemRange(AFXADDR_GET(R_DrawSkyBoxEx), AFXADDR_GET(R_DrawSkyBoxEx) + 0x1F0));
+			MemRange r2 = FindPatternString(range_R_DrawSkyBoxEx, "8B 04 B5 ?? ?? ?? ?? 8B 0C 85 ?? ?? ?? ?? 51 E8 ?? ?? ?? ?? 8B 55 FC 83 C4 04 52 53 57 FF 15 ?? ?? ?? ?? 6A 07");
+			if (!r2.IsEmpty())
+			{
+				AFXADDR_SET(skytextures, *(DWORD *)(r2.Start + 10));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
+
+	// TODO: EVERYTHING BELLOW.
+
 	AFXADDR_SET(UnkGetDecalTexture, hwDll + 0x2EB30); // *[12]
 	AFXADDR_SET(UnkGetDecalTexture_DSZ, 0x06); // *[12]
 

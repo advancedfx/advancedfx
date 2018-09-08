@@ -3,10 +3,11 @@
 #include "R_DrawEntitiesOnList.h"
 
 #include "../../hl_addresses.h"
-#include <shared/detours.h>
 
 #include "../../sv_hitboxes.h"
 
+#include <Windows.h>
+#include <shared/Detours/src/detours.h>
 
 bool g_In_R_DrawEntitiesOnList = false;
 
@@ -23,10 +24,32 @@ void New_R_DrawEntitiesOnList (void)
 }
 
 
-void Hook_R_DrawEntitiesOnList()
+bool Hook_R_DrawEntitiesOnList()
 {
-	if( !g_Old_R_DrawEntitiesOnList && 0 != HL_ADDR_GET(R_DrawEntitiesOnList) ) 
+	static bool firstRun = true;
+	static bool firstResult = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	if (HL_ADDR_GET(R_DrawEntitiesOnList))
 	{
-		g_Old_R_DrawEntitiesOnList = (R_DrawEntitiesOnList_t) DetourApply((BYTE *)HL_ADDR_GET(R_DrawEntitiesOnList), (BYTE *)New_R_DrawEntitiesOnList, (int)HL_ADDR_GET(DTOURSZ_R_DrawEntitiesOnList));
+		LONG error = NO_ERROR;
+
+		g_Old_R_DrawEntitiesOnList = (R_DrawEntitiesOnList_t)AFXADDR_GET(R_DrawEntitiesOnList);
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)g_Old_R_DrawEntitiesOnList, New_R_DrawEntitiesOnList);
+		error = DetourTransactionCommit();
+
+		if (NO_ERROR != error)
+		{
+			firstResult = false;
+			ErrorBox("Interception failed:\nHook_R_DrawEntitiesOnList");
+		}
 	}
+	else
+		firstResult = false;
+
+	return firstResult;
 }

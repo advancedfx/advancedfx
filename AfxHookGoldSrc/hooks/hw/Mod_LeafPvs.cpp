@@ -3,12 +3,12 @@
 
 #include "Mod_LeafPvs.h"
 
-#include <shared/detours.h>
-
 #include <hl_addresses.h>
 
 #include <hlsdk.h>
 
+#include <Windows.h>
+#include <shared/Detours/src/detours.h>
 
 //
 // Mod_LeafPVS WH related stuff:
@@ -46,10 +46,34 @@ byte * New_Mod_LeafPVS (mleaf_t *leaf, model_t *model)
 	return g_Old_Mod_LeafPVS( leaf, model);
 }
 
-void Hook_Mod_LeafPvs()
+bool Hook_Mod_LeafPvs()
 {
-	if (!g_Old_Mod_LeafPVS && (HL_ADDR_GET(Mod_LeafPVS)!=NULL))
-		g_Old_Mod_LeafPVS = (Mod_LeafPVS_t) DetourApply((BYTE *)HL_ADDR_GET(Mod_LeafPVS), (BYTE *)New_Mod_LeafPVS, (int)HL_ADDR_GET(DTOURSZ_Mod_LeafPVS));
+	static bool firstRun = true;
+	static bool firstResult = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	if (HL_ADDR_GET(Mod_LeafPVS) != NULL)
+	{
+		LONG error = NO_ERROR;
+
+		g_Old_Mod_LeafPVS = (Mod_LeafPVS_t)AFXADDR_GET(Mod_LeafPVS);
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)g_Old_Mod_LeafPVS, New_Mod_LeafPVS);
+		error = DetourTransactionCommit();
+
+		if (NO_ERROR != error)
+		{
+			firstResult = false;
+			ErrorBox("Interception failed:\nHook_Mod_LeafPvs");
+		}
+	}
+	else
+		firstResult = false;
+
+	return firstResult;
 }
 
 //
