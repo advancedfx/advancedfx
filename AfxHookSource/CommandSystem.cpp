@@ -71,6 +71,48 @@ void CommandSystem::AddTick(char const * command)
 	m_TickMap[tick] = cmds;
 }
 
+void CommandSystem::EditStart(double startTime)
+{
+	std::map<double, std::string> tmpMap;
+
+	tmpMap.swap(m_Map);
+
+	for (std::map<double, std::string>::iterator it = tmpMap.begin(); it != tmpMap.end(); ++it)
+	{
+		double time = it->first;
+
+		if (it == tmpMap.begin())
+		{
+			startTime = startTime - time;
+		}
+
+		time += startTime;
+
+		m_Map[time] = it->second;
+	}
+}
+
+void CommandSystem::EditStartTick(int startTick)
+{
+	std::map<int, std::string> tmpMap;
+
+	tmpMap.swap(m_TickMap);
+
+	for (std::map<int, std::string>::iterator it = tmpMap.begin(); it != tmpMap.end(); ++it)
+	{
+		int tick = it->first;
+
+		if (it == tmpMap.begin())
+		{
+			startTick = startTick - tick;
+		}
+
+		tick += startTick;
+
+		m_TickMap[tick] = it->second;
+	}
+}
+
 bool CommandSystem::Remove(int index)
 {
 	if (index < (int)m_TickMap.size())
