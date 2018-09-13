@@ -3,6 +3,23 @@
 
 <changelog>
 
+<release>
+<name>AfxHookSource</name>
+<version>1.44.5</version>
+<time>2018-09-13T09:17Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_pgl draw not working (due to wrong file being supplied as pixel shader).
+</change>
+<change type="added">
+Added mirv_cmd edit startTime, mirv_cmd edit startTick, mirv_cmd edit start.
+</change>
+</changes>
+<comments>
+Greetings to https://github.com/FlowingSPDG
+</comments>
+</release>
+
 
 <release>
 <name>AfxHookSource</name>

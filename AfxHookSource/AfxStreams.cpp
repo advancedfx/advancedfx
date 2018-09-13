@@ -7143,12 +7143,12 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 
 	cl->GetParent()->View_Render(rect);
 
-	IAfxMatRenderContextOrg * ctxp = GetCurrentContext()->GetOrg(); // We are on potentially a new context now!
+	//IAfxMatRenderContextOrg * ctxp = GetCurrentContext()->GetOrg(); // We are on potentially a new context now!
 
 #ifdef AFX_MIRV_PGL
 	if (MirvPgl::IsDrawingActive())
 	{
-		if (MirvPgl::IsDrawingActive()) MirvPgl::QueueDrawing(GetMirvPglCamData(rect), rect->width, rect->height);
+		MirvPgl::QueueDrawing(GetMirvPglCamData(rect), rect->width, rect->height);
 	}
 #endif
 

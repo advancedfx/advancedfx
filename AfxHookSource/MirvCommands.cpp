@@ -3591,12 +3591,39 @@ CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 
 			return;
 		}
+		else if (0 == _stricmp("edit", subcmd) && 3 <= argc)
+		{
+			const char * subcmd2 = args->ArgV(2);
+
+			if (0 == _stricmp("startTime", subcmd2))
+			{
+				g_CommandSystem.EditStart(4 <= argc ? atof(args->ArgV(3)) : std::nextafter(g_CommandSystem.GetLastTime(), g_CommandSystem.GetLastTime() + 1.0));
+
+				return;
+			}
+			else if (0 == _stricmp("startTick", subcmd2))
+			{
+				g_CommandSystem.EditStartTick(4 <= argc ? atoi(args->ArgV(3)) : g_CommandSystem.GetLastTick() + 1);
+
+				return;
+			}
+			else if (0 == _stricmp("start", subcmd2))
+			{
+				g_CommandSystem.EditStart(std::nextafter(g_CommandSystem.GetLastTime(), g_CommandSystem.GetLastTime() + 1.0));
+				g_CommandSystem.EditStartTick(g_CommandSystem.GetLastTick() + 1);
+
+				return;
+			}
+		}
 	}
 
 	Tier0_Msg(
 		"mirv_cmd enabled [...] - Control if command system is enabled (by default it is).\n"
 		"mirv_cmd addTick [commandPart1] [commandPart2] ... [commandPartN] - Adds/appends a commands at the current tick.\n"
 		"mirv_cmd add [commandPart1] [commandPart2] ... [commandPartN] - Adds/appends a command at the current time.\n"
+		"mirv_cmd edit start - Set current time+EPS and tick+1 as start time / tick.\n"
+		"mirv_cmd edit startTime [fTime] - Set start time, current+EPS if argument not given.\n"
+		"mirv_cmd edit startTick [iTick] - Set start tick, current+1 if argument not given.\n"
 		"mirv_cmd clear - Removes all commands.\n"
 		"mirv_cmd print - Prints commands / state.\n"
 		"mirv_cmd remove <index> - Removes a command by it's index.\n"

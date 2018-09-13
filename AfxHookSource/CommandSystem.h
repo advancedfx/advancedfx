@@ -13,6 +13,9 @@ public:
 	void Add(char const * command);
 	void AddTick(char const * command);
 
+	void EditStart(double startTime);
+	void EditStartTick(int startTick);
+
 	bool Remove(int index);
 
 	void Clear(void);
@@ -25,6 +28,14 @@ public:
 	void Do_Commands(void);
 
 	void OnLevelInitPreEntityAllTools(void);
+
+	double GetLastTime(void) {
+		return m_LastTime;
+	}
+
+	int GetLastTick(void) {
+		return m_LastTick;
+	}
 
 private:
 	std::map<int, std::string> m_TickMap;
