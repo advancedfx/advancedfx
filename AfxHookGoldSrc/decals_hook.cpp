@@ -5,8 +5,10 @@
 #include "cmdregister.h"
 #include "hl_addresses.h"
 
-#include <shared/detours.h>
 #include <shared/StringTools.h>
+
+#include <Windows.h>
+#include <shared/Detours/src/detours.h>
 
 #include <list>
 #include <string>
@@ -23,11 +25,9 @@ struct decal_filter_entry_s {
 struct g_decals_hook_s
 {
 	std::list<decal_filter_entry_s *> filters;
-	bool b_debugprint;
-	bool b_ListActive;
+	bool b_debugprint = false;
+	bool b_ListActive = false;
 } g_decals_hook;
-
-bool g_decals_hook_installed = false;
 
 bool IsFilterEntryMatched( decal_filter_entry_s *pentry, const char * sz_Target )
 {
@@ -52,8 +52,8 @@ REGISTER_DEBUGCMD_FUNC(test_filtermask)
 //
 // decal filtering hook:
 
-typedef texture_t * (* UnkGetDecalTexture_t)( int decaltexture );
-UnkGetDecalTexture_t detoured_UnkGetDecalTexture = NULL;
+typedef texture_t * (* Draw_DecalMaterial_t)( int decaltexture );
+Draw_DecalMaterial_t detoured_Draw_DecalMaterial = NULL;
 
 // DecalTexture hook:
 //   this function is called in a unknown sub function of R_DrawWorld that is
@@ -61,15 +61,15 @@ UnkGetDecalTexture_t detoured_UnkGetDecalTexture = NULL;
 //   decals of the map as it seems or s.th. and uses this one to get
 //   a decal's texture
 
-texture_t * touring_UnkGetDecalTexture( int decaltexture )
+texture_t * touring_Draw_DecalMaterial( int decaltexture )
 {
 	texture_t *tex;
-	tex = detoured_UnkGetDecalTexture( decaltexture );
+	tex = detoured_Draw_DecalMaterial( decaltexture );
 
 	if( tex )
 	{
 		const char * texname = tex->name;
-		if( g_decals_hook.b_debugprint ) pEngfuncs->Con_Printf("UnkGetDecalTexture( %u ) = 0x%08x, name = %s\n",decaltexture,(DWORD)tex,texname);
+		if( g_decals_hook.b_debugprint ) pEngfuncs->Con_Printf("Draw_DecalMaterial( %u ) = 0x%08x, name = %s\n",decaltexture,(DWORD)tex,texname);
 
 		if(  g_decals_hook.b_ListActive )
 		{
@@ -81,7 +81,7 @@ texture_t * touring_UnkGetDecalTexture( int decaltexture )
 				if( IsFilterEntryMatched( entry, texname) )
 				{
 					// matched, replace the texture( pointer) with the new one:
-					tex = detoured_UnkGetDecalTexture( entry->i_TargetDecalIndex );
+					tex = detoured_Draw_DecalMaterial( entry->i_TargetDecalIndex );
 					break; // first filter in the list always wins
 				}
 			}
@@ -89,24 +89,39 @@ texture_t * touring_UnkGetDecalTexture( int decaltexture )
 		}
 
 	}
-	else if( g_decals_hook.b_debugprint ) pEngfuncs->Con_Printf("UnkGetDecalTexture( %u ) = NULL\n",decaltexture);
+	else if( g_decals_hook.b_debugprint ) pEngfuncs->Con_Printf("Draw_DecalMaterial( %u ) = NULL\n",decaltexture);
 
 	return tex;
 }
 
-bool InstallHook_UnkGetDecalTexture()
+bool InstallHook_Draw_DecalMaterial()
 {
-	if (!detoured_UnkGetDecalTexture && (HL_ADDR_GET(UnkGetDecalTexture)!=NULL) && !g_decals_hook_installed)
+	static bool firstRun = true;
+	static bool firstResult = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	if (HL_ADDR_GET(Draw_DecalMaterial))
 	{
-		g_decals_hook_installed = true; // only excute this code once
+		LONG error = NO_ERROR;
 
-		g_decals_hook.b_debugprint = false;
-		g_decals_hook.b_ListActive = false;
+		detoured_Draw_DecalMaterial = (Draw_DecalMaterial_t)AFXADDR_GET(Draw_DecalMaterial);
 
-		detoured_UnkGetDecalTexture = (UnkGetDecalTexture_t) DetourApply((BYTE *)HL_ADDR_GET(UnkGetDecalTexture), (BYTE *)touring_UnkGetDecalTexture, (int)HL_ADDR_GET(UnkGetDecalTexture_DSZ));
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)detoured_Draw_DecalMaterial, touring_Draw_DecalMaterial);
+		error = DetourTransactionCommit();
+
+		if (NO_ERROR != error)
+		{
+			firstResult = false;
+			ErrorBox("Interception failed:\nHook_R_DrawEntitiesOnList");
+		}
 	}
+	else
+		firstResult = false;
 
-	return detoured_UnkGetDecalTexture != NULL;
+	return firstResult;
 }
 
 //
@@ -229,7 +244,7 @@ void DecalFilter_PrintHelp()
 
 REGISTER_CMD_FUNC(decalfilter)
 {
-	if(!InstallHook_UnkGetDecalTexture())
+	if(!InstallHook_Draw_DecalMaterial())
 	{
 		pEngfuncs->Con_Printf("Error: Failed to install hook.\n");
 		return;
@@ -282,7 +297,7 @@ REGISTER_DEBUGCVAR(noadverts_mask, "{^IGA_\\*", 0);
 
 REGISTER_CMD_FUNC(noadverts)
 {
-	if(!InstallHook_UnkGetDecalTexture())
+	if(!InstallHook_Draw_DecalMaterial())
 	{
 		pEngfuncs->Con_Printf("Error: Failed to install hook.\n");
 		return;

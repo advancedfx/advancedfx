@@ -37,8 +37,7 @@ AFXADDR_DEF(UnkDrawHudInContinue)
 AFXADDR_DEF(UnkDrawHudOut)
 AFXADDR_DEF(UnkDrawHudOutCall)
 AFXADDR_DEF(UnkDrawHudOutContinue)
-AFXADDR_DEF(UnkGetDecalTexture)
-AFXADDR_DEF(UnkGetDecalTexture_DSZ)
+AFXADDR_DEF(Draw_DecalMaterial)
 AFXADDR_DEF(clientDll)
 AFXADDR_DEF(cstrike_CHudDeathNotice_Draw)
 AFXADDR_DEF(cstrike_CHudDeathNotice_Draw_DSZ)
@@ -85,17 +84,17 @@ AFXADDR_DEF(valve_TeamFortressViewport_UpdateSpecatorPanel_DSZ)
 // n[3] doc/notes_goldsrc/debug_cstrike_smoke.txt
 // *[4] doc/notes_goldsrc/debug_tfc_UpdateSpectatorPanel.txt
 // [5] doc/notes_goldsrc/debug_engine_ifaces.txt
-// *[6] doc/notes_goldsrc/debug_sound.txt
+// [6] doc/notes_goldsrc/debug_sound.txt
 // [7] doc/notes_goldsrc/debug_SCR_UpdateScreen.txt
 // [8] doc/notes_goldsrc/debug_Host_Frame.txt
 // [9] doc/notes_goldsrc/debug_ClientFunctionTable
 // *[10] doc/notes_goldsrc/debug_CL_ParseServerMessage.txt
 // [11] doc/notes_goldsrc/debug_R_DrawWorld_and_sky.txt
-// n[12] doc/notes_goldsrc/debug_R_DecalShoot.txt
+// [12] doc/notes_goldsrc/debug_R_DecalShoot.txt
 // *[14] doc/notes_goldsrc/debug_tfc_deathmessage.txt
 // *[15] doc/notes_goldsrc/debug_sv_variables.txt
 // [16] doc/notes_goldsrc/debug_CL_Disconnect.txt
-// n[17] doc/notes_goldsrc/debug_fov.txt
+// [17] doc/notes_goldsrc/debug_fov.txt
 // [18] doc/notes_goldsrc/debug_Host_Init.txt
 
 void Addresses_InitHlExe(AfxAddr hlExe)
@@ -469,12 +468,40 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
 
-	// TODO: EVERYTHING BELLOW.
+	// Draw_DecalMaterial // [12] // Checked 2018-09-19
+	{
+		MemRange tmp1 = FindCString(data2Range, "No model %d!\n"); // Find String inside pEngfuncs->pEfxAPI->R_DecalShoot
+		if (!tmp1.IsEmpty())
+		{
+			MemRange refTmp1 = FindBytes(textRange, (const char *)&tmp1.Start, sizeof(tmp1.Start));
+			if (!refTmp1.IsEmpty())
+			{
+				MemRange r2 = FindPatternString(textRange.And(MemRange(refTmp1.Start - 0x16, refTmp1.Start - 0x16 + 0x0D)), "55 8B EC 56 8B 75 0C 56 E8 ?? ?? ?? ??");
+				if (!r2.IsEmpty())
+				{
+					AFXADDR_SET(Draw_DecalMaterial, *(DWORD *)(r2.Start + 0x0A) + (DWORD)(r2.Start + 0x0D)); // Decode call address.
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
 
-	AFXADDR_SET(UnkGetDecalTexture, hwDll + 0x2EB30); // *[12]
-	AFXADDR_SET(UnkGetDecalTexture_DSZ, 0x06); // *[12]
+	// g_fov // [17] // Checked 2018-09-19
+	{
+		MemRange r1 = FindPatternString(textRange, "51 FF D0 83 C4 08 85 C0 74 23 8B 55 E8 8B 45 EC 8B 4D F0 89 15 ?? ?? ?? ?? 8B 55 F8 A3 ?? ?? ?? ?? 89 0D ?? ?? ?? ?? 89 15 ?? ?? ?? ??");
 
-	AFXADDR_SET(g_fov , hwDll +0x144A8C); // *[17]
+		if (!r1.IsEmpty())
+		{
+			AFXADDR_SET(g_fov, *(DWORD *)(r1.Start + 41));
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
+
+	// TODO: all bellow:
+
+
 	
 	//
 	// Sound system related:

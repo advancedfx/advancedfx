@@ -18,4 +18,4 @@ pEngfuncs->pEfxAPI->R_DecalShoot
 ...
 
 
-0754e8e0 is UnkGetDecalTexture, which is also called during DecalDrawing
+0754e8e0 is Draw_DecalMaterial, which is also called during DecalDrawing
