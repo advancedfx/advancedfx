@@ -13,10 +13,6 @@ AFXADDR_DEF(CL_EmitEntities)
 AFXADDR_DEF(CL_ParseServerMessage_CmdRead)
 AFXADDR_DEF(CL_ParseServerMessage_CmdRead_DSZ)
 AFXADDR_DEF(p_cmd_functions)
-AFXADDR_DEF(DTOURSZ_GetSoundtime)
-AFXADDR_DEF(DTOURSZ_SND_PickChannel)
-AFXADDR_DEF(DTOURSZ_S_PaintChannels)
-AFXADDR_DEF(DTOURSZ_S_TransferPaintBuffer)
 AFXADDR_DEF(GetSoundtime)
 AFXADDR_DEF(_Host_Frame)
 AFXADDR_DEF(Host_Init)
@@ -88,7 +84,7 @@ AFXADDR_DEF(valve_TeamFortressViewport_UpdateSpecatorPanel_DSZ)
 // [7] doc/notes_goldsrc/debug_SCR_UpdateScreen.txt
 // [8] doc/notes_goldsrc/debug_Host_Frame.txt
 // [9] doc/notes_goldsrc/debug_ClientFunctionTable
-// *[10] doc/notes_goldsrc/debug_CL_ParseServerMessage.txt
+// [10] doc/notes_goldsrc/debug_CL_ParseServerMessage.txt
 // [11] doc/notes_goldsrc/debug_R_DrawWorld_and_sky.txt
 // [12] doc/notes_goldsrc/debug_R_DecalShoot.txt
 // *[14] doc/notes_goldsrc/debug_tfc_deathmessage.txt
@@ -506,33 +502,147 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 	//
 	// Sound system related:
 	//
+
+	// GetSoundtime // [6] // Checked 2018-09-22
+	// S_PaintChannels // [6] // Checked 2018-09-22
+	// paintedtime // [6] // Checked 2018-09-22
+	// shm // [6] // Checked 2018-09-22
+	// soundtime // [6] // Checked 2018-09-22
+	// paintbuffer // [6] // Checked 2018-09-22
+	// S_TransferPaintBuffer // [6] // Checked 2018-09-22
+	{
+		MemRange s1 = FindCString(data2Range, "Couldn't get sound buffer status\n");
+
+		if (!s1.IsEmpty()) {
+
+			MemRange refS1 = FindBytes(textRange, (const char *)&s1.Start, sizeof(s1.Start));
+
+			if (!refS1.IsEmpty()) {
+
+				MemRange r2a = FindPatternString(textRange.And(MemRange(refS1.Start - 0x78, refS1.Start - 0x78 + 0x7)), "56 57 E8 ?? ?? ?? ??");
+
+				if (!r2a.IsEmpty())
+				{
+					AFXADDR_SET(GetSoundtime, *(DWORD *)(r2a.Start +3) + (DWORD)(r2a.Start + 7));
+
+					MemRange r3 = textRange.And(MemRange(AFXADDR_GET(GetSoundtime), AFXADDR_GET(GetSoundtime) + 0x8F));
+
+					MemRange r4 = FindPatternString(r3, "A1 ?? ?? ?? ?? 41 3D 00 00 00 40");
+
+					if (!r4.IsEmpty()) {
+
+						AFXADDR_SET(paintedtime, *(DWORD *)(r4.Start + 1));
+
+						MemRange r5 = FindPatternString(MemRange(r4.End, r3.End), "E8 ?? ?? ?? ?? 83 C4 04 8B 0D ?? ?? ?? ??");
+
+						if (!r5.IsEmpty()) {
+
+							AFXADDR_SET(shm, *(DWORD *)(r5.Start + 11));
+
+							MemRange r6 = FindPatternString(MemRange(r5.End, r3.End), "89 0D ?? ?? ?? ?? 5F 5E 8B E5 5D C3");
+
+							if (!r6.IsEmpty()) {
+
+								AFXADDR_SET(soundtime, *(DWORD *)(r6.Start + 2));
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+
+
+
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+				MemRange r2b = FindPatternString(textRange.And(MemRange(refS1.Start + 0x34, refS1.Start + 0x34  + 8)), "D1 EF 57 E8 ?? ?? ?? ??");
+
+				if (!r2b.IsEmpty())
+				{
+					AFXADDR_SET(S_PaintChannels, *(DWORD *)(r2b.Start + 4) + (DWORD)(r2a.Start + 8));
+
+					MemRange r3 = textRange.And(MemRange(AFXADDR_GET(S_PaintChannels), AFXADDR_GET(S_PaintChannels) + 0x196));
+
+					MemRange r4 = FindPatternString(r3, "8B F3 2B F0 8D 14 F5 00 00 00 00 52 6A 00 68 ?? ?? ?? ??");
+
+					if (!r4.IsEmpty()) {
+
+						AFXADDR_SET(paintbuffer, *(DWORD *)(r4.Start + 15));
+
+						MemRange r5 = FindPatternString(MemRange(r4.End, r3.End), "53 E8 ?? ?? ?? ?? 8B 4D 08 83 C4 04");
+
+						if (!r5.IsEmpty()) {
+
+							AFXADDR_SET(S_TransferPaintBuffer, *(DWORD *)(r5.Start + 2) + (DWORD)(r5.Start + 6));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
 	
-	AFXADDR_SET(GetSoundtime, hwDll + 0x8B140); // *[6]
-	AFXADDR_SET(DTOURSZ_GetSoundtime, 0x0a); // *[6]
-	
-	AFXADDR_SET(S_PaintChannels, hwDll + 0x8CD60); // *[6]
-	AFXADDR_SET(DTOURSZ_S_PaintChannels, 0x08); // *[6]
-	
-	AFXADDR_SET(paintedtime, hwDll + 0xA2B860); // *[6]
-	AFXADDR_SET(shm, hwDll + 0x6B7CD8); // *[6]
-	AFXADDR_SET(soundtime, hwDll + 0xA2B85C); // *[6]
-	
-	AFXADDR_SET(paintbuffer, hwDll + 0xA21720); // *[6]
-	
-	AFXADDR_SET(S_TransferPaintBuffer, hwDll + 0x8C800); // *[6]
-	AFXADDR_SET(DTOURSZ_S_TransferPaintBuffer, 0x06); // *[6]
-	
-	AFXADDR_SET(SND_PickChannel, hwDll + 0x8A3E0); // *[6]
-	AFXADDR_SET(DTOURSZ_SND_PickChannel, 0x07); // *[6]
+	// SND_PickChannel // [6] // Checked 2018-0922
+	{
+		MemRange r1 = FindPatternString(textRange, "55 8B EC 53 8B 5D 0C 56 83 FB 05 57 75 17 8B 45 10 50 E8 ?? ?? ?? ?? 83 C4 04 85 C0 74 07 5F 5E 33 C0 5B 5D C3 83 CF FF C7 45 10 FF FF FF 7F BE 04 00 00 00");
+
+		if (!r1.IsEmpty()) {
+
+			AFXADDR_SET(SND_PickChannel, r1.Start);
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
 	
 	//
 	// Demo parsing related:
 	//
-	
-	AFXADDR_SET(CL_ParseServerMessage_CmdRead, hwDll + 0x1CFC6); // *[10]
-	AFXADDR_SET(CL_ParseServerMessage_CmdRead_DSZ, 0x07); // *[10]
-	AFXADDR_SET(msg_readcount, hwDll + 0x1004D28); // *[10]
-	AFXADDR_SET(net_message, hwDll +0xA9F230 - 0x10); // *[10]
+
+	// Warning: When these are upadated,the hook code might need to be updated as well!
+	// CL_ParseServerMessage_CmdRead // [10] // Checked 2018-09-22
+	// CL_ParseServerMessage_CmdRead_DSZ // [10] // Checked 2018-09-22
+	// msg_readcount // [10] // Checked 2018-09-22
+	// net_message // [10] // Checked 2018-09-22
+	{
+		MemRange s1 = FindCString(data2Range, "CL_ParseServerMessage: Bad server message");
+
+		if (!s1.IsEmpty()) {
+
+			MemRange s1Ref = FindBytes(textRange, (const char *)(&s1.Start), sizeof(s1.Start));
+
+			if (!s1Ref.IsEmpty()) {
+
+				MemRange r2 = FindPatternString(textRange.And(MemRange(s1Ref.Start + 0x12, s1Ref.Start + 0x12 + 0x7)), "8B DF E8 ?? ?? ?? ??");
+
+				if (!r2.IsEmpty()) {
+
+					AFXADDR_SET(CL_ParseServerMessage_CmdRead, r2.Start);
+					AFXADDR_SET(CL_ParseServerMessage_CmdRead_DSZ, 0x07);
+
+					DWORD addMessageReadByte = *(DWORD *)(r2.Start + 3) + (DWORD)(r2.Start + 7);
+
+					MemRange rMessageReadByte = textRange.And(MemRange(addMessageReadByte, addMessageReadByte + 0x36));
+
+					MemRange r3 = FindPatternString(rMessageReadByte, "A1 ?? ?? ?? ?? 8B 15 ?? ?? ?? ??");
+
+					if (!r3.IsEmpty()) {
+
+						AFXADDR_SET(msg_readcount, *(DWORD *)(r3.Start + 1));
+						AFXADDR_SET(net_message, *(DWORD *)(r3.Start + 7));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
 }
 
 /// <remarks>Not called when no client.dll is loaded.</remarks>

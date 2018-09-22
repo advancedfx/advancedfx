@@ -10,7 +10,9 @@
 
 #include "film_sound.h"
 #include "hl_addresses.h"
-#include <shared/detours.h> // detouring funcs
+
+#include <Windows.h>
+#include <shared/Detours/src/detours.h>
 
 
 // for debug:
@@ -196,13 +198,40 @@ channel_t * touring_SND_PickChannel(int entnum, int entchannel, int _unknown1, i
 	return 0;
 }
 
-void InstallHooks()
+bool InstallHooks()
 {
-	// notice the memory allocted here gets never freed o_O
-	if(!detoured_GetSoundtime) detoured_GetSoundtime = (GetSoundtime_t) DetourApply((BYTE *)HL_ADDR_GET(GetSoundtime), (BYTE *)touring_GetSoundtime, (int)HL_ADDR_GET(DTOURSZ_GetSoundtime));
-	if(!detoured_S_PaintChannels) detoured_S_PaintChannels = (S_PaintChannels_t) DetourApply((BYTE *)HL_ADDR_GET(S_PaintChannels), (BYTE *)touring_S_PaintChannels, (int)HL_ADDR_GET(DTOURSZ_S_PaintChannels));
-	if(!detoured_S_TransferPaintBuffer) detoured_S_TransferPaintBuffer = (S_TransferPaintBuffer_t) DetourApply((BYTE *)HL_ADDR_GET(S_TransferPaintBuffer), (BYTE *)touring_S_TransferPaintBuffer, (int)HL_ADDR_GET(DTOURSZ_S_TransferPaintBuffer));
-	if(!detoured_SND_PickChannel) detoured_SND_PickChannel = (SND_PickChannel_t)DetourApply((BYTE *)HL_ADDR_GET(SND_PickChannel), (BYTE *)touring_SND_PickChannel, (int)HL_ADDR_GET(DTOURSZ_SND_PickChannel));
+	static bool firstRun = true;
+	static bool firstResult = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	if (HL_ADDR_GET(R_DrawEntitiesOnList))
+	{
+		LONG error = NO_ERROR;
+
+		detoured_GetSoundtime = (GetSoundtime_t)AFXADDR_GET(GetSoundtime);
+		detoured_S_PaintChannels = (S_PaintChannels_t)AFXADDR_GET(S_PaintChannels);
+		detoured_S_TransferPaintBuffer = (S_TransferPaintBuffer_t)AFXADDR_GET(S_TransferPaintBuffer);
+		detoured_SND_PickChannel = (SND_PickChannel_t)AFXADDR_GET(SND_PickChannel);
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)detoured_GetSoundtime, touring_GetSoundtime);
+		DetourAttach(&(PVOID&)detoured_S_PaintChannels, touring_S_PaintChannels);
+		DetourAttach(&(PVOID&)detoured_S_TransferPaintBuffer, touring_S_TransferPaintBuffer);
+		DetourAttach(&(PVOID&)detoured_SND_PickChannel, touring_SND_PickChannel);
+		error = DetourTransactionCommit();
+
+		if (NO_ERROR != error)
+		{
+			firstResult = false;
+			ErrorBox("Interception failed:\nfilm_sound.cpp: InstallHooks");
+		}
+	}
+	else
+		firstResult = false;
+
+	return firstResult;
 }
 
 void FilmSound_BlockChannels(bool block) {
