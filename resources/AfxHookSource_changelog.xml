@@ -3,6 +3,21 @@
 
 <changelog>
 
+
+<release>
+<name>AfxHookSource</name>
+<version>1.44.6</version>
+<time>2018-10-01T11:11Z</time>
+<changes>
+<change type="added">
+HLAE now removes the removal of the -scaleform command line option by CS:GO's launcher DLL. This will allow to use the old Scaleform UI on older demos, until Valve decides to remove / break it completely.
+Please note that it may crash with newer demos made for the Panorama UI!<br />
+When this stops working, you can still try this: https://www.reddit.com/r/Steam/comments/611h5e/guide_how_to_download_older_versions_of_a_game_on/ (didn't work for me though).
+</change>
+</changes>
+</release>
+
+
 <release>
 <name>AfxHookSource</name>
 <version>1.44.5</version>

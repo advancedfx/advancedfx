@@ -52,6 +52,9 @@
 #include <csgo/hooks/engine.h>
 #include "csgo_ScaleForm_Hooks.h"
 
+#include <Windows.h>
+#include <shared/Detours/src/detours.h>
+
 #include <set>
 #include <map>
 #include <string>
@@ -1723,6 +1726,22 @@ HMODULE WINAPI new_LoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFl
 
 extern HMODULE g_H_EngineDll;
 
+typedef void(__fastcall * csgo_ICommandLine_RemoveParm_t)(void * This, void * edx, const char *parm);
+
+csgo_ICommandLine_RemoveParm_t True_csgo_ICommandLine_RemoveParam;
+
+void __fastcall My_csgo_ICommandLine_RemoveParam(void * This, void * edx, const char *parm)
+{
+	if (0 == _stricmp("-scaleform", parm))
+		return;
+
+	True_csgo_ICommandLine_RemoveParam(This, edx, parm);
+}
+
+typedef void csgo_ICommandLine_t;
+
+typedef csgo_ICommandLine_t * (*csgo_CommandLine_t)();
+
 void CommonHooks()
 {
 	static bool bFirstRun = true;
@@ -1795,6 +1814,26 @@ void CommonHooks()
 			if (SourceSdkVer_CSGO == g_SourceSdkVer)
 			{
 				SOURCESDK::CSGO::g_pMemAlloc = *(SOURCESDK::CSGO::IMemAlloc **)GetProcAddress(hTier0, "g_pMemAlloc");
+
+				if (csgo_CommandLine_t commandLine = (csgo_CommandLine_t)GetProcAddress(hTier0, "CommandLine")) {
+
+					csgo_ICommandLine_t * iCommandLine = commandLine();
+
+					LONG error = NO_ERROR;
+
+					True_csgo_ICommandLine_RemoveParam = (csgo_ICommandLine_RemoveParm_t)*(DWORD *)(*(DWORD *)iCommandLine +0x14);
+
+					DetourTransactionBegin();
+					DetourUpdateThread(GetCurrentThread());
+					DetourAttach(&(PVOID&)True_csgo_ICommandLine_RemoveParam, My_csgo_ICommandLine_RemoveParam);
+					error = DetourTransactionCommit();
+
+					if (NO_ERROR != error)
+						ErrorBox("Could not detour tier0!Commandline.");
+
+				}
+				else ErrorBox("Could not find tier0!Commandline.");
+
 			}
 			if (SourceSdkVer_SWARM == g_SourceSdkVer)
 			{
