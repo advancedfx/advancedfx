@@ -290,11 +290,11 @@ bool Hook_DeathMsg()
 	
 	if(gameDir)
 	{	
-		if(!strcmp("cstrike",gameDir))
+		if(0 == _stricmp("cstrike",gameDir))
 		{
 			firstResult = Hook_DeathMsg_cstrike();
 		}
-		else if(!strcmp("tfc",gameDir))
+		else if(0 == _stricmp("tfc",gameDir))
 		{
 			firstResult = Hook_DeathMsg_tfc();
 		}

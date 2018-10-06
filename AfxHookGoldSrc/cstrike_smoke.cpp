@@ -5,7 +5,8 @@
 #include "cmdregister.h"
 #include "hl_addresses.h"
 
-#include <shared/detours.h>
+#include <Windows.h>
+#include <shared/Detours/src/detours.h>
 
 extern cl_enginefuncs_s *pEngfuncs;
 
@@ -27,17 +28,33 @@ void touring_cstrike_EN_CreateSmoke( struct event_args_s *args ) {
 
 bool InstallHook_cstrike_EN_CreateSmoke()
 {
+	static bool firstRun = true;
+	static bool firstResult = true;
+	if (!firstRun) return false;
+	firstRun = false;
+
 	static bool bFirstRun = true;
 
-	if (bFirstRun && (NULL != HL_ADDR_GET(cstrike_EV_CreateSmoke)))
+	if (AFXADDR_GET(cstrike_EV_CreateSmoke))
 	{
-		bFirstRun = false;
+		LONG error = NO_ERROR;
 
-		detoured_cstrike_EN_CreateSmoke = (pfnEvent_t) DetourApply((BYTE *)HL_ADDR_GET(cstrike_EV_CreateSmoke), (BYTE *)touring_cstrike_EN_CreateSmoke, (int)HL_ADDR_GET(cstrike_EV_CreateSmoke_DSZ));
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)detoured_cstrike_EN_CreateSmoke, touring_cstrike_EN_CreateSmoke);
+		error = DetourTransactionCommit();
+
+		if (NO_ERROR != error)
+		{
+			firstResult = false;
+			//ErrorBox("Interception failed:\InstallHook_cstrike_EN_CreateSmoke()");
+		}
 	}
+	else
+		firstResult = false;
 
 
-	return detoured_cstrike_EN_CreateSmoke != NULL;
+	return firstResult;
 }
 
 

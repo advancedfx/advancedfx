@@ -19,7 +19,7 @@ void HookClient()
 	
 	if(!gamedir) return;
 	
-	if(!strcmp("cstrike",gamedir))
+	if(0 == _stricmp("cstrike",gamedir))
 	{
 		Hook_Cstrike_CrossHair_Fix();
 	}

@@ -3,8 +3,10 @@
 #include "hooks/HookHw.h"
 #include "cmdregister.h"
 #include "hl_addresses.h"
-#include <shared/detours.h>
 #include "hlsdk.h"
+
+#include <Windows.h>
+#include <shared/Detours/src/detours.h>
 
 float g_OldHud_draw_value;
 bool g_DisableSpecMenu = false;
@@ -32,20 +34,60 @@ void __stdcall New_TeamFortressViewport_UpdateSpectatorPanel(DWORD *this_ptr)
 
 bool Hook_TeamFortressViewport_UpdateSpectatorPanel_tfc(void)
 {
-	if(!HL_ADDR_GET(tfc_TeamFortressViewport_UpdateSpecatorPanel) || !HL_ADDR_GET(tfc_TeamFortressViewport_UpdateSpecatorPanel_DSZ))
-		return false;
+	static bool firstRun = true;
+	static bool firstResult = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
 
-	g_Old_TeamFortressViewport_UpdateSpectatorPanel = (TeamFortressViewport_UpdateSpectatorPanel_t)DetourClassFunc((BYTE *)HL_ADDR_GET(tfc_TeamFortressViewport_UpdateSpecatorPanel), (BYTE *)New_TeamFortressViewport_UpdateSpectatorPanel, (int)HL_ADDR_GET(tfc_TeamFortressViewport_UpdateSpecatorPanel_DSZ));
-	return true;
+	if (HL_ADDR_GET(tfc_TeamFortressViewport_UpdateSpecatorPanel))
+	{
+		LONG error = NO_ERROR;
+
+		g_Old_TeamFortressViewport_UpdateSpectatorPanel = (TeamFortressViewport_UpdateSpectatorPanel_t)AFXADDR_GET(tfc_TeamFortressViewport_UpdateSpecatorPanel);
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)g_Old_TeamFortressViewport_UpdateSpectatorPanel, New_TeamFortressViewport_UpdateSpectatorPanel);
+		error = DetourTransactionCommit();
+
+		if (NO_ERROR != error)
+		{
+			firstResult = false;
+		}
+	}
+	else
+		firstResult = false;
+
+	return firstResult;
 }
 
 bool Hook_TeamFortressViewport_UpdateSpectatorPanel_valve(void)
 {
-	if(!HL_ADDR_GET(valve_TeamFortressViewport_UpdateSpecatorPanel) || !HL_ADDR_GET(valve_TeamFortressViewport_UpdateSpecatorPanel_DSZ))
-		return false;
+	static bool firstRun = true;
+	static bool firstResult = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
 
-	g_Old_TeamFortressViewport_UpdateSpectatorPanel = (TeamFortressViewport_UpdateSpectatorPanel_t)DetourClassFunc((BYTE *)HL_ADDR_GET(valve_TeamFortressViewport_UpdateSpecatorPanel), (BYTE *)New_TeamFortressViewport_UpdateSpectatorPanel, (int)HL_ADDR_GET(valve_TeamFortressViewport_UpdateSpecatorPanel_DSZ));
-	return true;
+	if (HL_ADDR_GET(valve_TeamFortressViewport_UpdateSpecatorPanel))
+	{
+		LONG error = NO_ERROR;
+
+		g_Old_TeamFortressViewport_UpdateSpectatorPanel = (TeamFortressViewport_UpdateSpectatorPanel_t)AFXADDR_GET(valve_TeamFortressViewport_UpdateSpecatorPanel);
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)g_Old_TeamFortressViewport_UpdateSpectatorPanel, New_TeamFortressViewport_UpdateSpectatorPanel);
+		error = DetourTransactionCommit();
+
+		if (NO_ERROR != error)
+		{
+			firstResult = false;
+		}
+	}
+	else
+		firstResult = false;
+
+	return firstResult;
 }
 
 bool Hook_TeamFortressViewport_UpdateSpectatorPanel(void)
@@ -59,11 +101,11 @@ bool Hook_TeamFortressViewport_UpdateSpectatorPanel(void)
 	
 	if(gameDir)
 	{	
-		if(!strcmp("tfc",gameDir))
+		if(0 == _stricmp("tfc",gameDir))
 		{
 			firstResult = Hook_TeamFortressViewport_UpdateSpectatorPanel_tfc();
 		}
-		else if(!strcmp("valve",gameDir))
+		else if(0 == _stricmp("valve",gameDir))
 		{
 			firstResult = Hook_TeamFortressViewport_UpdateSpectatorPanel_valve();
 		}

@@ -175,6 +175,8 @@ FARPROC WINAPI NewHwGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 	return nResult;
 }
 
+HMODULE g_hClientDll = 0;
+
 HMODULE WINAPI NewHwLoadLibraryA( LPCSTR lpLibFileName )
 {
 	static bool bClientLoaded = false;
@@ -187,7 +189,7 @@ HMODULE WINAPI NewHwLoadLibraryA( LPCSTR lpLibFileName )
 	{
 		bClientLoaded = true;
 
-		Addresses_InitClientDll((AfxAddr)hRet);
+		g_hClientDll = hRet;
 	}
 	else if( !bDemoPlayerLoaded && StringEndsWith( lpLibFileName, "demoplayer.dll") )
 	{
@@ -199,6 +201,45 @@ HMODULE WINAPI NewHwLoadLibraryA( LPCSTR lpLibFileName )
 	return hRet;
 }
 
+pfnEngSrc_pfnHookEvent_t True_pfnHookEvent;
+
+void MypfnHookEvent(char *name, void(*pfnEvent)(struct event_args_s *args))
+{
+	static const char *gamedir = pEngfuncs->pfnGetGameDirectory();
+
+	if (gamedir && 0 == _stricmp("cstrike", gamedir) && name && 0 == strcmp("events/createsmoke.sc", name))
+	{
+		AFXADDR_SET(cstrike_EV_CreateSmoke, (DWORD)pfnEvent);
+	}
+
+	True_pfnHookEvent(name, pfnEvent);
+}
+
+bool HookpEnginefuncs(cl_enginefunc_t *pEnginefuncs)
+{
+	static bool firstRun = true;
+	static bool firstResult = true;
+	if (!firstRun) return false;
+	firstRun = false;
+
+	LONG error = NO_ERROR;
+
+	True_pfnHookEvent = pEngfuncs->pfnHookEvent;
+
+	DetourTransactionBegin();
+	DetourUpdateThread(GetCurrentThread());
+	DetourAttach(&(PVOID&)True_pfnHookEvent, MypfnHookEvent);
+	error = DetourTransactionCommit();
+
+	if (NO_ERROR != error)
+	{
+		firstResult = false;
+		ErrorBox("Interception failed:\nHookpEnginefuncs()");
+	}
+
+	return firstResult;
+}
+
 typedef int(*Client_Initialize_t)(cl_enginefunc_t *pEnginefuncs, int iVersion);
 
 Client_Initialize_t True_Client_Initialize;
@@ -206,6 +247,12 @@ Client_Initialize_t True_Client_Initialize;
 int My_Client_Initialize(cl_enginefunc_t *pEnginefuncs, int iVersion)
 {
 	::pEngfuncs = pEnginefuncs;
+
+	if(g_hClientDll) Addresses_InitClientDll((AfxAddr)g_hClientDll, pEngfuncs->pfnGetGameDirectory());
+
+	HookpEnginefuncs(pEnginefuncs);
+
+	HookClient();
 
 	return True_Client_Initialize(pEnginefuncs, iVersion);
 }
@@ -250,10 +297,6 @@ void MyEngine_LoadClientLibrary(const char * lpLibFilename) {
 
 	if (True_Client_HUD_GetStudioModelInterface = (Client_HUD_GetStudioModelInterface_t)GetClientFunction(CFTE_HUD_GetStudioModelInterface))
 		ReplaceClientFunction(CFTE_HUD_GetStudioModelInterface, My_Client_HUD_GetStudioModelInterface);
-
-	//
-
-	HookClient();
 }
 
 void HookHw(HMODULE hHw)

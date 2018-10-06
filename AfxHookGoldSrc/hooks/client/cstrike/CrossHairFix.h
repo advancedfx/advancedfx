@@ -13,4 +13,4 @@ double Cstrike_CrossHair_Fps_get();
 void Cstrike_CrossHair_Fps_set(double value);
 
 /// <summary>Installs the cstrike cross-hair fix hook.</summary>
-void Hook_Cstrike_CrossHair_Fix();
+bool Hook_Cstrike_CrossHair_Fix();

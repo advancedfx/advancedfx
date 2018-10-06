@@ -15,6 +15,9 @@
 
 #include <gl/gl.h>
 
+#include <Windows.h>
+#include <shared/Detours/src/detours.h>
+
 
 typedef void (__stdcall *UnkCstrikeCrosshairFn_t)( DWORD *this_ptr, float dwUnk1, DWORD dwUnk2);
 
@@ -122,22 +125,42 @@ void Cstrike_CrossHair_Fps_set(double value)
 }
 
 
-void Hook_Cstrike_CrossHair_Fix()
+bool Hook_Cstrike_CrossHair_Fix()
 {
 	static bool firstRun = true;
-	if(!firstRun) return;
+	static bool firstResult = true;
+	if (!firstRun) return firstResult;
 	firstRun = false;
 
 	double * addrMul = (double *)HL_ADDR_GET(cstrike_UnkCrosshairFn_mul_fac);
 	double * addrAdd = (double *)HL_ADDR_GET(cstrike_UnkCrosshairFn_add_fac);
 	BYTE * addrFn = (BYTE *)HL_ADDR_GET(cstrike_UnkCrosshairFn);
-	int addrFnDsz = (int)HL_ADDR_GET(cstrike_UnkCrosshairFn_DSZ);
 
-	if(!(
-		addrMul && addrAdd && addrFn && addrFnDsz
-	)) return;
+	if (!(
+		addrMul && addrAdd && addrFn
+		))
+	{
+		firstResult = false;
+	}
+	else
+	{
+		LONG error = NO_ERROR;
 
-	g_pfnCrosshairFix_Hooked_Func = (UnkCstrikeCrosshairFn_t)DetourClassFunc(addrFn, (BYTE *)CrosshairFix_Hooking_Func, addrFnDsz);
-	g_f_ch_mul_fac = addrMul;
-	g_f_ch_add_fac = addrAdd;
+		g_f_ch_mul_fac = addrMul;
+		g_f_ch_add_fac = addrAdd;
+		g_pfnCrosshairFix_Hooked_Func = (UnkCstrikeCrosshairFn_t)addrFn;
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)g_pfnCrosshairFix_Hooked_Func, CrosshairFix_Hooking_Func);
+		error = DetourTransactionCommit();
+
+		if (NO_ERROR != error)
+		{
+			firstResult = false;
+			ErrorBox("Interception failed:\nHook_Cstrike_CrossHair_Fix()");
+		}
+	}
+
+	return firstResult;
 }
