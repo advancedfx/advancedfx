@@ -8,6 +8,9 @@
 #include <shared/detours.h>
 #include <shared/StringTools.h>
 
+#include <Windows.h>
+#include <shared/Detours/src/detours.h>
+
 #include <list>
 
 
@@ -46,12 +49,6 @@ extern cl_enginefuncs_s *pEngfuncs;
 
 cstrike_DeathNoticeItem * cstrike_rgDeathNoticeList;
 tfc_DeathNoticeItem * tfc_rgDeathNoticeList;
-
-#define cstrike_OFS_Draw_YRes 0x114
-#define cstrike_OFS_Draw_AfterYRes (cstrike_OFS_Draw_YRes +0x0A)
-
-#define tfc_OFS_Draw_YRes 0x09
-#define tfc_OFS_Draw_AfterYRes (tfc_OFS_Draw_YRes +0x05)
 
 DWORD DeathMsg_Draw_AfterYRes;
 
@@ -255,24 +252,52 @@ __declspec(naked) void tfc_DeathMsg_DrawHelperY() {
 #define DEF_Hook_DeathMsg(modification) \
 bool Hook_DeathMsg_ ## modification() \
 { \
-	/* 1. Fill addresses: */ \
+	static bool firstRun = true; \
+	static bool firstResult = true; \
+	if (!firstRun) return firstResult; \
+	firstRun = false; \
 	\
-	modification ## _rgDeathNoticeList = (modification ## _DeathNoticeItem *)HL_ADDR_GET(modification ## _rgDeathNoticeList); \
+	if(AFXADDR_GET(modification ## _MsgFunc_DeathMsg) \
+		&& AFXADDR_GET(modification ## _CHudDeathNotice_MsgFunc_DeathMsg) \
+		&& AFXADDR_GET(modification ## _rgDeathNoticeList) \
+		&& AFXADDR_GET(modification ## _CHudDeathNotice_Draw) \
+		&& AFXADDR_GET(modification ## _CHudDeathNotice_Draw_YRes) \
+		&& AFXADDR_GET(modification ## _CHudDeathNotice_Draw_YRes_DSZ)) \
+	{ \
+		LONG error = NO_ERROR; \
+		\
+		/* 1. Fill addresses: */ \
+		\
+		modification ## _rgDeathNoticeList = (modification ## _DeathNoticeItem *)HL_ADDR_GET(modification ## _rgDeathNoticeList); \
+		\
+		/* Detour Functions: */ \
+		\
+		detoured_MsgFunc_DeathMsg = (MsgFunc_DeathMsg_t)HL_ADDR_GET(modification ## _MsgFunc_DeathMsg); \
+		\
+		detoured_DeathMsg_Msg = (DeathMsg_Msg_t)HL_ADDR_GET(modification ## _CHudDeathNotice_MsgFunc_DeathMsg); \
+		detoured_DeathMsg_Draw = (DeathMsg_Draw_t)HL_ADDR_GET(modification ## _CHudDeathNotice_Draw); \
+		\
+		DetourTransactionBegin(); \
+		DetourUpdateThread(GetCurrentThread()); \
+		DetourAttach(&(PVOID&)detoured_MsgFunc_DeathMsg, touring_MsgFunc_DeathMsg); \
+		DetourAttach(&(PVOID&)detoured_DeathMsg_Msg, modification ## _touring_DeathMsg_Msg); \
+		DetourAttach(&(PVOID&)detoured_DeathMsg_Draw, modification ## _touring_DeathMsg_Draw); \
+		error = DetourTransactionCommit(); \
+		\
+		if (NO_ERROR != error) \
+		{ \
+			firstResult = false; \
+		} \
+		else \
+		{ \
+			/* Patch Draw fn: */ \
+			Asm32ReplaceWithJmp((void *)(HL_ADDR_GET(modification ## _CHudDeathNotice_Draw_YRes)), HL_ADDR_GET(modification ## _CHudDeathNotice_Draw_YRes_DSZ), (void *)modification ## _DeathMsg_DrawHelperY); \
+		} \
+	} \
+	else \
+		firstResult = false; \
 	\
-	DWORD dwDraw = (DWORD)HL_ADDR_GET(modification ## _CHudDeathNotice_Draw); \
-	\
-	DeathMsg_Draw_AfterYRes = dwDraw +modification ## _OFS_Draw_AfterYRes; \
-	\
-	/* Detour Functions: */ \
-	detoured_MsgFunc_DeathMsg = (MsgFunc_DeathMsg_t)DetourApply((BYTE *)HL_ADDR_GET(modification ## _MsgFunc_DeathMsg), (BYTE *)touring_MsgFunc_DeathMsg, (int)HL_ADDR_GET(modification ## _MsgFunc_DeathMsg_DSZ)); \
-	\
-	detoured_DeathMsg_Draw = (DeathMsg_Draw_t)DetourClassFunc((BYTE *)dwDraw, (BYTE *)modification ## _touring_DeathMsg_Draw, (int)HL_ADDR_GET(modification ## _CHudDeathNotice_Draw_DSZ)); \
-	detoured_DeathMsg_Msg = (DeathMsg_Msg_t)DetourClassFunc((BYTE *)HL_ADDR_GET(modification ## _CHudDeathNotice_MsgFunc_DeathMsg), (BYTE *)modification ## _touring_DeathMsg_Msg, (int)HL_ADDR_GET(modification ## _CHudDeathNotice_MsgFunc_DeathMsg_DSZ)); \
-	\
-	/* Patch Draw fn: */ \
-	Asm32ReplaceWithJmp((void *)(dwDraw + modification ## _OFS_Draw_YRes), modification ## _OFS_Draw_AfterYRes - modification ## _OFS_Draw_YRes, (void *)modification ## _DeathMsg_DrawHelperY); \
-	\
-	return true; \
+	return firstResult; \
 }
 
 DEF_Hook_DeathMsg(cstrike)
@@ -290,11 +315,11 @@ bool Hook_DeathMsg()
 	
 	if(gameDir)
 	{	
-		if(0 == _stricmp("cstrike",gameDir))
+		if(!strcmp("cstrike",gameDir))
 		{
 			firstResult = Hook_DeathMsg_cstrike();
 		}
-		else if(0 == _stricmp("tfc",gameDir))
+		else if(!strcmp("tfc",gameDir))
 		{
 			firstResult = Hook_DeathMsg_tfc();
 		}

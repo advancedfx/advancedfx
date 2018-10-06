@@ -36,12 +36,11 @@ AFXADDR_DEF(UnkDrawHudOutContinue)
 AFXADDR_DEF(Draw_DecalMaterial)
 AFXADDR_DEF(clientDll)
 AFXADDR_DEF(cstrike_CHudDeathNotice_Draw)
-AFXADDR_DEF(cstrike_CHudDeathNotice_Draw_DSZ)
+AFXADDR_DEF(cstrike_CHudDeathNotice_Draw_YRes)
+AFXADDR_DEF(cstrike_CHudDeathNotice_Draw_YRes_DSZ)
 AFXADDR_DEF(cstrike_CHudDeathNotice_MsgFunc_DeathMsg)
-AFXADDR_DEF(cstrike_CHudDeathNotice_MsgFunc_DeathMsg_DSZ)
 AFXADDR_DEF(cstrike_EV_CreateSmoke)
 AFXADDR_DEF(cstrike_MsgFunc_DeathMsg)
-AFXADDR_DEF(cstrike_MsgFunc_DeathMsg_DSZ)
 AFXADDR_DEF(cstrike_UnkCrosshairFn)
 AFXADDR_DEF(cstrike_UnkCrosshairFn_add_fac)
 AFXADDR_DEF(cstrike_UnkCrosshairFn_mul_fac)
@@ -59,11 +58,10 @@ AFXADDR_DEF(shm)
 AFXADDR_DEF(skytextures)
 AFXADDR_DEF(soundtime)
 AFXADDR_DEF(tfc_CHudDeathNotice_Draw)
-AFXADDR_DEF(tfc_CHudDeathNotice_Draw_DSZ)
+AFXADDR_DEF(tfc_CHudDeathNotice_Draw_YRes)
+AFXADDR_DEF(tfc_CHudDeathNotice_Draw_YRes_DSZ)
 AFXADDR_DEF(tfc_CHudDeathNotice_MsgFunc_DeathMsg)
-AFXADDR_DEF(tfc_CHudDeathNotice_MsgFunc_DeathMsg_DSZ)
 AFXADDR_DEF(tfc_MsgFunc_DeathMsg)
-AFXADDR_DEF(tfc_MsgFunc_DeathMsg_DSZ)
 AFXADDR_DEF(tfc_TeamFortressViewport_UpdateSpecatorPanel)
 AFXADDR_DEF(tfc_rgDeathNoticeList)
 AFXADDR_DEF(valve_TeamFortressViewport_UpdateSpecatorPanel)
@@ -703,25 +701,124 @@ void Addresses_InitClientDll(AfxAddr clientDll, const char * gamedir)
 		// This is set in MypfnHookEvent.
 
 		// cstrike DeathMsg related (client.dll offsets):
-		AFXADDR_SET(cstrike_MsgFunc_DeathMsg, clientDll + 0x44490); // *[2]
-		AFXADDR_SET(cstrike_MsgFunc_DeathMsg_DSZ, 0x08); // *[2]
-		AFXADDR_SET(cstrike_CHudDeathNotice_MsgFunc_DeathMsg, clientDll + 0x44970); // *[2]
-		AFXADDR_SET(cstrike_CHudDeathNotice_MsgFunc_DeathMsg_DSZ, 0x08); // at least 8 bytes req. // *[2]
-		AFXADDR_SET(cstrike_rgDeathNoticeList, clientDll + 0x124EC0); // *[2]
-		AFXADDR_SET(cstrike_CHudDeathNotice_Draw, clientDll + 0x445F0); // *[2]
-		AFXADDR_SET(cstrike_CHudDeathNotice_Draw_DSZ, 0x0a); // at least 8 bytes req. // *[2]
+		// [2] // Checked 2018-10-06
+		{
+			MemRange s1 = FindCString(data2Range, "DeathMsg");
+
+			if (!s1.IsEmpty()) {
+
+				MemRange r1 = FindBytes(textRange, (const char *)&s1.Start, sizeof(s1.Start));
+
+				if (!r1.IsEmpty()) {
+
+					MemRange r2 = FindPatternString(textRange.And(MemRange(r1.Start - 6, r1.Start +4 + 6)), "68 ?? ?? ?? ?? 68 ?? ?? ?? ?? FF 15 ?? ?? ?? ??");
+
+					if (!r2.IsEmpty()) {
+
+						AFXADDR_SET(cstrike_MsgFunc_DeathMsg, *(DWORD *)(r2.Start + 1));
+
+						MemRange r3 = FindPatternString(textRange.And(MemRange(AFXADDR_GET(cstrike_MsgFunc_DeathMsg), AFXADDR_GET(cstrike_MsgFunc_DeathMsg) + 0x1A)), "8B 44 24 0C 8B 4C 24 08 8B 54 24 04 50 51 52 B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? C3");
+
+						if (!r3.IsEmpty())
+						{
+							AFXADDR_SET(cstrike_CHudDeathNotice_MsgFunc_DeathMsg, *(DWORD *)(r3.Start + 21) + (DWORD)(r3.Start + 25)); // Decode call address.
+
+							MemRange r4 = FindPatternString(textRange.And(MemRange(AFXADDR_GET(cstrike_CHudDeathNotice_MsgFunc_DeathMsg), AFXADDR_GET(cstrike_CHudDeathNotice_MsgFunc_DeathMsg) +0x43F)), "68 80 02 00 00 68 ?? ?? ?? ?? 68 ?? ?? ?? ?? E8 ?? ?? ?? ??");
+
+							if (!r4.IsEmpty()) {
+								AFXADDR_SET(cstrike_rgDeathNoticeList, *(DWORD *)(r4.Start + 11));
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			MemRange r1 = FindPatternString(textRange, "83 EC 3C 56 8B F1 89 74 24 0C 8B 46 1C 89 44 24 2C A1 ?? ?? ?? ?? 85 C0 75 0A FF 15 ?? ?? ?? ?? 85 C0 74 12");
+
+			if (!r1.IsEmpty()) {
+
+				AFXADDR_SET(cstrike_CHudDeathNotice_Draw, r1.Start);
+
+				// Check that our Y-Res adjusting code is still correct (otherwise it needs to be adjusted):
+				//
+				// .text:01944724 04C                 mov     ebp, [esi+18h]
+				// .text:01944727 04C                 mov     edx, [esp+38h]
+				// .text:0194472B 04C                 imul    ebp, ebx
+				//
+				MemRange r2 = FindPatternString(textRange.And(MemRange(r1.Start, r1.Start + 0x37D)), "8B 6E 18 8B 54 24 38 0F AF EB");
+
+				if (!r2.IsEmpty())
+				{
+					AFXADDR_SET(cstrike_CHudDeathNotice_Draw_YRes, r2.Start);
+					AFXADDR_SET(cstrike_CHudDeathNotice_Draw_YRes_DSZ, r2.End - r2.Start);
+				}
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
 	}
 	else if (0 == _stricmp("tfc", gamedir))
 	{
+		// tfc DeathMsg related (client.dll offsets):
+		// [14] // Checked 2018-10-06
+		{
+			MemRange s1 = FindCString(data2Range, "DeathMsg");
 
-		// tfc DeathMsg related:
-		AFXADDR_SET(tfc_MsgFunc_DeathMsg, clientDll + 0x27F60); // *[14]
-		AFXADDR_SET(tfc_MsgFunc_DeathMsg_DSZ, 0x08); // *[14]
-		AFXADDR_SET(tfc_CHudDeathNotice_MsgFunc_DeathMsg, clientDll + 0x28300); // *[14]
-		AFXADDR_SET(tfc_CHudDeathNotice_MsgFunc_DeathMsg_DSZ, 0x08); // at least 8 bytes req. // *[14]
-		AFXADDR_SET(tfc_rgDeathNoticeList, clientDll + 0xA79B0); // *[14]
-		AFXADDR_SET(tfc_CHudDeathNotice_Draw, clientDll + 0x28060); // *[14]
-		AFXADDR_SET(tfc_CHudDeathNotice_Draw_DSZ, 0x09); // at least 8 bytes req. // *[14]
+			if (!s1.IsEmpty()) {
+
+				MemRange r1 = FindBytes(textRange, (const char *)&s1.Start, sizeof(s1.Start));
+
+				if (!r1.IsEmpty()) {
+
+					MemRange r2 = FindPatternString(textRange.And(MemRange(r1.Start - 6, r1.Start + 4 + 6)), "68 ?? ?? ?? ?? 68 ?? ?? ?? ?? FF 15 ?? ?? ?? ??");
+
+					if (!r2.IsEmpty()) {
+
+						AFXADDR_SET(tfc_MsgFunc_DeathMsg, *(DWORD *)(r2.Start + 1));
+
+						MemRange r3 = FindPatternString(textRange.And(MemRange(AFXADDR_GET(tfc_MsgFunc_DeathMsg), AFXADDR_GET(tfc_MsgFunc_DeathMsg) + 0x1A)), "8B 44 24 0C 8B 4C 24 08 8B 54 24 04 50 51 52 B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? C3");
+
+						if (!r3.IsEmpty())
+						{
+							AFXADDR_SET(tfc_CHudDeathNotice_MsgFunc_DeathMsg, *(DWORD *)(r3.Start + 21) + (DWORD)(r3.Start + 25)); // Decode call address.
+
+							MemRange r4 = FindPatternString(textRange.And(MemRange(AFXADDR_GET(tfc_CHudDeathNotice_MsgFunc_DeathMsg), AFXADDR_GET(tfc_CHudDeathNotice_MsgFunc_DeathMsg) + 0x363)), "68 70 02 00 00 68 ?? ?? ?? ?? 68 ?? ?? ?? ?? E8 ?? ?? ?? ??");
+
+							if (!r4.IsEmpty()) {
+								AFXADDR_SET(tfc_rgDeathNoticeList, *(DWORD *)(r4.Start + 11));
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			MemRange r1 = FindPatternString(textRange, "83 EC 30 53 55 56 57 33 FF BD 22 00 00 00 89 4C 24 2C 89 7C 24 18 C7 44 24 14 ?? ?? ?? ?? C7 44 24 10 ?? ?? ?? ?? 89 6C 24 28 C7 44 24 1C ?? ?? ?? ??");
+
+			if (!r1.IsEmpty()) {
+
+				AFXADDR_SET(tfc_CHudDeathNotice_Draw, r1.Start);
+
+				// Check that our Y-Res adjusting code is still correct (otherwise it needs to be adjusted):
+				//
+				// .text:01928069 040                 mov     ebp, 22h
+				//
+
+				AFXADDR_SET(cstrike_CHudDeathNotice_Draw_YRes, r1.Start + 9);
+				AFXADDR_SET(cstrike_CHudDeathNotice_Draw_YRes_DSZ, r1.Start + 9 + 5);
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
 
 		// tfc_TeamFortressViewport_UpdateSpecatorPanel // 4 // Checked 2018-10-06
 		{
