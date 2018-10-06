@@ -19,7 +19,7 @@
 #include <shared/Detours/src/detours.h>
 
 
-typedef void (__stdcall *UnkCstrikeCrosshairFn_t)( DWORD *this_ptr, float dwUnk1, DWORD dwUnk2);
+typedef void (__fastcall *UnkCstrikeCrosshairFn_t)( void * This, void * edx, float dwUnk1, DWORD dwUnk2);
 
 bool g_Cstrike_CrossHair_Block = false;
 UnkCstrikeCrosshairFn_t g_pfnCrosshairFix_Hooked_Func = NULL;
@@ -29,7 +29,7 @@ double *g_f_ch_add_fac = NULL;
 double g_cstrike_ch_frameT = 1.0/100.0;
 
 
-void __stdcall CrosshairFix_Hooking_Func(  DWORD *this_ptr, float fUnkTime, DWORD dwUnkWeaponCode )
+void __fastcall CrosshairFix_Hooking_Func(void * This, void * edx, float fUnkTime, DWORD dwUnkWeaponCode )
 {
 	static float oldClientTime = 0;
 	static double deltaT = 0;
@@ -66,7 +66,7 @@ void __stdcall CrosshairFix_Hooking_Func(  DWORD *this_ptr, float fUnkTime, DWOR
 					glDepthMask(GL_FALSE);
 				}
 
-				g_pfnCrosshairFix_Hooked_Func( this_ptr, fUnkTime, dwUnkWeaponCode );
+				g_pfnCrosshairFix_Hooked_Func( This, edx, fUnkTime, dwUnkWeaponCode );
 
 				if(doLoop)
 				{
@@ -99,7 +99,7 @@ void __stdcall CrosshairFix_Hooking_Func(  DWORD *this_ptr, float fUnkTime, DWOR
 		*g_f_ch_mul_fac = 0.0f;
 		*g_f_ch_add_fac = 0.0f;
 
-		g_pfnCrosshairFix_Hooked_Func( this_ptr, fUnkTime, dwUnkWeaponCode );
+		g_pfnCrosshairFix_Hooked_Func( This, edx, fUnkTime, dwUnkWeaponCode );
 
 		*g_f_ch_mul_fac = fOldMulFac;
 		*g_f_ch_add_fac = fOldAddFac;
@@ -109,7 +109,7 @@ void __stdcall CrosshairFix_Hooking_Func(  DWORD *this_ptr, float fUnkTime, DWOR
 	}
 	else
 		// Normal (unfixed) operation.
-		g_pfnCrosshairFix_Hooked_Func( this_ptr, fUnkTime, dwUnkWeaponCode );
+		g_pfnCrosshairFix_Hooked_Func( This, edx, fUnkTime, dwUnkWeaponCode );
 }
 
 

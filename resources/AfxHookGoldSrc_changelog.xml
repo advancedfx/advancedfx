@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.6.0</version>
+<time>2018-10-06T20:18Z</time>
+<changes>
+<change type="updated">
+Re-release of AfxHookGoldSrc. Updated hooks and made them more stable against updates.
+</change>
+</changes>
+<comments>
+Please report new bugs in AfxHookGoldSrc with [GoldSrc] in title on https://github.com/advancedfx/advancedfx/issues
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.5.1</version>
 <time>2017-06-01T14:30Z</time>
 <changes>

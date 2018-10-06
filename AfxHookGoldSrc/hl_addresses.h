@@ -7,7 +7,9 @@ typedef AfxAddr HlAddress_t;
 #define HL_ADDR_GET(name) AFXADDR_GET(name)
 #define HL_ADDR_SET(name,value) AFXADDR_SET(name,value)
 
-AFXADDR_DECL(engine_LoadClientLibrary)
+AFXADDR_DECL(pEngfuncs)
+AFXADDR_DECL(ppmove)
+AFXADDR_DECL(pstudio)
 AFXADDR_DECL(engine_ClientFunctionTable)
 AFXADDR_DECL(CL_Disconnect)
 AFXADDR_DECL(CL_EmitEntities)

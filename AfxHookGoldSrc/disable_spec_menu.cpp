@@ -11,15 +11,15 @@
 float g_OldHud_draw_value;
 bool g_DisableSpecMenu = false;
 
-typedef int (__stdcall *TeamFortressViewport_UpdateSpectatorPanel_t)(DWORD *this_ptr);
+typedef int (__fastcall *TeamFortressViewport_UpdateSpectatorPanel_t)(void * This, void * edx);
 
 TeamFortressViewport_UpdateSpectatorPanel_t g_Old_TeamFortressViewport_UpdateSpectatorPanel;
 
-void __stdcall New_TeamFortressViewport_UpdateSpectatorPanel(DWORD *this_ptr)
+void __fastcall New_TeamFortressViewport_UpdateSpectatorPanel(void * This, void * edx)
 {
 	if(!g_DisableSpecMenu)
 	{
-		g_Old_TeamFortressViewport_UpdateSpectatorPanel(this_ptr);
+		g_Old_TeamFortressViewport_UpdateSpectatorPanel(This, edx);
 		return;
 	}
 
@@ -27,7 +27,7 @@ void __stdcall New_TeamFortressViewport_UpdateSpectatorPanel(DWORD *this_ptr)
 	
 	pEngfuncs->Cvar_SetValue("hud_draw", 0.0f);
 
-	g_Old_TeamFortressViewport_UpdateSpectatorPanel(this_ptr);
+	g_Old_TeamFortressViewport_UpdateSpectatorPanel(This, edx);
 
 	pEngfuncs->Cvar_SetValue("hud_draw", g_OldHud_draw_value);
 }

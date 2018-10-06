@@ -178,7 +178,7 @@ void HookGameLoaded()
 	SCREENINFO screeninfo;
 
 	// Re-Hook ClientFunctionTable:
-	//HookClientFunctions();
+	HookClientFunctions();
 
 #ifdef AFX_SCRIPT
 	g_Script_CanConsolePrint = true;

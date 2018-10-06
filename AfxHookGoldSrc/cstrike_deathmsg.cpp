@@ -58,8 +58,8 @@ std::list<tfc_DeathNoticeItem> tfc_DeathNotices;
 DWORD DeathMsg_Draw_ItemIndex;
 
 typedef int (* MsgFunc_DeathMsg_t)(const char *pszName, int iSize, void *pbuf);
-typedef int (__stdcall *DeathMsg_Draw_t)(DWORD *this_ptr, float flTime );
-typedef int (__stdcall *DeathMsg_Msg_t)(DWORD *this_ptr, const char *pszName, int iSize, void *pbuf );
+typedef int (__fastcall *DeathMsg_Draw_t)(void *This, void * ecx, float flTime );
+typedef int (__fastcall *DeathMsg_Msg_t)(void *This, void * ecx, const char *pszName, int iSize, void *pbuf );
 
 MsgFunc_DeathMsg_t detoured_MsgFunc_DeathMsg;
 DeathMsg_Draw_t detoured_DeathMsg_Draw;
@@ -132,7 +132,7 @@ int touring_MsgFunc_DeathMsg(const char *pszName, int iSize, void *pbuf)
 }
 
 #define DEF_DeathMsg_Draw(modification) \
-int __stdcall modification ## _touring_DeathMsg_Draw(DWORD *this_ptr, float flTime ) \
+int __fastcall modification ## _touring_DeathMsg_Draw(void * This, void * edx, float flTime ) \
 { \
 	int iRet = 1; \
 	DeathMsg_Draw_ItemIndex = -1; \
@@ -145,7 +145,7 @@ int __stdcall modification ## _touring_DeathMsg_Draw(DWORD *this_ptr, float flTi
 		DeathMsg_Draw_ItemIndex++; \
 		modification ## _rgDeathNoticeList[0] = *it; \
 		\
-		iRet = detoured_DeathMsg_Draw(this_ptr, flTime); \
+		iRet = detoured_DeathMsg_Draw(This, edx, flTime); \
 		\
 		/* check if the message has been deleted: */ \
 		if( \
@@ -166,14 +166,14 @@ DEF_DeathMsg_Draw(cstrike)
 DEF_DeathMsg_Draw(tfc)
 
 #define DEF_DeathMsg_Msg(modification) \
-int __stdcall modification ## _touring_DeathMsg_Msg(DWORD *this_ptr, const char *pszName, int iSize, void *pbuf ) \
+int __fastcall modification ## _touring_DeathMsg_Msg(void * This, void * edx, const char *pszName, int iSize, void *pbuf ) \
 { \
 	for(int i=0; i<MAX_DEATHNOTICES; i++) \
 	{ \
 		memset(&modification ## _rgDeathNoticeList[i], 0, sizeof(modification ## _DeathNoticeItem)); \
 	} \
 	\
-	int i = detoured_DeathMsg_Msg(this_ptr, pszName, iSize, pbuf); \
+	int i = detoured_DeathMsg_Msg(This, edx, pszName, iSize, pbuf); \
 	\
 	if(i) \
 	{ \

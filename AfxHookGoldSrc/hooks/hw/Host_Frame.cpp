@@ -32,6 +32,7 @@ bool Hook_Host_Frame()
 
 	LONG error = NO_ERROR;
 
+	g_phost_frametime = (double *)HL_ADDR_GET(host_frametime);
 	g_Old_HostFrame = (Host_Frame_t)AFXADDR_GET(_Host_Frame);
 
 	DetourTransactionBegin();

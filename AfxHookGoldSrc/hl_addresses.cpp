@@ -6,7 +6,9 @@
 
 using namespace Afx::BinUtils;
 
-AFXADDR_DEF(engine_LoadClientLibrary)
+AFXADDR_DEF(pEngfuncs)
+AFXADDR_DEF(ppmove)
+AFXADDR_DEF(pstudio)
 AFXADDR_DEF(engine_ClientFunctionTable)
 AFXADDR_DEF(CL_Disconnect)
 AFXADDR_DEF(CL_EmitEntities)
@@ -131,7 +133,57 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
 
-	// engine_LoadClientLibrary // [9] // Checked: 2018-09-01
+	// pEngfuncs // [5] // Checked: 2018-10-06
+	// ppmove // [5] // Checked: 2018-10-06
+	// pstudio // [5] // Checked: 2018-10-06
+	{
+		MemRange s1 = FindCString(data2Range, "ScreenFade");
+
+		if (!s1.IsEmpty()) {
+
+			MemRange r1 = FindBytes(textRange, (const char *)&s1.Start, sizeof(s1.Start));
+
+			if (!r1.IsEmpty()) {
+
+				MemRange r2 = FindPatternString(textRange.And(MemRange(r1.Start + 0x09, r1.Start + 0x09 + 23)), "6A 07 68 ?? ?? ?? ?? FF 15 ?? ?? ?? ?? 68 ?? ?? ?? ?? E8 ?? ?? ?? ??");
+
+				if (!r2.IsEmpty()) {
+
+					AFXADDR_SET(pEngfuncs, *(DWORD *)(r2.Start + 3));
+					AFXADDR_SET(ppmove, *(DWORD *)(r2.Start + 13));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+		s1 = MemRange(data2Range.Start, data2Range.Start);
+
+		for (int i = 0; i < 2; ++i)
+		{
+			s1 = FindCString(MemRange(s1.End, data2Range.End), "HUD_GetStudioModelInterface");
+		}
+
+		if (!s1.IsEmpty()) {
+
+			MemRange r1 = FindBytes(textRange, (const char *)&s1.Start, sizeof(s1.Start));
+
+			if (!r1.IsEmpty()) {
+
+				MemRange r2 = FindPatternString(textRange.And(MemRange(r1.Start + 0x14, r1.Start + 0x14 + 14)), "68 ?? ?? ?? ?? 68 ?? ?? ?? ?? 6A 01 FF D0");
+
+				if (!r2.IsEmpty()) {
+
+					AFXADDR_SET(pstudio, *(DWORD *)(r2.Start + 1));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
+
 	// engine_ClientFunctionTable // [9] // Checked: 2018-09-01
 	{
 		MemRange tmp1 = FindCString(data2Range, "Initialize");
@@ -140,19 +192,6 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 			MemRange refTmp1 = FindBytes(textRange, (const char *)&tmp1.Start, sizeof(tmp1.Start));
 			if (!refTmp1.IsEmpty())
 			{
-				{
-					MemRange tmp2 = textRange.And(MemRange(refTmp1.Start - 0x33, refTmp1.Start - 0x33 + 0x3));
-					if (!tmp2.IsEmpty())
-					{
-						if (!FindPatternString(tmp2, "55 8B EC").IsEmpty())
-						{
-							AFXADDR_SET(engine_LoadClientLibrary, tmp2.Start);
-						}
-						else ErrorBox(MkErrStr(__FILE__, __LINE__));
-					}
-					else ErrorBox(MkErrStr(__FILE__, __LINE__));
-				}
-
 				{
 					MemRange tmp2 = textRange.And(MemRange(refTmp1.Start + 0x11, refTmp1.Start + 0x11 + 0x7));
 					if (!tmp2.IsEmpty())
@@ -177,14 +216,14 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 
 	// Host_Init [18] // Checked: 2018-09-01
 	{
-		MemRange tmp1 = FindCString(data2Range, "-console");
+		MemRange tmp1 = FindCString(data2Range, "-toconsole");
 		if (!tmp1.IsEmpty())
 		{
 			MemRange refTmp1 = FindBytes(textRange, (const char *)&tmp1.Start, sizeof(tmp1.Start));
 			if (!refTmp1.IsEmpty())
 			{
 				{
-					MemRange tmp2 = textRange.And(MemRange(refTmp1.Start - 0x66, refTmp1.Start - 0x66 + 0x3));
+					MemRange tmp2 = textRange.And(MemRange(refTmp1.Start - 0x77, refTmp1.Start - 0x77 + 0x3));
 					if (!tmp2.IsEmpty())
 					{
 						if (!FindPatternString(tmp2, "55 8B EC").IsEmpty())
@@ -211,7 +250,7 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 			MemRange refTmp1 = FindBytes(data2Range, (const char *)&tmp1.Start, sizeof(tmp1.Start));
 			if (!refTmp1.IsEmpty())
 			{
-				DWORD tmpAddr = data2Range.Start + 0x0C;
+				DWORD tmpAddr = refTmp1.Start + 0x0C;
 
 				MemRange refTmp2 = FindBytes(textRange, (const char *)&tmpAddr, sizeof(tmpAddr));
 				if (!refTmp2.IsEmpty())
@@ -252,13 +291,14 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 						if (!FindPatternString(tmp2, "8B 15 ?? ?? ?? ?? A1 ?? ?? ?? ?? 52 50 E8 ?? ?? ?? ?? 83 C4 08 E8 ?? ?? ?? ?? E8 ?? ?? ?? ??  E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? E8 ?? ?? ?? ??").IsEmpty())
 						{
 							AFXADDR_SET(host_frametime, *(DWORD *)(tmp2.Start +0x7));
-							AFXADDR_SET(CL_EmitEntities, *(DWORD *)(tmp2.Start + 0x33 -0x5 -0x4));
+							AFXADDR_SET(CL_EmitEntities, *(DWORD *)(tmp2.Start + 0x33 -0x5 -0x4) + (DWORD)(tmp2.Start + 0x33 - 0x5)); // Decode Call
 						}
 						else ErrorBox(MkErrStr(__FILE__, __LINE__));
 					}
 					else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
@@ -267,7 +307,12 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 
 	// CL_Disconnect // [16] // Checked: 2018-09-01
 	{
-		MemRange tmp1 = FindCString(data2Range, "cd stop\n");
+		MemRange tmp1 = MemRange(data2Range.Start, data2Range.Start);
+		
+		for (int i = 0; i < 2; ++i)
+		{
+			tmp1 = FindCString(MemRange(tmp1.End, data2Range.End), "cd stop\n");
+		}
 		if (!tmp1.IsEmpty())
 		{
 			MemRange refTmp1 = FindBytes(textRange, (const char *)&tmp1.Start, sizeof(tmp1.Start));
@@ -278,7 +323,7 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 				{
 					if (!FindPatternString(tmp2, "E8 ?? ?? ?? ??").IsEmpty())
 					{
-						AFXADDR_SET(CL_Disconnect, *(DWORD *)(tmp2.Start + 0x1));
+						AFXADDR_SET(CL_Disconnect, *(DWORD *)(tmp2.Start + 0x1) + (DWORD)(tmp2.Start + 0x1 + 0x4)); // Decode Call
 					}
 					else ErrorBox(MkErrStr(__FILE__, __LINE__));
 				}
@@ -332,8 +377,8 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 
 		if (!r1.IsEmpty())
 		{
-			AFXADDR_SET(UnkDrawHudInCall, *(DWORD *)(r1.Start + 1)); // [7]
-			AFXADDR_SET(UnkDrawHudOutCall, *(DWORD *)(r1.Start + 134)); // [7]
+			AFXADDR_SET(UnkDrawHudInCall, *(DWORD *)(r1.Start + 1) + (DWORD)(r1.Start + 1 + 4)); // [7] // Decode Call
+			AFXADDR_SET(UnkDrawHudOutCall, *(DWORD *)(r1.Start + 134) + (DWORD)(r1.Start + 134 + 4)); // [7] // Decode Call
 
 			AFXADDR_SET(UnkDrawHudIn, r1.Start); // [7]
 			AFXADDR_SET(UnkDrawHudInContinue, AFXADDR_GET(UnkDrawHudIn) + 0x5); // [7]
@@ -381,29 +426,29 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 
 							if (!tmp3.IsEmpty())
 							{
-								DWORD addr_R_RenderScene = *(DWORD *)(tmp3.Start + 6);
-								AFXADDR_SET(R_DrawViewModel, *(DWORD *)(tmp3.Start + 20));
-								AFXADDR_SET(R_PolyBlend, *(DWORD *)(tmp3.Start + 25));
+								DWORD addr_R_RenderScene = *(DWORD *)(tmp3.Start + 6) + (DWORD)(tmp3.Start + 6 + 4); // Decode Call
+								AFXADDR_SET(R_DrawViewModel, *(DWORD *)(tmp3.Start + 20) + (DWORD)(tmp3.Start + 20 + 4)); // Decode Call
+								AFXADDR_SET(R_PolyBlend, *(DWORD *)(tmp3.Start + 25) + (DWORD)(tmp3.Start + 25 + 4)); // Decode CAll
 
 								// Look into R_RenderScene:
 								MemRange range_R_RenderScene = textRange.And(MemRange(addr_R_RenderScene, addr_R_RenderScene +0x0DD));
 								MemRange tmp4 = FindPatternString(range_R_RenderScene, "83 C4 04 E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? E8 ?? ?? ?? ??");
 								if (!tmp4.IsEmpty())
 								{
-									DWORD addr_R_SetupGL = *(DWORD *)(tmp4.Start + 14);
-									DWORD addr_R_MarkLeaves = *(DWORD *)(tmp4.Start + 19);
+									DWORD addr_R_SetupGL = *(DWORD *)(tmp4.Start + 14) + (DWORD)(tmp4.Start + 14 +  4); // Decode Call
+									DWORD addr_R_MarkLeaves = *(DWORD *)(tmp4.Start + 19) + (DWORD)(tmp4.Start + 19 +4); // Decode Call
 
 									MemRange tmp5 = FindPatternString(MemRange(tmp4.End, range_R_RenderScene.End), "E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? A1 ?? ?? ?? ?? 85 C0 74 05");
 									if (!tmp5.IsEmpty())
 									{
 										//DWORD addr_R_DrawWorld = *(DWORD *)(tmp5.Start + 1);
 
-										AFXADDR_SET(R_DrawEntitiesOnList, *(DWORD *)(tmp5.Start + 11));
+										AFXADDR_SET(R_DrawEntitiesOnList, *(DWORD *)(tmp5.Start + 11) +(DWORD)(tmp5.Start + 11 + 4)); // Decode call
 
 										MemRange tmp6 = FindPatternString(MemRange(tmp5.End, range_R_RenderScene.End), "A1 ?? ?? ?? ?? 85 C0 75 0F E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? E9 ?? ?? ?? ??");
 										if (!tmp6.IsEmpty())
 										{
-											AFXADDR_SET(R_DrawParticles, *(DWORD *)(tmp6.Start + 11) + (DWORD)(tmp6.Start + 15)); // (Decod E9 JMP into R_DrawParticles sub).
+											AFXADDR_SET(R_DrawParticles, *(DWORD *)(tmp6.Start + 10) + (DWORD)(tmp6.Start + 14)); // (Decod E9 JMP into R_DrawParticles sub).
 										}
 										else ErrorBox(MkErrStr(__FILE__, __LINE__));
 									}
@@ -413,7 +458,7 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 									MemRange tmp7 = FindPatternString(textRange.And(MemRange(addr_R_SetupGL, addr_R_SetupGL + 0x3FB)), "8B 1D ?? ?? ?? ?? 8B 3D ?? ?? ?? ?? A1 ?? ?? ?? ?? 8B 15 ?? ?? ?? ??");
 									if (!tmp7.IsEmpty())
 									{
-										AFXADDR_SET(r_refdef, *(DWORD *)(tmp7.Start + 11));
+										AFXADDR_SET(r_refdef, *(DWORD *)(tmp7.Start + 8));
 									}
 									else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
@@ -421,7 +466,7 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 									MemRange tmp8 = FindPatternString(textRange.And(MemRange(addr_R_MarkLeaves, addr_R_MarkLeaves +0x106)), "51 68 FF 00 00 00 52 E8 ?? ?? ?? ?? 83 C4 0C EB 0C 50 51 E8 ?? ?? ?? ??");
 									if (!tmp8.IsEmpty())
 									{
-										AFXADDR_SET(Mod_LeafPVS, *(DWORD *)(tmp8.Start + 20));
+										AFXADDR_SET(Mod_LeafPVS, *(DWORD *)(tmp8.Start + 20) + (DWORD)(tmp8.Start + 20 + 4)); // Decode Call
 									}
 									else ErrorBox(MkErrStr(__FILE__, __LINE__));
 								}
@@ -460,16 +505,16 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 
 	// Draw_DecalMaterial // [12] // Checked 2018-09-19
 	{
-		MemRange tmp1 = FindCString(data2Range, "No model %d!\n"); // Find String inside pEngfuncs->pEfxAPI->R_DecalShoot
+		MemRange tmp1 = FindCString(data2Range, "Failed to load custom decal for player #%i:%s using default decal 0.\n"); // Find String inside Draw_DecalMaterial
 		if (!tmp1.IsEmpty())
 		{
 			MemRange refTmp1 = FindBytes(textRange, (const char *)&tmp1.Start, sizeof(tmp1.Start));
 			if (!refTmp1.IsEmpty())
 			{
-				MemRange r2 = FindPatternString(textRange.And(MemRange(refTmp1.Start - 0x16, refTmp1.Start - 0x16 + 0x0D)), "55 8B EC 56 8B 75 0C 56 E8 ?? ?? ?? ??");
+				MemRange r2 = FindPatternString(textRange.And(MemRange(refTmp1.Start - 0x73, refTmp1.Start - 0x73 + 3)), "55 8B EC");
 				if (!r2.IsEmpty())
 				{
-					AFXADDR_SET(Draw_DecalMaterial, *(DWORD *)(r2.Start + 0x0A) + (DWORD)(r2.Start + 0x0D)); // Decode call address.
+					AFXADDR_SET(Draw_DecalMaterial, r2.Start);
 				}
 				else ErrorBox(MkErrStr(__FILE__, __LINE__));
 			}
@@ -488,10 +533,6 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 		}
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
-
-	// TODO: all bellow:
-
-
 	
 	//
 	// Sound system related:
@@ -513,7 +554,7 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 
 			if (!refS1.IsEmpty()) {
 
-				MemRange r2a = FindPatternString(textRange.And(MemRange(refS1.Start - 0x78, refS1.Start - 0x78 + 0x7)), "56 57 E8 ?? ?? ?? ??");
+				MemRange r2a = FindPatternString(textRange.And(MemRange(refS1.Start - 0x73, refS1.Start - 0x73 + 0x7)), "56 57 E8 ?? ?? ?? ??");
 
 				if (!r2a.IsEmpty())
 				{
@@ -555,7 +596,7 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 
 				if (!r2b.IsEmpty())
 				{
-					AFXADDR_SET(S_PaintChannels, *(DWORD *)(r2b.Start + 4) + (DWORD)(r2a.Start + 8));
+					AFXADDR_SET(S_PaintChannels, *(DWORD *)(r2b.Start + 4) + (DWORD)(r2b.Start + 4 + 4));
 
 					MemRange r3 = textRange.And(MemRange(AFXADDR_GET(S_PaintChannels), AFXADDR_GET(S_PaintChannels) + 0x196));
 
