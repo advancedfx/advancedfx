@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.6.1</version>
+<time>2018-10-08T16:34Z</time>
+<changes>
+<change type="fixed">
+Fixed crash bug when using mirv_movie_export_sound 1. Thanks to https://twitter.com/lxr15815798 for reporting it.
+</change>
+</changes>
+<comments>
+Please report new bugs in AfxHookGoldSrc with [GoldSrc] in title on https://github.com/advancedfx/advancedfx/issues
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.6.0</version>
 <time>2018-10-06T20:18Z</time>
 <changes>

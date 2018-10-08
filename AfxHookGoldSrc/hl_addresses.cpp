@@ -572,7 +572,7 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 
 						if (!r5.IsEmpty()) {
 
-							AFXADDR_SET(shm, *(DWORD *)(r5.Start + 11));
+							AFXADDR_SET(shm, *(DWORD *)(r5.Start + 10));
 
 							MemRange r6 = FindPatternString(MemRange(r5.End, r3.End), "89 0D ?? ?? ?? ?? 5F 5E 8B E5 5D C3");
 
