@@ -194,7 +194,7 @@ namespace AfxInterop {
 				{ errorLine = __LINE__; goto error; }
 			}
 
-			if (!WaitNamedPipe(strPipeName.c_str(), 20000))
+			if (!WaitNamedPipe(strPipeName.c_str(), NMPWAIT_USE_DEFAULT_WAIT))
 			{
 				Tier0_Warning("Could not open pipe: 20 second wait timed out.\n");
 				{ errorLine = __LINE__; goto error; }
@@ -245,7 +245,7 @@ namespace AfxInterop {
 					{ errorLine = __LINE__; goto error; }
 				}
 
-				if (!WaitNamedPipe(strPipeName.c_str(), 20000))
+				if (!WaitNamedPipe(strPipeName.c_str(), NMPWAIT_USE_DEFAULT_WAIT))
 				{
 					Tier0_Warning("Could not open enigne thread pipe: 20 second wait timed out.\n");
 					{ errorLine = __LINE__; goto error; }
