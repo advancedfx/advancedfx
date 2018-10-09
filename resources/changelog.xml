@@ -6,6 +6,21 @@
 
 <release>
 <name>HLAE</name>
+<version>2.56.0</version>
+<time>2018-10-09T20:36Z</time>
+<changes>
+<change type="updated">
+Included AfxHookSource 1.45.0 (2018-10-09T20:36Z).
+</change>
+<change type="fixed">
+Fixed unable to disable the GoldSrc optimize visibility feature bug. Thanks to https://github.com/juicejuicejuice for pull request #105
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.55.1</version>
 <time>2018-10-08T16:34Z</time>
 <changes>
