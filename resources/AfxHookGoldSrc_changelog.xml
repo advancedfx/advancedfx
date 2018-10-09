@@ -10,7 +10,7 @@
 <time>2018-10-08T16:34Z</time>
 <changes>
 <change type="fixed">
-Fixed crash bug when using mirv_movie_export_sound 1. Thanks to https://twitter.com/lxr15815798 for reporting it.
+Fixed crash bug when using mirv_movie_export_sound 1. Thanks to https://twitter.com/Alexey_lxr for reporting it.
 </change>
 </changes>
 <comments>

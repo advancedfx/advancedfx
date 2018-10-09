@@ -1,14 +1,12 @@
 #pragma once
 
 #include <shared/AfxMath.h>
+#include "FovScaling.h"
 
 #include <stdio.h>
 #include <fstream>
 #include <map>
 
-double AlienSwarm_FovScaling(double width, double height, double fov);
-
-double AlienSwarm_InverseFovScaling(double width, double height, double fov);
 
 class CamIO
 {

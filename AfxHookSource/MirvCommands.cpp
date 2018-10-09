@@ -27,6 +27,7 @@
 #include "csgo_vphysics.h"
 #include "csgo_c_baseentity.h"
 #include "csgo_c_baseanimatingoverlay.h"
+#include "FovScaling.h"
 
 #include "csgo_Stdshader_dx9_Hooks.h"
 
@@ -2300,8 +2301,14 @@ CON_COMMAND(mirv_fov,"allows overriding FOV (Filed Of View) of the camera")
 							g_Hook_VClient_RenderView.handleZoomMinUnzoomedFov = g_Hook_VClient_RenderView.LastCameraFov;
 							return;
 						}
-						else
-						if(StringIsEmpty(arg3) || !StringIsAlphas(arg3))
+						else if (0 == _stricmp("real", arg3) && 5 <= argc)
+						{
+							char const * arg4 = args->ArgV(4);
+
+							g_Hook_VClient_RenderView.handleZoomMinUnzoomedFov = Auto_InverseFovScaling(g_Hook_VClient_RenderView.LastWidth, g_Hook_VClient_RenderView.LastHeight, atof(arg4));
+							return;
+						}
+						else if(StringIsEmpty(arg3) || !StringIsAlphas(arg3))
 						{
 							g_Hook_VClient_RenderView.handleZoomMinUnzoomedFov = atof(arg3);
 							return;
@@ -2311,7 +2318,7 @@ CON_COMMAND(mirv_fov,"allows overriding FOV (Filed Of View) of the camera")
 					Tier0_Msg(
 						"Usage:\n"
 						"mirv_fov handleZoom minUnzoomedFov current - Set current fov as threshold.\n"
-						"mirv_fov handleZoom minUnzoomedFov <f> - Set floating point value <f> as threshold.\n"
+						"mirv_fov handleZoom minUnzoomedFov [real] <f> - Set floating point value <f> as threshold.\n"
 						"Current value: %f\n",
 						g_Hook_VClient_RenderView.handleZoomMinUnzoomedFov
 					);
@@ -2326,7 +2333,14 @@ CON_COMMAND(mirv_fov,"allows overriding FOV (Filed Of View) of the camera")
 			);
 			return;
 		}
-		else
+		else if (0 == _stricmp("real", arg1) && 3 <= argc)
+		{
+			char const * arg2 = args->ArgV(2);
+
+
+			g_Hook_VClient_RenderView.FovOverride(Auto_InverseFovScaling(g_Hook_VClient_RenderView.LastWidth, g_Hook_VClient_RenderView.LastHeight, atof(arg2)));
+			return;
+		}
 		if(StringIsEmpty(arg1) || !StringIsAlphas(arg1))
 		{
 			g_Hook_VClient_RenderView.FovOverride(atof(arg1));
@@ -2336,7 +2350,7 @@ CON_COMMAND(mirv_fov,"allows overriding FOV (Filed Of View) of the camera")
 
 	Tier0_Msg(
 		"Usage:\n"
-		"mirv_fov <f> - Override fov with given floating point value <f>.\n"
+		"mirv_fov [real] <f> - Override fov with given floating point value <f>.\n"
 		"mirv_fov default - Revert to the game's default behaviour.\n"
 		"mirv_fov handleZoom [...] - Handle zooming (i.e. AWP in CS:GO).\n"
 	);
@@ -2691,16 +2705,26 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 		else
 		if(0 == _stricmp("fov", arg1))
 		{
-			if(3 == argc)
+			if(3 <= argc)
 			{
 				char const * arg2 = args->ArgV(2);
-	
-				g_Hook_VClient_RenderView.LastCameraFov = atof(arg2);
-				return;
+
+				if (4 <= argc) {
+					char const * arg3 = args->ArgV(3);
+
+					if (0 == _stricmp("real", arg2)) {
+						g_Hook_VClient_RenderView.LastCameraFov = Auto_InverseFovScaling(g_Hook_VClient_RenderView.LastWidth, g_Hook_VClient_RenderView.LastHeight, atof(arg3));
+						return;
+					}
+				}
+				else {
+					g_Hook_VClient_RenderView.LastCameraFov = atof(arg2);
+					return;
+				}
 			}
 
 			Tier0_Msg(
-				"mirv_input fov <fov> - Set new fov (only useful in camera input mode).\n"
+				"mirv_input fov [real] <fov> - Set new fov (only useful in camera input mode).\n"
 				"Current value: %f\n"
 				, g_Hook_VClient_RenderView.LastCameraFov
 			);
