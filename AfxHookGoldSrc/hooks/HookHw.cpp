@@ -207,6 +207,7 @@ void MypfnHookEvent(char *name, void(*pfnEvent)(struct event_args_s *args))
 {
 	static const char *gamedir = pEngfuncs->pfnGetGameDirectory();
 
+
 	if (gamedir && 0 == _stricmp("cstrike", gamedir) && name && 0 == strcmp("events/createsmoke.sc", name))
 	{
 		AFXADDR_SET(cstrike_EV_CreateSmoke, (DWORD)pfnEvent);
@@ -219,7 +220,7 @@ bool HookpEnginefuncs(cl_enginefunc_t *pEnginefuncs)
 {
 	static bool firstRun = true;
 	static bool firstResult = true;
-	if (!firstRun) return false;
+	if (!firstRun) return firstResult;
 	firstRun = false;
 
 	LONG error = NO_ERROR;

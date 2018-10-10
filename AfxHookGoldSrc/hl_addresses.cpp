@@ -150,7 +150,7 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 				if (!r2.IsEmpty()) {
 
 					AFXADDR_SET(pEngfuncs, *(DWORD *)(r2.Start + 3));
-					AFXADDR_SET(ppmove, *(DWORD *)(r2.Start + 13));
+					AFXADDR_SET(ppmove, *(DWORD *)(r2.Start + 14));
 				}
 				else ErrorBox(MkErrStr(__FILE__, __LINE__));
 			}

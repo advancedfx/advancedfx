@@ -30,7 +30,7 @@ bool InstallHook_cstrike_EN_CreateSmoke()
 {
 	static bool firstRun = true;
 	static bool firstResult = true;
-	if (!firstRun) return false;
+	if (!firstRun) return firstResult;
 	firstRun = false;
 
 	static bool bFirstRun = true;
@@ -38,6 +38,8 @@ bool InstallHook_cstrike_EN_CreateSmoke()
 	if (AFXADDR_GET(cstrike_EV_CreateSmoke))
 	{
 		LONG error = NO_ERROR;
+
+		detoured_cstrike_EN_CreateSmoke = (pfnEvent_t)AFXADDR_GET(cstrike_EV_CreateSmoke);
 
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
