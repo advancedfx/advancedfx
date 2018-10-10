@@ -7,10 +7,10 @@
 <release>
 <name>HLAE</name>
 <version>2.56.1</version>
-<time>2018-10-09T07:52Z</time>
+<time>2018-10-10T07:52Z</time>
 <changes>
 <change type="updated">
-Included AfxHookGoldSrc 1.6.2 (2018-10-09T07:52Z).
+Included AfxHookGoldSrc 1.6.2 (2018-10-10T07:52Z).
 </change>
 </changes>
 </release>

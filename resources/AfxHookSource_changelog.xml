@@ -7,7 +7,7 @@
 <release>
 <name>AfxHookSource</name>
 <version>1.45.0</version>
-<time>2018-10-09T20:36Z</time>
+<time>2018-10-10T20:36Z</time>
 <changes>
 <change type="added">
 Added real sub-option (prefix) to mirv_input fov, mirv_fov, mirv_fov handleZoom minUnzoomedFov, this will allow setting the real FOV, taking the game's FOV-scaling into account for games where HLAE knows it (CS:GO, CSSV34, TF2, CSS, SWARM, L4D2).
