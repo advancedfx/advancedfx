@@ -3,6 +3,27 @@
 
 <changelog>
 
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.6.2</version>
+<time>2018-10-09T07:52Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_cstrike_deathmsg not working / crashing.
+</change>
+<change type="fixed">
+Fixed mirv_cstrike_smoke not working.
+</change>
+<change type="fixed">
+Fixed mivr_whereami not working / crashing.
+</change>
+</changes>
+<comments>
+Please report new bugs in AfxHookGoldSrc with [GoldSrc] in title on https://github.com/advancedfx/advancedfx/issues<br />
+Thanks to https://github.com/sphinxx87 for reporting #106
+</comments>
+</release>
+
 
 <release>
 <name>AfxHookGoldSrc</name>

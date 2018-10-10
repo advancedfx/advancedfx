@@ -95,7 +95,7 @@ class Launcher
 
             cmds += " -afxForceAlpha8 " + (cfg.ForceAlpha ? 1 : 0).ToString();
 
-            cmds += " -afxOptimizeCaptureVis" + (cfg.OptimizeVisibilty ? 1 : 0).ToString();
+            cmds += " -afxOptimizeCaptureVis " + (cfg.OptimizeVisibilty ? 1 : 0).ToString();
 
             // custom command line
 

@@ -58,8 +58,8 @@ std::list<tfc_DeathNoticeItem> tfc_DeathNotices;
 DWORD DeathMsg_Draw_ItemIndex;
 
 typedef int (* MsgFunc_DeathMsg_t)(const char *pszName, int iSize, void *pbuf);
-typedef int (__fastcall *DeathMsg_Draw_t)(void *This, void * ecx, float flTime );
-typedef int (__fastcall *DeathMsg_Msg_t)(void *This, void * ecx, const char *pszName, int iSize, void *pbuf );
+typedef int (__fastcall *DeathMsg_Draw_t)(void *This, void * edx, float flTime );
+typedef int (__fastcall *DeathMsg_Msg_t)(void *This, void * edx, const char *pszName, int iSize, void *pbuf );
 
 MsgFunc_DeathMsg_t detoured_MsgFunc_DeathMsg;
 DeathMsg_Draw_t detoured_DeathMsg_Draw;
@@ -291,6 +291,7 @@ bool Hook_DeathMsg_ ## modification() \
 		else \
 		{ \
 			/* Patch Draw fn: */ \
+			DeathMsg_Draw_AfterYRes = HL_ADDR_GET(modification ## _CHudDeathNotice_Draw_YRes) + HL_ADDR_GET(modification ## _CHudDeathNotice_Draw_YRes_DSZ); \
 			Asm32ReplaceWithJmp((void *)(HL_ADDR_GET(modification ## _CHudDeathNotice_Draw_YRes)), HL_ADDR_GET(modification ## _CHudDeathNotice_Draw_YRes_DSZ), (void *)modification ## _DeathMsg_DrawHelperY); \
 		} \
 	} \
