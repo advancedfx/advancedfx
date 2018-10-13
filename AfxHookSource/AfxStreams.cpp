@@ -4944,7 +4944,7 @@ void CAfxStreams::OnDrawingHud(void)
 	{
 		IAfxMatRenderContextOrg * orgCtx = afxMatRenderContext->GetOrg();
 
-		QueueOrExecute(orgCtx, new AfxInteropDrawingThreadBeforeHud_Functor());
+		QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new AfxInteropDrawingThreadBeforeHud_Functor()));
 	}
 #endif
 

@@ -70,10 +70,8 @@ namespace AfxInterop {
 
 	void BeforeFrameStart() {
 		if (!m_Enabled) return;
-	}
 
-	void BeforeFrameRenderStart() {
-		if (!m_Enabled) return;
+		return;
 
 		int errorLine = 0;
 
@@ -119,13 +117,17 @@ namespace AfxInterop {
 		return;
 
 	error:
-		Tier0_Warning("AfxInterop::BeforeFrameRenderStart: Error in line %i.\n", errorLine); 
+		Tier0_Warning("AfxInterop::BeforeFrameStart: Error in line %i.\n", errorLine);
 		{
 			std::unique_lock<std::mutex> lock(EngineThread::m_ConnectMutex);
 
 			Disconnect();
 		}
 		return;
+	}
+
+	void BeforeFrameRenderStart() {
+		if (!m_Enabled) return;
 	}
 
 	void Shutdown() {
@@ -152,6 +154,8 @@ namespace AfxInterop {
 	{
 		if (!m_Enabled) return;
 
+		int errorLine = 0;
+
 		{
 			// Connection handling:
 
@@ -166,10 +170,23 @@ namespace AfxInterop {
 				Disconnect();
 			}
 
-			if (!m_Connected) return;
-
-
+			if (!m_Connected)
+				return;
 		}
+
+		// No frame info available yet:
+		if (!WriteBoolean(m_HPipe, false)) { errorLine = __LINE__; goto error; }
+
+		return;
+
+	error:
+		Tier0_Warning("AfxInterop::DrawingThreadBeforeHud: Error in line %i.\n", errorLine);
+		{
+			std::unique_lock<std::mutex> lock(EngineThread::m_ConnectMutex);
+
+			Disconnect();
+		}
+		return;
 	}
 
 	bool Connect(char const * pipeName) {
@@ -194,12 +211,14 @@ namespace AfxInterop {
 				{ errorLine = __LINE__; goto error; }
 			}
 
-			if (!WaitNamedPipe(strPipeName.c_str(), NMPWAIT_USE_DEFAULT_WAIT))
+			if (!WaitNamedPipe(strPipeName.c_str(), 5000))
 			{
-				Tier0_Warning("Could not open pipe: 20 second wait timed out.\n");
+				Tier0_Warning("WaitNamedPipe: timed out.\n");
 				{ errorLine = __LINE__; goto error; }
 			}
 		}
+
+		Tier0_Msg("Connected to \"%s\".\n", strPipeName.c_str());
 
 		INT32 version;
 		if (!ReadInt32(m_HPipe, version)) { errorLine = __LINE__; goto error; }
@@ -218,13 +237,6 @@ namespace AfxInterop {
 
 		if(!ReadBoolean(m_HPipe, m_Server64Bit)) { errorLine = __LINE__; goto error; }
 
-		HANDLE engineWritePipe = INVALID_HANDLE_VALUE;
-		HANDLE engineReadPipe = INVALID_HANDLE_VALUE;
-
-		if(!ReadHandle(m_HPipe, engineWritePipe)) { errorLine = __LINE__; goto error; }
-
-		if (!ReadHandle(m_HPipe, engineReadPipe)) { errorLine = __LINE__; goto error; }
-
 		{
 			std::unique_lock<std::mutex> lock(EngineThread::m_ActiveMutex);
 
@@ -234,23 +246,24 @@ namespace AfxInterop {
 
 			while (true)
 			{
-
 				EngineThread::m_HPipe = CreateFile(strPipeName.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
 				if (EngineThread::m_HPipe != INVALID_HANDLE_VALUE)
 					break;
 
 				if (GetLastError() != ERROR_PIPE_BUSY)
 				{
-					Tier0_Warning("Could not open engine thread pipe. GLE=%d\n", GetLastError());
+					Tier0_Warning("Could not open pipe. GLE=%d\n", GetLastError());
 					{ errorLine = __LINE__; goto error; }
 				}
 
-				if (!WaitNamedPipe(strPipeName.c_str(), NMPWAIT_USE_DEFAULT_WAIT))
+				if (!WaitNamedPipe(strPipeName.c_str(), 5000))
 				{
-					Tier0_Warning("Could not open enigne thread pipe: 20 second wait timed out.\n");
+					Tier0_Warning("WaitNamedPipe: timed out.\n");
 					{ errorLine = __LINE__; goto error; }
 				}
 			}
+
+			Tier0_Msg("Connected to \"%s\".\n", strPipeName.c_str());
 
 			EngineThread::m_Active = true;
 		}
@@ -324,8 +337,13 @@ namespace AfxInterop {
 
 	bool ReadBoolean(HANDLE hFile, bool & outValue)
 	{
-		return ReadBytes(hFile, &outValue, 0, sizeof(outValue));
-	
+		BYTE useVal;
+
+		bool result =  ReadBytes(hFile, &useVal, 0, sizeof(useVal));
+		
+		if (result) outValue = 0 != useVal ? true : false;
+
+		return result;
 	}
 
 	bool ReadByte(HANDLE hFile, BYTE & outValue)
@@ -375,7 +393,10 @@ namespace AfxInterop {
 	}
 
 	bool WriteBoolean(HANDLE hFile, bool value) {
-		return WriteBytes(hFile, &value, 0, sizeof(bool));
+
+		BYTE useVal = value ? 1 : 0;
+
+		return WriteBytes(hFile, &useVal, 0, sizeof(useVal));
 	}
 
 	bool WriteInt32(HANDLE hFile, INT32 value) {
