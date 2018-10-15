@@ -36,7 +36,7 @@ namespace AfxInterop {
 
 	bool m_Enabled = false;
 	bool m_Connected = false;
-	HANDLE m_HPipe = INVALID_HANDLE_VALUE;
+	HANDLE m_Hipe = INVALID_HANDLE_VALUE;
 	bool m_Server64Bit = false;
 
 	namespace EngineThread {
@@ -53,7 +53,7 @@ namespace AfxInterop {
 
 		std::mutex m_ActiveMutex;
 		bool m_Active = false;
-		HANDLE m_HPipe = INVALID_HANDLE_VALUE;
+		HANDLE m_Hipe = INVALID_HANDLE_VALUE;
 
 		std::mutex m_ConnectMutex;
 		bool m_WantsConnect = false;
@@ -71,52 +71,53 @@ namespace AfxInterop {
 	void BeforeFrameStart() {
 		if (!m_Enabled) return;
 
-		return;
-
 		int errorLine = 0;
 
-		if (WrpGlobals * pWrpGlobals = g_Hook_VClient_RenderView.GetGlobals()) {
-			EngineThread::m_Frame = pWrpGlobals->framecount_get();
-		}
-		else {
-			++EngineThread::m_Frame;
-		}
+		//if (WrpGlobals * pWrpGlobals = g_Hook_VClient_RenderView.GetGlobals()) {
+		//	EngineThread::m_Frame = pWrpGlobals->framecount_get();
+		//}
+		//else {
+		//	++EngineThread::m_Frame;
+		//}
 
+		if(EngineThread::m_ActiveMutex.try_lock())
 		{
-			std::unique_lock<std::mutex> lock(EngineThread::m_ActiveMutex);
-
 			if (EngineThread::m_Active)
 			{
-				if (!WriteInt32(EngineThread::m_HPipe, EngineThread::ClientMessage_BeforeFrameStart)) { errorLine = __LINE__; goto error; }
-				if (!Flush(EngineThread::m_HPipe)) { errorLine = __LINE__; goto error; }
+				if (!WriteInt32(EngineThread::m_Hipe, EngineThread::ClientMessage_BeforeFrameStart)) { errorLine = __LINE__; goto locked_error; }
+				if (!Flush(EngineThread::m_Hipe)) { errorLine = __LINE__; goto locked_error; }
 
 				int commandCount = 0;
 				{
 					BYTE byteCommandCount;
-					if (!ReadByte(EngineThread::m_HPipe, byteCommandCount)) { errorLine = __LINE__; goto error; }
+					if (!ReadByte(EngineThread::m_Hipe, byteCommandCount)) { errorLine = __LINE__; goto locked_error; }
 					commandCount = byteCommandCount;
 				}
 				if (255 == commandCount)
 				{
-					if (!ReadInt32(EngineThread::m_HPipe, commandCount)) { errorLine = __LINE__; goto error; }
+					if (!ReadInt32(EngineThread::m_Hipe, commandCount)) { errorLine = __LINE__; goto locked_error; }
 				}
 
 				std::string command;
 
 				while (0 < commandCount)
 				{
-					if (!ReadStringUTF8(EngineThread::m_HPipe, command)) { errorLine = __LINE__; goto error; }
+					if (!ReadStringUTF8(EngineThread::m_Hipe, command)) { errorLine = __LINE__; goto locked_error; }
 
 					g_VEngineClient->ExecuteClientCmd(command.c_str());
 
 					--commandCount;
 				}
 			}
+
+			EngineThread::m_ActiveMutex.unlock();
 		}
 
 		return;
 
-	error:
+	locked_error:
+		EngineThread::m_ActiveMutex.unlock();
+
 		Tier0_Warning("AfxInterop::BeforeFrameStart: Error in line %i.\n", errorLine);
 		{
 			std::unique_lock<std::mutex> lock(EngineThread::m_ConnectMutex);
@@ -175,7 +176,7 @@ namespace AfxInterop {
 		}
 
 		// No frame info available yet:
-		if (!WriteBoolean(m_HPipe, false)) { errorLine = __LINE__; goto error; }
+		if (!WriteBoolean(m_Hipe, false)) { errorLine = __LINE__; goto error; }
 
 		return;
 
@@ -196,58 +197,14 @@ namespace AfxInterop {
 
 		Disconnect();
 
-		std::string strPipeName("\\\\.\\pipe\\");
-		strPipeName.append(pipeName);
-
-		while (true)
 		{
-			m_HPipe = CreateFile(strPipeName.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-			if (m_HPipe != INVALID_HANDLE_VALUE)
-				break;
-
-			if (GetLastError() != ERROR_PIPE_BUSY)
-			{
-				Tier0_Warning("Could not open pipe. GLE=%d\n", GetLastError());
-				{ errorLine = __LINE__; goto error; }
-			}
-
-			if (!WaitNamedPipe(strPipeName.c_str(), 5000))
-			{
-				Tier0_Warning("WaitNamedPipe: timed out.\n");
-				{ errorLine = __LINE__; goto error; }
-			}
-		}
-
-		Tier0_Msg("Connected to \"%s\".\n", strPipeName.c_str());
-
-		INT32 version;
-		if (!ReadInt32(m_HPipe, version)) { errorLine = __LINE__; goto error; }
-		
-		if (m_Version != version)
-		{
-			Tier0_Warning("Version %d is not a supported (%d) version.\n", version, m_Version);
-			if (!WriteBoolean(m_HPipe, false)) { errorLine = __LINE__; goto error; }
-			if (!Flush(m_HPipe)) { errorLine = __LINE__; goto error; }
-			{ errorLine = __LINE__; goto error; }
-		}
-
-		if (!WriteBoolean(m_HPipe, true)) { errorLine = __LINE__; goto error; }
-
-		if(!Flush(m_HPipe)) { errorLine = __LINE__; goto error; }
-
-		if(!ReadBoolean(m_HPipe, m_Server64Bit)) { errorLine = __LINE__; goto error; }
-
-		{
-			std::unique_lock<std::mutex> lock(EngineThread::m_ActiveMutex);
-
 			std::string strPipeName("\\\\.\\pipe\\");
 			strPipeName.append(pipeName);
-			strPipeName.append("_engine");
 
 			while (true)
 			{
-				EngineThread::m_HPipe = CreateFile(strPipeName.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-				if (EngineThread::m_HPipe != INVALID_HANDLE_VALUE)
+				m_Hipe = CreateFile(strPipeName.c_str(), GENERIC_WRITE | GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+				if (m_Hipe != INVALID_HANDLE_VALUE)
 					break;
 
 				if (GetLastError() != ERROR_PIPE_BUSY)
@@ -264,11 +221,59 @@ namespace AfxInterop {
 			}
 
 			Tier0_Msg("Connected to \"%s\".\n", strPipeName.c_str());
-
-			EngineThread::m_Active = true;
 		}
 
+		{
+			std::string strPipeName("\\\\.\\pipe\\");
+			strPipeName.append(pipeName);
+			strPipeName.append("_engine");
+
+			while (true)
+			{
+				EngineThread::m_Hipe = CreateFile(strPipeName.c_str(), GENERIC_WRITE | GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+				if (EngineThread::m_Hipe != INVALID_HANDLE_VALUE)
+					break;
+
+				if (GetLastError() != ERROR_PIPE_BUSY)
+				{
+					Tier0_Warning("Could not open pipe. GLE=%d\n", GetLastError());
+					{ errorLine = __LINE__; goto error; }
+				}
+
+				if (!WaitNamedPipe(strPipeName.c_str(), 5000))
+				{
+					Tier0_Warning("WaitNamedPipe: timed out.\n");
+					{ errorLine = __LINE__; goto error; }
+				}
+			}
+
+			Tier0_Msg("Connected to \"%s\".\n", strPipeName.c_str());
+		}
+
+
+		INT32 version;
+		if (!ReadInt32(m_Hipe, version)) { errorLine = __LINE__; goto error; }
+		
+		if (m_Version != version)
+		{
+			Tier0_Warning("Version %d is not a supported (%d) version.\n", version, m_Version);
+			if (!WriteBoolean(m_Hipe, false)) { errorLine = __LINE__; goto error; }
+			if (!Flush(m_Hipe)) { errorLine = __LINE__; goto error; }
+			{ errorLine = __LINE__; goto error; }
+		}
+
+		if (!WriteBoolean(m_Hipe, true)) { errorLine = __LINE__; goto error; }
+
+		if(!Flush(m_Hipe)) { errorLine = __LINE__; goto error; }
+
+		if(!ReadBoolean(m_Hipe, m_Server64Bit)) { errorLine = __LINE__; goto error; }
+
 		m_Connected = true;
+
+		{
+			std::unique_lock<std::mutex> lock(EngineThread::m_ActiveMutex);
+			EngineThread::m_Active = true;
+		}
 
 		return true;
 
@@ -282,13 +287,13 @@ namespace AfxInterop {
 		{
 			std::unique_lock<std::mutex> lock(EngineThread::m_ActiveMutex);
 
-			if (INVALID_HANDLE_VALUE != EngineThread::m_HPipe)
+			if (INVALID_HANDLE_VALUE != EngineThread::m_Hipe)
 			{
-				if (!CloseHandle(EngineThread::m_HPipe))
+				if (!CloseHandle(EngineThread::m_Hipe))
 				{
 					Tier0_Warning("AfxInterop::Disconnect: Error in line %i.\n", __LINE__);
 				}
-				EngineThread::m_HPipe = INVALID_HANDLE_VALUE;
+				EngineThread::m_Hipe = INVALID_HANDLE_VALUE;
 			}
 
 			if (EngineThread::m_Active)
@@ -297,13 +302,13 @@ namespace AfxInterop {
 			}
 		}
 
-		if (INVALID_HANDLE_VALUE != m_HPipe)
+		if (INVALID_HANDLE_VALUE != m_Hipe)
 		{
-			if (!CloseHandle(m_HPipe))
+			if (!CloseHandle(m_Hipe))
 			{
 				Tier0_Warning("AfxInterop::Disconnect: Error in line %i.\n", __LINE__);
 			}
-			m_HPipe = INVALID_HANDLE_VALUE;
+			m_Hipe = INVALID_HANDLE_VALUE;
 		}
 
 		if (m_Connected)
@@ -322,10 +327,13 @@ namespace AfxInterop {
 		{
 			DWORD bytesRead;
 
-			success = ReadFile( hFile, lpBuffer, numBytes, &bytesRead, NULL);
+			success = ReadFile(hFile, lpBuffer, numBytes, &bytesRead, NULL);
 
 			if (!success)
+			{
+				Tier0_Warning("!ReadBytes: GetLastError=%d\n", GetLastError());
 				return false;
+			}
 
 			numBytes -= bytesRead;
 			lpBuffer = &(((char *)lpBuffer)[bytesRead]);
