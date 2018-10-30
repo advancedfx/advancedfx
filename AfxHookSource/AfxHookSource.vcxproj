@@ -199,6 +199,7 @@
     <ClCompile Include="CommandSystem.cpp" />
     <ClCompile Include="csgo\ClientToolsCsgo.cpp" />
     <ClCompile Include="csgo\hooks\engine.cpp" />
+    <ClCompile Include="csgo\hooks\PanoramaDebugger.cpp" />
     <ClCompile Include="csgo\Panorama.cpp" />
     <ClCompile Include="csgo_Audio.cpp" />
     <ClCompile Include="csgo_CBasePlayer.cpp" />

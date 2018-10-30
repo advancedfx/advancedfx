@@ -426,10 +426,11 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 				AFXADDR_SET(csgo_CVoiceWriter_AddDecompressedData, addr);
 			}
 
-			// csgo_engine_RegisterForUnhandledEvent_ToggleDebugger_BeforeCall: // Checked 2018-07-14.
+			// csgo_engine_RegisterForUnhandledEvent_ToggleDebugger_BeforeCall: // Checked 2018-07-14. // TODO
 			{
 				DWORD addr = 0;
 				{
+					/*
 					ImageSectionsReader sections((HMODULE)engineDll);
 					if (!sections.Eof())
 					{
@@ -464,6 +465,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 						else ErrorBox(MkErrStr(__FILE__, __LINE__));
 					}
 					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					*/
 				}
 				AFXADDR_SET(csgo_engine_RegisterForUnhandledEvent_ToggleDebugger_BeforeCall, addr);
 			}
@@ -506,7 +508,7 @@ void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer)
 			DWORD addr = 0;
 			DWORD tmpAddr = FindClassVtable((HMODULE)panoramaDll, ".?AVCZip@@", 0, 0x0);
 			if (tmpAddr) {
-				addr = ((DWORD *)tmpAddr)[13];
+				addr = ((DWORD *)tmpAddr)[14];
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 

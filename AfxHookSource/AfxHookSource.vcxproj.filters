@@ -420,6 +420,9 @@
     <ClCompile Include="FovScaling.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
+    <ClCompile Include="csgo\hooks\PanoramaDebugger.cpp">
+      <Filter>AfxHookSource\csgo</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\bvhexport.h">

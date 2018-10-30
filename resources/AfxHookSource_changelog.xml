@@ -6,6 +6,33 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.45.2</version>
+<time>2018-10-30T05:39Z</time>
+<changes>
+<change type="fixed">
+Adjusted to CS:GO 10/29/2018 (10/30/2018 UTC, 1.36.5.8) update: Fixed -afxDetourPanorama not working (mirv_panorama_toggledebugger has still not been restored yet though).
+</change>
+<change type="fixed">
+Fixed mirv_deathmsg lifeTimeMod not working as intended (was only supposed to be applied to localPlayer).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.45.1</version>
+<time>2018-10-24T20:28Z</time>
+<changes>
+<change type="removed">
+Adjusted to CS:GO 10/23/2018 update: Temporarily disabled mirv_panorama_toggledebugger, since Valve removed code it depends on from the official engine.dll build. It's currently unclear when it can be replaced. Panorama UI can still be modded by editing the files directly using the known -afxDetourPanorama method.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.45.0</version>
 <time>2018-10-10T20:36Z</time>
 <changes>
