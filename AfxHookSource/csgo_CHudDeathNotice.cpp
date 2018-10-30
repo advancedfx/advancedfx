@@ -1521,7 +1521,9 @@ void __fastcall Mycsgo_panorama_CUIPanel_UnkSetFloatProp(csgo_panorama_CUIPanel 
 			break;
 		case 2:
 			// LifetimeMod.
-			if (g_HudDeathNoticeHookGlobals.activeWrapper->lifetimeMod.use) value = g_HudDeathNoticeHookGlobals.activeWrapper->lifetimeMod.value;
+			if (g_HudDeathNoticeHookGlobals.activeWrapper->lifetimeMod.use
+				&& value != 1.0f // multiplier is used
+			) value = g_HudDeathNoticeHookGlobals.activeWrapper->lifetimeMod.value;
 			break;
 		}
 

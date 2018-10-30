@@ -7130,6 +7130,9 @@ MirvPgl::CamData GetMirvPglCamData(SOURCESDK::vrect_t_csgo *rect) {
 	);
 }
 
+extern SOURCESDK::CSGO::panorama::CTopLevelWindowSource2 * panoramaDebuggerTopLevelWindow;
+extern HWND panoramaDebuggerHwnd;
+
 void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *rect)
 {
 	SetCurrent_View_Render_ThreadId(GetCurrentThreadId());
@@ -7144,6 +7147,12 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 	cl->GetParent()->View_Render(rect);
 
 	//IAfxMatRenderContextOrg * ctxp = GetCurrentContext()->GetOrg(); // We are on potentially a new context now!
+
+	if (panoramaDebuggerTopLevelWindow) {
+		panoramaDebuggerTopLevelWindow->SetVisible(false);
+		panoramaDebuggerTopLevelWindow->RunFrame(GetActiveWindow(), 1);
+		//panoramaDebuggerTopLevelWindow->LayoutAndPaintIfNeeded();
+	}
 
 #ifdef AFX_MIRV_PGL
 	if (MirvPgl::IsDrawingActive())

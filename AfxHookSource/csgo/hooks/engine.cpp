@@ -65,6 +65,7 @@ void OnPanoramaDebuggerOpened();
 
 void OnPanoramaDebuggerClosed();
 
+/*
 CON_COMMAND(mirv_panorama_toggledebugger, "Toggle Panorama UI debugger") {
 	if (!EngineHooks_Install() || nullptr == g_Engine_ToggleDebugger_This || nullptr == g_pVGuiSurface_csgo)
 	{
@@ -79,3 +80,4 @@ CON_COMMAND(mirv_panorama_toggledebugger, "Toggle Panorama UI debugger") {
 	else
 		OnPanoramaDebuggerClosed();
 }
+*/

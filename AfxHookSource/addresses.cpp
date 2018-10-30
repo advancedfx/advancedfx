@@ -508,7 +508,7 @@ void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer)
 			DWORD addr = 0;
 			DWORD tmpAddr = FindClassVtable((HMODULE)panoramaDll, ".?AVCZip@@", 0, 0x0);
 			if (tmpAddr) {
-				addr = ((DWORD *)tmpAddr)[13];
+				addr = ((DWORD *)tmpAddr)[14];
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
