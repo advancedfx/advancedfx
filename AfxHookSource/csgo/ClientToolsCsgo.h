@@ -20,6 +20,14 @@ public:
 
 	virtual void OnAfterFrameRenderEnd(void);
 
+	virtual bool SuppotsAutoEnableRecordingMode(void) {
+		return true;
+	}
+
+	virtual bool EnableRecordingMode_get() {
+		return true;
+	}
+
 	virtual void StartRecording(wchar_t const * fileName);
 
 	virtual void EndRecording();

@@ -24,6 +24,18 @@ public:
 
 	virtual void OnAfterFrameRenderEnd(void);
 
+	virtual bool SuppotsAutoEnableRecordingMode(void) {
+		return false;
+	}
+
+	virtual void EnableRecordingMode_set(bool value) {
+
+	}
+
+	virtual bool EnableRecordingMode_get() {
+		return false;
+	}
+
 	bool GetRecording(void);
 
 	virtual void StartRecording(wchar_t const * fileName);
@@ -124,6 +136,7 @@ private:
 	size_t m_HiddenFileOffset;
 	std::set<int> m_Hidden;
 
+	bool m_EnableRecording = false;
 	bool m_Recording;
 	FILE * m_File;
 
