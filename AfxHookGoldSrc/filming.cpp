@@ -672,7 +672,10 @@ void Filming::Start()
 		m_MatteMethod = MM_KEY;
 	}
 
-	m_fps = max(movie_fps->value,1.0f);
+	bool enableSampling = 0 != sample_enable->value;
+
+	m_fps = enableSampling ? max(sample_sps->value, 1.0f) :  max(movie_fps->value, 1.0f);
+
 	m_time = 0.0;
 	m_LastHostTime = m_time;
 
@@ -702,7 +705,7 @@ void Filming::Start()
 	// setup camexport:
 	if (!_bSimulate2) {
 		float fc = camexport_mode->value;
-		double frameTime = 1.0 / (double)m_fps;
+		double frameTime = 1.0 / m_fps;
 
 		if(fc && fc != 2.0f) g_CamExport.BeginFileMain(m_TakeDir.c_str(), frameTime);
 		if(fc && fc >= 2.0f) g_CamExport.BeginFileLeft(m_TakeDir.c_str(), frameTime);
@@ -725,15 +728,7 @@ void Filming::Start()
 	}
 
 	// indicate sound export if requested:
-	_bExportingSound = !_bSimulate2 && (movie_export_sound->value!=0.0f);
-
-	
-	// start up sampling system:
-	bool enableSampling = 0 != sample_enable->value;
-	if(enableSampling)
-	{
-		m_fps = max(sample_sps->value, 1.0f);
-	}
+	_bExportingSound = !_bSimulate2 && (movie_export_sound->value!=0.0f);	
 
 	// Prepare streams:
 	{

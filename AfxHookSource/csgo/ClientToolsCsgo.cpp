@@ -269,6 +269,7 @@ void CClientToolsCsgo::OnAfterFrameRenderEnd(void)
 	CClientTools::OnAfterFrameRenderEnd();
 }
 
+
 void CClientToolsCsgo::StartRecording(wchar_t const * fileName)
 {
 	CClientTools::StartRecording(fileName);

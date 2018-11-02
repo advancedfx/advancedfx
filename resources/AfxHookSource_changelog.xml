@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.45.3</version>
+<time>2018-11-02T11:37Z</time>
+<changes>
+<change type="fixed">
+Worked around memory leak in TF2 and probalby CSSV34 (thanks to https://steamcommunity.com/id/weegeepootis/ for reporting) related to AGR recording: Because the game leaks a notable amount memory each frame when in tool recording mode, the AGR recoding mode (if wanted) needs to be enabled _before_ loading a demo with "mirv_agr enabled 1" now! A warning console message for those that forget enabling it and start recording right away has been added. CS:GO HLAE AGR recording is not affected, because there it is possible to enable the recoding mode on-demand.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.45.2</version>
 <time>2018-10-30T05:39Z</time>
 <changes>

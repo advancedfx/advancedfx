@@ -19,14 +19,10 @@ CClientToolsCssV34::CClientToolsCssV34(SOURCESDK::CSSV34::IClientTools * clientT
 	, m_ClientTools(clientTools)
 {
 	m_Instance = this;
-
-	m_ClientTools->EnableRecordingMode(true);
 }
 
 CClientToolsCssV34::~CClientToolsCssV34()
 {
-	m_ClientTools->EnableRecordingMode(false);
-
 	m_Instance = 0;
 }
 
@@ -200,6 +196,14 @@ void CClientToolsCssV34::OnAfterFrameRenderEnd(void)
 {
 
 	CClientTools::OnAfterFrameRenderEnd();
+}
+
+void CClientToolsCssV34::EnableRecordingMode_set(bool value) {
+	m_ClientTools->EnableRecordingMode(value);
+}
+
+bool CClientToolsCssV34::EnableRecordingMode_get() {
+	return m_ClientTools->IsInRecordingMode();
 }
 
 void CClientToolsCssV34::StartRecording(wchar_t const * fileName)

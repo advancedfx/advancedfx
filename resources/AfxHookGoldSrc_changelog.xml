@@ -3,6 +3,19 @@
 
 <changelog>
 
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.6.3</version>
+<time>2018-11-02T11:37Z</time>
+<changes>
+<change type="fixed">
+Fixed https://github.com/advancedfx/advancedfx/issues/109 (Bvh camera file has incorrect number of frames when sampling enabled).
+</change>
+</changes>
+</release>
+
+
 <release>
 <name>AfxHookGoldSrc</name>
 <version>2.6.2</version>

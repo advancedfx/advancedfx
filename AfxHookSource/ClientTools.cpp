@@ -119,6 +119,15 @@ void CClientTools::StartRecording(wchar_t const * fileName)
 	}
 	else
 		Tier0_Warning("ERROR opening file \"%s\" for writing.\n", fileName);
+
+	if (!EnableRecordingMode_get() && !SuppotsAutoEnableRecordingMode()) {
+		Tier0_Warning(
+			"WARNING: The recording needs to be enabled with [...] enabled 1 before loading the demo!\n"
+			"(This is required, because this game leaks memory when recording mode is enabled.)\n"
+			"Enabling the recording (but it might be too late already).\n"
+		);
+		EnableRecordingMode_set(true);
+	}
 }
 
 void CClientTools::EndRecording()
@@ -405,7 +414,23 @@ CON_COMMAND(mirv_agr, "AFX GameRecord")
 	{
 		char const * cmd1 = args->ArgV(1);
 
-		if (!_stricmp(cmd1, "start"))
+		if (0 == _stricmp("enabled", cmd1)) {
+			if (3 <= argc) {
+				const char * cmd2 = args->ArgV(2);
+
+				clientTools->EnableRecordingMode_set(0 != atoi(cmd2));
+				return;
+			}
+
+			Tier0_Msg(
+				"%s enabled 0|1\n"
+				"Current value: %i\n"
+				, prefix
+				, clientTools->EnableRecordingMode_get() ? 1 : 0
+			);
+			return;
+		}
+		else if (!_stricmp(cmd1, "start"))
 		{
 			if (3 <= argc)
 			{
@@ -443,6 +468,13 @@ CON_COMMAND(mirv_agr, "AFX GameRecord")
 
 	if (ClientTools_Console_Cfg(args))
 		return;
+
+	if (!clientTools->SuppotsAutoEnableRecordingMode()) {
+		Tier0_Msg(
+			"%s enabled [...] - Enable / disable recording (Has to be enabled before loading the demo if you want to use AGR!).\n"
+			, prefix
+		);
+	}
 
 	Tier0_Msg(
 		"%s start <sFilePath> - Start recording to file <sFilePath>, you should set a low host_framerate before (i.e. 30) and give the \".agr\" file extension.\n"

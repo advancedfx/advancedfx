@@ -17,14 +17,10 @@ CClientToolsTf2::CClientToolsTf2(SOURCESDK::TF2::IClientTools * clientTools)
 	, m_ClientTools(clientTools)
 {
 	m_Instance = this;
-
-	m_ClientTools->EnableRecordingMode(true);
 }
 
 CClientToolsTf2::~CClientToolsTf2()
 {
-	m_ClientTools->EnableRecordingMode(false);
-
 	m_Instance = 0;
 }
 
@@ -193,6 +189,15 @@ void CClientToolsTf2::OnAfterFrameRenderEnd(void)
 {
 
 	CClientTools::OnAfterFrameRenderEnd();
+}
+
+
+void CClientToolsTf2::EnableRecordingMode_set(bool value) {
+	m_ClientTools->EnableRecordingMode(value);
+}
+
+bool CClientToolsTf2::EnableRecordingMode_get() {
+	return m_ClientTools->IsInRecordingMode();
 }
 
 void CClientToolsTf2::StartRecording(wchar_t const * fileName)
