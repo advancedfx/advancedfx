@@ -7,6 +7,8 @@
 #include "CampathDrawer.h"
 #include "AfxShaders.h"
 #include "MirvPgl.h"
+#include "csgo/hooks/shaderapidx9.h"
+#include "AfxInterop.h"
 
 #include <shared/detours.h>
 
@@ -842,7 +844,26 @@ public:
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, SetDialogBoxMode);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, SetGammaRamp);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetGammaRamp);
-    IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateTexture);
+
+	STDMETHOD(CreateTexture)(THIS_ UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DTexture9** ppTexture, HANDLE* pSharedHandle) {
+
+#if AFX_INTEROP
+		if(Pool == D3DPOOL_DEFAULT && (Usage == D3DUSAGE_RENDERTARGET || Usage == D3DUSAGE_DEPTHSTENCIL))
+		{
+			if (CShaderAPIDx8_TextureInfo * info = CShaderAPIDx8_GetCreateTextureInfo())
+			{
+				//MessageBox(0, info->TextureName ? info->TextureName : "n/a", info->TextureGroup ? info->TextureGroup : "n/a", MB_OK | MB_ICONINFORMATION);
+				//RenderTargets
+				//- _rt_fullscreen
+				//- _rt_fullframefb
+				//- _rt_fullframedepth
+			}
+		}
+#endif
+
+		return g_OldDirect3DDevice9->CreateTexture(Width, Height, Levels, Usage, Format, Pool, ppTexture, pSharedHandle);
+	}
+
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateVolumeTexture);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateCubeTexture);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateVertexBuffer);
@@ -1468,7 +1489,6 @@ IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetRasterStatus, NewDirect3DDevice9, g_O
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetDialogBoxMode, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetGammaRamp, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetGammaRamp, NewDirect3DDevice9, g_OldDirect3DDevice9);
-IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateTexture, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateVolumeTexture, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateCubeTexture, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateVertexBuffer, NewDirect3DDevice9, g_OldDirect3DDevice9);

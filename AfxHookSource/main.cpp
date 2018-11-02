@@ -51,6 +51,7 @@
 #include <csgo/Panorama.h>
 #include <csgo/hooks/engine.h>
 #include "csgo_ScaleForm_Hooks.h"
+#include "csgo/hooks/shaderapidx9.h"
 
 #include <Windows.h>
 #include <shared/Detours/src/detours.h>
@@ -1993,9 +1994,20 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 	{
 		bFirstShaderapidx9 = false;
 
+		Addresses_InitShaderAPIDX9Dll((AfxAddr)hModule, g_SourceSdkVer);
+
 		InterceptDllCall(hModule, "kernel32.dll", "GetProcAddress", (DWORD) &new_shaderapidx9_GetProcAddress);
 
 		old_Direct3DCreate9 = (Direct3DCreate9_t)InterceptDllCall(hModule, "d3d9.dll", "Direct3DCreate9", (DWORD) &new_Direct3DCreate9);
+
+#ifdef AFX_INTEROP
+		if (AfxInterop::Enabled())
+		{
+			// Only required by AfxInterop atm
+
+			Hook_CShaderAPIDx8();
+		}
+#endif
 	}
 	else
 	if (bFirstClient && StringEndsWith(lpLibFileName, "client.dll") && !StringEndsWith(lpLibFileName, "panoramauiclient.dll"))

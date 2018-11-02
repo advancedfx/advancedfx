@@ -71,6 +71,7 @@ AFXADDR_DECL(csgo_C_CSPlayer_IClientNetworkable_entindex)
 AFXADDR_DECL(csgo_engine_RegisterForUnhandledEvent_ToggleDebugger_BeforeCall)
 AFXADDR_DECL(csgo_Scaleformui_CUnkown_Loader)
 AFXADDR_DECL(csgo_Scaleformui_CUnkown_Loader_DSZ)
+AFXADDR_DECL(csgo_CShaderAPIDx8_UnkCreateTexture)
 
 extern bool g_Adresses_ClientIsPanorama;
 
@@ -79,3 +80,4 @@ void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer, bool isPanorama);
 void Addresses_InitScaleformuiDll(AfxAddr scaleformuiDll, SourceSdkVer sourceSdkVer);
 //void Addresses_InitStdshader_dx9Dll(AfxAddr stdshader_dx9Dll, bool isCsgo);
+void Addresses_InitShaderAPIDX9Dll(AfxAddr shaderapidx9Dll, SourceSdkVer sourceSdkVer);

@@ -66,6 +66,7 @@ AFXADDR_DEF(csgo_C_CSPlayer_IClientNetworkable_entindex)
 AFXADDR_DEF(csgo_engine_RegisterForUnhandledEvent_ToggleDebugger_BeforeCall)
 AFXADDR_DEF(csgo_Scaleformui_CUnkown_Loader)
 AFXADDR_DEF(csgo_Scaleformui_CUnkown_Loader_DSZ)
+AFXADDR_DEF(csgo_CShaderAPIDx8_UnkCreateTexture)
 
 bool g_Adresses_ClientIsPanorama = true;
 
@@ -2011,3 +2012,25 @@ void Addresses_InitStdshader_dx9Dll(AfxAddr stdshader_dx9Dll, bool isCsgo)
 	}
 }
 */
+
+void Addresses_InitShaderAPIDX9Dll(AfxAddr shaderapidx9Dll, SourceSdkVer sourceSdkVer)
+{
+	if (SourceSdkVer_CSGO == sourceSdkVer)
+	{
+		// csgo_CShaderAPIDx8_UnkCreateTexture // Checked 2018-11-02.
+		{
+			DWORD addr = 0;
+			DWORD tmpAddr = FindClassVtable((HMODULE)shaderapidx9Dll, ".?AVCShaderAPIDx8@@", 0, 0x24c);
+			if (tmpAddr) {
+				addr = ((DWORD *)tmpAddr)[229];
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			AFXADDR_SET(csgo_CShaderAPIDx8_UnkCreateTexture, addr);
+		}
+	}
+	else
+	{
+		AFXADDR_SET(csgo_CShaderAPIDx8_UnkCreateTexture, 0);
+	}
+}
