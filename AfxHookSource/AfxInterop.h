@@ -3,6 +3,7 @@
 #ifdef AFX_INTEROP
 
 #include "SourceInterfaces.h"
+#include <d3d9.h>
 
 namespace AfxInterop {
 
@@ -34,6 +35,7 @@ namespace AfxInterop {
 	/// <remarks>Must be called from drawing thread only.</remarks>
 	void DrawingThreadBeforeHud(void);
 
+	bool CreateTexture(const char * textureName, const char * textureGroup, IDirect3DDevice9 * device, UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DTexture9** ppTexture, HANDLE* pSharedHandle, HRESULT & result);
 }
 
 #endif

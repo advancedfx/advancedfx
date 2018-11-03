@@ -19,12 +19,8 @@ CTopLevelWindowSource2 * panoramaDebuggerTopLevelWindow = 0;
 HWND panoramaDebuggerHwnd = 0;
 
 LRESULT CALLBACK PanoramaDebuggerWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-	switch (uMsg)
-	{
-	default:
-		return DefWindowProc(hWnd, uMsg, wParam, lParam);
-	}
-	return 0;
+
+	return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
 CON_COMMAND(mirv_panorama_toggledebugger, "Toggle Panorama UI debugger") {

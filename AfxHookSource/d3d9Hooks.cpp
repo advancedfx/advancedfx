@@ -845,18 +845,16 @@ public:
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, SetGammaRamp);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetGammaRamp);
 
-	STDMETHOD(CreateTexture)(THIS_ UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DTexture9** ppTexture, HANDLE* pSharedHandle) {
-
+	STDMETHOD(CreateTexture)(THIS_ UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DTexture9** ppTexture, HANDLE* pSharedHandle)
+	{
 #if AFX_INTEROP
-		if(Pool == D3DPOOL_DEFAULT && (Usage == D3DUSAGE_RENDERTARGET || Usage == D3DUSAGE_DEPTHSTENCIL))
+		if(AfxInterop::Enabled() && ppTexture && Pool == D3DPOOL_DEFAULT && (Usage == D3DUSAGE_RENDERTARGET || Usage == D3DUSAGE_DEPTHSTENCIL))
 		{
 			if (CShaderAPIDx8_TextureInfo * info = CShaderAPIDx8_GetCreateTextureInfo())
 			{
-				//MessageBox(0, info->TextureName ? info->TextureName : "n/a", info->TextureGroup ? info->TextureGroup : "n/a", MB_OK | MB_ICONINFORMATION);
-				//RenderTargets
-				//- _rt_fullscreen
-				//- _rt_fullframefb
-				//- _rt_fullframedepth
+				HRESULT result;
+				if (AfxInterop::CreateTexture(info->TextureGroup, info->TextureGroup, g_OldDirect3DDevice9, Width, Height, Levels, Usage, Format, Pool, ppTexture, pSharedHandle, result))
+					return result;
 			}
 		}
 #endif
