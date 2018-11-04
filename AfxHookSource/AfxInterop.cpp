@@ -52,6 +52,9 @@ namespace AfxInterop {
 	HANDLE m_hPipe = INVALID_HANDLE_VALUE;
 	bool m_Server64Bit = false;
 
+	IDirect3DTexture9 * m_FbTexture = nullptr;
+	IDirect3DTexture9 * m_FbDepthTexture = nullptr;
+
 	namespace EngineThread {
 
 		enum EngineMessage {
@@ -520,7 +523,11 @@ namespace AfxInterop {
 		// This is the final message, before we allow to spin:
 
 		if (!WriteInt32(m_hPipe, DrawingMessage_DrawingThreadBeforeHud)) { errorLine = __LINE__; goto error; }
-		
+
+		if (!WriteInt32(m_hPipe, (INT32)m_FbTexture)) { errorLine = __LINE__; goto error; }
+
+		if (!WriteInt32(m_hPipe, (INT32)m_FbDepthTexture)) { errorLine = __LINE__; goto error; }
+
 		// No frame info available yet:
 		if (!WriteBoolean(m_hPipe, false)) { errorLine = __LINE__; goto error; }
 
@@ -529,7 +536,7 @@ namespace AfxInterop {
 		bool done;
 		do {
 			if (!ReadBoolean(m_hPipe, done)) { errorLine = __LINE__; goto error; }
-		} while(!done);
+		} while (!done);
 
 		return;
 
@@ -549,7 +556,7 @@ namespace AfxInterop {
 
 		if (ppTexture && textureName && textureGroup && 0 == strcmp("RenderTargets", textureGroup) && (0 == strcmp("_rt_fullframefb", textureName) || 0 == strcmp("_rt_fullframedepth", textureName)))
 		{
-			HANDLE pHandle;
+			HANDLE pHandle = NULL;
 
 			if (!pSharedHandle) pSharedHandle = &pHandle;
 
@@ -560,9 +567,11 @@ namespace AfxInterop {
 				(IDirect3DTexture9**)ppTexture,
 				pSharedHandle);
 
+			MessageBox(NULL, SUCCEEDED(hr) ? "OKAY" : "ERROR", "AfxInterop::CreateTexture", MB_OK);
+
 			if(SUCCEEDED(hr))
 			{
-				g_TextureManager.Manage(textureName, textureGroup, Width, Height, Levels, Usage, Format, Pool, *ppTexture, *pSharedHandle);
+				//g_TextureManager.Manage(textureName, textureGroup, Width, Height, Levels, Usage, Format, Pool, *ppTexture, *pSharedHandle);
 				resultp = hr;
 				return true;
 			}
@@ -570,6 +579,31 @@ namespace AfxInterop {
 		}
 
 		return false;
+	}
+
+	void OnSetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget)
+	{
+		if (0 == RenderTargetIndex)
+		{
+			if (nullptr != pRenderTarget)
+			{
+				if (D3D_OK == pRenderTarget->GetContainer(__uuidof(IDirect3DTexture9), (void **)&m_FbTexture))
+					return;
+			}
+		}
+
+		m_FbTexture = nullptr;
+	}
+
+	void OnSetDepthStencilSurface(IDirect3DSurface9* pNewZStencil)
+	{
+		if (nullptr != pNewZStencil)
+		{
+			if (D3D_OK == pNewZStencil->GetContainer(__uuidof(IDirect3DTexture9), (void **)&m_FbDepthTexture))
+				return;
+		}
+
+		m_FbDepthTexture = nullptr;
 	}
 
 	bool Connect(char const * pipeName) {

@@ -165,7 +165,11 @@ void Shared_Direct3DDevice9_Reset_After()
 }
 
 ULONG g_NewDirect3DDevice9_RefCount = 1;
-IDirect3DDevice9 * g_OldDirect3DDevice9 = 0;
+IDirect3DDevice9 * g_OldDirect3DDevice9 = nullptr;
+
+ULONG g_NewDirect3DDevice9Ex_RefCount = 1;
+IDirect3DDevice9Ex * g_OldDirect3DDevice9Ex = nullptr;
+
 struct NewDirect3DDevice9
 {
 private:
@@ -767,7 +771,17 @@ public:
 
     /*** IUnknown methods ***/
 
-    IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, QueryInterface);
+	STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj) {
+
+		if (riid == __uuidof(IDirect3DDevice9Ex))
+		{
+			if (ppvObj) ppvObj = NULL;
+			return E_NOINTERFACE; // If we shoved in D3D9Ex, make sure CS:GO does not notice it.
+		}
+
+		return g_OldDirect3DDevice9->QueryInterface(riid, ppvObj);
+	}
+
 
 	STDMETHOD_(ULONG,AddRef)(THIS)
 	{
@@ -834,6 +848,8 @@ public:
 	{
 		HRESULT result = m_Block_Present ? D3D_OK : g_OldDirect3DDevice9->Present(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 
+		Tier0_Warning("0x%08x\n", result);
+
 		Shared_Direct3DDevice9_Present(result == D3DERR_DEVICELOST, m_Block_Present);
 
 		return result;
@@ -853,7 +869,7 @@ public:
 			if (CShaderAPIDx8_TextureInfo * info = CShaderAPIDx8_GetCreateTextureInfo())
 			{
 				HRESULT result;
-				if (AfxInterop::CreateTexture(info->TextureGroup, info->TextureGroup, g_OldDirect3DDevice9, Width, Height, Levels, Usage, Format, Pool, ppTexture, pSharedHandle, result))
+				if (AfxInterop::CreateTexture(info->TextureName, info->TextureGroup, g_OldDirect3DDevice9, Width, Height, Levels, Usage, Format, Pool, ppTexture, pSharedHandle, result))
 					return result;
 			}
 		}
@@ -875,10 +891,18 @@ public:
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, StretchRect);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, ColorFill);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateOffscreenPlainSurface);
-    IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, SetRenderTarget);
-    IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetRenderTarget);
-    IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, SetDepthStencilSurface);
-    IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetDepthStencilSurface);
+
+	STDMETHOD(SetRenderTarget)(THIS_ DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget) {
+		return g_OldDirect3DDevice9->SetRenderTarget(RenderTargetIndex, pRenderTarget);
+	}
+
+	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetRenderTarget);
+
+	STDMETHOD(SetDepthStencilSurface)(THIS_ IDirect3DSurface9* pNewZStencil) {
+		return g_OldDirect3DDevice9->SetDepthStencilSurface(pNewZStencil);
+	}
+
+	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetDepthStencilSurface);
 
 	STDMETHOD(BeginScene)(THIS)
 	{
@@ -1468,7 +1492,6 @@ public:
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateQuery);
 } g_NewDirect3DDevice9;
 
-IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, QueryInterface, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, TestCooperativeLevel, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetAvailableTextureMem, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, EvictManagedResources, NewDirect3DDevice9, g_OldDirect3DDevice9);
@@ -1500,9 +1523,7 @@ IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetFrontBufferData, NewDirect3DDevice9, 
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, StretchRect, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, ColorFill, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateOffscreenPlainSurface, NewDirect3DDevice9, g_OldDirect3DDevice9);
-IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetRenderTarget, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetRenderTarget, NewDirect3DDevice9, g_OldDirect3DDevice9);
-IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetDepthStencilSurface, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetDepthStencilSurface, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetTransform, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetTransform, NewDirect3DDevice9, g_OldDirect3DDevice9);
@@ -1574,9 +1595,6 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE CAfxHookDirect3DStateBlock9::Appl
 	return hResult;
 }
 
-
-ULONG g_NewDirect3DDevice9Ex_RefCount = 1;
-IDirect3DDevice9Ex * g_OldDirect3DDevice9Ex = 0;
 struct NewDirect3DDevice9Ex
 {
 public:
@@ -1916,10 +1934,22 @@ IFACE_PASSTHROUGH_DEF(IDirect3DDevice9Ex, GetDisplayModeEx, NewDirect3DDevice9Ex
 
 
 IDirect3D9 * g_OldDirect3D9;
+IDirect3D9Ex * g_OldDirect3D9Ex = nullptr;
+
 struct NewDirect3D9
 {
     /*** IUnknown methods ***/
-	IFACE_PASSTHROUGH_DECL(IDirect3D9, QueryInterface);
+	STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj) {
+
+		if (riid == __uuidof(IDirect3D9Ex))
+		{
+			if (ppvObj) ppvObj = NULL;
+			return E_NOINTERFACE; // If we shoved in D3D9Ex, make sure CS:GO does not notice it.
+		}
+
+		return g_OldDirect3D9->QueryInterface(riid, ppvObj);
+	}
+
 	IFACE_PASSTHROUGH_DECL(IDirect3D9, AddRef);
 	IFACE_PASSTHROUGH_DECL(IDirect3D9, Release);
 
@@ -1940,6 +1970,25 @@ struct NewDirect3D9
 
     STDMETHOD(CreateDevice)(THIS_ UINT Adapter,D3DDEVTYPE DeviceType,HWND hFocusWindow,DWORD BehaviorFlags,D3DPRESENT_PARAMETERS* pPresentationParameters,IDirect3DDevice9** ppReturnedDeviceInterface)
 	{
+		if (false && g_OldDirect3D9Ex)
+		{
+			// We are shoving in D3D9Ex, so we have to use CreateDeviceEx:
+
+			HRESULT hRet = g_OldDirect3D9Ex->CreateDeviceEx(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, NULL, (IDirect3DDevice9Ex **)ppReturnedDeviceInterface);
+
+
+			if (SUCCEEDED(hRet) && pPresentationParameters && ppReturnedDeviceInterface)
+			{
+				g_OldDirect3DDevice9 = *ppReturnedDeviceInterface;
+
+				Shared_Direct3DDevice9_Init(Adapter, pPresentationParameters->hDeviceWindow, g_OldDirect3DDevice9);
+
+				*ppReturnedDeviceInterface = reinterpret_cast<IDirect3DDevice9 *>(&g_NewDirect3DDevice9);
+			}
+
+			return hRet;
+		}
+
 		HRESULT hRet = g_OldDirect3D9->CreateDevice(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
 
 
@@ -1957,7 +2006,6 @@ struct NewDirect3D9
 
 } g_NewDirect3D9;
 
-IFACE_PASSTHROUGH_DEF(IDirect3D9, QueryInterface, NewDirect3D9, g_OldDirect3D9);
 IFACE_PASSTHROUGH_DEF(IDirect3D9, AddRef, NewDirect3D9, g_OldDirect3D9);
 IFACE_PASSTHROUGH_DEF(IDirect3D9, Release, NewDirect3D9, g_OldDirect3D9);
 IFACE_PASSTHROUGH_DEF(IDirect3D9, RegisterSoftwareDevice, NewDirect3D9, g_OldDirect3D9);
@@ -1974,8 +2022,6 @@ IFACE_PASSTHROUGH_DEF(IDirect3D9, CheckDeviceFormatConversion, NewDirect3D9, g_O
 IFACE_PASSTHROUGH_DEF(IDirect3D9, GetDeviceCaps, NewDirect3D9, g_OldDirect3D9);
 IFACE_PASSTHROUGH_DEF(IDirect3D9, GetAdapterMonitor, NewDirect3D9, g_OldDirect3D9);
 
-
-IDirect3D9Ex * g_OldDirect3D9Ex;
 struct NewDirect3D9Ex
 {
     /*** IUnknown methods ***/
@@ -2061,18 +2107,41 @@ IFACE_PASSTHROUGH_DEF(IDirect3D9Ex, GetAdapterDisplayModeEx, NewDirect3D9Ex, g_O
 IFACE_PASSTHROUGH_DEF(IDirect3D9Ex, GetAdapterLUID, NewDirect3D9Ex, g_OldDirect3D9Ex);
 
 Direct3DCreate9_t old_Direct3DCreate9 = 0;
+Direct3DCreate9Ex_t old_Direct3DCreate9Ex = 0;
+
 IDirect3D9 * WINAPI new_Direct3DCreate9(UINT SDKVersion)
 {
 	if(D3D_SDK_VERSION == SDKVersion)
 	{
+#ifdef AFX_INTEROP
+		if (AfxInterop::Enabled())
+		{
+			IDirect3D9Ex * device = NULL;
+
+			if (!old_Direct3DCreate9Ex)
+			{
+				HMODULE hD3D9Dll = GetModuleHandle("d3d9.dll");
+				old_Direct3DCreate9Ex = (Direct3DCreate9Ex_t)GetProcAddress(hD3D9Dll, "Direct3DCreate9Ex");
+			}
+
+			old_Direct3DCreate9Ex(SDKVersion, &device);
+			g_OldDirect3D9Ex = device;
+			g_OldDirect3D9 = g_OldDirect3D9Ex;
+		}
+		else
+		{
+			g_OldDirect3D9 = old_Direct3DCreate9(SDKVersion);
+		}
+#else
 		g_OldDirect3D9 = old_Direct3DCreate9(SDKVersion);
+#endif
+
 		return reinterpret_cast<IDirect3D9 *>(&g_NewDirect3D9);
 	}
 
 	return old_Direct3DCreate9(SDKVersion);
 }
 
-Direct3DCreate9Ex_t old_Direct3DCreate9Ex = 0;
 HRESULT WINAPI new_Direct3DCreate9Ex(UINT SDKVersion, IDirect3D9Ex** ppD3DDevice)
 {
 	if(D3D_SDK_VERSION == SDKVersion)
