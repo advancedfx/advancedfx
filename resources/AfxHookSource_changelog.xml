@@ -6,6 +6,19 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>xxx</version>
+<time>xxx</time>
+<changes>
+<change type="fixed">
+Fixed / changed logic in mirv_deathmsg filter when forcing replacement IDs (used internally by mirv_deathmsg fake): the filters are correctly chained now, meaning the changed data is passed on to the next filter in the list.
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.45.3</version>
 <time>2018-11-02T11:37Z</time>
 <changes>

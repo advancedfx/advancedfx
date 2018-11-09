@@ -350,6 +350,7 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 				ErrorBox("Could not get a supported client engine trace interface.");
 			}
 
+			/*
 			if (iface = appSystemFactory(SORUCESDK_CSGO_VENGINE_GAMEUIFUNCS_VERSION, NULL))
 			{
 				g_pGameUIFuncs = (SOURCESDK::CSGO::CGameUIFuncs *)iface;
@@ -371,6 +372,7 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 			else {
 				ErrorBox("Could not get " SOURCESDK_CSGO_PANORAMAUICLIENT_VERSION " interface.");
 			}
+			*/
 		}
 		
 		g_Hook_VClient_RenderView.Install(pGlobals);

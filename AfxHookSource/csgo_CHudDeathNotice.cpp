@@ -1251,25 +1251,25 @@ void __fastcall MyCCSGO_HudDeathNotice_FireGameEvent(CCSGO_HudDeathNotice_t * Th
 		{
 			myWrapper.ApplyDeathMsgFilterEntry(e);
 
+			uidAttacker = myWrapper.GetInt("attacker", 0);
+			uidVictim = myWrapper.GetInt("userid", 0);
+			uidAssister = myWrapper.GetInt("assister", 0);
+
 			if (e.lastRule) break;
 		}
 	}
-
-	int curAttackerId = myWrapper.GetInt("attacker", 0);
-	int curUserId = myWrapper.GetInt("userid", 0);
-	int curAssisterId = myWrapper.GetInt("assister", 0);
 
 	if (g_HudDeathNoticeHookGlobals.useHighlightId)
 	{
 
 		myWrapper.attacker.isLocal.use = true;
-		myWrapper.attacker.isLocal.value = g_HudDeathNoticeHookGlobals.highlightId.EqualsUserId(curAttackerId);
+		myWrapper.attacker.isLocal.value = g_HudDeathNoticeHookGlobals.highlightId.EqualsUserId(uidAttacker);
 
 		myWrapper.victim.isLocal.use = true;
-		myWrapper.victim.isLocal.value = g_HudDeathNoticeHookGlobals.highlightId.EqualsUserId(curUserId);
+		myWrapper.victim.isLocal.value = g_HudDeathNoticeHookGlobals.highlightId.EqualsUserId(uidVictim);
 
 		myWrapper.assister.isLocal.use = true;
-		myWrapper.assister.isLocal.value = g_HudDeathNoticeHookGlobals.highlightId.EqualsUserId(curAssisterId);
+		myWrapper.assister.isLocal.value = g_HudDeathNoticeHookGlobals.highlightId.EqualsUserId(uidAssister);
 	}
 
 	if (!(myWrapper.block.use && myWrapper.block.value) ) {
@@ -1280,9 +1280,9 @@ void __fastcall MyCCSGO_HudDeathNotice_FireGameEvent(CCSGO_HudDeathNotice_t * Th
 			g_HudDeathNoticeHookGlobals.nextRealCUnknownGetPlayerNameState.pop();
 		}
 
-		if (curAttackerId) g_HudDeathNoticeHookGlobals.nextRealCUnknownGetPlayerNameState.push(1);
-		if (curUserId) g_HudDeathNoticeHookGlobals.nextRealCUnknownGetPlayerNameState.push(2);
-		if (curAssisterId) g_HudDeathNoticeHookGlobals.nextRealCUnknownGetPlayerNameState.push(3);
+		if (uidAttacker) g_HudDeathNoticeHookGlobals.nextRealCUnknownGetPlayerNameState.push(1);
+		if (uidVictim) g_HudDeathNoticeHookGlobals.nextRealCUnknownGetPlayerNameState.push(2);
+		if (uidAssister) g_HudDeathNoticeHookGlobals.nextRealCUnknownGetPlayerNameState.push(3);
 
 		while(!g_HudDeathNoticeHookGlobals.nextRealEntindexState.empty())
 		{
@@ -1290,8 +1290,8 @@ void __fastcall MyCCSGO_HudDeathNotice_FireGameEvent(CCSGO_HudDeathNotice_t * Th
 			g_HudDeathNoticeHookGlobals.nextRealEntindexState.pop();
 		}
 
-		if (curAttackerId) g_HudDeathNoticeHookGlobals.nextRealEntindexState.push(2);
-		if (curUserId) g_HudDeathNoticeHookGlobals.nextRealEntindexState.push(1);
+		if (uidAttacker) g_HudDeathNoticeHookGlobals.nextRealEntindexState.push(2);
+		if (uidVictim) g_HudDeathNoticeHookGlobals.nextRealEntindexState.push(1);
 
 		if (!g_Adresses_ClientIsPanorama)
 		{
