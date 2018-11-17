@@ -3430,24 +3430,41 @@ struct NewDirect3D9
 	IFACE_PASSTHROUGH_DECL(IDirect3D9, GetDeviceCaps);
 	IFACE_PASSTHROUGH_DECL(IDirect3D9, GetAdapterMonitor);
 
-    STDMETHOD(CreateDevice)(THIS_ UINT Adapter,D3DDEVTYPE DeviceType,HWND hFocusWindow,DWORD BehaviorFlags,D3DPRESENT_PARAMETERS* pPresentationParameters,IDirect3DDevice9** ppReturnedDeviceInterface)
+	STDMETHOD(CreateDevice)(THIS_ UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice9** ppReturnedDeviceInterface)
 	{
-		if (AfxInterop::Enabled() && pPresentationParameters) {
-			pPresentationParameters->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
-			pPresentationParameters->FullScreen_RefreshRateInHz = 0;			
-		}
+		HRESULT hRet = D3DERR_NOTAVAILABLE;
 
-		HRESULT hRet = g_OldDirect3D9->CreateDevice(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
-
-
-		if(SUCCEEDED(hRet) && pPresentationParameters && ppReturnedDeviceInterface)
+#if AFX_INTEROP
+		if (AfxInterop::Enabled() && g_OldDirect3D9Ex)
 		{
-			g_OldDirect3DDevice9 = *ppReturnedDeviceInterface;
+			hRet = g_OldDirect3D9Ex->CreateDeviceEx(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, nullptr, ppReturnedDeviceInterface != nullptr ? &g_OldDirect3DDevice9Ex : nullptr);
 
-			Shared_Direct3DDevice9_Init(Adapter, pPresentationParameters->hDeviceWindow, g_OldDirect3DDevice9);
+			if (SUCCEEDED(hRet) && pPresentationParameters && ppReturnedDeviceInterface)
+			{
+				g_OldDirect3DDevice9 = g_OldDirect3DDevice9Ex;
 
-			*ppReturnedDeviceInterface = reinterpret_cast<IDirect3DDevice9 *>(&g_NewDirect3DDevice9);
+				Shared_Direct3DDevice9_Init(Adapter, pPresentationParameters->hDeviceWindow, g_OldDirect3DDevice9);
+
+				*ppReturnedDeviceInterface = reinterpret_cast<IDirect3DDevice9 *>(&g_NewDirect3DDevice9);
+			}
+			else
+				return D3DERR_NOTAVAILABLE;
 		}
+		else
+#else
+		{
+			hRet = g_OldDirect3D9->CreateDevice(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
+
+			if(SUCCEEDED(hRet) && pPresentationParameters && ppReturnedDeviceInterface)
+			{
+				g_OldDirect3DDevice9 = *ppReturnedDeviceInterface;
+
+				Shared_Direct3DDevice9_Init(Adapter, pPresentationParameters->hDeviceWindow, g_OldDirect3DDevice9);
+
+				*ppReturnedDeviceInterface = reinterpret_cast<IDirect3DDevice9 *>(&g_NewDirect3DDevice9);
+			}
+		}
+#endif
 
 		return hRet;
 	}
@@ -3561,7 +3578,7 @@ IDirect3D9 * WINAPI new_Direct3DCreate9(UINT SDKVersion)
 {
 	if(D3D_SDK_VERSION == SDKVersion)
 	{
-#if 0
+#if AFX_INTEROP
 		if (AfxInterop::Enabled())
 		{
 			IDirect3D9Ex * device = NULL;
