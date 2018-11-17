@@ -91,6 +91,11 @@ CON_COMMAND(__mirv_memdiff, "")
 
 float mirv_setup_add = 0;
 
+CON_COMMAND(__mirv_info, "")
+{
+
+}
+
 CON_COMMAND(__mirv_test8, "")
 {
 	int argc = args->ArgC();

@@ -558,7 +558,7 @@ namespace AfxInterop {
 		{
 			HANDLE pHandle = NULL;
 
-			if (!pSharedHandle) pSharedHandle = &pHandle;
+			//if (!pSharedHandle) pSharedHandle = &pHandle;
 
 			HRESULT hr = device->CreateTexture(Width, Height, 1,
 				D3DUSAGE_RENDERTARGET,
@@ -567,7 +567,7 @@ namespace AfxInterop {
 				(IDirect3DTexture9**)ppTexture,
 				pSharedHandle);
 
-			MessageBox(NULL, SUCCEEDED(hr) ? "OKAY" : "ERROR", "AfxInterop::CreateTexture", MB_OK);
+			//MessageBox(NULL, SUCCEEDED(hr) ? "OKAY" : "ERROR", "AfxInterop::CreateTexture", MB_OK);
 
 			if(SUCCEEDED(hr))
 			{

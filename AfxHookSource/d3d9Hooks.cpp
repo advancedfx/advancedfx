@@ -12,7 +12,11 @@
 
 #include <shared/detours.h>
 
+#include <iterator>
 #include <stack>
+#include <set>
+#include <map>
+#include <list>
 
 typedef struct __declspec(novtable) Interface_s abstract {} * Interface_t;
 typedef void * (__stdcall Interface_s::*InterfaceFn_t) (void *);
@@ -169,6 +173,1280 @@ IDirect3DDevice9 * g_OldDirect3DDevice9 = nullptr;
 
 ULONG g_NewDirect3DDevice9Ex_RefCount = 1;
 IDirect3DDevice9Ex * g_OldDirect3DDevice9Ex = nullptr;
+
+
+// CAfxDirect3DManaged /////////////////////////////////////////////////////////
+
+template <typename T>
+class CAfxDirect3DManaged : public T
+{
+public:
+	static void AfxDeviceLost()
+	{
+		for (typename Instances_t::iterator it = m_Instances.begin(); it != m_Instances.end(); ++it)
+		{
+			(*it)->OnAfxDeviceLost();
+		}
+	}
+
+	static void AfxDevicePresented()
+	{
+		// Get rid of the old ones:
+
+		while (!m_Lru.empty())
+		{
+			typename Instance_t * instance = m_Lru.back();
+
+			// Only at least 4 frames old:
+			if (!(std::abs(m_PresentNr - instance->m_MyPresentNr) >= 0b10000))
+				break;
+
+			m_InstanceToLruIt.erase(instance);
+			m_Lru.pop_back();
+		}
+
+		m_PresentNr++;
+	}
+
+	CAfxDirect3DManaged()
+	{
+		m_DirtyCount = 0;
+		m_MyPresentNr = m_PresentNr;
+		m_Instances.insert(this);
+	}
+
+	T * AfxGetOrCreateUnmanged(void)
+	{
+		m_MyPresentNr = m_PresentNr;
+
+		typename InstanceToLruIt_t::iterator itLruIt = m_InstanceToLruIt.find(this);
+		if (itLruIt != m_InstanceToLruIt.end())
+		{
+			m_Lru.erase(itLruIt->second);
+			itLruIt->second = m_Lru.insert(m_Lru.begin(), this);
+		}
+		else
+		{
+			m_InstanceToLruIt[this] = m_Lru.insert(m_Lru.begin(), this);
+		}
+
+		bool wasDirty;
+
+		T * result = OnAfxGetOrCreateUnmanaged(0b100 <= m_DirtyCount, wasDirty);
+
+		if (wasDirty && m_DirtyCount < 0b100) ++m_DirtyCount;
+
+		return result;
+	}
+
+protected:
+	~CAfxDirect3DManaged()
+	{
+		typename InstanceToLruIt_t::iterator itLruIt = m_InstanceToLruIt.find(this);
+		if (itLruIt != m_InstanceToLruIt.end())
+		{
+			m_Lru.erase(itLruIt->second);
+			m_InstanceToLruIt.erase(itLruIt);
+		}
+
+		m_Instances.erase(this);
+	}
+
+	virtual void OnAfxDeviceLost() = 0;
+
+	virtual T * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty) = 0;
+
+private:
+	typedef CAfxDirect3DManaged<T> Instance_t;
+	typedef std::set<typename Instance_t *> Instances_t;
+	typedef std::list<typename Instance_t *> Lru_t;
+	typedef std::map<typename Instance_t *, typename Lru_t::iterator> InstanceToLruIt_t;
+
+	static int m_PresentNr;
+	static typename Instances_t m_Instances;
+	static typename Lru_t m_Lru;
+	static typename InstanceToLruIt_t m_InstanceToLruIt;
+
+	int m_MyPresentNr;
+	int m_DirtyCount;
+};
+
+template <typename T> int CAfxDirect3DManaged<T>::m_PresentNr = 0;
+template <typename T> typename CAfxDirect3DManaged<T>::Instances_t CAfxDirect3DManaged<T>::m_Instances;
+template <typename T> typename CAfxDirect3DManaged<T>::Lru_t CAfxDirect3DManaged<T>::m_Lru;
+template <typename T> typename CAfxDirect3DManaged<T>::InstanceToLruIt_t CAfxDirect3DManaged<T>::m_InstanceToLruIt;
+
+
+// CAfxManagedDirect3DTexture9 /////////////////////////////////////////////////
+
+// {4E2FC120-3361-4870-9BAD-5288E4EF74F2}
+DEFINE_GUID(IID_IAfxManagedDirect3DTexture9,
+	0x4e2fc120, 0x3361, 0x4870, 0x9b, 0xad, 0x52, 0x88, 0xe4, 0xef, 0x74, 0xf2);
+
+// {4E2FC120-3361-4870-9BAD-5288E4EF74F2}
+static const GUID IID_IAfxManagedDirect3DTexture9 =
+{ 0x4e2fc120, 0x3361, 0x4870, { 0x9b, 0xad, 0x52, 0x88, 0xe4, 0xef, 0x74, 0xf2 } };
+
+
+class CAfxManagedDirect3DTexture9 : public CAfxDirect3DManaged<IDirect3DTexture9>
+{
+public:
+	/*** IUnknown methods ***/
+	STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj)
+	{
+		if (IID_IAfxManagedDirect3DTexture9 == riid)
+		{
+			*ppvObj = this;
+			return D3D_OK;
+		}
+
+		return m_pSystemMemPool->QueryInterface(riid, ppvObj);
+
+	}
+	STDMETHOD_(ULONG, AddRef)(THIS)
+	{
+		return m_pSystemMemPool->AddRef();
+	}
+
+	STDMETHOD_(ULONG, Release)(THIS)
+	{
+		ULONG result = m_pSystemMemPool->Release();
+
+		if (0 == result)
+		{
+			if (m_pDefaultPool) m_pDefaultPool->Release();
+			delete this;
+		}
+
+		return result;
+	}
+
+	/*** IDirect3DResource9 methods ***/
+	STDMETHOD(GetDevice)(THIS_ IDirect3DDevice9** ppDevice)
+	{
+		return m_pSystemMemPool->GetDevice(ppDevice);
+	}
+
+	STDMETHOD(SetPrivateData)(THIS_ REFGUID refguid, CONST void* pData, DWORD SizeOfData, DWORD Flags)
+	{
+		return m_pSystemMemPool->SetPrivateData(refguid, pData, SizeOfData, Flags);
+	}
+
+	STDMETHOD(GetPrivateData)(THIS_ REFGUID refguid, void* pData, DWORD* pSizeOfData)
+	{
+		return m_pSystemMemPool->GetPrivateData(refguid, pData, pSizeOfData);
+	}
+
+	STDMETHOD(FreePrivateData)(THIS_ REFGUID refguid)
+	{
+		return m_pSystemMemPool->FreePrivateData(refguid);
+	}
+
+	STDMETHOD_(DWORD, SetPriority)(THIS_ DWORD PriorityNew)
+	{
+		if (m_pDefaultPool) m_pDefaultPool->SetPriority(PriorityNew);
+
+		return m_pSystemMemPool->SetPriority(PriorityNew);
+	}
+
+	STDMETHOD_(DWORD, GetPriority)(THIS)
+	{
+		return m_pSystemMemPool->GetPriority();
+	}
+
+	STDMETHOD_(void, PreLoad)(THIS)
+	{
+		bool dummy;
+		OnAfxGetOrCreateUnmanaged(Usage & D3DUSAGE_DYNAMIC, dummy);
+	}
+
+	STDMETHOD_(D3DRESOURCETYPE, GetType)(THIS)
+	{
+		return m_pSystemMemPool->GetType();
+	}
+
+	/*** IDirect3DBaseTexture9 methods ***/
+	STDMETHOD_(DWORD, SetLOD)(THIS_ DWORD LODNew) {
+		if (m_pDefaultPool) m_pDefaultPool->SetLOD(LODNew);
+
+		return m_pSystemMemPool->SetLOD(LODNew);
+	}
+
+	STDMETHOD_(DWORD, GetLOD)(THIS)
+	{
+		return m_pSystemMemPool->GetLOD();
+	}
+
+	STDMETHOD_(DWORD, GetLevelCount)(THIS)
+	{
+		return m_pSystemMemPool->GetLevelCount();
+	}
+
+	STDMETHOD(SetAutoGenFilterType)(THIS_ D3DTEXTUREFILTERTYPE FilterType)
+	{
+		if (m_pDefaultPool) m_pDefaultPool->SetAutoGenFilterType(FilterType);
+
+		return m_pSystemMemPool->SetAutoGenFilterType(FilterType);
+	}
+
+	STDMETHOD_(D3DTEXTUREFILTERTYPE, GetAutoGenFilterType)(THIS)
+	{
+		return m_pSystemMemPool->GetAutoGenFilterType();
+	}
+
+	STDMETHOD_(void, GenerateMipSubLevels)(THIS)
+	{
+		if (m_pDefaultPool) m_pDefaultPool->GenerateMipSubLevels();
+
+		return m_pSystemMemPool->GenerateMipSubLevels();
+	}
+
+	/*** IDirect3DTexture9 methods ***/
+	STDMETHOD(GetLevelDesc)(THIS_ UINT Level, D3DSURFACE_DESC *pDesc)
+	{
+		return m_pSystemMemPool->GetLevelDesc(Level, pDesc);
+	}
+
+	STDMETHOD(GetSurfaceLevel)(THIS_ UINT Level, IDirect3DSurface9** ppSurfaceLevel)
+	{
+		// TODO: out interface needs to be tracked for changes as well!
+
+		return m_pSystemMemPool->GetSurfaceLevel(Level, ppSurfaceLevel);
+	}
+
+	STDMETHOD(LockRect)(THIS_ UINT Level, D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags)
+	{
+		m_Dirty = true;
+
+		return m_pSystemMemPool->LockRect(Level, pLockedRect, pRect, Flags);
+	}
+
+	STDMETHOD(UnlockRect)(THIS_ UINT Level)
+	{
+		HRESULT result = m_pSystemMemPool->UnlockRect(Level);
+
+		return result;
+	}
+
+	STDMETHOD(AddDirtyRect)(THIS_ CONST RECT* pDirtyRect)
+	{
+		m_Dirty = true;
+
+		return m_pSystemMemPool->AddDirtyRect(pDirtyRect);
+	}
+
+	LPCWSTR Name;
+	UINT Width;
+	UINT Height;
+	UINT Levels;
+	DWORD Usage;
+	D3DFORMAT Format;
+	D3DPOOL Pool;
+	DWORD Priority;
+	DWORD LOD;
+	D3DTEXTUREFILTERTYPE FilterType;
+	UINT LockCount;
+	LPCWSTR CreationCallStack;
+
+	CAfxManagedDirect3DTexture9(UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, IDirect3DTexture9 * pSystemMemPoolTexture)
+		: Name(L"IAfxManagedDirect3DTexture9")
+		, Width(Width)
+		, Height(Height)
+		, Levels(Levels)
+		, Usage(Usage)
+		, Format(Format)
+		, Pool(D3DPOOL_MANAGED)
+		, Priority(0)
+		, LOD(0)
+		, FilterType(D3DTEXF_NONE)
+		, LockCount(0)
+		, CreationCallStack(L"n/a")
+		, m_pSystemMemPool(pSystemMemPoolTexture)
+		, m_Dirty(false)
+		, m_pDefaultPool(nullptr)
+	{
+	}
+
+protected:
+	virtual IDirect3DTexture9 * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty)
+	{
+		if (switchToDynamic && !(Usage & D3DUSAGE_DYNAMIC))
+		{
+			Usage |= D3DUSAGE_DYNAMIC;
+			m_pDefaultPool->Release();
+			m_pDefaultPool = nullptr;
+		}
+
+		if (nullptr == m_pDefaultPool)
+			m_Dirty = true;
+
+		outWasDirty = m_Dirty;
+
+		if (m_Dirty)
+		{
+			IDirect3DDevice9 * device;
+
+			if (D3D_OK == m_pSystemMemPool->GetDevice(&device))
+			{
+				if (nullptr == m_pDefaultPool)
+				{
+					IDirect3DTexture9 * pDefaultPool;
+					if (D3D_OK == device->CreateTexture(Width, Height, Levels, Usage, Format, D3DPOOL_DEFAULT, &pDefaultPool, nullptr))
+					{
+						m_pDefaultPool = pDefaultPool;
+
+						pDefaultPool->SetPriority(m_pSystemMemPool->GetPriority());
+						pDefaultPool->SetLOD(m_pSystemMemPool->GetLOD());
+						pDefaultPool->SetAutoGenFilterType(m_pSystemMemPool->GetAutoGenFilterType());
+					}
+				}
+
+				if (m_pDefaultPool && m_Dirty)
+				{
+					device->UpdateTexture(m_pSystemMemPool, m_pDefaultPool);
+					m_Dirty = false;
+				}
+			}
+		}
+
+		return m_pDefaultPool;
+	}
+
+	virtual void OnAfxDeviceLost()
+	{
+		if (m_pDefaultPool)
+		{
+			m_pDefaultPool->Release();
+			m_pDefaultPool = nullptr;
+		}
+	}
+
+private:
+	bool m_Dirty;
+	IDirect3DTexture9 * m_pSystemMemPool;
+	IDirect3DTexture9 * m_pDefaultPool;
+};
+
+// CAfxManagedDirect3DVolumeTexture9 ///////////////////////////////////////////
+
+// {7764F7E0-B5C4-4D33-A98B-3BFC145DEF8C}
+DEFINE_GUID(IID_IAfxManagedDirect3DVolumeTexture9,
+	0x7764f7e0, 0xb5c4, 0x4d33, 0xa9, 0x8b, 0x3b, 0xfc, 0x14, 0x5d, 0xef, 0x8c);
+
+
+// {7764F7E0-B5C4-4D33-A98B-3BFC145DEF8C}
+static const GUID IID_IAfxManagedDirect3DVolumeTexture9 =
+{ 0x7764f7e0, 0xb5c4, 0x4d33, { 0xa9, 0x8b, 0x3b, 0xfc, 0x14, 0x5d, 0xef, 0x8c } };
+
+class CAfxManagedDirect3DVolumeTexture9 : public CAfxDirect3DManaged<IDirect3DVolumeTexture9>
+{
+public:
+	/*** IUnknown methods ***/
+	STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj)
+	{
+		if (IID_IAfxManagedDirect3DVolumeTexture9 == riid)
+		{
+			*ppvObj = this;
+			return D3D_OK;
+		}
+
+		return m_pSystemMemPool->QueryInterface(riid, ppvObj);
+
+	}
+	STDMETHOD_(ULONG, AddRef)(THIS)
+	{
+		return m_pSystemMemPool->AddRef();
+	}
+
+	STDMETHOD_(ULONG, Release)(THIS)
+	{
+		ULONG result = m_pSystemMemPool->Release();
+
+		if (0 == result)
+		{
+			if (m_pDefaultPool) m_pDefaultPool->Release();
+
+			delete this;
+		}
+
+		return result;
+	}
+
+	/*** IDirect3DResource9 methods ***/
+	STDMETHOD(GetDevice)(THIS_ IDirect3DDevice9** ppDevice)
+	{
+		return m_pSystemMemPool->GetDevice(ppDevice);
+	}
+
+	STDMETHOD(SetPrivateData)(THIS_ REFGUID refguid, CONST void* pData, DWORD SizeOfData, DWORD Flags)
+	{
+		return m_pSystemMemPool->SetPrivateData(refguid, pData, SizeOfData, Flags);
+	}
+
+	STDMETHOD(GetPrivateData)(THIS_ REFGUID refguid, void* pData, DWORD* pSizeOfData)
+	{
+		return m_pSystemMemPool->GetPrivateData(refguid, pData, pSizeOfData);
+	}
+
+	STDMETHOD(FreePrivateData)(THIS_ REFGUID refguid)
+	{
+		return m_pSystemMemPool->FreePrivateData(refguid);
+	}
+
+	STDMETHOD_(DWORD, SetPriority)(THIS_ DWORD PriorityNew)
+	{
+		if (m_pDefaultPool) m_pDefaultPool->SetPriority(PriorityNew);
+
+		return m_pSystemMemPool->SetPriority(PriorityNew);
+	}
+
+	STDMETHOD_(DWORD, GetPriority)(THIS)
+	{
+		return m_pSystemMemPool->GetPriority();
+	}
+
+	STDMETHOD_(void, PreLoad)(THIS)
+	{
+		bool dummy;
+		OnAfxGetOrCreateUnmanaged(Usage & D3DUSAGE_DYNAMIC, dummy);
+	}
+
+	STDMETHOD_(D3DRESOURCETYPE, GetType)(THIS)
+	{
+		return m_pSystemMemPool->GetType();
+	}
+
+	/*** IDirect3DBaseTexture9 methods ***/
+	STDMETHOD_(DWORD, SetLOD)(THIS_ DWORD LODNew) {
+		if (m_pDefaultPool) m_pDefaultPool->SetLOD(LODNew);
+
+		return m_pSystemMemPool->SetLOD(LODNew);
+	}
+
+	STDMETHOD_(DWORD, GetLOD)(THIS)
+	{
+		return m_pSystemMemPool->GetLOD();
+	}
+
+	STDMETHOD_(DWORD, GetLevelCount)(THIS)
+	{
+		return m_pSystemMemPool->GetLevelCount();
+	}
+
+	STDMETHOD(SetAutoGenFilterType)(THIS_ D3DTEXTUREFILTERTYPE FilterType)
+	{
+		if (m_pDefaultPool) m_pDefaultPool->SetAutoGenFilterType(FilterType);
+
+		return m_pSystemMemPool->SetAutoGenFilterType(FilterType);
+	}
+
+	STDMETHOD_(D3DTEXTUREFILTERTYPE, GetAutoGenFilterType)(THIS)
+	{
+		return m_pSystemMemPool->GetAutoGenFilterType();
+	}
+
+	STDMETHOD_(void, GenerateMipSubLevels)(THIS)
+	{
+		if (m_pDefaultPool) m_pDefaultPool->GenerateMipSubLevels();
+
+		return m_pSystemMemPool->GenerateMipSubLevels();
+	}
+
+	/*** IDirect3DVolumeTexture9 methods ***/
+	STDMETHOD(GetLevelDesc)(THIS_ UINT Level, D3DVOLUME_DESC *pDesc)
+	{
+		return m_pSystemMemPool->GetLevelDesc(Level, pDesc);
+	}
+
+	STDMETHOD(GetVolumeLevel)(THIS_ UINT Level, IDirect3DVolume9** ppVolumeLevel)
+	{
+		// TODO: out interface needs to be tracked for changes as well!
+
+		return m_pSystemMemPool->GetVolumeLevel(Level, ppVolumeLevel);
+	}
+
+	STDMETHOD(LockBox)(THIS_ UINT Level, D3DLOCKED_BOX* pLockedVolume, CONST D3DBOX* pBox, DWORD Flags)
+	{
+		m_Dirty = true;
+
+		return m_pSystemMemPool->LockBox(Level, pLockedVolume, pBox, Flags);
+	}
+
+	STDMETHOD(UnlockBox)(THIS_ UINT Level)
+	{
+		HRESULT result =  m_pSystemMemPool->UnlockBox(Level);
+
+		return result;
+	}
+
+	STDMETHOD(AddDirtyBox)(THIS_ CONST D3DBOX* pDirtyBox)
+	{
+		m_Dirty = true;
+
+		return m_pSystemMemPool->AddDirtyBox(pDirtyBox);
+	}
+
+    LPCWSTR Name;
+    UINT Width;
+    UINT Height;
+    UINT Depth;
+    UINT Levels;
+    DWORD Usage;
+    D3DFORMAT Format;
+    D3DPOOL Pool;
+    DWORD Priority;
+    DWORD LOD;
+    D3DTEXTUREFILTERTYPE FilterType;
+    UINT LockCount;
+    LPCWSTR CreationCallStack;
+
+	CAfxManagedDirect3DVolumeTexture9(UINT Width, UINT Height, UINT Depth, UINT Levels, DWORD Usage, D3DFORMAT Format, IDirect3DVolumeTexture9 * pSystemMemPoolTexture)
+		: Name(L"IAfxManagedDirect3DVolumeTexture9")
+		, Width(Width)
+		, Height(Height)
+		, Depth(Depth)
+		, Levels(Levels)
+		, Usage(Usage)
+		, Format(Format)
+		, Pool(D3DPOOL_MANAGED)
+		, Priority(0)
+		, LOD(0)
+		, FilterType(D3DTEXF_NONE)
+		, LockCount(0)
+		, CreationCallStack(L"n/a")
+		, m_pSystemMemPool(pSystemMemPoolTexture)
+		, m_Dirty(false)
+		, m_pDefaultPool(nullptr)
+	{
+	}
+
+protected:
+	virtual IDirect3DVolumeTexture9 * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty)
+	{
+		if (switchToDynamic && !(Usage & D3DUSAGE_DYNAMIC))
+		{
+			Usage |= D3DUSAGE_DYNAMIC;
+			m_pDefaultPool->Release();
+			m_pDefaultPool = nullptr;
+		}
+
+		if (nullptr == m_pDefaultPool)
+			m_Dirty = true;
+
+		outWasDirty = m_Dirty;
+
+		if (m_Dirty)
+		{
+			IDirect3DDevice9 * device;
+
+			if (D3D_OK == m_pSystemMemPool->GetDevice(&device))
+			{
+				if (nullptr == m_pDefaultPool)
+				{
+					IDirect3DVolumeTexture9 * pDefaultPool;
+					if (D3D_OK == device->CreateVolumeTexture(Width, Height, Depth, Levels, Usage, Format, D3DPOOL_DEFAULT, &pDefaultPool, nullptr))
+					{
+						m_pDefaultPool = pDefaultPool;
+
+						pDefaultPool->SetPriority(m_pSystemMemPool->GetPriority());
+						pDefaultPool->SetLOD(m_pSystemMemPool->GetLOD());
+						pDefaultPool->SetAutoGenFilterType(m_pSystemMemPool->GetAutoGenFilterType());
+					}
+				}
+
+				if (m_pDefaultPool && m_Dirty)
+				{
+					device->UpdateTexture(m_pSystemMemPool, m_pDefaultPool);
+					m_Dirty = false;
+				}
+			}
+		}
+
+		return m_pDefaultPool;
+	}
+
+	virtual void OnAfxDeviceLost()
+	{
+		if (m_pDefaultPool)
+		{
+			m_pDefaultPool->Release();
+			m_pDefaultPool = nullptr;
+		}
+	}
+
+private:
+	bool m_Dirty;
+	IDirect3DVolumeTexture9 * m_pSystemMemPool;
+	IDirect3DVolumeTexture9 * m_pDefaultPool;
+};
+
+
+// CAfxManagedDirect3DCubeTexture9 ///////////////////////////////////////////
+
+// {24AA51E7-9575-49D5-A2DF-AF18CB6CC587}
+DEFINE_GUID(IID_IAfxManagedDirect3DCubeTexture9,
+	0x24aa51e7, 0x9575, 0x49d5, 0xa2, 0xdf, 0xaf, 0x18, 0xcb, 0x6c, 0xc5, 0x87);
+
+// {24AA51E7-9575-49D5-A2DF-AF18CB6CC587}
+static const GUID IID_IAfxManagedDirect3DCubeTexture9 =
+{ 0x24aa51e7, 0x9575, 0x49d5, { 0xa2, 0xdf, 0xaf, 0x18, 0xcb, 0x6c, 0xc5, 0x87 } };
+
+
+class CAfxManagedDirect3DCubeTexture9 : public CAfxDirect3DManaged<IDirect3DCubeTexture9>
+{
+public:
+	/*** IUnknown methods ***/
+	STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj)
+	{
+		if (IID_IAfxManagedDirect3DCubeTexture9 == riid)
+		{
+			*ppvObj = this;
+			return D3D_OK;
+		}
+
+		return m_pSystemMemPool->QueryInterface(riid, ppvObj);
+
+	}
+	STDMETHOD_(ULONG, AddRef)(THIS)
+	{
+		return m_pSystemMemPool->AddRef();
+	}
+
+	STDMETHOD_(ULONG, Release)(THIS)
+	{
+		ULONG result = m_pSystemMemPool->Release();
+
+		if (0 == result)
+		{
+			if (m_pDefaultPool) m_pDefaultPool->Release();
+
+			delete this;
+		}
+
+		return result;
+	}
+
+	/*** IDirect3DResource9 methods ***/
+	STDMETHOD(GetDevice)(THIS_ IDirect3DDevice9** ppDevice)
+	{
+		return m_pSystemMemPool->GetDevice(ppDevice);
+	}
+
+	STDMETHOD(SetPrivateData)(THIS_ REFGUID refguid, CONST void* pData, DWORD SizeOfData, DWORD Flags)
+	{
+		return m_pSystemMemPool->SetPrivateData(refguid, pData, SizeOfData, Flags);
+	}
+
+	STDMETHOD(GetPrivateData)(THIS_ REFGUID refguid, void* pData, DWORD* pSizeOfData)
+	{
+		return m_pSystemMemPool->GetPrivateData(refguid, pData, pSizeOfData);
+	}
+
+	STDMETHOD(FreePrivateData)(THIS_ REFGUID refguid)
+	{
+		return m_pSystemMemPool->FreePrivateData(refguid);
+	}
+
+	STDMETHOD_(DWORD, SetPriority)(THIS_ DWORD PriorityNew)
+	{
+		if (m_pDefaultPool) m_pDefaultPool->SetPriority(PriorityNew);
+
+		return m_pSystemMemPool->SetPriority(PriorityNew);
+	}
+
+	STDMETHOD_(DWORD, GetPriority)(THIS)
+	{
+		return m_pSystemMemPool->GetPriority();
+	}
+
+	STDMETHOD_(void, PreLoad)(THIS)
+	{
+		bool dummy;
+		OnAfxGetOrCreateUnmanaged(Usage & D3DUSAGE_DYNAMIC, dummy);
+	}
+
+	STDMETHOD_(D3DRESOURCETYPE, GetType)(THIS)
+	{
+		return m_pSystemMemPool->GetType();
+	}
+
+	/*** IDirect3DBaseTexture9 methods ***/
+	STDMETHOD_(DWORD, SetLOD)(THIS_ DWORD LODNew) {
+		if (m_pDefaultPool) m_pDefaultPool->SetLOD(LODNew);
+
+		return m_pSystemMemPool->SetLOD(LODNew);
+	}
+
+	STDMETHOD_(DWORD, GetLOD)(THIS)
+	{
+		return m_pSystemMemPool->GetLOD();
+	}
+
+	STDMETHOD_(DWORD, GetLevelCount)(THIS)
+	{
+		return m_pSystemMemPool->GetLevelCount();
+	}
+
+	STDMETHOD(SetAutoGenFilterType)(THIS_ D3DTEXTUREFILTERTYPE FilterType)
+	{
+		if (m_pDefaultPool) m_pDefaultPool->SetAutoGenFilterType(FilterType);
+
+		return m_pSystemMemPool->SetAutoGenFilterType(FilterType);
+	}
+
+	STDMETHOD_(D3DTEXTUREFILTERTYPE, GetAutoGenFilterType)(THIS)
+	{
+		return m_pSystemMemPool->GetAutoGenFilterType();
+	}
+
+	STDMETHOD_(void, GenerateMipSubLevels)(THIS)
+	{
+		if (m_pDefaultPool) m_pDefaultPool->GenerateMipSubLevels();
+
+		return m_pSystemMemPool->GenerateMipSubLevels();
+	}
+
+	/*** IDirect3DCubeTexture9 methods ***/
+	STDMETHOD(GetLevelDesc)(THIS_ UINT Level, D3DSURFACE_DESC *pDesc)
+	{
+		return m_pSystemMemPool->GetLevelDesc(Level, pDesc);
+	}
+
+	STDMETHOD(GetCubeMapSurface)(THIS_ D3DCUBEMAP_FACES FaceType, UINT Level, IDirect3DSurface9** ppCubeMapSurface)
+	{
+		// TODO: out interface needs to be tracked for changes as well!
+
+		return m_pSystemMemPool->GetCubeMapSurface(FaceType, Level, ppCubeMapSurface);
+	}
+
+	STDMETHOD(LockRect)(THIS_ D3DCUBEMAP_FACES FaceType, UINT Level, D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags)
+	{
+		m_Dirty = true;
+
+		return m_pSystemMemPool->LockRect(FaceType, Level, pLockedRect, pRect, Flags);
+	}
+
+	STDMETHOD(UnlockRect)(THIS_ D3DCUBEMAP_FACES FaceType, UINT Level)
+	{
+		HRESULT result = m_pSystemMemPool->UnlockRect(FaceType, Level);
+
+		return result;
+	}
+
+	STDMETHOD(AddDirtyRect)(THIS_ D3DCUBEMAP_FACES FaceType, CONST RECT* pDirtyRect)
+	{
+		m_Dirty = true;
+
+		return m_pDefaultPool->AddDirtyRect(FaceType, pDirtyRect);
+	}
+
+	LPCWSTR Name;
+	UINT Width;
+	UINT Height;
+	UINT Levels;
+	DWORD Usage;
+	D3DFORMAT Format;
+	D3DPOOL Pool;
+	DWORD Priority;
+	DWORD LOD;
+	D3DTEXTUREFILTERTYPE FilterType;
+	UINT LockCount;
+	LPCWSTR CreationCallStack;
+
+	CAfxManagedDirect3DCubeTexture9(UINT EdgeLength, UINT Levels, DWORD Usage, D3DFORMAT Format, IDirect3DCubeTexture9 * pSystemMemPoolTexture)
+		: Name(L"IAfxManagedDirect3DVolumeTexture9")
+		, Width(EdgeLength)
+		, Height(EdgeLength)
+		, Levels(Levels)
+		, Usage(Usage)
+		, Format(Format)
+		, Pool(D3DPOOL_MANAGED)
+		, Priority(0)
+		, LOD(0)
+		, FilterType(D3DTEXF_NONE)
+		, LockCount(0)
+		, CreationCallStack(L"n/a")
+		, m_pSystemMemPool(pSystemMemPoolTexture)
+		, m_Dirty(false)
+		, m_pDefaultPool(nullptr)
+	{
+	}
+
+protected:
+
+	virtual IDirect3DCubeTexture9 * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty)
+	{
+		if (switchToDynamic && !(Usage & D3DUSAGE_DYNAMIC))
+		{
+			Usage |= D3DUSAGE_DYNAMIC;
+			m_pDefaultPool->Release();
+			m_pDefaultPool = nullptr;
+		}
+
+		if (nullptr == m_pDefaultPool)
+			m_Dirty = true;
+
+		outWasDirty = m_Dirty;
+
+		if (m_Dirty)
+		{
+			IDirect3DDevice9 * device;
+
+			if (D3D_OK == m_pSystemMemPool->GetDevice(&device))
+			{
+				if (nullptr == m_pDefaultPool)
+				{
+					IDirect3DCubeTexture9 * pDefaultPool;
+					if (D3D_OK == device->CreateCubeTexture(Width, Levels, Usage, Format, D3DPOOL_DEFAULT, &pDefaultPool, nullptr))
+					{
+						m_pDefaultPool = pDefaultPool;
+
+						pDefaultPool->SetPriority(m_pSystemMemPool->GetPriority());
+						pDefaultPool->SetLOD(m_pSystemMemPool->GetLOD());
+						pDefaultPool->SetAutoGenFilterType(m_pSystemMemPool->GetAutoGenFilterType());
+					}
+				}
+
+				if (m_pDefaultPool && m_Dirty)
+				{
+					device->UpdateTexture(m_pSystemMemPool, m_pDefaultPool);
+					m_Dirty = false;
+				}
+			}
+		}
+
+		return m_pDefaultPool;
+	}
+
+	virtual void OnAfxDeviceLost()
+	{
+		if (m_pDefaultPool)
+		{
+			m_pDefaultPool->Release();
+			m_pDefaultPool = nullptr;
+		}
+	}
+
+private:
+	bool m_Dirty;
+	IDirect3DCubeTexture9 * m_pSystemMemPool;
+	IDirect3DCubeTexture9 * m_pDefaultPool;
+
+};
+
+// CAfxManagedDirect3DVertexBuffer9 ///////////////////////////////////////////
+
+// {57CDD386-9136-4E22-B215-77792080A04F}
+DEFINE_GUID(IID_IAfxManagedDirect3DVertexBuffer9,
+	0x57cdd386, 0x9136, 0x4e22, 0xb2, 0x15, 0x77, 0x79, 0x20, 0x80, 0xa0, 0x4f);
+
+// {57CDD386-9136-4E22-B215-77792080A04F}
+static const GUID IID_IAfxManagedDirect3DVertexBuffer9 =
+{ 0x57cdd386, 0x9136, 0x4e22, { 0xb2, 0x15, 0x77, 0x79, 0x20, 0x80, 0xa0, 0x4f } };
+
+class CAfxManagedDirect3DVertexBuffer9 : public CAfxDirect3DManaged<IDirect3DVertexBuffer9>
+{
+public:
+	/*** IUnknown methods ***/
+	STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj)
+	{
+		if (IID_IAfxManagedDirect3DVertexBuffer9 == riid)
+		{
+			*ppvObj = this;
+			return D3D_OK;
+		}
+
+		return m_pSystemMemPool->QueryInterface(riid, ppvObj);
+
+	}
+	STDMETHOD_(ULONG, AddRef)(THIS)
+	{
+		return m_pSystemMemPool->AddRef();
+	}
+
+	STDMETHOD_(ULONG, Release)(THIS)
+	{
+		ULONG result = m_pSystemMemPool->Release();
+
+		if (0 == result)
+		{
+			if (m_pDefaultPool) m_pDefaultPool->Release();
+
+			delete this;
+		}
+
+		return result;
+	}
+
+	/*** IDirect3DResource9 methods ***/
+	STDMETHOD(GetDevice)(THIS_ IDirect3DDevice9** ppDevice)
+	{
+		return m_pSystemMemPool->GetDevice(ppDevice);
+	}
+
+	STDMETHOD(SetPrivateData)(THIS_ REFGUID refguid, CONST void* pData, DWORD SizeOfData, DWORD Flags)
+	{
+		return m_pSystemMemPool->SetPrivateData(refguid, pData, SizeOfData, Flags);
+	}
+
+	STDMETHOD(GetPrivateData)(THIS_ REFGUID refguid, void* pData, DWORD* pSizeOfData)
+	{
+		return m_pSystemMemPool->GetPrivateData(refguid, pData, pSizeOfData);
+	}
+
+	STDMETHOD(FreePrivateData)(THIS_ REFGUID refguid)
+	{
+		return m_pSystemMemPool->FreePrivateData(refguid);
+	}
+
+	STDMETHOD_(DWORD, SetPriority)(THIS_ DWORD PriorityNew)
+	{
+		if (m_pDefaultPool) m_pDefaultPool->SetPriority(PriorityNew);
+
+		return m_pSystemMemPool->SetPriority(PriorityNew);
+	}
+
+	STDMETHOD_(DWORD, GetPriority)(THIS)
+	{
+		return m_pSystemMemPool->GetPriority();
+	}
+
+	STDMETHOD_(void, PreLoad)(THIS)
+	{
+		bool dummy;
+		OnAfxGetOrCreateUnmanaged(Usage & D3DUSAGE_DYNAMIC, dummy);
+	}
+
+	STDMETHOD_(D3DRESOURCETYPE, GetType)(THIS)
+	{
+		return m_pSystemMemPool->GetType();
+	}
+
+	/*** IDirect3DVertexBuffer9 methods ***/
+	STDMETHOD(Lock)(THIS_ UINT OffsetToLock, UINT SizeToLock, void** ppbData, DWORD Flags)
+	{
+		m_Dirty = true;
+
+		++LockCount;
+
+		return m_pSystemMemPool->Lock(OffsetToLock, SizeToLock, ppbData, Flags);
+	}
+
+	STDMETHOD(Unlock)(THIS)
+	{
+		HRESULT result = m_pSystemMemPool->Unlock();
+
+		return result;
+	}
+
+	STDMETHOD(GetDesc)(THIS_ D3DVERTEXBUFFER_DESC *pDesc)
+	{
+		return m_pSystemMemPool->GetDesc(pDesc);
+	}
+
+	LPCWSTR Name;
+	UINT Length;
+	DWORD Usage;
+	DWORD FVF;
+	D3DPOOL Pool;
+	DWORD Priority;
+	UINT LockCount;
+	LPCWSTR CreationCallStack;
+
+	CAfxManagedDirect3DVertexBuffer9(UINT Length, DWORD Usage, DWORD FVF, IDirect3DVertexBuffer9 * pSystemMemPool)
+		: Name(L"IAfxManagedDirect3DVertexBuffer9")
+		, Length(Length)
+		, Usage(Usage)
+		, FVF(FVF)
+		, Pool(D3DPOOL_MANAGED)
+		, Priority(0)
+		, LockCount(0)
+		, CreationCallStack(L"n/a")
+		, m_pSystemMemPool(pSystemMemPool)
+		, m_Dirty(false)
+		, m_pDefaultPool(nullptr)
+	{
+	}
+
+protected:
+
+	virtual IDirect3DVertexBuffer9 * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty)
+	{
+		if (switchToDynamic && !(Usage & D3DUSAGE_DYNAMIC))
+		{
+			Usage |= D3DUSAGE_DYNAMIC;
+			m_pDefaultPool->Release();
+			m_pDefaultPool = nullptr;
+		}
+
+		if (nullptr == m_pDefaultPool)
+			m_Dirty = true;
+
+		outWasDirty = m_Dirty;
+
+		if (m_Dirty)
+		{
+			IDirect3DDevice9 * device;
+
+			if (D3D_OK == m_pSystemMemPool->GetDevice(&device))
+			{
+				if (nullptr == m_pDefaultPool)
+				{
+					IDirect3DVertexBuffer9 * pDefaultPool;
+					if (D3D_OK == device->CreateVertexBuffer(Length, Usage, FVF, D3DPOOL_DEFAULT, &pDefaultPool, nullptr))
+					{
+						m_pDefaultPool = pDefaultPool;
+
+						pDefaultPool->SetPriority(m_pSystemMemPool->GetPriority());
+					}
+				}
+
+				if (m_pDefaultPool && m_Dirty)
+				{
+					void * pSource;
+					void * pTarget;
+
+					if (SUCCEEDED(m_pSystemMemPool->Lock(0, Length, &pSource, D3DLOCK_READONLY)))
+					{
+						if (SUCCEEDED(m_pDefaultPool->Lock(0, Length, &pTarget, 0)))
+						{
+							memcpy(pTarget, pSource, Length);
+							m_pDefaultPool->Unlock();
+							m_Dirty = false;
+						}
+						m_pSystemMemPool->Unlock();
+					}
+
+				}
+			}
+		}
+
+		return m_pDefaultPool;
+
+	}
+
+	virtual void OnAfxDeviceLost()
+	{
+		if (m_pDefaultPool)
+		{
+			m_pDefaultPool->Release();
+			m_pDefaultPool = nullptr;
+		}
+	}
+
+private:
+	bool m_Dirty;
+	IDirect3DVertexBuffer9 * m_pSystemMemPool;
+	IDirect3DVertexBuffer9 * m_pDefaultPool;
+};
+
+
+// CAfxManagedDirect3DIndexBuffer9 ///////////////////////////////////////////
+
+// {B8355D17-E24B-4B62-ABA6-C5625791AEC4}
+DEFINE_GUID(IID_IAfxManagedDirect3DIndexBuffer9,
+	0xb8355d17, 0xe24b, 0x4b62, 0xab, 0xa6, 0xc5, 0x62, 0x57, 0x91, 0xae, 0xc4);
+
+// {B8355D17-E24B-4B62-ABA6-C5625791AEC4}
+static const GUID IID_IAfxManagedDirect3DIndexBuffer9 =
+{ 0xb8355d17, 0xe24b, 0x4b62, { 0xab, 0xa6, 0xc5, 0x62, 0x57, 0x91, 0xae, 0xc4 } };
+
+class CAfxManagedDirect3DIndexBuffer9 : public CAfxDirect3DManaged<IDirect3DIndexBuffer9>
+{
+public:
+	/*** IUnknown methods ***/
+	STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj)
+	{
+		if (IID_IAfxManagedDirect3DIndexBuffer9 == riid)
+		{
+			*ppvObj = this;
+			return D3D_OK;
+		}
+
+		return m_pSystemMemPool->QueryInterface(riid, ppvObj);
+
+	}
+	STDMETHOD_(ULONG, AddRef)(THIS)
+	{
+		return m_pSystemMemPool->AddRef();
+	}
+
+	STDMETHOD_(ULONG, Release)(THIS)
+	{
+		ULONG result = m_pSystemMemPool->Release();
+
+		if (0 == result)
+		{
+			if (m_pDefaultPool) m_pDefaultPool->Release();
+
+			delete this;
+		}
+
+		return result;
+	}
+
+	/*** IDirect3DResource9 methods ***/
+	STDMETHOD(GetDevice)(THIS_ IDirect3DDevice9** ppDevice)
+	{
+		return m_pSystemMemPool->GetDevice(ppDevice);
+	}
+
+	STDMETHOD(SetPrivateData)(THIS_ REFGUID refguid, CONST void* pData, DWORD SizeOfData, DWORD Flags)
+	{
+		return m_pSystemMemPool->SetPrivateData(refguid, pData, SizeOfData, Flags);
+	}
+
+	STDMETHOD(GetPrivateData)(THIS_ REFGUID refguid, void* pData, DWORD* pSizeOfData)
+	{
+		return m_pSystemMemPool->GetPrivateData(refguid, pData, pSizeOfData);
+	}
+
+	STDMETHOD(FreePrivateData)(THIS_ REFGUID refguid)
+	{
+		return m_pSystemMemPool->FreePrivateData(refguid);
+	}
+
+	STDMETHOD_(DWORD, SetPriority)(THIS_ DWORD PriorityNew)
+	{
+		if (m_pDefaultPool) m_pDefaultPool->SetPriority(PriorityNew);
+
+		return m_pSystemMemPool->SetPriority(PriorityNew);
+	}
+
+	STDMETHOD_(DWORD, GetPriority)(THIS)
+	{
+		return m_pSystemMemPool->GetPriority();
+	}
+
+	STDMETHOD_(void, PreLoad)(THIS)
+	{
+		bool dummy;
+		OnAfxGetOrCreateUnmanaged(Usage & D3DUSAGE_DYNAMIC, dummy);
+	}
+
+	STDMETHOD_(D3DRESOURCETYPE, GetType)(THIS)
+	{
+		return m_pSystemMemPool->GetType();
+	}
+
+	/*** IDirect3DIndexBuffer9 methods ***/
+	STDMETHOD(Lock)(THIS_ UINT OffsetToLock, UINT SizeToLock, void** ppbData, DWORD Flags)
+	{
+		m_Dirty = true;
+
+		return m_pSystemMemPool->Lock(OffsetToLock, SizeToLock, ppbData, Flags);
+	}
+
+	STDMETHOD(Unlock)(THIS)
+	{
+		HRESULT result = m_pSystemMemPool->Unlock();
+
+		return result;
+	}
+
+	STDMETHOD(GetDesc)(THIS_ D3DINDEXBUFFER_DESC *pDesc)
+	{
+		return m_pSystemMemPool->GetDesc(pDesc);
+	}
+
+	LPCWSTR Name;
+	UINT Length;
+	DWORD Usage;
+	D3DFORMAT Format;
+	D3DPOOL Pool;
+	DWORD Priority;
+	UINT LockCount;
+	LPCWSTR CreationCallStack;
+
+	CAfxManagedDirect3DIndexBuffer9(UINT Length, DWORD Usage, D3DFORMAT Format, IDirect3DIndexBuffer9 * pSystemMemPool)
+		: Name(L"IAfxManagedDirect3DIndexBuffer9")
+		, Length(Length)
+		, Usage(Usage)
+		, Format(Format)
+		, Pool(D3DPOOL_MANAGED)
+		, Priority(0)
+		, LockCount(0)
+		, CreationCallStack(L"n/a")
+		, m_pSystemMemPool(pSystemMemPool)
+		, m_pDefaultPool(nullptr)
+		, m_Dirty(false)
+	{
+		
+	}
+
+protected:
+	virtual IDirect3DIndexBuffer9 * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty)
+	{
+		if (switchToDynamic && !(Usage & D3DUSAGE_DYNAMIC))
+		{
+			Usage |= D3DUSAGE_DYNAMIC;
+			m_pDefaultPool->Release();
+			m_pDefaultPool = nullptr;
+		}
+
+		if (nullptr == m_pDefaultPool)
+			m_Dirty = true;
+
+		outWasDirty = m_Dirty;
+
+		if(m_Dirty)
+		{
+			IDirect3DDevice9 * device;
+
+			if (D3D_OK == m_pSystemMemPool->GetDevice(&device))
+			{
+				if (nullptr == m_pDefaultPool)
+				{
+					IDirect3DIndexBuffer9 * pDefaultPool;
+					if (D3D_OK == device->CreateIndexBuffer(Length, Usage, Format, D3DPOOL_DEFAULT, &pDefaultPool, nullptr))
+					{
+						m_pDefaultPool = pDefaultPool;
+
+						pDefaultPool->SetPriority(m_pSystemMemPool->GetPriority());
+					}
+				}
+
+				if (m_pDefaultPool && m_Dirty)
+				{
+					void * pSource;
+					void * pTarget;
+
+					if (SUCCEEDED(m_pSystemMemPool->Lock(0, Length, &pSource, D3DLOCK_READONLY)))
+					{
+						if (SUCCEEDED(m_pDefaultPool->Lock(0, Length, &pTarget, 0)))
+						{
+							memcpy(pTarget, pSource, Length);
+							m_pDefaultPool->Unlock();
+							m_Dirty = false;
+						}
+						m_pSystemMemPool->Unlock();
+					}
+
+				}
+			}
+		}
+
+		return m_pDefaultPool;
+	}
+
+	virtual void OnAfxDeviceLost()
+	{
+		if (m_pDefaultPool)
+		{
+			m_pDefaultPool->Release();
+			m_pDefaultPool = nullptr;
+		}
+	}
+
+private:
+	bool m_Dirty;
+	IDirect3DIndexBuffer9 * m_pSystemMemPool;
+	IDirect3DIndexBuffer9 * m_pDefaultPool;
+
+};
+
+
+// NewDirect3DDevice9 //////////////////////////////////////////////////////////
 
 struct NewDirect3DDevice9
 {
@@ -837,6 +2115,14 @@ public:
 	{
 		Shared_Direct3DDevice9_Reset_Before();
 
+#if AFX_INTEROP
+		CAfxManagedDirect3DTexture9::AfxDeviceLost();
+		CAfxManagedDirect3DVolumeTexture9::AfxDeviceLost();
+		CAfxManagedDirect3DCubeTexture9::AfxDeviceLost();
+		CAfxManagedDirect3DVertexBuffer9::AfxDeviceLost();
+		CAfxManagedDirect3DIndexBuffer9::AfxDeviceLost();
+#endif
+
 		HRESULT hResult = g_OldDirect3DDevice9->Reset(pPresentationParameters);
 
 		Shared_Direct3DDevice9_Reset_After();
@@ -848,7 +2134,13 @@ public:
 	{
 		HRESULT result = m_Block_Present ? D3D_OK : g_OldDirect3DDevice9->Present(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 
-		Tier0_Warning("0x%08x\n", result);
+#if AFX_INTEROP
+		CAfxManagedDirect3DTexture9::AfxDevicePresented();
+		CAfxManagedDirect3DVolumeTexture9::AfxDevicePresented();
+		CAfxManagedDirect3DCubeTexture9::AfxDevicePresented();
+		CAfxManagedDirect3DVertexBuffer9::AfxDevicePresented();
+		CAfxManagedDirect3DIndexBuffer9::AfxDevicePresented();
+#endif
 
 		Shared_Direct3DDevice9_Present(result == D3DERR_DEVICELOST, m_Block_Present);
 
@@ -864,13 +2156,29 @@ public:
 	STDMETHOD(CreateTexture)(THIS_ UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DTexture9** ppTexture, HANDLE* pSharedHandle)
 	{
 #if AFX_INTEROP
-		if(AfxInterop::Enabled() && ppTexture && Pool == D3DPOOL_DEFAULT && (Usage == D3DUSAGE_RENDERTARGET || Usage == D3DUSAGE_DEPTHSTENCIL))
+		if (AfxInterop::Enabled())
 		{
-			if (CShaderAPIDx8_TextureInfo * info = CShaderAPIDx8_GetCreateTextureInfo())
+			if(ppTexture && Pool == D3DPOOL_DEFAULT && (Usage == D3DUSAGE_RENDERTARGET || Usage == D3DUSAGE_DEPTHSTENCIL))
 			{
-				HRESULT result;
-				if (AfxInterop::CreateTexture(info->TextureName, info->TextureGroup, g_OldDirect3DDevice9, Width, Height, Levels, Usage, Format, Pool, ppTexture, pSharedHandle, result))
-					return result;
+				if (CShaderAPIDx8_TextureInfo * info = CShaderAPIDx8_GetCreateTextureInfo())
+				{
+					HRESULT result;
+					if (AfxInterop::CreateTexture(info->TextureName, info->TextureGroup, g_OldDirect3DDevice9, Width, Height, Levels, Usage, Format, Pool, ppTexture, pSharedHandle, result))
+						return result;
+				}
+			}
+
+			if (Pool == D3DPOOL_MANAGED)
+			{
+				IDirect3DTexture9 * pSystemMemPoolTexture;
+				HRESULT result = g_OldDirect3DDevice9->CreateTexture(Width, Height, Levels, Usage, Format, D3DPOOL_SYSTEMMEM, &pSystemMemPoolTexture, pSharedHandle);
+
+				if (D3D_OK == result)
+				{
+					*ppTexture = new CAfxManagedDirect3DTexture9(Width, Height, Levels, Usage, Format, pSystemMemPoolTexture);
+				}
+
+				return result;
 			}
 		}
 #endif
@@ -878,10 +2186,98 @@ public:
 		return g_OldDirect3DDevice9->CreateTexture(Width, Height, Levels, Usage, Format, Pool, ppTexture, pSharedHandle);
 	}
 
-    IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateVolumeTexture);
-    IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateCubeTexture);
-    IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateVertexBuffer);
-    IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateIndexBuffer);
+	STDMETHOD(CreateVolumeTexture)(THIS_ UINT Width, UINT Height, UINT Depth, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DVolumeTexture9** ppVolumeTexture, HANDLE* pSharedHandle)
+	{
+#if AFX_INTEROP
+		if (AfxInterop::Enabled())
+		{
+			if (Pool == D3DPOOL_MANAGED)
+			{
+				IDirect3DVolumeTexture9 * pSystemMemPoolTexture;
+				HRESULT result = g_OldDirect3DDevice9->CreateVolumeTexture(Width, Height, Depth, Levels, Usage, Format, D3DPOOL_SYSTEMMEM, &pSystemMemPoolTexture, pSharedHandle);
+
+				if (D3D_OK == result)
+				{
+					*ppVolumeTexture = new CAfxManagedDirect3DVolumeTexture9(Width, Height, Depth, Levels, Usage, Format, pSystemMemPoolTexture);
+				}
+
+				return result;
+			}
+		}
+#endif
+
+		return g_OldDirect3DDevice9->CreateVolumeTexture(Width, Height, Depth, Levels, Usage, Format, Pool, ppVolumeTexture, pSharedHandle);
+	}
+	
+	STDMETHOD(CreateCubeTexture)(THIS_ UINT EdgeLength, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DCubeTexture9** ppCubeTexture, HANDLE* pSharedHandle)
+	{
+#if AFX_INTEROP
+		if (AfxInterop::Enabled())
+		{
+			if (Pool == D3DPOOL_MANAGED)
+			{
+				IDirect3DCubeTexture9 * pSystemMemPoolTexture;
+				HRESULT result = g_OldDirect3DDevice9->CreateCubeTexture(EdgeLength, Levels, Usage, Format, D3DPOOL_SYSTEMMEM, &pSystemMemPoolTexture, pSharedHandle);
+
+				if (D3D_OK == result)
+				{
+					*ppCubeTexture = new CAfxManagedDirect3DCubeTexture9(EdgeLength, Levels, Usage, Format, pSystemMemPoolTexture);
+				}
+
+				return result;
+			}
+		}
+#endif
+
+		return g_OldDirect3DDevice9->CreateCubeTexture(EdgeLength, Levels, Usage, Format, Pool, ppCubeTexture, pSharedHandle);
+	}
+
+	STDMETHOD(CreateVertexBuffer)(THIS_ UINT Length, DWORD Usage, DWORD FVF, D3DPOOL Pool, IDirect3DVertexBuffer9** ppVertexBuffer, HANDLE* pSharedHandle)
+	{
+#if AFX_INTEROP
+		if (AfxInterop::Enabled())
+		{
+			if (Pool == D3DPOOL_MANAGED)
+			{
+				IDirect3DVertexBuffer9 * pSystemMemPool;
+				HRESULT result = g_OldDirect3DDevice9->CreateVertexBuffer(Length, Usage, FVF, D3DPOOL_SYSTEMMEM, &pSystemMemPool, pSharedHandle);
+
+				if (D3D_OK == result)
+				{
+					*ppVertexBuffer = new CAfxManagedDirect3DVertexBuffer9(Length, Usage, FVF, pSystemMemPool);
+				}
+
+				return result;
+			}
+		}
+#endif
+
+		return g_OldDirect3DDevice9->CreateVertexBuffer(Length, Usage, FVF, Pool, ppVertexBuffer, pSharedHandle);
+	}
+
+	STDMETHOD(CreateIndexBuffer)(THIS_ UINT Length, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DIndexBuffer9** ppIndexBuffer, HANDLE* pSharedHandle)
+	{
+#if AFX_INTEROP
+		if (AfxInterop::Enabled())
+		{
+			if (Pool == D3DPOOL_MANAGED)
+			{
+				IDirect3DIndexBuffer9 * pSystemMemPool;
+				HRESULT result = g_OldDirect3DDevice9->CreateIndexBuffer(Length, Usage, Format, D3DPOOL_SYSTEMMEM, &pSystemMemPool, pSharedHandle);
+
+				if (D3D_OK == result)
+				{
+					*ppIndexBuffer = new CAfxManagedDirect3DIndexBuffer9(Length, Usage, Format, pSystemMemPool);
+				}
+
+				return result;
+			}
+		}
+#endif
+
+		return g_OldDirect3DDevice9->CreateIndexBuffer(Length, Usage, Format, Pool, ppIndexBuffer, pSharedHandle);
+	}
+
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateRenderTarget);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateDepthStencilSurface);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, UpdateSurface);
@@ -890,7 +2286,11 @@ public:
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetFrontBufferData);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, StretchRect);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, ColorFill);
-    IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateOffscreenPlainSurface);
+    
+	STDMETHOD(CreateOffscreenPlainSurface)(THIS_ UINT Width, UINT Height, D3DFORMAT Format, D3DPOOL Pool, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle)
+	{
+		return g_OldDirect3DDevice9->CreateOffscreenPlainSurface(Width, Height, Format, Pool, ppSurface, pSharedHandle);
+	}
 
 	STDMETHOD(SetRenderTarget)(THIS_ DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget) {
 		return g_OldDirect3DDevice9->SetRenderTarget(RenderTargetIndex, pRenderTarget);
@@ -1146,8 +2546,45 @@ public:
 
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, SetClipStatus);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetClipStatus);
-    IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetTexture);
-    IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, SetTexture);
+	
+	STDMETHOD(GetTexture)(THIS_ DWORD Stage, IDirect3DBaseTexture9** ppTexture)
+	{
+		// TODO: Make the CAfxManagedDirect3DTexture9 system memory texture hook transaprent for this function.
+
+		return g_OldDirect3DDevice9->GetTexture(Stage, ppTexture);
+
+	}
+	
+	STDMETHOD(SetTexture)(THIS_ DWORD Stage, IDirect3DBaseTexture9* pTexture)
+	{
+#ifdef AFX_INTEROP
+		if (AfxInterop::Enabled() && pTexture)
+		{
+			union
+			{
+				CAfxManagedDirect3DTexture9 * Direct3DTexture9;
+				CAfxManagedDirect3DVolumeTexture9 * Direct3DVolumeTexture9;
+				CAfxManagedDirect3DCubeTexture9 * Direct3DCubeTexture9;
+			} afxManaged;
+
+			if (SUCCEEDED(pTexture->QueryInterface(IID_IAfxManagedDirect3DTexture9, (void **)&(afxManaged.Direct3DTexture9))))
+			{
+				return g_OldDirect3DDevice9->SetTexture(Stage, (afxManaged.Direct3DTexture9)->AfxGetOrCreateUnmanged());
+			}
+			else if (SUCCEEDED(pTexture->QueryInterface(IID_IAfxManagedDirect3DVolumeTexture9, (void **)&(afxManaged.Direct3DVolumeTexture9))))
+			{
+				return g_OldDirect3DDevice9->SetTexture(Stage, (afxManaged.Direct3DVolumeTexture9)->AfxGetOrCreateUnmanged());
+			}
+			else if (SUCCEEDED(pTexture->QueryInterface(IID_IAfxManagedDirect3DCubeTexture9, (void **)&(afxManaged.Direct3DCubeTexture9))))
+			{
+				return g_OldDirect3DDevice9->SetTexture(Stage, (afxManaged.Direct3DCubeTexture9)->AfxGetOrCreateUnmanged());
+			}
+		}
+#endif
+
+		return g_OldDirect3DDevice9->SetTexture(Stage, pTexture);
+	}
+
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetTextureStageState);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, SetTextureStageState);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetSamplerState);
@@ -1269,11 +2706,45 @@ public:
 	
 	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetVertexShaderConstantB);
     
-	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, SetStreamSource);
+	STDMETHOD(SetStreamSource)(THIS_ UINT StreamNumber, IDirect3DVertexBuffer9* pStreamData, UINT OffsetInBytes, UINT Stride)
+	{
+#ifdef AFX_INTEROP
+		if (AfxInterop::Enabled() && pStreamData)
+		{
+			CAfxManagedDirect3DVertexBuffer9  * afxManagedDirect3DVertexBuffer9;
+
+			if (SUCCEEDED(pStreamData->QueryInterface(IID_IAfxManagedDirect3DVertexBuffer9, (void **)&(afxManagedDirect3DVertexBuffer9))))
+			{
+				return g_OldDirect3DDevice9->SetStreamSource(StreamNumber, (afxManagedDirect3DVertexBuffer9)->AfxGetOrCreateUnmanged(), OffsetInBytes, Stride);
+			}
+		}
+#endif
+
+		return g_OldDirect3DDevice9->SetStreamSource(StreamNumber, pStreamData, OffsetInBytes, Stride);
+	}
+
+
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetStreamSource);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, SetStreamSourceFreq);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetStreamSourceFreq);
-    IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, SetIndices);
+    
+	STDMETHOD(SetIndices)(THIS_ IDirect3DIndexBuffer9* pIndexData)
+	{
+#ifdef AFX_INTEROP
+		if (AfxInterop::Enabled() && pIndexData)
+		{
+			CAfxManagedDirect3DIndexBuffer9  * afxManagedDirect3DIndexBuffer9;
+
+			if (SUCCEEDED(pIndexData->QueryInterface(IID_IAfxManagedDirect3DIndexBuffer9, (void **)&(afxManagedDirect3DIndexBuffer9))))
+			{
+				return g_OldDirect3DDevice9->SetIndices((afxManagedDirect3DIndexBuffer9)->AfxGetOrCreateUnmanged());
+			}
+		}
+#endif
+
+		return g_OldDirect3DDevice9->SetIndices(pIndexData);
+	}
+
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetIndices);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreatePixelShader);
     
@@ -1510,10 +2981,6 @@ IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetRasterStatus, NewDirect3DDevice9, g_O
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetDialogBoxMode, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetGammaRamp, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetGammaRamp, NewDirect3DDevice9, g_OldDirect3DDevice9);
-IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateVolumeTexture, NewDirect3DDevice9, g_OldDirect3DDevice9);
-IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateCubeTexture, NewDirect3DDevice9, g_OldDirect3DDevice9);
-IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateVertexBuffer, NewDirect3DDevice9, g_OldDirect3DDevice9);
-IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateIndexBuffer, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateRenderTarget, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateDepthStencilSurface, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, UpdateSurface, NewDirect3DDevice9, g_OldDirect3DDevice9);
@@ -1522,7 +2989,6 @@ IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetRenderTargetData, NewDirect3DDevice9,
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetFrontBufferData, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, StretchRect, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, ColorFill, NewDirect3DDevice9, g_OldDirect3DDevice9);
-IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateOffscreenPlainSurface, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetRenderTarget, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetDepthStencilSurface, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetTransform, NewDirect3DDevice9, g_OldDirect3DDevice9);
@@ -1540,8 +3006,6 @@ IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetClipPlane, NewDirect3DDevice9, g_OldD
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, BeginStateBlock, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetClipStatus, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetClipStatus, NewDirect3DDevice9, g_OldDirect3DDevice9);
-IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetTexture, NewDirect3DDevice9, g_OldDirect3DDevice9);
-IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetTexture, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetTextureStageState, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetTextureStageState, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetSamplerState, NewDirect3DDevice9, g_OldDirect3DDevice9);
@@ -1571,11 +3035,9 @@ IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateVertexShader, NewDirect3DDevice9, 
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetVertexShaderConstantF, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetVertexShaderConstantI, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetVertexShaderConstantB, NewDirect3DDevice9, g_OldDirect3DDevice9);
-IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetStreamSource, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetStreamSource, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetStreamSourceFreq, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetStreamSourceFreq, NewDirect3DDevice9, g_OldDirect3DDevice9);
-IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetIndices, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetIndices, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreatePixelShader, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetPixelShaderConstantI, NewDirect3DDevice9, g_OldDirect3DDevice9);
@@ -1970,23 +3432,9 @@ struct NewDirect3D9
 
     STDMETHOD(CreateDevice)(THIS_ UINT Adapter,D3DDEVTYPE DeviceType,HWND hFocusWindow,DWORD BehaviorFlags,D3DPRESENT_PARAMETERS* pPresentationParameters,IDirect3DDevice9** ppReturnedDeviceInterface)
 	{
-		if (false && g_OldDirect3D9Ex)
-		{
-			// We are shoving in D3D9Ex, so we have to use CreateDeviceEx:
-
-			HRESULT hRet = g_OldDirect3D9Ex->CreateDeviceEx(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, NULL, (IDirect3DDevice9Ex **)ppReturnedDeviceInterface);
-
-
-			if (SUCCEEDED(hRet) && pPresentationParameters && ppReturnedDeviceInterface)
-			{
-				g_OldDirect3DDevice9 = *ppReturnedDeviceInterface;
-
-				Shared_Direct3DDevice9_Init(Adapter, pPresentationParameters->hDeviceWindow, g_OldDirect3DDevice9);
-
-				*ppReturnedDeviceInterface = reinterpret_cast<IDirect3DDevice9 *>(&g_NewDirect3DDevice9);
-			}
-
-			return hRet;
+		if (AfxInterop::Enabled() && pPresentationParameters) {
+			pPresentationParameters->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+			pPresentationParameters->FullScreen_RefreshRateInHz = 0;			
 		}
 
 		HRESULT hRet = g_OldDirect3D9->CreateDevice(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
@@ -2113,7 +3561,7 @@ IDirect3D9 * WINAPI new_Direct3DCreate9(UINT SDKVersion)
 {
 	if(D3D_SDK_VERSION == SDKVersion)
 	{
-#ifdef AFX_INTEROP
+#if 0
 		if (AfxInterop::Enabled())
 		{
 			IDirect3D9Ex * device = NULL;

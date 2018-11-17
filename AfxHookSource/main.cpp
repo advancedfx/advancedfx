@@ -2113,6 +2113,47 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 
 		InterceptDllCall(hModule, "Kernel32.dll", "LoadLibraryExA", (DWORD)&new_LoadLibraryExA);
 		InterceptDllCall(hModule, "Kernel32.dll", "LoadLibraryA", (DWORD)&new_LoadLibraryA);
+
+#if 0
+		if (AfxInterop::Enabled())
+		{
+
+			if (DWORD curDirLen = GetCurrentDirectoryW(0, NULL))
+			{
+				size_t curDirSize = curDirLen * sizeof(WCHAR);
+
+				LPWSTR curDirectory = (LPWSTR)malloc(curDirSize);
+				if (curDirectory)
+				{
+					if (curDirLen == 1 + GetCurrentDirectoryW(curDirLen, curDirectory))
+					{
+						std::wstring strHlaeFolder(GetHlaeFolderW());
+
+						std::wstring strWine32Folder = strHlaeFolder + L"wine32";
+
+						if (FALSE != SetCurrentDirectoryW(strWine32Folder.c_str()))
+						{
+							std::wstring strWineD3d9Dll = strWine32Folder + L"\\d3d9.dll";
+							if (NULL == LoadLibraryExW(strWineD3d9Dll.c_str(), NULL, LOAD_WITH_ALTERED_SEARCH_PATH))
+								ErrorBox("Could not load Wine d3d9.dll");
+
+							std::wstring strWineD3dx9_43Dll = strWine32Folder + L"\\d3dx9_43.dll";
+							if (NULL == LoadLibraryExW(strWineD3dx9_43Dll.c_str(), NULL, LOAD_WITH_ALTERED_SEARCH_PATH))
+								ErrorBox("Could not load Wine d3dx9_43.dll");
+
+							SetCurrentDirectoryW(curDirectory);
+						}
+						else ErrorBox("Could not SetCurrentDirectoryW to HLAE wine32 folder.");
+					}
+					else ErrorBox("Could not GetCurrentDirectoryW data.");
+
+					free(curDirectory);
+				}
+				else ErrorBox("Could not malloc.");
+			}
+			else ErrorBox("Could not GetCurrentDirectoryW length.");
+		}
+#endif
 	}
 }
 
