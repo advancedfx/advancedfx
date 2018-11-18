@@ -19,6 +19,25 @@ extern WrpVEngineClient * g_VEngineClient;
 
 extern Hook_VClient_RenderView g_Hook_VClient_RenderView;
 
+// {424A968E-EBD4-4BE2-9BEB-374580F00775}
+DEFINE_GUID(IID_IAfxInteropSharedSurface,
+	0x424a968e, 0xebd4, 0x4be2, 0x9b, 0xeb, 0x37, 0x45, 0x80, 0xf0, 0x7, 0x75);
+
+// {424A968E-EBD4-4BE2-9BEB-374580F00775}
+static const GUID IID_IAfxInteropSharedSurface =
+{ 0x424a968e, 0xebd4, 0x4be2, { 0x9b, 0xeb, 0x37, 0x45, 0x80, 0xf0, 0x7, 0x75 } };
+
+
+// {AA07D1A4-E28F-4FB2-B0B1-CC8985495EFB}
+DEFINE_GUID(IID_IAfxInteropSharedTexture ,
+	0xaa07d1a4, 0xe28f, 0x4fb2, 0xb0, 0xb1, 0xcc, 0x89, 0x85, 0x49, 0x5e, 0xfb);
+
+// {AA07D1A4-E28F-4FB2-B0B1-CC8985495EFB}
+static const GUID IID_IAfxInteropSharedTexture =
+{ 0xaa07d1a4, 0xe28f, 0x4fb2, { 0xb0, 0xb1, 0xcc, 0x89, 0x85, 0x49, 0x5e, 0xfb } };
+
+
+
 namespace AfxInterop {
 
 	const INT32 m_Version = 0;
@@ -28,6 +47,8 @@ namespace AfxInterop {
 		DrawingMessage_DrawingThreadBeforeHud = 1,
 		DrawingMessage_NewTexture = 2,
 		DrawingMessage_ReleaseTexture = 3,
+		DrawingMessage_NewSurface = 4,
+		DrawingMessage_ReleaseSurface = 5
 	};
 
 
@@ -52,8 +73,8 @@ namespace AfxInterop {
 	HANDLE m_hPipe = INVALID_HANDLE_VALUE;
 	bool m_Server64Bit = false;
 
-	IDirect3DTexture9 * m_FbTexture = nullptr;
-	IDirect3DTexture9 * m_FbDepthTexture = nullptr;
+	IDirect3DSurface9 * m_FbSurface = nullptr;
+	IDirect3DSurface9 * m_FbDepthSurface = nullptr;
 
 	namespace EngineThread {
 
@@ -78,42 +99,50 @@ namespace AfxInterop {
 		int m_Frame = -1;
 	}
 
-	class ISharedTextureHook abstract {
-	public:
-		virtual void Unmanage() = 0;
-		virtual bool ShareWithServer(HANDLE hPipe) = 0;
-		virtual INT32 GetTextureId() = 0;
-	};
+	class CSharedSurfaceHook;
 
-	class ITextureManager_SharedTextureHook abstract
+	class ISurfaceManager_SharedSurfaceHook abstract
 	{
 	public:
-		virtual void SharedTextureHookReleased(ISharedTextureHook * sharedTextureHook) = 0;
+		virtual void SharedSurfaceHookReleased(CSharedSurfaceHook * sharedSurfaceHook) = 0;
 	};
 
-	class CSharedTextureHook : public IDirect3DTexture9, public ISharedTextureHook
+	class CSharedSurfaceHook : public IDirect3DSurface9
 	{
 	public:
-		CSharedTextureHook(
-			ITextureManager_SharedTextureHook * textureManager,
-			const char * textureName, const char * textureGroup,
-			UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool,
-			IDirect3DTexture9 * texture, HANDLE sharedHandle)
-			: m_Parent(texture)
-			, m_TextureName(textureName)
-			, m_TextureGroup(textureGroup)
-			, m_TextureManager(textureManager)
-			, m_Width(Width)
-			, m_Height(Height)
-			, m_Levels(Levels)
-			, m_Usage(Usage)
-			, m_Format(Format)
+		CSharedSurfaceHook(
+			ISurfaceManager_SharedSurfaceHook * manager,
+			UINT                Width,
+			UINT                Height,
+			DWORD				Usage,
+			D3DFORMAT           Format,
+			D3DPOOL             Pool,
+			D3DMULTISAMPLE_TYPE MultiSample,
+			DWORD               MultisampleQuality,
+			IDirect3DSurface9   *pSurface,
+			HANDLE              sharedHandle)
+			: m_Parent(pSurface)
+			, Width(Width)
+			, Height(Height)
+			, Usage(Usage)
+			, Format(Format)
+			, Pool(Pool)
+			, MultiSampleType(MultiSampleType)
+			, MultiSampleQuality(MultiSampleQuality)
 			, m_SharedHandle(sharedHandle)
+			, m_RefCount(1)
 		{
 		}
 
 		/*** IUnknown methods ***/
-		STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj) {
+		STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj)
+		{
+			if (IID_IAfxInteropSharedSurface == riid && ppvObj)
+			{
+				*ppvObj = this;
+				return D3D_OK;
+			}
+
 			return m_Parent->QueryInterface(riid, ppvObj);
 		}
 
@@ -130,14 +159,333 @@ namespace AfxInterop {
 		{
 			--m_RefCount;
 
-			HRESULT result = m_Parent->Release();
+			IDirect3DSurface9 * parent = m_Parent;
 
 			if (0 == m_RefCount)
+			{
+				if (m_Manager) m_Manager->SharedSurfaceHookReleased(this);
+
 				delete this;
+			}
+
+			return parent->Release();
+		}
+
+		/*** IDirect3DResource9 methods ***/
+		STDMETHOD(GetDevice)(THIS_ IDirect3DDevice9** ppDevice) {
+			return m_Parent->GetDevice(ppDevice);
+		}
+
+		STDMETHOD(SetPrivateData)(THIS_ REFGUID refguid, CONST void* pData, DWORD SizeOfData, DWORD Flags) {
+			return m_Parent->SetPrivateData(refguid, pData, SizeOfData, Flags);
+		}
+
+		STDMETHOD(GetPrivateData)(THIS_ REFGUID refguid, void* pData, DWORD* pSizeOfData) {
+			return m_Parent->GetPrivateData(refguid, pData, pSizeOfData);
+		}
+
+		STDMETHOD(FreePrivateData)(THIS_ REFGUID refguid) {
+			return m_Parent->FreePrivateData(refguid);
+		}
+
+		STDMETHOD_(DWORD, SetPriority)(THIS_ DWORD PriorityNew) {
+			return m_Parent->SetPriority(PriorityNew);
+		}
+
+		STDMETHOD_(DWORD, GetPriority)(THIS) {
+			return m_Parent->GetPriority();
+		}
+		STDMETHOD_(void, PreLoad)(THIS)
+		{
+			return m_Parent->PreLoad();
+		}
+
+		STDMETHOD_(D3DRESOURCETYPE, GetType)(THIS) {
+			return m_Parent->GetType();
+		}
+
+		STDMETHOD(GetContainer)(THIS_ REFIID riid, void** ppContainer) {
+			return m_Parent->GetContainer(riid, ppContainer);
+		}
+
+		STDMETHOD(GetDesc)(THIS_ D3DSURFACE_DESC *pDesc) {
+			return m_Parent->GetDesc(pDesc);
+		}
+
+		STDMETHOD(LockRect)(THIS_ D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags)
+		{
+			return m_Parent->LockRect(pLockedRect, pRect, Flags);
+		
+		}
+
+		STDMETHOD(UnlockRect)(THIS)
+		{
+			return m_Parent->UnlockRect();
+		}
+
+		STDMETHOD(GetDC)(THIS_ HDC *phdc)
+		{
+			return m_Parent->GetDC(phdc);
+		}
+
+		STDMETHOD(ReleaseDC)(THIS_ HDC hdc)
+		{
+			return m_Parent->ReleaseDC(hdc);
+		}
+
+		LPCWSTR Name = L"n/a (AfxInterop::CSharedSurfaceHook)";
+		UINT Width;
+		UINT Height;
+		DWORD Usage;
+		D3DFORMAT Format;
+		D3DPOOL Pool;
+		D3DMULTISAMPLE_TYPE MultiSampleType;
+		DWORD MultiSampleQuality;
+		DWORD Priority = 0;
+		UINT LockCount = 0;
+		UINT DCCount = 0;
+		LPCWSTR CreationCallStack = L"n/a (AfxInterop::CSharedSurfaceHook)";
+
+		void Unmanage() {
+			m_Manager = nullptr;
+		}
+
+		bool ShareWithServer(HANDLE hPipe)
+		{
+			if (!WriteInt32(hPipe, this->GetId()))
+				return false;
+
+			if (!WriteInt32(hPipe, Width))
+				return false;
+
+			if (!WriteInt32(hPipe, Height))
+				return false;
+
+			if (!WriteInt32(hPipe, Usage))
+				return false;
+
+			if (!WriteInt32(hPipe, Format))
+				return false;
+
+			if (!WriteInt32(hPipe, Pool))
+				return false;
+
+			if (!WriteInt32(hPipe, MultiSampleType))
+				return false;
+
+			if (!WriteInt32(hPipe, MultiSampleQuality))
+				return false;
+
+			if (!WriteHandle(hPipe, m_SharedHandle))
+				return false;
+
+			return true;
+		}
+
+		INT32 GetId()
+		{
+			return (INT32)m_Parent;
+		}
+
+		IDirect3DSurface9 * GetWrapped()
+		{
+			return m_Parent;
+		}
+
+	private:
+		ULONG m_RefCount;
+		IDirect3DSurface9 * m_Parent;
+		ISurfaceManager_SharedSurfaceHook * m_Manager;
+		HANDLE m_SharedHandle;
+	};
+
+	class CSurfaceManager : public ISurfaceManager_SharedSurfaceHook
+	{
+	public:
+		IDirect3DSurface9 * Manage(
+			UINT                Width,
+			UINT                Height,
+			DWORD               Usage,
+			D3DFORMAT           Format,
+			D3DPOOL             Pool,
+			D3DMULTISAMPLE_TYPE MultiSample,
+			DWORD               MultisampleQuality,
+			IDirect3DSurface9   *pSurface,
+			HANDLE              sharedHandle)
+		{
+			CSharedSurfaceHook * sharedHook = new CSharedSurfaceHook(
+				this,
+				Width,
+				Height,
+				Usage,
+				Format,
+				Pool,
+				MultiSample,
+				MultisampleQuality,
+				pSurface,
+				sharedHandle
+			);
+
+			m_SharedHooks.insert(sharedHook);
+
+			if (m_Connected)
+			{
+				DispatchCreate(sharedHook);
+			}
+
+			return sharedHook;
+		}
+
+		bool ConnectDispatch()
+		{
+			if (m_Connected) {
+				for (std::set<CSharedSurfaceHook *>::iterator it = m_SharedHooks.begin(); it != m_SharedHooks.end(); ++it)
+				{
+					if (!DispatchCreate(*it)) return false;
+				}
+			}
+
+			return true;
+		}
+
+		virtual void SharedSurfaceHookReleased(CSharedSurfaceHook * sharedSurfaceHook)
+		{
+			if (m_Connected)
+			{
+				DispatchRelease(sharedSurfaceHook);
+			}
+
+			m_SharedHooks.erase(sharedSurfaceHook);
+		}
+
+		~CSurfaceManager() {
+
+			for (std::set<CSharedSurfaceHook *>::iterator it = m_SharedHooks.begin(); it != m_SharedHooks.end(); ++it)
+			{
+				(*it)->Unmanage();
+			}
+		}
+
+	private:
+		std::set<CSharedSurfaceHook *> m_SharedHooks;
+
+
+		bool DispatchCreate(CSharedSurfaceHook * surface)
+		{
+			int errorLine = 0;
+
+			if (!WriteInt32(m_hPipe, DrawingMessage_NewSurface)) { errorLine = __LINE__; goto error; }
+			if (!surface->ShareWithServer(m_hPipe)) { errorLine = __LINE__; goto error; }
+
+			return true;
+
+		error:
+			Tier0_Warning("AfxInterop::CSurfaceManager::DispatchCreate: Error in line %i.\n", errorLine);
+			{
+				std::unique_lock<std::mutex> lock(EngineThread::m_ConnectMutex);
+
+				Disconnect();
+			}
+			return false;
+		}
+
+		bool DispatchRelease(CSharedSurfaceHook * surface)
+		{
+			int errorLine = 0;
+
+			if (!WriteInt32(m_hPipe, DrawingMessage_ReleaseSurface)) { errorLine = __LINE__; goto error; }
+			if (!WriteInt32(m_hPipe, (INT32)surface->GetId())) { errorLine = __LINE__; goto error; }
+			if (!Flush(m_hPipe)) { errorLine = __LINE__; goto error; }
+
+			// Wait for confirmation:
+			bool done;
+			do
+			{
+				if (!ReadBoolean(m_hPipe, done)) { errorLine = __LINE__; goto error; }
+			} while (!done);
+
+			return true;
+
+		error:
+			Tier0_Warning("AfxInterop::CSurfaceManager::DispatchRelease: Error in line %i.\n", errorLine);
+			{
+				std::unique_lock<std::mutex> lock(EngineThread::m_ConnectMutex);
+
+				Disconnect();
+			}
+			return false;
+		}
+
+	} g_SurfaceManager;
+
+
+	class CSharedTextureHook;
+
+	class ITextureManager_SharedTextureHook abstract
+	{
+	public:
+		virtual void SharedTextureHookReleased(CSharedTextureHook * sharedTextureHook) = 0;
+	};
+
+	class CSharedTextureHook : public IDirect3DTexture9
+	{
+	public:
+		CSharedTextureHook(
+			ITextureManager_SharedTextureHook * textureManager,
+			const char * textureName, const char * textureGroup,
+			UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool,
+			IDirect3DTexture9 * texture, HANDLE sharedHandle)
+			: m_Parent(texture)
+			, m_TextureName(textureName)
+			, m_TextureGroup(textureGroup)
+			, m_TextureManager(textureManager)
+			, Width(Width)
+			, Height(Height)
+			, Levels(Levels)
+			, Usage(Usage)
+			, Format(Format)
+			, Pool(Pool)
+			, m_SharedHandle(sharedHandle)
+			, m_RefCount(1)
+		{
+		}
+
+		/*** IUnknown methods ***/
+		STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj)
+		{
+			if (IID_IAfxInteropSharedTexture == riid && ppvObj)
+			{
+				*ppvObj = this;
+				return D3D_OK;
+			}
+
+			return m_Parent->QueryInterface(riid, ppvObj);
+		}
+
+		STDMETHOD_(ULONG, AddRef)(THIS)
+		{
+			ULONG result = m_Parent->AddRef();
+
+			++m_RefCount;
 
 			return result;
 		}
 
+		STDMETHOD_(ULONG, Release)(THIS)
+		{
+			--m_RefCount;
+
+			IDirect3DTexture9 * parent = m_Parent;
+
+			if (0 == m_RefCount)
+			{
+				if (m_TextureManager) m_TextureManager->SharedTextureHookReleased(this);
+
+				delete this;
+			}
+
+			return parent->Release();
+		}
 		/*** IDirect3DBaseTexture9 methods ***/
 		STDMETHOD(GetDevice)(THIS_ IDirect3DDevice9** ppDevice) {
 			return m_Parent->GetDevice(ppDevice);
@@ -216,26 +564,24 @@ namespace AfxInterop {
 			return m_Parent->AddDirtyRect(pDirtyRect);
 		}
 
-		//#ifdef D3D_DEBUG_INFO
 		LPCWSTR Name = L"n/a (AfxInterop::CShareTextureHook)";
-		UINT Width = 0;
-		UINT Height = 0;
-		UINT Levels = 0;
-		DWORD Usage = 0;
-		D3DFORMAT Format = D3DFMT_FORCE_DWORD;
-		D3DPOOL Pool = D3DPOOL_FORCE_DWORD;
+		UINT Width;
+		UINT Height;
+		UINT Levels;
+		DWORD Usage;
+		D3DFORMAT Format;
+		D3DPOOL Pool;
 		DWORD Priority = 0;
 		DWORD LOD = 0;
 		D3DTEXTUREFILTERTYPE FilterType = D3DTEXF_FORCE_DWORD;
 		UINT LockCount = 0;
 		LPCWSTR CreationCallStack = L"n/a (AfxInterop::CShareTextureHook)";
-		//#endif
 
-		virtual void ISharedTextureHook::Unmanage() {
+		void Unmanage() {
 			m_TextureManager = nullptr;
 		}
 
-		virtual bool ISharedTextureHook::ShareWithServer(HANDLE hPipe)
+		bool ShareWithServer(HANDLE hPipe)
 		{
 			// TextureId:
 			if (!WriteInt32(hPipe, this->GetTextureId()))
@@ -247,22 +593,22 @@ namespace AfxInterop {
 			if (!WriteStringUTF8(hPipe, m_TextureName))
 				return false;
 
-			if (!WriteInt32(hPipe, m_Width))
+			if (!WriteInt32(hPipe, Width))
 				return false;
 
-			if (!WriteInt32(hPipe, m_Height))
+			if (!WriteInt32(hPipe, Height))
 				return false;
 
-			if (!WriteInt32(hPipe, m_Levels))
+			if (!WriteInt32(hPipe, Levels))
 				return false;
 
-			if (!WriteInt32(hPipe, m_Usage))
+			if (!WriteInt32(hPipe, Usage))
 				return false;
 
-			if (!WriteInt32(hPipe, m_Format))
+			if (!WriteInt32(hPipe, Format))
 				return false;
 
-			if (!WriteInt32(hPipe, m_Pool))
+			if (!WriteInt32(hPipe, Pool))
 				return false;
 
 			if (!WriteHandle(hPipe, m_SharedHandle))
@@ -271,8 +617,14 @@ namespace AfxInterop {
 			return true;
 		}
 
-		virtual INT32 ISharedTextureHook::GetTextureId() {
+		INT32 GetTextureId()
+		{
 			return (INT32)m_Parent;
+		}
+
+		IDirect3DTexture9 * GetWrappedTexture()
+		{
+			return m_Parent;
 		}
 
 	private:
@@ -281,28 +633,18 @@ namespace AfxInterop {
 		std::string m_TextureName;
 		std::string m_TextureGroup;
 		ITextureManager_SharedTextureHook * m_TextureManager;
-		UINT m_Width;
-		UINT m_Height;
-		UINT m_Levels;
-		DWORD m_Usage;
-		D3DFORMAT m_Format;
-		D3DPOOL m_Pool;
 		HANDLE m_SharedHandle;
-
-		CSharedTextureHook() {
-			if (m_TextureManager) m_TextureManager->SharedTextureHookReleased(this);
-		}
 	};
 
 	class CTextureManager : public ITextureManager_SharedTextureHook
 	{
 	public:
-		void Manage(
+		IDirect3DTexture9 * Manage(
 			const char * textureName, const char * textureGroup,
 			UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool,
 			IDirect3DTexture9 * texture, HANDLE sharedHandle)
 		{
-			ISharedTextureHook * sharedTextureHook = new CSharedTextureHook(
+			CSharedTextureHook * sharedTextureHook = new CSharedTextureHook(
 				this,
 				textureName,
 				textureGroup,
@@ -322,12 +664,14 @@ namespace AfxInterop {
 			{
 				DispatchCreateTexture(sharedTextureHook);
 			}
+
+			return sharedTextureHook;
 		}
 
 		bool ConnectDispatchTextures()
 		{
 			if (m_Connected) {
-				for (std::set<ISharedTextureHook *>::iterator it = m_SharedTextureHooks.begin(); it != m_SharedTextureHooks.end(); ++it)
+				for (std::set<CSharedTextureHook *>::iterator it = m_SharedTextureHooks.begin(); it != m_SharedTextureHooks.end(); ++it)
 				{
 					if (!DispatchCreateTexture(*it)) return false;
 				}
@@ -336,7 +680,7 @@ namespace AfxInterop {
 			return true;
 		}
 
-		virtual void SharedTextureHookReleased(ISharedTextureHook * sharedTextureHook)
+		virtual void SharedTextureHookReleased(CSharedTextureHook * sharedTextureHook)
 		{
 			if (m_Connected)
 			{
@@ -348,17 +692,17 @@ namespace AfxInterop {
 
 		~CTextureManager() {
 
-			for (std::set<ISharedTextureHook *>::iterator it = m_SharedTextureHooks.begin(); it != m_SharedTextureHooks.end(); ++it)
+			for (std::set<CSharedTextureHook *>::iterator it = m_SharedTextureHooks.begin(); it != m_SharedTextureHooks.end(); ++it)
 			{
 				(*it)->Unmanage();
 			}
 		}
 
 	private:
-		std::set<ISharedTextureHook *> m_SharedTextureHooks;
+		std::set<CSharedTextureHook *> m_SharedTextureHooks;
 
 
-		bool DispatchCreateTexture(ISharedTextureHook * texture)
+		bool DispatchCreateTexture(CSharedTextureHook * texture)
 		{
 			int errorLine = 0;
 
@@ -377,7 +721,7 @@ namespace AfxInterop {
 			return false;
 		}
 
-		bool DispatchReleaseTexture(ISharedTextureHook * texture)
+		bool DispatchReleaseTexture(CSharedTextureHook * texture)
 		{
 			int errorLine = 0;
 
@@ -405,6 +749,7 @@ namespace AfxInterop {
 		}
 
 	} g_TextureManager;
+
 
 	void DllProcessAttach() {
 		m_Enabled = wcsstr(GetCommandLineW(), L"-afxInterop");
@@ -501,6 +846,8 @@ namespace AfxInterop {
 
 		int errorLine = 0;
 
+		//Tier0_Warning("0x%08x / 0x%08x\n", m_FbTexture, m_FbDepthTexture);
+
 		{
 			// Connection handling:
 
@@ -524,9 +871,9 @@ namespace AfxInterop {
 
 		if (!WriteInt32(m_hPipe, DrawingMessage_DrawingThreadBeforeHud)) { errorLine = __LINE__; goto error; }
 
-		if (!WriteInt32(m_hPipe, (INT32)m_FbTexture)) { errorLine = __LINE__; goto error; }
+		if (!WriteInt32(m_hPipe, (INT32)m_FbSurface)) { errorLine = __LINE__; goto error; }
 
-		if (!WriteInt32(m_hPipe, (INT32)m_FbDepthTexture)) { errorLine = __LINE__; goto error; }
+		if (!WriteInt32(m_hPipe, (INT32)m_FbDepthSurface)) { errorLine = __LINE__; goto error; }
 
 		// No frame info available yet:
 		if (!WriteBoolean(m_hPipe, false)) { errorLine = __LINE__; goto error; }
@@ -552,6 +899,9 @@ namespace AfxInterop {
 
 	bool CreateTexture(const char * textureName, const char * textureGroup, IDirect3DDevice9 * device, UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DTexture9** ppTexture, HANDLE* pSharedHandle, HRESULT & resultp)
 	{
+		return false; // curently not needed.
+
+		/*
 		if (!m_Enabled) return false;
 
 		if (ppTexture && textureName && textureGroup && 0 == strcmp("RenderTargets", textureGroup) && (0 == strcmp("_rt_fullframefb", textureName) || 0 == strcmp("_rt_fullframedepth", textureName)))
@@ -560,18 +910,18 @@ namespace AfxInterop {
 
 			if (!pSharedHandle) pSharedHandle = &pHandle;
 
-			HRESULT hr = device->CreateTexture(Width, Height, 1,
-				D3DUSAGE_RENDERTARGET,
+			HRESULT hr = device->CreateTexture(Width, Height, Levels,
+				Usage,
 				Format,
-				D3DPOOL_DEFAULT,
-				(IDirect3DTexture9**)ppTexture,
+				Pool,
+				ppTexture,
 				pSharedHandle);
 
-			if(!SUCCEEDED(hr)) MessageBox(NULL, SUCCEEDED(hr) ? "OKAY" : "ERROR", "AfxInterop::CreateTexture", MB_OK);
+			if(!SUCCEEDED(hr)) Tier0_Warning("AfxInterop::CreateTexture errored\n");
 
 			if(SUCCEEDED(hr))
 			{
-				//g_TextureManager.Manage(textureName, textureGroup, Width, Height, Levels, Usage, Format, Pool, *ppTexture, *pSharedHandle);
+				*ppTexture = g_TextureManager.Manage(textureName, textureGroup, Width, Height, Levels, Usage, Format, Pool, *ppTexture, *pSharedHandle);
 				resultp = hr;
 				return true;
 			}
@@ -579,31 +929,95 @@ namespace AfxInterop {
 		}
 
 		return false;
+		*/
 	}
 
-	void OnSetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget)
+	HRESULT OnSetRenderTarget(IDirect3DDevice9 * device, DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget)
 	{
+		m_FbSurface = nullptr;
+
 		if (0 == RenderTargetIndex)
 		{
-			if (nullptr != pRenderTarget)
+			if (pRenderTarget)
 			{
-				if (D3D_OK == pRenderTarget->GetContainer(__uuidof(IDirect3DTexture9), (void **)&m_FbTexture))
-					return;
+				CSharedSurfaceHook * sharedSurface;
+				if (SUCCEEDED(pRenderTarget->QueryInterface(IID_IAfxInteropSharedSurface, (void **)&sharedSurface)))
+				{
+					m_FbSurface = sharedSurface->GetWrapped();
+					return device->SetRenderTarget(RenderTargetIndex, m_FbSurface);
+				}
+			}
+
+		}
+
+		return D3DERR_NOTFOUND;
+	}
+
+	HRESULT OnSetDepthStencilSurface(IDirect3DDevice9 * device, IDirect3DSurface9* pNewZStencil)
+	{
+		m_FbDepthSurface = nullptr;
+
+		if (pNewZStencil)
+		{
+			CSharedSurfaceHook * sharedSurface;
+			if (SUCCEEDED(pNewZStencil->QueryInterface(IID_IAfxInteropSharedSurface, (void **)&sharedSurface)))
+			{
+				m_FbDepthSurface = sharedSurface->GetWrapped();
+				return device->SetDepthStencilSurface(m_FbDepthSurface);
 			}
 		}
 
-		m_FbTexture = nullptr;
+		return D3DERR_NOTFOUND;
 	}
 
-	void OnSetDepthStencilSurface(IDirect3DSurface9* pNewZStencil)
+	HRESULT OnSetSexture(IDirect3DDevice9 * device, DWORD Stage, IDirect3DBaseTexture9* pTexture)
 	{
-		if (nullptr != pNewZStencil)
+		if (pTexture)
 		{
-			if (D3D_OK == pNewZStencil->GetContainer(__uuidof(IDirect3DTexture9), (void **)&m_FbDepthTexture))
-				return;
+			CSharedTextureHook * sharedTexture;
+			if (SUCCEEDED(pTexture->QueryInterface(IID_IAfxInteropSharedTexture, (void **)&sharedTexture)))
+			{
+				return device->SetTexture(Stage, sharedTexture->GetWrappedTexture());
+			}
 		}
 
-		m_FbDepthTexture = nullptr;
+		return D3DERR_NOTFOUND;
+	}
+
+	HRESULT OnCreateRenderTarget(IDirect3DDevice9 * device, UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Lockable, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle)
+	{
+		if (ppSurface)
+		{
+			HRESULT hr;
+			HANDLE tmpHandle;
+			if (!pSharedHandle) pSharedHandle = &tmpHandle;
+
+			if (SUCCEEDED(hr = device->CreateRenderTarget(Width, Height, Format, MultiSample, MultisampleQuality, Lockable, ppSurface, pSharedHandle)))
+			{
+				*ppSurface = g_SurfaceManager.Manage(Width, Height, D3DUSAGE_RENDERTARGET, Format, D3DPOOL_DEFAULT, MultiSample, MultisampleQuality, *ppSurface, pSharedHandle);
+				return hr;
+			}
+		}
+
+		return D3DERR_NOTAVAILABLE;
+	}
+
+	HRESULT OnCreateDepthStencilSurface(IDirect3DDevice9 * device, UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Discard, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle)
+	{
+		if (ppSurface)
+		{
+			HRESULT hr;
+			HANDLE tmpHandle;
+			if (!pSharedHandle) pSharedHandle = &tmpHandle;
+
+			if (SUCCEEDED(hr = device->CreateDepthStencilSurface(Width, Height, Format, MultiSample, MultisampleQuality, Discard, ppSurface, pSharedHandle)))
+			{
+				*ppSurface = g_SurfaceManager.Manage(Width, Height, D3DUSAGE_DEPTHSTENCIL, Format, D3DPOOL_DEFAULT, MultiSample, MultisampleQuality, *ppSurface, pSharedHandle);
+				return hr;
+			}
+		}
+
+		return D3DERR_NOTAVAILABLE;
 	}
 
 	bool Connect(char const * pipeName) {
@@ -690,7 +1104,9 @@ namespace AfxInterop {
 			EngineThread::m_Active = true;
 		}
 
-		if(!g_TextureManager.ConnectDispatchTextures()) { errorLine = __LINE__; goto error; }
+		if (!g_SurfaceManager.ConnectDispatch()) { errorLine = __LINE__; goto error; }
+
+		if (!g_TextureManager.ConnectDispatchTextures()) { errorLine = __LINE__; goto error; }
 
 		return true;
 
@@ -838,14 +1254,17 @@ namespace AfxInterop {
 		int length = (int)value.length();
 
 		if (length < 255) {
-			return WriteByte(hFile, (BYTE)length);
+			if (!WriteByte(hFile, (BYTE)length))
+				return false;
 		}
+		else
+		{
+			if (!WriteByte(hFile, 255))
+				return false;
 
-		if (!WriteByte(hFile, 255))
-			return false;
-
-		if (!WriteInt32(hFile, length))
-			return false;
+			if (!WriteInt32(hFile, length))
+				return false;
+		}
 
 		return WriteBytes(hFile, (LPVOID)value.c_str(), 0, length);
 	}

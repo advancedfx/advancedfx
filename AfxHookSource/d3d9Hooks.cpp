@@ -288,13 +288,14 @@ static const GUID IID_IAfxManagedDirect3DTexture9 =
 { 0x4e2fc120, 0x3361, 0x4870, { 0x9b, 0xad, 0x52, 0x88, 0xe4, 0xef, 0x74, 0xf2 } };
 
 
+// TODO, the D3D9 Debug fields should be layouted first in this class, otherwise the debug info if accessed is trash.
 class CAfxManagedDirect3DTexture9 : public CAfxDirect3DManaged<IDirect3DTexture9>
 {
 public:
 	/*** IUnknown methods ***/
 	STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj)
 	{
-		if (IID_IAfxManagedDirect3DTexture9 == riid)
+		if (IID_IAfxManagedDirect3DTexture9 == riid && ppvObj)
 		{
 			*ppvObj = this;
 			return D3D_OK;
@@ -544,7 +545,7 @@ public:
 	/*** IUnknown methods ***/
 	STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj)
 	{
-		if (IID_IAfxManagedDirect3DVolumeTexture9 == riid)
+		if (IID_IAfxManagedDirect3DVolumeTexture9 == riid && ppvObj)
 		{
 			*ppvObj = this;
 			return D3D_OK;
@@ -798,7 +799,7 @@ public:
 	/*** IUnknown methods ***/
 	STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj)
 	{
-		if (IID_IAfxManagedDirect3DCubeTexture9 == riid)
+		if (IID_IAfxManagedDirect3DCubeTexture9 == riid && ppvObj)
 		{
 			*ppvObj = this;
 			return D3D_OK;
@@ -1050,7 +1051,7 @@ public:
 	/*** IUnknown methods ***/
 	STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj)
 	{
-		if (IID_IAfxManagedDirect3DVertexBuffer9 == riid)
+		if (IID_IAfxManagedDirect3DVertexBuffer9 == riid && ppvObj)
 		{
 			*ppvObj = this;
 			return D3D_OK;
@@ -1257,7 +1258,7 @@ public:
 	/*** IUnknown methods ***/
 	STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj)
 	{
-		if (IID_IAfxManagedDirect3DIndexBuffer9 == riid)
+		if (IID_IAfxManagedDirect3DIndexBuffer9 == riid && ppvObj)
 		{
 			*ppvObj = this;
 			return D3D_OK;
@@ -2278,8 +2279,31 @@ public:
 		return g_OldDirect3DDevice9->CreateIndexBuffer(Length, Usage, Format, Pool, ppIndexBuffer, pSharedHandle);
 	}
 
-    IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateRenderTarget);
-    IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateDepthStencilSurface);
+	STDMETHOD(CreateRenderTarget)(THIS_ UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Lockable, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle)
+	{
+#ifdef AFX_INTEROP
+		if (AfxInterop::Enabled())
+		{
+			HRESULT hr = AfxInterop::OnCreateRenderTarget(g_OldDirect3DDevice9, Width, Height, Format, MultiSample, MultisampleQuality, Lockable, ppSurface, pSharedHandle);
+			if (SUCCEEDED(hr)) return hr;
+		}
+#endif
+		return g_OldDirect3DDevice9->CreateRenderTarget(Width, Height, Format, MultiSample, MultisampleQuality, Lockable, ppSurface, pSharedHandle);
+	}
+
+	STDMETHOD(CreateDepthStencilSurface)(THIS_ UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Discard, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle)
+	{
+#ifdef AFX_INTEROP
+		if (AfxInterop::Enabled())
+		{
+			HRESULT hr = AfxInterop::OnCreateDepthStencilSurface(g_OldDirect3DDevice9, Width, Height, Format, MultiSample, MultisampleQuality, Discard, ppSurface, pSharedHandle);
+			if (SUCCEEDED(hr)) return hr;
+		}
+#endif
+
+		return g_OldDirect3DDevice9->CreateDepthStencilSurface(Width, Height, Format, MultiSample, MultisampleQuality, Discard, ppSurface, pSharedHandle);
+	}
+
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, UpdateSurface);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, UpdateTexture);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetRenderTargetData);
@@ -2292,13 +2316,32 @@ public:
 		return g_OldDirect3DDevice9->CreateOffscreenPlainSurface(Width, Height, Format, Pool, ppSurface, pSharedHandle);
 	}
 
-	STDMETHOD(SetRenderTarget)(THIS_ DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget) {
+	STDMETHOD(SetRenderTarget)(THIS_ DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget)
+	{
+
+#ifdef AFX_INTEROP
+		if (AfxInterop::Enabled())
+		{
+			HRESULT hr = AfxInterop::OnSetRenderTarget(g_OldDirect3DDevice9, RenderTargetIndex, pRenderTarget);
+			if (SUCCEEDED(hr)) return hr;
+		}
+#endif
+
 		return g_OldDirect3DDevice9->SetRenderTarget(RenderTargetIndex, pRenderTarget);
 	}
 
 	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetRenderTarget);
 
 	STDMETHOD(SetDepthStencilSurface)(THIS_ IDirect3DSurface9* pNewZStencil) {
+
+#ifdef AFX_INTEROP
+		if (AfxInterop::Enabled())
+		{
+			HRESULT hr = AfxInterop::OnSetDepthStencilSurface(g_OldDirect3DDevice9, pNewZStencil);
+			if (SUCCEEDED(hr)) return hr;
+		}
+#endif
+
 		return g_OldDirect3DDevice9->SetDepthStencilSurface(pNewZStencil);
 	}
 
@@ -2567,6 +2610,8 @@ public:
 				CAfxManagedDirect3DCubeTexture9 * Direct3DCubeTexture9;
 			} afxManaged;
 
+			HRESULT hr;
+
 			if (SUCCEEDED(pTexture->QueryInterface(IID_IAfxManagedDirect3DTexture9, (void **)&(afxManaged.Direct3DTexture9))))
 			{
 				return g_OldDirect3DDevice9->SetTexture(Stage, (afxManaged.Direct3DTexture9)->AfxGetOrCreateUnmanged());
@@ -2579,6 +2624,8 @@ public:
 			{
 				return g_OldDirect3DDevice9->SetTexture(Stage, (afxManaged.Direct3DCubeTexture9)->AfxGetOrCreateUnmanged());
 			}
+			else if (SUCCEEDED(hr = AfxInterop::OnSetSexture(g_OldDirect3DDevice9, Stage, pTexture)))
+				return hr;
 		}
 #endif
 
@@ -2981,8 +3028,6 @@ IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetRasterStatus, NewDirect3DDevice9, g_O
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetDialogBoxMode, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetGammaRamp, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetGammaRamp, NewDirect3DDevice9, g_OldDirect3DDevice9);
-IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateRenderTarget, NewDirect3DDevice9, g_OldDirect3DDevice9);
-IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateDepthStencilSurface, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, UpdateSurface, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, UpdateTexture, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetRenderTargetData, NewDirect3DDevice9, g_OldDirect3DDevice9);

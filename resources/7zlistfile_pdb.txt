@@ -1,4 +1,5 @@
 x64\injector.pdb
+x64\AfxHookUnity.pdb
 AfxCppCli.pdb
 AfxHookGoldSrc.pdb
 AfxHookSource.pdb
