@@ -2282,23 +2282,28 @@ public:
 	STDMETHOD(CreateRenderTarget)(THIS_ UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Lockable, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle)
 	{
 #ifdef AFX_INTEROP
+		/*
 		if (AfxInterop::Enabled())
 		{
 			HRESULT hr = AfxInterop::OnCreateRenderTarget(g_OldDirect3DDevice9, Width, Height, Format, MultiSample, MultisampleQuality, Lockable, ppSurface, pSharedHandle);
 			if (SUCCEEDED(hr)) return hr;
 		}
+		*/
 #endif
+
 		return g_OldDirect3DDevice9->CreateRenderTarget(Width, Height, Format, MultiSample, MultisampleQuality, Lockable, ppSurface, pSharedHandle);
 	}
 
 	STDMETHOD(CreateDepthStencilSurface)(THIS_ UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Discard, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle)
 	{
 #ifdef AFX_INTEROP
+		/*
 		if (AfxInterop::Enabled())
 		{
 			HRESULT hr = AfxInterop::OnCreateDepthStencilSurface(g_OldDirect3DDevice9, Width, Height, Format, MultiSample, MultisampleQuality, Discard, ppSurface, pSharedHandle);
 			if (SUCCEEDED(hr)) return hr;
 		}
+		*/
 #endif
 
 		return g_OldDirect3DDevice9->CreateDepthStencilSurface(Width, Height, Format, MultiSample, MultisampleQuality, Discard, ppSurface, pSharedHandle);
@@ -3469,10 +3474,24 @@ struct NewDirect3D9
 	IFACE_PASSTHROUGH_DECL(IDirect3D9, GetAdapterDisplayMode);
 	IFACE_PASSTHROUGH_DECL(IDirect3D9, CheckDeviceType);
 	IFACE_PASSTHROUGH_DECL(IDirect3D9, CheckDeviceFormat);
-	IFACE_PASSTHROUGH_DECL(IDirect3D9, CheckDeviceMultiSampleType);
+	
+	STDMETHOD(CheckDeviceMultiSampleType)(THIS_ UINT Adapter, D3DDEVTYPE DeviceType, D3DFORMAT SurfaceFormat, BOOL Windowed, D3DMULTISAMPLE_TYPE MultiSampleType, DWORD* pQualityLevels)
+	{
+#if AFX_INTEROP
+		if (AfxInterop::Enabled())
+		{
+			if (D3DMULTISAMPLE_NONE != MultiSampleType)
+				return D3DERR_NOTAVAILABLE;
+		}
+#endif
+
+		return g_OldDirect3D9->CheckDeviceMultiSampleType(Adapter, DeviceType, SurfaceFormat, Windowed, MultiSampleType, pQualityLevels);
+	}
+
 	IFACE_PASSTHROUGH_DECL(IDirect3D9, CheckDepthStencilMatch);
 	IFACE_PASSTHROUGH_DECL(IDirect3D9, CheckDeviceFormatConversion);
 	IFACE_PASSTHROUGH_DECL(IDirect3D9, GetDeviceCaps);
+
 	IFACE_PASSTHROUGH_DECL(IDirect3D9, GetAdapterMonitor);
 
 	STDMETHOD(CreateDevice)(THIS_ UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice9** ppReturnedDeviceInterface)
@@ -3480,34 +3499,105 @@ struct NewDirect3D9
 		HRESULT hRet = D3DERR_NOTAVAILABLE;
 
 #if AFX_INTEROP
-		if (AfxInterop::Enabled() && g_OldDirect3D9Ex)
+		if (AfxInterop::Enabled() && g_OldDirect3D9Ex && pPresentationParameters)
 		{
+			pPresentationParameters->MultiSampleType = D3DMULTISAMPLE_NONE;
+			pPresentationParameters->MultiSampleQuality = 0;
+
+			Tier0_Warning("CheckDepthStencilMatch=0x%08x\n", g_OldDirect3D9Ex->CheckDepthStencilMatch(
+				Adapter,
+				DeviceType,
+				D3DFMT_A8R8G8B8,
+				D3DFMT_A8R8G8B8,
+				D3DFMT_D24S8
+			));
+
 			hRet = g_OldDirect3D9Ex->CreateDeviceEx(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, nullptr, ppReturnedDeviceInterface != nullptr ? &g_OldDirect3DDevice9Ex : nullptr);
 
 			if (SUCCEEDED(hRet) && pPresentationParameters && ppReturnedDeviceInterface)
 			{
 				g_OldDirect3DDevice9 = g_OldDirect3DDevice9Ex;
 
-				Shared_Direct3DDevice9_Init(Adapter, pPresentationParameters->hDeviceWindow, g_OldDirect3DDevice9);
-
 				*ppReturnedDeviceInterface = reinterpret_cast<IDirect3DDevice9 *>(&g_NewDirect3DDevice9);
+
+				// Replace render target surface with shared one:
+				{
+					IDirect3DSurface9 * oldRenderTarget = nullptr;
+					if (SUCCEEDED(g_OldDirect3DDevice9->GetRenderTarget(0, &oldRenderTarget)))
+					{
+						D3DSURFACE_DESC desc;
+						if (SUCCEEDED(oldRenderTarget->GetDesc(&desc)))
+						{
+							IDirect3DSurface9 * newRenderTarget = nullptr;
+
+							if (SUCCEEDED(AfxInterop::OnCreateRenderTarget(g_OldDirect3DDevice9, desc.Width, desc.Height, desc.Format, desc.MultiSampleType, desc.MultiSampleQuality, pPresentationParameters->Flags & D3DPRESENTFLAG_LOCKABLE_BACKBUFFER ? TRUE : FALSE, &newRenderTarget, nullptr)))
+							{
+								if (SUCCEEDED(g_NewDirect3DDevice9.SetRenderTarget(0, newRenderTarget)))
+								{
+									Tier0_Msg("AfxInterop: Set shared render target %i, %i, 0x%08x, %i, %i, %i.\n", desc.Width, desc.Height, desc.Format, desc.MultiSampleType, desc.MultiSampleQuality, pPresentationParameters->Flags & D3DPRESENTFLAG_LOCKABLE_BACKBUFFER ? 1 : 0);
+								}
+								else
+								{
+									newRenderTarget->Release();
+								}
+							}
+
+						}
+
+						oldRenderTarget->Release();
+					}
+				}
+
+				// Replaces depth stencil surface with shared one:
+				{
+					IDirect3DSurface9 * oldDepthStencilSurface = nullptr;
+					if (pPresentationParameters->EnableAutoDepthStencil && SUCCEEDED(g_OldDirect3DDevice9->GetDepthStencilSurface(&oldDepthStencilSurface)))
+					{
+						D3DSURFACE_DESC desc;
+						if (SUCCEEDED(oldDepthStencilSurface->GetDesc(&desc)))
+						{
+							IDirect3DSurface9 * newDepthStencilSurface = nullptr;
+
+							if (SUCCEEDED(AfxInterop::OnCreateDepthStencilSurface(g_OldDirect3DDevice9, desc.Width, desc.Height, desc.Format, desc.MultiSampleType, desc.MultiSampleQuality, pPresentationParameters->Flags & D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL ? TRUE : FALSE, &newDepthStencilSurface, nullptr)))
+							{
+								if (SUCCEEDED(g_NewDirect3DDevice9.SetDepthStencilSurface(newDepthStencilSurface)))
+								{
+									Tier0_Msg("AfxInterop: Set shared  depth stencil surface %i, %i, 0x%08x, %i, %i, %i.\n", desc.Width, desc.Height, desc.Format, desc.MultiSampleType, desc.MultiSampleQuality, pPresentationParameters->Flags & D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL ? 1 : 0);
+								}
+								else
+								{
+									newDepthStencilSurface->Release();
+								}
+							}
+
+						}
+
+						oldDepthStencilSurface->Release();
+					}
+				}
+
+				//
+
+				Shared_Direct3DDevice9_Init(Adapter, pPresentationParameters->hDeviceWindow, g_OldDirect3DDevice9);
 			}
 			else
 				return D3DERR_NOTAVAILABLE;
 		}
 		else
-#else
 		{
-			hRet = g_OldDirect3D9->CreateDevice(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
+#else
+		hRet = g_OldDirect3D9->CreateDevice(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
 
-			if(SUCCEEDED(hRet) && pPresentationParameters && ppReturnedDeviceInterface)
-			{
-				g_OldDirect3DDevice9 = *ppReturnedDeviceInterface;
+		if (SUCCEEDED(hRet) && pPresentationParameters && ppReturnedDeviceInterface)
+		{
+			g_OldDirect3DDevice9 = *ppReturnedDeviceInterface;
 
-				Shared_Direct3DDevice9_Init(Adapter, pPresentationParameters->hDeviceWindow, g_OldDirect3DDevice9);
+			Shared_Direct3DDevice9_Init(Adapter, pPresentationParameters->hDeviceWindow, g_OldDirect3DDevice9);
 
-				*ppReturnedDeviceInterface = reinterpret_cast<IDirect3DDevice9 *>(&g_NewDirect3DDevice9);
-			}
+			*ppReturnedDeviceInterface = reinterpret_cast<IDirect3DDevice9 *>(&g_NewDirect3DDevice9);
+		}
+#endif
+#ifdef AFX_INTEROP
 		}
 #endif
 
@@ -3526,7 +3616,6 @@ IFACE_PASSTHROUGH_DEF(IDirect3D9, EnumAdapterModes, NewDirect3D9, g_OldDirect3D9
 IFACE_PASSTHROUGH_DEF(IDirect3D9, GetAdapterDisplayMode, NewDirect3D9, g_OldDirect3D9);
 IFACE_PASSTHROUGH_DEF(IDirect3D9, CheckDeviceType, NewDirect3D9, g_OldDirect3D9);
 IFACE_PASSTHROUGH_DEF(IDirect3D9, CheckDeviceFormat, NewDirect3D9, g_OldDirect3D9);
-IFACE_PASSTHROUGH_DEF(IDirect3D9, CheckDeviceMultiSampleType, NewDirect3D9, g_OldDirect3D9);
 IFACE_PASSTHROUGH_DEF(IDirect3D9, CheckDepthStencilMatch, NewDirect3D9, g_OldDirect3D9);
 IFACE_PASSTHROUGH_DEF(IDirect3D9, CheckDeviceFormatConversion, NewDirect3D9, g_OldDirect3D9);
 IFACE_PASSTHROUGH_DEF(IDirect3D9, GetDeviceCaps, NewDirect3D9, g_OldDirect3D9);

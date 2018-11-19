@@ -117,11 +117,12 @@ namespace AfxInterop {
 			DWORD				Usage,
 			D3DFORMAT           Format,
 			D3DPOOL             Pool,
-			D3DMULTISAMPLE_TYPE MultiSample,
+			D3DMULTISAMPLE_TYPE MultiSampleType,
 			DWORD               MultisampleQuality,
 			IDirect3DSurface9   *pSurface,
 			HANDLE              sharedHandle)
-			: m_Parent(pSurface)
+			: m_Manager(manager)
+			, m_Parent(pSurface)
 			, Width(Width)
 			, Height(Height)
 			, Usage(Usage)
@@ -163,6 +164,8 @@ namespace AfxInterop {
 
 			if (0 == m_RefCount)
 			{
+				Tier0_Warning("BITCHES RELEASED!");
+
 				if (m_Manager) m_Manager->SharedSurfaceHookReleased(this);
 
 				delete this;
@@ -308,7 +311,7 @@ namespace AfxInterop {
 			DWORD               Usage,
 			D3DFORMAT           Format,
 			D3DPOOL             Pool,
-			D3DMULTISAMPLE_TYPE MultiSample,
+			D3DMULTISAMPLE_TYPE MultiSampleType,
 			DWORD               MultisampleQuality,
 			IDirect3DSurface9   *pSurface,
 			HANDLE              sharedHandle)
@@ -320,7 +323,7 @@ namespace AfxInterop {
 				Usage,
 				Format,
 				Pool,
-				MultiSample,
+				MultiSampleType,
 				MultisampleQuality,
 				pSurface,
 				sharedHandle
@@ -846,7 +849,16 @@ namespace AfxInterop {
 
 		int errorLine = 0;
 
-		//Tier0_Warning("0x%08x / 0x%08x\n", m_FbTexture, m_FbDepthTexture);
+		
+		static IDirect3DSurface9 * o1 = 0;
+		static IDirect3DSurface9 * o2 = 0;
+
+		if (o1 != m_FbSurface || o2 != m_FbDepthSurface)
+		{
+			o1 = m_FbSurface;
+			o2 = m_FbDepthSurface;
+			Tier0_Warning("0x%08x / 0x%08x\n", m_FbSurface, m_FbDepthSurface);
+		}
 
 		{
 			// Connection handling:
@@ -899,12 +911,16 @@ namespace AfxInterop {
 
 	bool CreateTexture(const char * textureName, const char * textureGroup, IDirect3DDevice9 * device, UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DTexture9** ppTexture, HANDLE* pSharedHandle, HRESULT & resultp)
 	{
-		return false; // curently not needed.
+		return false;
 
-		/*
 		if (!m_Enabled) return false;
 
-		if (ppTexture && textureName && textureGroup && 0 == strcmp("RenderTargets", textureGroup) && (0 == strcmp("_rt_fullframefb", textureName) || 0 == strcmp("_rt_fullframedepth", textureName)))
+		if (ppTexture)
+		{
+			Tier0_Msg("CreateTexture: 0x%08x %s %s\n", *ppTexture, textureGroup ? textureGroup : "[n/a]", textureName ? textureName : "[n/a]");
+		}
+
+		if (ppTexture && textureName && textureGroup)// && 0 == strcmp("RenderTargets", textureGroup) && (0 == strcmp("_rt_fullframefb", textureName) || 0 == strcmp("_rt_fullframedepth", textureName)))
 		{
 			HANDLE pHandle = NULL;
 
@@ -922,6 +938,15 @@ namespace AfxInterop {
 			if(SUCCEEDED(hr))
 			{
 				*ppTexture = g_TextureManager.Manage(textureName, textureGroup, Width, Height, Levels, Usage, Format, Pool, *ppTexture, *pSharedHandle);
+
+				IDirect3DSurface9 * surface;
+
+				if (SUCCEEDED((*ppTexture)->GetSurfaceLevel(0, &surface)))
+				{
+					Tier0_Msg("Surface=0x%08x\n", surface);
+					surface->Release();
+				}
+
 				resultp = hr;
 				return true;
 			}
@@ -929,25 +954,23 @@ namespace AfxInterop {
 		}
 
 		return false;
-		*/
 	}
 
 	HRESULT OnSetRenderTarget(IDirect3DDevice9 * device, DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget)
 	{
-		m_FbSurface = nullptr;
-
 		if (0 == RenderTargetIndex)
 		{
+			m_FbSurface = pRenderTarget;
+
 			if (pRenderTarget)
 			{
 				CSharedSurfaceHook * sharedSurface;
 				if (SUCCEEDED(pRenderTarget->QueryInterface(IID_IAfxInteropSharedSurface, (void **)&sharedSurface)))
 				{
 					m_FbSurface = sharedSurface->GetWrapped();
-					return device->SetRenderTarget(RenderTargetIndex, m_FbSurface);
+					return device->SetRenderTarget(0, m_FbSurface);
 				}
 			}
-
 		}
 
 		return D3DERR_NOTFOUND;
@@ -955,7 +978,7 @@ namespace AfxInterop {
 
 	HRESULT OnSetDepthStencilSurface(IDirect3DDevice9 * device, IDirect3DSurface9* pNewZStencil)
 	{
-		m_FbDepthSurface = nullptr;
+		m_FbDepthSurface = pNewZStencil;
 
 		if (pNewZStencil)
 		{
@@ -984,43 +1007,54 @@ namespace AfxInterop {
 		return D3DERR_NOTFOUND;
 	}
 
-	HRESULT OnCreateRenderTarget(IDirect3DDevice9 * device, UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Lockable, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle)
+	HRESULT OnCreateRenderTarget(IDirect3DDevice9 * device, UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSampleType, DWORD MultisampleQuality, BOOL Lockable, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle)
 	{
+		Tier0_Warning("OnCreateRenderTarget %d %d 0x%08x, 0x%08x, %d, %d\n", Width, Height, Format, MultiSampleType, MultisampleQuality, Lockable ? 1 : 0);
+
 		if (ppSurface)
 		{
 			HRESULT hr;
-			HANDLE tmpHandle;
-			if (!pSharedHandle) pSharedHandle = &tmpHandle;
+			HANDLE tmpHandle = nullptr;
+			//if (!pSharedHandle) pSharedHandle = &tmpHandle;
 
-			if (SUCCEEDED(hr = device->CreateRenderTarget(Width, Height, Format, MultiSample, MultisampleQuality, Lockable, ppSurface, pSharedHandle)))
+			if (SUCCEEDED(hr = device->CreateRenderTarget(Width, Height, Format, MultiSampleType, MultisampleQuality, Lockable, ppSurface, nullptr)))
 			{
-				*ppSurface = g_SurfaceManager.Manage(Width, Height, D3DUSAGE_RENDERTARGET, Format, D3DPOOL_DEFAULT, MultiSample, MultisampleQuality, *ppSurface, pSharedHandle);
+				//*ppSurface = g_SurfaceManager.Manage(Width, Height, D3DUSAGE_RENDERTARGET, Format, D3DPOOL_DEFAULT, MultiSampleType, MultisampleQuality, *ppSurface, *pSharedHandle);
+				//Tier0_Warning("OnCreateRenderTarget surface: 0x%08x\n", *ppSurface);
 				return hr;
 			}
+			else Tier0_Warning("AfxInterop: OnCreateRenderTarget failed with 0x%08x.\n", hr);
 		}
 
 		return D3DERR_NOTAVAILABLE;
 	}
 
-	HRESULT OnCreateDepthStencilSurface(IDirect3DDevice9 * device, UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Discard, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle)
+	HRESULT OnCreateDepthStencilSurface(IDirect3DDevice9 * device, UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSampleType, DWORD MultisampleQuality, BOOL Discard, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle)
 	{
+		Tier0_Warning("OnCreateDepthStencilSurface\n");
+
 		if (ppSurface)
 		{
 			HRESULT hr;
-			HANDLE tmpHandle;
-			if (!pSharedHandle) pSharedHandle = &tmpHandle;
+			HANDLE tmpHandle = nullptr;
+			//if (!pSharedHandle) pSharedHandle = &tmpHandle;
 
-			if (SUCCEEDED(hr = device->CreateDepthStencilSurface(Width, Height, Format, MultiSample, MultisampleQuality, Discard, ppSurface, pSharedHandle)))
+			if (SUCCEEDED(hr = device->CreateDepthStencilSurface(Width, Height, Format, MultiSampleType, MultisampleQuality, Discard, ppSurface, pSharedHandle)))
 			{
-				*ppSurface = g_SurfaceManager.Manage(Width, Height, D3DUSAGE_DEPTHSTENCIL, Format, D3DPOOL_DEFAULT, MultiSample, MultisampleQuality, *ppSurface, pSharedHandle);
+				//*ppSurface = g_SurfaceManager.Manage(Width, Height, D3DUSAGE_DEPTHSTENCIL, Format, D3DPOOL_DEFAULT, MultiSampleType, MultisampleQuality, *ppSurface, pSharedHandle);
+				Tier0_Warning("OnCreateDepthStencilSurface surface: 0x%08x\n", *ppSurface);
 				return hr;
 			}
+			else Tier0_Warning("AfxInterop: OnCreateDepthStencilSurface failed with 0x%08x.\n", hr);
 		}
 
 		return D3DERR_NOTAVAILABLE;
 	}
 
 	bool Connect(char const * pipeName) {
+
+		return false; // not used atm
+
 		if (!m_Enabled) return false;
 
 		int errorLine = 0;
