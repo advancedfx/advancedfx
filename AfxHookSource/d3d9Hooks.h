@@ -122,3 +122,13 @@ extern bool g_bD3D9DumpVertexShader;
 extern bool g_bD3D9DumpPixelShader;
 
 
+//
+
+class __declspec(novtable) ISharedSurfaceInfo abstract
+{
+public:
+	virtual IDirect3DSurface9 * GetSharedSurface() = 0;
+	virtual D3DMULTISAMPLE_TYPE GetMultiSampleType() = 0;
+	virtual DWORD GetMultiSampleQuality() = 0;
+	virtual HANDLE GetSharedHandle() = 0;
+};

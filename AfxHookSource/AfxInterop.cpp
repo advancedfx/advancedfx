@@ -19,13 +19,7 @@ extern WrpVEngineClient * g_VEngineClient;
 
 extern Hook_VClient_RenderView g_Hook_VClient_RenderView;
 
-// {424A968E-EBD4-4BE2-9BEB-374580F00775}
-DEFINE_GUID(IID_IAfxInteropSharedSurface,
-	0x424a968e, 0xebd4, 0x4be2, 0x9b, 0xeb, 0x37, 0x45, 0x80, 0xf0, 0x7, 0x75);
 
-// {424A968E-EBD4-4BE2-9BEB-374580F00775}
-static const GUID IID_IAfxInteropSharedSurface =
-{ 0x424a968e, 0xebd4, 0x4be2, { 0x9b, 0xeb, 0x37, 0x45, 0x80, 0xf0, 0x7, 0x75 } };
 
 
 // {AA07D1A4-E28F-4FB2-B0B1-CC8985495EFB}
@@ -73,8 +67,8 @@ namespace AfxInterop {
 	HANDLE m_hPipe = INVALID_HANDLE_VALUE;
 	bool m_Server64Bit = false;
 
-	IDirect3DSurface9 * m_FbSurface = nullptr;
-	IDirect3DSurface9 * m_FbDepthSurface = nullptr;
+	HANDLE m_FbSurfaceHandle = NULL;
+	HANDLE m_FbDepthSurfaceHandle = NULL;
 
 	namespace EngineThread {
 
@@ -98,330 +92,7 @@ namespace AfxInterop {
 
 		int m_Frame = -1;
 	}
-
-	class CSharedSurfaceHook;
-
-	class ISurfaceManager_SharedSurfaceHook abstract
-	{
-	public:
-		virtual void SharedSurfaceHookReleased(CSharedSurfaceHook * sharedSurfaceHook) = 0;
-	};
-
-	class CSharedSurfaceHook : public IDirect3DSurface9
-	{
-	public:
-		CSharedSurfaceHook(
-			ISurfaceManager_SharedSurfaceHook * manager,
-			UINT                Width,
-			UINT                Height,
-			DWORD				Usage,
-			D3DFORMAT           Format,
-			D3DPOOL             Pool,
-			D3DMULTISAMPLE_TYPE MultiSampleType,
-			DWORD               MultisampleQuality,
-			IDirect3DSurface9   *pSurface,
-			HANDLE              sharedHandle)
-			: m_Manager(manager)
-			, m_Parent(pSurface)
-			, Width(Width)
-			, Height(Height)
-			, Usage(Usage)
-			, Format(Format)
-			, Pool(Pool)
-			, MultiSampleType(MultiSampleType)
-			, MultiSampleQuality(MultiSampleQuality)
-			, m_SharedHandle(sharedHandle)
-			, m_RefCount(1)
-		{
-		}
-
-		/*** IUnknown methods ***/
-		STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj)
-		{
-			if (IID_IAfxInteropSharedSurface == riid && ppvObj)
-			{
-				*ppvObj = this;
-				return D3D_OK;
-			}
-
-			return m_Parent->QueryInterface(riid, ppvObj);
-		}
-
-		STDMETHOD_(ULONG, AddRef)(THIS)
-		{
-			ULONG result = m_Parent->AddRef();
-
-			++m_RefCount;
-
-			return result;
-		}
-
-		STDMETHOD_(ULONG, Release)(THIS)
-		{
-			--m_RefCount;
-
-			IDirect3DSurface9 * parent = m_Parent;
-
-			if (0 == m_RefCount)
-			{
-				Tier0_Warning("BITCHES RELEASED!");
-
-				if (m_Manager) m_Manager->SharedSurfaceHookReleased(this);
-
-				delete this;
-			}
-
-			return parent->Release();
-		}
-
-		/*** IDirect3DResource9 methods ***/
-		STDMETHOD(GetDevice)(THIS_ IDirect3DDevice9** ppDevice) {
-			return m_Parent->GetDevice(ppDevice);
-		}
-
-		STDMETHOD(SetPrivateData)(THIS_ REFGUID refguid, CONST void* pData, DWORD SizeOfData, DWORD Flags) {
-			return m_Parent->SetPrivateData(refguid, pData, SizeOfData, Flags);
-		}
-
-		STDMETHOD(GetPrivateData)(THIS_ REFGUID refguid, void* pData, DWORD* pSizeOfData) {
-			return m_Parent->GetPrivateData(refguid, pData, pSizeOfData);
-		}
-
-		STDMETHOD(FreePrivateData)(THIS_ REFGUID refguid) {
-			return m_Parent->FreePrivateData(refguid);
-		}
-
-		STDMETHOD_(DWORD, SetPriority)(THIS_ DWORD PriorityNew) {
-			return m_Parent->SetPriority(PriorityNew);
-		}
-
-		STDMETHOD_(DWORD, GetPriority)(THIS) {
-			return m_Parent->GetPriority();
-		}
-		STDMETHOD_(void, PreLoad)(THIS)
-		{
-			return m_Parent->PreLoad();
-		}
-
-		STDMETHOD_(D3DRESOURCETYPE, GetType)(THIS) {
-			return m_Parent->GetType();
-		}
-
-		STDMETHOD(GetContainer)(THIS_ REFIID riid, void** ppContainer) {
-			return m_Parent->GetContainer(riid, ppContainer);
-		}
-
-		STDMETHOD(GetDesc)(THIS_ D3DSURFACE_DESC *pDesc) {
-			return m_Parent->GetDesc(pDesc);
-		}
-
-		STDMETHOD(LockRect)(THIS_ D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags)
-		{
-			return m_Parent->LockRect(pLockedRect, pRect, Flags);
-		
-		}
-
-		STDMETHOD(UnlockRect)(THIS)
-		{
-			return m_Parent->UnlockRect();
-		}
-
-		STDMETHOD(GetDC)(THIS_ HDC *phdc)
-		{
-			return m_Parent->GetDC(phdc);
-		}
-
-		STDMETHOD(ReleaseDC)(THIS_ HDC hdc)
-		{
-			return m_Parent->ReleaseDC(hdc);
-		}
-
-		LPCWSTR Name = L"n/a (AfxInterop::CSharedSurfaceHook)";
-		UINT Width;
-		UINT Height;
-		DWORD Usage;
-		D3DFORMAT Format;
-		D3DPOOL Pool;
-		D3DMULTISAMPLE_TYPE MultiSampleType;
-		DWORD MultiSampleQuality;
-		DWORD Priority = 0;
-		UINT LockCount = 0;
-		UINT DCCount = 0;
-		LPCWSTR CreationCallStack = L"n/a (AfxInterop::CSharedSurfaceHook)";
-
-		void Unmanage() {
-			m_Manager = nullptr;
-		}
-
-		bool ShareWithServer(HANDLE hPipe)
-		{
-			if (!WriteInt32(hPipe, this->GetId()))
-				return false;
-
-			if (!WriteInt32(hPipe, Width))
-				return false;
-
-			if (!WriteInt32(hPipe, Height))
-				return false;
-
-			if (!WriteInt32(hPipe, Usage))
-				return false;
-
-			if (!WriteInt32(hPipe, Format))
-				return false;
-
-			if (!WriteInt32(hPipe, Pool))
-				return false;
-
-			if (!WriteInt32(hPipe, MultiSampleType))
-				return false;
-
-			if (!WriteInt32(hPipe, MultiSampleQuality))
-				return false;
-
-			if (!WriteHandle(hPipe, m_SharedHandle))
-				return false;
-
-			return true;
-		}
-
-		INT32 GetId()
-		{
-			return (INT32)m_Parent;
-		}
-
-		IDirect3DSurface9 * GetWrapped()
-		{
-			return m_Parent;
-		}
-
-	private:
-		ULONG m_RefCount;
-		IDirect3DSurface9 * m_Parent;
-		ISurfaceManager_SharedSurfaceHook * m_Manager;
-		HANDLE m_SharedHandle;
-	};
-
-	class CSurfaceManager : public ISurfaceManager_SharedSurfaceHook
-	{
-	public:
-		IDirect3DSurface9 * Manage(
-			UINT                Width,
-			UINT                Height,
-			DWORD               Usage,
-			D3DFORMAT           Format,
-			D3DPOOL             Pool,
-			D3DMULTISAMPLE_TYPE MultiSampleType,
-			DWORD               MultisampleQuality,
-			IDirect3DSurface9   *pSurface,
-			HANDLE              sharedHandle)
-		{
-			CSharedSurfaceHook * sharedHook = new CSharedSurfaceHook(
-				this,
-				Width,
-				Height,
-				Usage,
-				Format,
-				Pool,
-				MultiSampleType,
-				MultisampleQuality,
-				pSurface,
-				sharedHandle
-			);
-
-			m_SharedHooks.insert(sharedHook);
-
-			if (m_Connected)
-			{
-				DispatchCreate(sharedHook);
-			}
-
-			return sharedHook;
-		}
-
-		bool ConnectDispatch()
-		{
-			if (m_Connected) {
-				for (std::set<CSharedSurfaceHook *>::iterator it = m_SharedHooks.begin(); it != m_SharedHooks.end(); ++it)
-				{
-					if (!DispatchCreate(*it)) return false;
-				}
-			}
-
-			return true;
-		}
-
-		virtual void SharedSurfaceHookReleased(CSharedSurfaceHook * sharedSurfaceHook)
-		{
-			if (m_Connected)
-			{
-				DispatchRelease(sharedSurfaceHook);
-			}
-
-			m_SharedHooks.erase(sharedSurfaceHook);
-		}
-
-		~CSurfaceManager() {
-
-			for (std::set<CSharedSurfaceHook *>::iterator it = m_SharedHooks.begin(); it != m_SharedHooks.end(); ++it)
-			{
-				(*it)->Unmanage();
-			}
-		}
-
-	private:
-		std::set<CSharedSurfaceHook *> m_SharedHooks;
-
-
-		bool DispatchCreate(CSharedSurfaceHook * surface)
-		{
-			int errorLine = 0;
-
-			if (!WriteInt32(m_hPipe, DrawingMessage_NewSurface)) { errorLine = __LINE__; goto error; }
-			if (!surface->ShareWithServer(m_hPipe)) { errorLine = __LINE__; goto error; }
-
-			return true;
-
-		error:
-			Tier0_Warning("AfxInterop::CSurfaceManager::DispatchCreate: Error in line %i.\n", errorLine);
-			{
-				std::unique_lock<std::mutex> lock(EngineThread::m_ConnectMutex);
-
-				Disconnect();
-			}
-			return false;
-		}
-
-		bool DispatchRelease(CSharedSurfaceHook * surface)
-		{
-			int errorLine = 0;
-
-			if (!WriteInt32(m_hPipe, DrawingMessage_ReleaseSurface)) { errorLine = __LINE__; goto error; }
-			if (!WriteInt32(m_hPipe, (INT32)surface->GetId())) { errorLine = __LINE__; goto error; }
-			if (!Flush(m_hPipe)) { errorLine = __LINE__; goto error; }
-
-			// Wait for confirmation:
-			bool done;
-			do
-			{
-				if (!ReadBoolean(m_hPipe, done)) { errorLine = __LINE__; goto error; }
-			} while (!done);
-
-			return true;
-
-		error:
-			Tier0_Warning("AfxInterop::CSurfaceManager::DispatchRelease: Error in line %i.\n", errorLine);
-			{
-				std::unique_lock<std::mutex> lock(EngineThread::m_ConnectMutex);
-
-				Disconnect();
-			}
-			return false;
-		}
-
-	} g_SurfaceManager;
-
-
+	
 	class CSharedTextureHook;
 
 	class ITextureManager_SharedTextureHook abstract
@@ -761,62 +432,62 @@ namespace AfxInterop {
 	}
 
 	void BeforeFrameStart() {
-		if (!m_Enabled) return;
+if (!m_Enabled) return;
 
-		int errorLine = 0;
+int errorLine = 0;
 
-		//if (WrpGlobals * pWrpGlobals = g_Hook_VClient_RenderView.GetGlobals()) {
-		//	EngineThread::m_Frame = pWrpGlobals->framecount_get();
-		//}
-		//else {
-		//	++EngineThread::m_Frame;
-		//}
+//if (WrpGlobals * pWrpGlobals = g_Hook_VClient_RenderView.GetGlobals()) {
+//	EngineThread::m_Frame = pWrpGlobals->framecount_get();
+//}
+//else {
+//	++EngineThread::m_Frame;
+//}
 
-		if(EngineThread::m_ActiveMutex.try_lock())
+if (EngineThread::m_ActiveMutex.try_lock())
+{
+	if (EngineThread::m_Active)
+	{
+		if (!WriteInt32(EngineThread::m_hPipe, EngineThread::EngineMessage_BeforeFrameStart)) { errorLine = __LINE__; goto locked_error; }
+		if (!Flush(EngineThread::m_hPipe)) { errorLine = __LINE__; goto locked_error; }
+
+		int commandCount = 0;
 		{
-			if (EngineThread::m_Active)
-			{
-				if (!WriteInt32(EngineThread::m_hPipe, EngineThread::EngineMessage_BeforeFrameStart)) { errorLine = __LINE__; goto locked_error; }
-				if (!Flush(EngineThread::m_hPipe)) { errorLine = __LINE__; goto locked_error; }
-
-				int commandCount = 0;
-				{
-					BYTE byteCommandCount;
-					if (!ReadByte(EngineThread::m_hPipe, byteCommandCount)) { errorLine = __LINE__; goto locked_error; }
-					commandCount = byteCommandCount;
-				}
-				if (255 == commandCount)
-				{
-					if (!ReadInt32(EngineThread::m_hPipe, commandCount)) { errorLine = __LINE__; goto locked_error; }
-				}
-
-				std::string command;
-
-				while (0 < commandCount)
-				{
-					if (!ReadStringUTF8(EngineThread::m_hPipe, command)) { errorLine = __LINE__; goto locked_error; }
-
-					g_VEngineClient->ExecuteClientCmd(command.c_str());
-
-					--commandCount;
-				}
-			}
-
-			EngineThread::m_ActiveMutex.unlock();
+			BYTE byteCommandCount;
+			if (!ReadByte(EngineThread::m_hPipe, byteCommandCount)) { errorLine = __LINE__; goto locked_error; }
+			commandCount = byteCommandCount;
+		}
+		if (255 == commandCount)
+		{
+			if (!ReadInt32(EngineThread::m_hPipe, commandCount)) { errorLine = __LINE__; goto locked_error; }
 		}
 
-		return;
+		std::string command;
 
-	locked_error:
-		EngineThread::m_ActiveMutex.unlock();
-
-		Tier0_Warning("AfxInterop::BeforeFrameStart: Error in line %i.\n", errorLine);
+		while (0 < commandCount)
 		{
-			std::unique_lock<std::mutex> lock(EngineThread::m_ConnectMutex);
+			if (!ReadStringUTF8(EngineThread::m_hPipe, command)) { errorLine = __LINE__; goto locked_error; }
 
-			Disconnect();
+			g_VEngineClient->ExecuteClientCmd(command.c_str());
+
+			--commandCount;
 		}
-		return;
+	}
+
+	EngineThread::m_ActiveMutex.unlock();
+}
+
+return;
+
+locked_error:
+EngineThread::m_ActiveMutex.unlock();
+
+Tier0_Warning("AfxInterop::BeforeFrameStart: Error in line %i.\n", errorLine);
+{
+	std::unique_lock<std::mutex> lock(EngineThread::m_ConnectMutex);
+
+	Disconnect();
+}
+return;
 	}
 
 	void BeforeFrameRenderStart() {
@@ -849,15 +520,14 @@ namespace AfxInterop {
 
 		int errorLine = 0;
 
+		static HANDLE o1 = 0;
+		static HANDLE o2 = 0;
 		
-		static IDirect3DSurface9 * o1 = 0;
-		static IDirect3DSurface9 * o2 = 0;
-
-		if (o1 != m_FbSurface || o2 != m_FbDepthSurface)
+		if (o1 != m_FbSurfaceHandle || o2 != m_FbDepthSurfaceHandle)
 		{
-			o1 = m_FbSurface;
-			o2 = m_FbDepthSurface;
-			Tier0_Warning("0x%08x / 0x%08x\n", m_FbSurface, m_FbDepthSurface);
+			o1 = m_FbSurfaceHandle;
+			o2 = m_FbDepthSurfaceHandle;
+			Tier0_Warning("Surface switch: %i /%i \n", m_FbSurfaceHandle, m_FbDepthSurfaceHandle);
 		}
 
 		{
@@ -883,9 +553,9 @@ namespace AfxInterop {
 
 		if (!WriteInt32(m_hPipe, DrawingMessage_DrawingThreadBeforeHud)) { errorLine = __LINE__; goto error; }
 
-		if (!WriteInt32(m_hPipe, (INT32)m_FbSurface)) { errorLine = __LINE__; goto error; }
+		if (!WriteHandle(m_hPipe, m_FbSurfaceHandle)) { errorLine = __LINE__; goto error; }
 
-		if (!WriteInt32(m_hPipe, (INT32)m_FbDepthSurface)) { errorLine = __LINE__; goto error; }
+		if (!WriteHandle(m_hPipe, m_FbDepthSurfaceHandle)) { errorLine = __LINE__; goto error; }
 
 		// No frame info available yet:
 		if (!WriteBoolean(m_hPipe, false)) { errorLine = __LINE__; goto error; }
@@ -956,41 +626,115 @@ namespace AfxInterop {
 		return false;
 	}
 
-	HRESULT OnSetRenderTarget(IDirect3DDevice9 * device, DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget)
+	std::set<ISharedSurfaceInfo *> m_SharedSurfaces;
+
+	bool DispatchSurfaceCreated(ISharedSurfaceInfo * surface)
+	{
+		int errorLine = 0;
+
+		D3DSURFACE_DESC desc;
+
+		if (SUCCEEDED(surface->GetSharedSurface()->GetDesc(&desc)))
+		{
+
+			if (!WriteInt32(m_hPipe, DrawingMessage_NewSurface)) { errorLine = __LINE__; goto error; }
+
+			if (!WriteHandle(m_hPipe, surface->GetSharedHandle())) { errorLine = __LINE__; goto error; }
+
+			if (!WriteInt32(m_hPipe, desc.Width)) { errorLine = __LINE__; goto error; }
+
+			if (!WriteInt32(m_hPipe, desc.Width)) { errorLine = __LINE__; goto error; }
+
+			if (!WriteInt32(m_hPipe, desc.Usage)) { errorLine = __LINE__; goto error; }
+
+			if (!WriteInt32(m_hPipe, desc.Format)) { errorLine = __LINE__; goto error; }
+
+			if (!WriteInt32(m_hPipe, desc.Pool)) { errorLine = __LINE__; goto error; }
+
+			if (!WriteInt32(m_hPipe, surface->GetMultiSampleType())) { errorLine = __LINE__; goto error; }
+
+			if (!WriteInt32(m_hPipe, surface->GetMultiSampleQuality())) { errorLine = __LINE__; goto error; }
+
+			return true;
+		}
+		else { errorLine = __LINE__; goto error; }
+
+	error:
+		Tier0_Warning("AfxInterop::DispatchSurfaceCreated: Error in line %i.\n", errorLine);
+		{
+			std::unique_lock<std::mutex> lock(EngineThread::m_ConnectMutex);
+
+			Disconnect();
+		}
+		return false;
+	}
+
+	bool DispatchReleaseSurface(ISharedSurfaceInfo * surface)
+	{
+		int errorLine = 0;
+
+		if (!WriteInt32(m_hPipe, DrawingMessage_ReleaseSurface)) { errorLine = __LINE__; goto error; }
+		if (!WriteHandle(m_hPipe, surface->GetSharedHandle())) { errorLine = __LINE__; goto error; }
+		if (!Flush(m_hPipe)) { errorLine = __LINE__; goto error; }
+
+		// Wait for confirmation:
+		bool done;
+		do
+		{
+			if (!ReadBoolean(m_hPipe, done)) { errorLine = __LINE__; goto error; }
+		} while (!done);
+
+		return true;
+
+	error:
+		Tier0_Warning("AfxInterop::DispatchRelease: Error in line %i.\n", errorLine);
+		{
+			std::unique_lock<std::mutex> lock(EngineThread::m_ConnectMutex);
+
+			Disconnect();
+		}
+		return false;
+	}
+
+	bool DispatchSharedSurfaces()
+	{
+		if (m_Connected) {
+			for (std::set<ISharedSurfaceInfo *>::iterator it = m_SharedSurfaces.begin(); it != m_SharedSurfaces.end(); ++it)
+			{
+				if (!DispatchSurfaceCreated(*it)) return false;
+			}
+		}
+
+		return true;
+	}
+
+	void OnCreatedSharedSurface(ISharedSurfaceInfo * surface)
+	{
+		m_SharedSurfaces.insert(surface);
+
+		if(m_Connected) DispatchSurfaceCreated(surface);
+	}
+
+	void OnReleaseSharedSurface(ISharedSurfaceInfo * surface)
+	{
+		if (m_Connected) DispatchReleaseSurface(surface);
+
+		m_SharedSurfaces.erase(surface);
+	}
+
+	/// <param name="info">can be nullptr</param>
+	void OnSetSharedRenderTarget(DWORD RenderTargetIndex, ISharedSurfaceInfo * surface)
 	{
 		if (0 == RenderTargetIndex)
 		{
-			m_FbSurface = pRenderTarget;
-
-			if (pRenderTarget)
-			{
-				CSharedSurfaceHook * sharedSurface;
-				if (SUCCEEDED(pRenderTarget->QueryInterface(IID_IAfxInteropSharedSurface, (void **)&sharedSurface)))
-				{
-					m_FbSurface = sharedSurface->GetWrapped();
-					return device->SetRenderTarget(0, m_FbSurface);
-				}
-			}
+			m_FbSurfaceHandle = surface ? surface->GetSharedHandle() : NULL;
 		}
-
-		return D3DERR_NOTFOUND;
 	}
 
-	HRESULT OnSetDepthStencilSurface(IDirect3DDevice9 * device, IDirect3DSurface9* pNewZStencil)
+	/// <param name="info">can be nullptr</param>
+	void OnSetSharedDepthStencilSurface(ISharedSurfaceInfo * surface)
 	{
-		m_FbDepthSurface = pNewZStencil;
-
-		if (pNewZStencil)
-		{
-			CSharedSurfaceHook * sharedSurface;
-			if (SUCCEEDED(pNewZStencil->QueryInterface(IID_IAfxInteropSharedSurface, (void **)&sharedSurface)))
-			{
-				m_FbDepthSurface = sharedSurface->GetWrapped();
-				return device->SetDepthStencilSurface(m_FbDepthSurface);
-			}
-		}
-
-		return D3DERR_NOTFOUND;
+		m_FbDepthSurfaceHandle = surface ? surface->GetSharedHandle() : NULL;
 	}
 
 	HRESULT OnSetSexture(IDirect3DDevice9 * device, DWORD Stage, IDirect3DBaseTexture9* pTexture)
@@ -1007,53 +751,7 @@ namespace AfxInterop {
 		return D3DERR_NOTFOUND;
 	}
 
-	HRESULT OnCreateRenderTarget(IDirect3DDevice9 * device, UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSampleType, DWORD MultisampleQuality, BOOL Lockable, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle)
-	{
-		Tier0_Warning("OnCreateRenderTarget %d %d 0x%08x, 0x%08x, %d, %d\n", Width, Height, Format, MultiSampleType, MultisampleQuality, Lockable ? 1 : 0);
-
-		if (ppSurface)
-		{
-			HRESULT hr;
-			HANDLE tmpHandle = nullptr;
-			//if (!pSharedHandle) pSharedHandle = &tmpHandle;
-
-			if (SUCCEEDED(hr = device->CreateRenderTarget(Width, Height, Format, MultiSampleType, MultisampleQuality, Lockable, ppSurface, nullptr)))
-			{
-				//*ppSurface = g_SurfaceManager.Manage(Width, Height, D3DUSAGE_RENDERTARGET, Format, D3DPOOL_DEFAULT, MultiSampleType, MultisampleQuality, *ppSurface, *pSharedHandle);
-				//Tier0_Warning("OnCreateRenderTarget surface: 0x%08x\n", *ppSurface);
-				return hr;
-			}
-			else Tier0_Warning("AfxInterop: OnCreateRenderTarget failed with 0x%08x.\n", hr);
-		}
-
-		return D3DERR_NOTAVAILABLE;
-	}
-
-	HRESULT OnCreateDepthStencilSurface(IDirect3DDevice9 * device, UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSampleType, DWORD MultisampleQuality, BOOL Discard, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle)
-	{
-		Tier0_Warning("OnCreateDepthStencilSurface\n");
-
-		if (ppSurface)
-		{
-			HRESULT hr;
-			HANDLE tmpHandle = nullptr;
-			//if (!pSharedHandle) pSharedHandle = &tmpHandle;
-
-			if (SUCCEEDED(hr = device->CreateDepthStencilSurface(Width, Height, Format, MultiSampleType, MultisampleQuality, Discard, ppSurface, pSharedHandle)))
-			{
-				//*ppSurface = g_SurfaceManager.Manage(Width, Height, D3DUSAGE_DEPTHSTENCIL, Format, D3DPOOL_DEFAULT, MultiSampleType, MultisampleQuality, *ppSurface, pSharedHandle);
-				Tier0_Warning("OnCreateDepthStencilSurface surface: 0x%08x\n", *ppSurface);
-				return hr;
-			}
-			else Tier0_Warning("AfxInterop: OnCreateDepthStencilSurface failed with 0x%08x.\n", hr);
-		}
-
-		return D3DERR_NOTAVAILABLE;
-	}
-
 	bool Connect(char const * pipeName) {
-
-		return false; // not used atm
 
 		if (!m_Enabled) return false;
 
@@ -1138,7 +836,7 @@ namespace AfxInterop {
 			EngineThread::m_Active = true;
 		}
 
-		if (!g_SurfaceManager.ConnectDispatch()) { errorLine = __LINE__; goto error; }
+		if (!DispatchSharedSurfaces()) { errorLine = __LINE__; goto error; }
 
 		if (!g_TextureManager.ConnectDispatchTextures()) { errorLine = __LINE__; goto error; }
 
