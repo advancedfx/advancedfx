@@ -1713,7 +1713,52 @@ private:
 	CSharedSurfaceHook * sharedRenderTarget = nullptr;
 	CSharedSurfaceHook * sharedDepthStencilSurface = nullptr;
 
+	IDirect3DQuery9* waitQuery = nullptr;
+
+	void ReleaseQueries()
+	{
+#ifdef AFX_INTEROP
+		if (AfxInterop::Enabled())
+		{
+			if (waitQuery)
+			{
+				waitQuery->Release();
+				waitQuery = nullptr;
+			}
+		}
+#endif
+	}
+
+	void CreateQueries()
+	{
+#ifdef AFX_INTEROP
+		if (AfxInterop::Enabled())
+		{
+			if (FAILED(g_OldDirect3DDevice9->CreateQuery(D3DQUERYTYPE_OCCLUSION, &waitQuery)))
+				waitQuery = nullptr;
+		}
+#endif
+	}
+
 public:
+	void Init(D3DPRESENT_PARAMETERS* pPresentationParameters)
+	{
+		CreateQueries();
+		CreateSharedRenderTargets(pPresentationParameters);
+	}
+
+	void AfxWaitForGPU()
+	{
+		if (waitQuery)
+		{
+			waitQuery->Issue(D3DISSUE_END);
+
+			while (S_FALSE == waitQuery->GetData(NULL, 0, D3DGETDATA_FLUSH))
+				;
+		}
+	}
+
+private:
 	bool GetSharedSurfaceHook(IDirect3DSurface9 * surface, CSharedSurfaceHook ** pSharedSurfaceHook)
 	{
 		if (surface && SUCCEEDED(surface->QueryInterface(IID_IAfxInteropSharedSurface, (void **)pSharedSurfaceHook)))
@@ -1849,7 +1894,7 @@ public:
 
 						if (SUCCEEDED(hr = g_OldDirect3DDevice9->CreateDepthStencilSurface(desc.Width, desc.Height, desc.Format, pPresentationParameters->MultiSampleType, pPresentationParameters->MultiSampleQuality, FALSE, &surface, &sharedHandle)))
 						{
-							sharedDepthStencilSurface->DeviceReset(desc.Width, desc.Height, D3DUSAGE_RENDERTARGET, desc.Format, D3DPOOL_DEFAULT, pPresentationParameters->MultiSampleType, pPresentationParameters->MultiSampleQuality, surface, sharedHandle);
+							sharedDepthStencilSurface->DeviceReset(desc.Width, desc.Height, D3DUSAGE_DEPTHSTENCIL, desc.Format, D3DPOOL_DEFAULT, pPresentationParameters->MultiSampleType, pPresentationParameters->MultiSampleQuality, surface, sharedHandle);
 
 							if (FAILED(g_NewDirect3DDevice9.SetDepthStencilSurface(sharedDepthStencilSurface)))
 								Tier0_Warning("AfxInterop: CreateSharedRenderTarget set sharedDepthStencilSurface failed with 0x%08x.\n", hr);
@@ -2533,6 +2578,7 @@ public:
 
 #if AFX_INTEROP
 		ReleaseSharedRenderTargets();
+		ReleaseQueries();
 #endif
 
 		HRESULT hResult = g_OldDirect3DDevice9->Reset(pPresentationParameters);
@@ -2540,6 +2586,7 @@ public:
 #if AFX_INTEROP
 		if (SUCCEEDED(hResult))
 		{
+			CreateQueries();
 			g_NewDirect3DDevice9.CreateSharedRenderTargets(pPresentationParameters);
 		}
 #endif
@@ -3972,7 +4019,34 @@ struct NewDirect3D9
 	IFACE_PASSTHROUGH_DECL(IDirect3D9, GetAdapterModeCount);
 	IFACE_PASSTHROUGH_DECL(IDirect3D9, EnumAdapterModes);
 	IFACE_PASSTHROUGH_DECL(IDirect3D9, GetAdapterDisplayMode);
-	IFACE_PASSTHROUGH_DECL(IDirect3D9, CheckDeviceType);
+
+	STDMETHOD(CheckDeviceType)(THIS_ UINT Adapter, D3DDEVTYPE DevType, D3DFORMAT AdapterFormat, D3DFORMAT BackBufferFormat, BOOL bWindowed)
+	{
+#if AFX_INTEROP
+		if (AfxInterop::Enabled())
+		{
+			switch (BackBufferFormat)
+			{
+			//case D3DFMT_D16_LOCKABLE:
+			case D3DFMT_D32:
+			case D3DFMT_D15S1:
+			case D3DFMT_D24S8:
+			case D3DFMT_D24X8:
+			case D3DFMT_D24X4S4:
+			//case D3DFMT_D16:
+			//case D3DFMT_D32F_LOCKABLE:
+			case D3DFMT_D24FS8:
+			case D3DFMT_D32_LOCKABLE:
+			case D3DFMT_S8_LOCKABLE:
+				return D3DERR_NOTAVAILABLE;
+			}
+			
+		}
+#endif
+
+		return g_OldDirect3D9->CheckDeviceType(Adapter, DevType, AdapterFormat, BackBufferFormat, bWindowed);
+	}
+
 	IFACE_PASSTHROUGH_DECL(IDirect3D9, CheckDeviceFormat);
 	
 	STDMETHOD(CheckDeviceMultiSampleType)(THIS_ UINT Adapter, D3DDEVTYPE DeviceType, D3DFORMAT SurfaceFormat, BOOL Windowed, D3DMULTISAMPLE_TYPE MultiSampleType, DWORD* pQualityLevels)
@@ -4016,7 +4090,7 @@ struct NewDirect3D9
 
 				*ppReturnedDeviceInterface = reinterpret_cast<IDirect3DDevice9 *>(&g_NewDirect3DDevice9);
 
-				g_NewDirect3DDevice9.CreateSharedRenderTargets(pPresentationParameters);
+				g_NewDirect3DDevice9.Init(pPresentationParameters);
 
 				//
 
@@ -4055,7 +4129,6 @@ IFACE_PASSTHROUGH_DEF(IDirect3D9, GetAdapterIdentifier, NewDirect3D9, g_OldDirec
 IFACE_PASSTHROUGH_DEF(IDirect3D9, GetAdapterModeCount, NewDirect3D9, g_OldDirect3D9);
 IFACE_PASSTHROUGH_DEF(IDirect3D9, EnumAdapterModes, NewDirect3D9, g_OldDirect3D9);
 IFACE_PASSTHROUGH_DEF(IDirect3D9, GetAdapterDisplayMode, NewDirect3D9, g_OldDirect3D9);
-IFACE_PASSTHROUGH_DEF(IDirect3D9, CheckDeviceType, NewDirect3D9, g_OldDirect3D9);
 IFACE_PASSTHROUGH_DEF(IDirect3D9, CheckDeviceFormat, NewDirect3D9, g_OldDirect3D9);
 IFACE_PASSTHROUGH_DEF(IDirect3D9, CheckDepthStencilMatch, NewDirect3D9, g_OldDirect3D9);
 IFACE_PASSTHROUGH_DEF(IDirect3D9, CheckDeviceFormatConversion, NewDirect3D9, g_OldDirect3D9);
@@ -4432,4 +4505,40 @@ void AfxD3D9_Block_Present(bool block)
 	if(!g_OldDirect3DDevice9) return;
 
 	g_NewDirect3DDevice9.Block_Present(block);
+}
+
+IDirect3DStateBlock9* oldState = NULL;
+
+bool AfxD3D9_BeginOwnRender()
+{
+	if (!g_OldDirect3DDevice9) return false;
+
+	// Backup the DX9 state
+	IDirect3DStateBlock9* oldState = NULL;
+	
+	if (FAILED(g_NewDirect3DDevice9.CreateStateBlock(D3DSBT_ALL, &oldState)))
+		return false;
+	
+	g_NewDirect3DDevice9.EndScene();
+}
+
+void AfxD3D9_EndOwnRender()
+{
+	if (!g_OldDirect3DDevice9) return;
+
+	g_NewDirect3DDevice9.BeginScene();
+
+	if (oldState)
+	{
+		oldState->Apply();
+		oldState->Release();
+		oldState = NULL;
+	}
+}
+
+void AfxD3D_WaitForGPU()
+{
+	if (!g_OldDirect3DDevice9) return;
+
+	g_NewDirect3DDevice9.AfxWaitForGPU();
 }

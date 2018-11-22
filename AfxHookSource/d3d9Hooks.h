@@ -132,3 +132,5 @@ public:
 	virtual DWORD GetMultiSampleQuality() = 0;
 	virtual HANDLE GetSharedHandle() = 0;
 };
+
+void AfxD3D_WaitForGPU();

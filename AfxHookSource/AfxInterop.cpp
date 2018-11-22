@@ -551,6 +551,8 @@ return;
 		//
 		// This is the final message, before we allow to spin:
 
+		AfxD3D_WaitForGPU(); // TODO: This is only required if Unity wants to render shit.
+
 		if (!WriteInt32(m_hPipe, DrawingMessage_DrawingThreadBeforeHud)) { errorLine = __LINE__; goto error; }
 
 		if (!WriteHandle(m_hPipe, m_FbSurfaceHandle)) { errorLine = __LINE__; goto error; }
@@ -559,8 +561,6 @@ return;
 
 		// No frame info available yet:
 		if (!WriteBoolean(m_hPipe, false)) { errorLine = __LINE__; goto error; }
-
-		if (!Flush(m_hPipe)) { errorLine = __LINE__; goto error; }
 
 		bool done;
 		do {
