@@ -30,11 +30,15 @@ namespace AfxInterop {
 	/// <remarks>Must be called from engine thread only.</remarks>
 	void LevelShutdown();
 
+	int GetFrameCount();
+
+	bool GetFrameInfoSent();
+
 	//
 	// Drawing thread:
 
 	/// <remarks>Must be called from drawing thread only.</remarks>
-	void DrawingThreadBeforeHud(void);
+	void DrawingThreadBeforeHud(int frameCount, bool frameInfoSent);
 
 	void OnCreatedSharedSurface(ISharedSurfaceInfo * surface);
 

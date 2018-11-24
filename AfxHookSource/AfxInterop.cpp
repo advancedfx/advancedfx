@@ -58,6 +58,7 @@ namespace AfxInterop {
 	bool WriteBoolean(HANDLE hFile, bool value);
 	bool WriteByte(HANDLE hFile, BYTE value);
 	bool WriteInt32(HANDLE hFile, INT32 value);
+	bool WriteSingle(HANDLE hFile, float value);
 	bool WriteStringUTF8(HANDLE hFile, const std::string);
 	bool WriteHandle(HANDLE hFille, HANDLE value);
 	bool Flush(HANDLE hFile);
@@ -91,6 +92,7 @@ namespace AfxInterop {
 		std::string m_PipeName("advancedfxInterop");
 
 		int m_Frame = -1;
+		bool m_FrameInfoSent = false;
 	}
 	
 	class CSharedTextureHook;
@@ -431,67 +433,132 @@ namespace AfxInterop {
 		if (!m_Enabled) return;
 	}
 
-	void BeforeFrameStart() {
-if (!m_Enabled) return;
+	int GetFrameCount() {
+		return EngineThread::m_Frame;
+	}
 
-int errorLine = 0;
+	bool GetFrameInfoSent() {
+		return EngineThread::m_FrameInfoSent;
+	}
 
-//if (WrpGlobals * pWrpGlobals = g_Hook_VClient_RenderView.GetGlobals()) {
-//	EngineThread::m_Frame = pWrpGlobals->framecount_get();
-//}
-//else {
-//	++EngineThread::m_Frame;
-//}
-
-if (EngineThread::m_ActiveMutex.try_lock())
-{
-	if (EngineThread::m_Active)
+	void BeforeFrameStart()
 	{
-		if (!WriteInt32(EngineThread::m_hPipe, EngineThread::EngineMessage_BeforeFrameStart)) { errorLine = __LINE__; goto locked_error; }
-		if (!Flush(EngineThread::m_hPipe)) { errorLine = __LINE__; goto locked_error; }
-
-		int commandCount = 0;
-		{
-			BYTE byteCommandCount;
-			if (!ReadByte(EngineThread::m_hPipe, byteCommandCount)) { errorLine = __LINE__; goto locked_error; }
-			commandCount = byteCommandCount;
-		}
-		if (255 == commandCount)
-		{
-			if (!ReadInt32(EngineThread::m_hPipe, commandCount)) { errorLine = __LINE__; goto locked_error; }
-		}
-
-		std::string command;
-
-		while (0 < commandCount)
-		{
-			if (!ReadStringUTF8(EngineThread::m_hPipe, command)) { errorLine = __LINE__; goto locked_error; }
-
-			g_VEngineClient->ExecuteClientCmd(command.c_str());
-
-			--commandCount;
-		}
-	}
-
-	EngineThread::m_ActiveMutex.unlock();
-}
-
-return;
-
-locked_error:
-EngineThread::m_ActiveMutex.unlock();
-
-Tier0_Warning("AfxInterop::BeforeFrameStart: Error in line %i.\n", errorLine);
-{
-	std::unique_lock<std::mutex> lock(EngineThread::m_ConnectMutex);
-
-	Disconnect();
-}
-return;
-	}
-
-	void BeforeFrameRenderStart() {
 		if (!m_Enabled) return;
+
+		int errorLine = 0;
+
+		EngineThread::m_ActiveMutex.lock();
+		{
+			if (EngineThread::m_Active)
+			{
+				if (!WriteInt32(EngineThread::m_hPipe, EngineThread::EngineMessage_BeforeFrameStart)) { errorLine = __LINE__; goto locked_error; }
+				if (!Flush(EngineThread::m_hPipe)) { errorLine = __LINE__; goto locked_error; }
+
+				int commandCount = 0;
+				{
+					BYTE byteCommandCount;
+					if (!ReadByte(EngineThread::m_hPipe, byteCommandCount)) { errorLine = __LINE__; goto locked_error; }
+					commandCount = byteCommandCount;
+				}
+				if (255 == commandCount)
+				{
+					if (!ReadInt32(EngineThread::m_hPipe, commandCount)) { errorLine = __LINE__; goto locked_error; }
+				}
+
+				std::string command;
+
+				while (0 < commandCount)
+				{
+					if (!ReadStringUTF8(EngineThread::m_hPipe, command)) { errorLine = __LINE__; goto locked_error; }
+
+					g_VEngineClient->ExecuteClientCmd(command.c_str());
+
+					--commandCount;
+				}
+			}
+
+			EngineThread::m_ActiveMutex.unlock();
+		}
+
+		return;
+
+	locked_error:
+		EngineThread::m_ActiveMutex.unlock();
+
+		Tier0_Warning("AfxInterop::BeforeFrameStart: Error in line %i.\n", errorLine);
+		{
+			std::unique_lock<std::mutex> lock(EngineThread::m_ConnectMutex);
+
+			Disconnect();
+		}
+		return;
+	}
+
+	void BeforeFrameRenderStart()
+	{
+		if (!m_Enabled) return;
+
+		//if (WrpGlobals * pWrpGlobals = g_Hook_VClient_RenderView.GetGlobals()) {
+		//	EngineThread::m_Frame = pWrpGlobals->framecount_get();
+		//}
+		//else {
+		//	++EngineThread::m_Frame;
+		//}
+
+		++EngineThread::m_Frame;
+
+		int errorLine = 0;
+
+		EngineThread::m_ActiveMutex.lock();
+		{
+			if (EngineThread::m_Active)
+			{
+				SOURCESDK::VMatrix worldToScreenMatrix = g_VEngineClient->WorldToScreenMatrix();
+
+				if (!WriteInt32(EngineThread::m_hPipe, EngineThread::EngineMessage_BeforeFrameRenderStart)) { errorLine = __LINE__; goto locked_error; }
+
+				if (!WriteInt32(EngineThread::m_hPipe, EngineThread::m_Frame)) { errorLine = __LINE__; goto locked_error; }
+
+				if (!WriteSingle(EngineThread::m_hPipe, g_Hook_VClient_RenderView.GetGlobals()->absoluteframetime_get())) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, g_Hook_VClient_RenderView.GetGlobals()->curtime_get())) { errorLine = __LINE__; goto locked_error; }
+
+				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[0][0])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[0][1])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[0][2])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[0][3])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[1][0])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[1][1])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[1][2])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[1][3])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[2][0])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[2][1])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[2][2])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[2][3])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[3][0])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[3][1])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[3][2])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[3][3])) { errorLine = __LINE__; goto locked_error; }
+
+				if (!Flush(EngineThread::m_hPipe)) { errorLine = __LINE__; goto locked_error; } // TODO: move this flush as required, currently it's good here, since no more data after this.
+
+				EngineThread::m_FrameInfoSent = true;
+			}
+
+			EngineThread::m_ActiveMutex.unlock();
+		}
+
+		return;
+
+	locked_error:
+		EngineThread::m_ActiveMutex.unlock();
+
+		Tier0_Warning("AfxInterop::BeforeFrameStart: Error in line %i.\n", errorLine);
+		{
+			std::unique_lock<std::mutex> lock(EngineThread::m_ConnectMutex);
+
+			Disconnect();
+		}
+		return;
 	}
 
 	void Shutdown() {
@@ -514,7 +581,7 @@ return;
 		return m_Enabled;
 	}
 
-	void DrawingThreadBeforeHud(void)
+	void DrawingThreadBeforeHud(int frameCount, bool frameInfoSent)
 	{
 		if (!m_Enabled) return;
 
@@ -559,8 +626,11 @@ return;
 
 		if (!WriteHandle(m_hPipe, m_FbDepthSurfaceHandle)) { errorLine = __LINE__; goto error; }
 
-		// No frame info available yet:
-		if (!WriteBoolean(m_hPipe, false)) { errorLine = __LINE__; goto error; }
+		if (!WriteInt32(m_hPipe, frameCount)) { errorLine = __LINE__; goto error; }
+
+		if (!WriteBoolean(m_hPipe, frameInfoSent)) { errorLine = __LINE__; goto error; }
+		
+		if(!Flush(m_hPipe)) { errorLine = __LINE__; goto error; }
 
 		bool done;
 		do {
@@ -863,6 +933,7 @@ return;
 
 			if (EngineThread::m_Active)
 			{
+				EngineThread::m_FrameInfoSent = false;
 				EngineThread::m_Active = false;
 			}
 		}
@@ -978,7 +1049,12 @@ return;
 	}
 
 	bool WriteInt32(HANDLE hFile, INT32 value) {
-		return WriteBytes(hFile, &value, 0, sizeof(INT32));
+		return WriteBytes(hFile, &value, 0, sizeof(value));
+	}
+
+	bool WriteSingle(HANDLE hFile, float value)
+	{
+		return WriteBytes(hFile, &value, 0, sizeof(value));
 	}
 
 	bool WriteStringUTF8(HANDLE hFile, const std::string value)

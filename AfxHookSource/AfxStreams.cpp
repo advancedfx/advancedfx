@@ -280,16 +280,20 @@ class AfxInteropDrawingThreadBeforeHud_Functor
 	: public CAfxFunctor
 {
 public:
-	AfxInteropDrawingThreadBeforeHud_Functor()
+	AfxInteropDrawingThreadBeforeHud_Functor(int frameCount, bool frameInfoSent)
+		: m_FrameCount(frameCount)
+		, m_FrameInfoSent(frameInfoSent)
 	{
 	}
 
 	virtual void operator()()
 	{
-		AfxInterop::DrawingThreadBeforeHud();
+		AfxInterop::DrawingThreadBeforeHud(m_FrameCount, m_FrameInfoSent);
 	}
 
 private:
+	int m_FrameCount;
+	bool m_FrameInfoSent;
 };
 
 #endif
@@ -4944,7 +4948,7 @@ void CAfxStreams::OnDrawingHud(void)
 	{
 		IAfxMatRenderContextOrg * orgCtx = afxMatRenderContext->GetOrg();
 
-		QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new AfxInteropDrawingThreadBeforeHud_Functor()));
+		QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new AfxInteropDrawingThreadBeforeHud_Functor(AfxInterop::GetFrameCount(), AfxInterop::GetFrameInfoSent())));
 	}
 #endif
 
