@@ -18,6 +18,7 @@
 #include <map>
 #include <list>
 
+#define FOURCC_INTZ ((D3DFORMAT)(MAKEFOURCC('I', 'N', 'T', 'Z')))
 
 typedef struct __declspec(novtable) Interface_s abstract {} * Interface_t;
 typedef void * (__stdcall Interface_s::*InterfaceFn_t) (void *);
@@ -2244,7 +2245,7 @@ private:
 void FixPresentationparementers(D3DPRESENT_PARAMETERS* pPresentationParameters)
 {
 #ifdef AFX_INTEROP
-	if (AfxInterop::Enabled())
+	if (AfxInterop::Enabled() && pPresentationParameters)
 	{
 		pPresentationParameters->MultiSampleType = D3DMULTISAMPLE_NONE;
 		pPresentationParameters->MultiSampleQuality = 0;
@@ -2936,6 +2937,13 @@ private:
 						HRESULT hr;
 						HANDLE sharedHandle = NULL;
 						IDirect3DSurface9 * surface = nullptr;
+
+						// This has to happen transparently to CS:GO:
+						if (desc.Format == D3DFMT_D24S8)
+						{
+							Tier0_Msg("AfxHookSource: Secretly requesting INTZ format ...\n");
+							desc.Format = FOURCC_INTZ;
+						}
 
 						if (SUCCEEDED(hr = g_OldDirect3DDevice9->CreateDepthStencilSurface(desc.Width, desc.Height, desc.Format, pPresentationParameters->MultiSampleType, pPresentationParameters->MultiSampleQuality, FALSE, &surface, &sharedHandle)))
 						{
