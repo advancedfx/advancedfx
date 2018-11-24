@@ -178,10 +178,12 @@ IDirect3DDevice9Ex * g_OldDirect3DDevice9Ex = nullptr;
 
 // CAfxDirect3DManaged /////////////////////////////////////////////////////////
 
-template <typename T>
+template <typename T,typename D>
 class CAfxDirect3DManaged : public T
 {
 public:
+	D D3DDebugData;
+
 	static void AfxDeviceLost()
 	{
 		for (typename Instances_t::iterator it = m_Instances.begin(); it != m_Instances.end(); ++it)
@@ -192,6 +194,7 @@ public:
 
 	static void AfxDevicePresented()
 	{
+		/*
 		// Get rid of the old ones:
 
 		while (!m_Lru.empty())
@@ -207,17 +210,21 @@ public:
 		}
 
 		m_PresentNr++;
+		*/
 	}
 
 	CAfxDirect3DManaged()
 	{
+		/*
 		m_DirtyCount = 0;
 		m_MyPresentNr = m_PresentNr;
+		*/
 		m_Instances.insert(this);
 	}
 
-	T * AfxGetOrCreateUnmanged(void)
+	T * AfxGetOrCreateUnmanaged(void)
 	{
+		/*
 		m_MyPresentNr = m_PresentNr;
 
 		typename InstanceToLruIt_t::iterator itLruIt = m_InstanceToLruIt.find(this);
@@ -237,18 +244,23 @@ public:
 
 		if (wasDirty && m_DirtyCount < 0b100) ++m_DirtyCount;
 
-		return result;
+		return result;*/
+
+		bool dummy;
+		return OnAfxGetOrCreateUnmanaged(false, dummy);
 	}
 
 protected:
 	~CAfxDirect3DManaged()
 	{
+		/*
 		typename InstanceToLruIt_t::iterator itLruIt = m_InstanceToLruIt.find(this);
 		if (itLruIt != m_InstanceToLruIt.end())
 		{
 			m_Lru.erase(itLruIt->second);
 			m_InstanceToLruIt.erase(itLruIt);
 		}
+		*/
 
 		m_Instances.erase(this);
 	}
@@ -258,24 +270,24 @@ protected:
 	virtual T * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty) = 0;
 
 private:
-	typedef CAfxDirect3DManaged<T> Instance_t;
+	typedef CAfxDirect3DManaged<T,D> Instance_t;
 	typedef std::set<typename Instance_t *> Instances_t;
-	typedef std::list<typename Instance_t *> Lru_t;
-	typedef std::map<typename Instance_t *, typename Lru_t::iterator> InstanceToLruIt_t;
+	//typedef std::list<typename Instance_t *> Lru_t;
+	//typedef std::map<typename Instance_t *, typename Lru_t::iterator> InstanceToLruIt_t;
 
-	static int m_PresentNr;
+	//static int m_PresentNr;
 	static typename Instances_t m_Instances;
-	static typename Lru_t m_Lru;
-	static typename InstanceToLruIt_t m_InstanceToLruIt;
+	//static typename Lru_t m_Lru;
+	//static typename InstanceToLruIt_t m_InstanceToLruIt;
 
-	int m_MyPresentNr;
-	int m_DirtyCount;
+	//int m_MyPresentNr;
+	//int m_DirtyCount;
 };
 
-template <typename T> int CAfxDirect3DManaged<T>::m_PresentNr = 0;
-template <typename T> typename CAfxDirect3DManaged<T>::Instances_t CAfxDirect3DManaged<T>::m_Instances;
-template <typename T> typename CAfxDirect3DManaged<T>::Lru_t CAfxDirect3DManaged<T>::m_Lru;
-template <typename T> typename CAfxDirect3DManaged<T>::InstanceToLruIt_t CAfxDirect3DManaged<T>::m_InstanceToLruIt;
+//template <typename T> int CAfxDirect3DManaged<T>::m_PresentNr = 0;
+template <typename T, typename D> typename CAfxDirect3DManaged <T, D> ::Instances_t CAfxDirect3DManaged<T, D>::m_Instances;
+//template <typename T> typename CAfxDirect3DManaged<T>::Lru_t CAfxDirect3DManaged<T>::m_Lru;
+//template <typename T> typename CAfxDirect3DManaged<T>::InstanceToLruIt_t CAfxDirect3DManaged<T>::m_InstanceToLruIt;
 
 
 // CAfxManagedOffscreenPlainSurface ////////////////////////////////////////////
@@ -288,9 +300,24 @@ DEFINE_GUID(IID_CAfxManagedOffscreenPlainSurface,
 static const GUID IID_CAfxManagedOffscreenPlainSurface =
 { 0xacec2927, 0x3fed, 0x48b9, { 0x82, 0x97, 0x69, 0xd6, 0x5, 0x50, 0xd2, 0x42 } };
 
+struct CAfxManagedOffscreenPlainSurface_D3DDebugData
+{
+	LPCWSTR Name;
+	UINT Width;
+	UINT Height;
+	DWORD Usage;
+	D3DFORMAT Format;
+	D3DPOOL Pool;
+	D3DMULTISAMPLE_TYPE MultiSampleType;
+	DWORD MultiSampleQuality;
+	DWORD Priority;
+	UINT LockCount;
+	UINT DCCount;
+	LPCWSTR CreationCallStack;
+};
 
 // TODO, the D3D9 Debug fields should be layouted first in this class, otherwise the debug info if accessed is trash.
-class CAfxManagedOffscreenPlainSurface : public CAfxDirect3DManaged<IDirect3DSurface9>
+class CAfxManagedOffscreenPlainSurface : public CAfxDirect3DManaged<IDirect3DSurface9, CAfxManagedOffscreenPlainSurface_D3DDebugData>
 {
 public:
 	/*** IUnknown methods ***/
@@ -358,8 +385,7 @@ public:
 
 	STDMETHOD_(void, PreLoad)(THIS)
 	{
-		bool dummy;
-		OnAfxGetOrCreateUnmanaged(Usage & D3DUSAGE_DYNAMIC, dummy);
+		AfxGetOrCreateUnmanaged();
 	}
 
 	STDMETHOD_(D3DRESOURCETYPE, GetType)(THIS)
@@ -381,7 +407,8 @@ public:
 
 	STDMETHOD(LockRect)(THIS_ D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags)
 	{
-		this->AddDirtyRect(pRect);
+		if(!(Flags & (DWORD)(D3DLOCK_NO_DIRTY_UPDATE)))
+			this->AddDirtyRect(pRect);
 
 		return m_pSystemMemPool->LockRect(pLockedRect, pRect, Flags);
 	}
@@ -401,18 +428,7 @@ public:
 		return m_pSystemMemPool->ReleaseDC(hdc);
 	}
 
-	LPCWSTR Name;
-	UINT Width;
-	UINT Height;
-	DWORD Usage;
-	D3DFORMAT Format;
-	D3DPOOL Pool;
-	D3DMULTISAMPLE_TYPE MultiSampleType;
-	DWORD MultiSampleQuality;
-	DWORD Priority;
-	UINT LockCount;
-	UINT DCCount;
-	LPCWSTR CreationCallStack;
+
 
 	CAfxManagedOffscreenPlainSurface(
 		UINT Width,
@@ -424,22 +440,22 @@ public:
 		DWORD MultiSampleQuality,
 		IDirect3DSurface9 * pSystemMemPool
 	)
-		: Name(L"CAfxManagedOffscreenPlainSurface")
-		, Width(Width)
-		, Height(Height)
-		, Usage(Usage)
-		, Format(Format)
-		, Pool(D3DPOOL_MANAGED)
-		, Priority(0)
-		, MultiSampleType(MultiSampleType)
-		, MultiSampleQuality(MultiSampleQuality)
-		, LockCount(0)
-		, DCCount(0)
-		, CreationCallStack(L"n/a")
-		, m_pSystemMemPool(pSystemMemPool)
+		: m_pSystemMemPool(pSystemMemPool)
 		, m_Dirty(false)
 		, m_pDefaultPool(nullptr)
 	{
+		this->D3DDebugData.Name =L"CAfxManagedOffscreenPlainSurface";
+		this->D3DDebugData.Width = Width;
+		this->D3DDebugData.Height = Height;
+		this->D3DDebugData.Usage = Usage;
+		this->D3DDebugData.Format = Format;
+		this->D3DDebugData.Pool = D3DPOOL_MANAGED;
+		this->D3DDebugData.Priority = 0;
+		this->D3DDebugData.MultiSampleType = MultiSampleType;
+		this->D3DDebugData.MultiSampleQuality = MultiSampleQuality;
+		this->D3DDebugData.LockCount = 0;
+		this->D3DDebugData.DCCount = 0;
+		this->D3DDebugData.CreationCallStack = L"n/a";
 	}
 
 	HRESULT AddDirtyRect(const RECT *pDirtyRect)
@@ -448,8 +464,8 @@ public:
 		{
 			m_DirtyRect.left = 0;
 			m_DirtyRect.top = 0;
-			m_DirtyRect.right = Width;
-			m_DirtyRect.bottom = Height;
+			m_DirtyRect.right = this->D3DDebugData.Width;
+			m_DirtyRect.bottom = this->D3DDebugData.Height;
 		}
 		else if (!m_Dirty)
 		{
@@ -471,11 +487,14 @@ public:
 protected:
 	virtual IDirect3DSurface9 * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty)
 	{
-		if (switchToDynamic && !(Usage & D3DUSAGE_DYNAMIC))
+		if (switchToDynamic && !(this->D3DDebugData.Usage & D3DUSAGE_DYNAMIC))
 		{
-			Usage |= D3DUSAGE_DYNAMIC;
-			m_pDefaultPool->Release();
-			m_pDefaultPool = nullptr;
+			this->D3DDebugData.Usage |= D3DUSAGE_DYNAMIC;
+			if (m_pDefaultPool)
+			{
+				m_pDefaultPool->Release();
+				m_pDefaultPool = nullptr;
+			}
 		}
 
 		if (nullptr == m_pDefaultPool)
@@ -489,11 +508,11 @@ protected:
 		{
 			IDirect3DDevice9 * device;
 
-			if (D3D_OK == m_pSystemMemPool->GetDevice(&device))
+			if (SUCCEEDED(m_pSystemMemPool->GetDevice(&device)))
 			{
 				if (nullptr == m_pDefaultPool)
 				{
-					if (SUCCEEDED(device->CreateOffscreenPlainSurface(Width, Height, Format, Pool, &m_pDefaultPool, nullptr)))
+					if (SUCCEEDED(device->CreateOffscreenPlainSurface(this->D3DDebugData.Width, this->D3DDebugData.Height, this->D3DDebugData.Format, this->D3DDebugData.Pool, &m_pDefaultPool, nullptr)))
 					{
 						m_pDefaultPool->SetPriority(m_pSystemMemPool->GetPriority());
 					}
@@ -539,7 +558,9 @@ public:
 	/// <summary>Called by child wrapped surface in order to update after device has been lost.</summary>
 	/// <param name="surface">The child surface of this texture.</param>
 	/// <returns>The new default pool surface if available.</returns>
-	virtual IDirect3DSurface9 * AfxManagedChildDirect3DSurface9_GetDefaultPoolSurface(CAfxManagedChildDirect3DSurface9 * surface, bool switchToDynamic, bool wasDirty) = 0;
+	virtual IDirect3DSurface9 * AfxManagedChildDirect3DSurface9_GetDefaultPoolSurface(CAfxManagedChildDirect3DSurface9 * surface, bool switchToDynamic, bool & inOutasDirty) = 0;
+
+	virtual void AfxManagedChildDirect3DSurface9_GotDirty(CAfxManagedChildDirect3DSurface9 * surface) = 0;
 };
 
 // {AFF452F9-B129-4B01-85AC-6D7EFD4F1D9D}
@@ -558,8 +579,24 @@ DEFINE_GUID(IID_CAfxManagedChildDirect3DSurface9_ParentData,
 static const GUID IID_CAfxManagedChildDirect3DSurface9_ParentData =
 { 0xf4196378, 0x526c, 0x4ec2, { 0x88, 0x47, 0x34, 0x9c, 0xc5, 0x70, 0xc7, 0x5b } };
 
+struct CAfxManagedChildDirect3DSurface9_D3DDebugData
+{
+	LPCWSTR Name;
+	UINT Width;
+	UINT Height;
+	DWORD Usage;
+	D3DFORMAT Format;
+	D3DPOOL Pool;
+	D3DMULTISAMPLE_TYPE MultiSampleType;
+	DWORD MultiSampleQuality;
+	DWORD Priority;
+	UINT LockCount;
+	UINT DCCount;
+	LPCWSTR CreationCallStack;
+};
+
 // TODO, the D3D9 Debug fields should be layouted first in this class, otherwise the debug info if accessed is trash.
-class CAfxManagedChildDirect3DSurface9 : public CAfxDirect3DManaged<IDirect3DSurface9>
+class CAfxManagedChildDirect3DSurface9 : public CAfxDirect3DManaged<IDirect3DSurface9, CAfxManagedChildDirect3DSurface9_D3DDebugData>
 {
 public:
 	/*** IUnknown methods ***/
@@ -627,8 +664,7 @@ public:
 
 	STDMETHOD_(void, PreLoad)(THIS)
 	{
-		bool dummy;
-		OnAfxGetOrCreateUnmanaged(Usage & D3DUSAGE_DYNAMIC, dummy);
+		AfxGetOrCreateUnmanaged();
 	}
 
 	STDMETHOD_(D3DRESOURCETYPE, GetType)(THIS)
@@ -650,7 +686,8 @@ public:
 
 	STDMETHOD(LockRect)(THIS_ D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags)
 	{
-		this->AddDirtyRect(pRect);
+		if (!(Flags & (DWORD)(D3DLOCK_NO_DIRTY_UPDATE)))
+			this->AddDirtyRect(pRect);
 
 		return m_pSystemMemPool->LockRect(pLockedRect, pRect, Flags);
 	}
@@ -670,19 +707,6 @@ public:
 		return m_pSystemMemPool->ReleaseDC(hdc);
 	}
 
-	LPCWSTR Name;
-	UINT Width;
-	UINT Height;
-	DWORD Usage;
-	D3DFORMAT Format;
-	D3DPOOL Pool;
-	D3DMULTISAMPLE_TYPE MultiSampleType;
-	DWORD MultiSampleQuality;
-	DWORD Priority;
-	UINT LockCount;
-	UINT DCCount;
-	LPCWSTR CreationCallStack;
-
 	CAfxManagedChildDirect3DSurface9(
 		IAfxManagedTexture * parentTexture,
 		UINT Width,
@@ -695,22 +719,22 @@ public:
 		IDirect3DSurface9 * pSystemMemPool
 	)
 		: m_ParentTexture(parentTexture)
-		, Name(L"CAfxManagedChildDirect3DSurface9")
-		, Width(Width)
-		, Height(Height)
-		, Usage(Usage)
-		, Format(Format)
-		, Pool(D3DPOOL_MANAGED)
-		, Priority(0)
-		, MultiSampleType(MultiSampleType)
-		, MultiSampleQuality(MultiSampleQuality)
-		, LockCount(0)
-		, DCCount(0)
-		, CreationCallStack(L"n/a")
 		, m_pSystemMemPool(pSystemMemPool)
 		, m_Dirty(false)
 		, m_pDefaultPool(nullptr)
 	{
+		this->D3DDebugData.Name = L"CAfxManagedChildDirect3DSurface9";
+		this->D3DDebugData.Width = Width;
+		this->D3DDebugData.Height = Height;
+		this->D3DDebugData.Usage = Usage;
+		this->D3DDebugData.Format = Format;
+		this->D3DDebugData.Pool = D3DPOOL_MANAGED;
+		this->D3DDebugData.Priority = 0;
+		this->D3DDebugData.MultiSampleType = MultiSampleType;
+		this->D3DDebugData.MultiSampleQuality = MultiSampleQuality;
+		this->D3DDebugData.LockCount = 0;
+		this->D3DDebugData.DCCount = 0;
+		this->D3DDebugData.CreationCallStack = L"n/a";
 	}
 
 	HRESULT AddDirtyRect(const RECT *pDirtyRect)
@@ -719,8 +743,8 @@ public:
 		{
 			m_DirtyRect.left = 0;
 			m_DirtyRect.top = 0;
-			m_DirtyRect.right = Width;
-			m_DirtyRect.bottom = Height;
+			m_DirtyRect.right = this->D3DDebugData.Width;
+			m_DirtyRect.bottom = this->D3DDebugData.Height;
 		}
 		else if (!m_Dirty)
 		{
@@ -736,46 +760,33 @@ public:
 
 		m_Dirty = true;
 
+		m_ParentTexture->AfxManagedChildDirect3DSurface9_GotDirty(this);
+
 		return D3D_OK;
 	}
 
 protected:
 	virtual IDirect3DSurface9 * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty)
 	{
-		if (switchToDynamic && !(Usage & D3DUSAGE_DYNAMIC))
+		if (m_pDefaultPool)
 		{
-			Usage |= D3DUSAGE_DYNAMIC;
 			m_pDefaultPool->Release();
 			m_pDefaultPool = nullptr;
 		}
 
-		if (nullptr == m_pDefaultPool)
-		{
-			this->AddDirtyRect(NULL);
-		}
-
+		m_pDefaultPool = m_ParentTexture->AfxManagedChildDirect3DSurface9_GetDefaultPoolSurface(this, this->D3DDebugData.Usage & D3DUSAGE_DYNAMIC, m_Dirty);
+		
 		outWasDirty = m_Dirty;
 
-		if (m_Dirty)
+		IDirect3DDevice9 * device;
+
+		if (SUCCEEDED(m_pSystemMemPool->GetDevice(&device)))
 		{
-			IDirect3DDevice9 * device;
-
-			if (D3D_OK == m_pSystemMemPool->GetDevice(&device))
+			if (m_pDefaultPool && m_Dirty)
 			{
-				if (nullptr == m_pDefaultPool)
-				{
-					if(m_pDefaultPool = m_ParentTexture->AfxManagedChildDirect3DSurface9_GetDefaultPoolSurface(this, Usage & D3DUSAGE_DYNAMIC, m_Dirty))
-					{
-						m_pDefaultPool->SetPriority(m_pSystemMemPool->GetPriority());
-					}
-				}
-
-				if (m_pDefaultPool && m_Dirty)
-				{
-					POINT point = { m_DirtyRect.left, m_DirtyRect.top };
-					device->UpdateSurface(m_pSystemMemPool, &m_DirtyRect, m_pDefaultPool, &point);
-					m_Dirty = false;
-				}
+				POINT point = { m_DirtyRect.left, m_DirtyRect.top };
+				device->UpdateSurface(m_pSystemMemPool, &m_DirtyRect, m_pDefaultPool, &point);
+				m_Dirty = false;
 			}
 		}
 
@@ -809,8 +820,24 @@ DEFINE_GUID(IID_CAfxManagedDirect3DTexture9,
 static const GUID IID_CAfxManagedDirect3DTexture9 =
 { 0x4e2fc120, 0x3361, 0x4870, { 0x9b, 0xad, 0x52, 0x88, 0xe4, 0xef, 0x74, 0xf2 } };
 
+struct CAfxManagedDirect3DTexture9_D3DDebugData
+{
+	LPCWSTR Name;
+	UINT Width;
+	UINT Height;
+	UINT Levels;
+	DWORD Usage;
+	D3DFORMAT Format;
+	D3DPOOL Pool;
+	DWORD Priority;
+	DWORD LOD;
+	D3DTEXTUREFILTERTYPE FilterType;
+	UINT LockCount;
+	LPCWSTR CreationCallStack;
+};
+
 // TODO, the D3D9 Debug fields should be layouted first in this class, otherwise the debug info if accessed is trash.
-class CAfxManagedDirect3DTexture9 : public CAfxDirect3DManaged<IDirect3DTexture9>, protected IAfxManagedTexture
+class CAfxManagedDirect3DTexture9 : public CAfxDirect3DManaged<IDirect3DTexture9, CAfxManagedDirect3DTexture9_D3DDebugData>, protected IAfxManagedTexture
 {
 public:
 	/*** IUnknown methods ***/
@@ -878,8 +905,7 @@ public:
 
 	STDMETHOD_(void, PreLoad)(THIS)
 	{
-		bool dummy;
-		OnAfxGetOrCreateUnmanaged(Usage & D3DUSAGE_DYNAMIC, dummy);
+		AfxGetOrCreateUnmanaged();
 	}
 
 	STDMETHOD_(D3DRESOURCETYPE, GetType)(THIS)
@@ -948,94 +974,91 @@ public:
 
 	STDMETHOD(LockRect)(THIS_ UINT Level, D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags)
 	{
-		IDirect3DSurface9 * surf;
+		HRESULT result = m_pSystemMemPool->LockRect(Level, pLockedRect, pRect, Flags);
 
-		if (FAILED(this->GetSurfaceLevel(Level, &surf)))
-			return D3DERR_NOTAVAILABLE;
+		if (SUCCEEDED(result) && 0 == Level)
+		{
+			++this->D3DDebugData.LockCount;
+			m_Dirty = m_Dirty || !(Flags & (DWORD)(D3DLOCK_NO_DIRTY_UPDATE));
+		}
 
-		return surf->LockRect(pLockedRect, pRect, Flags);
+		return result;
 	}
 
 	STDMETHOD(UnlockRect)(THIS_ UINT Level)
 	{
-		IDirect3DSurface9 * surf;
+		HRESULT result = m_pSystemMemPool->UnlockRect(Level);
 
-		if (FAILED(this->GetSurfaceLevel(Level, &surf)))
-			return D3DERR_NOTAVAILABLE;
-
-		HRESULT result = surf->UnlockRect();
-		
-		surf->Release();
-		surf->Release();
+		if (SUCCEEDED(result) && 0 == Level)
+		{
+			--this->D3DDebugData.LockCount;
+		}
 
 		return result;
 	}
 
 	STDMETHOD(AddDirtyRect)(THIS_ CONST RECT* pDirtyRect)
 	{
-		HRESULT result = D3D_OK;
+		HRESULT result = m_pSystemMemPool->AddDirtyRect(pDirtyRect);
 
-		int levelCount = this->GetLevelCount();
-
-		for (int level = 0; level < levelCount; ++level)
+		if (SUCCEEDED(result))
 		{
-			CAfxManagedChildDirect3DSurface9 * surf;
+			m_Dirty = true;
 
-			HRESULT result = this->GetManagedSurface(level, &surf);
+			HRESULT result = D3D_OK;
 
-			if (FAILED(result))
+			int levelCount = this->GetLevelCount();
+
+			for (int level = 0; level < levelCount; ++level)
 			{
-				surf->Release();
-				return result;
-			}
+				CAfxManagedChildDirect3DSurface9 * surf;
 
-			surf->AddDirtyRect(pDirtyRect);
-			surf->Release();
+				HRESULT result = this->GetManagedSurface(level, &surf);
+
+				if (FAILED(result))
+				{
+					surf->Release();
+					return result;
+				}
+
+				surf->AddDirtyRect(pDirtyRect);
+				surf->Release();
+			}
 		}
 
 		return result;
 	}
 
-	LPCWSTR Name;
-	UINT Width;
-	UINT Height;
-	UINT Levels;
-	DWORD Usage;
-	D3DFORMAT Format;
-	D3DPOOL Pool;
-	DWORD Priority;
-	DWORD LOD;
-	D3DTEXTUREFILTERTYPE FilterType;
-	UINT LockCount;
-	LPCWSTR CreationCallStack;
-
 	CAfxManagedDirect3DTexture9(UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, IDirect3DTexture9 * pSystemMemPoolTexture)
-		: Name(L"IAfxManagedDirect3DTexture9")
-		, Width(Width)
-		, Height(Height)
-		, Levels(Levels)
-		, Usage(Usage)
-		, Format(Format)
-		, Pool(D3DPOOL_MANAGED)
-		, Priority(0)
-		, LOD(0)
-		, FilterType(D3DTEXF_NONE)
-		, LockCount(0)
-		, CreationCallStack(L"n/a")
-		, m_pSystemMemPool(pSystemMemPoolTexture)
+		: m_pSystemMemPool(pSystemMemPoolTexture)
 		, m_Dirty(false)
 		, m_pDefaultPool(nullptr)
 	{
+		this->D3DDebugData.Name = L"IAfxManagedDirect3DTexture9";
+		this->D3DDebugData.Width = Width;
+		this->D3DDebugData.Height = Height;
+		this->D3DDebugData.Levels = Levels;
+		this->D3DDebugData.Usage = Usage;
+		this->D3DDebugData.Format = Format;
+		this->D3DDebugData.Pool = D3DPOOL_MANAGED;
+		this->D3DDebugData.Priority = 0;
+		this->D3DDebugData.LOD = 0;
+		this->D3DDebugData.FilterType = D3DTEXF_NONE;
+		this->D3DDebugData.LockCount = 0;
+		this->D3DDebugData.CreationCallStack = L"n/a";
 	}
 
 protected:
 	virtual IDirect3DTexture9 * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty)
 	{
-		if (switchToDynamic && !(Usage & D3DUSAGE_DYNAMIC))
+		if (switchToDynamic && !(this->D3DDebugData.Usage & D3DUSAGE_DYNAMIC))
 		{
-			Usage |= D3DUSAGE_DYNAMIC;
-			m_pDefaultPool->Release();
-			m_pDefaultPool = nullptr;
+			this->D3DDebugData.Usage |= D3DUSAGE_DYNAMIC;
+			if (m_pDefaultPool)
+			{
+				m_pDefaultPool->Release();
+				m_pDefaultPool = nullptr;
+			}
 		}
 
 		if (nullptr == m_pDefaultPool)
@@ -1047,12 +1070,12 @@ protected:
 		{
 			IDirect3DDevice9 * device;
 
-			if (D3D_OK == m_pSystemMemPool->GetDevice(&device))
+			if (SUCCEEDED(m_pSystemMemPool->GetDevice(&device)))
 			{
 				if (nullptr == m_pDefaultPool)
 				{
 					IDirect3DTexture9 * pDefaultPool;
-					if (D3D_OK == device->CreateTexture(Width, Height, Levels, Usage, Format, D3DPOOL_DEFAULT, &pDefaultPool, nullptr))
+					if (SUCCEEDED(device->CreateTexture(this->D3DDebugData.Width, this->D3DDebugData.Height, this->D3DDebugData.Levels, this->D3DDebugData.Usage, this->D3DDebugData.Format, D3DPOOL_DEFAULT, &pDefaultPool, nullptr)))
 					{
 						m_pDefaultPool = pDefaultPool;
 
@@ -1082,22 +1105,33 @@ protected:
 		}
 	}
 
-	virtual IDirect3DSurface9 * AfxManagedChildDirect3DSurface9_GetDefaultPoolSurface(CAfxManagedChildDirect3DSurface9 * surface, bool switchToDynamic, bool wasDirty)
+	virtual IDirect3DSurface9 * AfxManagedChildDirect3DSurface9_GetDefaultPoolSurface(CAfxManagedChildDirect3DSurface9 * surface, bool switchToDynamic, bool & inOutWasDirty)
 	{
 		UINT level = 0;
 		DWORD levelSize = sizeof(level);
 		IDirect3DSurface9 * surf = NULL;
 
-		m_pDefaultPool = AfxGetOrCreateUnmanged();
-		
-		surface->GetPrivateData(IID_CAfxManagedChildDirect3DSurface9_ParentData, &level, &levelSize);
+		m_Dirty = m_Dirty || inOutWasDirty;
+		inOutWasDirty = m_Dirty;
 
-		if (FAILED(m_pDefaultPool->GetSurfaceLevel(level, &surf)))
+		m_pDefaultPool = AfxGetOrCreateUnmanaged();
+
+		if (m_pDefaultPool)
 		{
-			surf = NULL;
+			surface->GetPrivateData(IID_CAfxManagedChildDirect3DSurface9_ParentData, &level, &levelSize);
+
+			if (FAILED(m_pDefaultPool->GetSurfaceLevel(level, &surf)))
+			{
+				surf = NULL;
+			}
 		}
 
 		return surf;
+	}
+
+	virtual void AfxManagedChildDirect3DSurface9_GotDirty(CAfxManagedChildDirect3DSurface9 * surface)
+	{
+		m_Dirty = true;
 	}
 
 private:
@@ -1113,7 +1147,6 @@ private:
 
 		if (SUCCEEDED(result) && surf)
 		{
-
 			CAfxManagedChildDirect3DSurface9 * manSurf;
 			DWORD manSurfSize = sizeof(manSurf);
 
@@ -1121,11 +1154,11 @@ private:
 			{
 				manSurf = new CAfxManagedChildDirect3DSurface9(
 					this,
-					Width,
-					Height,
-					Usage,
-					Format,
-					Pool,
+					this->D3DDebugData.Width,
+					this->D3DDebugData.Height,
+					this->D3DDebugData.Usage,
+					this->D3DDebugData.Format,
+					this->D3DDebugData.Pool,
 					D3DMULTISAMPLE_NONE,
 					0,
 					surf
@@ -1162,7 +1195,24 @@ DEFINE_GUID(IID_CAfxManagedDirect3DVolumeTexture9,
 static const GUID IID_CAfxManagedDirect3DVolumeTexture9 =
 { 0x7764f7e0, 0xb5c4, 0x4d33, { 0xa9, 0x8b, 0x3b, 0xfc, 0x14, 0x5d, 0xef, 0x8c } };
 
-class CAfxManagedDirect3DVolumeTexture9 : public CAfxDirect3DManaged<IDirect3DVolumeTexture9>
+struct CAfxManagedDirect3DVolumeTexture9_D3DDebugData
+{
+	LPCWSTR Name;
+	UINT Width;
+	UINT Height;
+	UINT Depth;
+	UINT Levels;
+	DWORD Usage;
+	D3DFORMAT Format;
+	D3DPOOL Pool;
+	DWORD Priority;
+	DWORD LOD;
+	D3DTEXTUREFILTERTYPE FilterType;
+	UINT LockCount;
+	LPCWSTR CreationCallStack;
+};
+
+class CAfxManagedDirect3DVolumeTexture9 : public CAfxDirect3DManaged<IDirect3DVolumeTexture9, CAfxManagedDirect3DVolumeTexture9_D3DDebugData>
 {
 public:
 	/*** IUnknown methods ***/
@@ -1231,8 +1281,7 @@ public:
 
 	STDMETHOD_(void, PreLoad)(THIS)
 	{
-		bool dummy;
-		OnAfxGetOrCreateUnmanaged(Usage & D3DUSAGE_DYNAMIC, dummy);
+		AfxGetOrCreateUnmanaged();
 	}
 
 	STDMETHOD_(D3DRESOURCETYPE, GetType)(THIS)
@@ -1291,7 +1340,7 @@ public:
 
 	STDMETHOD(LockBox)(THIS_ UINT Level, D3DLOCKED_BOX* pLockedVolume, CONST D3DBOX* pBox, DWORD Flags)
 	{
-		m_Dirty = true;
+		m_Dirty = m_Dirty || !(Flags & (DWORD)(D3DLOCK_NO_DIRTY_UPDATE));
 
 		return m_pSystemMemPool->LockBox(Level, pLockedVolume, pBox, Flags);
 	}
@@ -1310,48 +1359,37 @@ public:
 		return m_pSystemMemPool->AddDirtyBox(pDirtyBox);
 	}
 
-    LPCWSTR Name;
-    UINT Width;
-    UINT Height;
-    UINT Depth;
-    UINT Levels;
-    DWORD Usage;
-    D3DFORMAT Format;
-    D3DPOOL Pool;
-    DWORD Priority;
-    DWORD LOD;
-    D3DTEXTUREFILTERTYPE FilterType;
-    UINT LockCount;
-    LPCWSTR CreationCallStack;
-
 	CAfxManagedDirect3DVolumeTexture9(UINT Width, UINT Height, UINT Depth, UINT Levels, DWORD Usage, D3DFORMAT Format, IDirect3DVolumeTexture9 * pSystemMemPoolTexture)
-		: Name(L"IAfxManagedDirect3DVolumeTexture9")
-		, Width(Width)
-		, Height(Height)
-		, Depth(Depth)
-		, Levels(Levels)
-		, Usage(Usage)
-		, Format(Format)
-		, Pool(D3DPOOL_MANAGED)
-		, Priority(0)
-		, LOD(0)
-		, FilterType(D3DTEXF_NONE)
-		, LockCount(0)
-		, CreationCallStack(L"n/a")
-		, m_pSystemMemPool(pSystemMemPoolTexture)
+		: m_pSystemMemPool(pSystemMemPoolTexture)
 		, m_Dirty(false)
 		, m_pDefaultPool(nullptr)
 	{
+		this->D3DDebugData.Name = L"IAfxManagedDirect3DVolumeTexture9";
+		this->D3DDebugData.Width = Width;
+		this->D3DDebugData.Height = Height;
+		this->D3DDebugData.Depth = Depth;
+		this->D3DDebugData.Levels = Levels;
+		this->D3DDebugData.Usage = Usage;
+		this->D3DDebugData.Format = Format;
+		this->D3DDebugData.Pool = D3DPOOL_MANAGED;
+		this->D3DDebugData.Priority = 0;
+		this->D3DDebugData.LOD = 0;
+		this->D3DDebugData.FilterType = D3DTEXF_NONE;
+		this->D3DDebugData.LockCount = 0;
+		this->D3DDebugData.CreationCallStack = L"n/a";
 	}
 
 protected:
 	virtual IDirect3DVolumeTexture9 * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty)
 	{
-		if (switchToDynamic && !(Usage & D3DUSAGE_DYNAMIC))
+		if (switchToDynamic && !(this->D3DDebugData.Usage & D3DUSAGE_DYNAMIC))
 		{
-			Usage |= D3DUSAGE_DYNAMIC;
-			m_pDefaultPool->Release();
-			m_pDefaultPool = nullptr;
+			this->D3DDebugData.Usage |= D3DUSAGE_DYNAMIC;
+			if (m_pDefaultPool)
+			{
+				m_pDefaultPool->Release();
+				m_pDefaultPool = nullptr;
+			}
 		}
 
 		if (nullptr == m_pDefaultPool)
@@ -1363,12 +1401,12 @@ protected:
 		{
 			IDirect3DDevice9 * device;
 
-			if (D3D_OK == m_pSystemMemPool->GetDevice(&device))
+			if (SUCCEEDED(m_pSystemMemPool->GetDevice(&device)))
 			{
 				if (nullptr == m_pDefaultPool)
 				{
 					IDirect3DVolumeTexture9 * pDefaultPool;
-					if (D3D_OK == device->CreateVolumeTexture(Width, Height, Depth, Levels, Usage, Format, D3DPOOL_DEFAULT, &pDefaultPool, nullptr))
+					if (SUCCEEDED(device->CreateVolumeTexture(this->D3DDebugData.Width, this->D3DDebugData.Height, this->D3DDebugData.Depth, this->D3DDebugData.Levels, this->D3DDebugData.Usage, this->D3DDebugData.Format, D3DPOOL_DEFAULT, &pDefaultPool, nullptr)))
 					{
 						m_pDefaultPool = pDefaultPool;
 
@@ -1416,7 +1454,23 @@ static const GUID IID_CAfxManagedDirect3DCubeTexture9 =
 { 0x24aa51e7, 0x9575, 0x49d5, { 0xa2, 0xdf, 0xaf, 0x18, 0xcb, 0x6c, 0xc5, 0x87 } };
 
 
-class CAfxManagedDirect3DCubeTexture9 : public CAfxDirect3DManaged<IDirect3DCubeTexture9>, protected IAfxManagedTexture
+struct CAfxManagedDirect3DCubeTexture9_D3DDebugData
+{
+	LPCWSTR Name;
+	UINT Width;
+	UINT Height;
+	UINT Levels;
+	DWORD Usage;
+	D3DFORMAT Format;
+	D3DPOOL Pool;
+	DWORD Priority;
+	DWORD LOD;
+	D3DTEXTUREFILTERTYPE FilterType;
+	UINT LockCount;
+	LPCWSTR CreationCallStack;
+};
+
+class CAfxManagedDirect3DCubeTexture9 : public CAfxDirect3DManaged<IDirect3DCubeTexture9, CAfxManagedDirect3DCubeTexture9_D3DDebugData>, protected IAfxManagedTexture
 {
 public:
 	/*** IUnknown methods ***/
@@ -1485,8 +1539,7 @@ public:
 
 	STDMETHOD_(void, PreLoad)(THIS)
 	{
-		bool dummy;
-		OnAfxGetOrCreateUnmanaged(Usage & D3DUSAGE_DYNAMIC, dummy);
+		AfxGetOrCreateUnmanaged();
 	}
 
 	STDMETHOD_(D3DRESOURCETYPE, GetType)(THIS)
@@ -1555,31 +1608,31 @@ public:
 
 	STDMETHOD(LockRect)(THIS_ D3DCUBEMAP_FACES FaceType, UINT Level, D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags)
 	{
-		IDirect3DSurface9 * surf;
+		HRESULT result = m_pSystemMemPool->LockRect(FaceType, Level, pLockedRect, pRect, Flags);
 
-		if (FAILED(this->GetCubeMapSurface(FaceType, Level, &surf)))
-			return D3DERR_NOTAVAILABLE;
+		if (SUCCEEDED(result))
+		{
+			m_Dirty = m_Dirty || !(Flags & (DWORD)(D3DLOCK_NO_DIRTY_UPDATE));
+		}
 
-		return surf->LockRect(pLockedRect, pRect, Flags);
+		return result;
 	}
 
 	STDMETHOD(UnlockRect)(THIS_ D3DCUBEMAP_FACES FaceType, UINT Level)
 	{
-		IDirect3DSurface9 * surf;
+		HRESULT result = m_pSystemMemPool->UnlockRect(FaceType, Level);
 
-		if (FAILED(this->GetCubeMapSurface(FaceType, Level, &surf)))
-			return D3DERR_NOTAVAILABLE;
-
-		HRESULT result = surf->UnlockRect();
-
-		surf->Release();
-		surf->Release();
+		if (SUCCEEDED(result))
+		{
+		}
 
 		return result;
 	}
 
 	STDMETHOD(AddDirtyRect)(THIS_ D3DCUBEMAP_FACES FaceType, CONST RECT* pDirtyRect)
 	{
+		m_Dirty = true;
+
 		HRESULT result = D3D_OK;
 
 		int levelCount = this->GetLevelCount();
@@ -1602,47 +1655,37 @@ public:
 		return result;
 	}
 
-	LPCWSTR Name;
-	UINT Width;
-	UINT Height;
-	UINT Levels;
-	DWORD Usage;
-	D3DFORMAT Format;
-	D3DPOOL Pool;
-	DWORD Priority;
-	DWORD LOD;
-	D3DTEXTUREFILTERTYPE FilterType;
-	UINT LockCount;
-	LPCWSTR CreationCallStack;
-
 	CAfxManagedDirect3DCubeTexture9(UINT EdgeLength, UINT Levels, DWORD Usage, D3DFORMAT Format, IDirect3DCubeTexture9 * pSystemMemPoolTexture)
-		: Name(L"IAfxManagedDirect3DVolumeTexture9")
-		, Width(EdgeLength)
-		, Height(EdgeLength)
-		, Levels(Levels)
-		, Usage(Usage)
-		, Format(Format)
-		, Pool(D3DPOOL_MANAGED)
-		, Priority(0)
-		, LOD(0)
-		, FilterType(D3DTEXF_NONE)
-		, LockCount(0)
-		, CreationCallStack(L"n/a")
-		, m_pSystemMemPool(pSystemMemPoolTexture)
+		: m_pSystemMemPool(pSystemMemPoolTexture)
 		, m_Dirty(false)
 		, m_pDefaultPool(nullptr)
 	{
+		this->D3DDebugData.Name = L"IAfxManagedDirect3DVolumeTexture9";
+		this->D3DDebugData.Width = EdgeLength;
+		this->D3DDebugData.Height = EdgeLength;
+		this->D3DDebugData.Levels = Levels;
+		this->D3DDebugData.Usage = Usage;
+		this->D3DDebugData.Format = Format;
+		this->D3DDebugData.Pool = D3DPOOL_MANAGED;
+		this->D3DDebugData.Priority = 0;
+		this->D3DDebugData.LOD = 0;
+		this->D3DDebugData.FilterType = D3DTEXF_NONE;
+		this->D3DDebugData.LockCount = 0;
+		this->D3DDebugData.CreationCallStack = L"n/a";
 	}
 
 protected:
 
 	virtual IDirect3DCubeTexture9 * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty)
 	{
-		if (switchToDynamic && !(Usage & D3DUSAGE_DYNAMIC))
+		if (switchToDynamic && !(this->D3DDebugData.Usage & D3DUSAGE_DYNAMIC))
 		{
-			Usage |= D3DUSAGE_DYNAMIC;
-			m_pDefaultPool->Release();
-			m_pDefaultPool = nullptr;
+			this->D3DDebugData.Usage |= D3DUSAGE_DYNAMIC;
+			if (m_pDefaultPool)
+			{
+				m_pDefaultPool->Release();
+				m_pDefaultPool = nullptr;
+			}
 		}
 
 		if (nullptr == m_pDefaultPool)
@@ -1654,12 +1697,12 @@ protected:
 		{
 			IDirect3DDevice9 * device;
 
-			if (D3D_OK == m_pSystemMemPool->GetDevice(&device))
+			if (SUCCEEDED(m_pSystemMemPool->GetDevice(&device)))
 			{
 				if (nullptr == m_pDefaultPool)
 				{
 					IDirect3DCubeTexture9 * pDefaultPool;
-					if (D3D_OK == device->CreateCubeTexture(Width, Levels, Usage, Format, D3DPOOL_DEFAULT, &pDefaultPool, nullptr))
+					if (SUCCEEDED(device->CreateCubeTexture(this->D3DDebugData.Width, this->D3DDebugData.Levels, this->D3DDebugData.Usage, this->D3DDebugData.Format, D3DPOOL_DEFAULT, &pDefaultPool, nullptr)))
 					{
 						m_pDefaultPool = pDefaultPool;
 
@@ -1689,22 +1732,33 @@ protected:
 		}
 	}
 
-	virtual IDirect3DSurface9 * AfxManagedChildDirect3DSurface9_GetDefaultPoolSurface(CAfxManagedChildDirect3DSurface9 * surface, bool switchToDynamic, bool wasDirty)
+	virtual IDirect3DSurface9 * AfxManagedChildDirect3DSurface9_GetDefaultPoolSurface(CAfxManagedChildDirect3DSurface9 * surface, bool switchToDynamic, bool & inOutWasDirty)
 	{
 		MyCubeSurfaceInfo myCubeSurfaceInfo = { D3DCUBEMAP_FACE_POSITIVE_X, 0 };
 		DWORD myCubeSurfaceInfoSize = sizeof(myCubeSurfaceInfo);
 		IDirect3DSurface9 * surf = NULL;
 
-		m_pDefaultPool = AfxGetOrCreateUnmanged();
+		m_Dirty = m_Dirty || inOutWasDirty;
+		inOutWasDirty = m_Dirty;
 
-		surface->GetPrivateData(IID_CAfxManagedChildDirect3DSurface9_ParentData, &myCubeSurfaceInfo, &myCubeSurfaceInfoSize);
+		m_pDefaultPool = AfxGetOrCreateUnmanaged();
 
-		if (FAILED(m_pDefaultPool->GetCubeMapSurface(myCubeSurfaceInfo.FaceType, myCubeSurfaceInfo.Level, &surf)))
+		if (m_pDefaultPool)
 		{
-			surf = NULL;
+			surface->GetPrivateData(IID_CAfxManagedChildDirect3DSurface9_ParentData, &myCubeSurfaceInfo, &myCubeSurfaceInfoSize);
+
+			if (FAILED(m_pDefaultPool->GetCubeMapSurface(myCubeSurfaceInfo.FaceType, myCubeSurfaceInfo.Level, &surf)))
+			{
+				surf = NULL;
+			}
 		}
 
 		return surf;
+	}
+
+	virtual void AfxManagedChildDirect3DSurface9_GotDirty(CAfxManagedChildDirect3DSurface9 * surface)
+	{
+		m_Dirty = true;
 	}
 
 private:
@@ -1733,11 +1787,11 @@ private:
 			{
 				manSurf = new CAfxManagedChildDirect3DSurface9(
 					this,
-					Width,
-					Height,
-					Usage,
-					Format,
-					Pool,
+					this->D3DDebugData.Width,
+					this->D3DDebugData.Height,
+					this->D3DDebugData.Usage,
+					this->D3DDebugData.Format,
+					this->D3DDebugData.Pool,
 					D3DMULTISAMPLE_NONE,
 					0,
 					surface
@@ -1776,7 +1830,19 @@ DEFINE_GUID(IID_CAfxManagedDirect3DVertexBuffer9,
 static const GUID IID_CAfxManagedDirect3DVertexBuffer9 =
 { 0x57cdd386, 0x9136, 0x4e22, { 0xb2, 0x15, 0x77, 0x79, 0x20, 0x80, 0xa0, 0x4f } };
 
-class CAfxManagedDirect3DVertexBuffer9 : public CAfxDirect3DManaged<IDirect3DVertexBuffer9>
+struct CAfxManagedDirect3DVertexBuffer9_D3DDebugData
+{
+	LPCWSTR Name;
+	UINT Length;
+	DWORD Usage;
+	DWORD FVF;
+	D3DPOOL Pool;
+	DWORD Priority;
+	UINT LockCount;
+	LPCWSTR CreationCallStack;
+};
+
+class CAfxManagedDirect3DVertexBuffer9 : public CAfxDirect3DManaged<IDirect3DVertexBuffer9, CAfxManagedDirect3DVertexBuffer9_D3DDebugData>
 {
 public:
 	/*** IUnknown methods ***/
@@ -1845,8 +1911,7 @@ public:
 
 	STDMETHOD_(void, PreLoad)(THIS)
 	{
-		bool dummy;
-		OnAfxGetOrCreateUnmanaged(Usage & D3DUSAGE_DYNAMIC, dummy);
+		AfxGetOrCreateUnmanaged();
 	}
 
 	STDMETHOD_(D3DRESOURCETYPE, GetType)(THIS)
@@ -1857,9 +1922,7 @@ public:
 	/*** IDirect3DVertexBuffer9 methods ***/
 	STDMETHOD(Lock)(THIS_ UINT OffsetToLock, UINT SizeToLock, void** ppbData, DWORD Flags)
 	{
-		m_Dirty = true;
-
-		++LockCount;
+		m_Dirty = m_Dirty || !(Flags & (DWORD)(D3DLOCK_NO_DIRTY_UPDATE));
 
 		return m_pSystemMemPool->Lock(OffsetToLock, SizeToLock, ppbData, Flags);
 	}
@@ -1867,8 +1930,6 @@ public:
 	STDMETHOD(Unlock)(THIS)
 	{
 		HRESULT result = m_pSystemMemPool->Unlock();
-
-		--LockCount;
 
 		return result;
 	}
@@ -1878,39 +1939,33 @@ public:
 		return m_pSystemMemPool->GetDesc(pDesc);
 	}
 
-	LPCWSTR Name;
-	UINT Length;
-	DWORD Usage;
-	DWORD FVF;
-	D3DPOOL Pool;
-	DWORD Priority;
-	UINT LockCount;
-	LPCWSTR CreationCallStack;
-
 	CAfxManagedDirect3DVertexBuffer9(UINT Length, DWORD Usage, DWORD FVF, IDirect3DVertexBuffer9 * pSystemMemPool)
-		: Name(L"IAfxManagedDirect3DVertexBuffer9")
-		, Length(Length)
-		, Usage(Usage)
-		, FVF(FVF)
-		, Pool(D3DPOOL_MANAGED)
-		, Priority(0)
-		, LockCount(0)
-		, CreationCallStack(L"n/a")
-		, m_pSystemMemPool(pSystemMemPool)
+		: m_pSystemMemPool(pSystemMemPool)
 		, m_Dirty(false)
 		, m_pDefaultPool(nullptr)
 	{
+		this->D3DDebugData.Name = L"IAfxManagedDirect3DVertexBuffer9";
+		this->D3DDebugData.Length = Length;
+		this->D3DDebugData.Usage = Usage;
+		this->D3DDebugData.FVF = FVF;
+		this->D3DDebugData.Pool = D3DPOOL_MANAGED;
+		this->D3DDebugData.Priority = 0;
+		this->D3DDebugData.LockCount = 0;
+		this->D3DDebugData.CreationCallStack = L"n/a";
 	}
 
 protected:
 
 	virtual IDirect3DVertexBuffer9 * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty)
 	{
-		if (switchToDynamic && !(Usage & D3DUSAGE_DYNAMIC))
+		if (switchToDynamic && !(this->D3DDebugData.Usage & D3DUSAGE_DYNAMIC))
 		{
-			Usage |= D3DUSAGE_DYNAMIC;
-			m_pDefaultPool->Release();
-			m_pDefaultPool = nullptr;
+			this->D3DDebugData.Usage |= D3DUSAGE_DYNAMIC;
+			if (m_pDefaultPool)
+			{
+				m_pDefaultPool->Release();
+				m_pDefaultPool = nullptr;
+			}
 		}
 
 		if (nullptr == m_pDefaultPool)
@@ -1922,12 +1977,12 @@ protected:
 		{
 			IDirect3DDevice9 * device;
 
-			if (D3D_OK == m_pSystemMemPool->GetDevice(&device))
+			if (SUCCEEDED(m_pSystemMemPool->GetDevice(&device)))
 			{
 				if (nullptr == m_pDefaultPool)
 				{
 					IDirect3DVertexBuffer9 * pDefaultPool;
-					if (D3D_OK == device->CreateVertexBuffer(Length, Usage, FVF, D3DPOOL_DEFAULT, &pDefaultPool, nullptr))
+					if (SUCCEEDED(device->CreateVertexBuffer(this->D3DDebugData.Length, this->D3DDebugData.Usage, this->D3DDebugData.FVF, D3DPOOL_DEFAULT, &pDefaultPool, nullptr)))
 					{
 						m_pDefaultPool = pDefaultPool;
 
@@ -1940,11 +1995,11 @@ protected:
 					void * pSource;
 					void * pTarget;
 
-					if (SUCCEEDED(m_pSystemMemPool->Lock(0, Length, &pSource, D3DLOCK_READONLY)))
+					if (SUCCEEDED(m_pSystemMemPool->Lock(0, this->D3DDebugData.Length, &pSource, D3DLOCK_READONLY | D3DLOCK_NOOVERWRITE | D3DLOCK_NO_DIRTY_UPDATE)))
 					{
-						if (SUCCEEDED(m_pDefaultPool->Lock(0, Length, &pTarget, 0)))
+						if (SUCCEEDED(m_pDefaultPool->Lock(0, this->D3DDebugData.Length, &pTarget, 0)))
 						{
-							memcpy(pTarget, pSource, Length);
+							memcpy(pTarget, pSource, this->D3DDebugData.Length);
 							m_pDefaultPool->Unlock();
 							m_Dirty = false;
 						}
@@ -1985,7 +2040,19 @@ DEFINE_GUID(IID_CAfxManagedDirect3DIndexBuffer9,
 static const GUID IID_CAfxManagedDirect3DIndexBuffer9 =
 { 0xb8355d17, 0xe24b, 0x4b62, { 0xab, 0xa6, 0xc5, 0x62, 0x57, 0x91, 0xae, 0xc4 } };
 
-class CAfxManagedDirect3DIndexBuffer9 : public CAfxDirect3DManaged<IDirect3DIndexBuffer9>
+struct CAfxManagedDirect3DIndexBuffer9_D3DDebugData
+{
+	LPCWSTR Name;
+	UINT Length;
+	DWORD Usage;
+	D3DFORMAT Format;
+	D3DPOOL Pool;
+	DWORD Priority;
+	UINT LockCount;
+	LPCWSTR CreationCallStack;
+};
+
+class CAfxManagedDirect3DIndexBuffer9 : public CAfxDirect3DManaged<IDirect3DIndexBuffer9, CAfxManagedDirect3DIndexBuffer9_D3DDebugData>
 {
 public:
 	/*** IUnknown methods ***/
@@ -2054,8 +2121,7 @@ public:
 
 	STDMETHOD_(void, PreLoad)(THIS)
 	{
-		bool dummy;
-		OnAfxGetOrCreateUnmanaged(Usage & D3DUSAGE_DYNAMIC, dummy);
+		AfxGetOrCreateUnmanaged();
 	}
 
 	STDMETHOD_(D3DRESOURCETYPE, GetType)(THIS)
@@ -2066,9 +2132,7 @@ public:
 	/*** IDirect3DIndexBuffer9 methods ***/
 	STDMETHOD(Lock)(THIS_ UINT OffsetToLock, UINT SizeToLock, void** ppbData, DWORD Flags)
 	{
-		m_Dirty = true;
-
-		++LockCount;
+		m_Dirty = m_Dirty || !(Flags & (DWORD)(D3DLOCK_NO_DIRTY_UPDATE));
 
 		return m_pSystemMemPool->Lock(OffsetToLock, SizeToLock, ppbData, Flags);
 	}
@@ -2076,8 +2140,6 @@ public:
 	STDMETHOD(Unlock)(THIS)
 	{
 		HRESULT result = m_pSystemMemPool->Unlock();
-
-		--LockCount;
 
 		return result;
 	}
@@ -2087,39 +2149,32 @@ public:
 		return m_pSystemMemPool->GetDesc(pDesc);
 	}
 
-	LPCWSTR Name;
-	UINT Length;
-	DWORD Usage;
-	D3DFORMAT Format;
-	D3DPOOL Pool;
-	DWORD Priority;
-	UINT LockCount;
-	LPCWSTR CreationCallStack;
-
 	CAfxManagedDirect3DIndexBuffer9(UINT Length, DWORD Usage, D3DFORMAT Format, IDirect3DIndexBuffer9 * pSystemMemPool)
-		: Name(L"IAfxManagedDirect3DIndexBuffer9")
-		, Length(Length)
-		, Usage(Usage)
-		, Format(Format)
-		, Pool(D3DPOOL_MANAGED)
-		, Priority(0)
-		, LockCount(0)
-		, CreationCallStack(L"n/a")
-		, m_pSystemMemPool(pSystemMemPool)
+		: m_pSystemMemPool(pSystemMemPool)
 		, m_pDefaultPool(nullptr)
 		, m_Dirty(false)
 	{
-		
+		this->D3DDebugData.Name = L"IAfxManagedDirect3DIndexBuffer9";
+		this->D3DDebugData.Length = Length;
+		this->D3DDebugData.Usage = Usage;
+		this->D3DDebugData.Format = Format;
+		this->D3DDebugData.Pool = D3DPOOL_MANAGED;
+		this->D3DDebugData.Priority = 0;
+		this->D3DDebugData.LockCount = 0;
+		this->D3DDebugData.CreationCallStack = L"n/a";
 	}
 
 protected:
 	virtual IDirect3DIndexBuffer9 * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty)
 	{
-		if (switchToDynamic && !(Usage & D3DUSAGE_DYNAMIC))
+		if (switchToDynamic && !(this->D3DDebugData.Usage & D3DUSAGE_DYNAMIC))
 		{
-			Usage |= D3DUSAGE_DYNAMIC;
-			m_pDefaultPool->Release();
-			m_pDefaultPool = nullptr;
+			this->D3DDebugData.Usage |= D3DUSAGE_DYNAMIC;
+			if (m_pDefaultPool)
+			{
+				m_pDefaultPool->Release();
+				m_pDefaultPool = nullptr;
+			}
 		}
 
 		if (nullptr == m_pDefaultPool)
@@ -2131,12 +2186,12 @@ protected:
 		{
 			IDirect3DDevice9 * device;
 
-			if (D3D_OK == m_pSystemMemPool->GetDevice(&device))
+			if (SUCCEEDED(m_pSystemMemPool->GetDevice(&device)))
 			{
 				if (nullptr == m_pDefaultPool)
 				{
 					IDirect3DIndexBuffer9 * pDefaultPool;
-					if (D3D_OK == device->CreateIndexBuffer(Length, Usage, Format, D3DPOOL_DEFAULT, &pDefaultPool, nullptr))
+					if (SUCCEEDED(device->CreateIndexBuffer(this->D3DDebugData.Length, this->D3DDebugData.Usage, this->D3DDebugData.Format, D3DPOOL_DEFAULT, &pDefaultPool, nullptr)))
 					{
 						m_pDefaultPool = pDefaultPool;
 
@@ -2149,11 +2204,11 @@ protected:
 					void * pSource;
 					void * pTarget;
 
-					if (SUCCEEDED(m_pSystemMemPool->Lock(0, Length, &pSource, D3DLOCK_READONLY)))
+					if (SUCCEEDED(m_pSystemMemPool->Lock(0, this->D3DDebugData.Length, &pSource, D3DLOCK_READONLY | D3DLOCK_NOOVERWRITE | D3DLOCK_NO_DIRTY_UPDATE)))
 					{
-						if (SUCCEEDED(m_pDefaultPool->Lock(0, Length, &pTarget, 0)))
+						if (SUCCEEDED(m_pDefaultPool->Lock(0, this->D3DDebugData.Length, &pTarget, 0)))
 						{
-							memcpy(pTarget, pSource, Length);
+							memcpy(pTarget, pSource, this->D3DDebugData.Length);
 							m_pDefaultPool->Unlock();
 							m_Dirty = false;
 						}
@@ -2555,23 +2610,22 @@ private:
 				CAfxManagedChildDirect3DSurface9 * afxWrapper;
 				if (GetAfxManagedChildDirect3DSurface9(surface, &afxWrapper))
 				{
-					Tier0_Warning("KEWL 1 :-)\n");
-					return afxWrapper->AfxGetOrCreateUnmanged();
+					return afxWrapper->AfxGetOrCreateUnmanaged();
 				}
 			}
 			{
-				CAfxManagedOffscreenPlainSurface * sharedSurfaceHook;
-				if (GetAfxManagedOffscreenPlainSurface(surface, &sharedSurfaceHook))
+				CAfxManagedOffscreenPlainSurface * afxWrapper;
+				if (GetAfxManagedOffscreenPlainSurface(surface, &afxWrapper))
 				{
-					Tier0_Warning("KEWL 2 :-)\n");
-					return sharedSurfaceHook->AfxGetOrCreateUnmanged();
+					return afxWrapper->AfxGetOrCreateUnmanaged();
 				}
 			}
 			{
-				CSharedSurfaceHook * sharedSurfaceHook;
-				if (GetSharedSurfaceHook(surface, &sharedSurfaceHook))
+				CSharedSurfaceHook * afxWrapper;
+				if (GetSharedSurfaceHook(surface, &afxWrapper))
 				{
-					return sharedSurfaceHook->GetSharedSurface();
+					//if (makeDirty) afxWrapper->AddDirtyRect(NULL);
+					return afxWrapper->GetSharedSurface();
 				}
 			}
 		}
@@ -2695,7 +2749,7 @@ private:
 
 				if (SUCCEEDED(pTexture->QueryInterface(IID_CAfxManagedDirect3DTexture9, (void **)&afxWrapper)))
 				{
-					return afxWrapper->AfxGetOrCreateUnmanged();
+					return afxWrapper->AfxGetOrCreateUnmanaged();
 				}
 			}
 			{
@@ -2703,7 +2757,7 @@ private:
 
 				if (SUCCEEDED(pTexture->QueryInterface(IID_CAfxManagedDirect3DVolumeTexture9, (void **)&afxWrapper)))
 				{
-					return afxWrapper->AfxGetOrCreateUnmanged();
+					return afxWrapper->AfxGetOrCreateUnmanaged();
 				}
 			}
 			{
@@ -2711,7 +2765,7 @@ private:
 
 				if (SUCCEEDED(pTexture->QueryInterface(IID_CAfxManagedDirect3DCubeTexture9, (void **)&afxWrapper)))
 				{
-					return afxWrapper->AfxGetOrCreateUnmanged();
+					return afxWrapper->AfxGetOrCreateUnmanaged();
 				}
 			}
 		}
@@ -2729,7 +2783,7 @@ private:
 
 				if (SUCCEEDED(buffer->QueryInterface(IID_CAfxManagedDirect3DVertexBuffer9, (void **)&afxWrapper)))
 				{
-					return afxWrapper->AfxGetOrCreateUnmanged();
+					return afxWrapper->AfxGetOrCreateUnmanaged();
 				}
 			}
 		}
@@ -2771,7 +2825,7 @@ private:
 
 				if (SUCCEEDED(buffer->QueryInterface(IID_CAfxManagedDirect3DIndexBuffer9, (void **)&afxWrapper)))
 				{
-					return afxWrapper->AfxGetOrCreateUnmanged();
+					return afxWrapper->AfxGetOrCreateUnmanaged();
 				}
 			}
 		}
@@ -3658,7 +3712,7 @@ public:
 				IDirect3DTexture9 * pSystemMemPoolTexture;
 				HRESULT result = g_OldDirect3DDevice9->CreateTexture(Width, Height, Levels, Usage, Format, D3DPOOL_SYSTEMMEM, &pSystemMemPoolTexture, pSharedHandle);
 
-				if (D3D_OK == result)
+				if (SUCCEEDED(result))
 				{
 					CAfxManagedDirect3DTexture9 * texture = new CAfxManagedDirect3DTexture9(Width, Height, Levels, Usage, Format, pSystemMemPoolTexture);
 					
@@ -3689,7 +3743,7 @@ public:
 				IDirect3DVolumeTexture9 * pSystemMemPoolTexture;
 				HRESULT result = g_OldDirect3DDevice9->CreateVolumeTexture(Width, Height, Depth, Levels, Usage, Format, D3DPOOL_SYSTEMMEM, &pSystemMemPoolTexture, pSharedHandle);
 
-				if (D3D_OK == result)
+				if (SUCCEEDED(result))
 				{
 					CAfxManagedDirect3DVolumeTexture9 * texture = new CAfxManagedDirect3DVolumeTexture9(Width, Height, Depth, Levels, Usage, Format, pSystemMemPoolTexture);
 					
@@ -3720,7 +3774,7 @@ public:
 				IDirect3DCubeTexture9 * pSystemMemPoolTexture;
 				HRESULT result = g_OldDirect3DDevice9->CreateCubeTexture(EdgeLength, Levels, Usage, Format, D3DPOOL_SYSTEMMEM, &pSystemMemPoolTexture, pSharedHandle);
 
-				if (D3D_OK == result)
+				if (SUCCEEDED(result))
 				{
 					CAfxManagedDirect3DCubeTexture9 * texture = new CAfxManagedDirect3DCubeTexture9(EdgeLength, Levels, Usage, Format, pSystemMemPoolTexture);
 
@@ -3751,7 +3805,7 @@ public:
 				IDirect3DVertexBuffer9 * pSystemMemPool;
 				HRESULT result = g_OldDirect3DDevice9->CreateVertexBuffer(Length, Usage, FVF, D3DPOOL_SYSTEMMEM, &pSystemMemPool, pSharedHandle);
 
-				if (D3D_OK == result)
+				if (SUCCEEDED(result))
 				{
 					CAfxManagedDirect3DVertexBuffer9 * buffer = new CAfxManagedDirect3DVertexBuffer9(Length, Usage, FVF, pSystemMemPool);
 
@@ -3782,7 +3836,7 @@ public:
 				IDirect3DIndexBuffer9 * pSystemMemPool;
 				HRESULT result = g_OldDirect3DDevice9->CreateIndexBuffer(Length, Usage, Format, D3DPOOL_SYSTEMMEM, &pSystemMemPool, pSharedHandle);
 
-				if (D3D_OK == result)
+				if (SUCCEEDED(result))
 				{
 					CAfxManagedDirect3DIndexBuffer9 * buffer = new CAfxManagedDirect3DIndexBuffer9(Length, Usage, Format, pSystemMemPool);
 
@@ -3868,7 +3922,7 @@ public:
 				IDirect3DSurface9 * pSystemMemPool;
 				HRESULT result = g_OldDirect3DDevice9->CreateOffscreenPlainSurface(Width, Height, Format, Pool, &pSystemMemPool, pSharedHandle);
 
-				if (D3D_OK == result)
+				if (SUCCEEDED(result))
 				{
 					CAfxManagedOffscreenPlainSurface * surface = new CAfxManagedOffscreenPlainSurface(Width, Height, 0, Format, Pool, D3DMULTISAMPLE_NONE, 0, pSystemMemPool);
 
@@ -4179,7 +4233,7 @@ public:
 	{
 		HRESULT hResult = g_OldDirect3DDevice9->CreateStateBlock(Type, ppSB);
 
-		if(D3D_OK == hResult && ppSB && *ppSB)
+		if(SUCCEEDED(hResult) && ppSB && *ppSB)
 		{
 			*ppSB = new CAfxHookDirect3DStateBlock9(*ppSB);
 		}
@@ -4193,7 +4247,7 @@ public:
 	{
 		HRESULT hResult = g_OldDirect3DDevice9->EndStateBlock(ppSB);
 
-		if(D3D_OK == hResult && ppSB && *ppSB)
+		if(SUCCEEDED(hResult) && ppSB && *ppSB)
 		{
 			*ppSB = new CAfxHookDirect3DStateBlock9(*ppSB);
 		}
@@ -4271,11 +4325,11 @@ public:
 			if(pShader)
 			{
 				UINT size;
-				if(D3D_OK == pShader->GetFunction(0, &size))
+				if(SUCCEEDED(pShader->GetFunction(0, &size)))
 				{
 					void * pData = malloc(size);
 
-					if(pData && D3D_OK == pShader->GetFunction(pData,&size))
+					if(pData && SUCCEEDED(pShader->GetFunction(pData,&size)))
 					{
 						FILE * f1 = fopen("AfxVertexShaderDump.fxo","wb");
 						if(f1)
@@ -4399,11 +4453,11 @@ public:
 			if(pShader)
 			{
 				UINT size;
-				if(D3D_OK == pShader->GetFunction(0, &size))
+				if(SUCCEEDED(pShader->GetFunction(0, &size)))
 				{
 					void * pData = malloc(size);
 
-					if(pData && D3D_OK == pShader->GetFunction(pData,&size))
+					if(pData && SUCCEEDED(pShader->GetFunction(pData,&size)))
 					{
 						FILE * f1 = fopen("AfxPixelShaderDump.fxo","wb");
 						if(f1)
@@ -5301,14 +5355,14 @@ bool AfxD3D9_Check_Supports_R32F_With_Blending(void)
 {
 	if(g_OldDirect3D9 && g_OldDirect3DDevice9)
 	{
-		if(D3D_OK == g_OldDirect3D9->CheckDeviceFormat(
+		if((g_OldDirect3D9->CheckDeviceFormat(
 			g_Adapter,
 			D3DDEVTYPE_HAL,
 			D3DFMT_R8G8B8,
 			D3DUSAGE_RENDERTARGET | D3DUSAGE_QUERY_POSTPIXELSHADER_BLENDING,
 			D3DRTYPE_SURFACE,
 			D3DFMT_R32F
-		))
+		)))
 			return true;
 	}
 
