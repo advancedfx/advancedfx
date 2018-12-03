@@ -513,7 +513,6 @@ namespace AfxInterop {
 		{
 			if (EngineThread::m_Active)
 			{
-				SOURCESDK::VMatrix worldToScreenMatrix = g_VEngineClient->WorldToScreenMatrix();
 
 				if (!WriteInt32(EngineThread::m_hPipe, EngineThread::EngineMessage_BeforeFrameRenderStart)) { errorLine = __LINE__; goto locked_error; }
 
@@ -521,6 +520,33 @@ namespace AfxInterop {
 
 				if (!WriteSingle(EngineThread::m_hPipe, g_Hook_VClient_RenderView.GetGlobals()->absoluteframetime_get())) { errorLine = __LINE__; goto locked_error; }
 				if (!WriteSingle(EngineThread::m_hPipe, g_Hook_VClient_RenderView.GetGlobals()->curtime_get())) { errorLine = __LINE__; goto locked_error; }
+
+				int width, height;
+				g_VEngineClient->GetScreenSize(width, height);
+
+				if (!WriteInt32(EngineThread::m_hPipe, width)) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteInt32(EngineThread::m_hPipe, height)) { errorLine = __LINE__; goto locked_error; }
+
+				SOURCESDK::VMatrix worldToViewMatrix = g_VEngineClient->WorldToViewMatrix();
+
+				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[0][0])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[0][1])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[0][2])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[0][3])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[1][0])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[1][1])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[1][2])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[1][3])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[2][0])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[2][1])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[2][2])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[2][3])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[3][0])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[3][1])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[3][2])) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[3][3])) { errorLine = __LINE__; goto locked_error; }
+
+				SOURCESDK::VMatrix worldToScreenMatrix = g_VEngineClient->WorldToScreenMatrix();
 
 				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[0][0])) { errorLine = __LINE__; goto locked_error; }
 				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[0][1])) { errorLine = __LINE__; goto locked_error; }

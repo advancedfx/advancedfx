@@ -134,17 +134,8 @@ Notice:
     to "C:\<HLAESRC>\advancedfx\build\Release\bin"
 
 [X] Copy all files
-    form "C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x64"
-    to "C:\<HLAESRC>\advancedfx\build\Release\bin\x64"
-
-[X] Copy all files
-    form "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Redist\MSVC\14.15.26706\x86\Microsoft.VC141.CRT"
+    form "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Redist\MSVC\14.16.27012\x86\Microsoft.VC141.CRT"
     to "C:\<HLAESRC>\advancedfx\build\Release\bin"
-
-[ ] This step is currently not required!
-	Copy all files
-    form "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Redist\MSVC\14.15.26706\x64\Microsoft.VC141.CRT"
-    to "C:\<HLAESRC>\advancedfx\build\Release\bin\x64"
 
 [X] Copy all DLL files from
     "C:\<HLAESRC>\ilmbase-build\lib",
