@@ -6,11 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>xxx</version>
-<time>xxx</time>
+<version>1.46.0</version>
+<time>2018-12-03T16:24Z</time>
 <changes>
 <change type="fixed">
 Fixed / changed logic in mirv_deathmsg filter when forcing replacement IDs (used internally by mirv_deathmsg fake): the filters are correctly chained now, meaning the changed data is passed on to the next filter in the list.
+</change>
+<change type="fixed">
+Removed error message box when using old -scaleform path.
+</change>
+<change type="added">
+Added first version 0 of afx_interop (needs -afxInterop in launch options (case sensitive)), which allows other programs (i.e. Unity, see https://github.com/advancedfx/afx-unity-interop ) to draw into CS:GO and retrieve data from it.
+Please understand the interface is highly unstable at the moment and subject to change, mainly for testing purposes at the moment.
 </change>
 </changes>
 </release>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="changelog.xsl"?>
+
+<changelog>
+
+
+<release>
+<name>AfxHookUnity</name>
+<version>0.1.0</version>
+<time>2018-12-03T16:24Z</time>
+<changes>
+<change type="added">
+First version, for afx_interop version 0.
+</change>
+</changes>
+<comments>
+Example usage see: https://github.com/advancedfx/afx-unity-interop
+</comments>
+</release>
+
+
+</changelog>

@@ -954,6 +954,7 @@ public:
 	void Console_ActionFilter_Print(void);
 	void Console_ActionFilter_Remove(int id);
 	void Console_ActionFilter_Move(int id, int moveBeforeId);
+	void Console_ActionFilter_Clear();
 
 	virtual CAfxBaseFxStream * AsAfxBaseFxStream(void) { return this; }
 

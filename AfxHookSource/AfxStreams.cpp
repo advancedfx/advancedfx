@@ -1211,6 +1211,12 @@ void CAfxBaseFxStream::Console_ActionFilter_Move(int id, int moveBeforeId)
 	}
 }
 
+void CAfxBaseFxStream::Console_ActionFilter_Clear()
+{
+	InvalidateMap();
+	m_ActionFilter.clear();
+}
+
 void CAfxBaseFxStream::MainThreadInitialize(void)
 {
 	m_Shared.MainThreadInitialize();
@@ -6067,6 +6073,12 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 						);
 						return true;
 					}
+					else if (!_stricmp(cmd1, "clear"))
+					{
+						curBaseFx->Console_ActionFilter_Clear();
+
+						return true;
+					}
 				}
 
 				Tier0_Msg(
@@ -6075,6 +6087,8 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 					"%s actionFilter print - Print current filter actions.\n"
 					"%s actionFilter remove [...] - Remove a filter action.\n"
 					"%s actionFilter move [...] - Move filter action (change priority).\n"
+					"%s actionFilter clear - Remove all actions from actionfilter.\n"
+					, cmdPrefix
 					, cmdPrefix
 					, cmdPrefix
 					, cmdPrefix
