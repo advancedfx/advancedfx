@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.46.1</version>
+<time>2018-12-04T13:54Z</time>
+<changes>
+<change type="fixed">
+Various bug fixes for afx_interop (i.e. being of by one frame). Compatible with afx-unity-interop v0.1.0, but v0.1.1 is recommended.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.46.0</version>
 <time>2018-12-03T16:24Z</time>
 <changes>

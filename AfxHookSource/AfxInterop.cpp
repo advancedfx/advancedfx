@@ -77,7 +77,7 @@ namespace AfxInterop {
 			EngineMessage_LevelInitPreEntity = 1,
 			EngineMessage_LevelShutDown = 2,
 			EngineMessage_BeforeFrameStart = 3,
-			EngineMessage_BeforeFrameRenderStart = 4,
+			EngineMessage_BeforeHud = 4,
 			EngineMessage_AfterFrameRenderEnd = 5,
 			EngineMessage_EntityCreated = 6,
 			EngineMessage_EntityDeleted = 7
@@ -494,7 +494,7 @@ namespace AfxInterop {
 		return;
 	}
 
-	void BeforeFrameRenderStart()
+	void BeforeHud()
 	{
 		if (!m_Enabled) return;
 
@@ -514,7 +514,7 @@ namespace AfxInterop {
 			if (EngineThread::m_Active)
 			{
 
-				if (!WriteInt32(EngineThread::m_hPipe, EngineThread::EngineMessage_BeforeFrameRenderStart)) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteInt32(EngineThread::m_hPipe, EngineThread::EngineMessage_BeforeHud)) { errorLine = __LINE__; goto locked_error; }
 
 				if (!WriteInt32(EngineThread::m_hPipe, EngineThread::m_Frame)) { errorLine = __LINE__; goto locked_error; }
 

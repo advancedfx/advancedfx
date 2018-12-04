@@ -1001,10 +1001,6 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 		g_csgo_FirstFrameAfterNetUpdateEnd = firstFrameAfterNetUpdateEnd;
 		firstFrameAfterNetUpdateEnd = false;
 
-#ifdef AFX_INTEROP
-		AfxInterop::BeforeFrameRenderStart();
-#endif
-
 #ifdef AFX_MIRV_PGL
 		MirvPgl::QueueThreadDataForDrawingThread();
 #endif

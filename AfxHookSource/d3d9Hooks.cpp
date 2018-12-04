@@ -525,6 +525,8 @@ protected:
 					device->UpdateSurface(m_pSystemMemPool, &m_DirtyRect, m_pDefaultPool, &point);
 					m_Dirty = false;
 				}
+
+				device->Release();
 			}
 		}
 
@@ -781,13 +783,14 @@ protected:
 
 		IDirect3DDevice9 * device;
 
-		if (SUCCEEDED(m_pSystemMemPool->GetDevice(&device)))
+		if (m_pDefaultPool && m_Dirty)
 		{
-			if (m_pDefaultPool && m_Dirty)
+			if (SUCCEEDED(m_pSystemMemPool->GetDevice(&device)))
 			{
 				POINT point = { m_DirtyRect.left, m_DirtyRect.top };
 				device->UpdateSurface(m_pSystemMemPool, &m_DirtyRect, m_pDefaultPool, &point);
 				m_Dirty = false;
+				device->Release();
 			}
 		}
 
@@ -1008,7 +1011,7 @@ public:
 
 			HRESULT result = D3D_OK;
 
-			int levelCount = this->GetLevelCount();
+			int levelCount = min(1, this->GetLevelCount()); // D3D9 only tracks dirty on level 0.
 
 			for (int level = 0; level < levelCount; ++level)
 			{
@@ -1091,6 +1094,8 @@ protected:
 					device->UpdateTexture(m_pSystemMemPool, m_pDefaultPool);
 					m_Dirty = false;
 				}
+
+				device->Release();
 			}
 		}
 
@@ -1422,6 +1427,8 @@ protected:
 					device->UpdateTexture(m_pSystemMemPool, m_pDefaultPool);
 					m_Dirty = false;
 				}
+
+				device->Release();
 			}
 		}
 
@@ -1636,7 +1643,7 @@ public:
 
 		HRESULT result = D3D_OK;
 
-		int levelCount = this->GetLevelCount();
+		int levelCount = min(1,this->GetLevelCount()); // D3D9 only tracks dirty on level 0.
 
 		for (int level = 0; level < levelCount; ++level)
 		{
@@ -1651,6 +1658,7 @@ public:
 			}
 
 			surf->AddDirtyRect(pDirtyRect);
+			surf->Release();
 		}
 
 		return result;
@@ -1718,6 +1726,8 @@ protected:
 					device->UpdateTexture(m_pSystemMemPool, m_pDefaultPool);
 					m_Dirty = false;
 				}
+
+				device->Release();
 			}
 		}
 
@@ -2008,6 +2018,8 @@ protected:
 					}
 
 				}
+
+				device->Release();
 			}
 		}
 
@@ -2217,6 +2229,8 @@ protected:
 					}
 
 				}
+
+				device->Release();
 			}
 		}
 
@@ -2526,7 +2540,7 @@ private:
 #ifdef AFX_INTEROP
 		if (AfxInterop::Enabled())
 		{
-			if (FAILED(g_OldDirect3DDevice9->CreateQuery(D3DQUERYTYPE_OCCLUSION, &waitQuery)))
+			if (FAILED(g_OldDirect3DDevice9->CreateQuery(D3DQUERYTYPE_EVENT, &waitQuery)))
 				waitQuery = nullptr;
 		}
 #endif
@@ -5168,7 +5182,7 @@ struct NewDirect3D9
 		if (AfxInterop::Enabled() && g_OldDirect3D9Ex && pPresentationParameters)
 		{
 			DeviceType = D3DDEVTYPE_HAL;
-			BehaviorFlags = (BehaviorFlags & ~(DWORD)(D3DCREATE_MIXED_VERTEXPROCESSING | D3DCREATE_SOFTWARE_VERTEXPROCESSING)) | D3DCREATE_HARDWARE_VERTEXPROCESSING;
+			BehaviorFlags = BehaviorFlags & ~(DWORD)(D3DCREATE_MIXED_VERTEXPROCESSING | D3DCREATE_SOFTWARE_VERTEXPROCESSING) | D3DCREATE_HARDWARE_VERTEXPROCESSING;
 
 			FixPresentationparementers(pPresentationParameters);
 

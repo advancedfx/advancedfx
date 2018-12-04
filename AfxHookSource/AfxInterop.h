@@ -19,7 +19,7 @@ namespace AfxInterop {
 	void BeforeFrameStart();
 
 	/// <remarks>Must be called from engine thread only.</remarks>
-	void BeforeFrameRenderStart();
+	void BeforeHud();
 
 	/// <remarks>Must be called from engine thread only.</remarks>
 	void Shutdown();

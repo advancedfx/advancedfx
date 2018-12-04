@@ -4952,6 +4952,10 @@ void CAfxStreams::OnDrawingHud(void)
 #ifdef AFX_INTEROP
 	if (AfxInterop::Enabled())
 	{
+#ifdef AFX_INTEROP
+		AfxInterop::BeforeHud();
+#endif
+
 		IAfxMatRenderContextOrg * orgCtx = afxMatRenderContext->GetOrg();
 
 		QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new AfxInteropDrawingThreadBeforeHud_Functor(AfxInterop::GetFrameCount(), AfxInterop::GetFrameInfoSent())));
