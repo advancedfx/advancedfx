@@ -6,6 +6,25 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.46.2</version>
+<time>2018-12-07T15:33Z</time>
+<changes>
+<change type="fixed">
+Adjusted to CS:GO 12/6/2018 (v1.36.6.3 ).
+</change>
+<change type="removed">
+Removed -scaleform launch option override support, it would simply crash if we'd still force that.
+</change>
+<change type="updated">
+Updated afx_interop: Currently depthbuffer is not supported (was not used yet), because it needs further wrapping due to Valve using NVAPI trickery and related code changes in CS:GO.
+And updated afx-unity-interop that works with that will be released shortly.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.46.1</version>
 <time>2018-12-04T13:54Z</time>
 <changes>

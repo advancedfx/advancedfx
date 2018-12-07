@@ -317,7 +317,6 @@ struct CAfxManagedOffscreenPlainSurface_D3DDebugData
 	LPCWSTR CreationCallStack;
 };
 
-// TODO, the D3D9 Debug fields should be layouted first in this class, otherwise the debug info if accessed is trash.
 class CAfxManagedOffscreenPlainSurface : public CAfxDirect3DManaged<IDirect3DSurface9, CAfxManagedOffscreenPlainSurface_D3DDebugData>
 {
 public:
@@ -598,7 +597,6 @@ struct CAfxManagedChildDirect3DSurface9_D3DDebugData
 	LPCWSTR CreationCallStack;
 };
 
-// TODO, the D3D9 Debug fields should be layouted first in this class, otherwise the debug info if accessed is trash.
 class CAfxManagedChildDirect3DSurface9 : public CAfxDirect3DManaged<IDirect3DSurface9, CAfxManagedChildDirect3DSurface9_D3DDebugData>
 {
 public:
@@ -840,7 +838,6 @@ struct CAfxManagedDirect3DTexture9_D3DDebugData
 	LPCWSTR CreationCallStack;
 };
 
-// TODO, the D3D9 Debug fields should be layouted first in this class, otherwise the debug info if accessed is trash.
 class CAfxManagedDirect3DTexture9 : public CAfxDirect3DManaged<IDirect3DTexture9, CAfxManagedDirect3DTexture9_D3DDebugData>, protected IAfxManagedTexture
 {
 public:
@@ -1174,6 +1171,7 @@ private:
 					|| FAILED(surf->SetPrivateData(IID_CAfxManagedChildDirect3DSurface9, &manSurf, manSurfSize, 0)))
 				{
 					manSurf->Release();
+					surf->Release();
 					return D3DERR_NOTAVAILABLE;
 				}
 			}
@@ -1815,6 +1813,7 @@ private:
 					|| FAILED(surface->SetPrivateData(IID_CAfxManagedChildDirect3DSurface9, &manSurf, manSurfSize, 0)))
 				{
 					manSurf->Release();
+					surface->Release();
 					return D3DERR_NOTAVAILABLE;
 				}
 			}
@@ -2280,8 +2279,8 @@ DEFINE_GUID(IID_IAfxInteropSharedSurface,
 class CSharedSurfaceHook : public IDirect3DSurface9, public ISharedSurfaceInfo
 {
 public:
-	CSharedSurfaceHook()
-		: m_RefCount(1)
+	CSharedSurfaceHook(ULONG initialRefCount)
+		: m_RefCount(initialRefCount)
 	{
 	}
 
@@ -2482,6 +2481,7 @@ public:
 
 		CSharedSurfaceHook * data = this;
 		m_Parent->SetPrivateData(IID_IAfxInteropSharedSurface, &data, sizeof(CSharedSurfaceHook *), 0);
+
 
 		AfxInterop::OnCreatedSharedSurface(this);
 	}
@@ -2881,11 +2881,13 @@ private:
 			if (sharedRenderTarget)
 			{
 				sharedRenderTarget->DeviceLost();
+				sharedRenderTarget = nullptr;
 			}
 
 			if (sharedDepthStencilSurface)
 			{
 				sharedDepthStencilSurface->DeviceLost();
+				sharedDepthStencilSurface = nullptr;
 			}
 
 			if (orgDeviceContextRenderTarget)
@@ -2915,7 +2917,11 @@ private:
 
 					if (SUCCEEDED(orgDeviceContextRenderTarget->GetDesc(&desc)))
 					{
-						if (nullptr == sharedRenderTarget) sharedRenderTarget = new CSharedSurfaceHook();
+						if (nullptr == sharedRenderTarget)
+						{
+							orgDeviceContextRenderTarget->AddRef();
+							sharedRenderTarget = new CSharedSurfaceHook(orgDeviceContextRenderTarget->Release()); // TODO: Why not -1 here?
+						}
 
 						HRESULT hr;
 						HANDLE sharedHandle = NULL;
@@ -2938,6 +2944,7 @@ private:
 				}
 			}
 
+			return; // TODO: Due to NVAPI and shit the warpping is currently not sufficient.
 			if (nullptr == orgDepthStencilSurface)
 			{
 				if (SUCCEEDED(g_OldDirect3DDevice9->GetDepthStencilSurface(&orgDepthStencilSurface)))
@@ -2946,7 +2953,11 @@ private:
 
 					if (SUCCEEDED(orgDepthStencilSurface->GetDesc(&desc)))
 					{
-						if (nullptr == sharedDepthStencilSurface) sharedDepthStencilSurface = new CSharedSurfaceHook();
+						if (nullptr == sharedDepthStencilSurface)
+						{
+							orgDepthStencilSurface->AddRef();
+							sharedDepthStencilSurface = new CSharedSurfaceHook(orgDepthStencilSurface->Release()); // TODO: Why not -1 here?
+						}
 
 						HRESULT hr;
 						HANDLE sharedHandle = NULL;
@@ -3996,7 +4007,7 @@ public:
 	{
 		HRESULT result = g_OldDirect3DDevice9->GetRenderTarget(RenderTargetIndex, ppRenderTarget);
 
-		if (SUCCEEDED(result)) *ppRenderTarget = UnwrapSurfaceReverse(*ppRenderTarget, true);
+		if (SUCCEEDED(result && ppRenderTarget)) *ppRenderTarget = UnwrapSurfaceReverse(*ppRenderTarget, true);
 
 		return result;
 	}
@@ -4032,7 +4043,7 @@ public:
 	{
 		HRESULT result = g_OldDirect3DDevice9->GetDepthStencilSurface(ppZStencilSurface);
 
-		if (SUCCEEDED(result)) *ppZStencilSurface = UnwrapSurfaceReverse(*ppZStencilSurface, true);
+		if (SUCCEEDED(result) && ppZStencilSurface) *ppZStencilSurface = UnwrapSurfaceReverse(*ppZStencilSurface, true);
 
 		return result;
 	}
@@ -5182,7 +5193,7 @@ struct NewDirect3D9
 		if (AfxInterop::Enabled() && g_OldDirect3D9Ex && pPresentationParameters)
 		{
 			DeviceType = D3DDEVTYPE_HAL;
-			BehaviorFlags = BehaviorFlags & ~(DWORD)(D3DCREATE_MIXED_VERTEXPROCESSING | D3DCREATE_SOFTWARE_VERTEXPROCESSING) | D3DCREATE_HARDWARE_VERTEXPROCESSING;
+			BehaviorFlags = (BehaviorFlags & ~(DWORD)(D3DCREATE_MIXED_VERTEXPROCESSING | D3DCREATE_SOFTWARE_VERTEXPROCESSING)) | D3DCREATE_HARDWARE_VERTEXPROCESSING;
 
 			FixPresentationparementers(pPresentationParameters);
 

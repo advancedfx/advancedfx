@@ -414,9 +414,6 @@
     <ClCompile Include="csgo\hooks\engine.cpp">
       <Filter>AfxHookSource\csgo\hooks</Filter>
     </ClCompile>
-    <ClCompile Include="csgo_ScaleForm_Hooks.cpp">
-      <Filter>AfxHookSource</Filter>
-    </ClCompile>
     <ClCompile Include="FovScaling.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
@@ -451,9 +448,6 @@
     </ClInclude>
     <ClInclude Include="..\shared\vcpp\AfxAddr.h">
       <Filter>shared\vcpp</Filter>
-    </ClInclude>
-    <ClInclude Include="addresses.h">
-      <Filter>AfxHookSource</Filter>
     </ClInclude>
     <ClInclude Include="WrpGlobals.h">
       <Filter>AfxHookSource</Filter>
@@ -773,14 +767,14 @@
     <ClInclude Include="csgo\hooks\engine.h">
       <Filter>AfxHookSource\csgo\hooks</Filter>
     </ClInclude>
-    <ClInclude Include="csgo_ScaleForm_Hooks.h">
-      <Filter>AfxHookSource</Filter>
-    </ClInclude>
     <ClInclude Include="FovScaling.h">
       <Filter>AfxHookSource</Filter>
     </ClInclude>
     <ClInclude Include="csgo\hooks\shaderapidx9.h">
       <Filter>AfxHookSource\csgo\hooks</Filter>
+    </ClInclude>
+    <ClInclude Include="addresses.h">
+      <Filter>AfxHookSource</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

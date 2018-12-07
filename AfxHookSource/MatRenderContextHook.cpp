@@ -1087,11 +1087,11 @@ void CMatRenderContextHook::HooKVtable(SOURCESDK::IMatRenderContext_csgo * orgCt
 	DetourIfacePtr((DWORD *)&(vtable[62]), MatRenderContextHook_GetDynamicMesh, (DetourIfacePtr_fn &)m_Detours->GetDynamicMesh);
 	DetourIfacePtr((DWORD *)&(vtable[81]), MatRenderContextHook_DrawScreenSpaceQuad, (DetourIfacePtr_fn &)m_Detours->DrawScreenSpaceQuad);
 	DetourIfacePtr((DWORD *)&(vtable[113]), MatRenderContextHook_DrawScreenSpaceRectangle, (DetourIfacePtr_fn &)m_Detours->DrawScreenSpaceRectangle);
-	DetourIfacePtr((DWORD *)&(vtable[150]), MatRenderContextHook_GetCallQueue, (DetourIfacePtr_fn &)m_Detours->GetCallQueue);
-	DetourIfacePtr((DWORD *)&(vtable[168]), MatRenderContextHook_GetDynamicMeshEx, (DetourIfacePtr_fn &)m_Detours->GetDynamicMeshEx);
-	DetourIfacePtr((DWORD *)&(vtable[193]), MatRenderContextHook_DrawInstances, (DetourIfacePtr_fn &)m_Detours->DrawInstances);
-	DetourIfacePtr((DWORD *)&(vtable[212]), MatRenderContextHook_UnkDrawVguiA, (DetourIfacePtr_fn &)m_Detours->UnkDrawVguiA);
-	DetourIfacePtr((DWORD *)&(vtable[213]), MatRenderContextHook_UnkDrawVguiB, (DetourIfacePtr_fn &)m_Detours->UnkDrawVguiB);
+	DetourIfacePtr((DWORD *)&(vtable[151]), MatRenderContextHook_GetCallQueue, (DetourIfacePtr_fn &)m_Detours->GetCallQueue);
+	DetourIfacePtr((DWORD *)&(vtable[169]), MatRenderContextHook_GetDynamicMeshEx, (DetourIfacePtr_fn &)m_Detours->GetDynamicMeshEx);
+	DetourIfacePtr((DWORD *)&(vtable[194]), MatRenderContextHook_DrawInstances, (DetourIfacePtr_fn &)m_Detours->DrawInstances);
+	DetourIfacePtr((DWORD *)&(vtable[213]), MatRenderContextHook_UnkDrawVguiA, (DetourIfacePtr_fn &)m_Detours->UnkDrawVguiA);
+	DetourIfacePtr((DWORD *)&(vtable[214]), MatRenderContextHook_UnkDrawVguiB, (DetourIfacePtr_fn &)m_Detours->UnkDrawVguiB);
 	//OutputDebugString("HooKVtable DETOUR END\n");
 }
 

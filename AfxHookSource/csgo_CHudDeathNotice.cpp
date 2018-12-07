@@ -1148,23 +1148,6 @@ struct CHudDeathNoticeHookGlobals {
 
 } g_HudDeathNoticeHookGlobals;
 
-void SetLifetimeClassValues(DWORD this_ptr)
-{
-	static float org_CHudDeathNotice_nNoticeLifeTime = *(float *)((BYTE *)this_ptr + 0x58);
-	static float org_CHudDeathNotice_nLocalPlayerLifeTimeMod = *(float *)((BYTE *)this_ptr + 0x68);
-
-	if (g_HudDeathNoticeHookGlobals.activeWrapper)
-	{
-		*(float *)((BYTE *)this_ptr + 0x58) = g_HudDeathNoticeHookGlobals.activeWrapper->lifetime.use ? g_HudDeathNoticeHookGlobals.activeWrapper->lifetime.value : org_CHudDeathNotice_nNoticeLifeTime;
-		*(float *)((BYTE *)this_ptr + 0x68) = g_HudDeathNoticeHookGlobals.activeWrapper->lifetimeMod.use ? g_HudDeathNoticeHookGlobals.activeWrapper->lifetimeMod.value : org_CHudDeathNotice_nLocalPlayerLifeTimeMod;
-	}
-	else
-	{
-		*(float *)((BYTE *)this_ptr + 0x58) = org_CHudDeathNotice_nNoticeLifeTime;
-		*(float *)((BYTE *)this_ptr + 0x68) = org_CHudDeathNotice_nLocalPlayerLifeTimeMod;
-	}
-}
-
 void __fastcall MyCCSGO_HudDeathNotice_FireGameEvent(CCSGO_HudDeathNotice_t * This, void * edx, SOURCESDK::CSGO::IGameEvent * event)
 {
 	CCSGO_HudDeathNotice_FireGameEvent_This = This;
@@ -1292,11 +1275,6 @@ void __fastcall MyCCSGO_HudDeathNotice_FireGameEvent(CCSGO_HudDeathNotice_t * Th
 
 		if (uidAttacker) g_HudDeathNoticeHookGlobals.nextRealEntindexState.push(2);
 		if (uidVictim) g_HudDeathNoticeHookGlobals.nextRealEntindexState.push(1);
-
-		if (!g_Adresses_ClientIsPanorama)
-		{
-			SetLifetimeClassValues((DWORD)This);
-		}
 
 		TrueCCSGO_HudDeathNotice_FireGameEvent(This, edx, &myWrapper);
 	}
@@ -1566,39 +1544,9 @@ bool csgo_CHudDeathNotice_Install_Panorama(void)
 	return firstResult;
 }
 
-bool csgo_CHudDeathNotice_Install_Scaleform(void)
-{
-	static bool firstResult = false;
-	static bool firstRun = true;
-	if (!firstRun) return firstResult;
-	firstRun = false;
-
-	if (
-		csgo_GetPlayerName_Install()
-		&& AFXADDR_GET(csgo_CCSGO_HudDeathNotice_FireGameEvent)
-		&& AFXADDR_GET(csgo_C_CSPlayer_IClientNetworkable_entindex)
-		)
-	{
-		LONG error = NO_ERROR;
-
-		TrueCCSGO_HudDeathNotice_FireGameEvent = (CCSGO_HudDeathNotice_FireGameEvent_t)AFXADDR_GET(csgo_CCSGO_HudDeathNotice_FireGameEvent);
-		Truecsgo_C_CSPlayer_IClientNetworkable_entindex = (csgo_C_CSPlayer_IClientNetworkable_entindex_t)AFXADDR_GET(csgo_C_CSPlayer_IClientNetworkable_entindex);
-
-		DetourTransactionBegin();
-		DetourUpdateThread(GetCurrentThread());
-		DetourAttach(&(PVOID&)TrueCCSGO_HudDeathNotice_FireGameEvent, MyCCSGO_HudDeathNotice_FireGameEvent);
-		DetourAttach(&(PVOID&)Truecsgo_C_CSPlayer_IClientNetworkable_entindex, Mycsgo_C_CSPlayer_IClientNetworkable_entindex);
-		error = DetourTransactionCommit();
-
-		firstResult = NO_ERROR == error;
-	}
-
-	return firstResult;
-}
-
 bool csgo_CHudDeathNotice_Install(void)
 {
-	return g_Adresses_ClientIsPanorama ? csgo_CHudDeathNotice_Install_Panorama() : csgo_CHudDeathNotice_Install_Scaleform();
+	return csgo_CHudDeathNotice_Install_Panorama();
 }
 
 void Console_DeathMsgId_PrintHelp(const char * cmd)

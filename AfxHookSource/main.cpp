@@ -50,7 +50,6 @@
 #include <l4d2/sdk_src/public/tier1/convar.h>
 #include <csgo/Panorama.h>
 #include <csgo/hooks/engine.h>
-#include "csgo_ScaleForm_Hooks.h"
 #include "csgo/hooks/shaderapidx9.h"
 
 #include <Windows.h>
@@ -1757,8 +1756,10 @@ csgo_ICommandLine_RemoveParm_t True_csgo_ICommandLine_RemoveParam;
 
 void __fastcall My_csgo_ICommandLine_RemoveParam(void * This, void * edx, const char *parm)
 {
-	if (0 == _stricmp("-scaleform", parm))
-		return;
+	// This hook is not active atm. because it's purpose is gone.
+
+	//if (0 == _stricmp("-scaleform", parm))
+	//	return;
 
 	True_csgo_ICommandLine_RemoveParam(This, edx, parm);
 }
@@ -1840,6 +1841,8 @@ void CommonHooks()
 			{
 				SOURCESDK::CSGO::g_pMemAlloc = *(SOURCESDK::CSGO::IMemAlloc **)GetProcAddress(hTier0, "g_pMemAlloc");
 
+				/*
+				// Scaleform hook is pointless, it just crashes now.
 				if (csgo_CommandLine_t commandLine = (csgo_CommandLine_t)GetProcAddress(hTier0, "CommandLine")) {
 
 					csgo_ICommandLine_t * iCommandLine = commandLine();
@@ -1858,7 +1861,7 @@ void CommonHooks()
 
 				}
 				else ErrorBox("Could not find tier0!Commandline.");
-
+				*/
 			}
 			if (SourceSdkVer_SWARM == g_SourceSdkVer)
 			{
@@ -1888,7 +1891,6 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 	static bool bFirstPanorama = true;
 	static bool bFirstStdshader_dx9 = true;
 	static bool bFirstVgui2 = true;
-	static bool bFirstScaleformui = true;
 
 	CommonHooks();
 
@@ -2008,29 +2010,13 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 #endif
 	}
 	else
-	if (bFirstClient && StringEndsWith(lpLibFileName, "client.dll") && !StringEndsWith(lpLibFileName, "panoramauiclient.dll"))
-	{
-		bFirstClient = false;
-
-		g_H_ClientDll = hModule;
-
-		Addresses_InitClientDll((AfxAddr)g_H_ClientDll, g_SourceSdkVer, false);
-
-		//
-		// Install early hooks:
-
-		csgo_CSkyBoxView_Draw_Install();
-		csgo_CViewRender_Install();
-		Hook_csgo_PlayerAnimStateFix();
-	}
-	else
 	if(bFirstClient && StringEndsWith( lpLibFileName, "client_panorama.dll"))
 	{
 		bFirstClient = false;
 
 		g_H_ClientDll = hModule;
 
-		Addresses_InitClientDll((AfxAddr)g_H_ClientDll, g_SourceSdkVer, true);
+		Addresses_InitClientDll((AfxAddr)g_H_ClientDll, g_SourceSdkVer);
 
 		//
 		// Install early hooks:
@@ -2073,16 +2059,6 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		InterceptDllCall(hModule, "USER32.dll", "SetCursor", (DWORD)&new_SetCursor);
 		InterceptDllCall(hModule, "USER32.dll", "SetCapture", (DWORD)&new_SetCapture);
 		InterceptDllCall(hModule, "USER32.dll", "ReleaseCapture", (DWORD)&new_ReleaseCapture);
-	}
-	else if (bFirstScaleformui && StringEndsWith(lpLibFileName, "scaleformui.dll")) {
-		bFirstScaleformui = false;
-
-		Addresses_InitScaleformuiDll((AfxAddr)hModule, g_SourceSdkVer);
-
-		//
-		// Install early hooks:
-
-		csgo_ScaleFormDll_Hooks_Init();
 	}
 }
 
