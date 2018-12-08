@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.46.4</version>
+<time>2018-12-08T12:48Z</time>
+<changes>
+<change type="fixed">
+Fixed a crash bug (incorrectly updated hook) that was most obvious in CS:GO DZ mode. Thanks to "kiddo" for reporting it.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.46.3</version>
 <time>2018-12-08T10:44Z</time>
 <changes>

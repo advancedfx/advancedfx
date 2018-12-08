@@ -1086,7 +1086,7 @@ void CMatRenderContextHook::HooKVtable(SOURCESDK::IMatRenderContext_csgo * orgCt
 	//DetourIfacePtr((DWORD *)&(vtable[40]), MatRenderContextHook_Viewport, (DetourIfacePtr_fn &)m_Detours->Viewport);
 	DetourIfacePtr((DWORD *)&(vtable[62]), MatRenderContextHook_GetDynamicMesh, (DetourIfacePtr_fn &)m_Detours->GetDynamicMesh);
 	DetourIfacePtr((DWORD *)&(vtable[81]), MatRenderContextHook_DrawScreenSpaceQuad, (DetourIfacePtr_fn &)m_Detours->DrawScreenSpaceQuad);
-	DetourIfacePtr((DWORD *)&(vtable[113]), MatRenderContextHook_DrawScreenSpaceRectangle, (DetourIfacePtr_fn &)m_Detours->DrawScreenSpaceRectangle);
+	DetourIfacePtr((DWORD *)&(vtable[114]), MatRenderContextHook_DrawScreenSpaceRectangle, (DetourIfacePtr_fn &)m_Detours->DrawScreenSpaceRectangle);
 	DetourIfacePtr((DWORD *)&(vtable[151]), MatRenderContextHook_GetCallQueue, (DetourIfacePtr_fn &)m_Detours->GetCallQueue);
 	DetourIfacePtr((DWORD *)&(vtable[169]), MatRenderContextHook_GetDynamicMeshEx, (DetourIfacePtr_fn &)m_Detours->GetDynamicMeshEx);
 	DetourIfacePtr((DWORD *)&(vtable[194]), MatRenderContextHook_DrawInstances, (DetourIfacePtr_fn &)m_Detours->DrawInstances);

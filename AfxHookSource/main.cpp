@@ -638,7 +638,7 @@ public:
 	virtual void _UNKOWN_063(void);
 	virtual void _UNKOWN_064(void);
 	virtual void _UNKOWN_065(void);
-	virtual void WriteSaveGameScreenshotOfSize(const char *pFilename, int width, int height, bool bCreatePowerOf2Padded = false, bool bWriteVTF = false);
+	virtual void _UNKOWN_066(void);
 	virtual void _UNKOWN_067(void);
 	virtual void _UNKOWN_068(void);
 	virtual void _UNKOWN_069(void);
@@ -922,7 +922,7 @@ void CAfxBaseClientDll::View_Render(SOURCESDK::vrect_t_csgo *rect)
 
 	//Tier0_Msg("---- View_Render ----\n");
 
-	bool rectNull = rect->width == 0 || rect->height == 0;
+	bool rectNull = nullptr == rect || rect->width == 0 || rect->height == 0;
 
 	if (g_MaterialSystem_csgo && !rectNull)
 	{
@@ -1112,7 +1112,7 @@ __declspec(naked) void CAfxBaseClientDll::_UNKOWN_064(void)
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_065(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 65) }
 
-__declspec(naked) void CAfxBaseClientDll::WriteSaveGameScreenshotOfSize(const char *pFilename, int width, int height, bool bCreatePowerOf2Padded, bool bWriteVTF)
+__declspec(naked) void CAfxBaseClientDll::_UNKOWN_066(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 66) }
 
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_067(void)
