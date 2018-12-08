@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.46.3</version>
+<time>2018-12-08T10:44Z</time>
+<changes>
+<change type="fixed">
+Adjusted to CS:GO 12/7/2018 (v1.36.6.6), fixes afx/wh cfg crashing / shouldForceNoVisOverride stream property crashing (https://github.com/advancedfx/advancedfx/issues/120).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.46.2</version>
 <time>2018-12-07T15:33Z</time>
 <changes>

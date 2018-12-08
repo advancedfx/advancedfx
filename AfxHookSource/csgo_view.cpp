@@ -48,7 +48,7 @@ bool Hook_csgo_CViewRender_ShouldForceNoVis(void)
 	{
 		int * vtable = *(int**)view;
 
-		DetourIfacePtr((DWORD *)&(vtable[41]), csgo_CViewRender_ShouldForceNoVis, (DetourIfacePtr_fn &)detoured_csgo_CViewRender_ShouldForceNoVis);
+		DetourIfacePtr((DWORD *)&(vtable[42]), csgo_CViewRender_ShouldForceNoVis, (DetourIfacePtr_fn &)detoured_csgo_CViewRender_ShouldForceNoVis);
 
 		firstResult = true;
 	}

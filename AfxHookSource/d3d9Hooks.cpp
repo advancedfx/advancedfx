@@ -2269,31 +2269,39 @@ void FixPresentationparementers(D3DPRESENT_PARAMETERS* pPresentationParameters)
 
 
 // {424A968E-EBD4-4BE2-9BEB-374580F00775}
-static const GUID IID_IAfxInteropSharedSurface =
+static const GUID IID_CAfxSharedRenderTarget =
 { 0x424a968e, 0xebd4, 0x4be2, { 0x9b, 0xeb, 0x37, 0x45, 0x80, 0xf0, 0x7, 0x75 } };
 
 // {424A968E-EBD4-4BE2-9BEB-374580F00775}
-DEFINE_GUID(IID_IAfxInteropSharedSurface,
+DEFINE_GUID(IID_CAfxSharedRenderTarget,
 	0x424a968e, 0xebd4, 0x4be2, 0x9b, 0xeb, 0x37, 0x45, 0x80, 0xf0, 0x7, 0x75);
 
-class CSharedSurfaceHook : public IDirect3DSurface9, public ISharedSurfaceInfo
+class CAfxSharedRenderTarget : public IDirect3DSurface9, public ISharedSurfaceInfo
 {
 public:
-	CSharedSurfaceHook(ULONG initialRefCount)
-		: m_RefCount(initialRefCount)
+	CAfxSharedRenderTarget(
+		IDirect3DDevice9 *  device,
+		D3DPRESENT_PARAMETERS* pPresentationParameters
+	)
+		: m_RefCount(1)
+		, m_SharedRenderTarget(nullptr)
+		, m_SharedHandle(NULL)
 	{
+		this->DeviceReset(device, pPresentationParameters);
 	}
 
 	/*** IUnknown methods ***/
 	STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj)
 	{
-		if (IID_IAfxInteropSharedSurface == riid && ppvObj)
+		if (IID_CAfxSharedRenderTarget == riid && ppvObj)
 		{
 			*ppvObj = this;
 			return D3D_OK;
 		}
 
-		return m_Parent->QueryInterface(riid, ppvObj);
+		if (!m_SharedRenderTarget) return D3DERR_INVALIDCALL;
+
+		return m_SharedRenderTarget->QueryInterface(riid, ppvObj);
 	}
 
 	STDMETHOD_(ULONG, AddRef)(THIS)
@@ -2309,11 +2317,20 @@ public:
 
 		if (0 == m_RefCount)
 		{
-			if (m_Parent)
+			if (m_SharedRenderTarget)
 			{
 				AfxInterop::OnReleaseSharedSurface(this);
-				m_Parent->FreePrivateData(IID_IAfxInteropSharedSurface);
-				m_Parent->Release();
+
+				IDirect3DDevice9 * device;
+				if (SUCCEEDED(m_DeviceRenderTarget->GetDevice(&device)))
+				{
+					device->SetRenderTarget(0, m_DeviceRenderTarget);
+					m_DeviceRenderTarget->Release();
+					device->Release();
+				}
+
+				m_SharedRenderTarget->FreePrivateData(IID_CAfxSharedRenderTarget);
+				m_SharedRenderTarget->Release();
 			}
 
 			delete this;
@@ -2326,91 +2343,91 @@ public:
 
 	/*** IDirect3DResource9 methods ***/
 	STDMETHOD(GetDevice)(THIS_ IDirect3DDevice9** ppDevice) {
-		if (!m_Parent) return D3DERR_INVALIDCALL;
+		if (!m_SharedRenderTarget) return D3DERR_INVALIDCALL;
 
-		return m_Parent->GetDevice(ppDevice);
+		return m_SharedRenderTarget->GetDevice(ppDevice);
 	}
 
 	STDMETHOD(SetPrivateData)(THIS_ REFGUID refguid, CONST void* pData, DWORD SizeOfData, DWORD Flags) {
-		if (!m_Parent) return D3DERR_INVALIDCALL;
+		if (!m_SharedRenderTarget) return D3DERR_INVALIDCALL;
 
-		return m_Parent->SetPrivateData(refguid, pData, SizeOfData, Flags);
+		return m_SharedRenderTarget->SetPrivateData(refguid, pData, SizeOfData, Flags);
 	}
 
 	STDMETHOD(GetPrivateData)(THIS_ REFGUID refguid, void* pData, DWORD* pSizeOfData) {
-		if (!m_Parent) return D3DERR_INVALIDCALL;
+		if (!m_SharedRenderTarget) return D3DERR_INVALIDCALL;
 
-		return m_Parent->GetPrivateData(refguid, pData, pSizeOfData);
+		return m_SharedRenderTarget->GetPrivateData(refguid, pData, pSizeOfData);
 	}
 
 	STDMETHOD(FreePrivateData)(THIS_ REFGUID refguid) {
-		if (!m_Parent) return D3DERR_INVALIDCALL;
+		if (!m_SharedRenderTarget) return D3DERR_INVALIDCALL;
 
-		return m_Parent->FreePrivateData(refguid);
+		return m_SharedRenderTarget->FreePrivateData(refguid);
 	}
 
 	STDMETHOD_(DWORD, SetPriority)(THIS_ DWORD PriorityNew) {
-		if (!m_Parent) return D3DERR_INVALIDCALL;
+		if (!m_SharedRenderTarget) return D3DERR_INVALIDCALL;
 
-		return m_Parent->SetPriority(PriorityNew);
+		return m_SharedRenderTarget->SetPriority(PriorityNew);
 	}
 
 	STDMETHOD_(DWORD, GetPriority)(THIS) {
-		if (!m_Parent) return 0;
+		if (!m_SharedRenderTarget) return 0;
 
-		return m_Parent->GetPriority();
+		return m_SharedRenderTarget->GetPriority();
 	}
 	STDMETHOD_(void, PreLoad)(THIS)
 	{
-		if (!m_Parent) return;
+		if (!m_SharedRenderTarget) return;
 
-		return m_Parent->PreLoad();
+		return m_SharedRenderTarget->PreLoad();
 	}
 
 	STDMETHOD_(D3DRESOURCETYPE, GetType)(THIS) {
-		if (!m_Parent) D3DRTYPE_SURFACE;
+		if (!m_SharedRenderTarget) D3DRTYPE_SURFACE;
 
-		return m_Parent->GetType();
+		return m_SharedRenderTarget->GetType();
 	}
 
 	STDMETHOD(GetContainer)(THIS_ REFIID riid, void** ppContainer) {
-		if (!m_Parent) D3DERR_INVALIDCALL;
+		if (!m_SharedRenderTarget) D3DERR_INVALIDCALL;
 
-		return m_Parent->GetContainer(riid, ppContainer);
+		return m_SharedRenderTarget->GetContainer(riid, ppContainer);
 	}
 
 	STDMETHOD(GetDesc)(THIS_ D3DSURFACE_DESC *pDesc) {
-		if (!m_Parent) D3DERR_INVALIDCALL;
+		if (!m_SharedRenderTarget) D3DERR_INVALIDCALL;
 
-		return m_Parent->GetDesc(pDesc);
+		return m_SharedRenderTarget->GetDesc(pDesc);
 	}
 
 	STDMETHOD(LockRect)(THIS_ D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags)
 	{
-		if (!m_Parent) D3DERR_INVALIDCALL;
+		if (!m_SharedRenderTarget) D3DERR_INVALIDCALL;
 
-		return m_Parent->LockRect(pLockedRect, pRect, Flags);
+		return m_SharedRenderTarget->LockRect(pLockedRect, pRect, Flags);
 	}
 
 	STDMETHOD(UnlockRect)(THIS)
 	{
-		if (!m_Parent) D3DERR_INVALIDCALL;
+		if (!m_SharedRenderTarget) D3DERR_INVALIDCALL;
 
-		return m_Parent->UnlockRect();
+		return m_SharedRenderTarget->UnlockRect();
 	}
 
 	STDMETHOD(GetDC)(THIS_ HDC *phdc)
 	{
-		if (!m_Parent) D3DERR_INVALIDCALL;
+		if (!m_SharedRenderTarget) D3DERR_INVALIDCALL;
 
-		return m_Parent->GetDC(phdc);
+		return m_SharedRenderTarget->GetDC(phdc);
 	}
 
 	STDMETHOD(ReleaseDC)(THIS_ HDC hdc)
 	{
-		if (!m_Parent) D3DERR_INVALIDCALL;
+		if (!m_SharedRenderTarget) D3DERR_INVALIDCALL;
 
-		return m_Parent->ReleaseDC(hdc);
+		return m_SharedRenderTarget->ReleaseDC(hdc);
 	}
 
 	LPCWSTR Name = L"n/a (AfxInterop::CSharedSurfaceHook)";
@@ -2428,7 +2445,7 @@ public:
 
 	virtual IDirect3DSurface9 * GetSharedSurface()
 	{
-		return m_Parent;
+		return m_SharedRenderTarget;
 	}
 
 	virtual D3DMULTISAMPLE_TYPE GetMultiSampleType()
@@ -2446,49 +2463,82 @@ public:
 		return m_SharedHandle;
 	}
 
-	void DeviceLost()
+	IDirect3DSurface9 * GetDeviceRenderTarget()
 	{
-		if (m_Parent)
+		return m_DeviceRenderTarget;
+	}
+
+	void DeviceLost(
+		IDirect3DDevice9 *  device)
+	{
+		if (m_SharedRenderTarget)
 		{
 			AfxInterop::OnReleaseSharedSurface(this);
-			m_Parent->FreePrivateData(IID_IAfxInteropSharedSurface);
-			m_Parent->Release();
-			m_Parent = nullptr;
+
+			device->SetRenderTarget(0, m_DeviceRenderTarget);
+			m_DeviceRenderTarget->Release();
+
+			m_SharedRenderTarget->FreePrivateData(IID_CAfxSharedRenderTarget);
+			m_SharedRenderTarget->Release();
+			m_SharedRenderTarget = nullptr;
 		}
 	}
 
 	void DeviceReset(
-		UINT                Width,
-		UINT                Height,
-		DWORD				Usage,
-		D3DFORMAT           Format,
-		D3DPOOL             Pool,
-		D3DMULTISAMPLE_TYPE MultiSampleType,
-		DWORD               MultisampleQuality,
-		IDirect3DSurface9   *pSurface,
-		HANDLE              sharedHandle
-	)
+		IDirect3DDevice9 *  device,
+		D3DPRESENT_PARAMETERS* pPresentationParameters)
 	{
-		this->Width = Width;
-		this->Height = Height;
-		this->Usage = Usage;
-		this->Format = Format;
-		this->Pool = Pool;
-		this->MultiSampleType = MultiSampleType;
-		this->MultiSampleQuality = MultisampleQuality;
-		this->m_Parent = pSurface;
-		this->m_SharedHandle = sharedHandle;
+		if (nullptr == m_SharedRenderTarget)
+		{
+			if (SUCCEEDED(device->GetRenderTarget(0, &m_DeviceRenderTarget)))
+			{
+				D3DSURFACE_DESC desc;
 
-		CSharedSurfaceHook * data = this;
-		m_Parent->SetPrivateData(IID_IAfxInteropSharedSurface, &data, sizeof(CSharedSurfaceHook *), 0);
+				if (SUCCEEDED(m_DeviceRenderTarget->GetDesc(&desc)))
+				{
+					HRESULT hr;
+					HANDLE sharedHandle = NULL;
+					IDirect3DSurface9 * surface = nullptr;
 
+					if (SUCCEEDED(hr = device->CreateRenderTarget(desc.Width, desc.Height, desc.Format, pPresentationParameters->MultiSampleType, pPresentationParameters->MultiSampleQuality, FALSE, &surface, &sharedHandle)))
+					{
+						CAfxSharedRenderTarget * data = this;
 
-		AfxInterop::OnCreatedSharedSurface(this);
+						if (
+							SUCCEEDED(surface->SetPrivateData(IID_CAfxSharedRenderTarget, &data, sizeof(CAfxSharedRenderTarget *), 0))
+							&& SUCCEEDED(device->SetRenderTarget(0, surface)))
+						{
+							this->Width = desc.Width;
+							this->Height = desc.Height;
+							this->Usage = D3DUSAGE_RENDERTARGET;
+							this->Format = desc.Format;
+							this->Pool = D3DPOOL_DEFAULT;
+							this->MultiSampleType = pPresentationParameters->MultiSampleType;
+							this->MultiSampleQuality = pPresentationParameters->MultiSampleQuality;
+
+							this->m_SharedRenderTarget = surface;
+							this->m_SharedHandle = sharedHandle;
+
+							AfxInterop::OnCreatedSharedSurface(this);
+						}
+						else
+						{
+							Tier0_Warning("AfxInterop: CreateSharedRenderTarget set private data / shared render target failed.\n");
+							CloseHandle(m_SharedHandle);
+							surface->Release();
+						}
+					}
+					else Tier0_Warning("AfxInterop: CreateSharedRenderTarget sharedRenderTarget failed with 0x%08x.\n", hr);
+				}
+			}
+			else Tier0_Warning("AfxInterop: CreateSharedRenderTarget GetRenderTarget failed.\n");
+		}
 	}
 
 private:
 	ULONG m_RefCount;
-	IDirect3DSurface9 * m_Parent;
+	IDirect3DSurface9 * m_DeviceRenderTarget;
+	IDirect3DSurface9 * m_SharedRenderTarget;
 	HANDLE m_SharedHandle;
 };
 
@@ -2513,13 +2563,11 @@ private:
 	IDirect3DVertexShader9 * m_Original_VertexShader = 0;
 	IDirect3DPixelShader9 * m_Original_PixelShader = 0;
 
-	IDirect3DSurface9 * orgDeviceContextRenderTarget = nullptr;
-	IDirect3DSurface9 * orgDepthStencilSurface = nullptr;
-
-	CSharedSurfaceHook * sharedRenderTarget = nullptr;
-	CSharedSurfaceHook * sharedDepthStencilSurface = nullptr;
-
 	IDirect3DQuery9* waitQuery = nullptr;
+
+#ifdef AFX_INTEROP
+	CAfxSharedRenderTarget * afxSharedRenderTarget = nullptr;
+#endif
 
 	void ReleaseQueries()
 	{
@@ -2550,7 +2598,13 @@ public:
 	void Init(D3DPRESENT_PARAMETERS* pPresentationParameters)
 	{
 		CreateQueries();
-		CreateSharedRenderTargets(pPresentationParameters);
+
+#ifdef AFX_INTEROP
+		if (AfxInterop::Enabled())
+		{
+			afxSharedRenderTarget = new CAfxSharedRenderTarget(g_OldDirect3DDevice9, pPresentationParameters);
+		}
+#endif
 	}
 
 	void AfxWaitForGPU()
@@ -2582,18 +2636,18 @@ private:
 		return false;
 	}
 
-	bool GetSharedSurfaceHook(IDirect3DSurface9 * surface, CSharedSurfaceHook ** pSharedSurfaceHook)
+	bool GetAfxSharedRenderTarget(IDirect3DSurface9 * surface, CAfxSharedRenderTarget ** pOut)
 	{
-		if (surface && SUCCEEDED(surface->QueryInterface(IID_IAfxInteropSharedSurface, (void **)pSharedSurfaceHook)))
+		if (surface && SUCCEEDED(surface->QueryInterface(IID_CAfxSharedRenderTarget, (void **)pOut)))
 			return true;
 
 		return false;
 	}
 
-	bool GetSharedSurfaceHookReverse(IDirect3DSurface9 * surface, CSharedSurfaceHook ** pSharedSurfaceHook)
+	bool GetAfxSharedRenderTargetReverse(IDirect3DSurface9 * surface, CAfxSharedRenderTarget ** pOut)
 	{
-		DWORD size = sizeof(*pSharedSurfaceHook);
-		if (surface && SUCCEEDED(surface->GetPrivateData(IID_IAfxInteropSharedSurface, pSharedSurfaceHook, &size)))
+		DWORD size = sizeof(*pOut);
+		if (surface && SUCCEEDED(surface->GetPrivateData(IID_CAfxSharedRenderTarget, pOut, &size)))
 			return true;
 
 		return false;
@@ -2636,8 +2690,8 @@ private:
 				}
 			}
 			{
-				CSharedSurfaceHook * afxWrapper;
-				if (GetSharedSurfaceHook(surface, &afxWrapper))
+				CAfxSharedRenderTarget * afxWrapper;
+				if (GetAfxSharedRenderTarget(surface, &afxWrapper))
 				{
 					//if (makeDirty) afxWrapper->AddDirtyRect(NULL);
 					return afxWrapper->GetSharedSurface();
@@ -2683,17 +2737,17 @@ private:
 				}
 			}
 			{
-				CSharedSurfaceHook * sharedSurfaceHook;
+				CAfxSharedRenderTarget * afxWrapper;
 
-				if (GetSharedSurfaceHookReverse(surface, &sharedSurfaceHook))
+				if (GetAfxSharedRenderTargetReverse(surface, &afxWrapper))
 				{
 					if (handleRef)
 					{
-						sharedSurfaceHook->AddRef();
+						afxWrapper->AddRef();
 						surface->Release();
 					}
 
-					return sharedSurfaceHook;
+					return afxWrapper;
 				}
 			}
 		}
@@ -2871,125 +2925,6 @@ private:
 #endif
 		return buffer;
 	}
-
-
-#ifdef AFX_INTEROP
-	void ReleaseSharedRenderTargets()
-	{
-		if (AfxInterop::Enabled())
-		{
-			if (sharedRenderTarget)
-			{
-				sharedRenderTarget->DeviceLost();
-				sharedRenderTarget = nullptr;
-			}
-
-			if (sharedDepthStencilSurface)
-			{
-				sharedDepthStencilSurface->DeviceLost();
-				sharedDepthStencilSurface = nullptr;
-			}
-
-			if (orgDeviceContextRenderTarget)
-			{
-				g_NewDirect3DDevice9.SetRenderTarget(0, orgDeviceContextRenderTarget);
-				orgDeviceContextRenderTarget->Release();
-				orgDeviceContextRenderTarget = nullptr;
-			}
-			if (orgDepthStencilSurface)
-			{
-				g_NewDirect3DDevice9.SetDepthStencilSurface(orgDepthStencilSurface);
-				orgDepthStencilSurface->Release();
-				orgDepthStencilSurface = nullptr;
-			}
-		}
-	}
-
-	void CreateSharedRenderTargets(D3DPRESENT_PARAMETERS* pPresentationParameters)
-	{
-		if (AfxInterop::Enabled())
-		{
-			if (nullptr == orgDeviceContextRenderTarget)
-			{
-				if (SUCCEEDED(g_OldDirect3DDevice9->GetRenderTarget(0, &orgDeviceContextRenderTarget)))
-				{
-					D3DSURFACE_DESC desc;
-
-					if (SUCCEEDED(orgDeviceContextRenderTarget->GetDesc(&desc)))
-					{
-						if (nullptr == sharedRenderTarget)
-						{
-							orgDeviceContextRenderTarget->AddRef();
-							sharedRenderTarget = new CSharedSurfaceHook(orgDeviceContextRenderTarget->Release()); // TODO: Why not -1 here?
-						}
-
-						HRESULT hr;
-						HANDLE sharedHandle = NULL;
-						IDirect3DSurface9 * surface = nullptr;
-
-						if (SUCCEEDED(hr = g_OldDirect3DDevice9->CreateRenderTarget(desc.Width, desc.Height, desc.Format, pPresentationParameters->MultiSampleType, pPresentationParameters->MultiSampleQuality, FALSE, &surface, &sharedHandle)))
-						{
-							sharedRenderTarget->DeviceReset(desc.Width, desc.Height, D3DUSAGE_RENDERTARGET, desc.Format, D3DPOOL_DEFAULT, pPresentationParameters->MultiSampleType, pPresentationParameters->MultiSampleQuality, surface, sharedHandle);
-
-							if (FAILED(g_NewDirect3DDevice9.SetRenderTarget(0, sharedRenderTarget)))
-								Tier0_Warning("AfxInterop: CreateSharedRenderTarget set sharedRenderTarget failed with 0x%08x.\n", hr);
-						}
-						else Tier0_Warning("AfxInterop: CreateSharedRenderTarget sharedRenderTarget failed with 0x%08x.\n", hr);
-
-					}
-				}
-				else
-				{
-					orgDeviceContextRenderTarget = nullptr;
-				}
-			}
-
-			return; // TODO: Due to NVAPI and shit the warpping is currently not sufficient.
-			if (nullptr == orgDepthStencilSurface)
-			{
-				if (SUCCEEDED(g_OldDirect3DDevice9->GetDepthStencilSurface(&orgDepthStencilSurface)))
-				{
-					D3DSURFACE_DESC desc;
-
-					if (SUCCEEDED(orgDepthStencilSurface->GetDesc(&desc)))
-					{
-						if (nullptr == sharedDepthStencilSurface)
-						{
-							orgDepthStencilSurface->AddRef();
-							sharedDepthStencilSurface = new CSharedSurfaceHook(orgDepthStencilSurface->Release()); // TODO: Why not -1 here?
-						}
-
-						HRESULT hr;
-						HANDLE sharedHandle = NULL;
-						IDirect3DSurface9 * surface = nullptr;
-
-						// This has to happen transparently to CS:GO:
-						if (desc.Format == D3DFMT_D24S8)
-						{
-							Tier0_Msg("AfxHookSource: Secretly requesting INTZ format ...\n");
-							desc.Format = FOURCC_INTZ;
-						}
-
-						if (SUCCEEDED(hr = g_OldDirect3DDevice9->CreateDepthStencilSurface(desc.Width, desc.Height, desc.Format, pPresentationParameters->MultiSampleType, pPresentationParameters->MultiSampleQuality, FALSE, &surface, &sharedHandle)))
-						{
-							sharedDepthStencilSurface->DeviceReset(desc.Width, desc.Height, D3DUSAGE_DEPTHSTENCIL, desc.Format, D3DPOOL_DEFAULT, pPresentationParameters->MultiSampleType, pPresentationParameters->MultiSampleQuality, surface, sharedHandle);
-
-							if (FAILED(g_NewDirect3DDevice9.SetDepthStencilSurface(sharedDepthStencilSurface)))
-								Tier0_Warning("AfxInterop: CreateSharedRenderTarget set sharedDepthStencilSurface failed with 0x%08x.\n", hr);
-						}
-						else Tier0_Warning("AfxInterop: CreateSharedRenderTarget sharedDepthStencilSurface failed with 0x%08x.\n", hr);
-
-
-					}
-				}
-				else
-				{
-					orgDepthStencilSurface = nullptr;
-				}
-			}
-		}
-	}
-#endif
 
 private:
 	bool m_Block_Present = false;
@@ -3617,10 +3552,13 @@ public:
 				m_Original_PixelShader = 0;
 			}
 
-			ReleaseSharedRenderTargets();
-
-			if (sharedRenderTarget) sharedRenderTarget->Release();
-			if (sharedDepthStencilSurface) sharedDepthStencilSurface->Release();
+#ifdef AFX_INTEROP
+			if (AfxInterop::Enabled())
+			{
+				if (afxSharedRenderTarget) afxSharedRenderTarget->Release();
+				afxSharedRenderTarget = nullptr;
+			}
+#endif
 		}
 
 		return g_OldDirect3DDevice9->Release();
@@ -3655,7 +3593,6 @@ public:
 		Shared_Direct3DDevice9_Reset_Before();
 
 #if AFX_INTEROP
-		ReleaseSharedRenderTargets();
 		ReleaseQueries();
 #endif
 
@@ -3665,7 +3602,11 @@ public:
 		if (SUCCEEDED(hResult))
 		{
 			CreateQueries();
-			g_NewDirect3DDevice9.CreateSharedRenderTargets(pPresentationParameters);
+
+			if (AfxInterop::Enabled())
+			{
+				if (afxSharedRenderTarget) afxSharedRenderTarget->DeviceReset(g_OldDirect3DDevice9, pPresentationParameters);
+			}
 		}
 #endif
 
@@ -3682,10 +3623,10 @@ public:
 #if AFX_INTEROP
 		if (AfxInterop::Enabled())
 		{
-			if (orgDeviceContextRenderTarget && sharedRenderTarget)
+			if (afxSharedRenderTarget)
 			{
-				if(IDirect3DSurface9 * sharedSurface = sharedRenderTarget->GetSharedSurface())
-					g_OldDirect3DDevice9->StretchRect(sharedSurface, pSourceRect, orgDeviceContextRenderTarget, pDestRect, D3DTEXF_NONE);
+				if(IDirect3DSurface9 * sharedSurface = afxSharedRenderTarget->GetSharedSurface())
+					g_OldDirect3DDevice9->StretchRect(sharedSurface, pSourceRect, afxSharedRenderTarget->GetDeviceRenderTarget(), pDestRect, D3DTEXF_NONE);
 			}
 		}
 #endif
@@ -3695,9 +3636,6 @@ public:
 #if AFX_INTEROP
 		if (result == D3DERR_DEVICELOST)
 		{
-			if (sharedDepthStencilSurface) sharedDepthStencilSurface->DeviceLost();
-			if (sharedRenderTarget) sharedRenderTarget->DeviceLost();
-
 			CAfxManagedChildDirect3DSurface9::AfxDeviceLost();
 			CAfxManagedDirect3DTexture9::AfxDeviceLost();
 			CAfxManagedDirect3DVolumeTexture9::AfxDeviceLost();
@@ -3705,6 +3643,7 @@ public:
 			CAfxManagedOffscreenPlainSurface::AfxDeviceLost();
 			CAfxManagedDirect3DVertexBuffer9::AfxDeviceLost();
 			CAfxManagedDirect3DIndexBuffer9::AfxDeviceLost();
+			if (afxSharedRenderTarget) afxSharedRenderTarget->DeviceLost(g_OldDirect3DDevice9);
 		}
 
 		CAfxManagedDirect3DIndexBuffer9::AfxDevicePresented();
@@ -3981,13 +3920,13 @@ public:
 #ifdef AFX_INTEROP
 		if (AfxInterop::Enabled())
 		{
-			CSharedSurfaceHook * sharedSurfaceHook;
+			CAfxSharedRenderTarget * afxSharedRenderTarget;
 
-			if (GetSharedSurfaceHook(pRenderTarget, &sharedSurfaceHook))
+			if (GetAfxSharedRenderTarget(pRenderTarget, &afxSharedRenderTarget))
 			{
-				HRESULT result = g_OldDirect3DDevice9->SetRenderTarget(RenderTargetIndex, sharedSurfaceHook->GetSharedSurface());
+				HRESULT result = g_OldDirect3DDevice9->SetRenderTarget(RenderTargetIndex, afxSharedRenderTarget->GetSharedSurface());
 
-				AfxInterop::OnSetSharedRenderTarget(RenderTargetIndex, sharedSurfaceHook);
+				AfxInterop::OnSetSharedRenderTarget(RenderTargetIndex, afxSharedRenderTarget);
 
 				return result;
 			}
@@ -4017,6 +3956,7 @@ public:
 #ifdef AFX_INTEROP
 		if (AfxInterop::Enabled())
 		{
+			/*
 			CSharedSurfaceHook * sharedSurfaceHook;
 
 			if (GetSharedSurfaceHook(pNewZStencil, &sharedSurfaceHook))
@@ -4027,6 +3967,7 @@ public:
 
 				return result;
 			}
+			*/
 
 			HRESULT result = g_OldDirect3DDevice9->SetDepthStencilSurface(UnwrapSurface(pNewZStencil));
 
