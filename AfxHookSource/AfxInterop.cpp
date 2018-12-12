@@ -11,6 +11,7 @@
 #include <Windows.h>
 
 #include <set>
+#include <queue>
 
 #include <mutex>
 #include <atomic>
@@ -34,7 +35,7 @@ static const GUID IID_IAfxInteropSharedTexture =
 
 namespace AfxInterop {
 
-	const INT32 m_Version = 0;
+	const INT32 m_Version = 1;
 
 	enum DrawingMessage
 	{
@@ -51,13 +52,21 @@ namespace AfxInterop {
 	bool ReadBytes(HANDLE hFile, LPVOID lpBuffer, int offset, DWORD numBytes);
 	bool ReadBoolean(HANDLE hFile, bool & outValue);
 	bool ReadByte(HANDLE hFile, BYTE & outValue);
+	bool ReadSByte(HANDLE hFile, signed char & outValue);
+	bool ReadUInt32(HANDLE hFile, UINT32 & outValue);
+	bool ReadCompressedUInt32(HANDLE hFile, UINT32 & outValue);
 	bool ReadInt32(HANDLE hFile, INT32 & outValue);
+	bool ReadCompressedInt32(HANDLE hFile, INT32 & outValue);
 	bool ReadHandle(HANDLE hFile, HANDLE & outValue);
 	bool ReadStringUTF8(HANDLE hFile, std::string & outValue);
 	bool WriteBytes(HANDLE hFile, LPVOID lpBuffer, int offset, DWORD numBytes);
 	bool WriteBoolean(HANDLE hFile, bool value);
 	bool WriteByte(HANDLE hFile, BYTE value);
+	bool WriteSByte(HANDLE hFile, signed char value);
+	bool WriteUInt32(HANDLE hFile, UINT32 value);
+	bool WriteCompressedUInt32(HANDLE hFile, UINT32 value);
 	bool WriteInt32(HANDLE hFile, INT32 value);
+	bool WriteCompressedInt32(HANDLE hFile, INT32 value);
 	bool WriteSingle(HANDLE hFile, float value);
 	bool WriteStringUTF8(HANDLE hFile, const std::string);
 	bool WriteHandle(HANDLE hFille, HANDLE value);
@@ -83,6 +92,36 @@ namespace AfxInterop {
 			EngineMessage_EntityDeleted = 7
 		};
 
+		class CConsole
+		{
+		public:
+			CConsole(IWrpCommandArgs *args)
+			{
+				for (int i = 0; i < args->ArgC(); ++i)
+				{
+					m_Args.push(args->ArgV(i));
+				}
+			}
+
+			bool Send(HANDLE hPipe)
+			{
+				if (!WriteCompressedUInt32(hPipe, (UINT32)m_Args.size())) return false;
+
+				bool okay = true;
+
+				while (!m_Args.empty())
+				{
+					okay = okay && WriteStringUTF8(hPipe, m_Args.front().c_str());
+					m_Args.pop();
+				}
+
+				return okay;
+			}
+
+		private:
+			std::queue<std::string> m_Args;
+		};
+
 		std::mutex m_ActiveMutex;
 		bool m_Active = false;
 		HANDLE m_hPipe = INVALID_HANDLE_VALUE;
@@ -93,6 +132,29 @@ namespace AfxInterop {
 
 		int m_Frame = -1;
 		bool m_FrameInfoSent = false;
+		bool m_Suspended = false;
+
+		std::queue<CConsole> m_Commands;
+
+		void AddCommand(IWrpCommandArgs *args)
+		{
+			m_Commands.emplace(args);
+		}
+
+		bool SendCommands(HANDLE hPipe)
+		{
+			if (!WriteCompressedUInt32(hPipe, (UINT32)m_Commands.size())) return false;
+
+			bool okay = true;
+
+			while (!m_Commands.empty())
+			{
+				okay = okay && m_Commands.front().Send(hPipe);
+				m_Commands.pop();
+			}
+
+			return okay;
+		}
 	}
 	
 	class CSharedTextureHook;
@@ -452,28 +514,22 @@ namespace AfxInterop {
 			if (EngineThread::m_Active)
 			{
 				if (!WriteInt32(EngineThread::m_hPipe, EngineThread::EngineMessage_BeforeFrameStart)) { errorLine = __LINE__; goto locked_error; }
+
+				if (!EngineThread::SendCommands(EngineThread::m_hPipe)) { errorLine = __LINE__; goto locked_error; }
+
 				if (!Flush(EngineThread::m_hPipe)) { errorLine = __LINE__; goto locked_error; }
 
-				int commandCount = 0;
-				{
-					BYTE byteCommandCount;
-					if (!ReadByte(EngineThread::m_hPipe, byteCommandCount)) { errorLine = __LINE__; goto locked_error; }
-					commandCount = byteCommandCount;
-				}
-				if (255 == commandCount)
-				{
-					if (!ReadInt32(EngineThread::m_hPipe, commandCount)) { errorLine = __LINE__; goto locked_error; }
-				}
+				UINT32 commandCount;
 
-				std::string command;
+				if(!ReadCompressedUInt32(EngineThread::m_hPipe, commandCount)) { errorLine = __LINE__; goto locked_error; }
 
-				while (0 < commandCount)
+				for (UINT32 i = 0; i < commandCount; ++i)
 				{
+					std::string command;
+
 					if (!ReadStringUTF8(EngineThread::m_hPipe, command)) { errorLine = __LINE__; goto locked_error; }
 
 					g_VEngineClient->ExecuteClientCmd(command.c_str());
-
-					--commandCount;
 				}
 			}
 
@@ -513,13 +569,13 @@ namespace AfxInterop {
 		{
 			if (EngineThread::m_Active)
 			{
-
 				if (!WriteInt32(EngineThread::m_hPipe, EngineThread::EngineMessage_BeforeHud)) { errorLine = __LINE__; goto locked_error; }
 
 				if (!WriteInt32(EngineThread::m_hPipe, EngineThread::m_Frame)) { errorLine = __LINE__; goto locked_error; }
 
 				if (!WriteSingle(EngineThread::m_hPipe, g_Hook_VClient_RenderView.GetGlobals()->absoluteframetime_get())) { errorLine = __LINE__; goto locked_error; }
 				if (!WriteSingle(EngineThread::m_hPipe, g_Hook_VClient_RenderView.GetGlobals()->curtime_get())) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, g_Hook_VClient_RenderView.GetGlobals()->frametime_get())) { errorLine = __LINE__; goto locked_error; }
 
 				int width, height;
 				g_VEngineClient->GetScreenSize(width, height);
@@ -806,6 +862,8 @@ namespace AfxInterop {
 
 	void OnCreatedSharedSurface(ISharedSurfaceInfo * surface)
 	{
+		Tier0_Msg("OnCreatedSharedSurface: 0x%08x\n", surface);
+
 		m_SharedSurfaces.insert(surface);
 
 		if(m_Connected) DispatchSurfaceCreated(surface);
@@ -816,6 +874,8 @@ namespace AfxInterop {
 		if (m_Connected) DispatchReleaseSurface(surface);
 
 		m_SharedSurfaces.erase(surface);
+
+		Tier0_Msg("OnReleaseSharedSurface: 0x%08x\n", surface);
 	}
 
 	/// <param name="info">can be nullptr</param>
@@ -1021,9 +1081,51 @@ namespace AfxInterop {
 		return ReadBytes(hFile, &outValue, 0, sizeof(outValue));
 	}
 
+	bool ReadSByte(HANDLE hFile, signed char & value)
+	{
+		return ReadByte(hFile, (BYTE &)value);
+	}
+
+	bool ReadUInt32(HANDLE hFile, UINT32 & outValue)
+	{
+		return ReadBytes(hFile, &outValue, 0, sizeof(outValue));
+	}
+
+	bool ReadCompressedUInt32(HANDLE hFile, UINT32 & outValue)
+	{
+		BYTE value;
+
+		if (!ReadByte(hFile, value))
+			return false;
+
+		if (value < 255)
+		{
+			outValue = value;
+			return true;
+		}
+
+		return ReadUInt32(hFile, outValue);
+	}
+
 	bool ReadInt32(HANDLE hFile, INT32 & outValue)
 	{
 		return ReadBytes(hFile, &outValue, 0, sizeof(outValue));
+	}
+
+	bool ReadCompressedInt32(HANDLE hFile, INT32 & outValue)
+	{
+		signed char value;
+
+		if (!ReadSByte(hFile, value))
+			return false;
+
+		if (value < 127)
+		{
+			outValue = value;
+			return true;
+		}
+
+		return ReadInt32(hFile, outValue);
 	}
 
 	bool ReadHandle(HANDLE hFile, HANDLE & outValue)
@@ -1033,17 +1135,9 @@ namespace AfxInterop {
 
 	bool ReadStringUTF8(HANDLE hFile, std::string & outValue)
 	{
-		int length = 0;
-		BYTE byteVal = 0;
+		UINT32 length;
 
-		if (!ReadByte(hFile, byteVal)) return false;
-
-		length = byteVal;
-
-		if (255 == length)
-		{
-			if (!ReadInt32(hFile, length)) return false;
-		}
+		if (!ReadCompressedUInt32(hFile, length)) return false;
 
 		outValue.resize(length);
 
@@ -1074,8 +1168,34 @@ namespace AfxInterop {
 		return WriteBytes(hFile, &value, 0, sizeof(value));
 	}
 
+	bool WriteSByte(HANDLE hFile, signed char value)
+	{
+		return WriteByte(hFile, (BYTE)value);
+	}
+
+	bool WriteUInt32(HANDLE hFile, UINT32 value) {
+		return WriteBytes(hFile, &value, 0, sizeof(value));
+	}
+
+	bool WriteCompressedUInt32(HANDLE hFile, UINT32 value)
+	{
+		if (0 <= value && value <= 255 - 1)
+			return WriteByte(hFile, (BYTE)value);
+
+		return WriteByte(hFile, 255) && WriteUInt32(hFile, value);
+	}
+
 	bool WriteInt32(HANDLE hFile, INT32 value) {
 		return WriteBytes(hFile, &value, 0, sizeof(value));
+	}
+
+	bool WriteCompressedInt32(HANDLE hFile, INT32 value)
+	{
+		if (-128 <= value && value <= 127 - 1)
+			return WriteSByte(hFile, (signed char)value);
+
+		return WriteByte(hFile, 255)
+			&& WriteUInt32(hFile, value);
 	}
 
 	bool WriteSingle(HANDLE hFile, float value)
@@ -1085,22 +1205,10 @@ namespace AfxInterop {
 
 	bool WriteStringUTF8(HANDLE hFile, const std::string value)
 	{
-		int length = (int)value.length();
+		UINT32 length = (UINT32)value.length();
 
-		if (length < 255) {
-			if (!WriteByte(hFile, (BYTE)length))
-				return false;
-		}
-		else
-		{
-			if (!WriteByte(hFile, 255))
-				return false;
-
-			if (!WriteInt32(hFile, length))
-				return false;
-		}
-
-		return WriteBytes(hFile, (LPVOID)value.c_str(), 0, length);
+		return WriteCompressedUInt32(hFile, length)
+			&& WriteBytes(hFile, (LPVOID)value.c_str(), 0, length);
 	}
 
 	bool WriteHandle(HANDLE hFile, HANDLE value)
@@ -1172,11 +1280,20 @@ CON_COMMAND(afx_interop, "Controls advancedfxInterop (i.e. with Unity engine).")
 			);
 			return;
 		}
+		else if (0 == _stricmp("send", arg1))
+		{
+			CSubWrpCommandArgs subArgs(args, 2);
+
+			AfxInterop::EngineThread::AddCommand(&subArgs);
+
+			return;
+		}
 	}
 
 	Tier0_Msg(
 		"afx_interop pipeName [...] - Name of the pipe to connect to.\n"
 		"afx_interop connect [...] - Controls if interop connection is enabled.\n"
+		"afx_interop send [<arg1>[ <arg2> [ ...]] - Queues a command to be sent to the server (lossy if connection is unstable).\n"
 	);
 }
 

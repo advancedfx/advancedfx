@@ -6,6 +6,22 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.46.5</version>
+<time>2018-12-12T18:35Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_fix oldDuckFix not working.
+</change>
+<change type="updated">
+Updated afx_interop to version 1, needs afx-unity-interop v0.1.3, added afx_interop send, which allows to send commands to the interop (the example will reply when connected).
+Also several bug fixes.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.46.4</version>
 <time>2018-12-08T12:48Z</time>
 <changes>

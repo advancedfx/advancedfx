@@ -3596,6 +3596,15 @@ public:
 		ReleaseQueries();
 #endif
 
+		CAfxManagedChildDirect3DSurface9::AfxDeviceLost();
+		CAfxManagedDirect3DTexture9::AfxDeviceLost();
+		CAfxManagedDirect3DVolumeTexture9::AfxDeviceLost();
+		CAfxManagedDirect3DCubeTexture9::AfxDeviceLost();
+		CAfxManagedOffscreenPlainSurface::AfxDeviceLost();
+		CAfxManagedDirect3DVertexBuffer9::AfxDeviceLost();
+		CAfxManagedDirect3DIndexBuffer9::AfxDeviceLost();
+		if (afxSharedRenderTarget) afxSharedRenderTarget->DeviceLost(g_OldDirect3DDevice9);
+
 		HRESULT hResult = g_OldDirect3DDevice9->Reset(pPresentationParameters);
 
 #if AFX_INTEROP
@@ -3634,18 +3643,6 @@ public:
 		HRESULT result = g_OldDirect3DDevice9->Present(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 
 #if AFX_INTEROP
-		if (result == D3DERR_DEVICELOST)
-		{
-			CAfxManagedChildDirect3DSurface9::AfxDeviceLost();
-			CAfxManagedDirect3DTexture9::AfxDeviceLost();
-			CAfxManagedDirect3DVolumeTexture9::AfxDeviceLost();
-			CAfxManagedDirect3DCubeTexture9::AfxDeviceLost();
-			CAfxManagedOffscreenPlainSurface::AfxDeviceLost();
-			CAfxManagedDirect3DVertexBuffer9::AfxDeviceLost();
-			CAfxManagedDirect3DIndexBuffer9::AfxDeviceLost();
-			if (afxSharedRenderTarget) afxSharedRenderTarget->DeviceLost(g_OldDirect3DDevice9);
-		}
-
 		CAfxManagedDirect3DIndexBuffer9::AfxDevicePresented();
 		CAfxManagedDirect3DVertexBuffer9::AfxDevicePresented();
 		CAfxManagedOffscreenPlainSurface::AfxDevicePresented();
