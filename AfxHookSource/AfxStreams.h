@@ -450,6 +450,16 @@ private:
 
 class CAfxBaseFxStream;
 
+struct AfxViewportData_t
+{
+	int x;
+	int y;
+	int width;
+	int height;
+	float zNear;
+	float zFar;
+};
+
 class CAfxRenderViewStream
 	: public CAfxStreamShared
 {
@@ -518,7 +528,7 @@ public:
 	//
 	// State information:
 
-	virtual void OnRenderBegin(SOURCESDK::vrect_t_csgo * orgViewRect = 0)
+	virtual void OnRenderBegin(const AfxViewportData_t & viewport)
 	{
 	}
 
@@ -945,7 +955,7 @@ public:
 
 	static void MainThreadInitialize(void);
 
-	virtual void OnRenderBegin(SOURCESDK::vrect_t_csgo * orgViewRect);
+	virtual void OnRenderBegin(const AfxViewportData_t & viewport);
 
 	virtual void OnRenderEnd(void);
 
@@ -1042,6 +1052,40 @@ public:
 
 	float DepthValMax_get(void);
 	void DepthValMax_set(float value);
+
+	enum EDrawDepth
+	{
+		EDrawDepth_None,
+		EDrawDepth_Gray,
+		EDrawDepth_Rgb
+	};
+
+	EDrawDepth DrawDepth_get(void)
+	{
+		return m_DrawDepth;
+	}
+
+	void DrawDepth_set(EDrawDepth value)
+	{
+		m_DrawDepth = value;
+	}
+
+	enum EDrawDepthMode
+	{
+		EDrawDepthMode_Inverse,
+		EDrawDepthMode_Linear,
+		EDrawDepthMode_LogE
+	};
+
+	EDrawDepthMode DrawDepthMode_get()
+	{
+		return m_DrawDepthMode;
+	}
+
+	void DrawDepthMode_set(EDrawDepthMode value)
+	{
+		m_DrawDepthMode = value;
+	}
 
 	virtual float SmokeOverlayAlphaFactor_get(void);
 	void SmokeOverlayAlphaFactor_set(float value);
@@ -1154,6 +1198,8 @@ protected:
 	bool m_ShouldForceNoVisOverride;
 
 	EClearBeforeHud m_ClearBeforeHud = EClearBeforeHud_No;
+	EDrawDepth m_DrawDepth = EDrawDepth_None;
+	EDrawDepthMode m_DrawDepthMode = EDrawDepthMode_Linear;
 
 	virtual ~CAfxBaseFxStream();
 
@@ -1761,7 +1807,7 @@ private:
 			return m_DrawingSkyBoxView;
 		}
 
-		void RenderBegin(CAfxBaseFxStream * stream, SOURCESDK::vrect_t_csgo * orgViewport = 0);
+		void RenderBegin(CAfxBaseFxStream * stream, const AfxViewportData_t & viewport);
 
 		void RenderEnd(void);
 
@@ -1910,7 +1956,8 @@ private:
 		bool m_IsRootCtx;
 		CAfxBaseFxStream::CAction * m_CurrentAction;
 		//std::map<void *, SOURCESDK::CSGO::CBaseHandle> m_ProxyDataToEntityHandle;
-		SOURCESDK::vrect_t_csgo m_OrgViewport;
+		AfxViewportData_t m_Viewport;
+		bool m_IsNextDepth;
 
 		void QueueBegin();
 		void QueueEnd();
@@ -2129,6 +2176,18 @@ protected:
 	virtual ~CAfxDepthStream() {}
 };
 
+class CAfxZDepthStream
+	: public CAfxBaseFxStream
+{
+public:
+	CAfxZDepthStream() : CAfxBaseFxStream()
+	{
+		ForceBuildingCubemaps_set(true);
+		DrawHud_set(DT_Draw);
+		DrawDepth_set(EDrawDepth_Gray);
+	}
+};
+
 class CAfxMatteWorldStream
 : public CAfxBaseFxStream
 {
@@ -2195,6 +2254,19 @@ protected:
 	virtual ~CAfxDepthWorldStream() {}
 };
 
+class CAfxZDepthWorldStream
+	: public CAfxMatteWorldStream
+{
+public:
+	CAfxZDepthWorldStream() : CAfxMatteWorldStream()
+	{
+		ForceBuildingCubemaps_set(true);
+		DrawHud_set(DT_Draw);
+		DrawDepth_set(EDrawDepth_Gray);
+	}
+};
+
+
 class CAfxMatteEntityStream
 : public CAfxBaseFxStream
 {
@@ -2234,6 +2306,15 @@ protected:
 class CAfxDepthEntityStream
 : public CAfxDepthStream
 {
+};
+
+class CAfxZDepthEntityStream
+	: public CAfxZDepthStream
+{
+public:
+	CAfxZDepthEntityStream() : CAfxZDepthStream()
+	{
+	}
 };
 
 class CAfxAlphaMatteStream
@@ -2495,11 +2576,11 @@ public:
 	void Console_Record_End();
 	void Console_AddStream(const char * streamName);
 	void Console_AddBaseFxStream(const char * streamName);
-	void Console_AddDepthStream(const char * streamName);
+	void Console_AddDepthStream(const char * streamName, bool tryZDepth);
 	void Console_AddMatteWorldStream(const char * streamName);
-	void Console_AddDepthWorldStream(const char * streamName);
+	void Console_AddDepthWorldStream(const char * streamName, bool tryZDepth);
 	void Console_AddMatteEntityStream(const char * streamName);
-	void Console_AddDepthEntityStream(const char * streamName);
+	void Console_AddDepthEntityStream(const char * streamName, bool tryZDepth);
 	void Console_AddAlphaMatteStream(const char * streamName);
 	void Console_AddAlphaEntityStream(const char * streamName);
 	void Console_AddAlphaWorldStream(const char * streamName);

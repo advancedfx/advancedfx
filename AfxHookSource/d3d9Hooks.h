@@ -59,6 +59,12 @@ void AfxD3D9OverrideBegin_D3DRS_SRGBWRITEENABLE(DWORD value);
 void AfxD3D9OverrideEnd_D3DRS_SRGBWRITEENABLE(void);
 
 /// <remarks>IDirect3D9Device only (i.e. CS:GO but not CSS).</remarks>
+void AfxD3D9OverrideBegin_D3DRS_COLORWRITEENABLE(DWORD value);
+
+/// <remarks>IDirect3D9Device only (i.e. CS:GO but not CSS).</remarks>
+void AfxD3D9OverrideEnd_D3DRS_COLORWRITEENABLE(void);
+
+/// <remarks>IDirect3D9Device only (i.e. CS:GO but not CSS).</remarks>
 void AfxD3D9OverrideBegin_D3DRS_ZWRITEENABLE(DWORD value);
 
 /// <remarks>IDirect3D9Device only (i.e. CS:GO but not CSS).</remarks>
@@ -121,6 +127,18 @@ void AfxD3D9_Block_Present(bool block);
 extern bool g_bD3D9DumpVertexShader;
 extern bool g_bD3D9DumpPixelShader;
 
+bool AfxD3d9_IntzSupported(void);
+
+enum AfxDrawDepthMode
+{
+	AfxDrawDepthMode_Inverse,
+	AfxDrawDepthMode_Linear,
+	AfxDrawDepthMode_LogE,
+};
+
+void AfxIntzOverrideBegin();
+void AfxIntzOverrideEnd();
+void AfxDrawDepth(bool rgb, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, float skyBoxScale);
 
 //
 
@@ -133,4 +151,6 @@ public:
 	virtual HANDLE GetSharedHandle() = 0;
 };
 
+#ifdef AFX_INTEROP
 void AfxD3D_WaitForGPU();
+#endif

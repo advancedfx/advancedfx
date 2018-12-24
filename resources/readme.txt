@@ -75,7 +75,7 @@ Detours
 	SOFTWARE.
 
 GitHub
-	For hosting the downloads, wiki and source code repository.
+	For hosting the downloads, homepage, wiki and source code repository.
 	https://github.com/
 
 Hex-Rays

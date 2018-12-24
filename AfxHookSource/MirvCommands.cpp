@@ -439,13 +439,13 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					{
 						char const * cmd3 = args->ArgV(3);
 
-						g_AfxStreams.Console_AddDepthStream(cmd3);
+						g_AfxStreams.Console_AddDepthStream(cmd3, !(5 <= argc && 0 == _stricmp(args->ArgV(4), "draw")));
 
 						return;
 					}
 
 					Tier0_Msg(
-						"mirv_streams add depth <name> - Add a depth stream with name <name>.\n"
+						"mirv_streams add depth <name> [draw]- Add a depth stream with name <name>. Draw to force the old method.\n"
 					);
 					return;
 				}
@@ -473,13 +473,13 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					{
 						char const * cmd3 = args->ArgV(3);
 
-						g_AfxStreams.Console_AddDepthWorldStream(cmd3);
+						g_AfxStreams.Console_AddDepthWorldStream(cmd3, !(5 <= argc && 0 == _stricmp(args->ArgV(4), "draw")));
 
 						return;
 					}
 
 					Tier0_Msg(
-						"mirv_streams add depthWorld <name> - Add a depth world stream with name <name>.\n"
+						"mirv_streams add depthWorld <name> [draw] - Add a depth world stream with name <name>. Draw to force the old method.\n"
 					);
 					return;
 				}
@@ -507,13 +507,13 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					{
 						char const * cmd3 = args->ArgV(3);
 
-						g_AfxStreams.Console_AddDepthEntityStream(cmd3);
+						g_AfxStreams.Console_AddDepthEntityStream(cmd3, !(5 <= argc && 0 == _stricmp(args->ArgV(4), "draw")));
 
 						return;
 					}
 
 					Tier0_Msg(
-						"mirv_streams add depthEntity <name> - Add a depth entity stream with name <name>.\n"
+						"mirv_streams add depthEntity <name> [draw] - Add a depth entity stream with name <name>. Draw to force the old method.\n"
 					);
 					return;
 				}

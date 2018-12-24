@@ -1017,8 +1017,8 @@ CAfxBaseFxStream::CShared CAfxBaseFxStream::m_Shared;
 CAfxBaseFxStream::CAfxBaseFxStream()
 : CAfxRenderViewStream()
 , m_TestAction(false)
-, m_DepthVal(1)
-, m_DepthValMax(1024)
+, m_DepthVal(7)
+, m_DepthValMax(2100)
 , m_SmokeOverlayAlphaFactor(1)
 , m_ShouldForceNoVisOverride(false)
 , m_DebugPrint(false)
@@ -1229,13 +1229,13 @@ void CAfxBaseFxStream::LevelShutdown(void)
 	m_Shared.LevelShutdown();
 }
 
-void CAfxBaseFxStream::OnRenderBegin(SOURCESDK::vrect_t_csgo * orgViewRect)
+void CAfxBaseFxStream::OnRenderBegin(const AfxViewportData_t & viewport)
 {
-	CAfxRenderViewStream::OnRenderBegin(orgViewRect);
+	CAfxRenderViewStream::OnRenderBegin(viewport);
 
 	m_ActiveStreamContext = m_Shared.RequestStreamContext();
 
-	m_ActiveStreamContext->RenderBegin(this, orgViewRect);
+	m_ActiveStreamContext->RenderBegin(this, viewport);
 }
 
 void CAfxBaseFxStream::OnRenderEnd()
@@ -2129,7 +2129,8 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin()
 
 		m_ChildContext->m_IsRootCtx = false;
 		m_ChildContext->m_Stream = this->m_Stream;
-		m_ChildContext->m_OrgViewport = this->m_OrgViewport;
+		m_ChildContext->m_Viewport = this->m_Viewport;
+		m_ChildContext->m_IsNextDepth = this->m_IsNextDepth;
 
 		queue->QueueFunctor(new CQueueBeginFunctor(m_ChildContext));
 	}
@@ -2138,6 +2139,14 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin()
 		// Is leaf context.
 
 		m_ChildContext = 0;
+
+		if (this->GetStream()->m_DrawDepth)
+		{
+			AfxIntzOverrideBegin();
+
+			AfxD3D9OverrideBegin_D3DRS_COLORWRITEENABLE(0);
+		}
+
 		AfxD3D9PushOverrideState();
 	}
 }
@@ -2158,6 +2167,13 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd()
 		BindAction(0);
 
 		AfxD3D9PopOverrideState();
+
+		if (this->GetStream()->m_DrawDepth)
+		{
+			AfxD3D9OverrideEnd_D3DRS_COLORWRITEENABLE();
+
+			AfxIntzOverrideEnd();
+		}
 	}
 
 	m_Ctx->Hook_set(0);
@@ -2174,18 +2190,12 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd()
 	CAfxBaseFxStream::m_Shared.ReturnStreamContext(this);
 }
 
-void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderBegin(CAfxBaseFxStream * stream, SOURCESDK::vrect_t_csgo * orgViewport)
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderBegin(CAfxBaseFxStream * stream, const AfxViewportData_t & viewport)
 {
 	m_IsRootCtx = true;
 	m_Stream = stream;
-	if (orgViewport)
-	{
-		m_OrgViewport = *orgViewport;
-	}
-	else
-	{
-		m_OrgViewport.height = m_OrgViewport.width = 0;
-	}
+	m_Viewport = viewport;
+	m_IsNextDepth = false;
 
 	m_Stream->AddRef();
 	m_Stream->InterLockIncrement();
@@ -2201,14 +2211,29 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderEnd(void)
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueFunctorInternal(IAfxCallQueue * aq, SOURCESDK::CSGO::CFunctor *pFunctor)
 {
 	this->IfRootThenUpdateCurrentEntityHandle();
-	aq->GetParent()->QueueFunctor(new CAfxLeafExecute_Functor(new CAfxD3D9PushOverrideState_Functor));
+	//aq->GetParent()->QueueFunctor(new CAfxLeafExecute_Functor(new CAfxD3D9PushOverrideState_Functor));
 	aq->GetParent()->QueueFunctorInternal(pFunctor);
-	aq->GetParent()->QueueFunctor(new CAfxLeafExecute_Functor(new CAfxD3D9PopOverrideState_Functor));
+	//aq->GetParent()->QueueFunctor(new CAfxLeafExecute_Functor(new CAfxD3D9PopOverrideState_Functor));
 }
 
 bool CAfxBaseFxStream::CAfxBaseFxStreamContext::ViewRenderShouldForceNoVis(bool orgValue)
 {
 	return m_Stream->m_ShouldForceNoVisOverride ? true : orgValue;
+}
+
+AfxDrawDepthMode AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(CAfxBaseFxStream::EDrawDepthMode value)
+{
+	switch (value)
+	{
+	case CAfxBaseFxStream::EDrawDepthMode_Inverse:
+		return AfxDrawDepthMode_Inverse;
+	case CAfxBaseFxStream::EDrawDepthMode_Linear:
+		return AfxDrawDepthMode_Linear;
+	case CAfxBaseFxStream::EDrawDepthMode_LogE:
+		return AfxDrawDepthMode_LogE;
+	}
+
+	return AfxDrawDepthMode_Linear;
 }
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
@@ -2221,7 +2246,20 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 	}
 	else
 	{
-		// Leaf context, do the clearing if wanted:
+		// Leaf context
+
+		CAfxBaseFxStream * stream = this->GetStream();
+
+		if (EDrawDepth_None != stream->m_DrawDepth)
+		{
+			float flDepthFactor = stream->m_DepthVal;
+			float flDepthFactorMax = stream->m_DepthValMax;
+
+			AfxDrawDepth(EDrawDepth_Rgb == stream->m_DrawDepth, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height, m_Viewport.zNear, m_Viewport.zFar, 1.0f);
+			m_IsNextDepth = true;
+		}
+		
+		// Do the clearing if wanted:
 
 		BindAction(0); // We don't handle HUD atm.
 
@@ -2266,6 +2304,19 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 	else
 	{
 		// Leaf context
+
+		CAfxBaseFxStream * stream = this->GetStream();
+
+		if (EDrawDepth_None != stream->m_DrawDepth)
+		{
+			float flDepthFactor = stream->m_DepthVal;
+			float flDepthFactorMax = stream->m_DepthValMax;
+
+			float scale = csgo_CSkyBoxView_GetScale();
+
+			AfxDrawDepth(EDrawDepth_Rgb == stream->m_DrawDepth, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height, m_Viewport.zNear, m_Viewport.zFar, scale);
+			m_IsNextDepth = true;
+		}
 	}
 
 	m_DrawingSkyBoxView = false;
@@ -2280,27 +2331,6 @@ bool Pt_Inside(int x, int y, SOURCESDK::vrect_t_csgo * rect)
 		&& y < (rect->y + rect->height);
 
 }
-/*
-void CAfxBaseFxStream::CAfxBaseFxStreamContext::Viewport(int x, int y, int width, int height)
-{
-	m_Ctx->GetOrg()->Viewport(x, y, width, height);
-	return;
-
-	if (m_OrgViewport.width && m_OrgViewport.height)
-	{
-		bool inside =
-			Pt_Inside(x, y, &m_OrgViewport)
-			&& Pt_Inside(x + width - 1, y + width - y, &m_OrgViewport)
-		;
-
-		if (inside)
-		{
-			m_Ctx->GetOrg()->Viewport(x, y, width, height);
-		}
-
-	}
-}
-*/
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::UpdateCurrentEntityHandle(SOURCESDK::CSGO::CBaseHandle handle)
 {
@@ -3764,6 +3794,7 @@ void CAfxBaseFxStream::CActionNoDraw::AfxUnbind(CAfxBaseFxStreamContext * ch)
 	IAfxMatRenderContextOrg * ctxo = ch->GetCtx()->GetOrg();
 
 	AfxD3D9OverrideEnd_D3DRS_ZWRITEENABLE();
+	AfxD3D9OverrideEnd_D3DRS_COLORWRITEENABLE();
 	AfxD3D9OverrideEnd_D3DRS_DESTBLEND();
 	AfxD3D9OverrideEnd_D3DRS_SRCBLEND();
 	AfxD3D9OverrideEnd_D3DRS_ALPHABLENDENABLE();
@@ -3776,6 +3807,7 @@ void CAfxBaseFxStream::CActionNoDraw::MaterialHook(CAfxBaseFxStreamContext * ch,
 	AfxD3D9OverrideBegin_D3DRS_ALPHABLENDENABLE(TRUE);
 	AfxD3D9OverrideBegin_D3DRS_SRCBLEND(D3DBLEND_ZERO);
 	AfxD3D9OverrideBegin_D3DRS_DESTBLEND(D3DBLEND_ONE);
+	AfxD3D9OverrideBegin_D3DRS_COLORWRITEENABLE(0);
 	AfxD3D9OverrideBegin_D3DRS_ZWRITEENABLE(FALSE);
 }
 
@@ -4634,7 +4666,16 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 	if (0 < strlen(previewStream->AttachCommands_get()))
 		g_VEngineClient->ExecuteClientCmd(previewStream->AttachCommands_get()); // Execute commands before we lock the stream!
 
-	previewStream->OnRenderBegin();
+	AfxViewportData_t afxViewport = {
+		view.x,
+		view.y,
+		view.width,
+		view.height,
+		view.zNear,
+		view.zFar
+	};
+
+	previewStream->OnRenderBegin(afxViewport);
 
 	int myWhatToDraw = whatToDraw;
 
@@ -5251,62 +5292,66 @@ void CAfxStreams::Console_AddBaseFxStream(const char * streamName)
 	AddStream(new CAfxSingleStream(streamName, new CAfxBaseFxStream()));
 }
 
-void CAfxStreams::Console_AddDepthStream(const char * streamName)
+void CAfxStreams::Console_AddDepthStream(const char * streamName, bool tryZDepth)
 {
-	Tier0_Warning("Warning: Due to CS:GO 17th Ferbuary 2016 update this stream is not working perfectly.\n");
-
 	if(!Console_CheckStreamName(streamName))
 		return;
 
-	AddStream(new CAfxSingleStream(streamName, new CAfxDepthStream()));
+	if (tryZDepth && !AfxD3d9_IntzSupported())
+	{
+		Tier0_Warning("Your graphic card does not support this feature (FOURCC_INTZ), falling back to old draw depth method.\n");
+		tryZDepth = false;
+	}
+
+	AddStream(new CAfxSingleStream(streamName, tryZDepth ? static_cast<CAfxRenderViewStream *>(new CAfxZDepthStream()) : static_cast<CAfxRenderViewStream *>(new CAfxDepthStream())));
 }
 
 void CAfxStreams::Console_AddMatteWorldStream(const char * streamName)
 {
-	Tier0_Warning("Warning: Due to CS:GO 17th Ferbuary 2016 update this stream is not working perfectly.\n");
-
 	if(!Console_CheckStreamName(streamName))
 		return;
 
 	AddStream(new CAfxSingleStream(streamName, new CAfxMatteWorldStream()));
 }
 
-void CAfxStreams::Console_AddDepthWorldStream(const char * streamName)
+void CAfxStreams::Console_AddDepthWorldStream(const char * streamName, bool tryZDepth)
 {
-	Tier0_Warning("Warning: Due to CS:GO 17th Ferbuary 2016 update this stream is not working perfectly.\n");
-
 	if (!Console_CheckStreamName(streamName))
 		return;
 
-	AddStream(new CAfxSingleStream(streamName, new CAfxDepthWorldStream()));
+	if (tryZDepth && !AfxD3d9_IntzSupported())
+	{
+		Tier0_Warning("Your graphic card does not support this feature (FOURCC_INTZ), falling back to old draw depth method.\n");
+		tryZDepth = false;
+	}
+
+	AddStream(new CAfxSingleStream(streamName, tryZDepth ? static_cast<CAfxRenderViewStream *>(new CAfxZDepthWorldStream()) : static_cast<CAfxRenderViewStream *>(new CAfxDepthWorldStream())));
 }
 
 void CAfxStreams::Console_AddMatteEntityStream(const char * streamName)
 {
-	Tier0_Warning("Warning: Due to CS:GO 17th Ferbuary 2016 update this stream is not working perfectly.\n");
-
 	if (!Console_CheckStreamName(streamName))
 		return;
 
 	AddStream(new CAfxSingleStream(streamName, new CAfxMatteEntityStream()));
-
-	Tier0_Warning("Your matteEntity stream has been added, however please note that the alphaMatte + alphaEntity streams (combined in alphaMatteEntity stream) are far superior, because they can handle transparency far better.\n");
 }
 
-void CAfxStreams::Console_AddDepthEntityStream(const char * streamName)
+void CAfxStreams::Console_AddDepthEntityStream(const char * streamName, bool tryZDepth)
 {
-	Tier0_Warning("Warning: Due to CS:GO 17th Ferbuary 2016 update this stream is not working perfectly.\n");
-
 	if (!Console_CheckStreamName(streamName))
 		return;
 
-	AddStream(new CAfxSingleStream(streamName, new CAfxDepthEntityStream()));
+	if (tryZDepth && !AfxD3d9_IntzSupported())
+	{
+		Tier0_Warning("Your graphic card does not support this feature (FOURCC_INTZ), falling back to old draw depth method.\n");
+		tryZDepth = false;
+	}
+
+	AddStream(new CAfxSingleStream(streamName, tryZDepth ? static_cast<CAfxRenderViewStream *>(new CAfxZDepthEntityStream()) : static_cast<CAfxRenderViewStream *>(new CAfxDepthEntityStream())));
 }
 
 void CAfxStreams::Console_AddAlphaMatteStream(const char * streamName)
 {
-	Tier0_Warning("Warning: Due to CS:GO 17th Ferbuary 2016 update this stream is not working perfectly.\n");
-
 	if (!Console_CheckStreamName(streamName))
 		return;
 
@@ -5315,8 +5360,6 @@ void CAfxStreams::Console_AddAlphaMatteStream(const char * streamName)
 
 void CAfxStreams::Console_AddAlphaEntityStream(const char * streamName)
 {
-	Tier0_Warning("Warning: Due to CS:GO 17th Ferbuary 2016 update this stream is not working perfectly.\n");
-
 	if (!Console_CheckStreamName(streamName))
 		return;
 
@@ -5325,8 +5368,6 @@ void CAfxStreams::Console_AddAlphaEntityStream(const char * streamName)
 
 void CAfxStreams::Console_AddAlphaWorldStream(const char * streamName)
 {
-	Tier0_Warning("Warning: Due to CS:GO 17th Ferbuary 2016 update this stream is not working perfectly.\n");
-
 	if (!Console_CheckStreamName(streamName))
 		return;
 
@@ -5335,8 +5376,6 @@ void CAfxStreams::Console_AddAlphaWorldStream(const char * streamName)
 
 void CAfxStreams::Console_AddAlphaMatteEntityStream(const char * streamName)
 {
-	Tier0_Warning("Warning: Due to CS:GO 17th Ferbuary 2016 update this stream is not working perfectly.\n");
-
 	if (!Console_CheckStreamName(streamName))
 		return;
 
@@ -6559,6 +6598,49 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 				);
 				return true;
 			}
+			else if (0 == _stricmp(cmd0, "clearBeforeHud"))
+			{
+				if (2 <= argc)
+				{
+					const char * cmd1 = args->ArgV(argcOffset + 1);
+
+					if (0 == _stricmp(cmd1, "none"))
+					{
+						curBaseFx->ClearBeforeHud_set(CAfxBaseFxStream::EClearBeforeHud_No);
+						return true;
+					}
+					else if (0 == _stricmp(cmd1, "black"))
+					{
+						curBaseFx->ClearBeforeHud_set(CAfxBaseFxStream::EClearBeforeHud_Black);
+						return true;
+					}
+					else if (0 == _stricmp(cmd1, "white"))
+					{
+						curBaseFx->ClearBeforeHud_set(CAfxBaseFxStream::EClearBeforeHud_White);
+						return true;
+					}
+				}
+
+				CAfxBaseFxStream::EClearBeforeHud value = curBaseFx->ClearBeforeHud_get();
+				const char * pszValue = "none";
+				switch (value)
+				{
+				case CAfxBaseFxStream::EClearBeforeHud_Black:
+					pszValue = "black";
+					break;
+				case CAfxBaseFxStream::EClearBeforeHud_White:
+					pszValue = "white";
+					break;
+				}
+
+				Tier0_Msg(
+					"%s clearBeforeHud none|black|white - Clear with color before HUD is drawn\n"
+					"Current value: %s\n"
+					, cmdPrefix
+					, pszValue
+				);
+				return true;
+			}
 			else
 			if(!_stricmp(cmd0, "depthVal"))
 			{
@@ -6592,6 +6674,108 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 					"Current value: %f.\n"
 					, cmdPrefix
 					, curBaseFx->DepthValMax_get()
+				);
+				return true;
+			}
+			else if (0 == _stricmp(cmd0, "drawZ"))
+			{
+				if (!AfxD3d9_IntzSupported())
+				{
+					Tier0_Warning("Your graphic card does not support this feature (FOURCC_INTZ).\n");
+				}
+
+				if (2 <= argc)
+				{
+					const char * cmd1 = args->ArgV(argcOffset + 1);
+
+					if (0 == _stricmp(cmd1, "none"))
+					{
+						curBaseFx->DrawDepth_set(CAfxBaseFxStream::EDrawDepth_None);
+						return true;
+					}
+					else if (0 == _stricmp(cmd1, "gray"))
+					{
+						curBaseFx->DrawDepth_set(CAfxBaseFxStream::EDrawDepth_Gray);
+						return true;
+					}
+					else if (0 == _stricmp(cmd1, "rgb"))
+					{
+						curBaseFx->DrawDepth_set(CAfxBaseFxStream::EDrawDepth_Rgb);
+						return true;
+					}
+				}
+
+				CAfxBaseFxStream::EDrawDepth value = curBaseFx->DrawDepth_get();
+				const char * pszValue = "[unkown]";
+				switch (value)
+				{
+				case CAfxBaseFxStream::EDrawDepth_None:
+					pszValue = "none";
+					break;
+				case CAfxBaseFxStream::EDrawDepth_Gray:
+					pszValue = "gray";
+					break;
+				case CAfxBaseFxStream::EDrawDepth_Rgb:
+					pszValue = "rgb";
+					break;
+				}
+
+				Tier0_Msg(
+					"%s drawZ none|gray|rgb - Use special shader to draw the z-(depth) buffer (does not support HUD atm).\n"
+					"Current value: %s\n"
+					, cmdPrefix
+					, pszValue
+				);
+				return true;
+			}
+			else if (0 == _stricmp(cmd0, "drawZMode"))
+			{
+				if (!AfxD3d9_IntzSupported())
+				{
+					Tier0_Warning("Your graphic card does not support this feature (FOURCC_INTZ).\n");
+				}
+
+				if (2 <= argc)
+				{
+					const char * cmd1 = args->ArgV(argcOffset + 1);
+
+					if (0 == _stricmp(cmd1, "inverse"))
+					{
+						curBaseFx->DrawDepthMode_set(CAfxBaseFxStream::EDrawDepthMode_Inverse);
+						return true;
+					}
+					else if (0 == _stricmp(cmd1, "linear"))
+					{
+						curBaseFx->DrawDepthMode_set(CAfxBaseFxStream::EDrawDepthMode_Linear);
+						return true;
+					}
+					else if (0 == _stricmp(cmd1, "logE"))
+					{
+						curBaseFx->DrawDepthMode_set(CAfxBaseFxStream::EDrawDepthMode_LogE);
+						return true;
+					}
+				}
+
+				CAfxBaseFxStream::EDrawDepth value = curBaseFx->DrawDepth_get();
+				const char * pszValue = "[unknown]";
+				switch (value)
+				{
+				case CAfxBaseFxStream::EDrawDepthMode_Inverse:
+					pszValue = "inverse";
+					break;
+				case CAfxBaseFxStream::EDrawDepthMode_Linear:
+					pszValue = "linear";
+					break;
+				case CAfxBaseFxStream::EDrawDepthMode_LogE:
+					pszValue = "logE";
+					break;
+				}
+
+				Tier0_Msg(
+					"%s drawZMode inverse|linear|logE - Mode to use for drawZ.\n"
+					"Current value: %s\n"
+					, cmdPrefix
+					, pszValue
 				);
 				return true;
 			}
@@ -6747,9 +6931,12 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 		Tier0_Msg("%s devAction [...] - Readonly.\n", cmdPrefix);
 		Tier0_Msg("%s otherEngineAction [...] - Readonly.\n", cmdPrefix);
 		Tier0_Msg("%s otherSpecialAction [...] - Readonly.\n", cmdPrefix);
+		Tier0_Msg("%s clearBeforeHud [...]\n", cmdPrefix);
 		Tier0_Msg("%s vguiAction [...] - Readonly.\n", cmdPrefix);
 		Tier0_Msg("%s depthVal [...]\n", cmdPrefix);
 		Tier0_Msg("%s depthValMax [...]\n", cmdPrefix);
+		Tier0_Msg("%s drawZ [...]\n", cmdPrefix);
+		Tier0_Msg("%s drawZMode [...]\n", cmdPrefix);
 		Tier0_Msg("%s smokeOverlayAlphaFactor [...]\n", cmdPrefix);
 		Tier0_Msg("%s shouldForceNoVisOverride [...]\n", cmdPrefix);
 		Tier0_Msg("%s debugPrint [...]\n", cmdPrefix);
@@ -7244,7 +7431,16 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 	if (0 < strlen(stream->AttachCommands_get()))
 		g_VEngineClient->ExecuteClientCmd(stream->AttachCommands_get()); // Execute commands before we lock the stream!
 
-	stream->OnRenderBegin();
+	AfxViewportData_t afxViewport = {
+		view.x,
+		view.y,
+		view.width,
+		view.height,
+		view.zNear,
+		view.zFar
+	};
+
+	stream->OnRenderBegin(afxViewport);
 
 	int myWhatToDraw = whatToDraw;
 

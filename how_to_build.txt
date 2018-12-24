@@ -112,6 +112,10 @@ Notice:
       - to afx_pgldraw_vs20 (profile vs_2_0)
     - shaders\afx_pgldraw_ps20.fxc:
       - to afx_pgldraw_ps20 (profile ps_2_0)
+    - shaders\afx_depth_ps20.fxc
+      - to afx_depth_ps20 (profile ps_2_0)
+    The .h and .acs files build this way are required by the AfxHookSource
+    project.
 
 [X] AfxHook\recompile_586.bat, move AfxHook.dat into build\Release\bin\
 
