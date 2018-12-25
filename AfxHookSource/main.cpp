@@ -2164,6 +2164,24 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 	{ 
 		case DLL_PROCESS_ATTACH:
 		{
+			wchar_t * pSzInsecureArg = wcsstr(GetCommandLineW(), L" -insecure");
+			if(NULL == pSzInsecureArg || !(pSzInsecureArg += wcslen(L" -insecure"), (L' ' == *pSzInsecureArg ||  L'\0' == *pSzInsecureArg)))
+			{
+				ErrorBox("Please add -insecure to launch options (case sensitive), AfxHookSource will refuse to work without it!");
+				try
+				{
+					HANDLE hproc = OpenProcess(PROCESS_TERMINATE, true, GetCurrentProcessId());
+					TerminateProcess(hproc, 0);
+					CloseHandle(hproc);
+				}
+				catch (...)
+				{
+					do MessageBoxA(NULL, "Please terminate the game manually in the taskmanager!", "Cannot terminate, please help:", MB_OK | MB_ICONERROR);
+					while (true);
+				}
+				break;
+			}
+
 #ifdef _DEBUG
 			MessageBox(0,"DLL_PROCESS_ATTACH","MDT_DEBUG",MB_OK);
 #endif

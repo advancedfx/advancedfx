@@ -4001,7 +4001,7 @@ public:
 
 	void AfxPushOverrideState(void)
 	{
-		m_OverrideStack.emplace(*this);
+		m_OverrideStack.push(m_OverrideStack.top()); // Copy top state and push it onto stack.
 	}
 
 	void AfxPopOverrideState(void)

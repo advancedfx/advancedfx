@@ -6,6 +6,25 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.47.0</version>
+<time>2018-12-25T08:04Z</time>
+<changes>
+<change type="added">
+Will now refuse to work without -insecure option, requested by several users.
+</change>
+<change type="updated">
+Updated depth streams for graphic cards with INTZ support (most PC graphic cards have that nowadays).<br />
+If you want to use the old method, use: mirv_streams add depth[...] &lt;name&gt; draw<br />
+The new depth stream is still far from perfect, but should be better (trees yay), since it uses CS:GO's own depth buffer, but it is not anti aliased. Since it uses the depth buffer, particles (e.g. smoke / blood) and semi-transparent objects (glass) or anything else that does not write to the depth buffer will still not be present in it.<br />
+The default for the streams depthVal changed to 7 (increased by 6 inches) and for depthValMax to 2100 (large increase).<br />
+Tip: You can also mask stuff by using depth and depthWorld streams.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.46.5</version>
 <time>2018-12-12T18:35Z</time>
 <changes>

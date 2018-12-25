@@ -149,11 +149,13 @@
             // checkBoxAvoidVac
             // 
             this.checkBoxAvoidVac.AutoSize = true;
-            this.checkBoxAvoidVac.Location = new System.Drawing.Point(10, 45);
+            this.checkBoxAvoidVac.Checked = true;
+            this.checkBoxAvoidVac.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.checkBoxAvoidVac.Location = new System.Drawing.Point(10, 21);
             this.checkBoxAvoidVac.Name = "checkBoxAvoidVac";
-            this.checkBoxAvoidVac.Size = new System.Drawing.Size(390, 17);
+            this.checkBoxAvoidVac.Size = new System.Drawing.Size(307, 17);
             this.checkBoxAvoidVac.TabIndex = 0;
-            this.checkBoxAvoidVac.Text = "also add these: -insecure +sv_lan 1 (highly recommended to avoid VAC bans)";
+            this.checkBoxAvoidVac.Text = "-insecure (prevents joining VAC secured server / VAC bans)";
             this.checkBoxAvoidVac.UseVisualStyleBackColor = true;
             this.checkBoxAvoidVac.Click += new System.EventHandler(this.checkBoxAvoidVac_Click);
             // 
@@ -161,7 +163,7 @@
             // 
             this.textBoxCustomCmd.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.textBoxCustomCmd.Location = new System.Drawing.Point(10, 19);
+            this.textBoxCustomCmd.Location = new System.Drawing.Point(10, 44);
             this.textBoxCustomCmd.Name = "textBoxCustomCmd";
             this.textBoxCustomCmd.Size = new System.Drawing.Size(547, 20);
             this.textBoxCustomCmd.TabIndex = 1;

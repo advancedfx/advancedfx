@@ -51,11 +51,11 @@ namespace AfxGui
 
             m_Guids = new Guid[]{
                 // current GUID:
-                new Guid("f8dbe90e-234a-4ef0-9798-c3d577403b90"),
+                new Guid("6911daee-ba29-4a1e-b5c8-4bc459e42fe2"),
                 // current roll-back GUID:
-                new Guid("cc75f513-0dbb-425f-b84f-602cc14e0183"),
+                new Guid("5b9e1d88-50e7-47c6-b620-d5bd8332304a"),
                 // old GUID(s) to accept:
-                new Guid("fa5feaee-da69-48d8-b9cf-aba52e300876")
+                new Guid("f8dbe90e-234a-4ef0-9798-c3d577403b90")
             };
 
 	        m_Targets = new LinkedList<UpdateCheckNotificationTarget>();

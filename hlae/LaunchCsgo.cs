@@ -51,8 +51,8 @@ namespace AfxGui
             String programPath = config.CsgoExe;
 
             String cmdLine = "-steam -game csgo";
-            if (config.AvoidVac)
-                cmdLine += " -insecure +sv_lan 1";
+            //if (config.AvoidVac)
+            cmdLine += " -insecure";
             if (config.GfxEnabled)
                 cmdLine += " -w " + config.GfxWidth + " -h " + config.GfxHeight + " " + (config.GfxFull ? "-full" : "-window");
             if (0 < config.CustomLaunchOptions.Length)
