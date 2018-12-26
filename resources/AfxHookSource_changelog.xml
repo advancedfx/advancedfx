@@ -6,6 +6,22 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.47.1</version>
+<time>2018-12-26T10:32Z</time>
+<changes>
+<change type="fixed">
+Fixed new depth streams breaking other streams.
+</change>
+<change type="fixed">
+Fixed stream property drawDepthMode.
+</change>
+</changes>
+<comments>Hint: you might be able to combine stream properties: captureType depth24 + drawZ rgb for better OpenEXR precision (untested though, not sure if it works yet).</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.47.0</version>
 <time>2018-12-25T08:04Z</time>
 <changes>

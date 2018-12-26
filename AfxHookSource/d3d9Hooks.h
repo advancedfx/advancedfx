@@ -138,7 +138,7 @@ enum AfxDrawDepthMode
 
 void AfxIntzOverrideBegin();
 void AfxIntzOverrideEnd();
-void AfxDrawDepth(bool rgb, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, float skyBoxScale);
+void AfxDrawDepth(bool rgb, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, bool drawToScreen);
 
 //
 

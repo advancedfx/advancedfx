@@ -2255,7 +2255,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 			float flDepthFactor = stream->m_DepthVal;
 			float flDepthFactorMax = stream->m_DepthValMax;
 
-			AfxDrawDepth(EDrawDepth_Rgb == stream->m_DrawDepth, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height, m_Viewport.zNear, m_Viewport.zFar, 1.0f);
+			AfxDrawDepth(EDrawDepth_Rgb == stream->m_DrawDepth, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height, m_Viewport.zNear, m_Viewport.zFar, true);
 			m_IsNextDepth = true;
 		}
 		
@@ -2309,12 +2309,13 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 
 		if (EDrawDepth_None != stream->m_DrawDepth)
 		{
-			float flDepthFactor = stream->m_DepthVal;
-			float flDepthFactorMax = stream->m_DepthValMax;
-
 			float scale = csgo_CSkyBoxView_GetScale();
+			scale = 1.0f / std::sqrtf((((1.0f / scale) / 2.0f) * ((1.0f / scale) / 2.0f)) / 3.0f);
 
-			AfxDrawDepth(EDrawDepth_Rgb == stream->m_DrawDepth, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height, m_Viewport.zNear, m_Viewport.zFar, scale);
+			float flDepthFactor = stream->m_DepthVal * scale;
+			float flDepthFactorMax = stream->m_DepthValMax * scale;
+
+			AfxDrawDepth(EDrawDepth_Rgb == stream->m_DrawDepth, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height, m_Viewport.zNear, m_Viewport.zFar, false);
 			m_IsNextDepth = true;
 		}
 	}
