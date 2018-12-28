@@ -6,6 +6,18 @@
 
 <release>
 <name>HLAE</name>
+<version>2.58.2</version>
+<time>2018-12-28T09:58Z</time>
+<changes>
+<change type="fixed">
+Fixed update check GUIDs.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.58.1</version>
 <time>2018-12-26T10:32Z</time>
 <changes>
