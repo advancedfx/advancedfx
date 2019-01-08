@@ -148,7 +148,7 @@ bool BvhImport::CopyToCampath(double timeOfs, double fov, CamPath & camPath)
 	return true;
 }
 
-bool BvhImport::GetCamPositon(double fTimeOfs, double outCamdata[6])
+bool BvhImport::GetCamPosition(double fTimeOfs, double outCamdata[6])
 {
 	char * pc;
 

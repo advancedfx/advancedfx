@@ -309,7 +309,7 @@ void Filming::OnR_RenderView(float vieworg[3], float viewangles[3], float & fov)
 	{
 		static double dtmp[6];
 	
-		if(g_CamImport.GetCamPositon(g_Filming.GetDebugClientTime(),dtmp))
+		if(g_CamImport.GetCamPosition(g_Filming.GetDebugClientTime(),dtmp))
 		{
 			vieworg[1] = (float)-dtmp[0];
 			vieworg[2] = (float)+dtmp[1];

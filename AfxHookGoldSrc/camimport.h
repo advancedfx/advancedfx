@@ -15,7 +15,7 @@ public:
 
 	// outformat: see BvhImport::BvhChannel_t
 	// return: truew if successful
-	bool GetCamPositon(double fTimeOfs, double outCamdata[6]);
+	bool GetCamPosition(double fTimeOfs, double outCamdata[6]);
 
 	double GetBaseTime();
 

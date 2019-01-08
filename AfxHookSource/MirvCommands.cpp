@@ -1811,7 +1811,7 @@ CON_COMMAND(mirv_campath,"camera paths")
 							}
 
 
-							Tier0_Msg("mirv_campath edit interp positon ");
+							Tier0_Msg("mirv_campath edit interp position ");
 							for(CamPath::DoubleInterp i = CamPath::DI_DEFAULT; i < CamPath::_DI_COUNT; i = (CamPath::DoubleInterp)((int)i +1))
 							{
 								Tier0_Msg("%s%s", i != CamPath::DI_DEFAULT ? "|": "", CamPath::DoubleInterp_ToString(i));
@@ -1876,7 +1876,7 @@ CON_COMMAND(mirv_campath,"camera paths")
 					}
 
 					Tier0_Msg(
-						"mirv_campath edit interp positon [...]\n"
+						"mirv_campath edit interp position [...]\n"
 						"mirv_campath edit interp rotation [...]\n"
 						"mirv_campath edit interp fov [...]\n"
 					);
@@ -2750,7 +2750,7 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 		"mirv_input camera - Enable camera input mode, see HLAE manual for keys etc.\n"
 		"mirv_input cfg [...] - Control input mode configuration.\n"
 		"mirv_input end - End input mode(s).\n"
-		"mirv_input positon [...]\n"
+		"mirv_input position [...]\n"
 		"mirv_input angles [...]\n"
 		"mirv_input fov [...]\n"
 		"mirv_input mem [...] - Store, use, save and load mirv_input view states.\n"

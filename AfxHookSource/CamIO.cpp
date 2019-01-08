@@ -31,7 +31,7 @@ CamExport::CamExport(const wchar_t * fileName, ScaleFov scaleFov)
 	m_Ofs << "advancedfx Cam" << std::endl;
 	m_Ofs << "version 1" << std::endl;
 	m_Ofs << "scaleFov " << (m_ScaleFov == SF_AlienSwarm ? "alienSwarm" : "none") << std::endl;
-	m_Ofs << "channels time xPosition yPosition zPositon xRotation yRotation zRotation fov" << std::endl;
+	m_Ofs << "channels time xPosition yPosition zPosition xRotation yRotation zRotation fov" << std::endl;
 	m_Ofs << "DATA" << std::endl;
 
 	m_Ofs << std::fixed;

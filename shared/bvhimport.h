@@ -19,7 +19,7 @@ public:
 
 	// outformat: see BvhChannel_t
 	// return: true on success, false otherwise
-	bool GetCamPositon(double fTimeOfs, double outCamdata[6]);
+	bool GetCamPosition(double fTimeOfs, double outCamdata[6]);
 
 	bool CopyToCampath(double timeOfs, double fov, CamPath & camPath);
 

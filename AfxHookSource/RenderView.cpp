@@ -201,7 +201,7 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 	if(m_Import) {
 		double Tf[6];
 
-		if(g_BvhImport.GetCamPositon(
+		if(g_BvhImport.GetCamPosition(
 			curTime -m_ImportBaseTime,
 			Tf
 		)) {

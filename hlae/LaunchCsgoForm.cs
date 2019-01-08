@@ -59,7 +59,7 @@ namespace AfxGui
         private void checkBoxAvoidVac_Click(object sender, EventArgs e)
         {
             MessageBox.Show(
-                "HLAE users requested this option to be made mandoatory.\n"
+                "HLAE users requested this option to be made mandatory.\n"
                 +"The hook will refuse to work without it, thus it can not be removed.",
                 "Mandatory option ...",
                 MessageBoxButtons.OK,

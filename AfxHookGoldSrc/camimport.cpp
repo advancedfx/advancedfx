@@ -79,10 +79,10 @@ void CCamImport::CloseMotionFile()
 	m_BvhImport.CloseMotionFile();
 }
 
-bool CCamImport::GetCamPositon(double fTimeOfs, double outCamdata[6])
+bool CCamImport::GetCamPosition(double fTimeOfs, double outCamdata[6])
 {
 	if(m_BvhImport.IsActive())
-		return m_BvhImport.GetCamPositon(fTimeOfs -m_BaseTime, outCamdata);
+		return m_BvhImport.GetCamPosition(fTimeOfs -m_BaseTime, outCamdata);
 
 	return false;
 }
