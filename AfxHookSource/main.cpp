@@ -2010,7 +2010,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 #endif
 	}
 	else
-	if(bFirstClient && (StringEndsWith( lpLibFileName, "client_panorama.dll") || StringEndsWith(lpLibFileName, "client.dll")))
+	if(bFirstClient && (StringEndsWith( lpLibFileName, "client_panorama.dll") || SourceSdkVer_CSGO != g_SourceSdkVer && StringEndsWith(lpLibFileName, "client.dll")))
 	{
 		bFirstClient = false;
 
