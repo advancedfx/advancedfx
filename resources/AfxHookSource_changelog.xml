@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.47.2</version>
+<time>2019-01-08T04:27Z</time>
+<changes>
+<change type="fixed">
+Fixed client.dll not being hooked (affects games other than CS:GO).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.47.1</version>
 <time>2018-12-26T10:32Z</time>
 <changes>

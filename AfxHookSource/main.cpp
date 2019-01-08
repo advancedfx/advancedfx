@@ -1801,11 +1801,11 @@ void CommonHooks()
 		{
 			g_SourceSdkVer = SourceSdkVer_L4D2;
 		}
-		else if (wcsstr(GetCommandLineW(), L"-game tf"))
+		else if (wcsstr(GetCommandLineW(), L" -game tf"))
 		{
 			g_SourceSdkVer = SourceSdkVer_TF2;
 		}
-		else if (wcsstr(GetCommandLineW(), L"-game cstrike"))
+		else if (wcsstr(GetCommandLineW(), L" -game cstrike"))
 		{
 			g_SourceSdkVer = SourceSdkVer_CSS;
 		}
@@ -2010,7 +2010,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 #endif
 	}
 	else
-	if(bFirstClient && StringEndsWith( lpLibFileName, "client_panorama.dll"))
+	if(bFirstClient && (StringEndsWith( lpLibFileName, "client_panorama.dll") || StringEndsWith(lpLibFileName, "client.dll")))
 	{
 		bFirstClient = false;
 
