@@ -2547,33 +2547,16 @@ private:
 	HANDLE m_SharedHandle;
 };
 
+
 ////////////////////////////////////////////////////////////////////////////////
 
-// {2CECCAA9-AD5B-4892-8D32-48FFF205B087}
-DEFINE_GUID(IID_CAfxTrackedIUnknown,
-	0x2ceccaa9, 0xad5b, 0x4892, 0x8d, 0x32, 0x48, 0xff, 0xf2, 0x5, 0xb0, 0x87);
-
-// {2CECCAA9-AD5B-4892-8D32-48FFF205B087}
-static const GUID IID_CAfxTrackedIUnknown =
-{ 0x2ceccaa9, 0xad5b, 0x4892, { 0x8d, 0x32, 0x48, 0xff, 0xf2, 0x5, 0xb0, 0x87 } };
 
 
-class CAfxTrackedIUnknown;
-
-class IAfxIUnknownTracker abstract
+class CAfxIUnknown : public IUnknown
 {
 public:
-	virtual void AfxTrackedIUnknown_Releasing(CAfxTrackedIUnknown * tracked) = 0;
-};
-
-class CAfxTrackedIUnknown : public IUnknown
-{
-public:
-	CAfxTrackedIUnknown(
-		IAfxIUnknownTracker * tracker
-	)
+	CAfxIUnknown()
 		: m_RefCount(1)
-		, m_Tracker(tracker)
 	{
 	}
 
@@ -2582,9 +2565,7 @@ public:
 	{
 		if (ppvObj)
 		{
-			if (
-				IID_IUnknown == riid
-				|| IID_CAfxTrackedIUnknown == riid)
+			if (IID_IUnknown == riid)
 			{
 				*ppvObj = this;
 				return S_OK;
@@ -2609,10 +2590,7 @@ public:
 
 		if (0 == m_RefCount)
 		{
-			if (m_Tracker)
-			{
-				m_Tracker->AfxTrackedIUnknown_Releasing(this);
-			}
+			AfxReleasing();
 
 			delete this;
 
@@ -2622,13 +2600,69 @@ public:
 		return m_RefCount;
 	}
 
+protected:
+	virtual void AfxReleasing(void) = 0;
+
+private:
+	ULONG m_RefCount;
+};
+
+
+// {2CECCAA9-AD5B-4892-8D32-48FFF205B087}
+DEFINE_GUID(IID_CAfxTrackedIUnknown,
+	0x2ceccaa9, 0xad5b, 0x4892, 0x8d, 0x32, 0x48, 0xff, 0xf2, 0x5, 0xb0, 0x87);
+
+// {2CECCAA9-AD5B-4892-8D32-48FFF205B087}
+static const GUID IID_CAfxTrackedIUnknown =
+{ 0x2ceccaa9, 0xad5b, 0x4892, { 0x8d, 0x32, 0x48, 0xff, 0xf2, 0x5, 0xb0, 0x87 } };
+
+class CAfxTrackedIUnknown;
+
+class IAfxIUnknownTracker abstract
+{
+public:
+	virtual void AfxTrackedIUnknown_Releasing(CAfxTrackedIUnknown * tracked) = 0;
+};
+
+class CAfxTrackedIUnknown : public CAfxIUnknown
+{
+public:
+	CAfxTrackedIUnknown(
+		IAfxIUnknownTracker * tracker
+	)
+		: m_Tracker(tracker)
+	{
+	}
+
+	STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj)
+	{
+		if (IID_CAfxTrackedIUnknown == riid)
+		{
+			*ppvObj = this;
+			return S_OK;
+		}
+
+		return CAfxIUnknown::QueryInterface(riid, ppvObj);
+	}
+
+protected:
+	virtual void AfxReleasing(void)
+	{
+		if (m_Tracker)
+		{
+			m_Tracker->AfxTrackedIUnknown_Releasing(this);
+		}
+	}
+
 private:
 	ULONG m_RefCount;
 	IAfxIUnknownTracker * m_Tracker;
 };
 
+template <typename T, bool handleRef = false> class CAfxDirect3DResource9Tracker;
+
 template <typename T>
-class CAfxDirect3DResource9Tracker
+class CAfxDirect3DResource9Tracker<T, false>
 	: protected IAfxIUnknownTracker
 {
 public:
@@ -2664,6 +2698,11 @@ public:
 		}
 	}
 
+	~CAfxDirect3DResource9Tracker()
+	{
+		this->Resource_set(nullptr);
+	}
+
 protected:
 	virtual void AfxTrackedIUnknown_Releasing(CAfxTrackedIUnknown * tracked)
 	{
@@ -2678,6 +2717,189 @@ private:
 	T * m_Resource;
 	CAfxTrackedIUnknown * m_Tracked;
 };
+
+template <typename T>
+class CAfxDirect3DResource9Tracker<T, true>
+	: protected IAfxIUnknownTracker
+{
+public:
+	CAfxDirect3DResource9Tracker()
+		: m_Resource(NULL)
+		, m_Tracked(NULL)
+	{
+
+	}
+
+	T * Resource_get(void)
+	{
+		return m_Resource;
+	}
+
+	void Resource_set(T* value)
+	{
+		if (m_Resource != value)
+		{
+			if (m_Tracked)
+			{
+				m_Resource->FreePrivateData(IID_CAfxTrackedIUnknown);
+
+				m_Resource->Release();
+			}
+
+			m_Resource = value;
+
+			if (NULL != m_Resource)
+			{
+				m_Resource->AddRef();
+
+				m_Tracked = new CAfxTrackedIUnknown(this);
+				m_Resource->SetPrivateData(IID_CAfxTrackedIUnknown, (IUnknown *)m_Tracked, sizeof(IUnknown *), D3DSPD_IUNKNOWN);
+				m_Tracked->Release();
+			}
+		}
+	}
+
+	~CAfxDirect3DResource9Tracker()
+	{
+		this->Resource_set(nullptr);
+	}
+
+protected:
+	virtual void AfxTrackedIUnknown_Releasing(CAfxTrackedIUnknown * tracked)
+	{
+		if (m_Tracked == tracked)
+		{
+			m_Tracked = NULL;
+			m_Resource = NULL;
+		}
+	}
+
+private:
+	T * m_Resource;
+	CAfxTrackedIUnknown * m_Tracked;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+#ifdef AFX_INTEROP
+
+// {1F80D4DE-7F7B-4868-B2DD-23DAD78F7619}
+DEFINE_GUID(IID_AfxTrackedSurface,
+	0x1f80d4de, 0x7f7b, 0x4868, 0xb2, 0xdd, 0x23, 0xda, 0xd7, 0x8f, 0x76, 0x19);
+
+// {1F80D4DE-7F7B-4868-B2DD-23DAD78F7619}
+static const GUID IID_AfxTrackedSurface =
+{ 0x1f80d4de, 0x7f7b, 0x4868, { 0xb2, 0xdd, 0x23, 0xda, 0xd7, 0x8f, 0x76, 0x19 } };
+
+class CAfxTrackedSurface
+	: public CAfxIUnknown
+	//, public IAfxSurface
+{
+public:
+	static CAfxTrackedSurface * Get(IDirect3DSurface9 * surface)
+	{
+		CAfxTrackedSurface * result = NULL;
+
+		if (surface)
+		{
+			IUnknown * data;
+			DWORD size = sizeof(IUnknown *);
+			if (SUCCEEDED(surface->GetPrivateData(IID_AfxTrackedSurface, &data, &size)))
+			{
+				if (FAILED(data->QueryInterface(IID_AfxTrackedSurface, (void **)&result)))
+					return NULL;
+
+				result->Release();
+			}
+		}
+
+		return result;
+	}
+
+	static CAfxTrackedSurface * Track(IDirect3DSurface9 * surface)
+	{
+		CAfxTrackedSurface * result = Get(surface);
+
+		if (NULL == result && surface)
+		{
+			result = new CAfxTrackedSurface(surface);
+		}
+
+		return result;
+	}
+
+	static IDirect3DSurface9 * Replacement(IDirect3DSurface9 * surface)
+	{
+		CAfxTrackedSurface * tracked = Track(surface);
+
+		if (NULL != tracked)
+		{
+			if (IDirect3DSurface9 * replacement = tracked->AfxGetReplacement())
+			{
+				//Tier0_Msg("CAfxTrackedSurface::Replacement = 0x%08x\n", replacement);
+				return replacement;
+			}
+		}
+
+		return surface;
+	}
+
+
+	CAfxTrackedSurface(
+		IDirect3DSurface9 * surface
+	)
+		: m_Surface(surface)
+	{
+		surface->SetPrivateData(IID_AfxTrackedSurface, (IUnknown *)this, sizeof(IUnknown *), D3DSPD_IUNKNOWN);
+		this->Release();
+
+		//AfxInterop::OnCreatedSurface(this);
+	}
+
+	STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj)
+	{
+		if (IID_AfxTrackedSurface == riid)
+		{
+			*ppvObj = this;
+			return S_OK;
+		}
+
+		return CAfxIUnknown::QueryInterface(riid, ppvObj);
+	}
+
+	virtual IDirect3DSurface9 * AfxGetSurface()
+	{
+		return m_Surface;
+	}
+
+	virtual void AfxSetReplacement(IDirect3DSurface9 * surface)
+	{
+		if (surface)
+		{
+			surface->SetPrivateData(IID_AfxTrackedSurface, (IUnknown *)this, sizeof(IUnknown *), D3DSPD_IUNKNOWN);
+			this->Release();
+		}
+
+		m_Replacement.Resource_set(surface);
+	}
+
+	virtual IDirect3DSurface9 * AfxGetReplacement()
+	{
+		return m_Replacement.Resource_get();
+	}
+
+protected:
+	virtual void AfxReleasing(void)
+	{
+		//AfxInterop::OnReleaseSurface(this);
+	}
+
+private:
+	IDirect3DSurface9 * m_Surface;
+	CAfxDirect3DResource9Tracker<IDirect3DSurface9, true> m_Replacement;
+};
+
+#endif
 
 // NewDirect3DDevice9 //////////////////////////////////////////////////////////
 

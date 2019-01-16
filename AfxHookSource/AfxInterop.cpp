@@ -35,7 +35,7 @@ static const GUID IID_IAfxInteropSharedTexture =
 
 namespace AfxInterop {
 
-	const INT32 m_Version = 1;
+	const INT32 m_Version = 2;
 
 	enum DrawingMessage
 	{
@@ -795,7 +795,7 @@ namespace AfxInterop {
 
 			if (!WriteInt32(m_hPipe, desc.Width)) { errorLine = __LINE__; goto error; }
 
-			if (!WriteInt32(m_hPipe, desc.Width)) { errorLine = __LINE__; goto error; }
+			if (!WriteInt32(m_hPipe, desc.Height)) { errorLine = __LINE__; goto error; }
 
 			if (!WriteInt32(m_hPipe, desc.Usage)) { errorLine = __LINE__; goto error; }
 
