@@ -2310,12 +2310,11 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 		if (EDrawDepth_None != stream->m_DrawDepth)
 		{
 			float scale = csgo_CSkyBoxView_GetScale();
-			scale = 1.0f / std::sqrtf((((1.0f / scale) / 2.0f) * ((1.0f / scale) / 2.0f)) / 3.0f);
 
 			float flDepthFactor = stream->m_DepthVal * scale;
 			float flDepthFactorMax = stream->m_DepthValMax * scale;
 
-			AfxDrawDepth(EDrawDepth_Rgb == stream->m_DrawDepth, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height, m_Viewport.zNear, m_Viewport.zFar, false);
+			AfxDrawDepth(EDrawDepth_Rgb == stream->m_DrawDepth, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height, 2.0f, (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH, false);
 			m_IsNextDepth = true;
 		}
 	}
@@ -4668,10 +4667,10 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 		g_VEngineClient->ExecuteClientCmd(previewStream->AttachCommands_get()); // Execute commands before we lock the stream!
 
 	AfxViewportData_t afxViewport = {
-		view.x,
-		view.y,
-		view.width,
-		view.height,
+		view.m_nUnscaledX,
+		view.m_nUnscaledY,
+		view.m_nUnscaledWidth,
+		view.m_nUnscaledHeight,
 		view.zNear,
 		view.zFar
 	};
@@ -7433,10 +7432,10 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 		g_VEngineClient->ExecuteClientCmd(stream->AttachCommands_get()); // Execute commands before we lock the stream!
 
 	AfxViewportData_t afxViewport = {
-		view.x,
-		view.y,
-		view.width,
-		view.height,
+		view.m_nUnscaledX,
+		view.m_nUnscaledY,
+		view.m_nUnscaledWidth,
+		view.m_nUnscaledHeight,
 		view.zNear,
 		view.zFar
 	};

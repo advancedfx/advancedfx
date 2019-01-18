@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.47.5</version>
+<time>2019-01-18T19:26Z</time>
+<changes>
+<change type="fixed">
+Fixed #123 (New depth method broken for screen res wider than 2:1).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.47.4</version>
 <time>2019-01-08T04:49Z</time>
 <changes>
