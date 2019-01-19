@@ -29,6 +29,10 @@ bool WrpVEngineClient_012::Con_IsVisible( void ) {
 	return m_VEngineClient_012->Con_IsVisible();
 }
 
+int	WrpVEngineClient_012::GetLocalPlayer(void) {
+	return m_VEngineClient_012->GetLocalPlayer();
+}
+
 void WrpVEngineClient_012::GetViewAngles(SOURCESDK::QAngle& va ) {
 	m_VEngineClient_012->GetViewAngles(va);
 }
@@ -167,6 +171,10 @@ void WrpVEngineClient_013::ClientCmd( const char *szCmdString ) {
 
 bool WrpVEngineClient_013::Con_IsVisible( void ) {
 	return m_VEngineClient_013->Con_IsVisible();
+}
+
+int	WrpVEngineClient_013::GetLocalPlayer(void) {
+	return m_VEngineClient_013->GetLocalPlayer();
 }
 
 void WrpVEngineClient_013::GetViewAngles(SOURCESDK::QAngle& va ) {
@@ -331,6 +339,10 @@ void WrpVEngineClient_014_csgo::ClientCmd( const char *szCmdString ) {
 
 bool WrpVEngineClient_014_csgo::Con_IsVisible( void ) {
 	return m_VEngineClient->Con_IsVisible();
+}
+
+int	WrpVEngineClient_014_csgo::GetLocalPlayer(void) {
+	return m_VEngineClient->GetLocalPlayer();
 }
 
 void WrpVEngineClient_014_csgo::GetViewAngles(SOURCESDK::QAngle& va ) {

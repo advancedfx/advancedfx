@@ -6,6 +6,8 @@
 
 #include <list>
 
+void CalcSmooth(double deltaT, double targetPos, double & lastPos, double & lastVel, double LimitVelocity, double LimitAcceleration);
+
 class IMirvHandleCalc abstract
 {
 public:
@@ -104,6 +106,8 @@ public:
 	IMirvHandleCalc * NewIndexCalc(char const * name, int entityIndex);
 	IMirvHandleCalc * NewKeyCalc(char const * name, int slot);
 	IMirvHandleCalc * NewActiveWeaponCalc(char const * name, IMirvHandleCalc * parent, bool world);
+	IMirvHandleCalc * NewLocalPlayerCalc(char const * name);
+	IMirvHandleCalc * NewObserverTargetCalc(char const * name, IMirvHandleCalc * parent);
 
 	bool Console_CheckName(char const * name);
 	void Console_Remove(char const * name);
@@ -126,7 +130,7 @@ public:
 	IMirvVecAngCalc * GetByName(char const * name);
 
 	IMirvVecAngCalc * NewValueCalc(char const * name, float x, float y, float z, float rX, float rY, float rZ);
-	IMirvVecAngCalc * NewOffsetCalc(char const * name, IMirvVecAngCalc * parent, IMirvVecAngCalc * offset, bool local);
+	IMirvVecAngCalc * NewOffsetCalc(char const * name, IMirvVecAngCalc * parent, IMirvVecAngCalc * offset, bool legacyMethod);
 	IMirvVecAngCalc * NewHandleCalc(char const * name, IMirvHandleCalc * handle);
 	IMirvVecAngCalc * NewHandleEyeCalc(char const * name, IMirvHandleCalc * handle);
 	IMirvVecAngCalc * NewHandleCalcEx(char const * name, IMirvHandleCalc * handle, bool eyeVec, bool eyeAng);
@@ -134,6 +138,7 @@ public:
 	IMirvVecAngCalc * NewIfCalc(char const * name, IMirvBoolCalc * condition, IMirvVecAngCalc * condTrue, IMirvVecAngCalc * condFalse);
 	IMirvVecAngCalc * NewOrCalc(char const * name, IMirvVecAngCalc * a, IMirvVecAngCalc * b);
 	IMirvVecAngCalc * NewCamCalc(char const * name, IMirvCamCalc * src);
+	IMirvVecAngCalc * NewSmoothCalc(char const * name, IMirvVecAngCalc * parent, IMirvHandleCalc * trackHandle);
 
 	bool Console_CheckName(char const * name);
 	void Console_Remove(char const * name);

@@ -11,12 +11,281 @@
 #include <shared/StringTools.h>
 #include <ctype.h>
 
+#include <algorithm>
+
+#define _USE_MATH_DEFINES
+#include <math.h>
+
 extern WrpVEngineClient * g_VEngineClient;
 
 CMirvHandleCalcs g_MirvHandleCalcs;
 CMirvVecAngCalcs g_MirvVecAngCalcs;
 CMirvCamCalcs g_MirvCamCalcs;
 CMirvFovCalcs g_MirvFovCalcs;
+
+void CalcSmooth(double deltaT, double targetPos, double & lastPos, double & lastVel, double LimitVelocity, double LimitAcceleration)
+{
+	if (deltaT <= 0)
+		return;
+
+	// What we would like to have ideally is this:
+	// https://www.physicsforums.com/threads/3rd-order-motion-profile-programming-sinusoidal.868148/
+
+	// However that is way too complicated for now so we try s.th. easier for now,
+	// a 2nd order motion profile that has sort of trapezoidal velocity profile:
+
+	// Objective:
+	//
+	// For the _normal_ case
+	// we build the 2nd order motion profile:
+	//
+	// phaseT_k is the (positive) phase time.
+	//
+	// accel(k) = c_k
+	// velo(k) = vel(k-1) +Int(accel(k),0+eps..phaseT_k) = vel(k-1) +accel(k)*phaseT_k
+	// pos(k) = pos(k-1) +Int(velo(k),0+eps..phaseT_k) = pos(k-1) +vel(k-1) * phaseT_k +accel(k)/2 * phaseT_k^2
+	//
+	// -LimitAccel <= accel(k) <= LimitAccel
+	// -LimitVelocity <= vel(k) <= LimitVelocity
+	//
+	// Possible phases:
+	// P1) velocity build-up
+	// P2) limit velocity
+	// P3) velocity ramp-down
+
+	// Complete programming problem:
+	//
+	//
+	// Input:
+	//
+	// LimitVelocity - absolute velocity limit, where 0 < LimitVelocity
+	// LimitAcceleration - absolute acceleration limit, where 0 < LimitAcceleration
+	// targetPos - target position
+	// lastPos - last position
+	// lastVel - last velocity, where -LimitVelocity <= lastVel <= LimitVelocity
+	//
+	//
+	// Output:
+	//
+	// phase1T, phase2T, phase3T - Phase times
+	// , where 0 <= phase1T, 0 <= phase2T, 0 <= phase3T
+	//
+	// dir - base accel direction, where dir \in {-1, 1}
+	//
+	//
+	// Further Equations:
+	//
+	// accel(1) = +dir * LimitAcceleration
+	// accel(2) = 0
+	// accel(3) = -dir * LimitAcceleration
+	//
+	// vel(0) = lastVel
+	// vel(1) = vel(0) +accel(1) * phase1T = lastVel + dir * LimitAcceleration * phase1T
+	// vel(2) = vel(1) +accel(2) * phase2T = lastVel + dir * LimitAcceleration * phase1T
+	// vel(3) = vel(2) +accel(3) * phase3T = lastVel + dir * LimitAcceleration * phase1T - dir * LimitAcceleration * phase3T
+	// vel(3) = 0
+	//
+	// -LimitVelocity <= vel(1), vel(2), vel(3) <= LimitVelocity
+	// 
+	// resultDeltaPos = 0
+	// +Int(vel(1),0+eps,phase1T)
+	// +Int(vel(2),0+eps,phase2T)
+	// +Int(vel(3),0+eps,phase3T)
+	// = 0
+	// +vel(0) * phase1T +accel(1)/2 * phase1T^2
+	// +vel(1) * phase2T +accel(2)/2 * phase2T^2
+	// +vel(2) * phase3T +accel(3)/2 * phase3T^2
+	// = 0
+	// + lastVel * phase1T +dir * LimitAcceleration / 2 * phase1T^2
+	// + (lastVel + dir * LimitAcceleration * phase1T) * phase2T
+	// + (lastVel + dir * LimitAcceleration * phase1T) * phase3T -dir * LimitAcceleration/2 * phase3T^2
+	//
+	// deltaPos = targetPos -lastPos
+	//
+	// Minimize:
+	//
+	// 1) Position error: abs(deltaPos -resultDeltaPos)
+	// 2) Position time: phase1T +phase2T +phase3T +phase4T +phase5T +phase6T +phase7T
+
+	while (0 < deltaT)
+	{
+		//Tier0_Msg("%f ", deltaT);
+
+		if (lastVel > LimitVelocity)
+		{
+			// Error condition.
+
+			// Solving Step:
+			//
+			// lower Velocity until we are within limits:
+
+			// LimitVelocity = lastVel -LimitAcceleration * phaseT
+
+			double phaseT = (LimitVelocity - lastVel) / -LimitAcceleration;
+
+			// Limit by deltaT:
+
+			phaseT = std::min(phaseT, deltaT);
+
+			lastPos += lastVel * phaseT - LimitAcceleration / 2.0 * phaseT * phaseT;
+			lastVel += -LimitAcceleration * phaseT;
+			deltaT -= phaseT;
+		}
+		else
+			if (lastVel < -LimitVelocity)
+			{
+				// Error condition.
+
+				// Solving Step:
+				//
+				// increase Velocity until we are within limits:
+
+				// -LimitVelocity = lastVel +LimitAcceleration * phaseT
+
+				double phaseT = (-LimitVelocity - lastVel) / +LimitAcceleration;
+
+				// Limit by deltaT:
+
+				phaseT = std::min(phaseT, deltaT);
+
+				lastPos += lastVel * phaseT + LimitAcceleration / 2.0 * phaseT * phaseT;
+				lastVel += +LimitAcceleration * phaseT;
+				deltaT -= phaseT;
+			}
+			else
+			{
+				double phase1T = 0;
+				double phase2T = 0;
+				double phase3T = 0;
+
+				// Solving Step 1:
+				//
+				// Finding a feasible solution, that is an upperBound for the position error
+				// and a lower bound for the position time:
+				//
+				// This equals a full stop, meaning phase1T_1 = 0, phase2T_1 = 0:
+				//
+				// resultDeltaPos_1 = lastVel * phase3T_1 -dir * LimitAcceleration/2 * phase3T_1^2
+				// 0 = lastVel - dir * LimitAcceleration * phase3T_1
+				//
+				// It follows:
+				// phase3T_1 = lastVel / (dir * limitAcceleration)
+
+				double deltaPos = targetPos - lastPos;
+
+				double dir = 0 < lastVel ? 1 : (0 > lastVel ? -1 : (0 <= deltaPos ? 1 : -1));
+				phase3T = lastVel / (dir * LimitAcceleration);
+
+				double resultDeltaPos = lastVel * phase3T - dir * LimitAcceleration / 2.0 * phase3T * phase3T;
+
+				if (
+					0 < dir && 0 < deltaPos - resultDeltaPos
+					|| 0 > dir && 0 > deltaPos - resultDeltaPos
+					)
+				{
+					// Solving Step 2 (only if we didn't (overshoot or hit) in Step 1):
+					//
+					// phase1T and phase3T are equally increased until either LimitAcceleration is hit
+					// or resultDetlaPos = deltaPos:
+					//
+					// phase2T_2 = 0, phase3T_2 = phase3T_2 +phase1T_2
+					//
+					// 2.1) Assume can hit deltaPos:
+					// deltaPos = 0
+					// + lastVel * phase1T_{2.1} +dir * LimitAcceleration / 2 * phase1T_{2.1}^2
+					// + (lastVel + dir * LimitAcceleration *  phase1T_{2.1}) * (phase3T_1 +phase1T_{2.1})
+					// -dir * LimitAcceleration/2 * (phase3T_1 +phase1T_{2.1})^2
+					// = 0
+					// + lastVel * phase1T_{2.1} +dir * LimitAcceleration / 2 * phase1T_{2.1}^2
+					// + lastVel * phase3T_1 +dir * LimitAcceleration * phase3T_1 * phase1T_{2.1}
+					// + lastVel * phase1T_{2.1} +dir * LimitAcceleration * phase1T_{2.1}^2
+					// - dir * LimitAcceleration/2 * (phase3T_1^2 +2*phase3T_1*phase1T_{2.1} +phase1T_{2.1}^2)
+					// = 0
+					// + lastVel * phase3T_1 - dir * LimitAcceleration/2 * phase3T_1^2
+					// + (lastVel +dir * LimitAcceleration * phase3T_1 +lastVel -dir * LimitAcceleration/2 *2*phase3T_1) * phase1T_{2.1}
+					// + (dir * LimitAcceleration / 2 +dir * LimitAcceleration - dir * LimitAcceleration/2) * phase1T_{2.1}^2
+					// It follows:
+					// 0 =
+					// [-deltaPos +lastVel * phase3T_1 - dir * LimitAcceleration/2 * phase3T_1^2]
+					// +[2 * lastVel] * phase1T_{2.1}
+					// +[dir * LimitAcceleration] * phase1T_{2.1}^2
+					// =
+					// [-deltaPos +lastVel * phase3T_1 - dir * LimitAcceleration/2 * phase3T_1^2]/[dir * LimitAcceleration]
+					// +[2 * lastVel]/[dir * LimitAcceleration] * phase1T_{2.1}
+					// +phase1T_{2.1}^2
+					// It follows:
+					// phase1T_{2.1.1}
+					// = 1/2 * (-[2 * lastVel]/[dir * LimitAcceleration]) +/- sqrt( ([2 * lastVel]/[dir * LimitAcceleration])^2 -4*([-deltaPos +lastVel * phase3T_1 - dir * LimitAcceleration/2 * phase3T_1^2]/[dir * LimitAcceleration]) )
+					// We only need the positive solution.
+					//
+					// 2.2) Assume we can hit LimitVelocity:
+					// -LimitVelocity <= lastVel + dir * LimitAcceleration * phase1T_{2.2} <= LimitVelocity	
+					// phase1T_{2.2} = (s_{2.2} * LimitVelocity -lastVel) / (dir * LimitAcceleration)
+					// s_{2.2} = dir
+					//
+					// phase1T_2 = min{phase1T_{2.1},phase1T_{2.2}}
+
+					double temp1 =
+						(2.0 * lastVel) / (dir * LimitAcceleration);
+
+					double phase1T_2d1 =
+						0.5 * ((-temp1)
+							+ sqrt(temp1*temp1 - 4 * (-deltaPos + lastVel * phase3T - dir * LimitAcceleration / 2.0 * phase3T*phase3T) / (dir * LimitAcceleration)));
+
+					double phase1T_2d2 = (dir * LimitVelocity - lastVel) / (dir * LimitAcceleration);
+
+					phase1T = std::min(phase1T_2d1, phase1T_2d2);
+					phase3T += phase1T;
+
+					resultDeltaPos = lastVel * phase1T + dir * LimitAcceleration / 2.0 * phase1T * phase1T
+						+ (lastVel + dir * LimitAcceleration * phase1T) * phase3T - dir * LimitAcceleration / 2.0 * phase3T*phase3T;
+
+					if (
+						0 < dir && 0 < deltaPos - resultDeltaPos
+						|| 0 > dir && 0 > deltaPos - resultDeltaPos
+						)
+					{
+						// Solving Step 3 (only if we didn't (overshoot or hit) in Step 2):
+						// 
+						// phase2T is increased until deltaPos is hit.
+						//
+						// deltaPos =
+						// + lastVel * phase1T_2 +dir * LimitAcceleration / 2 * phase1T_2^2
+						// + (lastVel + dir * LimitAcceleration * phase1T_2) * phase2T_3
+						// + (lastVel + dir * LimitAcceleration * phase1T_2) * phase3T_2 -dir * LimitAcceleration/2 * phase3T_2^2
+						//
+						// phase2T_3 = [deltaPos -lastVel * phase1T_2 -dir * LimitAcceleration / 2 * phase1T_2^2
+						// -(lastVel + dir * LimitAcceleration * phase1T_2) * phase3T_2 +dir * LimitAcceleration/2 * phase3T_2^2]
+						// / (lastVel + dir * LimitAcceleration * phase1T_2)
+
+						double temp2 = lastVel + dir * LimitAcceleration * phase1T;
+
+						if (temp2)
+							phase2T = (deltaPos - lastVel * phase1T - dir * LimitAcceleration / 2.0 * phase1T*phase1T
+								- (temp2)* phase3T + dir * LimitAcceleration / 2.0 * phase3T*phase3T)
+							/ (temp2);
+					}
+				}
+
+				// Limit by deltaT:
+
+				phase3T = std::max(std::min(phase1T + phase2T + phase3T, deltaT) - phase2T - phase1T, 0.0);
+				phase2T = std::max(std::min(phase1T + phase2T, deltaT) - phase1T, 0.0);
+				phase1T = std::min(phase1T, deltaT);
+
+
+				lastPos += lastVel * phase1T + dir * LimitAcceleration / 2.0 * phase1T * phase1T
+					+ (lastVel + dir * LimitAcceleration * phase1T) * phase2T
+					+ (lastVel + dir * LimitAcceleration * phase1T) * phase3T - dir * LimitAcceleration / 2.0 * phase3T*phase3T;
+				lastVel += +dir * LimitAcceleration * phase1T - dir * LimitAcceleration * phase3T;
+				deltaT -= phase1T + phase2T + phase3T;
+
+				// If we can consider to be finished, then we use-up the time completely:
+				if (abs(targetPos - lastPos) <= AFX_MATH_EPS && abs(0 - lastVel) <= AFX_MATH_EPS)
+					deltaT = 0;
+			}
+	}
+}
 
 class CMirvCalc
 {
@@ -454,7 +723,107 @@ private:
 	bool m_World;
 };
 
+class CMirvHandleLocalPlayerCalc : public CMirvHandleCalc
+{
+public:
+	CMirvHandleLocalPlayerCalc(char const * name)
+		: CMirvHandleCalc(name)
+	{
+	}
 
+	virtual bool CalcHandle(SOURCESDK::CSGO::CBaseHandle & outHandle)
+	{
+		SOURCESDK::IClientEntity_csgo * ce = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_VEngineClient->GetLocalPlayer());
+
+		if (ce)
+		{
+			outHandle = ce->GetRefEHandle();
+			return true;
+		}
+
+		return false;
+	}
+
+	virtual void Console_Print(void)
+	{
+		CMirvHandleCalc::Console_Print();
+
+		Tier0_Msg(" type=localPlayer");
+	}
+
+	virtual void Console_Edit(IWrpCommandArgs * args)
+	{
+		return CMirvHandleCalc::Console_Edit(args);
+	}
+
+protected:
+	virtual ~CMirvHandleLocalPlayerCalc()
+	{
+	}
+
+private:
+
+};
+
+class CMirvHandleObserverTargetCalc : public CMirvHandleCalc
+{
+public:
+	CMirvHandleObserverTargetCalc(char const * name, IMirvHandleCalc * parentCalc)
+		: CMirvHandleCalc(name)
+		, m_ParentCalc(parentCalc)
+	{
+		m_ParentCalc->AddRef();
+
+	}
+
+	virtual bool CalcHandle(SOURCESDK::CSGO::CBaseHandle & outHandle)
+	{
+		SOURCESDK::CSGO::CBaseHandle parentHandle;
+
+		if (m_ParentCalc->CalcHandle(parentHandle) && parentHandle.IsValid())
+		{
+			SOURCESDK::IClientEntity_csgo * clientEntity = SOURCESDK::g_Entitylist_csgo->GetClientEntityFromHandle(parentHandle);
+			SOURCESDK::C_BaseEntity_csgo * baseEntity = clientEntity ? clientEntity->GetBaseEntity() : 0;
+
+			if (baseEntity && baseEntity->IsPlayer())
+			{
+				SOURCESDK::C_BasePlayer_csgo * player = (SOURCESDK::C_BasePlayer_csgo *)baseEntity;
+
+				if (SOURCESDK::C_BaseEntity_csgo * be = player->GetObserverTarget())
+				{
+					if (SOURCESDK::IClientEntity_csgo * ce = be->GetIClientEntity())
+					{
+						outHandle = ce->GetRefEHandle();
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+	virtual void Console_Print(void)
+	{
+		CMirvHandleCalc::Console_Print();
+
+		Tier0_Msg(" type=observerTarget parent=\"%s\"", m_ParentCalc->GetName());
+	}
+
+	virtual void Console_Edit(IWrpCommandArgs * args)
+	{
+		return CMirvHandleCalc::Console_Edit(args);
+	}
+
+protected:
+	virtual ~CMirvHandleObserverTargetCalc()
+	{
+		m_ParentCalc->Release();
+	}
+
+private:
+	IMirvHandleCalc * m_ParentCalc;
+};
 
 class CMirvVecAngCalc : public CMirvCalc, public IMirvVecAngCalc
 {
@@ -754,11 +1123,11 @@ private:
 class CMirvVecAngOffsetCalc : public CMirvVecAngCalc
 {
 public:
-	CMirvVecAngOffsetCalc(char const * name, IMirvVecAngCalc * parent, IMirvVecAngCalc * offset, bool local)
+	CMirvVecAngOffsetCalc(char const * name, IMirvVecAngCalc * parent, IMirvVecAngCalc * offset, bool legacyMethod)
 		: CMirvVecAngCalc(name)
 		, m_Parent(parent)
 		, m_Offset(offset)
-		, m_Local(local)
+		, m_LegacyMethod(legacyMethod)
 	{
 		m_Parent->AddRef();
 		m_Offset->AddRef();
@@ -768,7 +1137,7 @@ public:
 	{
 		CMirvVecAngCalc::Console_Print();
 
-		Tier0_Msg(" type=offset parent=\"%s\" offset=\"%s\" local=%i", m_Parent->GetName(), m_Offset->GetName(), m_Local ? 1 : 0);
+		Tier0_Msg(" type=offset parent=\"%s\" offset=\"%s\" legacyMethod=%i", m_Parent->GetName(), m_Offset->GetName(), m_LegacyMethod ? 1 : 0);
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -780,26 +1149,26 @@ public:
 		{
 			char const * arg1 = args->ArgV(1);
 
-			if (0 == _stricmp("local", arg1))
+			if (0 == _stricmp("legacyMethod", arg1))
 			{
 				if (3 <= argc)
 				{
-					m_Local = atoi(args->ArgV(2));
+					m_LegacyMethod = atoi(args->ArgV(2));
 					return;
 				}
 
 				Tier0_Msg(
-					"%s local <bValue> - Set new value.\n"
+					"%s legacyMethod <bValue> - Set new value.\n"
 					"Current value: %i\n"
 					, arg0
-					, m_Local ? 1 : 0
+					, m_LegacyMethod ? 1 : 0
 				);
 				return;
 			}
 		}
 
 		Tier0_Msg(
-			"%s local [...]\n"
+			"%s legacyMethod [...]\n"
 			, arg0
 		);
 	}
@@ -815,7 +1184,7 @@ public:
 
 		if (calcedParent && calcedOffset)
 		{
-			if (m_Local)
+			if (m_LegacyMethod)
 			{
 				if (offsetVector.x || offsetVector.y || offsetVector.z)
 				{
@@ -850,12 +1219,22 @@ public:
 			}
 			else
 			{
-				outVector.x = parentVector.x + offsetVector.x;
-				outVector.y = parentVector.y + offsetVector.y;
-				outVector.z = parentVector.z + offsetVector.z;
-				outAngles.x = parentAngles.x + offsetAngles.x;
-				outAngles.y = parentAngles.y + offsetAngles.y;
-				outAngles.z = parentAngles.z + offsetAngles.z;
+				double forward[3], right[3], up[3];
+
+				Afx::Math::Quaternion q1 = Afx::Math::Quaternion::FromQREulerAngles(Afx::Math::QREulerAngles::FromQEulerAngles(Afx::Math::QEulerAngles(parentAngles.x, parentAngles.y, parentAngles.z)));
+				Afx::Math::Quaternion q2 = Afx::Math::Quaternion::FromQREulerAngles(Afx::Math::QREulerAngles::FromQEulerAngles(Afx::Math::QEulerAngles(offsetAngles.x, offsetAngles.y, offsetAngles.z)));
+
+				Afx::Math::QEulerAngles angs = (q1 * q2).ToQREulerAngles().ToQEulerAngles();
+
+				outAngles.z = (float)angs.Roll;
+				outAngles.x = (float)angs.Pitch;
+				outAngles.y = (float)angs.Yaw;
+
+				Afx::Math::MakeVectors(outAngles.z, outAngles.x, outAngles.y, forward, right, up);
+
+				outVector.x = (float)(parentVector.x + offsetVector.x*forward[0] - offsetVector.y*right[0] + offsetVector.z*up[0]);
+				outVector.y = (float)(parentVector.y + offsetVector.x*forward[1] - offsetVector.y*right[1] + offsetVector.z*up[1]);
+				outVector.z = (float)(parentVector.z + offsetVector.x*forward[2] - offsetVector.y*right[2] + offsetVector.z*up[2]);
 			}
 			return true;
 		}
@@ -873,7 +1252,7 @@ protected:
 private:
 	IMirvVecAngCalc * m_Parent;
 	IMirvVecAngCalc * m_Offset;
-	bool m_Local;
+	bool m_LegacyMethod;
 };
 
 class CMirvVecAngHandleCalcEx : public CMirvVecAngCalc
@@ -1012,7 +1391,7 @@ public:
 
 				Tier0_Msg(
 					"%s attachmentName <sValue> - Set new value.\n"
-					"Current value: %i\n"
+					"Current value: %s\n"
 					, arg0
 					, m_AttachmentName.c_str()
 				);
@@ -1132,6 +1511,160 @@ protected:
 private:
 	IMirvVecAngCalc * m_A;
 	IMirvVecAngCalc * m_B;
+};
+
+
+class CMirvVecAngSmoothCalc : public CMirvVecAngCalc
+{
+public:
+	CMirvVecAngSmoothCalc(char const * name, IMirvVecAngCalc * parent, IMirvHandleCalc * trackHandle)
+		: CMirvVecAngCalc(name)
+		, m_Parent(parent)
+		, m_TrackHandle(trackHandle)
+	{
+		m_Parent->AddRef();
+		m_TrackHandle->AddRef();
+	}
+
+	virtual void Console_Print(void)
+	{
+		CMirvVecAngCalc::Console_Print();
+
+		Tier0_Msg(" type=smooth parent=\"%s trackHandle=\"%s\n", m_Parent->GetName(), m_TrackHandle->GetName());
+	}
+
+	virtual void Console_Edit(IWrpCommandArgs * args)
+	{
+		CMirvVecAngCalc::Console_Edit(args);
+	}
+
+	virtual bool CalcVecAng(SOURCESDK::Vector & outVector, SOURCESDK::QAngle & outAngles)
+	{
+		SOURCESDK::Vector parentVector;
+		SOURCESDK::QAngle parentAngles;
+
+		SOURCESDK::CSGO::CBaseHandle handle;
+
+		bool calcedParent = m_Parent->CalcVecAng(parentVector, parentAngles);
+		bool calcedHandle = m_TrackHandle->CalcHandle(handle);
+
+		m_Reset = m_Reset || !(calcedParent && calcedHandle && m_LastHandle == handle);
+
+		if (calcedHandle) m_LastHandle = handle;
+
+		if (calcedParent && calcedHandle)
+		{
+			if (m_Reset)
+			{
+				m_Reset = false;
+
+				m_LastX = parentVector.x;
+				m_LastY = parentVector.y;
+				m_LastZ = parentVector.z;
+
+				m_XVelocity = 0;
+				m_YVelocity = 0;
+				m_ZVelocity = 0;
+
+				outVector.x = (float)m_LastX;
+				outVector.y = (float)m_LastY;
+				outVector.z = (float)m_LastZ;
+
+				m_LastXRoll = parentAngles.x;
+				m_LastYPitch = parentAngles.y;
+				m_LastZYaw = parentAngles.z;
+
+				m_XRollVelocity = 0;
+				m_YPitchVelocity = 0;
+				m_ZYawVelocity = 0;
+
+				outAngles.x = (float)m_LastXRoll;
+				outAngles.y = (float)m_LastYPitch;
+				outAngles.z = (float)m_LastZYaw;
+			}
+			else
+			{
+				double deltaT = g_Hook_VClient_RenderView.GetGlobals()->absoluteframetime_get();
+
+				double reaimYPitch = parentAngles.y - m_LastYPitch;
+				double reaimZYaw = parentAngles.z - m_LastZYaw;
+				double reaimXRoll = parentAngles.x - m_LastXRoll;
+
+				// Force reaim angles to be in [-180°, 180°)
+
+				reaimYPitch = fmod(reaimYPitch + 180.0, 360.0) - 180.0;
+				reaimZYaw = fmod(reaimZYaw + 180.0, 360.0) - 180.0;
+				reaimXRoll = fmod(reaimXRoll + 180.0, 360.0) - 180.0;
+
+				CalcSmooth(deltaT, m_LastYPitch + reaimYPitch, m_LastYPitch, m_YPitchVelocity, m_LimitVelocityRy, m_LimitAccelerationRy);
+				outAngles.y = (float)m_LastYPitch;
+
+				CalcSmooth(deltaT, m_LastZYaw + reaimZYaw, m_LastZYaw, m_ZYawVelocity, m_LimitVelocityRz, m_LimitAccelerationRz);
+				outAngles.z = (float)m_LastZYaw;
+
+				CalcSmooth(deltaT, m_LastXRoll + reaimXRoll, m_LastXRoll, m_XRollVelocity, m_LimitVelocityRx, m_LimitAccelerationRx);
+				outAngles.x = (float)m_LastXRoll;
+
+				//
+
+				CalcSmooth(deltaT, parentVector.x, m_LastX, m_XVelocity, m_LimitVelocityX, m_LimitAccelerationX);
+				outVector.x = (float)m_LastX;
+
+				CalcSmooth(deltaT, parentVector.y, m_LastY, m_YVelocity, m_LimitVelocityY, m_LimitAccelerationY);
+				outVector.y = (float)m_LastY;
+
+				CalcSmooth(deltaT, parentVector.z, m_LastZ, m_ZVelocity, m_LimitVelocityZ, m_LimitAccelerationZ);
+				outVector.z = (float)m_LastZ;
+			}
+
+			return true;
+		}
+
+		return false;
+	}
+
+protected:
+	virtual ~CMirvVecAngSmoothCalc()
+	{
+		m_TrackHandle->Release();
+		m_Parent->Release();
+	}
+
+private:
+	IMirvVecAngCalc * m_Parent;
+	IMirvHandleCalc * m_TrackHandle;
+
+	bool m_Reset = true;
+
+	SOURCESDK::CSGO::CBaseHandle m_LastHandle;
+
+	double m_LastX = 0;
+	double m_LastY = 0;
+	double m_LastZ = 0;
+	double m_XVelocity = 0;
+	double m_ZVelocity = 0;
+	double m_YVelocity = 0;
+
+	double m_LimitVelocityX = 6000;
+	double m_LimitAccelerationX = 6000;
+	double m_LimitVelocityY = 6000;
+	double m_LimitAccelerationY = 6000;
+	double m_LimitVelocityZ = 6000;
+	double m_LimitAccelerationZ = 6000;
+
+	double m_LastYPitch = 0;
+	double m_LastZYaw = 0;
+	double m_LastXRoll = 0;
+	double m_YPitchVelocity = 0;
+	double m_ZYawVelocity = 0;
+	double m_XRollVelocity = 0;
+
+	double m_LimitVelocityRx = 360;
+	double m_LimitAccelerationRx = 90;
+	double m_LimitVelocityRy = 360;
+	double m_LimitAccelerationRy = 90;
+	double m_LimitVelocityRz = 360;
+	double m_LimitAccelerationRz = 90;
 };
 
 class CMirvCamCamCalc : public CMirvCamCalc
@@ -1555,6 +2088,41 @@ IMirvHandleCalc * CMirvHandleCalcs::NewActiveWeaponCalc(char const * name, IMirv
 	return result;
 }
 
+IMirvHandleCalc *  CMirvHandleCalcs::NewLocalPlayerCalc(char const * name)
+{
+	if (name && !Console_CheckName(name))
+		return 0;
+
+	IMirvHandleCalc * result = new CMirvHandleLocalPlayerCalc(name);
+
+	if (name)
+	{
+		result->AddRef();
+
+		m_Calcs.push_back(result);
+	}
+
+	return result;
+}
+
+IMirvHandleCalc *  CMirvHandleCalcs::NewObserverTargetCalc(char const * name, IMirvHandleCalc * parent)
+{
+	if (name && !Console_CheckName(name))
+		return 0;
+
+	IMirvHandleCalc * result = new CMirvHandleObserverTargetCalc(name, parent);
+
+	if (name)
+	{
+		result->AddRef();
+
+		m_Calcs.push_back(result);
+	}
+
+	return result;
+}
+
+
 IMirvHandleCalc * CMirvHandleCalcs::NewKeyCalc(char const * name, int key)
 {
 	if (name && !Console_CheckName(name))
@@ -1676,12 +2244,12 @@ IMirvVecAngCalc * CMirvVecAngCalcs::NewValueCalc(char const * name, float x, flo
 	return result;
 }
 
-IMirvVecAngCalc * CMirvVecAngCalcs::NewOffsetCalc(char const * name, IMirvVecAngCalc * parent, IMirvVecAngCalc * offset, bool local)
+IMirvVecAngCalc * CMirvVecAngCalcs::NewOffsetCalc(char const * name, IMirvVecAngCalc * parent, IMirvVecAngCalc * offset, bool legacyMethod)
 {
 	if (name && !Console_CheckName(name))
 		return 0;
 
-	IMirvVecAngCalc * result = new CMirvVecAngOffsetCalc(name, parent, offset, local);
+	IMirvVecAngCalc * result = new CMirvVecAngOffsetCalc(name, parent, offset, legacyMethod);
 
 	if (name)
 	{
@@ -1801,6 +2369,23 @@ IMirvVecAngCalc * CMirvVecAngCalcs::NewCamCalc(char const * name, IMirvCamCalc *
 		return 0;
 
 	IMirvVecAngCalc * result = new CMirvVecAngCamCalc(name, src);
+
+	if (name)
+	{
+		result->AddRef();
+
+		m_Calcs.push_back(result);
+	}
+
+	return result;
+}
+
+IMirvVecAngCalc * CMirvVecAngCalcs::NewSmoothCalc(char const * name, IMirvVecAngCalc * parent, IMirvHandleCalc * trackHandle)
+{
+	if (name && !Console_CheckName(name))
+		return 0;
+
+	IMirvVecAngCalc * result = new CMirvVecAngSmoothCalc(name, parent, trackHandle);
 
 	if (name)
 	{
@@ -2327,6 +2912,25 @@ void mirv_calcs_handle(IWrpCommandArgs * args)
 
 					return;
 				}
+				else if (0 == _stricmp("localPlayer", arg2) && 4 <= argc)
+				{
+					g_MirvHandleCalcs.NewLocalPlayerCalc(args->ArgV(3));
+
+					return;
+				}
+				else if (0 == _stricmp("observerTarget", arg2) && 5 <= argc)
+				{
+					char const * parentCalcName = args->ArgV(4);
+
+					IMirvHandleCalc * parentCalc = g_MirvHandleCalcs.GetByName(parentCalcName);
+
+					if (parentCalc)
+						g_MirvHandleCalcs.NewObserverTargetCalc(args->ArgV(3), parentCalc);
+					else
+						Tier0_Warning("Error: No handle calc with name \"%s\" found.\n", parentCalcName);
+
+					return;
+				}
 			}
 
 			Tier0_Msg(
@@ -2334,6 +2938,10 @@ void mirv_calcs_handle(IWrpCommandArgs * args)
 				"%s add index <sName> <iIndex> - Add a new index calc.\n"
 				"%s add key <sName> <iKeyNumber> - Add a new key calc (like spectator HUD).\n"
 				"%s add activeWeapon <sName> <sParentCalcHandleName> <bGetWorld> - Add an active weapon calc, <bGetWorld> is 0 or 1.\n"
+				"%s add localPlayer <sName> - Add localPlayer calc.\n"
+				"%s add observerTarget <sName> <sParentCalcHandleName> - Add obser trarget calc (use e.g. localPlayer calc as parent name).\n"
+				, arg0
+				, arg0
 				, arg0
 				, arg0
 				, arg0
@@ -2524,16 +3132,40 @@ void mirv_calcs_vecang(IWrpCommandArgs * args)
 
 					return;
 				}
+				else if (0 == _stricmp("smooth", arg2) && 6 <= argc)
+				{
+					char const * calcAName = args->ArgV(4);
+					IMirvVecAngCalc * calcA = g_MirvVecAngCalcs.GetByName(calcAName);
+
+					if (calcA)
+					{
+						char const * calcBName = args->ArgV(5);
+						IMirvHandleCalc * calcB = g_MirvHandleCalcs.GetByName(calcBName);
+
+						if (calcB)
+						{
+							g_MirvVecAngCalcs.NewSmoothCalc(args->ArgV(3), calcA, calcB);
+						}
+						else
+							Tier0_Warning("Error: No vecAng parent with name \"%s\" found.\n", calcBName);
+					}
+					else
+						Tier0_Warning("Error: No handle calc with name \"%s\" found.\n", calcAName);
+
+					return;
+				}
 			}
 
 			Tier0_Msg(
 				"%s add value <sName> <fX> <fY> <fZ> <rX> <rY> <rZ> - Add a new calc with a constant value.\n"
-				"%s add offset <sName> <sParentName> <sOffSetName> <bIsLocal> - Add a new offset calc, <bIsLocal> is 1 for local transform, 0 for global transform.\n"
+				"%s add offset <sName> <sParentName> <sOffSetName> <bLeagacyMethod> - Add a new offset calc, <bLeagacyMethod>: 0 new method (recommended), old: legacy method.\n"
 				"%s add handle <sName> <sHandleCalcName> - Add an calc that gets its values from an entity using a handle calc named <sHandleCalcName>.\n"
 				"%s add handleEye <sName> <sHandleCalcName> - Add an calc that gets its values from an entity's eye point using a handle calc named <sHandleCalcName>.\n"
 				"%s add handleAttachment <sName> <sHandleCalcName> <sAttachMentName> - Add an calc that gets its values from an entity's attachment.\n"
 				"%s add or <sName> <sAName> <sBName> - Add an OR calc.\n"
 				"%s add cam <sName> <sCamCalName> - Adds a calc that gets its values from an cam calc named <sCamCalName>.\n"
+				"%s add smooth <sName> <sParentName> <sTrackHandleName> - Add a smooth calc, <sParentName> is the smooth target, <sTrackHandleName> is used to detect target changes (reset).\n"
+				, arg0
 				, arg0
 				, arg0
 				, arg0

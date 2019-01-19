@@ -27,6 +27,7 @@ public:
 	virtual void ServerCmd( const char *szCmdString, bool bReliable = true ) abstract = 0;
 	virtual void ClientCmd( const char *szCmdString ) abstract = 0;
 	virtual bool Con_IsVisible( void ) abstract = 0;
+	virtual int	GetLocalPlayer(void) abstract = 0;
 	virtual void GetViewAngles( SOURCESDK::QAngle& va ) abstract = 0;
 	virtual void SetViewAngles( SOURCESDK::QAngle& va ) abstract = 0;
 	virtual int GetMaxClients( void ) abstract = 0;
@@ -76,6 +77,7 @@ public:
 	virtual void ServerCmd( const char *szCmdString, bool bReliable = true );
 	virtual void ClientCmd( const char *szCmdString );
 	virtual bool Con_IsVisible( void );
+	virtual int	GetLocalPlayer(void);
 	virtual void GetViewAngles(SOURCESDK::QAngle& va );
 	virtual void SetViewAngles(SOURCESDK::QAngle& va );
 	virtual int GetMaxClients( void );
@@ -123,6 +125,7 @@ public:
 	virtual void ServerCmd( const char *szCmdString, bool bReliable = true );
 	virtual void ClientCmd( const char *szCmdString );
 	virtual bool Con_IsVisible( void );
+	virtual int	GetLocalPlayer(void);
 	virtual void GetViewAngles(SOURCESDK::QAngle& va );
 	virtual void SetViewAngles(SOURCESDK::QAngle& va );
 	virtual int GetMaxClients( void );
@@ -177,6 +180,7 @@ public:
 	virtual void ServerCmd( const char *szCmdString, bool bReliable = true );
 	virtual void ClientCmd( const char *szCmdString );
 	virtual bool Con_IsVisible( void );
+	virtual int	GetLocalPlayer(void);
 	virtual void GetViewAngles(SOURCESDK::QAngle& va );
 	virtual void SetViewAngles(SOURCESDK::QAngle& va );
 	virtual int GetMaxClients( void );
