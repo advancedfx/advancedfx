@@ -51,6 +51,7 @@
 #include <csgo/Panorama.h>
 #include <csgo/hooks/engine.h>
 #include "csgo/hooks/shaderapidx9.h"
+#include <insurgency2/public/cdll_int.h>
 
 #include <Windows.h>
 #include <shared/Detours/src/detours.h>
@@ -224,6 +225,8 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 
 		g_AppSystemFactory = appSystemFactory;
 
+		// VEngineClient:
+
 		if (SourceSdkVer_CSGO != g_SourceSdkVer && (iface = appSystemFactory(VENGINE_CLIENT_INTERFACE_VERSION_015, NULL)))
 		{
 			// This is not really 100% backward compatible, there is a problem with the CVAR interface or s.th..
@@ -233,6 +236,11 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 			
 			g_Info_VEngineClient = VENGINE_CLIENT_INTERFACE_VERSION_015;
 			g_VEngineClient = new WrpVEngineClient_013((SOURCESDK::IVEngineClient_013 *)iface);
+		}
+		else if (SourceSdkVer_Insurgency2 == g_SourceSdkVer && (iface = appSystemFactory(SOURCESDK_INSURGENCY2_VENGINE_CLIENT_INTERFACE_VERSION, NULL)))
+		{		
+			g_Info_VEngineClient = SOURCESDK_INSURGENCY2_VENGINE_CLIENT_INTERFACE_VERSION " (Insurgency 2)";
+			g_VEngineClient = new WrpVEngineClient_Insurgency2((SOURCESDK::INSURGENCY2::IVEngineClient *)iface);
 		}
 		else
 		if(SourceSdkVer_CSGO == g_SourceSdkVer && (iface = appSystemFactory(VENGINE_CLIENT_INTERFACE_VERSION_014_CSGO, NULL)))
@@ -254,7 +262,9 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 			ErrorBox("Could not get a supported VEngineClient interface.");
 		}
 
-		if((SourceSdkVer_CSGO == g_SourceSdkVer) && (iface = appSystemFactory( SOURCESDK_CSGO_CVAR_INTERFACE_VERSION, NULL )))
+		// VEngineCvar:
+
+		if((SourceSdkVer_CSGO == g_SourceSdkVer || SourceSdkVer_Insurgency2 == g_SourceSdkVer) && (iface = appSystemFactory( SOURCESDK_CSGO_CVAR_INTERFACE_VERSION, NULL )))
 		{
 			g_Info_VEngineCvar = SOURCESDK_CSGO_CVAR_INTERFACE_VERSION " (CS:GO)";
 			SOURCESDK::CSGO::g_pCVar = SOURCESDK::CSGO::cvar = (SOURCESDK::CSGO::ICvar *)iface;
@@ -1348,6 +1358,13 @@ void HookClientDllInterface_Swarm_Init(void * iface)
 	DetourIfacePtr((DWORD *)&(vtable[1]), new_CVClient_Init_Swarm, (DetourIfacePtr_fn &)old_CVClient_Init_Swarm);
 }
 
+void HookClientDllInterface_Insurgency2_Init(void * iface)
+{
+	int * vtable = *(int**)iface;
+
+	DetourIfacePtr((DWORD *)&(vtable[2]), new_CVClient_Init_Swarm, (DetourIfacePtr_fn &)old_CVClient_Init_Swarm);
+}
+
 
 SOURCESDK::IClientEntityList_csgo * SOURCESDK::g_Entitylist_csgo = 0;
 
@@ -1377,7 +1394,12 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 				HookClientDllInterface_011_Init(iface);
 			}
 			else if(iface = old_Client_CreateInterface(CLIENT_DLL_INTERFACE_VERSION_016, NULL)) {
-				if (SourceSdkVer_SWARM == g_SourceSdkVer || SourceSdkVer_L4D2 == g_SourceSdkVer)
+				if (SourceSdkVer_Insurgency2 == g_SourceSdkVer)
+				{
+					g_Info_VClient = CLIENT_DLL_INTERFACE_VERSION_016 " (Insurgency2)";
+					HookClientDllInterface_Insurgency2_Init(iface);
+				}
+				else if (SourceSdkVer_SWARM == g_SourceSdkVer || SourceSdkVer_L4D2 == g_SourceSdkVer)
 				{
 					g_Info_VClient = CLIENT_DLL_INTERFACE_VERSION_016 " (Alien Swarm / Left 4 Dead 2)";
 					HookClientDllInterface_Swarm_Init(iface);
@@ -1800,6 +1822,10 @@ void CommonHooks()
 		else if (StringEndsWith(filePath, "left4dead2.exe"))
 		{
 			g_SourceSdkVer = SourceSdkVer_L4D2;
+		}
+		else if (StringEndsWith(filePath, "insurgency.exe"))
+		{
+			g_SourceSdkVer = SourceSdkVer_Insurgency2;
 		}
 		else if (wcsstr(GetCommandLineW(), L" -game tf"))
 		{

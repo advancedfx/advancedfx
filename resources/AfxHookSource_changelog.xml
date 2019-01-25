@@ -7,7 +7,7 @@
 <release>
 <name>AfxHookSource</name>
 <version>1.48.0</version>
-<time>2019-01-XXTXX:XXZ</time>
+<time>2019-01-25T19:18Z</time>
 <changes>
 <change type="fixed">
 Fixed long .cam files causing low FPS, due to always seeking from beginning of the file for each query.<br />
@@ -27,6 +27,14 @@ Add the following vecAng calcs to mirv_calcs: add, subtract, motionProfile2 (rot
 </change>
 <change type="fixed">
 Some bug fixes.
+</change>
+<change type="added">
+Added basic Insurgency2 32bit version game support.<br />
+It is not known if -insecure is enough, SO DO NOT JOIN ANY SERVERS, also might be a good idea to turn off the Battle Eye client or even un-install it first.<br />
+Use custom loader:<br />
+Program Path: C:\Program Files (x86)\Steam\steamapps\common\insurgency2\insurgency.exe<br />
+CommandLine: -insecure<br />
+DLLs to Inject: add AfxHookSource.dll from latest HLAE extracted install there.
 </change>
 </changes>
 </release>

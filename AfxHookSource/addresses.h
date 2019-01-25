@@ -11,6 +11,7 @@ enum SourceSdkVer
 	SourceSdkVer_CSS,
 	SourceSdkVer_SWARM,
 	SourceSdkVer_L4D2,
+	SourceSdkVer_Insurgency2
 };
 
 extern SourceSdkVer g_SourceSdkVer;
