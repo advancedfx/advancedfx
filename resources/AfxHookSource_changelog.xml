@@ -37,6 +37,9 @@ CommandLine: -insecure<br />
 DLLs to Inject: add AfxHookSource.dll from latest HLAE extracted install there.
 </change>
 </changes>
+<comments>
+Thanks to https://twitter.com/onoderasecurity and Unkwn. from Discord for helping with Insurgency.
+</comments>
 </release>
 
 
