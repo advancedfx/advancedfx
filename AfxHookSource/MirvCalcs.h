@@ -132,7 +132,7 @@ public:
 	IMirvVecAngCalc * NewValueCalc(char const * name, float x, float y, float z, float rX, float rY, float rZ);
 	IMirvVecAngCalc * NewAddCalc(char const * name, IMirvVecAngCalc * a, IMirvVecAngCalc * b);
 	IMirvVecAngCalc * NewSubtractCalc(char const * name, IMirvVecAngCalc * a, IMirvVecAngCalc * b);
-	IMirvVecAngCalc * NewOffsetCalc(char const * name, IMirvVecAngCalc * parent, IMirvVecAngCalc * offset, bool legacyMethod);
+	IMirvVecAngCalc * NewOffsetCalc(char const * name, IMirvVecAngCalc * parent, IMirvVecAngCalc * offset, bool order);
 	IMirvVecAngCalc * NewHandleCalc(char const * name, IMirvHandleCalc * handle);
 	IMirvVecAngCalc * NewHandleEyeCalc(char const * name, IMirvHandleCalc * handle);
 	IMirvVecAngCalc * NewHandleCalcEx(char const * name, IMirvHandleCalc * handle, bool eyeVec, bool eyeAng);

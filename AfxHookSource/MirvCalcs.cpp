@@ -1167,11 +1167,11 @@ private:
 class CMirvVecAngOffsetCalc : public CMirvVecAngCalc
 {
 public:
-	CMirvVecAngOffsetCalc(char const * name, IMirvVecAngCalc * parent, IMirvVecAngCalc * offset, bool legacyMethod)
+	CMirvVecAngOffsetCalc(char const * name, IMirvVecAngCalc * parent, IMirvVecAngCalc * offset, bool order)
 		: CMirvVecAngCalc(name)
 		, m_Parent(parent)
 		, m_Offset(offset)
-		, m_LegacyMethod(legacyMethod)
+		, m_Order(order)
 	{
 		m_Parent->AddRef();
 		m_Offset->AddRef();
@@ -1181,7 +1181,7 @@ public:
 	{
 		CMirvVecAngCalc::Console_Print();
 
-		Tier0_Msg(" type=offset parent=\"%s\" offset=\"%s\" legacyMethod=%i", m_Parent->GetName(), m_Offset->GetName(), m_LegacyMethod ? 1 : 0);
+		Tier0_Msg(" type=offset parent=\"%s\" offset=\"%s\" order=%i", m_Parent->GetName(), m_Offset->GetName(), m_Order ? 1 : 0);
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -1193,26 +1193,26 @@ public:
 		{
 			char const * arg1 = args->ArgV(1);
 
-			if (0 == _stricmp("legacyMethod", arg1))
+			if (0 == _stricmp("order", arg1))
 			{
 				if (3 <= argc)
 				{
-					m_LegacyMethod = atoi(args->ArgV(2));
+					m_Order = atoi(args->ArgV(2));
 					return;
 				}
 
 				Tier0_Msg(
-					"%s legacyMethod <bValue> - Set new value.\n"
+					"%s order <bValue> - Set new value.\n"
 					"Current value: %i\n"
 					, arg0
-					, m_LegacyMethod ? 1 : 0
+					, m_Order ? 1 : 0
 				);
 				return;
 			}
 		}
 
 		Tier0_Msg(
-			"%s legacyMethod [...]\n"
+			"%s order [...]\n"
 			, arg0
 		);
 	}
@@ -1228,7 +1228,7 @@ public:
 
 		if (calcedParent && calcedOffset)
 		{
-			if (m_LegacyMethod)
+			if (m_Order)
 			{
 				if (offsetVector.x || offsetVector.y || offsetVector.z)
 				{
@@ -1296,7 +1296,7 @@ protected:
 private:
 	IMirvVecAngCalc * m_Parent;
 	IMirvVecAngCalc * m_Offset;
-	bool m_LegacyMethod;
+	bool m_Order;
 };
 
 class CMirvVecAngHandleCalcEx : public CMirvVecAngCalc
@@ -3095,12 +3095,12 @@ IMirvVecAngCalc * CMirvVecAngCalcs::NewSubtractCalc(char const * name, IMirvVecA
 }
 
 
-IMirvVecAngCalc * CMirvVecAngCalcs::NewOffsetCalc(char const * name, IMirvVecAngCalc * parent, IMirvVecAngCalc * offset, bool legacyMethod)
+IMirvVecAngCalc * CMirvVecAngCalcs::NewOffsetCalc(char const * name, IMirvVecAngCalc * parent, IMirvVecAngCalc * offset, bool order)
 {
 	if (name && !Console_CheckName(name))
 		return 0;
 
-	IMirvVecAngCalc * result = new CMirvVecAngOffsetCalc(name, parent, offset, legacyMethod);
+	IMirvVecAngCalc * result = new CMirvVecAngOffsetCalc(name, parent, offset, order);
 
 	if (name)
 	{
@@ -4176,7 +4176,7 @@ void mirv_calcs_vecang(IWrpCommandArgs * args)
 
 			Tier0_Msg(
 				"%s add value <sName> <fX> <fY> <fZ> <rX> <rY> <rZ> - Add a new calc with a constant value.\n"
-				"%s add offset <sName> <sParentName> <sOffSetName> <bLeagacyMethod> - Add a new offset calc, <bLeagacyMethod>: 0 new method (recommended), old: legacy method.\n"
+				"%s add offset <sName> <sParentName> <sOffSetName> <bOrder> - Add a new offset calc, <bOrder>: 0 rotate first then offset, 1: offset first then rotate.\n"
 				"%s add add <sName> <sAName> <sBName> - A + B.\n"
 				"%s add subtract <sName> <sAName> <sBName> - A - B.\n"
 				"%s add handle <sName> <sHandleCalcName> - Add an calc that gets its values from an entity using a handle calc named <sHandleCalcName>.\n"

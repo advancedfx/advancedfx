@@ -9,10 +9,14 @@
 <version>1.48.0</version>
 <time>2019-01-XXTXX:XXZ</time>
 <changes>
+<change type="fixed">
+Fixed long .cam files causing low FPS, due to always seeking from beginning of the file for each query.<br />
+It will now seek forward and backward (new) as required and also will try to jump to the beginning of the file if time is earlier or equal to the start time.
+</change>
 <change type="updated">
 Changed the mirv_calcs vecAng offset [breaking change, but should not break most real setups]:<br />
-The last argument is now legacyMethod 0|1, where 1 is the same as the old 1 mode and 0 changed (rarely used if at all): <br/>
-0 (new, recommended) - rotation is applied first and offset added from the new space.
+The last argument is now order 0|1, where 1 is the same as the old 1 mode and 0 changed (rarely used if at all):<br/>
+0 (changed) - rotation is applied first and offset added from the new space.<br/>
 1 (old) - offset is applied in old space and after that rotation is applied.
 </change>
 <change type="added">
