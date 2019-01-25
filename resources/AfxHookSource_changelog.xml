@@ -6,6 +6,31 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.48.0</version>
+<time>2019-01-XXTXX:XXZ</time>
+<changes>
+<change type="updated">
+Changed the mirv_calcs vecAng offset [breaking change, but should not break most real setups]:<br />
+The last argument is now legacyMethod 0|1, where 1 is the same as the old 1 mode and 0 changed (rarely used if at all): <br/>
+0 (new, recommended) - rotation is applied first and offset added from the new space.
+1 (old) - offset is applied in old space and after that rotation is applied.
+</change>
+<change type="added">
+Add the following handle calcs to mirv_calcs: localPlayer, observerTarget
+</change>
+<change type="added">
+Add the following vecAng calcs to mirv_calcs: add, subtract, motionProfile2 (rotation behvaiour might change), swichtInterp, localToGlobal, globalToLocal
+</change>
+<change type="fixed">
+Some bug fixes.
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.47.5</version>
 <time>2019-01-18T19:26Z</time>
 <changes>
