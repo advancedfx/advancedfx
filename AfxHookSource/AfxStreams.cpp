@@ -59,6 +59,9 @@ extern SOURCESDK::IMaterialSystem_csgo * g_MaterialSystem_csgo;
 
 IAfxMatRenderContext * GetCurrentContext()
 {
+	if (!g_MaterialSystem_csgo)
+		return nullptr;
+
 	return MatRenderContextHook(g_MaterialSystem_csgo);
 }
 
@@ -213,6 +216,23 @@ void QueueOrExecute(IAfxMatRenderContextOrg * ctx, SOURCESDK::CSGO::CFunctor * f
 	}
 }
 
+void CAfxBlockFunctor::operator()()
+{
+	if (m_Block)
+	{
+		AfxD3D9OverrideBegin_D3DRS_ALPHABLENDENABLE(TRUE);
+		AfxD3D9OverrideBegin_D3DRS_SRCBLEND(D3DBLEND_ZERO);
+		AfxD3D9OverrideBegin_D3DRS_DESTBLEND(D3DBLEND_ONE);
+		AfxD3D9OverrideBegin_D3DRS_ZWRITEENABLE(FALSE);
+	}
+	else {
+		AfxD3D9OverrideEnd_D3DRS_ZWRITEENABLE();
+		AfxD3D9OverrideEnd_D3DRS_DESTBLEND();
+		AfxD3D9OverrideEnd_D3DRS_SRCBLEND();
+		AfxD3D9OverrideEnd_D3DRS_ALPHABLENDENABLE();
+	}
+}
+
 class CAfxD3D9PushOverrideState_Functor
 	: public CAfxFunctor
 {
@@ -330,7 +350,7 @@ void CAfxFileTracker::WaitForFiles(unsigned int maxUnfinishedFiles)
 
 // CAfxRenderViewStream ////////////////////////////////////////////////////////
 
-CAfxRenderViewStream * CAfxRenderViewStream::m_MainStream = 0;
+CAfxRenderViewStream * CAfxRenderViewStream::m_EngineThreadStream = 0;
 
 CAfxRenderViewStream::CAfxRenderViewStream()
 : m_DrawViewModel(DT_NoChange)
@@ -2117,6 +2137,7 @@ void CAfxBaseFxStream::SetAction(CAction * & target, CAction * src)
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin()
 {
+	m_DrawingHud = false;
 	m_DrawingSkyBoxView = false;
 	m_CurrentEntityHandle = SOURCESDK_CSGO_INVALID_EHANDLE_INDEX;
 
@@ -2238,6 +2259,8 @@ AfxDrawDepthMode AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(CAfxBaseFxStre
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 {
+	m_DrawingHud = true;
+
 	if (SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue())
 	{
 		// Bubble into child contexts:
@@ -2248,14 +2271,12 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 	{
 		// Leaf context
 
-		CAfxBaseFxStream * stream = this->GetStream();
-
-		if (EDrawDepth_None != stream->m_DrawDepth)
+		if (EDrawDepth_None != m_Stream->m_DrawDepth)
 		{
-			float flDepthFactor = stream->m_DepthVal;
-			float flDepthFactorMax = stream->m_DepthValMax;
+			float flDepthFactor = m_Stream->m_DepthVal;
+			float flDepthFactorMax = m_Stream->m_DepthValMax;
 
-			AfxDrawDepth(EDrawDepth_Rgb == stream->m_DrawDepth, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height, m_Viewport.zNear, m_Viewport.zFar, true);
+			AfxDrawDepth(EDrawDepth_Rgb == m_Stream->m_DrawDepth, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height, m_Viewport.zNear, m_Viewport.zFar, true);
 			m_IsNextDepth = true;
 		}
 		
@@ -2274,7 +2295,39 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 			m_Ctx->GetOrg()->ClearBuffers(true, false, false);
 			break;
 		}
+
+		if (CAfxRenderViewStream::DT_NoDraw == m_Stream->DrawHud_get())
+		{
+			AfxD3D9OverrideBegin_D3DRS_ALPHABLENDENABLE(TRUE);
+			AfxD3D9OverrideBegin_D3DRS_SRCBLEND(D3DBLEND_ZERO);
+			AfxD3D9OverrideBegin_D3DRS_DESTBLEND(D3DBLEND_ONE);
+			AfxD3D9OverrideBegin_D3DRS_ZWRITEENABLE(FALSE);
+		}
 	}
+}
+
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudEnd(void)
+{
+	if (SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue())
+	{
+		// Bubble into child contexts:
+
+		queue->QueueFunctor(new CDrawingHudEndFunctor(this->m_ChildContext));
+	}
+	else
+	{
+		// Leaf context
+
+		if (CAfxRenderViewStream::DT_NoDraw == m_Stream->DrawHud_get())
+		{
+			AfxD3D9OverrideEnd_D3DRS_ZWRITEENABLE();
+			AfxD3D9OverrideEnd_D3DRS_DESTBLEND();
+			AfxD3D9OverrideEnd_D3DRS_SRCBLEND();
+			AfxD3D9OverrideEnd_D3DRS_ALPHABLENDENABLE();
+		}
+	}
+
+	m_DrawingHud = false;
 }
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewBegin(void)
@@ -4685,7 +4738,7 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 		myWhatToDraw |= SOURCESDK::RENDERVIEW_DRAWHUD;
 		break;
 	case CAfxRenderViewStream::DT_NoDraw:
-		myWhatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWHUD;
+		//myWhatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWHUD;
 		break;
 	case CAfxRenderViewStream::DT_NoChange:
 	default:
@@ -4734,7 +4787,7 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 	if (1 < cols && (hudDrawn || m_Recording))
 	{
 		// Would not allow to render the HUD in different passses per frame):
-		myWhatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWHUD;
+		//myWhatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWHUD;
 	}
 	else
 	{
@@ -4831,7 +4884,6 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 
 	return ctxp;
 }
-
 
 void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
 {
@@ -4986,7 +5038,7 @@ bool CAfxStreams::OnViewRenderShouldForceNoVis(bool orgValue)
 	return orgValue;
 }
 
-void CAfxStreams::OnDrawingHud(void)
+void CAfxStreams::OnDrawingHudBegin(void)
 {
 	IAfxMatRenderContext * afxMatRenderContext = GetCurrentContext();
 
@@ -5009,6 +5061,12 @@ void CAfxStreams::OnDrawingHud(void)
 		hook->DrawingHudBegin();
 }
 
+void CAfxStreams::OnDrawingHudEnd(void)
+{
+	if(IAfxStreamContext * hook = FindStreamContext(GetCurrentContext()))
+		hook->DrawingHudEnd();
+}
+
 void CAfxStreams::OnDrawingSkyBoxViewBegin(void)
 {
 	IAfxStreamContext * hook = FindStreamContext(GetCurrentContext());
@@ -5024,7 +5082,6 @@ void CAfxStreams::OnDrawingSkyBoxViewEnd(void)
 	if (hook)
 		hook->DrawingSkyBoxViewEnd();
 }
-
 
 void CAfxStreams::Console_RecordName_set(const char * value)
 {
@@ -7346,6 +7403,8 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 {
 	SetCurrent_View_Render_ThreadId(GetCurrentThreadId());
 
+	m_LastPreviewWithNoHud = false;
+
 	//GetCsgoCGlowOverlayFix()->OnMainViewRenderBegin();
 
 	if (MirvPgl::IsDataActive())
@@ -7391,6 +7450,11 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 	for (std::list<CEntityBvhCapture *>::iterator it = m_EntityBvhCaptures.begin(); it != m_EntityBvhCaptures.end(); ++it)
 	{
 		(*it)->CaptureFrame();
+	}
+
+	if (m_LastPreviewWithNoHud)
+	{
+		m_LastPreviewWithNoHud = false;
 	}
 
 	SetCurrent_View_Render_ThreadId(0);
@@ -7450,7 +7514,7 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 		myWhatToDraw |= SOURCESDK::RENDERVIEW_DRAWHUD;
 		break;
 	case CAfxRenderViewStream::DT_NoDraw:
-		myWhatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWHUD;
+		//myWhatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWHUD;
 		break;
 	case CAfxRenderViewStream::DT_NoChange:
 	default:
@@ -7731,6 +7795,7 @@ void CAfxStreams::BackUpMatVars()
 	m_OldMatMotionBlurEnabled = m_MatMotionBlurEnabledRef->GetInt();
 	m_OldMatForceTonemapScale = m_MatForceTonemapScale->GetFloat();
 	m_OldSndMuteLosefocus = m_SndMuteLosefocus->GetInt();
+	m_OldPanoramaDisableLayerCache = m_PanoramaDisableLayerCache->GetInt();
 }
 
 void CAfxStreams::SetMatVarsForStreams()
@@ -7743,6 +7808,7 @@ void CAfxStreams::SetMatVarsForStreams()
 	if (0 <= m_NewMatForceTonemapScale) m_MatForceTonemapScale->SetValue(m_NewMatForceTonemapScale);
 
 	m_SndMuteLosefocus->SetValue(0.0f);
+	m_PanoramaDisableLayerCache->SetValue(1.0f);
 }
 
 void CAfxStreams::RestoreMatVars()
@@ -7754,6 +7820,7 @@ void CAfxStreams::RestoreMatVars()
 	m_MatMotionBlurEnabledRef->SetValue((float)m_OldMatMotionBlurEnabled);
 	m_MatForceTonemapScale->SetValue(m_OldMatForceTonemapScale);
 	m_SndMuteLosefocus->SetValue((float)m_OldSndMuteLosefocus);
+	m_PanoramaDisableLayerCache->SetValue((float)m_OldPanoramaDisableLayerCache);
 }
 
 void CAfxStreams::EnsureMatVars()
@@ -7763,6 +7830,7 @@ void CAfxStreams::EnsureMatVars()
 	if(!m_MatMotionBlurEnabledRef) m_MatMotionBlurEnabledRef = new WrpConVarRef("mat_motion_blur_enabled");
 	if(!m_MatForceTonemapScale) m_MatForceTonemapScale = new WrpConVarRef("mat_force_tonemap_scale");
 	if (!m_SndMuteLosefocus) m_SndMuteLosefocus = new WrpConVarRef("snd_mute_losefocus");
+	if (!m_PanoramaDisableLayerCache) m_PanoramaDisableLayerCache = new WrpConVarRef("@panorama_disable_layer_cache");
 	if (!m_BuildingCubemaps) m_BuildingCubemaps = new WrpConVarRef("building_cubemaps");
 }
 

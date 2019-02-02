@@ -35,7 +35,8 @@ AFXADDR_DEF(csgo_CUnknown_GetPlayerName_DSZ)
 AFXADDR_DEF(csgo_CCSGameMovement_vtable)
 AFXADDR_DEF(csgo_CSkyboxView_Draw)
 AFXADDR_DEF(csgo_CSkyboxView_Draw_DSZ)
-AFXADDR_DEF(csgo_CViewRender_RenderView_AfterVGui_DrawHud)
+AFXADDR_DEF(csgo_CViewRender_RenderView_VGui_DrawHud_In)
+AFXADDR_DEF(csgo_CViewRender_RenderView_VGui_DrawHud_Out)
 AFXADDR_DEF(csgo_CAudioXAudio2_vtable)
 AFXADDR_DEF(csgo_MIX_PaintChannels)
 AFXADDR_DEF(csgo_MIX_PaintChannels_DSZ)
@@ -525,14 +526,14 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 	{
 		// csgo_CCSGO_HudDeathNotice_FireGameEvent // Checked 2018-08-03.
 		{
-			DWORD addr = 0;
+			AFXADDR_SET(csgo_CCSGO_HudDeathNotice_FireGameEvent, 0x0);
+			//AFXADDR_SET(csgo_CCSGO_HudDeathNotice_UnkRemoveNotices, 0x0);
 			DWORD tmpAddr = FindClassVtable((HMODULE)clientDll, ".?AVCCSGO_HudDeathNotice@@", 0, 0x14);
 			if (tmpAddr) {
-				addr = ((DWORD *)tmpAddr)[1];
+				AFXADDR_SET(csgo_CCSGO_HudDeathNotice_FireGameEvent, ((DWORD *)tmpAddr)[1]);
+				//AFXADDR_SET(csgo_CCSGO_HudDeathNotice_UnkRemoveNotices, ((DWORD *)tmpAddr)[9]);
 			}
-			else ErrorBox(MkErrStr(__FILE__, __LINE__));
-
-			AFXADDR_SET(csgo_CCSGO_HudDeathNotice_FireGameEvent, addr);
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));	
 		}
 		
 		// csgo_CUnknown_GetPlayerName: // Checked 2018-08-30.	
@@ -591,52 +592,32 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			}
 		}
 
-		// csgo_CViewRender_RenderView_AfterVGui_DrawHud: // Checked 2017-05-13.
+		// csgo_CViewRender_RenderView_VGui_DrawHud_In: // Checked 2019-02-02.
+		// csgo_CViewRender_RenderView_VGui_DrawHud_Out: // Checked 2019-02-02.
 		{
-			DWORD addr = 0;
-			DWORD strAddr = 0;
-			{
-				ImageSectionsReader sections((HMODULE)clientDll);
-				if(!sections.Eof())
-				{
-					sections.Next(); // skip .text
-					if(!sections.Eof())
-					{
-						MemRange result = FindCString(sections.GetMemRange(), "VGui_DrawHud");
-						if(!result.IsEmpty())
-						{
-							strAddr = result.Start;
-						}
-						else ErrorBox(MkErrStr(__FILE__,__LINE__));
-					}
-					else ErrorBox(MkErrStr(__FILE__,__LINE__));
-				}
-				else ErrorBox(MkErrStr(__FILE__,__LINE__));
-			}
-			if(strAddr)
-			{
-				ImageSectionsReader sections((HMODULE)clientDll);
+			// This is around the reference to "VGui_DrawHud".
+			// The hooks using the address need updating if the pattern changes!
+
+			AFXADDR_SET(csgo_CViewRender_RenderView_VGui_DrawHud_In, 0);
+			AFXADDR_SET(csgo_CViewRender_RenderView_VGui_DrawHud_Out, 0);
+
+			ImageSectionsReader sections((HMODULE)clientDll);
 			
-				MemRange baseRange = sections.GetMemRange();
-				MemRange result = FindBytes(baseRange, (char const *)&strAddr, sizeof(strAddr));
-				if(!result.IsEmpty())
+			MemRange baseRange = sections.GetMemRange();
+			MemRange result = FindPatternString(baseRange, "0F 84 ?? ?? ?? ?? 8B 0D ?? ?? ?? ?? 8B 81 0C 10 00 00 89 44 24 40 85 C0 74 16 6A 04 6A 00 68 ?? ?? ?? ?? 6A 00 68 ?? ?? ?? ?? FF 15 ?? ?? ?? ?? E8 ?? ?? ?? ??");
+			if(!result.IsEmpty())
+			{
+				DWORD jzAddr = *(DWORD *)(result.Start + 2) + result.Start + 6;
+				MemRange result2 = FindPatternString(baseRange.And(MemRange(result.Start, jzAddr)), "83 7C 24 40 00 74 0C");
+				if (!result2.IsEmpty())
 				{
-					DWORD targetAddr = result.Start +0x0a;
-
-					// check for pattern nearby to see if it is the right address:
-					unsigned char pattern[5] = { 0x6a, 0x04, 0x6a, 0x00, 0x68};
-
-					DWORD patternSize = sizeof(pattern)/sizeof(pattern[0]);
-					MemRange patternRange(result.Start -0x0C, result.Start -0x0C +patternSize);
-					MemRange result = FindBytes(patternRange, (char *)pattern, patternSize);
-					if(result.Start != patternRange.Start || result.End != patternRange.End)
-						ErrorBox(MkErrStr(__FILE__,__LINE__));
-					else
-						addr = targetAddr;
+					AFXADDR_SET(csgo_CViewRender_RenderView_VGui_DrawHud_In, result.Start + 48);
+					AFXADDR_SET(csgo_CViewRender_RenderView_VGui_DrawHud_Out, result2.Start);
 				}
-				else ErrorBox(MkErrStr(__FILE__,__LINE__));
+					
 			}
-			AFXADDR_SET(csgo_CViewRender_RenderView_AfterVGui_DrawHud, addr);
+			else ErrorBox(MkErrStr(__FILE__,__LINE__));
+
 		}
 
 		// csgo_CCSViewRender_RenderSmokeOverlay_OnLoadOldAlpha: // Checked 2017-05-13.
@@ -1577,7 +1558,8 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_CCSGameMovement_vtable, 0x0);
 		AFXADDR_SET(csgo_CSkyboxView_Draw, 0x0);
 		//AFXADDR_SET(csgo_CViewRender_Render, 0x0);
-		AFXADDR_SET(csgo_CViewRender_RenderView_AfterVGui_DrawHud, 0x0);
+		AFXADDR_SET(csgo_CViewRender_RenderView_VGui_DrawHud_In, 0x0);
+		AFXADDR_SET(csgo_CViewRender_RenderView_VGui_DrawHud_Out, 0x0);
 		AFXADDR_SET(csgo_pLocalPlayer, 0x0);
 		AFXADDR_SET(csgo_view, 0x0);
 		AFXADDR_SET(csgo_CCSViewRender_vtable, 0x0);

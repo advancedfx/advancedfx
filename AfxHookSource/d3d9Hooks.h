@@ -124,6 +124,9 @@ void AfxD3D9_OverrideEnd_SetPixelShader();
 /// <remarks>IDirect3D9Device only (i.e. CS:GO but not CSS).</remarks>
 void AfxD3D9_Block_Present(bool block);
 
+/// <remarks>IDirect3D9Device only (i.e. CS:GO but not CSS).</remarks>
+void AfxD3D9_Block_Clear(bool block);
+
 extern bool g_bD3D9DumpVertexShader;
 extern bool g_bD3D9DumpPixelShader;
 

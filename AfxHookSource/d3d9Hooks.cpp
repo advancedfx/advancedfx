@@ -2884,6 +2884,16 @@ public:
 		if (AfxInterop::Enabled())
 		{
 			afxSharedRenderTarget = new CAfxSharedRenderTarget(g_OldDirect3DDevice9, pPresentationParameters);
+
+			// Track render target in this case too, required for HUD supression:
+
+			IDirect3DSurface9 * renderTarget;
+
+			if (SUCCEEDED(g_OldDirect3DDevice9->GetRenderTarget(0, &renderTarget)))
+			{
+				m_RenderTargetTracker.Resource_set(renderTarget);
+				renderTarget->Release();
+			}
 		}
 		else
 #endif
@@ -3491,6 +3501,7 @@ private:
 
 private:
 	bool m_Block_Present = false;
+	bool m_Block_Clear = false;
 
 	class CAfxOverride
 	{
@@ -3967,6 +3978,11 @@ public:
 	void Block_Present(bool block)
 	{
 		m_Block_Present = block;
+	}
+
+	void Block_Clear(bool block)
+	{
+		m_Block_Clear = block;
 	}
 
 	void On_AfxHookDirect3DStateBlock9_Applied(void)
@@ -4654,6 +4670,9 @@ public:
 			Tier0_Msg(" Z=%f",Z);
 			Tier0_Msg("\n");
 		}
+
+		if (m_Block_Clear)
+			return D3D_OK;
 
 		return g_OldDirect3DDevice9->Clear(Count, pRects, Flags, Color, Z, Stencil);
 	}
@@ -6209,6 +6228,13 @@ void AfxD3D9_Block_Present(bool block)
 	if(!g_OldDirect3DDevice9) return;
 
 	g_NewDirect3DDevice9.Block_Present(block);
+}
+
+void AfxD3D9_Block_Clear(bool block)
+{
+	if (!g_OldDirect3DDevice9) return;
+
+	g_NewDirect3DDevice9.Block_Clear(block);
 }
 
 IDirect3DStateBlock9* oldState = NULL;

@@ -4,6 +4,22 @@
 <changelog>
 
 
+
+<release>
+<name>AfxHookSource</name>
+<version>1.48.1</version>
+<time>2019-02-02T21:18Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams screwing up HUD death notifications.
+</change>
+</changes>
+<comments>
+Thanks to https://twitter.com/Devomvm and https://www.reddit.com/user/BuckyKaiser for reporting and helping with examining the bug. Thanks to Devomvm for testing.
+</comments>
+</release>
+
+
 <release>
 <name>AfxHookSource</name>
 <version>1.48.0</version>
