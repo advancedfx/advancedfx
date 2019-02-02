@@ -178,6 +178,12 @@
     <Filter Include="AfxHookSource\csgo\hooks">
       <UniqueIdentifier>{eed7fb6d-936e-41f5-823f-82f0fdffc7c1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="prop\AfxHookSource\insurgency2">
+      <UniqueIdentifier>{5b4593d7-7485-4074-9bff-13d6763c7575}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\insurgency2\public">
+      <UniqueIdentifier>{9f8a63b3-6460-48bd-a750-91b2e9c2c410}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\bvhexport.cpp">
@@ -775,6 +781,9 @@
     </ClInclude>
     <ClInclude Include="addresses.h">
       <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\insurgency2\public\cdll_int.h">
+      <Filter>prop\AfxHookSource\insurgency2\public</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

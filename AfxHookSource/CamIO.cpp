@@ -54,17 +54,17 @@ void afx_std_string_remove_CR(std::string & inOutValue) {
 }
 
 CamImport::CamImport(char const * fileName, double startTime)
-	: m_Ifs(fileName, std::ifstream::in | std::ofstream::binary, _SH_DENYWR )
+	: m_Ifs(fileName, std::ifstream::in | std::ofstream::binary, _SH_DENYWR)
 	, m_StartTime(startTime)
 {
 	int version = 0;
 	m_ScaleFov = SF_None;
 
-	char magic[14+1+1] = { 0 };
+	char magic[14 + 1 + 1] = { 0 };
 
 	m_Ifs.getline(magic, sizeof(magic) / sizeof(char), '\n'); if ('\r' == magic[14]) magic[14] = '\0';
 	if (0 != strcmp(magic, "advancedfx Cam"))m_Ifs.clear(m_Ifs.rdstate() | std::ifstream::badbit);
-	
+
 
 	while (m_Ifs.good())
 	{
@@ -95,10 +95,9 @@ CamImport::CamImport(char const * fileName, double startTime)
 		}
 	}
 
-	if(1 != version) m_Ifs.setstate(m_Ifs.rdstate() | std::ifstream::badbit);
+	if (1 != version) m_Ifs.setstate(m_Ifs.rdstate() | std::ifstream::badbit);
 
 	m_DataStart = m_Ifs.tellg();
-	m_FileStartOk = !m_Ifs.fail();
 }
 
 CamImport::~CamImport()
@@ -122,10 +121,48 @@ bool CamImport::GetCamData(double time, double width, double height, CamData & o
 	if (m_HasFinalFrame && m_FinalFrameTime - m_FirstFrameTime < time - m_StartTime)
 		return false;
 
-	if (!m_HasLastFrame || m_LastFrameTime - m_FirstFrameTime > time - m_StartTime)
+	// Jump direcltly to beginning if possible and required:
+
+	if (m_HasLastFrame && m_FirstFrameTime >= time - m_StartTime)
 	{
-		m_Ifs.seekg(m_DataStart);
-		
+		if (!m_Ifs.seekg(m_DataStart))
+			return false;
+
+		m_HasLastFrame = false; // potentially invalid, go into backwards seek mode.
+	}
+
+	// Seek backwards if required:
+
+	while (
+		!m_HasLastFrame // has not read any frame yet
+		|| m_LastFrame.Time - m_FirstFrameTime > time - m_StartTime // OR time is before current interval
+		&& m_Ifs.tellg() != m_DataStart // AND not at start of current file
+		)
+	{
+		int lineBreakCount = 0;
+
+		while (m_Ifs.tellg() != m_DataStart)
+		{
+			if (!m_Ifs.seekg(-1, std::ios_base::cur))
+				return false;
+
+			char c;
+
+			if (!m_Ifs.get(c))
+				return false;
+
+			if ('\n' == c)
+				++lineBreakCount;
+
+			if (2 <= lineBreakCount)
+			{
+				if (!m_Ifs.seekg(1, std::ios_base::cur))
+					return false;
+
+				break;
+			}
+		}
+
 		m_HasLastFrame = ReadDataLine(m_LastFrame);
 		if (!m_HasLastFrame)
 			return false;
@@ -134,8 +171,9 @@ bool CamImport::GetCamData(double time, double width, double height, CamData & o
 		m_LastQuat = Afx::Math::Quaternion::FromQREulerAngles(Afx::Math::QREulerAngles::FromQEulerAngles(Afx::Math::QEulerAngles(m_LastFrame.YRotation, m_LastFrame.ZRotation, m_LastFrame.XRotation)));
 		m_NextFrame = m_LastFrame;
 		m_NextQuat = m_LastQuat;
-
 	}
+
+	// Read next frame and Seek forward if required
 
 	while (m_NextFrame.Time - m_FirstFrameTime < time - m_StartTime)
 	{

@@ -6,6 +6,85 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.48.2</version>
+<time>2019-02-02T22:18Z</time>
+<changes>
+<change type="fixed">
+Fixed the fix: plain "normal" streams should work correctly too again now.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.48.1</version>
+<time>2019-02-02T21:18Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams screwing up HUD death notifications.
+</change>
+</changes>
+<comments>
+Thanks to https://twitter.com/Devomvm and https://www.reddit.com/user/BuckyKaiser for reporting and helping with examining the bug. Thanks to Devomvm for testing.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.48.0</version>
+<time>2019-01-25T19:18Z</time>
+<changes>
+<change type="fixed">
+Fixed long .cam files causing low FPS, due to always seeking from beginning of the file for each query.<br />
+It will now seek forward and backward (new) as required and also will try to jump to the beginning of the file if time is earlier or equal to the start time.
+</change>
+<change type="updated">
+Changed the mirv_calcs vecAng offset [breaking change, but should not break most real setups]:<br />
+The last argument is now order 0|1, where 1 is the same as the old 1 mode and 0 changed (rarely used if at all):<br/>
+0 (changed) - rotation is applied first and offset added from the new space.<br/>
+1 (old) - offset is applied in old space and after that rotation is applied.
+</change>
+<change type="added">
+Add the following handle calcs to mirv_calcs: localPlayer, observerTarget
+</change>
+<change type="added">
+Add the following vecAng calcs to mirv_calcs: add, subtract, motionProfile2 (rotation behvaiour might change), swichtInterp, localToGlobal, globalToLocal
+</change>
+<change type="fixed">
+Some bug fixes.
+</change>
+<change type="added">
+Added basic Insurgency2 32bit version game support.<br />
+It is not known if -insecure is enough, SO DO NOT JOIN ANY SERVERS, also might be a good idea to turn off the Battle Eye client or even un-install it first.<br />
+Use custom loader:<br />
+Program Path: C:\Program Files (x86)\Steam\steamapps\common\insurgency2\insurgency.exe<br />
+CommandLine: -insecure<br />
+DLLs to Inject: add AfxHookSource.dll from latest HLAE extracted install there.
+</change>
+</changes>
+<comments>
+Thanks to https://twitter.com/onoderasecurity and Unkwn. from Discord for helping with Insurgency.
+</comments>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.47.5</version>
+<time>2019-01-18T19:26Z</time>
+<changes>
+<change type="fixed">
+Fixed #123 (New depth method broken for screen res wider than 2:1).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.47.4</version>
 <time>2019-01-08T04:49Z</time>
 <changes>

@@ -8,6 +8,8 @@
 #include "RenderView.h"
 #include "csgo/ClientToolsCSgo.h"
 
+#include "AfxStreams.h"
+
 #include <shared/detours.h>
 #include <shared/StringTools.h>
 
@@ -53,6 +55,9 @@ typedef void CCSGO_HudDeathNotice_t;
 typedef void (__fastcall *CCSGO_HudDeathNotice_FireGameEvent_t)(CCSGO_HudDeathNotice_t * This, void * edx, SOURCESDK::CSGO::IGameEvent * event);
 CCSGO_HudDeathNotice_FireGameEvent_t TrueCCSGO_HudDeathNotice_FireGameEvent = 0;
 CCSGO_HudDeathNotice_t * CCSGO_HudDeathNotice_FireGameEvent_This = 0;
+
+typedef void(__fastcall *CCSGO_HudDeathNotice_UnkRemoveNotices_t)(CCSGO_HudDeathNotice_t * This, void * edx);
+CCSGO_HudDeathNotice_UnkRemoveNotices_t TrueCCSGO_HudDeathNotice_UnkRemoveNotices = 0;
 
 typedef void csgo_panorama_CUIPanel;
 typedef void(__fastcall * csgo_panorama_CUIPanel_UnkSetFloatProp_t)(csgo_panorama_CUIPanel * This, void * edx, WORD propId, float value);
@@ -1510,6 +1515,7 @@ void __fastcall Mycsgo_panorama_CUIPanel_UnkSetFloatProp(csgo_panorama_CUIPanel 
 
 	Truecsgo_panorama_CUIPanel_UnkSetFloatProp(This, edx, propId, value);
 }
+
 
 bool csgo_CHudDeathNotice_Install_Panorama(void)
 {

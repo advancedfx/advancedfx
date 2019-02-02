@@ -6,19 +6,58 @@
 #include "addresses.h"
 #include <shared/detours.h>
 
-void * detoured_csgo_CViewRender_RenderView_AfterVGui_DrawHud;
+static bool g_InRenderView_VGui_DrawHud = false;
 
-void DoOnDrawingHud(void)
+int __stdcall DoOnRenderView_VGui_DrawHud_In(void)
 {
-	g_AfxStreams.OnDrawingHud();
+	g_InRenderView_VGui_DrawHud = true;
+	g_AfxStreams.OnDrawingHudBegin();
+
+	return 0;
 }
 
-void __declspec(naked) touring_csgo_CViewRender_RenderView_AfterVGui_DrawHud(void)
+void __stdcall DoOnRenderView_VGui_DrawHud_Out(void)
 {
-	__asm ; it's safe to do a call without preauctions here, because a call would happen right after anyways
-	__asm call DoOnDrawingHud
+	if (g_InRenderView_VGui_DrawHud)
+	{
+		g_InRenderView_VGui_DrawHud = false;
+		g_AfxStreams.OnDrawingHudEnd();
+	}
+}
 
-	__asm jmp detoured_csgo_CViewRender_RenderView_AfterVGui_DrawHud
+void * detoured_csgo_CViewRender_RenderView_VGui_DrawHud_In;
+
+void * detoured_csgo_CViewRender_RenderView_VGui_DrawHud_Out;
+
+void __declspec(naked) touring_csgo_CViewRender_RenderView_VGui_DrawHud_In(void)
+{
+	__asm push eax
+	__asm push ecx
+	__asm push edx
+	__asm call DoOnRenderView_VGui_DrawHud_In
+	__asm test eax, 1
+	__asm pop edx
+	__asm pop ecx
+	__asm pop eax
+
+	__asm jz __continue
+	__asm jmp detoured_csgo_CViewRender_RenderView_VGui_DrawHud_Out
+
+	__asm __continue:
+	__asm jmp detoured_csgo_CViewRender_RenderView_VGui_DrawHud_In
+}
+
+void __declspec(naked) touring_csgo_CViewRender_RenderView_VGui_DrawHud_Out(void)
+{
+	__asm push eax
+	__asm push ecx
+	__asm push edx
+	__asm call DoOnRenderView_VGui_DrawHud_Out
+	__asm pop edx
+	__asm pop ecx
+	__asm pop eax
+
+	__asm jmp detoured_csgo_CViewRender_RenderView_VGui_DrawHud_Out
 }
 
 /*
@@ -123,13 +162,18 @@ bool csgo_CViewRender_Install(void)
 	if(!firstRun) return firstResult;
 	firstRun = false;
 
-	if(AFXADDR_GET(csgo_CViewRender_RenderView_AfterVGui_DrawHud))
+	if(AFXADDR_GET(csgo_CViewRender_RenderView_VGui_DrawHud_In) && AFXADDR_GET(csgo_CViewRender_RenderView_VGui_DrawHud_Out))
 	{
-		detoured_csgo_CViewRender_RenderView_AfterVGui_DrawHud = (void *)DetourApply((BYTE *)AFXADDR_GET(csgo_CViewRender_RenderView_AfterVGui_DrawHud), (BYTE *)touring_csgo_CViewRender_RenderView_AfterVGui_DrawHud, 0x5);
-		
-		// update original call offset:
-		DWORD * pCalladdr = (DWORD *)((BYTE *)detoured_csgo_CViewRender_RenderView_AfterVGui_DrawHud +0x1);
-		*pCalladdr = *pCalladdr -((DWORD)detoured_csgo_CViewRender_RenderView_AfterVGui_DrawHud -AFXADDR_GET(csgo_CViewRender_RenderView_AfterVGui_DrawHud));
+		{
+			detoured_csgo_CViewRender_RenderView_VGui_DrawHud_In = (void *)DetourApply((BYTE *)AFXADDR_GET(csgo_CViewRender_RenderView_VGui_DrawHud_In), (BYTE *)touring_csgo_CViewRender_RenderView_VGui_DrawHud_In, 0x5);
+
+			// fix-up code relocation:
+			DWORD * pCalladdr = (DWORD *)((BYTE *)detoured_csgo_CViewRender_RenderView_VGui_DrawHud_In + 0x1);
+			*pCalladdr = *pCalladdr - ((DWORD)detoured_csgo_CViewRender_RenderView_VGui_DrawHud_In - AFXADDR_GET(csgo_CViewRender_RenderView_VGui_DrawHud_In));
+		}
+		{
+			detoured_csgo_CViewRender_RenderView_VGui_DrawHud_Out = (void *)DetourApply((BYTE *)AFXADDR_GET(csgo_CViewRender_RenderView_VGui_DrawHud_Out), (BYTE *)touring_csgo_CViewRender_RenderView_VGui_DrawHud_Out, 0x5);
+		}
 	}
 	else
 		firstResult = false;

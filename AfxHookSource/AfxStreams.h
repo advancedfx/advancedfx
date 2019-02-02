@@ -59,6 +59,8 @@ public:
 
 	virtual void DrawingHudBegin(void) = 0;
 
+	virtual void DrawingHudEnd(void) = 0;
+
 	virtual void DrawingSkyBoxViewBegin(void) = 0;
 
 	virtual void DrawingSkyBoxViewEnd(void) = 0;
@@ -91,7 +93,6 @@ public:
 
 	virtual void SetPixelShader(CAfx_csgo_ShaderState & state) = 0;
 #endif
-
 };
 
 #if AFXSTREAMS_REFTRACKER
@@ -448,6 +449,22 @@ private:
 
 };
 
+class CAfxBlockFunctor
+	: public CAfxFunctor
+{
+public:
+	CAfxBlockFunctor(bool block)
+		: m_Block(block)
+	{
+
+	}
+
+	virtual void operator()();
+
+private:
+	bool m_Block;
+};
+
 class CAfxBaseFxStream;
 
 struct AfxViewportData_t
@@ -479,6 +496,12 @@ public:
 		DT_Draw,
 		DT_NoDraw
 	};
+
+	static CAfxRenderViewStream * EngineThreadStream_get()
+	{
+		return m_EngineThreadStream;
+	}
+
 
 	CAfxRenderViewStream();
 
@@ -530,10 +553,12 @@ public:
 
 	virtual void OnRenderBegin(const AfxViewportData_t & viewport)
 	{
+		m_EngineThreadStream = this;
 	}
 
 	virtual void OnRenderEnd()
 	{
+		m_EngineThreadStream = nullptr;
 	}
 
 protected:
@@ -561,7 +586,7 @@ private:
 		int m_Height;
 	};
 
-	static CAfxRenderViewStream * m_MainStream;
+	static CAfxRenderViewStream * m_EngineThreadStream;
 
 	DrawType m_DrawViewModel;
 	DrawType m_DrawHud;
@@ -1818,6 +1843,8 @@ private:
 
 		virtual void DrawingHudBegin(void);
 
+		virtual void DrawingHudEnd(void);
+
 		virtual void DrawingSkyBoxViewBegin(void);
 
 		virtual void DrawingSkyBoxViewEnd(void);
@@ -1843,6 +1870,7 @@ private:
 #endif
 
 	private:
+		bool m_DrawingHud;
 		bool m_DrawingSkyBoxView;
 		SOURCESDK::CSGO::CBaseHandle m_CurrentEntityHandle;
 
@@ -1888,6 +1916,24 @@ private:
 			virtual void operator()()
 			{
 				m_StreamContext->DrawingHudBegin();
+			}
+
+		private:
+			CAfxBaseFxStreamContext * m_StreamContext;
+		};
+
+		class CDrawingHudEndFunctor
+			: public CAfxFunctor
+		{
+		public:
+			CDrawingHudEndFunctor(CAfxBaseFxStreamContext * streamContext)
+				: m_StreamContext(streamContext)
+			{
+			}
+
+			virtual void operator()()
+			{
+				m_StreamContext->DrawingHudEnd();
 			}
 
 		private:
@@ -2536,7 +2582,9 @@ public:
 
 	bool OnViewRenderShouldForceNoVis(bool orgValue);
 
-	void OnDrawingHud(void);
+	void OnDrawingHudBegin(void);
+
+	void OnDrawingHudEnd(void);
 
 	void OnDrawingSkyBoxViewBegin(void);
 
@@ -2621,22 +2669,6 @@ public:
 	void LevelShutdown(void);
 
 	virtual void View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *rect);
-
-	bool AbortUnkDrawVguiA(bool notInRenderView) {
-		if (GetCurrentThreadId() != GetCurrent_View_Render_ThreadId())
-			return false;
-
-		return notInRenderView && m_LastPreviewWithNoHud;
-	}
-
-	bool AbortUnkDrawVguiB(bool notInRenderView) {
-		if (GetCurrentThreadId() != GetCurrent_View_Render_ThreadId())
-			return false;
-
-		bool wasLastPreviewWithNoHud = m_LastPreviewWithNoHud;
-		m_LastPreviewWithNoHud = false;
-		return notInRenderView && wasLastPreviewWithNoHud;
-	}
 
 private:
 	class CEntityBvhCapture
@@ -2741,6 +2773,9 @@ private:
 	WrpConVarRef * m_BuildingCubemaps = nullptr;
 	int m_OldBuildingCubemaps;
 
+	WrpConVarRef * m_PanoramaDisableLayerCache = nullptr;
+	int m_OldPanoramaDisableLayerCache;
+
 	std::wstring m_TakeDir;
 	//ITexture_csgo * m_RgbaRenderTarget;
 	SOURCESDK::ITexture_csgo * m_RenderTargetDepthF;
@@ -2748,6 +2783,8 @@ private:
 	DWORD m_Current_View_Render_ThreadId;
 	bool m_PresentBlocked = false;
 	bool m_ShutDown = false;
+
+	bool m_BlockHud = false;
 
 	void SetCurrent_View_Render_ThreadId(DWORD id);
 

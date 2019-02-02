@@ -1104,7 +1104,7 @@ void CamPath::AnchorTransform(double anchorX, double anchorY, double anchorZ, do
 		quatAnchor = -1.0 * quatAnchor;
 	}
 
-	Quaternion quatR = quatDest * (quatAnchor.Norm() * quatAnchor.Conjugate());
+	Quaternion quatR = quatDest * (/*(1.0 / quatAnchor.Norm()) * */quatAnchor.Conjugate());
 
 	QEulerAngles angles = quatR.ToQREulerAngles().ToQEulerAngles();
 

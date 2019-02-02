@@ -69,13 +69,11 @@ public:
 	bool IsBad() { return m_Ifs.bad(); }
 
 private:
-	bool m_FileStartOk;
 	std::ifstream m_Ifs;
 	double m_StartTime;
 	std::streampos m_DataStart;
 	double m_FirstFrameTime;
 	bool m_HasLastFrame = false;
-	bool m_LastFrameTime;
 	double m_FinalFrameTime;
 	bool m_HasFinalFrame = false;
 	CamData m_LastFrame;

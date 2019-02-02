@@ -255,6 +255,7 @@
     <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\toolframework\itoolframework.h" />
     <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\tools\bonelist.h" />
     <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\vstdlib\ikeyvaluessystem.h" />
+    <ClInclude Include="..\prop\AfxHookSource\insurgency2\public\cdll_int.h" />
     <ClInclude Include="..\prop\AfxHookSource\l4d2\sdk_src\public\appframework\IAppSystem.h" />
     <ClInclude Include="..\prop\AfxHookSource\l4d2\sdk_src\public\icvar.h" />
     <ClInclude Include="..\prop\AfxHookSource\l4d2\sdk_src\public\interfaces\interfaces.h" />

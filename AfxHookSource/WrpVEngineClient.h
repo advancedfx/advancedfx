@@ -4,6 +4,7 @@
 // Wrapper(s) for Source's IVEngineClient Interface
 
 #include "SourceInterfaces.h"
+#include "insurgency2/public/cdll_int.h"
 
 
 // WrpVEngineClientDemoInfo ///////////////////////////////////////////////////
@@ -27,6 +28,7 @@ public:
 	virtual void ServerCmd( const char *szCmdString, bool bReliable = true ) abstract = 0;
 	virtual void ClientCmd( const char *szCmdString ) abstract = 0;
 	virtual bool Con_IsVisible( void ) abstract = 0;
+	virtual int	GetLocalPlayer(void) abstract = 0;
 	virtual void GetViewAngles( SOURCESDK::QAngle& va ) abstract = 0;
 	virtual void SetViewAngles( SOURCESDK::QAngle& va ) abstract = 0;
 	virtual int GetMaxClients( void ) abstract = 0;
@@ -76,6 +78,7 @@ public:
 	virtual void ServerCmd( const char *szCmdString, bool bReliable = true );
 	virtual void ClientCmd( const char *szCmdString );
 	virtual bool Con_IsVisible( void );
+	virtual int	GetLocalPlayer(void);
 	virtual void GetViewAngles(SOURCESDK::QAngle& va );
 	virtual void SetViewAngles(SOURCESDK::QAngle& va );
 	virtual int GetMaxClients( void );
@@ -123,6 +126,7 @@ public:
 	virtual void ServerCmd( const char *szCmdString, bool bReliable = true );
 	virtual void ClientCmd( const char *szCmdString );
 	virtual bool Con_IsVisible( void );
+	virtual int	GetLocalPlayer(void);
 	virtual void GetViewAngles(SOURCESDK::QAngle& va );
 	virtual void SetViewAngles(SOURCESDK::QAngle& va );
 	virtual int GetMaxClients( void );
@@ -177,6 +181,7 @@ public:
 	virtual void ServerCmd( const char *szCmdString, bool bReliable = true );
 	virtual void ClientCmd( const char *szCmdString );
 	virtual bool Con_IsVisible( void );
+	virtual int	GetLocalPlayer(void);
 	virtual void GetViewAngles(SOURCESDK::QAngle& va );
 	virtual void SetViewAngles(SOURCESDK::QAngle& va );
 	virtual int GetMaxClients( void );
@@ -221,4 +226,64 @@ public:
 
 private:
 	SOURCESDK::IVEngineClient_014_csgo * m_VEngineClient;
+};
+
+// WrpVEngineClient_Insurgency2 ////////////////////////////////////////////////
+
+class WrpVEngineClient_Insurgency2
+	: public WrpVEngineClient
+	, public WrpVEngineClientDemoInfoEx
+{
+public:
+	WrpVEngineClient_Insurgency2(SOURCESDK::INSURGENCY2::IVEngineClient * iface);
+
+	virtual void GetScreenSize(int& width, int& height);
+	virtual void ServerCmd(const char *szCmdString, bool bReliable = true);
+	virtual void ClientCmd(const char *szCmdString);
+	virtual bool Con_IsVisible(void);
+	virtual int	GetLocalPlayer(void);
+	virtual void GetViewAngles(SOURCESDK::QAngle& va);
+	virtual void SetViewAngles(SOURCESDK::QAngle& va);
+	virtual int GetMaxClients(void);
+	virtual bool IsInGame(void);
+	virtual bool IsConnected(void);
+	virtual bool IsDrawingLoadingImage(void);
+	virtual void Con_NPrintf(int pos, const char *fmt, ...);
+	virtual const char *  GetGameDirectory(void);
+	virtual const SOURCESDK::VMatrix& WorldToScreenMatrix();
+	virtual const SOURCESDK::VMatrix& WorldToViewMatrix();
+	virtual char const *  GetLevelName(void);
+	virtual void EngineStats_BeginFrame(void);
+	virtual void EngineStats_EndFrame(void);
+	virtual bool IsPlayingDemo(void);
+	virtual bool IsRecordingDemo(void);
+	virtual bool IsPlayingTimeDemo(void);
+
+	virtual int GetDemoRecordingTick(void);
+	virtual int	GetDemoPlaybackTick(void);
+	virtual int	GetDemoPlaybackStartTick(void);
+	virtual float GetDemoPlaybackTimeScale(void);
+	virtual int GetDemoPlaybackTotalTicks(void);
+
+	virtual bool IsPaused(void);
+	virtual bool IsTakingScreenshot(void);
+	virtual bool IsHLTV(void);
+	virtual bool IsLevelMainMenuBackground(void);
+	virtual void GetMainMenuBackgroundName(char *dest, int destlen);
+	virtual bool IsInEditMode(void);
+	virtual unsigned int GetEngineBuildNumber();
+	virtual const char * GetProductVersionString();
+	virtual bool IsHammerRunning() const;
+	virtual void ExecuteClientCmd(const char *szCmdString);
+	virtual void ClientCmd_Unrestricted(const char *szCmdString);
+
+	virtual WrpVEngineClientDemoInfoEx * GetDemoInfoEx(void);
+
+	virtual SOURCESDK::IVEngineClient_014_csgo * GetVEngineClient_csgo(void)
+	{
+		return 0;
+	}
+
+private:
+	SOURCESDK::INSURGENCY2::IVEngineClient * m_VEngineClient;
 };

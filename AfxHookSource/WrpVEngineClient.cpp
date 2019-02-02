@@ -29,6 +29,10 @@ bool WrpVEngineClient_012::Con_IsVisible( void ) {
 	return m_VEngineClient_012->Con_IsVisible();
 }
 
+int	WrpVEngineClient_012::GetLocalPlayer(void) {
+	return m_VEngineClient_012->GetLocalPlayer();
+}
+
 void WrpVEngineClient_012::GetViewAngles(SOURCESDK::QAngle& va ) {
 	m_VEngineClient_012->GetViewAngles(va);
 }
@@ -167,6 +171,10 @@ void WrpVEngineClient_013::ClientCmd( const char *szCmdString ) {
 
 bool WrpVEngineClient_013::Con_IsVisible( void ) {
 	return m_VEngineClient_013->Con_IsVisible();
+}
+
+int	WrpVEngineClient_013::GetLocalPlayer(void) {
+	return m_VEngineClient_013->GetLocalPlayer();
 }
 
 void WrpVEngineClient_013::GetViewAngles(SOURCESDK::QAngle& va ) {
@@ -333,6 +341,10 @@ bool WrpVEngineClient_014_csgo::Con_IsVisible( void ) {
 	return m_VEngineClient->Con_IsVisible();
 }
 
+int	WrpVEngineClient_014_csgo::GetLocalPlayer(void) {
+	return m_VEngineClient->GetLocalPlayer();
+}
+
 void WrpVEngineClient_014_csgo::GetViewAngles(SOURCESDK::QAngle& va ) {
 	m_VEngineClient->GetViewAngles(va);
 }
@@ -471,6 +483,175 @@ void WrpVEngineClient_014_csgo::ClientCmd_Unrestricted( const char *szCmdString 
 }
 
 WrpVEngineClientDemoInfoEx * WrpVEngineClient_014_csgo::GetDemoInfoEx(void)
+{
+	return this;
+}
+
+
+// WrpVEngineClient_Insurgency2 ///////////////////////////////////////////////////////////
+
+WrpVEngineClient_Insurgency2::WrpVEngineClient_Insurgency2(SOURCESDK::INSURGENCY2::IVEngineClient * iface) {
+	m_VEngineClient = iface;
+}
+
+void WrpVEngineClient_Insurgency2::GetScreenSize(int& width, int& height) {
+	m_VEngineClient->GetScreenSize(width, height);
+}
+
+void WrpVEngineClient_Insurgency2::ServerCmd(const char *szCmdString, bool bReliable) {
+	m_VEngineClient->ServerCmd(szCmdString, bReliable);
+}
+
+void WrpVEngineClient_Insurgency2::ClientCmd(const char *szCmdString) {
+	m_VEngineClient->ClientCmd(szCmdString);
+}
+
+bool WrpVEngineClient_Insurgency2::Con_IsVisible(void) {
+	return m_VEngineClient->Con_IsVisible();
+}
+
+int	WrpVEngineClient_Insurgency2::GetLocalPlayer(void) {
+	return m_VEngineClient->GetLocalPlayer();
+}
+
+void WrpVEngineClient_Insurgency2::GetViewAngles(SOURCESDK::QAngle& va) {
+	m_VEngineClient->GetViewAngles(va);
+}
+
+void WrpVEngineClient_Insurgency2::SetViewAngles(SOURCESDK::QAngle& va) {
+	m_VEngineClient->SetViewAngles(va);
+}
+
+int WrpVEngineClient_Insurgency2::GetMaxClients(void) {
+	return m_VEngineClient->GetMaxClients();
+}
+
+bool WrpVEngineClient_Insurgency2::IsInGame(void) {
+	return m_VEngineClient->IsInGame();
+}
+
+bool WrpVEngineClient_Insurgency2::IsConnected(void) {
+	return m_VEngineClient->IsConnected();
+}
+
+bool WrpVEngineClient_Insurgency2::IsDrawingLoadingImage(void) {
+	return m_VEngineClient->IsDrawingLoadingImage();
+}
+
+void WrpVEngineClient_Insurgency2::Con_NPrintf(int pos, const char *fmt, ...) {
+	va_list argptr;
+	va_start(argptr, fmt);
+	m_VEngineClient->Con_NPrintf(pos, fmt, argptr);
+}
+
+const char *  WrpVEngineClient_Insurgency2::GetGameDirectory(void) {
+	return m_VEngineClient->GetGameDirectory();
+}
+
+const SOURCESDK::VMatrix& WrpVEngineClient_Insurgency2::WorldToScreenMatrix()
+{
+	return m_VEngineClient->WorldToScreenMatrix();
+}
+
+const SOURCESDK::VMatrix& WrpVEngineClient_Insurgency2::WorldToViewMatrix()
+{
+	return m_VEngineClient->WorldToViewMatrix();
+}
+
+
+char const *  WrpVEngineClient_Insurgency2::GetLevelName(void) {
+	return m_VEngineClient->GetLevelName();
+}
+
+void WrpVEngineClient_Insurgency2::EngineStats_BeginFrame(void) {
+	return m_VEngineClient->EngineStats_BeginFrame();
+}
+
+void WrpVEngineClient_Insurgency2::EngineStats_EndFrame(void) {
+	return m_VEngineClient->EngineStats_EndFrame();
+}
+
+bool WrpVEngineClient_Insurgency2::IsPlayingDemo(void) {
+	return m_VEngineClient->IsPlayingDemo();
+}
+
+bool WrpVEngineClient_Insurgency2::IsRecordingDemo(void) {
+	return m_VEngineClient->IsRecordingDemo();
+}
+
+bool WrpVEngineClient_Insurgency2::IsPlayingTimeDemo(void) {
+	return m_VEngineClient->IsPlayingTimeDemo();
+}
+
+int WrpVEngineClient_Insurgency2::GetDemoRecordingTick(void)
+{
+	return m_VEngineClient->GetDemoRecordingTick();
+}
+
+int	WrpVEngineClient_Insurgency2::GetDemoPlaybackTick(void)
+{
+	return m_VEngineClient->GetDemoPlaybackTick();
+}
+
+int	WrpVEngineClient_Insurgency2::GetDemoPlaybackStartTick(void)
+{
+	return m_VEngineClient->GetDemoPlaybackStartTick();
+}
+
+float WrpVEngineClient_Insurgency2::GetDemoPlaybackTimeScale(void)
+{
+	return m_VEngineClient->GetDemoPlaybackTimeScale();
+}
+
+int WrpVEngineClient_Insurgency2::GetDemoPlaybackTotalTicks(void)
+{
+	return m_VEngineClient->GetDemoPlaybackTotalTicks();
+}
+
+bool WrpVEngineClient_Insurgency2::IsPaused(void) {
+	return m_VEngineClient->IsPaused();
+}
+
+bool WrpVEngineClient_Insurgency2::IsTakingScreenshot(void) {
+	return m_VEngineClient->IsTakingScreenshot();
+}
+bool WrpVEngineClient_Insurgency2::IsHLTV(void) {
+	return m_VEngineClient->IsHLTV();
+}
+
+bool WrpVEngineClient_Insurgency2::IsLevelMainMenuBackground(void) {
+	return m_VEngineClient->IsLevelMainMenuBackground();
+}
+
+void WrpVEngineClient_Insurgency2::GetMainMenuBackgroundName(char *dest, int destlen) {
+	return m_VEngineClient->GetMainMenuBackgroundName(dest, destlen);
+}
+
+bool WrpVEngineClient_Insurgency2::IsInEditMode(void) {
+	return m_VEngineClient->IsInEditMode();
+}
+
+unsigned int WrpVEngineClient_Insurgency2::GetEngineBuildNumber() {
+	return m_VEngineClient->GetEngineBuildNumber();
+}
+
+const char * WrpVEngineClient_Insurgency2::GetProductVersionString() {
+	return m_VEngineClient->GetProductVersionString();
+}
+
+bool WrpVEngineClient_Insurgency2::IsHammerRunning() const {
+	return m_VEngineClient->IsHammerRunning();
+}
+
+void WrpVEngineClient_Insurgency2::ExecuteClientCmd(const char *szCmdString) {
+	m_VEngineClient->ExecuteClientCmd(szCmdString);
+}
+
+void WrpVEngineClient_Insurgency2::ClientCmd_Unrestricted(const char *szCmdString) {
+	m_VEngineClient->ClientCmd_Unrestricted(szCmdString);
+}
+
+WrpVEngineClientDemoInfoEx * WrpVEngineClient_Insurgency2::GetDemoInfoEx(void)
 {
 	return this;
 }
