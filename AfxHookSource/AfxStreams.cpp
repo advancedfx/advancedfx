@@ -5044,36 +5044,34 @@ void CAfxStreams::OnDrawingHudBegin(void)
 
 	if (hook)
 		hook->DrawingHudBegin();
+
+	if (CAfxRenderViewStream * stream = CAfxRenderViewStream::EngineThreadStream_get())
+	{
+		if (CAfxRenderViewStream::DT_NoDraw == stream->DrawHud_get())
+		{
+			QueueOrExecute(afxMatRenderContext->GetOrg(), new CAfxLeafExecute_Functor(new CAfxBlockFunctor(true)));
+		}
+	}
 }
 
 void CAfxStreams::OnDrawingHudEnd(void)
 {
 	IAfxMatRenderContext * afxMatRenderContext = GetCurrentContext();
 
-	if(IAfxStreamContext * hook = FindStreamContext(afxMatRenderContext))
-		hook->DrawingHudEnd();
-
 	if (CAfxRenderViewStream * stream = CAfxRenderViewStream::EngineThreadStream_get())
 	{
 		if (CAfxRenderViewStream::DT_NoDraw == stream->DrawHud_get())
 		{
-			QueueOrExecute(afxMatRenderContext->GetOrg(), new CAfxLeafExecute_Functor(new CAfxBlockFunctor(true)));
+			QueueOrExecute(afxMatRenderContext->GetOrg(), new CAfxLeafExecute_Functor(new CAfxBlockFunctor(false)));
 		}
 	}
+
+	if(IAfxStreamContext * hook = FindStreamContext(afxMatRenderContext))
+		hook->DrawingHudEnd();
 }
 
 void CAfxStreams::OnDrawingSkyBoxViewBegin(void)
 {
-	IAfxMatRenderContext * afxMatRenderContext = GetCurrentContext();
-
-	if (CAfxRenderViewStream * stream = CAfxRenderViewStream::EngineThreadStream_get())
-	{
-		if (CAfxRenderViewStream::DT_NoDraw == stream->DrawHud_get())
-		{
-			QueueOrExecute(afxMatRenderContext->GetOrg(), new CAfxLeafExecute_Functor(new CAfxBlockFunctor(true)));
-		}
-	}
-
 	IAfxStreamContext * hook = FindStreamContext(GetCurrentContext());
 
 	if (hook)
