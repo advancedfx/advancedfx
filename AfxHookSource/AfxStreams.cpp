@@ -2295,14 +2295,6 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 			m_Ctx->GetOrg()->ClearBuffers(true, false, false);
 			break;
 		}
-
-		if (CAfxRenderViewStream::DT_NoDraw == m_Stream->DrawHud_get())
-		{
-			AfxD3D9OverrideBegin_D3DRS_ALPHABLENDENABLE(TRUE);
-			AfxD3D9OverrideBegin_D3DRS_SRCBLEND(D3DBLEND_ZERO);
-			AfxD3D9OverrideBegin_D3DRS_DESTBLEND(D3DBLEND_ONE);
-			AfxD3D9OverrideBegin_D3DRS_ZWRITEENABLE(FALSE);
-		}
 	}
 }
 
@@ -2318,13 +2310,6 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudEnd(void)
 	{
 		// Leaf context
 
-		if (CAfxRenderViewStream::DT_NoDraw == m_Stream->DrawHud_get())
-		{
-			AfxD3D9OverrideEnd_D3DRS_ZWRITEENABLE();
-			AfxD3D9OverrideEnd_D3DRS_DESTBLEND();
-			AfxD3D9OverrideEnd_D3DRS_SRCBLEND();
-			AfxD3D9OverrideEnd_D3DRS_ALPHABLENDENABLE();
-		}
 	}
 
 	m_DrawingHud = false;
@@ -5063,12 +5048,32 @@ void CAfxStreams::OnDrawingHudBegin(void)
 
 void CAfxStreams::OnDrawingHudEnd(void)
 {
-	if(IAfxStreamContext * hook = FindStreamContext(GetCurrentContext()))
+	IAfxMatRenderContext * afxMatRenderContext = GetCurrentContext();
+
+	if(IAfxStreamContext * hook = FindStreamContext(afxMatRenderContext))
 		hook->DrawingHudEnd();
+
+	if (CAfxRenderViewStream * stream = CAfxRenderViewStream::EngineThreadStream_get())
+	{
+		if (CAfxRenderViewStream::DT_NoDraw == stream->DrawHud_get())
+		{
+			QueueOrExecute(afxMatRenderContext->GetOrg(), new CAfxLeafExecute_Functor(new CAfxBlockFunctor(true)));
+		}
+	}
 }
 
 void CAfxStreams::OnDrawingSkyBoxViewBegin(void)
 {
+	IAfxMatRenderContext * afxMatRenderContext = GetCurrentContext();
+
+	if (CAfxRenderViewStream * stream = CAfxRenderViewStream::EngineThreadStream_get())
+	{
+		if (CAfxRenderViewStream::DT_NoDraw == stream->DrawHud_get())
+		{
+			QueueOrExecute(afxMatRenderContext->GetOrg(), new CAfxLeafExecute_Functor(new CAfxBlockFunctor(true)));
+		}
+	}
+
 	IAfxStreamContext * hook = FindStreamContext(GetCurrentContext());
 
 	if (hook)

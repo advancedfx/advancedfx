@@ -4,6 +4,17 @@
 <changelog>
 
 
+<release>
+<name>AfxHookSource</name>
+<version>1.48.2</version>
+<time>2019-02-02T22:18Z</time>
+<changes>
+<change type="fixed">
+Fixed the fix: plain "normal" streams should work correctly too again now.
+</change>
+</changes>
+</release>
+
 
 <release>
 <name>AfxHookSource</name>
