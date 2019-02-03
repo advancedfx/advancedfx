@@ -5,6 +5,7 @@
 #include "SourceInterfaces.h"
 #include "RenderView.h"
 #include "WrpVEngineClient.h"
+#include "MirvTime.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -344,7 +345,7 @@ void CCampathDrawer::OnPostRenderAllTools()
 	{
 		//Vector3 vvForward, vvUp, vvRight, vvPos;
 
-		double curTime = g_Hook_VClient_RenderView.GetCurTime();
+		double curTime = g_MirvTime.GetTime();
 		bool inCampath = 1 <= g_Hook_VClient_RenderView.m_CamPath.GetSize()
 			&&	g_Hook_VClient_RenderView.m_CamPath.GetLowerBound() <= curTime
 			&& curTime <= g_Hook_VClient_RenderView.m_CamPath.GetUpperBound();

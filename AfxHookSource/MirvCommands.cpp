@@ -5,6 +5,7 @@
 #include <shared/StringTools.h>
 
 #include "RenderView.h"
+#include "MirvTime.h"
 #include "SourceInterfaces.h"
 #include "WrpVEngineClient.h"
 #include "WrpConsole.h"
@@ -94,33 +95,6 @@ float mirv_setup_add = 0;
 CON_COMMAND(__mirv_info, "")
 {
 
-}
-
-CON_COMMAND(__mirv_test8, "")
-{
-	int argc = args->ArgC();
-
-	if (2 > argc)
-		return;
-
-
-	int idx = atoi(args->ArgV(1));
-
-	SOURCESDK::IClientEntity_csgo * ce = SOURCESDK::g_Entitylist_csgo->GetClientEntity(idx);
-	SOURCESDK::C_BaseEntity_csgo * be = ce ? ce->GetBaseEntity() : 0;
-
-	if (be)
-	{
-		int * p = (int *)((char *)be + 0xA38);
-		int * pp = (int *)((char *)be + 0xA38+0x8);
-
-		float *fp = (float *)((char *)be + 0x25c);
-		*pp = *p;
-
-		*fp = g_Hook_VClient_RenderView.GetGlobals()->curtime_get() + g_Hook_VClient_RenderView.GetGlobals()->frametime_get();
-
-		Tier0_Msg("%i: %i / %f\n", idx, *p, *fp);
-	}
 }
 
 CON_COMMAND(__mirv_test6, "")
@@ -1315,7 +1289,7 @@ CON_COMMAND(mirv_campath,"camera paths")
 		if(!_stricmp("add", subcmd) && 2 == argc)
 		{
 			g_Hook_VClient_RenderView.m_CamPath.Add(
-				g_Hook_VClient_RenderView.GetCurTime(),
+				g_MirvTime.GetTime(),
 				CamPathValue(
 					g_Hook_VClient_RenderView.LastCameraOrigin[0],
 					g_Hook_VClient_RenderView.LastCameraOrigin[1],
@@ -1389,7 +1363,7 @@ CON_COMMAND(mirv_campath,"camera paths")
 		{
 			Tier0_Msg("passed? selected? id: tick[approximate!], demoTime[approximate!], gameTime -> (x,y,z) fov (pitch,yaw,roll)\n");
 
-			double curtime = g_Hook_VClient_RenderView.GetCurTime();
+			double curtime = g_MirvTime.GetTime();
 			
 			int i=0;
 			for(CamPathIterator it = g_Hook_VClient_RenderView.m_CamPath.GetBegin(); it != g_Hook_VClient_RenderView.m_CamPath.GetEnd(); ++it)
@@ -1521,7 +1495,7 @@ CON_COMMAND(mirv_campath,"camera paths")
 					if(3 == argc)
 					{
 						g_Hook_VClient_RenderView.m_CamPath.SetStart(
-							g_Hook_VClient_RenderView.GetCurTime()
+							g_MirvTime.GetTime()
 						);
 
 						return;
@@ -1949,17 +1923,17 @@ CON_COMMAND(mirv_campath,"camera paths")
 						}
 						else if(!_stricmp(fromArg, "current"))
 						{
-							fromValue = g_Hook_VClient_RenderView.GetCurTime();
+							fromValue = g_MirvTime.GetTime();
 						}
 						else if(StringBeginsWith(fromArg, "current+"))
 						{
-							fromValue = g_Hook_VClient_RenderView.GetCurTime();
+							fromValue = g_MirvTime.GetTime();
 							fromArg += strlen("current+");
 							fromValue += atof(fromArg);
 						}
 						else if(StringBeginsWith(fromArg, "current-"))
 						{
-							fromValue = g_Hook_VClient_RenderView.GetCurTime();
+							fromValue = g_MirvTime.GetTime();
 							fromArg += strlen("current-");
 							fromValue -= atof(fromArg);
 						}
@@ -1988,13 +1962,13 @@ CON_COMMAND(mirv_campath,"camera paths")
 						}
 						else if(StringBeginsWith(toArg, "current+"))
 						{
-							toValue = g_Hook_VClient_RenderView.GetCurTime();
+							toValue = g_MirvTime.GetTime();
 							toArg += strlen("current+");
 							toValue += atof(toArg);
 						}
 						else if(StringBeginsWith(toArg, "current-"))
 						{
-							toValue = g_Hook_VClient_RenderView.GetCurTime();
+							toValue = g_MirvTime.GetTime();
 							toArg += strlen("current-");
 							toValue -= atof(toArg);
 						}
@@ -2115,7 +2089,7 @@ CON_COMMAND(mirv_camexport, "controls camera motion data export") {
 		}
 		if(0 == _stricmp("timeinfo", arg1))
 		{			
-			Tier0_Msg("Current (interpolated client) time: %f\n", g_Hook_VClient_RenderView.GetCurTime());
+			Tier0_Msg("Current (interpolated client) time: %f\n", g_MirvTime.GetTime());
 			return;
 		}
 
@@ -2148,7 +2122,7 @@ CON_COMMAND(mirv_camimport, "controls camera motion data import") {
 		else
 		if(0 == _stricmp("start", arg1) && 3 <= argc) {
 			char const * fileName = args->ArgV(2);
-			g_Hook_VClient_RenderView.SetImportBaseTime(g_Hook_VClient_RenderView.GetCurTime());
+			g_Hook_VClient_RenderView.SetImportBaseTime(g_MirvTime.GetTime());
 
 			std::wstring wideFileName;
 			if(!UTF8StringToWideString(fileName, wideFileName)
@@ -2162,7 +2136,7 @@ CON_COMMAND(mirv_camimport, "controls camera motion data import") {
 			if(3 <= argc) {
 				char const * newTime = args->ArgV(2);
 				if(0 == _stricmp("current", newTime))
-					g_Hook_VClient_RenderView.SetImportBaseTime(g_Hook_VClient_RenderView.GetCurTime());
+					g_Hook_VClient_RenderView.SetImportBaseTime(g_MirvTime.GetTime());
 				else
 					g_Hook_VClient_RenderView.SetImportBaseTime((float)atof(newTime));
 				return;
@@ -3954,5 +3928,55 @@ CON_COMMAND(mirv_loadlibrary, "Load a DLL.")
 
 	Tier0_Msg(
 		"mirv_loadlibrary <sDllFilePath> - Load DLL at given path.\n"
+	);
+}
+
+CON_COMMAND(mirv_time, "time control")
+{
+	int argc = args->ArgC();
+
+	if (2 <= argc)
+	{
+		const char * cmd1 = args->ArgV(1);
+
+		if (0 == _stricmp("mode", cmd1))
+		{
+			if(3 <= argc)
+			{
+				const char * cmd2 = args->ArgV(2);
+
+				g_MirvTime.SetMode(0 == _stricmp("resumePaused", cmd2) ? CMirvTime::TimeMode_ResumePaused : CMirvTime::TimeMode_CurTime);
+				return;
+			}
+
+			Tier0_Msg(
+				"mirv_time mode curTime|resumePaused - Time mode, curTime pauses when the demo pauses, resumePaused resumes even then. Default is curTime.\n"
+				"Current value: %s\n"
+				, CMirvTime::TimeMode_ResumePaused == g_MirvTime.GetMode() ? "resumePaused" : "curTime"
+			);
+			return;
+		}
+		else if (0 == _stricmp("pausedTime", cmd1))
+		{
+			if (3 <= argc)
+			{
+				const char * cmd2 = args->ArgV(2);
+
+				g_MirvTime.SetPausedTime((float)atof(cmd2));
+				return;
+			}
+
+			Tier0_Msg(
+				"mirv_time pausedTime <fSeconds> - Set currently added paused time.\n"
+				"Current value: %f\n"
+				, g_MirvTime.GetPausedTime()
+			);
+			return;
+		}
+	}
+
+	Tier0_Msg(
+		"mirv_time mode [...].\n"
+		"mirv_time pausedTime [...].\n"
 	);
 }

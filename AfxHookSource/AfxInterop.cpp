@@ -7,6 +7,7 @@
 #include "WrpVEngineClient.h"
 #include "WrpConsole.h"
 #include "RenderView.h"
+#include "MirvTime.h"
 
 #include <Windows.h>
 
@@ -573,9 +574,9 @@ namespace AfxInterop {
 
 				if (!WriteInt32(EngineThread::m_hPipe, EngineThread::m_Frame)) { errorLine = __LINE__; goto locked_error; }
 
-				if (!WriteSingle(EngineThread::m_hPipe, g_Hook_VClient_RenderView.GetGlobals()->absoluteframetime_get())) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, g_Hook_VClient_RenderView.GetGlobals()->curtime_get())) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, g_Hook_VClient_RenderView.GetGlobals()->frametime_get())) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, g_MirvTime.GetAbsoluteFrameTime())) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, g_MirvTime.GetTime())) { errorLine = __LINE__; goto locked_error; }
+				if (!WriteSingle(EngineThread::m_hPipe, g_MirvTime.GetFrameTime())) { errorLine = __LINE__; goto locked_error; }
 
 				int width, height;
 				g_VEngineClient->GetScreenSize(width, height);

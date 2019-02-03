@@ -4,6 +4,7 @@
 
 #include "WrpVEngineClient.h"
 #include "RenderView.h"
+#include "MirvTime.h"
 
 #include <shared/rapidxml/rapidxml.hpp>
 #include <shared/rapidxml/rapidxml_print.hpp>
@@ -369,7 +370,7 @@ void CommandSystem::Do_Commands(void)
 
 	if (IsSupportedByTime())
 	{
-		double time = g_Hook_VClient_RenderView.GetGlobals()->curtime_get();
+		double time = g_MirvTime.GetTime();
 
 		//Tier0_Msg("%f\n", time);
 

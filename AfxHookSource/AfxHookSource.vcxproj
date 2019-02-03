@@ -226,6 +226,7 @@
     <ClCompile Include="MirvCalcs.cpp" />
     <ClCompile Include="MirvInputMem.cpp" />
     <ClCompile Include="MirvPgl.cpp" />
+    <ClCompile Include="MirvTime.cpp" />
     <ClCompile Include="MirvWav.cpp" />
     <ClCompile Include="mirv_voice.cpp" />
     <ClCompile Include="RenderView.cpp" />
@@ -338,6 +339,7 @@
     <ClInclude Include="MirvCalcs.h" />
     <ClInclude Include="MirvInputMem.h" />
     <ClInclude Include="MirvPgl.h" />
+    <ClInclude Include="MirvTime.h" />
     <ClInclude Include="MirvWav.h" />
     <ClInclude Include="mirv_voice.h" />
     <ClInclude Include="Model\DemoTime.h" />

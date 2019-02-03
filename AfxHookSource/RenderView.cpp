@@ -9,6 +9,8 @@
 
 #include "RenderView.h"
 
+#include "MirvTime.h"
+
 #include <shared/detours.h>
 #include <shared/StringTools.h>
 
@@ -117,10 +119,6 @@ void Hook_VClient_RenderView::FovDefault()
 	m_FovOverride = false;
 }
 
-float Hook_VClient_RenderView::GetCurTime() {
-	return m_Globals->curtime_get();
-}
-
 float Hook_VClient_RenderView::GetImportBasteTime() {
 	return m_ImportBaseTime;
 }
@@ -162,7 +160,7 @@ bool Hook_VClient_RenderView::IsInstalled(void) {
 
 void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, float &Rx, float &Ry, float &Rz, float &Fov)
 {
-	float curTime = GetCurTime();
+	float curTime = g_MirvTime.GetTime();
 
 	GameCameraOrigin[0] = Tx;
 	GameCameraOrigin[1] = Ty;
@@ -422,7 +420,7 @@ void Hook_VClient_RenderView::Console_CamIO(IWrpCommandArgs * args)
 						m_CamImport = 0;
 					}
 
-					m_CamImport = new CamImport(args->ArgV(3), GetCurTime());
+					m_CamImport = new CamImport(args->ArgV(3), g_MirvTime.GetTime());
 					if (m_CamImport->IsBad()) Tier0_Warning("Error importing CAM file \"%s\"\n", args->ArgV(3));
 					return;
 				}

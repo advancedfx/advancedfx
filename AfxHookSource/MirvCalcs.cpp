@@ -5,6 +5,7 @@
 #include "WrpVEngineClient.h"
 #include "WrpConsole.h"
 #include "RenderView.h"
+#include "MirvTime.h"
 #include "addresses.h"
 #include "CamIO.h"
 
@@ -1838,7 +1839,7 @@ public:
 			{
 				m_Reset = false;
 
-				m_LastClientTime = g_Hook_VClient_RenderView.GetGlobals()->curtime_get();
+				m_LastClientTime = g_MirvTime.GetTime();
 
 				m_LastX = parentVector.x;
 				m_LastY = parentVector.y;
@@ -1866,7 +1867,7 @@ public:
 			}
 			else
 			{
-				float clientTime = g_Hook_VClient_RenderView.GetGlobals()->curtime_get();;
+				float clientTime = g_MirvTime.GetTime();
 				double deltaT = clientTime - m_LastClientTime;
 				m_LastClientTime = clientTime;
 
@@ -2186,7 +2187,7 @@ public:
 
 		if (m_SwitchHandle->CalcHandle(handle) && m_ResetHandle->CalcHandle(resetHandle))
 		{
-			float curTime = g_Hook_VClient_RenderView.GetGlobals()->curtime_get();
+			float curTime = g_MirvTime.GetTime();
 
 			if (m_LastResetHandle != resetHandle)
 			{
@@ -2560,7 +2561,7 @@ public:
 	{
 		CamIO::CamData outCamData;
 
-		if (m_CamImport->GetCamData(g_Hook_VClient_RenderView.GetCurTime(), g_Hook_VClient_RenderView.LastWidth, g_Hook_VClient_RenderView.LastHeight, outCamData))
+		if (m_CamImport->GetCamData(g_MirvTime.GetTime(), g_Hook_VClient_RenderView.LastWidth, g_Hook_VClient_RenderView.LastHeight, outCamData))
 		{
 			outVector.x = (float)outCamData.XPosition;
 			outVector.y = (float)outCamData.YPosition;
@@ -2593,7 +2594,7 @@ private:
 
 	double StartClientTimeFromString(const char * startClientTime)
 	{
-		return 0 == _stricmp(startClientTime, "current") ? g_Hook_VClient_RenderView.GetCurTime() : atof(startClientTime);
+		return 0 == _stricmp(startClientTime, "current") ? g_MirvTime.GetTime() : atof(startClientTime);
 	}
 };
 
