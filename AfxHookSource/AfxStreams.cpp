@@ -16,6 +16,7 @@
 #include "csgo_Audio.h"
 #include "mirv_voice.h"
 #include "addresses.h"
+#include "MirvTime.h"
 
 #include <shared/StringTools.h>
 #include <shared/FileTools.h>
@@ -7388,7 +7389,7 @@ void CAfxStreams::DebugDump(IAfxMatRenderContextOrg * ctxp)
 
 MirvPgl::CamData GetMirvPglCamData(SOURCESDK::vrect_t_csgo *rect) {
 	return MirvPgl::CamData(
-		g_Hook_VClient_RenderView.GetCurTime(),
+		g_MirvTime.GetTime(),
 		(float)g_Hook_VClient_RenderView.LastCameraOrigin[0],
 		(float)g_Hook_VClient_RenderView.LastCameraOrigin[1],
 		(float)g_Hook_VClient_RenderView.LastCameraOrigin[2],
@@ -7437,7 +7438,7 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 	{
 		CamIO::CamData camData;
 
-		camData.Time = g_Hook_VClient_RenderView.GetCurTime();
+		camData.Time = g_MirvTime.GetTime();
 		camData.XPosition = g_Hook_VClient_RenderView.LastCameraOrigin[0];
 		camData.YPosition = g_Hook_VClient_RenderView.LastCameraOrigin[1];
 		camData.ZPosition = g_Hook_VClient_RenderView.LastCameraOrigin[2];

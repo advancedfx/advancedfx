@@ -52,6 +52,7 @@
 #include <csgo/hooks/engine.h>
 #include "csgo/hooks/shaderapidx9.h"
 #include <insurgency2/public/cdll_int.h>
+#include "MirvTime.h"
 
 #include <Windows.h>
 #include <shared/Detours/src/detours.h>
@@ -443,6 +444,8 @@ int __stdcall new_CVClient_Init_Swarm(DWORD *this_ptr, SOURCESDK::CreateInterfac
 
 void Shared_BeforeFrameRenderStart(void)
 {
+	g_MirvTime.OnFrameRenderStart();
+
 	if (CClientTools * instance = CClientTools::Instance()) instance->OnBeforeFrameRenderStart();
 }
 
@@ -813,6 +816,8 @@ void CAfxBaseClientDll::LevelInitPreEntity(char const* pMapName)
 { // NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 5)
 
 	m_Parent->LevelInitPreEntity(pMapName);
+
+	g_MirvTime.OnLevelInitPreEntity();
 
 #ifdef AFX_INTEROP
 	AfxInterop::LevelInitPreEntity(pMapName);

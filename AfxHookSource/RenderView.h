@@ -42,8 +42,6 @@ public:
 	void FovOverride(double value);
 	void FovDefault();
 
-	float GetCurTime();
-
 	float GetImportBasteTime();
 
 	bool ImportBegin(wchar_t const *fileName);

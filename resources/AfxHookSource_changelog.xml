@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.49.0</version>
+<time>2019-02-03T05:59Z</time>
+<changes>
+<change type="fixed">
+Added paused time features / mirv_time, which most HLAE features (e.g. campaths) try to support as good as possible):<br />
+mirv_time mode: currently supports curTime (old behavior, pauses when demo is paused) and resumePaused (resumes when paused).<br />
+mirv_time pausedTime: Print / set currently used paused time (added to curTime).<br />
+Be aware that time travel has side effects: examples are stateful features like mirv_aim and some mirv_calcs.<br />
+Pro tip: You can use mirv_cmd add to schedule the pausing un-pausing (and mirv_cmd save / load to save / load it to / from an XML file), one should also combine it with setting mirv_time pausedTime e.g. to 0.
+</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookSource</name>
 <version>1.48.2</version>
 <time>2019-02-02T22:18Z</time>
 <changes>
