@@ -40,15 +40,12 @@ namespace AfxInterop {
 	/// <remarks>Must be called from drawing thread only.</remarks>
 	void DrawingThreadBeforeHud(int frameCount, bool frameInfoSent);
 
-	void OnCreatedSharedSurface(ISharedSurfaceInfo * surface);
+	void OnCreatedSurface(IAfxInteropSurface * surface);
 
-	void OnReleaseSharedSurface(ISharedSurfaceInfo * surface);
-
-	/// <param name="info">can be nullptr</param>
-	void OnSetSharedRenderTarget(DWORD RenderTargetIndex, ISharedSurfaceInfo * surface);
+	void OnReleaseSurface(IAfxInteropSurface * surface);
 
 	/// <param name="info">can be nullptr</param>
-	void OnSetSharedDepthStencilSurface(ISharedSurfaceInfo * surface);
+	void OnSetRenderTarget(DWORD RenderTargetIndex, IAfxInteropSurface * surface);
 }
 
 #endif

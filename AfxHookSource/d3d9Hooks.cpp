@@ -2272,285 +2272,7 @@ void FixPresentationParementers(D3DPRESENT_PARAMETERS* pFixPresentationParameter
 #endif
 }
 
-
-// {424A968E-EBD4-4BE2-9BEB-374580F00775}
-static const GUID IID_CAfxSharedRenderTarget =
-{ 0x424a968e, 0xebd4, 0x4be2, { 0x9b, 0xeb, 0x37, 0x45, 0x80, 0xf0, 0x7, 0x75 } };
-
-// {424A968E-EBD4-4BE2-9BEB-374580F00775}
-DEFINE_GUID(IID_CAfxSharedRenderTarget,
-	0x424a968e, 0xebd4, 0x4be2, 0x9b, 0xeb, 0x37, 0x45, 0x80, 0xf0, 0x7, 0x75);
-
-class CAfxSharedRenderTarget : public IDirect3DSurface9, public ISharedSurfaceInfo
-{
-public:
-	CAfxSharedRenderTarget(
-		IDirect3DDevice9 *  device,
-		D3DPRESENT_PARAMETERS* pPresentationParameters
-	)
-		: m_RefCount(1)
-		, m_SharedRenderTarget(nullptr)
-		, m_SharedHandle(NULL)
-	{
-		this->DeviceReset(device, pPresentationParameters);
-	}
-
-	/*** IUnknown methods ***/
-	STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj)
-	{
-		if (IID_CAfxSharedRenderTarget == riid && ppvObj)
-		{
-			*ppvObj = this;
-			return D3D_OK;
-		}
-
-		if (!m_SharedRenderTarget) return D3DERR_INVALIDCALL;
-
-		return m_SharedRenderTarget->QueryInterface(riid, ppvObj);
-	}
-
-	STDMETHOD_(ULONG, AddRef)(THIS)
-	{
-		++m_RefCount;
-
-		return m_RefCount;
-	}
-
-	STDMETHOD_(ULONG, Release)(THIS)
-	{
-		--m_RefCount;
-
-		if (0 == m_RefCount)
-		{
-			if (m_SharedRenderTarget)
-			{
-				AfxInterop::OnReleaseSharedSurface(this);
-
-				IDirect3DDevice9 * device;
-				if (SUCCEEDED(m_DeviceRenderTarget->GetDevice(&device)))
-				{
-					device->SetRenderTarget(0, m_DeviceRenderTarget);
-					m_DeviceRenderTarget->Release();
-					device->Release();
-				}
-
-				m_SharedRenderTarget->FreePrivateData(IID_CAfxSharedRenderTarget);
-				m_SharedRenderTarget->Release();
-			}
-
-			delete this;
-
-			return 0;
-		}
-
-		return m_RefCount;
-	}
-
-	/*** IDirect3DResource9 methods ***/
-	STDMETHOD(GetDevice)(THIS_ IDirect3DDevice9** ppDevice) {
-		if (!m_SharedRenderTarget) return D3DERR_INVALIDCALL;
-
-		return m_SharedRenderTarget->GetDevice(ppDevice);
-	}
-
-	STDMETHOD(SetPrivateData)(THIS_ REFGUID refguid, CONST void* pData, DWORD SizeOfData, DWORD Flags) {
-		if (!m_SharedRenderTarget) return D3DERR_INVALIDCALL;
-
-		return m_SharedRenderTarget->SetPrivateData(refguid, pData, SizeOfData, Flags);
-	}
-
-	STDMETHOD(GetPrivateData)(THIS_ REFGUID refguid, void* pData, DWORD* pSizeOfData) {
-		if (!m_SharedRenderTarget) return D3DERR_INVALIDCALL;
-
-		return m_SharedRenderTarget->GetPrivateData(refguid, pData, pSizeOfData);
-	}
-
-	STDMETHOD(FreePrivateData)(THIS_ REFGUID refguid) {
-		if (!m_SharedRenderTarget) return D3DERR_INVALIDCALL;
-
-		return m_SharedRenderTarget->FreePrivateData(refguid);
-	}
-
-	STDMETHOD_(DWORD, SetPriority)(THIS_ DWORD PriorityNew) {
-		if (!m_SharedRenderTarget) return D3DERR_INVALIDCALL;
-
-		return m_SharedRenderTarget->SetPriority(PriorityNew);
-	}
-
-	STDMETHOD_(DWORD, GetPriority)(THIS) {
-		if (!m_SharedRenderTarget) return 0;
-
-		return m_SharedRenderTarget->GetPriority();
-	}
-	STDMETHOD_(void, PreLoad)(THIS)
-	{
-		if (!m_SharedRenderTarget) return;
-
-		return m_SharedRenderTarget->PreLoad();
-	}
-
-	STDMETHOD_(D3DRESOURCETYPE, GetType)(THIS) {
-		if (!m_SharedRenderTarget) D3DRTYPE_SURFACE;
-
-		return m_SharedRenderTarget->GetType();
-	}
-
-	STDMETHOD(GetContainer)(THIS_ REFIID riid, void** ppContainer) {
-		if (!m_SharedRenderTarget) D3DERR_INVALIDCALL;
-
-		return m_SharedRenderTarget->GetContainer(riid, ppContainer);
-	}
-
-	STDMETHOD(GetDesc)(THIS_ D3DSURFACE_DESC *pDesc) {
-		if (!m_SharedRenderTarget) D3DERR_INVALIDCALL;
-
-		return m_SharedRenderTarget->GetDesc(pDesc);
-	}
-
-	STDMETHOD(LockRect)(THIS_ D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags)
-	{
-		if (!m_SharedRenderTarget) D3DERR_INVALIDCALL;
-
-		return m_SharedRenderTarget->LockRect(pLockedRect, pRect, Flags);
-	}
-
-	STDMETHOD(UnlockRect)(THIS)
-	{
-		if (!m_SharedRenderTarget) D3DERR_INVALIDCALL;
-
-		return m_SharedRenderTarget->UnlockRect();
-	}
-
-	STDMETHOD(GetDC)(THIS_ HDC *phdc)
-	{
-		if (!m_SharedRenderTarget) D3DERR_INVALIDCALL;
-
-		return m_SharedRenderTarget->GetDC(phdc);
-	}
-
-	STDMETHOD(ReleaseDC)(THIS_ HDC hdc)
-	{
-		if (!m_SharedRenderTarget) D3DERR_INVALIDCALL;
-
-		return m_SharedRenderTarget->ReleaseDC(hdc);
-	}
-
-	LPCWSTR Name = L"n/a (AfxInterop::CSharedSurfaceHook)";
-	UINT Width;
-	UINT Height;
-	DWORD Usage;
-	D3DFORMAT Format;
-	D3DPOOL Pool;
-	D3DMULTISAMPLE_TYPE MultiSampleType;
-	DWORD MultiSampleQuality;
-	DWORD Priority = 0;
-	UINT LockCount = 0;
-	UINT DCCount = 0;
-	LPCWSTR CreationCallStack = L"n/a (AfxInterop::CSharedSurfaceHook)";
-
-	virtual IDirect3DSurface9 * GetSharedSurface()
-	{
-		return m_SharedRenderTarget;
-	}
-
-	virtual D3DMULTISAMPLE_TYPE GetMultiSampleType()
-	{
-		return MultiSampleType;
-	}
-
-	virtual DWORD GetMultiSampleQuality()
-	{
-		return MultiSampleQuality;
-	}
-
-	virtual HANDLE GetSharedHandle()
-	{
-		return m_SharedHandle;
-	}
-
-	IDirect3DSurface9 * GetDeviceRenderTarget()
-	{
-		return m_DeviceRenderTarget;
-	}
-
-	void DeviceLost(
-		IDirect3DDevice9 *  device)
-	{
-		if (m_SharedRenderTarget)
-		{
-			AfxInterop::OnReleaseSharedSurface(this);
-
-			device->SetRenderTarget(0, m_DeviceRenderTarget);
-			m_DeviceRenderTarget->Release();
-
-			m_SharedRenderTarget->FreePrivateData(IID_CAfxSharedRenderTarget);
-			m_SharedRenderTarget->Release();
-			m_SharedRenderTarget = nullptr;
-		}
-	}
-
-	void DeviceReset(
-		IDirect3DDevice9 *  device,
-		D3DPRESENT_PARAMETERS* pPresentationParameters)
-	{
-		if (nullptr == m_SharedRenderTarget)
-		{
-			if (SUCCEEDED(device->GetRenderTarget(0, &m_DeviceRenderTarget)))
-			{
-				D3DSURFACE_DESC desc;
-
-				if (SUCCEEDED(m_DeviceRenderTarget->GetDesc(&desc)))
-				{
-					HRESULT hr;
-					HANDLE sharedHandle = NULL;
-					IDirect3DSurface9 * surface = nullptr;
-
-					if (SUCCEEDED(hr = device->CreateRenderTarget(desc.Width, desc.Height, desc.Format, pPresentationParameters->MultiSampleType, pPresentationParameters->MultiSampleQuality, FALSE, &surface, &sharedHandle)))
-					{
-						CAfxSharedRenderTarget * data = this;
-
-						if (
-							SUCCEEDED(surface->SetPrivateData(IID_CAfxSharedRenderTarget, &data, sizeof(CAfxSharedRenderTarget *), 0))
-							&& SUCCEEDED(device->SetRenderTarget(0, surface)))
-						{
-							this->Width = desc.Width;
-							this->Height = desc.Height;
-							this->Usage = D3DUSAGE_RENDERTARGET;
-							this->Format = desc.Format;
-							this->Pool = D3DPOOL_DEFAULT;
-							this->MultiSampleType = pPresentationParameters->MultiSampleType;
-							this->MultiSampleQuality = pPresentationParameters->MultiSampleQuality;
-
-							this->m_SharedRenderTarget = surface;
-							this->m_SharedHandle = sharedHandle;
-
-							AfxInterop::OnCreatedSharedSurface(this);
-						}
-						else
-						{
-							Tier0_Warning("AfxInterop: CreateSharedRenderTarget set private data / shared render target failed.\n");
-							CloseHandle(m_SharedHandle);
-							surface->Release();
-						}
-					}
-					else Tier0_Warning("AfxInterop: CreateSharedRenderTarget sharedRenderTarget failed with 0x%08x.\n", hr);
-				}
-			}
-			else Tier0_Warning("AfxInterop: CreateSharedRenderTarget GetRenderTarget failed.\n");
-		}
-	}
-
-private:
-	ULONG m_RefCount;
-	IDirect3DSurface9 * m_DeviceRenderTarget;
-	IDirect3DSurface9 * m_SharedRenderTarget;
-	HANDLE m_SharedHandle;
-};
-
-
 ////////////////////////////////////////////////////////////////////////////////
-
-
 
 class CAfxIUnknown : public IUnknown
 {
@@ -2682,14 +2404,18 @@ public:
 	{
 		if (m_Resource != value)
 		{
-			if (m_Tracked)
+			if (m_Resource)
 			{
-				m_Resource->FreePrivateData(IID_CAfxTrackedIUnknown);
+				if (m_Tracked)
+				{
+					// This can happen if the resource is referenced elsewhere.
+					m_Resource->FreePrivateData(IID_CAfxTrackedIUnknown);
+				}
 			}
 
 			m_Resource = value;
 
-			if (NULL != m_Resource)
+			if (m_Resource)
 			{
 				m_Tracked = new CAfxTrackedIUnknown(this);
 				m_Resource->SetPrivateData(IID_CAfxTrackedIUnknown, (IUnknown *)m_Tracked, sizeof(IUnknown *), D3DSPD_IUNKNOWN);
@@ -2739,16 +2465,20 @@ public:
 	{
 		if (m_Resource != value)
 		{
-			if (m_Tracked)
+			if (m_Resource)
 			{
-				m_Resource->FreePrivateData(IID_CAfxTrackedIUnknown);
-
 				m_Resource->Release();
+
+				if (m_Tracked)
+				{
+					// This can happen if the resource is referenced elsewhere
+					m_Resource->FreePrivateData(IID_CAfxTrackedIUnknown);
+				}
 			}
 
 			m_Resource = value;
 
-			if (NULL != m_Resource)
+			if (m_Resource)
 			{
 				m_Resource->AddRef();
 
@@ -2781,8 +2511,6 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifdef AFX_INTEROP
-
 // {1F80D4DE-7F7B-4868-B2DD-23DAD78F7619}
 DEFINE_GUID(IID_AfxTrackedSurface,
 	0x1f80d4de, 0x7f7b, 0x4868, 0xb2, 0xdd, 0x23, 0xda, 0xd7, 0x8f, 0x76, 0x19);
@@ -2793,7 +2521,7 @@ static const GUID IID_AfxTrackedSurface =
 
 class CAfxTrackedSurface
 	: public CAfxIUnknown
-	//, public IAfxSurface
+	, public IAfxInteropSurface
 {
 public:
 	static CAfxTrackedSurface * Get(IDirect3DSurface9 * surface)
@@ -2807,9 +2535,11 @@ public:
 			if (SUCCEEDED(surface->GetPrivateData(IID_AfxTrackedSurface, &data, &size)))
 			{
 				if (FAILED(data->QueryInterface(IID_AfxTrackedSurface, (void **)&result)))
-					return NULL;
+				{
+					result = NULL;
+				}
 
-				result->Release();
+				data->Release();
 			}
 		}
 
@@ -2828,15 +2558,14 @@ public:
 		return result;
 	}
 
-	static IDirect3DSurface9 * Replacement(IDirect3DSurface9 * surface)
+	static IDirect3DSurface9 * Replacement(IDirect3DSurface9 * surface, bool track)
 	{
-		CAfxTrackedSurface * tracked = Track(surface);
+		CAfxTrackedSurface * tracked = track ? Track(surface) : Get(surface);
 
 		if (NULL != tracked)
 		{
 			if (IDirect3DSurface9 * replacement = tracked->AfxGetReplacement())
 			{
-				//Tier0_Msg("CAfxTrackedSurface::Replacement = 0x%08x\n", replacement);
 				return replacement;
 			}
 		}
@@ -2844,6 +2573,20 @@ public:
 		return surface;
 	}
 
+	static IDirect3DSurface9 * Original(IDirect3DSurface9 * surface, bool track)
+	{
+		CAfxTrackedSurface * tracked = track ? Track(surface) : Get(surface);
+
+		if (NULL != tracked)
+		{
+			if (IDirect3DSurface9 * original = tracked->AfxGetSurface())
+			{
+				return original;
+			}
+		}
+
+		return surface;
+	}
 
 	CAfxTrackedSurface(
 		IDirect3DSurface9 * surface
@@ -2853,7 +2596,7 @@ public:
 		surface->SetPrivateData(IID_AfxTrackedSurface, (IUnknown *)this, sizeof(IUnknown *), D3DSPD_IUNKNOWN);
 		this->Release();
 
-		//AfxInterop::OnCreatedSurface(this);
+		AfxInterop::OnCreatedSurface(this);
 	}
 
 	STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj)
@@ -2888,18 +2631,33 @@ public:
 		return m_Replacement.Resource_get();
 	}
 
+	virtual void AfxSetDepthSurface(IDirect3DSurface9 * surface)
+	{
+		if (surface)
+		{
+			surface->SetPrivateData(IID_AfxTrackedSurface, (IUnknown *)this, sizeof(IUnknown *), D3DSPD_IUNKNOWN);
+			this->Release();
+		}
+
+		m_DepthSurface.Resource_set(surface);
+	}
+
+	virtual IDirect3DSurface9 * AfxGetDepthSurface()
+	{
+		return m_DepthSurface.Resource_get();
+	}
+
 protected:
 	virtual void AfxReleasing(void)
 	{
-		//AfxInterop::OnReleaseSurface(this);
+		AfxInterop::OnReleaseSurface(this);
 	}
 
 private:
 	IDirect3DSurface9 * m_Surface;
 	CAfxDirect3DResource9Tracker<IDirect3DSurface9, true> m_Replacement;
+	CAfxDirect3DResource9Tracker<IDirect3DSurface9, true> m_DepthSurface;
 };
-
-#endif
 
 // NewDirect3DDevice9 //////////////////////////////////////////////////////////
 
@@ -2964,17 +2722,10 @@ private:
 	IDirect3DVertexShader9 * m_Original_VertexShader = 0;
 	IDirect3DPixelShader9 * m_Original_PixelShader = 0;
 
-	IDirect3DSurface9 * m_IntzRenderTarget = NULL;
-	IDirect3DTexture9 * m_IntzDepthStencilTexture = NULL;
-	IDirect3DSurface9 * m_IntzDepthStencilSurface = NULL;
-
 	bool m_OverrideDefaultBuffersWithIntz = false;
-	CAfxDirect3DResource9Tracker<IDirect3DSurface9> m_RenderTargetTracker;
-	CAfxDirect3DResource9Tracker<IDirect3DSurface9> m_DepthStencilTracker;
 
 #ifdef AFX_INTEROP
-	IDirect3DQuery9* waitQuery = nullptr;
-	CAfxSharedRenderTarget * afxSharedRenderTarget = nullptr;
+	IDirect3DQuery9 * waitQuery = nullptr;
 #endif
 
 
@@ -3003,100 +2754,6 @@ private:
 	}
 #endif
 
-	void AfxAutoReleaseIntzTargets()
-	{
-		if (NULL != m_IntzDepthStencilSurface)
-		{
-			m_IntzDepthStencilSurface->Release();
-			m_IntzDepthStencilSurface = NULL;
-		}
-		if (NULL != m_IntzDepthStencilTexture)
-		{
-			m_IntzDepthStencilTexture->Release();
-			m_IntzDepthStencilTexture = NULL;
-		}
-		if (NULL != m_IntzRenderTarget)
-		{
-			m_IntzRenderTarget->Release();
-			m_IntzRenderTarget = NULL;
-		}
-	}
-
-	void AfxAutoCreateIntzTargets(D3DPRESENT_PARAMETERS* pPresentationParameters)
-	{
-		// Track the current buffers:
-
-		IDirect3DSurface9 * renderTarget;
-		bool hasRenderTargetDesc = false;
-		D3DSURFACE_DESC renderTargetDesc;
-
-		if (SUCCEEDED(g_OldDirect3DDevice9->GetRenderTarget(0, &renderTarget)))
-		{
-			hasRenderTargetDesc = SUCCEEDED(renderTarget->GetDesc(&renderTargetDesc));
-			m_RenderTargetTracker.Resource_set(renderTarget);
-			renderTarget->Release();
-		}
-		else
-		{
-			m_DepthStencilTracker.Resource_set(NULL);
-		}
-
-		IDirect3DSurface9 * depthSurface;
-		bool hasDepthStencilDesc = false;
-		D3DSURFACE_DESC deptStencilDesc;
-
-		if (SUCCEEDED(g_OldDirect3DDevice9->GetDepthStencilSurface(&depthSurface)))
-		{
-			hasDepthStencilDesc = SUCCEEDED(depthSurface->GetDesc(&deptStencilDesc));
-			m_DepthStencilTracker.Resource_set(depthSurface);
-			depthSurface->Release();
-		}
-		else
-		{
-			m_DepthStencilTracker.Resource_set(NULL);
-		}
-
-		// (Re-)create buffers:
-
-		if (g_bSupportsIntz && hasRenderTargetDesc && hasDepthStencilDesc &&  deptStencilDesc.Format == D3DFMT_D24S8)
-		{
-			if (NULL == m_IntzRenderTarget)
-			{
-				if (FAILED(g_OldDirect3DDevice9->CreateRenderTarget(
-					renderTargetDesc.Width,
-					renderTargetDesc.Height,
-					renderTargetDesc.Format,
-					D3DMULTISAMPLE_NONE,
-					0,
-					FALSE,
-					&m_IntzRenderTarget,
-					NULL)))
-				{
-					m_IntzRenderTarget = NULL;
-				}
-			}
-
-			if (NULL == m_IntzDepthStencilTexture)
-			{
-				if (FAILED(g_OldDirect3DDevice9->CreateTexture(
-					deptStencilDesc.Width, deptStencilDesc.Height, 1,
-					D3DUSAGE_DEPTHSTENCIL, FOURCC_INTZ,
-					D3DPOOL_DEFAULT, &m_IntzDepthStencilTexture,
-					NULL)))
-				{
-					m_IntzDepthStencilTexture = NULL;
-				}
-				else
-				{
-					if(FAILED(m_IntzDepthStencilTexture->GetSurfaceLevel(0, &m_IntzDepthStencilSurface)))
-					{
-						m_IntzDepthStencilSurface = NULL;
-					}
-				}
-			}
-		}
-	}
-
 public:
 	void Init(D3DPRESENT_PARAMETERS* pPresentationParameters)
 	{
@@ -3105,23 +2762,14 @@ public:
 
 		if (AfxInterop::Enabled())
 		{
-			afxSharedRenderTarget = new CAfxSharedRenderTarget(g_OldDirect3DDevice9, pPresentationParameters);
-
-			// Track render target in this case too, required for HUD supression:
-
-			IDirect3DSurface9 * renderTarget;
-
+			IDirect3DSurface9 * renderTarget = NULL;
 			if (SUCCEEDED(g_OldDirect3DDevice9->GetRenderTarget(0, &renderTarget)))
 			{
-				m_RenderTargetTracker.Resource_set(renderTarget);
+				g_OldDirect3DDevice9->SetRenderTarget(0, CAfxTrackedSurface::Replacement(renderTarget, true));
 				renderTarget->Release();
 			}
 		}
-		else
 #endif
-		{
-			AfxAutoCreateIntzTargets(pPresentationParameters);
-		}
 	}
 
 #ifdef AFX_INTEROP
@@ -3137,62 +2785,112 @@ public:
 	}
 #endif
 
-	IDirect3DTexture9 * AfxGetIntzGlobalDepthBuffer(void)
-	{
-		return m_IntzDepthStencilTexture;
-	}
-
 	void AfxOverrideDefaultBuffersWithIntz(bool value)
 	{
 		if (m_OverrideDefaultBuffersWithIntz != value)
 		{
+
 			m_OverrideDefaultBuffersWithIntz = value;
 
+#ifdef AFX_INTEROP
+			if (!AfxInterop::Enabled())
+#endif
 			{
 				IDirect3DSurface9 * renderTarget;
-				IDirect3DSurface9 * trackedRenderTarget = m_RenderTargetTracker.Resource_get();
 
-				if (trackedRenderTarget && m_IntzRenderTarget && SUCCEEDED(g_OldDirect3DDevice9->GetRenderTarget(0, &renderTarget)))
+				if (SUCCEEDED(g_OldDirect3DDevice9->GetRenderTarget(0, &renderTarget)))
 				{
-					if (renderTarget)
-					{
-						if (m_OverrideDefaultBuffersWithIntz)
-						{
-							if (trackedRenderTarget == renderTarget)
-								g_OldDirect3DDevice9->SetRenderTarget(0, m_IntzRenderTarget);
-						}
-						else
-						{
-							if (m_IntzRenderTarget == renderTarget)
-								g_OldDirect3DDevice9->SetRenderTarget(0, trackedRenderTarget);
-						}
+					CAfxTrackedSurface * trackedRenderTarget = CAfxTrackedSurface::Track(renderTarget);
 
-						renderTarget->Release();
+					if (m_OverrideDefaultBuffersWithIntz)
+					{
+						if (nullptr == trackedRenderTarget->AfxGetReplacement())
+						{
+							D3DSURFACE_DESC desc;
+							if (SUCCEEDED(trackedRenderTarget->AfxGetSurface()->GetDesc(&desc)))
+							{
+								IDirect3DSurface9 * replacement = NULL;
+
+								if (SUCCEEDED(g_OldDirect3DDevice9->CreateRenderTarget(
+									desc.Width,
+									desc.Height,
+									desc.Format,
+									D3DMULTISAMPLE_NONE,
+									0,
+									FALSE,
+									&replacement,
+									NULL)))
+								{
+									trackedRenderTarget->AfxSetReplacement(replacement);
+									replacement->Release();
+								}
+							}
+						}
 					}
+					else
+					{
+						trackedRenderTarget->AfxSetReplacement(nullptr);
+					}
+
+					IDirect3DSurface9 * replacement = CAfxTrackedSurface::Replacement(renderTarget, false);
+
+					if (replacement != renderTarget)
+					{
+						g_OldDirect3DDevice9->SetRenderTarget(0, replacement);
+					}
+
+					renderTarget->Release();
 				}
 			}
 
 			{
 				IDirect3DSurface9 * depthStencil;
-				IDirect3DSurface9 * trackedDepthStencil = m_DepthStencilTracker.Resource_get();
 
-				if (trackedDepthStencil && m_IntzDepthStencilSurface && SUCCEEDED(g_OldDirect3DDevice9->GetDepthStencilSurface(&depthStencil)))
+				if (SUCCEEDED(g_OldDirect3DDevice9->GetDepthStencilSurface(&depthStencil)))
 				{
-					if (depthStencil)
-					{
-						if (m_OverrideDefaultBuffersWithIntz)
-						{
-							if (trackedDepthStencil == depthStencil)
-								g_OldDirect3DDevice9->SetDepthStencilSurface(m_IntzDepthStencilSurface);
-						}
-						else
-						{
-							if (m_IntzDepthStencilSurface == depthStencil)
-								g_OldDirect3DDevice9->SetDepthStencilSurface(trackedDepthStencil);
-						}
+					CAfxTrackedSurface * trackedDepthStencil = CAfxTrackedSurface::Track(depthStencil);
 
-						depthStencil->Release();
+					if (m_OverrideDefaultBuffersWithIntz)
+					{
+						if (nullptr == trackedDepthStencil->AfxGetReplacement())
+						{
+							D3DSURFACE_DESC desc;
+							if (SUCCEEDED(trackedDepthStencil->AfxGetSurface()->GetDesc(&desc)))
+							{
+								IDirect3DTexture9 * texture = NULL;
+
+								if (SUCCEEDED(g_OldDirect3DDevice9->CreateTexture(
+									desc.Width, desc.Height, 1,
+									D3DUSAGE_DEPTHSTENCIL, FOURCC_INTZ,
+									D3DPOOL_DEFAULT, &texture,
+									NULL)))
+								{
+									IDirect3DSurface9 * replacement = NULL;
+
+									if (SUCCEEDED(texture->GetSurfaceLevel(0, &replacement)))
+									{
+										trackedDepthStencil->AfxSetReplacement(replacement);
+										replacement->Release();
+									}
+
+									texture->Release();
+								}
+							}
+						}
 					}
+					else
+					{
+						trackedDepthStencil->AfxSetReplacement(nullptr);
+					}
+
+					IDirect3DSurface9 * replacement = CAfxTrackedSurface::Replacement(depthStencil, false);
+
+					if (replacement != depthStencil)
+					{
+						g_OldDirect3DDevice9->SetDepthStencilSurface(replacement);
+					}
+
+					depthStencil->Release();
 				}
 			}
 		}
@@ -3200,7 +2898,7 @@ public:
 
 	void AfxDrawDepth(bool rgb, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, bool drawToScreen)
 	{
-		if (!AfxD3d9_IntzSupported()) return;
+		if (!g_bSupportsIntz) return;
 
 		ShaderCombo_afx_depth_ps20::AFXDEPTHMODE_e afxDepthMode = ShaderCombo_afx_depth_ps20::AFXDEPTHMODE_0;
 
@@ -3225,12 +2923,62 @@ public:
 
 		IDirect3DPixelShader9 * pixelShader = afxPixelShader->GetPixelShader();
 
-		IDirect3DTexture9 * depthTexture = m_IntzDepthStencilTexture;
+		IDirect3DTexture9 * depthTexture = NULL;
+
+		{
+			IDirect3DSurface9 * depthSurface = NULL;
+			if (SUCCEEDED(g_OldDirect3DDevice9->GetDepthStencilSurface(&depthSurface)))
+			{
+				IDirect3DSurface9 * depthReplacement = CAfxTrackedSurface::Replacement(depthSurface, false);
+
+				if (depthReplacement->GetContainer(__uuidof(IDirect3DTexture9), (void **)&depthTexture))
+				{
+					depthTexture->Release();
+				}
+
+				depthSurface->Release();
+			}
+		}
 
 		if (pixelShader && depthTexture)
 		{
 			//
 			// Save device state:
+
+			IDirect3DSurface9 * oldRenderTaret = NULL;
+
+#ifdef AFX_INTEROP
+			if (AfxInterop::Enabled())
+			{
+					if (SUCCEEDED(g_OldDirect3DDevice9->GetRenderTarget(0, &oldRenderTaret)))
+					{
+						if (CAfxTrackedSurface * afxTrackedSurface = CAfxTrackedSurface::Get(oldRenderTaret))
+						{
+							if (IDirect3DSurface9 * newRenderTarget = afxTrackedSurface->AfxGetDepthSurface())
+							{
+								g_OldDirect3DDevice9->SetRenderTarget(0, newRenderTarget);
+							}
+							else
+							{
+								// Abort.
+								oldRenderTaret->Release();
+								return;
+							}
+						}
+					}
+					else
+					{
+						oldRenderTaret = NULL;
+					}
+			}
+			else
+#endif
+			{
+				if (FAILED(g_OldDirect3DDevice9->GetRenderTarget(0, &oldRenderTaret)))				
+				{
+					return;
+				}
+			}
 
 			IDirect3DPixelShader9 * oldPixelShader = NULL;
 			g_OldDirect3DDevice9->GetPixelShader(&oldPixelShader);
@@ -3372,10 +3120,10 @@ public:
 
 			g_OldDirect3DDevice9->SetPixelShader(NULL);
 
-			if (drawToScreen && m_OverrideDefaultBuffersWithIntz && m_IntzRenderTarget && m_RenderTargetTracker.Resource_get())
+			if (drawToScreen && m_OverrideDefaultBuffersWithIntz)
 			{
 				RECT rect = { x, y, width, height };
-				g_OldDirect3DDevice9->StretchRect(m_IntzRenderTarget, NULL, m_RenderTargetTracker.Resource_get(), NULL, D3DTEXF_NONE);
+				g_OldDirect3DDevice9->StretchRect(CAfxTrackedSurface::Replacement(oldRenderTaret, false), NULL, CAfxTrackedSurface::Original(oldRenderTaret, false), NULL, D3DTEXF_NONE);
 			}
 
 			//
@@ -3409,6 +3157,18 @@ public:
 			g_OldDirect3DDevice9->SetRenderState(D3DRS_ZENABLE, oldZEnable);
 			g_OldDirect3DDevice9->SetRenderState(D3DRS_COLORWRITEENABLE, oldColorWriteEnable);
 			g_OldDirect3DDevice9->SetRenderState(D3DRS_SRGBWRITEENABLE, oldSrgbWriteEnable);
+
+#ifdef AFX_INTEROP
+			if (AfxInterop::Enabled())
+			{
+				if (oldRenderTaret)
+				{
+					g_OldDirect3DDevice9->SetRenderTarget(0, oldRenderTaret);
+					oldRenderTaret->Release();
+					oldRenderTaret = NULL;
+				}
+			}
+#endif
 		}
 	}
 
@@ -3426,23 +3186,6 @@ private:
 	{
 		DWORD size = sizeof(CAfxManagedChildDirect3DSurface9 *);
 		if (surface && SUCCEEDED(surface->GetPrivateData(IID_CAfxManagedChildDirect3DSurface9, pOut, &size)))
-			return true;
-
-		return false;
-	}
-
-	bool GetAfxSharedRenderTarget(IDirect3DSurface9 * surface, CAfxSharedRenderTarget ** pOut)
-	{
-		if (surface && SUCCEEDED(surface->QueryInterface(IID_CAfxSharedRenderTarget, (void **)pOut)))
-			return true;
-
-		return false;
-	}
-
-	bool GetAfxSharedRenderTargetReverse(IDirect3DSurface9 * surface, CAfxSharedRenderTarget ** pOut)
-	{
-		DWORD size = sizeof(*pOut);
-		if (surface && SUCCEEDED(surface->GetPrivateData(IID_CAfxSharedRenderTarget, pOut, &size)))
 			return true;
 
 		return false;
@@ -3484,18 +3227,10 @@ private:
 					return afxWrapper->AfxGetOrCreateUnmanaged();
 				}
 			}
-			{
-				CAfxSharedRenderTarget * afxWrapper;
-				if (GetAfxSharedRenderTarget(surface, &afxWrapper))
-				{
-					//if (makeDirty) afxWrapper->AddDirtyRect(NULL);
-					return afxWrapper->GetSharedSurface();
-				}
-			}
 		}
 #endif
 
-		return surface;
+		return CAfxTrackedSurface::Replacement(surface, false);
 	}
 
 	IDirect3DSurface9 * UnwrapSurfaceReverse(IDirect3DSurface9 * surface, bool handleRef)
@@ -3531,24 +3266,10 @@ private:
 					return afxWrapper;
 				}
 			}
-			{
-				CAfxSharedRenderTarget * afxWrapper;
-
-				if (GetAfxSharedRenderTargetReverse(surface, &afxWrapper))
-				{
-					if (handleRef)
-					{
-						afxWrapper->AddRef();
-						surface->Release();
-					}
-
-					return afxWrapper;
-				}
-			}
 		}
 #endif
 
-		return surface;
+		return CAfxTrackedSurface::Original(surface, false);
 	}
 
 	IDirect3DBaseTexture9 * UnwrapTextureReverse(IDirect3DBaseTexture9 * pTexture, bool handleRef)
@@ -3792,42 +3513,112 @@ private:
 		{
 		}
 
+		CAfxOverride(const CAfxOverride & x)
+			: m_Dev(x.m_Dev)
+			, m_Override_D3DRS_SRCBLEND(x.m_Override_D3DRS_SRCBLEND)
+			, m_OverrideValue_D3DRS_SRCBLEND(x.m_OverrideValue_D3DRS_SRCBLEND)
+			, m_Override_D3DRS_DESTBLEND(x.m_Override_D3DRS_DESTBLEND)
+			, m_OverrideValue_D3DRS_DESTBLEND(x.m_OverrideValue_D3DRS_DESTBLEND)
+			, m_Override_D3DRS_SRGBWRITEENABLE(x.m_Override_D3DRS_SRGBWRITEENABLE)
+			, m_OverrideValue_D3DRS_SRGBWRITEENABLE(x.m_OverrideValue_D3DRS_SRGBWRITEENABLE)
+			, m_Override_D3DRS_COLORWRITEENABLE(x.m_Override_D3DRS_COLORWRITEENABLE)
+			, m_OverrideValue_D3DRS_COLORWRITEENABLE(x.m_OverrideValue_D3DRS_COLORWRITEENABLE)
+			, m_Override_D3DRS_ZWRITEENABLE(x.m_Override_D3DRS_ZWRITEENABLE)
+			, m_OverrideValue_D3DRS_ZWRITEENABLE(x.m_OverrideValue_D3DRS_ZWRITEENABLE)
+			, m_Override_D3DRS_ALPHABLENDENABLE(x.m_Override_D3DRS_ALPHABLENDENABLE)
+			, m_OverrideValue_D3DRS_ALPHABLENDENABLE(x.m_OverrideValue_D3DRS_ALPHABLENDENABLE)
+			, m_Override_ps_c0(x.m_Override_ps_c0)
+			, m_Override_ps_c5(x.m_Override_ps_c5)
+			, m_Override_ps_c12_y(x.m_Override_ps_c12_y)
+			, m_OverrideValue_ps_c12_y(x.m_OverrideValue_ps_c12_y)
+			, m_Override_ps_c29_w(x.m_Override_ps_c29_w)
+			, m_OverrideValue_ps_c29_w(x.m_OverrideValue_ps_c29_w)
+			, m_Override_ps_c31(x.m_Override_ps_c31)
+			, m_Override_ps_c1_xyz(x.m_Override_ps_c1_xyz)
+			, m_Override_ps_c1_w(x.m_Override_ps_c1_w)
+			, m_OverrideValue_ps_c1_w(x.m_OverrideValue_ps_c1_w)
+			, m_Override_VertexShader(x.m_Override_VertexShader)
+			, m_OverrideValue_VertexShader(NULL)
+			, m_Override_PixelShader(x.m_Override_PixelShader)
+			, m_OverrideValue_PixelShader(NULL)
+		{
+			std::copy(std::begin(x.m_OverrideValue_ps_c0), std::end(x.m_OverrideValue_ps_c0), std::begin(m_OverrideValue_ps_c0));
+			std::copy(std::begin(x.m_OverrideValue_ps_c5), std::end(x.m_OverrideValue_ps_c5), std::begin(m_OverrideValue_ps_c5));
+			std::copy(std::begin(x.m_OverrideValue_ps_c31), std::end(x.m_OverrideValue_ps_c31), std::begin(m_OverrideValue_ps_c31));
+			std::copy(std::begin(x.m_OverrideValue_ps_c1_xyz), std::end(x.m_OverrideValue_ps_c1_xyz), std::begin(m_OverrideValue_ps_c1_xyz));
+
+			if (m_Override_VertexShader)
+			{
+				if (x.m_OverrideValue_VertexShader)
+				{
+					x.m_OverrideValue_VertexShader->AddRef();
+					m_OverrideValue_VertexShader = x.m_OverrideValue_VertexShader;
+				}
+			}
+
+			if (m_Override_PixelShader) {
+				if (x.m_Override_PixelShader)
+				{
+					x.m_OverrideValue_PixelShader->AddRef();
+					m_OverrideValue_PixelShader = x.m_OverrideValue_PixelShader;
+				}
+			}
+		}
+
 		void Redo(void)
 		{
-			if (m_Override_D3DRS_SRCBLEND) m_Dev.OverrideBegin_D3DRS_SRCBLEND(m_OverrideValue_D3DRS_SRCBLEND);
-			if (m_Override_D3DRS_DESTBLEND) m_Dev.OverrideBegin_D3DRS_DESTBLEND(m_OverrideValue_D3DRS_DESTBLEND);
-			if (m_Override_D3DRS_SRGBWRITEENABLE) m_Dev.OverrideBegin_D3DRS_SRGBWRITEENABLE(m_OverrideValue_D3DRS_SRGBWRITEENABLE);
-			if (m_Override_D3DRS_COLORWRITEENABLE) m_Dev.OverrideBegin_D3DRS_COLORWRITEENABLE(m_OverrideValue_D3DRS_COLORWRITEENABLE);
-			if (m_Override_D3DRS_ZWRITEENABLE) m_Dev.OverrideBegin_D3DRS_ZWRITEENABLE(m_OverrideValue_D3DRS_ZWRITEENABLE);
-			if (m_Override_D3DRS_ALPHABLENDENABLE) m_Dev.OverrideBegin_D3DRS_ALPHABLENDENABLE(m_OverrideValue_D3DRS_ALPHABLENDENABLE);
-			if (m_Override_ps_c0) m_Dev.OverrideBegin_ps_c0(m_OverrideValue_ps_c0);
-			if (m_Override_ps_c5) m_Dev.OverrideBegin_ps_c5(m_OverrideValue_ps_c5);
-			if (m_Override_ps_c12_y) m_Dev.OverrideBegin_ps_c12_y(m_OverrideValue_ps_c12_y);
-			if (m_Override_ps_c29_w) m_Dev.OverrideBegin_ps_c29_w(m_OverrideValue_ps_c29_w);
-			if (m_Override_ps_c31) m_Dev.OverrideBegin_ps_c31(m_OverrideValue_ps_c31);
-			if (m_Override_ps_c1_xyz) m_Dev.OverrideBegin_ps_c1_xyz(m_OverrideValue_ps_c1_xyz);
-			if (m_Override_ps_c1_w) m_Dev.OverrideBegin_ps_c1_w(m_OverrideValue_ps_c1_w);
-			if (m_Override_VertexShader) m_Dev.OverrideBegin_SetVertexShader(m_OverrideValue_VertexShader);
-			if (m_Override_PixelShader) m_Dev.OverrideBegin_SetPixelShader(m_OverrideValue_PixelShader);
+			if (m_Override_D3DRS_SRCBLEND) g_OldDirect3DDevice9->SetRenderState(D3DRS_SRCBLEND, m_OverrideValue_D3DRS_SRCBLEND);
+			if (m_Override_D3DRS_DESTBLEND) g_OldDirect3DDevice9->SetRenderState(D3DRS_DESTBLEND, m_OverrideValue_D3DRS_DESTBLEND);
+			if (m_Override_D3DRS_SRGBWRITEENABLE) g_OldDirect3DDevice9->SetRenderState(D3DRS_SRGBWRITEENABLE, m_OverrideValue_D3DRS_SRGBWRITEENABLE);
+			if (m_Override_D3DRS_COLORWRITEENABLE)g_OldDirect3DDevice9->SetRenderState(D3DRS_COLORWRITEENABLE, m_OverrideValue_D3DRS_COLORWRITEENABLE);
+			if (m_Override_D3DRS_ZWRITEENABLE) g_OldDirect3DDevice9->SetRenderState(D3DRS_ZWRITEENABLE, m_OverrideValue_D3DRS_ZWRITEENABLE);
+			if (m_Override_D3DRS_ALPHABLENDENABLE) g_OldDirect3DDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, m_OverrideValue_D3DRS_ALPHABLENDENABLE);
+			if (m_Override_VertexShader) g_OldDirect3DDevice9->SetVertexShader(m_OverrideValue_VertexShader);
+			if (m_Override_PixelShader) g_OldDirect3DDevice9->SetPixelShader(m_OverrideValue_PixelShader);
+			if (m_Override_ps_c0) g_OldDirect3DDevice9->SetPixelShaderConstantF(0, m_OverrideValue_ps_c0, 1);
+			if (m_Override_ps_c5) g_OldDirect3DDevice9->SetPixelShaderConstantF(5, m_OverrideValue_ps_c5, 1);
+			if (m_Override_ps_c12_y) {
+				float tmp[4] = { m_Dev.m_OriginalValue_ps_c12[0], m_OverrideValue_ps_c12_y, m_Dev.m_OriginalValue_ps_c12[2],  m_Dev.m_OriginalValue_ps_c12[3] };
+				g_OldDirect3DDevice9->SetPixelShaderConstantF(12, tmp, 1);
+			}
+			if (m_Override_ps_c29_w) {
+				float tmp[4] = { m_Dev.m_OriginalValue_ps_c29[0] ,m_Dev.m_OriginalValue_ps_c29[1],m_Dev.m_OriginalValue_ps_c29[2], m_OverrideValue_ps_c29_w };
+				g_OldDirect3DDevice9->SetPixelShaderConstantF(29, tmp, 1);
+			}
+			if (m_Override_ps_c31) g_OldDirect3DDevice9->SetPixelShaderConstantF(29, m_OverrideValue_ps_c31, 1);
+			if (m_Override_ps_c1_xyz) {
+				float tmp[4] = { m_OverrideValue_ps_c1_xyz[0], m_OverrideValue_ps_c1_xyz[1], m_OverrideValue_ps_c1_xyz[2], m_Override_ps_c1_w ? m_OverrideValue_ps_c1_w : m_Dev.m_OriginalValue_ps_c1[3] };
+				g_OldDirect3DDevice9->SetPixelShaderConstantF(1, tmp, 1);
+			}
+			if (m_Override_ps_c1_w) {
+				float tmp[4] = { m_Override_ps_c1_xyz ? m_OverrideValue_ps_c1_xyz[0] : m_Dev.m_OriginalValue_ps_c1[0], m_Override_ps_c1_xyz ? m_OverrideValue_ps_c1_xyz[1] : m_Dev.m_OriginalValue_ps_c1[1], m_Override_ps_c1_xyz ? m_OverrideValue_ps_c1_xyz[2] : m_Dev.m_OriginalValue_ps_c1[2], m_OverrideValue_ps_c1_w };
+				g_OldDirect3DDevice9->SetPixelShaderConstantF(1, tmp, 1);
+			}
 		}
 
 		void Undo(void)
 		{
-			if (m_Override_D3DRS_SRCBLEND) m_Dev.OverrideEnd_D3DRS_SRCBLEND();
-			if (m_Override_D3DRS_DESTBLEND) m_Dev.OverrideEnd_D3DRS_DESTBLEND();
-			if (m_Override_D3DRS_SRGBWRITEENABLE) m_Dev.OverrideEnd_D3DRS_SRGBWRITEENABLE();
-			if (m_Override_D3DRS_COLORWRITEENABLE) m_Dev.OverrideEnd_D3DRS_COLORWRITEENABLE();
-			if (m_Override_D3DRS_ZWRITEENABLE) m_Dev.OverrideEnd_D3DRS_ZWRITEENABLE();
-			if (m_Override_D3DRS_ALPHABLENDENABLE) m_Dev.OverrideEnd_D3DRS_ALPHABLENDENABLE();
-			if (m_Override_ps_c0) m_Dev.OverrideEnd_ps_c0();
-			if (m_Override_ps_c5) m_Dev.OverrideEnd_ps_c5();
-			if (m_Override_ps_c12_y) m_Dev.OverrideEnd_ps_c12_y();
-			if (m_Override_ps_c29_w) m_Dev.OverrideEnd_ps_c29_w();
-			if (m_Override_ps_c31) m_Dev.OverrideEnd_ps_c31();
-			if (m_Override_ps_c1_xyz) m_Dev.OverrideEnd_ps_c1_xyz();
-			if (m_Override_ps_c1_w) m_Dev.OverrideEnd_ps_c1_w();
-			if (m_Override_VertexShader) m_Dev.OverrideEnd_SetVertexShader();
-			if (m_Override_PixelShader) m_Dev.OverrideEnd_SetPixelShader();
+			if (m_Override_D3DRS_SRCBLEND) g_OldDirect3DDevice9->SetRenderState(D3DRS_SRCBLEND, m_Dev.m_D3DRS_SRCBLEND);
+			if (m_Override_D3DRS_DESTBLEND) g_OldDirect3DDevice9->SetRenderState(D3DRS_DESTBLEND, m_Dev.m_D3DRS_DESTBLEND);
+			if (m_Override_D3DRS_SRGBWRITEENABLE) g_OldDirect3DDevice9->SetRenderState(D3DRS_SRGBWRITEENABLE, m_Dev.m_D3DRS_SRGBWRITEENABLE);
+			if (m_Override_D3DRS_COLORWRITEENABLE) g_OldDirect3DDevice9->SetRenderState(D3DRS_COLORWRITEENABLE, m_Dev.m_D3DRS_COLORWRITEENABLE);
+			if (m_Override_D3DRS_ZWRITEENABLE)g_OldDirect3DDevice9->SetRenderState(D3DRS_ZWRITEENABLE, m_Dev.m_D3DRS_ZWRITEENABLE);
+			if (m_Override_D3DRS_ALPHABLENDENABLE) g_OldDirect3DDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, m_Dev.m_D3DRS_ALPHABLENDENABLE);
+			if (m_Override_VertexShader) g_OldDirect3DDevice9->SetVertexShader(m_Dev.m_Original_VertexShader);
+			if (m_Override_PixelShader) g_OldDirect3DDevice9->SetPixelShader(m_Dev.m_Original_PixelShader);
+			if (m_Override_ps_c0) g_OldDirect3DDevice9->SetPixelShaderConstantF(0, m_Dev.m_OriginalValue_ps_c0, 1);
+			if (m_Override_ps_c5) g_OldDirect3DDevice9->SetPixelShaderConstantF(5, m_Dev.m_OriginalValue_ps_c5, 1);
+			if (m_Override_ps_c12_y) g_OldDirect3DDevice9->SetPixelShaderConstantF(12, m_Dev.m_OriginalValue_ps_c12, 1);
+			if (m_Override_ps_c29_w) g_OldDirect3DDevice9->SetPixelShaderConstantF(29, m_Dev.m_OriginalValue_ps_c29, 1);
+			if (m_Override_ps_c31) g_OldDirect3DDevice9->SetPixelShaderConstantF(31, m_Dev.m_OriginalValue_ps_c31, 1);
+			if (m_Override_ps_c1_xyz) {
+				float tmp[4] = { m_Dev.m_OriginalValue_ps_c1[0], m_Dev.m_OriginalValue_ps_c1[1], m_Dev.m_OriginalValue_ps_c1[2], m_Override_ps_c1_w ? m_OverrideValue_ps_c1_w : m_Dev.m_OriginalValue_ps_c1[3] };
+				g_OldDirect3DDevice9->SetPixelShaderConstantF(1, tmp, 1);
+			}
+			if (m_Override_ps_c1_w) {
+				float tmp[4] = { m_Override_ps_c1_xyz ? m_OverrideValue_ps_c1_xyz[0] : m_Dev.m_OriginalValue_ps_c1[0], m_Override_ps_c1_xyz ? m_OverrideValue_ps_c1_xyz[1] : m_Dev.m_OriginalValue_ps_c1[1], m_Override_ps_c1_xyz ? m_OverrideValue_ps_c1_xyz[2] : m_Dev.m_OriginalValue_ps_c1[2], m_Dev.m_OriginalValue_ps_c1[3] };
+				g_OldDirect3DDevice9->SetPixelShaderConstantF(1, tmp, 1);
+			}
 		}
 
 	private:
@@ -4323,9 +4114,16 @@ public:
 
 	}
 
-	void AfxPushOverrideState(void)
+	void AfxPushOverrideState(bool clean)
 	{
-		m_OverrideStack.push(m_OverrideStack.top()); // Copy top state and push it onto stack.
+		m_OverrideStack.top().Undo();
+
+		if (clean)
+			m_OverrideStack.emplace(*this);
+		else
+			m_OverrideStack.push(m_OverrideStack.top()); // Copy top state and push it onto stack.
+
+		m_OverrideStack.top().Redo();
 	}
 
 	void AfxPopOverrideState(void)
@@ -4380,18 +4178,6 @@ public:
 				m_Original_PixelShader->Release();
 				m_Original_PixelShader = 0;
 			}
-
-#ifdef AFX_INTEROP
-			if (AfxInterop::Enabled())
-			{
-				if (afxSharedRenderTarget) afxSharedRenderTarget->Release();
-				afxSharedRenderTarget = nullptr;
-			}
-			else
-			{
-#endif
-				AfxAutoReleaseIntzTargets();
-			}
 		}
 
 		return g_OldDirect3DDevice9->Release();
@@ -4443,14 +4229,8 @@ public:
 			CAfxManagedOffscreenPlainSurface::AfxDeviceLost();
 			CAfxManagedDirect3DVertexBuffer9::AfxDeviceLost();
 			CAfxManagedDirect3DIndexBuffer9::AfxDeviceLost();
-
-			if (afxSharedRenderTarget) afxSharedRenderTarget->DeviceLost(g_OldDirect3DDevice9);
 		}
-		else
 #endif
-		{
-			AfxAutoReleaseIntzTargets();
-		}
 		
 		HRESULT hResult = g_OldDirect3DDevice9->Reset(pPresentationParameters);
 
@@ -4460,13 +4240,8 @@ public:
 			if (AfxInterop::Enabled())
 			{
 				CreateQueries();
-				if (afxSharedRenderTarget) afxSharedRenderTarget->DeviceReset(g_OldDirect3DDevice9, pPresentationParameters ? &paramsCopy : pPresentationParameters);
 			}
-			else
 #endif
-			{
-				AfxAutoCreateIntzTargets(pPresentationParameters ? &paramsCopy : pPresentationParameters);
-			}
 		}
 
 		Shared_Direct3DDevice9_Reset_After();
@@ -4482,10 +4257,16 @@ public:
 #if AFX_INTEROP
 		if (AfxInterop::Enabled())
 		{
-			if (afxSharedRenderTarget)
+			IDirect3DSurface9 * renderTarget = NULL;
+			if (SUCCEEDED(g_OldDirect3DDevice9->GetRenderTarget(0, &renderTarget)))
 			{
-				if(IDirect3DSurface9 * sharedSurface = afxSharedRenderTarget->GetSharedSurface())
-					g_OldDirect3DDevice9->StretchRect(sharedSurface, pSourceRect, afxSharedRenderTarget->GetDeviceRenderTarget(), pDestRect, D3DTEXF_NONE);
+				if (CAfxTrackedSurface * afxTrackedSurface = CAfxTrackedSurface::Get(renderTarget))
+				{
+					if (IDirect3DSurface9 * sharedSurface = afxTrackedSurface->AfxGetReplacement())
+						g_OldDirect3DDevice9->StretchRect(sharedSurface, pSourceRect, afxTrackedSurface->AfxGetSurface(), pDestRect, D3DTEXF_NONE);
+				}
+
+				renderTarget->Release();
 			}
 		}
 #endif
@@ -4678,25 +4459,12 @@ public:
 
 	STDMETHOD(CreateRenderTarget)(THIS_ UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Lockable, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle)
 	{
-#if 0
-		if (AfxInterop::Enabled())
-		{
-			HRESULT hr = AfxInterop::OnCreateRenderTarget(g_OldDirect3DDevice9, Width, Height, Format, MultiSample, MultisampleQuality, Lockable, ppSurface, pSharedHandle);
-			if (SUCCEEDED(hr)) return hr;
-		}
-#endif
+
 		return g_OldDirect3DDevice9->CreateRenderTarget(Width, Height, Format, MultiSample, MultisampleQuality, Lockable, ppSurface, pSharedHandle);
 	}
 
 	STDMETHOD(CreateDepthStencilSurface)(THIS_ UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Discard, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle)
 	{
-#if 0
-		if (AfxInterop::Enabled())
-		{
-			HRESULT hr = AfxInterop::OnCreateDepthStencilSurface(g_OldDirect3DDevice9, Width, Height, Format, MultiSample, MultisampleQuality, Discard, ppSurface, pSharedHandle);
-			if (SUCCEEDED(hr)) return hr;
-		}
-#endif
 
 		return g_OldDirect3DDevice9->CreateDepthStencilSurface(Width, Height, Format, MultiSample, MultisampleQuality, Discard, ppSurface, pSharedHandle);
 	}
@@ -4767,37 +4535,26 @@ public:
 #ifdef AFX_INTEROP
 		if (AfxInterop::Enabled())
 		{
-			CAfxSharedRenderTarget * afxSharedRenderTarget;
-
-			if (GetAfxSharedRenderTarget(pRenderTarget, &afxSharedRenderTarget))
+			if (CAfxTrackedSurface * afxTrackedSurface = CAfxTrackedSurface::Get(pRenderTarget))
 			{
-				HRESULT result = g_OldDirect3DDevice9->SetRenderTarget(RenderTargetIndex, afxSharedRenderTarget->GetSharedSurface());
+				IDirect3DSurface9 * replacement = afxTrackedSurface->AfxGetReplacement();
 
-				AfxInterop::OnSetSharedRenderTarget(RenderTargetIndex, afxSharedRenderTarget);
+				HRESULT result = g_OldDirect3DDevice9->SetRenderTarget(RenderTargetIndex, replacement ? replacement : pRenderTarget);
+
+				AfxInterop::OnSetRenderTarget(RenderTargetIndex, afxTrackedSurface);
 
 				return result;
 			}
 
 			HRESULT result = g_OldDirect3DDevice9->SetRenderTarget(RenderTargetIndex, UnwrapSurface(pRenderTarget));
 
-			AfxInterop::OnSetSharedRenderTarget(RenderTargetIndex, nullptr);
+			AfxInterop::OnSetRenderTarget(RenderTargetIndex, nullptr);
 
 			return result;
 		}
-		else
 #endif
-		if (m_OverrideDefaultBuffersWithIntz)
-		{
-			if(pRenderTarget && pRenderTarget == m_RenderTargetTracker.Resource_get() && m_RenderTargetTracker.Resource_get())
-				return g_OldDirect3DDevice9->SetRenderTarget(RenderTargetIndex, m_IntzRenderTarget);
-		}
-		else
-		{
-			if (pRenderTarget && pRenderTarget == m_IntzRenderTarget && m_IntzRenderTarget)
-				return g_OldDirect3DDevice9->SetRenderTarget(RenderTargetIndex, m_RenderTargetTracker.Resource_get());
-		}
 
-		return g_OldDirect3DDevice9->SetRenderTarget(RenderTargetIndex, pRenderTarget);
+		return g_OldDirect3DDevice9->SetRenderTarget(RenderTargetIndex, UnwrapSurface(pRenderTarget));
 	}
 
 	STDMETHOD(GetRenderTarget)(THIS_ DWORD RenderTargetIndex, IDirect3DSurface9** ppRenderTarget)
@@ -4817,40 +4574,11 @@ public:
 #ifdef AFX_INTEROP
 		if (AfxInterop::Enabled())
 		{
-			/*
-			CSharedSurfaceHook * sharedSurfaceHook;
-
-			if (GetSharedSurfaceHook(pNewZStencil, &sharedSurfaceHook))
-			{
-				HRESULT result = g_OldDirect3DDevice9->SetDepthStencilSurface(sharedSurfaceHook->GetSharedSurface());
-
-				AfxInterop::OnSetSharedDepthStencilSurface(sharedSurfaceHook);
-
-				return result;
-			}
-			*/
-
-			HRESULT result = g_OldDirect3DDevice9->SetDepthStencilSurface(UnwrapSurface(pNewZStencil));
-
-			AfxInterop::OnSetSharedDepthStencilSurface(nullptr);
-
-			return result;
+			pNewZStencil = UnwrapSurface(pNewZStencil);
 		}
-		else
 #endif
 
-		if (m_OverrideDefaultBuffersWithIntz)
-		{
-			if(pNewZStencil && pNewZStencil == m_DepthStencilTracker.Resource_get() && m_DepthStencilTracker.Resource_get())
-				return g_OldDirect3DDevice9->SetDepthStencilSurface(m_IntzDepthStencilSurface);
-		}
-		else
-		{
-			if (pNewZStencil && pNewZStencil == m_IntzDepthStencilSurface && m_IntzDepthStencilSurface)
-				return g_OldDirect3DDevice9->SetDepthStencilSurface(m_DepthStencilTracker.Resource_get());
-		}
-
-		return g_OldDirect3DDevice9->SetDepthStencilSurface(pNewZStencil);
+		return g_OldDirect3DDevice9->SetDepthStencilSurface(UnwrapSurface(pNewZStencil));
 	}
 
 	STDMETHOD(GetDepthStencilSurface)(THIS_ IDirect3DSurface9** ppZStencilSurface)
@@ -5999,8 +5727,7 @@ struct NewDirect3D9
 
 		if (pPresentationParameters) FixPresentationParementers(pPresentationParameters);
 
-		g_bSupportsIntz = !AfxInterop::Enabled() // (We could consider supporting this.)
-			&& pPresentationParameters
+		g_bSupportsIntz = pPresentationParameters
 			&& SUCCEEDED(g_OldDirect3D9->GetAdapterDisplayMode(Adapter, &displayMode))
 			&& SUCCEEDED(g_OldDirect3D9->CheckDeviceFormat(Adapter, DeviceType, displayMode.Format, D3DUSAGE_DEPTHSTENCIL, D3DRTYPE_TEXTURE, FOURCC_INTZ));
 
@@ -6019,8 +5746,6 @@ struct NewDirect3D9
 				*ppReturnedDeviceInterface = reinterpret_cast<IDirect3DDevice9 *>(&g_NewDirect3DDevice9);
 
 				g_NewDirect3DDevice9.Init(pPresentationParameters);
-
-				//
 
 				Shared_Direct3DDevice9_Init(Adapter, pPresentationParameters->hDeviceWindow, g_OldDirect3DDevice9);
 			}
@@ -6219,11 +5944,11 @@ bool AfxD3D9_Check_Supports_R32F_With_Blending(void)
 }
 
 
-void AfxD3D9PushOverrideState(void)
+void AfxD3D9PushOverrideState(bool clean)
 {
 	if (!g_OldDirect3DDevice9) return;
 
-	g_NewDirect3DDevice9.AfxPushOverrideState();
+	g_NewDirect3DDevice9.AfxPushOverrideState(clean);
 
 }
 
@@ -6497,8 +6222,13 @@ void AfxD3D_WaitForGPU()
 }
 #endif
 
-bool AfxD3d9_IntzSupported(void)
+bool AfxD3d9_DrawDepthSupported(void)
 {
+#ifdef AFX_INTEROP
+	if (AfxInterop::Enabled())
+		return false;
+#endif
+
 	return g_OldDirect3DDevice9 && g_bSupportsIntz;
 }
 
@@ -6515,7 +6245,7 @@ void AfxIntzOverrideEnd()
 
 void AfxDrawDepth(bool rgb, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, bool drawToScreen)
 {
-	if (!AfxD3d9_IntzSupported()) return;
+	if (!g_bSupportsIntz) return;
 
 	g_NewDirect3DDevice9.AfxDrawDepth(rgb, mode, clip, depthVal, depthValMax, x, y, width, height, zNear, zFar, drawToScreen);
 }

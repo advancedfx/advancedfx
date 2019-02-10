@@ -23,7 +23,7 @@ bool AfxD3D9_Check_Supports_R32F_With_Blending(void);
 // Make sure to maintain push and pop correctly.
 
 /// <remarks>IDirect3D9Device only (i.e. CS:GO but not CSS).</remarks>
-void AfxD3D9PushOverrideState(void);
+void AfxD3D9PushOverrideState(bool clean);
 
 /// <remarks>IDirect3D9Device only (i.e. CS:GO but not CSS).</remarks>
 void AfxD3D9PopOverrideState(void);
@@ -130,7 +130,7 @@ void AfxD3D9_Block_Clear(bool block);
 extern bool g_bD3D9DumpVertexShader;
 extern bool g_bD3D9DumpPixelShader;
 
-bool AfxD3d9_IntzSupported(void);
+bool AfxD3d9_DrawDepthSupported(void);
 
 enum AfxDrawDepthMode
 {
@@ -145,15 +145,22 @@ void AfxDrawDepth(bool rgb, AfxDrawDepthMode mode, bool clip, float depthVal, fl
 
 //
 
-class __declspec(novtable) ISharedSurfaceInfo abstract
+#ifdef AFX_INTEROP
+
+void AfxD3D_WaitForGPU();
+
+class __declspec(novtable) IAfxInteropSurface abstract
 {
 public:
-	virtual IDirect3DSurface9 * GetSharedSurface() = 0;
-	virtual D3DMULTISAMPLE_TYPE GetMultiSampleType() = 0;
-	virtual DWORD GetMultiSampleQuality() = 0;
-	virtual HANDLE GetSharedHandle() = 0;
+	virtual IDirect3DSurface9 * AfxGetSurface() = 0;
+
+	virtual void AfxSetReplacement(IDirect3DSurface9 * surface);
+
+	virtual IDirect3DSurface9 * AfxGetReplacement();
+
+	virtual void AfxSetDepthSurface(IDirect3DSurface9 * surface);
+
+	virtual IDirect3DSurface9 * AfxGetDepthSurface();
 };
 
-#ifdef AFX_INTEROP
-void AfxD3D_WaitForGPU();
 #endif

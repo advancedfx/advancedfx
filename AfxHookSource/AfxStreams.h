@@ -2735,6 +2735,8 @@ private:
 
 	bool m_LastPreviewWithNoHud;
 
+	const SOURCESDK::CViewSetup_csgo * m_CurrentView;
+
 	SOURCESDK::IMaterialSystem_csgo * m_MaterialSystem;
 	IAfxBaseClientDll * m_AfxBaseClientDll;
 	SOURCESDK::IShaderShadow_csgo * m_ShaderShadow;
@@ -2784,7 +2786,7 @@ private:
 	bool m_PresentBlocked = false;
 	bool m_ShutDown = false;
 
-	bool m_BlockHud = false;
+	bool m_HudDrawn = false;
 
 	void SetCurrent_View_Render_ThreadId(DWORD id);
 
@@ -2823,4 +2825,6 @@ private:
 	IAfxStreamContext * FindStreamContext(IAfxMatRenderContext * ctx);
 
 	void BlockPresent(IAfxMatRenderContextOrg * ctx, bool value);
+
+	void DoRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw);
 };
