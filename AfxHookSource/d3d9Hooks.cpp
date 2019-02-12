@@ -2613,8 +2613,6 @@ public:
 	{
 		surface->SetPrivateData(IID_AfxTrackedSurface, (IUnknown *)this, sizeof(IUnknown *), D3DSPD_IUNKNOWN);
 		this->Release();
-
-		AfxInterop::OnCreatedSurface(this);
 	}
 
 	STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObj)
@@ -2700,7 +2698,6 @@ public:
 protected:
 	virtual void AfxReleasing(void)
 	{
-		AfxInterop::OnReleaseSurface(this);
 	}
 
 private:
@@ -2829,6 +2826,13 @@ public:
 				trackedRenderTarget = CAfxTrackedSurface::Track(renderTarget);
 				trackedRenderTarget->AddRef();
 
+#ifdef AFX_INTEROP
+				if (AfxInterop::Enabled())
+				{
+					AfxInterop::OnCreatedSurface(trackedRenderTarget);
+				}
+#endif
+
 				renderTarget->Release();
 			}
 		}
@@ -2878,6 +2882,7 @@ public:
 				{
 					if (m_OverrideDefaultBuffersWithIntz)
 					{
+
 						if (nullptr == trackedSurface->AfxGetReplacement())
 						{
 							D3DSURFACE_DESC desc;
@@ -2914,15 +2919,20 @@ public:
 						trackedSurface->AfxReplacementEnabled_set(false);
 					}
 
-					// Update if current:
+					// Update current:
 
 					IDirect3DSurface9 * renderTarget;
 
 					if (SUCCEEDED(g_OldDirect3DDevice9->GetRenderTarget(0, &renderTarget)))					
 					{
-						if (renderTarget == trackedSurface->AfxGetSurface())
+						if (CAfxTrackedSurface::Get(renderTarget) == trackedSurface)
 						{
-							g_OldDirect3DDevice9->SetRenderTarget(0, CAfxTrackedSurface::Replacement(renderTarget));
+							IDirect3DSurface9 * replacement = CAfxTrackedSurface::Replacement(renderTarget);
+
+							if (replacement != renderTarget)
+							{
+								g_OldDirect3DDevice9->SetRenderTarget(0, replacement);
+							}
 						}
 
 						renderTarget->Release();
@@ -2976,17 +2986,21 @@ public:
 						trackedSurface->AfxReplacementEnabled_set(false);
 					}
 
-					// Update if current:
+					// Update current:
 
 					IDirect3DSurface9 * depthStencil;
 
 					if (SUCCEEDED(g_OldDirect3DDevice9->GetDepthStencilSurface(&depthStencil)))
 					{
-						if (depthStencil == trackedSurface->AfxGetSurface())
+						if (CAfxTrackedSurface::Get(depthStencil) == trackedSurface)
 						{
-							g_OldDirect3DDevice9->SetDepthStencilSurface(CAfxTrackedSurface::Replacement(depthStencil));
-						}
+							IDirect3DSurface9 * replacement = CAfxTrackedSurface::Replacement(depthStencil);
 
+							if (replacement != depthStencil)
+							{
+								g_OldDirect3DDevice9->SetDepthStencilSurface(CAfxTrackedSurface::Replacement(depthStencil));
+							}
+						}
 						depthStencil->Release();
 					}
 				}
@@ -2994,7 +3008,7 @@ public:
 		}
 	}
 
-	void AfxDrawDepth(bool rgb, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, bool drawToScreen)
+	void AfxDrawDepth(AfxDrawDepthEncode encode, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, bool drawToScreen)
 	{
 		if (!g_bSupportsIntz) return;
 
@@ -3015,10 +3029,25 @@ public:
 			break;
 		}
 
+		ShaderCombo_afx_depth_ps20::AFXD24_e afxEncode = ShaderCombo_afx_depth_ps20::AFXD24_0;
+
+		switch (encode)
+		{
+		case AfxDrawDepthEncode_Gray:
+			afxEncode = ShaderCombo_afx_depth_ps20::AFXD24_0;
+			break;
+		case AfxDrawDepthEncode_Rgb:
+			afxEncode = ShaderCombo_afx_depth_ps20::AFXD24_1;
+			break;
+		case AfxDrawDepthEncode_Rgba:
+			afxEncode = ShaderCombo_afx_depth_ps20::AFXD24_2;
+			break;
+		}
+
 		IAfxPixelShader * afxPixelShader = g_AfxShaders.GetAcsPixelShader("afx_depth_ps20.acs", ShaderCombo_afx_depth_ps20::GetCombo(
 			clip ? ShaderCombo_afx_depth_ps20::AFXCLIP_1 : ShaderCombo_afx_depth_ps20::AFXCLIP_0,
 			afxDepthMode,
-			rgb ? ShaderCombo_afx_depth_ps20::AFXD24_1 : ShaderCombo_afx_depth_ps20::AFXD24_0
+			afxEncode
 		));
 
 		IDirect3DPixelShader9 * pixelShader = afxPixelShader->GetPixelShader();
@@ -3029,13 +3058,13 @@ public:
 			IDirect3DSurface9 * depthSurface = NULL;
 			if (SUCCEEDED(g_OldDirect3DDevice9->GetDepthStencilSurface(&depthSurface)))
 			{
-				IDirect3DSurface9 * depthReplacement = CAfxTrackedSurface::Replacement(depthSurface);
-
-				if (depthReplacement->GetContainer(__uuidof(IDirect3DTexture9), (void **)&depthTexture))
+				if (IDirect3DSurface9 * depthReplacement = CAfxTrackedSurface::Replacement(depthSurface))
 				{
-					depthTexture->Release();
+					if (depthReplacement->GetContainer(__uuidof(IDirect3DTexture9), (void **)&depthTexture))
+					{
+						depthTexture->Release();
+					}
 				}
-
 				depthSurface->Release();
 			}
 		}
@@ -3045,40 +3074,31 @@ public:
 			//
 			// Save device state:
 
-			IDirect3DSurface9 * oldRenderTaret = NULL;
+			IDirect3DSurface9 * oldRenderTarget = NULL;
+
+			if (FAILED(g_OldDirect3DDevice9->GetRenderTarget(0, &oldRenderTarget)))
+			{
+				return;
+			}
 
 #ifdef AFX_INTEROP
 			if (AfxInterop::Enabled())
 			{
-					if (SUCCEEDED(g_OldDirect3DDevice9->GetRenderTarget(0, &oldRenderTaret)))
+				if (CAfxTrackedSurface * afxTrackedSurface = trackedRenderTarget)
+				{
+					if (IDirect3DSurface9 * newRenderTarget = afxTrackedSurface->AfxGetDepthSurface())
 					{
-						if (CAfxTrackedSurface * afxTrackedSurface = CAfxTrackedSurface::Get(oldRenderTaret))
-						{
-							if (IDirect3DSurface9 * newRenderTarget = afxTrackedSurface->AfxGetDepthSurface())
-							{
-								g_OldDirect3DDevice9->SetRenderTarget(0, newRenderTarget);
-							}
-							else
-							{
-								// Abort.
-								oldRenderTaret->Release();
-								return;
-							}
-						}
+						g_OldDirect3DDevice9->SetRenderTarget(0, newRenderTarget);
 					}
 					else
 					{
-						oldRenderTaret = NULL;
+						// Not connected.
+						oldRenderTarget->Release();
+						return;
 					}
-			}
-			else
-#endif
-			{
-				if (FAILED(g_OldDirect3DDevice9->GetRenderTarget(0, &oldRenderTaret)))				
-				{
-					return;
 				}
 			}
+#endif
 
 			IDirect3DPixelShader9 * oldPixelShader = NULL;
 			g_OldDirect3DDevice9->GetPixelShader(&oldPixelShader);
@@ -3093,6 +3113,15 @@ public:
 			UINT oldVertexBuffer0Stride;
 			g_OldDirect3DDevice9->GetStreamSource(0, &oldVertexBuffer0, &oldVertexBuffer0Offset, &oldVertexBuffer0Stride);
 			// this is done already according to doc: // if(oldVertexBuffer0) oldVertexBuffer0->AddRef();
+
+
+			IDirect3DIndexBuffer9 * oldIndexBuffer = 0;
+			g_OldDirect3DDevice9->GetIndices(&oldIndexBuffer);
+			// this is done already according to doc: // if(oldIndexBuffer) oldIndexBuffer->AddRef();
+
+			IDirect3DVertexDeclaration9 * oldDeclaration;
+			g_OldDirect3DDevice9->GetVertexDeclaration(&oldDeclaration);
+			if (oldDeclaration) oldDeclaration->AddRef();
 
 			DWORD oldFVF;
 			g_OldDirect3DDevice9->GetFVF(&oldFVF);
@@ -3131,13 +3160,13 @@ public:
 			g_OldDirect3DDevice9->GetTextureStageState(0, D3DTSS_COLOROP, &oldTs0_D3DTSS_COLOROP);
 
 			DWORD oldTs0_D3DTSS_COLORARG1;
-			g_OldDirect3DDevice9->GetTextureStageState(0, D3DTSS_COLOROP, &oldTs0_D3DTSS_COLORARG1);
+			g_OldDirect3DDevice9->GetTextureStageState(0, D3DTSS_COLORARG1, &oldTs0_D3DTSS_COLORARG1);
 
 			DWORD oldTs0_D3DTSS_ALPHAOP;
 			g_OldDirect3DDevice9->GetTextureStageState(0, D3DTSS_COLOROP, &oldTs0_D3DTSS_ALPHAOP);
 
 			DWORD oldTs0_D3DTSS_ALPHAARG1;
-			g_OldDirect3DDevice9->GetTextureStageState(0, D3DTSS_COLOROP, &oldTs0_D3DTSS_ALPHAARG1);
+			g_OldDirect3DDevice9->GetTextureStageState(0, D3DTSS_ALPHAARG1, &oldTs0_D3DTSS_ALPHAARG1);
 
 			DWORD oldSs0_D3DSAMP_MINFILTER;
 			g_OldDirect3DDevice9->GetSamplerState(0, D3DSAMP_MINFILTER, &oldSs0_D3DSAMP_MINFILTER);
@@ -3147,6 +3176,15 @@ public:
 
 			IDirect3DBaseTexture9 * oldTexture = 0;
 			if (FAILED(g_OldDirect3DDevice9->GetTexture(0, &oldTexture))) oldTexture = NULL;
+
+			D3DMATRIX oldTransformWorld;
+			g_OldDirect3DDevice9->GetTransform(D3DTS_WORLD, &oldTransformWorld);
+
+			D3DMATRIX oldTransformView;
+			g_OldDirect3DDevice9->GetTransform(D3DTS_VIEW, &oldTransformView);
+
+			D3DMATRIX oldTransformProjection;
+			g_OldDirect3DDevice9->GetTransform(D3DTS_PROJECTION, &oldTransformProjection);	
 
 			//
 			// Draw
@@ -3225,12 +3263,12 @@ public:
 
 			if (drawToScreen)
 			{
-				if (IDirect3DSurface9 * src = CAfxTrackedSurface::Replacement(oldRenderTaret))
+				if (IDirect3DSurface9 * src = oldRenderTarget)
 				{
 					IDirect3DTexture9 * srcTex = NULL;
 					if (SUCCEEDED(src->GetContainer(__uuidof(IDirect3DTexture9), (void **)&srcTex)))
 					{
-						g_OldDirect3DDevice9->SetRenderTarget(0, CAfxTrackedSurface::Original(oldRenderTaret));
+						g_OldDirect3DDevice9->SetRenderTarget(0, CAfxTrackedSurface::Original(oldRenderTarget));
 						g_OldDirect3DDevice9->SetTexture(0, srcTex);
 						g_OldDirect3DDevice9->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_NONE);
 						g_OldDirect3DDevice9->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_NONE);
@@ -3245,6 +3283,10 @@ public:
 			//
 			// Restore old Direct3D9 state:
 
+			g_OldDirect3DDevice9->SetTransform(D3DTS_PROJECTION, &oldTransformProjection);
+			g_OldDirect3DDevice9->SetTransform(D3DTS_VIEW, &oldTransformView);
+			g_OldDirect3DDevice9->SetTransform(D3DTS_WORLD, &oldTransformWorld);
+
 			g_OldDirect3DDevice9->SetTexture(0, oldTexture);
 			if (oldTexture)
 				oldTexture->Release();
@@ -3252,9 +3294,9 @@ public:
 			g_OldDirect3DDevice9->SetPixelShaderConstantF(5, oldOverFac, 1);
 			g_OldDirect3DDevice9->SetViewport(&oldViewPort);
 			g_OldDirect3DDevice9->SetTextureStageState(0, D3DTSS_COLOROP, oldTs0_D3DTSS_COLOROP);
-			g_OldDirect3DDevice9->SetTextureStageState(0, D3DTSS_COLOROP, oldTs0_D3DTSS_COLORARG1);
+			g_OldDirect3DDevice9->SetTextureStageState(0, D3DTSS_COLORARG1, oldTs0_D3DTSS_COLORARG1);
 			g_OldDirect3DDevice9->SetTextureStageState(0, D3DTSS_COLOROP, oldTs0_D3DTSS_ALPHAOP);
-			g_OldDirect3DDevice9->SetTextureStageState(0, D3DTSS_COLOROP, oldTs0_D3DTSS_ALPHAARG1);
+			g_OldDirect3DDevice9->SetTextureStageState(0, D3DTSS_ALPHAARG1, oldTs0_D3DTSS_ALPHAARG1);
 			g_OldDirect3DDevice9->SetSamplerState(0, D3DSAMP_MINFILTER, oldSs0_D3DSAMP_MINFILTER);
 			g_OldDirect3DDevice9->SetSamplerState(0, D3DSAMP_MAGFILTER, oldSs0_D3DSAMP_MAGFILTER);
 
@@ -3269,6 +3311,12 @@ public:
 
 			g_OldDirect3DDevice9->SetFVF(oldFVF);
 
+			g_OldDirect3DDevice9->SetIndices(oldIndexBuffer);
+			if (oldIndexBuffer) oldIndexBuffer->Release();
+
+			g_OldDirect3DDevice9->SetVertexDeclaration(oldDeclaration);
+			if (oldDeclaration) oldDeclaration->Release();
+
 			g_OldDirect3DDevice9->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, oldMultiSampleAnitAlias);
 			g_OldDirect3DDevice9->SetRenderState(D3DRS_CULLMODE, oldCullMode);
 			g_OldDirect3DDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, oldAlphaBlendEnable);
@@ -3278,12 +3326,11 @@ public:
 			g_OldDirect3DDevice9->SetRenderState(D3DRS_COLORWRITEENABLE, oldColorWriteEnable);
 			g_OldDirect3DDevice9->SetRenderState(D3DRS_SRGBWRITEENABLE, oldSrgbWriteEnable);
 
+			g_OldDirect3DDevice9->SetRenderTarget(0, oldRenderTarget);
 
-			if (oldRenderTaret)
+			if (oldRenderTarget)
 			{
-				g_OldDirect3DDevice9->SetRenderTarget(0, oldRenderTaret);
-				oldRenderTaret->Release();
-				oldRenderTaret = NULL;
+				oldRenderTarget->Release();
 			}
 		}
 	}
@@ -4394,6 +4441,13 @@ public:
 
 		if (trackedRenderTarget)
 		{
+#ifdef AFX_INTEROP
+			if (AfxInterop::Enabled())
+			{
+				AfxInterop::OnReleaseSurface(trackedRenderTarget);
+			}
+#endif
+
 			trackedRenderTarget->Release();
 			trackedRenderTarget = nullptr;
 		}
@@ -4448,7 +4502,7 @@ public:
 			IDirect3DSurface9 * renderTarget = NULL;
 			if (SUCCEEDED(g_OldDirect3DDevice9->GetRenderTarget(0, &renderTarget)))
 			{
-				if (CAfxTrackedSurface * afxTrackedSurface = CAfxTrackedSurface::Get(renderTarget))
+				if (CAfxTrackedSurface * afxTrackedSurface = trackedRenderTarget)
 				{
 					if (IDirect3DSurface9 * sharedSurface = afxTrackedSurface->AfxGetReplacement())
 					{
@@ -4728,20 +4782,12 @@ public:
 		{
 			if (CAfxTrackedSurface * afxTrackedSurface = CAfxTrackedSurface::Get(pRenderTarget))
 			{
-				IDirect3DSurface9 * replacement = afxTrackedSurface->AfxGetReplacement();
-
-				HRESULT result = g_OldDirect3DDevice9->SetRenderTarget(RenderTargetIndex, replacement ? replacement : pRenderTarget);
-
 				AfxInterop::OnSetRenderTarget(RenderTargetIndex, afxTrackedSurface);
-
-				return result;
 			}
-
-			HRESULT result = g_OldDirect3DDevice9->SetRenderTarget(RenderTargetIndex, UnwrapSurface(pRenderTarget));
-
-			AfxInterop::OnSetRenderTarget(RenderTargetIndex, nullptr);
-
-			return result;
+			else
+			{
+				AfxInterop::OnSetRenderTarget(RenderTargetIndex, nullptr);
+			}
 		}
 #endif
 
@@ -6490,9 +6536,9 @@ void AfxIntzOverrideEnd()
 	if (g_OldDirect3DDevice9) g_NewDirect3DDevice9.AfxOverrideDefaultBuffersWithIntz(false);
 }
 
-void AfxDrawDepth(bool rgb, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, bool drawToScreen)
+void AfxDrawDepth(AfxDrawDepthEncode encode, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, bool drawToScreen)
 {
 	if (!g_bSupportsIntz) return;
 
-	g_NewDirect3DDevice9.AfxDrawDepth(rgb, mode, clip, depthVal, depthValMax, x, y, width, height, zNear, zFar, drawToScreen);
+	g_NewDirect3DDevice9.AfxDrawDepth(encode, mode, clip, depthVal, depthValMax, x, y, width, height, zNear, zFar, drawToScreen);
 }

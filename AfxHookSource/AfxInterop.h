@@ -38,7 +38,7 @@ namespace AfxInterop {
 	// Drawing thread:
 
 	/// <remarks>Must be called from drawing thread only.</remarks>
-	void DrawingThreadBeforeHud(int frameCount, bool frameInfoSent);
+	void DrawingThreadBeforeHud(int frameCount, bool frameInfoSent, const SOURCESDK::CViewSetup_csgo & view);
 
 	void OnCreatedSurface(IAfxInteropSurface * surface);
 

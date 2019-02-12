@@ -20,6 +20,7 @@
 extern WrpVEngineClient * g_VEngineClient;
 
 extern Hook_VClient_RenderView g_Hook_VClient_RenderView;
+extern SOURCESDK::IVRenderView_csgo * g_pVRenderView_csgo;
 
 namespace AfxInterop {
 
@@ -232,50 +233,6 @@ namespace AfxInterop {
 				if (!WriteSingle(EngineThread::m_hPipe, g_MirvTime.GetTime())) { errorLine = __LINE__; goto locked_error; }
 				if (!WriteSingle(EngineThread::m_hPipe, g_MirvTime.GetFrameTime())) { errorLine = __LINE__; goto locked_error; }
 
-				int width, height;
-				g_VEngineClient->GetScreenSize(width, height);
-
-				if (!WriteInt32(EngineThread::m_hPipe, width)) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteInt32(EngineThread::m_hPipe, height)) { errorLine = __LINE__; goto locked_error; }
-
-				SOURCESDK::VMatrix worldToViewMatrix = g_VEngineClient->WorldToViewMatrix();
-
-				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[0][0])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[0][1])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[0][2])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[0][3])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[1][0])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[1][1])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[1][2])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[1][3])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[2][0])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[2][1])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[2][2])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[2][3])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[3][0])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[3][1])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[3][2])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToViewMatrix.m[3][3])) { errorLine = __LINE__; goto locked_error; }
-
-				SOURCESDK::VMatrix worldToScreenMatrix = g_VEngineClient->WorldToScreenMatrix();
-
-				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[0][0])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[0][1])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[0][2])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[0][3])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[1][0])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[1][1])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[1][2])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[1][3])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[2][0])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[2][1])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[2][2])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[2][3])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[3][0])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[3][1])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[3][2])) { errorLine = __LINE__; goto locked_error; }
-				if (!WriteSingle(EngineThread::m_hPipe, worldToScreenMatrix.m[3][3])) { errorLine = __LINE__; goto locked_error; }
-
 				if (!Flush(EngineThread::m_hPipe)) { errorLine = __LINE__; goto locked_error; } // TODO: move this flush as required, currently it's good here, since no more data after this.
 
 				EngineThread::m_FrameInfoSent = true;
@@ -318,7 +275,7 @@ namespace AfxInterop {
 		return m_Enabled;
 	}
 
-	void DrawingThreadBeforeHud(int frameCount, bool frameInfoSent)
+	void DrawingThreadBeforeHud(int frameCount, bool frameInfoSent, const SOURCESDK::CViewSetup_csgo & view)
 	{
 		if (!m_Enabled) return;
 
@@ -355,7 +312,51 @@ namespace AfxInterop {
 
 		AfxD3D_WaitForGPU(); // TODO: This is only required if Unity wants to render shit.
 
+		SOURCESDK::VMatrix worldToView;
+		SOURCESDK::VMatrix viewToProjection;
+		SOURCESDK::VMatrix worldToProjection;
+		SOURCESDK::VMatrix worldToPixels;
+
+		g_pVRenderView_csgo->GetMatricesForView(view, &worldToView, &viewToProjection, &worldToProjection, &worldToPixels);
+
 		if (!WriteInt32(m_hPipe, DrawingMessage_DrawingThreadBeforeHud)) { errorLine = __LINE__; goto error; }
+
+		if (!WriteInt32(m_hPipe, view.width)) { errorLine = __LINE__; goto error; }
+		if (!WriteInt32(m_hPipe, view.height)) { errorLine = __LINE__; goto error; }
+
+		if (!WriteSingle(m_hPipe, worldToView.m[0][0])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, worldToView.m[0][1])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, worldToView.m[0][2])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, worldToView.m[0][3])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, worldToView.m[1][0])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, worldToView.m[1][1])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, worldToView.m[1][2])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, worldToView.m[1][3])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, worldToView.m[2][0])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, worldToView.m[2][1])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, worldToView.m[2][2])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, worldToView.m[2][3])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, worldToView.m[3][0])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, worldToView.m[3][1])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, worldToView.m[3][2])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, worldToView.m[3][3])) { errorLine = __LINE__; goto error; }
+
+		if (!WriteSingle(m_hPipe, viewToProjection.m[0][0])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, viewToProjection.m[0][1])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, viewToProjection.m[0][2])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, viewToProjection.m[0][3])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, viewToProjection.m[1][0])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, viewToProjection.m[1][1])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, viewToProjection.m[1][2])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, viewToProjection.m[1][3])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, viewToProjection.m[2][0])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, viewToProjection.m[2][1])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, viewToProjection.m[2][2])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, viewToProjection.m[2][3])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, viewToProjection.m[3][0])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, viewToProjection.m[3][1])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, viewToProjection.m[3][2])) { errorLine = __LINE__; goto error; }
+		if (!WriteSingle(m_hPipe, viewToProjection.m[3][3])) { errorLine = __LINE__; goto error; }
 
 		if (!WriteHandle(m_hPipe, m_FbSurfaceHandle)) { errorLine = __LINE__; goto error; }
 
@@ -420,6 +421,7 @@ namespace AfxInterop {
 
 			if (!ReadHandle(m_hPipe, remoteDepth)) { errorLine = __LINE__; goto error; }
 
+			surface->AfxReplacementEnabled_set(false);
 			surface->AfxSetReplacement(NULL);
 			surface->AfxSetDepthSurface(NULL);
 
@@ -437,6 +439,7 @@ namespace AfxInterop {
 							if (SUCCEEDED(replacementTexture->GetSurfaceLevel(0, &replacementSurface)))
 							{
 								surface->AfxSetReplacement(replacementSurface);
+								surface->AfxReplacementEnabled_set(true);
 								replacementSurface->Release();
 							}
 							replacementTexture->Release();
@@ -521,8 +524,6 @@ namespace AfxInterop {
 
 	void OnCreatedSurface(IAfxInteropSurface * surface)
 	{
-		Tier0_Msg("OnCreatedSurface: 0x%08x\n", surface);
-
 		m_Surfaces.insert(surface);
 
 		if(m_Connected) DispatchSurfaceCreated(surface);
@@ -533,8 +534,6 @@ namespace AfxInterop {
 		if (m_Connected) DispatchReleaseSurface(surface);
 
 		m_Surfaces.erase(surface);
-
-		Tier0_Msg("OnReleaseSharedSurface: 0x%08x\n", surface);
 	}
 
 	/// <param name="info">can be nullptr</param>

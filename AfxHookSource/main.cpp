@@ -205,7 +205,7 @@ SOURCESDK::IFileSystem_csgo * g_FileSystem_csgo = 0;
 SOURCESDK::CSGO::vgui::IPanel * g_pVGuiPanel_csgo = 0;
 SOURCESDK::CSGO::vgui::ISurface *g_pVGuiSurface_csgo = 0;
 
-//SOURCESDK::IVRenderView_csgo * g_pVRenderView_csgo = 0;
+SOURCESDK::IVRenderView_csgo * g_pVRenderView_csgo = 0;
 
 SOURCESDK::CSGO::IEngineTrace * g_pClientEngineTrace = 0;
 
@@ -360,6 +360,15 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 			else {
 				ErrorBox("Could not get a supported client engine trace interface.");
 			}
+
+			if (iface = appSystemFactory(VENGINE_RENDERVIEW_INTERFACE_VERSION_CSGO, NULL))
+			{
+				g_pVRenderView_csgo = (SOURCESDK::IVRenderView_csgo *)iface;
+			}
+			else {
+				ErrorBox("Could not get " VENGINE_RENDERVIEW_INTERFACE_VERSION_CSGO ".");
+			}
+
 
 			/*
 			if (iface = appSystemFactory(SORUCESDK_CSGO_VENGINE_GAMEUIFUNCS_VERSION, NULL))

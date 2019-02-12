@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.50.0</version>
+<time>2019-02-12T21:43Z</time>
+<changes>
+<change type="fixed">
+Fixed multiple notable render state problems / bugs e.g. when using mirv_streams. Many thanks to @KaX and @Vulfare on the advancedfx Discord for reporting the problem and helping to make it reproducible.
+</change>
+<change type="updated">
+Updated afx_interop to version 2 (for supporting depth buffer).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.49.0</version>
 <time>2019-02-03T05:59Z</time>
 <changes>

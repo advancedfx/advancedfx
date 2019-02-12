@@ -332,7 +332,7 @@ public:
 
 	virtual void operator()()
 	{
-		AfxDrawDepth(true, AfxDrawDepthMode_Inverse, m_IsNextDepth, m_OutZNear, m_OutZFar, m_X, m_Y, m_Width, m_Height, m_ZNear, m_ZFar, false);
+		AfxDrawDepth(AfxDrawDepthEncode_Rgba, AfxDrawDepthMode_Inverse, m_IsNextDepth, m_OutZNear, m_OutZFar, m_X, m_Y, m_Width, m_Height, m_ZNear, m_ZFar, false);
 	}
 
 private:
@@ -384,20 +384,25 @@ class AfxInteropDrawingThreadBeforeHud_Functor
 	: public CAfxFunctor
 {
 public:
-	AfxInteropDrawingThreadBeforeHud_Functor(int frameCount, bool frameInfoSent)
+	AfxInteropDrawingThreadBeforeHud_Functor(int frameCount, bool frameInfoSent, const SOURCESDK::CViewSetup_csgo & view)
 		: m_FrameCount(frameCount)
 		, m_FrameInfoSent(frameInfoSent)
+		, m_View(view)
 	{
 	}
 
 	virtual void operator()()
 	{
-		AfxInterop::DrawingThreadBeforeHud(m_FrameCount, m_FrameInfoSent);
+		IAfxMatRenderContext * ctx = GetCurrentContext();
+		SOURCESDK::VMatrix matrix;
+		ctx->GetOrg()->GetMatrix(SOURCESDK::MATERIAL_PROJECTION, &matrix);
+		AfxInterop::DrawingThreadBeforeHud(m_FrameCount, m_FrameInfoSent, m_View);
 	}
 
 private:
 	int m_FrameCount;
 	bool m_FrameInfoSent;
+	SOURCESDK::CViewSetup_csgo m_View;
 };
 
 #endif
@@ -2362,7 +2367,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 			float flDepthFactor = m_Stream->m_DepthVal;
 			float flDepthFactorMax = m_Stream->m_DepthValMax;
 
-			AfxDrawDepth(EDrawDepth_Rgb == m_Stream->m_DrawDepth, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height, m_Viewport.zNear, m_Viewport.zFar, true);
+			AfxDrawDepth(EDrawDepth_Rgb == m_Stream->m_DrawDepth ? AfxDrawDepthEncode_Rgb : AfxDrawDepthEncode_Gray, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height, m_Viewport.zNear, m_Viewport.zFar, true);
 			m_IsNextDepth = true;
 		}
 		
@@ -2439,7 +2444,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 			float flDepthFactor = m_Stream->m_DepthVal * scale;
 			float flDepthFactorMax = m_Stream->m_DepthValMax * scale;
 
-			AfxDrawDepth(EDrawDepth_Rgb == m_Stream->m_DrawDepth, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height, 2.0f, (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH, false);
+			AfxDrawDepth(EDrawDepth_Rgb == m_Stream->m_DrawDepth ? AfxDrawDepthEncode_Rgb : AfxDrawDepthEncode_Gray, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height, 2.0f, (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH, false);
 			m_IsNextDepth = true;
 		}
 	}
@@ -5155,7 +5160,7 @@ void CAfxStreams::OnDrawingHudBegin(void)
 
 		AfxInterop::BeforeHud();
 
-		QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new AfxInteropDrawingThreadBeforeHud_Functor(AfxInterop::GetFrameCount(), AfxInterop::GetFrameInfoSent())));
+		QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new AfxInteropDrawingThreadBeforeHud_Functor(AfxInterop::GetFrameCount(), AfxInterop::GetFrameInfoSent(), *m_CurrentView)));
 	}
 #endif
 

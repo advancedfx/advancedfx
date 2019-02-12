@@ -139,9 +139,16 @@ enum AfxDrawDepthMode
 	AfxDrawDepthMode_LogE,
 };
 
+enum AfxDrawDepthEncode
+{
+	AfxDrawDepthEncode_Gray,
+	AfxDrawDepthEncode_Rgb,
+	AfxDrawDepthEncode_Rgba
+};
+
 void AfxIntzOverrideBegin();
 void AfxIntzOverrideEnd();
-void AfxDrawDepth(bool rgb, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, bool drawToScreen);
+void AfxDrawDepth(AfxDrawDepthEncode encode, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, bool drawToScreen);
 
 //
 

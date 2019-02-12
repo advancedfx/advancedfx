@@ -616,6 +616,11 @@ public:
 		m_Ctx->ReadPixels(x, y, width, height, data, dstFormat, _unknown7);
 	}
 
+	virtual void GetMatrix(SOURCESDK::MaterialMatrixMode_t_csgo matrixMode, SOURCESDK::VMatrix *matrix) override
+	{
+		m_Ctx->GetMatrix(matrixMode, matrix);
+	}
+
 	/*
 	virtual void Viewport(int x, int y, int width, int height)
 	{

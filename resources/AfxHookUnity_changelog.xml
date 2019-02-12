@@ -7,6 +7,18 @@
 <release>
 <name>AfxHookUnity</name>
 <version>0.1.1</version>
+<time>2019-02-12T21:43Z</time>
+<changes>
+<change type="added">
+Version 2, for afx_interop version 2, for afx-unity-interop v0.2.0.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookUnity</name>
+<version>0.1.1</version>
 <time>2018-12-12T18:35Z</time>
 <changes>
 <change type="added">
