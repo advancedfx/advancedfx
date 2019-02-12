@@ -154,13 +154,19 @@ class __declspec(novtable) IAfxInteropSurface abstract
 public:
 	virtual IDirect3DSurface9 * AfxGetSurface() = 0;
 
-	virtual void AfxSetReplacement(IDirect3DSurface9 * surface);
+	virtual void AfxReplacementEnabled_set(bool value) = 0;
 
-	virtual IDirect3DSurface9 * AfxGetReplacement();
+	virtual bool AfdxReplacementEnabled_get() = 0;
 
-	virtual void AfxSetDepthSurface(IDirect3DSurface9 * surface);
+	virtual void AfxSetReplacement(IDirect3DSurface9 * surface) = 0;
 
-	virtual IDirect3DSurface9 * AfxGetDepthSurface();
+	virtual IDirect3DSurface9 * AfxGetReplacement() = 0;
+
+	virtual void AfxSetDepthSurface(IDirect3DSurface9 * surface) = 0;
+
+	virtual IDirect3DSurface9 * AfxGetDepthSurface() = 0;
+
+	virtual IDirect3DSurface9 * AfxGetCurrentSurface() = 0;
 };
 
 #endif

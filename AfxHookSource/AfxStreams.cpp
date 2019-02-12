@@ -227,8 +227,11 @@ void CAfxBlockFunctor::operator()()
 		AfxD3D9OverrideBegin_D3DRS_SRCBLEND(D3DBLEND_ZERO);
 		AfxD3D9OverrideBegin_D3DRS_DESTBLEND(D3DBLEND_ONE);
 		AfxD3D9OverrideBegin_D3DRS_ZWRITEENABLE(FALSE);
+		AfxD3D9OverrideBegin_D3DRS_COLORWRITEENABLE(0);
 	}
-	else {
+	else
+	{
+		AfxD3D9OverrideEnd_D3DRS_COLORWRITEENABLE();
 		AfxD3D9OverrideEnd_D3DRS_ZWRITEENABLE();
 		AfxD3D9OverrideEnd_D3DRS_DESTBLEND();
 		AfxD3D9OverrideEnd_D3DRS_SRCBLEND();
@@ -2242,7 +2245,6 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin()
 
 		m_ChildContext = 0;
 
-
 		if (EDrawDepth_None != this->GetStream()->m_DrawDepth)
 		{
 			AfxD3D9PushOverrideState(false);
@@ -2353,6 +2355,8 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 	{
 		// Leaf context
 
+		BindAction(0);
+
 		if (EDrawDepth_None != m_Stream->m_DrawDepth)
 		{
 			float flDepthFactor = m_Stream->m_DepthVal;
@@ -2363,8 +2367,6 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 		}
 		
 		// Do the clearing if wanted:
-
-		BindAction(0); // We don't handle HUD atm.
 
 		switch (m_Stream->m_ClearBeforeHud)
 		{
@@ -2392,6 +2394,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudEnd(void)
 	{
 		// Leaf context
 
+		BindAction(0);
 	}
 
 	m_DrawingHud = false;
@@ -2410,6 +2413,8 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewBegin(void)
 	else
 	{
 		// Leaf context
+
+		BindAction(0);
 	}
 }
 
@@ -2424,6 +2429,8 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 	else
 	{
 		// Leaf context
+
+		BindAction(0);
 
 		if (EDrawDepth_None != m_Stream->m_DrawDepth)
 		{
@@ -4793,8 +4800,6 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 		view.zFar
 	};
 
-	previewStream->OnRenderBegin(afxViewport);
-
 	int myWhatToDraw = whatToDraw;
 
 	switch (previewStream->DrawHud_get())
@@ -4847,8 +4852,6 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 	newHudView.x += col * newHudView.width;
 	newHudView.y += row * newHudView.height;
 
-	ctxp->PushRenderTargetAndViewport(0, 0, newView.m_nUnscaledX, newView.m_nUnscaledY, newView.m_nUnscaledWidth, newView.m_nUnscaledHeight);
-
 	if (1 < cols && (hudDrawn || m_Recording))
 	{
 		// Would not allow to render the HUD in different passses per frame):
@@ -4887,7 +4890,16 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 
 		if(isLast && !(myWhatToDraw & SOURCESDK::RENDERVIEW_DRAWHUD)) m_LastPreviewWithNoHud = true;
 
+		ctxp->PushRenderTargetAndViewport(0, 0, newView.m_nUnscaledX, newView.m_nUnscaledY, newView.m_nUnscaledWidth, newView.m_nUnscaledHeight);
+
+		previewStream->OnRenderBegin(afxViewport);
+
 		DoRenderView(fn, this_ptr, newView, newHudView, nClearFlags, myWhatToDraw);
+
+		previewStream->OnRenderEnd();
+
+		ctxp->PopRenderTargetAndViewport();
+
 
 		if (forceBuildingCubeMaps)
 		{
@@ -4905,10 +4917,6 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 	}
 
 	*smokeOverlayAlphaFactor = oldSmokeOverlayAlphaFactor;
-
-	ctxp->PopRenderTargetAndViewport();
-
-	previewStream->OnRenderEnd();
 
 	if (0 < strlen(previewStream->DetachCommands_get()))
 		g_VEngineClient->ExecuteClientCmd(previewStream->DetachCommands_get()); // Execute commands after we unlocked the stream!
@@ -4958,6 +4966,14 @@ void CAfxStreams::DoRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropOverrideDepthBegin_Functor()));
 	}
 #endif
+
+	if (m_Recording)
+	{
+		IAfxMatRenderContextOrg * ctxp = GetCurrentContext()->GetOrg();
+
+		ctxp->ClearColor4ub(0, 0, 0, 0);
+		ctxp->ClearBuffers(true, true, true);
+	}
 
 	fn(this_ptr, view, hudViewSetup, nClearFlags, whatToDraw);
 
@@ -5128,6 +5144,8 @@ void CAfxStreams::OnDrawingHudBegin(void)
 {
 	IAfxMatRenderContext * afxMatRenderContext = GetCurrentContext();
 
+	if (IAfxStreamContext * hook = FindStreamContext(afxMatRenderContext)) hook->DrawingHudBegin();
+
 #ifdef AFX_INTEROP
 	if (AfxInterop::Enabled())
 	{
@@ -5140,11 +5158,6 @@ void CAfxStreams::OnDrawingHudBegin(void)
 		QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new AfxInteropDrawingThreadBeforeHud_Functor(AfxInterop::GetFrameCount(), AfxInterop::GetFrameInfoSent())));
 	}
 #endif
-
-	IAfxStreamContext * hook = FindStreamContext(afxMatRenderContext);
-
-	if (hook)
-		hook->DrawingHudBegin();
 
 	if (CAfxRenderViewStream * stream = CAfxRenderViewStream::EngineThreadStream_get())
 	{
@@ -5167,8 +5180,7 @@ void CAfxStreams::OnDrawingHudEnd(void)
 		}
 	}
 
-	if(IAfxStreamContext * hook = FindStreamContext(afxMatRenderContext))
-		hook->DrawingHudEnd();
+	if (IAfxStreamContext * hook = FindStreamContext(afxMatRenderContext)) hook->DrawingHudEnd();
 }
 
 void CAfxStreams::OnDrawingSkyBoxViewBegin(void)
@@ -5183,9 +5195,7 @@ void CAfxStreams::OnDrawingSkyBoxViewEnd(void)
 {
 	IAfxMatRenderContext * ctx = GetCurrentContext();
 
-	IAfxStreamContext * hook = FindStreamContext(ctx);
-
-	if (hook)
+	if (IAfxStreamContext * hook = FindStreamContext(ctx))
 		hook->DrawingSkyBoxViewEnd();
 
 #ifdef AFX_INTEROP
@@ -7585,26 +7595,6 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 	CAfxRenderViewStream::StreamCaptureType captureType = stream->StreamCaptureType_get();
 	bool isDepthF = captureType == CAfxRenderViewStream::SCT_DepthF || captureType == CAfxRenderViewStream::SCT_DepthFZIP;
 
-	if(isDepthF)
-	{
-		if(m_RenderTargetDepthF)
-		{
-			ctxp->PushRenderTargetAndViewport(
-				m_RenderTargetDepthF,
-				0,
-				view.m_nUnscaledX,
-				view.m_nUnscaledY,
-				view.m_nUnscaledWidth,
-				view.m_nUnscaledHeight
-			);
-		}
-		else
-		{
-			Tier0_Warning("AFXERROR: CAfxStreams::CaptureStreamToBuffer: missing render target.\n");
-			return false;
-		}
-	}
-
 	SetMatVarsForStreams(); // keep them set in case a mofo resets them.
 
 	if (0 < strlen(stream->AttachCommands_get()))
@@ -7618,8 +7608,6 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 		view.zNear,
 		view.zFar
 	};
-
-	stream->OnRenderBegin(afxViewport);
 
 	int myWhatToDraw = whatToDraw;
 
@@ -7649,12 +7637,6 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 		break;
 	}
 
-	ctxp->ClearColor4ub(0,0,0,0);
-	ctxp->ClearBuffers(true,false,false);
-
-	//DrawLock(ctxp);
-	//GetCsgoCGlowOverlayFix()->OnStreamRenderViewBegin(stream);
-	
 	float oldSmokeOverlayAlphaFactor = *smokeOverlayAlphaFactor;
 	smokeOverlayAlphaFactorMultiplyer = stream->SmokeOverlayAlphaFactor_get();
 	if (smokeOverlayAlphaFactorMultiplyer < 1) *smokeOverlayAlphaFactor = 0;
@@ -7681,7 +7663,43 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 			m_BuildingCubemaps->SetValue(1.0f);
 		}
 
+		if (isDepthF)
+		{
+			if (m_RenderTargetDepthF)
+			{
+				ctxp->PushRenderTargetAndViewport(
+					m_RenderTargetDepthF,
+					0,
+					view.m_nUnscaledX,
+					view.m_nUnscaledY,
+					view.m_nUnscaledWidth,
+					view.m_nUnscaledHeight
+				);
+			}
+			else
+			{
+				Tier0_Warning("AFXERROR: CAfxStreams::CaptureStreamToBuffer: missing render target.\n");
+				isDepthF = false;
+			}
+		}
+
+		stream->OnRenderBegin(afxViewport);
+
 		DoRenderView(fn, this_ptr, view, hudViewSetup, SOURCESDK::VIEW_CLEAR_STENCIL | SOURCESDK::VIEW_CLEAR_DEPTH, myWhatToDraw);
+
+		stream->QueueCapture(ctxp, captureTarget,
+			view.m_nUnscaledX,
+			view.m_nUnscaledY,
+			view.m_nUnscaledWidth,
+			view.m_nUnscaledHeight
+		);
+
+		stream->OnRenderEnd();
+
+		if (isDepthF)
+		{
+			ctxp->PopRenderTargetAndViewport();
+		}
 
 		if (forceBuildingCubeMaps)
 		{
@@ -7700,24 +7718,10 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 
 	*smokeOverlayAlphaFactor = oldSmokeOverlayAlphaFactor;
 
-	//ScheduleDrawUnlock(ctxp);
-
-	stream->QueueCapture(ctxp, captureTarget,
-		view.m_nUnscaledX,
-		view.m_nUnscaledY,
-		view.m_nUnscaledWidth,
-		view.m_nUnscaledHeight
-		);
-
-	stream->OnRenderEnd();
 
 	if (0 < strlen(stream->DetachCommands_get()))
 		g_VEngineClient->ExecuteClientCmd(stream->DetachCommands_get()); // Execute commands after we lock the stream!
 
-	if(isDepthF)
-	{
-		ctxp->PopRenderTargetAndViewport();
-	}
 
 	if (last)
 	{

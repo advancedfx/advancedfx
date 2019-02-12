@@ -980,9 +980,9 @@ public:
 
 	static void MainThreadInitialize(void);
 
-	virtual void OnRenderBegin(const AfxViewportData_t & viewport);
+	virtual void OnRenderBegin(const AfxViewportData_t & viewport) override;
 
-	virtual void OnRenderEnd(void);
+	virtual void OnRenderEnd(void) override;
 
 	void Console_ActionFilter_Add(const char * expression, CAction * action);
 	void Console_ActionFilter_AddEx(CAfxStreams * streams, IWrpCommandArgs * args);
