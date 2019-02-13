@@ -9,7 +9,6 @@
 <version>1.50.1</version>
 <time>2019-02-13T06:16Z</time>
 <changes>
-</change>
 <change type="updated">
 Adjusted to CS:GO update 2/12/2019 (2/13/2019 UTC, 1.36.7.8) (fixes errors related to smoke overlay alpha hooks).
 </change>
