@@ -664,7 +664,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 							DWORD tmpAddr = pushStringAddr - 0x79;
 
 							// check for pattern nearby to see if it is the right address:
-							unsigned char pattern[8] = { 0xF3, 0x0F, 0x10, 0x9A, 0x88, 0x05, 0x00, 0x00 };
+							unsigned char pattern[8] = { 0xF3, 0x0F, 0x10, 0x9F, 0x88, 0x05, 0x00, 0x00 }; 
 
 							DWORD patternSize = sizeof(pattern) / sizeof(pattern[0]);
 							MemRange patternRange(tmpAddr, tmpAddr + patternSize);
@@ -679,7 +679,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 							DWORD tmpAddr = pushStringAddr - 0x1A;
 
 							// check for pattern nearby to see if it is the right address:
-							unsigned char pattern[7] = { 0x0F, 0x2F, 0xAA, 0x88, 0x05, 0x00, 0x00 };
+							unsigned char pattern[7] = { 0x0F, 0x2F, 0xB7, 0x88, 0x05, 0x00, 0x00 };
 
 
 							DWORD patternSize = sizeof(pattern) / sizeof(pattern[0]);
@@ -692,7 +692,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 						}
 
 						{
-							DWORD tmpAddr = pushStringAddr + 0x5E;
+							DWORD tmpAddr = pushStringAddr + 0x5A;
 
 							// check for pattern nearby to see if it is the right address:
 							unsigned char pattern[8] = { 0x5F, 0x5E, 0x8B, 0xE5, 0x5D, 0xC2, 0x04, 0x00 };

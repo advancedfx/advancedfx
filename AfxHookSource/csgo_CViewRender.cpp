@@ -106,7 +106,7 @@ void __declspec(naked) touring_csgo_CViewRender_RenderSmokeOverlay_OnLoadOldAlph
 	// restore old value:
 	__asm push eax
 	__asm mov eax, g_csgo_OldSmokeOverlayAlphaFactor
-	__asm mov dword ptr[edx + 588h], eax
+	__asm mov dword ptr[edi + 588h], eax
 	__asm pop eax
 
 	__asm jmp detoured_csgo_CViewRender_RenderSmokeOverlay_OnLoadOldAlpha
@@ -123,14 +123,14 @@ void __declspec(naked) touring_csgo_CViewRender_RenderSmokeOverlay_OnCompareAlph
 
 	// store new old value:
 	__asm push eax
-	__asm mov eax, dword ptr[edx + 588h]
+	__asm mov eax, dword ptr[edi + 588h]
 	__asm mov g_csgo_NewSmokeOverlayAlphaFactor, eax
 	__asm pop eax
 
 	// calculate target value:
-	__asm movss xmm1, dword ptr[edx + 588h]
+	__asm movss xmm1, dword ptr[edi + 588h]
 	__asm mulss xmm1, g_csgo_AfxSmokeOverlayAlphaMod
-	__asm movss dword ptr [edx + 588h], xmm1
+	__asm movss dword ptr [edi + 588h], xmm1
 
 	__asm __continue:
 	__asm jmp detoured_csgo_CViewRender_RenderSmokeOverlay_OnCompareAlphaBeforeDraw
@@ -140,18 +140,6 @@ void * detoured_csgo_CViewRender_RenderSmokeOverlay_OnBeforeExitFunc;
 
 void __declspec(naked) touring_csgo_CViewRender_RenderSmokeOverlay_OnBeforeExitFunc(void)
 {
-	// restore old value:
-	//__asm push eax
-	//__asm mov eax, ebp
-	//__asm and eax, 0FFFFFFF0h
-	//__asm sub eax, 48h
-	//__asm sub eax, 0x4
-	//__asm sub eax, 0x4
-	//__asm mov edx, [eax + 18h] ; this ptr should be here
-	//__asm mov eax, g_csgo_OldSmokeOverlayAlphaFactor
-	//__asm mov dword ptr[edx + 588h], eax
-	//__asm pop eax
-
 	__asm jmp detoured_csgo_CViewRender_RenderSmokeOverlay_OnBeforeExitFunc
 }
 
