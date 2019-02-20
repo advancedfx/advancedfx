@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.50.2</version>
+<time>2019-02-20T09:42Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_streams preview of depth streams not working.
+</change>
+<change type="fixed">
+Fixed depth streams not writing alpha component to render target (might increase afx_interop depth accuracy by 1 bit).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.50.1</version>
 <time>2019-02-13T06:16Z</time>
 <changes>
