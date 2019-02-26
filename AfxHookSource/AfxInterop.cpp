@@ -32,7 +32,8 @@ namespace AfxInterop {
 		DrawingMessage_NewTexture = 2,
 		DrawingMessage_ReleaseTexture = 3,
 		DrawingMessage_NewSurface = 4,
-		DrawingMessage_ReleaseSurface = 5
+		DrawingMessage_ReleaseSurface = 5,
+		DrawingMessage_PreapareDraw = 6
 	};
 
 
