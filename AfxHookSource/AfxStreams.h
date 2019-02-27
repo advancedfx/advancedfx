@@ -551,7 +551,7 @@ public:
 	//
 	// State information:
 
-	virtual void OnRenderBegin(const AfxViewportData_t & viewport)
+	virtual void OnRenderBegin(const AfxViewportData_t & viewport, const SOURCESDK::VMatrix & projectionMatrix, const SOURCESDK::VMatrix & projectionMatrixSky)
 	{
 		m_EngineThreadStream = this;
 	}
@@ -980,7 +980,7 @@ public:
 
 	static void MainThreadInitialize(void);
 
-	virtual void OnRenderBegin(const AfxViewportData_t & viewport) override;
+	virtual void OnRenderBegin(const AfxViewportData_t & viewport, const SOURCESDK::VMatrix & projectionMatrix, const SOURCESDK::VMatrix & projectionMatrixSky) override;
 
 	virtual void OnRenderEnd(void) override;
 
@@ -1832,7 +1832,7 @@ private:
 			return m_DrawingSkyBoxView;
 		}
 
-		void RenderBegin(CAfxBaseFxStream * stream, const AfxViewportData_t & viewport);
+		void RenderBegin(CAfxBaseFxStream * stream, const AfxViewportData_t & viewport, const SOURCESDK::VMatrix & projectionMatrix, const SOURCESDK::VMatrix & projectionMatrixSky);
 
 		void RenderEnd(void);
 
@@ -2003,6 +2003,8 @@ private:
 		CAfxBaseFxStream::CAction * m_CurrentAction;
 		//std::map<void *, SOURCESDK::CSGO::CBaseHandle> m_ProxyDataToEntityHandle;
 		AfxViewportData_t m_Viewport;
+		SOURCESDK::VMatrix m_ProjectionMatrix;
+		SOURCESDK::VMatrix m_ProjectionMatrixSky;
 		bool m_IsNextDepth;
 
 		void QueueBegin();

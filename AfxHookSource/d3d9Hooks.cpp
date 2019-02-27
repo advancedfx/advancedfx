@@ -3009,7 +3009,7 @@ public:
 		}
 	}
 
-	void AfxDrawDepth(AfxDrawDepthEncode encode, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, bool drawToScreen)
+	void AfxDrawDepth(AfxDrawDepthEncode encode, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, bool drawToScreen, float projectionMatrix[4][4])
 	{
 		if (!g_bSupportsIntz) return;
 
@@ -3061,9 +3061,13 @@ public:
 			{
 				if (IDirect3DSurface9 * depthReplacement = CAfxTrackedSurface::Replacement(depthSurface))
 				{
-					if (depthReplacement->GetContainer(__uuidof(IDirect3DTexture9), (void **)&depthTexture))
+					if (SUCCEEDED(depthReplacement->GetContainer(__uuidof(IDirect3DTexture9), (void **)&depthTexture)))
 					{
 						depthTexture->Release();
+					}
+					else
+					{
+						depthTexture = NULL;
 					}
 				}				
 			}
@@ -3164,6 +3168,9 @@ public:
 
 			FLOAT oldOverFac[4];
 			g_OldDirect3DDevice9->GetPixelShaderConstantF(5, oldOverFac, 1);
+			
+			FLOAT oldMatrix[4][4];
+			if (projectionMatrix) g_OldDirect3DDevice9->GetPixelShaderConstantF(6, &(oldMatrix[0][0]), 4);
 
 			D3DVIEWPORT9 oldViewPort;
 			g_OldDirect3DDevice9->GetViewport(&oldViewPort);
@@ -3266,6 +3273,50 @@ public:
 			FLOAT overFac[4] = { zNear, zFar, depthVal, depthValMax };
 			g_OldDirect3DDevice9->SetPixelShaderConstantF(5, overFac, 1);
 
+			if (projectionMatrix)
+			{
+				double M[4][4] = {
+					projectionMatrix[0][0], projectionMatrix[0][1], projectionMatrix[0][2],  projectionMatrix[0][3],
+					projectionMatrix[1][0], projectionMatrix[1][1], projectionMatrix[1][2],  projectionMatrix[1][3],
+					projectionMatrix[2][0], projectionMatrix[2][1], projectionMatrix[2][2],  projectionMatrix[2][3],
+					projectionMatrix[3][0], projectionMatrix[3][1], projectionMatrix[3][2],  projectionMatrix[3][3]
+				};
+
+				double b0[4] = { 1, 0, 0, 0 };
+				double b1[4] = { 0, 1, 0, 0 };
+				double b2[4] = { 0, 0, 1, 0 };
+				double b3[4] = { 0, 0, 0, 1 };
+
+				unsigned char P[4];
+				unsigned char Q[4];
+
+				double L[4][4];
+				double U[4][4];
+
+				if (LUdecomposition(M, P, Q, L, U))
+				{
+					double inv0[4] = { 1,0,0,0 };
+					double inv1[4] = { 0,1,0,0 };
+					double inv2[4] = { 0,0,1,0 };
+					double inv3[4] = { 0,0,0,1 };
+
+					SolveWithLU(L, U, P, Q, b0, inv0);
+					SolveWithLU(L, U, P, Q, b1, inv1);
+					SolveWithLU(L, U, P, Q, b2, inv2);
+					SolveWithLU(L, U, P, Q, b3, inv3);
+
+					// Transposed for DirectX:
+					FLOAT newMatrix[4][4] = {
+						(FLOAT)inv0[0], (FLOAT)inv0[1], (FLOAT)inv0[2], (FLOAT)inv0[3],
+						(FLOAT)inv1[0], (FLOAT)inv1[1], (FLOAT)inv1[2], (FLOAT)inv1[3],
+						(FLOAT)inv2[0], (FLOAT)inv2[1], (FLOAT)inv2[2], (FLOAT)inv2[3],
+						(FLOAT)inv3[0], (FLOAT)inv3[1], (FLOAT)inv3[2], (FLOAT)inv3[3]
+					};
+
+					g_OldDirect3DDevice9->SetPixelShaderConstantF(6, &(newMatrix[0][0]), 4);
+				}
+			}
+
 			// Draw rectangle:
 
 			AFXDRAWDEPTHVERTEX vertexData[4] = {
@@ -3316,6 +3367,7 @@ public:
 			if (oldTexture)
 				oldTexture->Release();
 
+			if (projectionMatrix) g_OldDirect3DDevice9->SetPixelShaderConstantF(6, &(oldMatrix[0][0]), 4);
 			g_OldDirect3DDevice9->SetPixelShaderConstantF(5, oldOverFac, 1);
 			g_OldDirect3DDevice9->SetViewport(&oldViewPort);
 			g_OldDirect3DDevice9->SetTextureStageState(0, D3DTSS_COLOROP, oldTs0_D3DTSS_COLOROP);
@@ -6563,9 +6615,9 @@ void AfxIntzOverrideEnd()
 	if (g_OldDirect3DDevice9) g_NewDirect3DDevice9.AfxOverrideDefaultBuffersWithIntz(false);
 }
 
-void AfxDrawDepth(AfxDrawDepthEncode encode, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, bool drawToScreen)
+void AfxDrawDepth(AfxDrawDepthEncode encode, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, bool drawToScreen, float projectionMatrix[4][4])
 {
 	if (!g_bSupportsIntz) return;
 
-	g_NewDirect3DDevice9.AfxDrawDepth(encode, mode, clip, depthVal, depthValMax, x, y, width, height, zNear, zFar, drawToScreen);
+	g_NewDirect3DDevice9.AfxDrawDepth(encode, mode, clip, depthVal, depthValMax, x, y, width, height, zNear, zFar, drawToScreen, projectionMatrix);
 }
