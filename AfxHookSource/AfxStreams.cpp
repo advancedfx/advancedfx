@@ -2239,6 +2239,8 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin()
 		m_ChildContext->m_Stream = this->m_Stream;
 		m_ChildContext->m_Viewport = this->m_Viewport;
 		m_ChildContext->m_IsNextDepth = this->m_IsNextDepth;
+		m_ChildContext->m_ProjectionMatrix = this->m_ProjectionMatrix;
+		m_ChildContext->m_ProjectionMatrixSky = this->m_ProjectionMatrixSky;
 
 		queue->QueueFunctor(new CQueueBeginFunctor(m_ChildContext));
 	}
@@ -4823,8 +4825,6 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 
 	g_pVRenderView_csgo->GetMatricesForView(view, &worldToView, &viewToProjection, &worldToProjection, &worldToPixels);
 
-
-
 	int myWhatToDraw = whatToDraw;
 
 	switch (previewStream->DrawHud_get())
@@ -5069,6 +5069,8 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 			for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
 			{
 				if (!(*it)->Record_get() || (*it) == mainStream) continue;
+
+				bool hudDrawn = false;
 
 				ctxp = CaptureStream(ctxp, (*it), fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
 			}

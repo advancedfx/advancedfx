@@ -2955,27 +2955,23 @@ public:
 							D3DSURFACE_DESC desc;
 							if (SUCCEEDED(trackedSurface->AfxGetSurface()->GetDesc(&desc)))
 							{
-								D3DSURFACE_DESC desc;
-								if (SUCCEEDED(trackedSurface->AfxGetSurface()->GetDesc(&desc)))
+								IDirect3DTexture9 * texture = NULL;
+
+								if (SUCCEEDED(g_OldDirect3DDevice9->CreateTexture(
+									desc.Width, desc.Height, 1,
+									D3DUSAGE_DEPTHSTENCIL, FOURCC_INTZ,
+									D3DPOOL_DEFAULT, &texture,
+									NULL)))
 								{
-									IDirect3DTexture9 * texture = NULL;
+									IDirect3DSurface9 * replacement = NULL;
 
-									if (SUCCEEDED(g_OldDirect3DDevice9->CreateTexture(
-										desc.Width, desc.Height, 1,
-										D3DUSAGE_DEPTHSTENCIL, FOURCC_INTZ,
-										D3DPOOL_DEFAULT, &texture,
-										NULL)))
+									if (SUCCEEDED(texture->GetSurfaceLevel(0, &replacement)))
 									{
-										IDirect3DSurface9 * replacement = NULL;
-
-										if (SUCCEEDED(texture->GetSurfaceLevel(0, &replacement)))
-										{
-											trackedSurface->AfxSetReplacement(replacement);
-											replacement->Release();
-										}
-
-										texture->Release();
+										trackedSurface->AfxSetReplacement(replacement);
+										replacement->Release();
 									}
+
+									texture->Release();
 								}
 							}
 						}
@@ -2999,7 +2995,7 @@ public:
 
 							if (replacement != depthStencil)
 							{
-								g_OldDirect3DDevice9->SetDepthStencilSurface(CAfxTrackedSurface::Replacement(depthStencil));
+								g_OldDirect3DDevice9->SetDepthStencilSurface(replacement);
 							}
 						}
 						depthStencil->Release();
@@ -3061,11 +3057,7 @@ public:
 			{
 				if (IDirect3DSurface9 * depthReplacement = CAfxTrackedSurface::Replacement(depthSurface))
 				{
-					if (SUCCEEDED(depthReplacement->GetContainer(__uuidof(IDirect3DTexture9), (void **)&depthTexture)))
-					{
-						depthTexture->Release();
-					}
-					else
+					if (FAILED(depthReplacement->GetContainer(__uuidof(IDirect3DTexture9), (void **)&depthTexture)))
 					{
 						depthTexture = NULL;
 					}
@@ -3086,8 +3078,7 @@ public:
 
 			if (FAILED(g_OldDirect3DDevice9->GetRenderTarget(0, &oldRenderTarget)))
 			{
-				if(depthSurface) depthSurface->Release();
-				return;
+				goto exit;
 			}
 
 #ifdef AFX_INTEROP
@@ -3102,9 +3093,8 @@ public:
 					else
 					{
 						// Not connected.
-						if (depthSurface) depthSurface->Release();
 						oldRenderTarget->Release();
-						return;
+						goto exit;
 					}
 				}
 			}
@@ -3408,10 +3398,12 @@ public:
 
 			g_OldDirect3DDevice9->SetRenderTarget(0, oldRenderTarget);
 
-			if (depthSurface) depthSurface->Release();
-
 			if (oldRenderTarget) oldRenderTarget->Release();
 		}
+
+	exit:
+		if (depthTexture) depthTexture->Release();
+		if (depthSurface) depthSurface->Release();
 	}
 
 
