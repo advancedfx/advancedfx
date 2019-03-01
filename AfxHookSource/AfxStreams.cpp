@@ -57,6 +57,7 @@ int AfxStreams_RefTracker_Get(void)
 
 extern WrpVEngineClient * g_VEngineClient;
 extern SOURCESDK::IMaterialSystem_csgo * g_MaterialSystem_csgo;
+extern SOURCESDK::IVRenderView_csgo * g_pVRenderView_csgo;
 
 IAfxMatRenderContext * GetCurrentContext()
 {
@@ -332,7 +333,7 @@ public:
 
 	virtual void operator()()
 	{
-		AfxDrawDepth(AfxDrawDepthEncode_Rgba, AfxDrawDepthMode_Inverse, m_IsNextDepth, m_OutZNear, m_OutZFar, m_X, m_Y, m_Width, m_Height, m_ZNear, m_ZFar, false);
+		AfxDrawDepth(AfxDrawDepthEncode_Rgba, AfxDrawDepthMode_Inverse, m_IsNextDepth, m_OutZNear, m_OutZFar, m_X, m_Y, m_Width, m_Height, m_ZNear, m_ZFar, false, nullptr);
 	}
 
 private:
@@ -393,9 +394,6 @@ public:
 
 	virtual void operator()()
 	{
-		IAfxMatRenderContext * ctx = GetCurrentContext();
-		SOURCESDK::VMatrix matrix;
-		ctx->GetOrg()->GetMatrix(SOURCESDK::MATERIAL_PROJECTION, &matrix);
 		AfxInterop::DrawingThreadBeforeHud(m_FrameCount, m_FrameInfoSent, m_View);
 	}
 
@@ -1338,13 +1336,13 @@ void CAfxBaseFxStream::LevelShutdown(void)
 	m_Shared.LevelShutdown();
 }
 
-void CAfxBaseFxStream::OnRenderBegin(const AfxViewportData_t & viewport)
+void CAfxBaseFxStream::OnRenderBegin(const AfxViewportData_t & viewport, const SOURCESDK::VMatrix & projectionMatrix, const SOURCESDK::VMatrix & projectionMatrixSky)
 {
-	CAfxRenderViewStream::OnRenderBegin(viewport);
+	CAfxRenderViewStream::OnRenderBegin(viewport, projectionMatrix, projectionMatrixSky);
 
 	m_ActiveStreamContext = m_Shared.RequestStreamContext();
 
-	m_ActiveStreamContext->RenderBegin(this, viewport);
+	m_ActiveStreamContext->RenderBegin(this, viewport, projectionMatrix, projectionMatrixSky);
 }
 
 void CAfxBaseFxStream::OnRenderEnd()
@@ -2241,6 +2239,8 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin()
 		m_ChildContext->m_Stream = this->m_Stream;
 		m_ChildContext->m_Viewport = this->m_Viewport;
 		m_ChildContext->m_IsNextDepth = this->m_IsNextDepth;
+		m_ChildContext->m_ProjectionMatrix = this->m_ProjectionMatrix;
+		m_ChildContext->m_ProjectionMatrixSky = this->m_ProjectionMatrixSky;
 
 		queue->QueueFunctor(new CQueueBeginFunctor(m_ChildContext));
 	}
@@ -2300,11 +2300,13 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd()
 	CAfxBaseFxStream::m_Shared.ReturnStreamContext(this);
 }
 
-void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderBegin(CAfxBaseFxStream * stream, const AfxViewportData_t & viewport)
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderBegin(CAfxBaseFxStream * stream, const AfxViewportData_t & viewport, const SOURCESDK::VMatrix & projectionMatrix, const SOURCESDK::VMatrix & projectionMatrixSky)
 {
 	m_IsRootCtx = true;
 	m_Stream = stream;
 	m_Viewport = viewport;
+	m_ProjectionMatrix = projectionMatrix;
+	m_ProjectionMatrixSky = projectionMatrixSky;
 	m_IsNextDepth = false;
 
 	m_Stream->AddRef();
@@ -2367,7 +2369,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 			float flDepthFactor = m_Stream->m_DepthVal;
 			float flDepthFactorMax = m_Stream->m_DepthValMax;
 
-			AfxDrawDepth(EDrawDepth_Rgb == m_Stream->m_DrawDepth ? AfxDrawDepthEncode_Rgb : AfxDrawDepthEncode_Gray, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height, m_Viewport.zNear, m_Viewport.zFar, true);
+			AfxDrawDepth(EDrawDepth_Rgb == m_Stream->m_DrawDepth ? AfxDrawDepthEncode_Rgb : AfxDrawDepthEncode_Gray, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height, m_Viewport.zNear, m_Viewport.zFar, true, m_ProjectionMatrix.m);
 			m_IsNextDepth = true;
 		}
 		
@@ -2444,7 +2446,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 			float flDepthFactor = m_Stream->m_DepthVal * scale;
 			float flDepthFactorMax = m_Stream->m_DepthValMax * scale;
 
-			AfxDrawDepth(EDrawDepth_Rgb == m_Stream->m_DrawDepth ? AfxDrawDepthEncode_Rgb : AfxDrawDepthEncode_Gray, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height, 2.0f, (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH, false);
+			AfxDrawDepth(EDrawDepth_Rgb == m_Stream->m_DrawDepth ? AfxDrawDepthEncode_Rgb : AfxDrawDepthEncode_Gray, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height, 2.0f, (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH, false, m_ProjectionMatrixSky.m);
 			m_IsNextDepth = true;
 		}
 	}
@@ -4805,6 +4807,24 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 		view.zFar
 	};
 
+	SOURCESDK::VMatrix worldToView;
+	SOURCESDK::VMatrix viewToProjection;
+	SOURCESDK::VMatrix worldToProjection;
+	SOURCESDK::VMatrix worldToPixels;
+
+	SOURCESDK::VMatrix viewToProjectionSky;
+
+	{
+		SOURCESDK::CViewSetup_csgo skyView = view;
+
+		skyView.zNear = 2.0f;
+		skyView.zFar = (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH;
+
+		g_pVRenderView_csgo->GetMatricesForView(skyView, &worldToView, &viewToProjectionSky, &worldToProjection, &worldToPixels);
+	}
+
+	g_pVRenderView_csgo->GetMatricesForView(view, &worldToView, &viewToProjection, &worldToProjection, &worldToPixels);
+
 	int myWhatToDraw = whatToDraw;
 
 	switch (previewStream->DrawHud_get())
@@ -4897,7 +4917,7 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 
 		ctxp->PushRenderTargetAndViewport(0, 0, newView.m_nUnscaledX, newView.m_nUnscaledY, newView.m_nUnscaledWidth, newView.m_nUnscaledHeight);
 
-		previewStream->OnRenderBegin(afxViewport);
+		previewStream->OnRenderBegin(afxViewport, viewToProjection, viewToProjectionSky);
 
 		DoRenderView(fn, this_ptr, newView, newHudView, nClearFlags, myWhatToDraw);
 
@@ -5049,6 +5069,8 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 			for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
 			{
 				if (!(*it)->Record_get() || (*it) == mainStream) continue;
+
+				bool hudDrawn = false;
 
 				ctxp = CaptureStream(ctxp, (*it), fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
 			}
@@ -7614,6 +7636,24 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 		view.zFar
 	};
 
+	SOURCESDK::VMatrix worldToView;
+	SOURCESDK::VMatrix viewToProjection;
+	SOURCESDK::VMatrix worldToProjection;
+	SOURCESDK::VMatrix worldToPixels;
+
+	SOURCESDK::VMatrix viewToProjectionSky;
+
+	{
+		SOURCESDK::CViewSetup_csgo skyView = view;
+
+		skyView.zNear = 2.0f;
+		skyView.zFar = (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH;
+
+		g_pVRenderView_csgo->GetMatricesForView(skyView, &worldToView, &viewToProjectionSky, &worldToProjection, &worldToPixels);
+	}
+
+	g_pVRenderView_csgo->GetMatricesForView(view, &worldToView, &viewToProjection, &worldToProjection, &worldToPixels);
+
 	int myWhatToDraw = whatToDraw;
 
 	switch (stream->DrawHud_get())
@@ -7688,7 +7728,7 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 			}
 		}
 
-		stream->OnRenderBegin(afxViewport);
+		stream->OnRenderBegin(afxViewport, viewToProjection, viewToProjectionSky);
 
 		DoRenderView(fn, this_ptr, view, hudViewSetup, SOURCESDK::VIEW_CLEAR_STENCIL | SOURCESDK::VIEW_CLEAR_DEPTH, myWhatToDraw);
 

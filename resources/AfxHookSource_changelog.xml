@@ -6,6 +6,31 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.51.1</version>
+<time>2019-02-28T12:07Z</time>
+<changes>
+<change type="fixed">
+Fixed bug in mirv_streams contexts not copying view matrices over correctly for the context that would draw the depth, causing depth to be off or missing upon recording.
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.51.0</version>
+<time>2019-02-27T15:57Z</time>
+<changes>
+<change type="updated">
+Updated mirv_streams depth, for drawZMode linear (default) and logE: the depth is converted to the actual distance and not the distorted pyramidal view frustum anymore (thanks to Mcsiv (mcsiv.com) from advancedfx Discord!). drawZMode inverse remains unchanged.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.50.2</version>
 <time>2019-02-20T09:42Z</time>
 <changes>
