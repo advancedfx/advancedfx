@@ -536,7 +536,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));	
 		}
 		
-		// csgo_CUnknown_GetPlayerName: // Checked 2018-08-30.	
+		// csgo_CUnknown_GetPlayerName: // Checked 2019-03-07
 		{
 			DWORD addr = 0;
 			DWORD strAddr = 0;
@@ -566,7 +566,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 				MemRange result = FindBytes(baseRange, (char const *)&strAddr, sizeof(strAddr));
 				if (!result.IsEmpty())
 				{
-					addr = result.Start - 0x183;
+					addr = result.Start - 0x194;
 
 					// check for pattern to see if it is the right address:
 					unsigned char pattern[3] = { 0x55, 0x8B, 0xEC };
@@ -1583,7 +1583,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 	AFXADDR_SET(cstrike_gpGlobals_OFS_absoluteframetime, 2*4);
 	AFXADDR_SET(cstrike_gpGlobals_OFS_interpolation_amount, 8*4);
 	AFXADDR_SET(cstrike_gpGlobals_OFS_interval_per_tick, 7*4);
-	AFXADDR_SET(csgo_CUnknown_GetPlayerName_DSZ, 0x08);
+	AFXADDR_SET(csgo_CUnknown_GetPlayerName_DSZ, 0x0B);
 }
 
 /*

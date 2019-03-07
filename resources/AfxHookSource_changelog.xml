@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.51.2</version>
+<time>2019-03-07T06:29Z</time>
+<changes>
+<change type="fixed">
+Adjusted CS:GO 3/6/2019 (3/7/2019 UTC, 1.36.8.0) update: fixed mirv_deathmsg and mirv_replace_name.
+</change>
+</changes>
+<comments>
+This is a quick fix release, the new -d3d9ex CS:GO launch option is not supported yet!
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.51.1</version>
 <time>2019-02-28T12:07Z</time>
 <changes>
