@@ -1019,6 +1019,11 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 		firstFrameAfterNetUpdateEnd = true;
 		break;
 	case SOURCESDK::CSGO::FRAME_RENDER_START:
+
+#ifdef AFX_INTEROP
+		AfxInterop::BeforeFrameRenderStart();
+#endif
+
 		Shared_BeforeFrameRenderStart();
 
 		g_csgo_FirstFrameAfterNetUpdateEnd = firstFrameAfterNetUpdateEnd;

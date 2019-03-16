@@ -8,8 +8,987 @@
 
 #include <tchar.h>
 
+#include <queue>
+#include <vector>
+
+#include <atomic>
 #include <mutex>
 #include <condition_variable>
+
+class CNamedPipeServer
+{
+public:
+	enum State
+	{
+		State_Error,
+		State_Waiting,
+		State_Connected
+	};
+
+private:
+	HANDLE m_PipeHandle;
+
+	OVERLAPPED m_OverlappedRead = {};
+	OVERLAPPED m_OverlappedWrite = {};
+
+	State m_State = State_Error;
+
+	char * m_ReadBuffer;
+	char * m_WriteBuffer;
+
+	const DWORD m_ReadBufferSize = 512;
+	const DWORD m_WriteBufferSize = 512;
+
+	const DWORD m_ReadTimeoutMs = 5000;
+	const DWORD m_WriteTimeoutMs = 5000;
+
+public:
+	CNamedPipeServer(const char * pipeName)
+	{
+		m_ReadBuffer = (char *)malloc(m_ReadBufferSize);
+		m_WriteBuffer = (char *)malloc(m_WriteBufferSize);
+
+		m_OverlappedRead.hEvent = CreateEventA(NULL, true, true, NULL);
+		m_OverlappedWrite.hEvent = CreateEventA(NULL, true, true, NULL);
+
+		std::string strPipeName("\\\\.\\pipe\\");
+		strPipeName.append(pipeName);
+
+		m_PipeHandle = CreateNamedPipeA(
+			strPipeName.c_str(),
+			PIPE_ACCESS_INBOUND | PIPE_ACCESS_OUTBOUND | FILE_FLAG_OVERLAPPED,
+			PIPE_READMODE_BYTE | PIPE_TYPE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
+			1,
+			m_ReadBufferSize,
+			m_WriteBufferSize,
+			5000,
+			NULL);
+
+		if (NULL != m_ReadBuffer
+			&& NULL != m_WriteBuffer
+			&& INVALID_HANDLE_VALUE != m_OverlappedRead.hEvent
+			&& INVALID_HANDLE_VALUE != m_OverlappedWrite.hEvent
+			&& INVALID_HANDLE_VALUE != m_PipeHandle
+			&& FALSE == ConnectNamedPipe(m_PipeHandle, &m_OverlappedRead))
+		{
+			switch (GetLastError())
+			{
+			case ERROR_IO_PENDING:
+				m_State = State_Waiting;
+				break;
+			case ERROR_PIPE_CONNECTED:
+				m_State = State_Connected;
+				SetEvent(m_OverlappedRead.hEvent);
+				break;
+			}
+		}
+	}
+
+	~CNamedPipeServer()
+	{
+		if (INVALID_HANDLE_VALUE != m_PipeHandle) CloseHandle(m_PipeHandle);
+		if (INVALID_HANDLE_VALUE != m_OverlappedWrite.hEvent) CloseHandle(m_OverlappedWrite.hEvent);
+		if (INVALID_HANDLE_VALUE != m_OverlappedRead.hEvent) CloseHandle(m_OverlappedRead.hEvent);
+
+		free(m_WriteBuffer);
+		free(m_ReadBuffer);
+	}
+
+	State Connect()
+	{
+		if (State_Waiting == m_State)
+		{
+			DWORD waitResult = WaitForSingleObject(m_OverlappedRead.hEvent, 0);
+
+			if (WAIT_OBJECT_0 == waitResult)
+			{
+				DWORD cb;
+
+				if (!GetOverlappedResult(m_PipeHandle, &m_OverlappedRead, &cb, FALSE))
+					m_State = State_Error;
+				else
+					m_State = State_Connected;
+			}
+		}
+
+		return m_State;
+	}
+
+	bool ReadBytes(LPVOID bytes, DWORD offset, DWORD length)
+	{
+		while (true)
+		{
+			DWORD bytesRead = 0;
+
+			if (!ReadFile(m_PipeHandle, (LPVOID)&(((char *)m_ReadBuffer)[offset]), min(m_ReadBufferSize, length), NULL, &m_OverlappedRead))
+			{
+				if (ERROR_IO_PENDING == GetLastError())
+				{
+					bool completed = false;
+
+					while (!completed)
+					{
+						DWORD result = WaitForSingleObject(m_OverlappedRead.hEvent, m_ReadTimeoutMs);
+						switch (result)
+						{
+						case WAIT_OBJECT_0:
+							completed = true;
+							break;
+						case WAIT_TIMEOUT:
+							return false;
+						default:
+							return false;
+						}
+					}
+				}
+				else
+				{
+					return false;
+				}
+			}
+
+			if (!GetOverlappedResult(m_PipeHandle, &m_OverlappedRead, &bytesRead, FALSE))
+			{
+				return false;
+			}
+
+			offset += bytesRead;
+			length -= bytesRead;
+
+			if (0 == length)
+				break;
+		}
+
+		return true;
+	}
+
+	bool ReadBoolean(bool & outValue)
+	{
+		BYTE tmp;
+
+		if (ReadBytes(&tmp, 0, sizeof(tmp)))
+		{
+			outValue = 0 != tmp;
+			return true;
+		}
+
+		return false;
+	}
+
+	bool ReadByte(BYTE & outValue)
+	{
+		return ReadBytes(&outValue, 0, (DWORD)sizeof(outValue));
+	}
+
+	bool ReadSByte(signed char & outValue)
+	{
+		return ReadBytes(&outValue, 0, (DWORD)sizeof(outValue));
+	}
+
+	bool ReadUInt32(UINT32 & outValue)
+	{
+		return ReadBytes(&outValue, 0, (DWORD)sizeof(outValue));
+	}
+
+	bool ReadCompressedUInt32(UINT32 & outValue)
+	{
+		BYTE value;
+		
+		if (!ReadByte(value))
+			return false;
+
+		if (value < 255)
+		{
+			outValue = value;
+			return true;
+		}
+
+		return ReadUInt32(outValue);
+	}
+
+	bool ReadInt32(INT32 & outValue)
+	{
+		return ReadBytes(&outValue, 0, (DWORD)sizeof(outValue));
+	}
+
+	bool ReadCompressedInt32(INT32 & outValue)
+	{
+		signed char value;
+		
+		if (!ReadSByte(value))
+			return false;
+
+		if (value < 127)
+		{
+			outValue = value;
+			return value;
+		}
+
+		return ReadInt32(outValue);
+	}
+
+	bool ReadStringUTF8(std::string & outValue)
+	{
+		UINT32 length;
+
+		if (!ReadCompressedUInt32(length)) return false;
+
+		outValue.resize(length);
+
+		if (!ReadBytes(&outValue[0], 0, length)) return false;
+
+		return true;
+	}
+
+	bool ReadHandle(HANDLE & outValue)
+	{
+		return ReadBytes( &outValue, 0, (DWORD)sizeof(outValue));
+	}
+	
+	bool ReadSingle(float & outValue)
+	{
+		return ReadBytes(&outValue, 0, (DWORD)sizeof(outValue));
+	}
+
+
+	bool WriteBytes(const LPVOID bytes, DWORD offset, DWORD length)
+	{
+		while (true)
+		{
+			DWORD bytesWritten = 0;
+			DWORD bytesToWrite = min(m_WriteBufferSize, length);
+
+			if (!WriteFile(m_PipeHandle, (LPVOID)&(((char *)m_WriteBuffer)[offset]), bytesToWrite, NULL, &m_OverlappedWrite))
+			{
+				if (ERROR_IO_PENDING == GetLastError())
+				{
+					bool completed = false;
+
+					while (!completed)
+					{
+						DWORD result = WaitForSingleObject(m_OverlappedWrite.hEvent, m_WriteTimeoutMs);
+						switch (result)
+						{
+						case WAIT_OBJECT_0:
+							completed = true;
+							break;
+						case WAIT_TIMEOUT:
+							return false;
+						default:
+							return false;
+						}
+					}
+				}
+				else
+				{
+					return false;
+				}
+			}
+
+			if (!GetOverlappedResult(m_PipeHandle, &m_OverlappedWrite, &bytesWritten, FALSE))
+			{
+				return false;
+			}
+
+			offset += bytesWritten;
+			length -= bytesWritten;
+
+			if (0 == length)
+				break;
+		}
+
+		return true;
+	}
+
+	bool Flush()
+	{
+		if (!FlushFileBuffers(m_PipeHandle))
+			return false;
+
+		return true;
+	}
+
+	bool WriteBoolean(bool value)
+	{
+		BYTE tmp = value ? 1 : 0;
+
+		return WriteBytes(&tmp, 0, sizeof(tmp));
+	}
+
+	bool WriteByte(BYTE value)
+	{
+		return WriteBytes(&value, 0, sizeof(value));
+	}
+
+	bool WriteSByte(signed char value)
+	{
+		return WriteBytes(&value, 0, sizeof(value));
+	}
+
+	bool WriteUInt32(UINT32 value)
+	{
+		return WriteBytes(&value, 0, sizeof(value));
+	}
+
+	bool WriteCompressedUInt32(UINT32 value)
+	{
+		if (0 <= value && value <= 255 - 1)
+		{
+			return WriteByte((BYTE)value);
+		}
+		else
+		{
+			return WriteByte(255)
+				&& WriteUInt32(value);
+		}
+	}
+
+	bool WriteInt32(INT32 value)
+	{
+		return WriteBytes(&value, 0, sizeof(value));
+	}
+
+	bool WriteCompressedInt32(INT32 value)
+	{
+		if (-128 <= value && value <= 127 - 1)
+		{
+			WriteSByte((signed char)value);
+		}
+		else
+		{
+			return WriteSByte(127)
+				&& WriteInt32(value);
+		}
+	}
+
+	bool WriteHandle(HANDLE value)
+	{
+		return WriteBytes(&value, 0, sizeof(value));
+	}
+
+	bool WriteStringUTF8(const std::string value)
+	{
+		UINT32 length = (UINT32)value.length();
+
+		return WriteCompressedUInt32(length)
+			&& WriteBytes((LPVOID)value.c_str(), 0, length);
+	}
+};
+
+typedef struct CAfxInteropMatrix4x4 {
+	float M00;
+	float M01;
+	float M02;
+	float M03;
+	float M10;
+	float M11;
+	float M12;
+	float M13;
+	float M20;
+	float M21;
+	float M22;
+	float M23;
+	float M30;
+	float M31;
+	float M32;
+	float M33;
+} AfxInterop_Matrix4x4_t;
+
+typedef struct CAfxInteropRenderInfo {
+	INT32 Width;
+	INT32 Height;
+	CAfxInteropMatrix4x4 ViewMatrix;
+	CAfxInteropMatrix4x4 ProjectionMatrix;
+	INT32 FrameCount;
+	float AbsoluteFrameTime;
+	float CurTime;
+	float FrameTime;
+} AfxInterop_RenderInfo_t;
+
+class CAfxCommand
+{
+public:
+	UINT32 GetArgs() const
+	{
+		return (UINT32)m_Args.size();
+	}
+
+	const char * GetArg(UINT32 index) const
+	{
+		return m_Args[index].c_str();
+	}
+
+	void SetArgs(UINT32 numArgs)
+	{
+		m_Args.resize(numArgs);
+	}
+
+	std::string & GetArgString(UINT32 index)
+	{
+		return m_Args[index];
+	}
+
+private:
+	std::vector<std::string> m_Args;
+};
+
+class CAfxCommands
+{
+public:
+	UINT32 GetCommands() const
+	{
+		return (UINT32)m_Commands.size();
+	}
+
+	UINT32 GetArgs(UINT32 index) const
+	{
+		return m_Commands[index].GetArgs();
+	}
+
+	const char * GetArg(UINT32 index, UINT32 argIndex) const
+	{
+		return m_Commands[index].GetArg(argIndex);
+	}
+
+	void SetCommands(UINT32 numCommands)
+	{
+		m_Commands.resize(numCommands);
+	}
+
+	void SetArgs(UINT32 index, UINT32 numArgs)
+	{
+		m_Commands[index].SetArgs(numArgs);
+	}
+
+	std::string & GetArgString(UINT32 index, UINT32 argIndex)
+	{
+		return m_Commands[index].GetArgString(argIndex);
+	}
+
+private:
+	std::vector<CAfxCommand> m_Commands;
+};
+
+extern "C" __declspec(dllexport) UINT32 AfxInteropCommands_GetCommandCount(const CAfxCommands * commands)
+{
+	return commands->GetCommands();
+}
+
+extern "C" __declspec(dllexport) UINT32 AfxInteropCommands_GetCommandArgCount(const CAfxCommands * commands, UINT32 index)
+{
+	return commands->GetArgs(index);
+}
+
+extern "C" __declspec(dllexport) const char * AfxInteropCommands_GetCommandArg(const CAfxCommands * commands, UINT32 index, UINT32 argIndex)
+{
+	return commands->GetArg(index, argIndex);
+}
+
+typedef void (__stdcall * AfxInteropCommands_t)(const CAfxCommands * commands);
+
+typedef void (__stdcall * AfxInteropRender_t)(const CAfxInteropRenderInfo * renderInfo, BOOL * outColorTextureWasLost, HANDLE * outSharedColorTextureHandle, BOOL * outColorDepthTextureWasLost, HANDLE * outSharedColorepthTextureHandle);
+
+bool AfxHookUnityWaitForGPU();
+
+class CAfxInterop
+{
+public:
+	const INT32 Version = 3;
+
+	CAfxInterop(
+		const char * pipeName,
+		AfxInteropCommands_t afxInteropCommands,
+		AfxInteropRender_t afxInteropRender)
+		: m_PipeName(pipeName)
+		, m_AfxInteropCommands(afxInteropCommands)
+		, m_AfxInteropRender(afxInteropRender)
+	{
+
+	}
+
+	void ScheduleCommand(const char * command)
+	{
+		m_Commands.emplace(command);
+	}
+
+	bool UpdateEngineThread(void)
+	{
+		std::unique_lock<std::mutex> lock(m_EngineServerMutex);
+
+		if (nullptr == m_EnginePipeServer)
+		{
+			m_EnginePipeServer = new CNamedPipeServer(m_PipeName.c_str());
+			m_EngineServerNew = true;
+		}
+
+		CNamedPipeServer::State state = m_EnginePipeServer->Connect();
+
+		switch (state)
+		{
+		case CNamedPipeServer::State_Connected:
+			{
+				if (m_EngineServerNew)
+				{
+					// Check if our version is supported by client:
+
+					if (!m_EnginePipeServer->WriteInt32(Version)) goto locked_error;
+
+					if (!m_EnginePipeServer->Flush()) goto locked_error;
+
+					bool versionSupported;				
+					if (!m_EnginePipeServer->ReadBoolean(versionSupported)) goto locked_error;
+
+					if (!versionSupported) goto locked_error;
+
+					// Supply server info required by client:
+
+#if _WIN64
+					if (!m_EnginePipeServer->WriteBoolean(true)) goto locked_error;
+#else
+					if (!m_EnginePipeServer->WriteBoolean(false)) goto locked_error;
+#endif
+
+					if (!m_EnginePipeServer->Flush()) goto locked_error;
+
+					//
+
+					m_EngineServerNew = false;
+				}
+
+				bool done = false;
+
+				while (!done)
+				{
+					INT32 engineMessage;
+					if (!m_EnginePipeServer->ReadInt32(engineMessage)) goto locked_error;
+
+					switch (engineMessage)
+					{
+					case EngineMessage_BeforeFrameStart:
+					{
+						// Read incoming commands from client:
+						{
+							CAfxCommands commands;
+
+							UINT32 commandIndex = 0;
+							UINT32 commandCount;
+							if (!m_EnginePipeServer->ReadUInt32(commandCount)) goto locked_error;
+
+							commands.SetCommands(commandCount);
+
+							while (0 < commandCount)
+							{
+								UINT32 argIndex = 0;
+								UINT32 argCount;
+								if (!m_EnginePipeServer->ReadCompressedUInt32(argCount)) goto locked_error;
+
+								commands.SetArgs(commandIndex, argCount);
+
+								while (0 < argCount)
+								{
+									if (!m_EnginePipeServer->ReadStringUTF8(commands.GetArgString(commandIndex, argIndex))) goto locked_error;
+
+									--argCount;
+									++argIndex;
+								}
+
+								--commandCount;
+								++commandIndex;
+							}
+
+							m_AfxInteropCommands(&commands);
+						}
+
+						if(!m_EnginePipeServer->WriteCompressedUInt32((UINT32)m_Commands.size())) goto locked_error;
+
+						while (!m_Commands.empty())
+						{
+							if (!m_EnginePipeServer->WriteStringUTF8(m_Commands.front().c_str())) goto locked_error;
+							m_Commands.pop();
+						}
+					}
+					break;
+
+					case EngineMessage_BeforeHud:
+					{
+						CAfxInteropRenderInfo renderInfo;
+
+						if(!m_EnginePipeServer->ReadInt32(renderInfo.FrameCount)) goto locked_error;
+
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.AbsoluteFrameTime)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.CurTime)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.FrameTime)) goto locked_error;
+						if (!m_EnginePipeServer->ReadInt32(renderInfo.Width)) goto locked_error;
+						if (!m_EnginePipeServer->ReadInt32(renderInfo.Height)) goto locked_error;
+
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ViewMatrix.M00)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ViewMatrix.M01)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ViewMatrix.M02)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ViewMatrix.M03)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ViewMatrix.M10)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ViewMatrix.M11)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ViewMatrix.M12)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ViewMatrix.M13)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ViewMatrix.M20)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ViewMatrix.M21)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ViewMatrix.M22)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ViewMatrix.M23)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ViewMatrix.M30)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ViewMatrix.M31)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ViewMatrix.M32)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ViewMatrix.M33)) goto locked_error;
+
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ProjectionMatrix.M00)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ProjectionMatrix.M01)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ProjectionMatrix.M02)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ProjectionMatrix.M03)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ProjectionMatrix.M10)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ProjectionMatrix.M11)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ProjectionMatrix.M12)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ProjectionMatrix.M13)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ProjectionMatrix.M20)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ProjectionMatrix.M21)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ProjectionMatrix.M22)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ProjectionMatrix.M23)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ProjectionMatrix.M30)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ProjectionMatrix.M31)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ProjectionMatrix.M32)) goto locked_error;
+						if (!m_EnginePipeServer->ReadSingle(renderInfo.ProjectionMatrix.M33)) goto locked_error;
+
+						BOOL colorTextureWasLost;
+						HANDLE sharedColorTextureHandle;
+						BOOL colorDepthTextureWasLost;
+						HANDLE shareDepthColorTextureHandle;
+
+						m_AfxInteropRender(&renderInfo, &colorTextureWasLost, &sharedColorTextureHandle, &colorDepthTextureWasLost, &shareDepthColorTextureHandle);
+
+						{
+							std::unique_lock<std::mutex> lock(m_DrawingDataQueueMutex);
+
+							m_DrawingDataQueue.emplace(renderInfo.FrameCount, colorTextureWasLost, sharedColorTextureHandle, colorDepthTextureWasLost, shareDepthColorTextureHandle);
+						}
+
+						done = true; // We are done for this frame.
+					}
+					break;
+					}
+				}
+			}
+			break;
+		case CNamedPipeServer::State_Error:
+			goto locked_error;
+		}
+
+		return true;
+
+	locked_error:
+		lock.unlock();
+		Close();
+		return false;
+	}
+
+	bool UpdateDrawingThreadBegin()
+	{
+		std::unique_lock<std::mutex> lock(m_DrawingServerMutex);
+
+		if (nullptr == m_DrawingPipeServer)
+		{
+			std::string pipeName(m_PipeName);
+			pipeName.append("_drawing");
+
+			m_DrawingPipeServer = new CNamedPipeServer(pipeName.c_str());
+		}
+
+		CNamedPipeServer::State state = m_DrawingPipeServer->Connect();
+
+		switch (state)
+		{
+			case CNamedPipeServer::State_Connected:
+			{
+				while (true)
+				{
+					INT32 drawingMessage;
+					if (!m_DrawingPipeServer->ReadInt32(drawingMessage)) goto locked_error;
+
+					switch (drawingMessage)
+					{
+					case DrawingMessage_PreapareDraw:
+						{
+							INT32 clientFrameNumber;
+							if(!m_DrawingPipeServer->ReadInt32(clientFrameNumber)) goto locked_error;
+				
+							CDrawingData drawingData;
+							{
+								std::unique_lock<std::mutex> lock(m_DrawingDataQueueMutex);
+
+								if (m_DrawingDataQueue.empty())
+								{
+									// client is ahead, otherwise we would have data
+
+									if (!m_DrawingPipeServer->WriteInt32(PrepareDrawReply_Retry)) goto locked_error;
+									if (!m_DrawingPipeServer->Flush()) goto locked_error;
+									return true;
+								}
+
+								drawingData = m_DrawingDataQueue.front();
+								m_DrawingDataQueue.pop();
+							}
+
+							INT32 frameDiff = drawingData.FrameNumber - clientFrameNumber;
+
+							if (frameDiff > 0)
+							{
+								// client is behind.
+
+								if (!m_DrawingPipeServer->WriteInt32(PrepareDrawReply_Skip)) goto locked_error;
+								if (!m_DrawingPipeServer->Flush()) goto locked_error;
+							}
+							else if (frameDiff < 0)
+							{
+								// client is still ahead, this means something went wrong.
+
+								goto locked_error;
+							}
+							else
+							{
+								// we are right on, we can continue.
+
+								//drawingThreadImplementation.Log("AfxHookSource client is in sync");
+
+								if (!m_DrawingPipeServer->WriteInt32(PrepareDrawReply_Continue)) goto locked_error;
+
+								if (!m_DrawingPipeServer->WriteBoolean(drawingData.ColorTextureWasLost)) goto locked_error;
+								if (!m_DrawingPipeServer->WriteHandle(drawingData.SharedColorTextureHandle)) goto locked_error;
+								if (!m_DrawingPipeServer->WriteBoolean(drawingData.ColorDepthTextureWasLost)) goto locked_error;
+								if (!m_DrawingPipeServer->WriteHandle(drawingData.SharedColorDepthTextureHandle)) goto locked_error;
+
+								if (!m_DrawingPipeServer->Flush()) goto locked_error;
+							}
+						}
+						return true; // OK.
+
+					default:
+						goto locked_error;
+					}
+				}
+			} break;
+		case CNamedPipeServer::State_Error:
+			goto locked_error;
+		}
+
+		return true;
+
+	locked_error:
+		lock.unlock();
+		Close();
+		return false;
+	}
+
+	bool UpdateDrawingThreadEnd(void)
+	{
+		std::unique_lock<std::mutex> lock(m_DrawingServerMutex);
+
+		if (nullptr == m_DrawingPipeServer)
+		{
+			return false;
+		}
+
+		{
+			bool waitFinish = true;
+
+			while (true)
+			{
+				INT32 drawingMessage;
+				if (!m_DrawingPipeServer->ReadInt32(drawingMessage)) goto locked_error;
+				
+				switch (drawingMessage)
+				{
+				case DrawingMessage_DrawingThreadBeforeHud:
+				{
+					if (waitFinish)
+					{
+						waitFinish = false;
+
+						AfxHookUnityWaitForGPU();
+					}
+
+					// Signal okay to continue for waiting CS:GO client:
+					if (!m_DrawingPipeServer->WriteBoolean(true)) goto locked_error;
+					if (!m_DrawingPipeServer->Flush()) goto locked_error;
+				}
+				break;
+
+				case DrawingMessage_Finished:
+				{
+					if (waitFinish)
+					{
+						waitFinish = false;
+
+						AfxHookUnityWaitForGPU();
+					}
+
+					// Signal okay to continue for waiting CS:GO client:
+					if (!m_DrawingPipeServer->WriteBoolean(true)) goto locked_error;
+					if (!m_DrawingPipeServer->Flush()) goto locked_error;
+				}
+				return true;
+
+				default:
+					goto locked_error;
+				}
+			}
+		}
+
+		return true;
+
+	locked_error:
+		lock.unlock();
+		Close();
+		return false;
+	}
+
+	~CAfxInterop()
+	{
+		Close();
+	}
+
+private:
+	enum EngineMessage
+	{
+		EngineMessage_LevelInitPreEntity = 1,
+		EngineMessage_LevelShutDown = 2,
+		EngineMessage_BeforeFrameStart = 3,
+		EngineMessage_BeforeHud = 4,
+		EngineMessage_AfterFrameRenderEnd = 5,
+		EngineMessage_EntityCreated = 6,
+		EngineMessage_EntityDeleted = 7
+	};
+
+	enum DrawingMessage
+	{
+		DrawingMessage_DrawingThreadBeforeHud = 1,
+		DrawingMessage_PreapareDraw = 2,
+		DrawingMessage_Finished = 3
+	};
+
+	enum PrepareDrawReply
+	{
+		PrepareDrawReply_Skip = 1,
+		PrepareDrawReply_Retry = 2,
+		PrepareDrawReply_Continue = 3
+	};
+
+	struct CDrawingData
+	{
+		INT32 FrameNumber;
+		BOOL ColorTextureWasLost;
+		HANDLE SharedColorTextureHandle;
+		BOOL ColorDepthTextureWasLost;
+		HANDLE SharedColorDepthTextureHandle;
+
+		CDrawingData()
+		{
+		}
+
+		CDrawingData(INT32 frameNumber, BOOL colorTextureWasLost, HANDLE sharedColorTextureHandle, BOOL colorDepthTextureWasLost, HANDLE sharedColorDepthTextureHandle)
+			: FrameNumber(frameNumber)
+			, ColorTextureWasLost(colorTextureWasLost)
+			, SharedColorTextureHandle(sharedColorTextureHandle)
+			, ColorDepthTextureWasLost(colorDepthTextureWasLost)
+			, SharedColorDepthTextureHandle(sharedColorDepthTextureHandle)
+		{
+
+		}
+	};
+
+	std::string m_PipeName;
+
+	AfxInteropCommands_t m_AfxInteropCommands;
+	AfxInteropRender_t m_AfxInteropRender;
+
+	std::mutex m_EngineServerMutex;
+	CNamedPipeServer * m_EnginePipeServer = nullptr;
+	bool m_EngineServerNew = false;
+
+	std::mutex m_DrawingServerMutex;
+	CNamedPipeServer * m_DrawingPipeServer = nullptr;
+
+	std::mutex m_DrawingDataQueueMutex;
+	std::queue<CDrawingData> m_DrawingDataQueue;
+
+	std::queue<std::string> m_Commands;
+
+	void Close()
+	{
+		std::unique_lock<std::mutex> lock(m_EngineServerMutex);
+
+		{
+			std::unique_lock<std::mutex> lock(m_DrawingServerMutex);
+
+			if (nullptr != m_DrawingPipeServer)
+			{
+				delete m_DrawingPipeServer;
+				m_DrawingPipeServer = nullptr;
+			}
+		}
+
+		if (nullptr != m_EnginePipeServer)
+		{
+			delete m_EnginePipeServer;
+			m_EnginePipeServer = nullptr;
+		}
+	}
+};
+
+CAfxInterop * g_AfxInterop = nullptr;
+
+
+extern "C" __declspec(dllexport) void AfxInteropDestroy()
+{
+	if (g_AfxInterop)
+	{
+		delete g_AfxInterop;
+		g_AfxInterop = nullptr;
+	}
+}
+
+extern "C" __declspec(dllexport) bool AfxInteropCreate(
+	const char * pipeName,
+	AfxInteropCommands_t afxInteropCommands,
+	AfxInteropRender_t afxInteropRender)
+{
+	AfxInteropDestroy();
+
+	g_AfxInterop = new CAfxInterop(pipeName, afxInteropCommands, afxInteropRender);
+
+	return true;
+}
+
+
+extern "C" __declspec(dllexport) bool AfxInteropUpdateEngineThread()
+{
+	if (g_AfxInterop)
+	{
+		g_AfxInterop->UpdateEngineThread();
+		return true;
+	}
+
+	return false;
+}
+
+extern "C" __declspec(dllexport) bool AfxInteropScheduleCommand(const char * command)
+{
+	if (g_AfxInterop)
+	{
+		g_AfxInterop->ScheduleCommand(command);
+		return true;
+	}
+
+	return false;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 
 #if defined(__CYGWIN32__)
 #define UNITY_INTERFACE_API __stdcall
@@ -32,6 +1011,11 @@ LONG error = NO_ERROR;
 HMODULE hD3d11Dll = NULL;
 
 bool g_FbOverride = false;
+
+bool g_ColorTextureWasLost = false;
+bool g_ColorDepthTextureWasLost = false;
+HANDLE g_SharedColorTextureHandle = NULL;
+HANDLE g_SharedColorDepthTextureHandle = NULL;
 
 typedef ULONG(STDMETHODCALLTYPE * AddReff_t)(ID3D11Device * This);
 typedef ULONG(STDMETHODCALLTYPE * Release_t)(ID3D11Device * This);
@@ -267,7 +1251,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 }
 
 extern "C" __declspec(dllexport) bool AfxHookUnityInit(int version) {
-	return 2 == version && NO_ERROR == error;
+	return 3 == version && NO_ERROR == error;
 }
 
 extern "C" __declspec(dllexport) HANDLE AfxHookUnityGetSharedHandle(void * d3d11ResourcePtr)
@@ -310,7 +1294,7 @@ extern "C"  __declspec(dllexport) void AfxHookUnityWaitOne()
 	waitForGpuFinished = false;
 }
 
-extern "C" __declspec(dllexport) bool AfxHookUnityWaitForGPU()
+bool AfxHookUnityWaitForGPU()
 {
 	bool bOk = false;
 	bool immediateContextUsed = false;
@@ -347,25 +1331,21 @@ extern "C" __declspec(dllexport) bool AfxHookUnityWaitForGPU()
 	return bOk;
 }
 
-
 static void UNITY_INTERFACE_API OnRenderEvent(int eventId)
 {
-	if (1 == eventId)
+	switch (eventId)
 	{
-		AfxHookUnityWaitForGPU();
+	case 2:
+		if (g_AfxInterop) g_AfxInterop->UpdateDrawingThreadBegin();
+		break;
+	case 3:
+		if (g_AfxInterop) g_AfxInterop->UpdateDrawingThreadEnd();
+		break;
 	}
 }
 
 static void UNITY_INTERFACE_API OnRenderEventAndData(int eventId, void* data)
 {
-	switch (eventId)
-	{
-	case 2:
-		break;
-	case 3:
-		break;
-	}
-
 }
 
 // Freely defined function to pass a callback to plugin-specific scripts
@@ -379,5 +1359,4 @@ extern "C" UnityRenderingEventAndData UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API
 {
 	return OnRenderEventAndData;
 }
-
 

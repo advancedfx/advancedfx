@@ -4570,19 +4570,13 @@ public:
 #if AFX_INTEROP
 		if (AfxInterop::Enabled())
 		{
-			IDirect3DSurface9 * renderTarget = NULL;
-			if (SUCCEEDED(g_OldDirect3DDevice9->GetRenderTarget(0, &renderTarget)))
+			if (CAfxTrackedSurface * afxTrackedSurface = trackedRenderTarget)
 			{
-				if (CAfxTrackedSurface * afxTrackedSurface = trackedRenderTarget)
+				if (IDirect3DSurface9 * sharedSurface = afxTrackedSurface->AfxGetReplacement())
 				{
-					if (IDirect3DSurface9 * sharedSurface = afxTrackedSurface->AfxGetReplacement())
-					{
-						// TODO: This might mess up state:
-						g_OldDirect3DDevice9->StretchRect(sharedSurface, pSourceRect, afxTrackedSurface->AfxGetSurface(), pDestRect, D3DTEXF_NONE);
-					}
+					// TODO: This might mess up state:
+					g_OldDirect3DDevice9->StretchRect(sharedSurface, pSourceRect, afxTrackedSurface->AfxGetSurface(), pDestRect, D3DTEXF_NONE);
 				}
-
-				renderTarget->Release();
 			}
 		}
 #endif

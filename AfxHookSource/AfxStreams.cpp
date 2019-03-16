@@ -333,7 +333,10 @@ public:
 
 	virtual void operator()()
 	{
-		AfxDrawDepth(AfxDrawDepthEncode_Rgba, AfxDrawDepthMode_Inverse, m_IsNextDepth, m_OutZNear, m_OutZFar, m_X, m_Y, m_Width, m_Height, m_ZNear, m_ZFar, false, nullptr);
+		if (AfxInterop::GetDoingHud())
+		{
+			AfxDrawDepth(AfxDrawDepthEncode_Rgba, AfxDrawDepthMode_Inverse, m_IsNextDepth, m_OutZNear, m_OutZFar, m_X, m_Y, m_Width, m_Height, m_ZNear, m_ZFar, false, nullptr);
+		}
 	}
 
 private:
@@ -381,26 +384,55 @@ public:
 private:
 };
 
-class AfxInteropDrawingThreadBeforeHud_Functor
+
+class AfxInteropDrawingDrawingThreadPrepareDraw
 	: public CAfxFunctor
 {
 public:
-	AfxInteropDrawingThreadBeforeHud_Functor(int frameCount, bool frameInfoSent, const SOURCESDK::CViewSetup_csgo & view)
+	AfxInteropDrawingDrawingThreadPrepareDraw(int frameCount)
 		: m_FrameCount(frameCount)
-		, m_FrameInfoSent(frameInfoSent)
-		, m_View(view)
 	{
 	}
 
 	virtual void operator()()
 	{
-		AfxInterop::DrawingThreadBeforeHud(m_FrameCount, m_FrameInfoSent, m_View);
+		AfxInterop::DrawingThreadPrepareDraw(m_FrameCount);
 	}
 
 private:
 	int m_FrameCount;
-	bool m_FrameInfoSent;
-	SOURCESDK::CViewSetup_csgo m_View;
+};
+
+class AfxInteropDrawingThreadBeforeHud_Functor
+	: public CAfxFunctor
+{
+public:
+	AfxInteropDrawingThreadBeforeHud_Functor()
+	{
+	}
+
+	virtual void operator()()
+	{
+		AfxInterop::DrawingThreadBeforeHud();
+	}
+
+private:
+};
+
+class AfxInteropDrawingThreadFinished_Functor
+	: public CAfxFunctor
+{
+public:
+	AfxInteropDrawingThreadFinished_Functor()
+	{
+	}
+
+	virtual void operator()()
+	{
+		AfxInterop::DrawingThreadFinished();
+	}
+
+private:
 };
 
 #endif
@@ -4989,6 +5021,8 @@ void CAfxStreams::DoRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 	if (AfxInterop::Enabled())
 	{
 		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropOverrideDepthBegin_Functor()));
+
+		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new AfxInteropDrawingDrawingThreadPrepareDraw(AfxInterop::GetFrameCount())));
 	}
 #endif
 
@@ -5005,6 +5039,8 @@ void CAfxStreams::DoRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 #ifdef AFX_INTEROP
 	if (AfxInterop::Enabled())
 	{
+		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new AfxInteropDrawingThreadFinished_Functor()));
+
 		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropOverrideDepthEnd_Functor()));
 	}
 #endif
@@ -5180,9 +5216,9 @@ void CAfxStreams::OnDrawingHudBegin(void)
 
 		QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new CAfxInteropDrawDepth_Functor(true, m_CurrentView->zNear, m_CurrentView->zFar, m_CurrentView->zNear, m_CurrentView->zFar, m_CurrentView->x, m_CurrentView->y, m_CurrentView->width, m_CurrentView->height)));
 
-		AfxInterop::BeforeHud();
+		AfxInterop::BeforeHud(*m_CurrentView);
 
-		QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new AfxInteropDrawingThreadBeforeHud_Functor(AfxInterop::GetFrameCount(), AfxInterop::GetFrameInfoSent(), *m_CurrentView)));
+		QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new AfxInteropDrawingThreadBeforeHud_Functor()));
 	}
 #endif
 

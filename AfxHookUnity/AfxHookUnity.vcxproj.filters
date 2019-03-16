@@ -1,11 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
-    <Filter Include="AfxHookUnity">
+    <Filter Include="AfxHookInterop">
       <UniqueIdentifier>{681e6be2-8791-4547-ac3d-61e468af2edf}</UniqueIdentifier>
     </Filter>
     <Filter Include="shared">
@@ -19,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="dllmain.cpp">
-      <Filter>AfxHookUnity</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared\Detours\src\detours.cpp">
       <Filter>shared\Detours\src</Filter>
     </ClCompile>
@@ -49,16 +42,19 @@
     <ClCompile Include="..\shared\Detours\src\modules.cpp">
       <Filter>shared\Detours\src</Filter>
     </ClCompile>
+    <ClCompile Include="dllmain.cpp">
+      <Filter>AfxHookInterop</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="stdafx.h">
-      <Filter>AfxHookUnity</Filter>
-    </ClInclude>
     <ClInclude Include="..\shared\Detours\src\detours.h">
       <Filter>shared\Detours\src</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\Detours\src\detver.h">
       <Filter>shared\Detours\src</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>AfxHookInterop</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
