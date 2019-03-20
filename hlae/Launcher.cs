@@ -54,9 +54,6 @@ class Launcher
 
         public static bool Launch(CfgLauncher cfg)
         {
-            if (0 < System.Diagnostics.Process.GetProcessesByName("hl").Length)
-                return false;
-
             String cmds, s1;
 
             //

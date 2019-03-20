@@ -6,6 +6,21 @@
 
 <release>
 <name>HLAE</name>
+<version>2.63.3</version>
+<time>2019-03-20T13:13Z</time>
+<changes>
+<change type="updated">
+Included AfxHookSource 1.51.3 (2019-03-20T13:13Z).
+</change>
+<change type="updated">
+Fixes #144: Remove hl process check from AfxHookGoldSrc Launcher.cs in HLAE.exe.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.63.2</version>
 <time>2019-03-07T06:29Z</time>
 <changes>

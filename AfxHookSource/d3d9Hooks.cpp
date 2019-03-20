@@ -9,7 +9,6 @@
 #include "CampathDrawer.h"
 #include "AfxShaders.h"
 #include "MirvPgl.h"
-#include "csgo/hooks/shaderapidx9.h"
 #include "AfxInterop.h"
 
 #include <shared/detours.h>
