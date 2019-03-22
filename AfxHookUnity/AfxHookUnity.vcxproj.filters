@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="AfxHookInterop">
+    <Filter Include="AfxHookUnity">
       <UniqueIdentifier>{681e6be2-8791-4547-ac3d-61e468af2edf}</UniqueIdentifier>
     </Filter>
     <Filter Include="shared">
@@ -43,7 +43,7 @@
       <Filter>shared\Detours\src</Filter>
     </ClCompile>
     <ClCompile Include="dllmain.cpp">
-      <Filter>AfxHookInterop</Filter>
+      <Filter>AfxHookUnity</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -54,7 +54,7 @@
       <Filter>shared\Detours\src</Filter>
     </ClInclude>
     <ClInclude Include="stdafx.h">
-      <Filter>AfxHookInterop</Filter>
+      <Filter>AfxHookUnity</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -72,12 +72,10 @@ namespace AfxInterop {
 		};
 
 		std::mutex m_ConnectMutex;
-		bool m_WantsConnect = false;
+		bool m_Connecting = false;
 		bool m_Connected = false;
 
 		HANDLE m_hPipe = INVALID_HANDLE_VALUE;
-
-		std::string m_PipeName("advancedfxInterop");
 
 		IAfxInteropSurface * m_Surface = NULL;
 
@@ -322,38 +320,15 @@ namespace AfxInterop {
 
 		std::unique_lock<std::mutex> lock(DrawingThread::m_ConnectMutex);
 
-		if (!DrawingThread::m_WantsConnect) return;
+		if (!(DrawingThread::m_Connected || DrawingThread::m_Connecting)) return;
 
-		int errorLine = 0;
-
-		if(!DrawingThread::m_Connected)
+		if (DrawingThread::m_Connecting)
 		{
-			std::string strPipeName("\\\\.\\pipe\\");
-			strPipeName.append(DrawingThread::m_PipeName);
-			strPipeName.append("_drawing");
-
-			while (true)
-			{
-				DrawingThread::m_hPipe = CreateFile(strPipeName.c_str(), GENERIC_WRITE | GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
-				if (DrawingThread::m_hPipe != INVALID_HANDLE_VALUE)
-					break;
-
-				if (GetLastError() != ERROR_PIPE_BUSY)
-				{
-					Tier0_Warning("Could not open pipe. GLE=%d\n", GetLastError());
-					{ errorLine = __LINE__; goto locked_error; }
-				}
-
-				if (!WaitNamedPipe(strPipeName.c_str(), 5000))
-				{
-					Tier0_Warning("WaitNamedPipe: timed out.\n");
-					{ errorLine = __LINE__; goto locked_error; }
-				}
-			}
-
-			Tier0_Msg("Connected to \"%s\".\n", strPipeName.c_str());
+			DrawingThread::m_Connecting = false;
 			DrawingThread::m_Connected = true;
 		}
+
+		int errorLine = 0;
 
 		while (true)
 		{
@@ -580,49 +555,92 @@ namespace AfxInterop {
 				if (EngineThread::m_hPipe != INVALID_HANDLE_VALUE)
 					break;
 
-				if (GetLastError() != ERROR_PIPE_BUSY)
+				DWORD lastError = GetLastError();
+
+				if (lastError != ERROR_PIPE_BUSY)
 				{
-					Tier0_Warning("Could not open pipe. GLE=%d\n", GetLastError());
-					{ errorLine = __LINE__; goto error; }
+					Tier0_Warning("Could not open pipe. GLE=%d\n", lastError);
+					{ errorLine = __LINE__; goto locked_error; }
 				}
 
 				if (!WaitNamedPipe(strPipeName.c_str(), 5000))
 				{
 					Tier0_Warning("WaitNamedPipe: timed out.\n");
-					{ errorLine = __LINE__; goto error; }
+					{ errorLine = __LINE__; goto locked_error; }
 				}
 			}
 
 			Tier0_Msg("Connected to \"%s\".\n", strPipeName.c_str());
 		}
 
+		{
+			std::unique_lock<std::mutex> lock(DrawingThread::m_ConnectMutex);
+
+			std::string strPipeName("\\\\.\\pipe\\");
+			strPipeName.append(EngineThread::m_PipeName);
+			strPipeName.append("_drawing");
+
+			unsigned int sleepCount = 0;
+
+			while (true)
+			{
+				DrawingThread::m_hPipe = CreateFile(strPipeName.c_str(), GENERIC_WRITE | GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+				if (DrawingThread::m_hPipe != INVALID_HANDLE_VALUE)
+					break;
+
+				DWORD lastError = GetLastError();
+
+				switch (lastError)
+				{
+				case ERROR_FILE_NOT_FOUND:
+					if (sleepCount >= 5000)
+					{
+						Tier0_Warning("Could not open pipe. GLE=%d\n", lastError);
+						{ errorLine = __LINE__; goto locked_error; }
+					}
+					++sleepCount;
+					continue;
+				case ERROR_PIPE_BUSY:
+					break;
+				default:
+					{
+						Tier0_Warning("Could not open pipe. GLE=%d\n", lastError);
+						{ errorLine = __LINE__; goto locked_error; }
+					}
+				}
+
+				if (!WaitNamedPipe(strPipeName.c_str(), 5000))
+				{
+					Tier0_Warning("WaitNamedPipe: timed out.\n");
+					{ errorLine = __LINE__; goto locked_error; }
+				}
+			}
+
+			Tier0_Msg("Connected to \"%s\".\n", strPipeName.c_str());
+			DrawingThread::m_Connecting = true;
+		}
+
 		INT32 version;
-		if (!ReadInt32(EngineThread::m_hPipe, version)) { errorLine = __LINE__; goto error; }
+		if (!ReadInt32(EngineThread::m_hPipe, version)) { errorLine = __LINE__; goto locked_error; }
 		
 		if (m_Version != version)
 		{
 			Tier0_Warning("Version %d is not a supported (%d) version.\n", version, m_Version);
-			if (!WriteBoolean(EngineThread::m_hPipe, false)) { errorLine = __LINE__; goto error; }
-			if (!Flush(EngineThread::m_hPipe)) { errorLine = __LINE__; goto error; } 
+			if (!WriteBoolean(EngineThread::m_hPipe, false)) { errorLine = __LINE__; goto locked_error; }
+			if (!Flush(EngineThread::m_hPipe)) { errorLine = __LINE__; goto locked_error; }
 		}
 
-		if (!WriteBoolean(EngineThread::m_hPipe, true)) { errorLine = __LINE__; goto error; }
+		if (!WriteBoolean(EngineThread::m_hPipe, true)) { errorLine = __LINE__; goto locked_error; }
 
-		if(!Flush(EngineThread::m_hPipe)) { errorLine = __LINE__; goto error; }
+		if(!Flush(EngineThread::m_hPipe)) { errorLine = __LINE__; goto locked_error; }
 
-		if(!ReadBoolean(EngineThread::m_hPipe, EngineThread::m_Server64Bit)) { errorLine = __LINE__; goto error; }
+		if(!ReadBoolean(EngineThread::m_hPipe, EngineThread::m_Server64Bit)) { errorLine = __LINE__; goto locked_error; }
 
 		EngineThread::m_Connected = true;
 
-		{
-			std::unique_lock<std::mutex> lock(DrawingThread::m_ConnectMutex);
-			DrawingThread::m_PipeName = EngineThread::m_PipeName;
-			DrawingThread::m_WantsConnect = true;
-		}
-
 		return true;
 
-	error:
+	locked_error:
 		Tier0_Warning("AfxInterop::Connect: Error in line %i.\n", errorLine);
 		lock.unlock();
 		Disconnect();
@@ -647,16 +665,14 @@ namespace AfxInterop {
 			if (DrawingThread::m_Connected)
 			{
 				DrawingThread::m_Connected = false;
-
-				if (DrawingThread::m_Surface)
-				{
-					DrawingThread::m_Surface->AfxReplacementEnabled_set(false);
-					DrawingThread::m_Surface->AfxSetReplacement(NULL);
-					DrawingThread::m_Surface->AfxSetDepthSurface(NULL);
-				}
 			}
 
-			DrawingThread::m_WantsConnect = false;
+			if (DrawingThread::m_Surface)
+			{
+				DrawingThread::m_Surface->AfxReplacementEnabled_set(false);
+				DrawingThread::m_Surface->AfxSetReplacement(NULL);
+				DrawingThread::m_Surface->AfxSetDepthSurface(NULL);
+			}
 		}
 
 		if (INVALID_HANDLE_VALUE != EngineThread::m_hPipe)
@@ -765,7 +781,15 @@ namespace AfxInterop {
 
 	bool ReadHandle(HANDLE hFile, HANDLE & outValue)
 	{
-		return ReadBytes(hFile, &outValue, 0, sizeof(outValue));
+		DWORD value32;
+
+		if (ReadBytes(hFile, &value32, 0, sizeof(value32)))
+		{
+			outValue = ULongToHandle(value32);
+			return true;
+		}
+
+		return false;
 	}
 
 	bool ReadStringUTF8(HANDLE hFile, std::string & outValue)
@@ -848,13 +872,15 @@ namespace AfxInterop {
 
 	bool WriteHandle(HANDLE hFile, HANDLE value)
 	{
-		return WriteBytes(hFile, &value, 0, sizeof(value));
+		DWORD value32 = HandleToULong(value);
+
+		return WriteBytes(hFile, &value32, 0, sizeof(value32));
 	}
 
 	bool Flush(HANDLE hFile)
 	{
-		if (!FlushFileBuffers(hFile))
-			return false;
+		//if (!FlushFileBuffers(hFile))
+		//	return false;
 
 		return true;
 	}

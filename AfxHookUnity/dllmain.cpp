@@ -33,9 +33,6 @@ private:
 
 	State m_State = State_Error;
 
-	char * m_ReadBuffer;
-	char * m_WriteBuffer;
-
 	const DWORD m_ReadBufferSize = 512;
 	const DWORD m_WriteBufferSize = 512;
 
@@ -45,9 +42,6 @@ private:
 public:
 	CNamedPipeServer(const char * pipeName)
 	{
-		m_ReadBuffer = (char *)malloc(m_ReadBufferSize);
-		m_WriteBuffer = (char *)malloc(m_WriteBufferSize);
-
 		m_OverlappedRead.hEvent = CreateEventA(NULL, true, true, NULL);
 		m_OverlappedWrite.hEvent = CreateEventA(NULL, true, true, NULL);
 
@@ -64,9 +58,7 @@ public:
 			5000,
 			NULL);
 
-		if (NULL != m_ReadBuffer
-			&& NULL != m_WriteBuffer
-			&& INVALID_HANDLE_VALUE != m_OverlappedRead.hEvent
+		if (INVALID_HANDLE_VALUE != m_OverlappedRead.hEvent
 			&& INVALID_HANDLE_VALUE != m_OverlappedWrite.hEvent
 			&& INVALID_HANDLE_VALUE != m_PipeHandle
 			&& FALSE == ConnectNamedPipe(m_PipeHandle, &m_OverlappedRead))
@@ -89,9 +81,6 @@ public:
 		if (INVALID_HANDLE_VALUE != m_PipeHandle) CloseHandle(m_PipeHandle);
 		if (INVALID_HANDLE_VALUE != m_OverlappedWrite.hEvent) CloseHandle(m_OverlappedWrite.hEvent);
 		if (INVALID_HANDLE_VALUE != m_OverlappedRead.hEvent) CloseHandle(m_OverlappedRead.hEvent);
-
-		free(m_WriteBuffer);
-		free(m_ReadBuffer);
 	}
 
 	State Connect()
@@ -120,7 +109,7 @@ public:
 		{
 			DWORD bytesRead = 0;
 
-			if (!ReadFile(m_PipeHandle, (LPVOID)&(((char *)m_ReadBuffer)[offset]), min(m_ReadBufferSize, length), NULL, &m_OverlappedRead))
+			if (!ReadFile(m_PipeHandle, (LPVOID)&(((char *)bytes)[offset]), length, NULL, &m_OverlappedRead))
 			{
 				if (ERROR_IO_PENDING == GetLastError())
 				{
@@ -242,7 +231,15 @@ public:
 
 	bool ReadHandle(HANDLE & outValue)
 	{
-		return ReadBytes( &outValue, 0, (DWORD)sizeof(outValue));
+		DWORD value32;
+
+		if (ReadBytes(&value32, 0, (DWORD)sizeof(value32)))
+		{
+			outValue = ULongToHandle(value32);
+			return true;
+		}
+
+		return false;
 	}
 	
 	bool ReadSingle(float & outValue)
@@ -256,9 +253,9 @@ public:
 		while (true)
 		{
 			DWORD bytesWritten = 0;
-			DWORD bytesToWrite = min(m_WriteBufferSize, length);
+			DWORD bytesToWrite = length;
 
-			if (!WriteFile(m_PipeHandle, (LPVOID)&(((char *)m_WriteBuffer)[offset]), bytesToWrite, NULL, &m_OverlappedWrite))
+			if (!WriteFile(m_PipeHandle, (LPVOID)&(((char *)bytes)[offset]), bytesToWrite, NULL, &m_OverlappedWrite))
 			{
 				if (ERROR_IO_PENDING == GetLastError())
 				{
@@ -302,8 +299,8 @@ public:
 
 	bool Flush()
 	{
-		if (!FlushFileBuffers(m_PipeHandle))
-			return false;
+		//if (!FlushFileBuffers(m_PipeHandle))
+		//	return false;
 
 		return true;
 	}
@@ -363,7 +360,9 @@ public:
 
 	bool WriteHandle(HANDLE value)
 	{
-		return WriteBytes(&value, 0, sizeof(value));
+		DWORD value32 = HandleToULong(value);
+
+		return WriteBytes(&value32, 0, sizeof(value32));
 	}
 
 	bool WriteStringUTF8(const std::string value)
@@ -469,17 +468,17 @@ private:
 	std::vector<CAfxCommand> m_Commands;
 };
 
-extern "C" __declspec(dllexport) UINT32 AfxInteropCommands_GetCommandCount(const CAfxCommands * commands)
+extern "C" __declspec(dllexport) UINT32 __stdcall AfxInteropCommands_GetCommandCount(const CAfxCommands * commands)
 {
 	return commands->GetCommands();
 }
 
-extern "C" __declspec(dllexport) UINT32 AfxInteropCommands_GetCommandArgCount(const CAfxCommands * commands, UINT32 index)
+extern "C" __declspec(dllexport) UINT32 __stdcall AfxInteropCommands_GetCommandArgCount(const CAfxCommands * commands, UINT32 index)
 {
 	return commands->GetArgs(index);
 }
 
-extern "C" __declspec(dllexport) const char * AfxInteropCommands_GetCommandArg(const CAfxCommands * commands, UINT32 index, UINT32 argIndex)
+extern "C" __declspec(dllexport) const char * __stdcall AfxInteropCommands_GetCommandArg(const CAfxCommands * commands, UINT32 index, UINT32 argIndex)
 {
 	return commands->GetArg(index, argIndex);
 }
@@ -529,6 +528,32 @@ public:
 			{
 				if (m_EngineServerNew)
 				{
+					{
+						std::unique_lock<std::mutex> lock(m_DrawingServerMutex);
+
+						if (nullptr == m_DrawingPipeServer)
+						{
+							std::string pipeName(m_PipeName);
+							pipeName.append("_drawing");
+
+							m_DrawingPipeServer = new CNamedPipeServer(pipeName.c_str());
+							m_Connecting = true;
+						}
+
+						CNamedPipeServer::State drawingState = m_DrawingPipeServer->Connect();
+
+						switch (drawingState)
+						{
+						case CNamedPipeServer::State_Connected:
+							break;
+						case CNamedPipeServer::State_Error:
+							goto locked_error;
+						default:
+							// not connected yet.
+							return true;
+						}
+					}
+
 					// Check if our version is supported by client:
 
 					if (!m_EnginePipeServer->WriteInt32(Version)) goto locked_error;
@@ -572,7 +597,7 @@ public:
 
 							UINT32 commandIndex = 0;
 							UINT32 commandCount;
-							if (!m_EnginePipeServer->ReadUInt32(commandCount)) goto locked_error;
+							if (!m_EnginePipeServer->ReadCompressedUInt32(commandCount)) goto locked_error;
 
 							commands.SetCommands(commandCount);
 
@@ -692,11 +717,11 @@ public:
 		std::unique_lock<std::mutex> lock(m_DrawingServerMutex);
 
 		if (nullptr == m_DrawingPipeServer)
-		{
-			std::string pipeName(m_PipeName);
-			pipeName.append("_drawing");
+			return false;
 
-			m_DrawingPipeServer = new CNamedPipeServer(pipeName.c_str());
+		if (m_Connecting)
+		{
+			m_Connecting = false;
 		}
 
 		CNamedPipeServer::State state = m_DrawingPipeServer->Connect();
@@ -731,38 +756,42 @@ public:
 								}
 
 								drawingData = m_DrawingDataQueue.front();
-								m_DrawingDataQueue.pop();
-							}
 
-							INT32 frameDiff = drawingData.FrameNumber - clientFrameNumber;
+								INT32 frameDiff = drawingData.FrameNumber - clientFrameNumber;
 
-							if (frameDiff > 0)
-							{
-								// client is behind.
+								if (frameDiff > 0)
+								{
+									// client is behind.
 
-								if (!m_DrawingPipeServer->WriteInt32(PrepareDrawReply_Skip)) goto locked_error;
-								if (!m_DrawingPipeServer->Flush()) goto locked_error;
-							}
-							else if (frameDiff < 0)
-							{
-								// client is still ahead, this means something went wrong.
+									if (!m_DrawingPipeServer->WriteInt32(PrepareDrawReply_Skip)) goto locked_error;
+									if (!m_DrawingPipeServer->Flush()) goto locked_error;
+								}
+								else if (frameDiff < 0)
+								{
+									// client is still ahead.
 
-								goto locked_error;
-							}
-							else
-							{
-								// we are right on, we can continue.
+									if (!m_DrawingPipeServer->WriteInt32(PrepareDrawReply_Retry)) goto locked_error;
+									if (!m_DrawingPipeServer->Flush()) goto locked_error;
 
-								//drawingThreadImplementation.Log("AfxHookSource client is in sync");
+									continue;
+								}
+								else
+								{
+									// we are right on.
 
-								if (!m_DrawingPipeServer->WriteInt32(PrepareDrawReply_Continue)) goto locked_error;
+									m_DrawingDataQueue.pop();
 
-								if (!m_DrawingPipeServer->WriteBoolean(drawingData.ColorTextureWasLost)) goto locked_error;
-								if (!m_DrawingPipeServer->WriteHandle(drawingData.SharedColorTextureHandle)) goto locked_error;
-								if (!m_DrawingPipeServer->WriteBoolean(drawingData.ColorDepthTextureWasLost)) goto locked_error;
-								if (!m_DrawingPipeServer->WriteHandle(drawingData.SharedColorDepthTextureHandle)) goto locked_error;
+									//drawingThreadImplementation.Log("AfxHookSource client is in sync");
 
-								if (!m_DrawingPipeServer->Flush()) goto locked_error;
+									if (!m_DrawingPipeServer->WriteInt32(PrepareDrawReply_Continue)) goto locked_error;
+
+									if (!m_DrawingPipeServer->WriteBoolean(drawingData.ColorTextureWasLost)) goto locked_error;
+									if (!m_DrawingPipeServer->WriteHandle(drawingData.SharedColorTextureHandle)) goto locked_error;
+									if (!m_DrawingPipeServer->WriteBoolean(drawingData.ColorDepthTextureWasLost)) goto locked_error;
+									if (!m_DrawingPipeServer->WriteHandle(drawingData.SharedColorDepthTextureHandle)) goto locked_error;
+
+									if (!m_DrawingPipeServer->Flush()) goto locked_error;
+								}
 							}
 						}
 						return true; // OK.
@@ -788,7 +817,7 @@ public:
 	{
 		std::unique_lock<std::mutex> lock(m_DrawingServerMutex);
 
-		if (nullptr == m_DrawingPipeServer)
+		if (nullptr == m_DrawingPipeServer || m_Connecting)
 		{
 			return false;
 		}
@@ -911,6 +940,7 @@ private:
 	bool m_EngineServerNew = false;
 
 	std::mutex m_DrawingServerMutex;
+	bool m_Connecting = false;
 	CNamedPipeServer * m_DrawingPipeServer = nullptr;
 
 	std::mutex m_DrawingDataQueueMutex;
@@ -943,7 +973,7 @@ private:
 CAfxInterop * g_AfxInterop = nullptr;
 
 
-extern "C" __declspec(dllexport) void AfxInteropDestroy()
+extern "C" __declspec(dllexport) void __stdcall AfxInteropDestroy()
 {
 	if (g_AfxInterop)
 	{
@@ -952,7 +982,7 @@ extern "C" __declspec(dllexport) void AfxInteropDestroy()
 	}
 }
 
-extern "C" __declspec(dllexport) bool AfxInteropCreate(
+extern "C" __declspec(dllexport) bool __stdcall AfxInteropCreate(
 	const char * pipeName,
 	AfxInteropCommands_t afxInteropCommands,
 	AfxInteropRender_t afxInteropRender)
@@ -965,7 +995,7 @@ extern "C" __declspec(dllexport) bool AfxInteropCreate(
 }
 
 
-extern "C" __declspec(dllexport) bool AfxInteropUpdateEngineThread()
+extern "C" __declspec(dllexport) bool __stdcall AfxInteropUpdateEngineThread()
 {
 	if (g_AfxInterop)
 	{
@@ -976,7 +1006,7 @@ extern "C" __declspec(dllexport) bool AfxInteropUpdateEngineThread()
 	return false;
 }
 
-extern "C" __declspec(dllexport) bool AfxInteropScheduleCommand(const char * command)
+extern "C" __declspec(dllexport) bool __stdcall AfxInteropScheduleCommand(const char * command)
 {
 	if (g_AfxInterop)
 	{
@@ -1250,11 +1280,11 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 	return TRUE;
 }
 
-extern "C" __declspec(dllexport) bool AfxHookUnityInit(int version) {
+extern "C" __declspec(dllexport) bool __stdcall AfxHookUnityInit(int version) {
 	return 3 == version && NO_ERROR == error;
 }
 
-extern "C" __declspec(dllexport) HANDLE AfxHookUnityGetSharedHandle(void * d3d11ResourcePtr)
+extern "C" __declspec(dllexport) HANDLE __stdcall AfxHookUnityGetSharedHandle(void * d3d11ResourcePtr)
 {
 	HANDLE result = NULL;
 
@@ -1277,7 +1307,7 @@ extern "C" __declspec(dllexport) HANDLE AfxHookUnityGetSharedHandle(void * d3d11
 	return result;
 }
 
-extern "C" __declspec(dllexport) void AfxHookUnityBeginCreateRenderTexture()
+extern "C" __declspec(dllexport) void __stdcall AfxHookUnityBeginCreateRenderTexture()
 {
 	g_FbOverride = true;
 }
@@ -1286,7 +1316,7 @@ bool waitForGpuFinished = false;
 std::mutex waitForGpuMutex;
 std::condition_variable waitForGpuCondition;
 
-extern "C"  __declspec(dllexport) void AfxHookUnityWaitOne()
+extern "C"  __declspec(dllexport) void __stdcall AfxHookUnityWaitOne()
 {
 	std::unique_lock<std::mutex> lock(waitForGpuMutex);
 	waitForGpuCondition.wait(lock, [] { return waitForGpuFinished; });
