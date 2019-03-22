@@ -77,4 +77,4 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer);
 //void Addresses_InitStdshader_dx9Dll(AfxAddr stdshader_dx9Dll, bool isCsgo);
-void Addresses_InitShaderAPIDX9Dll(AfxAddr shaderapidx9Dll, SourceSdkVer sourceSdkVer);
+

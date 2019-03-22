@@ -6,6 +6,22 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.51.3</version>
+<time>2019-03-20T13:13Z</time>
+<changes>
+<change type="fixed">
+Adjusted CS:GO update 3/19/2019 (3/20/2019 UTC, 1.36.8.3): removed currently unused code that would trigger an error message box.
+</change>
+</changes>
+<comments>
+The new -d3d9ex CS:GO launch option is not supported yet!
+</comments>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.51.2</version>
 <time>2019-03-07T06:29Z</time>
 <changes>

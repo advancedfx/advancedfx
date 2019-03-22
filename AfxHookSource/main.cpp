@@ -50,7 +50,6 @@
 #include <l4d2/sdk_src/public/tier1/convar.h>
 #include <csgo/Panorama.h>
 #include <csgo/hooks/engine.h>
-#include "csgo/hooks/shaderapidx9.h"
 #include <insurgency2/public/cdll_int.h>
 #include "MirvTime.h"
 
@@ -2039,20 +2038,9 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 	{
 		bFirstShaderapidx9 = false;
 
-		Addresses_InitShaderAPIDX9Dll((AfxAddr)hModule, g_SourceSdkVer);
-
 		InterceptDllCall(hModule, "kernel32.dll", "GetProcAddress", (DWORD) &new_shaderapidx9_GetProcAddress);
 
 		old_Direct3DCreate9 = (Direct3DCreate9_t)InterceptDllCall(hModule, "d3d9.dll", "Direct3DCreate9", (DWORD) &new_Direct3DCreate9);
-
-#ifdef AFX_INTEROP
-		if (AfxInterop::Enabled())
-		{
-			// Only required by AfxInterop atm
-
-			Hook_CShaderAPIDx8();
-		}
-#endif
 	}
 	else
 	if(bFirstClient && (StringEndsWith( lpLibFileName, "client_panorama.dll") || SourceSdkVer_CSGO != g_SourceSdkVer && StringEndsWith(lpLibFileName, "client.dll")))
