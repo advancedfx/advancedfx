@@ -599,6 +599,7 @@ namespace AfxInterop {
 						{ errorLine = __LINE__; goto locked_error; }
 					}
 					++sleepCount;
+					Sleep(1);
 					continue;
 				case ERROR_PIPE_BUSY:
 					break;
@@ -879,8 +880,8 @@ namespace AfxInterop {
 
 	bool Flush(HANDLE hFile)
 	{
-		//if (!FlushFileBuffers(hFile))
-		//	return false;
+		if (!FlushFileBuffers(hFile))
+			return false;
 
 		return true;
 	}

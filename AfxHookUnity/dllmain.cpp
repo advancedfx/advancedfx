@@ -299,8 +299,8 @@ public:
 
 	bool Flush()
 	{
-		//if (!FlushFileBuffers(m_PipeHandle))
-		//	return false;
+		if (!FlushFileBuffers(m_PipeHandle))
+			return false;
 
 		return true;
 	}
@@ -485,7 +485,7 @@ extern "C" __declspec(dllexport) const char * __stdcall AfxInteropCommands_GetCo
 
 typedef void (__stdcall * AfxInteropCommands_t)(const CAfxCommands * commands);
 
-typedef void (__stdcall * AfxInteropRender_t)(const CAfxInteropRenderInfo * renderInfo, BOOL * outColorTextureWasLost, HANDLE * outSharedColorTextureHandle, BOOL * outColorDepthTextureWasLost, HANDLE * outSharedColorepthTextureHandle);
+typedef void (__stdcall * AfxInteropRender_t)(const CAfxInteropRenderInfo * renderInfo, BOOL * outColorTextureWasLost, HANDLE * outSharedColorTextureHandle, BOOL * outColorDepthTextureWasLost, HANDLE * outSharedColorDepthTextureHandle);
 
 bool AfxHookUnityWaitForGPU();
 
@@ -631,6 +631,8 @@ public:
 							if (!m_EnginePipeServer->WriteStringUTF8(m_Commands.front().c_str())) goto locked_error;
 							m_Commands.pop();
 						}
+
+						if (!m_EnginePipeServer->Flush()) goto locked_error;
 					}
 					break;
 
@@ -691,7 +693,11 @@ public:
 							std::unique_lock<std::mutex> lock(m_DrawingDataQueueMutex);
 
 							m_DrawingDataQueue.emplace(renderInfo.FrameCount, colorTextureWasLost, sharedColorTextureHandle, colorDepthTextureWasLost, shareDepthColorTextureHandle);
+
+							m_DrawingDataQueueConditionFinished = true;
 						}
+
+						m_DrawingDataQueueCondition.notify_one();
 
 						done = true; // We are done for this frame.
 					}
@@ -709,6 +715,11 @@ public:
 	locked_error:
 		lock.unlock();
 		Close();
+		{
+			std::unique_lock<std::mutex> lock(m_DrawingDataQueueMutex);
+			m_DrawingDataQueueConditionFinished = true;
+		}
+		m_DrawingDataQueueCondition.notify_one();
 		return false;
 	}
 
@@ -745,14 +756,18 @@ public:
 							CDrawingData drawingData;
 							{
 								std::unique_lock<std::mutex> lock(m_DrawingDataQueueMutex);
+								m_DrawingDataQueueCondition.wait(lock, [this] { return this->m_DrawingDataQueueConditionFinished; });
+
+								m_DrawingDataQueueConditionFinished = false;
 
 								if (m_DrawingDataQueue.empty())
 								{
-									// client is ahead, otherwise we would have data
+									// Error: client is ahead, otherwise we would have data by now.
 
-									if (!m_DrawingPipeServer->WriteInt32(PrepareDrawReply_Retry)) goto locked_error;
+									if (!m_DrawingPipeServer->WriteInt32(PrepareDrawReply_Skip)) goto locked_error;
 									if (!m_DrawingPipeServer->Flush()) goto locked_error;
-									return true;
+
+									return false;
 								}
 
 								drawingData = m_DrawingDataQueue.front();
@@ -768,12 +783,14 @@ public:
 								}
 								else if (frameDiff < 0)
 								{
-									// client is still ahead.
+									// Error: client is ahead, otherwise we would have correct data by now.
 
-									if (!m_DrawingPipeServer->WriteInt32(PrepareDrawReply_Retry)) goto locked_error;
+									while(!m_DrawingDataQueue.empty()) m_DrawingDataQueue.pop();
+
+									if (!m_DrawingPipeServer->WriteInt32(PrepareDrawReply_Skip)) goto locked_error;
 									if (!m_DrawingPipeServer->Flush()) goto locked_error;
 
-									continue;
+									return false;
 								}
 								else
 								{
@@ -944,6 +961,8 @@ private:
 	CNamedPipeServer * m_DrawingPipeServer = nullptr;
 
 	std::mutex m_DrawingDataQueueMutex;
+	std::condition_variable m_DrawingDataQueueCondition;
+	bool m_DrawingDataQueueConditionFinished = false;
 	std::queue<CDrawingData> m_DrawingDataQueue;
 
 	std::queue<std::string> m_Commands;
@@ -1353,8 +1372,10 @@ bool AfxHookUnityWaitForGPU()
 		pContext = NULL;
 	}
 
-	std::lock_guard<std::mutex> lock(waitForGpuMutex);
-	waitForGpuFinished = true;
+	{
+		std::lock_guard<std::mutex> lock(waitForGpuMutex);
+		waitForGpuFinished = true;
+	}
 
 	waitForGpuCondition.notify_one();
 
