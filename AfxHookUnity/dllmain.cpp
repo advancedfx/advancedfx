@@ -414,6 +414,8 @@ public:
 
 	const char * GetArg(UINT32 index) const
 	{
+		if (index >= m_Args.size()) return "";
+
 		return m_Args[index].c_str();
 	}
 
@@ -441,11 +443,15 @@ public:
 
 	UINT32 GetArgs(UINT32 index) const
 	{
+		if (index >= m_Commands.size()) return 0;
+
 		return m_Commands[index].GetArgs();
 	}
 
 	const char * GetArg(UINT32 index, UINT32 argIndex) const
 	{
+		if (index >= m_Commands.size()) return "";
+
 		return m_Commands[index].GetArg(argIndex);
 	}
 
