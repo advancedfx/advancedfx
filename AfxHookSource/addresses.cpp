@@ -26,7 +26,6 @@ AFXADDR_DEF(csgo_C_BasePlayer_RecvProxy_ObserverTarget)
 AFXADDR_DEF(csgo_CCSViewRender_vtable)
 AFXADDR_DEF(csgo_CCSViewRender_RenderSmokeOverlay_OnLoadOldAlpha)
 AFXADDR_DEF(csgo_CCSViewRender_RenderSmokeOverlay_OnCompareAlphaBeforeDraw)
-AFXADDR_DEF(csgo_CCSViewRender_RenderSmokeOverlay_OnBeforeExitFunc)
 AFXADDR_DEF(csgo_CGlowOverlay_Draw)
 AFXADDR_DEF(csgo_CGlowOverlay_Draw_DSZ)
 AFXADDR_DEF(csgo_CCSGO_HudDeathNotice_FireGameEvent)
@@ -620,9 +619,8 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 
 		}
 
-		// csgo_CCSViewRender_RenderSmokeOverlay_OnLoadOldAlpha: // Checked 2017-05-13.
-		// csgo_CCSViewRender_RenderSmokeOverlay_OnLoadAlphaBeforeDraw: // Checked 2017-05-13.
-		// csgo_CCSViewRender_RenderSmokeOverlay_OnBeforeExitFunc: // Checked 2017-05-13.
+		// csgo_CCSViewRender_RenderSmokeOverlay_OnLoadOldAlpha: // Checked 2019-04-03.
+		// csgo_CCSViewRender_RenderSmokeOverlay_OnLoadAlphaBeforeDraw: // Checked 2019-04-03.
 		{
 			DWORD addrOnLoadOldAlpha = 0;
 			DWORD addrOnCompareAlphaBeforeDraw = 0;
@@ -712,7 +710,6 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			}
 			AFXADDR_SET(csgo_CCSViewRender_RenderSmokeOverlay_OnLoadOldAlpha, addrOnLoadOldAlpha);
 			AFXADDR_SET(csgo_CCSViewRender_RenderSmokeOverlay_OnCompareAlphaBeforeDraw, addrOnCompareAlphaBeforeDraw);
-			AFXADDR_SET(csgo_CCSViewRender_RenderSmokeOverlay_OnBeforeExitFunc, addrOnBeforeExitFunc);
 		}
 
 		// csgo_pLocalPlayer: // Checked 2017-05-13.
@@ -1565,7 +1562,6 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_CCSViewRender_vtable, 0x0);
 		AFXADDR_SET(csgo_CCSViewRender_RenderSmokeOverlay_OnLoadOldAlpha, 0x0);
 		AFXADDR_SET(csgo_CCSViewRender_RenderSmokeOverlay_OnCompareAlphaBeforeDraw, 0x0);
-		AFXADDR_SET(csgo_CCSViewRender_RenderSmokeOverlay_OnBeforeExitFunc, 0x0);
 		//AFXADDR_SET(csgo_mystique_animation, 0x0);
 		AFXADDR_SET(csgo_Unknown_GetTeamsSwappedOnScreen, 0x0);
 		AFXADDR_SET(csgo_C_CSPlayer_IClientNetworkable_entindex, 0x0);

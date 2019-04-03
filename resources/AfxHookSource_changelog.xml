@@ -6,6 +6,22 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.51.4</version>
+<time>2019-04-03T05:51Z</time>
+<changes>
+<change type="fixed">
+Fixes #152 (smokeOverlayAlphaFactor stream property only working on first stream recorded / previewed).
+</change>
+</changes>
+<comments>
+The new -d3d9ex CS:GO launch option is not supported yet!
+</comments>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.51.3</version>
 <time>2019-03-20T13:13Z</time>
 <changes>
