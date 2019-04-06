@@ -1040,6 +1040,11 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 
 	switch (curStage)
 	{
+	case SOURCESDK::CSGO::FRAME_RENDER_START:
+#ifdef AFX_INTEROP
+		AfxInterop::AfterFrameRenderStart();
+#endif
+
 	case SOURCESDK::CSGO::FRAME_RENDER_END:
 		csgo_Audio_FRAME_RENDEREND();
 		Shared_AfterFrameRenderEnd();

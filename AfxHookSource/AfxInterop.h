@@ -22,6 +22,9 @@ namespace AfxInterop {
 	void BeforeFrameRenderStart();
 
 	/// <remarks>Must be called from engine thread only.</remarks>
+	void AfterFrameRenderStart();
+
+	/// <remarks>Must be called from engine thread only.</remarks>
 	void BeforeHud(const SOURCESDK::CViewSetup_csgo & view);
 
 	/// <remarks>Must be called from engine thread only.</remarks>

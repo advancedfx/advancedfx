@@ -8,6 +8,8 @@
 
 #include <tchar.h>
 
+#include <map>
+#include <set>
 #include <queue>
 #include <vector>
 
@@ -495,6 +497,224 @@ typedef void (__stdcall * AfxInteropRender_t)(const CAfxInteropRenderInfo * rend
 
 bool AfxHookUnityWaitForGPU();
 
+
+typedef struct AfxInteropHandleCalcResult_s {
+	INT32 IntHandle;
+} AfxInteropHandleCalcResult_t;
+
+struct AfxInteropVector_s {
+	FLOAT X;
+	FLOAT Y;
+	FLOAT Z;
+};
+
+struct AfxInteropQAngle_s {
+	FLOAT Pitch;
+	FLOAT Yaw;
+	FLOAT Roll;
+};
+
+typedef struct AfxInteropVecAngCalcResult_s {
+	AfxInteropVector_s Vector;
+	AfxInteropQAngle_s QAngle;
+} AfxInteropVecAngCalcResult_t;
+
+typedef struct AfxInteropCamCalcResult_s {
+	AfxInteropVector_s Vector;
+	AfxInteropQAngle_s QAngle;
+	FLOAT Fov;
+} AfxInteropCamCalcResult_t;
+
+typedef struct AfxInteropFovCalcResult_s {
+	FLOAT Fov;
+} AfxInteropFovCalcResult_t;
+
+typedef void(__stdcall * AfxInteropHandleCalcCallback_t)(AfxInteropHandleCalcResult_t * result);
+
+typedef void(__stdcall * AfxInteropVecAngCalcCallback_t)(AfxInteropVecAngCalcResult_s * result);
+
+typedef void(__stdcall * AfxInteropCamCalcCallback_t)(AfxInteropCamCalcResult_s * result);
+
+typedef void(__stdcall * AfxInteropFovCalcCallback_t)(AfxInteropFovCalcResult_s * result);
+
+class __declspec(novtable) IAfxInteropCalcCallbacksIterator abstract
+{
+public:
+	virtual void Destroy() = 0;
+};
+
+template<typename T, typename R> class CAfxInteropCalcCallbacks abstract
+{
+public:
+	IAfxInteropCalcCallbacksIterator * Add(const char * name, T callback)
+	{
+		return new CAfxInteropCalcCallbacksIterator(m_Map, name, callback);
+	}
+
+	bool BatchUpdateRequest(CNamedPipeServer * pipeServer)
+	{
+		if (!pipeServer->WriteCompressedUInt32((UINT32)m_Map.size())) return false;
+		for (typename std::map<std::string, std::set<T>>::iterator it = m_Map.begin(); it != m_Map.end(); ++it)
+		{
+			if (!pipeServer->WriteStringUTF8(it.first)) return false;
+		}
+
+		return true;
+	}
+
+	bool BatchUpdateResult(CNamedPipeServer * pipeServer)
+	{
+		R result;
+
+		for (typename std::map<std::string, std::set<T>>::iterator it = m_Map.begin(); it != m_Map.end(); ++it)
+		{
+			R * resultPtr = nullptr;
+			bool hasResult;
+
+			if (!pipeServer->ReadBoolean(hasResult)) return false;
+
+			if (hasResult)
+			{
+				if (!ReadResult(pipeServer, result)) return false;
+				resultPtr = &result;
+			}
+
+			for (typename std::set<T>::iterator setIt = it.second.begin(); setIt != it.second.end(); ++it)
+			{
+				CallResult(*setIt, resultPtr);
+			}
+		}
+
+		return true;
+	}
+
+protected:
+	virtual bool ReadResult(CNamedPipeServer * pipeServer, R & outResult) = 0;
+	virtual void CallResult(T callback, R * result) = 0;
+
+private:
+	typename typedef std::set<T> Callbacks_t;
+	typedef std::map<std::string, Callbacks_t> NameToCallbacks_t;
+	NameToCallbacks_t m_Map;
+
+	class CAfxInteropCalcCallbacksIterator : public IAfxInteropCalcCallbacksIterator
+	{
+	public:
+		CAfxInteropCalcCallbacksIterator(NameToCallbacks_t & map, const char * name, T callback)
+			: m_Map(map)
+			, m_Key(name)
+			, m_Callback(callback)
+		{
+			map[name].emplace(callback);
+		}
+
+		virtual void Destroy() {
+			delete this;
+		}
+
+	protected:
+		~CAfxInteropCalcCallbacksIterator() {
+			typename NameToCallbacks_t::iterator mapIterator = m_Map.find(m_Key);
+
+			if (mapIterator != m_Map.end())
+			{
+				typename Callbacks_t::iterator setIterator = (*mapIterator).second.find(m_Callback);
+				if (setIterator != (*mapIterator).second.end())
+				{
+					(*mapIterator).second.erase(setIterator);
+					if ((*mapIterator).second.empty())
+					{
+						m_Map.erase(mapIterator);
+					}
+				}
+			}
+		}
+
+	private:
+		typename NameToCallbacks_t & m_Map;
+		std::string m_Key;
+		T m_Callback;
+	};
+};
+
+class CAfxInteropHandleCalcCallbacks : public CAfxInteropCalcCallbacks<AfxInteropHandleCalcCallback_t, AfxInteropHandleCalcResult_t>
+{
+protected:
+	virtual bool ReadResult(CNamedPipeServer * pipeServer, AfxInteropHandleCalcResult_t & outResult) override
+	{
+		if (!pipeServer->ReadInt32(outResult.IntHandle)) return false;
+
+		return true;
+	}
+
+	virtual void CallResult(AfxInteropHandleCalcCallback_t callback, AfxInteropHandleCalcResult_t * result) override
+	{
+		callback(result);
+	}
+};
+
+class CAfxInteropVecAngCalcCallbacks : public CAfxInteropCalcCallbacks<AfxInteropVecAngCalcCallback_t, AfxInteropVecAngCalcResult_t>
+{
+protected:
+	virtual bool ReadResult(CNamedPipeServer * pipeServer, AfxInteropVecAngCalcResult_t & outResult) override
+	{
+		if (!pipeServer->ReadSingle(outResult.Vector.X)) return false;
+		if (!pipeServer->ReadSingle(outResult.Vector.Y)) return false;
+		if (!pipeServer->ReadSingle(outResult.Vector.Z)) return false;
+
+		if (!pipeServer->ReadSingle(outResult.QAngle.Pitch)) return false;
+		if (!pipeServer->ReadSingle(outResult.QAngle.Yaw)) return false;
+		if (!pipeServer->ReadSingle(outResult.QAngle.Roll)) return false;
+
+		return true;
+	}
+
+	virtual void CallResult(AfxInteropVecAngCalcCallback_t callback, AfxInteropVecAngCalcResult_t * result) override
+	{
+		callback(result);
+	}
+};
+
+class CAfxInteropCamCalcCallbacks : public CAfxInteropCalcCallbacks<AfxInteropCamCalcCallback_t, AfxInteropCamCalcResult_t>
+{
+protected:
+	virtual bool ReadResult(CNamedPipeServer * pipeServer, AfxInteropCamCalcResult_t & outResult) override
+	{
+		if (!pipeServer->ReadSingle(outResult.Vector.X)) return false;
+		if (!pipeServer->ReadSingle(outResult.Vector.Y)) return false;
+		if (!pipeServer->ReadSingle(outResult.Vector.Z)) return false;
+
+		if (!pipeServer->ReadSingle(outResult.QAngle.Pitch)) return false;
+		if (!pipeServer->ReadSingle(outResult.QAngle.Yaw)) return false;
+		if (!pipeServer->ReadSingle(outResult.QAngle.Roll)) return false;
+
+		if (!pipeServer->ReadSingle(outResult.Fov)) return false;
+
+		return true;
+	}
+
+	virtual void CallResult(AfxInteropCamCalcCallback_t callback, AfxInteropCamCalcResult_t * result) override
+	{
+		callback(result);
+	}
+};
+
+class CAfxInteropFovCalcCallbacks : public CAfxInteropCalcCallbacks<AfxInteropFovCalcCallback_t, AfxInteropFovCalcResult_t>
+{
+protected:
+	virtual bool ReadResult(CNamedPipeServer * pipeServer, AfxInteropFovCalcResult_t & outResult) override
+	{
+		if (!pipeServer->ReadSingle(outResult.Fov)) return false;
+
+		return true;
+	}
+
+	virtual void CallResult(AfxInteropFovCalcCallback_t callback, AfxInteropFovCalcResult_t * result) override
+	{
+		callback(result);
+	}
+};
+
 class CAfxInterop
 {
 public:
@@ -509,6 +729,26 @@ public:
 		, m_AfxInteropRender(afxInteropRender)
 	{
 
+	}
+
+	IAfxInteropCalcCallbacksIterator * __stdcall AddHandleCalcCallback(const char * name, AfxInteropHandleCalcCallback_t callback)
+	{
+		return m_HandleCalcCallbacks.Add(name, callback);
+	}
+
+	IAfxInteropCalcCallbacksIterator * __stdcall AddVecAngCalcCallback(const char * name, AfxInteropVecAngCalcCallback_t callback)
+	{
+		return m_VecAngCalcCallbacks.Add(name, callback);
+	}
+
+	IAfxInteropCalcCallbacksIterator * __stdcall AddCamCalcCallback(const char * name, AfxInteropCamCalcCallback_t callback)
+	{
+		return m_CamCalcCallbacks.Add(name, callback);
+	}
+
+	IAfxInteropCalcCallbacksIterator * __stdcall AddFovCalcCallback(const char * name, AfxInteropFovCalcCallback_t callback)
+	{
+		return m_FovCalcCallbacks.Add(name, callback);
 	}
 
 	void ScheduleCommand(const char * command)
@@ -639,6 +879,28 @@ public:
 						}
 
 						if (!m_EnginePipeServer->Flush()) goto locked_error;
+					}
+					break;
+
+					case EngineMessage_BeforeFrameRenderStart:
+					{
+
+					}
+					break;
+
+					case EngineMessage_AfterFrameRenderStart:
+					{
+						if (!m_HandleCalcCallbacks.BatchUpdateRequest(m_EnginePipeServer)) goto locked_error;
+						if (!m_VecAngCalcCallbacks.BatchUpdateRequest(m_EnginePipeServer)) goto locked_error;
+						if (!m_CamCalcCallbacks.BatchUpdateRequest(m_EnginePipeServer)) goto locked_error;
+						if (!m_FovCalcCallbacks.BatchUpdateRequest(m_EnginePipeServer)) goto locked_error;
+
+						if (!m_EnginePipeServer->Flush()) goto locked_error;
+
+						if (!m_HandleCalcCallbacks.BatchUpdateResult(m_EnginePipeServer)) goto locked_error;
+						if (!m_VecAngCalcCallbacks.BatchUpdateResult(m_EnginePipeServer)) goto locked_error;
+						if (!m_CamCalcCallbacks.BatchUpdateResult(m_EnginePipeServer)) goto locked_error;
+						if (!m_FovCalcCallbacks.BatchUpdateResult(m_EnginePipeServer)) goto locked_error;
 					}
 					break;
 
@@ -913,7 +1175,9 @@ private:
 		EngineMessage_BeforeHud = 4,
 		EngineMessage_AfterFrameRenderEnd = 5,
 		EngineMessage_EntityCreated = 6,
-		EngineMessage_EntityDeleted = 7
+		EngineMessage_EntityDeleted = 7,
+		EngineMessage_BeforeFrameRenderStart = 8,
+		EngineMessage_AfterFrameRenderStart = 9
 	};
 
 	enum DrawingMessage
@@ -972,6 +1236,11 @@ private:
 	std::queue<CDrawingData> m_DrawingDataQueue;
 
 	std::queue<std::string> m_Commands;
+
+	CAfxInteropHandleCalcCallbacks m_HandleCalcCallbacks;
+	CAfxInteropVecAngCalcCallbacks m_VecAngCalcCallbacks;
+	CAfxInteropCamCalcCallbacks m_CamCalcCallbacks;
+	CAfxInteropFovCalcCallbacks m_FovCalcCallbacks;
 
 	void Close()
 	{
@@ -1040,6 +1309,51 @@ extern "C" __declspec(dllexport) bool __stdcall AfxInteropScheduleCommand(const 
 	}
 
 	return false;
+}
+
+extern "C" __declspec(dllexport) IAfxInteropCalcCallbacksIterator * __stdcall AfxInteropAddHandleCalcCallback(const char * name, AfxInteropHandleCalcCallback_t callback)
+{
+	if (g_AfxInterop)
+	{
+		return g_AfxInterop->AddHandleCalcCallback(name, callback);
+	}
+
+	return nullptr;
+}
+
+extern "C" __declspec(dllexport) IAfxInteropCalcCallbacksIterator * __stdcall AfxInteropVecAngCalcCallback(const char * name, AfxInteropVecAngCalcCallback_t callback)
+{
+	if (g_AfxInterop)
+	{
+		return g_AfxInterop->AddVecAngCalcCallback(name, callback);
+	}
+
+	return nullptr;
+}
+
+extern "C" __declspec(dllexport) IAfxInteropCalcCallbacksIterator * __stdcall AfxInteropAddCamCalcCallback(const char * name, AfxInteropCamCalcCallback_t callback)
+{
+	if (g_AfxInterop)
+	{
+		return g_AfxInterop->AddCamCalcCallback(name, callback);
+	}
+
+	return nullptr;
+}
+
+extern "C" __declspec(dllexport) IAfxInteropCalcCallbacksIterator * __stdcall AfxInteropAddFovCalcCallback(const char * name, AfxInteropFovCalcCallback_t callback)
+{
+	if (g_AfxInterop)
+	{
+		return g_AfxInterop->AddFovCalcCallback(name, callback);
+	}
+
+	return nullptr;
+}
+
+extern "C" __declspec(dllexport) void __stdcall AfxInteropRemoveCallback(IAfxInteropCalcCallbacksIterator * iterator)
+{
+	if (iterator) iterator->Destroy();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

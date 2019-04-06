@@ -8,6 +8,7 @@
 #include "WrpConsole.h"
 #include "RenderView.h"
 #include "MirvTime.h"
+#include "MirvCalcs.h"
 
 #include <Windows.h>
 
@@ -91,7 +92,9 @@ namespace AfxInterop {
 			EngineMessage_BeforeHud = 4,
 			EngineMessage_AfterFrameRenderEnd = 5,
 			EngineMessage_EntityCreated = 6,
-			EngineMessage_EntityDeleted = 7
+			EngineMessage_EntityDeleted = 7,
+			EngineMessage_BeforeFrameRenderStart = 8,
+			EngineMessage_AfterFrameRenderStart = 9
 		};
 
 		class CConsole
@@ -215,6 +218,300 @@ namespace AfxInterop {
 		if (!m_Enabled) return;
 
 		++EngineThread::m_Frame;
+
+		//
+
+		std::unique_lock<std::mutex> lock(EngineThread::m_ConnectMutex);
+
+		if (!EngineThread::m_Connected) return;
+
+		int errorLine = 0;
+
+		if (!WriteInt32(EngineThread::m_hPipe, EngineThread::EngineMessage_BeforeFrameRenderStart)) { errorLine = __LINE__; goto locked_error; }
+
+		if (!Flush(EngineThread::m_hPipe)) { errorLine = __LINE__; goto locked_error; }
+
+		return;
+
+	locked_error:
+		Tier0_Warning("AfxInterop::BeforeFrameRenderStart: Error in line %i.\n", errorLine);
+		lock.unlock();
+		Disconnect();
+		return;
+	}
+
+	struct HandleCalcResult
+	{
+		INT32 IntHandle;
+
+		HandleCalcResult(INT32 intHandle)
+			: IntHandle(intHandle)
+		{
+		}
+	};
+
+	struct VecAngCalcResult
+	{
+		FLOAT X;
+		FLOAT Y;
+		FLOAT Z;
+		FLOAT Pitch;
+		FLOAT Yaw;
+		FLOAT Roll;
+
+		VecAngCalcResult(FLOAT x, FLOAT y, FLOAT z, FLOAT pitch, FLOAT yaw, FLOAT roll)
+			: X(x), Y(y), Z(z), Pitch(pitch), Yaw(yaw), Roll(roll)
+		{
+
+		}
+	};
+
+	struct CamCalcResult
+	{
+		FLOAT X;
+		FLOAT Y;
+		FLOAT Z;
+		FLOAT Pitch;
+		FLOAT Yaw;
+		FLOAT Roll;
+		FLOAT Fov;
+
+		CamCalcResult(FLOAT x, FLOAT y, FLOAT z, FLOAT pitch, FLOAT yaw, FLOAT roll, FLOAT fov)
+			: X(x), Y(y), Z(z), Pitch(pitch), Yaw(yaw), Roll(roll), Fov(fov)
+		{
+
+		}
+
+	};
+
+	struct FovCalcResult
+	{
+		FLOAT Fov;
+
+		FovCalcResult(FLOAT fov)
+			: Fov(fov)
+		{
+		}
+	};
+
+	void AfterFrameRenderStart()
+	{
+		if (!m_Enabled) return;
+
+		std::unique_lock<std::mutex> lock(EngineThread::m_ConnectMutex);
+
+		if (!EngineThread::m_Connected) return;
+
+		int errorLine = 0;
+
+		if (!WriteInt32(EngineThread::m_hPipe, EngineThread::EngineMessage_AfterFrameRenderStart)) { errorLine = __LINE__; goto locked_error; }
+
+		if (!Flush(EngineThread::m_hPipe)) { errorLine = __LINE__; goto locked_error; }
+
+		{
+			UINT32 numCalcs;
+			std::string calcName;
+
+			std::queue<HandleCalcResult *> handleCalcResults;
+			std::queue<VecAngCalcResult *> vecAngCalcResults;
+			std::queue<CamCalcResult *> camCalcResults;
+			std::queue<FovCalcResult *> fovCalcResults;
+
+			// Read and compute handle calcs:
+
+			if(!ReadUInt32(EngineThread::m_hPipe, numCalcs)) { errorLine = __LINE__; goto locked_error; }
+
+			for (UINT32 i = 0; i < numCalcs; ++i)
+			{
+				if(!ReadStringUTF8(EngineThread::m_hPipe, calcName)) { errorLine = __LINE__; goto locked_error; }
+
+				if (IMirvHandleCalc * calc = g_MirvHandleCalcs.GetByName(calcName.c_str()))
+				{
+					SOURCESDK::CSGO::CBaseHandle handle;
+
+					if (calc->CalcHandle(handle))
+					{
+						handleCalcResults.push(new HandleCalcResult(handle.ToInt()));
+					}
+					else handleCalcResults.push(nullptr);
+				}
+				else handleCalcResults.push(nullptr);
+			}
+
+			// Read and compute vecang calcs:
+
+			if (!ReadUInt32(EngineThread::m_hPipe, numCalcs)) { errorLine = __LINE__; goto locked_error; }
+
+			for (UINT32 i = 0; i < numCalcs; ++i)
+			{
+				if (!ReadStringUTF8(EngineThread::m_hPipe, calcName)) { errorLine = __LINE__; goto locked_error; }
+
+				if (IMirvVecAngCalc * calc = g_MirvVecAngCalcs.GetByName(calcName.c_str()))
+				{
+					SOURCESDK::Vector vector;
+					SOURCESDK::QAngle qangle;
+
+					if (calc->CalcVecAng(vector, qangle))
+					{
+						vecAngCalcResults.push(new VecAngCalcResult(vector.x, vector.y, vector.z, qangle.x, qangle.y, qangle.z));
+					}
+					else vecAngCalcResults.push(nullptr);
+				}
+				else vecAngCalcResults.push(nullptr);
+			}
+
+			// Read and compute cam calcs:
+
+			if (!ReadUInt32(EngineThread::m_hPipe, numCalcs)) { errorLine = __LINE__; goto locked_error; }
+
+			for (UINT32 i = 0; i < numCalcs; ++i)
+			{
+				if (!ReadStringUTF8(EngineThread::m_hPipe, calcName)) { errorLine = __LINE__; goto locked_error; }
+
+				if (IMirvCamCalc * calc = g_MirvCamCalcs.GetByName(calcName.c_str()))
+				{
+					SOURCESDK::Vector vector;
+					SOURCESDK::QAngle qangle;
+					float fov;
+
+					if (calc->CalcCam(vector, qangle, fov))
+					{
+						camCalcResults.push(new CamCalcResult(vector.x, vector.y, vector.z, qangle.x, qangle.y, qangle.z, fov));
+					}
+					else camCalcResults.push(nullptr);
+				}
+				else camCalcResults.push(nullptr);
+			}
+
+			// Read and fov calcs:
+
+			if (!ReadUInt32(EngineThread::m_hPipe, numCalcs)) { errorLine = __LINE__; goto locked_error; }
+
+			for (UINT32 i = 0; i < numCalcs; ++i)
+			{
+				if (!ReadStringUTF8(EngineThread::m_hPipe, calcName)) { errorLine = __LINE__; goto locked_error; }
+
+				if (IMirvFovCalc * calc = g_MirvFovCalcs.GetByName(calcName.c_str()))
+				{
+					float fov;
+
+					if (calc->CalcFov(fov))
+					{
+						fovCalcResults.push(new FovCalcResult(fov));
+					}
+					else fovCalcResults.push(nullptr);
+				}
+				else fovCalcResults.push(nullptr);
+			}
+
+			// Write handle calc result:
+
+			while (!handleCalcResults.empty())
+			{
+				HandleCalcResult * result = handleCalcResults.front();
+				handleCalcResults.pop();
+
+				if (result)
+				{
+					if (!WriteBoolean(EngineThread::m_hPipe, true)) { errorLine = __LINE__; goto locked_error; }
+
+					if (!WriteInt32(EngineThread::m_hPipe, result->IntHandle)) { errorLine = __LINE__; goto locked_error; }
+
+					delete result;
+				}
+				else
+				{
+					if (!WriteBoolean(EngineThread::m_hPipe, false)) { errorLine = __LINE__; goto locked_error; }
+				}
+			}
+
+			// Write vec ang calc result:
+
+			while (!vecAngCalcResults.empty())
+			{
+				VecAngCalcResult * result = vecAngCalcResults.front();
+				vecAngCalcResults.pop();
+
+				if (result)
+				{
+					if (!WriteBoolean(EngineThread::m_hPipe, true)) { errorLine = __LINE__; goto locked_error; }
+
+					if (!WriteSingle(EngineThread::m_hPipe, result->X)) { errorLine = __LINE__; goto locked_error; }
+					if (!WriteSingle(EngineThread::m_hPipe, result->Y)) { errorLine = __LINE__; goto locked_error; }
+					if (!WriteSingle(EngineThread::m_hPipe, result->Z)) { errorLine = __LINE__; goto locked_error; }
+
+					if (!WriteSingle(EngineThread::m_hPipe, result->Pitch)) { errorLine = __LINE__; goto locked_error; }
+					if (!WriteSingle(EngineThread::m_hPipe, result->Yaw)) { errorLine = __LINE__; goto locked_error; }
+					if (!WriteSingle(EngineThread::m_hPipe, result->Roll)) { errorLine = __LINE__; goto locked_error; }
+
+					delete result;
+				}
+				else
+				{
+					if (!WriteBoolean(EngineThread::m_hPipe, false)) { errorLine = __LINE__; goto locked_error; }
+				}
+			}
+
+			// Write cam calc result:
+
+			while (!camCalcResults.empty())
+			{
+				CamCalcResult * result = camCalcResults.front();
+				camCalcResults.pop();
+
+				if (result)
+				{
+					if (!WriteBoolean(EngineThread::m_hPipe, true)) { errorLine = __LINE__; goto locked_error; }
+
+					if (!WriteSingle(EngineThread::m_hPipe, result->X)) { errorLine = __LINE__; goto locked_error; }
+					if (!WriteSingle(EngineThread::m_hPipe, result->Y)) { errorLine = __LINE__; goto locked_error; }
+					if (!WriteSingle(EngineThread::m_hPipe, result->Z)) { errorLine = __LINE__; goto locked_error; }
+
+					if (!WriteSingle(EngineThread::m_hPipe, result->Pitch)) { errorLine = __LINE__; goto locked_error; }
+					if (!WriteSingle(EngineThread::m_hPipe, result->Yaw)) { errorLine = __LINE__; goto locked_error; }
+					if (!WriteSingle(EngineThread::m_hPipe, result->Roll)) { errorLine = __LINE__; goto locked_error; }
+
+					if (!WriteSingle(EngineThread::m_hPipe, result->Fov)) { errorLine = __LINE__; goto locked_error; }
+
+					delete result;
+				}
+				else
+				{
+					if (!WriteBoolean(EngineThread::m_hPipe, false)) { errorLine = __LINE__; goto locked_error; }
+				}
+			}
+
+			// Write fov calc result:
+
+			while (!fovCalcResults.empty())
+			{
+				FovCalcResult * result = fovCalcResults.front();
+				fovCalcResults.pop();
+
+				if (result)
+				{
+					if (!WriteBoolean(EngineThread::m_hPipe, true)) { errorLine = __LINE__; goto locked_error; }
+
+					if (!WriteSingle(EngineThread::m_hPipe, result->Fov)) { errorLine = __LINE__; goto locked_error; }
+
+					delete result;
+				}
+				else
+				{
+					if (!WriteBoolean(EngineThread::m_hPipe, false)) { errorLine = __LINE__; goto locked_error; }
+				}
+			}
+
+			// Do not flush here, since we are not waiting for data.
+		}
+	
+		return;
+
+	locked_error:
+		Tier0_Warning("AfxInterop::AfterFrameRenderStart: Error in line %i.\n", errorLine);
+		lock.unlock();
+		Disconnect();
+		return;
 	}
 
 	void BeforeHud(const SOURCESDK::CViewSetup_csgo & view)
