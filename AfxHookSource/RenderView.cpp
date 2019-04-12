@@ -157,9 +157,55 @@ bool Hook_VClient_RenderView::IsInstalled(void) {
 	return m_IsInstalled;
 }
 
+void TrySetAbsOriginAndAngles(float Tx, float Ty, float Tz, float Rx, float Ry, float Rz)
+{
+	static bool firstRun = true;
+	static SOURCESDK::CSGO::IServerTools * serverTools = nullptr;
+
+	if (firstRun)
+	{
+		firstRun = false;
+		
+		if (HMODULE hServerModule = GetModuleHandleA("server"))
+		{
+			if (SOURCESDK::CreateInterfaceFn createInterfaceFn = (SOURCESDK::CreateInterfaceFn)GetProcAddress(hServerModule, "CreateInterface"))
+			{
+				int returnCode = 0;
+
+				serverTools = (SOURCESDK::CSGO::IServerTools *)createInterfaceFn(SOURCESDK_CSGO_VSERVERTOOLS_INTERFACE_VERSION, &returnCode);
+			}
+		}
+
+		if (!serverTools)
+		{
+			Tier0_Warning(
+				"AFXERROR: Could not get %s interface required for server view override.\n"
+				, SOURCESDK_CSGO_VSERVERTOOLS_INTERFACE_VERSION);
+		}
+	}
+
+	if (serverTools)
+	{
+		SOURCESDK::Vector origin;
+		SOURCESDK::QAngle angles;
+
+		origin.x = Tx;
+		origin.y = Ty;
+		origin.z = Tz;
+
+		angles.x = Rx;
+		angles.y = Ry;
+		angles.z = Rz;
+
+		serverTools->MoveEngineViewTo(origin, angles);
+	}
+}
+
 
 void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, float &Rx, float &Ry, float &Rz, float &Fov)
 {
+	bool originOrAnglesOverriden = false;
+
 	float curTime = g_MirvTime.GetTime();
 
 	GameCameraOrigin[0] = Tx;
@@ -170,7 +216,7 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 	GameCameraAngles[2] = Rz;
 	GameCameraFov = Fov;
 
-	g_MirvCam.ApplySource(Tx, Ty, Tz, Rz, Rx, Ry);
+	if (g_MirvCam.ApplySource(Tx, Ty, Tz, Rz, Rx, Ry)) originOrAnglesOverriden = true;
 
 	if(m_CamPath.Enabled_get() && m_CamPath.CanEval())
 	{
@@ -183,6 +229,8 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 			//Tier0_Msg("================",curTime);
 			//Tier0_Msg("currenTime = %f",curTime);
 			//Tier0_Msg("vCp = %f %f %f\n", val.X, val.Y, val.Z);
+
+			originOrAnglesOverriden = true;
 
 			Tx = (float)val.X;
 			Ty = (float)val.Y;
@@ -203,6 +251,8 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 			curTime -m_ImportBaseTime,
 			Tf
 		)) {
+			originOrAnglesOverriden = true;
+
 			Ty = (float)(-Tf[0]);
 			Tz = (float)(+Tf[1]);
 			Tx = (float)(-Tf[2]);
@@ -218,6 +268,8 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 
 		if (m_CamImport->GetCamData(curTime, LastWidth, LastHeight, camData))
 		{
+			originOrAnglesOverriden = true;
+
 			Tx = (float)camData.XPosition;
 			Ty = (float)camData.YPosition;
 			Tz = (float)camData.ZPosition;
@@ -232,6 +284,8 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 
 	if(g_AfxHookSourceInput.GetCameraControlMode() && m_Globals)
 	{
+		originOrAnglesOverriden = true;
+
 		double dT = m_Globals->absoluteframetime_get();
 		double dForward = dT * g_AfxHookSourceInput.GetCamDForward();
 		double dLeft = dT * g_AfxHookSourceInput.GetCamDLeft();
@@ -274,15 +328,23 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 
 		if(g_Aiming.Aim(m_Globals->absoluteframetime_get(), Vector3(Tx, Ty, Tz), dRx, dRy, dRz))
 		{
+			originOrAnglesOverriden = true;
+			
 			Rx = (float)dRx;
 			Ry = (float)dRy;
 			Rz = (float)dRz;
 		}
 	}
 
-	g_MirvCam.ApplyOffset(Tx, Ty, Tz, Rz, Rx, Ry);
+	if (g_MirvCam.ApplyOffset(Tx, Ty, Tz, Rz, Rx, Ry)) originOrAnglesOverriden = true;
 
 	g_MirvCam.ApplyFov(Fov);
+
+	if (originOrAnglesOverriden && this->ForceViewOverride)
+	{
+		TrySetAbsOriginAndAngles(Tx, Ty, Tz, Rz, Rx, Ry);
+	}
+
 
 	if(m_Export) {
 		g_BvhExport->WriteFrame(

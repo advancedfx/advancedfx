@@ -212,7 +212,6 @@ SOURCESDK::CSGO::CGameUIFuncs * g_pGameUIFuncs = nullptr;
 SOURCESDK::CSGO::panorama::CPanoramaUIEngine * g_pPanoramaUIEngine = nullptr;
 SOURCESDK::CSGO::CPanoramaUIClient * g_pPanoramaUIClient = nullptr;
 
-
 void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals)
 {
 	static bool bFirstRun = true;
@@ -367,7 +366,6 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 			else {
 				ErrorBox("Could not get " VENGINE_RENDERVIEW_INTERFACE_VERSION_CSGO ".");
 			}
-
 
 			/*
 			if (iface = appSystemFactory(SORUCESDK_CSGO_VENGINE_GAMEUIFUNCS_VERSION, NULL))
