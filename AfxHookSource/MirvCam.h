@@ -19,11 +19,14 @@ public:
 		A_View
 	};
 
-	void ApplySource(float & x, float & y, float & z, float & xRotation, float & yRotation, float & zRotation);
+	/// <returns>true if overriden</returns>
+	bool ApplySource(float & x, float & y, float & z, float & xRotation, float & yRotation, float & zRotation);
 
-	void ApplyOffset(float & x, float & y, float & z, float & xRotation, float & yRotation, float & zRotation);
+	/// <returns>true if overriden</returns>
+	bool ApplyOffset(float & x, float & y, float & z, float & xRotation, float & yRotation, float & zRotation);
 
-	void ApplyFov(float & fov);
+	/// <returns>true if overriden</returns>
+	bool ApplyFov(float & fov);
 
 public:
 	SOURCESDK::CSGO::CBaseHandle m_SourceHandle;

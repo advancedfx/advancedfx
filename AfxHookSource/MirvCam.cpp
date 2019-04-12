@@ -8,8 +8,10 @@
 #include <shared/AfxMath.h>
 
 
-void CMirvCam::ApplySource(float & x, float & y, float & z, float & xRotation, float & yRotation, float & zRotation)
+bool CMirvCam::ApplySource(float & x, float & y, float & z, float & xRotation, float & yRotation, float & zRotation)
 {
+	bool overriden = false;
+
 	if (m_Source)
 	{
 		SOURCESDK::Vector o;
@@ -17,21 +19,51 @@ void CMirvCam::ApplySource(float & x, float & y, float & z, float & xRotation, f
 
 		if (m_Source->CalcVecAng(o, a))
 		{
-			if (m_SourceUseX) x = o.x;
-			if (m_SourceUseY) y = o.y;
-			if (m_SourceUseZ) z = o.z;
+			if (m_SourceUseX)
+			{
+				overriden = true;
+				x = o.x;
+			}
+			if (m_SourceUseY)
+			{
+				overriden = true;
+				y = o.y;
+			}
+			if (m_SourceUseZ)
+			{
+				overriden = true;
+				z = o.z;
+			}
 
-			if (m_SourceUseXRotation) xRotation = a.z;
-			if (m_SourceUseYRotation) yRotation = a.x;
-			if (m_SourceUseZRotation) zRotation = a.y;
+			if (m_SourceUseXRotation)
+			{
+				overriden = true;
+				xRotation = a.z;
+			}
+			if (m_SourceUseYRotation)
+			{
+				overriden = true;
+				yRotation = a.x;
+			}
+			if (m_SourceUseZRotation)
+			{
+				overriden = true;
+				zRotation = a.y;
+			}
 		}
 	}
+
+	return overriden;
 }
 
-void CMirvCam::ApplyOffset(float & x, float & y, float & z, float & xRotation, float & yRotation, float & zRotation)
+bool CMirvCam::ApplyOffset(float & x, float & y, float & z, float & xRotation, float & yRotation, float & zRotation)
 {
+	bool overriden = false;
+
 	if (m_OffsetForwad || m_OffsetLeft || m_OffsetUp)
 	{
+		overriden = true;
+
 		double forward[3], right[3], up[3];
 
 		Afx::Math::MakeVectors(xRotation, yRotation, zRotation, forward, right, up);
@@ -43,6 +75,8 @@ void CMirvCam::ApplyOffset(float & x, float & y, float & z, float & xRotation, f
 
 	if (m_OffsetForwardRot || m_OffseLeftRot || m_OffsetUpRot)
 	{
+		overriden = true;
+
 		Afx::Math::Quaternion q1 = Afx::Math::Quaternion::FromQREulerAngles(Afx::Math::QREulerAngles::FromQEulerAngles(Afx::Math::QEulerAngles(yRotation, zRotation, xRotation)));
 		Afx::Math::Quaternion q2 = Afx::Math::Quaternion::FromQREulerAngles(Afx::Math::QREulerAngles::FromQEulerAngles(Afx::Math::QEulerAngles(m_OffseLeftRot, m_OffsetUpRot, m_OffsetForwardRot)));
 
@@ -52,19 +86,26 @@ void CMirvCam::ApplyOffset(float & x, float & y, float & z, float & xRotation, f
 		yRotation = (float)angs.Pitch;
 		zRotation = (float)angs.Yaw;
 	}
+
+	return overriden;
 }
 
-void CMirvCam::ApplyFov(float & fov)
+bool CMirvCam::ApplyFov(float & fov)
 {
+	bool overriden = false;
+
 	if (m_Fov)
 	{
 		float tFov;
 
 		if (m_Fov->CalcFov(tFov))
 		{
+			overriden = true;
 			fov = tFov;
 		}
 	}
+
+	return overriden;
 }
 
 void CMirvCam::RebuildCalc(void)

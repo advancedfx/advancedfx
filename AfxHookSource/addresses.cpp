@@ -66,6 +66,7 @@ AFXADDR_DEF(csgo_C_CSPlayer_IClientNetworkable_entindex)
 AFXADDR_DEF(csgo_engine_RegisterForUnhandledEvent_ToggleDebugger_BeforeCall)
 AFXADDR_DEF(csgo_CShaderAPIDx8_UnkCreateTexture)
 
+
 void ErrorBox(char const * messageText);
 
 #define STRINGIZE(x) STRINGIZE2(x)
@@ -1533,7 +1534,6 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 
 			AFXADDR_SET(csgo_Unknown_GetTeamsSwappedOnScreen, addr);
 		}
-
 	}
 	else
 	{

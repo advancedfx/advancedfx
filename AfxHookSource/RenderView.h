@@ -18,6 +18,8 @@ class Hook_VClient_RenderView
 public:
 	CamPath m_CamPath;
 
+	bool ForceViewOverride = true;
+
 	float GameCameraOrigin[3] = { 0.0f, 0.0f, 0.0f };
 	float GameCameraAngles[3] = { 0.0f, 0.0f, 0.0f };
 	float GameCameraFov = 90.0f;

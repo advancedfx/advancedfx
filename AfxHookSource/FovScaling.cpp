@@ -124,43 +124,34 @@ double AlienSwarm_InverseFovScaling(double width, double height, double fov)
 	return 2.0 * halfAngle / (2.0 * M_PI / 360.0);
 }
 
-CON_COMMAND(mirv_cfg, "") {
-
+void Console_MirvFovScaling(IWrpCommandArgs * args)
+{
 	int argC = args->ArgC();
+
 	const char * arg0 = args->ArgV(0);
 
-	if(2 <= argC)
-	{
+	if (2 <= argC) {
+
 		const char * arg1 = args->ArgV(1);
 
-		if (0 == _stricmp("fovScaling", arg1)) {
+		FovScaling fovScaling;
 
-			if (3 <= argC) {
-
-				const char * arg2 = args->ArgV(2);
-
-				FovScaling fovScaling;
-
-				if (CStringToFovScaling(arg2, fovScaling)) {
-					SetFovScaling(fovScaling);
-				}
-				else Tier0_Warning("Error: \"%s\" is not a valid fovScaling.\n", arg2);
-			}
-
-			Tier0_Msg(
-				"%s fovScaling default|none|alienSwarm - Set default fov scaling.\n"
-				"Current: %s\n"
-				"Default: %s\n"
-				, arg0
-				, FovScalingToCString(GetFovScaling())
-				, FovScalingToCString(GetDefaultFovScaling())
-			);
-			return;
+		if (CStringToFovScaling(arg1, fovScaling)) {
+			SetFovScaling(fovScaling);
 		}
+		else Tier0_Warning("Error: \"%s\" is not a valid fovScaling.\n", arg1);
+
+		return;
 	}
 
 	Tier0_Msg(
-		"%s fovScaling [...] - Set default fov scaling.\n"
+		"%s default|none|alienSwarm - Set default fov scaling.\n"
+		"Current: %s\n"
+		"Default: %s\n"
 		, arg0
+		, FovScalingToCString(GetFovScaling())
+		, FovScalingToCString(GetDefaultFovScaling())
 	);
+	return;
 }
+

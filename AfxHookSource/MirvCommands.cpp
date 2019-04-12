@@ -3980,3 +3980,45 @@ CON_COMMAND(mirv_time, "time control")
 		"mirv_time pausedTime [...].\n"
 	);
 }
+
+
+CON_COMMAND(mirv_cfg, "general HLAE configuration")
+{
+	int argC = args->ArgC();
+	const char * arg0 = args->ArgV(0);
+
+	if (2 <= argC)
+	{
+		const char * arg1 = args->ArgV(1);
+
+		if (0 == _stricmp("fovScaling", arg1))
+		{
+			CSubWrpCommandArgs subArgs(args, 2);
+			Console_MirvFovScaling(&subArgs);
+			return;
+		}
+		else if (0 == _stricmp("forceViewOverride", arg1))
+		{
+			if (3 <= argC)
+			{
+				g_Hook_VClient_RenderView.ForceViewOverride = 0 != atoi(args->ArgV(2));
+				return;
+			}
+
+			Tier0_Msg(
+				"%s forceViewOverride 0|1\n"
+				"Current value: %i\n"
+				, arg0
+				, g_Hook_VClient_RenderView.ForceViewOverride ? 1 : 0
+			);
+			return;
+		}
+	}
+
+	Tier0_Msg(
+		"%s fovScaling [...] - Set default fov scaling.\n"
+		"%s forceViewOverride [...] - If to force the view override onto the local player, can fix a few bugs (CS:GO only)."
+		, arg0
+		, arg0
+	);
+}
