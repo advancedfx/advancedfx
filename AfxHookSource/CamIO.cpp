@@ -123,7 +123,7 @@ bool CamImport::GetCamData(double time, double width, double height, CamData & o
 
 	// Jump direcltly to beginning if possible and required:
 
-	if (m_HasLastFrame && m_FirstFrameTime >= time - m_StartTime)
+	if (m_HasLastFrame && 0 >= time - m_StartTime)
 	{
 		if (!m_Ifs.seekg(m_DataStart))
 			return false;
@@ -163,11 +163,18 @@ bool CamImport::GetCamData(double time, double width, double height, CamData & o
 			}
 		}
 
+		bool hadFrame = m_HasLastFrame;
+
 		m_HasLastFrame = ReadDataLine(m_LastFrame);
 		if (!m_HasLastFrame)
 			return false;
 
-		m_FirstFrameTime = m_LastFrame.Time;
+		if (!hadFrame)
+		{
+			// First frame read.
+			m_FirstFrameTime = m_LastFrame.Time;
+		}
+
 		m_LastQuat = Afx::Math::Quaternion::FromQREulerAngles(Afx::Math::QREulerAngles::FromQEulerAngles(Afx::Math::QEulerAngles(m_LastFrame.YRotation, m_LastFrame.ZRotation, m_LastFrame.XRotation)));
 		m_NextFrame = m_LastFrame;
 		m_NextQuat = m_LastQuat;
