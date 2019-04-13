@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.51.6</version>
+<time>2019-04-13T05:09Z</time>
+<changes>
+<change type="fixed">
+Fixes problem with mirv_camio still lagging / causing low FPS, many thanks to https://twitter.com/priusCSGO for reporting it!
+</change>
+</changes>
+<comments>
+The new -d3d9ex CS:GO launch option is not supported yet!
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.51.5</version>
 <time>2019-04-12T16:30Z</time>
 <changes>
