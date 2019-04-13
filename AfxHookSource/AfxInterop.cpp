@@ -40,6 +40,7 @@ namespace AfxInterop {
 	bool ReadInt32(HANDLE hFile, INT32 & outValue);
 	bool ReadCompressedInt32(HANDLE hFile, INT32 & outValue);
 	bool ReadHandle(HANDLE hFile, HANDLE & outValue);
+	bool ReadSingle(HANDLE hFile, FLOAT & value);
 	bool ReadStringUTF8(HANDLE hFile, std::string & outValue);
 	bool WriteBytes(HANDLE hFile, LPVOID lpBuffer, int offset, DWORD numBytes);
 	bool WriteBoolean(HANDLE hFile, bool value);
@@ -49,7 +50,7 @@ namespace AfxInterop {
 	bool WriteCompressedUInt32(HANDLE hFile, UINT32 value);
 	bool WriteInt32(HANDLE hFile, INT32 value);
 	bool WriteCompressedInt32(HANDLE hFile, INT32 value);
-	bool WriteSingle(HANDLE hFile, float value);
+	bool WriteSingle(HANDLE hFile, FLOAT value);
 	bool WriteStringUTF8(HANDLE hFile, const std::string);
 	bool WriteHandle(HANDLE hFille, HANDLE value);
 	bool Flush(HANDLE hFile);
@@ -94,7 +95,8 @@ namespace AfxInterop {
 			EngineMessage_EntityCreated = 6,
 			EngineMessage_EntityDeleted = 7,
 			EngineMessage_BeforeFrameRenderStart = 8,
-			EngineMessage_AfterFrameRenderStart = 9
+			EngineMessage_AfterFrameRenderStart = 9,
+			EngineMessage_OnRenderView = 10
 		};
 
 		class CConsole
@@ -294,6 +296,16 @@ namespace AfxInterop {
 		}
 	};
 
+	struct BoolCalcResult
+	{
+		BOOL Result;
+
+		BoolCalcResult(BOOL result)
+			: Result(result)
+		{
+		}
+	};
+
 	void AfterFrameRenderStart()
 	{
 		if (!m_Enabled) return;
@@ -316,6 +328,7 @@ namespace AfxInterop {
 			std::queue<VecAngCalcResult *> vecAngCalcResults;
 			std::queue<CamCalcResult *> camCalcResults;
 			std::queue<FovCalcResult *> fovCalcResults;
+			std::queue<BoolCalcResult *> boolCalcResults;
 
 			// Read and compute handle calcs:
 
@@ -383,7 +396,7 @@ namespace AfxInterop {
 				else camCalcResults.push(nullptr);
 			}
 
-			// Read and fov calcs:
+			// Read and compute fov calcs:
 
 			if (!ReadUInt32(EngineThread::m_hPipe, numCalcs)) { errorLine = __LINE__; goto locked_error; }
 
@@ -402,6 +415,27 @@ namespace AfxInterop {
 					else fovCalcResults.push(nullptr);
 				}
 				else fovCalcResults.push(nullptr);
+			}
+
+			// Read and compute bool calcs:
+
+			if (!ReadUInt32(EngineThread::m_hPipe, numCalcs)) { errorLine = __LINE__; goto locked_error; }
+
+			for (UINT32 i = 0; i < numCalcs; ++i)
+			{
+				if (!ReadStringUTF8(EngineThread::m_hPipe, calcName)) { errorLine = __LINE__; goto locked_error; }
+
+				if (IMirvBoolCalc * calc = g_MirvBoolCalcs.GetByName(calcName.c_str()))
+				{
+					bool result;
+
+					if (calc->CalcBool(result))
+					{
+						boolCalcResults.push(new BoolCalcResult(result));
+					}
+					else boolCalcResults.push(nullptr);
+				}
+				else boolCalcResults.push(nullptr);
 			}
 
 			// Write handle calc result:
@@ -502,6 +536,27 @@ namespace AfxInterop {
 				}
 			}
 
+			// Write bool calc result:
+
+			while (!boolCalcResults.empty())
+			{
+				BoolCalcResult * result = boolCalcResults.front();
+				boolCalcResults.pop();
+
+				if (result)
+				{
+					if (!WriteBoolean(EngineThread::m_hPipe, true)) { errorLine = __LINE__; goto locked_error; }
+
+					if (!WriteBoolean(EngineThread::m_hPipe, result->Result)) { errorLine = __LINE__; goto locked_error; }
+
+					delete result;
+				}
+				else
+				{
+					if (!WriteBoolean(EngineThread::m_hPipe, false)) { errorLine = __LINE__; goto locked_error; }
+				}
+			}
+
 			// Do not flush here, since we are not waiting for data.
 		}
 	
@@ -512,6 +567,54 @@ namespace AfxInterop {
 		lock.unlock();
 		Disconnect();
 		return;
+	}
+
+	bool OnRenderView(float & Tx, float & Ty, float & Tz, float & Rx, float & Ry, float & Rz)
+	{
+
+		std::unique_lock<std::mutex> lock(EngineThread::m_ConnectMutex);
+
+		if (!EngineThread::m_Connected) return false;
+
+		int errorLine = 0;
+
+		if (!WriteInt32(EngineThread::m_hPipe, EngineThread::EngineMessage_OnRenderView)) { errorLine = __LINE__; goto locked_error; }
+
+		if (!Flush(EngineThread::m_hPipe)) { errorLine = __LINE__; goto locked_error; }
+
+		{
+			bool overrideView;
+
+			if(!ReadBoolean(EngineThread::m_hPipe, overrideView)) { errorLine = __LINE__; goto locked_error; }
+
+			if (overrideView)
+			{
+				FLOAT tTx, tTy, tTz, tRx, tRy, tRz;
+
+				if (!ReadSingle(EngineThread::m_hPipe, tTx)) { errorLine = __LINE__; goto locked_error; }
+				if (!ReadSingle(EngineThread::m_hPipe, tTy)) { errorLine = __LINE__; goto locked_error; }
+				if (!ReadSingle(EngineThread::m_hPipe, tTz)) { errorLine = __LINE__; goto locked_error; }
+				if (!ReadSingle(EngineThread::m_hPipe, tRx)) { errorLine = __LINE__; goto locked_error; }
+				if (!ReadSingle(EngineThread::m_hPipe, tRy)) { errorLine = __LINE__; goto locked_error; }
+				if (!ReadSingle(EngineThread::m_hPipe, tRz)) { errorLine = __LINE__; goto locked_error; }
+
+				Tx = tTx;
+				Ty = tTy;
+				Tz = tTz;
+				Rx = tRx;
+				Ry = tRy;
+				Rz = tRz;
+			}
+			
+		}
+
+		return false;
+
+	locked_error:
+		Tier0_Warning("AfxInterop::OnRenderView: Error in line %i.\n", errorLine);
+		lock.unlock();
+		Disconnect();
+		return false;
 	}
 
 	void BeforeHud(const SOURCESDK::CViewSetup_csgo & view)
@@ -1088,6 +1191,11 @@ namespace AfxInterop {
 		}
 
 		return false;
+	}
+
+	bool ReadSingle(HANDLE hFile, FLOAT & outValue)
+	{
+		return ReadBytes(hFile, &outValue, 0, sizeof(outValue));
 	}
 
 	bool ReadStringUTF8(HANDLE hFile, std::string & outValue)

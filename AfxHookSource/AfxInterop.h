@@ -38,6 +38,12 @@ namespace AfxInterop {
 
 	int GetFrameCount();
 
+	/// <param name="Rx">Pitch</param>
+	/// <param name="Ry">Yaw</param>
+	/// <param name="Rz">Roll</param>
+	/// <returns>true if values are overriden.</returns>
+	bool OnRenderView(float & Tx, float & Ty, float & Tz, float & Rx, float & Ry, float & Rz);
+
 	//
 	// Drawing thread:
 

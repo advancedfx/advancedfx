@@ -86,7 +86,7 @@ public:
 
 	virtual int GetRefCount(void) abstract = 0;
 
-	virtual bool CalcBool(void) abstract = 0;
+	virtual bool CalcBool(bool & outResult) abstract = 0;
 
 	virtual  char const * GetName(void) abstract = 0;
 
@@ -213,6 +213,7 @@ public:
 
 	IMirvBoolCalc * NewHandleCalc(char const * name, IMirvHandleCalc * handle);
 	IMirvBoolCalc * NewVecAngCalc(char const * name, IMirvVecAngCalc * vecAng);
+	IMirvBoolCalc * NewAliveCalc(char const * name, IMirvHandleCalc * vecAng);
 	//IMirvBoolCalc * NewAndCalc(char const * name, IMirvBoolCalc * a, IMirvBoolCalc * b);
 	//IMirvBoolCalc * NewOrCalc(char const * name, IMirvBoolCalc * a, IMirvBoolCalc * b);
 	//IMirvBoolCalc * NewNotCalc(char const * name, IMirvBoolCalc * a);

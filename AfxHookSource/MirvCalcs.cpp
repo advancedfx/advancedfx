@@ -23,6 +23,7 @@ CMirvHandleCalcs g_MirvHandleCalcs;
 CMirvVecAngCalcs g_MirvVecAngCalcs;
 CMirvCamCalcs g_MirvCamCalcs;
 CMirvFovCalcs g_MirvFovCalcs;
+CMirvBoolCalcs g_MirvBoolCalcs;
 
 void CalcSmooth(double deltaT, double targetPos, double & lastPos, double & lastVel, double LimitVelocity, double LimitAcceleration)
 {
@@ -1502,7 +1503,11 @@ public:
 
 	virtual bool CalcVecAng(SOURCESDK::Vector & outVector, SOURCESDK::QAngle & outAngles)
 	{
-		bool condition = m_Condition->CalcBool();
+		bool condition;
+
+		bool result = m_Condition->CalcBool(condition);
+		
+		condition = result && condition;
 
 		return condition ? m_CondTrue->CalcVecAng(outVector, outAngles) : m_CondFalse->CalcVecAng(outVector, outAngles);
 	}
@@ -2781,11 +2786,13 @@ public:
 		Tier0_Msg(" type=handle handle=\"%s\"", m_Handle->GetName());
 	}
 
-	virtual bool CalcBool(void)
+	virtual bool CalcBool(bool & outResult)
 	{
 		SOURCESDK::CSGO::CBaseHandle dummy;
 
-		return m_Handle->CalcHandle(dummy);
+		outResult = m_Handle->CalcHandle(dummy);
+
+		return true;
 	}
 
 protected:
@@ -2815,12 +2822,14 @@ public:
 		Tier0_Msg(" type=vecAng vecAng=\"%s\"", m_VecAng->GetName());
 	}
 
-	virtual bool CalcBool(void)
+	virtual bool CalcBool(bool & outResult)
 	{
 		SOURCESDK::Vector dummyVec;
 		SOURCESDK::QAngle dummyAng;
 
-		return m_VecAng->CalcVecAng(dummyVec, dummyAng);
+		outResult = m_VecAng->CalcVecAng(dummyVec, dummyAng);
+
+		return true;
 	}
 
 protected:
@@ -2831,6 +2840,52 @@ protected:
 
 private:
 	IMirvVecAngCalc * m_VecAng;
+};
+
+class CMirvBoolAliveCalc : public CMirvBoolCalc
+{
+public:
+	CMirvBoolAliveCalc(char const * name, IMirvHandleCalc * handle)
+		: CMirvBoolCalc(name)
+		, m_Handle(handle)
+	{
+		m_Handle->AddRef();
+	}
+
+	virtual void Console_Print(void)
+	{
+		CMirvBoolCalc::Console_Print();
+
+		Tier0_Msg(" type=handle handle=\"%s\"", m_Handle->GetName());
+	}
+
+	virtual bool CalcBool(bool & outResult)
+	{
+		SOURCESDK::CSGO::CBaseHandle parentHandle;
+
+		if (m_Handle->CalcHandle(parentHandle) && parentHandle.IsValid())
+		{
+			SOURCESDK::IClientEntity_csgo * clientEntity = SOURCESDK::g_Entitylist_csgo->GetClientEntityFromHandle(parentHandle);
+			SOURCESDK::C_BaseEntity_csgo * baseEntity = clientEntity ? clientEntity->GetBaseEntity() : 0;
+
+			if (baseEntity)
+			{
+				outResult = baseEntity->IsAlive();
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+protected:
+	virtual ~CMirvBoolAliveCalc()
+	{
+		m_Handle->Release();
+	}
+
+private:
+	IMirvHandleCalc * m_Handle;
 };
 
 
@@ -3639,6 +3694,23 @@ IMirvBoolCalc * CMirvBoolCalcs::NewVecAngCalc(char const * name, IMirvVecAngCalc
 		return 0;
 
 	IMirvBoolCalc * result = new CMirvBoolVecAngCalc(name, vecAng);
+
+	if (name)
+	{
+		result->AddRef();
+
+		m_Calcs.push_back(result);
+	}
+
+	return result;
+}
+
+IMirvBoolCalc * CMirvBoolCalcs::NewAliveCalc(char const * name, IMirvHandleCalc * handle)
+{
+	if (name && !Console_CheckName(name))
+		return 0;
+
+	IMirvBoolCalc * result = new CMirvBoolAliveCalc(name, handle);
 
 	if (name)
 	{
@@ -4488,6 +4560,110 @@ void mirv_calcs_fov(IWrpCommandArgs * args)
 }
 
 
+void mirv_calcs_bool(IWrpCommandArgs * args)
+{
+	int argc = args->ArgC();
+
+	char const * arg0 = args->ArgV(0);
+
+	if (2 <= argc)
+	{
+		char const * arg1 = args->ArgV(1);
+
+		if (0 == _stricmp("add", arg1))
+		{
+			if (3 <= argc)
+			{
+				char const * arg2 = args->ArgV(2);
+
+				if (0 == _stricmp("alive", arg2) && 5 <= argc)
+				{
+					char const * parentCalcName = args->ArgV(4);
+
+					IMirvHandleCalc * parentCalc = g_MirvHandleCalcs.GetByName(parentCalcName);
+
+					if (parentCalc)
+						g_MirvBoolCalcs.NewAliveCalc(args->ArgV(3), parentCalc);
+					else
+						Tier0_Warning("Error: No handle calc with name \"%s\" found.\n", parentCalcName);
+
+					return;
+				}
+			}
+
+			Tier0_Msg(
+				"%s add alive <sName> <handleCalcName> - Returns true if alive.\n"
+				, arg0
+			);
+			return;
+		}
+		else if (0 == _stricmp("remove", arg1) && 3 <= argc)
+		{
+			g_MirvBoolCalcs.Console_Remove(args->ArgV(2));
+			return;
+		}
+		else if (0 == _stricmp("print", arg1))
+		{
+			g_MirvBoolCalcs.Console_Print();
+			return;
+		}
+		else if (0 == _stricmp("test", arg1) && 3 <= argc)
+		{
+			char const * parentCalcName = args->ArgV(2);
+
+			IMirvBoolCalc * parentCalc = g_MirvBoolCalcs.GetByName(parentCalcName);
+
+			if (parentCalc)
+			{
+				bool value;
+				bool calced = parentCalc->CalcBool(value);
+
+				Tier0_Msg("Calc: ");
+				parentCalc->Console_Print();
+				if (calced)
+					Tier0_Msg("\nResult: true, bool=%i\n", value ? 1 : 0);
+				else
+					Tier0_Msg("\nResult: false\n");
+			}
+			else
+				Tier0_Warning("Error: No calc with name \"%s\" found.\n", parentCalcName);
+
+			return;
+		}
+		else if (0 == _stricmp("edit", arg1) && 3 <= argc)
+		{
+			char const * parentCalcName = args->ArgV(2);
+
+			IMirvHandleCalc * parentCalc = g_MirvHandleCalcs.GetByName(parentCalcName);
+
+			if (parentCalc)
+			{
+				CSubWrpCommandArgs sub(args, 3);
+				parentCalc->Console_Edit(&sub);
+				return;
+			}
+			else
+				Tier0_Warning("Error: No calc with name \"%s\" found.\n", parentCalcName);
+
+			return;
+		}
+	}
+
+	Tier0_Msg(
+		"%s add [...] - Add a new bool calc.\n"
+		"%s remove <sCalcName> - Remove calc with name <sCalcName>.\n"
+		"%s print - Print calcs.\n"
+		"%s test <sCalcName> - Test a calc.\n"
+		"%s edit <sCalcName> [...] - Edit a calc.\n"
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+	);
+}
+
+
 CON_COMMAND(mirv_calcs, "Expressions, currently mainly for usage mirv_calcs, mirv_cam, mirv_aim")
 {
 	int argc = args->ArgC();
@@ -4521,6 +4697,12 @@ CON_COMMAND(mirv_calcs, "Expressions, currently mainly for usage mirv_calcs, mir
 			mirv_calcs_cam(&sub);
 			return;
 		}
+		else if (0 == _stricmp("bool", arg1))
+		{
+			CSubWrpCommandArgs sub(args, 2);
+			mirv_calcs_bool(&sub);
+			return;
+		}
 	}
 
 	Tier0_Msg(
@@ -4528,6 +4710,8 @@ CON_COMMAND(mirv_calcs, "Expressions, currently mainly for usage mirv_calcs, mir
 		"%s vecAng [...] - Calcs that return VecAng (location and rotation).\n"
 		"%s fov [...] - Calcs that return FOV (field of view).\n"
 		"%s cam [...] - Calcs that return a view (location, rotation and FOV).\n"
+		"%s bool [...] - Calc that returns true or false (if it could be evaluated that is).\n"
+		, arg0
 		, arg0
 		, arg0
 		, arg0

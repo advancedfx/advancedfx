@@ -367,6 +367,11 @@ public:
 		return WriteBytes(&value32, 0, sizeof(value32));
 	}
 
+	bool WriteSingle(FLOAT value)
+	{
+		return WriteBytes(&value, 0, sizeof(value));
+	}
+
 	bool WriteStringUTF8(const std::string value)
 	{
 		UINT32 length = (UINT32)value.length();
@@ -529,6 +534,10 @@ typedef struct AfxInteropFovCalcResult_s {
 	FLOAT Fov;
 } AfxInteropFovCalcResult_t;
 
+typedef struct AfxInteropBoolCalcResult_s {
+	BOOL Result;
+} AfxInteropBoolCalcResult_t;
+
 typedef void(__stdcall * AfxInteropHandleCalcCallback_t)(AfxInteropHandleCalcResult_t * result);
 
 typedef void(__stdcall * AfxInteropVecAngCalcCallback_t)(AfxInteropVecAngCalcResult_s * result);
@@ -536,6 +545,8 @@ typedef void(__stdcall * AfxInteropVecAngCalcCallback_t)(AfxInteropVecAngCalcRes
 typedef void(__stdcall * AfxInteropCamCalcCallback_t)(AfxInteropCamCalcResult_s * result);
 
 typedef void(__stdcall * AfxInteropFovCalcCallback_t)(AfxInteropFovCalcResult_s * result);
+
+typedef void(__stdcall * AfxInteropBoolCalcCallback_t)(AfxInteropBoolCalcResult_s * result);
 
 class __declspec(novtable) IAfxInteropCalcCallbacksIterator abstract
 {
@@ -556,7 +567,7 @@ public:
 		if (!pipeServer->WriteCompressedUInt32((UINT32)m_Map.size())) return false;
 		for (typename std::map<std::string, std::set<T>>::iterator it = m_Map.begin(); it != m_Map.end(); ++it)
 		{
-			if (!pipeServer->WriteStringUTF8(it.first)) return false;
+			if (!pipeServer->WriteStringUTF8(it->first)) return false;
 		}
 
 		return true;
@@ -579,7 +590,7 @@ public:
 				resultPtr = &result;
 			}
 
-			for (typename std::set<T>::iterator setIt = it.second.begin(); setIt != it.second.end(); ++it)
+			for (typename std::set<T>::iterator setIt = (*it).second.begin(); setIt != (*it).second.end(); ++it)
 			{
 				CallResult(*setIt, resultPtr);
 			}
@@ -715,6 +726,28 @@ protected:
 	}
 };
 
+class CAfxInteropBoolCalcCallbacks : public CAfxInteropCalcCallbacks<AfxInteropBoolCalcCallback_t, AfxInteropBoolCalcResult_t>
+{
+protected:
+	virtual bool ReadResult(CNamedPipeServer * pipeServer, AfxInteropBoolCalcResult_t & outResult) override
+	{
+		bool result;
+		if (!pipeServer->ReadBoolean(result)) return false;
+
+		outResult.Result = result;
+
+		return true;
+	}
+
+	virtual void CallResult(AfxInteropBoolCalcCallback_t callback, AfxInteropBoolCalcResult_t * result) override
+	{
+		callback(result);
+	}
+};
+
+typedef void(__stdcall * AfxInteropOnRenderViewCallback_t)(float & outTx, float  & outTy, float  & outTz, float  & outRx, float  & outRy, float  & outRz);
+
+
 class CAfxInterop
 {
 public:
@@ -731,24 +764,34 @@ public:
 
 	}
 
-	IAfxInteropCalcCallbacksIterator * __stdcall AddHandleCalcCallback(const char * name, AfxInteropHandleCalcCallback_t callback)
+	void SetOnRenderViewCallback(AfxInteropOnRenderViewCallback_t callback)
+	{
+		m_OnRenderViewCallback = callback;
+	}
+
+	IAfxInteropCalcCallbacksIterator * AddHandleCalcCallback(const char * name, AfxInteropHandleCalcCallback_t callback)
 	{
 		return m_HandleCalcCallbacks.Add(name, callback);
 	}
 
-	IAfxInteropCalcCallbacksIterator * __stdcall AddVecAngCalcCallback(const char * name, AfxInteropVecAngCalcCallback_t callback)
+	IAfxInteropCalcCallbacksIterator * AddVecAngCalcCallback(const char * name, AfxInteropVecAngCalcCallback_t callback)
 	{
 		return m_VecAngCalcCallbacks.Add(name, callback);
 	}
 
-	IAfxInteropCalcCallbacksIterator * __stdcall AddCamCalcCallback(const char * name, AfxInteropCamCalcCallback_t callback)
+	IAfxInteropCalcCallbacksIterator * AddCamCalcCallback(const char * name, AfxInteropCamCalcCallback_t callback)
 	{
 		return m_CamCalcCallbacks.Add(name, callback);
 	}
 
-	IAfxInteropCalcCallbacksIterator * __stdcall AddFovCalcCallback(const char * name, AfxInteropFovCalcCallback_t callback)
+	IAfxInteropCalcCallbacksIterator * AddFovCalcCallback(const char * name, AfxInteropFovCalcCallback_t callback)
 	{
 		return m_FovCalcCallbacks.Add(name, callback);
+	}
+
+	IAfxInteropCalcCallbacksIterator * AddBoolCalcCallback(const char * name, AfxInteropBoolCalcCallback_t callback)
+	{
+		return m_BoolCalcCallbacks.Add(name, callback);
 	}
 
 	void ScheduleCommand(const char * command)
@@ -894,6 +937,7 @@ public:
 						if (!m_VecAngCalcCallbacks.BatchUpdateRequest(m_EnginePipeServer)) goto locked_error;
 						if (!m_CamCalcCallbacks.BatchUpdateRequest(m_EnginePipeServer)) goto locked_error;
 						if (!m_FovCalcCallbacks.BatchUpdateRequest(m_EnginePipeServer)) goto locked_error;
+						if (!m_BoolCalcCallbacks.BatchUpdateRequest(m_EnginePipeServer)) goto locked_error;
 
 						if (!m_EnginePipeServer->Flush()) goto locked_error;
 
@@ -901,6 +945,7 @@ public:
 						if (!m_VecAngCalcCallbacks.BatchUpdateResult(m_EnginePipeServer)) goto locked_error;
 						if (!m_CamCalcCallbacks.BatchUpdateResult(m_EnginePipeServer)) goto locked_error;
 						if (!m_FovCalcCallbacks.BatchUpdateResult(m_EnginePipeServer)) goto locked_error;
+						if (!m_BoolCalcCallbacks.BatchUpdateResult(m_EnginePipeServer)) goto locked_error;
 					}
 					break;
 
@@ -968,6 +1013,31 @@ public:
 						m_DrawingDataQueueCondition.notify_one();
 
 						done = true; // We are done for this frame.
+					}
+					break;
+
+					case EngineMessage_OnRenderView:
+					{
+						if (m_OnRenderViewCallback)
+						{
+							float Tx, Ty, Tz, Rx, Ry, Rz;
+							m_OnRenderViewCallback(Tx, Ty, Tz, Rx, Ry, Rz);
+
+							if (!m_EnginePipeServer->WriteBoolean(true)) goto locked_error;
+
+							if (!m_EnginePipeServer->WriteSingle(Tx)) goto locked_error;
+							if (!m_EnginePipeServer->WriteSingle(Ty)) goto locked_error;
+							if (!m_EnginePipeServer->WriteSingle(Tz)) goto locked_error;
+							if (!m_EnginePipeServer->WriteSingle(Rx)) goto locked_error;
+							if (!m_EnginePipeServer->WriteSingle(Ry)) goto locked_error;
+							if (!m_EnginePipeServer->WriteSingle(Rz)) goto locked_error;
+						}
+						else
+						{
+							if (!m_EnginePipeServer->WriteBoolean(false)) goto locked_error;
+						}
+
+						if(!m_EnginePipeServer->Flush()) goto locked_error; // client is waiting
 					}
 					break;
 					}
@@ -1177,7 +1247,8 @@ private:
 		EngineMessage_EntityCreated = 6,
 		EngineMessage_EntityDeleted = 7,
 		EngineMessage_BeforeFrameRenderStart = 8,
-		EngineMessage_AfterFrameRenderStart = 9
+		EngineMessage_AfterFrameRenderStart = 9,
+		EngineMessage_OnRenderView = 10
 	};
 
 	enum DrawingMessage
@@ -1237,10 +1308,13 @@ private:
 
 	std::queue<std::string> m_Commands;
 
+	AfxInteropOnRenderViewCallback_t m_OnRenderViewCallback = nullptr;
+
 	CAfxInteropHandleCalcCallbacks m_HandleCalcCallbacks;
 	CAfxInteropVecAngCalcCallbacks m_VecAngCalcCallbacks;
 	CAfxInteropCamCalcCallbacks m_CamCalcCallbacks;
 	CAfxInteropFovCalcCallbacks m_FovCalcCallbacks;
+	CAfxInteropBoolCalcCallbacks m_BoolCalcCallbacks;
 
 	void Close()
 	{
@@ -1311,6 +1385,14 @@ extern "C" __declspec(dllexport) bool __stdcall AfxInteropScheduleCommand(const 
 	return false;
 }
 
+extern "C" __declspec(dllexport) void __stdcall AfxInteropSetOnRenderViewCallback(const char * name, AfxInteropOnRenderViewCallback_t callback)
+{
+	if (g_AfxInterop)
+	{
+		return g_AfxInterop->SetOnRenderViewCallback(callback);
+	}
+}
+
 extern "C" __declspec(dllexport) IAfxInteropCalcCallbacksIterator * __stdcall AfxInteropAddHandleCalcCallback(const char * name, AfxInteropHandleCalcCallback_t callback)
 {
 	if (g_AfxInterop)
@@ -1346,6 +1428,16 @@ extern "C" __declspec(dllexport) IAfxInteropCalcCallbacksIterator * __stdcall Af
 	if (g_AfxInterop)
 	{
 		return g_AfxInterop->AddFovCalcCallback(name, callback);
+	}
+
+	return nullptr;
+}
+
+extern "C" __declspec(dllexport) IAfxInteropCalcCallbacksIterator * __stdcall AfxInteropAddBoolCalcCallback(const char * name, AfxInteropBoolCalcCallback_t callback)
+{
+	if (g_AfxInterop)
+	{
+		return g_AfxInterop->AddBoolCalcCallback(name, callback);
 	}
 
 	return nullptr;
