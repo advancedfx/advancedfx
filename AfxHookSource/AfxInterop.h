@@ -42,7 +42,7 @@ namespace AfxInterop {
 	/// <param name="Ry">Yaw</param>
 	/// <param name="Rz">Roll</param>
 	/// <returns>true if values are overriden.</returns>
-	bool OnRenderView(float & Tx, float & Ty, float & Tz, float & Rx, float & Ry, float & Rz);
+	bool OnRenderView(float & Tx, float & Ty, float & Tz, float & Rx, float & Ry, float & Rz, float & Fov);
 
 	//
 	// Drawing thread:

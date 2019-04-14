@@ -22,6 +22,7 @@
 #include "AfxHookSourceInput.h"
 #include "aiming.h"
 #include "MirvCam.h"
+#include "AfxInterop.h"
 
 
 BvhExport * g_BvhExport = NULL;
@@ -339,6 +340,10 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 	if (g_MirvCam.ApplyOffset(Tx, Ty, Tz, Rz, Rx, Ry)) originOrAnglesOverriden = true;
 
 	g_MirvCam.ApplyFov(Fov);
+
+#ifdef AFX_INTEROP
+	if(AfxInterop::OnRenderView(Tx, Ty, Tz, Rx, Ry, Rz, Fov)) originOrAnglesOverriden = true;
+#endif
 
 	if (originOrAnglesOverriden && this->ForceViewOverride)
 	{

@@ -745,7 +745,7 @@ protected:
 	}
 };
 
-typedef void(__stdcall * AfxInteropOnRenderViewCallback_t)(float & outTx, float  & outTy, float  & outTz, float  & outRx, float  & outRy, float  & outRz);
+typedef bool(__stdcall * AfxInteropOnRenderViewCallback_t)(float & Tx, float  & Ty, float  & Tz, float  & Rx, float  & Ry, float  & Rz, float & Fov);
 
 
 class CAfxInterop
@@ -764,32 +764,32 @@ public:
 
 	}
 
-	void SetOnRenderViewCallback(AfxInteropOnRenderViewCallback_t callback)
+	static void SetOnRenderViewCallback(AfxInteropOnRenderViewCallback_t callback)
 	{
 		m_OnRenderViewCallback = callback;
 	}
 
-	IAfxInteropCalcCallbacksIterator * AddHandleCalcCallback(const char * name, AfxInteropHandleCalcCallback_t callback)
+	static IAfxInteropCalcCallbacksIterator * AddHandleCalcCallback(const char * name, AfxInteropHandleCalcCallback_t callback)
 	{
 		return m_HandleCalcCallbacks.Add(name, callback);
 	}
 
-	IAfxInteropCalcCallbacksIterator * AddVecAngCalcCallback(const char * name, AfxInteropVecAngCalcCallback_t callback)
+	static IAfxInteropCalcCallbacksIterator * AddVecAngCalcCallback(const char * name, AfxInteropVecAngCalcCallback_t callback)
 	{
 		return m_VecAngCalcCallbacks.Add(name, callback);
 	}
 
-	IAfxInteropCalcCallbacksIterator * AddCamCalcCallback(const char * name, AfxInteropCamCalcCallback_t callback)
+	static IAfxInteropCalcCallbacksIterator * AddCamCalcCallback(const char * name, AfxInteropCamCalcCallback_t callback)
 	{
 		return m_CamCalcCallbacks.Add(name, callback);
 	}
 
-	IAfxInteropCalcCallbacksIterator * AddFovCalcCallback(const char * name, AfxInteropFovCalcCallback_t callback)
+	static IAfxInteropCalcCallbacksIterator * AddFovCalcCallback(const char * name, AfxInteropFovCalcCallback_t callback)
 	{
 		return m_FovCalcCallbacks.Add(name, callback);
 	}
 
-	IAfxInteropCalcCallbacksIterator * AddBoolCalcCallback(const char * name, AfxInteropBoolCalcCallback_t callback)
+	static IAfxInteropCalcCallbacksIterator * AddBoolCalcCallback(const char * name, AfxInteropBoolCalcCallback_t callback)
 	{
 		return m_BoolCalcCallbacks.Add(name, callback);
 	}
@@ -1020,17 +1020,23 @@ public:
 					{
 						if (m_OnRenderViewCallback)
 						{
-							float Tx, Ty, Tz, Rx, Ry, Rz;
-							m_OnRenderViewCallback(Tx, Ty, Tz, Rx, Ry, Rz);
+							float Tx, Ty, Tz, Rx, Ry, Rz, Fov;
+							if (m_OnRenderViewCallback(Tx, Ty, Tz, Rx, Ry, Rz, Fov))
+							{
+								if (!m_EnginePipeServer->WriteBoolean(true)) goto locked_error;
 
-							if (!m_EnginePipeServer->WriteBoolean(true)) goto locked_error;
-
-							if (!m_EnginePipeServer->WriteSingle(Tx)) goto locked_error;
-							if (!m_EnginePipeServer->WriteSingle(Ty)) goto locked_error;
-							if (!m_EnginePipeServer->WriteSingle(Tz)) goto locked_error;
-							if (!m_EnginePipeServer->WriteSingle(Rx)) goto locked_error;
-							if (!m_EnginePipeServer->WriteSingle(Ry)) goto locked_error;
-							if (!m_EnginePipeServer->WriteSingle(Rz)) goto locked_error;
+								if (!m_EnginePipeServer->WriteSingle(Tx)) goto locked_error;
+								if (!m_EnginePipeServer->WriteSingle(Ty)) goto locked_error;
+								if (!m_EnginePipeServer->WriteSingle(Tz)) goto locked_error;
+								if (!m_EnginePipeServer->WriteSingle(Rx)) goto locked_error;
+								if (!m_EnginePipeServer->WriteSingle(Ry)) goto locked_error;
+								if (!m_EnginePipeServer->WriteSingle(Rz)) goto locked_error;
+								if (!m_EnginePipeServer->WriteSingle(Fov)) goto locked_error;
+							}
+							else
+							{
+								if (!m_EnginePipeServer->WriteBoolean(false)) goto locked_error;
+							}
 						}
 						else
 						{
@@ -1308,13 +1314,13 @@ private:
 
 	std::queue<std::string> m_Commands;
 
-	AfxInteropOnRenderViewCallback_t m_OnRenderViewCallback = nullptr;
+	static AfxInteropOnRenderViewCallback_t m_OnRenderViewCallback;
 
-	CAfxInteropHandleCalcCallbacks m_HandleCalcCallbacks;
-	CAfxInteropVecAngCalcCallbacks m_VecAngCalcCallbacks;
-	CAfxInteropCamCalcCallbacks m_CamCalcCallbacks;
-	CAfxInteropFovCalcCallbacks m_FovCalcCallbacks;
-	CAfxInteropBoolCalcCallbacks m_BoolCalcCallbacks;
+	static CAfxInteropHandleCalcCallbacks m_HandleCalcCallbacks;
+	static CAfxInteropVecAngCalcCallbacks m_VecAngCalcCallbacks;
+	static CAfxInteropCamCalcCallbacks m_CamCalcCallbacks;
+	static CAfxInteropFovCalcCallbacks m_FovCalcCallbacks;
+	static CAfxInteropBoolCalcCallbacks m_BoolCalcCallbacks;
 
 	void Close()
 	{
@@ -1339,6 +1345,14 @@ private:
 };
 
 CAfxInterop * g_AfxInterop = nullptr;
+
+AfxInteropOnRenderViewCallback_t CAfxInterop::m_OnRenderViewCallback = nullptr;
+
+CAfxInteropHandleCalcCallbacks CAfxInterop::m_HandleCalcCallbacks;
+CAfxInteropVecAngCalcCallbacks CAfxInterop::m_VecAngCalcCallbacks;
+CAfxInteropCamCalcCallbacks CAfxInterop::m_CamCalcCallbacks;
+CAfxInteropFovCalcCallbacks CAfxInterop::m_FovCalcCallbacks;
+CAfxInteropBoolCalcCallbacks CAfxInterop::m_BoolCalcCallbacks;
 
 
 extern "C" __declspec(dllexport) void __stdcall AfxInteropDestroy()
@@ -1385,62 +1399,34 @@ extern "C" __declspec(dllexport) bool __stdcall AfxInteropScheduleCommand(const 
 	return false;
 }
 
-extern "C" __declspec(dllexport) void __stdcall AfxInteropSetOnRenderViewCallback(const char * name, AfxInteropOnRenderViewCallback_t callback)
+extern "C" __declspec(dllexport) void __stdcall AfxInteropSetOnRenderViewCallback(AfxInteropOnRenderViewCallback_t callback)
 {
-	if (g_AfxInterop)
-	{
-		return g_AfxInterop->SetOnRenderViewCallback(callback);
-	}
+	CAfxInterop::SetOnRenderViewCallback(callback);
 }
 
 extern "C" __declspec(dllexport) IAfxInteropCalcCallbacksIterator * __stdcall AfxInteropAddHandleCalcCallback(const char * name, AfxInteropHandleCalcCallback_t callback)
 {
-	if (g_AfxInterop)
-	{
-		return g_AfxInterop->AddHandleCalcCallback(name, callback);
-	}
-
-	return nullptr;
+	return CAfxInterop::AddHandleCalcCallback(name, callback);
 }
 
 extern "C" __declspec(dllexport) IAfxInteropCalcCallbacksIterator * __stdcall AfxInteropVecAngCalcCallback(const char * name, AfxInteropVecAngCalcCallback_t callback)
 {
-	if (g_AfxInterop)
-	{
-		return g_AfxInterop->AddVecAngCalcCallback(name, callback);
-	}
-
-	return nullptr;
+	return CAfxInterop::AddVecAngCalcCallback(name, callback);
 }
 
 extern "C" __declspec(dllexport) IAfxInteropCalcCallbacksIterator * __stdcall AfxInteropAddCamCalcCallback(const char * name, AfxInteropCamCalcCallback_t callback)
 {
-	if (g_AfxInterop)
-	{
-		return g_AfxInterop->AddCamCalcCallback(name, callback);
-	}
-
-	return nullptr;
+	return CAfxInterop::AddCamCalcCallback(name, callback);
 }
 
 extern "C" __declspec(dllexport) IAfxInteropCalcCallbacksIterator * __stdcall AfxInteropAddFovCalcCallback(const char * name, AfxInteropFovCalcCallback_t callback)
 {
-	if (g_AfxInterop)
-	{
-		return g_AfxInterop->AddFovCalcCallback(name, callback);
-	}
-
-	return nullptr;
+	return CAfxInterop::AddFovCalcCallback(name, callback);
 }
 
 extern "C" __declspec(dllexport) IAfxInteropCalcCallbacksIterator * __stdcall AfxInteropAddBoolCalcCallback(const char * name, AfxInteropBoolCalcCallback_t callback)
 {
-	if (g_AfxInterop)
-	{
-		return g_AfxInterop->AddBoolCalcCallback(name, callback);
-	}
-
-	return nullptr;
+	return CAfxInterop::AddBoolCalcCallback(name, callback);
 }
 
 extern "C" __declspec(dllexport) void __stdcall AfxInteropRemoveCallback(IAfxInteropCalcCallbacksIterator * iterator)

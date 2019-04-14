@@ -332,7 +332,7 @@ namespace AfxInterop {
 
 			// Read and compute handle calcs:
 
-			if(!ReadUInt32(EngineThread::m_hPipe, numCalcs)) { errorLine = __LINE__; goto locked_error; }
+			if(!ReadCompressedUInt32(EngineThread::m_hPipe, numCalcs)) { errorLine = __LINE__; goto locked_error; }
 
 			for (UINT32 i = 0; i < numCalcs; ++i)
 			{
@@ -353,7 +353,7 @@ namespace AfxInterop {
 
 			// Read and compute vecang calcs:
 
-			if (!ReadUInt32(EngineThread::m_hPipe, numCalcs)) { errorLine = __LINE__; goto locked_error; }
+			if (!ReadCompressedUInt32(EngineThread::m_hPipe, numCalcs)) { errorLine = __LINE__; goto locked_error; }
 
 			for (UINT32 i = 0; i < numCalcs; ++i)
 			{
@@ -375,7 +375,7 @@ namespace AfxInterop {
 
 			// Read and compute cam calcs:
 
-			if (!ReadUInt32(EngineThread::m_hPipe, numCalcs)) { errorLine = __LINE__; goto locked_error; }
+			if (!ReadCompressedUInt32(EngineThread::m_hPipe, numCalcs)) { errorLine = __LINE__; goto locked_error; }
 
 			for (UINT32 i = 0; i < numCalcs; ++i)
 			{
@@ -398,7 +398,7 @@ namespace AfxInterop {
 
 			// Read and compute fov calcs:
 
-			if (!ReadUInt32(EngineThread::m_hPipe, numCalcs)) { errorLine = __LINE__; goto locked_error; }
+			if (!ReadCompressedUInt32(EngineThread::m_hPipe, numCalcs)) { errorLine = __LINE__; goto locked_error; }
 
 			for (UINT32 i = 0; i < numCalcs; ++i)
 			{
@@ -419,7 +419,7 @@ namespace AfxInterop {
 
 			// Read and compute bool calcs:
 
-			if (!ReadUInt32(EngineThread::m_hPipe, numCalcs)) { errorLine = __LINE__; goto locked_error; }
+			if (!ReadCompressedUInt32(EngineThread::m_hPipe, numCalcs)) { errorLine = __LINE__; goto locked_error; }
 
 			for (UINT32 i = 0; i < numCalcs; ++i)
 			{
@@ -569,7 +569,7 @@ namespace AfxInterop {
 		return;
 	}
 
-	bool OnRenderView(float & Tx, float & Ty, float & Tz, float & Rx, float & Ry, float & Rz)
+	bool OnRenderView(float & Tx, float & Ty, float & Tz, float & Rx, float & Ry, float & Rz, float & Fov)
 	{
 
 		std::unique_lock<std::mutex> lock(EngineThread::m_ConnectMutex);
@@ -589,7 +589,7 @@ namespace AfxInterop {
 
 			if (overrideView)
 			{
-				FLOAT tTx, tTy, tTz, tRx, tRy, tRz;
+				FLOAT tTx, tTy, tTz, tRx, tRy, tRz, tFov;
 
 				if (!ReadSingle(EngineThread::m_hPipe, tTx)) { errorLine = __LINE__; goto locked_error; }
 				if (!ReadSingle(EngineThread::m_hPipe, tTy)) { errorLine = __LINE__; goto locked_error; }
@@ -597,6 +597,7 @@ namespace AfxInterop {
 				if (!ReadSingle(EngineThread::m_hPipe, tRx)) { errorLine = __LINE__; goto locked_error; }
 				if (!ReadSingle(EngineThread::m_hPipe, tRy)) { errorLine = __LINE__; goto locked_error; }
 				if (!ReadSingle(EngineThread::m_hPipe, tRz)) { errorLine = __LINE__; goto locked_error; }
+				if (!ReadSingle(EngineThread::m_hPipe, tFov)) { errorLine = __LINE__; goto locked_error; }
 
 				Tx = tTx;
 				Ty = tTy;
@@ -604,6 +605,9 @@ namespace AfxInterop {
 				Rx = tRx;
 				Ry = tRy;
 				Rz = tRz;
+				Fov = tFov;
+
+				return true;
 			}
 			
 		}
