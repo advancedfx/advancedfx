@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.52.0</version>
+<time>2019-04-14T18:00Z</time>
+<changes>
+<change type="updated">
+Updated to afx_interop version 3.
+</change>
+</changes>
+<comments>
+The new -d3d9ex CS:GO launch option is not supported yet!
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.51.6</version>
 <time>2019-04-13T05:09Z</time>
 <changes>

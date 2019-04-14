@@ -538,15 +538,21 @@ typedef struct AfxInteropBoolCalcResult_s {
 	BOOL Result;
 } AfxInteropBoolCalcResult_t;
 
+typedef struct AfxInteropIntCalcResult_s {
+	INT32 Result;
+} AfxInteropIntCalcResult_t;
+
 typedef void(__stdcall * AfxInteropHandleCalcCallback_t)(AfxInteropHandleCalcResult_t * result);
 
-typedef void(__stdcall * AfxInteropVecAngCalcCallback_t)(AfxInteropVecAngCalcResult_s * result);
+typedef void(__stdcall * AfxInteropVecAngCalcCallback_t)(AfxInteropVecAngCalcResult_t * result);
 
-typedef void(__stdcall * AfxInteropCamCalcCallback_t)(AfxInteropCamCalcResult_s * result);
+typedef void(__stdcall * AfxInteropCamCalcCallback_t)(AfxInteropCamCalcResult_t * result);
 
-typedef void(__stdcall * AfxInteropFovCalcCallback_t)(AfxInteropFovCalcResult_s * result);
+typedef void(__stdcall * AfxInteropFovCalcCallback_t)(AfxInteropFovCalcResult_t * result);
 
-typedef void(__stdcall * AfxInteropBoolCalcCallback_t)(AfxInteropBoolCalcResult_s * result);
+typedef void(__stdcall * AfxInteropBoolCalcCallback_t)(AfxInteropBoolCalcResult_t * result);
+
+typedef void(__stdcall * AfxInteropIntCalcCallback_t)(AfxInteropIntCalcResult_t * result);
 
 class __declspec(novtable) IAfxInteropCalcCallbacksIterator abstract
 {
@@ -590,7 +596,7 @@ public:
 				resultPtr = &result;
 			}
 
-			for (typename std::set<T>::iterator setIt = (*it).second.begin(); setIt != (*it).second.end(); ++it)
+			for (typename std::set<T>::iterator setIt = (*it).second.begin(); setIt != (*it).second.end(); ++setIt)
 			{
 				CallResult(*setIt, resultPtr);
 			}
@@ -745,6 +751,25 @@ protected:
 	}
 };
 
+class CAfxInteropIntCalcCallbacks : public CAfxInteropCalcCallbacks<AfxInteropIntCalcCallback_t, AfxInteropIntCalcResult_t>
+{
+protected:
+	virtual bool ReadResult(CNamedPipeServer * pipeServer, AfxInteropIntCalcResult_t & outResult) override
+	{
+		INT32 result;
+		if (!pipeServer->ReadInt32(result)) return false;
+
+		outResult.Result = result;
+
+		return true;
+	}
+
+	virtual void CallResult(AfxInteropIntCalcCallback_t callback, AfxInteropIntCalcResult_t * result) override
+	{
+		callback(result);
+	}
+};
+
 typedef bool(__stdcall * AfxInteropOnRenderViewCallback_t)(float & Tx, float  & Ty, float  & Tz, float  & Rx, float  & Ry, float  & Rz, float & Fov);
 
 
@@ -794,6 +819,11 @@ public:
 		return m_BoolCalcCallbacks.Add(name, callback);
 	}
 
+	static IAfxInteropCalcCallbacksIterator * AddIntCalcCallback(const char * name, AfxInteropIntCalcCallback_t callback)
+	{
+		return m_IntCalcCallbacks.Add(name, callback);
+	}
+
 	void ScheduleCommand(const char * command)
 	{
 		m_Commands.emplace(command);
@@ -801,6 +831,8 @@ public:
 
 	bool UpdateEngineThread(void)
 	{
+		bool drawingThreadQueued = false;
+
 		std::unique_lock<std::mutex> lock(m_EngineServerMutex);
 
 		if (nullptr == m_EnginePipeServer)
@@ -834,11 +866,18 @@ public:
 						switch (drawingState)
 						{
 						case CNamedPipeServer::State_Connected:
+							m_Connecting = false;
 							break;
 						case CNamedPipeServer::State_Error:
 							goto locked_error;
 						default:
 							// not connected yet.
+							if(!drawingThreadQueued)
+							{
+								std::unique_lock<std::mutex> m_DrawingDataQueueMutex;
+								m_DrawingDataQueue.emplace();
+								drawingThreadQueued = true;
+							}
 							return true;
 						}
 					}
@@ -938,6 +977,7 @@ public:
 						if (!m_CamCalcCallbacks.BatchUpdateRequest(m_EnginePipeServer)) goto locked_error;
 						if (!m_FovCalcCallbacks.BatchUpdateRequest(m_EnginePipeServer)) goto locked_error;
 						if (!m_BoolCalcCallbacks.BatchUpdateRequest(m_EnginePipeServer)) goto locked_error;
+						if (!m_IntCalcCallbacks.BatchUpdateRequest(m_EnginePipeServer)) goto locked_error;
 
 						if (!m_EnginePipeServer->Flush()) goto locked_error;
 
@@ -946,6 +986,7 @@ public:
 						if (!m_CamCalcCallbacks.BatchUpdateResult(m_EnginePipeServer)) goto locked_error;
 						if (!m_FovCalcCallbacks.BatchUpdateResult(m_EnginePipeServer)) goto locked_error;
 						if (!m_BoolCalcCallbacks.BatchUpdateResult(m_EnginePipeServer)) goto locked_error;
+						if (!m_IntCalcCallbacks.BatchUpdateResult(m_EnginePipeServer)) goto locked_error;
 					}
 					break;
 
@@ -1007,10 +1048,8 @@ public:
 
 							m_DrawingDataQueue.emplace(renderInfo.FrameCount, colorTextureWasLost, sharedColorTextureHandle, colorDepthTextureWasLost, shareDepthColorTextureHandle);
 
-							m_DrawingDataQueueConditionFinished = true;
+							drawingThreadQueued = true;
 						}
-
-						m_DrawingDataQueueCondition.notify_one();
 
 						done = true; // We are done for this frame.
 					}
@@ -1054,29 +1093,42 @@ public:
 			goto locked_error;
 		}
 
+		if (!drawingThreadQueued)
+		{
+			std::unique_lock<std::mutex> m_DrawingDataQueueMutex;
+			m_DrawingDataQueue.emplace();
+			drawingThreadQueued = true;
+		}
+
 		return true;
 
 	locked_error:
 		lock.unlock();
 		Close();
+		if (!drawingThreadQueued)
 		{
-			std::unique_lock<std::mutex> lock(m_DrawingDataQueueMutex);
-			m_DrawingDataQueueConditionFinished = true;
+			std::unique_lock<std::mutex> m_DrawingDataQueueMutex;
+			m_DrawingDataQueue.emplace();
+			drawingThreadQueued = true;
 		}
-		m_DrawingDataQueueCondition.notify_one();
 		return false;
 	}
 
 	bool UpdateDrawingThreadBegin()
 	{
+		m_DrawingSkip = true;
+
+		std::unique_lock<std::mutex> drawingDataQueueLock(m_DrawingDataQueueMutex);
+		CDrawingData drawingData = m_DrawingDataQueue.front();
+		drawingDataQueueLock.unlock();
+
 		std::unique_lock<std::mutex> lock(m_DrawingServerMutex);
 
-		if (nullptr == m_DrawingPipeServer)
-			return false;
-
-		if (m_Connecting)
+		if (nullptr == m_DrawingPipeServer || m_Connecting)
 		{
-			m_Connecting = false;
+			drawingDataQueueLock.lock();
+			m_DrawingDataQueue.pop();
+			return false;
 		}
 
 		CNamedPipeServer::State state = m_DrawingPipeServer->Connect();
@@ -1085,7 +1137,9 @@ public:
 		{
 			case CNamedPipeServer::State_Connected:
 			{
-				while (true)
+				bool done = false;
+
+				while (!done)
 				{
 					INT32 drawingMessage;
 					if (!m_DrawingPipeServer->ReadInt32(drawingMessage)) goto locked_error;
@@ -1097,65 +1151,45 @@ public:
 							INT32 clientFrameNumber;
 							if(!m_DrawingPipeServer->ReadInt32(clientFrameNumber)) goto locked_error;
 				
-							CDrawingData drawingData;
+							INT32 frameDiff = drawingData.HasData ? drawingData.FrameNumber - clientFrameNumber : -1;
+
+							if (frameDiff < 0)
 							{
-								std::unique_lock<std::mutex> lock(m_DrawingDataQueueMutex);
-								m_DrawingDataQueueCondition.wait(lock, [this] { return this->m_DrawingDataQueueConditionFinished; });
+								// Error: client is ahead, otherwise we would have correct data by now.
 
-								m_DrawingDataQueueConditionFinished = false;
+								if (!m_DrawingPipeServer->WriteInt32(PrepareDrawReply_Retry)) goto locked_error;
+								if (!m_DrawingPipeServer->Flush()) goto locked_error;
 
-								if (m_DrawingDataQueue.empty())
-								{
-									// Error: client is ahead, otherwise we would have data by now.
+								drawingDataQueueLock.lock();
+								m_DrawingDataQueue.pop();
 
-									if (!m_DrawingPipeServer->WriteInt32(PrepareDrawReply_Skip)) goto locked_error;
-									if (!m_DrawingPipeServer->Flush()) goto locked_error;
-
-									return false;
-								}
-
-								drawingData = m_DrawingDataQueue.front();
-
-								INT32 frameDiff = drawingData.FrameNumber - clientFrameNumber;
-
-								if (frameDiff > 0)
-								{
-									// client is behind.
-
-									if (!m_DrawingPipeServer->WriteInt32(PrepareDrawReply_Skip)) goto locked_error;
-									if (!m_DrawingPipeServer->Flush()) goto locked_error;
-								}
-								else if (frameDiff < 0)
-								{
-									// Error: client is ahead, otherwise we would have correct data by now.
-
-									while(!m_DrawingDataQueue.empty()) m_DrawingDataQueue.pop();
-
-									if (!m_DrawingPipeServer->WriteInt32(PrepareDrawReply_Skip)) goto locked_error;
-									if (!m_DrawingPipeServer->Flush()) goto locked_error;
-
-									return false;
-								}
-								else
-								{
-									// we are right on.
-
-									m_DrawingDataQueue.pop();
-
-									//drawingThreadImplementation.Log("AfxHookSource client is in sync");
-
-									if (!m_DrawingPipeServer->WriteInt32(PrepareDrawReply_Continue)) goto locked_error;
-
-									if (!m_DrawingPipeServer->WriteBoolean(drawingData.ColorTextureWasLost)) goto locked_error;
-									if (!m_DrawingPipeServer->WriteHandle(drawingData.SharedColorTextureHandle)) goto locked_error;
-									if (!m_DrawingPipeServer->WriteBoolean(drawingData.ColorDepthTextureWasLost)) goto locked_error;
-									if (!m_DrawingPipeServer->WriteHandle(drawingData.SharedColorDepthTextureHandle)) goto locked_error;
-
-									if (!m_DrawingPipeServer->Flush()) goto locked_error;
-								}
+								return false; // Try again next frame.
 							}
-						}
-						return true; // OK.
+							else if (frameDiff > 0)
+							{
+								// client is behind.
+
+								if (!m_DrawingPipeServer->WriteInt32(PrepareDrawReply_Skip)) goto locked_error;
+								if (!m_DrawingPipeServer->Flush()) goto locked_error;
+							}
+							else
+							{
+								// we are right on.
+
+								//drawingThreadImplementation.Log("AfxHookSource client is in sync");
+
+								if (!m_DrawingPipeServer->WriteInt32(PrepareDrawReply_Continue)) goto locked_error;
+
+								if (!m_DrawingPipeServer->WriteBoolean(drawingData.ColorTextureWasLost)) goto locked_error;
+								if (!m_DrawingPipeServer->WriteHandle(drawingData.SharedColorTextureHandle)) goto locked_error;
+								if (!m_DrawingPipeServer->WriteBoolean(drawingData.ColorDepthTextureWasLost)) goto locked_error;
+								if (!m_DrawingPipeServer->WriteHandle(drawingData.SharedColorDepthTextureHandle)) goto locked_error;
+
+								if (!m_DrawingPipeServer->Flush()) goto locked_error;
+
+								done = true;
+							}							
+						} break;
 
 					default:
 						goto locked_error;
@@ -1166,16 +1200,25 @@ public:
 			goto locked_error;
 		}
 
+		drawingDataQueueLock.lock();
+		m_DrawingDataQueue.pop();
+
+		m_DrawingSkip = false;
 		return true;
 
 	locked_error:
 		lock.unlock();
 		Close();
+
+		drawingDataQueueLock.lock();
+		m_DrawingDataQueue.pop();
 		return false;
 	}
 
 	bool UpdateDrawingThreadEnd(void)
 	{
+		if (m_DrawingSkip) return false;
+
 		std::unique_lock<std::mutex> lock(m_DrawingServerMutex);
 
 		if (nullptr == m_DrawingPipeServer || m_Connecting)
@@ -1273,6 +1316,7 @@ private:
 
 	struct CDrawingData
 	{
+		bool HasData;
 		INT32 FrameNumber;
 		BOOL ColorTextureWasLost;
 		HANDLE SharedColorTextureHandle;
@@ -1280,11 +1324,13 @@ private:
 		HANDLE SharedColorDepthTextureHandle;
 
 		CDrawingData()
+			: HasData(false)
 		{
 		}
 
 		CDrawingData(INT32 frameNumber, BOOL colorTextureWasLost, HANDLE sharedColorTextureHandle, BOOL colorDepthTextureWasLost, HANDLE sharedColorDepthTextureHandle)
-			: FrameNumber(frameNumber)
+			: HasData(true)
+			, FrameNumber(frameNumber)
 			, ColorTextureWasLost(colorTextureWasLost)
 			, SharedColorTextureHandle(sharedColorTextureHandle)
 			, ColorDepthTextureWasLost(colorDepthTextureWasLost)
@@ -1306,10 +1352,9 @@ private:
 	std::mutex m_DrawingServerMutex;
 	bool m_Connecting = false;
 	CNamedPipeServer * m_DrawingPipeServer = nullptr;
+	bool m_DrawingSkip = true;
 
 	std::mutex m_DrawingDataQueueMutex;
-	std::condition_variable m_DrawingDataQueueCondition;
-	bool m_DrawingDataQueueConditionFinished = false;
 	std::queue<CDrawingData> m_DrawingDataQueue;
 
 	std::queue<std::string> m_Commands;
@@ -1321,6 +1366,7 @@ private:
 	static CAfxInteropCamCalcCallbacks m_CamCalcCallbacks;
 	static CAfxInteropFovCalcCallbacks m_FovCalcCallbacks;
 	static CAfxInteropBoolCalcCallbacks m_BoolCalcCallbacks;
+	static CAfxInteropIntCalcCallbacks m_IntCalcCallbacks;
 
 	void Close()
 	{
@@ -1353,6 +1399,7 @@ CAfxInteropVecAngCalcCallbacks CAfxInterop::m_VecAngCalcCallbacks;
 CAfxInteropCamCalcCallbacks CAfxInterop::m_CamCalcCallbacks;
 CAfxInteropFovCalcCallbacks CAfxInterop::m_FovCalcCallbacks;
 CAfxInteropBoolCalcCallbacks CAfxInterop::m_BoolCalcCallbacks;
+CAfxInteropIntCalcCallbacks CAfxInterop::m_IntCalcCallbacks;
 
 
 extern "C" __declspec(dllexport) void __stdcall AfxInteropDestroy()
@@ -1409,7 +1456,7 @@ extern "C" __declspec(dllexport) IAfxInteropCalcCallbacksIterator * __stdcall Af
 	return CAfxInterop::AddHandleCalcCallback(name, callback);
 }
 
-extern "C" __declspec(dllexport) IAfxInteropCalcCallbacksIterator * __stdcall AfxInteropVecAngCalcCallback(const char * name, AfxInteropVecAngCalcCallback_t callback)
+extern "C" __declspec(dllexport) IAfxInteropCalcCallbacksIterator * __stdcall AfxInteropAddVecAngCalcCallback(const char * name, AfxInteropVecAngCalcCallback_t callback)
 {
 	return CAfxInterop::AddVecAngCalcCallback(name, callback);
 }
@@ -1428,6 +1475,12 @@ extern "C" __declspec(dllexport) IAfxInteropCalcCallbacksIterator * __stdcall Af
 {
 	return CAfxInterop::AddBoolCalcCallback(name, callback);
 }
+
+extern "C" __declspec(dllexport) IAfxInteropCalcCallbacksIterator * __stdcall AfxInteropAddIntCalcCallback(const char * name, AfxInteropIntCalcCallback_t callback)
+{
+	return CAfxInterop::AddIntCalcCallback(name, callback);
+}
+
 
 extern "C" __declspec(dllexport) void __stdcall AfxInteropRemoveCallback(IAfxInteropCalcCallbacksIterator * iterator)
 {

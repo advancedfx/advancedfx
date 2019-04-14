@@ -3,6 +3,17 @@
 
 <changelog>
 
+<release>
+<name>AfxHookUnity</name>
+<version>0.3.0</version>
+<time>2019-04-14T18:00Z</time>
+<changes>
+<change type="added">
+Version 3, for afx_interop version 3, for afx-unity-interop v0.3.0.
+</change>
+</changes>
+</release>
+
 
 <release>
 <name>AfxHookUnity</name>

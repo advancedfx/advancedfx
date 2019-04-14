@@ -306,6 +306,17 @@ namespace AfxInterop {
 		}
 	};
 
+	struct IntCalcResult
+	{
+		INT32 Result;
+
+		IntCalcResult(INT32 result)
+			: Result(result)
+		{
+		}
+	};
+
+
 	void AfterFrameRenderStart()
 	{
 		if (!m_Enabled) return;
@@ -329,6 +340,7 @@ namespace AfxInterop {
 			std::queue<CamCalcResult *> camCalcResults;
 			std::queue<FovCalcResult *> fovCalcResults;
 			std::queue<BoolCalcResult *> boolCalcResults;
+			std::queue<IntCalcResult *> intCalcResults;
 
 			// Read and compute handle calcs:
 
@@ -436,6 +448,27 @@ namespace AfxInterop {
 					else boolCalcResults.push(nullptr);
 				}
 				else boolCalcResults.push(nullptr);
+			}
+
+			// Read and compute int calcs:
+
+			if (!ReadCompressedUInt32(EngineThread::m_hPipe, numCalcs)) { errorLine = __LINE__; goto locked_error; }
+
+			for (UINT32 i = 0; i < numCalcs; ++i)
+			{
+				if (!ReadStringUTF8(EngineThread::m_hPipe, calcName)) { errorLine = __LINE__; goto locked_error; }
+
+				if (IMirvIntCalc * calc = g_MirvIntCalcs.GetByName(calcName.c_str()))
+				{
+					int result;
+
+					if (calc->CalcInt(result))
+					{
+						intCalcResults.push(new IntCalcResult(result));
+					}
+					else intCalcResults.push(nullptr);
+				}
+				else intCalcResults.push(nullptr);
 			}
 
 			// Write handle calc result:
@@ -548,6 +581,27 @@ namespace AfxInterop {
 					if (!WriteBoolean(EngineThread::m_hPipe, true)) { errorLine = __LINE__; goto locked_error; }
 
 					if (!WriteBoolean(EngineThread::m_hPipe, result->Result)) { errorLine = __LINE__; goto locked_error; }
+
+					delete result;
+				}
+				else
+				{
+					if (!WriteBoolean(EngineThread::m_hPipe, false)) { errorLine = __LINE__; goto locked_error; }
+				}
+			}
+
+			// Write int calc result:
+
+			while (!intCalcResults.empty())
+			{
+				IntCalcResult * result = intCalcResults.front();
+				intCalcResults.pop();
+
+				if (result)
+				{
+					if (!WriteBoolean(EngineThread::m_hPipe, true)) { errorLine = __LINE__; goto locked_error; }
+
+					if (!WriteInt32(EngineThread::m_hPipe, result->Result)) { errorLine = __LINE__; goto locked_error; }
 
 					delete result;
 				}
