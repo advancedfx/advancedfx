@@ -166,11 +166,14 @@ advancedfx
 	
 	MIT License
 
+	Copyright (c) 2019 advancedfx.org
 	Copyright (c) 2007-2018 Dominik Tugend ( https://github.com/ripieces )
+	Copyright (c) 2018-2018 Juice ( https://github.com/juicejuicejuice )
+	Copyright (c) 2018-2018 Devostated ( https://github.com/Devostated ) 
 	Copyright (c) 2018-2018 Anders 'Dec' ( https://github.com/fj0d09r )
 	Copyright (c) 2016-2017 Ivan Molodetskikh ( https://github.com/YaLTeR )
-	Copyright (c) 2004-2009 Gavin Bramhill ( https://www.madabouthats.org/ )
-	Copyright (c) 2015-2015 Niklas Koep ( http://github.com/nkoep )
+	Copyright (c) 2015-2015 Niklas Koep ( https://github.com/nkoep )
+	Copyright (c) 2004-2009 Gavin Bramhill ( http://www.madabouthats.org/ )
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
