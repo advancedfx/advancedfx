@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.52.1</version>
+<time>2019-04-18T13:57Z</time>
+<changes>
+<change type="fixed">
+Fixed error introduced in previous version most notably affecting sound related features (missing break in switch case label).
+</change>
+</changes>
+<comments>
+The new -d3d9ex CS:GO launch option is not supported yet!
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.52.0</version>
 <time>2019-04-14T18:00Z</time>
 <changes>

@@ -489,6 +489,7 @@ void _stdcall new_CVClient_FrameStageNotify_TF2(DWORD *this_ptr, SOURCESDK::TF2:
 	{
 	case SOURCESDK::TF2::FRAME_RENDER_START:
 		Shared_BeforeFrameRenderStart();
+		break;
 	}
 
 	old_CVClient_FrameStageNotify_TF2(this_ptr, curStage);
@@ -497,6 +498,7 @@ void _stdcall new_CVClient_FrameStageNotify_TF2(DWORD *this_ptr, SOURCESDK::TF2:
 	{
 	case SOURCESDK::TF2::FRAME_RENDER_END:
 		Shared_AfterFrameRenderEnd();
+		break;
 	}
 }
 
@@ -522,6 +524,7 @@ void _stdcall new_CVClient_FrameStageNotify_CSSV34(DWORD *this_ptr, SOURCESDK::C
 	{
 	case SOURCESDK::CSSV34::FRAME_RENDER_START:
 		Shared_BeforeFrameRenderStart();
+		break;
 	}
 
 	old_CVClient_FrameStageNotify_CSSV34(this_ptr, curStage);
@@ -530,6 +533,7 @@ void _stdcall new_CVClient_FrameStageNotify_CSSV34(DWORD *this_ptr, SOURCESDK::C
 	{
 	case SOURCESDK::CSSV34::FRAME_RENDER_END:
 		Shared_AfterFrameRenderEnd();
+		break;
 	}
 }
 
@@ -1042,11 +1046,11 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 #ifdef AFX_INTEROP
 		AfxInterop::AfterFrameRenderStart();
 #endif
+		break;
 
 	case SOURCESDK::CSGO::FRAME_RENDER_END:
 		csgo_Audio_FRAME_RENDEREND();
 		Shared_AfterFrameRenderEnd();
-
 		break;
 	}
 }
