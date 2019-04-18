@@ -11,6 +11,7 @@
 <changes>
 <change type="fixed">
 Fixed error introduced in previous version most notably affecting sound related features (missing break in switch case label).
+Thanks to https://twitter.com/onlyonesolo for reporting the error.
 </change>
 </changes>
 <comments>
