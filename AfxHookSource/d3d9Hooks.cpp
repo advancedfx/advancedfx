@@ -215,100 +215,36 @@ public:
 
 	static void AfxDevicePresented()
 	{
-		/*
-		// Get rid of the old ones:
-
-		while (!m_Lru.empty())
-		{
-			typename Instance_t * instance = m_Lru.back();
-
-			// Only at least 4 frames old:
-			if (!(std::abs(m_PresentNr - instance->m_MyPresentNr) >= 0b10000))
-				break;
-
-			m_InstanceToLruIt.erase(instance);
-			m_Lru.pop_back();
-		}
-
-		m_PresentNr++;
-		*/
 	}
 
 	CAfxDirect3DManaged()
 	{
-		/*
-		m_DirtyCount = 0;
-		m_MyPresentNr = m_PresentNr;
-		*/
 		m_Instances.insert(this);
 	}
 
 	T * AfxGetOrCreateUnmanaged(void)
 	{
-		/*
-		m_MyPresentNr = m_PresentNr;
-
-		typename InstanceToLruIt_t::iterator itLruIt = m_InstanceToLruIt.find(this);
-		if (itLruIt != m_InstanceToLruIt.end())
-		{
-			m_Lru.erase(itLruIt->second);
-			itLruIt->second = m_Lru.insert(m_Lru.begin(), this);
-		}
-		else
-		{
-			m_InstanceToLruIt[this] = m_Lru.insert(m_Lru.begin(), this);
-		}
-
-		bool wasDirty;
-
-		T * result = OnAfxGetOrCreateUnmanaged(0b100 <= m_DirtyCount, wasDirty);
-
-		if (wasDirty && m_DirtyCount < 0b100) ++m_DirtyCount;
-
-		return result;*/
-
-		bool dummy;
-		return OnAfxGetOrCreateUnmanaged(false, dummy);
+		return OnAfxGetOrCreateUnmanaged();
 	}
 
 protected:
 	~CAfxDirect3DManaged()
 	{
-		/*
-		typename InstanceToLruIt_t::iterator itLruIt = m_InstanceToLruIt.find(this);
-		if (itLruIt != m_InstanceToLruIt.end())
-		{
-			m_Lru.erase(itLruIt->second);
-			m_InstanceToLruIt.erase(itLruIt);
-		}
-		*/
-
 		m_Instances.erase(this);
 	}
 
 	virtual void OnAfxDeviceLost() = 0;
 
-	virtual T * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty) = 0;
+	virtual T * OnAfxGetOrCreateUnmanaged() = 0;
 
 private:
 	typedef CAfxDirect3DManaged<T,D> Instance_t;
 	typedef std::set<typename Instance_t *> Instances_t;
-	//typedef std::list<typename Instance_t *> Lru_t;
-	//typedef std::map<typename Instance_t *, typename Lru_t::iterator> InstanceToLruIt_t;
 
-	//static int m_PresentNr;
 	static typename Instances_t m_Instances;
-	//static typename Lru_t m_Lru;
-	//static typename InstanceToLruIt_t m_InstanceToLruIt;
-
-	//int m_MyPresentNr;
-	//int m_DirtyCount;
 };
 
-//template <typename T> int CAfxDirect3DManaged<T>::m_PresentNr = 0;
 template <typename T, typename D> typename CAfxDirect3DManaged <T, D> ::Instances_t CAfxDirect3DManaged<T, D>::m_Instances;
-//template <typename T> typename CAfxDirect3DManaged<T>::Lru_t CAfxDirect3DManaged<T>::m_Lru;
-//template <typename T> typename CAfxDirect3DManaged<T>::InstanceToLruIt_t CAfxDirect3DManaged<T>::m_InstanceToLruIt;
 
 
 // CAfxManagedOffscreenPlainSurface ////////////////////////////////////////////
@@ -435,7 +371,11 @@ public:
 
 	STDMETHOD(UnlockRect)(THIS)
 	{
-		return m_pSystemMemPool->UnlockRect();
+		HRESULT result = m_pSystemMemPool->UnlockRect();
+
+		UpdateUnmanaged();
+
+		return result;
 	}
 
 	STDMETHOD(GetDC)(THIS_ HDC *phdc)
@@ -476,6 +416,11 @@ public:
 		this->D3DDebugData.LockCount = 0;
 		this->D3DDebugData.DCCount = 0;
 		this->D3DDebugData.CreationCallStack = L"n/a";
+
+		m_DirtyRect.left = this->D3DDebugData.Width;
+		m_DirtyRect.top = this->D3DDebugData.Height;
+		m_DirtyRect.right = 0;
+		m_DirtyRect.bottom = 0;
 	}
 
 	HRESULT AddDirtyRect(const RECT *pDirtyRect)
@@ -505,49 +450,53 @@ public:
 	}
 
 protected:
-	virtual IDirect3DSurface9 * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty)
+	void UpdateUnmanaged()
 	{
-		if (switchToDynamic && !(this->D3DDebugData.Usage & D3DUSAGE_DYNAMIC))
+		if (m_pDefaultPool && m_Dirty)
 		{
-			this->D3DDebugData.Usage |= D3DUSAGE_DYNAMIC;
-			if (m_pDefaultPool)
+			IDirect3DDevice9 * device;
+			if (SUCCEEDED(m_pSystemMemPool->GetDevice(&device)))
 			{
-				m_pDefaultPool->Release();
-				m_pDefaultPool = nullptr;
+				POINT point = { m_DirtyRect.left, m_DirtyRect.top };
+				device->UpdateSurface(m_pSystemMemPool, &m_DirtyRect, m_pDefaultPool, &point);
+
+				m_DirtyRect.left = this->D3DDebugData.Width;
+				m_DirtyRect.top = this->D3DDebugData.Height;
+				m_DirtyRect.right = 0;
+				m_DirtyRect.bottom = 0;
+
+				m_Dirty = false;
+
+				device->Release();
 			}
 		}
+	}
 
+	virtual IDirect3DSurface9 * OnAfxGetOrCreateUnmanaged()
+	{
 		if (nullptr == m_pDefaultPool)
-		{
-			this->AddDirtyRect(NULL);
-		}
-
-		outWasDirty = m_Dirty;
-
-		if (m_Dirty)
 		{
 			IDirect3DDevice9 * device;
 
 			if (SUCCEEDED(m_pSystemMemPool->GetDevice(&device)))
 			{
-				if (nullptr == m_pDefaultPool)
+				if (SUCCEEDED(device->CreateOffscreenPlainSurface(this->D3DDebugData.Width, this->D3DDebugData.Height, this->D3DDebugData.Format, this->D3DDebugData.Pool, &m_pDefaultPool, nullptr)))
 				{
-					if (SUCCEEDED(device->CreateOffscreenPlainSurface(this->D3DDebugData.Width, this->D3DDebugData.Height, this->D3DDebugData.Format, this->D3DDebugData.Pool, &m_pDefaultPool, nullptr)))
-					{
-						m_pDefaultPool->SetPriority(m_pSystemMemPool->GetPriority());
-					}
-				}
+					m_pDefaultPool->SetPriority(m_pSystemMemPool->GetPriority());
 
-				if (m_pDefaultPool && m_Dirty)
-				{
-					POINT point = { m_DirtyRect.left, m_DirtyRect.top };
-					device->UpdateSurface(m_pSystemMemPool, &m_DirtyRect, m_pDefaultPool, &point);
-					m_Dirty = false;
+					m_DirtyRect.left = 0;
+					m_DirtyRect.top = 0;
+					m_DirtyRect.right = this->D3DDebugData.Width;
+					m_DirtyRect.bottom = this->D3DDebugData.Height;
+
+					m_Dirty = true;
 				}
 
 				device->Release();
 			}
 		}
+
+		UpdateUnmanaged();
 
 		return m_pDefaultPool;
 	}
@@ -580,9 +529,9 @@ public:
 	/// <summary>Called by child wrapped surface in order to update after device has been lost.</summary>
 	/// <param name="surface">The child surface of this texture.</param>
 	/// <returns>The new default pool surface if available.</returns>
-	virtual IDirect3DSurface9 * AfxManagedChildDirect3DSurface9_GetDefaultPoolSurface(CAfxManagedChildDirect3DSurface9 * surface, bool switchToDynamic, bool & inOutasDirty) = 0;
+	virtual IDirect3DSurface9 * AfxManagedChildDirect3DSurface9_GetDefaultPoolSurface(CAfxManagedChildDirect3DSurface9 * surface) = 0;
 
-	virtual void AfxManagedChildDirect3DSurface9_GotDirty(CAfxManagedChildDirect3DSurface9 * surface) = 0;
+	virtual void AfxManagedChildDirect3DSurface9_Updated(CAfxManagedChildDirect3DSurface9 * surface) = 0;
 };
 
 // {AFF452F9-B129-4B01-85AC-6D7EFD4F1D9D}
@@ -715,7 +664,13 @@ public:
 
 	STDMETHOD(UnlockRect)(THIS)	
 	{
-		return m_pSystemMemPool->UnlockRect();
+		HRESULT result = m_pSystemMemPool->UnlockRect();
+
+		UpdateUnmanaged();
+
+		m_ParentTexture->AfxManagedChildDirect3DSurface9_Updated(this);
+
+		return result;
 	}
 
 	STDMETHOD(GetDC)(THIS_ HDC *phdc)
@@ -756,6 +711,11 @@ public:
 		this->D3DDebugData.LockCount = 0;
 		this->D3DDebugData.DCCount = 0;
 		this->D3DDebugData.CreationCallStack = L"n/a";
+
+		m_DirtyRect.left = this->D3DDebugData.Width;
+		m_DirtyRect.top = this->D3DDebugData.Height;
+		m_DirtyRect.right = 0;
+		m_DirtyRect.bottom = 0;
 	}
 
 	HRESULT AddDirtyRect(const RECT *pDirtyRect)
@@ -781,36 +741,47 @@ public:
 
 		m_Dirty = true;
 
-		m_ParentTexture->AfxManagedChildDirect3DSurface9_GotDirty(this);
-
 		return D3D_OK;
 	}
 
 protected:
-	virtual IDirect3DSurface9 * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty)
+	void UpdateUnmanaged()
 	{
-		if (m_pDefaultPool)
-		{
-			m_pDefaultPool->Release();
-			m_pDefaultPool = nullptr;
-		}
-
-		m_pDefaultPool = m_ParentTexture->AfxManagedChildDirect3DSurface9_GetDefaultPoolSurface(this, this->D3DDebugData.Usage & D3DUSAGE_DYNAMIC, m_Dirty);
-		
-		outWasDirty = m_Dirty;
-
-		IDirect3DDevice9 * device;
-
 		if (m_pDefaultPool && m_Dirty)
 		{
+			IDirect3DDevice9 * device;
 			if (SUCCEEDED(m_pSystemMemPool->GetDevice(&device)))
 			{
 				POINT point = { m_DirtyRect.left, m_DirtyRect.top };
 				device->UpdateSurface(m_pSystemMemPool, &m_DirtyRect, m_pDefaultPool, &point);
+
+				m_DirtyRect.left = this->D3DDebugData.Width;
+				m_DirtyRect.top = this->D3DDebugData.Height;
+				m_DirtyRect.right = 0;
+				m_DirtyRect.bottom = 0;
+
 				m_Dirty = false;
+
 				device->Release();
 			}
 		}
+	}
+
+	virtual IDirect3DSurface9 * OnAfxGetOrCreateUnmanaged()
+	{
+		if (nullptr == m_pDefaultPool)
+		{
+			m_pDefaultPool = m_ParentTexture->AfxManagedChildDirect3DSurface9_GetDefaultPoolSurface(this);
+
+			m_DirtyRect.left = this->D3DDebugData.Width;
+			m_DirtyRect.top = this->D3DDebugData.Height;
+			m_DirtyRect.right = 0;
+			m_DirtyRect.bottom = 0;
+
+			m_Dirty = false;
+		}
+
+		UpdateUnmanaged();
 
 		return m_pDefaultPool;
 	}
@@ -1013,6 +984,8 @@ public:
 		if (SUCCEEDED(result) && 0 == Level)
 		{
 			--this->D3DDebugData.LockCount;
+
+			UpdateUnmanaged();
 		}
 
 		return result;
@@ -1070,51 +1043,47 @@ public:
 	}
 
 protected:
-	virtual IDirect3DTexture9 * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty)
+	void UpdateUnmanaged()
 	{
-		if (switchToDynamic && !(this->D3DDebugData.Usage & D3DUSAGE_DYNAMIC))
+		if (m_pDefaultPool && m_Dirty)
 		{
-			this->D3DDebugData.Usage |= D3DUSAGE_DYNAMIC;
-			if (m_pDefaultPool)
+			IDirect3DDevice9 * device;
+			if (SUCCEEDED(m_pSystemMemPool->GetDevice(&device)))
 			{
-				m_pDefaultPool->Release();
-				m_pDefaultPool = nullptr;
+				device->UpdateTexture(m_pSystemMemPool, m_pDefaultPool);
+
+				m_Dirty = false;
+
+				device->Release();
 			}
 		}
+	}
 
+	virtual IDirect3DTexture9 * OnAfxGetOrCreateUnmanaged()
+	{
 		if (nullptr == m_pDefaultPool)
-			m_Dirty = true;
-
-		outWasDirty = m_Dirty;
-
-		if (m_Dirty)
 		{
 			IDirect3DDevice9 * device;
 
 			if (SUCCEEDED(m_pSystemMemPool->GetDevice(&device)))
 			{
-				if (nullptr == m_pDefaultPool)
+				IDirect3DTexture9 * pDefaultPool;
+				if (SUCCEEDED(device->CreateTexture(this->D3DDebugData.Width, this->D3DDebugData.Height, this->D3DDebugData.Levels, this->D3DDebugData.Usage, this->D3DDebugData.Format, D3DPOOL_DEFAULT, &pDefaultPool, nullptr)))
 				{
-					IDirect3DTexture9 * pDefaultPool;
-					if (SUCCEEDED(device->CreateTexture(this->D3DDebugData.Width, this->D3DDebugData.Height, this->D3DDebugData.Levels, this->D3DDebugData.Usage, this->D3DDebugData.Format, D3DPOOL_DEFAULT, &pDefaultPool, nullptr)))
-					{
-						m_pDefaultPool = pDefaultPool;
+					m_pDefaultPool = pDefaultPool;
 
-						pDefaultPool->SetPriority(m_pSystemMemPool->GetPriority());
-						pDefaultPool->SetLOD(m_pSystemMemPool->GetLOD());
-						pDefaultPool->SetAutoGenFilterType(m_pSystemMemPool->GetAutoGenFilterType());
-					}
-				}
+					pDefaultPool->SetPriority(m_pSystemMemPool->GetPriority());
+					pDefaultPool->SetLOD(m_pSystemMemPool->GetLOD());
+					pDefaultPool->SetAutoGenFilterType(m_pSystemMemPool->GetAutoGenFilterType());
 
-				if (m_pDefaultPool && m_Dirty)
-				{
-					device->UpdateTexture(m_pSystemMemPool, m_pDefaultPool);
-					m_Dirty = false;
+					m_Dirty = true;
 				}
 
 				device->Release();
 			}
 		}
+
+		UpdateUnmanaged();
 
 		return m_pDefaultPool;
 	}
@@ -1128,14 +1097,11 @@ protected:
 		}
 	}
 
-	virtual IDirect3DSurface9 * AfxManagedChildDirect3DSurface9_GetDefaultPoolSurface(CAfxManagedChildDirect3DSurface9 * surface, bool switchToDynamic, bool & inOutWasDirty)
+	virtual IDirect3DSurface9 * AfxManagedChildDirect3DSurface9_GetDefaultPoolSurface(CAfxManagedChildDirect3DSurface9 * surface)
 	{
 		UINT level = 0;
 		DWORD levelSize = sizeof(level);
 		IDirect3DSurface9 * surf = NULL;
-
-		m_Dirty = m_Dirty || inOutWasDirty;
-		inOutWasDirty = m_Dirty;
 
 		m_pDefaultPool = AfxGetOrCreateUnmanaged();
 
@@ -1152,9 +1118,11 @@ protected:
 		return surf;
 	}
 
-	virtual void AfxManagedChildDirect3DSurface9_GotDirty(CAfxManagedChildDirect3DSurface9 * surface)
+	virtual void AfxManagedChildDirect3DSurface9_Updated(CAfxManagedChildDirect3DSurface9 * surface)
 	{
 		m_Dirty = true;
+
+		UpdateUnmanaged();
 	}
 
 private:
@@ -1373,6 +1341,8 @@ public:
 	{
 		HRESULT result =  m_pSystemMemPool->UnlockBox(Level);
 
+		UpdateUnmanaged();
+
 		return result;
 	}
 
@@ -1404,51 +1374,47 @@ public:
 	}
 
 protected:
-	virtual IDirect3DVolumeTexture9 * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty)
+	void UpdateUnmanaged()
 	{
-		if (switchToDynamic && !(this->D3DDebugData.Usage & D3DUSAGE_DYNAMIC))
+		if (m_pDefaultPool && m_Dirty)
 		{
-			this->D3DDebugData.Usage |= D3DUSAGE_DYNAMIC;
-			if (m_pDefaultPool)
+			IDirect3DDevice9 * device;
+			if (SUCCEEDED(m_pSystemMemPool->GetDevice(&device)))
 			{
-				m_pDefaultPool->Release();
-				m_pDefaultPool = nullptr;
+				device->UpdateTexture(m_pSystemMemPool, m_pDefaultPool);
+
+				m_Dirty = false;
+
+				device->Release();
 			}
 		}
+	}
 
+	virtual IDirect3DVolumeTexture9 * OnAfxGetOrCreateUnmanaged()
+	{
 		if (nullptr == m_pDefaultPool)
-			m_Dirty = true;
-
-		outWasDirty = m_Dirty;
-
-		if (m_Dirty)
 		{
 			IDirect3DDevice9 * device;
 
 			if (SUCCEEDED(m_pSystemMemPool->GetDevice(&device)))
 			{
-				if (nullptr == m_pDefaultPool)
+				IDirect3DVolumeTexture9 * pDefaultPool;
+				if (SUCCEEDED(device->CreateVolumeTexture(this->D3DDebugData.Width, this->D3DDebugData.Height, this->D3DDebugData.Depth, this->D3DDebugData.Levels, this->D3DDebugData.Usage, this->D3DDebugData.Format, D3DPOOL_DEFAULT, &pDefaultPool, nullptr)))
 				{
-					IDirect3DVolumeTexture9 * pDefaultPool;
-					if (SUCCEEDED(device->CreateVolumeTexture(this->D3DDebugData.Width, this->D3DDebugData.Height, this->D3DDebugData.Depth, this->D3DDebugData.Levels, this->D3DDebugData.Usage, this->D3DDebugData.Format, D3DPOOL_DEFAULT, &pDefaultPool, nullptr)))
-					{
-						m_pDefaultPool = pDefaultPool;
+					m_pDefaultPool = pDefaultPool;
 
-						pDefaultPool->SetPriority(m_pSystemMemPool->GetPriority());
-						pDefaultPool->SetLOD(m_pSystemMemPool->GetLOD());
-						pDefaultPool->SetAutoGenFilterType(m_pSystemMemPool->GetAutoGenFilterType());
-					}
-				}
+					pDefaultPool->SetPriority(m_pSystemMemPool->GetPriority());
+					pDefaultPool->SetLOD(m_pSystemMemPool->GetLOD());
+					pDefaultPool->SetAutoGenFilterType(m_pSystemMemPool->GetAutoGenFilterType());
 
-				if (m_pDefaultPool && m_Dirty)
-				{
-					device->UpdateTexture(m_pSystemMemPool, m_pDefaultPool);
-					m_Dirty = false;
+					m_Dirty = true;
 				}
 
 				device->Release();
 			}
 		}
+
+		UpdateUnmanaged();
 
 		return m_pDefaultPool;
 	}
@@ -1652,6 +1618,8 @@ public:
 		{
 		}
 
+		UpdateUnmanaged();
+
 		return result;
 	}
 
@@ -1702,52 +1670,47 @@ public:
 	}
 
 protected:
-
-	virtual IDirect3DCubeTexture9 * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty)
+	void UpdateUnmanaged()
 	{
-		if (switchToDynamic && !(this->D3DDebugData.Usage & D3DUSAGE_DYNAMIC))
+		if (m_pDefaultPool && m_Dirty)
 		{
-			this->D3DDebugData.Usage |= D3DUSAGE_DYNAMIC;
-			if (m_pDefaultPool)
+			IDirect3DDevice9 * device;
+			if (SUCCEEDED(m_pSystemMemPool->GetDevice(&device)))
 			{
-				m_pDefaultPool->Release();
-				m_pDefaultPool = nullptr;
+				device->UpdateTexture(m_pSystemMemPool, m_pDefaultPool);
+
+				m_Dirty = false;
+
+				device->Release();
 			}
 		}
+	}
 
+	virtual IDirect3DCubeTexture9 * OnAfxGetOrCreateUnmanaged()
+	{
 		if (nullptr == m_pDefaultPool)
-			m_Dirty = true;
-
-		outWasDirty = m_Dirty;
-
-		if (m_Dirty)
 		{
 			IDirect3DDevice9 * device;
 
 			if (SUCCEEDED(m_pSystemMemPool->GetDevice(&device)))
 			{
-				if (nullptr == m_pDefaultPool)
+				IDirect3DCubeTexture9 * pDefaultPool;
+				if (SUCCEEDED(device->CreateCubeTexture(this->D3DDebugData.Width, this->D3DDebugData.Levels, this->D3DDebugData.Usage, this->D3DDebugData.Format, D3DPOOL_DEFAULT, &pDefaultPool, nullptr)))
 				{
-					IDirect3DCubeTexture9 * pDefaultPool;
-					if (SUCCEEDED(device->CreateCubeTexture(this->D3DDebugData.Width, this->D3DDebugData.Levels, this->D3DDebugData.Usage, this->D3DDebugData.Format, D3DPOOL_DEFAULT, &pDefaultPool, nullptr)))
-					{
-						m_pDefaultPool = pDefaultPool;
+					m_pDefaultPool = pDefaultPool;
 
-						pDefaultPool->SetPriority(m_pSystemMemPool->GetPriority());
-						pDefaultPool->SetLOD(m_pSystemMemPool->GetLOD());
-						pDefaultPool->SetAutoGenFilterType(m_pSystemMemPool->GetAutoGenFilterType());
-					}
-				}
+					pDefaultPool->SetPriority(m_pSystemMemPool->GetPriority());
+					pDefaultPool->SetLOD(m_pSystemMemPool->GetLOD());
+					pDefaultPool->SetAutoGenFilterType(m_pSystemMemPool->GetAutoGenFilterType());
 
-				if (m_pDefaultPool && m_Dirty)
-				{
-					device->UpdateTexture(m_pSystemMemPool, m_pDefaultPool);
-					m_Dirty = false;
+					m_Dirty = true;
 				}
 
 				device->Release();
 			}
 		}
+
+		UpdateUnmanaged();
 
 		return m_pDefaultPool;
 	}
@@ -1761,14 +1724,11 @@ protected:
 		}
 	}
 
-	virtual IDirect3DSurface9 * AfxManagedChildDirect3DSurface9_GetDefaultPoolSurface(CAfxManagedChildDirect3DSurface9 * surface, bool switchToDynamic, bool & inOutWasDirty)
+	virtual IDirect3DSurface9 * AfxManagedChildDirect3DSurface9_GetDefaultPoolSurface(CAfxManagedChildDirect3DSurface9 * surface)
 	{
 		MyCubeSurfaceInfo myCubeSurfaceInfo = { D3DCUBEMAP_FACE_POSITIVE_X, 0 };
 		DWORD myCubeSurfaceInfoSize = sizeof(myCubeSurfaceInfo);
 		IDirect3DSurface9 * surf = NULL;
-
-		m_Dirty = m_Dirty || inOutWasDirty;
-		inOutWasDirty = m_Dirty;
 
 		m_pDefaultPool = AfxGetOrCreateUnmanaged();
 
@@ -1785,9 +1745,11 @@ protected:
 		return surf;
 	}
 
-	virtual void AfxManagedChildDirect3DSurface9_GotDirty(CAfxManagedChildDirect3DSurface9 * surface)
+	virtual void AfxManagedChildDirect3DSurface9_Updated(CAfxManagedChildDirect3DSurface9 * surface)
 	{
 		m_Dirty = true;
+
+		UpdateUnmanaged();
 	}
 
 private:
@@ -1961,6 +1923,8 @@ public:
 	{
 		HRESULT result = m_pSystemMemPool->Unlock();
 
+		UpdateUnmanaged();
+
 		return result;
 	}
 
@@ -1985,62 +1949,50 @@ public:
 	}
 
 protected:
-
-	virtual IDirect3DVertexBuffer9 * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty)
+	void UpdateUnmanaged()
 	{
-		if (switchToDynamic && !(this->D3DDebugData.Usage & D3DUSAGE_DYNAMIC))
+		if (m_pDefaultPool && m_Dirty)
 		{
-			this->D3DDebugData.Usage |= D3DUSAGE_DYNAMIC;
-			if (m_pDefaultPool)
+			void * pSource;
+			void * pTarget;
+
+			if (SUCCEEDED(m_pSystemMemPool->Lock(0, this->D3DDebugData.Length, &pSource, D3DLOCK_READONLY | D3DLOCK_NOOVERWRITE | D3DLOCK_NO_DIRTY_UPDATE)))
 			{
-				m_pDefaultPool->Release();
-				m_pDefaultPool = nullptr;
+				if (SUCCEEDED(m_pDefaultPool->Lock(0, this->D3DDebugData.Length, &pTarget, 0)))
+				{
+					memcpy(pTarget, pSource, this->D3DDebugData.Length);
+					m_pDefaultPool->Unlock();
+
+					m_Dirty = false;
+				}
+				m_pSystemMemPool->Unlock();
 			}
 		}
+	}
 
+	virtual IDirect3DVertexBuffer9 * OnAfxGetOrCreateUnmanaged()
+	{
 		if (nullptr == m_pDefaultPool)
-			m_Dirty = true;
-
-		outWasDirty = m_Dirty;
-
-		if (m_Dirty)
 		{
 			IDirect3DDevice9 * device;
 
 			if (SUCCEEDED(m_pSystemMemPool->GetDevice(&device)))
 			{
-				if (nullptr == m_pDefaultPool)
+				IDirect3DVertexBuffer9 * pDefaultPool;
+				if (SUCCEEDED(device->CreateVertexBuffer(this->D3DDebugData.Length, this->D3DDebugData.Usage, this->D3DDebugData.FVF, D3DPOOL_DEFAULT, &pDefaultPool, nullptr)))
 				{
-					IDirect3DVertexBuffer9 * pDefaultPool;
-					if (SUCCEEDED(device->CreateVertexBuffer(this->D3DDebugData.Length, this->D3DDebugData.Usage, this->D3DDebugData.FVF, D3DPOOL_DEFAULT, &pDefaultPool, nullptr)))
-					{
-						m_pDefaultPool = pDefaultPool;
+					m_pDefaultPool = pDefaultPool;
 
-						pDefaultPool->SetPriority(m_pSystemMemPool->GetPriority());
-					}
-				}
+					pDefaultPool->SetPriority(m_pSystemMemPool->GetPriority());
 
-				if (m_pDefaultPool && m_Dirty)
-				{
-					void * pSource;
-					void * pTarget;
-
-					if (SUCCEEDED(m_pSystemMemPool->Lock(0, this->D3DDebugData.Length, &pSource, D3DLOCK_READONLY | D3DLOCK_NOOVERWRITE | D3DLOCK_NO_DIRTY_UPDATE)))
-					{
-						if (SUCCEEDED(m_pDefaultPool->Lock(0, this->D3DDebugData.Length, &pTarget, 0)))
-						{
-							memcpy(pTarget, pSource, this->D3DDebugData.Length);
-							m_pDefaultPool->Unlock();
-							m_Dirty = false;
-						}
-						m_pSystemMemPool->Unlock();
-					}
-
+					m_Dirty = true;
 				}
 
 				device->Release();
 			}
 		}
+
+		UpdateUnmanaged();
 
 		return m_pDefaultPool;
 
@@ -2173,6 +2125,8 @@ public:
 	{
 		HRESULT result = m_pSystemMemPool->Unlock();
 
+		UpdateUnmanaged();
+
 		return result;
 	}
 
@@ -2197,61 +2151,50 @@ public:
 	}
 
 protected:
-	virtual IDirect3DIndexBuffer9 * OnAfxGetOrCreateUnmanaged(bool switchToDynamic, bool & outWasDirty)
+	void UpdateUnmanaged()
 	{
-		if (switchToDynamic && !(this->D3DDebugData.Usage & D3DUSAGE_DYNAMIC))
+		if (m_pDefaultPool && m_Dirty)
 		{
-			this->D3DDebugData.Usage |= D3DUSAGE_DYNAMIC;
-			if (m_pDefaultPool)
+			void * pSource;
+			void * pTarget;
+
+			if (SUCCEEDED(m_pSystemMemPool->Lock(0, this->D3DDebugData.Length, &pSource, D3DLOCK_READONLY | D3DLOCK_NOOVERWRITE | D3DLOCK_NO_DIRTY_UPDATE)))
 			{
-				m_pDefaultPool->Release();
-				m_pDefaultPool = nullptr;
+				if (SUCCEEDED(m_pDefaultPool->Lock(0, this->D3DDebugData.Length, &pTarget, 0)))
+				{
+					memcpy(pTarget, pSource, this->D3DDebugData.Length);
+					m_pDefaultPool->Unlock();
+
+					m_Dirty = false;
+				}
+				m_pSystemMemPool->Unlock();
 			}
 		}
+	}
 
-		if (nullptr == m_pDefaultPool)
-			m_Dirty = true;
-
-		outWasDirty = m_Dirty;
-
-		if(m_Dirty)
+	virtual IDirect3DIndexBuffer9 * OnAfxGetOrCreateUnmanaged()
+	{
+		if(nullptr == m_pDefaultPool)
 		{
 			IDirect3DDevice9 * device;
 
 			if (SUCCEEDED(m_pSystemMemPool->GetDevice(&device)))
 			{
-				if (nullptr == m_pDefaultPool)
+				IDirect3DIndexBuffer9 * pDefaultPool;
+				if (SUCCEEDED(device->CreateIndexBuffer(this->D3DDebugData.Length, this->D3DDebugData.Usage, this->D3DDebugData.Format, D3DPOOL_DEFAULT, &pDefaultPool, nullptr)))
 				{
-					IDirect3DIndexBuffer9 * pDefaultPool;
-					if (SUCCEEDED(device->CreateIndexBuffer(this->D3DDebugData.Length, this->D3DDebugData.Usage, this->D3DDebugData.Format, D3DPOOL_DEFAULT, &pDefaultPool, nullptr)))
-					{
-						m_pDefaultPool = pDefaultPool;
+					m_pDefaultPool = pDefaultPool;
 
-						pDefaultPool->SetPriority(m_pSystemMemPool->GetPriority());
-					}
-				}
+					pDefaultPool->SetPriority(m_pSystemMemPool->GetPriority());
 
-				if (m_pDefaultPool && m_Dirty)
-				{
-					void * pSource;
-					void * pTarget;
-
-					if (SUCCEEDED(m_pSystemMemPool->Lock(0, this->D3DDebugData.Length, &pSource, D3DLOCK_READONLY | D3DLOCK_NOOVERWRITE | D3DLOCK_NO_DIRTY_UPDATE)))
-					{
-						if (SUCCEEDED(m_pDefaultPool->Lock(0, this->D3DDebugData.Length, &pTarget, 0)))
-						{
-							memcpy(pTarget, pSource, this->D3DDebugData.Length);
-							m_pDefaultPool->Unlock();
-							m_Dirty = false;
-						}
-						m_pSystemMemPool->Unlock();
-					}
-
+					m_Dirty = true;
 				}
 
 				device->Release();
 			}
 		}
+
+		UpdateUnmanaged();
 
 		return m_pDefaultPool;
 	}
