@@ -959,7 +959,6 @@ namespace AfxInterop {
 		if (DrawingThread::m_Surface)
 		{
 			OnReleaseSurface(DrawingThread::m_Surface);
-			DrawingThread::m_Surface = NULL;
 		}
 
 		DrawingThread::m_Surface = surface;
@@ -972,6 +971,8 @@ namespace AfxInterop {
 			surface->AfxReplacementEnabled_set(false);
 			surface->AfxSetReplacement(NULL);
 			surface->AfxSetDepthSurface(NULL);
+
+			DrawingThread::m_Surface = NULL;
 		}
 	}
 
