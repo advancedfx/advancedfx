@@ -11,7 +11,6 @@ extern Direct3DCreate9Ex_t old_Direct3DCreate9Ex;
 IDirect3D9 * WINAPI new_Direct3DCreate9(UINT SDKVersion);
 HRESULT WINAPI new_Direct3DCreate9Ex(UINT SDKVersion, IDirect3D9Ex** ppD3DDevice);
 
-
 /// <remarks>IDirect3D9Device only (i.e. CS:GO but not CSS).</remarks>
 bool AfxD3D9_Check_Supports_R32F_With_Blending(void);
 

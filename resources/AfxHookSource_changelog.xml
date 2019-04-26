@@ -3,6 +3,26 @@
 
 <changelog>
 
+<release>
+<name>AfxHookSource</name>
+<version>1.52.2</version>
+<time>2019-04-26T06:48Z</time>
+<changes>
+<change type="fixed">
+Now supports the new d3d9ex mode of CS:GO, you can safely remove -disable_d3d9ex from the launch options inside HLAE.
+</change>
+<change type="fixed">
+Fixed a crash when device was lost (e.g. due to minimizing) when using afx_interop.
+</change>
+<change type="fixed">
+Fixed a small bug with the wrapping when using afx_interop and not using d3d9ex.
+</change>
+</changes>
+<comments>
+To check if your game is really using d3d9ex (don't forget to remove -disable_d3d9ex launch option first), enter mirv_cvar_unhide_all and then enter mat_using_d3d9ex into console, if it's used then mat_using_d3d9ex should be 1. We recommend to do this and if it's not the case report CS:GO developers as described here: https://blog.counter-strike.net/index.php/2019/04/23870/ (Since we noticed that for some people it's not enabled despite that it should be.)
+</comments>
+</release>
+
 
 <release>
 <name>AfxHookSource</name>
