@@ -167,21 +167,24 @@ void TrySetAbsOriginAndAngles(float Tx, float Ty, float Tz, float Rx, float Ry, 
 	{
 		firstRun = false;
 		
-		if (HMODULE hServerModule = GetModuleHandleA("server"))
+		if (SourceSdkVer_CSGO == g_SourceSdkVer)
 		{
-			if (SOURCESDK::CreateInterfaceFn createInterfaceFn = (SOURCESDK::CreateInterfaceFn)GetProcAddress(hServerModule, "CreateInterface"))
+			if (HMODULE hServerModule = GetModuleHandleA("server"))
 			{
-				int returnCode = 0;
+				if (SOURCESDK::CreateInterfaceFn createInterfaceFn = (SOURCESDK::CreateInterfaceFn)GetProcAddress(hServerModule, "CreateInterface"))
+				{
+					int returnCode = 0;
 
-				serverTools = (SOURCESDK::CSGO::IServerTools *)createInterfaceFn(SOURCESDK_CSGO_VSERVERTOOLS_INTERFACE_VERSION, &returnCode);
+					serverTools = (SOURCESDK::CSGO::IServerTools *)createInterfaceFn(SOURCESDK_CSGO_VSERVERTOOLS_INTERFACE_VERSION, &returnCode);
+				}
 			}
-		}
 
-		if (!serverTools)
-		{
-			Tier0_Warning(
-				"AFXERROR: Could not get %s interface required for server view override.\n"
-				, SOURCESDK_CSGO_VSERVERTOOLS_INTERFACE_VERSION);
+			if (!serverTools)
+			{
+				Tier0_Warning(
+					"AFXERROR: Could not get %s interface required for server view override.\n"
+					, SOURCESDK_CSGO_VSERVERTOOLS_INTERFACE_VERSION);
+			}
 		}
 	}
 

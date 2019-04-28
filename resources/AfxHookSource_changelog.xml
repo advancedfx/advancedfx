@@ -3,6 +3,19 @@
 
 <changelog>
 
+
+<release>
+<name>AfxHookSource</name>
+<version>1.52.3</version>
+<time>2019-04-28T06:18</time>
+<changes>
+<change type="fixed">
+Fixed other games than CS:GO crashing when server interface view override meant for CS:GO was used: https://github.com/advancedfx/advancedfx/issues/164
+</change>
+</changes>
+</release>
+
+
 <release>
 <name>AfxHookSource</name>
 <version>1.52.2</version>
