@@ -208,7 +208,7 @@ void TrySetView(float Tx, float Ty, float Tz, float Rx, float Ry, float Rz, floa
 
 			if (outOrgFov)
 			{
-				*outOrgFov = serverTools->GetPlayerFOV(localPlayer);
+				*outOrgFov = (float)serverTools->GetPlayerFOV(localPlayer);
 			}
 
 			origin.x = Tx;
@@ -365,7 +365,7 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 	g_MirvCam.ApplyFov(Fov);
 
 #ifdef AFX_INTEROP
-	if(AfxInterop::OnViewOverride(Tx, Ty, Tz, Rx, Ry, Rz, Fov)) originOrAnglesOverriden = true;
+	if(AfxInterop::OnRenderView(Tx, Ty, Tz, Rx, Ry, Rz, Fov)) originOrAnglesOverriden = true;
 #endif
 	
 	static bool viewOverriding = false;
