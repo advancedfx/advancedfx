@@ -52,6 +52,7 @@
 #include <csgo/hooks/engine.h>
 #include <insurgency2/public/cdll_int.h>
 #include "MirvTime.h"
+#include "csgo_CRendering3dView.h"
 
 #include <Windows.h>
 #include <shared/Detours/src/detours.h>
@@ -2064,6 +2065,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		csgo_CSkyBoxView_Draw_Install();
 		csgo_CViewRender_Install();
 		Hook_csgo_PlayerAnimStateFix();
+		csgo_CRendering3dView_Install();
 	}
 	else
 	if(bFirstPanorama && StringEndsWith( lpLibFileName, "panorama.dll"))

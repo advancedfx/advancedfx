@@ -71,6 +71,7 @@ AFXADDR_DECL(csgo_panorama_CZip_UnkLoadFiles)
 AFXADDR_DECL(csgo_C_CSPlayer_IClientNetworkable_entindex)
 AFXADDR_DECL(csgo_engine_RegisterForUnhandledEvent_ToggleDebugger_BeforeCall)
 AFXADDR_DECL(csgo_CShaderAPIDx8_UnkCreateTexture)
+AFXADDR_DECL(csgo_CRendering3dView_DrawTranslucentRenderables)
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);

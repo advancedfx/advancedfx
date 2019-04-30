@@ -65,7 +65,7 @@ AFXADDR_DEF(csgo_panorama_CZip_UnkLoadFiles)
 AFXADDR_DEF(csgo_C_CSPlayer_IClientNetworkable_entindex)
 AFXADDR_DEF(csgo_engine_RegisterForUnhandledEvent_ToggleDebugger_BeforeCall)
 AFXADDR_DEF(csgo_CShaderAPIDx8_UnkCreateTexture)
-
+AFXADDR_DEF(csgo_CRendering3dView_DrawTranslucentRenderables)
 
 void ErrorBox(char const * messageText);
 
@@ -1534,6 +1534,31 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 
 			AFXADDR_SET(csgo_Unknown_GetTeamsSwappedOnScreen, addr);
 		}
+
+		// csgo_CRendering3dView_DrawTranslucentRenderables:
+		// (CRendering3dView::DrawTranslucentRenderables)
+		//
+		// This function holds the only two refrercnes to the string "DrawTranslucentEntities".
+		{
+			DWORD addr = 0;
+
+			ImageSectionsReader sections((HMODULE)clientDll);
+			if (!sections.Eof())
+			{
+				MemRange textRange = sections.GetMemRange();
+
+				MemRange result = FindPatternString(textRange, "55 8B EC 81 EC ?? ?? ?? ?? 83 3D ?? ?? ?? ?? 00 53 56 8B D9 57 89 5D ?? 74 ??");
+
+				if (!result.IsEmpty())
+					addr = result.Start;
+				else
+					ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			AFXADDR_SET(csgo_CRendering3dView_DrawTranslucentRenderables, addr);
+		}
+
 	}
 	else
 	{
@@ -1565,6 +1590,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		//AFXADDR_SET(csgo_mystique_animation, 0x0);
 		AFXADDR_SET(csgo_Unknown_GetTeamsSwappedOnScreen, 0x0);
 		AFXADDR_SET(csgo_C_CSPlayer_IClientNetworkable_entindex, 0x0);
+		AFXADDR_SET(csgo_CRendering3dView_DrawTranslucentRenderables, 0x0);
 	}
 
 	//AFXADDR_SET(csgo_CPredictionCopy_TransferData_DSZ, 0x0a);

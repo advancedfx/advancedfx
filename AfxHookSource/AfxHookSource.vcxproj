@@ -197,6 +197,7 @@
     <ClCompile Include="CampathDrawer.cpp" />
     <ClCompile Include="ClientTools.cpp" />
     <ClCompile Include="CommandSystem.cpp" />
+    <ClCompile Include="csgo_CRendering3dView.cpp" />
     <ClCompile Include="csgo\ClientToolsCsgo.cpp" />
     <ClCompile Include="csgo\hooks\engine.cpp" />
     <ClCompile Include="csgo\hooks\PanoramaDebugger.cpp" />
@@ -319,6 +320,7 @@
     <ClInclude Include="csgo_CBasePlayer.h" />
     <ClInclude Include="csgo_CHudDeathNotice.h" />
     <ClInclude Include="csgo_CCSGameMovement.h" />
+    <ClInclude Include="csgo_CRendering3dView.h" />
     <ClInclude Include="csgo_CSkyBoxView.h" />
     <ClInclude Include="csgo_CViewRender.h" />
     <ClInclude Include="csgo_c_baseanimatingoverlay.h" />

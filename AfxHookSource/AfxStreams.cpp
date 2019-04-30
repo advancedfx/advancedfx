@@ -59,6 +59,8 @@ extern WrpVEngineClient * g_VEngineClient;
 extern SOURCESDK::IMaterialSystem_csgo * g_MaterialSystem_csgo;
 extern SOURCESDK::IVRenderView_csgo * g_pVRenderView_csgo;
 
+static AfxInterop::EnabledFeatures_t g_InteropFeatures;
+
 IAfxMatRenderContext * GetCurrentContext()
 {
 	if (!g_MaterialSystem_csgo)
@@ -318,25 +320,23 @@ class CAfxInteropDrawDepth_Functor
 	: public CAfxFunctor
 {
 public:
-	CAfxInteropDrawDepth_Functor(bool isNextDepth, float outZNear, float outZFar, float zNear, float zFar, int x, int y, int width, int height)
+	CAfxInteropDrawDepth_Functor(bool isNextDepth, float outZNear, float outZFar, float zNear, float zFar)
 		: m_IsNextDepth(isNextDepth)
 		, m_OutZNear(outZNear)
 		, m_OutZFar(outZFar)
 		, m_ZNear(zNear)
 		, m_ZFar(zFar)
-		, m_X(x)
-		, m_Y(y)
-		, m_Width(width)
-		, m_Height(height)
 	{
 	}
 
 	virtual void operator()()
 	{
-		if (AfxInterop::GetDoingHud())
-		{
-			AfxDrawDepth(AfxDrawDepthEncode_Rgba, AfxDrawDepthMode_Inverse, m_IsNextDepth, m_OutZNear, m_OutZFar, m_X, m_Y, m_Width, m_Height, m_ZNear, m_ZFar, false, nullptr);
-		}
+		IAfxMatRenderContextOrg * context = GetCurrentContext()->GetOrg();
+
+		int x, y, width, height;
+		context->GetViewport(x, y, width, height);
+
+		AfxDrawDepth(AfxDrawDepthEncode_Rgba, AfxDrawDepthMode_Inverse, m_IsNextDepth, m_OutZNear, m_OutZFar, x, y, width, height, m_ZNear, m_ZFar, false, nullptr);
 	}
 
 private:
@@ -345,10 +345,6 @@ private:
 	float m_OutZFar;
 	float m_ZNear;
 	float m_ZFar;
-	int m_X;
-	int m_Y;
-	int m_Width;
-	int m_Height;
 };
 
 class CAfxInteropOverrideDepthBegin_Functor
@@ -403,6 +399,28 @@ private:
 	int m_FrameCount;
 };
 
+class CAfxInteropDrawingThreadFunctor_On_DrawTranslucentRenderables
+	: public CAfxFunctor
+{
+public:
+	CAfxInteropDrawingThreadFunctor_On_DrawTranslucentRenderables(bool bInSkybox, bool bShadowDepth, bool afterCall)
+		: m_bInSkyBox(bInSkybox)
+		, m_bShadowDepth(bShadowDepth)
+		, m_bAfterCall(afterCall)
+	{
+	}
+
+	virtual void operator()()
+	{
+		AfxInterop::DrawingThread_On_DrawTranslucentRenderables(GetCurrentContext()->GetOrg(), m_bInSkyBox, m_bShadowDepth, m_bAfterCall);
+	}
+
+private:
+	bool m_bInSkyBox;
+	bool m_bShadowDepth;
+	bool m_bAfterCall;
+};
+
 class AfxInteropDrawingThreadBeforeHud_Functor
 	: public CAfxFunctor
 {
@@ -413,7 +431,23 @@ public:
 
 	virtual void operator()()
 	{
-		AfxInterop::DrawingThreadBeforeHud();
+		AfxInterop::DrawingThread_BeforeHud(GetCurrentContext()->GetOrg());
+	}
+
+private:
+};
+
+class AfxInteropDrawingThreadAfterHud_Functor
+	: public CAfxFunctor
+{
+public:
+	AfxInteropDrawingThreadAfterHud_Functor()
+	{
+	}
+
+	virtual void operator()()
+	{
+		AfxInterop::DrawingThread_AfterHud(GetCurrentContext()->GetOrg());
 	}
 
 private:
@@ -5020,7 +5054,12 @@ void CAfxStreams::DoRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 #ifdef AFX_INTEROP
 	if (AfxInterop::Enabled())
 	{
-		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropOverrideDepthBegin_Functor()));
+		AfxInterop::OnRenderView(view, g_InteropFeatures);
+
+		if (g_InteropFeatures.GetDepthRequired())
+		{
+			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropOverrideDepthBegin_Functor()));
+		}
 
 		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new AfxInteropDrawingDrawingThreadPrepareDraw(AfxInterop::GetFrameCount())));
 	}
@@ -5041,7 +5080,10 @@ void CAfxStreams::DoRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 	{
 		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new AfxInteropDrawingThreadFinished_Functor()));
 
-		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropOverrideDepthEnd_Functor()));
+		if (g_InteropFeatures.GetDepthRequired())
+		{
+			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropOverrideDepthEnd_Functor()));
+		}
 	}
 #endif
 }
@@ -5203,6 +5245,77 @@ bool CAfxStreams::OnViewRenderShouldForceNoVis(bool orgValue)
 	return orgValue;
 }
 
+void CAfxStreams::On_DrawTranslucentRenderables(bool bInSkybox, bool bShadowDepth, bool afterCall)
+{
+#ifdef AFX_INTEROP
+	if (AfxInterop::Enabled())
+	{
+		bool enabled = false;
+		bool beforeDepth = false;
+		bool afterDepth = false;
+
+		if (false == bInSkybox)
+		{
+			if (true == bShadowDepth)
+			{
+				if (false == afterCall)
+				{
+					if (g_InteropFeatures.BeforeTranslucentShadow)
+					{
+						enabled = true;
+						beforeDepth = true;
+						afterDepth = true;
+					}
+				}
+				else
+				{
+					if (g_InteropFeatures.AfterTranslucentShadow)
+					{
+						enabled = true;
+						beforeDepth = true;
+						afterDepth = true;
+					}
+				}
+			}
+			else
+			{
+				if (false == afterCall)
+				{
+					if (g_InteropFeatures.BeforeTranslucent)
+					{
+						enabled = true;
+						beforeDepth = true;
+						afterDepth = true;
+					}
+				}
+				else
+				{
+					if (g_InteropFeatures.AfterTranslucentShadow)
+					{
+						enabled = true;
+						beforeDepth = true;
+						afterDepth = true;
+					}
+				}
+			}
+		}
+
+		if (enabled)
+		{
+			IAfxMatRenderContext * afxMatRenderContext = GetCurrentContext();
+			IAfxMatRenderContextOrg * orgCtx = afxMatRenderContext->GetOrg();
+
+			if (beforeDepth)
+			{
+				QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new CAfxInteropDrawDepth_Functor(true, m_CurrentView->zNear, m_CurrentView->zFar, m_CurrentView->zNear, m_CurrentView->zFar)));
+			}
+
+			QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new CAfxInteropDrawingThreadFunctor_On_DrawTranslucentRenderables(bInSkybox, bShadowDepth, afterCall)));
+		}
+	}
+#endif
+}
+
 void CAfxStreams::OnDrawingHudBegin(void)
 {
 	IAfxMatRenderContext * afxMatRenderContext = GetCurrentContext();
@@ -5214,11 +5327,12 @@ void CAfxStreams::OnDrawingHudBegin(void)
 	{
 		IAfxMatRenderContextOrg * orgCtx = afxMatRenderContext->GetOrg();
 
-		QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new CAfxInteropDrawDepth_Functor(true, m_CurrentView->zNear, m_CurrentView->zFar, m_CurrentView->zNear, m_CurrentView->zFar, m_CurrentView->x, m_CurrentView->y, m_CurrentView->width, m_CurrentView->height)));
+		if (g_InteropFeatures.BeforeHud)
+		{
+			QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new CAfxInteropDrawDepth_Functor(true, m_CurrentView->zNear, m_CurrentView->zFar, m_CurrentView->zNear, m_CurrentView->zFar)));
 
-		AfxInterop::BeforeHud(*m_CurrentView);
-
-		QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new AfxInteropDrawingThreadBeforeHud_Functor()));
+			QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new AfxInteropDrawingThreadBeforeHud_Functor()));
+		}
 	}
 #endif
 
@@ -5243,6 +5357,18 @@ void CAfxStreams::OnDrawingHudEnd(void)
 		}
 	}
 
+#ifdef AFX_INTEROP
+	if (AfxInterop::Enabled())
+	{
+		IAfxMatRenderContextOrg * orgCtx = afxMatRenderContext->GetOrg();
+
+		if (g_InteropFeatures.AfterHud)
+		{
+			QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new AfxInteropDrawingThreadAfterHud_Functor()));
+		}
+	}
+#endif
+
 	if (IAfxStreamContext * hook = FindStreamContext(afxMatRenderContext)) hook->DrawingHudEnd();
 }
 
@@ -5264,8 +5390,11 @@ void CAfxStreams::OnDrawingSkyBoxViewEnd(void)
 #ifdef AFX_INTEROP
 	if (AfxInterop::Enabled())
 	{
-		float scale = csgo_CSkyBoxView_GetScale();
-		QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropDrawDepth_Functor(false, scale * m_CurrentView->zNear, scale * m_CurrentView->zFar, 2.0f, (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH, m_CurrentView->x, m_CurrentView->y, m_CurrentView->width, m_CurrentView->height)));
+		if (g_InteropFeatures.GetDepthRequired())
+		{
+			float scale = csgo_CSkyBoxView_GetScale();
+			QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropDrawDepth_Functor(false, scale * m_CurrentView->zNear, scale * m_CurrentView->zFar, 2.0f, (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH)));
+		}
 	}
 #endif
 

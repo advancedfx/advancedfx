@@ -429,6 +429,9 @@
     <ClCompile Include="MirvTime.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
+    <ClCompile Include="csgo_CRendering3dView.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\bvhexport.h">
@@ -783,6 +786,9 @@
       <Filter>prop\AfxHookSource\insurgency2\public</Filter>
     </ClInclude>
     <ClInclude Include="MirvTime.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo_CRendering3dView.h">
       <Filter>AfxHookSource</Filter>
     </ClInclude>
   </ItemGroup>
