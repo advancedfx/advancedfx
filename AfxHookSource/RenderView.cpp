@@ -23,6 +23,7 @@
 #include "aiming.h"
 #include "MirvCam.h"
 #include "AfxInterop.h"
+#include "csgo/ClientToolsCSgo.h"
 
 
 BvhExport * g_BvhExport = NULL;
@@ -158,7 +159,7 @@ bool Hook_VClient_RenderView::IsInstalled(void) {
 	return m_IsInstalled;
 }
 
-void TrySetAbsOriginAndAngles(float Tx, float Ty, float Tz, float Rx, float Ry, float Rz)
+void TrySetView(float Tx, float Ty, float Tz, float Rx, float Ry, float Rz, float fov, float * outOrgRz, float * outOrgFov)
 {
 	static bool firstRun = true;
 	static SOURCESDK::CSGO::IServerTools * serverTools = nullptr;
@@ -169,39 +170,58 @@ void TrySetAbsOriginAndAngles(float Tx, float Ty, float Tz, float Rx, float Ry, 
 		
 		if (SourceSdkVer_CSGO == g_SourceSdkVer)
 		{
-			if (HMODULE hServerModule = GetModuleHandleA("server"))
+			if (CClientToolsCsgo::Instance())
 			{
-				if (SOURCESDK::CreateInterfaceFn createInterfaceFn = (SOURCESDK::CreateInterfaceFn)GetProcAddress(hServerModule, "CreateInterface"))
-				{
-					int returnCode = 0;
 
-					serverTools = (SOURCESDK::CSGO::IServerTools *)createInterfaceFn(SOURCESDK_CSGO_VSERVERTOOLS_INTERFACE_VERSION, &returnCode);
+				if (HMODULE hServerModule = GetModuleHandleA("server"))
+				{
+					if (SOURCESDK::CreateInterfaceFn createInterfaceFn = (SOURCESDK::CreateInterfaceFn)GetProcAddress(hServerModule, "CreateInterface"))
+					{
+						int returnCode = 0;
+
+						serverTools = (SOURCESDK::CSGO::IServerTools *)createInterfaceFn(SOURCESDK_CSGO_VSERVERTOOLS_INTERFACE_VERSION, &returnCode);
+					}
 				}
 			}
 
 			if (!serverTools)
 			{
 				Tier0_Warning(
-					"AFXERROR: Could not get %s interface required for server view override.\n"
-					, SOURCESDK_CSGO_VSERVERTOOLS_INTERFACE_VERSION);
+					"AFXERROR: Could not get interfaces required for server view override.\n");
 			}
 		}
 	}
 
 	if (serverTools)
 	{
-		SOURCESDK::Vector origin;
-		SOURCESDK::QAngle angles;
+		if (SOURCESDK::C_BaseEntity_csgo * localPlayer = reinterpret_cast<SOURCESDK::C_BaseEntity_csgo *>(CClientToolsCsgo::Instance()->GetClientToolsInterface()->GetLocalPlayer()))
+		{
 
-		origin.x = Tx;
-		origin.y = Ty;
-		origin.z = Tz;
+			SOURCESDK::Vector origin;
+			SOURCESDK::QAngle angles;
 
-		angles.x = Rx;
-		angles.y = Ry;
-		angles.z = Rz;
+			if (outOrgRz)
+			{
+				serverTools->GetPlayerPosition(origin, angles, localPlayer);
+				*outOrgRz = angles.z;
+			}
 
-		serverTools->MoveEngineViewTo(origin, angles);
+			if (outOrgFov)
+			{
+				*outOrgFov = serverTools->GetPlayerFOV(localPlayer);
+			}
+
+			origin.x = Tx;
+			origin.y = Ty;
+			origin.z = Tz;
+
+			angles.x = Rx;
+			angles.y = Ry;
+			angles.z = Rz;
+
+			serverTools->SnapPlayerToPosition(origin, angles, localPlayer);
+			serverTools->SetPlayerFOV((int)fov, localPlayer);
+		}
 	}
 }
 
@@ -345,12 +365,25 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 	g_MirvCam.ApplyFov(Fov);
 
 #ifdef AFX_INTEROP
-	if(AfxInterop::OnRenderView(Tx, Ty, Tz, Rx, Ry, Rz, Fov)) originOrAnglesOverriden = true;
+	if(AfxInterop::OnViewOverride(Tx, Ty, Tz, Rx, Ry, Rz, Fov)) originOrAnglesOverriden = true;
 #endif
+	
+	static bool viewOverriding = false;
 
 	if (originOrAnglesOverriden && this->ForceViewOverride)
 	{
-		TrySetAbsOriginAndAngles(Tx, Ty, Tz, Rz, Rx, Ry);
+		TrySetView(Tx, Ty, Tz, Rx, Ry, Rz, Fov, nullptr, nullptr);
+
+		viewOverriding = true;
+	}
+	else if (viewOverriding)
+	{
+		viewOverriding = false;
+
+		if (this->ViewOverrideReset)
+		{
+			TrySetView(Tx, Ty, Tz, Rx, Ry, 0.0f, 90.0f, nullptr, nullptr);
+		}
 	}
 
 

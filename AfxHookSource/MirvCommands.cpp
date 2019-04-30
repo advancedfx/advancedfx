@@ -4013,11 +4013,29 @@ CON_COMMAND(mirv_cfg, "general HLAE configuration")
 			);
 			return;
 		}
+		else if (0 == _stricmp("viewOverrideReset", arg1))
+		{
+			if (3 <= argC)
+			{
+				g_Hook_VClient_RenderView.ViewOverrideReset = 0 != atoi(args->ArgV(2));
+				return;
+			}
+
+			Tier0_Msg(
+				"%s viewOverrideReset 0|1\n"
+				"Current value: %i\n"
+				, arg0
+				, g_Hook_VClient_RenderView.ViewOverrideReset ? 1 : 0
+			);
+			return;
+		}
 	}
 
 	Tier0_Msg(
 		"%s fovScaling [...] - Set default fov scaling.\n"
 		"%s forceViewOverride [...] - If to force the view override onto the local player, can fix a few bugs (CS:GO only)."
+		"%s viewOverrideReset [...] - If to resert roll to 0 and fov to 90 (unscaled) after ending a view override (CS:GO only)."
+		, arg0
 		, arg0
 		, arg0
 	);

@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.52.4</version>
+<time>2019-04-30T09:23Z</time>
+<changes>
+<change type="fixed">
+Fixed CS:GO view override when HLAE is being used in spectator slots, mirv_cfg forceViewOverride 1 (default) should work fine now.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.52.3</version>
 <time>2019-04-28T06:18</time>
 <changes>
