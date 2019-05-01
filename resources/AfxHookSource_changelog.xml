@@ -3,6 +3,17 @@
 
 <changelog>
 
+<release>
+<name>AfxHookSource</name>
+<version>1.52.5</version>
+<time>2019-05-01T18:30Z</time>
+<changes>
+<change type="fixed">
+Adjusted to CS:GO 04/30/2019 (05/01/2019 UTC, 1.36.9.1) update. Fixes #166 and #167
+</change>
+</changes>
+</release>
+
 
 <release>
 <name>AfxHookSource</name>

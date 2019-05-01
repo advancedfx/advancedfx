@@ -43,6 +43,7 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 		if (GetRecording())
 		{
 			char const * className = m_ClientTools->GetClassname(hEntity);
+			if (!className) className = "[NULL]";
 
 			if (0 != Debug_get())
 			{
@@ -168,7 +169,9 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 	{
 		if (0 != Debug_get() && hEntity != SOURCESDK::CSGO::HTOOLHANDLE_INVALID)
 		{
-			Tier0_Msg("%i n/a: %s\n", hEntity, m_ClientTools->GetClassname(hEntity));
+			const char * className = m_ClientTools->GetClassname(hEntity);
+			if (!className) className = "[NULL]";
+			Tier0_Msg("%i n/a: %s\n", hEntity, className);
 		}
 
 		if (hEntity != SOURCESDK::CSGO::HTOOLHANDLE_INVALID && m_ClientTools->ShouldRecord(hEntity))

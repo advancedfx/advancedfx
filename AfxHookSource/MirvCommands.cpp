@@ -2887,12 +2887,18 @@ bool mirv_listentities_dist_compare(const MirvListEntitiesEntry_t & first, const
 
 void mirv_print_entity(int index, double dist, SOURCESDK::C_BaseEntity_csgo * be)
 {
+	const char * className = be->GetClassname();
+	if (!className) className = "[NULL]";
+
+	const char * entName = be->GetEntityName();
+	if (!entName) entName = "[NULL]";
+
 	Tier0_Msg(
 		"%i (%f): %s::%s :%i\n"
 		, index
 		, dist
-		, be->GetClassname()
-		, be->GetEntityName()
+		, className
+		, entName
 		, be->GetRefEHandle().ToInt()
 	);
 
@@ -2972,15 +2978,23 @@ CON_COMMAND(mirv_listentities, "Print info about currently active entites. (CS:G
 
 		if (be)
 		{
-			if ((!onlyPlayer || be->IsPlayer()) && StringWildCard1Matched(classWildCard, be->GetClassname()))
+		
+
+			if ((!onlyPlayer || be->IsPlayer()))
 			{
+				const char * className = be->GetClassname();
+				if (!className) className = "[NULL]";
 
-				SOURCESDK::Vector vEntOrigin = be->GetAbsOrigin();
-				Vector3 entOrigin(vEntOrigin.x, vEntOrigin.y, vEntOrigin.z);
+				if (StringWildCard1Matched(classWildCard, className))
+				{
 
-				double dist = (entOrigin - cameraOrigin).Length();
+					SOURCESDK::Vector vEntOrigin = be->GetAbsOrigin();
+					Vector3 entOrigin(vEntOrigin.x, vEntOrigin.y, vEntOrigin.z);
 
-				result.emplace_back(i, dist, be);
+					double dist = (entOrigin - cameraOrigin).Length();
+
+					result.emplace_back(i, dist, be);
+				}
 			}
 		}
 	}
