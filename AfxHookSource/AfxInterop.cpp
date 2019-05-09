@@ -965,7 +965,7 @@ namespace AfxInterop {
 						if (colorTextureWasLost) DrawingThread::m_Surface->AfxSetReplacement(NULL);
 						if (colorDepthTextureWasLost) DrawingThread::m_Surface->AfxSetDepthSurface(NULL);
 
-						if(sharedColorTextureHandle != DrawingThread::m_Surface->AfxGetReplacement() || sharedColorDepthTextureHandle != DrawingThread::m_Surface->AfxGetDepthSurface())
+						if(colorTextureWasLost && NULL != sharedColorTextureHandle || colorDepthTextureWasLost && NULL != sharedColorDepthTextureHandle)
 						{
 							IDirect3DDevice9 * device = NULL;
 							if (SUCCEEDED(DrawingThread::m_Surface->AfxGetSurface()->GetDevice(&device)))
@@ -974,7 +974,7 @@ namespace AfxInterop {
 
 								if (SUCCEEDED(DrawingThread::m_Surface->AfxGetSurface()->GetDesc(&desc)))
 								{
-									if(sharedColorTextureHandle != DrawingThread::m_Surface->AfxGetReplacement())
+									if(colorTextureWasLost && NULL != sharedColorTextureHandle)
 									{
 										IDirect3DTexture9 * replacementTexture = NULL;
 										if (sharedColorTextureHandle)
@@ -993,7 +993,7 @@ namespace AfxInterop {
 											}
 										}
 									}
-									if(sharedColorDepthTextureHandle != DrawingThread::m_Surface->AfxGetDepthSurface())
+									if(colorDepthTextureWasLost && NULL != sharedColorDepthTextureHandle)
 									{
 										IDirect3DTexture9 * replacementTexture = NULL;
 										if (sharedColorDepthTextureHandle)

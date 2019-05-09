@@ -5082,7 +5082,10 @@ void CAfxStreams::DoRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 #ifdef AFX_INTEROP
 	if (AfxInterop::Enabled())
 	{
-		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropOnRenderViewEnd_Functor()));
+		if (g_InteropFeatures.GetEnabled())
+		{
+			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropOnRenderViewEnd_Functor()));
+		}
 
 		if (g_InteropFeatures.GetDepthRequired())
 		{
