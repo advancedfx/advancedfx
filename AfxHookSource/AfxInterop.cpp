@@ -68,7 +68,8 @@ namespace AfxInterop {
 			DrawingMessage_BeforeTranslucent = 4,
 			DrawingMessage_AfterTranslucent = 5,
 			DrawingMessage_BeforeHud = 6,
-			DrawingMessage_AfterHud = 7
+			DrawingMessage_AfterHud = 7,
+			DrawingMessage_OnRenderViewEnd = 8
 		};
 
 		enum PrepareDrawReply
@@ -97,14 +98,14 @@ namespace AfxInterop {
 			EngineMessage_LevelShutDown = 2,
 			EngineMessage_BeforeFrameStart = 3,
 			EngineMessage_OnRenderView = 4,
-			EngineMessage_AfterFrameRenderEnd = 5,
-			EngineMessage_BeforeFrameRenderStart = 8,
-			EngineMessage_AfterFrameRenderStart = 9,
-			EngineMessage_OnViewOverride = 10,
-			EngineMessage_BeforeTranslucentShadow = 11,
-			EngineMessage_AfterTranslucentShadow = 12,
-			EngineMessage_BeforeTranslucent = 13,
-			EngineMessage_AfterTranslucent = 14
+			EngineMessage_OnRenderViewEnd = 5,
+			EngineMessage_BeforeFrameRenderStart = 6,
+			EngineMessage_AfterFrameRenderStart = 7,
+			EngineMessage_OnViewOverride = 8,
+			EngineMessage_BeforeTranslucentShadow = 9,
+			EngineMessage_AfterTranslucentShadow = 10,
+			EngineMessage_BeforeTranslucent = 11,
+			EngineMessage_AfterTranslucent = 12
 		};
 
 		class CConsole
@@ -763,7 +764,30 @@ namespace AfxInterop {
 		return;
 
 	error:
-		Tier0_Warning("AfxInterop::BeforeHud: Error in line %i.\n", errorLine);
+		Tier0_Warning("AfxInterop::OnRenderView: Error in line %i.\n", errorLine);
+		lock.unlock();
+		Disconnect();
+		return;
+	}
+
+	void OnRenderViewEnd()
+	{
+		if (!m_Enabled) return;
+
+		std::unique_lock<std::mutex> lock(EngineThread::m_ConnectMutex);
+
+		if (!EngineThread::m_Connected) return;
+
+		int errorLine = 0;
+		{
+			if (!WriteInt32(EngineThread::m_hPipe, EngineThread::EngineMessage_OnRenderViewEnd)) { errorLine = __LINE__; goto error; }
+			if (!Flush(EngineThread::m_hPipe)) { errorLine = __LINE__; goto error; }
+		}
+
+		return;
+
+	error:
+		Tier0_Warning("AfxInterop::OnRenderViewEnd: Error in line %i.\n", errorLine);
 		lock.unlock();
 		Disconnect();
 		return;
@@ -1124,6 +1148,29 @@ namespace AfxInterop {
 
 	locked_error:
 		Tier0_Warning("AfxInterop::DrawingThread_BeforeHud: Error in line %i.\n", errorLine);
+		lock.unlock();
+		Disconnect();
+		return;
+	}
+
+	void DrawingThread_OnRenderViewEnd()
+	{
+		if (!m_Enabled) return;
+
+		if (DrawingThread::m_Skip) return;
+
+		std::unique_lock<std::mutex> lock(DrawingThread::m_ConnectMutex);
+
+		if (!DrawingThread::m_Connected) return;
+
+		int errorLine = 0;
+
+		if (!WriteInt32(DrawingThread::m_hPipe, DrawingThread::DrawingMessage_OnRenderViewEnd)) { errorLine = __LINE__; goto locked_error; }
+
+		return;
+
+	locked_error:
+		Tier0_Warning("AfxInterop::DrawingThread_OnRenderViewEnd: Error in line %i.\n", errorLine);
 		lock.unlock();
 		Disconnect();
 		return;

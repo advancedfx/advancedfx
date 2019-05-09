@@ -380,6 +380,23 @@ public:
 private:
 };
 
+class CAfxInteropOnRenderViewEnd_Functor
+	: public CAfxFunctor
+{
+public:
+	CAfxInteropOnRenderViewEnd_Functor()
+	{
+	}
+
+	virtual void operator()()
+	{
+		AfxInterop::DrawingThread_OnRenderViewEnd();
+	}
+
+private:
+};
+
+
 
 class AfxInteropDrawingDrawingThreadPrepareDraw
 	: public CAfxFunctor
@@ -5065,10 +5082,18 @@ void CAfxStreams::DoRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 #ifdef AFX_INTEROP
 	if (AfxInterop::Enabled())
 	{
+		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropOnRenderViewEnd_Functor()));
+
 		if (g_InteropFeatures.GetDepthRequired())
 		{
 			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropOverrideDepthEnd_Functor()));
 		}
+
+		if (g_InteropFeatures.GetEnabled())
+		{
+			AfxInterop::OnRenderViewEnd();
+		}
+
 	}
 #endif
 }

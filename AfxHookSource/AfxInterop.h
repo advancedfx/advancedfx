@@ -66,6 +66,9 @@ namespace AfxInterop {
 	void OnRenderView(const SOURCESDK::CViewSetup_csgo & view, EnabledFeatures_t & outEnabled);
 
 	/// <remarks>Must be called from engine thread only.</remarks>
+	void OnRenderViewEnd();
+
+	/// <remarks>Must be called from engine thread only.</remarks>
 	void Shutdown();
 
 	/// <remarks>Must be called from engine thread only.</remarks>
@@ -84,11 +87,13 @@ namespace AfxInterop {
 	/// <remarks>Must be called from engine thread only.</remarks>
 	bool OnViewOverride(float & Tx, float & Ty, float & Tz, float & Rx, float & Ry, float & Rz, float & Fov);
 
+	/// <remarks>Must be called from engine thread only.</remarks>
 	void On_DrawTranslucentRenderables(SOURCESDK::CSGO::CRendering3dView * rendering3dView, bool bInSkybox, bool bShadowDepth, bool afterCall);
 
 	//
 	// Drawing thread:
 
+	/// <remarks>Must be called from drawing thread only.</remarks>
 	void DrawingThreadPrepareDraw(int frameCount);
 
 	/// <remarks>Must be called from drawing thread only.</remarks>
@@ -109,6 +114,9 @@ namespace AfxInterop {
 	/// <param name="info">can be nullptr</param>
 	/// <remarks>Must be called from drawing thread only.</remarks>
 	void OnSetRenderTarget(DWORD RenderTargetIndex, IAfxInteropSurface * surface);
+
+	/// <remarks>Must be called from drawing thread only.</remarks>
+	void DrawingThread_OnRenderViewEnd();
 }
 
 #endif
