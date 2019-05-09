@@ -45,6 +45,7 @@ void CClientToolsCssV34::OnPostToolMessageCssV34(SOURCESDK::CSSV34::HTOOLHANDLE 
 		if (GetRecording())
 		{
 			char const * className = m_ClientTools->GetClassname(hEntity);
+			if (!className) className = "[NULL]";
 
 			if (0 != Debug_get())
 			{
@@ -175,7 +176,10 @@ void CClientToolsCssV34::OnPostToolMessageCssV34(SOURCESDK::CSSV34::HTOOLHANDLE 
 	{
 		if (0 != Debug_get() && hEntity != SOURCESDK::CSGO::HTOOLHANDLE_INVALID)
 		{
-			Tier0_Msg("%i n/a: %s\n", hEntity, m_ClientTools->GetClassname(hEntity));
+			const char * className = m_ClientTools->GetClassname(hEntity);
+			if (!className) className = "[NULL]";
+
+			Tier0_Msg("%i n/a: %s\n", hEntity, className);
 		}
 
 		if (hEntity != SOURCESDK::CSGO::HTOOLHANDLE_INVALID)// && m_ClientTools->ShouldRecord(hEntity))

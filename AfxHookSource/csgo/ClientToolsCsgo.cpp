@@ -75,6 +75,7 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 		if (GetRecording())
 		{
 			char const * className = m_ClientTools->GetClassname(hEntity);
+			if (nullptr == className) className = "[NULL]";
 
 			if (2 <= Debug_get())
 			{
@@ -247,7 +248,10 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 			SOURCESDK::CSGO::EntitySearchResult ent = m_ClientTools->GetEntity(hEntity);
 			SOURCESDK::C_BaseEntity_csgo * be = reinterpret_cast<SOURCESDK::C_BaseEntity_csgo *>(ent);
 
-			Tier0_Msg("%i (%i): %s\n", hEntity, be ? be->GetRefEHandle().ToInt() : SOURCESDK_CSGO_INVALID_EHANDLE_INDEX, m_ClientTools->GetClassname(hEntity));
+			const char * className = m_ClientTools->GetClassname(hEntity);
+			if (!className) className = "";
+
+			Tier0_Msg("%i (%i): %s\n", hEntity, be ? be->GetRefEHandle().ToInt() : SOURCESDK_CSGO_INVALID_EHANDLE_INDEX, className);
 		}
 
 		if (hEntity != SOURCESDK::CSGO::HTOOLHANDLE_INVALID && m_ClientTools->ShouldRecord(hEntity))

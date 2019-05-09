@@ -18,6 +18,7 @@ class Hook_VClient_RenderView
 public:
 	CamPath m_CamPath;
 
+	bool ViewOverrideReset = true;
 	bool ForceViewOverride = true;
 
 	float GameCameraOrigin[3] = { 0.0f, 0.0f, 0.0f };
