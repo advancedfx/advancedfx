@@ -412,7 +412,7 @@ public:
 
 	virtual void operator()()
 	{
-		AfxInterop::DrawingThread_On_DrawTranslucentRenderables(GetCurrentContext()->GetOrg(), m_bInSkyBox, m_bShadowDepth, m_bAfterCall);
+		AfxInterop::DrawingThread_On_DrawTranslucentRenderables(m_bInSkyBox, m_bShadowDepth, m_bAfterCall);
 	}
 
 private:
@@ -448,22 +448,6 @@ public:
 	virtual void operator()()
 	{
 		AfxInterop::DrawingThread_AfterHud(GetCurrentContext()->GetOrg());
-	}
-
-private:
-};
-
-class AfxInteropDrawingThreadFinished_Functor
-	: public CAfxFunctor
-{
-public:
-	AfxInteropDrawingThreadFinished_Functor()
-	{
-	}
-
-	virtual void operator()()
-	{
-		AfxInterop::DrawingThreadFinished();
 	}
 
 private:
@@ -5061,7 +5045,10 @@ void CAfxStreams::DoRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropOverrideDepthBegin_Functor()));
 		}
 
-		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new AfxInteropDrawingDrawingThreadPrepareDraw(AfxInterop::GetFrameCount())));
+		if (g_InteropFeatures.GetEnabled())
+		{
+			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new AfxInteropDrawingDrawingThreadPrepareDraw(AfxInterop::GetFrameCount())));
+		}
 	}
 #endif
 
@@ -5078,8 +5065,6 @@ void CAfxStreams::DoRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 #ifdef AFX_INTEROP
 	if (AfxInterop::Enabled())
 	{
-		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new AfxInteropDrawingThreadFinished_Functor()));
-
 		if (g_InteropFeatures.GetDepthRequired())
 		{
 			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropOverrideDepthEnd_Functor()));
@@ -5245,7 +5230,7 @@ bool CAfxStreams::OnViewRenderShouldForceNoVis(bool orgValue)
 	return orgValue;
 }
 
-void CAfxStreams::On_DrawTranslucentRenderables(bool bInSkybox, bool bShadowDepth, bool afterCall)
+void CAfxStreams::On_DrawTranslucentRenderables(SOURCESDK::CSGO::CRendering3dView * rendering3dView, bool bInSkybox, bool bShadowDepth, bool afterCall)
 {
 #ifdef AFX_INTEROP
 	if (AfxInterop::Enabled())
@@ -5304,6 +5289,8 @@ void CAfxStreams::On_DrawTranslucentRenderables(bool bInSkybox, bool bShadowDept
 		{
 			IAfxMatRenderContext * afxMatRenderContext = GetCurrentContext();
 			IAfxMatRenderContextOrg * orgCtx = afxMatRenderContext->GetOrg();
+
+			AfxInterop::On_DrawTranslucentRenderables(rendering3dView, bInSkybox, bShadowDepth, afterCall);
 
 			if (beforeDepth)
 			{

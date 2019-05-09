@@ -7,17 +7,17 @@
 
 #include <shared/Detours/src/detours.h>
 
-typedef void(__fastcall * CRendering3dView_DrawTranslucentRenderables_t)(void * This, void * edx, bool bInSkybox, bool bShadowDepth);
+typedef void(__fastcall * CRendering3dView_DrawTranslucentRenderables_t)(SOURCESDK::CSGO::CRendering3dView * This, void * edx, bool bInSkybox, bool bShadowDepth);
 
 CRendering3dView_DrawTranslucentRenderables_t True_CRendering3dView_DrawTranslucentRenderables;
 
-void __fastcall My_CRendering3dView_DrawTranslucentRenderables(void * This, void * edx, bool bInSkybox, bool bShadowDepth)
+void __fastcall My_CRendering3dView_DrawTranslucentRenderables(SOURCESDK::CSGO::CRendering3dView * This, void * edx, bool bInSkybox, bool bShadowDepth)
 {
-	g_AfxStreams.On_DrawTranslucentRenderables(bInSkybox, bShadowDepth, false);
+	g_AfxStreams.On_DrawTranslucentRenderables(This, bInSkybox, bShadowDepth, false);
 
 	True_CRendering3dView_DrawTranslucentRenderables(This, edx, bInSkybox, bShadowDepth);
 
-	g_AfxStreams.On_DrawTranslucentRenderables(bInSkybox, bShadowDepth, true);
+	g_AfxStreams.On_DrawTranslucentRenderables(This, bInSkybox, bShadowDepth, true);
 }
 
 bool csgo_CRendering3dView_Install()

@@ -84,16 +84,15 @@ namespace AfxInterop {
 	/// <remarks>Must be called from engine thread only.</remarks>
 	bool OnViewOverride(float & Tx, float & Ty, float & Tz, float & Rx, float & Ry, float & Rz, float & Fov);
 
+	void On_DrawTranslucentRenderables(SOURCESDK::CSGO::CRendering3dView * rendering3dView, bool bInSkybox, bool bShadowDepth, bool afterCall);
+
 	//
 	// Drawing thread:
 
 	void DrawingThreadPrepareDraw(int frameCount);
 
 	/// <remarks>Must be called from drawing thread only.</remarks>
-	void DrawingThreadFinished();
-
-	/// <remarks>Must be called from drawing thread only.</remarks>
-	void DrawingThread_On_DrawTranslucentRenderables(IAfxMatRenderContextOrg * context, bool bInSkybox, bool bShadowDepth, bool afterCall);
+	void DrawingThread_On_DrawTranslucentRenderables(bool bInSkybox, bool bShadowDepth, bool afterCall);
 
 	/// <remarks>Must be called from drawing thread only.</remarks>
 	void DrawingThread_BeforeHud(IAfxMatRenderContextOrg * context);
