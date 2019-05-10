@@ -3,6 +3,20 @@
 
 <changelog>
 
+
+<release>
+<name>AfxHookSource</name>
+<version>1.55.0</version>
+<time>2019-05-10T17:00Z</time>
+<changes>
+<change type="removed">
+Updated afx_interop to version 5. Requires afx-unity-interop v0.5.0.
+</change>
+</changes>
+</release>
+
+
+
 <release>
 <name>AfxHookSource</name>
 <version>1.52.5</version>

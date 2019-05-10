@@ -27,7 +27,7 @@ extern SOURCESDK::IVRenderView_csgo * g_pVRenderView_csgo;
 
 namespace AfxInterop {
 
-	const INT32 m_Version = 4;
+	const INT32 m_Version = 5;
 
 	bool Connect();
 	void Disconnect();

@@ -1,6 +1,5 @@
 resources\*
 x64\AfxHook.dat
-x64\AfxHookUnity.dll
 x64\injector.exe
 advancedfx.org.url
 AfxCppCli.dll
@@ -8,7 +7,6 @@ AfxHook.dat
 AfxHookGoldSrc.dll
 AfxHookSource.dll
 AfxHookSource_changelog.xml
-AfxHookUnity_changelog.xml
 api-ms-win-core-console-l1-1-0.dll
 api-ms-win-core-datetime-l1-1-0.dll
 api-ms-win-core-debug-l1-1-0.dll

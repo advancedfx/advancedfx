@@ -6,6 +6,21 @@
 
 <release>
 <name>HLAE</name>
+<version>2.65.0</version>
+<time>2019-05-01T18:30</time>
+<changes>
+<change type="updated">
+Included AfxHookSource 1.55.0 (2019-05-10T17:00Z).
+</change>
+<change type="removed">
+Removed AfxHookUnity: This is now included as DLL in the Unity project and doesn't need to be injected anymore.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.64.5</version>
 <time>2019-05-01T18:30</time>
 <changes>
