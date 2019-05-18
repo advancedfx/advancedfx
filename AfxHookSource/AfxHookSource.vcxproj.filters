@@ -432,6 +432,18 @@
     <ClCompile Include="csgo_CRendering3dView.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
+    <ClCompile Include="AfxImageBuffer.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="AfxOutStreams.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="AfxWriteFileLimiter.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="AfxThreadedRefCounted.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\bvhexport.h">
@@ -789,6 +801,18 @@
       <Filter>AfxHookSource</Filter>
     </ClInclude>
     <ClInclude Include="csgo_CRendering3dView.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="AfxImageBuffer.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="AfxOutStreams.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="AfxWriteFileLimiter.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="AfxThreadedRefCounted.h">
       <Filter>AfxHookSource</Filter>
     </ClInclude>
   </ItemGroup>
