@@ -184,7 +184,7 @@ public:
 	//
 	// Reference counting:
 
-	virtual int AddRef(void)
+	virtual int AddRef(bool mutex = false)
 	{
 		AFXSTREAMS_REFTRACKER_INC
 
@@ -193,14 +193,14 @@ public:
 		++m_RefCount;
 		int result = m_RefCount;
 
-		m_RefMutex.unlock();
+		if (!mutex) m_RefMutex.unlock();
 
 		return m_RefCount;
 	}
 
-	virtual int Release(void)
+	virtual int Release(bool mutex = false)
 	{
-		m_RefMutex.lock();
+		if(!mutex) m_RefMutex.lock();
 
 		--m_RefCount;
 
@@ -216,73 +216,9 @@ public:
 		return result;
 	}
 
-	//
-	// Lock functions:
-	//
-	// These should be used when accessing concurrent resources on the stream.
-
-	void InterLock(void)
-	{
-		std::unique_lock<std::mutex> lock(m_LockMutex);
-
-		m_LockCondition.wait(lock, [this]() { return m_LockCount == 0; });
-
-		++m_LockCount;
-	}
-
-	void InterLockIncrement(void)
-	{
-		std::unique_lock<std::mutex> lock(m_LockMutex);
-
-		++m_LockCount;
-	}
-
-	void InterLockDecrement(void)
-	{
-		bool notify = false;
-
-		{
-			std::unique_lock<std::mutex> lock(m_LockMutex);
-			--m_LockCount;
-
-			notify = m_LockCount == 0;
-		}
-
-		if (notify)
-			m_LockCondition.notify_one();
-	}
-
-protected:
-	int LockCount_get(void) {
-		return m_LockCount;
-	}
-
 private:
 	std::mutex m_RefMutex;
-	std::mutex m_LockMutex;
-	std::condition_variable m_LockCondition;
-	int m_LockCount = 0;
 	int m_RefCount = 0;
-};
-
-class CAfxStreamSharedInterLock
-{
-public:
-	CAfxStreamSharedInterLock(CAfxStreamShared * stream)
-		: m_Stream(stream)
-	{
-		if (m_Stream)
-			m_Stream->InterLock();
-	}
-
-	~CAfxStreamSharedInterLock()
-	{
-		if (m_Stream)
-			m_Stream->InterLockDecrement();
-	}
-
-private:
-	CAfxStreamShared * m_Stream;
 };
 
 class CAfxStream
@@ -408,6 +344,27 @@ protected:
 
 private:
 	std::atomic_int m_RefCount;
+};
+
+
+class CAfxStreamUniqueLock
+{
+public:
+	CAfxStreamUniqueLock(CAfxStreamShared * stream)
+		: m_Stream(stream)
+	{
+		if (m_Stream)
+			m_Stream->AddRef(true);
+	}
+
+	~CAfxStreamUniqueLock()
+	{
+		if (m_Stream)
+			m_Stream->Release(true);
+	}
+
+private:
+	CAfxStreamShared * m_Stream;
 };
 
 IAfxMatRenderContext * GetCurrentContext();
@@ -653,7 +610,6 @@ private:
 			: m_Stream(stream)
 		{
 			m_Stream.AddRef();
-			m_Stream.InterLockIncrement();
 		}
 
 		void operator()()
@@ -678,7 +634,6 @@ private:
 		void operator()()
 		{
 			m_Stream.CaptureEnd(m_OutPathOk ? &m_OutPath : 0);
-			m_Stream.InterLockDecrement();
 			m_Stream.Release();
 		}
 

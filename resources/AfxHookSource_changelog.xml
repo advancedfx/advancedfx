@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.55.1</version>
+<time>2019-05-18T11:20Z</time>
+<changes>
+<change type="fixed">
+Fixed #171 stream removal while previewing = crash.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.55.0</version>
 <time>2019-05-10T17:00Z</time>
 <changes>

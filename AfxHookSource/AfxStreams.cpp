@@ -731,7 +731,6 @@ CAfxRenderViewStream::CCaptureFunctor::CCaptureFunctor(CAfxRenderViewStream & st
 	, m_X(x), m_Y(y), m_Width(width), m_Height(height)
 {
 	m_Stream.AddRef();
-	m_Stream.InterLockIncrement();
 
 	m_CaptureTarget->AddRef();
 }
@@ -742,7 +741,6 @@ void CAfxRenderViewStream::CCaptureFunctor::operator()()
 
 	m_CaptureTarget->Release();
 
-	m_Stream.InterLockDecrement();
 	m_Stream.Release();
 }
 
@@ -2360,7 +2358,6 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd()
 	{
 		// Is leaf context.
 
-		m_Stream->InterLockDecrement();
 		m_Stream->Release();
 	}
 
@@ -2377,7 +2374,6 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderBegin(CAfxBaseFxStream * s
 	m_IsNextDepth = false;
 
 	m_Stream->AddRef();
-	m_Stream->InterLockIncrement();
 
 	QueueBegin();
 }
@@ -6050,7 +6046,7 @@ void CAfxStreams::Console_EditStream(CAfxStream * stream, IWrpCommandArgs * args
 	CAfxTwinStream * curTwin = 0;
 	CAfxRenderViewStream * curRenderView = 0;
 
-	CAfxStreamSharedInterLock afxStreamInterLock(cur);
+	CAfxStreamUniqueLock afxStreamInterLock(cur);
 	
 	if(cur)
 	{
@@ -6192,7 +6188,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 	CAfxRenderViewStream * curRenderView = stream;
 	CAfxBaseFxStream * curBaseFx = 0;
 	
-	CAfxStreamSharedInterLock afxRenderViewStreamInterLock(curRenderView);
+	CAfxStreamUniqueLock afxRenderViewStreamInterLock(curRenderView);
 
 	if(curRenderView)
 	{
