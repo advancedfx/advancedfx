@@ -58,17 +58,22 @@ public:
 
 	void WaitLastRefAndLock()
 	{
-		std::condition_variable * conditionVariable = new std::condition_variable();
-
 		std::unique_lock<std::mutex> lock(m_RefMutex);
 
-		m_LastRefCondition = conditionVariable;
+		if (1 != m_RefCount)
+		{
+			std::condition_variable * conditionVariable = new std::condition_variable();
 
-		if (1 == m_RefCount) conditionVariable->notify_one();	
+			m_LastRefCondition = conditionVariable;
 
-		conditionVariable->wait(lock, [this]() { return 1 == this->m_RefCount; });
+			if (1 == m_RefCount) conditionVariable->notify_one();
 
-		delete conditionVariable;
+			conditionVariable->wait(lock, [this]() { return 1 == this->m_RefCount; });
+
+			delete conditionVariable;
+		}
+
+		lock.release();
 	}
 
 protected:
