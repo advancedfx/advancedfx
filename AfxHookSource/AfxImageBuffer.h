@@ -35,6 +35,15 @@ struct CAfxImageFormat
 	{
 
 	}
+
+	bool operator==(const CAfxImageFormat & other) const
+	{
+		return PixelFormat == other.PixelFormat
+			&& Width == other.Width
+			&& Height == other.Height
+			&& Pitch == other.Pitch
+			&& Bytes == other.Bytes;
+	}
 };
 
 class CAfxImageBuffer;

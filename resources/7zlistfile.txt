@@ -1,3 +1,4 @@
+ffmpeg\readme.advancedfx.txt
 resources\*
 x64\AfxHook.dat
 x64\injector.exe

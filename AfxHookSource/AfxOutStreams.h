@@ -3,6 +3,7 @@
 #include "AfxImageBuffer.h"
 #include "AfxThreadedRefCounted.h"
 #include <string>
+#include <Windows.h>
 
 class CAfxOutStream : public CAfxThreadedRefCounted
 {
@@ -94,4 +95,31 @@ private:
 	size_t m_FrameNumber = 0;
 
 	bool CreateCapturePath(const char * fileExtension, std::wstring &outPath);
+};
+
+class CAfxOutFFMPEGVideoStream : public CAfxOutVideoStream
+{
+public:
+	CAfxOutFFMPEGVideoStream(const CAfxImageFormat & imageFormat, const std::wstring & path, const std::wstring && ffmpegOptions, float frameRate);
+
+	virtual bool SupplyVideoData(const CAfxImageBuffer & buffer);
+
+protected:
+	virtual ~CAfxOutFFMPEGVideoStream() override;
+
+private:
+	PROCESS_INFORMATION m_ProcessInfo;
+	bool m_TriedCreatePath = false;
+	bool m_SucceededCreatePath;
+	BOOL m_Okay = FALSE;
+	HANDLE m_hChildStd_IN_Rd = NULL;
+	HANDLE m_hChildStd_IN_Wr = NULL;
+	HANDLE m_hChildStd_OUT_Rd = NULL;
+	HANDLE m_hChildStd_OUT_Wr = NULL;
+	HANDLE m_hChildStd_ERR_Rd = NULL;
+	HANDLE m_hChildStd_ERR_Wr = NULL;
+
+	void Close();
+
+	bool HandleOutAndErr();
 };
