@@ -66,8 +66,6 @@ public:
 
 			m_LastRefCondition = conditionVariable;
 
-			if (1 == m_RefCount) conditionVariable->notify_one();
-
 			conditionVariable->wait(lock, [this]() { return 1 == this->m_RefCount; });
 
 			delete conditionVariable;
