@@ -100,7 +100,7 @@ private:
 class CAfxOutFFMPEGVideoStream : public CAfxOutVideoStream
 {
 public:
-	CAfxOutFFMPEGVideoStream(const CAfxImageFormat & imageFormat, const std::wstring & path, const std::wstring && ffmpegOptions, float frameRate);
+	CAfxOutFFMPEGVideoStream(const CAfxImageFormat & imageFormat, const std::wstring & path, const std::wstring & ffmpegOptions, float frameRate);
 
 	virtual bool SupplyVideoData(const CAfxImageBuffer & buffer);
 

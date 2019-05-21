@@ -462,45 +462,126 @@ class CAfxTwinStream;
 class CAfxRecordingSettings : public CAfxThreadedRefCounted
 {
 public:
-	static void Init();
+	static CAfxRecordingSettings * GetClassic()
+	{
+		return m_Shared.m_ClassicSettings;
+	}
+
+	static CAfxRecordingSettings * GetByName(const char * name)
+	{
+		auto it = m_Shared.m_NamedSettings.find(name);
+
+		if (m_Shared.m_NamedSettings.end() != it)
+			return it->second.Settings;
+		else
+			return nullptr;
+	}
+
 	static void Console(IWrpCommandArgs * args);
+
+	CAfxRecordingSettings(const char * name, bool bProtected)
+		: m_Name(name)
+		, m_Protected(bProtected)
+	{
+	}
+
+	const char * GetName() const
+	{
+		return m_Name.c_str();
+	}
+
+	bool GetProtected() const
+	{
+		return m_Protected;
+	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args) = 0;
 
 	virtual CAfxOutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat) const = 0;
 
+protected:
+	std::string m_Name;
+	bool m_Protected;
+
 private:
 	struct CNamedSettingValue {
-		bool Protected;
 		CAfxRecordingSettings * Settings;
 
-		CNamedSettingValue(bool bProtected, CAfxRecordingSettings * settings)
-			: Protected(bProtected)
-			, Settings(settings)
+		CNamedSettingValue()
+			: Settings(nullptr)
+		{
+		}
+
+		CNamedSettingValue(CAfxRecordingSettings * settings)
+			: Settings(settings)
 		{
 			Settings->AddRef();
 		}
 
+		CNamedSettingValue(const CNamedSettingValue & copyFrom)
+			: Settings(copyFrom.Settings)
+		{
+			if (Settings) Settings->AddRef();
+		}
+
 		~CNamedSettingValue()
 		{
-			Settings->Release();
+			if(Settings) Settings->Release();
+		}
+
+		bool DeleteIfUnrefrenced()
+		{
+			if (Settings)
+			{
+				Settings->Lock();
+				if (1 == Settings->GetRefCount())
+				{
+					Settings->Release(true);
+					Settings = nullptr;
+					delete this;
+				}
+				else
+				{
+					Settings->Unlock();
+					return false;
+				}
+			}
+			else
+			{
+				delete this;
+				return true;
+			}
 		}
 	};
 
-	static std::map<std::string, CNamedSettingValue> m_NamedSettings;
-};
+	static struct CShared {
+		std::map<std::string, CNamedSettingValue> m_NamedSettings;
+		CAfxRecordingSettings * m_ClassicSettings;
 
-class __declspec(novtable) IAfxClassicRecordingSettingsHelper
-{
-public:
-	virtual CAfxRenderViewStream::StreamCaptureType GetCaptureType() const = 0;
+		CShared();
+		~CShared();
+	} m_Shared;
 };
 
 class CAfxClassicRecordingSettings : public CAfxRecordingSettings
 {
 public:
-	CAfxClassicRecordingSettings(const IAfxClassicRecordingSettingsHelper & helper)
-		: m_Helper(helper)
+	CAfxClassicRecordingSettings()
+		: CAfxRecordingSettings("afxClassic", true)
+	{
+	}
+
+	virtual void Console_Edit(IWrpCommandArgs * args) override;
+
+	virtual CAfxOutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat) const override;
+};
+
+class CAfxFfmpegRecordingSettings : public CAfxRecordingSettings
+{
+public:
+	CAfxFfmpegRecordingSettings(const char * name, bool bProtected, const char * szFfmpegOptions)
+		: CAfxRecordingSettings(name, bProtected)
+		, m_FfmpegOptions(szFfmpegOptions)
 	{
 
 	}
@@ -510,7 +591,7 @@ public:
 	virtual CAfxOutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat) const override;
 
 private:
-	const IAfxClassicRecordingSettingsHelper & m_Helper;
+	std::string m_FfmpegOptions;
 };
 
 class CAfxRecordStream abstract
@@ -555,6 +636,8 @@ public:
 
 	/// <remarks>This is not guaranteed to be called, i.e. not called upon buffer re-allocation error.</remarks>
 	virtual void OnImageBufferCaptured(CAfxRenderViewStream * stream, CAfxImageBuffer * buffer) = 0;
+
+	virtual CAfxRenderViewStream::StreamCaptureType GetCaptureType() const = 0;
 
 protected:
 	CAfxRecordingSettings * m_Settings;
@@ -617,7 +700,6 @@ private:
 
 class CAfxSingleStream
 	: public CAfxRecordStream
-	, public IAfxClassicRecordingSettingsHelper
 {
 public:
 	CAfxSingleStream(char const * streamName, CAfxRenderViewStream * stream);
@@ -650,7 +732,6 @@ private:
 
 class CAfxTwinStream
 	: public CAfxRecordStream
-	, public IAfxClassicRecordingSettingsHelper
 {
 public:
 	enum StreamCombineType
@@ -2553,6 +2634,11 @@ public:
 
 	virtual void View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *rect);
 
+	float GetStartHostFrameRate()
+	{
+		return m_StartHostFrameRateValue;
+	}
+
 private:
 	class CEntityBvhCapture
 	{
@@ -2635,6 +2721,7 @@ private:
 	bool m_GameRecording;
 
 	WrpConVarRef * m_HostFrameRate = nullptr;
+	float m_StartHostFrameRateValue = 0.0f;
 
 	WrpConVarRef * m_MatPostProcessEnableRef = nullptr;
 	int m_OldMatPostProcessEnable;

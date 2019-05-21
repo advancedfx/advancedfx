@@ -974,6 +974,12 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			);
 			return;
 		}
+		else if (0 == _stricmp("settings", cmd1))
+		{
+			CSubWrpCommandArgs subArgs(args, 2);
+			CAfxRecordingSettings::Console(&subArgs);
+			return;
+		}
 	}
 
 	Tier0_Msg(
@@ -987,6 +993,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 		"mirv_streams print - Print current streams.\n"
 		"mirv_streams record [...] - Recording control.\n"
 		"mirv_streams actions [...] - Actions control (for baseFx based streams).\n"
+		"mirv_streams settings [...] - Recording settings.\n"
 	);
 	return;
 }

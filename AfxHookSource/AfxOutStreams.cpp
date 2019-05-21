@@ -96,7 +96,7 @@ void ReplaceAllW(std::wstring & str, const std::wstring & from, const std::wstri
 	}
 }
 
-CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & imageFormat, const std::wstring & path, const std::wstring && ffmpegOptions, float frameRate)
+CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & imageFormat, const std::wstring & path, const std::wstring & ffmpegOptions, float frameRate)
 	: CAfxOutVideoStream(imageFormat)
 {
 	std::wstring myPath(path);
@@ -124,9 +124,10 @@ CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & image
 		std::wstring ffmpegExe(GetHlaeFolderW());
 		ffmpegExe.append(L"ffmpeg\\bin\\ffmpeg.exe");
 
-		std::wostringstream ffmpegArgs(ffmpegExe);
+		std::wostringstream ffmpegArgs;
 
-		ffmpegArgs << L"-i pipe:0 -f rawvideo -pixelFormat ";
+		ffmpegArgs << L"\"" << ffmpegExe << L"\"";
+		ffmpegArgs << L" -i pipe:0 -f rawvideo -pixel_format ";
 
 		switch (imageFormat.PixelFormat)
 		{
@@ -145,7 +146,7 @@ CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & image
 		}
 
 		ffmpegArgs << " -framerate " << frameRate;
-		ffmpegArgs << " -videosize " << imageFormat.Width << "x" << imageFormat.Height;
+		ffmpegArgs << " -video_size " << imageFormat.Width << "x" << imageFormat.Height;
 
 		std::wstring myFFMPEGOptions(ffmpegOptions);
 
@@ -240,8 +241,12 @@ CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & image
 
 		if (FALSE != m_Okay)
 		{
+			startupInfo.hStdInput = m_hChildStd_IN_Rd;
+			startupInfo.hStdError = m_hChildStd_ERR_Wr;
+			startupInfo.hStdOutput = m_hChildStd_OUT_Wr;
+
 			m_Okay = CreateProcessW(
-				myFFMPEGOptions.c_str(),
+				ffmpegExe.c_str(),
 				&(commandLine[0]),
 				NULL,
 				NULL,
@@ -369,15 +374,14 @@ bool CAfxOutFFMPEGVideoStream::HandleOutAndErr()
 
 	if (PeekNamedPipe(m_hChildStd_ERR_Rd, NULL, 0, NULL, &bytesAvail, NULL))
 	{
-		bool hadError = 0 < bytesAvail;
-
 		while (0 < bytesAvail)
 		{
 			DWORD dwBytesRead;
-			if (ReadFile(m_hChildStd_ERR_Rd, chBuf, 250, &dwBytesRead, NULL))
+			if (ReadFile(m_hChildStd_ERR_Rd, chBuf, min(bytesAvail, 250), &dwBytesRead, NULL))
 			{
 				chBuf[dwBytesRead] = 0;
 				Tier0_Warning("%s", chBuf);
+				bytesAvail -= dwBytesRead;
 			}
 			else
 			{
@@ -385,13 +389,6 @@ bool CAfxOutFFMPEGVideoStream::HandleOutAndErr()
 				Close();
 				return false;
 			}
-		}
-
-		if(hadError)
-		{
-			Tier0_Warning("AFXERROR: CAfxOutFFMPEGVideoStream::HandleOutAndErr: StdErr had data.\n");
-			Close();
-			return false;
 		}
 	}
 	else
@@ -406,10 +403,11 @@ bool CAfxOutFFMPEGVideoStream::HandleOutAndErr()
 		while (0 < bytesAvail)
 		{
 			DWORD dwBytesRead;
-			if (ReadFile(m_hChildStd_OUT_Rd, chBuf, 250, &dwBytesRead, NULL))
+			if (ReadFile(m_hChildStd_OUT_Rd, chBuf, min(bytesAvail, 250), &dwBytesRead, NULL))
 			{
 				chBuf[dwBytesRead] = 0;
 				Tier0_Msg("%s", chBuf);
+				bytesAvail -= dwBytesRead;
 			}
 			else
 			{
