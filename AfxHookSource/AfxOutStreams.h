@@ -118,6 +118,7 @@ private:
 	HANDLE m_hChildStd_OUT_Wr = NULL;
 	HANDLE m_hChildStd_ERR_Rd = NULL;
 	HANDLE m_hChildStd_ERR_Wr = NULL;
+	OVERLAPPED m_OverlappedWrite = {};
 
 	void Close();
 

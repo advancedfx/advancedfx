@@ -812,8 +812,6 @@ CAfxSingleStream::CAfxSingleStream(char const * streamName, CAfxRenderViewStream
 
 CAfxSingleStream::~CAfxSingleStream()
 {
-	m_Settings->Release();
-
 	m_Stream->Release();
 }
 
@@ -909,8 +907,6 @@ CAfxTwinStream::CAfxTwinStream(char const * streamName, CAfxRenderViewStream * s
 
 CAfxTwinStream::~CAfxTwinStream()
 {
-	m_Settings->Release();
-
 	m_StreamB->Release();
 	m_StreamA->Release();
 }
@@ -8290,17 +8286,22 @@ CAfxClassicRecordingSettings::CShared::CShared()
 	m_NamedSettings.emplace(m_ClassicSettings->GetName(), m_ClassicSettings);
 
 	{
-		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpeg", true, "-c:v libx264 -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}\\video.avi{QUOTE}");
+		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpeg", true, "-c:v libx264 -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}\\video.mp4{QUOTE}");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 
 	{
-		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegLosslessFast", true, "-c:v libx264 -preset ultrafast -crf 0 {QUOTE}{AFX_STREAM_PATH}\\video.avi{QUOTE}");
+		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegYuv420p", true, "-c:v libx264 -pix_fmt yuv420p -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}\\video.mp4{QUOTE}");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 
 	{
-		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegLosslessBest", true, "-c:v libx264 -preset veryslow -crf 0 {QUOTE}{AFX_STREAM_PATH}\\video.avi{QUOTE}");
+		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegLosslessFast", true, "-c:v libx264rgb -preset ultrafast -crf 0 {QUOTE}{AFX_STREAM_PATH}\\video.mp4{QUOTE}");
+		m_NamedSettings.emplace(settings->GetName(), settings);
+	}
+
+	{
+		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegLosslessBest", true, "-c:v libx264rgb -preset veryslow -crf 0 {QUOTE}{AFX_STREAM_PATH}\\video.mp4{QUOTE}");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 }

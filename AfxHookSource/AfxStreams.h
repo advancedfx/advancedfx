@@ -612,11 +612,10 @@ public:
 
 	void SetSettings(CAfxRecordingSettings * settings)
 	{
+		settings->AddRef();
+
 		m_Settings->Release();
-
 		m_Settings = settings;
-
-		m_Settings->AddRef();
 	}
 
 	char const * StreamName_get(void) const;

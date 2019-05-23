@@ -6,6 +6,33 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.60.0</version>
+<time>2019-05-23T17:40Z</time>
+<changes>
+<change type="added">
+Added support for FFMPEG encoding of the image streams (audio is not supported yet and will be .wav as usual):<br />
+<br />
+First follow the instructions in ffmpeg/readme.advancedfx.txt to install FFMPEG for HLAE.<br />
+<br />
+// Example usage:<br />
+host_framerate 120<br />
+mirv_streams add normal norm<br />
+mirv_streams edit norm settings afxFfmpegYuv420p<br />
+mirv_streams add depth depth<br />
+mirv_streams edit depth settings afxFfmpegLosslessBest<br />
+mirv_streams record start<br />
+<br />
+Hint: You can add custom profiles / see the other default profiles by using the mirv_streams settings command.<br />
+<br />
+Notice: Many video programs and browsers can not decode the depth streams, because they are "monochromatic rgb". Also we recommend afxFfmpeg over afxFfmpegYuv420p, both are lossy, but the former has better color quality, while many programs and browsers can't handle the latter.
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.55.1</version>
 <time>2019-05-18T11:20Z</time>
 <changes>
