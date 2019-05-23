@@ -21,6 +21,8 @@ mirv_streams edit norm settings afxFfmpegYuv420p<br />
 mirv_streams add depth depth<br />
 mirv_streams edit depth settings afxFfmpegLosslessBest<br />
 mirv_streams record start<br />
+// ...<br />
+mirv_streams record end<br />
 <br />
 Hint: You can add custom profiles / see the other default profiles by using the mirv_streams settings command.<br />
 <br />
