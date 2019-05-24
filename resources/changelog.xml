@@ -6,6 +6,18 @@
 
 <release>
 <name>HLAE</name>
+<version>2.70.1</version>
+<time>2019-05-24T04:49Z</time>
+<changes>
+<change type="fixed">
+Fixed HLAE.exe not opening due to a typo in the update check GUID.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.70.0</version>
 <time>2019-05-23T17:40Z</time>
 <changes>
