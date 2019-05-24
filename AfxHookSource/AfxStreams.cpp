@@ -8356,7 +8356,7 @@ void CAfxRecordingSettings::Console(IWrpCommandArgs * args)
 				{
 					Tier0_Warning("AFXERROR: Setting %s is protected and thus can not be deleted.\n", arg2);
 				}
-				else if (!it->second.DeleteIfUnrefrenced())
+				else if (!m_Shared.DeleteIfUnrefrenced(it))
 				{
 					Tier0_Warning("AFXERROR: Could not delete %s, because it has further refrences.\n", arg2);
 				}
@@ -8369,32 +8369,28 @@ void CAfxRecordingSettings::Console(IWrpCommandArgs * args)
 		}
 		else if (0 == _strcmpi("add", arg1))
 		{
-			if (5 <= argC && 0 == _stricmp("ffmpeg", args->ArgV(2)))
+			if (5 == argC && 0 == _stricmp("ffmpeg", args->ArgV(2)))
 			{
 				const char * arg3 = args->ArgV(3);
 
-				if (nullptr != GetByName(arg3))
+				if (StringIBeginsWith(arg3, "afx"))
+				{
+					Tier0_Warning("AFXERROR: Custom presets must not begin with \"afx\".\n");
+				}
+				else if (nullptr != GetByName(arg3))
 				{
 					Tier0_Warning("AFXERROR: There is already a setting named %s\n", arg3);
 				}
 				else
 				{
-					std::string myOptions;
-
-					for (int i = 4; i < argC; ++i)
-					{
-						myOptions.append(args->ArgV(i));
-					}
-
-					CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings(arg3, false, myOptions.c_str());
+					CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings(arg3, false, args->ArgV(4));
 					m_Shared.m_NamedSettings.emplace(settings->GetName(), settings);
-
 				}
 				return;
 			}
 
 			Tier0_Msg(
-				"%s add ffmpeg <name> <options> - Adds an FFMPEG setting, options are output options, use {QUOTE} for \", {AFX_STREAM_PATH} for the folder path of the stream, \\{ for {, \\} for }. For an example see one of the afxFfmpeg* templates (edit them).\n"
+				"%s add ffmpeg <name> \"<yourOptionsHere>\" - Adds an FFMPEG setting, <yourOptionsHere> are output options, use {QUOTE} for \", {AFX_STREAM_PATH} for the folder path of the stream, \\{ for {, \\} for }. For an example see one of the afxFfmpeg* templates (edit them).\n"
 				, arg0
 			);
 			return;
@@ -8457,7 +8453,7 @@ void CAfxFfmpegRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 
 		if (0 == _stricmp("options", arg1))
 		{
-			if (3 <= argC)
+			if (3 == argC)
 			{
 				if (m_Protected)
 				{
@@ -8465,17 +8461,13 @@ void CAfxFfmpegRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 					return;
 				}
 
-				m_FfmpegOptions.clear();
-				for (int i = 2; i < argC; ++i)
-				{
-					m_FfmpegOptions.append(args->ArgV(i));
-				}
+				m_FfmpegOptions = args->ArgV(2);
 				return;
 			}
 
 			Tier0_Msg(
-				"%s options option1 ... optionN - Set output options, use {QUOTE} for \", {AFX_STREAM_PATH} for the folder path of the stream, \\{ for {, \\} for }.\n"
-				"Current value: %s\n"
+				"%s \"<yourOptionsHere>\" - Set output options, use {QUOTE} for \", {AFX_STREAM_PATH} for the folder path of the stream, \\{ for {, \\} for }.\n"
+				"Current value: \"%s\"\n"
 				, arg0
 				, m_FfmpegOptions.c_str()
 			);

@@ -503,7 +503,6 @@ protected:
 	std::string m_Name;
 	bool m_Protected;
 
-private:
 	struct CNamedSettingValue {
 		CAfxRecordingSettings * Settings;
 
@@ -528,30 +527,6 @@ private:
 		{
 			if(Settings) Settings->Release();
 		}
-
-		bool DeleteIfUnrefrenced()
-		{
-			if (Settings)
-			{
-				Settings->Lock();
-				if (1 == Settings->GetRefCount())
-				{
-					Settings->Release(true);
-					Settings = nullptr;
-					delete this;
-				}
-				else
-				{
-					Settings->Unlock();
-					return false;
-				}
-			}
-			else
-			{
-				delete this;
-				return true;
-			}
-		}
 	};
 
 	static struct CShared {
@@ -560,6 +535,29 @@ private:
 
 		CShared();
 		~CShared();
+
+		bool DeleteIfUnrefrenced(std::map<std::string, CNamedSettingValue>::iterator it)
+		{
+			if (it->second.Settings)
+			{
+				it->second.Settings->Lock();
+				if (1 == it->second.Settings->GetRefCount())
+				{
+					it->second.Settings->Release(true);
+					it->second.Settings = nullptr;
+					m_NamedSettings.erase(it);
+					return true;
+				}
+				else
+				{
+					it->second.Settings->Unlock();
+					return false;
+				}
+			}
+
+			m_NamedSettings.erase(it);
+			return true;
+		}
 	} m_Shared;
 };
 

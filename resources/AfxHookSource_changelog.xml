@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.60.1</version>
+<time>xxxx</time>
+<changes>
+<change type="fixed">
+Fixed #178 New Ffmpeg encoding related bugs.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.60.0</version>
 <time>2019-05-23T17:40Z</time>
 <changes>
