@@ -4,6 +4,12 @@
 
 /*
 
+Changes from version 2.0.2 to version 2.0.3:
+- The messages "transBegin" and "transEnd" have been added, so that the server can group messsage that must be processed together (in order to avoid side effects).
+- Added "gameEvent" message, for decoding it we recommend to have a look at the sample code in misc/mirv_pgl_test/server.js,
+  since it depends state shared between client and server in order to reduce the amount of data sent.
+- Added mirv_pgl events command to control sending and set-up of "gameEvent" messages, by default none are sent.
+
 Changes from version 2 to version 2(.0.2):
 
 - "cam" message is sent the first time the current game frame is presented on-screen.
@@ -84,7 +90,7 @@ Purpose:
   If received with unexpected version, server should close the connection.
 Format:
   CString cmd = "hello"
-  UInt32 version = 1;
+  UInt32 version = 3;
 
 "dataStart"
 Purpose:
@@ -140,6 +146,15 @@ Purpose:
 Format:
   CString cmd = "exec";
   CString cmds;
+
+"transBegin"
+Purpose:
+  Begins a transaction.
+
+"transEnd"
+Purpose:
+  Ends a transaction.
+
 
 
 Ideas for the future:

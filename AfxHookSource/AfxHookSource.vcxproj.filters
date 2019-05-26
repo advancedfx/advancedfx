@@ -444,6 +444,9 @@
     <ClCompile Include="AfxThreadedRefCounted.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
+    <ClCompile Include="csgo_GameEvents.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\bvhexport.h">
@@ -813,6 +816,9 @@
       <Filter>AfxHookSource</Filter>
     </ClInclude>
     <ClInclude Include="AfxThreadedRefCounted.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo_GameEvents.h">
       <Filter>AfxHookSource</Filter>
     </ClInclude>
   </ItemGroup>

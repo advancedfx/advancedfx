@@ -213,6 +213,7 @@
     <ClCompile Include="csgo_CSkyBoxView.cpp" />
     <ClCompile Include="csgo_CViewRender.cpp" />
     <ClCompile Include="csgo_c_baseanimatingoverlay.cpp" />
+    <ClCompile Include="csgo_GameEvents.cpp" />
     <ClCompile Include="csgo_SndMixTimeScalePatch.cpp" />
     <ClCompile Include="csgo_Stdshader_dx9_Hooks.cpp" />
     <ClCompile Include="csgo_S_StartSound.cpp" />
@@ -332,6 +333,7 @@
     <ClInclude Include="csgo_CSkyBoxView.h" />
     <ClInclude Include="csgo_CViewRender.h" />
     <ClInclude Include="csgo_c_baseanimatingoverlay.h" />
+    <ClInclude Include="csgo_GameEvents.h" />
     <ClInclude Include="csgo_SndMixTimeScalePatch.h" />
     <ClInclude Include="csgo_Stdshader_dx9_Hooks.h" />
     <ClInclude Include="csgo_S_StartSound.h" />

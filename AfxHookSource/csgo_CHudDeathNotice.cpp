@@ -1374,6 +1374,7 @@ struct CCsgoReplaceNameEntry
 bool g_csgo_ReplaceNameDebug = false;
 std::list<CCsgoReplaceNameEntry> g_csgo_ReplaceNameList;
 
+// This function has a bug: entindex != entnum (returned by GetPlayerForUserID), but it's fine for now here.
 
 int __fastcall Mycsgo_C_CSPlayer_IClientNetworkable_entindex(csgo_C_CSPlayer_IUnk_t * This, void * edx) {
 

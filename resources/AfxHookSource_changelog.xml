@@ -7,10 +7,13 @@
 <release>
 <name>AfxHookSource</name>
 <version>1.60.1</version>
-<time>xxxx</time>
+<time>2019-05-26T16:11Z</time>
 <changes>
 <change type="fixed">
 Fixed #178 New Ffmpeg encoding related bugs.
+</change>
+<change type="added">
+Added game event transmission (optional) to mirv_pgl (should be backwards-compatible) and updated the misc/mirv_pgl_test/server.js node example accordingly. (There's quite a lot of data you can not get with CS:GO game state integration at the moment, e.g. you can tell where defuse kits have been dropped and many other things.)
 </change>
 </changes>
 </release>

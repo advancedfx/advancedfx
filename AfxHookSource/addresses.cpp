@@ -66,6 +66,10 @@ AFXADDR_DEF(csgo_C_CSPlayer_IClientNetworkable_entindex)
 AFXADDR_DEF(csgo_engine_RegisterForUnhandledEvent_ToggleDebugger_BeforeCall)
 AFXADDR_DEF(csgo_CShaderAPIDx8_UnkCreateTexture)
 AFXADDR_DEF(csgo_CRendering3dView_DrawTranslucentRenderables)
+AFXADDR_DEF(csgo_CGameEventManger_FireEventIntern);
+AFXADDR_DEF(csgo_dynamic_cast);
+AFXADDR_DEF(csgo_RTTI_CGameEvent);
+AFXADDR_DEF(csgo_RTTI_IGameEvent);
 
 void ErrorBox(char const * messageText);
 
@@ -467,6 +471,42 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 				}
 				AFXADDR_SET(csgo_engine_RegisterForUnhandledEvent_ToggleDebugger_BeforeCall, addr);
 			}
+
+			// csgo_CGameEventManger_FireEventIntern:
+				//
+				//
+			{
+				AFXADDR_SET(csgo_CGameEventManger_FireEventIntern, 0);
+				AFXADDR_SET(csgo_dynamic_cast, 0);
+				AFXADDR_SET(csgo_RTTI_CGameEvent, 0);
+				AFXADDR_SET(csgo_RTTI_IGameEvent, 0);
+
+				ImageSectionsReader sections((HMODULE)engineDll);
+				if (!sections.Eof())
+				{
+					MemRange textRange = sections.GetMemRange();
+
+					MemRange result = FindPatternString(textRange, "55 8B EC 83 E4 F8 83 EC 0C 53 8B D9 56 57 89 5C 24 0C 8D B3 9C 00 00 00 89 74 24 14 FF 15 ?? ?? ?? ??");
+
+					if (!result.IsEmpty())
+					{
+						AFXADDR_SET(csgo_CGameEventManger_FireEventIntern, result.Start);
+
+						result = FindPatternString(MemRange(result.Start, result.Start + 0x25C).And(textRange), "6A 00 68 ?? ?? ?? ?? 68 ?? ?? ?? ?? 6A 00 57 E8 ?? ?? ?? ??");
+
+						if (!result.IsEmpty())
+						{
+							AFXADDR_SET(csgo_RTTI_CGameEvent, *(DWORD *)(result.Start + 3));
+							AFXADDR_SET(csgo_RTTI_IGameEvent, *(DWORD *)(result.Start + 8));
+							AFXADDR_SET(csgo_dynamic_cast, *(DWORD *)(result.Start + 16) + result.Start + 16 + 4);
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			}
 		}
 	}
 	else
@@ -478,6 +518,10 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_CClientState_ProcessVoiceData, 0x0);
 		AFXADDR_SET(csgo_CVoiceWriter_AddDecompressedData, 0x0);
 		AFXADDR_SET(csgo_engine_RegisterForUnhandledEvent_ToggleDebugger_BeforeCall, 0x0);
+		AFXADDR_SET(csgo_CGameEventManger_FireEventIntern, 0);
+		AFXADDR_SET(csgo_dynamic_cast, 0);
+		AFXADDR_SET(csgo_RTTI_CGameEvent, 0);
+		AFXADDR_SET(csgo_RTTI_IGameEvent, 0);
 	}
 	AFXADDR_SET(csgo_snd_mix_timescale_patch_DSZ, 0x08);
 	AFXADDR_SET(csgo_MIX_PaintChannels_DSZ, 0x9);
@@ -1558,7 +1602,6 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 
 			AFXADDR_SET(csgo_CRendering3dView_DrawTranslucentRenderables, addr);
 		}
-
 	}
 	else
 	{

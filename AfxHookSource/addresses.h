@@ -72,6 +72,10 @@ AFXADDR_DECL(csgo_C_CSPlayer_IClientNetworkable_entindex)
 AFXADDR_DECL(csgo_engine_RegisterForUnhandledEvent_ToggleDebugger_BeforeCall)
 AFXADDR_DECL(csgo_CShaderAPIDx8_UnkCreateTexture)
 AFXADDR_DECL(csgo_CRendering3dView_DrawTranslucentRenderables)
+AFXADDR_DECL(csgo_CGameEventManger_FireEventIntern);
+AFXADDR_DECL(csgo_dynamic_cast);
+AFXADDR_DECL(csgo_RTTI_CGameEvent);
+AFXADDR_DECL(csgo_RTTI_IGameEvent);
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);

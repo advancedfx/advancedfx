@@ -16,6 +16,7 @@
 #include "WrpConsole.h"
 #include "AfxStreams.h"
 #include "AfxShaders.h"
+#include "csgo_GameEvents.h"
 
 #include <math.h>
 
@@ -1016,6 +1017,7 @@ namespace MirvPgl
 	std::vector<uint8_t> m_DataForSendThread;
 	std::condition_variable m_DataForSendThreadAvailableCondition;
 	std::mutex m_DataForSendThreadMutex;
+	bool m_InTransaction;
 
 	bool m_DataActive = false;
 
@@ -1033,6 +1035,48 @@ namespace MirvPgl
 		std::string str(cstr);
 		outVec.insert(outVec.end(), str.begin(), str.end());
 		outVec.push_back(static_cast<uint8_t>('\0'));
+	}
+
+	void AppendFloat(float_t value, std::vector<uint8_t> &outVec)
+	{
+		uint8_t data[sizeof(value)];
+		memcpy(&(data[0]), &value, sizeof(value));
+
+		outVec.insert(outVec.end(), std::begin(data), std::end(data));
+	}
+
+	void AppendInt32(int32_t value, std::vector<uint8_t> &outVec)
+	{
+		uint8_t data[sizeof(value)];
+		memcpy(&(data[0]), &value, sizeof(value));
+
+		outVec.insert(outVec.end(), std::begin(data), std::end(data));
+	}
+
+	void AppendInt16(int16_t value, std::vector<uint8_t> &outVec)
+	{
+		uint8_t data[sizeof(value)];
+		memcpy(&(data[0]), &value, sizeof(value));
+
+		outVec.insert(outVec.end(), std::begin(data), std::end(data));
+	}
+
+	void AppendByte(uint8_t value, std::vector<uint8_t> &outVec)
+	{
+		outVec.push_back(value);
+	}
+
+	void AppendBoolean(uint8_t value, std::vector<uint8_t> &outVec)
+	{
+		AppendByte(value ? 1 : 0, outVec);
+	}
+
+	void AppendUInt64(uint64_t value, std::vector<uint8_t> &outVec)
+	{
+		uint8_t data[sizeof(value)];
+		memcpy(&(data[0]), &value, sizeof(value));
+
+		outVec.insert(outVec.end(), std::begin(data), std::end(data));
 	}
 
 	void AppendHello(std::vector<uint8_t> &outVec)
@@ -1120,6 +1164,16 @@ namespace MirvPgl
 
 					continue;
 				}
+				else if (0 == strcmp("transBegin", code))
+				{
+					m_InTransaction = true;
+					itBegin = itDelim + 1;
+				}
+				else if (0 == strcmp("transEnd", code))
+				{
+					itBegin = itDelim + 1;
+					m_InTransaction = false;
+				}
 			}
 
 			break;
@@ -1149,6 +1203,7 @@ namespace MirvPgl
 			m_Ws->dispatchBinary(Recv_Bytes);
 
 			std::unique_lock<std::mutex> dataLock(m_DataForSendThreadMutex);
+
 			m_DataForSendThreadAvailableCondition.wait_for(dataLock, m_ThreadSleepMsIfNoData * 1ms, [] { return !m_DataForSendThread.empty() || m_WantClose; }); // if we don't need to send data, we are a bit lazy in order to save some CPU. Of course this assumes, that the data we get from network can wait that long ;)
 
 			if (!m_DataForSendThread.empty())
@@ -1168,7 +1223,7 @@ namespace MirvPgl
 				m_Ws->close();
 		}
 	}
-	
+
 	void EndThread()
 	{
 		if (0 != m_Thread)
@@ -1190,6 +1245,7 @@ namespace MirvPgl
 	{
 		EndThread();
 
+		m_InTransaction = false;
 		m_Thread = new std::thread(Thread);
 	}
 
@@ -1224,6 +1280,8 @@ namespace MirvPgl
 		return m_WsUrl.c_str();
 	}
 
+	void Restart_MirvPglGameEventSerializer();
+
 	void Start()
 	{
 		Stop();
@@ -1237,6 +1295,8 @@ namespace MirvPgl
 			if (0 != m_Ws)
 			{
 				AppendHello(m_ThreadDataPool.AccessNextThreadData());
+
+				Restart_MirvPglGameEventSerializer();
 
 				CreateThread();
 			}
@@ -1439,6 +1499,70 @@ namespace MirvPgl
 		}
 	}
 
+	class CMirvPglGameEventSerializer : public CAfxGameEventListenerSerialzer
+	{
+	public:
+		virtual bool BeginSerialize() override
+		{
+			if (!m_WantWs)
+				return false;
+
+			m_Data = &(m_ThreadDataPool.AccessNextThreadData());
+
+			AppendCString("gameEvent", *m_Data);
+
+			return true;
+		}
+
+		virtual void EndSerialize() override
+		{
+
+		}
+
+		virtual void WriteCString(const char * value) override
+		{
+			AppendCString(value, *m_Data);
+		}
+
+		virtual void WriteFloat(float value) override
+		{
+			AppendFloat(value, *m_Data);
+		}
+
+		virtual void WriteLong(long value) override
+		{
+			AppendInt32(value, *m_Data);
+		}
+
+		virtual void WriteShort(short value) override
+		{
+			AppendInt16(value, *m_Data);
+		}
+
+		virtual void WriteByte(char value)
+		{
+			AppendByte((uint8_t)value, *m_Data);
+		}
+
+		virtual void WriteBoolean(bool value)
+		{
+			AppendBoolean(value, *m_Data);
+		}
+
+		virtual void WriteUInt64(unsigned __int64 value)
+		{
+			AppendUInt64(value, *m_Data);
+		}
+
+	private:
+		std::vector<uint8_t> * m_Data;
+	} g_MirvPglGameEventSerializer;
+
+	void Restart_MirvPglGameEventSerializer()
+	{
+		g_AfxGameEvents.RemoveListener(&MirvPgl::g_MirvPglGameEventSerializer);
+		g_MirvPglGameEventSerializer.Restart();
+	}
 }
 
 CON_COMMAND(mirv_pgl, "PGL")
@@ -1498,16 +1622,156 @@ CON_COMMAND(mirv_pgl, "PGL")
 
 			return;
 		}
+		else if (0 == _stricmp(cmd1, "events"))
+		{
+			if (3 <= argc)
+			{
+				const char * arg2 = args->ArgV(2);
 
+				if (0 == _stricmp(arg2, "enabled") && 4 <= argc)
+				{
+					bool enable = 0 != atoi(args->ArgV(3));
+
+					if (enable)
+						g_AfxGameEvents.AddListener(&MirvPgl::g_MirvPglGameEventSerializer);
+					else
+						g_AfxGameEvents.RemoveListener(&MirvPgl::g_MirvPglGameEventSerializer);
+
+					return;
+				}
+				else if (0 == _stricmp(arg2, "whitelist") && 4 <= argc)
+				{
+					const char * arg3 = args->ArgV(3);
+
+					if (0 == _stricmp(arg3, "clear"))
+					{
+						MirvPgl::g_MirvPglGameEventSerializer.ClearWhiteList();
+						return;
+					}
+					else if (0 == _stricmp(arg3, "add") && 5 <= argc)
+					{
+						const char * arg4 = args->ArgV(4);
+
+						MirvPgl::g_MirvPglGameEventSerializer.WhiteList(arg4);
+						return;
+					}
+					else if (0 == _stricmp(arg3, "remove") && 5 <= argc)
+					{
+						const char * arg4 = args->ArgV(4);
+
+						MirvPgl::g_MirvPglGameEventSerializer.UnWhiteList(arg4);
+						return;
+					}
+				}
+				else if (0 == _stricmp(arg2, "blacklist") && 4 <= argc)
+				{
+					const char * arg3 = args->ArgV(3);
+
+					if (0 == _stricmp(arg3, "clear"))
+					{
+						MirvPgl::g_MirvPglGameEventSerializer.ClearBlackList();
+						return;
+					}
+					else if (0 == _stricmp(arg3, "add") && 5 <= argc)
+					{
+						const char * arg4 = args->ArgV(4);
+
+						MirvPgl::g_MirvPglGameEventSerializer.BlackList(arg4);
+						return;
+					}
+					else if (0 == _stricmp(arg3, "remove") && 5 <= argc)
+					{
+						const char * arg4 = args->ArgV(4);
+
+						MirvPgl::g_MirvPglGameEventSerializer.BlackList(arg4);
+						return;
+					}
+				}
+				else if (0 == _stricmp(arg2, "enrich") && 4 <= argc)
+				{
+					const char * arg3 = args->ArgV(3);
+
+					if (0 == _stricmp(arg3, "clear"))
+					{
+						MirvPgl::g_MirvPglGameEventSerializer.ClearEnrichments();
+						return;
+					}
+					else if (0 == _stricmp(arg3, "eventProperty") && 7 <= argc)
+					{
+						const char * arg4 = args->ArgV(4);
+						const char * arg5 = args->ArgV(5);
+						const char * arg6 = args->ArgV(6);
+
+						if (0 == _stricmp(arg4, "useridWithSteamId"))
+						{
+							MirvPgl::g_MirvPglGameEventSerializer.EnrichUseridWithSteamId(arg5, arg6);
+							return;
+						}
+						else if (0 == _stricmp(arg4, "entnumWithOrigin"))
+						{
+							MirvPgl::g_MirvPglGameEventSerializer.Enrich_EntnumWithOrigin(arg5, arg6);
+							return;
+						}
+						else if (0 == _stricmp(arg4, "entnumWithAngles"))
+						{
+							MirvPgl::g_MirvPglGameEventSerializer.Enrich_EntnumWithAngles(arg5, arg6);
+							return;
+						}
+						else if (0 == _stricmp(arg4, "useridWithEyePosition"))
+						{
+							MirvPgl::g_MirvPglGameEventSerializer.Enrich_UseridWithEyePosition(arg5, arg6);
+							return;
+						}
+						else if (0 == _stricmp(arg4, "useridWithEyeAngles"))
+						{
+							MirvPgl::g_MirvPglGameEventSerializer.Enrich_UseridWithEyeAngels(arg5, arg6);
+							return;
+						}
+					}
+					else if (0 == _stricmp(arg3, "clientTime") && 5 <= argc)
+					{
+						MirvPgl::g_MirvPglGameEventSerializer.TransmitClientTime = 0 != atoi(args->ArgV(4));
+						return;
+					}
+					else if (0 == _stricmp(arg3, "tick") && 5 <= argc)
+					{
+						MirvPgl::g_MirvPglGameEventSerializer.TransmitTick = 0 != atoi(args->ArgV(4));
+						return;
+					}
+					else if (0 == _stricmp(arg3, "systemtime") && 5 <= argc)
+					{
+						MirvPgl::g_MirvPglGameEventSerializer.TransmitClientTime = 0 != atoi(args->ArgV(4));
+						return;
+					}
+				}
+			}
+
+			Tier0_Msg(
+				"mirv_pgl events enabled 0|1\n"
+				"mirv_pgl events whitelist clear\n"
+				"mirv_pgl events whitelist add <eventName>\n"
+				"mirv_pgl events whitelist remove <eventName>\n"
+				"mirv_pgl events blacklist clear\n"
+				"mirv_pgl events blacklist add <eventName>\n"
+				"mirv_pgl events blacklist remove <eventName>\n"
+				"mirv_pgl events enrich clear\n"
+				"mirv_pgl events enrich eventProperty useridWithSteamId|entnumWithOrigin|entnumWithAngles|useridWithEyePosition|useridWithEyeAngles <eventName> <property>\n"
+				"mirv_pgl events enrich clientTime 0|1\n"
+				"mirv_pgl events enrich tick 0|1\n"
+				"mirv_pgl events enrich systemtime 0|1\n"
+			);
+			return;
+		}
 	}
 
 	Tier0_Msg(
-		"mirv_pgl start - (Re-)Starts connection to websocket server.\n"
+		"mirv_pgl start [2|3] - (Re-)Starts connection to websocket server with version given (none = old version 2).\n"
 		"mirv_pgl stop - Stops connection to websocket server.\n"
 		"mirv_pgl dataStart - Start sending data.\n"
 		"mirv_pgl dataStop - Stop sending data.\n"
 		"mirv_pgl url [...] - Set url to use with start.\n"
 		"mirv_pgl draw [...] - Controls on-screen data drawing.\n"
+		"mirv_pgl events [...] - Control game event data (disabled by default, requires start with version 3 or newer).\n"
 	);
 
 }
