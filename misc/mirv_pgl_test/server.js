@@ -325,10 +325,6 @@ var enrichments = {
 		'userid': useridEnrichment,
 		'attacker': useridEnrichment,
 	},
-	'player_hurt' : {
-		'userid': useridEnrichment,
-		'attacker': useridEnrichment,
-	},
 	'item_purchase' : {
 		'userid': useridEnrichment,
 	},
@@ -392,11 +388,7 @@ var enrichments = {
 	},
 	'vip_escaped' : {
 		'userid': useridEnrichment,
-	},	
-	'vip_escaped' : {
-		'userid': useridEnrichment,
-		'attacker': useridEnrichment,
-	},	
+	},		
 	'player_radio' : {
 		'userid': useridEnrichment,
 	},
@@ -510,9 +502,6 @@ var enrichments = {
 		'userid': useridEnrichment,
 	},
 	'decoy_firing' : {
-		'userid': useridEnrichment,
-	},
-	'bullet_impact' : {
 		'userid': useridEnrichment,
 	},
 	'bullet_impact' : {
