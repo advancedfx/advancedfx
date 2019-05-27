@@ -355,6 +355,9 @@ Perra 'akdios' Anderson
 
 Other contributors:
 
+Shugo 'FlowingSPDG' Kawamura
+	https://github.com/FlowingSPDG
+
 Ivan 'YaLTeR' Molodetskikh
 	https://github.com/yalter
 
