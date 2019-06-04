@@ -806,7 +806,7 @@ CAfxSingleStream::CAfxSingleStream(char const * streamName, CAfxRenderViewStream
 
 	m_CaptureCondition.notify_one();
 
-	m_Settings = CAfxRecordingSettings::GetClassic();
+	m_Settings = CAfxRecordingSettings::GetDefault();
 	m_Settings->AddRef();
 }
 
@@ -901,7 +901,7 @@ CAfxTwinStream::CAfxTwinStream(char const * streamName, CAfxRenderViewStream * s
 
 	m_CaptureCondition.notify_one();
 
-	m_Settings = CAfxRecordingSettings::GetClassic();
+	m_Settings = CAfxRecordingSettings::GetDefault();
 	m_Settings->AddRef();
 }
 
@@ -8281,9 +8281,12 @@ CAfxRecordingSettings::CShared CAfxRecordingSettings::m_Shared;
 
 CAfxClassicRecordingSettings::CShared::CShared()
 {
-	m_ClassicSettings = new CAfxClassicRecordingSettings();
-	m_ClassicSettings->AddRef();
-	m_NamedSettings.emplace(m_ClassicSettings->GetName(), m_ClassicSettings);
+	CAfxRecordingSettings * classicSettings = new CAfxClassicRecordingSettings();
+	m_NamedSettings.emplace(classicSettings->GetName(), classicSettings);
+
+	m_DefaultSettings = new CAfxDefaultRecordingSettings(classicSettings);
+	m_DefaultSettings->AddRef();
+	m_NamedSettings.emplace(m_DefaultSettings->GetName(), m_DefaultSettings);
 
 	{
 		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpeg", true, "-c:v libx264 -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}\\video.mp4{QUOTE}");
@@ -8309,7 +8312,7 @@ CAfxClassicRecordingSettings::CShared::CShared()
 CAfxClassicRecordingSettings::CShared::~CShared()
 {
 	m_NamedSettings.clear();
-	m_ClassicSettings->Release();
+	m_DefaultSettings->Release();
 }
 
 void CAfxRecordingSettings::Console(IWrpCommandArgs * args)
@@ -8466,7 +8469,7 @@ void CAfxFfmpegRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 			}
 
 			Tier0_Msg(
-				"%s \"<yourOptionsHere>\" - Set output options, use {QUOTE} for \", {AFX_STREAM_PATH} for the folder path of the stream, \\{ for {, \\} for }.\n"
+				"%s options \"<yourOptionsHere>\" - Set output options, use {QUOTE} for \", {AFX_STREAM_PATH} for the folder path of the stream, \\{ for {, \\} for }.\n"
 				"Current value: \"%s\"\n"
 				, arg0
 				, m_FfmpegOptions.c_str()
@@ -8508,4 +8511,58 @@ CAfxOutVideoStream * CAfxFfmpegRecordingSettings::CreateOutVideoStream(const CAf
 	}
 
 	return nullptr;
+}
+
+
+// CAfxDefaultRecordingSettings ////////////////////////////////////////////////
+
+void CAfxDefaultRecordingSettings::Console_Edit(IWrpCommandArgs * args)
+{
+	Tier0_Msg("%s (type default) recording setting options:\n", m_Name.c_str());
+
+	int argC = args->ArgC();
+	const char * arg0 = args->ArgV(0);
+
+	if (2 <= argC)
+	{
+		const char * arg1 = args->ArgV(1);
+
+		if (0 == _stricmp("setting", arg1))
+		{
+			if (3 == argC)
+			{
+				CAfxRecordingSettings * settings = CAfxRecordingSettings::GetByName(args->ArgV(2));
+
+				if (nullptr == settings)
+				{
+					Tier0_Warning("AFXERROR: There's no settings named %s.\n", args->ArgV(2));
+				}
+				else if(static_cast<CAfxRecordingSettings *>(this) == settings)
+				{
+					Tier0_Warning("AFXERROR: Can not assign slelf.\n");
+				}
+				else
+				{
+					if (m_DefaultSettings) m_DefaultSettings->Release();
+					m_DefaultSettings = settings;
+					if (m_DefaultSettings) m_DefaultSettings->AddRef();
+				}
+
+				return;
+			}
+
+			Tier0_Msg(
+				"%s settings <settingsName> - Use a settings with name <settingsNmae> as default settings.\n"
+				"Current value: \"%s\"\n"
+				, arg0
+				, m_DefaultSettings ? m_DefaultSettings->GetName() : "[null]"
+			);
+			return;
+		}
+	}
+
+	Tier0_Msg(
+		"%s settings [...] - Set default settings.\n"
+		, arg0
+	);
 }

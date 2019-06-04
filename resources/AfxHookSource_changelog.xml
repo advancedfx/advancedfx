@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.X.X</version>
+<time>2019-06-XXTXX:XXZ</time>
+<changes>
+<change type="added">
+Added special "afxDefault" mirv_streams setting, that you can use to set a default setting (Example: mirv_streams settings edit afxDefault settings afxFfmpeg).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.60.1</version>
 <time>2019-05-26T16:11Z</time>
 <changes>

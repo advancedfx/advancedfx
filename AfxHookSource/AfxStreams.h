@@ -462,9 +462,9 @@ class CAfxTwinStream;
 class CAfxRecordingSettings : public CAfxThreadedRefCounted
 {
 public:
-	static CAfxRecordingSettings * GetClassic()
+	static CAfxRecordingSettings * GetDefault()
 	{
-		return m_Shared.m_ClassicSettings;
+		return m_Shared.m_DefaultSettings;
 	}
 
 	static CAfxRecordingSettings * GetByName(const char * name)
@@ -531,7 +531,7 @@ protected:
 
 	static struct CShared {
 		std::map<std::string, CNamedSettingValue> m_NamedSettings;
-		CAfxRecordingSettings * m_ClassicSettings;
+		CAfxRecordingSettings * m_DefaultSettings;
 
 		CShared();
 		~CShared();
@@ -559,6 +559,39 @@ protected:
 			return true;
 		}
 	} m_Shared;
+};
+
+class CAfxDefaultRecordingSettings : public CAfxRecordingSettings
+{
+public:
+	CAfxDefaultRecordingSettings(CAfxRecordingSettings * useSettings)
+		: CAfxRecordingSettings("afxDefault", true)
+		, m_DefaultSettings(useSettings)
+	{
+		if (m_DefaultSettings) m_DefaultSettings->AddRef();
+	}
+
+	virtual void Console_Edit(IWrpCommandArgs * args) override;
+
+	virtual CAfxOutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat) const override
+	{
+		if (m_DefaultSettings)
+			return m_DefaultSettings->CreateOutVideoStream(streams, stream, imageFormat);
+
+		return nullptr;
+	}
+
+protected:
+	virtual ~CAfxDefaultRecordingSettings()
+	{
+		if (m_DefaultSettings)
+		{
+			m_DefaultSettings->Release();
+			m_DefaultSettings = nullptr;
+		}
+	}
+private:
+	CAfxRecordingSettings * m_DefaultSettings;
 };
 
 class CAfxClassicRecordingSettings : public CAfxRecordingSettings
