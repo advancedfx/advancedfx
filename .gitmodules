@@ -18,3 +18,7 @@
 	path = shared/halflife
 	url = https://github.com/advancedfx/halflife.git
 	branch = advancedfx
+[submodule "contrib"]
+	path = contrib
+	url = https://github.com/advancedfx/contrib.git
+	branch = master
