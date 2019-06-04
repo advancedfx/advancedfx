@@ -8527,7 +8527,7 @@ void CAfxDefaultRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 	{
 		const char * arg1 = args->ArgV(1);
 
-		if (0 == _stricmp("setting", arg1))
+		if (0 == _stricmp("settings", arg1))
 		{
 			if (3 == argC)
 			{
