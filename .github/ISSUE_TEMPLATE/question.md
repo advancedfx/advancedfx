@@ -7,4 +7,4 @@ assignees: ''
 
 ---
 
-- [x] I have searched exiting **open and closed** issues to verify this is a new question.
+I have searched exiting **open and closed** issues to verify this is a new question.

@@ -1,3 +1,4 @@
+LICENSES\*
 ffmpeg\readme.advancedfx.txt
 resources\*
 x64\AfxHook.dat
