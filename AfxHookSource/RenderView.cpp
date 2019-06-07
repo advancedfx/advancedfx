@@ -495,7 +495,7 @@ void Hook_VClient_RenderView::Console_CamIO(IWrpCommandArgs * args)
 						m_CamExport = 0;
 					}
 					else
-						Tier0_Warning("No cam export was active.");
+						Tier0_Warning("No cam export was active.\n");
 
 					return;
 				}
