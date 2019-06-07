@@ -35,6 +35,14 @@ CAfxImageBuffer * CAfxImageBufferPool::AquireBuffer(void)
 
 	m_Buffers.pop();
 
+	bool available = !m_Buffers.empty();
+
+	if (available)
+	{
+		lock.unlock();
+		m_BufferAvailableCondition.notify_one();
+	}
+
 	return result;
 }
 

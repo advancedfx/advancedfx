@@ -48,6 +48,7 @@ bool g_bD3D9DumpPixelShader = false;
 
 struct AfxDirtyTrack
 {
+	bool m_D3DRS_BLENDOP_Dirty = false;
 	bool m_D3DRS_SRCBLEND_Dirty = false;
 	bool m_D3DRS_DESTBLEND_Dirty = false;
 	bool m_D3DRS_SRGBWRITEENABLE_Dirty = false;
@@ -2668,6 +2669,7 @@ struct NewDirect3DDevice9
 private:
 	AfxDirtyTrack m_DirtyTrack;
 
+	DWORD m_D3DRS_BLENDOP = D3DBLENDOP_ADD;
 	DWORD m_D3DRS_SRCBLEND = D3DBLEND_ONE;
 	DWORD m_D3DRS_DESTBLEND = D3DBLEND_ZERO;
 	DWORD m_D3DRS_SRGBWRITEENABLE = FALSE;
@@ -3593,6 +3595,9 @@ private:
 	class CAfxOverride
 	{
 	public:
+		bool m_Override_D3DRS_BLENDOP;
+		DWORD m_OverrideValue_D3DRS_BLENDOP;
+
 		bool m_Override_D3DRS_SRCBLEND;
 		DWORD m_OverrideValue_D3DRS_SRCBLEND;
 
@@ -3639,6 +3644,7 @@ private:
 
 		CAfxOverride(NewDirect3DDevice9 & dev)
 			: m_Dev(dev)
+			, m_Override_D3DRS_BLENDOP(false)
 			, m_Override_D3DRS_SRCBLEND(false)
 			, m_Override_D3DRS_DESTBLEND(false)
 			, m_Override_D3DRS_SRGBWRITEENABLE(false)
@@ -3659,6 +3665,8 @@ private:
 
 		CAfxOverride(const CAfxOverride & x)
 			: m_Dev(x.m_Dev)
+			, m_Override_D3DRS_BLENDOP(x.m_Override_D3DRS_BLENDOP)
+			, m_OverrideValue_D3DRS_BLENDOP(x.m_OverrideValue_D3DRS_BLENDOP)
 			, m_Override_D3DRS_SRCBLEND(x.m_Override_D3DRS_SRCBLEND)
 			, m_OverrideValue_D3DRS_SRCBLEND(x.m_OverrideValue_D3DRS_SRCBLEND)
 			, m_Override_D3DRS_DESTBLEND(x.m_Override_D3DRS_DESTBLEND)
@@ -3711,6 +3719,7 @@ private:
 
 		void Redo(void)
 		{
+			if (m_Override_D3DRS_BLENDOP) g_OldDirect3DDevice9->SetRenderState(D3DRS_BLENDOP, m_OverrideValue_D3DRS_BLENDOP);
 			if (m_Override_D3DRS_SRCBLEND) g_OldDirect3DDevice9->SetRenderState(D3DRS_SRCBLEND, m_OverrideValue_D3DRS_SRCBLEND);
 			if (m_Override_D3DRS_DESTBLEND) g_OldDirect3DDevice9->SetRenderState(D3DRS_DESTBLEND, m_OverrideValue_D3DRS_DESTBLEND);
 			if (m_Override_D3DRS_SRGBWRITEENABLE) g_OldDirect3DDevice9->SetRenderState(D3DRS_SRGBWRITEENABLE, m_OverrideValue_D3DRS_SRGBWRITEENABLE);
@@ -3742,6 +3751,7 @@ private:
 
 		void Undo(void)
 		{
+			if (m_Override_D3DRS_BLENDOP) g_OldDirect3DDevice9->SetRenderState(D3DRS_BLENDOP, m_Dev.m_D3DRS_BLENDOP);
 			if (m_Override_D3DRS_SRCBLEND) g_OldDirect3DDevice9->SetRenderState(D3DRS_SRCBLEND, m_Dev.m_D3DRS_SRCBLEND);
 			if (m_Override_D3DRS_DESTBLEND) g_OldDirect3DDevice9->SetRenderState(D3DRS_DESTBLEND, m_Dev.m_D3DRS_DESTBLEND);
 			if (m_Override_D3DRS_SRGBWRITEENABLE) g_OldDirect3DDevice9->SetRenderState(D3DRS_SRGBWRITEENABLE, m_Dev.m_D3DRS_SRGBWRITEENABLE);
@@ -3776,6 +3786,28 @@ public:
 	NewDirect3DDevice9()
 	{
 		m_OverrideStack.emplace(*this);
+	}
+
+	void OverrideBegin_D3DRS_BLENDOP(DWORD value)
+	{
+		CAfxOverride & curOverride = m_OverrideStack.top();
+
+		curOverride.m_Override_D3DRS_BLENDOP = true;
+		curOverride.m_OverrideValue_D3DRS_BLENDOP = value;
+
+		g_OldDirect3DDevice9->SetRenderState(D3DRS_BLENDOP, value);
+	}
+
+	void OverrideEnd_D3DRS_BLENDOP(void)
+	{
+		CAfxOverride & curOverride = m_OverrideStack.top();
+
+		if (curOverride.m_Override_D3DRS_BLENDOP)
+		{
+			curOverride.m_Override_D3DRS_BLENDOP = false;
+
+			g_OldDirect3DDevice9->SetRenderState(D3DRS_BLENDOP, m_D3DRS_BLENDOP);
+		}
 	}
 
 	void OverrideBegin_D3DRS_SRCBLEND(DWORD value)
@@ -4155,6 +4187,14 @@ public:
 	void On_AfxHookDirect3DStateBlock9_Applied(const AfxDirtyTrack & dirtyTrack)
 	{
 		CAfxOverride & curOverride = m_OverrideStack.top();
+
+		if (dirtyTrack.m_D3DRS_BLENDOP_Dirty)
+		{
+			m_DirtyTrack.m_D3DRS_BLENDOP_Dirty = true;
+			g_OldDirect3DDevice9->GetRenderState(D3DRS_BLENDOP, &m_D3DRS_BLENDOP);
+			if (curOverride.m_Override_D3DRS_BLENDOP)
+				g_OldDirect3DDevice9->SetRenderState(D3DRS_BLENDOP, curOverride.m_OverrideValue_D3DRS_BLENDOP);
+		}
 
 		if (dirtyTrack.m_D3DRS_SRCBLEND_Dirty)
 		{
@@ -4951,6 +4991,12 @@ public:
 
 		switch(State)
 		{
+		case D3DRS_BLENDOP:
+			m_DirtyTrack.m_D3DRS_BLENDOP_Dirty = true;
+			m_D3DRS_BLENDOP = Value;
+			if (curOverride.m_Override_D3DRS_BLENDOP)
+				return D3D_OK;
+			break;
 		case D3DRS_SRCBLEND:
 			m_DirtyTrack.m_D3DRS_SRCBLEND_Dirty = true;
 			m_D3DRS_SRCBLEND = Value;
@@ -5000,6 +5046,13 @@ public:
 
 			switch(State)
 			{
+			case D3DRS_BLENDOP:
+				if (curOverride.m_Override_D3DRS_BLENDOP)
+				{
+					*pValue = m_D3DRS_BLENDOP;
+					return D3D_OK;
+				}
+				break;
 			case D3DRS_SRCBLEND:
 				if(curOverride.m_Override_D3DRS_SRCBLEND)
 				{
@@ -5060,6 +5113,7 @@ public:
 
 		if(SUCCEEDED(hResult) && ppSB && *ppSB)
 		{
+			m_DirtyTrack.m_D3DRS_BLENDOP_Dirty = Type == D3DSBT_ALL || Type == D3DSBT_PIXELSTATE;
 			m_DirtyTrack.m_D3DRS_SRCBLEND_Dirty = Type == D3DSBT_ALL || Type == D3DSBT_PIXELSTATE;
 			m_DirtyTrack.m_D3DRS_DESTBLEND_Dirty = Type == D3DSBT_ALL || Type == D3DSBT_PIXELSTATE;
 			m_DirtyTrack.m_D3DRS_SRGBWRITEENABLE_Dirty = Type == D3DSBT_ALL || Type == D3DSBT_PIXELSTATE;
@@ -5082,6 +5136,7 @@ public:
 	}
 
 	STDMETHOD(BeginStateBlock)(THIS) {
+		m_DirtyTrack.m_D3DRS_BLENDOP_Dirty = false;
 		m_DirtyTrack.m_D3DRS_SRCBLEND_Dirty = false;
 		m_DirtyTrack.m_D3DRS_DESTBLEND_Dirty = false;
 		m_DirtyTrack.m_D3DRS_SRGBWRITEENABLE_Dirty = false;
@@ -5976,6 +6031,20 @@ void AfxD3D9OverrideEnd_ModulationBlend(void)
 	if (!g_OldDirect3DDevice9) return;
 
 	g_NewDirect3DDevice9.OverrideEnd_ps_c1_w();
+}
+
+void AfxD3D9OverrideBegin_D3DRS_BLENDOP(DWORD value)
+{
+	if (!g_OldDirect3DDevice9) return;
+
+	g_NewDirect3DDevice9.OverrideBegin_D3DRS_BLENDOP(value);
+}
+
+void AfxD3D9OverrideEnd_D3DRS_BLENDOP(void)
+{
+	if (!g_OldDirect3DDevice9) return;
+
+	g_NewDirect3DDevice9.OverrideEnd_D3DRS_BLENDOP();
 }
 
 void AfxD3D9OverrideBegin_D3DRS_SRCBLEND(DWORD value)

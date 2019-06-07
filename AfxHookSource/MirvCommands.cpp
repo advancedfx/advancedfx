@@ -558,7 +558,23 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 						"mirv_streams add alphaWorld <name> - Add a alpha world stream with name <name>.\n"
 					);
 					return;
-				}				
+				}	
+				else if(!_stricmp(cmd2, "matte"))
+				{
+					if(4 <= argc)
+					{
+						char const * cmd3 = args->ArgV(3);
+
+						g_AfxStreams.Console_AddMatteStream(cmd3);
+
+						return;
+					}
+
+					Tier0_Msg(
+						"mirv_streams add matte <name> - Add a matte stream with name <name>.\n"
+					);
+					return;
+				}	
 			}
 
 			Tier0_Msg(
@@ -576,6 +592,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 				"mirv_streams add alphaWorld [...] - Add a alpha world stream.\n"
 				"mirv_streams add alphaMatte [...] - Add a alpha matte stream (alpha channel of alphaMatteEntity).\n"
 				"mirv_streams add alphaEntity [...] - Add a alpha entity stream (color channel of alphaMatteEntity).\n"
+				"mirv_streams add matte [...] - Add a matte stream.\n"
 			);
 			return;
 		}

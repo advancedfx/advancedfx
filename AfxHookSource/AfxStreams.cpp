@@ -30,6 +30,12 @@
 #include <algorithm>
 #include <utility>
 
+//#define CAFXBASEFXSTREAM_STREAMCOMBINETYPES "aRedAsAlphaBColor|aColorBRedAsAlpha|aHudWhiteBHudBlack"
+#define CAFXBASEFXSTREAM_STREAMCOMBINETYPES "aRedAsAlphaBColor|aColorBRedAsAlpha"
+#define CAFXBASEFXSTREAM_STREAMCAPTURETYPES "normal|depth24|depth24ZIP|depthF|depthFZIP"
+#define CAFXSTREAMS_ACTIONSUFFIX " <actionName> - Set action with name <actionName> (see mirv_streams actions)."
+
+
 #if AFXSTREAMS_REFTRACKER
 
 #include <atomic>
@@ -566,12 +572,12 @@ void CAfxRenderViewStream::StreamCaptureType_set(StreamCaptureType value)
 	m_StreamCaptureType = value;
 }
 
-void CAfxRenderViewStream::QueueCapture(IAfxMatRenderContextOrg * ctx, CAfxRecordStream * captureTarget, int x, int y, int width, int height)
+void CAfxRenderViewStream::QueueCapture(IAfxMatRenderContextOrg * ctx, CAfxRecordStream * captureTarget, size_t streamIndex, int x, int y, int width, int height)
 {
-	QueueOrExecute(ctx, new CAfxLeafExecute_Functor(new CCaptureFunctor(*this, captureTarget, x, y, width, height)));
+	QueueOrExecute(ctx, new CAfxLeafExecute_Functor(new CCaptureFunctor(*this, captureTarget, streamIndex, x, y, width, height)));
 }
 
-void CAfxRenderViewStream::Capture(CAfxRecordStream * captureTarget, int x, int y, int width, int height)
+void CAfxRenderViewStream::Capture(CAfxRecordStream * captureTarget, size_t streamIndex, int x, int y, int width, int height)
 {
 	IAfxMatRenderContextOrg * ctx = GetCurrentContext()->GetOrg();
 
@@ -617,7 +623,7 @@ void CAfxRenderViewStream::Capture(CAfxRecordStream * captureTarget, int x, int 
 				}
 			}
 
-			captureTarget->OnImageBufferCaptured(this, buffer);
+			captureTarget->OnImageBufferCaptured(streamIndex, buffer);
 		}
 		else
 		{
@@ -676,7 +682,7 @@ void CAfxRenderViewStream::Capture(CAfxRecordStream * captureTarget, int x, int 
 					}
 				}
 
-				captureTarget->OnImageBufferCaptured(this, buffer);
+				captureTarget->OnImageBufferCaptured(streamIndex, buffer);
 			}
 			else
 			{
@@ -712,7 +718,7 @@ void CAfxRenderViewStream::Capture(CAfxRecordStream * captureTarget, int x, int 
 				}
 			}
 
-			captureTarget->OnImageBufferCaptured(this, buffer);
+			captureTarget->OnImageBufferCaptured(streamIndex, buffer);
 		}
 	}
 	else
@@ -724,9 +730,10 @@ void CAfxRenderViewStream::Capture(CAfxRecordStream * captureTarget, int x, int 
 
 // CAfxRenderViewStream::CCaptureFunctor ///////////////////////////////////////
 
-CAfxRenderViewStream::CCaptureFunctor::CCaptureFunctor(CAfxRenderViewStream & stream, CAfxRecordStream * captureTarget, int x, int y, int width, int height)
+CAfxRenderViewStream::CCaptureFunctor::CCaptureFunctor(CAfxRenderViewStream & stream, CAfxRecordStream * captureTarget, size_t streamIndex, int x, int y, int width, int height)
 	: m_Stream(stream)
 	, m_CaptureTarget(captureTarget)
+	, m_StreamIndex(streamIndex)
 	, m_X(x), m_Y(y), m_Width(width), m_Height(height)
 {
 	m_Stream.AddRef();
@@ -736,7 +743,7 @@ CAfxRenderViewStream::CCaptureFunctor::CCaptureFunctor(CAfxRenderViewStream & st
 
 void CAfxRenderViewStream::CCaptureFunctor::operator()()
 {
-	m_Stream.Capture(m_CaptureTarget, m_X, m_Y, m_Width, m_Height);
+	m_Stream.Capture(m_CaptureTarget, m_StreamIndex, m_X, m_Y, m_Width, m_Height);
 
 	m_CaptureTarget->Release();
 
@@ -745,13 +752,19 @@ void CAfxRenderViewStream::CCaptureFunctor::operator()()
 
 // CAfxRecordStream ////////////////////////////////////////////////////////////
 
-CAfxRecordStream::CAfxRecordStream(char const * streamName)
+CAfxRecordStream::CAfxRecordStream(char const * streamName, std::vector<CAfxRenderViewStream *>&& streams)
 	: CAfxStream()
 	, m_StreamName(streamName)
 	, m_Record(true)
 	, m_OutVideoStream(nullptr)
+	, m_Streams(streams)
 {
+	for (size_t i = 0; i < m_Streams.size(); ++i)
+	{
+		m_Streams[i]->AddRef();
+	}
 
+	m_Buffers.resize(m_Streams.size());
 }
 
 bool CAfxRecordStream::Record_get(void)
@@ -795,70 +808,92 @@ void CAfxRecordStream::QueueCaptureEnd(IAfxMatRenderContextOrg * ctx)
 	QueueOrExecute(ctx, new CAfxLeafExecute_Functor(new CCaptureEndFunctor(*this)));
 }
 
+void CAfxRecordStream::OnImageBufferCaptured(size_t index, CAfxImageBuffer * buffer)
+{
+	m_Buffers[index] = buffer;
+}
+
+bool CAfxRecordStream::Console_Edit_Head(IWrpCommandArgs * args)
+{
+	int argC = args->ArgC();
+	const char * arg0 = args->ArgV(0);
+
+	if (2 <= argC)
+	{
+		char const * arg1 = args->ArgV(1);
+
+		if (!_stricmp(arg1, "record"))
+		{
+			if (3 <= argC)
+			{
+				char const * arg2 = args->ArgV(2);
+
+				this->Record_set(atoi(arg2) != 0 ? true : false);
+
+				return true;
+			}
+
+			Tier0_Msg(
+				"%s record 0|1 - Whether to record this stream with mirv_streams record - 0 = record off, 1 = RECORD ON.\n"
+				"Current value: %s.\n"
+				, arg0
+				, this->Record_get() ? "1" : "0"
+			);
+			return true;
+		}
+		else if (0 == _stricmp("settings", arg1))
+		{
+			if (3 <= argC)
+			{
+				char const * arg2 = args->ArgV(2);
+
+				if (CAfxRecordingSettings * settings = CAfxRecordingSettings::GetByName(arg2))
+				{
+					this->SetSettings(settings);
+				}
+				else
+				{
+					Tier0_Warning("AFXERROR: There is no recording setting named %s\n", arg2);
+				}
+
+				return true;
+			}
+
+			Tier0_Msg(
+				"%s settings <name> - Set recording settings to use from mirv_streams settings.\n"
+				"Current value: %s\n"
+				, arg0
+				, this->GetSettings()->GetName()
+			);
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void CAfxRecordStream::Console_Edit_Tail(IWrpCommandArgs * args)
+{
+	char const * arg0 = args->ArgV(0);
+
+	Tier0_Msg("-- record properties --\n");
+	Tier0_Msg("%s record [...] - Controls whether or not this stream is recorded with mirv_streams record.\n", arg0);
+	Tier0_Msg("%s settings [...] - Recording settings to use.\n", arg0);
+}
 
 // CAfxSingleStream ////////////////////////////////////////////////////////////
 
 CAfxSingleStream::CAfxSingleStream(char const * streamName, CAfxRenderViewStream * stream)
-: CAfxRecordStream(streamName)
-, m_Stream(stream)
+	: CAfxRecordStream(streamName, std::vector<CAfxRenderViewStream *>({ stream }))
 {
-	m_Stream->AddRef();
-
-	m_CaptureCondition.notify_one();
-
 	m_Settings = CAfxRecordingSettings::GetDefault();
 	m_Settings->AddRef();
 }
 
-CAfxSingleStream::~CAfxSingleStream()
-{
-	m_Stream->Release();
-}
-
-CAfxRenderViewStream * CAfxSingleStream::Stream_get(void)
-{
-	return m_Stream;
-}
-
-void CAfxSingleStream::LevelShutdown(void)
-{
-	m_Stream->LevelShutdown();
-}
-
-void CAfxSingleStream::OnImageBufferCaptured(CAfxRenderViewStream * stream, CAfxImageBuffer * buffer)
-{
-	if (m_Stream == stream)
-		m_Buffer = buffer;
-	else
-		buffer->Release();
-}
-
-
-void CAfxSingleStream::CaptureStart(void)
-{
-	{
-		std::unique_lock<std::mutex> lock(m_CaptureMutex);
-
-		m_CaptureCondition.wait(lock, [this]() { return !m_Capturing; });
-
-		m_Capturing = true;
-	}
-
-	m_Buffer = 0;
-}
-
 void CAfxSingleStream::CaptureEnd()
 {
-	CAfxImageBuffer * buffer = m_Buffer;
-
-	{
-		std::unique_lock<std::mutex> lock(m_CaptureMutex);
-		m_Capturing = false;
-	}
-
-	m_CaptureCondition.notify_one();
-
-	if (buffer)
+	if (CAfxImageBuffer *& buffer = m_Buffers[0])
 	{
 		if (nullptr == m_OutVideoStream)
 		{
@@ -877,54 +912,44 @@ void CAfxSingleStream::CaptureEnd()
 		{
 			Tier0_Warning("AFXERROR: Failed writing image for stream %s.\n", this->StreamName_get());
 		}
-
-		buffer->Release();
 	}
+
+	CAfxRecordStream::CaptureEnd();
 }
 
 CAfxRenderViewStream::StreamCaptureType CAfxSingleStream::GetCaptureType() const
 {
-	return m_Stream->StreamCaptureType_get();
+	return m_Streams[0]->StreamCaptureType_get();
 }
+
+bool CAfxSingleStream::Console_Edit_Head(IWrpCommandArgs * args)
+{
+	if (CAfxRecordStream::Console_Edit_Head(args))
+		return true;
+
+	if (g_AfxStreams.Console_EditStream(m_Streams[0], args))
+		return true;
+
+	return false;
+}
+
+void CAfxSingleStream::Console_Edit_Tail(IWrpCommandArgs * args)
+{
+	// ...
+
+	CAfxRecordStream::Console_Edit_Tail(args);
+}
+
 
 
 // CAfxTwinStream //////////////////////////////////////////////////////////////
 
 CAfxTwinStream::CAfxTwinStream(char const * streamName, CAfxRenderViewStream * streamA, CAfxRenderViewStream * streamB, StreamCombineType streamCombineType)
-: CAfxRecordStream(streamName)
-, m_StreamA(streamA)
-, m_StreamB(streamB)
-, m_StreamCombineType(streamCombineType)
+	: CAfxRecordStream(streamName, std::vector<CAfxRenderViewStream *>({streamA, streamB}))
+	, m_StreamCombineType(streamCombineType)
 {
-	m_StreamA->AddRef();
-	m_StreamB->AddRef();
-
-	m_CaptureCondition.notify_one();
-
 	m_Settings = CAfxRecordingSettings::GetDefault();
 	m_Settings->AddRef();
-}
-
-CAfxTwinStream::~CAfxTwinStream()
-{
-	m_StreamB->Release();
-	m_StreamA->Release();
-}
-
-void CAfxTwinStream::LevelShutdown(void)
-{
-	m_StreamA->LevelShutdown();
-	m_StreamB->LevelShutdown();
-}
-
-CAfxRenderViewStream * CAfxTwinStream::StreamA_get()
-{
-	return m_StreamA;
-}
-
-CAfxRenderViewStream * CAfxTwinStream::StreamB_get()
-{
-	return m_StreamB;
 }
 
 CAfxTwinStream::StreamCombineType CAfxTwinStream::StreamCombineType_get(void)
@@ -937,44 +962,19 @@ void CAfxTwinStream::StreamCombineType_set(StreamCombineType value)
 	m_StreamCombineType = value;
 }
 
-void CAfxTwinStream::OnImageBufferCaptured(CAfxRenderViewStream * stream, CAfxImageBuffer * buffer)
-{
-	if (m_StreamA == stream)
-		m_BufferA = buffer;
-	else if (m_StreamB == stream)
-		m_BufferB = buffer;
-	else
-		buffer->Release();
-}
-
-
-void CAfxTwinStream::CaptureStart(void)
-{
-	{
-		std::unique_lock<std::mutex> lock(m_CaptureMutex);
-
-		m_CaptureCondition.wait(lock, [this]() { return !m_Capturing; });
-
-		m_Capturing = true;
-	}
-
-	m_BufferA = 0;
-	m_BufferB = 0;
-}
-
 CAfxRenderViewStream::StreamCaptureType CAfxTwinStream::GetCaptureType() const
 {
 	if (CAfxTwinStream::SCT_ARedAsAlphaBColor == m_StreamCombineType)
 	{
-		return m_StreamB->StreamCaptureType_get();
+		return m_Streams[1]->StreamCaptureType_get();
 	}
 	else if (CAfxTwinStream::SCT_AColorBRedAsAlpha == m_StreamCombineType)
 	{
-		return  m_StreamA->StreamCaptureType_get();
+		return m_Streams[0]->StreamCaptureType_get();
 	}
 	else if (CAfxTwinStream::SCT_AHudWhiteBHudBlack == m_StreamCombineType)
 	{
-		return m_StreamA->StreamCaptureType_get();
+		return m_Streams[1]->StreamCaptureType_get();
 	}
 
 	return CAfxRenderViewStream::SCT_Invalid;
@@ -982,8 +982,8 @@ CAfxRenderViewStream::StreamCaptureType CAfxTwinStream::GetCaptureType() const
 
 void CAfxTwinStream::CaptureEnd()
 {
-	CAfxImageBuffer * bufferA = m_BufferA;
-	CAfxImageBuffer * bufferB = m_BufferB;
+	CAfxImageBuffer * bufferA = m_Buffers[0];
+	CAfxImageBuffer * bufferB = m_Buffers[1];
 	//CAfxRenderViewStream::StreamCaptureType captureType;
 
 	enum ECombineOp {
@@ -994,32 +994,25 @@ void CAfxTwinStream::CaptureEnd()
 
 	if (CAfxTwinStream::SCT_ARedAsAlphaBColor == m_StreamCombineType)
 	{
-		bufferA = m_BufferB;
+		bufferA = m_Buffers[1];
 		//captureType = m_StreamB->StreamCaptureType_get();
-		bufferB = m_BufferA;
+		bufferB = m_Buffers[0];
 		combineOp = ECombineOp_AColorBRedAsAlpha;
 	}
 	else if (CAfxTwinStream::SCT_AColorBRedAsAlpha == m_StreamCombineType)
 	{
-		bufferA = m_BufferA;
+		bufferA = m_Buffers[0];
 		//captureType = m_StreamA->StreamCaptureType_get();
-		bufferB = m_BufferB;
+		bufferB = m_Buffers[1];
 		combineOp = ECombineOp_AColorBRedAsAlpha;
 	}
 	else if (CAfxTwinStream::SCT_AHudWhiteBHudBlack == m_StreamCombineType)
 	{
-		bufferA = m_BufferA;
+		bufferA = m_Buffers[0];
 		//captureType = m_StreamA->StreamCaptureType_get();
-		bufferB = m_BufferB;
+		bufferB = m_Buffers[1];
 		combineOp = ECombineOp_AHudWhiteBHudBlack;
 	}
-
-	{
-		std::unique_lock<std::mutex> lock(m_CaptureMutex);
-		m_Capturing = false;
-	}
-
-	m_CaptureCondition.notify_one();
 
 	bool canCombine = bufferA && bufferB;
 
@@ -1186,11 +1179,282 @@ void CAfxTwinStream::CaptureEnd()
 		Tier0_Warning("CAfxTwinStream::CaptureEnd: Combining sub-streams for stream %s, failed.\n", this->StreamName_get());
 	}
 
-	if (bufferB) bufferB->Release();
-	if (bufferA) bufferA->Release();
+	CAfxRecordStream::CaptureEnd();
+}
+
+bool CAfxTwinStream::Console_Edit_Head(IWrpCommandArgs * args)
+{
+	if (CAfxRecordStream::Console_Edit_Head(args))
+		return true;
+
+	int argC = args->ArgC();
+	const char * arg0 = args->ArgV(0);
+
+	if (2 <= argC)
+	{
+		char const * arg1 = args->ArgV(1);
+
+		if (0 == _stricmp(arg1, "streamA"))
+		{
+			CSubWrpCommandArgs subArgs(args, 2);
+
+			g_AfxStreams.Console_EditStream(m_Streams[0], &subArgs);
+			return true;
+		}
+		else if (0 == _stricmp(arg1, "streamB"))
+		{
+			CSubWrpCommandArgs subArgs(args,2);
+
+			g_AfxStreams.Console_EditStream(m_Streams[1], &subArgs);
+			return true;
+		}
+		else if (0 == _stricmp(arg1, "streamCombineType"))
+		{
+			if (3 <= argC)
+			{
+				char const * arg2 = args->ArgV(2);
+				CAfxTwinStream::StreamCombineType value;
+
+				if (g_AfxStreams.Console_ToStreamCombineType(arg2, value))
+				{
+					this->StreamCombineType_set(value);
+					return true;
+				}
+			}
+
+			Tier0_Msg(
+				"%s streamCombineType " CAFXBASEFXSTREAM_STREAMCOMBINETYPES " - Set new combine type.\n"
+				"Current value: %s.\n"
+				, arg0
+				, g_AfxStreams.Console_FromStreamCombineType(this->StreamCombineType_get())
+			);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void CAfxTwinStream::Console_Edit_Tail(IWrpCommandArgs * args)
+{
+	char const * arg0 = args->ArgV(0);
+
+	Tier0_Msg("-- twin properties --\n");
+	Tier0_Msg("%s streamA [...] - Edit sub stream A.\n", arg0);
+	Tier0_Msg("%s streamB [...] - Edit sub stream B.\n", arg0);
+	Tier0_Msg("%s streamCombineType [...] - Controlls how streams are combined.\n", arg0);
+
+	CAfxRecordStream::Console_Edit_Tail(args);
 }
 
 
+// CAfxMatteStream /////////////////////////////////////////////////////////////
+
+/*
+
+entWhite = a * ent + (1 - a) * 1
+entBlack = a * ent + (1 - a) * 0
+
+entWhite - entBlack = 1 - a
+
+---
+
+entBlack = a * ent + (1 - a) * 0
+
+entWhiteInv = 1 - entWhite
+= 1 - [a*ent + (1 - a) * 1]
+= 1 - a * ent - 1 + a
+= a - a * ent
+= (1 - a) * ent + a * 0
+
+*/
+
+class CAfxMatteStreamModifier : public IAfxBasefxStreamModifier
+{
+public:
+	CAfxMatteStreamModifier(CAfxMatteStream * matteStream, size_t streamIndex)
+		: m_MatteStream(matteStream)
+		, m_StreamIndex(streamIndex)
+	{
+	}
+
+	virtual void OverrideClearColor(unsigned char & outR, unsigned char & outG, unsigned char & outB, unsigned char & outA) override
+	{
+		m_MatteStream->OverrideClearColor(m_StreamIndex, outR, outG, outB, outA);
+	}
+
+	virtual CAfxBaseFxStream::CAction * OverrideAction(CAfxBaseFxStream::CAction * action) override
+	{
+		return m_MatteStream->OverrideAction(m_StreamIndex, action);
+	}
+
+private:
+	CAfxMatteStream * m_MatteStream;
+	size_t m_StreamIndex;
+};
+
+CAfxMatteStream::CAfxMatteStream(char const * streamName, CAfxRenderViewStream * stream)
+	: CAfxRecordStream(streamName, std::vector<CAfxRenderViewStream *>({ stream, stream }))
+	, m_HandleMaskAction(true)
+{
+	m_Settings = CAfxRecordingSettings::GetDefault();
+	m_Settings->AddRef();
+
+	m_Modifiers.resize(2);
+	m_Modifiers[0] = new CAfxMatteStreamModifier(this, 0);
+	m_Modifiers[1] = new CAfxMatteStreamModifier(this, 1);
+
+	if (CAfxBaseFxStream::CAction * drawMatteAction = CAfxBaseFxStream::GetAction(CAfxBaseFxStream::CActionKey("drawMatte")))
+	{
+		drawMatteAction->AddRef();
+		m_MatteActions.emplace(drawMatteAction);
+	}
+
+	m_ActionBlack = CAfxBaseFxStream::GetAction(CAfxBaseFxStream::CActionKey("afxZOnly"));
+	if (m_ActionBlack) m_ActionBlack->AddRef();
+
+	m_ActionWhite = CAfxBaseFxStream::GetAction(CAfxBaseFxStream::CActionKey("afxZOnly"));
+	if (m_ActionWhite) m_ActionWhite->AddRef();
+}
+
+CAfxMatteStream::~CAfxMatteStream()
+{
+	for (size_t i = 0; i < m_Modifiers.size(); ++i) delete m_Modifiers[i];
+
+	for (auto it = m_MatteActions.begin(); it != m_MatteActions.end(); ++it)
+	{
+		(*it)->Release();
+	}
+
+	if (m_ActionWhite) m_ActionWhite->Release();
+	if (m_ActionBlack) m_ActionBlack->Release();
+}
+
+CAfxRenderViewStream::StreamCaptureType CAfxMatteStream::GetCaptureType() const
+{
+	return m_Streams[0]->StreamCaptureType_get();
+}
+
+void CAfxMatteStream::OverrideClearColor(size_t streamIndex, unsigned char & outR, unsigned char & outG, unsigned char & outB, unsigned char & outA)
+{
+	switch (streamIndex)
+	{
+	case 0: // entBlackBg
+		outR = 0;
+		outG = 0;
+		outB = 0;
+		outA = 255;
+		return;
+	case 1: // entWhiteBg
+		outR = 255;
+		outG = 255;
+		outB = 255;
+		outA = 255;
+		return;
+	}
+}
+
+CAfxBaseFxStream::CAction * CAfxMatteStream::OverrideAction(size_t streamIndex, CAfxBaseFxStream::CAction * action)
+{
+	if (m_MatteActions.end() == m_MatteActions.find(action))
+	{
+		switch (streamIndex)
+		{
+		case 0: // entBlackBg
+			return m_ActionBlack;
+		default:
+		case 1: // entWhiteBg
+			return m_ActionWhite;
+		}
+	}
+
+	return action;
+}
+
+bool CAfxMatteStream::Console_Edit_Head(IWrpCommandArgs * args)
+{
+	if (CAfxRecordStream::Console_Edit_Head(args))
+		return true;
+
+	if (g_AfxStreams.Console_EditStream(m_Streams[0], args))
+		return true;
+
+	return false;
+}
+
+void CAfxMatteStream::Console_Edit_Tail(IWrpCommandArgs * args)
+{
+	// ...
+
+	CAfxRecordStream::Console_Edit_Tail(args);
+}
+
+void CAfxMatteStream::CaptureEnd()
+{
+	CAfxImageBuffer * bufferEntBlack = m_Buffers[0];
+	CAfxImageBuffer * bufferEntWhite = m_Buffers[1];
+
+	int orgImagePitch;
+
+	bool canCombine =
+		bufferEntBlack && bufferEntWhite
+		&& bufferEntBlack->Format == bufferEntWhite->Format
+		&& bufferEntBlack->Format.PixelFormat == CAfxImageFormat::PF_BGR
+		&& (orgImagePitch = bufferEntBlack->Format.Pitch, bufferEntBlack->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_BGRA, bufferEntBlack->Format.Width, bufferEntBlack->Format.Height)));
+
+	if (canCombine)
+	{
+		int height = bufferEntBlack->Format.Height;
+		int width = bufferEntBlack->Format.Width;
+		int newImagePitchA = bufferEntBlack->Format.Pitch;
+
+		unsigned char * pBufferEntBlack = (unsigned char *)(bufferEntBlack->Buffer);
+		unsigned char * pBufferEntWhite = (unsigned char *)(bufferEntWhite->Buffer);
+
+		for (int y = height - 1; y >= 0; --y)
+		{
+			for (int x = width - 1; x >= 0; --x)
+			{
+				unsigned char entBlack_b = ((unsigned char *)pBufferEntBlack)[y*orgImagePitch + x * 3 + 0];
+				unsigned char entBlack_g = ((unsigned char *)pBufferEntBlack)[y*orgImagePitch + x * 3 + 1];
+				unsigned char entBlack_r = ((unsigned char *)pBufferEntBlack)[y*orgImagePitch + x * 3 + 2];
+
+				unsigned char entWhite_b = ((unsigned char *)pBufferEntWhite)[y*orgImagePitch + x * 3 + 0];
+				unsigned char entWhite_g = ((unsigned char *)pBufferEntWhite)[y*orgImagePitch + x * 3 + 1];
+				unsigned char entWhite_r = ((unsigned char *)pBufferEntWhite)[y*orgImagePitch + x * 3 + 2];
+
+				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 0] = (unsigned char)(((int)entBlack_b + (int)entWhite_b)/2);
+				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 1] = (unsigned char)(((int)entBlack_g + (int)entWhite_g)/2);
+				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 2] = (unsigned char)(((int)entBlack_g + (int)entWhite_r)/2);
+				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 3] = (unsigned char)min(max((255l - (int)entWhite_b + (int)entBlack_b + 255l - (int)entWhite_g + (int)entBlack_g + 255l - (int)entWhite_r + (int)entBlack_r) / 3l, 0), 255);
+			}
+		}
+
+		if (nullptr == m_OutVideoStream)
+		{
+			m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, bufferEntBlack->Format);
+			if (nullptr == m_OutVideoStream)
+			{
+				Tier0_Warning("AFXERROR: Failed to create out video stream for %s.\n", this->StreamName_get());
+			}
+			else
+			{
+				m_OutVideoStream->AddRef();
+			}
+		}
+
+		if (nullptr != m_OutVideoStream && !m_OutVideoStream->SupplyVideoData(*bufferEntBlack))
+		{
+			Tier0_Warning("AFXERROR: Failed writing image for stream %s\n.", this->StreamName_get());
+		}
+	}
+	else
+	{
+		Tier0_Warning("CAfxMatteStream::CaptureEnd: Combining sub-streams for stream %s, failed.\n", this->StreamName_get());
+	}
+
+	CAfxRecordStream::CaptureEnd();
+}
 
 // CAfxBaseFxStream ////////////////////////////////////////////////////////////
 
@@ -1411,13 +1675,13 @@ void CAfxBaseFxStream::LevelShutdown(void)
 	m_Shared.LevelShutdown();
 }
 
-void CAfxBaseFxStream::OnRenderBegin(const AfxViewportData_t & viewport, const SOURCESDK::VMatrix & projectionMatrix, const SOURCESDK::VMatrix & projectionMatrixSky)
+void CAfxBaseFxStream::OnRenderBegin(IAfxBasefxStreamModifier * modifier, const AfxViewportData_t & viewport, const SOURCESDK::VMatrix & projectionMatrix, const SOURCESDK::VMatrix & projectionMatrixSky)
 {
-	CAfxRenderViewStream::OnRenderBegin(viewport, projectionMatrix, projectionMatrixSky);
+	CAfxRenderViewStream::OnRenderBegin(modifier, viewport, projectionMatrix, projectionMatrixSky);
 
 	m_ActiveStreamContext = m_Shared.RequestStreamContext();
 
-	m_ActiveStreamContext->RenderBegin(this, viewport, projectionMatrix, projectionMatrixSky);
+	m_ActiveStreamContext->RenderBegin(this, modifier, viewport, projectionMatrix, projectionMatrixSky);
 }
 
 void CAfxBaseFxStream::OnRenderEnd()
@@ -2316,6 +2580,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin()
 		m_ChildContext->m_IsNextDepth = this->m_IsNextDepth;
 		m_ChildContext->m_ProjectionMatrix = this->m_ProjectionMatrix;
 		m_ChildContext->m_ProjectionMatrixSky = this->m_ProjectionMatrixSky;
+		m_ChildContext->m_Modifier = this->m_Modifier;
 
 		queue->QueueFunctor(new CQueueBeginFunctor(m_ChildContext));
 	}
@@ -2332,6 +2597,24 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin()
 			AfxIntzOverrideBegin();
 
 			AfxD3D9OverrideBegin_D3DRS_COLORWRITEENABLE(0);
+		}
+
+		if (m_Stream->GetClearBeforeRender())
+		{
+			auto orgCtx = m_Ctx->GetOrg();
+
+			unsigned char r = 0;
+			unsigned char g = 255;
+			unsigned char b = 0;
+			unsigned char a = 255;
+
+			if (m_Modifier)
+			{
+				m_Modifier->OverrideClearColor(r, g, b, a);
+			}
+
+			orgCtx->ClearColor4ub(r, g, b, a);
+			orgCtx->ClearBuffers(true, false, false);
 		}
 	}
 }
@@ -2374,10 +2657,11 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd()
 	CAfxBaseFxStream::m_Shared.ReturnStreamContext(this);
 }
 
-void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderBegin(CAfxBaseFxStream * stream, const AfxViewportData_t & viewport, const SOURCESDK::VMatrix & projectionMatrix, const SOURCESDK::VMatrix & projectionMatrixSky)
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderBegin(CAfxBaseFxStream * stream, IAfxBasefxStreamModifier * modifier, const AfxViewportData_t & viewport, const SOURCESDK::VMatrix & projectionMatrix, const SOURCESDK::VMatrix & projectionMatrixSky)
 {
 	m_IsRootCtx = true;
 	m_Stream = stream;
+	m_Modifier = modifier;
 	m_Viewport = viewport;
 	m_ProjectionMatrix = projectionMatrix;
 	m_ProjectionMatrixSky = projectionMatrixSky;
@@ -2606,6 +2890,11 @@ SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::MaterialH
 			m_CurrentEntityHandle
 		);
 
+		if (m_Modifier)
+		{
+			action = m_Modifier->OverrideAction(action);
+		}
+
 		BindAction(action);
 
 		if (m_CurrentAction)
@@ -2729,6 +3018,7 @@ void CAfxBaseFxStream::CShared::ReturnStreamContext(CAfxBaseFxStreamContext * st
 void CAfxBaseFxStream::CShared::AfxStreamsInit(void)
 {
 	CreateStdAction(m_DrawAction, CActionKey("draw"), new CAction());
+	CreateStdAction(m_DrawMatteAction, CActionKey("drawMatte"), new CAction());
 	CreateStdAction(m_NoDrawAction, CActionKey("noDraw"), new CActionNoDraw());
 
 	CreateStdAction(m_DepthAction, CActionKey("drawDepth"), new CActionDebugDepth(m_NoDrawAction));
@@ -2765,6 +3055,7 @@ void CAfxBaseFxStream::CShared::AfxStreamsInit(void)
 	CreateAction(CActionKey("invisible"), new CActionNoDraw(), true);
 	CreateAction(CActionKey("debugDepth"), new CActionDebugDepth(m_NoDrawAction), true);
 
+	CreateAction(CActionKey("afxZOnly"), new CActionZOnly());
 }
 
 void CAfxBaseFxStream::CShared::AfxStreamsShutdown(void)
@@ -2775,6 +3066,7 @@ void CAfxBaseFxStream::CShared::AfxStreamsShutdown(void)
 	}
 
 	if (m_DrawAction) m_DrawAction->Release();
+	if (m_DrawMatteAction) m_DrawMatteAction->Release();
 	if (m_NoDrawAction) m_NoDrawAction->Release();
 	if (m_DepthAction) m_DepthAction->Release();
 	/*
@@ -2966,6 +3258,11 @@ void CAfxBaseFxStream::CShared::LevelShutdown(void)
 CAfxBaseFxStream::CAction * CAfxBaseFxStream::CShared::DrawAction_get(void)
 {
 	return m_DrawAction;
+}
+
+CAfxBaseFxStream::CAction * CAfxBaseFxStream::CShared::DrawMatteAction_get(void)
+{
+	return m_DrawMatteAction;
 }
 
 CAfxBaseFxStream::CAction * CAfxBaseFxStream::CShared::NoDrawAction_get(void)
@@ -4006,6 +4303,29 @@ void CAfxBaseFxStream::CActionNoDraw::MaterialHook(CAfxBaseFxStreamContext * ch,
 	AfxD3D9OverrideBegin_D3DRS_ZWRITEENABLE(FALSE);
 }
 
+
+// CAfxBaseFxStream::CActionZOnly //////////////////////////////////////////////
+
+void CAfxBaseFxStream::CActionZOnly::AfxUnbind(CAfxBaseFxStreamContext * ch)
+{
+	AfxD3D9OverrideEnd_D3DRS_COLORWRITEENABLE();
+	AfxD3D9OverrideEnd_D3DRS_DESTBLEND();
+	AfxD3D9OverrideEnd_D3DRS_SRCBLEND();
+	AfxD3D9OverrideEnd_D3DRS_ALPHABLENDENABLE();
+
+	AfxD3D9PopOverrideState();
+}
+
+void CAfxBaseFxStream::CActionZOnly::MaterialHook(CAfxBaseFxStreamContext * ch, CAfxTrackedMaterial * trackedMaterial)
+{
+	AfxD3D9PushOverrideState(false);
+
+	AfxD3D9OverrideBegin_D3DRS_ALPHABLENDENABLE(TRUE);
+	AfxD3D9OverrideBegin_D3DRS_SRCBLEND(D3DBLEND_ZERO);
+	AfxD3D9OverrideBegin_D3DRS_DESTBLEND(D3DBLEND_ONE);
+	AfxD3D9OverrideBegin_D3DRS_COLORWRITEENABLE(0);
+}
+
 // CAfxBaseFxStream::CActionAfxVertexLitGenericHook ////////////////////////////
 
 #if AFX_SHADERS_CSGO
@@ -4689,19 +5009,6 @@ void CAfxBaseFxStream::CActionAfxSplineRopeHook::SetPixelShader(CAfx_csgo_Shader
 
 // CAfxStreams /////////////////////////////////////////////////////////////////
 
-void FinishStreamForGlowOverlayFix(CAfxRecordStream * stream)
-{
-	if (CAfxSingleStream * singleStream = stream->AsAfxSingleStream())
-	{
-		//GetCsgoCGlowOverlayFix()->OnStreamFinished(singleStream->Stream_get());
-	}
-	if (CAfxTwinStream * twinStream = stream->AsAfxTwinStream())
-	{
-		//GetCsgoCGlowOverlayFix()->OnStreamFinished(twinStream->StreamA_get());
-		//GetCsgoCGlowOverlayFix()->OnStreamFinished(twinStream->StreamB_get());
-	}
-}
-
 CAfxStreams::CAfxStreams()
 : m_RecordName("untitled_rec")
 , m_PresentRecordOnScreen(false)
@@ -4801,56 +5108,13 @@ void CAfxStreams::OnSetPixelShader(CAfx_csgo_ShaderState & state)
 
 IAfxMatRenderContextOrg * CAfxStreams::CaptureStream(IAfxMatRenderContextOrg * ctxp, CAfxRecordStream * stream, CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
 {
-	//
-	// Render a stream and queue capturing etc.:
+	size_t streamCount = stream->GetStreamCount();
 
-	CAfxRenderViewStream * streamA = 0;
-	CAfxRenderViewStream * streamB = 0;
-	bool streamAOk = false;
-	bool streamBOk = false;
-
-	CAfxSingleStream * curSingle = stream->AsAfxSingleStream();
-	CAfxTwinStream * curTwin = stream->AsAfxTwinStream();
-
-	if (curSingle)
+	for(size_t streamIndex=0; streamIndex < streamCount; ++streamIndex)
 	{
-		streamA = curSingle->Stream_get();
-	}
-	else if (curTwin)
-	{
-		CAfxTwinStream::StreamCombineType streamCombineType = curTwin->StreamCombineType_get();
+		CAfxRenderViewStream * renderViewStream = stream->GetStream(streamIndex);
 
-		switch (streamCombineType)
-		{
-		case CAfxTwinStream::SCT_ARedAsAlphaBColor:
-		{
-			streamA = curTwin->StreamB_get();
-			streamB = curTwin->StreamA_get();
-		}
-		break;
-		case CAfxTwinStream::SCT_AColorBRedAsAlpha:
-		{
-			streamA = curTwin->StreamA_get();
-			streamB = curTwin->StreamB_get();
-		}
-		break;
-		case CAfxTwinStream::SCT_AHudWhiteBHudBlack:
-		{
-			streamA = curTwin->StreamA_get();
-			streamB = curTwin->StreamB_get();
-		}
-		break;
-		}
-	}
-
-	if (streamA)
-	{
-		ctxp = CaptureStreamToBuffer(ctxp, streamA, stream, true, !streamB, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
-	}
-
-	if (streamB)
-	{
-		ctxp = CaptureStreamToBuffer(ctxp, streamB, stream, !streamA, true, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+		ctxp = CaptureStreamToBuffer(ctxp, streamIndex, renderViewStream, stream, 0 == streamIndex, streamIndex + 1 >= streamCount, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
 	}
 
 	return ctxp;
@@ -4980,7 +5244,7 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 
 		ctxp->PushRenderTargetAndViewport(0, 0, newView.m_nUnscaledX, newView.m_nUnscaledY, newView.m_nUnscaledWidth, newView.m_nUnscaledHeight);
 
-		previewStream->OnRenderBegin(afxViewport, viewToProjection, viewToProjectionSky);
+		previewStream->OnRenderBegin(nullptr, afxViewport, viewToProjection, viewToProjectionSky);
 
 		DoRenderView(fn, this_ptr, newView, newHudView, nClearFlags, myWhatToDraw);
 
@@ -5064,14 +5328,6 @@ void CAfxStreams::DoRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 		}
 	}
 #endif
-
-	if (m_Recording)
-	{
-		IAfxMatRenderContextOrg * ctxp = GetCurrentContext()->GetOrg();
-
-		ctxp->ClearColor4ub(0, 0, 0, 0);
-		ctxp->ClearBuffers(true, true, true);
-	}
 
 	fn(this_ptr, view, hudViewSetup, nClearFlags, whatToDraw);
 
@@ -5187,10 +5443,10 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 		{
 			if (m_PreviewStreams[i])
 			{
-				if (CAfxSingleStream * singleStream = m_PreviewStreams[i]->AsAfxSingleStream())
+				if (1 == m_PreviewStreams[i]->GetStreamCount())
 				{
 					previewNumSlots = 1 + i;
-					previewStreams[i] = singleStream->Stream_get();
+					previewStreams[i] = m_PreviewStreams[i]->GetStream(0);
 				}
 			}
 		}
@@ -5649,8 +5905,6 @@ void CAfxStreams::Console_Record_End()
 		for(std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
 		{
 			(*it)->RecordEnd();
-
-			FinishStreamForGlowOverlayFix(*it);
 		}
 
 		RestoreMatVars();
@@ -5769,6 +6023,16 @@ void CAfxStreams::Console_AddAlphaMatteEntityStream(const char * streamName)
 	AddStream(new CAfxTwinStream(streamName, new CAfxAlphaMatteStream(), new CAfxAlphaEntityStream(), CAfxTwinStream::SCT_ARedAsAlphaBColor));
 }
 
+void CAfxStreams::Console_AddMatteStream(const char * streamName)
+{
+	if (!Console_CheckStreamName(streamName))
+		return;
+
+	auto meStream = new CAfxMatteFxStream();
+	AddStream(new CAfxMatteStream(streamName, meStream));
+	meStream->SetClearBeforeRender(true);
+}
+
 void CAfxStreams::Console_AddHudStream(const char * streamName)
 {
 	if (!Console_CheckStreamName(streamName))
@@ -5802,11 +6066,11 @@ void CAfxStreams::Console_PrintStreams()
 	{
 		int previewSlot = -1;
 		
-		if (CAfxSingleStream * singleStream = (*it)->AsAfxSingleStream())
+		if (1 == (*it)->GetStreamCount())
 		{
 			for (int i = 0; i < (int)(sizeof(m_PreviewStreams) / sizeof(m_PreviewStreams[0])); ++i)
 			{
-				if (m_PreviewStreams[i] == singleStream)
+				if (m_PreviewStreams[i] == (*it))
 				{
 					previewSlot = i;
 					break;
@@ -5926,8 +6190,6 @@ void CAfxStreams::Console_RemoveStream(const char * streamName)
 				}
 			}
 
-			FinishStreamForGlowOverlayFix(cur);
-
 			m_Streams.erase(it);
 
 			cur->WaitLastRefAndLock();
@@ -5988,7 +6250,7 @@ void CAfxStreams::Console_PreviewStream(const char * streamName, int slot)
 	{
 		if(!_stricmp(streamName, (*it)->StreamName_get()))
 		{
-			if(!(*it)->AsAfxSingleStream())
+			if(1 != (*it)->GetStreamCount())
 			{
 				Tier0_Msg("Error: Only simple (single) streams can be previewed.\n");
 				return;
@@ -6009,11 +6271,6 @@ void CAfxStreams::Console_ListActions(void)
 {
 	CAfxBaseFxStream::Console_ListActions();
 }
-
-//#define CAFXBASEFXSTREAM_STREAMCOMBINETYPES "aRedAsAlphaBColor|aColorBRedAsAlpha|aHudWhiteBHudBlack"
-#define CAFXBASEFXSTREAM_STREAMCOMBINETYPES "aRedAsAlphaBColor|aColorBRedAsAlpha"
-#define CAFXBASEFXSTREAM_STREAMCAPTURETYPES "normal|depth24|depth24ZIP|depthF|depthFZIP"
-#define CAFXSTREAMS_ACTIONSUFFIX " <actionName> - Set action with name <actionName> (see mirv_streams actions)."
 
 void CAfxStreams::Console_EditStream(const char * streamName, IWrpCommandArgs * args)
 {
@@ -6043,175 +6300,26 @@ void CAfxStreams::Console_EditStream(const char * streamName, IWrpCommandArgs * 
 void CAfxStreams::Console_EditStream(CAfxStream * stream, IWrpCommandArgs * args)
 {
 	CAfxStream * cur = stream;
-
-	CAfxRecordStream * curRecord = 0;
-	CAfxSingleStream * curSingle = 0;
-	CAfxTwinStream * curTwin = 0;
-	CAfxRenderViewStream * curRenderView = 0;
+	CAfxRecordStream * curRecord = nullptr;
 
 	CAfxThreadedRefCountedUniqueLock afxStreamInterLock(cur);
 	
 	if(cur)
 	{
 		curRecord = cur->AsAfxRecordStream();
-	
-		if(curRecord)
-		{
-			curSingle = curRecord->AsAfxSingleStream();
-			curTwin = curRecord->AsAfxTwinStream();
-
-			if(curSingle)
-			{
-				curRenderView = curSingle->Stream_get();
-			}
-		}
 	}
 
-	char const * cmdPrefix = args->ArgV(0);
-
-	int argcOffset = 1;
-
-	int argc = args->ArgC() - argcOffset;
-
-	if(cur)
-	{
-	}
-
-	if(curSingle)
-	{
-	}
-
-	if(curTwin)
-	{
-		if(1 <= argc)
-		{
-			char const * cmd0 = args->ArgV(argcOffset +0);
-
-			if(!_stricmp(cmd0, "streamA"))
-			{
-				CSubWrpCommandArgs subArgs(args, argcOffset + 1);
-
-				Console_EditStream(curTwin->StreamA_get(), &subArgs);
-				return;
-			}
-			else
-			if(!_stricmp(cmd0, "streamB"))
-			{
-				CSubWrpCommandArgs subArgs(args, argcOffset + 1);
-
-				Console_EditStream(curTwin->StreamB_get(), &subArgs);
-				return;
-			}
-			else
-			if(!_stricmp(cmd0, "streamCombineType"))
-			{
-				if(2 <= argc)
-				{
-					char const * cmd1 = args->ArgV(argcOffset +1);
-					CAfxTwinStream::StreamCombineType value;
-
-					if(Console_ToStreamCombineType(cmd1, value))
-					{
-						curTwin->StreamCombineType_set(value);
-						return;
-					}
-				}
-
-				Tier0_Msg(
-					"%s streamCombineType " CAFXBASEFXSTREAM_STREAMCOMBINETYPES " - Set new combine type.\n"
-					"Current value: %s.\n"
-					, cmdPrefix
-					, Console_FromStreamCombineType(curTwin->StreamCombineType_get())
-				);
-				return;
-			}
-		}
-	}
-
-	if(curRecord)
-	{
-		if(1 <= argc)
-		{
-			char const * cmd0 = args->ArgV(argcOffset +0);
-
-			if(!_stricmp(cmd0, "record"))
-			{
-				if(2 <= argc)
-				{
-					char const * cmd1 = args->ArgV(argcOffset +1);
-
-					curRecord->Record_set(atoi(cmd1) != 0 ? true : false);
-
-					return;
-				}
-
-				Tier0_Msg(
-					"%s record 0|1 - Whether to record this stream with mirv_streams record - 0 = record off, 1 = RECORD ON.\n"
-					"Current value: %s.\n"
-					, cmdPrefix
-					, curRecord->Record_get() ? "1" : "0"
-				);
-				return;
-			}
-			else if (0 == _stricmp("settings", cmd0))
-			{
-				if (2 <= argc)
-				{
-					char const * cmd1 = args->ArgV(argcOffset + 1);
-
-					if (CAfxRecordingSettings * settings = CAfxRecordingSettings::GetByName(cmd1))
-					{
-						curRecord->SetSettings(settings);
-					}
-					else
-					{
-						Tier0_Warning("AFXERROR: There is no recording setting named %s\n", cmd1);
-					}
-
-					return;
-				}
-
-				Tier0_Msg(
-					"%s settings <name> - Set recording settings to use from mirv_streams settings.\n"
-					"Current value: %s\n"
-					, cmdPrefix
-					, curRecord->GetSettings()->GetName()
-				);
-
-				return;
-			}
-		}
-	}
-
-	if(curRenderView)
-	{
-		if (Console_EditStream(curRenderView, args))
-			return;
-	}		
-
-	if (curTwin)
-	{
-		Tier0_Msg("-- twin properties --\n");
-		Tier0_Msg("%s streamA [...] - Edit sub stream A.\n", cmdPrefix);
-		Tier0_Msg("%s streamB [...] - Edit sub stream B.\n", cmdPrefix);
-		Tier0_Msg("%s streamCombineType [...] - Controlls how streams are combined.\n", cmdPrefix);
-	}
-
-	if (curSingle)
-	{
-	}
+	bool headDone = false;
 
 	if (curRecord)
 	{
-		Tier0_Msg("-- record properties --\n");
-		Tier0_Msg("%s record [...] - Controls whether or not this stream is recorded with mirv_streams record.\n", cmdPrefix);
-		Tier0_Msg("%s settings [...] - Recording settings to use.\n", cmdPrefix);
+		if (!(headDone = curRecord->Console_Edit_Head(args)))
+		{
+			curRecord->Console_Edit_Tail(args);
+		}
 	}
 
-	if (cur)
-	{
-	}
-	Tier0_Msg("== No more properties. ==\n");
+	if(!headDone) Tier0_Msg("== No more properties. ==\n");
 }
 
 bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandArgs * args)
@@ -7014,6 +7122,24 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 				);
 				return true;
 			}
+			else if (0 == _stricmp(cmd0, "clear"))
+			{
+				if (2 <= argc)
+				{
+					const char * cmd1 = args->ArgV(argcOffset + 1);
+
+					curBaseFx->SetClearBeforeRender(0 != atoi(cmd1));
+					return true;
+				}
+
+				Tier0_Msg(
+					"%s clear 0|1 - Whether to clear (black) before rendering or not.\n"
+					"Current value: %i.\n"
+					, cmdPrefix
+					, 0 != curBaseFx->GetClearBeforeRender() ? 1 : 0
+				);
+				return true;
+			}
 			else if (0 == _stricmp(cmd0, "clearBeforeHud"))
 			{
 				if (2 <= argc)
@@ -7347,6 +7473,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 		Tier0_Msg("%s devAction [...] - Readonly.\n", cmdPrefix);
 		Tier0_Msg("%s otherEngineAction [...] - Readonly.\n", cmdPrefix);
 		Tier0_Msg("%s otherSpecialAction [...] - Readonly.\n", cmdPrefix);
+		Tier0_Msg("%s clear [...]\n", cmdPrefix);
 		Tier0_Msg("%s clearBeforeHud [...]\n", cmdPrefix);
 		Tier0_Msg("%s vguiAction [...] - Readonly.\n", cmdPrefix);
 		Tier0_Msg("%s depthVal [...]\n", cmdPrefix);
@@ -7735,7 +7862,7 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 	SetCurrent_View_Render_ThreadId(0);
 }
 
-IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContextOrg * ctxp, CAfxRenderViewStream * stream, CAfxRecordStream * captureTarget, bool first, bool last, CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
+IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContextOrg * ctxp, size_t streamIndex, CAfxRenderViewStream * stream, CAfxRecordStream * captureTarget, bool first, bool last, CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
 {
 	if (first)
 	{
@@ -7851,11 +7978,11 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 			}
 		}
 
-		stream->OnRenderBegin(afxViewport, viewToProjection, viewToProjectionSky);
+		stream->OnRenderBegin(captureTarget->GetBasefxStreamModifier(streamIndex), afxViewport, viewToProjection, viewToProjectionSky);
 
 		DoRenderView(fn, this_ptr, view, hudViewSetup, SOURCESDK::VIEW_CLEAR_STENCIL | SOURCESDK::VIEW_CLEAR_DEPTH, myWhatToDraw);
 
-		stream->QueueCapture(ctxp, captureTarget,
+		stream->QueueCapture(ctxp, captureTarget, streamIndex,
 			view.m_nUnscaledX,
 			view.m_nUnscaledY,
 			view.m_nUnscaledWidth,

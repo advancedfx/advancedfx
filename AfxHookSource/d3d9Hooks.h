@@ -40,6 +40,12 @@ void AfxD3D9OverrideBegin_ModulationBlend(float value);
 void AfxD3D9OverrideEnd_ModulationBlend(void);
 
 /// <remarks>IDirect3D9Device only (i.e. CS:GO but not CSS).</remarks>
+void AfxD3D9OverrideBegin_D3DRS_BLENDOP(DWORD value);
+
+/// <remarks>IDirect3D9Device only (i.e. CS:GO but not CSS).</remarks>
+void AfxD3D9OverrideEnd_D3DRS_BLENDOP(void);
+
+/// <remarks>IDirect3D9Device only (i.e. CS:GO but not CSS).</remarks>
 void AfxD3D9OverrideBegin_D3DRS_SRCBLEND(DWORD value);
 
 /// <remarks>IDirect3D9Device only (i.e. CS:GO but not CSS).</remarks>
