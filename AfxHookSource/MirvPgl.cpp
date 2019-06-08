@@ -1765,7 +1765,7 @@ CON_COMMAND(mirv_pgl, "PGL")
 	}
 
 	Tier0_Msg(
-		"mirv_pgl start [2|3] - (Re-)Starts connection to websocket server with version given (none = old version 2).\n"
+		"mirv_pgl start - (Re-)Starts connection to websocket server.\n"
 		"mirv_pgl stop - Stops connection to websocket server.\n"
 		"mirv_pgl dataStart - Start sending data.\n"
 		"mirv_pgl dataStop - Stop sending data.\n"
