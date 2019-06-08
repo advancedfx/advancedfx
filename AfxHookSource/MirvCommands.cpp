@@ -504,7 +504,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					}
 
 					Tier0_Msg(
-						"mirv_streams add alphaMatteEntity <name> - Add a alpha matte entity stream with name <name>.\n"
+						"mirv_streams add alphaMatteEntity <name> - DEPRECATED: Add a alpha matte entity stream with name <name>.\n"
 					);
 					return;
 				}				
@@ -521,7 +521,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					}
 
 					Tier0_Msg(
-						"mirv_streams add alphaMatte <name> - Add a alpha matte stream with name <name>.\n"
+						"mirv_streams add alphaMatte <name> - DEPRECATED: Add a alpha matte stream with name <name>.\n"
 					);
 					return;
 				}				
@@ -538,7 +538,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					}
 
 					Tier0_Msg(
-						"mirv_streams add alphaEntity <name> - Add a alpha entity stream with name <name>.\n"
+						"mirv_streams add alphaEntity <name> -DEPRECATED:  Add a alpha entity stream with name <name>.\n"
 					);
 					return;
 				}				
@@ -555,7 +555,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					}
 
 					Tier0_Msg(
-						"mirv_streams add alphaWorld <name> - Add a alpha world stream with name <name>.\n"
+						"mirv_streams add alphaWorld <name> - DEPRECATED: Add a alpha world stream with name <name>.\n"
 					);
 					return;
 				}	
@@ -583,16 +583,12 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 				//"mirv_streams add hud [...] - Add a HUD stream (this is two streams (hudWhite / hudBlack) combined into one (RGBA)).\n"
 				"mirv_streams add hudWhite [...] - Add a HUD stream on white background.\n"
 				"mirv_streams add hudBlack [...] - Add a HUD stream on black background.\n"
-				"mirv_streams add depth [...] - Add a depth stream. WILL NOT WORK PROPERLY ATM!\n"
+				"mirv_streams add depth [...] - Add a depth stream.\n"
 				"mirv_streams add matteWorld [...] - Add a matte world stream.\n"
-				"mirv_streams add depthWorld [...] - Add a depth world stream. WILL NOT WORK PROPERLY ATM!\n"
+				"mirv_streams add depthWorld [...] - Add a depth world stream.\n"
 				"mirv_streams add matteEntity [...] - Add a matte entity stream.\n"
-				"mirv_streams add depthEntity [...] - Add a depth entity stream. WILL NOT WORK PROPERLY ATM!\n"
-				"mirv_streams add alphaMatteEntity [...] - Add a entity stream with alpha matte combined into a single stream.\n"
-				"mirv_streams add alphaWorld [...] - Add a alpha world stream.\n"
-				"mirv_streams add alphaMatte [...] - Add a alpha matte stream (alpha channel of alphaMatteEntity).\n"
-				"mirv_streams add alphaEntity [...] - Add a alpha entity stream (color channel of alphaMatteEntity).\n"
-				"mirv_streams add matte [...] - Add a matte stream.\n"
+				"mirv_streams add depthEntity [...] - Add a depth entity stream.\n"
+				"mirv_streams add matte [...] - Add a matte stream (use drawMatte action to set what shall be drawn inside the matte).\n"
 			);
 			return;
 		}

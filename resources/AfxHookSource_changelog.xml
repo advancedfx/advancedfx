@@ -6,8 +6,8 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>1.X.X</version>
-<time>2019-06-XXTXX:XXZ</time>
+<version>1.61.0</version>
+<time>2019-06-08T12:48Z</time>
 <changes>
 <change type="added">
 Added #185: special "afxDefault" mirv_streams setting, that you can use to set a default setting (Example: mirv_streams settings edit afxDefault settings afxFfmpeg).
@@ -17,6 +17,18 @@ Fixed #184: mistake in mirv_pgl start help.
 </change>
 <change type="added">
 Added #170: Toggle for spherical depth correction: mirv_streams baseFx streams drawZMode now supports pyramidalLinear and pyramidalLogE, for those that don't like the spherical correction for linear / logE.
+</change>
+<change type="updated">
+Deprecated alphaMatteEntity, alphaMatte, alphaEntity, alphaWorld streams.
+</change>
+<change type="updated">
+Updated mirv_streams baseFx stream's vguiAction: it's now changeable.
+</change>
+<change type="added">
+Updated material files for black, mask, white actions to make sure they are really black (0,0,0), really mask green (0,255,0) and really white (255,255,255) again.
+</change>
+<change type="added">
+Added #174: Simpler experimental matte stream (with alpha channel) ("Will it be able to record alpha layer?"): Set the drawMatte action as action for things to be drawn on the matte. This is still **very far from perfect** (e.g. smoke will still screw it up), we hope being able to improve these. Please note: Since this is a multi-stream composed on the CPU, preview is currently not implemented.
 </change>
 </changes>
 </release>

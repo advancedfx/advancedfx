@@ -1310,16 +1310,30 @@ CAfxMatteStream::CAfxMatteStream(char const * streamName, CAfxRenderViewStream *
 		m_MatteActions.emplace(drawMatteAction);
 	}
 
-	m_ActionBlack = CAfxBaseFxStream::GetAction(CAfxBaseFxStream::CActionKey("afxZOnly"));
+	if (CAfxBaseFxStream::CAction * noDrawMatteAction = CAfxBaseFxStream::GetAction(CAfxBaseFxStream::CActionKey("noDrawMatte")))
+	{
+		noDrawMatteAction->AddRef();
+		m_NoMatteActions.emplace(noDrawMatteAction);
+	}
+
+	m_ActionBlack = CAfxBaseFxStream::GetAction(CAfxBaseFxStream::CActionKey("black"));
 	if (m_ActionBlack) m_ActionBlack->AddRef();
 
-	m_ActionWhite = CAfxBaseFxStream::GetAction(CAfxBaseFxStream::CActionKey("afxZOnly"));
+	m_ActionWhite = CAfxBaseFxStream::GetAction(CAfxBaseFxStream::CActionKey("white"));
 	if (m_ActionWhite) m_ActionWhite->AddRef();
+
+	m_ActionNoDraw = CAfxBaseFxStream::GetAction(CAfxBaseFxStream::CActionKey("noDraw"));
+	if (m_ActionNoDraw) m_ActionNoDraw->AddRef();
 }
 
 CAfxMatteStream::~CAfxMatteStream()
 {
 	for (size_t i = 0; i < m_Modifiers.size(); ++i) delete m_Modifiers[i];
+
+	for (auto it = m_NoMatteActions.begin(); it != m_NoMatteActions.end(); ++it)
+	{
+		(*it)->Release();
+	}
 
 	for (auto it = m_MatteActions.begin(); it != m_MatteActions.end(); ++it)
 	{
@@ -1328,6 +1342,7 @@ CAfxMatteStream::~CAfxMatteStream()
 
 	if (m_ActionWhite) m_ActionWhite->Release();
 	if (m_ActionBlack) m_ActionBlack->Release();
+	if (m_ActionNoDraw) m_ActionNoDraw->Release();
 }
 
 CAfxRenderViewStream::StreamCaptureType CAfxMatteStream::GetCaptureType() const
@@ -1358,6 +1373,9 @@ CAfxBaseFxStream::CAction * CAfxMatteStream::OverrideAction(size_t streamIndex, 
 {
 	if (m_MatteActions.end() == m_MatteActions.find(action))
 	{
+		if (m_NoMatteActions.end() != m_NoMatteActions.find(action))
+			return m_ActionNoDraw;
+
 		switch (streamIndex)
 		{
 		case 0: // entBlackBg
@@ -1423,9 +1441,13 @@ void CAfxMatteStream::CaptureEnd()
 				unsigned char entWhite_g = ((unsigned char *)pBufferEntWhite)[y*orgImagePitch + x * 3 + 1];
 				unsigned char entWhite_r = ((unsigned char *)pBufferEntWhite)[y*orgImagePitch + x * 3 + 2];
 
+				//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 0] = y < 1 * height / 3 ? entBlack_b : (y < 2 * height / 3 ? entWhite_b : (unsigned char)(((int)entBlack_b + (int)entWhite_b)/2));
+				//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 1] = y < 1 * height / 3 ? entBlack_g : (y < 2 * height / 3 ? entWhite_g : (unsigned char)(((int)entBlack_g + (int)entWhite_g)/2));
+				//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 2] = y < 1 * height / 3 ? entBlack_r : (y < 2 * height / 3 ? entWhite_r : (unsigned char)(((int)entBlack_r + (int)entWhite_r)/2));
+				//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 3] = y < 1 * height / 3 ? 255 : (y < 2 * height / 3 ? 255 : (unsigned char)min(max((255l - (int)entWhite_b + (int)entBlack_b + 255l - (int)entWhite_g + (int)entBlack_g + 255l - (int)entWhite_r + (int)entBlack_r) / 3l, 0), 255));
 				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 0] = (unsigned char)(((int)entBlack_b + (int)entWhite_b)/2);
 				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 1] = (unsigned char)(((int)entBlack_g + (int)entWhite_g)/2);
-				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 2] = (unsigned char)(((int)entBlack_g + (int)entWhite_r)/2);
+				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 2] = (unsigned char)(((int)entBlack_r + (int)entWhite_r)/2);
 				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 3] = (unsigned char)min(max((255l - (int)entWhite_b + (int)entBlack_b + 255l - (int)entWhite_g + (int)entBlack_g + 255l - (int)entWhite_r + (int)entBlack_r) / 3l, 0), 255);
 			}
 		}
@@ -2148,6 +2170,11 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::VguiAction_get(void)
 	return m_VguiAction;
 }
 
+void CAfxBaseFxStream::VguiAction_set(CAction * value)
+{
+	SetActionAndInvalidateMap(m_VguiAction, value);
+}
+
 CAfxBaseFxStream::EClearBeforeHud CAfxBaseFxStream::ClearBeforeHud_get(void)
 {
 	return m_ClearBeforeHud;
@@ -2604,7 +2631,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin()
 			auto orgCtx = m_Ctx->GetOrg();
 
 			unsigned char r = 0;
-			unsigned char g = 255;
+			unsigned char g = 0;
 			unsigned char b = 0;
 			unsigned char a = 255;
 
@@ -3022,8 +3049,10 @@ void CAfxBaseFxStream::CShared::ReturnStreamContext(CAfxBaseFxStreamContext * st
 void CAfxBaseFxStream::CShared::AfxStreamsInit(void)
 {
 	CreateStdAction(m_DrawAction, CActionKey("draw"), new CAction());
-	CreateStdAction(m_DrawMatteAction, CActionKey("drawMatte"), new CAction());
 	CreateStdAction(m_NoDrawAction, CActionKey("noDraw"), new CActionNoDraw());
+
+	CreateStdAction(m_DrawMatteAction, CActionKey("drawMatte"), new CAction());
+	CreateStdAction(m_NoDrawMatteAction, CActionKey("noDrawMatte"), new CAction());
 
 	CreateStdAction(m_DepthAction, CActionKey("drawDepth"), new CActionDebugDepth(m_NoDrawAction));
 	// CreateStdAction(m_DepthAction, CActionKey("drawDepth"), new CActionStandardResolve(CActionStandardResolve::RF_DrawDepth, m_NoDrawAction));
@@ -3071,6 +3100,7 @@ void CAfxBaseFxStream::CShared::AfxStreamsShutdown(void)
 
 	if (m_DrawAction) m_DrawAction->Release();
 	if (m_DrawMatteAction) m_DrawMatteAction->Release();
+	if (m_NoDrawMatteAction) m_NoDrawMatteAction->Release();
 	if (m_NoDrawAction) m_NoDrawAction->Release();
 	if (m_DepthAction) m_DepthAction->Release();
 	/*
@@ -3267,6 +3297,11 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::CShared::DrawAction_get(void)
 CAfxBaseFxStream::CAction * CAfxBaseFxStream::CShared::DrawMatteAction_get(void)
 {
 	return m_DrawMatteAction;
+}
+
+CAfxBaseFxStream::CAction * CAfxBaseFxStream::CShared::NoDrawMatteAction_get(void)
+{
+	return m_NoDrawMatteAction;
 }
 
 CAfxBaseFxStream::CAction * CAfxBaseFxStream::CShared::NoDrawAction_get(void)
@@ -5447,7 +5482,7 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 		{
 			if (m_PreviewStreams[i])
 			{
-				if (1 == m_PreviewStreams[i]->GetStreamCount())
+				if (1 <= m_PreviewStreams[i]->GetStreamCount())
 				{
 					previewNumSlots = 1 + i;
 					previewStreams[i] = m_PreviewStreams[i]->GetStream(0);
@@ -6000,6 +6035,8 @@ void CAfxStreams::Console_AddAlphaMatteStream(const char * streamName)
 	if (!Console_CheckStreamName(streamName))
 		return;
 
+	Tier0_Warning("AFXWARNING: alphaMatteStream is deprecated and will be removed!\n");
+
 	AddStream(new CAfxSingleStream(streamName, new CAfxAlphaMatteStream()));
 }
 
@@ -6007,6 +6044,8 @@ void CAfxStreams::Console_AddAlphaEntityStream(const char * streamName)
 {
 	if (!Console_CheckStreamName(streamName))
 		return;
+
+	Tier0_Warning("AFXWARNING: alphaEntityStream is deprecated and will be removed!\n");
 
 	AddStream(new CAfxSingleStream(streamName, new CAfxAlphaEntityStream()));
 }
@@ -6016,6 +6055,8 @@ void CAfxStreams::Console_AddAlphaWorldStream(const char * streamName)
 	if (!Console_CheckStreamName(streamName))
 		return;
 
+	Tier0_Warning("AFXWARNING: alphaWorldStream is deprecated and will be removed!\n");
+
 	AddStream(new CAfxSingleStream(streamName, new CAfxAlphaWorldStream()));
 }
 
@@ -6023,6 +6064,8 @@ void CAfxStreams::Console_AddAlphaMatteEntityStream(const char * streamName)
 {
 	if (!Console_CheckStreamName(streamName))
 		return;
+
+	Tier0_Warning("AFXWARNING: alphaMatteEntityStream is deprecated and will be removed!\n");
 
 	AddStream(new CAfxTwinStream(streamName, new CAfxAlphaMatteStream(), new CAfxAlphaEntityStream(), CAfxTwinStream::SCT_ARedAsAlphaBColor));
 }
@@ -7118,8 +7161,20 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 			else
 			if(!_stricmp(cmd0, "vguiAction"))
 			{
+				if (2 <= argc)
+				{
+					char const * cmd1 = args->ArgV(argcOffset + 1);
+					CAfxBaseFxStream::CAction * value;
+
+					if (Console_ToAfxAction(cmd1, value))
+					{
+						curBaseFx->VguiAction_set(value);
+						return true;
+					}
+				}
+
 				Tier0_Msg(
-					"%s vguiAction\n"
+					"%s vguiAction" CAFXSTREAMS_ACTIONSUFFIX "\n"
 					"Current value: %s.\n"
 					, cmdPrefix
 					, Console_FromAfxAction(curBaseFx->VguiAction_get())
@@ -7495,7 +7550,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 		Tier0_Msg("%s otherSpecialAction [...] - Readonly.\n", cmdPrefix);
 		Tier0_Msg("%s clear [...]\n", cmdPrefix);
 		Tier0_Msg("%s clearBeforeHud [...]\n", cmdPrefix);
-		Tier0_Msg("%s vguiAction [...] - Readonly.\n", cmdPrefix);
+		Tier0_Msg("%s vguiAction [...].\n", cmdPrefix);
 		Tier0_Msg("%s depthVal [...]\n", cmdPrefix);
 		Tier0_Msg("%s depthValMax [...]\n", cmdPrefix);
 		Tier0_Msg("%s drawZ [...]\n", cmdPrefix);

@@ -1082,6 +1082,7 @@ public:
 	CAction * OtherSpecialAction_get(void);
 
 	CAction * VguiAction_get(void);
+	void VguiAction_set(CAction *);
 
 	bool GetClearBeforeRender(void) const
 	{
@@ -1199,8 +1200,9 @@ protected:
 
 
 		CAction * DrawAction_get(void);
-		CAction * DrawMatteAction_get(void);
 		CAction * NoDrawAction_get(void);
+		CAction * DrawMatteAction_get(void);
+		CAction * NoDrawMatteAction_get(void);
 		CAction * DepthAction_get(void);
 		//CAction * Depth24Action_get(void);
 		CAction * MaskAction_get(void);
@@ -1217,6 +1219,7 @@ protected:
 		std::map<CActionKey, CAction *> m_Actions;
 		CAction * m_DrawAction = 0;
 		CAction * m_DrawMatteAction = 0;
+		CAction * m_NoDrawMatteAction = 0;
 		CAction * m_NoDrawAction = 0;
 		CAction * m_DepthAction = 0;
 		//CAction * m_Depth24Action = 0;
@@ -2277,8 +2280,10 @@ protected:
 private:
 	std::vector<IAfxBasefxStreamModifier *> m_Modifiers;
 	std::set<CAfxBaseFxStream::CAction *> m_MatteActions;
+	std::set<CAfxBaseFxStream::CAction *> m_NoMatteActions;
 	CAfxBaseFxStream::CAction * m_ActionBlack;
 	CAfxBaseFxStream::CAction * m_ActionWhite;
+	CAfxBaseFxStream::CAction * m_ActionNoDraw;
 	bool m_HandleMaskAction;
 };
 
@@ -2434,7 +2439,7 @@ public:
 
 		DrawHud_set(DT_NoDraw);
 
-		this->SmokeOverlayAlphaFactor_set(0.01f);
+		this->SmokeOverlayAlphaFactor_set(0.0f);
 		Console_ActionFilter_Add("effects/overlaysmoke", m_Shared.NoDrawAction_get());
 	}
 
@@ -2457,7 +2462,23 @@ public:
 		SetAction(m_ShellParticleAction, m_Shared.DrawMatteAction_get());
 		SetAction(m_StickerAction, m_Shared.DrawMatteAction_get());
 
+		// Temporary workaround:
+		SetAction(m_WriteZAction, m_Shared.DrawMatteAction_get());
+		SetAction(m_DevAction, m_Shared.DrawMatteAction_get());
+		SetAction(m_OtherEngineAction, m_Shared.DrawMatteAction_get());
+		SetAction(m_OtherSpecialAction, m_Shared.DrawMatteAction_get());
+
 		DrawHud_set(DT_NoDraw);
+
+		SetAction(m_ClientEffectTexturesAction, m_Shared.NoDrawMatteAction_get());
+		SetAction(m_CableAction, m_Shared.NoDrawMatteAction_get());
+		SetAction(m_DecalTexturesAction, m_Shared.NoDrawMatteAction_get());
+		SetAction(m_EffectsAction, m_Shared.NoDrawMatteAction_get());
+		SetAction(m_OtherParticleAction, m_Shared.NoDrawMatteAction_get());
+		SetAction(m_OtherAction, m_Shared.NoDrawMatteAction_get());
+
+		this->SmokeOverlayAlphaFactor_set(0.0f);
+		Console_ActionFilter_Add("effects/overlaysmoke", m_Shared.NoDrawMatteAction_get());
 	}
 
 protected:
@@ -2506,7 +2527,7 @@ public:
 
 		DrawHud_set(DT_NoDraw);
 
-		this->SmokeOverlayAlphaFactor_set(0.01f);
+		this->SmokeOverlayAlphaFactor_set(0.0f);
 		Console_ActionFilter_Add("effects/overlaysmoke", m_Shared.NoDrawAction_get());
 	}
 
