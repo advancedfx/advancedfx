@@ -1133,7 +1133,9 @@ public:
 	{
 		EDrawDepthMode_Inverse,
 		EDrawDepthMode_Linear,
-		EDrawDepthMode_LogE
+		EDrawDepthMode_LogE,
+		EDrawDepthMode_PyramidalLinear,
+		EDrawDepthMode_PyramidalLogE
 	};
 
 	EDrawDepthMode DrawDepthMode_get()

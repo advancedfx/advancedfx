@@ -142,6 +142,8 @@ enum AfxDrawDepthMode
 	AfxDrawDepthMode_Inverse,
 	AfxDrawDepthMode_Linear,
 	AfxDrawDepthMode_LogE,
+	AfxDrawDepthMode_PyramidalLinear,
+	AfxDrawDepthMode_PyramidalLogE
 };
 
 enum AfxDrawDepthEncode

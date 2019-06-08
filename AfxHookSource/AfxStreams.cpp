@@ -2700,6 +2700,10 @@ AfxDrawDepthMode AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(CAfxBaseFxStre
 		return AfxDrawDepthMode_Linear;
 	case CAfxBaseFxStream::EDrawDepthMode_LogE:
 		return AfxDrawDepthMode_LogE;
+	case CAfxBaseFxStream::EDrawDepthMode_PyramidalLinear:
+		return AfxDrawDepthMode_PyramidalLinear;
+	case CAfxBaseFxStream::EDrawDepthMode_PyramidalLogE:
+		return AfxDrawDepthMode_PyramidalLogE;
 	}
 
 	return AfxDrawDepthMode_Linear;
@@ -7296,6 +7300,16 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 						curBaseFx->DrawDepthMode_set(CAfxBaseFxStream::EDrawDepthMode_LogE);
 						return true;
 					}
+					else if (0 == _stricmp(cmd1, "pyramidalLinear"))
+					{
+						curBaseFx->DrawDepthMode_set(CAfxBaseFxStream::EDrawDepthMode_PyramidalLinear);
+						return true;
+					}
+					else if (0 == _stricmp(cmd1, "pyramidalLogE"))
+					{
+						curBaseFx->DrawDepthMode_set(CAfxBaseFxStream::EDrawDepthMode_PyramidalLogE);
+						return true;
+					}
 				}
 
 				CAfxBaseFxStream::EDrawDepth value = curBaseFx->DrawDepth_get();
@@ -7311,10 +7325,16 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 				case CAfxBaseFxStream::EDrawDepthMode_LogE:
 					pszValue = "logE";
 					break;
+				case CAfxBaseFxStream::EDrawDepthMode_PyramidalLinear:
+					pszValue = "pyramidalLinear";
+					break;
+				case CAfxBaseFxStream::EDrawDepthMode_PyramidalLogE:
+					pszValue = "pyramidalLogE";
+					break;
 				}
 
 				Tier0_Msg(
-					"%s drawZMode inverse|linear|logE - Mode to use for drawZ.\n"
+					"%s drawZMode inverse|linear|logE|pyramidalLinear|pyramidalLogE - Mode to use for drawZ.\n"
 					"Current value: %s\n"
 					, cmdPrefix
 					, pszValue

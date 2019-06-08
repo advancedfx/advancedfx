@@ -10,7 +10,13 @@
 <time>2019-06-XXTXX:XXZ</time>
 <changes>
 <change type="added">
-Added special "afxDefault" mirv_streams setting, that you can use to set a default setting (Example: mirv_streams settings edit afxDefault settings afxFfmpeg).
+Added #185: special "afxDefault" mirv_streams setting, that you can use to set a default setting (Example: mirv_streams settings edit afxDefault settings afxFfmpeg).
+</change>
+<change type="fixed">
+Fixed #184: mistake in mirv_pgl start help.
+</change>
+<change type="added">
+Added #170: Toggle for spherical depth correction: mirv_streams baseFx streams drawZMode now supports pyramidalLinear and pyramidalLogE, for those that don't like the spherical correction for linear / logE.
 </change>
 </changes>
 </release>

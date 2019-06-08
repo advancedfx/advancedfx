@@ -2936,6 +2936,12 @@ public:
 		case AfxDrawDepthMode_LogE:
 			afxDepthMode = ShaderCombo_afx_depth_ps20::AFXDEPTHMODE_2;
 			break;
+		case AfxDrawDepthMode_PyramidalLinear:
+			afxDepthMode = ShaderCombo_afx_depth_ps20::AFXDEPTHMODE_3;
+			break;
+		case AfxDrawDepthMode_PyramidalLogE:
+			afxDepthMode = ShaderCombo_afx_depth_ps20::AFXDEPTHMODE_4;
+			break;
 		}
 
 		ShaderCombo_afx_depth_ps20::AFXD24_e afxEncode = ShaderCombo_afx_depth_ps20::AFXD24_0;
