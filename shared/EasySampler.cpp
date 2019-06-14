@@ -435,7 +435,7 @@ EasySamplerBase::EasySamplerBase(
 	m_LastFrameTime = startTime;
 	m_LastSampleTime = startTime;
 	m_ShutterOpen = 0.0 < exposure;
-	m_ShutterOpenDuration = frameDuration * min(max(exposure, 0.0), 1.0);
+	m_ShutterOpenDuration = frameDuration * (exposure < 0 ? 0 : (exposure > 1 ? 1 : exposure));
 	m_ShutterTime = m_LastFrameTime;
 }
 

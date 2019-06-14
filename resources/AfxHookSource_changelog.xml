@@ -6,6 +6,42 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.62.0</version>
+<time>2019-06-14T10:12Z</time>
+<changes>
+<change type="added">
+Added #74 "Sampling System like in old AfxHookGoldSrc?":<br />
+There is a default 30 down-sampler setting named afxSampler30 in afxSettings. If you want to change settings (e.g. output fps, please add a new sampler using mirv_streams settings add ... and edit that one.<br />
+Example usage:<br />
+<br />
+// Load demo.<br />
+<br />
+exec sd // Replace this with config for Smoother Demos guide: https://github.com/advancedfx/advancedfx/wiki/Source%3ASmoother-Demos<br />
+<br />
+mirv_streams settings edit afxSampler30 settings afxClassic // if you have FFMPEG installed for HLAE, you can use one of those settings (e.g. afxFfmpegYuv420p) instead of afxClassic<br />
+mirv_streams settings edit afxDefault settings afxSampler30<br />
+<br />
+mirv_streams add normal myNorm<br />
+<br />
+// Start recording:<br />
+<br />
+host_framerate 1200; mirv_streams record start<br />
+<br />
+// .... let it record a bit ....<br />
+<br />
+// End recording:<br />
+<br />
+mirv_streams record end; host_framerate 0<br />
+<br />
+<br />
+Please avoid cascading samplers for now, since that will probably cause problems, since HLAE will refuse to allocate more than 3 image buffers at the same time and just lock up waiting for a buffer to get available.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.61.0</version>
 <time>2019-06-08T12:48Z</time>
 <changes>

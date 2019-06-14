@@ -1,7 +1,8 @@
 #pragma once
 
-#include "AfxImageBuffer.h"
 #include "AfxThreadedRefCounted.h"
+#include "AfxImageBuffer.h"
+#include <shared/EasySampler.h>
 #include <string>
 #include <Windows.h>
 
@@ -82,7 +83,7 @@ public:
 
 	}
 
-	virtual bool SupplyVideoData(const CAfxImageBuffer & buffer);
+	virtual bool SupplyVideoData(const CAfxImageBuffer & buffer) override;
 
 private:
 	std::wstring m_Path;
@@ -102,7 +103,7 @@ class CAfxOutFFMPEGVideoStream : public CAfxOutVideoStream
 public:
 	CAfxOutFFMPEGVideoStream(const CAfxImageFormat & imageFormat, const std::wstring & path, const std::wstring & ffmpegOptions, float frameRate);
 
-	virtual bool SupplyVideoData(const CAfxImageBuffer & buffer);
+	virtual bool SupplyVideoData(const CAfxImageBuffer & buffer) override;
 
 protected:
 	virtual ~CAfxOutFFMPEGVideoStream() override;
@@ -123,4 +124,35 @@ private:
 	void Close();
 
 	bool HandleOutAndErr();
+};
+
+
+// TODO:
+// - optimize shutter to allow skipping (capturing of) frames.
+// - think about error propagation, though not entirely applicable.
+// - RGBA smapling might not be accurate, since it doesn't take alpha into account?
+class CAfxOutSamplingStream : public CAfxOutVideoStream
+	, public IFramePrinter
+	, public IFloatFramePrinter
+{
+public:
+	CAfxOutSamplingStream(const CAfxImageFormat & imageFormat, CAfxOutVideoStream * outVideoStream, float frameRate, EasySamplerSettings::Method method, double frameDuration, double exposure, float frameStrength);
+
+	virtual bool SupplyVideoData(const CAfxImageBuffer & buffer) override;
+
+	virtual void Print(unsigned char const * data) override;
+	virtual void Print(float const * data) override;
+
+protected:
+	virtual ~CAfxOutSamplingStream() override;
+
+private:
+	union {
+		EasyByteSampler * Byte;
+		EasyFloatSampler * Float;
+	} m_EasySampler;
+	CAfxOutVideoStream * m_OutVideoStream;
+	double m_Time;
+
+	double m_InputFrameDuration;
 };

@@ -447,6 +447,9 @@
     <ClCompile Include="csgo_GameEvents.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared\EasySampler.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\bvhexport.h">
@@ -820,6 +823,9 @@
     </ClInclude>
     <ClInclude Include="csgo_GameEvents.h">
       <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\EasySampler.h">
+      <Filter>shared</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

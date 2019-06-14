@@ -3,17 +3,12 @@
 // TODO:
 //
 // In the average case where the full range of a sample is
-// used (withn a frame), CPU power is wasted, because the same multiplication
+// used (within a frame), CPU power is wasted, because the same multiplication
 // is done twice when interpolating from the next sample.
 // (First it's the new one, then the old one and factors
 // are about the same, this is a waste).
 
-#include "Store.h"
-
-#include <list>
-
-using namespace std;
-
+#include <memory.h>
 
 class __declspec(novtable) IFramePrinter abstract
 {

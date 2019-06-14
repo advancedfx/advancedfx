@@ -499,7 +499,24 @@ public:
 
 	virtual void Console_Edit(IWrpCommandArgs * args) = 0;
 
-	virtual CAfxOutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat) const = 0;
+	virtual CAfxOutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float fps) const = 0;
+
+	virtual CAfxRecordingSettings * GetParent() const
+	{
+		return nullptr;
+	}
+
+	bool InheritsFrom(CAfxRecordingSettings * setting)
+	{
+		if (setting == this) return true;
+
+		for (CAfxRecordingSettings * cur = this->GetParent(); cur != nullptr; cur = cur->GetParent())
+		{
+			if (setting == cur) return true;
+		}
+
+		return false;
+	}
 
 protected:
 	std::string m_Name;
@@ -575,12 +592,17 @@ public:
 
 	virtual void Console_Edit(IWrpCommandArgs * args) override;
 
-	virtual CAfxOutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat) const override
+	virtual CAfxOutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float fps) const override
 	{
 		if (m_DefaultSettings)
-			return m_DefaultSettings->CreateOutVideoStream(streams, stream, imageFormat);
+			return m_DefaultSettings->CreateOutVideoStream(streams, stream, imageFormat, fps);
 
 		return nullptr;
+	}
+
+	virtual CAfxRecordingSettings * GetParent() const override
+	{
+		return m_DefaultSettings;
 	}
 
 protected:
@@ -606,7 +628,7 @@ public:
 
 	virtual void Console_Edit(IWrpCommandArgs * args) override;
 
-	virtual CAfxOutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat) const override;
+	virtual CAfxOutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float fps) const override;
 };
 
 class CAfxFfmpegRecordingSettings : public CAfxRecordingSettings
@@ -621,10 +643,51 @@ public:
 
 	virtual void Console_Edit(IWrpCommandArgs * args) override;
 
-	virtual CAfxOutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat) const override;
+	virtual CAfxOutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float fps) const override;
 
 private:
 	std::string m_FfmpegOptions;
+};
+
+
+class CAfxSamplingRecordingSettings : public CAfxRecordingSettings
+{
+public:
+	CAfxSamplingRecordingSettings(const char * name, bool bProtected, CAfxRecordingSettings * outputSettings, EasySamplerSettings::Method method, float outFps, double exposure, float frameStrength)
+		: CAfxRecordingSettings(name, bProtected)
+		, m_OutputSettings(outputSettings)
+		, m_Method(method)
+		, m_OutFps(outFps)
+		, m_Exposure(exposure)
+		, m_FrameStrength(frameStrength)
+	{
+		if (m_OutputSettings) m_OutputSettings->AddRef();
+	}
+
+	virtual void Console_Edit(IWrpCommandArgs * args) override;
+
+	virtual CAfxOutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float fps) const override;
+
+	virtual CAfxRecordingSettings * GetParent() const override
+	{
+		return m_OutputSettings;
+	}
+
+protected:
+	virtual ~CAfxSamplingRecordingSettings()
+	{
+		if (m_OutputSettings)
+		{
+			m_OutputSettings->Release();
+			m_OutputSettings = nullptr;
+		}
+	}
+private:
+	CAfxRecordingSettings * m_OutputSettings;
+	EasySamplerSettings::Method m_Method;
+	float m_OutFps;
+	double m_Exposure;
+	float m_FrameStrength;
 };
 
 class CAfxRecordStream abstract

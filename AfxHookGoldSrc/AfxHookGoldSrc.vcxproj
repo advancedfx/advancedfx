@@ -253,6 +253,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\shared\EasySampler.cpp" />
     <ClCompile Include="..\shared\FileTools.cpp" />
     <ClCompile Include="..\shared\hooks\gameOverlayRenderer.cpp" />
     <ClCompile Include="..\shared\StringTools.cpp" />
@@ -272,7 +273,6 @@
     <ClCompile Include="demo_tools.cpp" />
     <ClCompile Include="demozoom.cpp" />
     <ClCompile Include="disable_spec_menu.cpp" />
-    <ClCompile Include="EasySampler.cpp" />
     <ClCompile Include="film_sound.cpp" />
     <ClCompile Include="filming.cpp" />
     <ClCompile Include="forcePlayersSolid.cpp" />
@@ -340,6 +340,7 @@
     <ClInclude Include="..\shared\CamPath.h" />
     <ClInclude Include="..\shared\Detours\src\detours.h" />
     <ClInclude Include="..\shared\Detours\src\detver.h" />
+    <ClInclude Include="..\shared\EasySampler.h" />
     <ClInclude Include="..\shared\FileTools.h" />
     <ClInclude Include="..\shared\hooks\gameOverlayRenderer.h" />
     <ClInclude Include="..\prop\shared\rapidxml\rapidxml.hpp" />
@@ -357,7 +358,6 @@
     <ClInclude Include="camimport.h" />
     <ClInclude Include="cmd_tools.h" />
     <ClInclude Include="cmdregister.h" />
-    <ClInclude Include="EasySampler.h" />
     <ClInclude Include="film_sound.h" />
     <ClInclude Include="filming.h" />
     <ClInclude Include="GlPrimMods.h" />

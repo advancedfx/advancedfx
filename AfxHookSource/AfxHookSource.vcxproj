@@ -178,6 +178,7 @@
     <ClCompile Include="..\shared\Detours\src\disolx86.cpp" />
     <ClCompile Include="..\shared\Detours\src\image.cpp" />
     <ClCompile Include="..\shared\Detours\src\modules.cpp" />
+    <ClCompile Include="..\shared\EasySampler.cpp" />
     <ClCompile Include="..\shared\FileTools.cpp" />
     <ClCompile Include="..\shared\hooks\gameOverlayRenderer.cpp" />
     <ClCompile Include="..\shared\imgui\imgui.cpp" />
@@ -293,6 +294,7 @@
     <ClInclude Include="..\prop\shared\detours.h" />
     <ClInclude Include="..\shared\Detours\src\detours.h" />
     <ClInclude Include="..\shared\Detours\src\detver.h" />
+    <ClInclude Include="..\shared\EasySampler.h" />
     <ClInclude Include="..\shared\FileTools.h" />
     <ClInclude Include="..\shared\hooks\gameOverlayRenderer.h" />
     <ClInclude Include="..\shared\imgui\imconfig.h" />

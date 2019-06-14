@@ -7,7 +7,7 @@
 #include <list>
 #include <string>
 
-#include "EasySampler.h"
+#include <shared/EasySampler.h>
 #include "film_sound.h"
 #include "mdt_media.h"
 #include "supportrender.h"

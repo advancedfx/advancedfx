@@ -897,7 +897,7 @@ void CAfxSingleStream::CaptureEnd()
 	{
 		if (nullptr == m_OutVideoStream)
 		{
-			m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, buffer->Format);
+			m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, buffer->Format, g_AfxStreams.GetStartHostFrameRate());
 			if (nullptr == m_OutVideoStream)
 			{
 				Tier0_Warning("AFXERROR: Failed to create out video stream for %s.\n", this->StreamName_get());
@@ -1062,7 +1062,7 @@ void CAfxTwinStream::CaptureEnd()
 
 					if (nullptr == m_OutVideoStream)
 					{
-						m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, bufferA->Format);
+						m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, bufferA->Format, g_AfxStreams.GetStartHostFrameRate());
 						if (nullptr == m_OutVideoStream)
 						{
 							Tier0_Warning("AFXERROR: Failed to create out video stream for %s.\n", this->StreamName_get());
@@ -1157,7 +1157,7 @@ void CAfxTwinStream::CaptureEnd()
 
 					if (nullptr == m_OutVideoStream)
 					{
-						m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, bufferA->Format);
+						m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, bufferA->Format, g_AfxStreams.GetStartHostFrameRate());
 						m_OutVideoStream->AddRef();
 					}
 
@@ -1454,7 +1454,7 @@ void CAfxMatteStream::CaptureEnd()
 
 		if (nullptr == m_OutVideoStream)
 		{
-			m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, bufferEntBlack->Format);
+			m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, bufferEntBlack->Format, g_AfxStreams.GetStartHostFrameRate());
 			if (nullptr == m_OutVideoStream)
 			{
 				Tier0_Warning("AFXERROR: Failed to create out video stream for %s.\n", this->StreamName_get());
@@ -8509,6 +8509,11 @@ CAfxClassicRecordingSettings::CShared::CShared()
 		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegLosslessBest", true, "-c:v libx264rgb -preset veryslow -crf 0 {QUOTE}{AFX_STREAM_PATH}\\video.mp4{QUOTE}");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
+
+	{
+		CAfxRecordingSettings * settings = new CAfxSamplingRecordingSettings("afxSampler30", true, m_DefaultSettings, EasySamplerSettings::ESM_Trapezoid, 30.0f, 1.0f, 1.0f);
+		m_NamedSettings.emplace(settings->GetName(), settings);
+	}
 }
 
 CAfxClassicRecordingSettings::CShared::~CShared()
@@ -8593,9 +8598,30 @@ void CAfxRecordingSettings::Console(IWrpCommandArgs * args)
 				}
 				return;
 			}
+			else if (4 == argC && 0 == _stricmp("sampler", args->ArgV(2)))
+			{
+				const char * arg3 = args->ArgV(3);
+
+				if (StringIBeginsWith(arg3, "afx"))
+				{
+					Tier0_Warning("AFXERROR: Custom presets must not begin with \"afx\".\n");
+				}
+				else if (nullptr != GetByName(arg3))
+				{
+					Tier0_Warning("AFXERROR: There is already a setting named %s\n", arg3);
+				}
+				else
+				{
+					CAfxRecordingSettings * settings = new CAfxSamplingRecordingSettings(arg3, false, m_Shared.m_DefaultSettings, EasySamplerSettings::ESM_Trapezoid, 30.0f, 1.0f, 1.0f);
+					m_Shared.m_NamedSettings.emplace(settings->GetName(), settings);
+				}
+				return;
+			}
 
 			Tier0_Msg(
 				"%s add ffmpeg <name> \"<yourOptionsHere>\" - Adds an FFMPEG setting, <yourOptionsHere> are output options, use {QUOTE} for \", {AFX_STREAM_PATH} for the folder path of the stream, \\{ for {, \\} for }. For an example see one of the afxFfmpeg* templates (edit them).\n"
+				"%s add sampler <name> - Adds a sampler with 30 fps and default settings, edit it afterwars to change them.\n"
+				, arg0
 				, arg0
 			);
 			return;
@@ -8622,7 +8648,7 @@ void CAfxClassicRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 	Tier0_Warning("The classic settings are controlled through mirv_streams settings and can not be edited.\n");
 }
 
-CAfxOutVideoStream * CAfxClassicRecordingSettings::CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat) const
+CAfxOutVideoStream * CAfxClassicRecordingSettings::CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float frameRate) const
 {
 	std::wstring wideStreamName;
 	if (UTF8StringToWideString(stream.StreamName_get(), wideStreamName))
@@ -8686,7 +8712,7 @@ void CAfxFfmpegRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 	);
 }
 
-CAfxOutVideoStream * CAfxFfmpegRecordingSettings::CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat) const
+CAfxOutVideoStream * CAfxFfmpegRecordingSettings::CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float frameRate) const
 {
 	std::wstring wideOptions;
 	if (UTF8StringToWideString(m_FfmpegOptions.c_str(), wideOptions))
@@ -8700,7 +8726,7 @@ CAfxOutVideoStream * CAfxFfmpegRecordingSettings::CreateOutVideoStream(const CAf
 
 			CAfxRenderViewStream::StreamCaptureType captureType = stream.GetCaptureType();
 
-			return new CAfxOutFFMPEGVideoStream(imageFormat, capturePath, wideOptions, g_AfxStreams.GetStartHostFrameRate());
+			return new CAfxOutFFMPEGVideoStream(imageFormat, capturePath, wideOptions, frameRate);
 		}
 		else
 		{
@@ -8739,9 +8765,9 @@ void CAfxDefaultRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 				{
 					Tier0_Warning("AFXERROR: There's no settings named %s.\n", args->ArgV(2));
 				}
-				else if(static_cast<CAfxRecordingSettings *>(this) == settings)
+				else if(settings->InheritsFrom(this))
 				{
-					Tier0_Warning("AFXERROR: Can not assign slelf.\n");
+					Tier0_Warning("AFXERROR: Can not assign a setting that we depends on this setting.\n");
 				}
 				else
 				{
@@ -8754,7 +8780,7 @@ void CAfxDefaultRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 			}
 
 			Tier0_Msg(
-				"%s settings <settingsName> - Use a settings with name <settingsNmae> as default settings.\n"
+				"%s settings <settingsName> - Use a settings with name <settingsName> as default settings.\n"
 				"Current value: \"%s\"\n"
 				, arg0
 				, m_DefaultSettings ? m_DefaultSettings->GetName() : "[null]"
@@ -8765,6 +8791,193 @@ void CAfxDefaultRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 
 	Tier0_Msg(
 		"%s settings [...] - Set default settings.\n"
+		, arg0
+	);
+}
+
+// CAfxSamplingRecordingSettings ///////////////////////////////////////////////
+
+CAfxOutVideoStream * CAfxSamplingRecordingSettings::CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float frameRate) const
+{
+	if (m_OutputSettings)
+	{
+		if (CAfxOutVideoStream * outVideoStream = m_OutputSettings->CreateOutVideoStream(streams, stream, imageFormat, m_OutFps))
+		{
+			return new CAfxOutSamplingStream(imageFormat, outVideoStream, frameRate, m_Method, m_OutFps ? 1.0 / m_OutFps : 0.0, m_Exposure, m_FrameStrength);
+		}
+	}
+
+	return nullptr;
+}
+
+void CAfxSamplingRecordingSettings::Console_Edit(IWrpCommandArgs * args)
+{
+	Tier0_Msg("%s (type sampling) recording setting options:\n", m_Name.c_str());
+
+	int argC = args->ArgC();
+	const char * arg0 = args->ArgV(0);
+
+	if (2 <= argC)
+	{
+		const char * arg1 = args->ArgV(1);
+
+		if (0 == _stricmp("settings", arg1))
+		{
+			if (3 == argC)
+			{
+				CAfxRecordingSettings * settings = CAfxRecordingSettings::GetByName(args->ArgV(2));
+
+				if (nullptr == settings)
+				{
+					Tier0_Warning("AFXERROR: There's no settings named %s.\n", args->ArgV(2));
+				}
+				else if (settings->InheritsFrom(this))
+				{
+					Tier0_Warning("AFXERROR: Can not assign a setting that we depends on this setting.\n");
+				}
+				else
+				{
+					if (m_OutputSettings) m_OutputSettings->Release();
+					m_OutputSettings = settings;
+					if (m_OutputSettings) m_OutputSettings->AddRef();
+				}
+
+				return;
+			}
+
+			Tier0_Msg(
+				"%s settings <settingsName> - Use a settings with name <settingsName> as output settings.\n"
+				"Current value: \"%s\"\n"
+				, arg0
+				, m_OutputSettings ? m_OutputSettings->GetName() : "[null]"
+			);
+			return;
+		}
+		else if (0 == _stricmp("fps", arg1))
+		{
+			if (3 == argC)
+			{
+				if (m_Protected)
+				{
+					Tier0_Warning("This setting is protected and can not be changed.\n");
+					return;
+				}
+
+				m_OutFps = (float)atof(args->ArgV(2));
+			}
+
+			Tier0_Msg(
+				"%s fps <fValue> - Output FPS, has to be greater than 0.\n"
+				"Current value: %f\n"
+				, arg0
+				, m_OutFps
+			);
+			return;
+		}
+		else if (0 == _stricmp("method", arg1))
+		{
+			if (3 == argC)
+			{
+				if (m_Protected)
+				{
+					Tier0_Warning("This setting is protected and can not be changed.\n");
+					return;
+				}
+
+				const char * arg2 = args->ArgV(2);
+
+				if (0 == _stricmp(arg2, "rectangle"))
+				{
+					m_Method = EasySamplerSettings::ESM_Rectangle;
+				}
+				else if (0 == _stricmp(arg2, "trapezoid"))
+				{
+					m_Method = EasySamplerSettings::ESM_Trapezoid;
+				}
+				else
+				{
+					Tier0_Warning("AFXERROR: Invalid value.\n");
+				}
+
+				return;
+			}
+
+			const char * curMethod = "[n/a]";
+
+			switch (m_Method)
+			{
+			case EasySamplerSettings::ESM_Rectangle:
+				curMethod = "rectangle";
+				break;
+			case EasySamplerSettings::ESM_Trapezoid:
+				curMethod = "trapezoid";
+				break;
+			};
+
+			Tier0_Msg(
+				"%s method rectangle|trapezoid.\n"
+				"Current value: %s\n"
+				, arg0
+				, curMethod
+			);
+			return;
+		}
+		else if (0 == _stricmp("exposure", arg1))
+		{
+			if (3 == argC)
+			{
+				if (m_Protected)
+				{
+					Tier0_Warning("This setting is protected and can not be changed.\n");
+					return;
+				}
+
+				m_Exposure = atof(args->ArgV(2));
+				return;
+			}
+
+			Tier0_Msg(
+				"%s exposure <fValue>.\n"
+				"Current value: %f\n"
+				, arg0
+				, m_Exposure
+			);
+			return;
+		}
+		else if (0 == _stricmp("strength", arg1))
+		{
+			if (3 == argC)
+			{
+				if (m_Protected)
+				{
+					Tier0_Warning("This setting is protected and can not be changed.\n");
+					return;
+				}
+
+				m_FrameStrength = (float)atof(args->ArgV(2));
+				return;
+			}
+
+			Tier0_Msg(
+				"%s strength <fValue>.\n"
+				"Current value: %f\n"
+				, arg0
+				, m_FrameStrength
+			);
+			return;
+		}
+	}
+
+	Tier0_Msg(
+		"%s settings [...] - Output settings.\n"
+		"%s fps [...] - Output fps.\n"
+		"%s method [...] - Sampling method (default: trapezoid).\n"
+		"%s exposure [...] - Frame exposure (0.0 (0° shutter angle) - 1.0 (360° shutter angle), default: 1.0).\n"
+		"%s strength [...] - Frame strength (0.0 (max cross-frame blur) - 1.0 (no cross-frame blur), default: 1.0).\n"
+		, arg0
+		, arg0
+		, arg0
+		, arg0
 		, arg0
 	);
 }

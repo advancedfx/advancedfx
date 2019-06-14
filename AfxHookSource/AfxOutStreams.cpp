@@ -3,6 +3,7 @@
 #include "AfxOutStreams.h"
 #include "AfxWriteFileLimiter.h"
 #include "hlaeFolder.h"
+#include "AfxStreams.h"
 
 #include <shared/RawOutput.h>
 #include <shared/OpenExrOutput.h>
@@ -507,4 +508,131 @@ bool CAfxOutFFMPEGVideoStream::HandleOutAndErr()
 	}
 
 	return true;
+}
+
+// CAfxOutSamplingStream ///////////////////////////////////////////////////////
+
+CAfxOutSamplingStream::CAfxOutSamplingStream(const CAfxImageFormat & imageFormat, CAfxOutVideoStream * outVideoStream, float frameRate, EasySamplerSettings::Method method, double frameDuration, double exposure, float frameStrength)
+	: CAfxOutVideoStream(imageFormat)
+	, m_OutVideoStream(outVideoStream)
+	, m_Time(0.0)
+	, m_InputFrameDuration(frameRate ? 1.0 / frameRate : 0.0)
+{
+	if(m_OutVideoStream) m_OutVideoStream->AddRef();
+
+	unsigned int bytesPerPixel = 1;
+
+	switch (imageFormat.PixelFormat)
+	{
+	case CAfxImageFormat::PF_BGR:
+		m_EasySampler.Byte = new EasyByteSampler(EasySamplerSettings(
+			imageFormat.Width * 3,
+			imageFormat.Height,
+			method,
+			frameDuration,
+			m_Time,
+			exposure,
+			frameStrength
+		), (int)imageFormat.Pitch, this);
+		break;
+	case CAfxImageFormat::PF_BGRA:
+		m_EasySampler.Byte = new EasyByteSampler(EasySamplerSettings(
+			imageFormat.Width * 4,
+			imageFormat.Height,
+			method,
+			frameDuration,
+			m_Time,
+			exposure,
+			frameStrength
+		), (int)imageFormat.Pitch, this);
+		break;
+	case CAfxImageFormat::PF_A:
+		m_EasySampler.Byte = new EasyByteSampler(EasySamplerSettings(
+			imageFormat.Width * 1,
+			imageFormat.Height,
+			method,
+			frameDuration,
+			m_Time,
+			exposure,
+			frameStrength
+		), (int)imageFormat.Pitch, this);
+		break;
+	case CAfxImageFormat::PF_ZFloat:
+		m_EasySampler.Float = new EasyFloatSampler(EasySamplerSettings(
+			imageFormat.Width,
+			imageFormat.Height,
+			method,
+			frameDuration,
+			m_Time,
+			exposure,
+			frameStrength
+		), this);
+		break;
+	default:
+		Tier0_Warning("AFXERROR: CAfxOutSamplingStream::CAfxOutSamplingStream: Unspoported image format.");
+	}
+}
+
+CAfxOutSamplingStream::~CAfxOutSamplingStream()
+{
+	switch (m_ImageFormat.PixelFormat)
+	{
+	case CAfxImageFormat::PF_BGR:
+	case CAfxImageFormat::PF_BGRA:
+	case CAfxImageFormat::PF_A:
+		delete m_EasySampler.Byte;
+		break;
+	case CAfxImageFormat::PF_ZFloat:
+		delete m_EasySampler.Float;
+	};
+
+	if (m_OutVideoStream) m_OutVideoStream->Release();
+}
+
+bool CAfxOutSamplingStream::SupplyVideoData(const CAfxImageBuffer & buffer)
+{
+	if (nullptr == m_OutVideoStream) return false;
+
+	if (!(buffer.Format == m_ImageFormat))
+	{
+		Tier0_Warning("AFXERROR: CAfxOutSamplingStream::SupplyVideoData: Format mismatch.\n");
+		return false;
+	}
+
+	switch (m_ImageFormat.PixelFormat)
+	{
+	case CAfxImageFormat::PF_BGR:
+	case CAfxImageFormat::PF_BGRA:
+	case CAfxImageFormat::PF_A:
+		m_EasySampler.Byte->Sample((const unsigned char*)buffer.Buffer, m_Time);
+		break;
+	case CAfxImageFormat::PF_ZFloat:
+		m_EasySampler.Float->Sample((const float*)buffer.Buffer, m_Time);
+	};
+
+	m_Time += m_InputFrameDuration;
+
+	return true;
+}
+
+void CAfxOutSamplingStream::Print(unsigned char const * data)
+{
+	if (CAfxImageBuffer * buffer = g_AfxStreams.ImageBufferPool.AquireBuffer())
+	{
+		buffer->AutoRealloc(m_ImageFormat);
+		memcpy(buffer->Buffer, data, buffer->Format.Bytes);
+		m_OutVideoStream->SupplyVideoData(*buffer);
+		buffer->Release();
+	}
+}
+
+void CAfxOutSamplingStream::Print(float const * data)
+{
+	if (CAfxImageBuffer * buffer = g_AfxStreams.ImageBufferPool.AquireBuffer())
+	{
+		buffer->AutoRealloc(m_ImageFormat);
+		memcpy(buffer->Buffer, data, buffer->Format.Bytes);
+		m_OutVideoStream->SupplyVideoData(*buffer);
+		buffer->Release();
+	}
 }
