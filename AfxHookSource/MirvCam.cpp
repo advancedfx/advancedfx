@@ -5,6 +5,8 @@
 #include "WrpVEngineClient.h"
 #include "WrpConsole.h"
 
+#include "RenderView.h"
+
 #include <shared/AfxMath.h>
 
 
@@ -457,11 +459,18 @@ CON_COMMAND(mirv_cam, "Control camera source entity and offset.")
 			);
 			return;
 		}
+		else if (0 == _stricmp("order", arg1))
+		{
+			CSubWrpCommandArgs subArgs(args, 2);
+			g_Hook_VClient_RenderView.Console_Overrides(&subArgs);
+			return;
+		}
 	}
 
 	Tier0_Msg(
 		"mirv_cam source [...] - Control camera location.\n"
 		"mirv_cam fov [...] - Control camera fov.\n"
 		"mirv_cam offset [...] - Control camera offset (in local space).\n"
+		"mirv_cam order [...] - Control order of camera overrides.\n"
 	);
 }

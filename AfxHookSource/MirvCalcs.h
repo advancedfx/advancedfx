@@ -183,6 +183,7 @@ public:
 
 	IMirvCamCalc * NewCamCalc(char const * name, const char * camFileName, const char * startClientTime);
 	IMirvCamCalc * NewGameCalc(char const * name);
+	IMirvCamCalc * NewCurrentCalc(char const * name);
 
 	bool Console_CheckName(char const * name);
 	void Console_Remove(char const * name);

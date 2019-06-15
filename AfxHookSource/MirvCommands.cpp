@@ -2397,7 +2397,7 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 						g_AfxHookSourceInput.SetMouseSensitivity(value);
 						return;
 					}
-					Tier0_Msg("Value: %f", g_AfxHookSourceInput.GetMouseSensitivty());
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.GetMouseSensitivty());
 					return;
 				}
 				else
@@ -2409,7 +2409,7 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 						g_AfxHookSourceInput.SetKeyboardSensitivity(value);
 						return;
 					}
-					Tier0_Msg("Value: %f", g_AfxHookSourceInput.GetKeyboardSensitivty());
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.GetKeyboardSensitivty());
 					return;
 				}
 				else
@@ -2421,7 +2421,7 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 						g_AfxHookSourceInput.KeyboardForwardSpeed_set(value);
 						return;
 					}
-					Tier0_Msg("Value: %f", g_AfxHookSourceInput.KeyboardForwardSpeed_get());
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.KeyboardForwardSpeed_get());
 					return;
 				}
 				else
@@ -2433,7 +2433,7 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 						g_AfxHookSourceInput.KeyboardBackwardSpeed_set(value);
 						return;
 					}
-					Tier0_Msg("Value: %f", g_AfxHookSourceInput.KeyboardBackwardSpeed_get());
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.KeyboardBackwardSpeed_get());
 					return;
 				}
 				else
@@ -2445,7 +2445,7 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 						g_AfxHookSourceInput.KeyboardLeftSpeed_set(value);
 						return;
 					}
-					Tier0_Msg("Value: %f", g_AfxHookSourceInput.KeyboardLeftSpeed_get());
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.KeyboardLeftSpeed_get());
 					return;
 				}
 				else
@@ -2457,7 +2457,7 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 						g_AfxHookSourceInput.KeyboardRightSpeed_set(value);
 						return;
 					}
-					Tier0_Msg("Value: %f", g_AfxHookSourceInput.KeyboardRightSpeed_get());
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.KeyboardRightSpeed_get());
 					return;
 				}
 				else
@@ -2469,7 +2469,7 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 						g_AfxHookSourceInput.KeyboardUpSpeed_set(value);
 						return;
 					}
-					Tier0_Msg("Value: %f", g_AfxHookSourceInput.KeyboardUpSpeed_get());
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.KeyboardUpSpeed_get());
 					return;
 				}
 				else
@@ -2481,7 +2481,7 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 						g_AfxHookSourceInput.KeyboardDownSpeed_set(value);
 						return;
 					}
-					Tier0_Msg("Value: %f", g_AfxHookSourceInput.KeyboardDownSpeed_get());
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.KeyboardDownSpeed_get());
 					return;
 				}
 				else
@@ -2493,7 +2493,7 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 						g_AfxHookSourceInput.KeyboardPitchPositiveSpeed_set(value);
 						return;
 					}
-					Tier0_Msg("Value: %f", g_AfxHookSourceInput.KeyboardPitchPositiveSpeed_get());
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.KeyboardPitchPositiveSpeed_get());
 					return;
 				}
 				else
@@ -2505,7 +2505,7 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 						g_AfxHookSourceInput.KeyboardPitchNegativeSpeed_set(value);
 						return;
 					}
-					Tier0_Msg("Value: %f", g_AfxHookSourceInput.KeyboardPitchNegativeSpeed_get());
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.KeyboardPitchNegativeSpeed_get());
 					return;
 				}
 				else
@@ -2517,7 +2517,7 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 						g_AfxHookSourceInput.KeyboardYawPositiveSpeed_set(value);
 						return;
 					}
-					Tier0_Msg("Value: %f", g_AfxHookSourceInput.KeyboardYawPositiveSpeed_get());
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.KeyboardYawPositiveSpeed_get());
 					return;
 				}
 				else
@@ -2529,7 +2529,7 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 						g_AfxHookSourceInput.KeyboardYawNegativeSpeed_set(value);
 						return;
 					}
-					Tier0_Msg("Value: %f", g_AfxHookSourceInput.KeyboardYawNegativeSpeed_get());
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.KeyboardYawNegativeSpeed_get());
 					return;
 				}
 				else
@@ -2541,7 +2541,7 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 						g_AfxHookSourceInput.KeyboardRollPositiveSpeed_set(value);
 						return;
 					}
-					Tier0_Msg("Value: %f", g_AfxHookSourceInput.KeyboardRollPositiveSpeed_get());
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.KeyboardRollPositiveSpeed_get());
 					return;
 				}
 				else
@@ -2553,7 +2553,7 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 						g_AfxHookSourceInput.KeyboardRollNegativeSpeed_set(value);
 						return;
 					}
-					Tier0_Msg("Value: %f", g_AfxHookSourceInput.KeyboardRollNegativeSpeed_get());
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.KeyboardRollNegativeSpeed_get());
 					return;
 				}
 				else
@@ -2565,7 +2565,7 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 						g_AfxHookSourceInput.KeyboardFovPositiveSpeed_set(value);
 						return;
 					}
-					Tier0_Msg("Value: %f", g_AfxHookSourceInput.KeyboardFovPositiveSpeed_get());
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.KeyboardFovPositiveSpeed_get());
 					return;
 				}
 				else
@@ -2577,7 +2577,7 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 						g_AfxHookSourceInput.KeyboardFovNegativeSpeed_set(value);
 						return;
 					}
-					Tier0_Msg("Value: %f", g_AfxHookSourceInput.KeyboardFovNegativeSpeed_get());
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.KeyboardFovNegativeSpeed_get());
 					return;
 				}
 				else
@@ -2589,7 +2589,7 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 						g_AfxHookSourceInput.MouseYawSpeed_set(value);
 						return;
 					}
-					Tier0_Msg("Value: %f", g_AfxHookSourceInput.MouseYawSpeed_get());
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.MouseYawSpeed_get());
 					return;
 				}
 				else
@@ -2601,17 +2601,151 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 						g_AfxHookSourceInput.MousePitchSpeed_set(value);
 						return;
 					}
-					Tier0_Msg("Value: %f", g_AfxHookSourceInput.MousePitchSpeed_get());
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.MousePitchSpeed_get());
+					return;
+				}
+				else if(0 == _stricmp("mLeftSpeed", arg2))
+				{
+					if(4 <= argc)
+					{
+						double value = atof(args->ArgV(3));
+						g_AfxHookSourceInput.SetMouseLeftSpeed(value);
+						return;
+					}
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.GetMouseLeftSpeed());
+					return;
+				}
+				else if (0 == _stricmp("mRightSpeed", arg2))
+				{
+					if (4 <= argc)
+					{
+						double value = atof(args->ArgV(3));
+						g_AfxHookSourceInput.SetMouseRightSpeed(value);
+						return;
+					}
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.GetMouseRightSpeed());
+					return;
+				}
+				else if (0 == _stricmp("mForwardSpeed", arg2))
+				{
+					if (4 <= argc)
+					{
+						double value = atof(args->ArgV(3));
+						g_AfxHookSourceInput.SetMouseForwardSpeed(value);
+						return;
+					}
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.GetMouseForwardSpeed());
+					return;
+				}
+				else if (0 == _stricmp("mBackSpeed", arg2))
+				{
+					if (4 <= argc)
+					{
+						double value = atof(args->ArgV(3));
+						g_AfxHookSourceInput.SetMouseBackwardSpeed(value);
+						return;
+					}
+					Tier0_Msg("Value: %\nf", g_AfxHookSourceInput.GetMouseBackwardSpeed());
+					return;
+				}
+				else if (0 == _stricmp("mUpSpeed", arg2))
+				{
+					if (4 <= argc)
+					{
+						double value = atof(args->ArgV(3));
+						g_AfxHookSourceInput.SetMouseUpSpeed(value);
+						return;
+					}
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.GetMouseUpSpeed());
+					return;
+				}
+				else if (0 == _stricmp("mDownSpeed", arg2))
+				{
+					if (4 <= argc)
+					{
+						double value = atof(args->ArgV(3));
+						g_AfxHookSourceInput.SetMouseDownSpeed(value);
+						return;
+					}
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.GetMouseDownSpeed());
+					return;
+				}
+				else if (0 == _stricmp("mouseMoveSupport", arg2))
+				{
+					if (4 <= argc)
+					{
+						bool value = 0 != atoi(args->ArgV(3));
+						g_AfxHookSourceInput.SetEnableMouseMove(value);
+						return;
+					}
+					Tier0_Msg("Value: %i\n", g_AfxHookSourceInput.GetEnableMouseMove() ? 1 : 0);
+					return;
+				}
+				else if (0 == _stricmp("offsetMode", arg2))
+				{
+					if (4 <= argc)
+					{
+						const char * arg3 = args->ArgV(3);
+
+						if (0 == _stricmp("last", arg3))
+						{
+							g_AfxHookSourceInput.SetOffsetMode(AfxHookSourceInput::OffsetMode_Last);
+						}
+						else if (0 == _stricmp("ownLast", arg3))
+						{
+							g_AfxHookSourceInput.SetOffsetMode(AfxHookSourceInput::OffsetMode_OwnLast);
+						}
+						else if (0 == _stricmp("game", arg3))
+						{
+							g_AfxHookSourceInput.SetOffsetMode(AfxHookSourceInput::OffsetMode_Game);
+						}
+						else if (0 == _stricmp("current", arg3))
+						{
+							g_AfxHookSourceInput.SetOffsetMode(AfxHookSourceInput::OffsetMode_Current);
+						}
+						else
+						{
+							Tier0_Warning("AFXERROR: %s is not a valid offset mode.\n", arg3);
+						}
+
+						return;
+					}
+
+					const char * szOffsetMode = "[n/a]";
+
+					switch(g_AfxHookSourceInput.GetOffsetMode())
+					{
+					case AfxHookSourceInput::OffsetMode_Last:
+						szOffsetMode = "last";
+						break;
+					case AfxHookSourceInput::OffsetMode_OwnLast:
+						szOffsetMode = "ownLast";
+						break;
+					case AfxHookSourceInput::OffsetMode_Game:
+						szOffsetMode = "game";
+						break;
+					case AfxHookSourceInput::OffsetMode_Current:
+						szOffsetMode = "current";
+						break;
+					}
+
+					Tier0_Msg("Value: %s\n", szOffsetMode);
 					return;
 				}
 			}
 
 			Tier0_Msg(
 				"Usage:\n"
+				"mirv_input cfg mouseMoveSupport - Get Value.\n"
+				"mirv_input cfg mouseMoveSupport 0|1 - Disable / Enable mouse move support (use left / right mouse button).\n"
+				"mirv_input cfg offsetMode - Get Value.\n"
+				"mirv_input cfg offsetMode last|ownLast|game|current - Default: current, last = old method (last outputted), ownLast = as outputted by mirv_input, game = as outputted by game, current = as outputted by current overrides.\n"
 				"mirv_input cfg msens - Get mouse sensitiviy.\n"
 				"mirv_input cfg msens <dValue> - Set mouse sensitiviy.\n"
 				"mirv_input cfg ksens - Get keyboard sensitivity.\n"
 				"mirv_input cfg ksens <dValue> - Set keyboard sensitivity.\n"
+			);
+			Tier0_Msg(
 				"mirv_input cfg kForwardSpeed - Get value.\n"
 				"mirv_input cfg kForwardSpeed <dValue> - Set value.\n"
 				"mirv_input cfg kBackwardSpeed - Get value.\n"
@@ -2640,10 +2774,24 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 				"mirv_input cfg kFovPositiveSpeed <dValue> - Set value.\n"
 				"mirv_input cfg kFovNegativeSpeed - Get value.\n"
 				"mirv_input cfg kFovNegativeSpeed <dValue> - Set value.\n"
+			);
+			Tier0_Msg(
 				"mirv_input cfg mYawSpeed - Get value.\n"
 				"mirv_input cfg mYawSpeed <dValue> - Set value.\n"
 				"mirv_input cfg mPitchSpeed - Get value.\n"
 				"mirv_input cfg mPitchSpeed <dValue> - Set value.\n"
+				"mirv_input cfg mForwardSpeed - Get value.\n"
+				"mirv_input cfg mForwardSpeed <dValue> - Set value.\n"
+				"mirv_input cfg mBackwardSpeed - Get value.\n"
+				"mirv_input cfg mBackwardSpeed <dValue> - Set value.\n"
+				"mirv_input cfg mLeftSpeed - Get value.\n"
+				"mirv_input cfg mLeftSpeed <dValue> - Set value.\n"
+				"mirv_input cfg mRightSpeed - Get value.\n"
+				"mirv_input cfg mRightSpeed <dValue> - Set value.\n"
+				"mirv_input cfg mUpSpeed - Get value.\n"
+				"mirv_input cfg mUpSpeed <dValue> - Set value.\n"
+				"mirv_input cfg mDownSpeed - Get value.\n"
+				"mirv_input cfg mDownSpeed <dValue> - Set value.\n"
 			);
 			return;
 		}

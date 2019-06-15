@@ -1578,6 +1578,20 @@ LRESULT CALLBACK new_Afx_WindowProc(
 		if(g_AfxHookSourceInput.Supply_KeyEvent(AfxHookSourceInput::KS_UP,wParam, lParam))
 			return 0;
 		break;
+	case WM_LBUTTONDBLCLK:
+	case WM_LBUTTONDOWN:
+	case WM_LBUTTONUP:
+	case WM_MBUTTONDBLCLK:
+	case WM_MBUTTONDOWN:
+	case WM_MBUTTONUP:
+	case WM_RBUTTONDBLCLK:
+	case WM_RBUTTONDOWN:
+	case WM_RBUTTONUP:
+		if (g_AfxHookSourceInput.Supply_MouseEvent(uMsg, wParam, lParam))
+			return 0;
+		break;
+		break;
+		break;
 	case WM_INPUT:
 		{
 			HRAWINPUT hRawInput = (HRAWINPUT)lParam;

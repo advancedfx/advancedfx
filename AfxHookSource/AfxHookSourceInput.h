@@ -11,6 +11,14 @@ public:
 		KS_UP
 	};
 
+	enum OffsetMode
+	{
+		OffsetMode_Last,
+		OffsetMode_OwnLast,
+		OffsetMode_Game,
+		OffsetMode_Current
+	};
+
 	AfxHookSourceInput();
 
 	bool GetCamResetView(void);
@@ -79,13 +87,34 @@ public:
 	double MousePitchSpeed_get(void);
 	void MousePitchSpeed_set(double value);
 
+	bool GetEnableMouseMove() { return m_MMove; }
+	void SetEnableMouseMove(bool value) { m_MMove = value; }
+
+	double GetMouseUpSpeed() { return m_MouseUpSpeed; }
+	double GetMouseDownSpeed() { return m_MouseDownSpeed; }
+	double GetMouseLeftSpeed() { return m_MouseLeftSpeed;  }
+	double GetMouseRightSpeed() { return m_MouseRightSpeed;  }
+	double GetMouseForwardSpeed() { return m_MouseForwardSpeed; }
+	double GetMouseBackwardSpeed() { return m_MouseBackwardSpeed; }
+
+	void SetMouseUpSpeed(double value) { m_MouseUpSpeed = value; }
+	void SetMouseDownSpeed(double value) { m_MouseDownSpeed = value; }
+	void SetMouseLeftSpeed(double value) { m_MouseLeftSpeed = value;  }
+	void SetMouseRightSpeed(double value) { m_MouseRightSpeed = value; }
+	void SetMouseForwardSpeed(double value) { m_MouseForwardSpeed = value; }
+	void SetMouseBackwardSpeed(double value) { m_MouseBackwardSpeed = value; }
+
 	bool Supply_CharEvent(WPARAM wParam, LPARAM lParam);
 	bool Supply_KeyEvent(KeyState keyState, WPARAM wParam, LPARAM lParam);
+	bool Supply_MouseEvent(DWORD uMsg, WPARAM wParam, LPARAM lParam);
 	bool Supply_RawMouseMotion(int dX, int dY);
 	void Supply_GetCursorPos(LPPOINT lpPoint);
 	void Supply_SetCursorPos(int x, int y);
 	void Supply_MouseFrameEnd(void);
 	void Supply_Focus(bool hasFocus);
+
+	OffsetMode GetOffsetMode() { return m_OffsetMode; }
+	void SetOffsetMode(OffsetMode value) { m_OffsetMode = value; }
 
 private:
 	static const double m_CamSpeedFacMove;
@@ -112,6 +141,12 @@ private:
 	double m_KeyboardFovNegativeSpeed;
 	double m_MouseYawSpeed;
 	double m_MousePitchSpeed;
+	double m_MouseUpSpeed;
+	double m_MouseDownSpeed;
+	double m_MouseForwardSpeed;
+	double m_MouseBackwardSpeed;
+	double m_MouseLeftSpeed;
+	double m_MouseRightSpeed;
 
 	bool m_CamResetView;
 	double m_CamForward;
@@ -131,12 +166,19 @@ private:
 	double m_CamRoll;
 	double m_CamRollI;
 	double m_CamSpeed;
+	bool m_MMove = false;
+	bool m_MLDown;
+	bool m_MLWasDown = false;
+	bool m_MRDown;
+	bool m_MRWasDown = false;
 	bool m_CameraControlMode;
 	bool m_Focus;
 	bool m_IgnoreKeyUp;
 	bool m_IgnoreNextKey;
 	LONG m_LastCursorX;
 	LONG m_LastCursorY;
+
+	OffsetMode m_OffsetMode = OffsetMode_Last;
 
 	bool GetConsoleOpen(void);
 

@@ -6,6 +6,69 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.63.0</version>
+<time>2019-06-15T19:03Z</time>
+<changes>
+<change type="fixed">
+Fixed #176 mirv_calcs motionProfile2 bug: Use more correct rotation modulo.
+Also fixed the rotation modulo for mirv_pgl draw,
+this should not be a breaking change is most common cases,
+since the engine limits the angles itself already and that range should still have the same output.
+</change>
+<change type="added">
+Added mirv_calcs cam add current.
+</change>
+<change type="added">
+Added mirv_cam order - allows to change camera override order. 
+</change>
+<change type="added">
+Added mirv_cam order - allows to change camera override order. 
+</change>
+<change type="added">
+Added: mirv_input cfg mouseMoveSupport 0|1: If enabled(1) You can use left / right mouse button to move left / right or (forward / backward or up / down) in mirv_input camera mode. Default is off (0).
+</change>
+<change type="added">
+Added: mirv_input cfg offsetMode last|ownLast|game|current: Default: current, last - old method (last outputted), ownLast - as outputted by mirv_input, game - as outputted by game, current - as outputted by current overrides.
+</change>
+</changes>
+<comments>
+// Bonus config script:
+<br />
+mirv_input cfg ksens 1<br />
+mirv_input cfg msens 0.05<br />
+<br />
+mirv_calcs cam add current game<br />
+mirv_calcs vecAng add cam game game<br />
+mirv_calcs vecAng add value forward 1 0 0 0 0 0<br />
+mirv_calcs vecAng add offset gameForward game forward 0<br />
+mirv_calcs handle add value dummy 0<br />
+mirv_calcs vecAng add motionProfile2 gameSmooth game dummy<br />
+mirv_calcs vecAng edit gameSmooth limXVelo 1600<br />
+mirv_calcs vecAng edit gameSmooth limXAcel 200<br />
+mirv_calcs vecAng edit gameSmooth limYVelo 1600<br />
+mirv_calcs vecAng edit gameSmooth limYAcel 200<br />
+mirv_calcs vecAng edit gameSmooth limZVelo 1600<br />
+mirv_calcs vecAng edit gameSmooth limZAcel 200<br />
+mirv_calcs vecAng edit gameSmooth limRXVelo 360<br />
+mirv_calcs vecAng edit gameSmooth limRXAcel 360<br />
+mirv_calcs vecAng edit gameSmooth limRYVelo 360<br />
+mirv_calcs vecAng edit gameSmooth limRYAcel 360<br />
+mirv_calcs vecAng edit gameSmooth limRZVelo 360<br />
+mirv_calcs vecAng edit gameSmooth limRZAcel 360<br />
+<br />
+alias "afx_smooth_on" "mirv_cam order move input 0; mirv_cam source calcVecAng gameSmooth; mirv_input camera; mirv_input cfg offsetMode ownLast; mirv_input cfg mouseMoveSupport 1"<br />
+alias "afx_smooth_off" "mirv_input end; mirv_cam source calcVecAngClear; mirv_cam order default; mirv_input cfg offsetMode last; mirv_input cfg mouseMoveSupport 0"<br />
+<br />
+afx_smooth_on<br />
+<br />
+echo "enter afx_smooth_off to turn smooth off"<br />
+</comments>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.62.0</version>
 <time>2019-06-14T10:12Z</time>
 <changes>

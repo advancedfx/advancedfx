@@ -53,6 +53,14 @@ AfxHookSourceInput::AfxHookSourceInput()
 , m_FirstGetCursorPos(true)
 , m_LastCursorX(0)
 , m_LastCursorY(0)
+, m_MouseUpSpeed(320.0)
+, m_MouseDownSpeed(320.0)
+, m_MouseForwardSpeed(320.0)
+, m_MouseBackwardSpeed(320.0)
+, m_MouseLeftSpeed(320.0)
+, m_MouseRightSpeed(320.0)
+, m_MLDown(false)
+, m_MRDown(false)
 {
 }
 
@@ -434,6 +442,41 @@ bool AfxHookSourceInput::Supply_KeyEvent(KeyState keyState, WPARAM wParam, LPARA
 	return false;
 }
 
+bool  AfxHookSourceInput::Supply_MouseEvent(DWORD uMsg, WPARAM wParam, LPARAM lParam)
+{
+	if (!m_Focus)
+		return false;
+
+	if (GetConsoleOpen())
+	{
+		return false;
+	}
+
+	switch (uMsg)
+	{
+	case WM_NCLBUTTONDBLCLK:
+		return true;
+	case WM_LBUTTONDOWN:
+		m_MLDown = true;
+		return true;
+		break;
+	case WM_LBUTTONUP:
+		m_MLDown = false;
+		return true;
+	case WM_RBUTTONDBLCLK:
+		return true;
+	case WM_RBUTTONDOWN:
+		m_MRDown = true;
+		return true;
+		break;
+	case WM_RBUTTONUP:
+		m_MRDown = false;
+		return true;
+	}
+
+	return false;
+}
+
 bool AfxHookSourceInput::Supply_RawMouseMotion(int dX, int dY)
 {
 	if(!m_Focus)
@@ -444,8 +487,29 @@ bool AfxHookSourceInput::Supply_RawMouseMotion(int dX, int dY)
 
 	if(m_CameraControlMode)
 	{
-		m_CamYawM += m_MouseSens * m_MouseYawSpeed * -dX;
-		m_CamPitchM += m_MouseSens * m_MousePitchSpeed * dY;
+		if (!(m_MMove && (m_MLDown || m_MRDown)))
+		{
+			m_CamYawM += m_MouseSens * m_MouseYawSpeed * -dX;
+			m_CamPitchM += m_MouseSens * m_MousePitchSpeed * dY;
+		}
+		else
+		{
+			if (0 <= dX) m_CamLeftI += m_MouseSens * m_MouseRightSpeed * dX;
+			else m_CamLeft += m_MouseSens * m_MouseLeftSpeed * - dX;
+
+			if (m_MLDown)
+			{
+				m_MLWasDown = true;
+				if (0 <= dY) m_CamForwardI += m_MouseSens * m_MouseBackwardSpeed * dY;
+				else m_CamForward += m_MouseSens * m_MouseForwardSpeed * -dY;
+			}
+			if (m_MRDown)
+			{
+				m_MRWasDown = true;
+				if (0 <= dY) m_CamUpI += m_MouseSens * m_MouseDownSpeed * dY;
+				else m_CamUp += m_MouseSens * m_MouseUpSpeed * -dY;
+			}
+		}
 
 		return true;
 	}
@@ -516,6 +580,26 @@ void AfxHookSourceInput::Supply_MouseFrameEnd(void)
 		m_CamYawM = 0.0;
 		m_CamPitchM = 0.0;
 		m_FirstGetCursorPos = true;
+
+		if (m_MLWasDown || m_MRWasDown)
+		{
+			m_CamLeft = 0.0;
+			m_CamLeftI = 0.0;
+
+			if (m_MLWasDown)
+			{
+				m_MLWasDown = false;
+				m_CamForward = 0.0;
+				m_CamForwardI = 0.0;
+			}
+
+			if (m_MRWasDown)
+			{
+				m_MRWasDown = false;
+				m_CamUp = 0.0;
+				m_CamUpI = 0.0;
+			}
+		}
 	}
 }
 

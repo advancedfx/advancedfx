@@ -73,8 +73,18 @@ Hook_VClient_RenderView::Hook_VClient_RenderView()
 	LastCameraAngles[0] = 0.0;
 	LastCameraAngles[1] = 0.0;
 	LastCameraAngles[2] = 0.0;
-
 	LastCameraFov = 90.0;
+
+	CurrentCameraOrigin[0] = 0.0;
+	CurrentCameraOrigin[1] = 0.0;
+	CurrentCameraOrigin[2] = 0.0;
+	CurrentCameraAngles[0] = 0.0;
+	CurrentCameraAngles[1] = 0.0;
+	CurrentCameraAngles[2] = 0.0;
+	CurrentCameraFov = 90.0;
+
+
+	SetDefaultOverrides();
 }
 
 
@@ -225,7 +235,6 @@ void TrySetView(float Tx, float Ty, float Tz, float Rx, float Ry, float Rz, floa
 	}
 }
 
-
 void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, float &Rx, float &Ry, float &Rz, float &Fov)
 {
 	bool originOrAnglesOverriden = false;
@@ -240,133 +249,229 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 	GameCameraAngles[2] = Rz;
 	GameCameraFov = Fov;
 
-	if (g_MirvCam.ApplySource(Tx, Ty, Tz, Rz, Rx, Ry)) originOrAnglesOverriden = true;
-
-	if(m_CamPath.Enabled_get() && m_CamPath.CanEval())
+	for (int i = 0; i < 10; ++i)
 	{
-		// no extrapolation:
-		if(m_CamPath.GetLowerBound() <= curTime && curTime <= m_CamPath.GetUpperBound())
+		CurrentCameraOrigin[0] = Tx;
+		CurrentCameraOrigin[1] = Ty;
+		CurrentCameraOrigin[2] = Tz;
+		CurrentCameraAngles[0] = Rx;
+		CurrentCameraAngles[1] = Ry;
+		CurrentCameraAngles[2] = Rz;
+		CurrentCameraFov = Fov;
+
+		switch (m_Overrides[i])
 		{
-			CamPathValue val = m_CamPath.Eval( curTime );
-			QEulerAngles ang = val.R.ToQREulerAngles().ToQEulerAngles();
+		case Override_CamSource:
+			if (g_MirvCam.ApplySource(Tx, Ty, Tz, Rz, Rx, Ry)) originOrAnglesOverriden = true;
+			break;
 
-			//Tier0_Msg("================",curTime);
-			//Tier0_Msg("currenTime = %f",curTime);
-			//Tier0_Msg("vCp = %f %f %f\n", val.X, val.Y, val.Z);
+		case Override_Campath:
+			if (m_CamPath.Enabled_get() && m_CamPath.CanEval())
+			{
+				// no extrapolation:
+				if (m_CamPath.GetLowerBound() <= curTime && curTime <= m_CamPath.GetUpperBound())
+				{
+					CamPathValue val = m_CamPath.Eval(curTime);
+					QEulerAngles ang = val.R.ToQREulerAngles().ToQEulerAngles();
 
-			originOrAnglesOverriden = true;
+					//Tier0_Msg("================",curTime);
+					//Tier0_Msg("currenTime = %f",curTime);
+					//Tier0_Msg("vCp = %f %f %f\n", val.X, val.Y, val.Z);
 
-			Tx = (float)val.X;
-			Ty = (float)val.Y;
-			Tz = (float)val.Z;
+					originOrAnglesOverriden = true;
 
-			Rx = (float)ang.Pitch;
-			Ry = (float)ang.Yaw;
-			Rz = (float)ang.Roll;
+					Tx = (float)val.X;
+					Ty = (float)val.Y;
+					Tz = (float)val.Z;
 
-			Fov = (float)val.Fov;
-		}
-	}
+					Rx = (float)ang.Pitch;
+					Ry = (float)ang.Yaw;
+					Rz = (float)ang.Roll;
 
-	if(m_Import) {
-		double Tf[6];
+					Fov = (float)val.Fov;
+				}
+			}
+			break;
 
-		if(g_BvhImport.GetCamPosition(
-			curTime -m_ImportBaseTime,
-			Tf
-		)) {
-			originOrAnglesOverriden = true;
+		case Override_Bvh:
+			if (m_Import)
+			{
+				double Tf[6];
 
-			Ty = (float)(-Tf[0]);
-			Tz = (float)(+Tf[1]);
-			Tx = (float)(-Tf[2]);
-			Rz = (float)(-Tf[3]);
-			Rx = (float)(-Tf[4]);
-			Ry = (float)(+Tf[5]);
-		}
-	}
+				if (g_BvhImport.GetCamPosition(
+					curTime - m_ImportBaseTime,
+					Tf
+				)) {
+					originOrAnglesOverriden = true;
 
-	if (m_CamImport)
-	{
-		CamIO::CamData camData;
+					Ty = (float)(-Tf[0]);
+					Tz = (float)(+Tf[1]);
+					Tx = (float)(-Tf[2]);
+					Rz = (float)(-Tf[3]);
+					Rx = (float)(-Tf[4]);
+					Ry = (float)(+Tf[5]);
+				}
+			}
+			break;
 
-		if (m_CamImport->GetCamData(curTime, LastWidth, LastHeight, camData))
-		{
-			originOrAnglesOverriden = true;
+		case Override_Camio:
+			if (m_CamImport)
+			{
+				CamIO::CamData camData;
 
-			Tx = (float)camData.XPosition;
-			Ty = (float)camData.YPosition;
-			Tz = (float)camData.ZPosition;
-			Rx = (float)camData.YRotation;
-			Ry = (float)camData.ZRotation;
-			Rz = (float)camData.XRotation;
-			Fov = (float)camData.Fov;
-		}
-	}
+				if (m_CamImport->GetCamData(curTime, LastWidth, LastHeight, camData))
+				{
+					originOrAnglesOverriden = true;
 
-	if(m_FovOverride && (!handleZoomEnabled || handleZoomMinUnzoomedFov <= Fov)) Fov = (float)m_FovValue;
+					Tx = (float)camData.XPosition;
+					Ty = (float)camData.YPosition;
+					Tz = (float)camData.ZPosition;
+					Rx = (float)camData.YRotation;
+					Ry = (float)camData.ZRotation;
+					Rz = (float)camData.XRotation;
+					Fov = (float)camData.Fov;
+				}
+			}
+			break;
 
-	if(g_AfxHookSourceInput.GetCameraControlMode() && m_Globals)
-	{
-		originOrAnglesOverriden = true;
+		case Override_Fov:
+			if (m_FovOverride && (!handleZoomEnabled || handleZoomMinUnzoomedFov <= Fov)) Fov = (float)m_FovValue;
+			break;
 
-		double dT = m_Globals->absoluteframetime_get();
-		double dForward = dT * g_AfxHookSourceInput.GetCamDForward();
-		double dLeft = dT * g_AfxHookSourceInput.GetCamDLeft();
-		double dUp = dT * g_AfxHookSourceInput.GetCamDUp();
-		double dPitch = dT * g_AfxHookSourceInput.GetCamDPitch();
-		double dRoll = dT * g_AfxHookSourceInput.GetCamDRoll();
-		double dYaw = dT * g_AfxHookSourceInput.GetCamDYaw();
-		double dFov = dT * g_AfxHookSourceInput.GetCamDFov();
-		double forward[3], right[3], up[3];
+		case Override_Input:
+			if (g_AfxHookSourceInput.GetCameraControlMode() && m_Globals)
+			{
+				originOrAnglesOverriden = true;
 
-		Rx = (float)(LastCameraAngles[0] +dPitch);
-		Ry = (float)(LastCameraAngles[1] +dYaw);
-		Rz = (float)(LastCameraAngles[2] +dRoll);
-		Fov = (float)(LastCameraFov +dFov);
+				if (!m_InputOn)
+				{
+					m_InputOn = true;
 
-		if(g_AfxHookSourceInput.GetCamResetView())
-		{
-			Rx = 0;
-			Ry = 0;
-			Rz = 0;
-			Fov = 90.0;
-		}
+					InputCameraOrigin[0] = LastCameraOrigin[0];
+					InputCameraOrigin[1] = LastCameraOrigin[1];
+					InputCameraOrigin[2] = LastCameraOrigin[2];
+					InputCameraAngles[0] = LastCameraAngles[0];
+					InputCameraAngles[1] = LastCameraAngles[1];
+					InputCameraAngles[2] = LastCameraAngles[2];
+					InputCameraFov = LastCameraFov;
+				}
 
-		MakeVectors(Rz, Rx, Ry, forward, right, up);
+				switch (g_AfxHookSourceInput.GetOffsetMode())
+				{
+				case AfxHookSourceInput::OffsetMode_Last:
+					InputCameraOrigin[0] = LastCameraOrigin[0];
+					InputCameraOrigin[1] = LastCameraOrigin[1];
+					InputCameraOrigin[2] = LastCameraOrigin[2];
+					InputCameraAngles[0] = LastCameraAngles[0];
+					InputCameraAngles[1] = LastCameraAngles[1];
+					InputCameraAngles[2] = LastCameraAngles[2];
+					InputCameraFov = LastCameraFov;
+					break;
+				case AfxHookSourceInput::OffsetMode_Game:
+					InputCameraOrigin[0] = GameCameraOrigin[0];
+					InputCameraOrigin[1] = GameCameraOrigin[1];
+					InputCameraOrigin[2] = GameCameraOrigin[2];
+					InputCameraAngles[0] = GameCameraAngles[0];
+					InputCameraAngles[1] = GameCameraAngles[1];
+					InputCameraAngles[2] = GameCameraAngles[2];
+					InputCameraFov = GameCameraFov;
+					break;
+				case AfxHookSourceInput::OffsetMode_Current:
+					InputCameraOrigin[0] = Tx;
+					InputCameraOrigin[1] = Ty;
+					InputCameraOrigin[2] = Tz;
+					InputCameraAngles[0] = Rx;
+					InputCameraAngles[1] = Ry;
+					InputCameraAngles[2] = Rz;
+					InputCameraFov = Fov;
+					break;
+				}
 
-		Tx = (float)(LastCameraOrigin[0] + dForward*forward[0] -dLeft*right[0] +dUp*up[0]);
-		Ty = (float)(LastCameraOrigin[1] + dForward*forward[1] -dLeft*right[1] +dUp*up[1]);
-		Tz = (float)(LastCameraOrigin[2] + dForward*forward[2] -dLeft*right[2] +dUp*up[2]);
-	}
+				double dT = m_Globals->absoluteframetime_get();
+				double dForward = dT * g_AfxHookSourceInput.GetCamDForward();
+				double dLeft = dT * g_AfxHookSourceInput.GetCamDLeft();
+				double dUp = dT * g_AfxHookSourceInput.GetCamDUp();
+				double dPitch = dT * g_AfxHookSourceInput.GetCamDPitch();
+				double dRoll = dT * g_AfxHookSourceInput.GetCamDRoll();
+				double dYaw = dT * g_AfxHookSourceInput.GetCamDYaw();
+				double dFov = dT * g_AfxHookSourceInput.GetCamDFov();
+				double forward[3], right[3], up[3];
 
-	// limit fov to sane values:
-	if(Fov<1) Fov = 1;
-	else if(Fov>179) Fov = 179;
+				Rx = (float)(InputCameraAngles[0] + dPitch);
+				Ry = (float)(InputCameraAngles[1] + dYaw);
+				Rz = (float)(InputCameraAngles[2] + dRoll);
+				Fov = (float)(InputCameraFov + dFov);
 
-	if(m_Globals)
-	{
-		double dRx = Rx;
-		double dRy = Ry;
-		double dRz = Rz;
+				// limit fov to sane values:
+				if (Fov < 1) Fov = 1;
+				else if (Fov > 179) Fov = 179;
 
-		if(g_Aiming.Aim(m_Globals->absoluteframetime_get(), Vector3(Tx, Ty, Tz), dRx, dRy, dRz))
-		{
-			originOrAnglesOverriden = true;
-			
-			Rx = (float)dRx;
-			Ry = (float)dRy;
-			Rz = (float)dRz;
-		}
-	}
+				if (g_AfxHookSourceInput.GetCamResetView())
+				{
+					Rx = 0;
+					Ry = 0;
+					Rz = 0;
+					Fov = 90.0;
+				}
 
-	if (g_MirvCam.ApplyOffset(Tx, Ty, Tz, Rz, Rx, Ry)) originOrAnglesOverriden = true;
+				MakeVectors(Rz, Rx, Ry, forward, right, up);
 
-	g_MirvCam.ApplyFov(Fov);
+				Tx = (float)(InputCameraOrigin[0] + dForward * forward[0] - dLeft * right[0] + dUp * up[0]);
+				Ty = (float)(InputCameraOrigin[1] + dForward * forward[1] - dLeft * right[1] + dUp * up[1]);
+				Tz = (float)(InputCameraOrigin[2] + dForward * forward[2] - dLeft * right[2] + dUp * up[2]);
 
+				InputCameraOrigin[0] = Tx;
+				InputCameraOrigin[1] = Ty;
+				InputCameraOrigin[2] = Tz;
+				InputCameraAngles[0] = Rx;
+				InputCameraAngles[1] = Ry;
+				InputCameraAngles[2] = Rz;
+
+				InputCameraFov = Fov;
+			}
+			else
+			{
+				m_InputOn = false;
+			}
+			break;
+
+		case Override_Aim:
+			if (m_Globals)
+			{
+				double dRx = Rx;
+				double dRy = Ry;
+				double dRz = Rz;
+
+				if (g_Aiming.Aim(m_Globals->absoluteframetime_get(), Vector3(Tx, Ty, Tz), dRx, dRy, dRz))
+				{
+					originOrAnglesOverriden = true;
+
+					Rx = (float)dRx;
+					Ry = (float)dRy;
+					Rz = (float)dRz;
+				}
+			}
+			break;
+
+		case Override_CamOffset:
+			if (g_MirvCam.ApplyOffset(Tx, Ty, Tz, Rz, Rx, Ry)) originOrAnglesOverriden = true;
+			break;
+
+		case Override_CamFov:
+			g_MirvCam.ApplyFov(Fov);
+			break;
+
+		case Override_Interop:
 #ifdef AFX_INTEROP
-	if(AfxInterop::OnViewOverride(Tx, Ty, Tz, Rx, Ry, Rz, Fov)) originOrAnglesOverriden = true;
+			if (AfxInterop::OnViewOverride(Tx, Ty, Tz, Rx, Ry, Rz, Fov)) originOrAnglesOverriden = true;
 #endif
+			break;
+		}
+
+		// limit fov to sane values:
+		if (Fov < 1) Fov = 1;
+		else if (Fov > 179) Fov = 179;
+	}
 	
 	static bool viewOverriding = false;
 
@@ -551,5 +656,166 @@ void Hook_VClient_RenderView::Console_CamIO(IWrpCommandArgs * args)
 		"%s import [...] - Controls import of new camera motion data.\n"
 		, cmd0
 		, cmd0
+	);
+}
+
+void Hook_VClient_RenderView::SetDefaultOverrides()
+{
+	m_Overrides[0] = Override_CamSource;
+	m_Overrides[1] = Override_Campath;
+	m_Overrides[2] = Override_Bvh;
+	m_Overrides[3] = Override_Camio;
+	m_Overrides[4] = Override_Fov;
+	m_Overrides[5] = Override_Input;
+	m_Overrides[6] = Override_Aim;
+	m_Overrides[7] = Override_CamOffset;
+	m_Overrides[8] = Override_CamFov;
+	m_Overrides[9] = Override_Interop;
+}
+
+bool Hook_VClient_RenderView::OverrideFromString(const char * value, Override & outOverride)
+{
+	if (0 == _stricmp("camSource", value)) {
+		outOverride = Override_CamSource;
+		return true;
+	}
+	if (0 == _stricmp("camPath", value)) {
+		outOverride = Override_Campath;
+		return true;
+	}
+	if (0 == _stricmp("bvh", value)) {
+		outOverride = Override_Bvh;
+		return true;
+	}
+	if (0 == _stricmp("camIo", value)) {
+		outOverride = Override_Camio;
+		return true;
+	}
+	if (0 == _stricmp("fov", value)) {
+		outOverride = Override_Fov;
+		return true;
+	}
+	if (0 == _stricmp("input", value)) {
+		outOverride = Override_Input;
+		return true;
+	}
+	if (0 == _stricmp("aim", value)) {
+		outOverride = Override_Aim;
+		return true;
+	}
+	if (0 == _stricmp("camOffset", value)) {
+		outOverride = Override_CamOffset;
+		return true;
+	}
+	if (0 == _stricmp("camFov", value)) {
+		outOverride = Override_CamFov;
+		return true;
+	}
+	if (0 == _stricmp("interop", value)) {
+		outOverride = Override_Interop;
+		return true;
+	}
+
+	return false;
+}
+
+void Hook_VClient_RenderView::Console_Overrides(IWrpCommandArgs * args)
+{
+	int argC = args->ArgC();
+	const char * arg0 = args->ArgV(0);
+
+	if (2 <= argC)
+	{
+		const char * arg1 = args->ArgV(1);
+
+		if (0 == _stricmp("default", arg1))
+		{
+			SetDefaultOverrides();
+			return;
+		}
+		else if (0 == _stricmp("print", arg1))
+		{
+			const char * text[10] = {
+				"camSource (of mirv_cam)"
+				, "camPath"
+				, "bvh"
+				, "camIo"
+				, "fov (mirv_fov)"
+				, "input (mirv_input)"
+				, "aim (mirv_aim)"
+				, "camOffset (of mirv_cam)"
+				, "camFov (of mirv_cam)"
+				, "interop (afx_interop)"
+			};
+
+			for (int i = 0; i < 10; ++i)
+			{
+				int value = m_Overrides[i];
+
+				if (0 <= value && value < 10)
+				{
+					Tier0_Msg("%i: %s\n", i, text[m_Overrides[i]]);
+				}
+				else Tier0_Msg("%i: [n/a]\n", i);
+			}
+			return;
+		}
+		else if (0 == _stricmp("move", arg1) && 4 == argC)
+		{
+			Override overrideVal;
+
+			if (!OverrideFromString(args->ArgV(2), overrideVal))
+			{
+				Tier0_Warning("AFXERROR: %s is not a valid overide name.\n", args->ArgV(2));
+				return;
+			}
+
+			int pos = atoi(args->ArgV(3));
+
+			if (pos < 0) pos = 0;
+			else if (9 < pos) pos = 9;
+
+			if (m_Overrides[pos] != overrideVal)
+			{
+				int orgPos;
+
+				for (int i = 0; i < 10; ++i)
+				{
+					if (m_Overrides[i] == overrideVal)
+					{
+						orgPos = i;
+						break;
+					}
+				}
+
+				if (pos < orgPos)
+				{
+					for (int i = orgPos; i > pos; --i)
+					{
+						m_Overrides[i] = m_Overrides[i - 1];
+					}
+				}
+				else // if (pos > orgPos)
+				{
+					for (int i = orgPos; i < pos; ++i)
+					{
+						m_Overrides[i] = m_Overrides[i + 1];
+					}
+				}
+
+				m_Overrides[pos] = overrideVal;
+			}
+
+			return;
+		}
+	}
+
+	Tier0_Msg(
+		"%s default - Restore default override order.\n"
+		"%s print - Print current override order.\n"
+		"%s move <sOverrideName> <iPos> - Move override <sOverrideName> to position <iPos>.\n"
+		, arg0
+		, arg0
+		, arg0
 	);
 }

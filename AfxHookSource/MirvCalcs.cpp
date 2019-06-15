@@ -2664,6 +2664,49 @@ private:
 
 };
 
+
+class CMirvCamCurrentCalc : public CMirvCamCalc
+{
+public:
+	CMirvCamCurrentCalc(char const * name)
+		: CMirvCamCalc(name)
+	{
+	}
+
+	virtual void Console_Print(void)
+	{
+		CMirvCamCalc::Console_Print();
+
+		Tier0_Msg(" type=current");
+	}
+
+	virtual void Console_Edit(IWrpCommandArgs * args)
+	{
+		CMirvCamCalc::Console_Edit(args);
+	}
+
+	virtual bool CalcCam(SOURCESDK::Vector & outVector, SOURCESDK::QAngle & outAngles, float & outFov)
+	{
+		outVector.x = (float)g_Hook_VClient_RenderView.CurrentCameraOrigin[0];
+		outVector.y = (float)g_Hook_VClient_RenderView.CurrentCameraOrigin[1];
+		outVector.z = (float)g_Hook_VClient_RenderView.CurrentCameraOrigin[2];
+		outAngles.x = (float)g_Hook_VClient_RenderView.CurrentCameraAngles[0];
+		outAngles.y = (float)g_Hook_VClient_RenderView.CurrentCameraAngles[1];
+		outAngles.z = (float)g_Hook_VClient_RenderView.CurrentCameraAngles[2];
+		outFov = (float)g_Hook_VClient_RenderView.CurrentCameraFov;
+
+		return true;
+	}
+
+protected:
+	virtual ~CMirvCamCurrentCalc()
+	{
+	}
+
+private:
+
+};
+
 class CMirvVecAngCamCalc : public CMirvVecAngCalc
 {
 public:
@@ -3579,6 +3622,24 @@ IMirvCamCalc * CMirvCamCalcs::NewGameCalc(char const * name)
 		return 0;
 
 	IMirvCamCalc * result = new CMirvCamGameCalc(name);
+
+	if (name)
+	{
+		result->AddRef();
+
+		m_Calcs.push_back(result);
+	}
+
+	return result;
+}
+
+
+IMirvCamCalc * CMirvCamCalcs::NewCurrentCalc(char const * name)
+{
+	if (name && !Console_CheckName(name))
+		return 0;
+
+	IMirvCamCalc * result = new CMirvCamCurrentCalc(name);
 
 	if (name)
 	{
@@ -4591,11 +4652,19 @@ void mirv_calcs_cam(IWrpCommandArgs * args)
 
 					return;
 				}
+				else if (0 == _stricmp("current", arg2))
+				{
+					g_MirvCamCalcs.NewCurrentCalc(args->ArgV(3));
+
+					return;
+				}
 			}
 
 			Tier0_Msg(
 				"%s add cam <sName> <sfilePath> <fStartTime>|current - Adds an mirv_camio file as calc.\n"
 				"%s add game <sName> - Current game camera.\n"
+				"%s add current <sName> - Current camera (depends on mirv_cam order and overrides).\n"
+				, arg0
 				, arg0
 				, arg0
 			);
