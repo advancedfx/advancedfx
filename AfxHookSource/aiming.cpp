@@ -157,9 +157,9 @@ bool Aiming::Aim(double deltaT, Vector3 const camOrigin, double & yPitch, double
 
 			// Force reaim angles to be in [-180°, 180°)
 
-			reaimYPitch = fmod(reaimYPitch + 180.0, 360.0) -180.0;
-			reaimZYaw = fmod(reaimZYaw + 180.0, 360.0) -180.0;
-			reaimXRoll = fmod(reaimXRoll + 180.0, 360.0) -180.0;
+			reaimYPitch = AngleModDeg(reaimYPitch);
+			reaimZYaw = AngleModDeg(reaimZYaw);
+			reaimXRoll = AngleModDeg(reaimXRoll);
 
 			m_Deactivating = Active || abs(reaimYPitch) > AFX_MATH_EPS || abs(reaimZYaw) > AFX_MATH_EPS || abs(reaimXRoll) > AFX_MATH_EPS;
 
@@ -189,9 +189,9 @@ bool Aiming::Aim(double deltaT, Vector3 const camOrigin, double & yPitch, double
 
 	// Force remembered angels to be in [-180°, 180°)
 
-	LastYPitch = fmod(yPitch +180.0, 360.0) -180.0;
-	LastZYaw = fmod(zYaw +180.0, 360.0) -180.0;
-	LastXRoll = fmod(xRoll +180.0, 360.0) -180.0;
+	LastYPitch = AngleModDeg(yPitch);
+	LastZYaw = AngleModDeg(zYaw);
+	LastXRoll = AngleModDeg(xRoll);
 
 	return camRotationChanged;
 }

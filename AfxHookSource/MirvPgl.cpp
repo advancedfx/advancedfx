@@ -18,6 +18,8 @@
 #include "AfxShaders.h"
 #include "csgo_GameEvents.h"
 
+#include <shared/AfxMath.h>
+
 #include <math.h>
 
 #include <string>
@@ -614,9 +616,9 @@ namespace MirvPgl
 				Pack(functor.m_CamData.XPosition, -16384, 16384 + FLT_EPSILON, 22, 32, data);
 				Pack(functor.m_CamData.YPosition, -16384, 16384 + FLT_EPSILON, 22, 54, data);
 				Pack(functor.m_CamData.ZPosition, -16384, 16384 + FLT_EPSILON, 22, 76, data);
-				Pack(fmod(functor.m_CamData.XRotation +180.0f, 360.0f) - 180.0f, -180, 180, 16, 98, data);
-				Pack(fmod(functor.m_CamData.YRotation + 180.0f, 360.0f) - 180.0f, -180, 180, 16, 114, data);
-				Pack(fmod(functor.m_CamData.ZRotation + 180.0f, 360.0f) - 180.0f, -180, 180, 16, 130, data);
+				Pack((float)Afx::Math::AngleModDeg(functor.m_CamData.XRotation), -180, 180, 16, 98, data);
+				Pack((float)Afx::Math::AngleModDeg(functor.m_CamData.YRotation), -180, 180, 16, 114, data);
+				Pack((float)Afx::Math::AngleModDeg(functor.m_CamData.ZRotation), -180, 180, 16, 130, data);
 				Pack(functor.m_CamData.Fov, 0, 180, 14, 146, data);
 
 				size_t vertex = 0;

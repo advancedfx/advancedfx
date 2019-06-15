@@ -26,10 +26,13 @@ CMirvFovCalcs g_MirvFovCalcs;
 CMirvBoolCalcs g_MirvBoolCalcs;
 CMirvIntCalcs g_MirvIntCalcs;
 
-void CalcSmooth(double deltaT, double targetPos, double & lastPos, double & lastVel, double LimitVelocity, double LimitAcceleration)
+void CalcDeltaSmooth(double deltaT, double targetDeltaPos, double & resultDeltaPos, double & lastVel, double LimitVelocity, double LimitAcceleration)
 {
 	if (deltaT <= 0)
+	{
+		resultDeltaPos = 0;
 		return;
+	}
 
 	// What we would like to have ideally is this:
 	// https://www.physicsforums.com/threads/3rd-order-motion-profile-programming-sinusoidal.868148/
@@ -130,7 +133,7 @@ void CalcSmooth(double deltaT, double targetPos, double & lastPos, double & last
 
 			phaseT = std::min(phaseT, deltaT);
 
-			lastPos += lastVel * phaseT - LimitAcceleration / 2.0 * phaseT * phaseT;
+			resultDeltaPos = lastVel * phaseT - LimitAcceleration / 2.0 * phaseT * phaseT;
 			lastVel += -LimitAcceleration * phaseT;
 			deltaT -= phaseT;
 		}
@@ -151,7 +154,7 @@ void CalcSmooth(double deltaT, double targetPos, double & lastPos, double & last
 
 				phaseT = std::min(phaseT, deltaT);
 
-				lastPos += lastVel * phaseT + LimitAcceleration / 2.0 * phaseT * phaseT;
+				resultDeltaPos = lastVel * phaseT + LimitAcceleration / 2.0 * phaseT * phaseT;
 				lastVel += +LimitAcceleration * phaseT;
 				deltaT -= phaseT;
 			}
@@ -174,16 +177,14 @@ void CalcSmooth(double deltaT, double targetPos, double & lastPos, double & last
 				// It follows:
 				// phase3T_1 = lastVel / (dir * limitAcceleration)
 
-				double deltaPos = targetPos - lastPos;
-
-				double dir = 0 < lastVel ? 1 : (0 > lastVel ? -1 : (0 <= deltaPos ? 1 : -1));
+				double dir = 0 < lastVel ? 1 : (0 > lastVel ? -1 : (0 <= targetDeltaPos ? 1 : -1));
 				phase3T = lastVel / (dir * LimitAcceleration);
 
-				double resultDeltaPos = lastVel * phase3T - dir * LimitAcceleration / 2.0 * phase3T * phase3T;
+				resultDeltaPos = lastVel * phase3T - dir * LimitAcceleration / 2.0 * phase3T * phase3T;
 
 				if (
-					0 < dir && 0 < deltaPos - resultDeltaPos
-					|| 0 > dir && 0 > deltaPos - resultDeltaPos
+					0 < dir && 0 < targetDeltaPos - resultDeltaPos
+					|| 0 > dir && 0 > targetDeltaPos - resultDeltaPos
 					)
 				{
 					// Solving Step 2 (only if we didn't (overshoot or hit) in Step 1):
@@ -233,7 +234,7 @@ void CalcSmooth(double deltaT, double targetPos, double & lastPos, double & last
 
 					double phase1T_2d1 =
 						0.5 * ((-temp1)
-							+ sqrt(temp1*temp1 - 4 * (-deltaPos + lastVel * phase3T - dir * LimitAcceleration / 2.0 * phase3T*phase3T) / (dir * LimitAcceleration)));
+							+ sqrt(temp1*temp1 - 4 * (-targetDeltaPos + lastVel * phase3T - dir * LimitAcceleration / 2.0 * phase3T*phase3T) / (dir * LimitAcceleration)));
 
 					double phase1T_2d2 = (dir * LimitVelocity - lastVel) / (dir * LimitAcceleration);
 
@@ -244,8 +245,8 @@ void CalcSmooth(double deltaT, double targetPos, double & lastPos, double & last
 						+ (lastVel + dir * LimitAcceleration * phase1T) * phase3T - dir * LimitAcceleration / 2.0 * phase3T*phase3T;
 
 					if (
-						0 < dir && 0 < deltaPos - resultDeltaPos
-						|| 0 > dir && 0 > deltaPos - resultDeltaPos
+						0 < dir && 0 < targetDeltaPos - resultDeltaPos
+						|| 0 > dir && 0 > targetDeltaPos - resultDeltaPos
 						)
 					{
 						// Solving Step 3 (only if we didn't (overshoot or hit) in Step 2):
@@ -264,7 +265,7 @@ void CalcSmooth(double deltaT, double targetPos, double & lastPos, double & last
 						double temp2 = lastVel + dir * LimitAcceleration * phase1T;
 
 						if (temp2)
-							phase2T = (deltaPos - lastVel * phase1T - dir * LimitAcceleration / 2.0 * phase1T*phase1T
+							phase2T = (targetDeltaPos - lastVel * phase1T - dir * LimitAcceleration / 2.0 * phase1T*phase1T
 								- (temp2)* phase3T + dir * LimitAcceleration / 2.0 * phase3T*phase3T)
 							/ (temp2);
 					}
@@ -276,18 +277,29 @@ void CalcSmooth(double deltaT, double targetPos, double & lastPos, double & last
 				phase2T = std::max(std::min(phase1T + phase2T, deltaT) - phase1T, 0.0);
 				phase1T = std::min(phase1T, deltaT);
 
-
-				lastPos += lastVel * phase1T + dir * LimitAcceleration / 2.0 * phase1T * phase1T
+				resultDeltaPos = lastVel * phase1T + dir * LimitAcceleration / 2.0 * phase1T * phase1T
 					+ (lastVel + dir * LimitAcceleration * phase1T) * phase2T
 					+ (lastVel + dir * LimitAcceleration * phase1T) * phase3T - dir * LimitAcceleration / 2.0 * phase3T*phase3T;
 				lastVel += +dir * LimitAcceleration * phase1T - dir * LimitAcceleration * phase3T;
 				deltaT -= phase1T + phase2T + phase3T;
 
 				// If we can consider to be finished, then we use-up the time completely:
-				if (abs(targetPos - lastPos) <= AFX_MATH_EPS && abs(0 - lastVel) <= AFX_MATH_EPS)
+				if (abs(targetDeltaPos - resultDeltaPos) <= AFX_MATH_EPS && abs(0 - lastVel) <= AFX_MATH_EPS)
+				{
 					deltaT = 0;
+					resultDeltaPos = targetDeltaPos;
+				}
 			}
 	}
+}
+
+void CalcSmooth(double deltaT, double targetPos, double & lastPos, double & lastVel, double LimitVelocity, double LimitAcceleration)
+{
+	double deltaPos;
+
+	CalcDeltaSmooth(deltaT, targetPos - lastPos, deltaPos, lastVel, LimitVelocity, LimitAcceleration);
+
+	lastPos += deltaPos;
 }
 
 SOURCESDK::vec_t DotProduct(const SOURCESDK::vec_t * v1, const SOURCESDK::vec_t * v2)
@@ -1859,17 +1871,17 @@ public:
 				outVector.y = (float)m_LastY;
 				outVector.z = (float)m_LastZ;
 
-				m_LastYPitch = parentAngles.x;
-				m_LastZYaw = parentAngles.y;
-				m_LastXRoll = parentAngles.z;
+				m_LastInYPitch = outAngles.x = parentAngles.x;
+				m_LastInZYaw = outAngles.y = parentAngles.y;
+				m_LastInXRoll = outAngles.z = parentAngles.z;
+
+				m_DeltaYPitch = 0;
+				m_DeltaZYaw = 0;
+				m_DeltaXRoll = 0;
 
 				m_YPitchVelocity = 0;
 				m_ZYawVelocity = 0;
 				m_XRollVelocity = 0;
-
-				outAngles.x = (float)m_LastYPitch;
-				outAngles.y = (float)m_LastZYaw;
-				outAngles.z = (float)m_LastXRoll;
 			}
 			else
 			{
@@ -1877,24 +1889,27 @@ public:
 				double deltaT = clientTime - m_LastClientTime;
 				m_LastClientTime = clientTime;
 
-				double reaimYPitch = parentAngles.x - m_LastYPitch;
-				double reaimZYaw = parentAngles.y - m_LastZYaw;
-				double reaimXRoll = parentAngles.z - m_LastXRoll;
+				m_DeltaYPitch += AngleModDeg(parentAngles.x - m_LastInYPitch);
+				m_DeltaZYaw += AngleModDeg(parentAngles.y - m_LastInZYaw);
+				m_DeltaXRoll += AngleModDeg(parentAngles.z - m_LastInXRoll);
 
-				// Force reaim angles to be in [-180°, 180°)
+				double deltaYPitch, deltaZYaw, deltaXRoll;
 
-				reaimYPitch = fmod(reaimYPitch + 180.0, 360.0) - 180.0;
-				reaimZYaw = fmod(reaimZYaw + 180.0, 360.0) - 180.0;
-				reaimXRoll = fmod(reaimXRoll + 180.0, 360.0) - 180.0;
+				CalcDeltaSmooth(deltaT, m_DeltaYPitch, deltaYPitch, m_YPitchVelocity, m_LimitVelocityRy, m_LimitAccelerationRy);
+				outAngles.x = (float)(parentAngles.x - m_DeltaYPitch + deltaYPitch);
+				m_DeltaYPitch -= deltaYPitch;
 
-				CalcSmooth(deltaT, m_LastYPitch + reaimYPitch, m_LastYPitch, m_YPitchVelocity, m_LimitVelocityRy, m_LimitAccelerationRy);
-				outAngles.x = (float)m_LastYPitch;
+				CalcDeltaSmooth(deltaT, m_DeltaZYaw, deltaZYaw, m_ZYawVelocity, m_LimitVelocityRy, m_LimitAccelerationRy);
+				outAngles.y = (float)(parentAngles.y - m_DeltaZYaw + deltaZYaw);
+				m_DeltaZYaw -= deltaZYaw;
 
-				CalcSmooth(deltaT, m_LastZYaw + reaimZYaw, m_LastZYaw, m_ZYawVelocity, m_LimitVelocityRz, m_LimitAccelerationRz);
-				outAngles.y = (float)m_LastZYaw;
+				CalcDeltaSmooth(deltaT, m_DeltaXRoll, deltaXRoll, m_XRollVelocity, m_LimitVelocityRy, m_LimitAccelerationRy);
+				outAngles.z = (float)(parentAngles.z - m_DeltaXRoll + deltaXRoll);
+				m_DeltaXRoll -= deltaXRoll;
 
-				CalcSmooth(deltaT, m_LastXRoll + reaimXRoll, m_LastXRoll, m_XRollVelocity, m_LimitVelocityRx, m_LimitAccelerationRx);
-				outAngles.z = (float)m_LastXRoll;
+				m_LastInYPitch = parentAngles.x;
+				m_LastInZYaw = parentAngles.y;
+				m_LastInXRoll = parentAngles.z;
 
 				//
 
@@ -1943,9 +1958,12 @@ private:
 	double m_LimitVelocityZ = 600;
 	double m_LimitAccelerationZ = 60;
 
-	double m_LastYPitch = 0;
-	double m_LastZYaw = 0;
-	double m_LastXRoll = 0;
+	double m_LastInYPitch = 0;
+	double m_LastInZYaw = 0;
+	double m_LastInXRoll = 0;
+	double m_DeltaYPitch = 0;
+	double m_DeltaZYaw = 0;
+	double m_DeltaXRoll = 0;
 	double m_YPitchVelocity = 0;
 	double m_ZYawVelocity = 0;
 	double m_XRollVelocity = 0;
