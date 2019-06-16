@@ -1587,10 +1587,9 @@ LRESULT CALLBACK new_Afx_WindowProc(
 	case WM_RBUTTONDBLCLK:
 	case WM_RBUTTONDOWN:
 	case WM_RBUTTONUP:
+	case WM_MOUSEMOVE:
 		if (g_AfxHookSourceInput.Supply_MouseEvent(uMsg, wParam, lParam))
 			return 0;
-		break;
-		break;
 		break;
 	case WM_INPUT:
 		{
@@ -1598,9 +1597,9 @@ LRESULT CALLBACK new_Afx_WindowProc(
 			RAWINPUT inp;
 			UINT size = sizeof(inp);
 
-			GetRawInputData(hRawInput, RID_INPUT, &inp, &size, sizeof(RAWINPUTHEADER));
+			UINT getRawInputResult = GetRawInputData(hRawInput, RID_INPUT, &inp, &size, sizeof(RAWINPUTHEADER));
 
-			if(inp.header.dwType == RIM_TYPEMOUSE)
+			if(-1 != getRawInputResult && inp.header.dwType == RIM_TYPEMOUSE)
 			{
 				RAWMOUSE * rawmouse = &inp.data.mouse;
 				LONG dX, dY;
@@ -1630,13 +1629,12 @@ LRESULT CALLBACK new_Afx_WindowProc(
 					lastY = rawmouse->lLastY;
 				}
 
-				if(g_AfxHookSourceInput.Supply_RawMouseMotion(dX,dY))
-					return 0;
+				if (g_AfxHookSourceInput.Supply_RawMouseMotion(dX, dY))
+					return DefWindowProcW(hwnd, uMsg, wParam, lParam);
 			}
 		}
 		break;
 	}
-
 	return CallWindowProcW(g_NextWindProc, hwnd, uMsg, wParam, lParam);
 }
 

@@ -106,7 +106,7 @@ public:
 
 	bool Supply_CharEvent(WPARAM wParam, LPARAM lParam);
 	bool Supply_KeyEvent(KeyState keyState, WPARAM wParam, LPARAM lParam);
-	bool Supply_MouseEvent(DWORD uMsg, WPARAM wParam, LPARAM lParam);
+	bool Supply_MouseEvent(DWORD uMsg, WPARAM & wParam, LPARAM & lParam);
 	bool Supply_RawMouseMotion(int dX, int dY);
 	void Supply_GetCursorPos(LPPOINT lpPoint);
 	void Supply_SetCursorPos(int x, int y);

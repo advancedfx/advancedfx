@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.63.1</version>
+<time>2019-06-16T05:39Z</time>
+<changes>
+<change type="fixed">
+Fixed several problems related to mouse input hooks introduced in previous version.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.63.0</version>
 <time>2019-06-15T19:03Z</time>
 <changes>
@@ -17,9 +29,6 @@ since the engine limits the angles itself already and that range should still ha
 </change>
 <change type="added">
 Added mirv_calcs cam add current.
-</change>
-<change type="added">
-Added mirv_cam order - allows to change camera override order. 
 </change>
 <change type="added">
 Added mirv_cam order - allows to change camera override order. 

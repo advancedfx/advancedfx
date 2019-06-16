@@ -442,7 +442,7 @@ bool AfxHookSourceInput::Supply_KeyEvent(KeyState keyState, WPARAM wParam, LPARA
 	return false;
 }
 
-bool  AfxHookSourceInput::Supply_MouseEvent(DWORD uMsg, WPARAM wParam, LPARAM lParam)
+bool  AfxHookSourceInput::Supply_MouseEvent(DWORD uMsg, WPARAM & wParam, LPARAM & lParam)
 {
 	if (!m_Focus)
 		return false;
@@ -452,26 +452,39 @@ bool  AfxHookSourceInput::Supply_MouseEvent(DWORD uMsg, WPARAM wParam, LPARAM lP
 		return false;
 	}
 
-	switch (uMsg)
+	if (m_CameraControlMode && m_MMove)
 	{
-	case WM_NCLBUTTONDBLCLK:
-		return true;
-	case WM_LBUTTONDOWN:
-		m_MLDown = true;
-		return true;
-		break;
-	case WM_LBUTTONUP:
-		m_MLDown = false;
-		return true;
-	case WM_RBUTTONDBLCLK:
-		return true;
-	case WM_RBUTTONDOWN:
-		m_MRDown = true;
-		return true;
-		break;
-	case WM_RBUTTONUP:
-		m_MRDown = false;
-		return true;
+		switch (uMsg)
+		{
+		case WM_LBUTTONDBLCLK:
+			return true;
+		case WM_LBUTTONDOWN:
+			m_MLDown = true;
+			return true;
+		case WM_LBUTTONUP:
+			m_MLDown = false;
+			return true;
+		case WM_RBUTTONDBLCLK:
+			return true;
+		case WM_RBUTTONDOWN:
+			m_MRDown = true;
+			return true;
+		case WM_RBUTTONUP:
+			m_MRDown = false;
+			return true;
+		case WM_MOUSEMOVE:
+			if (wParam & MK_LBUTTON)
+			{
+				m_MLDown = true;
+				wParam &= ~(WPARAM)MK_LBUTTON;
+			}
+			if (wParam & MK_RBUTTON)
+			{
+				m_MRDown = true;
+				wParam &= ~(WPARAM)MK_RBUTTON;
+			}
+			break;
+		}
 	}
 
 	return false;
