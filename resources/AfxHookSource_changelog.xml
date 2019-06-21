@@ -6,6 +6,26 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.64.0</version>
+<time>2019-06-21T07:40Z</time>
+<changes>
+<change type="added">
+Added #175 spectator "smooth" (working with mirv_input) calc, see example bellow for more info.
+</change>
+<change type="added">
+Added scroll wheel to mirv_input camera to change FOV when mirv_input cfg mouseMoveSupport is 1.
+</change>
+<change type="updated">
+BREAKING CHANGE: Updated motionProfile2: Now uses a quaternion for rotation interpolation.
+Removed limRxVelo, limRxAng, limRyVelo, limRyAng, limRzVelo, limRzAng properties
+Added limAngVelo (default 180), limAngAcel (default 11.25) properties.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.63.1</version>
 <time>2019-06-16T05:39Z</time>
 <changes>

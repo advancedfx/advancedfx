@@ -1588,6 +1588,7 @@ LRESULT CALLBACK new_Afx_WindowProc(
 	case WM_RBUTTONDOWN:
 	case WM_RBUTTONUP:
 	case WM_MOUSEMOVE:
+	case WM_MOUSEWHEEL:
 		if (g_AfxHookSourceInput.Supply_MouseEvent(uMsg, wParam, lParam))
 			return 0;
 		break;

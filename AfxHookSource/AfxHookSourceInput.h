@@ -147,6 +147,8 @@ private:
 	double m_MouseBackwardSpeed;
 	double m_MouseLeftSpeed;
 	double m_MouseRightSpeed;
+	double m_MouseFovPositiveSpeed;
+	double m_MouseFovNegativeSpeed;
 
 	bool m_CamResetView;
 	double m_CamForward;
@@ -171,6 +173,7 @@ private:
 	bool m_MLWasDown = false;
 	bool m_MRDown;
 	bool m_MRWasDown = false;
+	bool m_MouseFov = true;
 	bool m_CameraControlMode;
 	bool m_Focus;
 	bool m_IgnoreKeyUp;

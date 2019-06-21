@@ -964,7 +964,7 @@ public:
 		CMirvCalc::Console_Print();
 	}
 
-	virtual bool CalcFov(float & outFov)
+	virtual bool CalcCam(SOURCESDK::Vector & outVector, SOURCESDK::QAngle & outAngles, float & outFov)
 	{
 		return false;
 	}
@@ -973,6 +973,321 @@ public:
 	{
 		CMirvCalc::Console_Edit(args);
 	}
+};
+
+double CalcExpSmooth(double deltaT, double oldVal, double newVal)
+{
+	const double halfTime = 0.69314718055994530941723212145818;
+
+	double x = 1 / exp(deltaT / halfTime);
+
+	return x * oldVal +  (1 - x) * newVal;
+}
+
+double CalcDeltaExpSmooth(double deltaT, double deltaVal)
+{
+	const double halfTime = 0.69314718055994530941723212145818;
+
+	double x = 1 / exp(deltaT / halfTime);
+
+	return (1 - x) * deltaVal;
+}
+
+class CMirvCamSmoothCalc : public CMirvCamCalc
+{
+public:
+	CMirvCamSmoothCalc(char const * name, IMirvCamCalc * cam, IMirvHandleCalc * trackHandle)
+		: CMirvCamCalc(name)
+		, m_Parent(cam)
+		, m_TrackHandle(trackHandle)
+	{
+		m_Parent->AddRef();
+		m_TrackHandle->AddRef();
+	}
+
+	virtual void Console_Print(void)
+	{
+		CMirvCamCalc::Console_Print();
+
+		Tier0_Msg(" type=smooth parent=\"%s\" trackHandle=\"%s\" halfTimeVec=%f halfTimeAng=%f halfTimeFov=%f", m_Parent->GetName(), m_TrackHandle->GetName(), (float)m_HalfTimeVec, (float)m_HalfTimeAng, (float)m_HalfTimeFov);
+	}
+
+	virtual void Console_Edit(IWrpCommandArgs * args)
+	{
+		int argc = args->ArgC();
+		char const * arg0 = args->ArgV(0);
+
+		if (2 <= argc)
+		{
+			char const * arg1 = args->ArgV(1);
+
+			if (0 == _stricmp("halfTime", arg1))
+			{
+				if (3 <= argc)
+				{
+					m_HalfTimeVec = m_HalfTimeAng = m_HalfTimeFov = atof(args->ArgV(2));
+					return;
+				}
+
+				Tier0_Msg(
+					"%s halfTime <fHalfTimeSecs> - Set new value for vec,ang,fov.\n"
+					, arg0
+				);
+				return;
+			}
+			else if (0 == _stricmp("halfTimeVec", arg1))
+			{
+				if (3 <= argc)
+				{
+					m_HalfTimeVec = atof(args->ArgV(2));
+					return;
+				}
+
+				Tier0_Msg(
+					"%s halfTimeVec <fHalfTimeSecs> - Set new value.\n"
+					"Current value: %f\n"
+					, arg0
+					, m_HalfTimeVec
+				);
+				return;
+			}
+			else if (0 == _stricmp("halfTimeAng", arg1))
+			{
+				if (3 <= argc)
+				{
+					m_HalfTimeAng = atof(args->ArgV(2));
+					return;
+				}
+
+				Tier0_Msg(
+					"%s halfTimeAng <fHalfTimeSecs> - Set new value.\n"
+					"Current value: %f\n"
+					, arg0
+					, m_HalfTimeAng
+				);
+				return;
+			}
+			else if (0 == _stricmp("halfTimeFov", arg1))
+			{
+				if (3 <= argc)
+				{
+					m_HalfTimeFov = atof(args->ArgV(2));
+					return;
+				}
+
+				Tier0_Msg(
+					"%s halfTimeFov <fHalfTimeSecs> - Set new value.\n"
+					"Current value: %f\n"
+					, arg0
+					, m_HalfTimeFov
+				);
+				return;
+			}
+		}
+
+		Tier0_Msg(
+			"%s halfTime [...]\n"
+			"%s halfTimeVec [...]\n"
+			"%s halfTimeAng [...]\n"
+			"%s halfTimeFov [...]\n"
+			, arg0
+			, arg0
+			, arg0
+			, arg0
+		);
+	}
+
+	virtual bool CalcCam(SOURCESDK::Vector & outVector, SOURCESDK::QAngle & outAngles, float & outFov) override
+	{
+		SOURCESDK::Vector parentVector;
+		SOURCESDK::QAngle parentAngles;
+		float parentFov;
+
+		SOURCESDK::CSGO::CBaseHandle handle;
+
+		bool calcedParent = m_Parent->CalcCam(parentVector, parentAngles, parentFov);
+		bool calcedHandle = m_TrackHandle->CalcHandle(handle);
+
+		m_Reset = m_Reset || !(calcedParent && calcedHandle && m_LastHandle == handle);
+
+		if(calcedHandle) m_LastHandle = handle;
+
+		if (calcedParent && calcedHandle)
+		{
+			if (m_Reset)
+			{
+				m_Reset = false;
+
+				m_LastClientTime = g_MirvTime.GetTime();
+
+				m_LastX = outVector.x = parentVector.x;
+				m_LastY = outVector.y = parentVector.y;
+				m_LastZ = outVector.z = parentVector.z;
+
+				outAngles.x = parentAngles.x;
+				outAngles.y = parentAngles.y;
+				outAngles.z = parentAngles.z;
+				m_LastQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(outAngles.x, outAngles.y, outAngles.z)));
+
+				m_LastFov = outFov = parentFov;
+			}
+			else
+			{
+				float clientTime = g_MirvTime.GetTime();
+				double deltaT = clientTime - m_LastClientTime;
+				m_LastClientTime = clientTime;
+
+				if (m_HalfTimeAng)
+				{
+					double t = deltaT / m_HalfTimeAng;
+
+					Quaternion targetQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(parentAngles.x, parentAngles.y, parentAngles.z)));
+
+					double targetAngle = m_LastQuat.GetAng(targetQuat, Vector3());
+					double angle  = CalcDeltaExpSmooth(t, targetAngle);
+
+					m_LastQuat = m_LastQuat.Slerp(targetQuat, targetAngle ? angle / targetAngle : 1);
+
+					QEulerAngles newAngles = m_LastQuat.ToQREulerAngles().ToQEulerAngles();
+	
+					outAngles.x = (float)newAngles.Pitch;
+					outAngles.y = (float)newAngles.Yaw;
+					outAngles.z = (float)newAngles.Roll;
+				}
+				else
+				{
+					outAngles.x = parentAngles.x;
+					outAngles.y = parentAngles.y;
+					outAngles.z = parentAngles.z;
+					m_LastQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(outAngles.x, outAngles.y, outAngles.z)));
+				}
+
+				if (m_HalfTimeVec)
+				{
+					double t = deltaT / m_HalfTimeVec;
+
+					m_LastX = outVector.x = (float)CalcExpSmooth(t, m_LastX, parentVector.x);
+					m_LastY = outVector.y = (float)CalcExpSmooth(t, m_LastY, parentVector.y);
+					m_LastZ = outVector.z = (float)CalcExpSmooth(t, m_LastZ, parentVector.z);
+				}
+				else
+				{
+					m_LastX = outVector.x = parentVector.x;
+					m_LastY = outVector.y = parentVector.y;
+					m_LastZ = outVector.z = parentVector.z;
+				}
+
+				if (m_HalfTimeFov)
+				{
+					double t = deltaT / m_HalfTimeFov;
+
+					double oldOpposite = 2 * tan(0.5 * m_LastFov * M_PI / 180.0);
+					double targetOpposite = 2 * tan(0.5 * parentFov * M_PI / 180.0);
+
+					double newOppposite = CalcExpSmooth(t, oldOpposite, targetOpposite);
+					m_LastFov = outFov = (float)(2 * atan(0.5 * newOppposite) * 180.0 / M_PI);
+				}
+				else
+				{
+					m_LastFov = outFov = parentFov;
+				}
+			}
+
+			return true;
+		}
+
+		return false;
+	}
+
+protected:
+	virtual ~CMirvCamSmoothCalc()
+	{
+		m_TrackHandle->Release();
+		m_Parent->Release();
+	}
+
+private:
+	IMirvCamCalc * m_Parent;
+	IMirvHandleCalc * m_TrackHandle;
+
+	bool m_Reset = true;
+	SOURCESDK::CSGO::CBaseHandle m_LastHandle;
+	float m_LastClientTime = 0;
+
+	double m_LastX = 0;
+	double m_LastY = 0;
+	double m_LastZ = 0;
+
+	Quaternion m_LastQuat;
+
+	double m_LastFov = 90.0;
+
+	double m_HalfTimeVec = 0.5;
+	double m_HalfTimeAng = 0.5;
+	double m_HalfTimeFov = 0.5;
+};
+
+
+class CMirvCamVecAngFovCalc : public CMirvCamCalc
+{
+public:
+	CMirvCamVecAngFovCalc(char const * name, IMirvVecAngCalc * vecAng, IMirvFovCalc * fov)
+		: CMirvCamCalc(name)
+		, m_VecAng(vecAng)
+		, m_Fov(fov)
+	{
+		m_VecAng->AddRef();
+		m_Fov->AddRef();
+	}
+
+	virtual void Console_Print(void)
+	{
+		CMirvCamCalc::Console_Print();
+
+		Tier0_Msg(" type=vecAngFov vecAng=\"%s\" fov=\"%s\"", m_VecAng->GetName(), m_Fov->GetName());
+	}
+
+	virtual void Console_Edit(IWrpCommandArgs * args)
+	{
+		CMirvCamCalc::Console_Edit(args);
+	}
+
+	virtual bool CalcCam(SOURCESDK::Vector & outVector, SOURCESDK::QAngle & outAngles, float & outFov) override
+	{
+		SOURCESDK::Vector parentVector;
+		SOURCESDK::QAngle parentAngles;
+		float parentFov;
+
+		SOURCESDK::CSGO::CBaseHandle handle;
+
+		if (
+			m_VecAng->CalcVecAng(parentVector, parentAngles)
+			&& m_Fov->CalcFov(parentFov))
+		{
+			outVector.x = parentVector.x;
+			outVector.y = parentVector.y;
+			outVector.z = parentVector.z;
+			outAngles.x = parentAngles.x;
+			outAngles.y = parentAngles.y;
+			outAngles.z = parentAngles.z;
+			outFov = parentFov;
+
+			return true;
+		}
+
+		return false;
+	}
+
+protected:
+	virtual ~CMirvCamVecAngFovCalc()
+	{
+		m_Fov->Release();
+		m_VecAng->Release();
+	}
+
+private:
+	IMirvVecAngCalc * m_VecAng;
+	IMirvFovCalc * m_Fov;
 };
 
 class CMirvFovCalc : public CMirvCalc, public IMirvFovCalc
@@ -1594,15 +1909,13 @@ public:
 		CMirvVecAngCalc::Console_Print();
 
 		Tier0_Msg(
-			" type=motionProfile2 parent=\"%s\" trackHandle=\"%s\" 	limXVelo=%f limXAcel=%f limYVelo=%f limYAcel=%f limZVelo=%f limZAcel=%f limRXVelo=%f limRXAcel=%f limRYVelo=%f limRYAcel=%f limRZVelo=%f limRZAcel=%f\n",
+			" type=motionProfile2 parent=\"%s\" trackHandle=\"%s\" 	limXVelo=%f limXAcel=%f limYVelo=%f limYAcel=%f limZVelo=%f limZAcel=%f limAngVelo=%f limAngAcel=%f\n",
 			m_Parent->GetName()
 			, m_TrackHandle->GetName()
 			, m_LimitVelocityX, m_LimitAccelerationX		
 			, m_LimitVelocityY, m_LimitAccelerationY
 			, m_LimitVelocityZ, m_LimitAccelerationZ
-			, m_LimitVelocityRx, m_LimitAccelerationRx
-			, m_LimitVelocityRy, m_LimitAccelerationRy
-			, m_LimitVelocityRz, m_LimitAccelerationRz
+			, m_LimitVelocityAng, m_LimitAccelerationAng
 		);
 	}
 
@@ -1711,99 +2024,35 @@ public:
 				);
 				return;
 			}
-			else if (0 == _stricmp("limRXVelo", arg1))
+			else if (0 == _stricmp("limAngVelo", arg1))
 			{
 				if (3 <= argc)
 				{
-					m_LimitVelocityRx = atof(args->ArgV(2));
+					m_LimitVelocityAng = atof(args->ArgV(2));
 					return;
 				}
 
 				Tier0_Msg(
-					"%s limRXVelo <fValue> - Set new value.\n"
+					"%s limAngVelo <fValue> - Set new value.\n"
 					"Current value: %f\n"
 					, arg0
-					, m_LimitVelocityRx
+					, m_LimitVelocityAng
 				);
 				return;
 			}
-			else if (0 == _stricmp("limRXAcel", arg1))
+			else if (0 == _stricmp("limAngAcel", arg1))
 			{
 				if (3 <= argc)
 				{
-					m_LimitAccelerationRx = atof(args->ArgV(2));
+					m_LimitAccelerationAng = atof(args->ArgV(2));
 					return;
 				}
 
 				Tier0_Msg(
-					"%s limRXAcel <fValue> - Set new value.\n"
+					"%s limAngAcel <fValue> - Set new value.\n"
 					"Current value: %f\n"
 					, arg0
-					, m_LimitAccelerationRx
-				);
-				return;
-			}
-			else if (0 == _stricmp("limRYVelo", arg1))
-			{
-				if (3 <= argc)
-				{
-					m_LimitVelocityRy = atof(args->ArgV(2));
-					return;
-				}
-
-				Tier0_Msg(
-					"%s limRYVelo <fValue> - Set new value.\n"
-					"Current value: %f\n"
-					, arg0
-					, m_LimitVelocityRy
-				);
-				return;
-			}
-			else if (0 == _stricmp("limRYAcel", arg1))
-			{
-				if (3 <= argc)
-				{
-					m_LimitAccelerationRy = atof(args->ArgV(2));
-					return;
-				}
-
-				Tier0_Msg(
-					"%s limRYAcel <fValue> - Set new value.\n"
-					"Current value: %f\n"
-					, arg0
-					, m_LimitAccelerationRy
-				);
-				return;
-			}
-			else if (0 == _stricmp("limRZVelo", arg1))
-			{
-				if (3 <= argc)
-				{
-					m_LimitVelocityRz = atof(args->ArgV(2));
-					return;
-				}
-
-				Tier0_Msg(
-					"%s limRZVelo <fValue> - Set new value.\n"
-					"Current value: %f\n"
-					, arg0
-					, m_LimitVelocityRz
-				);
-				return;
-			}
-			else if (0 == _stricmp("limRZAcel", arg1))
-			{
-				if (3 <= argc)
-				{
-					m_LimitAccelerationRz = atof(args->ArgV(2));
-					return;
-				}
-
-				Tier0_Msg(
-					"%s limRZAcel <fValue> - Set new value.\n"
-					"Current value: %f\n"
-					, arg0
-					, m_LimitAccelerationRz
+					, m_LimitAccelerationAng
 				);
 				return;
 			}
@@ -1816,12 +2065,8 @@ public:
 			"%s limYAcel [...] - Y-location acelleration limit in inch.\n"
 			"%s limZVelo [...] - Z-location velocity limit in inch.\n"
 			"%s limZAcel [...] - Z-location acelleration limit in inch.\n"
-			"%s limRXVelo [...] - X-rotation (roll) velocity limit in degrees.\n"
-			"%s limRXAcel [...] - X-rotation (roll) acelleration limit in degrees.\n"
-			"%s limRYVelo [...] - Y-rotation (-pitch) velocity limit in degrees.\n"
-			"%s limRYAcel [...] - Y-rotation (-pitch) acelleration limit in degrees.\n"
-			"%s limRZVelo [...] - Z-rotation (-yaw) velocity limit in degrees.\n"
-			"%s limRZAcel [...] - Z-rotation (-yaw) acelleration limit in degrees.\n"
+			"%s limAngVelo [...] - Angular velocity limit in degrees.\n"
+			"%s limAngAcel [...] - Angular acelleration limit in degrees.\n"
 			, arg0
 			, arg0
 			, arg0
@@ -1871,17 +2116,11 @@ public:
 				outVector.y = (float)m_LastY;
 				outVector.z = (float)m_LastZ;
 
-				m_LastInYPitch = outAngles.x = parentAngles.x;
-				m_LastInZYaw = outAngles.y = parentAngles.y;
-				m_LastInXRoll = outAngles.z = parentAngles.z;
-
-				m_DeltaYPitch = 0;
-				m_DeltaZYaw = 0;
-				m_DeltaXRoll = 0;
-
-				m_YPitchVelocity = 0;
-				m_ZYawVelocity = 0;
-				m_XRollVelocity = 0;
+				outAngles.x = parentAngles.x;
+				outAngles.y = parentAngles.y;
+				outAngles.z = parentAngles.z;
+				m_LastAngVelocity = 0;
+				m_LastQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(outAngles.x, outAngles.y, outAngles.z)));
 			}
 			else
 			{
@@ -1889,27 +2128,20 @@ public:
 				double deltaT = clientTime - m_LastClientTime;
 				m_LastClientTime = clientTime;
 
-				m_DeltaYPitch += AngleModDeg(parentAngles.x - m_LastInYPitch);
-				m_DeltaZYaw += AngleModDeg(parentAngles.y - m_LastInZYaw);
-				m_DeltaXRoll += AngleModDeg(parentAngles.z - m_LastInXRoll);
+				Quaternion targetQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(parentAngles.x, parentAngles.y, parentAngles.z)));
 
-				double deltaYPitch, deltaZYaw, deltaXRoll;
+				double targetAngle = m_LastQuat.GetAng(targetQuat, Vector3());
+				double angle;
+				
+				CalcDeltaSmooth(deltaT, targetAngle, angle, m_LastAngVelocity, m_LimitVelocityAng, m_LimitAccelerationAng);
 
-				CalcDeltaSmooth(deltaT, m_DeltaYPitch, deltaYPitch, m_YPitchVelocity, m_LimitVelocityRy, m_LimitAccelerationRy);
-				outAngles.x = (float)(parentAngles.x - m_DeltaYPitch + deltaYPitch);
-				m_DeltaYPitch -= deltaYPitch;
+				m_LastQuat = m_LastQuat.Slerp(targetQuat, targetAngle ? angle / targetAngle : 1);
 
-				CalcDeltaSmooth(deltaT, m_DeltaZYaw, deltaZYaw, m_ZYawVelocity, m_LimitVelocityRy, m_LimitAccelerationRy);
-				outAngles.y = (float)(parentAngles.y - m_DeltaZYaw + deltaZYaw);
-				m_DeltaZYaw -= deltaZYaw;
+				QEulerAngles newAngles = m_LastQuat.ToQREulerAngles().ToQEulerAngles();
 
-				CalcDeltaSmooth(deltaT, m_DeltaXRoll, deltaXRoll, m_XRollVelocity, m_LimitVelocityRy, m_LimitAccelerationRy);
-				outAngles.z = (float)(parentAngles.z - m_DeltaXRoll + deltaXRoll);
-				m_DeltaXRoll -= deltaXRoll;
-
-				m_LastInYPitch = parentAngles.x;
-				m_LastInZYaw = parentAngles.y;
-				m_LastInXRoll = parentAngles.z;
+				outAngles.x = (float)newAngles.Pitch;
+				outAngles.y = (float)newAngles.Yaw;
+				outAngles.z = (float)newAngles.Roll;
 
 				//
 
@@ -1958,22 +2190,11 @@ private:
 	double m_LimitVelocityZ = 600;
 	double m_LimitAccelerationZ = 60;
 
-	double m_LastInYPitch = 0;
-	double m_LastInZYaw = 0;
-	double m_LastInXRoll = 0;
-	double m_DeltaYPitch = 0;
-	double m_DeltaZYaw = 0;
-	double m_DeltaXRoll = 0;
-	double m_YPitchVelocity = 0;
-	double m_ZYawVelocity = 0;
-	double m_XRollVelocity = 0;
+	Quaternion m_LastQuat;
+	double m_LastAngVelocity = 0;
 
-	double m_LimitVelocityRx = 360;
-	double m_LimitAccelerationRx = 90;
-	double m_LimitVelocityRy = 360;
-	double m_LimitAccelerationRy = 90;
-	double m_LimitVelocityRz = 360;
-	double m_LimitAccelerationRz = 90;
+	double m_LimitVelocityAng = 180;
+	double m_LimitAccelerationAng = 11.25;
 };
 
 class CMirvVecAngAddCalc : public CMirvVecAngCalc
@@ -3651,6 +3872,40 @@ IMirvCamCalc * CMirvCamCalcs::NewCurrentCalc(char const * name)
 	return result;
 }
 
+IMirvCamCalc * CMirvCamCalcs::NewSmoothCalc(char const * name, IMirvCamCalc * parent, IMirvHandleCalc * trackHandle)
+{
+	if (name && !Console_CheckName(name))
+		return 0;
+
+	IMirvCamCalc * result = new CMirvCamSmoothCalc(name, parent, trackHandle);
+
+	if (name)
+	{
+		result->AddRef();
+
+		m_Calcs.push_back(result);
+	}
+
+	return result;
+}
+
+IMirvCamCalc * CMirvCamCalcs::NewVecAngFovCalc(char const * name, IMirvVecAngCalc * vecAng, IMirvFovCalc * fov)
+{
+	if (name && !Console_CheckName(name))
+		return 0;
+
+	IMirvCamCalc * result = new CMirvCamVecAngFovCalc(name, vecAng, fov);
+
+	if (name)
+	{
+		result->AddRef();
+
+		m_Calcs.push_back(result);
+	}
+
+	return result;
+}
+
 
 void CMirvCamCalcs::Console_Remove(char const * name)
 {
@@ -4658,12 +4913,50 @@ void mirv_calcs_cam(IWrpCommandArgs * args)
 
 					return;
 				}
+				else if (0 == _stricmp("smooth", arg2) && 6 <= argc)
+				{
+					char const * parentCalcName = args->ArgV(4);
+					char const * trackHandleCalcName = args->ArgV(5);
+
+					if (IMirvCamCalc * parentCalc = g_MirvCamCalcs.GetByName(parentCalcName))
+					{
+						if (IMirvHandleCalc * trackHandleCalc = g_MirvHandleCalcs.GetByName(trackHandleCalcName))
+						{
+							g_MirvCamCalcs.NewSmoothCalc(args->ArgV(3), parentCalc, trackHandleCalc);
+						}
+						else Tier0_Warning("Error: No handle calc with name \"%s\" found.\n", trackHandleCalcName);
+					}
+					else Tier0_Warning("Error: No cam calc with name \"%s\" found.\n", parentCalcName);
+
+					return;
+				}
+				else if (0 == _stricmp("vecAngFov", arg2) && 6 <= argc)
+				{
+					char const * vecAngCalcName = args->ArgV(4);
+					char const * fovCalcName = args->ArgV(5);
+
+					if (IMirvVecAngCalc * vecAngCalc = g_MirvVecAngCalcs.GetByName(vecAngCalcName))
+					{
+						if (IMirvFovCalc * fovCalc = g_MirvFovCalcs.GetByName(fovCalcName))
+						{
+							g_MirvCamCalcs.NewVecAngFovCalc(args->ArgV(3), vecAngCalc, fovCalc);
+						}
+						else Tier0_Warning("Error: No fov calc with name \"%s\" found.\n", fovCalcName);
+					}
+					else Tier0_Warning("Error: No vecAng calc with name \"%s\" found.\n", vecAngCalcName);
+
+					return;
+				}
 			}
 
 			Tier0_Msg(
 				"%s add cam <sName> <sfilePath> <fStartTime>|current - Adds an mirv_camio file as calc.\n"
 				"%s add game <sName> - Current game camera.\n"
 				"%s add current <sName> - Current camera (depends on mirv_cam order and overrides).\n"
+				"%s add smooth <sName> <sParentCamCalcName> <sTrackHandleCalcName>- Smooth calc.\n"
+				"%s add vecAngFov <sName> <sVecAngCalcName> <sFovCalcName>- Combine a vecAng and a fov calc into a cam calc.\n"
+				, arg0
+				, arg0
 				, arg0
 				, arg0
 				, arg0

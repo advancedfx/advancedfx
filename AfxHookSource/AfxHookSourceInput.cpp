@@ -59,6 +59,8 @@ AfxHookSourceInput::AfxHookSourceInput()
 , m_MouseBackwardSpeed(320.0)
 , m_MouseLeftSpeed(320.0)
 , m_MouseRightSpeed(320.0)
+, m_MouseFovPositiveSpeed(45.0)
+, m_MouseFovNegativeSpeed(45.0)
 , m_MLDown(false)
 , m_MRDown(false)
 {
@@ -484,6 +486,16 @@ bool  AfxHookSourceInput::Supply_MouseEvent(DWORD uMsg, WPARAM & wParam, LPARAM 
 				wParam &= ~(WPARAM)MK_RBUTTON;
 			}
 			break;
+		case WM_MOUSEWHEEL:
+			{
+				m_MouseFov = true;
+
+				signed short delta = GET_WHEEL_DELTA_WPARAM(wParam);
+
+				if(0 <= delta) m_CamFovI += m_MouseSens * m_MouseFovNegativeSpeed * delta;
+				else m_CamFov += m_MouseSens * m_MouseFovPositiveSpeed * -delta;
+			}
+			return true;
 		}
 	}
 
@@ -612,6 +624,13 @@ void AfxHookSourceInput::Supply_MouseFrameEnd(void)
 				m_CamUp = 0.0;
 				m_CamUpI = 0.0;
 			}
+		}
+
+		if (m_MouseFov)
+		{
+			m_MouseFov = false;
+			m_CamFov = 0.0;
+			m_CamFovI = 0.0;
 		}
 	}
 }

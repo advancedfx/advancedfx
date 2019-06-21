@@ -184,6 +184,8 @@ public:
 	IMirvCamCalc * NewCamCalc(char const * name, const char * camFileName, const char * startClientTime);
 	IMirvCamCalc * NewGameCalc(char const * name);
 	IMirvCamCalc * NewCurrentCalc(char const * name);
+	IMirvCamCalc * NewSmoothCalc(char const * name, IMirvCamCalc * parent, IMirvHandleCalc * trackHandle);
+	IMirvCamCalc * NewVecAngFovCalc(char const * name, IMirvVecAngCalc * vecAng, IMirvFovCalc * fov);
 
 	bool Console_CheckName(char const * name);
 	void Console_Remove(char const * name);
