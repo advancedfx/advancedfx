@@ -647,3 +647,48 @@ bool AfxHookSourceInput::GetConsoleOpen(void)
 		&& g_VEngineClient->Con_IsVisible()
 	;
 }
+
+bool AfxHookSourceInput::Override(float & Tx, float &Ty, float & Tz, float & Rx, float & Ry, float & Rz, float & Fov)
+{
+	bool overriden = false;
+
+	if (m_SetTx)
+	{
+		m_SetTx = false;
+		Tx = m_SetTxValue;
+	}
+	if (m_SetTy)
+	{
+		m_SetTy = false;
+		Ty = m_SetTyValue;
+	}
+	if (m_SetTz)
+	{
+		m_SetTz = false;
+		Tz = m_SetTzValue;
+	}
+
+	if (m_SetRx)
+	{
+		m_SetRx = false;
+		Rx = m_SetRxValue;
+	}
+	if (m_SetRy)
+	{
+		m_SetRy = false;
+		Ry = m_SetRyValue;
+	}
+	if (m_SetRz)
+	{
+		m_SetRz = false;
+		Rz = m_SetRzValue;
+	}
+
+	if (m_SetFov)
+	{
+		m_SetFov = false;
+		Fov = m_SetFovValue;
+	}
+
+	return overriden;
+}

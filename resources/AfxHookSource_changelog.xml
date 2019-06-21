@@ -7,7 +7,7 @@
 <release>
 <name>AfxHookSource</name>
 <version>1.64.0</version>
-<time>2019-06-21T07:40Z</time>
+<time>2019-06-21T18:35Z</time>
 <changes>
 <change type="added">
 Added #175 spectator "smooth" (working with mirv_input) calc, see example bellow for more info.
@@ -20,7 +20,39 @@ BREAKING CHANGE: Updated motionProfile2: Now uses a quaternion for rotation inte
 Removed limRxVelo, limRxAng, limRyVelo, limRyAng, limRzVelo, limRzAng properties
 Added limAngVelo (default 180), limAngAcel (default 11.25) properties.
 </change>
+<change type="updated">
+Updated mirv_input position / angles / fov to work better with the new different offsetMode-s (allows setting position / angles / fov to a value directly).
+</change>
 </changes>
+<comments>
+// Bonus config for smoothing the camera:<br />
+// For key assignment see: https://github.com/advancedfx/advancedfx/wiki/Source%3Amirv_input#mirv_input-camera (New mouse buttons (left / right) + mousemove and mousewheel are not documented there yet.)<br />
+<br />
+mirv_input cfg ksens 1<br />
+mirv_input cfg msens 0.05<br />
+<br />
+// The smooth uses a trackhandle that when changes resets the smoothing, since we want to always smooth we use a constant handle value (-1):<br />
+mirv_calcs handle add value invalid -1<br />
+mirv_calcs cam add current game<br />
+mirv_calcs cam add smooth smooth game invalid<br />
+<br />
+mirv_calcs cam edit smooth halfTime 1.0 // sets all half life time for vec (position), and (rotation), fov (field of view) to same value in seconds.<br />
+<br />
+// Uncomment to set independently:<br />
+// mirv_calcs cam edit smooth halfTimeVec 1.0<br />
+// mirv_calcs cam edit smooth halfTimeAng 1.0 // Tip: Use 0 value to disable smoothing, or use e.g. 0.1 value for lower delay and less smoothing.<br />
+// mirv_calcs cam edit smooth halfTimeFov 1.0<br />
+
+mirv_calcs vecAng add cam smooth smooth<br />
+mirv_calcs fov add cam smooth smooth<br />
+<br />
+alias "afx_smooth_on" "mirv_cam order move input 0; mirv_cam source calcVecAng smooth; mirv_cam fov calc smooth; mirv_input camera; mirv_input cfg offsetMode ownLast; mirv_input cfg mouseMoveSupport 1"<br />
+alias "afx_smooth_off" "mirv_input end; mirv_cam source calcVecAngClear; mirv_cam fov calcClear; mirv_cam order default; mirv_input cfg offsetMode last; mirv_input cfg mouseMoveSupport 0"<br />
+<br />
+afx_smooth_on<br />
+<br />
+echo "enter afx_smooth_off to turn smooth off"<br />
+</comments>
 </release>
 
 

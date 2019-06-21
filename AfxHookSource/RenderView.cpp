@@ -420,6 +420,8 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 				Ty = (float)(InputCameraOrigin[1] + dForward * forward[1] - dLeft * right[1] + dUp * up[1]);
 				Tz = (float)(InputCameraOrigin[2] + dForward * forward[2] - dLeft * right[2] + dUp * up[2]);
 
+				g_AfxHookSourceInput.Override(Tx, Ty, Tz, Rx, Ry, Rz, Fov);
+
 				InputCameraOrigin[0] = Tx;
 				InputCameraOrigin[1] = Ty;
 				InputCameraOrigin[2] = Tz;
