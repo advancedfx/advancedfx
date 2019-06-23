@@ -2810,9 +2810,9 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 				char const * arg3 = args->ArgV(3);
 				char const * arg4 = args->ArgV(4);
 	
-				if(0 != _stricmp("*", arg2)) g_AfxHookSourceInput.SetTx(atof(arg2));
-				if (0 != _stricmp("*", arg3)) g_AfxHookSourceInput.SetTy(atof(arg3));
-				if (0 != _stricmp("*", arg4)) g_AfxHookSourceInput.SetTz(atof(arg4));
+				if(0 != _stricmp("*", arg2)) g_AfxHookSourceInput.SetTx((float)atof(arg2));
+				if (0 != _stricmp("*", arg3)) g_AfxHookSourceInput.SetTy((float)atof(arg3));
+				if (0 != _stricmp("*", arg4)) g_AfxHookSourceInput.SetTz((float)atof(arg4));
 				return;
 			}
 
@@ -2834,9 +2834,9 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 				char const * arg3 = args->ArgV(3);
 				char const * arg4 = args->ArgV(4);
 	
-				if (0 != _stricmp("*", arg2)) g_AfxHookSourceInput.SetRx(atof(arg2));
-				if (0 != _stricmp("*", arg3)) g_AfxHookSourceInput.SetRy(atof(arg3));
-				if (0 != _stricmp("*", arg4)) g_AfxHookSourceInput.SetRz(atof(arg4));
+				if (0 != _stricmp("*", arg2)) g_AfxHookSourceInput.SetRx((float)atof(arg2));
+				if (0 != _stricmp("*", arg3)) g_AfxHookSourceInput.SetRy((float)atof(arg3));
+				if (0 != _stricmp("*", arg4)) g_AfxHookSourceInput.SetRz((float)atof(arg4));
 				return;
 			}
 
@@ -2860,12 +2860,12 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 					char const * arg3 = args->ArgV(3);
 
 					if (0 == _stricmp("real", arg2)) {
-						g_AfxHookSourceInput.SetFov(Auto_InverseFovScaling(g_Hook_VClient_RenderView.LastWidth, g_Hook_VClient_RenderView.LastHeight, atof(arg3)));
+						g_AfxHookSourceInput.SetFov((float)Auto_InverseFovScaling(g_Hook_VClient_RenderView.LastWidth, g_Hook_VClient_RenderView.LastHeight, atof(arg3)));
 						return;
 					}
 				}
 				else {
-					g_AfxHookSourceInput.SetFov(atof(arg2));
+					g_AfxHookSourceInput.SetFov((float)atof(arg2));
 					return;
 				}
 			}

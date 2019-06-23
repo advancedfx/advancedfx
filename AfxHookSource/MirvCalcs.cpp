@@ -1127,7 +1127,7 @@ public:
 				outAngles.x = parentAngles.x;
 				outAngles.y = parentAngles.y;
 				outAngles.z = parentAngles.z;
-				m_LastQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(outAngles.x, outAngles.y, outAngles.z)));
+				m_LastOutQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(outAngles.x, outAngles.y, outAngles.z)));
 
 				m_LastFov = outFov = parentFov;
 			}
@@ -1141,15 +1141,18 @@ public:
 				{
 					double t = deltaT / m_HalfTimeAng;
 
-					Quaternion targetQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(parentAngles.x, parentAngles.y, parentAngles.z)));
+					Quaternion targetQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(parentAngles.x, parentAngles.y, parentAngles.z))).Normalized();
 
-					double targetAngle = m_LastQuat.GetAng(targetQuat, Vector3());
-					double angle  = CalcDeltaExpSmooth(t, targetAngle);
+					double targetAngle = m_LastOutQuat.GetAng(targetQuat, Vector3()) * 180.0 / M_PI;
+					double angle = CalcDeltaExpSmooth(t, targetAngle);
 
-					m_LastQuat = m_LastQuat.Slerp(targetQuat, targetAngle ? angle / targetAngle : 1);
+					if (abs(angle) > AFX_MATH_EPS)
+					{
+						m_LastOutQuat = m_LastOutQuat.Slerp(targetQuat, angle / targetAngle).Normalized();
+					}
 
-					QEulerAngles newAngles = m_LastQuat.ToQREulerAngles().ToQEulerAngles();
-	
+					QEulerAngles newAngles = m_LastOutQuat.ToQREulerAngles().ToQEulerAngles();
+
 					outAngles.x = (float)newAngles.Pitch;
 					outAngles.y = (float)newAngles.Yaw;
 					outAngles.z = (float)newAngles.Roll;
@@ -1159,7 +1162,7 @@ public:
 					outAngles.x = parentAngles.x;
 					outAngles.y = parentAngles.y;
 					outAngles.z = parentAngles.z;
-					m_LastQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(outAngles.x, outAngles.y, outAngles.z)));
+					m_LastOutQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(outAngles.x, outAngles.y, outAngles.z)));
 				}
 
 				if (m_HalfTimeVec)
@@ -1218,7 +1221,7 @@ private:
 	double m_LastY = 0;
 	double m_LastZ = 0;
 
-	Quaternion m_LastQuat;
+	Quaternion m_LastOutQuat;
 
 	double m_LastFov = 90.0;
 
@@ -2120,7 +2123,7 @@ public:
 				outAngles.y = parentAngles.y;
 				outAngles.z = parentAngles.z;
 				m_LastAngVelocity = 0;
-				m_LastQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(outAngles.x, outAngles.y, outAngles.z)));
+				m_LastOutQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(outAngles.x, outAngles.y, outAngles.z)));
 			}
 			else
 			{
@@ -2128,16 +2131,19 @@ public:
 				double deltaT = clientTime - m_LastClientTime;
 				m_LastClientTime = clientTime;
 
-				Quaternion targetQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(parentAngles.x, parentAngles.y, parentAngles.z)));
+				Quaternion targetQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(parentAngles.x, parentAngles.y, parentAngles.z))).Normalized();
 
-				double targetAngle = m_LastQuat.GetAng(targetQuat, Vector3());
+				double targetAngle = m_LastOutQuat.GetAng(targetQuat, Vector3()) * 180.0 / M_PI;
 				double angle;
-				
+
 				CalcDeltaSmooth(deltaT, targetAngle, angle, m_LastAngVelocity, m_LimitVelocityAng, m_LimitAccelerationAng);
 
-				m_LastQuat = m_LastQuat.Slerp(targetQuat, targetAngle ? angle / targetAngle : 1);
+				if (abs(angle) > AFX_MATH_EPS)
+				{
+					m_LastOutQuat = m_LastOutQuat.Slerp(targetQuat, angle / targetAngle).Normalized();
+				}
 
-				QEulerAngles newAngles = m_LastQuat.ToQREulerAngles().ToQEulerAngles();
+				QEulerAngles newAngles = m_LastOutQuat.ToQREulerAngles().ToQEulerAngles();
 
 				outAngles.x = (float)newAngles.Pitch;
 				outAngles.y = (float)newAngles.Yaw;
@@ -2190,11 +2196,11 @@ private:
 	double m_LimitVelocityZ = 600;
 	double m_LimitAccelerationZ = 60;
 
-	Quaternion m_LastQuat;
+	Quaternion m_LastOutQuat;
 	double m_LastAngVelocity = 0;
 
-	double m_LimitVelocityAng = 180;
-	double m_LimitAccelerationAng = 11.25;
+	double m_LimitVelocityAng = 360;
+	double m_LimitAccelerationAng = 90;
 };
 
 class CMirvVecAngAddCalc : public CMirvVecAngCalc
@@ -2493,21 +2499,20 @@ public:
 					outVector.y = (float)pos.Y;
 					outVector.z = (float)pos.Z;
 
-					Quaternion sourceQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(sourceAngles.x, sourceAngles.y, sourceAngles.z)));
+					Quaternion sourceQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(sourceAngles.x, sourceAngles.y, sourceAngles.z))).Normalized();
 
-					// Make sure we will travel the short way:
 					double dotProduct = DotProduct(sourceQuat, m_LastQuat);
-					if (dotProduct < 0.0)
+
+					if (dotProduct < 0)
 					{
 						sourceQuat = -1.0 * sourceQuat;
 					}
+					
+					QEulerAngles newAngles = m_LastQuat.Slerp(sourceQuat, t).Normalized().ToQREulerAngles().ToQEulerAngles();
 
-					Quaternion quat = m_LastQuat.Slerp(sourceQuat, t);
-
-					QEulerAngles angles = quat.ToQREulerAngles().ToQEulerAngles();
-					outAngles.x = (float)angles.Pitch;
-					outAngles.y = (float)angles.Yaw;
-					outAngles.z = (float)angles.Roll;
+					outAngles.x = (float)newAngles.Pitch;
+					outAngles.y = (float)newAngles.Yaw;
+					outAngles.z = (float)newAngles.Roll;
 
 					return true;
 				}
