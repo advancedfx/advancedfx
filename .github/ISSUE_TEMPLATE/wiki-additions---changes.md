@@ -2,7 +2,7 @@
 name: Wiki additions / changes
 about: Use this to propose additions / changes to the Wiki (HLAE Manual)
 title: "[Wiki] "
-labels: documentation, enhancement
+labels: documentation
 assignees: ''
 
 ---
