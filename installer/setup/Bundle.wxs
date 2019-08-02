@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"  xmlns:bal="http://schemas.microsoft.com/wix/BalExtension">
+	<Bundle
+    Name="HLAE"
+    Version="2.75.7"
+    Manufacturer="advancedfx.org"
+    UpgradeCode="{A3020802-7F4F-4B61-BAA0-6C3065855361}"
+    AboutUrl="https://www.advancedfx.org/"
+    IconSourceFile="..\..\hlae\app.ico"
+    Compressed="yes">
+
+    <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.HyperlinkSidebarLicense">
+      <bal:WixStandardBootstrapperApplication
+        LicenseUrl=""
+        SuppressOptionsUI="no"
+        LocalizationFile="lang\HyperlinkTheme.wxl"
+        ThemeFile="HyperlinkSidebarTheme.xml"
+        ShowVersion="yes"
+      />
+      
+      <Payload Id="theme_de_de" Compressed="yes"  Name="1031\thm.wxl" SourceFile="lang\HyperlinkTheme_de-DE.wxl"/>
+    </BootstrapperApplicationRef>
+
+    <Variable Name='InstallFolder' Type='string' Value='[ProgramFilesFolder]HLAE' Persisted='yes' bal:Overridable='yes'/>
+    <Variable Name="HlaeFfmpegFeature" Type="numeric" Value="1" Persisted="yes" bal:Overridable='yes'/>
+
+    <Chain>
+      <PackageGroupRef Id="NetFx45Web" />
+      <PackageGroupRef Id="HlaeCore" />        
+		</Chain>
+
+  </Bundle>
+  
+  <Fragment>
+    <PackageGroup Id="HlaeCore">
+      <MsiPackage SourceFile="$(var.HlaeCore.en-us.TargetPath)" Compressed="yes" EnableFeatureSelection="yes" Vital="yes">
+        <MsiProperty Name='APPLICATIONFOLDER' Value='[InstallFolder]' />
+        <MsiProperty Name='TRANSFORMS' Value='!(loc.HlaeCoreTransform)'/>
+        <MsiProperty Name="AFX_INSTALLFFMPEG" Value="[HlaeFfmpegFeature]" />
+        <Payload Id="HlaeCore_de_de" Compressed="yes" Name="de-de.mst" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\de-de\HlaeCore.mst"/>
+      </MsiPackage>
+    </PackageGroup>
+  </Fragment>
+</Wix>

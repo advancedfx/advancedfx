@@ -6,6 +6,24 @@
 
 <release>
 <name>HLAE</name>
+<version>2.75.7-installer</version>
+<time>2019-06-23T06:39Z</time>
+<changes>
+<change type="added">
+Added installer (based on https://wixtoolset.org) in order to solve issue #65 (Non-ASCII chracters in HLAE install location can cause problems).
+</change>
+<change type="updated">
+Changed config loading and saving behaviour:<br />
+First tries to load %APPDATA%\HLAE\hlaeconfig.xml, if that is not possible will try to load it from HLAE.exe folder.<br />
+Config will be saved to %APPDATA%\HLAE\hlaeconfig.xml.
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>HLAE</name>
 <version>2.74.1</version>
 <time>2019-06-23T06:39Z</time>
 <changes>

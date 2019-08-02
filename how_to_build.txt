@@ -14,6 +14,8 @@ Notice:
 [X] Obtain and install CMAKE from http://www.cmake.org/
     We currently use "cmake-3.8.1-win64-x64.msi".
 
+[X] Install WiX Toolset v3.11.1 from https://github.com/wixtoolset/wix3/releases/tag/wix3111rtm
+
 [X] Obtain the HLAE source code from https://github.com/advancedfx/advancedfx into a
     folder you like, we'll call it <HLAESRC> from now on (by that I mean
     extract it so that you end up with the files like advancedfx.sln and directories
@@ -149,5 +151,6 @@ Notice:
     "C:\Libraries\zlib-1.2.11"
     to "C:\<HLAESRC>\advancedfx\build\Release\bin"
 
-[X] You need to package all files covered by the 7zlistfile.txt.
-    
+[X] For ZIP Download you need to package all files covered by the 7zlistfile.txt.
+
+[X] Build the installer/setup project (if you change stuff you will need to update Product Id GUID and Version in installer/HlaeCore and Version in installer/setup (larger than build number)).

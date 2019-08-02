@@ -85,6 +85,10 @@ Valve
 	For various SDKs.
 	https://www.valvesoftware.com/
 
+WiX Toolset
+	For installer authoring software.
+	https://wixtoolset.org/
+
 advancedfx
 	https://github.com/advancedfx/advancedfx
 	License: ./LICENSES/advancedfx/LICENSE

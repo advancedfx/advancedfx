@@ -7,6 +7,7 @@ advancedfx.org.url
 AfxCppCli.dll
 AfxHook.dat
 AfxHookGoldSrc.dll
+AfxHookGoldSrc_changelog.xml
 AfxHookSource.dll
 AfxHookSource_changelog.xml
 api-ms-win-core-console-l1-1-0.dll

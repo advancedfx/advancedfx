@@ -255,9 +255,12 @@ public class Config
     //
     // Internal members:
 
-    internal static Config LoadOrCreate(String cfgPath)
+    internal static Config LoadOrCreate(String cfgPath, String oldCfgPath)
     {
         Config config = Load(cfgPath);
+
+        if (null == config) config = Load(oldCfgPath);
+
         if(null == config)
         {
             config = new Config();
