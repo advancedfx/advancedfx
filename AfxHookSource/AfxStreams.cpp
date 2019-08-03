@@ -8887,7 +8887,7 @@ void CAfxMultiRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 						CAfxRecordingSettings * itSettings = *it;
 						if (itSettings == settings)
 						{
-							m_Settings.erase(it);
+							it = m_Settings.erase(it);
 							itSettings->Release();
 						}
 					}
