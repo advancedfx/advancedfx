@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
 	<Product
-    Id="{46CA0DBB-73EC-45E1-AD34-4E4F53364B5D}"
-    Version="2.75.7"
+    Id="{A76F8377-AEA9-453C-B2D2-3C3B91A03EE6}"
+    Version="2.76.0.1"
     Name="!(loc.ApplicationName)"
     Language="1033"
     Manufacturer="!(loc.Manufacturer)"

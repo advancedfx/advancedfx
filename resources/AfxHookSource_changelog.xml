@@ -6,8 +6,8 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>1.65.XX</version>
-<time>XXXX-XX-XXTXX:X</time>
+<version>1.65.0</version>
+<time>2019-08-03T10:56</time>
 <changes>
 <change type="added">
 Added assistedflash and wipe properties to mirv_deathmsg (#206).<br />

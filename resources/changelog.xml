@@ -6,17 +6,17 @@
 
 <release>
 <name>HLAE</name>
-<version>2.76.XX</version>
-<time>XXXX-XX-XXTXX:XXZ</time>
+<version>2.76.0.1</version>
+<time>2019-08-03T10:56</time>
 <changes>
 <change type="updated">
-Changed config load/save behavior: hlaeconfig.xml in HLAE application folder will have priority, otherwise the one in %APPDATA%HLAE is used.
+Changed config load/save behavior: hlaeconfig.xml in HLAE application folder will have priority, otherwise the one in %APPDATA%\HLAE is used.
 </change>
 <change type="added">
 Custom loader now detects if paths are relative to HLAE folder and stores them accordingly, so that moving the folder doesn't break it (#200).
 </change>
 <change type="updated">
-Included AfxHookSource 1.65.0 (XXXX-XX-XXTXX:XXZ).
+Included AfxHookSource 1.65.0 (2019-08-03T10:56).
 </change>
 </changes>
 </release>
