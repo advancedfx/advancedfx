@@ -14,6 +14,14 @@ Added assistedflash and wipe properties to mirv_deathmsg (#206).<br />
 Example: <br />
 mirv_deathmsg filter add assisterId=0 assistedflash=0 // first entry (or use move)
 </change>
+<change type="added">
+Added mutli recording settings, example:<br/>
+mirv_streams settings add multi multi<br/>
+mirv_streams settings edit multi add afxClassic<br/>
+mirv_streams settings edit multi add afxFfmpegYuv420p<br/>
+mirv_streams add normal norm<br/>
+mirv_streams edit norm settings multi<br/>
+</change>
 </changes>
 </release>
 

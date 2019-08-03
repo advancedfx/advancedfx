@@ -897,7 +897,7 @@ void CAfxSingleStream::CaptureEnd()
 	{
 		if (nullptr == m_OutVideoStream)
 		{
-			m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, buffer->Format, g_AfxStreams.GetStartHostFrameRate());
+			m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, buffer->Format, g_AfxStreams.GetStartHostFrameRate(), "");
 			if (nullptr == m_OutVideoStream)
 			{
 				Tier0_Warning("AFXERROR: Failed to create out video stream for %s.\n", this->StreamName_get());
@@ -1062,7 +1062,7 @@ void CAfxTwinStream::CaptureEnd()
 
 					if (nullptr == m_OutVideoStream)
 					{
-						m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, bufferA->Format, g_AfxStreams.GetStartHostFrameRate());
+						m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, bufferA->Format, g_AfxStreams.GetStartHostFrameRate(), "");
 						if (nullptr == m_OutVideoStream)
 						{
 							Tier0_Warning("AFXERROR: Failed to create out video stream for %s.\n", this->StreamName_get());
@@ -1157,7 +1157,7 @@ void CAfxTwinStream::CaptureEnd()
 
 					if (nullptr == m_OutVideoStream)
 					{
-						m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, bufferA->Format, g_AfxStreams.GetStartHostFrameRate());
+						m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, bufferA->Format, g_AfxStreams.GetStartHostFrameRate(), "");
 						m_OutVideoStream->AddRef();
 					}
 
@@ -1454,7 +1454,7 @@ void CAfxMatteStream::CaptureEnd()
 
 		if (nullptr == m_OutVideoStream)
 		{
-			m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, bufferEntBlack->Format, g_AfxStreams.GetStartHostFrameRate());
+			m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, bufferEntBlack->Format, g_AfxStreams.GetStartHostFrameRate(), "");
 			if (nullptr == m_OutVideoStream)
 			{
 				Tier0_Warning("AFXERROR: Failed to create out video stream for %s.\n", this->StreamName_get());
@@ -8491,22 +8491,22 @@ CAfxClassicRecordingSettings::CShared::CShared()
 	m_NamedSettings.emplace(m_DefaultSettings->GetName(), m_DefaultSettings);
 
 	{
-		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpeg", true, "-c:v libx264 -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}\\video.mp4{QUOTE}");
+		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpeg", true, "-c:v libx264 -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}video.mp4{QUOTE}");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 
 	{
-		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegYuv420p", true, "-c:v libx264 -pix_fmt yuv420p -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}\\video.mp4{QUOTE}");
+		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegYuv420p", true, "-c:v libx264 -pix_fmt yuv420p -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}video.mp4{QUOTE}");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 
 	{
-		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegLosslessFast", true, "-c:v libx264rgb -preset ultrafast -crf 0 {QUOTE}{AFX_STREAM_PATH}\\video.mp4{QUOTE}");
+		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegLosslessFast", true, "-c:v libx264rgb -preset ultrafast -crf 0 {QUOTE}{AFX_STREAM_PATH}video.mp4{QUOTE}");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 
 	{
-		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegLosslessBest", true, "-c:v libx264rgb -preset veryslow -crf 0 {QUOTE}{AFX_STREAM_PATH}\\video.mp4{QUOTE}");
+		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegLosslessBest", true, "-c:v libx264rgb -preset veryslow -crf 0 {QUOTE}{AFX_STREAM_PATH}video.mp4{QUOTE}");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 
@@ -8617,10 +8617,31 @@ void CAfxRecordingSettings::Console(IWrpCommandArgs * args)
 				}
 				return;
 			}
+			else if (4 == argC && 0 == _stricmp("multi", args->ArgV(2)))
+			{
+				const char * arg3 = args->ArgV(3);
+
+				if (StringIBeginsWith(arg3, "afx"))
+				{
+					Tier0_Warning("AFXERROR: Custom presets must not begin with \"afx\".\n");
+				}
+				else if (nullptr != GetByName(arg3))
+				{
+					Tier0_Warning("AFXERROR: There is already a setting named %s\n", arg3);
+				}
+				else
+				{
+					CAfxRecordingSettings * settings = new CAfxMultiRecordingSettings(arg3, false);
+					m_Shared.m_NamedSettings.emplace(settings->GetName(), settings);
+				}
+				return;
+			}
 
 			Tier0_Msg(
 				"%s add ffmpeg <name> \"<yourOptionsHere>\" - Adds an FFMPEG setting, <yourOptionsHere> are output options, use {QUOTE} for \", {AFX_STREAM_PATH} for the folder path of the stream, \\{ for {, \\} for }. For an example see one of the afxFfmpeg* templates (edit them).\n"
 				"%s add sampler <name> - Adds a sampler with 30 fps and default settings, edit it afterwars to change them.\n"
+				"%s add multi <name> - Adds multi settings, edit it afterwars to add settings to it.\n"
+				, arg0
 				, arg0
 				, arg0
 			);
@@ -8648,14 +8669,16 @@ void CAfxClassicRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 	Tier0_Warning("The classic settings are controlled through mirv_streams settings and can not be edited.\n");
 }
 
-CAfxOutVideoStream * CAfxClassicRecordingSettings::CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float frameRate) const
+CAfxOutVideoStream * CAfxClassicRecordingSettings::CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float frameRate, const char * pathSuffix) const
 {
 	std::wstring wideStreamName;
-	if (UTF8StringToWideString(stream.StreamName_get(), wideStreamName))
+	std::wstring widePathSuffix;
+	if (UTF8StringToWideString(stream.StreamName_get(), wideStreamName) && UTF8StringToWideString(pathSuffix, widePathSuffix))
 	{
 		std::wstring capturePath(streams.GetTakeDir());
 		capturePath.append(L"\\");
 		capturePath.append(wideStreamName);
+		capturePath.append(widePathSuffix);
 
 		CAfxRenderViewStream::StreamCaptureType captureType = stream.GetCaptureType();
 
@@ -8663,7 +8686,7 @@ CAfxOutVideoStream * CAfxClassicRecordingSettings::CreateOutVideoStream(const CA
 	}
 	else
 	{
-		Tier0_Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", stream.StreamName_get());
+		Tier0_Warning("AFXERROR: Could not convert \"%s\" and \"%s\" from UTF8 to wide string.\n", stream.StreamName_get(), pathSuffix);
 	}
 
 	return nullptr;
@@ -8712,30 +8735,39 @@ void CAfxFfmpegRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 	);
 }
 
-CAfxOutVideoStream * CAfxFfmpegRecordingSettings::CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float frameRate) const
+CAfxOutVideoStream * CAfxFfmpegRecordingSettings::CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float frameRate, const char * pathSuffix) const
 {
-	std::wstring wideOptions;
-	if (UTF8StringToWideString(m_FfmpegOptions.c_str(), wideOptions))
+	std::wstring widePathSuffix;
+	if (UTF8StringToWideString(pathSuffix, widePathSuffix))
 	{
-		std::wstring wideStreamName;
-		if (UTF8StringToWideString(stream.StreamName_get(), wideStreamName))
+		std::wstring wideOptions;
+		if (UTF8StringToWideString(m_FfmpegOptions.c_str(), wideOptions))
 		{
-			std::wstring capturePath(streams.GetTakeDir());
-			capturePath.append(L"\\");
-			capturePath.append(wideStreamName);
+			std::wstring wideStreamName;
+			if (UTF8StringToWideString(stream.StreamName_get(), wideStreamName))
+			{
+				std::wstring capturePath(streams.GetTakeDir());
+				capturePath.append(L"\\");
+				capturePath.append(wideStreamName);
+				capturePath.append(widePathSuffix);
 
-			CAfxRenderViewStream::StreamCaptureType captureType = stream.GetCaptureType();
+				CAfxRenderViewStream::StreamCaptureType captureType = stream.GetCaptureType();
 
-			return new CAfxOutFFMPEGVideoStream(imageFormat, capturePath, wideOptions, frameRate);
+				return new CAfxOutFFMPEGVideoStream(imageFormat, capturePath, wideOptions, frameRate);
+			}
+			else
+			{
+				Tier0_Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", stream.StreamName_get());
+			}
 		}
 		else
 		{
-			Tier0_Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", stream.StreamName_get());
+			Tier0_Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", m_FfmpegOptions.c_str());
 		}
 	}
 	else
 	{
-		Tier0_Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", m_FfmpegOptions.c_str());
+		Tier0_Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", pathSuffix);
 	}
 
 	return nullptr;
@@ -8767,7 +8799,7 @@ void CAfxDefaultRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 				}
 				else if(settings->InheritsFrom(this))
 				{
-					Tier0_Warning("AFXERROR: Can not assign a setting that we depends on this setting.\n");
+					Tier0_Warning("AFXERROR: Can not assign a setting that depends on this setting.\n");
 				}
 				else
 				{
@@ -8795,13 +8827,112 @@ void CAfxDefaultRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 	);
 }
 
+// CAfxMultiRecordingSettings //////////////////////////////////////////////////
+
+
+void CAfxMultiRecordingSettings::Console_Edit(IWrpCommandArgs * args)
+{
+	Tier0_Msg("%s (type multi) recording setting options:\n", m_Name.c_str());
+
+	int argC = args->ArgC();
+	const char * arg0 = args->ArgV(0);
+
+	if (2 <= argC)
+	{
+		const char * arg1 = args->ArgV(1);
+
+		if (0 == _stricmp("add", arg1))
+		{
+			if (3 == argC)
+			{
+				CAfxRecordingSettings * settings = CAfxRecordingSettings::GetByName(args->ArgV(2));
+
+				if (nullptr == settings)
+				{
+					Tier0_Warning("AFXERROR: There's no setting named %s.\n", args->ArgV(2));
+				}
+				else if (settings->InheritsFrom(this))
+				{
+					Tier0_Warning("AFXERROR: Can not assign a setting that depends on this setting.\n");
+				}
+				else
+				{
+					if (settings) settings->AddRef();
+					m_Settings.push_back(settings);
+				}
+
+				return;
+			}
+
+			Tier0_Msg(
+				"%s add <settingsName> - Add settings with name <settingsName>.\n"
+				, arg0
+			);
+			return;
+		}
+		else if (0 == _stricmp("remove", arg1))
+		{
+			if (3 == argC)
+			{
+				CAfxRecordingSettings * settings = CAfxRecordingSettings::GetByName(args->ArgV(2));
+
+				if (nullptr == settings)
+				{
+					Tier0_Warning("AFXERROR: There's no setting named %s.\n", args->ArgV(2));
+				}
+				else
+				{
+					for (auto it = m_Settings.begin(); it != m_Settings.end(); ++it)
+					{
+						CAfxRecordingSettings * itSettings = *it;
+						if (itSettings == settings)
+						{
+							m_Settings.erase(it);
+							itSettings->Release();
+						}
+					}
+				}
+
+				return;
+			}
+
+			Tier0_Msg(
+				"%s remove <settingsName> - Remove settings with name <settingsName>.\n"
+				, arg0
+			);
+			return;
+		}
+		else if (0 == _stricmp("print", arg1))
+		{
+			int idx = 0;
+			for (auto it = m_Settings.begin(); it != m_Settings.end(); ++it)
+			{
+				CAfxRecordingSettings * itSettings = *it;
+				Tier0_Msg("%i: %s\n", idx, itSettings ? itSettings->GetName() : "[null]");
+				++idx;
+			}
+			if (0 == idx) Tier0_Msg("[empty]\n");
+			return;
+		}
+	}
+
+	Tier0_Msg(
+		"%s add <settingsName> - Add settings.\n"
+		"%s remove <settingsName> - Remove settings.\n"
+		"%s print <settingsName> - List settings.\n"
+		, arg0
+		, arg0
+		, arg0
+	);
+}
+
 // CAfxSamplingRecordingSettings ///////////////////////////////////////////////
 
-CAfxOutVideoStream * CAfxSamplingRecordingSettings::CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float frameRate) const
+CAfxOutVideoStream * CAfxSamplingRecordingSettings::CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float frameRate, const char * pathSuffix) const
 {
 	if (m_OutputSettings)
 	{
-		if (CAfxOutVideoStream * outVideoStream = m_OutputSettings->CreateOutVideoStream(streams, stream, imageFormat, m_OutFps))
+		if (CAfxOutVideoStream * outVideoStream = m_OutputSettings->CreateOutVideoStream(streams, stream, imageFormat, m_OutFps, pathSuffix))
 		{
 			return new CAfxOutSamplingStream(imageFormat, outVideoStream, frameRate, m_Method, m_OutFps ? 1.0 / m_OutFps : 0.0, m_Exposure, m_FrameStrength);
 		}
@@ -8833,7 +8964,7 @@ void CAfxSamplingRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 				}
 				else if (settings->InheritsFrom(this))
 				{
-					Tier0_Warning("AFXERROR: Can not assign a setting that we depends on this setting.\n");
+					Tier0_Warning("AFXERROR: Can not assign a setting that depends on this setting.\n");
 				}
 				else
 				{

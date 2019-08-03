@@ -6,6 +6,8 @@
 #include <string>
 #include <Windows.h>
 
+#include <list>
+
 class CAfxOutStream : public CAfxThreadedRefCounted
 {
 public:
@@ -155,4 +157,45 @@ private:
 	double m_Time;
 
 	double m_InputFrameDuration;
+};
+
+class CAfxOutMultiVideoStream : public CAfxOutVideoStream
+{
+public:
+	CAfxOutMultiVideoStream(const CAfxImageFormat & imageFormat, std::list<CAfxOutVideoStream *> && outStreams)
+		: CAfxOutVideoStream(imageFormat)
+		, m_OutStreams(outStreams)
+	{
+		for (auto it = m_OutStreams.begin(); it != m_OutStreams.end(); ++it)
+		{
+			if (CAfxOutVideoStream * stream = *it) stream->AddRef();
+		}
+	}
+
+	virtual bool SupplyVideoData(const CAfxImageBuffer & buffer) override
+	{
+		bool okay = true;
+
+		for (auto it = m_OutStreams.begin(); it != m_OutStreams.end(); ++it)
+		{
+			if (CAfxOutVideoStream * stream = *it)
+			{
+				if (!stream->SupplyVideoData(buffer)) okay = false;
+			}
+		}
+
+		return okay;
+	}
+
+protected:
+	virtual ~CAfxOutMultiVideoStream() override
+	{
+		for (auto it = m_OutStreams.begin(); it != m_OutStreams.end(); ++it)
+		{
+			if (CAfxOutVideoStream * stream = *it) stream->Release();
+		}
+	}
+
+private:
+	std::list<CAfxOutVideoStream *> m_OutStreams;
 };

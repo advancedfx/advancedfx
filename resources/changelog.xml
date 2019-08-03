@@ -9,6 +9,9 @@
 <version>2.76.XX</version>
 <time>XXXX-XX-XXTXX:XXZ</time>
 <changes>
+<change type="updated">
+Changed config load/save behavior: hlaeconfig.xml in HLAE application folder will have priority, otherwise the one in %APPDATA%HLAE is used.
+</change>
 <change type="added">
 Custom loader now detects if paths are relative to HLAE folder and stores them accordingly, so that moving the folder doesn't break it (#200).
 </change>
