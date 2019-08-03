@@ -29,11 +29,13 @@ void CHudBaseDeathNotice::FireGameEvent_UnkDoNotice( IGameEvent *event )
 event->GetInt("attacker",0) -> VEngineClient014->GetPlayerForUserID --> VEngineClient014->GetPlayerInfo,  IClientNetworkable::entindex((IClientNetworkable)localPlayer)
 event->GetInt("userid",0) -> VEngineClient014->GetPlayerForUserID --> VEngineClient014->GetPlayerInfo
 event->GetInt("assister",0) -> VEngineClient014->GetPlayerForUserID --> VEngineClient014->GetPlayerInfo,  IClientNetworkable::entindex((IClientNetworkable)localPlayer)
+event->GetInt("assistedflash",0) // new
 event->GetString("weapon",0)
 event->GetInt("headshot",0)
 event->GetInt("penetrated",0)
 event->GetInt("dominated",0)
 event->GetInt("revenge",0)
+event->GetInt("wipe",0) // new
 
 - SpawnTime
 - Lifetime
@@ -600,6 +602,8 @@ struct DeathMsgFilterEntry
 	PlayerEntry victim;
 	PlayerEntry assister;
 
+	MyDeathMsgIntEntry assistedflash;
+
 	StringEntry weapon;
 
 	MyDeathMsgIntEntry headshot;
@@ -609,6 +613,8 @@ struct DeathMsgFilterEntry
 	MyDeathMsgIntEntry dominated;
 
 	MyDeathMsgIntEntry revenge;
+
+	MyDeathMsgIntEntry wipe;
 
 	MyDeathMsgFloatEntry lifetime;
 
@@ -685,6 +691,10 @@ struct DeathMsgFilterEntry
 			{
 				victim.isLocal.Console_Set(argI + strlen("victimIsLocal="));
 			}
+			else if (StringIBeginsWith(argI, "assistedflash="))
+			{
+				assistedflash.Console_Set(argI + strlen("assistedflash="));
+			}
 			else if (StringIBeginsWith(argI, "weapon="))
 			{
 				weapon.Console_Set(argI + strlen("weapon="));
@@ -696,6 +706,10 @@ struct DeathMsgFilterEntry
 			else if (StringIBeginsWith(argI, "penetrated="))
 			{
 				penetrated.Console_Set(argI + strlen("penetrated="));
+			}
+			else if (StringIBeginsWith(argI, "wipe="))
+			{
+				wipe.Console_Set(argI + strlen("wipe="));
 			}
 			else if (StringIBeginsWith(argI, "dominated="))
 			{
@@ -808,6 +822,12 @@ struct DeathMsgFilterEntry
 				victim.isLocal.Console_Edit(args);
 				return;
 			}
+			else if (0 == _stricmp("assistedflash", arg1))
+			{
+				CSubWrpCommandArgs subArgs(args, 2);
+				assistedflash.Console_Edit(args);
+				return;
+			}
 			else if (0 == _stricmp("weapon", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
@@ -836,6 +856,12 @@ struct DeathMsgFilterEntry
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
 				revenge.Console_Edit(args);
+				return;
+			}
+			else if (0 == _stricmp("wipe", arg1))
+			{
+				CSubWrpCommandArgs subArgs(args, 2);
+				wipe.Console_Edit(args);
 				return;
 			}
 			else if (0 == _stricmp("lifetime", arg1))
@@ -924,6 +950,10 @@ struct DeathMsgFilterEntry
 		victim.isLocal.Console_Print();
 		Tier0_Msg("\n");
 
+		Tier0_Msg("%s assistedflash [...] = ", arg0);
+		assistedflash.Console_Print();
+		Tier0_Msg("\n");
+
 		Tier0_Msg("%s weapon [...] = ", arg0);
 		weapon.Console_Print();
 		Tier0_Msg("\n");
@@ -942,6 +972,10 @@ struct DeathMsgFilterEntry
 
 		Tier0_Msg("%s revenge [...] = ", arg0);
 		revenge.Console_Print();
+		Tier0_Msg("\n");
+
+		Tier0_Msg("%s wipe [...] = ", arg0);
+		wipe.Console_Print();
 		Tier0_Msg("\n");
 
 		Tier0_Msg("%s lifetime [...] = ", arg0);
@@ -969,6 +1003,8 @@ public:
 	MyDeathMsgPlayerEntry victim;
 	MyDeathMsgPlayerEntry assister;
 
+	MyDeathMsgIntEntry assistedflash;
+
 	MyDeathMsgCStringEntry weapon;
 
 	MyDeathMsgIntEntry headshot;
@@ -978,6 +1014,8 @@ public:
 	MyDeathMsgIntEntry dominated;
 
 	MyDeathMsgIntEntry revenge;
+
+	MyDeathMsgIntEntry wipe;
 
 	MyDeathMsgFloatEntry lifetime;
 
@@ -995,11 +1033,13 @@ public:
 		ApplyPlayerEntry(dme.attacker, attacker);
 		ApplyPlayerEntry(dme.victim, victim);
 		ApplyPlayerEntry(dme.assister, assister);
+		ApplyIntEntry(dme.assistedflash, assistedflash);
 		ApplyStringEntry(dme.weapon, weapon);
 		ApplyIntEntry(dme.headshot, headshot);
 		ApplyIntEntry(dme.penetrated, penetrated);
 		ApplyIntEntry(dme.dominated, dominated);
 		ApplyIntEntry(dme.revenge, revenge);
+		ApplyIntEntry(dme.wipe, wipe);
 		ApplyFloatEntry(dme.lifetime, lifetime);
 		ApplyFloatEntry(dme.lifetimeMod, lifetimeMod);
 		ApplyBoolEntry(dme.block, block);
@@ -1035,10 +1075,12 @@ public:
 		if (attacker.newId.use && 0 == strcmp("attacker", keyName)) return attacker.newId.value.ResolveToUserId();
 		if (victim.newId.use && 0 == strcmp("userid", keyName)) return victim.newId.value.ResolveToUserId();
 		if (assister.newId.use && 0 == strcmp("assister", keyName)) return assister.newId.value.ResolveToUserId();
+		if (assistedflash.use && 0 == strcmp("assistedflash", keyName)) return assistedflash.value;
 		if (headshot.use && 0 == strcmp("headshot", keyName)) return headshot.value;
 		if (penetrated.use && 0 == strcmp("penetrated", keyName)) return penetrated.value;
 		if (dominated.use && 0 == strcmp("dominated", keyName)) return dominated.value;
 		if (revenge.use && 0 == strcmp("revenge", keyName)) return revenge.value;
+		if (wipe.use && 0 == strcmp("wipe", keyName)) return wipe.value;
 
 		return m_Event->GetInt(keyName, defaultValue);
 	}
@@ -1586,11 +1628,13 @@ void Console_DeathMsgArgs_PrintHelp(const char * cmd, bool showMatch)
 		"\t\"victimName=<sName>\" - New victim name.\n"
 		"\t\"victimId=<id>\" - New victim id.\n"
 		"\t\"victimIsLocal=(0|1)\" - If to be considered local player.\n"
+		"\t\"assistedflash=<iVal>\" - If flash assist.\n"
 		"\t\"weapon=<sWeaponName>\" - Weapon name (i.e. ak47).\n"
 		"\t\"headshot=<iVal>\" - If headshot.\n"
 		"\t\"penetrated=<iVal>\" - If penetrated.\n"
 		"\t\"dominated=<iVal>\" - If dominated.\n"
 		"\t\"revenge=<iVal>\" - If revenge.\n"
+		"\t\"wipe=<iVal>\" - Squad wipeout in Danger Zone(?).\n"
 		"\t\"lifetime=<fVal>\" - Life time in seconds.\n"
 		"\t\"lifetimeMod=<fVal>\" - Life time modifier (for player considered to be local player).\n"
 		"\t\"block=<iVal>\" - If to block this message (0 = No, 1 = Yes).\n"
