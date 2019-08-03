@@ -39,7 +39,7 @@ class CustomLoader
 
                             cfg.InjectDlls.Add(dll);
 
-                            getHookPaths.Add(isProcess64Bit => path);
+                            getHookPaths.Add(isProcess64Bit => dll.FullPath);
                         }
                     }
 

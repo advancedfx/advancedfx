@@ -6,11 +6,11 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>1.65.0</version>
+<version>1.65.XX</version>
 <time>XXXX-XX-XXTXX:X</time>
 <changes>
 <change type="added">
-Added assistedflash and wipe properties to mirv_deathmsg.<br />
+Added assistedflash and wipe properties to mirv_deathmsg (#206).<br />
 Example: <br />
 mirv_deathmsg filter add assisterId=0 assistedflash=0 // first entry (or use move)
 </change>

@@ -329,7 +329,7 @@ namespace AfxGui
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            m_BaseDir = System.Windows.Forms.Application.StartupPath;
+            m_BaseDir = System.IO.Path.GetFullPath(System.Windows.Forms.Application.StartupPath).TrimEnd('\\','/');
             m_AppDataDir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HLAE");
 
             if(!System.IO.Directory.Exists(m_AppDataDir)) System.IO.Directory.CreateDirectory(m_AppDataDir);
@@ -363,7 +363,7 @@ namespace AfxGui
             if (Globals.AutoStartCustomLoader)
             {
                 List<Loader.GetHookPathDelegate> getHookPaths = new List<Loader.GetHookPathDelegate>();
-                foreach (CfgInjectDll dll in GlobalConfig.Instance.Settings.CustomLoader.InjectDlls) getHookPaths.Add(isProcess64Bit => dll.Path);
+                foreach (CfgInjectDll dll in GlobalConfig.Instance.Settings.CustomLoader.InjectDlls) getHookPaths.Add(isProcess64Bit => dll.FullPath);
 
                 if (!Loader.Load(getHookPaths, GlobalConfig.Instance.Settings.CustomLoader.ProgramPath, GlobalConfig.Instance.Settings.CustomLoader.CmdLine))
                     bOk = false;

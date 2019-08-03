@@ -6,6 +6,21 @@
 
 <release>
 <name>HLAE</name>
+<version>2.76.XX</version>
+<time>XXXX-XX-XXTXX:XXZ</time>
+<changes>
+<change type="added">
+Custom loader now detects if paths are relative to HLAE folder and stores them accordingly, so that moving the folder doesn't break it (#200).
+</change>
+<change type="updated">
+Included AfxHookSource 1.65.0 (XXXX-XX-XXTXX:XXZ).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.75.7-installer</version>
 <time>2019-06-23T06:39Z</time>
 <changes>

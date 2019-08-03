@@ -71,7 +71,27 @@ public class CfgLauncher
 
     public class CfgInjectDll
     {
-        public String Path;
+        public String Path {
+            get {
+                string basePath = (Program.BaseDir + System.IO.Path.DirectorySeparatorChar);
+                if (null != m_Path && m_Path.StartsWith(basePath)) return m_Path.Substring(basePath.Length);
+                return m_Path;
+            }
+            set
+            {
+                m_Path = value;
+            }
+        }
+
+        internal String FullPath
+        {
+            get
+            {
+                return !System.IO.Path.IsPathRooted(m_Path) ? System.IO.Path.Combine(Program.BaseDir, m_Path) : m_Path;
+            }
+        }
+
+        private String m_Path;
     }
 
 public class CfgCustomLoader
