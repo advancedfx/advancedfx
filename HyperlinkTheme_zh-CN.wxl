@@ -8,30 +8,28 @@
   <String Id="InstallHeader">欢迎</String>
   <String Id="InstallMessage">安装程序将会在您的电脑上安装 [WixBundleName].点击安装以继续<!--, options to set the install directory--> 或者点击关闭并推出.</String>
   <String Id="InstallVersion">版本 [WixBundleVersion]</String>
-  <String Id="ConfirmCancelMessage">确定要离开吗？</String>
-  <String Id="ExecuteUpgradeRelatedBundleMessage">先前的版本</String>
+  <String Id="ConfirmCancelMessage">确定要取消安装吗？</String>
+  <String Id="ExecuteUpgradeRelatedBundleMessage">早期版本</String>
   <String Id="HelpHeader">安装帮助</String>
   <String Id="HelpText">/安装 | /修复 | /卸载 | /布局 [directory] - 安装, 修复, 卸载或
-   creates a complete local copy of the bundle in directory. 默认为安装.
+   在目录中创建一个完整的本地副本. 默认为安装.
 
-/passive | /quiet -  displays minimal UI with no prompts or displays no UI and
-   no prompts. By default UI and all prompts are displayed.
-
-/norestart   - suppress any attempts to restart. By default UI will prompt before restart.
-/log log.txt - logs to a specific file. By default a log file is created in %TEMP%.</String>
+/被动模式 | /静默模式 -  显示最小化用户界面和提示或者不显示用户界面和提示. 默认显示用户界面和所有提示. 
+/禁止重启模式   - 阻止任何可能的计算机重启. 默认用户界面会显示重启提示.
+/日志模式 log.txt - 指定一个日志文件. 默认日志文件会创建在%TEMP%.</String>
   <String Id="HelpCloseButton">&amp;关闭</String>
-  <String Id="InstallLicenseLinkText">[WixBundleName] &lt;a href="#"&gt;license terms&lt;/a&gt;.</String>
-  <String Id="InstallAcceptCheckbox">I &amp;agree to the license terms and conditions</String>
-  <String Id="InstallOptionsButton">&amp;Options</String>
+  <String Id="InstallLicenseLinkText">[WixBundleName] &lt;a href="#"&gt;许可条款&lt;/a&gt;.</String>
+  <String Id="InstallAcceptCheckbox">I &amp;同意许可条款</String>
+  <String Id="InstallOptionsButton">&amp;选项</String>
   <String Id="InstallInstallButton">&amp;安装</String>
   <String Id="InstallCloseButton">&amp;关闭</String>
-  <String Id="OptionsHeader">Setup Options</String>
+  <String Id="OptionsHeader">安装选项</String>
   <String Id="OptionsLocationLabel">安装路径</String>
   <String Id="OptionsBrowseButton">&amp;浏览</String>
   <String Id="OptionsOkButton">&amp;确定</String>
   <String Id="OptionsCancelButton">&amp;取消</String>
-  <String Id="ProgressHeader">Setup Progress</String>
-  <String Id="ProgressLabel">Processing:</String>
+  <String Id="ProgressHeader">安装进度</String>
+  <String Id="ProgressLabel">处理中:</String>
   <String Id="OverallProgressPackageText">初始化中...</String>
   <String Id="ProgressCancelButton">&amp;取消</String>
   <String Id="ModifyHeader">自定义安装</String>
@@ -41,7 +39,7 @@
   <String Id="SuccessRepairHeader">修复成功</String>
   <String Id="SuccessUninstallHeader">卸载成功</String>
   <String Id="SuccessInstallHeader">安装成功</String> 
-  <String Id="SuccessHeader">Setup Successful</String>	
+  <String Id="SuccessHeader">安装成功</String>	
   <String Id="SuccessLaunchButton">&amp;启动</String>
   <String Id="SuccessRestartText">使用软件之前务必重新启动计算机.</String>
   <String Id="SuccessRestartButton">&amp;重启</String>
@@ -54,19 +52,19 @@
   <String Id="FailureRestartText">必须重启您的计算机以完成安装.</String>
   <String Id="FailureRestartButton">&amp;重启</String>
   <String Id="FailureCloseButton">&amp;关闭</String>
-  <String Id="FilesInUseHeader">Files In Use</String>
-  <String Id="FilesInUseLabel">The following applications are using files that need to be updated:</String>
+  <String Id="FilesInUseHeader">文件正在使用中</String>
+  <String Id="FilesInUseLabel">以下应用程序正在使用需要更新的文件:</String>
   <String Id="FilesInUseCloseRadioButton">请关闭 &amp;应用并尝试重启它们.</String>
   <String Id="FilesInUseDontCloseRadioButton">&amp;请勿关闭应用. 需要重新启动.</String>
   <String Id="FilesInUseOkButton">&amp;确定</String>
   <String Id="FilesInUseCancelButton">&amp;取消</String>
-  <String Id="ErrorFailNoActionReboot">No action was taken as a system reboot is required.</String>
+  <String Id="ErrorFailNoActionReboot">在系统重启前将不进行任何操作.</String>
 
   <String Id="HlaeCoreTransform"></String>
 
-  <String Id="HlaeDisclaimerTitle">Disclaimer</String>
-  <String Id="HlaeDisclaimer">This software is for your enjoyment and you are using it at your own risk.</String>
+  <String Id="HlaeDisclaimerTitle">免责声明</String>
+  <String Id="HlaeDisclaimer">该软件仅限个人使用并且自行承担风险.</String>
 
-  <String Id="HlaeFeaturesHeader">Features</String>
-  <String Id="HlaeFfmpegFeature"><![CDATA[Install FFMPEG from https://ffmpeg.zeranoe.com/builds/]]></String>
+  <String Id="HlaeFeaturesHeader">特点</String>
+  <String Id="HlaeFfmpegFeature"><![CDATA[在这里 https://ffmpeg.zeranoe.com/builds/ 安装ffmpeg]]></String>
 </WixLocalization>
