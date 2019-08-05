@@ -15,7 +15,7 @@ Example: <br />
 mirv_deathmsg filter add assisterId=0 assistedflash=0 // first entry (or use move)
 </change>
 <change type="added">
-Added mutli recording settings, example:<br/>
+Added mutli recording settings, example (#193):<br/>
 mirv_streams settings add multi multi<br/>
 mirv_streams settings edit multi add afxClassic<br/>
 mirv_streams settings edit multi add afxFfmpegYuv420p<br/>
