@@ -6,7 +6,7 @@
     <ProductVersion>3.10</ProductVersion>
     <ProjectGuid>fae49f29-11c5-426c-b062-594be5bd11d6</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
-    <OutputName>HLAE Setup</OutputName>
+    <OutputName>HLAE_Setup</OutputName>
     <OutputType>Bundle</OutputType>
     <Name>setup</Name>
   </PropertyGroup>

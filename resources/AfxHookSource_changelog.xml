@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.65.1</version>
+<time>2019-08-05T20:29Z</time>
+<changes>
+<change type="fixed">
+Fixed crash bug when removing an item from a mirv_streams multi settings item.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.65.0</version>
 <time>2019-08-03T10:56</time>
 <changes>

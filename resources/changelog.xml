@@ -6,8 +6,26 @@
 
 <release>
 <name>HLAE</name>
+<version>2.76.2</version>
+<time>2019-08-05T20:29Z</time>
+<changes>
+<change type="fixed">
+Fixed HLAE_Setup.exe loading in wrong language.
+</change>
+<change type="added">
+Added zn-CH translations to installer. (Thanks to Purple-CSGO and tediorelee!)
+</change>
+<change type="updated">
+Included AfxHookSource 1.65.1 (2019-08-05T20:29Z).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.76.0.1</version>
-<time>2019-08-03T10:56</time>
+<time>2019-08-03T10:56Z</time>
 <changes>
 <change type="updated">
 Changed config load/save behavior: hlaeconfig.xml in HLAE application folder will have priority, otherwise the one in %APPDATA%\HLAE is used.

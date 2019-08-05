@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<WixLocalization Culture="zh-cn" Language="2052" Codepage="65001"xmlns="http://schemas.microsoft.com/wix/2006/localization">
+<WixLocalization Culture="zh-cn" Language="2052" Codepage="65001" xmlns="http://schemas.microsoft.com/wix/2006/localization">
   <String Id="AfxUiCulture">zh-CN</String>
   <String Id="ApplicationName">HLAE 内核</String>
   <String Id="Manufacturer">advancedfx.org</String>
