@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (c) .NET Foundation and contributors. All rights reserved. Licensed under the Microsoft Reciprocal License. See LICENSE.TXT file in the project root for full license information. -->
+
+
+<WixLocalization Culture="en-us" Language="1033" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <String Overridable="yes" Id="Caption">[WixBundleName] Setup</String>
+  <String Overridable="yes" Id="Title">[WixBundleName]</String>
+  <String Overridable="yes" Id="InstallHeader">Welcome</String>
+  <String Overridable="yes" Id="InstallMessage">Setup will install [WixBundleName] on your computer. Click install to continue<!--, options to set the install directory--> or Close to exit.</String>
+  <String Overridable="yes" Id="InstallVersion">Version [WixBundleVersion]</String>
+  <String Overridable="yes" Id="ConfirmCancelMessage">Are you sure you want to cancel?</String>
+  <String Overridable="yes" Id="ExecuteUpgradeRelatedBundleMessage">Previous version</String>
+  <String Overridable="yes" Id="HelpHeader">Setup Help</String>
+  <String Overridable="yes" Id="HelpText">/install | /repair | /uninstall | /layout [directory] - installs, repairs, uninstalls or
+   creates a complete local copy of the bundle in directory. Install is the default.
+
+/passive | /quiet -  displays minimal UI with no prompts or displays no UI and
+   no prompts. By default UI and all prompts are displayed.
+
+/norestart   - suppress any attempts to restart. By default UI will prompt before restart.
+/log log.txt - logs to a specific file. By default a log file is created in %TEMP%.</String>
+  <String Overridable="yes" Id="HelpCloseButton">&amp;Close</String>
+  <String Overridable="yes" Id="InstallLicenseLinkText">[WixBundleName] &lt;a href="#"&gt;license terms&lt;/a&gt;.</String>
+  <String Overridable="yes" Id="InstallAcceptCheckbox">I &amp;agree to the license terms and conditions</String>
+  <String Overridable="yes" Id="InstallOptionsButton">&amp;Options</String>
+  <String Overridable="yes" Id="InstallInstallButton">&amp;Install</String>
+  <String Overridable="yes" Id="InstallCloseButton">&amp;Close</String>
+  <String Overridable="yes" Id="OptionsHeader">Setup Options</String>
+  <String Overridable="yes" Id="OptionsLocationLabel">Install location:</String>
+  <String Overridable="yes" Id="OptionsBrowseButton">&amp;Browse</String>
+  <String Overridable="yes" Id="OptionsOkButton">&amp;OK</String>
+  <String Overridable="yes" Id="OptionsCancelButton">&amp;Cancel</String>
+  <String Overridable="yes" Id="ProgressHeader">Setup Progress</String>
+  <String Overridable="yes" Id="ProgressLabel">Processing:</String>
+  <String Overridable="yes" Id="OverallProgressPackageText">Initializing...</String>
+  <String Overridable="yes" Id="ProgressCancelButton">&amp;Cancel</String>
+  <String Overridable="yes" Id="ModifyHeader">Modify Setup</String>
+  <String Overridable="yes" Id="ModifyRepairButton">&amp;Repair</String>
+  <String Overridable="yes" Id="ModifyUninstallButton">&amp;Uninstall</String>
+  <String Overridable="yes" Id="ModifyCloseButton">&amp;Close</String>
+  <String Overridable="yes" Id="SuccessRepairHeader">Repair Successfully Completed</String>
+  <String Overridable="yes" Id="SuccessUninstallHeader">Uninstall Successfully Completed</String>
+  <String Overridable="yes" Id="SuccessInstallHeader">Installation Successfully Completed</String> 
+  <String Overridable="yes" Id="SuccessHeader">Setup Successful</String>	
+  <String Overridable="yes" Id="SuccessLaunchButton">&amp;Launch</String>
+  <String Overridable="yes" Id="SuccessRestartText">You must restart your computer before you can use the software.</String>
+  <String Overridable="yes" Id="SuccessRestartButton">&amp;Restart</String>
+  <String Overridable="yes" Id="SuccessCloseButton">&amp;Close</String>
+  <String Overridable="yes" Id="FailureHeader">Setup Failed</String>
+  <String Overridable="yes" Id="FailureInstallHeader">Setup Failed</String>
+  <String Overridable="yes" Id="FailureUninstallHeader">Uninstall Failed</String>
+  <String Overridable="yes" Id="FailureRepairHeader">Repair Failed</String> 
+  <String Overridable="yes" Id="FailureHyperlinkLogText">One or more issues caused the setup to fail. Please fix the issues and then retry setup. For more information see the &lt;a href="#"&gt;log file&lt;/a&gt;.</String>
+  <String Overridable="yes" Id="FailureRestartText">You must restart your computer to complete the rollback of the software.</String>
+  <String Overridable="yes" Id="FailureRestartButton">&amp;Restart</String>
+  <String Overridable="yes" Id="FailureCloseButton">&amp;Close</String>
+  <String Overridable="yes" Id="FilesInUseHeader">Files In Use</String>
+  <String Overridable="yes" Id="FilesInUseLabel">The following applications are using files that need to be updated:</String>
+  <String Overridable="yes" Id="FilesInUseCloseRadioButton">Close the &amp;applications and attempt to restart them.</String>
+  <String Overridable="yes" Id="FilesInUseDontCloseRadioButton">&amp;Do not close applications. A reboot will be required.</String>
+  <String Overridable="yes" Id="FilesInUseOkButton">&amp;OK</String>
+  <String Overridable="yes" Id="FilesInUseCancelButton">&amp;Cancel</String>
+  <String Overridable="yes" Id="ErrorFailNoActionReboot">No action was taken as a system reboot is required.</String>
+
+  <String Overridable="yes" Id="HlaeCoreTransform"></String>
+
+  <String Overridable="yes" Id="HlaeDisclaimerTitle">Disclaimer</String>
+  <String Overridable="yes" Id="HlaeDisclaimer">This software is for your enjoyment and you are using it at your own risk.</String>
+
+  <String Overridable="yes" Id="HlaeFeaturesHeader">Features</String>
+  <String Overridable="yes" Id="HlaeFfmpegFeature"><![CDATA[Install FFMPEG from https://ffmpeg.zeranoe.com/builds/]]></String>
+</WixLocalization>

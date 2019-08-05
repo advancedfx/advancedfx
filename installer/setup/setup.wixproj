@@ -42,7 +42,8 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="lang\HyperlinkTheme_de-DE.wxl" />
-    <None Include="lang\HyperlinkTheme.wxl" />
+    <EmbeddedResource Include="lang\HyperlinkTheme_en-US.wxl" />
+    <EmbeddedResource Include="lang\HyperlinkTheme_zh-CN.wxl" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="lang" />

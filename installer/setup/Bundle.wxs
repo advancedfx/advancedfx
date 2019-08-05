@@ -2,7 +2,7 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"  xmlns:bal="http://schemas.microsoft.com/wix/BalExtension">
 	<Bundle
     Name="HLAE"
-    Version="2.76.0.1"
+    Version="2.76.1"
     Manufacturer="advancedfx.org"
     UpgradeCode="{A3020802-7F4F-4B61-BAA0-6C3065855361}"
     AboutUrl="https://www.advancedfx.org/"
@@ -13,12 +13,14 @@
       <bal:WixStandardBootstrapperApplication
         LicenseUrl=""
         SuppressOptionsUI="no"
-        LocalizationFile="lang\HyperlinkTheme.wxl"
+        LocalizationFile="lang\HyperlinkTheme_en-US.wxl"
         ThemeFile="HyperlinkSidebarTheme.xml"
         ShowVersion="yes"
       />
-      
+
       <Payload Id="theme_de_de" Compressed="yes"  Name="1031\thm.wxl" SourceFile="lang\HyperlinkTheme_de-DE.wxl"/>
+      <Payload Id="theme_en_us" Compressed="yes"  Name="1033\thm.wxl" SourceFile="lang\HyperlinkTheme_en-US.wxl"/>
+      <Payload Id="theme_zh_zn" Compressed="yes"  Name="2052\thm.wxl" SourceFile="lang\HyperlinkTheme_zh-CN.wxl"/>
     </BootstrapperApplicationRef>
 
     <Variable Name='InstallFolder' Type='string' Value='[ProgramFilesFolder]HLAE' Persisted='yes' bal:Overridable='yes'/>
@@ -29,15 +31,18 @@
       <PackageGroupRef Id="HlaeCore" />        
 		</Chain>
 
+    <Variable Name="HlaeCoreTransform" Value="!(loc.HlaeCoreTransform)" bal:Overridable="yes" />
+
   </Bundle>
   
-  <Fragment>
+  <Fragment>  
     <PackageGroup Id="HlaeCore">
       <MsiPackage SourceFile="$(var.HlaeCore.en-us.TargetPath)" Compressed="yes" EnableFeatureSelection="yes" Vital="yes">
         <MsiProperty Name='APPLICATIONFOLDER' Value='[InstallFolder]' />
-        <MsiProperty Name='TRANSFORMS' Value='!(loc.HlaeCoreTransform)'/>
+        <MsiProperty Name='TRANSFORMS' Value='[HlaeCoreTransform]' />
         <MsiProperty Name="AFX_INSTALLFFMPEG" Value="[HlaeFfmpegFeature]" />
         <Payload Id="HlaeCore_de_de" Compressed="yes" Name="de-de.mst" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\de-de\HlaeCore.mst"/>
+        <Payload Id="HlaeCore_zh_zn" Compressed="yes" Name="zh-cn.mst" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\zh-cn\HlaeCore.mst"/>
       </MsiPackage>
     </PackageGroup>
   </Fragment>

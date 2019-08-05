@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <WixLocalization Culture="de-de" Language="1031" xmlns="http://schemas.microsoft.com/wix/2006/localization">
-  <String Id="Caption">[WixBundleName] Setup</String>
-  <String Id="Title">[WixBundleName]</String>
-  <String Id="InstallHeader">Wilkommen</String>
-  <String Id="InstallMessage">Das Setup wird [WixBundleName] auf Ihrem Computer installieren. Klicken sie Installieren um fortzufahren<!--, Optionen um den Installionsordner zu wählen--> oder Schließen um zu beenden.</String>
-  <String Id="InstallVersion">Version [WixBundleVersion]</String>
-  <String Id="ConfirmCancelMessage">Sind Sie sicher, dass Sie abbrechen möchten?</String>
-  <String Id="ExecuteUpgradeRelatedBundleMessage">Vorherige Version</String>
-  <String Id="HelpHeader">Setup Hilfe</String>
-  <String Id="HelpText">
+  <String Overridable="yes" Id="Caption">[WixBundleName] Setup</String>
+  <String Overridable="yes" Id="Title">[WixBundleName]</String>
+  <String Overridable="yes" Id="InstallHeader">Wilkommen</String>
+  <String Overridable="yes" Id="InstallMessage">Das Setup wird [WixBundleName] auf Ihrem Computer installieren. Klicken sie Installieren um fortzufahren<!--, Optionen um den Installionsordner zu wählen--> oder Schließen um zu beenden.</String>
+  <String Overridable="yes" Id="InstallVersion">Version [WixBundleVersion]</String>
+  <String Overridable="yes" Id="ConfirmCancelMessage">Sind Sie sicher, dass Sie abbrechen möchten?</String>
+  <String Overridable="yes" Id="ExecuteUpgradeRelatedBundleMessage">Vorherige Version</String>
+  <String Overridable="yes" Id="HelpHeader">Setup Hilfe</String>
+  <String Overridable="yes" Id="HelpText">
     /install | /repair | /uninstall | /layout [directory] - Installiert, repariert, deinstalliert oder
     erstellt eine komplette lokale Kopie des Bundles im Verzeichnis. Install ist Standard.
 
@@ -18,54 +18,54 @@
     /norestart   - Unterdücke jegliche Neustartversuche. Standardmäßig wird die Oberfäche vor dem Neutstart fragen.
     /log log.txt - Loggt in eine bestimmte Datei. Standardmäßig wird ein Logfile in %TEMP% erstellt.
   </String>
-  <String Id="HelpCloseButton">&amp;Schließen</String>
-  <String Id="InstallLicenseLinkText">[WixBundleName] &lt;a href="#"&gt;Lizensbedingungen&lt;/a&gt;.</String>
-  <String Id="InstallAcceptCheckbox">Ich nehme die Lizenz-Bestimmungen und -Bedingungen &amp;an.</String>
-  <String Id="InstallOptionsButton">&amp;Optionen</String>
-  <String Id="InstallInstallButton">&amp;Installieren</String>
-  <String Id="InstallCloseButton">&amp;Schließen</String>
-  <String Id="OptionsHeader">Setup Optionen</String>
-  <String Id="OptionsLocationLabel">Installationsort:</String>
-  <String Id="OptionsBrowseButton">&amp;Suchen</String>
-  <String Id="OptionsOkButton">&amp;OK</String>
-  <String Id="OptionsCancelButton">Ab&amp;brechen</String>
-  <String Id="ProgressHeader">Setup-Fortschritt</String>
-  <String Id="ProgressLabel">Verarbeite:</String>
-  <String Id="OverallProgressPackageText">Initialisiere...</String>
-  <String Id="ProgressCancelButton">Ab&amp;brechen</String>
-  <String Id="ModifyHeader">Setup verändern</String>
-  <String Id="ModifyRepairButton">&amp;Reparieren</String>
-  <String Id="ModifyUninstallButton">&amp;Deinstallieren</String>
-  <String Id="ModifyCloseButton">&amp;Schließen</String>
-  <String Id="SuccessRepairHeader">Reperaturn erfolgreich abgeschlossen</String>
-  <String Id="SuccessUninstallHeader">Deinstallation erfolgreich abgeschlossen</String>
-  <String Id="SuccessInstallHeader">Installation erfolgreich abgeschlossen</String>
-  <String Id="SuccessHeader">Setup erfolgreich</String>
-  <String Id="SuccessLaunchButton">S&amp;tarten</String>
-  <String Id="SuccessRestartText">Sie müßen Ihren Computer neustarten, bevor Sie die Software benutzen können.</String>
-  <String Id="SuccessRestartButton">&amp;Neustarten</String>
-  <String Id="SuccessCloseButton">&amp;Schließen</String>
-  <String Id="FailureHeader">Setup fehlgeschlagen</String>
-  <String Id="FailureInstallHeader">Setup fehlgeschlagen</String>
-  <String Id="FailureUninstallHeader">Deinstallation fehlgeschlagen</String>
-  <String Id="FailureRepairHeader">Reperatur fehlgeschlagen</String>
-  <String Id="FailureHyperlinkLogText">Eine oder mehre Probleme brachten das Setup zum fehlschlagen. Bitte beheben Sie die Probleme und wiederholen Sie danach das Setup. Für weitere Informationen schauen Sie in die &lt;a href="#"&gt;Logdatei&lt;/a&gt;.</String>
-  <String Id="FailureRestartText">Sie müssen den Computer neustarten, um die Rückabwicklung der Software abzuschließen.</String>
-  <String Id="FailureRestartButton">&amp;Neustarten</String>
-  <String Id="FailureCloseButton">&amp;Schließen</String>
-  <String Id="FilesInUseHeader">Dateien in Benutzung</String>
-  <String Id="FilesInUseLabel">Die folgenden Anwendungen verwenden Dateien, die aktualisiert werden müssen:</String>
-  <String Id="FilesInUseCloseRadioButton">Schließe die &amp;Applikationen und versuche sie neuzustarten.</String>
-  <String Id="FilesInUseDontCloseRadioButton">&amp;Schließe keine Applikationen. Ein Neustart wird erforderlich sein.</String>
-  <String Id="FilesInUseOkButton">&amp;OK</String>
-  <String Id="FilesInUseCancelButton">Ab&amp;brechen</String>
-  <String Id="ErrorFailNoActionReboot">Es wurde keine Aktion ausgeführt, da ein Systemneustart erforderlich ist.</String>
+  <String Overridable="yes" Id="HelpCloseButton">&amp;Schließen</String>
+  <String Overridable="yes" Id="InstallLicenseLinkText">[WixBundleName] &lt;a href="#"&gt;Lizensbedingungen&lt;/a&gt;.</String>
+  <String Overridable="yes" Id="InstallAcceptCheckbox">Ich nehme die Lizenz-Bestimmungen und -Bedingungen &amp;an.</String>
+  <String Overridable="yes" Id="InstallOptionsButton">&amp;Optionen</String>
+  <String Overridable="yes" Id="InstallInstallButton">&amp;Installieren</String>
+  <String Overridable="yes" Id="InstallCloseButton">&amp;Schließen</String>
+  <String Overridable="yes" Id="OptionsHeader">Setup Optionen</String>
+  <String Overridable="yes" Id="OptionsLocationLabel">Installationsort:</String>
+  <String Overridable="yes" Id="OptionsBrowseButton">&amp;Suchen</String>
+  <String Overridable="yes" Id="OptionsOkButton">&amp;OK</String>
+  <String Overridable="yes" Id="OptionsCancelButton">Ab&amp;brechen</String>
+  <String Overridable="yes" Id="ProgressHeader">Setup-Fortschritt</String>
+  <String Overridable="yes" Id="ProgressLabel">Verarbeite:</String>
+  <String Overridable="yes" Id="OverallProgressPackageText">Initialisiere...</String>
+  <String Overridable="yes" Id="ProgressCancelButton">Ab&amp;brechen</String>
+  <String Overridable="yes" Id="ModifyHeader">Setup verändern</String>
+  <String Overridable="yes" Id="ModifyRepairButton">&amp;Reparieren</String>
+  <String Overridable="yes" Id="ModifyUninstallButton">&amp;Deinstallieren</String>
+  <String Overridable="yes" Id="ModifyCloseButton">&amp;Schließen</String>
+  <String Overridable="yes" Id="SuccessRepairHeader">Reperaturn erfolgreich abgeschlossen</String>
+  <String Overridable="yes" Id="SuccessUninstallHeader">Deinstallation erfolgreich abgeschlossen</String>
+  <String Overridable="yes" Id="SuccessInstallHeader">Installation erfolgreich abgeschlossen</String>
+  <String Overridable="yes" Id="SuccessHeader">Setup erfolgreich</String>
+  <String Overridable="yes" Id="SuccessLaunchButton">S&amp;tarten</String>
+  <String Overridable="yes" Id="SuccessRestartText">Sie müßen Ihren Computer neustarten, bevor Sie die Software benutzen können.</String>
+  <String Overridable="yes" Id="SuccessRestartButton">&amp;Neustarten</String>
+  <String Overridable="yes" Id="SuccessCloseButton">&amp;Schließen</String>
+  <String Overridable="yes" Id="FailureHeader">Setup fehlgeschlagen</String>
+  <String Overridable="yes" Id="FailureInstallHeader">Setup fehlgeschlagen</String>
+  <String Overridable="yes" Id="FailureUninstallHeader">Deinstallation fehlgeschlagen</String>
+  <String Overridable="yes" Id="FailureRepairHeader">Reperatur fehlgeschlagen</String>
+  <String Overridable="yes" Id="FailureHyperlinkLogText">Eine oder mehre Probleme brachten das Setup zum fehlschlagen. Bitte beheben Sie die Probleme und wiederholen Sie danach das Setup. Für weitere Informationen schauen Sie in die &lt;a href="#"&gt;Logdatei&lt;/a&gt;.</String>
+  <String Overridable="yes" Id="FailureRestartText">Sie müssen den Computer neustarten, um die Rückabwicklung der Software abzuschließen.</String>
+  <String Overridable="yes" Id="FailureRestartButton">&amp;Neustarten</String>
+  <String Overridable="yes" Id="FailureCloseButton">&amp;Schließen</String>
+  <String Overridable="yes" Id="FilesInUseHeader">Dateien in Benutzung</String>
+  <String Overridable="yes" Id="FilesInUseLabel">Die folgenden Anwendungen verwenden Dateien, die aktualisiert werden müssen:</String>
+  <String Overridable="yes" Id="FilesInUseCloseRadioButton">Schließe die &amp;Applikationen und versuche sie neuzustarten.</String>
+  <String Overridable="yes" Id="FilesInUseDontCloseRadioButton">&amp;Schließe keine Applikationen. Ein Neustart wird erforderlich sein.</String>
+  <String Overridable="yes" Id="FilesInUseOkButton">&amp;OK</String>
+  <String Overridable="yes" Id="FilesInUseCancelButton">Ab&amp;brechen</String>
+  <String Overridable="yes" Id="ErrorFailNoActionReboot">Es wurde keine Aktion ausgeführt, da ein Systemneustart erforderlich ist.</String>
 
-  <String Id="HlaeCoreTransform">de-de.mst</String>
+  <String Overridable="yes" Id="HlaeCoreTransform">de-de.mst</String>
 
-  <String Id="HlaeDisclaimerTitle">Haftungsausschluss</String>
-  <String Id="HlaeDisclaimer">Die Software ist zu Ihrem Vergnügen and Sie benutzen sie auf eigenes Risiko.</String>
+  <String Overridable="yes" Id="HlaeDisclaimerTitle">Haftungsausschluss</String>
+  <String Overridable="yes" Id="HlaeDisclaimer">Die Software ist zu Ihrem Vergnügen and Sie benutzen sie auf eigenes Risiko.</String>
 
-  <String Id="HlaeFeaturesHeader">Funktionen</String>
-  <String Id="HlaeFfmpegFeature"><![CDATA[Installiere FFMPEG von https://ffmpeg.zeranoe.com/builds/]]></String>
+  <String Overridable="yes" Id="HlaeFeaturesHeader">Funktionen</String>
+  <String Overridable="yes" Id="HlaeFfmpegFeature"><![CDATA[Installiere FFMPEG von https://ffmpeg.zeranoe.com/builds/]]></String>
 </WixLocalization>
