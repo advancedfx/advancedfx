@@ -12,7 +12,7 @@
   <String Id="InstallFfmpegDownload_Template">[1] / [2] 字节</String>
   <String Id="InstallFfmpegExtract">正在解压 FFMPEG</String>
   <String Id="InstallFfmpegExtract_Template">项目 [1] / [2] ...</String>
-  <String Id="AppFolderMustBeLatin">HLAE安装路径包含无效字符：只允许基本拉丁字符集(英文路径)。字母数字下划线
-  请在相应选项中选择一个不同的安装文件夹.</String>
+  <String Id="AppFolderMustBeLatin">HLAE安装路径包含无效字符：程序不支持中文路径，请选择英文路径（字母数字下划线等ASCII字符组成）。
+   请重新选择符合要求的安装路径。</String>
 </WixLocalization>
 <!-- Contributed by @Purple-CSGO and @tediorelee. "EDW NB!"-->

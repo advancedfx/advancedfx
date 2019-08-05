@@ -50,7 +50,7 @@
   <String Id="FailureInstallHeader">安装失败</String>
   <String Id="FailureUninstallHeader">卸载失败</String>
   <String Id="FailureRepairHeader">修复失败</String> 
-  <String Id="FailureHyperlinkLogText">一个或多个问题导致安装失败，请修复问题并尝试重新安装。更多信息见 &lt;a href="#"&gt;log file&lt;/a&gt;.</String>
+  <String Id="FailureHyperlinkLogText">一个或多个问题导致安装失败，请修复问题并尝试重新安装。更多信息见 &lt;a href="#"&gt;日志文件&lt;/a&gt;.</String>
   <String Id="FailureRestartText">必须重启您的计算机以完成安装.</String>
   <String Id="FailureRestartButton">&amp;重启</String>
   <String Id="FailureCloseButton">&amp;关闭</String>
