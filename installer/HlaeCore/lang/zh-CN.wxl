@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <WixLocalization Culture="zh-cn" Language="2052" xmlns="http://schemas.microsoft.com/wix/2006/localization">
   <String Id="AfxUiCulture">zh-CN</String>
-  <String Id="ApplicationName">HLAE Core</String>
+  <String Id="ApplicationName">HLAE 内核</String>
   <String Id="Manufacturer">advancedfx.org</String>
-  <String Id="DowngradeErrorMessage">较新版本[ProductName]已经安装.</String>
+  <String Id="DowngradeErrorMessage">计算机中已有更新版本的[ProductName]。</String>
   <String Id="FfmpegFeature">从 https://ffmpeg.zeranoe.com/builds/ 下载FFMPEG</String>
-  <String Id="InstallFfmpeg">正在安装FFMPEG ...</String>
+  <String Id="InstallFfmpeg">正在安装 FFMPEG ...</String>
   <String Id="InstallFfmpegConnect">正在连接至 https://ffmpeg.zeranoe.com/</String>
   <String Id="InstallFfmpegConnect_Template">...</String>
   <String Id="InstallFfmpegDownload">正在从 https://ffmpeg.zeranoe.com/ 下载</String>
   <String Id="InstallFfmpegDownload_Template">[1] / [2] 字节</String>
   <String Id="InstallFfmpegExtract">正在解压 FFMPEG</String>
   <String Id="InstallFfmpegExtract_Template">项目 [1] / [2] ...</String>
-  <String Id="AppFolderMustBeLatin">HLAE应用程序文件夹路径包含无效字符:只允许基本拉丁字符集(英文路径)。请在相应选项中选择一个不同的安装文件夹.</String>
+  <String Id="AppFolderMustBeLatin">HLAE安装路径包含无效字符：只允许基本拉丁字符集(英文路径)。字母数字下划线
+  请在相应选项中选择一个不同的安装文件夹.</String>
 </WixLocalization>
+<!-- Contributed by @Purple-CSGO and @tediorelee. "EDW NB!"-->
