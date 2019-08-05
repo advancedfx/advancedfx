@@ -7,7 +7,8 @@
     UpgradeCode="{A3020802-7F4F-4B61-BAA0-6C3065855361}"
     AboutUrl="https://www.advancedfx.org/"
     IconSourceFile="..\..\hlae\app.ico"
-    Compressed="yes">
+    Compressed="yes"    
+    >
 
     <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.HyperlinkSidebarLicense">
       <bal:WixStandardBootstrapperApplication
@@ -15,8 +16,10 @@
         SuppressOptionsUI="no"
         LocalizationFile="lang\HyperlinkTheme_en-US.wxl"
         ThemeFile="HyperlinkSidebarTheme.xml"
-        ShowVersion="yes"
+        ShowVersion="yes"        
       />
+
+      <Payload Compressed="yes" Name="bafunctions.dll" SourceFile="$(var.bafunctions.TargetPath)"  />
 
       <Payload Id="theme_de_de" Compressed="yes"  Name="1031\thm.wxl" SourceFile="lang\HyperlinkTheme_de-DE.wxl"/>
       <Payload Id="theme_en_us" Compressed="yes"  Name="1033\thm.wxl" SourceFile="lang\HyperlinkTheme_en-US.wxl"/>
@@ -31,8 +34,8 @@
       <PackageGroupRef Id="HlaeCore" />        
 		</Chain>
 
-    <Variable Name="HlaeCoreTransform" Value="!(loc.HlaeCoreTransform)" bal:Overridable="yes" />
-
+    <Variable Name="1031" Value="de-de.mst" Type="string" />
+    <Variable Name="HlaeCoreTransform" Value="" Type="string" bal:Overridable="yes" />
   </Bundle>
   
   <Fragment>  

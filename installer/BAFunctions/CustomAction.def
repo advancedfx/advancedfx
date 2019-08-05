@@ -1,0 +1,4 @@
+LIBRARY "BAFunctions"
+
+EXPORTS
+	CustomAction1

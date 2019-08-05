@@ -7,7 +7,7 @@
     Language="1033"
     Manufacturer="!(loc.Manufacturer)"
     UpgradeCode="{33FEF63B-4A17-4D59-ABC9-B7A06BD07F07}"
-    Codepage="65001"
+    Codepage="1252"
     >
 		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 

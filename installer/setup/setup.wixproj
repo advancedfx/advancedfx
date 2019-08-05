@@ -41,14 +41,17 @@
     </WixExtension>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="lang\HyperlinkTheme_de-DE.wxl" />
-    <EmbeddedResource Include="lang\HyperlinkTheme_en-US.wxl" />
-    <EmbeddedResource Include="lang\HyperlinkTheme_zh-CN.wxl" />
-  </ItemGroup>
-  <ItemGroup>
     <Folder Include="lang" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\BAFunctions\BAFunctions.vcxproj">
+      <Name>bafunctions</Name>
+      <Project>{440e75a1-143e-4e16-b196-76ffe55158de}</Project>
+      <Private>True</Private>
+      <DoNotHarvest>True</DoNotHarvest>
+      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
+    </ProjectReference>
     <ProjectReference Include="..\HlaeCore\HlaeCore.wixproj">
       <Name>HlaeCore</Name>
       <Project>{8c08dbe5-8431-4fba-9278-bcdc89295776}</Project>
@@ -60,6 +63,11 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="HyperlinkSidebarTheme.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="lang\HyperlinkTheme_de-DE.wxl" />
+    <None Include="lang\HyperlinkTheme_en-US.wxl" />
+    <None Include="lang\HyperlinkTheme_zh-CN.wxl" />
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" Condition=" '$(WixTargetsPath)' != '' " />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets" Condition=" '$(WixTargetsPath)' == '' AND Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets') " />
