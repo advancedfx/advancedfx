@@ -1052,6 +1052,15 @@ CON_COMMAND(mirv_exec, "command execution")
 				str = args->ArgV(i);
 
 				ReplaceAll(str, "{QUOTE}", "\"");
+				ReplaceAll(str, "{QUOTE2}", "{QUOTE}");
+				ReplaceAll(str, "{QUOTE3}", "{QUOTE2}");
+				ReplaceAll(str, "{QUOTE4}", "{QUOTE3}");
+				ReplaceAll(str, "{QUOTE5}", "{QUOTE4}");
+				ReplaceAll(str, "{QUOTE6}", "{QUOTE5}");
+				ReplaceAll(str, "{QUOTE7}", "{QUOTE6}");
+				ReplaceAll(str, "{QUOTE8}", "{QUOTE7}");
+				ReplaceAll(str, "{QUOTE9}", "{QUOTE8}");
+				ReplaceAll(str, "{QUOTE10}", "{QUOTE9}");
 				ReplaceAll(str, "\\{", "{");
 				ReplaceAll(str, "\\}", "}");
 
