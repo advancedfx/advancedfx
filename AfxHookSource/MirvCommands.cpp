@@ -31,6 +31,7 @@
 #include "FovScaling.h"
 
 #include "csgo_Stdshader_dx9_Hooks.h"
+//#include <csgo/sdk_src/public/tier0/memalloc.h>
 
 #include <malloc.h>
 #include <stdlib.h>
@@ -1009,6 +1010,72 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 		"mirv_streams settings [...] - Recording settings.\n"
 	);
 	return;
+}
+
+void ReplaceAll(std::string & str, const std::string & from, const std::string & to)
+{
+	if (from.empty())
+		return;
+	size_t start_pos = 0;
+	while ((start_pos = str.find(from, start_pos)) != std::wstring::npos) {
+		str.replace(start_pos, from.length(), to);
+		start_pos += to.length();
+	}
+}
+
+CON_COMMAND(mirv_exec, "command execution")
+{
+	SOURCESDK::CSGO::ICvar * pCvar = WrpConCommands::GetVEngineCvar_CSGO();
+	if (!pCvar)
+	{
+		Tier0_Warning("Error: No suitable Cvar interface found.\n");
+		return;
+	}
+
+	int argC = args->ArgC();
+	const char * arg0 = args->ArgV(0);
+
+	if (2 <= argC)
+	{
+		const char * arg1 = args->ArgV(1);
+
+		if (auto cmd = pCvar->FindCommand(arg1))
+		{
+			const char **ppargV = (const char **)malloc(sizeof(char *)*(argC - 1));
+
+			std::string * strings = new std::string[argC - 1];
+
+			for (int i = 1; i < argC; ++i)
+			{
+				std::string & str = strings[i - 1];
+
+				str = args->ArgV(i);
+
+				ReplaceAll(str, "{QUOTE}", "\"");
+				ReplaceAll(str, "\\{", "{");
+				ReplaceAll(str, "\\}", "}");
+
+				ppargV[i-1] = str.c_str();
+			}
+
+			SOURCESDK::CSGO::CCommand ccmd(argC - 1, ppargV);
+
+			cmd->Dispatch(ccmd);
+
+			free(ppargV);
+			return;
+		}
+		else
+		{
+			Tier0_Warning("AFXERROR: Command %s not found.\n", arg1);
+			return;
+		}
+	}
+
+	Tier0_Msg(
+		"%s <sCommandName> \"<arg1>\" ... \"<argN>\" - Pass arguments <arg1> to <argN> to command named <sCommandName>,  use {QUOTE} for \", \\{ for {, \\} for }.\n"
+		, arg0
+	);
 }
 
 CON_COMMAND(__mirv_exec, "client command execution: __mirv_exec <as you would have typed here>") {

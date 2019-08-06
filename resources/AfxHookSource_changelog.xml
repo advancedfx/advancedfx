@@ -3,6 +3,19 @@
 
 <changelog>
 
+<release>
+<name>AfxHookSource</name>
+<version>1.66.X</version>
+<time>2019-XX-XXTXX:XX9Z</time>
+<changes>
+<change type="added">
+Added mirv_exec command:<br />
+mirv_exec &lt;sCommandName&gt; "&lt;arg1&gt;" ... "&lt;argN&gt;" - Pass arguments &lt;arg1&gt; to &lt;argN&gt; to command named &lt;sCommandName&gt;,  use {QUOTE} for ", \{ for {, \} for }.<br />
+Example: mirv_exec bind x "echo {QUOTE}你好{QUOTE}"
+</change>
+</changes>
+</release>
+
 
 <release>
 <name>AfxHookSource</name>
