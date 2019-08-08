@@ -5,8 +5,8 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>1.66.X</version>
-<time>2019-XX-XXTXX:XX9Z</time>
+<version>1.66.0</version>
+<time>2019-08-08T19:19Z</time>
 <changes>
 <change type="added">
 Added mirv_exec command:<br />

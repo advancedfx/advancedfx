@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
 	<Product
-    Id="{7EDDBF56-DE8E-4E40-8BDB-63DF02CC6434}"
-    Version="2.76.2.1"
+    Id="{D6AAD37C-06F9-4F65-AEDB-F6DCFA810B30}"
+    Version="2.77.0.2"
     Name="!(loc.ApplicationName)"
     Language="1033"
     Manufacturer="!(loc.Manufacturer)"
@@ -100,6 +100,8 @@
                   </Directory>
                 </Directory>
               </Directory>
+               <Directory Id="_B4871446_F005_4BE5_82CA_AFA82BC89A76_shaders" Name="shaders">
+               </Directory>
             </Directory>
           </Directory>
           <Directory Id="_018947D0_AEA0_42CB_A184_76D6EBD5CF9D_x64" Name="x64" />
@@ -210,18 +212,39 @@
         <File Id="_81FC657C_C6CF_43A2_8758_2AB1B9FCFEE5_black.vmt" Name="black.vmt" Source="$(var.hlae.TargetDir)\resources\AfxHookSource\assets\csgo\materials\afx\black.vmt" KeyPath="yes"/>
       </Component>
       <Component Id="_9E4D3E39_96E2_4509_B29D_FF208355B365_depth.vmt">
-        <File Id="_9E4D3E39_96E2_4509_B29D_FF208355B365_depth.vmt" Name="depth.vmt" Source="$(var.hlae.TargetDir)\resources\AfxHookSource\assets\csgo\materials\afx\black.vmt" KeyPath="yes"/>
+        <File Id="_9E4D3E39_96E2_4509_B29D_FF208355B365_depth.vmt" Name="depth.vmt" Source="$(var.hlae.TargetDir)\resources\AfxHookSource\assets\csgo\materials\afx\depth.vmt" KeyPath="yes"/>
       </Component>
       <Component Id="_0DD3FC48_2A90_4BA2_B441_7A6D98554209_greenmatte.vmt">
-        <File Id="_0DD3FC48_2A90_4BA2_B441_7A6D98554209_greenmatte.vmt" Name="greenmatte.vmt" Source="$(var.hlae.TargetDir)\resources\AfxHookSource\assets\csgo\materials\afx\black.vmt" KeyPath="yes"/>
+        <File Id="_0DD3FC48_2A90_4BA2_B441_7A6D98554209_greenmatte.vmt" Name="greenmatte.vmt" Source="$(var.hlae.TargetDir)\resources\AfxHookSource\assets\csgo\materials\afx\greenmatte.vmt" KeyPath="yes"/>
       </Component>
       <Component Id="_825AB636_C242_4318_9C50_A57F44EFB15B_invisible.vmt">
-        <File Id="_825AB636_C242_4318_9C50_A57F44EFB15B_invisible.vmt" Name="invisible.vmt" Source="$(var.hlae.TargetDir)\resources\AfxHookSource\assets\csgo\materials\afx\black.vmt" KeyPath="yes"/>
+        <File Id="_825AB636_C242_4318_9C50_A57F44EFB15B_invisible.vmt" Name="invisible.vmt" Source="$(var.hlae.TargetDir)\resources\AfxHookSource\assets\csgo\materials\afx\invisible.vmt" KeyPath="yes"/>
       </Component>
       <Component Id="_C02A48D5_F6C5_4640_AE87_513E2AD0D49F_white.vmt">
-        <File Id="_C02A48D5_F6C5_4640_AE87_513E2AD0D49F_white.vmt" Name="white.vmt" Source="$(var.hlae.TargetDir)\resources\AfxHookSource\assets\csgo\materials\afx\black.vmt" KeyPath="yes"/>
+        <File Id="_C02A48D5_F6C5_4640_AE87_513E2AD0D49F_white.vmt" Name="white.vmt" Source="$(var.hlae.TargetDir)\resources\AfxHookSource\assets\csgo\materials\afx\white.vmt" KeyPath="yes"/>
       </Component>
     </DirectoryRef>
+    
+    <DirectoryRef Id="_B4871446_F005_4BE5_82CA_AFA82BC89A76_shaders">
+      <Component Id="_0CB9488D_55CA_4C19_9651_CD983BD33421_afx_depth_ps20.acs">
+        <File Id="_0CB9488D_55CA_4C19_9651_CD983BD33421_afx_depth_ps20.acs" Name="afx_depth_ps20.acs" Source="$(var.hlae.TargetDir)\resources\AfxHookSource\shaders\afx_depth_ps20.acs" KeyPath="yes"/>
+      </Component>     
+      <Component Id="_6C7D4E77_FA29_4429_BD9E_A5CC15F23053_afx_drawtexture_ps20.acs">
+        <File Id="_6C7D4E77_FA29_4429_BD9E_A5CC15F23053_afx_drawtexture_ps20.acs" Name="afx_drawtexture_ps20.acs" Source="$(var.hlae.TargetDir)\resources\AfxHookSource\shaders\afx_drawtexture_ps20.acs" KeyPath="yes"/>
+      </Component>
+      <Component Id="_1DB8FCD7_3757_492D_ADBE_02C585117299_afx_line_ps20.fxo">
+        <File Id="_1DB8FCD7_3757_492D_ADBE_02C585117299_afx_line_ps20.fxo" Name="afx_line_ps20.fxo" Source="$(var.hlae.TargetDir)\resources\AfxHookSource\shaders\afx_line_ps20.fxo" KeyPath="yes"/>
+      </Component>
+      <Component Id="_2A096550_36C7_4DFB_A4CE_6894B76CF0FD_afx_line_vs20.fxo">
+        <File Id="_2A096550_36C7_4DFB_A4CE_6894B76CF0FD_afx_line_vs20.fxo" Name="afx_line_vs20.fxo" Source="$(var.hlae.TargetDir)\resources\AfxHookSource\shaders\afx_line_vs20.fxo" KeyPath="yes"/>
+      </Component>
+      <Component Id="_03B61B14_16E4_480D_B3BD_1E6E39B15485_afx_pgldraw_ps20.acs">
+        <File Id="_03B61B14_16E4_480D_B3BD_1E6E39B15485_afx_pgldraw_ps20.acs" Name="afx_pgldraw_ps20.acs" Source="$(var.hlae.TargetDir)\resources\AfxHookSource\shaders\afx_pgldraw_ps20.acs" KeyPath="yes"/>
+      </Component>
+      <Component Id="_FF3795FC_3A94_4251_A78C_608F3A22E678_afx_pgldraw_vs20.acs">
+        <File Id="_FF3795FC_3A94_4251_A78C_608F3A22E678_afx_pgldraw_vs20.acs" Name="afx_pgldraw_vs20.acs" Source="$(var.hlae.TargetDir)\resources\AfxHookSource\shaders\afx_pgldraw_vs20.acs" KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>    
     
     <DirectoryRef Id="_018947D0_AEA0_42CB_A184_76D6EBD5CF9D_x64">
       <Component Id="_BE94EA23_C739_4490_9586_924C5D31DE5E_AfxHook.dat">
@@ -488,11 +511,13 @@
       <ComponentRef Id="_0DD3FC48_2A90_4BA2_B441_7A6D98554209_greenmatte.vmt"/>
       <ComponentRef Id="_825AB636_C242_4318_9C50_A57F44EFB15B_invisible.vmt"/>
       <ComponentRef Id="_C02A48D5_F6C5_4640_AE87_513E2AD0D49F_white.vmt"/>
-      <ComponentRef Id="_81FC657C_C6CF_43A2_8758_2AB1B9FCFEE5_black.vmt"/>
-      <ComponentRef Id="_9E4D3E39_96E2_4509_B29D_FF208355B365_depth.vmt"/>
-      <ComponentRef Id="_0DD3FC48_2A90_4BA2_B441_7A6D98554209_greenmatte.vmt"/>
-      <ComponentRef Id="_825AB636_C242_4318_9C50_A57F44EFB15B_invisible.vmt"/>
-      <ComponentRef Id="_C02A48D5_F6C5_4640_AE87_513E2AD0D49F_white.vmt"/>
+      <ComponentRef Id="_81FC657C_C6CF_43A2_8758_2AB1B9FCFEE5_black.vmt"/>   
+      <ComponentRef Id="_0CB9488D_55CA_4C19_9651_CD983BD33421_afx_depth_ps20.acs"/>     
+      <ComponentRef Id="_6C7D4E77_FA29_4429_BD9E_A5CC15F23053_afx_drawtexture_ps20.acs"/>
+      <ComponentRef Id="_1DB8FCD7_3757_492D_ADBE_02C585117299_afx_line_ps20.fxo"/>
+      <ComponentRef Id="_2A096550_36C7_4DFB_A4CE_6894B76CF0FD_afx_line_vs20.fxo"/>
+      <ComponentRef Id="_03B61B14_16E4_480D_B3BD_1E6E39B15485_afx_pgldraw_ps20.acs"/>
+      <ComponentRef Id="_FF3795FC_3A94_4251_A78C_608F3A22E678_afx_pgldraw_vs20.acs"/>            
       <ComponentRef Id="_BE94EA23_C739_4490_9586_924C5D31DE5E_AfxHook.dat"/>
       <ComponentRef Id="_370BF1EB_879C_41C5_975D_F30E77F104C3_injector.exe"/>
       <ComponentRef Id="_62B9CDB6_744E_4FE5_BAEC_CC23B08C5657_advancedfx.org.url"/>
