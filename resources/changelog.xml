@@ -6,6 +6,19 @@
 
 <release>
 <name>HLAE</name>
+<version>2.78.0</version>
+<time>2019-08-09T06:58Z</time>
+<changes>
+<change type="updated">
+Included AfxHookSource 1.67.0 (2019-08-09T06:58Z).
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>HLAE</name>
 <version>2.77.0</version>
 <time>2019-08-08T19:19Z</time>
 <changes>
@@ -13,7 +26,7 @@
 Fixed missing and mixed up files in HLAE_Setup.exe (installer version).
 </change>
 <change type="updated">
-Included AfxHookSource 1.77.0 (2019-08-08T19:19Z).
+Included AfxHookSource 1.66.0 (2019-08-08T19:19Z).
 </change>
 </changes>
 </release>

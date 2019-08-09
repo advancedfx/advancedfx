@@ -4052,14 +4052,14 @@ void MirvVPanelOnCommand(SOURCESDK::CSGO::vgui::Panel * panel, char const * comm
 {
 	int * vtable = *(int**)panel;
 
-	void * onCommand = (void *)vtable[277];
+	void * onCommand = (void *)vtable[96];
 
 	__asm push command
 	__asm mov ecx, panel
 	__asm call onCommand
 }
 
-void MirvDoVPanelOnCommand(char const * panelName, char const * panelCommand)
+void MirvDoVPanelOnCommand(char const * panelName, char const * destinationModule, char const * panelCommand)
 {
 	if (!(g_pVGuiSurface_csgo && g_pVGuiPanel_csgo))
 	{
@@ -4071,7 +4071,7 @@ void MirvDoVPanelOnCommand(char const * panelName, char const * panelCommand)
 
 	if (MirvFindVPanel(g_pVGuiSurface_csgo->GetEmbeddedPanel(), panelName, &vpanel))
 	{
-		SOURCESDK::CSGO::vgui::Panel * panel = g_pVGuiPanel_csgo->GetPanel(vpanel, "ClientDLL");
+		SOURCESDK::CSGO::vgui::Panel * panel = g_pVGuiPanel_csgo->GetPanel(vpanel, destinationModule);
 		if (panel)
 			MirvVPanelOnCommand(panel, panelCommand);
 		else
@@ -4135,17 +4135,19 @@ CON_COMMAND(mirv_vpanel, "VGUI Panel access")
 		}
 		else if (!_stricmp("command", cmd1))
 		{
-			if (4 <= argc)
+			if (5 <= argc)
 			{
 				char const * panelName = args->ArgV(2);
-				char const * panelCommand = args->ArgV(2);
+				char const * panelModule = args->ArgV(3);
+				char const * panelCommand = args->ArgV(4);
 
-				MirvDoVPanelOnCommand(panelName, panelCommand);
+				MirvDoVPanelOnCommand(panelName, panelModule, panelCommand);
 				return;
 			}
 
 			Tier0_Msg(
-				"mirv_vpanel command <panelName> <comand>\n"
+				"mirv_vpanel command <panelName> <sModule> <comand> - Execute <command> on panel with name <panelName> in module <sModule> (options are case-sensitive, <sModule> can e.g. be BaseUI or ClientDLL).\n"
+				"Example: mirv_vpanel command DemoUIPanel BaseUI pause\n"
 			);
 			return;
 		}

@@ -3,6 +3,22 @@
 
 <changelog>
 
+
+<release>
+<name>AfxHookSource</name>
+<version>1.67.0</version>
+<time>2019-08-09T06:58Z</time>
+<changes>
+<change type="added">
+Fixed and changed mirv_vpanel command:<br />
+mirv_vpanel command &lt;panelName&gt; &lt;sModule&gt; &lt;comand&gt; - Execute &lt;command&gt; on panel with name &lt;panelName&gt; in module &lt;sModule&gt; (options are case-sensitive, &lt;sModule&gt; can e.g. be BaseUI or ClientDLL).<br />
+Example: mirv_vpanel command DemoUIPanel BaseUI pause<br />
+Possible &lt;command&gt; values for DemoUIPanel in BaseUI: uireload, gotostart, prevframe, play, nextframe, gotoend, timescale_quarter, timescale_half, timescale_one, timescale_2x, timescale_4x, nextround, previousround, nextdeath, prevdeath, load, edit, smooth, drive, stop
+</change>
+</changes>
+</release>
+
+
 <release>
 <name>AfxHookSource</name>
 <version>1.66.0</version>
