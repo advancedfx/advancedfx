@@ -1850,19 +1850,19 @@ void CommonHooks()
 		{
 			g_SourceSdkVer = SourceSdkVer_CSSV34;
 		}
-		else if (StringEndsWith(filePath, "csgo.exe"))
+		else if (StringIEndsWith(filePath, "csgo.exe"))
 		{
 			g_SourceSdkVer = SourceSdkVer_CSGO;
 		}
-		else if (StringEndsWith(filePath, "swarm.exe"))
+		else if (StringIEndsWith(filePath, "swarm.exe"))
 		{
 			g_SourceSdkVer = SourceSdkVer_SWARM;
 		}
-		else if (StringEndsWith(filePath, "left4dead2.exe"))
+		else if (StringIEndsWith(filePath, "left4dead2.exe"))
 		{
 			g_SourceSdkVer = SourceSdkVer_L4D2;
 		}
-		else if (StringEndsWith(filePath, "insurgency.exe"))
+		else if (StringIEndsWith(filePath, "insurgency.exe"))
 		{
 			g_SourceSdkVer = SourceSdkVer_Insurgency2;
 		}
