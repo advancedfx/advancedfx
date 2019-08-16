@@ -4174,13 +4174,22 @@ CON_COMMAND(mirv_loadlibrary, "Load a DLL.")
 	{
 		char const * cmd1 = args->ArgV(1);
 
-		if (0 != LoadLibraryA(cmd1))
+		std::wstring wCmd1;
+		if (UTF8StringToWideString(cmd1, wCmd1))
 		{
-			Tier0_Msg("LoadLibraryA OK.\n");
+
+			if (0 != LoadLibraryW(wCmd1.c_str()))
+			{
+				Tier0_Msg("LoadLibraryA OK.\n");
+			}
+			else
+			{
+				Tier0_Warning("LoadLibraryA failed.\n");
+			}
 		}
 		else
 		{
-			Tier0_Warning("LoadLibraryA failed.\n");
+			Tier0_Warning("Failed to convert \"%s\" from UFT8 to UTF-16.\n", cmd1);
 		}
 
 		return;

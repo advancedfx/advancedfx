@@ -237,13 +237,13 @@ void CCampathDrawer::OnPostRenderAllTools()
 
 	if(!m_VertexShader)
 	{
-		m_VertexShader = g_AfxShaders.GetVertexShader("afx_line_vs20.fxo");
+		m_VertexShader = g_AfxShaders.GetVertexShader(L"afx_line_vs20.fxo");
 	}
 	IDirect3DVertexShader9 * vertexShader = m_VertexShader->GetVertexShader();
 
 	if(!m_PixelShader)
 	{
-		m_PixelShader = g_AfxShaders.GetPixelShader("afx_line_ps20.fxo");
+		m_PixelShader = g_AfxShaders.GetPixelShader(L"afx_line_ps20.fxo");
 	}
 	IDirect3DPixelShader9 * pixelShader = m_PixelShader->GetPixelShader();
 

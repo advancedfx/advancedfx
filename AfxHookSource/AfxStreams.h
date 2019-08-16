@@ -2772,18 +2772,6 @@ public:
 	}
 };
 
-class CAfxFileTracker
-{
-public:
-	void TrackFile(char const * filePath);
-
-	void WaitForFiles(unsigned int maxUnfinishedFiles);
-
-private:
-	std::queue<std::string> m_FilePaths;
-
-};
-
 class CAfxStreams
 : public IAfxBaseClientDllView_Render
 {

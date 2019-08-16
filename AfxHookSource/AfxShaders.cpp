@@ -9,21 +9,21 @@
 
 CAfxShaders g_AfxShaders;
 
-bool GetShaderDirectory(std::string & outShaderDirectory)
+bool GetShaderDirectory(std::wstring & outShaderDirectory)
 {
-	outShaderDirectory.assign(GetHlaeFolder());
+	outShaderDirectory.assign(GetHlaeFolderW());
 
-	outShaderDirectory.append("resources\\AfxHookSource\\shaders\\");
+	outShaderDirectory.append(L"resources\\AfxHookSource\\shaders\\");
 
 	return true;
 }
 
-DWORD * LoadShaderFileInMemory(char const * fileName)
+DWORD * LoadShaderFileInMemory(const wchar_t * fileName)
 {
 	if(!fileName)
 		return 0;
 
-	std::string shaderDir;
+	std::wstring shaderDir;
 
 	if(!GetShaderDirectory(shaderDir))
 		return 0;
@@ -31,7 +31,7 @@ DWORD * LoadShaderFileInMemory(char const * fileName)
 	shaderDir.append(fileName);
 
 	FILE * file = 0;
-	bool bOk = 0 == fopen_s(&file, shaderDir.c_str(), "rb");
+	bool bOk = 0 == _wfopen_s(&file, shaderDir.c_str(), L"rb");
 	DWORD * so = 0;
 	size_t size = 0;
 
@@ -128,12 +128,12 @@ bool GetAcsComboOffsetAndSize(FILE * file, int index, int indexSize, size_t & ou
 	return true;
 }
 
-DWORD * LoadFromAcsShaderFileInMemory(char const * fileName, int combo)
+DWORD * LoadFromAcsShaderFileInMemory(const wchar_t * fileName, int combo)
 {
 	if(!fileName)
 		return 0;
 
-	std::string shaderDir;
+	std::wstring shaderDir;
 
 	if(!GetShaderDirectory(shaderDir))
 		return 0;
@@ -141,7 +141,7 @@ DWORD * LoadFromAcsShaderFileInMemory(char const * fileName, int combo)
 	shaderDir.append(fileName);
 
 	FILE * file = 0;
-	bool bOk = 0 == fopen_s(&file, shaderDir.c_str(), "rb");
+	bool bOk = 0 == _wfopen_s(&file, shaderDir.c_str(), L"rb");
 	DWORD * so = 0;
 	size_t size = 0;
 	int version;
@@ -212,7 +212,7 @@ IDirect3DVertexShader9 * CAfxVertexShader::GetVertexShader()
 	return m_VertexShader;
 }
 
-void CAfxVertexShader::BeginDevice(IDirect3DDevice9 * device, char const * name)
+void CAfxVertexShader::BeginDevice(IDirect3DDevice9 * device, const wchar_t * name)
 {
 	DWORD * so = LoadShaderFileInMemory(name);
 
@@ -261,7 +261,7 @@ IDirect3DPixelShader9 * CAfxPixelShader::GetPixelShader()
 	return m_PixelShader;
 }
 
-void CAfxPixelShader::BeginDevice(IDirect3DDevice9 * device, char const * name)
+void CAfxPixelShader::BeginDevice(IDirect3DDevice9 * device, const wchar_t * name)
 {
 	DWORD * so = LoadShaderFileInMemory(name);
 
@@ -310,7 +310,7 @@ IDirect3DVertexShader9 * CAfxAcsVertexShader::GetVertexShader()
 	return m_VertexShader;
 }
 
-void CAfxAcsVertexShader::BeginDevice(IDirect3DDevice9 * device, char const * name, int combo)
+void CAfxAcsVertexShader::BeginDevice(IDirect3DDevice9 * device, const wchar_t * name, int combo)
 {
 	DWORD * so = LoadFromAcsShaderFileInMemory(name, combo);
 
@@ -360,7 +360,7 @@ IDirect3DPixelShader9 * CAfxAcsPixelShader::GetPixelShader()
 	return m_PixelShader;
 }
 
-void CAfxAcsPixelShader::BeginDevice(IDirect3DDevice9 * device, char const * name, int combo)
+void CAfxAcsPixelShader::BeginDevice(IDirect3DDevice9 * device, const wchar_t * name, int combo)
 {
 	DWORD * so = LoadFromAcsShaderFileInMemory(name, combo);
 
@@ -430,22 +430,22 @@ CAfxShaders::~CAfxShaders()
 		it->second->Release();
 	}
 
-	for(std::map<std::string,CAfxPixelShader *>::iterator it = m_PixelShaders.begin(); it != m_PixelShaders.end(); ++it)
+	for(std::map<std::wstring,CAfxPixelShader *>::iterator it = m_PixelShaders.begin(); it != m_PixelShaders.end(); ++it)
 	{
 		it->second->Release();
 	}
 
-	for(std::map<std::string,CAfxVertexShader *>::iterator it = m_VertexShaders.begin(); it != m_VertexShaders.end(); ++it)
+	for(std::map<std::wstring,CAfxVertexShader *>::iterator it = m_VertexShaders.begin(); it != m_VertexShaders.end(); ++it)
 	{
 		it->second->Release();
 	}
 }
 
-IAfxVertexShader * CAfxShaders::GetVertexShader(char const * name)
+IAfxVertexShader * CAfxShaders::GetVertexShader(const wchar_t * name)
 {
-	std::string sName(name);
+	std::wstring sName(name);
 
-	std::map<std::string,CAfxVertexShader *>::iterator it = m_VertexShaders.find(sName);
+	std::map<std::wstring,CAfxVertexShader *>::iterator it = m_VertexShaders.find(sName);
 	if(it!=m_VertexShaders.end())
 	{
 		it->second->AddRef(); // for call
@@ -461,11 +461,11 @@ IAfxVertexShader * CAfxShaders::GetVertexShader(char const * name)
 	return m_VertexShaders[sName] = shader;
 }
 
-IAfxPixelShader * CAfxShaders::GetPixelShader(char const * name)
+IAfxPixelShader * CAfxShaders::GetPixelShader(const wchar_t * name)
 {
-	std::string sName(name);
+	std::wstring sName(name);
 
-	std::map<std::string,CAfxPixelShader *>::iterator it = m_PixelShaders.find(sName);
+	std::map<std::wstring,CAfxPixelShader *>::iterator it = m_PixelShaders.find(sName);
 	if(it!=m_PixelShaders.end())
 	{
 		it->second->AddRef(); // for call
@@ -481,7 +481,7 @@ IAfxPixelShader * CAfxShaders::GetPixelShader(char const * name)
 	return m_PixelShaders[sName] = shader;
 }
 
-IAfxVertexShader * CAfxShaders::GetAcsVertexShader(char const * name, int combo)
+IAfxVertexShader * CAfxShaders::GetAcsVertexShader(const wchar_t * name, int combo)
 {
 	CAcsShaderKey key(name, combo);
 
@@ -501,7 +501,7 @@ IAfxVertexShader * CAfxShaders::GetAcsVertexShader(char const * name, int combo)
 	return m_AcsVertexShaders[key] = shader;
 }
 
-IAfxPixelShader * CAfxShaders::GetAcsPixelShader(char const * name, int combo)
+IAfxPixelShader * CAfxShaders::GetAcsPixelShader(const wchar_t * name, int combo)
 {
 	CAcsShaderKey key(name, combo);
 
@@ -542,12 +542,12 @@ void CAfxShaders::BeginDevice(IDirect3DDevice9 * device)
 		it->second->BeginDevice(device, it->first.Name.c_str(), it->first.Combo);
 	}
 
-	for(std::map<std::string,CAfxPixelShader *>::iterator it = m_PixelShaders.begin(); it != m_PixelShaders.end(); ++it)
+	for(std::map<std::wstring,CAfxPixelShader *>::iterator it = m_PixelShaders.begin(); it != m_PixelShaders.end(); ++it)
 	{
 		it->second->BeginDevice(device, it->first.c_str());
 	}
 
-	for(std::map<std::string,CAfxVertexShader *>::iterator it = m_VertexShaders.begin(); it != m_VertexShaders.end(); ++it)
+	for(std::map<std::wstring,CAfxVertexShader *>::iterator it = m_VertexShaders.begin(); it != m_VertexShaders.end(); ++it)
 	{
 		it->second->BeginDevice(device, it->first.c_str());
 	}
@@ -568,12 +568,12 @@ void CAfxShaders::EndDevice()
 		it->second->EndDevice();
 	}
 
-	for(std::map<std::string,CAfxPixelShader *>::iterator it = m_PixelShaders.begin(); it != m_PixelShaders.end(); ++it)
+	for(std::map<std::wstring,CAfxPixelShader *>::iterator it = m_PixelShaders.begin(); it != m_PixelShaders.end(); ++it)
 	{
 		it->second->EndDevice();
 	}
 
-	for(std::map<std::string,CAfxVertexShader *>::iterator it = m_VertexShaders.begin(); it != m_VertexShaders.end(); ++it)
+	for(std::map<std::wstring,CAfxVertexShader *>::iterator it = m_VertexShaders.begin(); it != m_VertexShaders.end(); ++it)
 	{
 		it->second->EndDevice();
 	}
@@ -614,11 +614,11 @@ void CAfxShaders::ReleaseUnusedShaders()
 		}
 	}
 
-	for(std::map<std::string,CAfxPixelShader *>::iterator it = m_PixelShaders.begin(); it != m_PixelShaders.end();)
+	for(std::map<std::wstring,CAfxPixelShader *>::iterator it = m_PixelShaders.begin(); it != m_PixelShaders.end();)
 	{
 		if(1 == it->second->GetRefCount())
 		{
-			std::map<std::string,CAfxPixelShader *>::iterator er = it;
+			std::map<std::wstring,CAfxPixelShader *>::iterator er = it;
 			++it;
 			er->second->Release();
 			m_PixelShaders.erase(er);
@@ -629,11 +629,11 @@ void CAfxShaders::ReleaseUnusedShaders()
 		}
 	}
 
-	for(std::map<std::string,CAfxVertexShader *>::iterator it = m_VertexShaders.begin(); it != m_VertexShaders.end();)
+	for(std::map<std::wstring,CAfxVertexShader *>::iterator it = m_VertexShaders.begin(); it != m_VertexShaders.end();)
 	{
 		if(1 == it->second->GetRefCount())
 		{
-			std::map<std::string,CAfxVertexShader *>::iterator er = it;
+			std::map<std::wstring,CAfxVertexShader *>::iterator er = it;
 			++it;
 			er->second->Release();
 			m_VertexShaders.erase(er);
@@ -651,7 +651,7 @@ CAfxShaders::CAcsShaderKey::CAcsShaderKey()
 {
 }
 
-CAfxShaders::CAcsShaderKey::CAcsShaderKey(char const * name, int combo)
+CAfxShaders::CAcsShaderKey::CAcsShaderKey(const wchar_t * name, int combo)
 : Name(name)
 , Combo(combo)
 {

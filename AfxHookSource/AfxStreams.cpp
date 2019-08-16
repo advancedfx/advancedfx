@@ -477,35 +477,6 @@ private:
 
 #endif
 
-// CAfxFileTracker /////////////////////////////////////////////////////////////
-
-void CAfxFileTracker::TrackFile(char const * filePath)
-{
-	std::string str(filePath);
-
-	m_FilePaths.push(str);
-}
-
-void CAfxFileTracker::WaitForFiles(unsigned int maxUnfinishedFiles)
-{
-	while(m_FilePaths.size() > maxUnfinishedFiles)
-	{
-		FILE * file;
-
-		//Tier0_Msg("Waiting for file \"%s\" .... ", m_FilePaths.front().c_str());
-
-		do
-		{
-			file = fopen(m_FilePaths.front().c_str(), "rb+");
-		}while(!file);
-
-		fclose(file);
-
-		//Tier0_Msg("done.\n");
-
-		m_FilePaths.pop();
-	}
-}
 
 // CAfxRenderViewStream ////////////////////////////////////////////////////////
 

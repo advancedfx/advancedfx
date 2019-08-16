@@ -54,7 +54,7 @@ public:
 
 	virtual IDirect3DVertexShader9 * GetVertexShader();
 
-	void BeginDevice(IDirect3DDevice9 * device, char const * name);
+	void BeginDevice(IDirect3DDevice9 * device, const wchar_t * name);
 	void EndDevice();
 
 protected:
@@ -76,7 +76,7 @@ public:
 
 	virtual IDirect3DPixelShader9 * GetPixelShader();
 
-	void BeginDevice(IDirect3DDevice9 * device, char const * name);
+	void BeginDevice(IDirect3DDevice9 * device, const wchar_t * name);
 	void EndDevice();
 
 protected:
@@ -99,7 +99,7 @@ public:
 
 	virtual IDirect3DVertexShader9 * GetVertexShader();
 
-	void BeginDevice(IDirect3DDevice9 * device, char const * name, int combo);
+	void BeginDevice(IDirect3DDevice9 * device, const wchar_t * name, int combo);
 	void EndDevice();
 
 protected:
@@ -122,7 +122,7 @@ public:
 
 	virtual IDirect3DPixelShader9 * GetPixelShader();
 
-	void BeginDevice(IDirect3DDevice9 * device, char const * name, int combo);
+	void BeginDevice(IDirect3DDevice9 * device, const wchar_t * name, int combo);
 	void EndDevice();
 
 protected:
@@ -139,12 +139,12 @@ public:
 	CAfxShaders();
 	~CAfxShaders();
 
-	IAfxVertexShader * GetVertexShader(char const * name);
+	IAfxVertexShader * GetVertexShader(const wchar_t * name);
 	
-	IAfxPixelShader * GetPixelShader(char const * name);
+	IAfxPixelShader * GetPixelShader(const wchar_t * name);
 
-	IAfxVertexShader * GetAcsVertexShader(char const * name, int combo);
-	IAfxPixelShader * GetAcsPixelShader(char const * name, int combo);
+	IAfxVertexShader * GetAcsVertexShader(const wchar_t * name, int combo);
+	IAfxPixelShader * GetAcsPixelShader(const wchar_t * name, int combo);
 
 	void BeginDevice(IDirect3DDevice9 * device);
 	void EndDevice();
@@ -155,11 +155,11 @@ private:
 	class CAcsShaderKey
 	{
 	public:
-		std::string Name;
+		std::wstring Name;
 		int Combo;
 
 		CAcsShaderKey();
-		CAcsShaderKey(char const * name, int combo);
+		CAcsShaderKey(const wchar_t * name, int combo);
 
 		CAcsShaderKey(const CAcsShaderKey & x);
 		
@@ -167,8 +167,8 @@ private:
 	};
 
 	IDirect3DDevice9 * m_Device;
-	std::map<std::string,CAfxVertexShader *> m_VertexShaders;
-	std::map<std::string,CAfxPixelShader *> m_PixelShaders;
+	std::map<std::wstring,CAfxVertexShader *> m_VertexShaders;
+	std::map<std::wstring,CAfxPixelShader *> m_PixelShaders;
 	std::map<CAcsShaderKey,CAfxAcsVertexShader *> m_AcsVertexShaders;
 	std::map<CAcsShaderKey,CAfxAcsPixelShader *> m_AcsPixelShaders;
 };

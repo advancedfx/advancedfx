@@ -2959,7 +2959,7 @@ public:
 			break;
 		}
 
-		IAfxPixelShader * afxPixelShader = g_AfxShaders.GetAcsPixelShader("afx_depth_ps20.acs", ShaderCombo_afx_depth_ps20::GetCombo(
+		IAfxPixelShader * afxPixelShader = g_AfxShaders.GetAcsPixelShader(L"afx_depth_ps20.acs", ShaderCombo_afx_depth_ps20::GetCombo(
 			clip ? ShaderCombo_afx_depth_ps20::AFXCLIP_1 : ShaderCombo_afx_depth_ps20::AFXCLIP_0,
 			afxDepthMode,
 			afxEncode
@@ -3240,7 +3240,7 @@ public:
 			{
 				if (IDirect3DSurface9 * src = oldRenderTarget)
 				{
-					if (IDirect3DPixelShader9 * drawTextureShader = g_AfxShaders.GetAcsPixelShader("afx_drawtexture_ps20.acs", ShaderCombo_afx_drawtexture_ps20::GetCombo())->GetPixelShader())
+					if (IDirect3DPixelShader9 * drawTextureShader = g_AfxShaders.GetAcsPixelShader(L"afx_drawtexture_ps20.acs", ShaderCombo_afx_drawtexture_ps20::GetCombo())->GetPixelShader())
 					{
 						g_OldDirect3DDevice9->SetPixelShader(drawTextureShader);
 

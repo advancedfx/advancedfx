@@ -115,8 +115,8 @@ namespace MirvPgl
 
 					if (m_PositionVertexBuffer && m_ColorVertexBuffer && m_IndexBuffer && m_VertexDecl)
 					{
-						if (!m_VertexShader) m_VertexShader = g_AfxShaders.GetAcsVertexShader("afx_pgldraw_vs20.acs", 0);
-						if (!m_PixelShader) m_PixelShader = g_AfxShaders.GetAcsPixelShader("afx_pgldraw_ps20.acs", 0);
+						if (!m_VertexShader) m_VertexShader = g_AfxShaders.GetAcsVertexShader(L"afx_pgldraw_vs20.acs", 0);
+						if (!m_PixelShader) m_PixelShader = g_AfxShaders.GetAcsPixelShader(L"afx_pgldraw_ps20.acs", 0);
 
 						IDirect3DVertexShader9 * vertexShader = m_VertexShader->GetVertexShader();
 						IDirect3DPixelShader9 * pixelShader = m_PixelShader->GetPixelShader();
