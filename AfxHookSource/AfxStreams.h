@@ -327,6 +327,68 @@ private:
 	bool m_Block;
 };
 
+
+template<typename T> class CAfxOverrideable
+{
+public:
+	CAfxOverrideable()
+		: m_Override(false)
+	{
+
+	}
+
+	CAfxOverrideable(T value)
+		: m_Override(true)
+		, m_Value(value)
+	{
+	}
+
+	CAfxOverrideable & operator= (const CAfxOverrideable & x)
+	{
+		m_Override = x.m_Override;
+		m_Value = x.m_Value;
+
+		return *this;
+	}
+
+	CAfxOverrideable & operator= (const T value)
+	{
+		m_Override = true;
+		m_Value = value;
+
+		return *this;
+	}
+
+	CAfxOverrideable & AssignNoOverride()
+	{
+		m_Override = false;
+
+		return *this;
+	}
+
+	bool GetOverride() const
+	{
+		return m_Override;
+	}
+
+	bool Get(T & outValue) const
+	{
+		if (m_Override)
+		{
+			outValue = m_Value;
+			return true;
+		}
+
+		return false;
+	}
+
+private:
+	bool m_Override;
+	T m_Value;
+};
+
+typedef CAfxOverrideable<bool> CAfxBoolOverrideable;
+
 class CAfxBaseFxStream;
 
 struct AfxViewportData_t
@@ -404,6 +466,12 @@ public:
 	{
 		m_ForceBuildingCubemaps = value;
 	}
+
+	CAfxBoolOverrideable DoBloomAndToneMapping;
+	CAfxBoolOverrideable DoDepthOfField;
+	CAfxBoolOverrideable DrawWorldNormal;
+	CAfxBoolOverrideable CullFrontFaces;
+	CAfxBoolOverrideable RenderFlashlightDepthTranslucents;
 
 	virtual void LevelShutdown(void)
 	{
@@ -2419,8 +2487,6 @@ class CAfxDepthStream
 public:
 	CAfxDepthStream() : CAfxBaseFxStream()
 	{
-		ForceBuildingCubemaps_set(true);
-
 		SetAction(m_ClientEffectTexturesAction, m_Shared.NoDrawAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.DepthAction_get());
 		SetAction(m_SkyBoxTexturesAction, m_Shared.DepthAction_get());
@@ -2452,7 +2518,6 @@ class CAfxZDepthStream
 public:
 	CAfxZDepthStream() : CAfxBaseFxStream()
 	{
-		ForceBuildingCubemaps_set(true);
 		DrawHud_set(DT_Draw);
 		DrawDepth_set(EDrawDepth_Gray);
 	}
@@ -2464,8 +2529,6 @@ class CAfxMatteWorldStream
 public:
 	CAfxMatteWorldStream() : CAfxBaseFxStream()
 	{
-		ForceBuildingCubemaps_set(true);
-
 		SetAction(m_ClientEffectTexturesAction, m_Shared.DrawAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.DrawAction_get());
 		SetAction(m_SkyBoxTexturesAction, m_Shared.DrawAction_get());
@@ -2497,8 +2560,6 @@ class CAfxDepthWorldStream
 public:
 	CAfxDepthWorldStream() : CAfxBaseFxStream()
 	{
-		ForceBuildingCubemaps_set(true);
-
 		SetAction(m_ClientEffectTexturesAction, m_Shared.NoDrawAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.DepthAction_get());
 		SetAction(m_SkyBoxTexturesAction, m_Shared.DepthAction_get());
@@ -2530,7 +2591,6 @@ class CAfxZDepthWorldStream
 public:
 	CAfxZDepthWorldStream() : CAfxMatteWorldStream()
 	{
-		ForceBuildingCubemaps_set(true);
 		DrawHud_set(DT_Draw);
 		DrawDepth_set(EDrawDepth_Gray);
 	}
@@ -2543,8 +2603,6 @@ class CAfxMatteEntityStream
 public:
 	CAfxMatteEntityStream() : CAfxBaseFxStream()
 	{
-		ForceBuildingCubemaps_set(true);
-
 		SetAction(m_ClientEffectTexturesAction, m_Shared.NoDrawAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.MaskAction_get());
 		SetAction(m_SkyBoxTexturesAction, m_Shared.MaskAction_get());
@@ -2579,8 +2637,6 @@ class CAfxMatteFxStream
 public:
 	CAfxMatteFxStream() : CAfxBaseFxStream()
 	{
-		ForceBuildingCubemaps_set(true);
-
 		SetAction(m_PlayerModelsAction, m_Shared.DrawMatteAction_get());
 		SetAction(m_WeaponModelsAction, m_Shared.DrawMatteAction_get());
 		SetAction(m_StatTrakAction, m_Shared.DrawMatteAction_get());
@@ -2631,8 +2687,6 @@ class CAfxAlphaMatteStream
 public:
 	CAfxAlphaMatteStream() : CAfxBaseFxStream()
 	{
-		ForceBuildingCubemaps_set(true);
-
 		SetAction(m_ClientEffectTexturesAction, m_Shared.NoDrawAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.BlackAction_get());
 		SetAction(m_SkyBoxTexturesAction, m_Shared.BlackAction_get());
@@ -2667,8 +2721,6 @@ class CAfxAlphaEntityStream
 public:
 	CAfxAlphaEntityStream() : CAfxBaseFxStream()
 	{
-		ForceBuildingCubemaps_set(true);
-
 		SetAction(m_ClientEffectTexturesAction, m_Shared.DrawAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.DrawAction_get());
 		SetAction(m_SkyBoxTexturesAction, m_Shared.DrawAction_get());
@@ -2701,8 +2753,6 @@ class CAfxAlphaWorldStream
 public:
 	CAfxAlphaWorldStream() : CAfxBaseFxStream()
 	{
-		ForceBuildingCubemaps_set(true);
-
 		SetAction(m_ClientEffectTexturesAction, m_Shared.DrawAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.DrawAction_get());
 		SetAction(m_SkyBoxTexturesAction, m_Shared.DrawAction_get());
@@ -2735,8 +2785,6 @@ public:
 	CAfxHudWhiteStream()
 		: CAfxBaseFxStream()
 	{
-		ForceBuildingCubemaps_set(true);
-
 		SetAction(m_ClientEffectTexturesAction, m_Shared.NoDrawAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.NoDrawAction_get());
 		SetAction(m_SkyBoxTexturesAction, m_Shared.NoDrawAction_get());
@@ -2767,8 +2815,6 @@ public:
 	CAfxHudBlackStream()
 		: CAfxBaseFxStream()
 	{
-		ForceBuildingCubemaps_set(true);
-
 		SetAction(m_ClientEffectTexturesAction, m_Shared.NoDrawAction_get());
 		SetAction(m_WorldTexturesAction, m_Shared.NoDrawAction_get());
 		SetAction(m_SkyBoxTexturesAction, m_Shared.NoDrawAction_get());
@@ -2930,7 +2976,20 @@ public:
 		return m_StartHostFrameRateValue;
 	}
 
+	void Console_MainStream(IWrpCommandArgs * args);
+
 private:
+	enum MainStreamMode_e
+	{
+		MainStreamMode_None,
+		MainStreamMode_FirstActive,
+		MainStreamMode_First,
+		MainStreamMode_Set
+	} m_MainStreamMode = MainStreamMode_FirstActive;
+	CAfxRecordStream * m_MainStream = nullptr;
+
+	bool m_ForceCacheFullSceneState = false;
+
 	class CEntityBvhCapture
 	{
 	public:
@@ -3074,11 +3133,13 @@ private:
 	IAfxMatRenderContextOrg * CaptureStream(IAfxMatRenderContextOrg * ctxp, CAfxRecordStream * stream, CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer);
 	IAfxMatRenderContextOrg * CaptureStreamToBuffer(IAfxMatRenderContextOrg * ctxp, size_t streamIndex, CAfxRenderViewStream * stream, CAfxRecordStream * captureTarget, bool first, bool last, CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer);
 
-	IAfxMatRenderContextOrg * PreviewStream(IAfxMatRenderContextOrg * ctxp, CAfxRenderViewStream * previewStream, bool isLast, int slot, int cols, bool & hudDrawn, CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer);
+	IAfxMatRenderContextOrg * PreviewStream(IAfxMatRenderContextOrg * ctxp, CAfxRenderViewStream * previewStream, bool isLast, int slot, int cols, CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer);
 
 	IAfxStreamContext * FindStreamContext(IAfxMatRenderContext * ctx);
 
 	void BlockPresent(IAfxMatRenderContextOrg * ctx, bool value);
 
 	void DoRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw);
+
+	void CalcMainStream();
 };

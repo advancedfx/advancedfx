@@ -10,6 +10,18 @@
 <time>2019-XX-XXTXX:XXZ</time>
 <changes>
 <change type="updated">
+Update mirv_streams stream properties:<br />
+- forceBuildingCubeMaps is now always obeyed and off (0) for all templates by default. If you have it somewhere in your config, we recommend removing it.<br />
+- Added doBloomAndToneMapping and doDepthOfField properties: These are on "default" for the "normal" stream template (We recommend having only one normal stream and putting it first in the list of streams!) and off (0) for all other templates.<br />
+This change together with the new mainStream setting should fully fix #150 mirv_streams light glows bug.
+</change>
+<change type="added">
+Added mirv_streams mainStream setting, which allows to control which stream is considered the main stream for caching the full scene state.
+By default this is set to "firstActive", which means the first stream that is recorded or previewed is the main stream.
+Any other setting can mean a performance penalty, since the stream might need to be silently rendered first and re-rendered later on again.
+There's is also currently such a performance penalty for "firstActive" if you are using multi-preview (which most people don't).
+</change>
+<change type="updated">
 Breaking change: mirv_streams settings: names are now matched case-insensitively against each other.
 </change>
 <change type="added">

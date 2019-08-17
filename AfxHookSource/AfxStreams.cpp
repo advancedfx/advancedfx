@@ -78,6 +78,49 @@ CAfxStreams g_AfxStreams;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+bool AfxOverrideable_FromConsole(const char * arg, CAfxBoolOverrideable & outValue)
+{
+	if (0 == _stricmp("default", arg))
+	{
+		outValue.AssignNoOverride();
+		return true;
+	}
+	else if (StringIsDigits(arg))
+	{
+		outValue = 0 != atoi(arg);
+		return true;
+	}
+
+	Tier0_Warning("AFXERROR: %s is not a valid value.\n");
+	return false;
+}
+
+void AfxOverridable_ToConsole(const CAfxBoolOverrideable & value)
+{
+	bool boolValue;
+	if (value.Get(boolValue)) Tier0_Msg("%i", boolValue ? 1 : 0);
+	else Tier0_Msg("default");
+}
+
+void AfxOverrideable_Console(IWrpCommandArgs * args, CAfxBoolOverrideable & value, const char * description)
+{
+	int argC = args->ArgC();
+
+	if (2 == argC)
+	{
+		const char * argValue = args->ArgV(1);
+		AfxOverrideable_FromConsole(argValue, value);
+		return;
+	}
+
+	Tier0_Msg("%s default|0|1", args->ArgV(0));
+	if (description) Tier0_Msg(" - %s", description);
+	Tier0_Msg("\n");
+	Tier0_Msg("Current value: ");
+	AfxOverridable_ToConsole(value);
+	Tier0_Msg("\n");
+}
+
 /* Doesn't work for some reason.
 void DebugDepthFixDraw(IMesh_csgo * pMesh)
 {
@@ -1489,7 +1532,8 @@ CAfxBaseFxStream::CAfxBaseFxStream()
 
 	m_Shared.AddRef();
 
-	ForceBuildingCubemaps_set(true);
+	DoBloomAndToneMapping = false;
+	DoDepthOfField = false;
 
 	SetAction(m_ClientEffectTexturesAction, m_Shared.DrawAction_get());
 	SetAction(m_WorldTexturesAction, m_Shared.DrawAction_get());
@@ -5130,7 +5174,7 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStream(IAfxMatRenderContextOrg * c
 	return ctxp;
 }
 
-IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * ctxp, CAfxRenderViewStream * previewStream, bool isLast, int slot, int cols, bool & hudDrawn, CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
+IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * ctxp, CAfxRenderViewStream * previewStream, bool isLast, int slot, int cols, CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
 {
 	if (0 < strlen(previewStream->AttachCommands_get()))
 		g_VEngineClient->ExecuteClientCmd(previewStream->AttachCommands_get()); // Execute commands before we lock the stream!
@@ -5214,16 +5258,6 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 	newHudView.x += col * newHudView.width;
 	newHudView.y += row * newHudView.height;
 
-	if (1 < cols && (hudDrawn || m_Recording))
-	{
-		// Would not allow to render the HUD in different passses per frame):
-		//myWhatToDraw &= ~SOURCESDK::RENDERVIEW_DRAWHUD;
-	}
-	else
-	{
-		hudDrawn = hudDrawn || (myWhatToDraw & SOURCESDK::RENDERVIEW_DRAWHUD);
-	}
-
 	float oldSmokeOverlayAlphaFactor = *smokeOverlayAlphaFactor;
 	smokeOverlayAlphaFactorMultiplyer = previewStream->SmokeOverlayAlphaFactor_get();
 	if (smokeOverlayAlphaFactorMultiplyer < 1) *smokeOverlayAlphaFactor = 0;
@@ -5234,7 +5268,7 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 		float oldFrameTime;
 		int oldBuildingCubeMaps;
 
-		if (m_FirstStreamToBeRendered)
+		if (true || m_FirstStreamToBeRendered)
 		{
 			forceBuildingCubeMaps = previewStream->ForceBuildingCubemaps_get();
 		}
@@ -5254,11 +5288,68 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 
 		ctxp->PushRenderTargetAndViewport(0, 0, newView.m_nUnscaledX, newView.m_nUnscaledY, newView.m_nUnscaledWidth, newView.m_nUnscaledHeight);
 
+
+		bool oldDoBloomAndToneMapping;
+		bool overrideDoBloomAndToneMapping;
+		{
+			bool value;
+			if (overrideDoBloomAndToneMapping = previewStream->DoBloomAndToneMapping.Get(value))
+			{
+				oldDoBloomAndToneMapping = newView.m_bDoBloomAndToneMapping;
+				const_cast<SOURCESDK::CViewSetup_csgo &>(newView).m_bDoBloomAndToneMapping = value;
+			}
+		}
+		bool oldDoDepthOfField;
+		bool overrideDoDepthOfField;
+		{
+			bool value;
+			if (overrideDoDepthOfField = previewStream->DoDepthOfField.Get(value))
+			{
+				oldDoDepthOfField = newView.m_bDoDepthOfField;
+				const_cast<SOURCESDK::CViewSetup_csgo &>(newView).m_bDoDepthOfField = value;
+			}
+		}
+		bool oldDrawWorldNormal;
+		bool overrideDrawWorldNormal;
+		{
+			bool value;
+			if (overrideDrawWorldNormal = previewStream->DrawWorldNormal.Get(value))
+			{
+				oldDrawWorldNormal = newView.m_bDrawWorldNormal;
+				const_cast<SOURCESDK::CViewSetup_csgo &>(newView).m_bDrawWorldNormal = value;
+			}
+		}
+		bool oldCullFrontFaces;
+		bool overrideCullFrontFaces;
+		{
+			bool value;
+			if (overrideCullFrontFaces = previewStream->CullFrontFaces.Get(value))
+			{
+				oldCullFrontFaces = newView.m_bCullFrontFaces;
+				const_cast<SOURCESDK::CViewSetup_csgo &>(newView).m_bCullFrontFaces = value;
+			}
+		}
+		bool oldRenderFlashlightDepthTranslucents;
+		bool overrideRenderFlashlightDepthTranslucents;
+		{
+			bool value;
+			if (overrideRenderFlashlightDepthTranslucents = previewStream->RenderFlashlightDepthTranslucents.Get(value))
+			{
+				oldRenderFlashlightDepthTranslucents = newView.m_bRenderFlashlightDepthTranslucents;
+				const_cast<SOURCESDK::CViewSetup_csgo &>(newView).m_bRenderFlashlightDepthTranslucents = value;
+			}
+		}
 		previewStream->OnRenderBegin(nullptr, afxViewport, viewToProjection, viewToProjectionSky);
 
 		DoRenderView(fn, this_ptr, newView, newHudView, nClearFlags, myWhatToDraw);
 
 		previewStream->OnRenderEnd();
+
+		if (overrideRenderFlashlightDepthTranslucents) const_cast<SOURCESDK::CViewSetup_csgo &>(newView).m_bRenderFlashlightDepthTranslucents = oldRenderFlashlightDepthTranslucents;
+		if (overrideCullFrontFaces) const_cast<SOURCESDK::CViewSetup_csgo &>(newView).m_bCullFrontFaces = oldCullFrontFaces;
+		if (overrideDrawWorldNormal) const_cast<SOURCESDK::CViewSetup_csgo &>(newView).m_bDrawWorldNormal = oldDrawWorldNormal;
+		if (overrideDoDepthOfField) const_cast<SOURCESDK::CViewSetup_csgo &>(newView).m_bDoDepthOfField = oldDoDepthOfField;
+		if (overrideDoBloomAndToneMapping) const_cast<SOURCESDK::CViewSetup_csgo &>(newView).m_bDoBloomAndToneMapping = oldDoBloomAndToneMapping;
 
 		ctxp->PopRenderTargetAndViewport();
 
@@ -5339,7 +5430,19 @@ void CAfxStreams::DoRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 	}
 #endif
 
+	bool oldCacheFullSceneState;
+	if (m_ForceCacheFullSceneState)
+	{
+		oldCacheFullSceneState = view.m_bCacheFullSceneState;
+		const_cast<SOURCESDK::CViewSetup_csgo &>(view).m_bCacheFullSceneState = true;
+	}
+
 	fn(this_ptr, view, hudViewSetup, nClearFlags, whatToDraw);
+
+	if (m_ForceCacheFullSceneState)
+	{
+		const_cast<SOURCESDK::CViewSetup_csgo &>(view).m_bCacheFullSceneState = oldCacheFullSceneState;
+	}
 
 #ifdef AFX_INTEROP
 	if (AfxInterop::Enabled())
@@ -5363,8 +5466,60 @@ void CAfxStreams::DoRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 #endif
 }
 
+void CAfxStreams::CalcMainStream()
+{
+	switch (m_MainStreamMode)
+	{
+	case MainStreamMode_None:
+		m_MainStream = nullptr;
+		break;
+	case MainStreamMode_FirstActive:
+		m_MainStream = nullptr;
+		if (m_Recording)
+		{
+			for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); )
+			{
+				CAfxRecordStream * recordStream = *it;
+				if (recordStream->Record_get())
+				{
+					m_MainStream = recordStream;
+					break;
+				}
+			}
+		}
+		else
+		{
+			for (int i = 0; i < 16; ++i)
+			{
+				if (m_PreviewStreams[i])
+				{
+					if (1 <= m_PreviewStreams[i]->GetStreamCount())
+					{
+						m_MainStream = m_PreviewStreams[i];
+						break;
+					}
+				}
+			}
+		}
+		break;
+	case MainStreamMode_First:
+		m_MainStream = nullptr;
+		for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); )
+		{
+			CAfxRecordStream * recordStream = *it;
+			m_MainStream = recordStream;
+			break;
+		}
+		break;
+	case MainStreamMode_Set:
+		break;
+	}
+}
+
 void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
 {
+	m_ForceCacheFullSceneState = false;
+
 	smokeOverlayAlphaFactorMultiplyer = 1;
 
 	m_CurrentView = &view;
@@ -5381,8 +5536,106 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 
 	IAfxMatRenderContextOrg * ctxp = GetCurrentContext()->GetOrg();
 
-	CAfxRecordStream * mainStream = nullptr;
 	m_FirstStreamToBeRendered = true;
+
+	CalcMainStream();
+
+	if (m_Recording && m_MainStream && m_MainStream->Record_get())
+	{
+		// We can render and record it as first thing.
+
+		m_ForceCacheFullSceneState = true; // There's always another render in this case at the moment, so cache!
+
+		// Record it first
+		ctxp = CaptureStream(ctxp, m_MainStream, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+	}
+	else if (m_MainStream)
+	{
+		// There's a main stream, but it's not recorded.
+
+		// If there's more streams to be rendered, then we need to cache the scene state:
+
+		bool otherStreams = false;
+
+		if (m_Recording)
+		{
+			for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
+			{
+				if (!(*it)->Record_get() || (*it) == m_MainStream) continue;
+
+				otherStreams = true;
+				break;
+			}
+		}
+
+		for (int i = 0; i < 16; ++i)
+		{
+			if (m_PreviewStreams[i])
+			{
+				if (1 <= m_PreviewStreams[i]->GetStreamCount() && (i != 0 || m_PreviewStreams[i] != m_MainStream))
+				{
+					otherStreams = true;
+				}
+			}
+		}
+
+
+		// Just render it:
+
+		if (otherStreams) m_ForceCacheFullSceneState = true;
+
+		CAfxRenderViewStream * previewStream = m_MainStream->GetStream(0);
+		ctxp = PreviewStream(ctxp, previewStream, !otherStreams, 0, 1, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+	}
+	else
+	{
+		// There is no mainstream, so use the original game (if there's other streams):
+
+		bool otherStreams = false;
+
+		if (m_Recording)
+		{
+			for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
+			{
+				if (!(*it)->Record_get()) continue;
+
+				otherStreams = true;
+				break;
+			}
+		}
+
+		for (int i = 0; i < 16; ++i)
+		{
+			if (m_PreviewStreams[i])
+			{
+				if (1 <= m_PreviewStreams[i]->GetStreamCount())
+				{
+					otherStreams = true;
+				}
+			}
+		}
+
+		// Render it only if there's other streams:
+		if (otherStreams)
+		{			
+			m_ForceCacheFullSceneState = true; // There's more streams to be rendered, so we need to cache the scene state.
+			DoRenderView(fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw);
+
+			if (!m_PresentBlocked)
+			{
+				BlockPresent(ctxp, true);
+				m_PresentBlocked = true;
+			}
+
+			// Work around game running out of memory because of too much shit on the queue
+			// aka issue ripieces/advancedfx-prop#22 by using a sub-context:
+			m_MaterialSystem->EndFrame();
+			m_MaterialSystem->SwapBuffers(); // Apparently we have to do this always, otherwise the state is messed up.
+			m_MaterialSystem->BeginFrame(0);
+
+			ctxp = GetCurrentContext()->GetOrg(); // We are potentially on a new context now
+		}
+	}
 
 	if (m_Recording)
 	{
@@ -5392,38 +5645,9 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 		}
 		else
 		{
-			/*
 			for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
 			{
-				if (CAfxSingleStream * curSingle = (*it)->AsAfxSingleStream())
-				{
-					if (curSingle->Stream_get()->IsMainStream())
-					{
-						mainStream = (*it);
-						break;
-					}
-				}
-				if (CAfxTwinStream * curTwin = (*it)->AsAfxTwinStream())
-				{
-					if (curTwin->StreamA_get()->IsMainStream() || curTwin->StreamB_get()->IsMainStream())
-					{
-						mainStream = (*it);
-						break;
-					}
-				}
-			}
-			*/
-
-			if (mainStream && mainStream->Record_get())
-			{
-				ctxp = CaptureStream(ctxp, mainStream, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
-			}
-
-			for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
-			{
-				if (!(*it)->Record_get() || (*it) == mainStream) continue;
-
-				bool hudDrawn = false;
+				if (!(*it)->Record_get() || (*it) == m_MainStream) continue;
 
 				ctxp = CaptureStream(ctxp, (*it), fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
 			}
@@ -5492,17 +5716,21 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 
 			int num = 0;
 
-			bool hudDrawn = false;
-
 			for (std::map<int, CAfxRenderViewStream *>::iterator it = previewStreams.begin(); it != previewStreams.end(); ++it)
 			{
 				int slot = it->first;
+
+				if (!m_Recording && slot == 0 && previewStreams.size() == 1 && m_PreviewStreams[slot] == m_MainStream)
+				{
+					// This streams has been rendered correctly alreday, no need to render it again.
+					continue;
+				}
 
 				slot = cols * cols - slot - 1; // We draw backwards (bottom,right) -> (top,left) in order to solve some weird problem.
 
 				CAfxRenderViewStream * previewStream = it->second;
 
-				ctxp = PreviewStream(ctxp, previewStream, num + 1 == (int)previewStreams.size(), slot, cols, hudDrawn, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+				ctxp = PreviewStream(ctxp, previewStream, num + 1 == (int)previewStreams.size(), slot, cols, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
 
 				++num;
 			}
@@ -6208,6 +6436,12 @@ void CAfxStreams::Console_RemoveStream(const char * streamName)
 				}
 			}
 
+			if (m_MainStream == cur)
+			{
+				m_MainStream = nullptr;
+				m_MainStreamMode = MainStreamMode_First;
+			}
+
 			m_Streams.erase(it);
 
 			cur->WaitLastRefAndLock();
@@ -6217,6 +6451,63 @@ void CAfxStreams::Console_RemoveStream(const char * streamName)
 		}
 	}
 	Tier0_Msg("Error: invalid streamName.\n");
+}
+
+void CAfxStreams::Console_MainStream(IWrpCommandArgs * args)
+{
+	int argC = args->ArgC();
+	const char * arg0 = args->ArgV(0);
+
+	if (2 <= argC)
+	{
+		const char * arg1 = args->ArgV(1);
+
+		if (0 == _stricmp("none", arg1))
+		{
+			m_MainStreamMode = MainStreamMode_None;
+			return;
+		}
+		else if (0 == _stricmp("firstActive", arg1))
+		{
+			m_MainStreamMode = MainStreamMode_FirstActive;
+			return;
+		}
+		else if (0 == _stricmp("first", arg1))
+		{
+			m_MainStreamMode = MainStreamMode_First;
+			return;
+		}
+		else if (0 == _stricmp("set", arg1) && 3 <= argC)
+		{
+			const char * arg2 = args->ArgV(2);
+
+			for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
+			{
+				if (!_stricmp(arg2, (*it)->StreamName_get()))
+				{
+					m_MainStreamMode = MainStreamMode_Set;
+					m_MainStream = *it;
+					return;
+				}
+			}
+
+			Tier0_Warning("AFXERROR: Stream %s not found.\n", arg2);
+			return;
+		}
+	}
+
+	Tier0_Msg(
+		"%s none - Never use a mainstream, instead always do a (hidden) render to cache the scene sate.\n"
+		"%s firstActive - Default: The first stream recorded or previewed is considered the main stream.\n"
+		"%s first -The first stream in the list is considered the main stream.\n"
+		"%s set <sStreamName> - Set a stream named <sStreamName> to use as main stream.\n"
+		"Current value: %s%s\n"
+		, arg0
+		, arg0
+		, arg0
+		, m_MainStreamMode == MainStreamMode_None ? "none" : (m_MainStreamMode == MainStreamMode_FirstActive ? "firstActive" : (m_MainStreamMode == MainStreamMode_First ? "first" : (m_MainStreamMode == MainStreamMode_Set ? "set " : "")))
+		, m_MainStreamMode == MainStreamMode_Set ? m_MainStream->StreamName_get() : ""
+	);
 }
 
 void CAfxStreams::Console_PreviewStream(const char * streamName, int slot)
@@ -6516,6 +6807,36 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 					, cmdPrefix
 					, Console_FromStreamCaptureType(curRenderView->StreamCaptureType_get())
 				);
+				return true;
+			}
+			else if (0 == _stricmp("doBloomAndToneMapping", cmd0))
+			{
+				CSubWrpCommandArgs subArgs(args, 2);
+				AfxOverrideable_Console(&subArgs, curRenderView->DoBloomAndToneMapping, NULL);
+				return true;
+			}
+			else if (0 == _stricmp("doDepthOfField", cmd0))
+			{
+				CSubWrpCommandArgs subArgs(args, 2);
+				AfxOverrideable_Console(&subArgs, curRenderView->DoDepthOfField, NULL);
+				return true;
+			}
+			else if (0 == _stricmp("drawWorldNormal", cmd0))
+			{
+				CSubWrpCommandArgs subArgs(args, 2);
+				AfxOverrideable_Console(&subArgs, curRenderView->DrawWorldNormal, NULL);
+				return true;
+			}
+			else if (0 == _stricmp("cullFrontFaces", cmd0))
+			{
+				CSubWrpCommandArgs subArgs(args, 2);
+				AfxOverrideable_Console(&subArgs, curRenderView->CullFrontFaces, NULL);
+				return true;
+			}
+			else if (0 == _stricmp("renderFlashlightDepthTranslucents", cmd0))
+			{
+				CSubWrpCommandArgs subArgs(args, 2);
+				AfxOverrideable_Console(&subArgs, curRenderView->RenderFlashlightDepthTranslucents, NULL);
 				return true;
 			}
 		}
@@ -7544,6 +7865,11 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 		Tier0_Msg("%s drawViewModel [...] - Controls whether or not view model (in-eye weapon) is drawn for this stream.\n", cmdPrefix);
 		Tier0_Msg("%s forceBuildingCubeMaps [...] - Control if to enable force building_cubemaps to 1. This should be set on all streams that are composited with other streams or should not have any postprocessing. For technical reasons only the first stream rendered (recorded or previewd) will obey this option, others always force this.\n", cmdPrefix);
 		Tier0_Msg("%s captureType [...] - Stream capture type.\n", cmdPrefix);
+		Tier0_Msg("%s doBloomAndToneMapping [...]\n", cmdPrefix);
+		Tier0_Msg("%s doDepthOfField [...]\n", cmdPrefix);
+		//Tier0_Msg("%s drawWorldNormal [...]\n", cmdPrefix);
+		//Tier0_Msg("%s cullFrontFaces [...]\n", cmdPrefix);
+		//Tier0_Msg("%s renderFlashlightDepthTranslucents [...]\n", cmdPrefix);
 	}
 
 	return false;
@@ -7988,7 +8314,7 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 		float oldFrameTime;
 		int oldBuildingCubeMaps;
 
-		if (m_FirstStreamToBeRendered)
+		if (true || m_FirstStreamToBeRendered)
 		{
 			forceBuildingCubeMaps = stream->ForceBuildingCubemaps_get();
 		}
@@ -8024,6 +8350,57 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 			}
 		}
 
+		bool oldDoBloomAndToneMapping;
+		bool overrideDoBloomAndToneMapping;
+		{
+			bool value;
+			if (overrideDoBloomAndToneMapping = stream->DoBloomAndToneMapping.Get(value))
+			{
+				oldDoBloomAndToneMapping = view.m_bDoBloomAndToneMapping;
+				const_cast<SOURCESDK::CViewSetup_csgo &>(view).m_bDoBloomAndToneMapping = value;
+			}
+		}
+		bool oldDoDepthOfField;
+		bool overrideDoDepthOfField;
+		{
+			bool value;
+			if (overrideDoDepthOfField = stream->DoDepthOfField.Get(value))
+			{
+				oldDoDepthOfField = view.m_bDoDepthOfField;
+				const_cast<SOURCESDK::CViewSetup_csgo &>(view).m_bDoDepthOfField = value;
+			}
+		}
+		bool oldDrawWorldNormal;
+		bool overrideDrawWorldNormal;
+		{
+			bool value;
+			if (overrideDrawWorldNormal = stream->DrawWorldNormal.Get(value))
+			{
+				oldDrawWorldNormal = view.m_bDrawWorldNormal;
+				const_cast<SOURCESDK::CViewSetup_csgo &>(view).m_bDrawWorldNormal = value;
+			}
+		}
+		bool oldCullFrontFaces;
+		bool overrideCullFrontFaces;
+		{
+			bool value;
+			if (overrideCullFrontFaces = stream->CullFrontFaces.Get(value))
+			{
+				oldCullFrontFaces = view.m_bCullFrontFaces;
+				const_cast<SOURCESDK::CViewSetup_csgo &>(view).m_bCullFrontFaces = value;
+			}
+		}
+		bool oldRenderFlashlightDepthTranslucents;
+		bool overrideRenderFlashlightDepthTranslucents;
+		{
+			bool value;
+			if (overrideRenderFlashlightDepthTranslucents = stream->RenderFlashlightDepthTranslucents.Get(value))
+			{
+				oldRenderFlashlightDepthTranslucents = view.m_bRenderFlashlightDepthTranslucents;
+				const_cast<SOURCESDK::CViewSetup_csgo &>(view).m_bRenderFlashlightDepthTranslucents = value;
+			}
+		}
+
 		stream->OnRenderBegin(captureTarget->GetBasefxStreamModifier(streamIndex), afxViewport, viewToProjection, viewToProjectionSky);
 
 		DoRenderView(fn, this_ptr, view, hudViewSetup, SOURCESDK::VIEW_CLEAR_STENCIL | SOURCESDK::VIEW_CLEAR_DEPTH, myWhatToDraw);
@@ -8036,6 +8413,12 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 		);
 
 		stream->OnRenderEnd();
+
+		if (overrideRenderFlashlightDepthTranslucents) const_cast<SOURCESDK::CViewSetup_csgo &>(view).m_bRenderFlashlightDepthTranslucents = oldRenderFlashlightDepthTranslucents;
+		if (overrideCullFrontFaces) const_cast<SOURCESDK::CViewSetup_csgo &>(view).m_bCullFrontFaces = oldCullFrontFaces;
+		if (overrideDrawWorldNormal) const_cast<SOURCESDK::CViewSetup_csgo &>(view).m_bDrawWorldNormal = oldDrawWorldNormal;
+		if (overrideDoDepthOfField) const_cast<SOURCESDK::CViewSetup_csgo &>(view).m_bDoDepthOfField = oldDoDepthOfField;
+		if (overrideDoBloomAndToneMapping) const_cast<SOURCESDK::CViewSetup_csgo &>(view).m_bDoBloomAndToneMapping = oldDoBloomAndToneMapping;
 
 		if (isDepthF)
 		{

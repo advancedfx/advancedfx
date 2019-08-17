@@ -994,6 +994,12 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			CAfxRecordingSettings::Console(&subArgs);
 			return;
 		}
+		else if (0 == _stricmp("mainStream", cmd1))
+		{
+			CSubWrpCommandArgs subArgs(args, 2);
+			g_AfxStreams.Console_MainStream(&subArgs);
+			return;
+		}
 	}
 
 	Tier0_Msg(
@@ -1008,6 +1014,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 		"mirv_streams record [...] - Recording control.\n"
 		"mirv_streams actions [...] - Actions control (for baseFx based streams).\n"
 		"mirv_streams settings [...] - Recording settings.\n"
+		"mirv_streams mainStream [...] - Controls which stream is the main stream for caching full-scene state (default is first).\n"
 	);
 	return;
 }
