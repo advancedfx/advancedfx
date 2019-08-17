@@ -6,8 +6,8 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>1.XX.XX</version>
-<time>2019-XX-XXTXX:XXZ</time>
+<version>1.68.0</version>
+<time>2019-08-17T20:06Z</time>
 <changes>
 <change type="added">
 Added mirv_guides phiGrid enabled 0|1, will draw a white PHI Grid onto the game view, CS:GO only.<br />
