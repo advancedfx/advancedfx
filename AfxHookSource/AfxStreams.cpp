@@ -8482,6 +8482,16 @@ CAfxClassicRecordingSettings::CShared::CShared()
 	}
 
 	{
+		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegRaw", true, "-c:v rawvideo {QUOTE}{AFX_STREAM_PATH}video.avi{QUOTE}");
+		m_NamedSettings.emplace(settings->GetName(), settings);
+	}
+
+	{
+		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegHuffyuv", true, "-c:v huffyuv {QUOTE}{AFX_STREAM_PATH}video.avi{QUOTE}");
+		m_NamedSettings.emplace(settings->GetName(), settings);
+	}
+
+	{
 		CAfxRecordingSettings * settings = new CAfxSamplingRecordingSettings("afxSampler30", true, m_DefaultSettings, EasySamplerSettings::ESM_Trapezoid, 30.0f, 1.0f, 1.0f);
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
