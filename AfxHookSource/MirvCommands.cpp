@@ -4316,3 +4316,58 @@ CON_COMMAND(mirv_cfg, "general HLAE configuration")
 		, arg0
 	);
 }
+
+CON_COMMAND(mirv_guides, "Draw guides on screen (CS:GO).")
+{
+	int argC = args->ArgC();
+	const char * arg0 = args->ArgV(0);
+
+	if (3 <= argC)
+	{
+		const char * arg1 = args->ArgV(1);
+		const char * arg2 = args->ArgV(2);
+
+		if (0 == _stricmp("enabled", arg2))
+		{
+			if (0 == _stricmp("phiGrid", arg1))
+			{
+				if (4 <= argC)
+				{
+					g_AfxStreams.DrawPhiGrid = 0 != atoi(args->ArgV(3));
+					return;
+				}
+
+				Tier0_Msg(
+					"%s phiGrid enabled 0|1\n"
+					"Current value: %i\n"
+					, arg0
+					, g_AfxStreams.DrawPhiGrid ? 1 : 0
+				);
+				return;
+			}
+			else if (0 == _stricmp("ruleOfThirds", arg1))
+			{
+				if (4 <= argC)
+				{
+					g_AfxStreams.DrawRuleOfThirds = 0 != atoi(args->ArgV(3));
+					return;
+				}
+
+				Tier0_Msg(
+					"%s ruleOfThirds enabled 0|1\n"
+					"Current value: %i\n"
+					, arg0
+					, g_AfxStreams.DrawRuleOfThirds ? 1 : 0
+				);
+				return;
+			}
+		}
+	}
+
+	Tier0_Msg(
+		"%s phiGrid enabled [...]\n"
+		"%s ruleOfThirds enabled [...]\n"
+		, arg0
+		, arg0
+	);
+}

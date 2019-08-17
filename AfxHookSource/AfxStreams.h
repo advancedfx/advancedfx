@@ -2978,6 +2978,9 @@ public:
 
 	void Console_MainStream(IWrpCommandArgs * args);
 
+	bool DrawPhiGrid = false;
+	bool DrawRuleOfThirds = false;
+
 private:
 	enum MainStreamMode_e
 	{

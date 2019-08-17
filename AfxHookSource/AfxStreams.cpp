@@ -361,6 +361,31 @@ private:
 
 #endif
 
+class AfxDrawGuidesFunctor
+	: public CAfxFunctor
+{
+public:
+	AfxDrawGuidesFunctor(bool phiGrid, bool ruleOfThirds)
+		: m_PhiGrid(phiGrid)
+		, m_RuleOfThrids(ruleOfThirds)
+	{
+	}
+
+	virtual void operator()()
+	{
+		IAfxMatRenderContextOrg * context = GetCurrentContext()->GetOrg();
+
+		int x, y, width, height;
+		context->GetViewport(x, y, width, height);
+
+		AfxDrawGuides(x, y, width, height, m_PhiGrid, m_RuleOfThrids);
+	}
+
+private:
+	bool m_PhiGrid;
+	bool m_RuleOfThrids;
+};
+
 #ifdef AFX_INTEROP
 
 
@@ -5826,6 +5851,11 @@ void CAfxStreams::OnDrawingHudBegin(void)
 	IAfxMatRenderContext * afxMatRenderContext = GetCurrentContext();
 
 	if (IAfxStreamContext * hook = FindStreamContext(afxMatRenderContext)) hook->DrawingHudBegin();
+
+	if (DrawPhiGrid || DrawRuleOfThirds)
+	{
+		QueueOrExecute(afxMatRenderContext->GetOrg(), new CAfxLeafExecute_Functor(new AfxDrawGuidesFunctor(DrawPhiGrid, DrawRuleOfThirds)));
+	}
 
 #ifdef AFX_INTEROP
 	if (AfxInterop::Enabled())

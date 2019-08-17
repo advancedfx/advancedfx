@@ -159,6 +159,8 @@ void AfxIntzOverrideEnd();
 /// <param name="projectionMatrix">Can currently be null if AfxDrawDepthMode_Inverse, otherwise has to be projection matrix from engine.</param>
 void AfxDrawDepth(AfxDrawDepthEncode encode, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, bool drawToScreen, float projectionMatrix[4][4]);
 
+void AfxDrawGuides(int x, int y, int width, int height, bool phiGrid, bool ruleOfThirds);
+
 //
 
 #ifdef AFX_INTEROP

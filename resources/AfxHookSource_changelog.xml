@@ -9,6 +9,10 @@
 <version>1.XX.XX</version>
 <time>2019-XX-XXTXX:XXZ</time>
 <changes>
+<change type="added">
+Added mirv_guides phiGrid enabled 0|1, will draw a white PHI Grid onto the game view, CS:GO only.<br />
+Added mirv_guides ruleOfThirds enabled 0|1, will draw a pink Rule of Thirds Grid onto the game view, CS:GO only.
+</change>
 <change type="updated">
 Update mirv_streams stream properties:<br />
 - forceBuildingCubeMaps is now always obeyed and off (0) for all templates by default. If you have it somewhere in your config, we recommend removing it.<br />
