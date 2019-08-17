@@ -6,6 +6,28 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.XX.XX</version>
+<time>2019-XX-XXTXX:XXZ</time>
+<changes>
+<change type="updated">
+Breaking change: mirv_streams settings: names are now matched case-insensitively against each other.
+</change>
+<change type="added">
+Added mirv_streams settings presets afxFfmpegRaw (uncompressed AVI) and afxFfmpegHuffyuv (HuffYUV AVI).
+</change>
+<change type="fixed">
+Fixed problems with UTF-8 characters in mirv_loadlibrary command. Also changed AfxShader functions to use wide character version of fopen.
+</change>
+<change type="updated">
+Made game .exe detection case-insensitive.
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.67.0</version>
 <time>2019-08-09T06:58Z</time>
 <changes>

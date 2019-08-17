@@ -31,6 +31,8 @@
 
 #include <shared/bvhexport.h>
 
+#include <cctype>
+
 #include <string>
 #include <set>
 #include <list>
@@ -471,7 +473,7 @@ public:
 
 	static CAfxRecordingSettings * GetByName(const char * name)
 	{
-		auto it = m_Shared.m_NamedSettings.find(name);
+		auto it = m_Shared.m_NamedSettings.find(CNamedSettingKey(name));
 
 		if (m_Shared.m_NamedSettings.end() != it)
 			return it->second.Settings;
@@ -538,14 +540,32 @@ protected:
 		}
 	};
 
+	class CNamedSettingKey
+	{
+	public:
+		CNamedSettingKey(const char * value)
+			: m_Value(value)
+		{
+			std::transform(m_Value.begin(), m_Value.end(), m_Value.begin(), [](unsigned char c) { return std::tolower(c); });
+		}
+
+		bool operator < (const CNamedSettingKey & y) const
+		{
+			return m_Value.compare(y.m_Value) < 0;
+		}
+
+	private:
+		std::string m_Value;
+	};
+
 	static struct CShared {
-		std::map<std::string, CNamedSettingValue> m_NamedSettings;
+		std::map<CNamedSettingKey, CNamedSettingValue> m_NamedSettings;
 		CAfxRecordingSettings * m_DefaultSettings;
 
 		CShared();
 		~CShared();
 
-		bool DeleteIfUnrefrenced(std::map<std::string, CNamedSettingValue>::iterator it)
+		bool DeleteIfUnrefrenced(std::map<CNamedSettingKey, CNamedSettingValue>::iterator it)
 		{
 			if (it->second.Settings)
 			{
