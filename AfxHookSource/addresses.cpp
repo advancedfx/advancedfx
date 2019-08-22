@@ -36,7 +36,7 @@ AFXADDR_DEF(csgo_CSkyboxView_Draw)
 AFXADDR_DEF(csgo_CSkyboxView_Draw_DSZ)
 AFXADDR_DEF(csgo_CViewRender_RenderView_VGui_DrawHud_In)
 AFXADDR_DEF(csgo_CViewRender_RenderView_VGui_DrawHud_Out)
-AFXADDR_DEF(csgo_CAudioXAudio2_vtable)
+AFXADDR_DEF(csgo_g_AudioDevice2)
 AFXADDR_DEF(csgo_MIX_PaintChannels)
 AFXADDR_DEF(csgo_MIX_PaintChannels_DSZ)
 AFXADDR_DEF(csgo_SplineRope_CShader_vtable)
@@ -292,9 +292,45 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 			}
 		}
 
-		// csgo_CAudioXAudio2_vtable: // Checked 2018-08-03.
-		AFXADDR_SET(csgo_CAudioXAudio2_vtable, FindClassVtable((HMODULE)engineDll, ".?AVCAudioXAudio2@@", 0, 0x0));
-		if(!AFXADDR_GET(csgo_CAudioXAudio2_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
+		// csgo_g_AudioDevice2: // Checked 2019-08-22.
+		{
+			DWORD addr = 0;
+			{
+				ImageSectionsReader sections((HMODULE)engineDll);
+				if (!sections.Eof())
+				{
+					MemRange textRange = sections.GetMemRange();
+					sections.Next(); // skip .text
+					if (!sections.Eof())
+					{
+						MemRange firstDataRange = sections.GetMemRange();
+
+						MemRange result = FindCString(sections.GetMemRange(), "Sound system not active\n");
+						if (!result.IsEmpty())
+						{
+							DWORD tmpAddr = result.Start;
+
+							result = FindBytes(textRange, (char const *)&tmpAddr, sizeof(tmpAddr));
+							if (!result.IsEmpty())
+							{
+								result = FindPatternString(MemRange(result.Start - 0x0c, result.Start - 0x0c + 6).And(textRange), "A1 ?? ?? ?? ?? 80");
+								if (!result.IsEmpty())
+								{
+									addr = *(DWORD *)(result.Start + 1);
+								}
+								else ErrorBox(MkErrStr(__FILE__, __LINE__));
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+
+			AFXADDR_SET(csgo_g_AudioDevice2, addr);
+		}
 
 		// csgo_MIX_PaintChannels: // Checked 2017-07-18.
 		{
@@ -513,7 +549,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 	{
 		AFXADDR_SET(csgo_snd_mix_timescale_patch, 0x0);
 		AFXADDR_SET(csgo_S_StartSound_StringConversion, 0x0);
-		AFXADDR_SET(csgo_CAudioXAudio2_vtable, 0x0);
+		AFXADDR_SET(csgo_g_AudioDevice2, 0x0);
 		AFXADDR_SET(csgo_MIX_PaintChannels, 0x0);
 		AFXADDR_SET(csgo_CClientState_ProcessVoiceData, 0x0);
 		AFXADDR_SET(csgo_CVoiceWriter_AddDecompressedData, 0x0);

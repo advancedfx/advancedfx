@@ -13,6 +13,7 @@
 #include <mutex>
 #include <map>
 #include <sstream>
+#include <set>
 
 typedef void(__stdcall * CAudioXAudio2_UnkSupplyAudio_t)(DWORD * this_ptr, int numChannels, float * audioData);
 typedef void(__cdecl * csgo_MIX_PaintChannels_t)(int paintCountTarget, int unknown);
@@ -86,6 +87,18 @@ void __cdecl touring_csgo_MIX_PaintChannels(int endtime, int unknown)
 		return;
 	}
 
+	static std::set<void *> iAudioDevice2Vtables;
+
+	if (void * csgo_g_AudioDevice2 = *(void **)AFXADDR_GET(csgo_g_AudioDevice2))
+	{
+		void ** vtable = *(void ***)csgo_g_AudioDevice2;
+
+		if (iAudioDevice2Vtables.insert(vtable).second)
+		{
+			DetourIfacePtr((DWORD *)&(vtable[1]), touring_CAudioXAudio2_UnkSupplyAudio, (DetourIfacePtr_fn &)detoured_CAudioXAudio2_UnkSupplyAudio);
+		}
+	}
+
 	if (g_csgo_Audio_TimeDue <= 0)
 		return;
 
@@ -112,17 +125,13 @@ bool csgo_Audio_Install(void)
 {
 	static bool firstResult = true;
 	static bool firstRun = true;
+
 	if (!firstRun) return firstResult;
 	firstRun = false;
 
-	if (AFXADDR_GET(csgo_CAudioXAudio2_vtable)
-		&& AFXADDR_GET(csgo_MIX_PaintChannels))
+	if (AFXADDR_GET(csgo_MIX_PaintChannels) && AFXADDR_GET(csgo_g_AudioDevice2))
 	{
 		detoured_csgo_MIX_PaintChannels = (csgo_MIX_PaintChannels_t)DetourApply((BYTE*)AFXADDR_GET(csgo_MIX_PaintChannels), (BYTE *)touring_csgo_MIX_PaintChannels, (int)AFXADDR_GET(csgo_MIX_PaintChannels_DSZ));
-
-		int * vtable = (int*)AFXADDR_GET(csgo_CAudioXAudio2_vtable);
-
-		DetourIfacePtr((DWORD *)&(vtable[1]), touring_CAudioXAudio2_UnkSupplyAudio, (DetourIfacePtr_fn &)detoured_CAudioXAudio2_UnkSupplyAudio);
 	}
 	else
 		firstResult = false;
