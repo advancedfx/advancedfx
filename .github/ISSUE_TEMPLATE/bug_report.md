@@ -7,4 +7,4 @@ assignees: ''
 
 ---
 
-I have searched exiting **open** issues to verify this is a new bug report.
+(Please search exiting **open and closed** issues first to verify this is a new bug report.)
