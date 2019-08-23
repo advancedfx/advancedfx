@@ -11,7 +11,7 @@
 <changes>
 <change type="added">
 Added #155 Visualize Camera orientation on campath preview.<br />
-Adeded mirv_campath draw keyAxis 0|1 (default 1).<br />
+Adeded mirv_campath draw keyAxis 0|1 (default 0).<br />
 Adeded mirv_campath draw keyCam 0|1 (default 1).
 </change>
 <change type="fixed">
