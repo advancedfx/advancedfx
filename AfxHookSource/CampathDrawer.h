@@ -51,7 +51,7 @@ private:
 		TempPoint * nextPt;
 	};
 
-	bool m_DrawKeyframeAxis = true;
+	bool m_DrawKeyframeAxis = false;
 	bool m_DrawKeyframeCam = true;
 
 	IDirect3DDevice9 * m_Device;
