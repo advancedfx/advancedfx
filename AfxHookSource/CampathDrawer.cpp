@@ -825,7 +825,7 @@ void CCampathDrawer::DrawCamera(const CamPathValue & cpv, DWORD colour, FLOAT sc
 	Vector3 vLD = vCp + (double)c_CameraRadius * vForward - a * vRight - b * vUp;
 	Vector3 vRD = vCp + (double)c_CameraRadius * vForward + a * vRight - b * vUp;
 	Vector3 vMU = vLU + (vRU - vLU) / 2;
-	Vector3 vMUU = vMU + 0.5 * (double)c_CameraRadius * vUp;
+	Vector3 vMUU = vMU + 0.5 * b * vUp;
 
 	AutoSingleLine(vCp, colour, vLD, colour);
 
