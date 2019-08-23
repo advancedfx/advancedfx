@@ -1451,9 +1451,49 @@ CON_COMMAND(mirv_campath,"camera paths")
 					);
 					return;
 				}
+				else if (0 == _stricmp("keyAxis", cmd2))
+				{
+					if (4 <= argc)
+					{
+						char const * cmd3 = args->ArgV(3);
+
+						bool enabled = 0 != atoi(cmd3);
+
+						g_CampathDrawer.SetDrawKeyframeAxis(enabled);
+						return;
+					}
+
+					Tier0_Msg(
+						"mirv_campath draw keyAxis 0|1 - enable (1) / disable (0) drawing.\n"
+						"Current value: %s\n",
+						g_CampathDrawer.GetDrawKeyframeAxis() ? "1 (enabled)" : "0 (disabled)"
+					);
+					return;
+				}
+				else if (0 == _stricmp("keyCam", cmd2))
+				{
+					if (4 <= argc)
+					{
+						char const * cmd3 = args->ArgV(3);
+
+						bool enabled = 0 != atoi(cmd3);
+
+						g_CampathDrawer.SetDrawKeyframeCam(enabled);
+						return;
+					}
+
+					Tier0_Msg(
+						"mirv_campath draw keyCam 0|1 - enable (1) / disable (0) drawing.\n"
+						"Current value: %s\n",
+						g_CampathDrawer.GetDrawKeyframeCam() ? "1 (enabled)" : "0 (disabled)"
+					);
+					return;
+				}
 			}
 
 			Tier0_Msg("mirv_campath draw enabled [...] - enable / disable drawing.\n");
+			Tier0_Msg("mirv_campath draw keyAxis [...] - If to draw axis at keyframes.\n");
+			Tier0_Msg("mirv_campath draw keyCam [...] - If to draw camera at keyframes.\n");
 			return;
 		}
 		else if(!_stricmp("clear", subcmd) && 2 == argc)

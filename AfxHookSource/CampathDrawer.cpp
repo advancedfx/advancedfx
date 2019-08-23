@@ -650,43 +650,6 @@ void CCampathDrawer::OnPostRenderAllTools()
 			bool lpSelected = false;
 			double lpTime;
 			
-			/*if(0 < g_Hook_VClient_RenderView.m_CamPath.GetSize())
-			{
-				// Test for not too unlikely hard case:
-				CamPathValue cpv = g_Hook_VClient_RenderView.m_CamPath.GetBegin().GetValue();
-				Vector3 current(cpv.X+76, cpv.Y+76, cpv.Z+76);
-				Vector3 previous(current.X+76, current.Y-1*4, current.Z);
-				Vector3 next(current.X+76, current.Y+1*4, current.Z);
-				Vector3 next2(current.X, current.Y+2*4, current.Z);
-				Vector3 next3(current.X+76, current.Y+3*4, current.Z);
-				Vector3 next4(current.X, current.Y+4*4, current.Z);
-				Vector3 next5(current.X+76, current.Y+5*4, current.Z);
-
-				AutoPolyLineStart();
-				AutoPolyLinePoint(previous, previous, D3DCOLOR_RGBA(255,0,0,255), current);
-				AutoPolyLinePoint(previous, current, D3DCOLOR_RGBA(255,0,0,255), next);
-				AutoPolyLinePoint(current, next, D3DCOLOR_RGBA(255,0,0,255), next2);
-				AutoPolyLinePoint(next, next2, D3DCOLOR_RGBA(255,0,0,255), next3);
-				AutoPolyLinePoint(next2, next3, D3DCOLOR_RGBA(255,0,0,255), next4);
-				AutoPolyLinePoint(next3, next4, D3DCOLOR_RGBA(255,0,0,255), next5);
-				AutoPolyLinePoint(next4, next5, D3DCOLOR_RGBA(255,0,0,255), next5);
-				AutoPolyLineFlush();
-			}*/
-			
-			/*if(0 < g_Hook_VClient_RenderView.m_CamPath.GetSize())
-			{
-				CamPathValue cpv = g_Hook_VClient_RenderView.m_CamPath.GetBegin().GetValue();
-
-				float x = cpv.X * m_WorldToScreenMatrix.m[0][0] + cpv.Y * m_WorldToScreenMatrix.m[0][1] + cpv.Z * m_WorldToScreenMatrix.m[0][2] +m_WorldToScreenMatrix.m[0][3];
-				float y = cpv.X * m_WorldToScreenMatrix.m[1][0] + cpv.Y * m_WorldToScreenMatrix.m[1][1] + cpv.Z * m_WorldToScreenMatrix.m[1][2] +m_WorldToScreenMatrix.m[1][3];
-				float z = cpv.X * m_WorldToScreenMatrix.m[2][0] + cpv.Y * m_WorldToScreenMatrix.m[2][1] + cpv.Z * m_WorldToScreenMatrix.m[2][2] +m_WorldToScreenMatrix.m[2][3];
-				float w = cpv.X * m_WorldToScreenMatrix.m[3][0] + cpv.Y * m_WorldToScreenMatrix.m[3][1] + cpv.Z * m_WorldToScreenMatrix.m[3][2] +m_WorldToScreenMatrix.m[3][3];
-
-				float iw = w ? 1/w : 0;
-
-				Tier0_Msg("pt: %f %f %f %f -> %f %f %f %f\n",x,y,z,w,x*iw,y*iw,z*iw,w*iw);
-			}*/
-		
 			for(CamPathIterator it = g_Hook_VClient_RenderView.m_CamPath.GetBegin(); it != g_Hook_VClient_RenderView.m_CamPath.GetEnd(); ++it)
 			{
 				double cpT = it.GetTime();
@@ -735,32 +698,37 @@ void CCampathDrawer::OnPostRenderAllTools()
 					);
 				}
 
-				// x / forward line:
+				if (m_DrawKeyframeAxis)
+				{
+					// x / forward line:
 
-				AutoSingleLine(
-					Vector3(cpv.X -c_CampathCrossRadius, cpv.Y, cpv.Z),
-					colour,
-					Vector3(cpv.X +c_CampathCrossRadius, cpv.Y, cpv.Z),
-					colour
-				);
+					AutoSingleLine(
+						Vector3(cpv.X - c_CampathCrossRadius, cpv.Y, cpv.Z),
+						colour,
+						Vector3(cpv.X + c_CampathCrossRadius, cpv.Y, cpv.Z),
+						colour
+					);
 
-				// y / left line:
+					// y / left line:
 
-				AutoSingleLine(
-					Vector3(cpv.X, cpv.Y -c_CampathCrossRadius, cpv.Z),
-					colour,
-					Vector3(cpv.X, cpv.Y +c_CampathCrossRadius, cpv.Z),
-					colour
-				);
+					AutoSingleLine(
+						Vector3(cpv.X, cpv.Y - c_CampathCrossRadius, cpv.Z),
+						colour,
+						Vector3(cpv.X, cpv.Y + c_CampathCrossRadius, cpv.Z),
+						colour
+					);
 
-				// z / up line:
+					// z / up line:
 
-				AutoSingleLine(
-					Vector3(cpv.X, cpv.Y, cpv.Z -c_CampathCrossRadius),
-					colour,
-					Vector3(cpv.X, cpv.Y, cpv.Z +c_CampathCrossRadius),
-					colour
-				);
+					AutoSingleLine(
+						Vector3(cpv.X, cpv.Y, cpv.Z - c_CampathCrossRadius),
+						colour,
+						Vector3(cpv.X, cpv.Y, cpv.Z + c_CampathCrossRadius),
+						colour
+					);
+				}
+
+				if(m_DrawKeyframeCam) DrawCamera(cpv, colour, newCScreenInfo);
 			}
 
 			AutoSingleLineFlush();
@@ -769,9 +737,6 @@ void CCampathDrawer::OnPostRenderAllTools()
 		// Draw wireframe camera:
 		if(inCampath && campathCanEval)
 		{
-			newCScreenInfo[2] = c_CameraPixelWidth;
-			m_Device->SetVertexShaderConstantF(48, newCScreenInfo, 1);
-
 			DWORD colourCam = campathEnabled
 				? D3DCOLOR_RGBA(
 					ValToUCCondInv(255,cameraMightBeSelected),
@@ -783,114 +748,10 @@ void CCampathDrawer::OnPostRenderAllTools()
 					ValToUCCondInv(255,cameraMightBeSelected),
 					ValToUCCondInv(255,cameraMightBeSelected),
 					128);
-			DWORD colourCamUp = campathEnabled
-				? D3DCOLOR_RGBA(
-					ValToUCCondInv(0,cameraMightBeSelected),
-					ValToUCCondInv(255,cameraMightBeSelected),
-					ValToUCCondInv(0,cameraMightBeSelected),
-					128)
-				: D3DCOLOR_RGBA(
-					ValToUCCondInv(0,cameraMightBeSelected),
-					ValToUCCondInv(0,cameraMightBeSelected),
-					ValToUCCondInv(0,cameraMightBeSelected),
-					128);
 
 			CamPathValue cpv = g_Hook_VClient_RenderView.m_CamPath.Eval(curTime);
 
-			// limit to values as RenderView hook:
-			cpv.Fov = max(1,cpv.Fov);
-			cpv.Fov = min(179,cpv.Fov);
-
-			double forward[3], right[3], up[3];
-			QEulerAngles ang = cpv.R.ToQREulerAngles().ToQEulerAngles();
-			MakeVectors(ang.Roll, ang.Pitch, ang.Yaw, forward, right, up);
-
-			Vector3 vCp(cpv.X, cpv.Y, cpv.Z);
-			Vector3 vForward(forward);
-			Vector3 vUp(up);
-			Vector3 vRight(right);
-
-			//Tier0_Msg("----------------",curTime);
-			//Tier0_Msg("currenTime = %f",curTime);
-			//Tier0_Msg("vCp = %f %f %f\n", vCp.X, vCp.Y, vCp.Z);
-
-			double a = sin(cpv.Fov * M_PI / 360.0) * c_CameraRadius;
-			double b = a;
-
-			int screenWidth, screenHeight;
-			g_VEngineClient->GetScreenSize(screenWidth, screenHeight);
-
-			double aspectRatio = screenWidth ? (double)screenHeight / (double)screenWidth : 1.0;
-
-			b *= aspectRatio;
-
-			Vector3 vLU = vCp +(double)c_CameraRadius * vForward -a * vRight +b * vUp;
-			Vector3 vRU = vCp +(double)c_CameraRadius * vForward +a * vRight +b * vUp;
-			Vector3 vLD = vCp +(double)c_CameraRadius * vForward -a * vRight -b * vUp;
-			Vector3 vRD = vCp +(double)c_CameraRadius * vForward +a * vRight -b * vUp;
-			Vector3 vMU = vLU +(vRU -vLU)/2;
-			Vector3 vMUU = vMU +(double)c_CameraRadius * vUp;
-
-			AutoSingleLine(vCp, colourCam, vLD, colourCam);
-
-			AutoSingleLine(vCp, colourCam, vRD, colourCam);
-
-			AutoSingleLine(vCp, colourCam, vLU, colourCam);
-
-			AutoSingleLine(vCp, colourCam, vRU, colourCam);
-
-			AutoSingleLine(vLD, colourCam, vRD, colourCam);
-
-			AutoSingleLine(vRD, colourCam, vRU, colourCam);
-
-			AutoSingleLine(vRU, colourCam, vLU, colourCam);
-
-			AutoSingleLine(vLU, colourCam, vLD, colourCam);
-
-			AutoSingleLine(vMU, colourCam, vMUU, colourCamUp);
-
-			AutoSingleLineFlush();
-
-			//
-			/*
-
-			colourCam = D3DCOLOR_RGBA(255, 0, 0, 255);
-			colourCamUp = D3DCOLOR_RGBA(255, 255, 0, 255);
-
-			vCp = vvPos;
-			vForward = vvForward;
-			vUp = vvUp;
-			vRight = vvRight;
-
-			//Tier0_Msg("vCp2 = %f %f %f\n", vCp.X, vCp.Y, vCp.Z);
-
-			vLU = vCp +(double)c_CameraRadius * vForward -a * vRight +b * vUp;
-			vRU = vCp +(double)c_CameraRadius * vForward +a * vRight +b * vUp;
-			vLD = vCp +(double)c_CameraRadius * vForward -a * vRight -b * vUp;
-			vRD = vCp +(double)c_CameraRadius * vForward +a * vRight -b * vUp;
-			vMU = vLU +(vRU -vLU)/2;
-			vMUU = vMU +(double)c_CameraRadius * vUp;
-
-			AutoSingleLine(vCp, colourCam, vLD, colourCam);
-
-			AutoSingleLine(vCp, colourCam, vRD, colourCam);
-
-			AutoSingleLine(vCp, colourCam, vLU, colourCam);
-
-			AutoSingleLine(vCp, colourCam, vRU, colourCam);
-
-			AutoSingleLine(vLD, colourCam, vRD, colourCam);
-
-			AutoSingleLine(vRD, colourCam, vRU, colourCam);
-
-			AutoSingleLine(vRU, colourCam, vLU, colourCam);
-
-			AutoSingleLine(vLU, colourCam, vLD, colourCam);
-
-			AutoSingleLine(vMU, colourCam, vMUU, colourCamUp);
-
-			AutoSingleLineFlush();
-			*/
+			DrawCamera(cpv, colourCam, newCScreenInfo);
 		}
 	}
 
@@ -930,6 +791,63 @@ void CCampathDrawer::OnPostRenderAllTools()
 	m_Device->SetRenderState(D3DRS_ZENABLE, oldZEnable);
 	m_Device->SetRenderState(D3DRS_COLORWRITEENABLE, oldColorWriteEnable);
 	m_Device->SetRenderState(D3DRS_SRGBWRITEENABLE, oldSrgbWriteEnable);
+}
+
+void CCampathDrawer::DrawCamera(const CamPathValue & cpv, DWORD colour, FLOAT screenInfo[4])
+{
+	screenInfo[2] = c_CameraPixelWidth;
+	m_Device->SetVertexShaderConstantF(48, screenInfo, 1);
+
+	// limit to values as RenderView hook:
+	double fov = min(179, max(1, cpv.Fov));
+
+	double forward[3], right[3], up[3];
+	QEulerAngles ang = cpv.R.ToQREulerAngles().ToQEulerAngles();
+	MakeVectors(ang.Roll, ang.Pitch, ang.Yaw, forward, right, up);
+
+	Vector3 vCp(cpv.X, cpv.Y, cpv.Z);
+	Vector3 vForward(forward);
+	Vector3 vUp(up);
+	Vector3 vRight(right);
+
+	double a = sin(fov * M_PI / 360.0) * c_CameraRadius;
+	double b = a;
+
+	int screenWidth, screenHeight;
+	g_VEngineClient->GetScreenSize(screenWidth, screenHeight);
+
+	double aspectRatio = screenWidth ? (double)screenHeight / (double)screenWidth : 1.0;
+
+	b *= aspectRatio;
+
+	Vector3 vLU = vCp + (double)c_CameraRadius * vForward - a * vRight + b * vUp;
+	Vector3 vRU = vCp + (double)c_CameraRadius * vForward + a * vRight + b * vUp;
+	Vector3 vLD = vCp + (double)c_CameraRadius * vForward - a * vRight - b * vUp;
+	Vector3 vRD = vCp + (double)c_CameraRadius * vForward + a * vRight - b * vUp;
+	Vector3 vMU = vLU + (vRU - vLU) / 2;
+	Vector3 vMUU = vMU + 0.5 * (double)c_CameraRadius * vUp;
+
+	AutoSingleLine(vCp, colour, vLD, colour);
+
+	AutoSingleLine(vCp, colour, vRD, colour);
+
+	AutoSingleLine(vCp, colour, vLU, colour);
+
+	AutoSingleLine(vCp, colour, vRU, colour);
+
+	AutoSingleLine(vLD, colour, vRD, colour);
+
+	AutoSingleLine(vRD, colour, vRU, colour);
+
+	AutoSingleLine(vRU, colour, vLU, colour);
+
+	AutoSingleLine(vLU, colour, vLD, colour);
+
+	AutoSingleLine(vLU, colour, vMUU, colour);
+
+	AutoSingleLine(vRU, colour, vMUU, colour);
+
+	AutoSingleLineFlush();
 }
 
 void CCampathDrawer::BuildSingleLine(Vector3 from, Vector3 to, Vertex * pOutVertexData)

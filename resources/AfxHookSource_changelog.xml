@@ -10,7 +10,12 @@
 <time>2019-XX-XXTXX:XXZ</time>
 <changes>
 <change type="added">
-Fixed #134 DirectSound-based drivers without XAudio2 support don't work
+Added #155 Visualize Camera orientation on campath preview.<br />
+Adeded mirv_campath draw keyAxis 0|1 (default 1).<br />
+Adeded mirv_campath draw keyCam 0|1 (default 1).
+</change>
+<change type="fixed">
+Fixed #134 DirectSound-based drivers without XAudio2 support don't work.
 </change>
 </changes>
 </release>

@@ -13,11 +13,18 @@ class CCampathDrawer
 : public ICamPathChanged
 {
 public:
+
 	CCampathDrawer();
 	~CCampathDrawer();
 
 	void Draw_set(bool value);
 	bool Draw_get(void);
+
+	void SetDrawKeyframeAxis(bool value) { m_DrawKeyframeAxis = value; }
+	bool GetDrawKeyframeAxis() { return m_DrawKeyframeAxis;  }
+
+	void SetDrawKeyframeCam(bool value) { m_DrawKeyframeCam = value; }
+	bool GetDrawKeyframeCam() { return m_DrawKeyframeCam; }
 
 	void BeginDevice(IDirect3DDevice9 * device);
 	void EndDevice();
@@ -43,6 +50,9 @@ private:
 		Vector3 y;
 		TempPoint * nextPt;
 	};
+
+	bool m_DrawKeyframeAxis = true;
+	bool m_DrawKeyframeCam = true;
 
 	IDirect3DDevice9 * m_Device;
 	bool m_Draw;
@@ -77,6 +87,8 @@ private:
 	/// <summary>For reducing the number of points.</summary>
 	void RamerDouglasPeucker(TempPoint * start, TempPoint * end, double epsilon);
 	double ShortestDistanceToSegment(TempPoint * pt, TempPoint * start, TempPoint * end);
+
+	void DrawCamera(const CamPathValue & cpv, DWORD colour, FLOAT screenInfo[4]);
 };
 
 extern CCampathDrawer g_CampathDrawer;
