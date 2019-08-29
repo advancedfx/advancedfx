@@ -450,6 +450,12 @@
     <ClCompile Include="..\shared\EasySampler.cpp">
       <Filter>shared</Filter>
     </ClCompile>
+    <ClCompile Include="csgo\hooks\studiorender.cpp">
+      <Filter>AfxHookSource\csgo\hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo\hooks\c_basentity.cpp">
+      <Filter>AfxHookSource\csgo\hooks</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\bvhexport.h">
@@ -826,6 +832,12 @@
     </ClInclude>
     <ClInclude Include="..\shared\EasySampler.h">
       <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo\hooks\studiorender.h">
+      <Filter>AfxHookSource\csgo\hooks</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo\hooks\c_basentity.h">
+      <Filter>AfxHookSource\csgo\hooks</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

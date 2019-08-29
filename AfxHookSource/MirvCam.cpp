@@ -172,7 +172,7 @@ CON_COMMAND(mirv_cam, "Control camera source entity and offset.")
 						, vecAng ? "" : "(none)"
 					);
 
-					if (vecAng) vecAng->Console_Print();
+					if (vecAng) { vecAng->Console_PrintBegin(); vecAng->Console_PrintEnd(); }
 					Tier0_Msg("\n");
 
 					return;
@@ -401,7 +401,7 @@ CON_COMMAND(mirv_cam, "Control camera source entity and offset.")
 						, calc ? "" : "(none)"
 					);
 
-					if (calc) calc->Console_Print();
+					if (calc) { calc->Console_PrintBegin(); calc->Console_PrintEnd(); }
 					Tier0_Msg("\n");
 
 					return;

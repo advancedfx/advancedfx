@@ -10,6 +10,12 @@
 <time>2019-XX-XXTXX:XXZ</time>
 <changes>
 <change type="added">
+Extended understanding of mirv_streams for entities: You can now detect way more entities in a baseFx based stream.
+</change>
+<change type="added">
+Added a few new mirv_calcs to support other features.
+</change>
+<change type="added">
 Added #155 Visualize Camera orientation on campath preview.<br />
 Adeded mirv_campath draw keyAxis 0|1 (default 0).<br />
 Adeded mirv_campath draw keyCam 0|1 (default 1).

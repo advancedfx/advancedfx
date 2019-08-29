@@ -51,7 +51,6 @@ public:
 	virtual SOURCESDK::CSGO::ICallQueue *GetCallQueue() = 0; //:150
 
 	virtual void DrawInstances(int nInstanceCount, const SOURCESDK::MeshInstanceData_t_csgo *pInstance) = 0; //:192
-
 };
 
 class IAfxMatRenderContext abstract

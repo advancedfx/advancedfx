@@ -8,6 +8,7 @@
 #include "MirvTime.h"
 #include "addresses.h"
 #include "CamIO.h"
+#include "csgo/ClientToolsCsgo.h"
 
 #include <shared/StringTools.h>
 #include <ctype.h>
@@ -346,11 +347,12 @@ void MatrixAngles(const SOURCESDK::matrix3x4_t & matrix, SOURCESDK::QAngle & ang
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class CMirvCalc
+class CMirvCalc : public IMirvCalc
 {
 public:
 	CMirvCalc(char const * name)
-		: m_Name(name ? name : "(no name)")
+		: m_Name(name ? name : "")
+		, m_HasName(nullptr != name)
 	{
 
 	}
@@ -378,9 +380,15 @@ public:
 		return m_Name.c_str();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		Tier0_Msg("name=\"%s\"", m_Name.c_str());
+		if(m_HasName) Tier0_Msg("{ name: \"%s\"", m_Name.c_str());
+		else Tier0_Msg("{ name: null", m_Name.c_str());
+	}
+	
+	virtual void Console_PrintEnd(void)
+	{
+		Tier0_Msg(" }");
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -395,6 +403,7 @@ protected:
 	}
 
 private:
+	bool m_HasName;
 	std::string m_Name;
 	int m_RefCount = 0;
 };
@@ -428,9 +437,15 @@ public:
 		return CMirvCalc::GetName();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvCalc::Console_Print();
+		CMirvCalc::Console_PrintBegin();
+		Tier0_Msg(", type: \"handle\"");
+	}
+
+	virtual void Console_PrintEnd(void)
+	{
+		CMirvCalc::Console_PrintEnd();
 	}
 
 	virtual bool CalcHandle(SOURCESDK::CSGO::CBaseHandle & outHandle)
@@ -461,11 +476,10 @@ public:
 		return true;
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvHandleCalc::Console_Print();
-
-		Tier0_Msg(" type=value handle=%i", m_Handle);
+		CMirvHandleCalc::Console_PrintBegin();
+		Tier0_Msg(", fn: \"value\", handle: %i", m_Handle);
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -528,11 +542,11 @@ public:
 		return false;
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvHandleCalc::Console_Print();
+		CMirvHandleCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=index index=%i", m_Index);
+		Tier0_Msg(", fn: \"index\", index: %i", m_Index);
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -640,11 +654,11 @@ public:
 		return false;
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvHandleCalc::Console_Print();
+		CMirvHandleCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=key key=%i", m_Key);
+		Tier0_Msg(", fn: \"key\", key: %i", m_Key);
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -731,11 +745,13 @@ public:
 		return false;
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvHandleCalc::Console_Print();
+		CMirvHandleCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=activeWeapon parent=\"%s\", getWorld=%i", m_ParentCalc->GetName(), m_World ? 1 : 0);
+		Tier0_Msg(", fn: \"activeWeapon\"");
+		Tier0_Msg(", parent: "); m_ParentCalc->Console_PrintBegin(); m_ParentCalc->Console_PrintEnd();
+		Tier0_Msg(", getWorld: %i", m_World ? 1 : 0);
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -803,11 +819,11 @@ public:
 		return false;
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvHandleCalc::Console_Print();
+		CMirvHandleCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=localPlayer");
+		Tier0_Msg(", fn: \"localPlayer\"");
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -862,11 +878,12 @@ public:
 		return false;
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvHandleCalc::Console_Print();
+		CMirvHandleCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=observerTarget parent=\"%s\"", m_ParentCalc->GetName());
+		Tier0_Msg(", fn: \"observerTarget\"");
+		Tier0_Msg(", parent: "); m_ParentCalc->Console_PrintBegin(); m_ParentCalc->Console_PrintEnd();
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -882,6 +899,82 @@ protected:
 
 private:
 	IMirvHandleCalc * m_ParentCalc;
+};
+
+
+class CMirvHandleOwnerEntityCalc : public CMirvHandleCalc
+{
+public:
+	CMirvHandleOwnerEntityCalc(char const * name, IMirvHandleCalc * calc, unsigned int maxDepth = 1)
+		: CMirvHandleCalc(name)
+		, m_ParentCalc(calc)
+		, m_MaxDepth(maxDepth)
+	{
+		m_ParentCalc->AddRef();
+
+	}
+
+	virtual bool CalcHandle(SOURCESDK::CSGO::CBaseHandle & outHandle)
+	{
+		SOURCESDK::CSGO::CBaseHandle parentHandle;
+
+		if (m_ParentCalc->CalcHandle(parentHandle) && parentHandle.IsValid())
+		{
+			if (CClientToolsCsgo::Instance())
+			{
+				if (SOURCESDK::CSGO::IClientTools * clientTools = CClientToolsCsgo::Instance()->GetClientToolsInterface())
+				{
+					if (SOURCESDK::IClientEntity_csgo * clientEntity = SOURCESDK::g_Entitylist_csgo->GetClientEntityFromHandle(parentHandle))
+					{
+						SOURCESDK::C_BaseEntity_csgo * ent = clientEntity->GetBaseEntity();
+
+						unsigned int maxDepth = m_MaxDepth;
+
+						while (ent && 0 < maxDepth)
+						{
+							--maxDepth;
+
+							if (SOURCESDK::C_BaseEntity_csgo * owningEnt = reinterpret_cast<SOURCESDK::C_BaseEntity_csgo *>(clientTools->GetOwnerEntity(reinterpret_cast<SOURCESDK::CSGO::EntitySearchResult>(ent))))
+								ent = owningEnt;
+							else break;
+						}
+
+						if (ent)
+						{
+							outHandle = ent->GetRefEHandle();
+							return true;
+						}
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+	virtual void Console_PrintBegin(void)
+	{
+		CMirvHandleCalc::Console_PrintBegin();
+
+		Tier0_Msg(", fn: \"observerTarget\"");
+		Tier0_Msg(", calc: "); m_ParentCalc->Console_PrintBegin(); m_ParentCalc->Console_PrintEnd();
+		Tier0_Msg(", maxDepth: %u", m_MaxDepth);
+	}
+
+	virtual void Console_Edit(IWrpCommandArgs * args)
+	{
+		return CMirvHandleCalc::Console_Edit(args);
+	}
+
+protected:
+	virtual ~CMirvHandleOwnerEntityCalc()
+	{
+		m_ParentCalc->Release();
+	}
+
+private:
+	IMirvHandleCalc * m_ParentCalc;
+	unsigned int m_MaxDepth;
 };
 
 class CMirvVecAngCalc : public CMirvCalc, public IMirvVecAngCalc
@@ -913,9 +1006,15 @@ public:
 		return CMirvCalc::GetName();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvCalc::Console_Print();
+		CMirvCalc::Console_PrintBegin();
+		Tier0_Msg(", type: \"vecAng\"");
+	}
+
+	virtual void Console_PrintEnd(void)
+	{
+		CMirvCalc::Console_PrintEnd();
 	}
 
 	virtual bool CalcVecAng(SOURCESDK::Vector & outVector, SOURCESDK::QAngle & outAngles)
@@ -959,9 +1058,15 @@ public:
 		return CMirvCalc::GetName();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvCalc::Console_Print();
+		CMirvCalc::Console_PrintBegin();
+		Tier0_Msg(", type: \"cam\"");
+	}
+
+	virtual void Console_PrintEnd(void)
+	{
+		CMirvCalc::Console_PrintEnd();
 	}
 
 	virtual bool CalcCam(SOURCESDK::Vector & outVector, SOURCESDK::QAngle & outAngles, float & outFov)
@@ -1005,11 +1110,13 @@ public:
 		m_TrackHandle->AddRef();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvCamCalc::Console_Print();
-
-		Tier0_Msg(" type=smooth parent=\"%s\" trackHandle=\"%s\" halfTimeVec=%f halfTimeAng=%f halfTimeFov=%f", m_Parent->GetName(), m_TrackHandle->GetName(), (float)m_HalfTimeVec, (float)m_HalfTimeAng, (float)m_HalfTimeFov);
+		CMirvCamCalc::Console_PrintBegin();
+		Tier0_Msg(", fn: \"smooth\"");
+		Tier0_Msg(", parent: "); m_Parent->Console_PrintBegin(); m_Parent->Console_PrintEnd();
+		Tier0_Msg(", trackHandle: "); m_TrackHandle->Console_PrintBegin(); m_TrackHandle->Console_PrintEnd();
+		Tier0_Msg(", halfTimeVec: %f, halfTimeAng : %f, halfTimeFov : %f", (float)m_HalfTimeVec, (float)m_HalfTimeAng, (float)m_HalfTimeFov);
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -1243,11 +1350,13 @@ public:
 		m_Fov->AddRef();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvCamCalc::Console_Print();
+		CMirvCamCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=vecAngFov vecAng=\"%s\" fov=\"%s\"", m_VecAng->GetName(), m_Fov->GetName());
+		Tier0_Msg(", fn: \"vecAngFov\"");
+		Tier0_Msg(", vecAng: "); m_VecAng->Console_PrintBegin(); m_VecAng->Console_PrintEnd();
+		Tier0_Msg(", fov: "); m_Fov->Console_PrintBegin(); m_Fov->Console_PrintEnd();
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -1322,9 +1431,15 @@ public:
 		return CMirvCalc::GetName();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvCalc::Console_Print();
+		CMirvCalc::Console_PrintBegin();
+		Tier0_Msg(", type: \"fov\"");
+	}
+
+	virtual void Console_PrintEnd(void)
+	{
+		CMirvCalc::Console_PrintEnd();
 	}
 
 	virtual bool CalcFov(float & outFov)
@@ -1352,11 +1467,11 @@ public:
 		m_Ang.y = rZ;
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvVecAngCalc::Console_Print();
+		CMirvVecAngCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=value x=%f y=%f, z=%f, rX=%f, rY=%f, rZ=%f", m_Vec.x, m_Vec.y, m_Vec.z, m_Ang.z, m_Ang.x, m_Ang.y);
+		Tier0_Msg(", fn: \"value\", x: %f, y: %f, z: %f, rX: %f, rY: %f, rZ: %f", m_Vec.x, m_Vec.y, m_Vec.z, m_Ang.z, m_Ang.x, m_Ang.y);
 	}
 
 	virtual bool CalcVecAng(SOURCESDK::Vector & outVector, SOURCESDK::QAngle & outAngles)
@@ -1510,11 +1625,14 @@ public:
 		m_Offset->AddRef();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvVecAngCalc::Console_Print();
+		CMirvVecAngCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=offset parent=\"%s\" offset=\"%s\" order=%i", m_Parent->GetName(), m_Offset->GetName(), m_Order ? 1 : 0);
+		Tier0_Msg(", fn: \"offset\"");
+		Tier0_Msg(", parent: "); m_Parent->Console_PrintBegin(); m_Parent->Console_PrintEnd();
+		Tier0_Msg(", offset: "); m_Offset->Console_PrintBegin(); m_Offset->Console_PrintEnd();
+		Tier0_Msg(", order: %i", m_Order ? 1 : 0);
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -1644,11 +1762,12 @@ public:
 		m_Handle->AddRef();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvVecAngCalc::Console_Print();
-
-		Tier0_Msg(" type=handleEx handle=\"%s\" eyeVec=%i, eyeAng=%i", m_Handle->GetName(), m_EyeVec ? 1 : 0, m_EyeAng ? 1 : 0);
+		CMirvVecAngCalc::Console_PrintBegin();
+		Tier0_Msg(", fn: \"handleEx\"");
+		Tier0_Msg(", handle: "); m_Handle->Console_PrintBegin(); m_Handle->Console_PrintEnd();
+		Tier0_Msg(", eyeVec: %i, eyeAng: %i", m_EyeVec ? 1 : 0, m_EyeAng ? 1 : 0);
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -1742,11 +1861,13 @@ public:
 		m_Handle->AddRef();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvVecAngCalc::Console_Print();
+		CMirvVecAngCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=handleAttachment handle=\"%s\" attachmentName=\"%s\"", m_Handle->GetName(), m_AttachmentName.c_str());
+		Tier0_Msg(", fn: \"handleAttachment\"");
+		Tier0_Msg(", handle: "); m_Handle->Console_PrintBegin(); m_Handle->Console_PrintEnd();
+		Tier0_Msg(", attachmentName: \"%s\"", m_AttachmentName.c_str());
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -1825,11 +1946,14 @@ public:
 		m_CondFalse->AddRef();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvVecAngCalc::Console_Print();
+		CMirvVecAngCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=if condition=\"%s\" true=\"%s\" false=\"%s\"", m_Condition->GetName(), m_CondTrue->GetName(), m_CondFalse->GetName());
+		Tier0_Msg(", fn: \"if\"");
+		Tier0_Msg(", condition: "); m_Condition->Console_PrintBegin(); m_Condition->Console_PrintEnd();
+		Tier0_Msg(", true: "); m_CondTrue->Console_PrintBegin(); m_CondTrue->Console_PrintEnd();
+		Tier0_Msg(", false: "); m_CondFalse->Console_PrintBegin(); m_CondFalse->Console_PrintEnd();
 	}
 
 	virtual bool CalcVecAng(SOURCESDK::Vector & outVector, SOURCESDK::QAngle & outAngles)
@@ -1870,11 +1994,13 @@ public:
 		m_B->AddRef();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvVecAngCalc::Console_Print();
+		CMirvVecAngCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=or a=\"%s\" b=\"%s\"", m_A->GetName(), m_B->GetName());
+		Tier0_Msg(", fn: \"or\"");
+		Tier0_Msg(", a: "); m_A->Console_PrintBegin(); m_A->Console_PrintEnd();
+		Tier0_Msg(", b: "); m_B->Console_PrintBegin(); m_B->Console_PrintEnd();
 	}
 
 	virtual bool CalcVecAng(SOURCESDK::Vector & outVector, SOURCESDK::QAngle & outAngles)
@@ -1907,14 +2033,15 @@ public:
 		m_TrackHandle->AddRef();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvVecAngCalc::Console_Print();
+		CMirvVecAngCalc::Console_PrintBegin();
 
+		Tier0_Msg(", fn: \"motionProfile\"");
+		Tier0_Msg(", parent: "); m_Parent->Console_PrintBegin(); m_Parent->Console_PrintEnd();
+		Tier0_Msg(", trackHandle: "); m_TrackHandle->Console_PrintBegin(); m_TrackHandle->Console_PrintEnd();
 		Tier0_Msg(
-			" type=motionProfile2 parent=\"%s\" trackHandle=\"%s\" 	limXVelo=%f limXAcel=%f limYVelo=%f limYAcel=%f limZVelo=%f limZAcel=%f limAngVelo=%f limAngAcel=%f\n",
-			m_Parent->GetName()
-			, m_TrackHandle->GetName()
+			", limXVelo: %f, limXAcel: %f, limYVelo: %f, limYAcel: %f, limZVelo: %f, limZAcel: %f, limAngVelo: %f, limAngAcel: %f\n"
 			, m_LimitVelocityX, m_LimitAccelerationX		
 			, m_LimitVelocityY, m_LimitAccelerationY
 			, m_LimitVelocityZ, m_LimitAccelerationZ
@@ -2215,11 +2342,13 @@ public:
 		m_B->AddRef();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvVecAngCalc::Console_Print();
+		CMirvVecAngCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=add a=\"%s\" b=\"%s\"", m_A->GetName(), m_B->GetName());
+		Tier0_Msg(", fn: \"add\"");
+		Tier0_Msg(", a: "); m_A->Console_PrintBegin(); m_A->Console_PrintEnd();
+		Tier0_Msg(", b: "); m_B->Console_PrintBegin(); m_B->Console_PrintEnd();
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -2287,11 +2416,13 @@ public:
 		m_B->AddRef();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvVecAngCalc::Console_Print();
+		CMirvVecAngCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=subtract a=\"%s\" b=\"%s\"", m_A->GetName(), m_B->GetName());
+		Tier0_Msg(", fn: \"subtract\"");
+		Tier0_Msg(", a: "); m_A->Console_PrintBegin(); m_A->Console_PrintEnd();
+		Tier0_Msg(", b: "); m_B->Console_PrintBegin(); m_B->Console_PrintEnd();
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -2373,11 +2504,15 @@ public:
 		m_ResetHandle->AddRef();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvVecAngCalc::Console_Print();
+		CMirvVecAngCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=switchInterp source=\"%s\" switchHandle=\"%s\" resetHandle=\"%s\" holdTime=%f interpTime=%f", m_Source->GetName(), m_SwitchHandle->GetName(), m_ResetHandle->GetName(), (float)m_HoldTime, (float)m_InterpTime);
+		Tier0_Msg(", fn: \"switchInterp\"");
+		Tier0_Msg(", source: "); m_Source->Console_PrintBegin(); m_Source->Console_PrintEnd();
+		Tier0_Msg(", switchHandle: "); m_SwitchHandle->Console_PrintBegin(); m_SwitchHandle->Console_PrintEnd();
+		Tier0_Msg(", resetHandle: "); m_ResetHandle->Console_PrintBegin(); m_ResetHandle->Console_PrintEnd();
+		Tier0_Msg(", holdTime: %f, interpTime: %f", (float)m_HoldTime, (float)m_InterpTime);
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -2571,11 +2706,13 @@ public:
 		m_Handle->AddRef();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvVecAngCalc::Console_Print();
+		CMirvVecAngCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=localToGlobal source=\"%s\" handle=\"%s\"", m_Source->GetName(), m_Handle->GetName());
+		Tier0_Msg(", fn: \"localToGlobal\"");
+		Tier0_Msg(", source: "); m_Source->Console_PrintBegin(); m_Source->Console_PrintEnd();
+		Tier0_Msg(", handle: "); m_Handle->Console_PrintBegin(); m_Handle->Console_PrintEnd();
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -2647,11 +2784,13 @@ public:
 		m_Handle->AddRef();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvVecAngCalc::Console_Print();
+		CMirvVecAngCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=globalToLocal source=\"%s\" handle=\"%s\"", m_Source->GetName(), m_Handle->GetName());
+		Tier0_Msg(", fn: \"globalToLocal\"");
+		Tier0_Msg(", source: "); m_Source->Console_PrintBegin(); m_Source->Console_PrintEnd();
+		Tier0_Msg(", handle: "); m_Handle->Console_PrintBegin(); m_Handle->Console_PrintEnd();
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -2745,11 +2884,11 @@ public:
 		m_CamImport = new CamImport(m_CamFileName.c_str(), m_StartClientTime);
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvCamCalc::Console_Print();
+		CMirvCamCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=cam camFileName=\"%s\" startClientTime=%f", m_CamFileName.c_str(), m_StartClientTime);
+		Tier0_Msg(", fn: \"cam\", camFileName: \"%s\", startClientTime: %f", m_CamFileName.c_str(), m_StartClientTime);
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -2856,11 +2995,11 @@ public:
 	{
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvCamCalc::Console_Print();
+		CMirvCamCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=game");
+		Tier0_Msg(", fn: \"game\"");
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -2899,11 +3038,11 @@ public:
 	{
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvCamCalc::Console_Print();
+		CMirvCamCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=current");
+		Tier0_Msg(", fn: \"current\"");
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -2943,11 +3082,12 @@ public:
 		m_Cam->AddRef();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvVecAngCalc::Console_Print();
+		CMirvVecAngCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=cam cam=\"%s\"", m_Cam->GetName());
+		Tier0_Msg(", fn: \"cam\"");
+		Tier0_Msg(", cam: "); m_Cam->Console_PrintBegin(); m_Cam->Console_PrintEnd();
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -2982,11 +3122,12 @@ public:
 		m_Cam->AddRef();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvFovCalc::Console_Print();
+		CMirvFovCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=cam cam=\"%s\"", m_Cam->GetName());
+		Tier0_Msg(", fn: \"cam\"");
+		Tier0_Msg(", cam: "); m_Cam->Console_PrintBegin(); m_Cam->Console_PrintEnd();
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -3041,9 +3182,16 @@ public:
 		return CMirvCalc::GetName();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvCalc::Console_Print();
+		CMirvCalc::Console_PrintBegin();
+
+		Tier0_Msg(", type: \"bool\"");
+	}
+
+	virtual void Console_PrintEnd(void)
+	{
+		CMirvCalc::Console_PrintEnd();
 	}
 
 	virtual bool CalcBool(void)
@@ -3057,6 +3205,146 @@ public:
 	}
 };
 
+class CMirvBoolAndCalc : public CMirvBoolCalc
+{
+public:
+	CMirvBoolAndCalc(char const * name, IMirvBoolCalc * calcA, IMirvBoolCalc * calcB)
+		: CMirvBoolCalc(name)
+		, m_CalcA(calcA)
+		, m_CalcB(calcB)
+	{
+		m_CalcA->AddRef();
+		m_CalcB->AddRef();
+	}
+
+	virtual void Console_PrintBegin(void)
+	{
+		CMirvBoolCalc::Console_PrintBegin();
+
+		Tier0_Msg(", fn: \"and\"");
+		Tier0_Msg(", calcA: "); m_CalcA->Console_PrintBegin(); m_CalcA->Console_PrintEnd();
+		Tier0_Msg(", calcB: "); m_CalcB->Console_PrintBegin(); m_CalcB->Console_PrintEnd();
+	}
+
+	virtual bool CalcBool(bool & outResult)
+	{
+		bool calcValueA, calcValueB;
+
+		if (m_CalcA->CalcBool(calcValueA) && m_CalcB->CalcBool(calcValueB))
+		{
+			outResult = calcValueA || calcValueB;
+			return true;
+		}
+		
+		return false;
+	}
+
+protected:
+	virtual ~CMirvBoolAndCalc()
+	{
+		m_CalcB->Release();
+		m_CalcA->Release();
+	}
+
+private:
+	IMirvBoolCalc * m_CalcA;
+	IMirvBoolCalc * m_CalcB;
+};
+
+class CMirvBoolOrCalc : public CMirvBoolCalc
+{
+public:
+	CMirvBoolOrCalc(char const * name, IMirvBoolCalc * calcA, IMirvBoolCalc * calcB)
+		: CMirvBoolCalc(name)
+		, m_CalcA(calcA)
+		, m_CalcB(calcB)
+	{
+		m_CalcA->AddRef();
+		m_CalcB->AddRef();
+	}
+
+	virtual void Console_PrintBegin(void)
+	{
+		CMirvBoolCalc::Console_PrintBegin();
+
+		Tier0_Msg(", fn: \"or\"");
+		Tier0_Msg(", calcA: "); m_CalcA->Console_PrintBegin(); m_CalcA->Console_PrintEnd();
+		Tier0_Msg(", calcB: "); m_CalcB->Console_PrintBegin(); m_CalcB->Console_PrintEnd();
+	}
+
+	virtual bool CalcBool(bool & outResult)
+	{
+		bool calcValueA, calcValueB;
+
+		if (m_CalcA->CalcBool(calcValueA))
+		{
+			outResult = calcValueA;
+			if(calcValueA) return true;
+		}
+
+		if (m_CalcB->CalcBool(calcValueB))
+		{
+			outResult = calcValueB;
+			return true;
+		}
+
+		return false;
+	}
+
+protected:
+	virtual ~CMirvBoolOrCalc()
+	{
+		m_CalcB->Release();
+		m_CalcA->Release();
+	}
+
+private:
+	IMirvBoolCalc * m_CalcA;
+	IMirvBoolCalc * m_CalcB;
+};
+
+class CMirvBoolNotCalc : public CMirvBoolCalc
+{
+public:
+	CMirvBoolNotCalc(char const * name, IMirvBoolCalc * calc)
+		: CMirvBoolCalc(name)
+		, m_Calc(calc)
+	{
+		m_Calc->AddRef();
+	}
+
+	virtual void Console_PrintBegin(void)
+	{
+		CMirvBoolCalc::Console_PrintBegin();
+
+		Tier0_Msg(", fn: \"not\"");
+		Tier0_Msg(", calc: "); m_Calc->Console_PrintBegin(); m_Calc->Console_PrintEnd();
+
+	}
+
+	virtual bool CalcBool(bool & outResult)
+	{
+		bool calcValue;
+
+		if (m_Calc->CalcBool(calcValue))
+		{
+			outResult = !calcValue;
+			return true;
+		}
+
+		return false;
+	}
+
+protected:
+	virtual ~CMirvBoolNotCalc()
+	{
+		m_Calc->Release();
+	}
+
+private:
+	IMirvBoolCalc * m_Calc;
+};
+
 class CMirvBoolHandleCalc : public CMirvBoolCalc
 {
 public:
@@ -3067,11 +3355,12 @@ public:
 		m_Handle->AddRef();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvBoolCalc::Console_Print();
+		CMirvBoolCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=handle handle=\"%s\"", m_Handle->GetName());
+		Tier0_Msg(", fn: \"handle\"");
+		Tier0_Msg(", handle: "); m_Handle->Console_PrintBegin(); m_Handle->Console_PrintEnd();
 	}
 
 	virtual bool CalcBool(bool & outResult)
@@ -3103,11 +3392,12 @@ public:
 		m_VecAng->AddRef();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvBoolCalc::Console_Print();
+		CMirvBoolCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=vecAng vecAng=\"%s\"", m_VecAng->GetName());
+		Tier0_Msg(", fn: \"vecAng\"");
+		Tier0_Msg(", vecAng: "); m_VecAng->Console_PrintBegin(); m_VecAng->Console_PrintEnd();
 	}
 
 	virtual bool CalcBool(bool & outResult)
@@ -3142,9 +3432,10 @@ public:
 
 	virtual void Console_Print(void)
 	{
-		CMirvBoolCalc::Console_Print();
+		CMirvBoolCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=handle handle=\"%s\"", m_Handle->GetName());
+		Tier0_Msg(", fn: \"alive\"");
+		Tier0_Msg(", handle: "); m_Handle->Console_PrintBegin(); m_Handle->Console_PrintEnd();
 	}
 
 	virtual bool CalcBool(bool & outResult)
@@ -3174,6 +3465,149 @@ protected:
 
 private:
 	IMirvHandleCalc * m_Handle;
+};
+
+class CMirvBoolHandlesEqualCalc : public CMirvBoolCalc
+{
+public:
+	CMirvBoolHandlesEqualCalc(char const * name, IMirvHandleCalc * calcA, IMirvHandleCalc * calcB)
+		: CMirvBoolCalc(name)
+		, m_CalcA(calcA)
+		, m_CalcB(calcB)
+	{
+		m_CalcA->AddRef();
+		m_CalcB->AddRef();
+	}
+
+	virtual void Console_Print(void)
+	{
+		CMirvBoolCalc::Console_PrintBegin();
+
+		Tier0_Msg(", fn: \"handlesEqual\"");
+		Tier0_Msg(", calcA: "); m_CalcA->Console_PrintBegin(); m_CalcA->Console_PrintEnd();
+		Tier0_Msg(", calcB: "); m_CalcB->Console_PrintBegin(); m_CalcB->Console_PrintEnd();
+	}
+
+	virtual bool CalcBool(bool & outResult)
+	{
+		SOURCESDK::CSGO::CBaseHandle calcValueA, calcValueB;
+
+		if (m_CalcA->CalcHandle(calcValueA) && m_CalcB->CalcHandle(calcValueB))
+		{
+			outResult = calcValueA == calcValueB;
+			return true;
+		}
+
+		return false;
+	}
+
+protected:
+	virtual ~CMirvBoolHandlesEqualCalc()
+	{
+		m_CalcB->Release();
+		m_CalcA->Release();
+	}
+
+private:
+	IMirvHandleCalc * m_CalcA;
+	IMirvHandleCalc * m_CalcB;
+};
+
+class CMirvBoolIntsEqualCalc : public CMirvBoolCalc
+{
+public:
+	CMirvBoolIntsEqualCalc(char const * name, IMirvIntCalc * calcA, IMirvIntCalc * calcB)
+		: CMirvBoolCalc(name)
+		, m_CalcA(calcA)
+		, m_CalcB(calcB)
+	{
+		m_CalcA->AddRef();
+		m_CalcB->AddRef();
+	}
+
+	virtual void Console_Print(void)
+	{
+		CMirvBoolCalc::Console_PrintBegin();
+
+		Tier0_Msg(", fn: \"intsEqual\"");
+		Tier0_Msg(", calcA: "); m_CalcA->Console_PrintBegin(); m_CalcA->Console_PrintEnd();
+		Tier0_Msg(", calcB: "); m_CalcB->Console_PrintBegin(); m_CalcB->Console_PrintEnd();
+	}
+
+	virtual bool CalcBool(bool & outResult)
+	{
+		int calcValueA, calcValueB;
+
+		if (m_CalcA->CalcInt(calcValueA) && m_CalcB->CalcInt(calcValueB))
+		{
+			outResult = calcValueA == calcValueB;
+			return true;
+		}
+
+		return false;
+	}
+
+protected:
+	virtual ~CMirvBoolIntsEqualCalc()
+	{
+		m_CalcB->Release();
+		m_CalcA->Release();
+	}
+
+private:
+	IMirvIntCalc * m_CalcA;
+	IMirvIntCalc * m_CalcB;
+};
+
+
+class CMirvBoolClassNameMatchesCalc : public CMirvBoolCalc
+{
+public:
+	CMirvBoolClassNameMatchesCalc(char const * name, IMirvHandleCalc * calc, const char * wildCardString)
+		: CMirvBoolCalc(name)
+		, m_Calc(calc)
+		, m_WildCardString(wildCardString)
+	{
+		m_Calc->AddRef();
+	}
+
+	virtual void Console_PrintBegin(void)
+	{
+		CMirvBoolCalc::Console_PrintBegin();
+
+		Tier0_Msg(", fn: \"classnameMatches\"");
+		Tier0_Msg(", calc: "); m_Calc->Console_PrintBegin(); m_Calc->Console_PrintEnd();
+		Tier0_Msg(", wildCardString: \"%s\"", m_WildCardString.c_str());
+	}
+
+	virtual bool CalcBool(bool & outResult)
+	{
+		SOURCESDK::CSGO::CBaseHandle handle;
+
+		if (m_Calc->CalcHandle(handle) && handle.IsValid())
+		{
+			SOURCESDK::IClientEntity_csgo * clientEntity = SOURCESDK::g_Entitylist_csgo->GetClientEntityFromHandle(handle);
+			SOURCESDK::C_BaseEntity_csgo * baseEntity = clientEntity ? clientEntity->GetBaseEntity() : 0;
+
+			if (baseEntity)
+			{
+				outResult = StringWildCard1Matched(m_WildCardString.c_str(), baseEntity->GetClassname());
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+protected:
+	virtual ~CMirvBoolClassNameMatchesCalc()
+	{
+		m_Calc->Release();
+	}
+
+private:
+	IMirvHandleCalc * m_Calc;
+	std::string m_WildCardString;
 };
 
 
@@ -3206,9 +3640,16 @@ public:
 		return CMirvCalc::GetName();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvCalc::Console_Print();
+		CMirvCalc::Console_PrintBegin();
+
+		Tier0_Msg(", type: \"int\"");
+	}
+
+	virtual void Console_PrintEnd(void)
+	{
+		CMirvCalc::Console_PrintEnd();
 	}
 
 	virtual bool CalcInt(void)
@@ -3222,6 +3663,39 @@ public:
 	}
 };
 
+
+class CMirvIntValueCalc : public CMirvIntCalc
+{
+public:
+	CMirvIntValueCalc(char const * name, int value)
+		: CMirvIntCalc(name)
+		, m_Value(value)
+	{
+	}
+
+	virtual void Console_PrintBegin(void)
+	{
+		CMirvIntCalc::Console_PrintBegin();
+
+		Tier0_Msg(", fn: \"value\", value: %i", m_Value);
+	}
+
+	virtual bool CalcInt(int & outResult)
+	{
+		outResult = m_Value;
+
+		return true;
+	}
+
+protected:
+	virtual ~CMirvIntValueCalc()
+	{
+	}
+
+private:
+	int m_Value;
+};
+
 class CMirvIntTeamNumberCalc : public CMirvIntCalc
 {
 public:
@@ -3232,11 +3706,12 @@ public:
 		m_Handle->AddRef();
 	}
 
-	virtual void Console_Print(void)
+	virtual void Console_PrintBegin(void)
 	{
-		CMirvIntCalc::Console_Print();
+		CMirvIntCalc::Console_PrintBegin();
 
-		Tier0_Msg(" type=handle handle=\"%s\"", m_Handle->GetName());
+		Tier0_Msg(", fn: \"handle\"");
+		Tier0_Msg(", handle: "); m_Handle->Console_PrintBegin(); m_Handle->Console_PrintEnd();
 	}
 
 	virtual bool CalcInt(int & outResult)
@@ -3374,6 +3849,24 @@ IMirvHandleCalc *  CMirvHandleCalcs::NewObserverTargetCalc(char const * name, IM
 	return result;
 }
 
+IMirvHandleCalc *  CMirvHandleCalcs::NewOwnerEntityCalc(char const * name, IMirvHandleCalc * calc, unsigned int maxDepth)
+{
+	if (name && !Console_CheckName(name))
+		return 0;
+
+	IMirvHandleCalc * result = new CMirvHandleOwnerEntityCalc(name, calc, maxDepth);
+
+	if (name)
+	{
+		result->AddRef();
+
+		m_Calcs.push_back(result);
+	}
+
+	return result;
+}
+
+
 
 IMirvHandleCalc * CMirvHandleCalcs::NewKeyCalc(char const * name, int key)
 {
@@ -3445,7 +3938,7 @@ void CMirvHandleCalcs::Console_Print(void)
 {
 	for (std::list<IMirvHandleCalc *>::iterator it = m_Calcs.begin(); it != m_Calcs.end(); ++it)
 	{
-		(*it)->Console_Print(); Tier0_Msg(";\n");
+		(*it)->Console_PrintBegin(); (*it)->Console_PrintEnd(); Tier0_Msg(";\n");
 	}
 }
 
@@ -3788,7 +4281,7 @@ void CMirvVecAngCalcs::Console_Print(void)
 {
 	for (std::list<IMirvVecAngCalc *>::iterator it = m_Calcs.begin(); it != m_Calcs.end(); ++it)
 	{
-		(*it)->Console_Print(); Tier0_Msg(";\n");
+		(*it)->Console_PrintBegin(); (*it)->Console_PrintEnd(); Tier0_Msg(";\n");
 	}
 }
 
@@ -3965,7 +4458,7 @@ void CMirvCamCalcs::Console_Print(void)
 {
 	for (std::list<IMirvCamCalc *>::iterator it = m_Calcs.begin(); it != m_Calcs.end(); ++it)
 	{
-		(*it)->Console_Print(); Tier0_Msg(";\n");
+		(*it)->Console_PrintBegin(); (*it)->Console_PrintEnd(); Tier0_Msg(";\n");
 	}
 }
 
@@ -4069,7 +4562,7 @@ void CMirvFovCalcs::Console_Print(void)
 {
 	for (std::list<IMirvFovCalc *>::iterator it = m_Calcs.begin(); it != m_Calcs.end(); ++it)
 	{
-		(*it)->Console_Print(); Tier0_Msg(";\n");
+		(*it)->Console_PrintBegin(); (*it)->Console_PrintEnd(); Tier0_Msg(";\n");
 	}
 }
 
@@ -4154,8 +4647,6 @@ IMirvBoolCalc * CMirvBoolCalcs::NewAliveCalc(char const * name, IMirvHandleCalc 
 	return result;
 }
 
-/*
-
 IMirvBoolCalc * CMirvBoolCalcs::NewAndCalc(char const * name, IMirvBoolCalc * a, IMirvBoolCalc * b)
 {
 	if (name && !Console_CheckName(name))
@@ -4207,7 +4698,56 @@ IMirvBoolCalc * CMirvBoolCalcs::NewNotCalc(char const * name, IMirvBoolCalc * a)
 	return result;
 }
 
-*/
+IMirvBoolCalc * CMirvBoolCalcs::NewHandlesEqualCalc(char const * name, IMirvHandleCalc * a, IMirvHandleCalc * b)
+{
+	if (name && !Console_CheckName(name))
+		return 0;
+
+	IMirvBoolCalc * result = new CMirvBoolHandlesEqualCalc(name, a, b);
+
+	if (name)
+	{
+		result->AddRef();
+
+		m_Calcs.push_back(result);
+	}
+
+	return result;
+}
+
+IMirvBoolCalc * CMirvBoolCalcs::NewIntsEqualCalc(char const * name, IMirvIntCalc * a, IMirvIntCalc * b)
+{
+	if (name && !Console_CheckName(name))
+		return 0;
+
+	IMirvBoolCalc * result = new CMirvBoolIntsEqualCalc(name, a, b);
+
+	if (name)
+	{
+		result->AddRef();
+
+		m_Calcs.push_back(result);
+	}
+
+	return result;
+}
+
+IMirvBoolCalc * CMirvBoolCalcs::NewClassnameMatchesCalc(char const * name, IMirvHandleCalc * handle, const char * wildCardString)
+{
+	if (name && !Console_CheckName(name))
+		return 0;
+
+	IMirvBoolCalc * result = new CMirvBoolClassNameMatchesCalc(name, handle, wildCardString);
+
+	if (name)
+	{
+		result->AddRef();
+
+		m_Calcs.push_back(result);
+	}
+
+	return result;
+}
 
 void CMirvBoolCalcs::Console_Remove(char const * name)
 {
@@ -4262,7 +4802,7 @@ void CMirvBoolCalcs::Console_Print(void)
 {
 	for (std::list<IMirvBoolCalc *>::iterator it = m_Calcs.begin(); it != m_Calcs.end(); ++it)
 	{
-		(*it)->Console_Print(); Tier0_Msg(";\n");
+		(*it)->Console_PrintBegin(); (*it)->Console_PrintEnd(); Tier0_Msg(";\n");
 	}
 }
 
@@ -4294,6 +4834,24 @@ IMirvIntCalc * CMirvIntCalcs::GetByName(char const * name)
 	}
 
 	return 0;
+}
+
+
+IMirvIntCalc * CMirvIntCalcs::NewValueCalc(char const * name, int value)
+{
+	if (name && !Console_CheckName(name))
+		return 0;
+
+	IMirvIntCalc * result = new CMirvIntValueCalc(name, value);
+
+	if (name)
+	{
+		result->AddRef();
+
+		m_Calcs.push_back(result);
+	}
+
+	return result;
 }
 
 IMirvIntCalc * CMirvIntCalcs::NewTeamNumberCalc(char const * name, IMirvHandleCalc * handle)
@@ -4366,7 +4924,7 @@ void CMirvIntCalcs::Console_Print(void)
 {
 	for (std::list<IMirvIntCalc *>::iterator it = m_Calcs.begin(); it != m_Calcs.end(); ++it)
 	{
-		(*it)->Console_Print(); Tier0_Msg(";\n");
+		(*it)->Console_PrintBegin(); (*it)->Console_PrintEnd(); Tier0_Msg(";\n");
 	}
 }
 
@@ -4442,6 +5000,20 @@ void mirv_calcs_handle(IWrpCommandArgs * args)
 
 					return;
 				}
+				else if (0 == _stricmp("observerTarget", arg2) && 6 <= argc)
+				{
+					char const * parentCalcName = args->ArgV(4);
+					unsigned int maxDepth = strtoul(args->ArgV(5), nullptr, 10);
+
+					IMirvHandleCalc * parentCalc = g_MirvHandleCalcs.GetByName(parentCalcName);
+
+					if (parentCalc)
+						g_MirvHandleCalcs.NewOwnerEntityCalc(args->ArgV(3), parentCalc, maxDepth);
+					else
+						Tier0_Warning("Error: No handle calc with name \"%s\" found.\n", parentCalcName);
+
+					return;
+				}
 			}
 
 			Tier0_Msg(
@@ -4451,6 +5023,8 @@ void mirv_calcs_handle(IWrpCommandArgs * args)
 				"%s add activeWeapon <sName> <sParentCalcHandleName> <bGetWorld> - Add an active weapon calc, <bGetWorld> is 0 or 1.\n"
 				"%s add localPlayer <sName> - Add localPlayer calc.\n"
 				"%s add observerTarget <sName> <sParentCalcHandleName> - Add obser trarget calc (use e.g. localPlayer calc as parent name).\n"
+				"%s add ownerEntityCalc <sName> <sCalcHandleName> <iMaxDepth>\n"
+				, arg0
 				, arg0
 				, arg0
 				, arg0
@@ -4481,8 +5055,6 @@ void mirv_calcs_handle(IWrpCommandArgs * args)
 				SOURCESDK::CSGO::CBaseHandle handle;
 				bool calced = parentCalc->CalcHandle(handle);
 
-				Tier0_Msg("Calc: ");
-				parentCalc->Console_Print();
 				if(calced)
 					Tier0_Msg("\nResult: true, handle=%i\n", handle);
 				else
@@ -4835,8 +5407,6 @@ void mirv_calcs_vecang(IWrpCommandArgs * args)
 				SOURCESDK::QAngle ang;
 				bool calced = parentCalc->CalcVecAng(vec, ang);
 
-				Tier0_Msg("Calc: ");
-				parentCalc->Console_Print();
 				if(calced)
 					Tier0_Msg("\nResult: true, vec=(%f, %f, %f), ang=(%f, %f, %f)\n", vec.x, vec.y, vec.z, ang.z, ang.x, ang.y);
 				else
@@ -4991,8 +5561,6 @@ void mirv_calcs_cam(IWrpCommandArgs * args)
 				float fov;
 				bool calced = parentCalc->CalcCam(vec, ang, fov);
 
-				Tier0_Msg("Calc: ");
-				parentCalc->Console_Print();
 				if (calced)
 					Tier0_Msg("\nResult: true, vec=(%f, %f, %f), ang=(%f, %f, %f), fov=%f\n", vec.x, vec.y, vec.z, ang.z, ang.x, ang.y, fov);
 				else
@@ -5096,8 +5664,6 @@ void mirv_calcs_fov(IWrpCommandArgs * args)
 				float fov;
 				bool calced = parentCalc->CalcFov(fov);
 
-				Tier0_Msg("Calc: ");
-				parentCalc->Console_Print();
 				if (calced)
 					Tier0_Msg("\nResult: true, fov=%f\n", fov);
 				else
@@ -5158,7 +5724,82 @@ void mirv_calcs_bool(IWrpCommandArgs * args)
 			{
 				char const * arg2 = args->ArgV(2);
 
-				if (0 == _stricmp("alive", arg2) && 5 <= argc)
+				if (0 == _stricmp("and", arg2) && 6 <= argc)
+				{
+					char const * parentCalcNameA = args->ArgV(4);
+					char const * parentCalcNameB = args->ArgV(5);
+
+					IMirvBoolCalc * parentCalcA = g_MirvBoolCalcs.GetByName(parentCalcNameA);
+					IMirvBoolCalc * parentCalcB = g_MirvBoolCalcs.GetByName(parentCalcNameB);
+
+					if (parentCalcA && parentCalcB)
+						g_MirvBoolCalcs.NewAndCalc(args->ArgV(3), parentCalcA, parentCalcB);
+					else
+					{
+						if(!parentCalcA) Tier0_Warning("Error: No bool calc with name \"%s\" found.\n", parentCalcA);
+						if (!parentCalcB) Tier0_Warning("Error: No bool calc with name \"%s\" found.\n", parentCalcB);
+					}
+
+					return;
+				}
+				else if (0 == _stricmp("or", arg2) && 6 <= argc)
+				{
+					char const * parentCalcNameA = args->ArgV(4);
+					char const * parentCalcNameB = args->ArgV(5);
+
+					IMirvBoolCalc * parentCalcA = g_MirvBoolCalcs.GetByName(parentCalcNameA);
+					IMirvBoolCalc * parentCalcB = g_MirvBoolCalcs.GetByName(parentCalcNameB);
+
+					if (parentCalcA && parentCalcB)
+						g_MirvBoolCalcs.NewOrCalc(args->ArgV(3), parentCalcA, parentCalcB);
+					else
+					{
+						if(!parentCalcA) Tier0_Warning("Error: No bool calc with name \"%s\" found.\n", parentCalcA);
+						if (!parentCalcB) Tier0_Warning("Error: No bool calc with name \"%s\" found.\n", parentCalcB);
+					}
+
+					return;
+				}
+				else if (0 == _stricmp("not", arg2) && 5 <= argc)
+				{
+					char const * parentCalcName = args->ArgV(4);
+
+					IMirvBoolCalc * parentCalc = g_MirvBoolCalcs.GetByName(parentCalcName);
+
+					if (parentCalc)
+						g_MirvBoolCalcs.NewNotCalc(args->ArgV(3), parentCalc);
+					else
+						Tier0_Warning("Error: No bool calc with name \"%s\" found.\n", parentCalcName);
+
+					return;
+				}
+				else if (0 == _stricmp("handle", arg2) && 5 <= argc)
+				{
+					char const * parentCalcName = args->ArgV(4);
+
+					IMirvHandleCalc * parentCalc = g_MirvHandleCalcs.GetByName(parentCalcName);
+
+					if (parentCalc)
+						g_MirvBoolCalcs.NewHandleCalc(args->ArgV(3), parentCalc);
+					else
+						Tier0_Warning("Error: No handle calc with name \"%s\" found.\n", parentCalcName);
+
+					return;
+				}
+				else if (0 == _stricmp("vecAng", arg2) && 5 <= argc)
+				{
+					char const * parentCalcName = args->ArgV(4);
+
+					IMirvVecAngCalc * parentCalc = g_MirvVecAngCalcs.GetByName(parentCalcName);
+
+					if (parentCalc)
+						g_MirvBoolCalcs.NewVecAngCalc(args->ArgV(3), parentCalc);
+					else
+						Tier0_Warning("Error: No vecAng calc with name \"%s\" found.\n", parentCalcName);
+
+					return;
+				}
+				else if (0 == _stricmp("alive", arg2) && 5 <= argc)
 				{
 					char const * parentCalcName = args->ArgV(4);
 
@@ -5171,10 +5812,76 @@ void mirv_calcs_bool(IWrpCommandArgs * args)
 
 					return;
 				}
+				else if (0 == _stricmp("handlesEqual", arg2) && 6 <= argc)
+				{
+					char const * parentCalcNameA = args->ArgV(4);
+					char const * parentCalcNameB = args->ArgV(5);
+
+					IMirvHandleCalc * parentCalcA = g_MirvHandleCalcs.GetByName(parentCalcNameA);
+					IMirvHandleCalc * parentCalcB = g_MirvHandleCalcs.GetByName(parentCalcNameB);
+
+					if (parentCalcA && parentCalcB)
+						g_MirvBoolCalcs.NewHandlesEqualCalc(args->ArgV(3), parentCalcA, parentCalcB);
+					else
+					{
+						if (!parentCalcA) Tier0_Warning("Error: No handle calc with name \"%s\" found.\n", parentCalcA);
+						if (!parentCalcB) Tier0_Warning("Error: No handle calc with name \"%s\" found.\n", parentCalcB);
+					}
+
+					return;
+				}
+				else if (0 == _stricmp("intsEqual", arg2) && 6 <= argc)
+				{
+					char const * parentCalcNameA = args->ArgV(4);
+					char const * parentCalcNameB = args->ArgV(5);
+
+					IMirvIntCalc * parentCalcA = g_MirvIntCalcs.GetByName(parentCalcNameA);
+					IMirvIntCalc * parentCalcB = g_MirvIntCalcs.GetByName(parentCalcNameB);
+
+					if (parentCalcA && parentCalcB)
+						g_MirvBoolCalcs.NewIntsEqualCalc(args->ArgV(3), parentCalcA, parentCalcB);
+					else
+					{
+						if (!parentCalcA) Tier0_Warning("Error: No int calc with name \"%s\" found.\n", parentCalcA);
+						if (!parentCalcB) Tier0_Warning("Error: No int calc with name \"%s\" found.\n", parentCalcB);
+					}
+
+					return;
+				}
+				else if (0 == _stricmp("classnameMatches", arg2) && 6 <= argc)
+				{
+				char const * parentCalcNameA = args->ArgV(4);
+				char const * wildCardString = args->ArgV(5);
+
+				IMirvHandleCalc * parentCalc = g_MirvHandleCalcs.GetByName(parentCalcNameA);
+
+				if (parentCalc)
+					g_MirvBoolCalcs.NewClassnameMatchesCalc(args->ArgV(3), parentCalc, wildCardString);
+				else
+					Tier0_Warning("Error: No int calc with name \"%s\" found.\n", parentCalc);
+
+				return;
+				}
 			}
 
 			Tier0_Msg(
+				"%s add and <sName> <boolCalcNameA> <boolCalcNameB> - Returns AND of the bool calcs if valid.\n"
+				"%s add or <sName> <boolCalcNameA> <boolCalcNameB> - Returns OR of the bool calcs if valid.\n"
+				"%s add not <sName> <boolCalcName> - Returns NOT of bool calc if valid.\n"
+				"%s add handle <sName> <handleCalcName> - Returns true if handleCalc is valid.\n"
+				"%s add vecAng <sName> <vecAngCalcNae> - Returns true if vecAngCalc is valid.\n"
 				"%s add alive <sName> <handleCalcName> - Returns true if alive.\n"
+				"%s add handlesEqual <sName> <handleCalcNameA> <handleCalcNameB>\n"
+				"%s add intsEqual <sName> <intCalcNameA> <intCalcNameB>\n"
+				"%s add classnameMatches <sName> <handleCalcname> <sWildCardString>\n"
+				, arg0
+				, arg0
+				, arg0
+				, arg0
+				, arg0
+				, arg0
+				, arg0
+				, arg0
 				, arg0
 			);
 			return;
@@ -5200,8 +5907,6 @@ void mirv_calcs_bool(IWrpCommandArgs * args)
 				bool value;
 				bool calced = parentCalc->CalcBool(value);
 
-				Tier0_Msg("Calc: ");
-				parentCalc->Console_Print();
 				if (calced)
 					Tier0_Msg("\nResult: true, bool=%i\n", value ? 1 : 0);
 				else
@@ -5263,7 +5968,14 @@ void mirv_calcs_int(IWrpCommandArgs * args)
 			{
 				char const * arg2 = args->ArgV(2);
 
-				if (0 == _stricmp("teamNumber", arg2) && 5 <= argc)
+				if (0 == _stricmp("value", arg2) && 5 <= argc)
+				{
+					int value = atoi(args->ArgV(4));
+
+					g_MirvIntCalcs.NewValueCalc(args->ArgV(3), value);
+					return;
+				}
+				else if (0 == _stricmp("teamNumber", arg2) && 5 <= argc)
 				{
 					char const * parentCalcName = args->ArgV(4);
 
@@ -5279,7 +5991,9 @@ void mirv_calcs_int(IWrpCommandArgs * args)
 			}
 
 			Tier0_Msg(
+				"%s add value <sName> <iValue>.\n"
 				"%s add teamNumber <sName> <handleCalcName> - Returns team number (1 = spec, 2 = T, 3 = CT).\n"
+				, arg0
 				, arg0
 			);
 			return;
@@ -5305,8 +6019,6 @@ void mirv_calcs_int(IWrpCommandArgs * args)
 				int value;
 				bool calced = parentCalc->CalcInt(value);
 
-				Tier0_Msg("Calc: ");
-				parentCalc->Console_Print();
 				if (calced)
 					Tier0_Msg("\nResult: true, int=%i\n", value);
 				else

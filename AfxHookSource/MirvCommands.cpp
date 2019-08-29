@@ -3462,7 +3462,7 @@ CON_COMMAND(mirv_aim, "Aiming system control.")
 				, vecAng ? "" : "(none)"
 			);
 
-			if (vecAng) vecAng->Console_Print();
+			if (vecAng) { vecAng->Console_PrintBegin(); vecAng->Console_PrintEnd(); }
 			Tier0_Msg("\n");
 
 			return;

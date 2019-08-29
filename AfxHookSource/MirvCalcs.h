@@ -8,7 +8,7 @@
 
 void CalcSmooth(double deltaT, double targetPos, double & lastPos, double & lastVel, double LimitVelocity, double LimitAcceleration);
 
-class IMirvHandleCalc abstract
+class IMirvCalc abstract
 {
 public:
 	virtual void AddRef(void) abstract = 0;
@@ -16,98 +16,48 @@ public:
 
 	virtual int GetRefCount(void) abstract = 0;
 
+	virtual  char const * GetName(void) abstract = 0;
+
+	virtual void Console_PrintBegin(void) abstract = 0;
+	virtual void Console_PrintEnd(void) abstract = 0;
+
+	virtual void Console_Edit(IWrpCommandArgs * args) abstract = 0;
+};
+
+class IMirvHandleCalc abstract : public IMirvCalc
+{
+public:
 	virtual bool CalcHandle(SOURCESDK::CSGO::CBaseHandle & outHandle) abstract = 0;
-
-	virtual  char const * GetName(void) abstract = 0;
-
-	virtual void Console_Print(void) abstract = 0;
-
-	virtual void Console_Edit(IWrpCommandArgs * args) abstract = 0;
 };
 
-class IMirvVecAngCalc abstract
+class IMirvVecAngCalc abstract : public IMirvCalc
 {
 public:
-	virtual void AddRef(void) abstract = 0;
-	virtual void Release(void) abstract = 0;;
-
-	virtual int GetRefCount(void) abstract = 0;
-
 	virtual bool CalcVecAng(SOURCESDK::Vector & outVector, SOURCESDK::QAngle & outAngles) abstract = 0;
-
-	virtual  char const * GetName(void) abstract = 0;
-
-	virtual void Console_Print(void) abstract = 0;
-
-	virtual void Console_Edit(IWrpCommandArgs * args) abstract = 0;
 };
 
-class IMirvCamCalc abstract
+class IMirvCamCalc abstract : public IMirvCalc
 {
 public:
-	virtual void AddRef(void) abstract = 0;
-	virtual void Release(void) abstract = 0;;
-
-	virtual int GetRefCount(void) abstract = 0;
-
 	virtual bool CalcCam(SOURCESDK::Vector & outVector, SOURCESDK::QAngle & outAngles, float & outFov) abstract = 0;
-
-	virtual  char const * GetName(void) abstract = 0;
-
-	virtual void Console_Print(void) abstract = 0;
-
-	virtual void Console_Edit(IWrpCommandArgs * args) abstract = 0;
 };
 
-class IMirvFovCalc abstract
+class IMirvFovCalc abstract : public IMirvCalc
 {
 public:
-	virtual void AddRef(void) abstract = 0;
-	virtual void Release(void) abstract = 0;;
-
-	virtual int GetRefCount(void) abstract = 0;
-
 	virtual bool CalcFov(float & outFov) abstract = 0;
-
-	virtual  char const * GetName(void) abstract = 0;
-
-	virtual void Console_Print(void) abstract = 0;
-
-	virtual void Console_Edit(IWrpCommandArgs * args) abstract = 0;
 };
 
-class IMirvBoolCalc abstract
+class IMirvBoolCalc abstract : public IMirvCalc
 {
 public:
-	virtual void AddRef(void) abstract = 0;
-	virtual void Release(void) abstract = 0;;
-
-	virtual int GetRefCount(void) abstract = 0;
-
 	virtual bool CalcBool(bool & outResult) abstract = 0;
-
-	virtual  char const * GetName(void) abstract = 0;
-
-	virtual void Console_Print(void) abstract = 0;
-
-	virtual void Console_Edit(IWrpCommandArgs * args) abstract = 0;
 };
 
-class IMirvIntCalc abstract
+class IMirvIntCalc abstract : public IMirvCalc
 {
 public:
-	virtual void AddRef(void) abstract = 0;
-	virtual void Release(void) abstract = 0;;
-
-	virtual int GetRefCount(void) abstract = 0;
-
 	virtual bool CalcInt(int & outResult) abstract = 0;
-
-	virtual  char const * GetName(void) abstract = 0;
-
-	virtual void Console_Print(void) abstract = 0;
-
-	virtual void Console_Edit(IWrpCommandArgs * args) abstract = 0;
 };
 
 
@@ -124,6 +74,7 @@ public:
 	IMirvHandleCalc * NewActiveWeaponCalc(char const * name, IMirvHandleCalc * parent, bool world);
 	IMirvHandleCalc * NewLocalPlayerCalc(char const * name);
 	IMirvHandleCalc * NewObserverTargetCalc(char const * name, IMirvHandleCalc * parent);
+	IMirvHandleCalc * NewOwnerEntityCalc(char const * name, IMirvHandleCalc * calc, unsigned int maxDepth = 1);
 
 	bool Console_CheckName(char const * name);
 	void Console_Remove(char const * name);
@@ -233,9 +184,12 @@ public:
 	IMirvBoolCalc * NewHandleCalc(char const * name, IMirvHandleCalc * handle);
 	IMirvBoolCalc * NewVecAngCalc(char const * name, IMirvVecAngCalc * vecAng);
 	IMirvBoolCalc * NewAliveCalc(char const * name, IMirvHandleCalc * vecAng);
-	//IMirvBoolCalc * NewAndCalc(char const * name, IMirvBoolCalc * a, IMirvBoolCalc * b);
-	//IMirvBoolCalc * NewOrCalc(char const * name, IMirvBoolCalc * a, IMirvBoolCalc * b);
-	//IMirvBoolCalc * NewNotCalc(char const * name, IMirvBoolCalc * a);
+	IMirvBoolCalc * NewAndCalc(char const * name, IMirvBoolCalc * a, IMirvBoolCalc * b);
+	IMirvBoolCalc * NewOrCalc(char const * name, IMirvBoolCalc * a, IMirvBoolCalc * b);
+	IMirvBoolCalc * NewNotCalc(char const * name, IMirvBoolCalc * a);
+	IMirvBoolCalc * NewHandlesEqualCalc(char const * name, IMirvHandleCalc * a, IMirvHandleCalc * b);
+	IMirvBoolCalc * NewIntsEqualCalc(char const * name, IMirvIntCalc * a, IMirvIntCalc * b);
+	IMirvBoolCalc * NewClassnameMatchesCalc(char const * name, IMirvHandleCalc * handle, const char * wildCardString);
 
 	bool Console_CheckName(char const * name);
 	void Console_Remove(char const * name);
@@ -257,6 +211,7 @@ public:
 
 	IMirvIntCalc * GetByName(char const * name);
 
+	IMirvIntCalc * NewValueCalc(const char * name, int value);
 	IMirvIntCalc * NewTeamNumberCalc(char const * name, IMirvHandleCalc * handle);
 
 	bool Console_CheckName(char const * name);

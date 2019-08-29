@@ -18,6 +18,7 @@ extern SourceSdkVer g_SourceSdkVer;
 
 //AFXADDR_DECL(csgo_CPredictionCopy_TransferData)
 //AFXADDR_DECL(csgo_CPredictionCopy_TransferData_DSZ)
+AFXADDR_DECL(csgo_C_BaseEntity_IClientEntity_vtable)
 AFXADDR_DECL(csgo_C_BaseAnimating_vtable)
 AFXADDR_DECL(csgo_DT_Animationlayer_m_flCycle_fn)
 //AFXADDR_DECL(csgo_DT_Animationlayer_m_flPrevCycle_fn)
@@ -76,6 +77,8 @@ AFXADDR_DECL(csgo_CGameEventManger_FireEventIntern);
 AFXADDR_DECL(csgo_dynamic_cast);
 AFXADDR_DECL(csgo_RTTI_CGameEvent);
 AFXADDR_DECL(csgo_RTTI_IGameEvent);
+//AFXADDR_DECL(csgo_client_dynamic_cast);
+//AFXADDR_DECL(csgo_client_RTTI_IClientRenderable);
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);

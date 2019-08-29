@@ -18,6 +18,7 @@
 #include "addresses.h"
 #include "MirvTime.h"
 #include "SourceInterfaces.h"
+#include "csgo/hooks/c_basentity.h"
 
 #include <shared/StringTools.h>
 #include <shared/FileTools.h>
@@ -1750,6 +1751,8 @@ void CAfxBaseFxStream::OnRenderEnd()
 {
 	m_ActiveStreamContext->RenderEnd();
 
+	m_ActiveStreamContext = nullptr;
+
 	CAfxRenderViewStream::OnRenderEnd();
 }
 
@@ -2910,6 +2913,8 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::UpdateCurrentEntityHandle(SOURCE
 
 bool CAfxBaseFxStream::CAfxBaseFxStreamContext::IfRootThenUpdateCurrentEntityHandle()
 {
+	return false; // We work differently now.
+
 	if (m_IsRootCtx)
 	{
 		SOURCESDK::CSGO::CBaseHandle handle;
@@ -2931,6 +2936,8 @@ bool CAfxBaseFxStream::CAfxBaseFxStreamContext::IfRootThenUpdateCurrentEntityHan
 	return false;
 }
 
+typedef void * (__cdecl * csgo_client_dynamic_cast_t)(void * from, void * unk1, void * baseClassRtti, void * classRtti, void * unk2);
+
 SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::MaterialHook(SOURCESDK::IMaterial_csgo * material, void * proxyData)
 {
 	/*
@@ -2949,6 +2956,26 @@ SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::MaterialH
 	*/
 
 	IfRootThenUpdateCurrentEntityHandle();
+
+	/*
+	if (m_IsRootCtx)
+	{
+		if (csgo_client_dynamic_cast_t csgo_client_dynamic_cast = (csgo_client_dynamic_cast_t)AFXADDR_GET(csgo_client_dynamic_cast))
+		{
+			if (void * rttiIClientRenderAble = (void *)AFXADDR_GET(csgo_client_RTTI_IClientRenderable))
+			{
+				if (SOURCESDK::IClientRenderable_csgo * re = (SOURCESDK::IClientRenderable_csgo *)csgo_client_dynamic_cast(proxyData, 0, rttiIClientRenderAble, rttiIClientRenderAble, 0))
+				{
+					SetClientRenderable(re);
+				}
+				else
+				{
+					SetClientRenderable(nullptr);
+				}
+			}
+		}
+	}
+	*/
 
 	if (!this->GetCtx()->GetOrg()->GetCallQueue())
 	{
@@ -5384,7 +5411,7 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 			m_BuildingCubemaps->SetValue((float)oldBuildingCubeMaps);
 		}
 
-		if (m_FirstStreamToBeRendered)
+		if (true || m_FirstStreamToBeRendered)
 		{
 			m_FirstStreamToBeRendered = false;
 		}
@@ -5558,6 +5585,8 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 		fn(this_ptr, view, hudViewSetup, nClearFlags, whatToDraw);
 		return;
 	}
+
+	Hook_csgo_CBaseEntity_IClientRenderable_DrawModel();
 
 	IAfxMatRenderContextOrg * ctxp = GetCurrentContext()->GetOrg();
 
@@ -8460,7 +8489,7 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 			m_BuildingCubemaps->SetValue((float)oldBuildingCubeMaps);
 		}
 
-		if (m_FirstStreamToBeRendered)
+		if (true || m_FirstStreamToBeRendered)
 		{
 			m_FirstStreamToBeRendered = false;
 		}
@@ -9505,4 +9534,38 @@ void CAfxSamplingRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 		, arg0
 		, arg0
 	);
+}
+
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::SetClientRenderable(SOURCESDK::IClientRenderable_csgo * renderable)
+{
+	if (renderable)
+	{
+		if (SOURCESDK::C_BaseEntity_csgo * be = renderable->GetIClientUnknown()->GetBaseEntity())
+		{
+			UpdateCurrentEntityHandle(be->GetRefEHandle());
+			return;
+		}
+		else
+		{
+			//TODO: //Tier0_Msg("Instance: %u\n", renderable->GetModelInstance());
+		}
+	}
+
+	UpdateCurrentEntityHandle(SOURCESDK_CSGO_INVALID_EHANDLE_INDEX);
+}
+
+void CAfxBaseFxStream::SetClientRenderable(SOURCESDK::IClientRenderable_csgo * renderable)
+{
+	if(m_ActiveStreamContext) m_ActiveStreamContext->SetClientRenderable(renderable);
+}
+
+void CAfxStreams::SetClientRenderable(SOURCESDK::IClientRenderable_csgo * renderable)
+{
+	if (CAfxRenderViewStream * renderViewStream = CAfxRenderViewStream::EngineThreadStream_get())
+	{
+		if (CAfxBaseFxStream * baseFxStream = renderViewStream->AsAfxBaseFxStream())
+		{
+			baseFxStream->SetClientRenderable(renderable);
+		}
+	}
 }

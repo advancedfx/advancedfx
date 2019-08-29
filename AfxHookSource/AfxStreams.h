@@ -14,6 +14,7 @@
 #include "AfxOutStreams.h"
 #include "AfxWriteFileLimiter.h"
 #include "AfxThreadedRefCounted.h"
+#include "MirvCalcs.h"
 
 #define AFX_SHADERS_CSGO 0
 
@@ -60,6 +61,8 @@ public:
 	// Stream settings info
 
 	virtual bool ViewRenderShouldForceNoVis(bool orgValue) = 0;
+
+	virtual void SetClientRenderable(SOURCESDK::IClientRenderable_csgo * renderable) = 0;
 
 	//
 	// General state:
@@ -1202,6 +1205,8 @@ public:
 
 	virtual void OnRenderEnd(void) override;
 
+	void SetClientRenderable(SOURCESDK::IClientRenderable_csgo * renderable);
+
 	void Console_ActionFilter_Add(const char * expression, CAction * action);
 	void Console_ActionFilter_AddEx(CAfxStreams * streams, IWrpCommandArgs * args);
 	void Console_ActionFilter_Print(void);
@@ -2084,6 +2089,8 @@ private:
 
 		virtual bool ViewRenderShouldForceNoVis(bool orgValue);
 
+		virtual void SetClientRenderable(SOURCESDK::IClientRenderable_csgo * renderable) override;
+
 		virtual void DrawingHudBegin(void);
 
 		virtual void DrawingHudEnd(void);
@@ -2273,7 +2280,7 @@ private:
 		void UpdateCurrentEntityHandle(SOURCESDK::CSGO::CBaseHandle handle);
 	};
 
-	CAfxBaseFxStreamContext * m_ActiveStreamContext;
+	CAfxBaseFxStreamContext * m_ActiveStreamContext = nullptr;
 
 	bool m_DebugPrint;
 	struct CCacheEntry
@@ -2980,6 +2987,8 @@ public:
 
 	bool DrawPhiGrid = false;
 	bool DrawRuleOfThirds = false;
+
+	virtual void SetClientRenderable(SOURCESDK::IClientRenderable_csgo * renderable);
 
 private:
 	enum MainStreamMode_e

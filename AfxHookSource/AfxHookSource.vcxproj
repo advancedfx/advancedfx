@@ -202,6 +202,8 @@
     <ClCompile Include="CampathDrawer.cpp" />
     <ClCompile Include="ClientTools.cpp" />
     <ClCompile Include="CommandSystem.cpp" />
+    <ClCompile Include="csgo\hooks\c_basentity.cpp" />
+    <ClCompile Include="csgo\hooks\studiorender.cpp" />
     <ClCompile Include="csgo_CRendering3dView.cpp" />
     <ClCompile Include="csgo\ClientToolsCsgo.cpp" />
     <ClCompile Include="csgo\hooks\engine.cpp" />
@@ -325,7 +327,9 @@
     <ClInclude Include="ClientTools.h" />
     <ClInclude Include="CommandSystem.h" />
     <ClInclude Include="csgo\ClientToolsCsgo.h" />
+    <ClInclude Include="csgo\hooks\c_basentity.h" />
     <ClInclude Include="csgo\hooks\engine.h" />
+    <ClInclude Include="csgo\hooks\studiorender.h" />
     <ClInclude Include="csgo\Panorama.h" />
     <ClInclude Include="csgo_Audio.h" />
     <ClInclude Include="csgo_CBasePlayer.h" />

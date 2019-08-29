@@ -50,6 +50,7 @@
 #include <l4d2/sdk_src/public/tier1/convar.h>
 #include <csgo/Panorama.h>
 #include <csgo/hooks/engine.h>
+#include <csgo/hooks/studiorender.h>
 #include <insurgency2/public/cdll_int.h>
 #include "MirvTime.h"
 #include "csgo_CRendering3dView.h"
@@ -213,6 +214,8 @@ SOURCESDK::CSGO::CGameUIFuncs * g_pGameUIFuncs = nullptr;
 SOURCESDK::CSGO::panorama::CPanoramaUIEngine * g_pPanoramaUIEngine = nullptr;
 SOURCESDK::CSGO::CPanoramaUIClient * g_pPanoramaUIClient = nullptr;
 
+SOURCESDK::CSGO::IStudioRender * g_pStudioRender = nullptr;
+
 void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals)
 {
 	static bool bFirstRun = true;
@@ -367,6 +370,16 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 			else {
 				ErrorBox("Could not get " VENGINE_RENDERVIEW_INTERFACE_VERSION_CSGO ".");
 			}
+
+			if (iface = appSystemFactory(SOURCESDK_CSGO_STUDIO_RENDER_INTERFACE_VERSION, NULL))
+			{
+				g_pStudioRender = (SOURCESDK::CSGO::IStudioRender *)iface;
+				StudioHooks_Install(g_pStudioRender);
+			}
+			else {
+				ErrorBox("Could not get " SOURCESDK_CSGO_STUDIO_RENDER_INTERFACE_VERSION ".");
+			}
+
 
 			/*
 			if (iface = appSystemFactory(SORUCESDK_CSGO_VENGINE_GAMEUIFUNCS_VERSION, NULL))
