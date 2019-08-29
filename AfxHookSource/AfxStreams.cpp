@@ -5384,7 +5384,7 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 			m_BuildingCubemaps->SetValue((float)oldBuildingCubeMaps);
 		}
 
-		if (m_FirstStreamToBeRendered)
+		if (true || m_FirstStreamToBeRendered)
 		{
 			m_FirstStreamToBeRendered = false;
 		}
@@ -8460,7 +8460,7 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 			m_BuildingCubemaps->SetValue((float)oldBuildingCubeMaps);
 		}
 
-		if (m_FirstStreamToBeRendered)
+		if (true || m_FirstStreamToBeRendered)
 		{
 			m_FirstStreamToBeRendered = false;
 		}
