@@ -6,9 +6,12 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>1.XX.XX</version>
-<time>2019-XX-XXTXX:XXZ</time>
+<version>1.69.0</version>
+<time>2019-08-29T06:32Z</time>
 <changes>
+<change type="fixed">
+Adjusted to CS:GO 08/28/2019 update.
+</change>
 <change type="added">
 Added #155 Visualize Camera orientation on campath preview.<br />
 Adeded mirv_campath draw keyAxis 0|1 (default 0).<br />

@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"  xmlns:bal="http://schemas.microsoft.com/wix/BalExtension">
+  <!-- Update this on release: Version -->
 	<Bundle
     Name="HLAE"
-    Version="2.79.0"
+    Version="2.80.0"
     Manufacturer="advancedfx.org"
     UpgradeCode="{A3020802-7F4F-4B61-BAA0-6C3065855361}"
     AboutUrl="https://www.advancedfx.org/"
