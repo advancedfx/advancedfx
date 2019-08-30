@@ -456,6 +456,9 @@
     <ClCompile Include="csgo\hooks\c_basentity.cpp">
       <Filter>AfxHookSource\csgo\hooks</Filter>
     </ClCompile>
+    <ClCompile Include="csgo\hooks\staticpropmgr.cpp">
+      <Filter>AfxHookSource\csgo\hooks</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\bvhexport.h">
@@ -837,6 +840,9 @@
       <Filter>AfxHookSource\csgo\hooks</Filter>
     </ClInclude>
     <ClInclude Include="csgo\hooks\c_basentity.h">
+      <Filter>AfxHookSource\csgo\hooks</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo\hooks\staticpropmgr.h">
       <Filter>AfxHookSource\csgo\hooks</Filter>
     </ClInclude>
   </ItemGroup>

@@ -19,6 +19,7 @@
 #include "MirvTime.h"
 #include "SourceInterfaces.h"
 #include "csgo/hooks/c_basentity.h"
+#include "csgo/hooks/staticpropmgr.h"
 
 #include <shared/StringTools.h>
 #include <shared/FileTools.h>
@@ -765,6 +766,16 @@ void CAfxRenderViewStream::Capture(CAfxRecordStream * captureTarget, size_t stre
 	{
 		buffer->Release();
 		Tier0_Warning("CAfxRenderViewStream::Capture: Failed to realloc buffer.\n");
+	}
+}
+
+
+void CAfxRenderViewStream::Console_EnbleFastPathRequired()
+{
+	if (!GetDisableFastPath())
+	{
+		Tier0_Warning("You are using a feature that might require disabling fastpath, autoamtically setting disableFastPath 1 on this stream.\n");
+		SetDisableFastPath(true);
 	}
 }
 
@@ -1641,6 +1652,7 @@ void CAfxBaseFxStream::Console_ActionFilter_AddEx(CAfxStreams * streams, IWrpCom
 	if (value)
 	{
 		InvalidateMap();
+		if (value->GetUseHandle()) this->Console_EnbleFastPathRequired();
 		m_ActionFilter.push_back(*value);
 		delete value;
 	}
@@ -5391,11 +5403,16 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 				const_cast<SOURCESDK::CViewSetup_csgo &>(newView).m_bRenderFlashlightDepthTranslucents = value;
 			}
 		}
+
+		if (previewStream->GetDisableFastPath()) DisableFastPath();
+
 		previewStream->OnRenderBegin(nullptr, afxViewport, viewToProjection, viewToProjectionSky);
 
 		DoRenderView(fn, this_ptr, newView, newHudView, nClearFlags, myWhatToDraw);
 
 		previewStream->OnRenderEnd();
+
+		if (previewStream->GetDisableFastPath()) RestoreFastPath();
 
 		if (overrideRenderFlashlightDepthTranslucents) const_cast<SOURCESDK::CViewSetup_csgo &>(newView).m_bRenderFlashlightDepthTranslucents = oldRenderFlashlightDepthTranslucents;
 		if (overrideCullFrontFaces) const_cast<SOURCESDK::CViewSetup_csgo &>(newView).m_bCullFrontFaces = oldCullFrontFaces;
@@ -5529,7 +5546,7 @@ void CAfxStreams::CalcMainStream()
 		m_MainStream = nullptr;
 		if (m_Recording)
 		{
-			for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); )
+			for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
 			{
 				CAfxRecordStream * recordStream = *it;
 				if (recordStream->Record_get())
@@ -5587,6 +5604,7 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 	}
 
 	Hook_csgo_CBaseEntity_IClientRenderable_DrawModel();
+	Hook_csgo_CStaticProp_IClientRenderable_DrawModel();
 
 	IAfxMatRenderContextOrg * ctxp = GetCurrentContext()->GetOrg();
 
@@ -5610,6 +5628,7 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 		// If there's more streams to be rendered, then we need to cache the scene state:
 
 		bool otherStreams = false;
+		bool mainStreamPreview = false;
 
 		if (m_Recording)
 		{
@@ -5626,6 +5645,8 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 		{
 			if (m_PreviewStreams[i])
 			{
+				if (m_PreviewStreams[i] == m_MainStream) mainStreamPreview = true;
+
 				if (1 <= m_PreviewStreams[i]->GetStreamCount() && (i != 0 || m_PreviewStreams[i] != m_MainStream))
 				{
 					otherStreams = true;
@@ -5633,13 +5654,13 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 			}
 		}
 
+		if (otherStreams || mainStreamPreview)
+		{
+			if (otherStreams) m_ForceCacheFullSceneState = true;
 
-		// Just render it:
-
-		if (otherStreams) m_ForceCacheFullSceneState = true;
-
-		CAfxRenderViewStream * previewStream = m_MainStream->GetStream(0);
-		ctxp = PreviewStream(ctxp, previewStream, !otherStreams, 0, 1, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+			CAfxRenderViewStream * previewStream = m_MainStream->GetStream(0);
+			ctxp = PreviewStream(ctxp, previewStream, !otherStreams, 0, 1, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+		}
 	}
 	else
 	{
@@ -6583,11 +6604,11 @@ void CAfxStreams::Console_PreviewStream(const char * streamName, int slot)
 		if(slot < 0)
 		{
 			for (int i = 0; i < (int)(sizeof(m_PreviewStreams) / sizeof(m_PreviewStreams[0])); ++i)
-				m_PreviewStreams[i] = 0;
+				m_PreviewStreams[i] = nullptr;
 		}
 		else
 		{
-			m_PreviewStreams[slot] = 0;
+			m_PreviewStreams[slot] = nullptr;
 		}
 
 		bool allEmpty = true;
@@ -6898,6 +6919,24 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 				AfxOverrideable_Console(&subArgs, curRenderView->RenderFlashlightDepthTranslucents, NULL);
 				return true;
 			}
+			else if (0 == _stricmp("disableFastPath", cmd0))
+			{
+				if (2 <= argc)
+				{
+					char const * cmd1 = args->ArgV(argcOffset + 1);
+
+					curRenderView->SetDisableFastPath(0 != atoi(cmd1));
+					return true;
+				}
+
+				Tier0_Msg(
+					"%s disableFastPath 0|1 - Whether to disable fast path for this stream (required for some features, e.g. detailed entity handles).\n"
+					"Current value: %s.\n"
+					, cmdPrefix
+					, curRenderView->GetDisableFastPath() ? "1" : "0"
+				);
+				return true;
+			}
 		}
 	}
 
@@ -6915,6 +6954,8 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 
 					if (!_stricmp(cmd1, "ent") && 3 <= argc)
 					{
+						curBaseFx->Console_EnbleFastPathRequired();
+
 						bool value = 0 != atoi(args->ArgV(argcOffset + 2));
 						curBaseFx->Picker_Pick(true, value);
 						return true;
@@ -6922,6 +6963,8 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 					else
 					if (!_stricmp(cmd1, "mat") && 3 <= argc)
 					{
+						curBaseFx->Console_EnbleFastPathRequired();
+
 						bool value = 0 != atoi(args->ArgV(argcOffset + 2));
 						curBaseFx->Picker_Pick(false, value);
 						return true;
@@ -7910,7 +7953,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 		Tier0_Msg("%s shouldForceNoVisOverride [...]\n", cmdPrefix);
 		Tier0_Msg("%s debugPrint [...]\n", cmdPrefix);
 		Tier0_Msg("%s invalidateMap - invaldiates the material map.\n", cmdPrefix);
-		Tier0_Msg("%s man [...] - Manipulate stream more easily (i.e. depth to depth24).\n", cmdPrefix);
+		//Tier0_Msg("%s man [...] - Manipulate stream more easily (i.e. depth to depth24).\n", cmdPrefix);
 		// testAction options is not displayed, because we don't want users to use it.
 		// Tier0_Msg("%s testAction [...]\n", cmdPrefix);
 	}
@@ -7929,6 +7972,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 		//Tier0_Msg("%s drawWorldNormal [...]\n", cmdPrefix);
 		//Tier0_Msg("%s cullFrontFaces [...]\n", cmdPrefix);
 		//Tier0_Msg("%s renderFlashlightDepthTranslucents [...]\n", cmdPrefix);
+		Tier0_Msg("%s disableFastPath [...]\n", cmdPrefix);
 	}
 
 	return false;
@@ -8734,6 +8778,33 @@ void CAfxStreams::EnsureMatVars()
 	if (!m_SndMuteLosefocus) m_SndMuteLosefocus = new WrpConVarRef("snd_mute_losefocus");
 	if (!m_PanoramaDisableLayerCache) m_PanoramaDisableLayerCache = new WrpConVarRef("@panorama_disable_layer_cache");
 	if (!m_BuildingCubemaps) m_BuildingCubemaps = new WrpConVarRef("building_cubemaps");
+	if (!m_cl_modelfastpath) m_cl_modelfastpath = new WrpConVarRef("cl_modelfastpath");
+	if (!m_cl_tlucfastpath) m_cl_tlucfastpath = new WrpConVarRef("cl_tlucfastpath");
+	if (!m_cl_brushfastpath) m_cl_brushfastpath = new WrpConVarRef("cl_brushfastpath");
+	if (!m_r_drawstaticprops) m_r_drawstaticprops = new WrpConVarRef("r_drawstaticprops");
+}
+
+void CAfxStreams::DisableFastPath()
+{
+	EnsureMatVars();
+
+	m_Old_cl_modelfastpath = m_cl_modelfastpath->GetInt();
+	m_Old_cl_tlucfastpath = m_cl_tlucfastpath->GetInt();
+	m_Old_cl_brushfastpath = m_cl_brushfastpath->GetInt();
+	m_Old_r_drawstaticprops = m_r_drawstaticprops->GetInt();
+
+	if(m_Old_cl_modelfastpath) m_cl_modelfastpath->SetValue(0);
+	if(m_Old_cl_tlucfastpath) m_cl_tlucfastpath->SetValue(0);
+	if(m_Old_cl_brushfastpath) m_cl_brushfastpath->SetValue(0);
+	if(1 == m_Old_r_drawstaticprops) m_r_drawstaticprops->SetValue(4); // any other value than 1 disables fast path, 0,2 are special too.
+}
+
+void CAfxStreams::RestoreFastPath()
+{
+	m_r_drawstaticprops->SetValue((float)m_Old_r_drawstaticprops);
+	m_cl_brushfastpath->SetValue((float)m_Old_cl_brushfastpath);
+	m_cl_tlucfastpath->SetValue((float)m_Old_cl_tlucfastpath);
+	m_cl_modelfastpath->SetValue((float)m_Old_cl_modelfastpath);
 }
 
 void CAfxStreams::AddStream(CAfxRecordStream * stream)
@@ -9540,14 +9611,24 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::SetClientRenderable(SOURCESDK::I
 {
 	if (renderable)
 	{
-		if (SOURCESDK::C_BaseEntity_csgo * be = renderable->GetIClientUnknown()->GetBaseEntity())
+		UpdateCurrentEntityHandle(renderable->GetIClientUnknown()->GetRefEHandle());
+		return;
+
+		SOURCESDK::IClientUnknown_csgo * cu = renderable->GetIClientUnknown();
+		if (SOURCESDK::C_BaseEntity_csgo * be = cu->GetBaseEntity())
 		{
 			UpdateCurrentEntityHandle(be->GetRefEHandle());
 			return;
 		}
 		else
 		{
-			//TODO: //Tier0_Msg("Instance: %u\n", renderable->GetModelInstance());
+			//Tier0_Msg("Instance: %u\n", renderable->GetModelInstance());
+			SOURCESDK::CSGO::CBaseHandle handle = cu->GetRefEHandle();
+
+			if (handle.GetSerialNumber() == (SOURCESDK_CSGO_STATICPROP_EHANDLE_MASK >> SOURCESDK_CSGO_NUM_ENT_ENTRY_BITS))
+			{
+
+			}
 		}
 	}
 

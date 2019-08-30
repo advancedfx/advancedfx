@@ -44,8 +44,6 @@ bool Hook_csgo_CBaseEntity_IClientRenderable_DrawModel(void)
 
 		void **vtable = (void **)AFXADDR_GET(csgo_C_BaseEntity_IClientEntity_vtable);
 
-		Tier0_Msg("vtable[9]: 0x%08x\n", vtable[9]);
-
 		Truecsgo_CBaseEntity_IClientRenderable_DrawModel = (csgo_CBaseEntity_IClientRenderable_DrawModel_t)(vtable[9]);
 
 		DetourTransactionBegin();

@@ -476,6 +476,18 @@ public:
 	CAfxBoolOverrideable CullFrontFaces;
 	CAfxBoolOverrideable RenderFlashlightDepthTranslucents;
 
+	bool GetDisableFastPath()
+	{
+		return m_DisableFastPath;
+	}
+
+	void SetDisableFastPath(bool value)
+	{
+		m_DisableFastPath = value;
+	}
+
+	void Console_EnbleFastPathRequired();
+
 	virtual void LevelShutdown(void)
 	{
 	}
@@ -499,6 +511,8 @@ protected:
 	bool m_ForceBuildingCubemaps = false;
 	StreamCaptureType m_StreamCaptureType;
 	bool m_DrawingSkyBox;
+	bool m_DisableFastPath = false;
+
 
 	virtual ~CAfxRenderViewStream();
 
@@ -3110,6 +3124,19 @@ private:
 	WrpConVarRef * m_PanoramaDisableLayerCache = nullptr;
 	int m_OldPanoramaDisableLayerCache;
 
+	WrpConVarRef * m_cl_modelfastpath = nullptr;
+	int m_Old_cl_modelfastpath;
+
+	WrpConVarRef * m_cl_tlucfastpath = nullptr;
+	int m_Old_cl_tlucfastpath;
+
+	WrpConVarRef * m_cl_brushfastpath = nullptr;
+	int m_Old_cl_brushfastpath;
+
+	WrpConVarRef * m_r_drawstaticprops = nullptr;
+	int m_Old_r_drawstaticprops;
+
+
 	std::wstring m_TakeDir;
 	//ITexture_csgo * m_RgbaRenderTarget;
 	SOURCESDK::ITexture_csgo * m_RenderTargetDepthF;
@@ -3137,6 +3164,9 @@ private:
 	void SetMatVarsForStreams();
 	void RestoreMatVars();
 	void EnsureMatVars();
+
+	void DisableFastPath();
+	void RestoreFastPath();
 
 	void AddStream(CAfxRecordStream * stream);
 
