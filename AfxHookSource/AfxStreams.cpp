@@ -5502,7 +5502,7 @@ void CAfxStreams::CalcMainStream()
 		m_MainStream = nullptr;
 		if (m_Recording)
 		{
-			for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); )
+			for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
 			{
 				CAfxRecordStream * recordStream = *it;
 				if (recordStream->Record_get())
@@ -5593,10 +5593,14 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 			}
 		}
 
+		bool mainStreamPreview = false;
+
 		for (int i = 0; i < 16; ++i)
 		{
 			if (m_PreviewStreams[i])
 			{
+				if (m_PreviewStreams[i] == m_MainStream) mainStreamPreview = true;
+
 				if (1 <= m_PreviewStreams[i]->GetStreamCount() && (i != 0 || m_PreviewStreams[i] != m_MainStream))
 				{
 					otherStreams = true;
@@ -5605,12 +5609,13 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 		}
 
 
-		// Just render it:
+		if (otherStreams || mainStreamPreview)
+		{
+			if (otherStreams) m_ForceCacheFullSceneState = true;
 
-		if (otherStreams) m_ForceCacheFullSceneState = true;
-
-		CAfxRenderViewStream * previewStream = m_MainStream->GetStream(0);
-		ctxp = PreviewStream(ctxp, previewStream, !otherStreams, 0, 1, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+			CAfxRenderViewStream * previewStream = m_MainStream->GetStream(0);
+			ctxp = PreviewStream(ctxp, previewStream, !otherStreams, 0, 1, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+		}
 	}
 	else
 	{
