@@ -5641,6 +5641,8 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 			}
 		}
 
+		bool mainStreamPreview = false;
+
 		for (int i = 0; i < 16; ++i)
 		{
 			if (m_PreviewStreams[i])
@@ -5657,7 +5659,7 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 		if (otherStreams || mainStreamPreview)
 		{
 			if (otherStreams) m_ForceCacheFullSceneState = true;
-
+			
 			CAfxRenderViewStream * previewStream = m_MainStream->GetStream(0);
 			ctxp = PreviewStream(ctxp, previewStream, !otherStreams, 0, 1, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
 		}
