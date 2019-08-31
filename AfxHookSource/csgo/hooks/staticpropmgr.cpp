@@ -20,11 +20,11 @@ csgo_CStaticProp_IClientRenderable_DrawModel_t Truecsgo_CStaticProp_IClientRende
 
 int __fastcall Mycsgo_CStaticProp_IClientRenderable_DrawModel(SOURCESDK::IClientRenderable_csgo * This, void * Edx, int flags, const RenderableInstance_t &instance)
 {
-	g_AfxStreams.SetClientRenderable(This);
+	if (flags) g_AfxStreams.SetClientRenderable(This);
 
 	int result = Truecsgo_CStaticProp_IClientRenderable_DrawModel(This, Edx, flags, instance);
 
-	g_AfxStreams.SetClientRenderable(nullptr);
+	if (flags) g_AfxStreams.SetClientRenderable(nullptr);
 
 	return result;
 }

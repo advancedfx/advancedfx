@@ -14,22 +14,22 @@
 
 struct RenderableInstance_t;
 
-typedef int (__fastcall * csgo_CBaseEntity_IClientRenderable_DrawModel_t)(SOURCESDK::IClientRenderable_csgo * This, void * Edx, int flags, const RenderableInstance_t &instance);
+typedef int (__fastcall * csgo_C_BaseEntity_IClientRenderable_DrawModel_t)(SOURCESDK::IClientRenderable_csgo * This, void * Edx, int flags, const RenderableInstance_t &instance);
 
-csgo_CBaseEntity_IClientRenderable_DrawModel_t Truecsgo_CBaseEntity_IClientRenderable_DrawModel;
+csgo_C_BaseEntity_IClientRenderable_DrawModel_t Truecsgo_C_BaseEntity_IClientRenderable_DrawModel;
 
-int __fastcall Mycsgo_CBaseEntity_IClientRenderable_DrawModel(SOURCESDK::IClientRenderable_csgo * This, void * Edx, int flags, const RenderableInstance_t &instance)
+int __fastcall Mycsgo_C_BaseEntity_IClientRenderable_DrawModel(SOURCESDK::IClientRenderable_csgo * This, void * Edx, int flags, const RenderableInstance_t &instance)
 {
-	g_AfxStreams.SetClientRenderable(This);
+	if (flags) g_AfxStreams.SetClientRenderable(This);
 
-	int result = Truecsgo_CBaseEntity_IClientRenderable_DrawModel(This, Edx, flags, instance);
+	int result = Truecsgo_C_BaseEntity_IClientRenderable_DrawModel(This, Edx, flags, instance);
 
-	g_AfxStreams.SetClientRenderable(nullptr);
+	if (flags) g_AfxStreams.SetClientRenderable(nullptr);
 
 	return result;
 }
 
-bool Hook_csgo_CBaseEntity_IClientRenderable_DrawModel(void)
+bool Hook_csgo_C_BaseEntity_IClientRenderable_DrawModel(void)
 {
 	static bool firstResult = false;
 	static bool firstRun = true;
@@ -44,11 +44,11 @@ bool Hook_csgo_CBaseEntity_IClientRenderable_DrawModel(void)
 
 		void **vtable = (void **)AFXADDR_GET(csgo_C_BaseEntity_IClientEntity_vtable);
 
-		Truecsgo_CBaseEntity_IClientRenderable_DrawModel = (csgo_CBaseEntity_IClientRenderable_DrawModel_t)(vtable[9]);
+		Truecsgo_C_BaseEntity_IClientRenderable_DrawModel = (csgo_C_BaseEntity_IClientRenderable_DrawModel_t)(vtable[9]);
 
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
-		DetourAttach(&(PVOID&)Truecsgo_CBaseEntity_IClientRenderable_DrawModel, Mycsgo_CBaseEntity_IClientRenderable_DrawModel);
+		DetourAttach(&(PVOID&)Truecsgo_C_BaseEntity_IClientRenderable_DrawModel, Mycsgo_C_BaseEntity_IClientRenderable_DrawModel);
 		error = DetourTransactionCommit();
 
 		firstResult = NO_ERROR == error;

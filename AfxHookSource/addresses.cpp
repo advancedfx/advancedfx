@@ -10,7 +10,9 @@ using namespace Afx::BinUtils;
 
 //AFXADDR_DEF(csgo_CPredictionCopy_TransferData)
 //AFXADDR_DEF(csgo_CPredictionCopy_TransferData_DSZ)
-AFXADDR_DEF(csgo_C_BaseEntity_IClientEntity_vtable)
+//AFXADDR_DEF(csgo_C_BaseEntity_IClientEntity_vtable)
+//AFXADDR_DEF(csgo_C_BaseAnimating_IClientEntity_vtable)
+//AFXADDR_DEF(csgo_C_BaseCombatWeapon_IClientEntity_vtable)
 AFXADDR_DEF(csgo_CStaticProp_IClientEntity_vtable)
 AFXADDR_DEF(csgo_C_BaseAnimating_vtable)
 AFXADDR_DEF(csgo_DT_Animationlayer_m_flCycle_fn)
@@ -1506,12 +1508,20 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		if (!AFXADDR_GET(csgo_CCSGameMovement_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 		// csgo_C_BaseEntity_IClientEntity_vtable // Checked 2019-08-24.
-		AFXADDR_SET(csgo_C_BaseEntity_IClientEntity_vtable, FindClassVtable((HMODULE)clientDll, ".?AVC_BaseEntity@@", 0, 0x4));
-		if (!AFXADDR_GET(csgo_C_BaseEntity_IClientEntity_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
+		//AFXADDR_SET(csgo_C_BaseEntity_IClientEntity_vtable, FindClassVtable((HMODULE)clientDll, ".?AVC_BaseEntity@@", 0, 0x4));
+		//if (!AFXADDR_GET(csgo_C_BaseEntity_IClientEntity_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 		// csgo_C_BaseAnimating_vtable // Checked 2018-08-03.
 		AFXADDR_SET(csgo_C_BaseAnimating_vtable, FindClassVtable((HMODULE)clientDll, ".?AVC_BaseAnimating@@", 0, 0x0));
 		if (!AFXADDR_GET(csgo_C_BaseAnimating_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+		// csgo_C_BaseAnimating_IClientEntity_vtable // Checked 2019-08-31.
+		//AFXADDR_SET(csgo_C_BaseAnimating_IClientEntity_vtable, FindClassVtable((HMODULE)clientDll, ".?AVC_BaseAnimating@@", 0, 0x4));
+		//if (!AFXADDR_GET(csgo_C_BaseAnimating_IClientEntity_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+		// csgo_C_BaseCombatWeapon_IClientEntity_vtable // Checked 2019-08-31.
+		//AFXADDR_SET(csgo_C_BaseCombatWeapon_IClientEntity_vtable, FindClassVtable((HMODULE)clientDll, ".?AVC_BaseCombatWeapon@@", 0, 0x4));
+		//if (!AFXADDR_GET(csgo_C_BaseCombatWeapon_IClientEntity_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 		// csgo_CGlowOverlay_Destructor, csgo_CGlowOverlay_Draw:
 		{
@@ -1721,8 +1731,10 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 	else
 	{
 		//AFXADDR_SET(csgo_CPredictionCopy_TransferData, 0x0);
-		AFXADDR_SET(csgo_C_BaseEntity_IClientEntity_vtable, 0x0);
+		//AFXADDR_SET(csgo_C_BaseEntity_IClientEntity_vtable, 0x0);
+		//AFXADDR_SET(csgo_C_BaseAnimating_IClientEntity_vtable, 0x0);
 		AFXADDR_SET(csgo_C_BaseAnimating_vtable, 0x0);
+		//AFXADDR_SET(csgo_C_BaseCombatWeapon_IClientEntity_vtable, 0x0);
 		AFXADDR_SET(csgo_DT_Animationlayer_m_flCycle_fn, 0x0);
 		//AFXADDR_SET(csgo_DT_Animationlayer_m_flPrevCycle_fn, 0x0);
 		AFXADDR_SET(csgo_C_BaseCombatWeapon_m_hWeaponWorldModel, -1);

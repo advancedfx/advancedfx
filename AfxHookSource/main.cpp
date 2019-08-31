@@ -50,7 +50,7 @@
 #include <l4d2/sdk_src/public/tier1/convar.h>
 #include <csgo/Panorama.h>
 #include <csgo/hooks/engine.h>
-#include <csgo/hooks/studiorender.h>
+//#include <csgo/hooks/studiorender.h>
 #include <insurgency2/public/cdll_int.h>
 #include "MirvTime.h"
 #include "csgo_CRendering3dView.h"
@@ -374,7 +374,7 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 			if (iface = appSystemFactory(SOURCESDK_CSGO_STUDIO_RENDER_INTERFACE_VERSION, NULL))
 			{
 				g_pStudioRender = (SOURCESDK::CSGO::IStudioRender *)iface;
-				StudioHooks_Install(g_pStudioRender);
+				//StudioHooks_Install(g_pStudioRender);
 			}
 			else {
 				ErrorBox("Could not get " SOURCESDK_CSGO_STUDIO_RENDER_INTERFACE_VERSION ".");

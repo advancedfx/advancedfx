@@ -18,8 +18,11 @@
 #include "addresses.h"
 #include "MirvTime.h"
 #include "SourceInterfaces.h"
-#include "csgo/hooks/c_basentity.h"
-#include "csgo/hooks/staticpropmgr.h"
+//#include "csgo/hooks/c_basentity.h"
+//#include "csgo/hooks/c_baseanimating.h"
+//#include "csgo/hooks/c_basecombatweapon.h"
+//#include "csgo/hooks/staticpropmgr.h"
+#include "csgo/ClientToolsCsgo.h"
 
 #include <shared/StringTools.h>
 #include <shared/FileTools.h>
@@ -770,7 +773,8 @@ void CAfxRenderViewStream::Capture(CAfxRecordStream * captureTarget, size_t stre
 }
 
 
-void CAfxRenderViewStream::Console_EnbleFastPathRequired()
+/*
+void CAfxRenderViewStream::Console_DisableFastPathRequired()
 {
 	if (!GetDisableFastPath())
 	{
@@ -778,6 +782,7 @@ void CAfxRenderViewStream::Console_EnbleFastPathRequired()
 		SetDisableFastPath(true);
 	}
 }
+*/
 
 // CAfxRenderViewStream::CCaptureFunctor ///////////////////////////////////////
 
@@ -1652,7 +1657,7 @@ void CAfxBaseFxStream::Console_ActionFilter_AddEx(CAfxStreams * streams, IWrpCom
 	if (value)
 	{
 		InvalidateMap();
-		if (value->GetUseHandle()) this->Console_EnbleFastPathRequired();
+		//if (value->GetUseEntity()) this->Console_DisableFastPathRequired();
 		m_ActionFilter.push_back(*value);
 		delete value;
 	}
@@ -1768,13 +1773,13 @@ void CAfxBaseFxStream::OnRenderEnd()
 	CAfxRenderViewStream::OnRenderEnd();
 }
 
-CAfxBaseFxStream::CAction * CAfxBaseFxStream::RetrieveAction(CAfxTrackedMaterial * tackedMaterial, SOURCESDK::CSGO::CBaseHandle const & entityHandle)
+CAfxBaseFxStream::CAction * CAfxBaseFxStream::RetrieveAction(CAfxTrackedMaterial * tackedMaterial, const CEntityInfo & currentEntity)
 {
 	SOURCESDK::IMaterialInternal_csgo * material = tackedMaterial->GetMaterial();
 
 	CAction * action = 0;
 
-	if (Picker_GetHidden(entityHandle, tackedMaterial))
+	if (Picker_GetHidden(tackedMaterial, currentEntity))
 	{
 		action = GetAction(tackedMaterial, m_Shared.NoDrawAction_get());
 	}
@@ -1787,7 +1792,7 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::RetrieveAction(CAfxTrackedMaterial
 
 		if (it != m_Map.end())
 		{
-			std::map<SOURCESDK::CSGO::CBaseHandle, CAction *>::iterator itEnt = it->second.EntityActions.find(entityHandle);
+			std::map<SOURCESDK::CSGO::CBaseHandle, CAction *>::iterator itEnt = it->second.EntityActions.find(currentEntity.Handle);
 			if (itEnt != it->second.EntityActions.end())
 				action = itEnt->second;
 			else
@@ -1804,7 +1809,7 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::RetrieveAction(CAfxTrackedMaterial
 
 			if (it != m_Map.end())
 			{
-				std::map<SOURCESDK::CSGO::CBaseHandle, CAction *>::iterator itEnt = it->second.EntityActions.find(entityHandle);
+				std::map<SOURCESDK::CSGO::CBaseHandle, CAction *>::iterator itEnt = it->second.EntityActions.find(currentEntity.Handle);
 				if (itEnt != it->second.EntityActions.end())
 					action = itEnt->second;
 				else
@@ -1823,17 +1828,15 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::RetrieveAction(CAfxTrackedMaterial
 				{
 					if (it->CalcMatch_Material(tackedMaterial))
 					{
-						if (it->GetUseHandle())
+						if (it->GetUseEntity())
 						{
-							SOURCESDK::CSGO::CBaseHandle const & itHandle = it->GetHandle();
-
-							if (entry.EntityActions.end() == entry.EntityActions.find(itHandle))
+							if(entry.EntityActions.end() == entry.EntityActions.find(currentEntity.Handle) && it->CalcMatch_Entity(currentEntity))
 							{
 								CAction * itAction = GetAction(tackedMaterial, it->GetMatchAction());
 								itAction->AddRef();
-								entry.EntityActions[itHandle] = itAction;
+								entry.EntityActions[currentEntity.Handle] = itAction;
 
-								if (!action && itHandle == entityHandle)
+								if (!action)
 								{
 									action = itAction;
 								}
@@ -1878,7 +1881,7 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::RetrieveAction(CAfxTrackedMaterial
 					bool isErrorMaterial = material->IsErrorMaterial();
 
 					Tier0_Msg("Stream: RetrieveAction: Material action cache miss: \"handle=%i\" \"name=%s\" \"textureGroup=%s\" \"shader=%s\" \"isErrrorMaterial=%u\" -> %s\n"
-						, entityHandle.ToInt()
+						, currentEntity.Handle
 						, name
 						, groupName
 						, shaderName
@@ -1899,7 +1902,7 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::RetrieveAction(CAfxTrackedMaterial
 		bool isErrorMaterial = material->IsErrorMaterial();
 
 		Tier0_Msg("Info: \"handle=%i\" (not used) \"name=%s\" \"textureGroup=%s\" \"shader=%s\" \"isErrrorMaterial=%u\" -> %s\n"
-			, entityHandle.ToInt()
+			, currentEntity.Handle
 			, name
 			, groupName
 			, shaderName
@@ -2360,10 +2363,10 @@ void CAfxBaseFxStream::Picker_Print(void)
 		Tier0_Msg("\"name=%s\" \"textureGroup=%s\" \"shader=%s\" \"isErrorMaterial=%i\" (%s)\n", material->GetName(), material->GetTextureGroupName(), material->GetShaderName(), material->IsErrorMaterial() ? 1 : 0, m_PickingMaterials && (1 == (idx & 0x1)) ? "hidden" : "visible");
 	}
 	Tier0_Msg("---- Entities: ----\n");
-	for (std::map<int, CPickerEntValue>::iterator it = m_PickerEntities.begin(); it != m_PickerEntities.end(); ++it)
+	for (std::map<CEntityInfo, CPickerEntValue>::iterator it = m_PickerEntities.begin(); it != m_PickerEntities.end(); ++it)
 	{
 		int idx = it->second.Index;
-		Tier0_Msg("\"handle=%i\" (%s)\n", it->first, m_PickingEntities && (1 == (idx & 0x1)) ? "hidden" : "visible");
+		Tier0_Msg("\"handle=%i\" (%s)\n", it->first.Handle, m_PickingEntities && (1 == (idx & 0x1)) ? "hidden" : "visible");
 	}
 	Tier0_Msg("---- END ----\n");
 }
@@ -2387,7 +2390,7 @@ void CAfxBaseFxStream::Picker_Pick(bool pickEntityNotMaterial, bool wasVisible)
 			std::set<CAfxMaterialKey *> usedMats;
 			int index = 0;
 
-			for (std::map<int, CPickerEntValue>::iterator it = m_PickerEntities.begin(); it != m_PickerEntities.end(); )
+			for (std::map<CEntityInfo, CPickerEntValue>::iterator it = m_PickerEntities.begin(); it != m_PickerEntities.end(); )
 			{
 				int oldIndex = it->second.Index;
 
@@ -2418,7 +2421,7 @@ void CAfxBaseFxStream::Picker_Pick(bool pickEntityNotMaterial, bool wasVisible)
 
 		if (m_PickingMaterials)
 		{
-			std::set<int> usedEnts;
+			std::set<CEntityInfo> usedEnts;
 			int index = 0;
 
 			for (std::map<CAfxTrackedMaterial *, CPickerMatValue>::iterator it = m_PickerMaterials.begin(); it != m_PickerMaterials.end(); )
@@ -2439,7 +2442,7 @@ void CAfxBaseFxStream::Picker_Pick(bool pickEntityNotMaterial, bool wasVisible)
 				}
 			}
 
-			for (std::map<int, CPickerEntValue>::iterator it = m_PickerEntities.begin(); it != m_PickerEntities.end(); )
+			for (std::map<CEntityInfo, CPickerEntValue>::iterator it = m_PickerEntities.begin(); it != m_PickerEntities.end(); )
 			{
 				if (usedEnts.end() != usedEnts.find(it->first))
 					++it;
@@ -2485,7 +2488,7 @@ void CAfxBaseFxStream::Picker_Pick(bool pickEntityNotMaterial, bool wasVisible)
 	m_PickingMaterials = !pickEntityNotMaterial;
 }
 
-bool CAfxBaseFxStream::Picker_GetHidden(SOURCESDK::CSGO::CBaseHandle const & entityHandle, CAfxTrackedMaterial * tackedMaterial)
+bool CAfxBaseFxStream::Picker_GetHidden(CAfxTrackedMaterial * tackedMaterial, const CEntityInfo & currentEntity)
 {
 	if (!m_PickerActive)
 		return false;
@@ -2512,8 +2515,6 @@ bool CAfxBaseFxStream::Picker_GetHidden(SOURCESDK::CSGO::CBaseHandle const & ent
 
 	if (m_PickerActive)
 	{
-		int ent = entityHandle.ToInt();
-
 		if (!m_PickerCollecting)
 		{
 			if (!hidden && m_PickingMaterials)
@@ -2523,7 +2524,7 @@ bool CAfxBaseFxStream::Picker_GetHidden(SOURCESDK::CSGO::CBaseHandle const & ent
 			}
 			if (!hidden && m_PickingEntities)
 			{
-				std::map<int, CPickerEntValue>::iterator itEnt = m_PickerEntities.find(ent);
+				std::map<CEntityInfo, CPickerEntValue>::iterator itEnt = m_PickerEntities.find(currentEntity);
 				hidden = (m_PickerEntities.end() != itEnt) && (((itEnt->second.Index) & 0x1) == 1);
 			}
 		}
@@ -2532,18 +2533,18 @@ bool CAfxBaseFxStream::Picker_GetHidden(SOURCESDK::CSGO::CBaseHandle const & ent
 			std::map<CAfxTrackedMaterial *, CPickerMatValue>::iterator itMat = m_PickerMaterials.lower_bound(tackedMaterial);
 			if (itMat == m_PickerMaterials.end() || (tackedMaterial < itMat->first))
 			{
-				itMat = m_PickerMaterials.emplace_hint(itMat,std::piecewise_construct, std::forward_as_tuple(tackedMaterial), std::forward_as_tuple(m_PickerMaterials.size(), ent));
+				itMat = m_PickerMaterials.emplace_hint(itMat,std::piecewise_construct, std::forward_as_tuple(tackedMaterial), std::forward_as_tuple(m_PickerMaterials.size(), currentEntity));
 				tackedMaterial->AddNotifyee(m_PickerMaterialsRleaseNotification);
 			}
 			else
 			{
-				itMat->second.Entities.insert(ent);
+				itMat->second.Entities.insert(currentEntity);
 			}
 
-			std::map<int, CPickerEntValue>::iterator itEnt = m_PickerEntities.lower_bound(ent);
-			if (itEnt == m_PickerEntities.end() || (ent < itEnt->first))
+			std::map<CEntityInfo, CPickerEntValue>::iterator itEnt = m_PickerEntities.lower_bound(currentEntity);
+			if (itEnt == m_PickerEntities.end() || (currentEntity < itEnt->first))
 			{
-				itEnt = m_PickerEntities.emplace_hint(itEnt, std::piecewise_construct, std::forward_as_tuple(ent), std::forward_as_tuple(this, m_PickerEntities.size(), tackedMaterial));
+				itEnt = m_PickerEntities.emplace_hint(itEnt, std::piecewise_construct, std::forward_as_tuple(currentEntity), std::forward_as_tuple(this, m_PickerEntities.size(), tackedMaterial));
 			}
 			else
 			{
@@ -2647,7 +2648,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin()
 {
 	m_DrawingHud = false;
 	m_DrawingSkyBoxView = false;
-	m_CurrentEntityHandle = SOURCESDK_CSGO_INVALID_EHANDLE_INDEX;
+	m_CurrentEntity.Handle = SOURCESDK_CSGO_INVALID_EHANDLE_INDEX;
 
 	m_Ctx = GetCurrentContext();
 	m_Ctx->Hook_set(this);
@@ -2761,7 +2762,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderEnd(void)
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueFunctorInternal(IAfxCallQueue * aq, SOURCESDK::CSGO::CFunctor *pFunctor)
 {
-	this->IfRootThenUpdateCurrentEntityHandle();
+	this->IfRootThenUpdateCurrentEntity();
 	//aq->GetParent()->QueueFunctor(new CAfxLeafExecute_Functor(new CAfxD3D9PushOverrideState_Functor(true)));
 	aq->GetParent()->QueueFunctorInternal(pFunctor);
 	//aq->GetParent()->QueueFunctor(new CAfxLeafExecute_Functor(new CAfxD3D9PopOverrideState_Functor()));
@@ -2907,15 +2908,17 @@ bool Pt_Inside(int x, int y, SOURCESDK::vrect_t_csgo * rect)
 
 }
 
-void CAfxBaseFxStream::CAfxBaseFxStreamContext::UpdateCurrentEntityHandle(SOURCESDK::CSGO::CBaseHandle handle)
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::UpdateCurrentEntity(const CEntityInfo & currentEntity)
 {
-	m_CurrentEntityHandle = handle;
+	if (currentEntity == m_CurrentEntity) return;
+
+	m_CurrentEntity = currentEntity;
 
 	if (SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue())
 	{
 		// Bubble into child contexts:
 
-		queue->QueueFunctor(new CUpdateCurrentEnitityHandleFunctor(this->m_ChildContext, handle));
+		queue->QueueFunctor(new CUpdateCurrentEnitityHandleFunctor(this->m_ChildContext, currentEntity));
 	}
 	else
 	{
@@ -2923,25 +2926,24 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::UpdateCurrentEntityHandle(SOURCE
 	}
 }
 
-bool CAfxBaseFxStream::CAfxBaseFxStreamContext::IfRootThenUpdateCurrentEntityHandle()
+bool CAfxBaseFxStream::CAfxBaseFxStreamContext::IfRootThenUpdateCurrentEntity()
 {
-	return false; // We work differently now.
-
 	if (m_IsRootCtx)
 	{
-		SOURCESDK::CSGO::CBaseHandle handle;
+		CEntityInfo info;
+		info.Handle = SOURCESDK_CSGO_INVALID_EHANDLE_INDEX;
 
 		if (SOURCESDK::IViewRender_csgo * view = GetView_csgo())
 		{
+
 			if (SOURCESDK::C_BaseEntity_csgo * ce = view->GetCurrentlyDrawingEntity())
 			{
-				handle.AfxAssign(ce->GetRefEHandle());
+				info.Handle.AfxAssign(ce->GetRefEHandle());
 			}
 		}
 
-		if(handle != m_CurrentEntityHandle)
-			UpdateCurrentEntityHandle(handle);
-		
+		UpdateCurrentEntity(info);
+
 		return true;
 	}
 
@@ -2952,22 +2954,7 @@ typedef void * (__cdecl * csgo_client_dynamic_cast_t)(void * from, void * unk1, 
 
 SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::MaterialHook(SOURCESDK::IMaterial_csgo * material, void * proxyData)
 {
-	/*
-	std::map<void *, SOURCESDK::CSGO::CBaseHandle>::iterator it = m_ProxyDataToEntityHandle.find(proxyData);
-
-	if (it != m_ProxyDataToEntityHandle.end())
-	{
-		Tier0_Msg("FOUND: 0x%08x\n", proxyData);
-		m_QueueState->CurrentEntityHandle.AfxAssign(it->second);
-	}
-	else
-	{
-		if(proxyData) Tier0_Msg("Miss: 0x%08x: %s\n", proxyData, *(*(*((char ****)proxyData) - 1) + 3) + 8);
-		IfRootThenUpdateCurrentEntityHandle();
-	}
-	*/
-
-	IfRootThenUpdateCurrentEntityHandle();
+	IfRootThenUpdateCurrentEntity();
 
 	/*
 	if (m_IsRootCtx)
@@ -2996,8 +2983,8 @@ SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::MaterialH
 		CAfxTrackedMaterial * trackedMaterial = CAfxTrackedMaterial::TrackMaterial(material);
 
 		CAction * action = m_Stream->RetrieveAction(
-			trackedMaterial,
-			m_CurrentEntityHandle
+			trackedMaterial
+			, m_CurrentEntity
 		);
 
 		if (m_Modifier)
@@ -3490,6 +3477,9 @@ CAfxBaseFxStream::CActionFilterValue * CAfxBaseFxStream::CActionFilterValue::Con
 
 	bool useHandle = false;
 	SOURCESDK::CSGO::CBaseHandle * handle = 0;
+	SOURCESDK::CSGO::CBaseHandle * rootHandle = 0;
+	SOURCESDK::CSGO::CBaseHandle * rootMoveHandle = 0;
+	std::string className("\\*");
 	std::string name("\\*");
 	std::string textureGroupName("\\*");
 	std::string shaderName("\\*");
@@ -3577,6 +3567,13 @@ bool CAfxBaseFxStream::CActionFilterValue::CalcMatch_Material(CAfxTrackedMateria
 		&& StringWildCard1Matched(m_TextureGroupName.c_str(), material->GetTextureGroupName())
 		&& StringWildCard1Matched(m_ShaderName.c_str(), material->GetShaderName())
 		&& (m_IsErrorMaterial == TS_True ? (material->IsErrorMaterial() == true) : (m_IsErrorMaterial == TS_False ? (material->IsErrorMaterial() == false) : true));
+}
+
+bool CAfxBaseFxStream::CActionFilterValue::CalcMatch_Entity(const CEntityInfo & info)
+{
+	return
+		(!m_UseHandle || m_Handle == info.Handle)
+	;
 }
 
 // CAfxBaseFxStream::CAction /////////////////////////////////////////
@@ -5404,7 +5401,7 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 			}
 		}
 
-		if (previewStream->GetDisableFastPath()) DisableFastPath();
+		//if (previewStream->GetDisableFastPath()) DisableFastPath();
 
 		previewStream->OnRenderBegin(nullptr, afxViewport, viewToProjection, viewToProjectionSky);
 
@@ -5412,7 +5409,7 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 
 		previewStream->OnRenderEnd();
 
-		if (previewStream->GetDisableFastPath()) RestoreFastPath();
+		//if (previewStream->GetDisableFastPath()) RestoreFastPath();
 
 		if (overrideRenderFlashlightDepthTranslucents) const_cast<SOURCESDK::CViewSetup_csgo &>(newView).m_bRenderFlashlightDepthTranslucents = oldRenderFlashlightDepthTranslucents;
 		if (overrideCullFrontFaces) const_cast<SOURCESDK::CViewSetup_csgo &>(newView).m_bCullFrontFaces = oldCullFrontFaces;
@@ -5603,8 +5600,10 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 		return;
 	}
 
-	Hook_csgo_CBaseEntity_IClientRenderable_DrawModel();
-	Hook_csgo_CStaticProp_IClientRenderable_DrawModel();
+	//Hook_csgo_C_BaseEntity_IClientRenderable_DrawModel();
+	//Hook_csgo_C_BaseAnimating_IClientRenderable_DrawModel();
+	//Hook_csgo_C_BaseCombatWeapon_IClientRenderable_DrawModel();
+	//Hook_csgo_CStaticProp_IClientRenderable_DrawModel();
 
 	IAfxMatRenderContextOrg * ctxp = GetCurrentContext()->GetOrg();
 
@@ -5640,8 +5639,6 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 				break;
 			}
 		}
-
-		bool mainStreamPreview = false;
 
 		for (int i = 0; i < 16; ++i)
 		{
@@ -6921,6 +6918,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 				AfxOverrideable_Console(&subArgs, curRenderView->RenderFlashlightDepthTranslucents, NULL);
 				return true;
 			}
+			/*
 			else if (0 == _stricmp("disableFastPath", cmd0))
 			{
 				if (2 <= argc)
@@ -6939,6 +6937,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 				);
 				return true;
 			}
+			*/
 		}
 	}
 
@@ -6956,7 +6955,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 
 					if (!_stricmp(cmd1, "ent") && 3 <= argc)
 					{
-						curBaseFx->Console_EnbleFastPathRequired();
+						//curBaseFx->Console_DisableFastPathRequired();
 
 						bool value = 0 != atoi(args->ArgV(argcOffset + 2));
 						curBaseFx->Picker_Pick(true, value);
@@ -6965,7 +6964,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 					else
 					if (!_stricmp(cmd1, "mat") && 3 <= argc)
 					{
-						curBaseFx->Console_EnbleFastPathRequired();
+						//curBaseFx->Console_DisableFastPathRequired();
 
 						bool value = 0 != atoi(args->ArgV(argcOffset + 2));
 						curBaseFx->Picker_Pick(false, value);
@@ -7974,7 +7973,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 		//Tier0_Msg("%s drawWorldNormal [...]\n", cmdPrefix);
 		//Tier0_Msg("%s cullFrontFaces [...]\n", cmdPrefix);
 		//Tier0_Msg("%s renderFlashlightDepthTranslucents [...]\n", cmdPrefix);
-		Tier0_Msg("%s disableFastPath [...]\n", cmdPrefix);
+		//Tier0_Msg("%s disableFastPath [...]\n", cmdPrefix);
 	}
 
 	return false;
@@ -8780,12 +8779,13 @@ void CAfxStreams::EnsureMatVars()
 	if (!m_SndMuteLosefocus) m_SndMuteLosefocus = new WrpConVarRef("snd_mute_losefocus");
 	if (!m_PanoramaDisableLayerCache) m_PanoramaDisableLayerCache = new WrpConVarRef("@panorama_disable_layer_cache");
 	if (!m_BuildingCubemaps) m_BuildingCubemaps = new WrpConVarRef("building_cubemaps");
-	if (!m_cl_modelfastpath) m_cl_modelfastpath = new WrpConVarRef("cl_modelfastpath");
-	if (!m_cl_tlucfastpath) m_cl_tlucfastpath = new WrpConVarRef("cl_tlucfastpath");
-	if (!m_cl_brushfastpath) m_cl_brushfastpath = new WrpConVarRef("cl_brushfastpath");
-	if (!m_r_drawstaticprops) m_r_drawstaticprops = new WrpConVarRef("r_drawstaticprops");
+	//if (!m_cl_modelfastpath) m_cl_modelfastpath = new WrpConVarRef("cl_modelfastpath");
+	//if (!m_cl_tlucfastpath) m_cl_tlucfastpath = new WrpConVarRef("cl_tlucfastpath");
+	//if (!m_cl_brushfastpath) m_cl_brushfastpath = new WrpConVarRef("cl_brushfastpath");
+	//if (!m_r_drawstaticprops) m_r_drawstaticprops = new WrpConVarRef("r_drawstaticprops");
 }
 
+/*
 void CAfxStreams::DisableFastPath()
 {
 	EnsureMatVars();
@@ -8808,6 +8808,7 @@ void CAfxStreams::RestoreFastPath()
 	m_cl_tlucfastpath->SetValue((float)m_Old_cl_tlucfastpath);
 	m_cl_modelfastpath->SetValue((float)m_Old_cl_modelfastpath);
 }
+*/
 
 void CAfxStreams::AddStream(CAfxRecordStream * stream)
 {
@@ -9609,32 +9610,68 @@ void CAfxSamplingRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 	);
 }
 
-void CAfxBaseFxStream::CAfxBaseFxStreamContext::SetClientRenderable(SOURCESDK::IClientRenderable_csgo * renderable)
+SOURCESDK::C_BaseEntity_csgo * GetMoveParent(SOURCESDK::C_BaseEntity_csgo * value)
 {
-	if (renderable)
+	if (value)
 	{
-		UpdateCurrentEntityHandle(renderable->GetIClientUnknown()->GetRefEHandle());
-		return;
+		if (SOURCESDK::IClientEntity_csgo * ce = SOURCESDK::g_Entitylist_csgo->GetClientEntityFromHandle(value->AfxGetMoveParentHandle()))
+			return ce->GetBaseEntity();
 
-		SOURCESDK::IClientUnknown_csgo * cu = renderable->GetIClientUnknown();
-		if (SOURCESDK::C_BaseEntity_csgo * be = cu->GetBaseEntity())
-		{
-			UpdateCurrentEntityHandle(be->GetRefEHandle());
-			return;
-		}
-		else
-		{
-			//Tier0_Msg("Instance: %u\n", renderable->GetModelInstance());
-			SOURCESDK::CSGO::CBaseHandle handle = cu->GetRefEHandle();
-
-			if (handle.GetSerialNumber() == (SOURCESDK_CSGO_STATICPROP_EHANDLE_MASK >> SOURCESDK_CSGO_NUM_ENT_ENTRY_BITS))
-			{
-
-			}
-		}
 	}
 
-	UpdateCurrentEntityHandle(SOURCESDK_CSGO_INVALID_EHANDLE_INDEX);
+	return nullptr;
+}
+
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::SetClientRenderable(SOURCESDK::IClientRenderable_csgo * renderable)
+{
+	CEntityInfo info;
+	info.Handle = SOURCESDK_CSGO_INVALID_EHANDLE_INDEX;
+	//info.RootHandle = SOURCESDK_CSGO_INVALID_EHANDLE_INDEX;
+	//info.RootMoveHandle = SOURCESDK_CSGO_INVALID_EHANDLE_INDEX;
+	//info.ClassName = "";
+		
+	if (renderable)
+	{
+		SOURCESDK::IClientUnknown_csgo * cu = renderable->GetIClientUnknown();
+
+		info.Handle = cu->GetRefEHandle();
+		//info.RootHandle = info.Handle;
+		//info.RootMoveHandle = info.Handle;
+		/*
+		if (SOURCESDK::C_BaseEntity_csgo * be = cu->GetBaseEntity())
+		{
+			info.ClassName = be->GetClassname();
+			
+			if (CClientToolsCsgo::Instance())
+			{
+				SOURCESDK::CSGO::IClientTools * tools = CClientToolsCsgo::Instance()->GetClientToolsInterface();
+				SOURCESDK::C_BaseEntity_csgo * re = be;
+				while (true)
+				{
+					if (SOURCESDK::C_BaseEntity_csgo * ne = reinterpret_cast<SOURCESDK::C_BaseEntity_csgo *>(tools->GetOwnerEntity(reinterpret_cast<SOURCESDK::CSGO::EntitySearchResult>(re))))
+						re = ne;
+					else
+						break;
+				}
+
+				info.RootHandle = re->GetRefEHandle();
+			}
+
+			SOURCESDK::C_BaseEntity_csgo * rm = be;
+			while (true)
+			{
+				if (SOURCESDK::C_BaseEntity_csgo * ne = GetMoveParent(rm))
+					rm = ne;
+				else
+					break;
+			}
+
+			info.RootMoveHandle = rm->GetRefEHandle();
+		}
+		*/
+	}
+
+	UpdateCurrentEntity(info);
 }
 
 void CAfxBaseFxStream::SetClientRenderable(SOURCESDK::IClientRenderable_csgo * renderable)
