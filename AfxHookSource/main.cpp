@@ -9,6 +9,7 @@
 
 #include <shared/detours.h>
 
+#include "AfxCommandLine.h"
 #include "addresses.h"
 #include "RenderView.h"
 #include "SourceInterfaces.h"
@@ -2232,22 +2233,18 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 	{ 
 		case DLL_PROCESS_ATTACH:
 		{
-			wchar_t * pSzInsecureArg = wcsstr(GetCommandLineW(), L" -insecure");
-			if(NULL == pSzInsecureArg || !(pSzInsecureArg += wcslen(L" -insecure"), (L' ' == *pSzInsecureArg ||  L'\0' == *pSzInsecureArg)))
+			g_CommandLine = new CAfxCommandLine();
+
+			if(!g_CommandLine->FindParam(L"-insecure"))
 			{
-				ErrorBox("Please add -insecure to launch options (case sensitive), AfxHookSource will refuse to work without it!");
-				try
-				{
-					HANDLE hproc = OpenProcess(PROCESS_TERMINATE, true, GetCurrentProcessId());
-					TerminateProcess(hproc, 0);
-					CloseHandle(hproc);
-				}
-				catch (...)
-				{
-					do MessageBoxA(NULL, "Please terminate the game manually in the taskmanager!", "Cannot terminate, please help:", MB_OK | MB_ICONERROR);
-					while (true);
-				}
-				break;
+				ErrorBox("Please add -insecure to launch options, AfxHookSource will refuse to work without it!");
+
+				HANDLE hproc = OpenProcess(PROCESS_TERMINATE, true, GetCurrentProcessId());
+				TerminateProcess(hproc, 0);
+				CloseHandle(hproc);
+				
+				do MessageBoxA(NULL, "Please terminate the game manually in the taskmanager!", "Cannot terminate, please help:", MB_OK | MB_ICONERROR);
+				while (true);
 			}
 
 #ifdef _DEBUG
@@ -2284,6 +2281,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 			if(g_AfxBaseClientDll) { delete g_AfxBaseClientDll; g_AfxBaseClientDll = 0; }
 
 			AfxHookSource::Gui::DllProcessDetach();
+
+			delete g_CommandLine;
 
 #ifdef _DEBUG
 			_CrtDumpMemoryLeaks();

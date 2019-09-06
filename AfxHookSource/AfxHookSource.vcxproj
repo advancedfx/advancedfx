@@ -190,6 +190,7 @@
     <ClCompile Include="..\shared\vcpp\AfxAddr.cpp" />
     <ClCompile Include="addresses.cpp" />
     <ClCompile Include="AfxClasses.cpp" />
+    <ClCompile Include="AfxCommandLine.cpp" />
     <ClCompile Include="AfxHookSourceInput.cpp" />
     <ClCompile Include="AfxImageBuffer.cpp" />
     <ClCompile Include="AfxOutStreams.cpp" />
@@ -310,6 +311,7 @@
     <ClInclude Include="..\shared\vcpp\AfxAddr.h" />
     <ClInclude Include="addresses.h" />
     <ClInclude Include="AfxClasses.h" />
+    <ClInclude Include="AfxCommandLine.h" />
     <ClInclude Include="AfxHookSourceInput.h" />
     <ClInclude Include="AfxImageBuffer.h" />
     <ClInclude Include="AfxInterfaces.h" />

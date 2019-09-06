@@ -151,6 +151,7 @@
             this.checkBoxAvoidVac.AutoSize = true;
             this.checkBoxAvoidVac.Checked = true;
             this.checkBoxAvoidVac.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.checkBoxAvoidVac.Enabled = false;
             this.checkBoxAvoidVac.Location = new System.Drawing.Point(10, 21);
             this.checkBoxAvoidVac.Name = "checkBoxAvoidVac";
             this.checkBoxAvoidVac.Size = new System.Drawing.Size(307, 17);

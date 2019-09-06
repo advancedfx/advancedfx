@@ -450,6 +450,9 @@
     <ClCompile Include="..\shared\EasySampler.cpp">
       <Filter>shared</Filter>
     </ClCompile>
+    <ClCompile Include="AfxCommandLine.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\bvhexport.h">
@@ -826,6 +829,9 @@
     </ClInclude>
     <ClInclude Include="..\shared\EasySampler.h">
       <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="AfxCommandLine.h">
+      <Filter>AfxHookSource</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
