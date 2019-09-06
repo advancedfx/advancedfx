@@ -1,0 +1,11 @@
+sampler g_sDepthTextureSampler : register( s0 );
+
+struct PS_INPUT
+{
+	float2 t0 : TEXCOORD0;
+};
+
+float4 main( PS_INPUT i ) : COLOR
+{
+	return tex2D(g_sDepthTextureSampler, i.t0);
+}

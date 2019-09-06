@@ -1,0 +1,12 @@
+struct PS_INPUT
+{
+	float4 diffuse : COLOR;
+	float t0 : TEXCOORD0;
+};
+
+float4 main( PS_INPUT i ) : COLOR
+{
+	clip(i.t0);
+	
+	return i.diffuse;
+}

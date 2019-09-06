@@ -1,0 +1,23 @@
+const float2 cScreenInfo : register(c48);
+
+struct VS_INPUT
+{
+	float2 xy : POSITION;
+	float3 diffuse : COLOR;
+};
+
+struct VS_OUTPUT
+{
+	float4 xyzw : POSITION;
+	float4 diffuse : COLOR;
+};
+
+VS_OUTPUT main( const VS_INPUT i )
+{
+	VS_OUTPUT o;
+	
+	o.xyzw = float4(i.xy.x*cScreenInfo.x -1, -i.xy.y*cScreenInfo.y +1, 0, 1);
+	o.diffuse = float4(i.diffuse.x, i.diffuse.y, i.diffuse.z, 1);
+
+	return o;
+}

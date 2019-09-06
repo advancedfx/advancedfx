@@ -233,11 +233,11 @@
       <Component Id="_6C7D4E77_FA29_4429_BD9E_A5CC15F23053_afx_drawtexture_ps20.acs">
         <File Id="_6C7D4E77_FA29_4429_BD9E_A5CC15F23053_afx_drawtexture_ps20.acs" Name="afx_drawtexture_ps20.acs" Source="$(var.hlae.TargetDir)\resources\AfxHookSource\shaders\afx_drawtexture_ps20.acs" KeyPath="yes"/>
       </Component>
-      <Component Id="_1DB8FCD7_3757_492D_ADBE_02C585117299_afx_line_ps20.fxo">
-        <File Id="_1DB8FCD7_3757_492D_ADBE_02C585117299_afx_line_ps20.fxo" Name="afx_line_ps20.fxo" Source="$(var.hlae.TargetDir)\resources\AfxHookSource\shaders\afx_line_ps20.fxo" KeyPath="yes"/>
+      <Component Id="_1DB8FCD7_3757_492D_ADBE_02C585117299_afx_line_ps20.acs">
+        <File Id="_1DB8FCD7_3757_492D_ADBE_02C585117299_afx_line_ps20.acs" Name="afx_line_ps20.acs" Source="$(var.hlae.TargetDir)\resources\AfxHookSource\shaders\afx_line_ps20.acs" KeyPath="yes"/>
       </Component>
-      <Component Id="_2A096550_36C7_4DFB_A4CE_6894B76CF0FD_afx_line_vs20.fxo">
-        <File Id="_2A096550_36C7_4DFB_A4CE_6894B76CF0FD_afx_line_vs20.fxo" Name="afx_line_vs20.fxo" Source="$(var.hlae.TargetDir)\resources\AfxHookSource\shaders\afx_line_vs20.fxo" KeyPath="yes"/>
+      <Component Id="_2A096550_36C7_4DFB_A4CE_6894B76CF0FD_afx_line_vs20.acs">
+        <File Id="_2A096550_36C7_4DFB_A4CE_6894B76CF0FD_afx_line_vs20.acs" Name="afx_line_vs20.acs" Source="$(var.hlae.TargetDir)\resources\AfxHookSource\shaders\afx_line_vs20.acs" KeyPath="yes"/>
       </Component>
       <Component Id="_03B61B14_16E4_480D_B3BD_1E6E39B15485_afx_pgldraw_ps20.acs">
         <File Id="_03B61B14_16E4_480D_B3BD_1E6E39B15485_afx_pgldraw_ps20.acs" Name="afx_pgldraw_ps20.acs" Source="$(var.hlae.TargetDir)\resources\AfxHookSource\shaders\afx_pgldraw_ps20.acs" KeyPath="yes"/>
@@ -515,8 +515,8 @@
       <ComponentRef Id="_81FC657C_C6CF_43A2_8758_2AB1B9FCFEE5_black.vmt"/>   
       <ComponentRef Id="_0CB9488D_55CA_4C19_9651_CD983BD33421_afx_depth_ps20.acs"/>     
       <ComponentRef Id="_6C7D4E77_FA29_4429_BD9E_A5CC15F23053_afx_drawtexture_ps20.acs"/>
-      <ComponentRef Id="_1DB8FCD7_3757_492D_ADBE_02C585117299_afx_line_ps20.fxo"/>
-      <ComponentRef Id="_2A096550_36C7_4DFB_A4CE_6894B76CF0FD_afx_line_vs20.fxo"/>
+      <ComponentRef Id="_1DB8FCD7_3757_492D_ADBE_02C585117299_afx_line_ps20.acs"/>
+      <ComponentRef Id="_2A096550_36C7_4DFB_A4CE_6894B76CF0FD_afx_line_vs20.acs"/>
       <ComponentRef Id="_03B61B14_16E4_480D_B3BD_1E6E39B15485_afx_pgldraw_ps20.acs"/>
       <ComponentRef Id="_FF3795FC_3A94_4251_A78C_608F3A22E678_afx_pgldraw_vs20.acs"/>            
       <ComponentRef Id="_BE94EA23_C739_4490_9586_924C5D31DE5E_AfxHook.dat"/>
