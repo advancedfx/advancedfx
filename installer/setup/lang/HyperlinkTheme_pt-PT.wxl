@@ -3,7 +3,7 @@
 
 
 <WixLocalization Culture="pt-pt" Language="1033" Codepage="1252" xmlns="http://schemas.microsoft.com/wix/2006/localization">
-  <String Id="Caption">[WixBundleName] Setup</String>
+  <String Id="Caption">[WixBundleName] Instalação</String>
   <String Id="Title">[WixBundleName]</String>
   <String Id="InstallHeader">Bem-vindo</String>
   <String Id="InstallMessage">A instalação será instalada [WixBundleName] no seu computador. Clique em instalar para continuar<!--, options to set the install directory--> or Close to exit.</String>
