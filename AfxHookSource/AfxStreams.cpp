@@ -6872,7 +6872,8 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 						{
 							if(!(AfxD3D9_Check_Supports_R32F_With_Blending() && m_RenderTargetDepthF))
 							{
-								Tier0_Warning("AFXERROR: This capture type ist not fully supported according to your graphics card / driver!\n");
+								Tier0_Warning("AFXERROR: This capture type ist not supported according to your graphics card / driver. Aborting to avoid crashes.\n");
+								return true;
 							}
 						}
 						curRenderView->StreamCaptureType_set(value);
