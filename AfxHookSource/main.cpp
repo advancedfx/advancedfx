@@ -50,7 +50,6 @@
 #include <l4d2/sdk_src/public/tier0/memalloc.h>
 #include <l4d2/sdk_src/public/tier1/convar.h>
 #include <csgo/Panorama.h>
-#include <csgo/hooks/engine.h>
 //#include <csgo/hooks/studiorender.h>
 #include <insurgency2/public/cdll_int.h>
 #include "MirvTime.h"
@@ -571,23 +570,6 @@ public:
 	{
 	}
 
-	void OnPanoramaDebuggerOpened()
-	{
-		if (m_IN_MouseActive)
-		{
-			m_Parent->IN_DeactivateMouse();
-			ReleaseCapture();
-		}
-	}
-
-	void OnPanoramaDebuggerClosed()
-	{
-		if (m_IN_MouseActive)
-		{
-			m_Parent->IN_ActivateMouse();
-		}
-	}
-
 	//
 	// IAfxBaseClientDll:
 
@@ -759,16 +741,6 @@ private:
 
 CAfxBaseClientDll * g_AfxBaseClientDll = 0;
 
-
-void OnPanoramaDebuggerOpened() {
-	g_AfxBaseClientDll->OnPanoramaDebuggerOpened();
-}
-
-void OnPanoramaDebuggerClosed() {
-	g_AfxBaseClientDll->OnPanoramaDebuggerClosed();
-}
-
-
 __declspec(naked) int CAfxBaseClientDll::Connect(SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CGlobalVarsBase *pGlobals)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 0) }
 
@@ -912,13 +884,7 @@ void CAfxBaseClientDll::IN_ActivateMouse(void)
 
 	m_IN_MouseActive = true;
 
-	if (EngineHooks_PanoramaDebuggerActive())
-	{
-		m_Parent->IN_DeactivateMouse();
-		ReleaseCapture();
-	}
-	else 
-		m_Parent->IN_ActivateMouse();
+	m_Parent->IN_ActivateMouse();
 }
 
 void CAfxBaseClientDll::IN_DeactivateMouse(void)
@@ -2035,7 +2001,6 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		InterceptDllCall(hModule, "USER32.dll", "ReleaseCapture", (DWORD)&new_ReleaseCapture);
 
 		// Init the hook early, so we don't run into issues with threading:
-		EngineHooks_Install();
 		Hook_csgo_SndMixTimeScalePatch();
 		csgo_Audio_Install();
 	}

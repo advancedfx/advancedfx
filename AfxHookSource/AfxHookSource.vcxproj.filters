@@ -417,14 +417,8 @@
     <ClCompile Include="csgo\Panorama.cpp">
       <Filter>AfxHookSource\csgo</Filter>
     </ClCompile>
-    <ClCompile Include="csgo\hooks\engine.cpp">
-      <Filter>AfxHookSource\csgo\hooks</Filter>
-    </ClCompile>
     <ClCompile Include="FovScaling.cpp">
       <Filter>AfxHookSource</Filter>
-    </ClCompile>
-    <ClCompile Include="csgo\hooks\PanoramaDebugger.cpp">
-      <Filter>AfxHookSource\csgo</Filter>
     </ClCompile>
     <ClCompile Include="MirvTime.cpp">
       <Filter>AfxHookSource</Filter>
@@ -793,9 +787,6 @@
     </ClInclude>
     <ClInclude Include="csgo\Panorama.h">
       <Filter>AfxHookSource\csgo</Filter>
-    </ClInclude>
-    <ClInclude Include="csgo\hooks\engine.h">
-      <Filter>AfxHookSource\csgo\hooks</Filter>
     </ClInclude>
     <ClInclude Include="FovScaling.h">
       <Filter>AfxHookSource</Filter>
