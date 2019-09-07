@@ -7,12 +7,18 @@ Notice:
   But we recommend getting them from the original sources.
 
 
-[X] Download and install Microsoft Visual Studio 2017 Community, which you can
+[X] Download and install Microsoft Visual Studio 2019 Community, which you can
     obtain for free from https://www.visualstudio.com/downloads/ .
-    (We are using 15.8 at the moment.)
+    (We are using 16.2.x at the moment.)
+    - Select Desktop .NET Desktop Development component
+    - Select Desktop Development with C++ component
+    - In Single Components tab select Windows XP support for C++ in the
+      Compiler, Buildtools and Run-times section
+    - You'll need to install Wix Toolset Visual Studio 2019 Extension from
+      within Visual Studio later.
 
 [X] Obtain and install CMAKE from http://www.cmake.org/
-    We currently use "cmake-3.8.1-win64-x64.msi".
+    We currently use "cmake-3.15.3-win64-x64.msi".
 
 [X] Install WiX Toolset v3.11.1 from https://github.com/wixtoolset/wix3/releases/tag/wix3111rtm
 
@@ -41,7 +47,7 @@ Notice:
     Enter the "C:\Libraries\ilmbase-2.2.1" directory and execute
     setlocal
     del /f CMakeCache.txt
-    cmake "-DCMAKE_INSTALL_PREFIX=C:\<HLAESRC>\ilmbase-build" -G "Visual Studio 15 2017" -T "v141_xp"
+    cmake "-DCMAKE_INSTALL_PREFIX=C:\<HLAESRC>\ilmbase-build" -G "Visual Studio 16 2019" -T "v141_xp" -A Win32 .
 
 [X] Open the C:\Libraries\ilmbase-2.2.1\ilmbase.sln created in the previous step
     Select the Release configuration.
@@ -54,7 +60,7 @@ Notice:
     patch Makefile.msc /c/<HLAESRC>/advancedfx/patches/zlib-1.2.11/win32/Makefile.msc.patch
 
 [X] Build zlib using nmake:
-    Open the Developer Command Prompt for VS2017 and enter the
+    Open the Developer Command Prompt for VS2019 and enter the
     "C:\Libraries\zlib-1.2.11" directory and execute
     nmake -f win32/Makefile.msc zlib1.dll
     nmake -f win32/Makefile.msc example_d.exe
@@ -69,7 +75,7 @@ Notice:
     Enter the "C:\Libraries\openexr-2.2.1" directory and execute
     setlocal
     del /f CMakeCache.txt
-    cmake "-DZLIB_ROOT=C:\Libraries\zlib-1.2.11" "-DILMBASE_PACKAGE_PREFIX=C:\<HLAESRC>\ilmbase-build" "-DCMAKE_INSTALL_PREFIX=C:\<HLAESRC>\openexr-build" -G "Visual Studio 15 2017" -T "v141_xp"
+    cmake "-DZLIB_ROOT=C:\Libraries\zlib-1.2.11" "-DILMBASE_PACKAGE_PREFIX=C:\<HLAESRC>\ilmbase-build" "-DCMAKE_INSTALL_PREFIX=C:\<HLAESRC>\openexr-build" -G "Visual Studio 16 2019" -T "v141_xp" -A Win32 .
 
 [X] Open the C:\Libraries\openexr-2.2.1\openexr.sln created in the previous step
     Select the Release configuration.
@@ -132,8 +138,6 @@ Notice:
 [X] Open advancedfx.sln in the HLAE source code ("C:\<HLAESRC>\advancedfx" folder)
     and Build (Configuration=Release, Platform=x86) in this order:
     AfxHookGoldSrc, AfxHookSource, AfxCppCli, injector, hlae
-    and Build (Configuration=Release, Platform=x64) in this order:
-	AfxHookUnity
     and Build (Configuration=Release, Platform=x64) in this order:
     injector
 

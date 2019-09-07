@@ -451,6 +451,9 @@
       <Component Id="_F2655C7F_CCA6_4DBB_8BEE_96C0B57E52DF_msvcp140_2.dll">
         <File Id="_F2655C7F_CCA6_4DBB_8BEE_96C0B57E52DF_msvcp140_2.dll" Name="msvcp140_2.dll" Source="$(var.hlae.TargetDir)\msvcp140_2.dll" KeyPath="yes" Checksum="yes"/>
       </Component>
+      <Component Id="_4E60A51F_0792_4DD3_800D_8AAECA225232_msvcp140_codecvt_ids.dll">
+        <File Id="_4E60A51F_0792_4DD3_800D_8AAECA225232_msvcp140_codecvt_ids.dll" Name="msvcp140_codecvt_ids.dll" Source="$(var.hlae.TargetDir)\msvcp140_codecvt_ids.dll" KeyPath="yes" Checksum="yes"/>
+      </Component>
       <Component Id="_81F77EA7_5D0D_4145_B929_BEB438C2FE82_readme.txt">
         <File Id="_81F77EA7_5D0D_4145_B929_BEB438C2FE82_readme.txt" Name="readme.txt" Source="$(var.hlae.TargetDir)\readme.txt" KeyPath="yes"/>
       </Component>
@@ -583,6 +586,7 @@
       <ComponentRef Id="_1FDB31B6_5D13_4133_923A_888D2C815595_msvcp140.dll"/>
       <ComponentRef Id="_4787489A_FFB9_4C18_BF4E_98F000833FCB_msvcp140_1.dll"/>
       <ComponentRef Id="_F2655C7F_CCA6_4DBB_8BEE_96C0B57E52DF_msvcp140_2.dll"/>
+      <ComponentRef Id="_4E60A51F_0792_4DD3_800D_8AAECA225232_msvcp140_codecvt_ids.dll"/>
       <ComponentRef Id="_81F77EA7_5D0D_4145_B929_BEB438C2FE82_readme.txt"/>
       <ComponentRef Id="_02F9D20E_C59E_4D01_A9F8_9CCB48C3FC64_ucrtbase.dll"/>
       <ComponentRef Id="_3F7746C4_344C_4798_87AA_8AF2037DE414_vccorlib140.dll"/>
