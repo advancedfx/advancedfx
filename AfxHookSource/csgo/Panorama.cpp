@@ -4,6 +4,7 @@
 
 #include "../addresses.h"
 #include "../hlaeFolder.h"
+#include "AfxCommandLine.h"
 
 #include <shared/detours.h>
 #include <Windows.h>
@@ -62,7 +63,7 @@ bool PanoramaHooks_Install()
 	firstRun = false;
 
 	if (
-		nullptr == wcsstr(GetCommandLineW(), L" -afxDetourPanorama")
+		0 == g_CommandLine->FindParam(L"-afxDetourPanorama")
 	) {
 		firstResult = true;
 		return firstResult;

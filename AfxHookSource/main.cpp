@@ -1826,7 +1826,7 @@ void CommonHooks()
 		char filePath[MAX_PATH] = { 0 };
 		GetModuleFileName(0, filePath, MAX_PATH);
 
-		if (wcsstr(GetCommandLineW(), L"-afxV34"))
+		if (g_CommandLine->FindParam(L"-afxV34"))
 		{
 			g_SourceSdkVer = SourceSdkVer_CSSV34;
 		}
@@ -1846,11 +1846,11 @@ void CommonHooks()
 		{
 			g_SourceSdkVer = SourceSdkVer_Insurgency2;
 		}
-		else if (wcsstr(GetCommandLineW(), L" -game tf"))
+		else if (g_CommandLine->FindParam(L"-game tf"))
 		{
 			g_SourceSdkVer = SourceSdkVer_TF2;
 		}
-		else if (wcsstr(GetCommandLineW(), L" -game cstrike"))
+		else if (g_CommandLine->FindParam(L"-game cstrike"))
 		{
 			g_SourceSdkVer = SourceSdkVer_CSS;
 		}

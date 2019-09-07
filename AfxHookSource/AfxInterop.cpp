@@ -9,6 +9,7 @@
 #include "RenderView.h"
 #include "MirvTime.h"
 #include "MirvCalcs.h"
+#include "AfxCommandLine.h"
 
 #include <Windows.h>
 
@@ -175,7 +176,7 @@ namespace AfxInterop {
 	}
 	
 	void DllProcessAttach() {
-		m_Enabled = wcsstr(GetCommandLineW(), L"-afxInterop");
+		m_Enabled = 0 != g_CommandLine->FindParam(L"-afxInterop");
 
 		if (!m_Enabled) return;
 	}
