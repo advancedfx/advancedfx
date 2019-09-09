@@ -25,6 +25,7 @@
       <Payload Id="theme_de_de" Compressed="yes"  Name="1031\thm.wxl" SourceFile="lang\HyperlinkTheme_de-DE.wxl"/>
       <Payload Id="theme_en_us" Compressed="yes"  Name="1033\thm.wxl" SourceFile="lang\HyperlinkTheme_en-US.wxl"/>
       <Payload Id="theme_zh_zn" Compressed="yes"  Name="2052\thm.wxl" SourceFile="lang\HyperlinkTheme_zh-CN.wxl"/>
+      <Payload Id="theme_pt_pt" Compressed="yes"  Name="2070\thm.wxl" SourceFile="lang\HyperlinkTheme_pt-PT.wxl"/>
     </BootstrapperApplicationRef>
 
     <Variable Name='InstallFolder' Type='string' Value='[ProgramFilesFolder]HLAE' Persisted='yes' bal:Overridable='yes'/>
