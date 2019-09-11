@@ -94,7 +94,12 @@ namespace AfxGui
 
         private void MenuAdvancedFxOrg_Click(object sender, EventArgs e)
         {
-            System.Diagnostics.Process.Start("http://advancedfx.org/");
+            System.Diagnostics.Process.Start("https://www.advancedfx.org/");
+        }
+
+        private void MenuDonate_Click(object sender, EventArgs e)
+        {
+            System.Diagnostics.Process.Start("https://opencollective.com/advancedfx/");
         }
 
         private void CheckNowToolStripMenuItem_Click(object sender, EventArgs e)
