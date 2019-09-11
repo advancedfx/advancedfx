@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<WixLocalization Culture="fi-fi" Language="1033" Codepage="1252" xmlns="http://schemas.microsoft.com/wix/2006/localization">
-  <String Id="AfxUiCulture">fi-FI</String>
+<WixLocalization Culture="fi-fi" Language="1035" Codepage="1252" xmlns="http://schemas.microsoft.com/wix/2006/localization">
   <String Id="ApplicationName">HLAE Ydin</String>
   <String Id="Manufacturer">advancedfx.org</String>
   <String Id="DowngradeErrorMessage">Uudempi versio [ProductName] on jo asennettu.</String>

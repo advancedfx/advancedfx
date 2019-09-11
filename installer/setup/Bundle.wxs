@@ -24,6 +24,7 @@
 
       <Payload Id="theme_de_de" Compressed="yes"  Name="1031\thm.wxl" SourceFile="lang\HyperlinkTheme_de-DE.wxl"/>
       <Payload Id="theme_en_us" Compressed="yes"  Name="1033\thm.wxl" SourceFile="lang\HyperlinkTheme_en-US.wxl"/>
+      <Payload Id="theme_fi_fi" Compressed="yes"  Name="1035\thm.wxl" SourceFile="lang\HyperlinkTheme_fi-FI.wxl"/>
       <Payload Id="theme_zh_zn" Compressed="yes"  Name="2052\thm.wxl" SourceFile="lang\HyperlinkTheme_zh-CN.wxl"/>
       <Payload Id="theme_pt_pt" Compressed="yes"  Name="2070\thm.wxl" SourceFile="lang\HyperlinkTheme_pt-PT.wxl"/>
     </BootstrapperApplicationRef>
@@ -47,6 +48,7 @@
         <MsiProperty Name='TRANSFORMS' Value='[HlaeCoreTransform]' />
         <MsiProperty Name="AFX_INSTALLFFMPEG" Value="[HlaeFfmpegFeature]" />
         <Payload Id="HlaeCore_de_de" Compressed="yes" Name="de-de.mst" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\de-de\HlaeCore.mst"/>
+        <Payload Id="HlaeCore_fi_fi" Compressed="yes" Name="fi-fi.mst" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\fi-fi\HlaeCore.mst"/>
         <Payload Id="HlaeCore_zh_zn" Compressed="yes" Name="zh-cn.mst" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\zh-cn\HlaeCore.mst"/>
       </MsiPackage>
     </PackageGroup>
