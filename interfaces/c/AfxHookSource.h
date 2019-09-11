@@ -1,9 +1,7 @@
 #ifndef ADVANCEDFX_AFXHOOKSOURCE_H
 #define ADVANCEDFX_AFXHOOKSOURCE_H
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+
+
 
 
 #define ADVANCEDFX_LOCALEID_EN 0
@@ -243,7 +241,4 @@ struct advancedfx_IAfxHookSource_1 {
 };
 
 
-#ifdef __cplusplus
-}
-#endif
 #endif

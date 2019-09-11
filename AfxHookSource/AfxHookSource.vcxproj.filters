@@ -163,12 +163,6 @@
     <Filter Include="interfaces\c">
       <UniqueIdentifier>{c4b62cbe-42a8-4391-841a-7d6faf3cba23}</UniqueIdentifier>
     </Filter>
-    <Filter Include="interfaces\support">
-      <UniqueIdentifier>{b526537c-808a-4ad1-9cb6-080ecf5388a4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="interfaces\support\c">
-      <UniqueIdentifier>{7dfbe5a3-def8-4728-b9c3-f907a6514aaf}</UniqueIdentifier>
-    </Filter>
     <Filter Include="shared\Detours">
       <UniqueIdentifier>{a00372c9-e182-48de-a4e5-f496755b2814}</UniqueIdentifier>
     </Filter>
@@ -823,6 +817,18 @@
     </ClInclude>
     <ClInclude Include="AfxCommandLine.h">
       <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\interfaces\c\AfxInterface.h">
+      <Filter>interfaces\c</Filter>
+    </ClInclude>
+    <ClInclude Include="..\interfaces\c\AfxTypes.h">
+      <Filter>interfaces\c</Filter>
+    </ClInclude>
+    <ClInclude Include="..\interfaces\c\AfxLibrary.h">
+      <Filter>interfaces\c</Filter>
+    </ClInclude>
+    <ClInclude Include="..\interfaces\c\AfxLocale.h">
+      <Filter>interfaces\c</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
