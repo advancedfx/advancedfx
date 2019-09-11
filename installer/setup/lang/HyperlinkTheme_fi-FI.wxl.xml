@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (c) .NET Foundation and contributors. All rights reserved. Licensed under the Microsoft Reciprocal License. See LICENSE.TXT file in the project root for full license information. -->
+
+
+<WixLocalization Culture="fi-fi" Language="1033" Codepage="1252" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <String Id="Caption">[WixBundleName] Asennus</String>
+  <String Id="Title">[WixBundleName]</String>
+  <String Id="InstallHeader">Tervetuloa</String>
+  <String Id="InstallMessage">Asennus asentaa [WixBundleName] tietokoneellesi. Paina asenna jatkaaksesi<!--, options to set the install directory--> tai Sulje poistuaksesi.</String>
+  <String Id="InstallVersion">Versio [WixBundleVersion]</String>
+  <String Id="ConfirmCancelMessage">Oletko varma, että haluat peruuttaa asennuksen?</String>
+  <String Id="ExecuteUpgradeRelatedBundleMessage">Edellinen versio</String>
+  <String Id="HelpHeader">Asennuksen ohjeet</String>
+  <String Id="HelpText">/install | /repair | /uninstall | /layout [directory] - asentaa, korjaa, poistaa tai
+   luo täydellisen paikallisen kopion paketista hakemistoon. Asennus on oletusarvo.
+
+/passive | /quiet -  näyttää minimaalisen käyttöliittymän ilman kehotteita tai suorittaa ohjelman ilman käyttöliittymää ja
+   kehotteita. Oletuksena käyttöliittymä ja kehotukset näytetään.
+
+/norestart   - estää kaikki uudelleenkäynnistysyritykset. Oletusarvona käyttöliittymä kysyy ennen uudelleenkäynnistystä.
+/log log.txt - kirjoittaa lokia tiettyyn tiedostoon. Oletusarvona loki luodaan hakemistoon %TEMP%.</String>
+  <String Id="HelpCloseButton">&amp;Sulje</String>
+  <String Id="InstallLicenseLinkText">[WixBundleName] &lt;a href="#"&gt;lisenssitiedot&lt;/a&gt;.</String>
+  <String Id="InstallAcceptCheckbox">&amp;Hyväksyn lisenssin ja käyttöehdot</String>
+  <String Id="InstallOptionsButton">&amp;Asetukset</String>
+  <String Id="InstallInstallButton">&amp;Asenna</String>
+  <String Id="InstallCloseButton">&amp;Sulje</String>
+  <String Id="OptionsHeader">Asennuksen valinnat</String>
+  <String Id="OptionsLocationLabel">Asennuksen sijainti:</String>
+  <String Id="OptionsBrowseButton">&amp;Selaa</String>
+  <String Id="OptionsOkButton">&amp;OK</String>
+  <String Id="OptionsCancelButton">&amp;Peruuta</String>
+  <String Id="ProgressHeader">Asennuksen eteneminen</String>
+  <String Id="ProgressLabel">Prosessoidaan:</String>
+  <String Id="OverallProgressPackageText">Käynnistetään asennus...</String>
+  <String Id="ProgressCancelButton">&amp;Peruuta</String>
+  <String Id="ModifyHeader">Muokkaa asennusta</String>
+  <String Id="ModifyRepairButton">&amp;Korjaa</String>
+  <String Id="ModifyUninstallButton">&amp;Poista asennus</String>
+  <String Id="ModifyCloseButton">&amp;Sulje</String>
+  <String Id="SuccessRepairHeader">Asennuksen korjaus suoritettu onnistuneesti</String>
+  <String Id="SuccessUninstallHeader">Asennuksen poistaminen suoritettu onnistuneesti</String>
+  <String Id="SuccessInstallHeader">Asennus suoritettu onnistuneesti</String> 
+  <String Id="SuccessHeader">Asennus onnistui</String>	
+  <String Id="SuccessLaunchButton">&amp;Käynnistä</String>
+  <String Id="SuccessRestartText">Sinun tulee käynnistää tietokoneesi uudelleen ennen ohjelman käyttöä.</String>
+  <String Id="SuccessRestartButton">&amp;Käynnistä uudelleen</String>
+  <String Id="SuccessCloseButton">&amp;Sulje</String>
+  <String Id="FailureHeader">Asennus epäonnistui</String>
+  <String Id="FailureInstallHeader">Asennus epäonnistui</String>
+  <String Id="FailureUninstallHeader">Asennuksen poistaminen epäonnistui</String>
+  <String Id="FailureRepairHeader">Korjaaminen epäonnistui</String> 
+  <String Id="FailureHyperlinkLogText">Yksi tai useampi ongelma aiheutti asennuksen epäonnistumisen. Korjaa ongelmat ja yritä asennusta uudelleen. Lisätietoja &lt;a href="#"&gt;log file&lt;/a&gt;.</String>
+  <String Id="FailureRestartText">Sinun tulee käynnistää tietokoneesi uudelleen suorittaaksesi ohjelmiston palautuksen loppuun.</String>
+  <String Id="FailureRestartButton">&amp;Käynnistä uudelleen</String>
+  <String Id="FailureCloseButton">&amp;Sulje</String>
+  <String Id="FilesInUseHeader">Tiedostot ovat käytössä</String>
+  <String Id="FilesInUseLabel">Seuraavat ohjelmat käyttävät tiedostoja joita asennus yrittää päivittää:</String>
+  <String Id="FilesInUseCloseRadioButton">Sulje &amp;ohjelmat ja yritä käynnistää ne uudelleen.</String>
+  <String Id="FilesInUseDontCloseRadioButton">&amp;Älä sulje ohjelmia. Tämä vaatii uudelleenkäynnistyksen.</String>
+  <String Id="FilesInUseOkButton">&amp;OK</String>
+  <String Id="FilesInUseCancelButton">&amp;Peruuta</String>
+  <String Id="ErrorFailNoActionReboot">Mitään ei tehty, koska uudelleenkäynnistys vaaditaan.</String>
+
+  <String Id="HlaeDisclaimerTitle">Vastuuvapauslauseke</String>
+  <String Id="HlaeDisclaimer">Ohjelman lataaminen, asentaminen ja käyttäminen tapahtuvat käyttäjän omalla vastuulla.</String>
+
+  <String Id="HlaeFeaturesHeader">Ominaisuudet</String>
+  <String Id="HlaeFfmpegFeature"><![CDATA[Asenna FFMPEG osoitteesta https://ffmpeg.zeranoe.com/builds/]]></String>
+</WixLocalization>
