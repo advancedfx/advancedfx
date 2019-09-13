@@ -6868,7 +6868,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 
 					if(Console_ToStreamCaptureType(cmd1, value))
 					{
-						if(value == CAfxRenderViewStream::SCT_DepthF || CAfxRenderViewStream::SCT_DepthFZIP)
+						if(value == CAfxRenderViewStream::SCT_DepthF || value == CAfxRenderViewStream::SCT_DepthFZIP)
 						{
 							if(!(AfxD3D9_Check_Supports_R32F_With_Blending() && m_RenderTargetDepthF))
 							{
