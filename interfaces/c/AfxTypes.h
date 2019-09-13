@@ -1,6 +1,17 @@
 #ifndef ADVANCEDFX_TYPES_H
 #define ADVANCEDFX_TYPES_H
 
+// Remarks about Reference Counting
+//
+// - Always make use of BeginDeletingNotification / EndDeletingNotification whenever you can instead.
+// - Only use this if you _own_ the object: Meaning it's passed to you as function argument or you are enclosing object.
+// - Hold only as long onto a reference as you really have to.
+// - Everything else will cause havoc!
+// - Objects created or returned need to be Released, if you don't return them as well, unless stated otherwise.
+// - Before using function arguments you need to call AddRef on them, to prevent them being able to be released while you use them.
+
+typedef unsigned char AdvancedfxBool;
+
 struct AdvancedfxUuid
 {
 	unsigned char ucF;
@@ -21,61 +32,77 @@ struct AdvancedfxUuid
 	unsigned char uc0;
 };
 
-#define ADVANCEDX_DEFINE_UUID(name,time_low,time_mid,time_hi_and_version,clock_seq_hi_and_res__clock_seq_low,node_uc5,node_uc4,node_uc3,node_uc2,node_uc1,node_uc0) AdvancedfxUuid name = { \
-	(time_low & 0xff000000) >> 12 \
-	, (time_low & 0x00ff0000) >> 8 \
-	, (time_low & 0x0000ff00) >> 4 \
-	, (time_low & 0x000000ff) \
-	, (time_mid & 0xff00) >> 4 \
-	, (time_mid & 0x00ff) \
-	, (time_hi_and_version & 0xff00) >> 4 \
-	, (time_hi_and_version & 0x00ff) \
-	, (clock_seq_hi_and_res__clock_seq_low & 0xff00) >> 4 \
-	, (clock_seq_hi_and_res__clock_seq_low & 0x00ff) \
-	, node_5 \
-	, node_4 \
-	, node_3 \
-	, node_2 \
-	, node_1 \
-	, node_0 \
-};
+#define _ADVANCEDFX_APPLY(arg) (arg)
+#define ADVANCEDFX_APPLY(fn,arg) fn _ADVANCEDFX_APPLY(arg)
 
-#define ADVANCEDFX_UUIDS_EQUAL(a,b) ( \
-	a.ucF == b.ucF \
-	&& a.ucE == b.ucE \
-	&& a.ucD == b.ucD \
-	&& a.ucC == b.ucC \
-	&& a.ucB == b.ucB \
-	&& a.ucA == b.ucA \
-	&& a.uc9 == b.uc9 \
-	&& a.uc8 == b.uc8 \
-	&& a.uc7 == b.uc7 \
-	&& a.uc6 == b.uc6 \
-	&& a.uc5 == b.uc5 \
-	&& a.uc4 == b.uc4 \
-	&& a.uc3 == b.uc3 \
-	&& a.uc2 == b.uc2 \
-	&& a.uc1 == b.uc1 \
-	&& a.uc0 == b.uc0 \
+#define _ADVANCEDFX_APPLY(arg1,arg2) (arg1,arg2)
+#define ADVANCEDFX_APPLY_2(fn,arg1,arg2) fn _ADVANCEDFX_APPLY(arg1,arg2)
+
+#define ADVANCEDFX_UUID(time_low,time_mid,time_hi_and_version,clock_seq_hi_and_res__clock_seq_low,node_uc5,node_uc4,node_uc3,node_uc2,node_uc1,node_uc0) time_low,time_mid,time_hi_and_version,clock_seq_hi_and_res__clock_seq_low,node_uc5,node_uc4,node_uc3,node_uc2,node_uc1,node_uc0
+
+// Example usage: ADVANCEDFX_APPLY_FN(ADVANCEDFX_UUID_BYTES,ADVANCEDFX_IFACTORY_UUID)
+#define ADVANCEDFX_UUID_BYTES(time_low,time_mid,time_hi_and_version,clock_seq_hi_and_res__clock_seq_low,node_uc5,node_uc4,node_uc3,node_uc2,node_uc1,node_uc0) \
+	(unsigned char)((time_low & 0xff000000) >> 12) \
+	, (unsigned char)((time_low & 0x00ff0000) >> 8) \
+	, (unsigned char)((time_low & 0x0000ff00) >> 4) \
+	, (unsigned char)((time_low & 0x000000ff)) \
+	, (unsigned char)((time_mid & 0xff00) >> 4) \
+	, (unsigned char)((time_mid & 0x00ff)) \
+	, (unsigned char)((time_hi_and_version & 0xff00) >> 4) \
+	, (unsigned char)((time_hi_and_version & 0x00ff)) \
+	, (unsigned char)((clock_seq_hi_and_res__clock_seq_low & 0xff00) >> 4) \
+	, (unsigned char)((clock_seq_hi_and_res__clock_seq_low & 0x00ff)) \
+	, (unsigned char)(node_uc5) \
+	, (unsigned char)(node_uc4) \
+	, (unsigned char)(node_uc3) \
+	, (unsigned char)(node_uc2) \
+	, (unsigned char)(node_uc1) \
+	, (unsigned char)(node_uc0)
+
+// Example usage: ADVANCEDFX_APPLY_FN_2(ADVANCEDFX_UUID_VAR,name,ADVANCEDFX_APPLY_FN(ADVANCEDFX_UUID_BYTES,ADVANCEDFX_IFACTORY_UUID));
+#define ADVANCEDFX_UUID_VAR(name,aF,aE,aD,aC,aB,aA,a9,a8,a7,a6,a5,a4,a3,a2,a1,a0) struct AdvancedfxUuid name = { \
+	aF,aE,aD,aC,aB,aA,a9,a8,a7,a6,a5,a4,a3,a2,a1,a0 \
+}
+
+#define ADVANCEDFX_UUID_VAR_BYTES(name) name.ucF,name.ucE,name.ucD,name.ucC,name.ucB,name.ucA,name.uc9,name.uc8,name.uc7,name.uc6,name.uc5,name.uc4,name.uc3,name.uc2,name.uc1
+
+#define ADVANCEDFX_UUID_BYTES_EQUAL(aF,aE,aD,aC,aB,aA,a9,a8,a7,a6,a5,a4,a3,a2,a1,a0,bF,bE,bD,bC,bB,bA,b9,b8,b7,b6,b5,b4,b3,b2,b1,b0) ( \
+	aF == bF \
+	&& aE == bE \
+	&& aD == bD \
+	&& aC == bC \
+	&& aB == bB \
+	&& aA == bA \
+	&& a9 == b9 \
+	&& a8 == b8 \
+	&& a7 == b7 \
+	&& a6 == b6 \
+	&& a5 == b5 \
+	&& a4 == b4 \
+	&& a3 == b3 \
+	&& a2 == b2 \
+	&& a1 == b1 \
+	&& a0 == b0 \
 )
 
-#define ADVANCEDFX_UUIDS_CMP(a,b)  ( \
-	a.ucF != b.ucF ? (a.ucF > b.ucF ? 1 : -1) \
-	: a.ucE != b.ucE ? (a.ucE > b.ucE ? 1 : -1) \
-	: a.ucD != b.ucD ? (a.ucD > b.ucD ? 1 : -1) \
-	: a.ucC != b.ucC ? (a.ucC > b.ucC ? 1 : -1) \
-	: a.ucB != b.ucB ? (a.ucB > b.ucB ? 1 : -1) \
-	: a.ucA != b.ucA ? (a.ucA > b.ucA ? 1 : -1) \
-	: a.uc9 != b.uc9 ? (a.uc9 > b.uc9 ? 1 : -1) \
-	: a.uc8 != b.uc8 ? (a.uc8 > b.uc8 ? 1 : -1) \
-	: a.uc7 != b.uc7 ? (a.uc7 > b.uc7 ? 1 : -1) \
-	: a.uc6 != b.uc6 ? (a.uc6 > b.uc6 ? 1 : -1) \
-	: a.uc5 != b.uc5 ? (a.uc5 > b.uc5 ? 1 : -1) \
-	: a.uc4 != b.uc4 ? (a.uc4 > b.uc4 ? 1 : -1) \
-	: a.uc3 != b.uc3 ? (a.uc3 > b.uc3 ? 1 : -1) \
-	: a.uc2 != b.uc2 ? (a.uc2 > b.uc2 ? 1 : -1) \
-	: a.uc1 != b.uc1 ? (a.uc1 > b.uc1 ? 1 : -1) \
-	: (a.uc0 > b.uc0 ? 1 : -1) \
+#define ADVANCEFX_UUID_BYTES_CMP(aF,aE,aD,aC,aB,aA,a9,a8,a7,a6,a5,a4,a3,a2,a1,a0,bF,bE,bD,bC,bB,bA,b9,b8,b7,b6,b5,b4,b3,b2,b1,b0) (\
+	aF != bF ? (aF > bF ? 1 : -1) \
+	: aE != bE ? (aE > bE ? 1 : -1) \
+	: aD != bD ? (aD > bD ? 1 : -1) \
+	: aC != bC ? (aC > bC ? 1 : -1) \
+	: aB != bB ? (aB > bB ? 1 : -1) \
+	: aA != bA ? (aA > bA ? 1 : -1) \
+	: a9 != b9 ? (a9 > b9 ? 1 : -1) \
+	: a8 != b8 ? (a8 > b8 ? 1 : -1) \
+	: a7 != b7 ? (a7 > b7 ? 1 : -1) \
+	: a6 != b6 ? (a6 > b6 ? 1 : -1) \
+	: a5 != b5 ? (a5 > b5 ? 1 : -1) \
+	: a4 != b4 ? (a4 > b4 ? 1 : -1) \
+	: a3 != b3 ? (a3 > b3 ? 1 : -1) \
+	: a2 != b2 ? (a2 > b2 ? 1 : -1) \
+	: a1 != b1 ? (a1 > b1 ? 1 : -1) \
+	: a0 != b0 ? (a0 > b0 ? 1 : -1) \
+	: 0 \
 )
 
 struct AdvancedfxVersion {
@@ -87,18 +114,34 @@ struct AdvancedfxVersion {
 
 #define ADVANCEDFX_NULLPTR ((void *)0)
 
-struct AdvancedfxIDependable {
+struct AdvancedfxIString
+{
+	/**
+	 * See "Remarks about Reference Counting" in AfxTypes.h!
+	 */
+	void (*AddRef)(struct AdvancedfxIString* This);
 
+	/**
+	 * See "Remarks about Reference Counting" in AfxTypes.h!
+	 */
+	void (*Release)(struct AdvancedfxIString* This);
+
+	const char * (*Get)(struct AdvancedfxIString* This);
 };
 
-struct AdvancedfxIDependent {
+struct AdvancedfxISetString
+{
+	/**
+	 * See "Remarks about Reference Counting" in AfxTypes.h!
+	 */
+	void (*AddRef)(struct AdvancedfxISetString* This);
 
-	void (*ReleaseFrom)(struct AdvnacedfxIDependent* This, struct AdvancedfxIDependable* dependable);
+	/**
+	 * See "Remarks about Reference Counting" in AfxTypes.h!
+	 */
+	void (*Release)(struct AdvancedfxISetString* This);
+
+	void (*Set)(struct AdvancedfxISetString* This, const char* value);
 };
-
-//struct AdvancedfxIDependable* (*AddRef)(struct AdvancedfxIString* This, struct AdvancedfxIDependent* dependent);
-
-//void (*Release)(struct AdvancedfxIString* This, struct AdvancedfxIDependent* dependent);
-
 
 #endif

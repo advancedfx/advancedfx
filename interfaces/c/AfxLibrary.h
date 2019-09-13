@@ -1,23 +1,29 @@
 #ifndef ADVANCEDFX_LIBARY_H
 #define ADVANCEDFX_LIBARY_H
 #include "AfxTypes.h"
+#include "AfxLocale.h"
 
-// AdvancedfxFactoryFn: AdvancedfxILibraryManager -> AdvancedfxILibrary
+// AdvancedfxFactoryFn: ADVANCEDFX_ILIBRARY_UUID, AdvancedfxILocale -> AdvancedfxILibrary
 
-#define ADVANCEDFX_ILIBRARY_DEFINE_UUID(name) ADVANCEDX_DEFINE_UUID(0x3BBBD18B,0x0100,0x4761,0xA588,0x9D,0xF8,0x8F,0xF0,0x52,0xAE)
+#define ADVANCEDFX_ILIBRARY_UUID ADVANCEDFX_UUID(0x3BBBD18B,0x0100,0x4761,0xA588,0x9D,0xF8,0x8F,0xF0,0x52,0xAE)
 
-struct AdvancedfxILibraryManager {
+struct AdvancedfxILibrary
+{
+	/**
+	 * See "Remarks about Reference Counting" in AfxTypes.h!
+	 */
+	void (*AddRef)(struct AdvancedfxILibrary* This);
 
-	AdvancedfxLocaleId(*GetLocale)(void);
-};
+	/**
+	 * See "Remarks about Reference Counting" in AfxTypes.h!
+	 */
+	void (*Release)(struct AdvancedfxILibrary* This);
 
-struct AdvancedfxILibrary {
+	AdvancedfxUuid(*GetUuid)(struct AdvancedfxILibrary * This);
 
-	AdvancedfxUuid(*GetUuid)(void);
+	AdvancedfxVersion (*GetVersion)(struct AdvancedfxILibrary* This);
 
-	AdvancedfxVersion (*GetVersion)(void);
-
-	const char* (*GetLabelUtf8)(void);
+	const char* (*GetLabelUtf8)(struct AdvancedfxILibrary* This);
 };
 
 #endif

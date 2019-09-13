@@ -441,6 +441,9 @@
     <ClCompile Include="AfxCommandLine.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
+    <ClCompile Include="..\interfaces\c\test.c">
+      <Filter>interfaces\c</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\bvhexport.h">
@@ -828,6 +831,9 @@
       <Filter>interfaces\c</Filter>
     </ClInclude>
     <ClInclude Include="..\interfaces\c\AfxLocale.h">
+      <Filter>interfaces\c</Filter>
+    </ClInclude>
+    <ClInclude Include="..\interfaces\c\AfxJit.h">
       <Filter>interfaces\c</Filter>
     </ClInclude>
   </ItemGroup>

@@ -155,6 +155,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\interfaces\c\test.c" />
     <ClCompile Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier1\convar.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\cssV34\sdk_src\public\tools\bonelist.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\cssV34\sdk_src\tier1\keyvalues.cpp" />
@@ -246,6 +247,7 @@
   <ItemGroup>
     <ClInclude Include="..\interfaces\c\AfxHookSource.h" />
     <ClInclude Include="..\interfaces\c\AfxInterface.h" />
+    <ClInclude Include="..\interfaces\c\AfxJit.h" />
     <ClInclude Include="..\interfaces\c\AfxLibrary.h" />
     <ClInclude Include="..\interfaces\c\AfxLocale.h" />
     <ClInclude Include="..\interfaces\c\AfxTypes.h" />
