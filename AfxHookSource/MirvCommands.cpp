@@ -3842,7 +3842,7 @@ CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 		}
 		else if(!_stricmp("enabled", subcmd))
 		{
-			if(3 < argc)
+			if(3 <= argc)
 			{
 				g_CommandSystem.Enabled = 0 != atof(args->ArgV(2));
 				return;
