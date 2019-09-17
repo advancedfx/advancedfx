@@ -24,7 +24,6 @@
 #endif
 
 // AdvancedfxFactoryFn: ADVANCEDFX_IFACTORY_UUID, AdvancedfxIFactory -> AdvancedfxIFactory
-
 #define ADVANCEDFX_IFACTORY_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x3F3644B5,0xDF45,0x406B,0xB0B4,0x0E,0xFD,0xA7,0xA9,0x42,0xE4)
 
 struct AdvancedfxIFactory;

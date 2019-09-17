@@ -118,7 +118,7 @@ struct AdvancedfxVersion {
 
 #define ADVANCEDFX_NULLPTR ((void *)0)
 
-struct AdvancedfxIString
+struct AdvancedfxIString_Vtable
 {
 	/**
 	 * See "Remarks about Reference Counting" in AfxTypes.h!
@@ -133,7 +133,14 @@ struct AdvancedfxIString
 	const char * (*Get)(struct AdvancedfxIString* This);
 };
 
-struct AdvancedfxISetString
+struct AdvancedfxIString
+{
+	AdvancedfxIString_Vtable* Vtable;
+
+	void* Data;
+};
+
+struct AdvancedfxISetString_Vtable
 {
 	/**
 	 * See "Remarks about Reference Counting" in AfxTypes.h!
@@ -146,6 +153,13 @@ struct AdvancedfxISetString
 	void (*Release)(struct AdvancedfxISetString* This);
 
 	void (*Set)(struct AdvancedfxISetString* This, const char* value);
+};
+
+struct AdvancedfxISetString
+{
+	AdvancedfxISetString_Vtable* Vtable;
+
+	void* Data;
 };
 
 #endif
