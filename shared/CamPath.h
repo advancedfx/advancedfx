@@ -160,6 +160,10 @@ public:
 
 	void OnChanged_set(ICamPathChanged * value);
 
+	void SetOffset(double value);
+
+	double GetOffset();
+
 private:
 	static double XSelector(CamPathValue const & value)
 	{
@@ -196,6 +200,7 @@ private:
 	QuaternionInterp m_RotationInterpMethod;
 	DoubleInterp m_FovInterpMethod;
 	ICamPathChanged * m_OnChanged;
+	double m_Offset;
 	
 	CInterpolationMap<CamPathValue> m_Map;
 

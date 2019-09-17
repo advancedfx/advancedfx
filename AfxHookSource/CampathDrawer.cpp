@@ -344,11 +344,14 @@ void CCampathDrawer::OnPostRenderAllTools()
 	DWORD oldCullMode;
 	m_Device->GetRenderState(D3DRS_CULLMODE, &oldCullMode);
 
+	DWORD oldFillMode;
+	m_Device->GetRenderState(D3DRS_FILLMODE, &oldFillMode);
+
 	// Draw:
 	{
 		//Vector3 vvForward, vvUp, vvRight, vvPos;
 
-		double curTime = g_MirvTime.GetTime();
+		double curTime = g_MirvTime.GetTime() - g_Hook_VClient_RenderView.m_CamPath.GetOffset();
 		bool inCampath = 1 <= g_Hook_VClient_RenderView.m_CamPath.GetSize()
 			&&	g_Hook_VClient_RenderView.m_CamPath.GetLowerBound() <= curTime
 			&& curTime <= g_Hook_VClient_RenderView.m_CamPath.GetUpperBound();
@@ -368,6 +371,7 @@ void CCampathDrawer::OnPostRenderAllTools()
 		m_Device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 		m_Device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 		m_Device->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+		m_Device->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
 
 		m_Device->SetVertexShader(vertexShader);
 
@@ -782,6 +786,7 @@ void CCampathDrawer::OnPostRenderAllTools()
 	m_Device->SetVertexShaderConstantF(49, oldCPlane0, 1);
 	m_Device->SetVertexShaderConstantF(50, oldCPlaneN, 1);
 
+	m_Device->SetRenderState(D3DRS_FILLMODE, oldFillMode);
 	m_Device->SetRenderState(D3DRS_CULLMODE, oldCullMode);
 	m_Device->SetRenderState(D3DRS_DESTBLEND, oldDestBlend);
 	m_Device->SetRenderState(D3DRS_SRCBLEND, oldSrcBlend);
