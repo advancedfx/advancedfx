@@ -141,9 +141,11 @@ bool CamPathIterator::operator != (CamPathIterator const &it) const
 	return !(*this == it);
 }
 
+// CamPath /////////////////////////////////////////////////////////////////////
 
 CamPath::CamPath()
 : m_OnChanged(0)
+, m_Offset(0)
 , m_Enabled(false)
 , m_PositionInterpMethod(DI_DEFAULT)
 , m_RotationInterpMethod(QI_DEFAULT)
@@ -317,6 +319,8 @@ void CamPath::Clear()
 
 	if(selectAll) m_Map.clear();
 
+	m_Offset = 0;
+
 	DoInterpolationMapChangedAll();
 	Changed();
 }
@@ -399,6 +403,8 @@ bool CamPath::Save(wchar_t const * fileName)
 		cam->append_attribute(doc.allocate_attribute("rotationInterp", QuaternionInterp_ToString(m_RotationInterpMethod)));
 	if(DI_DEFAULT != m_FovInterpMethod)
 		cam->append_attribute(doc.allocate_attribute("fovInterp", DoubleInterp_ToString(m_FovInterpMethod)));
+	if (m_Offset)
+		cam->append_attribute(doc.allocate_attribute("offset", double2xml(doc, m_Offset)));
 	doc.append_node(cam);
 
 	rapidxml::xml_node<> * pts = doc.allocate_node(rapidxml::node_element, "points");
@@ -510,6 +516,10 @@ bool CamPath::Load(wchar_t const * fileName)
 				DoubleInterp fovInterp = DI_DEFAULT;
 				if(fovInterpA) DoubleInterp_FromString(fovInterpA->value(), fovInterp);
 				FovInterpMethod_set(fovInterp);
+
+				rapidxml::xml_attribute<>* offsetA = cur_node->first_attribute("offset");
+				double offset = offsetA ? atof(offsetA->value()) : 0.0;
+				SetOffset(offset);
 
 				cur_node = cur_node->first_node("points");
 				if(!cur_node) break;
@@ -1203,4 +1213,16 @@ double CamPath::GetDuration()
 	if(m_Map.size()<2) return 0.0;
 
 	return (--m_Map.end())->first - m_Map.begin()->first;
+}
+
+void CamPath::SetOffset(double value)
+{
+	m_Offset = value;
+
+	Changed();
+}
+
+double CamPath::GetOffset()
+{
+	return m_Offset;
 }

@@ -6,6 +6,27 @@
 
 <release>
 <name>HLAE</name>
+<version>2.81.0</version>
+<time>2019-09-17T13:00Z</time>
+<changes>
+<change type="updated">
+Included AfxHookSource 1.70.0 (2019-09-17T13:00Z).
+</change>
+<change type="added">
+Added #224 fi-FI translation for installer, thanks https://github.com/markusforss
+</change>
+<change type="added">
+Added #221 partial pt-PT translation for installer, thanks https://github.com/DMTWENTYTHREE
+</change>
+<change type="added">
+Added Donate-button to menu.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.80.1</version>
 <time>2019-08-30T16:21Z</time>
 <changes>

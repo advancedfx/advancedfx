@@ -183,6 +183,9 @@ namespace MirvPgl
 							DWORD oldMultiSampleAnitAlias;
 							m_Device->GetRenderState(D3DRS_MULTISAMPLEANTIALIAS, &oldMultiSampleAnitAlias);
 
+							DWORD oldFillMode;
+							m_Device->GetRenderState(D3DRS_FILLMODE, &oldFillMode);
+
 							// Draw:
 							{
 								FLOAT newCScreenInfo[4] = { 2.0f / functor.m_Width, 2.0f / functor.m_Height, 0.0f, 0.0f };
@@ -196,6 +199,7 @@ namespace MirvPgl
 								m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 								m_Device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
 								m_Device->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, FALSE);
+								m_Device->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
 
 								m_Device->SetStreamSource(0, m_PositionVertexBuffer, 0, sizeof(VertexPosition));
 								m_Device->SetStreamSource(1, m_ColorVertexBuffer, 0, sizeof(VertexColor));
@@ -231,6 +235,7 @@ namespace MirvPgl
 							m_Device->SetVertexDeclaration(oldDeclaration);
 							if (oldDeclaration) oldDeclaration->Release();
 
+							m_Device->SetRenderState(D3DRS_FILLMODE, oldFillMode);
 							m_Device->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, oldMultiSampleAnitAlias);
 							m_Device->SetRenderState(D3DRS_CULLMODE, oldCullMode);
 							m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, oldAlphaBlendEnable);

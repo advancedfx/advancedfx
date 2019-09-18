@@ -6,6 +6,33 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.70.0</version>
+<time>2019-09-17T13:00Z</time>
+<changes>
+<change type="added">
+Added #75 mirv_campath offset command (for easier preview of campath).
+</change>
+<change type="fixed">
+Fixed mirv_campath draw being wiregrame in latest CS:GO version.
+</change>
+<change type="fixed">
+Fixed mirv_campath select second argument not working with current.
+</change>
+<change type="fixed">
+Fixed #225 mirv_cmd enabled does not work properly.
+</change>
+<change type="fixed">
+Fixed #137 mirv_streams captureType depthF crashes.
+</change>
+<change type="fixed">
+Fixed #218 Possible to bypass -insecure check.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.69.1</version>
 <time>2019-08-29T06:32Z</time>
 <changes>

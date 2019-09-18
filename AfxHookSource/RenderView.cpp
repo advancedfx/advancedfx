@@ -268,10 +268,12 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 		case Override_Campath:
 			if (m_CamPath.Enabled_get() && m_CamPath.CanEval())
 			{
+				double campathCurTime = curTime - m_CamPath.GetOffset();
+
 				// no extrapolation:
-				if (m_CamPath.GetLowerBound() <= curTime && curTime <= m_CamPath.GetUpperBound())
+				if (m_CamPath.GetLowerBound() <= campathCurTime && campathCurTime <= m_CamPath.GetUpperBound())
 				{
-					CamPathValue val = m_CamPath.Eval(curTime);
+					CamPathValue val = m_CamPath.Eval(campathCurTime);
 					QEulerAngles ang = val.R.ToQREulerAngles().ToQEulerAngles();
 
 					//Tier0_Msg("================",curTime);

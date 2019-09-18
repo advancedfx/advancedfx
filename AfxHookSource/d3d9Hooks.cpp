@@ -3085,6 +3085,9 @@ public:
 			DWORD oldMultiSampleAnitAlias;
 			g_OldDirect3DDevice9->GetRenderState(D3DRS_MULTISAMPLEANTIALIAS, &oldMultiSampleAnitAlias);
 
+			DWORD oldFillMode;
+			g_OldDirect3DDevice9->GetRenderState(D3DRS_FILLMODE, &oldFillMode);
+
 			FLOAT oldOverFac[4];
 			g_OldDirect3DDevice9->GetPixelShaderConstantF(5, oldOverFac, 1);
 			
@@ -3156,6 +3159,7 @@ public:
 			g_OldDirect3DDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 			g_OldDirect3DDevice9->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
 			g_OldDirect3DDevice9->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, FALSE);
+			g_OldDirect3DDevice9->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
 
 			g_OldDirect3DDevice9->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
 			g_OldDirect3DDevice9->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
@@ -3314,6 +3318,7 @@ public:
 			g_OldDirect3DDevice9->SetVertexDeclaration(oldDeclaration);
 			if (oldDeclaration) oldDeclaration->Release();
 
+			g_OldDirect3DDevice9->SetRenderState(D3DRS_FILLMODE, oldFillMode);
 			g_OldDirect3DDevice9->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, oldMultiSampleAnitAlias);
 			g_OldDirect3DDevice9->SetRenderState(D3DRS_CULLMODE, oldCullMode);
 			g_OldDirect3DDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, oldAlphaBlendEnable);
