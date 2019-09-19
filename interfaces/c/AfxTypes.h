@@ -136,8 +136,6 @@ struct AdvancedfxIString_Vtable
 struct AdvancedfxIString
 {
 	AdvancedfxIString_Vtable* Vtable;
-
-	void* Data;
 };
 
 struct AdvancedfxISetString_Vtable
@@ -158,8 +156,37 @@ struct AdvancedfxISetString_Vtable
 struct AdvancedfxISetString
 {
 	AdvancedfxISetString_Vtable* Vtable;
-
-	void* Data;
 };
+
+
+#define ADVANCEDFX_IDELETING_DECL(prefix,type) \
+struct prefix ##_IDeleting { \
+	struct prefix ##_IDeletingVtable* Vtable; \
+}; \
+struct prefix ##_IDeletingVtable { \
+	bool (*Deleting)(struct prefix ##_IDeletingVtable* This, type value); \
+};
+
+#define ADVANCEDFX_IDELETING(prefix) \
+struct prefix ##_IDeleting
+
+
+#define ADVANCEDFX_ILIST_DECL(prefix,type) \
+struct prefix ##_IList { \
+	struct prefix ##_IListVtable* Vtable; \
+}; \
+struct prefix ##_IListVtable { \
+	bool (*Begin)(struct prefix ##IList* This); \
+	bool (*End)(struct prefix ##IList* This); \
+	bool (*Next)(struct prefix ##IList* This); \
+	bool (*Previous)(struct prefix ##IList* This); \
+	void (*Insert)(struct prefix ##IList* This, type value); \
+	void (*Delete)(struct prefix ##IList* This); \
+	type (*GetValue)(struct prefix ##IList* This); \
+	void (*SetValue)(struct prefix ##IList* This, type value); \
+};
+
+#define ADVANCEDFX_ILIST(prefix) \
+struct prefix ##_IList
 
 #endif

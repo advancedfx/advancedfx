@@ -4,7 +4,8 @@
 
 typedef unsigned long AdvancedfxLocaleId;
 
-struct AdvancedfxILocale
+
+struct AdvancedfxILocaleVtable
 {
 	/**
 	 * See "Remarks about Reference Counting" in AfxTypes.h!
@@ -16,9 +17,14 @@ struct AdvancedfxILocale
 	 */
 	void (*Release)(struct AdvancedfxILibrary* This);
 
-	const char* (*GetLanguage)(struct AdvancedfxILocale * This);
+	const char* (*GetLanguage)(struct AdvancedfxILocale* This);
 
 	const char* (*GetRegion)(struct AdvancedfxILocale* This);
+};
+
+struct AdvancedfxILocale
+{
+	AdvancedfxILocaleVtable* Vtable;
 };
 
 #endif

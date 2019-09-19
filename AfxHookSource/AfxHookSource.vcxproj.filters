@@ -827,9 +827,6 @@
     <ClInclude Include="..\interfaces\c\AfxTypes.h">
       <Filter>interfaces\c</Filter>
     </ClInclude>
-    <ClInclude Include="..\interfaces\c\AfxLibrary.h">
-      <Filter>interfaces\c</Filter>
-    </ClInclude>
     <ClInclude Include="..\interfaces\c\AfxLocale.h">
       <Filter>interfaces\c</Filter>
     </ClInclude>
