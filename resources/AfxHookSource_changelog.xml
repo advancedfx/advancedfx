@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.70.1</version>
+<time>2019-09-20T07:00Z</time>
+<changes>
+<change type="fixed">
+Adjusted CS:GO update 9/19/19.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.70.0</version>
 <time>2019-09-17T13:00Z</time>
 <changes>
