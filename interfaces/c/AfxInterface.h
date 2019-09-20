@@ -39,7 +39,7 @@ struct AdvancedfxIFactoryVtable {
 	 */
 	void (*Release)(struct AdvancedfxIFactory* This);
 
-	void (*Factory)(struct AdvancedfxIFactory* This, struct AdvancedfxUuid uuid, void* arg);
+	void* (*Factory)(struct AdvancedfxIFactory* This, struct AdvancedfxUuid uuid, void* arg);
 };
 
 struct AdvancedfxIFactory

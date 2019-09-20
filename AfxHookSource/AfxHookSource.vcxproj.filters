@@ -160,9 +160,6 @@
     <Filter Include="interfaces">
       <UniqueIdentifier>{fd3279bd-298a-45ca-8335-92e8c0e7ef1c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="interfaces\c">
-      <UniqueIdentifier>{c4b62cbe-42a8-4391-841a-7d6faf3cba23}</UniqueIdentifier>
-    </Filter>
     <Filter Include="shared\Detours">
       <UniqueIdentifier>{a00372c9-e182-48de-a4e5-f496755b2814}</UniqueIdentifier>
     </Filter>
@@ -177,6 +174,9 @@
     </Filter>
     <Filter Include="prop\AfxHookSource\insurgency2\public">
       <UniqueIdentifier>{9f8a63b3-6460-48bd-a750-91b2e9c2c410}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="interfaces\cpp">
+      <UniqueIdentifier>{c4b62cbe-42a8-4391-841a-7d6faf3cba23}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -442,7 +442,7 @@
       <Filter>AfxHookSource</Filter>
     </ClCompile>
     <ClCompile Include="..\interfaces\c\test.c">
-      <Filter>interfaces\c</Filter>
+      <Filter>interfaces\cpp</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -771,7 +771,7 @@
       <Filter>prop\AfxHookSource\l4d2\sdk_src\public</Filter>
     </ClInclude>
     <ClInclude Include="..\interfaces\c\AfxHookSource.h">
-      <Filter>interfaces\c</Filter>
+      <Filter>interfaces\cpp</Filter>
     </ClInclude>
     <ClInclude Include="AfxInterop.h">
       <Filter>AfxHookSource</Filter>
@@ -822,16 +822,16 @@
       <Filter>AfxHookSource</Filter>
     </ClInclude>
     <ClInclude Include="..\interfaces\c\AfxInterface.h">
-      <Filter>interfaces\c</Filter>
+      <Filter>interfaces\cpp</Filter>
     </ClInclude>
     <ClInclude Include="..\interfaces\c\AfxTypes.h">
-      <Filter>interfaces\c</Filter>
+      <Filter>interfaces\cpp</Filter>
     </ClInclude>
     <ClInclude Include="..\interfaces\c\AfxLocale.h">
-      <Filter>interfaces\c</Filter>
+      <Filter>interfaces\cpp</Filter>
     </ClInclude>
     <ClInclude Include="..\interfaces\c\AfxJit.h">
-      <Filter>interfaces\c</Filter>
+      <Filter>interfaces\cpp</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

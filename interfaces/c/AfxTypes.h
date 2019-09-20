@@ -135,7 +135,7 @@ struct AdvancedfxIString_Vtable
 
 struct AdvancedfxIString
 {
-	AdvancedfxIString_Vtable* Vtable;
+	struct AdvancedfxIString_Vtable* Vtable;
 };
 
 struct AdvancedfxISetString_Vtable
@@ -155,38 +155,46 @@ struct AdvancedfxISetString_Vtable
 
 struct AdvancedfxISetString
 {
-	AdvancedfxISetString_Vtable* Vtable;
+	struct AdvancedfxISetString_Vtable* Vtable;
 };
 
 
-#define ADVANCEDFX_IDELETING_DECL(prefix,type) \
-struct prefix ##_IDeleting { \
-	struct prefix ##_IDeletingVtable* Vtable; \
+#define ADVANCEDFX_INOTIFY_DECL(type_name,notify_type) \
+struct type_name ##Vtable { \
+	bool (*Notify)(struct type_name* This, notify_type value); \
 }; \
-struct prefix ##_IDeletingVtable { \
-	bool (*Deleting)(struct prefix ##_IDeletingVtable* This, type value); \
+struct type_name { \
+	struct type_name##Vtable* Vtable; \
 };
 
-#define ADVANCEDFX_IDELETING(prefix) \
-struct prefix ##_IDeleting
+#define ADVANCEDFX_INOTIFY(prefix) \
+struct prefix ##_INotify
 
-
-#define ADVANCEDFX_ILIST_DECL(prefix,type) \
-struct prefix ##_IList { \
-	struct prefix ##_IListVtable* Vtable; \
+#define ADVANCEDFX_ILIST_DECL(type_name,item_type) \
+ADVANCEDFX_INOTIFY_DECL(type_name ##_Notify, struct type_name*) \
+struct type_name ##Vtable { \
+	bool (*Begin)(struct type_name* This); \
+	bool (*End)(struct type_name* This); \
+	bool (*Next)(struct type_name* This); \
+	bool (*Previous)(struct type_name* This); \
+	void (*Insert)(struct type_name* This, item_type value); \
+	void (*NotifyAfterInsertBegin)(struct type_name* This, ADVANCEDFX_INOTIFY(type_name ##Notify)* notify); \
+	void (*NotifyAfterInsertEnd)(struct type_name* This, ADVANCEDFX_INOTIFY(type_name ##Notify)* notify); \
+	void (*Delete)(struct type_name* This); \
+	void (*NotifyBeforeDeleteBegin)(struct type_name* This, ADVANCEDFX_INOTIFY(type_name ##Notify)* notify); \
+	void (*NotifyBeforeDeletingEnd)(struct type_name* This, ADVANCEDFX_INOTIFY(type_name ##Notify)* notify); \
+	item_type (*Get)(struct type_name* This); \
+	void (*Set(struct type_name* This, item_type value); \
+	void (*NotifyBeforeSetBegin)(struct type_name* This, ADVANCEDFX_INOTIFY(type_name ##Notify)* notify); \
+	void (*NotifyBeforeSetEnd)(struct type_name* This, ADVANCEDFX_INOTIFY(type_name ##Notify)* notify); \
+	void (*NotifyAfterSetBegin)(struct type_name* This, ADVANCEDFX_INOTIFY(type_name ##Notify)* notify); \
+	void (*NotifyAfterSetEnd)(struct type_name* This, ADVANCEDFX_INOTIFY(type_name ##Notify)* notify); \
 }; \
-struct prefix ##_IListVtable { \
-	bool (*Begin)(struct prefix ##IList* This); \
-	bool (*End)(struct prefix ##IList* This); \
-	bool (*Next)(struct prefix ##IList* This); \
-	bool (*Previous)(struct prefix ##IList* This); \
-	void (*Insert)(struct prefix ##IList* This, type value); \
-	void (*Delete)(struct prefix ##IList* This); \
-	type (*GetValue)(struct prefix ##IList* This); \
-	void (*SetValue)(struct prefix ##IList* This, type value); \
+struct type_name {\
+	struct type_name ##Vtable* Vtable; \
 };
 
-#define ADVANCEDFX_ILIST(prefix) \
-struct prefix ##_IList
+#define ADVANCEDFX_ILIST(type_name) \
+struct type_name
 
 #endif

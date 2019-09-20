@@ -88,31 +88,7 @@ struct AdvancedfxIAfxHookSource
 	ADVANCEDFX_ILIST(AdvancedxIJit)* Jits;
 };
 
-// AdvancedfxFactoryFn: ADVANCEDFX_IAFXHOOKSOURCEDLL_UUID_FN, AdvancedfxIAfxHookSource -> AdvancedfxIAfxHookSourceDll
+// AdvancedfxFactoryFn: ADVANCEDFX_IAFXHOOKSOURCEDLL_UUID_FN, AdvancedfxIFactory -> AdvancedfxIFactory
 #define ADVANCEDFX_IAFXHOOKSOURCEDLL_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x3F3644B5,0xDF45,0x406B,0xB0B4,0x0E,0xFD,0xA7,0xA9,0x42,0xE4)
-
-struct AdvancedfxIAfxHookSourceDllVtable
-{
-	/**
-	 * See "Remarks about Reference Counting" in AfxTypes.h!
-	 */
-	void (*AddRef)(struct AdvancedfxIAfxHookSourceDll* This);
-
-	/**
-	 * See "Remarks about Reference Counting" in AfxTypes.h!
-	 */
-	void (*Release)(struct AdvancedfxIAfxHookSourceDll* This);
-
-	void (*Connect)(struct AdvancedfxIAfxHookSourceDll* This, struct AdvancedfxIAfxHookSource* afxHookSource);
-};
-
-ADVANCEDFX_IDELETING_DECL(AdvancedfxIAfxHookSourceDll, struct AdvancedfxIAfxHookSourceDll*)
-
-struct AdvancedfxIAfxHookSourceDll
-{
-	AdvancedfxIAfxHookSourceDllVtable* Vtable;
-
-	ADVANCEDFX_IDELETING(AdvancedfxIAfxHookSourceDll)* Deleting;
-};
 
 #endif
