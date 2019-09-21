@@ -21,6 +21,8 @@
 //
 // - It is recommended to trigger clean-up code, as soon as you observe an invalidate reference: E.g. if you depend on a mandatory reference being valid and it becomes invalid, ADVANCEDFX_DELETE yourself.
 //
+// - If your code can not handle ADVANCEDFX_DELETE delete begin called eraly, you need to wrap your code so it works like that from the outside.
+//
 // - We recommend to use the macros in this header to work with the references:
 //   - ADVANCEDFX_VALID - ADAVANCEDFX_FALSE if invalid, other value otherwise
 //   - ADVANCEDFX_ADDREF - Increment reference count (e.g. if you need to hold longer onto a passed reference that the current scope.
