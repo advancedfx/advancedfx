@@ -11,14 +11,45 @@
 
 #define ADVANCEDFX_JIT_CONTEXT_LOG_MESSAGE_ISETSTRING_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0xD8BD0A7F,0x6F5D,0x4F82,0xB7B1,0x11,0x5A,0x1E,0xC6,0x4B,0xC7)
 
-#define ADVANCEDFX_JIT_PYTHON_IJIT_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x60B22765,0x9E18,0x410F,0x8401,0x9B,0x1E,0x3C,0xE8,0x74,0xC8)
+struct AdvancedfxIJitContextVtable
+{
+	void(*Delete)(struct AdvancedfxIJitContext* This);
 
-struct AdvancedxIJit {
-	/**
-	 * @param outErrorString can be 0.
-	 * @returns 0 upon error, assembly otherwise.
-	 */
-	void (*Execute)(struct AdvancedxIJit* This, AdvancedfxIFactory * context);
+	ADVANCEDFX_ILIST_DECL_FNS(Uuids, AdvancedfxIJitContext, AdvancedfxIJitContextNotify, struct AdvancedfxUuid)
+
+	AdvancedfxIReference* (*Get)(struct AdvancedfxIJitContext* This, struct AdvancedfxUuid);
 };
+
+struct AdvancedfxIJitContext {
+	size_t RefCountValid;
+	struct AdvancedfxIJitContextVtable* Vtable;
+};
+
+struct AdvancedxIJitVtable {
+	//
+	// Implement AdvancedfxIInterfaceVTable:
+
+	void(*Delete)(struct AdvancedxIJit* This);
+
+	struct AdvancedfxUuid(*GetUuid)(struct AdvancedxIJit* This);
+
+	//
+	// Own:
+
+	void (*Execute)(struct AdvancedxIJit* This, AdvancedfxIJitContext* context);
+};
+
+struct AdvancedxIJit
+{
+	//
+	// Implement AdvancedfxIInterface:
+
+	size_t RefCountValid;
+	struct AdvancedfxIFactoryVtable* Vtable;
+
+	//
+	// Own:
+};
+
 
 #endif

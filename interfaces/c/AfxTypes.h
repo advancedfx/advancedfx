@@ -3,19 +3,40 @@
 
 #include <stddef.h>
 
-// TODO: text bellow needs to be updated when somewhat final.
+
+// Remarks about Invalidatable-Reference-Counting //////////////////////////////
+
+
+// - AdvancedfxIReference (or compatible) objects must only be allocated and freed from the single AfxCore object.
 //
-// Remarks about Reference Counting
+// - Unless explictely stated otherwise, AdvancedfxIReference* pointers can be assumed to be non-null.
 //
 // - Objects returned to you from a function need to be released with ADVANCEDFX_RELEASE, if you don't return them as well, unless stated otherwise.
-// - Function arguments are only referenced for the duration of the call, if you need a refernce after that, use ADVANCEDFX_ADDREF and ADVANCEDFX_RELEASE accordingly.
+//
+// - Function arguments are only referenced for the duration of the call, if you need a reference after that, use ADVANCEDFX_ADDREF and ADVANCEDFX_RELEASE accordingly.
+//
 // - Always ensure that a reference is valid e.g. using ADVANCEDFX_VALID, before calling a function in it's Vtable.
-// - Unless a function is explictely marked with ADVANCEDFX_NO_INVALIDATION you should assume that the This reference can be invalid after the call!
+//
+// - Unless a function is explictely marked with ADVANCEDFX_NO_INVALIDATION you should assume that any references used can be invalid after the call!
+//
+// - It is recommended to trigger clean-up code, as soon as you observe an invalidate reference: E.g. if you depend on a mandatory reference being valid and it becomes invalid, ADVANCEDFX_DELETE yourself.
+//
+// - We recommend to use the macros in this header to work with the references:
+//   - ADVANCEDFX_VALID - ADAVANCEDFX_FALSE if invalid, other value otherwise
+//   - ADVANCEDFX_ADDREF - Increment reference count (e.g. if you need to hold longer onto a passed reference that the current scope.
+//   - ADVANCEDFX_DELETE - Calls Delete on a valid reference, otherwise does nothing
+//   - ADVANCEDFX_RELEASE - Decrements refernce count. If count becomes zero ADVANCEDFX_DELETE, and the reference is freed using afxCore.
+//   - ADVANCEDFX_CREATE - Creates reference of a given size (must be at least sizeof(AdvancedfxIReference) and initializes it (but does not initalize other memory allocated).
+//   - ADVANCEDFX_CREATE_INVALID - Creates an invalid reference.
+
+
+////////////////////////////////////////////////////////////////////////////////
+
 
 typedef unsigned char AdvancedfxBool;
 
-#define ADAVANCEDFX_TRUE 1
 #define ADAVANCEDFX_FALSE 0
+#define ADAVANCEDFX_TRUE 1
 
 struct AdvancedfxUuid
 {
@@ -123,57 +144,89 @@ struct AdvancedfxVersion {
 
 #define ADVANCEDFX_NULLPTR ((void *)0)
 
-struct AdvancedfxReferenceVtable
+struct AdvancedfxIReferenceVtable
 {
-	void (*Delete)(struct AdvancedfxReference* This);
+	//
+	// Own:
+
+	void (*Delete)(struct AdvancedfxIReference* This);
 };
 
-struct AdvancedfxReference
+struct AdvancedfxIReference
 {
+	//
+	// Own:
+
 	size_t RefCountValid;
-	struct AdvancedfxReferenceVtable* Vtable;
+	struct AdvancedfxIReferenceVtable* Vtable;
 };
 
 #define ADVANCEDFX_VALID(pRef) (0 == (pRef->RefCountValid & 0x1))
 
 #define ADVANCEDFX_ADDREF(pRef) ref.RefCountValid = (pRef->RefCountValid + 0x2) | (pRef->RefCountValid & 0x1);
 
-#define ADVANCEDFX_DELETE(pRef) if(ADVANCEDFX_VALID(pRef)) { ref.Vtable.Delete(ref); ref |= 0x1; }
+#define ADVANCEDFX_DELETE(pAfxCore,pRef) if(ADVANCEDFX_VALID(pRef)) { ref.Vtable.Delete(ref); ref |= 0x1; }
 
-#define ADVANCEDFX_RELEASE(pAfxCore,pRef) pRef->RefCountValid = (pRef->RefCountValid - 0x2) | (pRef->RefCountValid & 0x1); if(0 == (pRef->RefCountValid >> 1)) { ADVANCEDFX_DELETE(pRef) pAfxCore.FreeRef((AdvancedfxReference*)ref); }
+#define ADVANCEDFX_RELEASE(pAfxCore,pRef) pRef->RefCountValid = (pRef->RefCountValid - 0x2) | (pRef->RefCountValid & 0x1); if(0 == (pRef->RefCountValid >> 1)) { ADVANCEDFX_DELETE(pRef) pAfxCore.FreeRef((AdvancedfxIReference*)ref); }
 
 #define ADVANCEDFX_CREATE(pAfxCore,refType,pVtable,pRef) (pRef = pAfxCore->MemAlloc(sizeof(refType)), pRef->RefCountValid = 0x2, pRef->Vtable = pVtable, pRef) 
+
+#define ADVANCEDFX_CREATE_INVALID(pAfxCore,pRef) (pRef = pAfxCore->MemAlloc(sizeof(struct AdvancedfxIReference)), pRef->RefCountValid = (0x2 | 0x1), pRef) 
 
 struct AdvancedfxCore
 {
 	void* (*MemAlloc)(size_t bytes);
-	void (*Free)(struct AdvancedfxReference* ref);
+	void (*Free)(struct AdvancedfxIReference* ref);
 };
 
 struct AdvancedfxIString_Vtable
 {
+	//
+	// Implement AdvancedfxIReferenceVtable:
+
 	void (*Delete)(struct AdvancedfxIString* ref);
+
+	//
+	// Own:
 
 	const char * (*Get)(struct AdvancedfxIString* This);
 };
 
 struct AdvancedfxIString
 {
+	//
+	// Implement AdvancedfxIReference:
+
 	size_t RefCountValid;
 	struct AdvancedfxIString_Vtable* Vtable;
+
+	//
+	// Own:
 };
 
 struct AdvancedfxISetString_Vtable
 {
+	//
+	// Implement AdvancedfxIReferenceVtable:
+
 	void (*Delete)(struct AdvancedfxISetString* ref);
+
+	//
+	// Own:
 
 	void (*Set)(struct AdvancedfxISetString* This, const char* value);
 };
 
 struct AdvancedfxISetString
 {
+	//
+	// Implement AdvancedfxIReference:
+
 	size_t RefCountValid;
 	struct AdvancedfxISetString_Vtable* Vtable;
+
+	//
+	// Own:
 };
 
 
@@ -196,16 +249,16 @@ struct prefix ##Notify
 	AdvancedfxBool (*prefix ##Next)(struct this_type_name* This); \
 	AdvancedfxBool (*prefix ##Previous)(struct this_type_name* This); \
 	void (*prefix ##Insert)(struct this_type_name* This, item_type value); \
-	void (*prefix ##NotifyAfterInsertBegin)(struct this_type_name* This, struct notify_type_name* notify); \
-	void (*prefix ##NotifyAfterInsertEnd)(struct this_type_name* This, struct notify_type_name* notify); \
+	void (*prefix ##BeginNotifyAfterInsert)(struct this_type_name* This, struct notify_type_name* notify); \
+	void (*prefix ##EndNotifyAfterInsert)(struct this_type_name* This, struct notify_type_name* notify); \
 	void (*prefix ##Delete)(struct this_type_name* This); \
-	void (*prefix ##NotifyBeforeDeleteBegin)(struct this_type_name* This, struct notify_type_name* notify); \
-	void (*prefix ##NotifyBeforeDeleteEnd)(struct this_type_name* This, struct notify_type_name* notify); \
+	void (*prefix ##BeginNotifyBeforeDelete)(struct this_type_name* This, struct notify_type_name* notify); \
+	void (*prefix ##EndNotifyBeforeDelete)(struct this_type_name* This, struct notify_type_name* notify); \
 	item_type (*prefix ##Get)(struct this_type_name* This); \
 	void (*prefix ##Set)(struct this_type_name* This, item_type value); \
-	void (*prefix ##NotifyBeforeSetBegin)(struct this_type_name* This, struct notify_type_name* notify); \
-	void (*prefix ##NotifyBeforeSetEnd)(struct this_type_name* This, struct notify_type_name* notify); \
-	void (*prefix ##NotifyAfterSetBegin)(struct this_type_name* This, struct notify_type_name* notify); \
-	void (*prefix ##NotifyAfterSetEnd)(struct this_type_name* This, struct notify_type_name* notify);
+	void (*prefix ##BeginNotifyBeforeSet)(struct this_type_name* This, struct notify_type_name* notify); \
+	void (*prefix ##EndNotifyBeforeSet)(struct this_type_name* This, struct notify_type_name* notify); \
+	void (*prefix ##BeginNotifyAfterSet)(struct this_type_name* This, struct notify_type_name* notify); \
+	void (*prefix ##EndNotifyAfterSet)(struct this_type_name* This, struct notify_type_name* notify);
 
 #endif

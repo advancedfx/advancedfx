@@ -23,35 +23,43 @@
 #endif
 #endif
 
-ADVANCEDFX_INOTIFY_DECL(AdvancedfxIFactoryNotify, struct AdvancedfxIFactory*)
+//
+// Interface
 
-struct AdvancedfxIFactoryVtable {
-	void(*Delete)(struct AdvancedfxIFactory* This);
-
-	void(*NotifyBeforeDeleteBegin)(struct AdvancedfxIFactory* This, struct AdvancedfxIFactoryNotify* notify);
-
-	void (*NotifyBeforeDeleteEnd)(struct AdvancedfxIFactory* This, struct AdvancedfxIFactoryNotify* notify);
-
-	struct AdvancedfxUuid(*GetUuid)(struct AdvancedfxIFactory* This);
-
-	void* (*Factory)(struct AdvancedfxIFactory* This, void* arg);
-};
-
-struct AdvancedfxIFactory
+struct AdvancedfxInterfaceVtable
 {
-	size_t RefCountValid;
-	struct AdvancedfxIFactoryVtable* Vtable;
+	//
+	// Implement AdvancedfxIReferenceVtable:
+
+	void(*Delete)(struct AdvancedfxIInterface* This);
+
+	//
+	// Own:
+
+	struct AdvancedfxUuid(*GetUuid)(struct AdvancedfxIInterface* This);
 };
 
-// AdvancedfxFactoryFn: ADVANCEDFX_IFACTORY_LIST_UUID, AdvancedfxCore -> AdvancedfxIFactoryLists
-#define ADVANCEDFX_IFACTORY_ILIST_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x0FE7472B,0xF4EC,0x4642,0x827D,0xB8,0xDD,0x8E,0xDD,0xCF,0x28)
+struct AdvancedfxIInterface
+{
+	//
+	// Implement AdvancedfxIReference:
+
+	size_t RefCountValid;
+	struct AdvancedfxIInterfaceVtable* Vtable;
+
+	//
+	// Own:
+};
+
+//
+// Factory
 
 ADVANCEDFX_INOTIFY_DECL(AdvancedfxIUuidListNotify, struct AdvancedfxIUuidList*)
 
 struct AdvancedfxIUuidListVtable {
 	void(*Delete)(struct AdvancedfxIFactoryListVtable* This);
 
-	ADVANCEDFX_ILIST_DECL_FNS(Uuids, AdvancedfxIFactoryList, AdvancedfxIAfxHookSourceNotify, struct AdvancedfxUuid)
+	ADVANCEDFX_ILIST_DECL_FNS(Uuids, AdvancedfxIUuidList, AdvancedfxIUuidListNotify, struct AdvancedfxUuid)
 };
 
 struct AdvancedfxIUuidList
@@ -71,5 +79,11 @@ typedef void * AdvancedfxFactoryFn(struct AdvancedfxUuid uuid, void * arg);
 #endif
 
 #define ADVANCEDFX_FACTORY_FN ADVANCEDFX_EXTERNC struct AdvancedfxIObject * ADVANCEDFX_FACTORY_FN_IDENTIFIER (struct AdvancedfxIObject * obj)
+
+//
+// Uuids
+
+// AdvancedfxFactoryFn: ADVANCEDFX_FACTORY_IUUIDLIST_FN, AdvancedfxCore -> AdvancedfxIUuidList
+#define ADVANCEDFX_FACTORY_IUUIDLIST_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x0FE7472B,0xF4EC,0x4642,0x827D,0xB8,0xDD,0x8E,0xDD,0xCF,0x28)
 
 #endif
