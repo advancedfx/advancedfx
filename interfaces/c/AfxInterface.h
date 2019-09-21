@@ -23,62 +23,42 @@
 #endif
 #endif
 
-// AdvancedfxFactoryFn: ADVANCEDFX_IFACTORY_UUID, AdvancedfxIFactory -> AdvancedfxIFactory
-#define ADVANCEDFX_IFACTORY_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x3F3644B5,0xDF45,0x406B,0xB0B4,0x0E,0xFD,0xA7,0xA9,0x42,0xE4)
-
-ADVANCEDFX_IDELETING_DECL(AdvancedfxIFactory, struct AdvancedfxIFactory*)
+ADVANCEDFX_INOTIFY_DECL(AdvancedfxIFactoryNotify, struct AdvancedfxIFactory*)
 
 struct AdvancedfxIFactoryVtable {
-	/**
-	 * See "Remarks about Reference Counting" in AfxTypes.h!
-	 */
-	void (*AddRef)(struct AdvancedfxIFactory* This);
+	void(*Delete)(struct AdvancedfxIFactory* This);
 
-	/**
-	 * See "Remarks about Reference Counting" in AfxTypes.h!
-	 */
-	void (*Release)(struct AdvancedfxIFactory* This);
+	void(*NotifyBeforeDeleteBegin)(struct AdvancedfxIFactory* This, struct AdvancedfxIFactoryNotify* notify);
 
-	void* (*Factory)(struct AdvancedfxIFactory* This, struct AdvancedfxUuid uuid, void* arg);
+	void (*NotifyBeforeDeleteEnd)(struct AdvancedfxIFactory* This, struct AdvancedfxIFactoryNotify* notify);
+
+	struct AdvancedfxUuid(*GetUuid)(struct AdvancedfxIFactory* This);
+
+	void* (*Factory)(struct AdvancedfxIFactory* This, void* arg);
 };
 
 struct AdvancedfxIFactory
 {
-	AdvancedfxIFactoryVtable* Vtable;
-	
-	ADVANCEDFX_IDELETING(AdvancedfxIFactory)* Deleting;
+	size_t RefCountValid;
+	struct AdvancedfxIFactoryVtable* Vtable;
 };
 
+// AdvancedfxFactoryFn: ADVANCEDFX_IFACTORY_LIST_UUID, AdvancedfxCore -> AdvancedfxIFactoryLists
+#define ADVANCEDFX_IFACTORY_ILIST_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x0FE7472B,0xF4EC,0x4642,0x827D,0xB8,0xDD,0x8E,0xDD,0xCF,0x28)
 
-// AdvancedfxFactoryFn: ADVANCEDFX_IFACTORY_LIST_UUID, AdvancedfxIFactory -> AdvancedfxIFactoryLists
-#define ADVANCEDFX_IFACTORY_ILIST_UUID ADVANCEDFX_UUID(0x0FE7472B,0xF4EC,0x4642,0x827D,0xB8DD8EDDCF28)
+ADVANCEDFX_INOTIFY_DECL(AdvancedfxIUuidListNotify, struct AdvancedfxIUuidList*)
 
-ADVANCEDFX_ILIST_DECL(AdvancedfxIFactory, AdvancedfxIFactory*)
+struct AdvancedfxIUuidListVtable {
+	void(*Delete)(struct AdvancedfxIFactoryListVtable* This);
 
-struct AdvancedfxIFactoryListVtable {
-	/**
-	 * See "Remarks about Reference Counting" in AfxTypes.h!
-	 */
-	void (*AddRef)(struct AdvancedfxIFactory* This);
-
-	/**
-	 * See "Remarks about Reference Counting" in AfxTypes.h!
-	 */
-	void (*Release)(struct AdvancedfxIFactory* This);
-
-	struct AdvancedfxUuid (*GetUuid)(struct AdvancedfxIFactory* This);
-
-	void (*Factory)(struct AdvancedfxIFactory* This, struct AdvancedfxUuid uuid, void* arg);
+	ADVANCEDFX_ILIST_DECL_FNS(Uuids, AdvancedfxIFactoryList, AdvancedfxIAfxHookSourceNotify, struct AdvancedfxUuid)
 };
 
-struct AdvancedfxIFactoryList
+struct AdvancedfxIUuidList
 {
-	AdvancedfxIFactoryListVtable* Vtable;
-
-	ADVANCEDFX_ILIST(AdvancedfxIFactory)* Factories;
+	size_t RefCountValid;
+	struct AdvancedfxIUuidListVtable* Vtable;
 };
-
-
 
 typedef void * AdvancedfxFactoryFn(struct AdvancedfxUuid uuid, void * arg);
 

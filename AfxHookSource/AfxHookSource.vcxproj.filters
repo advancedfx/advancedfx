@@ -175,7 +175,7 @@
     <Filter Include="prop\AfxHookSource\insurgency2\public">
       <UniqueIdentifier>{9f8a63b3-6460-48bd-a750-91b2e9c2c410}</UniqueIdentifier>
     </Filter>
-    <Filter Include="interfaces\cpp">
+    <Filter Include="interfaces\c">
       <UniqueIdentifier>{c4b62cbe-42a8-4391-841a-7d6faf3cba23}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -442,7 +442,7 @@
       <Filter>AfxHookSource</Filter>
     </ClCompile>
     <ClCompile Include="..\interfaces\c\test.c">
-      <Filter>interfaces\cpp</Filter>
+      <Filter>interfaces\c</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -771,7 +771,7 @@
       <Filter>prop\AfxHookSource\l4d2\sdk_src\public</Filter>
     </ClInclude>
     <ClInclude Include="..\interfaces\c\AfxHookSource.h">
-      <Filter>interfaces\cpp</Filter>
+      <Filter>interfaces\c</Filter>
     </ClInclude>
     <ClInclude Include="AfxInterop.h">
       <Filter>AfxHookSource</Filter>
@@ -822,16 +822,16 @@
       <Filter>AfxHookSource</Filter>
     </ClInclude>
     <ClInclude Include="..\interfaces\c\AfxInterface.h">
-      <Filter>interfaces\cpp</Filter>
+      <Filter>interfaces\c</Filter>
     </ClInclude>
     <ClInclude Include="..\interfaces\c\AfxTypes.h">
-      <Filter>interfaces\cpp</Filter>
+      <Filter>interfaces\c</Filter>
     </ClInclude>
     <ClInclude Include="..\interfaces\c\AfxLocale.h">
-      <Filter>interfaces\cpp</Filter>
+      <Filter>interfaces\c</Filter>
     </ClInclude>
     <ClInclude Include="..\interfaces\c\AfxJit.h">
-      <Filter>interfaces\cpp</Filter>
+      <Filter>interfaces\c</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

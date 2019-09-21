@@ -21,8 +21,10 @@ typedef struct AdvancedfxQAngles {
 	float z;
 };
 
-struct AdvancedfxIEntity
+struct AdvancedfxIEntityVtable
 {
+	void(*Delete)(struct AdvancedfxIEntity* This);
+
 	AdvancedfxEntityHandle(*GetHandle)(struct AdvancedfxIEntity* This);
 
 	int(*GetEntIndex)(struct AdvancedfxIEntity* This);
@@ -39,9 +41,14 @@ struct AdvancedfxIEntity
 
 	int(*LookUpAttachment)(struct AdvancedfxIEntity* This, const char * attachmentName);
 
-	bool(*GetAttachment)(struct AdvancedfxIEntity* This, int number, struct advancedfx_QVector * outOrigin, struct advancedfx_QAngles * outAngles);
+	AdvancedfxBool(*GetAttachment)(struct AdvancedfxIEntity* This, int number, struct advancedfx_QVector * outOrigin, struct advancedfx_QAngles * outAngles);
 
 	void* (*GetRawIClientEntity)(struct AdvancedfxIEntity* This);
+};
+
+struct AdvancedfxIEntity {
+	size_t RefCountValid;
+	struct AdvancedfxIEntityVtable* Vtable;
 };
 
 struct AdvancedfxIAfxHookSourceFactoryConnected
@@ -49,46 +56,50 @@ struct AdvancedfxIAfxHookSourceFactoryConnected
 	void (*Connected)(struct AdvancedfxIAfxHookSourceFactoryConnected* This, struct AdvancedfxUuid uuid, struct AdvancedfxIFactory* factory);
 };
 
-ADVANCEDFX_IDELETING_DECL(AdvancedfxIAfxHookSource, struct AdvancedfxIAfxHookSource*)
-ADVANCEDFX_ILIST_DECL(AdvancedfxIFactory, struct AdvancedfxIFactory*)
-ADVANCEDFX_ILIST_DECL(AdvancedfxISetupEngineViewOverride, struct AdvancedfxISetupEngineViewOverride*)
-ADVANCEDFX_ILIST_DECL(AdvancedfxIEntity, struct AdvancedfxIEntity*)
+ADVANCEDFX_INOTIFY_DECL(AdvancedfxIAfxHookSourceNotify, struct AdvancedfxIAfxHookSource*)
 
 struct AdvancedfxIAfxHookSourceVtable
 {
-	/**
-	 * Dll is loaded and queried for ADVANCEDFX_IAFXHOOKSOURCEDLL_UUID_FN.
-	 */
-	AdvancedfxIAfxHookSourceDll* (*LoadDll)(struct AdvancedfxIAfxHookSource* This, const char* filePath);
+	void(*Delete)(struct AdvancedfxIAfxHookSource* This);
+
+	void (*NotifyBeforeDeleteBegin)(struct AdvancedfxIAfxHookSource* This, struct AdvancedfxIAfxHookSourceNotify* notify);
+
+	void (*NotifyBeforeDeleteEnd)(struct AdvancedfxIAfxHookSource* This, struct AdvancedfxIAfxHookSourceNotify* notify);
 
 	struct AdvancedfxILocale* (*GetLocale)(struct AdvancedfxIAfxHookSource* This);
 
-	AdvancedfxIEntity* (*EntityFromHandle)(struct AdvancedfxIAfxHookSource** This, AdvancedfxEntityHandle handle);
 
-	AdvancedfxIEntity* (*EntityFromIndex)(struct AdvancedfxIAfxHookSource** This, int index);
+	/**
+	 * Dll is loaded and queried for ADVANCEDFX_IAFXHOOKSOURCEDLL_UUID_FN.
+	 */
+	struct AdvancedfxIAfxHookSourceDll* (*LoadDll)(struct AdvancedfxIAfxHookSource* This, const char* filePath);
 
-	AdvancedfxIEntity* (*EntityFromSpecKey)(struct AdvancedfxIAfxHookSource** This, int keyNumber);
+	void (*AddFactory)(struct AdvancedfxIAfxHookSource* This, struct AdvancedfxIFactory* factory);
+
+	ADVANCEDFX_ILIST_DECL_FNS(FactoryUuids, AdvancedfxIAfxHookSource, AdvancedfxIAfxHookSourceNotify, struct AdvancedfxUuid)
+
+	struct AdvancedfxIFactory* (*GetFactory)(struct AdvancedfxIAfxHookSource* This, struct AdvancedfxUuid uuid);
+
+	struct AdvancedfxIEntity* (*EntityFromHandle)(struct AdvancedfxIAfxHookSource** This, AdvancedfxEntityHandle handle);
+
+	struct AdvancedfxIEntity* (*EntityFromIndex)(struct AdvancedfxIAfxHookSource** This, int index);
+
+	struct AdvancedfxIEntity* (*EntityFromSpecKey)(struct AdvancedfxIAfxHookSource** This, int keyNumber);
+
+	ADVANCEDFX_ILIST_DECL_FNS(SetupEngineViewHandlers, AdvancedfxIAfxHookSource, AdvancedfxIAfxHookSourceNotify, struct AdvancedfxISetupEngineViewOverride*)
+
+	ADVANCEDFX_ILIST_DECL_FNS(Entities, AdvancedfxIAfxHookSource, AdvancedfxIAfxHookSourceNotify, struct AdvancedfxIEntity*)
+
+	ADVANCEDFX_ILIST_DECL_FNS(Jits, AdvancedfxIAfxHookSource, AdvancedfxIAfxHookSourceNotify, struct AdvancedfxIJit*)
 };
 
 struct AdvancedfxIAfxHookSource
 {
-	AdvancedfxIAfxHookSourceVtable* Vtable;
-
-	ADVANCEDFX_IDELETING(AdvancedfxIAfxHookSource)* Deleting;
-
-	ADVANCEDFX_ILIST(AdvancedfxIFactory)* Factories;
-
-	ADVANCEDFX_ILIST(AdvancedfxISetupEngineViewOverride)* SetupEngineViewHandlers;
-
-	ADVANCEDFX_ILIST(AdvancedfxIEntity)* Entities;
-
-	//
-	// Jits
-
-	ADVANCEDFX_ILIST(AdvancedxIJit)* Jits;
+	size_t RefCountValid;
+	struct AdvancedfxIAfxHookSourceVtable* Vtable;
 };
 
-// AdvancedfxFactoryFn: ADVANCEDFX_IAFXHOOKSOURCEDLL_UUID_FN, AdvancedfxIFactory -> AdvancedfxIFactory
+// AdvancedfxFactoryFn: ADVANCEDFX_IAFXHOOKSOURCEDLL_UUID_FN, AdvancedfxIAfxHookSource -> AdvancedfxIFactory
 #define ADVANCEDFX_IAFXHOOKSOURCEDLL_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x3F3644B5,0xDF45,0x406B,0xB0B4,0x0E,0xFD,0xA7,0xA9,0x42,0xE4)
 
 #endif
