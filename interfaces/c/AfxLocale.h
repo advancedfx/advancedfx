@@ -7,15 +7,13 @@ typedef unsigned long AdvancedfxLocaleId;
 
 struct AdvancedfxILocaleVtable
 {
-	/**
-	 * See "Remarks about Reference Counting" in AfxTypes.h!
-	 */
-	void (*AddRef)(struct AdvancedfxILibrary* This);
+	//
+	// Implement AdvancedfxIReferenceVtable:
 
-	/**
-	 * See "Remarks about Reference Counting" in AfxTypes.h!
-	 */
-	void (*Release)(struct AdvancedfxILibrary* This);
+	void(*Delete)(struct AdvancedfxILocale* This);
+
+	//
+	// Own:
 
 	const char* (*GetLanguage)(struct AdvancedfxILocale* This);
 
@@ -24,7 +22,14 @@ struct AdvancedfxILocaleVtable
 
 struct AdvancedfxILocale
 {
-	AdvancedfxILocaleVtable* Vtable;
+	//
+	// Implement AdvancedfxIReference:
+
+	size_t RefCountValid;
+	struct AdvancedfxILocaleVtable* Vtable;
+
+	//
+	// Own:
 };
 
 #endif
