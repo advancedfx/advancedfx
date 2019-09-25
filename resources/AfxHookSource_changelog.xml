@@ -4,6 +4,19 @@
 <changelog>
 
 
+
+<release>
+<name>AfxHookSource</name>
+<version>1.70.2</version>
+<time>2019-09-24T18:53Z</time>
+<changes>
+<change type="fixed">
+Fixed bug that would prevent -game tf, -game cstrike or (new) -game garrysmod from being detected properly, thanks to https://www.youtube.com/channel/UC9EXt3oP5Zt0UJjId7L050g
+</change>
+</changes>
+</release>
+
+
 <release>
 <name>AfxHookSource</name>
 <version>1.70.1</version>

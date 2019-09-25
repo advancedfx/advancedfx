@@ -462,6 +462,25 @@ int __stdcall new_CVClient_Init_Swarm(DWORD *this_ptr, SOURCESDK::CreateInterfac
 	return old_CVClient_Init_Swarm(this_ptr, AppSystemFactory_ForClient, pGlobals);
 }
 
+
+typedef int(__stdcall* CVClient_Init_Garrysmod_t)(DWORD* this_ptr, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CreateInterfaceFn physicsFactory, SOURCESDK::CGlobalVarsBase* pGlobals, void * unknown3);
+
+CVClient_Init_Garrysmod_t old_CVClient_Init_Garrysmod;
+
+int __stdcall new_CVClient_Init_Garrysmod(DWORD* this_ptr, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CreateInterfaceFn physicsFactory, SOURCESDK::CGlobalVarsBase* pGlobals, void* unknown3)
+{
+	static bool bFirstCall = true;
+
+	if (bFirstCall) {
+		bFirstCall = false;
+
+		MySetup(appSystemFactory, new WrpGlobalsOther(pGlobals));
+	}
+
+	return old_CVClient_Init_Garrysmod(this_ptr, AppSystemFactory_ForClient, physicsFactory, pGlobals, unknown3);
+}
+
+
 void Shared_BeforeFrameRenderStart(void)
 {
 	g_MirvTime.OnFrameRenderStart();
@@ -1371,6 +1390,12 @@ void HookClientDllInterface_Insurgency2_Init(void * iface)
 	DetourIfacePtr((DWORD *)&(vtable[2]), new_CVClient_Init_Swarm, (DetourIfacePtr_fn &)old_CVClient_Init_Swarm);
 }
 
+void HookClientDllInterface_Garrysmod_Init(void* iface)
+{
+	int* vtable = *(int**)iface;
+
+	DetourIfacePtr((DWORD*) & (vtable[0]), new_CVClient_Init_Garrysmod, (DetourIfacePtr_fn&)old_CVClient_Init_Garrysmod);
+}
 
 SOURCESDK::IClientEntityList_csgo * SOURCESDK::g_Entitylist_csgo = 0;
 
@@ -1396,8 +1421,16 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 			}
 			else
 			if(iface = old_Client_CreateInterface(CLIENT_DLL_INTERFACE_VERSION_017, NULL)) {
-				g_Info_VClient = CLIENT_DLL_INTERFACE_VERSION_017;
-				HookClientDllInterface_011_Init(iface);
+				if (SourceSdkVer_Garrysmod == g_SourceSdkVer)
+				{
+					g_Info_VClient = CLIENT_DLL_INTERFACE_VERSION_017 " (Garrysmod)";
+					HookClientDllInterface_Garrysmod_Init(iface);
+				}
+				else
+				{
+					g_Info_VClient = CLIENT_DLL_INTERFACE_VERSION_017;
+					HookClientDllInterface_011_Init(iface);
+				}
 			}
 			else if(iface = old_Client_CreateInterface(CLIENT_DLL_INTERFACE_VERSION_016, NULL)) {
 				if (SourceSdkVer_Insurgency2 == g_SourceSdkVer)
@@ -1846,14 +1879,21 @@ void CommonHooks()
 		{
 			g_SourceSdkVer = SourceSdkVer_Insurgency2;
 		}
-		else if (g_CommandLine->FindParam(L"-game tf"))
+		else if (int gameIdx = g_CommandLine->FindParam(L"-game"))
 		{
-			g_SourceSdkVer = SourceSdkVer_TF2;
+			++gameIdx;
+			if (gameIdx < g_CommandLine->GetArgC())
+			{
+				const wchar_t* game = g_CommandLine->GetArgV(gameIdx);
+				if(0 == _wcsicmp(L"tf", game))
+					g_SourceSdkVer = SourceSdkVer_TF2;
+				else if (0 == _wcsicmp(L"cstrike", game))
+					g_SourceSdkVer = SourceSdkVer_CSS;
+				else if (0 == _wcsicmp(L"garrysmod", game))
+					g_SourceSdkVer = SourceSdkVer_Garrysmod;
+			}
 		}
-		else if (g_CommandLine->FindParam(L"-game cstrike"))
-		{
-			g_SourceSdkVer = SourceSdkVer_CSS;
-		}
+
 
 		//ScriptEngine_StartUp();
 	}
