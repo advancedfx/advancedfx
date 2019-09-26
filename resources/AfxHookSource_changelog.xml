@@ -4,6 +4,17 @@
 <changelog>
 
 
+<release>
+<name>AfxHookSource</name>
+<version>1.70.3</version>
+<time>2019-09-26T08:30Z</time>
+<changes>
+<change type="fixed">
+Adjusted to CS:GO 09/25/2019 update.
+</change>
+</changes>
+</release>
+
 
 <release>
 <name>AfxHookSource</name>
