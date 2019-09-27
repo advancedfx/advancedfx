@@ -2,7 +2,7 @@
 
 #include "AfxClasses.h"
 
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 
 #include <string.h>
 

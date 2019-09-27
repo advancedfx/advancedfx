@@ -165,11 +165,11 @@
     <ClCompile Include="..\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\tf2\sdk_src\tier1\KeyValues.cpp" />
     <ClCompile Include="..\prop\shared\AfxMath.cpp" />
+    <ClCompile Include="..\shared\AfxDetours.cpp" />
     <ClCompile Include="..\shared\binutils.cpp" />
     <ClCompile Include="..\shared\bvhexport.cpp" />
     <ClCompile Include="..\shared\bvhimport.cpp" />
     <ClCompile Include="..\shared\CamPath.cpp" />
-    <ClCompile Include="..\prop\shared\detours.cpp" />
     <ClCompile Include="..\shared\Detours\src\detours.cpp" />
     <ClCompile Include="..\shared\Detours\src\disasm.cpp" />
     <ClCompile Include="..\shared\Detours\src\disolarm.cpp" />
@@ -291,11 +291,11 @@
     <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.h" />
     <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\vstdlib\IKeyValuesSystem.h" />
     <ClInclude Include="..\prop\shared\AfxMath.h" />
+    <ClInclude Include="..\shared\AfxDetours.h" />
     <ClInclude Include="..\shared\binutils.h" />
     <ClInclude Include="..\shared\bvhexport.h" />
     <ClInclude Include="..\shared\bvhimport.h" />
     <ClInclude Include="..\shared\CamPath.h" />
-    <ClInclude Include="..\prop\shared\detours.h" />
     <ClInclude Include="..\shared\Detours\src\detours.h" />
     <ClInclude Include="..\shared\Detours\src\detver.h" />
     <ClInclude Include="..\shared\EasySampler.h" />

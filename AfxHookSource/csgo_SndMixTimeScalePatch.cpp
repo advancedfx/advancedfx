@@ -4,7 +4,7 @@
 
 #include "addresses.h"
 
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 
 bool csgo_SndMixTimeScalePatch_enable = false;
 float csgo_SndMixTimeScalePatch_value = 1.0f;

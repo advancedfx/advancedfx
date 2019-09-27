@@ -4,7 +4,7 @@
 
 #include "addresses.h"
 
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 
 bool g_Enable_csgo_CCSGameMovement_DuckFix = false;
 

@@ -21,7 +21,7 @@
 
 #include "SourceInterfaces.h"
 #include "addresses.h"
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 #include "asmClassTools.h"
 #include "AfxStreams.h"
 #include <shared/StringTools.h>

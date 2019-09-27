@@ -264,9 +264,6 @@
     <ClCompile Include="..\shared\binutils.cpp">
       <Filter>shared</Filter>
     </ClCompile>
-    <ClCompile Include="..\prop\shared\detours.cpp">
-      <Filter>prop\shared</Filter>
-    </ClCompile>
     <ClCompile Include="..\prop\shared\AfxMath.cpp">
       <Filter>prop\shared</Filter>
     </ClCompile>
@@ -298,6 +295,9 @@
       <Filter>shared\Detours\src</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\EasySampler.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\AfxDetours.cpp">
       <Filter>shared</Filter>
     </ClCompile>
   </ItemGroup>
@@ -476,9 +476,6 @@
     <ClInclude Include="..\shared\binutils.h">
       <Filter>shared</Filter>
     </ClInclude>
-    <ClInclude Include="..\prop\shared\detours.h">
-      <Filter>prop\shared</Filter>
-    </ClInclude>
     <ClInclude Include="..\prop\shared\AfxMath.h">
       <Filter>prop\shared</Filter>
     </ClInclude>
@@ -501,6 +498,9 @@
       <Filter>shared\Detours\src</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\EasySampler.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\AfxDetours.h">
       <Filter>shared</Filter>
     </ClInclude>
   </ItemGroup>

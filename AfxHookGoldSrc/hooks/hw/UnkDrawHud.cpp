@@ -2,7 +2,7 @@
 
 #include "UnkDrawHud.h"
 
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 #include <hl_addresses.h>
 
 #include "../../filming.h"

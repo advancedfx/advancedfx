@@ -3,7 +3,7 @@
 #include "ClientFunctions.h"
 
 #include "../../hl_addresses.h"
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 
 void * * g_ClientFunctionTable = 0;
 

@@ -5,7 +5,7 @@
 #include "addresses.h"
 #include "AfxStreams.h"
 
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 
 
 SOURCESDK::IViewRender_csgo * GetView_csgo(void)

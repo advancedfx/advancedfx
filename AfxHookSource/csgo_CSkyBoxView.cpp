@@ -5,7 +5,7 @@
 #include "addresses.h"
 #include "AfxStreams.h"
 
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 
 typedef void (__stdcall *csgo_CSkyBoxView_Draw_t)(DWORD *this_ptr);
 

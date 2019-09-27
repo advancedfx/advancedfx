@@ -196,7 +196,7 @@ bool StringIEndsWithW(wchar_t const * target, wchar_t const * ending)
 
 	if (lenTarget < lenEnding) return false;
 
-	return !wcsicmp(target + (lenTarget - lenEnding), ending);
+	return !_wcsicmp(target + (lenTarget - lenEnding), ending);
 }
 
 bool StringBeginsWith(char const * target, char const * beginning) {

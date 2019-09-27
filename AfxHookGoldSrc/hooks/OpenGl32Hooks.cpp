@@ -348,9 +348,9 @@ void APIENTRY NewGlBlendFunc (GLenum sfactor, GLenum dfactor)
 	}
 }
 
-
-wglSwapBuffers_t OldWglSwapBuffers;
-
+BOOL APIENTRY NewWglSwapBuffers(HDC hDC);
+CAfxImportFuncHook<BOOL(APIENTRY*)(HDC)> g_Import_GDI32_SwapBuffers("SwapBuffers", NewWglSwapBuffers);
+CAfxImportFuncHookBase* g_pImport_GDI32_SwapBuffers = &g_Import_GDI32_SwapBuffers;
 BOOL APIENTRY NewWglSwapBuffers(HDC hDC)
 {
 	BOOL bResWglSwapBuffers;
@@ -391,7 +391,7 @@ BOOL APIENTRY NewWglSwapBuffers(HDC hDC)
 		if (g_pSupportRender)
 			bResWglSwapBuffers = g_pSupportRender->hlaeSwapBuffers(hDC);
 		else
-			bResWglSwapBuffers = OldWglSwapBuffers(hDC);
+			bResWglSwapBuffers = g_Import_GDI32_SwapBuffers.TrueFunc(hDC);
 	}
 
 	// no we have captured the image (by default from backbuffer) and display it on the front, now we can prepare the new backbuffer image if required.

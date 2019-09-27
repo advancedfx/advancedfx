@@ -1,5 +1,6 @@
 #pragma once
 
 #include <windows.h>
+#include <shared/AfxDetours.h>
 
-BOOL  WINAPI NewSetPixelFormat(__in HDC hdc, __in int format, __in CONST PIXELFORMATDESCRIPTOR * ppfd);
+extern CAfxImportFuncHookBase* g_pImport_GDI32_SetPixelFormat;

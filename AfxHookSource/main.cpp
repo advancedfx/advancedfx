@@ -7,7 +7,7 @@
 
 #include <shared/StringTools.h>
 
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 
 #include "AfxCommandLine.h"
 #include "addresses.h"
@@ -1652,7 +1652,6 @@ LRESULT CALLBACK new_Afx_WindowProc(
 	return CallWindowProcW(g_NextWindProc, hwnd, uMsg, wParam, lParam);
 }
 
-
 // TODO: this is risky, actually we should track the hWnd maybe.
 LONG WINAPI new_GetWindowLongW(
 	__in HWND hWnd,
@@ -1842,6 +1841,14 @@ typedef void csgo_ICommandLine_t;
 
 typedef csgo_ICommandLine_t * (*csgo_CommandLine_t)();
 
+CAfxImportFuncHook<BOOL (WINAPI *)(LPPOINT)> g_Import_Tier0_USER32_GetCursorPos("GetCursorPos", new_GetCursorPos);
+CAfxImportFuncHook<BOOL (WINAPI *)(int, int)> g_Import_Tier0_USER32_SetCursorPos("SetCursorPos", new_SetCursorPos);
+CAfxImportDllHook g_Import_Tier0_USER32("USER32.dll", CAfxImportDllHooks({
+	&g_Import_Tier0_USER32_GetCursorPos
+	, & g_Import_Tier0_USER32_SetCursorPos}));
+CAfxImportsHook g_Import_Tier0(CAfxImportsHooks({
+	&g_Import_Tier0_USER32}));
+
 void CommonHooks()
 {
 	static bool bFirstRun = true;
@@ -1918,8 +1925,7 @@ void CommonHooks()
 
 			if (SourceSdkVer_CSSV34 == g_SourceSdkVer)
 			{
-				InterceptDllCall(hTier0, "USER32.dll", "GetCursorPos", (DWORD)&new_GetCursorPos);
-				InterceptDllCall(hTier0, "USER32.dll", "SetCursorPos", (DWORD)&new_SetCursorPos); // not there, but heh.
+				g_Import_Tier0.Apply(hTier0);
 			}
 
 			if (SourceSdkVer_CSGO == g_SourceSdkVer)
@@ -1963,6 +1969,138 @@ void CommonHooks()
 	}
 }
 
+CAfxImportFuncHook<HMODULE (WINAPI *)(LPCSTR)> g_Import_launcher_KERNEL32_LoadLibraryA("LoadLibraryA", &new_LoadLibraryA);
+CAfxImportFuncHook<HMODULE (WINAPI *)(LPCSTR, HANDLE, DWORD)> g_Import_launcher_KERNEL32_LoadLibraryExA("LoadLibraryExA", &new_LoadLibraryExA);
+
+CAfxImportDllHook g_Import_launcher_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
+	&g_Import_launcher_KERNEL32_LoadLibraryA
+	, &g_Import_launcher_KERNEL32_LoadLibraryExA }));
+
+CAfxImportsHook g_Import_launcher(CAfxImportsHooks({
+	&g_Import_launcher_KERNEL32 }));
+
+CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR)> g_Import_filesystem_steam_KERNEL32_LoadLibraryA("LoadLibraryA", &new_LoadLibraryA);
+CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR, HANDLE, DWORD)> g_Import_filesystem_steam_KERNEL32_LoadLibraryExA("LoadLibraryExA", &new_LoadLibraryExA);
+
+CAfxImportDllHook g_Import_filesystem_steam_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
+	&g_Import_filesystem_steam_KERNEL32_LoadLibraryA
+	, &g_Import_filesystem_steam_KERNEL32_LoadLibraryExA }));
+
+CAfxImportsHook g_Import_filesystem_steam(CAfxImportsHooks({
+	&g_Import_filesystem_steam_KERNEL32 }));
+
+CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR)> g_Import_filesystem_stdio_KERNEL32_LoadLibraryA("LoadLibraryA", &new_LoadLibraryA);
+CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR, HANDLE, DWORD)> g_Import_filesystem_stdio_KERNEL32_LoadLibraryExA("LoadLibraryExA", &new_LoadLibraryExA);
+
+CAfxImportDllHook g_Import_filesystem_stdio_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
+	&g_Import_filesystem_stdio_KERNEL32_LoadLibraryA
+	, &g_Import_filesystem_stdio_KERNEL32_LoadLibraryExA }));
+
+CAfxImportsHook g_Import_filesystem_stdio(CAfxImportsHooks({
+	&g_Import_filesystem_stdio_KERNEL32 }));
+
+CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR)> g_Import_engine_KERNEL32_LoadLibraryA("LoadLibraryA", &new_LoadLibraryA);
+CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR, HANDLE, DWORD)> g_Import_engine_KERNEL32_LoadLibraryExA("LoadLibraryExA", &new_LoadLibraryExA);
+CAfxImportFuncHook<FARPROC(WINAPI*)(HMODULE, LPCSTR)> g_Import_engine_KERNEL32_GetProcAddress("GetProcAddress", &new_Engine_GetProcAddress);
+
+CAfxImportDllHook g_Import_engine_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
+	&g_Import_engine_KERNEL32_LoadLibraryA
+	, &g_Import_engine_KERNEL32_LoadLibraryExA
+	, &g_Import_engine_KERNEL32_GetProcAddress }));
+
+// actually this is not required, since engine.dll calls first and thus is lower in the chain:
+CAfxImportFuncHook<LONG(WINAPI*)(HWND, int)> g_Import_engine_USER32_GetWindowLongW("GetWindowLongW", &new_GetWindowLongW);
+CAfxImportFuncHook<LONG(WINAPI*)(HWND, int, LONG)> g_Import_engine_USER32_SetWindowLongW("SetWindowLongW", &new_SetWindowLongW);
+
+CAfxImportFuncHook<HCURSOR(WINAPI*)(HCURSOR)> g_Import_engine_USER32_SetCursor("SetCursor", &new_SetCursor);
+CAfxImportFuncHook<HWND(WINAPI*)(HWND)> g_Import_engine_USER32_SetCapture("SetCapture", &new_SetCapture);
+CAfxImportFuncHook<BOOL(WINAPI*)()> g_Import_engine_USER32_ReleaseCapture("ReleaseCapture", &new_ReleaseCapture);
+
+// CSSV34 only:
+CAfxImportFuncHook<BOOL(WINAPI*)(LPPOINT)> g_Import_engine_USER32_GetCursorPos("GetCursorPos", &new_GetCursorPos); // not there, but heh.
+CAfxImportFuncHook<BOOL(WINAPI*)(int, int)> g_Import_engine_USER32_SetCursorPos("SetCursorPos", &new_SetCursorPos);
+
+CAfxImportDllHook g_Import_engine_USER32("USER32.dll", CAfxImportDllHooks({
+	&g_Import_engine_USER32_GetWindowLongW,
+	&g_Import_engine_USER32_SetWindowLongW,
+	&g_Import_engine_USER32_SetCursor,
+	&g_Import_engine_USER32_SetCapture,
+	&g_Import_engine_USER32_ReleaseCapture }));
+
+
+CAfxImportsHook g_Import_engine(CAfxImportsHooks({
+	&g_Import_engine_KERNEL32,
+	&g_Import_engine_USER32 }));
+
+
+CAfxImportFuncHook<LONG(WINAPI*)(HWND, int)> g_Import_inputsystem_USER32_GetWindowLongW("GetWindowLongW", &new_GetWindowLongW);
+CAfxImportFuncHook<LONG(WINAPI*)(HWND, int, LONG)> g_Import_inputsystem_USER32_SetWindowLongW("SetWindowLongW", &new_SetWindowLongW);
+
+// CSSV34 only:
+CAfxImportFuncHook<LONG(WINAPI*)(HWND, int)> g_Import_inputsystem_USER32_GetWindowLongA("GetWindowLongA", &new_GetWindowLongA);
+CAfxImportFuncHook<LONG(WINAPI*)(HWND, int, LONG)> g_Import_inputsystem_USER32_SetWindowLongA("SetWindowLongA", &new_SetWindowLongA);
+
+CAfxImportFuncHook<HCURSOR(WINAPI*)(HCURSOR)> g_Import_inputsystem_USER32_SetCursor("SetCursor", &new_SetCursor);
+CAfxImportFuncHook<HWND(WINAPI*)(HWND)> g_Import_inputsystem_USER32_SetCapture("SetCapture", &new_SetCapture);
+CAfxImportFuncHook<BOOL(WINAPI*)()> g_Import_inputsystem_USER32_ReleaseCapture("ReleaseCapture", &new_ReleaseCapture);
+CAfxImportFuncHook<BOOL(WINAPI*)(LPPOINT)> g_Import_inputsystem_USER32_GetCursorPos("GetCursorPos", &new_GetCursorPos); // not there, but heh.
+CAfxImportFuncHook<BOOL(WINAPI*)(int, int)> g_Import_inputsystem_USER32_SetCursorPos("SetCursorPos", &new_SetCursorPos);
+
+CAfxImportDllHook g_Import_inputsystem_USER32("USER32.dll", CAfxImportDllHooks({
+	&g_Import_inputsystem_USER32_GetWindowLongW,
+	&g_Import_inputsystem_USER32_SetWindowLongW,
+	&g_Import_inputsystem_USER32_SetCursor,
+	&g_Import_inputsystem_USER32_SetCapture,
+	&g_Import_inputsystem_USER32_ReleaseCapture,
+	&g_Import_inputsystem_USER32_GetCursorPos,
+	&g_Import_inputsystem_USER32_SetCursorPos }));
+
+CAfxImportsHook g_Import_inputsystem(CAfxImportsHooks({
+	& g_Import_inputsystem_USER32 }));
+
+
+CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR)> g_Import_materialsystem_KERNEL32_LoadLibraryA("LoadLibraryA", &new_LoadLibraryA);
+CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR, HANDLE, DWORD)> g_Import_materialsystem_KERNEL32_LoadLibraryExA("LoadLibraryExA", &new_LoadLibraryExA);
+
+CAfxImportDllHook g_Import_materialsystem_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
+	&g_Import_materialsystem_KERNEL32_LoadLibraryA
+	, &g_Import_materialsystem_KERNEL32_LoadLibraryExA }));
+
+CAfxImportsHook g_Import_materialsystem(CAfxImportsHooks({
+	&g_Import_materialsystem_KERNEL32 }));
+
+
+CAfxImportFuncHook<FARPROC(WINAPI*)(HMODULE, LPCSTR)> g_Import_shaderapidx9_KERNEL32_GetProcAddress("GetProcAddress", &new_shaderapidx9_GetProcAddress);
+
+CAfxImportDllHook g_Import_shaderapidx9_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
+	&g_Import_shaderapidx9_KERNEL32_GetProcAddress }));
+
+CAfxImportFuncHook<IDirect3D9 * (WINAPI*)(UINT)> g_Import_shaderapidx9_d3d9_Direct3DCreate9("Direct3DCreate9", &new_Direct3DCreate9);
+
+CAfxImportDllHook g_Import_shaderapidx9_d3d9("d3d9.dll", CAfxImportDllHooks({
+	&g_Import_shaderapidx9_d3d9_Direct3DCreate9 }));
+
+CAfxImportsHook g_Import_shaderapidx9(CAfxImportsHooks({
+	&g_Import_shaderapidx9_KERNEL32,
+	&g_Import_shaderapidx9_d3d9}));
+
+
+CAfxImportFuncHook<HCURSOR(WINAPI*)(HCURSOR)> g_Import_vgui2_USER32_SetCursor("SetCursor", &new_SetCursor);
+CAfxImportFuncHook<HWND(WINAPI*)(HWND)> g_Import_vgui2_USER32_SetCapture("SetCapture", &new_SetCapture);
+CAfxImportFuncHook<BOOL(WINAPI*)()> g_Import_vgui2_USER32_ReleaseCapture("ReleaseCapture", &new_ReleaseCapture);
+CAfxImportFuncHook<BOOL(WINAPI*)(LPPOINT)> g_Import_vgui2_USER32_GetCursorPos("GetCursorPos", &new_GetCursorPos); // not there, but heh.
+CAfxImportFuncHook<BOOL(WINAPI*)(int, int)> g_Import_vgui2_USER32_SetCursorPos("SetCursorPos", &new_SetCursorPos);
+
+CAfxImportDllHook g_Import_vgui2_USER32("USER32.dll", CAfxImportDllHooks({
+	&g_Import_vgui2_USER32_SetCursor,
+	&g_Import_vgui2_USER32_SetCapture,
+	&g_Import_vgui2_USER32_ReleaseCapture,
+	&g_Import_vgui2_USER32_GetCursorPos,
+	&g_Import_vgui2_USER32_SetCursorPos }));
+
+CAfxImportsHook g_Import_vgui2(CAfxImportsHooks({
+	&g_Import_vgui2_USER32 }));
+
 void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 {
 	static bool bFirstLauncher = true;
@@ -1970,6 +2108,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 	static bool bFirstEngine = true;
 	static bool bFirstInputsystem = true;
 	//static bool bFirstGameOverlayRenderer = true;
+	static bool bFirstFileSystemSteam = true;
 	static bool bFirstfilesystem_stdio = true;
 	static bool bFirstShaderapidx9 = true;
 	static bool bFirstMaterialsystem = true;
@@ -1994,27 +2133,21 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 	{
 		bFirstLauncher = false;
 
-		InterceptDllCall(hModule, "Kernel32.dll", "LoadLibraryExA", (DWORD)&new_LoadLibraryExA);
-		InterceptDllCall(hModule, "Kernel32.dll", "LoadLibraryA", (DWORD)&new_LoadLibraryA);
+		g_Import_launcher.Apply(hModule);
 	}
-	else
-	if(bFirstfilesystem_stdio && StringEndsWith( lpLibFileName, "filesystem_steam.dll")) // v34
+	else if(bFirstFileSystemSteam && StringEndsWith( lpLibFileName, "filesystem_steam.dll")) // v34
+	{
+		bFirstFileSystemSteam = false;
+
+		g_Import_filesystem_steam.Apply(hModule);
+	}
+	else if(bFirstfilesystem_stdio && StringEndsWith( lpLibFileName, "filesystem_stdio.dll"))
 	{
 		bFirstfilesystem_stdio = false;
 		
-		InterceptDllCall(hModule, "Kernel32.dll", "LoadLibraryExA", (DWORD) &new_LoadLibraryExA);
-		InterceptDllCall(hModule, "Kernel32.dll", "LoadLibraryA", (DWORD) &new_LoadLibraryA);
+		g_Import_filesystem_stdio.Apply(hModule);
 	}
-	else
-	if(bFirstfilesystem_stdio && StringEndsWith( lpLibFileName, "filesystem_stdio.dll"))
-	{
-		bFirstfilesystem_stdio = false;
-		
-		InterceptDllCall(hModule, "Kernel32.dll", "LoadLibraryExA", (DWORD) &new_LoadLibraryExA);
-		InterceptDllCall(hModule, "Kernel32.dll", "LoadLibraryA", (DWORD) &new_LoadLibraryA);
-	}
-	else
-	if(bFirstEngine && StringEndsWith( lpLibFileName, "engine.dll"))
+	else if(bFirstEngine && StringEndsWith( lpLibFileName, "engine.dll"))
 	{
 		bFirstEngine = false;
 
@@ -2022,68 +2155,47 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 
 		Addresses_InitEngineDll((AfxAddr)hModule, g_SourceSdkVer);
 
-		InterceptDllCall(hModule, "Kernel32.dll", "GetProcAddress", (DWORD) &new_Engine_GetProcAddress);
-		InterceptDllCall(hModule, "Kernel32.dll", "LoadLibraryExA", (DWORD) &new_LoadLibraryExA);
-		InterceptDllCall(hModule, "Kernel32.dll", "LoadLibraryA", (DWORD) &new_LoadLibraryA);
-
-		// actually this is not required, since engine.dll calls first and thus is lower in the chain:
-		InterceptDllCall(hModule, "USER32.dll", "GetWindowLongW", (DWORD) &new_GetWindowLongW);
-		InterceptDllCall(hModule, "USER32.dll", "SetWindowLongW", (DWORD) &new_SetWindowLongW);
-
 		if (SourceSdkVer_CSSV34 == g_SourceSdkVer)
 		{
-			InterceptDllCall(hModule, "USER32.dll", "GetCursorPos", (DWORD)&new_GetCursorPos); // not there, but heh.
-			InterceptDllCall(hModule, "USER32.dll", "SetCursorPos", (DWORD)&new_SetCursorPos);
+			g_Import_engine_USER32.Add(CAfxImportDllHooks({
+				&g_Import_engine_USER32_GetCursorPos,
+				&g_Import_engine_USER32_SetCursorPos }));
 		}
 
-		InterceptDllCall(hModule, "USER32.dll", "SetCursor", (DWORD)&new_SetCursor);
-		InterceptDllCall(hModule, "USER32.dll", "SetCapture", (DWORD)&new_SetCapture);
-		InterceptDllCall(hModule, "USER32.dll", "ReleaseCapture", (DWORD)&new_ReleaseCapture);
+		g_Import_engine.Apply(hModule);
 
 		// Init the hook early, so we don't run into issues with threading:
 		Hook_csgo_SndMixTimeScalePatch();
 		csgo_Audio_Install();
 	}
-	else
-	if(bFirstInputsystem && StringEndsWith( lpLibFileName, "inputsystem.dll"))
+	else if(bFirstInputsystem && StringEndsWith( lpLibFileName, "inputsystem.dll"))
 	{
 		bFirstInputsystem = false;
 
-		InterceptDllCall(hModule, "USER32.dll", "GetWindowLongW", (DWORD) &new_GetWindowLongW);
-		InterceptDllCall(hModule, "USER32.dll", "SetWindowLongW", (DWORD) &new_SetWindowLongW);
-
 		if (SourceSdkVer_CSSV34 == g_SourceSdkVer)
 		{
-			InterceptDllCall(hModule, "USER32.dll", "GetWindowLongA", (DWORD)&new_GetWindowLongA);
-			InterceptDllCall(hModule, "USER32.dll", "SetWindowLongA", (DWORD)&new_SetWindowLongA);
+			g_Import_inputsystem_USER32.Add(CAfxImportDllHooks({
+				&g_Import_inputsystem_USER32_GetWindowLongA,
+				&g_Import_inputsystem_USER32_SetWindowLongA }));
 		}
 
-		InterceptDllCall(hModule, "USER32.dll", "GetCursorPos", (DWORD) &new_GetCursorPos);
-		InterceptDllCall(hModule, "USER32.dll", "SetCursorPos", (DWORD) &new_SetCursorPos);
-		InterceptDllCall(hModule, "USER32.dll", "SetCursor", (DWORD)&new_SetCursor);
-		InterceptDllCall(hModule, "USER32.dll", "SetCapture", (DWORD)&new_SetCapture);
-		InterceptDllCall(hModule, "USER32.dll", "ReleaseCapture", (DWORD)&new_ReleaseCapture);
-
+		g_Import_inputsystem.Apply(hModule);
 	}
-	else
-	if(bFirstMaterialsystem && StringEndsWith( lpLibFileName, "materialsystem.dll"))
+	else if(bFirstMaterialsystem && StringEndsWith( lpLibFileName, "materialsystem.dll"))
 	{
 		bFirstMaterialsystem = false;
-		
-		InterceptDllCall(hModule, "Kernel32.dll", "LoadLibraryExA", (DWORD) &new_LoadLibraryExA);
-		InterceptDllCall(hModule, "Kernel32.dll", "LoadLibraryA", (DWORD) &new_LoadLibraryA);
+
+		g_Import_materialsystem.Apply(hModule);
 	}
-	else
-	if(bFirstShaderapidx9 && StringEndsWith( lpLibFileName, "shaderapidx9.dll"))
+	else if(bFirstShaderapidx9 && StringEndsWith( lpLibFileName, "shaderapidx9.dll"))
 	{
 		bFirstShaderapidx9 = false;
 
-		InterceptDllCall(hModule, "kernel32.dll", "GetProcAddress", (DWORD) &new_shaderapidx9_GetProcAddress);
+		g_Import_shaderapidx9.Apply(hModule);
 
-		old_Direct3DCreate9 = (Direct3DCreate9_t)InterceptDllCall(hModule, "d3d9.dll", "Direct3DCreate9", (DWORD) &new_Direct3DCreate9);
+		old_Direct3DCreate9 = (Direct3DCreate9_t)g_Import_shaderapidx9_d3d9_Direct3DCreate9.TrueFunc;
 	}
-	else
-	if(bFirstClient && (StringEndsWith( lpLibFileName, "client_panorama.dll") || SourceSdkVer_CSGO != g_SourceSdkVer && StringEndsWith(lpLibFileName, "client.dll")))
+	else if(bFirstClient && (StringEndsWith( lpLibFileName, "client_panorama.dll") || SourceSdkVer_CSGO != g_SourceSdkVer && StringEndsWith(lpLibFileName, "client.dll")))
 	{
 		bFirstClient = false;
 
@@ -2099,8 +2211,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		Hook_csgo_PlayerAnimStateFix();
 		csgo_CRendering3dView_Install();
 	}
-	else
-	if(bFirstPanorama && StringEndsWith( lpLibFileName, "panorama.dll"))
+	else if(bFirstPanorama && StringEndsWith( lpLibFileName, "panorama.dll"))
 	{
 		bFirstPanorama = false;
 
@@ -2111,8 +2222,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 
 		PanoramaHooks_Install();
 	}
-	else
-	if(bFirstStdshader_dx9 && StringEndsWith( lpLibFileName, "stdshader_dx9.dll"))
+	else if(bFirstStdshader_dx9 && StringEndsWith( lpLibFileName, "stdshader_dx9.dll"))
 	{
 		bFirstStdshader_dx9 = false;
 
@@ -2123,16 +2233,11 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 
 		//csgo_Stdshader_dx9_Hooks_Init();
 	}
-	else
-	if(bFirstVgui2 && StringEndsWith( lpLibFileName, "vgui2.dll"))
+	else if(bFirstVgui2 && StringEndsWith( lpLibFileName, "vgui2.dll"))
 	{
 		bFirstVgui2 = false;
 
-		InterceptDllCall(hModule, "USER32.dll", "GetCursorPos", (DWORD) &new_GetCursorPos);
-		InterceptDllCall(hModule, "USER32.dll", "SetCursorPos", (DWORD) &new_SetCursorPos);
-		InterceptDllCall(hModule, "USER32.dll", "SetCursor", (DWORD)&new_SetCursor);
-		InterceptDllCall(hModule, "USER32.dll", "SetCapture", (DWORD)&new_SetCapture);
-		InterceptDllCall(hModule, "USER32.dll", "ReleaseCapture", (DWORD)&new_ReleaseCapture);
+		g_Import_vgui2.Apply(hModule);
 	}
 }
 
@@ -2157,49 +2262,7 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 	{
 		bFirstLauncher = false;
 
-		InterceptDllCall(hModule, "Kernel32.dll", "LoadLibraryExA", (DWORD)&new_LoadLibraryExA);
-		InterceptDllCall(hModule, "Kernel32.dll", "LoadLibraryA", (DWORD)&new_LoadLibraryA);
-
-#if 0
-		if (AfxInterop::Enabled())
-		{
-
-			if (DWORD curDirLen = GetCurrentDirectoryW(0, NULL))
-			{
-				size_t curDirSize = curDirLen * sizeof(WCHAR);
-
-				LPWSTR curDirectory = (LPWSTR)malloc(curDirSize);
-				if (curDirectory)
-				{
-					if (curDirLen == 1 + GetCurrentDirectoryW(curDirLen, curDirectory))
-					{
-						std::wstring strHlaeFolder(GetHlaeFolderW());
-
-						std::wstring strWine32Folder = strHlaeFolder + L"wine32";
-
-						if (FALSE != SetCurrentDirectoryW(strWine32Folder.c_str()))
-						{
-							std::wstring strWineD3d9Dll = strWine32Folder + L"\\d3d9.dll";
-							if (NULL == LoadLibraryExW(strWineD3d9Dll.c_str(), NULL, LOAD_WITH_ALTERED_SEARCH_PATH))
-								ErrorBox("Could not load Wine d3d9.dll");
-
-							std::wstring strWineD3dx9_43Dll = strWine32Folder + L"\\d3dx9_43.dll";
-							if (NULL == LoadLibraryExW(strWineD3dx9_43Dll.c_str(), NULL, LOAD_WITH_ALTERED_SEARCH_PATH))
-								ErrorBox("Could not load Wine d3dx9_43.dll");
-
-							SetCurrentDirectoryW(curDirectory);
-						}
-						else ErrorBox("Could not SetCurrentDirectoryW to HLAE wine32 folder.");
-					}
-					else ErrorBox("Could not GetCurrentDirectoryW data.");
-
-					free(curDirectory);
-				}
-				else ErrorBox("Could not malloc.");
-			}
-			else ErrorBox("Could not GetCurrentDirectoryW length.");
-		}
-#endif
+		g_Import_launcher.Apply(hModule);
 	}
 }
 
@@ -2232,6 +2295,18 @@ HMODULE WINAPI new_LoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwF
 	return hRet;
 }
 
+CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR)> g_Import_PROCESS_KERNEL32_LoadLibraryA("LoadLibraryA", &new_LoadLibraryA);
+CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR, HANDLE, DWORD)> g_Import_PROCESS_KERNEL32_LoadLibraryExA("LoadLibraryExA", &new_LoadLibraryExA);
+CAfxImportFuncHook<HMODULE(WINAPI*)(LPCWSTR, HANDLE, DWORD)> g_Import_PROCESS_KERNEL32_LoadLibraryExW("LoadLibraryExW", &new_LoadLibraryExW);
+
+CAfxImportDllHook g_Import_PROCESS_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
+	&g_Import_PROCESS_KERNEL32_LoadLibraryA
+	, &g_Import_PROCESS_KERNEL32_LoadLibraryExA
+	, &g_Import_PROCESS_KERNEL32_LoadLibraryExW }));
+
+CAfxImportsHook g_Import_PROCESS(CAfxImportsHooks({
+	&g_Import_PROCESS_KERNEL32 }));
+
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 {
 	switch (fdwReason) 
@@ -2255,12 +2330,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 #ifdef _DEBUG
 			MessageBox(0,"DLL_PROCESS_ATTACH","MDT_DEBUG",MB_OK);
 #endif
+			g_Import_PROCESS.Apply(GetModuleHandle(NULL));
 
-			bool bLoadLibraryExA = 0 != InterceptDllCall(GetModuleHandle(NULL), "Kernel32.dll", "LoadLibraryExA", (DWORD)&new_LoadLibraryExA);
-			bool bLoadLibraryA = 0 != InterceptDllCall(GetModuleHandle(NULL), "Kernel32.dll", "LoadLibraryA", (DWORD)&new_LoadLibraryA);
-			bool bLoadLibraryExW = 0 != InterceptDllCall(GetModuleHandle(NULL), "Kernel32.dll", "LoadLibraryExW", (DWORD)&new_LoadLibraryExW);
-
-			if (!(bLoadLibraryExA || bLoadLibraryA || bLoadLibraryExW))
+			if (!(g_Import_PROCESS_KERNEL32_LoadLibraryA.TrueFunc || g_Import_PROCESS_KERNEL32_LoadLibraryExA.TrueFunc || g_Import_PROCESS_KERNEL32_LoadLibraryExW.TrueFunc))
 				ErrorBox();
 
 			//

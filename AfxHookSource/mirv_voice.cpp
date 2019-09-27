@@ -8,7 +8,7 @@
 #include "RenderView.h"
 #include "MirvWav.h"
 
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 #include <shared/StringTools.h>
 
 #include <list>

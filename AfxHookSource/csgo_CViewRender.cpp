@@ -4,7 +4,7 @@
 
 #include "AfxStreams.h"
 #include "addresses.h"
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 
 static bool g_InRenderView_VGui_DrawHud = false;
 

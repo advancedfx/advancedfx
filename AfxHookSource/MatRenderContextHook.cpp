@@ -4,7 +4,7 @@
 
 #include "AfxStreams.h"
 #include "asmClassTools.h"
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 #include "d3d9Hooks.h"
 
 #include <map>

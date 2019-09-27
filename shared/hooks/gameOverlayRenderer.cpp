@@ -3,7 +3,7 @@
 #include "gameOverlayRenderer.h"
 
 #include <Windows.h>
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 
 #include <shared/binutils.h>
 

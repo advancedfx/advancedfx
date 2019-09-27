@@ -8,7 +8,7 @@
 #include "csgo_MemAlloc.h"
 #include "WrpConsole.h"
 
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 
 #include <map>
 

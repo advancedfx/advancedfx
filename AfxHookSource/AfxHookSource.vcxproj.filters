@@ -315,9 +315,6 @@
     <ClCompile Include="MirvCalcs.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
-    <ClCompile Include="..\prop\shared\detours.cpp">
-      <Filter>prop\shared</Filter>
-    </ClCompile>
     <ClCompile Include="..\prop\shared\AfxMath.cpp">
       <Filter>prop\shared</Filter>
     </ClCompile>
@@ -443,6 +440,9 @@
     </ClCompile>
     <ClCompile Include="..\interfaces\c\test.c">
       <Filter>interfaces\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\AfxDetours.cpp">
+      <Filter>shared</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -577,9 +577,6 @@
     </ClInclude>
     <ClInclude Include="MirvCalcs.h">
       <Filter>AfxHookSource</Filter>
-    </ClInclude>
-    <ClInclude Include="..\prop\shared\detours.h">
-      <Filter>prop\shared</Filter>
     </ClInclude>
     <ClInclude Include="..\prop\shared\AfxMath.h">
       <Filter>prop\shared</Filter>
@@ -832,6 +829,9 @@
     </ClInclude>
     <ClInclude Include="..\interfaces\c\AfxJit.h">
       <Filter>interfaces\c</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\AfxDetours.h">
+      <Filter>shared</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
