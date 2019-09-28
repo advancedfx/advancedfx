@@ -154,49 +154,20 @@ void *DetourVoidClassFunc(BYTE *src, const BYTE *dst, const int len)
 	return jmp;
 }
 
-
-void DetourIfacePtr(DWORD * ptr, void const * hook, DetourIfacePtr_fn & outTarget)
+BOOL AfxDetourPtr(PVOID* ptr, PVOID myFunc, PVOID* outTrueFunc)
 {
-	MdtMemBlockInfos mbis;
-	DWORD orgAddr;
-	HANDLE hCurrentProcss = GetCurrentProcess();
+	DWORD oldProtect;
 
-	MdtMemAccessBegin(ptr, sizeof(DWORD), &mbis);
+	if (VirtualProtect(ptr, sizeof(PVOID), PAGE_EXECUTE_READWRITE, &oldProtect))
+	{
+		if(outTrueFunc) *outTrueFunc = *ptr;
+		*ptr = myFunc;
 
-	orgAddr = *ptr;
+		return VirtualProtect(ptr, sizeof(PVOID), oldProtect, NULL);
+	}
 
-	BYTE *jmpTarget = (BYTE*)MdtAllocExecuteableMemory(JMP32_SZ+POPREG_SZ+POPREG_SZ+POPREG_SZ);
-
-	// padding code that jumps to target:
-	jmpTarget[0] = POP_EAX;						// pop eax
-	jmpTarget[1] = POP_ECX;						// pop ecx
-	jmpTarget[2] = PUSH_EAX;						// push eax
-	jmpTarget[3] = JMP;						// jmp
-	*(DWORD*)(jmpTarget+4) = (orgAddr - (DWORD)(jmpTarget+3)) - JMP32_SZ;
-
-	FlushInstructionCache(hCurrentProcss, jmpTarget, JMP32_SZ + POPREG_SZ + POPREG_SZ + POPREG_SZ);
-
-
-	outTarget = (void(*)(void))jmpTarget;
-
-
-	BYTE * jmpHook = (BYTE*)MdtAllocExecuteableMemory(JMP32_SZ+POPREG_SZ+POPREG_SZ+POPREG_SZ);
-
-	// padding code that jumps to our hook:
-	jmpHook[0] = POP_EAX;						// pop eax;
-	jmpHook[1] = PUSH_ECX;						// push ecx
-	jmpHook[2] = PUSH_EAX;						// push eax
-	jmpHook[3] = JMP;							// jmp
-	*(DWORD*)(jmpHook+4) = (DWORD)((BYTE *)hook - (jmpHook+3)) - JMP32_SZ;
-
-	FlushInstructionCache(hCurrentProcss, jmpHook, JMP32_SZ + POPREG_SZ + POPREG_SZ + POPREG_SZ);
-
-	// update iface ptr:
-	*ptr = (DWORD)jmpHook; // this needs to be an atomic operation!!! (currently is)
-
-	MdtMemAccessEnd(&mbis);
+	return FALSE;
 }
-
 
 void Asm32ReplaceWithJmp(void * replaceAt, size_t countBytes, void * jmpTo)
 {

@@ -5221,7 +5221,7 @@ void CAfxStreams::OnSetPixelShader(CAfx_csgo_ShaderState & state)
 }
 #endif
 
-IAfxMatRenderContextOrg * CAfxStreams::CaptureStream(IAfxMatRenderContextOrg * ctxp, CAfxRecordStream * stream, CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
+IAfxMatRenderContextOrg * CAfxStreams::CaptureStream(IAfxMatRenderContextOrg * ctxp, CAfxRecordStream * stream, CCSViewRender_RenderView_t fn, void* This, void* Edx, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
 {
 	size_t streamCount = stream->GetStreamCount();
 
@@ -5229,13 +5229,13 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStream(IAfxMatRenderContextOrg * c
 	{
 		CAfxRenderViewStream * renderViewStream = stream->GetStream(streamIndex);
 
-		ctxp = CaptureStreamToBuffer(ctxp, streamIndex, renderViewStream, stream, 0 == streamIndex, streamIndex + 1 >= streamCount, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+		ctxp = CaptureStreamToBuffer(ctxp, streamIndex, renderViewStream, stream, 0 == streamIndex, streamIndex + 1 >= streamCount, fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
 	}
 
 	return ctxp;
 }
 
-IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * ctxp, CAfxRenderViewStream * previewStream, bool isLast, int slot, int cols, CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
+IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * ctxp, CAfxRenderViewStream * previewStream, bool isLast, int slot, int cols, CCSViewRender_RenderView_t fn, void* This, void* Edx, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
 {
 	if (0 < strlen(previewStream->AttachCommands_get()))
 		g_VEngineClient->ExecuteClientCmd(previewStream->AttachCommands_get()); // Execute commands before we lock the stream!
@@ -5405,7 +5405,7 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 
 		previewStream->OnRenderBegin(nullptr, afxViewport, viewToProjection, viewToProjectionSky);
 
-		DoRenderView(fn, this_ptr, newView, newHudView, nClearFlags, myWhatToDraw);
+		DoRenderView(fn, This, Edx, newView, newHudView, nClearFlags, myWhatToDraw);
 
 		previewStream->OnRenderEnd();
 
@@ -5477,7 +5477,7 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 	return ctxp;
 }
 
-void CAfxStreams::DoRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw)
+void CAfxStreams::DoRenderView(CCSViewRender_RenderView_t fn, void* This, void* Edx, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw)
 {
 #ifdef AFX_INTEROP
 	if (AfxInterop::Enabled())
@@ -5503,7 +5503,7 @@ void CAfxStreams::DoRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 		const_cast<SOURCESDK::CViewSetup_csgo &>(view).m_bCacheFullSceneState = true;
 	}
 
-	fn(this_ptr, view, hudViewSetup, nClearFlags, whatToDraw);
+	fn(This, Edx, view, hudViewSetup, nClearFlags, whatToDraw);
 
 	if (m_ForceCacheFullSceneState)
 	{
@@ -5582,7 +5582,7 @@ void CAfxStreams::CalcMainStream()
 	}
 }
 
-void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
+void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * This, void* Edx, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
 {
 	m_ForceCacheFullSceneState = false;
 
@@ -5596,7 +5596,7 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 
 		m_FirstRenderAfterLevelInit = false;
 
-		fn(this_ptr, view, hudViewSetup, nClearFlags, whatToDraw);
+		fn(This, Edx, view, hudViewSetup, nClearFlags, whatToDraw);
 		return;
 	}
 
@@ -5618,7 +5618,7 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 		m_ForceCacheFullSceneState = true; // There's always another render in this case at the moment, so cache!
 
 		// Record it first
-		ctxp = CaptureStream(ctxp, m_MainStream, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+		ctxp = CaptureStream(ctxp, m_MainStream, fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
 	}
 	else if (m_MainStream)
 	{
@@ -5658,7 +5658,7 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 			if (otherStreams) m_ForceCacheFullSceneState = true;
 			
 			CAfxRenderViewStream * previewStream = m_MainStream->GetStream(0);
-			ctxp = PreviewStream(ctxp, previewStream, !otherStreams, 0, 1, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+			ctxp = PreviewStream(ctxp, previewStream, !otherStreams, 0, 1, fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
 		}
 	}
 	else
@@ -5693,7 +5693,7 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 		if (otherStreams)
 		{			
 			m_ForceCacheFullSceneState = true; // There's more streams to be rendered, so we need to cache the scene state.
-			DoRenderView(fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw);
+			DoRenderView(fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw);
 
 			if (!m_PresentBlocked)
 			{
@@ -5723,7 +5723,7 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 			{
 				if (!(*it)->Record_get() || (*it) == m_MainStream) continue;
 
-				ctxp = CaptureStream(ctxp, (*it), fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+				ctxp = CaptureStream(ctxp, (*it), fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
 			}
 		}
 
@@ -5740,7 +5740,7 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 			m_PresentBlocked = false;
 		}
 
-		DoRenderView(fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw);
+		DoRenderView(fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw);
 	}
 	else
 	{
@@ -5767,7 +5767,7 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 				m_PresentBlocked = false;
 			}
 
-			DoRenderView(fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw);
+			DoRenderView(fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw);
 		}
 		else
 		{
@@ -5775,7 +5775,7 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 			if (!CheckCanFeedStreams())
 			{
 				Tier0_Warning("Error: Cannot preview stream(s) due to missing dependencies!\n");
-				DoRenderView(fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw);
+				DoRenderView(fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw);
 				return;
 			}
 
@@ -5804,7 +5804,7 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * this_ptr, c
 
 				CAfxRenderViewStream * previewStream = it->second;
 
-				ctxp = PreviewStream(ctxp, previewStream, num + 1 == (int)previewStreams.size(), slot, cols, fn, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+				ctxp = PreviewStream(ctxp, previewStream, num + 1 == (int)previewStreams.size(), slot, cols, fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
 
 				++num;
 			}
@@ -8330,7 +8330,7 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 	SetCurrent_View_Render_ThreadId(0);
 }
 
-IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContextOrg * ctxp, size_t streamIndex, CAfxRenderViewStream * stream, CAfxRecordStream * captureTarget, bool first, bool last, CCSViewRender_RenderView_t fn, void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
+IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContextOrg * ctxp, size_t streamIndex, CAfxRenderViewStream * stream, CAfxRecordStream * captureTarget, bool first, bool last, CCSViewRender_RenderView_t fn, void* This, void* Edx, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
 {
 	if (first)
 	{
@@ -8499,7 +8499,7 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 
 		stream->OnRenderBegin(captureTarget->GetBasefxStreamModifier(streamIndex), afxViewport, viewToProjection, viewToProjectionSky);
 
-		DoRenderView(fn, this_ptr, view, hudViewSetup, SOURCESDK::VIEW_CLEAR_STENCIL | SOURCESDK::VIEW_CLEAR_DEPTH, myWhatToDraw);
+		DoRenderView(fn, This, Edx, view, hudViewSetup, SOURCESDK::VIEW_CLEAR_STENCIL | SOURCESDK::VIEW_CLEAR_DEPTH, myWhatToDraw);
 
 		stream->QueueCapture(ctxp, captureTarget, streamIndex,
 			view.m_nUnscaledX,

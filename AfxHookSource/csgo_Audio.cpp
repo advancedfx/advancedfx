@@ -15,7 +15,7 @@
 #include <sstream>
 #include <set>
 
-typedef void(__stdcall * CAudioXAudio2_UnkSupplyAudio_t)(DWORD * this_ptr, int numChannels, float * audioData);
+typedef void(__fastcall * CAudioXAudio2_UnkSupplyAudio_t)(void* This, void* Edx, int numChannels, float * audioData);
 typedef void(__cdecl * csgo_MIX_PaintChannels_t)(int paintCountTarget, int unknown);
 
 CAudioXAudio2_UnkSupplyAudio_t detoured_CAudioXAudio2_UnkSupplyAudio;
@@ -28,25 +28,25 @@ double g_csgo_Audio_Remainder = 0;
 bool g_CAudioXAudio2_RecordAudio_Active = false;
 bool g_CAudioXAudio2_FirstCallInLoop = true;
 std::wstring g_CAudioXAudio2_RecordAudio_Dir;
-std::map<DWORD *, CMirvWav> g_CAudioXAudio2_RecordAudio_Files;
+std::map<void*, CMirvWav> g_CAudioXAudio2_RecordAudio_Files;
 
 std::vector<WORD> g_CAudioXAudio2_ChannelData;
 
-void __stdcall touring_CAudioXAudio2_UnkSupplyAudio(DWORD * this_ptr, int numChannels, float * audioData)
+void __fastcall touring_CAudioXAudio2_UnkSupplyAudio(void* This, void* Edx, int numChannels, float * audioData)
 {
 	if (g_CAudioXAudio2_RecordAudio_Active)
 	{
 		//Tier0_Msg("Calling CAudioXAudio2_UnkSupplyAudio.\n");
 
-		std::map<DWORD *, CMirvWav>::iterator it = g_CAudioXAudio2_RecordAudio_Files.find(this_ptr);
+		std::map<void*, CMirvWav>::iterator it = g_CAudioXAudio2_RecordAudio_Files.find(This);
 
 		if (it == g_CAudioXAudio2_RecordAudio_Files.end())
 		{
 			std::wostringstream os;
-			os << g_CAudioXAudio2_RecordAudio_Dir << L"\\audio_" << this_ptr << L".wav";
+			os << g_CAudioXAudio2_RecordAudio_Dir << L"\\audio_" << This << L".wav";
 			std::wstring fileName = os.str();
 
-			it = g_CAudioXAudio2_RecordAudio_Files.emplace(std::piecewise_construct, std::forward_as_tuple(this_ptr), std::forward_as_tuple(fileName.c_str(), numChannels, 44100)).first;
+			it = g_CAudioXAudio2_RecordAudio_Files.emplace(std::piecewise_construct, std::forward_as_tuple(This), std::forward_as_tuple(fileName.c_str(), numChannels, 44100)).first;
 		}
 
 		const int samples = 512;
@@ -73,7 +73,7 @@ void __stdcall touring_CAudioXAudio2_UnkSupplyAudio(DWORD * this_ptr, int numCha
 
 	// sorry, but we can't forward mutliple calls in a loop, that will overrun buffers!
 	if(g_CAudioXAudio2_FirstCallInLoop)
-		detoured_CAudioXAudio2_UnkSupplyAudio(this_ptr, numChannels, audioData);
+		detoured_CAudioXAudio2_UnkSupplyAudio(This, Edx, numChannels, audioData);
 }
 
 
@@ -95,7 +95,7 @@ void __cdecl touring_csgo_MIX_PaintChannels(int endtime, int unknown)
 
 		if (iAudioDevice2Vtables.insert(vtable).second)
 		{
-			DetourIfacePtr((DWORD *)&(vtable[1]), touring_CAudioXAudio2_UnkSupplyAudio, (DetourIfacePtr_fn &)detoured_CAudioXAudio2_UnkSupplyAudio);
+			AfxDetourPtr((PVOID *)&(vtable[1]), touring_CAudioXAudio2_UnkSupplyAudio, (PVOID *)&detoured_CAudioXAudio2_UnkSupplyAudio);
 		}
 	}
 

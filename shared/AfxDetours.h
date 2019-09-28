@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Windows.h>
-#include <shared/Detours/src/detours.h>
+#include"Detours/src/detours.h"
 #include <vector>
 #include <map>
 #include <string>
@@ -23,11 +23,7 @@ void *DetourApply(BYTE *orig, BYTE *hook, int len);
 /// </remarks>
 void *DetourClassFunc(BYTE *src, const BYTE *dst, const int len);
 
-
-typedef void(*DetourIfacePtr_fn)(void);
-
-/// <remarks>This is somewhat threadsafe, but be aware that outTarget can be already called while you are still in this function.</remarks>
-void DetourIfacePtr(DWORD * ptr, void const * hookk, DetourIfacePtr_fn & outTarget);
+BOOL AfxDetourPtr(PVOID* ptr, PVOID myFunc, PVOID* outTrueFunc);
 
 void MdtMemAccessBegin(LPVOID lpAddress, size_t size, MdtMemBlockInfos *mdtMemBlockInfos);
 void MdtMemAccessEnd(MdtMemBlockInfos *mdtMemBlockInfos);

@@ -10,16 +10,14 @@ bool g_Enable_csgo_CCSGameMovement_DuckFix = false;
 
 
 //:009
-typedef void(__stdcall * csgo_CCSGameMovement_DuckShit_t)(
-	DWORD *this_ptr);
+typedef void(__fastcall * csgo_CCSGameMovement_DuckShit_t)(void *This, void* Edx);
 
 csgo_CCSGameMovement_DuckShit_t detoured_csgo_CCSGameMovement_DuckShit;
 
-void __stdcall csgo_CCSGameMovement_DuckShit(
-	DWORD *this_ptr)
+void __fastcall csgo_CCSGameMovement_DuckShit(void* This, void* Edx)
 {
 	if (!g_Enable_csgo_CCSGameMovement_DuckFix)
-		detoured_csgo_CCSGameMovement_DuckShit(this_ptr);
+		detoured_csgo_CCSGameMovement_DuckShit(This, Edx);
 }
 
 bool Hook_csgo_CCSGameMovement_DuckFix(void)
@@ -33,7 +31,7 @@ bool Hook_csgo_CCSGameMovement_DuckFix(void)
 	{
 		DWORD * vtable = (DWORD *)(AFXADDR_GET(csgo_CCSGameMovement_vtable));
 
-		DetourIfacePtr((DWORD *)&(vtable[57]), csgo_CCSGameMovement_DuckShit, (DetourIfacePtr_fn &)detoured_csgo_CCSGameMovement_DuckShit);
+		AfxDetourPtr((PVOID *)&(vtable[57]), csgo_CCSGameMovement_DuckShit, (PVOID *)&detoured_csgo_CCSGameMovement_DuckShit);
 
 		firstResult = true;
 	}

@@ -77,7 +77,7 @@ float g_csgo_OldSmokeOverlayAlphaFactor;
 float g_csgo_NewSmokeOverlayAlphaFactor;
 float g_csgo_AfxSmokeOverlayAlphaMod = 1.0f;
 
-void __stdcall touring_CCSViewRender_RenderView(void * this_ptr, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw)
+void __fastcall touring_CCSViewRender_RenderView(void* This, void* Edx, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw)
 {
 	static bool isRootCall = true;
 
@@ -87,11 +87,11 @@ void __stdcall touring_CCSViewRender_RenderView(void * this_ptr, const SOURCESDK
 
 		g_csgo_SmokeOverlay_OnCompareAlphaBeforeDraw_FirstCall = true;
 
-		float * smokeOverlayAlphaFactor = (float *)((const char *)this_ptr + 0x588);
+		float * smokeOverlayAlphaFactor = (float *)((const char *)This + 0x588);
 
 		g_csgo_OldSmokeOverlayAlphaFactor = *smokeOverlayAlphaFactor;
 
-		g_AfxStreams.OnRenderView(detoured_CCSViewRender_RenderView, this_ptr, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, g_csgo_AfxSmokeOverlayAlphaMod);
+		g_AfxStreams.OnRenderView(detoured_CCSViewRender_RenderView, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, g_csgo_AfxSmokeOverlayAlphaMod);
 
 		*smokeOverlayAlphaFactor = g_csgo_NewSmokeOverlayAlphaFactor;
 
@@ -168,7 +168,7 @@ bool csgo_CViewRender_Install(void)
 		int * vtable = (int*)AFXADDR_GET(csgo_CCSViewRender_vtable);
 
 		//DetourIfacePtr((DWORD *)&(vtable[5]), touring_CCSViewRender_Render, (DetourIfacePtr_fn &)detoured_CCSViewRender_Render);
-		DetourIfacePtr((DWORD *)&(vtable[6]), touring_CCSViewRender_RenderView, (DetourIfacePtr_fn &)detoured_CCSViewRender_RenderView);
+		AfxDetourPtr((PVOID *)&(vtable[6]), touring_CCSViewRender_RenderView, (PVOID *)&detoured_CCSViewRender_RenderView);
 
 		detoured_csgo_CViewRender_RenderSmokeOverlay_OnLoadOldAlpha = (void *)DetourApply((BYTE *)AFXADDR_GET(csgo_CCSViewRender_RenderSmokeOverlay_OnLoadOldAlpha), (BYTE *)touring_csgo_CViewRender_RenderSmokeOverlay_OnLoadOldAlpha, 8);	
 		detoured_csgo_CViewRender_RenderSmokeOverlay_OnCompareAlphaBeforeDraw = (void *)DetourApply((BYTE *)AFXADDR_GET(csgo_CCSViewRender_RenderSmokeOverlay_OnCompareAlphaBeforeDraw), (BYTE *)touring_csgo_CViewRender_RenderSmokeOverlay_OnCompareAlphaBeforeDraw, 7);

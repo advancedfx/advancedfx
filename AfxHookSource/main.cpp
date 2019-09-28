@@ -428,11 +428,11 @@ void* AppSystemFactory_ForClient(const char *pName, int *pReturnCode)
 	return g_AppSystemFactory(pName, pReturnCode);
 }
 
-typedef int(__stdcall * CVClient_Init_Unknown_t)(DWORD *this_ptr, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CreateInterfaceFn physicsFactory, SOURCESDK::CGlobalVarsBase *pGlobals);
+typedef int(__fastcall * CVClient_Init_Unknown_t)(void* This, void* Edx, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CreateInterfaceFn physicsFactory, SOURCESDK::CGlobalVarsBase *pGlobals);
 
 CVClient_Init_Unknown_t old_CVClient_Init_Unkown;
 
-int __stdcall new_CVClient_Init_Unknown(DWORD *this_ptr, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CreateInterfaceFn physicsFactory, SOURCESDK::CGlobalVarsBase *pGlobals)
+int __fastcall new_CVClient_Init_Unknown(void* This, void* Edx, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CreateInterfaceFn physicsFactory, SOURCESDK::CGlobalVarsBase *pGlobals)
 {
 	static bool bFirstCall = true;
 
@@ -442,14 +442,14 @@ int __stdcall new_CVClient_Init_Unknown(DWORD *this_ptr, SOURCESDK::CreateInterf
 		MySetup(appSystemFactory, new WrpGlobalsOther(pGlobals));
 	}
 
-	return old_CVClient_Init_Unkown(this_ptr, AppSystemFactory_ForClient, physicsFactory, pGlobals);
+	return old_CVClient_Init_Unkown(This, Edx, AppSystemFactory_ForClient, physicsFactory, pGlobals);
 }
 
-typedef int(__stdcall * CVClient_Init_Swarm_t)(DWORD *this_ptr, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CGlobalVarsBase *pGlobals);
+typedef int(__fastcall* CVClient_Init_Swarm_t)(void* This, void* Edx, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CGlobalVarsBase *pGlobals);
 
 CVClient_Init_Swarm_t old_CVClient_Init_Swarm;
 
-int __stdcall new_CVClient_Init_Swarm(DWORD *this_ptr, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CGlobalVarsBase *pGlobals)
+int __fastcall new_CVClient_Init_Swarm(void* This, void* Edx, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CGlobalVarsBase *pGlobals)
 {
 	static bool bFirstCall = true;
 
@@ -459,15 +459,15 @@ int __stdcall new_CVClient_Init_Swarm(DWORD *this_ptr, SOURCESDK::CreateInterfac
 		MySetup(appSystemFactory, new WrpGlobalsOther(pGlobals));
 	}
 
-	return old_CVClient_Init_Swarm(this_ptr, AppSystemFactory_ForClient, pGlobals);
+	return old_CVClient_Init_Swarm(This, Edx, AppSystemFactory_ForClient, pGlobals);
 }
 
 
-typedef int(__stdcall* CVClient_Init_Garrysmod_t)(DWORD* this_ptr, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CreateInterfaceFn physicsFactory, SOURCESDK::CGlobalVarsBase* pGlobals, void * unknown3);
+typedef int(__fastcall* CVClient_Init_Garrysmod_t)(void* This, void* Edx, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CreateInterfaceFn physicsFactory, SOURCESDK::CGlobalVarsBase* pGlobals, void * unknown3);
 
 CVClient_Init_Garrysmod_t old_CVClient_Init_Garrysmod;
 
-int __stdcall new_CVClient_Init_Garrysmod(DWORD* this_ptr, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CreateInterfaceFn physicsFactory, SOURCESDK::CGlobalVarsBase* pGlobals, void* unknown3)
+int __fastcall new_CVClient_Init_Garrysmod(void* This, void* Edx, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CreateInterfaceFn physicsFactory, SOURCESDK::CGlobalVarsBase* pGlobals, void* unknown3)
 {
 	static bool bFirstCall = true;
 
@@ -477,7 +477,7 @@ int __stdcall new_CVClient_Init_Garrysmod(DWORD* this_ptr, SOURCESDK::CreateInte
 		MySetup(appSystemFactory, new WrpGlobalsOther(pGlobals));
 	}
 
-	return old_CVClient_Init_Garrysmod(this_ptr, AppSystemFactory_ForClient, physicsFactory, pGlobals, unknown3);
+	return old_CVClient_Init_Garrysmod(This, Edx, AppSystemFactory_ForClient, physicsFactory, pGlobals, unknown3);
 }
 
 
@@ -500,23 +500,23 @@ void Shared_Shutdown(void)
 	if (CClientTools * instance = CClientTools::Instance()) delete instance;
 }
 
-typedef void(__stdcall * CVClient_Shutdown_TF2_t)(DWORD *this_ptr);
+typedef void(__fastcall * CVClient_Shutdown_TF2_t)(void* This, void* Edx);
 
 CVClient_Shutdown_TF2_t old_CVClient_Shutdown_TF2;
 
-void __stdcall new_CVClient_Shutdown_TF2(DWORD *this_ptr)
+void __fastcall new_CVClient_Shutdown_TF2(void* This, void* Edx)
 {
 	Shared_Shutdown();
 
-	old_CVClient_Shutdown_TF2(this_ptr);
+	old_CVClient_Shutdown_TF2(This, Edx);
 }
 
-typedef void (__stdcall * CVClient_FrameStageNotify_TF2_t)(DWORD *this_ptr, SOURCESDK::TF2::ClientFrameStage_t curStage);
+typedef void (__fastcall* CVClient_FrameStageNotify_TF2_t)(void* This, void* Edx, SOURCESDK::TF2::ClientFrameStage_t curStage);
 
 CVClient_FrameStageNotify_TF2_t old_CVClient_FrameStageNotify_TF2;
 
 // Notification that we're moving into another stage during the frame.
-void _stdcall new_CVClient_FrameStageNotify_TF2(DWORD *this_ptr, SOURCESDK::TF2::ClientFrameStage_t curStage)
+void __fastcall new_CVClient_FrameStageNotify_TF2(void* This, void* Edx, SOURCESDK::TF2::ClientFrameStage_t curStage)
 {
 	switch (curStage)
 	{
@@ -525,7 +525,7 @@ void _stdcall new_CVClient_FrameStageNotify_TF2(DWORD *this_ptr, SOURCESDK::TF2:
 		break;
 	}
 
-	old_CVClient_FrameStageNotify_TF2(this_ptr, curStage);
+	old_CVClient_FrameStageNotify_TF2(This, Edx, curStage);
 
 	switch (curStage)
 	{
@@ -535,23 +535,23 @@ void _stdcall new_CVClient_FrameStageNotify_TF2(DWORD *this_ptr, SOURCESDK::TF2:
 	}
 }
 
-typedef void(__stdcall * CVClient_Shutdown_CSSV34_t)(DWORD *this_ptr);
+typedef void(__fastcall* CVClient_Shutdown_CSSV34_t)(void* This, void* Edx);
 
 CVClient_Shutdown_CSSV34_t old_CVClient_Shutdown_CSSV34;
 
-void __stdcall new_CVClient_Shutdown_CSSV34(DWORD *this_ptr)
+void __fastcall new_CVClient_Shutdown_CSSV34(void* This, void* Edx)
 {
 	Shared_Shutdown();
 
-	old_CVClient_Shutdown_CSSV34(this_ptr);
+	old_CVClient_Shutdown_CSSV34(This,Edx);
 }
 
-typedef void (__stdcall * CVClient_FrameStageNotify_CSSV34_t)(DWORD *this_ptr, SOURCESDK::CSSV34::ClientFrameStage_t curStage);
+typedef void (__fastcall* CVClient_FrameStageNotify_CSSV34_t)(void* This, void* Edxr, SOURCESDK::CSSV34::ClientFrameStage_t curStage);
 
 CVClient_FrameStageNotify_CSSV34_t old_CVClient_FrameStageNotify_CSSV34;
 
 // Notification that we're moving into another stage during the frame.
-void _stdcall new_CVClient_FrameStageNotify_CSSV34(DWORD *this_ptr, SOURCESDK::CSSV34::ClientFrameStage_t curStage)
+void __fastcall new_CVClient_FrameStageNotify_CSSV34(void* This, void* Edx, SOURCESDK::CSSV34::ClientFrameStage_t curStage)
 {
 	switch (curStage)
 	{
@@ -560,7 +560,7 @@ void _stdcall new_CVClient_FrameStageNotify_CSSV34(DWORD *this_ptr, SOURCESDK::C
 		break;
 	}
 
-	old_CVClient_FrameStageNotify_CSSV34(this_ptr, curStage);
+	old_CVClient_FrameStageNotify_CSSV34(This, Edx, curStage);
 
 	switch (curStage)
 	{
@@ -1373,28 +1373,28 @@ void HookClientDllInterface_011_Init(void * iface)
 {
 	int * vtable = *(int**)iface;
 
-	DetourIfacePtr((DWORD *)&(vtable[0]), new_CVClient_Init_Unknown, (DetourIfacePtr_fn &)old_CVClient_Init_Unkown);
+	AfxDetourPtr((PVOID *)&(vtable[0]), new_CVClient_Init_Unknown, (PVOID*)&old_CVClient_Init_Unkown);
 }
 
 void HookClientDllInterface_Swarm_Init(void * iface)
 {
 	int * vtable = *(int**)iface;
 
-	DetourIfacePtr((DWORD *)&(vtable[1]), new_CVClient_Init_Swarm, (DetourIfacePtr_fn &)old_CVClient_Init_Swarm);
+	AfxDetourPtr((PVOID*) & (vtable[1]), new_CVClient_Init_Swarm, (PVOID*)&old_CVClient_Init_Swarm);
 }
 
 void HookClientDllInterface_Insurgency2_Init(void * iface)
 {
 	int * vtable = *(int**)iface;
 
-	DetourIfacePtr((DWORD *)&(vtable[2]), new_CVClient_Init_Swarm, (DetourIfacePtr_fn &)old_CVClient_Init_Swarm);
+	AfxDetourPtr((PVOID*) & (vtable[2]), new_CVClient_Init_Swarm, (PVOID*)&old_CVClient_Init_Swarm);
 }
 
 void HookClientDllInterface_Garrysmod_Init(void* iface)
 {
 	int* vtable = *(int**)iface;
 
-	DetourIfacePtr((DWORD*) & (vtable[0]), new_CVClient_Init_Garrysmod, (DetourIfacePtr_fn&)old_CVClient_Init_Garrysmod);
+	AfxDetourPtr((PVOID*) & (vtable[0]), new_CVClient_Init_Garrysmod, (PVOID*)&old_CVClient_Init_Garrysmod);
 }
 
 SOURCESDK::IClientEntityList_csgo * SOURCESDK::g_Entitylist_csgo = 0;
@@ -1474,16 +1474,16 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 			{
 				int * vtable = *(int**)iface;
 
-				DetourIfacePtr((DWORD *)&(vtable[2]), new_CVClient_Shutdown_TF2, (DetourIfacePtr_fn &)old_CVClient_Shutdown_TF2);
-				DetourIfacePtr((DWORD *)&(vtable[35]), new_CVClient_FrameStageNotify_TF2, (DetourIfacePtr_fn &)old_CVClient_FrameStageNotify_TF2);
+				AfxDetourPtr((PVOID*) & (vtable[2]), new_CVClient_Shutdown_TF2, (PVOID*)&old_CVClient_Shutdown_TF2);
+				AfxDetourPtr((PVOID*) & (vtable[35]), new_CVClient_FrameStageNotify_TF2, (PVOID*)&old_CVClient_FrameStageNotify_TF2);
 			}
 
 			if (iface && SourceSdkVer_CSSV34 == g_SourceSdkVer)
 			{
 				int * vtable = *(int**)iface;
 
-				DetourIfacePtr((DWORD *)&(vtable[1]), new_CVClient_Shutdown_CSSV34, (DetourIfacePtr_fn &)old_CVClient_Shutdown_CSSV34);
-				DetourIfacePtr((DWORD *)&(vtable[32]), new_CVClient_FrameStageNotify_CSSV34, (DetourIfacePtr_fn &)old_CVClient_FrameStageNotify_CSSV34);
+				AfxDetourPtr((PVOID*) & (vtable[1]), new_CVClient_Shutdown_CSSV34, (PVOID*)&old_CVClient_Shutdown_CSSV34);
+				AfxDetourPtr((PVOID*) & (vtable[32]), new_CVClient_FrameStageNotify_CSSV34, (PVOID*)&old_CVClient_FrameStageNotify_CSSV34);
 			}
 		}
 		if(SourceSdkVer_CSGO == g_SourceSdkVer)
