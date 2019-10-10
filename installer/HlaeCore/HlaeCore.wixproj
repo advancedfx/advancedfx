@@ -31,6 +31,7 @@
     <EmbeddedResource Include="lang\de-DE.wxl" />
     <EmbeddedResource Include="lang\en-US.wxl" />
     <EmbeddedResource Include="lang\fi-FI.wxl" />
+    <EmbeddedResource Include="lang\pt-PT.wxl" />
     <EmbeddedResource Include="lang\zh-CN.wxl" />
   </ItemGroup>
   <ItemGroup>
@@ -74,6 +75,7 @@
     <!-- https://stackoverflow.com/questions/10330436/how-to-use-wix-torch-msbuild-task -->
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\de-de\HlaeCore.msi" OutputFile="bin\Release\de-de\HlaeCore.mst" ToolPath="$(WixToolPath)" />
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\fi-fi\HlaeCore.msi" OutputFile="bin\Release\fi-fi\HlaeCore.mst" ToolPath="$(WixToolPath)" />
+    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\pt-pt\HlaeCore.msi" OutputFile="bin\Release\pt-pt\HlaeCore.mst" ToolPath="$(WixToolPath)" />
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\zh-cn\HlaeCore.msi" OutputFile="bin\Release\zh-cn\HlaeCore.mst" ToolPath="$(WixToolPath)" />
   </Target>
 </Project>
