@@ -6,6 +6,19 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.70.4</version>
+<time>2019-10-10T07:21Z</time>
+<changes>
+<change type="fixed">
+Fixed #238 mirv_camio fails when time jumps backwards.
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.70.3</version>
 <time>2019-09-26T08:30Z</time>
 <changes>

@@ -6,6 +6,24 @@
 
 <release>
 <name>HLAE</name>
+<version>2.81.4</version>
+<time>2019-10-10T07:21Z</time>
+<changes>
+<change type="updated">
+Included AfxHookSource 1.70.4 (2019-10-10T07:21Z).
+</change>
+<change type="updated">
+Included AfxHookGoldSrc 2.6.4 (2019-10-10T07:21Z).
+</change>
+<changed type="added">
+Added pt-pt translation by https://github.com/DMTWENTYTHREE to core installer.
+</changed>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.81.3</version>
 <time>2019-09-26T08:30Z</time>
 <changes>
