@@ -719,15 +719,15 @@ void Addresses_InitClientDll(AfxAddr clientDll, const char * gamedir)
 		// cstrike_UnkCrosshairFn_mul_fac // [1] // Checked 2018-10-06
 		// cstrike_UnkCrosshairFn_add_fac // [1] // Checked 2018-10-06
 		{
-			MemRange r1 = FindPatternString(textRange, "8B 44 24 08 83 EC 0C BA 04 00 00 00 53 55 56 57 8D 78 FF 8B D9 83 FF 1D BE 05 00 00 00 0F 87 ?? ?? ?? ?? FF 24 BD ?? ?? ?? ??");
+			MemRange r1 = FindPatternString(textRange, "83 EC 08 8B 44 24 10 53 55 56 57 8B F9 8D 48 FF 89 7C 24 14 83 F9 1D BA 04 00 00 00 BE 05 00 00 00");
 
 			if (!r1.IsEmpty()) {
 
 				AFXADDR_SET(cstrike_UnkCrosshairFn, r1.Start);
 
-				MemRange r2 = textRange.And(MemRange(r1.Start, r1.Start + 0x59D));
+				MemRange r2 = textRange.And(MemRange(r1.Start, r1.Start + 0x550));
 
-				MemRange r3 = FindPatternString(r2, "D9 43 44 DD 05 ?? ?? ?? ?? D8 C9 83 C0 02 89 43 48 DC 05 ?? ?? ?? ?? D8 E9 D9 5B 44 DD D8");
+				MemRange r3 = FindPatternString(r2, "D9 47 44 DD 05 ?? ?? ?? ?? D8 C9 83 C0 02 89 47 48 DC 05 ?? ?? ?? ??");
 
 				if (!r3.IsEmpty()) {
 					AFXADDR_SET(cstrike_UnkCrosshairFn_mul_fac, *(DWORD *)(r3.Start + 5));
