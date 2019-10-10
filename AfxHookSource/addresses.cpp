@@ -70,12 +70,23 @@ AFXADDR_DEF(csgo_C_CSPlayer_IClientNetworkable_entindex)
 AFXADDR_DEF(csgo_engine_RegisterForUnhandledEvent_ToggleDebugger_BeforeCall)
 AFXADDR_DEF(csgo_CShaderAPIDx8_UnkCreateTexture)
 AFXADDR_DEF(csgo_CRendering3dView_DrawTranslucentRenderables)
-AFXADDR_DEF(csgo_CGameEventManger_FireEventIntern);
-AFXADDR_DEF(csgo_dynamic_cast);
-AFXADDR_DEF(csgo_RTTI_CGameEvent);
-AFXADDR_DEF(csgo_RTTI_IGameEvent);
+AFXADDR_DEF(csgo_CGameEventManger_FireEventIntern)
+AFXADDR_DEF(csgo_dynamic_cast)
+AFXADDR_DEF(csgo_RTTI_CGameEvent)
+AFXADDR_DEF(csgo_RTTI_IGameEvent)
 //AFXADDR_DEF(csgo_client_dynamic_cast);
 //AFXADDR_DEF(csgo_client_RTTI_IClientRenderable);
+AFXADDR_DEF(csgo_CDemoPlayer)
+//AFXADDR_DEF(csgo_CClientFrameManager_DeleteClientFrames)
+//AFXADDR_DEF(m_ClockDriftMgr)
+AFXADDR_DEF(csgo_cl)
+//AFXADDR_DEF(csgo_CL_ProcessPacketEntities_AddClientFrame);
+AFXADDR_DEF(csgo_sv)
+//AFXADDR_DEF(csgo_host_client)
+AFXADDR_DEF(csgo_CDemoPlayer_InternalStartPlayback)
+AFXADDR_DEF(csgo_WriteDeltaEntities)
+AFXADDR_DEF(csgo_NET_CreateNetChannel)
+AFXADDR_DEF(csgo_CBaseServer_GetFreeCLient);
 
 void ErrorBox(char const * messageText);
 
@@ -553,6 +564,268 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		// csgo_C_BaseEntity_IClientEntity_vtable // Checked 2019-08-24.
 		AFXADDR_SET(csgo_CStaticProp_IClientEntity_vtable, FindClassVtable((HMODULE)engineDll, ".?AVCStaticProp@@", 0, 0x4));
 		if (!AFXADDR_GET(csgo_CStaticProp_IClientEntity_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+		// csgo_CDemoPlayer // Checked 2019-10-02.
+		AFXADDR_SET(csgo_CDemoPlayer, FindClassVtable((HMODULE)engineDll, ".?AVCDemoPlayer@@", 0, 0x0));
+		if (!AFXADDR_GET(csgo_CDemoPlayer)) ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+		/*
+		// csgo_CClientFrameManager_DeleteClientFrames // Checked 2019-10-02.
+		{
+			DWORD addr = 0;
+
+			ImageSectionsReader sections((HMODULE)engineDll);
+			if (!sections.Eof())
+			{
+				MemRange textRange = sections.GetMemRange();
+
+				MemRange result = FindPatternString(textRange, "55 8B EC 53 56 57 8B F9 33 DB 8B 77 04 85 F6 74 7C 8B 45 08 85 C0 78 0C 39 46 08 7C 07");
+
+				if (!result.IsEmpty())
+				{
+					addr = result.Start;
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			AFXADDR_SET(csgo_CClientFrameManager_DeleteClientFrames, addr);
+		}
+
+		// m_ClockDriftMgr // Checked 2019-10-04.
+		{
+			DWORD addr = 0;
+			{
+				ImageSectionsReader sections((HMODULE)engineDll);
+				if (!sections.Eof())
+				{
+					MemRange textRange = sections.GetMemRange();
+					sections.Next(); // skip .text
+					if (!sections.Eof())
+					{
+						MemRange firstDataRange = sections.GetMemRange();
+
+						MemRange result = FindCString(sections.GetMemRange(), "Update self-referencing, connection dropped.\n");
+						if (!result.IsEmpty())
+						{
+							DWORD tmpAddr = result.Start;
+
+							result = FindBytes(textRange, (char const*)&tmpAddr, sizeof(tmpAddr));
+							if (!result.IsEmpty())
+							{
+								result = FindPatternString(MemRange(result.Start - 0x1 - 0x10, tmpAddr - 0x1 - 0x10 + 0x0e), "A1 ?? ?? ?? ?? 8B 4F ?? 39 88 6C 01 00 00");
+								if (!result.IsEmpty())
+								{
+									addr = *(DWORD*)(result.Start +1);
+								}
+								else ErrorBox(MkErrStr(__FILE__, __LINE__));
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			AFXADDR_SET(m_ClockDriftMgr, addr);
+		}
+		*/
+
+		// csgo_cl // Checked 2019-10-05.
+		// csgo_CL_ProcessPacketEntities_AddClientFrame // Checked 2019-10-05.
+		{
+			DWORD addr = 0;
+			DWORD addr2 = 0;
+
+			ImageSectionsReader sections((HMODULE)engineDll);
+			if (!sections.Eof())
+			{
+				MemRange textRange = sections.GetMemRange();
+
+				MemRange result = FindPatternString(textRange, "A1 ?? ?? ?? ?? 8B 88 ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? 83 C4 0C");
+
+				if (!result.IsEmpty())
+				{
+					addr = *(DWORD *)(result.Start + 0x1);
+					addr2 = result.Start + 0x4;
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			AFXADDR_SET(csgo_cl, addr);
+			//AFXADDR_SET(csgo_CL_ProcessPacketEntities_AddClientFrame, addr2);
+		}
+
+		// csgo_sv // Checked 2019-10-04.
+		// Hint: Instance of CGameServer.
+		{
+			DWORD addr = 0;
+
+			ImageSectionsReader sections((HMODULE)engineDll);
+			if (!sections.Eof())
+			{
+				MemRange textRange = sections.GetMemRange();
+
+				MemRange result = FindPatternString(textRange, "B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 0F 57 C0 C7 05 ?? ?? ?? ?? ?? ?? ?? ?? 0F 11 05 ?? ?? ?? ?? B9 00 10 00 00");
+
+				if (!result.IsEmpty())
+				{
+					addr = *(DWORD *)(result.Start + 0x1);
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			AFXADDR_SET(csgo_sv, addr);
+		}
+
+		/*
+		// csgo_host_client // Checked: 2019-10-05
+		{
+			DWORD addr = 0;
+			{
+				ImageSectionsReader sections((HMODULE)engineDll);
+				if (!sections.Eof())
+				{
+					MemRange textRange = sections.GetMemRange();
+					sections.Next(); // skip .text
+					if (!sections.Eof())
+					{
+						MemRange firstDataRange = sections.GetMemRange();
+
+						MemRange result = FindCString(sections.GetMemRange(), "Client ping times:\n");
+						if (!result.IsEmpty())
+						{
+							DWORD tmpAddr = result.Start;
+
+							result = FindBytes(textRange, (char const*)&tmpAddr, sizeof(tmpAddr));
+							if (!result.IsEmpty())
+							{
+								result = FindPatternString(textRange.And(MemRange(result.Start - 0x9, result.Start - 0x9 +13)), "A1 ?? ?? ?? ?? 83 C0 04 68 ?? ?? ?? ??");
+								if (!result.IsEmpty())
+								{
+									addr = *(DWORD*)(result.Start + 1) +4;
+								}
+								else ErrorBox(MkErrStr(__FILE__, __LINE__));
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			AFXADDR_SET(csgo_host_client, addr);
+		}
+		*/
+
+		// csgo_CDemoPlayer_InternalStartPlayback // Checked: 2019-10-05.
+		{
+			DWORD addr2 = 0;
+
+			ImageSectionsReader sections((HMODULE)engineDll);
+			if (!sections.Eof())
+			{
+				MemRange textRange = sections.GetMemRange();
+
+				MemRange result = FindPatternString(textRange, "55 8B EC 51 8B 45 10 53 56 57 8B F9 33 C9 89 87 C8 05 00 00 C6 87 C0 05 00 00 00");
+
+				if (!result.IsEmpty())
+				{
+					addr2 = result.Start;
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			AFXADDR_SET(csgo_CDemoPlayer_InternalStartPlayback, addr2);
+		}
+
+		// csgo_WriteDeltaEntities // Checked: 2019-10-05
+		{
+			DWORD addr = 0;
+			{
+				ImageSectionsReader sections((HMODULE)engineDll);
+				if (!sections.Eof())
+				{
+					MemRange textRange = sections.GetMemRange();
+					sections.Next(); // skip .text
+					if (!sections.Eof())
+					{
+						MemRange firstDataRange = sections.GetMemRange();
+
+						MemRange result = FindCString(sections.GetMemRange(), "WriteDeltaEntities");
+						if (!result.IsEmpty())
+						{
+							DWORD tmpAddr = result.Start;
+
+							result = FindBytes(textRange, (char const*)&tmpAddr, sizeof(tmpAddr));
+							if (!result.IsEmpty())
+							{
+								result = FindPatternString(textRange.And(MemRange(result.Start - 0x30, result.Start - 0x30 + 9)), "55 8B EC 81 EC 80 01 00 00");
+								if (!result.IsEmpty())
+								{
+									addr = result.Start;
+								}
+								else ErrorBox(MkErrStr(__FILE__, __LINE__));
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			AFXADDR_SET(csgo_WriteDeltaEntities, addr);
+		}
+
+		// csgo_NET_CreateNetChannel // Checked: 2019-10-09.
+		{
+			DWORD addr = 0;
+
+			ImageSectionsReader sections((HMODULE)engineDll);
+			if (!sections.Eof())
+			{
+				MemRange textRange = sections.GetMemRange();
+
+				MemRange result = FindPatternString(textRange, "55 8B EC 83 E4 F0 83 EC 58 80 7D 14 00 8B C1 56 57");
+
+				if (!result.IsEmpty())
+				{
+					addr = result.Start;
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			AFXADDR_SET(csgo_NET_CreateNetChannel, addr);
+		}
+
+		// csgo_CBaseServer_GetFreeCLient // Checked: 2019-10-09.
+		{
+			DWORD addr = 0;
+
+			ImageSectionsReader sections((HMODULE)engineDll);
+			if (!sections.Eof())
+			{
+				MemRange textRange = sections.GetMemRange();
+
+				MemRange result = FindPatternString(textRange, "55 8B EC 83 EC 50 53 8B D9 56 57 33 F6");
+
+				if (!result.IsEmpty())
+				{
+					addr = result.Start;
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			AFXADDR_SET(csgo_CBaseServer_GetFreeCLient, addr);
+		}
 	}
 	else
 	{
@@ -568,6 +841,17 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_RTTI_CGameEvent, 0);
 		AFXADDR_SET(csgo_RTTI_IGameEvent, 0);
 		AFXADDR_SET(csgo_CStaticProp_IClientEntity_vtable, 0x0);
+		AFXADDR_SET(csgo_CDemoPlayer, 0x0);
+		//AFXADDR_SET(csgo_CClientFrameManager_DeleteClientFrames, 0x0);
+		//AFXADDR_SET(m_ClockDriftMgr, 0x0);
+		AFXADDR_SET(csgo_cl, 0x0);
+		//AFXADDR_SET(csgo_CL_ProcessPacketEntities_AddClientFrame, 0x0);
+		AFXADDR_SET(csgo_sv, 0x0);
+		//AFXADDR_SET(csgo_host_client, 0x0);
+		AFXADDR_SET(csgo_CDemoPlayer_InternalStartPlayback, 0x0);
+		AFXADDR_SET(csgo_WriteDeltaEntities, 0x0);
+		AFXADDR_SET(csgo_NET_CreateNetChannel, 0x0);
+		AFXADDR_SET(csgo_CBaseServer_GetFreeCLient, 0x0);
 	}
 	AFXADDR_SET(csgo_snd_mix_timescale_patch_DSZ, 0x08);
 	AFXADDR_SET(csgo_MIX_PaintChannels_DSZ, 0x9);

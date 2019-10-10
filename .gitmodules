@@ -25,3 +25,4 @@
 [submodule "shared/csgo-demoinfo"]
 	path = shared/csgo-demoinfo
 	url = https://github.com/advancedfx/csgo-demoinfo.git
+	branch = master

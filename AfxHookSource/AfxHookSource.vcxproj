@@ -78,15 +78,15 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
-      <AdditionalIncludeDirectories>./;../prop/AfxHookSource;../;../prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;../prop/AfxHookSource;../;../prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;C:\source\advancedfx\shared\csgo-demoinfo\demoinfogo\protobuf-2.5.0\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
       <ObjectFileName>$(IntDir)%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalLibraryDirectories>../../openexr-build/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>IlmImf-2_2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../../openexr-build/lib;C:\source\advancedfx\shared\csgo-demoinfo\demoinfogo\protobuf-2.5.0\vsprojects\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libprotobuf.lib;IlmImf-2_2.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
     </Link>
   </ItemDefinitionGroup>
@@ -98,14 +98,14 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>./;../prop/AfxHookSource;../;../prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;../prop/AfxHookSource;../;../prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;C:\source\advancedfx\shared\csgo-demoinfo\demoinfogo\protobuf-2.5.0\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
       <ObjectFileName>$(IntDir)%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>../../openexr-build/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>IlmImf-2_2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../../openexr-build/lib;C:\source\advancedfx\shared\csgo-demoinfo\demoinfogo\protobuf-2.5.0\vsprojects\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libprotobuf.lib;IlmImf-2_2.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
     </Link>
   </ItemDefinitionGroup>
@@ -118,7 +118,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>./;../prop/AfxHookSource;../;../prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;../prop/AfxHookSource;../;../prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;C:\source\advancedfx\shared\csgo-demoinfo\demoinfogo\protobuf-2.5.0\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
       <ObjectFileName>$(IntDir)%(RelativeDir)/</ObjectFileName>
     </ClCompile>
@@ -127,8 +127,8 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalLibraryDirectories>../../openexr-build/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>IlmImf-2_2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../../openexr-build/lib;C:\source\advancedfx\shared\csgo-demoinfo\demoinfogo\protobuf-2.5.0\vsprojects\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libprotobuf.lib;IlmImf-2_2.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
     </Link>
   </ItemDefinitionGroup>
@@ -141,7 +141,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>./;../prop/AfxHookSource;../;../prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;../prop/AfxHookSource;../;../prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;C:\source\advancedfx\shared\csgo-demoinfo\demoinfogo\protobuf-2.5.0\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
       <ObjectFileName>$(IntDir)%(RelativeDir)/</ObjectFileName>
     </ClCompile>
@@ -149,13 +149,14 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <AdditionalLibraryDirectories>../../openexr-build/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>IlmImf-2_2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../../openexr-build/lib;C:\source\advancedfx\shared\csgo-demoinfo\demoinfogo\protobuf-2.5.0\vsprojects\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libprotobuf.lib;IlmImf-2_2.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier1\convar.cpp" />
+    <ClCompile Include="..\prop\AfxHookSource\csgo_CDemoFile.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\cssV34\sdk_src\public\tools\bonelist.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\cssV34\sdk_src\tier1\keyvalues.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\l4d2\sdk_src\public\tier1\convar.cpp" />
@@ -169,6 +170,8 @@
     <ClCompile Include="..\shared\bvhimport.cpp" />
     <ClCompile Include="..\shared\CamPath.cpp" />
     <ClCompile Include="..\prop\shared\detours.cpp" />
+    <ClCompile Include="..\shared\csgo-demoinfo\demoinfogo\demofilebitbuf.cpp" />
+    <ClCompile Include="..\shared\csgo-demoinfo\demoinfogo\generated_proto\netmessages_public.pb.cc" />
     <ClCompile Include="..\shared\Detours\src\detours.cpp" />
     <ClCompile Include="..\shared\Detours\src\disasm.cpp" />
     <ClCompile Include="..\shared\Detours\src\disolarm.cpp" />
@@ -250,6 +253,7 @@
     <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier0\memalloc.h" />
     <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier1\convar.h" />
     <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier1\iconvar.h" />
+    <ClInclude Include="..\prop\AfxHookSource\csgo_CDemoFile.h" />
     <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\basehandle.h" />
     <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\const.h" />
     <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\engine\ishadowmgr.h" />
@@ -290,6 +294,9 @@
     <ClInclude Include="..\shared\bvhimport.h" />
     <ClInclude Include="..\shared\CamPath.h" />
     <ClInclude Include="..\prop\shared\detours.h" />
+    <ClInclude Include="..\shared\csgo-demoinfo\demoinfogo\demofile.h" />
+    <ClInclude Include="..\shared\csgo-demoinfo\demoinfogo\demofilebitbuf.h" />
+    <ClInclude Include="..\shared\csgo-demoinfo\demoinfogo\generated_proto\netmessages_public.pb.h" />
     <ClInclude Include="..\shared\Detours\src\detours.h" />
     <ClInclude Include="..\shared\Detours\src\detver.h" />
     <ClInclude Include="..\shared\EasySampler.h" />
