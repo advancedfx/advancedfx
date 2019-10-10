@@ -172,6 +172,15 @@
     <Filter Include="prop\AfxHookSource\insurgency2\public">
       <UniqueIdentifier>{9f8a63b3-6460-48bd-a750-91b2e9c2c410}</UniqueIdentifier>
     </Filter>
+    <Filter Include="shared\csgo-demoinfo">
+      <UniqueIdentifier>{b1a9ed20-9a10-4a3b-a675-e5dc70333507}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shared\csgo-demoinfo\demoinfogo">
+      <UniqueIdentifier>{b77bacbd-1082-43f7-af24-12c1be7e6a75}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shared\csgo-demoinfo\demoinfogo\generated_proto">
+      <UniqueIdentifier>{454af415-3055-47a1-b201-9d33d17bce9a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\bvhexport.cpp">
@@ -434,6 +443,15 @@
     </ClCompile>
     <ClCompile Include="AfxCommandLine.cpp">
       <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\csgo-demoinfo\demoinfogo\demofilebitbuf.cpp">
+      <Filter>shared\csgo-demoinfo\demoinfogo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\csgo-demoinfo\demoinfogo\generated_proto\netmessages_public.pb.cc">
+      <Filter>shared\csgo-demoinfo\demoinfogo\generated_proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\prop\AfxHookSource\csgo_CDemoFile.cpp">
+      <Filter>prop\AfxHookSource</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -808,6 +826,18 @@
     </ClInclude>
     <ClInclude Include="AfxCommandLine.h">
       <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\csgo-demoinfo\demoinfogo\demofilebitbuf.h">
+      <Filter>shared\csgo-demoinfo\demoinfogo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\csgo-demoinfo\demoinfogo\demofile.h">
+      <Filter>shared\csgo-demoinfo\demoinfogo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\csgo-demoinfo\demoinfogo\generated_proto\netmessages_public.pb.h">
+      <Filter>shared\csgo-demoinfo\demoinfogo\generated_proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\csgo_CDemoFile.h">
+      <Filter>prop\AfxHookSource</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
