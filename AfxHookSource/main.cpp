@@ -54,7 +54,7 @@
 #include <insurgency2/public/cdll_int.h>
 #include "MirvTime.h"
 #include "csgo_CRendering3dView.h"
-#include "csgo_CDemoFile.h"
+//#include "csgo_CDemoFile.h"
 
 #include <Windows.h>
 #include <shared/Detours/src/detours.h>
@@ -2044,7 +2044,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		// Init the hook early, so we don't run into issues with threading:
 		Hook_csgo_SndMixTimeScalePatch();
 		csgo_Audio_Install();
-		Hook_csgo_DemoFile();
+		//Hook_csgo_DemoFile();
 	}
 	else
 	if(bFirstInputsystem && StringEndsWith( lpLibFileName, "inputsystem.dll"))
