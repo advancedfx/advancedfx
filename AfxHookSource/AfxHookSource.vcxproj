@@ -159,6 +159,7 @@
     <ClCompile Include="..\prop\AfxHookSource\cssV34\sdk_src\public\tools\bonelist.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\cssV34\sdk_src\tier1\keyvalues.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\l4d2\sdk_src\public\tier1\convar.cpp" />
+    <ClCompile Include="..\prop\AfxHookSource\bm\sdk_src\public\tier1\convar.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\SourceSdkShared.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\swarm\sdk_src\public\tier1\convar.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.cpp" />
@@ -267,6 +268,13 @@
     <ClInclude Include="..\prop\AfxHookSource\l4d2\sdk_src\public\tier0\memalloc.h" />
     <ClInclude Include="..\prop\AfxHookSource\l4d2\sdk_src\public\tier1\convar.h" />
     <ClInclude Include="..\prop\AfxHookSource\l4d2\sdk_src\public\tier1\iconvar.h" />
+    <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\appframework\IAppSystem.h" />
+    <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\cdll_int.h" />
+    <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\icvar.h" />
+    <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\interfaces\interfaces.h" />
+    <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\tier0\memalloc.h" />
+    <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\tier1\convar.h" />
+    <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\tier1\iconvar.h" />
     <ClInclude Include="..\prop\AfxHookSource\SourceSdkShared.h" />
     <ClInclude Include="..\prop\AfxHookSource\swarm\sdk_src\public\appframework\IAppSystem.h" />
     <ClInclude Include="..\prop\AfxHookSource\swarm\sdk_src\public\icvar.h" />

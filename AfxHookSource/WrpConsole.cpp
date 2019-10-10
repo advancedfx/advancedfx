@@ -51,6 +51,7 @@ SOURCESDK::ICvar_004 * WrpConCommands::m_CvarIface_004 = 0;
 SOURCESDK::CSGO::ICvar * WrpConCommands::m_CvarIface_CSGO = 0;
 SOURCESDK::SWARM::ICvar * WrpConCommands::m_CvarIface_SWARM = 0;
 SOURCESDK::L4D2::ICvar * WrpConCommands::m_CvarIface_L4D2 = 0;
+SOURCESDK::BM::ICvar * WrpConCommands::m_CvarIface_BM = 0;
 WrpConCommandsListEntry * WrpConCommands::m_CommandListRoot = 0;
 SOURCESDK::IVEngineClient_012 * WrpConCommands::m_VEngineClient_012 = 0;
 
@@ -144,6 +145,22 @@ void WrpConCommands::RegisterCommands(SOURCESDK::L4D2::ICvar * cvarIface) {
 	}
 }
 
+void WrpConCommands::RegisterCommands(SOURCESDK::BM::ICvar * cvarIface) {
+	if (m_CvarIface_BM)
+		// already registered the current list
+		return;
+
+	m_CvarIface_BM = cvarIface;
+	SOURCESDK::BM::ConVar_Register(0, new WrpConCommandsRegistrar_BM());
+
+	for (WrpConCommandsListEntry * entry = m_CommandListRoot; entry; entry = entry->Next) {
+		WrpConCommand * cmd = entry->Command;
+
+		// will init themself since s_pAccessor is set:
+		new SOURCESDK::BM::ConCommand(cmd->GetName(), cmd, cmd->GetHelpString(), SOURCESDK_BM_FCVAR_CLIENTDLL);
+	}
+}
+
 void WrpConCommands::WrpConCommand_Register(WrpConCommand * cmd) {
 	WrpConCommandsListEntry * entry = new WrpConCommandsListEntry();
 	entry->Command = cmd;
@@ -159,6 +176,8 @@ void WrpConCommands::WrpConCommand_Register(WrpConCommand * cmd) {
 		new SOURCESDK::SWARM::ConCommand(cmd->GetName(), cmd, cmd->GetHelpString(), SOURCESDK_SWARM_FCVAR_CLIENTDLL);
 	else if (m_CvarIface_L4D2)
 		new SOURCESDK::L4D2::ConCommand(cmd->GetName(), cmd, cmd->GetHelpString(), SOURCESDK_L4D2_FCVAR_CLIENTDLL);
+	else if (m_CvarIface_BM)
+		new SOURCESDK::BM::ConCommand(cmd->GetName(), cmd, cmd->GetHelpString(), SOURCESDK_BM_FCVAR_CLIENTDLL);
 	else if(m_CvarIface_004)
 		new SOURCESDK::ConCommand_004(cmd->GetName(), cmd->GetCallback(), cmd->GetHelpString());
 	else if(m_CvarIface_003)
@@ -228,6 +247,16 @@ bool WrpConCommands::WrpConCommandsRegistrar_L4D2_Register(SOURCESDK::L4D2::ConC
 	return true;
 }
 
+bool WrpConCommands::WrpConCommandsRegistrar_BM_Register(SOURCESDK::BM::ConCommandBase *pVar) {
+	if (!m_CvarIface_BM)
+		return false;
+
+	//	MessageBox(0, "WrpConCommands::WrpConCommandsRegistrar_007_Register", "AFX_DEBUG", MB_OK);
+
+	m_CvarIface_BM->RegisterConCommand(pVar);
+	return true;
+}
+
 // WrpConCommandsRegistrar_003 ////////////////////////////////////////////////////
 
 bool WrpConCommandsRegistrar_003::RegisterConCommandBase(SOURCESDK::ConCommandBase_003 *pVar ) {
@@ -256,6 +285,12 @@ bool WrpConCommandsRegistrar_SWARM::RegisterConCommandBase(SOURCESDK::SWARM::Con
 
 bool WrpConCommandsRegistrar_L4D2::RegisterConCommandBase(SOURCESDK::L4D2::ConCommandBase *pVar) {
 	return WrpConCommands::WrpConCommandsRegistrar_L4D2_Register(pVar);
+}
+
+// WrpConCommandsRegistrar_BM ////////////////////////////////////////////////////
+
+bool WrpConCommandsRegistrar_BM::RegisterConCommandBase(SOURCESDK::BM::ConCommandBase *pVar) {
+	return WrpConCommands::WrpConCommandsRegistrar_BM_Register(pVar);
 }
 
 

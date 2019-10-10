@@ -157,6 +157,27 @@
     <Filter Include="prop\AfxHookSource\l4d2\sdk_src\public\tier1">
       <UniqueIdentifier>{43d04db8-21c5-4641-bedb-bca4db8a52a6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="prop\AfxHookSource\bm">
+      <UniqueIdentifier>{cd77fb3a-8a86-4aa5-968f-b0014174a8b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\bm\sdk_src">
+      <UniqueIdentifier>{ab679ada-7ea9-4b43-82ce-baad674566e3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\bm\sdk_src\public">
+      <UniqueIdentifier>{b4338a71-a2b3-4e73-af46-6b627565711d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\bm\sdk_src\public\appframework">
+      <UniqueIdentifier>{42c88070-a308-47fe-b927-2e4c65f1007d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\bm\sdk_src\public\interfaces">
+      <UniqueIdentifier>{171e3520-c9d4-475d-ae3a-6d41661740d9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\bm\sdk_src\public\tier0">
+      <UniqueIdentifier>{48c53b74-c027-461b-a134-5aac1bb4acf1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="prop\AfxHookSource\bm\sdk_src\public\tier1">
+      <UniqueIdentifier>{43d04db8-21c5-4641-bedb-bca4db8a52a6}</UniqueIdentifier>
+    </Filter>
     <Filter Include="shared\Detours">
       <UniqueIdentifier>{a00372c9-e182-48de-a4e5-f496755b2814}</UniqueIdentifier>
     </Filter>
@@ -371,6 +392,9 @@
     </ClCompile>
     <ClCompile Include="..\prop\AfxHookSource\l4d2\sdk_src\public\tier1\convar.cpp">
       <Filter>prop\AfxHookSource\l4d2\sdk_src\public\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\prop\AfxHookSource\bm\sdk_src\public\tier1\convar.cpp">
+      <Filter>prop\AfxHookSource\bm\sdk_src\public\tier1</Filter>
     </ClCompile>
     <ClCompile Include="AfxInterop.cpp">
       <Filter>AfxHookSource</Filter>
@@ -761,6 +785,27 @@
     <ClInclude Include="..\prop\AfxHookSource\l4d2\sdk_src\public\icvar.h">
       <Filter>prop\AfxHookSource\l4d2\sdk_src\public</Filter>
     </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\appframework\IAppSystem.h">
+      <Filter>prop\AfxHookSource\bm\sdk_src\public\appframework</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\interfaces\interfaces.h">
+      <Filter>prop\AfxHookSource\bm\sdk_src\public\interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\tier0\memalloc.h">
+      <Filter>prop\AfxHookSource\bm\sdk_src\public\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\tier1\convar.h">
+      <Filter>prop\AfxHookSource\bm\sdk_src\public\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\cdll_int.h">
+      <Filter>prop\AfxHookSource\bm\sdk_src\public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\tier1\iconvar.h">
+      <Filter>prop\AfxHookSource\bm\sdk_src\public\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\icvar.h">
+      <Filter>prop\AfxHookSource\bm\sdk_src\public</Filter>
+    </ClInclude>
     <ClInclude Include="AfxInterop.h">
       <Filter>AfxHookSource</Filter>
     </ClInclude>
@@ -808,6 +853,6 @@
     </ClInclude>
     <ClInclude Include="AfxCommandLine.h">
       <Filter>AfxHookSource</Filter>
-    </ClInclude>
+    </ClInclude>   
   </ItemGroup>
 </Project>

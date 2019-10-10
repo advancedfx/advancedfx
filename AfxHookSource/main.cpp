@@ -49,9 +49,12 @@
 #include <swarm/sdk_src/public/tier1/convar.h>
 #include <l4d2/sdk_src/public/tier0/memalloc.h>
 #include <l4d2/sdk_src/public/tier1/convar.h>
+#include <bm/sdk_src/public/tier0/memalloc.h>
+#include <bm/sdk_src/public/tier1/convar.h>
 #include <csgo/Panorama.h>
 //#include <csgo/hooks/studiorender.h>
 #include <insurgency2/public/cdll_int.h>
+#include <bm/sdk_src/public/cdll_int.h>
 #include "MirvTime.h"
 #include "csgo_CRendering3dView.h"
 
@@ -76,6 +79,10 @@ SOURCESDK::SWARM::ICvar * SOURCESDK::SWARM::g_pCVar = 0;
 SOURCESDK::L4D2::IMemAlloc *SOURCESDK::L4D2::g_pMemAlloc = 0;
 SOURCESDK::L4D2::ICvar * SOURCESDK::L4D2::cvar = 0;
 SOURCESDK::L4D2::ICvar * SOURCESDK::L4D2::g_pCVar = 0;
+
+SOURCESDK::BM::IMemAlloc *SOURCESDK::BM::g_pMemAlloc = 0;
+SOURCESDK::BM::ICvar * SOURCESDK::BM::cvar = 0;
+SOURCESDK::BM::ICvar * SOURCESDK::BM::g_pCVar = 0;
 
 
 void ErrorBox(char const * messageText) {
@@ -251,6 +258,12 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 			g_Info_VEngineClient = VENGINE_CLIENT_INTERFACE_VERSION_014_CSGO " (CS:GO)";
 			g_VEngineClient = new WrpVEngineClient_014_csgo((SOURCESDK::IVEngineClient_014_csgo *)iface);
 		}
+		else 
+		if( SourceSdkVer_BM == g_SourceSdkVer && (iface = appSystemFactory(SOURCESDK_BM_VENGINE_CLIENT_INTERFACE_VERSION, NULL)) )
+		{
+			g_Info_VEngineClient = SOURCESDK_BM_VENGINE_CLIENT_INTERFACE_VERSION " (Black Mesa)";
+			g_VEngineClient = new WrpVEngineClient_bm((SOURCESDK::BM::IVEngineClient *)iface);
+		}
 		else
 		if(iface = appSystemFactory(VENGINE_CLIENT_INTERFACE_VERSION_013, NULL))
 		{
@@ -274,7 +287,7 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 
 			WrpConCommands::RegisterCommands(SOURCESDK::CSGO::g_pCVar);
 		}
-		else if((SourceSdkVer_SWARM == g_SourceSdkVer) && (iface = appSystemFactory(SOURCESDK_SWARM_CVAR_INTERFACE_VERSION, NULL)))
+		else if(SourceSdkVer_SWARM == g_SourceSdkVer && (iface = appSystemFactory(SOURCESDK_SWARM_CVAR_INTERFACE_VERSION, NULL)))
 		{
 			g_Info_VEngineCvar = SOURCESDK_SWARM_CVAR_INTERFACE_VERSION " (Alien Swarm)";
 			SOURCESDK::SWARM::g_pCVar = SOURCESDK::SWARM::cvar = (SOURCESDK::SWARM::ICvar *)iface;
@@ -287,6 +300,13 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 			SOURCESDK::L4D2::g_pCVar = SOURCESDK::L4D2::cvar = (SOURCESDK::L4D2::ICvar *)iface;
 
 			WrpConCommands::RegisterCommands(SOURCESDK::L4D2::g_pCVar);
+		}
+		else if ((iface = appSystemFactory(SOURCESDK_BM_CVAR_INTERFACE_VERSION, NULL)))
+		{
+			g_Info_VEngineCvar = SOURCESDK_BM_CVAR_INTERFACE_VERSION " (Black Mesa)";
+			SOURCESDK::BM::g_pCVar = SOURCESDK::BM::cvar = (SOURCESDK::BM::ICvar *)iface;
+
+			WrpConCommands::RegisterCommands(SOURCESDK::BM::g_pCVar);
 		}
 		else if((iface = appSystemFactory( VENGINE_CVAR_INTERFACE_VERSION_004, NULL )))
 		{
@@ -460,6 +480,24 @@ int __stdcall new_CVClient_Init_Swarm(DWORD *this_ptr, SOURCESDK::CreateInterfac
 	}
 
 	return old_CVClient_Init_Swarm(this_ptr, AppSystemFactory_ForClient, pGlobals);
+}
+
+typedef int(__stdcall * CVClient_Init_BM_t)(DWORD *this_ptr, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CGlobalVarsBase *pGlobals);
+
+CVClient_Init_BM_t old_CVClient_Init_BM;
+
+int __stdcall new_CVClient_Init_BM(DWORD *this_ptr, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CGlobalVarsBase *pGlobals)
+{
+	static bool bFirstCall = true;
+
+	if( bFirstCall )
+	{
+		bFirstCall = false;
+
+		MySetup(appSystemFactory, new WrpGlobalsOther(pGlobals));
+	}
+
+	return old_CVClient_Init_BM(this_ptr, AppSystemFactory_ForClient, pGlobals);
 }
 
 
@@ -1383,6 +1421,13 @@ void HookClientDllInterface_Swarm_Init(void * iface)
 	DetourIfacePtr((DWORD *)&(vtable[1]), new_CVClient_Init_Swarm, (DetourIfacePtr_fn &)old_CVClient_Init_Swarm);
 }
 
+void HookClientDllInterface_BM_Init(void * iface)
+{
+	int * vtable = *(int**) iface;
+
+	DetourIfacePtr((DWORD *)&(vtable[2]), new_CVClient_Init_BM, (DetourIfacePtr_fn &) old_CVClient_Init_BM);
+}
+
 void HookClientDllInterface_Insurgency2_Init(void * iface)
 {
 	int * vtable = *(int**)iface;
@@ -1416,8 +1461,16 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 		if(SourceSdkVer_CSGO != g_SourceSdkVer)
 		{
 			if (iface = old_Client_CreateInterface(CLIENT_DLL_INTERFACE_VERSION_018, NULL)) {
-				g_Info_VClient = CLIENT_DLL_INTERFACE_VERSION_018;
-				HookClientDllInterface_011_Init(iface);
+				if( SourceSdkVer_BM == g_SourceSdkVer )
+				{
+					g_Info_VClient = CLIENT_DLL_INTERFACE_VERSION_018 " (Black Mesa)";
+					HookClientDllInterface_BM_Init(iface);
+				}
+				else
+				{
+					g_Info_VClient = CLIENT_DLL_INTERFACE_VERSION_018;
+					HookClientDllInterface_011_Init(iface);
+				}
 			}
 			else
 			if(iface = old_Client_CreateInterface(CLIENT_DLL_INTERFACE_VERSION_017, NULL)) {
@@ -1438,7 +1491,7 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 					g_Info_VClient = CLIENT_DLL_INTERFACE_VERSION_016 " (Insurgency2)";
 					HookClientDllInterface_Insurgency2_Init(iface);
 				}
-				else if (SourceSdkVer_SWARM == g_SourceSdkVer || SourceSdkVer_L4D2 == g_SourceSdkVer)
+				else if (SourceSdkVer_SWARM == g_SourceSdkVer || SourceSdkVer_L4D2 == g_SourceSdkVer || SourceSdkVer_BM == g_SourceSdkVer)
 				{
 					g_Info_VClient = CLIENT_DLL_INTERFACE_VERSION_016 " (Alien Swarm / Left 4 Dead 2)";
 					HookClientDllInterface_Swarm_Init(iface);
@@ -1875,6 +1928,10 @@ void CommonHooks()
 		{
 			g_SourceSdkVer = SourceSdkVer_L4D2;
 		}
+		else if (StringIEndsWith(filePath, "bms.exe"))
+		{
+			g_SourceSdkVer = SourceSdkVer_BM;
+		}
 		else if (StringIEndsWith(filePath, "insurgency.exe"))
 		{
 			g_SourceSdkVer = SourceSdkVer_Insurgency2;
@@ -1954,9 +2011,20 @@ void CommonHooks()
 			}
 			else
 			{
-				if (SOURCESDK::L4D2::IMemAlloc ** ppMemalloc = (SOURCESDK::L4D2::IMemAlloc **)GetProcAddress(hTier0, "g_pMemAlloc"))
+				if (SourceSdkVer_L4D2 == g_SourceSdkVer)
 				{
-					SOURCESDK::L4D2::g_pMemAlloc = *ppMemalloc;
+					if (SOURCESDK::L4D2::IMemAlloc ** ppMemalloc = (SOURCESDK::L4D2::IMemAlloc **)GetProcAddress(hTier0, "g_pMemAlloc"))
+					{
+						SOURCESDK::L4D2::g_pMemAlloc = *ppMemalloc;
+					}
+				}
+				else
+				if (SourceSdkVer_BM == g_SourceSdkVer)
+				{
+					if (SOURCESDK::BM::IMemAlloc ** ppMemalloc = (SOURCESDK::BM::IMemAlloc **)GetProcAddress(hTier0, "g_pMemAlloc"))
+					{
+						SOURCESDK::BM::g_pMemAlloc = *ppMemalloc;
+					}
 				}
 			}
 		}

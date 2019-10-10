@@ -655,3 +655,203 @@ WrpVEngineClientDemoInfoEx * WrpVEngineClient_Insurgency2::GetDemoInfoEx(void)
 {
 	return this;
 }
+
+
+// WrpVEngineClient_bm ///////////////////////////////////////////////////////////
+
+WrpVEngineClient_bm::WrpVEngineClient_bm(SOURCESDK::BM::IVEngineClient * iface)
+{
+	m_VEngineClient = iface;
+}
+
+void WrpVEngineClient_bm::GetScreenSize(int& width, int& height)
+{
+	m_VEngineClient->GetScreenSize(width, height);
+}
+
+void WrpVEngineClient_bm::ServerCmd(const char *szCmdString, bool bReliable)
+{
+	m_VEngineClient->ServerCmd(szCmdString, bReliable);
+}
+
+void WrpVEngineClient_bm::ClientCmd(const char *szCmdString)
+{
+	m_VEngineClient->ClientCmd(szCmdString);
+}
+
+bool WrpVEngineClient_bm::Con_IsVisible(void)
+{
+	return m_VEngineClient->Con_IsVisible();
+}
+
+int	WrpVEngineClient_bm::GetLocalPlayer(void)
+{
+	return m_VEngineClient->GetLocalPlayer();
+}
+
+void WrpVEngineClient_bm::GetViewAngles(SOURCESDK::QAngle& va)
+{
+	m_VEngineClient->GetViewAngles(va);
+}
+
+void WrpVEngineClient_bm::SetViewAngles(SOURCESDK::QAngle& va)
+{
+	m_VEngineClient->SetViewAngles(va);
+}
+
+int WrpVEngineClient_bm::GetMaxClients(void)
+{
+	return m_VEngineClient->GetMaxClients();
+}
+
+bool WrpVEngineClient_bm::IsInGame(void)
+{
+	return m_VEngineClient->IsInGame();
+}
+
+bool WrpVEngineClient_bm::IsConnected(void)
+{
+	return m_VEngineClient->IsConnected();
+}
+
+bool WrpVEngineClient_bm::IsDrawingLoadingImage(void)
+{
+	return m_VEngineClient->IsDrawingLoadingImage();
+}
+
+void WrpVEngineClient_bm::Con_NPrintf(int pos, const char *fmt, ...)
+{
+	va_list argptr;
+	va_start(argptr, fmt);
+	m_VEngineClient->Con_NPrintf(pos, fmt, argptr);
+}
+
+const char *  WrpVEngineClient_bm::GetGameDirectory(void)
+{
+	return m_VEngineClient->GetGameDirectory();
+}
+
+const SOURCESDK::VMatrix& WrpVEngineClient_bm::WorldToScreenMatrix()
+{
+	return m_VEngineClient->WorldToScreenMatrix();
+}
+
+const SOURCESDK::VMatrix& WrpVEngineClient_bm::WorldToViewMatrix()
+{
+	return m_VEngineClient->WorldToViewMatrix();
+}
+
+
+char const *  WrpVEngineClient_bm::GetLevelName(void)
+{
+	return m_VEngineClient->GetLevelName();
+}
+
+void WrpVEngineClient_bm::EngineStats_BeginFrame(void)
+{
+//	return m_VEngineClient->EngineStats_BeginFrame();
+}
+
+void WrpVEngineClient_bm::EngineStats_EndFrame(void)
+{
+//	return m_VEngineClient->EngineStats_EndFrame();
+}
+
+bool WrpVEngineClient_bm::IsPlayingDemo(void)
+{
+	return m_VEngineClient->IsPlayingDemo();
+}
+
+bool WrpVEngineClient_bm::IsRecordingDemo(void)
+{
+	return m_VEngineClient->IsRecordingDemo();
+}
+
+bool WrpVEngineClient_bm::IsPlayingTimeDemo(void)
+{
+	return m_VEngineClient->IsPlayingTimeDemo();
+}
+
+int WrpVEngineClient_bm::GetDemoRecordingTick(void)
+{
+	return m_VEngineClient->GetDemoRecordingTick();
+}
+
+int	WrpVEngineClient_bm::GetDemoPlaybackTick(void)
+{
+	return m_VEngineClient->GetDemoPlaybackTick();
+}
+
+int	WrpVEngineClient_bm::GetDemoPlaybackStartTick(void)
+{
+	return m_VEngineClient->GetDemoPlaybackStartTick();
+}
+
+float WrpVEngineClient_bm::GetDemoPlaybackTimeScale(void)
+{
+	return m_VEngineClient->GetDemoPlaybackTimeScale();
+}
+
+int WrpVEngineClient_bm::GetDemoPlaybackTotalTicks(void)
+{
+	return m_VEngineClient->GetDemoPlaybackTotalTicks();
+}
+
+bool WrpVEngineClient_bm::IsPaused(void)
+{
+	return m_VEngineClient->IsPaused();
+}
+
+bool WrpVEngineClient_bm::IsTakingScreenshot(void)
+{
+	return m_VEngineClient->IsTakingScreenshot();
+}
+bool WrpVEngineClient_bm::IsHLTV(void)
+{
+	return m_VEngineClient->IsHLTV();
+}
+
+bool WrpVEngineClient_bm::IsLevelMainMenuBackground(void)
+{
+	return m_VEngineClient->IsLevelMainMenuBackground();
+}
+
+void WrpVEngineClient_bm::GetMainMenuBackgroundName(char *dest, int destlen)
+{
+	return m_VEngineClient->GetMainMenuBackgroundName(dest, destlen);
+}
+
+bool WrpVEngineClient_bm::IsInEditMode(void)
+{
+	return m_VEngineClient->IsInEditMode();
+}
+
+unsigned int WrpVEngineClient_bm::GetEngineBuildNumber()
+{
+	return m_VEngineClient->GetEngineBuildNumber();
+}
+
+const char * WrpVEngineClient_bm::GetProductVersionString()
+{
+	return m_VEngineClient->GetProductVersionString();
+}
+
+bool WrpVEngineClient_bm::IsHammerRunning() const
+{
+	return m_VEngineClient->IsHammerRunning();
+}
+
+void WrpVEngineClient_bm::ExecuteClientCmd(const char *szCmdString)
+{
+	m_VEngineClient->ExecuteClientCmd(szCmdString);
+}
+
+void WrpVEngineClient_bm::ClientCmd_Unrestricted(const char *szCmdString)
+{
+	m_VEngineClient->ClientCmd_Unrestricted(szCmdString);
+}
+
+WrpVEngineClientDemoInfoEx * WrpVEngineClient_bm::GetDemoInfoEx(void)
+{
+	return this;
+}
