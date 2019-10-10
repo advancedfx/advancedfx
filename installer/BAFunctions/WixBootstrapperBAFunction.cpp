@@ -25,6 +25,10 @@ public:
 		{
 			hr = m_pEngine->SetVariableString(L"HlaeCoreTransform", L"fi-fi.mst");
 		}
+		else if (0 == wcscmp(sczValue, L"2070"))
+		{
+			hr = m_pEngine->SetVariableString(L"HlaeCoreTransform", L"pt-pt.mst");
+		}
 		else if (0 == wcscmp(sczValue, L"2052"))
 		{
 			hr = m_pEngine->SetVariableString(L"HlaeCoreTransform", L"zh-cn.mst");

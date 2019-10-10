@@ -49,6 +49,7 @@
         <MsiProperty Name="AFX_INSTALLFFMPEG" Value="[HlaeFfmpegFeature]" />
         <Payload Id="HlaeCore_de_de" Compressed="yes" Name="de-de.mst" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\de-de\HlaeCore.mst"/>
         <Payload Id="HlaeCore_fi_fi" Compressed="yes" Name="fi-fi.mst" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\fi-fi\HlaeCore.mst"/>
+        <Payload Id="HlaeCore_pt_pt" Compressed="yes" Name="fi-fi.mst" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\pt-pt\HlaeCore.mst"/>
         <Payload Id="HlaeCore_zh_zn" Compressed="yes" Name="zh-cn.mst" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\zh-cn\HlaeCore.mst"/>
       </MsiPackage>
     </PackageGroup>
