@@ -22,7 +22,3 @@
 	path = contrib
 	url = https://github.com/advancedfx/contrib.git
 	branch = master
-[submodule "shared/csgo-demoinfo"]
-	path = shared/csgo-demoinfo
-	url = https://github.com/advancedfx/csgo-demoinfo.git
-	branch = master

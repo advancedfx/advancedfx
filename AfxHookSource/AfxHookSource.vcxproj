@@ -156,7 +156,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier1\convar.cpp" />
-    <ClCompile Include="..\prop\AfxHookSource\csgo_CDemoFile.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\cssV34\sdk_src\public\tools\bonelist.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\cssV34\sdk_src\tier1\keyvalues.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\l4d2\sdk_src\public\tier1\convar.cpp" />
@@ -170,8 +169,6 @@
     <ClCompile Include="..\shared\bvhimport.cpp" />
     <ClCompile Include="..\shared\CamPath.cpp" />
     <ClCompile Include="..\prop\shared\detours.cpp" />
-    <ClCompile Include="..\shared\csgo-demoinfo\demoinfogo\demofilebitbuf.cpp" />
-    <ClCompile Include="..\shared\csgo-demoinfo\demoinfogo\generated_proto\netmessages_public.pb.cc" />
     <ClCompile Include="..\shared\Detours\src\detours.cpp" />
     <ClCompile Include="..\shared\Detours\src\disasm.cpp" />
     <ClCompile Include="..\shared\Detours\src\disolarm.cpp" />
@@ -253,7 +250,6 @@
     <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier0\memalloc.h" />
     <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier1\convar.h" />
     <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier1\iconvar.h" />
-    <ClInclude Include="..\prop\AfxHookSource\csgo_CDemoFile.h" />
     <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\basehandle.h" />
     <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\const.h" />
     <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\engine\ishadowmgr.h" />
@@ -294,9 +290,6 @@
     <ClInclude Include="..\shared\bvhimport.h" />
     <ClInclude Include="..\shared\CamPath.h" />
     <ClInclude Include="..\prop\shared\detours.h" />
-    <ClInclude Include="..\shared\csgo-demoinfo\demoinfogo\demofile.h" />
-    <ClInclude Include="..\shared\csgo-demoinfo\demoinfogo\demofilebitbuf.h" />
-    <ClInclude Include="..\shared\csgo-demoinfo\demoinfogo\generated_proto\netmessages_public.pb.h" />
     <ClInclude Include="..\shared\Detours\src\detours.h" />
     <ClInclude Include="..\shared\Detours\src\detver.h" />
     <ClInclude Include="..\shared\EasySampler.h" />
