@@ -5,6 +5,7 @@
 
 #include "SourceInterfaces.h"
 #include "insurgency2/public/cdll_int.h"
+#include "bm/sdk_src/public/cdll_int.h"
 
 
 // WrpVEngineClientDemoInfo ///////////////////////////////////////////////////
@@ -286,4 +287,64 @@ public:
 
 private:
 	SOURCESDK::INSURGENCY2::IVEngineClient * m_VEngineClient;
+};
+
+// WrpVEngineClient_bm ///////////////////////////////////////////////////
+
+class WrpVEngineClient_bm
+	: public WrpVEngineClient
+	, public WrpVEngineClientDemoInfoEx
+{
+public:
+	WrpVEngineClient_bm(SOURCESDK::BM::IVEngineClient * iface);
+
+	virtual void GetScreenSize(int& width, int& height);
+	virtual void ServerCmd(const char *szCmdString, bool bReliable = true);
+	virtual void ClientCmd(const char *szCmdString);
+	virtual bool Con_IsVisible(void);
+	virtual int	GetLocalPlayer(void);
+	virtual void GetViewAngles(SOURCESDK::QAngle& va);
+	virtual void SetViewAngles(SOURCESDK::QAngle& va);
+	virtual int GetMaxClients(void);
+	virtual bool IsInGame(void);
+	virtual bool IsConnected(void);
+	virtual bool IsDrawingLoadingImage(void);
+	virtual void Con_NPrintf(int pos, const char *fmt, ...);
+	virtual const char *  GetGameDirectory(void);
+	virtual const SOURCESDK::VMatrix& WorldToScreenMatrix();
+	virtual const SOURCESDK::VMatrix& WorldToViewMatrix();
+	virtual char const *  GetLevelName(void);
+	virtual void EngineStats_BeginFrame(void);
+	virtual void EngineStats_EndFrame(void);
+	virtual bool IsPlayingDemo(void);
+	virtual bool IsRecordingDemo(void);
+	virtual bool IsPlayingTimeDemo(void);
+
+	virtual int GetDemoRecordingTick(void);
+	virtual int	GetDemoPlaybackTick(void);
+	virtual int	GetDemoPlaybackStartTick(void);
+	virtual float GetDemoPlaybackTimeScale(void);
+	virtual int GetDemoPlaybackTotalTicks(void);
+
+	virtual bool IsPaused(void);
+	virtual bool IsTakingScreenshot(void);
+	virtual bool IsHLTV(void);
+	virtual bool IsLevelMainMenuBackground(void);
+	virtual void GetMainMenuBackgroundName(char *dest, int destlen);
+	virtual bool IsInEditMode(void);
+	virtual unsigned int GetEngineBuildNumber();
+	virtual const char * GetProductVersionString();
+	virtual bool IsHammerRunning() const;
+	virtual void ExecuteClientCmd(const char *szCmdString);
+	virtual void ClientCmd_Unrestricted(const char *szCmdString);
+
+	virtual WrpVEngineClientDemoInfoEx * GetDemoInfoEx(void);
+
+	virtual SOURCESDK::IVEngineClient_014_csgo * GetVEngineClient_csgo(void)
+	{
+		return 0;
+	}
+
+private:
+	SOURCESDK::BM::IVEngineClient * m_VEngineClient;
 };
