@@ -51,10 +51,10 @@
 #include <l4d2/sdk_src/public/tier1/convar.h>
 #include <bm/sdk_src/public/tier0/memalloc.h>
 #include <bm/sdk_src/public/tier1/convar.h>
+#include <bm/sdk_src/public/cdll_int.h>
 #include <csgo/Panorama.h>
 //#include <csgo/hooks/studiorender.h>
 #include <insurgency2/public/cdll_int.h>
-#include <bm/sdk_src/public/cdll_int.h>
 #include "MirvTime.h"
 #include "csgo_CRendering3dView.h"
 
@@ -1491,7 +1491,7 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 					g_Info_VClient = CLIENT_DLL_INTERFACE_VERSION_016 " (Insurgency2)";
 					HookClientDllInterface_Insurgency2_Init(iface);
 				}
-				else if (SourceSdkVer_SWARM == g_SourceSdkVer || SourceSdkVer_L4D2 == g_SourceSdkVer || SourceSdkVer_BM == g_SourceSdkVer)
+				else if (SourceSdkVer_SWARM == g_SourceSdkVer || SourceSdkVer_L4D2 == g_SourceSdkVer )
 				{
 					g_Info_VClient = CLIENT_DLL_INTERFACE_VERSION_016 " (Alien Swarm / Left 4 Dead 2)";
 					HookClientDllInterface_Swarm_Init(iface);
@@ -2005,26 +2005,25 @@ void CommonHooks()
 				else ErrorBox("Could not find tier0!Commandline.");
 				*/
 			}
+
 			if (SourceSdkVer_SWARM == g_SourceSdkVer)
 			{
 				SOURCESDK::SWARM::g_pMemAlloc = *(SOURCESDK::SWARM::IMemAlloc **)GetProcAddress(hTier0, "g_pMemAlloc");
 			}
-			else
+
+			if( SourceSdkVer_L4D2 == g_SourceSdkVer )
 			{
-				if (SourceSdkVer_L4D2 == g_SourceSdkVer)
+				if( SOURCESDK::L4D2::IMemAlloc ** ppMemalloc = (SOURCESDK::L4D2::IMemAlloc **)GetProcAddress(hTier0, "g_pMemAlloc") )
 				{
-					if (SOURCESDK::L4D2::IMemAlloc ** ppMemalloc = (SOURCESDK::L4D2::IMemAlloc **)GetProcAddress(hTier0, "g_pMemAlloc"))
-					{
-						SOURCESDK::L4D2::g_pMemAlloc = *ppMemalloc;
-					}
+					SOURCESDK::L4D2::g_pMemAlloc = *ppMemalloc;
 				}
-				else
-				if (SourceSdkVer_BM == g_SourceSdkVer)
+			}
+
+			if( SourceSdkVer_BM == g_SourceSdkVer )
+			{
+				if( SOURCESDK::BM::IMemAlloc ** ppMemalloc = (SOURCESDK::BM::IMemAlloc **)GetProcAddress(hTier0, "g_pMemAlloc") )
 				{
-					if (SOURCESDK::BM::IMemAlloc ** ppMemalloc = (SOURCESDK::BM::IMemAlloc **)GetProcAddress(hTier0, "g_pMemAlloc"))
-					{
-						SOURCESDK::BM::g_pMemAlloc = *ppMemalloc;
-					}
+					SOURCESDK::BM::g_pMemAlloc = *ppMemalloc;
 				}
 			}
 		}
