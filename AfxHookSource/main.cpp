@@ -237,7 +237,7 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 
 		// VEngineClient:
 
-		if (SourceSdkVer_CSGO != g_SourceSdkVer && (iface = appSystemFactory(VENGINE_CLIENT_INTERFACE_VERSION_015, NULL)))
+		if (SourceSdkVer_CSGO != g_SourceSdkVer && SourceSdkVer_BM != g_SourceSdkVer && (iface = appSystemFactory(VENGINE_CLIENT_INTERFACE_VERSION_015, NULL)))
 		{
 			// This is not really 100% backward compatible, there is a problem with the CVAR interface or s.th..
 			// But the guy that tested it wasn't available for further debugging, so I'll just leave it as
