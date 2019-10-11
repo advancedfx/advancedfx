@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.70.x</version>
+<time>xxx</time>
+<changes>
+<change type="added">
+Added basic support for Black Mesa, coded by / thanks to: https://github.com/TheDS1337
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.70.4</version>
 <time>2019-10-10T07:21Z</time>
 <changes>
