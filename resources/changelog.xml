@@ -7,7 +7,7 @@
 <release>
 <name>HLAE</name>
 <version>2.81.6</version>
-<time>2019-10-38T11:51Z</time>
+<time>2019-10-28T11:51Z</time>
 <changes>
 <change type="updated">
 Changed Installer (HLAE_Setup.exe) to address #241 Installer improvement.
