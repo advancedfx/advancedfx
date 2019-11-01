@@ -6,6 +6,21 @@
 
 <release>
 <name>HLAE</name>
+<version>2.81.7</version>
+<time>2019-11-01T16:40Z</time>
+<changes>
+<change type="fixed">
+Fixed wrong content of ffmpeg/readme.advancedfx.txt. Thanks https://steamcommunity.com/id/lasamlg/
+</change>
+<change type="updated">
+Included AfxHookSource 1.70.6 (2019-11-01T16:40Z).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.81.6</version>
 <time>2019-10-28T11:51Z</time>
 <changes>
