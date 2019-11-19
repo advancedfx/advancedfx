@@ -940,7 +940,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 				MemRange result = FindBytes(baseRange, (char const *)&strAddr, sizeof(strAddr));
 				if (!result.IsEmpty())
 				{
-					addr = result.Start - 0x194;
+					addr = result.Start - 0x1a1;
 
 					// check for pattern to see if it is the right address:
 					unsigned char pattern[3] = { 0x55, 0x8B, 0xEC };
@@ -951,7 +951,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 					if (result.Start != patternRange.Start || result.End != patternRange.End)
 					{
 						addr = 0;
-						ErrorBox(MkErrStr(__FILE__, __LINE__));
+						ErrorBox(MkErrStr(__FILE__, __LINE__)); // TODO
 					}
 				}
 				else ErrorBox(MkErrStr(__FILE__, __LINE__));

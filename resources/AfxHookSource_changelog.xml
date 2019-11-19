@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.71.0</version>
+<time>2019-11-19T04:00Z</time>
+<changes>
+<change type="fixed">
+Adjusted to CS:GO 11/18/2019 (11/19/2019 UTC) update: <br />
++ Fixes mirv_replace_name (related to addresses.cpp:954 error pop-up).<br />
++ Fixes mirv_calcs.
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.70.6</version>
 <time>2019-11-01T16:40Z</time>
 <changes>
