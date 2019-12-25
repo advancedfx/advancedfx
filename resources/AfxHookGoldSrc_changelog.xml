@@ -6,6 +6,19 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.6.4</version>
+<time>2019-10-10T07:21Z</time>
+<changes>
+<change type="updated">
+Adjusted to latest cstrike update (fixes #237 crosshair fix needing update).
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.6.3</version>
 <time>2018-11-02T11:37Z</time>
 <changes>

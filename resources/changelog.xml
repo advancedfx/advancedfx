@@ -6,6 +6,76 @@
 
 <release>
 <name>HLAE</name>
+<version>2.82.0</version>
+<time>2019-11-19T04:00Z</time>
+<changes>
+<change type="updated">
+Included AfxHookSource 1.71.0 (2019-11-19T04:00Z).
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>HLAE</name>
+<version>2.81.7</version>
+<time>2019-11-01T16:40Z</time>
+<changes>
+<change type="fixed">
+Fixed wrong content of ffmpeg/readme.advancedfx.txt. Thanks https://steamcommunity.com/id/lasamlg/
+</change>
+<change type="updated">
+Included AfxHookSource 1.70.6 (2019-11-01T16:40Z).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
+<version>2.81.6</version>
+<time>2019-10-28T11:51Z</time>
+<changes>
+<change type="updated">
+Changed Installer (HLAE_Setup.exe) to address #241 Installer improvement.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
+<version>2.81.5</version>
+<time>2019-10-13T06:04Z</time>
+<changes>
+<change type="updated">
+Included AfxHookSource 1.70.5 (2019-10-13T06:04Z).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
+<version>2.81.4</version>
+<time>2019-10-10T07:21Z</time>
+<changes>
+<change type="updated">
+Included AfxHookSource 1.70.4 (2019-10-10T07:21Z).
+</change>
+<change type="updated">
+Included AfxHookGoldSrc 2.6.4 (2019-10-10T07:21Z).
+</change>
+<changed type="added">
+Added pt-pt translation by https://github.com/DMTWENTYTHREE to core installer.
+</changed>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.81.3</version>
 <time>2019-09-26T08:30Z</time>
 <changes>

@@ -9140,7 +9140,7 @@ void CAfxRecordingSettings::Console(IWrpCommandArgs * args)
 
 	Tier0_Msg(
 		"%s print - List currently registerred settings\n"
-		"%s edit <name> - Remove setting.\n"
+		"%s edit <name> - Edit setting.\n"
 		"%s remove <name> - Remove setting.\n"
 		"%s add [...] - Add a setting.\n"
 		, arg0

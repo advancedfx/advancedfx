@@ -125,8 +125,7 @@ bool CamImport::GetCamData(double time, double width, double height, CamData & o
 
 	if (m_HasLastFrame && 0 >= time - m_StartTime)
 	{
-		if (!m_Ifs.seekg(m_DataStart))
-			return false;
+		if (m_Ifs.seekg(m_DataStart).bad()) return false;
 
 		m_HasLastFrame = false; // potentially invalid, go into backwards seek mode.
 	}
@@ -143,21 +142,19 @@ bool CamImport::GetCamData(double time, double width, double height, CamData & o
 
 		while (m_Ifs.tellg() != m_DataStart)
 		{
-			if (!m_Ifs.seekg(-1, std::ios_base::cur))
-				return false;
+			if(m_Ifs.seekg(-1, std::ios_base::cur).bad()) return false;
 
-			char c;
+			char c = m_Ifs.peek();
 
-			if (!m_Ifs.get(c))
+			if (m_Ifs.bad())
 				return false;
 
 			if ('\n' == c)
 				++lineBreakCount;
 
-			if (2 <= lineBreakCount)
+			if (3 <= lineBreakCount)
 			{
-				if (!m_Ifs.seekg(1, std::ios_base::cur))
-					return false;
+				if (m_Ifs.seekg(1, std::ios_base::cur).bad()) return false;
 
 				break;
 			}

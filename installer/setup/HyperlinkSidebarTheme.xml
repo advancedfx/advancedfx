@@ -18,16 +18,19 @@
     <Button Name="HelpCancelButton" X="-11" Y="-11" Width="75" Height="23" TabStop="yes" FontId="0">#(loc.HelpCloseButton)</Button>
   </Page>
   <Page Name="Install">
-    <Text X="185" Y="11" Width="-11" Height="32" FontId="1" DisablePrefix="yes">#(loc.Title)</Text>
-    <Image X="11" Y="11" Width="165" Height="400" ImageFile="logoside.png"/>
-    <Text X="185" Y="50" Width="-11" Height="32" FontId="2" DisablePrefix="yes">#(loc.InstallHeader)</Text>
-    <Text X="185" Y="91" Width="-11" Height="64" FontId="3" DisablePrefix="yes">#(loc.InstallMessage)</Text><!-- HexStyle="0x800000" -->
+    <Text X="11" Y="11" Width="-11" Height="32" FontId="1" DisablePrefix="yes">#(loc.Title)</Text>
+    <!-- <Image X="11" Y="11" Width="165" Height="400" ImageFile="logoside.png"/> -->
+    <Text X="11" Y="50" Width="-11" Height="32" FontId="2" DisablePrefix="yes">#(loc.InstallHeader)</Text>
+    <Text X="11" Y="91" Width="-11" Height="32" FontId="3" DisablePrefix="yes">#(loc.InstallMessage)</Text><!-- HexStyle="0x800000" -->
     <!-- <Hypertext Name="EulaHyperlink" X="185" Y="-111" Width="-11" Height="17" TabStop="yes" FontId="3" HideWhenDisabled="yes">#(loc.InstallLicenseLinkText)</Hypertext> -->
     
-    <Text X="185" Y="164" Width="-11" Height="32" FontId="2" DisablePrefix="yes">#(loc.HlaeDisclaimerTitle)</Text>
-    <Text X="185" Y="205" Width="-11" Height="64" FontId="3" DisablePrefix="yes">#(loc.HlaeDisclaimer)</Text>
-    
-    <Text Name="InstallVersion" X="185" Y="-81" Width="-11" Height="17" FontId="3" DisablePrefix="yes" HideWhenDisabled="yes">#(loc.InstallVersion)</Text>
+    <Text X="11" Y="150" Width="-11" Height="32" FontId="2" DisablePrefix="yes">#(loc.HlaeDisclaimerTitle)</Text>
+    <Text X="11" Y="193" Width="-11" Height="48" FontId="3" DisablePrefix="yes">#(loc.HlaeDisclaimer)</Text>
+
+    <Text X="11" Y="252" Width="-11" Height="32" FontId="2" DisablePrefix="yes">#(loc.HlaeFeaturesHeader)</Text>
+    <Checkbox Name="HlaeFfmpegFeature" X="11" Y="295" Width="-11" Height="17" TabStop="yes" FontId="3">#(loc.HlaeFfmpegFeature)</Checkbox>
+
+    <Text Name="InstallVersion" X="11" Y="-51" Width="-11" Height="17" FontId="3" DisablePrefix="yes" HideWhenDisabled="yes">#(loc.InstallVersion)</Text>
     <Checkbox Name="EulaAcceptCheckbox" X="185" Y="-51" Width="-11" Height="17" TabStop="yes" FontId="3" HideWhenDisabled="yes">#(loc.InstallAcceptCheckbox)</Checkbox>
     <Button Name="OptionsButton" X="-171" Y="-11" Width="75" Height="23" TabStop="yes" FontId="0" HideWhenDisabled="yes">#(loc.InstallOptionsButton)</Button>
     <Button Name="InstallButton" X="-91" Y="-11" Width="75" Height="23" TabStop="yes" FontId="0">#(loc.InstallInstallButton)</Button>
@@ -41,9 +44,6 @@
     <Editbox Name="FolderEditbox" X="11" Y="143" Width="-91" Height="21" TabStop="yes" FontId="3" FileSystemAutoComplete="yes" />
     <Button Name="BrowseButton" X="-11" Y="142" Width="75" Height="23" TabStop="yes" FontId="3">#(loc.OptionsBrowseButton)</Button>
     
-    <Text X="11" Y="173" Width="-11" Height="30" FontId="2" DisablePrefix="yes">#(loc.HlaeFeaturesHeader)</Text>
-    <Checkbox Name="HlaeFfmpegFeature" X="11" Y="212" Width="-11" Height="17" TabStop="yes" FontId="3">#(loc.HlaeFfmpegFeature)</Checkbox>
-
     <Button Name="OptionsOkButton" X="-91" Y="-11" Width="75" Height="23" TabStop="yes" FontId="0">#(loc.OptionsOkButton)</Button>
     <Button Name="OptionsCancelButton" X="-11" Y="-11" Width="75" Height="23" TabStop="yes" FontId="0">#(loc.OptionsCancelButton)</Button>
   </Page>

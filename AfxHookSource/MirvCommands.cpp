@@ -29,6 +29,7 @@
 #include "csgo_c_baseentity.h"
 #include "csgo_c_baseanimatingoverlay.h"
 #include "FovScaling.h"
+//#include "csgo_CDemoFile.h"
 
 #include "csgo_Stdshader_dx9_Hooks.h"
 //#include <csgo/sdk_src/public/tier0/memalloc.h>
@@ -4212,6 +4213,31 @@ CON_COMMAND(mirv_fix, "Various fixes")
 			);
 			return;
 		}
+		/*
+		else if (0 == _stricmp("demoIndexTicks", cmd1))
+		{
+			if (!Hook_csgo_DemoFile())
+			{
+				Tier0_Warning("Error: Required hooks not installed.\n");
+				return;
+			}
+
+			if (3 <= argc)
+			{
+				char const * cmd2 = args->ArgV(2);
+
+				g_bFixCDemoFileTicks = atoi(cmd2);
+				return;
+			}
+
+			Tier0_Msg(
+				"mirv_fix demoIndexTicks <iValue> - Set to 1 or greater to enable indexing (sane values are 1920 ticks or greater), set 0 or less to disable.\n"
+				"Current value: %i\n",
+				g_bFixCDemoFileTicks
+			);
+			return;
+		}
+		*/
 	}
 
 	Tier0_Msg(
@@ -4219,6 +4245,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 		"mirv_fix blockObserverTarget [...] - Fixes unwanted player switching i.e. upon bomb plant (blocks C_BasePlayer::RecvProxy_ObserverTarget).\n"
 		"mirv_fix oldDuckFix [...] - Can fix player stuck in duck for old demos.\n"
 		"mirv_fix playerAnimState [...] - Fixes twitching of player arms/legs, see https://github.com/ripieces/advancedfx/wiki/Source%%3ASmoother-Demos .\n"
+		//"mirv_fix demoIndexTicks [...] - Tries to make backward skipping faster in demos.\n"
 	);
 	return;
 }

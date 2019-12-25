@@ -66,5 +66,5 @@
   <String Id="HlaeDisclaimer">Ohjelman lataaminen, asentaminen ja käyttäminen tapahtuvat käyttäjän omalla vastuulla.</String>
 
   <String Id="HlaeFeaturesHeader">Ominaisuudet</String>
-  <String Id="HlaeFfmpegFeature"><![CDATA[Asenna FFMPEG osoitteesta https://ffmpeg.zeranoe.com/builds/]]></String>
+  <String Id="HlaeFfmpegFeature"><![CDATA[Asenna FFMPEG osoitteesta https://ffmpeg.zeranoe.com/builds/ (200 MB)]]></String>
 </WixLocalization>

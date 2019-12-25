@@ -65,5 +65,5 @@
   <String Id="HlaeDisclaimer">Die Software ist zu Ihrem Vergnügen and Sie benutzen sie auf eigenes Risiko.</String>
 
   <String Id="HlaeFeaturesHeader">Funktionen</String>
-  <String Id="HlaeFfmpegFeature"><![CDATA[Installiere FFMPEG von https://ffmpeg.zeranoe.com/builds/]]></String>
+  <String Id="HlaeFfmpegFeature"><![CDATA[Installiere FFMPEG von https://ffmpeg.zeranoe.com/builds/  (200 MB)]]></String>
 </WixLocalization>
