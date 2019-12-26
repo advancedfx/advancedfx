@@ -791,10 +791,9 @@
     <ClInclude Include="..\prop\AfxHookSource\l4d2\sdk_src\public\icvar.h">
       <Filter>prop\AfxHookSource\l4d2\sdk_src\public</Filter>
     </ClInclude>
-<<<<<<< HEAD
     <ClInclude Include="..\interfaces\c\AfxHookSource.h">
       <Filter>interfaces\c</Filter>
-=======
+	</ClInclude>
     <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\appframework\IAppSystem.h">
       <Filter>prop\AfxHookSource\bm\sdk_src\public\appframework</Filter>
     </ClInclude>
@@ -815,7 +814,6 @@
     </ClInclude>
     <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\icvar.h">
       <Filter>prop\AfxHookSource\bm\sdk_src\public</Filter>
->>>>>>> master
     </ClInclude>
     <ClInclude Include="AfxInterop.h">
       <Filter>AfxHookSource</Filter>
@@ -864,7 +862,6 @@
     </ClInclude>
     <ClInclude Include="AfxCommandLine.h">
       <Filter>AfxHookSource</Filter>
-<<<<<<< HEAD
     </ClInclude>
     <ClInclude Include="..\interfaces\c\AfxInterface.h">
       <Filter>interfaces\c</Filter>
@@ -881,8 +878,5 @@
     <ClInclude Include="..\shared\AfxDetours.h">
       <Filter>shared</Filter>
     </ClInclude>
-=======
-    </ClInclude>   
->>>>>>> master
   </ItemGroup>
 </Project>
