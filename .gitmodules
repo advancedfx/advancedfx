@@ -1,7 +1,7 @@
 [submodule "prop"]
 	path = prop
 	url = https://github.com/advancedfx/advancedfx-prop.git
-	branch = v3
+	branch = prop
 [submodule "shared/easywsclient"]
 	path = shared/easywsclient
 	url = https://github.com/advancedfx/easywsclient.git
