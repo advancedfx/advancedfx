@@ -2,7 +2,7 @@
 
 #include "user32Hooks.h"
 
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 
 #include "../AfxSettings.h"
 #include "../supportrender.h"
@@ -64,11 +64,14 @@ LRESULT CALLBACK NewGameWindowProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lPar
 	return g_GameWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
+HWND APIENTRY NewCreateWindowExW(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWindowName, DWORD dwStyle, int x, int y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam);
+CAfxImportFuncHook<HWND(APIENTRY*)(DWORD, LPCWSTR, LPCWSTR, DWORD, int, int, int, int, HWND, HMENU, HINSTANCE, LPVOID)> g_Import_USER32_CreateWindowExW("CreateWindowExW", NewCreateWindowExW);
+CAfxImportFuncHookBase* g_pImport_USER32_CreateWindowExW = &g_Import_USER32_CreateWindowExW;
 HWND APIENTRY NewCreateWindowExW(DWORD dwExStyle,LPCWSTR lpClassName,LPCWSTR lpWindowName,DWORD dwStyle,int x,int y,int nWidth,int nHeight,HWND hWndParent,HMENU hMenu,HINSTANCE hInstance,LPVOID lpParam)
 {
 	if (NULL != hWndParent || lstrcmpW(L"",lpWindowName))
 		// it's not the window we want.
-		return CreateWindowExW(dwExStyle,lpClassName,lpWindowName,dwStyle,x,y,nWidth,nHeight,hWndParent,hMenu,hInstance,lpParam);
+		return g_Import_USER32_CreateWindowExW.TrueFunc(dwExStyle,lpClassName,lpWindowName,dwStyle,x,y,nWidth,nHeight,hWndParent,hMenu,hInstance,lpParam);
 
 	// it's the window we want.
 	
@@ -83,7 +86,7 @@ HWND APIENTRY NewCreateWindowExW(DWORD dwExStyle,LPCWSTR lpClassName,LPCWSTR lpW
 		y = 0;*/
 	}
 	
-	g_GameWindow = CreateWindowExW( dwExStyle, lpClassName, lpWindowName, dwStyle, x, y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam );
+	g_GameWindow = g_Import_USER32_CreateWindowExW.TrueFunc( dwExStyle, lpClassName, lpWindowName, dwStyle, x, y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam );
 
 	g_GameWindowProc = (WNDPROC)GetWindowLongPtrW(g_GameWindow, GWLP_WNDPROC);
 	//char t[100];
@@ -98,7 +101,9 @@ HWND APIENTRY NewCreateWindowExW(DWORD dwExStyle,LPCWSTR lpClassName,LPCWSTR lpW
 	return g_GameWindow;
 }
 
-
+BOOL APIENTRY NewDestroyWindow(HWND hWnd);
+CAfxImportFuncHook<BOOL(APIENTRY*)(HWND)> g_Import_USER32_DestroyWindow("DestroyWindow", NewDestroyWindow);
+CAfxImportFuncHookBase* g_pImport_USER32_DestroyWindow = &g_Import_USER32_DestroyWindow;
 BOOL APIENTRY NewDestroyWindow(HWND hWnd)
 {
 	if (hWnd != NULL && hWnd == g_GameWindow)
@@ -110,7 +115,7 @@ BOOL APIENTRY NewDestroyWindow(HWND hWnd)
 		if (g_pSupportRender) delete g_pSupportRender;
 	}
 
-	return DestroyWindow(hWnd);
+	return g_Import_USER32_DestroyWindow.TrueFunc(hWnd);
 }
 
 

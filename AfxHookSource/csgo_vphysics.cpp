@@ -3,7 +3,7 @@
 #include "csgo_vphysics.h"
 
 #include <shared/binutils.h>
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 
 double g_csgo_vphsyiscs_frametime_lowerlimit;
 

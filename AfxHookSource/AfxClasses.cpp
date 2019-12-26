@@ -2,7 +2,7 @@
 
 #include "AfxClasses.h"
 
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 
 #include <string.h>
 
@@ -114,9 +114,9 @@ void CAfxTrackedMaterial::OnMaterialInterlockedDecrement(SOURCESDK::IMaterial_cs
 	}
 }
 
-void __stdcall CAfxTrackedMaterial::Material_InterlockedDecrement(DWORD *this_ptr)
+void __fastcall CAfxTrackedMaterial::Material_InterlockedDecrement(void* This, void* Edx)
 {
-	int * vtable = *(int**)this_ptr;
+	int * vtable = *(int**)This;
 
 	m_VtableMapMutex.lock_shared();
 
@@ -124,9 +124,9 @@ void __stdcall CAfxTrackedMaterial::Material_InterlockedDecrement(DWORD *this_pt
 
 	if (it != m_VtableMap.end())
 	{
-		OnMaterialInterlockedDecrement((SOURCESDK::IMaterial_csgo *) this_ptr);
+		OnMaterialInterlockedDecrement((SOURCESDK::IMaterial_csgo *) This);
 
-		it->second.InterlockedDecrement(this_ptr);
+		it->second.InterlockedDecrement(This, Edx);
 	}
 	else
 		Assert(0); // should not happen.
@@ -162,7 +162,7 @@ void CAfxTrackedMaterial::HooKVtable(SOURCESDK::IMaterial_csgo * orgMaterial)
 
 	CMaterialDetours & m_Detours = m_VtableMap[vtable];
 
-	DetourIfacePtr((DWORD *)&(vtable[13]), Material_InterlockedDecrement, (DetourIfacePtr_fn &)m_Detours.InterlockedDecrement);
+	AfxDetourPtr((PVOID *)&(vtable[13]), Material_InterlockedDecrement, (PVOID *)&m_Detours.InterlockedDecrement);
 
 	m_VtableMapMutex.unlock();
 }

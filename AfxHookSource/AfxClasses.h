@@ -67,7 +67,7 @@ class CAfxTrackedMaterial : public CAfxMaterialKey
 {
 public:
 	//:192
-	typedef void (_stdcall * MaterialHook_Free_t)(DWORD *this_ptr);
+	typedef void (__fastcall * MaterialHook_Free_t)(void* This, void* Edx);
 
 	struct CMaterialDetours
 	{
@@ -104,7 +104,7 @@ private:
 
 	static void HooKVtable(SOURCESDK::IMaterial_csgo * orgMaterial);
 
-	static void __stdcall CAfxTrackedMaterial::Material_InterlockedDecrement(DWORD *this_ptr);
+	static void __fastcall CAfxTrackedMaterial::Material_InterlockedDecrement(void* This, void* Edx);
 
 	static void OnMaterialInterlockedDecrement(SOURCESDK::IMaterial_csgo * material);
 

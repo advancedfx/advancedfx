@@ -2,13 +2,17 @@
 
 #include "HookHw.h"
 #include <windows.h>
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 #include "HookHw.h"
 #include "../hl_addresses.h"
 
 #ifdef AFX_SCRIPT
 #include "../scripting.h"
 #endif // AFX_SCRIPT
+
+HMODULE WINAPI new_LoadLibraryA(LPCSTR lpLibFileName);
+
+CAfxImportFuncHook<HMODULE (__stdcall*)(LPCSTR)> g_Import_hl_KERNEL32_LoadLibraryA("LoadLibraryA", new_LoadLibraryA);
 
 HMODULE WINAPI new_LoadLibraryA( LPCSTR lpLibFileName )
 {
@@ -32,7 +36,7 @@ HMODULE WINAPI new_LoadLibraryA( LPCSTR lpLibFileName )
 	if( !bHwLoaded && !lstrcmp( lpLibFileName, "hw.dll") )
 	{
 		bHwLoaded = true;
-		HMODULE hHw = LoadLibraryA( lpLibFileName );
+		HMODULE hHw = g_Import_hl_KERNEL32_LoadLibraryA.TrueFunc( lpLibFileName );
 
 		if( hHw )
 			HookHw(hHw);
@@ -40,8 +44,13 @@ HMODULE WINAPI new_LoadLibraryA( LPCSTR lpLibFileName )
 		return hHw;
 	}
 
-	return LoadLibraryA( lpLibFileName );
+	return g_Import_hl_KERNEL32_LoadLibraryA.TrueFunc( lpLibFileName );
 }
+
+CAfxImportDllHook g_Import_hl_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
+	&g_Import_hl_KERNEL32_LoadLibraryA }));
+CAfxImportsHook g_Import_hl(CAfxImportsHooks({
+	&g_Import_hl_KERNEL32 }));
 
 void HookHl()
 {
@@ -49,6 +58,7 @@ void HookHl()
 
 	Addresses_InitHlExe((AfxAddr)hHl);
 
-	if(!InterceptDllCall(hHl, "Kernel32.dll", "LoadLibraryA", (DWORD) &new_LoadLibraryA))
-		MessageBox(0,"Base interception failed","MDT_ERROR",MB_OK|MB_ICONHAND);
+	g_Import_hl.Apply(hHl);
+		
+	if(!g_Import_hl_KERNEL32_LoadLibraryA.TrueFunc) MessageBox(0,"Base interception failed","MDT_ERROR",MB_OK|MB_ICONHAND);
 }

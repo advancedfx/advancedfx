@@ -6,7 +6,7 @@
 
 #include <windows.h>
 
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 #include <hlsdk.h>
 #include "../../../hl_addresses.h"
 

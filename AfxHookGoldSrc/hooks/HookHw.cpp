@@ -2,7 +2,7 @@
 
 #include <shared/StringTools.h>
 
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 
 #include <shared/halflife/external/SDL2/SDL.h>
 
@@ -41,10 +41,12 @@ struct cl_enginefuncs_s * pEngfuncs		= (struct cl_enginefuncs_s *)0;
 struct engine_studio_api_s * pEngStudio	= (struct engine_studio_api_s *)0;
 struct playermove_s * ppmove			= (struct playermove_s *)0;
 
+FARPROC WINAPI NewSdlGetProcAddress(HMODULE hModule, LPCSTR lpProcName);
+CAfxImportFuncHook<FARPROC(WINAPI*)(HMODULE, LPCSTR)> g_Import_sdl2_KERNEL32_GetProcAddress("GetProcAddress", NewSdlGetProcAddress);
 FARPROC WINAPI NewSdlGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 {
 	FARPROC nResult;
-	nResult = GetProcAddress(hModule, lpProcName);
+	nResult = g_Import_sdl2_KERNEL32_GetProcAddress.TrueFunc(hModule, lpProcName);
 
 	if (HIWORD(lpProcName))
 	{
@@ -73,9 +75,8 @@ FARPROC WINAPI NewSdlGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 	return nResult;
 }
 
-typedef void * (*SDL_GL_GetProcAddress_t) (const char* proc);
-SDL_GL_GetProcAddress_t g_Old_SDL_GL_GetProcAddress;
-
+void* New_SDL_GL_GetProcAddress(const char* proc);
+CAfxImportFuncHook<void* (*)(const char*)> g_Import_hw_sdl2_SDL_GL_GetProcAddress("SDL_GL_GetProcAddress", New_SDL_GL_GetProcAddress);
 void *New_SDL_GL_GetProcAddress(const char* proc)
 {
 	if (!lstrcmp(proc, "glBegin"))
@@ -91,32 +92,30 @@ void *New_SDL_GL_GetProcAddress(const char* proc)
 	if (!lstrcmp(proc, "glBlendFunc"))
 		return (void *) &NewGlBlendFunc;
 
-	return g_Old_SDL_GL_GetProcAddress(proc);
+	return g_Import_hw_sdl2_SDL_GL_GetProcAddress.TrueFunc(proc);
 }
 
 #ifdef AFX_GUI
 
-typedef int (*SDL_SetRelativeMouseMode_t) (SDL_bool enabled);
-SDL_SetRelativeMouseMode_t g_Old_SDL_SetRelativeMouseMode;
-
+int New_SDL_SetRelativeMouseMode(SDL_bool enabled);
+CAfxImportFuncHook g_hw_sdl2_SDL_SetRelativeMouseMode<int (*)(SDL_bool)>("SDL_SetRelativeMouseMode", New_SDL_SetRelativeMouseMode);
 int New_SDL_SetRelativeMouseMode(SDL_bool enabled)
 {
-	return g_Old_SDL_SetRelativeMouseMode(enabled);
+	return g_hw_sdl2_SDL_SetRelativeMouseMode.TrueFunc(enabled);
 }
 
 #endif // AFX_GUI
 
 #ifdef AFX_GUI
 
-typedef int (*SDL_WaitEventTimeout_t)(SDL_Event* event,int timeout);
-SDL_WaitEventTimeout_t g_Old_SDL_WaitEventTimeout;
-
+int New_SDL_WaitEventTimeout(SDL_Event* event, int timeout);
+CAfxImportFuncHook<int (*)(SDL_event*, int)> g_hw_sdl2_SDL_WaitEventTimeout("SDL_WaitEventTimeout", New_SDL_WaitEventTimeout);
 int New_SDL_WaitEventTimeout(SDL_Event* event,int timeout)
 {
 	int result;
 	bool handled = false;
 
-	while(0 != (result = g_Old_SDL_WaitEventTimeout(event, handled ? 0 : timeout))
+	while(0 != (result = g_hw_sdl2_SDL_WaitEventTimeout.TrueFunc(event, handled ? 0 : timeout))
 		&& (handled = AfxGui_HandleSdlEvent(event)))
 	;
 
@@ -127,15 +126,14 @@ int New_SDL_WaitEventTimeout(SDL_Event* event,int timeout)
 
 #ifdef AFX_GUI
 
-typedef int (*SDL_PollEvent_t)(SDL_Event* event);
-SDL_PollEvent_t g_Old_SDL_PollEvent;
-
+int New_SDL_PollEvent(SDL_Event* event);
+CAfxImportDllHook<int (*)(SDL_Event*)> g_hw_sdl2_SDL_PollEvent("SDL_PollEvent", New_SDL_PollEvent);
 int New_SDL_PollEvent(SDL_Event* event)
 {
 	int result;
 	bool handled = false;
 
-	while(0 != (result = g_Old_SDL_PollEvent(event))
+	while(0 != (result = g_hw_sdl2_SDL_PollEvent.TrueFunc(event))
 		&& (handled = AfxGui_HandleSdlEvent(event)))
 	;
 
@@ -144,10 +142,12 @@ int New_SDL_PollEvent(SDL_Event* event)
 
 #endif // AFX_GUI
 
+
+FARPROC WINAPI NewHwGetProcAddress(HMODULE hModule, LPCSTR lpProcName);
+CAfxImportFuncHook<FARPROC(WINAPI*)(HMODULE, LPCSTR)> g_Import_hw_KERNEL32_GetProcAddress("GetProcAddress", NewHwGetProcAddress);
 FARPROC WINAPI NewHwGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 {
-	FARPROC nResult;
-	nResult = GetProcAddress(hModule, lpProcName);
+	FARPROC nResult = g_Import_hw_KERNEL32_GetProcAddress.TrueFunc(hModule, lpProcName);
 
 	if (HIWORD(lpProcName))
 	{
@@ -175,13 +175,14 @@ FARPROC WINAPI NewHwGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 	return nResult;
 }
 
+HMODULE WINAPI NewHwLoadLibraryA(LPCSTR lpLibFileName);
+CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR)> g_Import_hw_KERNEL32_LoadLibraryA("LoadLibraryA", NewHwLoadLibraryA);
 HMODULE WINAPI NewHwLoadLibraryA( LPCSTR lpLibFileName )
 {
 	static bool bClientLoaded = false;
 	static bool bDemoPlayerLoaded = false;
 
-	HMODULE hRet = LoadLibraryA( lpLibFileName );
-
+	HMODULE hRet = g_Import_hw_KERNEL32_LoadLibraryA.TrueFunc(lpLibFileName);
 
 	if( !bClientLoaded && StringEndsWith( lpLibFileName, "client.dll") && hRet )
 	{
@@ -241,6 +242,37 @@ bool HookpEnginefuncs(cl_enginefunc_t *pEnginefuncs)
 	return firstResult;
 }
 
+
+CAfxImportDllHook g_Import_hw_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
+		&g_Import_hw_KERNEL32_LoadLibraryA,
+		&g_Import_hw_KERNEL32_GetProcAddress }));
+
+CAfxImportDllHook g_Import_hw_sdl2("SDL2.dll", CAfxImportDllHooks({
+	&g_Import_hw_sdl2_SDL_GL_GetProcAddress,
+	}));
+
+CAfxImportsHook g_Import_hw(CAfxImportsHooks({
+	&g_Import_hw_KERNEL32,
+	&g_Import_hw_sdl2
+	}));
+
+CAfxImportDllHook g_Import_sdl2_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
+	&g_Import_sdl2_KERNEL32_GetProcAddress }));
+
+CAfxImportDllHook g_Import_sdl2_USER32("USER32.dll", CAfxImportDllHooks({
+	g_pImport_USER32_CreateWindowExW,
+	g_pImport_USER32_DestroyWindow }));
+
+CAfxImportDllHook g_Import_sdl2_GDI32("GDI32.dll", CAfxImportDllHooks({
+	g_pImport_GDI32_SetPixelFormat,
+	g_pImport_GDI32_SwapBuffers }));
+
+
+CAfxImportsHook g_Import_sdl2(CAfxImportsHooks({
+	&g_Import_sdl2_KERNEL32,
+	&g_Import_sdl2_USER32,
+	& g_Import_sdl2_GDI32 }));
+
 void HookHw(HMODULE hHw)
 {
 	static bool firstRun = true;
@@ -256,30 +288,33 @@ void HookHw(HMODULE hHw)
 	::ppmove = (struct playermove_s *)AFXADDR_GET(ppmove);
 	::pEngStudio = (struct engine_studio_api_s *)AFXADDR_GET(pstudio);
 
-	// Kernel32.dll:
-	if(!InterceptDllCall(hHw, "Kernel32.dll", "LoadLibraryA", (DWORD) &NewHwLoadLibraryA)) { bIcepOk = false; MessageBox(0,"Interception failed:\nhw.dll:Kernel32.dll!LoadLibraryA","MDT_ERROR",MB_OK|MB_ICONHAND); }
-	if(!InterceptDllCall(hHw, "Kernel32.dll", "GetProcAddress", (DWORD) &NewHwGetProcAddress) ) { bIcepOk = false; MessageBox(0,"Interception failed:\nhw.dll:Kernel32.dll!GetProcAddress","MDT_ERROR",MB_OK|MB_ICONHAND); }
-
-	// sdl2.dll:
-	if(!(g_Old_SDL_GL_GetProcAddress=(SDL_GL_GetProcAddress_t)InterceptDllCall(hHw, "sdl2.dll", "SDL_GL_GetProcAddress", (DWORD) &New_SDL_GL_GetProcAddress) )) { bIcepOk = false; MessageBox(0,"Interception failed:\nhw.dll:sdl2.dll!SDL_GL_GetProcAddress","MDT_ERROR",MB_OK|MB_ICONHAND); }
 #ifdef AFX_GUI
-	if(!(g_Old_SDL_SetRelativeMouseMode=(SDL_SetRelativeMouseMode_t)InterceptDllCall(hHw, "sdl2.dll", "SDL_SetRelativeMouseMode", (DWORD) &New_SDL_SetRelativeMouseMode) )) { bIcepOk = false; MessageBox(0,"Interception failed:\nhw.dll:sdl2.dll!SDL_SetRelativeMouseMode","MDT_ERROR",MB_OK|MB_ICONHAND); }
-	if(!(g_Old_SDL_WaitEventTimeout=(SDL_WaitEventTimeout_t)InterceptDllCall(hHw, "sdl2.dll", "SDL_WaitEventTimeout", (DWORD) &New_SDL_WaitEventTimeout) )) { bIcepOk = false; MessageBox(0,"Interception failed:\nhw.dll:sdl2.dll!SDL_WaitEventTimeout","MDT_ERROR",MB_OK|MB_ICONHAND); }
-	if(!(g_Old_SDL_PollEvent=(SDL_PollEvent_t)InterceptDllCall(hHw, "sdl2.dll", "SDL_PollEvent", (DWORD) &New_SDL_PollEvent) )) { bIcepOk = false; MessageBox(0,"Interception failed:\nhw.dll:sdl2.dll!SDL_PollEvent","MDT_ERROR",MB_OK|MB_ICONHAND); }
+	g_Import_hw_sdl2.Append(CAfxImportDllHooks{
+		&g_hw_sdl2_SDL_SetRelativeMouseMode,
+		&g_hw_sdl2_SDL_WaitEventTimeout
+		&g_hw_sdl2_SDL_PollEvent });
+#endif // AFX_GUI
+	g_Import_hw.Apply(hHw);
+
+	if(!g_Import_hw_KERNEL32_LoadLibraryA.TrueFunc) { bIcepOk = false; MessageBox(0, "Interception failed:\nhw.dll:Kernel32.dll!LoadLibraryA", "MDT_ERROR", MB_OK | MB_ICONHAND); }
+	if(!g_Import_hw_KERNEL32_GetProcAddress.TrueFunc) { bIcepOk = false; MessageBox(0, "Interception failed:\nhw.dll:Kernel32.dll!GetProcAddress", "MDT_ERROR", MB_OK | MB_ICONHAND); }
+	if(!g_Import_hw_sdl2_SDL_GL_GetProcAddress.TrueFunc) { bIcepOk = false; MessageBox(0, "Interception failed:\nhw.dll:sdl2.dll!SDL_GL_GetProcAddress", "MDT_ERROR", MB_OK | MB_ICONHAND); }
+#ifdef AFX_GUI
+	if(!g_hw_sdl2_SDL_SetRelativeMouseMode.TrueFunc) { bIcepOk = false; MessageBox(0,"Interception failed:\nhw.dll:sdl2.dll!SDL_SetRelativeMouseMode","MDT_ERROR",MB_OK|MB_ICONHAND); }
+	if(!g_hw_sdl2_SDL_WaitEventTimeout.TrueFunc) { bIcepOk = false; MessageBox(0,"Interception failed:\nhw.dll:sdl2.dll!SDL_WaitEventTimeout","MDT_ERROR",MB_OK|MB_ICONHAND); }
+	if(!g_hw_sdl2_SDL_PollEvent.TrueFunc) { bIcepOk = false; MessageBox(0,"Interception failed:\nhw.dll:sdl2.dll!SDL_PollEvent","MDT_ERROR",MB_OK|MB_ICONHAND); }
 #endif // AFX_GUI
 	
 	HMODULE hSdl = GetModuleHandle("sdl2.dll");
 	if(hSdl)
 	{
-		if(!InterceptDllCall(hSdl, "Kernel32.dll", "GetProcAddress", (DWORD) &NewSdlGetProcAddress) ) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:Kernel32.dll!GetProcAddress","MDT_ERROR",MB_OK|MB_ICONHAND); }
+		g_Import_sdl2.Apply(hSdl);
 
-		// user32.dll:
-		if(!InterceptDllCall(hSdl, "user32.dll", "CreateWindowExW", (DWORD) &NewCreateWindowExW) ) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:user32.dll!CreateWindowExW","MDT_ERROR",MB_OK|MB_ICONHAND); }
-		if(!InterceptDllCall(hSdl, "user32.dll", "DestroyWindow", (DWORD) &NewDestroyWindow) ) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:user32.dll!DestroyWindow","MDT_ERROR",MB_OK|MB_ICONHAND); }
-
-		// gdi32.dll:
-		if(!(OldWglSwapBuffers=(wglSwapBuffers_t)InterceptDllCall(hSdl, "gdi32.dll", "SwapBuffers", (DWORD) &NewWglSwapBuffers) )) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:gdi32.dll!SwapBuffers","MDT_ERROR",MB_OK|MB_ICONHAND); }
-		if(!InterceptDllCall(hSdl, "gdi32.dll", "SetPixelFormat", (DWORD) &NewSetPixelFormat) ) { bIcepOk = false; MessageBox(0,"Interception failed: gdi32.dll!SetPixelFormat","MDT_ERROR",MB_OK|MB_ICONHAND); }
+		if(!g_Import_sdl2_KERNEL32_GetProcAddress.TrueFunc) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:Kernel32.dll!GetProcAddress","MDT_ERROR",MB_OK|MB_ICONHAND); }
+		if(!*g_pImport_USER32_CreateWindowExW->GetTrueFunc()) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:user32.dll!CreateWindowExW","MDT_ERROR",MB_OK|MB_ICONHAND); }
+		if(!*g_pImport_USER32_DestroyWindow->GetTrueFunc()) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:user32.dll!DestroyWindow","MDT_ERROR",MB_OK|MB_ICONHAND); }
+		if(!*g_pImport_GDI32_SwapBuffers->GetTrueFunc()) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:gdi32.dll!SwapBuffers","MDT_ERROR",MB_OK|MB_ICONHAND); }
+		if(!*g_pImport_GDI32_SetPixelFormat->GetTrueFunc()) { bIcepOk = false; MessageBox(0,"Interception failed: gdi32.dll!SetPixelFormat","MDT_ERROR",MB_OK|MB_ICONHAND); }
 	}
 	else
 	{

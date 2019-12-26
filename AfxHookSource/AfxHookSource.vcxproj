@@ -155,6 +155,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\interfaces\c\test.c" />
     <ClCompile Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier1\convar.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\cssV34\sdk_src\public\tools\bonelist.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\cssV34\sdk_src\tier1\keyvalues.cpp" />
@@ -165,11 +166,11 @@
     <ClCompile Include="..\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.cpp" />
     <ClCompile Include="..\prop\AfxHookSource\tf2\sdk_src\tier1\KeyValues.cpp" />
     <ClCompile Include="..\prop\shared\AfxMath.cpp" />
+    <ClCompile Include="..\shared\AfxDetours.cpp" />
     <ClCompile Include="..\shared\binutils.cpp" />
     <ClCompile Include="..\shared\bvhexport.cpp" />
     <ClCompile Include="..\shared\bvhimport.cpp" />
     <ClCompile Include="..\shared\CamPath.cpp" />
-    <ClCompile Include="..\prop\shared\detours.cpp" />
     <ClCompile Include="..\shared\Detours\src\detours.cpp" />
     <ClCompile Include="..\shared\Detours\src\disasm.cpp" />
     <ClCompile Include="..\shared\Detours\src\disolarm.cpp" />
@@ -245,6 +246,11 @@
     <ClCompile Include="..\shared\StringTools.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\interfaces\c\AfxHookSource.h" />
+    <ClInclude Include="..\interfaces\c\AfxInterface.h" />
+    <ClInclude Include="..\interfaces\c\AfxJit.h" />
+    <ClInclude Include="..\interfaces\c\AfxLocale.h" />
+    <ClInclude Include="..\interfaces\c\AfxTypes.h" />
     <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\appframework\IAppSystem.h" />
     <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\icvar.h" />
     <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\interfaces\interfaces.h" />
@@ -293,11 +299,11 @@
     <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.h" />
     <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\vstdlib\IKeyValuesSystem.h" />
     <ClInclude Include="..\prop\shared\AfxMath.h" />
+    <ClInclude Include="..\shared\AfxDetours.h" />
     <ClInclude Include="..\shared\binutils.h" />
     <ClInclude Include="..\shared\bvhexport.h" />
     <ClInclude Include="..\shared\bvhimport.h" />
     <ClInclude Include="..\shared\CamPath.h" />
-    <ClInclude Include="..\prop\shared\detours.h" />
     <ClInclude Include="..\shared\Detours\src\detours.h" />
     <ClInclude Include="..\shared\Detours\src\detver.h" />
     <ClInclude Include="..\shared\EasySampler.h" />

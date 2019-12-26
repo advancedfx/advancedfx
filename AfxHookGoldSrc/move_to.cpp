@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-#include "shared/detours.h"
+#include <shared/AfxDetours.h>
 #include "hl_addresses.h"
 #include "hooks/HookHw.h"
 #include "hooks/hw/ClientFunctions.h"

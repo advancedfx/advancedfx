@@ -157,6 +157,9 @@
     <Filter Include="prop\AfxHookSource\l4d2\sdk_src\public\tier1">
       <UniqueIdentifier>{43d04db8-21c5-4641-bedb-bca4db8a52a6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="interfaces">
+      <UniqueIdentifier>{fd3279bd-298a-45ca-8335-92e8c0e7ef1c}</UniqueIdentifier>
+    </Filter>
     <Filter Include="prop\AfxHookSource\bm">
       <UniqueIdentifier>{cd77fb3a-8a86-4aa5-968f-b0014174a8b1}</UniqueIdentifier>
     </Filter>
@@ -192,6 +195,9 @@
     </Filter>
     <Filter Include="prop\AfxHookSource\insurgency2\public">
       <UniqueIdentifier>{9f8a63b3-6460-48bd-a750-91b2e9c2c410}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="interfaces\c">
+      <UniqueIdentifier>{c4b62cbe-42a8-4391-841a-7d6faf3cba23}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -330,9 +336,6 @@
     <ClCompile Include="MirvCalcs.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
-    <ClCompile Include="..\prop\shared\detours.cpp">
-      <Filter>prop\shared</Filter>
-    </ClCompile>
     <ClCompile Include="..\prop\shared\AfxMath.cpp">
       <Filter>prop\shared</Filter>
     </ClCompile>
@@ -458,6 +461,12 @@
     </ClCompile>
     <ClCompile Include="AfxCommandLine.cpp">
       <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\interfaces\c\test.c">
+      <Filter>interfaces\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\AfxDetours.cpp">
+      <Filter>shared</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -592,9 +601,6 @@
     </ClInclude>
     <ClInclude Include="MirvCalcs.h">
       <Filter>AfxHookSource</Filter>
-    </ClInclude>
-    <ClInclude Include="..\prop\shared\detours.h">
-      <Filter>prop\shared</Filter>
     </ClInclude>
     <ClInclude Include="..\prop\shared\AfxMath.h">
       <Filter>prop\shared</Filter>
@@ -785,6 +791,9 @@
     <ClInclude Include="..\prop\AfxHookSource\l4d2\sdk_src\public\icvar.h">
       <Filter>prop\AfxHookSource\l4d2\sdk_src\public</Filter>
     </ClInclude>
+    <ClInclude Include="..\interfaces\c\AfxHookSource.h">
+      <Filter>interfaces\c</Filter>
+	</ClInclude>
     <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\appframework\IAppSystem.h">
       <Filter>prop\AfxHookSource\bm\sdk_src\public\appframework</Filter>
     </ClInclude>
@@ -853,6 +862,21 @@
     </ClInclude>
     <ClInclude Include="AfxCommandLine.h">
       <Filter>AfxHookSource</Filter>
-    </ClInclude>   
+    </ClInclude>
+    <ClInclude Include="..\interfaces\c\AfxInterface.h">
+      <Filter>interfaces\c</Filter>
+    </ClInclude>
+    <ClInclude Include="..\interfaces\c\AfxTypes.h">
+      <Filter>interfaces\c</Filter>
+    </ClInclude>
+    <ClInclude Include="..\interfaces\c\AfxLocale.h">
+      <Filter>interfaces\c</Filter>
+    </ClInclude>
+    <ClInclude Include="..\interfaces\c\AfxJit.h">
+      <Filter>interfaces\c</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\AfxDetours.h">
+      <Filter>shared</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

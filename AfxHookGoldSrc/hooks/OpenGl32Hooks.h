@@ -1,7 +1,7 @@
 #pragma once
 
 #include <windows.h>
-
+#include <shared/AfxDetours.h>
 #include <gl/gl.h>
 
 void APIENTRY NewGlBegin(GLenum mode);
@@ -16,9 +16,7 @@ void APIENTRY NewGlFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdou
 
 void APIENTRY NewGlBlendFunc (GLenum sfactor, GLenum dfactor);
 
-typedef BOOL (APIENTRY *wglSwapBuffers_t)(HDC hDC);
-extern wglSwapBuffers_t OldWglSwapBuffers;
-BOOL APIENTRY NewWglSwapBuffers(HDC hDC);
+extern CAfxImportFuncHookBase* g_pImport_GDI32_SwapBuffers;
 
 HGLRC WINAPI NewWglCreateContext(HDC);
 

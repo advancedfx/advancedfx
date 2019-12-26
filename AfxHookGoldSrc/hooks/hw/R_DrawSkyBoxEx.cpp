@@ -3,7 +3,7 @@
 #include "R_DrawSkyBoxEx.h"
 
 #include <hl_addresses.h>
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 
 #include <Windows.h>
 #include <shared/Detours/src/detours.h>

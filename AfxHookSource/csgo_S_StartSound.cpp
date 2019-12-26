@@ -5,7 +5,7 @@
 #include "addresses.h"
 #include "SourceInterfaces.h"
 
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 #include <shared/StringTools.h>
 
 #include <list>

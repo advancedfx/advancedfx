@@ -5,7 +5,7 @@
 #include "addresses.h"
 #include "AfxStreams.h"
 
-#include <shared/detours.h>
+#include <shared/AfxDetours.h>
 
 
 SOURCESDK::IViewRender_csgo * GetView_csgo(void)
@@ -19,18 +19,16 @@ SOURCESDK::IViewRender_csgo * GetView_csgo(void)
 }
 
 
-typedef bool (__stdcall * csgo_CViewRender_ShouldForceNoVis_t)(
-	DWORD * this_ptr);
+typedef bool (__fastcall * csgo_CViewRender_ShouldForceNoVis_t)(void* This);
 
 csgo_CViewRender_ShouldForceNoVis_t detoured_csgo_CViewRender_ShouldForceNoVis;
 
 bool g_csgo_CViewRender_ShouldForceNoVis_OverrideEnable = false;
 bool g_csgo_CViewRender_ShouldForceNoVis_OverrideValue;
 
-bool __stdcall csgo_CViewRender_ShouldForceNoVis(
-	DWORD *this_ptr)
+bool __fastcall csgo_CViewRender_ShouldForceNoVis(void* This)
 {
-	bool orgValue = detoured_csgo_CViewRender_ShouldForceNoVis(this_ptr);
+	bool orgValue = detoured_csgo_CViewRender_ShouldForceNoVis(This);
 
 	return g_AfxStreams.OnViewRenderShouldForceNoVis(orgValue);
 }
@@ -48,7 +46,7 @@ bool Hook_csgo_CViewRender_ShouldForceNoVis(void)
 	{
 		int * vtable = *(int**)view;
 
-		DetourIfacePtr((DWORD *)&(vtable[42]), csgo_CViewRender_ShouldForceNoVis, (DetourIfacePtr_fn &)detoured_csgo_CViewRender_ShouldForceNoVis);
+		AfxDetourPtr((PVOID *)&(vtable[42]), csgo_CViewRender_ShouldForceNoVis, (PVOID*)&detoured_csgo_CViewRender_ShouldForceNoVis);
 
 		firstResult = true;
 	}
