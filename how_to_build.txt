@@ -9,16 +9,14 @@ Notice:
 
 [X] Download and install Microsoft Visual Studio 2019 Community, which you can
     obtain for free from https://www.visualstudio.com/downloads/ .
-    (We are using 16.2.x at the moment.)
+    (We are using 16.2.4 at the moment.)
     - Select Desktop .NET Desktop Development component
     - Select Desktop Development with C++ component
-    - In Single Components tab select Windows XP support for C++ in the
-      Compiler, Buildtools and Run-times section
     - You'll need to install Wix Toolset Visual Studio 2019 Extension from
       within Visual Studio later.
 
 [X] Obtain and install CMAKE from http://www.cmake.org/
-    We currently use "cmake-3.15.3-win64-x64.msi".
+    We currently use "cmake-3.16.2-win64-x64.msi".
 
 [X] Install WiX Toolset v3.11.1 from https://github.com/wixtoolset/wix3/releases/tag/wix3111rtm
 
@@ -32,62 +30,51 @@ Notice:
     git clone --recursive https://github.com/advancedfx/advancedfx.git
 
 [X] Obtain the following files from http://openexr.com/ :
-    ilmbase-2.2.1.tar.gz, openexr-2.2.1.tar.gz and extract their contents
+    ilmbase-2.3.0.tar.gz, openexr-2.2.1.tar.gz and extract their contents
     into "C:\Libraries"
 
 [X] Obtain zlib-1.2.11.tar.gz from http://zlib.net and extract it into
     "C:\Libraries"
 
-[X] Open the GIT Bash we recommended above in order to apply the patches
-    for the ilmbase library:
-    cd /c/Libraries/ilmbase-2.2.1/
-    patch CMakeLists.txt /c/<HLAESRC>/advancedfx/patches/ilmbase-2.2.1/CMakeLists.txt.patch
+[X] Open the GIT Bash we recommended above:
+	cd /c/Libraries
+	git clone --branch v2.4.0 https://github.com/advancedfx/openexr.git
 
-[X] Build ilmbase solutions using cmake:
-    Enter the "C:\Libraries\ilmbase-2.2.1" directory and execute
-    setlocal
-    del /f CMakeCache.txt
-    cmake "-DCMAKE_INSTALL_PREFIX=C:\<HLAESRC>\ilmbase-build" -G "Visual Studio 16 2019" -T "v141_xp" -A Win32 .
+[X] Build ilmbase solutions using cmake (open command prompt):
+	c:
+	cd "C:\Libraries\openexr"
+	md build
+	cd build
+	setlocal
+	del /f "CMakeCache.txt"
+	"C:\Program Files\CMake\bin\cmake.exe" "-DBUILD_SHARED_LIBS=1" "-DCMAKE_INSTALL_PREFIX=C:\<HLAESRC>\ilmbase-build" -G "Visual Studio 16 2019" -T "v142" -A Win32 ../IlmBase
 
-[X] Open the C:\Libraries\ilmbase-2.2.1\ilmbase.sln created in the previous step
+[X] Open the C:\Libraries\openexr\build\ilmbase.sln created in the previous step
     Select the Release configuration.
     Then build the Solution.
-    After that build the INSTALL project in the solution.
-
-[X] Open the GIT Bash we recommended above in order to apply the patches
-    for the zlib library:
-    cd /c/Libraries/zlib-1.2.11/win32/
-    patch Makefile.msc /c/<HLAESRC>/advancedfx/patches/zlib-1.2.11/win32/Makefile.msc.patch
+    After that build the INSTALL project in the solution (ignore errors about smybolic link creation).
 
 [X] Build zlib using nmake:
-    Open the Developer Command Prompt for VS2019 and enter the
-    "C:\Libraries\zlib-1.2.11" directory and execute
-    nmake -f win32/Makefile.msc zlib1.dll
-    nmake -f win32/Makefile.msc example_d.exe
-    example_d.exe (To see if the zlib1.dll is okay.)
-
-[X] Open the GIT Bash we recommended above in order to apply the patches
-    for the openexr library:
-    cd /c/Libraries/openexr-2.2.1/
-    patch CMakeLists.txt /c/<HLAESRC>/advancedfx/patches/openexr-2.2.1/CMakeLists.txt.patch
+	Open the Developer Command Prompt for VS2019 and enter:
+	c:
+	cd "C:\Libraries\zlib-1.2.11"
+	nmake -f win32/Makefile.msc zlib1.dll
+	nmake -f win32/Makefile.msc example_d.exe
+	example_d.exe (To see if the zlib1.dll is okay.)
 
 [X] Build openexr solutions using cmake:
-    Enter the "C:\Libraries\openexr-2.2.1" directory and execute
-    setlocal
-    del /f CMakeCache.txt
-    cmake "-DZLIB_ROOT=C:\Libraries\zlib-1.2.11" "-DILMBASE_PACKAGE_PREFIX=C:\<HLAESRC>\ilmbase-build" "-DCMAKE_INSTALL_PREFIX=C:\<HLAESRC>\openexr-build" -G "Visual Studio 16 2019" -T "v141_xp" -A Win32 .
+	c:
+	cd "C:\Libraries\openexr"
+	md build
+	cd build
+	setlocal
+	del /f "CMakeCache.txt"
+	"C:\Program Files\CMake\bin\cmake.exe" .. "-DBUILD_SHARED_LIBS=1" "-DZLIB_ROOT=C:\Libraries\zlib-1.2.11" "-DCMAKE_PREFIX_PATH=C:\<HLAESRC>\ilmbase-build" "-DCMAKE_SYSTEM_PREFIX=C:\<HLAESRC>\ilmbase-build" "-DCMAKE_INSTALL_PREFIX=C:\<HLAESRC>\openexr-build" -G "Visual Studio 16 2019" -T "v142" -A Win32 ../OpenEXR
 
-[X] Open the C:\Libraries\openexr-2.2.1\openexr.sln created in the previous step
+[X] Open the C:\Libraries\openexr\build\openexr.sln created in the previous step
     Select the Release configuration.
-    Build the projects b44ExpLogTable and dwaLookups.
-    Then copy the .dll files in "C:\<HLAESRC>\ilmbase-build\lib"
-    to "C:\Libraries\openexr-2.2.1\IlmImf\Release"!
     Then build the Solution.
-    After that build the INSTALL project in the solution.
-    If you want to use the .exe files in "C:\<HLAESRC>\openexr-build\bin",
-    then you need to copy all DLL files from
-    "C:\<HLAESRC>\ilmbase-build\lib", "C:\<HLAESRC>\openexr-build\lib" and
-    "C:\Libraries\zlib-1.2.11" there.
+    After that build the INSTALL project in the solution (ignore errors about smybolic link creation).
 
 [X] Obtain the SharpDX SDK 2.6.3 from
     https://github.com/sharpdx/SharpDX/releases/tag/2.6.3
@@ -150,12 +137,12 @@ Notice:
     to "C:\<HLAESRC>\advancedfx\build\Release\bin"
 
 [X] Copy all files
-    form "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Redist\MSVC\14.16.27012\x86\Microsoft.VC141.CRT"
+    form "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Redist\MSVC\14.24.28127\x86\Microsoft.VC142.CRT"
     to "C:\<HLAESRC>\advancedfx\build\Release\bin"
 
 [X] Copy all DLL files from
-    "C:\<HLAESRC>\ilmbase-build\lib",
-    "C:\<HLAESRC>\openexr-build\lib" (except "IlmImfUtil-2_2.dll") and
+    "C:\<HLAESRC>\ilmbase-build\bin",
+    "C:\<HLAESRC>\openexr-build\bin" (except "IlmImfUtil-2_2.dll") and
     "C:\Libraries\zlib-1.2.11"
     to "C:\<HLAESRC>\advancedfx\build\Release\bin"
 

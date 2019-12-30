@@ -2,8 +2,8 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <!-- Update this on release: Id, Version -->
 	<Product
-    Id="{D690B2CE-5EF9-485B-B879-3F3E9E9B870B}"
-    Version="2.82.0"
+    Id="{BECCFFA3-0790-4457-9332-1E9122A033E1}"
+    Version="2.83.0.1"
     Name="!(loc.ApplicationName)"
     Language="1033"
     Manufacturer="!(loc.Manufacturer)"
@@ -410,8 +410,8 @@
       <Component Id="_73CC32AE_2421_46DC_A0CA_07E4F07919A8_concrt140.dll">
         <File Id="_73CC32AE_2421_46DC_A0CA_07E4F07919A8_concrt140.dll" Name="concrt140.dll" Source="$(var.hlae.TargetDir)\concrt140.dll" KeyPath="yes" Checksum="yes"/>
       </Component>
-      <Component Id="_BDDDD824_C405_4A6F_98FD_A1C04614D150_Half.dll">
-        <File Id="_BDDDD824_C405_4A6F_98FD_A1C04614D150_Half.dll" Name="Half.dll" Source="$(var.hlae.TargetDir)\Half.dll" KeyPath="yes" Checksum="yes"/>
+      <Component Id="_BDDDD824_C405_4A6F_98FD_A1C04614D150_Half_2_4.dll">
+        <File Id="_BDDDD824_C405_4A6F_98FD_A1C04614D150_Half_2_4.dll" Name="Half-2_4.dll" Source="$(var.hlae.TargetDir)\Half-2_4.dll" KeyPath="yes" Checksum="yes"/>
       </Component>
       <Component Id="_E77FBD5C_A4F1_429D_B750_9C270BD89C18_HLAE.exe">
         <File Id="_E77FBD5C_A4F1_429D_B750_9C270BD89C18_HLAE.exe" Name="HLAE.exe" Source="$(var.hlae.TargetDir)\HLAE.exe" KeyPath="yes" Checksum="yes">
@@ -424,20 +424,20 @@
                     Advertise="yes"/>
         </File>
       </Component>
-      <Component Id="_382A679D_8B60_4F2F_9A7C_93B5C5691EFE_Iex_2_2.dll">
-        <File Id="_382A679D_8B60_4F2F_9A7C_93B5C5691EFE_Iex_2_2.dll" Name="Iex-2_2.dll" Source="$(var.hlae.TargetDir)\Iex-2_2.dll" KeyPath="yes" Checksum="yes"/>
+      <Component Id="_382A679D_8B60_4F2F_9A7C_93B5C5691EFE_Iex_2_4.dll">
+        <File Id="_382A679D_8B60_4F2F_9A7C_93B5C5691EFE_Iex_2_4.dll" Name="Iex-2_4.dll" Source="$(var.hlae.TargetDir)\Iex-2_4.dll" KeyPath="yes" Checksum="yes"/>
       </Component>
-      <Component Id="_C04FC447_3B97_42F1_ABE7_0DB8DF70B61E_IexMath_2_2.dll">
-        <File Id="_C04FC447_3B97_42F1_ABE7_0DB8DF70B61E_IexMath_2_2.dll" Name="IexMath-2_2.dll" Source="$(var.hlae.TargetDir)\IexMath-2_2.dll" KeyPath="yes" Checksum="yes"/>
+      <Component Id="_C04FC447_3B97_42F1_ABE7_0DB8DF70B61E_IexMath_2_4.dll">
+        <File Id="_C04FC447_3B97_42F1_ABE7_0DB8DF70B61E_IexMath_2_4.dll" Name="IexMath-2_4.dll" Source="$(var.hlae.TargetDir)\IexMath-2_4.dll" KeyPath="yes" Checksum="yes"/>
       </Component>
-      <Component Id="_8003CAB9_B3E6_4DCC_9075_96805E2CE099_IlmImf_2_2.dll">
-        <File Id="_8003CAB9_B3E6_4DCC_9075_96805E2CE099_IlmImf_2_2.dll" Name="IlmImf-2_2.dll" Source="$(var.hlae.TargetDir)\IlmImf-2_2.dll" KeyPath="yes" Checksum="yes"/>
+      <Component Id="_8003CAB9_B3E6_4DCC_9075_96805E2CE099_IlmImf_2_4.dll">
+        <File Id="_8003CAB9_B3E6_4DCC_9075_96805E2CE099_IlmImf_2_4.dll" Name="IlmImf-2_4.dll" Source="$(var.hlae.TargetDir)\IlmImf-2_4.dll" KeyPath="yes" Checksum="yes"/>
       </Component>
-      <Component Id="_6A77C106_9189_4913_B6EB_2F5A2FCC327A_IlmThread_2_2.dll">
-        <File Id="_6A77C106_9189_4913_B6EB_2F5A2FCC327A_IlmThread_2_2.dll" Name="IlmThread-2_2.dll" Source="$(var.hlae.TargetDir)\IlmThread-2_2.dll" KeyPath="yes" Checksum="yes"/>
+      <Component Id="_6A77C106_9189_4913_B6EB_2F5A2FCC327A_IlmThread_2_4.dll">
+        <File Id="_6A77C106_9189_4913_B6EB_2F5A2FCC327A_IlmThread_2_4.dll" Name="IlmThread-2_4.dll" Source="$(var.hlae.TargetDir)\IlmThread-2_4.dll" KeyPath="yes" Checksum="yes"/>
       </Component>
-      <Component Id="_374D319E_CB4A_4962_9D1D_8DEDB7811ED8_Imath_2_2.dll">
-        <File Id="_374D319E_CB4A_4962_9D1D_8DEDB7811ED8_Imath_2_2.dll" Name="Imath-2_2.dll" Source="$(var.hlae.TargetDir)\Imath-2_2.dll" KeyPath="yes" Checksum="yes"/>
+      <Component Id="_374D319E_CB4A_4962_9D1D_8DEDB7811ED8_Imath_2_4.dll">
+        <File Id="_374D319E_CB4A_4962_9D1D_8DEDB7811ED8_Imath_2_4.dll" Name="Imath-2_4.dll" Source="$(var.hlae.TargetDir)\Imath-2_4.dll" KeyPath="yes" Checksum="yes"/>
       </Component>
       <Component Id="_8A45D18B_686E_4963_954C_BDE043D9A3DC_injector.exe">
         <File Id="_8A45D18B_686E_4963_954C_BDE043D9A3DC_injector.exe" Name="injector.exe" Source="$(var.hlae.TargetDir)\injector.exe" KeyPath="yes" Checksum="yes"/>
@@ -575,13 +575,13 @@
       <ComponentRef Id="_6EB9B47F_1B2F_417D_8F6F_70516A68AA02_changelog.xml"/>
       <ComponentRef Id="_9F5B9A8B_58E1_43B7_A5C0_D65AE2FDAEF7_changelog.xsl"/>
       <ComponentRef Id="_73CC32AE_2421_46DC_A0CA_07E4F07919A8_concrt140.dll"/>
-      <ComponentRef Id="_BDDDD824_C405_4A6F_98FD_A1C04614D150_Half.dll"/>
+      <ComponentRef Id="_BDDDD824_C405_4A6F_98FD_A1C04614D150_Half_2_4.dll"/>
       <ComponentRef Id="_E77FBD5C_A4F1_429D_B750_9C270BD89C18_HLAE.exe"/>
-      <ComponentRef Id="_382A679D_8B60_4F2F_9A7C_93B5C5691EFE_Iex_2_2.dll"/>
-      <ComponentRef Id="_C04FC447_3B97_42F1_ABE7_0DB8DF70B61E_IexMath_2_2.dll"/>
-      <ComponentRef Id="_8003CAB9_B3E6_4DCC_9075_96805E2CE099_IlmImf_2_2.dll"/>
-      <ComponentRef Id="_6A77C106_9189_4913_B6EB_2F5A2FCC327A_IlmThread_2_2.dll"/>
-      <ComponentRef Id="_374D319E_CB4A_4962_9D1D_8DEDB7811ED8_Imath_2_2.dll"/>
+      <ComponentRef Id="_382A679D_8B60_4F2F_9A7C_93B5C5691EFE_Iex_2_4.dll"/>
+      <ComponentRef Id="_C04FC447_3B97_42F1_ABE7_0DB8DF70B61E_IexMath_2_4.dll"/>
+      <ComponentRef Id="_8003CAB9_B3E6_4DCC_9075_96805E2CE099_IlmImf_2_4.dll"/>
+      <ComponentRef Id="_6A77C106_9189_4913_B6EB_2F5A2FCC327A_IlmThread_2_4.dll"/>
+      <ComponentRef Id="_374D319E_CB4A_4962_9D1D_8DEDB7811ED8_Imath_2_4.dll"/>
       <ComponentRef Id="_8A45D18B_686E_4963_954C_BDE043D9A3DC_injector.exe"/>
       <ComponentRef Id="_1FDB31B6_5D13_4133_923A_888D2C815595_msvcp140.dll"/>
       <ComponentRef Id="_4787489A_FFB9_4C18_BF4E_98F000833FCB_msvcp140_1.dll"/>

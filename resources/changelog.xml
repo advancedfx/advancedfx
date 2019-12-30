@@ -3,6 +3,23 @@
 
 <changelog>
 
+<release>
+<name>HLAE</name>
+<version>2.83.0</version>
+<time>2019-13-30T18:34Z</time>
+<changes>
+<change type="updated">
+Included AfxHookSource 1.72.0 (2019-13-30T18:34Z).
+</change>
+<change type="updated">
+Included AfxHookGoldSrc 2.6.5 (2019-13-30T17:57Z).
+</change>
+<change type="updated">
+Recompiled with latest Visual Studio 16.4.2 and packaged with latest CRT - now requires at least Windows 7. (Windows XP is not supported anymore.)
+</change>
+</changes>
+</release>
+
 
 <release>
 <name>HLAE</name>

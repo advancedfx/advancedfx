@@ -36,9 +36,3 @@ using namespace System::Security::Permissions;
 [assembly:ComVisible(false)];
 
 [assembly:CLSCompliantAttribute(true)];
-
-[assembly:SecurityPermission(SecurityAction::RequestMinimum, UnmanagedCode = true)];
-
-// own permssions requested:
-[assembly:FileIOPermission(SecurityAction::RequestMinimum, Unrestricted = true)];
-[assembly:FileDialogPermission(SecurityAction::RequestMinimum, Unrestricted = true)];

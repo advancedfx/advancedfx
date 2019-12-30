@@ -6,6 +6,24 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.72.0</version>
+<time>2019-13-30T18:34Z</time>
+<changes>
+<change type="updated">
+Added 1:1 sample aspect ratio (SAR) info to default ffmpeg video filter params (now: -vf vflip,setsar=sar=1/1), fixes #252 weird video resolution recording with ffmpeg (wrong resolution for video programs defaulting to non square SAR).
+</change>
+<change type="updated">
+Breaking change: For ffmpeg presets {AFX_STREAM_PATH} does not contain a trailing backslash anymore! (Also default ffmpeg presets have been adjusted to include \\ which means \.)
+</change>
+<change type="updated">
+Recompiled with latest Visual Studio 16.4.2 and packaged with latest CRT - now requires at least Windows 7. (Windows XP is not supported anymore.)
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.71.0</version>
 <time>2019-11-19T04:00Z</time>
 <changes>
@@ -16,7 +34,6 @@ Adjusted to CS:GO 11/18/2019 (11/19/2019 UTC) update: <br />
 </change>
 </changes>
 </release>
-
 
 
 <release>

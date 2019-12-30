@@ -60,6 +60,11 @@ public:
 	virtual bool CalcInt(int & outResult) abstract = 0;
 };
 
+class IMirvFloatCalc abstract : public IMirvCalc
+{
+public:
+	virtual bool CalcFloat(float& outResult) abstract = 0;
+};
 
 class CMirvHandleCalcs
 {
@@ -225,4 +230,28 @@ private:
 };
 
 extern CMirvIntCalcs g_MirvIntCalcs;
+
+
+class CMirvFloatCalcs
+{
+public:
+	~CMirvFloatCalcs();
+
+	IMirvFloatCalc* GetByName(char const* name);
+
+	IMirvFloatCalc* NewValueCalc(const char* name, float value);
+	IMirvFloatCalc* NewIfCalc(char const* name, IMirvBoolCalc* condition, IMirvFloatCalc* condTrue, IMirvFloatCalc* condFalse);
+
+	bool Console_CheckName(char const* name);
+	void Console_Remove(char const* name);
+	void Console_Print(void);
+
+private:
+	std::list<IMirvFloatCalc*> m_Calcs;
+
+	void GetIteratorByName(char const* name, std::list<IMirvFloatCalc*>::iterator& outIt);
+};
+
+extern CMirvFloatCalcs g_MirvFloatCalcs;
+
 

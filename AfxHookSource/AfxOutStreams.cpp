@@ -86,14 +86,33 @@ bool CAfxOutImageStream::CreateCapturePath(const char * fileExtension, std::wstr
 }
 
 
-void ReplaceAllW(std::wstring & str, const std::wstring & from, const std::wstring & to)
+void ReplaceAllW(std::wstring & str, const std::map<std::wstring, std::wstring> & replacements)
 {
-	if (from.empty())
-		return;
 	size_t start_pos = 0;
-	while ((start_pos = str.find(from, start_pos)) != std::wstring::npos) {
-		str.replace(start_pos, from.length(), to);
-		start_pos += to.length();
+	while (true)
+	{
+		size_t found_pos = std::wstring::npos;
+		std::map<std::wstring, std::wstring>::const_iterator itFound = replacements.end();
+
+		for (std::map<std::wstring, std::wstring>::const_iterator itR = replacements.begin(); itR != replacements.end(); ++itR)
+		{
+			if (itR->first.empty()) continue;
+
+			size_t cur_found_pos = str.find(itR->first, start_pos);
+
+			if (cur_found_pos != std::wstring::npos && (found_pos == std::wstring::npos || cur_found_pos < found_pos))
+			{
+				found_pos = cur_found_pos;
+				itFound = itR;
+			}
+		}
+
+		if (itFound != replacements.end())
+		{
+			str.replace(found_pos, itFound->first.length(), itFound->second);
+			start_pos = found_pos + itFound->second.length();
+		}
+		else break;
 	}
 }
 
@@ -148,16 +167,20 @@ CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & image
 
 		ffmpegArgs << " -framerate " << frameRate;
 		ffmpegArgs << " -video_size " << imageFormat.Width << "x" << imageFormat.Height;
-		ffmpegArgs << " -i pipe:0 -vf vflip";
+		ffmpegArgs << " -i pipe:0 -vf vflip,setsar=sar=1/1";
 
 		std::wstring myFFMPEGOptions(ffmpegOptions);
 
-		myPath.append(L"\\");
+		// breaking change: // myPath.append(L"\\");
 
-		ReplaceAllW(myFFMPEGOptions, L"{AFX_STREAM_PATH}", myPath);
-		ReplaceAllW(myFFMPEGOptions, L"{QUOTE}", L"\"");
-		ReplaceAllW(myFFMPEGOptions, L"\\{", L"{");
-		ReplaceAllW(myFFMPEGOptions, L"\\}", L"}");
+		std::map<std::wstring, std::wstring> replacements;
+		replacements[L"{AFX_STREAM_PATH}"] = myPath;
+		replacements[L"{QUOTE}"] = L"\"";
+		replacements[L"\\{"] = L"{";
+		replacements[L"\\}"] = L"}";
+		replacements[L"\\\\"] = L"\\";
+
+		ReplaceAllW(myFFMPEGOptions, replacements);
 
 		ffmpegArgs << " " << myFFMPEGOptions;
 		ffmpegArgs << L"\0";
