@@ -29,10 +29,6 @@ Notice:
     cd /c/<HLAESRC>
     git clone --recursive https://github.com/advancedfx/advancedfx.git
 
-[X] Obtain the following files from http://openexr.com/ :
-    ilmbase-2.3.0.tar.gz, openexr-2.2.1.tar.gz and extract their contents
-    into "C:\Libraries"
-
 [X] Obtain zlib-1.2.11.tar.gz from http://zlib.net and extract it into
     "C:\Libraries"
 
@@ -69,7 +65,7 @@ Notice:
 	cd build
 	setlocal
 	del /f "CMakeCache.txt"
-	"C:\Program Files\CMake\bin\cmake.exe" .. "-DBUILD_SHARED_LIBS=1" "-DZLIB_ROOT=C:\Libraries\zlib-1.2.11" "-DCMAKE_PREFIX_PATH=C:\<HLAESRC>\ilmbase-build" "-DCMAKE_SYSTEM_PREFIX=C:\<HLAESRC>\ilmbase-build" "-DCMAKE_INSTALL_PREFIX=C:\<HLAESRC>\openexr-build" -G "Visual Studio 16 2019" -T "v142" -A Win32 ../OpenEXR
+	"C:\Program Files\CMake\bin\cmake.exe" "-DBUILD_SHARED_LIBS=1" "-DZLIB_ROOT=C:\Libraries\zlib-1.2.11" "-DCMAKE_PREFIX_PATH=C:\<HLAESRC>\ilmbase-build" "-DCMAKE_SYSTEM_PREFIX=C:\<HLAESRC>\ilmbase-build" "-DCMAKE_INSTALL_PREFIX=C:\<HLAESRC>\openexr-build" -G "Visual Studio 16 2019" -T "v142" -A Win32 ../OpenEXR
 
 [X] Open the C:\Libraries\openexr\build\openexr.sln created in the previous step
     Select the Release configuration.
