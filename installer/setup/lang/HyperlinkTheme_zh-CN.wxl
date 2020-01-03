@@ -66,6 +66,5 @@
   <String Id="HlaeDisclaimer">该软件仅限个人使用并且自行承担风险.</String>
 
   <String Id="HlaeFeaturesHeader">可选安装</String>
-  <String Id="HlaeFfmpegFeature"><![CDATA[从 https://ffmpeg.zeranoe.com/builds/ 下载安装FFMPEG（约200MB）]]></String>
-  <!-- Suggest to explain what it does in the second line. “*FFMPEG配合HLAE可以直接录制得到MP4文件 ”-->
+  <String Id="HlaeFfmpegFeature"><![CDATA[从 https://ffmpeg.zeranoe.com/builds/ 下载安装FFMPEG，FFMPEG配合HLAE可以直接录制得到MP4文件，某些地区下载速度慢，可以不勾选此项，手动安装FFMPEG]]></String>
 </WixLocalization>
