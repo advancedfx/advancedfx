@@ -7,7 +7,7 @@
 <release>
 <name>AfxHookSource</name>
 <version>1.72.1</version>
-<time>2019-01-06T18:43Z</time>
+<time>2020-01-06T18:43Z</time>
 <changes>
 <change type="fixed">
 Fixed AGR files created being broken due to bug (undefined C++ std library / compiler behavior).
@@ -22,7 +22,7 @@ Improve zh-CN translation (by Purple-CSGO).
 <release>
 <name>AfxHookSource</name>
 <version>1.72.0</version>
-<time>2019-13-30T18:34Z</time>
+<time>2019-12-30T18:34Z</time>
 <changes>
 <change type="updated">
 Added 1:1 sample aspect ratio (SAR) info to default ffmpeg video filter params (now: -vf vflip,setsar=sar=1/1), fixes #252 weird video resolution recording with ffmpeg (wrong resolution for video programs defaulting to non square SAR).
