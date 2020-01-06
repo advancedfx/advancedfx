@@ -165,7 +165,9 @@ private:
 			return pair.second;
 		}
 
-		m_Dictionary[sValue] = m_Dictionary.size();
+		size_t oldDictSize = m_Dictionary.size();
+
+		m_Dictionary[sValue] = oldDictSize;
 		return -1;
 	}
 };

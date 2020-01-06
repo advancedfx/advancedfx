@@ -161,7 +161,9 @@ void CClientTools::Write(bool value)
 {
 	if (!m_File) return;
 
-	fwrite(&value, sizeof(value), 1, m_File);
+	unsigned char ucValue = value ? 1 : 0;
+
+	fwrite(&ucValue, sizeof(ucValue), 1, m_File);
 }
 
 void CClientTools::Write(int value)
