@@ -3,7 +3,7 @@
   <!-- Update this on release: Version -->
 	<Bundle
     Name="HLAE"
-    Version="2.83.0.1"
+    Version="2.83.1"
     Manufacturer="advancedfx.org"
     UpgradeCode="{A3020802-7F4F-4B61-BAA0-6C3065855361}"
     AboutUrl="https://www.advancedfx.org/"
