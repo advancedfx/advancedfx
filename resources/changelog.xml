@@ -6,6 +6,18 @@
 
 <release>
 <name>HLAE</name>
+<version>2.83.1.1</version>
+<time>2020-01-09T11:00Z</time>
+<changes>
+<change type="fixed">
+Fixed installer (HLAE_Setup.exe) to address #256 zh-CN FFMPEG feature translation now too long due to hints added by translator.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.83.1</version>
 <time>2020-01-06T18:43Z</time>
 <changes>

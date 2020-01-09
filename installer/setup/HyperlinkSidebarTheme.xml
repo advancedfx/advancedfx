@@ -21,14 +21,14 @@
     <Text X="11" Y="11" Width="-11" Height="32" FontId="1" DisablePrefix="yes">#(loc.Title)</Text>
     <!-- <Image X="11" Y="11" Width="165" Height="400" ImageFile="logoside.png"/> -->
     <Text X="11" Y="50" Width="-11" Height="32" FontId="2" DisablePrefix="yes">#(loc.InstallHeader)</Text>
-    <Text X="11" Y="91" Width="-11" Height="32" FontId="3" DisablePrefix="yes">#(loc.InstallMessage)</Text><!-- HexStyle="0x800000" -->
+    <Text X="11" Y="91" Width="-11" Height="48" FontId="3" DisablePrefix="yes">#(loc.InstallMessage)</Text><!-- HexStyle="0x800000" -->
     <!-- <Hypertext Name="EulaHyperlink" X="185" Y="-111" Width="-11" Height="17" TabStop="yes" FontId="3" HideWhenDisabled="yes">#(loc.InstallLicenseLinkText)</Hypertext> -->
     
     <Text X="11" Y="150" Width="-11" Height="32" FontId="2" DisablePrefix="yes">#(loc.HlaeDisclaimerTitle)</Text>
     <Text X="11" Y="193" Width="-11" Height="48" FontId="3" DisablePrefix="yes">#(loc.HlaeDisclaimer)</Text>
 
     <Text X="11" Y="252" Width="-11" Height="32" FontId="2" DisablePrefix="yes">#(loc.HlaeFeaturesHeader)</Text>
-    <Checkbox Name="HlaeFfmpegFeature" X="11" Y="295" Width="-11" Height="17" TabStop="yes" FontId="3">#(loc.HlaeFfmpegFeature)</Checkbox>
+    <Checkbox Name="HlaeFfmpegFeature" X="11" Y="295" Width="-11" Height="48" TabStop="yes" FontId="3" HexStyle="00800000">#(loc.HlaeFfmpegFeature)</Checkbox>
 
     <Text Name="InstallVersion" X="11" Y="-51" Width="-11" Height="17" FontId="3" DisablePrefix="yes" HideWhenDisabled="yes">#(loc.InstallVersion)</Text>
     <Checkbox Name="EulaAcceptCheckbox" X="185" Y="-51" Width="-11" Height="17" TabStop="yes" FontId="3" HideWhenDisabled="yes">#(loc.InstallAcceptCheckbox)</Checkbox>
@@ -52,7 +52,7 @@
     <Image X="11" Y="11" Width="64" Height="64" ImageFile="logo.png"/>
     <Text X="11" Y="80" Width="-11" Height="30" FontId="2" DisablePrefix="yes">#(loc.FilesInUseHeader)</Text>
     <Text X="11" Y="121" Width="-11" Height="34" FontId="3" DisablePrefix="yes">#(loc.FilesInUseLabel)</Text>
-    <Text Name="FilesInUseText" X="11" Y="150" Width="-11" Height="-86" FontId="3" DisablePrefix="yes" HexStyle="0x0000000C"></Text>
+    <Text Name="FilesInUseText" X="11" Y="150" Width="-11" Height="-86" FontId="3" DisablePrefix="yes"></Text>
 
     <Button Name="FilesInUseCloseRadioButton" X="11" Y="-60" Width="-11" Height="23" TabStop="yes" FontId="0" HideWhenDisabled="yes" HexStyle="0x000009">#(loc.FilesInUseCloseRadioButton)</Button>
     <Button Name="FilesInUseDontCloseRadioButton" X="11" Y="-40" Width="-11" Height="23" TabStop="yes" FontId="0" HideWhenDisabled="yes" HexStyle="0x000009">#(loc.FilesInUseDontCloseRadioButton)</Button>
@@ -68,7 +68,7 @@
     <Text Name="OverallProgressPackageText" X="85" Y="141" Width="-11" Height="17" FontId="3" DisablePrefix="yes">#(loc.OverallProgressPackageText)</Text>
     <Progressbar Name="OverallCalculatedProgressbar" X="11" Y="163" Width="-11" Height="20" />
     
-    <Text Name="ExecuteProgressActionDataText" X="11" Y="192" Width="-11" Height="17" FontId="3" DisablePrefix="yes" />
+    <Text Name="ExecuteProgressActionDataText" X="11" Y="192" Width="-11" Height="192" FontId="3" DisablePrefix="yes" />
     
     <Button Name="ProgressCancelButton" X="-11" Y="-11" Width="75" Height="23" TabStop="yes" FontId="0">#(loc.ProgressCancelButton)</Button>
   </Page>
