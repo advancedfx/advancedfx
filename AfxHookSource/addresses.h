@@ -84,17 +84,6 @@ AFXADDR_DECL(csgo_RTTI_CGameEvent)
 AFXADDR_DECL(csgo_RTTI_IGameEvent)
 //AFXADDR_DECL(csgo_client_dynamic_cast)
 //AFXADDR_DECL(csgo_client_RTTI_IClientRenderable)
-AFXADDR_DECL(csgo_CDemoPlayer)
-//AFXADDR_DECL(csgo_CClientFrameManager_DeleteClientFrames)
-//AFXADDR_DECL(m_ClockDriftMgr)
-//AFXADDR_DECL(csgo_CL_ProcessPacketEntities_AddClientFrame)
-AFXADDR_DECL(csgo_cl)
-AFXADDR_DECL(csgo_sv)
-//AFXADDR_DECL(csgo_host_client)
-AFXADDR_DECL(csgo_CDemoPlayer_InternalStartPlayback)
-AFXADDR_DECL(csgo_WriteDeltaEntities)
-AFXADDR_DECL(csgo_NET_CreateNetChannel)
-AFXADDR_DECL(csgo_CBaseServer_GetFreeCLient)
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);
