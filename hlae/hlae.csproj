@@ -80,12 +80,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\injector\AfxError.cs">
-      <Link>AfxError.cs</Link>
+    <Compile Include="..\injector\InjectorMessages.cs">
+      <Link>InjectorMessages.cs</Link>
     </Compile>
-    <Compile Include="..\injector\InjectorErrors.cs">
-      <Link>InjectorErrors.cs</Link>
-    </Compile>
+    <Compile Include="AfxError.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="ErrorDialogue.cs">
       <SubType>Form</SubType>
@@ -160,6 +158,7 @@
     <EmbeddedResource Include="Tools\CustomLoaderForm.resx">
       <DependentUpon>CustomLoaderForm.cs</DependentUpon>
     </EmbeddedResource>
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
