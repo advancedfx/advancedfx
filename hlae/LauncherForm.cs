@@ -16,6 +16,53 @@ namespace AfxGui
         internal LauncherForm()
         {
             InitializeComponent();
+
+            this.Text = L10n._p("Launch GoldSrc dialog", "Launch GoldSrc ...");
+            this.groupBoxGame.Text = L10n._p("Launch GoldSrc dialog", "");
+            this.labelExe.Text = L10n._p("Launch GoldSrc dialog", "Game");
+            this.buttonExe.Text = L10n._p("Launch GoldSrc dialog", "Browse ...");
+            this.labelModSel.Text = L10n._p("Launch GoldSrc dialog", "Modification:");
+
+            this.modificiationValues = new string[] { "cstrike", "dod", "tfc", "valve" };
+            this.comboBoxModSel.Items.AddRange(new string[]{
+                L10n._p("Launch GoldSrc dialog", "{0} (Counter-Strike)", this.modificiationValues[0]),
+                L10n._p("Launch GoldSrc dialog", "{0} (Day of Defeat)", this.modificiationValues[1]),
+                L10n._p("Launch GoldSrc dialog", "{0} (Team Fortress Classic)", this.modificiationValues[2]),
+                L10n._p("Launch GoldSrc dialog", "{0} (Half-Life)", this.modificiationValues[3]),
+                L10n._p("Launch GoldSrc dialog", "Other modification:"),
+            });
+
+            this.groupBoxCmdOpts.Text = L10n._p("Launch GoldSrc dialog", "Custom command line options");
+            this.groupBoxRes.Text = L10n._p("Launch GoldSrc dialog", "Graphic Resolution");
+            this.labelResWidth.Text = L10n._p("Launch GoldSrc dialog", "Width:");
+            this.labelResHeight.Text = L10n._p("Launch GoldSrc dialog", "Height:");
+            this.labelResDepth.Text = L10n._p("Launch GoldSrc dialog", "Color Depth:");
+            this.checkBoxResForce.Text = L10n._p("Launch GoldSrc dialog", "force resolution");
+            this.checkBoxFullScreen.Text = L10n._p("Launch GoldSrc dialog", "full screen");
+
+            this.bppValues = new byte[] { 32, 24, 16 };
+            this.comboBoxResDepth.Items.AddRange(new string[]{
+                L10n._p("Launch GoldSrc dialog bpp", "32 (High)"),
+                L10n._p("Launch GoldSrc dialog bpp", "24 (Medium)"),
+                L10n._p("Launch GoldSrc dialog bpp", "16 (Low)"),
+            });
+
+            this.groupBoxMisc.Text = L10n._p("Launch GoldSrc dialog", "Advanced Settings");
+            this.checkBoxForceAlpha.Text = L10n._p("Launch GoldSrc dialog", "Force 8 bit alpha channel");
+            this.checkBoxVisbility.Text = L10n._p("Launch GoldSrc dialog", "checkBoxVisbility");
+            this.checkBoxDesktopRes.Text = L10n._p("Launch GoldSrc dialog", "Optimize desktop resolution");
+
+            this.labelRenderMode.Text = L10n._p("Launch GoldSrc dialog", "Render mode:");
+            this.comboBoxRenderMode.Items.AddRange(new string[]
+            {
+                L10n._p("Launch GoldSrc dialog render mode", "Standard"),
+                L10n._p("Launch GoldSrc dialog render mode", "FrameBuffer Object"),
+                L10n._p("Launch GoldSrc dialog render mode", "Memory DC")
+            });
+
+            this.checkBoxRemeber.Text = L10n._p("Launch GoldSrc dialog", "remember my changes");
+            this.buttonOK.Text = L10n._p("Launch GoldSrc dialog", "L&aunch");
+            this.buttonCancel.Text = L10n._p("Launch GoldSrc dialog", "Can&cel");
         }
 
 
@@ -25,20 +72,16 @@ namespace AfxGui
 	        this.textBoxExe.Text = cfg.GamePath;
 
 	        int iInd = -1;
-	        for( int i = 0; i < this.comboBoxModSel.Items.Count; i++)
+	        for( int i = 0; i < this.modificiationValues.Length; i++)
 	        {
-
-		        String stext = this.comboBoxModSel.Items[i].ToString();
-                stext = stext.Split(new char[]{' '}, 2)[0];
-                    
-		        if(0 == String.Compare(stext,cfg.Modification))
+		        if(0 == String.Compare(this.modificiationValues[i], cfg.Modification))
 		        {
 			        iInd = i;
 			        break;
 		        }
 	        }
 
-	        if(iInd<0 || iInd >= this.comboBoxModSel.Items.Count-1)
+	        if(iInd<0 || iInd >= this.modificiationValues.Length)
 	        {
 		        this.textBoxCustMod.Enabled = true;
 		        this.comboBoxModSel.SelectedIndex = this.comboBoxModSel.Items.Count - 1;
@@ -68,24 +111,30 @@ namespace AfxGui
 
         internal void WriteToConfig(CfgLauncher cfg)
         {
-            char[] spaceDelim = new char[] { ' ' };
-
 	        cfg.RememberChanges = this.checkBoxRemeber.Checked;
 
 	        cfg.GamePath = this.textBoxExe.Text;
 
-	        if( this.comboBoxModSel.SelectedIndex ==  this.comboBoxModSel.Items.Count-1)
+	        if( this.comboBoxModSel.SelectedIndex < 0 || this.comboBoxModSel.SelectedIndex >= this.modificiationValues.Length)
 	        {
 		        cfg.Modification = this.textBoxCustMod.Text;
 	        } else {
-                cfg.Modification = this.comboBoxModSel.Text.Split(spaceDelim, 2)[0];
+                cfg.Modification = this.modificiationValues[this.comboBoxModSel.SelectedIndex];
 	        }
 
 	        cfg.CustomCmdLine = this.textBoxCmdAdd.Text;
 	        cfg.GfxForce = this.checkBoxResForce.Checked;
 	        UInt16.TryParse( this.textBoxResWidth.Text, out cfg.GfxWidth );
 	        UInt16.TryParse( this.textBoxResHeight.Text, out cfg.GfxHeight );
-            Byte.TryParse(this.comboBoxResDepth.Text.Split(spaceDelim, 2)[0], out cfg.GfxBpp);
+
+            if (this.comboBoxResDepth.SelectedIndex < 0 || this.comboBoxResDepth.SelectedIndex >= this.bppValues.Length)
+            {
+                Byte.TryParse(this.comboBoxResDepth.Text, out cfg.GfxBpp);
+            }
+            else
+            {
+                cfg.GfxBpp = this.bppValues[this.comboBoxResDepth.SelectedIndex];
+            }
 
 	        // Advanced Settings:
 	        cfg.ForceAlpha = this.checkBoxForceAlpha.Checked;
@@ -97,6 +146,9 @@ namespace AfxGui
 
         //
         // Private members:
+
+        private string[] modificiationValues;
+        private Byte[] bppValues;
 
         private void buttonExe_Click(object sender, EventArgs e)
         {

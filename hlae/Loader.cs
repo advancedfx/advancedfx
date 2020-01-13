@@ -76,7 +76,7 @@ namespace AfxGui
                                 );
                             }
 
-                            advancedfx.AfxError error = null;
+                            AfxError error = null;
 
                             IFormatter formatter = new advancedfx.injector.interop.Formatter();
 
@@ -135,7 +135,7 @@ namespace AfxGui
                                             case advancedfx.injector.interop.ContinueWaitingQuestion contineWaitingQuestion:
                                                 {
                                                     advancedfx.injector.interop.ContinueWaiting r = new advancedfx.injector.interop.ContinueWaiting();
-                                                    r.Response = DialogResult.Yes == MessageBox.Show("Image injection problem.\nContinue waiting?", "injector Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                                                    r.Response = DialogResult.Yes == MessageBox.Show(L10n._("Image injection problem.\nContinue waiting?"), L10n._("injector Warning"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
 
                                                     formatter.Serialize(injectorIn, r);
                                                     injectorIn.Flush();
@@ -194,7 +194,7 @@ namespace AfxGui
                     CloseHandle(processInfo.hProcess);
                 }
             }
-            catch(advancedfx.AfxError e)
+            catch(AfxError e)
             {
                 if (showErrorMessage)
                 {
@@ -308,7 +308,7 @@ namespace AfxGui
             IntPtr hKernel32Dll = GetModuleHandle("Kernel32.dll");
 
             if (IntPtr.Zero == hKernel32Dll)
-                throw new ApplicationException("Can not get Kernel32.dll handle.");
+                throw new ApplicationException(L10n._("Can not get Kernel32.dll handle."));
 
             m_HasIsWow64Process = IntPtr.Zero != GetProcAddress(hKernel32Dll, "IsWow64Process");
         }
@@ -321,7 +321,7 @@ namespace AfxGui
             bool wow64Process;
 
             if (!IsWow64Process(hProcess, out wow64Process))
-                throw new ApplicationException("IsWow64Process failed, error code: " + Marshal.GetLastWin32Error());
+                throw new ApplicationException(L10n._("IsWow64Process failed, error code: {0}", Marshal.GetLastWin32Error()));
 
             return !(wow64Process || !Environment.Is64BitOperatingSystem);
         }

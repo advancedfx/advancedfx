@@ -21,6 +21,61 @@ namespace AfxGui
         {
             InitializeComponent();
             this.Icon = Program.Icon;
+            this.buttonManual.Image = SystemIcons.Information.ToBitmap();
+
+            this.Text = L10n._p("Main window", "Half-Life Advanced Effects");
+
+            this.fileToolStripMenuItem.Text = L10n._p("Main window | menu", "File");
+            this.menuLaunchCSGO.Text = L10n._p("Main window | menu | File", "Launch CS:GO");
+            this.launchGoldSrcToolStripMenuItem.Text = L10n._p("Main window | menu | File", "Launch GoldSrc");
+            this.menuExit.Text = L10n._p("Main window | menu | File", "Exit");
+
+            this.viewToolStripMenuItem.Text = L10n._p("Main Window | menu", "View");
+            this.menuStatusBar.Text = L10n._p("Main window | menu | View", "Status Bar");
+
+            this.toolsToolStripMenuItem.Text = L10n._p("Main window | menu", "Tools");            
+            this.calculatorsToolStripMenuItem.Text = L10n._p("Main window | menu | Tools", "Calculators");
+            this.menuFileSize.Text = L10n._p("Main window | menu | Tools | Calculators", "File Size");
+            this.goldSrcToolStripMenuItem.Text = L10n._p("Main window | menu | Tools", "GoldSrc");
+            this.demoToolsToolStripMenuItem.Text = L10n._p("Main window | menu | Tools | GoldSrc", "Demo Tools");
+            this.skyManagerToolStripMenuItem.Text = L10n._p("Main window | menu | Tools | GoldSrc", "Sky Manager");
+
+            this.developerToolStripMenuItem.Text = L10n._p("Main window | menu | Tools", "Developer");
+            this.menuCustomLoader.Text = L10n._p("Main window | menu | Tools | Developer", "Custom Loader");
+            this.menuGuidToClipBoard.Text = L10n._p("Main window | menu | Tools | Developer", "Own GUID to ClipBoard");
+            this.menuNewGuidToClipBoard.Text = L10n._p("Main window | menu | Tools | Developer", "New GUID to ClipBoard");
+
+            string manualLanguage = L10n._p("Manual URL language (localized)", "English");
+            this.manualLink = L10n._p("Manual URL (localized)", "https://github.com/advancedfx/advancedfx/wiki");
+
+            // This is used for Process.Start, so better sanitize it:
+            Uri uriResult;
+            if (!Uri.TryCreate(this.manualLink, UriKind.Absolute, out uriResult)
+                || !(uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps))
+            {
+                this.manualLink = "https://www.advancedfx.org/";
+            }
+
+            this.helpToolStripMenuItem.Text = L10n._p("Main window | menu", "Help");
+            this.manualToolStripMenuItem.Text = L10n._p("Main window | menu | Help", "Online Manual ({0})", manualLanguage);
+            this.manualToolStripMenuItem.ToolTipText = manualLink;
+            this.checkForUpdatesToolStripMenuItem.Text = L10n._p("Main window | menu | Help", "Check for Updates");
+            this.menuAutoUpdateCheck.Text = L10n._p("Main window | menu | Help | Check for Updates", "Auto Check");
+            this.checkNowToolStripMenuItem.Text = L10n._p("Main window | menu | Help | Check for Updates", "Check Now");
+            this.menuAdvancedFxOrg.Text = L10n._p("Main window | menu | Help", "Official Website");
+
+            this.donateToolStripMenuItem.Text = L10n._p("Main window | menu", "Donate");
+
+            this.checkUpdatesLabel.Text = L10n._p("Main window | check updates strip", "Check for updates automatically?");
+            this.statusLabelAutoYes.Text = L10n._p("Main window | check updates strip", "Yes");
+            this.statusLabelAutoNo.Text = L10n._p("Main window | check updates strip", "No");
+
+
+            this.statusLabelIgnore.Text = L10n._p("Main window | update status strip", "Ignore");
+            this.statusLabelHide.Text = L10n._p("Main window | update status strip", "OK");
+            this.statusLabelUpdate.Text = L10n._p("Main window | update status strip | label", "Update status unknown");
+
+            this.buttonManual.Text = L10n._p("Main window", "Open Online Manual ({0})", manualLanguage);
 
             m_UpdateCheckNotification = new UpdateCheckNotificationTarget(this, new UpdateCheckedDelegate(OnUpdateChecked));
         }
@@ -28,6 +83,7 @@ namespace AfxGui
         //
         // Private members:
 
+        string manualLink;
         Guid m_LastUpdateGuid;
         UpdateCheckNotificationTarget m_UpdateCheckNotification;
 
@@ -50,7 +106,7 @@ namespace AfxGui
                     statusStrip.Visible = statusStrip.Visible || notIgnored;
                     statusLabelUpdate.IsLink = true;
                     statusLabelUpdate.Tag = null != checkResult.Uri ? checkResult.Uri.ToString() : "http://advancedfx.org/";
-                    statusLabelUpdate.Text = "Update available!";
+                    statusLabelUpdate.Text = L10n._p("Main window | update status strip | label" , "Update available!");
                     statusLabelUpdate.ForeColor = Color.Black;
                     statusLabelUpdate.BackColor = Color.Orange;
                 }
@@ -59,7 +115,7 @@ namespace AfxGui
                     // Is recent:
                     statusLabelIgnore.Visible = false;
                     statusLabelUpdate.IsLink = false;
-                    statusLabelUpdate.Text = "Your version is up to date :)";
+                    statusLabelUpdate.Text = L10n._p("Main window | update status strip | label", "Your version is up to date :)");
                     statusLabelUpdate.ForeColor = Color.Black;
                     statusLabelUpdate.BackColor = Color.LightGreen;
                 }
@@ -71,7 +127,7 @@ namespace AfxGui
                 statusStrip.Visible = true;
                 statusLabelUpdate.IsLink = true;
                 statusLabelUpdate.Tag = "http://advancedfx.org/";
-                statusLabelUpdate.Text = "Update check failed :(";
+                statusLabelUpdate.Text = L10n._p("Main window | update status strip | label", "Update check failed :(");
                 statusLabelUpdate.ForeColor = Color.Black;
                 statusLabelUpdate.BackColor = Color.LightCoral;
             }
@@ -80,7 +136,7 @@ namespace AfxGui
         void StartUpdateCheck()
         {
             this.statusLabelUpdate.IsLink = false;
-            this.statusLabelUpdate.Text = "Checking for updates ...";
+            this.statusLabelUpdate.Text = L10n._p("Main window | update status strip | label", "Checking for updates ...");
             this.statusLabelUpdate.ForeColor = Color.FromKnownColor(KnownColor.ControlText);
             this.statusLabelUpdate.BackColor = Color.FromKnownColor(KnownColor.Control);
 
@@ -233,6 +289,11 @@ namespace AfxGui
         {
             AfxCppCli.old.tools.skymanager sm = new AfxCppCli.old.tools.skymanager(GlobalConfig.Instance.Settings.Launcher.GamePath);
             sm.Show(this);
+        }
+
+        private void openManual_Click(object sender, EventArgs e)
+        {
+            System.Diagnostics.Process.Start(this.manualLink);
         }
     }
 }

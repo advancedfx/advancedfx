@@ -49,23 +49,28 @@
             this.menuGuidToClipBoard = new System.Windows.Forms.ToolStripMenuItem();
             this.menuNewGuidToClipBoard = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.menuAdvancedFxOrg = new System.Windows.Forms.ToolStripMenuItem();
+            this.manualToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem3 = new System.Windows.Forms.ToolStripSeparator();
             this.checkForUpdatesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuAutoUpdateCheck = new System.Windows.Forms.ToolStripMenuItem();
             this.checkNowToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem5 = new System.Windows.Forms.ToolStripSeparator();
+            this.menuAdvancedFxOrg = new System.Windows.Forms.ToolStripMenuItem();
+            this.donateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusStrip = new System.Windows.Forms.StatusStrip();
             this.statusLabelUpdate = new System.Windows.Forms.ToolStripStatusLabel();
             this.statusLabelIgnore = new System.Windows.Forms.ToolStripStatusLabel();
             this.statusLabelHide = new System.Windows.Forms.ToolStripStatusLabel();
             this.stripEnableUpdateCheck = new System.Windows.Forms.StatusStrip();
-            this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
+            this.checkUpdatesLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.statusLabelAutoYes = new System.Windows.Forms.ToolStripStatusLabel();
             this.statusLabelAutoNo = new System.Windows.Forms.ToolStripStatusLabel();
-            this.donateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.buttonManual = new System.Windows.Forms.Button();
             this.mainMenu.SuspendLayout();
             this.statusStrip.SuspendLayout();
             this.stripEnableUpdateCheck.SuspendLayout();
+            this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // mainMenu
@@ -79,7 +84,7 @@
             this.mainMenu.Location = new System.Drawing.Point(0, 0);
             this.mainMenu.Name = "mainMenu";
             this.mainMenu.ShowItemToolTips = true;
-            this.mainMenu.Size = new System.Drawing.Size(370, 24);
+            this.mainMenu.Size = new System.Drawing.Size(584, 24);
             this.mainMenu.TabIndex = 0;
             this.mainMenu.Text = "mainMenu";
             // 
@@ -91,33 +96,33 @@
             this.toolStripMenuItem1,
             this.menuExit});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
-            this.fileToolStripMenuItem.Text = "File";
+            this.fileToolStripMenuItem.Size = new System.Drawing.Size(65, 20);
+            this.fileToolStripMenuItem.Text = "L10n File";
             // 
             // menuLaunchCSGO
             // 
             this.menuLaunchCSGO.Name = "menuLaunchCSGO";
-            this.menuLaunchCSGO.Size = new System.Drawing.Size(157, 22);
-            this.menuLaunchCSGO.Text = "Launch CS:GO";
+            this.menuLaunchCSGO.Size = new System.Drawing.Size(185, 22);
+            this.menuLaunchCSGO.Text = "L10n Launch CS:GO";
             this.menuLaunchCSGO.Click += new System.EventHandler(this.MenuLaunchCSGO_Click);
             // 
             // launchGoldSrcToolStripMenuItem
             // 
             this.launchGoldSrcToolStripMenuItem.Name = "launchGoldSrcToolStripMenuItem";
-            this.launchGoldSrcToolStripMenuItem.Size = new System.Drawing.Size(157, 22);
-            this.launchGoldSrcToolStripMenuItem.Text = "Launch GoldSrc";
+            this.launchGoldSrcToolStripMenuItem.Size = new System.Drawing.Size(185, 22);
+            this.launchGoldSrcToolStripMenuItem.Text = "L10n Launch GoldSrc";
             this.launchGoldSrcToolStripMenuItem.Click += new System.EventHandler(this.MenuLaunchGoldSrc_Click);
             // 
             // toolStripMenuItem1
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(154, 6);
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(182, 6);
             // 
             // menuExit
             // 
             this.menuExit.Name = "menuExit";
-            this.menuExit.Size = new System.Drawing.Size(157, 22);
-            this.menuExit.Text = "Exit";
+            this.menuExit.Size = new System.Drawing.Size(185, 22);
+            this.menuExit.Text = "L10n Exit";
             this.menuExit.Click += new System.EventHandler(this.MenuExit_Click);
             // 
             // viewToolStripMenuItem
@@ -125,14 +130,14 @@
             this.viewToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.menuStatusBar});
             this.viewToolStripMenuItem.Name = "viewToolStripMenuItem";
-            this.viewToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
-            this.viewToolStripMenuItem.Text = "View";
+            this.viewToolStripMenuItem.Size = new System.Drawing.Size(72, 20);
+            this.viewToolStripMenuItem.Text = "L10n View";
             // 
             // menuStatusBar
             // 
             this.menuStatusBar.Name = "menuStatusBar";
-            this.menuStatusBar.Size = new System.Drawing.Size(126, 22);
-            this.menuStatusBar.Text = "Status Bar";
+            this.menuStatusBar.Size = new System.Drawing.Size(154, 22);
+            this.menuStatusBar.Text = "L10n Status Bar";
             this.menuStatusBar.Click += new System.EventHandler(this.StatusBarToolStripMenuItem_Click);
             // 
             // toolsToolStripMenuItem
@@ -143,22 +148,22 @@
             this.toolStripMenuItem2,
             this.developerToolStripMenuItem});
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
-            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(46, 20);
-            this.toolsToolStripMenuItem.Text = "Tools";
+            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(74, 20);
+            this.toolsToolStripMenuItem.Text = "L10n Tools";
             // 
             // calculatorsToolStripMenuItem
             // 
             this.calculatorsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.menuFileSize});
             this.calculatorsToolStripMenuItem.Name = "calculatorsToolStripMenuItem";
-            this.calculatorsToolStripMenuItem.Size = new System.Drawing.Size(133, 22);
-            this.calculatorsToolStripMenuItem.Text = "Calculators";
+            this.calculatorsToolStripMenuItem.Size = new System.Drawing.Size(161, 22);
+            this.calculatorsToolStripMenuItem.Text = "L10n Calculators";
             // 
             // menuFileSize
             // 
             this.menuFileSize.Name = "menuFileSize";
-            this.menuFileSize.Size = new System.Drawing.Size(115, 22);
-            this.menuFileSize.Text = "File Size";
+            this.menuFileSize.Size = new System.Drawing.Size(143, 22);
+            this.menuFileSize.Text = "L10n File Size";
             this.menuFileSize.Click += new System.EventHandler(this.MenuFileSize_Click);
             // 
             // goldSrcToolStripMenuItem
@@ -167,27 +172,27 @@
             this.demoToolsToolStripMenuItem,
             this.skyManagerToolStripMenuItem});
             this.goldSrcToolStripMenuItem.Name = "goldSrcToolStripMenuItem";
-            this.goldSrcToolStripMenuItem.Size = new System.Drawing.Size(133, 22);
-            this.goldSrcToolStripMenuItem.Text = "GoldSrc";
+            this.goldSrcToolStripMenuItem.Size = new System.Drawing.Size(161, 22);
+            this.goldSrcToolStripMenuItem.Text = "L10n GoldSrc";
             // 
             // demoToolsToolStripMenuItem
             // 
             this.demoToolsToolStripMenuItem.Name = "demoToolsToolStripMenuItem";
-            this.demoToolsToolStripMenuItem.Size = new System.Drawing.Size(142, 22);
-            this.demoToolsToolStripMenuItem.Text = "Demo Tools";
+            this.demoToolsToolStripMenuItem.Size = new System.Drawing.Size(170, 22);
+            this.demoToolsToolStripMenuItem.Text = "L10n Demo Tools";
             this.demoToolsToolStripMenuItem.Click += new System.EventHandler(this.MenuToolsGoldSrcDemoTools_Click);
             // 
             // skyManagerToolStripMenuItem
             // 
             this.skyManagerToolStripMenuItem.Name = "skyManagerToolStripMenuItem";
-            this.skyManagerToolStripMenuItem.Size = new System.Drawing.Size(142, 22);
-            this.skyManagerToolStripMenuItem.Text = "Sky Manager";
+            this.skyManagerToolStripMenuItem.Size = new System.Drawing.Size(170, 22);
+            this.skyManagerToolStripMenuItem.Text = "L10n Sky Manager";
             this.skyManagerToolStripMenuItem.Click += new System.EventHandler(this.MenuToolsGoldSrcSkyManager_Click);
             // 
             // toolStripMenuItem2
             // 
             this.toolStripMenuItem2.Name = "toolStripMenuItem2";
-            this.toolStripMenuItem2.Size = new System.Drawing.Size(130, 6);
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(158, 6);
             // 
             // developerToolStripMenuItem
             // 
@@ -197,57 +202,59 @@
             this.menuGuidToClipBoard,
             this.menuNewGuidToClipBoard});
             this.developerToolStripMenuItem.Name = "developerToolStripMenuItem";
-            this.developerToolStripMenuItem.Size = new System.Drawing.Size(133, 22);
-            this.developerToolStripMenuItem.Text = "Developer";
+            this.developerToolStripMenuItem.Size = new System.Drawing.Size(161, 22);
+            this.developerToolStripMenuItem.Text = "l10n Developer";
             // 
             // menuCustomLoader
             // 
             this.menuCustomLoader.Name = "menuCustomLoader";
-            this.menuCustomLoader.Size = new System.Drawing.Size(198, 22);
-            this.menuCustomLoader.Text = "Custom Loader";
+            this.menuCustomLoader.Size = new System.Drawing.Size(226, 22);
+            this.menuCustomLoader.Text = "L10n Custom Loader";
             this.menuCustomLoader.Click += new System.EventHandler(this.MenuCustomLoader_Click);
             // 
             // toolStripMenuItem4
             // 
             this.toolStripMenuItem4.Name = "toolStripMenuItem4";
-            this.toolStripMenuItem4.Size = new System.Drawing.Size(195, 6);
+            this.toolStripMenuItem4.Size = new System.Drawing.Size(223, 6);
             // 
             // menuGuidToClipBoard
             // 
             this.menuGuidToClipBoard.Name = "menuGuidToClipBoard";
-            this.menuGuidToClipBoard.Size = new System.Drawing.Size(198, 22);
-            this.menuGuidToClipBoard.Text = "Own GUID to ClipBoard";
+            this.menuGuidToClipBoard.Size = new System.Drawing.Size(226, 22);
+            this.menuGuidToClipBoard.Text = "L10n Own GUID to ClipBoard";
             this.menuGuidToClipBoard.Click += new System.EventHandler(this.MenuGuidToClipBoard_Click);
             // 
             // menuNewGuidToClipBoard
             // 
             this.menuNewGuidToClipBoard.Name = "menuNewGuidToClipBoard";
-            this.menuNewGuidToClipBoard.Size = new System.Drawing.Size(198, 22);
-            this.menuNewGuidToClipBoard.Text = "New GUID to ClipBoard";
+            this.menuNewGuidToClipBoard.Size = new System.Drawing.Size(226, 22);
+            this.menuNewGuidToClipBoard.Text = "L10n New GUID to ClipBoard";
             this.menuNewGuidToClipBoard.Click += new System.EventHandler(this.MenuNewGuidToClipBoard_Click);
             // 
             // helpToolStripMenuItem
             // 
             this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.menuAdvancedFxOrg,
+            this.manualToolStripMenuItem,
             this.toolStripMenuItem3,
-            this.checkForUpdatesToolStripMenuItem});
+            this.checkForUpdatesToolStripMenuItem,
+            this.toolStripMenuItem5,
+            this.menuAdvancedFxOrg});
             this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
-            this.helpToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
-            this.helpToolStripMenuItem.Text = "Help";
+            this.helpToolStripMenuItem.Size = new System.Drawing.Size(72, 20);
+            this.helpToolStripMenuItem.Text = "L10n Help";
             // 
-            // menuAdvancedFxOrg
+            // manualToolStripMenuItem
             // 
-            this.menuAdvancedFxOrg.Name = "menuAdvancedFxOrg";
-            this.menuAdvancedFxOrg.Size = new System.Drawing.Size(180, 22);
-            this.menuAdvancedFxOrg.Text = "advancedfx.org";
-            this.menuAdvancedFxOrg.ToolTipText = "https://www.advancedfx.org/";
-            this.menuAdvancedFxOrg.Click += new System.EventHandler(this.MenuAdvancedFxOrg_Click);
+            this.manualToolStripMenuItem.Name = "manualToolStripMenuItem";
+            this.manualToolStripMenuItem.Size = new System.Drawing.Size(222, 22);
+            this.manualToolStripMenuItem.Text = "L10n Online Manual (LANG)";
+            this.manualToolStripMenuItem.ToolTipText = "L10n URL";
+            this.manualToolStripMenuItem.Click += new System.EventHandler(this.openManual_Click);
             // 
             // toolStripMenuItem3
             // 
             this.toolStripMenuItem3.Name = "toolStripMenuItem3";
-            this.toolStripMenuItem3.Size = new System.Drawing.Size(177, 6);
+            this.toolStripMenuItem3.Size = new System.Drawing.Size(196, 6);
             // 
             // checkForUpdatesToolStripMenuItem
             // 
@@ -255,22 +262,43 @@
             this.menuAutoUpdateCheck,
             this.checkNowToolStripMenuItem});
             this.checkForUpdatesToolStripMenuItem.Name = "checkForUpdatesToolStripMenuItem";
-            this.checkForUpdatesToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.checkForUpdatesToolStripMenuItem.Text = "Check for Updates";
+            this.checkForUpdatesToolStripMenuItem.Size = new System.Drawing.Size(199, 22);
+            this.checkForUpdatesToolStripMenuItem.Text = "L10n Check for Updates";
             // 
             // menuAutoUpdateCheck
             // 
             this.menuAutoUpdateCheck.Name = "menuAutoUpdateCheck";
-            this.menuAutoUpdateCheck.Size = new System.Drawing.Size(136, 22);
-            this.menuAutoUpdateCheck.Text = "Auto Check";
+            this.menuAutoUpdateCheck.Size = new System.Drawing.Size(164, 22);
+            this.menuAutoUpdateCheck.Text = "L10n Auto Check";
             this.menuAutoUpdateCheck.Click += new System.EventHandler(this.MenuAutoUpdateCheck_Click);
             // 
             // checkNowToolStripMenuItem
             // 
             this.checkNowToolStripMenuItem.Name = "checkNowToolStripMenuItem";
-            this.checkNowToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
-            this.checkNowToolStripMenuItem.Text = "Check Now";
+            this.checkNowToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
+            this.checkNowToolStripMenuItem.Text = "L10n Check Now";
             this.checkNowToolStripMenuItem.Click += new System.EventHandler(this.CheckNowToolStripMenuItem_Click);
+            // 
+            // toolStripMenuItem5
+            // 
+            this.toolStripMenuItem5.Name = "toolStripMenuItem5";
+            this.toolStripMenuItem5.Size = new System.Drawing.Size(196, 6);
+            // 
+            // menuAdvancedFxOrg
+            // 
+            this.menuAdvancedFxOrg.Name = "menuAdvancedFxOrg";
+            this.menuAdvancedFxOrg.Size = new System.Drawing.Size(199, 22);
+            this.menuAdvancedFxOrg.Text = "L10n Offical website";
+            this.menuAdvancedFxOrg.ToolTipText = "https://www.advancedfx.org/";
+            this.menuAdvancedFxOrg.Click += new System.EventHandler(this.MenuAdvancedFxOrg_Click);
+            // 
+            // donateToolStripMenuItem
+            // 
+            this.donateToolStripMenuItem.Name = "donateToolStripMenuItem";
+            this.donateToolStripMenuItem.Size = new System.Drawing.Size(85, 20);
+            this.donateToolStripMenuItem.Text = "L10n Donate";
+            this.donateToolStripMenuItem.ToolTipText = "https://opencollective.com/advancedfx/";
+            this.donateToolStripMenuItem.Click += new System.EventHandler(this.MenuDonate_Click);
             // 
             // statusStrip
             // 
@@ -278,9 +306,9 @@
             this.statusLabelUpdate,
             this.statusLabelIgnore,
             this.statusLabelHide});
-            this.statusStrip.Location = new System.Drawing.Point(0, 251);
+            this.statusStrip.Location = new System.Drawing.Point(0, 337);
             this.statusStrip.Name = "statusStrip";
-            this.statusStrip.Size = new System.Drawing.Size(370, 22);
+            this.statusStrip.Size = new System.Drawing.Size(584, 24);
             this.statusStrip.TabIndex = 1;
             this.statusStrip.Text = "statusStrip1";
             this.statusStrip.Visible = false;
@@ -289,9 +317,9 @@
             // statusLabelUpdate
             // 
             this.statusLabelUpdate.Name = "statusLabelUpdate";
-            this.statusLabelUpdate.Size = new System.Drawing.Size(329, 17);
+            this.statusLabelUpdate.Size = new System.Drawing.Size(441, 19);
             this.statusLabelUpdate.Spring = true;
-            this.statusLabelUpdate.Text = "Update status known";
+            this.statusLabelUpdate.Text = "L10n Update status unknown";
             this.statusLabelUpdate.Click += new System.EventHandler(this.StatusLabelUpdate_Click);
             // 
             // statusLabelIgnore
@@ -300,8 +328,8 @@
             | System.Windows.Forms.ToolStripStatusLabelBorderSides.Right) 
             | System.Windows.Forms.ToolStripStatusLabelBorderSides.Bottom)));
             this.statusLabelIgnore.Name = "statusLabelIgnore";
-            this.statusLabelIgnore.Size = new System.Drawing.Size(45, 17);
-            this.statusLabelIgnore.Text = "Ignore";
+            this.statusLabelIgnore.Size = new System.Drawing.Size(73, 19);
+            this.statusLabelIgnore.Text = "L10n Ignore";
             this.statusLabelIgnore.Visible = false;
             this.statusLabelIgnore.Click += new System.EventHandler(this.StatusLabelIgnore_Click);
             // 
@@ -311,33 +339,33 @@
             | System.Windows.Forms.ToolStripStatusLabelBorderSides.Right) 
             | System.Windows.Forms.ToolStripStatusLabelBorderSides.Bottom)));
             this.statusLabelHide.Name = "statusLabelHide";
-            this.statusLabelHide.Size = new System.Drawing.Size(26, 17);
-            this.statusLabelHide.Text = "Ok";
+            this.statusLabelHide.Size = new System.Drawing.Size(55, 19);
+            this.statusLabelHide.Text = "L10n OK";
             this.statusLabelHide.Click += new System.EventHandler(this.StatusLabelHide_Click);
             // 
             // stripEnableUpdateCheck
             // 
             this.stripEnableUpdateCheck.Dock = System.Windows.Forms.DockStyle.Top;
             this.stripEnableUpdateCheck.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.toolStripStatusLabel1,
+            this.checkUpdatesLabel,
             this.statusLabelAutoYes,
             this.statusLabelAutoNo});
             this.stripEnableUpdateCheck.Location = new System.Drawing.Point(0, 0);
             this.stripEnableUpdateCheck.Name = "stripEnableUpdateCheck";
-            this.stripEnableUpdateCheck.Size = new System.Drawing.Size(370, 22);
+            this.stripEnableUpdateCheck.Size = new System.Drawing.Size(584, 32);
             this.stripEnableUpdateCheck.SizingGrip = false;
             this.stripEnableUpdateCheck.TabIndex = 2;
             this.stripEnableUpdateCheck.Text = "statusStrip1";
             this.stripEnableUpdateCheck.Visible = false;
             // 
-            // toolStripStatusLabel1
+            // checkUpdatesLabel
             // 
-            this.toolStripStatusLabel1.BackColor = System.Drawing.SystemColors.Info;
-            this.toolStripStatusLabel1.ForeColor = System.Drawing.SystemColors.InfoText;
-            this.toolStripStatusLabel1.Name = "toolStripStatusLabel1";
-            this.toolStripStatusLabel1.Size = new System.Drawing.Size(300, 17);
-            this.toolStripStatusLabel1.Spring = true;
-            this.toolStripStatusLabel1.Text = "Check for updates automatically?";
+            this.checkUpdatesLabel.BackColor = System.Drawing.SystemColors.Info;
+            this.checkUpdatesLabel.ForeColor = System.Drawing.SystemColors.InfoText;
+            this.checkUpdatesLabel.Name = "checkUpdatesLabel";
+            this.checkUpdatesLabel.Size = new System.Drawing.Size(442, 27);
+            this.checkUpdatesLabel.Spring = true;
+            this.checkUpdatesLabel.Text = "L10n Check for updates automatically?";
             // 
             // statusLabelAutoYes
             // 
@@ -345,8 +373,9 @@
             | System.Windows.Forms.ToolStripStatusLabelBorderSides.Right) 
             | System.Windows.Forms.ToolStripStatusLabelBorderSides.Bottom)));
             this.statusLabelAutoYes.Name = "statusLabelAutoYes";
-            this.statusLabelAutoYes.Size = new System.Drawing.Size(28, 17);
-            this.statusLabelAutoYes.Text = "Yes";
+            this.statusLabelAutoYes.Padding = new System.Windows.Forms.Padding(4);
+            this.statusLabelAutoYes.Size = new System.Drawing.Size(64, 27);
+            this.statusLabelAutoYes.Text = "L10n Yes";
             this.statusLabelAutoYes.Click += new System.EventHandler(this.StatusLabelAuto_Click);
             // 
             // statusLabelAutoNo
@@ -355,29 +384,50 @@
             | System.Windows.Forms.ToolStripStatusLabelBorderSides.Right) 
             | System.Windows.Forms.ToolStripStatusLabelBorderSides.Bottom)));
             this.statusLabelAutoNo.Name = "statusLabelAutoNo";
-            this.statusLabelAutoNo.Size = new System.Drawing.Size(27, 17);
-            this.statusLabelAutoNo.Text = "No";
+            this.statusLabelAutoNo.Padding = new System.Windows.Forms.Padding(4);
+            this.statusLabelAutoNo.Size = new System.Drawing.Size(63, 27);
+            this.statusLabelAutoNo.Text = "L10n No";
             this.statusLabelAutoNo.Click += new System.EventHandler(this.StatusLabelAuto_Click);
             // 
-            // donateToolStripMenuItem
+            // panel1
             // 
-            this.donateToolStripMenuItem.Name = "donateToolStripMenuItem";
-            this.donateToolStripMenuItem.Size = new System.Drawing.Size(57, 20);
-            this.donateToolStripMenuItem.Text = "Donate";
-            this.donateToolStripMenuItem.ToolTipText = "https://opencollective.com/advancedfx/";
-            this.donateToolStripMenuItem.Click += new System.EventHandler(this.MenuDonate_Click);
+            this.panel1.Controls.Add(this.buttonManual);
+            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panel1.Location = new System.Drawing.Point(0, 24);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(584, 337);
+            this.panel1.TabIndex = 4;
+            // 
+            // buttonManual
+            // 
+            this.buttonManual.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.buttonManual.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.buttonManual.BackColor = System.Drawing.Color.MediumBlue;
+            this.buttonManual.ForeColor = System.Drawing.Color.White;
+            this.buttonManual.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.buttonManual.Location = new System.Drawing.Point(12, 261);
+            this.buttonManual.Name = "buttonManual";
+            this.buttonManual.Padding = new System.Windows.Forms.Padding(8);
+            this.buttonManual.Size = new System.Drawing.Size(560, 64);
+            this.buttonManual.TabIndex = 4;
+            this.buttonManual.Text = "L10n Open Online Manual (LANG)";
+            this.buttonManual.UseVisualStyleBackColor = false;
+            this.buttonManual.Click += new System.EventHandler(this.openManual_Click);
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(370, 273);
+            this.ClientSize = new System.Drawing.Size(584, 361);
+            this.Controls.Add(this.panel1);
             this.Controls.Add(this.mainMenu);
             this.Controls.Add(this.statusStrip);
             this.Controls.Add(this.stripEnableUpdateCheck);
             this.MainMenuStrip = this.mainMenu;
+            this.MinimumSize = new System.Drawing.Size(600, 400);
             this.Name = "MainForm";
-            this.Text = "Half-Life Advanced Effects";
+            this.Text = "L10n Half-Life Advanced Effects";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainForm_FormClosed);
             this.Shown += new System.EventHandler(this.MainForm_Shown);
             this.mainMenu.ResumeLayout(false);
@@ -386,6 +436,7 @@
             this.statusStrip.PerformLayout();
             this.stripEnableUpdateCheck.ResumeLayout(false);
             this.stripEnableUpdateCheck.PerformLayout();
+            this.panel1.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -415,7 +466,7 @@
         private System.Windows.Forms.ToolStripStatusLabel statusLabelUpdate;
         private System.Windows.Forms.ToolStripStatusLabel statusLabelHide;
         private System.Windows.Forms.StatusStrip stripEnableUpdateCheck;
-        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel1;
+        private System.Windows.Forms.ToolStripStatusLabel checkUpdatesLabel;
         private System.Windows.Forms.ToolStripStatusLabel statusLabelAutoYes;
         private System.Windows.Forms.ToolStripStatusLabel statusLabelAutoNo;
         private System.Windows.Forms.ToolStripMenuItem menuGuidToClipBoard;
@@ -428,5 +479,9 @@
         private System.Windows.Forms.ToolStripMenuItem demoToolsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem skyManagerToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem donateToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem manualToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripMenuItem5;
+        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.Button buttonManual;
     }
 }

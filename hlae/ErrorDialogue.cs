@@ -18,15 +18,23 @@ namespace AfxGui
             this.Icon = SystemIcons.Error;
             this.pictureBoxIcon.Image = SystemIcons.Error.ToBitmap();
 
-            m_NoTitleString = this.labelTitle.Text;
-            m_NoDescriptionString = this.textBoxDescription.Text;
-            m_NoSolutionString = this.textBoxSolution.Text;
+            this.Text = L10n._("Error dialog", "HLAE Error");
+            this.labelCode.Text = L10n._p("Error dialog", "Code:");
+            this.labelCodeValue.Text = L10n._p("Error dialog", "n/a");
+            this.labelDescription.Text = L10n._p("Error dialog", "Description:");
+            this.labelSolution.Text = L10n._p("Error dialog", "Solution:");
+            this.buttonCopyToClipboard.Text = L10n._p("Error dialog", "&Copy to clipboard for support");
+            this.buttonOkay.Text = L10n._p("Error dialog", "Okay"); 
+
+            m_NoTitleString = L10n._p("Error dialog", "Unknown error.");
+            m_NoDescriptionString = L10n._p("Error dialog", "No description available.");
+            m_NoSolutionString = L10n._p("Error dialog", "No solution available.");
 
             m_NoSolutionBackColor = this.textBoxSolution.BackColor;
             m_NoSolutionForeColor = this.textBoxSolution.ForeColor;
         }
 
-        internal advancedfx.AfxError Error {
+        internal AfxError Error {
             get
             {
                 return m_Error;
@@ -62,7 +70,7 @@ namespace AfxGui
         private Color m_NoSolutionBackColor;
         private Color m_NoSolutionForeColor;
 
-        private advancedfx.AfxError m_Error;
+        private AfxError m_Error;
 
         private void buttonCopyToClipboard_Click(object sender, EventArgs e)
         {

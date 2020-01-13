@@ -53,7 +53,7 @@ public class CfgLauncher
 
     private void ThisDefault()
     {
-        GamePath = "please select";
+        GamePath = L10n._p("Config (game path)", "please select");
         Modification = "cstrike";
         CustomCmdLine = "+toggleconsole";
         GfxForce = true;
@@ -194,7 +194,7 @@ public class CfgLauncherCsgo
 
     private void ThisDefault()
     {
-        CsgoExe = "please select";
+        CsgoExe = L10n._p("Config (game path)", "please select");
         MmcfgEnabled = false;
         Mmmcfg = "";
         GfxEnabled = false;

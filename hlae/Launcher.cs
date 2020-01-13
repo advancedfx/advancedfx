@@ -33,7 +33,7 @@ class Launcher
                 bOk = Launch(cfg);
 
                 if (!bOk)
-                    MessageBox.Show("Launching failed.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(L10n._p("Launcher dialog", "Launching failed."), L10n._("Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
 
             }
             else
@@ -47,7 +47,7 @@ class Launcher
 
         private static string GetHookPath(bool isProcess64Bit)
         {
-            if (isProcess64Bit) throw new System.ApplicationException("64 Bit GoldSrc is not supported.");
+            if (isProcess64Bit) throw new System.ApplicationException(L10n._("64 Bit GoldSrc is not supported."));
 
             return System.Windows.Forms.Application.StartupPath + "\\AfxHookGoldSrc.dll";
         }

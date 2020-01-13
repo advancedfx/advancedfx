@@ -55,9 +55,9 @@
             this.labelCode.AutoSize = true;
             this.labelCode.Location = new System.Drawing.Point(115, 90);
             this.labelCode.Name = "labelCode";
-            this.labelCode.Size = new System.Drawing.Size(35, 13);
+            this.labelCode.Size = new System.Drawing.Size(62, 13);
             this.labelCode.TabIndex = 3;
-            this.labelCode.Text = "Code:";
+            this.labelCode.Text = "L10n Code:";
             // 
             // labelCodeValue
             // 
@@ -67,7 +67,7 @@
             this.labelCodeValue.Name = "labelCodeValue";
             this.labelCodeValue.Size = new System.Drawing.Size(348, 23);
             this.labelCodeValue.TabIndex = 4;
-            this.labelCodeValue.Text = "n/a";
+            this.labelCodeValue.Text = "L10n n/a";
             this.labelCodeValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // labelTitle
@@ -79,7 +79,7 @@
             this.labelTitle.Name = "labelTitle";
             this.labelTitle.Size = new System.Drawing.Size(458, 63);
             this.labelTitle.TabIndex = 2;
-            this.labelTitle.Text = "Unknown error.";
+            this.labelTitle.Text = "L10n Unknown error.";
             this.labelTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // buttonOkay
@@ -91,7 +91,7 @@
             this.buttonOkay.Name = "buttonOkay";
             this.buttonOkay.Size = new System.Drawing.Size(560, 48);
             this.buttonOkay.TabIndex = 0;
-            this.buttonOkay.Text = "&Okay";
+            this.buttonOkay.Text = "L10n &Okay";
             this.buttonOkay.UseVisualStyleBackColor = true;
             // 
             // textBoxDescription
@@ -107,25 +107,25 @@
             this.textBoxDescription.Size = new System.Drawing.Size(560, 48);
             this.textBoxDescription.TabIndex = 6;
             this.textBoxDescription.TabStop = false;
-            this.textBoxDescription.Text = "No description available.";
+            this.textBoxDescription.Text = "L10n No description available.";
             // 
             // labelDescription
             // 
             this.labelDescription.AutoSize = true;
             this.labelDescription.Location = new System.Drawing.Point(12, 115);
             this.labelDescription.Name = "labelDescription";
-            this.labelDescription.Size = new System.Drawing.Size(63, 13);
+            this.labelDescription.Size = new System.Drawing.Size(90, 13);
             this.labelDescription.TabIndex = 5;
-            this.labelDescription.Text = "Description:";
+            this.labelDescription.Text = "L10n Description:";
             // 
             // labelSolution
             // 
             this.labelSolution.AutoSize = true;
             this.labelSolution.Location = new System.Drawing.Point(12, 182);
             this.labelSolution.Name = "labelSolution";
-            this.labelSolution.Size = new System.Drawing.Size(48, 13);
+            this.labelSolution.Size = new System.Drawing.Size(75, 13);
             this.labelSolution.TabIndex = 7;
-            this.labelSolution.Text = "Solution:";
+            this.labelSolution.Text = "L10n Solution:";
             // 
             // textBoxSolution
             // 
@@ -140,7 +140,7 @@
             this.textBoxSolution.Size = new System.Drawing.Size(560, 61);
             this.textBoxSolution.TabIndex = 8;
             this.textBoxSolution.TabStop = false;
-            this.textBoxSolution.Text = "No solution available.";
+            this.textBoxSolution.Text = "L10n No solution available.";
             // 
             // buttonCopyToClipboard
             // 
@@ -152,7 +152,7 @@
             this.buttonCopyToClipboard.Name = "buttonCopyToClipboard";
             this.buttonCopyToClipboard.Size = new System.Drawing.Size(560, 30);
             this.buttonCopyToClipboard.TabIndex = 1;
-            this.buttonCopyToClipboard.Text = "&Copy to clipboard for support";
+            this.buttonCopyToClipboard.Text = "L10n &Copy to clipboard for support";
             this.buttonCopyToClipboard.UseVisualStyleBackColor = false;
             this.buttonCopyToClipboard.Click += new System.EventHandler(this.buttonCopyToClipboard_Click);
             // 
@@ -176,7 +176,7 @@
             this.MinimumSize = new System.Drawing.Size(600, 400);
             this.Name = "ErrorDialogue";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "HLAE Error";
+            this.Text = "L10n HLAE Error";
             this.TopMost = true;
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxIcon)).EndInit();
             this.ResumeLayout(false);

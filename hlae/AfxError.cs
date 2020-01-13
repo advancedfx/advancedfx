@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace advancedfx
+namespace AfxGui
 {
     public class AfxError : Exception
     {
         public AfxError(int code, string title = null, string description = null, string solution = null, Exception innerException = null)
-            : base("AfxError", innerException)
+            : base(L10n._("AfxError"), innerException)
         {
             m_Code = code;
             m_Title = title;
@@ -37,11 +37,11 @@ namespace advancedfx
         {
             StringBuilder stringBuilder = new StringBuilder();
 
-            stringBuilder.AppendLine("AfxError #"+ m_Code.ToString()+": ");
-            if (null != m_Title) { stringBuilder.Append("Title: "); stringBuilder.AppendLine(m_Title); }
-            if (null != m_Description) { stringBuilder.Append("Description: "); stringBuilder.AppendLine(m_Description); }
-            if (null != m_Solution) { stringBuilder.Append("Solution: "); stringBuilder.AppendLine(m_Solution); }
-            if (null != this.InnerException) { stringBuilder.Append("Inner exception: "); stringBuilder.AppendLine(this.InnerException.ToString()); }
+            stringBuilder.AppendLine(L10n._p("AfxError (number code)", "AfxError #{0}: ", m_Code));
+            if (null != m_Title) { stringBuilder.Append(L10n._p("AfxError", "Title: {0}", m_Title)); }
+            if (null != m_Description) { stringBuilder.Append(L10n._p("AfxError", "Description: {0}", m_Description)); }
+            if (null != m_Solution) { stringBuilder.Append(L10n._p("AfxError", "Solution: {0}", m_Solution)); }
+            if (null != this.InnerException) { stringBuilder.Append(L10n._p("AfxError", "Inner exception: {0}")); }
 
             return stringBuilder.ToString();
         }

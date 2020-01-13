@@ -70,9 +70,9 @@
             this.labelResDepth.AutoSize = true;
             this.labelResDepth.Location = new System.Drawing.Point(154, 18);
             this.labelResDepth.Name = "labelResDepth";
-            this.labelResDepth.Size = new System.Drawing.Size(66, 13);
+            this.labelResDepth.Size = new System.Drawing.Size(93, 13);
             this.labelResDepth.TabIndex = 4;
-            this.labelResDepth.Text = "Color Depth:";
+            this.labelResDepth.Text = "L10n Color Depth:";
             // 
             // textBoxResHeight
             // 
@@ -87,27 +87,23 @@
             this.labelResHeight.AutoSize = true;
             this.labelResHeight.Location = new System.Drawing.Point(82, 18);
             this.labelResHeight.Name = "labelResHeight";
-            this.labelResHeight.Size = new System.Drawing.Size(41, 13);
+            this.labelResHeight.Size = new System.Drawing.Size(68, 13);
             this.labelResHeight.TabIndex = 2;
-            this.labelResHeight.Text = "Height:";
+            this.labelResHeight.Text = "L10n Height:";
             // 
             // checkBoxVisbility
             // 
             this.checkBoxVisbility.AutoSize = true;
             this.checkBoxVisbility.Location = new System.Drawing.Point(10, 42);
             this.checkBoxVisbility.Name = "checkBoxVisbility";
-            this.checkBoxVisbility.Size = new System.Drawing.Size(195, 17);
+            this.checkBoxVisbility.Size = new System.Drawing.Size(222, 17);
             this.checkBoxVisbility.TabIndex = 1;
-            this.checkBoxVisbility.Text = "Optimize window visibilty on capture";
+            this.checkBoxVisbility.Text = "L10n Optimize window visibilty on capture";
             this.checkBoxVisbility.UseVisualStyleBackColor = true;
             // 
             // comboBoxResDepth
             // 
             this.comboBoxResDepth.FormattingEnabled = true;
-            this.comboBoxResDepth.Items.AddRange(new object[] {
-            "32 (High)",
-            "24 (Medium)",
-            "16 (Low)"});
             this.comboBoxResDepth.Location = new System.Drawing.Point(157, 35);
             this.comboBoxResDepth.Name = "comboBoxResDepth";
             this.comboBoxResDepth.Size = new System.Drawing.Size(88, 21);
@@ -119,9 +115,9 @@
             this.checkBoxDesktopRes.Enabled = false;
             this.checkBoxDesktopRes.Location = new System.Drawing.Point(10, 65);
             this.checkBoxDesktopRes.Name = "checkBoxDesktopRes";
-            this.checkBoxDesktopRes.Size = new System.Drawing.Size(155, 17);
+            this.checkBoxDesktopRes.Size = new System.Drawing.Size(182, 17);
             this.checkBoxDesktopRes.TabIndex = 4;
-            this.checkBoxDesktopRes.Text = "Optimize desktop resolution";
+            this.checkBoxDesktopRes.Text = "L10n Optimize desktop resolution";
             this.checkBoxDesktopRes.UseVisualStyleBackColor = true;
             // 
             // checkBoxForceAlpha
@@ -129,9 +125,9 @@
             this.checkBoxForceAlpha.AutoSize = true;
             this.checkBoxForceAlpha.Location = new System.Drawing.Point(10, 19);
             this.checkBoxForceAlpha.Name = "checkBoxForceAlpha";
-            this.checkBoxForceAlpha.Size = new System.Drawing.Size(146, 17);
+            this.checkBoxForceAlpha.Size = new System.Drawing.Size(173, 17);
             this.checkBoxForceAlpha.TabIndex = 0;
-            this.checkBoxForceAlpha.Text = "Force 8 bit alpha channel";
+            this.checkBoxForceAlpha.Text = "L10n Force 8 bit alpha channel";
             this.checkBoxForceAlpha.UseVisualStyleBackColor = true;
             // 
             // groupBoxGame
@@ -147,7 +143,7 @@
             this.groupBoxGame.Size = new System.Drawing.Size(469, 86);
             this.groupBoxGame.TabIndex = 10;
             this.groupBoxGame.TabStop = false;
-            this.groupBoxGame.Text = "Game";
+            this.groupBoxGame.Text = "L10n Game";
             // 
             // textBoxCustMod
             // 
@@ -162,12 +158,6 @@
             // 
             this.comboBoxModSel.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBoxModSel.FormattingEnabled = true;
-            this.comboBoxModSel.Items.AddRange(new object[] {
-            "cstrike (Counter-Strike)",
-            "dod (Day of Defeat)",
-            "tfc (Team Fortress Classic)",
-            "valve (Half-Life)",
-            "Other modification:"});
             this.comboBoxModSel.Location = new System.Drawing.Point(112, 51);
             this.comboBoxModSel.Name = "comboBoxModSel";
             this.comboBoxModSel.Size = new System.Drawing.Size(224, 21);
@@ -179,9 +169,9 @@
             this.labelModSel.AutoSize = true;
             this.labelModSel.Location = new System.Drawing.Point(7, 54);
             this.labelModSel.Name = "labelModSel";
-            this.labelModSel.Size = new System.Drawing.Size(67, 13);
+            this.labelModSel.Size = new System.Drawing.Size(94, 13);
             this.labelModSel.TabIndex = 3;
-            this.labelModSel.Text = "Modification:";
+            this.labelModSel.Text = "L10n Modification:";
             // 
             // buttonExe
             // 
@@ -189,7 +179,7 @@
             this.buttonExe.Name = "buttonExe";
             this.buttonExe.Size = new System.Drawing.Size(96, 23);
             this.buttonExe.TabIndex = 1;
-            this.buttonExe.Text = "Browse ...";
+            this.buttonExe.Text = "L10n Browse ...";
             this.buttonExe.UseVisualStyleBackColor = true;
             this.buttonExe.Click += new System.EventHandler(this.buttonExe_Click);
             // 
@@ -205,18 +195,18 @@
             this.labelExe.AutoSize = true;
             this.labelExe.Location = new System.Drawing.Point(7, 20);
             this.labelExe.Name = "labelExe";
-            this.labelExe.Size = new System.Drawing.Size(54, 13);
+            this.labelExe.Size = new System.Drawing.Size(81, 13);
             this.labelExe.TabIndex = 0;
-            this.labelExe.Text = "hl.exe file:";
+            this.labelExe.Text = "L10n hl.exe file:";
             // 
             // checkBoxFullScreen
             // 
             this.checkBoxFullScreen.AutoSize = true;
             this.checkBoxFullScreen.Location = new System.Drawing.Point(275, 39);
             this.checkBoxFullScreen.Name = "checkBoxFullScreen";
-            this.checkBoxFullScreen.Size = new System.Drawing.Size(74, 17);
+            this.checkBoxFullScreen.Size = new System.Drawing.Size(101, 17);
             this.checkBoxFullScreen.TabIndex = 7;
-            this.checkBoxFullScreen.Text = "full screen";
+            this.checkBoxFullScreen.Text = "L10n full screen";
             this.checkBoxFullScreen.UseVisualStyleBackColor = true;
             this.checkBoxFullScreen.Click += new System.EventHandler(this.checkBoxFullScreen_Click);
             // 
@@ -224,10 +214,6 @@
             // 
             this.comboBoxRenderMode.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBoxRenderMode.FormattingEnabled = true;
-            this.comboBoxRenderMode.Items.AddRange(new object[] {
-            "Standard",
-            "FrameBuffer Object",
-            "Memory DC"});
             this.comboBoxRenderMode.Location = new System.Drawing.Point(259, 32);
             this.comboBoxRenderMode.Name = "comboBoxRenderMode";
             this.comboBoxRenderMode.Size = new System.Drawing.Size(181, 21);
@@ -236,21 +222,21 @@
             // buttonCancel
             // 
             this.buttonCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.buttonCancel.Location = new System.Drawing.Point(385, 332);
+            this.buttonCancel.Location = new System.Drawing.Point(365, 332);
             this.buttonCancel.Name = "buttonCancel";
-            this.buttonCancel.Size = new System.Drawing.Size(75, 28);
+            this.buttonCancel.Size = new System.Drawing.Size(98, 28);
             this.buttonCancel.TabIndex = 8;
-            this.buttonCancel.Text = "Can&cel";
+            this.buttonCancel.Text = "L10n Can&cel";
             this.buttonCancel.UseVisualStyleBackColor = true;
             // 
             // buttonOK
             // 
             this.buttonOK.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.buttonOK.Location = new System.Drawing.Point(292, 332);
+            this.buttonOK.Location = new System.Drawing.Point(261, 332);
             this.buttonOK.Name = "buttonOK";
-            this.buttonOK.Size = new System.Drawing.Size(75, 28);
+            this.buttonOK.Size = new System.Drawing.Size(98, 28);
             this.buttonOK.TabIndex = 7;
-            this.buttonOK.Text = "L&aunch";
+            this.buttonOK.Text = "L10n L&aunch";
             this.buttonOK.UseVisualStyleBackColor = true;
             // 
             // textBoxCmdAdd
@@ -268,16 +254,16 @@
             this.groupBoxCmdOpts.Size = new System.Drawing.Size(469, 50);
             this.groupBoxCmdOpts.TabIndex = 11;
             this.groupBoxCmdOpts.TabStop = false;
-            this.groupBoxCmdOpts.Text = "Custom command line options";
+            this.groupBoxCmdOpts.Text = "L10n Custom command line options";
             // 
             // labelRenderMode
             // 
             this.labelRenderMode.AutoSize = true;
             this.labelRenderMode.Location = new System.Drawing.Point(256, 16);
             this.labelRenderMode.Name = "labelRenderMode";
-            this.labelRenderMode.Size = new System.Drawing.Size(72, 13);
+            this.labelRenderMode.Size = new System.Drawing.Size(101, 13);
             this.labelRenderMode.TabIndex = 2;
-            this.labelRenderMode.Text = "RenderMode:";
+            this.labelRenderMode.Text = "L10n Render mode:";
             // 
             // openFileDialogExe
             // 
@@ -297,16 +283,16 @@
             this.groupBoxMisc.Size = new System.Drawing.Size(469, 98);
             this.groupBoxMisc.TabIndex = 13;
             this.groupBoxMisc.TabStop = false;
-            this.groupBoxMisc.Text = "Advanced Settings";
+            this.groupBoxMisc.Text = "L10n Advanced Settings";
             // 
             // checkBoxResForce
             // 
             this.checkBoxResForce.AutoSize = true;
             this.checkBoxResForce.Location = new System.Drawing.Point(275, 14);
             this.checkBoxResForce.Name = "checkBoxResForce";
-            this.checkBoxResForce.Size = new System.Drawing.Size(98, 17);
+            this.checkBoxResForce.Size = new System.Drawing.Size(125, 17);
             this.checkBoxResForce.TabIndex = 6;
-            this.checkBoxResForce.Text = "force resolution";
+            this.checkBoxResForce.Text = "L10n force resolution";
             this.checkBoxResForce.UseVisualStyleBackColor = true;
             // 
             // textBoxResWidth
@@ -331,16 +317,16 @@
             this.groupBoxRes.Size = new System.Drawing.Size(469, 63);
             this.groupBoxRes.TabIndex = 12;
             this.groupBoxRes.TabStop = false;
-            this.groupBoxRes.Text = "Graphic Resolution";
+            this.groupBoxRes.Text = "L10n Graphic Resolution";
             // 
             // labelResWidth
             // 
             this.labelResWidth.AutoSize = true;
             this.labelResWidth.Location = new System.Drawing.Point(7, 19);
             this.labelResWidth.Name = "labelResWidth";
-            this.labelResWidth.Size = new System.Drawing.Size(38, 13);
+            this.labelResWidth.Size = new System.Drawing.Size(65, 13);
             this.labelResWidth.TabIndex = 0;
-            this.labelResWidth.Text = "Width:";
+            this.labelResWidth.Text = "L10n Width:";
             // 
             // checkBoxRemeber
             // 
@@ -374,7 +360,7 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "LauncherForm";
-            this.Text = "Launch GoldSrc ...";
+            this.Text = "L10n Launch GoldSrc ...";
             this.groupBoxGame.ResumeLayout(false);
             this.groupBoxGame.PerformLayout();
             this.groupBoxCmdOpts.ResumeLayout(false);

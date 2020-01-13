@@ -39,7 +39,7 @@ namespace AfxGui
 
         private static string GetHookPath(bool isProcess64Bit)
         {
-            if (isProcess64Bit) throw new System.ApplicationException("64 Bit CS:GO is not supported.");
+            if (isProcess64Bit) throw new System.ApplicationException(L10n._("64 Bit CS:GO is not supported."));
 
             return System.Windows.Forms.Application.StartupPath + "\\AfxHookSource.dll";
         }

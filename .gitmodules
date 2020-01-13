@@ -23,3 +23,6 @@
 	url = https://github.com/advancedfx/contrib.git
 	branch = master
 
+[submodule "l10n"]
+	path = l10n
+	url = https://github.com/advancedfx/l10n.git

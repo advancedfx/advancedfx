@@ -70,6 +70,9 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="NGettext, Version=0.6.1.0, Culture=neutral, PublicKeyToken=08d3d1c89dfd2985, processorArchitecture=MSIL">
+      <HintPath>..\packages\NGettext.0.6.5\lib\net40\NGettext.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />
@@ -93,6 +96,7 @@
     </Compile>
     <Compile Include="Globals.cs" />
     <Compile Include="HlaeErrors.cs" />
+    <Compile Include="L10n.cs" />
     <Compile Include="LaunchCsgo.cs" />
     <Compile Include="LaunchCsgoForm.cs">
       <SubType>Form</SubType>
@@ -158,6 +162,7 @@
     <EmbeddedResource Include="Tools\CustomLoaderForm.resx">
       <DependentUpon>CustomLoaderForm.cs</DependentUpon>
     </EmbeddedResource>
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
