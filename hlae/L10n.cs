@@ -12,7 +12,7 @@ namespace AfxGui
 {
 	internal class L10n
 	{
-		private static readonly ICatalog _Catalog = new Catalog("HLAE", System.IO.Path.GetFullPath(System.Windows.Forms.Application.StartupPath).TrimEnd('\\', '/')+"/locales");
+		private static readonly ICatalog _Catalog = new Catalog("hlae", System.IO.Path.GetFullPath(System.Windows.Forms.Application.StartupPath).TrimEnd('\\', '/')+"/locales");
 
 
 		public static string _(string text)

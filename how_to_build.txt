@@ -17,7 +17,16 @@ Notice:
 
 [X] Obtain and install CMAKE from http://www.cmake.org/
     We currently use "cmake-3.16.2-win64-x64.msi".
-
+	
+[X]	Obtain Python 3.8.1 or newer from from https://www.python.org/downloads/windows/ .
+	We used python-3.8.1-amd64.exe .
+	You will need to do the custom installation
+	with pip
+	py launcher.
+	
+[X]	Obtain GNU gettext Windows binaries from https://www.gnu.org/software/gettext/ .
+	We used gettext0.20.1-iconv1.16-shared-64.exe .
+	
 [X] Install WiX Toolset v3.11.1 from https://github.com/wixtoolset/wix3/releases/tag/wix3111rtm
 
 [X] Obtain the HLAE source code from https://github.com/advancedfx/advancedfx into a
@@ -28,6 +37,8 @@ Notice:
     easily fetch and merge updates from the advancedfx repository:
     cd /c/<HLAESRC>
     git clone --recursive https://github.com/advancedfx/advancedfx.git
+
+[X]	Execute C:\<HLAESRC>\l10n_update_to_source.bat in order to generate translation files.
 
 [X] Obtain zlib-1.2.11.tar.gz from http://zlib.net and extract it into
     "C:\Libraries"

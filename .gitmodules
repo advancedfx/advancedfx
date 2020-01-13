@@ -22,7 +22,10 @@
 	path = contrib
 	url = https://github.com/advancedfx/contrib.git
 	branch = master
-
 [submodule "l10n"]
 	path = l10n
 	url = https://github.com/advancedfx/l10n.git
+[submodule "deps/wxl-po-tools"]
+	path = deps/wxl-po-tools
+	url = https://github.com/advancedfx/wxl-po-tools.git
+	branch = python3
