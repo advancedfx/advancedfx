@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace AfxGui
@@ -45,6 +47,7 @@ namespace AfxGui
         {
             public const string AfxHookError = "AfxHook error";
             public const string AccessRightsSolution = "Make sure you run the injector and the program to inject with same access rights and that no anti virus / anti cheat is blocking its calls.";
+            public const string CloseAnthiCheatsSolution = "Make sure to exit anitcheats like ESEA client / Faceit client, Challengeme.gg before using HLAE.";
         }
 
         public static readonly InjectorError Unknown = new InjectorError(-1);
@@ -59,19 +62,19 @@ namespace AfxGui
         public static readonly InjectorError AfxHook9 = new InjectorError(9, InjectorErrorStrings.AfxHookError);
         public static readonly InjectorError AfxHook10 = new InjectorError(10, InjectorErrorStrings.AfxHookError);
         public static readonly InjectorError AfxHook11 = new InjectorError(11, InjectorErrorStrings.AfxHookError);
-        public static readonly InjectorError AfxHook12 = new InjectorError(12, InjectorErrorStrings.AfxHookError);
-        public static readonly InjectorError AfxHook13 = new InjectorError(13, InjectorErrorStrings.AfxHookError);
+        public static readonly InjectorError AfxHook12 = new InjectorError(12, InjectorErrorStrings.AfxHookError, "Could not access / enter directory of DLL to inject", "Is the path given invalid? Is the directory really there or missing? Does HLAE have enough rights to access that path?");
+        public static readonly InjectorError AfxHook13 = new InjectorError(13, InjectorErrorStrings.AfxHookError, "DLL can't be found.", "Remove DLLs and readd them and maybe check antivirus.");
         public static readonly InjectorError AfxHook14 = new InjectorError(14, InjectorErrorStrings.AfxHookError);
         public static readonly InjectorError AfxHook15 = new InjectorError(15, InjectorErrorStrings.AfxHookError);
 
         public static readonly InjectorError OpenProcessFailed = new InjectorError(1000, "OpenProcess failed", null, InjectorErrorStrings.AccessRightsSolution);
-        public static readonly InjectorError VirtualAllocExReadWriteFailed = new InjectorError(1001, "VirtualAllocEx read|write allocation failed.", null, InjectorErrorStrings.AccessRightsSolution);
-        public static readonly InjectorError GetImageFailed = new InjectorError(1002, "GetImage failed.", null, "Make sure that AfxHook.dat is not missing / broken and accessible.");
+        public static readonly InjectorError VirtualAllocExReadWriteFailed = new InjectorError(1001, "VirtualAllocEx read|write allocation failed.", null, InjectorErrorStrings.CloseAnthiCheatsSolution);
+        public static readonly InjectorError GetImageFailed = new InjectorError(1002, "GetImage failed.", "AfxHook.dat missing / broken / not accessible", "Try reextracting / repairing HLAE.");
         public static readonly InjectorError VirtualAllocExReadWriteExecuteFailed = new InjectorError(1003, "VirtualAllocEx read|write|execute allocation failed.", null, InjectorErrorStrings.AccessRightsSolution);
         public static readonly InjectorError WriteProcessMemoryFailed = new InjectorError(1004, "WriteProcessMemory failed.", null, InjectorErrorStrings.AccessRightsSolution);
         public static readonly InjectorError FlushInstructionCacheFailed = new InjectorError(1005, "FlushInstructionCache failed.", null, InjectorErrorStrings.AccessRightsSolution);
         public static readonly InjectorError CreateRemoteThreadFailed = new InjectorError(1006, "CreateRemoteThread failed.", null, InjectorErrorStrings.AccessRightsSolution);
-        public static readonly InjectorError AfxHookUnknown = new InjectorError(1007, "AfxHook error: Unknown error code.");
+        public static readonly InjectorError AfxHookUnknown = new InjectorError(1007, "AfxHook error: Unknown error code.", InjectorErrorStrings.CloseAnthiCheatsSolution);
 
         protected InjectorErrors()
         {
@@ -98,9 +101,13 @@ namespace AfxGui
             }
         }
 
+        protected class HlaeErrorStrings
+        {
+        }
+
         public static advancedfx.AfxError InjectorStartException(string injectorFileName, Exception exception)
         {
-            return new advancedfx.AfxError(2000, "Failed to start injector.", "Failed to start injector: " + injectorFileName, "Check that your Anti Virus did not remove it due to a false positive. If so restore it and add an exception for injector / the HLAE folder.", exception);
+            return new advancedfx.AfxError(2000, "Failed to start injector.", "Failed to start injector: " + injectorFileName, "injector.exe blocked. Probably caused by antivirus. Check it and reextract HLAE (HLAE NEEDS to be extracted, don't run it from a .zip file)", exception);
         }
 
         public static advancedfx.AfxError LoaderException(Exception exeception)
@@ -108,6 +115,27 @@ namespace AfxGui
             if (exeception is advancedfx.AfxError) return exeception as advancedfx.AfxError;
 
             return new advancedfx.AfxError(2001, "Loader failed.", exeception.ToString(), null, exeception);
+        }
+
+        public static advancedfx.AfxError LoaderCreateProcessException(int getLastWin32ErrorValue)
+        {
+            string solution = null;
+
+            switch(getLastWin32ErrorValue)
+            {
+                case 5:
+                case 267:
+                    solution = InjectorErrorStrings.CloseAnthiCheatsSolution;
+                    break;
+                case 123:
+                    solution = "Try using CSGO Launcher instead of Custom Launcher";
+                    break;
+                case 740:
+                    solution = "Make sure neither HLAE.exe nor Steam.exe nor csgo.exe are set to run as admin.";
+                    break;
+            }
+
+            return new advancedfx.AfxError(2002, "Loader could not create requested process.", String.Format("GetLastWin32Error = {0}: {1}", getLastWin32ErrorValue, new Win32Exception(Marshal.GetLastWin32Error()).Message), solution);
         }
 
         protected HlaeErrors()

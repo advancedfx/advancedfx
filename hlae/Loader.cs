@@ -46,7 +46,7 @@ namespace AfxGui
                     , ref startupInfo
                     , out processInfo)
                     )
-                    throw new System.ApplicationException("Failed to launch program, error code: " + Marshal.GetLastWin32Error());
+                    throw HlaeErrors.LoaderCreateProcessException(Marshal.GetLastWin32Error());
 
                 try
                 {
@@ -193,6 +193,19 @@ namespace AfxGui
                     CloseHandle(processInfo.hThread);
                     CloseHandle(processInfo.hProcess);
                 }
+            }
+            catch(advancedfx.AfxError e)
+            {
+                if (showErrorMessage)
+                {
+                    using (ErrorDialogue frm = new ErrorDialogue())
+                    {
+                        frm.Error = e;
+                        frm.ShowDialog();
+                    }
+                }
+
+                return false;
             }
             catch(Exception e)
             {
