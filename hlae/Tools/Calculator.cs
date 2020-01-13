@@ -15,6 +15,28 @@ namespace AfxGui.Tools
             InitializeComponent();
             this.Icon = Program.Icon;
 
+            this.Text = L10n._p("File Size Calculator", "File Size Calculator");
+            this.labelWidth.Text = L10n._p("File Size Calculator", "Width:");
+            this.labelHeight.Text = L10n._p("File Size Calculator", "Height:");
+            this.labelFPS.Text = L10n._p("File Size Calculator", "FPS:");
+            this.labelDuration.Text = L10n._p("File Size Calculator", "Duration:");
+            this.labelMin.Text = L10n._p("File Size Calculator | Duration", "min");
+            this.labelSec.Text = L10n._p("File Size Calculator | Duration", "sec");
+            this.groupBoxEstimate.Text = L10n._p("File Size Calculator", "Estimated Disk Usage");
+            this.checkHuffYuv.Text = L10n._p("File Size Calculator | Estimate", "HuffYuv encoded output");
+
+            this.textWidth.Text = ((int)1920).ToString();
+            this.textHeight.Text = ((int)1080).ToString();
+            this.textFps.Text = (60.0f).ToString("N1");
+            this.textMin.Text = 1.ToString();
+            this.textSec.Text = 0.ToString();
+
+            this.textWidth.TextChanged += text_TextChanged;
+            this.textHeight.TextChanged += text_TextChanged;
+            this.textFps.TextChanged += text_TextChanged;
+            this.textMin.TextChanged += text_TextChanged;
+            this.textSec.TextChanged += text_TextChanged;
+
             DoRecalc();
         }
 
@@ -26,14 +48,8 @@ namespace AfxGui.Tools
             Decimal fps = 0;
             Decimal mins = 0;
             Decimal secs = 0;
-            System.Globalization.CultureInfo cultureInfo = new System.Globalization.CultureInfo("en-US", false);
-            IFormatProvider provider;
-            System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Number;
 
-            cultureInfo.NumberFormat.NumberDecimalDigits = 4;
-            provider = cultureInfo.NumberFormat;
-
-            if (!System.Decimal.TryParse(textWidth.Text, style, provider, out width))
+            if (!System.Decimal.TryParse(textWidth.Text, out width))
             {
                 bOk = false;
                 errorProvider.SetError(textWidth, "Parsing failed.");
@@ -41,7 +57,7 @@ namespace AfxGui.Tools
             else
                 errorProvider.SetError(textWidth, "");
 
-            if (!System.Decimal.TryParse(textHeight.Text, style, provider, out height))
+            if (!System.Decimal.TryParse(textHeight.Text, out height))
             {
                 bOk = false;
                 errorProvider.SetError(textHeight, "Parsing failed.");
@@ -49,7 +65,7 @@ namespace AfxGui.Tools
             else
                 errorProvider.SetError(textHeight, "");
 
-            if (!System.Decimal.TryParse(textFps.Text, style, provider, out fps))
+            if (!System.Decimal.TryParse(textFps.Text, out fps))
             {
                 bOk = false;
                 errorProvider.SetError(textFps, "Parsing failed.");
@@ -57,7 +73,7 @@ namespace AfxGui.Tools
             else
                 errorProvider.SetError(textFps, "");
 
-            if (!System.Decimal.TryParse(textMin.Text, style, provider, out mins))
+            if (!System.Decimal.TryParse(textMin.Text, out mins))
             {
                 bOk = false;
                 errorProvider.SetError(textMin, "Parsing failed.");
@@ -65,7 +81,7 @@ namespace AfxGui.Tools
             else
                 errorProvider.SetError(textMin, "");
 
-            if (!System.Decimal.TryParse(textSec.Text, style, provider, out secs))
+            if (!System.Decimal.TryParse(textSec.Text, out secs))
             {
                 bOk = false;
                 errorProvider.SetError(textSec, "Parsing failed.");
@@ -129,7 +145,7 @@ namespace AfxGui.Tools
 			nfi.NumberDecimalDigits = 4;
 
 
-			textSize.Text = String.Format("{0} {1}", result.ToString("N", provider), sunit);
+			textSize.Text = String.Format("{0} {1}", result.ToString("N4"), sunit);
 			}
 			else
 			{

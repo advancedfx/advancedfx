@@ -197,6 +197,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="app.ico" />
+    <None Include="xgettext.txt" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\" />

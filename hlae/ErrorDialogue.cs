@@ -18,7 +18,7 @@ namespace AfxGui
             this.Icon = SystemIcons.Error;
             this.pictureBoxIcon.Image = SystemIcons.Error.ToBitmap();
 
-            this.Text = L10n._("Error dialog", "HLAE Error");
+            this.Text = L10n._p("Error dialog", "HLAE Error");
             this.labelCode.Text = L10n._p("Error dialog", "Code:");
             this.labelCodeValue.Text = L10n._p("Error dialog", "n/a");
             this.labelDescription.Text = L10n._p("Error dialog", "Description:");

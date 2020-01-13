@@ -21,6 +21,19 @@ namespace AfxGui.Tools
         {
             InitializeComponent();
 
+            this.Text = L10n._p("Custom Loader dialog", "Custom Loader");
+            this.labelProgram.Text = L10n._p("Custom Loader dialog | Program", "ProgramPath:");
+            this.labelCmdLine.Text = L10n._p("Custom Loader dialog | Program", "CommandLine:");
+            this.buttonSelectProgram.Text = L10n._p("Custom Loader dialog | Program", "Browse ...");
+            this.groupBoxInjectDlls.Text = L10n._p("Custom Loader dialog | DLLS", "DLLs to inject");
+            this.buttonHookBrowse.Text = L10n._p("Custom Loader dialog | DLLS", "Browse ...");
+            this.buttonHookDelete.Text = L10n._p("Custom Loader dialog | DLLS", "Delete");
+            this.buttonHookUp.Text = L10n._p("Custom Loader dialog | DLLS", "Up");
+            this.buttonHookDown.Text = L10n._p("Custom Loader dialog | DLLS", "Down");
+            this.labelDllsHint.Text = L10n._p("Custom Loader dialog | DLLS", "Hint: You can Drag && Drop DLLs in the box above.");
+            this.buttonOk.Text = L10n._p("Custom Loader dialog", "&OK");
+            this.buttonAbort.Text = L10n._p("Custom Loader dialog", "&Abort");
+
             this.openFileDialog.InitialDirectory = AfxGui.Program.BaseDir;
         }
         
@@ -47,7 +60,7 @@ namespace AfxGui.Tools
         private void buttonSelectProgram_Click(object sender, EventArgs e)
         {
 		    openFileDialog.DefaultExt = "*.exe";
-		    openFileDialog.Filter = "Program to launch and hook (.exe)|*.exe";
+		    openFileDialog.Filter = L10n._p("Custom Loader dialog | Program filter", "Program to launch and hook (.exe)|*.exe");
 		    if(DialogResult.OK == openFileDialog.ShowDialog(this))
 			    this.textProgram.Text = openFileDialog.FileName;
         }
@@ -55,7 +68,7 @@ namespace AfxGui.Tools
         private void buttonHookBrowse_Click(object sender, EventArgs e)
         {
             openFileDialog.DefaultExt = "*.dll";
-            openFileDialog.Filter = "Hook DLL (.dll)|*.dll";
+            openFileDialog.Filter = L10n._p("Custom Loader dialog | DLL filter", "Hook DLL (.dll)|*.dll");
             if (DialogResult.OK == openFileDialog.ShowDialog(this))
             {
                 this.listBoxHookDlls.Items.Add(openFileDialog.FileName);

@@ -30,45 +30,45 @@
         {
             this.components = new System.ComponentModel.Container();
             this.errorProvider = new System.Windows.Forms.ErrorProvider(this.components);
-            this.label1 = new System.Windows.Forms.Label();
-            this.label2 = new System.Windows.Forms.Label();
+            this.labelWidth = new System.Windows.Forms.Label();
+            this.labelHeight = new System.Windows.Forms.Label();
             this.textWidth = new System.Windows.Forms.TextBox();
             this.textHeight = new System.Windows.Forms.TextBox();
             this.textFps = new System.Windows.Forms.TextBox();
             this.textMin = new System.Windows.Forms.TextBox();
-            this.label3 = new System.Windows.Forms.Label();
-            this.label4 = new System.Windows.Forms.Label();
-            this.label5 = new System.Windows.Forms.Label();
+            this.labelFPS = new System.Windows.Forms.Label();
+            this.labelDuration = new System.Windows.Forms.Label();
+            this.labelMin = new System.Windows.Forms.Label();
             this.textSec = new System.Windows.Forms.TextBox();
-            this.label6 = new System.Windows.Forms.Label();
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.labelSec = new System.Windows.Forms.Label();
+            this.groupBoxEstimate = new System.Windows.Forms.GroupBox();
             this.checkHuffYuv = new System.Windows.Forms.CheckBox();
             this.textSize = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this.errorProvider)).BeginInit();
-            this.groupBox1.SuspendLayout();
+            this.groupBoxEstimate.SuspendLayout();
             this.SuspendLayout();
             // 
             // errorProvider
             // 
             this.errorProvider.ContainerControl = this;
             // 
-            // label1
+            // labelWidth
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(12, 9);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(38, 13);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "Width:";
+            this.labelWidth.AutoSize = true;
+            this.labelWidth.Location = new System.Drawing.Point(12, 9);
+            this.labelWidth.Name = "labelWidth";
+            this.labelWidth.Size = new System.Drawing.Size(65, 13);
+            this.labelWidth.TabIndex = 0;
+            this.labelWidth.Text = "L10n Width:";
             // 
-            // label2
+            // labelHeight
             // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(12, 35);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(41, 13);
-            this.label2.TabIndex = 1;
-            this.label2.Text = "Height:";
+            this.labelHeight.AutoSize = true;
+            this.labelHeight.Location = new System.Drawing.Point(12, 35);
+            this.labelHeight.Name = "labelHeight";
+            this.labelHeight.Size = new System.Drawing.Size(68, 13);
+            this.labelHeight.TabIndex = 2;
+            this.labelHeight.Text = "L10n Height:";
             // 
             // textWidth
             // 
@@ -76,9 +76,7 @@
             this.textWidth.Location = new System.Drawing.Point(111, 6);
             this.textWidth.Name = "textWidth";
             this.textWidth.Size = new System.Drawing.Size(169, 20);
-            this.textWidth.TabIndex = 2;
-            this.textWidth.Text = "960";
-            this.textWidth.TextChanged += new System.EventHandler(this.text_TextChanged);
+            this.textWidth.TabIndex = 1;
             // 
             // textHeight
             // 
@@ -87,8 +85,6 @@
             this.textHeight.Name = "textHeight";
             this.textHeight.Size = new System.Drawing.Size(169, 20);
             this.textHeight.TabIndex = 3;
-            this.textHeight.Text = "540";
-            this.textHeight.TextChanged += new System.EventHandler(this.text_TextChanged);
             // 
             // textFps
             // 
@@ -96,9 +92,7 @@
             this.textFps.Location = new System.Drawing.Point(111, 58);
             this.textFps.Name = "textFps";
             this.textFps.Size = new System.Drawing.Size(169, 20);
-            this.textFps.TabIndex = 4;
-            this.textFps.Text = "30.0";
-            this.textFps.TextChanged += new System.EventHandler(this.text_TextChanged);
+            this.textFps.TabIndex = 5;
             // 
             // textMin
             // 
@@ -106,36 +100,34 @@
             this.textMin.Location = new System.Drawing.Point(111, 84);
             this.textMin.Name = "textMin";
             this.textMin.Size = new System.Drawing.Size(60, 20);
-            this.textMin.TabIndex = 5;
-            this.textMin.Text = "1";
-            this.textMin.TextChanged += new System.EventHandler(this.text_TextChanged);
+            this.textMin.TabIndex = 8;
             // 
-            // label3
+            // labelFPS
             // 
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(12, 61);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(30, 13);
-            this.label3.TabIndex = 6;
-            this.label3.Text = "FPS:";
+            this.labelFPS.AutoSize = true;
+            this.labelFPS.Location = new System.Drawing.Point(12, 61);
+            this.labelFPS.Name = "labelFPS";
+            this.labelFPS.Size = new System.Drawing.Size(57, 13);
+            this.labelFPS.TabIndex = 4;
+            this.labelFPS.Text = "L10n FPS:";
             // 
-            // label4
+            // labelDuration
             // 
-            this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(12, 87);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(50, 13);
-            this.label4.TabIndex = 7;
-            this.label4.Text = "Duration:";
+            this.labelDuration.AutoSize = true;
+            this.labelDuration.Location = new System.Drawing.Point(12, 87);
+            this.labelDuration.Name = "labelDuration";
+            this.labelDuration.Size = new System.Drawing.Size(77, 13);
+            this.labelDuration.TabIndex = 6;
+            this.labelDuration.Text = "L10n Duration:";
             // 
-            // label5
+            // labelMin
             // 
-            this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(177, 87);
-            this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(23, 13);
-            this.label5.TabIndex = 8;
-            this.label5.Text = "min";
+            this.labelMin.AutoSize = true;
+            this.labelMin.Location = new System.Drawing.Point(177, 87);
+            this.labelMin.Name = "labelMin";
+            this.labelMin.Size = new System.Drawing.Size(50, 13);
+            this.labelMin.TabIndex = 7;
+            this.labelMin.Text = "L10n min";
             // 
             // textSec
             // 
@@ -143,38 +135,36 @@
             this.textSec.Location = new System.Drawing.Point(220, 84);
             this.textSec.Name = "textSec";
             this.textSec.Size = new System.Drawing.Size(60, 20);
-            this.textSec.TabIndex = 9;
-            this.textSec.Text = "0";
-            this.textSec.TextChanged += new System.EventHandler(this.text_TextChanged);
+            this.textSec.TabIndex = 10;
             // 
-            // label6
+            // labelSec
             // 
-            this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(286, 87);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(24, 13);
-            this.label6.TabIndex = 10;
-            this.label6.Text = "sec";
+            this.labelSec.AutoSize = true;
+            this.labelSec.Location = new System.Drawing.Point(286, 87);
+            this.labelSec.Name = "labelSec";
+            this.labelSec.Size = new System.Drawing.Size(51, 13);
+            this.labelSec.TabIndex = 9;
+            this.labelSec.Text = "L10n sec";
             // 
-            // groupBox1
+            // groupBoxEstimate
             // 
-            this.groupBox1.Controls.Add(this.checkHuffYuv);
-            this.groupBox1.Controls.Add(this.textSize);
-            this.groupBox1.Location = new System.Drawing.Point(12, 110);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(330, 80);
-            this.groupBox1.TabIndex = 11;
-            this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Estimated Disk Usage";
+            this.groupBoxEstimate.Controls.Add(this.checkHuffYuv);
+            this.groupBoxEstimate.Controls.Add(this.textSize);
+            this.groupBoxEstimate.Location = new System.Drawing.Point(12, 110);
+            this.groupBoxEstimate.Name = "groupBoxEstimate";
+            this.groupBoxEstimate.Size = new System.Drawing.Size(330, 80);
+            this.groupBoxEstimate.TabIndex = 11;
+            this.groupBoxEstimate.TabStop = false;
+            this.groupBoxEstimate.Text = "L10n Estimated Disk Usage";
             // 
             // checkHuffYuv
             // 
             this.checkHuffYuv.AutoSize = true;
             this.checkHuffYuv.Location = new System.Drawing.Point(6, 51);
             this.checkHuffYuv.Name = "checkHuffYuv";
-            this.checkHuffYuv.Size = new System.Drawing.Size(143, 17);
+            this.checkHuffYuv.Size = new System.Drawing.Size(170, 17);
             this.checkHuffYuv.TabIndex = 1;
-            this.checkHuffYuv.Text = "HuffYuv encoded output";
+            this.checkHuffYuv.Text = "L10n HuffYuv encoded output";
             this.checkHuffYuv.UseVisualStyleBackColor = true;
             this.checkHuffYuv.CheckedChanged += new System.EventHandler(this.text_TextChanged);
             // 
@@ -194,25 +184,25 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(354, 203);
-            this.Controls.Add(this.groupBox1);
-            this.Controls.Add(this.label6);
+            this.Controls.Add(this.groupBoxEstimate);
+            this.Controls.Add(this.labelSec);
             this.Controls.Add(this.textSec);
-            this.Controls.Add(this.label5);
-            this.Controls.Add(this.label4);
-            this.Controls.Add(this.label3);
+            this.Controls.Add(this.labelMin);
+            this.Controls.Add(this.labelDuration);
+            this.Controls.Add(this.labelFPS);
             this.Controls.Add(this.textMin);
             this.Controls.Add(this.textFps);
             this.Controls.Add(this.textHeight);
             this.Controls.Add(this.textWidth);
-            this.Controls.Add(this.label2);
-            this.Controls.Add(this.label1);
+            this.Controls.Add(this.labelHeight);
+            this.Controls.Add(this.labelWidth);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.Name = "Calculator";
-            this.Text = "File Size Calculator";
+            this.Text = "L10n File Size Calculator";
             ((System.ComponentModel.ISupportInitialize)(this.errorProvider)).EndInit();
-            this.groupBox1.ResumeLayout(false);
-            this.groupBox1.PerformLayout();
+            this.groupBoxEstimate.ResumeLayout(false);
+            this.groupBoxEstimate.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -221,19 +211,19 @@
         #endregion
 
         private System.Windows.Forms.ErrorProvider errorProvider;
-        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.GroupBox groupBoxEstimate;
         private System.Windows.Forms.CheckBox checkHuffYuv;
         private System.Windows.Forms.TextBox textSize;
-        private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.Label labelSec;
         private System.Windows.Forms.TextBox textSec;
-        private System.Windows.Forms.Label label5;
-        private System.Windows.Forms.Label label4;
-        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Label labelMin;
+        private System.Windows.Forms.Label labelDuration;
+        private System.Windows.Forms.Label labelFPS;
         private System.Windows.Forms.TextBox textMin;
         private System.Windows.Forms.TextBox textFps;
         private System.Windows.Forms.TextBox textHeight;
         private System.Windows.Forms.TextBox textWidth;
-        private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label labelHeight;
+        private System.Windows.Forms.Label labelWidth;
     }
 }

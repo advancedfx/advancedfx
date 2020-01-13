@@ -51,7 +51,7 @@ class CustomLoader
                 bOk = Loader.Load(getHookPaths, frm.Program, frm.CmdLine);
 
                 if (!bOk)
-                    MessageBox.Show("CustomLoader failed", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(L10n._p("Custom Loader dialog", "CustomLoader failed"), L10n._("Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             else
                 bOk = true;

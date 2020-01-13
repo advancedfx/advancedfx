@@ -49,7 +49,7 @@ namespace AfxGui
 
             this.groupBoxMisc.Text = L10n._p("Launch GoldSrc dialog", "Advanced Settings");
             this.checkBoxForceAlpha.Text = L10n._p("Launch GoldSrc dialog", "Force 8 bit alpha channel");
-            this.checkBoxVisbility.Text = L10n._p("Launch GoldSrc dialog", "checkBoxVisbility");
+            this.checkBoxVisbility.Text = L10n._p("Launch GoldSrc dialog", "Optimize window visibilty on capture");
             this.checkBoxDesktopRes.Text = L10n._p("Launch GoldSrc dialog", "Optimize desktop resolution");
 
             this.labelRenderMode.Text = L10n._p("Launch GoldSrc dialog", "Render mode:");

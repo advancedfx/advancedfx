@@ -37,7 +37,7 @@
             this.textProgram = new System.Windows.Forms.TextBox();
             this.openFileDialog = new System.Windows.Forms.OpenFileDialog();
             this.groupBoxInjectDlls = new System.Windows.Forms.GroupBox();
-            this.label1 = new System.Windows.Forms.Label();
+            this.labelDllsHint = new System.Windows.Forms.Label();
             this.listBoxHookDlls = new System.Windows.Forms.ListBox();
             this.buttonHookDelete = new System.Windows.Forms.Button();
             this.buttonHookUp = new System.Windows.Forms.Button();
@@ -48,32 +48,32 @@
             // 
             // buttonSelectProgram
             // 
-            this.buttonSelectProgram.Location = new System.Drawing.Point(373, 10);
+            this.buttonSelectProgram.Location = new System.Drawing.Point(468, 11);
             this.buttonSelectProgram.Name = "buttonSelectProgram";
-            this.buttonSelectProgram.Size = new System.Drawing.Size(84, 23);
+            this.buttonSelectProgram.Size = new System.Drawing.Size(104, 22);
             this.buttonSelectProgram.TabIndex = 15;
-            this.buttonSelectProgram.Text = "Browse";
+            this.buttonSelectProgram.Text = "L10n Browse ...";
             this.buttonSelectProgram.UseVisualStyleBackColor = true;
             this.buttonSelectProgram.Click += new System.EventHandler(this.buttonSelectProgram_Click);
             // 
             // buttonAbort
             // 
             this.buttonAbort.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.buttonAbort.Location = new System.Drawing.Point(334, 318);
+            this.buttonAbort.Location = new System.Drawing.Point(452, 317);
             this.buttonAbort.Name = "buttonAbort";
-            this.buttonAbort.Size = new System.Drawing.Size(123, 31);
+            this.buttonAbort.Size = new System.Drawing.Size(120, 32);
             this.buttonAbort.TabIndex = 19;
-            this.buttonAbort.Text = "&Abort";
+            this.buttonAbort.Text = "L10n &Abort";
             this.buttonAbort.UseVisualStyleBackColor = true;
             // 
             // buttonOk
             // 
             this.buttonOk.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.buttonOk.Location = new System.Drawing.Point(15, 318);
+            this.buttonOk.Location = new System.Drawing.Point(12, 317);
             this.buttonOk.Name = "buttonOk";
-            this.buttonOk.Size = new System.Drawing.Size(123, 31);
+            this.buttonOk.Size = new System.Drawing.Size(120, 32);
             this.buttonOk.TabIndex = 18;
-            this.buttonOk.Text = "&Ok";
+            this.buttonOk.Text = "L10n &Ok";
             this.buttonOk.UseVisualStyleBackColor = true;
             // 
             // labelCmdLine
@@ -81,15 +81,15 @@
             this.labelCmdLine.AutoSize = true;
             this.labelCmdLine.Location = new System.Drawing.Point(12, 41);
             this.labelCmdLine.Name = "labelCmdLine";
-            this.labelCmdLine.Size = new System.Drawing.Size(77, 13);
+            this.labelCmdLine.Size = new System.Drawing.Size(103, 13);
             this.labelCmdLine.TabIndex = 16;
-            this.labelCmdLine.Text = "CommandLine:";
+            this.labelCmdLine.Text = "L10 n Commandline:";
             // 
             // textCmdLine
             // 
-            this.textCmdLine.Location = new System.Drawing.Point(105, 38);
+            this.textCmdLine.Location = new System.Drawing.Point(116, 38);
             this.textCmdLine.Name = "textCmdLine";
-            this.textCmdLine.Size = new System.Drawing.Size(352, 20);
+            this.textCmdLine.Size = new System.Drawing.Size(456, 20);
             this.textCmdLine.TabIndex = 17;
             // 
             // labelProgram
@@ -97,15 +97,15 @@
             this.labelProgram.AutoSize = true;
             this.labelProgram.Location = new System.Drawing.Point(12, 15);
             this.labelProgram.Name = "labelProgram";
-            this.labelProgram.Size = new System.Drawing.Size(71, 13);
+            this.labelProgram.Size = new System.Drawing.Size(100, 13);
             this.labelProgram.TabIndex = 13;
-            this.labelProgram.Text = "ProgramPath:";
+            this.labelProgram.Text = "L10n Program path:";
             // 
             // textProgram
             // 
-            this.textProgram.Location = new System.Drawing.Point(105, 12);
+            this.textProgram.Location = new System.Drawing.Point(116, 12);
             this.textProgram.Name = "textProgram";
-            this.textProgram.Size = new System.Drawing.Size(262, 20);
+            this.textProgram.Size = new System.Drawing.Size(346, 20);
             this.textProgram.TabIndex = 14;
             // 
             // openFileDialog
@@ -114,7 +114,7 @@
             // 
             // groupBoxInjectDlls
             // 
-            this.groupBoxInjectDlls.Controls.Add(this.label1);
+            this.groupBoxInjectDlls.Controls.Add(this.labelDllsHint);
             this.groupBoxInjectDlls.Controls.Add(this.listBoxHookDlls);
             this.groupBoxInjectDlls.Controls.Add(this.buttonHookDelete);
             this.groupBoxInjectDlls.Controls.Add(this.buttonHookUp);
@@ -122,19 +122,19 @@
             this.groupBoxInjectDlls.Controls.Add(this.buttonHookBrowse);
             this.groupBoxInjectDlls.Location = new System.Drawing.Point(12, 65);
             this.groupBoxInjectDlls.Name = "groupBoxInjectDlls";
-            this.groupBoxInjectDlls.Size = new System.Drawing.Size(445, 234);
+            this.groupBoxInjectDlls.Size = new System.Drawing.Size(560, 234);
             this.groupBoxInjectDlls.TabIndex = 20;
             this.groupBoxInjectDlls.TabStop = false;
-            this.groupBoxInjectDlls.Text = " DLLs to inject: ";
+            this.groupBoxInjectDlls.Text = "L10n DLLs to inject";
             // 
-            // label1
+            // labelDllsHint
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(7, 215);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(246, 13);
-            this.label1.TabIndex = 20;
-            this.label1.Text = "Hint: You can Drag && Drop DLLs in the box above.";
+            this.labelDllsHint.AutoSize = true;
+            this.labelDllsHint.Location = new System.Drawing.Point(7, 215);
+            this.labelDllsHint.Name = "labelDllsHint";
+            this.labelDllsHint.Size = new System.Drawing.Size(246, 13);
+            this.labelDllsHint.TabIndex = 20;
+            this.labelDllsHint.Text = "Hint: You can Drag && Drop DLLs in the box above.";
             // 
             // listBoxHookDlls
             // 
@@ -143,7 +143,7 @@
             this.listBoxHookDlls.Location = new System.Drawing.Point(6, 49);
             this.listBoxHookDlls.Name = "listBoxHookDlls";
             this.listBoxHookDlls.SelectionMode = System.Windows.Forms.SelectionMode.MultiSimple;
-            this.listBoxHookDlls.Size = new System.Drawing.Size(433, 160);
+            this.listBoxHookDlls.Size = new System.Drawing.Size(548, 160);
             this.listBoxHookDlls.TabIndex = 19;
             this.listBoxHookDlls.DragDrop += new System.Windows.Forms.DragEventHandler(this.listBoxHookDlls_DragDrop);
             this.listBoxHookDlls.DragEnter += new System.Windows.Forms.DragEventHandler(this.listBoxHookDlls_DragEnter);
@@ -151,29 +151,29 @@
             // 
             // buttonHookDelete
             // 
-            this.buttonHookDelete.Location = new System.Drawing.Point(179, 19);
+            this.buttonHookDelete.Location = new System.Drawing.Point(214, 19);
             this.buttonHookDelete.Name = "buttonHookDelete";
-            this.buttonHookDelete.Size = new System.Drawing.Size(80, 23);
+            this.buttonHookDelete.Size = new System.Drawing.Size(104, 22);
             this.buttonHookDelete.TabIndex = 17;
-            this.buttonHookDelete.Text = "Delete";
+            this.buttonHookDelete.Text = "L10n Delete";
             this.buttonHookDelete.UseVisualStyleBackColor = true;
             this.buttonHookDelete.Click += new System.EventHandler(this.buttonHookDelete_Click);
             // 
             // buttonHookUp
             // 
-            this.buttonHookUp.Location = new System.Drawing.Point(273, 19);
+            this.buttonHookUp.Location = new System.Drawing.Point(340, 19);
             this.buttonHookUp.Name = "buttonHookUp";
-            this.buttonHookUp.Size = new System.Drawing.Size(80, 23);
+            this.buttonHookUp.Size = new System.Drawing.Size(104, 22);
             this.buttonHookUp.TabIndex = 16;
-            this.buttonHookUp.Text = "Up";
+            this.buttonHookUp.Text = "L10n Up";
             this.buttonHookUp.UseVisualStyleBackColor = true;
             this.buttonHookUp.Click += new System.EventHandler(this.buttonHookUp_Click);
             // 
             // buttonHookDown
             // 
-            this.buttonHookDown.Location = new System.Drawing.Point(359, 19);
+            this.buttonHookDown.Location = new System.Drawing.Point(450, 19);
             this.buttonHookDown.Name = "buttonHookDown";
-            this.buttonHookDown.Size = new System.Drawing.Size(80, 23);
+            this.buttonHookDown.Size = new System.Drawing.Size(104, 22);
             this.buttonHookDown.TabIndex = 15;
             this.buttonHookDown.Text = "Down";
             this.buttonHookDown.UseVisualStyleBackColor = true;
@@ -183,9 +183,9 @@
             // 
             this.buttonHookBrowse.Location = new System.Drawing.Point(6, 19);
             this.buttonHookBrowse.Name = "buttonHookBrowse";
-            this.buttonHookBrowse.Size = new System.Drawing.Size(80, 23);
+            this.buttonHookBrowse.Size = new System.Drawing.Size(104, 22);
             this.buttonHookBrowse.TabIndex = 14;
-            this.buttonHookBrowse.Text = "Browse";
+            this.buttonHookBrowse.Text = "L10n Browse ...";
             this.buttonHookBrowse.UseVisualStyleBackColor = true;
             this.buttonHookBrowse.Click += new System.EventHandler(this.buttonHookBrowse_Click);
             // 
@@ -195,7 +195,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.buttonAbort;
-            this.ClientSize = new System.Drawing.Size(469, 361);
+            this.ClientSize = new System.Drawing.Size(584, 361);
             this.Controls.Add(this.groupBoxInjectDlls);
             this.Controls.Add(this.buttonSelectProgram);
             this.Controls.Add(this.buttonAbort);
@@ -208,7 +208,7 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "CustomLoaderForm";
-            this.Text = "Custom Loader";
+            this.Text = "L10n Custom Loader";
             this.groupBoxInjectDlls.ResumeLayout(false);
             this.groupBoxInjectDlls.PerformLayout();
             this.ResumeLayout(false);
@@ -231,7 +231,7 @@
         private System.Windows.Forms.Button buttonHookUp;
         private System.Windows.Forms.Button buttonHookDown;
         private System.Windows.Forms.Button buttonHookBrowse;
-        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label labelDllsHint;
         private System.Windows.Forms.ListBox listBoxHookDlls;
     }
 }
