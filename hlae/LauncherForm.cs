@@ -18,8 +18,8 @@ namespace AfxGui
             InitializeComponent();
 
             this.Text = L10n._p("Launch GoldSrc dialog", "Launch GoldSrc ...");
-            this.groupBoxGame.Text = L10n._p("Launch GoldSrc dialog", "");
-            this.labelExe.Text = L10n._p("Launch GoldSrc dialog", "Game");
+            this.groupBoxGame.Text = L10n._p("Launch GoldSrc dialog", "Game");
+            this.labelExe.Text = L10n._p("Launch GoldSrc dialog", "hl.exe");
             this.buttonExe.Text = L10n._p("Launch GoldSrc dialog", "Browse ...");
             this.labelModSel.Text = L10n._p("Launch GoldSrc dialog", "Modification:");
 
