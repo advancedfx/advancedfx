@@ -25,9 +25,21 @@ public:
 		{
 			hr = m_pEngine->SetVariableString(L"HlaeCoreTransform", L"fi-fi.mst");
 		}
+		else if (0 == wcscmp(sczValue, L"1041"))
+		{
+			hr = m_pEngine->SetVariableString(L"HlaeCoreTransform", L"ja-jp.mst");
+		}
+		else if (0 == wcscmp(sczValue, L"1043"))
+		{
+			hr = m_pEngine->SetVariableString(L"HlaeCoreTransform", L"nl-nl.mst");
+		}
 		else if (0 == wcscmp(sczValue, L"2070"))
 		{
 			hr = m_pEngine->SetVariableString(L"HlaeCoreTransform", L"pt-pt.mst");
+		}
+		else if (0 == wcscmp(sczValue, L"1049"))
+		{
+			hr = m_pEngine->SetVariableString(L"HlaeCoreTransform", L"ru-ru.mst");
 		}
 		else if (0 == wcscmp(sczValue, L"2052"))
 		{

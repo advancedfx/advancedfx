@@ -62,10 +62,12 @@ IlmImf-2_4.dll
 IlmThread-2_4.dll
 Imath-2_4.dll
 injector.exe
+locales\*
 msvcp140.dll
 msvcp140_1.dll
 msvcp140_2.dll
 msvcp140_codecvt_ids.dll
+NGettext.dll
 readme.txt
 ucrtbase.dll
 vccorlib140.dll

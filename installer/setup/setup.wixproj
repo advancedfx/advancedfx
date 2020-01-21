@@ -73,7 +73,10 @@
     <None Include="lang\HyperlinkTheme_pt-PT.wxl" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="lang\HyperlinkTheme_fi-FI.wxl" />
+    <None Include="lang\HyperlinkTheme_fi-FI.wxl" />
+    <None Include="lang\HyperlinkTheme_ja-JP.wxl" />
+    <None Include="lang\HyperlinkTheme_nl-NL.wxl" />
+    <None Include="lang\HyperlinkTheme_ru-RU.wxl" />
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" Condition=" '$(WixTargetsPath)' != '' " />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets" Condition=" '$(WixTargetsPath)' == '' AND Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets') " />

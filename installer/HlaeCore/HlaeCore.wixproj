@@ -13,15 +13,17 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>Debug</DefineConstants>
+    <DefineConstants>Debug;LocalesDir=..\..\build\Release\bin\locales</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <WixVariables>
     </WixVariables>
+    <DefineConstants>LocalesDir=..\..\build\Release\bin\locales</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="LocaleFiles.wxs" />
     <Compile Include="Product.wxs" />
   </ItemGroup>
   <ItemGroup>
@@ -31,7 +33,10 @@
     <EmbeddedResource Include="lang\de-DE.wxl" />
     <EmbeddedResource Include="lang\en-US.wxl" />
     <EmbeddedResource Include="lang\fi-FI.wxl" />
+    <EmbeddedResource Include="lang\ja-JP.wxl" />
+    <EmbeddedResource Include="lang\nl-NL.wxl" />
     <EmbeddedResource Include="lang\pt-PT.wxl" />
+    <EmbeddedResource Include="lang\ru-RU.wxl" />
     <EmbeddedResource Include="lang\zh-CN.wxl" />
   </ItemGroup>
   <ItemGroup>
@@ -63,19 +68,17 @@
   <Target Name="EnsureWixToolsetInstalled" Condition=" '$(WixTargetsImported)' != 'true' ">
     <Error Text="The WiX Toolset v3.11 (or newer) build tools must be installed to build this project. To download the WiX Toolset, see http://wixtoolset.org/releases/" />
   </Target>
-  <!--
-	To modify your build process, add your task inside one of the targets below and uncomment it.
-	Other similar extension points exist, see Wix.targets.
-	<Target Name="BeforeBuild">
-	</Target>
-	<Target Name="AfterBuild">
-	</Target>
-	-->
+  <Target Name="BeforeBuild">
+    <HeatDirectory OutputFile="$(ProjectDir)\LocaleFiles.wxs" Directory="..\..\build\Release\bin\locales" PreprocessorVariable="var.LocalesDir" ComponentGroupName="LocalesComponentGroup" DirectoryRefId="LocalesDir" AutogenerateGuids="true" SuppressRegistry="true" SuppressRootDirectory="false" ToolPath="$(WixToolPath)" NoLogo="true" />
+  </Target>
   <Target Name="AfterBuild">
     <!-- https://stackoverflow.com/questions/10330436/how-to-use-wix-torch-msbuild-task -->
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\de-de\HlaeCore.msi" OutputFile="bin\Release\de-de\HlaeCore.mst" ToolPath="$(WixToolPath)" />
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\fi-fi\HlaeCore.msi" OutputFile="bin\Release\fi-fi\HlaeCore.mst" ToolPath="$(WixToolPath)" />
+    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\ja-jp\HlaeCore.msi" OutputFile="bin\Release\ja-jp\HlaeCore.mst" ToolPath="$(WixToolPath)" />
+    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\nl-nl\HlaeCore.msi" OutputFile="bin\Release\nl-nl\HlaeCore.mst" ToolPath="$(WixToolPath)" />
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\pt-pt\HlaeCore.msi" OutputFile="bin\Release\pt-pt\HlaeCore.mst" ToolPath="$(WixToolPath)" />
+    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\ru-ru\HlaeCore.msi" OutputFile="bin\Release\ru-ru\HlaeCore.mst" ToolPath="$(WixToolPath)" />
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\zh-cn\HlaeCore.msi" OutputFile="bin\Release\zh-cn\HlaeCore.mst" ToolPath="$(WixToolPath)" />
   </Target>
 </Project>

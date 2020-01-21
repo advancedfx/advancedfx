@@ -2,22 +2,24 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <!-- Update this on release: Id, Version -->
 	<Product
-    Id="{443AA390-A0C0-41AE-9319-441A10D418D0}"
-    Version="2.83.1.1"
+    Id="{AEB89B17-460F-4CEF-BC29-41C0831F1137}"
+    Version="2.83.6"
     Name="!(loc.ApplicationName)"
     Language="1033"
     Manufacturer="!(loc.Manufacturer)"
     UpgradeCode="{33FEF63B-4A17-4D59-ABC9-B7A06BD07F07}"
     Codepage="1252"
     >
-		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
 		<MajorUpgrade Schedule="afterInstallInitialize" DowngradeErrorMessage="!(loc.DowngradeErrorMessage)" />
 
     <MediaTemplate EmbedCab="yes" />
 
 		<Feature Id="HlaeCoreFeature" Title="!(loc.ApplicationName)" Level="1" Display="expand">
-		  <ComponentGroupRef Id="HlaeCoreComponents" />
+      <ComponentGroupRef Id="HlaeCoreComponents" />
+      <ComponentGroupRef Id="LocalesComponentGroup" />
       <ComponentRef Id="HlaeStartProgramsFolder"/>
       <Feature Id="FfmpegFeature" Title="!(loc.FfmpegFeature)" Level="1" Display="expand">
         <Condition Level="0">AFX_INSTALLFFMPEG=0</Condition>
@@ -78,10 +80,12 @@
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
         <Directory Id="APPLICATIONFOLDER" Name="HLAE">
+          <Directory Id="LocalesDir" />
           <Directory Id="_AD7A334E_0A23_4B94_85C9_08787F6CF6F2_LICENSES" Name="LICENSES">
             <Directory Id="_F695B8AB_011A_4452_8E8B_4A826D9E9658_advancedfx" Name="advancedfx"/>
             <Directory Id="_027C3A38_DE56_4037_9580_6A8F717B8BCF_Detours" Name="Detours"/>
             <Directory Id="_F4899D02_33F2_48E8_8C94_A6C46969D4F2_easywsclient" Name="easywsclient"/>
+            <Directory Id="_C0A01E1E_60DD_46FD_AD7A_043A799FE097_NGettext" Name="NGettext"/>
             <Directory Id="_835A5D0A_7E34_4482_A37C_CD4C239B672A_OpenEXR" Name="OpenEXR"/>
             <Directory Id="_A2BAEDDB_9517_4413_8519_DD79B7A7E1F0_rapidxml" Name="rapidxml"/>
             <Directory Id="_D7529765_EBE7_44D2_A7DA_A1B6BB8ABC04_zlib" Name="zlib"/>
@@ -133,9 +137,16 @@
       </Component>
     </DirectoryRef>
 
+    <DirectoryRef Id="_C0A01E1E_60DD_46FD_AD7A_043A799FE097_NGettext">
+      <Component Id="_F8757444_6FC6_491F_B1A1_62428841FB3B_LICENSE">
+        <File Id="_F8757444_6FC6_491F_B1A1_62428841FB3B_LICENSE" Name="LICENSE" Source="$(var.hlae.TargetDir)\LICENSES\NGettext\LICENSE" KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
+
+
     <DirectoryRef Id="_835A5D0A_7E34_4482_A37C_CD4C239B672A_OpenEXR">
-      <Component Id="C0E080A1_B853_400F_88B1_E25310D4478FR_LICENSE">
-        <File Id="C0E080A1_B853_400F_88B1_E25310D4478FR_LICENSE" Name="LICENSE" Source="$(var.hlae.TargetDir)\LICENSES\OpenEXR\LICENSE" KeyPath="yes"/>
+      <Component Id="_C0E080A1_B853_400F_88B1_E25310D4478FR_LICENSE">
+        <File Id="_C0E080A1_B853_400F_88B1_E25310D4478FR_LICENSE" Name="LICENSE" Source="$(var.hlae.TargetDir)\LICENSES\OpenEXR\LICENSE" KeyPath="yes"/>
       </Component>
     </DirectoryRef>
 
@@ -454,6 +465,9 @@
       <Component Id="_4E60A51F_0792_4DD3_800D_8AAECA225232_msvcp140_codecvt_ids.dll">
         <File Id="_4E60A51F_0792_4DD3_800D_8AAECA225232_msvcp140_codecvt_ids.dll" Name="msvcp140_codecvt_ids.dll" Source="$(var.hlae.TargetDir)\msvcp140_codecvt_ids.dll" KeyPath="yes" Checksum="yes"/>
       </Component>
+      <Component Id="_1412DBAD_01F6_42A3_BB37_BCEA97D0B860_NGettext.dll">
+        <File Id="_1412DBAD_01F6_42A3_BB37_BCEA97D0B860_NGettext.dll" Name="NGettext.dll" Source="$(var.hlae.TargetDir)\NGettext.dll" KeyPath="yes"/>
+      </Component>
       <Component Id="_81F77EA7_5D0D_4145_B929_BEB438C2FE82_readme.txt">
         <File Id="_81F77EA7_5D0D_4145_B929_BEB438C2FE82_readme.txt" Name="readme.txt" Source="$(var.hlae.TargetDir)\readme.txt" KeyPath="yes"/>
       </Component>
@@ -490,7 +504,8 @@
       <ComponentRef Id="_EB7D4DF0_111A_4E26_9D2F_54C0FA86014C_LICENSE"/>
       <ComponentRef Id="_8F522F24_EDFE_485F_9A91_C44F0E2C1DC6_LICENSE.md"/>
       <ComponentRef Id="_20A0F8EF_737D_4851_8A86_55E6997A06D9_COPYING"/>
-      <ComponentRef Id="C0E080A1_B853_400F_88B1_E25310D4478FR_LICENSE"/>
+      <ComponentRef Id="_F8757444_6FC6_491F_B1A1_62428841FB3B_LICENSE"/>
+      <ComponentRef Id="_C0E080A1_B853_400F_88B1_E25310D4478FR_LICENSE"/>
       <ComponentRef Id="_FCD2D2A8_1D6D_41E7_A4DF_CFC889EC53D9_license.txt"/>
       <ComponentRef Id="_5F7056F2_3BF6_4B6B_897E_7F28BDBF051F_README"/>
       <ComponentRef Id="_CF1FC747_A46B_427B_A0E6_7C8FE595A3C3_updateWorkaround.cfg"/>
@@ -587,6 +602,7 @@
       <ComponentRef Id="_4787489A_FFB9_4C18_BF4E_98F000833FCB_msvcp140_1.dll"/>
       <ComponentRef Id="_F2655C7F_CCA6_4DBB_8BEE_96C0B57E52DF_msvcp140_2.dll"/>
       <ComponentRef Id="_4E60A51F_0792_4DD3_800D_8AAECA225232_msvcp140_codecvt_ids.dll"/>
+      <ComponentRef Id="_1412DBAD_01F6_42A3_BB37_BCEA97D0B860_NGettext.dll"/>
       <ComponentRef Id="_81F77EA7_5D0D_4145_B929_BEB438C2FE82_readme.txt"/>
       <ComponentRef Id="_02F9D20E_C59E_4D01_A9F8_9CCB48C3FC64_ucrtbase.dll"/>
       <ComponentRef Id="_3F7746C4_344C_4798_87AA_8AF2037DE414_vccorlib140.dll"/>
