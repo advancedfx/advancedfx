@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.mainMenu = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuLaunchCSGO = new System.Windows.Forms.ToolStripMenuItem();
@@ -49,8 +50,6 @@
             this.menuGuidToClipBoard = new System.Windows.Forms.ToolStripMenuItem();
             this.menuNewGuidToClipBoard = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.manualToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripMenuItem3 = new System.Windows.Forms.ToolStripSeparator();
             this.checkForUpdatesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuAutoUpdateCheck = new System.Windows.Forms.ToolStripMenuItem();
             this.checkNowToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -66,11 +65,20 @@
             this.statusLabelAutoYes = new System.Windows.Forms.ToolStripStatusLabel();
             this.statusLabelAutoNo = new System.Windows.Forms.ToolStripStatusLabel();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.groupBoxHelp = new System.Windows.Forms.GroupBox();
+            this.comboBoxHelpEntries = new System.Windows.Forms.ComboBox();
+            this.labelHelpSelection = new System.Windows.Forms.Label();
+            this.comboBoxHelpLanguage = new System.Windows.Forms.ComboBox();
+            this.labelHelpLanguage = new System.Windows.Forms.Label();
             this.buttonManual = new System.Windows.Forms.Button();
+            this.pictureBoxHelp = new System.Windows.Forms.PictureBox();
+            this.notifyIcon1 = new System.Windows.Forms.NotifyIcon(this.components);
             this.mainMenu.SuspendLayout();
             this.statusStrip.SuspendLayout();
             this.stripEnableUpdateCheck.SuspendLayout();
             this.panel1.SuspendLayout();
+            this.groupBoxHelp.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxHelp)).BeginInit();
             this.SuspendLayout();
             // 
             // mainMenu
@@ -234,27 +242,12 @@
             // helpToolStripMenuItem
             // 
             this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.manualToolStripMenuItem,
-            this.toolStripMenuItem3,
             this.checkForUpdatesToolStripMenuItem,
             this.toolStripMenuItem5,
             this.menuAdvancedFxOrg});
             this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
             this.helpToolStripMenuItem.Size = new System.Drawing.Size(72, 20);
             this.helpToolStripMenuItem.Text = "L10n Help";
-            // 
-            // manualToolStripMenuItem
-            // 
-            this.manualToolStripMenuItem.Name = "manualToolStripMenuItem";
-            this.manualToolStripMenuItem.Size = new System.Drawing.Size(222, 22);
-            this.manualToolStripMenuItem.Text = "L10n Online Manual (LANG)";
-            this.manualToolStripMenuItem.ToolTipText = "L10n URL";
-            this.manualToolStripMenuItem.Click += new System.EventHandler(this.openManual_Click);
-            // 
-            // toolStripMenuItem3
-            // 
-            this.toolStripMenuItem3.Name = "toolStripMenuItem3";
-            this.toolStripMenuItem3.Size = new System.Drawing.Size(196, 6);
             // 
             // checkForUpdatesToolStripMenuItem
             // 
@@ -391,29 +384,107 @@
             // 
             // panel1
             // 
-            this.panel1.Controls.Add(this.buttonManual);
+            this.panel1.Controls.Add(this.groupBoxHelp);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 24);
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(584, 337);
-            this.panel1.TabIndex = 4;
+            this.panel1.TabIndex = 1;
+            // 
+            // groupBoxHelp
+            // 
+            this.groupBoxHelp.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBoxHelp.BackColor = System.Drawing.Color.LightBlue;
+            this.groupBoxHelp.Controls.Add(this.comboBoxHelpEntries);
+            this.groupBoxHelp.Controls.Add(this.labelHelpSelection);
+            this.groupBoxHelp.Controls.Add(this.comboBoxHelpLanguage);
+            this.groupBoxHelp.Controls.Add(this.labelHelpLanguage);
+            this.groupBoxHelp.Controls.Add(this.buttonManual);
+            this.groupBoxHelp.Controls.Add(this.pictureBoxHelp);
+            this.groupBoxHelp.Location = new System.Drawing.Point(3, 175);
+            this.groupBoxHelp.Name = "groupBoxHelp";
+            this.groupBoxHelp.Size = new System.Drawing.Size(578, 159);
+            this.groupBoxHelp.TabIndex = 0;
+            this.groupBoxHelp.TabStop = false;
+            this.groupBoxHelp.Text = "L10n Hilfe";
+            // 
+            // comboBoxHelpEntries
+            // 
+            this.comboBoxHelpEntries.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.comboBoxHelpEntries.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxHelpEntries.FormattingEnabled = true;
+            this.comboBoxHelpEntries.Location = new System.Drawing.Point(229, 46);
+            this.comboBoxHelpEntries.Name = "comboBoxHelpEntries";
+            this.comboBoxHelpEntries.Size = new System.Drawing.Size(340, 21);
+            this.comboBoxHelpEntries.TabIndex = 4;
+            this.comboBoxHelpEntries.SelectedIndexChanged += new System.EventHandler(this.comboBoxHelpEntry_SelectedIndexChanged);
+            // 
+            // labelHelpSelection
+            // 
+            this.labelHelpSelection.AutoSize = true;
+            this.labelHelpSelection.Location = new System.Drawing.Point(63, 49);
+            this.labelHelpSelection.Name = "labelHelpSelection";
+            this.labelHelpSelection.Size = new System.Drawing.Size(81, 13);
+            this.labelHelpSelection.TabIndex = 3;
+            this.labelHelpSelection.Text = "L10n Selection:";
+            // 
+            // comboBoxHelpLanguage
+            // 
+            this.comboBoxHelpLanguage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.comboBoxHelpLanguage.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxHelpLanguage.FormattingEnabled = true;
+            this.comboBoxHelpLanguage.Location = new System.Drawing.Point(229, 19);
+            this.comboBoxHelpLanguage.Name = "comboBoxHelpLanguage";
+            this.comboBoxHelpLanguage.Size = new System.Drawing.Size(340, 21);
+            this.comboBoxHelpLanguage.TabIndex = 2;
+            this.comboBoxHelpLanguage.SelectedIndexChanged += new System.EventHandler(this.comboBoxHelpLanguage_SelectedIndexChanged);
+            // 
+            // labelHelpLanguage
+            // 
+            this.labelHelpLanguage.AutoSize = true;
+            this.labelHelpLanguage.Location = new System.Drawing.Point(63, 22);
+            this.labelHelpLanguage.Name = "labelHelpLanguage";
+            this.labelHelpLanguage.Size = new System.Drawing.Size(85, 13);
+            this.labelHelpLanguage.TabIndex = 1;
+            this.labelHelpLanguage.Text = "L10n Language:";
             // 
             // buttonManual
             // 
-            this.buttonManual.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            this.buttonManual.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.buttonManual.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.buttonManual.BackColor = System.Drawing.Color.MediumBlue;
+            this.buttonManual.FlatAppearance.BorderColor = System.Drawing.Color.White;
+            this.buttonManual.FlatAppearance.BorderSize = 2;
+            this.buttonManual.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Cyan;
+            this.buttonManual.FlatAppearance.MouseOverBackColor = System.Drawing.Color.LightCyan;
             this.buttonManual.ForeColor = System.Drawing.Color.White;
-            this.buttonManual.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.buttonManual.Location = new System.Drawing.Point(12, 261);
+            this.buttonManual.Location = new System.Drawing.Point(6, 89);
             this.buttonManual.Name = "buttonManual";
             this.buttonManual.Padding = new System.Windows.Forms.Padding(8);
-            this.buttonManual.Size = new System.Drawing.Size(560, 64);
-            this.buttonManual.TabIndex = 4;
-            this.buttonManual.Text = "L10n Open Online Manual (LANG)";
+            this.buttonManual.Size = new System.Drawing.Size(566, 64);
+            this.buttonManual.TabIndex = 0;
+            this.buttonManual.Text = "[URL]";
             this.buttonManual.UseVisualStyleBackColor = false;
-            this.buttonManual.Click += new System.EventHandler(this.openManual_Click);
+            this.buttonManual.Click += new System.EventHandler(this.buttonManual_Click);
+            // 
+            // pictureBoxHelp
+            // 
+            this.pictureBoxHelp.Location = new System.Drawing.Point(9, 19);
+            this.pictureBoxHelp.Name = "pictureBoxHelp";
+            this.pictureBoxHelp.Size = new System.Drawing.Size(48, 48);
+            this.pictureBoxHelp.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
+            this.pictureBoxHelp.TabIndex = 0;
+            this.pictureBoxHelp.TabStop = false;
+            // 
+            // notifyIcon1
+            // 
+            this.notifyIcon1.Text = "notifyIcon1";
+            this.notifyIcon1.Visible = true;
             // 
             // MainForm
             // 
@@ -437,6 +508,9 @@
             this.stripEnableUpdateCheck.ResumeLayout(false);
             this.stripEnableUpdateCheck.PerformLayout();
             this.panel1.ResumeLayout(false);
+            this.groupBoxHelp.ResumeLayout(false);
+            this.groupBoxHelp.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxHelp)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -458,7 +532,6 @@
         private System.Windows.Forms.ToolStripMenuItem menuCustomLoader;
         private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem menuAdvancedFxOrg;
-        private System.Windows.Forms.ToolStripSeparator toolStripMenuItem3;
         private System.Windows.Forms.ToolStripMenuItem checkForUpdatesToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem menuAutoUpdateCheck;
         private System.Windows.Forms.ToolStripMenuItem checkNowToolStripMenuItem;
@@ -479,9 +552,15 @@
         private System.Windows.Forms.ToolStripMenuItem demoToolsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem skyManagerToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem donateToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem manualToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripMenuItem5;
         private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.GroupBox groupBoxHelp;
+        private System.Windows.Forms.ComboBox comboBoxHelpEntries;
+        private System.Windows.Forms.Label labelHelpSelection;
+        private System.Windows.Forms.ComboBox comboBoxHelpLanguage;
+        private System.Windows.Forms.Label labelHelpLanguage;
         private System.Windows.Forms.Button buttonManual;
+        private System.Windows.Forms.PictureBox pictureBoxHelp;
+        private System.Windows.Forms.NotifyIcon notifyIcon1;
     }
 }

@@ -21,7 +21,7 @@ namespace AfxGui
         {
             InitializeComponent();
             this.Icon = Program.Icon;
-            this.buttonManual.Image = SystemIcons.Information.ToBitmap();
+            this.pictureBoxHelp.Image = SystemIcons.Information.ToBitmap();
 
             this.Text = L10n._p("Main window", "Half-Life Advanced Effects");
 
@@ -45,20 +45,7 @@ namespace AfxGui
             this.menuGuidToClipBoard.Text = L10n._p("Main window | menu | Tools | Developer", "Own GUID to ClipBoard");
             this.menuNewGuidToClipBoard.Text = L10n._p("Main window | menu | Tools | Developer", "New GUID to ClipBoard");
 
-            string manualLanguage = L10n._p("Manual URL language (localized)", "English");
-            this.manualLink = L10n._p("Manual URL (localized)", "https://github.com/advancedfx/advancedfx/wiki");
-
-            // This is used for Process.Start, so better sanitize it:
-            Uri uriResult;
-            if (!Uri.TryCreate(this.manualLink, UriKind.Absolute, out uriResult)
-                || !(uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps))
-            {
-                this.manualLink = "https://www.advancedfx.org/";
-            }
-
             this.helpToolStripMenuItem.Text = L10n._p("Main window | menu", "Help");
-            this.manualToolStripMenuItem.Text = L10n._p("Main window | menu | Help", "Online Manual ({0})", manualLanguage);
-            this.manualToolStripMenuItem.ToolTipText = manualLink;
             this.checkForUpdatesToolStripMenuItem.Text = L10n._p("Main window | menu | Help", "Check for Updates");
             this.menuAutoUpdateCheck.Text = L10n._p("Main window | menu | Help | Check for Updates", "Auto Check");
             this.checkNowToolStripMenuItem.Text = L10n._p("Main window | menu | Help | Check for Updates", "Check Now");
@@ -75,7 +62,55 @@ namespace AfxGui
             this.statusLabelHide.Text = L10n._p("Main window | update status strip", "OK");
             this.statusLabelUpdate.Text = L10n._p("Main window | update status strip | label", "Update status unknown");
 
-            this.buttonManual.Text = L10n._p("Main window", "Open Online Manual ({0})", manualLanguage);
+            this.groupBoxHelp.Text = L10n._("Help");
+            this.labelHelpLanguage.Text = L10n._("Language:");
+            this.labelHelpSelection.Text = L10n._("Selection:");
+            {
+                HelpEntry officialEnglishSupportPage = new HelpEntry(L10n._("Official support page (English)"), "https://www.advancedfx.org/support/");
+
+                helpLanguages = new HelpLanguage[] {
+                    new HelpLanguage("en", L10n._p("Language", "English"), new HelpEntry[] {
+                        officialEnglishSupportPage
+                    })
+                };
+
+                this.comboBoxHelpLanguage.Items.AddRange(helpLanguages);
+
+                string ietfLanguageTagPath = System.IO.Path.Combine(System.Windows.Forms.Application.StartupPath, "locales", System.Globalization.CultureInfo.CurrentUICulture.IetfLanguageTag, "hlae", "messages.mo");
+                string twoLetterIsoLanguageNamPath = System.IO.Path.Combine(System.Windows.Forms.Application.StartupPath, "locales", System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName, "hlae", "messages.mo");
+
+                // Select a default language:
+
+                int selectIndex = -1;
+                int curIndex = 0;
+
+                foreach(HelpLanguage helpLanguage in helpLanguages)
+                {
+                    if(helpLanguage.Code.Equals(ietfLanguageTagPath))
+                    {
+                        selectIndex = curIndex;
+                        break;
+                    }
+                    ++curIndex;
+                }
+
+                if(selectIndex == -1)
+                {
+                    foreach (HelpLanguage helpLanguage in helpLanguages)
+                    {
+                        if (helpLanguage.Code.Equals(twoLetterIsoLanguageNamPath))
+                        {
+                            selectIndex = curIndex;
+                            break;
+                        }
+                        ++curIndex;
+                    }
+                }
+
+                if (selectIndex == -1 && 0 < helpLanguages.Length) selectIndex = 0;
+
+                if (selectIndex != -1) comboBoxHelpLanguage.SelectedIndex = selectIndex;
+            }
 
             m_UpdateCheckNotification = new UpdateCheckNotificationTarget(this, new UpdateCheckedDelegate(OnUpdateChecked));
         }
@@ -83,9 +118,45 @@ namespace AfxGui
         //
         // Private members:
 
-        string manualLink;
         Guid m_LastUpdateGuid;
         UpdateCheckNotificationTarget m_UpdateCheckNotification;
+        HelpLanguage[] helpLanguages;
+
+        class HelpLanguage
+        {
+            public HelpLanguage(string code, string label, HelpEntry[] items)
+            {
+                this.Code = code;
+                this.Label = label;
+                this.Items = items;
+            }
+
+            public override string ToString()
+            {
+                return Label;
+            }
+
+            public string Code { get; }
+            public string Label { get; }
+            public HelpEntry[] Items { get; }
+        }
+
+        class HelpEntry 
+        {
+            public HelpEntry(string label, string url)
+            {
+                this.Label = label;
+                this.Url = url;
+            }
+
+            public string Label { get; }
+            public string Url { get; }
+
+            public override string ToString()
+            {
+                return Label;
+            }
+        }
 
         void OnUpdateChecked(object o, IUpdateCheckResult checkResult)
         {
@@ -291,9 +362,35 @@ namespace AfxGui
             sm.Show(this);
         }
 
-        private void openManual_Click(object sender, EventArgs e)
+        private void comboBoxHelpEntry_SelectedIndexChanged(object sender, EventArgs e)
         {
-            System.Diagnostics.Process.Start(this.manualLink);
+            if(0 <= comboBoxHelpEntries.SelectedIndex && comboBoxHelpEntries.SelectedIndex < comboBoxHelpEntries.Items.Count)
+            {
+                HelpEntry helpEntry = (HelpEntry)comboBoxHelpEntries.Items[comboBoxHelpEntries.SelectedIndex];
+                buttonManual.Text = helpEntry.Url;
+            }
+        }
+
+        private void comboBoxHelpLanguage_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (0 <= comboBoxHelpLanguage.SelectedIndex && comboBoxHelpLanguage.SelectedIndex < comboBoxHelpLanguage.Items.Count)
+            {
+                HelpLanguage helpLanguage = (HelpLanguage)comboBoxHelpLanguage.Items[comboBoxHelpLanguage.SelectedIndex];
+
+                comboBoxHelpEntries.Items.Clear();
+                comboBoxHelpEntries.Items.AddRange(helpLanguage.Items);
+
+                if (0 < helpLanguage.Items.Length) comboBoxHelpEntries.SelectedIndex = 0;
+            }
+        }
+
+        private void buttonManual_Click(object sender, EventArgs e)
+        {
+            if (0 <= comboBoxHelpEntries.SelectedIndex && comboBoxHelpEntries.SelectedIndex < comboBoxHelpEntries.Items.Count)
+            {
+                HelpEntry helpEntry = (HelpEntry)comboBoxHelpEntries.Items[comboBoxHelpEntries.SelectedIndex];
+                System.Diagnostics.Process.Start(helpEntry.Url);
+            }
         }
     }
 }
