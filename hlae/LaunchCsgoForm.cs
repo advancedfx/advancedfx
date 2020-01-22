@@ -78,14 +78,6 @@ namespace AfxGui
 
         private void checkBoxAvoidVac_Click(object sender, EventArgs e)
         {
-            MessageBox.Show(
-                "HLAE users requested this option to be made mandatory.\n"
-                +"The hook will refuse to work without it, thus it can not be removed.",
-                "Mandatory option ...",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Stop
-            );
-
             this.checkBoxAvoidVac.Checked = true;
 
             /*
@@ -138,13 +130,8 @@ namespace AfxGui
         private void buttonMmcfgInfo_Click(object sender, EventArgs e)
         {
             MessageBox.Show(
-                "When enabled you can set a parent folder for your movie making config for the game.\n"
-                + "The game will create a sub-folder called cfg there and store config.cfg\n"
-                + "and video settings in that folder.\n"
-                + "Also you can put your movie making config into that cfg sub-folder,\n"
-                + "however the game will load those only if they are not present in"
-                + "the csgo/cfg folder already.",
-                "About movie making config parent folder",
+                L10n._p("Launch CS:GO dialog | MmcfgFolder Description", "When enabled you can set a parent folder for your movie making config for the game.\nThe game will create a sub-folder called cfg there and store config.cfg\nand video settings in that folder.\nAlso you can put your movie making config into that cfg sub-folder,\nhowever the game will load those only if they are not present inthe csgo/cfg folder already."),
+                L10n._p("Launch CS:GO dialog | MmcfgFolder Title", "About movie making config parent folder"),
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information,
                 MessageBoxDefaultButton.Button1
