@@ -2,34 +2,19 @@
 #define ADVANCEDFX_LOCALE_H
 #include "AfxTypes.h"
 
-typedef unsigned long AdvancedfxLocaleId;
 
 
 struct AdvancedfxILocaleVtable
 {
-	//
-	// Implement AdvancedfxIReferenceVtable:
+	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct AdvancedfxILocale* This);
 
-	void(*Delete)(struct AdvancedfxILocale* This);
-
-	//
-	// Own:
+	struct AdvancedfxIInterface* (*GetAsInterface)(struct AdvancedfxILocale* This);
 
 	const char* (*GetLanguage)(struct AdvancedfxILocale* This);
 
 	const char* (*GetRegion)(struct AdvancedfxILocale* This);
 };
 
-struct AdvancedfxILocale
-{
-	//
-	// Implement AdvancedfxIReference:
 
-	size_t RefCountValid;
-	struct AdvancedfxILocaleVtable* Vtable;
-
-	//
-	// Own:
-};
 
 #endif

@@ -1,8 +1,8 @@
 #ifndef ADVANCEDFX_AFXHOOKSOURCE_H
 #define ADVANCEDFX_AFXHOOKSOURCE_H
+
 #include "AfxTypes.h"
-#include "AfxInterface.h"
-#include "AfxJit.h"
+#include "AfxCompiler.h"
 
 // UUIDs ///////////////////////////////////////////////////////////////////////
 
@@ -30,15 +30,15 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-typedef int AdvancedfxEntityHandle;
+typedef AdvancedfxInt32 AdvancedfxEntityHandle;
 
-typedef struct AdvancedfxQVector {
+struct AdvancedfxQVector {
 	float x;
 	float y;
 	float z;
 };
 
-typedef struct AdvancedfxQAngles {
+struct AdvancedfxQAngles {
 	float x;
 	float y;
 	float z;
@@ -50,7 +50,9 @@ typedef struct AdvancedfxQAngles {
 
 struct AdvancedfxIEntityVtable
 {
-	void(*Delete)(struct AdvancedfxIEntity* This);
+	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct AdvancedfxIEntity* This);
+
+	struct AdvancedfxIInterface* (*GetAsInterface)(struct AdvancedfxIEntity* This);
 
 	AdvancedfxEntityHandle(*GetHandle)(struct AdvancedfxIEntity* This);
 
@@ -74,45 +76,35 @@ struct AdvancedfxIEntityVtable
 };
 
 struct AdvancedfxIEntity {
-	size_t RefCountValid;
 	struct AdvancedfxIEntityVtable* Vtable;
 };
 
-ADVANCEDFX_INOTIFY_DECL(AdvancedfxIEntitiesNotify, struct AdvancedfxIAfxHookSource*)
+ADVANCEDFX_ISoftReference_DECL(AdvancedfxIEntitySoftReference, item_type)
+ADVANCEDFX_IReadonlyList_DECL(AdvancedfxIEntityList, struct AdvancedfxIEntitySoftReference*)
 
 struct AdvancedfxIEntitiesVtable
 {
-	//
-	// Implement AdvancedfxIInterfaceVtable:
+	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct AdvancedfxIEntities* This);
 
-	void(*Delete)(struct AdvancedfxIEntities* This);
+	struct AdvancedfxIInterface* (*GetAsInterface)(struct AdvancedfxIEntities* This);
 
-	struct AdvancedfxUuid(*GetUuid)(struct AdvancedfxIEntities* This);
+	AdvancedfxIEntityList* (*GetEntityList)(struct AdvancedfxIEntities* This);
 
-	//
-	// Own:
+	struct AdvancedfxIEntitySoftReference* (*EntityFromHandle)(struct AdvancedfxIAfxHookSource** This, AdvancedfxEntityHandle handle);
 
-	ADVANCEDFX_ILIST_DECL_FNS(, AdvancedfxIEntities, AdvancedfxIEntitiesNotify, struct AdvancedfxIEntity*)
+	struct AdvancedfxIEntitySoftReference* (*EntityFromIndex)(struct AdvancedfxIAfxHookSource** This, int index);
 
-	struct AdvancedfxIEntity* (*EntityFromHandle)(struct AdvancedfxIAfxHookSource** This, AdvancedfxEntityHandle handle);
-
-	struct AdvancedfxIEntity* (*EntityFromIndex)(struct AdvancedfxIAfxHookSource** This, int index);
-
-	struct AdvancedfxIEntity* (*EntityFromSpecKey)(struct AdvancedfxIAfxHookSource** This, int keyNumber);
+	struct AdvancedfxIEntitySoftReference* (*EntityFromSpecKey)(struct AdvancedfxIAfxHookSource** This, int keyNumber);
 };
 
 struct AdvancedfxIEntities
 {
-	//
-	// Implement AdvancedfxIInterface:
-
-	size_t RefCountValid;
 	struct AdvancedfxIEntitiesVtable* Vtable;
-
-	//
-	// Own:
 };
 
+/*
+
+//TODO:
 
 // Engine view overrides ///////////////////////////////////////////////////////
 
@@ -207,15 +199,13 @@ struct AdvancedfxIAfxHookSourceVtable
 
 	//void (*EndNotifyBeforeDelete)(struct AdvancedfxIAfxHookSource* This, struct AdvancedfxIAfxHookSourceNotify* notify);
 
-	/**
-	 * Dll is loaded and queried for ADVANCEDFX_IAFXHOOKSOURCEDLL_UUID_FN.
-	 */
+	/// Dll is loaded and queried for ADVANCEDFX_IAFXHOOKSOURCEDLL_UUID_FN.
 	struct AfxIHookSourceDll* (*LoadDll)(struct AdvancedfxIAfxHookSource* This, const char* filePath);
 
-	/**
-	 * This first calls Delete on the reference returned to LoadDll and then unloads the dll (FreeLibrary).
-	 * Please note: On Windows a single DLL can be loaded multiple times by the same process, so the final unload won't happen before it's unloaded as much times as it is still loaded.
-	 */
+	//
+	// This first calls Delete on the reference returned to LoadDll and then unloads the dll (FreeLibrary).
+	// Please note: On Windows a single DLL can be loaded multiple times by the same process, so the final unload won't happen before it's unloaded as much times as it is still loaded.
+	//
 	void (*FreeDll)(struct AdvancedfxIAfxHookSource* This, struct AfxIHookSourceDll* value);
 
 	ADVANCEDFX_ILIST_DECL_FNS(Interfaces, AdvancedfxIAfxHookSource, AdvancedfxIAfxHookSourceNotify, struct AdvancedfxIInterface*)
@@ -234,5 +224,6 @@ struct AdvancedfxIAfxHookSource
 	//
 	// Own:
 };
+*/
 
 #endif

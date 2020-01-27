@@ -793,7 +793,7 @@
     </ClInclude>
     <ClInclude Include="..\interfaces\c\AfxHookSource.h">
       <Filter>interfaces\c</Filter>
-	</ClInclude>
+    </ClInclude>
     <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\appframework\IAppSystem.h">
       <Filter>prop\AfxHookSource\bm\sdk_src\public\appframework</Filter>
     </ClInclude>
@@ -863,20 +863,20 @@
     <ClInclude Include="AfxCommandLine.h">
       <Filter>AfxHookSource</Filter>
     </ClInclude>
-    <ClInclude Include="..\interfaces\c\AfxInterface.h">
-      <Filter>interfaces\c</Filter>
-    </ClInclude>
     <ClInclude Include="..\interfaces\c\AfxTypes.h">
       <Filter>interfaces\c</Filter>
     </ClInclude>
     <ClInclude Include="..\interfaces\c\AfxLocale.h">
       <Filter>interfaces\c</Filter>
     </ClInclude>
-    <ClInclude Include="..\interfaces\c\AfxJit.h">
-      <Filter>interfaces\c</Filter>
-    </ClInclude>
     <ClInclude Include="..\shared\AfxDetours.h">
       <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\interfaces\c\AfxLibrary.h">
+      <Filter>interfaces\c</Filter>
+    </ClInclude>
+    <ClInclude Include="..\interfaces\c\AfxCompiler.h">
+      <Filter>interfaces\c</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 #include "AfxTypes.h"
-#include "AfxInterface.h"
 
 
+/* //TODO
 void uuid_test()
 {
 	ADVANCEDFX_UUID_VAR(test_var, ADVANCEDFX_FACTORY_IUUIDLIST_FN);
@@ -10,3 +10,4 @@ void uuid_test()
 
 	int cmpt = ADVANCEFX_CMP_UUID_VARS(test_var, test_var);
 }
+*/
