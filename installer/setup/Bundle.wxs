@@ -3,7 +3,7 @@
   <!-- Update this on release: Version -->
 	<Bundle
     Name="HLAE"
-    Version="2.83.6"
+    Version="2.83.8"
     Manufacturer="advancedfx.org"
     UpgradeCode="{A3020802-7F4F-4B61-BAA0-6C3065855361}"
     AboutUrl="https://www.advancedfx.org/"
@@ -40,7 +40,6 @@
       <PackageGroupRef Id="HlaeCore" />        
 		</Chain>
 
-    <Variable Name="1031" Value="de-de.mst" Type="string" />
     <Variable Name="HlaeCoreTransform" Value="" Type="string" bal:Overridable="yes" />
   </Bundle>
   
@@ -50,13 +49,14 @@
         <MsiProperty Name='APPLICATIONFOLDER' Value='[InstallFolder]' />
         <MsiProperty Name='TRANSFORMS' Value='[HlaeCoreTransform]' />
         <MsiProperty Name="AFX_INSTALLFFMPEG" Value="[HlaeFfmpegFeature]" />
-        <Payload Id="HlaeCore_de_de" Compressed="yes" Name="de-de.mst" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\de-de\HlaeCore.mst"/>
-        <Payload Id="HlaeCore_fi_fi" Compressed="yes" Name="fi-fi.mst" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\fi-fi\HlaeCore.mst"/>
-        <Payload Id="HlaeCore_ja_jp" Compressed="yes" Name="ja-jp.mst" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\ja-jp\HlaeCore.mst"/>
-        <Payload Id="HlaeCore_nl_nl" Compressed="yes" Name="nl-nl.mst" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\nl-nl\HlaeCore.mst"/>
-        <Payload Id="HlaeCore_pt_pt" Compressed="yes" Name="pt-pt.mst" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\pt-pt\HlaeCore.mst"/>
-        <Payload Id="HlaeCore_ru_ru" Compressed="yes" Name="ru-ru.mst" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\ru-ru\HlaeCore.mst"/>
-        <Payload Id="HlaeCore_zh_zn" Compressed="yes" Name="zh-cn.mst" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\zh-cn\HlaeCore.mst"/>
+        <Payload Id="HlaeCore_de_de" Compressed="yes" Name="1031" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\de-de\HlaeCore.mst"/>
+        <Payload Id="HlaeCore_fi_fi" Compressed="yes" Name="1035" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\fi-fi\HlaeCore.mst"/>
+        <Payload Id="HlaeCore_hu_hu" Compressed="yes" Name="1038" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\hu-hu\HlaeCore.mst"/>
+        <Payload Id="HlaeCore_ja_jp" Compressed="yes" Name="1041" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\ja-jp\HlaeCore.mst"/>
+        <Payload Id="HlaeCore_nl_nl" Compressed="yes" Name="1043" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\nl-nl\HlaeCore.mst"/>
+        <Payload Id="HlaeCore_pt_pt" Compressed="yes" Name="2070" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\pt-pt\HlaeCore.mst"/>
+        <Payload Id="HlaeCore_ru_ru" Compressed="yes" Name="1049" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\ru-ru\HlaeCore.mst"/>
+        <Payload Id="HlaeCore_zh_zn" Compressed="yes" Name="2052" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\zh-cn\HlaeCore.mst"/>
       </MsiPackage>
     </PackageGroup>
   </Fragment>

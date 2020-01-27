@@ -12,40 +12,18 @@ public:
 		BalLog(BOOTSTRAPPER_LOG_LEVEL_STANDARD, "Running detect BA function");
 
 		//-------------------------------------------------------------------------------------------------
+
 		LPWSTR sczValue = NULL;
 
 		BalGetStringVariable(L"UserUILanguageID", &sczValue);
 		BalExitOnFailure(hr, "Failed to get variable.");
 
-		if (0 == wcscmp(sczValue, L"1031"))
+		if (0 != wcscmp(sczValue, L"1033"))
 		{
-			hr = m_pEngine->SetVariableString(L"HlaeCoreTransform", L"de-de.mst");
+			hr = m_pEngine->SetVariableString(L"HlaeCoreTransform", sczValue);
 		}		
-		else if (0 == wcscmp(sczValue, L"1035"))
-		{
-			hr = m_pEngine->SetVariableString(L"HlaeCoreTransform", L"fi-fi.mst");
-		}
-		else if (0 == wcscmp(sczValue, L"1041"))
-		{
-			hr = m_pEngine->SetVariableString(L"HlaeCoreTransform", L"ja-jp.mst");
-		}
-		else if (0 == wcscmp(sczValue, L"1043"))
-		{
-			hr = m_pEngine->SetVariableString(L"HlaeCoreTransform", L"nl-nl.mst");
-		}
-		else if (0 == wcscmp(sczValue, L"2070"))
-		{
-			hr = m_pEngine->SetVariableString(L"HlaeCoreTransform", L"pt-pt.mst");
-		}
-		else if (0 == wcscmp(sczValue, L"1049"))
-		{
-			hr = m_pEngine->SetVariableString(L"HlaeCoreTransform", L"ru-ru.mst");
-		}
-		else if (0 == wcscmp(sczValue, L"2052"))
-		{
-			hr = m_pEngine->SetVariableString(L"HlaeCoreTransform", L"zh-cn.mst");
-		}
 		BalExitOnFailure(hr, "Failed to set variable.");
+
 		//-------------------------------------------------------------------------------------------------
 
 	LExit:

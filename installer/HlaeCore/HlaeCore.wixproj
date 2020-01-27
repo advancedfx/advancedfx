@@ -9,6 +9,7 @@
     <OutputName>HlaeCore</OutputName>
     <OutputType>Package</OutputType>
     <Name>HlaeCore</Name>
+    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
@@ -33,6 +34,7 @@
     <EmbeddedResource Include="lang\de-DE.wxl" />
     <EmbeddedResource Include="lang\en-US.wxl" />
     <EmbeddedResource Include="lang\fi-FI.wxl" />
+    <EmbeddedResource Include="lang\hu-HU.wxl" />
     <EmbeddedResource Include="lang\ja-JP.wxl" />
     <EmbeddedResource Include="lang\nl-NL.wxl" />
     <EmbeddedResource Include="lang\pt-PT.wxl" />
@@ -75,6 +77,7 @@
     <!-- https://stackoverflow.com/questions/10330436/how-to-use-wix-torch-msbuild-task -->
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\de-de\HlaeCore.msi" OutputFile="bin\Release\de-de\HlaeCore.mst" ToolPath="$(WixToolPath)" />
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\fi-fi\HlaeCore.msi" OutputFile="bin\Release\fi-fi\HlaeCore.mst" ToolPath="$(WixToolPath)" />
+    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\hu-hu\HlaeCore.msi" OutputFile="bin\Release\hu-hu\HlaeCore.mst" ToolPath="$(WixToolPath)" />
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\ja-jp\HlaeCore.msi" OutputFile="bin\Release\ja-jp\HlaeCore.mst" ToolPath="$(WixToolPath)" />
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\nl-nl\HlaeCore.msi" OutputFile="bin\Release\nl-nl\HlaeCore.mst" ToolPath="$(WixToolPath)" />
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\pt-pt\HlaeCore.msi" OutputFile="bin\Release\pt-pt\HlaeCore.mst" ToolPath="$(WixToolPath)" />
