@@ -27,9 +27,10 @@
       <Payload Id="theme_fi_fi" Compressed="yes"  Name="1035\thm.wxl" SourceFile="lang\HyperlinkTheme_fi-FI.wxl"/>
       <Payload Id="theme_ja_jp" Compressed="yes"  Name="1041\thm.wxl" SourceFile="lang\HyperlinkTheme_ja-JP.wxl"/>
       <Payload Id="theme_nl_nl" Compressed="yes"  Name="1043\thm.wxl" SourceFile="lang\HyperlinkTheme_nl-NL.wxl"/>
-      <Payload Id="theme_zh_zn" Compressed="yes"  Name="2052\thm.wxl" SourceFile="lang\HyperlinkTheme_zh-CN.wxl"/>
-      <Payload Id="theme_ru_ru" Compressed="yes"  Name="1049\thm.wxl" SourceFile="lang\HyperlinkTheme_ru-RU.wxl"/>
       <Payload Id="theme_pt_pt" Compressed="yes"  Name="2070\thm.wxl" SourceFile="lang\HyperlinkTheme_pt-PT.wxl"/>
+      <Payload Id="theme_ru_ru" Compressed="yes"  Name="1049\thm.wxl" SourceFile="lang\HyperlinkTheme_ru-RU.wxl"/>
+      <Payload Id="theme_tr_tr" Compressed="yes"  Name="1055\thm.wxl" SourceFile="lang\HyperlinkTheme_tr-TR.wxl"/>
+      <Payload Id="theme_zh_zn" Compressed="yes"  Name="2052\thm.wxl" SourceFile="lang\HyperlinkTheme_zh-CN.wxl"/>
     </BootstrapperApplicationRef>
 
     <Variable Name='InstallFolder' Type='string' Value='[ProgramFilesFolder]HLAE' Persisted='yes' bal:Overridable='yes'/>
@@ -56,6 +57,7 @@
         <Payload Id="HlaeCore_nl_nl" Compressed="yes" Name="1043" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\nl-nl\HlaeCore.mst"/>
         <Payload Id="HlaeCore_pt_pt" Compressed="yes" Name="2070" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\pt-pt\HlaeCore.mst"/>
         <Payload Id="HlaeCore_ru_ru" Compressed="yes" Name="1049" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\ru-ru\HlaeCore.mst"/>
+        <Payload Id="HlaeCore_tr_tr" Compressed="yes" Name="1055" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\tr-tr\HlaeCore.mst"/>
         <Payload Id="HlaeCore_zh_zn" Compressed="yes" Name="2052" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\zh-cn\HlaeCore.mst"/>
       </MsiPackage>
     </PackageGroup>

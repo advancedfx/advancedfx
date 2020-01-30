@@ -39,6 +39,7 @@
     <EmbeddedResource Include="lang\nl-NL.wxl" />
     <EmbeddedResource Include="lang\pt-PT.wxl" />
     <EmbeddedResource Include="lang\ru-RU.wxl" />
+    <EmbeddedResource Include="lang\tr-TR.wxl" />
     <EmbeddedResource Include="lang\zh-CN.wxl" />
   </ItemGroup>
   <ItemGroup>
@@ -82,6 +83,7 @@
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\nl-nl\HlaeCore.msi" OutputFile="bin\Release\nl-nl\HlaeCore.mst" ToolPath="$(WixToolPath)" />
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\pt-pt\HlaeCore.msi" OutputFile="bin\Release\pt-pt\HlaeCore.mst" ToolPath="$(WixToolPath)" />
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\ru-ru\HlaeCore.msi" OutputFile="bin\Release\ru-ru\HlaeCore.mst" ToolPath="$(WixToolPath)" />
+    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\tr-tr\HlaeCore.msi" OutputFile="bin\Release\tr-tr\HlaeCore.mst" ToolPath="$(WixToolPath)" />
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\zh-cn\HlaeCore.msi" OutputFile="bin\Release\zh-cn\HlaeCore.mst" ToolPath="$(WixToolPath)" />
   </Target>
 </Project>
