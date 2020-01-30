@@ -79,7 +79,7 @@ struct AdvancedfxIEntity {
 	struct AdvancedfxIEntityVtable* Vtable;
 };
 
-ADVANCEDFX_ISoftReference_DECL(AdvancedfxIEntitySoftReference, item_type)
+ADVANCEDFX_ISoftReference_DECL(AdvancedfxIEntitySoftReference, struct AdvancedfxIEntity *)
 ADVANCEDFX_IReadonlyList_DECL(AdvancedfxIEntityList, struct AdvancedfxIEntitySoftReference*)
 
 struct AdvancedfxIEntitiesVtable

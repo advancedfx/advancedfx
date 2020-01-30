@@ -1,8 +1,6 @@
 #ifndef ADVANCEDFX_TYPES_H
 #define ADVANCEDFX_TYPES_H
 
-#include <ctype.h>
-
 
 
 // TODO:
@@ -30,11 +28,18 @@
 
 
 
-// Primitive types /////////////////////////////////////////////////////////////
-
+#if (_WIN32 || _WIN64) && _WIN64 || __GNUC__ && __x86_64__ || __ppc64__
+#define ADVANCEDFX_ENV64
+#else
+#define ADVANCEDFX_ENV32
+#endif
 
 
 #define ADVANCEDFX_NULLPTR ((void *)0)
+
+
+
+// Primitive types /////////////////////////////////////////////////////////////
 
 
 //
@@ -81,7 +86,11 @@ typedef signed long AdvancedfxInt32;
 //
 // AdvancedfxSize
 
-typedef size_t AdvancedfxSize;
+#ifdef ADVANCEDFX_ENV64
+typedef unsigned __int64 AdvancedfxSize;
+#else
+typedef unsigned int AdvancedfxSize;
+#endif
 
 #define AdvancedfxSize_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x0C5AFAAD,0xF01F,0x4D60,0x8051,0x86,0xC9,0xBE,0x78,0xFE,0xEF)
 
@@ -211,7 +220,7 @@ struct AdvancedfxVersion {
 
 
 
-// Referenced types ////////////////////////////////////////////////////////////
+// Lifecycle management ////////////////////////////////////////////////////////
 
 
 //
@@ -219,10 +228,8 @@ struct AdvancedfxVersion {
 
 struct AdvancedfxIReferencedVtable
 {
-	void(*AddRef)(struct AdvancedfxIReferenced* This, struct AdvancedfxIReferenced* child);
-	void(*Release)(struct AdvancedfxIReferenced* This, struct AdvancedfxIReferenced* child);
-
-	struct AdvancedfxIReferenced* (*GetLastChild)(struct AdvancedfxIReferenced* This);
+	void(*AddRef)(struct AdvancedfxIReferenced* This);
+	void(*Release)(struct AdvancedfxIReferenced* This);
 };
 
 
@@ -231,6 +238,26 @@ struct AdvancedfxIReferenced
 	struct AdvancedfxIReferencedVtable* Vtable;
 };
 
+#define AdvancedfxIReferenced_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x2AD68771,0x741B,0x48D9,0xB91E,0xDA,0x60,0x48,0xA6,0x41,0x10)
+
+
+//
+// AdvancedfxIDeletable
+
+struct AdvancedfxIDeletableVtable
+{
+	void(*Delete)(struct AdvancedfxIDeletable* This);
+};
+
+
+struct AdvancedfxIDeletable
+{
+	struct AdvancedfxIDeletableVtable* Vtable;
+};
+
+#define AdvancedfxIDeletable_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0xD1F3343C,0xA0A1,0x48A2,0xA687,0xD6,0xCE,0xFD,0xAE,0x4B,0x27)
+
+
 
 // Interfaces //////////////////////////////////////////////////////////////////
 
@@ -238,10 +265,9 @@ struct AdvancedfxIReferenced
 //
 // AdvancedfxIInterface
 
+
 struct AdvancedfxIInterfaceVtable
 {
-	struct AdvancedfxIReferenced*(*GetAsReferenced)(struct AdvancedfxIInterface* This);
-
 	struct AdvancedfxUuid(*GetUuid)(struct AdvancedfxIInterface* This);
 
 	AdvancedfxBool(*GetAs)(struct AdvancedfxIInterface* This, struct AdvancedfxUuid uuid, void* pOut);
@@ -260,10 +286,6 @@ struct AdvancedfxIInterface
 
 struct AdvancedfxIInterfaceUuidListVtable
 {
-	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct AdvancedfxIInterfaceUuidList* This);
-
-	struct AdvancedfxIInterface* (*GetAsInterface)(struct AdvancedfxIInterfaceUuidList* This);
-
 	AdvancedfxSize(*GetInterfaceUuidCount)(struct AdvancedfxIInterfaceUuidList* This);
 
 	struct AdvancedfxUuid(*GetInterfaceUuid)(struct AdvancedfxIInterfaceUuidList* This, AdvancedfxSize index);
@@ -278,6 +300,22 @@ struct AdvancedfxIInterfaceUuidList
 
 
 
+// Memory management ///////////////////////////////////////////////////////////
+
+
+struct AdvancedfxIMemoryRootVtable
+{
+	void* (*Alloc)(struct AdvancefxTypeRoot* This, AdvancedfxSize size);
+	void (*Free)(struct AdvancefxTypeRoot* This, void* memory);
+	void* (*Realloc)(struct AdvancefxTypeRoot* This, void* memory);
+};
+
+struct AdvancedfxIMemory
+{
+	struct AdvancedfxIMemoryRootVtable* Vtable;
+};
+
+
 // Type discovery //////////////////////////////////////////////////////////////
 
 
@@ -286,19 +324,11 @@ typedef void* AdvancedfdxRuntimeTypeId;
 
 struct AdvancefxITypeRootVtable
 {	
-	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct AdvancefxTypeRoot* This);
-
-	struct AdvancedfxIInterface* (*GetAsInterface)(struct AdvancefxTypeRoot* This);
-
 	struct AdvancedfxIRuntimeType* (*GetRuntimeTypeById)(struct AdvancefxTypeRoot* This, AdvancedfdxRuntimeTypeId id);
 
 	struct AdvancedfxIRuntimeType* (*MakeRuntimeTypeFromType)(struct AdvancefxTypeRoot* This, struct AdvancedfxIType* type);
 
 	void (*ReleaseRuntimeType)(struct AdvancefxTypeRoot* This, struct AdvancedfxIRuntimeType* id);
-
-	AdvancedfxCString(*AllocateText)(struct AdvancefxTypeRoot* This, AdvancedfxCString text);
-
-	void(*FreeText)(struct AdvancefxTypeRoot* This, AdvancedfxCString text);
 };
 
 struct AdvancefxTypeRoot
@@ -314,10 +344,6 @@ struct AdvancefxTypeRoot
 
 struct AdvancedfxIRuntimeTypeVtable
 {
-	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct AdvancefxTypeRootVtable* This);
-
-	struct AdvancedfxIInterface* (*GetAsInterface)(struct AdvancedfxIRuntimeType* This);
-
 	struct AdvancefxTypeRoot* (*GetRoot)(struct AdvancedfxIRuntimeType* This);
 	
 	AdvancedfdxRuntimeTypeId(*GetRuntimeId)(struct AdvancedfxIRuntimeType* This);
@@ -333,15 +359,15 @@ struct AdvancedfxIRuntimeType
 #define AdvancedfxIRuntimeType_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0xF5C4EC8D,0x9B5C,0x43F4,0xA43D,0xB1,0xBB,0x87,0x98,0x70,0x6F)
 
 
-
 //
 // AdvancedfxIType
 
 struct AdvancedfxITypeVtable
 {
-	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct AdvancedfxIType* This);
+	struct AdvancedfxUuid(*GetTypeUiid)(struct AdvancedfxIType* This);
 
-	struct AdvancedfxIInterface* (*GetAsInterface)(struct AdvancedfxIType* This);
+	///<returns>ADVANCEDFX_NULLPTR for primitive types</returns>
+	void*(*GetTypeInterface)(struct AdvancedfxIType* This);
 
 	AdvancedfxCString(*GetName)(struct AdvancedfxIType* This);
 
@@ -353,41 +379,13 @@ struct AdvancedfxIType
 	struct AdvancedfxITypeVtable* Vtable;
 };
 
-#define AdvancedfxIType_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x9D2552BC,0xA05C,0x4FE7,0xAE67,0x55,0x10,0x86,0x90,0x5C,0xEC)
-
-
-//
-// AdvancedfxIPrimitveType
-
-struct AdvancedfxIPrimitveTypeVtable
-{
-	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct AdvancedfxIPrimitveType* This);
-
-	struct AdvancedfxIInterface* (*GetAsInterface)(struct AdvancedfxIPrimitveType* This);
-
-	struct AdvancedfxIType* (*GetAsType)(struct AdvancedfxIPrimitveType* This);
-
-	struct AdvancedfxUuid (*GetPrimitiveTypeUuid)(struct AdvancedfxIPrimitveType* type);
-};
-
-struct AdvancedfxIPrimitveType
-{
-	struct AdvancedfxIPrimitveTypeVtable* Vtable;
-};
-
-#define AdvancedfxIPrimitveType_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x9F6480BE,0x90D3,0x44AB,0x8955,0x52,0xA9,0xA7,0xDB,0x2C,0x52)
-
 
 //
 // AdvancedfxIPointerType
 
 struct AdvancedfxIPointerTypeVtable
 {
-	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct AdvancedfxIPointerType* This);
-
-	struct AdvancedfxIInterface* (*GetAsInterface)(struct AdvancedfxIPointerType* This);
-
-	struct AdvancedfxIType* (*GetAsType)(struct AdvancedfxIPointerType* This);
+	struct AdvancedfxIType* (*AsType)(struct AdvancedfxIRuntimeType* This);
 
 	struct AdvancedfxIType*(*GetPointerType)(struct AdvancedfxIPointerType* This);
 };
@@ -397,20 +395,17 @@ struct AdvancedfxIPointerType
 	struct AdvancedfxIPointerTypeVtable* Vtable;
 };
 
-#define AdvancedfxIPointerType_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x5D7EDF2A,0x72EA,0x4E88,0x969F,0xE5,0x8D,0x9B,0xEC,0x6C,0x1A)
+#define ADVANCEDFX_TYPE_POINTER_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x5D7EDF2A,0x72EA,0x4E88,0x969F,0xE5,0x8D,0x9B,0xEC,0x6C,0x1A)
+
 
 //
 // AdvancedfxITypedef
 
 struct AdvancedfxITypedefVtable
 {	
-	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct AdvancedfxITypedef* This);
+	struct AdvancedfxIType* (*AsType)(struct AdvancedfxIRuntimeType* This);
 
-	struct AdvancedfxIInterface* (*GetAsInterface)(struct AdvancedfxITypedef* This);
-
-	struct AdvancedfxIType* (*GetAsType)(struct AdvancedfxITypedef* This);
-
-	struct AdvancedfxUuid(*GetTypdefUuid)(struct AdvancedfxITypedef* type);
+	struct AdvancedfxUuid(*GetTypedefUuid)(struct AdvancedfxITypedef* type);
 
 	struct AdvancedfxIType* (*GetTypedefType)(struct AdvancedfxITypedef* This);
 };
@@ -420,7 +415,7 @@ struct AdvancedfxITypedef
 	struct AdvancedfxITypedefVtable* Vtable;
 };
 
-#define AdvancedfxITypedef_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0xA909AAF1,0x3F57,0x4F04,0xA7AA,0xA3,0xD2,0xA3,0x95,0x50,0x37)
+#define ADVANCEDFX_TYPE_TYPEDEF_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0xA909AAF1,0x3F57,0x4F04,0xA7AA,0xA3,0xD2,0xA3,0x95,0x50,0x37)
 
 
 //
@@ -428,11 +423,7 @@ struct AdvancedfxITypedef
 
 struct AdvancedfxIStructVtable
 {	
-	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct AdvancedfxIStruct* This);
-
-	struct AdvancedfxIInterface* (*GetAsInterface)(struct AdvancedfxIStruct* This);
-
-	struct AdvancedfxIType* (*GetAsType)(struct AdvancedfxIStruct* This);
+	struct AdvancedfxIType* (*AsType)(struct AdvancedfxIRuntimeType* This);
 
 	AdvancedfxSize(*GetMemberCount)(struct AdvancedfxIStruct* This);
 
@@ -448,7 +439,7 @@ struct AdvancedfxIStruct
 	struct AdvancedfxIStructVtable* Vtable;
 };
 
-#define AdvancedfxIStruct_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0xC216AFB1,0xF75D,0x4A9C,0x962F,0x67,0xE0,0xCF,0x6E,0x65,0xC1)
+#define ADVANCEDFX_TYPE_STRUCT_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0xC216AFB1,0xF75D,0x4A9C,0x962F,0x67,0xE0,0xCF,0x6E,0x65,0xC1)
 
 
 //
@@ -456,11 +447,7 @@ struct AdvancedfxIStruct
 
 struct AdvancedfxIFunctionVtable
 {	
-	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct AdvancedfxIFunction* This);
-
-	struct AdvancedfxIInterface* (*GetAsInterface)(struct AdvancedfxIFunction* This);
-
-	struct AdvancedfxIType * (*GetAsType)(struct AdvancedfxIFunction* This);
+	struct AdvancedfxIType* (*AsType)(struct AdvancedfxIRuntimeType* This);
 
 	AdvancedfxSize(*GetParameterCount)(struct AdvancedfxIFunction* This);
 	
@@ -478,7 +465,7 @@ struct AdvancedfxIFunction
 	struct AdvancedfIxFunctionTypeVtable* Vtable;
 };
 
-#define AdvancedfxFunctionType_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x2B440CAE,0xBA61,0x479A,0x9DC4,0xDF,0xF7,0x5C,0x44,0xEF,0x9A)
+#define ADVANCEFX_TYPE_FUNCTION_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x2B440CAE,0xBA61,0x479A,0x9DC4,0xDF,0xF7,0x5C,0x44,0xEF,0x9A)
 
 
 //
@@ -486,11 +473,7 @@ struct AdvancedfxIFunction
 
 struct AdvancedfxITemplateParameterVtable
 {
-	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct AdvancedfxITemplateParameter* This);
-
-	struct AdvancedfxIInterface* (*GetAsInterface)(struct AdvancedfxITemplateParameter* This);
-
-	struct AdvancedfxIType* (*GetAsType)(struct AdvancedfxITemplateParameter* This);
+	struct AdvancedfxIType* (*AsType)(struct AdvancedfxIRuntimeType* This);
 
 	struct AdvancedfxITemplate* (*GetTemplate)(struct AdvancedfxITemplateParameter* This);
 
@@ -506,17 +489,15 @@ struct AdvancedfxITemplateParameter
 	struct AdvancedfxITemplateParameterVtable* Vtable;
 };
 
+#define ADVANCEFX_TYPE_TEMPLATE_PARAMETER_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x6A530606,0x09CA,0x4B52,0x853F,0x3E,0x9C,0x09,0xC8,0x69,0x63)
+
 
 //
 // AdvancedfxITemplate
 
 struct AdvancedfxITemplateVtable
 {
-	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct AdvancedfxITemplate* This);
-
-	struct AdvancedfxIInterface* (*GetAsInterface)(struct AdvancedfxITemplate* This);
-
-	struct AdvancedfxIType* (*GetAsType)(struct AdvancedfxITemplate* This);
+	struct AdvancedfxIType* (*AsType)(struct AdvancedfxIRuntimeType* This);
 
 	AdvancedfxSize(*GetParameterCount)(struct AdvancedfxITemplate* This);
 
@@ -540,10 +521,6 @@ struct AdvancedfxITemplate
 
 #define ADVANCEDFX_IEventSink_DECL(type_name,value_type) \
 struct type_name ##Vtable { \
-	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct type_name* This); \
-	\
-	struct AdvancedfxIInterface* (*GetAsInterface)(struct type_name* This); \
-	\
 	void (*Trigger)(struct type_name* This, value_type value); \
 }; \
 struct type_name { \
@@ -556,41 +533,8 @@ struct type_name { \
 
 #define ADVANCEDFX_IEventSource_DECL(type_name,event_sink_type_name) \
 struct type_name ##Vtable { \
-	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct type_name* This); \
-	\
-	struct AdvancedfxIInterface* (*GetAsInterface)(struct type_name* This); \
-	\
 	void BeginNotify(struct type_name* This, struct event_sink_type_name* eventSink); \
 	void EndNotify(struct type_name* This, struct event_sink_type_name* eventSink); \
-}; \
-struct type_name { \
-	struct type_name##Vtable* Vtable; \
-};
-
-
-//
-// Soft references /////////////////////////////////////////////////////////////
-
-// Soft references must be released upon request.
-// So you should subscribe to that event.
-//
-// Failure to do so might lead to you being released yourself at best
-// and a progam dead-lock at worst.
-//
-// There's no perfect way to handle this.
-// A good way would be to handle all directly or indirectly accessible
-// functions as non-side effect free (unless they are known to be side-effect
-// free).
-
-#define ADVANCEDFX_ISoftReference_DECL(type_name,item_type) \
-ADVANCEDFX_IEventSink_DECL(type_name ##EventSink,struct type_name*) \
-ADVANCEDFX_IEventSource_DECL(type_name ##EventSource,type_name) \
-struct type_name ##Vtable { \
-	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct type_name* This); \
-	\
-	struct AdvancedfxIInterface* (*GetAsInterface)(struct type_name* This); \
-	\
-	struct type_name ##EventSource* (*GetReleaseRequest)(struct type_name* This); \
 }; \
 struct type_name { \
 	struct type_name##Vtable* Vtable; \
@@ -601,41 +545,34 @@ struct type_name { \
 
 
 //
-// IReadonlyListNode<item_type>
-
-#define ADVANCEDFX_IReadonlyListNode_DECL(type_name,item_type) \
-ADVANCEDFX_IEventSource_DECL(type_name ##EventSource,type_name) \
-struct type_name ##Vtable { \
-	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct type_name* This); \
-	\
-	struct AdvancedfxIInterface* (*GetAsInterface)(struct type_name* This); \
-	\
-	item_type(*GetValue)(struct type_name* This); \
-	\
-	struct type_name* (*GetNext)(struct type_name* This); \
-	struct type_name* (*GetPrevious)(struct type_name* This); \
-	\
-	struct type_name ##EventSource * (*GetBeforeValueChange)(struct type_name* This); \
-	struct type_name ##EventSource * (*GetAfterValueChange)(struct type_name* This); \
-}; \
-struct type_name { \
-	struct type_name##Vtable* Vtable; \
-};
-
-
-//
 // IReadonlyList<item_type>
 
 #define ADVANCEDFX_IReadonlyList_DECL(type_name,item_type) \
-ADVANCEDFX_IReadonlyListNode_DECL(type_name ##Node,item_type) \
-ADVANCEDFX_ISoftReference_DECL(type_name ##NodeSoftReference, type_name ##Node) \
+typedef void* type_name ##Node; \
+struct type_name ##NodeValue { \
+	type_name ##Node Node; \
+	item_type Value; \
+}; \
+struct type_name ##NodeOther { \
+	type_name ##Node Node; \
+	type_name ##Node Other; \
+}; \
+ADVANCEDFX_IEventSink_DECL(type_name ##NodeEventSink, type_name ##Node) \
+ADVANCEDFX_IEventSink_DECL(type_name ##NodeValueEventSink, struct type_name ##NodeValue) \
+ADVANCEDFX_IEventSink_DECL(type_name ##NodeOther, struct type_name ##NodeOther) \
+ADVANCEDFX_IEventSource_DECL(type_name ##NodeEventSource,type_name ##NodeEventSync) \
+ADVANCEDFX_IEventSource_DECL(type_name ##NodeEventSource,type_name ##NodeEventSync) \
+ADVANCEDFX_IEventSource_DECL(type_name ##NodeEventSource,type_name ##NodeEventSync) \
 struct this_type_name ##Vtable { \
-	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct type_name* This); \
+	type_name ##Node * (*Begin)(struct type_name* This); \
+	type_name ##Node * (*End)(struct type_name* This); \
+	type_name ##Node * (*Next)(struct type_name* This, type_name ##Node node); \
+	type_name ##Node * (*Previous)(struct type_name* This, type_name ##Node node); \
 	\
-	struct AdvancedfxIInterface* (*GetAsInterface)(struct type_name* This); \
-	\
-	struct type_name ##NodeSoftReference * (*Begin)(struct type_name* This); \
-	struct type_name ##NodeSoftReference * (*End)(struct type_name* This); \
+	struct type_name ##NodeEventSink * (*GetBeforeDelete)(struct type_name* This); \
+	struct type_name ##NodeValueEventSink * (*GetBeforeValueChange)(struct type_name* This); \
+	struct type_name ##EventSource * (*GetBeforeNextChange)(struct type_name* This); \
+	struct type_name ##EventSource * (*GetBeforePreviousChange)(struct type_name* Thise); \
 }; \
 struct this_type_name {\
 	struct this_type_name##Vtable* Vtable; \
@@ -643,31 +580,46 @@ struct this_type_name {\
 
 
 //
-// IListNode<item_type>
+// IList<item_type>
 
-#define ADVANCEDFX_IListNode_DECL(type_name,item_type) \
-struct type_name ##Vtable { \
-	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct type_name* This); \
-	\
-	struct AdvancedfxIInterface* (*GetAsInterface)(struct type_name* This); \
-	\
-	item_type(*GetValue)(struct type_name* This); \
-	\
-	struct type_name* (*GetNext)(struct type_name* This); \
-	struct type_name* (*GetPrevious)(struct type_name* This); \	void (*Delete)(struct type_name* This); \
-	\
-	void(*SetValue)(struct type_name* This, item_type value); \
-	\
-	struct type_name ##EventSource * (*GetBeforeValueChange)(struct type_name* This); \
-	struct type_name ##EventSource * (*GetAfterValueChange)(struct type_name* This); \
+#define ADVANCEDFX_IList_DECL(type_name,item_type) \
+ADVANCEDFX_IReadonlyList_DECL(type_name ##Readonly,item_type) \
+typedef void* type_name ##Node; \
+struct type_name ##NodeValue { \
+	type_name ##Node Node; \
+	item_type Value; \
 }; \
-struct type_name { \
-	struct type_name ##Vtable * Vtable; \
+struct type_name ##NodeOther { \
+	type_name ##Node Node; \
+	type_name ##Node Other; \
+}; \
+ADVANCEDFX_IEventSink_DECL(type_name ##NodeEventSink, type_name ##Node) \
+ADVANCEDFX_IEventSink_DECL(type_name ##NodeValueEventSink, struct type_name ##NodeValue) \
+ADVANCEDFX_IEventSink_DECL(type_name ##NodeOther, struct type_name ##NodeOther) \
+ADVANCEDFX_IEventSource_DECL(type_name ##NodeEventSource,type_name ##NodeEventSync) \
+ADVANCEDFX_IEventSource_DECL(type_name ##NodeEventSource,type_name ##NodeEventSync) \
+ADVANCEDFX_IEventSource_DECL(type_name ##NodeEventSource,type_name ##NodeEventSync) \
+struct this_type_name ##Vtable { \
+	type_name ##Node * (*Begin)(struct type_name* This); \
+	type_name ##Node * (*End)(struct type_name* This); \
+	type_name ##Node * (*Next)(struct type_name* This, type_name ##Node * node); \
+	type_name ##Node * (*Previous)(struct type_name* This, type_name ##Node * node); \
+	\
+	struct type_name ##NodeEventSink * (*GetBeforeDelete)(struct type_name* This); \
+	struct type_name ##NodeValueEventSink * (*GetBeforeValueChange)(struct type_name* This); \
+	struct type_name ##EventSource * (*GetBeforeNextChange)(struct type_name* This); \
+	struct type_name ##EventSource * (*GetBeforePreviousChange)(struct type_name* This); \
+	\
+	struct type_name ##NodeSoftReference * (*InsertBefore)(struct type_name* This, type_name ##Node node, item_type value); \
+	struct type_name ##NodeSoftReference * (*InsertAfter)(struct type_name* This, type_name ##Node node, item_type value); \
+	void (*SetValue)(struct type_name* This, struct type_name ##Node node, item_type value); \
+	void (*MoveBefore)(struct type_name* This, struct type_name ##Node target_node, type_name ##Node move_node ); \
+	void (*MoveAfter)(struct type_name* This, struct type_name ##Node target_node, type_name ##Node move_node ); \
+}; \
+struct this_type_name {\
+	struct this_type_name##Vtable* Vtable; \
 };
 
-
-//
-// IList<item_type>
 
 #define ADVANCEDFX_IList_DECL(type_name,item_type) \
 ADVANCEDFX_IListNode_DECL(type_name ##Node,item_type) \
