@@ -23,8 +23,6 @@ namespace injector
 
         static void Main()
         {
-            System.Windows.Forms.MessageBox.Show("HI");
-
             IFormatter formatter = new advancedfx.injector.interop.Formatter();
 
             using (Stream stdIn = System.Console.OpenStandardInput())
@@ -32,8 +30,6 @@ namespace injector
                 using (Stream stdOut = System.Console.OpenStandardOutput())
                 {
                     advancedfx.injector.interop.InjectMessage injectMessage = (advancedfx.injector.interop.InjectMessage)formatter.Deserialize(stdIn);
-
-                    System.Windows.Forms.MessageBox.Show(injectMessage.ToString());
 
                     bool bOk = false;
                     try
