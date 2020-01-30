@@ -9,7 +9,7 @@
 <version>1.73.0</version>
 <time>2020-01-30T15:45Z</time>
 <changes>
-<change type="fixed">
+<change type="added">
 Added mirv_deathmsg showNumbers 0|1|2 - Default (0), numbers (1), prepend numbers (2).
 </change>
 </changes>

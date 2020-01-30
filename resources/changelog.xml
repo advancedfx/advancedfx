@@ -12,13 +12,13 @@
 <change type="updated">
 Included AfxHookSource 1.73.0 (2020-01-30T15:45Z).
 </change>
-<change type="updated">
+<change type="added">
 Added translations of installer and most of HLAE.exe GUI by the generous translators: https://l10n.advancedfx.org/projects/l10n/contributors/
 </change>
-<change type="updated">
+<change type="added">
 Added a help / guide button at the bottom of the GUI.
 </change>
-<change type="updated">
+<change type="added">
 Added possible solutions to more error codes.
 </change>
 <change type="updated">
