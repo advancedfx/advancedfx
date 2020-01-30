@@ -45,6 +45,70 @@ event->GetInt("wipe",0) // new
 
 */
 
+
+enum class DeathnoticeShowNumbers_e : int
+{
+	DeathnoticeShowNumbers_Default = 0,
+	DeathnoticeShowNumbers_Numbers = 1,
+	DeathnoticeShowNumbers_PrependNumbers = 2
+};
+
+DeathnoticeShowNumbers_e g_DeathnoticeShowNumbers = DeathnoticeShowNumbers_e::DeathnoticeShowNumbers_Default;
+
+int GetSpecKeyNumber(int entindex)
+{
+	// Left screen side keys: 1, 2, 3, 4, 5
+	// Right screen side keys: 6, 7, 8, 9, 0
+
+	static bool (*fnPlayerSidesWappedOnScreen)(void) = (bool (*)(void))AFXADDR_GET(csgo_Unknown_GetTeamsSwappedOnScreen);
+
+	bool swapPlayerSide = fnPlayerSidesWappedOnScreen && fnPlayerSidesWappedOnScreen();
+
+	int slotCT = 0;
+	int slotT = 0;
+
+	WrpGlobals* gl = g_Hook_VClient_RenderView.GetGlobals();
+	int imax = gl ? gl->maxclients_get() : 0;
+
+	for (int i = 1; i <= imax; ++i)
+	{
+		SOURCESDK::IClientEntity_csgo* ce = SOURCESDK::g_Entitylist_csgo->GetClientEntity(i);
+		SOURCESDK::C_BaseEntity_csgo* be = ce ? ce->GetBaseEntity() : 0;
+		if (be && be->IsPlayer())
+		{
+			int be_team = be->GetTeamNumber();
+
+			if (3 == be_team) // CT
+			{
+				if (be->entindex() == entindex)
+				{
+					int slot = 1 + slotCT;
+					if (swapPlayerSide) slot += 5;
+					slot = slot % 10;
+					return slot;
+				}
+
+				++slotCT;
+			}
+			else if (2 == be_team) // T
+			{
+				if (be->entindex() == entindex)
+				{
+					int slot = 1 + slotT;
+					if (!swapPlayerSide) slot += 5;
+					slot = slot % 10;
+					return slot;
+				}
+
+				++slotT;
+			}
+		}
+	}
+
+	return -1;
+}
+
+
 extern WrpVEngineClient * g_VEngineClient;
 
 
@@ -1495,7 +1559,7 @@ wchar_t * __stdcall touring_csgo_CUnknown_GetPlayerName(DWORD *this_ptr, int ent
 				std::wstring widePlayerName;
 				if (UTF8StringToWideString(it->name.c_str(), widePlayerName))
 				{
-					wcscpy_s(targetBuffer, targetByteCount, widePlayerName.c_str());
+					wcscpy_s(targetBuffer, targetByteCount / sizeof(wchar_t), widePlayerName.c_str());
 				}
 				break;
 			}
@@ -1505,7 +1569,49 @@ wchar_t * __stdcall touring_csgo_CUnknown_GetPlayerName(DWORD *this_ptr, int ent
 			std::wstring widePlayerName;
 			if (UTF8StringToWideString(playerEntry->name.value, widePlayerName))
 			{
-				wcscpy_s(targetBuffer, targetByteCount, widePlayerName.c_str());
+				wcscpy_s(targetBuffer, targetByteCount / sizeof(wchar_t), widePlayerName.c_str());
+			}
+		}
+
+		if (g_HudDeathNoticeHookGlobals.activeWrapper)
+		{
+			switch (g_DeathnoticeShowNumbers)
+			{
+				case DeathnoticeShowNumbers_e::DeathnoticeShowNumbers_Numbers:
+				case DeathnoticeShowNumbers_e::DeathnoticeShowNumbers_PrependNumbers:
+				{
+					wchar_t number[33];
+					if (0 == _itow_s(GetSpecKeyNumber(entIndex), number, 10))
+					{
+						size_t len = wcslen(number);
+						size_t oldLen = wcslen(targetBuffer);
+						if (g_DeathnoticeShowNumbers == DeathnoticeShowNumbers_e::DeathnoticeShowNumbers_PrependNumbers)
+						{
+							size_t pos = len + 1 + oldLen;
+							if (pos < targetByteCount)
+							{
+								for(;len <= pos; --pos)
+								{
+									targetBuffer[pos] = targetBuffer[pos - len - 1];
+								}
+								targetBuffer[len] = L' ';
+								for (pos = 0; pos < len; ++pos)
+								{
+									targetBuffer[pos] = number[pos];
+								}
+							}
+						}
+						else
+						{
+							len = len + 1;
+							if (len <= targetByteCount / sizeof(wchar_t))
+							{
+								wcscpy_s(targetBuffer, len, number);
+							}
+						}
+					}
+				}
+				break;
 			}
 		}
 	}
@@ -1929,6 +2035,36 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 			Tier0_Msg("\n");
 			return true;
 		}
+		else if (0 == _stricmp("showNumbers", arg1)) {
+
+			if (3 <= argc)
+			{
+				int value = atoi(args->ArgV(2));
+
+				if (value <= 0)
+				{
+					g_DeathnoticeShowNumbers = DeathnoticeShowNumbers_e::DeathnoticeShowNumbers_Default;
+				}
+				else if(1 == value)
+				{
+					g_DeathnoticeShowNumbers = DeathnoticeShowNumbers_e::DeathnoticeShowNumbers_Numbers;
+				}
+				else
+				{
+					g_DeathnoticeShowNumbers = DeathnoticeShowNumbers_e::DeathnoticeShowNumbers_PrependNumbers;
+				}
+				
+				return true;
+			}
+
+			Tier0_Msg(
+				"%s showNumbers 0|1|2 - Default (0), only numbers (1), prepend numbers (2)\n"
+				"Current value: %i\n"
+				, arg0
+				, g_DeathnoticeShowNumbers
+			);			
+			return true;
+		}
 		else if (0 == _stricmp("debug", arg1))
 		{
 			if (3 <= argc)
@@ -2137,9 +2273,11 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 		"%s lifetime [...] - Controls lifetime of deathmessages.\n"
 		"%s lifetimeMod [...] - Controls lifetime modifier of deathmessages for the \"local\" player.\n"
 		"%s localPlayer [...] - Controls what is considered \"local\" player (and thus highlighted in death notices).\n"
+		"%s showNumbers [...] - Controls if and in what style to show numbers instead of player names.\n"
 		"%s debug [...] - Enable / Disable debug spew upon death messages.\n"
 		"%s deprecated - Print deprecated commands.\n"
 		"Hint: Jump back in demo (i.e. to round start) to clear death messages.\n"
+		, arg0
 		, arg0
 		, arg0
 		, arg0
