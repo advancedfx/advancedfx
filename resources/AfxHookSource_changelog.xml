@@ -6,14 +6,23 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.73.0</version>
+<time>2020-01-30T15:45Z</time>
+<changes>
+<change type="fixed">
+Added mirv_deathmsg showNumbers 0|1|2 - Default (0), numbers (1), prepend numbers (2).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.72.1</version>
 <time>2020-01-06T18:43Z</time>
 <changes>
 <change type="fixed">
 Fixed AGR files created being broken due to bug (undefined C++ std library / compiler behavior).
-</change>
-<change type="updated">
-Improve zh-CN translation (by Purple-CSGO).
 </change>
 </changes>
 </release>

@@ -6,11 +6,23 @@
 
 <release>
 <name>HLAE</name>
-<version>2.83.1.1</version>
-<time>2020-01-09T11:00Z</time>
+<version>2.84.0</version>
+<time>2020-01-30T15:45Z</time>
 <changes>
-<change type="fixed">
-Fixed installer (HLAE_Setup.exe) to address #256 zh-CN FFMPEG feature translation now too long due to hints added by translator.
+<change type="updated">
+Included AfxHookSource 1.73.0 (2020-01-30T15:45Z).
+</change>
+<change type="updated">
+Added translations of installer and most of HLAE.exe GUI by the generous translators: https://l10n.advancedfx.org/projects/l10n/contributors/
+</change>
+<change type="updated">
+Added a help / guide button at the bottom of the GUI.
+</change>
+<change type="updated">
+Added possible solutions to more error codes.
+</change>
+<change type="updated">
+Other: https://github.com/advancedfx/advancedfx/milestone/14?closed=1
 </change>
 </changes>
 </release>
@@ -23,6 +35,9 @@ Fixed installer (HLAE_Setup.exe) to address #256 zh-CN FFMPEG feature translatio
 <changes>
 <change type="updated">
 Included AfxHookSource 1.72.1 (2020-01-06T18:43Z).
+</change>
+<change type="updated">
+Improve zh-CN translation (by Purple-CSGO).
 </change>
 </changes>
 </release>
