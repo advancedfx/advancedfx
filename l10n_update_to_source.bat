@@ -27,6 +27,7 @@ py -3.8 ..\..\deps\wxl-po-tools\po2wxl.py -f -p -1 -l LangId ..\..\l10n\locales\
 py -3.8 ..\..\deps\wxl-po-tools\po2wxl.py -f -p -1 -l LangId ..\..\l10n\locales\nl\installer\HlaeCore\messages.po lang/nl-NL.wxl
 py -3.8 ..\..\deps\wxl-po-tools\po2wxl.py -f -p -1 -l LangId ..\..\l10n\locales\pt-PT\installer\HlaeCore\messages.po lang/pt-PT.wxl
 py -3.8 ..\..\deps\wxl-po-tools\po2wxl.py -f -p -1 -l LangId ..\..\l10n\locales\ru\installer\HlaeCore\messages.po lang/ru-RU.wxl
+py -3.8 ..\..\deps\wxl-po-tools\po2wxl.py -f -p -1 -l LangId ..\..\l10n\locales\tr\installer\HlaeCore\messages.po lang/tr-TR.wxl
 py -3.8 ..\..\deps\wxl-po-tools\po2wxl.py -f -p -1 -l LangId ..\..\l10n\locales\zh-CN\installer\HlaeCore\messages.po lang/zh-CN.wxl
 cd ..\..
 
@@ -42,5 +43,6 @@ py -3.8 ..\..\deps\wxl-po-tools\po2wxl.py -f -p -1 -l LangId ..\..\l10n\locales\
 py -3.8 ..\..\deps\wxl-po-tools\po2wxl.py -f -p -1 -l LangId ..\..\l10n\locales\nl\installer\setup\messages.po lang/HyperlinkTheme_nl-NL.wxl
 py -3.8 ..\..\deps\wxl-po-tools\po2wxl.py -f -p -1 -l LangId ..\..\l10n\locales\pt-PT\installer\setup\messages.po lang/HyperlinkTheme_pt-PT.wxl
 py -3.8 ..\..\deps\wxl-po-tools\po2wxl.py -f -p -1 -l LangId ..\..\l10n\locales\ru\installer\setup\messages.po lang/HyperlinkTheme_ru-RU.wxl
+py -3.8 ..\..\deps\wxl-po-tools\po2wxl.py -f -p -1 -l LangId ..\..\l10n\locales\tr\installer\setup\messages.po lang/HyperlinkTheme_tr-TR.wxl
 py -3.8 ..\..\deps\wxl-po-tools\po2wxl.py -f -p -1 -l LangId ..\..\l10n\locales\zh-CN\installer\setup\messages.po lang/HyperlinkTheme_zh-CN.wxl
 cd ..\..

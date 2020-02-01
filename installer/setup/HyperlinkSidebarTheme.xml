@@ -18,6 +18,8 @@
     <Button Name="HelpCancelButton" X="-11" Y="-11" Width="75" Height="23" TabStop="yes" FontId="0">#(loc.HelpCloseButton)</Button>
   </Page>
   <Page Name="Install">
+    <Editbox Name="LangId" X="0" Y="0" Height="1" Width="1" FontId="0" Visible="no" TabStop="no" HideWhenDisabled="yes" HexStyle="08000000">#(loc.LangId)</Editbox>
+    
     <Text X="11" Y="11" Width="-11" Height="32" FontId="1" DisablePrefix="yes">#(loc.Title)</Text>
     <!-- <Image X="11" Y="11" Width="165" Height="400" ImageFile="logoside.png"/> -->
     <Text X="11" Y="50" Width="-11" Height="32" FontId="2" DisablePrefix="yes">#(loc.InstallHeader)</Text>

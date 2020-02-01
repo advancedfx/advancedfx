@@ -3,6 +3,11 @@
 
 
 <WixLocalization Culture="en-us" Language="1033" Codepage="1252" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+
+  <!-- This contains the LangID and should be translated to reflect the correct LangID. -->
+  <!-- Supported language and codepage codes can be found here: https://msdn.microsoft.com/en-us/goglobal/bb964664.aspx -->
+  <String Id="LangId"></String>
+  
   <String Id="Caption">[WixBundleName] Setup</String>
   <String Id="Title">[WixBundleName]</String>
   <String Id="InstallHeader">Welcome</String>

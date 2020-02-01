@@ -3,7 +3,7 @@
   <!-- Update this on release: Version -->
 	<Bundle
     Name="HLAE"
-    Version="2.84.1"
+    Version="2.84.3"
     Manufacturer="advancedfx.org"
     UpgradeCode="{35C8D990-6C4F-4639-ADF7-D259B06E070B}"
     AboutUrl="https://www.advancedfx.org/"
@@ -20,8 +20,6 @@
         ShowVersion="yes"        
       />
 
-      <Payload Compressed="yes" Name="bafunctions.dll" SourceFile="$(var.bafunctions.TargetPath)"  />
-
       <Payload Id="theme_de_de" Compressed="yes"  Name="1031\thm.wxl" SourceFile="lang\HyperlinkTheme_de-DE.wxl"/>
       <Payload Id="theme_en_us" Compressed="yes"  Name="1033\thm.wxl" SourceFile="lang\HyperlinkTheme_en-US.wxl"/>
       <Payload Id="theme_fi_fi" Compressed="yes"  Name="1035\thm.wxl" SourceFile="lang\HyperlinkTheme_fi-FI.wxl"/>
@@ -35,20 +33,20 @@
 
     <Variable Name='InstallFolder' Type='string' Value='[ProgramFilesFolder]HLAE' Persisted='yes' bal:Overridable='yes'/>
     <Variable Name="HlaeFfmpegFeature" Type="numeric" Value="1" Persisted="yes" bal:Overridable='yes'/>
+    <Variable Name="LangId" Type="string" Value="" Persisted="yes" bal:Overridable="yes" />
 
     <Chain>
       <PackageGroupRef Id="NetFx45Web" />
       <PackageGroupRef Id="HlaeCore" />        
 		</Chain>
 
-    <Variable Name="HlaeCoreTransform" Value="" Type="string" bal:Overridable="yes" />
   </Bundle>
   
   <Fragment>  
     <PackageGroup Id="HlaeCore">
       <MsiPackage SourceFile="$(var.HlaeCore.en-us.TargetPath)" Compressed="yes" EnableFeatureSelection="yes" Vital="yes">
         <MsiProperty Name='APPLICATIONFOLDER' Value='[InstallFolder]' />
-        <MsiProperty Name='TRANSFORMS' Value='[HlaeCoreTransform]' />
+        <MsiProperty Name='TRANSFORMS' Value='[LangId]' />
         <MsiProperty Name="AFX_INSTALLFFMPEG" Value="[HlaeFfmpegFeature]" />
         <Payload Id="HlaeCore_de_de" Compressed="yes" Name="1031" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\de-de\HlaeCore.mst"/>
         <Payload Id="HlaeCore_fi_fi" Compressed="yes" Name="1035" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\fi-fi\HlaeCore.mst"/>

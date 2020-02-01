@@ -6,6 +6,18 @@
 
 <release>
 <name>HLAE</name>
+<version>2.84.3</version>
+<time>2020-02-01T21:17Z</time>
+<changes>
+<change type="fixed">
+Fixed installer failing for non-translated languages.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.84.1</version>
 <time>2020-01-30T19:55Z</time>
 <changes>
