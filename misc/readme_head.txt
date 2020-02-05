@@ -90,6 +90,10 @@ Valve
 	For various SDKs.
 	https://www.valvesoftware.com/
 
+Vitalii Tsilnyk
+	For NGettext.
+	https://github.com/VitaliiTsilnyk/NGettext
+
 WiX Toolset
 	For installer authoring software.
 	https://wixtoolset.org/
