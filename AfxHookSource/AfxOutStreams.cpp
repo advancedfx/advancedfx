@@ -10,7 +10,7 @@
 #include <shared/StringTools.h>
 #include <shared/FileTools.h>
 
-#include <prop/AfxHookSource/SourceInterfaces.h>
+#include <AfxHookSource/SourceInterfaces.h>
 
 #include <string>
 #include <sstream>

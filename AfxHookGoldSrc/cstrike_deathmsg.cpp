@@ -9,7 +9,7 @@
 #include <shared/StringTools.h>
 
 #include <Windows.h>
-#include <shared/Detours/src/detours.h>
+#include <deps/release/Detours/src/detours.h>
 
 #include <list>
 

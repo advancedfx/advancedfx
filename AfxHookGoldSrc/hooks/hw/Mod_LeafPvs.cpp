@@ -8,7 +8,7 @@
 #include <hlsdk.h>
 
 #include <Windows.h>
-#include <shared/Detours/src/detours.h>
+#include <deps/release/Detours/src/detours.h>
 
 //
 // Mod_LeafPVS WH related stuff:

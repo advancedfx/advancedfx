@@ -2,8 +2,8 @@
 
 #ifdef AFX_MIRV_PGL
 // Shit needs to be included for d3d9.h or we a doomed (great!):
-#include "../../shared/easywsclient/easywsclient.hpp"
-#include "../../shared/easywsclient/easywsclient.cpp"
+#include <deps/release/easywsclient/easywsclient.hpp>
+#include <deps/release/easywsclient/easywsclient.cpp>
 #pragma comment( lib, "ws2_32" )
 #include <WinSock2.h>
 #endif

@@ -4,7 +4,7 @@
 
 #include <shared/AfxDetours.h>
 
-#include <shared/halflife/external/SDL2/SDL.h>
+#include <deps/release/halflife/external/SDL2/SDL.h>
 
 #include "HookHw.h"
 #include "OpenGl32Hooks.h"
@@ -35,7 +35,7 @@
 #endif // AFX_GUI
 
 #include <Windows.h>
-#include <shared/Detours/src/detours.h>
+#include <deps/release/Detours/src/detours.h>
 
 struct cl_enginefuncs_s * pEngfuncs		= (struct cl_enginefuncs_s *)0;
 struct engine_studio_api_s * pEngStudio	= (struct engine_studio_api_s *)0;

@@ -5,7 +5,7 @@
 #include "../../filming.h"
 
 #include <Windows.h>
-#include <shared/Detours/src/detours.h>
+#include <deps/release/Detours/src/detours.h>
 
 typedef void (*CL_Disconnect_t) (void);
 

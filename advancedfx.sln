@@ -4,11 +4,11 @@ VisualStudioVersion = 16.0.29230.47
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "hlae", "hlae\hlae.csproj", "{0BA0C36B-DC95-4B5F-9793-4CEF5B2FC60B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShaderBuilder", "prop\ShaderBuilder\ShaderBuilder.csproj", "{3007A356-25EE-4E2B-A4DD-081D035DD9B2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShaderBuilder", "deps\release\prop\ShaderBuilder\ShaderBuilder.csproj", "{3007A356-25EE-4E2B-A4DD-081D035DD9B2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShaderDisassembler", "prop\ShaderDisassembler\ShaderDisassembler.csproj", "{18617F26-10C7-46BA-9EBE-92B648B0ACC5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShaderDisassembler", "deps\release\prop\ShaderDisassembler\ShaderDisassembler.csproj", "{18617F26-10C7-46BA-9EBE-92B648B0ACC5}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "prop", "prop", "{F5C9EEAD-E3B3-4D52-9BD1-A4B51DC6EF8E}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "prop", "deps\release\prop", "{F5C9EEAD-E3B3-4D52-9BD1-A4B51DC6EF8E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "injector", "injector\injector.csproj", "{59AE6FDA-B952-434E-B899-1FD9D778A930}"
 EndProject

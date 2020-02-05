@@ -21,7 +21,7 @@ typedef vec_t vec3_t[3];
 
 #include <hlsdk.h>
 
-#include <shared/halflife/common/r_studioint.h>
+#include <deps/release/halflife/common/r_studioint.h>
 
 #include "../HookHw.h"
 #include "../../cmdregister.h"

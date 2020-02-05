@@ -2,7 +2,7 @@ $contrib_members_current = @()
 $contrib_members_past = @()
 $contrib_others = @()
 
-Get-ChildItem ".\contrib\" -Filter *.md | Foreach-Object {
+Get-ChildItem ".\deps\release\contrib\" -Filter *.md | Foreach-Object {
 	$content = Get-Content $_.FullName -Raw
 	$matches = $content | Select-String '(?sm)---(.*)---(.*)'
 	

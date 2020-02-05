@@ -16,7 +16,7 @@
 #include <gl/gl.h>
 
 #include <Windows.h>
-#include <shared/Detours/src/detours.h>
+#include <deps/release/Detours/src/detours.h>
 
 
 typedef void (__fastcall *UnkCstrikeCrosshairFn_t)( void * This, void * edx, float dwUnk1, DWORD dwUnk2);

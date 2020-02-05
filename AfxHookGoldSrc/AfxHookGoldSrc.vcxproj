@@ -82,7 +82,7 @@
     </PreBuildEvent>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>./;../;../prop;../shared/halflife/common;../shared/halflife/engine;../shared/halflife/pm_shared;../shared/halflife/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;../;../deps\release\prop;../deps/release/halflife/common;../deps/release/halflife/engine;../deps/release/halflife/pm_shared;../deps/release/halflife/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -117,7 +117,7 @@
     </PreBuildEvent>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>./;../;../prop;../shared/halflife/common;../shared/halflife/engine;../shared/halflife/pm_shared;../shared/halflife/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;../;../deps\release\prop;../deps/release/halflife/common;../deps/release/halflife/engine;../deps/release/halflife/pm_shared;../deps/release/halflife/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -149,7 +149,7 @@
       </Command>
     </PreBuildEvent>
     <ClCompile>
-      <AdditionalIncludeDirectories>./;../;../prop;../shared/halflife/common;../shared/halflife/engine;../shared/halflife/pm_shared;../shared/halflife/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;../;../deps\release\prop;../deps/release/halflife/common;../deps/release/halflife/engine;../deps/release/halflife/pm_shared;../deps/release/halflife/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -186,7 +186,7 @@
       </Command>
     </PreBuildEvent>
     <ClCompile>
-      <AdditionalIncludeDirectories>./;../;../prop;../shared/halflife/common;../shared/halflife/engine;../shared/halflife/pm_shared;../shared/halflife/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;../;../deps\release\prop;../deps/release/halflife/common;../deps/release/halflife/engine;../deps/release/halflife/pm_shared;../deps/release/halflife/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -217,43 +217,43 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\prop\shared\AfxMath.cpp" />
+    <ClCompile Include="..\deps\release\prop\shared\AfxMath.cpp" />
     <ClCompile Include="..\shared\AfxDetours.cpp" />
     <ClCompile Include="..\shared\binutils.cpp" />
     <ClCompile Include="..\shared\CamPath.cpp" />
-    <ClCompile Include="..\shared\Detours\src\detours.cpp">
+    <ClCompile Include="..\deps\release\Detours\src\detours.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="..\shared\Detours\src\disasm.cpp">
+    <ClCompile Include="..\deps\release\Detours\src\disasm.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="..\shared\Detours\src\disolarm.cpp">
+    <ClCompile Include="..\deps\release\Detours\src\disolarm.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="..\shared\Detours\src\disolarm64.cpp">
+    <ClCompile Include="..\deps\release\Detours\src\disolarm64.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="..\shared\Detours\src\disolia64.cpp">
+    <ClCompile Include="..\deps\release\Detours\src\disolia64.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="..\shared\Detours\src\disolx64.cpp">
+    <ClCompile Include="..\deps\release\Detours\src\disolx64.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="..\shared\Detours\src\disolx86.cpp">
+    <ClCompile Include="..\deps\release\Detours\src\disolx86.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="..\shared\Detours\src\image.cpp">
+    <ClCompile Include="..\deps\release\Detours\src\image.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="..\shared\Detours\src\modules.cpp">
+    <ClCompile Include="..\deps\release\Detours\src\modules.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
@@ -338,19 +338,19 @@
     <ClCompile Include="..\shared\RawOutput.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\prop\shared\AfxMath.h" />
+    <ClInclude Include="..\deps\release\prop\shared\AfxMath.h" />
     <ClInclude Include="..\shared\AfxDetours.h" />
     <ClInclude Include="..\shared\binutils.h" />
     <ClInclude Include="..\shared\CamPath.h" />
-    <ClInclude Include="..\shared\Detours\src\detours.h" />
-    <ClInclude Include="..\shared\Detours\src\detver.h" />
+    <ClInclude Include="..\deps\release\Detours\src\detours.h" />
+    <ClInclude Include="..\deps\release\Detours\src\detver.h" />
     <ClInclude Include="..\shared\EasySampler.h" />
     <ClInclude Include="..\shared\FileTools.h" />
     <ClInclude Include="..\shared\hooks\gameOverlayRenderer.h" />
-    <ClInclude Include="..\prop\shared\rapidxml\rapidxml.hpp" />
-    <ClInclude Include="..\prop\shared\rapidxml\rapidxml_iterators.hpp" />
-    <ClInclude Include="..\prop\shared\rapidxml\rapidxml_print.hpp" />
-    <ClInclude Include="..\prop\shared\rapidxml\rapidxml_utils.hpp" />
+    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml.hpp" />
+    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_iterators.hpp" />
+    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_print.hpp" />
+    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_utils.hpp" />
     <ClInclude Include="..\shared\StringTools.h" />
     <ClInclude Include="..\shared\vcpp\AfxAddr.h" />
     <ClInclude Include="AfxGlImage.h" />

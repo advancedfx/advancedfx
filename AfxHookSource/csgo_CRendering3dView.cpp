@@ -5,7 +5,7 @@
 #include "addresses.h"
 #include "AfxStreams.h"
 
-#include <shared/Detours/src/detours.h>
+#include <deps/release/Detours/src/detours.h>
 
 typedef void(__fastcall * CRendering3dView_DrawTranslucentRenderables_t)(SOURCESDK::CSGO::CRendering3dView * This, void * edx, bool bInSkybox, bool bShadowDepth);
 

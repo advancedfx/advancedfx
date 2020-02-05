@@ -11,7 +11,7 @@
 #include <hlsdk.h>
 
 #include <Windows.h>
-#include <shared/Detours/src/detours.h>
+#include <deps/release/Detours/src/detours.h>
 
 REGISTER_DEBUGCVAR(fixforcehltv, "1", 0);
 REGISTER_DEBUGCVAR(force_thirdperson, "0", 0);

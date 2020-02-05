@@ -14,7 +14,7 @@ typedef float vec3_t[3];
 #include "sv_hitboxes.h"
 
 #include <hlsdk.h>
-#include <shared/halflife/common/r_studioint.h>
+#include <deps/release/halflife/common/r_studioint.h>
 
 #include "hooks/HookHw.h"
 

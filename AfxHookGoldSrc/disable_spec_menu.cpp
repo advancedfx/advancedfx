@@ -6,7 +6,7 @@
 #include "hlsdk.h"
 
 #include <Windows.h>
-#include <shared/Detours/src/detours.h>
+#include <deps/release/Detours/src/detours.h>
 
 float g_OldHud_draw_value;
 bool g_DisableSpecMenu = false;

@@ -5,7 +5,7 @@
 #include "../HookGameLoaded.h"
 
 #include <Windows.h>
-#include <shared/Detours/src/detours.h>
+#include <deps/release/Detours/src/detours.h>
 
 
 typedef void (*Host_Frame_t) (float time);

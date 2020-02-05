@@ -22,15 +22,6 @@
     <Filter Include="AfxHookGoldSrc\hooks\svdll">
       <UniqueIdentifier>{a8976221-7300-4cc2-9ea0-700d9db75d9e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="prop">
-      <UniqueIdentifier>{b7746533-87ac-4a58-ba4c-1e505727d82b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="prop\shared">
-      <UniqueIdentifier>{32805ebf-8b73-4ad8-9fa7-84ac24d50773}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="prop\shared\rapidxml">
-      <UniqueIdentifier>{14cce315-c13b-454e-a3ef-c05598a2a291}</UniqueIdentifier>
-    </Filter>
     <Filter Include="shared">
       <UniqueIdentifier>{3539c3dc-d46c-4525-b2b9-1b3a76e8324d}</UniqueIdentifier>
     </Filter>
@@ -43,10 +34,25 @@
     <Filter Include="shared\hldemo">
       <UniqueIdentifier>{f109fb84-4139-47b9-beed-0cf2052be0ec}</UniqueIdentifier>
     </Filter>
-    <Filter Include="shared\Detours">
+    <Filter Include="deps">
+      <UniqueIdentifier>{e17ded0f-eef2-4b0e-9da1-0482a40ef6c0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="deps\release">
+      <UniqueIdentifier>{c2faba58-83b5-4cdc-8ec3-3d6aa898b495}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="deps\release\prop">
+      <UniqueIdentifier>{b7746533-87ac-4a58-ba4c-1e505727d82b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="deps\release\prop\shared">
+      <UniqueIdentifier>{32805ebf-8b73-4ad8-9fa7-84ac24d50773}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="deps\release\prop\shared\rapidxml">
+      <UniqueIdentifier>{14cce315-c13b-454e-a3ef-c05598a2a291}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="deps\release\Detours">
       <UniqueIdentifier>{a9be4af9-5721-47cc-a9a0-46d5ea02981c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="shared\Detours\src">
+    <Filter Include="deps\release\Detours\src">
       <UniqueIdentifier>{52f5451a-fb32-457f-87d2-f7f971ecdc14}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -264,35 +270,35 @@
     <ClCompile Include="..\shared\binutils.cpp">
       <Filter>shared</Filter>
     </ClCompile>
-    <ClCompile Include="..\prop\shared\AfxMath.cpp">
-      <Filter>prop\shared</Filter>
+    <ClCompile Include="..\deps\release\prop\shared\AfxMath.cpp">
+      <Filter>deps\release\prop\shared</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\Detours\src\detours.cpp">
-      <Filter>shared\Detours\src</Filter>
+    <ClCompile Include="..\deps\release\Detours\src\detours.cpp">
+      <Filter>deps\release\Detours\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\Detours\src\disasm.cpp">
-      <Filter>shared\Detours\src</Filter>
+    <ClCompile Include="..\deps\release\Detours\src\disasm.cpp">
+      <Filter>deps\release\Detours\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\Detours\src\disolarm.cpp">
-      <Filter>shared\Detours\src</Filter>
+    <ClCompile Include="..\deps\release\Detours\src\disolarm.cpp">
+      <Filter>deps\release\Detours\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\Detours\src\disolarm64.cpp">
-      <Filter>shared\Detours\src</Filter>
+    <ClCompile Include="..\deps\release\Detours\src\disolarm64.cpp">
+      <Filter>deps\release\Detours\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\Detours\src\disolia64.cpp">
-      <Filter>shared\Detours\src</Filter>
+    <ClCompile Include="..\deps\release\Detours\src\disolia64.cpp">
+      <Filter>deps\release\Detours\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\Detours\src\disolx64.cpp">
-      <Filter>shared\Detours\src</Filter>
+    <ClCompile Include="..\deps\release\Detours\src\disolx64.cpp">
+      <Filter>deps\release\Detours\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\Detours\src\disolx86.cpp">
-      <Filter>shared\Detours\src</Filter>
+    <ClCompile Include="..\deps\release\Detours\src\disolx86.cpp">
+      <Filter>deps\release\Detours\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\Detours\src\image.cpp">
-      <Filter>shared\Detours\src</Filter>
+    <ClCompile Include="..\deps\release\Detours\src\image.cpp">
+      <Filter>deps\release\Detours\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\Detours\src\modules.cpp">
-      <Filter>shared\Detours\src</Filter>
+    <ClCompile Include="..\deps\release\Detours\src\modules.cpp">
+      <Filter>deps\release\Detours\src</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\EasySampler.cpp">
       <Filter>shared</Filter>
@@ -476,26 +482,26 @@
     <ClInclude Include="..\shared\binutils.h">
       <Filter>shared</Filter>
     </ClInclude>
-    <ClInclude Include="..\prop\shared\AfxMath.h">
-      <Filter>prop\shared</Filter>
+    <ClInclude Include="..\deps\release\prop\shared\AfxMath.h">
+      <Filter>deps\release\prop\shared</Filter>
     </ClInclude>
-    <ClInclude Include="..\prop\shared\rapidxml\rapidxml.hpp">
-      <Filter>prop\shared\rapidxml</Filter>
+    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml.hpp">
+      <Filter>deps\release\prop\shared\rapidxml</Filter>
     </ClInclude>
-    <ClInclude Include="..\prop\shared\rapidxml\rapidxml_iterators.hpp">
-      <Filter>prop\shared\rapidxml</Filter>
+    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_iterators.hpp">
+      <Filter>deps\release\prop\shared\rapidxml</Filter>
     </ClInclude>
-    <ClInclude Include="..\prop\shared\rapidxml\rapidxml_print.hpp">
-      <Filter>prop\shared\rapidxml</Filter>
+    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_print.hpp">
+      <Filter>deps\release\prop\shared\rapidxml</Filter>
     </ClInclude>
-    <ClInclude Include="..\prop\shared\rapidxml\rapidxml_utils.hpp">
-      <Filter>prop\shared\rapidxml</Filter>
+    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_utils.hpp">
+      <Filter>deps\release\prop\shared\rapidxml</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared\Detours\src\detours.h">
-      <Filter>shared\Detours\src</Filter>
+    <ClInclude Include="..\deps\release\Detours\src\detours.h">
+      <Filter>deps\release\Detours\src</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared\Detours\src\detver.h">
-      <Filter>shared\Detours\src</Filter>
+    <ClInclude Include="..\deps\release\Detours\src\detver.h">
+      <Filter>deps\release\Detours\src</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\EasySampler.h">
       <Filter>shared</Filter>

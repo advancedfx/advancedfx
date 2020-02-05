@@ -1,31 +1,27 @@
 [submodule "prop"]
-	path = prop
+	path = deps/release/prop
 	url = https://github.com/advancedfx/advancedfx-prop.git
 	branch = prop
 [submodule "shared/easywsclient"]
-	path = shared/easywsclient
+	path = deps/release/easywsclient
 	url = https://github.com/advancedfx/easywsclient.git
 	branch = master
-[submodule "shared/imgui"]
-	path = shared/imgui
-	url = https://github.com/advancedfx/imgui.git
-	branch = master
 [submodule "shared/Detours"]
-	path = shared/Detours
+	path = deps/release/Detours
 	url = https://github.com/advancedfx/Detours
 	branch = master
 [submodule "shared/halflife"]
-	path = shared/halflife
+	path = deps/release/halflife
 	url = https://github.com/advancedfx/halflife.git
 	branch = advancedfx
 [submodule "contrib"]
-	path = contrib
+	path = deps/release/contrib
 	url = https://github.com/advancedfx/contrib.git
 	branch = master
 [submodule "l10n"]
-	path = l10n
+	path = deps/release/l10n
 	url = https://github.com/advancedfx/l10n.git
 [submodule "deps/wxl-po-tools"]
-	path = deps/wxl-po-tools
+	path = deps/dev/wxl-po-tools
 	url = https://github.com/advancedfx/wxl-po-tools.git
 	branch = python3

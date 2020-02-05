@@ -18,7 +18,7 @@
     <ClCompile Include="RoundingErrors.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\prop\shared\AfxMath.cpp">
+    <ClCompile Include="..\..\deps\release\prop\shared\AfxMath.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

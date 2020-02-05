@@ -71,13 +71,13 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>AFX_INTEROP;AFX_MIRV_PGL;IMGUI_DISABLE_OBSOLETE_FUNCTIONS;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>AFX_INTEROP;AFX_MIRV_PGL;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
-      <AdditionalIncludeDirectories>./;../prop/AfxHookSource;../;../prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;../deps\release\prop/AfxHookSource;../;../deps\release\prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>
       </AdditionalOptions>
       <ObjectFileName>$(IntDir)%(RelativeDir)/</ObjectFileName>
@@ -93,12 +93,12 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>AFX_UNITYINTEROP;AFX_MIRV_PGL;IMGUI_DISABLE_OBSOLETE_FUNCTIONS;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>AFX_UNITYINTEROP;AFX_MIRV_PGL;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>./;../prop/AfxHookSource;../;../prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;../deps\release\prop/AfxHookSource;../;../deps\release\prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>
       </AdditionalOptions>
       <ObjectFileName>$(IntDir)%(RelativeDir)/</ObjectFileName>
@@ -114,12 +114,12 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>AFX_INTEROP;AFX_MIRV_PGL;IMGUI_DISABLE_OBSOLETE_FUNCTIONS;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>AFX_INTEROP;AFX_MIRV_PGL;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>./;../prop/AfxHookSource;../;../prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;../deps\release\prop/AfxHookSource;../;../deps\release\prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>
       </AdditionalOptions>
       <ObjectFileName>$(IntDir)%(RelativeDir)/</ObjectFileName>
@@ -138,12 +138,12 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>AFX_UNITYINTEROP;AFX_MIRV_PGL;IMGUI_DISABLE_OBSOLETE_FUNCTIONS;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>AFX_UNITYINTEROP;AFX_MIRV_PGL;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>./;../prop/AfxHookSource;../;../prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;../deps\release\prop/AfxHookSource;../;../deps\release\prop;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>
       </AdditionalOptions>
       <ObjectFileName>$(IntDir)%(RelativeDir)/</ObjectFileName>
@@ -159,36 +159,33 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\interfaces\c\test.c" />
-    <ClCompile Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier1\convar.cpp" />
-    <ClCompile Include="..\prop\AfxHookSource\cssV34\sdk_src\public\tools\bonelist.cpp" />
-    <ClCompile Include="..\prop\AfxHookSource\cssV34\sdk_src\tier1\keyvalues.cpp" />
-    <ClCompile Include="..\prop\AfxHookSource\l4d2\sdk_src\public\tier1\convar.cpp" />
-    <ClCompile Include="..\prop\AfxHookSource\bm\sdk_src\public\tier1\convar.cpp" />
-    <ClCompile Include="..\prop\AfxHookSource\SourceSdkShared.cpp" />
-    <ClCompile Include="..\prop\AfxHookSource\swarm\sdk_src\public\tier1\convar.cpp" />
-    <ClCompile Include="..\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.cpp" />
-    <ClCompile Include="..\prop\AfxHookSource\tf2\sdk_src\tier1\KeyValues.cpp" />
-    <ClCompile Include="..\prop\shared\AfxMath.cpp" />
+    <ClCompile Include="..\deps\release\prop\AfxHookSource\csgo\sdk_src\public\tier1\convar.cpp" />
+    <ClCompile Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\tools\bonelist.cpp" />
+    <ClCompile Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\tier1\keyvalues.cpp" />
+    <ClCompile Include="..\deps\release\prop\AfxHookSource\l4d2\sdk_src\public\tier1\convar.cpp" />
+    <ClCompile Include="..\deps\release\prop\AfxHookSource\bm\sdk_src\public\tier1\convar.cpp" />
+    <ClCompile Include="..\deps\release\prop\AfxHookSource\SourceSdkShared.cpp" />
+    <ClCompile Include="..\deps\release\prop\AfxHookSource\swarm\sdk_src\public\tier1\convar.cpp" />
+    <ClCompile Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.cpp" />
+    <ClCompile Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\tier1\KeyValues.cpp" />
+    <ClCompile Include="..\deps\release\prop\shared\AfxMath.cpp" />
     <ClCompile Include="..\shared\AfxDetours.cpp" />
     <ClCompile Include="..\shared\binutils.cpp" />
     <ClCompile Include="..\shared\bvhexport.cpp" />
     <ClCompile Include="..\shared\bvhimport.cpp" />
     <ClCompile Include="..\shared\CamPath.cpp" />
-    <ClCompile Include="..\shared\Detours\src\detours.cpp" />
-    <ClCompile Include="..\shared\Detours\src\disasm.cpp" />
-    <ClCompile Include="..\shared\Detours\src\disolarm.cpp" />
-    <ClCompile Include="..\shared\Detours\src\disolarm64.cpp" />
-    <ClCompile Include="..\shared\Detours\src\disolia64.cpp" />
-    <ClCompile Include="..\shared\Detours\src\disolx64.cpp" />
-    <ClCompile Include="..\shared\Detours\src\disolx86.cpp" />
-    <ClCompile Include="..\shared\Detours\src\image.cpp" />
-    <ClCompile Include="..\shared\Detours\src\modules.cpp" />
+    <ClCompile Include="..\deps\release\Detours\src\detours.cpp" />
+    <ClCompile Include="..\deps\release\Detours\src\disasm.cpp" />
+    <ClCompile Include="..\deps\release\Detours\src\disolarm.cpp" />
+    <ClCompile Include="..\deps\release\Detours\src\disolarm64.cpp" />
+    <ClCompile Include="..\deps\release\Detours\src\disolia64.cpp" />
+    <ClCompile Include="..\deps\release\Detours\src\disolx64.cpp" />
+    <ClCompile Include="..\deps\release\Detours\src\disolx86.cpp" />
+    <ClCompile Include="..\deps\release\Detours\src\image.cpp" />
+    <ClCompile Include="..\deps\release\Detours\src\modules.cpp" />
     <ClCompile Include="..\shared\EasySampler.cpp" />
     <ClCompile Include="..\shared\FileTools.cpp" />
     <ClCompile Include="..\shared\hooks\gameOverlayRenderer.cpp" />
-    <ClCompile Include="..\shared\imgui\imgui.cpp" />
-    <ClCompile Include="..\shared\imgui\imgui_demo.cpp" />
-    <ClCompile Include="..\shared\imgui\imgui_draw.cpp" />
     <ClCompile Include="..\shared\OpenExrOutput.cpp" />
     <ClCompile Include="..\shared\RawOutput.cpp" />
     <ClCompile Include="..\shared\RefCounted.cpp" />
@@ -240,7 +237,7 @@
     <ClCompile Include="MirvWav.cpp" />
     <ClCompile Include="mirv_voice.cpp" />
     <ClCompile Include="RenderView.cpp" />
-    <ClCompile Include="..\prop\AfxHookSource\SourceInterfaces.cpp" />
+    <ClCompile Include="..\deps\release\prop\AfxHookSource\SourceInterfaces.cpp" />
     <ClCompile Include="tf2\ClientToolsTf2.cpp" />
     <ClCompile Include="AfxInterop.cpp" />
     <ClCompile Include="WrpConsole.cpp" />
@@ -254,72 +251,69 @@
     <ClInclude Include="..\interfaces\c\AfxCompiler.h" />
     <ClInclude Include="..\interfaces\c\AfxLocale.h" />
     <ClInclude Include="..\interfaces\c\AfxTypes.h" />
-    <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\appframework\IAppSystem.h" />
-    <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\icvar.h" />
-    <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\interfaces\interfaces.h" />
-    <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier0\memalloc.h" />
-    <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier1\convar.h" />
-    <ClInclude Include="..\prop\AfxHookSource\csgo\sdk_src\public\tier1\iconvar.h" />
-    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\basehandle.h" />
-    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\const.h" />
-    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\engine\ishadowmgr.h" />
-    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\iclientrenderable.h" />
-    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\ihandleentity.h" />
-    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\tier1\keyvalues.h" />
-    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\toolframework\itoolentity.h" />
-    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\toolframework\itoolframework.h" />
-    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\tools\bonelist.h" />
-    <ClInclude Include="..\prop\AfxHookSource\cssV34\sdk_src\public\vstdlib\ikeyvaluessystem.h" />
-    <ClInclude Include="..\prop\AfxHookSource\insurgency2\public\cdll_int.h" />
-    <ClInclude Include="..\prop\AfxHookSource\l4d2\sdk_src\public\appframework\IAppSystem.h" />
-    <ClInclude Include="..\prop\AfxHookSource\l4d2\sdk_src\public\icvar.h" />
-    <ClInclude Include="..\prop\AfxHookSource\l4d2\sdk_src\public\interfaces\interfaces.h" />
-    <ClInclude Include="..\prop\AfxHookSource\l4d2\sdk_src\public\tier0\memalloc.h" />
-    <ClInclude Include="..\prop\AfxHookSource\l4d2\sdk_src\public\tier1\convar.h" />
-    <ClInclude Include="..\prop\AfxHookSource\l4d2\sdk_src\public\tier1\iconvar.h" />
-    <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\appframework\IAppSystem.h" />
-    <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\cdll_int.h" />
-    <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\icvar.h" />
-    <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\interfaces\interfaces.h" />
-    <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\tier0\memalloc.h" />
-    <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\tier1\convar.h" />
-    <ClInclude Include="..\prop\AfxHookSource\bm\sdk_src\public\tier1\iconvar.h" />
-    <ClInclude Include="..\prop\AfxHookSource\SourceSdkShared.h" />
-    <ClInclude Include="..\prop\AfxHookSource\swarm\sdk_src\public\appframework\IAppSystem.h" />
-    <ClInclude Include="..\prop\AfxHookSource\swarm\sdk_src\public\icvar.h" />
-    <ClInclude Include="..\prop\AfxHookSource\swarm\sdk_src\public\interfaces\interfaces.h" />
-    <ClInclude Include="..\prop\AfxHookSource\swarm\sdk_src\public\tier0\memalloc.h" />
-    <ClInclude Include="..\prop\AfxHookSource\swarm\sdk_src\public\tier1\convar.h" />
-    <ClInclude Include="..\prop\AfxHookSource\swarm\sdk_src\public\tier1\iconvar.h" />
-    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\basehandle.h" />
-    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\const.h" />
-    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\engine\ishadowmgr.h" />
-    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\iclientrenderable.h" />
-    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\ihandleentity.h" />
-    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\tier1\KeyValues.h" />
-    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\toolframework\itoolentity.h" />
-    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\toolframework\itoolframework.h" />
-    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.h" />
-    <ClInclude Include="..\prop\AfxHookSource\tf2\sdk_src\public\vstdlib\IKeyValuesSystem.h" />
-    <ClInclude Include="..\prop\shared\AfxMath.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\csgo\sdk_src\public\appframework\IAppSystem.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\csgo\sdk_src\public\icvar.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\csgo\sdk_src\public\interfaces\interfaces.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\csgo\sdk_src\public\tier0\memalloc.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\csgo\sdk_src\public\tier1\convar.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\csgo\sdk_src\public\tier1\iconvar.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\basehandle.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\const.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\engine\ishadowmgr.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\iclientrenderable.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\ihandleentity.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\tier1\keyvalues.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\toolframework\itoolentity.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\toolframework\itoolframework.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\tools\bonelist.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\vstdlib\ikeyvaluessystem.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\insurgency2\public\cdll_int.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\l4d2\sdk_src\public\appframework\IAppSystem.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\l4d2\sdk_src\public\icvar.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\l4d2\sdk_src\public\interfaces\interfaces.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\l4d2\sdk_src\public\tier0\memalloc.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\l4d2\sdk_src\public\tier1\convar.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\l4d2\sdk_src\public\tier1\iconvar.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\bm\sdk_src\public\appframework\IAppSystem.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\bm\sdk_src\public\cdll_int.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\bm\sdk_src\public\icvar.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\bm\sdk_src\public\interfaces\interfaces.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\bm\sdk_src\public\tier0\memalloc.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\bm\sdk_src\public\tier1\convar.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\bm\sdk_src\public\tier1\iconvar.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\SourceSdkShared.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\swarm\sdk_src\public\appframework\IAppSystem.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\swarm\sdk_src\public\icvar.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\swarm\sdk_src\public\interfaces\interfaces.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\swarm\sdk_src\public\tier0\memalloc.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\swarm\sdk_src\public\tier1\convar.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\swarm\sdk_src\public\tier1\iconvar.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\public\basehandle.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\public\const.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\public\engine\ishadowmgr.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\public\iclientrenderable.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\public\ihandleentity.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\public\tier1\KeyValues.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\public\toolframework\itoolentity.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\public\toolframework\itoolframework.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\public\vstdlib\IKeyValuesSystem.h" />
+    <ClInclude Include="..\deps\release\prop\shared\AfxMath.h" />
     <ClInclude Include="..\shared\AfxDetours.h" />
     <ClInclude Include="..\shared\binutils.h" />
     <ClInclude Include="..\shared\bvhexport.h" />
     <ClInclude Include="..\shared\bvhimport.h" />
     <ClInclude Include="..\shared\CamPath.h" />
-    <ClInclude Include="..\shared\Detours\src\detours.h" />
-    <ClInclude Include="..\shared\Detours\src\detver.h" />
+    <ClInclude Include="..\deps\release\Detours\src\detours.h" />
+    <ClInclude Include="..\deps\release\Detours\src\detver.h" />
     <ClInclude Include="..\shared\EasySampler.h" />
     <ClInclude Include="..\shared\FileTools.h" />
     <ClInclude Include="..\shared\hooks\gameOverlayRenderer.h" />
-    <ClInclude Include="..\shared\imgui\imconfig.h" />
-    <ClInclude Include="..\shared\imgui\imgui.h" />
-    <ClInclude Include="..\shared\imgui\imgui_internal.h" />
     <ClInclude Include="..\shared\OpenExrOutput.h" />
-    <ClInclude Include="..\prop\shared\rapidxml\rapidxml.hpp" />
-    <ClInclude Include="..\prop\shared\rapidxml\rapidxml_iterators.hpp" />
-    <ClInclude Include="..\prop\shared\rapidxml\rapidxml_print.hpp" />
-    <ClInclude Include="..\prop\shared\rapidxml\rapidxml_utils.hpp" />
+    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml.hpp" />
+    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_iterators.hpp" />
+    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_print.hpp" />
+    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_utils.hpp" />
     <ClInclude Include="..\shared\RawOutput.h" />
     <ClInclude Include="..\shared\RefCounted.h" />
     <ClInclude Include="..\shared\vcpp\AfxAddr.h" />
@@ -377,7 +371,7 @@
     <ClInclude Include="Model\Tasks\Record.h" />
     <ClInclude Include="Model\Tasks\Task.h" />
     <ClInclude Include="RenderView.h" />
-    <ClInclude Include="..\prop\AfxHookSource\SourceInterfaces.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\SourceInterfaces.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="tf2\ClientToolsTf2.h" />
     <ClInclude Include="AfxInterop.h" />

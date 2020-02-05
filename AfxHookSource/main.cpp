@@ -60,7 +60,7 @@
 //#include "csgo_CDemoFile.h"
 
 #include <Windows.h>
-#include <shared/Detours/src/detours.h>
+#include <deps/release/Detours/src/detours.h>
 
 #include <set>
 #include <map>

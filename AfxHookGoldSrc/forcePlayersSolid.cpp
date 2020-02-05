@@ -3,7 +3,7 @@
 #include "hooks/HookHw.h"
 #include "hooks/hw/ClientFunctions.h"
 #include "cmdregister.h"
-#include <shared/halflife/common/const.h>
+#include <deps/release/halflife/common/const.h>
 
 bool g_bForcePlayersSolid = false;
 
