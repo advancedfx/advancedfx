@@ -75,6 +75,11 @@ NASM
 RapidXml
 	http://rapidxml.sourceforge.net/
 	License: ./LICENSES/rapidxml/license.txt
+	
+Sebastien BLAISOT
+	For wxl-po-tools.
+	(Used by developers to build installer translations.
+	https://github.com/sblaisot/wxl-po-tools
 
 SharpDX
 	For the SharpDX SDK
