@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.6.6</version>
+<time>2020-02-18T18:18Z</time>
+<changes>
+<change type="updated">
+Made mirv_campath more unified with AfxHookSource: Campath drawing and mirv_time features from AfxHookGoldSrc are not available though.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.6.5</version>
 <time>2019-13-30T17:57Z</time>
 <changes>

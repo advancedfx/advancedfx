@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.74.0</version>
+<time>2020-02-18T18:18Z</time>
+<changes>
+<change type="updated">
+Solved #267 wh stream getting blurred when sg553 us zoomed.
+</change>
+<change type="updated">
+Some hopefully transparent plumbing to make mirv_campath more unified for AfxHookGoldSrc.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.73.0</version>
 <time>2020-01-30T15:45Z</time>
 <changes>
