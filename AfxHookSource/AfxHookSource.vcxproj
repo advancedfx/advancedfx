@@ -169,6 +169,7 @@
     <ClCompile Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.cpp" />
     <ClCompile Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\tier1\KeyValues.cpp" />
     <ClCompile Include="..\deps\release\prop\shared\AfxMath.cpp" />
+    <ClCompile Include="..\shared\AfxConsole.cpp" />
     <ClCompile Include="..\shared\AfxDetours.cpp" />
     <ClCompile Include="..\shared\binutils.cpp" />
     <ClCompile Include="..\shared\bvhexport.cpp" />
@@ -186,6 +187,7 @@
     <ClCompile Include="..\shared\EasySampler.cpp" />
     <ClCompile Include="..\shared\FileTools.cpp" />
     <ClCompile Include="..\shared\hooks\gameOverlayRenderer.cpp" />
+    <ClCompile Include="..\shared\MirvCampath.cpp" />
     <ClCompile Include="..\shared\OpenExrOutput.cpp" />
     <ClCompile Include="..\shared\RawOutput.cpp" />
     <ClCompile Include="..\shared\RefCounted.cpp" />
@@ -299,6 +301,8 @@
     <ClInclude Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.h" />
     <ClInclude Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\public\vstdlib\IKeyValuesSystem.h" />
     <ClInclude Include="..\deps\release\prop\shared\AfxMath.h" />
+    <ClInclude Include="..\shared\MirvCampath.h" />
+    <ClInclude Include="..\shared\AfxConsole.h" />
     <ClInclude Include="..\shared\AfxDetours.h" />
     <ClInclude Include="..\shared\binutils.h" />
     <ClInclude Include="..\shared\bvhexport.h" />

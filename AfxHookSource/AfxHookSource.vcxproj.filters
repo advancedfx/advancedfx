@@ -462,6 +462,12 @@
     <ClCompile Include="..\shared\AfxDetours.cpp">
       <Filter>shared</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared\AfxConsole.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\MirvCampath.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\bvhexport.h">
@@ -862,6 +868,12 @@
     </ClInclude>
     <ClInclude Include="..\interfaces\c\AfxCompiler.h">
       <Filter>interfaces\c</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\AfxConsole.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\MirvCampath.h">
+      <Filter>shared</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

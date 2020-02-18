@@ -9,74 +9,8 @@
 #include <l4d2/sdk_src/public/tier1/convar.h>
 #include <bm/sdk_src/public/tier1/convar.h>
 
-#include <string>
-#include <vector>
-
-// IWrpCommandArgs /////////////////////////////////////////////////////////////
-
-class IWrpCommandArgs abstract
-{
-public:
-	/// <summary> returns the count of passed arguments </summary>
-	virtual int ArgC() abstract = 0;
-
-	/// <summary> returns the i-th argument, where 0 is being the first one </summary>
-	virtual char const * ArgV(int i) abstract = 0;
-};
-typedef void (*WrpCommandCallback)(IWrpCommandArgs * args);
-
-// CSubWrpCommandArgs //////////////////////////////////////////////////////////
-
-class CSubWrpCommandArgs
-: public IWrpCommandArgs
-{
-public:
-	CSubWrpCommandArgs(IWrpCommandArgs * commandArgs, int offset);
-
-	/// <summary> returns the count of passed arguments </summary>
-	virtual int ArgC();
-
-	/// <summary> returns the i-th argument, where 0 is being the first one </summary>
-	virtual char const * ArgV(int i);
-
-private:
-	int m_Offset;
-	IWrpCommandArgs *m_CommandArgs;
-	std::string m_Prefix;
-};
-
-// CFakeWrpCommandArgs /////////////////////////////////////////////////////////
-
-class CFakeWrpCommandArgs
-	: public IWrpCommandArgs
-{
-public:
-	CFakeWrpCommandArgs(const char * command)
-	{
-		AddArg(command);
-	}
-
-	void AddArg(const char * arg)
-	{
-		m_Args.push_back(arg);
-	}
-
-	/// <summary> returns the count of passed arguments </summary>
-	virtual int ArgC() {
-		return m_Args.size();
-	}
-
-	/// <summary> returns the i-th argument, where 0 is being the first one </summary>
-	virtual char const * ArgV(int i) {
-		if (i < 0 || i >= (int)m_Args.size())
-			return "";
-
-		return m_Args[i].c_str();
-	}
-
-private:
-	std::vector<std::string> m_Args;
-};
+typedef advancedfx::CSubCommandArgs CSubWrpCommandArgs;
+typedef advancedfx::CFakeCommandArgs CFakeWrpCommandArgs;
 
 // WrpConCommand ///////////////////////////////////////////////////////////////
 
