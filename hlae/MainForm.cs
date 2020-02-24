@@ -67,10 +67,14 @@ namespace AfxGui
             this.labelHelpSelection.Text = L10n._("Selection:");
             {
                 HelpEntry officialEnglishSupportPage = new HelpEntry(L10n._("Official support page (English)"), "https://www.advancedfx.org/support/");
+                HelpEntry chinesePage = new HelpEntry(L10n._("HLAE Chinese Station"), "https://hlae.site/");
 
                 helpLanguages = new HelpLanguage[] {
-                    new HelpLanguage("en", L10n._p("Language", "English"), new HelpEntry[] {
+                    new HelpLanguage("en", L10n._p("Language", "English (en)"), new HelpEntry[] {
                         officialEnglishSupportPage
+                    }),
+                    new HelpLanguage("zh-CN", L10n._p("Language", "Chinese (zh-CN)"), new HelpEntry[] {
+                        chinesePage
                     })
                 };
 
