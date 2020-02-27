@@ -3038,6 +3038,14 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawModulated(IAfxMesh * am, con
 		am->GetParent()->DrawModulated(vecDiffuseModulation, firstIndex, numIndices);
 }
 
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::UnlockMesh(IAfxMesh* am, int numVerts, int numIndices, SOURCESDK::MeshDesc_t_csgo& desc)
+{
+	if (m_CurrentAction)
+		m_CurrentAction->UnlockMesh(this, am, numVerts, numIndices, desc);
+	else
+		am->GetParent()->UnlockMesh(numVerts, numIndices, desc);
+}
+
 #if AFX_SHADERS_CSGO
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::SetVertexShader(CAfx_csgo_ShaderState & state)
 {
@@ -3290,6 +3298,31 @@ void CAfxBaseFxStream::CShared::Console_AddReplaceAction(IWrpCommandArgs * args)
 			"\t\"overrideDepthWrite=<iF>\"- Where <iF> is 0 (don't write depth) or 1 (write depth)\n"
 			,
 			prefix);
+	}
+}
+
+void CAfxBaseFxStream::CShared::Console_AddGlowColorMapAction(IWrpCommandArgs* args)
+{
+	int argc = args->ArgC();
+
+	char const* prefix = args->ArgV(0);
+
+	if (2 <= argc)
+	{
+		char const* actionName = args->ArgV(1);
+
+		CActionKey key(actionName);
+
+		if (!Console_CheckActionKey(key))
+			return;
+
+		CActionGlowColorMap * action = new CActionGlowColorMap();
+
+		CreateAction(key, action);
+	}
+	else
+	{
+		Tier0_Msg("%s <actionName>\n", prefix);
 	}
 }
 
@@ -3578,6 +3611,11 @@ bool CAfxBaseFxStream::CActionFilterValue::CalcMatch_Entity(const CEntityInfo & 
 
 // CAfxBaseFxStream::CAction /////////////////////////////////////////
 
+void CAfxBaseFxStream::CAction::Console_Edit(IWrpCommandArgs* args)
+{
+	Tier0_Msg("This action has no editable settings.\n");
+}
+
 void CAfxBaseFxStream::CAction::MaterialHook(CAfxBaseFxStreamContext * ch, CAfxTrackedMaterial * trackedMaterial)
 {
 }
@@ -3747,9 +3785,7 @@ void CAfxBaseFxStream::CActionReplace::MainThreadInitialize(void)
 
 void CAfxBaseFxStream::CActionReplace::AfxUnbind(CAfxBaseFxStreamContext * ch)
 {
-	if (m_OverrideColor) AfxD3D9OverrideEnd_ModulationColor();
-
-	if (m_OverrideBlend) AfxD3D9OverrideEnd_ModulationBlend();
+	if (m_OverrideColor || m_OverrideBlend) AfxD3D9OverrideEnd_ModulationColorBlend();
 
 	if (m_OverrideDepthWrite) AfxD3D9OverrideEnd_D3DRS_ZWRITEENABLE();
 
@@ -3775,9 +3811,7 @@ void CAfxBaseFxStream::CActionReplace::MaterialHook(CAfxBaseFxStreamContext * ch
 	else
 		m_TrackedMaterial = nullptr;
 
-	if (m_OverrideBlend) AfxD3D9OverrideBegin_ModulationBlend(m_Blend);
-
-	if (m_OverrideColor) AfxD3D9OverrideBegin_ModulationColor(m_Color);
+	if (m_OverrideColor ||m_OverrideBlend) AfxD3D9OverrideBegin_ModulationColorBlend(this);
 
 	if(m_OverrideDepthWrite) AfxD3D9OverrideBegin_D3DRS_ZWRITEENABLE(m_DepthWrite ? TRUE : FALSE);
 }
@@ -3820,6 +3854,463 @@ void CAfxBaseFxStream::CActionReplace::ExamineMaterial(SOURCESDK::IMaterial_csgo
 	outSplinetype = splinetype;
 	outUseinstancing = useinstancing;
 }
+
+// CAfxBaseFxStream::CActionGlowColorMap ///////////////////////////////////////////
+
+CAfxBaseFxStream::CActionGlowColorMap::~CActionGlowColorMap()
+{
+	if (nullptr != m_AfxColorLut) delete m_AfxColorLut;
+}
+
+void CAfxBaseFxStream::CActionGlowColorMap::Console_Edit(IWrpCommandArgs* args)
+{
+	int argC = args->ArgC();
+	const char* arg0 = args->ArgV(0);
+
+	if (2 <= argC)
+	{
+		const char* arg1 = args->ArgV(1);
+
+		if (0 == _stricmp("load", arg1) && 3 == argC)
+		{
+			std::unique_lock<std::shared_timed_mutex> lock(m_EditMutex);
+			if (nullptr != m_AfxColorLut)
+			{
+				delete m_AfxColorLut;
+				m_AfxColorLut = nullptr;
+			}
+			FILE* file = nullptr;
+			if (fopen_s(&file, args->ArgV(2), "rb+"))
+			{
+				m_AfxColorLut = new CAfxColorLut();
+				if (!m_AfxColorLut->LoadFromFile(file))
+				{
+					delete m_AfxColorLut;
+					m_AfxColorLut = nullptr;
+					Tier0_Warning("Error when processing HLAE Lookup Table Tree file at %i.\n", ftell(file));
+				}
+				fclose(file);
+			}
+			else Tier0_Warning("Error opening HLAE Lookup Table Tree file \"%s\".\n", args->ArgV(2));
+			return;
+		}
+		else if (0 == _stricmp("clear", arg1))
+		{
+			{
+				std::unique_lock<std::shared_timed_mutex> lock(m_EditMutex);
+				if (nullptr != m_AfxColorLut)
+				{
+					delete m_AfxColorLut;
+					m_AfxColorLut = nullptr;
+				}
+			}
+			return;
+		}
+		else if (0 == _stricmp("debugColor", arg1))
+		{
+			if (3 == argC)
+			{
+				std::unique_lock<std::shared_timed_mutex> lock(m_EditMutex);
+				m_DebugColor = 0 != atoi(args->ArgV(2));
+				return;
+			}
+
+			Tier0_Msg(
+				"%s debugColor 0|1 - Enable debug coloring (also forces alpha to 1 and suspends remap), combine with doBloomAndToneMapping 0 on a stream.\n"
+				"Current value: %i\n"
+				, arg0
+				,m_DebugColor ? 1 : 0);
+			return;
+		}
+	}
+
+	Tier0_Msg("%s load <aFilePath> - Load color mapping tree form file.\n", arg0);
+	Tier0_Msg("%s clear - Clear color mapping tree.\n", arg0);
+	Tier0_Msg("%s debugColor [...]\n", arg0);
+}
+
+void CAfxBaseFxStream::CActionGlowColorMap::AfxUnbind(CAfxBaseFxStreamContext* ch)
+{
+	AfxD3D9OverrideEnd_ModulationColorBlend();
+
+	AfxD3D9PopOverrideState();
+}
+
+void CAfxBaseFxStream::CActionGlowColorMap::MaterialHook(CAfxBaseFxStreamContext* ch, CAfxTrackedMaterial* trackedMaterial)
+{
+	AfxD3D9PushOverrideState(false);
+
+	AfxD3D9OverrideBegin_ModulationColorBlend(this);
+}
+
+void CAfxBaseFxStream::CActionGlowColorMap::UnlockMesh(CAfxBaseFxStreamContext* ch, IAfxMesh* am, int numVerts, int numIndices, SOURCESDK::MeshDesc_t_csgo& desc)
+{
+	if (ch->GetCtx()->GetOrg()->GetCallQueue()) return;
+
+	auto mesh = am->GetParent();
+	if (mesh->GetVertexFormat() & 0x0004) // VERTEX_COLOR
+	{
+		for (int i = 0; i < numVerts; ++i)
+		{
+			unsigned char* Color = desc.m_pColor + i * desc.m_VertexSize_Color;
+			CAfxColorLut::CRgba rgba(Color[0] / 255.0f, Color[1] / 255.0f, Color[2] / 255.0f, Color[3] / 255.0f);
+
+			if (m_DebugColor)
+			{
+				rgba.A = 1;
+			}
+			else
+			{
+				RemapColor(rgba.R, rgba.G, rgba.B, rgba.A);
+			}
+
+			Color[0] = (unsigned char)min(255.0f, rgba.R * 255.0f + 0.5f);
+			Color[1] = (unsigned char)min(255.0f, rgba.G * 255.0f + 0.5f);
+			Color[2] = (unsigned char)min(255.0f, rgba.B * 255.0f + 0.5f);
+			Color[3] = (unsigned char)min(255.0f, rgba.A * 255.0f + 0.5f);
+		}
+	}
+	am->GetParent()->UnlockMesh(numVerts, numIndices, desc);
+}
+
+void CAfxBaseFxStream::CActionGlowColorMap::RemapColor(float& r, float& g, float& b, float& a)
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_EditMutex);
+
+	if (!m_AfxColorLut) return;
+	
+	if (24 < m_Queue.size())
+	{
+		auto it = m_Cache.find(m_Queue.front());
+		if (0 == --(it->second.Count)) m_Cache.erase(it);
+		m_Queue.pop();
+	}
+
+	CAfxColorLut::CRgba iV(r, g, b, a);
+	m_Queue.push(iV);
+
+	auto it = m_Cache.find(iV);
+	if (it != m_Cache.end())
+	{
+		++it->second.Count;
+		r = it->second.Result.R;
+		g = it->second.Result.G;
+		b = it->second.Result.B;
+		a = it->second.Result.A;
+		return;
+	}
+
+	CAfxColorLut::CRgba result(iV);
+
+	if (m_AfxColorLut->Query(iV, &result))
+	{
+		r = result.R;
+		g = result.G;
+		b = result.B;
+		a = result.A;
+	}
+
+	m_Cache.emplace(std::piecewise_construct, std::forward_as_tuple(iV), std::forward_as_tuple(result));
+}
+
+/*
+float CAfxBaseFxStream::CActionGlowColorMap::DistSquared(const CRgba & x1, const CRgba & x2)
+{
+	return x1.R * x2.R + x1.G * x2.G + x1.B * x2.B + x1.A * x2.A;
+}
+
+void CAfxBaseFxStream::CActionGlowColorMap::MakeNaturalNeighbourLut()
+{
+	SOURCESDK::Vector *** mapVoronoi = nullptr;
+	float ***nearestDistTable = nullptr;
+	MakeLut(m_Lut);
+	MakeLut(mapVoronoi);
+
+	nearestDistTable = new float** [m_ResX];
+	for (int x = 0; x < m_ResX; ++x)
+	{
+		nearestDistTable[x] = new float* [m_ResY];
+		for (int y = 0; y < m_ResY; ++y)
+		{
+			nearestDistTable[x][y] = new float[m_ResZ];
+
+			for (int z = 0; z < m_ResZ; ++z)
+			{
+				SOURCESDK::Vector input(x / (float)(m_ResX - 1), y / (float)(m_ResY - 1), z / (float)(m_ResZ - 1));
+
+				SOURCESDK::Vector& lutV = m_Lut[x][y][z];
+				lutV.x = 0;
+				lutV.y = 0;
+				lutV.z = 0;
+
+				SOURCESDK::Vector* nearest = nullptr;
+				float nearestDist;
+
+				for (auto it = m_Map.begin(); it != m_Map.end(); ++it)
+				{
+					float dist = DistSquared(it->first, input.x, input.y, input.z);
+					if (nullptr == nearest || dist < nearestDist)
+					{
+						nearestDist = dist;
+						nearest = &it->second;
+					}
+				}
+
+				SOURCESDK::Vector& mapVoronoi = m_Lut[x][y][z];
+
+				if (nullptr != nearest)
+				{
+					mapVoronoi.x = nearest->x;
+					mapVoronoi.y = nearest->y;
+					mapVoronoi.z = nearest->z;
+					nearestDistTable[x][y][z] = nearestDist;
+				}
+				else
+				{
+					mapVoronoi.x = input.x;
+					mapVoronoi.y = input.y;
+					mapVoronoi.z = input.z;
+					nearestDistTable[x][y][z] = std::numeric_limits<float>::infinity();
+				}
+			}
+		}
+	}
+
+	for (int x = 0; x < m_ResX; ++x)
+	{
+		for (int y = 0; y < m_ResY; ++y)
+		{
+			for (int z = 0; z < m_ResZ; ++z)
+			{
+				SOURCESDK::Vector input(x / (float)(m_ResX - 1), y / (float)(m_ResY - 1), z / (float)(m_ResZ - 1));
+
+				SOURCESDK::Vector* nearest = nullptr;
+				float nearestDist;
+
+				for (auto it = m_Map.begin(); it != m_Map.end(); ++it)
+				{
+					float dist = DistSquared(it->first, input.x, input.y, input.z);
+					if (nullptr == nearest || dist < nearestDist)
+					{
+						nearestDist = dist;
+						nearest = &it->second;
+					}
+				}
+
+				if (nearest == nullptr)
+				{
+
+				}
+			}
+		}
+	}
+
+	for (int x = 0; x < m_ResX; ++x)
+	{
+		for (int y = 0; y < m_ResY; ++y)
+		{
+			for (int z = 0; z < m_ResZ; ++z)
+			{
+				SOURCESDK::Vector input(x / (float)(m_ResX - 1), y / (float)(m_ResY - 1), z / (float)(m_ResZ - 1));				
+
+
+			}
+		}
+	}
+
+	free nearestDist
+
+	FreeLut(mapVoronoi);
+}
+*/
+
+/*
+void CAfxBaseFxStream::CActionGlowColorMap::BowyerWatson(ColorMap_t& map, TetrahedonSet_t& tetras)
+{
+	std::unique_lock<std::shared_timed_mutex> lock(m_EditMutex);
+
+	m_RecentList.clear();
+	m_RecentMap.clear();
+
+	// https://en.wikipedia.org/wiki/Delaunay_triangulation
+	// https://en.wikipedia.org/wiki/Bowyer%E2%80%93Watson_algorithm --> pseudocode there is currently faulty, used http://paulbourke.net/papers/triangulate/ instead
+
+	const float epsilon = 1;
+
+	tetras.clear();
+	//https://math.stackexchange.com/questions/2670972/coordinates-of-a-tetrahedron-containing-a-cube
+	SOURCESDK::Vector v1 = {
+		1 + std::sqrtf(3.0f / 8.0f) + 1 / std::sqrtf(3.0f) + epsilon,
+		-1 / (2 * std::sqrtf(2)) - epsilon,
+		0 - epsilon
+	};
+	SOURCESDK::Vector v2 = {
+		1/2.0f + epsilon,
+		1+  (std::sqrtf(2) + std::sqrtf(3)) / 2.0f + epsilon,
+		0 - epsilon
+	};
+	SOURCESDK::Vector v3 = {
+		-1/std::sqrtf(3) -std::sqrtf(3/8.0f) - epsilon,
+		-1 / (2 * std::sqrtf(2)) - epsilon,
+		0 - epsilon
+	};
+	SOURCESDK::Vector v4 = {
+		1/2.0f + epsilon,
+		1/3.0f + std::sqrtf(3)/6.0f + epsilon,
+		1 + 2* std::sqrtf(2)/3.0f + std::sqrtf(6)/3.0f + epsilon
+	};
+
+	map[v1] = v1;
+	map[v2] = v2;
+	map[v3] = v3;
+	map[v4] = v4;
+	tetras.emplace(v1, v2, v3, v4, v1, v2, v3, v4);
+
+	for (ColorMap_t::const_iterator itPoint = map.begin(); itPoint != map.end(); ++itPoint)
+	{
+		std::set<CTriangle> poly;
+		for (TetrahedonSet_t::iterator itTetra = tetras.begin(); itTetra != tetras.end(); )
+		{
+			if (InsideCircumSphere(*itTetra, itPoint->first))
+			{
+				for (int i = 0; i < 4; ++i)
+				{
+					poly.emplace(GetTetraTriangle(*itTetra, i));
+				}
+
+				TetrahedonSet_t::iterator itT = std::next(itTetra);
+				tetras.erase(itTetra);
+				itTetra = itT;
+			}
+			else  ++itTetra;
+		}
+		for (std::set<CTriangle>::iterator itTri = poly.begin(); itTri != poly.end(); ++itTri)
+		{
+			for (std::set<CTriangle>::iterator itTri2 = std::next(itTri); itTri2 != poly.end(); )
+			{
+				if (Equal(*itTri, *itTri2))
+				{
+					std::set<CTriangle>::iterator itT = std::next(itTri2);
+					poly.erase(itTri2);
+					itTri2 = itT;
+				}
+				else ++itTri2;
+			}
+		}
+		for (std::set<CTriangle>::iterator itTri = poly.begin(); itTri != poly.end(); ++itTri)
+		{
+			tetras.emplace(itTri->s1, itTri->s2, itTri->s3, itPoint->first, itTri->d1, itTri->d2, itTri->d3, itPoint->second);
+		}
+	}
+	for (TetrahedonSet_t::iterator itTetra = tetras.begin(); itTetra != tetras.end(); )
+	{
+		if (Equal(itTetra->s1, v1) || Equal(itTetra->s2, v1) || Equal(itTetra->s3, v1) || Equal(itTetra->s4, v1)
+			|| Equal(itTetra->s1, v2) || Equal(itTetra->s2, v2) || Equal(itTetra->s3, v2) || Equal(itTetra->s4, v2)
+			|| Equal(itTetra->s1, v3) || Equal(itTetra->s2, v3) || Equal(itTetra->s3, v3) || Equal(itTetra->s4, v3)
+			|| Equal(itTetra->s1, v4) || Equal(itTetra->s2, v4) || Equal(itTetra->s3, v4) || Equal(itTetra->s4, v4)) {
+			TetrahedonSet_t::iterator itT = std::next(itTetra);
+			tetras.erase(itTetra);
+			itTetra = itT;
+		}
+		else ++itTetra;
+	}
+	map.erase(v1);
+	map.erase(v2);
+	map.erase(v3);
+	map.erase(v4);
+}
+
+bool CAfxBaseFxStream::CActionGlowColorMap::InsideTetra(const CTetrahedron& tetra, const SOURCESDK::Vector& p)
+{
+	// http://steve.hollasch.net/cgindex/geometry/ptintet.html
+
+	SOURCESDK::Vector v1 = tetra.s1;
+	SOURCESDK::Vector v2 = tetra.s2;
+	SOURCESDK::Vector v3 = tetra.s3;
+	SOURCESDK::Vector v4 = tetra.s4;
+
+	float D0_4_1 = v2.x * (v3.y * v4.z - v3.z * v4.y) - v3.x * (v2.y * v4.z - v2.z * v4.y) + v4.x * (v2.y * v3.z - v2.z * v3.y);
+	float D0_4_2 = v1.x * (v3.y * v4.z - v3.z * v4.y) - v3.x * (v1.y * v4.z - v1.z * v4.y) + v4.x * (v1.y * v3.z - v1.z * v3.y);
+	float D0_4_3 = v1.x * (v2.y * v4.z - v2.z * v4.y) - v2.x * (v1.y * v4.z - v1.z * v4.y) + v4.x * (v1.y * v2.z - v1.z * v2.y);
+	float D0_4_4 = v1.x * (v2.y * v3.z - v2.z * v3.y) - v2.x * (v1.y * v3.z - v1.z * v3.y) + v3.x * (v1.y * v2.z - v1.z * v2.y);
+	float D0_4 = -1 * (D0_4_1)+1 * (D0_4_2)-1 * (D0_4_3)+1 * (D0_4_4);
+
+	float D1_4_1 = D0_4_1;
+	float D1_4_2 = p.x * (v3.y * v4.z - v3.z * v4.y) - v3.x * (p.y * v4.z - p.z * v4.y) + v4.x * (p.y * v3.z - p.z * v3.y);
+	float D1_4_3 = p.x * (v2.y * v4.z - v2.z * v4.y) - v2.x * (p.y * v4.z - p.z * v4.y) + v4.x * (p.y * v2.z - p.z * v2.y);
+	float D1_4_4 = p.x * (v2.y * v3.z - v2.z * v3.y) - v2.x * (p.y * v3.z - p.z * v3.y) + v3.x * (p.y * v2.z - p.z * v2.y);
+	float D1_4 = -1 * (D1_4_1)+1 * (D1_4_2)-1 * (D1_4_3)+1 * (D1_4_4);
+
+	float D2_4_1 = p.x * (v3.y * v4.z - v3.z * v4.y) - v3.x * (p.y * v4.z - p.z * v4.y) + v4.x * (p.y * v3.z - p.z * v3.y);
+	float D2_4_2 = D0_4_2;
+	float D2_4_3 = v1.x * (p.y * v4.z - p.z * v4.y) - p.x * (v1.y * v4.z - v1.z * v4.y) + v4.x * (v1.y * p.z - v1.z * p.y);
+	float D2_4_4 = v1.x * (p.y * v3.z - p.z * v3.y) - p.x * (v1.y * v3.z - v1.z * v3.y) + v3.x * (v1.y * p.z - v1.z * p.y);
+	float D2_4 = -1 * (D2_4_1)+1 * (D2_4_2)-1 * (D2_4_3)+1 * (D2_4_4);
+
+	float D3_4_1 = v2.x * (p.y * v4.z - p.z * v4.y) - p.x * (v2.y * v4.z - v2.z * v4.y) + v4.x * (v2.y * p.z - v2.z * p.y);
+	float D3_4_2 = v1.x * (p.y * v4.z - p.z * v4.y) - p.x * (v1.y * v4.z - v1.z * v4.y) + v4.x * (v1.y * p.z - v1.z * p.y);
+	float D3_4_3 = D0_4_3;
+	float D3_4_4 = v1.x * (v2.y * p.z - v2.z * p.y) - v2.x * (v1.y * p.z - v1.z * p.y) + p.x * (v1.y * v2.z - v1.z * v2.y);
+	float D3_4 = -1 * (D3_4_1)+1 * (D3_4_2)-1 * (D3_4_3)+1 * (D3_4_4);
+
+	float D4_4_1 = v2.x * (v3.y * p.z - v3.z * p.y) - v3.x * (v2.y * p.z - v2.z * p.y) + p.x * (v2.y * v3.z - v2.z * v3.y);
+	float D4_4_2 = v1.x * (v3.y * p.z - v3.z * p.y) - v3.x * (v1.y * p.z - v1.z * p.y) + p.x * (v1.y * v3.z - v1.z * v3.y);
+	float D4_4_3 = v1.x * (v2.y * p.z - v2.z * p.y) - v2.x * (v1.y * p.z - v1.z * p.y) + p.x * (v1.y * v2.z - v1.z * v2.y);
+	float D4_4_4 = D0_4_4;
+	float D4_4 = -1 * (D4_4_1)+1 * (D4_4_2)-1 * (D4_4_3)+1 * (D4_4_4);
+
+	return std::signbit(D0_4) == std::signbit(D1_4) == std::signbit(D2_4) == std::signbit(D3_4) == std::signbit(D4_4);
+}
+
+bool CAfxBaseFxStream::CActionGlowColorMap::InsideCircumSphere(const CTetrahedron& tetra, const SOURCESDK::Vector& p, SOURCESDK::Vector* pCenter)
+{
+	SOURCESDK::Vector center = {
+		(tetra.s1.x + tetra.s2.x + tetra.s3.x + tetra.s4.x) / 4,
+		(tetra.s1.y + tetra.s2.y + tetra.s3.y + tetra.s4.y) / 4,
+		(tetra.s1.z + tetra.s2.z + tetra.s3.z + tetra.s4.z) / 4,
+	};
+
+	float rad = DistSquared(center, tetra.s1.x, tetra.s1.y, tetra.s1.z);
+	float dist = DistSquared(center, p.x, p.y, p.z);
+
+	if (pCenter) *pCenter = center;
+
+	return dist <= rad + AFX_MATH_EPS;
+}
+
+CAfxBaseFxStream::CActionGlowColorMap::CTriangle CAfxBaseFxStream::CActionGlowColorMap::GetTetraTriangle(const CTetrahedron& tetra, int i)
+{
+	switch (i)
+	{
+	default:
+	case 0:
+		return CTriangle(tetra.s1, tetra.s2, tetra.s3, tetra.d1, tetra.d2, tetra.d3);
+	case 1:
+		return CTriangle(tetra.s1, tetra.s2, tetra.s4, tetra.d1, tetra.d2, tetra.d4);
+	case 2:
+		return CTriangle(tetra.s1, tetra.s3, tetra.s4, tetra.d1, tetra.d3, tetra.d4);
+	case 3:
+		return CTriangle(tetra.s2, tetra.s3, tetra.s4, tetra.d2, tetra.d3, tetra.d4);
+	}
+}
+
+bool CAfxBaseFxStream::CActionGlowColorMap::Equal(const CTriangle& tri1, const CTriangle& tri2)
+{
+	return
+		Equal(tri1.s1, tri2.s1) && Equal(tri1.s2, tri2.s2) && Equal(tri1.s3, tri2.s3)
+		|| Equal(tri1.s1, tri2.s1) && Equal(tri1.s3, tri2.s2) && Equal(tri1.s2, tri2.s3)
+		|| Equal(tri1.s2, tri2.s1) && Equal(tri1.s1, tri2.s2) && Equal(tri1.s3, tri2.s3)
+		|| Equal(tri1.s2, tri2.s1) && Equal(tri1.s3, tri2.s2) && Equal(tri1.s1, tri2.s3)
+		|| Equal(tri1.s3, tri2.s1) && Equal(tri1.s1, tri2.s2) && Equal(tri1.s2, tri2.s3)
+		|| Equal(tri1.s3, tri2.s1) && Equal(tri1.s2, tri2.s2) && Equal(tri1.s1, tri2.s3);
+}
+
+
+bool CAfxBaseFxStream::CActionGlowColorMap::Equal(SOURCESDK::Vector a, SOURCESDK::Vector b)
+{
+	return abs(a.x - b.x) <= AFX_MATH_EPS && (a.y - b.y) <= AFX_MATH_EPS && (a.z - b.z) <= AFX_MATH_EPS;
+}
+*/
 
 #if AFX_SHADERS_CSGO
 // CAfxBaseFxStream::CActionStandardResolve:CShared ////////////////////////////

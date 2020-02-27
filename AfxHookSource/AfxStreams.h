@@ -8,6 +8,7 @@
 #include "WrpConsole.h"
 #include "AfxShaders.h"
 #include "csgo_Stdshader_dx9_Hooks.h"
+#include "csgo_Stdshader_dx9_Hooks.h"
 #include "CamIO.h"
 #include "MatRenderContextHook.h"
 #include "AfxImageBuffer.h"
@@ -15,6 +16,7 @@
 #include "AfxWriteFileLimiter.h"
 #include "AfxThreadedRefCounted.h"
 #include "MirvCalcs.h"
+#include "d3d9Hooks.h"
 
 #define AFX_SHADERS_CSGO 0
 
@@ -31,6 +33,7 @@
 #endif
 
 #include <shared/bvhexport.h>
+#include <shared/AfxColorLut.h>
 
 #include <cctype>
 
@@ -89,6 +92,8 @@ public:
 	virtual void Draw_2(IAfxMesh * am, SOURCESDK::CPrimList_csgo *pLists, int nLists) = 0;
 
 	virtual void DrawModulated(IAfxMesh * am, const SOURCESDK::Vector4D_csgo &vecDiffuseModulation, int firstIndex = -1, int numIndices = 0) = 0;
+
+	virtual void UnlockMesh(IAfxMesh* am, int numVerts, int numIndices, SOURCESDK::MeshDesc_t_csgo& desc) = 0;
 
 	/// <remarks>
 	/// This is a good chance for an implmentation
@@ -1116,6 +1121,8 @@ public:
 		{
 		}
 
+		virtual void Console_Edit(IWrpCommandArgs* args);
+
 		int GetRefCount(void)
 		{
 			return m_RefCount;
@@ -1180,6 +1187,11 @@ public:
 			am->GetParent()->DrawModulated(vecDiffuseModulation, firstIndex, numIndices);
 		}
 
+		virtual void UnlockMesh(CAfxBaseFxStreamContext* ch, IAfxMesh* am, int numVerts, int numIndices, SOURCESDK::MeshDesc_t_csgo& desc)
+		{
+			am->GetParent()->UnlockMesh(numVerts, numIndices, desc);
+		}
+
 #if AFX_SHADERS_CSGO
 		virtual void SetVertexShader(CAfxBaseFxStreamContext * ch, CAfx_csgo_ShaderState & state)
 		{
@@ -1219,6 +1231,12 @@ public:
 	{
 		m_Shared.Console_AddReplaceAction(args);
 	}
+
+	static void Console_AddGlowColorMapAction(IWrpCommandArgs* args)
+	{
+		m_Shared.Console_AddGlowColorMapAction(args);
+	}
+
 
 	static CAction * GetAction(CActionKey const & key)
 	{
@@ -1423,6 +1441,7 @@ protected:
 
 		void Console_ListActions(void);
 		void Console_AddReplaceAction(IWrpCommandArgs * args);
+		void Console_AddGlowColorMapAction(IWrpCommandArgs* args);
 		CAction * GetAction(CActionKey const & key);
 		bool RemoveAction(CActionKey const & key);
 
@@ -1764,7 +1783,7 @@ private:
 #endif
 
 	class CActionReplace
-	: public CAction
+	: public CAction, public ID3d9HooksModulationColorBlendOverride
 	{
 	public:
 		CActionReplace(
@@ -1823,7 +1842,17 @@ private:
 			}
  
 			ch->GetCtx()->GetOrg()->DrawInstances(nInstanceCount, pInstance); 
-		} 
+		}
+
+		void ID3d9HooksModulationColorBlendOverride::D3d9HooksModulationColorBlendOverride(float color[4]) {
+			if (m_OverrideColor) {
+				color[0] = m_Color[0]; color[1] = m_Color[1]; color[2] = m_Color[2];
+			}
+			
+			if (m_OverrideBlend) {
+				color[3] = m_Color[3];
+			}
+		}
 
 	protected:
 		virtual ~CActionReplace();
@@ -1841,6 +1870,66 @@ private:
 		CAfxTrackedMaterial * m_TrackedMaterial;
 
 		void ExamineMaterial(SOURCESDK::IMaterial_csgo *, bool & outSplinetype, bool & outUseinstancing);
+	};
+
+	// Todo: Speed up with cubetrees.
+	class CActionGlowColorMap
+		: public CAction
+		, public ID3d9HooksModulationColorBlendOverride
+	{
+	public:
+		virtual void Console_Edit(IWrpCommandArgs* args) override;
+
+		virtual void AfxUnbind(CAfxBaseFxStreamContext* ch) override;
+
+		virtual void MaterialHook(CAfxBaseFxStreamContext* ch, CAfxTrackedMaterial* trackedMaterial) override;
+
+		virtual void UnlockMesh(CAfxBaseFxStreamContext* ch, IAfxMesh* am, int numVerts, int numIndices, SOURCESDK::MeshDesc_t_csgo& desc) override;
+
+		void ID3d9HooksModulationColorBlendOverride::D3d9HooksModulationColorBlendOverride(float color[4]) override {
+
+			if (m_DebugColor)
+			{
+				color[3] = 1;
+			}
+			else
+			{
+				RemapColor(color[0], color[1], color[2], color[3]);
+			}
+		}
+
+
+	protected:
+		virtual ~CActionGlowColorMap();
+
+	private:
+
+		struct CRecentEntry
+		{
+			int Count;
+			CAfxColorLut::CRgba Result;
+
+			CRecentEntry(const CAfxColorLut::CRgba & result)
+				: Count(1)
+				, Result(result)
+			{
+			}
+
+			CRecentEntry(const CRecentEntry& other)
+				: Count(other.Count)
+				, Result(other.Result)
+			{
+			}
+		};
+
+		std::shared_timed_mutex m_EditMutex;
+		bool m_DebugColor = false;
+		std::queue<CAfxColorLut::CRgba> m_Queue;
+		std::map<CAfxColorLut::CRgba, CRecentEntry> m_Cache;
+		CAfxColorLut* m_AfxColorLut = nullptr;
+
+		void RemapColor(float& r, float& g, float& b, float &a); 
+
 	};
 
 	class CActionDebugDepth
@@ -2144,6 +2233,8 @@ private:
 		virtual void Draw_2(IAfxMesh * am, SOURCESDK::CPrimList_csgo *pLists, int nLists);
 
 		virtual void DrawModulated(IAfxMesh * am, const SOURCESDK::Vector4D_csgo &vecDiffuseModulation, int firstIndex = -1, int numIndices = 0);
+
+		virtual void UnlockMesh(IAfxMesh* am, int numVerts, int numIndices, SOURCESDK::MeshDesc_t_csgo& desc);
 
 		virtual void QueueFunctorInternal(IAfxCallQueue * aq, SOURCESDK::CSGO::CFunctor *pFunctor);
 

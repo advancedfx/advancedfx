@@ -43,6 +43,8 @@
             this.goldSrcToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.demoToolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.skyManagerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.l10nHLAELookUpTreesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.l10nToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
             this.developerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuCustomLoader = new System.Windows.Forms.ToolStripMenuItem();
@@ -153,6 +155,7 @@
             this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.calculatorsToolStripMenuItem,
             this.goldSrcToolStripMenuItem,
+            this.l10nHLAELookUpTreesToolStripMenuItem,
             this.toolStripMenuItem2,
             this.developerToolStripMenuItem});
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
@@ -164,7 +167,7 @@
             this.calculatorsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.menuFileSize});
             this.calculatorsToolStripMenuItem.Name = "calculatorsToolStripMenuItem";
-            this.calculatorsToolStripMenuItem.Size = new System.Drawing.Size(161, 22);
+            this.calculatorsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.calculatorsToolStripMenuItem.Text = "L10n Calculators";
             // 
             // menuFileSize
@@ -180,7 +183,7 @@
             this.demoToolsToolStripMenuItem,
             this.skyManagerToolStripMenuItem});
             this.goldSrcToolStripMenuItem.Name = "goldSrcToolStripMenuItem";
-            this.goldSrcToolStripMenuItem.Size = new System.Drawing.Size(161, 22);
+            this.goldSrcToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.goldSrcToolStripMenuItem.Text = "L10n GoldSrc";
             // 
             // demoToolsToolStripMenuItem
@@ -197,10 +200,25 @@
             this.skyManagerToolStripMenuItem.Text = "L10n Sky Manager";
             this.skyManagerToolStripMenuItem.Click += new System.EventHandler(this.MenuToolsGoldSrcSkyManager_Click);
             // 
+            // l10nHLAELookUpTreesToolStripMenuItem
+            // 
+            this.l10nHLAELookUpTreesToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.l10nToolStripMenuItem});
+            this.l10nHLAELookUpTreesToolStripMenuItem.Name = "l10nHLAELookUpTreesToolStripMenuItem";
+            this.l10nHLAELookUpTreesToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.l10nHLAELookUpTreesToolStripMenuItem.Text = "L10n AfxRgbaLut";
+            // 
+            // l10nToolStripMenuItem
+            // 
+            this.l10nToolStripMenuItem.Name = "l10nToolStripMenuItem";
+            this.l10nToolStripMenuItem.Size = new System.Drawing.Size(228, 22);
+            this.l10nToolStripMenuItem.Text = "L10n Natural Neighbour Map";
+            this.l10nToolStripMenuItem.Click += new System.EventHandler(this.l10nToolStripMenuItem_Click);
+            // 
             // toolStripMenuItem2
             // 
             this.toolStripMenuItem2.Name = "toolStripMenuItem2";
-            this.toolStripMenuItem2.Size = new System.Drawing.Size(158, 6);
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(177, 6);
             // 
             // developerToolStripMenuItem
             // 
@@ -210,8 +228,8 @@
             this.menuGuidToClipBoard,
             this.menuNewGuidToClipBoard});
             this.developerToolStripMenuItem.Name = "developerToolStripMenuItem";
-            this.developerToolStripMenuItem.Size = new System.Drawing.Size(161, 22);
-            this.developerToolStripMenuItem.Text = "l10n Developer";
+            this.developerToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.developerToolStripMenuItem.Text = "L10n Developer";
             // 
             // menuCustomLoader
             // 
@@ -562,5 +580,7 @@
         private System.Windows.Forms.Button buttonManual;
         private System.Windows.Forms.PictureBox pictureBoxHelp;
         private System.Windows.Forms.NotifyIcon notifyIcon1;
+        private System.Windows.Forms.ToolStripMenuItem l10nHLAELookUpTreesToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem l10nToolStripMenuItem;
     }
 }

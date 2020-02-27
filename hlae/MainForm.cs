@@ -396,5 +396,13 @@ namespace AfxGui
                 System.Diagnostics.Process.Start(helpEntry.Url);
             }
         }
+
+        private void l10nToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            using(AfxRgbaLutVoronoiGenerator dlg = new AfxRgbaLutVoronoiGenerator())
+            {
+                dlg.ShowDialog(this);
+            }
+        }
     }
 }

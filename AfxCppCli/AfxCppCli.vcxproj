@@ -92,7 +92,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)..\;$(ProjectDir)..\deps\release\prop\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>
       </AdditionalOptions>
     </ClCompile>
@@ -125,7 +125,7 @@
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>WIN32;NDEBUG;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)..\;$(ProjectDir)..\deps\release\prop\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>
       </AdditionalOptions>
     </ClCompile>
@@ -160,6 +160,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\deps\release\prop\shared\AfxMath.h" />
+    <ClInclude Include="..\shared\AfxColorLut.h" />
+    <ClInclude Include="ColorLutTools.h" />
     <ClInclude Include="old\tools\demotools\demotools.h" />
     <ClInclude Include="old\tools\demotools\DemoToolsProgressForm.h">
       <FileType>CppForm</FileType>
@@ -183,7 +186,10 @@
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\deps\release\prop\shared\AfxMath.cpp" />
+    <ClCompile Include="..\shared\AfxColorLut.cpp" />
     <ClCompile Include="AssemblyInfo.cpp" />
+    <ClCompile Include="ColorLutTools.cpp" />
     <ClCompile Include="old\tools\demotools\demotools.cpp" />
     <ClCompile Include="old\tools\demotools\DemoToolsProgressForm.cpp" />
     <ClCompile Include="old\tools\demotools\demotoolswizard.cpp" />

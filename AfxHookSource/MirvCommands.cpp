@@ -958,10 +958,18 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 							CAfxBaseFxStream::Console_AddReplaceAction(&subArgs);
 							return;
 						}
+						else if (!_stricmp(cmd3, "glowColorMap"))
+						{
+							CSubWrpCommandArgs subArgs(args, 4);
+
+							CAfxBaseFxStream::Console_AddGlowColorMapAction(&subArgs);
+							return;
+						}
 					}
 
 					Tier0_Msg(
 						"mirv_streams actions add replace [...] - Add replace action.\n"
+						"mirv_streams actions add glowColorMap [...] - Add glowColorMap action (can be edited after adding it).\n"
 					);
 					return;
 				}
@@ -981,11 +989,27 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 						return;
 					}
 				}
+				else if(!_stricmp(cmd2, "edit"))
+				{
+					if(4 <= argc)
+					{
+						char const * cmd3 = args->ArgV(3);
+						if (CAfxBaseFxStream::CAction* action = CAfxBaseFxStream::GetAction(CAfxBaseFxStream::CActionKey(cmd3)))
+						{
+							CSubWrpCommandArgs subArgs(args, 4);
+							action->Console_Edit(&subArgs);
+							return;
+						}
+						Tier0_Warning("No action with key \"%s\" found.\n", cmd3);
+						return;
+					}
+				}
 			}
 			Tier0_Msg(
 				"mirv_streams actions add [...] - Add an action.\n"
 				"mirv_streams actions print - Print available actions.\n"
 				"mirv_streams actions remove <actionName> - Remove an action named <actionName>.\n"
+				"mirv_streams actions edit <actionName> [...] - Edit action named <actionName>.\n"
 			);
 			return;
 		}

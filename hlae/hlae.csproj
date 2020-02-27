@@ -96,6 +96,12 @@
     </Compile>
     <Compile Include="Globals.cs" />
     <Compile Include="HlaeErrors.cs" />
+    <Compile Include="AfxRgbaLutVoronoiGenerator.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AfxRgbaLutVoronoiGenerator.Designer.cs">
+      <DependentUpon>AfxRgbaLutVoronoiGenerator.cs</DependentUpon>
+    </Compile>
     <Compile Include="L10n.cs" />
     <Compile Include="LaunchCsgo.cs" />
     <Compile Include="LaunchCsgoForm.cs">
@@ -134,8 +140,20 @@
       <DependentUpon>CustomLoaderForm.cs</DependentUpon>
     </Compile>
     <Compile Include="UpdateCheck.cs" />
+    <Compile Include="AfxRgbaLutControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="AfxRgbaLutControl.Designer.cs">
+      <DependentUpon>AfxRgbaLutControl.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="AfxRgbaLutControl.resx">
+      <DependentUpon>AfxRgbaLutControl.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="ErrorDialogue.resx">
       <DependentUpon>ErrorDialogue.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="AfxRgbaLutVoronoiGenerator.resx">
+      <DependentUpon>AfxRgbaLutVoronoiGenerator.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="LaunchCsgoForm.resx">
       <DependentUpon>LaunchCsgoForm.cs</DependentUpon>

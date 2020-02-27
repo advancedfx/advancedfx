@@ -468,6 +468,9 @@
     <ClCompile Include="..\shared\MirvCampath.cpp">
       <Filter>shared</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared\AfxColorLut.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\bvhexport.h">
@@ -873,6 +876,9 @@
       <Filter>shared</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\MirvCampath.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\AfxColorLut.h">
       <Filter>shared</Filter>
     </ClInclude>
   </ItemGroup>

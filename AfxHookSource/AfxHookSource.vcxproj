@@ -169,6 +169,7 @@
     <ClCompile Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.cpp" />
     <ClCompile Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\tier1\KeyValues.cpp" />
     <ClCompile Include="..\deps\release\prop\shared\AfxMath.cpp" />
+    <ClCompile Include="..\shared\AfxColorLut.cpp" />
     <ClCompile Include="..\shared\AfxConsole.cpp" />
     <ClCompile Include="..\shared\AfxDetours.cpp" />
     <ClCompile Include="..\shared\binutils.cpp" />
@@ -301,6 +302,7 @@
     <ClInclude Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.h" />
     <ClInclude Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\public\vstdlib\IKeyValuesSystem.h" />
     <ClInclude Include="..\deps\release\prop\shared\AfxMath.h" />
+    <ClInclude Include="..\shared\AfxColorLut.h" />
     <ClInclude Include="..\shared\MirvCampath.h" />
     <ClInclude Include="..\shared\AfxConsole.h" />
     <ClInclude Include="..\shared\AfxDetours.h" />

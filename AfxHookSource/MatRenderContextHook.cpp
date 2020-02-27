@@ -221,8 +221,16 @@ __declspec(naked) void CAfxMesh::ModifyBegin(int firstVertex, int numVerts, int 
 __declspec(naked) void CAfxMesh::ModifyEnd(SOURCESDK::MeshDesc_t_csgo& desc)
 { NAKED_JMP_CLASSMEMBERIFACE_OFS_FN_DBG(CAfxMesh, m_Parent, 0, 19) }
 
-__declspec(naked) void CAfxMesh::UnlockMesh(int numVerts, int numIndices, SOURCESDK::MeshDesc_t_csgo &desc)
-{ NAKED_JMP_CLASSMEMBERIFACE_OFS_FN_DBG(CAfxMesh, m_Parent, 0, 20) }
+//__declspec(naked)
+void CAfxMesh::UnlockMesh(int numVerts, int numIndices, SOURCESDK::MeshDesc_t_csgo &desc)
+{ //NAKED_JMP_CLASSMEMBERIFACE_OFS_FN_DBG(CAfxMesh, m_Parent, 0, 20)
+	IAfxStreamContext* stream = m_AfxMatRenderContext->Hook_get();
+
+	if (stream)
+		stream->UnlockMesh(this, numVerts, numIndices, desc);
+	else
+		m_Parent->UnlockMesh(numVerts, numIndices, desc);
+}
 
 __declspec(naked) void CAfxMesh::ModifyBeginEx(bool bReadOnly, int firstVertex, int numVerts, int firstIndex, int numIndices, SOURCESDK::MeshDesc_t_csgo &desc)
 { NAKED_JMP_CLASSMEMBERIFACE_OFS_FN_DBG(CAfxMesh, m_Parent, 0, 21) }

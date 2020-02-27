@@ -15,6 +15,13 @@ HRESULT WINAPI new_Direct3DCreate9Ex(UINT SDKVersion, IDirect3D9Ex** ppD3DDevice
 bool AfxD3D9_Check_Supports_R32F_With_Blending(void);
 
 
+class __declspec(novtable) ID3d9HooksModulationColorBlendOverride abstract
+{
+public:
+	/// <remarks>color is in bgr</remarks>
+	virtual void D3d9HooksModulationColorBlendOverride(float color[4]) = 0;
+};
+
 //
 // Override state management:
 //
@@ -28,16 +35,10 @@ void AfxD3D9PushOverrideState(bool clean);
 void AfxD3D9PopOverrideState(void);
 
 /// <remarks>IDirect3D9Device only (i.e. CS:GO but not CSS).</remarks>
-void AfxD3D9OverrideBegin_ModulationColor(float const color[3]);
+void AfxD3D9OverrideBegin_ModulationColorBlend(ID3d9HooksModulationColorBlendOverride* overrideFn);
 
 /// <remarks>IDirect3D9Device only (i.e. CS:GO but not CSS).</remarks>
-void AfxD3D9OverrideEnd_ModulationColor(void);
-
-/// <remarks>IDirect3D9Device only (i.e. CS:GO but not CSS).</remarks>
-void AfxD3D9OverrideBegin_ModulationBlend(float value);
-
-/// <remarks>IDirect3D9Device only (i.e. CS:GO but not CSS).</remarks>
-void AfxD3D9OverrideEnd_ModulationBlend(void);
+void AfxD3D9OverrideEnd_ModulationColorBlend(void);
 
 /// <remarks>IDirect3D9Device only (i.e. CS:GO but not CSS).</remarks>
 void AfxD3D9OverrideBegin_D3DRS_BLENDOP(DWORD value);
