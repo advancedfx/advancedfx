@@ -6,6 +6,25 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.75.0</version>
+<time>2020-02-28T08:45Z</time>
+<changes>
+<change type="updated">
+Updated / changed many internal aspects mirv_streams to accommodate the latest CS:GO updates.
+</change>
+<change type="added">
+Added match options className, isPlayer, teamNumber to mirv_streams edit streamNameHere actionFilter addEx.
+</change>
+<change type="updated">
+Updated afx/wh.cfg accordingly.
+</change>
+</changes>
+<comments>Please give us feedback on Twitter or Discord if the FPS / performace of mirv_streams is about the same, changed notably and if it changed notably in which way. Also in case you notice memory leaks that weren't there before, please notify us.</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.74.0</version>
 <time>2020-02-18T18:18Z</time>
 <changes>

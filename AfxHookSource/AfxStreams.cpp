@@ -1568,8 +1568,10 @@ CAfxBaseFxStream::CAfxBaseFxStream()
 , m_OtherEngineAction(0)
 , m_OtherSpecialAction(0)
 , m_VguiAction(0)
+, m_InvalidateMap(false)
 {
-	m_MapRleaseNotification = new CMapRleaseNotification(this);
+	m_Context = new CAfxBaseFxStreamContext(this);
+
 	m_PickerMaterialsRleaseNotification = new CPickerMaterialsRleaseNotification(this);
 
 	m_Shared.AddRef();
@@ -1631,7 +1633,8 @@ CAfxBaseFxStream::~CAfxBaseFxStream()
 	m_Shared.Release();
 
 	delete m_PickerMaterialsRleaseNotification;
-	delete m_MapRleaseNotification;
+
+	delete m_Context;
 }
 
 void CAfxBaseFxStream::AfxStreamsInit(void)
@@ -1751,151 +1754,144 @@ void CAfxBaseFxStream::MainThreadInitialize(void)
 void CAfxBaseFxStream::LevelShutdown(void)
 {
 	Picker_Stop();
-	InvalidateMap(); // required because cached entity handles are only unique per demo!
+	InvalidateMap();
+	if (m_Context) m_Context->InvalidateMap();
 	m_Shared.LevelShutdown();
 }
 
-void CAfxBaseFxStream::OnRenderBegin(IAfxBasefxStreamModifier * modifier, const AfxViewportData_t & viewport, const SOURCESDK::VMatrix & projectionMatrix, const SOURCESDK::VMatrix & projectionMatrixSky)
+void CAfxBaseFxStream::OnRenderBegin(IAfxBasefxStreamModifier* modifier, const AfxViewportData_t& viewport, const SOURCESDK::VMatrix& projectionMatrix, const SOURCESDK::VMatrix& projectionMatrixSky, const std::list<SOURCESDK::CSGO::CBaseHandle>& deletedEnts)
 {
-	CAfxRenderViewStream::OnRenderBegin(modifier, viewport, projectionMatrix, projectionMatrixSky);
+	CAfxRenderViewStream::OnRenderBegin(modifier, viewport, projectionMatrix, projectionMatrixSky, deletedEnts);
 
-	m_ActiveStreamContext = m_Shared.RequestStreamContext();
-
-	m_ActiveStreamContext->RenderBegin(this, modifier, viewport, projectionMatrix, projectionMatrixSky);
+	m_Context->QueueBegin(CAfxBaseFxStreamData(
+		modifier,
+		viewport,
+		projectionMatrix,
+		projectionMatrixSky,
+		deletedEnts,
+		m_InvalidateMap
+	), true);
+	m_InvalidateMap = false;
 }
 
 void CAfxBaseFxStream::OnRenderEnd()
 {
-	m_ActiveStreamContext->RenderEnd();
-
-	m_ActiveStreamContext = nullptr;
+	m_Context->QueueEnd(true);
 
 	CAfxRenderViewStream::OnRenderEnd();
 }
 
-CAfxBaseFxStream::CAction * CAfxBaseFxStream::RetrieveAction(CAfxTrackedMaterial * tackedMaterial, const CEntityInfo & currentEntity)
+CAfxBaseFxStream::CAction* CAfxBaseFxStream::RetrieveAction(CAfxTrackedMaterial* trackedMaterial, const CEntityInfo& currentEntity)
 {
-	SOURCESDK::IMaterialInternal_csgo * material = tackedMaterial->GetMaterial();
+	CAction* action = nullptr;
 
-	CAction * action = 0;
-
-	if (Picker_GetHidden(tackedMaterial, currentEntity))
+	if (Picker_GetHidden(trackedMaterial, currentEntity.Handle))
 	{
-		action = GetAction(tackedMaterial, m_Shared.NoDrawAction_get());
+		action = GetAction(trackedMaterial, m_Shared.NoDrawAction_get());
+	}
+
+	return action;
+}
+
+CAfxBaseFxStream::CAction * CAfxBaseFxStream::CAfxBaseFxStreamContext::RetrieveAction(CAfxTrackedMaterial * trackedMaterial, const CEntityInfo & currentEntity)
+{
+	CAction * action = nullptr;
+
+	std::unique_lock<std::mutex> lock(m_MapMutex);
+	std::map<CAfxTrackedMaterial *, CCacheEntry>::iterator it = m_Map.find(trackedMaterial);
+
+	if (it == m_Map.end())
+	{
+		it = m_Map.emplace(std::piecewise_construct, std::forward_as_tuple(trackedMaterial), std::forward_as_tuple()).first;
+		trackedMaterial->AddNotifyee(m_MapRleaseNotification);
+	}
+
+	std::map<SOURCESDK::CSGO::CBaseHandle, CCacheEntry::CachedData>::iterator itEnt = it->second.EntityActions.find(currentEntity.Handle);
+
+	if (itEnt == it->second.EntityActions.end())
+	{
+		itEnt = it->second.EntityActions.emplace(std::piecewise_construct, std::forward_as_tuple(currentEntity.Handle), std::forward_as_tuple()).first;
+		m_EntCaches.emplace(std::piecewise_construct, std::forward_as_tuple(currentEntity.Handle),
+			std::forward_as_tuple(&(it->second)));
+	}
+
+	action = itEnt->second.Action;
+
+	if (action && !(itEnt->second.Data == currentEntity.Data))
+	{
+		itEnt->second.Action = nullptr;
+		itEnt->second.Data = currentEntity.Data;
+		action = nullptr;
 	}
 
 	if (!action)
 	{
-		m_MapMutex.lock_shared();
-
-		std::map<CAfxTrackedMaterial *, CCacheEntry>::iterator it = m_Map.find(tackedMaterial);
-
-		if (it != m_Map.end())
+		for (std::list<CActionFilterValue>::iterator itAf = m_Stream->m_ActionFilter.begin(); itAf != m_Stream->m_ActionFilter.end(); ++itAf)
 		{
-			std::map<SOURCESDK::CSGO::CBaseHandle, CAction *>::iterator itEnt = it->second.EntityActions.find(currentEntity.Handle);
-			if (itEnt != it->second.EntityActions.end())
-				action = itEnt->second;
-			else
-				action = it->second.DefaultAction;
-
-			m_MapMutex.unlock_shared();
-		}
-		else
-		{
-			m_MapMutex.unlock_shared();
-			m_MapMutex.lock();
-
-			it = m_Map.find(tackedMaterial);
-
-			if (it != m_Map.end())
+			if (itAf->CalcMatch_Material(trackedMaterial))
 			{
-				std::map<SOURCESDK::CSGO::CBaseHandle, CAction *>::iterator itEnt = it->second.EntityActions.find(currentEntity.Handle);
-				if (itEnt != it->second.EntityActions.end())
-					action = itEnt->second;
-				else
-					action = it->second.DefaultAction;
-			}
-
-			if (!action)
-			{
-				// determine current action and cache it.
-
-				CCacheEntry & entry = m_Map[tackedMaterial];
-
-				tackedMaterial->AddNotifyee(m_MapRleaseNotification);
-
-				for (std::list<CActionFilterValue>::iterator it = m_ActionFilter.begin(); it != m_ActionFilter.end(); ++it)
+				if (itAf->GetUseEntity())
 				{
-					if (it->CalcMatch_Material(tackedMaterial))
+					if (itAf->CalcMatch_Entity(currentEntity))
 					{
-						if (it->GetUseEntity())
-						{
-							if(entry.EntityActions.end() == entry.EntityActions.find(currentEntity.Handle) && it->CalcMatch_Entity(currentEntity))
-							{
-								CAction * itAction = GetAction(tackedMaterial, it->GetMatchAction());
-								itAction->AddRef();
-								entry.EntityActions[currentEntity.Handle] = itAction;
-
-								if (!action)
-								{
-									action = itAction;
-								}
-							}
-						}
-						else
-						{
-							if (!entry.DefaultAction)
-							{
-								CAction * itAction = GetAction(tackedMaterial, it->GetMatchAction());
-								itAction->AddRef();
-								entry.DefaultAction = itAction;
-
-								if (!action)
-								{
-									action = itAction;
-								}
-							}
-
-							break;
-						}
+						action = m_Stream->GetAction(trackedMaterial, itAf->GetMatchAction());
+						action->AddRef();
+						itEnt->second.Action = action;
+						itEnt->second.Data = currentEntity.Data;
+						break;
 					}
 				}
-
-				if (!entry.DefaultAction)
+				else
 				{
-					CAction * itAction = GetAction(tackedMaterial);
-					itAction->AddRef();
-					entry.DefaultAction = itAction;
+					action = m_Stream->GetAction(trackedMaterial, itAf->GetMatchAction());
+					action->AddRef();
+					itEnt->second.Action = action;
+					itEnt->second.Data = currentEntity.Data;
 
-					if (!action)
-						action = entry.DefaultAction;
-				}
-
-				Assert(0 != action);
-
-				if (m_DebugPrint)
-				{
-					const char * name = material->GetName();
-					const char * groupName = material->GetTextureGroupName();
-					const char * shaderName = material->GetShaderName();
-					bool isErrorMaterial = material->IsErrorMaterial();
-
-					Tier0_Msg("Stream: RetrieveAction: Material action cache miss: \"handle=%i\" \"name=%s\" \"textureGroup=%s\" \"shader=%s\" \"isErrrorMaterial=%u\" -> %s\n"
-						, currentEntity.Handle
-						, name
-						, groupName
-						, shaderName
-						, isErrorMaterial ? 1 : 0
-						, action ? action->Key_get().m_Name.c_str() : "(null)");
+					break;
 				}
 			}
+		}
 
-			m_MapMutex.unlock();
+		if (!action)
+		{
+			action = m_Stream->GetAction(trackedMaterial, currentEntity);
+			action->AddRef();
+			itEnt->second.Action = action;
+			itEnt->second.Data = currentEntity.Data;
+		}
+
+		Assert(0 != action);
+
+		if (m_Stream->m_DebugPrint)
+		{
+			SOURCESDK::IMaterialInternal_csgo* material = trackedMaterial->GetMaterial();
+
+			const char* name = material->GetName();
+			const char* groupName = material->GetTextureGroupName();
+			const char* shaderName = material->GetShaderName();
+			bool isErrorMaterial = material->IsErrorMaterial();
+			const char* className = currentEntity.Data.ClassName;
+			bool isPlayer = currentEntity.Data.IsPlayer;
+			int teamNumber = currentEntity.Data.TeamNumber;
+
+			Tier0_Msg("Stream: RetrieveAction: Material action cache miss: \"handle=%i\" \"name=%s\" \"textureGroup=%s\" \"shader=%s\" \"isErrrorMaterial=%u\" \"className=%s\" \"isPlayer=%u\" \"teamNumber=%u\" -> %s\n"
+				, currentEntity.Handle
+				, name
+				, groupName
+				, shaderName
+				, isErrorMaterial ? 1 : 0
+				, className
+				, isPlayer ? 1 : 0
+				, teamNumber
+				, action ? action->Key_get().m_Name.c_str() : "(null)");
 		}
 	}
 
 	if(false)
 	{
+		SOURCESDK::IMaterialInternal_csgo* material = trackedMaterial->GetMaterial();
+
 		const char * name = material->GetName();
 		const char * groupName = material->GetTextureGroupName();
 		const char * shaderName = material->GetShaderName();
@@ -1913,18 +1909,19 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::RetrieveAction(CAfxTrackedMaterial
 	return action;
 }
 
-CAfxBaseFxStream::CAction * CAfxBaseFxStream::GetAction(CAfxTrackedMaterial * trackedMaterial)
+CAfxBaseFxStream::CAction * CAfxBaseFxStream::GetAction(CAfxTrackedMaterial * trackedMaterial, const CEntityInfo& currentEntity)
 {
 	SOURCESDK::IMaterial_csgo * material = trackedMaterial->GetMaterial();
 
 	const char * groupName =  material->GetTextureGroupName();
 	const char * name = material->GetName();
-	//const char * shaderName = material->GetShaderName();
+	const char * shaderName = material->GetShaderName();
 	bool isErrorMaterial = material->IsErrorMaterial();
 
 	if(isErrorMaterial)
 		return GetAction(trackedMaterial, m_ErrorMaterialAction);
-	else
+	else if(currentEntity.Data.IsPlayer || 0 == strcmp(shaderName,"Character"))
+		return GetAction(trackedMaterial, m_PlayerModelsAction);
 	if(!strcmp("ClientEffect textures", groupName))
 		return GetAction(trackedMaterial, m_ClientEffectTexturesAction);
 	else
@@ -2305,26 +2302,23 @@ void CAfxBaseFxStream::DebugPrint_set(bool value)
 	m_DebugPrint = value;
 }
 
-void CAfxBaseFxStream::InvalidateMap(void)
+void CAfxBaseFxStream::InvalidateMap()
 {
-	m_MapMutex.lock();
+	m_InvalidateMap = true;
+}
 
-	if(m_DebugPrint)
-		Tier0_Msg("Stream: Invalidating material cache.\n");
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::InvalidateMap()
+{
+	if(m_Stream->m_DebugPrint) Tier0_Msg("Stream: Invalidating material cache.\n");
+
+	std::unique_lock<std::mutex> lock(m_MapMutex);
 
 	for(std::map<CAfxTrackedMaterial *, CCacheEntry>::iterator it = m_Map.begin(); it != m_Map.end(); ++it)
 	{
-		for (std::map<SOURCESDK::CSGO::CBaseHandle, CAction *>::iterator itIt = it->second.EntityActions.begin(); itIt != it->second.EntityActions.end(); ++itIt)
-		{
-			itIt->second->Release();
-		}
-
-		it->second.DefaultAction->Release();
 		it->first->RemoveNotifyee(m_MapRleaseNotification);
 	}
 	m_Map.clear();
-
-	m_MapMutex.unlock();
+	m_EntCaches.clear();
 }
 
 void CAfxBaseFxStream::Picker_Stop(void)
@@ -2363,10 +2357,10 @@ void CAfxBaseFxStream::Picker_Print(void)
 		Tier0_Msg("\"name=%s\" \"textureGroup=%s\" \"shader=%s\" \"isErrorMaterial=%i\" (%s)\n", material->GetName(), material->GetTextureGroupName(), material->GetShaderName(), material->IsErrorMaterial() ? 1 : 0, m_PickingMaterials && (1 == (idx & 0x1)) ? "hidden" : "visible");
 	}
 	Tier0_Msg("---- Entities: ----\n");
-	for (std::map<CEntityInfo, CPickerEntValue>::iterator it = m_PickerEntities.begin(); it != m_PickerEntities.end(); ++it)
+	for (std::map<SOURCESDK::CSGO::CBaseHandle, CPickerEntValue>::iterator it = m_PickerEntities.begin(); it != m_PickerEntities.end(); ++it)
 	{
 		int idx = it->second.Index;
-		Tier0_Msg("\"handle=%i\" (%s)\n", it->first.Handle, m_PickingEntities && (1 == (idx & 0x1)) ? "hidden" : "visible");
+		Tier0_Msg("\"handle=%i\" (%s)\n", it->first, m_PickingEntities && (1 == (idx & 0x1)) ? "hidden" : "visible");
 	}
 	Tier0_Msg("---- END ----\n");
 }
@@ -2390,7 +2384,7 @@ void CAfxBaseFxStream::Picker_Pick(bool pickEntityNotMaterial, bool wasVisible)
 			std::set<CAfxMaterialKey *> usedMats;
 			int index = 0;
 
-			for (std::map<CEntityInfo, CPickerEntValue>::iterator it = m_PickerEntities.begin(); it != m_PickerEntities.end(); )
+			for (std::map<SOURCESDK::CSGO::CBaseHandle, CPickerEntValue>::iterator it = m_PickerEntities.begin(); it != m_PickerEntities.end(); )
 			{
 				int oldIndex = it->second.Index;
 
@@ -2421,7 +2415,7 @@ void CAfxBaseFxStream::Picker_Pick(bool pickEntityNotMaterial, bool wasVisible)
 
 		if (m_PickingMaterials)
 		{
-			std::set<CEntityInfo> usedEnts;
+			std::set<SOURCESDK::CSGO::CBaseHandle> usedEnts;
 			int index = 0;
 
 			for (std::map<CAfxTrackedMaterial *, CPickerMatValue>::iterator it = m_PickerMaterials.begin(); it != m_PickerMaterials.end(); )
@@ -2442,7 +2436,7 @@ void CAfxBaseFxStream::Picker_Pick(bool pickEntityNotMaterial, bool wasVisible)
 				}
 			}
 
-			for (std::map<CEntityInfo, CPickerEntValue>::iterator it = m_PickerEntities.begin(); it != m_PickerEntities.end(); )
+			for (std::map<SOURCESDK::CSGO::CBaseHandle, CPickerEntValue>::iterator it = m_PickerEntities.begin(); it != m_PickerEntities.end(); )
 			{
 				if (usedEnts.end() != usedEnts.find(it->first))
 					++it;
@@ -2488,7 +2482,7 @@ void CAfxBaseFxStream::Picker_Pick(bool pickEntityNotMaterial, bool wasVisible)
 	m_PickingMaterials = !pickEntityNotMaterial;
 }
 
-bool CAfxBaseFxStream::Picker_GetHidden(CAfxTrackedMaterial * tackedMaterial, const CEntityInfo & currentEntity)
+bool CAfxBaseFxStream::Picker_GetHidden(CAfxTrackedMaterial * tackedMaterial, SOURCESDK::CSGO::CBaseHandle currentEntity)
 {
 	if (!m_PickerActive)
 		return false;
@@ -2524,7 +2518,7 @@ bool CAfxBaseFxStream::Picker_GetHidden(CAfxTrackedMaterial * tackedMaterial, co
 			}
 			if (!hidden && m_PickingEntities)
 			{
-				std::map<CEntityInfo, CPickerEntValue>::iterator itEnt = m_PickerEntities.find(currentEntity);
+				std::map<SOURCESDK::CSGO::CBaseHandle, CPickerEntValue>::iterator itEnt = m_PickerEntities.find(currentEntity);
 				hidden = (m_PickerEntities.end() != itEnt) && (((itEnt->second.Index) & 0x1) == 1);
 			}
 		}
@@ -2541,7 +2535,7 @@ bool CAfxBaseFxStream::Picker_GetHidden(CAfxTrackedMaterial * tackedMaterial, co
 				itMat->second.Entities.insert(currentEntity);
 			}
 
-			std::map<CEntityInfo, CPickerEntValue>::iterator itEnt = m_PickerEntities.lower_bound(currentEntity);
+			std::map<SOURCESDK::CSGO::CBaseHandle, CPickerEntValue>::iterator itEnt = m_PickerEntities.lower_bound(currentEntity);
 			if (itEnt == m_PickerEntities.end() || (currentEntity < itEnt->first))
 			{
 				itEnt = m_PickerEntities.emplace_hint(itEnt, std::piecewise_construct, std::forward_as_tuple(currentEntity), std::forward_as_tuple(this, m_PickerEntities.size(), tackedMaterial));
@@ -2644,34 +2638,44 @@ void CAfxBaseFxStream::SetAction(CAction * & target, CAction * src)
 
 // CAfxBaseFxStream::CAfxBaseFxStreamContext ///////////////////////////////
 
-void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin()
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin(const CAfxBaseFxStreamData& data, bool isRoot)
 {
-	m_DrawingHud = false;
-	m_DrawingSkyBoxView = false;
-	m_CurrentEntity.Handle = SOURCESDK_CSGO_INVALID_EHANDLE_INDEX;
+	IAfxMatRenderContext* ctx = GetCurrentContext();
 
-	m_Ctx = GetCurrentContext();
-	m_Ctx->Hook_set(this);
+	ctx->Hook_set(this);
 
-	if (SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue())
+	if (isRoot)
 	{
-		m_ChildContext = CAfxBaseFxStream::m_Shared.RequestStreamContext();
+		m_RootContext = ctx;
+	}
 
-		m_ChildContext->m_IsRootCtx = false;
-		m_ChildContext->m_Stream = this->m_Stream;
-		m_ChildContext->m_Viewport = this->m_Viewport;
-		m_ChildContext->m_IsNextDepth = this->m_IsNextDepth;
-		m_ChildContext->m_ProjectionMatrix = this->m_ProjectionMatrix;
-		m_ChildContext->m_ProjectionMatrixSky = this->m_ProjectionMatrixSky;
-		m_ChildContext->m_Modifier = this->m_Modifier;
-
-		queue->QueueFunctor(new CQueueBeginFunctor(m_ChildContext));
+	if (SOURCESDK::CSGO::ICallQueue * queue = ctx->GetOrg()->GetCallQueue())
+	{
+		queue->QueueFunctor(new CQueueBeginFunctor(this, data));
 	}
 	else
 	{
 		// Is leaf context.
 
-		m_ChildContext = 0;
+		m_Data = data;
+		m_IsNextDepth = false;
+		m_DrawingHud = false;
+		m_DrawingSkyBoxView = false;
+		m_CurrentEntity.Handle = SOURCESDK_CSGO_INVALID_EHANDLE_INDEX;
+		m_CurrentEntity.Data.ClassName = "";
+		m_CurrentEntity.Data.IsPlayer = false;
+		m_CurrentEntity.Data.TeamNumber = 0;
+
+		if (m_Data.InvalidateMap)
+		{
+			m_Data.InvalidateMap = false;
+			InvalidateMap();
+		}
+
+		for (auto it = m_Data.DeletedEntities.begin(); it != m_Data.DeletedEntities.end(); ++it)
+		{
+			m_EntCaches.erase(*it);
+		}
 
 		if (EDrawDepth_None != this->GetStream()->m_DrawDepth)
 		{
@@ -2684,16 +2688,16 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin()
 
 		if (m_Stream->GetClearBeforeRender())
 		{
-			auto orgCtx = m_Ctx->GetOrg();
+			auto orgCtx = ctx->GetOrg();
 
 			unsigned char r = 0;
 			unsigned char g = 0;
 			unsigned char b = 0;
 			unsigned char a = 255;
 
-			if (m_Modifier)
+			if (m_Data.Modifier)
 			{
-				m_Modifier->OverrideClearColor(r, g, b, a);
+				m_Data.Modifier->OverrideClearColor(r, g, b, a);
 			}
 
 			orgCtx->ClearColor4ub(r, g, b, a);
@@ -2702,14 +2706,16 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin()
 	}
 }
 
-void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd()
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd(bool isRoot)
 {
+	IAfxMatRenderContext* ctx = GetCurrentContext();
+
 	// These need to happen before switching to new Queue of course:
-	SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue();
+	SOURCESDK::CSGO::ICallQueue * queue = ctx->GetOrg()->GetCallQueue();
 
 	if (queue)
 	{
-		queue->QueueFunctor(new CQueueEndFunctor(m_ChildContext));
+		queue->QueueFunctor(new CQueueEndFunctor(this));
 	}
 	else
 	{
@@ -2725,39 +2731,15 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd()
 
 			AfxD3D9PopOverrideState();
 		}
+
 	}
 
-	m_Ctx->Hook_set(0);
-	m_Ctx = 0;
-
-	if (!queue)
+	if (isRoot)
 	{
-		// Is leaf context.
-
-		m_Stream->Release();
+		m_RootContext = nullptr;
 	}
 
-	CAfxBaseFxStream::m_Shared.ReturnStreamContext(this);
-}
-
-void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderBegin(CAfxBaseFxStream * stream, IAfxBasefxStreamModifier * modifier, const AfxViewportData_t & viewport, const SOURCESDK::VMatrix & projectionMatrix, const SOURCESDK::VMatrix & projectionMatrixSky)
-{
-	m_IsRootCtx = true;
-	m_Stream = stream;
-	m_Modifier = modifier;
-	m_Viewport = viewport;
-	m_ProjectionMatrix = projectionMatrix;
-	m_ProjectionMatrixSky = projectionMatrixSky;
-	m_IsNextDepth = false;
-
-	m_Stream->AddRef();
-
-	QueueBegin();
-}
-
-void CAfxBaseFxStream::CAfxBaseFxStreamContext::RenderEnd(void)
-{
-	QueueEnd();
+	ctx->Hook_set(nullptr);
 }
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueFunctorInternal(IAfxCallQueue * aq, SOURCESDK::CSGO::CFunctor *pFunctor)
@@ -2794,13 +2776,15 @@ AfxDrawDepthMode AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(CAfxBaseFxStre
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 {
+	IAfxMatRenderContext* ctx = GetCurrentContext();
+
 	m_DrawingHud = true;
 
-	if (SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue())
+	if (SOURCESDK::CSGO::ICallQueue * queue = ctx->GetOrg()->GetCallQueue())
 	{
 		// Bubble into child contexts:
 
-		queue->QueueFunctor(new CDrawingHudBeginFunctor(this->m_ChildContext));
+		queue->QueueFunctor(new CDrawingHudBeginFunctor(this));
 	}
 	else
 	{
@@ -2813,7 +2797,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 			float flDepthFactor = m_Stream->m_DepthVal;
 			float flDepthFactorMax = m_Stream->m_DepthValMax;
 
-			AfxDrawDepth(EDrawDepth_Rgb == m_Stream->m_DrawDepth ? AfxDrawDepthEncode_Rgb : AfxDrawDepthEncode_Gray, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height, m_Viewport.zNear, m_Viewport.zFar, true, m_ProjectionMatrix.m);
+			AfxDrawDepth(EDrawDepth_Rgb == m_Stream->m_DrawDepth ? AfxDrawDepthEncode_Rgb : AfxDrawDepthEncode_Gray, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Data.Viewport.x, m_Data.Viewport.y, m_Data.Viewport.width, m_Data.Viewport.height, m_Data.Viewport.zNear, m_Data.Viewport.zFar, true, m_Data.ProjectionMatrix.m);
 			m_IsNextDepth = true;
 		}
 		
@@ -2822,12 +2806,12 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 		switch (m_Stream->m_ClearBeforeHud)
 		{
 		case EClearBeforeHud_Black:
-			m_Ctx->GetOrg()->ClearColor4ub(0, 0, 0, 255);
-			m_Ctx->GetOrg()->ClearBuffers(true, false, false);
+			ctx->GetOrg()->ClearColor4ub(0, 0, 0, 255);
+			ctx->GetOrg()->ClearBuffers(true, false, false);
 			break;
 		case EClearBeforeHud_White:
-			m_Ctx->GetOrg()->ClearColor4ub(255, 255, 255, 255);
-			m_Ctx->GetOrg()->ClearBuffers(true, false, false);
+			ctx->GetOrg()->ClearColor4ub(255, 255, 255, 255);
+			ctx->GetOrg()->ClearBuffers(true, false, false);
 			break;
 		}
 	}
@@ -2835,11 +2819,13 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudEnd(void)
 {
-	if (SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue())
+	IAfxMatRenderContext* ctx = GetCurrentContext();
+
+	if (SOURCESDK::CSGO::ICallQueue * queue = ctx->GetOrg()->GetCallQueue())
 	{
 		// Bubble into child contexts:
 
-		queue->QueueFunctor(new CDrawingHudEndFunctor(this->m_ChildContext));
+		queue->QueueFunctor(new CDrawingHudEndFunctor(this));
 	}
 	else
 	{
@@ -2853,13 +2839,15 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudEnd(void)
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewBegin(void)
 {
+	IAfxMatRenderContext* ctx = GetCurrentContext();
+
 	m_DrawingSkyBoxView = true;
 
-	if (SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue())
+	if (SOURCESDK::CSGO::ICallQueue * queue = ctx->GetOrg()->GetCallQueue())
 	{
 		// Bubble into child contexts:
 
-		queue->QueueFunctor(new CDrawingSkyBoxViewBeginFunctor(this->m_ChildContext));
+		queue->QueueFunctor(new CDrawingSkyBoxViewBeginFunctor(this));
 	}
 	else
 	{
@@ -2871,11 +2859,13 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewBegin(void)
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 {
-	if (SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue())
+	IAfxMatRenderContext* ctx = GetCurrentContext();
+
+	if (SOURCESDK::CSGO::ICallQueue * queue = ctx->GetOrg()->GetCallQueue())
 	{
 		// Bubble into child contexts:
 
-		queue->QueueFunctor(new CDrawingSkyBoxViewEndFunctor(this->m_ChildContext));
+		queue->QueueFunctor(new CDrawingSkyBoxViewEndFunctor(this));
 	}
 	else
 	{
@@ -2890,7 +2880,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 			float flDepthFactor = m_Stream->m_DepthVal * scale;
 			float flDepthFactorMax = m_Stream->m_DepthValMax * scale;
 
-			AfxDrawDepth(EDrawDepth_Rgb == m_Stream->m_DrawDepth ? AfxDrawDepthEncode_Rgb : AfxDrawDepthEncode_Gray, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height, 2.0f, (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH, false, m_ProjectionMatrixSky.m);
+			AfxDrawDepth(EDrawDepth_Rgb == m_Stream->m_DrawDepth ? AfxDrawDepthEncode_Rgb : AfxDrawDepthEncode_Gray, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Data.Viewport.x, m_Data.Viewport.y, m_Data.Viewport.width, m_Data.Viewport.height, 2.0f, (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH, false, m_Data.ProjectionMatrixSky.m);
 			m_IsNextDepth = true;
 		}
 	}
@@ -2910,51 +2900,58 @@ bool Pt_Inside(int x, int y, SOURCESDK::vrect_t_csgo * rect)
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::UpdateCurrentEntity(const CEntityInfo & currentEntity)
 {
-	if (currentEntity == m_CurrentEntity) return;
+	IAfxMatRenderContext* ctx = GetCurrentContext();
 
-	m_CurrentEntity = currentEntity;
-
-	if (SOURCESDK::CSGO::ICallQueue * queue = m_Ctx->GetOrg()->GetCallQueue())
+	if (SOURCESDK::CSGO::ICallQueue * queue = ctx->GetOrg()->GetCallQueue())
 	{
 		// Bubble into child contexts:
 
-		queue->QueueFunctor(new CUpdateCurrentEnitityHandleFunctor(this->m_ChildContext, currentEntity));
+		queue->QueueFunctor(new CUpdateCurrentEnitityHandleFunctor(this, currentEntity));
 	}
 	else
 	{
 		// Leaf context
+
+		m_CurrentEntity = currentEntity;
 	}
 }
 
-bool CAfxBaseFxStream::CAfxBaseFxStreamContext::IfRootThenUpdateCurrentEntity()
+void CAfxBaseFxStream::UpdateCurrentEntity()
 {
-	if (m_IsRootCtx)
+	CEntityInfo info;
+	info.Handle = SOURCESDK_CSGO_INVALID_EHANDLE_INDEX;
+	info.Data.ClassName = "";
+	info.Data.IsPlayer = false;
+	info.Data.TeamNumber = 0;
+
+	if (SOURCESDK::IViewRender_csgo * view = GetView_csgo())
 	{
-		CEntityInfo info;
-		info.Handle = SOURCESDK_CSGO_INVALID_EHANDLE_INDEX;
 
-		if (SOURCESDK::IViewRender_csgo * view = GetView_csgo())
+		if (SOURCESDK::C_BaseEntity_csgo * be = view->GetCurrentlyDrawingEntity())
 		{
+			SOURCESDK::CSGO::CBaseHandle current = be->GetRefEHandle();
 
-			if (SOURCESDK::C_BaseEntity_csgo * ce = view->GetCurrentlyDrawingEntity())
-			{
-				info.Handle.AfxAssign(ce->GetRefEHandle());
-			}
+			if (m_CurrentEntity == current) return;
+
+			info.Handle.AfxAssign(current);
+			info.Data.ClassName = be->GetClassname();
+			info.Data.IsPlayer = be->IsPlayer();
+			info.Data.TeamNumber = be->GetTeamNumber();
 		}
-
-		UpdateCurrentEntity(info);
-
-		return true;
 	}
 
-	return false;
+	if (info.Handle != m_CurrentEntity)
+	{
+		m_CurrentEntity = info.Handle;
+		m_Context->UpdateCurrentEntity(info);
+	}
 }
 
 typedef void * (__cdecl * csgo_client_dynamic_cast_t)(void * from, void * unk1, void * baseClassRtti, void * classRtti, void * unk2);
 
-SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::MaterialHook(SOURCESDK::IMaterial_csgo * material, void * proxyData)
+SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::MaterialHook(IAfxMatRenderContext* ctx, SOURCESDK::IMaterial_csgo * material, void * proxyData)
 {
-	IfRootThenUpdateCurrentEntity();
+	this->IfRootThenUpdateCurrentEntity();
 
 	/*
 	if (m_IsRootCtx)
@@ -2976,7 +2973,7 @@ SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::MaterialH
 	}
 	*/
 
-	if (!this->GetCtx()->GetOrg()->GetCallQueue())
+	if (nullptr == ctx->GetOrg()->GetCallQueue())
 	{
 		// This means we are on the rendering thread and can go through with the current material.
 
@@ -2987,16 +2984,18 @@ SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::MaterialH
 			, m_CurrentEntity
 		);
 
-		if (m_Modifier)
+		if (nullptr == action) action = this->RetrieveAction(trackedMaterial, m_CurrentEntity);
+
+		if (m_Data.Modifier)
 		{
-			action = m_Modifier->OverrideAction(action);
+			action = m_Data.Modifier->OverrideAction(action);
 		}
 
 		BindAction(action);
 
 		if (m_CurrentAction)
 		{
-			m_CurrentAction->MaterialHook(this, trackedMaterial);
+			m_CurrentAction->MaterialHook(this, ctx, trackedMaterial);
 		}
 
 		if (SOURCESDK::IMaterial_csgo * replacementMaterial = trackedMaterial->GetReplacement())
@@ -3006,17 +3005,17 @@ SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::MaterialH
 	return material;
 }
 
-void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawInstances(int nInstanceCount, const SOURCESDK::MeshInstanceData_t_csgo *pInstance)
+void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawInstances(IAfxMatRenderContext* ctx, int nInstanceCount, const SOURCESDK::MeshInstanceData_t_csgo *pInstance)
 {
-	if (m_CurrentAction)
-		m_CurrentAction->DrawInstances(this, nInstanceCount, pInstance);
+	if (nullptr == ctx->GetOrg()->GetCallQueue() && m_CurrentAction)
+		m_CurrentAction->DrawInstances(this, ctx, nInstanceCount, pInstance);
 	else
-		m_Ctx->GetOrg()->DrawInstances(nInstanceCount, pInstance);
+		ctx->GetOrg()->DrawInstances(nInstanceCount, pInstance);
 }
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::Draw(IAfxMesh * am, int firstIndex, int numIndices)
 {
-	if (m_CurrentAction)
+	if (nullptr == am->GetContext()->GetOrg()->GetCallQueue() && m_CurrentAction)
 		m_CurrentAction->Draw(this, am, firstIndex, numIndices);
 	else
 		am->GetParent()->Draw(firstIndex, numIndices);
@@ -3024,7 +3023,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::Draw(IAfxMesh * am, int firstInd
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::Draw_2(IAfxMesh * am, SOURCESDK::CPrimList_csgo *pLists, int nLists)
 {
-	if (m_CurrentAction)
+	if (nullptr == am->GetContext()->GetOrg()->GetCallQueue() && m_CurrentAction)
 		m_CurrentAction->Draw_2(this, am, pLists, nLists);
 	else
 		am->GetParent()->Draw(pLists, nLists);
@@ -3032,7 +3031,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::Draw_2(IAfxMesh * am, SOURCESDK:
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawModulated(IAfxMesh * am, const SOURCESDK::Vector4D_csgo &vecDiffuseModulation, int firstIndex, int numIndices)
 {
-	if (m_CurrentAction)
+	if (nullptr == am->GetContext()->GetOrg()->GetCallQueue() && m_CurrentAction)
 		m_CurrentAction->DrawModulated(this, am, vecDiffuseModulation, firstIndex, numIndices);
 	else
 		am->GetParent()->DrawModulated(vecDiffuseModulation, firstIndex, numIndices);
@@ -3040,7 +3039,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawModulated(IAfxMesh * am, con
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::UnlockMesh(IAfxMesh* am, int numVerts, int numIndices, SOURCESDK::MeshDesc_t_csgo& desc)
 {
-	if (m_CurrentAction)
+	if (nullptr == am->GetContext()->GetOrg()->GetCallQueue() && m_CurrentAction)
 		m_CurrentAction->UnlockMesh(this, am, numVerts, numIndices, desc);
 	else
 		am->GetParent()->UnlockMesh(numVerts, numIndices, desc);
@@ -3064,7 +3063,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::SetPixelShader(CAfx_csgo_ShaderS
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::CQueueBeginFunctor::operator()()
 {
-	m_StreamContext->QueueBegin();
+	m_StreamContext->QueueBegin(m_Data);
 }
 
 // CAfxBaseFxStream::CAfxBaseFxStreamContext::CQueueEndFunctor /////////////////
@@ -3089,35 +3088,7 @@ CAfxBaseFxStream::CShared::CShared()
 
 CAfxBaseFxStream::CShared::~CShared()
 {
-	{
-		std::unique_lock<std::mutex> lock(m_StreamContextsMutex);
-		while (!m_StreamContexts.empty())
-		{
-			CAfxBaseFxStreamContext * ctx = m_StreamContexts.front();
-			m_StreamContexts.pop();
-			delete ctx;
-		}
-	}
-}
 
-CAfxBaseFxStream::CAfxBaseFxStreamContext * CAfxBaseFxStream::CShared::RequestStreamContext(void)
-{
-	std::unique_lock<std::mutex> lock(m_StreamContextsMutex);
-
-	if (m_StreamContexts.empty())
-		return new CAfxBaseFxStreamContext();
-
-	CAfxBaseFxStreamContext * streamContext = m_StreamContexts.front();
-	m_StreamContexts.pop();
-
-	return streamContext;
-}
-
-void CAfxBaseFxStream::CShared::ReturnStreamContext(CAfxBaseFxStreamContext * streamContext)
-{
-	std::unique_lock<std::mutex> lock(m_StreamContextsMutex);
-
-	m_StreamContexts.push(streamContext);
 }
 
 void CAfxBaseFxStream::CShared::AfxStreamsInit(void)
@@ -3493,6 +3464,9 @@ CAfxBaseFxStream::CActionFilterValue * CAfxBaseFxStream::CActionFilterValue::Con
 			"\n"
 			"<option> can be:\n"
 			"\"handle=<handleNumber>\" (of entity, see mirv_listentities)\n"
+			"\"className=<wildCardString>\" (of entity)\n"
+			"\"isPlayer=<0|1>\" (of entity)\n"
+			"\"teamNumber=<iValue>\" (of entity)\n"
 			"\"name=<wildCardString>\" (of material)\n"
 			"\"textureGroup=<wildCardString>\" (of material)\n"
 			"\"shader=<wildCardString>\" (of material)\n"
@@ -3513,6 +3487,10 @@ CAfxBaseFxStream::CActionFilterValue * CAfxBaseFxStream::CActionFilterValue::Con
 	SOURCESDK::CSGO::CBaseHandle * rootHandle = 0;
 	SOURCESDK::CSGO::CBaseHandle * rootMoveHandle = 0;
 	std::string className("\\*");
+	bool useIsPlayer = false;
+	bool isPlayer = false;
+	bool useTeamNumber = false;
+	int teamNumber = 0;
 	std::string name("\\*");
 	std::string textureGroupName("\\*");
 	std::string shaderName("\\*");
@@ -3553,6 +3531,20 @@ CAfxBaseFxStream::CActionFilterValue * CAfxBaseFxStream::CActionFilterValue::Con
 
 			isErrorMaterial = value ? TS_True : TS_False;
 		}
+		else if (!_stricmp("className", key))
+		{
+			className = sValue;
+		}
+		else if (!_stricmp("isPlayer", key))
+		{
+			useIsPlayer = true;
+			isPlayer = 0 != atoi(sValue.c_str());
+		}
+		else if (!_stricmp("teamNumber", key))
+		{
+			useTeamNumber = true;
+			teamNumber = atoi(sValue.c_str());
+		}
 		else if (!_stricmp("action", key))
 		{
 			CAfxBaseFxStream::CAction * action;
@@ -3581,7 +3573,9 @@ CAfxBaseFxStream::CActionFilterValue * CAfxBaseFxStream::CActionFilterValue::Con
 		handle = new SOURCESDK::CSGO::CBaseHandle();
 	}
 
-	CActionFilterValue * result = new CActionFilterValue(useHandle, *handle, name.c_str(), textureGroupName.c_str(), shaderName.c_str(), isErrorMaterial, matchAction);
+	CActionFilterValue * result = new CActionFilterValue(
+		useHandle, *handle, className.c_str(), useIsPlayer, isPlayer, useTeamNumber, teamNumber,		
+		name.c_str(), textureGroupName.c_str(), shaderName.c_str(), isErrorMaterial, matchAction);
 
 	delete handle;
 
@@ -3606,6 +3600,9 @@ bool CAfxBaseFxStream::CActionFilterValue::CalcMatch_Entity(const CEntityInfo & 
 {
 	return
 		(!m_UseHandle || m_Handle == info.Handle)
+		&& (!m_UseClassName || StringWildCard1Matched(m_ClassName.c_str(), info.Data.ClassName))
+		&& (!m_UseIsPlayer || m_IsPlayer == info.Data.IsPlayer)
+		&& (!m_UseTeamNumber || m_TeamNumber == info.Data.TeamNumber)
 	;
 }
 
@@ -3616,7 +3613,7 @@ void CAfxBaseFxStream::CAction::Console_Edit(IWrpCommandArgs* args)
 	Tier0_Msg("This action has no editable settings.\n");
 }
 
-void CAfxBaseFxStream::CAction::MaterialHook(CAfxBaseFxStreamContext * ch, CAfxTrackedMaterial * trackedMaterial)
+void CAfxBaseFxStream::CAction::MaterialHook(CAfxBaseFxStreamContext * ch, IAfxMatRenderContext* ctx, CAfxTrackedMaterial * trackedMaterial)
 {
 }
 
@@ -3695,7 +3692,7 @@ void CAfxBaseFxStream::CActionDebugDepth::AfxUnbind(CAfxBaseFxStreamContext * ch
 	}
 }
 
-void CAfxBaseFxStream::CActionDebugDepth::MaterialHook(CAfxBaseFxStreamContext * ch, CAfxTrackedMaterial * trackedMaterial)
+void CAfxBaseFxStream::CActionDebugDepth::MaterialHook(CAfxBaseFxStreamContext * ch, IAfxMatRenderContext* ctx, CAfxTrackedMaterial * trackedMaterial)
 {
 	
 
@@ -3798,7 +3795,7 @@ void CAfxBaseFxStream::CActionReplace::AfxUnbind(CAfxBaseFxStreamContext * ch)
 
 }
 
-void CAfxBaseFxStream::CActionReplace::MaterialHook(CAfxBaseFxStreamContext * ch, CAfxTrackedMaterial * trackedMaterial)
+void CAfxBaseFxStream::CActionReplace::MaterialHook(CAfxBaseFxStreamContext * ch, IAfxMatRenderContext* ctx, CAfxTrackedMaterial * trackedMaterial)
 {
 	AfxD3D9PushOverrideState(false);
 
@@ -3936,7 +3933,7 @@ void CAfxBaseFxStream::CActionGlowColorMap::AfxUnbind(CAfxBaseFxStreamContext* c
 	AfxD3D9PopOverrideState();
 }
 
-void CAfxBaseFxStream::CActionGlowColorMap::MaterialHook(CAfxBaseFxStreamContext* ch, CAfxTrackedMaterial* trackedMaterial)
+void CAfxBaseFxStream::CActionGlowColorMap::MaterialHook(CAfxBaseFxStreamContext* ch, IAfxMatRenderContext* ctx, CAfxTrackedMaterial* trackedMaterial)
 {
 	AfxD3D9PushOverrideState(false);
 
@@ -3945,8 +3942,6 @@ void CAfxBaseFxStream::CActionGlowColorMap::MaterialHook(CAfxBaseFxStreamContext
 
 void CAfxBaseFxStream::CActionGlowColorMap::UnlockMesh(CAfxBaseFxStreamContext* ch, IAfxMesh* am, int numVerts, int numIndices, SOURCESDK::MeshDesc_t_csgo& desc)
 {
-	if (ch->GetCtx()->GetOrg()->GetCallQueue()) return;
-
 	auto mesh = am->GetParent();
 	if (mesh->GetVertexFormat() & 0x0004) // VERTEX_COLOR
 	{
@@ -4898,7 +4893,7 @@ void CAfxBaseFxStream::CActionNoDraw::AfxUnbind(CAfxBaseFxStreamContext * ch)
 	AfxD3D9PopOverrideState();
 }
 
-void CAfxBaseFxStream::CActionNoDraw::MaterialHook(CAfxBaseFxStreamContext * ch, CAfxTrackedMaterial * trackedMaterial)
+void CAfxBaseFxStream::CActionNoDraw::MaterialHook(CAfxBaseFxStreamContext * ch, IAfxMatRenderContext* ctx, CAfxTrackedMaterial * trackedMaterial)
 {
 	AfxD3D9PushOverrideState(false);
 
@@ -4922,7 +4917,7 @@ void CAfxBaseFxStream::CActionZOnly::AfxUnbind(CAfxBaseFxStreamContext * ch)
 	AfxD3D9PopOverrideState();
 }
 
-void CAfxBaseFxStream::CActionZOnly::MaterialHook(CAfxBaseFxStreamContext * ch, CAfxTrackedMaterial * trackedMaterial)
+void CAfxBaseFxStream::CActionZOnly::MaterialHook(CAfxBaseFxStreamContext * ch, IAfxMatRenderContext* ctx, CAfxTrackedMaterial * trackedMaterial)
 {
 	AfxD3D9PushOverrideState(false);
 
@@ -5894,7 +5889,7 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 
 		//if (previewStream->GetDisableFastPath()) DisableFastPath();
 
-		previewStream->OnRenderBegin(nullptr, afxViewport, viewToProjection, viewToProjectionSky);
+		previewStream->OnRenderBegin(nullptr, afxViewport, viewToProjection, viewToProjectionSky, m_DeletedEntites);
 
 		DoRenderView(fn, This, Edx, newView, newHudView, nClearFlags, myWhatToDraw);
 
@@ -8988,7 +8983,7 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 			}
 		}
 
-		stream->OnRenderBegin(captureTarget->GetBasefxStreamModifier(streamIndex), afxViewport, viewToProjection, viewToProjectionSky);
+		stream->OnRenderBegin(captureTarget->GetBasefxStreamModifier(streamIndex), afxViewport, viewToProjection, viewToProjectionSky, m_DeletedEntites);
 
 		DoRenderView(fn, This, Edx, view, hudViewSetup, SOURCESDK::VIEW_CLEAR_STENCIL | SOURCESDK::VIEW_CLEAR_DEPTH, myWhatToDraw);
 
@@ -10159,7 +10154,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::SetClientRenderable(SOURCESDK::I
 
 void CAfxBaseFxStream::SetClientRenderable(SOURCESDK::IClientRenderable_csgo * renderable)
 {
-	if(m_ActiveStreamContext) m_ActiveStreamContext->SetClientRenderable(renderable);
+	//TODO: ? if(m_ActiveStreamContext) m_ActiveStreamContext->SetClientRenderable(renderable);
 }
 
 void CAfxStreams::SetClientRenderable(SOURCESDK::IClientRenderable_csgo * renderable)

@@ -155,6 +155,30 @@ public:
 		if(CClientTools * instance = CClientTools::Instance()) instance->OnPostToolMessage(hEntity, msg);
 
 		g_Engine_ClientEngineTools->PostToolMessage(hEntity, msg);
+
+		if (g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO)
+		{
+			if(msg)			
+			{
+				char const* msgName = ((SOURCESDK::CSGO::KeyValues * )msg)->GetName();
+				if (0 == strcmp(msgName, "created") && CClientToolsCsgo::Instance())
+				{
+					if (auto clientTools = CClientToolsCsgo::Instance()->GetClientToolsInterface())
+					{
+						SOURCESDK::CSGO::EntitySearchResult ent = clientTools->GetEntity(reinterpret_cast<SOURCESDK::CSGO::HTOOLHANDLE>(hEntity));
+						g_AfxStreams.OnClientEntityCreated(reinterpret_cast<SOURCESDK::C_BaseEntity_csgo*>(ent));
+					}
+				}
+				else if (0 == strcmp(msgName, "deleted") && CClientToolsCsgo::Instance())
+				{
+					if (auto clientTools = CClientToolsCsgo::Instance()->GetClientToolsInterface())
+					{
+						SOURCESDK::CSGO::EntitySearchResult ent = clientTools->GetEntity(reinterpret_cast<SOURCESDK::CSGO::HTOOLHANDLE>(hEntity));
+						g_AfxStreams.OnClientEntityDeleted(reinterpret_cast<SOURCESDK::C_BaseEntity_csgo*>(ent));
+					}
+				}
+			}
+		}
 	}
 	virtual void AdjustEngineViewport( int& x, int& y, int& width, int& height )
 	{
@@ -1072,6 +1096,8 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 		MirvPgl::CheckStartedAndRestoreIfDown();
 		MirvPgl::ExecuteQueuedCommands();
 #endif
+
+		g_AfxStreams.BeforeFrameStart();
 		break;
 	case SOURCESDK::CSGO::FRAME_NET_UPDATE_START:
 		break;

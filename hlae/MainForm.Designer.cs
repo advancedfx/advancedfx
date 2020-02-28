@@ -204,9 +204,11 @@
             // 
             this.l10nHLAELookUpTreesToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.l10nToolStripMenuItem});
+            this.l10nHLAELookUpTreesToolStripMenuItem.Enabled = false;
             this.l10nHLAELookUpTreesToolStripMenuItem.Name = "l10nHLAELookUpTreesToolStripMenuItem";
             this.l10nHLAELookUpTreesToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.l10nHLAELookUpTreesToolStripMenuItem.Text = "L10n AfxRgbaLut";
+            this.l10nHLAELookUpTreesToolStripMenuItem.Visible = false;
             // 
             // l10nToolStripMenuItem
             // 

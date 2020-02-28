@@ -789,7 +789,7 @@ public:
 		if (afxStream)
 		{
 
-			afxStream->DrawInstances(nInstanceCount, pInstance);
+			afxStream->DrawInstances(this, nInstanceCount, pInstance);
 		}
 		else
 		{
@@ -905,7 +905,7 @@ private:
 	{
 		IAfxStreamContext * afxStream = Hook_get();
 		if (afxStream && value)
-			return afxStream->MaterialHook(value, proxyData);
+			return afxStream->MaterialHook(this, value, proxyData);
 
 		return value;
 	}
