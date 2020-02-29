@@ -28,14 +28,9 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.colorDialog1 = new System.Windows.Forms.ColorDialog();
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
-            this.buttonGenerateLut = new System.Windows.Forms.Button();
-            this.buttonLoadTemplate = new System.Windows.Forms.Button();
-            this.buttonSaveTemplate = new System.Windows.Forms.Button();
-            this.buttonAdd = new System.Windows.Forms.Button();
-            this.buttonDelete = new System.Windows.Forms.Button();
             this.dataGridViewColors = new System.Windows.Forms.DataGridView();
+            this.Index = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.SrcR = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.SrcG = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.SrcB = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -45,56 +40,27 @@
             this.DstG = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.DstB = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.DstA = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.progressBar1 = new System.Windows.Forms.ProgressBar();
+            this.label4 = new System.Windows.Forms.Label();
+            this.numericUpDown3 = new System.Windows.Forms.NumericUpDown();
+            this.label3 = new System.Windows.Forms.Label();
+            this.numericUpDown2 = new System.Windows.Forms.NumericUpDown();
+            this.label2 = new System.Windows.Forms.Label();
+            this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
+            this.label1 = new System.Windows.Forms.Label();
+            this.labelResolution = new System.Windows.Forms.Label();
+            this.numR = new System.Windows.Forms.NumericUpDown();
+            this.buttonGenerateLut = new System.Windows.Forms.Button();
+            this.buttonCopy = new System.Windows.Forms.Button();
+            this.buttonPaste = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewColors)).BeginInit();
+            this.groupBox1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown3)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numR)).BeginInit();
             this.SuspendLayout();
-            // 
-            // buttonGenerateLut
-            // 
-            this.buttonGenerateLut.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonGenerateLut.Location = new System.Drawing.Point(12, 304);
-            this.buttonGenerateLut.Name = "buttonGenerateLut";
-            this.buttonGenerateLut.Size = new System.Drawing.Size(560, 45);
-            this.buttonGenerateLut.TabIndex = 1;
-            this.buttonGenerateLut.Text = "L10n Generate HLAELUT";
-            this.buttonGenerateLut.UseVisualStyleBackColor = true;
-            // 
-            // buttonLoadTemplate
-            // 
-            this.buttonLoadTemplate.Location = new System.Drawing.Point(12, 12);
-            this.buttonLoadTemplate.Name = "buttonLoadTemplate";
-            this.buttonLoadTemplate.Size = new System.Drawing.Size(251, 23);
-            this.buttonLoadTemplate.TabIndex = 2;
-            this.buttonLoadTemplate.Text = "L10n Load Template";
-            this.buttonLoadTemplate.UseVisualStyleBackColor = true;
-            // 
-            // buttonSaveTemplate
-            // 
-            this.buttonSaveTemplate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonSaveTemplate.Location = new System.Drawing.Point(321, 12);
-            this.buttonSaveTemplate.Name = "buttonSaveTemplate";
-            this.buttonSaveTemplate.Size = new System.Drawing.Size(251, 23);
-            this.buttonSaveTemplate.TabIndex = 3;
-            this.buttonSaveTemplate.Text = "L10n Save Template";
-            this.buttonSaveTemplate.UseVisualStyleBackColor = true;
-            // 
-            // buttonAdd
-            // 
-            this.buttonAdd.Location = new System.Drawing.Point(13, 44);
-            this.buttonAdd.Name = "buttonAdd";
-            this.buttonAdd.Size = new System.Drawing.Size(117, 23);
-            this.buttonAdd.TabIndex = 5;
-            this.buttonAdd.Text = "L10n Add";
-            this.buttonAdd.UseVisualStyleBackColor = true;
-            // 
-            // buttonDelete
-            // 
-            this.buttonDelete.Location = new System.Drawing.Point(146, 44);
-            this.buttonDelete.Name = "buttonDelete";
-            this.buttonDelete.Size = new System.Drawing.Size(117, 23);
-            this.buttonDelete.TabIndex = 6;
-            this.buttonDelete.Text = "L10n Delete";
-            this.buttonDelete.UseVisualStyleBackColor = true;
             // 
             // dataGridViewColors
             // 
@@ -103,6 +69,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.dataGridViewColors.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dataGridViewColors.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.Index,
             this.SrcR,
             this.SrcG,
             this.SrcB,
@@ -112,12 +79,21 @@
             this.DstG,
             this.DstB,
             this.DstA});
-            this.dataGridViewColors.Location = new System.Drawing.Point(13, 73);
+            this.dataGridViewColors.Location = new System.Drawing.Point(8, 41);
             this.dataGridViewColors.Name = "dataGridViewColors";
-            this.dataGridViewColors.Size = new System.Drawing.Size(559, 224);
+            this.dataGridViewColors.Size = new System.Drawing.Size(564, 188);
             this.dataGridViewColors.TabIndex = 7;
             this.dataGridViewColors.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridViewColors_CellValueChanged);
-            this.dataGridViewColors.RowsAdded += new System.Windows.Forms.DataGridViewRowsAddedEventHandler(this.dataGridViewColors_RowsAdded);
+            this.dataGridViewColors.RowsRemoved += new System.Windows.Forms.DataGridViewRowsRemovedEventHandler(this.dataGridViewColors_RowsRemoved);
+            // 
+            // Index
+            // 
+            this.Index.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.DisplayedCellsExceptHeader;
+            this.Index.HeaderText = "Index";
+            this.Index.MinimumWidth = 40;
+            this.Index.Name = "Index";
+            this.Index.ReadOnly = true;
+            this.Index.Width = 40;
             // 
             // SrcR
             // 
@@ -174,35 +150,249 @@
             this.DstA.Name = "DstA";
             this.DstA.Width = 50;
             // 
+            // groupBox1
+            // 
+            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox1.Controls.Add(this.progressBar1);
+            this.groupBox1.Controls.Add(this.label4);
+            this.groupBox1.Controls.Add(this.numericUpDown3);
+            this.groupBox1.Controls.Add(this.label3);
+            this.groupBox1.Controls.Add(this.numericUpDown2);
+            this.groupBox1.Controls.Add(this.label2);
+            this.groupBox1.Controls.Add(this.numericUpDown1);
+            this.groupBox1.Controls.Add(this.label1);
+            this.groupBox1.Controls.Add(this.labelResolution);
+            this.groupBox1.Controls.Add(this.numR);
+            this.groupBox1.Controls.Add(this.buttonGenerateLut);
+            this.groupBox1.Location = new System.Drawing.Point(8, 235);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(564, 114);
+            this.groupBox1.TabIndex = 9;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "groupBox1";
+            // 
+            // progressBar1
+            // 
+            this.progressBar1.Location = new System.Drawing.Point(7, 83);
+            this.progressBar1.Maximum = 16777216;
+            this.progressBar1.Name = "progressBar1";
+            this.progressBar1.Size = new System.Drawing.Size(547, 23);
+            this.progressBar1.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
+            this.progressBar1.TabIndex = 19;
+            // 
+            // label4
+            // 
+            this.label4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(478, 21);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(14, 13);
+            this.label4.TabIndex = 18;
+            this.label4.Text = "A";
+            // 
+            // numericUpDown3
+            // 
+            this.numericUpDown3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.numericUpDown3.Location = new System.Drawing.Point(499, 19);
+            this.numericUpDown3.Maximum = new decimal(new int[] {
+            32,
+            0,
+            0,
+            0});
+            this.numericUpDown3.Minimum = new decimal(new int[] {
+            2,
+            0,
+            0,
+            0});
+            this.numericUpDown3.Name = "numericUpDown3";
+            this.numericUpDown3.Size = new System.Drawing.Size(60, 20);
+            this.numericUpDown3.TabIndex = 17;
+            this.numericUpDown3.Value = new decimal(new int[] {
+            2,
+            0,
+            0,
+            0});
+            // 
+            // label3
+            // 
+            this.label3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(391, 21);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(14, 13);
+            this.label3.TabIndex = 16;
+            this.label3.Text = "B";
+            // 
+            // numericUpDown2
+            // 
+            this.numericUpDown2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.numericUpDown2.Location = new System.Drawing.Point(412, 19);
+            this.numericUpDown2.Maximum = new decimal(new int[] {
+            32,
+            0,
+            0,
+            0});
+            this.numericUpDown2.Minimum = new decimal(new int[] {
+            2,
+            0,
+            0,
+            0});
+            this.numericUpDown2.Name = "numericUpDown2";
+            this.numericUpDown2.Size = new System.Drawing.Size(60, 20);
+            this.numericUpDown2.TabIndex = 15;
+            this.numericUpDown2.Value = new decimal(new int[] {
+            32,
+            0,
+            0,
+            0});
+            // 
+            // label2
+            // 
+            this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(304, 21);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(15, 13);
+            this.label2.TabIndex = 14;
+            this.label2.Text = "G";
+            // 
+            // numericUpDown1
+            // 
+            this.numericUpDown1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.numericUpDown1.Location = new System.Drawing.Point(325, 19);
+            this.numericUpDown1.Maximum = new decimal(new int[] {
+            32,
+            0,
+            0,
+            0});
+            this.numericUpDown1.Minimum = new decimal(new int[] {
+            2,
+            0,
+            0,
+            0});
+            this.numericUpDown1.Name = "numericUpDown1";
+            this.numericUpDown1.Size = new System.Drawing.Size(60, 20);
+            this.numericUpDown1.TabIndex = 13;
+            this.numericUpDown1.Value = new decimal(new int[] {
+            16,
+            0,
+            0,
+            0});
+            // 
+            // label1
+            // 
+            this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(217, 21);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(15, 13);
+            this.label1.TabIndex = 12;
+            this.label1.Text = "R";
+            // 
+            // labelResolution
+            // 
+            this.labelResolution.AutoSize = true;
+            this.labelResolution.Location = new System.Drawing.Point(7, 21);
+            this.labelResolution.Name = "labelResolution";
+            this.labelResolution.Size = new System.Drawing.Size(87, 13);
+            this.labelResolution.TabIndex = 11;
+            this.labelResolution.Text = "L10n Resolution:";
+            // 
+            // numR
+            // 
+            this.numR.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.numR.Location = new System.Drawing.Point(238, 19);
+            this.numR.Maximum = new decimal(new int[] {
+            32,
+            0,
+            0,
+            0});
+            this.numR.Minimum = new decimal(new int[] {
+            2,
+            0,
+            0,
+            0});
+            this.numR.Name = "numR";
+            this.numR.Size = new System.Drawing.Size(60, 20);
+            this.numR.TabIndex = 10;
+            this.numR.Value = new decimal(new int[] {
+            8,
+            0,
+            0,
+            0});
+            // 
+            // buttonGenerateLut
+            // 
+            this.buttonGenerateLut.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.buttonGenerateLut.Location = new System.Drawing.Point(6, 45);
+            this.buttonGenerateLut.Name = "buttonGenerateLut";
+            this.buttonGenerateLut.Size = new System.Drawing.Size(553, 32);
+            this.buttonGenerateLut.TabIndex = 9;
+            this.buttonGenerateLut.Text = "L10n Start";
+            this.buttonGenerateLut.UseVisualStyleBackColor = true;
+            // 
+            // buttonCopy
+            // 
+            this.buttonCopy.Location = new System.Drawing.Point(8, 12);
+            this.buttonCopy.Name = "buttonCopy";
+            this.buttonCopy.Size = new System.Drawing.Size(275, 23);
+            this.buttonCopy.TabIndex = 10;
+            this.buttonCopy.Text = "L10n Copy to clipboard";
+            this.buttonCopy.UseVisualStyleBackColor = true;
+            this.buttonCopy.Click += new System.EventHandler(this.buttonCopy_Click);
+            // 
+            // buttonPaste
+            // 
+            this.buttonPaste.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.buttonPaste.Location = new System.Drawing.Point(297, 12);
+            this.buttonPaste.Name = "buttonPaste";
+            this.buttonPaste.Size = new System.Drawing.Size(275, 23);
+            this.buttonPaste.TabIndex = 11;
+            this.buttonPaste.Text = "L10n Paste form clipboard";
+            this.buttonPaste.UseVisualStyleBackColor = true;
+            this.buttonPaste.Click += new System.EventHandler(this.buttonPaste_Click);
+            // 
             // AfxRgbaLutVoronoiGenerator
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(584, 361);
+            this.Controls.Add(this.buttonPaste);
+            this.Controls.Add(this.buttonCopy);
+            this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.dataGridViewColors);
-            this.Controls.Add(this.buttonDelete);
-            this.Controls.Add(this.buttonAdd);
-            this.Controls.Add(this.buttonSaveTemplate);
-            this.Controls.Add(this.buttonLoadTemplate);
-            this.Controls.Add(this.buttonGenerateLut);
             this.MinimumSize = new System.Drawing.Size(600, 400);
             this.Name = "AfxRgbaLutVoronoiGenerator";
             this.Text = "L10n Natural Neighbour Interpolation HLAE Lookup Tree Generator";
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewColors)).EndInit();
+            this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown3)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numR)).EndInit();
             this.ResumeLayout(false);
 
         }
 
         #endregion
-
-        private System.Windows.Forms.ColorDialog colorDialog1;
         private System.Windows.Forms.SaveFileDialog saveFileDialog1;
-        private System.Windows.Forms.Button buttonGenerateLut;
-        private System.Windows.Forms.Button buttonLoadTemplate;
-        private System.Windows.Forms.Button buttonSaveTemplate;
-        private System.Windows.Forms.Button buttonAdd;
-        private System.Windows.Forms.Button buttonDelete;
         private System.Windows.Forms.DataGridView dataGridViewColors;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.ProgressBar progressBar1;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.NumericUpDown numericUpDown3;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.NumericUpDown numericUpDown2;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.NumericUpDown numericUpDown1;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label labelResolution;
+        private System.Windows.Forms.NumericUpDown numR;
+        private System.Windows.Forms.Button buttonGenerateLut;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Index;
         private System.Windows.Forms.DataGridViewTextBoxColumn SrcR;
         private System.Windows.Forms.DataGridViewTextBoxColumn SrcG;
         private System.Windows.Forms.DataGridViewTextBoxColumn SrcB;
@@ -212,5 +402,7 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn DstG;
         private System.Windows.Forms.DataGridViewTextBoxColumn DstB;
         private System.Windows.Forms.DataGridViewTextBoxColumn DstA;
+        private System.Windows.Forms.Button buttonCopy;
+        private System.Windows.Forms.Button buttonPaste;
     }
 }

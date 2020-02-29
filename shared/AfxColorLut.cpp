@@ -7,38 +7,43 @@
 #include <algorithm>
 
 
-const char CAfxColorLut::m_Magic[17] = { 'A','f','x','R','b','a','L','o','o','k','u','p','T','r','e','e','\0' };
+const char CAfxColorLut::m_Magic[11] = { 'A','f','x','R','g','b','a','L','u','t','\0' };
 
 bool CAfxColorLut::Query(const CRgba& color, CRgba* outColor)
 {
 	if (nullptr == m_Root) return false;
 
+	size_t resR = m_Dimensions.GetSize();
+	size_t resG = m_Dimensions.GetSub().GetSize();
+	size_t resB = m_Dimensions.GetSub().GetSub().GetSize();
+	size_t resA = m_Dimensions.GetSub().GetSub().GetSub().GetSize();
+
 	float xR0, xR1;
 	GreenLookupTreeNode_t* yR0, * yR1;
-	GetInterval<GreenLookupTreeNode_t>(m_Root, color.R, xR0, xR1, yR0, yR1);
+	GetInterval<RedLookupTreeNode_t, GreenLookupTreeNode_t>(m_Root, resR, color.R, xR0, xR1, yR0, yR1);
 
 	float xG00, xG01, xG10, xG11;
 	BlueLookupTreeNode_t* yG00, * yG01, * yG10, * yG11;
-	GetInterval<BlueLookupTreeNode_t>(yR0, color.G, xG00, xG01, yG00, yG01);
-	GetInterval<BlueLookupTreeNode_t>(yR1, color.G, xG10, xG11, yG10, yG11);
+	GetInterval<GreenLookupTreeNode_t, BlueLookupTreeNode_t>(yR0, resG, color.G, xG00, xG01, yG00, yG01);
+	GetInterval<GreenLookupTreeNode_t, BlueLookupTreeNode_t>(yR1, resG, color.G, xG10, xG11, yG10, yG11);
 
 	float xB000, xB001, xB010, xB011, xB100, xB101, xB110, xB111;
 	AlphaLookupTreeNode_t* yB000, * yB001, * yB010, * yB011, * yB100, * yB101, * yB110, * yB111;
-	GetInterval<AlphaLookupTreeNode_t>(yG00, color.B, xB000, xB001, yB000, yB001);
-	GetInterval<AlphaLookupTreeNode_t>(yG01, color.B, xB010, xB011, yB010, yB011);
-	GetInterval<AlphaLookupTreeNode_t>(yG10, color.B, xB100, xB101, yB100, yB101);
-	GetInterval<AlphaLookupTreeNode_t>(yG11, color.B, xB110, xB111, yB110, yB111);
+	GetInterval<BlueLookupTreeNode_t, AlphaLookupTreeNode_t>(yG00, resB, color.B, xB000, xB001, yB000, yB001);
+	GetInterval<BlueLookupTreeNode_t, AlphaLookupTreeNode_t>(yG01, resB, color.B, xB010, xB011, yB010, yB011);
+	GetInterval<BlueLookupTreeNode_t, AlphaLookupTreeNode_t>(yG10, resB, color.B, xB100, xB101, yB100, yB101);
+	GetInterval<BlueLookupTreeNode_t, AlphaLookupTreeNode_t>(yG11, resB, color.B, xB110, xB111, yB110, yB111);
 
 	float xA0000, xA0001, xA0010, xA0011, xA0100, xA0101, xA0110, xA0111, xA1000, xA1001, xA1010, xA1011, xA1100, xA1101, xA1110, xA1111;
 	CRgba* yA0000, * yA0001, * yA0010, * yA0011, * yA0100, * yA0101, * yA0110, * yA0111, * yA1000, * yA1001, * yA1010, * yA1011, * yA1100, * yA1101, * yA1110, * yA1111;
-	GetInterval<CRgba>(yB000, color.A, xA0000, xA0001, yA0000, yA0001);
-	GetInterval<CRgba>(yB001, color.A, xA0010, xA0011, yA0010, yA0011);
-	GetInterval<CRgba>(yB010, color.A, xA0100, xA0101, yA0100, yA0101);
-	GetInterval<CRgba>(yB011, color.A, xA0110, xA0111, yA0110, yA0111);
-	GetInterval<CRgba>(yB100, color.A, xA1000, xA1001, yA1000, yA1001);
-	GetInterval<CRgba>(yB101, color.A, xA1010, xA1011, yA1010, yA1011);
-	GetInterval<CRgba>(yB110, color.A, xA1100, xA1101, yA1100, yA1101);
-	GetInterval<CRgba>(yB111, color.A, xA1110, xA1111, yA1110, yA1111);
+	GetInterval<AlphaLookupTreeNode_t, CRgba>(yB000, resA, color.A, xA0000, xA0001, yA0000, yA0001);
+	GetInterval<AlphaLookupTreeNode_t, CRgba>(yB001, resA, color.A, xA0010, xA0011, yA0010, yA0011);
+	GetInterval<AlphaLookupTreeNode_t, CRgba>(yB010, resA, color.A, xA0100, xA0101, yA0100, yA0101);
+	GetInterval<AlphaLookupTreeNode_t, CRgba>(yB011, resA, color.A, xA0110, xA0111, yA0110, yA0111);
+	GetInterval<AlphaLookupTreeNode_t, CRgba>(yB100, resA, color.A, xA1000, xA1001, yA1000, yA1001);
+	GetInterval<AlphaLookupTreeNode_t, CRgba>(yB101, resA, color.A, xA1010, xA1011, yA1010, yA1011);
+	GetInterval<AlphaLookupTreeNode_t, CRgba>(yB110, resA, color.A, xA1100, xA1101, yA1100, yA1101);
+	GetInterval<AlphaLookupTreeNode_t, CRgba>(yB111, resA, color.A, xA1110, xA1111, yA1110, yA1111);
 
 	CRgba x[16] = {
 		CRgba(xR0, xG00, xB000, xA0000),

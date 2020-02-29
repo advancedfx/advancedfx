@@ -3,6 +3,9 @@
 #include <shared/AfxColorLut.h>
 #include <stdio.h>
 
+using namespace System;
+using namespace System::Runtime::InteropServices;
+
 namespace AfxCppCli {
 
 ref class ColorLutTools
@@ -11,6 +14,21 @@ public:
 	ColorLutTools()
 	{
 		m_AfxColorLut = new CAfxColorLut();
+	}
+
+	~ColorLutTools()
+	{
+		delete m_AfxColorLut;
+	}
+
+	bool IsValid()
+	{
+		return m_AfxColorLut->IsValid();
+	}
+
+	bool New(size_t resR, size_t resG, size_t resB, size_t resA)
+	{
+		return m_AfxColorLut->New(resR, resG, resB, resA);
 	}
 
 	bool LoadFromFile(const char* fileName)
@@ -66,27 +84,24 @@ public:
 		return false;
 	}
 
-	void Put(System::Drawing::Color^key, System::Drawing::Color^value)
-	{
-		CAfxColorLut::CRgba rgbaKey(
-			key->R / 255.0f,
-			key->G / 255.0f,
-			key->B / 255.0f,
-			key->A / 255.0f
-		);
-		CAfxColorLut::CRgba rgbaValue(
-			value->R / 255.0f,
-			value->G / 255.0f,
-			value->B / 255.0f,
-			value->A / 255.0f
-		);
+	delegate bool IteratePutCallBack(float r, float g, float b, float a,
+		[System::Runtime::InteropServices::OutAttribute] Single% outR,
+		[System::Runtime::InteropServices::OutAttribute] Single% outG,
+		[System::Runtime::InteropServices::OutAttribute] Single% outB,
+		[System::Runtime::InteropServices::OutAttribute] Single% outA);
 
-		//m_AfxColorLut->Put(rgbaKey, rgbaValue);
-	}
-
-	~ColorLutTools()
+	bool IteratePut(IteratePutCallBack ^ callback)
 	{
-		delete m_AfxColorLut;
+		GCHandle gch = GCHandle::Alloc(callback);
+
+		IntPtr ip = Marshal::GetFunctionPointerForDelegate(callback);
+		CAfxColorLut::IteratePutCallback_t nativeCallback = static_cast<CAfxColorLut::IteratePutCallback_t>(ip.ToPointer());
+
+		bool result = m_AfxColorLut->IteratePut(nativeCallback);
+
+		gch.Free();
+
+		return result;
 	}
 
 private:
