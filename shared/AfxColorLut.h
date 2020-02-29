@@ -62,17 +62,19 @@ public:
 		{
 			m_Root = new RedLookupTreeNode_t();
 
-			for (size_t r = 0; r < resR; ++resR)
+			m_Root->MakeChildren(resR);
+			for (size_t r = 0; r < resR; ++r)
 			{
-				m_Root->MakeChildren(resR);
-				for (size_t g = 0; g < resG; ++resG)
+				GreenLookupTreeNode_t* rootG = m_Root->GetValue(resR, r);
+				rootG->MakeChildren(resG);
+				for (size_t g = 0; g < resG; ++g)
 				{
-					GreenLookupTreeNode_t* rootG = m_Root->GetValue(resR, g);
-					rootG->MakeChildren(resG);
-					for (size_t b = 0; b < resB; ++resB)
+					BlueLookupTreeNode_t* rootB = rootG->GetValue(resG, g);
+					rootB->MakeChildren(resB);
+					for (size_t b = 0; b < resB; ++b)
 					{
-						GreenLookupTreeNode_t* rootB = m_Root->GetValue(resB, b);
-						rootB->MakeChildren(resA);
+						AlphaLookupTreeNode_t* rootA = rootB->GetValue(resB, b);
+						rootA->MakeChildren(resA);
 					}
 				}
 			}
@@ -221,24 +223,24 @@ public:
 		if (!IsValid()) return false;
 
 		size_t resR = m_Dimensions.GetSize();
-		for (size_t r = 0; r < resR; ++resR)
+		for (size_t r = 0; r < resR; ++r)
 		{
-			float fR = (float)r * (resR - 1);
+			float fR = (float)r / (resR - 1);
 			GreenLookupTreeNode_t* rootG = m_Root->GetValue(resR, r);
 			size_t resG = m_Dimensions.GetSub().GetSize();
-			for (size_t g = 0; g < resG; ++resG)
+			for (size_t g = 0; g < resG; ++g)
 			{
-				float fG = (float)g * (resG - 1);
+				float fG = (float)g / (resG - 1);
 				BlueLookupTreeNode_t* rootB = rootG->GetValue(resG, g);
 				size_t resB = m_Dimensions.GetSub().GetSub().GetSize();
-				for (size_t b = 0; b < resB; ++resB)
+				for (size_t b = 0; b < resB; ++b)
 				{
-					float fB = (float)b * (resB - 1);
+					float fB = (float)b / (resB - 1);
 					AlphaLookupTreeNode_t* rootA = rootB->GetValue(resB, b);
 					size_t resA = m_Dimensions.GetSub().GetSub().GetSub().GetSize();
-					for (size_t a = 0; a < resA; ++resA)
+					for (size_t a = 0; a < resA; ++a)
 					{
-						float fA = (float)a * (resA - 1);
+						float fA = (float)a / (resA - 1);
 
 						CRgba* outVal = rootA->GetValue(resA, a);
 

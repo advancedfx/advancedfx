@@ -8,7 +8,7 @@ using namespace System::Runtime::InteropServices;
 
 namespace AfxCppCli {
 
-ref class ColorLutTools
+public ref class ColorLutTools
 {
 public:
 	ColorLutTools()
@@ -85,10 +85,10 @@ public:
 	}
 
 	delegate bool IteratePutCallBack(float r, float g, float b, float a,
-		[System::Runtime::InteropServices::OutAttribute] Single% outR,
-		[System::Runtime::InteropServices::OutAttribute] Single% outG,
-		[System::Runtime::InteropServices::OutAttribute] Single% outB,
-		[System::Runtime::InteropServices::OutAttribute] Single% outA);
+		[System::Runtime::InteropServices::Out] float% outR,
+		[System::Runtime::InteropServices::Out] float% outG,
+		[System::Runtime::InteropServices::Out] float% outB,
+		[System::Runtime::InteropServices::Out] float% outA);
 
 	bool IteratePut(IteratePutCallBack ^ callback)
 	{

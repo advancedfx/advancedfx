@@ -8,21 +8,21 @@ using System.Windows.Forms;
 
 namespace AfxGui
 {
-    public partial class AfxRgbaLutVoronoiGenerator : Form
+    public partial class AfxRgbaLutVoronoiGenerator : Form, IDisposable
     {
         public AfxRgbaLutVoronoiGenerator()
         {
             InitializeComponent();
 
-            m_Colors.Add(new HlaeCommentedColor(0.878431f, 0.686275f, 0.337255f, 0, "T"), new HlaeColor(0.902f, 0.525f, 0.196f, 0));
-            m_Colors.Add(new HlaeCommentedColor(0.878431f, 0.686275f, 0.337255f, 1, "T"), new HlaeColor(0.902f, 0.525f, 0.196f, 1));
-            m_Colors.Add(new HlaeCommentedColor(0.447059f, 0.607843f, 0.866667f, 0, "CT"), new HlaeColor(0.384f, 0.388f, 0.741f, 0));
-            m_Colors.Add(new HlaeCommentedColor(0.447059f, 0.607843f, 0.866667f, 1, "CT"), new HlaeColor(0.384f, 0.388f, 0.741f, 1));
+            m_Colors.Add(new HlaeCommentedColor(0.878431f, 0.686275f, 0.337255f, 0, L10n._p("terrorist", "T")), new HlaeColor(0.902f, 0.525f, 0.196f, 0));
+            m_Colors.Add(new HlaeCommentedColor(0.878431f, 0.686275f, 0.337255f, 1, L10n._p("terrorist", "T")), new HlaeColor(0.902f, 0.525f, 0.196f, 1));
+            m_Colors.Add(new HlaeCommentedColor(0.447059f, 0.607843f, 0.866667f, 0, L10n._p("counter-terrorist", "CT")), new HlaeColor(0.384f, 0.388f, 0.741f, 0));
+            m_Colors.Add(new HlaeCommentedColor(0.447059f, 0.607843f, 0.866667f, 1, L10n._p("counter-terrorist", "CT")), new HlaeColor(0.384f, 0.388f, 0.741f, 1));
             //m_Colors.Add(new HlaeCommentedColor(0.662745f, 0.647059f, 0.601961f, 1, "T/CT primary neutral"), new HlaeColor(0.637258f, 0.637258f, 0.637258f));
-            m_Colors.Add(new HlaeCommentedColor(0.894f, 0.486f, 0f, 0, "T aim"), new HlaeColor(0.902f, 0.525f, 0.196f, 0));
-            m_Colors.Add(new HlaeCommentedColor(0.894f, 0.486f, 0f, 1, "T aim"), new HlaeColor(0.902f, 0.525f, 0.196f, 1));
-            m_Colors.Add(new HlaeCommentedColor(0f, 0.447f, 0.922f, 0, "CT aim"), new HlaeColor(0.384f, 0.388f, 0.741f, 0));
-            m_Colors.Add(new HlaeCommentedColor(0f, 0.447f, 0.922f, 1, "CT aim"), new HlaeColor(0.384f, 0.388f, 0.741f, 1));
+            m_Colors.Add(new HlaeCommentedColor(0.894f, 0.486f, 0f, 0, L10n._p("terrorist", "T aim")), new HlaeColor(0.902f, 0.525f, 0.196f, 0));
+            m_Colors.Add(new HlaeCommentedColor(0.894f, 0.486f, 0f, 1, L10n._p("terrorist", "T aim")), new HlaeColor(0.902f, 0.525f, 0.196f, 1));
+            m_Colors.Add(new HlaeCommentedColor(0f, 0.447f, 0.922f, 0, L10n._p("counter-terrorist", "CT aim")), new HlaeColor(0.384f, 0.388f, 0.741f, 0));
+            m_Colors.Add(new HlaeCommentedColor(0f, 0.447f, 0.922f, 1, L10n._p("counter-terrorist", "CT aim")), new HlaeColor(0.384f, 0.388f, 0.741f, 1));
             //m_Colors.Add(new HlaeCommentedColor(0.984f, 0.4815f, 0.922f, 1, "T/CT aim neutral"), new HlaeColor(0.795833f, 0.795833f, 0.795833, 1));
 
             m_Colors.Add(new HlaeCommentedColor(0, 0, 0, 0), new HlaeColor(0, 0, 0, 0));
@@ -61,7 +61,12 @@ namespace AfxGui
 
                 ++idx;
             }
+
+            UpdateEstimate();
         }
+
+        private AfxCppCli.ColorLutTools colorLutTools;
+        private Bitmap previewBitmap;
 
         private byte VavlueToByte(float value)
         {
@@ -84,7 +89,7 @@ namespace AfxGui
                 A = (byte)Math.Min(Math.Max(0, value.A * 255f + 0.5f), 255f);
             }
 
-            public override string ToString() 
+            public override string ToString()
             {
                 return R.ToString("X2") + G.ToString("X2") + B.ToString("X2") + A.ToString("X2");
             }
@@ -128,8 +133,24 @@ namespace AfxGui
 
             public HlaeCommentedColor(float r, float g, float b, float a, string comment = "")
             {
-                Color = new HlaeColor(r,g,b,a);
+                Color = new HlaeColor(r, g, b, a);
                 Comment = comment;
+            }
+
+            public override int GetHashCode()
+            {
+                return Color.GetHashCode();
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (null == obj) return false;
+
+                if (!(obj is HlaeCommentedColor)) return false;
+
+                HlaeCommentedColor ccol = (HlaeCommentedColor)obj;
+
+                return Color.Equals(ccol.Color);
             }
         }
 
@@ -175,7 +196,7 @@ namespace AfxGui
             row.Cells[3].Style.SelectionBackColor = row.Cells[3].Style.BackColor = bSB ? bcS : bcSf;
             row.Cells[3].Style.SelectionForeColor = row.Cells[3].Style.ForeColor = bSB ? bcSf : bcS;
             row.Cells[4].Style.SelectionBackColor = row.Cells[4].Style.BackColor = bSA ? System.Drawing.Color.FromArgb(255, sA, sA, sA) : System.Drawing.Color.FromArgb(255, 255, 0, 0);
-            row.Cells[4].Style.SelectionForeColor = row.Cells[4].Style.ForeColor = ForeColorValue(row.Cells[3].Style.BackColor);
+            row.Cells[4].Style.SelectionForeColor = row.Cells[4].Style.ForeColor = ForeColorValue(row.Cells[4].Style.BackColor);
 
             row.Cells[6].Style.SelectionBackColor = row.Cells[6].Style.BackColor = bDR ? bcD : bcDf;
             row.Cells[6].Style.SelectionForeColor = row.Cells[6].Style.ForeColor = bDR ? bcDf : bcD;
@@ -198,8 +219,9 @@ namespace AfxGui
 
         private void dataGridViewColors_RowsRemoved(object sender, DataGridViewRowsRemovedEventArgs e)
         {
-            for(int i = e.RowIndex; i < (sender as DataGridView).Rows.Count; ++i)
+            for (int i = e.RowIndex; i < (sender as DataGridView).Rows.Count; ++i)
             {
+                dataGridViewColors.Rows[i].Cells[0].Value = e.RowIndex.ToString();
             }
         }
 
@@ -207,10 +229,10 @@ namespace AfxGui
         {
             string value = "";
 
-            for(int i=0; i < dataGridViewColors.Rows.Count; ++i)
+            for (int i = 0; i < dataGridViewColors.Rows.Count; ++i)
             {
                 if (0 < i) value = value + System.Environment.NewLine;
-                for (int j=1; j < dataGridViewColors.Rows[i].Cells.Count; ++j)
+                for (int j = 1; j < dataGridViewColors.Rows[i].Cells.Count; ++j)
                 {
                     if (1 < j) value = value + "\t";
                     value = value + (null != dataGridViewColors.Rows[i].Cells[j].Value ? dataGridViewColors.Rows[i].Cells[j].Value.ToString() : "");
@@ -228,7 +250,7 @@ namespace AfxGui
             if (null == value) value = "";
 
             string[] rows = value.Split('\n');
-            for(int i=0; i<rows.Length; ++i)
+            for (int i = 0; i < rows.Length; ++i)
             {
                 string[] cells = rows[i].TrimEnd('\r').Split('\t');
 
@@ -245,7 +267,205 @@ namespace AfxGui
                     9 <= cells.Length ? cells[8] : ""
                 )]);
             }
+        }
 
+        private void RowColumnError(int row, string column)
+        {
+            MessageBox.Show(this,
+                 L10n._("Invalid / missing value in row {0}, column {1}.", row, column),
+                 L10n._("Error"),
+                 MessageBoxButtons.OK,
+                 MessageBoxIcon.Error);
+        }
+
+        private bool GetRowColor(DataGridViewRow row, out HlaeCommentedColor src, out HlaeColor dst)
+        {
+            bool bOk = true;
+            string[] colNames = { "Index", "R1", "G1", "B1", "A1", "Comment", "R2", "G2", "B2", "A2" };
+            int[] cols = { 1, 2, 3, 4, 6, 7, 8, 9 };
+            byte[] vals = { 255, 255, 255, 255, 255, 255, 255, 255 };
+            string comment = "ERROR";
+
+            for (int i = 0; i < cols.Length && bOk; ++i)
+            {
+                bOk = bOk && null != row.Cells[cols[i]].Value;
+                if (bOk) bOk = bOk && byte.TryParse(row.Cells[cols[i]].Value.ToString(), out vals[i]);
+                if (!bOk) RowColumnError(row.Index, colNames[cols[i]]);
+            }
+
+            if (bOk && null == row.Cells[5].Value)
+            {
+                bOk = false;
+                RowColumnError(0, colNames[cols[5]]);
+            }
+            else comment = row.Cells[5].Value.ToString();
+
+            src = new HlaeCommentedColor(vals[0], vals[1], vals[2], vals[3], comment);
+            dst = new HlaeColor(vals[4], vals[5], vals[6], vals[7]);
+
+            return bOk;
+        }
+
+        private bool GetColors()
+        {
+            m_Colors.Clear();
+
+            for (int i = 0; i < dataGridViewColors.Rows.Count; ++i)
+            {
+                if (dataGridViewColors.Rows[i].IsNewRow) continue;
+
+                HlaeCommentedColor src;
+                HlaeColor dst;
+                if (!GetRowColor(dataGridViewColors.Rows[i], out src, out dst)) return false;
+
+                if (m_Colors.ContainsKey(src))
+                {
+                    int idx = 0;
+                    foreach (KeyValuePair<HlaeCommentedColor, HlaeColor> kvp in m_Colors)
+                    {
+                        if (kvp.Key.Equals(src))
+                        {
+                            MessageBox.Show(this,
+                                L10n._("Duplicate source color in row {0} (of row {1}).", i, idx),
+                                L10n._("Error"),
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Error);
+                        }
+                        ++idx;
+                    }
+
+                    return false;
+                }
+
+                m_Colors.Add(src, dst);
+            }
+
+            return true;
+        }
+
+        private void buttonCheck_Click(object sender, EventArgs e)
+        {
+            if (GetColors())
+            {
+                MessageBox.Show(
+                    L10n._("No Errors"),
+                    L10n._("Check passsed"),
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+        }
+
+        private void UpdateEstimate()
+        {
+            decimal value = resR.Value * resG.Value * resB.Value * resA.Value * 4;
+
+            memEstimate.Text = value.ToString();
+        }
+
+        private void ResValueChanged(object sender, EventArgs e)
+        {
+            UpdateEstimate();
+        }
+
+        private void UpdatePictureBoxBg(PictureBox pb, int size, Color col)
+        {
+            if (size == 0 && pb.BackgroundImage != null)
+            {
+                pb.BackgroundImage.Dispose();
+                pb.BackgroundImage = null;
+                return;
+            }
+            Bitmap bmp = new Bitmap(size * 2, size * 2);
+            using (SolidBrush brush = new SolidBrush(col))
+            using (Graphics G = Graphics.FromImage(bmp))
+            {
+                G.FillRectangle(brush, 0, 0, size, size);
+                G.FillRectangle(brush, size, size, size, size);
+            }
+            pb.BackgroundImage = bmp;
+            pb.BackgroundImageLayout = ImageLayout.Tile;
+        }
+
+        private bool Iterate(float r, float g, float b, float a, out float outR, out float outG, out float outB, out float outA)
+        {
+            outR = r;
+            outG = g;
+            outB = b;
+            outA = a;
+
+            if(r == 0 && g == 0)
+            {
+                if (preview.Image != null)
+                {
+                    preview.Image.Dispose();
+                    preview.Image = null;
+                }
+                if (previewBitmap != null)
+                {
+                   preview.Image = null;
+                   previewBitmap.Dispose();
+                }
+                previewBitmap = new Bitmap((int)resR.Value, (int)resG.Value);
+                preview.Image = new Bitmap(preview.Width, preview.Height);
+            }
+
+            previewBitmap.SetPixel(Math.Max(Math.Min(previewBitmap.Width -1,(int)(r * (float)(resR.Value - 1))),0), Math.Max(Math.Min(previewBitmap.Height - 1, (int)(g * (float)(resG.Value - 1))), 0), new HlaeColorUc(new HlaeColor(outR, outG, outB, outA)).ToColor());
+
+            using (Graphics gfx = Graphics.FromImage(preview.Image))
+            {
+                gfx.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+                gfx.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                gfx.DrawImage(previewBitmap, 0, 0, preview.Width, preview.Height);
+            }
+
+            preview.Refresh();
+
+            return true;
+        }
+
+        private void buttonGenerateLut_Click(object sender, EventArgs e)
+        {
+            if (!GetColors()) return;
+
+            if (null != colorLutTools) colorLutTools.Dispose();
+
+            UpdatePictureBoxBg(preview, 320/4, System.Drawing.Color.FromArgb(255,128,128,128));
+
+            colorLutTools = new AfxCppCli.ColorLutTools();
+
+            if(!colorLutTools.New(
+                (uint)resR.Value,
+                (uint)resG.Value,
+                (uint)resB.Value,
+                (uint)resA.Value
+            ))
+            {
+                MessageBox.Show(this,
+                    L10n._("Error when creating / re-sizing color map."),
+                    L10n._("Error"),
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return;
+            }
+
+            if (!colorLutTools.IteratePut(Iterate))
+            {
+                MessageBox.Show(this,
+                    L10n._("User aborted."),
+                    L10n._("Error"),
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return;
+            }
+        }
+
+        private void AfxRgbaLutVoronoiGenerator_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            if (null != colorLutTools)
+            {
+                colorLutTools.Dispose();
+                colorLutTools = null;
+            }
         }
     }
 }
