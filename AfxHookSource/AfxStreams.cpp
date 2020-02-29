@@ -1797,7 +1797,6 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::CAfxBaseFxStreamContext::RetrieveA
 {
 	CAction * action = nullptr;
 
-	std::unique_lock<std::mutex> lock(m_MapMutex);
 	std::map<CAfxTrackedMaterial *, CCacheEntry>::iterator it = m_Map.find(trackedMaterial);
 
 	if (it == m_Map.end())
@@ -2657,6 +2656,8 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin(const CAfxBaseFxStrea
 	{
 		// Is leaf context.
 
+		m_MapMutex.lock();
+
 		m_Data = data;
 		m_IsNextDepth = false;
 		m_DrawingHud = false;
@@ -2732,6 +2733,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd(bool isRoot)
 			AfxD3D9PopOverrideState();
 		}
 
+		m_MapMutex.unlock();
 	}
 
 	if (isRoot)
