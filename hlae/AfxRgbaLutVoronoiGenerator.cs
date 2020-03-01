@@ -63,10 +63,13 @@ namespace AfxGui
             }
 
             UpdateEstimate();
+
+            UpdatePreview();
         }
 
         private AfxCppCli.ColorLutTools colorLutTools;
         private Bitmap previewBitmap;
+        private bool suspendPreview = false;
 
         private byte VavlueToByte(float value)
         {
@@ -83,10 +86,10 @@ namespace AfxGui
 
             public HlaeColorUc(HlaeColor value)
             {
-                R = (byte)Math.Min(Math.Max(0, value.R * 255f + 0.5f), 255f);
-                G = (byte)Math.Min(Math.Max(0, value.G * 255f + 0.5f), 255f);
-                B = (byte)Math.Min(Math.Max(0, value.B * 255f + 0.5f), 255f);
-                A = (byte)Math.Min(Math.Max(0, value.A * 255f + 0.5f), 255f);
+                R = (byte)Math.Min(Math.Max(0, value.R * 255f), 255f);
+                G = (byte)Math.Min(Math.Max(0, value.G * 255f), 255f);
+                B = (byte)Math.Min(Math.Max(0, value.B * 255f), 255f);
+                A = (byte)Math.Min(Math.Max(0, value.A * 255f), 255f);
             }
 
             public override string ToString()
@@ -411,14 +414,19 @@ namespace AfxGui
 
             previewBitmap.SetPixel(Math.Max(Math.Min(previewBitmap.Width -1,(int)(r * (float)(resR.Value - 1))),0), Math.Max(Math.Min(previewBitmap.Height - 1, (int)(g * (float)(resG.Value - 1))), 0), new HlaeColorUc(new HlaeColor(outR, outG, outB, outA)).ToColor());
 
-            using (Graphics gfx = Graphics.FromImage(preview.Image))
-            {
-                gfx.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
-                gfx.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-                gfx.DrawImage(previewBitmap, 0, 0, preview.Width, preview.Height);
-            }
+            trackZ.Value = Math.Max(Math.Min(trackZ.Maximum, (int)(b * (float)(trackZ.Maximum))), 0);
+            trackW.Value = Math.Max(Math.Min(trackW.Maximum, (int)(a * (float)(trackW.Maximum))), 0);
 
-            preview.Refresh();
+            if (b == 1 && a == 1)
+            {
+                using (Graphics gfx = Graphics.FromImage(preview.Image))
+                {
+                    gfx.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+                    gfx.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                    gfx.DrawImage(previewBitmap, 0, 0, preview.Width, preview.Height);
+                }
+                preview.Refresh();                
+            }
 
             return true;
         }
@@ -429,7 +437,14 @@ namespace AfxGui
 
             if (null != colorLutTools) colorLutTools.Dispose();
 
-            UpdatePictureBoxBg(preview, 320/4, System.Drawing.Color.FromArgb(255,128,128,128));
+            colorLutTools = null;
+
+            comboX.SelectedIndex = 0;
+            comboY.SelectedIndex = 1;
+            trackZ.Value = 255;
+            trackW.Value = 255;
+
+            suspendPreview = true;
 
             colorLutTools = new AfxCppCli.ColorLutTools();
 
@@ -455,8 +470,11 @@ namespace AfxGui
                     L10n._("Error"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
-                return;
             }
+
+            suspendPreview = false;
+
+            UpdatePreview();
         }
 
         private void AfxRgbaLutVoronoiGenerator_FormClosed(object sender, FormClosedEventArgs e)
@@ -466,6 +484,134 @@ namespace AfxGui
                 colorLutTools.Dispose();
                 colorLutTools = null;
             }
+        }
+
+        private void SetPreviewEnabled(bool value)
+        {
+            comboX.Enabled = value;
+            comboY.Enabled = value;
+            trackW.Enabled = value;
+            trackZ.Enabled = value;
+        } 
+
+        private void UpdatePreview()
+        {
+            if (suspendPreview || preview.Width <= 0 || preview.Height <= 0) return;
+
+            string[] axis = { "R", "G", "B", "A" };
+            int[] orgAxisVal = { 0, 1, 2, 3 };
+            int[] axisVal = { 0, 1, 2, 3 };
+
+            int j = 0;
+            int i = 0;
+            for(; i < axis.Length; ++i)
+            {
+                if (comboX.Text.Equals(axis[i]))
+                {
+                    axisVal[0] = orgAxisVal[i];
+                }
+                else if(comboY.Text.Equals(axis[i]))
+                {
+                    axisVal[1] = orgAxisVal[i];
+                }
+                else if (j == 0)
+                {
+                    labelZ.Text = axis[i];
+                    axisVal[2] = orgAxisVal[i];
+                    ++j;
+                }
+                else if (j == 1)
+                {
+                    labelW.Text = axis[i];
+                    axisVal[3] = orgAxisVal[i];
+                    ++j;
+                }
+            }
+
+            bool hasLut = null != colorLutTools && colorLutTools.IsValid();
+
+            UpdatePictureBoxBg(preview, 320 / 4, hasLut ? System.Drawing.Color.FromArgb(255, 255, 255, 0)  : System.Drawing.Color.FromArgb(255, 255, 0, 0));
+            SetPreviewEnabled(hasLut);
+            preview.Refresh();
+
+            if(null != colorLutTools)
+            {
+                if (null != previewBitmap) previewBitmap.Dispose();
+                if (null != preview.Image) preview.Image.Dispose();
+
+                preview.Image = previewBitmap = new Bitmap(preview.Width, preview.Height);
+
+                for(int x = 0; x < preview.Width; ++x)
+                {
+                    for(int y = 0; y < preview.Height; ++y)
+                    {
+                        float[] vals = new float[]{ 0, 0, 0, 0 };
+
+                        vals[axisVal[0]] = (float)x / (preview.Width - 1);
+                        vals[axisVal[1]] = (float)y / (preview.Height - 1);
+                        vals[axisVal[2]] = (float)trackZ.Value / (trackZ.Maximum - 1);
+                        vals[axisVal[3]] = (float)trackW.Value / (trackW.Maximum - 1);
+
+                        float newR, newG, newB, newA;
+
+                        if(colorLutTools.Query(vals[0], vals[1], vals[2], vals[3], out newR, out newG, out newB, out newA))
+                        {
+                            previewBitmap.SetPixel(x, y, new HlaeColorUc(new HlaeColor(newR, newG, newB, newA)).ToColor());
+                        }
+
+                        if (((x * y) & 65535) == 65535)
+                        {
+                            preview.Refresh();
+                        }
+                    }
+                }
+
+                UpdatePictureBoxBg(preview, 320 / 4, System.Drawing.Color.FromArgb(255, 128, 128, 128));
+                preview.Refresh();
+            }
+        }
+
+        private void comboX_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (comboY.SelectedIndex == comboX.SelectedIndex)
+            {
+                comboY.SelectedIndex = (comboY.SelectedIndex + 1) % comboY.Items.Count;
+            }
+            else UpdatePreview();
+        }
+
+        private void comboY_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (comboX.SelectedIndex == comboY.SelectedIndex)
+            {
+                comboX.SelectedIndex = (comboX.SelectedIndex + 1) % comboX.Items.Count;
+            }
+            else UpdatePreview();
+        }
+
+        private void trackZ_ValueChanged(object sender, EventArgs e)
+        {
+            UpdatePreview();
+        }
+
+        private void preview_Resize(object sender, EventArgs e)
+        {
+            UpdatePreview();
+        }
+
+        private void AfxRgbaLutVoronoiGenerator_ResizeEnd(object sender, EventArgs e)
+        {
+            suspendPreview = false;
+        }
+
+        private void preview_SizeChanged(object sender, EventArgs e)
+        {
+            UpdatePreview();
+        }
+
+        private void AfxRgbaLutVoronoiGenerator_ResizeBegin(object sender, EventArgs e)
+        {
+            suspendPreview = true;
         }
     }
 }

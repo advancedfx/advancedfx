@@ -64,8 +64,8 @@
             this.comboY = new System.Windows.Forms.ComboBox();
             this.label5 = new System.Windows.Forms.Label();
             this.comboX = new System.Windows.Forms.ComboBox();
-            this.label8 = new System.Windows.Forms.Label();
-            this.label9 = new System.Windows.Forms.Label();
+            this.labelZ = new System.Windows.Forms.Label();
+            this.labelW = new System.Windows.Forms.Label();
             this.trackZ = new System.Windows.Forms.TrackBar();
             this.trackW = new System.Windows.Forms.TrackBar();
             this.tabControl1.SuspendLayout();
@@ -267,6 +267,7 @@
             this.preview.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.preview.TabIndex = 15;
             this.preview.TabStop = false;
+            this.preview.SizeChanged += new System.EventHandler(this.preview_SizeChanged);
             // 
             // groupBox1
             // 
@@ -440,8 +441,8 @@
             this.groupBox2.Controls.Add(this.comboY);
             this.groupBox2.Controls.Add(this.label5);
             this.groupBox2.Controls.Add(this.comboX);
-            this.groupBox2.Controls.Add(this.label8);
-            this.groupBox2.Controls.Add(this.label9);
+            this.groupBox2.Controls.Add(this.labelZ);
+            this.groupBox2.Controls.Add(this.labelW);
             this.groupBox2.Controls.Add(this.trackZ);
             this.groupBox2.Controls.Add(this.trackW);
             this.groupBox2.Location = new System.Drawing.Point(336, 130);
@@ -462,11 +463,18 @@
             // 
             // comboY
             // 
+            this.comboY.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboY.FormattingEnabled = true;
+            this.comboY.Items.AddRange(new object[] {
+            "R",
+            "G",
+            "B",
+            "A"});
             this.comboY.Location = new System.Drawing.Point(160, 46);
             this.comboY.Name = "comboY";
             this.comboY.Size = new System.Drawing.Size(68, 21);
             this.comboY.TabIndex = 3;
+            this.comboY.SelectedIndexChanged += new System.EventHandler(this.comboY_SelectedIndexChanged);
             // 
             // label5
             // 
@@ -479,29 +487,36 @@
             // 
             // comboX
             // 
+            this.comboX.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboX.FormattingEnabled = true;
+            this.comboX.Items.AddRange(new object[] {
+            "R",
+            "G",
+            "B",
+            "A"});
             this.comboX.Location = new System.Drawing.Point(160, 19);
             this.comboX.Name = "comboX";
             this.comboX.Size = new System.Drawing.Size(68, 21);
             this.comboX.TabIndex = 1;
+            this.comboX.SelectedIndexChanged += new System.EventHandler(this.comboX_SelectedIndexChanged);
             // 
-            // label8
+            // labelZ
             // 
-            this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(8, 73);
-            this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(14, 13);
-            this.label8.TabIndex = 4;
-            this.label8.Text = "Z";
+            this.labelZ.AutoSize = true;
+            this.labelZ.Location = new System.Drawing.Point(8, 73);
+            this.labelZ.Name = "labelZ";
+            this.labelZ.Size = new System.Drawing.Size(14, 13);
+            this.labelZ.TabIndex = 4;
+            this.labelZ.Text = "Z";
             // 
-            // label9
+            // labelW
             // 
-            this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(6, 105);
-            this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(18, 13);
-            this.label9.TabIndex = 6;
-            this.label9.Text = "W";
+            this.labelW.AutoSize = true;
+            this.labelW.Location = new System.Drawing.Point(6, 105);
+            this.labelW.Name = "labelW";
+            this.labelW.Size = new System.Drawing.Size(18, 13);
+            this.labelW.TabIndex = 6;
+            this.labelW.Text = "W";
             // 
             // trackZ
             // 
@@ -516,6 +531,7 @@
             this.trackZ.TabIndex = 5;
             this.trackZ.TickFrequency = 16;
             this.trackZ.TickStyle = System.Windows.Forms.TickStyle.TopLeft;
+            this.trackZ.ValueChanged += new System.EventHandler(this.trackZ_ValueChanged);
             // 
             // trackW
             // 
@@ -530,6 +546,7 @@
             this.trackW.TabIndex = 7;
             this.trackW.TickFrequency = 16;
             this.trackW.TickStyle = System.Windows.Forms.TickStyle.TopLeft;
+            this.trackW.ValueChanged += new System.EventHandler(this.trackZ_ValueChanged);
             // 
             // AfxRgbaLutVoronoiGenerator
             // 
@@ -541,6 +558,8 @@
             this.Name = "AfxRgbaLutVoronoiGenerator";
             this.Text = "L10n Natural Neighbour Interpolation - AfxRgbaLut";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.AfxRgbaLutVoronoiGenerator_FormClosed);
+            this.ResizeBegin += new System.EventHandler(this.AfxRgbaLutVoronoiGenerator_ResizeBegin);
+            this.ResizeEnd += new System.EventHandler(this.AfxRgbaLutVoronoiGenerator_ResizeEnd);
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewColors)).EndInit();
@@ -592,8 +611,8 @@
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.ComboBox comboY;
         private System.Windows.Forms.ComboBox comboX;
-        private System.Windows.Forms.Label label8;
-        private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.Label labelZ;
+        private System.Windows.Forms.Label labelW;
         private System.Windows.Forms.TrackBar trackZ;
         private System.Windows.Forms.TrackBar trackW;
         private System.Windows.Forms.TextBox memEstimate;

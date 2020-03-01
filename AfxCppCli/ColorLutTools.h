@@ -59,24 +59,20 @@ public:
 		return false;
 	}
 
-	bool Query(System::Drawing::Color^ color, System::Drawing::Color^ &outColor)
+	bool Query(float r, float g, float b, float a,
+		[System::Runtime::InteropServices::Out] float% outR,
+		[System::Runtime::InteropServices::Out] float% outG,
+		[System::Runtime::InteropServices::Out] float% outB,
+		[System::Runtime::InteropServices::Out] float% outA)
 	{
-		CAfxColorLut::CRgba rgba(
-			color->R / 255.0f,
-			color->G / 255.0f,
-			color->B / 255.0f,
-			color->A / 255.0f
-		);
+		float tOutR, tOutG, tOutB, tOutA;
 
-		CAfxColorLut::CRgba outRgba(rgba);
-
-		if (bool result = m_AfxColorLut->Query(rgba, &outRgba))
+		if (bool result = m_AfxColorLut->Query(r, g, b, a, tOutR, tOutG, tOutB, tOutA))
 		{
-			outColor = System::Drawing::Color::FromArgb(
-				(int)System::Math::Max(0.0f, System::Math::Min(outRgba.A * 255.0f + 0.5f, 255.0f)),
-				(int)System::Math::Max(0.0f, System::Math::Min(outRgba.R * 255.0f + 0.5f, 255.0f)),
-				(int)System::Math::Max(0.0f, System::Math::Min(outRgba.G * 255.0f + 0.5f, 255.0f)),
-				(int)System::Math::Max(0.0f, System::Math::Min(outRgba.B * 255.0f + 0.5f, 255.0f)));
+			outR = tOutR;
+			outG = tOutG;
+			outB = tOutB;
+			outA = tOutA;
 
 			return true;
 		}
@@ -84,6 +80,7 @@ public:
 		return false;
 	}
 
+	[returnvalue: System::Runtime::InteropServices::MarshalAs(System::Runtime::InteropServices::UnmanagedType::Bool)]
 	delegate bool IteratePutCallBack(float r, float g, float b, float a,
 		[System::Runtime::InteropServices::Out] float% outR,
 		[System::Runtime::InteropServices::Out] float% outG,

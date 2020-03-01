@@ -159,29 +159,30 @@ public:
 		return true;
 	}
 
-	struct CRgba
+
+	struct CRgbaUc
 	{
-		float R;
-		float G;
-		float B;
-		float A;
+		unsigned char R;
+		unsigned char G;
+		unsigned char B;
+		unsigned char A;
 
-		CRgba() {}
-		CRgba(float r, float g, float b, float a) : R(r), G(g), B(b), A(a) {}
-		CRgba(const CRgba& other) : R(other.R), G(other.G), B(other.B), A(other.A) {}
+		CRgbaUc() {}
+		CRgbaUc(unsigned char r, unsigned char g, unsigned char b, unsigned char a) : R(r), G(g), B(b), A(a) {}
+		CRgbaUc(const CRgbaUc& other) : R(other.R), G(other.G), B(other.B), A(other.A) {}
 
-		bool operator<(const CRgba& rhs) const
+		bool operator<(const CRgbaUc& rhs) const
 		{
-			int cmp = (int)(R - rhs.R);
+			int cmp = (int)R - (int)rhs.R;
 			if (cmp < 0) return true;
 			else if (cmp > 0) return false;
-			cmp = (int)(G - rhs.G);
+			cmp = (int)G - (int)rhs.G;
 			if (cmp < 0) return true;
 			else if (cmp > 0) return false;
-			cmp = (int)(B - rhs.B);
+			cmp = (int)B - (int)rhs.B;
 			if (cmp < 0) return true;
 			else if (cmp > 0) return false;
-			cmp = (int)(A - rhs.A);
+			cmp = (int)A - (int)rhs.A;
 			if (cmp < 0) return true;
 			else if (cmp > 0) return false;
 			return false;
@@ -214,7 +215,36 @@ public:
 		}
 	};
 
-	bool Query(const CRgba& color, CRgba* outColor);
+	struct CRgba
+	{
+		float R;
+		float G;
+		float B;
+		float A;
+
+		CRgba() {}
+		CRgba(float r, float g, float b, float a) : R(r), G(g), B(b), A(a) {}
+		CRgba(const CRgbaUc & val) : R(max(0,min(val.R / 255.0f,1))), G(max(0, min(val.G / 255.0f, 1))), B(max(0, min(val.B / 255.0f, 1))), A(max(0, min(val.A / 255.0f, 1))) {}
+		CRgba(const CRgba& other) : R(other.R), G(other.G), B(other.B), A(other.A) {}
+
+		static CRgba Interp(const CRgba& x, const CRgba& x0, const CRgba & x1, const CRgba& y0, const CRgba & y1)
+		{
+			float dR = x1.R - x0.R;
+			float dG = x1.G - x0.G;
+			float dB = x1.B - x0.B;
+			float dA = x1.A - x0.A;
+
+			return CRgba(
+				dR ? y0.R + (x.R - x0.R) * (y1.R - y0.R) / dR : y0.R,
+				dG ? y0.G + (x.G - x0.G) * (y1.G - y0.G) / dG : y0.G,
+				dB ? y0.B + (x.B - x0.B) * (y1.B - y0.B) / dB : y0.B,
+				dA ? y0.A + (x.A - x0.A) * (y1.A - y0.A) / dA : y0.A
+			);
+		}
+	};
+
+
+	bool Query(float r, float g, float b, float a, float& outR, float& outG, float& outB, float& outA);
 
 	typedef BOOL (CALLBACK * IteratePutCallback_t)(float r, float g, float b, float a, float & outR, float & outG, float & outB, float & outA);
 
@@ -242,12 +272,18 @@ public:
 					{
 						float fA = (float)a / (resA - 1);
 
-						CRgba* outVal = rootA->GetValue(resA, a);
+						float outR, outG, outB, outA;
 
-						if (!callBack(fR, fG, fB, fA, outVal->R, outVal->G, outVal->B, outVal->A))
+						if (!callBack(fR, fG, fB, fA, outR, outG, outB, outA))
 						{
 							return false;
 						}
+
+						CRgbaUc* val = rootA->GetValue(resA, a);
+						val->R = (unsigned char)min(max(0, outR * 255.0f), 255.0f);
+						val->G = (unsigned char)min(max(0, outG * 255.0f), 255.0f);
+						val->B = (unsigned char)min(max(0, outB * 255.0f), 255.0f);
+						val->A = (unsigned char)min(max(0, outA * 255.0f), 255.0f);
 					}
 				}
 			}
@@ -300,8 +336,7 @@ private:
 				return &(m_Children[0]);
 			}
 
-			float fIndex = key * (count - 1);
-			if (key < 0) key = 0;
+			float fIndex = min(max(0,key * (count - 1)),count-1);
 
 			size_t index = (size_t)fIndex;
 
@@ -368,7 +403,7 @@ private:
 		y2 = node->GetValue(size, key, &x2, true);
 	}
 
-	typedef CLookupTreeNode<CRgba,size_t> AlphaLookupTreeNode_t;
+	typedef CLookupTreeNode<CRgbaUc,size_t> AlphaLookupTreeNode_t;
 	typedef CLookupTreeNode<AlphaLookupTreeNode_t, size_t, size_t> BlueLookupTreeNode_t;
 	typedef CLookupTreeNode<BlueLookupTreeNode_t, size_t, size_t, size_t> GreenLookupTreeNode_t;
 	typedef CLookupTreeNode<GreenLookupTreeNode_t, size_t, size_t, size_t, size_t> RedLookupTreeNode_t;
@@ -378,9 +413,9 @@ private:
 	RedLookupTreeNode_t* m_Root = nullptr;
 	CDimensions<size_t, size_t, size_t, size_t> m_Dimensions;
 
-	CRgba ValueOrDefault(const CRgba* value, const CRgba& defaultValue)
+	CRgba ValueOrDefault(const CRgbaUc* value, const CRgba& defaultValue)
 	{
-		if (value) return *value;
+		if (value) return CRgba(*value);
 		else return defaultValue;
 	}
 };
