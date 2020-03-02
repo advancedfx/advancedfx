@@ -4,6 +4,45 @@
 <changelog>
 
 
+
+<release>
+<name>AfxHookSource</name>
+<version>1.77.0</version>
+<time>2020-03-02T20:30Z</time>
+<changes>
+<change type="updated">
+Made mirv_streams drawing context locking less fine grained.
+</change>
+<change type="added">
+mirv_streams actions add glowColorMap, can be edited with mirv_streams actions edit.
+</change>
+</changes>
+<comments>
+// This config shows how to map the x-ray glow colors using an blast.afxlut file (can be generated in Tools -> AfxRgbaLut).<br />
+// The death notification colors and the overhead id colors need to be changed by customizing PanoramaUI instead!<br />
+<br />
+mirv_streams actions add glowColorMap blastGlow<br />
+<br />
+mirv_streams actions edit blastGlow load "C:\Users\Dominik\Desktop\blast.afxlut" // update this path to yours.<br />
+<br />
+mirv_streams add baseFx blast<br />
+mirv_streams edit blast forceBuildingCubeMaps 0<br />
+mirv_streams edit blast doBloomAndToneMapping 1<br />
+mirv_streams edit blast doDepthOfField 1<br />
+mirv_streams edit blast actionFilter clear // Just in case someone execs this cfg multiple times (We don't want the list to grow larger and larger!).<br />
+mirv_streams edit blast actionFilter add "__utilwireframe" blastGlow<br />
+mirv_streams edit blast actionFilter add "__utilwireframeignorez" blastGlow<br />
+mirv_streams edit blast actionFilter add "__utilvertexcolor" blastGlow<br />
+mirv_streams edit blast actionFilter add "__utilvertexcolorignorez" blastGlow<br />
+mirv_streams edit blast actionFilter add "dev/glow_color" blastGlow<br />
+mirv_streams preview blast<br />
+<br />
+mirv_fix selectedPlayerGlow 0 // disable glowing of selected player.
+</comments>
+</release>
+
+
+
 <release>
 <name>AfxHookSource</name>
 <version>1.75.0</version>

@@ -33,6 +33,7 @@
 #include "csgo_Stdshader_dx9_Hooks.h"
 //#include <csgo/sdk_src/public/tier0/memalloc.h>
 #include <shared/MirvCampath.h>
+#include <shared/AfxDetours.h>
 
 #include <malloc.h>
 #include <stdlib.h>
@@ -3356,6 +3357,24 @@ CON_COMMAND(mirv_fix, "Various fixes")
 			return;
 		}
 		*/
+		else if (0 == _stricmp("selectedPlayerGlow", cmd1) && 3 == argc)
+		{
+			if (!AFXADDR_GET(csgo_GlowCurrentPlayer_JE))
+			{
+				Tier0_Warning("Error: Required hooks not installed.\n");
+				return;
+			}
+
+			MdtMemBlockInfos mdtInfos;
+
+			MdtMemAccessBegin((LPVOID)AFXADDR_GET(csgo_GlowCurrentPlayer_JE), sizeof(unsigned char), &mdtInfos);
+
+			*(unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JE) = 0 != atoi(args->ArgV(2)) ? 0x74 : 0xEB;
+
+			MdtMemAccessEnd(&mdtInfos);
+
+			return;
+		}
 	}
 
 	Tier0_Msg(
@@ -3364,6 +3383,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 		"mirv_fix oldDuckFix [...] - Can fix player stuck in duck for old demos.\n"
 		"mirv_fix playerAnimState [...] - Fixes twitching of player arms/legs, see https://github.com/ripieces/advancedfx/wiki/Source%%3ASmoother-Demos .\n"
 		//"mirv_fix demoIndexTicks [...] - Tries to make backward skipping faster in demos.\n"
+		"mirv_fix selectedPlayerGlow 0|1 - If to allow selected player flow (1, default) or not (0).\n"
 	);
 	return;
 }

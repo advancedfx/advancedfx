@@ -67,24 +67,41 @@ bool CAfxColorLut::Query(float r, float g, float b, float a, float& outR, float&
 			ValueOrDefault(yA1111, x)
 		};
 
-		CRgba yB000 = CRgba::Interp(x, CRgba(xR0, xG00, xB000, xA0000), CRgba(xR0, xG00, xB000, xA0001), y[0b0000], y[0b0001]);
-		CRgba yB001 = CRgba::Interp(x, CRgba(xR0, xG00, xB001, xA0010), CRgba(xR0, xG00, xB001, xA0011), y[0b0010], y[0b0011]);
-		CRgba yB010 = CRgba::Interp(x, CRgba(xR0, xG01, xB010, xA0100), CRgba(xR0, xG01, xB010, xA0101), y[0b0100], y[0b0101]);
-		CRgba yB011 = CRgba::Interp(x, CRgba(xR0, xG01, xB011, xA0110), CRgba(xR0, xG01, xB011, xA0111), y[0b0110], y[0b0111]);
-		CRgba yB100 = CRgba::Interp(x, CRgba(xR1, xG10, xB100, xA1000), CRgba(xR1, xG10, xB100, xA1001), y[0b1000], y[0b1001]);
-		CRgba yB101 = CRgba::Interp(x, CRgba(xR1, xG10, xB101, xA1010), CRgba(xR1, xG10, xB101, xA1011), y[0b1010], y[0b1011]);
-		CRgba yB110 = CRgba::Interp(x, CRgba(xR1, xG11, xB110, xA1100), CRgba(xR1, xG11, xB110, xA1101), y[0b1100], y[0b1101]);
-		CRgba yB111 = CRgba::Interp(x, CRgba(xR1, xG11, xB111, xA1110), CRgba(xR1, xG11, xB111, xA1111), y[0b1110], y[0b1111]);
+		CRgba cB000 = CRgba(xR0, xG00, xB000, x.A);
+		CRgba cB001 = CRgba(xR0, xG00, xB001, x.A);
+		CRgba cB010 = CRgba(xR0, xG01, xB010, x.A);
+		CRgba cB011 = CRgba(xR0, xG01, xB011, x.A);
+		CRgba cB100 = CRgba(xR1, xG10, xB100, x.A);
+		CRgba cB101 = CRgba(xR1, xG10, xB101, x.A);
+		CRgba cB110 = CRgba(xR1, xG11, xB110, x.A);
+		CRgba cB111 = CRgba(xR1, xG11, xB111, x.A);
 
-		CRgba yG00 = CRgba::Interp(x, CRgba(xR0, xG00, xB000, x.A), CRgba(xR0, xG00, xB001, x.A), yB000, yB001);
-		CRgba yG01 = CRgba::Interp(x, CRgba(xR0, xG01, xB010, x.A), CRgba(xR0, xG01, xB011, x.A), yB010, yB011);
-		CRgba yG10 = CRgba::Interp(x, CRgba(xR1, xG10, xB100, x.A), CRgba(xR1, xG10, xB101, x.A), yB100, yB101);
-		CRgba yG11 = CRgba::Interp(x, CRgba(xR1, xG11, xB110, x.A), CRgba(xR1, xG11, xB111, x.A), yB110, yB111);
+		CRgba yB000 = CRgba::Interp(3, cB000, CRgba(xR0, xG00, xB000, xA0000), CRgba(xR0, xG00, xB000, xA0001), y[0b0000], y[0b0001]);
+		CRgba yB001 = CRgba::Interp(3, cB001, CRgba(xR0, xG00, xB001, xA0010), CRgba(xR0, xG00, xB001, xA0011), y[0b0010], y[0b0011]);
+		CRgba yB010 = CRgba::Interp(3, cB010, CRgba(xR0, xG01, xB010, xA0100), CRgba(xR0, xG01, xB010, xA0101), y[0b0100], y[0b0101]);
+		CRgba yB011 = CRgba::Interp(3, cB011, CRgba(xR0, xG01, xB011, xA0110), CRgba(xR0, xG01, xB011, xA0111), y[0b0110], y[0b0111]);
+		CRgba yB100 = CRgba::Interp(3, cB100, CRgba(xR1, xG10, xB100, xA1000), CRgba(xR1, xG10, xB100, xA1001), y[0b1000], y[0b1001]);
+		CRgba yB101 = CRgba::Interp(3, cB101, CRgba(xR1, xG10, xB101, xA1010), CRgba(xR1, xG10, xB101, xA1011), y[0b1010], y[0b1011]);
+		CRgba yB110 = CRgba::Interp(3, cB110, CRgba(xR1, xG11, xB110, xA1100), CRgba(xR1, xG11, xB110, xA1101), y[0b1100], y[0b1101]);
+		CRgba yB111 = CRgba::Interp(3, cB111, CRgba(xR1, xG11, xB111, xA1110), CRgba(xR1, xG11, xB111, xA1111), y[0b1110], y[0b1111]);
 
-		CRgba yR0 = CRgba::Interp(x, CRgba(xR0, xG00, x.B, x.A), CRgba(xR0, xG01, x.B, x.A), yG00, yG01);
-		CRgba yR1 = CRgba::Interp(x, CRgba(xR1, xG10, x.B, x.A), CRgba(xR1, xG11, x.B, x.A), yG10, yG11);
+		CRgba cG00 = CRgba(xR0, xG00, x.B, x.A);
+		CRgba cG01 = CRgba(xR0, xG01, x.B, x.A);
+		CRgba cG10 = CRgba(xR1, xG10, x.B, x.A);
+		CRgba cG11 = CRgba(xR1, xG11, x.B, x.A);
 
-		CRgba outY = CRgba::Interp(x, CRgba(xR0, x.G, x.B, x.A), CRgba(xR1, x.G, x.B, x.A), yR0, yR1);
+		CRgba yG00 = CRgba::Interp(2, cG00, cB000, cB001, yB000, yB001);
+		CRgba yG01 = CRgba::Interp(2, cG01, cB010, cB011, yB010, yB011);
+		CRgba yG10 = CRgba::Interp(2, cG10, cB100, cB101, yB100, yB101);
+		CRgba yG11 = CRgba::Interp(2, cG11, cB110, cB111, yB110, yB111);
+
+		CRgba cR0 = CRgba(xR0, x.G, x.B, x.A);
+		CRgba cR1 = CRgba(xR1, x.G, x.B, x.A);
+
+		CRgba yR0 = CRgba::Interp(1, cR0, cG00, cG01, yG00, yG01);
+		CRgba yR1 = CRgba::Interp(1, cR1, cG10, cG11, yG10, yG11);
+
+		CRgba outY = CRgba::Interp(0, x, cR0, cR1, yR0, yR1);
 
 		outR = outY.R;
 		outG = outY.G;

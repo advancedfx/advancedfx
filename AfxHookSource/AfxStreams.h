@@ -1880,8 +1880,15 @@ private:
 
 		void ID3d9HooksModulationColorBlendOverride::D3d9HooksModulationColorBlendOverride(float color[4]) override {
 
-			if (m_DebugColor)
+			if (1 == m_DebugColor)
 			{
+				color[3] = 1;
+			}
+			else if (2 == m_DebugColor)
+			{
+				color[0] = color[3];
+				color[1] = color[3];
+				color[2] = color[3];
 				color[3] = 1;
 			}
 			else
@@ -1915,7 +1922,7 @@ private:
 		};
 
 		std::shared_timed_mutex m_EditMutex;
-		bool m_DebugColor = false;
+		int m_DebugColor = 0;
 		std::queue<CAfxColorLut::CRgba> m_Queue;
 		std::map<CAfxColorLut::CRgba, CRecentEntry> m_Cache;
 		CAfxColorLut* m_AfxColorLut = nullptr;

@@ -36,6 +36,8 @@ namespace AfxGui
             this.toolsToolStripMenuItem.Text = L10n._p("Main window | menu", "Tools");            
             this.calculatorsToolStripMenuItem.Text = L10n._p("Main window | menu | Tools", "Calculators");
             this.menuFileSize.Text = L10n._p("Main window | menu | Tools | Calculators", "File Size");
+            this.menuAfxRgbaLut.Text = L10n._p("Main window | menu | Tools", "Color Lookup Tables");
+            this.menuVoronoi.Text = L10n._p("Main window | menu | Tools | Color Lookup Tables", "Voronoi");
             this.goldSrcToolStripMenuItem.Text = L10n._p("Main window | menu | Tools", "GoldSrc");
             this.demoToolsToolStripMenuItem.Text = L10n._p("Main window | menu | Tools | GoldSrc", "Demo Tools");
             this.skyManagerToolStripMenuItem.Text = L10n._p("Main window | menu | Tools | GoldSrc", "Sky Manager");
@@ -399,10 +401,7 @@ namespace AfxGui
 
         private void l10nToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            using(AfxRgbaLutVoronoiGenerator dlg = new AfxRgbaLutVoronoiGenerator())
-            {
-                dlg.ShowDialog(this);
-            }
+            new AfxRgbaLutVoronoiGenerator().Show();
         }
     }
 }

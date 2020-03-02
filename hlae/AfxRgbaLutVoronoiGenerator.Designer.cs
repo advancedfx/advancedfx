@@ -30,27 +30,29 @@
         {
             this.saveFileDialog = new System.Windows.Forms.SaveFileDialog();
             this.tabControl1 = new System.Windows.Forms.TabControl();
-            this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.tabMap = new System.Windows.Forms.TabPage();
             this.buttonCheck = new System.Windows.Forms.Button();
             this.buttonPaste = new System.Windows.Forms.Button();
             this.buttonCopy = new System.Windows.Forms.Button();
             this.dataGridViewColors = new System.Windows.Forms.DataGridView();
-            this.Index = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colIndex = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.SrcR = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.SrcG = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.SrcB = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.SrcA = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.TargetComment = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colComment = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.DstR = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.DstG = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.DstB = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.DstA = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.tabPage2 = new System.Windows.Forms.TabPage();
-            this.buttonGenerateLut = new System.Windows.Forms.Button();
+            this.colDstWeight = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.tabGenerate = new System.Windows.Forms.TabPage();
+            this.buttonSave = new System.Windows.Forms.Button();
+            this.buttonStart = new System.Windows.Forms.Button();
             this.preview = new System.Windows.Forms.PictureBox();
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.grpRes = new System.Windows.Forms.GroupBox();
             this.memEstimate = new System.Windows.Forms.TextBox();
-            this.label7 = new System.Windows.Forms.Label();
+            this.labelMemEstimate = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.resA = new System.Windows.Forms.NumericUpDown();
             this.label3 = new System.Windows.Forms.Label();
@@ -59,26 +61,27 @@
             this.resR = new System.Windows.Forms.NumericUpDown();
             this.label2 = new System.Windows.Forms.Label();
             this.resG = new System.Windows.Forms.NumericUpDown();
-            this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.label6 = new System.Windows.Forms.Label();
+            this.grpPreview = new System.Windows.Forms.GroupBox();
+            this.drawMode = new System.Windows.Forms.ComboBox();
+            this.labelVert = new System.Windows.Forms.Label();
             this.comboY = new System.Windows.Forms.ComboBox();
-            this.label5 = new System.Windows.Forms.Label();
+            this.labelHori = new System.Windows.Forms.Label();
             this.comboX = new System.Windows.Forms.ComboBox();
             this.labelZ = new System.Windows.Forms.Label();
             this.labelW = new System.Windows.Forms.Label();
             this.trackZ = new System.Windows.Forms.TrackBar();
             this.trackW = new System.Windows.Forms.TrackBar();
             this.tabControl1.SuspendLayout();
-            this.tabPage1.SuspendLayout();
+            this.tabMap.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewColors)).BeginInit();
-            this.tabPage2.SuspendLayout();
+            this.tabGenerate.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.preview)).BeginInit();
-            this.groupBox1.SuspendLayout();
+            this.grpRes.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.resA)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.resB)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.resR)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.resG)).BeginInit();
-            this.groupBox2.SuspendLayout();
+            this.grpPreview.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.trackZ)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackW)).BeginInit();
             this.SuspendLayout();
@@ -90,8 +93,8 @@
             // 
             // tabControl1
             // 
-            this.tabControl1.Controls.Add(this.tabPage1);
-            this.tabControl1.Controls.Add(this.tabPage2);
+            this.tabControl1.Controls.Add(this.tabMap);
+            this.tabControl1.Controls.Add(this.tabGenerate);
             this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControl1.Location = new System.Drawing.Point(0, 0);
             this.tabControl1.Name = "tabControl1";
@@ -99,19 +102,19 @@
             this.tabControl1.Size = new System.Drawing.Size(584, 361);
             this.tabControl1.TabIndex = 0;
             // 
-            // tabPage1
+            // tabMap
             // 
-            this.tabPage1.Controls.Add(this.buttonCheck);
-            this.tabPage1.Controls.Add(this.buttonPaste);
-            this.tabPage1.Controls.Add(this.buttonCopy);
-            this.tabPage1.Controls.Add(this.dataGridViewColors);
-            this.tabPage1.Location = new System.Drawing.Point(4, 22);
-            this.tabPage1.Name = "tabPage1";
-            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage1.Size = new System.Drawing.Size(576, 335);
-            this.tabPage1.TabIndex = 0;
-            this.tabPage1.Text = "L10n Color map";
-            this.tabPage1.UseVisualStyleBackColor = true;
+            this.tabMap.Controls.Add(this.buttonCheck);
+            this.tabMap.Controls.Add(this.buttonPaste);
+            this.tabMap.Controls.Add(this.buttonCopy);
+            this.tabMap.Controls.Add(this.dataGridViewColors);
+            this.tabMap.Location = new System.Drawing.Point(4, 22);
+            this.tabMap.Name = "tabMap";
+            this.tabMap.Padding = new System.Windows.Forms.Padding(3);
+            this.tabMap.Size = new System.Drawing.Size(576, 335);
+            this.tabMap.TabIndex = 0;
+            this.tabMap.Text = "L10n Color map";
+            this.tabMap.UseVisualStyleBackColor = true;
             // 
             // buttonCheck
             // 
@@ -119,7 +122,7 @@
             this.buttonCheck.Name = "buttonCheck";
             this.buttonCheck.Size = new System.Drawing.Size(562, 31);
             this.buttonCheck.TabIndex = 0;
-            this.buttonCheck.Text = "L10n Check for errors";
+            this.buttonCheck.Text = "L10n Check";
             this.buttonCheck.UseVisualStyleBackColor = true;
             this.buttonCheck.Click += new System.EventHandler(this.buttonCheck_Click);
             // 
@@ -132,6 +135,7 @@
             this.buttonPaste.TabIndex = 3;
             this.buttonPaste.Text = "L10n Paste all form clipboard";
             this.buttonPaste.UseVisualStyleBackColor = true;
+            this.buttonPaste.Click += new System.EventHandler(this.buttonPaste_Click);
             // 
             // buttonCopy
             // 
@@ -142,6 +146,7 @@
             this.buttonCopy.TabIndex = 2;
             this.buttonCopy.Text = "L10n Copy all to clipboard";
             this.buttonCopy.UseVisualStyleBackColor = true;
+            this.buttonCopy.Click += new System.EventHandler(this.buttonCopy_Click);
             // 
             // dataGridViewColors
             // 
@@ -150,16 +155,17 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.dataGridViewColors.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dataGridViewColors.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.Index,
+            this.colIndex,
             this.SrcR,
             this.SrcG,
             this.SrcB,
             this.SrcA,
-            this.TargetComment,
+            this.colComment,
             this.DstR,
             this.DstG,
             this.DstB,
-            this.DstA});
+            this.DstA,
+            this.colDstWeight});
             this.dataGridViewColors.Location = new System.Drawing.Point(6, 43);
             this.dataGridViewColors.Name = "dataGridViewColors";
             this.dataGridViewColors.Size = new System.Drawing.Size(562, 239);
@@ -167,13 +173,13 @@
             this.dataGridViewColors.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridViewColors_CellValueChanged);
             this.dataGridViewColors.RowsRemoved += new System.Windows.Forms.DataGridViewRowsRemovedEventHandler(this.dataGridViewColors_RowsRemoved);
             // 
-            // Index
+            // colIndex
             // 
-            this.Index.HeaderText = "L10n Index";
-            this.Index.MinimumWidth = 60;
-            this.Index.Name = "Index";
-            this.Index.ReadOnly = true;
-            this.Index.Width = 60;
+            this.colIndex.HeaderText = "L10n Index";
+            this.colIndex.MinimumWidth = 60;
+            this.colIndex.Name = "colIndex";
+            this.colIndex.ReadOnly = true;
+            this.colIndex.Width = 60;
             // 
             // SrcR
             // 
@@ -199,12 +205,12 @@
             this.SrcA.Name = "SrcA";
             this.SrcA.Width = 40;
             // 
-            // TargetComment
+            // colComment
             // 
-            this.TargetComment.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            this.TargetComment.HeaderText = "Comment";
-            this.TargetComment.MinimumWidth = 60;
-            this.TargetComment.Name = "TargetComment";
+            this.colComment.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.colComment.HeaderText = "L10n Comment";
+            this.colComment.MinimumWidth = 60;
+            this.colComment.Name = "colComment";
             // 
             // DstR
             // 
@@ -230,31 +236,52 @@
             this.DstA.Name = "DstA";
             this.DstA.Width = 40;
             // 
-            // tabPage2
+            // colDstWeight
             // 
-            this.tabPage2.Controls.Add(this.buttonGenerateLut);
-            this.tabPage2.Controls.Add(this.preview);
-            this.tabPage2.Controls.Add(this.groupBox1);
-            this.tabPage2.Controls.Add(this.groupBox2);
-            this.tabPage2.Location = new System.Drawing.Point(4, 22);
-            this.tabPage2.Name = "tabPage2";
-            this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(576, 335);
-            this.tabPage2.TabIndex = 1;
-            this.tabPage2.Text = "L10n Generation";
-            this.tabPage2.UseVisualStyleBackColor = true;
+            this.colDstWeight.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.ColumnHeader;
+            this.colDstWeight.HeaderText = "L10n Weight";
+            this.colDstWeight.MinimumWidth = 60;
+            this.colDstWeight.Name = "colDstWeight";
+            this.colDstWeight.Width = 86;
             // 
-            // buttonGenerateLut
+            // tabGenerate
             // 
-            this.buttonGenerateLut.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.tabGenerate.Controls.Add(this.buttonSave);
+            this.tabGenerate.Controls.Add(this.buttonStart);
+            this.tabGenerate.Controls.Add(this.preview);
+            this.tabGenerate.Controls.Add(this.grpRes);
+            this.tabGenerate.Controls.Add(this.grpPreview);
+            this.tabGenerate.Location = new System.Drawing.Point(4, 22);
+            this.tabGenerate.Name = "tabGenerate";
+            this.tabGenerate.Padding = new System.Windows.Forms.Padding(3);
+            this.tabGenerate.Size = new System.Drawing.Size(576, 335);
+            this.tabGenerate.TabIndex = 1;
+            this.tabGenerate.Text = "L10n Generation";
+            this.tabGenerate.UseVisualStyleBackColor = true;
+            // 
+            // buttonSave
+            // 
+            this.buttonSave.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonGenerateLut.Location = new System.Drawing.Point(336, 274);
-            this.buttonGenerateLut.Name = "buttonGenerateLut";
-            this.buttonGenerateLut.Size = new System.Drawing.Size(234, 53);
-            this.buttonGenerateLut.TabIndex = 1;
-            this.buttonGenerateLut.Text = "L10n Start";
-            this.buttonGenerateLut.UseVisualStyleBackColor = true;
-            this.buttonGenerateLut.Click += new System.EventHandler(this.buttonGenerateLut_Click);
+            this.buttonSave.Location = new System.Drawing.Point(474, 303);
+            this.buttonSave.Name = "buttonSave";
+            this.buttonSave.Size = new System.Drawing.Size(96, 24);
+            this.buttonSave.TabIndex = 2;
+            this.buttonSave.Text = "L10n Save";
+            this.buttonSave.UseVisualStyleBackColor = true;
+            this.buttonSave.Click += new System.EventHandler(this.buttonSave_Click);
+            // 
+            // buttonStart
+            // 
+            this.buttonStart.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.buttonStart.Location = new System.Drawing.Point(336, 303);
+            this.buttonStart.Name = "buttonStart";
+            this.buttonStart.Size = new System.Drawing.Size(132, 24);
+            this.buttonStart.TabIndex = 1;
+            this.buttonStart.Text = "L10n Generate";
+            this.buttonStart.UseVisualStyleBackColor = true;
+            this.buttonStart.Click += new System.EventHandler(this.buttonGenerateLut_Click);
             // 
             // preview
             // 
@@ -269,25 +296,25 @@
             this.preview.TabStop = false;
             this.preview.SizeChanged += new System.EventHandler(this.preview_SizeChanged);
             // 
-            // groupBox1
+            // grpRes
             // 
-            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupBox1.Controls.Add(this.memEstimate);
-            this.groupBox1.Controls.Add(this.label7);
-            this.groupBox1.Controls.Add(this.label4);
-            this.groupBox1.Controls.Add(this.resA);
-            this.groupBox1.Controls.Add(this.label3);
-            this.groupBox1.Controls.Add(this.resB);
-            this.groupBox1.Controls.Add(this.label1);
-            this.groupBox1.Controls.Add(this.resR);
-            this.groupBox1.Controls.Add(this.label2);
-            this.groupBox1.Controls.Add(this.resG);
-            this.groupBox1.Location = new System.Drawing.Point(336, 7);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(234, 117);
-            this.groupBox1.TabIndex = 0;
-            this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "L10n Resolution";
+            this.grpRes.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.grpRes.Controls.Add(this.memEstimate);
+            this.grpRes.Controls.Add(this.labelMemEstimate);
+            this.grpRes.Controls.Add(this.label4);
+            this.grpRes.Controls.Add(this.resA);
+            this.grpRes.Controls.Add(this.label3);
+            this.grpRes.Controls.Add(this.resB);
+            this.grpRes.Controls.Add(this.label1);
+            this.grpRes.Controls.Add(this.resR);
+            this.grpRes.Controls.Add(this.label2);
+            this.grpRes.Controls.Add(this.resG);
+            this.grpRes.Location = new System.Drawing.Point(336, 7);
+            this.grpRes.Name = "grpRes";
+            this.grpRes.Size = new System.Drawing.Size(234, 117);
+            this.grpRes.TabIndex = 0;
+            this.grpRes.TabStop = false;
+            this.grpRes.Text = "L10n Resolution";
             // 
             // memEstimate
             // 
@@ -297,14 +324,14 @@
             this.memEstimate.Size = new System.Drawing.Size(218, 20);
             this.memEstimate.TabIndex = 9;
             // 
-            // label7
+            // labelMemEstimate
             // 
-            this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(7, 72);
-            this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(151, 13);
-            this.label7.TabIndex = 8;
-            this.label7.Text = "L10n Memory estimate (Bytes):";
+            this.labelMemEstimate.AutoSize = true;
+            this.labelMemEstimate.Location = new System.Drawing.Point(7, 72);
+            this.labelMemEstimate.Name = "labelMemEstimate";
+            this.labelMemEstimate.Size = new System.Drawing.Size(151, 13);
+            this.labelMemEstimate.TabIndex = 8;
+            this.labelMemEstimate.Text = "L10n Memory estimate (Bytes):";
             // 
             // label4
             // 
@@ -319,7 +346,7 @@
             // 
             this.resA.Location = new System.Drawing.Point(114, 43);
             this.resA.Maximum = new decimal(new int[] {
-            32,
+            64,
             0,
             0,
             0});
@@ -332,7 +359,7 @@
             this.resA.Size = new System.Drawing.Size(60, 20);
             this.resA.TabIndex = 7;
             this.resA.Value = new decimal(new int[] {
-            2,
+            3,
             0,
             0,
             0});
@@ -351,7 +378,7 @@
             // 
             this.resB.Location = new System.Drawing.Point(27, 43);
             this.resB.Maximum = new decimal(new int[] {
-            32,
+            64,
             0,
             0,
             0});
@@ -364,7 +391,7 @@
             this.resB.Size = new System.Drawing.Size(60, 20);
             this.resB.TabIndex = 5;
             this.resB.Value = new decimal(new int[] {
-            32,
+            7,
             0,
             0,
             0});
@@ -383,7 +410,7 @@
             // 
             this.resR.Location = new System.Drawing.Point(27, 17);
             this.resR.Maximum = new decimal(new int[] {
-            32,
+            64,
             0,
             0,
             0});
@@ -396,7 +423,7 @@
             this.resR.Size = new System.Drawing.Size(60, 20);
             this.resR.TabIndex = 1;
             this.resR.Value = new decimal(new int[] {
-            8,
+            7,
             0,
             0,
             0});
@@ -415,7 +442,7 @@
             // 
             this.resG.Location = new System.Drawing.Point(114, 17);
             this.resG.Maximum = new decimal(new int[] {
-            32,
+            64,
             0,
             0,
             0});
@@ -428,38 +455,49 @@
             this.resG.Size = new System.Drawing.Size(60, 20);
             this.resG.TabIndex = 3;
             this.resG.Value = new decimal(new int[] {
-            16,
+            7,
             0,
             0,
             0});
             this.resG.ValueChanged += new System.EventHandler(this.ResValueChanged);
             // 
-            // groupBox2
+            // grpPreview
             // 
-            this.groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupBox2.Controls.Add(this.label6);
-            this.groupBox2.Controls.Add(this.comboY);
-            this.groupBox2.Controls.Add(this.label5);
-            this.groupBox2.Controls.Add(this.comboX);
-            this.groupBox2.Controls.Add(this.labelZ);
-            this.groupBox2.Controls.Add(this.labelW);
-            this.groupBox2.Controls.Add(this.trackZ);
-            this.groupBox2.Controls.Add(this.trackW);
-            this.groupBox2.Location = new System.Drawing.Point(336, 130);
-            this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(234, 138);
-            this.groupBox2.TabIndex = 2;
-            this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "L10n Preview";
+            this.grpPreview.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.grpPreview.Controls.Add(this.drawMode);
+            this.grpPreview.Controls.Add(this.labelVert);
+            this.grpPreview.Controls.Add(this.comboY);
+            this.grpPreview.Controls.Add(this.labelHori);
+            this.grpPreview.Controls.Add(this.comboX);
+            this.grpPreview.Controls.Add(this.labelZ);
+            this.grpPreview.Controls.Add(this.labelW);
+            this.grpPreview.Controls.Add(this.trackZ);
+            this.grpPreview.Controls.Add(this.trackW);
+            this.grpPreview.Location = new System.Drawing.Point(336, 130);
+            this.grpPreview.Name = "grpPreview";
+            this.grpPreview.Size = new System.Drawing.Size(234, 167);
+            this.grpPreview.TabIndex = 2;
+            this.grpPreview.TabStop = false;
+            this.grpPreview.Text = "L10n Preview";
             // 
-            // label6
+            // drawMode
             // 
-            this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(6, 49);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(72, 13);
-            this.label6.TabIndex = 2;
-            this.label6.Text = "L10n Vertical:";
+            this.drawMode.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.drawMode.FormattingEnabled = true;
+            this.drawMode.Location = new System.Drawing.Point(11, 135);
+            this.drawMode.Name = "drawMode";
+            this.drawMode.Size = new System.Drawing.Size(219, 21);
+            this.drawMode.TabIndex = 8;
+            this.drawMode.SelectedIndexChanged += new System.EventHandler(this.drawMode_SelectedIndexChanged);
+            // 
+            // labelVert
+            // 
+            this.labelVert.AutoSize = true;
+            this.labelVert.Location = new System.Drawing.Point(6, 49);
+            this.labelVert.Name = "labelVert";
+            this.labelVert.Size = new System.Drawing.Size(72, 13);
+            this.labelVert.TabIndex = 2;
+            this.labelVert.Text = "L10n Vertical:";
             // 
             // comboY
             // 
@@ -476,14 +514,14 @@
             this.comboY.TabIndex = 3;
             this.comboY.SelectedIndexChanged += new System.EventHandler(this.comboY_SelectedIndexChanged);
             // 
-            // label5
+            // labelHori
             // 
-            this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(6, 22);
-            this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(84, 13);
-            this.label5.TabIndex = 0;
-            this.label5.Text = "L10n Horizontal:";
+            this.labelHori.AutoSize = true;
+            this.labelHori.Location = new System.Drawing.Point(6, 22);
+            this.labelHori.Name = "labelHori";
+            this.labelHori.Size = new System.Drawing.Size(84, 13);
+            this.labelHori.TabIndex = 0;
+            this.labelHori.Text = "L10n Horizontal:";
             // 
             // comboX
             // 
@@ -531,7 +569,9 @@
             this.trackZ.TabIndex = 5;
             this.trackZ.TickFrequency = 16;
             this.trackZ.TickStyle = System.Windows.Forms.TickStyle.TopLeft;
-            this.trackZ.ValueChanged += new System.EventHandler(this.trackZ_ValueChanged);
+            this.trackZ.ValueChanged += new System.EventHandler(this.track_ValueChanged);
+            this.trackZ.MouseDown += new System.Windows.Forms.MouseEventHandler(this.track_MouseDown);
+            this.trackZ.MouseUp += new System.Windows.Forms.MouseEventHandler(this.track_MouseUp);
             // 
             // trackW
             // 
@@ -546,7 +586,9 @@
             this.trackW.TabIndex = 7;
             this.trackW.TickFrequency = 16;
             this.trackW.TickStyle = System.Windows.Forms.TickStyle.TopLeft;
-            this.trackW.ValueChanged += new System.EventHandler(this.trackZ_ValueChanged);
+            this.trackW.ValueChanged += new System.EventHandler(this.track_ValueChanged);
+            this.trackW.MouseDown += new System.Windows.Forms.MouseEventHandler(this.track_MouseDown);
+            this.trackW.MouseUp += new System.Windows.Forms.MouseEventHandler(this.track_MouseUp);
             // 
             // AfxRgbaLutVoronoiGenerator
             // 
@@ -556,23 +598,23 @@
             this.Controls.Add(this.tabControl1);
             this.MinimumSize = new System.Drawing.Size(600, 400);
             this.Name = "AfxRgbaLutVoronoiGenerator";
-            this.Text = "L10n Natural Neighbour Interpolation - AfxRgbaLut";
+            this.Text = "L10n Voronoi Color Lookup Table";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.AfxRgbaLutVoronoiGenerator_FormClosed);
             this.ResizeBegin += new System.EventHandler(this.AfxRgbaLutVoronoiGenerator_ResizeBegin);
             this.ResizeEnd += new System.EventHandler(this.AfxRgbaLutVoronoiGenerator_ResizeEnd);
             this.tabControl1.ResumeLayout(false);
-            this.tabPage1.ResumeLayout(false);
+            this.tabMap.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewColors)).EndInit();
-            this.tabPage2.ResumeLayout(false);
+            this.tabGenerate.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.preview)).EndInit();
-            this.groupBox1.ResumeLayout(false);
-            this.groupBox1.PerformLayout();
+            this.grpRes.ResumeLayout(false);
+            this.grpRes.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.resA)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.resB)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.resR)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.resG)).EndInit();
-            this.groupBox2.ResumeLayout(false);
-            this.groupBox2.PerformLayout();
+            this.grpPreview.ResumeLayout(false);
+            this.grpPreview.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.trackZ)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackW)).EndInit();
             this.ResumeLayout(false);
@@ -582,23 +624,13 @@
         #endregion
         private System.Windows.Forms.SaveFileDialog saveFileDialog;
         private System.Windows.Forms.TabControl tabControl1;
-        private System.Windows.Forms.TabPage tabPage1;
+        private System.Windows.Forms.TabPage tabMap;
         private System.Windows.Forms.DataGridView dataGridViewColors;
-        private System.Windows.Forms.TabPage tabPage2;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Index;
-        private System.Windows.Forms.DataGridViewTextBoxColumn SrcR;
-        private System.Windows.Forms.DataGridViewTextBoxColumn SrcG;
-        private System.Windows.Forms.DataGridViewTextBoxColumn SrcB;
-        private System.Windows.Forms.DataGridViewTextBoxColumn SrcA;
-        private System.Windows.Forms.DataGridViewTextBoxColumn TargetComment;
-        private System.Windows.Forms.DataGridViewTextBoxColumn DstR;
-        private System.Windows.Forms.DataGridViewTextBoxColumn DstG;
-        private System.Windows.Forms.DataGridViewTextBoxColumn DstB;
-        private System.Windows.Forms.DataGridViewTextBoxColumn DstA;
+        private System.Windows.Forms.TabPage tabGenerate;
         private System.Windows.Forms.PictureBox preview;
-        private System.Windows.Forms.Button buttonGenerateLut;
-        private System.Windows.Forms.GroupBox groupBox1;
-        private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.Button buttonStart;
+        private System.Windows.Forms.GroupBox grpRes;
+        private System.Windows.Forms.Label labelMemEstimate;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.NumericUpDown resA;
         private System.Windows.Forms.Label label3;
@@ -607,8 +639,8 @@
         private System.Windows.Forms.NumericUpDown resR;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.NumericUpDown resG;
-        private System.Windows.Forms.GroupBox groupBox2;
-        private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.GroupBox grpPreview;
+        private System.Windows.Forms.Label labelVert;
         private System.Windows.Forms.ComboBox comboY;
         private System.Windows.Forms.ComboBox comboX;
         private System.Windows.Forms.Label labelZ;
@@ -619,6 +651,19 @@
         private System.Windows.Forms.Button buttonCheck;
         private System.Windows.Forms.Button buttonPaste;
         private System.Windows.Forms.Button buttonCopy;
-        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.Label labelHori;
+        private System.Windows.Forms.Button buttonSave;
+        private System.Windows.Forms.ComboBox drawMode;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colIndex;
+        private System.Windows.Forms.DataGridViewTextBoxColumn SrcR;
+        private System.Windows.Forms.DataGridViewTextBoxColumn SrcG;
+        private System.Windows.Forms.DataGridViewTextBoxColumn SrcB;
+        private System.Windows.Forms.DataGridViewTextBoxColumn SrcA;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colComment;
+        private System.Windows.Forms.DataGridViewTextBoxColumn DstR;
+        private System.Windows.Forms.DataGridViewTextBoxColumn DstG;
+        private System.Windows.Forms.DataGridViewTextBoxColumn DstB;
+        private System.Windows.Forms.DataGridViewTextBoxColumn DstA;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colDstWeight;
     }
 }

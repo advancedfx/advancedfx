@@ -2310,8 +2310,6 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::InvalidateMap()
 {
 	if(m_Stream->m_DebugPrint) Tier0_Msg("Stream: Invalidating material cache.\n");
 
-	std::unique_lock<std::mutex> lock(m_MapMutex);
-
 	for(std::map<CAfxTrackedMaterial *, CCacheEntry>::iterator it = m_Map.begin(); it != m_Map.end(); ++it)
 	{
 		it->first->RemoveNotifyee(m_MapRleaseNotification);
@@ -2656,6 +2654,12 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin(const CAfxBaseFxStrea
 	{
 		// Is leaf context.
 
+		if (m_Data.InvalidateMap)
+		{
+			m_Data.InvalidateMap = false;
+			InvalidateMap();
+		}
+
 		m_MapMutex.lock();
 
 		m_Data = data;
@@ -2666,12 +2670,6 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin(const CAfxBaseFxStrea
 		m_CurrentEntity.Data.ClassName = "";
 		m_CurrentEntity.Data.IsPlayer = false;
 		m_CurrentEntity.Data.TeamNumber = 0;
-
-		if (m_Data.InvalidateMap)
-		{
-			m_Data.InvalidateMap = false;
-			InvalidateMap();
-		}
 
 		for (auto it = m_Data.DeletedEntities.begin(); it != m_Data.DeletedEntities.end(); ++it)
 		{
@@ -3879,7 +3877,7 @@ void CAfxBaseFxStream::CActionGlowColorMap::Console_Edit(IWrpCommandArgs* args)
 				m_AfxColorLut = nullptr;
 			}
 			FILE* file = nullptr;
-			if (fopen_s(&file, args->ArgV(2), "rb+"))
+			if (0 == fopen_s(&file, args->ArgV(2), "rb"))
 			{
 				m_AfxColorLut = new CAfxColorLut();
 				if (!m_AfxColorLut->LoadFromFile(file))
@@ -3910,15 +3908,15 @@ void CAfxBaseFxStream::CActionGlowColorMap::Console_Edit(IWrpCommandArgs* args)
 			if (3 == argC)
 			{
 				std::unique_lock<std::shared_timed_mutex> lock(m_EditMutex);
-				m_DebugColor = 0 != atoi(args->ArgV(2));
+				m_DebugColor = atoi(args->ArgV(2));
 				return;
 			}
 
 			Tier0_Msg(
-				"%s debugColor 0|1 - Enable debug coloring (also forces alpha to 1 and suspends remap), combine with doBloomAndToneMapping 0 on a stream.\n"
+				"%s debugColor 0|1|2 - Enable debug coloring (1: opaque color, 2: alpha value), combine with doBloomAndToneMapping 0 on a stream.\n"
 				"Current value: %i\n"
 				, arg0
-				,m_DebugColor ? 1 : 0);
+				,m_DebugColor);
 			return;
 		}
 	}
@@ -3999,7 +3997,7 @@ void CAfxBaseFxStream::CActionGlowColorMap::RemapColor(float& r, float& g, float
 
 	CAfxColorLut::CRgba result(iV);
 
-	if (m_AfxColorLut->Query(iV, &result))
+	m_AfxColorLut->Query(r, g, b, a, result.R, result.G, result.B, result.A);
 	{
 		r = result.R;
 		g = result.G;

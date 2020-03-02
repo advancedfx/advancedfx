@@ -99,8 +99,8 @@ public:
 		int version;
 		unsigned __int32 resR, resG, resB, resA;
 
-		if (sizeof(magic) != fread(magic, sizeof(magic), 1, file)
-			|| '\'0' != m_Magic[sizeof(m_Magic) / sizeof(m_Magic[0]) - 1]
+		if (1 != fread(magic, sizeof(magic), 1, file)
+			|| '\0' != magic[sizeof(magic) / sizeof(magic[0]) - 1]
 			|| 0 != strcmp(magic, m_Magic)
 			|| 1 != fread(&version, sizeof(version), 1, file)
 			|| 1 != version
@@ -113,12 +113,9 @@ public:
 			return false;
 		}
 
-		m_Dimensions.SetSize(resR);
-		m_Dimensions.GetSub().SetSize(resG);
-		m_Dimensions.GetSub().GetSub().SetSize(resB);
-		m_Dimensions.GetSub().GetSub().GetSub().SetSize(resA);
+		if (!New(resR, resG, resB, resA))
+			return false;
 
-		m_Root = new RedLookupTreeNode_t();
 		if (!m_Root->LoadFromFile(m_Dimensions, file))
 		{
 			delete m_Root;
@@ -139,12 +136,12 @@ public:
 		unsigned __int32 resB = m_Dimensions.GetSub().GetSub().GetSize();
 		unsigned __int32 resA = m_Dimensions.GetSub().GetSub().GetSub().GetSize();
 
-		if (sizeof(m_Magic) != fwrite(m_Magic, sizeof(m_Magic), 1, file)
+		if (1 != fwrite(m_Magic, sizeof(m_Magic), 1, file)
 			|| 1 != fwrite(&version, sizeof(version), 1, file)
-			|| 1 != fread(&resR, sizeof(resR), 1, file)
-			|| 1 != fread(&resG, sizeof(resG), 1, file)
-			|| 1 != fread(&resB, sizeof(resB), 1, file)
-			|| 1 != fread(&resA, sizeof(resA), 1, file)
+			|| 1 != fwrite(&resR, sizeof(resR), 1, file)
+			|| 1 != fwrite(&resG, sizeof(resG), 1, file)
+			|| 1 != fwrite(&resB, sizeof(resB), 1, file)
+			|| 1 != fwrite(&resA, sizeof(resA), 1, file)
 			)
 
 		{
@@ -227,19 +224,57 @@ public:
 		CRgba(const CRgbaUc & val) : R(max(0,min(val.R / 255.0f,1))), G(max(0, min(val.G / 255.0f, 1))), B(max(0, min(val.B / 255.0f, 1))), A(max(0, min(val.A / 255.0f, 1))) {}
 		CRgba(const CRgba& other) : R(other.R), G(other.G), B(other.B), A(other.A) {}
 
-		static CRgba Interp(const CRgba& x, const CRgba& x0, const CRgba & x1, const CRgba& y0, const CRgba & y1)
+		bool operator<(const CRgba& other) const
 		{
-			float dR = x1.R - x0.R;
-			float dG = x1.G - x0.G;
-			float dB = x1.B - x0.B;
-			float dA = x1.A - x0.A;
+			if (R < other.R) return true;
+			else if (R == other.R)
+			{
+				if (G < other.G) return true;
+				else if (G == other.G)
+				{
+					if (B < other.B) return true;
+					else if (B == other.B)
+					{
+						if (B < other.B) return true;
+						else if (B == other.B)
+						{
+							if (A < other.A) return true;
+						}
+					}
+				}
+			}
+
+			return false;
+		}
+
+		static CRgba Interp(int axis, const CRgba & x, const CRgba& x0, const CRgba& x1, const CRgba& y0, const CRgba & y1)
+		{
+			float f = 0;
+			switch (axis)
+			{
+			case 0:
+				f = (x1.R - x0.R);
+				if(f) f = (x.R - x0.R) / f;
+				break;
+			case 1:
+				f = (x1.G - x0.G);
+				if (f) f = (x.G - x0.G) / f;
+				break;
+			case 2:
+				f = (x1.B - x0.B);
+				if (f) f = (x.B - x0.B) / f;
+				break;
+			case 3:
+				f = (x1.A - x0.A);
+				if (f) f = (x.A - x0.A) / f;
+				break;
+			}
 
 			return CRgba(
-				dR ? y0.R + (x.R - x0.R) * (y1.R - y0.R) / dR : y0.R,
-				dG ? y0.G + (x.G - x0.G) * (y1.G - y0.G) / dG : y0.G,
-				dB ? y0.B + (x.B - x0.B) * (y1.B - y0.B) / dB : y0.B,
-				dA ? y0.A + (x.A - x0.A) * (y1.A - y0.A) / dA : y0.A
-			);
+				y0.R * (1 - f) + y1.R * f,
+				y0.G * (1 - f) + y1.G * f,
+				y0.B * (1 - f) + y1.B * f,
+				y0.A * (1 - f) + y1.A * f);
 		}
 	};
 
@@ -359,13 +394,6 @@ private:
 		bool LoadFromFile(const CDimensions<size_t, SizeTs...>& dims, FILE* file)
 		{
 			size_t count = dims.GetSize();
-
-			try {
-				MakeChildren(count);
-			}
-			catch (...) {
-				throw;
-			}
 
 			for (size_t i = 0; i < count; ++i)
 			{

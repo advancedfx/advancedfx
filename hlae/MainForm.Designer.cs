@@ -40,11 +40,11 @@
             this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.calculatorsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuFileSize = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuAfxRgbaLut = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuVoronoi = new System.Windows.Forms.ToolStripMenuItem();
             this.goldSrcToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.demoToolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.skyManagerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.l10nHLAELookUpTreesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.l10nToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
             this.developerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuCustomLoader = new System.Windows.Forms.ToolStripMenuItem();
@@ -154,7 +154,7 @@
             // 
             this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.calculatorsToolStripMenuItem,
-            this.l10nHLAELookUpTreesToolStripMenuItem,
+            this.menuAfxRgbaLut,
             this.goldSrcToolStripMenuItem,
             this.toolStripMenuItem2,
             this.developerToolStripMenuItem});
@@ -173,9 +173,24 @@
             // menuFileSize
             // 
             this.menuFileSize.Name = "menuFileSize";
-            this.menuFileSize.Size = new System.Drawing.Size(143, 22);
+            this.menuFileSize.Size = new System.Drawing.Size(180, 22);
             this.menuFileSize.Text = "L10n File Size";
             this.menuFileSize.Click += new System.EventHandler(this.MenuFileSize_Click);
+            // 
+            // menuAfxRgbaLut
+            // 
+            this.menuAfxRgbaLut.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.menuVoronoi});
+            this.menuAfxRgbaLut.Name = "menuAfxRgbaLut";
+            this.menuAfxRgbaLut.Size = new System.Drawing.Size(180, 22);
+            this.menuAfxRgbaLut.Text = "L10n AfxRgbaLut";
+            // 
+            // menuVoronoi
+            // 
+            this.menuVoronoi.Name = "menuVoronoi";
+            this.menuVoronoi.Size = new System.Drawing.Size(180, 22);
+            this.menuVoronoi.Text = "L10n Voronoi";
+            this.menuVoronoi.Click += new System.EventHandler(this.l10nToolStripMenuItem_Click);
             // 
             // goldSrcToolStripMenuItem
             // 
@@ -199,21 +214,6 @@
             this.skyManagerToolStripMenuItem.Size = new System.Drawing.Size(170, 22);
             this.skyManagerToolStripMenuItem.Text = "L10n Sky Manager";
             this.skyManagerToolStripMenuItem.Click += new System.EventHandler(this.MenuToolsGoldSrcSkyManager_Click);
-            // 
-            // l10nHLAELookUpTreesToolStripMenuItem
-            // 
-            this.l10nHLAELookUpTreesToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.l10nToolStripMenuItem});
-            this.l10nHLAELookUpTreesToolStripMenuItem.Name = "l10nHLAELookUpTreesToolStripMenuItem";
-            this.l10nHLAELookUpTreesToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.l10nHLAELookUpTreesToolStripMenuItem.Text = "L10n AfxRgbaLut";
-            // 
-            // l10nToolStripMenuItem
-            // 
-            this.l10nToolStripMenuItem.Name = "l10nToolStripMenuItem";
-            this.l10nToolStripMenuItem.Size = new System.Drawing.Size(228, 22);
-            this.l10nToolStripMenuItem.Text = "L10n Natural Neighbour Map";
-            this.l10nToolStripMenuItem.Click += new System.EventHandler(this.l10nToolStripMenuItem_Click);
             // 
             // toolStripMenuItem2
             // 
@@ -580,7 +580,7 @@
         private System.Windows.Forms.Button buttonManual;
         private System.Windows.Forms.PictureBox pictureBoxHelp;
         private System.Windows.Forms.NotifyIcon notifyIcon1;
-        private System.Windows.Forms.ToolStripMenuItem l10nHLAELookUpTreesToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem l10nToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem menuAfxRgbaLut;
+        private System.Windows.Forms.ToolStripMenuItem menuVoronoi;
     }
 }

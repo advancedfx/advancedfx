@@ -31,32 +31,49 @@ public:
 		return m_AfxColorLut->New(resR, resG, resB, resA);
 	}
 
-	bool LoadFromFile(const char* fileName)
+	bool LoadFromFile(System::String^ fileName)
 	{
-		FILE* file = nullptr;
-		if (0 == fopen_s(&file, fileName, "rb"))
+		IntPtr pszFileName = System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(fileName);
+		try
 		{
-			bool result = m_AfxColorLut->LoadFromFile(file);
+			FILE* file = nullptr;
+			if (0 == fopen_s(&file, static_cast<const char*>(pszFileName.ToPointer()), "rb"))
+			{
+				bool result = m_AfxColorLut->LoadFromFile(file);
 
-			fclose(file);
-			return result;
+				fclose(file);
+				return result;
+			}
+
+			return false;
 		}
-
-		return false;
+		finally
+		{
+			System::Runtime::InteropServices::Marshal::FreeHGlobal(pszFileName);
+		}
 	}
 
-	bool SaveToFile(const char* fileName)
+	bool SaveToFile(System::String^ fileName)
 	{
-		FILE* file = nullptr;
-		if (0 == fopen_s(&file, fileName, "wb"))
+		IntPtr pszFileName = System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(fileName);
+		try
 		{
-			bool result = m_AfxColorLut->SaveToFile(file);
+			FILE* file = nullptr;
 
-			fclose(file);
-			return result;
+			if (0 == fopen_s(&file, static_cast<const char*>(pszFileName.ToPointer()), "wb"))
+			{
+				bool result = m_AfxColorLut->SaveToFile(file);
+
+				fclose(file);
+				return result;
+			}
+
+			return false;
 		}
-
-		return false;
+		finally
+		{
+			System::Runtime::InteropServices::Marshal::FreeHGlobal(pszFileName);
+		}
 	}
 
 	bool Query(float r, float g, float b, float a,

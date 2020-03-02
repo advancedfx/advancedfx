@@ -76,6 +76,7 @@ AFXADDR_DEF(csgo_RTTI_CGameEvent)
 AFXADDR_DEF(csgo_RTTI_IGameEvent)
 //AFXADDR_DEF(csgo_client_dynamic_cast);
 //AFXADDR_DEF(csgo_client_RTTI_IClientRenderable);
+AFXADDR_DEF(csgo_GlowCurrentPlayer_JE)
 
 void ErrorBox(char const * messageText);
 
@@ -1727,6 +1728,27 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			AFXADDR_SET(csgo_client_RTTI_IClientRenderable, addr);
 		}
 		*/
+
+		// This is above spec_glow_silent_factor reference, where it makes the selected player glow
+		{
+			DWORD addr = 0;
+
+			ImageSectionsReader sections((HMODULE)clientDll);
+			if (!sections.Eof())
+			{
+				MemRange textRange = sections.GetMemRange();
+
+				MemRange result = FindPatternString(textRange, "75 ?? 38 45 FF 74 ?? C7 06 00 00 80 3F C7 46 04 00 00 80 3F C7 46 08 00 00 80 3F EB ??");
+
+				if (!result.IsEmpty())
+					addr = result.Start + 0x5;
+				else
+					ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			AFXADDR_SET(csgo_GlowCurrentPlayer_JE, addr);
+		}
 	}
 	else
 	{
@@ -1764,6 +1786,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_CRendering3dView_DrawTranslucentRenderables, 0x0);
 		//AFXADDR_SET(csgo_client_dynamic_cast, 0x0);
 		//AFXADDR_SET(csgo_client_RTTI_IClientRenderable, 0x0);
+		AFXADDR_SET(csgo_GlowCurrentPlayer_JE, 0x0);
 	}
 
 	//AFXADDR_SET(csgo_CPredictionCopy_TransferData_DSZ, 0x0a);
