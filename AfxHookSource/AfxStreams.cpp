@@ -3948,7 +3948,7 @@ void CAfxBaseFxStream::CActionGlowColorMap::UnlockMesh(CAfxBaseFxStreamContext* 
 		for (int i = 0; i < numVerts; ++i)
 		{
 			unsigned char* Color = desc.m_pColor + i * desc.m_VertexSize_Color;
-			CAfxColorLut::CRgba rgba(Color[0] / 255.0f, Color[1] / 255.0f, Color[2] / 255.0f, Color[3] / 255.0f);
+			CAfxColorLut::CRgba rgba(Color[2] / 255.0f, Color[1] / 255.0f, Color[0] / 255.0f, Color[3] / 255.0f);
 
 			if (m_DebugColor)
 			{
@@ -3959,9 +3959,9 @@ void CAfxBaseFxStream::CActionGlowColorMap::UnlockMesh(CAfxBaseFxStreamContext* 
 				RemapColor(rgba.R, rgba.G, rgba.B, rgba.A);
 			}
 
-			Color[0] = (unsigned char)min(255.0f, rgba.R * 255.0f + 0.5f);
+			Color[2] = (unsigned char)min(255.0f, rgba.R * 255.0f + 0.5f);
 			Color[1] = (unsigned char)min(255.0f, rgba.G * 255.0f + 0.5f);
-			Color[2] = (unsigned char)min(255.0f, rgba.B * 255.0f + 0.5f);
+			Color[0] = (unsigned char)min(255.0f, rgba.B * 255.0f + 0.5f);
 			Color[3] = (unsigned char)min(255.0f, rgba.A * 255.0f + 0.5f);
 		}
 	}

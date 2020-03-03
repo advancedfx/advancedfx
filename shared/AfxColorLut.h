@@ -371,16 +371,12 @@ private:
 				return &(m_Children[0]);
 			}
 
-			float fIndex = min(max(0,key * (count - 1)),count-1);
+			float fIndex = key * (count - 1);
+			size_t index = min(max(0, (size_t)(fIndex)), count - 1);
 
-			size_t index = (size_t)fIndex;
-
-			if (count < index) index = count - 1;
-
-			if (other)
+			if (other && index +  1< count)
 			{
 				++index;
-				if (count <= index) index = count - 1;
 			}
 
 			if (pOutKey)

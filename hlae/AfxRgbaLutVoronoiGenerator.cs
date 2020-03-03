@@ -34,17 +34,17 @@ namespace AfxGui
 
             suspendPreview = true;
 
-            m_Colors.Add(new HlaeCommentedColor(224, 175, 86, 0, L10n._p("terrorist", "T")), new HlaeWeightedColor(0.902f, 0.525f, 0.196f, 0.0f, 128f));
-            m_Colors.Add(new HlaeCommentedColor(224, 175, 86, 255, L10n._p("terrorist", "T")), new HlaeWeightedColor(0.902f, 0.525f, 0.196f, 1.0f, 128f));
-            m_Colors.Add(new HlaeCommentedColor(144, 155, 221, 0, L10n._p("counter-terrorist", "CT")), new HlaeWeightedColor(0.384f, 0.388f, 0.741f, 0.0f, 128f));
-            m_Colors.Add(new HlaeCommentedColor(144, 155, 221, 255, L10n._p("counter-terrorist", "CT")), new HlaeWeightedColor(0.384f, 0.388f, 0.741f, 1.0f, 128f));
+            m_Colors.Add(new HlaeCommentedColor(224, 175, 86, 0, L10n._p("terrorist", "T")), new HlaeWeightedColor(255, 0, 0, 0, 128f));
+            m_Colors.Add(new HlaeCommentedColor(224, 175, 86, 255, L10n._p("terrorist", "T")), new HlaeWeightedColor(255, 0, 0, 255, 128f));
+            m_Colors.Add(new HlaeCommentedColor(144, 155, 221, 0, L10n._p("counter-terrorist", "CT")), new HlaeWeightedColor(0, 0, 255, 0, 128f));
+            m_Colors.Add(new HlaeCommentedColor(144, 155, 221, 255, L10n._p("counter-terrorist", "CT")), new HlaeWeightedColor(0, 0, 255, 255, 128f));
             m_Colors.Add(new HlaeCommentedColor(0.662745f, 0.647059f, 0.601961f, 0.0f, L10n._p("terrorist / counter-terrorist", "T/CT neutral")), new HlaeWeightedColor(0.656863f, 0.656863f, 0.656863f, 0));
             m_Colors.Add(new HlaeCommentedColor(0.662745f, 0.647059f, 0.601961f, 1.0f, L10n._p("terrorist / counter-terrorist", "T/CT neutral")), new HlaeWeightedColor(0.656863f, 0.656863f, 0.656863f, 1));
 
-            m_Colors.Add(new HlaeCommentedColor(230, 128, 0, 0, L10n._p("terrorist", "T aim")), new HlaeWeightedColor(0.902f, 0.525f, 0.196f, 0.0f, 128f));
-            m_Colors.Add(new HlaeCommentedColor(230, 128, 0, 255, L10n._p("terrorist", "T aim")), new HlaeWeightedColor(0.902f, 0.525f, 0.196f, 1.0f, 128f));
-            m_Colors.Add(new HlaeCommentedColor(0, 120, 240, 0, L10n._p("counter-terrorist", "CT aim")), new HlaeWeightedColor(0.384f, 0.388f, 0.741f, 0.0f, 128f));
-            m_Colors.Add(new HlaeCommentedColor(0, 120, 240, 255, L10n._p("counter-terrorist", "CT aim")), new HlaeWeightedColor(0.384f, 0.388f, 0.741f, 1.0f, 128f));
+            m_Colors.Add(new HlaeCommentedColor(230, 128, 0, 0, L10n._p("terrorist", "T aim")), new HlaeWeightedColor(255, 0, 0, 0, 128f));
+            m_Colors.Add(new HlaeCommentedColor(230, 128, 0, 255, L10n._p("terrorist", "T aim")), new HlaeWeightedColor(255, 0, 0, 255, 128f));
+            m_Colors.Add(new HlaeCommentedColor(0, 120, 240, 0, L10n._p("counter-terrorist", "CT aim")), new HlaeWeightedColor(0, 0, 255, 0, 128f));
+            m_Colors.Add(new HlaeCommentedColor(0, 120, 240, 255, L10n._p("counter-terrorist", "CT aim")), new HlaeWeightedColor(0, 0, 255, 255, 128f));
             m_Colors.Add(new HlaeCommentedColor(0.450980f, 0.486275f, 0.470588f, 0, L10n._p("terrorist / counter-terrorist", "T/CT aim neutral")), new HlaeWeightedColor(0.469281f, 0.469281f, 0.469281f, 0));
             m_Colors.Add(new HlaeCommentedColor(0.450980f, 0.486275f, 0.470588f, 1, L10n._p("terrorist / counter-terrorist", "T/CT aim neutral")), new HlaeWeightedColor(0.469281f, 0.469281f, 0.469281f, 1));
             
@@ -521,7 +521,7 @@ namespace AfxGui
                         float fiB = iB / (float)(resB.Value - 1);
                         for (int iA = 0; iA < (int)resA.Value; ++iA)
                         {
-                            float fiA = iR / (float)(resA.Value - 1);
+                            float fiA = iA / (float)(resA.Value - 1);
 
                             HlaeColor xx = new HlaeColor(fiR, fiG, fiB, fiA);
 
@@ -569,7 +569,7 @@ namespace AfxGui
             outB = y.B;
             outA = y.A;
 
-            previewBitmap.SetPixel(Math.Max(Math.Min(previewBitmap.Width - 1, (int)(r * (float)(previewBitmap.Width - 1) + 0.5f / previewBitmap.Width)), 0), Math.Max(Math.Min(previewBitmap.Height - 1, (int)(g * (float)(previewBitmap.Height - 1) + 0.5f / previewBitmap.Height)), 0), new HlaeColorUc(y).ToColor());
+            previewBitmap.SetPixel(Math.Max(Math.Min(previewBitmap.Width - 1, (int)(r * (float)(previewBitmap.Width - 1) + 0.5f)), 0), Math.Max(Math.Min(previewBitmap.Height - 1, (int)(g * (float)(previewBitmap.Height - 1) + 0.5f)), 0), new HlaeColorUc(y).ToColor());
 
             int curTick = System.Environment.TickCount;
 
@@ -746,8 +746,8 @@ namespace AfxGui
 
                         vals[axisVal[0]] = (float)x / (preview.Width - 1);
                         vals[axisVal[1]] = (float)y / (preview.Height - 1);
-                        vals[axisVal[2]] = (float)trackZ.Value / (trackZ.Maximum - 1);
-                        vals[axisVal[3]] = (float)trackW.Value / (trackW.Maximum - 1);
+                        vals[axisVal[2]] = (float)trackZ.Value / trackZ.Maximum;
+                        vals[axisVal[3]] = (float)trackW.Value / trackW.Maximum;
 
                         float newR = vals[0];
                         float newG = vals[1];

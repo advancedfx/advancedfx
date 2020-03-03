@@ -8,13 +8,16 @@
 <release>
 <name>AfxHookSource</name>
 <version>1.77.0</version>
-<time>2020-03-02T20:30Z</time>
+<time>2020-03-03T07:00Z</time>
 <changes>
 <change type="updated">
 Made mirv_streams drawing context locking less fine grained.
 </change>
 <change type="added">
-mirv_streams actions add glowColorMap, can be edited with mirv_streams actions edit.
+Added mirv_streams actions add glowColorMap, can be edited with mirv_streams actions edit.
+</change>
+<change type="added">
+Added mirv_fix selectedPlayerGlow.
 </change>
 </changes>
 <comments>
@@ -37,7 +40,7 @@ mirv_streams edit blast actionFilter add "__utilvertexcolorignorez" blastGlow<br
 mirv_streams edit blast actionFilter add "dev/glow_color" blastGlow<br />
 mirv_streams preview blast<br />
 <br />
-mirv_fix selectedPlayerGlow 0 // disable glowing of selected player.
+mirv_fix selectedPlayerGlow 0 // disable glowing of selected player.<br />
 </comments>
 </release>
 

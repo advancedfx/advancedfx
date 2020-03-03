@@ -359,7 +359,7 @@
             this.resA.Size = new System.Drawing.Size(60, 20);
             this.resA.TabIndex = 7;
             this.resA.Value = new decimal(new int[] {
-            3,
+            4,
             0,
             0,
             0});
@@ -391,7 +391,7 @@
             this.resB.Size = new System.Drawing.Size(60, 20);
             this.resB.TabIndex = 5;
             this.resB.Value = new decimal(new int[] {
-            7,
+            8,
             0,
             0,
             0});
@@ -423,7 +423,7 @@
             this.resR.Size = new System.Drawing.Size(60, 20);
             this.resR.TabIndex = 1;
             this.resR.Value = new decimal(new int[] {
-            7,
+            8,
             0,
             0,
             0});
@@ -455,7 +455,7 @@
             this.resG.Size = new System.Drawing.Size(60, 20);
             this.resG.TabIndex = 3;
             this.resG.Value = new decimal(new int[] {
-            7,
+            8,
             0,
             0,
             0});
