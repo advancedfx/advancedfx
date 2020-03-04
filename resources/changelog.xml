@@ -7,13 +7,13 @@
 <release>
 <name>HLAE</name>
 <version>2.90.0</version>
-<time>2020-03-24T09:45Z</time>
+<time>2020-03-04T09:45Z</time>
 <changes>
 <change type="fixed">
 Fixed support page language selection.
 </change>
 <change type="updated">
-Included AfxHookSource 1.78.0 (2020-03-24T09:45Z).
+Included AfxHookSource 1.78.0 (2020-03-04T09:45Z).
 </change>
 </changes>
 </release>
