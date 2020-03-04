@@ -4,6 +4,17 @@
 <changelog>
 
 
+<release>
+<name>AfxHookSource</name>
+<version>1.78.0</version>
+<time>2020-03-24T09:45Z</time>
+<changes>
+<change type="updated">
+Adjusted to 3/3/2020 CS:GO updade.
+</change>
+</changes>
+</release>
+
 
 <release>
 <name>AfxHookSource</name>
@@ -43,7 +54,6 @@ mirv_streams preview blast<br />
 mirv_fix selectedPlayerGlow 0 // disable glowing of selected player.<br />
 </comments>
 </release>
-
 
 
 <release>

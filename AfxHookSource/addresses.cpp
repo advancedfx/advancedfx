@@ -1300,7 +1300,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 					{
 						DWORD tmpAddr = result.Start - 0xf;
 
-						result = FindPatternString(MemRange(tmpAddr, result.End), "68 ?? ?? ?? ?? 6A 00 6A 04 68 88 33 00 00");
+						result = FindPatternString(MemRange(tmpAddr, result.End), "68 ?? ?? ?? ?? 6A 00 6A 04 68 ?? ?? ?? ??");
 
 						if (!result.IsEmpty() && result.Start == tmpAddr)
 						{
