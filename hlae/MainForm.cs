@@ -82,8 +82,8 @@ namespace AfxGui
 
                 this.comboBoxHelpLanguage.Items.AddRange(helpLanguages);
 
-                string ietfLanguageTagPath = System.IO.Path.Combine(System.Windows.Forms.Application.StartupPath, "locales", System.Globalization.CultureInfo.CurrentUICulture.IetfLanguageTag, "hlae", "messages.mo");
-                string twoLetterIsoLanguageNamPath = System.IO.Path.Combine(System.Windows.Forms.Application.StartupPath, "locales", System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName, "hlae", "messages.mo");
+                string ietfLanguageTag = System.Globalization.CultureInfo.CurrentUICulture.IetfLanguageTag;
+                string twoLetterIsoLanguageName = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
 
                 // Select a default language:
 
@@ -92,7 +92,7 @@ namespace AfxGui
 
                 foreach(HelpLanguage helpLanguage in helpLanguages)
                 {
-                    if(helpLanguage.Code.Equals(ietfLanguageTagPath))
+                    if(helpLanguage.Code.Equals(ietfLanguageTag))
                     {
                         selectIndex = curIndex;
                         break;
@@ -102,9 +102,10 @@ namespace AfxGui
 
                 if(selectIndex == -1)
                 {
+                    curIndex = 0;
                     foreach (HelpLanguage helpLanguage in helpLanguages)
                     {
-                        if (helpLanguage.Code.Equals(twoLetterIsoLanguageNamPath))
+                        if (helpLanguage.Code.Equals(twoLetterIsoLanguageName))
                         {
                             selectIndex = curIndex;
                             break;
