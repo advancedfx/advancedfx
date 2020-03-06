@@ -75,6 +75,7 @@
             this.buttonManual = new System.Windows.Forms.Button();
             this.pictureBoxHelp = new System.Windows.Forms.PictureBox();
             this.notifyIcon1 = new System.Windows.Forms.NotifyIcon(this.components);
+            this.menuContact = new System.Windows.Forms.ToolStripMenuItem();
             this.mainMenu.SuspendLayout();
             this.statusStrip.SuspendLayout();
             this.stripEnableUpdateCheck.SuspendLayout();
@@ -167,13 +168,13 @@
             this.calculatorsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.menuFileSize});
             this.calculatorsToolStripMenuItem.Name = "calculatorsToolStripMenuItem";
-            this.calculatorsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.calculatorsToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
             this.calculatorsToolStripMenuItem.Text = "L10n Calculators";
             // 
             // menuFileSize
             // 
             this.menuFileSize.Name = "menuFileSize";
-            this.menuFileSize.Size = new System.Drawing.Size(180, 22);
+            this.menuFileSize.Size = new System.Drawing.Size(143, 22);
             this.menuFileSize.Text = "L10n File Size";
             this.menuFileSize.Click += new System.EventHandler(this.MenuFileSize_Click);
             // 
@@ -182,13 +183,13 @@
             this.menuAfxRgbaLut.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.menuVoronoi});
             this.menuAfxRgbaLut.Name = "menuAfxRgbaLut";
-            this.menuAfxRgbaLut.Size = new System.Drawing.Size(180, 22);
+            this.menuAfxRgbaLut.Size = new System.Drawing.Size(164, 22);
             this.menuAfxRgbaLut.Text = "L10n AfxRgbaLut";
             // 
             // menuVoronoi
             // 
             this.menuVoronoi.Name = "menuVoronoi";
-            this.menuVoronoi.Size = new System.Drawing.Size(180, 22);
+            this.menuVoronoi.Size = new System.Drawing.Size(143, 22);
             this.menuVoronoi.Text = "L10n Voronoi";
             this.menuVoronoi.Click += new System.EventHandler(this.l10nToolStripMenuItem_Click);
             // 
@@ -198,7 +199,7 @@
             this.demoToolsToolStripMenuItem,
             this.skyManagerToolStripMenuItem});
             this.goldSrcToolStripMenuItem.Name = "goldSrcToolStripMenuItem";
-            this.goldSrcToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.goldSrcToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
             this.goldSrcToolStripMenuItem.Text = "L10n GoldSrc";
             // 
             // demoToolsToolStripMenuItem
@@ -218,7 +219,7 @@
             // toolStripMenuItem2
             // 
             this.toolStripMenuItem2.Name = "toolStripMenuItem2";
-            this.toolStripMenuItem2.Size = new System.Drawing.Size(177, 6);
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(161, 6);
             // 
             // developerToolStripMenuItem
             // 
@@ -228,7 +229,7 @@
             this.menuGuidToClipBoard,
             this.menuNewGuidToClipBoard});
             this.developerToolStripMenuItem.Name = "developerToolStripMenuItem";
-            this.developerToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.developerToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
             this.developerToolStripMenuItem.Text = "L10n Developer";
             // 
             // menuCustomLoader
@@ -262,6 +263,7 @@
             this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.checkForUpdatesToolStripMenuItem,
             this.toolStripMenuItem5,
+            this.menuContact,
             this.menuAdvancedFxOrg});
             this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
             this.helpToolStripMenuItem.Size = new System.Drawing.Size(72, 20);
@@ -273,7 +275,7 @@
             this.menuAutoUpdateCheck,
             this.checkNowToolStripMenuItem});
             this.checkForUpdatesToolStripMenuItem.Name = "checkForUpdatesToolStripMenuItem";
-            this.checkForUpdatesToolStripMenuItem.Size = new System.Drawing.Size(199, 22);
+            this.checkForUpdatesToolStripMenuItem.Size = new System.Drawing.Size(371, 22);
             this.checkForUpdatesToolStripMenuItem.Text = "L10n Check for Updates";
             // 
             // menuAutoUpdateCheck
@@ -293,12 +295,12 @@
             // toolStripMenuItem5
             // 
             this.toolStripMenuItem5.Name = "toolStripMenuItem5";
-            this.toolStripMenuItem5.Size = new System.Drawing.Size(196, 6);
+            this.toolStripMenuItem5.Size = new System.Drawing.Size(368, 6);
             // 
             // menuAdvancedFxOrg
             // 
             this.menuAdvancedFxOrg.Name = "menuAdvancedFxOrg";
-            this.menuAdvancedFxOrg.Size = new System.Drawing.Size(199, 22);
+            this.menuAdvancedFxOrg.Size = new System.Drawing.Size(371, 22);
             this.menuAdvancedFxOrg.Text = "L10n Offical website";
             this.menuAdvancedFxOrg.ToolTipText = "https://www.advancedfx.org/";
             this.menuAdvancedFxOrg.Click += new System.EventHandler(this.MenuAdvancedFxOrg_Click);
@@ -504,6 +506,13 @@
             this.notifyIcon1.Text = "notifyIcon1";
             this.notifyIcon1.Visible = true;
             // 
+            // menuContact
+            // 
+            this.menuContact.Name = "menuContact";
+            this.menuContact.Size = new System.Drawing.Size(371, 22);
+            this.menuContact.Text = "L10n Contact / Privacy Policy / Imprint (advancedfx.org)";
+            this.menuContact.Click += new System.EventHandler(this.menuContact_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -582,5 +591,6 @@
         private System.Windows.Forms.NotifyIcon notifyIcon1;
         private System.Windows.Forms.ToolStripMenuItem menuAfxRgbaLut;
         private System.Windows.Forms.ToolStripMenuItem menuVoronoi;
+        private System.Windows.Forms.ToolStripMenuItem menuContact;
     }
 }

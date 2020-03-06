@@ -64,6 +64,8 @@ namespace AfxGui
             this.statusLabelHide.Text = L10n._p("Main window | update status strip", "OK");
             this.statusLabelUpdate.Text = L10n._p("Main window | update status strip | label", "Update status unknown");
 
+            this.menuContact.Text = L10n._("Contact / Privacy Policy / Imprint (advancedfx.org)");
+
             this.groupBoxHelp.Text = L10n._("Help");
             this.labelHelpLanguage.Text = L10n._("Language:");
             this.labelHelpSelection.Text = L10n._("Selection:");
@@ -403,6 +405,11 @@ namespace AfxGui
         private void l10nToolStripMenuItem_Click(object sender, EventArgs e)
         {
             new AfxRgbaLutVoronoiGenerator().Show();
+        }
+
+        private void menuContact_Click(object sender, EventArgs e)
+        {
+            System.Diagnostics.Process.Start("https://www.advancedfx.org/contact");
         }
     }
 }
