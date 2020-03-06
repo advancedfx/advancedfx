@@ -140,15 +140,6 @@
       <DependentUpon>CustomLoaderForm.cs</DependentUpon>
     </Compile>
     <Compile Include="UpdateCheck.cs" />
-    <Compile Include="AfxRgbaLutControl.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="AfxRgbaLutControl.Designer.cs">
-      <DependentUpon>AfxRgbaLutControl.cs</DependentUpon>
-    </Compile>
-    <EmbeddedResource Include="AfxRgbaLutControl.resx">
-      <DependentUpon>AfxRgbaLutControl.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="ErrorDialogue.resx">
       <DependentUpon>ErrorDialogue.cs</DependentUpon>
     </EmbeddedResource>

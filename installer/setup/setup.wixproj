@@ -76,6 +76,9 @@
   <ItemGroup>
     <None Include="lang\HyperlinkTheme_tr-TR.wxl" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="lang\HyperlinkTheme_pl-PL.wxl" />
+  </ItemGroup>
   <Import Project="$(WixTargetsPath)" Condition=" '$(WixTargetsPath)' != '' " />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets" Condition=" '$(WixTargetsPath)' == '' AND Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets') " />
   <Target Name="EnsureWixToolsetInstalled" Condition=" '$(WixTargetsImported)' != 'true' ">

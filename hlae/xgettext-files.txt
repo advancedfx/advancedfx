@@ -1,4 +1,5 @@
 AfxError.cs
+AfxRgbaLutVoronoiGenerator.cs
 Config.cs
 ErrorDialogue.cs
 Globals.cs

@@ -37,6 +37,7 @@
     <EmbeddedResource Include="lang\hu-HU.wxl" />
     <EmbeddedResource Include="lang\ja-JP.wxl" />
     <EmbeddedResource Include="lang\nl-NL.wxl" />
+    <EmbeddedResource Include="lang\pl-PL.wxl" />
     <EmbeddedResource Include="lang\pt-PT.wxl" />
     <EmbeddedResource Include="lang\ru-RU.wxl" />
     <EmbeddedResource Include="lang\tr-TR.wxl" />
@@ -81,6 +82,7 @@
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\hu-hu\HlaeCore.msi" OutputFile="bin\Release\hu-hu\HlaeCore.mst" ToolPath="$(WixToolPath)" />
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\ja-jp\HlaeCore.msi" OutputFile="bin\Release\ja-jp\HlaeCore.mst" ToolPath="$(WixToolPath)" />
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\nl-nl\HlaeCore.msi" OutputFile="bin\Release\nl-nl\HlaeCore.mst" ToolPath="$(WixToolPath)" />
+    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\pl-pl\HlaeCore.msi" OutputFile="bin\Release\pl-pl\HlaeCore.mst" ToolPath="$(WixToolPath)" />
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\pt-pt\HlaeCore.msi" OutputFile="bin\Release\pt-pt\HlaeCore.mst" ToolPath="$(WixToolPath)" />
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\ru-ru\HlaeCore.msi" OutputFile="bin\Release\ru-ru\HlaeCore.mst" ToolPath="$(WixToolPath)" />
     <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\tr-tr\HlaeCore.msi" OutputFile="bin\Release\tr-tr\HlaeCore.mst" ToolPath="$(WixToolPath)" />
