@@ -465,7 +465,7 @@ namespace AfxGui
             {
                 MessageBox.Show(
                     L10n._("No Errors"),
-                    L10n._("Check passsed"),
+                    L10n._("Check passed"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
             }
