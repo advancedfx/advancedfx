@@ -173,6 +173,8 @@ ULONG g_NewDirect3DDevice9_RefCount = 1;
 IDirect3DDevice9 * g_OldDirect3DDevice9 = nullptr;
 IDirect3DDevice9Ex * g_OldDirect3DDevice9Ex = nullptr;
 
+#if 0
+
 // CAfxDirect3DManaged /////////////////////////////////////////////////////////
 
 template <typename T,typename D>
@@ -2186,7 +2188,7 @@ private:
 	IDirect3DIndexBuffer9 * m_pDefaultPool;
 
 };
-
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -2196,7 +2198,7 @@ bool g_bSupportsIntz = false;
 void FixPresentationParementers(D3DPRESENT_PARAMETERS* pFixPresentationParameters)
 {
 #ifdef AFX_INTEROP
-	if (AfxInterop::Enabled())
+	if (AfxInterop::MainEnabled())
 	{
 		pFixPresentationParameters->MultiSampleType = D3DMULTISAMPLE_NONE;
 		pFixPresentationParameters->MultiSampleQuality = 0;
@@ -2751,7 +2753,7 @@ public:
 				trackedRenderTarget->AddRef();
 
 #ifdef AFX_INTEROP
-				if (AfxInterop::Enabled())
+				if (AfxInterop::MainEnabled())
 				{
 					AfxInterop::OnCreatedSurface(trackedRenderTarget);
 				}
@@ -2797,7 +2799,7 @@ public:
 			// Base RenderTarget:
 
 #ifdef AFX_INTEROP
-			if (!AfxInterop::Enabled())
+			if (!AfxInterop::MainEnabled())
 #endif
 			{
 				// (Re-)Create replacements:
@@ -3011,7 +3013,7 @@ public:
 			}
 
 #ifdef AFX_INTEROP
-			if (AfxInterop::Enabled())
+			if (AfxInterop::MainEnabled())
 			{
 				if (CAfxTrackedSurface * afxTrackedSurface = trackedRenderTarget)
 				{
@@ -3613,6 +3615,7 @@ public:
 
 
 private:
+#if 0
 	bool GetAfxManagedChildDirect3DSurface9(IDirect3DSurface9 * surface, CAfxManagedChildDirect3DSurface9 ** pOut)
 	{
 		if (surface && SUCCEEDED(surface->QueryInterface(IID_CAfxManagedChildDirect3DSurface9, (void **)pOut)))
@@ -3646,10 +3649,11 @@ private:
 
 		return false;
 	}	
+#endif
 
 	IDirect3DSurface9 * UnwrapSurface(IDirect3DSurface9 * surface)
 	{
-#ifdef AFX_INTEROP
+#if 0 && AFX_INTEROP
 		if (AfxInterop::Enabled() && surface)
 		{
 			{
@@ -3672,9 +3676,10 @@ private:
 		return CAfxTrackedSurface::Replacement(surface);
 	}
 
+
 	IDirect3DSurface9 * UnwrapSurfaceReverse(IDirect3DSurface9 * surface, bool handleRef)
 	{
-#ifdef AFX_INTEROP
+#if 0 && AFX_INTEROP
 		if (AfxInterop::Enabled() && surface)
 		{
 			{
@@ -3710,7 +3715,7 @@ private:
 
 		return CAfxTrackedSurface::Original(surface);
 	}
-
+#if 0
 	IDirect3DBaseTexture9 * UnwrapTextureReverse(IDirect3DBaseTexture9 * pTexture, bool handleRef)
 	{
 #ifdef AFX_INTEROP
@@ -3880,6 +3885,7 @@ private:
 #endif
 		return buffer;
 	}
+#endif
 
 private:
 	bool m_Block_Present = false;
@@ -4735,7 +4741,7 @@ public:
 		if (trackedRenderTarget)
 		{
 #ifdef AFX_INTEROP
-			if (AfxInterop::Enabled())
+			if (AfxInterop::MainEnabled())
 			{
 				AfxInterop::OnReleaseSurface(trackedRenderTarget);
 			}
@@ -4756,6 +4762,7 @@ public:
 		{
 			ReleaseQueries();
 
+			/*
 			CAfxManagedChildDirect3DSurface9::AfxDeviceLost();
 			CAfxManagedDirect3DTexture9::AfxDeviceLost();
 			CAfxManagedDirect3DVolumeTexture9::AfxDeviceLost();
@@ -4763,6 +4770,7 @@ public:
 			CAfxManagedOffscreenPlainSurface::AfxDeviceLost();
 			CAfxManagedDirect3DVertexBuffer9::AfxDeviceLost();
 			CAfxManagedDirect3DIndexBuffer9::AfxDeviceLost();
+			*/
 		}
 #endif
 	}
@@ -4797,7 +4805,7 @@ public:
 	void Afx_Present_Before(CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion, DWORD dwFlags)
 	{
 #if AFX_INTEROP
-		if (AfxInterop::Enabled())
+		if (AfxInterop::MainEnabled())
 		{
 			if (CAfxTrackedSurface * afxTrackedSurface = trackedRenderTarget)
 			{
@@ -4848,6 +4856,8 @@ public:
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, SetGammaRamp);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetGammaRamp);
 
+	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateTexture);
+/*/
 	STDMETHOD(CreateTexture)(THIS_ UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DTexture9** ppTexture, HANDLE* pSharedHandle)
 	{
 #if AFX_INTEROP
@@ -4878,7 +4888,10 @@ public:
 
 		return g_OldDirect3DDevice9->CreateTexture(Width, Height, Levels, Usage, Format, Pool, ppTexture, pSharedHandle);
 	}
+*/
 
+	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateVolumeTexture);
+	/*
 	STDMETHOD(CreateVolumeTexture)(THIS_ UINT Width, UINT Height, UINT Depth, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DVolumeTexture9** ppVolumeTexture, HANDLE* pSharedHandle)
 	{
 #if AFX_INTEROP
@@ -4909,7 +4922,10 @@ public:
 
 		return g_OldDirect3DDevice9->CreateVolumeTexture(Width, Height, Depth, Levels, Usage, Format, Pool, ppVolumeTexture, pSharedHandle);
 	}
-	
+	*/
+
+	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateCubeTexture);
+	/*
 	STDMETHOD(CreateCubeTexture)(THIS_ UINT EdgeLength, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DCubeTexture9** ppCubeTexture, HANDLE* pSharedHandle)
 	{
 #if AFX_INTEROP
@@ -4940,7 +4956,10 @@ public:
 
 		return g_OldDirect3DDevice9->CreateCubeTexture(EdgeLength, Levels, Usage, Format, Pool, ppCubeTexture, pSharedHandle);
 	}
+	*/
 
+	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateVertexBuffer);
+	/*
 	STDMETHOD(CreateVertexBuffer)(THIS_ UINT Length, DWORD Usage, DWORD FVF, D3DPOOL Pool, IDirect3DVertexBuffer9** ppVertexBuffer, HANDLE* pSharedHandle)
 	{
 #if AFX_INTEROP
@@ -4971,7 +4990,10 @@ public:
 
 		return g_OldDirect3DDevice9->CreateVertexBuffer(Length, Usage, FVF, Pool, ppVertexBuffer, pSharedHandle);
 	}
+	*/
 
+	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateIndexBuffer);
+	/*
 	STDMETHOD(CreateIndexBuffer)(THIS_ UINT Length, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DIndexBuffer9** ppIndexBuffer, HANDLE* pSharedHandle)
 	{
 #if AFX_INTEROP
@@ -5002,29 +5024,39 @@ public:
 
 		return g_OldDirect3DDevice9->CreateIndexBuffer(Length, Usage, Format, Pool, ppIndexBuffer, pSharedHandle);
 	}
+	*/
 
+	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateRenderTarget);
+	/*
 	STDMETHOD(CreateRenderTarget)(THIS_ UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Lockable, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle)
 	{
 
 		return g_OldDirect3DDevice9->CreateRenderTarget(Width, Height, Format, MultiSample, MultisampleQuality, Lockable, ppSurface, pSharedHandle);
 	}
+	*/
 
+	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateDepthStencilSurface);
+	/*
 	STDMETHOD(CreateDepthStencilSurface)(THIS_ UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Discard, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle)
 	{
 
 		return g_OldDirect3DDevice9->CreateDepthStencilSurface(Width, Height, Format, MultiSample, MultisampleQuality, Discard, ppSurface, pSharedHandle);
 	}
+	*/
 
 	STDMETHOD(UpdateSurface)(THIS_ IDirect3DSurface9* pSourceSurface, CONST RECT* pSourceRect, IDirect3DSurface9* pDestinationSurface, CONST POINT* pDestPoint)
 	{
 		return g_OldDirect3DDevice9->UpdateSurface(UnwrapSurface(pSourceSurface), pSourceRect, UnwrapSurface(pDestinationSurface), pDestPoint);
 	}
 
+	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, UpdateTexture);
+	/*
 	STDMETHOD(UpdateTexture)(THIS_ IDirect3DBaseTexture9* pSourceTexture, IDirect3DBaseTexture9* pDestinationTexture)
 	{
 		return g_OldDirect3DDevice9->UpdateTexture(UnwrapTexture(pSourceTexture), UnwrapTexture(pDestinationTexture));
 	}
-	
+	*/
+
 	STDMETHOD(GetRenderTargetData)(THIS_ IDirect3DSurface9* pRenderTarget, IDirect3DSurface9* pDestSurface)
 	{
 		return g_OldDirect3DDevice9->GetRenderTargetData(UnwrapSurface(pRenderTarget), UnwrapSurface(pDestSurface));
@@ -5044,7 +5076,9 @@ public:
 	{
 		return g_OldDirect3DDevice9->ColorFill(UnwrapSurface(pSurface), pRect, color);
 	}
-    
+
+	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateOffscreenPlainSurface);
+	/*
 	STDMETHOD(CreateOffscreenPlainSurface)(THIS_ UINT Width, UINT Height, D3DFORMAT Format, D3DPOOL Pool, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle)
 	{
 #if AFX_INTEROP
@@ -5075,11 +5109,12 @@ public:
 
 		return g_OldDirect3DDevice9->CreateOffscreenPlainSurface(Width, Height, Format, Pool, ppSurface, pSharedHandle);
 	}
+	*/
 
 	STDMETHOD(SetRenderTarget)(THIS_ DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget)
 	{
 #ifdef AFX_INTEROP
-		if (AfxInterop::Enabled())
+		if (AfxInterop::MainEnabled())
 		{
 			if (CAfxTrackedSurface * afxTrackedSurface = CAfxTrackedSurface::Get(pRenderTarget))
 			{
@@ -5440,6 +5475,8 @@ public:
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, SetClipStatus);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetClipStatus);
 	
+	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetTexture);
+	/*
 	STDMETHOD(GetTexture)(THIS_ DWORD Stage, IDirect3DBaseTexture9** ppTexture)
 	{
 		HRESULT result = g_OldDirect3DDevice9->GetTexture(Stage, ppTexture);
@@ -5451,7 +5488,10 @@ public:
 
 		return result;
 	}
-	
+	*/
+
+	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, SetTexture);
+	/*
 	STDMETHOD(SetTexture)(THIS_ DWORD Stage, IDirect3DBaseTexture9* pTexture)
 	{
 #ifdef AFX_INTEROP
@@ -5463,6 +5503,7 @@ public:
 
 		return g_OldDirect3DDevice9->SetTexture(Stage, pTexture);
 	}
+	*/
 
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetTextureStageState);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, SetTextureStageState);
@@ -5484,10 +5525,14 @@ public:
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, DrawPrimitiveUP);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, DrawIndexedPrimitiveUP);
 	
+
+	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, ProcessVertices);
+	/*
 	STDMETHOD(ProcessVertices)(THIS_ UINT SrcStartIndex, UINT DestIndex, UINT VertexCount, IDirect3DVertexBuffer9* pDestBuffer, IDirect3DVertexDeclaration9* pVertexDecl, DWORD Flags)
 	{
 		return g_OldDirect3DDevice9->ProcessVertices(SrcStartIndex, DestIndex, VertexCount, UnwrapVertexBuffer(pDestBuffer), pVertexDecl, Flags);
 	}
+	*/
 
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreateVertexDeclaration);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, SetVertexDeclaration);
@@ -5592,11 +5637,16 @@ public:
 	
 	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetVertexShaderConstantB);
     
+	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, SetStreamSource);
+	/*
 	STDMETHOD(SetStreamSource)(THIS_ UINT StreamNumber, IDirect3DVertexBuffer9* pStreamData, UINT OffsetInBytes, UINT Stride)
 	{
 		return g_OldDirect3DDevice9->SetStreamSource(StreamNumber, UnwrapVertexBuffer(pStreamData), OffsetInBytes, Stride);
 	}
+	*/
 
+	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetStreamSource);
+	/*
 	STDMETHOD(GetStreamSource)(THIS_ UINT StreamNumber, IDirect3DVertexBuffer9** ppStreamData, UINT* pOffsetInBytes, UINT* pStride)
 	{
 		HRESULT result = g_OldDirect3DDevice9->GetStreamSource(StreamNumber, ppStreamData, pOffsetInBytes, pStride);
@@ -5605,15 +5655,22 @@ public:
 
 		return result;
 	}
+	*/
 
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, SetStreamSourceFreq);
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetStreamSourceFreq);
     
+
+	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, SetIndices);
+	/*
 	STDMETHOD(SetIndices)(THIS_ IDirect3DIndexBuffer9* pIndexData)
 	{
 		return g_OldDirect3DDevice9->SetIndices(UnwrapIndexBuffer(pIndexData));
 	}
+	*/
 
+	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetIndices);
+	/*
 	STDMETHOD(GetIndices)(THIS_ IDirect3DIndexBuffer9** ppIndexData)
 	{
 		HRESULT result = g_OldDirect3DDevice9->GetIndices(ppIndexData);
@@ -5622,7 +5679,7 @@ public:
 
 		return result;
 	}
-
+	*/
 
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, CreatePixelShader);
     
@@ -5879,7 +5936,7 @@ public:
 	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, CheckDeviceState);
 	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, CreateRenderTargetEx);
 	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, CreateOffscreenPlainSurfaceEx);
-	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, CreateDepthStencilSurfaceEx)
+	IFACE_PASSTHROUGH_DECL(IDirect3DDevice9Ex, CreateDepthStencilSurfaceEx);
 
 	STDMETHOD(ResetEx)(THIS_ D3DPRESENT_PARAMETERS* pPresentationParameters, D3DDISPLAYMODEEX *pFullscreenDisplayMode)
 	{
@@ -5911,6 +5968,15 @@ IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetRasterStatus, NewDirect3DDevice9, g_O
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetDialogBoxMode, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetGammaRamp, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetGammaRamp, NewDirect3DDevice9, g_OldDirect3DDevice9);
+IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateTexture, NewDirect3DDevice9, g_OldDirect3DDevice9);
+IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateVolumeTexture, NewDirect3DDevice9, g_OldDirect3DDevice9);
+IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateCubeTexture, NewDirect3DDevice9, g_OldDirect3DDevice9);
+IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateVertexBuffer, NewDirect3DDevice9, g_OldDirect3DDevice9);
+IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateIndexBuffer, NewDirect3DDevice9, g_OldDirect3DDevice9);
+IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateRenderTarget, NewDirect3DDevice9, g_OldDirect3DDevice9);
+IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateDepthStencilSurface, NewDirect3DDevice9, g_OldDirect3DDevice9);
+IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, UpdateTexture, NewDirect3DDevice9, g_OldDirect3DDevice9);
+IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateOffscreenPlainSurface, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetTransform, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetTransform, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, MultiplyTransform, NewDirect3DDevice9, g_OldDirect3DDevice9);
@@ -5925,6 +5991,8 @@ IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetClipPlane, NewDirect3DDevice9, g_OldD
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetClipPlane, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetClipStatus, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetClipStatus, NewDirect3DDevice9, g_OldDirect3DDevice9);
+IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetTexture, NewDirect3DDevice9, g_OldDirect3DDevice9);
+IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetTexture, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetTextureStageState, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetTextureStageState, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetSamplerState, NewDirect3DDevice9, g_OldDirect3DDevice9);
@@ -5944,6 +6012,7 @@ IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, DrawPrimitive, NewDirect3DDevice9, g_Old
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, DrawIndexedPrimitive, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, DrawPrimitiveUP, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, DrawIndexedPrimitiveUP, NewDirect3DDevice9, g_OldDirect3DDevice9);
+IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, ProcessVertices, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateVertexDeclaration, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetVertexDeclaration, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetVertexDeclaration, NewDirect3DDevice9, g_OldDirect3DDevice9);
@@ -5953,8 +6022,12 @@ IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreateVertexShader, NewDirect3DDevice9, 
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetVertexShaderConstantF, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetVertexShaderConstantI, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetVertexShaderConstantB, NewDirect3DDevice9, g_OldDirect3DDevice9);
+IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetStreamSource, NewDirect3DDevice9, g_OldDirect3DDevice9);
+IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetStreamSource, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetStreamSourceFreq, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetStreamSourceFreq, NewDirect3DDevice9, g_OldDirect3DDevice9);
+IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, SetIndices, NewDirect3DDevice9, g_OldDirect3DDevice9);
+IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetIndices, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, CreatePixelShader, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetPixelShaderConstantI, NewDirect3DDevice9, g_OldDirect3DDevice9);
 IFACE_PASSTHROUGH_DEF(IDirect3DDevice9, GetPixelShaderConstantB, NewDirect3DDevice9, g_OldDirect3DDevice9);
@@ -6032,7 +6105,7 @@ struct NewDirect3D9
 	STDMETHOD(CheckDeviceMultiSampleType)(THIS_ UINT Adapter, D3DDEVTYPE DeviceType, D3DFORMAT SurfaceFormat, BOOL Windowed, D3DMULTISAMPLE_TYPE MultiSampleType, DWORD* pQualityLevels)
 	{
 #if AFX_INTEROP
-		if (AfxInterop::Enabled())
+		if (AfxInterop::MainEnabled())
 		{
 			pQualityLevels = 0;
 
@@ -6062,8 +6135,8 @@ struct NewDirect3D9
 			&& SUCCEEDED(g_OldDirect3D9->GetAdapterDisplayMode(Adapter, &displayMode))
 			&& SUCCEEDED(g_OldDirect3D9->CheckDeviceFormat(Adapter, DeviceType, displayMode.Format, D3DUSAGE_DEPTHSTENCIL, D3DRTYPE_TEXTURE, FOURCC_INTZ));
 
-#ifdef AFX_INTEROP
-		if (AfxInterop::Enabled() && g_OldDirect3D9Ex && pPresentationParameters)
+#if AFX_INTEROP
+		if (AfxInterop::MainEnabled() && g_OldDirect3D9Ex && pPresentationParameters)
 		{
 			DeviceType = D3DDEVTYPE_HAL;
 			BehaviorFlags = (BehaviorFlags & ~(DWORD)(D3DCREATE_MIXED_VERTEXPROCESSING | D3DCREATE_SOFTWARE_VERTEXPROCESSING)) | D3DCREATE_HARDWARE_VERTEXPROCESSING;
@@ -6098,7 +6171,7 @@ struct NewDirect3D9
 
 				Shared_Direct3DDevice9_Init(Adapter, pPresentationParameters->hDeviceWindow, g_OldDirect3DDevice9);
 			}
-#ifdef AFX_INTEROP
+#if AFX_INTEROP
 		}
 #endif
 
@@ -6123,7 +6196,7 @@ struct NewDirect3D9
 			&& SUCCEEDED(g_OldDirect3D9->CheckDeviceFormat(Adapter, DeviceType, displayMode.Format, D3DUSAGE_DEPTHSTENCIL, D3DRTYPE_TEXTURE, FOURCC_INTZ));
 
 #ifdef AFX_INTEROP
-		if (AfxInterop::Enabled() && pPresentationParameters)
+		if (AfxInterop::MainEnabled() && pPresentationParameters)
 		{
 			DeviceType = D3DDEVTYPE_HAL;
 			BehaviorFlags = (BehaviorFlags & ~(DWORD)(D3DCREATE_MIXED_VERTEXPROCESSING | D3DCREATE_SOFTWARE_VERTEXPROCESSING)) | D3DCREATE_HARDWARE_VERTEXPROCESSING;
@@ -6200,7 +6273,7 @@ IDirect3D9 * WINAPI new_Direct3DCreate9(UINT SDKVersion)
 {
 	if(D3D_SDK_VERSION == SDKVersion)
 	{
-#if AFX_INTEROP
+#if 0 && AFX_INTEROP
 		if (AfxInterop::Enabled())
 		{
 			IDirect3D9Ex * device = NULL;
@@ -6545,7 +6618,7 @@ void AfxD3D_WaitForGPU()
 bool AfxD3d9_DrawDepthSupported(void)
 {
 #ifdef AFX_INTEROP
-	if (AfxInterop::Enabled())
+	if (AfxInterop::MainEnabled())
 		return false;
 #endif
 

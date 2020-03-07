@@ -44,11 +44,23 @@ namespace AfxInterop {
 			AfterHud = false;
 		}
 
+		void Or(const EnabledFeatures_s& other)
+		{
+			BeforeTranslucentShadow = other.BeforeTranslucentShadow;
+			AfterTranslucentShadow = other.AfterTranslucentShadow;
+			BeforeTranslucent = other.BeforeTranslucent;
+			AfterTranslucent = other.AfterTranslucent;
+			BeforeHud = other.BeforeHud;
+			AfterHud = other.AfterHud;
+		}
+
 	} EnabledFeatures_t;
 
 	void DllProcessAttach();
 
 	bool Enabled();
+
+	bool MainEnabled();
 
 	//
 	// Engine thread:
