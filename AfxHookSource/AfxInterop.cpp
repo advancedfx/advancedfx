@@ -1570,8 +1570,8 @@ namespace AfxInterop {
 	IAfxInteropSurface* m_Surface = NULL;
 	
 	void DllProcessAttach() {
-		m_Enabled = 0 != g_CommandLine->FindParam(L"-afxInterop");
-		m_MainEnabled = m_Enabled && 0 == g_CommandLine->FindParam(L"-afxInteropNoMain");
+		m_MainEnabled = 0 != g_CommandLine->FindParam(L"-afxInterop");
+		m_Enabled = m_MainEnabled || 0 != g_CommandLine->FindParam(L"-afxInteropLight");
 
 		if (!m_Enabled) return;
 	}
