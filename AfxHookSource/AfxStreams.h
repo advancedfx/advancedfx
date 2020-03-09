@@ -2521,7 +2521,7 @@ private:
 
 			virtual void AfxMaterialFree(CAfxTrackedMaterial* trackedMaterial)
 			{
-				std::unique_lock<std::mutex> unique_lock(m_Context->m_MapMutex);
+				// Happens only from drawing context or when not drawing, so no need to lock.
 
 				std::map<CAfxTrackedMaterial*, CCacheEntry>::iterator it = m_Context->m_Map.find(trackedMaterial);
 
@@ -2566,7 +2566,7 @@ private:
 
 		virtual void AfxMaterialFree(CAfxTrackedMaterial * trackedMaterial)
 		{
-			std::unique_lock<std::shared_timed_mutex> unique_lock(m_Stream->m_PickerMutex);
+			// Happens only from drawing context or when not drawing, so no need to lock.
 
 			Materials.erase(trackedMaterial);
 		}
@@ -2633,7 +2633,7 @@ private:
 
 		virtual void AfxMaterialFree(CAfxTrackedMaterial * material)
 		{
-			std::unique_lock<std::shared_timed_mutex> unique_lock(m_Stream->m_PickerMutex);
+			// Happens only from drawing context or when not drawing, so no need to lock.
 
 			m_Stream->m_PickerMaterials.erase(material);
 		}
