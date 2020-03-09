@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.78.1</version>
+<time>2020-03-09T18:18Z</time>
+<changes>
+<change type="fixed">Fixed mirv_streams crash bug that e.g. could happen on listen servers when CS:GO was freeing a material (e.g. when POV player died) on the drawing thread while in the view rendering functions on the drawing thread at same time, causing HLAE to crash (tried to lock a mutex twice from same thread).</change>
+<change type="removed">afx_interop: Removed old d3d9 wrapping support.</change>
+<change type="added">afx_interop: Added support for multiple clients..</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.78.0</version>
 <time>2020-03-04T09:45Z</time>
 <changes>
