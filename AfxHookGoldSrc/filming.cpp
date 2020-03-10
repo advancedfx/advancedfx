@@ -129,10 +129,17 @@ enum FilmingStreamSlot {
 
 REGISTER_CMD_FUNC(cameraofs_cs)
 {
-	if (pEngfuncs->Cmd_Argc() == 4)
+	if (pEngfuncs->Cmd_Argc() == 4 || pEngfuncs->Cmd_Argc() == 7)
+	{
 		g_Filming.SetCameraOfs((float)atof(pEngfuncs->Cmd_Argv(1)), (float)atof(pEngfuncs->Cmd_Argv(2)), (float)atof(pEngfuncs->Cmd_Argv(3)));
+
+		if(pEngfuncs->Cmd_Argc() == 7)
+			g_Filming.SetCameraAngs((float)atof(pEngfuncs->Cmd_Argv(4)), (float)atof(pEngfuncs->Cmd_Argv(5)), (float)atof(pEngfuncs->Cmd_Argv(6)));
+		else
+			g_Filming.SetCameraAngs(0,0,0);
+	}
 	else
-		pEngfuncs->Con_Printf("Usage: " PREFIX "cameraofs_cs <right> <up> <forward>\nNot neccessary for stereo mode, use mirv_movie_stereo instead\n");
+		pEngfuncs->Con_Printf("Usage: " PREFIX "cameraofs_cs <right> <up> <forward> [<pitch> <yaw> <roll>]\nNot neccessary for stereo mode, use mirv_movie_stereo instead\n");
 }
 
 
@@ -326,6 +333,34 @@ void Filming::OnR_RenderView(float vieworg[3], float viewangles[3], float & fov)
 	if(fov<1) fov = 1;
 	else if(fov>179) fov = 179;
 
+	//
+	// Apply rotation displacement:
+	{
+		float fPitch, fYaw, fRoll;
+		g_Filming.GetCameraAngs(fPitch, fYaw, fRoll);
+
+		if (0 != fPitch || 0 != fYaw || 0 != fRoll)
+		{
+			Quaternion quatOfs = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(
+				fPitch,
+				fYaw,
+				fRoll
+			)));
+
+			Quaternion quatEngine = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(
+				viewangles[PITCH],
+				viewangles[YAW],
+				viewangles[ROLL]
+			)));
+
+			QEulerAngles A = (quatOfs * quatEngine).ToQREulerAngles().ToQEulerAngles();
+
+			viewangles[PITCH] = (float)A.Pitch;
+			viewangles[YAW] = (float)A.Yaw;
+			viewangles[ROLL] = (float)A.Roll;
+		}
+	}
+
 	// >> begin calculate transform vectors
 
 	double forward[3],right[3],up[3];
@@ -341,7 +376,7 @@ void Filming::OnR_RenderView(float vieworg[3], float viewangles[3], float & fov)
 	{
 		float fDispRight, fDispUp, fDispForward;
 
-		g_Filming.GetCameraOfs(&fDispRight,&fDispUp,&fDispForward);
+		g_Filming.GetCameraOfs(fDispRight, fDispUp, fDispForward);
 
 		for ( int i=0 ; i<3 ; i++ )
 		{
@@ -466,17 +501,21 @@ bool Filming::bEnableStereoMode()
 
 void Filming::SetCameraOfs(float right, float up, float forward)
 {
-	if (m_iFilmingState == FS_INACTIVE)
-	{
-		_cameraofs.right = right;
-		_cameraofs.up = up;
-		_cameraofs.forward = forward;
-	}
+	_cameraofs.right = right;
+	_cameraofs.up = up;
+	_cameraofs.forward = forward;
+}
+
+void Filming::SetCameraAngs(float pitch, float yaw, float roll)
+{
+	_cameraofs.pitch = pitch;
+	_cameraofs.yaw = yaw;
+	_cameraofs.roll = roll;
 }
 
 void Filming::SetStereoOfs(float left_and_rightofs)
 {
-	if (m_iFilmingState == FS_INACTIVE) _fStereoOffset = left_and_rightofs;
+	_fStereoOffset = left_and_rightofs;
 }
 
 Filming::Filming()
@@ -485,9 +524,6 @@ Filming::Filming()
 	m_bInWireframe = false;
 	m_EnableStereoMode = false;
 
-		_cameraofs.right = 0;
-		_cameraofs.up = 0;
-		_cameraofs.forward = 0;
 		_fStereoOffset = (float)1.27;
 		
 		// this is currently done globally: _detoured_R_RenderView = NULL; // only hook when requested
@@ -520,11 +556,18 @@ void Filming::DoCanDebugCapture()
 	if(isFilming() && g_Filming_Stream[FS_debug]) g_Filming_Stream[FS_debug]->Capture(m_time, &m_GlRawPic, m_fps);
 }
 
-void Filming::GetCameraOfs(float *right, float *up, float *forward)
+void Filming::GetCameraOfs(float& right, float& up, float& forward)
 {
-	*right = _cameraofs.right;
-	*up = _cameraofs.up;
-	*forward = _cameraofs.forward;
+	right = _cameraofs.right;
+	up = _cameraofs.up;
+	forward = _cameraofs.forward;
+}
+
+void Filming::GetCameraAngs(float& pitch, float& yaw, float& roll)
+{
+	pitch = _cameraofs.pitch;
+	yaw = _cameraofs.yaw;
+	roll = _cameraofs.roll;
 }
 
 double Filming::GetDebugClientTime()

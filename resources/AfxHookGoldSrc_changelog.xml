@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.7.0</version>
+<time>2020-03-xxTxx:xxZ</time>
+<changes>
+<change type="updated">
+Updated mirv_cameraofs_cs: can now be changed any time, not only when not recording.
+</change>
+<change type="added">
+Added possibility to mirv_cameraofs_cs to set rotation as well (3 more (optional) parameters: pitch, yaw, roll).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.6.6</version>
 <time>2020-02-18T18:18Z</time>
 <changes>

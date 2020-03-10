@@ -174,8 +174,8 @@ public:
 	double LastCameraFov;
 
 
-	// those are used by R_RenderView, since it doesn't sit in the class yet ( I didn't want to mess around with static properties and this pointers etc.)
-	void GetCameraOfs(float *right, float *up, float *forward); // will copy the current camera ofs to the supplied addresses
+	void GetCameraOfs(float &right, float &up, float &forward); // will copy the current camera ofs to the supplied addresses
+	void GetCameraAngs(float& pitch, float& yaw, float& roll);
 	float GetStereoOffset(); // returns current stereoofs
 	bool bEnableStereoMode();
 	STEREO_STATE GetStereoState();
@@ -185,6 +185,7 @@ public:
 
 
 	void SetCameraOfs(float right, float up, float forward); // you can set an static cameraofs here, however during stereomode it should be 0
+	void SetCameraAngs(float pitch, float yaw, float roll);
 	void SetStereoOfs(float left_and_rightofs); // will be used in stereo mode to displace the camera left and right, suggested values are between 1.0 - 1.4, value should be positive, otherewise you would switch left and right cam
 
 	void OnR_RenderView(float vieworg[3], float viewangles[3], float & fov);
@@ -246,7 +247,7 @@ private:
 	bool m_bInWireframe;
 	GLenum m_iLastMode;
 
-	struct _cameraofs_s { float right; float up; float forward; } _cameraofs;
+	struct _cameraofs_s { float right; float up; float forward; float pitch; float yaw; float roll; } _cameraofs = { 0,0,0,0,0,0 };
 	float	_fStereoOffset;
 
 	STEREO_STATE _stereo_state;
