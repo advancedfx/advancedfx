@@ -62,6 +62,8 @@ namespace AfxInterop {
 
 	bool MainEnabled();
 
+	bool Active();
+
 	//
 	// Engine thread:
 

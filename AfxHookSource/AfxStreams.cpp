@@ -5966,7 +5966,7 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 void CAfxStreams::DoRenderView(CCSViewRender_RenderView_t fn, void* This, void* Edx, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw)
 {
 #ifdef AFX_INTEROP
-	if (AfxInterop::Enabled())
+	if (AfxInterop::Enabled() && AfxInterop::Active())
 	{
 		AfxInterop::OnRenderView(view, g_InteropFeatures);
 
@@ -5975,10 +5975,7 @@ void CAfxStreams::DoRenderView(CCSViewRender_RenderView_t fn, void* This, void* 
 			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropOverrideDepthBegin_Functor()));
 		}
 
-		if (g_InteropFeatures.GetEnabled())
-		{
-			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new AfxInteropDrawingDrawingThreadPrepareDraw(AfxInterop::GetFrameCount())));
-		}
+		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new AfxInteropDrawingDrawingThreadPrepareDraw(AfxInterop::GetFrameCount())));
 	}
 #endif
 
@@ -5997,23 +5994,16 @@ void CAfxStreams::DoRenderView(CCSViewRender_RenderView_t fn, void* This, void* 
 	}
 
 #ifdef AFX_INTEROP
-	if (AfxInterop::Enabled())
+	if (AfxInterop::Enabled() && AfxInterop::Active())
 	{
-		if (g_InteropFeatures.GetEnabled())
-		{
-			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropOnRenderViewEnd_Functor()));
-		}
+		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropOnRenderViewEnd_Functor()));
 
 		if (g_InteropFeatures.GetDepthRequired())
 		{
 			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropOverrideDepthEnd_Functor()));
 		}
 
-		if (g_InteropFeatures.GetEnabled())
-		{
-			AfxInterop::OnRenderViewEnd();
-		}
-
+		AfxInterop::OnRenderViewEnd();
 	}
 #endif
 }
