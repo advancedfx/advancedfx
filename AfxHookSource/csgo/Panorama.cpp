@@ -20,7 +20,7 @@ void __fastcall MyPanorama_CZip_UnkLoadFiles(void * This, void * edx, void * pDa
 {
 	std::wstring filePath;
 
-	filePath = GetHlaeFolderW();
+	filePath = GetHlaeRoamingAppDataFolderW();
 	filePath.append(L"panorama.org.zip");
 
 	FILE * file = _wfopen(filePath.c_str(), L"wb");
@@ -30,7 +30,7 @@ void __fastcall MyPanorama_CZip_UnkLoadFiles(void * This, void * edx, void * pDa
 		fclose(file);
 	}
 
-	filePath = GetHlaeFolderW();
+	filePath = GetHlaeRoamingAppDataFolderW();
 	filePath.append(L"panorama.my.zip");
 
 	file = _wfopen(filePath.c_str(), L"rb");

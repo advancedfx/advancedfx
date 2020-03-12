@@ -3,8 +3,10 @@
 #include "hlaeFolder.h"
 
 #include <shared/StringTools.h>
+#include <shared/FileTools.h>
 
 #include <Windows.h>
+#include <Shlobj.h>
 #include <string>
 
 #define DLL_NAME	L"AfxHookSource.dll"
@@ -49,9 +51,9 @@ void CalculateHlaeFolderOnce()
 		g_HlaeFolderW.assign(fileName);
 
 		size_t fp = g_HlaeFolderW.find_last_of(L'\\');
-		if(std::string::npos != fp)
+		if(std::string::npos == fp || g_HlaeFolderW.length() != fp)
 		{
-			g_HlaeFolderW.resize(fp+1, L'\\');
+			g_HlaeFolderW.resize(g_HlaeFolderW.length() +1, L'\\');
 		}
 		
 		WideStringToUTF8String(g_HlaeFolderW.c_str(), g_HlaeFolder);
@@ -74,4 +76,56 @@ const wchar_t * GetHlaeFolderW()
 	CalculateHlaeFolderOnce();
 
 	return g_HlaeFolderW.c_str();
+}
+
+
+std::wstring g_HlaeRoamingAppDataFolderW(L"");
+std::string g_HlaeRoamingAppDataFolder("");
+
+void CalculateHlaeRoamingAppDataFolderOnce()
+{
+	static bool firstRun = true;
+	if (firstRun)
+	{
+		firstRun = false;
+	}
+	else
+		return;
+
+	PWSTR path = nullptr;
+
+	if (S_OK == SHGetKnownFolderPath(FOLDERID_RoamingAppData, KF_FLAG_DEFAULT,0,&path))
+	{
+		g_HlaeRoamingAppDataFolderW = path;
+
+		size_t fp = g_HlaeRoamingAppDataFolderW.find_last_of(L'\\');
+		if (std::string::npos == fp || g_HlaeRoamingAppDataFolderW.length() != fp)
+		{
+			g_HlaeRoamingAppDataFolderW.resize(g_HlaeRoamingAppDataFolderW.length() + 1, L'\\');
+		}
+
+		g_HlaeRoamingAppDataFolderW += L"HLAE\\";
+
+		WideStringToUTF8String(g_HlaeRoamingAppDataFolderW.c_str(), g_HlaeRoamingAppDataFolder);
+
+		CreatePath(g_HlaeRoamingAppDataFolderW.c_str(), std::wstring());
+	}
+
+	CoTaskMemFree(path);
+
+	return;
+}
+
+const char* GetHlaeRoamingAppDataFolder()
+{
+	CalculateHlaeRoamingAppDataFolderOnce();
+
+	return g_HlaeRoamingAppDataFolder.c_str();
+}
+
+const wchar_t* GetHlaeRoamingAppDataFolderW()
+{
+	CalculateHlaeRoamingAppDataFolderOnce();
+
+	return g_HlaeRoamingAppDataFolderW.c_str();
 }
