@@ -50,10 +50,11 @@ void CalculateHlaeFolderOnce()
 	{
 		g_HlaeFolderW.assign(fileName);
 
+		// strip DLL name to get path:
 		size_t fp = g_HlaeFolderW.find_last_of(L'\\');
-		if(std::string::npos == fp || g_HlaeFolderW.length() != fp)
+		if(std::string::npos != fp)
 		{
-			g_HlaeFolderW.resize(g_HlaeFolderW.length() +1, L'\\');
+			g_HlaeFolderW.resize(fp +1, L'\\');
 		}
 		
 		WideStringToUTF8String(g_HlaeFolderW.c_str(), g_HlaeFolder);
