@@ -586,7 +586,7 @@ void CAfxRenderViewStream::Capture(CAfxRecordStream * captureTarget, size_t stre
 		}
 	}
 	else
-	if(buffer->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_RGB, width, height)))
+	if(buffer->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_BGR, width, height)))
 	{
 		unsigned char * pBuffer = (unsigned char*)buffer->Buffer;
 		int imagePitch = buffer->Format.Pitch;
@@ -993,10 +993,10 @@ void CAfxTwinStream::CaptureEnd()
 				canCombine =
 					bufferA->Format.Width == bufferB->Format.Width
 					&& bufferA->Format.Height == bufferB->Format.Height
-					&& bufferA->Format.PixelFormat == CAfxImageFormat::PF_RGB
+					&& bufferA->Format.PixelFormat == CAfxImageFormat::PF_BGR
 					&& bufferA->Format.PixelFormat == bufferB->Format.PixelFormat
 					&& (orgImagePitch = bufferA->Format.Pitch) == bufferB->Format.Pitch
-					&& bufferA->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_ARGB, bufferA->Format.Width, bufferA->Format.Height))
+					&& bufferA->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_BGRA, bufferA->Format.Width, bufferA->Format.Height))
 					;
 
 				if (canCombine)
@@ -1014,15 +1014,15 @@ void CAfxTwinStream::CaptureEnd()
 					{
 						for (int x = width - 1; x >= 0; --x)
 						{
-							unsigned char b = ((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 2];
+							unsigned char b = ((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 0];
 							unsigned char g = ((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 1];
-							unsigned char r = ((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 0];
+							unsigned char r = ((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 2];
 							unsigned char a = ((unsigned char *)pBufferB)[y*orgImagePitch + x * 3 + 0];
 
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 3] = b;
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 2] = g;
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 1] = r;
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 0] = a;
+							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 0] = b;
+							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 1] = g;
+							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 2] = r;
+							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 3] = a;
 						}
 					}
 
@@ -1053,10 +1053,10 @@ void CAfxTwinStream::CaptureEnd()
 				canCombine =
 					bufferA->Format.Width == bufferB->Format.Width
 					&& bufferA->Format.Height == bufferB->Format.Height
-					&& bufferA->Format.PixelFormat == CAfxImageFormat::PF_RGB
+					&& bufferA->Format.PixelFormat == CAfxImageFormat::PF_BGR
 					&& bufferA->Format.PixelFormat == bufferB->Format.PixelFormat
 					&& (orgImagePitch = bufferA->Format.Pitch) == bufferB->Format.Pitch
-					&& bufferA->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_ARGB, bufferA->Format.Width, bufferA->Format.Height))
+					&& bufferA->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_BGRA, bufferA->Format.Width, bufferA->Format.Height))
 					;
 
 				if (canCombine)
@@ -1092,14 +1092,14 @@ void CAfxTwinStream::CaptureEnd()
 							// hud >= 255
 
 							unsigned char white[3] = {
-								((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 2],
+								((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 0],
 								((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 1],
-								((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 0]
+								((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 2]
 							};
 							unsigned char black[3] = {
-								((unsigned char *)pBufferB)[y*orgImagePitch + x * 3 + 2],
+								((unsigned char *)pBufferB)[y*orgImagePitch + x * 3 + 0],
 								((unsigned char *)pBufferB)[y*orgImagePitch + x * 3 + 1],
-								((unsigned char *)pBufferB)[y*orgImagePitch + x * 3 + 0]
+								((unsigned char *)pBufferB)[y*orgImagePitch + x * 3 + 2]
 							};
 
 							signed short whiteMinusBlack[3] = {
@@ -1114,10 +1114,10 @@ void CAfxTwinStream::CaptureEnd()
 
 							float alpha  = 0.5;
 
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 3] = (unsigned char)hudB;
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 2] = (unsigned char)hudG;
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 1] = (unsigned char)hudR;
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 0] = (unsigned char)alpha;
+							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 0] = (unsigned char)hudB;
+							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 1] = (unsigned char)hudG;
+							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 2] = (unsigned char)hudR;
+							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 3] = (unsigned char)alpha;
 						}
 					}
 
@@ -1383,8 +1383,8 @@ void CAfxMatteStream::CaptureEnd()
 	bool canCombine =
 		bufferEntBlack && bufferEntWhite
 		&& bufferEntBlack->Format == bufferEntWhite->Format
-		&& bufferEntBlack->Format.PixelFormat == CAfxImageFormat::PF_RGB
-		&& (orgImagePitch = bufferEntBlack->Format.Pitch, bufferEntBlack->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_ARGB, bufferEntBlack->Format.Width, bufferEntBlack->Format.Height)));
+		&& bufferEntBlack->Format.PixelFormat == CAfxImageFormat::PF_BGR
+		&& (orgImagePitch = bufferEntBlack->Format.Pitch, bufferEntBlack->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_BGRA, bufferEntBlack->Format.Width, bufferEntBlack->Format.Height)));
 
 	if (canCombine)
 	{
@@ -1399,22 +1399,22 @@ void CAfxMatteStream::CaptureEnd()
 		{
 			for (int x = width - 1; x >= 0; --x)
 			{
-				unsigned char entBlack_b = ((unsigned char *)pBufferEntBlack)[y*orgImagePitch + x * 3 + 2];
+				unsigned char entBlack_b = ((unsigned char *)pBufferEntBlack)[y*orgImagePitch + x * 3 + 0];
 				unsigned char entBlack_g = ((unsigned char *)pBufferEntBlack)[y*orgImagePitch + x * 3 + 1];
-				unsigned char entBlack_r = ((unsigned char *)pBufferEntBlack)[y*orgImagePitch + x * 3 + 0];
+				unsigned char entBlack_r = ((unsigned char *)pBufferEntBlack)[y*orgImagePitch + x * 3 + 2];
 
-				unsigned char entWhite_b = ((unsigned char *)pBufferEntWhite)[y*orgImagePitch + x * 3 + 2];
+				unsigned char entWhite_b = ((unsigned char *)pBufferEntWhite)[y*orgImagePitch + x * 3 + 0];
 				unsigned char entWhite_g = ((unsigned char *)pBufferEntWhite)[y*orgImagePitch + x * 3 + 1];
-				unsigned char entWhite_r = ((unsigned char *)pBufferEntWhite)[y*orgImagePitch + x * 3 + 0];
+				unsigned char entWhite_r = ((unsigned char *)pBufferEntWhite)[y*orgImagePitch + x * 3 + 2];
 
 				//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 0] = y < 1 * height / 3 ? entBlack_b : (y < 2 * height / 3 ? entWhite_b : (unsigned char)(((int)entBlack_b + (int)entWhite_b)/2));
 				//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 1] = y < 1 * height / 3 ? entBlack_g : (y < 2 * height / 3 ? entWhite_g : (unsigned char)(((int)entBlack_g + (int)entWhite_g)/2));
 				//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 2] = y < 1 * height / 3 ? entBlack_r : (y < 2 * height / 3 ? entWhite_r : (unsigned char)(((int)entBlack_r + (int)entWhite_r)/2));
 				//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 3] = y < 1 * height / 3 ? 255 : (y < 2 * height / 3 ? 255 : (unsigned char)min(max((255l - (int)entWhite_b + (int)entBlack_b + 255l - (int)entWhite_g + (int)entBlack_g + 255l - (int)entWhite_r + (int)entBlack_r) / 3l, 0), 255));
-				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 3] = (unsigned char)(((int)entBlack_b + (int)entWhite_b)/2);
-				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 2] = (unsigned char)(((int)entBlack_g + (int)entWhite_g)/2);
-				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 1] = (unsigned char)(((int)entBlack_r + (int)entWhite_r)/2);
-				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 0] = (unsigned char)min(max((255l - (int)entWhite_b + (int)entBlack_b + 255l - (int)entWhite_g + (int)entBlack_g + 255l - (int)entWhite_r + (int)entBlack_r) / 3l, 0), 255);
+				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 0] = (unsigned char)(((int)entBlack_b + (int)entWhite_b)/2);
+				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 1] = (unsigned char)(((int)entBlack_g + (int)entWhite_g)/2);
+				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 2] = (unsigned char)(((int)entBlack_r + (int)entWhite_r)/2);
+				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 3] = (unsigned char)min(max((255l - (int)entWhite_b + (int)entBlack_b + 255l - (int)entWhite_g + (int)entBlack_g + 255l - (int)entWhite_r + (int)entBlack_r) / 3l, 0), 255);
 			}
 		}
 
@@ -1489,7 +1489,7 @@ CAfxBaseFxStream::CAfxBaseFxStream()
 	DoBloomAndToneMapping = false;
 	DoDepthOfField = false;
 
-	SetAction(m_ClientEffectTexturesAction, m_Shared.DrawAction_get());
+		SetAction(m_ClientEffectTexturesAction, m_Shared.DrawAction_get());
 	SetAction(m_WorldTexturesAction, m_Shared.DrawAction_get());
 	SetAction(m_SkyBoxTexturesAction, m_Shared.DrawAction_get());
 	SetAction(m_StaticPropTexturesAction, m_Shared.DrawAction_get());

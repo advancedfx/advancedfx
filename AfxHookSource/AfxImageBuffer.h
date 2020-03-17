@@ -11,8 +11,8 @@ public:
 	enum PixelFormat_e
 	{
 		PF_Invalid,
-		PF_RGB,
-		PF_ARGB,
+		PF_BGR,
+		PF_BGRA,
 		PF_A,
 		PF_ZFloat
 	};
@@ -65,10 +65,10 @@ private:
 			
 			switch (PixelFormat)
 			{
-			case CAfxImageFormat::PF_RGB:
+			case CAfxImageFormat::PF_BGR:
 				Pitch *= 3 * sizeof(char);
 				break;
-			case CAfxImageFormat::PF_ARGB:
+			case CAfxImageFormat::PF_BGRA:
 				Pitch *= 4 * sizeof(char);
 				break;
 			case CAfxImageFormat::PF_A:

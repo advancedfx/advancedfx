@@ -43,7 +43,7 @@ bool CAfxOutImageStream::SupplyVideoData(const CAfxImageBuffer & buffer)
 			;
 	}
 
-	bool isBgra = CAfxImageFormat::PF_ARGB == buffer.Format.PixelFormat;
+	bool isBgra = CAfxImageFormat::PF_BGRA == buffer.Format.PixelFormat;
 
 	return m_IfBmpNotTga && !isBgra
 		? CreateCapturePath(".bmp", path) && WriteRawBitmap((unsigned char*)buffer.Buffer, path.c_str(), buffer.Format.Width, buffer.Format.Height, 24, buffer.Format.Pitch)
@@ -212,10 +212,10 @@ CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & image
 
 		switch (imageFormat.PixelFormat)
 		{
-		case CAfxImageFormat::PF_RGB:
+		case CAfxImageFormat::PF_BGR:
 			ffmpegArgs << L"rgb24";
 			break;
-		case CAfxImageFormat::PF_ARGB:
+		case CAfxImageFormat::PF_BGRA:
 			ffmpegArgs << L"argb";
 			break;
 		case CAfxImageFormat::PF_A:
@@ -679,7 +679,7 @@ CAfxOutSamplingStream::CAfxOutSamplingStream(const CAfxImageFormat & imageFormat
 
 	switch (imageFormat.PixelFormat)
 	{
-	case CAfxImageFormat::PF_RGB:
+	case CAfxImageFormat::PF_BGR:
 		m_EasySampler.Byte = new EasyByteSampler(EasySamplerSettings(
 			imageFormat.Width * 3,
 			imageFormat.Height,
@@ -690,7 +690,7 @@ CAfxOutSamplingStream::CAfxOutSamplingStream(const CAfxImageFormat & imageFormat
 			frameStrength
 		), (int)imageFormat.Pitch, this);
 		break;
-	case CAfxImageFormat::PF_ARGB:
+	case CAfxImageFormat::PF_BGRA:
 		m_EasySampler.Byte = new EasyByteSampler(EasySamplerSettings(
 			imageFormat.Width * 4,
 			imageFormat.Height,
@@ -732,8 +732,8 @@ CAfxOutSamplingStream::~CAfxOutSamplingStream()
 {
 	switch (m_ImageFormat.PixelFormat)
 	{
-	case CAfxImageFormat::PF_RGB:
-	case CAfxImageFormat::PF_ARGB:
+	case CAfxImageFormat::PF_BGR:
+	case CAfxImageFormat::PF_BGRA:
 	case CAfxImageFormat::PF_A:
 		delete m_EasySampler.Byte;
 		break;
@@ -756,8 +756,8 @@ bool CAfxOutSamplingStream::SupplyVideoData(const CAfxImageBuffer & buffer)
 
 	switch (m_ImageFormat.PixelFormat)
 	{
-	case CAfxImageFormat::PF_RGB:
-	case CAfxImageFormat::PF_ARGB:
+	case CAfxImageFormat::PF_BGR:
+	case CAfxImageFormat::PF_BGRA:
 	case CAfxImageFormat::PF_A:
 		m_EasySampler.Byte->Sample((const unsigned char*)buffer.Buffer, m_Time);
 		break;
