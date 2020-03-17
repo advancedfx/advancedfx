@@ -2,6 +2,8 @@
 
 #include <d3d9.h>
 
+#define FOURCC_INTZ ((D3DFORMAT)(MAKEFOURCC('I', 'N', 'T', 'Z')))
+
 typedef IDirect3D9 * (WINAPI * Direct3DCreate9_t)(UINT SDKVersion);
 typedef HRESULT (WINAPI * Direct3DCreate9Ex_t)(UINT SDKVersion, IDirect3D9Ex**);
 
@@ -162,6 +164,8 @@ void AfxDrawDepth(AfxDrawDepthEncode encode, AfxDrawDepthMode mode, bool clip, f
 
 void AfxDrawGuides(int x, int y, int width, int height, bool phiGrid, bool ruleOfThirds);
 
+void AfxDrawRect(IDirect3DTexture9* texture, int x, int y, int width, int height, float x0, float y0, float x1, float y1);
+
 //
 
 #ifdef AFX_INTEROP
@@ -189,3 +193,10 @@ public:
 };
 
 #endif
+
+IDirect3DDevice9* AfxGetDirect3DDevice9();
+
+IDirect3DDevice9Ex* AfxGetDirect3DDevice9Ex();
+
+IDirect3DSurface9* AfxGetRenderTargetSurface();
+

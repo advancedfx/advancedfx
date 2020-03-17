@@ -121,7 +121,9 @@ private:
 	HANDLE m_hChildStd_OUT_Wr = NULL;
 	HANDLE m_hChildStd_ERR_Rd = NULL;
 	HANDLE m_hChildStd_ERR_Wr = NULL;
-	OVERLAPPED m_OverlappedWrite = {};
+	OVERLAPPED m_OverlappedStdin = {};
+	//OVERLAPPED m_OverlappedStdout = {};
+	//OVERLAPPED m_OverlappedStderr = {};
 
 	void Close();
 

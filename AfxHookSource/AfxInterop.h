@@ -102,22 +102,14 @@ namespace AfxInterop {
 	bool OnViewOverride(float & Tx, float & Ty, float & Tz, float & Rx, float & Ry, float & Rz, float & Fov);
 
 	/// <remarks>Must be called from engine thread only.</remarks>
-	void On_DrawTranslucentRenderables(SOURCESDK::CSGO::CRendering3dView * rendering3dView, bool bInSkybox, bool bShadowDepth, bool afterCall);
+	void On_DrawTranslucentRenderables(IAfxMatRenderContext * ctx, SOURCESDK::CSGO::CRendering3dView * rendering3dView, bool bInSkybox, bool bShadowDepth, bool afterCall);
+
+	void OnBeforeHud(IAfxMatRenderContext* ctx);
+
+	void OnAfterHud(IAfxMatRenderContext* ctx);
 
 	//
 	// Drawing thread:
-
-	/// <remarks>Must be called from drawing thread only.</remarks>
-	void DrawingThreadPrepareDraw(int frameCount);
-
-	/// <remarks>Must be called from drawing thread only.</remarks>
-	void DrawingThread_On_DrawTranslucentRenderables(bool bInSkybox, bool bShadowDepth, bool afterCall);
-
-	/// <remarks>Must be called from drawing thread only.</remarks>
-	void DrawingThread_BeforeHud(IAfxMatRenderContextOrg * context);
-
-	/// <remarks>Must be called from drawing thread only.</remarks>
-	void DrawingThread_AfterHud(IAfxMatRenderContextOrg * context);
 
 	/// <remarks>Must be called from drawing thread only.</remarks>
 	void OnCreatedSurface(IAfxInteropSurface * surface);
@@ -129,8 +121,7 @@ namespace AfxInterop {
 	/// <remarks>Must be called from drawing thread only.</remarks>
 	void OnSetRenderTarget(DWORD RenderTargetIndex, IAfxInteropSurface * surface);
 
-	/// <remarks>Must be called from drawing thread only.</remarks>
-	void DrawingThread_OnRenderViewEnd();
+	void DrawingThread_DeviceLost();
 }
 
 #endif

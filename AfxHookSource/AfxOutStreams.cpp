@@ -43,7 +43,7 @@ bool CAfxOutImageStream::SupplyVideoData(const CAfxImageBuffer & buffer)
 			;
 	}
 
-	bool isBgra = CAfxImageFormat::PF_BGRA == buffer.Format.PixelFormat;
+	bool isBgra = CAfxImageFormat::PF_ARGB == buffer.Format.PixelFormat;
 
 	return m_IfBmpNotTga && !isBgra
 		? CreateCapturePath(".bmp", path) && WriteRawBitmap((unsigned char*)buffer.Buffer, path.c_str(), buffer.Format.Width, buffer.Format.Height, 24, buffer.Format.Pitch)
@@ -116,6 +116,67 @@ void ReplaceAllW(std::wstring & str, const std::map<std::wstring, std::wstring> 
 	}
 }
 
+BOOL AfxOutFFMPEGVideoStream_CreatePipe(
+	const char * pipeName,
+	OUT LPHANDLE lpReadPipe,
+	OUT LPHANDLE lpWritePipe,
+	IN LPSECURITY_ATTRIBUTES lpPipeAttributes,
+	DWORD nSize,
+	DWORD timeOutMs,
+	DWORD dwReadMode,
+	DWORD dwWriteMode)
+{
+	HANDLE ReadPipeHandle, WritePipeHandle;
+	DWORD dwError;
+
+	// Only one valid OpenMode flag - FILE_FLAG_OVERLAPPED
+
+	if ((dwReadMode | dwWriteMode) & (~FILE_FLAG_OVERLAPPED)) {
+		SetLastError(ERROR_INVALID_PARAMETER);
+		return FALSE;
+	}
+
+	if (nSize == 0) {
+		nSize = 4096;
+	}
+
+	ReadPipeHandle = CreateNamedPipeA(
+		pipeName,
+		PIPE_ACCESS_INBOUND | dwReadMode,
+		PIPE_TYPE_BYTE | PIPE_WAIT,
+		1, // Number of pipes
+		nSize, // Out buffer size
+		nSize, // In buffer size
+		timeOutMs, // Timeout in ms
+		lpPipeAttributes
+	);
+
+	if (!ReadPipeHandle) {
+		return FALSE;
+	}
+
+	WritePipeHandle = CreateFileA(
+		pipeName,
+		GENERIC_WRITE,
+		0, // No sharing
+		lpPipeAttributes,
+		OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL | dwWriteMode,
+		NULL                       // Template file
+	);
+
+	if (INVALID_HANDLE_VALUE == WritePipeHandle) {
+		dwError = GetLastError();
+		CloseHandle(ReadPipeHandle);
+		SetLastError(dwError);
+		return FALSE;
+	}
+
+	*lpReadPipe = ReadPipeHandle;
+	*lpWritePipe = WritePipeHandle;
+	return(TRUE);
+}
+
 CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & imageFormat, const std::wstring & path, const std::wstring & ffmpegOptions, float frameRate)
 	: CAfxOutVideoStream(imageFormat)
 {
@@ -151,11 +212,11 @@ CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & image
 
 		switch (imageFormat.PixelFormat)
 		{
-		case CAfxImageFormat::PF_BGR:
-			ffmpegArgs << L"bgr24";
+		case CAfxImageFormat::PF_RGB:
+			ffmpegArgs << L"rgb24";
 			break;
-		case CAfxImageFormat::PF_BGRA:
-			ffmpegArgs << L"bgra";
+		case CAfxImageFormat::PF_ARGB:
+			ffmpegArgs << L"argb";
 			break;
 		case CAfxImageFormat::PF_A:
 			ffmpegArgs << L"gray";
@@ -200,89 +261,101 @@ CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & image
 		saAttr.bInheritHandle = TRUE;
 		saAttr.lpSecurityDescriptor = NULL;
 
-		// Create a pipe for the child process's STDOUT.
+		// Create STDOUT:
 
-		if (!CreatePipe(&m_hChildStd_OUT_Rd, &m_hChildStd_OUT_Wr, &saAttr, 0))
+		std::ostringstream stOutPipeNameStream;
+		stOutPipeNameStream << "\\\\.\\pipe\\AfxHookSource_FFMPEG_Out_" << GetCurrentProcessId() << "_" << (void*)this;
+		std::string stdOutPipeName(stOutPipeNameStream.str());
+
+		if (TRUE != AfxOutFFMPEGVideoStream_CreatePipe(
+			stdOutPipeName.c_str(),
+			&m_hChildStd_OUT_Rd,
+			&m_hChildStd_OUT_Wr,
+			&saAttr,
+			0,
+			20 * 1000,
+			0, 0))
 		{
-			Tier0_Warning("AFXERROR: CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream: StdoutRd CreatePipe.\n");
-			m_hChildStd_OUT_Rd = INVALID_HANDLE_VALUE;
-			m_hChildStd_OUT_Wr = INVALID_HANDLE_VALUE;
+			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream: Could not create STDOUT.\n");
 		}
-
-		// Ensure the read handle to the pipe for STDOUT is not inherited.
 
 		if (INVALID_HANDLE_VALUE != m_hChildStd_OUT_Rd && !SetHandleInformation(m_hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0))
 		{
-			Tier0_Warning("AFXERROR: CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream:Stdout SetHandleInformation.\n");
+			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream:STDOUT SetHandleInformation.\n");
 			CloseHandle(m_hChildStd_OUT_Rd);
 			m_hChildStd_OUT_Rd = INVALID_HANDLE_VALUE;
 		}
 
-		// Create a pipe for the child process's STDERR.
-
-		if (!CreatePipe(&m_hChildStd_ERR_Rd, &m_hChildStd_ERR_Wr, &saAttr, 0))
+		/*
+		if (INVALID_HANDLE_VALUE == (m_OverlappedStdout.hEvent = CreateEventA(NULL, true, true, NULL)))
 		{
-			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream: StdErrRd CreatePipe.\n");
-			m_hChildStd_ERR_Wr = INVALID_HANDLE_VALUE;
+			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream:STDOUT CreateEventA.\n");
 		}
+		*/
 
-		// Ensure the read handle to the pipe for STDERR is not inherited.
+		// Create STDERR:
+
+		std::ostringstream stErrPipeNameStream;
+		stErrPipeNameStream << "\\\\.\\pipe\\AfxHookSource_FFMPEG_Err_" << GetCurrentProcessId() << "_" << (void*)this;
+		std::string stdErrPipeName(stErrPipeNameStream.str());
+
+		if (TRUE != AfxOutFFMPEGVideoStream_CreatePipe(
+			stdErrPipeName.c_str(),
+			&m_hChildStd_ERR_Rd,
+			&m_hChildStd_ERR_Wr,
+			&saAttr,
+			0,
+			20 * 1000,
+			0, 0))
+		{
+			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream: Could not create STDERR.\n");
+		}
 
 		if (INVALID_HANDLE_VALUE != m_hChildStd_ERR_Rd && !SetHandleInformation(m_hChildStd_ERR_Rd, HANDLE_FLAG_INHERIT, 0))
 		{
-			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream:StdErr SetHandleInformation.\n");
+			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream:STDERR SetHandleInformation.\n");
 			CloseHandle(m_hChildStd_ERR_Rd);
 			m_hChildStd_ERR_Rd = INVALID_HANDLE_VALUE;
 		}
 
-		// Create a pipe for the child process's STDIN. 
+		/*
+		if (INVALID_HANDLE_VALUE == (m_OverlappedStderr.hEvent = CreateEventA(NULL, true, true, NULL)))
+		{
+			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream:STDERR CreateEventA.\n");
+		}
+		*/
+
+		// Create STDIN:
 
 		std::ostringstream stdInPipeNameStream;
 		stdInPipeNameStream << "\\\\.\\pipe\\AfxHookSource_FFMPEG_In_" << GetCurrentProcessId() << "_" << (void *)this;
-
 		std::string stdInPipeName(stdInPipeNameStream.str());
 
-		if (INVALID_HANDLE_VALUE != (m_hChildStd_IN_Wr = CreateNamedPipeA(
+		if (TRUE != AfxOutFFMPEGVideoStream_CreatePipe(
 			stdInPipeName.c_str(),
-			PIPE_ACCESS_OUTBOUND | FILE_FLAG_OVERLAPPED,
-			PIPE_TYPE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
-			1,
-			256 * 1024,
-			0,
-			20000,
-			&saAttr)))
+			&m_hChildStd_IN_Rd,
+			&m_hChildStd_IN_Wr,
+			&saAttr,
+			1024 * 1024,
+			20 * 1000,
+			0, FILE_FLAG_OVERLAPPED))
 		{
-			if (INVALID_HANDLE_VALUE == (m_hChildStd_IN_Rd = CreateFileA(
-				stdInPipeName.c_str(),
-				GENERIC_READ,
-				0,  // No sharing
-				&saAttr,
-				OPEN_EXISTING,
-				FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_READONLY,
-				NULL                       // Template file
-			)))
-			{
-				Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream: Stdin CreateFileA.\n");
-			}
+			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream: Could not create STDIN.\n");
 		}
-		else
-		{
-			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream: Stdin CreateNamedPipeA.\n");
-		}
-
-		// Ensure the write handle to the pipe for STDIN is not inherited. 
 
 		if (INVALID_HANDLE_VALUE != m_hChildStd_IN_Wr && !SetHandleInformation(m_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0))
 		{
-			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream:Stdin SetHandleInformation.\n");
+			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream:STDIN SetHandleInformation.\n");
 			CloseHandle(m_hChildStd_IN_Wr);
 			m_hChildStd_IN_Wr = INVALID_HANDLE_VALUE;
 		}
 
-		if (INVALID_HANDLE_VALUE == (m_OverlappedWrite.hEvent = CreateEventA(NULL, true, true, NULL)))
+		if (INVALID_HANDLE_VALUE == (m_OverlappedStdin.hEvent = CreateEventA(NULL, true, true, NULL)))
 		{
-			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream:OverlappedWrite CreateEventA.\n");
+			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream:STDIN CreateEventA.\n");
 		}
+
+		//
 
 		ZeroMemory(&m_ProcessInfo, sizeof(m_ProcessInfo));
 
@@ -387,16 +460,48 @@ void CAfxOutFFMPEGVideoStream::Close()
 		CloseHandle(m_hChildStd_ERR_Wr);
 		m_hChildStd_ERR_Wr = INVALID_HANDLE_VALUE;
 	}
-	if (INVALID_HANDLE_VALUE != m_OverlappedWrite.hEvent)
+	if (INVALID_HANDLE_VALUE != m_OverlappedStdin.hEvent)
 	{
-		CloseHandle(m_OverlappedWrite.hEvent);
+		CloseHandle(m_OverlappedStdin.hEvent);
 
-		m_OverlappedWrite.hEvent = INVALID_HANDLE_VALUE;
+		m_OverlappedStdin.hEvent = INVALID_HANDLE_VALUE;
 	}
+	/*
+	if (INVALID_HANDLE_VALUE != m_OverlappedStdout.hEvent)
+	{
+		CloseHandle(m_OverlappedStdout.hEvent);
+
+		m_OverlappedStdout.hEvent = INVALID_HANDLE_VALUE;
+	}
+	if (INVALID_HANDLE_VALUE != m_OverlappedStderr.hEvent)
+	{
+		CloseHandle(m_OverlappedStderr.hEvent);
+
+		m_OverlappedStderr.hEvent = INVALID_HANDLE_VALUE;
+	}
+	*/
 }
 
 bool CAfxOutFFMPEGVideoStream::SupplyVideoData(const CAfxImageBuffer & buffer)
 {
+	/*
+	static DWORD frames = 0;
+	static DWORD firstTickCount = GetTickCount();
+	
+	++frames;
+	DWORD delta = GetTickCount() - firstTickCount;
+
+	if (1000 < delta)
+	{
+		float fps = delta ? (float)frames / (delta / 1000.0f): 0;
+		Tier0_Msg("FPS: %f\n",fps);
+		frames = 0;
+		firstTickCount = GetTickCount();
+	}
+
+	return true;
+	*/
+
 	if (TRUE != m_Okay) return false;
 
 	if (!(buffer.Format == m_ImageFormat))
@@ -411,55 +516,82 @@ bool CAfxOutFFMPEGVideoStream::SupplyVideoData(const CAfxImageBuffer & buffer)
 	DWORD offset = 0;
 	DWORD length = (DWORD)buffer.Format.Bytes;
 
-	while (true)
+	if (WriteFile(m_hChildStd_IN_Wr, (LPVOID) & (((char*)buffer.Buffer)[offset]), length, NULL, &m_OverlappedStdin)) return true;
+	
+	if(ERROR_IO_PENDING != GetLastError())
+		return false;
+
+	bool completed = false;
+
+	char chBuf[251];
+	DWORD bytesAvail;
+
+	while (!completed)
 	{
-		DWORD bytesWritten = 0;
-		DWORD bytesToWrite = length;
-
-		if (!WriteFile(m_hChildStd_IN_Wr, (LPVOID)&(((char *)buffer.Buffer)[offset]), bytesToWrite, NULL, &m_OverlappedWrite))
+		if (PeekNamedPipe(m_hChildStd_ERR_Rd, chBuf, 250, NULL, &bytesAvail, NULL))
 		{
-			if (ERROR_IO_PENDING == GetLastError())
+			while (0 < bytesAvail)
 			{
-				bool completed = false;
-
-				while (!completed)
+				DWORD dwBytesRead;
+				if (ReadFile(m_hChildStd_ERR_Rd, chBuf, min(bytesAvail, 250), &dwBytesRead, NULL))
 				{
-					DWORD result = WaitForSingleObject(m_OverlappedWrite.hEvent, 0);
-					switch (result)
-					{
-					case WAIT_OBJECT_0:
-						completed = true;
-						break;
-					case WAIT_TIMEOUT:
-						{
-							//DWORD curTickCount = GetTickCount();
-							//if (curTickCount - lastTickCount > 20000) return false;
-							//lastTickCount = curTickCount;
-							if (!HandleOutAndErr()) return false;
-						}
-						break;
-					default:
-						return false;
-					}
+					chBuf[dwBytesRead] = 0;
+					Tier0_Warning("%s", chBuf);
+					bytesAvail -= dwBytesRead;
+				}
+				else
+				{
+					Tier0_Warning("AFXERROR: CAfxOutFFMPEGVideoStream::HandleOutAndErr: StdErr ReadFile.\n");
+					return false;
 				}
 			}
-			else
-			{
-				return false;
-			}
 		}
-
-		if (!GetOverlappedResult(m_hChildStd_IN_Wr, &m_OverlappedWrite, &bytesWritten, FALSE))
+		else
 		{
+			Tier0_Warning("AFXERROR: CAfxOutFFMPEGVideoStream::HandleOutAndErr: StdErr PeekNamedPipe.\n");
 			return false;
 		}
 
-		offset += bytesWritten;
-		length -= bytesWritten;
+		if (PeekNamedPipe(m_hChildStd_OUT_Rd, NULL, 0, NULL, &bytesAvail, NULL))
+		{
+			while (0 < bytesAvail)
+			{
+				DWORD dwBytesRead;
+				if (ReadFile(m_hChildStd_OUT_Rd, chBuf, min(bytesAvail, 250), &dwBytesRead, NULL))
+				{
+					chBuf[dwBytesRead] = 0;
+					Tier0_Msg("%s", chBuf);
+					bytesAvail -= dwBytesRead;
+				}
+				else
+				{
+					Tier0_Warning("AFXERROR: CAfxOutFFMPEGVideoStream::HandleOutAndErr: StdOut ReadFile.\n");
+					return false;
+				}
+			}
+		}
+		else
+		{
+			Tier0_Warning("AFXERROR: CAfxOutFFMPEGVideoStream::HandleOutAndErr: StdOut PeekNamedPipe.\n");
+			return false;
+		}
 
-		if (0 == length)
+		DWORD result = WaitForSingleObject(m_OverlappedStdin.hEvent, 0);
+		switch (result)
+		{
+		case WAIT_OBJECT_0:
+			completed = true;
 			break;
+		case WAIT_TIMEOUT:
+			break;
+		default:
+			return false;
+		}
 	}
+
+	DWORD bytesWritten;
+	if (!GetOverlappedResult(m_hChildStd_IN_Wr, &m_OverlappedStdin, &bytesWritten, FALSE) || bytesWritten != length)
+		return false;
 
 	return true;
 }
@@ -547,7 +679,7 @@ CAfxOutSamplingStream::CAfxOutSamplingStream(const CAfxImageFormat & imageFormat
 
 	switch (imageFormat.PixelFormat)
 	{
-	case CAfxImageFormat::PF_BGR:
+	case CAfxImageFormat::PF_RGB:
 		m_EasySampler.Byte = new EasyByteSampler(EasySamplerSettings(
 			imageFormat.Width * 3,
 			imageFormat.Height,
@@ -558,7 +690,7 @@ CAfxOutSamplingStream::CAfxOutSamplingStream(const CAfxImageFormat & imageFormat
 			frameStrength
 		), (int)imageFormat.Pitch, this);
 		break;
-	case CAfxImageFormat::PF_BGRA:
+	case CAfxImageFormat::PF_ARGB:
 		m_EasySampler.Byte = new EasyByteSampler(EasySamplerSettings(
 			imageFormat.Width * 4,
 			imageFormat.Height,
@@ -600,8 +732,8 @@ CAfxOutSamplingStream::~CAfxOutSamplingStream()
 {
 	switch (m_ImageFormat.PixelFormat)
 	{
-	case CAfxImageFormat::PF_BGR:
-	case CAfxImageFormat::PF_BGRA:
+	case CAfxImageFormat::PF_RGB:
+	case CAfxImageFormat::PF_ARGB:
 	case CAfxImageFormat::PF_A:
 		delete m_EasySampler.Byte;
 		break;
@@ -624,8 +756,8 @@ bool CAfxOutSamplingStream::SupplyVideoData(const CAfxImageBuffer & buffer)
 
 	switch (m_ImageFormat.PixelFormat)
 	{
-	case CAfxImageFormat::PF_BGR:
-	case CAfxImageFormat::PF_BGRA:
+	case CAfxImageFormat::PF_RGB:
+	case CAfxImageFormat::PF_ARGB:
 	case CAfxImageFormat::PF_A:
 		m_EasySampler.Byte->Sample((const unsigned char*)buffer.Buffer, m_Time);
 		break;

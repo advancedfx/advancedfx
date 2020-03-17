@@ -458,96 +458,6 @@ public:
 private:
 };
 
-class CAfxInteropOnRenderViewEnd_Functor
-	: public CAfxFunctor
-{
-public:
-	CAfxInteropOnRenderViewEnd_Functor()
-	{
-	}
-
-	virtual void operator()()
-	{
-		AfxInterop::DrawingThread_OnRenderViewEnd();
-	}
-
-private:
-};
-
-
-
-class AfxInteropDrawingDrawingThreadPrepareDraw
-	: public CAfxFunctor
-{
-public:
-	AfxInteropDrawingDrawingThreadPrepareDraw(int frameCount)
-		: m_FrameCount(frameCount)
-	{
-	}
-
-	virtual void operator()()
-	{
-		AfxInterop::DrawingThreadPrepareDraw(m_FrameCount);
-	}
-
-private:
-	int m_FrameCount;
-};
-
-class CAfxInteropDrawingThreadFunctor_On_DrawTranslucentRenderables
-	: public CAfxFunctor
-{
-public:
-	CAfxInteropDrawingThreadFunctor_On_DrawTranslucentRenderables(bool bInSkybox, bool bShadowDepth, bool afterCall)
-		: m_bInSkyBox(bInSkybox)
-		, m_bShadowDepth(bShadowDepth)
-		, m_bAfterCall(afterCall)
-	{
-	}
-
-	virtual void operator()()
-	{
-		AfxInterop::DrawingThread_On_DrawTranslucentRenderables(m_bInSkyBox, m_bShadowDepth, m_bAfterCall);
-	}
-
-private:
-	bool m_bInSkyBox;
-	bool m_bShadowDepth;
-	bool m_bAfterCall;
-};
-
-class AfxInteropDrawingThreadBeforeHud_Functor
-	: public CAfxFunctor
-{
-public:
-	AfxInteropDrawingThreadBeforeHud_Functor()
-	{
-	}
-
-	virtual void operator()()
-	{
-		AfxInterop::DrawingThread_BeforeHud(GetCurrentContext()->GetOrg());
-	}
-
-private:
-};
-
-class AfxInteropDrawingThreadAfterHud_Functor
-	: public CAfxFunctor
-{
-public:
-	AfxInteropDrawingThreadAfterHud_Functor()
-	{
-	}
-
-	virtual void operator()()
-	{
-		AfxInterop::DrawingThread_AfterHud(GetCurrentContext()->GetOrg());
-	}
-
-private:
-};
-
 #endif
 
 
@@ -676,7 +586,7 @@ void CAfxRenderViewStream::Capture(CAfxRecordStream * captureTarget, size_t stre
 		}
 	}
 	else
-	if(buffer->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_BGR, width, height)))
+	if(buffer->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_RGB, width, height)))
 	{
 		unsigned char * pBuffer = (unsigned char*)buffer->Buffer;
 		int imagePitch = buffer->Format.Pitch;
@@ -739,26 +649,26 @@ void CAfxRenderViewStream::Capture(CAfxRecordStream * captureTarget, size_t stre
 			// (back) transform to MDT native format:
 
 			int lastLine = height >> 1;
-			if(height & 0x1) ++lastLine;
+			if (height & 0x1) ++lastLine;
 
-			for(int y=0;y<lastLine;++y)
+			for (int y = 0; y < lastLine; ++y)
 			{
 				int srcLine = y;
-				int dstLine = height -1 -y;
+				int dstLine = height - 1 - y;
 
-				for(int x=0;x<width;++x)
+				for (int x = 0; x < width; ++x)
 				{
-					unsigned char r = ((unsigned char *)pBuffer)[dstLine*imagePitch +3*x +0];
-					unsigned char g = ((unsigned char *)pBuffer)[dstLine*imagePitch +3*x +1];
-					unsigned char b = ((unsigned char *)pBuffer)[dstLine*imagePitch +3*x +2];
-									
-					((unsigned char *)pBuffer)[dstLine*imagePitch +3*x +0] = ((unsigned char *)pBuffer)[srcLine*imagePitch +3*x +2];
-					((unsigned char *)pBuffer)[dstLine*imagePitch +3*x +1] = ((unsigned char *)pBuffer)[srcLine*imagePitch +3*x +1];
-					((unsigned char *)pBuffer)[dstLine*imagePitch +3*x +2] = ((unsigned char *)pBuffer)[srcLine*imagePitch +3*x +0];
-									
-					((unsigned char *)pBuffer)[srcLine*imagePitch +3*x +0] = b;
-					((unsigned char *)pBuffer)[srcLine*imagePitch +3*x +1] = g;
-					((unsigned char *)pBuffer)[srcLine*imagePitch +3*x +2] = r;
+					unsigned char r = ((unsigned char*)pBuffer)[dstLine * imagePitch + 3 * x + 0];
+					unsigned char g = ((unsigned char*)pBuffer)[dstLine * imagePitch + 3 * x + 1];
+					unsigned char b = ((unsigned char*)pBuffer)[dstLine * imagePitch + 3 * x + 2];
+
+					((unsigned char*)pBuffer)[dstLine * imagePitch + 3 * x + 0] = ((unsigned char*)pBuffer)[srcLine * imagePitch + 3 * x + 2];
+					((unsigned char*)pBuffer)[dstLine * imagePitch + 3 * x + 1] = ((unsigned char*)pBuffer)[srcLine * imagePitch + 3 * x + 1];
+					((unsigned char*)pBuffer)[dstLine * imagePitch + 3 * x + 2] = ((unsigned char*)pBuffer)[srcLine * imagePitch + 3 * x + 0];
+
+					((unsigned char*)pBuffer)[srcLine * imagePitch + 3 * x + 0] = b;
+					((unsigned char*)pBuffer)[srcLine * imagePitch + 3 * x + 1] = g;
+					((unsigned char*)pBuffer)[srcLine * imagePitch + 3 * x + 2] = r;
 				}
 			}
 
@@ -1083,10 +993,10 @@ void CAfxTwinStream::CaptureEnd()
 				canCombine =
 					bufferA->Format.Width == bufferB->Format.Width
 					&& bufferA->Format.Height == bufferB->Format.Height
-					&& bufferA->Format.PixelFormat == CAfxImageFormat::PF_BGR
+					&& bufferA->Format.PixelFormat == CAfxImageFormat::PF_RGB
 					&& bufferA->Format.PixelFormat == bufferB->Format.PixelFormat
 					&& (orgImagePitch = bufferA->Format.Pitch) == bufferB->Format.Pitch
-					&& bufferA->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_BGRA, bufferA->Format.Width, bufferA->Format.Height))
+					&& bufferA->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_ARGB, bufferA->Format.Width, bufferA->Format.Height))
 					;
 
 				if (canCombine)
@@ -1104,15 +1014,15 @@ void CAfxTwinStream::CaptureEnd()
 					{
 						for (int x = width - 1; x >= 0; --x)
 						{
-							unsigned char b = ((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 0];
+							unsigned char b = ((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 2];
 							unsigned char g = ((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 1];
-							unsigned char r = ((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 2];
+							unsigned char r = ((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 0];
 							unsigned char a = ((unsigned char *)pBufferB)[y*orgImagePitch + x * 3 + 0];
 
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 0] = b;
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 1] = g;
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 2] = r;
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 3] = a;
+							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 3] = b;
+							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 2] = g;
+							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 1] = r;
+							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 0] = a;
 						}
 					}
 
@@ -1143,10 +1053,10 @@ void CAfxTwinStream::CaptureEnd()
 				canCombine =
 					bufferA->Format.Width == bufferB->Format.Width
 					&& bufferA->Format.Height == bufferB->Format.Height
-					&& bufferA->Format.PixelFormat == CAfxImageFormat::PF_BGR
+					&& bufferA->Format.PixelFormat == CAfxImageFormat::PF_RGB
 					&& bufferA->Format.PixelFormat == bufferB->Format.PixelFormat
 					&& (orgImagePitch = bufferA->Format.Pitch) == bufferB->Format.Pitch
-					&& bufferA->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_BGRA, bufferA->Format.Width, bufferA->Format.Height))
+					&& bufferA->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_ARGB, bufferA->Format.Width, bufferA->Format.Height))
 					;
 
 				if (canCombine)
@@ -1182,20 +1092,20 @@ void CAfxTwinStream::CaptureEnd()
 							// hud >= 255
 
 							unsigned char white[3] = {
-								((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 0],
+								((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 2],
 								((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 1],
-								((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 2]
+								((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 0]
 							};
 							unsigned char black[3] = {
-								((unsigned char *)pBufferB)[y*orgImagePitch + x * 3 + 0],
+								((unsigned char *)pBufferB)[y*orgImagePitch + x * 3 + 2],
 								((unsigned char *)pBufferB)[y*orgImagePitch + x * 3 + 1],
-								((unsigned char *)pBufferB)[y*orgImagePitch + x * 3 + 2]
+								((unsigned char *)pBufferB)[y*orgImagePitch + x * 3 + 0]
 							};
 
 							signed short whiteMinusBlack[3] = {
-								white[0] - black[0],
+								white[2] - black[2],
 								white[1] - black[1],
-								white[2] - black[2]
+								white[0] - black[0]
 							};
 
 							float hudB =  0.0f;
@@ -1204,10 +1114,10 @@ void CAfxTwinStream::CaptureEnd()
 
 							float alpha  = 0.5;
 
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 0] = (unsigned char)hudB;
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 1] = (unsigned char)hudG;
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 2] = (unsigned char)hudR;
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 3] = (unsigned char)(alpha);
+							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 3] = (unsigned char)hudB;
+							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 2] = (unsigned char)hudG;
+							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 1] = (unsigned char)hudR;
+							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 0] = (unsigned char)alpha;
 						}
 					}
 
@@ -1473,8 +1383,8 @@ void CAfxMatteStream::CaptureEnd()
 	bool canCombine =
 		bufferEntBlack && bufferEntWhite
 		&& bufferEntBlack->Format == bufferEntWhite->Format
-		&& bufferEntBlack->Format.PixelFormat == CAfxImageFormat::PF_BGR
-		&& (orgImagePitch = bufferEntBlack->Format.Pitch, bufferEntBlack->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_BGRA, bufferEntBlack->Format.Width, bufferEntBlack->Format.Height)));
+		&& bufferEntBlack->Format.PixelFormat == CAfxImageFormat::PF_RGB
+		&& (orgImagePitch = bufferEntBlack->Format.Pitch, bufferEntBlack->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_ARGB, bufferEntBlack->Format.Width, bufferEntBlack->Format.Height)));
 
 	if (canCombine)
 	{
@@ -1489,22 +1399,22 @@ void CAfxMatteStream::CaptureEnd()
 		{
 			for (int x = width - 1; x >= 0; --x)
 			{
-				unsigned char entBlack_b = ((unsigned char *)pBufferEntBlack)[y*orgImagePitch + x * 3 + 0];
+				unsigned char entBlack_b = ((unsigned char *)pBufferEntBlack)[y*orgImagePitch + x * 3 + 2];
 				unsigned char entBlack_g = ((unsigned char *)pBufferEntBlack)[y*orgImagePitch + x * 3 + 1];
-				unsigned char entBlack_r = ((unsigned char *)pBufferEntBlack)[y*orgImagePitch + x * 3 + 2];
+				unsigned char entBlack_r = ((unsigned char *)pBufferEntBlack)[y*orgImagePitch + x * 3 + 0];
 
-				unsigned char entWhite_b = ((unsigned char *)pBufferEntWhite)[y*orgImagePitch + x * 3 + 0];
+				unsigned char entWhite_b = ((unsigned char *)pBufferEntWhite)[y*orgImagePitch + x * 3 + 2];
 				unsigned char entWhite_g = ((unsigned char *)pBufferEntWhite)[y*orgImagePitch + x * 3 + 1];
-				unsigned char entWhite_r = ((unsigned char *)pBufferEntWhite)[y*orgImagePitch + x * 3 + 2];
+				unsigned char entWhite_r = ((unsigned char *)pBufferEntWhite)[y*orgImagePitch + x * 3 + 0];
 
 				//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 0] = y < 1 * height / 3 ? entBlack_b : (y < 2 * height / 3 ? entWhite_b : (unsigned char)(((int)entBlack_b + (int)entWhite_b)/2));
 				//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 1] = y < 1 * height / 3 ? entBlack_g : (y < 2 * height / 3 ? entWhite_g : (unsigned char)(((int)entBlack_g + (int)entWhite_g)/2));
 				//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 2] = y < 1 * height / 3 ? entBlack_r : (y < 2 * height / 3 ? entWhite_r : (unsigned char)(((int)entBlack_r + (int)entWhite_r)/2));
 				//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 3] = y < 1 * height / 3 ? 255 : (y < 2 * height / 3 ? 255 : (unsigned char)min(max((255l - (int)entWhite_b + (int)entBlack_b + 255l - (int)entWhite_g + (int)entBlack_g + 255l - (int)entWhite_r + (int)entBlack_r) / 3l, 0), 255));
-				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 0] = (unsigned char)(((int)entBlack_b + (int)entWhite_b)/2);
-				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 1] = (unsigned char)(((int)entBlack_g + (int)entWhite_g)/2);
-				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 2] = (unsigned char)(((int)entBlack_r + (int)entWhite_r)/2);
-				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 3] = (unsigned char)min(max((255l - (int)entWhite_b + (int)entBlack_b + 255l - (int)entWhite_g + (int)entBlack_g + 255l - (int)entWhite_r + (int)entBlack_r) / 3l, 0), 255);
+				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 3] = (unsigned char)(((int)entBlack_b + (int)entWhite_b)/2);
+				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 2] = (unsigned char)(((int)entBlack_g + (int)entWhite_g)/2);
+				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 1] = (unsigned char)(((int)entBlack_r + (int)entWhite_r)/2);
+				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 0] = (unsigned char)min(max((255l - (int)entWhite_b + (int)entBlack_b + 255l - (int)entWhite_g + (int)entBlack_g + 255l - (int)entWhite_r + (int)entBlack_r) / 3l, 0), 255);
 			}
 		}
 
@@ -5974,8 +5884,6 @@ void CAfxStreams::DoRenderView(CCSViewRender_RenderView_t fn, void* This, void* 
 		{
 			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropOverrideDepthBegin_Functor()));
 		}
-
-		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new AfxInteropDrawingDrawingThreadPrepareDraw(AfxInterop::GetFrameCount())));
 	}
 #endif
 
@@ -5996,14 +5904,12 @@ void CAfxStreams::DoRenderView(CCSViewRender_RenderView_t fn, void* This, void* 
 #ifdef AFX_INTEROP
 	if (AfxInterop::Enabled() && AfxInterop::Active())
 	{
-		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropOnRenderViewEnd_Functor()));
+		AfxInterop::OnRenderViewEnd();
 
 		if (g_InteropFeatures.GetDepthRequired())
 		{
 			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropOverrideDepthEnd_Functor()));
 		}
-
-		AfxInterop::OnRenderViewEnd();
 	}
 #endif
 }
@@ -6358,14 +6264,13 @@ void CAfxStreams::On_DrawTranslucentRenderables(SOURCESDK::CSGO::CRendering3dVie
 			IAfxMatRenderContext * afxMatRenderContext = GetCurrentContext();
 			IAfxMatRenderContextOrg * orgCtx = afxMatRenderContext->GetOrg();
 
-			AfxInterop::On_DrawTranslucentRenderables(rendering3dView, bInSkybox, bShadowDepth, afterCall);
-
 			if (beforeDepth)
 			{
+				// TODO.
 				QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new CAfxInteropDrawDepth_Functor(true, m_CurrentView->zNear, m_CurrentView->zFar, m_CurrentView->zNear, m_CurrentView->zFar)));
 			}
 
-			QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new CAfxInteropDrawingThreadFunctor_On_DrawTranslucentRenderables(bInSkybox, bShadowDepth, afterCall)));
+			AfxInterop::On_DrawTranslucentRenderables(afxMatRenderContext, rendering3dView, bInSkybox, bShadowDepth, afterCall);
 		}
 	}
 #endif
@@ -6391,7 +6296,7 @@ void CAfxStreams::OnDrawingHudBegin(void)
 		{
 			QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new CAfxInteropDrawDepth_Functor(true, m_CurrentView->zNear, m_CurrentView->zFar, m_CurrentView->zNear, m_CurrentView->zFar)));
 
-			QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new AfxInteropDrawingThreadBeforeHud_Functor()));
+			AfxInterop::OnBeforeHud(afxMatRenderContext);
 		}
 	}
 #endif
@@ -6424,7 +6329,7 @@ void CAfxStreams::OnDrawingHudEnd(void)
 
 		if (g_InteropFeatures.AfterHud)
 		{
-			QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new AfxInteropDrawingThreadAfterHud_Functor()));
+			AfxInterop::OnAfterHud(afxMatRenderContext);
 		}
 	}
 #endif
