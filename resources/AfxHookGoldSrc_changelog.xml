@@ -7,7 +7,7 @@
 <release>
 <name>AfxHookGoldSrc</name>
 <version>2.7.0</version>
-<time>2020-03-xxTxx:xxZ</time>
+<time>2020-03-17T20:20Z</time>
 <changes>
 <change type="updated">
 Updated mirv_cameraofs_cs: can now be changed any time, not only when not recording.

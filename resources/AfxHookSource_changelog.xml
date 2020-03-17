@@ -7,9 +7,10 @@
 <release>
 <name>AfxHookSource</name>
 <version>1.79.0</version>
-<time>2020-03-xxTxx:xxZ</time>
+<time>2020-03-17T20:20Z</time>
 <changes>
 <change type="updated">BREAKING CHANGE: panorama.*.zip files are now located in "%APPDATA%\HLAE" instead! This is on order to fix access right problems for people using HLAE_Setup.exe version.</change>
+<change type="updated">afx_interop: Changes to prepare version 6 (with version 5 backward compatibility) that should be mostly transparent (apart from faster connecting).</change>
 </changes>
 </release>
 
