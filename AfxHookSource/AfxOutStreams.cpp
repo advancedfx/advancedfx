@@ -213,10 +213,10 @@ CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & image
 		switch (imageFormat.PixelFormat)
 		{
 		case CAfxImageFormat::PF_BGR:
-			ffmpegArgs << L"rgb24";
+			ffmpegArgs << L"bgr24";
 			break;
 		case CAfxImageFormat::PF_BGRA:
-			ffmpegArgs << L"argb";
+			ffmpegArgs << L"bgra";
 			break;
 		case CAfxImageFormat::PF_A:
 			ffmpegArgs << L"gray";

@@ -25,16 +25,20 @@ public:
 
 	CAfxImageFormat()
 		: PixelFormat(PF_Invalid)
+		, Width(0)
+		, Height(0)
+		, Pitch(0)
 	{
-
+		Calc();
 	}
 
 	CAfxImageFormat(PixelFormat_e pixelFormat, int width, int height)
 		: PixelFormat(pixelFormat)
 		, Width(width)
 		, Height(height)
+		, Pitch(0)
 	{
-
+		Calc();
 	}
 
 
@@ -44,7 +48,7 @@ public:
 		, Height(height)
 		, Pitch(pitch)
 	{
-
+		Calc();
 	}
 
 	bool operator==(const CAfxImageFormat & other) const
@@ -62,26 +66,26 @@ private:
 		if (Pitch == 0)
 		{
 			Pitch = Width;
-			
-			switch (PixelFormat)
-			{
-			case CAfxImageFormat::PF_BGR:
-				Pitch *= 3 * sizeof(char);
-				break;
-			case CAfxImageFormat::PF_BGRA:
-				Pitch *= 4 * sizeof(char);
-				break;
-			case CAfxImageFormat::PF_A:
-				Pitch *= 1 * sizeof(char);
-				break;
-			case CAfxImageFormat::PF_ZFloat:
-				Pitch *= 1 * sizeof(float);
-				break;
-			default:
-				//Tier0_Warning("CAfxImageFormat::Calc: Unsupported pixelFormat\n");
-				Pitch = 0;
-				break;
-			}
+		}
+
+		switch (PixelFormat)
+		{
+		case CAfxImageFormat::PF_BGR:
+			Pitch *= 3 * sizeof(char);
+			break;
+		case CAfxImageFormat::PF_BGRA:
+			Pitch *= 4 * sizeof(char);
+			break;
+		case CAfxImageFormat::PF_A:
+			Pitch *= 1 * sizeof(char);
+			break;
+		case CAfxImageFormat::PF_ZFloat:
+			Pitch *= 1 * sizeof(float);
+			break;
+		default:
+			//Tier0_Warning("CAfxImageFormat::Calc: Unsupported pixelFormat\n");
+			Pitch = 0;
+			break;
 		}
 
 		Bytes = Height * Pitch;

@@ -60,7 +60,7 @@ void CAfxImageBufferPool::ImageBuffer_Done(CAfxImageBuffer * buffer)
 // CAfxImageBuffer /////////////////////////////////////////////////////////////
 
 CAfxImageBuffer::CAfxImageBuffer(CAfxImageBufferPool * pool)
-	: Buffer(0)
+	: Buffer(nullptr)
 	, m_BufferBytesAllocated(0)
 	, m_Pool(pool)
 {

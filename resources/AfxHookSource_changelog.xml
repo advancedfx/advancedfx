@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.79.1</version>
+<time>2020-03-18T06:20Z</time>
+<changes>
+<change type="fixed">Fixed bugs causing mirv_streams to fail or crash introduced in last version.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.79.0</version>
 <time>2020-03-17T20:20Z</time>
 <changes>
