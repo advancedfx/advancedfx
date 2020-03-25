@@ -126,7 +126,7 @@ namespace AfxInterop {
 		{
 			ConnectEngine();
 
-			if (m_EngineWantsConnect) QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CConnectFunctor(this)));
+			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CConnectFunctor(this)));
 
 			if (!m_EngineConnected) return;
 
@@ -1563,7 +1563,7 @@ namespace AfxInterop {
 						{
 							IDirect3DTexture9* texture = NULL;
 
-							HRESULT hr = device->CreateTexture(texWidth, texHeight, 1, 0, (D3DFORMAT)d3dFormat, D3DPOOL_DEFAULT, &texture, &sharedTextureHandle);
+							HRESULT hr = device->CreateTexture(texWidth, texHeight, 1, D3DUSAGE_RENDERTARGET, (D3DFORMAT)d3dFormat, D3DPOOL_DEFAULT, &texture, &sharedTextureHandle);
 
 							if (SUCCEEDED(hr))
 							{
@@ -1575,7 +1575,7 @@ namespace AfxInterop {
 
 					if (m_SharedSurface.Handle && texWidth && texHeight)
 					{
-						AfxDrawRect(m_SharedSurface.Texture, 0, 0, texWidth, texHeight, 0.5f + 0 / (float)texWidth, 0.5f + 0 / (float)texHeight, 0.5f + (0 + texWidth - 1) / (float)texWidth, 0.5f + (0 + texHeight - 1) / (float)texHeight);
+						AfxDrawRect(m_SharedSurface.Texture, 0, 0, texWidth, texHeight, 0, 0, 1, 1);
 						AfxD3D_WaitForGPU(); // TODO: Improve. We are slowing down more than we have to.
 					}
 					

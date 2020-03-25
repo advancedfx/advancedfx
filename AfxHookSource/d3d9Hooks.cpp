@@ -3753,7 +3753,7 @@ public:
 			//
 			// Draw
 
-			g_OldDirect3DDevice9->SetFVF(D3DFVF_AFXDRAWGUIDEVERTEX);
+			g_OldDirect3DDevice9->SetFVF(D3DFVF_AFXDRAWDEPTHVERTEX);
 
 			// Setup viewport
 			D3DVIEWPORT9 vp;
@@ -3770,7 +3770,7 @@ public:
 			g_OldDirect3DDevice9->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
 
 			g_OldDirect3DDevice9->SetVertexShader(NULL);
-			g_OldDirect3DDevice9->SetPixelShader(NULL);
+			g_OldDirect3DDevice9->SetPixelShader(pixelShader);
 
 			g_OldDirect3DDevice9->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
 			g_OldDirect3DDevice9->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
@@ -3792,7 +3792,7 @@ public:
 			g_OldDirect3DDevice9->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 			g_OldDirect3DDevice9->SetSamplerState(0, D3DSAMP_SRGBTEXTURE, FALSE);
 
-			// Bind depth as texture:
+			// texture:
 			g_OldDirect3DDevice9->SetTexture(0, texture);
 
 			// Setup orthographic projection matrix
@@ -3814,10 +3814,10 @@ public:
 			// Render:
 			{
 				AFXDRAWDEPTHVERTEX vertexData[4] = {
-					{{0,(float)height,0}, {x0,y1}},
-					{{0,0,0}, {x0,y0}},
-					{{(float)width,(float)height,0}, {x1,y1}},
-					{{(float)width,0,0}, {x1,y0}},
+					{{0,(float)height,0}, {x0,y0}},
+					{{0,0,0}, {x0,y1}},
+					{{(float)width,(float)height,0}, {x1,y0}},
+					{{(float)width,0,0}, {x1,y1}},
 				};
 
 				g_OldDirect3DDevice9->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, &vertexData, sizeof(AFXDRAWDEPTHVERTEX));
@@ -6401,7 +6401,7 @@ struct NewDirect3D9
 			&& SUCCEEDED(g_OldDirect3D9->CheckDeviceFormat(Adapter, DeviceType, displayMode.Format, D3DUSAGE_DEPTHSTENCIL, D3DRTYPE_TEXTURE, FOURCC_INTZ));
 
 #if AFX_INTEROP
-		if (AfxInterop::MainEnabled() && g_OldDirect3D9Ex && pPresentationParameters)
+		if (AfxInterop::Enabled() && g_OldDirect3D9Ex && pPresentationParameters)
 		{
 			DeviceType = D3DDEVTYPE_HAL;
 			BehaviorFlags = (BehaviorFlags & ~(DWORD)(D3DCREATE_MIXED_VERTEXPROCESSING | D3DCREATE_SOFTWARE_VERTEXPROCESSING)) | D3DCREATE_HARDWARE_VERTEXPROCESSING;
