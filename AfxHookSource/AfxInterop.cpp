@@ -23,6 +23,41 @@
 
 #include <memory>
 
+#include <strsafe.h>
+
+void ErrorExit(LPTSTR lpszFunction, DWORD dw)
+{
+	// Retrieve the system error message for the last-error code
+
+	LPVOID lpMsgBuf;
+	LPVOID lpDisplayBuf;
+
+	FormatMessage(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER |
+		FORMAT_MESSAGE_FROM_SYSTEM |
+		FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL,
+		dw,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		(LPTSTR)&lpMsgBuf,
+		0, NULL);
+
+	// Display the error message and exit the process
+
+	lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT,
+		(lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR));
+	StringCchPrintf((LPTSTR)lpDisplayBuf,
+		LocalSize(lpDisplayBuf) / sizeof(TCHAR),
+		TEXT("%s failed with error %d: %s"),
+		lpszFunction, dw, lpMsgBuf);
+	MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK);
+
+	LocalFree(lpMsgBuf);
+	LocalFree(lpDisplayBuf);
+	ExitProcess(dw);
+}
+
+
 // TODO: very fast disconnects and reconnects will cause invalid state probably.
 
 extern WrpVEngineClient * g_VEngineClient;
@@ -692,7 +727,11 @@ namespace AfxInterop {
 
 			if (!m_DrawingConnected) return;
 
-			if (6 == m_DrawingVersion) return;
+			if (6 == m_DrawingVersion)
+			{
+				m_DrawingSkip = false;
+				return;
+			}
 
 			int errorLine = 0;
 
@@ -838,9 +877,7 @@ namespace AfxInterop {
 
 				if (6 == m_DrawingVersion)
 				{
-					if(!WriteInt32(m_hDrawingPipe, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
-					if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
-					if(!HandleVersion6DrawingReply()) { errorLine = __LINE__; goto error; }
+					if(!HandleVersion6DrawingMessage(message, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
 				}
 				else
 				{
@@ -875,11 +912,7 @@ namespace AfxInterop {
 
 			if (6 == m_DrawingVersion)
 			{
-				if (!WriteInt32(m_hDrawingPipe, DrawingMessage_BeforeHud)) { errorLine = __LINE__; goto error; }
-
-				if (!WriteInt32(m_hDrawingPipe, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
-				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
-				if (!HandleVersion6DrawingReply()) { errorLine = __LINE__; goto error; }
+				if (!HandleVersion6DrawingMessage(DrawingMessage_BeforeHud, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
 			}
 			else
 			{
@@ -913,10 +946,7 @@ namespace AfxInterop {
 
 			if (6 == m_DrawingVersion)
 			{
-				if (!WriteInt32(m_hDrawingPipe, DrawingMessage_AfterHud)) { errorLine = __LINE__; goto error; }
-				if (!WriteInt32(m_hDrawingPipe, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
-				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
-				if (!HandleVersion6DrawingReply()) { errorLine = __LINE__; goto error; }
+				if (!HandleVersion6DrawingMessage(DrawingMessage_AfterHud, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
 			}
 			else
 			{
@@ -959,11 +989,10 @@ namespace AfxInterop {
 
 		void DrawingThread_DeviceLost()
 		{
-			while (!m_SharedSurfaces.empty())
+			while (m_SharedSurface.Texture)
 			{
-				auto it = m_SharedSurfaces.begin();
-				it->second.Texture->Release();
-				m_SharedSurfaces.erase(it);
+				m_SharedSurface.Texture->Release();
+				m_SharedSurface.Texture = nullptr;
 			}
 		}
 
@@ -972,7 +1001,7 @@ namespace AfxInterop {
 				std::shared_lock<std::shared_timed_mutex> sharedLock(m_DrawingConnectMutex);
 
 				if (!m_DrawingWantsConnect) {
-					if (m_DrawingConnected) {
+					if (m_DrawingPreConnect) {
 						sharedLock.unlock();
 						DisconnectDrawing();
 					}
@@ -993,8 +1022,6 @@ namespace AfxInterop {
 						std::string strPipeName("\\\\.\\pipe\\");
 						strPipeName.append(m_DrawingPipeName);
 
-						unsigned int sleepCount = 0;
-
 						while (true)
 						{
 							m_hDrawingPipe = CreateFile(strPipeName.c_str(), GENERIC_WRITE | GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
@@ -1003,24 +1030,10 @@ namespace AfxInterop {
 
 							DWORD lastError = GetLastError();
 
-							switch (lastError)
-							{
-							case ERROR_FILE_NOT_FOUND:
-								if (sleepCount >= 5000)
-								{
-									Tier0_Warning("Could not open pipe. GLE=%d (%s)\n", lastError, strPipeName.c_str());
-									{ errorLine = __LINE__; goto error; }
-								}
-								++sleepCount;
-								Sleep(1);
-								continue;
-							case ERROR_PIPE_BUSY:
-								break;
-							default:
+							if (lastError != ERROR_PIPE_BUSY)
 							{
 								Tier0_Warning("Could not open pipe. GLE=%d (%s)\n", lastError, strPipeName.c_str());
 								{ errorLine = __LINE__; goto error; }
-							}
 							}
 
 							if (!WaitNamedPipe(strPipeName.c_str(), 5000))
@@ -1082,7 +1095,7 @@ namespace AfxInterop {
 				std::shared_lock<std::shared_timed_mutex> sharedLock(m_EngineConnectMutex);
 
 				if (!m_EngineWantsConnect) {
-					if (m_EngineConnected) {
+					if (m_EnginePreConnect) {
 						sharedLock.unlock();
 						DisconnectEngine();
 					}
@@ -1502,82 +1515,79 @@ namespace AfxInterop {
 			IDirect3DTexture9* Texture = nullptr;
 		};
 
-		std::map<INT32, SharedSurfacesValue> m_SharedSurfaces;
+		SharedSurfacesValue m_SharedSurface;
 
-		bool HandleVersion6DrawingReply()
+		bool HandleVersion6DrawingMessage(DrawingMessage message, int frameCount)
 		{
 			int errorLine = 0;
 
-			INT32 textureId;
-			HANDLE sharedTextureHandle;
-			UINT32 texWidth;
-			UINT32 texHeight;
-			UINT32 d3dFormat;
-
-			if (!ReadInt32(m_hDrawingPipe, textureId)) { errorLine = __LINE__; goto error; }
-			if (!ReadHandle(m_hDrawingPipe, sharedTextureHandle)) { errorLine = __LINE__; goto error; }
-			if (!ReadUInt32(m_hDrawingPipe, texWidth)) { errorLine = __LINE__; goto error; }
-			if (!ReadUInt32(m_hDrawingPipe, texHeight)) { errorLine = __LINE__; goto error; }
-			if (!ReadUInt32(m_hDrawingPipe, d3dFormat)) { errorLine = __LINE__; goto error; }
-
-			SharedSurfacesValue* val = nullptr;
-
-			{
-				auto  itOld = m_SharedSurfaces.find(textureId);
-				if (itOld != m_SharedSurfaces.end())
-				{
-					if(itOld->second.Handle != sharedTextureHandle)
-					{
-						itOld->second.Texture->Release();
-						m_SharedSurfaces.erase(itOld);
-					}
-					else
-					{
-						val = &(itOld->second);
-					}
-				}
-			}
-
-			if (sharedTextureHandle)
-			{
-				if (IDirect3DDevice9Ex* device = AfxGetDirect3DDevice9Ex())
-				{
-					IDirect3DTexture9* texture;
-
-					if (SUCCEEDED(device->CreateTexture(texWidth, texHeight, 1, 0, (D3DFORMAT)d3dFormat, D3DPOOL_DEFAULT, &texture, &sharedTextureHandle)))
-					{
-						SharedSurfacesValue& val = m_SharedSurfaces[textureId];
-
-						val.Handle = sharedTextureHandle;
-						val.Texture = texture;
-					}
-				}
-			}
-
 			while (true)
 			{
-				bool hasRect;
-				if (!ReadBoolean(m_hDrawingPipe, hasRect)) { errorLine = __LINE__; goto error; }
+				if (!WriteInt32(m_hDrawingPipe, message)) { errorLine = __LINE__; goto error; }
+				if (!WriteInt32(m_hDrawingPipe, frameCount)) { errorLine = __LINE__; goto error; }
+				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 
-				if (!hasRect) break;
+				INT32 prepareDrawReply;
+				if (!ReadInt32(m_hDrawingPipe, prepareDrawReply)) { errorLine = __LINE__; goto error; }
 
-				INT32 rectX, rectY, rectWidth, rectHeight;
-
-				if (!ReadInt32(m_hDrawingPipe, rectX)) { errorLine = __LINE__; goto error; }
-				if (!ReadInt32(m_hDrawingPipe, rectY)) { errorLine = __LINE__; goto error; }
-				if (!ReadInt32(m_hDrawingPipe, rectWidth)) { errorLine = __LINE__; goto error; }
-				if (!ReadInt32(m_hDrawingPipe, rectHeight)) { errorLine = __LINE__; goto error; }
-
-				if (val)
+				switch (prepareDrawReply)
 				{
-					AfxDrawRect(val->Texture, rectX, rectY, rectWidth, rectHeight, 0.5f + rectX / (float)texWidth, 0.5f + rectY / (float)texHeight, 0.5f + (rectX + rectWidth -1) / (float)texWidth, 0.5f + (rectY + rectHeight -1) / (float)texHeight);
+				case PrepareDrawReply_Skip:
+					m_DrawingSkip = true;
+					return true;
+				case PrepareDrawReply_Retry:
+					break;
+				case PrepareDrawReply_Continue:
+				{
+					HANDLE sharedTextureHandle;
+					UINT32 texWidth;
+					UINT32 texHeight;
+					UINT32 d3dFormat;
+
+					if (!ReadHandle(m_hDrawingPipe, sharedTextureHandle)) { errorLine = __LINE__; goto error; }
+					if (!ReadUInt32(m_hDrawingPipe, texWidth)) { errorLine = __LINE__; goto error; }
+					if (!ReadUInt32(m_hDrawingPipe, texHeight)) { errorLine = __LINE__; goto error; }
+					if (!ReadUInt32(m_hDrawingPipe, d3dFormat)) { errorLine = __LINE__; goto error; }
+
+					if (m_SharedSurface.Handle && m_SharedSurface.Handle != sharedTextureHandle)
+					{
+						if (m_SharedSurface.Texture) {
+							m_SharedSurface.Texture->Release();
+							m_SharedSurface.Texture = nullptr;
+						}
+					}
+
+					if (sharedTextureHandle && nullptr == m_SharedSurface.Texture)
+					{
+						if (IDirect3DDevice9Ex* device = AfxGetDirect3DDevice9Ex())
+						{
+							IDirect3DTexture9* texture = NULL;
+
+							HRESULT hr = device->CreateTexture(texWidth, texHeight, 1, 0, (D3DFORMAT)d3dFormat, D3DPOOL_DEFAULT, &texture, &sharedTextureHandle);
+
+							if (SUCCEEDED(hr))
+							{
+								m_SharedSurface.Handle = sharedTextureHandle;
+								m_SharedSurface.Texture = texture;
+							}
+						}
+					}
+
+					if (m_SharedSurface.Handle && texWidth && texHeight)
+					{
+						AfxDrawRect(m_SharedSurface.Texture, 0, 0, texWidth, texHeight, 0.5f + 0 / (float)texWidth, 0.5f + 0 / (float)texHeight, 0.5f + (0 + texWidth - 1) / (float)texWidth, 0.5f + (0 + texHeight - 1) / (float)texHeight);
+						AfxD3D_WaitForGPU(); // TODO: Improve. We are slowing down more than we have to.
+					}
+					
+					if (!WriteBoolean(m_hDrawingPipe, true)) { errorLine = __LINE__; goto error; }
+
+					return true;
 				}
+				default:
+					{ errorLine = __LINE__; goto error; }
+				}
+
 			}
-
-			AfxD3D_WaitForGPU(); // TODO: Improve. We are slowing down more than we have to.
-			if(!WriteBoolean(m_hDrawingPipe, true)) { errorLine = __LINE__; goto error; }
-
-			return true;
 
 		error:
 			Tier0_Warning("AfxInterop::HandleVersion6DrawingReply: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());

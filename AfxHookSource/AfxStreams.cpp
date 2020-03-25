@@ -1695,7 +1695,7 @@ CAfxBaseFxStream::CAction* CAfxBaseFxStream::RetrieveAction(CAfxTrackedMaterial*
 {
 	CAction* action = nullptr;
 
-	if (Picker_GetHidden(trackedMaterial, currentEntity.Handle))
+	if (Picker_GetHidden(trackedMaterial, currentEntity))
 	{
 		action = GetAction(trackedMaterial, m_Shared.NoDrawAction_get());
 	}
@@ -1780,11 +1780,11 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::CAfxBaseFxStreamContext::RetrieveA
 			const char* groupName = material->GetTextureGroupName();
 			const char* shaderName = material->GetShaderName();
 			bool isErrorMaterial = material->IsErrorMaterial();
-			const char* className = currentEntity.Data.ClassName;
+			const char* className = currentEntity.Data.ClassName.c_str();
 			bool isPlayer = currentEntity.Data.IsPlayer;
 			int teamNumber = currentEntity.Data.TeamNumber;
 
-			Tier0_Msg("Stream: RetrieveAction: Material action cache miss: \"handle=%i\" \"name=%s\" \"textureGroup=%s\" \"shader=%s\" \"isErrrorMaterial=%u\" \"className=%s\" \"isPlayer=%u\" \"teamNumber=%u\" -> %s\n"
+			Tier0_Msg("Stream: RetrieveAction: Material action cache miss: \"handle=%i\" \"name=%s\" \"textureGroup=%s\" \"shader=%s\" \"isErrrorMaterial=%u\" \"className=%s\" \"isPlayer=%i\" \"teamNumber=%i\" -> %s\n"
 				, currentEntity.Handle
 				, name
 				, groupName
@@ -2234,7 +2234,7 @@ void CAfxBaseFxStream::Picker_Stop(void)
 
 	if(m_PickerActive)
 	{
-		for (std::map<CAfxTrackedMaterial *, CPickerMatValue>::iterator it = m_PickerMaterials.begin(); it != m_PickerMaterials.end(); ++it)
+		for (auto it = m_PickerMaterials.begin(); it != m_PickerMaterials.end(); ++it)
 		{
 			it->first->RemoveNotifyee(m_PickerMaterialsRleaseNotification);
 		}
@@ -2253,7 +2253,7 @@ void CAfxBaseFxStream::Picker_Print(void)
 	std::shared_lock<std::shared_timed_mutex> lock(m_PickerMutex);
 
 	Tier0_Msg("---- Materials: ----\n");
-	for (std::map<CAfxTrackedMaterial *, CPickerMatValue>::iterator it = m_PickerMaterials.begin(); it != m_PickerMaterials.end(); ++it)
+	for (auto it = m_PickerMaterials.begin(); it != m_PickerMaterials.end(); ++it)
 	{
 		int idx = it->second.Index;
 
@@ -2264,10 +2264,10 @@ void CAfxBaseFxStream::Picker_Print(void)
 		Tier0_Msg("\"name=%s\" \"textureGroup=%s\" \"shader=%s\" \"isErrorMaterial=%i\" (%s)\n", material->GetName(), material->GetTextureGroupName(), material->GetShaderName(), material->IsErrorMaterial() ? 1 : 0, m_PickingMaterials && (1 == (idx & 0x1)) ? "hidden" : "visible");
 	}
 	Tier0_Msg("---- Entities: ----\n");
-	for (std::map<SOURCESDK::CSGO::CBaseHandle, CPickerEntValue>::iterator it = m_PickerEntities.begin(); it != m_PickerEntities.end(); ++it)
+	for (auto it = m_PickerEntities.begin(); it != m_PickerEntities.end(); ++it)
 	{
 		int idx = it->second.Index;
-		Tier0_Msg("\"handle=%i\" (%s)\n", it->first, m_PickingEntities && (1 == (idx & 0x1)) ? "hidden" : "visible");
+		Tier0_Msg("\"handle=%i\" \"className=%s\" \"isPlayer=%i\" \"teamNumber=%i\" (%s)\n", it->first.Handle, it->first.Data.ClassName.c_str(), it->first.Data.IsPlayer?1:0, it->first.Data.TeamNumber, m_PickingEntities && (1 == (idx & 0x1)) ? "hidden" : "visible");
 	}
 	Tier0_Msg("---- END ----\n");
 }
@@ -2291,7 +2291,7 @@ void CAfxBaseFxStream::Picker_Pick(bool pickEntityNotMaterial, bool wasVisible)
 			std::set<CAfxMaterialKey *> usedMats;
 			int index = 0;
 
-			for (std::map<SOURCESDK::CSGO::CBaseHandle, CPickerEntValue>::iterator it = m_PickerEntities.begin(); it != m_PickerEntities.end(); )
+			for (auto it = m_PickerEntities.begin(); it != m_PickerEntities.end(); )
 			{
 				int oldIndex = it->second.Index;
 
@@ -2308,7 +2308,7 @@ void CAfxBaseFxStream::Picker_Pick(bool pickEntityNotMaterial, bool wasVisible)
 				}
 			}
 
-			for(std::map<CAfxTrackedMaterial *,CPickerMatValue>::iterator it = m_PickerMaterials.begin(); it != m_PickerMaterials.end(); )
+			for(auto it = m_PickerMaterials.begin(); it != m_PickerMaterials.end(); )
 			{
 				if (usedMats.end() != usedMats.find(it->first))
 					++it;
@@ -2322,10 +2322,10 @@ void CAfxBaseFxStream::Picker_Pick(bool pickEntityNotMaterial, bool wasVisible)
 
 		if (m_PickingMaterials)
 		{
-			std::set<SOURCESDK::CSGO::CBaseHandle> usedEnts;
+			std::set<CEntityInfo> usedEnts;
 			int index = 0;
 
-			for (std::map<CAfxTrackedMaterial *, CPickerMatValue>::iterator it = m_PickerMaterials.begin(); it != m_PickerMaterials.end(); )
+			for (auto it = m_PickerMaterials.begin(); it != m_PickerMaterials.end(); )
 			{
 				int oldIndex = it->second.Index;
 
@@ -2343,7 +2343,7 @@ void CAfxBaseFxStream::Picker_Pick(bool pickEntityNotMaterial, bool wasVisible)
 				}
 			}
 
-			for (std::map<SOURCESDK::CSGO::CBaseHandle, CPickerEntValue>::iterator it = m_PickerEntities.begin(); it != m_PickerEntities.end(); )
+			for (auto it = m_PickerEntities.begin(); it != m_PickerEntities.end(); )
 			{
 				if (usedEnts.end() != usedEnts.find(it->first))
 					++it;
@@ -2389,7 +2389,7 @@ void CAfxBaseFxStream::Picker_Pick(bool pickEntityNotMaterial, bool wasVisible)
 	m_PickingMaterials = !pickEntityNotMaterial;
 }
 
-bool CAfxBaseFxStream::Picker_GetHidden(CAfxTrackedMaterial * tackedMaterial, SOURCESDK::CSGO::CBaseHandle currentEntity)
+bool CAfxBaseFxStream::Picker_GetHidden(CAfxTrackedMaterial * tackedMaterial, const CEntityInfo& currentEntity)
 {
 	if (!m_PickerActive)
 		return false;
@@ -2425,7 +2425,7 @@ bool CAfxBaseFxStream::Picker_GetHidden(CAfxTrackedMaterial * tackedMaterial, SO
 			}
 			if (!hidden && m_PickingEntities)
 			{
-				std::map<SOURCESDK::CSGO::CBaseHandle, CPickerEntValue>::iterator itEnt = m_PickerEntities.find(currentEntity);
+				auto itEnt = m_PickerEntities.find(currentEntity);
 				hidden = (m_PickerEntities.end() != itEnt) && (((itEnt->second.Index) & 0x1) == 1);
 			}
 		}
@@ -2442,7 +2442,7 @@ bool CAfxBaseFxStream::Picker_GetHidden(CAfxTrackedMaterial * tackedMaterial, SO
 				itMat->second.Entities.insert(currentEntity);
 			}
 
-			std::map<SOURCESDK::CSGO::CBaseHandle, CPickerEntValue>::iterator itEnt = m_PickerEntities.lower_bound(currentEntity);
+			auto itEnt = m_PickerEntities.lower_bound(currentEntity);
 			if (itEnt == m_PickerEntities.end() || (currentEntity < itEnt->first))
 			{
 				itEnt = m_PickerEntities.emplace_hint(itEnt, std::piecewise_construct, std::forward_as_tuple(currentEntity), std::forward_as_tuple(this, m_PickerEntities.size(), tackedMaterial));
@@ -2688,8 +2688,6 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 {
 	IAfxMatRenderContext* ctx = GetCurrentContext();
 
-	m_DrawingHud = true;
-
 	if (SOURCESDK::CSGO::ICallQueue * queue = ctx->GetOrg()->GetCallQueue())
 	{
 		// Bubble into child contexts:
@@ -2699,6 +2697,8 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 	else
 	{
 		// Leaf context
+
+		m_DrawingHud = true;
 
 		BindAction(0);
 
@@ -2741,17 +2741,15 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudEnd(void)
 	{
 		// Leaf context
 
+		m_DrawingHud = false;
+
 		BindAction(0);
 	}
-
-	m_DrawingHud = false;
 }
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewBegin(void)
 {
 	IAfxMatRenderContext* ctx = GetCurrentContext();
-
-	m_DrawingSkyBoxView = true;
 
 	if (SOURCESDK::CSGO::ICallQueue * queue = ctx->GetOrg()->GetCallQueue())
 	{
@@ -2764,6 +2762,8 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewBegin(void)
 		// Leaf context
 
 		BindAction(0);
+
+		m_DrawingSkyBoxView = true;
 	}
 }
 
@@ -2781,6 +2781,8 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 	{
 		// Leaf context
 
+		m_DrawingSkyBoxView = false;
+
 		BindAction(0);
 
 		if (EDrawDepth_None != m_Stream->m_DrawDepth)
@@ -2794,8 +2796,6 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 			m_IsNextDepth = true;
 		}
 	}
-
-	m_DrawingSkyBoxView = false;
 }
 
 bool Pt_Inside(int x, int y, SOURCESDK::vrect_t_csgo * rect)
@@ -2829,10 +2829,6 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::UpdateCurrentEntity(const CEntit
 void CAfxBaseFxStream::UpdateCurrentEntity()
 {
 	CEntityInfo info;
-	info.Handle = SOURCESDK_CSGO_INVALID_EHANDLE_INDEX;
-	info.Data.ClassName = "";
-	info.Data.IsPlayer = false;
-	info.Data.TeamNumber = 0;
 
 	if (SOURCESDK::IViewRender_csgo * view = GetView_csgo())
 	{
@@ -3510,7 +3506,7 @@ bool CAfxBaseFxStream::CActionFilterValue::CalcMatch_Entity(const CEntityInfo & 
 {
 	return
 		(!m_UseHandle || m_Handle == info.Handle)
-		&& (!m_UseClassName || StringWildCard1Matched(m_ClassName.c_str(), info.Data.ClassName))
+		&& (!m_UseClassName || StringWildCard1Matched(m_ClassName.c_str(), info.Data.ClassName.c_str()))
 		&& (!m_UseIsPlayer || m_IsPlayer == info.Data.IsPlayer)
 		&& (!m_UseTeamNumber || m_TeamNumber == info.Data.TeamNumber)
 	;
@@ -3604,7 +3600,7 @@ void CAfxBaseFxStream::CActionDebugDepth::AfxUnbind(CAfxBaseFxStreamContext * ch
 
 void CAfxBaseFxStream::CActionDebugDepth::MaterialHook(CAfxBaseFxStreamContext * ch, IAfxMatRenderContext* ctx, CAfxTrackedMaterial * trackedMaterial)
 {
-	
+
 
 	float scale = ch->DrawingSkyBoxView_get() ? csgo_CSkyBoxView_GetScale() : 1.0f;
 	float flDepthFactor = scale * ch->GetStream()->m_DepthVal;

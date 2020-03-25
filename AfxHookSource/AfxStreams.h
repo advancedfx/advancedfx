@@ -1055,22 +1055,69 @@ class CAfxBaseFxStream
 public:
 	struct CEntityData
 	{
-		const char* ClassName;
+		std::string ClassName;
 		bool IsPlayer;
 		int TeamNumber;
 
+		CEntityData()
+			: ClassName("")
+			, IsPlayer(false)
+			, TeamNumber(0)
+		{
+
+		}
+
+		CEntityData(const CEntityData& other)
+			: ClassName(other.ClassName)
+			, IsPlayer(other.IsPlayer)
+			, TeamNumber(other.TeamNumber)
+		{
+
+		}
+
+		CEntityData& operator=(const CEntityData& x) {
+			ClassName = x.ClassName;
+			IsPlayer = x.IsPlayer;
+			TeamNumber = x.TeamNumber;
+			return *this;
+		}
+
 		bool operator==(const CEntityData& other) const
 		{
-			return
-				IsPlayer == other.IsPlayer
+			return ClassName == other.ClassName
+				&& IsPlayer == other.IsPlayer
 				&& TeamNumber == other.TeamNumber;
 		}
+
 	};
 
 	struct CEntityInfo
 	{
 		SOURCESDK::CSGO::CBaseHandle Handle;
 		CEntityData Data;
+
+		CEntityInfo()
+			: Handle(SOURCESDK_CSGO_INVALID_EHANDLE_INDEX)
+		{
+
+		}
+
+		CEntityInfo(const CEntityInfo& other)
+			: Handle(other.Handle)
+			, Data(other.Data)
+		{
+		}
+
+		CEntityInfo& operator=(const CEntityInfo& x) {
+			Handle = x.Handle;
+			Data = x.Data;
+			return *this;
+		}
+
+		bool operator<(const CEntityInfo& other) const
+		{
+			return Handle < other.Handle;
+		}
 	};
 
 public:
@@ -2599,9 +2646,9 @@ private:
 	struct CPickerMatValue
 	{
 		int Index;
-		std::set<SOURCESDK::CSGO::CBaseHandle> Entities;
+		std::set<CEntityInfo> Entities;
 
-		CPickerMatValue(int index, const SOURCESDK::CSGO::CBaseHandle entity)
+		CPickerMatValue(int index, const CEntityInfo& entity)
 		{
 			Index = index;
 			Entities.insert(entity);
@@ -2643,7 +2690,7 @@ private:
 
 	} * m_PickerMaterialsRleaseNotification;
 
-	std::map<SOURCESDK::CSGO::CBaseHandle, CPickerEntValue> m_PickerEntities;
+	std::map<CEntityInfo, CPickerEntValue> m_PickerEntities;
 	bool m_PickingEntities;
 	bool m_PickerEntitiesAlerted;
 
@@ -2660,7 +2707,7 @@ private:
 	void ConvertDepthAction(CAction * & action, bool to24);
 	*/
 
-	bool Picker_GetHidden(CAfxTrackedMaterial * tackedMaterial, SOURCESDK::CSGO::CBaseHandle currentEntity);
+	bool Picker_GetHidden(CAfxTrackedMaterial * tackedMaterial, const CEntityInfo& currentEntity);
 };
 
 class __declspec(novtable) IAfxBasefxStreamModifier abstract

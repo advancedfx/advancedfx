@@ -6,10 +6,13 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>1.79.x</version>
-<time>2020-03-xxT0xx::xxZ</time>
+<version>1.79.2</version>
+<time>2020-03-25T12:03Z</time>
 <changes>
 <change type="updated">Updated / improved afx/wh.cfg.</change>
+<change type="fixed">Fixed #300 Old system depth bug.</change>
+<change type="fixed">Other small changes / fixes in mirv_streams.</change>
+<change type="fixed">Changes in unreleased afx_interop 6 version.</change>
 </changes>
 </release>
 

@@ -6,10 +6,10 @@
 
 <release>
 <name>HLAE</name>
-<version>2.91.x</version>
-<time>2020-03-xxTxx:xxZ</time>
+<version>2.91.2</version>
+<time>2020-03-25T12:03Z</time>
 <changes>
-<change type="updated">Included AfxHookSource 1.79.x (2020-03-xxT0xx::xxZ).</change>
+<change type="updated">Included AfxHookSource 1.79.x (2020-03-25T12:03Z).</change>
 </changes>
 </release>
 
