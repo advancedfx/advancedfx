@@ -91,31 +91,31 @@ h1 {
 	<xsl:choose>
 		<xsl:when test="@type = 'added'">
 			<div class="note">
-				<span class="note_icon">*</span>
+				<span class="note_icon">* </span>
 				<xsl:apply-templates select="node()" />
 			</div>
 		</xsl:when>
 		<xsl:when test="@type = 'fixed'">
 			<div class="note">
-				<span class="note_icon">+</span>
+				<span class="note_icon">+ </span>
 				<xsl:apply-templates select="node()" />
 			</div>
 		</xsl:when>
 		<xsl:when test="@type = 'removed'">
 			<div class="note">
-				<span class="note_icon">-</span>
+				<span class="note_icon">- </span>
 				<xsl:apply-templates select="node()" />
 			</div>
 		</xsl:when>
 		<xsl:when test="@type = 'updated'">
 			<div class="note">
-				<span class="note_icon">U</span>
+				<span class="note_icon">U </span>
 				<xsl:apply-templates select="node()" />
 			</div>
 		</xsl:when>
 		<xsl:otherwise>
 			<div class="note">
-				<span class="note_icon">?</span>
+				<span class="note_icon">? </span>
 				<xsl:apply-templates select="node()" />
 			</div>
 		</xsl:otherwise>
@@ -132,5 +132,4 @@ h1 {
 	<br />
 </xsl:template>
 
- 
 </xsl:stylesheet>

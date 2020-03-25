@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.79.x</version>
+<time>2020-03-xxT0xx::xxZ</time>
+<changes>
+<change type="updated">Updated / improved afx/wh.cfg.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.79.1</version>
 <time>2020-03-18T06:20Z</time>
 <changes>
