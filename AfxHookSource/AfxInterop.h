@@ -16,6 +16,7 @@ namespace AfxInterop {
 		bool AfterTranslucent = false;
 		bool BeforeHud = false;
 		bool AfterHud = false;
+		bool AfterRenderView = false;
 
 		bool GetEnabled() {
 			return BeforeTranslucentShadow
@@ -23,7 +24,8 @@ namespace AfxInterop {
 				|| BeforeTranslucent
 				|| AfterTranslucent
 				|| BeforeHud
-				|| AfterHud;
+				|| AfterHud
+				|| AfterRenderView;
 		}
 
 		bool GetDepthRequired() {
@@ -42,6 +44,7 @@ namespace AfxInterop {
 			AfterTranslucent = false;
 			BeforeHud = false;
 			AfterHud = false;
+			AfterRenderView = false;
 		}
 
 		void Or(const EnabledFeatures_s& other)
@@ -52,6 +55,7 @@ namespace AfxInterop {
 			AfterTranslucent = other.AfterTranslucent;
 			BeforeHud = other.BeforeHud;
 			AfterHud = other.AfterHud;
+			AfterRenderView = other.AfterRenderView;
 		}
 
 	} EnabledFeatures_t;

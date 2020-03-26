@@ -574,6 +574,11 @@ namespace AfxInterop {
 				if (!ReadBoolean(m_hEnginePipe, m_EnabledFeatures.AfterTranslucent)) { errorLine = __LINE__; goto error; }
 				if (!ReadBoolean(m_hEnginePipe, m_EnabledFeatures.BeforeHud)) { errorLine = __LINE__; goto error; }
 				if (!ReadBoolean(m_hEnginePipe, m_EnabledFeatures.AfterHud)) { errorLine = __LINE__; goto error; }
+
+				if (6 == m_EngineVersion)
+				{
+					if (!ReadBoolean(m_hEnginePipe, m_EnabledFeatures.AfterRenderView)) { errorLine = __LINE__; goto error; }
+				}
 			}
 
 			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CPrepareDrawFunctor(this, AfxInterop::GetFrameCount())));
@@ -596,7 +601,8 @@ namespace AfxInterop {
 				if (!Flush(m_hEnginePipe)) { errorLine = __LINE__; goto error; }
 			}
 
-			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new COnRenderViewEndFunctor(this)));
+			if(m_EngineVersion != 6 || m_EnabledFeatures.AfterRenderView)
+				QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new COnRenderViewEndFunctor(this)));
 
 			return;
 
@@ -707,11 +713,15 @@ namespace AfxInterop {
 
 		void OnBeforeHud(IAfxMatRenderContext* ctx)
 		{
+			if (!m_EnabledFeatures.BeforeHud) return;
+
 			QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new CBeforeHudFunctor(this)));
 		}
 
 		void OnAfterHud(IAfxMatRenderContext* ctx)
 		{
+			if (!m_EnabledFeatures.AfterHud) return;
+
 			QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new CAfterHudFunctor(this)));
 		}
 
@@ -973,11 +983,16 @@ namespace AfxInterop {
 
 			if (!m_DrawingConnected) return;
 
-			if (6 == m_DrawingVersion) return;
-
 			int errorLine = 0;
 
-			if (!WriteInt32(m_hDrawingPipe, DrawingMessage_OnRenderViewEnd)) { errorLine = __LINE__; goto error; }
+			if (6 == m_DrawingVersion)
+			{
+				if (!HandleVersion6DrawingMessage(DrawingMessage_OnRenderViewEnd, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
+			}
+			else
+			{
+				if (!WriteInt32(m_hDrawingPipe, DrawingMessage_OnRenderViewEnd)) { errorLine = __LINE__; goto error; }
+			}
 
 			return;
 
