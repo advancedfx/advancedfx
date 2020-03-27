@@ -156,6 +156,8 @@ namespace AfxGui
 
         static void ProcessArgsCustomLoader(string[] args)
         {
+            bool firstEnv = true;
+
             for (int i = 0; i < args.Length; i++)
             {
                 string arg = args[i];
@@ -196,6 +198,14 @@ namespace AfxGui
                         if (i + 1 < args.Length)
                         {
                             GlobalConfig.Instance.Settings.CustomLoader.CmdLine = args[i + 1];
+                            i++;
+                        }
+                        break;
+                    case "-addEnv":
+                        if (i + 1 < args.Length)
+                        {
+                            if (firstEnv) GlobalConfig.Instance.Settings.CustomLoader.AddEnvironmentVars = "";
+                            GlobalConfig.Instance.Settings.CustomLoader.AddEnvironmentVars += args[i + 1] + "\n";
                             i++;
                         }
                         break;
@@ -365,7 +375,26 @@ namespace AfxGui
                 List<Loader.GetHookPathDelegate> getHookPaths = new List<Loader.GetHookPathDelegate>();
                 foreach (CfgInjectDll dll in GlobalConfig.Instance.Settings.CustomLoader.InjectDlls) getHookPaths.Add(isProcess64Bit => dll.FullPath);
 
-                if (!Loader.Load(getHookPaths, GlobalConfig.Instance.Settings.CustomLoader.ProgramPath, GlobalConfig.Instance.Settings.CustomLoader.CmdLine))
+                string[] envVars = GlobalConfig.Instance.Settings.CustomLoader.AddEnvironmentVars.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                string environment = null;
+                foreach (string line in envVars)
+                {
+                    if (null == environment)
+                    {
+                        environment = "";
+                        foreach (System.Collections.DictionaryEntry kv in Environment.GetEnvironmentVariables())
+                        {
+                            environment += kv.Key + "=" + kv.Value + "\0";
+                        }
+                    }
+                    environment += line + "\0";
+                }
+                if (null != environment)
+                {
+                    environment += "\0\0";
+                }
+
+                if (!Loader.Load(getHookPaths, GlobalConfig.Instance.Settings.CustomLoader.ProgramPath, GlobalConfig.Instance.Settings.CustomLoader.CmdLine, environment))
                     bOk = false;
             }
 

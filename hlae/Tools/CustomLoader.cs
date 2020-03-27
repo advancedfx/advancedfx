@@ -19,7 +19,9 @@ class CustomLoader
 
             frm.Program = cfg.ProgramPath;
             frm.CmdLine = cfg.CmdLine;
-                foreach (CfgInjectDll dll in cfg.InjectDlls) frm.HookDlls.Add(dll.Path);
+            foreach (CfgInjectDll dll in cfg.InjectDlls) frm.HookDlls.Add(dll.Path);
+
+            frm.AddEnvironmentVars = cfg.AddEnvironmentVars.Replace("\n", System.Environment.NewLine);
 
             DialogResult dr = frm.ShowDialog(owner);
 
@@ -45,10 +47,30 @@ class CustomLoader
 
                 cfg.ProgramPath = frm.Program;
                 cfg.CmdLine = frm.CmdLine;
+                cfg.AddEnvironmentVars = frm.AddEnvironmentVars.Replace(System.Environment.NewLine, "\n");
 
                 GlobalConfig.Instance.BackUp();
 
-                bOk = Loader.Load(getHookPaths, frm.Program, frm.CmdLine);
+                string[] envVars = cfg.AddEnvironmentVars.Split(new char[]{ '\n'}, StringSplitOptions.RemoveEmptyEntries);
+                string environment = null;        
+                foreach(string line in envVars)
+                {
+                        if (null == environment)
+                        {
+                            environment = "";
+                            foreach (System.Collections.DictionaryEntry kv in Environment.GetEnvironmentVariables())
+                            {
+                                environment += kv.Key + "=" + kv.Value + "\0";
+                            }
+                        }
+                    environment += line + "\0";
+                }
+                if (null != environment)
+                {
+                    environment += "\0\0";
+                }
+
+                bOk = Loader.Load(getHookPaths, frm.Program, frm.CmdLine, environment);
 
                 if (!bOk)
                     MessageBox.Show(L10n._p("Custom Loader dialog", "CustomLoader failed"), L10n._("Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);

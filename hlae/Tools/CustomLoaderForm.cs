@@ -33,6 +33,7 @@ namespace AfxGui.Tools
             this.labelDllsHint.Text = L10n._p("Custom Loader dialog | DLLS", "Hint: You can Drag && Drop DLLs in the box above.");
             this.buttonOk.Text = L10n._p("Custom Loader dialog", "&OK");
             this.buttonAbort.Text = L10n._p("Custom Loader dialog", "&Abort");
+            this.groupEnv.Text = L10n._("Add environment variables: name=value");
 
             this.openFileDialog.InitialDirectory = AfxGui.Program.BaseDir;
         }
@@ -54,8 +55,16 @@ namespace AfxGui.Tools
 			set { this.textCmdLine.Text = value; }
 		}
 
+        internal String AddEnvironmentVars
+        {
+            get { return this.textEnv.Text; }
+            set { this.textEnv.Text = value; }
+        }
+
         //
         // Private memebers:
+
+        IButtonControl supressedAcceptButton = null;
 
         private void buttonSelectProgram_Click(object sender, EventArgs e)
         {
@@ -183,6 +192,24 @@ namespace AfxGui.Tools
             if (0 < listBoxHookDlls.SelectedItems.Count)
             {
                 HookMoveSelected(Math.Min(listBoxHookDlls.SelectedIndices[listBoxHookDlls.SelectedIndices.Count-1] +2, listBoxHookDlls.Items.Count));
+            }
+        }
+
+        private void textEnv_Enter(object sender, EventArgs e)
+        {
+            if (null == supressedAcceptButton)
+            {
+                supressedAcceptButton = this.AcceptButton;
+                this.AcceptButton = null;
+            }
+        }
+
+        private void textEnv_Leave(object sender, EventArgs e)
+        {
+            if(null != supressedAcceptButton)
+            {
+                this.AcceptButton = this.supressedAcceptButton;
+                supressedAcceptButton = null;
             }
         }
     }

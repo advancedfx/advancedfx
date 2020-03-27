@@ -98,15 +98,17 @@ public class CfgCustomLoader
 {
 	public String CmdLine;
 
-        /// <summary>
-        /// Do NOT USE. For backwards compat only.
-        /// </summary>
-        public String HookDllPath;
+    /// <summary>
+    /// Do NOT USE. For backwards compat only.
+    /// </summary>
+    public String HookDllPath;
 
     public String ProgramPath;
 
-        [XmlArrayItem("Dll")]
-        public List<CfgInjectDll> InjectDlls;
+    [XmlArrayItem("Dll")]
+    public List<CfgInjectDll> InjectDlls;
+
+    public string AddEnvironmentVars;
 
     public CfgCustomLoader()
     {
@@ -145,6 +147,7 @@ public class CfgCustomLoader
 		ProgramPath = "";
 		CmdLine = "-steam -insecure +sv_lan 1 -window -console -game csgo";
         InjectDlls = new List<CfgInjectDll>();
+        AddEnvironmentVars = "";
     }
 }
 

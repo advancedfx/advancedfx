@@ -43,7 +43,10 @@
             this.buttonHookUp = new System.Windows.Forms.Button();
             this.buttonHookDown = new System.Windows.Forms.Button();
             this.buttonHookBrowse = new System.Windows.Forms.Button();
+            this.groupEnv = new System.Windows.Forms.GroupBox();
+            this.textEnv = new System.Windows.Forms.TextBox();
             this.groupBoxInjectDlls.SuspendLayout();
+            this.groupEnv.SuspendLayout();
             this.SuspendLayout();
             // 
             // buttonSelectProgram
@@ -120,9 +123,9 @@
             this.groupBoxInjectDlls.Controls.Add(this.buttonHookUp);
             this.groupBoxInjectDlls.Controls.Add(this.buttonHookDown);
             this.groupBoxInjectDlls.Controls.Add(this.buttonHookBrowse);
-            this.groupBoxInjectDlls.Location = new System.Drawing.Point(12, 65);
+            this.groupBoxInjectDlls.Location = new System.Drawing.Point(2, 65);
             this.groupBoxInjectDlls.Name = "groupBoxInjectDlls";
-            this.groupBoxInjectDlls.Size = new System.Drawing.Size(560, 234);
+            this.groupBoxInjectDlls.Size = new System.Drawing.Size(579, 158);
             this.groupBoxInjectDlls.TabIndex = 20;
             this.groupBoxInjectDlls.TabStop = false;
             this.groupBoxInjectDlls.Text = "L10n DLLs to inject";
@@ -130,7 +133,7 @@
             // labelDllsHint
             // 
             this.labelDllsHint.AutoSize = true;
-            this.labelDllsHint.Location = new System.Drawing.Point(7, 215);
+            this.labelDllsHint.Location = new System.Drawing.Point(6, 108);
             this.labelDllsHint.Name = "labelDllsHint";
             this.labelDllsHint.Size = new System.Drawing.Size(246, 13);
             this.labelDllsHint.TabIndex = 20;
@@ -143,7 +146,7 @@
             this.listBoxHookDlls.Location = new System.Drawing.Point(6, 49);
             this.listBoxHookDlls.Name = "listBoxHookDlls";
             this.listBoxHookDlls.SelectionMode = System.Windows.Forms.SelectionMode.MultiSimple;
-            this.listBoxHookDlls.Size = new System.Drawing.Size(548, 160);
+            this.listBoxHookDlls.Size = new System.Drawing.Size(548, 56);
             this.listBoxHookDlls.TabIndex = 19;
             this.listBoxHookDlls.DragDrop += new System.Windows.Forms.DragEventHandler(this.listBoxHookDlls_DragDrop);
             this.listBoxHookDlls.DragEnter += new System.Windows.Forms.DragEventHandler(this.listBoxHookDlls_DragEnter);
@@ -189,6 +192,26 @@
             this.buttonHookBrowse.UseVisualStyleBackColor = true;
             this.buttonHookBrowse.Click += new System.EventHandler(this.buttonHookBrowse_Click);
             // 
+            // groupEnv
+            // 
+            this.groupEnv.Controls.Add(this.textEnv);
+            this.groupEnv.Location = new System.Drawing.Point(2, 229);
+            this.groupEnv.Name = "groupEnv";
+            this.groupEnv.Size = new System.Drawing.Size(579, 82);
+            this.groupEnv.TabIndex = 21;
+            this.groupEnv.TabStop = false;
+            this.groupEnv.Text = "L10n Add Environment Variables: Name=Value";
+            // 
+            // textEnv
+            // 
+            this.textEnv.Location = new System.Drawing.Point(6, 19);
+            this.textEnv.Multiline = true;
+            this.textEnv.Name = "textEnv";
+            this.textEnv.Size = new System.Drawing.Size(567, 57);
+            this.textEnv.TabIndex = 0;
+            this.textEnv.Enter += new System.EventHandler(this.textEnv_Enter);
+            this.textEnv.Leave += new System.EventHandler(this.textEnv_Leave);
+            // 
             // CustomLoaderForm
             // 
             this.AcceptButton = this.buttonOk;
@@ -196,6 +219,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.buttonAbort;
             this.ClientSize = new System.Drawing.Size(584, 361);
+            this.Controls.Add(this.groupEnv);
             this.Controls.Add(this.groupBoxInjectDlls);
             this.Controls.Add(this.buttonSelectProgram);
             this.Controls.Add(this.buttonAbort);
@@ -211,6 +235,8 @@
             this.Text = "L10n Custom Loader";
             this.groupBoxInjectDlls.ResumeLayout(false);
             this.groupBoxInjectDlls.PerformLayout();
+            this.groupEnv.ResumeLayout(false);
+            this.groupEnv.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -233,5 +259,7 @@
         private System.Windows.Forms.Button buttonHookBrowse;
         private System.Windows.Forms.Label labelDllsHint;
         private System.Windows.Forms.ListBox listBoxHookDlls;
+        private System.Windows.Forms.GroupBox groupEnv;
+        private System.Windows.Forms.TextBox textEnv;
     }
 }

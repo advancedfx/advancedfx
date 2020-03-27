@@ -58,19 +58,19 @@ namespace AfxGui
             if (0 < config.CustomLaunchOptions.Length)
                 cmdLine += " " + config.CustomLaunchOptions;
 
+            environment = "";
+            foreach (DictionaryEntry kv in Environment.GetEnvironmentVariables())
+            {
+                environment += kv.Key + "=" + kv.Value + "\0";
+            }
+
             if (config.MmcfgEnabled)
             {
-                environment = "";
-
-                foreach (DictionaryEntry kv in Environment.GetEnvironmentVariables())
-                {
-                    environment += kv.Key + "=" + kv.Value + "\0";
-                }
-
                 environment += "USRLOCALCSGO=" + config.Mmmcfg+"\0";
-
-                environment += "\0\0";
             }
+
+            environment += "SteamOverlayGameId=730" + "\0";
+            environment += "\0\0";
 
             return Loader.Load(GetHookPath, programPath, cmdLine, environment);
         }

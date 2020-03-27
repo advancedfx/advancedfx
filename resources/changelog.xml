@@ -6,6 +6,18 @@
 
 <release>
 <name>HLAE</name>
+<version>2.91.3</version>
+<time>2020-03-27T11:03Z</time>
+<changes>
+<change type="fixed">Fixed #301 CS:GO Steam overlay screenshot (F12) does not work anymore when game is not launched from official Steam Library entry (CS:GO 2020-03-26 pre-release / silent update) by adding SteamOverlayGameId=730 to environment variables for launching CS:GO.</change>
+<change type="added">Custom loader now has an option to set additional environment variables.</change>
+<change type="added">-addEnv option for custom loader HLAE command line options (can be used multiple times to add multiple vars).</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.91.2</version>
 <time>2020-03-25T12:03Z</time>
 <changes>
