@@ -8140,7 +8140,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 					}
 				}
 
-				CAfxBaseFxStream::EDrawDepth value = curBaseFx->DrawDepth_get();
+				CAfxBaseFxStream::EDrawDepthMode value = curBaseFx->DrawDepthMode_get();
 				const char * pszValue = "[unknown]";
 				switch (value)
 				{
