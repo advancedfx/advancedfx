@@ -93,6 +93,8 @@ public:
 	void Console_Overrides(IWrpCommandArgs * args);
 
 private:
+	float m_LastFrameTime = 0;
+
 	bool m_Export;
 	bool m_FovOverride;
 	double m_FovValue;

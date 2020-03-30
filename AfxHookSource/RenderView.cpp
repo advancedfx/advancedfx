@@ -389,7 +389,7 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 					break;
 				}
 
-				double dT = m_Globals->absoluteframetime_get();
+				double dT = 0 == m_LastFrameTime ? 1 : m_LastFrameTime;
 				double dForward = dT * g_AfxHookSourceInput.GetCamDForward();
 				double dLeft = dT * g_AfxHookSourceInput.GetCamDLeft();
 				double dUp = dT * g_AfxHookSourceInput.GetCamDUp();
@@ -528,6 +528,8 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 	LastCameraFov = Fov;
 
 	g_AfxHookSourceInput.Supply_MouseFrameEnd();
+
+	m_LastFrameTime = m_Globals->absoluteframetime_get();
 
 	//Tier0_Msg("Hook_VClient_RenderView::OnViewOverride: curTime = %f, LastCameraOrigin=%f,%f,%f\n",curTime,LastCameraOrigin[0],LastCameraOrigin[1],LastCameraOrigin[2]);
 }
