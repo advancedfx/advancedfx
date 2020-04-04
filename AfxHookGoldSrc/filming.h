@@ -80,6 +80,8 @@ private:
 
 	/// <summary>Implements IFloatFramePrinter.</summary>
 	virtual void Print(float const * data);
+
+	virtual void PrintExr(float const* data);
 };
 
 

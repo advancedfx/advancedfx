@@ -19,7 +19,8 @@ bool WriteFloatZOpenExr(
 	int height,
 	int xStride,
 	int yStride,
-	WriteFloatZOpenExrCompression compression)
+	WriteFloatZOpenExrCompression compression,
+	bool topDown)
 {
 	std::string ansiFileName;
 
@@ -31,6 +32,7 @@ bool WriteFloatZOpenExr(
 		Header header (width, height);
 		header.channels().insert ("Z", Channel (IMF::FLOAT));
 		header.compression() = WFZOEC_Zip == compression ? ZIP_COMPRESSION : NO_COMPRESSION;
+		if (!topDown) header.lineOrder() = DECREASING_Y;
 
 		OutputFile file (ansiFileName.c_str(), header);
 

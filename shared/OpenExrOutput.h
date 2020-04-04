@@ -13,4 +13,5 @@ bool WriteFloatZOpenExr(
 	int height,
 	int xStride,
 	int yStride,
-	WriteFloatZOpenExrCompression compression);
+	WriteFloatZOpenExrCompression compression,
+	bool topDown = true);

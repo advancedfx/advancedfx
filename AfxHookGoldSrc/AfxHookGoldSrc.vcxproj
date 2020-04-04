@@ -82,7 +82,7 @@
     </PreBuildEvent>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>./;../;../deps\release\prop;../deps/release/halflife/common;../deps/release/halflife/engine;../deps/release/halflife/pm_shared;../deps/release/halflife/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;../;../deps\release\prop;../deps/release/halflife/common;../deps/release/halflife/engine;../deps/release/halflife/pm_shared;../deps/release/halflife/public;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -95,7 +95,7 @@
     </ClCompile>
     <Link>
       <OutputFile>$(OutDir)AfxHookGoldSrc.dll</OutputFile>
-      <AdditionalLibraryDirectories>C:\Libraries\js\lib;C:\Libraries\libRocket\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Libraries\js\lib;C:\Libraries\libRocket\bin;../../openexr-build/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>$(OutDir)AfxHookGoldSrc.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
@@ -104,6 +104,7 @@
       </DataExecutionPrevention>
       <ImportLibrary>$(OutDir)AfxHookGoldSrc.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>IlmImf-2_4.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -117,7 +118,7 @@
     </PreBuildEvent>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>./;../;../deps\release\prop;../deps/release/halflife/common;../deps/release/halflife/engine;../deps/release/halflife/pm_shared;../deps/release/halflife/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;../;../deps\release\prop;../deps/release/halflife/common;../deps/release/halflife/engine;../deps/release/halflife/pm_shared;../deps/release/halflife/public;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -129,7 +130,7 @@
     </ClCompile>
     <Link>
       <OutputFile>$(OutDir)AfxHookGoldSrc.dll</OutputFile>
-      <AdditionalLibraryDirectories>C:\Libraries\js\lib;C:\Libraries\libRocket\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Libraries\js\lib;C:\Libraries\libRocket\bin;../../openexr-build/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>$(OutDir)AfxHookGoldSrc.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
@@ -137,6 +138,7 @@
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <ImportLibrary>$(OutDir)AfxHookGoldSrc.lib</ImportLibrary>
+      <AdditionalDependencies>IlmImf-2_4.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -149,7 +151,7 @@
       </Command>
     </PreBuildEvent>
     <ClCompile>
-      <AdditionalIncludeDirectories>./;../;../deps\release\prop;../deps/release/halflife/common;../deps/release/halflife/engine;../deps/release/halflife/pm_shared;../deps/release/halflife/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;../;../deps\release\prop;../deps/release/halflife/common;../deps/release/halflife/engine;../deps/release/halflife/pm_shared;../deps/release/halflife/public;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -162,7 +164,7 @@
     </ClCompile>
     <Link>
       <OutputFile>$(OutDir)AfxHookGoldSrc.dll</OutputFile>
-      <AdditionalLibraryDirectories>C:\Libraries\js\lib;C:\Libraries\libRocket\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Libraries\js\lib;C:\Libraries\libRocket\bin;../../openexr-build/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -174,6 +176,7 @@
       </DataExecutionPrevention>
       <ImportLibrary>$(OutDir)AfxHookGoldSrc.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>IlmImf-2_4.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -186,7 +189,7 @@
       </Command>
     </PreBuildEvent>
     <ClCompile>
-      <AdditionalIncludeDirectories>./;../;../deps\release\prop;../deps/release/halflife/common;../deps/release/halflife/engine;../deps/release/halflife/pm_shared;../deps/release/halflife/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;../;../deps\release\prop;../deps/release/halflife/common;../deps/release/halflife/engine;../deps/release/halflife/pm_shared;../deps/release/halflife/public;../../openexr-build/include/OpenEXR;../../ilmbase-build/include/OpenEXR;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;_BIND_TO_CURRENT_CRT_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -199,7 +202,7 @@
     </ClCompile>
     <Link>
       <OutputFile>$(OutDir)AfxHookGoldSrc.dll</OutputFile>
-      <AdditionalLibraryDirectories>C:\Libraries\js\lib;C:\Libraries\libRocket\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Libraries\js\lib;C:\Libraries\libRocket\bin;../../openexr-build/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -210,6 +213,7 @@
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <ImportLibrary>$(OutDir)AfxHookGoldSrc.lib</ImportLibrary>
+      <AdditionalDependencies>IlmImf-2_4.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -262,6 +266,7 @@
     <ClCompile Include="..\shared\FileTools.cpp" />
     <ClCompile Include="..\shared\hooks\gameOverlayRenderer.cpp" />
     <ClCompile Include="..\shared\MirvCampath.cpp" />
+    <ClCompile Include="..\shared\OpenExrOutput.cpp" />
     <ClCompile Include="..\shared\StringTools.cpp" />
     <ClCompile Include="..\shared\vcpp\AfxAddr.cpp" />
     <ClCompile Include="AfxGlImage.cpp" />
@@ -355,6 +360,7 @@
     <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_print.hpp" />
     <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_utils.hpp" />
     <ClInclude Include="..\shared\MirvCampath.h" />
+    <ClInclude Include="..\shared\OpenExrOutput.h" />
     <ClInclude Include="..\shared\StringTools.h" />
     <ClInclude Include="..\shared\vcpp\AfxAddr.h" />
     <ClInclude Include="AfxGlImage.h" />

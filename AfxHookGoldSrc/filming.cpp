@@ -12,6 +12,7 @@
 #include <shared/FileTools.h>
 #include <shared/StringTools.h>
 #include <shared/RawOutput.h>
+#include <shared/OpenExrOutput.h>
 
 #include <hlsdk.h>
 #include <deps/release/halflife/common/r_studioint.h>
@@ -57,6 +58,7 @@ REGISTER_DEBUGCVAR(print_pos, "0", 0);
 REGISTER_CVAR(camexport_mode, "0", 0);
 REGISTER_CVAR(crop_height, "-1", 0);
 REGISTER_CVAR(crop_yofs, "-1", 0);
+REGISTER_CVAR(depth_exr, "0", 0);
 REGISTER_CVAR(depth_streams, "3", 0);
 REGISTER_CVAR(fx_lightmap, "0", 0);
 REGISTER_CVAR(fx_viewmodel_lightmap, "0", 0);
@@ -1865,15 +1867,20 @@ FilmingStream::FilmingStream(
 	case FB_DEPTH:
 		m_GlBuffer = GL_DEPTH_COMPONENT;
 		m_GlType = GL_FLOAT;
-		switch((unsigned char)depth_bpp->value) {
-		case 16:
-			m_BytesPerPixel = 2;
-			break;
-		case 24:
-			m_BytesPerPixel = 3;
-			break;
-		default:
-			m_BytesPerPixel = 1;
+		if(0 != depth_exr->value)
+			m_BytesPerPixel = 4;
+		else
+		{
+			switch ((unsigned char)depth_bpp->value) {
+			case 16:
+				m_BytesPerPixel = 2;
+				break;
+			case 24:
+				m_BytesPerPixel = 3;
+				break;
+			default:
+				m_BytesPerPixel = 1;
+			}
 		}
 		break;
 
@@ -1985,7 +1992,7 @@ void FilmingStream::Capture(double time, CMdt_Media_RAWGLPIC * usePic, float sps
 			if(0.0f != m_DepthSliceLo || 1.0f != m_DepthSliceHi)
 				SliceDepthBuffer((GLfloat *)pBuffer, uiCount, m_DepthSliceLo, m_DepthSliceHi);
 
-			GLfloatArrayToXByteArray((GLfloat *)pBuffer, m_Width, m_Height, m_BytesPerPixel);
+			if(0 == depth_exr->value) GLfloatArrayToXByteArray((GLfloat *)pBuffer, m_Width, m_Height, m_BytesPerPixel);
 		}	
 	}
 
@@ -2069,7 +2076,15 @@ void FilmingStream::WriteFrame(CMdt_Media_RAWGLPIC& frame, double time)
 	else
 	{
 		// write out directly:
-		Print((unsigned char const *)frame.GetPointer());
+
+		if (FB_DEPTH == m_Buffer && 0 != depth_exr->value)
+		{
+			PrintExr((float*)frame.GetPointer());
+		}
+		else
+		{
+			Print((unsigned char const*)frame.GetPointer());
+		}
 	}
 }
 
@@ -2091,6 +2106,27 @@ void FilmingStream::Print(unsigned char const * data)
 	m_FrameCount++;
 }
 
+void FilmingStream::PrintExr(float const* data)
+{
+	if (!m_DirCreated)
+		return;
+
+	std::wostringstream os;
+	os << m_Path << L"\\" << setfill(L'0') << setw(5) << m_FrameCount << setw(0) << L".exr";
+
+	WriteFloatZOpenExr(
+		os.str().c_str(),
+		(unsigned char*)data,
+		m_Width,
+		m_Height,
+		sizeof(float),
+		m_Pitch,
+		2 == depth_exr->value ? WFZOEC_Zip : WFZOEC_None,
+		false
+	);
+
+	m_FrameCount++;
+}
 
 void FilmingStream::Print(float const * data)
 {
@@ -2115,16 +2151,30 @@ void FilmingStream::Print(float const * data)
 		if(0.0f != m_DepthSliceLo || 1.0f != m_DepthSliceHi)
 			SliceDepthBuffer(fT, uiCount, m_DepthSliceLo, m_DepthSliceHi);
 
-		GLfloatArrayToXByteArray(fT, m_Width, m_Height, m_BytesPerPixel);
+		if (0 == depth_exr->value)
+		{
+			GLfloatArrayToXByteArray(fT, m_Width, m_Height, m_BytesPerPixel);
 
-		Print((unsigned char const *)fT);
+			Print((unsigned char const*)fT);
+		}
+		else
+		{
+			PrintExr(fT);
+		}
 
 		delete fT;
 	}
 	else
 	{
-		GLfloatArrayToXByteArray((GLfloat *)data, m_Width, m_Height, m_BytesPerPixel);
-		Print((unsigned char const *)data);
+		if (0 == depth_exr->value)
+		{
+			GLfloatArrayToXByteArray((GLfloat*)data, m_Width, m_Height, m_BytesPerPixel);
+			Print((unsigned char const*)data);
+		}
+		else
+		{
+			PrintExr((float*)data);
+		}
 	}
 }
 
