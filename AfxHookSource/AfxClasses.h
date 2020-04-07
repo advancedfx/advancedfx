@@ -75,16 +75,30 @@ public:
 		MaterialHook_Free_t InterlockedDecrement;
 	};
 
+	/// <remarks>On Drawing thread only.</remarks>
 	static CAfxTrackedMaterial * TrackMaterial(SOURCESDK::IMaterial_csgo * material);
 
+	/// <remarks>Threadsafe.</remarks>
+	void AddRef();
+
+	/// <remarks>Threadsafe.</remarks>
+	void Release();
+
+	/// <remarks>On Drawing thread only.</remarks>
 	void AddNotifyee(IAfxMaterialFree * notifyee);
+
+	/// <remarks>Threadsafe.</remarks>
 	void RemoveNotifyee(IAfxMaterialFree * notifyee);
 
+	// TODO: move this elsewhere
+	/// <remarks>On Drawing thread only.</remarks>
 	SOURCESDK::IMaterial_csgo * GetReplacement(void)
 	{
 		return m_Replacement;
 	}
 
+	// TODO: move this elsewhere
+	/// <remarks>On Drawing thread only.</remarks>
 	void SetReplacement(SOURCESDK::IMaterial_csgo * value)
 	{
 		m_Replacement = value;
@@ -108,6 +122,46 @@ private:
 
 	static void OnMaterialInterlockedDecrement(SOURCESDK::IMaterial_csgo * material);
 
+	std::atomic_int m_RefCount = 1;
+
+	std::mutex m_ThisNotifyeesMutex;
 	std::set<IAfxMaterialFree *> m_ThisNotifyees;
+	bool m_Deleting = false;
+
 	SOURCESDK::IMaterial_csgo * m_Replacement = 0;
+
+	void Delete();
+};
+
+class CAfxTrackedMaterialRef
+{
+public:
+	CAfxTrackedMaterialRef(CAfxTrackedMaterial* trackedMaterial)
+		: m_TrackedMaterial(trackedMaterial)
+	{
+		m_TrackedMaterial->AddRef();
+	}
+
+	CAfxTrackedMaterialRef(const CAfxTrackedMaterialRef& trackedMaterialRef)
+		: m_TrackedMaterial(trackedMaterialRef.m_TrackedMaterial)
+	{
+		m_TrackedMaterial->AddRef();
+	}
+
+	~CAfxTrackedMaterialRef()
+	{
+		m_TrackedMaterial->Release();
+	}
+
+	bool operator < (const CAfxTrackedMaterialRef& y) const
+	{
+		return m_TrackedMaterial < y.m_TrackedMaterial;
+	}
+
+	CAfxTrackedMaterial* Get() const {
+		return m_TrackedMaterial;
+	}
+
+private:
+	CAfxTrackedMaterial* m_TrackedMaterial;
 };

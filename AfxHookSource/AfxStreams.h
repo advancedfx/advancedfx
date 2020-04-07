@@ -1194,7 +1194,7 @@ public:
 			m_Key = value;
 		}
 
-		virtual CAction * ResolveAction(CAfxTrackedMaterial * trackedMaterial)
+		virtual CAction * ResolveAction(const CAfxTrackedMaterialRef& trackedMaterial)
 		{
 			return this;
 		}
@@ -1211,7 +1211,7 @@ public:
 		{
 		}
 
-		virtual void MaterialHook(CAfxBaseFxStreamContext * ch, IAfxMatRenderContext* ctx, CAfxTrackedMaterial * trackedMaterial);
+		virtual void MaterialHook(CAfxBaseFxStreamContext * ch, IAfxMatRenderContext* ctx, const CAfxTrackedMaterialRef& trackedMaterial);
 
 		virtual void DrawInstances(CAfxBaseFxStreamContext * ch, IAfxMatRenderContext* ctx, int nInstanceCount, const SOURCESDK::MeshInstanceData_t_csgo *pInstance )
 		{
@@ -1256,7 +1256,7 @@ public:
 		{
 		}
 
-		virtual CAction * SafeSubResolveAction(CAction * action, CAfxTrackedMaterial * trackedMaterial)
+		virtual CAction * SafeSubResolveAction(CAction * action, const CAfxTrackedMaterialRef& trackedMaterial)
 		{
 			if(action)
 				return action->ResolveAction(trackedMaterial);
@@ -1318,7 +1318,7 @@ public:
 
 	virtual void LevelShutdown(void);
 
-	CAction * RetrieveAction(CAfxTrackedMaterial * trackedMaterial, const CEntityInfo & currentEntity);
+	CAction * RetrieveAction(const CAfxTrackedMaterialRef& trackedMaterial, const CEntityInfo & currentEntity);
 
 	CAction * ClientEffectTexturesAction_get(void);
 	void ClientEffectTexturesAction_set(CAction * value);
@@ -1658,7 +1658,7 @@ private:
 
 		virtual void AfxUnbind(CAfxBaseFxStreamContext * ch) override;
 
-		virtual void MaterialHook(CAfxBaseFxStreamContext * ch, IAfxMatRenderContext* ctx, CAfxTrackedMaterial * trackedMaterial) override;
+		virtual void MaterialHook(CAfxBaseFxStreamContext * ch, IAfxMatRenderContext* ctx, const CAfxTrackedMaterialRef& trackedMaterial) override;
 
 /*		We could speed up a bit here, but I am not sure if it's safe to do this,
         so we just let it draw for now and block the drawing instead.
@@ -1696,7 +1696,7 @@ private:
 
 		virtual void AfxUnbind(CAfxBaseFxStreamContext * ch) override;
 
-		virtual void MaterialHook(CAfxBaseFxStreamContext * ch, IAfxMatRenderContext* ctx, CAfxTrackedMaterial * trackedMaterial) override;
+		virtual void MaterialHook(CAfxBaseFxStreamContext * ch, IAfxMatRenderContext* ctx, const CAfxTrackedMaterialRef& trackedMaterial) override;
 	};
 
 	class CActionDraw
@@ -1708,7 +1708,7 @@ private:
 		{
 		}
 
-		//virtual bool CheckIsCompatible(CAfxTrackedMaterial * tackedMaterial)
+		//virtual bool CheckIsCompatible(const CAfxTrackedMaterialRef& tackedMaterial)
 		//{
 		//	return true;
 		//}
@@ -1849,13 +1849,13 @@ private:
 			m_DepthWrite = depthWrite;
 		}
 
-		virtual CAction * ResolveAction(CAfxTrackedMaterial * trackedMaterial);
+		virtual CAction * ResolveAction(const CAfxTrackedMaterialRef& trackedMaterial);
 
 		virtual void MainThreadInitialize(void);
 
 		virtual void AfxUnbind(CAfxBaseFxStreamContext * ch) override;
 
-		virtual void MaterialHook(CAfxBaseFxStreamContext * ch, IAfxMatRenderContext* ctx, CAfxTrackedMaterial * trackedMaterial) override;
+		virtual void MaterialHook(CAfxBaseFxStreamContext * ch, IAfxMatRenderContext* ctx, const CAfxTrackedMaterialRef& trackedMaterial) override;
 
  		virtual void DrawInstances(CAfxBaseFxStreamContext * ch, IAfxMatRenderContext* ctx, int nInstanceCount, const SOURCESDK::MeshInstanceData_t_csgo *pInstance ) override
 		{
@@ -1921,7 +1921,7 @@ private:
 
 		virtual void AfxUnbind(CAfxBaseFxStreamContext* ch) override;
 
-		virtual void MaterialHook(CAfxBaseFxStreamContext* ch, IAfxMatRenderContext* ctx, CAfxTrackedMaterial* trackedMaterial) override;
+		virtual void MaterialHook(CAfxBaseFxStreamContext* ch, IAfxMatRenderContext* ctx, const CAfxTrackedMaterialRef& trackedMaterial) override;
 
 		virtual void UnlockMesh(CAfxBaseFxStreamContext* ch, IAfxMesh* am, int numVerts, int numIndices, SOURCESDK::MeshDesc_t_csgo& desc) override;
 
@@ -1984,13 +1984,13 @@ private:
 	public:
 		CActionDebugDepth(CAction * fallBackAction);
 
-		virtual CAction * ResolveAction(CAfxTrackedMaterial * trackedMaterial);
+		virtual CAction * ResolveAction(const CAfxTrackedMaterialRef& trackedMaterial);
 
 		virtual void MainThreadInitialize(void);
 
 		virtual void AfxUnbind(CAfxBaseFxStreamContext * ch);
 
-		virtual void MaterialHook(CAfxBaseFxStreamContext * ch, IAfxMatRenderContext* ctx, CAfxTrackedMaterial * trackedMaterial) override;
+		virtual void MaterialHook(CAfxBaseFxStreamContext * ch, IAfxMatRenderContext* ctx, const CAfxTrackedMaterialRef& trackedMaterial) override;
 
 	protected:
 		~CActionDebugDepth();
@@ -2242,7 +2242,7 @@ private:
 			return m_UseHandle || m_UseClassName || m_UseIsPlayer || m_UseTeamNumber;
 		}
 
-		bool CalcMatch_Material(CAfxTrackedMaterial * trackedMaterial);
+		bool CalcMatch_Material(const CAfxTrackedMaterialRef& trackedMaterial);
 
 		bool CalcMatch_Entity(const CEntityInfo & info);
 
@@ -2529,7 +2529,7 @@ private:
 		};
 
 		std::mutex m_MapMutex;
-		std::map<CAfxTrackedMaterial*, CCacheEntry> m_Map;
+		std::map<CAfxTrackedMaterialRef, CCacheEntry> m_Map;
 		std::multimap<SOURCESDK::CSGO::CBaseHandle, CCacheEntry*> m_EntCaches;
 
 		void BindAction(CAction * action)
@@ -2558,11 +2558,11 @@ private:
 			{
 				std::unique_lock<std::mutex> unique_lock(m_Context->m_MapMutex);
 
-				std::map<CAfxTrackedMaterial*, CCacheEntry>& map = m_Context->m_Map;
+				std::map<CAfxTrackedMaterialRef, CCacheEntry>& map = m_Context->m_Map;
 
-				for (std::map<CAfxTrackedMaterial*, CCacheEntry>::iterator it = map.begin(); it != map.end(); ++it)
+				for (std::map<CAfxTrackedMaterialRef, CCacheEntry>::iterator it = map.begin(); it != map.end(); ++it)
 				{
-					it->first->RemoveNotifyee(this);
+					it->first.Get()->RemoveNotifyee(this);
 				}
 			}
 
@@ -2570,7 +2570,7 @@ private:
 			{
 				// Happens only from drawing context or when not drawing, so no need to lock.
 
-				std::map<CAfxTrackedMaterial*, CCacheEntry>::iterator it = m_Context->m_Map.find(trackedMaterial);
+				std::map<CAfxTrackedMaterialRef, CCacheEntry>::iterator it = m_Context->m_Map.find(trackedMaterial);
 
 				if (it != m_Context->m_Map.end())
 				{
@@ -2584,7 +2584,7 @@ private:
 
 		} *m_MapRleaseNotification;
 
-		CAction* RetrieveAction(CAfxTrackedMaterial* trackedMaterial, const CEntityInfo& currentEntity);
+		CAction* RetrieveAction(const CAfxTrackedMaterialRef& trackedMaterial, const CEntityInfo& currentEntity);
 
 		void IfRootThenUpdateCurrentEntity()
 		{
@@ -2609,7 +2609,7 @@ private:
 	{
 	public:
 		int Index;
-		std::set<CAfxTrackedMaterial *> Materials;
+		std::set<CAfxTrackedMaterialRef> Materials;
 
 		virtual void AfxMaterialFree(CAfxTrackedMaterial * trackedMaterial)
 		{
@@ -2618,20 +2618,20 @@ private:
 			Materials.erase(trackedMaterial);
 		}
 
-		CPickerEntValue(CAfxBaseFxStream * stream, int index, CAfxTrackedMaterial * trackedMaterial)
+		CPickerEntValue(CAfxBaseFxStream * stream, int index, const CAfxTrackedMaterialRef& trackedMaterial)
 			: m_Stream(stream)
 			, Index(index)
 		{
 			Materials.insert(trackedMaterial);
 
-			trackedMaterial->AddNotifyee(this);
+			trackedMaterial.Get()->AddNotifyee(this);
 		}
 
 		~CPickerEntValue()
 		{
-			for (std::set<CAfxTrackedMaterial *>::iterator it = Materials.begin(); it != Materials.end(); ++it)
+			for (std::set<CAfxTrackedMaterialRef>::iterator it = Materials.begin(); it != Materials.end(); ++it)
 			{
-				(*it)->RemoveNotifyee(this);
+				(*it).Get()->RemoveNotifyee(this);
 			}
 		}
 
@@ -2654,7 +2654,7 @@ private:
 			Entities.insert(entity);
 		}
 	};
-	std::map<CAfxTrackedMaterial *, CPickerMatValue> m_PickerMaterials;
+	std::map<CAfxTrackedMaterialRef, CPickerMatValue> m_PickerMaterials;
 	bool m_PickingMaterials;
 	bool m_PickerMaterialsAlerted;
 
@@ -2670,19 +2670,19 @@ private:
 		{
 			std::unique_lock<std::shared_timed_mutex> unique_lock(m_Stream->m_PickerMutex);
 
-			std::map<CAfxTrackedMaterial *, CPickerMatValue> & pickerMaterials = m_Stream->m_PickerMaterials;
+			std::map<CAfxTrackedMaterialRef, CPickerMatValue> & pickerMaterials = m_Stream->m_PickerMaterials;
 
-			for (std::map<CAfxTrackedMaterial *, CPickerMatValue>::iterator it = pickerMaterials.begin(); it != pickerMaterials.end(); ++it)
+			for (std::map<CAfxTrackedMaterialRef, CPickerMatValue>::iterator it = pickerMaterials.begin(); it != pickerMaterials.end(); ++it)
 			{
-				it->first->RemoveNotifyee(this);
+				it->first.Get()->RemoveNotifyee(this);
 			}
 		}
 
-		virtual void AfxMaterialFree(CAfxTrackedMaterial * material)
+		virtual void AfxMaterialFree(CAfxTrackedMaterial * trackedMaterial)
 		{
 			// Happens only from drawing context or when not drawing, so no need to lock.
 
-			m_Stream->m_PickerMaterials.erase(material);
+			m_Stream->m_PickerMaterials.erase(trackedMaterial);
 		}
 
 	private:
@@ -2700,14 +2700,14 @@ private:
 
 	bool m_ClearBeforeRender = false;
 
-	CAction * CAfxBaseFxStream::GetAction(CAfxTrackedMaterial * trackedMaterial, const CEntityInfo& currentEntity);
-	CAction * CAfxBaseFxStream::GetAction(CAfxTrackedMaterial * trackedMaterial, CAction * action);
+	CAction * CAfxBaseFxStream::GetAction(const CAfxTrackedMaterialRef& trackedMaterial, const CEntityInfo& currentEntity);
+	CAction * CAfxBaseFxStream::GetAction(const CAfxTrackedMaterialRef& trackedMaterial, CAction * action);
 
 	/*
 	void ConvertDepthAction(CAction * & action, bool to24);
 	*/
 
-	bool Picker_GetHidden(CAfxTrackedMaterial * tackedMaterial, const CEntityInfo& currentEntity);
+	bool Picker_GetHidden(const CAfxTrackedMaterialRef& tackedMaterial, const CEntityInfo& currentEntity);
 };
 
 class __declspec(novtable) IAfxBasefxStreamModifier abstract

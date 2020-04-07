@@ -107,7 +107,8 @@ void CAfxTrackedMaterial::OnMaterialInterlockedDecrement(SOURCESDK::IMaterial_cs
 
 		if (it != m_Trackeds.end())
 		{
-			delete it->second;
+			it->second->Delete();
+			it->second->Release();
 
 			m_Trackeds.erase(it);
 		}
@@ -178,24 +179,57 @@ CAfxTrackedMaterial::~CAfxTrackedMaterial()
 #ifdef _DEBUG
 	Tier0_Msg("CAfxTrackedMaterial::~CAfxTrackedMaterial 0x%08x -> %s (PRE-FREE)\n", this, m_Material->GetName());
 #endif
-
-	while (!m_ThisNotifyees.empty())
-	{
-		std::set<IAfxMaterialFree *>::iterator it = m_ThisNotifyees.begin();
-		IAfxMaterialFree * notifyee = *it;
-		m_ThisNotifyees.erase(it);
-		notifyee->AfxMaterialFree(this);
-	}
 }
 
 void CAfxTrackedMaterial::AddNotifyee(IAfxMaterialFree * notifyee)
 {
+	std::unique_lock<std::mutex> lock(m_ThisNotifyeesMutex);
+
+	if (m_Deleting)
+	{
+		// This path should not happen, but you never know.
+		notifyee->AfxMaterialFree(this);
+		return;
+	}
+
 	m_ThisNotifyees.insert(notifyee);
 }
 
 void CAfxTrackedMaterial::RemoveNotifyee(IAfxMaterialFree * notifyee)
 {
+	std::unique_lock<std::mutex> lock(m_ThisNotifyeesMutex);
+
 	m_ThisNotifyees.erase(notifyee);
+}
+
+void CAfxTrackedMaterial::Delete()
+{
+	std::unique_lock<std::mutex> lock(m_ThisNotifyeesMutex);
+
+	m_Deleting = true;
+
+	while (!m_ThisNotifyees.empty())
+	{
+		std::set<IAfxMaterialFree*>::iterator it = m_ThisNotifyees.begin();
+		IAfxMaterialFree* notifyee = *it;
+		notifyee->AfxMaterialFree(this);
+		m_ThisNotifyees.erase(notifyee);
+	}
+}
+
+void CAfxTrackedMaterial::AddRef()
+{
+	++m_RefCount;
+}
+
+void CAfxTrackedMaterial::Release()
+{
+	--m_RefCount;
+
+	if (0 == m_RefCount)
+	{
+		delete this;
+	}
 }
 
 
