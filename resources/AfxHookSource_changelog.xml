@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.79.3</version>
+<time>2020-04-07T10:19Z</time>
+<changes>
+<change type="fixed">Fixed #307 Jittery camera and mouse movement on mirv_input camera.</change>
+<change type="fixed">Addressed #308 Multi-stream recording with ffmpeg cause game crashes: Changed material tracking/referencing in mirv_streams.</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.79.2</version>
 <time>2020-03-25T12:03Z</time>
 <changes>
