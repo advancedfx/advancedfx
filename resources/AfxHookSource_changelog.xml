@@ -10,7 +10,7 @@
 <time>2020-04-07T10:19Z</time>
 <changes>
 <change type="fixed">Fixed #307 Jittery camera and mouse movement on mirv_input camera.</change>
-<change type="fixed">Addressed #308 Multi-stream recording with ffmpeg cause game crashes: Changed material tracking/referencing in mirv_streams.</change>
+<change type="fixed">Addressed #314 Multi-stream recording with ffmpeg cause game crashes: Changed material tracking/referencing in mirv_streams.</change>
 </changes>
 </release>
 
