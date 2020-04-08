@@ -1,6 +1,6 @@
 #ifndef ADVANCEDFX_LIBRARY_H
 #define ADVANCEDFX_LIBRARY_H
-#include "AfxTypes.h"
+#include "AdvancedfxTypes.h"
 
 #if defined _WIN32 || defined __CYGWIN__
 #ifdef __GNUC__
@@ -29,7 +29,7 @@
 // Factory
 
 
-#define ADVANCEDFX_LIBRARY_FN_IDENTIFIER AdvancedfxLibraryInterface
+#define ADVANCEDFX_LIBRARY_FN_IDENTIFIER AdvancedfxModuleInit
 
 #ifdef __cplusplus
 #define ADVANCEDFX_EXTERNC extern "C"
@@ -37,7 +37,7 @@
 #define ADVANCEDFX_EXTERNC
 #endif
 
-#define ADVANCEDFX_FACTORY_FN ADVANCEDFX_EXTERNC void* ADVANCEDFX_LIBRARY_FN_IDENTIFIER (struct AdvancedfxUuid uuid, void* arg)
+#define ADVANCEDFX_FACTORY_FN ADVANCEDFX_EXTERNC void ADVANCEDFX_LIBRARY_FN_IDENTIFIER (AdvancedfxProcessGet processGet)
 
 
 

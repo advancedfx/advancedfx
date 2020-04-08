@@ -857,20 +857,8 @@
     <ClInclude Include="AfxCommandLine.h">
       <Filter>AfxHookSource</Filter>
     </ClInclude>
-    <ClInclude Include="..\interfaces\c\AfxTypes.h">
-      <Filter>interfaces\c</Filter>
-    </ClInclude>
-    <ClInclude Include="..\interfaces\c\AfxLocale.h">
-      <Filter>interfaces\c</Filter>
-    </ClInclude>
     <ClInclude Include="..\shared\AfxDetours.h">
       <Filter>shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\interfaces\c\AfxLibrary.h">
-      <Filter>interfaces\c</Filter>
-    </ClInclude>
-    <ClInclude Include="..\interfaces\c\AfxCompiler.h">
-      <Filter>interfaces\c</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\AfxConsole.h">
       <Filter>shared</Filter>
@@ -880,6 +868,12 @@
     </ClInclude>
     <ClInclude Include="..\shared\AfxColorLut.h">
       <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\interfaces\c\AdvancedfxTypes.h">
+      <Filter>interfaces\c</Filter>
+    </ClInclude>
+    <ClInclude Include="..\interfaces\c\AdvancedfxLibrary.h">
+      <Filter>interfaces\c</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

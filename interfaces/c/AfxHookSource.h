@@ -1,30 +1,7 @@
 #ifndef ADVANCEDFX_AFXHOOKSOURCE_H
 #define ADVANCEDFX_AFXHOOKSOURCE_H
 
-#include "AfxTypes.h"
-#include "AfxCompiler.h"
-
-// UUIDs ///////////////////////////////////////////////////////////////////////
-
-
-// AdvancedfxFactoryFn: ADVANCEDFX_IAFXHOOKSOURCEDLL_UUID, AdvancedfxIAfxHookSource* -> AdvancedfxIReference*
-#define ADVANCEDFX_IAFXHOOKSOURCEDLL_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x3F3644B5,0xDF45,0x406B,0xB0B4,0x0E,0xFD,0xA7,0xA9,0x42,0xE4)
-
-// AdavancedfxIAfxHookSource::GetInterface: ADVANCEDFX_IENTITIES_UUID -> AdvancedfxIEntities*
-#define ADVANCEDFX_IENTITIES_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0xA7888B75,0x79DF,0x47B9,0xB801,0x03,0x40,0xF4,0x88,0xB5,0x8E)
-
-// AdavancedfxIAfxHookSource::GetInterface: ADVANCEDFX_ISETUPENGINEVIEWOVERRIDES_UUID -> AdvancedfxISetupEngineViewOverrides*
-#define ADVANCEDFX_ISETUPENGINEVIEWOVERRIDES_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x8164851B,0xF7F1,0x4F25,0x9A38,0x21,0x6E,0x43,0x79,0x88,0x22)
-
-// AdavancedfxIAfxHookSource::GetInterface: ADVANCEDFX_IAFXHOOKSOURCEJITS_UUID -> AdvancedfxISetupEngineViewOverrides*
-#define ADVANCEDFX_IAFXHOOKSOURCE_JITS_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0xED0CDB83,0x646B,0x4CCA,0x887F,0x3A,0x13,0xE2,0x6E,0x45,0x75)
-
-// AdvancedfxIJitContext::Get: ADVANCEDFX_JIT_CONTEXT_IAFXHOOKSOURCE_UUID -> AdavancedfxIAfxHookSource*
-#define ADVANCEDFX_JIT_CONTEXT_IAFXHOOKSOURCE_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x737E1F66,0x6034,0x4DC6,0x8DE2,0x03,0x3B,0x76,0x83,0x05,0x4F)
-
-// AdavancedfxIAfxHookSource::GetInterface: ADVANCEDFX_IAFXHOOKSOURCE_PYTHON_IJIT_UUID -> AdvancedxIJit*
-#define ADVANCEDFX_IAFXHOOKSOURCE_PYTHON_IJIT_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x60B22765,0x9E18,0x410F,0x8401,0x9B,0x1E,0x3C,0xE8,0x74,0xC8)
-
+#include "AdvancedfxTypes.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -50,13 +27,9 @@ struct AdvancedfxQAngles {
 
 struct AdvancedfxIEntityVtable
 {
-	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct AdvancedfxIEntity* This);
-
-	struct AdvancedfxIInterface* (*GetAsInterface)(struct AdvancedfxIEntity* This);
-
 	AdvancedfxEntityHandle(*GetHandle)(struct AdvancedfxIEntity* This);
 
-	int(*GetEntIndex)(struct AdvancedfxIEntity* This);
+	AdvancedfxInt32(*GetEntIndex)(struct AdvancedfxIEntity* This);
 
 	AdvancedfxIEntity*(*GetActiveWeapon)(struct AdvancedfxIEntity* This);
 
@@ -68,7 +41,7 @@ struct AdvancedfxIEntityVtable
 
 	AdvancedfxQAngles(*EyeAngles)(struct AdvancedfxIEntity* This);
 
-	int(*LookUpAttachment)(struct AdvancedfxIEntity* This, const char * attachmentName);
+	AdvancedfxInt32(*LookUpAttachment)(struct AdvancedfxIEntity* This, const char * attachmentName);
 
 	AdvancedfxBool(*GetAttachment)(struct AdvancedfxIEntity* This, int number, struct advancedfx_QVector * outOrigin, struct advancedfx_QAngles * outAngles);
 
@@ -79,22 +52,37 @@ struct AdvancedfxIEntity {
 	struct AdvancedfxIEntityVtable* Vtable;
 };
 
-ADVANCEDFX_ISoftReference_DECL(AdvancedfxIEntitySoftReference, struct AdvancedfxIEntity *)
-ADVANCEDFX_IReadonlyList_DECL(AdvancedfxIEntityList, struct AdvancedfxIEntitySoftReference*)
+typedef void* AdvancedfxEntityListIterator;
+
+struct AdvancedfxIEntityEventHandlerVtable
+{
+	void (*EntityEvent)(struct AdvancedfxIEntityEventHandler* This, struct AdvancedfxIEntity* entity);
+};
+
+struct AdvancedfxIEntityEventHandler
+{
+	struct AdvancedfxIEntityEventHandlerVtable* Vtable;
+};
 
 struct AdvancedfxIEntitiesVtable
 {
-	struct AdvancedfxIReferenced* (*GetAsReferenced)(struct AdvancedfxIEntities* This);
+	void (*OnEntityCreatedAdd)(struct AdvancedfxIEntities* This, struct AdvancedfxIEntityEventHandler* handler);
 
-	struct AdvancedfxIInterface* (*GetAsInterface)(struct AdvancedfxIEntities* This);
+	void (*OnEntityCreatedRemove)(struct AdvancedfxIEntities* This, struct AdvancedfxIEntityEventHandler* handler);
 
-	AdvancedfxIEntityList* (*GetEntityList)(struct AdvancedfxIEntities* This);
+	void (*OnEntityDeletedAdd)(struct AdvancedfxIEntities* This, struct AdvancedfxIEntityEventHandler* handler);
 
-	struct AdvancedfxIEntitySoftReference* (*EntityFromHandle)(struct AdvancedfxIAfxHookSource** This, AdvancedfxEntityHandle handle);
+	void (*OnEntityDeletedRemove)(struct AdvancedfxIEntities* This, struct AdvancedfxIEntityEventHandler* handler);
 
-	struct AdvancedfxIEntitySoftReference* (*EntityFromIndex)(struct AdvancedfxIAfxHookSource** This, int index);
+	struct AdvancedfxIEntity* (*EntityListBegin)(struct AdvancedfxIEntities* This);
 
-	struct AdvancedfxIEntitySoftReference* (*EntityFromSpecKey)(struct AdvancedfxIAfxHookSource** This, int keyNumber);
+	struct AdvancedfxIEntit* (*EntityListNext)(struct AdvancedfxIEntities* This);
+
+	struct AdvancedfxIEntity* (*EntityFromHandle)(struct AdvancedfxIEntities* This, AdvancedfxEntityHandle handle);
+
+	struct AdvancedfxIEntity* (*EntityFromIndex)(struct AdvancedfxIEntities* This, int index);
+
+	struct AdvancedfxIEntity* (*EntityFromSpecKey)(struct AdvancedfxIEntities* This, int keyNumber);
 };
 
 struct AdvancedfxIEntities
@@ -102,128 +90,138 @@ struct AdvancedfxIEntities
 	struct AdvancedfxIEntitiesVtable* Vtable;
 };
 
-/*
+#define ADVANCEDFX_IENTITIES_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0xA7888B75,0x79DF,0x47B9,0xB801,0x03,0x40,0xF4,0x88,0xB5,0x8E)
 
-//TODO:
+
 
 // Engine view overrides ///////////////////////////////////////////////////////
 
 
+struct AdvancedfxISetupEngineViewOverrideHandlerVtable
+{
+	AdvancedfxBool(*Handle)(struct AdvancedfxISetupEngineViewOverride * This, AdvancedfxBool lastResult, struct AdvancedfxQAngles* inOutOrigin, struct AdvancedfxQVector* inOutAngles, AdvancedfxFloat* inOutfov);
+};
+
+struct AdvancedfxISetupEngineViewOverrideHandler
+{
+	struct AdvancedfxISetupEngineViewOverrideHandlerVtable* Vtable;
+};
+
 struct AdvancedfxISetupEngineViewOverrideVtable
 {
-	void(*Delete)(struct AdvancedfxISetupEngineViewOverride* This);
+	struct AdvancedfxISetupEngineViewOverrideHandler* (*GetOverride)(struct AdvancedfxISetupEngineViewOverride* This);
 
-	bool(*Handle)(struct AdvancedfxISetupEngineViewOverride * This, bool lastResult, advancedfx_QVector* inOutOrigin, advancedfx_QAngles* inOutAngles, float* inOutfov);
+	void (*SetOverride)(struct AdvancedfxISetupEngineViewOverride* This, struct AdvancedfxISetupEngineViewOverrideHandler* handler);
 };
 
 struct AdvancedfxISetupEngineViewOverride
 {
-	size_t RefCountValid;
 	struct AdvancedfxISetupEngineViewOverrideVtable* Vtable;
 };
 
-ADVANCEDFX_INOTIFY_DECL(AdvancedfxISetupEngineViewOverridesNotify, struct AdvancedfxISetupEngineViewOverrides*)
 
-struct AdvancedfxISetupEngineViewOverridesVtable
+#define ADVANCEDFX_ISETUPENGINEVIEWOVERRIDES_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x8164851B,0xF7F1,0x4F25,0x9A38,0x21,0x6E,0x43,0x79,0x88,0x22)
+
+
+// AdvancedfxILocale ///////////////////////////////////////////////////////////
+
+struct AdvancedfxILocaleVtable
 {
-	//
-	// Implement AdvancedfxIInterfaceVtable:
+	const char* (*GetLanguage)(struct AdvancedfxILocale* This);
 
-	void(*Delete)(struct AdvancedfxISetupEngineViewOverrides* This);
-
-	struct AdvancedfxUuid(*GetUuid)(struct AdvancedfxISetupEngineViewOverrides* This);
-
-	//
-	// Own:
-
-	ADVANCEDFX_ILIST_DECL_FNS(, AdvancedfxISetupEngineViewOverrides, AdvancedfxISetupEngineViewOverridesNotify, struct AdvancedfxISetupEngineViewOverride*)
+	const char* (*GetRegion)(struct AdvancedfxILocale* This);
 };
 
-struct AdvancedfxISetupEngineViewOverrides
+struct AdvancedfxILocale
 {
-	//
-	// Implement AdvancedfxIInterface:
-
-	size_t RefCountValid;
-	struct AdvancedfxISetupEngineViewOverridesVtable* Vtable;
-
-	//
-	// Own:
+	struct AdvancedfxILocaleVtable* Vtable;
 };
 
-// AfxIHookSourceDll ///////////////////////////////////////////////////////////
+#define ADVANCEDFX_ISETUPENGINEVIEWOVERRIDES_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x20B4EE1C,0xB03F,0x4826,0x9AE2,0x1A,0xF2,0x8E,0x36,0xE9,0x79)
 
-struct AfxIHookSourceDllVtable
+
+// AdvancedfxILoadModule ///////////////////////////////////////////////////////
+
+struct AdvancedfxILoadModuleVtable
 {
-	//
-	// Implement AdvancedfxIReferenceVtable:
-
-	void(*Delete)(struct AfxIHookSourceDll* This);
-
-	//
-	// Own:
+	void(*LoadModule)(struct AdvancedfxILoadModule* This, const char* filePath);
 };
 
-struct AfxIHookSourceDll
-{
-	//
-	// Implement AdvancedfxIReference:
-
-	size_t RefCountValid;
-	struct AfxIHookSourceDllVtable* Vtable;
-
-	//
-	// Own:
+struct AdvancedfxILoadModule {
+	struct AdvancedfxILoadModuleVtable* Vtable;
 };
 
-// AfxHookSource ///////////////////////////////////////////////////////////////
+#define ADVANCEDFX_ILOADMODULE_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x6D9981A3,0x6132,0x431B,0x9A40,0x61,0x96,0xBD,0x37,0x7C,0x1F)
 
 
-ADVANCEDFX_INOTIFY_DECL(AdvancedfxIAfxHookSourceNotify, struct AdvancedfxIAfxHookSource*)
+// AdvancedfxIHook /////////////////////////////////////////////////////////////
 
-struct AdvancedfxIAfxHookSourceVtable
+struct AdvancedfxIHookEventHandlerVtable
 {
-	//
-	// Implement AdvancedfxIReferenceVtable:
-
-	void(*Delete)(struct AdvancedfxIAfxHookSource* This);
-
-	//
-	// Own:
-
-	struct AdvancedfxCore* (*GetCore)(struct AdvancedfxIAfxHookSource* This);
-
-	struct AdvancedfxILocale* (*GetLocale)(struct AdvancedfxIAfxHookSource* This);
-
-	//void (*BeginNotifyBeforeDelete)(struct AdvancedfxIAfxHookSource* This, struct AdvancedfxIAfxHookSourceNotify* notify);
-
-	//void (*EndNotifyBeforeDelete)(struct AdvancedfxIAfxHookSource* This, struct AdvancedfxIAfxHookSourceNotify* notify);
-
-	/// Dll is loaded and queried for ADVANCEDFX_IAFXHOOKSOURCEDLL_UUID_FN.
-	struct AfxIHookSourceDll* (*LoadDll)(struct AdvancedfxIAfxHookSource* This, const char* filePath);
-
-	//
-	// This first calls Delete on the reference returned to LoadDll and then unloads the dll (FreeLibrary).
-	// Please note: On Windows a single DLL can be loaded multiple times by the same process, so the final unload won't happen before it's unloaded as much times as it is still loaded.
-	//
-	void (*FreeDll)(struct AdvancedfxIAfxHookSource* This, struct AfxIHookSourceDll* value);
-
-	ADVANCEDFX_ILIST_DECL_FNS(Interfaces, AdvancedfxIAfxHookSource, AdvancedfxIAfxHookSourceNotify, struct AdvancedfxIInterface*)
-	
-	struct AdvancedfxIInterface* (*GetInterface)(struct AdvancedfxIAfxHookSource* This, struct AdvancedfxUuid uuid);
+	void(*HookSourceEvent)(struct AdvancedfxIHookEventHandler* This, struct AdvancedfxIHookSource* hookSource);
 };
 
-struct AdvancedfxIAfxHookSource
+struct AdvancedfxIHookEventHandler
 {
-	//
-	// Implement AdvancedfxIReference:
-
-	size_t RefCountValid;
-	struct AdvancedfxIAfxHookSourceVtable* Vtable;
-
-	//
-	// Own:
+	struct AdvancedfxIHookEventHandlerVtable* Vtable;
 };
-*/
+
+struct AdvancedfxIHookVtable
+{
+	void (*OnShutDownAdd)(struct AdvancedfxIHook* This, struct AdvancedfxIHookEventHandler* handler);
+
+	void (*OnShutDownRemove)(struct AdvancedfxIHook* This, struct AdvancedfxIHookEventHandler* handler);
+};
+
+struct AdvancedfxIHook
+{
+	struct AdvancedfxIHookVtable* Vtable;
+};
+
+#define ADVANCEDFX_IHOOK_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x3F3644B5,0xDF45,0x406B,0xB0B4,0x0E,0xFD,0xA7,0xA9,0x42,0xE4)
+
+
+
+// AdvancedfxIConsole //////////////////////////////////////////////////////////
+
+
+struct AdvancedfxIConsoleCommandArgsVtable
+{
+	AdvancedfxUInt32(*ArgC)(struct AdvancedfxIConsoleCommandArgs* This);
+
+	AdvancedfxUInt32(*ArgV)(struct AdvancedfxIConsoleCommandArgs* This, AdvancedfxUInt32 index);
+};
+
+struct AdvancedfxIConsoleCommandArgs
+{
+	struct AdvancedfxIConsoleCommandArgsVtable* Vtable;
+};
+
+struct AdvancedfxIConsoleCommandVtable
+{
+	void (*Execute)(struct  AdvancedfxIConsoleCommand* This, struct AdvancedfxIConsoleCommandArgs* args);
+};
+
+struct AdvancedfxIConsoleCommand
+{
+	struct AdvancedfxIConsoleCommandVtable* Vtable;
+};
+
+struct AdvancedfxIConsoleVtable
+{
+	void (*AddCommand)(struct AdvancedfxIConsoleVtable* This, const char* name, struct AdvancedfxIConsoleCommand* command);
+
+	void (*RemoveCommand)(struct AdvancedfxIConsoleVtable* This, const char* name, struct AdvancedfxIConsoleCommand* command);
+
+	void (*Print)(struct AdvancedfxIConsoleVtable* This, const char* text);
+
+	void (*PrintWarning)(struct AdvancedfxIConsoleVtable* This, const char* text);
+
+	void (*Execute)(struct AdvancedfxIConsoleVtable* This, const char* text);
+};
+
+#define ADVANCEDFX_ICONSOLE_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x4B336709,0x1665,0x4FD5,0x98DC,0xCC,0x1E,0x9C,0x73,0x59,0x76)
+
+
 
 #endif

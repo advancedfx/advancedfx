@@ -250,10 +250,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\interfaces\c\AfxHookSource.h" />
-    <ClInclude Include="..\interfaces\c\AfxLibrary.h" />
-    <ClInclude Include="..\interfaces\c\AfxCompiler.h" />
-    <ClInclude Include="..\interfaces\c\AfxLocale.h" />
-    <ClInclude Include="..\interfaces\c\AfxTypes.h" />
+    <ClInclude Include="..\interfaces\c\AdvancedfxLibrary.h" />
+    <ClInclude Include="..\interfaces\c\AdvancedfxTypes.h" />
     <ClInclude Include="..\deps\release\prop\AfxHookSource\csgo\sdk_src\public\appframework\IAppSystem.h" />
     <ClInclude Include="..\deps\release\prop\AfxHookSource\csgo\sdk_src\public\icvar.h" />
     <ClInclude Include="..\deps\release\prop\AfxHookSource\csgo\sdk_src\public\interfaces\interfaces.h" />
