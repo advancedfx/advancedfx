@@ -2,6 +2,7 @@
 
 #include "cmdregister.h"
 #include "filming.h"
+#include "CampathDrawer.h"
 #include "hooks/DemoPlayer/DemoPlayer.h"
 #include "hooks/HookHw.h"
 #include <shared/StringTools.h>
@@ -85,5 +86,5 @@ REGISTER_CMD_FUNC(campath)
 {
 	CMirvCommandArgs args(pEngfuncs);
 
-	MirvCampath_ConCommand(&args, MirvCampath_Msg, MirvCampath_Msg, g_Filming.GetCamPath(), &g_MirvCampath_Time, &g_MirvCampath_Camera, nullptr);
+	MirvCampath_ConCommand(&args, MirvCampath_Msg, MirvCampath_Msg, g_Filming.GetCamPath(), &g_MirvCampath_Time, &g_MirvCampath_Camera, &g_CampathDrawer);
 }

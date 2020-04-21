@@ -165,6 +165,7 @@ void CCampathDrawer::BeginDevice(IDirect3DDevice9 * device)
 	device->AddRef();
 
 	m_Device = device;
+	m_Device = device;
 
 	g_Hook_VClient_RenderView.m_CamPath.OnChanged_set(this);
 
@@ -524,7 +525,7 @@ void CCampathDrawer::OnPostRenderAllTools()
 				// add last point:
 				m_TrajectoryPoints.push_back(pts[c_CameraTrajectoryMaxPointsPerInterval-1].t);
 
-				delete pts;
+				delete[] pts;
 
 				m_RebuildDrawing = false;
 			}

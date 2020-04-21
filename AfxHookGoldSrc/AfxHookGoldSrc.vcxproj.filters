@@ -315,6 +315,9 @@
     <ClCompile Include="..\shared\OpenExrOutput.cpp">
       <Filter>shared</Filter>
     </ClCompile>
+    <ClCompile Include="CampathDrawer.cpp">
+      <Filter>AfxHookGoldSrc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="aiming.h">
@@ -526,6 +529,9 @@
     </ClInclude>
     <ClInclude Include="..\shared\OpenExrOutput.h">
       <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="CampathDrawer.h">
+      <Filter>AfxHookGoldSrc</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

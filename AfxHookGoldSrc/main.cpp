@@ -39,6 +39,8 @@
 #include "Rocket/Core/ReferenceCountable.h"
 #endif
 
+#include "CampathDrawer.h"
+
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 {
@@ -51,6 +53,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 #endif
 			HookHl();
 
+			g_CampathDrawer.Begin();
+
 			break;
 		}
 		case DLL_PROCESS_DETACH:
@@ -58,6 +62,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 #if 0
 			MessageBox(0,"DLL_PROCESS_DETACH","MDT_DEBUG",MB_OK);
 #endif
+
+			g_CampathDrawer.End();
 
 #ifdef AFX_SCRIPT
 			g_Script_CanConsolePrint = false;
