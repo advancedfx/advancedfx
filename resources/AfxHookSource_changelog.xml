@@ -6,6 +6,29 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.79.5</version>
+<time>2020-04-29T16:58Z</time>
+<changes>
+<change type="fixed">Fixed afx/wh.cfg again ... Huge thanks to Dec for helping testing :-)</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.79.4</version>
+<time>2020-04-29T08:34Z</time>
+<changes>
+<change type="fixed">Fixed afx/wh.cfg.</change>
+<change type="fixed">Fixed #17 Gloves being part of the weaponmodelsaction rather than playermodelsaction.</change>
+<change type="fixed">Fixed #304 player model shadows not visible on mirv_streams world layer.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.79.3</version>
 <time>2020-04-07T10:19Z</time>
 <changes>

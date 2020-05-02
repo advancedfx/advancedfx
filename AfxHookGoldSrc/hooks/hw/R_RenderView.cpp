@@ -7,6 +7,8 @@
 #include "../HookHw.h"
 #include "../../filming.h"
 
+#include "../../CampathDrawer.h"
+
 #include <Windows.h>
 #include <deps/release/Detours/src/detours.h>
 
@@ -104,6 +106,8 @@ void New_R_RenderView(void)
 	}
 
 	g_Old_R_RenderView();
+
+	g_CampathDrawer.Draw(p_r_refdef->vrect.width - p_r_refdef->vrect.x, p_r_refdef->vrect.height - p_r_refdef->vrect.y);
 
 	if(g_R_RenderViewCallFromEngine) g_R_RenderViewCalledFromEngine = true;
 

@@ -235,7 +235,7 @@ namespace AfxGui
 
         private void MenuDonate_Click(object sender, EventArgs e)
         {
-            System.Diagnostics.Process.Start("https://opencollective.com/advancedfx/");
+            System.Diagnostics.Process.Start("https://www.advancedfx.org/credits/#donors");
         }
 
         private void CheckNowToolStripMenuItem_Click(object sender, EventArgs e)

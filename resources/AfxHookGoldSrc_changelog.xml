@@ -6,6 +6,19 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.8.1</version>
+<time>2020-04-29T08:34Z</time>
+<changes>
+<change type="added">
+Added #278 mirv_campath draw for GoldSrc.
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.8.0</version>
 <time>2020-04-07T10:19Z</time>
 <changes>

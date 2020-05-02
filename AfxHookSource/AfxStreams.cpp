@@ -1829,8 +1829,10 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::GetAction(const CAfxTrackedMateria
 
 	if(isErrorMaterial)
 		return GetAction(trackedMaterial, m_ErrorMaterialAction);
-	else if(currentEntity.Data.IsPlayer || 0 == strcmp(shaderName,"Character"))
+
+	if (0 == strcmp(shaderName, "Character"))
 		return GetAction(trackedMaterial, m_PlayerModelsAction);
+
 	if(!strcmp("ClientEffect textures", groupName))
 		return GetAction(trackedMaterial, m_ClientEffectTexturesAction);
 	else
@@ -1853,13 +1855,20 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::GetAction(const CAfxTrackedMateria
 	else
 	if(!strcmp("Model textures", groupName))
 	{
-		if(StringBeginsWith(name, "models/player/"))
+		if (StringBeginsWith(name, "models/player/"))
+		{
+			if(StringBeginsWith(name, "models/player/contactshadows/"))
+				return GetAction(trackedMaterial, m_WorldTexturesAction);
+
 			return GetAction(trackedMaterial, m_PlayerModelsAction);
+		}
 		else
 		if(StringBeginsWith(name, "models/weapons/"))
 		{
 			if(StringBeginsWith(name, "models/weapons/stattrack/"))
 				return GetAction(trackedMaterial, m_StatTrakAction);
+			else if(StringBeginsWith(name, "models/weapons/w_models/arms/") || StringBeginsWith(name, "models/weapons/v_models/arms/"))
+				return GetAction(trackedMaterial, m_PlayerModelsAction);
 			else
 				return GetAction(trackedMaterial, m_WeaponModelsAction);
 		}
@@ -1878,8 +1887,7 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::GetAction(const CAfxTrackedMateria
 		else
 		if(StringBeginsWith(name, "cable/"))
 			return GetAction(trackedMaterial, m_CableAction);
-		else
-		if(StringBeginsWith(name, "cs_custom_material_"))
+		else if (StringBeginsWith(name, "cs_custom_material_"))
 			return GetAction(trackedMaterial, m_WeaponModelsAction);
 		else
 		if(StringBeginsWith(name, "engine/"))
@@ -1923,6 +1931,9 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::GetAction(const CAfxTrackedMateria
 	else
 	if(!strcmp(groupName, "VGUI textures"))
 		return GetAction(trackedMaterial, m_VguiAction);
+
+	if (currentEntity.Data.IsPlayer)
+		return GetAction(trackedMaterial, m_PlayerModelsAction);
 
 	return GetAction(trackedMaterial, 0);
 }

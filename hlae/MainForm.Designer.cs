@@ -56,6 +56,7 @@
             this.menuAutoUpdateCheck = new System.Windows.Forms.ToolStripMenuItem();
             this.checkNowToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem5 = new System.Windows.Forms.ToolStripSeparator();
+            this.menuContact = new System.Windows.Forms.ToolStripMenuItem();
             this.menuAdvancedFxOrg = new System.Windows.Forms.ToolStripMenuItem();
             this.donateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusStrip = new System.Windows.Forms.StatusStrip();
@@ -75,7 +76,6 @@
             this.buttonManual = new System.Windows.Forms.Button();
             this.pictureBoxHelp = new System.Windows.Forms.PictureBox();
             this.notifyIcon1 = new System.Windows.Forms.NotifyIcon(this.components);
-            this.menuContact = new System.Windows.Forms.ToolStripMenuItem();
             this.mainMenu.SuspendLayout();
             this.statusStrip.SuspendLayout();
             this.stripEnableUpdateCheck.SuspendLayout();
@@ -297,6 +297,13 @@
             this.toolStripMenuItem5.Name = "toolStripMenuItem5";
             this.toolStripMenuItem5.Size = new System.Drawing.Size(368, 6);
             // 
+            // menuContact
+            // 
+            this.menuContact.Name = "menuContact";
+            this.menuContact.Size = new System.Drawing.Size(371, 22);
+            this.menuContact.Text = "L10n Contact / Privacy Policy / Imprint (advancedfx.org)";
+            this.menuContact.Click += new System.EventHandler(this.menuContact_Click);
+            // 
             // menuAdvancedFxOrg
             // 
             this.menuAdvancedFxOrg.Name = "menuAdvancedFxOrg";
@@ -310,7 +317,7 @@
             this.donateToolStripMenuItem.Name = "donateToolStripMenuItem";
             this.donateToolStripMenuItem.Size = new System.Drawing.Size(85, 20);
             this.donateToolStripMenuItem.Text = "L10n Donate";
-            this.donateToolStripMenuItem.ToolTipText = "https://opencollective.com/advancedfx/";
+            this.donateToolStripMenuItem.ToolTipText = "https://www.advancedfx.org/credits/#donors";
             this.donateToolStripMenuItem.Click += new System.EventHandler(this.MenuDonate_Click);
             // 
             // statusStrip
@@ -505,13 +512,6 @@
             // 
             this.notifyIcon1.Text = "notifyIcon1";
             this.notifyIcon1.Visible = true;
-            // 
-            // menuContact
-            // 
-            this.menuContact.Name = "menuContact";
-            this.menuContact.Size = new System.Drawing.Size(371, 22);
-            this.menuContact.Text = "L10n Contact / Privacy Policy / Imprint (advancedfx.org)";
-            this.menuContact.Click += new System.EventHandler(this.menuContact_Click);
             // 
             // MainForm
             // 

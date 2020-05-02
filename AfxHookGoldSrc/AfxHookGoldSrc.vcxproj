@@ -276,6 +276,7 @@
     <ClCompile Include="aiming.cpp" />
     <ClCompile Include="camexport.cpp" />
     <ClCompile Include="camimport.cpp" />
+    <ClCompile Include="CampathDrawer.cpp" />
     <ClCompile Include="cmd_tools.cpp" />
     <ClCompile Include="cstrike_ch.cpp" />
     <ClCompile Include="cstrike_deathmsg.cpp" />
@@ -370,6 +371,7 @@
     <ClInclude Include="aiming.h" />
     <ClInclude Include="camexport.h" />
     <ClInclude Include="camimport.h" />
+    <ClInclude Include="CampathDrawer.h" />
     <ClInclude Include="cmd_tools.h" />
     <ClInclude Include="cmdregister.h" />
     <ClInclude Include="film_sound.h" />
