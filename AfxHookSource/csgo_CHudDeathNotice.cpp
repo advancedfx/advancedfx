@@ -29,13 +29,16 @@ void CHudBaseDeathNotice::FireGameEvent_UnkDoNotice( IGameEvent *event )
 event->GetInt("attacker",0) -> VEngineClient014->GetPlayerForUserID --> VEngineClient014->GetPlayerInfo,  IClientNetworkable::entindex((IClientNetworkable)localPlayer)
 event->GetInt("userid",0) -> VEngineClient014->GetPlayerForUserID --> VEngineClient014->GetPlayerInfo
 event->GetInt("assister",0) -> VEngineClient014->GetPlayerForUserID --> VEngineClient014->GetPlayerInfo,  IClientNetworkable::entindex((IClientNetworkable)localPlayer)
-event->GetInt("assistedflash",0) // new
+event->GetInt("assistedflash",0) 
 event->GetString("weapon",0)
 event->GetInt("headshot",0)
 event->GetInt("penetrated",0)
 event->GetInt("dominated",0)
 event->GetInt("revenge",0)
-event->GetInt("wipe",0) // new
+event->GetInt("wipe",0)
+event->GetInt("noscope",0) // new
+event->GetInt("thrusmoke",0) // new
+event->GetInt("attackerblind",0) // new
 
 - SpawnTime
 - Lifetime
@@ -680,6 +683,12 @@ struct DeathMsgFilterEntry
 
 	MyDeathMsgIntEntry wipe;
 
+	MyDeathMsgIntEntry noscope;
+
+	MyDeathMsgIntEntry thrusmoke;
+
+	MyDeathMsgIntEntry attackerblind;
+
 	MyDeathMsgFloatEntry lifetime;
 
 	MyDeathMsgFloatEntry lifetimeMod;
@@ -774,6 +783,18 @@ struct DeathMsgFilterEntry
 			else if (StringIBeginsWith(argI, "wipe="))
 			{
 				wipe.Console_Set(argI + strlen("wipe="));
+			}
+			else if (StringIBeginsWith(argI, "noscope="))
+			{
+				noscope.Console_Set(argI + strlen("noscope="));
+			}
+			else if (StringIBeginsWith(argI, "thrusmoke="))
+			{
+				thrusmoke.Console_Set(argI + strlen("thrusmoke="));
+			}
+			else if (StringIBeginsWith(argI, "attackerblind="))
+			{
+				attackerblind.Console_Set(argI + strlen("attackerblind="));
 			}
 			else if (StringIBeginsWith(argI, "dominated="))
 			{
@@ -928,6 +949,24 @@ struct DeathMsgFilterEntry
 				wipe.Console_Edit(args);
 				return;
 			}
+			else if (0 == _stricmp("noscope", arg1))
+			{
+				CSubWrpCommandArgs subArgs(args, 2);
+				noscope.Console_Edit(args);
+				return;
+			}
+			else if (0 == _stricmp("thrusmoke", arg1))
+			{
+				CSubWrpCommandArgs subArgs(args, 2);
+				thrusmoke.Console_Edit(args);
+				return;
+			}
+			else if (0 == _stricmp("attackerblind", arg1))
+			{
+				CSubWrpCommandArgs subArgs(args, 2);
+				attackerblind.Console_Edit(args);
+				return;
+			}
 			else if (0 == _stricmp("lifetime", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
@@ -1042,6 +1081,18 @@ struct DeathMsgFilterEntry
 		wipe.Console_Print();
 		Tier0_Msg("\n");
 
+		Tier0_Msg("%s noscope [...] = ", arg0);
+		noscope.Console_Print();
+		Tier0_Msg("\n");
+
+		Tier0_Msg("%s thrusmoke [...] = ", arg0);
+		thrusmoke.Console_Print();
+		Tier0_Msg("\n");
+
+		Tier0_Msg("%s attackerblind [...] = ", arg0);
+		attackerblind.Console_Print();
+		Tier0_Msg("\n");
+
 		Tier0_Msg("%s lifetime [...] = ", arg0);
 		lifetime.Console_Print();
 		Tier0_Msg("\n");
@@ -1081,6 +1132,12 @@ public:
 
 	MyDeathMsgIntEntry wipe;
 
+	MyDeathMsgIntEntry noscope;
+
+	MyDeathMsgIntEntry thrusmoke;
+
+	MyDeathMsgIntEntry attackerblind;
+
 	MyDeathMsgFloatEntry lifetime;
 
 	MyDeathMsgFloatEntry lifetimeMod;
@@ -1104,6 +1161,9 @@ public:
 		ApplyIntEntry(dme.dominated, dominated);
 		ApplyIntEntry(dme.revenge, revenge);
 		ApplyIntEntry(dme.wipe, wipe);
+		ApplyIntEntry(dme.noscope, noscope);
+		ApplyIntEntry(dme.thrusmoke, thrusmoke);
+		ApplyIntEntry(dme.attackerblind, attackerblind);
 		ApplyFloatEntry(dme.lifetime, lifetime);
 		ApplyFloatEntry(dme.lifetimeMod, lifetimeMod);
 		ApplyBoolEntry(dme.block, block);
@@ -1145,6 +1205,9 @@ public:
 		if (dominated.use && 0 == strcmp("dominated", keyName)) return dominated.value;
 		if (revenge.use && 0 == strcmp("revenge", keyName)) return revenge.value;
 		if (wipe.use && 0 == strcmp("wipe", keyName)) return wipe.value;
+		if (noscope.use && 0 == strcmp("noscope", keyName)) return noscope.value;
+		if (thrusmoke.use && 0 == strcmp("thrusmoke", keyName)) return thrusmoke.value;
+		if (attackerblind.use && 0 == strcmp("attackerblind", keyName)) return attackerblind.value;
 
 		return m_Event->GetInt(keyName, defaultValue);
 	}
@@ -1741,6 +1804,9 @@ void Console_DeathMsgArgs_PrintHelp(const char * cmd, bool showMatch)
 		"\t\"dominated=<iVal>\" - If dominated.\n"
 		"\t\"revenge=<iVal>\" - If revenge.\n"
 		"\t\"wipe=<iVal>\" - Squad wipeout in Danger Zone(?).\n"
+		"\t\"noscope=<iVal>\" - If noscope.\n"
+		"\t\"thrusmoke=<iVal>\" - If thrusmoke.\n"
+		"\t\"attackerblind=<iVal>\" - If attackerblind.\n"
 		"\t\"lifetime=<fVal>\" - Life time in seconds.\n"
 		"\t\"lifetimeMod=<fVal>\" - Life time modifier (for player considered to be local player).\n"
 		"\t\"block=<iVal>\" - If to block this message (0 = No, 1 = Yes).\n"
