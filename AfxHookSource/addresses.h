@@ -21,6 +21,8 @@ extern SourceSdkVer g_SourceSdkVer;
 //AFXADDR_DECL(csgo_CPredictionCopy_TransferData)
 //AFXADDR_DECL(csgo_CPredictionCopy_TransferData_DSZ)
 //AFXADDR_DECL(csgo_C_BaseEntity_IClientEntity_vtable)
+//AFXADDR_DECL(csgo_C_BaseEntity_ofs_m_nModelIndex)
+//AFXADDR_DECL(csgo_C_BaseEntity_ofs_m_iWorldModelIndex)
 //AFXADDR_DECL(csgo_C_BaseAnimating_IClientEntity_vtable)
 //AFXADDR_DECL(csgo_C_BaseCombatWeapon_IClientEntity_vtable)
 //AFXADDR_DECL(csgo_CStaticProp_IClientEntity_vtable)

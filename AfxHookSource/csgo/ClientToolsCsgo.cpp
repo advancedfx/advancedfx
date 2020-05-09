@@ -96,10 +96,12 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 				|| className && !strcmp(className, "class C_CSRagdoll")
 				;
 
+			bool isWeaponWorldModel = className && 0 == strcmp(className, "weaponworldmodel");
+
 			bool isWeapon =
 				m_ClientTools->IsWeapon(ent)
 				|| className && (
-					!strcmp(className, "weaponworldmodel")
+					isWeaponWorldModel
 					|| !strcmp(className, "class C_PlayerAddonModel")
 					|| !strcmp(className, "class C_PlantedC4")
 					)
@@ -153,24 +155,48 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 						return;
 				}
 
-				if (!msg->GetPtr("baseentity") && m_ClientTools->IsWeapon(ent))
+				if (!msg->GetPtr("baseentity") && isWeapon)
 				{
 					// Fix up broken overloaded C_BaseCombatWeapon code as good as we can:
+
+					/*
+					int* p_m_nModelIndex = -1 != AFXADDR_GET(csgo_C_BaseEntity_ofs_m_nModelIndex) ? (int *)((char *)be + AFXADDR_GET(csgo_C_BaseEntity_ofs_m_nModelIndex)): nullptr;
+					int* p_m_iWorldModelIndex = -1 != AFXADDR_GET(csgo_C_BaseEntity_ofs_m_iWorldModelIndex) ? (int*)((char*)be + AFXADDR_GET(csgo_C_BaseEntity_ofs_m_iWorldModelIndex)) : nullptr;
+					bool hasModelIndex = p_m_nModelIndex && p_m_iWorldModelIndex;
+					bool modelIndexChanged = false;
+					int oldModelIndex;
+
+					if (hasModelIndex)
+					{
+						oldModelIndex = *p_m_nModelIndex;
+						if (*p_m_iWorldModelIndex != oldModelIndex)
+						{
+							modelIndexChanged = true;
+							*p_m_nModelIndex = *p_m_iWorldModelIndex;
+							be->ValidateModelIndex();
+						}
+					}
+					*/
+
 					Call_CBaseAnimating_GetToolRecordingState(be, msg);
 
 					// Btw.: We don't need to call CBaseAnimating::CleanupToolRecordingState afterwards, because that code is still fully functional / function not overloaded.
+
+					/*
+					if (modelIndexChanged)
+					{
+						*p_m_nModelIndex = oldModelIndex;
+						be->ValidateModelIndex();
+					}
+					*/
 				}
 
 				SOURCESDK::CSGO::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::CSGO::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity"));
 
-				if (
-					(
-						!RecordInvisible_get()
-						|| !strcmp("weaponworldmodel", className) // never parse invsibile worldmodels, these will have trash data.
-						) && !(pBaseEntityRs && pBaseEntityRs->m_bVisible) && !IsViewmodel(hEntity))
-				{
-					// Entity not visible, avoid trash data:
-
+				if (pBaseEntityRs && !pBaseEntityRs->m_bVisible && (
+					!RecordInvisible_get()
+					|| isWeaponWorldModel && be && be->AfxGetMoveParentHandle() == SOURCESDK_CSGO_INVALID_EHANDLE_INDEX
+				)) {	
 					std::map<SOURCESDK::CSGO::HTOOLHANDLE, bool>::iterator it = m_TrackedHandles.find(hEntity);
 					if (it != m_TrackedHandles.end() && it->second)
 					{
@@ -214,6 +240,7 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 						Write((bool)(0 != pBaseAnimatingRs->m_pBoneList));
 						if (pBaseAnimatingRs->m_pBoneList)
 						{
+							bool hasError = false;
 							Write(pBaseAnimatingRs->m_pBoneList);
 						}
 					}
@@ -305,10 +332,12 @@ void CClientToolsCsgo::Write(SOURCESDK::CSGO::CBoneList const * value)
 
 	for (int i = 0; i < value->m_nBones; ++i)
 	{
-		if (
+		if (0 != Debug_get() && (
 			std::isnan(value->m_vecPos[i].x) || std::isnan(value->m_vecPos[i].y) || std::isnan(value->m_vecPos[i].z)
 			|| std::isnan(value->m_quatRot[i].w) || std::isnan(value->m_quatRot[i].x) || std::isnan(value->m_quatRot[i].y) || std::isnan(value->m_quatRot[i].z)
-			)
+		)) {
+			// This error condition happens with bugged weaponworldmodels that have no movementowner a lot.
+
 			Tier0_Warning("ClientToolsCsgo::Write(SOURCESDK::CSGO::CBoneList const * value): %i: (%f, %f, %f) (%f, %f, %f, %f)\n"
 				, i
 				, value->m_vecPos[i].x
@@ -319,6 +348,7 @@ void CClientToolsCsgo::Write(SOURCESDK::CSGO::CBoneList const * value)
 				, value->m_quatRot[i].y
 				, value->m_quatRot[i].z
 			);
+		}
 
 		Write(value->m_vecPos[i]);
 		Write(value->m_quatRot[i]);

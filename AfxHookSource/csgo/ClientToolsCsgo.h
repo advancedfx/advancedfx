@@ -55,6 +55,4 @@ private:
 	void OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntity, SOURCESDK::CSGO::KeyValues * msg);
 
 	bool IsViewmodel(SOURCESDK::CSGO::HTOOLHANDLE hEntity);
-
-	void DebugEntity(SOURCESDK::CSGO::HTOOLHANDLE hEntity);
 };
