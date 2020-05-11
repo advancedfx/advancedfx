@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.80.1</version>
+<time>2020-05-11T08:27Z</time>
+<changes>
+<change type="fixed">Fixed #326 AGR: no arms with recordInvisible 0.</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.80.0</version>
 <time>2020-05-09T06:54Z</time>
 <changes>
