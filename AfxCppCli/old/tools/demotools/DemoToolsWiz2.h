@@ -178,12 +178,13 @@ namespace tools {
 			// 
 			// labelCleanUpHelp
 			// 
-			this->labelCleanUpHelp->AutoSize = true;
+			this->labelCleanUpHelp->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Left)
+				| System::Windows::Forms::AnchorStyles::Right));
 			this->labelCleanUpHelp->Location = System::Drawing::Point(12, 42);
 			this->labelCleanUpHelp->Name = L"labelCleanUpHelp";
-			this->labelCleanUpHelp->Size = System::Drawing::Size(309, 26);
+			this->labelCleanUpHelp->Size = System::Drawing::Size(450, 46);
 			this->labelCleanUpHelp->TabIndex = 3;
-			this->labelCleanUpHelp->Text = L"By default the scoreboard and the commandmenu is removed.\r\nIf that is fine with y" 
+			this->labelCleanUpHelp->Text = L"By default the scoreboard and the commandmenu is removed.\r\nIf that is fine with y"
 				L"ou just continue to the next page (Click Next).";
 			// 
 			// textBoxCmdDst
@@ -258,7 +259,7 @@ namespace tools {
 			// 
 			// listMap
 			// 
-			this->listMap->Columns->AddRange(gcnew cli::array< System::Windows::Forms::ColumnHeader^  >(2) {this->colFrom, this->colTo});
+			this->listMap->Columns->AddRange(gcnew cli::array< System::Windows::Forms::ColumnHeader^  >(2) { this->colFrom, this->colTo });
 			this->listMap->FullRowSelect = true;
 			this->listMap->GridLines = true;
 			this->listMap->HeaderStyle = System::Windows::Forms::ColumnHeaderStyle::Nonclickable;

@@ -97,7 +97,7 @@ namespace tools {
 		/// </summary>
 		void InitializeComponent(void)
 		{
-			System::ComponentModel::ComponentResourceManager^  resources = (gcnew System::ComponentModel::ComponentResourceManager(DemoToolsWiz1::typeid));
+			System::ComponentModel::ComponentResourceManager^ resources = (gcnew System::ComponentModel::ComponentResourceManager(DemoToolsWiz1::typeid));
 			this->checkBoxCleanup = (gcnew System::Windows::Forms::CheckBox());
 			this->checkBoxFix = (gcnew System::Windows::Forms::CheckBox());
 			this->checkBoxStuck = (gcnew System::Windows::Forms::CheckBox());
@@ -113,7 +113,7 @@ namespace tools {
 			// checkBoxCleanup
 			// 
 			this->checkBoxCleanup->AutoSize = true;
-			this->checkBoxCleanup->Location = System::Drawing::Point(21, 19);
+			this->checkBoxCleanup->Location = System::Drawing::Point(15, 19);
 			this->checkBoxCleanup->Name = L"checkBoxCleanup";
 			this->checkBoxCleanup->Size = System::Drawing::Size(98, 17);
 			this->checkBoxCleanup->TabIndex = 0;
@@ -124,7 +124,7 @@ namespace tools {
 			// checkBoxFix
 			// 
 			this->checkBoxFix->AutoSize = true;
-			this->checkBoxFix->Location = System::Drawing::Point(21, 72);
+			this->checkBoxFix->Location = System::Drawing::Point(15, 76);
 			this->checkBoxFix->Name = L"checkBoxFix";
 			this->checkBoxFix->Size = System::Drawing::Size(70, 17);
 			this->checkBoxFix->TabIndex = 3;
@@ -135,7 +135,7 @@ namespace tools {
 			// checkBoxStuck
 			// 
 			this->checkBoxStuck->AutoSize = true;
-			this->checkBoxStuck->Location = System::Drawing::Point(21, 166);
+			this->checkBoxStuck->Location = System::Drawing::Point(15, 169);
 			this->checkBoxStuck->Name = L"checkBoxStuck";
 			this->checkBoxStuck->Size = System::Drawing::Size(138, 17);
 			this->checkBoxStuck->TabIndex = 5;
@@ -145,28 +145,31 @@ namespace tools {
 			// 
 			// labelCleanUp
 			// 
-			this->labelCleanUp->AutoSize = true;
-			this->labelCleanUp->Location = System::Drawing::Point(18, 39);
+			this->labelCleanUp->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Left)
+				| System::Windows::Forms::AnchorStyles::Right));
+			this->labelCleanUp->Location = System::Drawing::Point(12, 39);
 			this->labelCleanUp->Name = L"labelCleanUp";
-			this->labelCleanUp->Size = System::Drawing::Size(267, 13);
+			this->labelCleanUp->Size = System::Drawing::Size(450, 34);
 			this->labelCleanUp->TabIndex = 1;
 			this->labelCleanUp->Text = L"Allows you to remove scoreboard and commandmenus.";
 			// 
 			// labelDemoFix
 			// 
-			this->labelDemoFix->AutoSize = true;
-			this->labelDemoFix->Location = System::Drawing::Point(18, 96);
+			this->labelDemoFix->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Left)
+				| System::Windows::Forms::AnchorStyles::Right));
+			this->labelDemoFix->Location = System::Drawing::Point(12, 96);
 			this->labelDemoFix->Name = L"labelDemoFix";
-			this->labelDemoFix->Size = System::Drawing::Size(433, 52);
+			this->labelDemoFix->Size = System::Drawing::Size(450, 70);
 			this->labelDemoFix->TabIndex = 4;
 			this->labelDemoFix->Text = resources->GetString(L"labelDemoFix.Text");
 			// 
 			// labelStuckFix
 			// 
-			this->labelStuckFix->AutoSize = true;
-			this->labelStuckFix->Location = System::Drawing::Point(18, 189);
+			this->labelStuckFix->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Left)
+				| System::Windows::Forms::AnchorStyles::Right));
+			this->labelStuckFix->Location = System::Drawing::Point(12, 189);
 			this->labelStuckFix->Name = L"labelStuckFix";
-			this->labelStuckFix->Size = System::Drawing::Size(421, 39);
+			this->labelStuckFix->Size = System::Drawing::Size(450, 56);
 			this->labelStuckFix->TabIndex = 6;
 			this->labelStuckFix->Text = resources->GetString(L"labelStuckFix.Text");
 			// 
@@ -205,7 +208,7 @@ namespace tools {
 			// checkBoxDemoHeader
 			// 
 			this->checkBoxDemoHeader->AutoSize = true;
-			this->checkBoxDemoHeader->Location = System::Drawing::Point(21, 248);
+			this->checkBoxDemoHeader->Location = System::Drawing::Point(15, 248);
 			this->checkBoxDemoHeader->Name = L"checkBoxDemoHeader";
 			this->checkBoxDemoHeader->Size = System::Drawing::Size(206, 17);
 			this->checkBoxDemoHeader->TabIndex = 9;
