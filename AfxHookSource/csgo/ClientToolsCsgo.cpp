@@ -193,7 +193,7 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 
 				SOURCESDK::CSGO::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::CSGO::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity"));
 
-				if (pBaseEntityRs && !pBaseEntityRs->m_bVisible && (
+				if (pBaseEntityRs && !(pBaseEntityRs->m_bVisible || IsViewmodel(hEntity)) && (
 					!RecordInvisible_get()
 					|| isWeaponWorldModel && be && be->AfxGetMoveParentHandle() == SOURCESDK_CSGO_INVALID_EHANDLE_INDEX
 				)) {	
