@@ -6390,6 +6390,8 @@ struct NewDirect3D9
 
 	STDMETHOD(CreateDevice)(THIS_ UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice9** ppReturnedDeviceInterface)
 	{
+		if (D3DCREATE_ADAPTERGROUP_DEVICE & BehaviorFlags) return D3DERR_NOTAVAILABLE; //TODO: Support this code path?
+
 		HRESULT hRet = D3DERR_NOTAVAILABLE;
 
 		D3DDISPLAYMODE displayMode;
@@ -6403,10 +6405,25 @@ struct NewDirect3D9
 #if AFX_INTEROP
 		if (AfxInterop::Enabled() && g_OldDirect3D9Ex && pPresentationParameters)
 		{
+			D3DDISPLAYMODEEX displayModeEx;
+			bool fullscreen = false;
+
 			DeviceType = D3DDEVTYPE_HAL;
 			BehaviorFlags = (BehaviorFlags & ~(DWORD)(D3DCREATE_MIXED_VERTEXPROCESSING | D3DCREATE_SOFTWARE_VERTEXPROCESSING)) | D3DCREATE_HARDWARE_VERTEXPROCESSING;
 
-			hRet = g_OldDirect3D9Ex->CreateDeviceEx(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, nullptr, ppReturnedDeviceInterface != nullptr ? &g_OldDirect3DDevice9Ex : nullptr);
+			if (!(pPresentationParameters->Windowed))
+			{
+				fullscreen = true;
+
+				displayModeEx.Size = sizeof(displayModeEx);
+				displayModeEx.Format = pPresentationParameters->BackBufferFormat;
+				displayModeEx.Width = pPresentationParameters->BackBufferWidth;
+				displayModeEx.Height = pPresentationParameters->BackBufferHeight;
+				displayModeEx.RefreshRate = pPresentationParameters->FullScreen_RefreshRateInHz;
+				displayModeEx.ScanLineOrdering = D3DSCANLINEORDERING_PROGRESSIVE; //TODO: Support interlaced?
+			}
+
+			hRet = g_OldDirect3D9Ex->CreateDeviceEx(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, fullscreen ? &displayModeEx : nullptr, ppReturnedDeviceInterface != nullptr ? &g_OldDirect3DDevice9Ex : nullptr);
 
 			if (SUCCEEDED(hRet) && ppReturnedDeviceInterface)
 			{
@@ -6466,7 +6483,7 @@ struct NewDirect3D9
 			DeviceType = D3DDEVTYPE_HAL;
 			BehaviorFlags = (BehaviorFlags & ~(DWORD)(D3DCREATE_MIXED_VERTEXPROCESSING | D3DCREATE_SOFTWARE_VERTEXPROCESSING)) | D3DCREATE_HARDWARE_VERTEXPROCESSING;
 
-			hRet = g_OldDirect3D9Ex->CreateDeviceEx(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, nullptr, ppReturnedDeviceInterface);
+			hRet = g_OldDirect3D9Ex->CreateDeviceEx(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, pFullscreenDisplayMode, ppReturnedDeviceInterface);
 
 			if (SUCCEEDED(hRet) && ppReturnedDeviceInterface)
 			{
@@ -6485,7 +6502,7 @@ struct NewDirect3D9
 		else
 		{
 #endif
-			hRet = g_OldDirect3D9Ex->CreateDeviceEx(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, nullptr, ppReturnedDeviceInterface);
+			hRet = g_OldDirect3D9Ex->CreateDeviceEx(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, pFullscreenDisplayMode, ppReturnedDeviceInterface);
 
 			if (SUCCEEDED(hRet) && pPresentationParameters && ppReturnedDeviceInterface)
 			{

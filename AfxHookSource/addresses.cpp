@@ -11,6 +11,8 @@ using namespace Afx::BinUtils;
 //AFXADDR_DEF(csgo_CPredictionCopy_TransferData)
 //AFXADDR_DEF(csgo_CPredictionCopy_TransferData_DSZ)
 //AFXADDR_DEF(csgo_C_BaseEntity_IClientEntity_vtable)
+//AFXADDR_DEF(csgo_C_BaseEntity_ofs_m_nModelIndex)
+//AFXADDR_DEF(csgo_C_BaseEntity_ofs_m_iWorldModelIndex)
 //AFXADDR_DEF(csgo_C_BaseAnimating_IClientEntity_vtable)
 //AFXADDR_DEF(csgo_C_BaseCombatWeapon_IClientEntity_vtable)
 AFXADDR_DEF(csgo_CStaticProp_IClientEntity_vtable)
@@ -551,7 +553,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
 
-		// csgo_C_BaseEntity_IClientEntity_vtable // Checked 2019-08-24.
+		// csgo_CStaticProp_IClientEntity_vtable // Checked 2019-08-24.
 		AFXADDR_SET(csgo_CStaticProp_IClientEntity_vtable, FindClassVtable((HMODULE)engineDll, ".?AVCStaticProp@@", 0, 0x4));
 		if (!AFXADDR_GET(csgo_CStaticProp_IClientEntity_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
@@ -1749,6 +1751,106 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 
 			AFXADDR_SET(csgo_GlowCurrentPlayer_JE, addr);
 		}
+
+		/*
+		// csgo_C_BaseEntity_ofs_m_nModelIndex
+		//
+		{
+			// this basically uses the RecvProp* functions in c_baseplayer.cpp to get the offsets of the fields.
+
+			DWORD strAddr_m_nModelIndex = 0;
+			DWORD ofs_m_nModelIndex = -1;
+			{
+				ImageSectionsReader sections((HMODULE)clientDll);
+				if (!sections.Eof())
+				{
+					sections.Next(); // skip .text
+					if (!sections.Eof())
+					{
+						{
+							MemRange result = FindCString(sections.GetMemRange(), "m_nModelIndex");
+							if (!result.IsEmpty())
+							{
+								strAddr_m_nModelIndex = result.Start;
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+
+			if (strAddr_m_nModelIndex)
+			{
+				{
+					ImageSectionsReader sections((HMODULE)clientDll);
+
+					MemRange baseRange = sections.GetMemRange();
+					MemRange result = FindBytes(baseRange, (char const *)&strAddr_m_nModelIndex, sizeof(strAddr_m_nModelIndex));
+					if (!result.IsEmpty())
+					{
+						DWORD addr = result.Start;
+						addr += 4 + 2 + 4;
+						addr = *(DWORD *)addr;
+						ofs_m_nModelIndex = addr;
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+			}
+
+			AFXADDR_SET(csgo_C_BaseEntity_ofs_m_nModelIndex, ofs_m_nModelIndex);
+		}
+
+		// csgo_C_BaseEntity_ofs_m_iWorldModelIndex
+		//
+		{
+			// this basically uses the RecvProp* functions in c_baseplayer.cpp to get the offsets of the fields.
+
+			DWORD strAddr_m_iWorldModelIndex = 0;
+			DWORD ofs_m_iWorldModelIndex = -1;
+			{
+				ImageSectionsReader sections((HMODULE)clientDll);
+				if (!sections.Eof())
+				{
+					sections.Next(); // skip .text
+					if (!sections.Eof())
+					{
+						{
+							MemRange result = FindCString(sections.GetMemRange(), "m_iWorldModelIndex");
+							if (!result.IsEmpty())
+							{
+								strAddr_m_iWorldModelIndex = result.Start;
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+
+			if (strAddr_m_iWorldModelIndex)
+			{
+				{
+					ImageSectionsReader sections((HMODULE)clientDll);
+
+					MemRange baseRange = sections.GetMemRange();
+					MemRange result = FindBytes(baseRange, (char const*)&strAddr_m_iWorldModelIndex, sizeof(strAddr_m_iWorldModelIndex));
+					if (!result.IsEmpty())
+					{
+						DWORD addr = result.Start;
+						addr += 4 + 2 + 4;
+						addr = *(DWORD*)addr;
+						ofs_m_iWorldModelIndex = addr;
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+			}
+
+			AFXADDR_SET(csgo_C_BaseEntity_ofs_m_iWorldModelIndex, ofs_m_iWorldModelIndex);
+		}
+		*/
 	}
 	else
 	{
@@ -1787,6 +1889,8 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		//AFXADDR_SET(csgo_client_dynamic_cast, 0x0);
 		//AFXADDR_SET(csgo_client_RTTI_IClientRenderable, 0x0);
 		AFXADDR_SET(csgo_GlowCurrentPlayer_JE, 0x0);
+		//AFXADDR_SET(csgo_C_BaseEntity_ofs_m_nModelIndex, -1);
+		//AFXADDR_SET(csgo_C_BaseEntity_ofs_m_iWorldModelIndex, -1);
 	}
 
 	//AFXADDR_SET(csgo_CPredictionCopy_TransferData_DSZ, 0x0a);

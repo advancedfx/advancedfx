@@ -6,6 +6,42 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.80.2</version>
+<time>2020-05-12T14:58Z</time>
+<changes>
+<change type="updated">
+Adjusted to 5/11/2020 (5/12/2020 UTC) CS:GO update: Now having to tell more lies to CS:GO in order to make file system load non-whitelisted files :(
+</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.80.1</version>
+<time>2020-05-11T08:27Z</time>
+<changes>
+<change type="fixed">Fixed #326 AGR: no arms with recordInvisible 0.</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.80.0</version>
+<time>2020-05-09T06:54Z</time>
+<changes>
+<change type="fixed">Fixed #323 afxInterop / afxInteropLight doesn't work in fullscreen.</change>
+<change type="added">Added #324 Support new notification icons in mirv_deathmsg. New options for mirv_deatmsg filter add / mirv_deatmsg fake are: noscope, thrusmoke, attackerblind.</change>
+<change type="fixed">Fixed #325 recordWeapon not recording spectated player. Please note: While recordInvisible behaves much better now, it still won't record weapons attached to the in-eye spectated player model that are not currently active. It might be advisable to do two recordings instead: One 3rd person and one in-eye (only viewmodel and camera).</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.79.5</version>
 <time>2020-04-29T16:58Z</time>
 <changes>

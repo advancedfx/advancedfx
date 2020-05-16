@@ -62,6 +62,8 @@
 #include <Windows.h>
 #include <deps/release/Detours/src/detours.h>
 
+#include <shared/binutils.h>
+
 #include <set>
 #include <map>
 #include <string>
@@ -849,6 +851,66 @@ __declspec(naked) int CAfxBaseClientDll::Connect(SOURCESDK::CreateInterfaceFn ap
 __declspec(naked) void CAfxBaseClientDll::Disconnect()
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 1) }
 
+
+
+
+typedef void(__fastcall* CsgoFileSystemGetPureMode_t)(void* This, void* Edx);
+CsgoFileSystemGetPureMode_t TrueCsgoFileSystemGetPureMode = nullptr;
+
+bool __cdecl IsFileSystemDllReturnAddress(void* returnAddress)
+{
+	static bool initialized = false;
+	static void* start;
+	static void* end;
+
+	if (!initialized)
+	{
+		if (HMODULE hFileSystemStdio = GetModuleHandleA("filesystem_stdio"))
+		{
+			Afx::BinUtils::ImageSectionsReader sections((HMODULE)hFileSystemStdio);
+			if (!sections.Eof())
+			{
+				Afx::BinUtils::MemRange range = sections.GetMemRange();
+				start = (void*)range.Start;
+				end = (void*)range.End;
+
+				initialized = true;
+			}
+		}
+	}
+
+	return start <= returnAddress && returnAddress < end;
+}
+
+__declspec(naked) bool __fastcall MyCsgoFileSystemGetPureMode(void* This, void* Edx)
+{
+	__asm mov eax, [esp]
+		__asm push ecx
+	__asm push edx
+	__asm push eax
+	__asm call IsFileSystemDllReturnAddress
+	__asm add esp, 4
+	__asm pop edx
+	__asm pop ecx
+	__asm test al, al
+	__asm jz __you_wanted_lies_we_tell_you_lies
+	__asm mov eax, TrueCsgoFileSystemGetPureMode
+	__asm call eax
+	__asm ret
+	__asm __you_wanted_lies_we_tell_you_lies:
+	__asm mov eax, 0
+	__asm ret
+}
+
+
+typedef void(__fastcall*CsgoFileSystemSetPureMode_t)(void * This, void * Edx, int pureMode);
+CsgoFileSystemSetPureMode_t TrueCsgoFileSystemSetPureMode = nullptr;
+
+void __fastcall MyCsgoFileSystemSetPureMode(void* This, void* Edx, int pureModex)
+{
+	TrueCsgoFileSystemSetPureMode(This, Edx, 1); // nope @CSGO we're not gonna let you switch that back!
+}
+
 //__declspec(naked) 
 int CAfxBaseClientDll::Init(SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CGlobalVarsBase *pGlobals)
 { // NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 2)
@@ -869,13 +931,31 @@ int CAfxBaseClientDll::Init(SOURCESDK::CreateInterfaceFn appSystemFactory, SOURC
 
 	int result = m_Parent->Init(AppSystemFactory_ForClient, pGlobals);
 
-	// Add file system search path for our assets:
 	if (g_FileSystem_csgo)
 	{
+		if (nullptr == TrueCsgoFileSystemSetPureMode)
+		{
+			TrueCsgoFileSystemGetPureMode = (CsgoFileSystemGetPureMode_t)(*(DWORD*)((*(char**)g_FileSystem_csgo) + 0x200));
+			TrueCsgoFileSystemSetPureMode = (CsgoFileSystemSetPureMode_t)(*(DWORD*)((*(char**)g_FileSystem_csgo) + 0x204));
+
+			DetourTransactionBegin();
+			DetourUpdateThread(GetCurrentThread());
+			DetourAttach(&(PVOID&)TrueCsgoFileSystemGetPureMode, MyCsgoFileSystemGetPureMode);
+			DetourAttach(&(PVOID&)TrueCsgoFileSystemSetPureMode, MyCsgoFileSystemSetPureMode);
+			if (NO_ERROR == DetourTransactionCommit())
+			{
+				// Enable non-pure mode, now that @CSGO can't change it back:
+				TrueCsgoFileSystemSetPureMode(g_FileSystem_csgo, 0, 1);
+			}
+			else
+			{
+				MessageBoxA(0, "Failed to detour CS:GO filesystem_stdio interface", "ERROR", MB_OK | MB_ICONERROR);
+			}
+		}
+
+		// Add file system search path for our assets:
 		std::string path(GetHlaeFolder());
-
 		path.append("resources\\AfxHookSource\\assets\\csgo");
-
 		g_FileSystem_csgo->AddSearchPath(path.c_str(), "GAME", SOURCESDK::PATH_ADD_TO_TAIL);
 	}
 
