@@ -32,6 +32,7 @@
 #include "ClientTools.h"
 #include "csgo/ClientToolsCsgo.h"
 #include "tf2/ClientToolsTf2.h"
+#include "momentum/ClientToolsMom.h"
 #include "cssV34/ClientToolsCssV34.h"
 #include "MatRenderContextHook.h"
 //#include "csgo_IPrediction.h"
@@ -1650,8 +1651,11 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 				ErrorBox("Could not get a supported VClient interface.");
 			}
 
-			if (iface && SourceSdkVer_TF2 == g_SourceSdkVer)
-			{
+			if (iface
+				&& (SourceSdkVer_TF2 == g_SourceSdkVer
+					|| SourceSdkVer_Momentum == g_SourceSdkVer
+				)
+			) {
 				int * vtable = *(int**)iface;
 
 				AfxDetourPtr((PVOID*) & (vtable[2]), new_CVClient_Shutdown_TF2, (PVOID*)&old_CVClient_Shutdown_TF2);
@@ -1675,11 +1679,15 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 			if (SOURCESDK::CSGO::IClientTools * iface = (SOURCESDK::CSGO::IClientTools *)old_Client_CreateInterface(SOURCESDK_CSGO_VCLIENTTOOLS_INTERFACE_VERSION, NULL))
 				new CClientToolsCsgo(iface);
 		}
-		if (SourceSdkVer_TF2 == g_SourceSdkVer)
-		{
+		if (SourceSdkVer_TF2 == g_SourceSdkVer) {
 
 			if (SOURCESDK::TF2::IClientTools * iface = (SOURCESDK::TF2::IClientTools *)old_Client_CreateInterface(SOURCESDK_TF2_VCLIENTTOOLS_INTERFACE_VERSION, NULL))
 				new CClientToolsTf2(iface);
+		}
+		if (SourceSdkVer_Momentum == g_SourceSdkVer) {
+
+			if (SOURCESDK::TF2::IClientTools* iface = (SOURCESDK::TF2::IClientTools*)old_Client_CreateInterface(SOURCESDK_TF2_VCLIENTTOOLS_INTERFACE_VERSION, NULL))
+				new CClientToolsMom(iface);
 		}
 		if(SourceSdkVer_CSSV34 == g_SourceSdkVer)
 		{
@@ -2046,7 +2054,33 @@ void CommonHooks()
 		char filePath[MAX_PATH] = { 0 };
 		GetModuleFileName(0, filePath, MAX_PATH);
 
-		if (g_CommandLine->FindParam(L"-afxV34"))
+		if (int gameIdx = g_CommandLine->FindParam(L"-afxGame"))
+		{
+			++gameIdx;
+			if (gameIdx < g_CommandLine->GetArgC())
+			{
+				const wchar_t* game = g_CommandLine->GetArgV(gameIdx);
+				if (0 == _wcsicmp(L"tf", game))
+					g_SourceSdkVer = SourceSdkVer_TF2;
+				else if (0 == _wcsicmp(L"css", game))
+					g_SourceSdkVer = SourceSdkVer_CSS;
+				else if (0 == _wcsicmp(L"css_v34", game))
+					g_SourceSdkVer = SourceSdkVer_CSSV34;
+				else if (0 == _wcsicmp(L"garrysmod", game))
+					g_SourceSdkVer = SourceSdkVer_Garrysmod;
+				else if (0 == _wcsicmp(L"swarm", game))
+					g_SourceSdkVer = SourceSdkVer_SWARM;
+				else if (0 == _wcsicmp(L"l4d2", game))
+					g_SourceSdkVer = SourceSdkVer_L4D2;
+				else if (0 == _wcsicmp(L"bm", game))
+					g_SourceSdkVer = SourceSdkVer_BM;
+				else if (0 == _wcsicmp(L"insurgency", game))
+					g_SourceSdkVer = SourceSdkVer_Insurgency2;
+				else if (0 == _wcsicmp(L"momentum", game))
+					g_SourceSdkVer = SourceSdkVer_Momentum;
+			}
+		}
+		else if (g_CommandLine->FindParam(L"-afxV34"))
 		{
 			g_SourceSdkVer = SourceSdkVer_CSSV34;
 		}
@@ -2082,6 +2116,8 @@ void CommonHooks()
 					g_SourceSdkVer = SourceSdkVer_CSS;
 				else if (0 == _wcsicmp(L"garrysmod", game))
 					g_SourceSdkVer = SourceSdkVer_Garrysmod;
+				else if (0 == _wcsicmp(L"momentum", game))
+					g_SourceSdkVer = SourceSdkVer_Momentum;
 			}
 		}
 

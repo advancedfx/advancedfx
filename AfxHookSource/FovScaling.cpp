@@ -23,6 +23,7 @@ FovScaling GetDefaultFovScaling() {
 	case SourceSdkVer_TF2:
 	case SourceSdkVer_SWARM:
 	case SourceSdkVer_L4D2:
+	case SourceSdkVer_Momentum:
 		return FovScaling_AlienSwarm;
 	case SourceSdkVer_BM:
 	default:

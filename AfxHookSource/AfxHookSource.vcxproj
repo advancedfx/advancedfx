@@ -239,6 +239,7 @@
     <ClCompile Include="MirvTime.cpp" />
     <ClCompile Include="MirvWav.cpp" />
     <ClCompile Include="mirv_voice.cpp" />
+    <ClCompile Include="momentum\ClientToolsMom.cpp" />
     <ClCompile Include="RenderView.cpp" />
     <ClCompile Include="..\deps\release\prop\AfxHookSource\SourceInterfaces.cpp" />
     <ClCompile Include="tf2\ClientToolsTf2.cpp" />
@@ -376,6 +377,7 @@
     <ClInclude Include="Model\Schedule.h" />
     <ClInclude Include="Model\Tasks\Record.h" />
     <ClInclude Include="Model\Tasks\Task.h" />
+    <ClInclude Include="momentum\ClientToolsMom.h" />
     <ClInclude Include="RenderView.h" />
     <ClInclude Include="..\deps\release\prop\AfxHookSource\SourceInterfaces.h" />
     <ClInclude Include="stdafx.h" />
