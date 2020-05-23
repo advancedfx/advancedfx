@@ -1,4 +1,4 @@
-#include "AfxTypes.h"
+//#include "AfxTypes.h"
 
 
 /* //TODO
