@@ -519,8 +519,8 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		}
 
 		// csgo_CGameEventManger_FireEventIntern:
-			//
-			//
+		//
+		// (References ""Game event \"%s\", Tick %i:\n".)
 		{
 			AFXADDR_SET(csgo_CGameEventManger_FireEventIntern, 0);
 			AFXADDR_SET(csgo_dynamic_cast, 0);
@@ -532,7 +532,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 			{
 				MemRange textRange = sections.GetMemRange();
 
-				MemRange result = FindPatternString(textRange, "55 8B EC 83 E4 F8 83 EC 0C 53 8B D9 56 57 89 5C 24 0C 8D B3 9C 00 00 00 89 74 24 14 FF 15 ?? ?? ?? ??");
+				MemRange result = FindPatternString(textRange, "55 8B EC 83 E4 F8 83 EC 0C 53 8B D9 56 57 89 5C 24 0C 8D B3 ?? ?? ?? ?? 89 74 24 14 FF 15 ?? ?? ?? ??");
 
 				if (!result.IsEmpty())
 				{
