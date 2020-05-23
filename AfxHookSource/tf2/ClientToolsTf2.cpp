@@ -82,10 +82,16 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 				|| className && StringBeginsWith(className, "class C_TFProjectile_")
 				;
 
+			bool isViewModel =
+				false
+				|| className && 0 == strcmp(className, "viewmodel")
+				;
+
 			if (false
 				|| RecordPlayers_get() && isPlayer
 				|| RecordWeapons_get() && isWeapon
 				|| RecordProjectiles_get() && isProjectile
+				|| RecordViewModel_get() && isViewModel
 				)
 			{
 
