@@ -13,7 +13,7 @@
 Fixes #328 Inferno afx/wh white floor bug.
 </change>
 <change type="added">
-Added Movement Mod (camera stuff, AGR) stupport.
+Added Momentum Mod (camera stuff, AGR) stupport.
 </change>
 <change type="added">
 Add viewmodel to TF2 AGR. Needs to be enabled with: mirv_agr recordViewModel 1
