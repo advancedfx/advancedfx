@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.81.1</version>
+<time>2020-05-28T06:48Z</time>
+<changes>
+<change type="fixed">
+Adjust to 5/27/2020 (5/28/2020 UTC) CS:GO update.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.81.0</version>
 <time>2020-05-23T12:21Z</time>
 <changes>
