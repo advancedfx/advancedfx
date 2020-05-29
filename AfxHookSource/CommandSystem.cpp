@@ -351,7 +351,6 @@ bool CommandSystem::Load(wchar_t const * fileName)
 						int tick = atoi(tickAttr->value());
 
 						CCommand* cmd = new CCommand();
-						cmd->SetCommand(cur_node->value());
 
 						Interval<int> range = Interval<int>(tick,tick);
 

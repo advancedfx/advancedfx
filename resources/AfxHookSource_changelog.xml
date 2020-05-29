@@ -6,6 +6,28 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.82.0</version>
+<time>2020-05-29T20:22Z</time>
+<changes>
+<change type="fixed">
+Added #329 Command value changer between certain ticks.<br />
+Example commands:<br />
+mirv_fov handleZoom enabled 1<br />
+mirv_cmd clear<br />
+mirv_cmd addCurves tick 1000 5000 - interp=cubic 0 1 0.25 2 0.75 1 1 0.5 -- demo_timescale "{0}"<br />
+mirv_cmd addCurves tick 2000 4000 - interp=linear 0 100 1 120 -- mirv_fov "{0}"<br />
+mirv_cmd addAtTick 5000 demo_timescale 1<br />
+mirv_cmd addAtTick 5000 mirv_fov default
+</change>
+<change type="fixed">
+Fixed D3D9 state issues caused by us.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.81.1</version>
 <time>2020-05-28T06:48Z</time>
 <changes>
