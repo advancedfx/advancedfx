@@ -24,6 +24,11 @@ public:
 	virtual void D3d9HooksModulationColorBlendOverride(float color[4]) = 0;
 };
 
+
+void AfxD3D9BeginCleanState();
+
+void AfxD3D9EndCleanState();
+
 //
 // Override state management:
 //
