@@ -3124,6 +3124,47 @@ CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 			);
 			return;
 		}
+		else if (!_stricmp("addAtTick", subcmd) && 3 <= args->ArgC())
+		{
+			std::string cmds("");
+
+			for (int i = 3; i < args->ArgC(); ++i)
+			{
+				if (3 < i) cmds.append(" ");
+
+				cmds.append(args->ArgV(i));
+			}
+
+			g_CommandSystem.AddAtTick(
+				cmds.c_str(),
+				atoi(args->ArgV(2))
+			);
+			return;
+		}
+		else if (!_stricmp("addAtTime", subcmd) && 3 <= args->ArgC())
+		{
+			std::string cmds("");
+
+			for (int i = 3; i < args->ArgC(); ++i)
+			{
+				if (3 < i) cmds.append(" ");
+
+				cmds.append(args->ArgV(i));
+			}
+
+			g_CommandSystem.AddAtTime(
+				cmds.c_str(),
+				atof(args->ArgV(2))
+			);
+			return;
+		}
+		else if (0 == _stricmp("addCurves", subcmd))
+		{
+			CSubWrpCommandArgs subArgs(args, 2);
+
+			g_CommandSystem.AddCurves(&subArgs);
+			return;
+		}
 		else if(!_stricmp("enabled", subcmd))
 		{
 			if(3 <= argc)
@@ -3211,8 +3252,11 @@ CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 
 	Tier0_Msg(
 		"mirv_cmd enabled [...] - Control if command system is enabled (by default it is).\n"
-		"mirv_cmd addTick [commandPart1] [commandPart2] ... [commandPartN] - Adds/appends a commands at the current tick.\n"
-		"mirv_cmd add [commandPart1] [commandPart2] ... [commandPartN] - Adds/appends a command at the current time.\n"
+		"mirv_cmd addTick [commandPart1] [commandPart2] ... [commandPartN] - Adds commands at the current tick.\n"
+		"mirv_cmd add [commandPart1] [commandPart2] ... [commandPartN] - Adds commands at the current time.\n"
+		"mirv_cmd addAtTick <iTick> [commandPart1] [commandPart2] ... [commandPartN] - Adds commands at the given tick.\n"
+		"mirv_cmd addAtTime <fTime> [commandPart1] [commandPart2] ... [commandPartN] - Adds commands at the given time.\n"
+		"mirv_cmd addCurves [...] - Allows to add animated commands.\n"
 		"mirv_cmd edit start - Set current time+EPS and tick+1 as start time / tick.\n"
 		"mirv_cmd edit startTime [fTime] - Set start time, current+EPS if argument not given.\n"
 		"mirv_cmd edit startTick [iTick] - Set start tick, current+1 if argument not given.\n"
