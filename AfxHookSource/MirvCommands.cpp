@@ -2011,6 +2011,28 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.MousePitchSpeed_get());
 					return;
 				}
+				else if(0 == _stricmp("mFovPositiveSpeed", arg2))
+				{
+					if(4 <= argc)
+					{
+						double value = atof(args->ArgV(3));
+						g_AfxHookSourceInput.MouseFovPositiveSpeed_set(value);
+						return;
+					}
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.MouseFovPositiveSpeed_get());
+					return;
+				}
+				else if (0 == _stricmp("mFovNegativeSpeed", arg2))
+				{
+					if (4 <= argc)
+					{
+						double value = atof(args->ArgV(3));
+						g_AfxHookSourceInput.MouseFovNegativeSpeed_set(value);
+						return;
+					}
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.MouseFovNegativeSpeed_get());
+					return;
+				}
 				else if(0 == _stricmp("mLeftSpeed", arg2))
 				{
 					if(4 <= argc)
@@ -2187,6 +2209,10 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 				"mirv_input cfg mYawSpeed <dValue> - Set value.\n"
 				"mirv_input cfg mPitchSpeed - Get value.\n"
 				"mirv_input cfg mPitchSpeed <dValue> - Set value.\n"
+				"mirv_input cfg mFovPositiveSpeed - Get value.\n"
+				"mirv_input cfg mFovPositiveSpeed <dValue> - Set value.\n"
+				"mirv_input cfg mFovNegativeSpeed - Get value.\n"
+				"mirv_input cfg mFovNegativeSpeed <dValue> - Set value.\n"
 				"mirv_input cfg mForwardSpeed - Get value.\n"
 				"mirv_input cfg mForwardSpeed <dValue> - Set value.\n"
 				"mirv_input cfg mBackwardSpeed - Get value.\n"
