@@ -3273,6 +3273,10 @@ public:
 		m_Entities.erase(it);
 	}
 
+	bool IsRecording() {
+		return m_Recording;
+	}
+
 private:
 	std::map<SOURCESDK::C_BaseEntity_csgo*,SOURCESDK::CSGO::CBaseHandle> m_Entities;
 	std::list<SOURCESDK::CSGO::CBaseHandle> m_DeletedEntites;

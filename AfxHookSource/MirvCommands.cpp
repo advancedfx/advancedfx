@@ -3688,11 +3688,55 @@ CON_COMMAND(mirv_time, "time control")
 			);
 			return;
 		}
+		else if (0 == _stricmp("drive", cmd1))
+		{
+			if (3 <= argc)
+			{
+				const char* cmd2 = args->ArgV(2);
+
+				if (0 == _stricmp("default", cmd2))
+				{
+					g_MirvTime.SetDriveTimeEnabled(false);
+				}
+				else
+				{
+
+					float value = (float)atof(cmd2);
+					float minValue = AFX_MATH_EPS;
+					float maxValue = 1.0f / AFX_MATH_EPS;
+
+					if (value < minValue)
+					{
+						value = minValue;
+						Tier0_Warning("AFXWARNING: Limiting to minimum: %f\n.", minValue);
+					}
+					else if (maxValue < value)
+					{
+						value = maxValue;
+						Tier0_Warning("AFXWARNING: Limiting to maximum: %f\n.", maxValue);
+					}
+
+					g_MirvTime.SetDriveTimeFactor(value);
+					g_MirvTime.SetDriveTimeEnabled(true);
+				}
+				return;
+			}
+
+			Tier0_Msg(
+				"mirv_time drive <fFactor> - Set the time drive factor.\n"
+				"mirv_time drive default - Disable time drive.\n"
+				"Current value: "
+			);
+			if (g_MirvTime.GetDriveTimeEnabled()) Tier0_Msg("%f\n", g_MirvTime.GetDriveTimeFactor());
+			else Tier0_Msg("default\n");
+			return;
+		}
 	}
 
 	Tier0_Msg(
 		"mirv_time mode [...].\n"
 		"mirv_time pausedTime [...].\n"
+		"mirv_time drive [....]."
 	);
 }
 
