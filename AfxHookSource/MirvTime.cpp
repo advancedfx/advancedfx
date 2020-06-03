@@ -143,7 +143,7 @@ void CMirvTime::OnFrameRenderStart()
 				char cmd[100];
 				sprintf_s(cmd, _TRUNCATE, "demo_timescale %f", targetVal);
 
-				g_VEngineClient->ClientCmd_Unrestricted(cmd);
+				g_VEngineClient->ExecuteClientCmd(cmd);
 			}
 
 		}

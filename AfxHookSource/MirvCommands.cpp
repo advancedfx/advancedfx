@@ -1150,7 +1150,7 @@ CON_COMMAND(__mirv_exec, "client command execution: __mirv_exec <as you would ha
 
 	g_VEngineClient->ExecuteClientCmd(ttt);
 
-	delete ttt;
+	free(ttt);
 }
 
 bool GetCurrentDemoTick(int &outTick)
@@ -3262,14 +3262,14 @@ CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 			}
 			else if (0 == _stricmp("startTick", subcmd2))
 			{
-				g_CommandSystem.EditStartTick(4 <= argc ? atoi(args->ArgV(3)) : g_CommandSystem.GetLastTick() + 1);
+				g_CommandSystem.EditStartTick(4 <= argc ? atof(args->ArgV(3)) : (double)g_CommandSystem.GetLastTick());
 
 				return;
 			}
 			else if (0 == _stricmp("start", subcmd2))
 			{
-				g_CommandSystem.EditStart(std::nextafter(g_CommandSystem.GetLastTime(), g_CommandSystem.GetLastTime() + 1.0));
-				g_CommandSystem.EditStartTick(g_CommandSystem.GetLastTick() + 1);
+				g_CommandSystem.EditStart(g_CommandSystem.GetLastTime());
+				g_CommandSystem.EditStartTick(g_CommandSystem.GetLastTick());
 
 				return;
 			}
@@ -3283,9 +3283,9 @@ CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 		"mirv_cmd addAtTick <iTick> [commandPart1] [commandPart2] ... [commandPartN] - Adds commands at the given tick.\n"
 		"mirv_cmd addAtTime <fTime> [commandPart1] [commandPart2] ... [commandPartN] - Adds commands at the given time.\n"
 		"mirv_cmd addCurves [...] - Allows to add animated commands.\n"
-		"mirv_cmd edit start - Set current time+EPS and tick+1 as start time / tick.\n"
-		"mirv_cmd edit startTime [fTime] - Set start time, current+EPS if argument not given.\n"
-		"mirv_cmd edit startTick [iTick] - Set start tick, current+1 if argument not given.\n"
+		"mirv_cmd edit start - Set current time and tick as start time / tick.\n"
+		"mirv_cmd edit startTime [fTime] - Set start time, current if argument not given.\n"
+		"mirv_cmd edit startTick [fTick] - Set start tick, current if argument not given.\n"
 		"mirv_cmd clear - Removes all commands.\n"
 		"mirv_cmd print - Prints commands / state.\n"
 		"mirv_cmd remove <index> - Removes a command by it's index.\n"

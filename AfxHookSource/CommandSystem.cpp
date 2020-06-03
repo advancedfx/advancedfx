@@ -43,15 +43,15 @@ void CommandSystem::AddAtTime(char const* command, double time)
 	CCommand* cmd = new CCommand();
 	cmd->SetCommand(command);
 
-	Interval<double> interval(time, time);
+	Interval interval(time, time, true);
 	m_TimeMap.insert({ interval, cmd });
-	m_TimeTree = Insert<double>(m_TimeTree, interval, cmd);
+	m_TimeTree = Insert(m_TimeTree, interval, cmd);
 }
 
 
 void CommandSystem::AddTick(char const * command)
 {
-	int tick = m_LastTick;
+	double tick = m_LastTick;
 
 	AddAtTick(command, tick);
 }
@@ -67,14 +67,14 @@ void CommandSystem::AddAtTick(char const* command, int tick)
 	CCommand* cmd = new CCommand();
 	cmd->SetCommand(command);
 
-	Interval<int> interval(tick, tick);
+	Interval interval((double)tick, (double)tick, true);
 	m_TickMap.insert({ interval, cmd });
-	m_TickTree = Insert<int>(m_TickTree, interval, cmd);
+	m_TickTree = Insert(m_TickTree, interval, cmd);
 }
 
 void CommandSystem::EditStart(double startTime)
 {
-	std::multimap<Interval<double>, CCommand*> tmpMap;
+	std::multimap<Interval, CCommand*> tmpMap;
 
 	tmpMap.swap(m_TimeMap);
 
@@ -89,21 +89,21 @@ void CommandSystem::EditStart(double startTime)
 
 		time += startTime;
 
-		m_TimeMap.insert({ Interval<double>(time, it->first.High + startTime), it->second});
+		m_TimeMap.insert({ Interval(time, it->first.High + startTime, it->first.Epsilon), it->second});
 	}
 
 	DeleteTimeTree();
 }
 
-void CommandSystem::EditStartTick(int startTick)
+void CommandSystem::EditStartTick(double startTick)
 {
-	std::multimap<Interval<int>, CCommand*> tmpMap;
+	std::multimap<Interval, CCommand*> tmpMap;
 
 	tmpMap.swap(m_TickMap);
 
 	for (auto it = tmpMap.begin(); it != tmpMap.end(); ++it)
 	{
-		int tick = it->first.Low;
+		double tick = it->first.Low;
 
 		if (it == tmpMap.begin())
 		{
@@ -112,7 +112,7 @@ void CommandSystem::EditStartTick(int startTick)
 
 		tick += startTick;
 
-		m_TickMap.insert({ Interval<int>(tick, it->first.High + startTick) , it->second });
+		m_TickMap.insert({ Interval(tick, it->first.High + startTick, it->first.Epsilon) , it->second });
 	}
 
 	DeleteTickTree();
@@ -207,11 +207,16 @@ bool CommandSystem::Save(wchar_t const * fileName)
 	for (auto it = m_TickMap.begin(); it != m_TickMap.end(); ++it)
 	{
 		rapidxml::xml_node<> * cmd = doc.allocate_node(rapidxml::node_element, "c");
-		cmd->append_attribute(doc.allocate_attribute("tick", int2xml(doc, it->first.Low)));
+		cmd->append_attribute(doc.allocate_attribute("tick", double2xml(doc, it->first.Low)));
 
 		if (it->first.Low != it->first.High)
 		{
-			cmd->append_attribute(doc.allocate_attribute("end", int2xml(doc, it->first.High)));
+			cmd->append_attribute(doc.allocate_attribute("end", double2xml(doc, it->first.High)));
+		}
+
+		if (!it->first.Epsilon)
+		{
+			cmd->append_attribute(doc.allocate_attribute("epsilon", "0"));
 		}
 
 		if (it->second->GetFormated())
@@ -254,6 +259,11 @@ bool CommandSystem::Save(wchar_t const * fileName)
 		if (it->first.Low != it->first.High)
 		{
 			cmd->append_attribute(doc.allocate_attribute("end", double2xml(doc, it->first.High)));
+		}
+
+		if (it->first.Epsilon)
+		{
+			cmd->append_attribute(doc.allocate_attribute("epsilon", "1"));
 		}
 
 		if (it->second->GetFormated())
@@ -348,11 +358,18 @@ bool CommandSystem::Load(wchar_t const * fileName)
 				{
 					if (rapidxml::xml_attribute<> * tickAttr = cur_node->first_attribute("tick"))
 					{
-						int tick = atoi(tickAttr->value());
+						double tick = atof(tickAttr->value());
 
 						CCommand* cmd = new CCommand();
 
-						Interval<int> range = Interval<int>(tick,tick);
+						bool epsilon = true;
+
+						if (rapidxml::xml_attribute<>* epsAttr = cur_node->first_attribute("epsilon"))
+						{
+							if (0 == atoi(epsAttr->value())) epsilon = false;
+						}
+
+						Interval range = Interval(tick,tick, epsilon);
 
 						if (NULL == cur_node->first_node())
 						{
@@ -366,7 +383,7 @@ bool CommandSystem::Load(wchar_t const * fileName)
 
 						if (rapidxml::xml_attribute<>* endTickAttr = cur_node->first_attribute("end"))
 						{
-							range = Interval<int>(tick, atoi(endTickAttr->value()));
+							range = Interval(tick, atof(endTickAttr->value()), epsilon);
 						}
 
 						if (rapidxml::xml_attribute<>* formatedAttr = cur_node->first_attribute("formated"))
@@ -398,7 +415,7 @@ bool CommandSystem::Load(wchar_t const * fileName)
 
 						bUsedByTick = true;
 						m_TickMap.insert({ range, cmd });
-						m_TickTree = Insert<int>(m_TickTree, range, cmd);
+						m_TickTree = Insert(m_TickTree, range, cmd);
 					}
 
 					if (rapidxml::xml_attribute<> * timeAttr = cur_node->first_attribute("t"))
@@ -406,8 +423,15 @@ bool CommandSystem::Load(wchar_t const * fileName)
 						double time = atof(timeAttr->value());
 
 						CCommand* cmd = new CCommand();
+
+						bool epsilon = true;
+
+						if (rapidxml::xml_attribute<>* epsAttr = cur_node->first_attribute("epsilon"))
+						{
+							if (0 == atoi(epsAttr->value())) epsilon = false;
+						}
 						
-						Interval<double> range = Interval<double>(time,time);
+						Interval range = Interval(time,time, epsilon);
 
 						if (NULL == cur_node->first_node())
 						{
@@ -421,7 +445,7 @@ bool CommandSystem::Load(wchar_t const * fileName)
 
 						if (rapidxml::xml_attribute<>* endTimeAttr = cur_node->first_attribute("end"))
 						{
-							range = Interval<double>(time, atof(endTimeAttr->value()));
+							range = Interval(time, atof(endTimeAttr->value()), epsilon);
 						}
 
 						if (rapidxml::xml_attribute<>* formatedAttr = cur_node->first_attribute("formated"))
@@ -453,7 +477,7 @@ bool CommandSystem::Load(wchar_t const * fileName)
 
 						bUsedByTime = true;
 						m_TimeMap.insert({ range, cmd });
-						m_TimeTree = Insert<double>(m_TimeTree, range, cmd);
+						m_TimeTree = Insert(m_TimeTree, range, cmd);
 					}
 				}
 			}
@@ -491,17 +515,20 @@ void CommandSystem::Console_List(void)
 	{
 		if (it->first.Low == it->first.High)
 		{
-			Tier0_Msg("%i: %i -> %s\n",
+			Tier0_Msg("%i: %f (eps=%i) -> %s\n",
 				idx,
 				it->first.Low,
-				it->second->GetCommand());
+				it->first.Epsilon,
+				it->second->GetCommand()
+			);
 		}
 		else
 		{
-			Tier0_Msg("%i: %i - %i -> %s\n",
+			Tier0_Msg("%i: %f - %f (eps=%i) -> %s\n",
 				idx,
 				it->first.Low,
 				it->first.High,
+				it->first.Epsilon,
 				it->second->GetCommand());
 		}
 
@@ -516,17 +543,20 @@ void CommandSystem::Console_List(void)
 	{
 		if (it->first.Low == it->first.High)
 		{
-			Tier0_Msg("%i: %f -> %s\n",
+			Tier0_Msg("%i: %f (eps=%i) -> %s\n",
 				idx,
 				it->first.Low,
-				it->second->GetCommand());
+				it->first.Epsilon,
+				it->second->GetCommand()
+			);
 		}
 		else
 		{
-			Tier0_Msg("%i: %f - %f -> %s\n",
+			Tier0_Msg("%i: %f - %f (eps=%i) -> %s\n",
 				idx,
 				it->first.Low,
 				it->first.High,
+				it->first.Epsilon,
 				it->second->GetCommand());
 		}
 
@@ -540,7 +570,7 @@ void CommandSystem::Do_Commands(void)
 {
 	if (IsSupportedByTick())
 	{
-		int tick = g_VEngineClient->GetDemoInfoEx()->GetDemoPlaybackTick();
+		double tick = (double)g_VEngineClient->GetDemoInfoEx()->GetDemoPlaybackTick() + (double)g_Hook_VClient_RenderView.GetGlobals()->interpolation_amount_get();
 
 		//Tier0_Msg("%i\n", tick);
 
@@ -550,7 +580,7 @@ void CommandSystem::Do_Commands(void)
 			{
 				EnsureTickTree();
 
-				OverlapExecute(m_TickTree, Interval<int>(m_LastTick, tick), g_Hook_VClient_RenderView.GetGlobals()->interpolation_amount_get());
+				OverlapExecute(m_TickTree, Interval(m_LastTick, (double)tick , false));
 			}
 
 			m_LastTick = tick;
@@ -567,7 +597,7 @@ void CommandSystem::Do_Commands(void)
 		{
 			EnsureTimeTree();
 
-			OverlapExecute(m_TimeTree, Interval<double>(m_LastTime, time));
+			OverlapExecute(m_TimeTree, Interval(m_LastTime, time, false));
 		}
 
 		m_LastTime = time;
@@ -578,9 +608,6 @@ void CommandSystem::OnLevelInitPreEntityAllTools(void)
 {
 	m_LastTime = -1;
 	m_LastTick = -1;
-
-	for (auto it = m_TickMap.begin(); it != m_TickMap.end(); ++it) it->second->LastTick = -1;
-	for (auto it = m_TimeMap.begin(); it != m_TimeMap.end(); ++it) it->second->LastTime = -1;
 }
 
 bool CommandSystem::IsSupportedByTime(void)
@@ -606,7 +633,6 @@ bool CommandSystem::CCommand::DoCommand(double t01)
 
 	bool inBegin = false;
 	bool inEnd = false;
-	bool inCmd = false;
 	std::string::const_iterator itBegin;
 	std::string::const_iterator itEnd;
 	std::string strIdx;
@@ -623,10 +649,10 @@ bool CommandSystem::CCommand::DoCommand(double t01)
 			{
 			case '{':
 				inBegin = false;
+				fCommand += '{';
 				break;
 			case '}':
-				if (inCmd) return false;
-				inCmd = false;
+				inBegin = false;
 				strIdx.assign(itBegin, itEnd);
 				idx = atoi(strIdx.c_str());
 				if (idx < 0 || idx >= (int)m_Interp.size()) return false;
@@ -688,15 +714,45 @@ void CommandSystem::AddCurves(IWrpCommandArgs* args)
 		int idx = 4;
 		int dim = 0;
 
+		bool tick = true;
+
+		double begin = atof(args->ArgV(2));
+		double end = atof(args->ArgV(3));
+
+		if (0 == _stricmp("tick", args->ArgV(1)))
+		{
+		}
+		else if (0 == _stricmp("time", args->ArgV(1)))
+		{
+		}
+		else {
+			Tier0_Warning("AFXERRORR: Expected time or tick.\n");
+			delete cmd;
+			return;
+		}
+
+		double d = end - begin;
+		if (d) d = 1 / d;
+
 		while (idx < argC && 0 == strcmp("-", args->ArgV(idx)))
 		{
 			cmd->SetSize(dim + 1);
 
 			++idx;
 
-			if (StringIBeginsWith(args->ArgV(idx), "interp="))
+			bool abs = false;
+
+			while (true)
 			{
-				cmd->SetInterp(dim, 0 == _stricmp("cubic", args->ArgV(idx) + strlen("interp=")) ? CDoubleInterp::Method_Cubic : CDoubleInterp::Method_Linear);
+				if (StringIBeginsWith(args->ArgV(idx), "interp="))
+				{
+					cmd->SetInterp(dim, 0 == _stricmp("cubic", args->ArgV(idx) + strlen("interp=")) ? CDoubleInterp::Method_Cubic : CDoubleInterp::Method_Linear);
+				}
+				else if (StringIBeginsWith(args->ArgV(idx), "space="))
+				{
+					abs = 0 == _stricmp("abs", args->ArgV(idx) + strlen("space="));
+				}
+				else break;
 
 				++idx;
 			}
@@ -717,7 +773,11 @@ void CommandSystem::AddCurves(IWrpCommandArgs* args)
 
 			for (int i = 0; i < ptArgs; ++i)
 			{
-				cmd->GetMap(dim).insert({ atof(args->ArgV(idx + i * 2)), atof(args->ArgV(idx + i * 2 + 1)) });
+				double t = atof(args->ArgV(idx + i * 2));
+
+				if (abs) t = (t - begin) * d;
+
+				cmd->GetMap(dim).insert({ t, atof(args->ArgV(idx + i * 2 + 1)) });
 			}
 
 			++dim;
@@ -745,30 +805,24 @@ void CommandSystem::AddCurves(IWrpCommandArgs* args)
 
 		cmd->SetCommand(cmdStr.c_str());
 
-		if (0 == _stricmp("tick", args->ArgV(1)))
+		if (tick)
 		{
-			Interval<int> interval(atoi(args->ArgV(2)), atoi(args->ArgV(3)));
+			Interval interval(begin,end, false);
 			m_TickMap.insert({ interval, cmd });
-			m_TickTree = Insert<int>(m_TickTree, interval, cmd);
-			return;
+			m_TickTree = Insert(m_TickTree, interval, cmd);
 		}
-		else if (0 == _stricmp("time", args->ArgV(1)))
+		else
 		{
-			Interval<double> interval(atof(args->ArgV(2)), atof(args->ArgV(3)));
+			Interval interval(begin, end, false);
 			m_TimeMap.insert({interval, cmd });
-			m_TimeTree = Insert<double>(m_TimeTree, interval, cmd);
-			return;
+			m_TimeTree = Insert(m_TimeTree, interval, cmd);
 		}
-		else {
-			Tier0_Warning("AFXERRORR: Expected time or tick.\n");
-			delete cmd;
-			return;
-		}
+		return;
 	}
 
 	Tier0_Msg(
-		"%s tick <iStartTick> <iEndTick> [\"-\" [interp=(linear|cubic)] <fCurveTime1> <fCurveValue1> ... <fCurveTimeN> <fCurveValueN>]* \"--\" <formatedCommand1> ... <formatedCommandM> - adds a curve based on ticks, curveTime is in [0,1]. \n"
-		"%s time <fStartTime> <iEndTime> [\"-\" [interp=(linear|cubic)] <fCurveTime1> <fCurveValue1> ... <fCurveTimeN> <fCurveValueN>]* \"--\" <formatedCommand1> ... <formatedCommandM> - adds a curve based on time, curveTime is in [0,1]. \n"
+		"%s tick <iStartTick> <iEndTick> [\"-\" [interp=(linear|cubic)] [space=rel|abs] <fCurveTime1> <fCurveValue1> ... <fCurveTimeN> <fCurveValueN>]* \"--\" <formatedCommand1> ... <formatedCommandM> - adds a curve based on ticks, curveTime is in [0,1]. \n"
+		"%s time <fStartTime> <iEndTime> [\"-\" [interp=(linear|cubic)] [space=rel|abs] <fCurveTime1> <fCurveValue1> ... <fCurveTimeN> <fCurveValueN>]* \"--\" <formatedCommand1> ... <formatedCommandM> - adds a curve based on time, curveTime is in [0,1]. \n"
 		, arg0
 		, arg0
 	);

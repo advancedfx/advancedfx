@@ -29,7 +29,7 @@ public:
 	void AddCurves(IWrpCommandArgs* args);
 
 	void EditStart(double startTime);
-	void EditStartTick(int startTick);
+	void EditStartTick(double startTick);
 
 	bool Remove(int index);
 
@@ -48,7 +48,7 @@ public:
 		return m_LastTime;
 	}
 
-	int GetLastTick(void) {
+	double GetLastTick(void) {
 		return m_LastTick;
 	}
 
@@ -150,45 +150,45 @@ private:
 
 		bool DoCommand(double t01);
 
-		int LastTick = -1;
-		double LastTime = -1;
-
 	private:
-		bool m_Animated = false;
+		bool m_OnlyOnce = false;
 		bool m_Formated = false;
 		std::string m_Command;
 		std::vector<CDoubleInterp> m_Interp;
 	};
 
-	template<typename T> struct Interval {
+	struct Interval {
 
 		Interval() {
 		}
 
-		Interval(T low, T high)
+		Interval(double low, double high, bool epsilon)
 			: Low(low)
-			, High(high) {
+			, High(high)
+			, Epsilon(epsilon)
+		{
 
 		}
 
-		T Low, High;
+		double Low, High;
+		bool Epsilon;
 
-		bool operator<(const Interval<T>& other) const {
-			T cmp = Low - other.Low;
+		bool operator<(const Interval& other) const {
+			double cmp = Low - other.Low;
 			if (cmp < 0) return true;
 			return cmp == 0 && High < other.High;
 		}
 	};
 
-	template<typename T> struct ITNode {
+	struct ITNode {
 		CCommand* Command;
-		Interval<T> i;
-		T Max;
-		struct ITNode<T>* Left, * Right;
+		Interval i;
+		double Max;
+		struct ITNode* Left, * Right;
 	};
 
-	template<typename T> ITNode<T>* NewITNode(Interval<T> i, CCommand * command) {
-		ITNode<T>* result = new ITNode<T>();
+	 ITNode* NewITNode(Interval i, CCommand * command) {
+		ITNode* result = new ITNode();
 		result->Command = command;
 		result->i = i;
 		result->Max = i.High;
@@ -196,7 +196,7 @@ private:
 		return result;
 	}
 
-	template<typename T> void DeleteNode(ITNode<T>*root) {
+	void DeleteNode(ITNode*root) {
 		if (nullptr == root)
 			return;
 
@@ -204,17 +204,17 @@ private:
 		DeleteNode(root->Right);
 	}
 
-	template<typename T> ITNode<T>* Insert(ITNode<T>* root, Interval<T> i, CCommand * command)
+	ITNode* Insert(ITNode* root, Interval i, CCommand * command)
 	{
 		if (nullptr == root)
-			return NewITNode<T>(i, command);
+			return NewITNode(i, command);
 
-		T l = root->i.Low;
+		double l = root->i.Low;
 
 		if (i.Low < l)
-			root->Left = Insert<T>(root->Left, i, command);
+			root->Left = Insert(root->Left, i, command);
 		else
-			root->Right = Insert<T>(root->Right, i, command);
+			root->Right = Insert(root->Right, i, command);
 
 		if (root->Max < i.High)
 			root->Max = i.High;
@@ -222,45 +222,21 @@ private:
 		return root;
 	}
 
-	template<typename T> bool DoOverlap(Interval<T> i1, Interval<T> i2)
+	bool DoOverlap(Interval i1, Interval i2)
 	{
-		if (i1.Low <= i2.High && i2.Low <= i1.High)
+		if ((i2.Epsilon ? i1.Low <= i2.High : i1.Low < i2.High)
+			&& (i1.Epsilon ? i2.Low <= i1.High: i2.Low < i1.High))
 			return true;
 		return false;
 	}
 
-	void OverlapExecute(ITNode<int>* root, Interval<int> i, float interpolationAmount)
+	void OverlapExecute(ITNode* root, Interval i)
 	{
 		if (nullptr == root) return;
 
-		if (DoOverlap<int>(root->i, i))
+		if (DoOverlap(root->i, i))
 		{
-			if (root->Command && (root->Command->LastTick != i.Low || 0 <root->Command->GetSize()))
-			{
-				double d = 1.0 + (double)root->i.High - (double)root->i.Low;
-				double t01 = 0 != d ? ((double)i.High - (double)root->i.Low + (double)interpolationAmount) / d : 1;
-
-				if (t01 < 0) t01 = 0;
-				else if (1 < t01) t01 = 1;
-
-				root->Command->DoCommand(t01);
-				root->Command->LastTick = i.High;
-			}
-		}
-
-		if (nullptr != root->Left && root->Left->Max >= i.Low)
-			OverlapExecute(root->Left, i, interpolationAmount);
-		else
-			OverlapExecute(root->Right, i, interpolationAmount);
-	}
-
-	void OverlapExecute(ITNode<double>* root, Interval<double> i)
-	{
-		if (nullptr == root) return;
-
-		if (DoOverlap<double>(root->i, i))
-		{
-			if (root->Command && (root->Command->LastTime != i.Low || 0 < root->Command->GetSize()))
+			if (root->Command)
 			{
 				double d = (double)root->i.High - (double)root->i.Low;
 				double t01 = 0 != d ? ((double)i.High - (double)root->i.Low) / d : 1;
@@ -269,7 +245,6 @@ private:
 				else if (1 < t01) t01 = 1;
 
 				root->Command->DoCommand(t01);
-				root->Command->LastTime = i.High;
 			}
 		}
 
@@ -279,21 +254,21 @@ private:
 			OverlapExecute(root->Right, i);
 	}
 
-	ITNode<int>* m_TickTree = nullptr;
-	ITNode<double>* m_TimeTree = nullptr;
+	ITNode* m_TickTree = nullptr;
+	ITNode* m_TimeTree = nullptr;
 
-	std::multimap<Interval<int>, CCommand*> m_TickMap;
-	std::multimap<Interval<double>, CCommand*> m_TimeMap;
+	std::multimap<Interval, CCommand*> m_TickMap;
+	std::multimap<Interval, CCommand*> m_TimeMap;
 
 	void DeleteTickTree()
 	{
-		DeleteNode<int>(m_TickTree);
+		DeleteNode(m_TickTree);
 		m_TickTree = nullptr;
 	}
 
 	void DeleteTimeTree()
 	{
-		DeleteNode<double>(m_TimeTree);
+		DeleteNode(m_TimeTree);
 		m_TimeTree = nullptr;
 	}
 
@@ -303,7 +278,7 @@ private:
 
 		for (auto it = m_TickMap.begin(); it != m_TickMap.end(); ++it)
 		{
-			m_TickTree = Insert<int>(m_TickTree, it->first, it->second); // TODO: This tree will degenerate really bad.
+			m_TickTree = Insert(m_TickTree, it->first, it->second); // TODO: This tree will degenerate really bad.
 		}
 	}
 
@@ -313,12 +288,12 @@ private:
 
 		for (auto it = m_TimeMap.begin(); it != m_TimeMap.end(); ++it)
 		{
-			m_TimeTree = Insert<double>(m_TimeTree, it->first, it->second); // TODO: This tree will degenerate really bad.
+			m_TimeTree = Insert(m_TimeTree, it->first, it->second); // TODO: This tree will degenerate really bad.
 		}
 	}
 
 	double m_LastTime;
-	int m_LastTick;
+	double m_LastTick;
 
 	bool m_GotCleared = false;
 
