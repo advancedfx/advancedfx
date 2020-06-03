@@ -3163,7 +3163,7 @@ CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 
 			g_CommandSystem.AddAtTick(
 				cmds.c_str(),
-				atoi(args->ArgV(2))
+				atof(args->ArgV(2))
 			);
 			return;
 		}
@@ -3273,6 +3273,12 @@ CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 
 				return;
 			}
+			else if (0 == _stricmp("cmd", subcmd2))
+			{
+				CSubWrpCommandArgs subArgs(args, 3);
+				g_CommandSystem.EditCommand(&subArgs);
+				return;
+			}
 		}
 	}
 
@@ -3286,6 +3292,7 @@ CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 		"mirv_cmd edit start - Set current time and tick as start time / tick.\n"
 		"mirv_cmd edit startTime [fTime] - Set start time, current if argument not given.\n"
 		"mirv_cmd edit startTick [fTick] - Set start tick, current if argument not given.\n"
+		"mirv_cmd edit cmd [...] - Edit a specific command.\n"
 		"mirv_cmd clear - Removes all commands.\n"
 		"mirv_cmd print - Prints commands / state.\n"
 		"mirv_cmd remove <index> - Removes a command by it's index.\n"

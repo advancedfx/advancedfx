@@ -24,12 +24,14 @@ public:
 	void AddTick(char const * command);
 
 	void AddAtTime(char const* command, double time);
-	void AddAtTick(char const* command, int tick);
+	void AddAtTick(char const* command, double tick);
 
 	void AddCurves(IWrpCommandArgs* args);
 
 	void EditStart(double startTime);
 	void EditStartTick(double startTick);
+
+	void EditCommand(IWrpCommandArgs* args);
 
 	bool Remove(int index);
 
@@ -67,6 +69,15 @@ private:
 
 		}
 
+		CDoubleInterp(const CDoubleInterp& copyFrom)
+			: m_Map(copyFrom.m_Map)
+			, m_View(&m_Map, Selector)
+			, m_Interp(nullptr)
+		{
+		
+
+		}
+
 		~CDoubleInterp()
 		{
 			delete m_Interp;
@@ -79,6 +90,14 @@ private:
 
 		void SetMethod(Method_e value)
 		{
+			if (m_Method != value)
+			{
+				if (nullptr != m_Interp)
+				{
+					delete m_Interp;
+					m_Interp = nullptr;
+				}
+			}
 			m_Method = value;
 		}
 
@@ -103,6 +122,12 @@ private:
 		{
 			return m_Map;
 		}
+
+		void TriggerMapChanged()
+		{
+			if (m_Interp) m_Interp->InterpolationMapChanged();
+		}
+		
 
 	private:
 		Afx::Math::CInterpolationMap<double> m_Map;
@@ -146,6 +171,28 @@ private:
 		Afx::Math::CInterpolationMap<double>& GetMap(int idx)
 		{
 			return m_Interp[idx].GetMap();
+		}
+	
+		void TriggerMapChanged(int idx)
+		{
+			m_Interp[idx].TriggerMapChanged();
+		}
+
+		void Remove(int idx)
+		{
+			auto it = m_Interp.begin(); std::advance(it, idx);
+			m_Interp.erase(it);
+		}
+
+		void Add(int idx)
+		{
+			auto it = m_Interp.begin(); std::advance(it, idx);
+			m_Interp.insert(it, CDoubleInterp());
+		}
+
+		void ClearCurves()
+		{
+			m_Interp.clear();
 		}
 
 		bool DoCommand(double t01);
@@ -299,6 +346,8 @@ private:
 
 	bool IsSupportedByTime(void);
 	bool IsSupportedByTick(void);
+
+	void EditCommandCurves(Interval I, CCommand * c, IWrpCommandArgs* args);
 };
 
 extern CommandSystem g_CommandSystem;

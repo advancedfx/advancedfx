@@ -56,7 +56,7 @@ void CommandSystem::AddTick(char const * command)
 	AddAtTick(command, tick);
 }
 
-void CommandSystem::AddAtTick(char const* command, int tick)
+void CommandSystem::AddAtTick(char const* command, double tick)
 {
 	if (!IsSupportedByTick())
 	{
@@ -823,6 +823,442 @@ void CommandSystem::AddCurves(IWrpCommandArgs* args)
 	Tier0_Msg(
 		"%s tick <iStartTick> <iEndTick> [\"-\" [interp=(linear|cubic)] [space=rel|abs] <fCurveTime1> <fCurveValue1> ... <fCurveTimeN> <fCurveValueN>]* \"--\" <formatedCommand1> ... <formatedCommandM> - adds a curve based on ticks, curveTime is in [0,1]. \n"
 		"%s time <fStartTime> <iEndTime> [\"-\" [interp=(linear|cubic)] [space=rel|abs] <fCurveTime1> <fCurveValue1> ... <fCurveTimeN> <fCurveValueN>]* \"--\" <formatedCommand1> ... <formatedCommandM> - adds a curve based on time, curveTime is in [0,1]. \n"
+		, arg0
+		, arg0
+	);
+}
+
+void CommandSystem::EditCommand(IWrpCommandArgs* args)
+{
+	const char* arg0 = args->ArgV(0);
+	int argC = args->ArgC();
+
+	if (3 <= argC)
+	{
+		int cmdIndex = atoi(args->ArgV(1));
+
+		CCommand* cmd = nullptr;
+		auto itTick = m_TickMap.end();
+		auto itTime = m_TimeMap.end();
+		Interval interval;
+
+		if (cmdIndex < (int)m_TickMap.size())
+		{
+			int idx = 0;
+
+			for (auto it = m_TickMap.begin(); it != m_TickMap.end(); ++it)
+			{
+				if (idx == cmdIndex)
+				{
+					itTick = it;
+					interval = it->first;
+					cmd = it->second;
+					break;
+				}
+
+				++idx;
+			}
+		}
+		else
+		{
+			cmdIndex -= m_TickMap.size();
+
+			int idx = 0;
+
+			for (auto it = m_TimeMap.begin(); it != m_TimeMap.end(); ++it)
+			{
+				if (idx == cmdIndex)
+				{
+					itTime = it;
+					interval = it->first;
+					cmd = it->second;
+					break;
+				}
+
+				++idx;
+			}
+		}
+
+		if (nullptr == cmd)
+		{
+			Tier0_Warning("AFXERROR: Invalid command index.\n");
+			return;
+		}
+
+		const char* arg2 = args->ArgV(2);
+
+		if (0 == _stricmp("start", arg2))
+		{
+			if (4 <= argC)
+			{
+				double oldDiff = interval.High - interval.Low;
+				bool bNoAuto = false;
+
+				if (5 <= argC && 0 == _stricmp("noAuto", args->ArgV(3)))
+					bNoAuto = true;
+
+				interval.Low = atof(bNoAuto ? args->ArgV(4) : args->ArgV(3));
+
+				if (!bNoAuto)
+				{
+					interval.High = interval.Low + oldDiff;
+				}
+
+
+				if (itTick != m_TickMap.end())
+				{
+					DeleteTickTree();
+					m_TickMap.erase(itTick);
+					m_TickMap.insert({ interval, cmd });
+				}
+				if (itTime != m_TimeMap.end())
+				{
+					DeleteTickTree();
+					m_TimeMap.erase(itTime);
+					m_TimeMap.insert({ interval, cmd });
+				}
+				return;
+			}
+
+			Tier0_Msg(
+				"%s start [noAuto] <fValue> -  Set start tick / time, if noAuto option is given, then the end is not automatically shifted as well .\n"
+				"Current value: %i\n"
+				, arg0
+				, interval.Low ? 1 : 0
+			);
+			return;
+		}
+		else if (0 == _stricmp("end", arg2))
+		{
+			if (4 <= argC)
+			{
+				double oldDiff = interval.Low - interval.High;
+				double oldVal = interval.High;
+				bool bNoAuto = false;
+
+				if (5 <= argC && 0 == _stricmp("noAuto", args->ArgV(3)))
+					bNoAuto = true;
+
+				interval.High = atof(bNoAuto ? args->ArgV(4) : args->ArgV(3));
+
+				if (!bNoAuto)
+				{
+					interval.Low = interval.High + oldDiff;
+				}
+
+				if (itTick != m_TickMap.end())
+				{
+					DeleteTickTree();
+					m_TickMap.erase(itTick);
+					m_TickMap.insert({ interval, cmd });
+				}
+				if (itTime != m_TimeMap.end())
+				{
+					DeleteTickTree();
+					m_TimeMap.erase(itTime);
+					m_TimeMap.insert({ interval, cmd });
+				}
+				return;
+			}
+
+			Tier0_Msg(
+				"%s end [noAuto] <fValue> -  Set start tick / time, if noAuto option is given, then the start is not automatically shifted as well .\n"
+				"Current value: %i\n"
+				, arg0
+				, interval.High ? 1 : 0
+			);
+			return;
+		}
+		else if (0 == _stricmp("startEnd", arg2))
+		{
+
+		}
+		else if (0 == _stricmp("epsilon", arg2))
+		{
+			if (4 <= argC)
+			{
+				interval.Epsilon = 0 != atoi(args->ArgV(3));
+				if (itTick != m_TickMap.end())
+				{
+					DeleteTickTree();
+					m_TickMap.erase(itTick);
+					m_TickMap.insert({ interval, cmd });
+				}
+				if (itTime != m_TimeMap.end())
+				{
+					DeleteTickTree();
+					m_TimeMap.erase(itTime);
+					m_TimeMap.insert({ interval, cmd });
+				}
+				return;
+			}
+
+			Tier0_Msg(
+				"%s epsilon 0|1 -  Set if command string is formated (1) (usually e.g. for curve values) or not (0).\n"
+				"Current value: %i\n"
+				, arg0
+				, interval.Epsilon ? 1 : 0
+			);
+			return;
+		}
+		else if (0 == _stricmp("cmd", arg2))
+		{
+			if (4 <= argC)
+			{
+				std::string command = "";
+
+				for (int i = 3; i < argC; ++i)
+				{
+					if (3 < i) command += " ";
+					command += args->ArgV(i);
+				}
+
+				cmd->SetCommand(command.c_str());
+				return;
+			}
+
+			Tier0_Msg(
+				"%s cmd <sSommand1> ... <sSommandN> - Set if to use open (0) or closed interval (1) end.\n"
+				"Current value: %s\n"
+				, arg0
+				, cmd->GetCommand()
+			);
+			return;
+		}
+		else if (0 == _stricmp("formated", arg2))
+		{
+			if (4 <= argC)
+			{
+				cmd->SetFormated(0 != atoi(args->ArgV(3)));
+				return;
+			}
+
+			Tier0_Msg(
+				"%s formated 0|1 -  Set if command string is formated (1) (usually e.g. for curve values) or not (0}.\n"
+				"Current value: %i\n"
+				, arg0
+				, cmd->GetFormated() ? 1 : 0
+			);
+			return;
+		}
+		else if (0 == _stricmp("curves", arg2))
+		{
+			CSubWrpCommandArgs subArgs(args, 3);
+			EditCommandCurves(interval, cmd, &subArgs);
+			return;
+		}
+	}
+
+	Tier0_Msg(
+		"%s <index> start [...] - Edit start tick / time.\n"
+		"%s <index> end [...] - Edit end tick / time.\n"
+		"%s <index> epsilon [...] - Edit if to use open or closed interval end.\n"
+		"%s <index> cmd [...] - Edit command string.\n"
+		"%s <index> formated [...] - Set if command string is formated (usually e.g. for curve values).\n"
+		"%s <index> curves [...] - Edit curves attached to command.\n"
+		"Be aware: The index can and often will change when editing start/end!\n"
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+	);
+}
+
+void CommandSystem::EditCommandCurves(Interval I, CCommand* c, IWrpCommandArgs* args)
+{
+	const char* arg0 = args->ArgV(0);
+	int argC = args->ArgC();
+
+	if (2 <= argC)
+	{
+		const char* arg1 = args->ArgV(1);
+
+		if (0 == _stricmp("add", arg1) && 3 <= argC)
+		{
+			int curveIndex = atoi(args->ArgV(2));
+			if (-1 == curveIndex) curveIndex = (int)c->GetSize();
+			if (curveIndex < 0 || (int)c->GetSize() < curveIndex)
+			{
+				Tier0_Warning("Invalid curve index.\n");
+				return;
+			}
+
+			c->Add(curveIndex);
+			return;
+		}
+		else if (0 == _stricmp("edit", arg1) && 3 <= argC)
+		{
+			int curveIndex = atoi(args->ArgV(2));
+			if (curveIndex < 0 || (int)c->GetSize() <= curveIndex)
+			{
+				Tier0_Warning("Invalid curve index.\n");
+				return;
+			}
+			if (4 <= argC)
+			{
+				const char* curveCmd = args->ArgV(3);
+
+				if (0 == _stricmp("add", curveCmd) && 6 <= argC)
+				{
+					bool abs = 7 <= argC && 0 == _stricmp("abs", args->ArgV(4));
+
+					double dKey = atof(args->ArgV(abs ? 5 : 4));
+					double dValue = atof(args->ArgV(abs ? 6 : 5));
+
+					if (abs)
+					{
+						double d = I.High - I.Low;
+						if (d) d = 1.0 / d;
+
+						dKey = (dKey - I.Low) * d;
+					}
+
+					c->GetMap(curveIndex)[dKey] = dValue;
+					c->TriggerMapChanged(curveIndex);
+
+					return;
+				}
+				else if (0 == _stricmp("edit", curveCmd) && 6 <= argC)
+				{
+					int tidx = atoi(args->ArgV(4));
+					int cidx = 0;
+
+					for (auto it = c->GetMap(curveIndex).begin(); it != c->GetMap(curveIndex).end(); ++it)
+					{
+						if (cidx == tidx)
+						{
+							it->second = atof(args->ArgV(5));
+							c->TriggerMapChanged(curveIndex);
+							return;
+						}
+						++cidx;
+					}
+
+					Tier0_Warning("Invalid key/value index.\n");
+					return;
+				}
+				else if (0 == _stricmp("remove", curveCmd) && 5 <= argC)
+				{
+					int tidx = atoi(args->ArgV(4));
+					int cidx = 0;
+
+					for (auto it = c->GetMap(curveIndex).begin(); it != c->GetMap(curveIndex).end(); ++it)
+					{
+						if (cidx == tidx)
+						{
+							c->GetMap(curveIndex).erase(it);
+							c->TriggerMapChanged(curveIndex);
+							return;
+						}
+						++cidx;
+					}
+
+					Tier0_Warning("Invalid key/value index.\n");
+					return;
+				}
+				else if (0 == _stricmp("clear", curveCmd) && 4 <= argC)
+				{
+					c->GetMap(curveIndex).clear();
+					c->TriggerMapChanged(curveIndex);
+					return;
+				}
+				else if (0 == _stricmp("print", curveCmd) && 4 <= argC)
+				{
+					int idx = 0;
+					for (auto it = c->GetMap(curveIndex).begin(); it != c->GetMap(curveIndex).end(); ++it)
+					{
+						double key = it->first;
+						double value = it->second;
+						double d = I.High - I.Low;
+						double absKey = key * d + I.Low;
+
+						Tier0_Msg(
+							"%i: %f (%f) -> %f\n",
+							idx,
+							key,
+							absKey,
+							value
+						);
+
+						++idx;
+					}
+					
+					return;
+				}
+			}
+
+			Tier0_Msg(
+				"%s edit %i add [abs] <fKey> <fValue> - Insert value at key (overwriting exisiting values), use \"abs\" for inserting in absolute tick / time space of the comamnd.\n"
+				"%s edit %i edit <iIndex> <fValue> - Edit value position <iIndex>.\n"
+				"%s edit %i remove <iIndex> - Remove at position <iIndex>.\n"
+				"%s edit %i clear - Remove all keys.\n"
+				"%s edit %i print - Print values.\n"
+				, arg0, curveIndex
+				, arg0, curveIndex
+				, arg0, curveIndex
+				, arg0, curveIndex
+				, arg0, curveIndex
+			);
+			return;
+		}
+		else if (0 == _stricmp("remove", arg1) && 3 <= argC)
+		{
+			int curveIndex = atoi(args->ArgV(2));
+			if (curveIndex < 0 || (int)c->GetSize() <= curveIndex)
+			{
+				Tier0_Warning("Invalid curve index.\n");
+				return;
+			}
+			
+			c->Remove(curveIndex);
+		}
+		else if (0 == _stricmp("interp", arg1) && 4 <= argC)
+		{
+			int curveIndex = atoi(args->ArgV(2));
+			if (curveIndex < 0 || (int)c->GetSize() <= curveIndex)
+			{
+				Tier0_Warning("Invalid curve index.\n");
+				return;
+			}
+
+			c->SetInterp(curveIndex, 0 == _stricmp("cubic", args->ArgV(3)) ? CDoubleInterp::Method_Cubic : CDoubleInterp::Method_Linear);
+
+			return;
+		}
+		else if (0 == _stricmp("clear", arg1))
+		{
+			c->ClearCurves();
+			return;
+		}
+		else if (0 == _stricmp("print", arg1))
+		{
+			Tier0_Msg("Curves:\n");
+			for (int i = 0; i < (int)c->GetSize(); ++i)
+			{
+				Tier0_Msg("%i: interp=%s size=%i\n"
+					, i
+					, c->GetInterp(i) == CDoubleInterp::Method_Linear ? "linear" : "cubic"
+					, c->GetMap(i).size()
+				);
+			}
+
+			return;
+		}
+	}
+
+	Tier0_Msg(
+		"%s add <iIndex> - Add a curve at position <iIndex> (use -1 for inserting at the end).\n"
+		"%s edit <iIndex> [...] - Edit curve at position <iIndex>.\n"
+		"%s remove <iIndex> - Remove curve at position <iIndex>.\n"
+		"%s interp <iIndex> linear|cubic - Edit interpolation of curve at position <iIndex>.\n"
+		"%s clear - Remove all curves.\n"
+		"%s print - Print curves briefly.\n"
+		, arg0
+		, arg0
+		, arg0
+		, arg0
 		, arg0
 		, arg0
 	);
