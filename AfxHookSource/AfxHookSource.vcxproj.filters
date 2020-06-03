@@ -202,6 +202,9 @@
     <Filter Include="deps\release\Detours\src">
       <UniqueIdentifier>{34b3b323-d378-40da-aa26-50a38883f92b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="AfxHookSource\momentum">
+      <UniqueIdentifier>{ef946def-0efd-4b7b-b2c4-f29ef7ba2541}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\bvhexport.cpp">
@@ -470,6 +473,9 @@
     </ClCompile>
     <ClCompile Include="..\shared\AfxColorLut.cpp">
       <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="momentum\ClientToolsMom.cpp">
+      <Filter>AfxHookSource\momentum</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -874,6 +880,9 @@
     </ClInclude>
     <ClInclude Include="..\interfaces\c\AdvancedfxLibrary.h">
       <Filter>interfaces\c</Filter>
+    </ClInclude>
+    <ClInclude Include="momentum\ClientToolsMom.h">
+      <Filter>AfxHookSource\momentum</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

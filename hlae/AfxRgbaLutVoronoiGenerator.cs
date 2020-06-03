@@ -24,8 +24,8 @@ namespace AfxGui
             this.colIndex.HeaderText = L10n._p("Number/Key","Index");
             this.colComment.HeaderText = L10n._("Comment");
             this.colDstWeight.HeaderText = L10n._("Weight");
-            grpRes.Text = L10n._("image", "Resolution");
-            labelMemEstimate.Text = L10n._("image", "Memory estimate (Bytes):");
+            grpRes.Text = L10n._p("image", "Resolution");
+            labelMemEstimate.Text = L10n._p("image", "Memory estimate (Bytes):");
             grpPreview.Text = L10n._("Preview");
             labelHori.Text = L10n._("Horizontal:");
             labelVert.Text = L10n._("Vertical:");

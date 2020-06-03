@@ -6,6 +6,7 @@
 #include "SourceInterfaces.h"
 #include "addresses.h"
 #include "MirvWav.h"
+#include "MirvTime.h"
 
 #include <shared/AfxDetours.h>
 
@@ -177,5 +178,9 @@ void csgo_Audio_FRAME_RENDEREND(void)
 	if (!glob)
 		return;
 
-	g_csgo_Audio_TimeDue += glob->absoluteframetime_get();
+	float frameTime = glob->absoluteframetime_get();
+
+	if (g_MirvTime.GetDriveTimeEnabled() && g_MirvTime.GetDrivingByFps()) frameTime /= g_MirvTime.GetDriveTimeFactor();
+
+	g_csgo_Audio_TimeDue += frameTime;
 }

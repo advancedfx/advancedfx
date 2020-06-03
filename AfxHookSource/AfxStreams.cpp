@@ -1869,6 +1869,8 @@ CAfxBaseFxStream::CAction * CAfxBaseFxStream::GetAction(const CAfxTrackedMateria
 				return GetAction(trackedMaterial, m_StatTrakAction);
 			else if(StringBeginsWith(name, "models/weapons/w_models/arms/") || StringBeginsWith(name, "models/weapons/v_models/arms/"))
 				return GetAction(trackedMaterial, m_PlayerModelsAction);
+			else if(StringBeginsWith(name, "models/weapons/shared/shells/"))
+				return GetAction(trackedMaterial, m_ShellModelsAction);
 			else
 				return GetAction(trackedMaterial, m_WeaponModelsAction);
 		}

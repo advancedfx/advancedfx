@@ -6,6 +6,91 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.83.0</version>
+<time>2020-06-03T11:46Z</time>
+<changes>
+<change type="added">
+Added mFovPositiveSpeed, mFovNegativeSpeed options to mirv_inout cfg.
+</change>
+<change type="added">
+Added mirv_time drive command (value should greater than 0, otherwise it will force it that way atm.), this drives the host_framerate when it's not 0 or the demo_timescale otherwise (so it will work in demos live and when recording).
+</change>
+<change type="updated">
+Updated mirv_cmd: now supports fractional ticks.
+</change>
+<change type="updated">
+Updated mirv_cmd: now uses intervals with open end for addCurves by default (and intervals with closed ends for the other commands).
+</change>
+<change type="updated">
+Updated mirv_cmd addCurves: now supports absolute keyframe times.
+</change>
+<change type="added">
+Added mirv_cmd edit cmd: allows to edit commands and their curves.
+</change>
+</changes>
+<comments>
+// Example config for driving time with mirv_cmd curves:<br />
+mirv_cmd clear<br />
+mirv_cmd addCurves tick 1000 4000 - interp=cubic space=abs 1000 1 1300 2 1600 0.5 1900 2 2100 0.5 2500 2 2800 1 3100 2 3400 0.5 3700 2 4000 1 - interp=linear 0 0 1 100 -- "mirv_time drive {0}; echo {1}% finished: driving: {0}"<br />
+mirv_cmd addAtTick 4000 "mirv_time drive default"
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.82.0</version>
+<time>2020-05-29T20:22Z</time>
+<changes>
+<change type="fixed">
+Added #329 Command value changer between certain ticks.<br />
+Example commands:<br />
+mirv_fov handleZoom enabled 1<br />
+mirv_cmd clear<br />
+mirv_cmd addCurves tick 1000 5000 - interp=cubic 0 1 0.25 2 0.75 1 1 0.5 -- demo_timescale "{0}"<br />
+mirv_cmd addCurves tick 2000 4000 - interp=linear 0 100 1 120 -- mirv_fov "{0}"<br />
+mirv_cmd addAtTick 5000 demo_timescale 1<br />
+mirv_cmd addAtTick 5000 mirv_fov default
+</change>
+<change type="fixed">
+Fixed D3D9 state issues caused by us.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.81.1</version>
+<time>2020-05-28T06:48Z</time>
+<changes>
+<change type="fixed">
+Adjust to 5/27/2020 (5/28/2020 UTC) CS:GO update.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.81.0</version>
+<time>2020-05-23T12:21Z</time>
+<changes>
+<change type="fixed">
+Fixes #328 Inferno afx/wh white floor bug.
+</change>
+<change type="added">
+Added Momentum Mod (camera stuff, AGR) stupport.
+</change>
+<change type="added">
+Add viewmodel to TF2 AGR. Needs to be enabled with: mirv_agr recordViewModel 1
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.80.2</version>
 <time>2020-05-12T14:58Z</time>
 <changes>

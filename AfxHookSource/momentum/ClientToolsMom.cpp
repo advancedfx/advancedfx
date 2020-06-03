@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-#include "ClientToolsTf2.h"
+#include "ClientToolsMom.h"
 
 #include "addresses.h"
 #include "RenderView.h"
@@ -10,28 +10,28 @@
 
 #include <shared/StringTools.h>
 
-CClientToolsTf2 * CClientToolsTf2::m_Instance = 0;
+CClientToolsMom* CClientToolsMom::m_Instance = 0;
 
-CClientToolsTf2::CClientToolsTf2(SOURCESDK::TF2::IClientTools * clientTools)
+CClientToolsMom::CClientToolsMom(SOURCESDK::TF2::IClientTools * clientTools)
 	: CClientTools()
 	, m_ClientTools(clientTools)
 {
 	m_Instance = this;
 }
 
-CClientToolsTf2::~CClientToolsTf2()
+CClientToolsMom::~CClientToolsMom()
 {
 	m_Instance = 0;
 }
 
-void CClientToolsTf2::OnPostToolMessage(void * hEntity, void * msg)
+void CClientToolsMom::OnPostToolMessage(void * hEntity, void * msg)
 {
 	CClientTools::OnPostToolMessage(hEntity, msg);
 
 	OnPostToolMessageTf2(reinterpret_cast<SOURCESDK::TF2::HTOOLHANDLE>(hEntity), reinterpret_cast<SOURCESDK::TF2::KeyValues *>(msg));
 }
 
-void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, SOURCESDK::TF2::KeyValues * msg)
+void CClientToolsMom::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, SOURCESDK::TF2::KeyValues * msg)
 {
 	if (!(hEntity != SOURCESDK::CSGO::HTOOLHANDLE_INVALID && msg))
 		return;
@@ -64,30 +64,33 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 			bool isPlayer =
 				false
 				|| className && (
-					!strcmp(className, "class C_TFPlayer")
-					|| !strcmp(className, "class C_TFRagdoll")
+					0 == strcmp(className, "class C_MomentumPlayer")
 					)
 				;
 
 			bool isWeapon =
 				false
 				|| className && (
-					StringBeginsWith(className, "tf_weapon_")
-					|| !strcmp(className, "grenade")
+					StringBeginsWith(className, "mom_weapon_")
+					|| 0 == strcmp(className, "grenade")
 					)
 				;
 
 			bool isProjectile =
 				false
-				|| className && StringBeginsWith(className, "class C_TFProjectile_")
+				|| className && (
+					StringEndsWith(className, "Projectile")
+					)
 				;
 
 			bool isViewModel =
 				false
-				|| className && 0 == strcmp(className, "viewmodel")
+				|| className && (
+					0 == strcmp(className, "viewmodel")
+					)
 				;
 
-			if (false
+			if(false
 				|| RecordPlayers_get() && isPlayer
 				|| RecordWeapons_get() && isWeapon
 				|| RecordProjectiles_get() && isProjectile
@@ -188,28 +191,28 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 	}
 }
 
-void CClientToolsTf2::OnBeforeFrameRenderStart(void)
+void CClientToolsMom::OnBeforeFrameRenderStart(void)
 {
 	CClientTools::OnBeforeFrameRenderStart();
 
 }
 
-void CClientToolsTf2::OnAfterFrameRenderEnd(void)
+void CClientToolsMom::OnAfterFrameRenderEnd(void)
 {
 
 	CClientTools::OnAfterFrameRenderEnd();
 }
 
 
-void CClientToolsTf2::EnableRecordingMode_set(bool value) {
+void CClientToolsMom::EnableRecordingMode_set(bool value) {
 	m_ClientTools->EnableRecordingMode(value);
 }
 
-bool CClientToolsTf2::EnableRecordingMode_get() {
+bool CClientToolsMom::EnableRecordingMode_get() {
 	return m_ClientTools->IsInRecordingMode();
 }
 
-void CClientToolsTf2::StartRecording(wchar_t const * fileName)
+void CClientToolsMom::StartRecording(wchar_t const * fileName)
 {
 	CClientTools::StartRecording(fileName);
 
@@ -222,7 +225,7 @@ void CClientToolsTf2::StartRecording(wchar_t const * fileName)
 	}
 }
 
-void CClientToolsTf2::EndRecording()
+void CClientToolsMom::EndRecording()
 {
 	if (GetRecording())
 	{
@@ -235,12 +238,12 @@ void CClientToolsTf2::EndRecording()
 	CClientTools::EndRecording();
 }
 
-float CClientToolsTf2::ScaleFov(int width, int height, float fov)
+float CClientToolsMom::ScaleFov(int width, int height, float fov)
 {
 	return (float)AlienSwarm_FovScaling(g_Hook_VClient_RenderView.LastWidth, g_Hook_VClient_RenderView.LastHeight, g_Hook_VClient_RenderView.LastCameraFov);
 }
 
-void CClientToolsTf2::Write(SOURCESDK::TF2::CBoneList const * value)
+void CClientToolsMom::Write(SOURCESDK::TF2::CBoneList const * value)
 {
 	Write((int)value->m_nBones);
 

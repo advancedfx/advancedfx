@@ -1150,7 +1150,7 @@ CON_COMMAND(__mirv_exec, "client command execution: __mirv_exec <as you would ha
 
 	g_VEngineClient->ExecuteClientCmd(ttt);
 
-	delete ttt;
+	free(ttt);
 }
 
 bool GetCurrentDemoTick(int &outTick)
@@ -2011,6 +2011,28 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.MousePitchSpeed_get());
 					return;
 				}
+				else if(0 == _stricmp("mFovPositiveSpeed", arg2))
+				{
+					if(4 <= argc)
+					{
+						double value = atof(args->ArgV(3));
+						g_AfxHookSourceInput.MouseFovPositiveSpeed_set(value);
+						return;
+					}
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.MouseFovPositiveSpeed_get());
+					return;
+				}
+				else if (0 == _stricmp("mFovNegativeSpeed", arg2))
+				{
+					if (4 <= argc)
+					{
+						double value = atof(args->ArgV(3));
+						g_AfxHookSourceInput.MouseFovNegativeSpeed_set(value);
+						return;
+					}
+					Tier0_Msg("Value: %f\n", g_AfxHookSourceInput.MouseFovNegativeSpeed_get());
+					return;
+				}
 				else if(0 == _stricmp("mLeftSpeed", arg2))
 				{
 					if(4 <= argc)
@@ -2187,6 +2209,10 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 				"mirv_input cfg mYawSpeed <dValue> - Set value.\n"
 				"mirv_input cfg mPitchSpeed - Get value.\n"
 				"mirv_input cfg mPitchSpeed <dValue> - Set value.\n"
+				"mirv_input cfg mFovPositiveSpeed - Get value.\n"
+				"mirv_input cfg mFovPositiveSpeed <dValue> - Set value.\n"
+				"mirv_input cfg mFovNegativeSpeed - Get value.\n"
+				"mirv_input cfg mFovNegativeSpeed <dValue> - Set value.\n"
 				"mirv_input cfg mForwardSpeed - Get value.\n"
 				"mirv_input cfg mForwardSpeed <dValue> - Set value.\n"
 				"mirv_input cfg mBackwardSpeed - Get value.\n"
@@ -3124,6 +3150,47 @@ CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 			);
 			return;
 		}
+		else if (!_stricmp("addAtTick", subcmd) && 3 <= args->ArgC())
+		{
+			std::string cmds("");
+
+			for (int i = 3; i < args->ArgC(); ++i)
+			{
+				if (3 < i) cmds.append(" ");
+
+				cmds.append(args->ArgV(i));
+			}
+
+			g_CommandSystem.AddAtTick(
+				cmds.c_str(),
+				atof(args->ArgV(2))
+			);
+			return;
+		}
+		else if (!_stricmp("addAtTime", subcmd) && 3 <= args->ArgC())
+		{
+			std::string cmds("");
+
+			for (int i = 3; i < args->ArgC(); ++i)
+			{
+				if (3 < i) cmds.append(" ");
+
+				cmds.append(args->ArgV(i));
+			}
+
+			g_CommandSystem.AddAtTime(
+				cmds.c_str(),
+				atof(args->ArgV(2))
+			);
+			return;
+		}
+		else if (0 == _stricmp("addCurves", subcmd))
+		{
+			CSubWrpCommandArgs subArgs(args, 2);
+
+			g_CommandSystem.AddCurves(&subArgs);
+			return;
+		}
 		else if(!_stricmp("enabled", subcmd))
 		{
 			if(3 <= argc)
@@ -3195,15 +3262,21 @@ CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 			}
 			else if (0 == _stricmp("startTick", subcmd2))
 			{
-				g_CommandSystem.EditStartTick(4 <= argc ? atoi(args->ArgV(3)) : g_CommandSystem.GetLastTick() + 1);
+				g_CommandSystem.EditStartTick(4 <= argc ? atof(args->ArgV(3)) : (double)g_CommandSystem.GetLastTick());
 
 				return;
 			}
 			else if (0 == _stricmp("start", subcmd2))
 			{
-				g_CommandSystem.EditStart(std::nextafter(g_CommandSystem.GetLastTime(), g_CommandSystem.GetLastTime() + 1.0));
-				g_CommandSystem.EditStartTick(g_CommandSystem.GetLastTick() + 1);
+				g_CommandSystem.EditStart(g_CommandSystem.GetLastTime());
+				g_CommandSystem.EditStartTick(g_CommandSystem.GetLastTick());
 
+				return;
+			}
+			else if (0 == _stricmp("cmd", subcmd2))
+			{
+				CSubWrpCommandArgs subArgs(args, 3);
+				g_CommandSystem.EditCommand(&subArgs);
 				return;
 			}
 		}
@@ -3211,11 +3284,15 @@ CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 
 	Tier0_Msg(
 		"mirv_cmd enabled [...] - Control if command system is enabled (by default it is).\n"
-		"mirv_cmd addTick [commandPart1] [commandPart2] ... [commandPartN] - Adds/appends a commands at the current tick.\n"
-		"mirv_cmd add [commandPart1] [commandPart2] ... [commandPartN] - Adds/appends a command at the current time.\n"
-		"mirv_cmd edit start - Set current time+EPS and tick+1 as start time / tick.\n"
-		"mirv_cmd edit startTime [fTime] - Set start time, current+EPS if argument not given.\n"
-		"mirv_cmd edit startTick [iTick] - Set start tick, current+1 if argument not given.\n"
+		"mirv_cmd addTick [commandPart1] [commandPart2] ... [commandPartN] - Adds commands at the current tick.\n"
+		"mirv_cmd add [commandPart1] [commandPart2] ... [commandPartN] - Adds commands at the current time.\n"
+		"mirv_cmd addAtTick <iTick> [commandPart1] [commandPart2] ... [commandPartN] - Adds commands at the given tick.\n"
+		"mirv_cmd addAtTime <fTime> [commandPart1] [commandPart2] ... [commandPartN] - Adds commands at the given time.\n"
+		"mirv_cmd addCurves [...] - Allows to add animated commands.\n"
+		"mirv_cmd edit start - Set current time and tick as start time / tick.\n"
+		"mirv_cmd edit startTime [fTime] - Set start time, current if argument not given.\n"
+		"mirv_cmd edit startTick [fTick] - Set start tick, current if argument not given.\n"
+		"mirv_cmd edit cmd [...] - Edit a specific command.\n"
 		"mirv_cmd clear - Removes all commands.\n"
 		"mirv_cmd print - Prints commands / state.\n"
 		"mirv_cmd remove <index> - Removes a command by it's index.\n"
@@ -3618,11 +3695,55 @@ CON_COMMAND(mirv_time, "time control")
 			);
 			return;
 		}
+		else if (0 == _stricmp("drive", cmd1))
+		{
+			if (3 <= argc)
+			{
+				const char* cmd2 = args->ArgV(2);
+
+				if (0 == _stricmp("default", cmd2))
+				{
+					g_MirvTime.SetDriveTimeEnabled(false);
+				}
+				else
+				{
+
+					float value = (float)atof(cmd2);
+					float minValue = AFX_MATH_EPS;
+					float maxValue = 1.0f / AFX_MATH_EPS;
+
+					if (value < minValue)
+					{
+						value = minValue;
+						Tier0_Warning("AFXWARNING: Limiting to minimum: %f\n.", minValue);
+					}
+					else if (maxValue < value)
+					{
+						value = maxValue;
+						Tier0_Warning("AFXWARNING: Limiting to maximum: %f\n.", maxValue);
+					}
+
+					g_MirvTime.SetDriveTimeFactor(value);
+					g_MirvTime.SetDriveTimeEnabled(true);
+				}
+				return;
+			}
+
+			Tier0_Msg(
+				"mirv_time drive <fFactor> - Set the time drive factor.\n"
+				"mirv_time drive default - Disable time drive.\n"
+				"Current value: "
+			);
+			if (g_MirvTime.GetDriveTimeEnabled()) Tier0_Msg("%f\n", g_MirvTime.GetDriveTimeFactor());
+			else Tier0_Msg("default\n");
+			return;
+		}
 	}
 
 	Tier0_Msg(
 		"mirv_time mode [...].\n"
 		"mirv_time pausedTime [...].\n"
+		"mirv_time drive [....]."
 	);
 }
 

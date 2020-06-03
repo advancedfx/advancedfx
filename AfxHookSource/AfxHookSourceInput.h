@@ -89,6 +89,13 @@ public:
 	double MousePitchSpeed_get(void);
 	void MousePitchSpeed_set(double value);
 
+	double MouseFovPositiveSpeed_get(void);
+	void MouseFovPositiveSpeed_set(double value);
+
+	double MouseFovNegativeSpeed_get(void);
+	void MouseFovNegativeSpeed_set(double value);
+
+
 	bool GetEnableMouseMove() { return m_MMove; }
 	void SetEnableMouseMove(bool value) { m_MMove = value; }
 

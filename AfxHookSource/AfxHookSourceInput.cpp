@@ -308,6 +308,26 @@ void AfxHookSourceInput::MousePitchSpeed_set(double value)
 	m_MousePitchSpeed = value;
 }
 
+double AfxHookSourceInput::MouseFovPositiveSpeed_get(void)
+{
+	return m_MouseFovPositiveSpeed;
+}
+
+void AfxHookSourceInput::MouseFovPositiveSpeed_set(double value)
+{
+	m_MouseFovPositiveSpeed = value;
+}
+
+
+double AfxHookSourceInput::MouseFovNegativeSpeed_get(void)
+{
+	return m_MouseFovNegativeSpeed;
+}
+
+void AfxHookSourceInput::MouseFovNegativeSpeed_set(double value)
+{
+	m_MouseFovNegativeSpeed = value;
+}
 
 bool AfxHookSourceInput::Supply_CharEvent(WPARAM wParam, LPARAM lParam)
 {

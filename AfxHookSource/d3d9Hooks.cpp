@@ -2698,6 +2698,9 @@ private:
 
 	bool m_OverrideDefaultBuffersWithIntz = false;
 
+	IDirect3DStateBlock9* m_InitialState = nullptr;
+	IDirect3DStateBlock9* m_CurrentState = nullptr;
+
 	CAfxTrackedSurface * trackedRenderTarget = nullptr;
 	CAfxTrackedSurface * trackedDepthStencil = nullptr;
 
@@ -2739,6 +2742,14 @@ public:
 #endif
 
 		HookInitialBuffers();
+
+		if (NULL != m_InitialState)
+		{
+			m_InitialState->Release();
+			m_InitialState = NULL;
+		}
+		g_OldDirect3DDevice9->CreateStateBlock(D3DSBT_ALL, &m_InitialState);
+		if(m_InitialState) m_InitialState->Capture();
 	}
 
 	IDirect3DSurface9* AfxGetRenderTargetSurface()
@@ -3022,8 +3033,7 @@ public:
 
 		if (pixelShader && depthTexture)
 		{
-			//
-			// Save device state:
+			AfxBeginCleanState();
 
 			IDirect3DSurface9 * oldRenderTarget = NULL;
 
@@ -3050,108 +3060,6 @@ public:
 				}
 			}
 #endif
-
-			IDirect3DPixelShader9 * oldPixelShader = NULL;
-			g_OldDirect3DDevice9->GetPixelShader(&oldPixelShader);
-			if (oldPixelShader) oldPixelShader->AddRef();
-
-			IDirect3DVertexShader9 * oldVertexShader = NULL;
-			g_OldDirect3DDevice9->GetVertexShader(&oldVertexShader);
-			if (oldVertexShader) oldVertexShader->AddRef();
-
-			IDirect3DVertexBuffer9 * oldVertexBuffer0 = NULL;
-			UINT oldVertexBuffer0Offset;
-			UINT oldVertexBuffer0Stride;
-			g_OldDirect3DDevice9->GetStreamSource(0, &oldVertexBuffer0, &oldVertexBuffer0Offset, &oldVertexBuffer0Stride);
-			// this is done already according to doc: // if(oldVertexBuffer0) oldVertexBuffer0->AddRef();
-
-
-			IDirect3DIndexBuffer9 * oldIndexBuffer = 0;
-			g_OldDirect3DDevice9->GetIndices(&oldIndexBuffer);
-			// this is done already according to doc: // if(oldIndexBuffer) oldIndexBuffer->AddRef();
-
-			IDirect3DVertexDeclaration9 * oldDeclaration;
-			g_OldDirect3DDevice9->GetVertexDeclaration(&oldDeclaration);
-			if (oldDeclaration) oldDeclaration->AddRef();
-
-			DWORD oldFVF;
-			g_OldDirect3DDevice9->GetFVF(&oldFVF);
-
-			DWORD oldSrgbWriteEnable;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_SRGBWRITEENABLE, &oldSrgbWriteEnable);
-
-			DWORD oldColorWriteEnable;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_COLORWRITEENABLE, &oldColorWriteEnable);
-
-			DWORD oldZWriteEnable;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_ZWRITEENABLE, &oldZWriteEnable);
-
-			DWORD oldZFunc;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_ZFUNC, &oldZFunc);
-
-			DWORD oldZEnable;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_ZENABLE, &oldZEnable);
-
-			DWORD oldAlphaTestEnable;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_ALPHATESTENABLE, &oldAlphaTestEnable);
-
-			DWORD oldSeparateAlphaBlendEnable;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, &oldSeparateAlphaBlendEnable);
-
-			DWORD oldAlphaBlendEnable;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_ALPHABLENDENABLE, &oldAlphaBlendEnable);
-
-			DWORD oldCullMode;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_CULLMODE, &oldCullMode);
-
-			DWORD oldMultiSampleAnitAlias;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_MULTISAMPLEANTIALIAS, &oldMultiSampleAnitAlias);
-
-			DWORD oldFillMode;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_FILLMODE, &oldFillMode);
-
-			FLOAT oldOverFac[4];
-			g_OldDirect3DDevice9->GetPixelShaderConstantF(5, oldOverFac, 1);
-			
-			FLOAT oldMatrix[4][4];
-			if (projectionMatrix) g_OldDirect3DDevice9->GetPixelShaderConstantF(6, &(oldMatrix[0][0]), 4);
-
-			D3DVIEWPORT9 oldViewPort;
-			g_OldDirect3DDevice9->GetViewport(&oldViewPort);
-
-			DWORD oldTs0_D3DTSS_COLOROP;
-			g_OldDirect3DDevice9->GetTextureStageState(0, D3DTSS_COLOROP, &oldTs0_D3DTSS_COLOROP);
-
-			DWORD oldTs0_D3DTSS_COLORARG1;
-			g_OldDirect3DDevice9->GetTextureStageState(0, D3DTSS_COLORARG1, &oldTs0_D3DTSS_COLORARG1);
-
-			DWORD oldTs0_D3DTSS_ALPHAOP;
-			g_OldDirect3DDevice9->GetTextureStageState(0, D3DTSS_COLOROP, &oldTs0_D3DTSS_ALPHAOP);
-
-			DWORD oldTs0_D3DTSS_ALPHAARG1;
-			g_OldDirect3DDevice9->GetTextureStageState(0, D3DTSS_ALPHAARG1, &oldTs0_D3DTSS_ALPHAARG1);
-
-			DWORD oldSs0_D3DSAMP_MINFILTER;
-			g_OldDirect3DDevice9->GetSamplerState(0, D3DSAMP_MINFILTER, &oldSs0_D3DSAMP_MINFILTER);
-
-			DWORD oldSs0_D3DSAMP_MAGFILTER;
-			g_OldDirect3DDevice9->GetSamplerState(0, D3DSAMP_MAGFILTER, &oldSs0_D3DSAMP_MAGFILTER);
-
-			DWORD oldSs0_D3DSAMP_SRGBTEXTURE;
-			g_OldDirect3DDevice9->GetSamplerState(0, D3DSAMP_SRGBTEXTURE, &oldSs0_D3DSAMP_SRGBTEXTURE);
-
-			IDirect3DBaseTexture9 * oldTexture = 0;
-			if (FAILED(g_OldDirect3DDevice9->GetTexture(0, &oldTexture))) oldTexture = NULL;
-
-			D3DMATRIX oldTransformWorld;
-			g_OldDirect3DDevice9->GetTransform(D3DTS_WORLD, &oldTransformWorld);
-
-			D3DMATRIX oldTransformView;
-			g_OldDirect3DDevice9->GetTransform(D3DTS_VIEW, &oldTransformView);
-
-			D3DMATRIX oldTransformProjection;
-			g_OldDirect3DDevice9->GetTransform(D3DTS_PROJECTION, &oldTransformProjection);	
-
 			//
 			// Draw
 
@@ -3304,57 +3212,11 @@ public:
 			//
 			// Restore old Direct3D9 state:
 
-			g_OldDirect3DDevice9->SetTransform(D3DTS_PROJECTION, &oldTransformProjection);
-			g_OldDirect3DDevice9->SetTransform(D3DTS_VIEW, &oldTransformView);
-			g_OldDirect3DDevice9->SetTransform(D3DTS_WORLD, &oldTransformWorld);
-
-			g_OldDirect3DDevice9->SetTexture(0, oldTexture);
-			if (oldTexture)
-				oldTexture->Release();
-
-			if (projectionMatrix) g_OldDirect3DDevice9->SetPixelShaderConstantF(6, &(oldMatrix[0][0]), 4);
-			g_OldDirect3DDevice9->SetPixelShaderConstantF(5, oldOverFac, 1);
-			g_OldDirect3DDevice9->SetViewport(&oldViewPort);
-			g_OldDirect3DDevice9->SetTextureStageState(0, D3DTSS_COLOROP, oldTs0_D3DTSS_COLOROP);
-			g_OldDirect3DDevice9->SetTextureStageState(0, D3DTSS_COLORARG1, oldTs0_D3DTSS_COLORARG1);
-			g_OldDirect3DDevice9->SetTextureStageState(0, D3DTSS_COLOROP, oldTs0_D3DTSS_ALPHAOP);
-			g_OldDirect3DDevice9->SetTextureStageState(0, D3DTSS_ALPHAARG1, oldTs0_D3DTSS_ALPHAARG1);
-			g_OldDirect3DDevice9->SetSamplerState(0, D3DSAMP_MINFILTER, oldSs0_D3DSAMP_MINFILTER);
-			g_OldDirect3DDevice9->SetSamplerState(0, D3DSAMP_MAGFILTER, oldSs0_D3DSAMP_MAGFILTER);
-			g_OldDirect3DDevice9->SetSamplerState(0, D3DSAMP_SRGBTEXTURE, oldSs0_D3DSAMP_SRGBTEXTURE);
-
-			g_OldDirect3DDevice9->SetPixelShader(oldPixelShader);
-			if (oldPixelShader) oldPixelShader->Release();
-
-			g_OldDirect3DDevice9->SetVertexShader(oldVertexShader);
-			if (oldVertexShader) oldVertexShader->Release();
-
-			g_OldDirect3DDevice9->SetStreamSource(0, oldVertexBuffer0, oldVertexBuffer0Offset, oldVertexBuffer0Stride);
-			if (oldVertexBuffer0) oldVertexBuffer0->Release();
-
-			g_OldDirect3DDevice9->SetFVF(oldFVF);
-
-			g_OldDirect3DDevice9->SetIndices(oldIndexBuffer);
-			if (oldIndexBuffer) oldIndexBuffer->Release();
-
-			g_OldDirect3DDevice9->SetVertexDeclaration(oldDeclaration);
-			if (oldDeclaration) oldDeclaration->Release();
-
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_FILLMODE, oldFillMode);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, oldMultiSampleAnitAlias);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_CULLMODE, oldCullMode);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, oldAlphaBlendEnable);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, oldSeparateAlphaBlendEnable);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_ALPHATESTENABLE, oldAlphaTestEnable);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_ZENABLE, oldZEnable);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_ZFUNC, oldZFunc);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_ZWRITEENABLE, oldZWriteEnable);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_COLORWRITEENABLE, oldColorWriteEnable);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_SRGBWRITEENABLE, oldSrgbWriteEnable);
-
 			g_OldDirect3DDevice9->SetRenderTarget(0, oldRenderTarget);
 
 			if (oldRenderTarget) oldRenderTarget->Release();
+
+			AfxEndCleanState();
 		}
 
 	exit:
@@ -3371,82 +3233,9 @@ public:
 
 		if (pixelShader)
 		{
-			//
-			// Save device state:
+			AfxBeginCleanState();
 
-			IDirect3DPixelShader9 * oldPixelShader = NULL;
-			g_OldDirect3DDevice9->GetPixelShader(&oldPixelShader);
-			if (oldPixelShader) oldPixelShader->AddRef();
-
-			IDirect3DVertexShader9 * oldVertexShader = NULL;
-			g_OldDirect3DDevice9->GetVertexShader(&oldVertexShader);
-			if (oldVertexShader) oldVertexShader->AddRef();
-
-			IDirect3DVertexBuffer9 * oldVertexBuffer0 = NULL;
-			UINT oldVertexBuffer0Offset;
-			UINT oldVertexBuffer0Stride;
-			g_OldDirect3DDevice9->GetStreamSource(0, &oldVertexBuffer0, &oldVertexBuffer0Offset, &oldVertexBuffer0Stride);
-			// this is done already according to doc: // if(oldVertexBuffer0) oldVertexBuffer0->AddRef();
-
-
-			IDirect3DIndexBuffer9 * oldIndexBuffer = 0;
-			g_OldDirect3DDevice9->GetIndices(&oldIndexBuffer);
-			// this is done already according to doc: // if(oldIndexBuffer) oldIndexBuffer->AddRef();
-
-			IDirect3DVertexDeclaration9 * oldDeclaration;
-			g_OldDirect3DDevice9->GetVertexDeclaration(&oldDeclaration);
-			if (oldDeclaration) oldDeclaration->AddRef();
-
-			DWORD oldFVF;
-			g_OldDirect3DDevice9->GetFVF(&oldFVF);
-
-			DWORD oldLightning;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_LIGHTING, &oldLightning);
-
-			DWORD oldSrgbWriteEnable;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_SRGBWRITEENABLE, &oldSrgbWriteEnable);
-
-			DWORD oldColorWriteEnable;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_COLORWRITEENABLE, &oldColorWriteEnable);
-
-			DWORD oldZWriteEnable;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_ZWRITEENABLE, &oldZWriteEnable);
-
-			DWORD oldZFunc;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_ZFUNC, &oldZFunc);
-
-			DWORD oldZEnable;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_ZENABLE, &oldZEnable);
-
-			DWORD oldAlphaTestEnable;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_ALPHATESTENABLE, &oldAlphaTestEnable);
-
-			DWORD oldSeparateAlphaBlendEnable;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, &oldSeparateAlphaBlendEnable);
-
-			DWORD oldAlphaBlendEnable;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_ALPHABLENDENABLE, &oldAlphaBlendEnable);
-
-			DWORD oldCullMode;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_CULLMODE, &oldCullMode);
-
-			DWORD oldMultiSampleAnitAlias;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_MULTISAMPLEANTIALIAS, &oldMultiSampleAnitAlias);
-
-			D3DVIEWPORT9 oldViewPort;
-			g_OldDirect3DDevice9->GetViewport(&oldViewPort);
-
-			D3DMATRIX oldTransformWorld;
-			g_OldDirect3DDevice9->GetTransform(D3DTS_WORLD, &oldTransformWorld);
-
-			D3DMATRIX oldTransformView;
-			g_OldDirect3DDevice9->GetTransform(D3DTS_VIEW, &oldTransformView);
-
-			D3DMATRIX oldTransformProjection;
-			g_OldDirect3DDevice9->GetTransform(D3DTS_PROJECTION, &oldTransformProjection);
-
-			//
-			// Draw
+			//		
 
 			g_OldDirect3DDevice9->SetFVF(D3DFVF_AFXDRAWGUIDEVERTEX);
 
@@ -3594,42 +3383,8 @@ public:
 			}
 			
 			//
-			// Restore old Direct3D9 state:
 
-			g_OldDirect3DDevice9->SetTransform(D3DTS_PROJECTION, &oldTransformProjection);
-			g_OldDirect3DDevice9->SetTransform(D3DTS_VIEW, &oldTransformView);
-			g_OldDirect3DDevice9->SetTransform(D3DTS_WORLD, &oldTransformWorld);
-
-			g_OldDirect3DDevice9->SetViewport(&oldViewPort);
-
-			g_OldDirect3DDevice9->SetPixelShader(oldPixelShader);
-			if (oldPixelShader) oldPixelShader->Release();
-
-			g_OldDirect3DDevice9->SetVertexShader(oldVertexShader);
-			if (oldVertexShader) oldVertexShader->Release();
-
-			g_OldDirect3DDevice9->SetStreamSource(0, oldVertexBuffer0, oldVertexBuffer0Offset, oldVertexBuffer0Stride);
-			if (oldVertexBuffer0) oldVertexBuffer0->Release();
-
-			g_OldDirect3DDevice9->SetFVF(oldFVF);
-
-			g_OldDirect3DDevice9->SetIndices(oldIndexBuffer);
-			if (oldIndexBuffer) oldIndexBuffer->Release();
-
-			g_OldDirect3DDevice9->SetVertexDeclaration(oldDeclaration);
-			if (oldDeclaration) oldDeclaration->Release();
-
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_LIGHTING, oldLightning);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, oldMultiSampleAnitAlias);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_CULLMODE, oldCullMode);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, oldAlphaBlendEnable);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, oldSeparateAlphaBlendEnable);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_ALPHATESTENABLE, oldAlphaTestEnable);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_ZENABLE, oldZEnable);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_ZFUNC, oldZFunc);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_ZWRITEENABLE, oldZWriteEnable);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_COLORWRITEENABLE, oldColorWriteEnable);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_SRGBWRITEENABLE, oldSrgbWriteEnable);
+			AfxEndCleanState();
 		}
 	}
 
@@ -3642,116 +3397,9 @@ public:
 
 		if (pixelShader)
 		{		
-			//
-			// Save device state:
-
-			IDirect3DPixelShader9* oldPixelShader = NULL;
-			g_OldDirect3DDevice9->GetPixelShader(&oldPixelShader);
-			if (oldPixelShader) oldPixelShader->AddRef();
-
-			IDirect3DVertexShader9* oldVertexShader = NULL;
-			g_OldDirect3DDevice9->GetVertexShader(&oldVertexShader);
-			if (oldVertexShader) oldVertexShader->AddRef();
-
-			IDirect3DVertexBuffer9* oldVertexBuffer0 = NULL;
-			UINT oldVertexBuffer0Offset;
-			UINT oldVertexBuffer0Stride;
-			g_OldDirect3DDevice9->GetStreamSource(0, &oldVertexBuffer0, &oldVertexBuffer0Offset, &oldVertexBuffer0Stride);
-			// this is done already according to doc: // if(oldVertexBuffer0) oldVertexBuffer0->AddRef();
-
-
-			IDirect3DIndexBuffer9* oldIndexBuffer = 0;
-			g_OldDirect3DDevice9->GetIndices(&oldIndexBuffer);
-			// this is done already according to doc: // if(oldIndexBuffer) oldIndexBuffer->AddRef();
-
-			IDirect3DVertexDeclaration9* oldDeclaration;
-			g_OldDirect3DDevice9->GetVertexDeclaration(&oldDeclaration);
-			if (oldDeclaration) oldDeclaration->AddRef();
-
-			DWORD oldFVF;
-			g_OldDirect3DDevice9->GetFVF(&oldFVF);
-
-			DWORD oldLightning;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_LIGHTING, &oldLightning);
-
-			DWORD oldSrgbWriteEnable;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_SRGBWRITEENABLE, &oldSrgbWriteEnable);
-
-			DWORD oldColorWriteEnable;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_COLORWRITEENABLE, &oldColorWriteEnable);
-
-			DWORD oldZWriteEnable;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_ZWRITEENABLE, &oldZWriteEnable);
-
-			DWORD oldZFunc;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_ZFUNC, &oldZFunc);
-
-			DWORD oldZEnable;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_ZENABLE, &oldZEnable);
-
-			DWORD oldAlphaTestEnable;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_ALPHATESTENABLE, &oldAlphaTestEnable);
-
-			DWORD oldSeparateAlphaBlendEnable;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, &oldSeparateAlphaBlendEnable);
-
-			DWORD oldAlphaBlendEnable;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_ALPHABLENDENABLE, &oldAlphaBlendEnable);
-
-			DWORD oldCullMode;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_CULLMODE, &oldCullMode);
-
-			DWORD oldMultiSampleAnitAlias;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_MULTISAMPLEANTIALIAS, &oldMultiSampleAnitAlias);
-
-			DWORD oldFillMode;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_FILLMODE, &oldFillMode);
-
-			DWORD oldSrcBlend;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_SRCBLEND, &oldSrcBlend);
-
-			DWORD oldDestBlend;
-			g_OldDirect3DDevice9->GetRenderState(D3DRS_DESTBLEND, &oldDestBlend);
-
-			D3DVIEWPORT9 oldViewPort;
-			g_OldDirect3DDevice9->GetViewport(&oldViewPort);
-
-			D3DMATRIX oldTransformWorld;
-			g_OldDirect3DDevice9->GetTransform(D3DTS_WORLD, &oldTransformWorld);
-
-			D3DMATRIX oldTransformView;
-			g_OldDirect3DDevice9->GetTransform(D3DTS_VIEW, &oldTransformView);
-
-			D3DMATRIX oldTransformProjection;
-			g_OldDirect3DDevice9->GetTransform(D3DTS_PROJECTION, &oldTransformProjection);
-
-			DWORD oldTs0_D3DTSS_COLOROP;
-			g_OldDirect3DDevice9->GetTextureStageState(0, D3DTSS_COLOROP, &oldTs0_D3DTSS_COLOROP);
-
-			DWORD oldTs0_D3DTSS_COLORARG1;
-			g_OldDirect3DDevice9->GetTextureStageState(0, D3DTSS_COLORARG1, &oldTs0_D3DTSS_COLORARG1);
-
-			DWORD oldTs0_D3DTSS_ALPHAOP;
-			g_OldDirect3DDevice9->GetTextureStageState(0, D3DTSS_COLOROP, &oldTs0_D3DTSS_ALPHAOP);
-
-			DWORD oldTs0_D3DTSS_ALPHAARG1;
-			g_OldDirect3DDevice9->GetTextureStageState(0, D3DTSS_ALPHAARG1, &oldTs0_D3DTSS_ALPHAARG1);
-
-			DWORD oldSs0_D3DSAMP_MINFILTER;
-			g_OldDirect3DDevice9->GetSamplerState(0, D3DSAMP_MINFILTER, &oldSs0_D3DSAMP_MINFILTER);
-
-			DWORD oldSs0_D3DSAMP_MAGFILTER;
-			g_OldDirect3DDevice9->GetSamplerState(0, D3DSAMP_MAGFILTER, &oldSs0_D3DSAMP_MAGFILTER);
-
-			DWORD oldSs0_D3DSAMP_SRGBTEXTURE;
-			g_OldDirect3DDevice9->GetSamplerState(0, D3DSAMP_SRGBTEXTURE, &oldSs0_D3DSAMP_SRGBTEXTURE);
-
-			IDirect3DBaseTexture9* oldTexture = 0;
-			if (FAILED(g_OldDirect3DDevice9->GetTexture(0, &oldTexture))) oldTexture = NULL;
-
+			AfxBeginCleanState();
 
 			//
-			// Draw
 
 			g_OldDirect3DDevice9->SetFVF(D3DFVF_AFXDRAWDEPTHVERTEX);
 
@@ -3824,57 +3472,8 @@ public:
 			}
 
 			//
-			// Restore old Direct3D9 state:
 
-			g_OldDirect3DDevice9->SetTransform(D3DTS_PROJECTION, &oldTransformProjection);
-			g_OldDirect3DDevice9->SetTransform(D3DTS_VIEW, &oldTransformView);
-			g_OldDirect3DDevice9->SetTransform(D3DTS_WORLD, &oldTransformWorld);
-
-			g_OldDirect3DDevice9->SetTexture(0, oldTexture);
-			if (oldTexture)
-				oldTexture->Release();
-
-			g_OldDirect3DDevice9->SetViewport(&oldViewPort);
-
-			g_OldDirect3DDevice9->SetTextureStageState(0, D3DTSS_COLOROP, oldTs0_D3DTSS_COLOROP);
-			g_OldDirect3DDevice9->SetTextureStageState(0, D3DTSS_COLORARG1, oldTs0_D3DTSS_COLORARG1);
-			g_OldDirect3DDevice9->SetTextureStageState(0, D3DTSS_COLOROP, oldTs0_D3DTSS_ALPHAOP);
-			g_OldDirect3DDevice9->SetTextureStageState(0, D3DTSS_ALPHAARG1, oldTs0_D3DTSS_ALPHAARG1);
-			g_OldDirect3DDevice9->SetSamplerState(0, D3DSAMP_MINFILTER, oldSs0_D3DSAMP_MINFILTER);
-			g_OldDirect3DDevice9->SetSamplerState(0, D3DSAMP_MAGFILTER, oldSs0_D3DSAMP_MAGFILTER);
-			g_OldDirect3DDevice9->SetSamplerState(0, D3DSAMP_SRGBTEXTURE, oldSs0_D3DSAMP_SRGBTEXTURE);
-
-			g_OldDirect3DDevice9->SetPixelShader(oldPixelShader);
-			if (oldPixelShader) oldPixelShader->Release();
-
-			g_OldDirect3DDevice9->SetVertexShader(oldVertexShader);
-			if (oldVertexShader) oldVertexShader->Release();
-
-			g_OldDirect3DDevice9->SetStreamSource(0, oldVertexBuffer0, oldVertexBuffer0Offset, oldVertexBuffer0Stride);
-			if (oldVertexBuffer0) oldVertexBuffer0->Release();
-
-			g_OldDirect3DDevice9->SetFVF(oldFVF);
-
-			g_OldDirect3DDevice9->SetIndices(oldIndexBuffer);
-			if (oldIndexBuffer) oldIndexBuffer->Release();
-
-			g_OldDirect3DDevice9->SetVertexDeclaration(oldDeclaration);
-			if (oldDeclaration) oldDeclaration->Release();
-
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_FILLMODE, oldFillMode);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_DESTBLEND, oldDestBlend);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_SRCBLEND, oldSrcBlend);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_LIGHTING, oldLightning);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, oldMultiSampleAnitAlias);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_CULLMODE, oldCullMode);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, oldAlphaBlendEnable);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, oldSeparateAlphaBlendEnable);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_ALPHATESTENABLE, oldAlphaTestEnable);	
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_ZENABLE, oldZEnable);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_ZFUNC, oldZFunc);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_ZWRITEENABLE, oldZWriteEnable);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_COLORWRITEENABLE, oldColorWriteEnable);
-			g_OldDirect3DDevice9->SetRenderState(D3DRS_SRGBWRITEENABLE, oldSrgbWriteEnable);
+			AfxEndCleanState();
 		}
 	}
 
@@ -4950,6 +4549,18 @@ public:
 		{
 			Shared_Direct3DDevice9_Shutdown();
 
+			if (NULL != m_CurrentState)
+			{
+				m_CurrentState->Release();
+				m_CurrentState = NULL;
+			}
+
+			if (NULL != m_InitialState)
+			{
+				m_InitialState->Release();
+				m_InitialState = NULL;
+			}
+
 			if(m_Original_VertexShader)
 			{
 				m_Original_VertexShader->Release();
@@ -5003,6 +4614,18 @@ public:
 
 		g_CampathDrawer.Reset();
 
+		if (NULL != m_CurrentState)
+		{
+			m_CurrentState->Release();
+			m_CurrentState = NULL;
+		}
+
+		if (NULL != m_InitialState)
+		{
+			m_InitialState->Release();
+			m_InitialState = NULL;
+		}
+
 		if (trackedRenderTarget)
 		{
 #ifdef AFX_INTEROP
@@ -5051,9 +4674,38 @@ public:
 			}
 #endif
 			HookInitialBuffers();
+
+			if (NULL != m_InitialState)
+			{
+				m_InitialState->Release();
+				m_InitialState = NULL;
+			}
+			g_OldDirect3DDevice9->CreateStateBlock(D3DSBT_ALL, &m_InitialState);
+			if (m_InitialState) m_InitialState->Capture();
 		}
 
 		AfxHookSource::Gui::On_Direct3DDevice9_Reset_After();
+	}
+
+	void AfxBeginCleanState()
+	{
+		if (NULL == m_CurrentState)
+		{
+			g_OldDirect3DDevice9->CreateStateBlock(D3DSBT_ALL, &m_CurrentState);
+			if (m_CurrentState) m_CurrentState->Capture();
+		}
+
+		if (m_InitialState) m_InitialState->Apply();
+	}
+
+	void AfxEndCleanState()
+	{
+		if (m_CurrentState)
+		{
+			m_CurrentState->Apply();
+			m_CurrentState->Release();
+			m_CurrentState = NULL;
+		}
 	}
     
 	STDMETHOD(Reset)(THIS_ D3DPRESENT_PARAMETERS* pPresentationParameters)
@@ -6392,6 +6044,8 @@ struct NewDirect3D9
 	{
 		if (D3DCREATE_ADAPTERGROUP_DEVICE & BehaviorFlags) return D3DERR_NOTAVAILABLE; //TODO: Support this code path?
 
+		BehaviorFlags = BehaviorFlags & ~(DWORD)D3DCREATE_PUREDEVICE; // We want state tracking actually.
+
 		HRESULT hRet = D3DERR_NOTAVAILABLE;
 
 		D3DDISPLAYMODE displayMode;
@@ -6470,6 +6124,8 @@ struct NewDirect3D9
 		HRESULT hRet = D3DERR_NOTAVAILABLE;
 
 		D3DDISPLAYMODE displayMode;
+
+		BehaviorFlags = BehaviorFlags & ~(DWORD)D3DCREATE_PUREDEVICE; // We want state tracking actually.
 
 		if (pPresentationParameters) FixPresentationParementers(pPresentationParameters);
 
@@ -6618,6 +6274,19 @@ bool AfxD3D9_Check_Supports_R32F_With_Blending(void)
 	return false;
 }
 
+void AfxD3D9BeginCleanState()
+{
+	if (!g_OldDirect3DDevice9) return;
+
+	g_NewDirect3DDevice9.AfxBeginCleanState();
+}
+
+void AfxD3D9EndCleanState()
+{
+	if (!g_OldDirect3DDevice9) return;
+
+	g_NewDirect3DDevice9.AfxEndCleanState();
+}
 
 void AfxD3D9PushOverrideState(bool clean)
 {
