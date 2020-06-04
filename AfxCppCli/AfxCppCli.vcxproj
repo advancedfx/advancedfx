@@ -160,7 +160,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\deps\release\prop\shared\AfxMath.h" />
     <ClInclude Include="..\shared\AfxColorLut.h" />
     <ClInclude Include="ColorLutTools.h" />
     <ClInclude Include="old\tools\demotools\demotools.h" />
@@ -186,7 +185,6 @@
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\deps\release\prop\shared\AfxMath.cpp" />
     <ClCompile Include="..\shared\AfxColorLut.cpp" />
     <ClCompile Include="AssemblyInfo.cpp" />
     <ClCompile Include="ColorLutTools.cpp" />

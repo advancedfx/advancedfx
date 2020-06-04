@@ -1469,6 +1469,9 @@ public:
 		g_CampathDrawer.SetDrawKeyframeCam(value);
 	}
 
+	virtual float GetDrawKeyframeIndex() { return g_CampathDrawer.GetDrawKeyframeIndex(); }
+	virtual void SetDrawKeyframeIndex(float value) { g_CampathDrawer.SetDrawKeyframeIndex(value); }
+
 } g_MirvCampath_Drawer;
  
 CON_COMMAND(mirv_campath, "camera paths")

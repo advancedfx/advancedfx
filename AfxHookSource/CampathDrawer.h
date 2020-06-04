@@ -26,6 +26,9 @@ public:
 	void SetDrawKeyframeCam(bool value) { m_DrawKeyframeCam = value; }
 	bool GetDrawKeyframeCam() { return m_DrawKeyframeCam; }
 
+	float GetDrawKeyframeIndex() { return m_DrawKeyframIndex; }
+	void SetDrawKeyframeIndex(float value) { m_DrawKeyframIndex = value; }
+
 	void BeginDevice(IDirect3DDevice9 * device);
 	void EndDevice();
 	void Reset();
@@ -67,6 +70,9 @@ private:
 	UINT m_VertexBufferVertexCount; // c_VertexBufferVertexCount
 	Vertex * m_LockedVertexBuffer;
 	std::list<double> m_TrajectoryPoints;
+	float m_DrawKeyframIndex = 0.618f;
+	IDirect3DTexture9* m_DigitsTexture = nullptr;
+	IAfxPixelShader* m_DrawTextureShader = nullptr;
 
 	void BuildPolyLinePoint(Vector3 previous, Vector3 current, DWORD currentColor, Vector3 next, Vertex * pOutVertexData);
 

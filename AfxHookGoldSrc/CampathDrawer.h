@@ -44,6 +44,8 @@ public:
 
 	virtual void CamPathChanged(CamPath* obj);
 
+	virtual float GetDrawKeyframeIndex() { return 0;  }
+	virtual void SetDrawKeyframeIndex(float value) { }
 private:
 	struct TempPoint
 	{

@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.84.0</version>
+<time>2020-06-04T10:50Z</time>
+<changes>
+<change type="fixed">
+Adjust to 6/03/2020 (06/04/2020 UTC) CS:GO update.
+</change>
+<change type="added">
+Added mirv_campath draw keyIndex (default 0.61, set 0 to disable).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.83.0</version>
 <time>2020-06-03T11:46Z</time>
 <changes>
