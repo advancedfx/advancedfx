@@ -40,20 +40,14 @@
     <Filter Include="deps\release">
       <UniqueIdentifier>{c2faba58-83b5-4cdc-8ec3-3d6aa898b495}</UniqueIdentifier>
     </Filter>
-    <Filter Include="deps\release\prop">
-      <UniqueIdentifier>{b7746533-87ac-4a58-ba4c-1e505727d82b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="deps\release\prop\shared">
-      <UniqueIdentifier>{32805ebf-8b73-4ad8-9fa7-84ac24d50773}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="deps\release\prop\shared\rapidxml">
-      <UniqueIdentifier>{14cce315-c13b-454e-a3ef-c05598a2a291}</UniqueIdentifier>
-    </Filter>
     <Filter Include="deps\release\Detours">
       <UniqueIdentifier>{a9be4af9-5721-47cc-a9a0-46d5ea02981c}</UniqueIdentifier>
     </Filter>
     <Filter Include="deps\release\Detours\src">
       <UniqueIdentifier>{52f5451a-fb32-457f-87d2-f7f971ecdc14}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="deps\release\rapidxml">
+      <UniqueIdentifier>{35d6398b-f546-46ff-8a8f-761d92b0c766}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -270,9 +264,6 @@
     <ClCompile Include="..\shared\binutils.cpp">
       <Filter>shared</Filter>
     </ClCompile>
-    <ClCompile Include="..\deps\release\prop\shared\AfxMath.cpp">
-      <Filter>deps\release\prop\shared</Filter>
-    </ClCompile>
     <ClCompile Include="..\deps\release\Detours\src\detours.cpp">
       <Filter>deps\release\Detours\src</Filter>
     </ClCompile>
@@ -317,6 +308,9 @@
     </ClCompile>
     <ClCompile Include="CampathDrawer.cpp">
       <Filter>AfxHookGoldSrc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\AfxMath.cpp">
+      <Filter>shared</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -494,21 +488,6 @@
     <ClInclude Include="..\shared\binutils.h">
       <Filter>shared</Filter>
     </ClInclude>
-    <ClInclude Include="..\deps\release\prop\shared\AfxMath.h">
-      <Filter>deps\release\prop\shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml.hpp">
-      <Filter>deps\release\prop\shared\rapidxml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_iterators.hpp">
-      <Filter>deps\release\prop\shared\rapidxml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_print.hpp">
-      <Filter>deps\release\prop\shared\rapidxml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_utils.hpp">
-      <Filter>deps\release\prop\shared\rapidxml</Filter>
-    </ClInclude>
     <ClInclude Include="..\deps\release\Detours\src\detours.h">
       <Filter>deps\release\Detours\src</Filter>
     </ClInclude>
@@ -532,6 +511,21 @@
     </ClInclude>
     <ClInclude Include="CampathDrawer.h">
       <Filter>AfxHookGoldSrc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\deps\release\rapidxml\rapidxml.hpp">
+      <Filter>deps\release\rapidxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\deps\release\rapidxml\rapidxml_iterators.hpp">
+      <Filter>deps\release\rapidxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\deps\release\rapidxml\rapidxml_print.hpp">
+      <Filter>deps\release\rapidxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\deps\release\rapidxml\rapidxml_utils.hpp">
+      <Filter>deps\release\rapidxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\AfxMath.h">
+      <Filter>shared</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

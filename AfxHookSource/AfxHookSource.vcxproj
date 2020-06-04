@@ -168,10 +168,10 @@
     <ClCompile Include="..\deps\release\prop\AfxHookSource\swarm\sdk_src\public\tier1\convar.cpp" />
     <ClCompile Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.cpp" />
     <ClCompile Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\tier1\KeyValues.cpp" />
-    <ClCompile Include="..\deps\release\prop\shared\AfxMath.cpp" />
     <ClCompile Include="..\shared\AfxColorLut.cpp" />
     <ClCompile Include="..\shared\AfxConsole.cpp" />
     <ClCompile Include="..\shared\AfxDetours.cpp" />
+    <ClCompile Include="..\shared\AfxMath.cpp" />
     <ClCompile Include="..\shared\binutils.cpp" />
     <ClCompile Include="..\shared\bvhexport.cpp" />
     <ClCompile Include="..\shared\bvhimport.cpp" />
@@ -250,6 +250,10 @@
     <ClCompile Include="..\shared\StringTools.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\deps\release\rapidxml\rapidxml.hpp" />
+    <ClInclude Include="..\deps\release\rapidxml\rapidxml_iterators.hpp" />
+    <ClInclude Include="..\deps\release\rapidxml\rapidxml_print.hpp" />
+    <ClInclude Include="..\deps\release\rapidxml\rapidxml_utils.hpp" />
     <ClInclude Include="..\interfaces\c\AfxHookSource.h" />
     <ClInclude Include="..\interfaces\c\AdvancedfxLibrary.h" />
     <ClInclude Include="..\interfaces\c\AdvancedfxTypes.h" />
@@ -300,8 +304,8 @@
     <ClInclude Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\public\toolframework\itoolframework.h" />
     <ClInclude Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\public\tools\bonelist.h" />
     <ClInclude Include="..\deps\release\prop\AfxHookSource\tf2\sdk_src\public\vstdlib\IKeyValuesSystem.h" />
-    <ClInclude Include="..\deps\release\prop\shared\AfxMath.h" />
     <ClInclude Include="..\shared\AfxColorLut.h" />
+    <ClInclude Include="..\shared\AfxMath.h" />
     <ClInclude Include="..\shared\MirvCampath.h" />
     <ClInclude Include="..\shared\AfxConsole.h" />
     <ClInclude Include="..\shared\AfxDetours.h" />
@@ -315,10 +319,6 @@
     <ClInclude Include="..\shared\FileTools.h" />
     <ClInclude Include="..\shared\hooks\gameOverlayRenderer.h" />
     <ClInclude Include="..\shared\OpenExrOutput.h" />
-    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml.hpp" />
-    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_iterators.hpp" />
-    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_print.hpp" />
-    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_utils.hpp" />
     <ClInclude Include="..\shared\RawOutput.h" />
     <ClInclude Include="..\shared\RefCounted.h" />
     <ClInclude Include="..\shared\vcpp\AfxAddr.h" />
