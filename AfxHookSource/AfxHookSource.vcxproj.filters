@@ -46,9 +46,6 @@
     <Filter Include="deps\release\prop">
       <UniqueIdentifier>{2c79369e-082a-43c4-9f0a-abcaa115fed3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="deps\release\prop\shared">
-      <UniqueIdentifier>{846254d9-48cb-47a6-ad65-ea03b5a61cd0}</UniqueIdentifier>
-    </Filter>
     <Filter Include="deps\release\prop\AfxHookSource">
       <UniqueIdentifier>{71347936-3615-40c3-9176-b40656efd2c1}</UniqueIdentifier>
     </Filter>
@@ -342,9 +339,6 @@
     <ClCompile Include="MirvCalcs.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
-    <ClCompile Include="..\deps\release\prop\shared\AfxMath.cpp">
-      <Filter>deps\release\prop\shared</Filter>
-    </ClCompile>
     <ClCompile Include="..\deps\release\prop\AfxHookSource\SourceInterfaces.cpp">
       <Filter>deps\release\prop\AfxHookSource</Filter>
     </ClCompile>
@@ -476,6 +470,9 @@
     </ClCompile>
     <ClCompile Include="momentum\ClientToolsMom.cpp">
       <Filter>AfxHookSource\momentum</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\AfxMath.cpp">
+      <Filter>shared</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -610,9 +607,6 @@
     </ClInclude>
     <ClInclude Include="MirvCalcs.h">
       <Filter>AfxHookSource</Filter>
-    </ClInclude>
-    <ClInclude Include="..\deps\release\prop\shared\AfxMath.h">
-      <Filter>deps\release\prop\shared</Filter>
     </ClInclude>
     <ClInclude Include="..\deps\release\prop\AfxHookSource\SourceInterfaces.h">
       <Filter>deps\release\prop\AfxHookSource</Filter>
@@ -889,6 +883,9 @@
     </ClInclude>
     <ClInclude Include="..\deps\release\rapidxml\rapidxml_utils.hpp">
       <Filter>deps\release\rapidxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\AfxMath.h">
+      <Filter>shared</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

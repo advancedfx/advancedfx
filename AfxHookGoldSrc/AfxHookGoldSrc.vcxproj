@@ -221,9 +221,9 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\deps\release\prop\shared\AfxMath.cpp" />
     <ClCompile Include="..\shared\AfxConsole.cpp" />
     <ClCompile Include="..\shared\AfxDetours.cpp" />
+    <ClCompile Include="..\shared\AfxMath.cpp" />
     <ClCompile Include="..\shared\binutils.cpp" />
     <ClCompile Include="..\shared\CamPath.cpp" />
     <ClCompile Include="..\deps\release\Detours\src\detours.cpp">
@@ -346,9 +346,13 @@
     <ClCompile Include="..\shared\RawOutput.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\deps\release\prop\shared\AfxMath.h" />
+    <ClInclude Include="..\deps\release\rapidxml\rapidxml.hpp" />
+    <ClInclude Include="..\deps\release\rapidxml\rapidxml_iterators.hpp" />
+    <ClInclude Include="..\deps\release\rapidxml\rapidxml_print.hpp" />
+    <ClInclude Include="..\deps\release\rapidxml\rapidxml_utils.hpp" />
     <ClInclude Include="..\shared\AfxConsole.h" />
     <ClInclude Include="..\shared\AfxDetours.h" />
+    <ClInclude Include="..\shared\AfxMath.h" />
     <ClInclude Include="..\shared\binutils.h" />
     <ClInclude Include="..\shared\CamPath.h" />
     <ClInclude Include="..\deps\release\Detours\src\detours.h" />
@@ -356,10 +360,6 @@
     <ClInclude Include="..\shared\EasySampler.h" />
     <ClInclude Include="..\shared\FileTools.h" />
     <ClInclude Include="..\shared\hooks\gameOverlayRenderer.h" />
-    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml.hpp" />
-    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_iterators.hpp" />
-    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_print.hpp" />
-    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_utils.hpp" />
     <ClInclude Include="..\shared\MirvCampath.h" />
     <ClInclude Include="..\shared\OpenExrOutput.h" />
     <ClInclude Include="..\shared\StringTools.h" />

@@ -2,7 +2,7 @@
 
 #include <WrpConsole.h>
 
-#include <deps/release/prop/shared/AfxMath.h>
+#include <shared/AfxMath.h>
 
 #include <string>
 #include <map>
