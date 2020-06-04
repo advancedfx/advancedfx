@@ -25,3 +25,7 @@
 	path = deps/dev/wxl-po-tools
 	url = https://github.com/advancedfx/wxl-po-tools.git
 	branch = python3
+[submodule "deps/release/rapidxml"]
+	path = deps/release/rapidxml
+	url = https://github.com/advancedfx/rapidxml.git
+	branch = master
