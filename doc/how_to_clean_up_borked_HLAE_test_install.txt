@@ -1,0 +1,12 @@
+Enter in admin powershell:
+
+Get-ChildItem -path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData' -Recurse | where {
+	foreach ($prop in $_.Property) {
+		if($_.GetValue($prop) -match 'C\:\\Program Files \(x86\)\\HLAE') {
+			return $true
+		}
+	}
+	return $false
+} | Remove-Item -Recurse -Force
+
+Then search the registry for remaing few HLAE items.
