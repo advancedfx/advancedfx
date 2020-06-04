@@ -49,9 +49,6 @@
     <Filter Include="deps\release\prop\shared">
       <UniqueIdentifier>{846254d9-48cb-47a6-ad65-ea03b5a61cd0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="deps\release\prop\shared\rapidxml">
-      <UniqueIdentifier>{354e9d3b-f0ce-481c-afa3-245f414e0bb7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="deps\release\prop\AfxHookSource">
       <UniqueIdentifier>{71347936-3615-40c3-9176-b40656efd2c1}</UniqueIdentifier>
     </Filter>
@@ -204,6 +201,9 @@
     </Filter>
     <Filter Include="AfxHookSource\momentum">
       <UniqueIdentifier>{ef946def-0efd-4b7b-b2c4-f29ef7ba2541}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="deps\release\rapidxml">
+      <UniqueIdentifier>{115c22f5-0cc1-433f-b2d1-0aec6d6d8529}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -614,18 +614,6 @@
     <ClInclude Include="..\deps\release\prop\shared\AfxMath.h">
       <Filter>deps\release\prop\shared</Filter>
     </ClInclude>
-    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_utils.hpp">
-      <Filter>deps\release\prop\shared\rapidxml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_print.hpp">
-      <Filter>deps\release\prop\shared\rapidxml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml_iterators.hpp">
-      <Filter>deps\release\prop\shared\rapidxml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\deps\release\prop\shared\rapidxml\rapidxml.hpp">
-      <Filter>deps\release\prop\shared\rapidxml</Filter>
-    </ClInclude>
     <ClInclude Include="..\deps\release\prop\AfxHookSource\SourceInterfaces.h">
       <Filter>deps\release\prop\AfxHookSource</Filter>
     </ClInclude>
@@ -889,6 +877,18 @@
     </ClInclude>
     <ClInclude Include="momentum\ClientToolsMom.h">
       <Filter>AfxHookSource\momentum</Filter>
+    </ClInclude>
+    <ClInclude Include="..\deps\release\rapidxml\rapidxml.hpp">
+      <Filter>deps\release\rapidxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\deps\release\rapidxml\rapidxml_iterators.hpp">
+      <Filter>deps\release\rapidxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\deps\release\rapidxml\rapidxml_print.hpp">
+      <Filter>deps\release\rapidxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\deps\release\rapidxml\rapidxml_utils.hpp">
+      <Filter>deps\release\rapidxml</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

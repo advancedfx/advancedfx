@@ -2,8 +2,8 @@
 
 #include "CamPath.h"
 
-#include <shared/rapidxml/rapidxml.hpp>
-#include <shared/rapidxml/rapidxml_print.hpp>
+#include <deps/release/rapidxml/rapidxml.hpp>
+#include <deps/release/rapidxml/rapidxml_print.hpp>
 #include <iterator>
 #include <stdio.h>
 #include <fstream>

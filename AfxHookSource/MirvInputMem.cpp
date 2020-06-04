@@ -7,8 +7,8 @@
 
 #include <shared/StringTools.h>
 
-#include <shared/rapidxml/rapidxml.hpp>
-#include <shared/rapidxml/rapidxml_print.hpp>
+#include <deps/release/rapidxml/rapidxml.hpp>
+#include <deps/release/rapidxml/rapidxml_print.hpp>
 
 
 MirvInputMem g_MirvInputMem;
