@@ -2,8 +2,8 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <!-- Update this on release: Id, Version -->
 	<Product
-    Id="{4988F669-3184-41DB-9373-FD37F1E17A7B}"
-    Version="2.98.0"
+    Id="{30130B50-F02C-421F-A866-485855EAB1BC}"
+    Version="2.99.0"
     Name="!(loc.ApplicationName)"
     Language="1033"
     Manufacturer="!(loc.Manufacturer)"
@@ -159,6 +159,12 @@
     <DirectoryRef Id="_D7529765_EBE7_44D2_A7DA_A1B6BB8ABC04_zlib">
       <Component Id="_5F7056F2_3BF6_4B6B_897E_7F28BDBF051F_README">
         <File Id="_5F7056F2_3BF6_4B6B_897E_7F28BDBF051F_README" Name="README" Source="$(var.hlae.TargetDir)\LICENSES\zlib\README" KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
+    
+    <DirectoryRef Id="_1A4E1985_37D7_4828_89AF_74CB62961F9B_resources">
+      <Component Id="_C6E104D2_B5B1_4EF6_995B_3FCE3FEFF63C_hexfont.tga">
+        <File Id="_C6E104D2_B5B1_4EF6_995B_3FCE3FEFF63C_hexfont.tga" Name="hexfont.tga" Source="$(var.hlae.TargetDir)\resources\hexfont.tga" KeyPath="yes"/>        
       </Component>
     </DirectoryRef>
 
@@ -508,6 +514,7 @@
       <ComponentRef Id="_C0E080A1_B853_400F_88B1_E25310D4478FR_LICENSE"/>
       <ComponentRef Id="_FCD2D2A8_1D6D_41E7_A4DF_CFC889EC53D9_license.txt"/>
       <ComponentRef Id="_5F7056F2_3BF6_4B6B_897E_7F28BDBF051F_README"/>
+      <ComponentRef Id="_C6E104D2_B5B1_4EF6_995B_3FCE3FEFF63C_hexfont.tga"/>
       <ComponentRef Id="_CF1FC747_A46B_427B_A0E6_7C8FE595A3C3_updateWorkaround.cfg"/>
       <ComponentRef Id="_3D4D72C2_1905_4131_B4E5_AFF7DAA11B04_wh.cfg"/>
       <ComponentRef Id="_B1156701_763D_4873_9DC7_AFC673C74EEC_cable.vmt"/>

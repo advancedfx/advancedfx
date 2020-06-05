@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.84.1</version>
+<time>2020-06-05T07:06Z</time>
+<changes>
+<change type="updated">
+Updated mirv_campath draw keyIndex to be more beautiful and changed default to 18.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.84.0</version>
 <time>2020-06-04T10:50Z</time>
 <changes>

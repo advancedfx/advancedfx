@@ -105,9 +105,9 @@ void New_R_RenderView(void)
 		*(float*)HL_ADDR_GET(g_fov) = cur_fov;
 	}
 
-	g_Old_R_RenderView();
+	g_Old_R_RenderView();		
 
-	g_CampathDrawer.Draw(p_r_refdef->vrect.width - p_r_refdef->vrect.x, p_r_refdef->vrect.height - p_r_refdef->vrect.y);
+	g_CampathDrawer.Draw(p_r_refdef->vrect.width - p_r_refdef->vrect.x, p_r_refdef->vrect.height - p_r_refdef->vrect.y, p_r_refdef->vieworg, p_r_refdef->viewangles);
 
 	if(g_R_RenderViewCallFromEngine) g_R_RenderViewCalledFromEngine = true;
 

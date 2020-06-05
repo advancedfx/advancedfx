@@ -60,4 +60,3 @@ public:
 // <param name="drawer">Can be nullptr.</param>
 void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Printf_t conMessage, advancedfx::Con_Printf_t conWarning, CamPath* camPath, IMirvCampath_Time* mirvTime, IMirvCampath_Camera* mirvCamera, IMirvCampath_Drawer* mirvDrawer);
 
-void MirvCampath_NewHexDigitsBgraTexture__4x8_8_32x16(void* data, int pitch);

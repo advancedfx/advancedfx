@@ -6,6 +6,7 @@
 #include "RenderView.h"
 #include "WrpVEngineClient.h"
 #include "MirvTime.h"
+#include "hlaeFolder.h"
 
 #include <shared/MirvCampath.h>
 
@@ -305,32 +306,18 @@ void CCampathDrawer::OnPostRenderAllTools()
 		bool campathEnabled = g_Hook_VClient_RenderView.m_CamPath.Enabled_get();
 		bool cameraMightBeSelected = false;
 
-		m_Device->SetRenderState(D3DRS_SRGBWRITEENABLE, FALSE);
-		m_Device->SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA|D3DCOLORWRITEENABLE_BLUE|D3DCOLORWRITEENABLE_GREEN|D3DCOLORWRITEENABLE_RED);
-		m_Device->SetRenderState(D3DRS_ZENABLE, D3DZB_TRUE);
-		m_Device->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
-		m_Device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
-		m_Device->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-		m_Device->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
-		m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-		m_Device->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
-		m_Device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		m_Device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-		m_Device->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
-		m_Device->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
-
-		m_Device->SetVertexShader(vertexShader);
+		int screenWidth, screenHeight;
+		g_VEngineClient->GetScreenSize(screenWidth, screenHeight);
+		FLOAT newCScreenInfo[4] = { 0 != screenWidth ? 1.0f / screenWidth : 0.0f, 0 != screenHeight ? 1.0f / screenHeight : 0.0f, 0.0, 0.0f };
 
 		m_WorldToScreenMatrix = g_VEngineClient->WorldToScreenMatrix();
-			
-		m_Device->SetVertexShaderConstantF(8, m_WorldToScreenMatrix.m[0], 4);
 
 		// Provide view plane info for line clipping:
+		double plane0[4] = { 0,0,0,1 };
+		double planeN[4] = { 1,0,0,1 };
+		double planeR[4] = { 0,-1,0,1 };
+		double planeU[4] = { 0,0,1,1 };
 		{
-			double plane0[4]={0,0,0,1};
-			double planeN[4]={1,0,0,1};
-			//double planeR[4]={0,-1,0,1};
-			//double planeU[4]={0,0,1,1};
 
 			unsigned char P[4];
 			unsigned char Q[4];
@@ -346,34 +333,32 @@ void CCampathDrawer::OnPostRenderAllTools()
 			};
 
 			double b0[4] = {
-				0 -m_WorldToScreenMatrix.m[0][3],
-				0 -m_WorldToScreenMatrix.m[1][3],
-				0 -m_WorldToScreenMatrix.m[2][3],
+				0 - m_WorldToScreenMatrix.m[0][3],
+				0 - m_WorldToScreenMatrix.m[1][3],
+				0 - m_WorldToScreenMatrix.m[2][3],
 				-m_WorldToScreenMatrix.m[3][3],
 			};
 
 			double bN[4] = {
-				0 -m_WorldToScreenMatrix.m[0][3],
-				0 -m_WorldToScreenMatrix.m[1][3],
-				1 -m_WorldToScreenMatrix.m[2][3],
+				0 - m_WorldToScreenMatrix.m[0][3],
+				0 - m_WorldToScreenMatrix.m[1][3],
+				1 - m_WorldToScreenMatrix.m[2][3],
 				-m_WorldToScreenMatrix.m[3][3],
 			};
-			/*
 			double bR[4] = {
-				1 -m_WorldToScreenMatrix.m[0][3],
-				0 -m_WorldToScreenMatrix.m[1][3],
-				0 -m_WorldToScreenMatrix.m[2][3],
+				1 - m_WorldToScreenMatrix.m[0][3],
+				0 - m_WorldToScreenMatrix.m[1][3],
+				0 - m_WorldToScreenMatrix.m[2][3],
 				-m_WorldToScreenMatrix.m[3][3],
 			};
 
 			double bU[4] = {
-				0 -m_WorldToScreenMatrix.m[0][3],
-				1 -m_WorldToScreenMatrix.m[1][3],
-				0 -m_WorldToScreenMatrix.m[2][3],
+				0 - m_WorldToScreenMatrix.m[0][3],
+				1 - m_WorldToScreenMatrix.m[1][3],
+				0 - m_WorldToScreenMatrix.m[2][3],
 				-m_WorldToScreenMatrix.m[3][3],
 			};
-			*/
-			if(!LUdecomposition(M, P, Q, L, U))
+			if (!LUdecomposition(M, P, Q, L, U))
 			{
 				Tier0_Warning("AFXERROR in CCampathDrawer::OnPostRenderAllTools: LUdecomposition failed\n");
 			}
@@ -381,9 +366,9 @@ void CCampathDrawer::OnPostRenderAllTools()
 			{
 				SolveWithLU(L, U, P, Q, b0, plane0);
 				SolveWithLU(L, U, P, Q, bN, planeN);
-				
-				//SolveWithLU(L, U, P, Q, bR, planeR);
-				//SolveWithLU(L, U, P, Q, bU, planeU);
+
+				SolveWithLU(L, U, P, Q, bR, planeR);
+				SolveWithLU(L, U, P, Q, bU, planeU);
 			}
 
 			/*
@@ -405,24 +390,196 @@ void CCampathDrawer::OnPostRenderAllTools()
 			Tier0_Msg("planeN=%f %f %f %f\n", planeN[0], planeN[1], planeN[2], planeN[3]);
 			*/
 
-			FLOAT vPlane0[4] = {(float)plane0[0], (float)plane0[1], (float)plane0[2], 0.0f};
+			FLOAT vPlane0[4] = { (float)plane0[0], (float)plane0[1], (float)plane0[2], 0.0f };
 
-			Vector3 planeNormal(planeN[0] -plane0[0], planeN[1] -plane0[1], planeN[2] -plane0[2]);
+			Vector3 planeNormal(planeN[0] - plane0[0], planeN[1] - plane0[1], planeN[2] - plane0[2]);
 			planeNormal.Normalize();
 
-			FLOAT vPlaneN[4] = {(float)planeNormal.X, (float)planeNormal.Y, (float)planeNormal.Z, 0.0f};
+			FLOAT vPlaneN[4] = { (float)planeNormal.X, (float)planeNormal.Y, (float)planeNormal.Z, 0.0f };
 
 			m_Device->SetVertexShaderConstantF(49, vPlane0, 1);
 			m_Device->SetVertexShaderConstantF(50, vPlaneN, 1);
 		}
 
+		// Draw keyframes index:
+		if (m_DrawKeyframIndex) {
+			if (nullptr == m_DigitsTexture)
+			{
+				if (SUCCEEDED(m_Device->CreateTexture(256, 128, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_DigitsTexture, NULL)))
+				{
+					D3DLOCKED_RECT rect;
+					if (SUCCEEDED(m_DigitsTexture->LockRect(0, &rect, NULL, 0)))
+					{
+						std::wstring fileName = GetHlaeFolderW();
+						fileName += L"resources\\hexfont.tga";
+
+						FILE* file;
+						_wfopen_s(&file, fileName.c_str(), L"rb");
+
+						if (file)
+						{
+							fseek(file, 18, SEEK_SET);
+
+							for (int j = 0; j < 128; ++j)
+							{
+								fread((unsigned char*)rect.pBits + j * rect.Pitch, 1, 256 * 4, file);
+							}
+
+							fclose(file);
+						}
+
+						m_DigitsTexture->UnlockRect(0);
+					}
+					else
+					{
+						m_DigitsTexture->Release();
+						m_DigitsTexture = nullptr;
+					}
+
+				}
+				else
+				{
+					m_DigitsTexture = nullptr;
+				}
+			}
+
+			if (m_DigitsTexture)
+			{
+				if (IDirect3DPixelShader9* pixelShader = m_DrawTextureShader->GetPixelShader())
+				{
+					m_Device->SetFVF(D3DFVF_AFXDRAWTEXTUREVERTEX);
+
+					// Setup viewport
+					D3DVIEWPORT9 vp;
+					vp.X = (DWORD)0;
+					vp.Y = (DWORD)0;
+					vp.Width = (DWORD)screenWidth;
+					vp.Height = (DWORD)screenHeight;
+					vp.MinZ = 0.0f;
+					vp.MaxZ = 1.0f;
+					m_Device->SetViewport(&vp);
+
+					m_Device->SetRenderState(D3DRS_SRGBWRITEENABLE, FALSE);
+					m_Device->SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_RED);
+					m_Device->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
+
+					m_Device->SetVertexShader(NULL);
+					m_Device->SetPixelShader(pixelShader);
+
+					m_Device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+					m_Device->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+					m_Device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+					m_Device->SetRenderState(D3DRS_ZENABLE, D3DZB_TRUE);
+					m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+					m_Device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+					m_Device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+					m_Device->SetRenderState(D3DRS_ALPHAREF, (DWORD)0x00000001);
+					m_Device->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
+					m_Device->SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATEREQUAL);
+					m_Device->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, TRUE);
+					m_Device->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
+
+					m_Device->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+					m_Device->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+					m_Device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
+					m_Device->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+					m_Device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
+					m_Device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
+					m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+					m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+					m_Device->SetSamplerState(0, D3DSAMP_SRGBTEXTURE, FALSE);
+
+					// texture:
+					m_Device->SetTexture(0, m_DigitsTexture);
+
+
+					// Setup projection matrix
+					{
+						D3DMATRIX mat_identity = { { 1.0f, 0.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,  0.0f, 0.0f, 0.0f, 1.0f } };
+						D3DMATRIX mat_projection =
+						{
+							m_WorldToScreenMatrix.m[0][0], m_WorldToScreenMatrix.m[1][0], m_WorldToScreenMatrix.m[2][0], m_WorldToScreenMatrix.m[3][0],
+							m_WorldToScreenMatrix.m[0][1], m_WorldToScreenMatrix.m[1][1], m_WorldToScreenMatrix.m[2][1], m_WorldToScreenMatrix.m[3][1],
+							m_WorldToScreenMatrix.m[0][2], m_WorldToScreenMatrix.m[1][2], m_WorldToScreenMatrix.m[2][2], m_WorldToScreenMatrix.m[3][2],
+							m_WorldToScreenMatrix.m[0][3], m_WorldToScreenMatrix.m[1][3], m_WorldToScreenMatrix.m[2][3], m_WorldToScreenMatrix.m[3][3]
+						};
+						m_Device->SetTransform(D3DTS_WORLD, &mat_identity);
+						m_Device->SetTransform(D3DTS_VIEW, &mat_identity);
+						m_Device->SetTransform(D3DTS_PROJECTION, &mat_projection);
+					}
+
+					int index = 0;
+
+					Vector3 vvRight(planeR[0] - plane0[0], planeR[1] - plane0[1], planeR[2] - plane0[2]);
+					vvRight.Normalize();
+					Vector3 vvUp(planeU[0] - plane0[0], planeU[1] - plane0[1], planeU[2] - plane0[2]);
+					vvUp.Normalize();
+
+					for (CamPathIterator it = g_Hook_VClient_RenderView.m_CamPath.GetBegin(); it != g_Hook_VClient_RenderView.m_CamPath.GetEnd(); ++it)
+					{
+						int digits = 0;
+						for (int t = index; 0 < t; t = t / 10)
+						{
+							++digits;
+						}
+						if (digits < 1) digits = 1;
+
+						double cpT = it.GetTime();
+						CamPathValue cpv = it.GetValue();
+
+						int val = index;
+
+						for (int i = 0; i < digits; ++i)
+						{
+							int cval = val % 10;
+							val = val / 10;
+
+							float left = -0.5f * m_DrawKeyframIndex * (i + 1);
+							float top = 0.5f * m_DrawKeyframIndex;
+							float bottom = -0.5f * m_DrawKeyframIndex;
+							float right = left + 0.5f * m_DrawKeyframIndex;
+
+							float tx = (32 * (cval % 8)) / 256.0f;
+							float ty = (64 * (cval / 8)) / 128.0f;
+
+							AFXDRAWTEXTUREVERTEX vertexData[4] = {
+								{{(float)cpv.X + left * (float)vvRight.X + top * (float)vvUp.X, (float)cpv.Y + left * (float)vvRight.Y + top * (float)vvUp.Y, (float)cpv.Z + left * (float)vvRight.Z + top * (float)vvUp.Z}, {tx, ty }},
+								{{(float)cpv.X + left * (float)vvRight.X + bottom * (float)vvUp.X, (float)cpv.Y + left * (float)vvRight.Y + bottom * (float)vvUp.Y, (float)cpv.Z + left * (float)vvRight.Z + bottom * (float)vvUp.Z}, {tx, ty + 64 / 128.0f}},
+								{{(float)cpv.X + right * (float)vvRight.X + top * (float)vvUp.X, (float)cpv.Y + right * (float)vvRight.Y + top * (float)vvUp.Y, (float)cpv.Z + right * (float)vvRight.Z + top * (float)vvUp.Z}, {tx + 32 / 256.0f, ty}},
+								{{(float)cpv.X + right * (float)vvRight.X + bottom * (float)vvUp.X, (float)cpv.Y + right * (float)vvRight.Y + bottom * (float)vvUp.Y, (float)cpv.Z + right * (float)vvRight.Z + bottom * (float)vvUp.Z}, {tx + 32 / 256.0f, ty + 64 / 128.0f}},
+							};
+
+							m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, &vertexData, sizeof(AFXDRAWTEXTUREVERTEX));
+						}
+
+						// cameraMightBeSelected = cameraMightBeSelected || lpSelected && cpv.Selected && lpTime <= curTime && curTime <= cpT;
+
+						++index;
+					}
+				}
+			}
+		}
+
+		m_Device->SetRenderState(D3DRS_SRGBWRITEENABLE, FALSE);
+		m_Device->SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_RED);
+		m_Device->SetRenderState(D3DRS_ZENABLE, D3DZB_TRUE);
+		m_Device->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+		m_Device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+		m_Device->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+		m_Device->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
+		m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+		m_Device->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
+		m_Device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		m_Device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		m_Device->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+		m_Device->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
+
+		m_Device->SetVertexShader(vertexShader);
+		m_Device->SetVertexShaderConstantF(8, m_WorldToScreenMatrix.m[0], 4);
+
 		m_Device->SetPixelShader(pixelShader);
 
 		m_Device->SetFVF(CCampathDrawer_VertexFVF);
-
-		int screenWidth, screenHeight;
-		g_VEngineClient->GetScreenSize(screenWidth, screenHeight);
-		FLOAT newCScreenInfo[4] = { 0 != screenWidth ? 1.0f / screenWidth : 0.0f, 0 != screenHeight ? 1.0f / screenHeight : 0.0f, 0.0, 0.0f};
 
 		// Draw trajectory:
 		if(2 <= g_Hook_VClient_RenderView.m_CamPath.GetSize() && campathCanEval)
@@ -705,174 +862,6 @@ void CCampathDrawer::OnPostRenderAllTools()
 			CamPathValue cpv = g_Hook_VClient_RenderView.m_CamPath.Eval(curTime);
 
 			DrawCamera(cpv, colourCam, newCScreenInfo);
-		}
-
-		// Draw keyframes index:
-		if (m_DrawKeyframIndex) {
-			if (nullptr == m_DigitsTexture)
-			{
-				if (SUCCEEDED(m_Device->CreateTexture(32, 16, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_DigitsTexture, NULL)))
-				{					
-					D3DLOCKED_RECT rect;
-					if (SUCCEEDED(m_DigitsTexture->LockRect(0, &rect, NULL, 0)))
-					{
-						MirvCampath_NewHexDigitsBgraTexture__4x8_8_32x16(rect.pBits, rect.Pitch);
-						m_DigitsTexture->UnlockRect(0);
-					}
-					else
-					{
-						m_DigitsTexture->Release();
-						m_DigitsTexture = nullptr;
-					}
-					
-				}
-				else
-				{
-					m_DigitsTexture = nullptr;
-				}
-			}
-
-			if(m_DigitsTexture)
-			{
-				if (IDirect3DPixelShader9* pixelShader = m_DrawTextureShader->GetPixelShader())
-				{
-					m_Device->SetFVF(D3DFVF_AFXDRAWTEXTUREVERTEX);
-
-					// Setup viewport
-					D3DVIEWPORT9 vp;
-					vp.X = (DWORD)0;
-					vp.Y = (DWORD)0;
-					vp.Width = (DWORD)screenWidth;
-					vp.Height = (DWORD)screenHeight;
-					vp.MinZ = 0.0f;
-					vp.MaxZ = 1.0f;
-					m_Device->SetViewport(&vp);
-
-					m_Device->SetRenderState(D3DRS_SRGBWRITEENABLE, FALSE);
-					m_Device->SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_RED);
-					m_Device->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
-
-					m_Device->SetVertexShader(NULL);
-					m_Device->SetPixelShader(pixelShader);
-
-					m_Device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
-					m_Device->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
-					m_Device->SetRenderState(D3DRS_ZFUNC, D3DCMP_ALWAYS); // redundant due to ZENABLE
-					m_Device->SetRenderState(D3DRS_ZENABLE, D3DZB_FALSE);
-					m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-					m_Device->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-					m_Device->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, FALSE);
-					m_Device->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
-
-					m_Device->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
-					m_Device->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-					m_Device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
-					m_Device->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-					m_Device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
-					m_Device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
-					m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-					m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-					m_Device->SetSamplerState(0, D3DSAMP_SRGBTEXTURE, FALSE);
-
-					// Setup orthographic projection matrix
-					{
-						const float L = 0.5f + 0, R = 0.5f + 0 + screenWidth, T = 0.5f + 0, B = 0.5f + 0 + screenHeight;
-						D3DMATRIX mat_identity = { { 1.0f, 0.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,  0.0f, 0.0f, 0.0f, 1.0f } };
-						D3DMATRIX mat_projection =
-						{
-							2.0f / (R - L),   0.0f,         0.0f,  0.0f,
-							0.0f,         2.0f / (T - B),   0.0f,  0.0f,
-							0.0f,         0.0f,         0.5f,  0.0f,
-							(L + R) / (L - R),  (T + B) / (B - T),  0.5f,  1.0f,
-						};
-						m_Device->SetTransform(D3DTS_WORLD, &mat_identity);
-						m_Device->SetTransform(D3DTS_VIEW, &mat_identity);
-						m_Device->SetTransform(D3DTS_PROJECTION, &mat_projection);
-					}
-
-					// texture:
-					m_Device->SetTexture(0, m_DigitsTexture);
-
-					int index = 0;
-					float halfScreenHeight = screenHeight * 0.5f;
-					float halfScreenWidth = screenWidth * 0.5f;
-
-					for (CamPathIterator it = g_Hook_VClient_RenderView.m_CamPath.GetBegin(); it != g_Hook_VClient_RenderView.m_CamPath.GetEnd(); ++it)
-					{
-						int digits = 0;
-						for (int t = index; 0 < t; t = t / 10)
-						{
-							++digits;
-						}
-						if (digits < 1) digits = 1;
-
-						double cpT = it.GetTime();
-						CamPathValue cpv = it.GetValue();
-
-						SOURCESDK::Vector v;
-						v.x = m_WorldToScreenMatrix.m[0][0] * (float)cpv.X + m_WorldToScreenMatrix.m[0][1] * (float)cpv.Y + m_WorldToScreenMatrix.m[0][2] * (float)cpv.Z + m_WorldToScreenMatrix.m[0][3];
-						v.y = m_WorldToScreenMatrix.m[1][0] * (float)cpv.X + m_WorldToScreenMatrix.m[1][1] * (float)cpv.Y + m_WorldToScreenMatrix.m[1][2] * (float)cpv.Z + m_WorldToScreenMatrix.m[1][3];
-						v.z = m_WorldToScreenMatrix.m[2][0] * (float)cpv.X + m_WorldToScreenMatrix.m[2][1] * (float)cpv.Y + m_WorldToScreenMatrix.m[2][2] * (float)cpv.Z + m_WorldToScreenMatrix.m[2][3];
-						if (float w = m_WorldToScreenMatrix.m[3][0] * (float)cpv.X  + m_WorldToScreenMatrix.m[3][1] * (float)cpv.Y  + m_WorldToScreenMatrix.m[3][2] * (float)cpv.Z + m_WorldToScreenMatrix.m[3][3])
-						{
-							v.x /= w;
-							v.y /= w;
-							v.z /= w;
-
-							if (w < 0)
-							{
-								++index;
-								continue;
-							}
-						}
-
-						v.x *= halfScreenWidth;
-						v.y *= -halfScreenHeight;
-						if (v.z < 0) v.z = 0;
-						else if (v.z > 1) v.z = 1;
-
-						float height = (m_DrawKeyframIndex) * screenHeight * (1.0f-v.z);
-
-						if (height < 0.5f)
-						{
-							++index;
-							continue;
-						}
-
-						float widthOfs = height * 0.75f;
-
-						int val = index;
-
-						for (int i = 0; i < digits; ++i)
-						{
-							int cval = val % 10;
-							val = val / 10;
-
-							float left = halfScreenWidth + v.x - widthOfs * (i + 1) + height * 0.25f;
-							float top = halfScreenHeight + v.y + height * 0.5f;
-							float bottom = halfScreenHeight + v.y - height * 0.5f;
-							float right = left + 0.5f * height;
-
-							float tx = (4 * (cval % 8)) / 32.0f;
-							float ty = (8 * (cval / 8)) / 16.0f;
-
-							AFXDRAWTEXTUREVERTEX vertexData[4] = {
-								{{left,top,0}, {tx, ty + 8 / 16.0f}},
-								{{left,bottom,0}, {tx, ty}},
-								{{right,top,0}, {tx + 4 / 32.0f, ty + 8 / 16.0f}},
-								{{right,bottom,0}, {tx + 4 / 32.0f, ty}},
-							};
-
-							m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, &vertexData, sizeof(AFXDRAWTEXTUREVERTEX));
-						}
-
-						// cameraMightBeSelected = cameraMightBeSelected || lpSelected && cpv.Selected && lpTime <= curTime && curTime <= cpT;
-
-						++index;
-					}
-				}
-			}
-				
 		}
 	}
 

@@ -7,48 +7,6 @@
 #include <sstream>
 #include <iomanip>
 
-unsigned char g_MirvCampath_Digits[16][4] = {
-	{0b01100011, 0b01100110, 0b10001111, 0b01111111},
-	{0b10010101, 0b10011001, 0b10001000, 0b10000001},
-	{0b10011001, 0b10011001, 0b10101000, 0b10000010},
-	{0b10010001, 0b00100010, 0b11111111, 0b11100010},
-	{0b10010001, 0b01000010, 0b00100001, 0b10010100},
-	{0b10010001, 0b01001001, 0b00100001, 0b10010100},
-	{0b10010001, 0b10001001, 0b00100001, 0b10011000},
-	{0b01100001, 0b11110110, 0b00101111, 0b01101000},
-	{0b01100110, 0b11111110, 0b01111110, 0b11111111},
-	{0b10011001, 0b10011001, 0b10000101, 0b10001000},
-	{0b10011001, 0b10011001, 0b10000101, 0b10001000},
-	{0b11110111, 0b11111110, 0b10000101, 0b11111111},
-	{0b10010001, 0b10011001, 0b10000101, 0b10001000},
-	{0b10010001, 0b10011001, 0b10000101, 0b10001000},
-	{0b10010001, 0b10011001, 0b10000101, 0b10001000},
-	{0b01100110, 0b10011110, 0b01111110, 0b11111000}
-};
-
-
-void MirvCampath_NewHexDigitsBgraTexture__4x8_8_32x16(void* data, int pitch)
-{
-	if (nullptr == data) return;
-
-	for (int i = 0; i < 32; ++i)
-	{
-		for (int j = 0; j < 16; ++j)
-		{
-			unsigned char val = 0 != (g_MirvCampath_Digits[j][i / 8] & (1 << (7 - (i % 8)))) ? 255 : 0;
-			
-			unsigned char* pOut = (unsigned char* )data + (j * pitch + i * 4);
-
-			pOut[0] = val;
-			pOut[1] = val;
-			pOut[2] = val;
-			pOut[3] = 255;
-		}
-	}
-	
-}
-
-
 void MirvCampath_PrintTimeFormated(double time, advancedfx::Con_Printf_t conMessage)
 {
 	int seconds = (int)time % 60;
@@ -183,7 +141,7 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 					}
 
 					conMessage(
-						"%s draw keyIndex <fHeightPercent> - Text height in percent of screen heigt.\n"
+						"%s draw keyIndex <fHeight> - The text height.\n"
 						"Current value: %f\n",
 						args->ArgV(0),
 						mirvDrawer->GetDrawKeyframeIndex()

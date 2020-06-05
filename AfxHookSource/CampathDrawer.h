@@ -70,7 +70,7 @@ private:
 	UINT m_VertexBufferVertexCount; // c_VertexBufferVertexCount
 	Vertex * m_LockedVertexBuffer;
 	std::list<double> m_TrajectoryPoints;
-	float m_DrawKeyframIndex = 0.618f;
+	float m_DrawKeyframIndex = 18.0f;
 	IDirect3DTexture9* m_DigitsTexture = nullptr;
 	IAfxPixelShader* m_DrawTextureShader = nullptr;
 

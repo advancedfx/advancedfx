@@ -7,6 +7,8 @@
 #include "hooks/DemoPlayer/DemoPlayer.h"
 #include "hooks/HookHw.h"
 
+#include "hlaeFolder.h"
+
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -62,13 +64,48 @@ void CCampathDrawer::CamPathChanged(CamPath* obj)
 
 #define ValCondInv(value,invert) ((invert) ? 1.0f - (value) : (value) )
 
-void CCampathDrawer::Draw(float width, float height)
+void CCampathDrawer::Draw(float width, float height, float origin[3], float angles[3])
 {
 	if (!m_Draw)
 		return;
 
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glEnable(GL_BLEND);
+	if (!m_HasDigitsTexture)
+	{
+		glGenTextures(1, &m_DigitsTexture);
+		glBindTexture(GL_TEXTURE_2D, m_DigitsTexture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		if (unsigned char* data = (unsigned char* )malloc(4 * 256 * 128))
+		{
+			std::wstring fileName = GetHlaeFolderW();
+			fileName += L"resources\\hexfont.tga";
+
+			FILE* file;
+			_wfopen_s(&file, fileName.c_str(), L"rb");
+
+			if (file)
+			{
+				fseek(file, 18, SEEK_SET);
+
+				for (int j = 0; j < 128; ++j)
+				{
+					fread(data + j * 256 * 4, 1, 256 * 4, file);
+				}
+
+				fclose(file);
+			}
+
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 128, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+
+			free(data);
+		}
+
+		m_HasDigitsTexture = true;
+	}
+
 
 	// Draw:
 	{
@@ -81,6 +118,76 @@ void CCampathDrawer::Draw(float width, float height)
 		bool campathCanEval = camPath->CanEval();
 		bool campathEnabled = camPath->Enabled_get();
 		bool cameraMightBeSelected = false;
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glDisable(GL_CULL_FACE);
+
+		if (m_DrawKeyframIndex)
+		{
+			double vvForward[3];
+			double vvRight[3];
+			double vvUp[3];
+
+			MakeVectors(angles[2], angles[0], angles[1], vvForward, vvRight, vvUp);
+
+			glBindTexture(GL_TEXTURE_2D, m_DigitsTexture);
+			glEnable(GL_ALPHA_TEST);
+			glAlphaFunc(GL_GEQUAL, 1.0f / 255.0f);
+
+			glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+			int index = 0;
+
+			for (CamPathIterator it = camPath->GetBegin(); it != camPath->GetEnd(); ++it)
+			{
+				int digits = 0;
+				for (int t = index; 0 < t; t = t / 10)
+				{
+					++digits;
+				}
+				if (digits < 1) digits = 1;
+
+				double cpT = it.GetTime();
+				CamPathValue cpv = it.GetValue();
+
+				int val = index;
+
+				for (int i = 0; i < digits; ++i)
+				{
+					int cval = val % 10;
+					val = val / 10;
+
+					float left = -0.5f * m_DrawKeyframIndex * (i + 1);
+					float top = 0.5f * m_DrawKeyframIndex;
+					float bottom = -0.5f * m_DrawKeyframIndex;
+					float right = left + 0.5f * m_DrawKeyframIndex;
+
+					float tx = (32 * (cval % 8)) / 256.0f;
+					float ty = (64 * (cval / 8)) / 128.0f;
+
+					glBegin(GL_TRIANGLE_STRIP);
+					glTexCoord2f(tx, ty);
+					glVertex3f((float)cpv.X + left * (float)vvRight[0] + top * (float)vvUp[0], (float)cpv.Y + left * (float)vvRight[1] + top * (float)vvUp[1], (float)cpv.Z + left * (float)vvRight[2] + top * (float)vvUp[2]);
+					glTexCoord2f(tx, ty + 64 / 128.0f);
+					glVertex3f((float)cpv.X + left * (float)vvRight[0] + bottom * (float)vvUp[0], (float)cpv.Y + left * (float)vvRight[1] + bottom * (float)vvUp[1], (float)cpv.Z + left * (float)vvRight[2] + bottom * (float)vvUp[2]);
+					glTexCoord2f(tx + 32 / 256.0f, ty);
+					glVertex3f((float)cpv.X + right * (float)vvRight[0] + top * (float)vvUp[0], (float)cpv.Y + right * (float)vvRight[1] + top * (float)vvUp[1], (float)cpv.Z + right * (float)vvRight[2] + top * (float)vvUp[2]);
+					glTexCoord2f(tx + 32 / 256.0f, ty + 64 / 128.0f);
+					glVertex3f((float)cpv.X + right * (float)vvRight[0] + bottom * (float)vvUp[0], (float)cpv.Y + right * (float)vvRight[1] + bottom * (float)vvUp[1], (float)cpv.Z + right * (float)vvRight[2] + bottom * (float)vvUp[2]);
+					glEnd();
+				}
+
+				// cameraMightBeSelected = cameraMightBeSelected || lpSelected && cpv.Selected && lpTime <= curTime && curTime <= cpT;
+
+				++index;
+			}
+
+			glDisable(GL_ALPHA_TEST);
+			glBindTexture(GL_TEXTURE_2D, 0);
+		}
+
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 		// Draw trajectory:
 		if (2 <= camPath->GetSize() && campathCanEval)
@@ -283,11 +390,12 @@ void CCampathDrawer::Draw(float width, float height)
 
 			DrawCamera(cpv, colourCam, width, height);
 		}
-	}
 
-	glLineWidth(1.0f);
-	glDisable(GL_BLEND);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		glEnable(GL_CULL_FACE);
+		glLineWidth(1.0f);
+		glDisable(GL_BLEND);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
 }
 
 
