@@ -78,7 +78,7 @@ AFXADDR_DEF(csgo_RTTI_CGameEvent)
 AFXADDR_DEF(csgo_RTTI_IGameEvent)
 //AFXADDR_DEF(csgo_client_dynamic_cast);
 //AFXADDR_DEF(csgo_client_RTTI_IClientRenderable);
-AFXADDR_DEF(csgo_GlowCurrentPlayer_JE)
+AFXADDR_DEF(csgo_GlowCurrentPlayer_JMPS)
 
 void ErrorBox(char const * messageText);
 
@@ -1731,6 +1731,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		}
 		*/
 
+		// When this changes mirv_fix selectedPlayerGlow needs an update as well!
 		// This is above spec_glow_silent_factor reference, where it makes the selected player glow
 		{
 			DWORD addr = 0;
@@ -1740,16 +1741,16 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			{
 				MemRange textRange = sections.GetMemRange();
 
-				MemRange result = FindPatternString(textRange, "75 ?? 38 45 FF 74 ?? C7 06 00 00 80 3F C7 46 04 00 00 80 3F C7 46 08 00 00 80 3F EB ??");
+				MemRange result = FindPatternString(textRange, "75 05 38 45 FF 74 ?? C7 06 00 00 80 3F C7 46 04 00 00 80 3F C7 46 08 00 00 80 3F EB ??");
 
 				if (!result.IsEmpty())
-					addr = result.Start + 0x5;
+					addr = result.Start;
 				else
 					ErrorBox(MkErrStr(__FILE__, __LINE__));
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-			AFXADDR_SET(csgo_GlowCurrentPlayer_JE, addr);
+			AFXADDR_SET(csgo_GlowCurrentPlayer_JMPS, addr);
 		}
 
 		/*
@@ -1888,7 +1889,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_CRendering3dView_DrawTranslucentRenderables, 0x0);
 		//AFXADDR_SET(csgo_client_dynamic_cast, 0x0);
 		//AFXADDR_SET(csgo_client_RTTI_IClientRenderable, 0x0);
-		AFXADDR_SET(csgo_GlowCurrentPlayer_JE, 0x0);
+		AFXADDR_SET(csgo_GlowCurrentPlayer_JMPS, 0x0);
 		//AFXADDR_SET(csgo_C_BaseEntity_ofs_m_nModelIndex, -1);
 		//AFXADDR_SET(csgo_C_BaseEntity_ofs_m_iWorldModelIndex, -1);
 	}
