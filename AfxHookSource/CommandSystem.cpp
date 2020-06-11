@@ -371,7 +371,7 @@ bool CommandSystem::Load(wchar_t const * fileName)
 
 						Interval range = Interval(tick,tick, epsilon);
 
-						if (NULL == cur_node->first_node())
+						if (NULL == cur_node->first_node("body"))
 						{
 							cmd->SetCommand(cur_node->value());
 						}
@@ -433,7 +433,7 @@ bool CommandSystem::Load(wchar_t const * fileName)
 						
 						Interval range = Interval(time,time, epsilon);
 
-						if (NULL == cur_node->first_node())
+						if (NULL == cur_node->first_node("body"))
 						{
 							cmd->SetCommand(cur_node->value());
 						}
