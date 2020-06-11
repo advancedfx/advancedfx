@@ -23,6 +23,8 @@
       <Payload Id="theme_de_de" Compressed="yes"  Name="1031\thm.wxl" SourceFile="lang\HyperlinkTheme_de-DE.wxl"/>
       <Payload Id="theme_en_us" Compressed="yes"  Name="1033\thm.wxl" SourceFile="lang\HyperlinkTheme_en-US.wxl"/>
       <Payload Id="theme_fi_fi" Compressed="yes"  Name="1035\thm.wxl" SourceFile="lang\HyperlinkTheme_fi-FI.wxl"/>
+      <Payload Id="theme_hu_hu" Compressed="yes"  Name="1038\thm.wxl" SourceFile="lang\HyperlinkTheme_hu-HU.wxl"/>
+      <Payload Id="theme_it_it" Compressed="yes"  Name="1040\thm.wxl" SourceFile="lang\HyperlinkTheme_it-IT.wxl"/>
       <Payload Id="theme_ja_jp" Compressed="yes"  Name="1041\thm.wxl" SourceFile="lang\HyperlinkTheme_ja-JP.wxl"/>
       <Payload Id="theme_nl_nl" Compressed="yes"  Name="1043\thm.wxl" SourceFile="lang\HyperlinkTheme_nl-NL.wxl"/>
       <Payload Id="theme_pl_pl" Compressed="yes"  Name="1045\thm.wxl" SourceFile="lang\HyperlinkTheme_pl-PL.wxl"/>
@@ -52,6 +54,7 @@
         <Payload Id="HlaeCore_de_de" Compressed="yes" Name="1031" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\de-de\HlaeCore.mst"/>
         <Payload Id="HlaeCore_fi_fi" Compressed="yes" Name="1035" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\fi-fi\HlaeCore.mst"/>
         <Payload Id="HlaeCore_hu_hu" Compressed="yes" Name="1038" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\hu-hu\HlaeCore.mst"/>
+        <Payload Id="HlaeCore_it_it" Compressed="yes" Name="1040" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\it-it\HlaeCore.mst"/>
         <Payload Id="HlaeCore_ja_jp" Compressed="yes" Name="1041" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\ja-jp\HlaeCore.mst"/>
         <Payload Id="HlaeCore_nl_nl" Compressed="yes" Name="1043" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\nl-nl\HlaeCore.mst"/>
         <Payload Id="HlaeCore_pl_pl" Compressed="yes" Name="1045" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\pl-pl\HlaeCore.mst"/>

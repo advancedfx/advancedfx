@@ -77,6 +77,7 @@
     <None Include="lang\HyperlinkTheme_tr-TR.wxl" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="lang\HyperlinkTheme_it-IT.wxl" />
     <EmbeddedResource Include="lang\HyperlinkTheme_pl-PL.wxl" />
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" Condition=" '$(WixTargetsPath)' != '' " />
