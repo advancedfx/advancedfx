@@ -1925,8 +1925,8 @@ private:
 
 		virtual void UnlockMesh(CAfxBaseFxStreamContext* ch, IAfxMesh* am, int numVerts, int numIndices, SOURCESDK::MeshDesc_t_csgo& desc) override;
 
-		void ID3d9HooksModulationColorBlendOverride::D3d9HooksModulationColorBlendOverride(float color[4]) override {
-
+		void ID3d9HooksModulationColorBlendOverride::D3d9HooksModulationColorBlendOverride(float color[4]) override
+		{
 			if (1 == m_DebugColor)
 			{
 				color[3] = 1;
@@ -1937,6 +1937,14 @@ private:
 				color[1] = color[3];
 				color[2] = color[3];
 				color[3] = 1;
+			}
+			else if (color[3] == 0.0f)
+			{
+				// Edge case for cut-out mask.
+			}
+			else if (color[3] == 1.0f && color[2] == 1.0f && color[1] == 1.0f && color[0] == 1.0f)
+			{
+				// Edge case for cut-out mask.
 			}
 			else
 			{
