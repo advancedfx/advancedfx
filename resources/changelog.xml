@@ -6,6 +6,22 @@
 
 <release>
 <name>HLAE</name>
+<version>2.100.0</version>
+<time>2020-06-11T10:40Z</time>
+<changes>
+<change type="added">Add it translations to Release.</change>
+<change type="fixed">Fixed hu installer translations not being used.</change>
+<change type="fixed">Fixed Voronoi color table generator:<br />
+- Fixed some bugs.<br />
+- Weights are now used to weight the region size / shape, instead of the interpolation.<br />
+- Default example weights are now 1 / 2 (old 1 / 128) in order to make sense with new usage.</change>
+<change type="updated">Included AfxHookSource 1.84.2 (2020-06-11T10:40Z).</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.99.0</version>
 <time>2020-06-05T07:06Z</time>
 <changes>
