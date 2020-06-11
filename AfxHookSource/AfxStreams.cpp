@@ -3853,9 +3853,6 @@ void CAfxBaseFxStream::CActionGlowColorMap::Console_Edit(IWrpCommandArgs* args)
 
 void CAfxBaseFxStream::CActionGlowColorMap::AfxUnbind(CAfxBaseFxStreamContext* ch)
 {
-	AfxD3D9OverrideEnd_D3DRS_DESTBLEND();
-	AfxD3D9OverrideEnd_D3DRS_SRCBLEND();
-
 	AfxD3D9OverrideEnd_ModulationColorBlend();
 
 	AfxD3D9PopOverrideState();
@@ -3866,9 +3863,6 @@ void CAfxBaseFxStream::CActionGlowColorMap::MaterialHook(CAfxBaseFxStreamContext
 	AfxD3D9PushOverrideState(false);
 
 	AfxD3D9OverrideBegin_ModulationColorBlend(this);
-
-	AfxD3D9OverrideBegin_D3DRS_SRCBLEND(D3DBLEND_SRCALPHA);
-	AfxD3D9OverrideBegin_D3DRS_DESTBLEND(D3DBLEND_INVSRCALPHA);
 }
 
 void CAfxBaseFxStream::CActionGlowColorMap::UnlockMesh(CAfxBaseFxStreamContext* ch, IAfxMesh* am, int numVerts, int numIndices, SOURCESDK::MeshDesc_t_csgo& desc)
