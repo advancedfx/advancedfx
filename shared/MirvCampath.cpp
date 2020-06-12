@@ -130,11 +130,30 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 					);
 					return;
 				}
+				else if (0 == _stricmp("keyIndex", cmd2))
+				{
+					if (4 <= argc)
+					{
+						char const* cmd3 = args->ArgV(3);
+
+						mirvDrawer->SetDrawKeyframeIndex(atof(cmd3));
+						return;
+					}
+
+					conMessage(
+						"%s draw keyIndex <fHeight> - The text height.\n"
+						"Current value: %f\n",
+						args->ArgV(0),
+						mirvDrawer->GetDrawKeyframeIndex()
+					);
+					return;
+				}
 			}
 
 			conMessage("%s draw enabled [...] - enable / disable drawing.\n", args->ArgV(0));
 			conMessage("%s draw keyAxis [...] - If to draw axis at keyframes.\n", args->ArgV(0));
 			conMessage("%s draw keyCam [...] - If to draw camera at keyframes.\n", args->ArgV(0));
+			conMessage("%s draw keyIndex [...] - Size of keyframe index to draw.\n", args->ArgV(0));
 			return;
 		}
 		else if (!_stricmp("clear", subcmd) && 2 == argc)

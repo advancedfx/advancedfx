@@ -3,6 +3,8 @@
 #include <shared/CamPath.h>
 #include <shared/MirvCampath.h>
 
+#include <gl/GL.h>
+
 #include <list>
 
 class CCampathDrawer
@@ -17,7 +19,7 @@ public:
 	void Begin();
 	void End();
 
-	void Draw(float width, float height);
+	void Draw(float width, float height, float origin[3], float angles[3]);
 
 	virtual bool GetEnabled() {
 		return m_Draw;
@@ -42,6 +44,9 @@ public:
 		m_DrawKeyframeCam = value;
 	}
 
+	float GetDrawKeyframeIndex() { return m_DrawKeyframIndex; }
+	void SetDrawKeyframeIndex(float value) { m_DrawKeyframIndex = value; }
+
 	virtual void CamPathChanged(CamPath* obj);
 
 private:
@@ -54,10 +59,14 @@ private:
 
 	bool m_DrawKeyframeAxis = false;
 	bool m_DrawKeyframeCam = true;
+	float m_DrawKeyframIndex = 18.0f;
 
 	bool m_Draw;
 	bool m_RebuildDrawing;
 	std::list<double> m_TrajectoryPoints;
+
+	bool m_HasDigitsTexture = false;
+	GLuint m_DigitsTexture;
 
 	void AutoPolyLineStart();
 	void AutoPolyLinePoint(Vector3 previous, Vector3 current, DWORD colorCurrent, Vector3 next);

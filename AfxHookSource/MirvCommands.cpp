@@ -1469,6 +1469,9 @@ public:
 		g_CampathDrawer.SetDrawKeyframeCam(value);
 	}
 
+	virtual float GetDrawKeyframeIndex() { return g_CampathDrawer.GetDrawKeyframeIndex(); }
+	virtual void SetDrawKeyframeIndex(float value) { g_CampathDrawer.SetDrawKeyframeIndex(value); }
+
 } g_MirvCampath_Drawer;
  
 CON_COMMAND(mirv_campath, "camera paths")
@@ -3436,7 +3439,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 		*/
 		else if (0 == _stricmp("selectedPlayerGlow", cmd1) && 3 == argc)
 		{
-			if (!AFXADDR_GET(csgo_GlowCurrentPlayer_JE))
+			if (!AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS))
 			{
 				Tier0_Warning("Error: Required hooks not installed.\n");
 				return;
@@ -3444,9 +3447,20 @@ CON_COMMAND(mirv_fix, "Various fixes")
 
 			MdtMemBlockInfos mdtInfos;
 
-			MdtMemAccessBegin((LPVOID)AFXADDR_GET(csgo_GlowCurrentPlayer_JE), sizeof(unsigned char), &mdtInfos);
+			MdtMemAccessBegin((LPVOID)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS), 5 * sizeof(unsigned char), &mdtInfos);
 
-			*(unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JE) = 0 != atoi(args->ArgV(2)) ? 0x74 : 0xEB;
+			if (0 != atoi(args->ArgV(2)))
+			{
+				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 0) = 0x75;
+				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 1) = 0x05;
+				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 5) = 0x74;
+			}
+			else
+			{
+				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 0) = 0x90;
+				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 1) = 0x90;
+				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 5) = 0xEB;
+			}
 
 			MdtMemAccessEnd(&mdtInfos);
 

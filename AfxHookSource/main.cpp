@@ -2425,7 +2425,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 
 		old_Direct3DCreate9 = (Direct3DCreate9_t)g_Import_shaderapidx9_d3d9_Direct3DCreate9.TrueFunc;
 	}
-	else if(bFirstClient && (StringEndsWith( lpLibFileName, "client_panorama.dll") || SourceSdkVer_CSGO != g_SourceSdkVer && StringEndsWith(lpLibFileName, "client.dll")))
+	else if(bFirstClient && (StringEndsWith( lpLibFileName, "client_panorama.dll") || SourceSdkVer_CSGO != g_SourceSdkVer && StringEndsWith(lpLibFileName, "client.dll") || StringEndsWith(lpLibFileName, "csgo\\bin\\client.dll")))
 	{
 		bFirstClient = false;
 

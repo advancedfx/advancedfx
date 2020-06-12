@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
+using System.Security.Permissions;
 using System.Text;
 using System.Windows.Forms;
 
@@ -34,17 +35,17 @@ namespace AfxGui
 
             suspendPreview = true;
 
-            m_Colors.Add(new HlaeCommentedColor(224, 175, 86, 0, L10n._p("terrorist", "T")), new HlaeWeightedColor(255, 0, 0, 0, 128f));
-            m_Colors.Add(new HlaeCommentedColor(224, 175, 86, 255, L10n._p("terrorist", "T")), new HlaeWeightedColor(255, 0, 0, 255, 128f));
-            m_Colors.Add(new HlaeCommentedColor(144, 155, 221, 0, L10n._p("counter-terrorist", "CT")), new HlaeWeightedColor(0, 0, 255, 0, 128f));
-            m_Colors.Add(new HlaeCommentedColor(144, 155, 221, 255, L10n._p("counter-terrorist", "CT")), new HlaeWeightedColor(0, 0, 255, 255, 128f));
+            m_Colors.Add(new HlaeCommentedColor(224, 175, 86, 0, L10n._p("terrorist", "T")), new HlaeWeightedColor(255, 0, 0, 0, 2f));
+            m_Colors.Add(new HlaeCommentedColor(224, 175, 86, 255, L10n._p("terrorist", "T")), new HlaeWeightedColor(255, 0, 0, 255, 2f));
+            m_Colors.Add(new HlaeCommentedColor(144, 155, 221, 0, L10n._p("counter-terrorist", "CT")), new HlaeWeightedColor(0, 0, 255, 0, 2f));
+            m_Colors.Add(new HlaeCommentedColor(144, 155, 221, 255, L10n._p("counter-terrorist", "CT")), new HlaeWeightedColor(0, 0, 255, 255, 2f));
             m_Colors.Add(new HlaeCommentedColor(0.662745f, 0.647059f, 0.601961f, 0.0f, L10n._p("terrorist / counter-terrorist", "T/CT neutral")), new HlaeWeightedColor(0.656863f, 0.656863f, 0.656863f, 0));
             m_Colors.Add(new HlaeCommentedColor(0.662745f, 0.647059f, 0.601961f, 1.0f, L10n._p("terrorist / counter-terrorist", "T/CT neutral")), new HlaeWeightedColor(0.656863f, 0.656863f, 0.656863f, 1));
 
-            m_Colors.Add(new HlaeCommentedColor(230, 128, 0, 0, L10n._p("terrorist", "T aim")), new HlaeWeightedColor(255, 0, 0, 0, 128f));
-            m_Colors.Add(new HlaeCommentedColor(230, 128, 0, 255, L10n._p("terrorist", "T aim")), new HlaeWeightedColor(255, 0, 0, 255, 128f));
-            m_Colors.Add(new HlaeCommentedColor(0, 120, 240, 0, L10n._p("counter-terrorist", "CT aim")), new HlaeWeightedColor(0, 0, 255, 0, 128f));
-            m_Colors.Add(new HlaeCommentedColor(0, 120, 240, 255, L10n._p("counter-terrorist", "CT aim")), new HlaeWeightedColor(0, 0, 255, 255, 128f));
+            m_Colors.Add(new HlaeCommentedColor(230, 128, 0, 0, L10n._p("terrorist", "T aim")), new HlaeWeightedColor(255, 0, 0, 0, 2f));
+            m_Colors.Add(new HlaeCommentedColor(230, 128, 0, 255, L10n._p("terrorist", "T aim")), new HlaeWeightedColor(255, 0, 0, 255, 2f));
+            m_Colors.Add(new HlaeCommentedColor(0, 120, 240, 0, L10n._p("counter-terrorist", "CT aim")), new HlaeWeightedColor(0, 0, 255, 0, 2f));
+            m_Colors.Add(new HlaeCommentedColor(0, 120, 240, 255, L10n._p("counter-terrorist", "CT aim")), new HlaeWeightedColor(0, 0, 255, 255, 2f));
             m_Colors.Add(new HlaeCommentedColor(0.450980f, 0.486275f, 0.470588f, 0, L10n._p("terrorist / counter-terrorist", "T/CT aim neutral")), new HlaeWeightedColor(0.469281f, 0.469281f, 0.469281f, 0));
             m_Colors.Add(new HlaeCommentedColor(0.450980f, 0.486275f, 0.470588f, 1, L10n._p("terrorist / counter-terrorist", "T/CT aim neutral")), new HlaeWeightedColor(0.469281f, 0.469281f, 0.469281f, 1));
             
@@ -119,10 +120,10 @@ namespace AfxGui
 
             public HlaeColorUc(HlaeColor value)
             {
-                R = (byte)Math.Min(Math.Max(0, value.R * 255f), 255f);
-                G = (byte)Math.Min(Math.Max(0, value.G * 255f), 255f);
-                B = (byte)Math.Min(Math.Max(0, value.B * 255f), 255f);
-                A = (byte)Math.Min(Math.Max(0, value.A * 255f), 255f);
+                R = (byte)Math.Min(Math.Max(0, value.R * 255f + 0.5f), 255f);
+                G = (byte)Math.Min(Math.Max(0, value.G * 255f + 0.5f), 255f);
+                B = (byte)Math.Min(Math.Max(0, value.B * 255f + 0.5f), 255f);
+                A = (byte)Math.Min(Math.Max(0, value.A * 255f + 0.5f), 255f);
             }
 
             public override string ToString()
@@ -181,14 +182,18 @@ namespace AfxGui
                 return new HlaeColor(a.R / b, a.G / b, a.B / b, a.A / b);
             }
 
-            public float CalcDistanceSquared(HlaeColor other)
+            public float CalcDistanceSquared(HlaeColor other, float w)
             {
                 float dR = other.R - R;
                 float dG = other.G - G;
                 float dB = other.B - B;
                 float dA = other.A - A;
 
-                return dR * dR + dG * dG + dB * dB + dA * dA;
+                float result = dR * dR + dG * dG + dB * dB + dA * dA;
+
+                if (0 != w) result = result / w;
+
+                return  result;
             }
         }
 
@@ -530,9 +535,11 @@ namespace AfxGui
                             float bestDist = 0;
                             float dist;
 
+                            float maxWeight = 1;
+
                             foreach (KeyValuePair<HlaeCommentedColor, HlaeWeightedColor> kvp in m_Colors)
                             {
-                                dist = xx.CalcDistanceSquared(kvp.Key.Color);
+                                dist = xx.CalcDistanceSquared(kvp.Key.Color, kvp.Value.Weight);
 
                                 if (!hasBest || dist < bestDist)
                                 {
@@ -551,11 +558,11 @@ namespace AfxGui
                                 return false;
                             }
 
-                            dist = xx.CalcDistanceSquared(x);
-                            if(dist < bestDist)
+                            dist = xx.CalcDistanceSquared(x, 1.0f);
+                            if(dist <= bestDist)
                             {
-                                y = y + best.Value.Color * best.Value.Weight;
-                                s = s + best.Value.Weight;
+                                y = y + best.Value.Color;
+                                s = s + 1;
                             }
                         }
                     }

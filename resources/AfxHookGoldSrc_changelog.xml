@@ -4,6 +4,19 @@
 <changelog>
 
 
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.9.0</version>
+<time>2020-06-05T07:06Z</time>
+<changes>
+<change type="added">
+Added mirv_campath draw keyIndex (default 18).
+</change>
+</changes>
+</release>
+
+
 <release>
 <name>AfxHookGoldSrc</name>
 <version>2.8.1</version>
@@ -14,7 +27,6 @@ Added #278 mirv_campath draw for GoldSrc.
 </change>
 </changes>
 </release>
-
 
 
 <release>

@@ -19,18 +19,6 @@
     <Filter Include="shared">
       <UniqueIdentifier>{54b800e6-32df-4582-80f4-50f371fb7bb8}</UniqueIdentifier>
     </Filter>
-    <Filter Include="deps">
-      <UniqueIdentifier>{1e26bbde-59e0-4f36-868f-3b9bdb9a80ae}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="deps\release">
-      <UniqueIdentifier>{fffe2ba8-c4bf-404c-8197-c5572e3847b9}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="deps\release\prop">
-      <UniqueIdentifier>{6e95b2e9-8d5b-4fd7-ad5d-4f561145fb06}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="deps\release\prop\shared">
-      <UniqueIdentifier>{9bc3fa34-b7a7-41d5-a952-fa3c9bbd276f}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -66,9 +54,6 @@
     <ClInclude Include="ColorLutTools.h">
       <Filter>AfxCppCli</Filter>
     </ClInclude>
-    <ClInclude Include="..\deps\release\prop\shared\AfxMath.h">
-      <Filter>deps\release\prop\shared</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AssemblyInfo.cpp">
@@ -94,9 +79,6 @@
     </ClCompile>
     <ClCompile Include="ColorLutTools.cpp">
       <Filter>AfxCppCli</Filter>
-    </ClCompile>
-    <ClCompile Include="..\deps\release\prop\shared\AfxMath.cpp">
-      <Filter>deps\release\prop\shared</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
