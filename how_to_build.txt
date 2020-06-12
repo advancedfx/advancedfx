@@ -83,11 +83,6 @@ Notice:
     Then build the Solution.
     After that build the INSTALL project in the solution (ignore errors about smybolic link creation).
 
-[X] Obtain the SharpDX SDK 2.6.3 from
-    https://github.com/sharpdx/SharpDX/releases/tag/2.6.3
-    and extract it into a folder named "SharpDX" in the same folder where the
-    HLAE source code folder is located.
-
 [ ] This step is currently not required!
     Compile and run the ShaderBuilder project (requires the SharpDX SDK) and
     compile the following Shaders to the "shaders\build" folder:
@@ -108,8 +103,7 @@ Notice:
     The .h and .acs files build this way are required by the AfxHookSource
     project.
 
-[X]	Compile and run the prop\ShaderBuilder project (requires the SharpDX SDK) in
-	ShaderBuilder\Release\bin:
+[X]	Compile and run the prop\ShaderBuilder project in ShaderBuilder\Release\bin:
 	
 	ShaderBuilder.exe --profile vs_2_0 --in "..\..\..\shaders\afx_line_vs20.fxc" --outPrefix "..\..\..\shaders\build\afx_line_vs20"
 	ShaderBuilder.exe --profile ps_2_0 --in "..\..\..\shaders\afx_line_ps20.fxc" --outPrefix "..\..\..\shaders\build\afx_line_ps20"
