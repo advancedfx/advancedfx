@@ -4,6 +4,17 @@
 <changelog>
 
 
+
+<release>
+<name>AfxHookSource</name>
+<version>1.84.4</version>
+<time>2020-06-16T08:03Z</time>
+<changes>
+<change type="fixed">Adjusted the adjustment to 2020-06-15T23:27:07Z CS:GO update.</change>
+</changes>
+</release>
+
+
 <release>
 <name>AfxHookSource</name>
 <version>1.84.3</version>
