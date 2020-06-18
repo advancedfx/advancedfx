@@ -4,6 +4,27 @@
 <changelog>
 
 
+
+<release>
+<name>AfxHookSource</name>
+<version>1.84.4</version>
+<time>2020-06-16T08:03Z</time>
+<changes>
+<change type="fixed">Adjusted the adjustment to 2020-06-15T23:27:07Z CS:GO update.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.84.3</version>
+<time>2020-06-16T06:52Z</time>
+<changes>
+<change type="fixed">Adjusted to 2020-06-15T23:27:07Z CS:GO update.</change>
+</changes>
+</release>
+
+
 <release>
 <name>AfxHookSource</name>
 <version>1.84.2</version>
@@ -20,7 +41,6 @@ Fixed #347 old mirv_cmd xml versions not working as intended.
 </change>
 </changes>
 </release>
-
 
 
 <release>

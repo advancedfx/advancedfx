@@ -713,8 +713,8 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 
 		}
 
-		// csgo_CCSViewRender_RenderSmokeOverlay_OnLoadOldAlpha: // Checked 2019-04-03.
-		// csgo_CCSViewRender_RenderSmokeOverlay_OnLoadAlphaBeforeDraw: // Checked 2019-04-03.
+		// csgo_CCSViewRender_RenderSmokeOverlay_OnLoadOldAlpha: // Checked 2020-06-16.
+		// csgo_CCSViewRender_RenderSmokeOverlay_OnLoadAlphaBeforeDraw: // Checked 2020-06-16.
 		{
 			DWORD addrOnLoadOldAlpha = 0;
 			DWORD addrOnCompareAlphaBeforeDraw = 0;
@@ -784,10 +784,10 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 						}
 
 						{
-							DWORD tmpAddr = pushStringAddr + 0x5A;
+							DWORD tmpAddr = pushStringAddr + 0x56;
 
 							// check for pattern nearby to see if it is the right address:
-							unsigned char pattern[8] = { 0x5F, 0x5E, 0x8B, 0xE5, 0x5D, 0xC2, 0x04, 0x00 };
+							unsigned char pattern[11] = { 0x5F, 0x5E, 0x8B, 0xE5, 0x5D, 0x8B, 0xE3, 0x5B, 0xC2, 0x04, 0x00 };
 
 							DWORD patternSize = sizeof(pattern) / sizeof(pattern[0]);
 							MemRange patternRange(tmpAddr, tmpAddr + patternSize);
