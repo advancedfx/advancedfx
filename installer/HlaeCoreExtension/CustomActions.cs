@@ -5,6 +5,7 @@ using System.Net;
 using System.IO;
 using System.Security.Cryptography;
 using Microsoft.Deployment.WindowsInstaller;
+using System.Windows.Forms;
 
 namespace HlaeCoreExtension
 {
@@ -228,6 +229,9 @@ namespace HlaeCoreExtension
                 Progress progress = new Progress(session);
 
                 if (MessageResult.Cancel == progress.Init(actionName, locInstallFfmpegConnect, locInstallFfmpegConnect_Template, 1)) return ActionResult.UserExit;
+
+                System.Net.WebRequest.DefaultWebProxy = System.Net.WebRequest.GetSystemWebProxy();
+                System.Net.WebRequest.DefaultWebProxy.Credentials = System.Net.CredentialCache.DefaultNetworkCredentials;
 
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(downloadUrl);
 

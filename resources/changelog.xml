@@ -6,6 +6,17 @@
 
 <release>
 <name>HLAE</name>
+<version>2.100.3</version>
+<time>2020-07-01T06:50Z</time>
+<changes>
+<change type="fixed">Fixed installer to use system web proxy settings for downloading FFMPEG.</change>
+<change type="updated">Updated translations (thanks).</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.100.2</version>
 <time>2020-06-16T08:03Z</time>
 <changes>
