@@ -2747,7 +2747,7 @@ CON_COMMAND(mirv_aim, "Aiming system control.")
 			}
 
 			Tier0_Msg(
-				"mirv_aim softDeactivate 0|1 - Wheter to support soft deactivation (1) or not (0).\n"
+				"mirv_aim softDeactivate 0|1 - Whether to support soft deactivation (1) or not (0).\n"
 				"Current value: %s\n",
 				g_Aiming.SoftDeactivate ? "1" : "0"
 			);
@@ -2913,7 +2913,7 @@ CON_COMMAND(mirv_aim, "Aiming system control.")
 			}
 
 			Tier0_Msg(
-				"mirv_aim snapTo 0|1 - Wheter to aim non-soft (1) or not (0)."
+				"mirv_aim snapTo 0|1 - Whether to aim non-soft (1) or not (0).\n"
 				"Current value: %s\n",
 				g_Aiming.SnapTo ? "1" : "0"
 			);
@@ -3097,7 +3097,7 @@ CON_COMMAND(mirv_aim, "Aiming system control.")
 
 	Tier0_Msg(
 		"mirv_aim active [...] - Whether aiming is active.\n"
-		"mirv_aim softDeactivate [...] - Wheter to support soft deactivation (for snapTo 0).\n"
+		"mirv_aim softDeactivate [...] - Whether to support soft deactivation (for snapTo 0).\n"
 		"mirv_aim calcVecAng [...] - Source for target (overrides entityIndex, point, origin, angles).\n"
 		"mirv_aim calcVecAngClear - Clears source for target (no target) (overrides entityIndex, point, origin, angles).\n"
 		"mirv_aim entityIndex [...] - Entity index to aim after (use mirv_listentities to get one).\n"
@@ -3106,7 +3106,7 @@ CON_COMMAND(mirv_aim, "Aiming system control.")
 		"mirv_aim angles [...] - Target angles to use.\n"
 		"mirv_aim offset [...] - Offset in target space to aim at.\n"
 		"mirv_aim up [...] - How to determine the camera up direction.\n"
-		"mirv_aim snapTo [...] - Wheter to aim non-soft or soft.\n"
+		"mirv_aim snapTo [...] - Whether to aim non-soft or soft.\n"
 		"mirv_aim velLimit [...] - Max velocity possible (for snapTo 0).\n"
 		"mirv_aim accelLimit [...] - Max acceleration possible (for snapTo 0).\n"
 		// does not work atm // "mirv_aim jerkLimit [...] - Max jerk possible (for snapTo 0).\n"
