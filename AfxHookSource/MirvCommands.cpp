@@ -3298,7 +3298,7 @@ CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 		"mirv_cmd edit cmd [...] - Edit a specific command.\n"
 		"mirv_cmd clear - Removes all commands.\n"
 		"mirv_cmd print - Prints commands / state.\n"
-		"mirv_cmd remove <index> - Removes a command by it's index.\n"
+		"mirv_cmd remove <index> - Removes a command by its index.\n"
 		"mirv_cmd load <fileName> - loads commands from the file (XML format)\n"
 		"mirv_cmd save <fileName> - saves commands to the file (XML format)\n"
 	);
