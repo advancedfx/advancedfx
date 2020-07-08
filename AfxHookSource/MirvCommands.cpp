@@ -2770,7 +2770,7 @@ CON_COMMAND(mirv_aim, "Aiming system control.")
 			IMirvVecAngCalc * vecAng = g_Aiming.Source_get();
 
 			Tier0_Msg(
-				"mirv_aim finder <sClacVecAngName> - Calc to use as source (<sClacVecAngName> is name form mirv_calcs vecAng).\n"
+				"mirv_aim finder <sClacVecAngName> - Calc to use as source (<sClacVecAngName> is name from mirv_calcs vecAng).\n"
 				"Current value: %s\n"
 				, vecAng ? "" : "(none)"
 			);
@@ -3814,7 +3814,7 @@ CON_COMMAND(mirv_cfg, "general HLAE configuration")
 	Tier0_Msg(
 		"%s fovScaling [...] - Set default fov scaling.\n"
 		"%s forceViewOverride [...] - If to force the view override onto the local player, can fix a few bugs (CS:GO only)."
-		"%s viewOverrideReset [...] - If to resert roll to 0 and fov to 90 (unscaled) after ending a view override (CS:GO only)."
+		"%s viewOverrideReset [...] - If to reset roll to 0 and fov to 90 (unscaled) after ending a view override (CS:GO only)."
 		, arg0
 		, arg0
 		, arg0
