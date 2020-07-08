@@ -2391,7 +2391,7 @@ CON_COMMAND(mirv_gameoverlay, "GameOverlayRenderer control.")
 
 	Tier0_Msg(
 		"Usage:\n"
-		"mirv_gameoverlay enabled 0|1 - Disable/Enable the GameOverlay (will only do s.th. useful when it was enabled initally).\n"
+		"mirv_gameoverlay enabled 0|1 - Disable/Enable the GameOverlay (will only do s.th. useful when it was enabled initially).\n"
 	);
 }
 
