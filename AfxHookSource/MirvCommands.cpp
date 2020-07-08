@@ -3813,7 +3813,7 @@ CON_COMMAND(mirv_cfg, "general HLAE configuration")
 
 	Tier0_Msg(
 		"%s fovScaling [...] - Set default fov scaling.\n"
-		"%s forceViewOverride [...] - If to force the view override onto the local player, can fix a few bugs (CS:GO only)."
+		"%s forceViewOverride [...] - If to force the view override onto the local player, can fix a few bugs (CS:GO only).\n"
 		"%s viewOverrideReset [...] - If to reset roll to 0 and fov to 90 (unscaled) after ending a view override (CS:GO only)."
 		, arg0
 		, arg0
