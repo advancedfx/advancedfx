@@ -1654,7 +1654,7 @@ CON_COMMAND(mirv_deathmsg, "controls death notification options")
 	csgo_CHudDeathNotice_Console(args);
 }
 
-CON_COMMAND(mirv_fov,"allows overriding FOV (Filed Of View) of the camera")
+CON_COMMAND(mirv_fov,"allows overriding FOV (Field Of View) of the camera")
 {
 	if(!g_Hook_VClient_RenderView.IsInstalled())
 	{
@@ -1737,7 +1737,7 @@ CON_COMMAND(mirv_fov,"allows overriding FOV (Filed Of View) of the camera")
 
 			Tier0_Msg(
 				"Usage:\n"
-				"mirv_fov handleZoom enabled [...] - Whether to enable zoom handling (if enabled mirv_fov is only active if it's not bellow minUnzoomedFov (not zoomed)).\n"
+				"mirv_fov handleZoom enabled [...] - Whether to enable zoom handling (if enabled mirv_fov is only active if it's not below minUnzoomedFov (not zoomed)).\n"
 				"mirv_fov handleZoom minUnzoomedFov [...] - Zoom detection threshold.\n"
 			);
 			return;
