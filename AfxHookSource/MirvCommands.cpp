@@ -2690,7 +2690,7 @@ CON_COMMAND(mirv_traceentity, "Trace entity from current view position")
 
 	Tier0_Msg(
 		"Result:\n"
-		"index (distance): className::enitityName :entityHandle\n"
+		"index (distance): className::entityName :entityHandle\n"
 	);
 
 
