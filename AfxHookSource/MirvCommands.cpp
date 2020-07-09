@@ -2608,7 +2608,7 @@ CON_COMMAND(mirv_listentities, "Print info about currently active entites. (CS:G
 
 	Tier0_Msg(
 		"Results:\n"
-		"index (distance): className::enitityName :entityHandle\n"
+		"index (distance): className::entityName :entityHandle\n"
 	);
 
 
