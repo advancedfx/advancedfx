@@ -2191,13 +2191,13 @@ public:
 
 		Tier0_Msg(
 			"%s limXVelo [...] - X-location velocity limit in inch.\n"
-			"%s limXAcel [...] - X-location acelleration limit in inch.\n"
+			"%s limXAcel [...] - X-location acceleration limit in inch.\n"
 			"%s limYVelo [...] - y-location velocity limit in inch.\n"
-			"%s limYAcel [...] - Y-location acelleration limit in inch.\n"
+			"%s limYAcel [...] - Y-location acceleration limit in inch.\n"
 			"%s limZVelo [...] - Z-location velocity limit in inch.\n"
-			"%s limZAcel [...] - Z-location acelleration limit in inch.\n"
+			"%s limZAcel [...] - Z-location acceleration limit in inch.\n"
 			"%s limAngVelo [...] - Angular velocity limit in degrees.\n"
-			"%s limAngAcel [...] - Angular acelleration limit in degrees.\n"
+			"%s limAngAcel [...] - Angular acceleration limit in degrees.\n"
 			, arg0
 			, arg0
 			, arg0
