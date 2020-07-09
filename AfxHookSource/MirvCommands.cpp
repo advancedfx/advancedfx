@@ -3406,7 +3406,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 			}
 
 			Tier0_Msg(
-				"mirv_fix playerAnimState 0|1|2|3- Fixes twitching of player arms, see https://github.com/ripieces/advancedfx/wiki/Source%%3ASmoother-Demos , 0 - disabled, 1 - enabled, 2/3 - debug.\n"
+				"mirv_fix playerAnimState 0|1|2|3- Fixes twitching of player arms, see https://github.com/advancedfx/advancedfx/wiki/Source%3ASmoother-Demos , 0 - disabled, 1 - enabled, 2/3 - debug.\n"
 				"Current value: %i\n",
 				Enable_csgo_PlayerAnimStateFix_get()
 			);
@@ -3472,9 +3472,9 @@ CON_COMMAND(mirv_fix, "Various fixes")
 		"mirv_fix physicsMaxFps [...] - Can raise the FPS limit for physics (i.e. rag dolls, so they don't freeze upon high host_framerate).\n"
 		"mirv_fix blockObserverTarget [...] - Fixes unwanted player switching i.e. upon bomb plant (blocks C_BasePlayer::RecvProxy_ObserverTarget).\n"
 		"mirv_fix oldDuckFix [...] - Can fix player stuck in duck for old demos.\n"
-		"mirv_fix playerAnimState [...] - Fixes twitching of player arms/legs, see https://github.com/ripieces/advancedfx/wiki/Source%%3ASmoother-Demos .\n"
+		"mirv_fix playerAnimState [...] - Fixes twitching of player arms/legs, see https://github.com/advancedfx/advancedfx/wiki/Source%3ASmoother-Demos\n"
 		//"mirv_fix demoIndexTicks [...] - Tries to make backward skipping faster in demos.\n"
-		"mirv_fix selectedPlayerGlow 0|1 - If to allow selected player flow (1, default) or not (0).\n"
+		"mirv_fix selectedPlayerGlow 0|1 - If to allow selected player glow (1, default) or not (0).\n"
 	);
 	return;
 }
