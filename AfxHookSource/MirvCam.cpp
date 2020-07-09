@@ -168,7 +168,7 @@ CON_COMMAND(mirv_cam, "Control camera source entity and offset.")
 
 					Tier0_Msg(
 						"mirv_cam source calcVecAng <sVecAngCalcName> - Calc to use as source (<sVecAngCalcName> is name from mirv_calcs vecAng).\n"
-						"Cuurent value: %s"
+						"Current value: %s"
 						, vecAng ? "" : "(none)"
 					);
 
@@ -397,7 +397,7 @@ CON_COMMAND(mirv_cam, "Control camera source entity and offset.")
 
 					Tier0_Msg(
 						"mirv_cam fov calc <sFovCalcName> - Calc to use as source (<sFovCalcName> is name from mirv_calcs fov).\n"
-						"Cuurent value: %s"
+						"Current value: %s"
 						, calc ? "" : "(none)"
 					);
 
