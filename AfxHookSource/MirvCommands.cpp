@@ -2460,7 +2460,7 @@ CON_COMMAND(mirv_snd_filter, "Sound control (i.e. blocking sounds).")
 
 	Tier0_Msg(
 		"Usage:\n"
-		"mirv_snd_filter block <mask> - Blocks given <mask> string (for format see bellow).\n"
+		"mirv_snd_filter block <mask> - Blocks given <mask> string (for format see below).\n"
 		"mirv_snd_filter print - Prints current blocks.\n"
 		"mirv_snd_filter remove <index> - Removes the block with index <index> (You can get that from the print sub-command).\n"
 		"mirv_snd_filter clear - Clears all blocks.\n"
