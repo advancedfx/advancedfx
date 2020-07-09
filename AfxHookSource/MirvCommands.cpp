@@ -2172,8 +2172,8 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 				"mirv_input cfg mouseMoveSupport 0|1 - Disable / Enable mouse move support (use left / right mouse button).\n"
 				"mirv_input cfg offsetMode - Get Value.\n"
 				"mirv_input cfg offsetMode last|ownLast|game|current - Default: current, last = old method (last outputted), ownLast = as outputted by mirv_input, game = as outputted by game, current = as outputted by current overrides.\n"
-				"mirv_input cfg msens - Get mouse sensitiviy.\n"
-				"mirv_input cfg msens <dValue> - Set mouse sensitiviy.\n"
+				"mirv_input cfg msens - Get mouse sensitivity.\n"
+				"mirv_input cfg msens <dValue> - Set mouse sensitivity.\n"
 				"mirv_input cfg ksens - Get keyboard sensitivity.\n"
 				"mirv_input cfg ksens <dValue> - Set keyboard sensitivity.\n"
 			);
