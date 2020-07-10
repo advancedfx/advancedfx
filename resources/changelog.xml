@@ -6,6 +6,33 @@
 
 <release>
 <name>HLAE</name>
+<version>2.101.0</version>
+<time>2020-07-10T12:04Z</time>
+<changes>
+<change type="updated">Included AfxHookSource 1.85.0 (2020-07-10T12:04Z).</change>
+<change type="fixed">Adjusted to 7/9/2020 CS:GO update: File - Lauch CS:GO will work automatically now.<br />
+People using custom loader will need to add the following lines in environment variables section (and might need to adjust the path to the Steam folder):<br />
+SteamPath=C:\Program Files (x86)\Steam:<br />
+ValvePlatformMutex=c:/program files (x86)/steam/steam.exe:<br />
+SteamClientLaunch=1:<br />
+SteamGameId=730:<br />
+SteamAppId=730:<br />
+SteamOverlayGameId=730</change>
+<change type="added">Installer improvements:<br />
+- Closes #351 HLAE_Setup.exe / Installer:<br />
+  - Easier to find option to change folder<br />
+  - License conditions removed, since there are none<br />
+  - Option to remove APPDATA folder<br />
+- Closes #356 (ffmpeg / installer related):<br />
+  - Repeated installations don't need to reinstall FFMPEG if not wanted.<br />
+  - Allows selecting existing FFMPEG installation<br />
+  - Allows to select different builds.</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.100.3</version>
 <time>2020-07-01T06:50Z</time>
 <changes>

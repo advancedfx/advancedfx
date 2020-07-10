@@ -2,8 +2,8 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <!-- Update this on release: Id, Version -->
 	<Product
-    Id='{CA3D6BCD-147E-4E74-A886-379310662C2C}'
-    Version='2.100.19'
+    Id='{914813D3-93A3-4E88-8FD8-D62218711AA2}'
+    Version='2.101.0'
     Name="!(loc.ApplicationName)"
     Language="1033"
     Manufacturer="!(loc.Manufacturer)"
