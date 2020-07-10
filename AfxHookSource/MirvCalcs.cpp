@@ -5900,7 +5900,7 @@ void mirv_calcs_fov(IWrpCommandArgs * args)
 			}
 
 			Tier0_Msg(
-				"%s add cam <sName> <sCamCalName> - Adds a calc that gets its values from an cam calc named <sCamCalName>.\n"
+				"%s add cam <sName> <sCamCalName> - Adds a calc that gets its values from a cam calc named <sCamCalName>.\n"
 				, arg0
 			);
 			return;
