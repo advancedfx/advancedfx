@@ -2,8 +2,8 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"  xmlns:bal="http://schemas.microsoft.com/wix/BalExtension">
   <!-- Update this on release: Version -->
 	<Bundle
-    Name="HLAE"
-    Version="2.100.3"
+    Name="HLAE Setup"
+    Version="2.100.19"
     Manufacturer="advancedfx.org"
     UpgradeCode="{35C8D990-6C4F-4639-ADF7-D259B06E070B}"
     AboutUrl="https://www.advancedfx.org/"
@@ -14,10 +14,10 @@
     <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.HyperlinkSidebarLicense">
       <bal:WixStandardBootstrapperApplication
         LicenseUrl=""
-        SuppressOptionsUI="no"
+        SuppressOptionsUI="yes"
         LocalizationFile="lang\HyperlinkTheme_en-US.wxl"
         ThemeFile="HyperlinkSidebarTheme.xml"
-        ShowVersion="yes"        
+        ShowVersion="yes"
       />
 
       <Payload Id="theme_de_de" Compressed="yes"  Name="1031\thm.wxl" SourceFile="lang\HyperlinkTheme_de-DE.wxl"/>
@@ -35,11 +35,11 @@
     </BootstrapperApplicationRef>
 
     <Variable Name='InstallFolder' Type='string' Value='[ProgramFilesFolder]HLAE' Persisted='yes' bal:Overridable='yes'/>
-    <Variable Name="HlaeFfmpegFeature" Type="numeric" Value="1" Persisted="yes" bal:Overridable='yes'/>
     <Variable Name="LangId" Type="string" Value="" Persisted="yes" bal:Overridable="yes" />
 
     <Chain>
       <PackageGroupRef Id="NetFx45Web" />
+      <RollbackBoundary />
       <PackageGroupRef Id="HlaeCore" />        
 		</Chain>
 
@@ -47,10 +47,9 @@
   
   <Fragment>  
     <PackageGroup Id="HlaeCore">
-      <MsiPackage SourceFile="$(var.HlaeCore.en-us.TargetPath)" Compressed="yes" EnableFeatureSelection="yes" Vital="yes">
+      <MsiPackage SourceFile="$(var.HlaeCore.en-us.TargetPath)" Compressed="yes" Vital="yes" DisplayInternalUI="yes" EnableFeatureSelection="yes" Visible="yes">
         <MsiProperty Name='APPLICATIONFOLDER' Value='[InstallFolder]' />
         <MsiProperty Name='TRANSFORMS' Value='[LangId]' />
-        <MsiProperty Name="AFX_INSTALLFFMPEG" Value="[HlaeFfmpegFeature]" />
         <Payload Id="HlaeCore_de_de" Compressed="yes" Name="1031" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\de-de\HlaeCore.mst"/>
         <Payload Id="HlaeCore_fi_fi" Compressed="yes" Name="1035" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\fi-fi\HlaeCore.mst"/>
         <Payload Id="HlaeCore_hu_hu" Compressed="yes" Name="1038" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\hu-hu\HlaeCore.mst"/>

@@ -70,6 +70,5 @@
   <String Id="HlaeDisclaimerTitle">Disclaimer</String>
   <String Id="HlaeDisclaimer">This software is for your enjoyment and you are using it at your own risk.</String>
 
-  <String Id="HlaeFeaturesHeader">Features</String>
-  <String Id="HlaeFfmpegFeature"><![CDATA[Install FFMPEG from https://ffmpeg.zeranoe.com/builds/ (200 MB)]]></String>
+  <String Id="HlaeSetupModifyInfo">To modify the exiting HLAE installation, please use the &quot;HLAE&quot; entry in the installed apps list instead.</String>
 </WixLocalization>

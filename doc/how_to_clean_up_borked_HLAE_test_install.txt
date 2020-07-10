@@ -9,4 +9,23 @@ Get-ChildItem -path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\U
 	return $false
 } | Remove-Item -Recurse -Force
 
+Get-ChildItem -path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData' -Recurse | where {
+	foreach ($prop in $_.Property) {
+		if($_.GetValue($prop) -match 'advancedfx\\HLAE') {
+			return $true
+		}
+	}
+	return $false
+} | Remove-Item -Recurse -Force
+
+
+Get-ChildItem -path 'HKLM:\SOFTWARE\Classes\Installer' -Recurse | where {
+	foreach ($prop in $_.Property) {
+		if($_.GetValue($prop) -match 'HLAE Core') {
+			return $true
+		}
+	}
+	return $false
+} | Remove-Item -Recurse -Force
+
 Then search the registry for remaing few HLAE items.

@@ -202,8 +202,29 @@ CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & image
 
 	if (m_SucceededCreatePath)
 	{
-		std::wstring ffmpegExe(GetHlaeFolderW());
-		ffmpegExe.append(L"ffmpeg\\bin\\ffmpeg.exe");
+		std::wstring ffmpegIni(GetHlaeFolderW());
+		ffmpegIni.append(L"ffmpeg\\ffmpeg.ini");
+
+		wchar_t ffmpegPath[MAX_PATH+3];
+
+		std::wstring ffmpegExe;
+
+		int nSize = GetPrivateProfileStringW(
+			L"Ffmpeg",
+			L"Path",
+			NULL,
+			ffmpegPath,
+			MAX_PATH + 3,
+			ffmpegIni.c_str());
+		if(0 < nSize && nSize <= MAX_PATH)
+		{
+			ffmpegExe.assign(ffmpegPath);
+		}
+		else
+		{
+			ffmpegExe = GetHlaeFolderW();
+			ffmpegExe.append(L"ffmpeg\\bin\\ffmpeg.exe");
+		}
 
 		std::wostringstream ffmpegArgs;
 

@@ -6,6 +6,9 @@ using System.IO;
 using System.Security.Cryptography;
 using Microsoft.Deployment.WindowsInstaller;
 using System.Windows.Forms;
+using System.Globalization;
+using System.Threading;
+using Microsoft.Win32;
 
 namespace HlaeCoreExtension
 {
@@ -127,7 +130,7 @@ namespace HlaeCoreExtension
         {
             try
             {
-                bool ok = System.Text.RegularExpressions.Regex.IsMatch(session["APPLICATIONFOLDER"], @"^\p{IsBasicLatin}*$");
+                bool ok = System.Text.RegularExpressions.Regex.IsMatch(session["APPLICATIONFOLDER"], "^\\p{IsBasicLatin}*$");
 
                 Record record = new Record(1);
                 record[1] = 25001;
@@ -144,6 +147,86 @@ namespace HlaeCoreExtension
             return ActionResult.Failure;
         }
 
+        [CustomAction]
+        public static ActionResult ValidateFfmpegCustomPath(Session session)
+        {
+            try
+            {
+                session["AFX_FFMPEGPATH_OK"] = System.IO.File.Exists(session["FFMPEG_CUSTOM"]) ? "1" : "0";
+                return ActionResult.Success;
+            }
+            catch (Exception e)
+            {
+                session.Log("Error: " + e.ToString());
+            }
+
+            session["AFX_FFMPEGPATH_OK"] = "0";
+            return ActionResult.Failure;
+        }
+
+
+
+        [CustomAction]
+        public static ActionResult FfmpegCustomPathDlg(Session session)
+        {
+            try
+            {
+                string result = "";
+                var task = new Thread(() =>
+                {
+                    try
+                    {
+                        using (System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog())
+                        {
+                            ofd.Filter = "FFMPEG executeable|ffmpeg.exe";
+                            ofd.FileName = "ffmpeg.exe";
+
+                            if (ofd.ShowDialog() == DialogResult.OK) result = ofd.FileName;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        session.Log("Error: " + e.ToString());
+                    }
+                });
+                task.SetApartmentState(ApartmentState.STA);
+                task.Start();
+                task.Join();
+                session["FFMPEG_CUSTOM"] = result;
+            }
+            catch (Exception ex)
+            {
+                session.Log("Exception occurred as Message: {0}\r\n StackTrace: {1}", ex.Message, ex.StackTrace);
+                return ActionResult.Failure;
+            }
+            return ActionResult.Success;
+        }
+
+        [CustomAction]
+        public static ActionResult ValidateTargetPath(Session session)
+        {
+            try
+            {
+                if (session["_BrowseProperty"].Equals("APPLICATIONFOLDER"))
+                {
+                    bool ok = System.Text.RegularExpressions.Regex.IsMatch(session["APPLICATIONFOLDER"], "^\\p{IsBasicLatin}*$");
+
+                    if (!ok) MessageBox.Show(null, ((string)session.Database.ExecuteScalar("SELECT `Message` FROM `Error` WHERE `Error`=25001")), null, MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                    session["AFX_TARGETPATH_OK"] = ok ? "1" : "0";
+                    return ActionResult.Success;
+                }
+            }
+            catch (Exception e)
+            {
+                session.Log("Error: " + e.ToString());
+                session["AFX_TARGETPATH_OK"] = "0";
+                return ActionResult.Failure;
+            }
+
+            session["AFX_TARGETPATH_OK"] = "1";
+            return ActionResult.Success;
+        }
 
         [CustomAction]
         public static ActionResult InstallFfmpegPrepare(Session session)
@@ -160,6 +243,7 @@ namespace HlaeCoreExtension
                 _data["UILevel"] = session["UILevel"].Replace(";", ";;");
                 _data["TEMPFOLDER"] = session["TEMPFOLDER"].Replace(";", ";;");
                 _data["AFX_FFMPEGFOLDER"] = session["AFX_FFMPEGFOLDER"].Replace("; ", ";;");
+                _data["AFX_FFMPEGURL"] = session["AFX_FFMPEGURL"].Replace("; ", ";;");
                 _data["InstallFfmpegConnect"] = ((string)session.Database.ExecuteScalar("SELECT `Text` FROM `UIText` WHERE `Key`='InstallFfmpegConnect'")).Replace(";", ";;");
                 _data["InstallFfmpegConnect_Template"] = ((string)session.Database.ExecuteScalar("SELECT `Text` FROM `UIText` WHERE `Key`='InstallFfmpegConnect_Template'")).Replace(";", ";;");
                 _data["InstallFfmpegDownload"] = ((string)session.Database.ExecuteScalar("SELECT `Text` FROM `UIText` WHERE `Key`='InstallFfmpegDownload'")).Replace(";", ";;");
@@ -175,7 +259,7 @@ namespace HlaeCoreExtension
                 session.Log("Error: " + e.ToString());
             }
 
-            return ActionResult.Success;
+            return ActionResult.Failure;
         }
 
 
@@ -198,6 +282,10 @@ namespace HlaeCoreExtension
                 tempFolder = session.CustomActionData["TEMPFOLDER"].TrimEnd('/', '\\') + "\\" + Path.GetRandomFileName();
 
                 string afxFfmpegFolder = session.CustomActionData["AFX_FFMPEGFOLDER"].TrimEnd('/', '\\');
+                string downloadUrl = session.CustomActionData["AFX_FFMPEGURL"];
+                //string targetHash = session.CustomActionData["AFX_FFMPEGHASH"];
+                bool is64BitOs = System.Environment.Is64BitOperatingSystem;
+
                 string locInstallFfmpegConnect = session.CustomActionData["InstallFfmpegConnect"];
                 string locInstallFfmpegConnect_Template = session.CustomActionData["InstallFfmpegConnect_Template"];
                 string locInstallFfmpegDownload = session.CustomActionData["InstallFfmpegDownload"];
@@ -205,22 +293,7 @@ namespace HlaeCoreExtension
                 string locInstallFfmpegExtract = session.CustomActionData["InstallFfmpegExtract"];
                 string locInstallFfmpegExtract_Template = session.CustomActionData["InstallFfmpegExtract_Template"];
 
-                bool is64BitOs = System.Environment.Is64BitOperatingSystem;
-
-                string downloadUrl = is64BitOs
-                    ? ffmpegWin64Url
-                    : ffmpegWin32Url
-                    ;
-
-                string fileName = is64BitOs
-                    ? "ffmpeg-latest-win64-static.zip"
-                    : "ffmpeg-latest-win32-static.zip"
-                    ;
-
-                //string targetHash = is64BitOs
-                //   ? ffmpegWin64Sha512
-                //    : ffmpegWin32Sha512
-                 //   ;
+                string fileName = "ffmpeg.zip";
 
                 if (!Directory.Exists(tempFolder)) Directory.CreateDirectory(tempFolder);
 
@@ -310,7 +383,7 @@ namespace HlaeCoreExtension
                             throw new ApplicationException("Unexpected ZIP contents.");
                         }
 
-                        string orgName = string.Join("\\", split, 1, split.Length -1);
+                        string orgName = string.Join("\\", split, 1, split.Length - 1);
                         string fullName = afxFfmpegFolder + "\\" + orgName;
                         string fullPath = Path.GetFullPath(fullName);
                         string parentFolder = 2 <= split.Length ? string.Join("\\", split, 1, split.Length - 2) : "";
@@ -380,18 +453,61 @@ namespace HlaeCoreExtension
             return ActionResult.Failure;
         }
 
+        [System.Runtime.InteropServices.DllImport("kernel32")]
+        private static extern long WritePrivateProfileString(string section,
+          string key, string val, string filePath);
+
         [CustomAction]
-        public static ActionResult UninstallFfmpegPrepare(Session session)
+        public static ActionResult FinalizeFfmpegInstall(Session session)
         {
             try
             {
-                CustomActionData _data = new CustomActionData();
+                // Remember user settings in registry:
+                RegistryKey key = Registry.LocalMachine.CreateSubKey("Software\\advancedfx\\HLAE\\FFMPEG", RegistryKeyPermissionCheck.ReadWriteSubTree);
 
-                _data["UILevel"] = session["UILevel"].Replace(";", ";;");
-                _data["AFX_FFMPEGFOLDER"] = session["AFX_FFMPEGFOLDER"].Replace("; ", ";;");
+                int reinstall = 0;
+                if (null != session.CustomActionData["FFMPEG_REINSTALL"])
+                {
+                   if(!int.TryParse(session.CustomActionData["FFMPEG_REINSTALL"], out reinstall))
+                   {
+                        reinstall = 0;
+                   }
+                }
 
-                session["RollbackFfmpegAction"] = _data.ToString();
-                session["UninstallFfmpegAction"] = _data.ToString();
+                key.SetValue("reinstall", reinstall);
+                key.SetValue("version", session.CustomActionData["FFMPEG_VERSION"]);
+                key.SetValue("linking", session.CustomActionData["FFMPEG_LINKING"]);
+                key.SetValue("license", session.CustomActionData["FFMPEG_LICENSE"]);
+                key.SetValue("custom", session.CustomActionData["FFMPEG_CUSTOM"]);
+
+                if (session.CustomActionData["FFMPEG_VERSION"].Equals("custom"))
+                {
+                    // Write the ini file:
+
+                    WritePrivateProfileString("Ffmpeg", "Path", session.CustomActionData["FFMPEG_CUSTOM"], session.CustomActionData["AFX_FFMPEGFOLDER"]+"\\"+"ffmpeg.ini");
+                }
+
+                return ActionResult.Success;
+            }
+            catch (Exception e)
+            {
+                session.Log("Error saving to HLAE FFMPEG registry keys: " + e.ToString());
+            }
+
+            return ActionResult.Failure;
+        }
+
+        [CustomAction]
+        public static ActionResult RemoveFolder(Session session)
+        {
+            try
+            {
+                session.Log("Begin RemoveFolder");
+
+                string afxFolder = session.CustomActionData["AFX_REMOVEFOLDER"].TrimEnd('/', '\\');
+
+                if (0 < afxFolder.Length && Directory.Exists(afxFolder)) Directory.Delete(afxFolder, true);
+
                 return ActionResult.Success;
             }
             catch (Exception e)
@@ -403,19 +519,15 @@ namespace HlaeCoreExtension
         }
 
         [CustomAction]
-        public static ActionResult UninstallFfmpeg(Session session)
+        public static ActionResult CreateDirectory(Session session)
         {
-            bool showUi = false;
-
             try
             {
-                session.Log("Begin UninstallFfmpeg");
+                session.Log("Begin CreateFolder");
 
-                showUi = 5 >= int.Parse(session.CustomActionData["UILevel"]);
+                string afxFolder = session.CustomActionData["AFX_CREATEFOLDER"].TrimEnd('/', '\\');
 
-                string afxFfmpegFolder = session.CustomActionData["AFX_FFMPEGFOLDER"].TrimEnd('/', '\\');
-
-                if(0 < afxFfmpegFolder.Length) Directory.Delete(afxFfmpegFolder, true);
+                if (0 < afxFolder.Length && !Directory.Exists(afxFolder)) Directory.CreateDirectory(afxFolder);
 
                 return ActionResult.Success;
             }
