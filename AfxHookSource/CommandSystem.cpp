@@ -921,7 +921,7 @@ void CommandSystem::EditCommand(IWrpCommandArgs* args)
 			}
 
 			Tier0_Msg(
-				"%s start [noAuto] <fValue> -  Set start tick / time, if noAuto option is given, then the end is not automatically shifted as well .\n"
+				"%s start [noAuto] <fValue> -  Set start tick / time, if noAuto option is given, then the end is not automatically shifted as well.\n"
 				"Current value: %i\n"
 				, arg0
 				, interval.Low ? 1 : 0
@@ -962,7 +962,7 @@ void CommandSystem::EditCommand(IWrpCommandArgs* args)
 			}
 
 			Tier0_Msg(
-				"%s end [noAuto] <fValue> -  Set start tick / time, if noAuto option is given, then the start is not automatically shifted as well .\n"
+				"%s end [noAuto] <fValue> -  Set start tick / time, if noAuto option is given, then the start is not automatically shifted as well.\n"
 				"Current value: %i\n"
 				, arg0
 				, interval.High ? 1 : 0
@@ -1190,7 +1190,7 @@ void CommandSystem::EditCommandCurves(Interval I, CCommand* c, IWrpCommandArgs* 
 			}
 
 			Tier0_Msg(
-				"%s edit %i add [abs] <fKey> <fValue> - Insert value at key (overwriting exisiting values), use \"abs\" for inserting in absolute tick / time space of the comamnd.\n"
+				"%s edit %i add [abs] <fKey> <fValue> - Insert value at key (overwriting existing values), use \"abs\" for inserting in absolute tick / time space of the command.\n"
 				"%s edit %i edit <iIndex> <fValue> - Edit value position <iIndex>.\n"
 				"%s edit %i remove <iIndex> - Remove at position <iIndex>.\n"
 				"%s edit %i clear - Remove all keys.\n"
