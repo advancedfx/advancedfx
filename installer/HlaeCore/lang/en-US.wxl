@@ -5,7 +5,7 @@
   <String Id="Manufacturer">advancedfx.org</String>
   <String Id="DowngradeErrorMessage">A newer version of [ProductName] is already installed.</String>
   <String Id="FfmpegTitle">FFMPEG</String>
-  <String Id="FfmpegDescription">FFMPEG can be used  for encoding mirv_streams to videos.</String>
+  <String Id="FfmpegDescription">FFMPEG can be used for encoding mirv_streams to videos.</String>
   <String Id="FfmpegDlgTitle">{\WixUI_Font_Title}FFMPEG</String>
   <String Id="FfmpegDlgDescription">Install FFMPEG or use exsiting one.</String>
   <String Id="FfmpegDlgReinstall">Reinstall FFMPEG</String>
