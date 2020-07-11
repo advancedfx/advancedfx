@@ -2228,9 +2228,9 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 			Tier0_Msg(
 				"Usage:\n"
 				"mirv_deathmsg block <idAttacker> <idVictim> - block these ids\n"
-				"\tRemarks: * to match any uid, use !x to match any id apart from x.\n"
+				"\tRemarks: * to match any id, use !x to match any id apart from x.\n"
 				"mirv_deathmsg block <idAttacker> <idVictim> <idAssister> - block these ids\n"
-				"\tRemarks: * to match any uid, use !x to match any id apart from x.\n"
+				"\tRemarks: * to match any id, use !x to match any id apart from x.\n"
 				"mirv_deathmsg block list - list current blocks\n"
 				"mirv_deathmsg block clear - clear current blocks\n"
 				"(Use mirv_deathmsg help id to get help on the ids.)\n"

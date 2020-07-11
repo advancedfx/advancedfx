@@ -3530,7 +3530,7 @@ void MirvDoVPanelOnCommand(char const * panelName, char const * destinationModul
 {
 	if (!(g_pVGuiSurface_csgo && g_pVGuiPanel_csgo))
 	{
-		Tier0_Warning("Errror: Missing dependencies.\n");
+		Tier0_Warning("Error: Missing dependencies.\n");
 		return;
 	}
 
@@ -3552,7 +3552,7 @@ CON_COMMAND(mirv_vpanel, "VGUI Panel access")
 {
 	if (!(g_pVGuiSurface_csgo && g_pVGuiPanel_csgo))
 	{
-		Tier0_Warning("Errror: Missing dependencies.\n");
+		Tier0_Warning("Error: Missing dependencies.\n");
 		return;
 	}
 
@@ -3755,9 +3755,9 @@ CON_COMMAND(mirv_time, "time control")
 	}
 
 	Tier0_Msg(
-		"mirv_time mode [...].\n"
-		"mirv_time pausedTime [...].\n"
-		"mirv_time drive [....]."
+		"mirv_time mode [...]\n"
+		"mirv_time pausedTime [...]\n"
+		"mirv_time drive [...]\n"
 	);
 }
 
