@@ -397,8 +397,8 @@ CON_COMMAND(mirv_voice, "Controls voice data related features.")
 			}
 
 			Tier0_Msg(
-				"mirv_voice block add <idx> - Add antity index as shown in voice_show_mute command.\n"
-				"mirv_voice block remove <idx> - Remove antity index as shown in voice_show_mute command.\n"
+				"mirv_voice block add <idx> - Add entity index as shown in voice_show_mute command.\n"
+				"mirv_voice block remove <idx> - Remove entity index as shown in voice_show_mute command.\n"
 				"mirv_voice block clear - Clear all blocks.\n"
 				"mirv_voice block list - List current blocks.\n"
 			);

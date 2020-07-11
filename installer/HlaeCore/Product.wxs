@@ -2,8 +2,8 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <!-- Update this on release: Id, Version -->
 	<Product
-    Id="{0A9CA32B-8542-486B-8FB5-491242927A7A}"
-    Version="2.100.2"
+    Id='{914813D3-93A3-4E88-8FD8-D62218711AA2}'
+    Version='2.101.0'
     Name="!(loc.ApplicationName)"
     Language="1033"
     Manufacturer="!(loc.Manufacturer)"
@@ -13,31 +13,91 @@
 
     <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
+
 		<MajorUpgrade Schedule="afterInstallInitialize" DowngradeErrorMessage="!(loc.DowngradeErrorMessage)" />
 
     <MediaTemplate EmbedCab="yes" />
-
-		<Feature Id="HlaeCoreFeature" Title="!(loc.ApplicationName)" Level="1" Display="expand">
-      <ComponentGroupRef Id="HlaeCoreComponents" />
-      <ComponentGroupRef Id="LocalesComponentGroup" />
-      <ComponentRef Id="HlaeStartProgramsFolder"/>
-      <Feature Id="FfmpegFeature" Title="!(loc.FfmpegFeature)" Level="1" Display="expand">
-        <Condition Level="0">AFX_INSTALLFFMPEG=0</Condition>
-        <ComponentGroupRef Id="FfmpegComponents" />
-      </Feature>
-    </Feature>
-
+       
     <Icon Id="icon.ico" SourceFile="../../hlae/app.ico"/>
     <Property Id="ARPPRODUCTICON" Value="icon.ico" />
 
     <Property Id="ApplicationFolderName" Value="HLAE" />
     
     <Property Id="WixAppFolder" Value="WixPerMachineFolder" />
+    
     <WixVariable Id="WixUISupportPerUser" Value="0" />
     
-    <UIRef Id="WixUI_ErrorProgressText"/>
+    <Property Id="WIXUI_INSTALLDIR" Value="APPLICATIONFOLDER" />
+    
+    <Property Id="AFX_REMOVEAPPDATAFOLDER" Value="0" />
+    <SetProperty Sequence="first" Action="SetAFX_REMOVEAPPDATAFOLDER" Id="AFX_REMOVEAPPDATAFOLDER" After="AppSearch" Value="{}">1</SetProperty>    
+    
+    <Property Id="FFMPEG_REINSTALL" Value="1" Secure="yes" />
+    <Property Id="_FFMPEG_REINSTALL" Value="#1">
+      <RegistrySearch Id="FFMPEG_REINSTALL_reg" Type="raw" Root="HKLM" Key="Software\advancedfx\HLAE\FFMPEG" Name="reinstall"  />
+    </Property>
+    <SetProperty Sequence="first" Action="SetFFMPEG_REINSTALL_1" Id="FFMPEG_REINSTALL" After="AppSearch" Value="1"><![CDATA[_FFMPEG_REINSTALL = "#1" OR INSTALL AND NOT REINSTALL]]></SetProperty>
+    <SetProperty Sequence="first" Action="SetFFMPEG_REINSTALL_0" Id="FFMPEG_REINSTALL" After="AppSearch" Value="{}"><![CDATA[NOT (_FFMPEG_REINSTALL = "#1" OR INSTALL AND NOT REINSTALL)]]></SetProperty>
 
+    <Property Id="FFMPEG_VERSION" Value="latest" Secure="yes" />
+    <Property Id="_FFMPEG_VERSION" Value="latest">
+      <RegistrySearch Id="FFMPEG_VERSION_reg" Type="raw" Root="HKLM" Key="Software\advancedfx\HLAE\FFMPEG" Name="version" />
+    </Property>
+    <SetProperty Sequence="first" Action="SetFFMPEG_VERSION_latest" Id="FFMPEG_VERSION" After="AppSearch" Value="latest"><![CDATA["latest" = _FFMPEG_VERSION]]></SetProperty>
+    <SetProperty Sequence="first" Action="SetFFMPEG_VERSION_v4_3" Id="FFMPEG_VERSION" After="AppSearch" Value="v4.3"><![CDATA["v4.3" = _FFMPEG_VERSION]]></SetProperty>
+    <SetProperty Sequence="first" Action="SetFFMPEG_VERSION_v4_2_3" Id="FFMPEG_VERSION" After="AppSearch" Value="v4.2.3"><![CDATA["v4.2.3" = _FFMPEG_VERSION]]></SetProperty>
+    <SetProperty Sequence="first" Action="SetFFMPEG_VERSION_v4_2_2" Id="FFMPEG_VERSION" After="AppSearch" Value="v4.2.2"><![CDATA["v4.2.2" = _FFMPEG_VERSION]]></SetProperty>
+    <SetProperty Sequence="first" Action="SetFFMPEG_VERSION_v4_2_1" Id="FFMPEG_VERSION" After="AppSearch" Value="v4.2.1"><![CDATA["v4.2.1" = _FFMPEG_VERSION]]></SetProperty>
+    <SetProperty Sequence="first" Action="SetFFMPEG_VERSION_custom" Id="FFMPEG_VERSION" After="AppSearch" Value="custom"><![CDATA["custom" = _FFMPEG_VERSION]]></SetProperty>
+
+    <Property Id="FFMPEG_LINKING" Value="static" Secure="yes" />
+    <Property Id="_FFMPEG_LINKING" Value="static">
+      <RegistrySearch Id="FFMPEG_LINKING_reg" Type="raw" Root="HKLM" Key="Software\advancedfx\HLAE\FFMPEG" Name="linking" />
+    </Property>
+    <SetProperty Sequence="first" Action="SetFFMPEG_LINKING_static" Id="FFMPEG_LINKING" After="AppSearch" Value="static"><![CDATA["static" = _FFMPEG_LINKING]]></SetProperty>
+    <SetProperty Sequence="first" Action="SetFFMPEG_LINKING_shared" Id="FFMPEG_LINKING" After="AppSearch" Value="shared"><![CDATA["shared" = _FFMPEG_LINKING]]></SetProperty>
+
+    <Property Id="FFMPEG_LICENSE" Value="gpl3" Secure="yes">
+    </Property>
+    <Property Id="_FFMPEG_LICENSE" Value="gpl3">
+      <RegistrySearch Id="FFMPEG_LICENSE_reg" Type="raw" Root="HKLM" Key="Software\advancedfx\HLAE\FFMPEG" Name="license" />
+    </Property>
+    <SetProperty Sequence="first" Action="SetFFMPEG_LICENSE_gpl3" Id="FFMPEG_LICENSE" After="AppSearch" Value="gpl3"><![CDATA["gpl3" = _FFMPEG_LICENSE]]></SetProperty>
+    <SetProperty Sequence="first" Action="SetFFMPEG_LICENSE_lgpl3" Id="FFMPEG_LICENSE" After="AppSearch" Value="lgpl3"><![CDATA["lgpl3" = _FFMPEG_LICENSE]]></SetProperty>
+    
+    <Property Id="FFMPEG_CUSTOM" Value="(unset)" Secure="yes">
+      <RegistrySearch Id="FFMPEG_CUSTOM_reg" Type="file" Root="HKLM" Key="Software\advancedfx\HLAE\FFMPEG" Name="custom">
+        <FileSearch Id="FFMPEG_CUSTOM_reg" Name="[FFMPEG_CUSTOM]" />
+      </RegistrySearch>
+    </Property>
+    
+    <Feature Id='Hlae' Title='!(loc.ApplicationName)' Display='expand' Level='1'
+             ConfigurableDirectory='APPLICATIONFOLDER'
+             AllowAdvertise='no' InstallDefault='local' Absent='disallow'>
+
+      <ComponentGroupRef Id="HlaeCoreComponents" />        
+      <ComponentRef Id="HlaeStartProgramsFolder"/>
+
+      <Feature Id="HlaeLocales" Title="!(loc.HlaeLocalesTitle)" Level="1"
+               AllowAdvertise='no' InstallDefault='local' Absent='allow'>
+        <ComponentGroupRef Id="LocalesComponentGroup" />
+      </Feature>
+
+      <Feature Id="FfmpegFeature" Title="!(loc.FfmpegTitle)" Description="!(loc.FfmpegDescription)"
+              Level="1" Display="expand"
+              AllowAdvertise='no' InstallDefault='local' Absent='allow'>
+        <!-- If something in the FFMPEG install logic changes, theny you'll need to update the GUID, since this component is used to avoid unneccsary reinstalls. -->
+        <Component Id='Ffmpeg' Guid='{2D1C78F6-D5B5-499E-B596-47429893F8A8}' Directory='_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg' NeverOverwrite='yes' KeyPath='yes'>
+          <CreateFolder Directory="_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg" />
+        </Component>
+        <ComponentRef Id="FfmpegRegistry"/>
+     </Feature>
+  </Feature>
+      
     <UI>
+      <UIRef Id="MyWixUI_Mondo"/>
+      <UIRef Id="WixUI_ErrorProgressText"/>      
+      
       <ProgressText Action="InstallFfmpeg">!(loc.InstallFfmpeg)</ProgressText>
       
       <UIText Id="InstallFfmpegConnect">!(loc.InstallFfmpegConnect)</UIText>
@@ -46,35 +106,171 @@
       <UIText Id="InstallFfmpegDownload_Template">!(loc.InstallFfmpegDownload_Template)</UIText>
       <UIText Id="InstallFfmpegExtract">!(loc.InstallFfmpegExtract)</UIText>
       <UIText Id="InstallFfmpegExtract_Template">!(loc.InstallFfmpegExtract_Template)</UIText>
-
+        
       <Error Id="25001">!(loc.AppFolderMustBeLatin)</Error>
     </UI>
+    
+    <Property Id="AFX_FFMPEGURL" Value="https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-latest-win64-static.zip" />
+    
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_64_latest_static" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-latest-win64-static.zip">
+      <![CDATA[ VersionNT64 AND FFMPEG_VERSION="latest" AND FFMPEG_LINKING="static" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_64_latest_shared" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-latest-win64-shared.zip">
+      <![CDATA[ VersionNT64 AND FFMPEG_VERSION="latest" AND FFMPEG_LINKING="shared" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_32_latest_static" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-latest-win32-static.zip">
+      <![CDATA[ NOT VersionNT64 AND FFMPEG_VERSION="latest" AND FFMPEG_LINKING="static" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_32_latest_shared" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win32/shared/ffmpeg-latest-win32-shared.zip">
+      <![CDATA[ NOT VersionNT64 AND FFMPEG_VERSION="latest" AND FFMPEG_LINKING="shared" ]]>
+    </SetProperty>
+    
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_64_v4_3_static_gpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-4.3-win64-static.zip">
+      <![CDATA[ VersionNT64 AND FFMPEG_VERSION="v4.3" AND FFMPEG_LINKING="static" AND FFMPEG_LICENSE="gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_64_v4_3_shared_gpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-4.3-win64-shared.zip">
+      <![CDATA[ VersionNT64 AND FFMPEG_VERSION="v4.3" AND FFMPEG_LINKING="shared" AND FFMPEG_LICENSE="gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_32_v4_3_static_gpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-4.3-win32-static.zip">
+      <![CDATA[ NOT VersionNT64 AND FFMPEG_VERSION="v4.3" AND FFMPEG_LINKING="static" AND FFMPEG_LICENSE="gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_32_v4_3_shared_gpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win32/shared/ffmpeg-4.3-win32-shared.zip">
+      <![CDATA[ NOT VersionNT64 AND FFMPEG_VERSION="v4.3" AND FFMPEG_LINKING="shared" AND FFMPEG_LICENSE="gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_64_v4_3_static_lgpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-4.3-win64-static-lgpl.zip">
+      <![CDATA[ VersionNT64 AND FFMPEG_VERSION="v4.3" AND FFMPEG_LINKING="static" AND FFMPEG_LICENSE<>"gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_64_v4_3_shared_lgpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-4.3-win64-shared-lgpl.zip">
+      <![CDATA[ VersionNT64 AND FFMPEG_VERSION="v4.3" AND FFMPEG_LINKING="shared" AND FFMPEG_LICENSE<>"gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_32_v4_3_static_lgpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-4.3-win32-static-lgpl.zip">
+      <![CDATA[ NOT VersionNT64 AND FFMPEG_VERSION="v4.3" AND FFMPEG_LINKING="static" AND FFMPEG_LICENSE<>"gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_32_v_4_3_shared_lgpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win32/shared/ffmpeg-4.3-win32-shared-lgpl.zip">
+      <![CDATA[ NOT VersionNT64 AND FFMPEG_VERSION="v4.3" AND FFMPEG_LINKING="shared" AND FFMPEG_LICENSE<>"gpl3" ]]>
+    </SetProperty>
+    
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_64_v4_2_3_static_gpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-4.2.3-win64-static.zip">
+      <![CDATA[ VersionNT64 AND FFMPEG_VERSION="v4.2.3" AND FFMPEG_LINKING="static" AND FFMPEG_LICENSE="gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_64_v4_2_3_shared_gpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-4.2.3-win64-shared.zip">
+      <![CDATA[ VersionNT64 AND FFMPEG_VERSION="v4.2.3" AND FFMPEG_LINKING="shared" AND FFMPEG_LICENSE="gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_32_v4_2_3_static_gpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-4.2.3-win32-static.zip">
+      <![CDATA[ NOT VersionNT64 AND FFMPEG_VERSION="v4.2.3" AND FFMPEG_LINKING="static" AND FFMPEG_LICENSE="gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_32_v4_2_3_shared_gpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win32/shared/ffmpeg-4.2.3-win32-shared.zip">
+      <![CDATA[ NOT VersionNT64 AND FFMPEG_VERSION="v4.2.3" AND FFMPEG_LINKING="shared" AND FFMPEG_LICENSE="gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_64_v4_2_3_static_lgpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-4.2.3-win64-static-lgpl.zip">
+      <![CDATA[ VersionNT64 AND FFMPEG_VERSION="v4.2.3" AND FFMPEG_LINKING="static" AND FFMPEG_LICENSE<>"gpl3" ]]>    
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_64_v4_2_3_shared_lgpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-4.2.3-win64-shared-lgpl.zip">
+      <![CDATA[ VersionNT64 AND FFMPEG_VERSION="v4.2.3" AND FFMPEG_LINKING="shared" AND FFMPEG_LICENSE<>"gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_32_v4_2_3_static_lgpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-4.2.3-win32-static-lgpl.zip">
+      <![CDATA[ NOT VersionNT64 AND FFMPEG_VERSION="v4.2.3" AND FFMPEG_LINKING="static" AND FFMPEG_LICENSE<>"gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_32_v_4_2_3_shared_lgpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win32/shared/ffmpeg-4.2.3-win32-shared-lgpl.zip">
+      <![CDATA[ NOT VersionNT64 AND FFMPEG_VERSION="v4.2.3" AND FFMPEG_LINKING="shared" AND FFMPEG_LICENSE<>"gpl3" ]]>
+    </SetProperty>  
 
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_64_v4_2_2_static_gpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-4.2.2-win64-static.zip">
+      <![CDATA[ VersionNT64 AND FFMPEG_VERSION="v4.2.2" AND FFMPEG_LINKING="static" AND FFMPEG_LICENSE="gpl3" ]]>    
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_64_v4_2_2_shared_gpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-4.2.2-win64-shared.zip">
+      <![CDATA[ VersionNT64 AND FFMPEG_VERSION="v4.2.2" AND FFMPEG_LINKING="shared" AND FFMPEG_LICENSE="gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_32_v4_2_2_static_gpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-4.2.2-win32-static.zip">
+      <![CDATA[ NOT VersionNT64 AND FFMPEG_VERSION="v4.2.2" AND FFMPEG_LINKING="static" AND FFMPEG_LICENSE="gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_32_v4_2_2_shared_gpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win32/shared/ffmpeg-4.2.2-win32-shared.zip">
+      <![CDATA[ NOT VersionNT64 AND FFMPEG_VERSION="v4.2.2" AND FFMPEG_LINKING="shared" AND FFMPEG_LICENSE="gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_64_v4_2_2_static_lgpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-4.2.2-win64-static-lgpl.zip">
+      <![CDATA[ VersionNT64 AND FFMPEG_VERSION="v4.2.2" AND FFMPEG_LINKING="static" AND FFMPEG_LICENSE<>"gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_64_v4_2_2_shared_lgpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-4.2.2-win64-shared-lgpl.zip">
+      <![CDATA[ VersionNT64 AND FFMPEG_VERSION="v4.2.2" AND FFMPEG_LINKING="shared" AND FFMPEG_LICENSE<>"gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_32_v4_2_2_static_lgpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-4.2.2-win32-static-lgpl.zip">
+      <![CDATA[ NOT VersionNT64 AND FFMPEG_VERSION="v4.2.2" AND FFMPEG_LINKING="static" AND FFMPEG_LICENSE<>"gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_32_v_4_2_2_shared_lgpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win32/shared/ffmpeg-4.2.2-win32-shared-lgpl.zip">
+      <![CDATA[ NOT VersionNT64 AND FFMPEG_VERSION="v4.2.2" AND FFMPEG_LINKING="shared" AND FFMPEG_LICENSE<>"gpl3" ]]>
+    </SetProperty>    
+    
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_64_v4_2_1_static_gpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-4.2.1-win64-static.zip">
+      <![CDATA[ VersionNT64 AND FFMPEG_VERSION="v4.2.1" AND FFMPEG_LINKING="static" AND FFMPEG_LICENSE="gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_64_v4_2_1_shared_gpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-4.2.1-win64-shared.zip">
+      <![CDATA[ VersionNT64 AND FFMPEG_VERSION="v4.2.1" AND FFMPEG_LINKING="shared" AND FFMPEG_LICENSE="gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_32_v4_2_1_static_gpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-4.2.1-win32-static.zip">
+      <![CDATA[ NOT VersionNT64 AND FFMPEG_VERSION="v4.2.1" AND FFMPEG_LINKING="static" AND FFMPEG_LICENSE="gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_32_v4_2_1_shared_gpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win32/shared/ffmpeg-4.2.1-win32-shared.zip">
+      <![CDATA[ NOT VersionNT64 AND FFMPEG_VERSION="v4.2.1" AND FFMPEG_LINKING="shared" AND FFMPEG_LICENSE="gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_64_v4_2_1_static_lgpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-4.2.1-win64-static-lgpl.zip">
+      <![CDATA[ VersionNT64 AND FFMPEG_VERSION="v4.2.1" AND FFMPEG_LINKING="static" AND FFMPEG_LICENSE<>"gpl3" ]]>    
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_64_v4_2_1_shared_lgpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-4.2.1-win64-shared-lgpl.zip">
+      <![CDATA[ VersionNT64 AND FFMPEG_VERSION="v4.2.1" AND FFMPEG_LINKING="shared" AND FFMPEG_LICENSE<>"gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_32_v4_2_1_static_lgpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-4.2.1-win32-static-lgpl.zip">
+      <![CDATA[ NOT VersionNT64 AND FFMPEG_VERSION="v4.2.1" AND FFMPEG_LINKING="static" AND FFMPEG_LICENSE<>"gpl3" ]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="SetAFX_FFMPEGURL_32_v_4_2_1_shared_lgpl3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://ffmpeg.zeranoe.com/builds/win32/shared/ffmpeg-4.2.1-win32-shared-lgpl.zip">
+      <![CDATA[ NOT VersionNT64 AND FFMPEG_VERSION="v4.2.1" AND FFMPEG_LINKING="shared" AND FFMPEG_LICENSE<>"gpl3" ]]>
+    </SetProperty>
+    
     <InstallExecuteSequence>
-      <Custom Action="ValidateAppFolderIsLatinAction" Before="CostFinalize" />
-      <Custom Action="RollbackFfmpegPrepareAction" Before="RollbackFfmpegAction"><![CDATA[&FfmpegFeature = 3 And !FfmpegFeature <> 3]]></Custom>
-      <Custom Action="RollbackFfmpegAction" Before="InstallFfmpegAction"><![CDATA[&FfmpegFeature = 3 And !FfmpegFeature <> 3]]></Custom>
-      <Custom Action="InstallFfmpegPrepareAction" Before="InstallFfmpegAction"><![CDATA[&FfmpegFeature = 3 Or REINSTALL And !FfmpegFeature = 3]]></Custom>
-      <Custom Action="InstallFfmpegAction" Before="InstallFinalize"><![CDATA[&FfmpegFeature = 3 Or REINSTALL And !FfmpegFeature = 3]]></Custom>
-      <Custom Action="UninstallFfmpegPrepareAction" Before="UninstallFfmpegAction"><![CDATA[&FfmpegFeature <> 3 And !FfmpegFeature = 3]]></Custom>
-      <Custom Action="UninstallFfmpegAction" Before="RemoveFiles"><![CDATA[&FfmpegFeature <> 3 And !FfmpegFeature = 3]]></Custom>
+      <Custom Action="ValidateAppFolderIsLatinAction" Before="CostFinalize">1</Custom>
+
+      <Custom Action="FfmpegRollbackAction" Before="FfmpegUninstallAction"><![CDATA[$Ffmpeg = 3]]></Custom>
+      
+      <Custom Action="FfmpegUninstallAction" Before="RemoveFiles"><![CDATA[($Ffmpeg = 2 OR ($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3) AND FFMPEG_REINSTALL) AND (?Ffmpeg = 3)]]></Custom>
+
+      <Custom Action="FfmpegCreateDirectory" Before="InstallFfmpegPrepareAction"><![CDATA[$Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3]]></Custom>
+      <Custom Action="InstallFfmpegPrepareAction" Before="InstallFfmpegAction"><![CDATA[($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3) AND FFMPEG_REINSTALL AND FFMPEG_VERSION <> "custom"]]></Custom>
+      <Custom Action="InstallFfmpegAction" After="InstallFiles"><![CDATA[($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3) AND FFMPEG_REINSTALL AND FFMPEG_VERSION <> "custom"]]></Custom>
+      <Custom Action="FinalizeFfmpegInstallAction" After="InstallFfmpegAction"><![CDATA[$Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3]]></Custom>
+
+      <Custom Action="RemoveHlaeAppDataAction" Before="RemoveFiles"><![CDATA[&Hlae <> 3 AND !Hlae = 3 AND AFX_REMOVEAPPDATAFOLDER]]></Custom>
     </InstallExecuteSequence>
   </Product>
 
   <Fragment>
-    <SetProperty Action="SetValidateAppFolderIsLatinAction" Id="APPLICATIONFOLDER" Value="[APPLICATIONFOLDER]" Before="ValidateAppFolderIsLatinAction" Sequence="execute" />
-    <SetProperty Action="SetRollbackFfmpegPrepareAction" Id="AFX_FFMPEGFOLDER" Value="[_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg]" Before="RollbackFfmpegPrepareAction" Sequence="execute" />
-    <SetProperty Action="SetInstallFfmpegPrepareAction" Id="AFX_FFMPEGFOLDER" Value="[_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg]" Before="InstallFfmpegPrepareAction" Sequence="execute" />
-    <SetProperty Action="SetUninstallFfmpegPrepareAction" Id="AFX_FFMPEGFOLDER" Value="[_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg]" Before="UninstallFfmpegPrepareAction" Sequence="execute" />
     <Binary Id='HlaeCoreExtension' SourceFile='$(var.HlaeCoreExtension.TargetDir)HlaeCoreExtension.CA.dll'/>
+
+    <CustomAction Id='FfmpegCustomPathDlgAction' BinaryKey='HlaeCoreExtension' DllEntry='FfmpegCustomPathDlg' Execute='immediate' Return='check'/>
+    <CustomAction Id='ValidateFfmpegCustomPathAction' BinaryKey='HlaeCoreExtension' DllEntry='ValidateFfmpegCustomPath' Execute='immediate' Return='check'/>
+    <CustomAction Id='ValidateTargetPathAction' BinaryKey='HlaeCoreExtension' DllEntry='ValidateTargetPath' Execute='immediate' Return='check'/>
+    
+    <SetProperty Action="SetValidateAppFolderIsLatinAction" Id="APPLICATIONFOLDER" Value="[APPLICATIONFOLDER]" Before="ValidateAppFolderIsLatinAction" Sequence="execute" />
     <CustomAction Id='ValidateAppFolderIsLatinAction' BinaryKey='HlaeCoreExtension' DllEntry='ValidateAppFolderIsLatin' Execute='immediate' Return='check'/>
-    <CustomAction Id='RollbackFfmpegPrepareAction' BinaryKey='HlaeCoreExtension' DllEntry='UninstallFfmpegPrepare' Execute='immediate' Return='check'/>
-    <CustomAction Id='RollbackFfmpegAction' BinaryKey='HlaeCoreExtension' DllEntry='UninstallFfmpeg' Execute='rollback' Impersonate='no' Return='check'/>
-    <CustomAction Id='InstallFfmpegPrepareAction' BinaryKey='HlaeCoreExtension' DllEntry='InstallFfmpegPrepare' Execute='immediate' Return='check'/>
+    
+    <SetProperty Action="SetInstallFfmpegPrepareUrlAction" Id="AFX_FFMPEGURL" Value="[AFX_FFMPEGURL]" Before="InstallFfmpegPrepareAction" Sequence="execute" />           
+    <SetProperty Action="SetInstallFfmpegPrepareFolderAction" Id="AFX_FFMPEGFOLDER" Value="[_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg]" Before="InstallFfmpegPrepareAction" Sequence="execute" />
+    <CustomAction Id='InstallFfmpegPrepareAction' BinaryKey='HlaeCoreExtension' DllEntry='InstallFfmpegPrepare' Execute='immediate' Return='check' />
     <CustomAction Id='InstallFfmpegAction' BinaryKey='HlaeCoreExtension' DllEntry='InstallFfmpeg' Execute='deferred' Impersonate='no' Return='check'/>
-    <CustomAction Id='UninstallFfmpegPrepareAction' BinaryKey='HlaeCoreExtension' DllEntry='UninstallFfmpegPrepare' Execute='immediate' Return='check'/>
-    <CustomAction Id='UninstallFfmpegAction' BinaryKey='HlaeCoreExtension' DllEntry='UninstallFfmpeg' Execute='deferred' Impersonate='no' Return='check'/>
-  </Fragment>
+
+    <SetProperty Action="SetFfmpegCreateDirectory" Id="FfmpegCreateDirectory" Value="AFX_CREATEFOLDER=[_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg]" Before="FfmpegCreateDirectory" Sequence="execute" />
+    <CustomAction Id='FfmpegCreateDirectory' BinaryKey='HlaeCoreExtension' DllEntry='CreateDirectory' Execute='deferred' Impersonate='no' Return='check'/>
+    
+    <SetProperty Action="SetFinalizeFfmpegInstallAction" Id="FinalizeFfmpegInstallAction" Value="FFMPEG_REINSTALL=[FFMPEG_REINSTALL];FFMPEG_VERSION=[FFMPEG_VERSION];FFMPEG_LINKING=[FFMPEG_LINKING];FFMPEG_LICENSE=[FFMPEG_LICENSE];FFMPEG_CUSTOM=[FFMPEG_CUSTOM];AFX_FFMPEGFOLDER=[_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg]" Before="FinalizeFfmpegInstallAction" Sequence="execute" />
+    <CustomAction Id='FinalizeFfmpegInstallAction' BinaryKey='HlaeCoreExtension' DllEntry='FinalizeFfmpegInstall' Execute='deferred' Impersonate='no' Return='check'/>
+
+    <SetProperty Action="SetFfmpegRollbackAction" Id="FfmpegRollbackAction" Value="AFX_REMOVEFOLDER=[_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg]" Before="FfmpegRollbackAction" Sequence="execute" />
+    <CustomAction Id='FfmpegRollbackAction' BinaryKey='HlaeCoreExtension' DllEntry='RemoveFolder' Execute='rollback' Impersonate='no' Return='check'/>    
+    
+    <SetProperty Action="SetFfmpegUninstallAction" Id="FfmpegUninstallAction" Value="AFX_REMOVEFOLDER=[_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg]" Before="FfmpegUninstallAction" Sequence="execute" />
+    <CustomAction Id='FfmpegUninstallAction' BinaryKey='HlaeCoreExtension' DllEntry='RemoveFolder' Execute='deferred' Impersonate='no' Return='check'/>
+
+    <SetProperty Action="SetRemoveHlaeAppDataAction" Id="RemoveHlaeAppDataAction" Value="AFX_REMOVEFOLDER=[AppDataFolder]\HLAE" Before="RemoveHlaeAppDataAction" Sequence="execute" />
+    <CustomAction Id='RemoveHlaeAppDataAction' BinaryKey='HlaeCoreExtension' DllEntry='RemoveFolder' Execute='deferred' Impersonate='yes' Return='check' />
+</Fragment>
 
   <Fragment>
     <Directory Id="TARGETDIR" Name="SourceDir">
@@ -492,21 +688,24 @@
     </DirectoryRef>
     
     <DirectoryRef Id="TARGETDIR">
-      <Component Id="RegistryEntries" Guid="{22E1FC75-9BBA-4B86-BE8E-E7D50E44B6E6}">
-        <RegistryKey Root="HKLM"
-                     Key="Software\advancedfx\HLAE">
+      <Component Id="HlaeCoreRegistry" Guid="{22E1FC75-9BBA-4B86-BE8E-E7D50E44B6E6}">
+        <RegistryKey Root='HKLM' Key='Software\advancedfx\HLAE'>
           <RegistryValue Type="string" Name="APPLICATIONFOLDER" Value="[APPLICATIONFOLDER]" KeyPath="yes" />
         </RegistryKey>
       </Component>
-    </DirectoryRef>    
+      <Component Id="FfmpegRegistry" Guid="{9E45CDC6-E991-46DE-89A5-6A97D1E3AC12}">
+        <CreateFolder Directory="_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg" />
+        <RegistryKey Root='HKLM' Key='Software\advancedfx\HLAE\FFMPEG' ForceDeleteOnUninstall='yes' />
+      </Component>
+    </DirectoryRef>
     
-    <Component Id="HlaeStartProgramsFolder" Guid="{89D3440C-0559-449F-B3A9-686573945374}"  Directory="ApplicationProgramsFolder">
+    <Component Id="HlaeStartProgramsFolder" Guid="{89D3440C-0559-449F-B3A9-686573945374}" Directory="ApplicationProgramsFolder">
         <RemoveFolder Id="CleanUpHlaeShortCut" On="uninstall"/>
         <RegistryValue Root="HKCU" Key="Software\advancedfx\HLAE" Name="scut" Value="1" Type="integer" KeyPath="yes"/>
-    </Component> 
+    </Component>
 
-    <ComponentGroup Id="HlaeCoreComponents" Directory="APPLICATIONFOLDER">
-      <ComponentRef Id="RegistryEntries"/>
+    <ComponentGroup Id="HlaeCoreComponents" Directory="APPLICATIONFOLDER">      
+      <ComponentRef Id="HlaeCoreRegistry"/>
       <ComponentRef Id="_EB7D4DF0_111A_4E26_9D2F_54C0FA86014C_LICENSE"/>
       <ComponentRef Id="_8F522F24_EDFE_485F_9A91_C44F0E2C1DC6_LICENSE.md"/>
       <ComponentRef Id="_20A0F8EF_737D_4851_8A86_55E6997A06D9_COPYING"/>
@@ -617,18 +816,4 @@
       <ComponentRef Id="_D4A10668_7785_4A2F_B613_05302B3D36F5_zlib1.dll"/>
     </ComponentGroup>
 	</Fragment>
-
-  <Fragment>
-
-    <DirectoryRef Id="_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg">
-      <Component Id="_32A1AD35_1386_4C8E_9D64_E1D87AD71BD8_ffmpeg" Guid="{6650098A-1807-499D-8F48-B8F9D5558872}">
-        <CreateFolder Directory="_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg" />
-        <ReserveCost Id="_8CC723EF_BAEC_4D2C_A894_D9ACAB71FE2A_reserve" Directory="_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg" RunFromSource="250000000" RunLocal="250000000" />
-      </Component>
-    </DirectoryRef>
-
-    <ComponentGroup Id="FfmpegComponents" Directory="_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg">
-      <ComponentRef Id="_32A1AD35_1386_4C8E_9D64_E1D87AD71BD8_ffmpeg" />
-    </ComponentGroup>
-  </Fragment>
 </Wix>

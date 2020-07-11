@@ -36,6 +36,13 @@ namespace AfxGui
             }
         }
 
+        internal static string SteamInstallPath
+        {
+            get
+            {
+                return m_SteamInstallPath;
+            }
+        }
 
         //
         // Private members:
@@ -43,6 +50,7 @@ namespace AfxGui
         static String m_BaseDir;
         static String m_AppDataDir;
         static System.Drawing.Icon m_Icon;
+        static string m_SteamInstallPath;
         static bool m_CustomLoaderHadHookDllPath = false;
 
         static void ProcessArgsAfxHookGoldSrc(string[] args)
@@ -336,13 +344,27 @@ namespace AfxGui
         {
             ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // Force TLS v1.2 (Will only work where .NET 4.5 is installed).
 
+            // Use default system proxy in case we use WebRequest (which we don't) atm:
+            System.Net.WebRequest.DefaultWebProxy = System.Net.WebRequest.GetSystemWebProxy();
+            System.Net.WebRequest.DefaultWebProxy.Credentials = System.Net.CredentialCache.DefaultNetworkCredentials;
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
             m_BaseDir = System.IO.Path.GetFullPath(System.Windows.Forms.Application.StartupPath).TrimEnd('\\','/');
             m_AppDataDir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HLAE");
 
-            if(!System.IO.Directory.Exists(m_AppDataDir)) System.IO.Directory.CreateDirectory(m_AppDataDir);
+            try
+            {
+                m_SteamInstallPath = Microsoft.Win32.Registry.LocalMachine.GetValue("Computer\\HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Valve\\Steam") as string;
+            }
+            catch
+            {
+                m_SteamInstallPath = null;
+            }
+            if (null == m_SteamInstallPath) m_SteamInstallPath = "C:\\Program Files(x86)\\Steam";
+
+            if (!System.IO.Directory.Exists(m_AppDataDir)) System.IO.Directory.CreateDirectory(m_AppDataDir);
 
             m_Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Windows.Forms.Application.ExecutablePath);
 

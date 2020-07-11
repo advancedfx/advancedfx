@@ -1,15 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <WixLocalization Culture="en-us" Language="1033" Codepage="1252" xmlns="http://schemas.microsoft.com/wix/2006/localization">
-  <String Id="ApplicationName">HLAE Core</String>
+  <String Id="ApplicationName">HLAE</String>
+  <String Id="HlaeLocalesTitle">Translations</String>
   <String Id="Manufacturer">advancedfx.org</String>
   <String Id="DowngradeErrorMessage">A newer version of [ProductName] is already installed.</String>
-  <String Id="FfmpegFeature">Install FFMPEG from https://ffmpeg.zeranoe.com/builds/</String>
+  <String Id="FfmpegTitle">FFMPEG</String>
+  <String Id="FfmpegDescription">FFMPEG can be used for encoding mirv_streams to videos.</String>
+  <String Id="FfmpegDlgTitle">{\WixUI_Font_Title}FFMPEG</String>
+  <String Id="FfmpegDlgDescription">Install FFMPEG or use exsiting one.</String>
+  <String Id="FfmpegDlgReinstall">Reinstall FFMPEG</String>
+  <String Id="FfmpegDlgDownloaded">FFMPEG will be downloaded from https://ffmpeg.zeranoe.com/builds/ and installed using your current internet connection and proxy settings.</String>
+  <String Id="FfmpegDlgVersion">Select version:</String>
+  <String Id="FfmpegDlgLatest">latest (recommended)</String>
+  <String Id="FfmpegDlgCustom">Select existing on disk</String>
+  <String Id="FfmpegDlgLinking">Select linking:</String>
+  <String Id="FfmpegDlgStatic">static (faster, 100 MB download, recommended)</String>
+  <String Id="FfmpegDlgShared">shared (smaller, 50 MB download)</String>
+  <String Id="FfmpegDlgLicense">Select license:</String>
+  <String Id="FfmpegDlgGpl3">GPL3 (complete, recommended)</String>
+  <String Id="FfmpegDlgLgpl3">LGPL3 (less features, more permissive)</String>
+  <String Id="FfmpegDlgPath">Please enter the full path to your custom ffmpeg.exe here:</String>
+  <String Id="FfmpegDlgPathBrowse">Browse</String>
+  <String Id="FfmpegDlgPathError">{\WixUI_Font_Bold}File does not exist or is not accessible. Please fix and click Next button to try again.</String>
   <String Id="InstallFfmpeg">Installing FFMPEG ...</String>
-  <String Id="InstallFfmpegConnect">Connecting to https://ffmpeg.zeranoe.com/</String>
+  <String Id="InstallFfmpegConnect">Connecting to [AFX_FFMPEGURL]</String>
   <String Id="InstallFfmpegConnect_Template">...</String>
-  <String Id="InstallFfmpegDownload">Downloading from https://ffmpeg.zeranoe.com/</String>
+  <String Id="InstallFfmpegDownload">Downloading [AFX_FFMPEGURL]</String>
   <String Id="InstallFfmpegDownload_Template">[1] of [2] Bytes</String>
   <String Id="InstallFfmpegExtract">Extracting FFMPEG</String>
   <String Id="InstallFfmpegExtract_Template">Item [1] of [2] ...</String>  
-  <String Id="AppFolderMustBeLatin">The HLAE application folder path contains invalid characters: Only basic latin character set is allowed. Please choose a different installation folder in options accordingly.</String>
+  <String Id="AppFolderMustBeLatin">The HLAE application folder path contains invalid characters: Only basic latin character set is allowed (7bit ASCII).</String>
+  <String Id="RemoveHlaeAppDataFolder">Remove HLAE application data folder (not recommended).</String>
 </WixLocalization>

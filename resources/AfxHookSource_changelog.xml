@@ -4,6 +4,17 @@
 <changelog>
 
 
+<release>
+<name>AfxHookSource</name>
+<version>1.85.0</version>
+<time>2020-07-10T12:04Z</time>
+<changes>
+<change type="fixed">Fixed typos (thanks Dec).</change>
+<change type="fixed">Added support for ffmpeg.ini placed in ffmpeg folder by installer (allows to point at ffmpeg.exe in different location).</change>
+</changes>
+</release>
+
+
 
 <release>
 <name>AfxHookSource</name>

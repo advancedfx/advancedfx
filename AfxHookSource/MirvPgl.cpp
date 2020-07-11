@@ -396,7 +396,7 @@ namespace MirvPgl
 						}
 
 						Tier0_Msg(
-							"%s rectsPerRow <i> - Number of rectangles per row\n"
+							"%s rectsPerRow <i> - Number of rectangles per row.\n"
 							"Current value: %u\n"
 							, cmd0
 							, m_RectsPerRow

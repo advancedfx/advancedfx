@@ -819,7 +819,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					}
 
 					Tier0_Msg(
-						"mirv_streams record matForceTonemapScale <fValue> - Positive value: Force floating point value <fValue> for mat_force_tonemap_scale during recording (can fix random bomb plan birghtness if enabled, but breaks auto brightness adjustment).\n"
+						"mirv_streams record matForceTonemapScale <fValue> - Positive value: Force floating point value <fValue> for mat_force_tonemap_scale during recording (can fix random bomb plant brightness if enabled, but breaks auto brightness adjustment).\n"
 						"Current value: %f.\n",
 						g_AfxStreams.Console_MatForceTonemapScale_get()
 					);
@@ -1654,7 +1654,7 @@ CON_COMMAND(mirv_deathmsg, "controls death notification options")
 	csgo_CHudDeathNotice_Console(args);
 }
 
-CON_COMMAND(mirv_fov,"allows overriding FOV (Filed Of View) of the camera")
+CON_COMMAND(mirv_fov,"allows overriding FOV (Field Of View) of the camera")
 {
 	if(!g_Hook_VClient_RenderView.IsInstalled())
 	{
@@ -1737,7 +1737,7 @@ CON_COMMAND(mirv_fov,"allows overriding FOV (Filed Of View) of the camera")
 
 			Tier0_Msg(
 				"Usage:\n"
-				"mirv_fov handleZoom enabled [...] - Whether to enable zoom handling (if enabled mirv_fov is only active if it's not bellow minUnzoomedFov (not zoomed)).\n"
+				"mirv_fov handleZoom enabled [...] - Whether to enable zoom handling (if enabled mirv_fov is only active if it's not below minUnzoomedFov (not zoomed)).\n"
 				"mirv_fov handleZoom minUnzoomedFov [...] - Zoom detection threshold.\n"
 			);
 			return;
@@ -2172,8 +2172,8 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 				"mirv_input cfg mouseMoveSupport 0|1 - Disable / Enable mouse move support (use left / right mouse button).\n"
 				"mirv_input cfg offsetMode - Get Value.\n"
 				"mirv_input cfg offsetMode last|ownLast|game|current - Default: current, last = old method (last outputted), ownLast = as outputted by mirv_input, game = as outputted by game, current = as outputted by current overrides.\n"
-				"mirv_input cfg msens - Get mouse sensitiviy.\n"
-				"mirv_input cfg msens <dValue> - Set mouse sensitiviy.\n"
+				"mirv_input cfg msens - Get mouse sensitivity.\n"
+				"mirv_input cfg msens <dValue> - Set mouse sensitivity.\n"
 				"mirv_input cfg ksens - Get keyboard sensitivity.\n"
 				"mirv_input cfg ksens <dValue> - Set keyboard sensitivity.\n"
 			);
@@ -2391,7 +2391,7 @@ CON_COMMAND(mirv_gameoverlay, "GameOverlayRenderer control.")
 
 	Tier0_Msg(
 		"Usage:\n"
-		"mirv_gameoverlay enabled 0|1 - Disable/Enable the GameOverlay (will only do s.th. useful when it was enabled initally).\n"
+		"mirv_gameoverlay enabled 0|1 - Disable/Enable the GameOverlay (will only do s.th. useful when it was enabled initially).\n"
 	);
 }
 
@@ -2460,7 +2460,7 @@ CON_COMMAND(mirv_snd_filter, "Sound control (i.e. blocking sounds).")
 
 	Tier0_Msg(
 		"Usage:\n"
-		"mirv_snd_filter block <mask> - Blocks given <mask> string (for format see bellow).\n"
+		"mirv_snd_filter block <mask> - Blocks given <mask> string (for format see below).\n"
 		"mirv_snd_filter print - Prints current blocks.\n"
 		"mirv_snd_filter remove <index> - Removes the block with index <index> (You can get that from the print sub-command).\n"
 		"mirv_snd_filter clear - Clears all blocks.\n"
@@ -2608,7 +2608,7 @@ CON_COMMAND(mirv_listentities, "Print info about currently active entites. (CS:G
 
 	Tier0_Msg(
 		"Results:\n"
-		"index (distance): className::enitityName :entityHandle\n"
+		"index (distance): className::entityName :entityHandle\n"
 	);
 
 
@@ -2690,7 +2690,7 @@ CON_COMMAND(mirv_traceentity, "Trace entity from current view position")
 
 	Tier0_Msg(
 		"Result:\n"
-		"index (distance): className::enitityName :entityHandle\n"
+		"index (distance): className::entityName :entityHandle\n"
 	);
 
 
@@ -2747,7 +2747,7 @@ CON_COMMAND(mirv_aim, "Aiming system control.")
 			}
 
 			Tier0_Msg(
-				"mirv_aim softDeactivate 0|1 - Wheter to support soft deactivation (1) or not (0).\n"
+				"mirv_aim softDeactivate 0|1 - Whether to support soft deactivation (1) or not (0).\n"
 				"Current value: %s\n",
 				g_Aiming.SoftDeactivate ? "1" : "0"
 			);
@@ -2770,7 +2770,7 @@ CON_COMMAND(mirv_aim, "Aiming system control.")
 			IMirvVecAngCalc * vecAng = g_Aiming.Source_get();
 
 			Tier0_Msg(
-				"mirv_aim finder <sClacVecAngName> - Calc to use as source (<sClacVecAngName> is name form mirv_calcs vecAng).\n"
+				"mirv_aim finder <sClacVecAngName> - Calc to use as source (<sClacVecAngName> is name from mirv_calcs vecAng).\n"
 				"Current value: %s\n"
 				, vecAng ? "" : "(none)"
 			);
@@ -2913,7 +2913,7 @@ CON_COMMAND(mirv_aim, "Aiming system control.")
 			}
 
 			Tier0_Msg(
-				"mirv_aim snapTo 0|1 - Wheter to aim non-soft (1) or not (0)."
+				"mirv_aim snapTo 0|1 - Whether to aim non-soft (1) or not (0).\n"
 				"Current value: %s\n",
 				g_Aiming.SnapTo ? "1" : "0"
 			);
@@ -3097,7 +3097,7 @@ CON_COMMAND(mirv_aim, "Aiming system control.")
 
 	Tier0_Msg(
 		"mirv_aim active [...] - Whether aiming is active.\n"
-		"mirv_aim softDeactivate [...] - Wheter to support soft deactivation (for snapTo 0).\n"
+		"mirv_aim softDeactivate [...] - Whether to support soft deactivation (for snapTo 0).\n"
 		"mirv_aim calcVecAng [...] - Source for target (overrides entityIndex, point, origin, angles).\n"
 		"mirv_aim calcVecAngClear - Clears source for target (no target) (overrides entityIndex, point, origin, angles).\n"
 		"mirv_aim entityIndex [...] - Entity index to aim after (use mirv_listentities to get one).\n"
@@ -3106,7 +3106,7 @@ CON_COMMAND(mirv_aim, "Aiming system control.")
 		"mirv_aim angles [...] - Target angles to use.\n"
 		"mirv_aim offset [...] - Offset in target space to aim at.\n"
 		"mirv_aim up [...] - How to determine the camera up direction.\n"
-		"mirv_aim snapTo [...] - Wheter to aim non-soft or soft.\n"
+		"mirv_aim snapTo [...] - Whether to aim non-soft or soft.\n"
 		"mirv_aim velLimit [...] - Max velocity possible (for snapTo 0).\n"
 		"mirv_aim accelLimit [...] - Max acceleration possible (for snapTo 0).\n"
 		// does not work atm // "mirv_aim jerkLimit [...] - Max jerk possible (for snapTo 0).\n"
@@ -3298,7 +3298,7 @@ CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 		"mirv_cmd edit cmd [...] - Edit a specific command.\n"
 		"mirv_cmd clear - Removes all commands.\n"
 		"mirv_cmd print - Prints commands / state.\n"
-		"mirv_cmd remove <index> - Removes a command by it's index.\n"
+		"mirv_cmd remove <index> - Removes a command by its index.\n"
 		"mirv_cmd load <fileName> - loads commands from the file (XML format)\n"
 		"mirv_cmd save <fileName> - saves commands to the file (XML format)\n"
 	);
@@ -3406,7 +3406,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 			}
 
 			Tier0_Msg(
-				"mirv_fix playerAnimState 0|1|2|3- Fixes twitching of player arms, see https://github.com/ripieces/advancedfx/wiki/Source%%3ASmoother-Demos , 0 - disabled, 1 - enabled, 2/3 - debug.\n"
+				"mirv_fix playerAnimState 0|1|2|3- Fixes twitching of player arms, see https://github.com/advancedfx/advancedfx/wiki/Source%3ASmoother-Demos , 0 - disabled, 1 - enabled, 2/3 - debug.\n"
 				"Current value: %i\n",
 				Enable_csgo_PlayerAnimStateFix_get()
 			);
@@ -3472,9 +3472,9 @@ CON_COMMAND(mirv_fix, "Various fixes")
 		"mirv_fix physicsMaxFps [...] - Can raise the FPS limit for physics (i.e. rag dolls, so they don't freeze upon high host_framerate).\n"
 		"mirv_fix blockObserverTarget [...] - Fixes unwanted player switching i.e. upon bomb plant (blocks C_BasePlayer::RecvProxy_ObserverTarget).\n"
 		"mirv_fix oldDuckFix [...] - Can fix player stuck in duck for old demos.\n"
-		"mirv_fix playerAnimState [...] - Fixes twitching of player arms/legs, see https://github.com/ripieces/advancedfx/wiki/Source%%3ASmoother-Demos .\n"
+		"mirv_fix playerAnimState [...] - Fixes twitching of player arms/legs, see https://github.com/advancedfx/advancedfx/wiki/Source%3ASmoother-Demos\n"
 		//"mirv_fix demoIndexTicks [...] - Tries to make backward skipping faster in demos.\n"
-		"mirv_fix selectedPlayerGlow 0|1 - If to allow selected player flow (1, default) or not (0).\n"
+		"mirv_fix selectedPlayerGlow 0|1 - If to allow selected player glow (1, default) or not (0).\n"
 	);
 	return;
 }
@@ -3530,7 +3530,7 @@ void MirvDoVPanelOnCommand(char const * panelName, char const * destinationModul
 {
 	if (!(g_pVGuiSurface_csgo && g_pVGuiPanel_csgo))
 	{
-		Tier0_Warning("Errror: Missing dependencies.\n");
+		Tier0_Warning("Error: Missing dependencies.\n");
 		return;
 	}
 
@@ -3552,7 +3552,7 @@ CON_COMMAND(mirv_vpanel, "VGUI Panel access")
 {
 	if (!(g_pVGuiSurface_csgo && g_pVGuiPanel_csgo))
 	{
-		Tier0_Warning("Errror: Missing dependencies.\n");
+		Tier0_Warning("Error: Missing dependencies.\n");
 		return;
 	}
 
@@ -3755,9 +3755,9 @@ CON_COMMAND(mirv_time, "time control")
 	}
 
 	Tier0_Msg(
-		"mirv_time mode [...].\n"
-		"mirv_time pausedTime [...].\n"
-		"mirv_time drive [....]."
+		"mirv_time mode [...]\n"
+		"mirv_time pausedTime [...]\n"
+		"mirv_time drive [...]\n"
 	);
 }
 
@@ -3813,8 +3813,8 @@ CON_COMMAND(mirv_cfg, "general HLAE configuration")
 
 	Tier0_Msg(
 		"%s fovScaling [...] - Set default fov scaling.\n"
-		"%s forceViewOverride [...] - If to force the view override onto the local player, can fix a few bugs (CS:GO only)."
-		"%s viewOverrideReset [...] - If to resert roll to 0 and fov to 90 (unscaled) after ending a view override (CS:GO only)."
+		"%s forceViewOverride [...] - If to force the view override onto the local player, can fix a few bugs (CS:GO only).\n"
+		"%s viewOverrideReset [...] - If to reset roll to 0 and fov to 90 (unscaled) after ending a view override (CS:GO only).\n"
 		, arg0
 		, arg0
 		, arg0

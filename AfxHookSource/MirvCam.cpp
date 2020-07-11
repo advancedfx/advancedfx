@@ -167,8 +167,8 @@ CON_COMMAND(mirv_cam, "Control camera source entity and offset.")
 					IMirvVecAngCalc * vecAng = g_MirvCam.Source_get();
 
 					Tier0_Msg(
-						"mirv_cam source calcVecAng <sVecAngCalcName> - Calc to use as source (<sVecAngCalcName> is name form mirv_calcs vecAng).\n"
-						"Cuurent value: %s"
+						"mirv_cam source calcVecAng <sVecAngCalcName> - Calc to use as source (<sVecAngCalcName> is name from mirv_calcs vecAng).\n"
+						"Current value: %s"
 						, vecAng ? "" : "(none)"
 					);
 
@@ -288,7 +288,7 @@ CON_COMMAND(mirv_cam, "Control camera source entity and offset.")
 					}
 
 					Tier0_Msg(
-						"mirv_cam source angles net|view - Source angeles to use.\n"
+						"mirv_cam source angles net|view - Source angles to use.\n"
 						"Current value: %s\n",
 						curValue
 					);
@@ -396,8 +396,8 @@ CON_COMMAND(mirv_cam, "Control camera source entity and offset.")
 					IMirvFovCalc * calc = g_MirvCam.Fov_get();
 
 					Tier0_Msg(
-						"mirv_cam fov calc <sFovCalcName> - Calc to use as source (<sFovCalcName> is name form mirv_calcs fov).\n"
-						"Cuurent value: %s"
+						"mirv_cam fov calc <sFovCalcName> - Calc to use as source (<sFovCalcName> is name from mirv_calcs fov).\n"
+						"Current value: %s"
 						, calc ? "" : "(none)"
 					);
 

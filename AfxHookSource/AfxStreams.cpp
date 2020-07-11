@@ -1208,7 +1208,7 @@ void CAfxTwinStream::Console_Edit_Tail(IWrpCommandArgs * args)
 	Tier0_Msg("-- twin properties --\n");
 	Tier0_Msg("%s streamA [...] - Edit sub stream A.\n", arg0);
 	Tier0_Msg("%s streamB [...] - Edit sub stream B.\n", arg0);
-	Tier0_Msg("%s streamCombineType [...] - Controlls how streams are combined.\n", arg0);
+	Tier0_Msg("%s streamCombineType [...] - Controls how streams are combined.\n", arg0);
 
 	CAfxRecordStream::Console_Edit_Tail(args);
 }
@@ -6972,11 +6972,12 @@ void CAfxStreams::Console_MainStream(IWrpCommandArgs * args)
 	}
 
 	Tier0_Msg(
-		"%s none - Never use a mainstream, instead always do a (hidden) render to cache the scene sate.\n"
+		"%s none - Never use a mainstream, instead always do a (hidden) render to cache the scene state.\n"
 		"%s firstActive - Default: The first stream recorded or previewed is considered the main stream.\n"
-		"%s first -The first stream in the list is considered the main stream.\n"
+		"%s first - The first stream in the list is considered the main stream.\n"
 		"%s set <sStreamName> - Set a stream named <sStreamName> to use as main stream.\n"
 		"Current value: %s%s\n"
+		, arg0
 		, arg0
 		, arg0
 		, arg0
@@ -8342,7 +8343,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 		Tier0_Msg("%s otherSpecialAction [...] - Readonly.\n", cmdPrefix);
 		Tier0_Msg("%s clear [...]\n", cmdPrefix);
 		Tier0_Msg("%s clearBeforeHud [...]\n", cmdPrefix);
-		Tier0_Msg("%s vguiAction [...].\n", cmdPrefix);
+		Tier0_Msg("%s vguiAction [...]\n", cmdPrefix);
 		Tier0_Msg("%s depthVal [...]\n", cmdPrefix);
 		Tier0_Msg("%s depthValMax [...]\n", cmdPrefix);
 		Tier0_Msg("%s drawZ [...]\n", cmdPrefix);
@@ -8361,9 +8362,9 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 		Tier0_Msg("-- renderView properties --\n");
 		Tier0_Msg("%s attachCommands [...] - Commands to be executed when stream is attached. WARNING. Use at your own risk, game may crash!\n", cmdPrefix);
 		Tier0_Msg("%s detachCommands [...] - Commands to be executed when stream is detached. WARNING. Use at your own risk, game may crash!\n", cmdPrefix);
-		Tier0_Msg("%s drawHud [...] - Controlls whether or not HUD is drawn for this stream.\n", cmdPrefix);
+		Tier0_Msg("%s drawHud [...] - Controls whether or not HUD is drawn for this stream.\n", cmdPrefix);
 		Tier0_Msg("%s drawViewModel [...] - Controls whether or not view model (in-eye weapon) is drawn for this stream.\n", cmdPrefix);
-		Tier0_Msg("%s forceBuildingCubeMaps [...] - Control if to enable force building_cubemaps to 1. This should be set on all streams that are composited with other streams or should not have any postprocessing. For technical reasons only the first stream rendered (recorded or previewd) will obey this option, others always force this.\n", cmdPrefix);
+		Tier0_Msg("%s forceBuildingCubeMaps [...] - Control if to enable force building_cubemaps to 1. This should be set on all streams that are composited with other streams or should not have any postprocessing. For technical reasons only the first stream rendered (recorded or previewed) will obey this option, others always force this.\n", cmdPrefix);
 		Tier0_Msg("%s captureType [...] - Stream capture type.\n", cmdPrefix);
 		Tier0_Msg("%s doBloomAndToneMapping [...]\n", cmdPrefix);
 		Tier0_Msg("%s doDepthOfField [...]\n", cmdPrefix);
@@ -9524,8 +9525,8 @@ void CAfxRecordingSettings::Console(IWrpCommandArgs * args)
 
 			Tier0_Msg(
 				"%s add ffmpeg <name> \"<yourOptionsHere>\" - Adds an FFMPEG setting, <yourOptionsHere> are output options, use {QUOTE} for \", {AFX_STREAM_PATH} for the folder path of the stream, \\{ for {, \\} for }. For an example see one of the afxFfmpeg* templates (edit them).\n"
-				"%s add sampler <name> - Adds a sampler with 30 fps and default settings, edit it afterwars to change them.\n"
-				"%s add multi <name> - Adds multi settings, edit it afterwars to add settings to it.\n"
+				"%s add sampler <name> - Adds a sampler with 30 fps and default settings, edit it afterwards to change them.\n"
+				"%s add multi <name> - Adds multi settings, edit it afterwards to add settings to it.\n"
 				, arg0
 				, arg0
 				, arg0

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (c) .NET Foundation and contributors. All rights reserved. Licensed under the Microsoft Reciprocal License. See LICENSE.TXT file in the project root for full license information. -->
+
+
+
+<!--
+First-time install dialog sequence:
+- WixUI_WelcomeDlg
+- WixUI_LicenseAgreementDlg
+- WixUI_SetupTypeDlg
+- WixUI_VerifyReadyDlg
+- WixUI_CustomizeDlg
+- WixUI_DiskCostDlg
+- WixUI_BrowseDlg
+
+Maintenance dialog sequence:
+- WixUI_MaintenanceWelcomeDlg
+- WixUI_MyMaintenanceTypeDlg
+- WixUI_CustomizeDlg
+- WixUI_VerifyReadyDlg
+
+Patch dialog sequence:
+ - WixUI_WelcomeDlg
+ - WixUI_VerifyReadyDlg
+-->
+
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Fragment>
+        <UI Id="MyWixUI_Mondo">
+          <TextStyle Id="WixUI_Font_Normal" FaceName="Tahoma" Size="8" />
+          <TextStyle Id="WixUI_Font_Bold" FaceName="Tahoma" Size="8" Bold="yes" />
+          <TextStyle Id="WixUI_Font_Bigger" FaceName="Tahoma" Size="12" />
+          <TextStyle Id="WixUI_Font_Title" FaceName="Tahoma" Size="9" Bold="yes" />
+
+          <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
+          <Property Id="WixUI_Mode" Value="Mondo" />
+
+          <DialogRef Id="ErrorDlg" />
+          <DialogRef Id="FatalError" />
+          <DialogRef Id="FilesInUse" />
+          <DialogRef Id="MsiRMFilesInUse" />
+          <DialogRef Id="PrepareDlg" />
+          <DialogRef Id="ProgressDlg" />
+          <DialogRef Id="ResumeDlg" />
+          <DialogRef Id="UserExit" />
+
+          <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999">1</Publish>
+
+          <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="SetupTypeDlg">NOT Installed AND NOT PATCH</Publish>
+          <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">NOT (?Ffmpeg = 3) AND (Installed AND PATCH)</Publish>
+          <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="FfmpegDlg">(?Ffmpeg = 3) AND (Installed AND PATCH)</Publish>
+
+          <Publish Dialog="SetupTypeDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg">1</Publish>
+          <Publish Dialog="SetupTypeDlg" Control="TypicalButton" Event="NewDialog" Value="VerifyReadyDlg">NOT ($Ffmpeg = 3)</Publish>
+          <Publish Dialog="SetupTypeDlg" Control="TypicalButton" Event="NewDialog" Value="FfmpegDlg">($Ffmpeg = 3)</Publish>
+          <Publish Dialog="SetupTypeDlg" Control="CustomButton" Event="NewDialog" Value="MyCustomizeDlg">1</Publish>
+          <Publish Dialog="SetupTypeDlg" Control="CompleteButton" Event="NewDialog" Value="VerifyReadyDlg">NOT ($Ffmpeg = 3)</Publish>
+          <Publish Dialog="SetupTypeDlg" Control="CompleteButton" Event="NewDialog" Value="FfmpegDlg">($Ffmpeg = 3)</Publish>
+
+          <Publish Dialog="MyCustomizeDlg" Control="Back" Event="NewDialog" Value="MyMaintenanceTypeDlg" Order="1">WixUI_InstallMode = "Change"</Publish>
+          <Publish Dialog="MyCustomizeDlg" Control="Back" Event="NewDialog" Value="SetupTypeDlg" Order="2">WixUI_InstallMode = "InstallCustom"</Publish>
+          <Publish Dialog="MyCustomizeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg"><![CDATA[NOT($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3)]]></Publish>
+          <Publish Dialog="MyCustomizeDlg" Control="Next" Event="NewDialog" Value="FfmpegDlg"><![CDATA[$Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3]]></Publish>
+
+          <Publish Dialog="FfmpegDlg" Control="Back" Event="NewDialog" Value="MyCustomizeDlg" Order="1">WixUI_InstallMode = "InstallCustom"</Publish>
+          <Publish Dialog="FfmpegDlg" Control="Back" Event="NewDialog" Value="SetupTypeDlg" Order="2">WixUI_InstallMode = "InstallTypical" OR WixUI_InstallMode = "InstallComplete"</Publish>
+          <Publish Dialog="FfmpegDlg" Control="Back" Event="NewDialog" Value="MyCustomizeDlg" Order="3">WixUI_InstallMode = "Change"</Publish>
+          <Publish Dialog="FfmpegDlg" Control="Back" Event="NewDialog" Value="MyMaintenanceTypeDlg" Order="4">WixUI_InstallMode = "Repair"</Publish>
+          <Publish Dialog="FfmpegDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2">WixUI_InstallMode = "Update"</Publish>
+          <Publish Dialog="FfmpegDlg" Control="Next" Event="DoAction" Value="ValidateFfmpegCustomPathAction">FFMPEG_REINSTALL = 1 AND FFMPEG_VERSION = "custom"</Publish>
+          <Publish Dialog="FfmpegDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">NOT (FFMPEG_REINSTALL = 1) OR NOT (FFMPEG_VERSION = "custom") OR AFX_FFMPEGPATH_OK = "1"</Publish>
+
+          <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="FfmpegDlg" Order="1">
+            <![CDATA[($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3) AND (WixUI_InstallMode = "InstallCustom" OR WixUI_InstallMode = "InstallTypical" OR WixUI_InstallMode = "InstallComplete")]]>
+          </Publish>
+          <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="FfmpegDlg" Order="1">
+            <![CDATA[($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3) AND (WixUI_InstallMode = "Change" OR WixUI_InstallMode = "Repair" OR WixUI_InstallMode = "Update")]]>        
+          </Publish>
+          <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MyCustomizeDlg" Order="1">
+            <![CDATA[NOT ($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3) AND (WixUI_InstallMode = "InstallCustom")]]>        
+          </Publish>
+          <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="SetupTypeDlg" Order="2">
+            <![CDATA[NOT ($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3) AND (WixUI_InstallMode = "InstallTypical" OR WixUI_InstallMode = "InstallComplete")]]>
+          </Publish>
+          <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MyCustomizeDlg" Order="3">
+            <![CDATA[NOT ($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3) AND (WixUI_InstallMode = "Change")]]>
+          </Publish>
+          <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MyMaintenanceTypeDlg" Order="4">
+            <![CDATA[NOT ($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3) AND (WixUI_InstallMode = "Repair") OR WixUI_InstallMode = "Remove"]]>
+          </Publish>
+          <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2">
+            <![CDATA[NOT ($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3) AND (WixUI_InstallMode = "Update")]]>
+          </Publish>
+
+          <Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MyMaintenanceTypeDlg">1</Publish>
+
+          <Publish Dialog="MyMaintenanceTypeDlg" Control="ChangeButton" Event="NewDialog" Value="MyCustomizeDlg">1</Publish>
+          <Publish Dialog="MyMaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg"><![CDATA[NOT(($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3))]]></Publish>
+          <Publish Dialog="MyMaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="FfmpegDlg"><![CDATA[($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3)]]></Publish>
+          <Publish Dialog="MyMaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+          <Publish Dialog="MyMaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg">1</Publish>
+        </UI>
+
+        <UIRef Id="WixUI_Common" />
+    </Fragment>
+</Wix>

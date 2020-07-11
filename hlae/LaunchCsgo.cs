@@ -69,6 +69,10 @@ namespace AfxGui
                 environment += "USRLOCALCSGO=" + config.Mmmcfg+"\0";
             }
 
+            environment += "SteamPath=" + Program.SteamInstallPath + "\0";
+            environment += "SteamClientLaunch=1" + "\0";
+            environment += "SteamGameId=730" + "\0";
+            environment += "SteamAppId=730" + "\0";
             environment += "SteamOverlayGameId=730" + "\0";
             environment += "\0\0";
 

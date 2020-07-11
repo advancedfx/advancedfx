@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Fragment>
+    <UI>
+      <Dialog Id="FfmpegDlg" Width="370" Height="270" Title="!(loc.FfmpegTitle)">
+        
+        <Control Id="FfmepgReinstallCheck" Type="CheckBox" X="6" Y="52" Width="358" Height="16" Text="!(loc.FfmpegDlgReinstall)" Property="FFMPEG_REINSTALL" CheckBoxValue="1" Disabled="yes">
+          <Condition Action="enable"><![CDATA[$Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3)]]></Condition>
+        </Control>
+
+        <Control Id="FfmpegVersionText" Type="Text" X="6" Y="74" Width="358" Height="12" Text="!(loc.FfmpegDlgVersion)" Disabled="no" Hidden="no">
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL]]></Condition>
+        </Control>
+        <Control Id="FfmpegVersion" Type="ComboBox" X="6" Y="86" Width="358" Height="16" Property="FFMPEG_VERSION" ComboList="yes" Sorted="yes" Disabled="no" Hidden="no">
+          <ComboBox Property="FFMPEG_VERSION">
+            <ListItem Text="!(loc.FfmpegDlgLatest)" Value="latest" />
+            <ListItem Text="4.3" Value="v4.3" />
+            <ListItem Text="4.2.3" Value="v4.2.3" />
+            <ListItem Text="4.2.2" Value="v4.2.2" />
+            <ListItem Text="4.2.1" Value="v4.2.1" />
+            <ListItem Text="!(loc.FfmpegDlgCustom)" Value="custom"/>
+          </ComboBox>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL]]></Condition>
+        </Control>
+        
+        <Control Id="FfmpegDownloadedText" Type="Text" X="6" Y="108" Width="358" Height="24" Text="!(loc.FfmpegDlgDownloaded)" Disabled="no" Hidden="no">
+          <Condition Action="show"><![CDATA[NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Condition Action="hide"><![CDATA["custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> FFMPEG_VERSION]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = FFMPEG_VERSION]]></Condition>
+        </Control>
+        <Control Id="FfmpegLinkingText" Type="Text" X="6" Y="138" Width="358" Height="12" Text="!(loc.FfmpegDlgLinking)" Disabled="no" Hidden="no">
+          <Condition Action="show"><![CDATA[NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Condition Action="hide"><![CDATA["custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> FFMPEG_VERSION]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = FFMPEG_VERSION]]></Condition>
+        </Control>
+        <Control Id="FfmpegLinking" Type="RadioButtonGroup" X="6" Y="150" Width="358" Height="24" Text="TEST" Property="FFMPEG_LINKING" Disabled="no" Hidden="no">
+          <RadioButtonGroup Property="FFMPEG_LINKING">
+            <RadioButton X="6" Y="0" Width="358" Height="12" Text="!(loc.FfmpegDlgStatic)" Value="static" />
+            <RadioButton X="6" Y="12" Width="358" Height="12" Text="!(loc.FfmpegDlgShared)" Value="shared" />
+          </RadioButtonGroup>
+          <Condition Action="show"><![CDATA[NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Condition Action="hide"><![CDATA["custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> FFMPEG_VERSION]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = FFMPEG_VERSION]]></Condition>
+        </Control>
+        <Control Id="FfmpegLicenseText" Type="Text" X="6" Y="180" Width="358" Height="12" Text="!(loc.FfmpegDlgLicense)" Disabled="no" Hidden="no">
+          <Condition Action="show"><![CDATA[NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Condition Action="hide"><![CDATA["custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> FFMPEG_VERSION]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = FFMPEG_VERSION]]></Condition>
+        </Control>
+        <Control Id="FfmpegLicense" Type="RadioButtonGroup" X="6" Y="192" Width="358" Height="24" Property="FFMPEG_LICENSE" Disabled="no" Hidden="no">
+          <RadioButtonGroup Property="FFMPEG_LICENSE">
+            <RadioButton X="6" Y="0" Width="233" Height="12" Text="!(loc.FfmpegDlgGpl3)" Value="gpl3" />
+            <RadioButton X="6" Y="12" Width="258" Height="12" Text="!(loc.FfmpegDlgLgpl3)" Value="lgpl3" />
+          </RadioButtonGroup>
+          <Condition Action="show"><![CDATA["v4.3 v4.2.3 v4.2.2 v4.2.1" >< FFMPEG_VERSION]]></Condition>
+          <Condition Action="hide"><![CDATA[NOT ("v4.3 v4.2.3 v4.2.2 v4.2.1" >< FFMPEG_VERSION)]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND ("v4.3 v4.2.3 v4.2.2 v4.2.1" >< FFMPEG_VERSION)]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR NOT ("v4.3 v4.2.3 v4.2.2 v4.2.1" >< FFMPEG_VERSION)]]></Condition>
+        </Control>
+        <Control Id="FfmpegLicenseGpl3" Type="Text" X="12" Y="192" Width="358" Height="12" Text="!(loc.FfmpegDlgGpl3)" Disabled="no" Hidden="no">
+          <Condition Action="show"><![CDATA[NOT ("v4.3 v4.2.3 v4.2.2 v4.2.1 custom" >< FFMPEG_VERSION)]]></Condition>
+          <Condition Action="hide"><![CDATA["v4.3 v4.2.3 v4.2.2 v4.2.1 custom" >< FFMPEG_VERSION]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND NOT ("v4.3 v4.2.3 v4.2.2 v4.2.1 custom" >< FFMPEG_VERSION)]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "v4.3 v4.2.3 v4.2.2 v4.2.1 custom" >< FFMPEG_VERSION]]></Condition>
+        </Control>
+        
+        <Control Id="FfmpegPathText" Type="Text" X="6" Y="108" Width="358" Height="12" Text="!(loc.FfmpegDlgPath)" Disabled="no" Hidden="yes">
+          <Condition Action="show"><![CDATA["custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="hide"><![CDATA[NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+        </Control>
+        <Control Id="FfmpegPath" Type="Edit" X="6" Y="120" Width="260" Height="18" TabSkip="no" Property="FFMPEG_CUSTOM" Disabled="yes" Hidden="yes">
+          <Condition Action="show"><![CDATA["custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="hide"><![CDATA[NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Publish Event="DoAction" Value="ValidateFfmpegCustomPathAction">FFMPEG_VERSION = "custom"</Publish>
+        </Control>
+        <Control Id="FfmpegPathBrowse" Type="PushButton" X="266" Y="120" Width="100" Height="18" Text="!(loc.FfmpegDlgPathBrowse)" Disabled="yes" Hidden="yes">
+          <Condition Action="show"><![CDATA["custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="hide"><![CDATA[NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Publish Event="DoAction" Value="FfmpegCustomPathDlgAction">1</Publish>
+          <Publish Event="DoAction" Value="ValidateFfmpegCustomPathAction">1</Publish>
+          <Publish Property="FFMPEG_CUSTOM" Value="[FFMPEG_CUSTOM]">1</Publish>
+        </Control>
+        <Control Id="FfmpegPathError" Type="Text" X="6" Y="138" Width="362" Height="56" Text="!(loc.FfmpegDlgPathError)" Disabled="no" Hidden="yes">
+          <Condition Action="show"><![CDATA[FFMPEG_REINSTALL AND FFMPEG_VERSION = "custom" AND NOT (AFX_FFMPEGPATH_OK = "1")]]></Condition>
+          <Condition Action="hide"><![CDATA[NOT (FFMPEG_REINSTALL AND FFMPEG_VERSION = "custom" AND NOT (AFX_FFMPEGPATH_OK = "1"))]]></Condition>
+        </Control>
+
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.WixUIBack)" />
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="!(loc.WixUINext)" />
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="!(loc.WixUICancel)">
+        <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
+        </Control>
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="!(loc.SetupTypeDlgBannerBitmap)" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Transparent="yes" NoPrefix="yes" Text="!(loc.FfmpegDlgTitle)" />
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="!(loc.FfmpegDlgDescription)" />      
+      </Dialog>
+    </UI>
+  </Fragment>
+</Wix>

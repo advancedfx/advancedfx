@@ -2191,13 +2191,13 @@ public:
 
 		Tier0_Msg(
 			"%s limXVelo [...] - X-location velocity limit in inch.\n"
-			"%s limXAcel [...] - X-location acelleration limit in inch.\n"
+			"%s limXAcel [...] - X-location acceleration limit in inch.\n"
 			"%s limYVelo [...] - y-location velocity limit in inch.\n"
-			"%s limYAcel [...] - Y-location acelleration limit in inch.\n"
+			"%s limYAcel [...] - Y-location acceleration limit in inch.\n"
 			"%s limZVelo [...] - Z-location velocity limit in inch.\n"
-			"%s limZAcel [...] - Z-location acelleration limit in inch.\n"
+			"%s limZAcel [...] - Z-location acceleration limit in inch.\n"
 			"%s limAngVelo [...] - Angular velocity limit in degrees.\n"
-			"%s limAngAcel [...] - Angular acelleration limit in degrees.\n"
+			"%s limAngAcel [...] - Angular acceleration limit in degrees.\n"
 			, arg0
 			, arg0
 			, arg0
@@ -5284,7 +5284,7 @@ void mirv_calcs_handle(IWrpCommandArgs * args)
 				"%s add key <sName> <iKeyNumber> - Add a new key calc (like spectator HUD).\n"
 				"%s add activeWeapon <sName> <sParentCalcHandleName> <bGetWorld> - Add an active weapon calc, <bGetWorld> is 0 or 1.\n"
 				"%s add localPlayer <sName> - Add localPlayer calc.\n"
-				"%s add observerTarget <sName> <sParentCalcHandleName> - Add obser trarget calc (use e.g. localPlayer calc as parent name).\n"
+				"%s add observerTarget <sName> <sParentCalcHandleName> - Add observer target calc (use e.g. localPlayer calc as parent name).\n"
 				"%s add ownerEntityCalc <sName> <sCalcHandleName> <iMaxDepth>\n"
 				, arg0
 				, arg0
@@ -5622,13 +5622,13 @@ void mirv_calcs_vecang(IWrpCommandArgs * args)
 				"%s add offset <sName> <sParentName> <sOffSetName> <bOrder> - Add a new offset calc, <bOrder>: 0 rotate first then offset, 1: offset first then rotate.\n"
 				"%s add add <sName> <sAName> <sBName> - A + B.\n"
 				"%s add subtract <sName> <sAName> <sBName> - A - B.\n"
-				"%s add handle <sName> <sHandleCalcName> - Add an calc that gets its values from an entity using a handle calc named <sHandleCalcName>.\n"
-				"%s add handleEye <sName> <sHandleCalcName> - Add an calc that gets its values from an entity's eye point using a handle calc named <sHandleCalcName>.\n"
-				"%s add handleAttachment <sName> <sHandleCalcName> <sAttachMentName> - Add an calc that gets its values from an entity's attachment.\n"
+				"%s add handle <sName> <sHandleCalcName> - Add a calc that gets its values from an entity using a handle calc named <sHandleCalcName>.\n"
+				"%s add handleEye <sName> <sHandleCalcName> - Add a calc that gets its values from an entity's eye point using a handle calc named <sHandleCalcName>.\n"
+				"%s add handleAttachment <sName> <sHandleCalcName> <sAttachMentName> - Add a calc that gets its values from an entity's attachment.\n"
 				"%s add or <sName> <sAName> <sBName> - Add an OR calc.\n"
-				"%s add cam <sName> <sCamCalName> - Adds a calc that gets its values from an cam calc named <sCamCalName>.\n"
+				"%s add cam <sName> <sCamCalName> - Adds a calc that gets its values from a cam calc named <sCamCalName>.\n"
 				"%s add motionProfile2 <sName> <sParentName> <sTrackHandleName> - Add a velocity motion profile calc, <sParentName> is the motion target, <sTrackHandleName> is used to detect target changes (reset).\n"
-				"%s add switchInterp <sName> <sSourceVecAngName> <sSwitchHandleName> <sResetHandleName> <fHoldTime> <fInterpTime> - Add a calc that after <sSwitchHandleName> value changes, holds the last value <sSourceVecAngName> for <fHoldTime> seconds and then interpolates between last value and current value for <fInterpTime>, if <sResetHandleName> changes the change is instant (reset like inital).\n"
+				"%s add switchInterp <sName> <sSourceVecAngName> <sSwitchHandleName> <sResetHandleName> <fHoldTime> <fInterpTime> - Add a calc that after <sSwitchHandleName> value changes, holds the last value <sSourceVecAngName> for <fHoldTime> seconds and then interpolates between last value and current value for <fInterpTime>, if <sResetHandleName> changes the change is instant (reset like initial).\n"
 				"%s add localToGlobal <sName> <sSourceVecAngName> <sHandleName> - Add a calc that transforms from local <sSwitchHandleName> space <sSourceVecAngName> to global space.\n"
 				"%s add globalToLocal <sName> <sSourceVecAngName> <sHandleName> - Add a calc that transforms to local <sSwitchHandleName> space <sSourceVecAngName> from global space.\n"
 				, arg0
@@ -5787,7 +5787,7 @@ void mirv_calcs_cam(IWrpCommandArgs * args)
 			}
 
 			Tier0_Msg(
-				"%s add cam <sName> <sfilePath> <fStartTime>|current - Adds an mirv_camio file as calc.\n"
+				"%s add cam <sName> <sfilePath> <fStartTime>|current - Adds a mirv_camio file as calc.\n"
 				"%s add game <sName> - Current game camera.\n"
 				"%s add current <sName> - Current camera (depends on mirv_cam order and overrides).\n"
 				"%s add smooth <sName> <sParentCamCalcName> <sTrackHandleCalcName>- Smooth calc.\n"
@@ -5900,7 +5900,7 @@ void mirv_calcs_fov(IWrpCommandArgs * args)
 			}
 
 			Tier0_Msg(
-				"%s add cam <sName> <sCamCalName> - Adds a calc that gets its values from an cam calc named <sCamCalName>.\n"
+				"%s add cam <sName> <sCamCalName> - Adds a calc that gets its values from a cam calc named <sCamCalName>.\n"
 				, arg0
 			);
 			return;
