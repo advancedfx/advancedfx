@@ -1,7 +1,0 @@
-C:\source\advancedfx\installer\DeleteHlaeAppData\bin\Debug\DeleteHlaeAppData.exe.config
-C:\source\advancedfx\installer\DeleteHlaeAppData\bin\Debug\DeleteHlaeAppData.exe
-C:\source\advancedfx\installer\DeleteHlaeAppData\bin\Debug\DeleteHlaeAppData.pdb
-C:\source\advancedfx\installer\DeleteHlaeAppData\obj\Debug\DeleteHlaeAppData.csprojAssemblyReference.cache
-C:\source\advancedfx\installer\DeleteHlaeAppData\obj\Debug\DeleteHlaeAppData.csproj.CoreCompileInputs.cache
-C:\source\advancedfx\installer\DeleteHlaeAppData\obj\Debug\DeleteHlaeAppData.exe
-C:\source\advancedfx\installer\DeleteHlaeAppData\obj\Debug\DeleteHlaeAppData.pdb
