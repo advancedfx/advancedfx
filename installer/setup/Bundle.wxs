@@ -52,7 +52,7 @@
   <Fragment>
 
     <PackageGroup Id="HlaeCore">
-      <ExePackage Id="DeleteHlaeAppData" SourceFile="$(var.DeleteHlaeAppData.TargetPath)" Compressed="yes" PerMachine="no" UninstallCommand="EXECUTE [HlaeRemoveAppData]" Vital="no" DetectCondition="WixBundleInstalled AND HlaeRemoveAppData" Cache="no" />
+      <ExePackage Id="DeleteHlaeAppData" DisplayName="CheckDeleteHlaeAppData" SourceFile="$(var.DeleteHlaeAppData.TargetPath)" Compressed="yes" PerMachine="no" UninstallCommand="EXECUTE [HlaeRemoveAppData]" Vital="no" DetectCondition="WixBundleInstalled" Cache="no" />
       <MsiPackage SourceFile="$(var.HlaeCore.en-us.TargetPath)" Compressed="yes" Vital="yes" DisplayInternalUI="yes" EnableFeatureSelection="no" Visible="yes" After="DeleteHlaeAppData">
         <MsiProperty Name='APPLICATIONFOLDER' Value='[InstallFolder]' />
         <MsiProperty Name='TRANSFORMS' Value='[LangId]' />
