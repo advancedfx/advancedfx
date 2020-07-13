@@ -36,6 +36,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShaderBuilder", "ShaderBuil
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShaderDisassembler", "ShaderDisassembler\ShaderDisassembler.csproj", "{18617F26-10C7-46BA-9EBE-92B648B0ACC5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeleteHlaeAppData", "installer\DeleteHlaeAppData\DeleteHlaeAppData.csproj", "{329ABD5C-04D3-44A4-AA24-641125EEBD35}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -182,6 +184,18 @@ Global
 		{18617F26-10C7-46BA-9EBE-92B648B0ACC5}.Release|x64.Build.0 = Release|x64
 		{18617F26-10C7-46BA-9EBE-92B648B0ACC5}.Release|x86.ActiveCfg = Release|x86
 		{18617F26-10C7-46BA-9EBE-92B648B0ACC5}.Release|x86.Build.0 = Release|x86
+		{329ABD5C-04D3-44A4-AA24-641125EEBD35}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{329ABD5C-04D3-44A4-AA24-641125EEBD35}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{329ABD5C-04D3-44A4-AA24-641125EEBD35}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{329ABD5C-04D3-44A4-AA24-641125EEBD35}.Debug|x64.Build.0 = Debug|Any CPU
+		{329ABD5C-04D3-44A4-AA24-641125EEBD35}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{329ABD5C-04D3-44A4-AA24-641125EEBD35}.Debug|x86.Build.0 = Debug|Any CPU
+		{329ABD5C-04D3-44A4-AA24-641125EEBD35}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{329ABD5C-04D3-44A4-AA24-641125EEBD35}.Release|Any CPU.Build.0 = Release|Any CPU
+		{329ABD5C-04D3-44A4-AA24-641125EEBD35}.Release|x64.ActiveCfg = Release|Any CPU
+		{329ABD5C-04D3-44A4-AA24-641125EEBD35}.Release|x64.Build.0 = Release|Any CPU
+		{329ABD5C-04D3-44A4-AA24-641125EEBD35}.Release|x86.ActiveCfg = Release|Any CPU
+		{329ABD5C-04D3-44A4-AA24-641125EEBD35}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -194,6 +208,7 @@ Global
 		{8537315A-D1A4-4711-9519-6D8E14A50F43} = {0C75B165-1CCC-4BD5-9ED6-D2DCFCE59FD4}
 		{8C08DBE5-8431-4FBA-9278-BCDC89295776} = {0C75B165-1CCC-4BD5-9ED6-D2DCFCE59FD4}
 		{FAE49F29-11C5-426C-B062-594BE5BD11D6} = {0C75B165-1CCC-4BD5-9ED6-D2DCFCE59FD4}
+		{329ABD5C-04D3-44A4-AA24-641125EEBD35} = {0C75B165-1CCC-4BD5-9ED6-D2DCFCE59FD4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {81B1CCCA-1308-4A7D-9062-20BC31A81FD2}

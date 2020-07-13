@@ -70,6 +70,7 @@
     <Image X="11" Y="11" Width="165" Height="400" ImageFile="logoside.png"/>
     <Text X="185" Y="50" Width="-11" Height="30" FontId="2" DisablePrefix="yes">#(loc.ModifyHeader)</Text>
     <Text X="185" Y="92" Width="-11" Height="36" FontId="3" DisablePrefix="yes">#(loc.HlaeSetupModifyInfo)</Text>
+    <Checkbox X="185" Y="128" Width="-11" Height="36" FontId="3" Name="HlaeRemoveAppData" TabStop="yes">#(loc.HlaeRemoveAppData)</Checkbox>    
     <Button Name="RepairButton" X="-171" Y="-11" Width="75" Height="23" TabStop="yes" FontId="0" HideWhenDisabled="yes">#(loc.ModifyRepairButton)</Button>
     <Button Name="UninstallButton" X="-91" Y="-11" Width="75" Height="23" TabStop="yes" FontId="0">#(loc.ModifyUninstallButton)</Button>
     <Button Name="ModifyCancelButton" X="-11" Y="-11" Width="75" Height="23" TabStop="yes" FontId="0">#(loc.ModifyCloseButton)</Button>

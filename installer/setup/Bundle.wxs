@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"  xmlns:bal="http://schemas.microsoft.com/wix/BalExtension">
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:bal="http://schemas.microsoft.com/wix/BalExtension"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
   <!-- Update this on release: Version -->
-	<Bundle
+  <Bundle
     Name="HLAE Setup"
-    Version="2.101.0"
+    Version="2.101.1"
     Manufacturer="advancedfx.org"
     UpgradeCode="{35C8D990-6C4F-4639-ADF7-D259B06E070B}"
     AboutUrl="https://www.advancedfx.org/"
     IconSourceFile="..\..\hlae\app.ico"
-    Compressed="yes"    
+    Compressed="yes"
     >
 
     <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.HyperlinkSidebarLicense">
@@ -36,18 +38,22 @@
 
     <Variable Name='InstallFolder' Type='string' Value='[ProgramFilesFolder]HLAE' Persisted='yes' bal:Overridable='yes'/>
     <Variable Name="LangId" Type="string" Value="" Persisted="yes" bal:Overridable="yes" />
+    <Variable Name='HlaeRemoveAppData' Type='numeric' Value='0' Persisted='no' bal:Overridable='yes' />
 
     <Chain>
       <PackageGroupRef Id="NetFx45Web" />
       <RollbackBoundary />
-      <PackageGroupRef Id="HlaeCore" />        
-		</Chain>
+      <PackageGroupRef Id="HlaeCore" />
+    </Chain>
+
 
   </Bundle>
-  
-  <Fragment>  
+
+  <Fragment>
+
     <PackageGroup Id="HlaeCore">
-      <MsiPackage SourceFile="$(var.HlaeCore.en-us.TargetPath)" Compressed="yes" Vital="yes" DisplayInternalUI="yes" EnableFeatureSelection="yes" Visible="yes">
+      <ExePackage Id="DeleteHlaeAppData" SourceFile="$(var.DeleteHlaeAppData.TargetPath)" Compressed="yes" PerMachine="no" UninstallCommand="EXECUTE [HlaeRemoveAppData]" Vital="no" DetectCondition="WixBundleInstalled AND HlaeRemoveAppData" Cache="no" />
+      <MsiPackage SourceFile="$(var.HlaeCore.en-us.TargetPath)" Compressed="yes" Vital="yes" DisplayInternalUI="yes" EnableFeatureSelection="no" Visible="yes" After="DeleteHlaeAppData">
         <MsiProperty Name='APPLICATIONFOLDER' Value='[InstallFolder]' />
         <MsiProperty Name='TRANSFORMS' Value='[LangId]' />
         <Payload Id="HlaeCore_de_de" Compressed="yes" Name="1031" SourceFile="$(var.HlaeCore.ProjectDir)bin\$(var.Configuration)\de-de\HlaeCore.mst"/>

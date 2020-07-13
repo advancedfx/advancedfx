@@ -1,3 +1,11 @@
+First try https://support.microsoft.com/en-us/help/17588/windows-fix-problems-that-block-programs-being-installed-or-removed
+and run Deinstallation Problem Fix and enter the product ID(s) if it can't be found in the list.
+
+
+----
+
+If that doesn't work (No actually don't do, it will make things worse!):
+
 Enter in admin powershell:
 
 Get-ChildItem -path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData' -Recurse | where {

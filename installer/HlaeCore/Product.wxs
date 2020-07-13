@@ -2,8 +2,8 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <!-- Update this on release: Id, Version -->
 	<Product
-    Id='{914813D3-93A3-4E88-8FD8-D62218711AA2}'
-    Version='2.101.0'
+    Id='{DFE3C895-76F8-4B6A-A539-786D9C36CEDD}'
+    Version='2.101.1'
     Name="!(loc.ApplicationName)"
     Language="1033"
     Manufacturer="!(loc.Manufacturer)"
@@ -20,7 +20,7 @@
        
     <Icon Id="icon.ico" SourceFile="../../hlae/app.ico"/>
     <Property Id="ARPPRODUCTICON" Value="icon.ico" />
-
+    
     <Property Id="ApplicationFolderName" Value="HLAE" />
     
     <Property Id="WixAppFolder" Value="WixPerMachineFolder" />
@@ -28,9 +28,6 @@
     <WixVariable Id="WixUISupportPerUser" Value="0" />
     
     <Property Id="WIXUI_INSTALLDIR" Value="APPLICATIONFOLDER" />
-    
-    <Property Id="AFX_REMOVEAPPDATAFOLDER" Value="0" />
-    <SetProperty Sequence="first" Action="SetAFX_REMOVEAPPDATAFOLDER" Id="AFX_REMOVEAPPDATAFOLDER" After="AppSearch" Value="{}">1</SetProperty>    
     
     <Property Id="FFMPEG_REINSTALL" Value="1" Secure="yes" />
     <Property Id="_FFMPEG_REINSTALL" Value="#1">
@@ -236,8 +233,6 @@
       <Custom Action="InstallFfmpegPrepareAction" Before="InstallFfmpegAction"><![CDATA[($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3) AND FFMPEG_REINSTALL AND FFMPEG_VERSION <> "custom"]]></Custom>
       <Custom Action="InstallFfmpegAction" After="InstallFiles"><![CDATA[($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3) AND FFMPEG_REINSTALL AND FFMPEG_VERSION <> "custom"]]></Custom>
       <Custom Action="FinalizeFfmpegInstallAction" After="InstallFfmpegAction"><![CDATA[$Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3]]></Custom>
-
-      <Custom Action="RemoveHlaeAppDataAction" Before="RemoveFiles"><![CDATA[&Hlae <> 3 AND !Hlae = 3 AND AFX_REMOVEAPPDATAFOLDER]]></Custom>
     </InstallExecuteSequence>
   </Product>
 
@@ -267,9 +262,6 @@
     
     <SetProperty Action="SetFfmpegUninstallAction" Id="FfmpegUninstallAction" Value="AFX_REMOVEFOLDER=[_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg]" Before="FfmpegUninstallAction" Sequence="execute" />
     <CustomAction Id='FfmpegUninstallAction' BinaryKey='HlaeCoreExtension' DllEntry='RemoveFolder' Execute='deferred' Impersonate='no' Return='check'/>
-
-    <SetProperty Action="SetRemoveHlaeAppDataAction" Id="RemoveHlaeAppDataAction" Value="AFX_REMOVEFOLDER=[AppDataFolder]\HLAE" Before="RemoveHlaeAppDataAction" Sequence="execute" />
-    <CustomAction Id='RemoveHlaeAppDataAction' BinaryKey='HlaeCoreExtension' DllEntry='RemoveFolder' Execute='deferred' Impersonate='yes' Return='check' />
 </Fragment>
 
   <Fragment>
