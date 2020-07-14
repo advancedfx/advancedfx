@@ -9,25 +9,25 @@ Notice:
 
 [X] Download and install Microsoft Visual Studio 2019 Community, which you can
     obtain for free from https://www.visualstudio.com/downloads/ .
-    (We are using 16.2.4 at the moment.)
+    (We are using 16.6.3 at the moment.)
     - Select Desktop .NET Desktop Development component
     - Select Desktop Development with C++ component
     - You'll need to install Wix Toolset Visual Studio 2019 Extension from
       within Visual Studio later.
 
 [X] Obtain and install CMAKE from http://www.cmake.org/
-    We currently use "cmake-3.16.2-win64-x64.msi".
+    We currently use "cmake-3.18.0-rc4-win64-x64.msi".
 	
-[X]	Obtain Python 3.8.1 or newer from from https://www.python.org/downloads/windows/ .
-	We used python-3.8.1-amd64.exe .
+[X]	Obtain Python 3.8.x from https://www.python.org/downloads/windows/ .
+	We used python-3.8.3-amd64 .
 	You will need to do the custom installation
-	with pip
-	py launcher.
+	with pip and py launcher.
 	
 [X]	Obtain GNU gettext Windows binaries from https://www.gnu.org/software/gettext/ .
 	We used gettext0.20.1-iconv1.16-shared-64.exe .
 	
-[X] Install WiX Toolset v3.11.1 from https://github.com/wixtoolset/wix3/releases/tag/wix3111rtm
+[X] Install WiX Toolsetfrom https://github.com/wixtoolset/wix3/releases
+	We used WiX Toolset v3.11.2.
 
 [X] Obtain the HLAE source code from https://github.com/advancedfx/advancedfx into a
     folder you like, we'll call it <HLAESRC> from now on (by that I mean

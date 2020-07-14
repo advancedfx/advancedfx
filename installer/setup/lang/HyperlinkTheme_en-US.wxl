@@ -71,4 +71,5 @@
   <String Id="HlaeDisclaimer">This software is for your enjoyment and you are using it at your own risk.</String>
 
   <String Id="HlaeSetupModifyInfo">To modify the existing HLAE installation, please use the &quot;HLAE&quot; entry in the installed applications list instead.</String>
+  <String Id="HlaeRemoveAppData">Check to remove HLAE %APPDATA% folder upon uinstall (not recommended).</String>
 </WixLocalization>

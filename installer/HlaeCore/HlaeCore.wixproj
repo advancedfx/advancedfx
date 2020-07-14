@@ -26,7 +26,6 @@
   <ItemGroup>
     <Compile Include="FfmpegDlg.wxs" />
     <Compile Include="LocaleFiles.wxs" />
-    <Compile Include="MyMaintenanceTypeDlg.wxs" />
     <Compile Include="MyBrowseDlg.wxs" />
     <Compile Include="MyCustomizeDlg.wxs" />
     <Compile Include="MyWixUI_Mondo.wxs" />

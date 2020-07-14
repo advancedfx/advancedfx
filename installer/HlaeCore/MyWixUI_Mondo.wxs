@@ -15,7 +15,7 @@ First-time install dialog sequence:
 
 Maintenance dialog sequence:
 - WixUI_MaintenanceWelcomeDlg
-- WixUI_MyMaintenanceTypeDlg
+- WixUI_MaintenanceTypeDlg
 - WixUI_CustomizeDlg
 - WixUI_VerifyReadyDlg
 
@@ -57,7 +57,7 @@ Patch dialog sequence:
           <Publish Dialog="SetupTypeDlg" Control="CompleteButton" Event="NewDialog" Value="VerifyReadyDlg">NOT ($Ffmpeg = 3)</Publish>
           <Publish Dialog="SetupTypeDlg" Control="CompleteButton" Event="NewDialog" Value="FfmpegDlg">($Ffmpeg = 3)</Publish>
 
-          <Publish Dialog="MyCustomizeDlg" Control="Back" Event="NewDialog" Value="MyMaintenanceTypeDlg" Order="1">WixUI_InstallMode = "Change"</Publish>
+          <Publish Dialog="MyCustomizeDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="1">WixUI_InstallMode = "Change"</Publish>
           <Publish Dialog="MyCustomizeDlg" Control="Back" Event="NewDialog" Value="SetupTypeDlg" Order="2">WixUI_InstallMode = "InstallCustom"</Publish>
           <Publish Dialog="MyCustomizeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg"><![CDATA[NOT($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3)]]></Publish>
           <Publish Dialog="MyCustomizeDlg" Control="Next" Event="NewDialog" Value="FfmpegDlg"><![CDATA[$Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3]]></Publish>
@@ -65,7 +65,7 @@ Patch dialog sequence:
           <Publish Dialog="FfmpegDlg" Control="Back" Event="NewDialog" Value="MyCustomizeDlg" Order="1">WixUI_InstallMode = "InstallCustom"</Publish>
           <Publish Dialog="FfmpegDlg" Control="Back" Event="NewDialog" Value="SetupTypeDlg" Order="2">WixUI_InstallMode = "InstallTypical" OR WixUI_InstallMode = "InstallComplete"</Publish>
           <Publish Dialog="FfmpegDlg" Control="Back" Event="NewDialog" Value="MyCustomizeDlg" Order="3">WixUI_InstallMode = "Change"</Publish>
-          <Publish Dialog="FfmpegDlg" Control="Back" Event="NewDialog" Value="MyMaintenanceTypeDlg" Order="4">WixUI_InstallMode = "Repair"</Publish>
+          <Publish Dialog="FfmpegDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="4">WixUI_InstallMode = "Repair"</Publish>
           <Publish Dialog="FfmpegDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2">WixUI_InstallMode = "Update"</Publish>
           <Publish Dialog="FfmpegDlg" Control="Next" Event="DoAction" Value="ValidateFfmpegCustomPathAction">FFMPEG_REINSTALL = 1 AND FFMPEG_VERSION = "custom"</Publish>
           <Publish Dialog="FfmpegDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">NOT (FFMPEG_REINSTALL = 1) OR NOT (FFMPEG_VERSION = "custom") OR AFX_FFMPEGPATH_OK = "1"</Publish>
@@ -85,20 +85,20 @@ Patch dialog sequence:
           <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MyCustomizeDlg" Order="3">
             <![CDATA[NOT ($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3) AND (WixUI_InstallMode = "Change")]]>
           </Publish>
-          <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MyMaintenanceTypeDlg" Order="4">
+          <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="4">
             <![CDATA[NOT ($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3) AND (WixUI_InstallMode = "Repair") OR WixUI_InstallMode = "Remove"]]>
           </Publish>
           <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2">
             <![CDATA[NOT ($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3) AND (WixUI_InstallMode = "Update")]]>
           </Publish>
 
-          <Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MyMaintenanceTypeDlg">1</Publish>
+          <Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg">1</Publish>
 
-          <Publish Dialog="MyMaintenanceTypeDlg" Control="ChangeButton" Event="NewDialog" Value="MyCustomizeDlg">1</Publish>
-          <Publish Dialog="MyMaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg"><![CDATA[NOT(($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3))]]></Publish>
-          <Publish Dialog="MyMaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="FfmpegDlg"><![CDATA[($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3)]]></Publish>
-          <Publish Dialog="MyMaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
-          <Publish Dialog="MyMaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg">1</Publish>
+          <Publish Dialog="MaintenanceTypeDlg" Control="ChangeButton" Event="NewDialog" Value="MyCustomizeDlg">1</Publish>
+          <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg"><![CDATA[NOT(($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3))]]></Publish>
+          <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="FfmpegDlg"><![CDATA[($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3)]]></Publish>
+          <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+          <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg">1</Publish>
         </UI>
 
         <UIRef Id="WixUI_Common" />
