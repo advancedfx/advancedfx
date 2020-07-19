@@ -3028,6 +3028,8 @@ void CAfxBaseFxStream::CShared::AfxStreamsInit(void)
 		CActionReplace * action = new CActionReplace("afx/greenmatte", m_NoDrawAction);
 		float color[3] = { 0,1,0 };
 		action->OverrideColor(color);
+		float lightScale[4] = { 1,1,1,1 };
+		action->OverrideLigthScale(lightScale);
 		CreateStdAction(m_MaskAction, CActionKey("mask"), action);
 	}
 	// CreateStdAction(m_MaskAction, CActionKey("mask"), new CActionStandardResolve(CActionStandardResolve::RF_GreenScreen, m_NoDrawAction));
@@ -3036,6 +3038,8 @@ void CAfxBaseFxStream::CShared::AfxStreamsInit(void)
 		CActionReplace * action = new CActionReplace("afx/white", m_NoDrawAction);
 		float color[3] = { 1,1,1 };
 		action->OverrideColor(color);
+		float lightScale[4] = { 1,1,1,1 };
+		action->OverrideLigthScale(lightScale);
 		CreateStdAction(m_WhiteAction, CActionKey("white"), action);
 	}
 	// CreateStdAction(m_WhiteAction, CActionKey("white"), new CActionStandardResolve(CActionStandardResolve::RF_White, m_NoDrawAction));
@@ -3044,6 +3048,8 @@ void CAfxBaseFxStream::CShared::AfxStreamsInit(void)
 		CActionReplace * action = new CActionReplace("afx/black", m_NoDrawAction);
 		float color[3] = { 0,0,0 };
 		action->OverrideColor(color);
+		float lightScale[4] = { 1,1,1,1 };
+		action->OverrideLigthScale(lightScale);
 		CreateStdAction(m_BlackAction, CActionKey("black"), action);
 	}
 	// CreateStdAction(m_BlackAction, CActionKey("black"), new CActionStandardResolve(CActionStandardResolve::RF_Black, m_NoDrawAction));
@@ -3118,6 +3124,9 @@ void CAfxBaseFxStream::CShared::Console_AddReplaceAction(IWrpCommandArgs * args)
 		bool overrideDepthWrite = false;
 		bool depthWrite;
 
+		bool overrideLightScale = false;
+		float lightScale[3];
+
 		for(int i=3; i < argc; ++i)
 		{
 			char const * argOpt = args->ArgV(i);
@@ -3163,6 +3172,31 @@ void CAfxBaseFxStream::CShared::Console_AddReplaceAction(IWrpCommandArgs * args)
 				overrideDepthWrite = true;
 				depthWrite = 0 != atoi(argOpt);
 			}
+			else if (StringBeginsWith(argOpt, "overrideLightScale="))
+			{
+				argOpt += strlen("overrideLightScale=");
+
+				std::istringstream iss(argOpt);
+
+				std::string word;
+
+				int j = 0;
+				while (j < 4 && (iss >> word))
+				{
+					lightScale[j] = (float)atof(word.c_str());
+					++j;
+				}
+
+				if (4 == j)
+				{
+					overrideLightScale = true;
+				}
+				else
+				{
+					Tier0_Warning("Error: overrideLightScale needs 4 values!\n");
+					return;
+				}
+			}
 			else
 			{
 				Tier0_Warning("Error: invalid option %s\n", argOpt);
@@ -3175,6 +3209,7 @@ void CAfxBaseFxStream::CShared::Console_AddReplaceAction(IWrpCommandArgs * args)
 		if(overrideColor) replaceAction->OverrideColor(color);
 		if(overrideBlend) replaceAction->OverrideBlend(blend);
 		if(overrideDepthWrite) replaceAction->OverrideDepthWrite(depthWrite);
+		if (overrideLightScale) replaceAction->OverrideLigthScale(lightScale);
 
 		CreateAction(key, replaceAction);
 	}
@@ -3183,9 +3218,10 @@ void CAfxBaseFxStream::CShared::Console_AddReplaceAction(IWrpCommandArgs * args)
 		Tier0_Msg(
 			"%s <actionName> <materialName> [option]*\n"
 			"Options (yes you can specify multiple) can be:\n"
-			"\t\"overrideColor=<rF> <gF> <bF>\"- Where <.F> is a floating point value between 0.0 and 1.0\n"
-			"\t\"overrideBlend=<bF>\"- Where <bF> is a floating point value between 0.0 and 1.0\n"
-			"\t\"overrideDepthWrite=<iF>\"- Where <iF> is 0 (don't write depth) or 1 (write depth)\n"
+			"\t\"overrideColor=<rF> <gF> <bF>\" - Where <.F> is a floating point value between 0.0 and 1.0\n"
+			"\t\"overrideBlend=<bF>\" - Where <bF> is a floating point value between 0.0 and 1.0\n"
+			"\t\"overrideDepthWrite=<iF>\" - Where <iF> is 0 (don't write depth) or 1 (write depth)\n"
+			"\t\"overrideLightScale=<fLinearLight> <fLightMap> <fEnvMap> <fGammaLight>\"\n"
 			,
 			prefix);
 	}
@@ -3656,8 +3692,6 @@ CAfxBaseFxStream::CActionReplace::CActionReplace(
 : CAction()
 , m_Material(0)
 , m_MaterialName(materialName)
-, m_OverrideColor(false)
-, m_OverrideBlend(false)
 , m_OverrideDepthWrite(false)
 , m_TrackedMaterial(nullptr)
 {
@@ -3704,7 +3738,8 @@ void CAfxBaseFxStream::CActionReplace::MainThreadInitialize(void)
 
 void CAfxBaseFxStream::CActionReplace::AfxUnbind(CAfxBaseFxStreamContext * ch)
 {
-	if (m_OverrideColor || m_OverrideBlend) AfxD3D9OverrideEnd_ModulationColorBlend();
+	if (m_LightScaleOverride.m_Override) AfxD3D9OverrideEnd_LightScale();
+	if (m_ModulationColorBlendOverride.m_OverrideColor || m_ModulationColorBlendOverride.m_OverrideBlend) AfxD3D9OverrideEnd_ModulationColorBlend();
 
 	if (m_OverrideDepthWrite) AfxD3D9OverrideEnd_D3DRS_ZWRITEENABLE();
 
@@ -3733,7 +3768,8 @@ void CAfxBaseFxStream::CActionReplace::MaterialHook(CAfxBaseFxStreamContext * ch
 	else
 		m_TrackedMaterial = nullptr;
 
-	if (m_OverrideColor ||m_OverrideBlend) AfxD3D9OverrideBegin_ModulationColorBlend(this);
+	if (m_ModulationColorBlendOverride.m_OverrideColor || m_ModulationColorBlendOverride.m_OverrideBlend) AfxD3D9OverrideBegin_ModulationColorBlend(&m_ModulationColorBlendOverride);
+	if (m_LightScaleOverride.m_Override) AfxD3D9OverrideBegin_LightScale(&m_LightScaleOverride);
 
 	if(m_OverrideDepthWrite) AfxD3D9OverrideBegin_D3DRS_ZWRITEENABLE(m_DepthWrite ? TRUE : FALSE);
 }
