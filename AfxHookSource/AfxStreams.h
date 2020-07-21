@@ -1822,7 +1822,7 @@ private:
 #endif
 
 	class CActionReplace
-	: public CAction, public ID3d9HooksModulationColorBlendOverride
+	: public CAction
 	{
 	public:
 		CActionReplace(
@@ -1831,22 +1831,31 @@ private:
 
 		void OverrideColor(float const color[3])
 		{
-			m_OverrideColor = true;
-			m_Color[0] = color[0];
-			m_Color[1] = color[1];
-			m_Color[2] = color[2];
+			m_ModulationColorBlendOverride.m_OverrideColor = true;
+			m_ModulationColorBlendOverride.m_Color[0] = color[0];
+			m_ModulationColorBlendOverride.m_Color[1] = color[1];
+			m_ModulationColorBlendOverride.m_Color[2] = color[2];
 		}
 
 		void OverrideBlend(float blend)
 		{
-			m_OverrideBlend = true;
-			m_Blend = blend;
+			m_ModulationColorBlendOverride.m_OverrideBlend = true;
+			m_ModulationColorBlendOverride.m_Blend = blend;
 		}
 
 		void OverrideDepthWrite(bool depthWrite)
 		{
 			m_OverrideDepthWrite = true;
 			m_DepthWrite = depthWrite;
+		}
+
+		void OverrideLigthScale(float const color[4])
+		{
+			m_LightScaleOverride.m_Override = true;
+			m_LightScaleOverride.m_Value[0] = color[0];
+			m_LightScaleOverride.m_Value[1] = color[1];
+			m_LightScaleOverride.m_Value[2] = color[2];
+			m_LightScaleOverride.m_Value[3] = color[3];
 		}
 
 		virtual CAction * ResolveAction(const CAfxTrackedMaterialRef& trackedMaterial);
@@ -1859,21 +1868,21 @@ private:
 
  		virtual void DrawInstances(CAfxBaseFxStreamContext * ch, IAfxMatRenderContext* ctx, int nInstanceCount, const SOURCESDK::MeshInstanceData_t_csgo *pInstance ) override
 		{
-			if(m_OverrideColor || m_OverrideBlend)
+			if(m_ModulationColorBlendOverride.m_OverrideColor || m_ModulationColorBlendOverride.m_OverrideBlend)
 			{
 				SOURCESDK::MeshInstanceData_t_csgo * first = const_cast<SOURCESDK::MeshInstanceData_t_csgo *>(pInstance);
 
 				for(int i = 0; i < nInstanceCount; ++i)
 				{
-					if(m_OverrideColor)
+					if(m_ModulationColorBlendOverride.m_OverrideColor)
 					{
-						first->m_DiffuseModulation.x = m_Color[0];
-						first->m_DiffuseModulation.y = m_Color[1];
-						first->m_DiffuseModulation.z = m_Color[2];
+						first->m_DiffuseModulation.x = m_ModulationColorBlendOverride.m_Color[0];
+						first->m_DiffuseModulation.y = m_ModulationColorBlendOverride.m_Color[1];
+						first->m_DiffuseModulation.z = m_ModulationColorBlendOverride.m_Color[2];
 					}
-					if(m_OverrideBlend)
+					if(m_ModulationColorBlendOverride.m_OverrideBlend)
 					{
-						first->m_DiffuseModulation.w = m_Blend;
+						first->m_DiffuseModulation.w = m_ModulationColorBlendOverride.m_Blend;
 					}
  
 					++first;
@@ -1883,27 +1892,53 @@ private:
 			ctx->GetOrg()->DrawInstances(nInstanceCount, pInstance); 
 		}
 
-		void ID3d9HooksModulationColorBlendOverride::D3d9HooksModulationColorBlendOverride(float color[4]) {
-			if (m_OverrideColor) {
-				color[0] = m_Color[0]; color[1] = m_Color[1]; color[2] = m_Color[2];
-			}
-			
-			if (m_OverrideBlend) {
-				color[3] = m_Blend;
-			}
-		}
-
 	protected:
 		virtual ~CActionReplace();
 
 	private:
+		class CModulationColorBlendOverride : public ID3d9HooksFloat4ParamOverride
+		{
+		public:
+			bool m_OverrideColor = false;
+			float m_Color[3] = { 0.0f, 0.0f, 0.0f };
+			bool m_OverrideBlend = false;
+			float m_Blend = 0.0f;
+
+			virtual void D3d9HooksFloat4ParamOverride(float value[4]) override
+			{
+				if (m_OverrideColor) {
+					value[0] = m_Color[0]; value[1] = m_Color[1]; value[2] = m_Color[2];
+				}
+
+				if (m_OverrideBlend) {
+					value[3] = m_Blend;
+				}
+			}
+		private:
+		} m_ModulationColorBlendOverride;
+
+		class CClightScaleOverride : public ID3d9HooksFloat4ParamOverride
+		{
+		public:
+			bool m_Override = false;
+			float m_Value[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+			virtual void D3d9HooksFloat4ParamOverride(float value[4]) override
+			{
+				if (m_Override)
+				{
+					value[0] = m_Value[0];
+					value[1] = m_Value[1];
+					value[2] = m_Value[2];
+					value[3] = m_Value[3];
+				}
+			}
+		private:
+		} m_LightScaleOverride;
+
 		CAfxOwnedMaterial * m_Material;
 		std::string m_MaterialName;
 		CAction * m_FallBackAction;
-		bool m_OverrideColor;
-		float m_Color[3];
-		bool m_OverrideBlend;
-		float m_Blend;
 		bool m_OverrideDepthWrite;
 		bool m_DepthWrite;
 		CAfxTrackedMaterial * m_TrackedMaterial;
@@ -1913,8 +1948,7 @@ private:
 
 	// Todo: Speed up with cubetrees.
 	class CActionGlowColorMap
-		: public CAction
-		, public ID3d9HooksModulationColorBlendOverride
+		: public CAction, public ID3d9HooksFloat4ParamOverride
 	{
 	public:
 		virtual void Console_Edit(IWrpCommandArgs* args) override;
@@ -1925,7 +1959,7 @@ private:
 
 		virtual void UnlockMesh(CAfxBaseFxStreamContext* ch, IAfxMesh* am, int numVerts, int numIndices, SOURCESDK::MeshDesc_t_csgo& desc) override;
 
-		void ID3d9HooksModulationColorBlendOverride::D3d9HooksModulationColorBlendOverride(float color[4]) override
+		virtual void D3d9HooksFloat4ParamOverride(float color[4]) override
 		{
 			if (1 == m_DebugColor)
 			{
@@ -1952,12 +1986,10 @@ private:
 			}
 		}
 
-
 	protected:
 		virtual ~CActionGlowColorMap();
 
 	private:
-
 		struct CRecentEntry
 		{
 			int Count;
@@ -1982,8 +2014,7 @@ private:
 		std::map<CAfxColorLut::CRgba, CRecentEntry> m_Cache;
 		CAfxColorLut* m_AfxColorLut = nullptr;
 
-		void RemapColor(float& r, float& g, float& b, float &a); 
-
+		void RemapColor(float& r, float& g, float& b, float &a);
 	};
 
 	class CActionDebugDepth
