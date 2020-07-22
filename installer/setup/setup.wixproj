@@ -53,7 +53,8 @@
       <Project>{329abd5c-04d3-44a4-aa24-641125eebd35}</Project>
       <Private>True</Private>
       <DoNotHarvest>True</DoNotHarvest>
-      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+      <RefProjectOutputGroups>
+      </RefProjectOutputGroups>
       <RefTargetDir>INSTALLFOLDER</RefTargetDir>
     </ProjectReference>
     <ProjectReference Include="..\HlaeCore\HlaeCore.wixproj">
@@ -61,7 +62,8 @@
       <Project>{8c08dbe5-8431-4fba-9278-bcdc89295776}</Project>
       <Private>True</Private>
       <DoNotHarvest>True</DoNotHarvest>
-      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+      <RefProjectOutputGroups>
+      </RefProjectOutputGroups>
       <RefTargetDir>INSTALLFOLDER</RefTargetDir>
     </ProjectReference>
   </ItemGroup>

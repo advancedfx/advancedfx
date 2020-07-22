@@ -5,7 +5,7 @@
   <!-- Update this on release: Version -->
   <Bundle
     Name="HLAE Setup"
-    Version="2.102.0"
+    Version="2.102.1"
     Manufacturer="advancedfx.org"
     UpgradeCode="{35C8D990-6C4F-4639-ADF7-D259B06E070B}"
     AboutUrl="https://www.advancedfx.org/"
@@ -52,7 +52,7 @@
   <Fragment>
 
     <PackageGroup Id="HlaeCore">
-      <ExePackage Id="DeleteHlaeAppData" DisplayName="CheckDeleteHlaeAppData" SourceFile="$(var.DeleteHlaeAppData.TargetPath)" Compressed="yes" PerMachine="no" UninstallCommand="EXECUTE [HlaeRemoveAppData]" Vital="no" DetectCondition="WixBundleInstalled" Cache="no" />
+      <ExePackage Id="DeleteHlaeAppData" DisplayName="CheckDeleteHlaeAppData" SourceFile="$(var.DeleteHlaeAppData.TargetPath)" Compressed="yes" PerMachine="yes" UninstallCommand="EXECUTE [HlaeRemoveAppData]" Vital="no" DetectCondition="WixBundleInstalled" Cache="no" />
       <MsiPackage SourceFile="$(var.HlaeCore.en-us.TargetPath)" Compressed="yes" Vital="yes" DisplayInternalUI="yes" EnableFeatureSelection="no" Visible="yes" After="DeleteHlaeAppData">
         <MsiProperty Name='APPLICATIONFOLDER' Value='[InstallFolder]' />
         <MsiProperty Name='TRANSFORMS' Value='[LangId]' />

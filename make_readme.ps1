@@ -92,4 +92,6 @@ if(0 -lt $contrib_others.Length)
 	$readme += mk_members_string($contrib_others)
 }
 
-Set-Content -Path '.\build\Release\bin\readme.txt' -Value $readme
+$Path = $args[0] + "\readme.txt"
+
+Set-Content -Path $Path -Value $readme

@@ -14,18 +14,19 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>Debug;LocalesDir=..\..\build\Release\bin\locales</DefineConstants>
+    <DefineConstants>Debug;LocalesDir=..\..\build\Release\bin\locales;HlaeDir=..\..\build\Release\installer\hlae</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <WixVariables>
     </WixVariables>
-    <DefineConstants>LocalesDir=..\..\build\Release\bin\locales</DefineConstants>
+    <DefineConstants>LocalesDir=..\..\build\Release\bin\locales;HlaeDir=..\..\build\Release\installer\hlae</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="FfmpegDlg.wxs" />
     <Compile Include="LocaleFiles.wxs" />
+    <Compile Include="HlaeFiles.wxs" />
     <Compile Include="MyBrowseDlg.wxs" />
     <Compile Include="MyCustomizeDlg.wxs" />
     <Compile Include="MyWixUI_Mondo.wxs" />
@@ -54,7 +55,8 @@
       <Project>{0ba0c36b-dc95-4b5f-9793-4cef5b2fc60b}</Project>
       <Private>True</Private>
       <DoNotHarvest>True</DoNotHarvest>
-      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+      <RefProjectOutputGroups>
+      </RefProjectOutputGroups>
       <RefTargetDir>INSTALLFOLDER</RefTargetDir>
     </ProjectReference>
     <ProjectReference Include="..\HlaeCoreExtension\HlaeCoreExtension.csproj">
@@ -62,7 +64,8 @@
       <Project>{8537315a-d1a4-4711-9519-6d8e14a50f43}</Project>
       <Private>True</Private>
       <DoNotHarvest>True</DoNotHarvest>
-      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+      <RefProjectOutputGroups>
+      </RefProjectOutputGroups>
       <RefTargetDir>INSTALLFOLDER</RefTargetDir>
     </ProjectReference>
   </ItemGroup>
@@ -78,6 +81,7 @@
     <Error Text="The WiX Toolset v3.11 (or newer) build tools must be installed to build this project. To download the WiX Toolset, see http://wixtoolset.org/releases/" />
   </Target>
   <Target Name="BeforeBuild">
+    <HeatDirectory OutputFile="$(ProjectDir)\HlaeFiles.wxs" Directory="..\..\build\Release\installer\hlae" PreprocessorVariable="var.HlaeDir" ComponentGroupName="HlaeComponentGroup" DirectoryRefId="APPLICATIONFOLDER" AutogenerateGuids="true" SuppressRegistry="true" SuppressRootDirectory="true" ToolPath="$(WixToolPath)" NoLogo="true" />
     <HeatDirectory OutputFile="$(ProjectDir)\LocaleFiles.wxs" Directory="..\..\build\Release\bin\locales" PreprocessorVariable="var.LocalesDir" ComponentGroupName="LocalesComponentGroup" DirectoryRefId="LocalesDir" AutogenerateGuids="true" SuppressRegistry="true" SuppressRootDirectory="false" ToolPath="$(WixToolPath)" NoLogo="true" />
   </Target>
   <Target Name="AfterBuild">

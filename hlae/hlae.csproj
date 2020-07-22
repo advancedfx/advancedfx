@@ -215,6 +215,7 @@
     <ProjectReference Include="..\AfxCppCli\AfxCppCli.vcxproj">
       <Project>{98ecbbb4-6be2-42e2-8754-e18827852534}</Project>
       <Name>AfxCppCli</Name>
+      <Private>False</Private>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

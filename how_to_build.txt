@@ -28,6 +28,10 @@ Notice:
 	
 [X] Install WiX Toolsetfrom https://github.com/wixtoolset/wix3/releases
 	We used WiX Toolset v3.11.2.
+	
+[X] Currently it's required to change the PowerShell execution policy to
+    RemoteSigned:
+	https://docs.microsoft.com/de-de/powershell/module/microsoft.powershell.core/about/about_execution_policies?view=powershell-7
 
 [X] Obtain the HLAE source code from https://github.com/advancedfx/advancedfx into a
     folder you like, we'll call it <HLAESRC> from now on (by that I mean
@@ -38,111 +42,17 @@ Notice:
     cd /c/<HLAESRC>
     git clone --recursive https://github.com/advancedfx/advancedfx.git
 
-[X]	Execute C:\<HLAESRC>\l10n_update_to_source.bat in order to generate translation files.
-
-[X] Obtain zlib-1.2.11.tar.gz from http://zlib.net and extract it into
-    "C:\Libraries"
-
-[X] Open the GIT Bash we recommended above:
-	cd /c/Libraries
-	git clone --branch v2.4.0 https://github.com/advancedfx/openexr.git
-
-[X] Build ilmbase solutions using cmake (open command prompt):
-	c:
-	cd "C:\Libraries\openexr"
-	md build
-	cd build
-	setlocal
-	del /f "CMakeCache.txt"
-	"C:\Program Files\CMake\bin\cmake.exe" "-DBUILD_SHARED_LIBS=1" "-DCMAKE_INSTALL_PREFIX=C:\<HLAESRC>\ilmbase-build" -G "Visual Studio 16 2019" -T "v142" -A Win32 ../IlmBase
-
-[X] Open the C:\Libraries\openexr\build\ilmbase.sln created in the previous step
-    Select the Release configuration.
-    Then build the Solution.
-    After that build the INSTALL project in the solution (ignore errors about smybolic link creation).
-
-[X] Build zlib using nmake:
-	Open the Developer Command Prompt for VS2019 and enter:
-	c:
-	cd "C:\Libraries\zlib-1.2.11"
-	nmake -f win32/Makefile.msc zlib1.dll
-	nmake -f win32/Makefile.msc example_d.exe
-	example_d.exe (To see if the zlib1.dll is okay.)
-
-[X] Build openexr solutions using cmake:
-	c:
-	cd "C:\Libraries\openexr"
-	md build
-	cd build
-	setlocal
-	del /f "CMakeCache.txt"
-	"C:\Program Files\CMake\bin\cmake.exe" "-DBUILD_SHARED_LIBS=1" "-DZLIB_ROOT=C:\Libraries\zlib-1.2.11" "-DCMAKE_PREFIX_PATH=C:\<HLAESRC>\ilmbase-build" "-DCMAKE_SYSTEM_PREFIX=C:\<HLAESRC>\ilmbase-build" "-DCMAKE_INSTALL_PREFIX=C:\<HLAESRC>\openexr-build" -G "Visual Studio 16 2019" -T "v142" -A Win32 ../OpenEXR
-
-[X] Open the C:\Libraries\openexr\build\openexr.sln created in the previous step
-    Select the Release configuration.
-    Then build the Solution.
-    After that build the INSTALL project in the solution (ignore errors about smybolic link creation).
-
-[ ] This step is currently not required!
-    Compile and run the ShaderBuilder project (requires the SharpDX SDK) and
-    compile the following Shaders to the "shaders\build" folder:
-    - shaders\afxHook_splinerope_ps2x.fxc:
-      - to afxHook_splinerope_ps20 (profile ps_2_0)
-      - to afxHook_splinerope_ps20b (profile ps_2_b)
-    - shaders\afxHook_splinecard_vsxx.fxc:
-      - to afxHook_splinecard_vs20 (profile vs_2_0)
-    - shaders\afxHook_spritecard_vsxx.fxc:
-      - to afxHook_spritecard_vs20 (profile vs_2_0)
-    - shaders\afxHook_spritecard_ps2x.fxc:
-      - to afxHook_spritecard_ps20 (profile ps_2_0)
-      - to afxHook_spritecard_ps20b (profile ps_2_b)
-    - shaders\afxHook_vertexlit_and_unlit_generic_ps2x.fxc:
-      - to afxHook_vertexlit_and_unlit_generic_ps20 (profile ps_2_0)
-      - to afxHook_vertexlit_and_unlit_generic_ps20b (profile ps_2_b)
-      - to afxHook_vertexlit_and_unlit_generic_ps30 (profile ps_3_0)
-    The .h and .acs files build this way are required by the AfxHookSource
-    project.
-
-[X]	Compile and run the prop\ShaderBuilder project in ShaderBuilder\Release\bin:
+[X] Open the "C:\<HLAESRC>\advancedfx" _folder_ in Visual Studio.
+	Select "Release" configuration.
+	It is important to let each of these 3 steps _fully_ finish,
+	before you continue (unless there are errors):
+	1) Right click CMakeLists.txt and select "Generate Cache". Wait for "CMake generation finished." in output!
+	2) Right click CMakeLists.txt and select "Build". Wait for the build icon in the bottom status bar to disappear!
+	3) Right click CMakeLists.txt and select "Install" Wait for "CMake install finished." in output!
 	
-	ShaderBuilder.exe --profile vs_2_0 --in "..\..\..\shaders\afx_line_vs20.fxc" --outPrefix "..\..\..\shaders\build\afx_line_vs20"
-	ShaderBuilder.exe --profile ps_2_0 --in "..\..\..\shaders\afx_line_ps20.fxc" --outPrefix "..\..\..\shaders\build\afx_line_ps20"
-	ShaderBuilder.exe --profile vs_2_0 --in "..\..\..\shaders\afx_pgldraw_vs20.fxc" --outPrefix "..\..\..\shaders\build\afx_pgldraw_vs20"
-	ShaderBuilder.exe --profile ps_2_0 --in "..\..\..\shaders\afx_pgldraw_ps20.fxc" --outPrefix "..\..\..\shaders\build\afx_pgldraw_ps20"
-	ShaderBuilder.exe --profile ps_2_0 --in "..\..\..\shaders\afx_depth_ps20.fxc" --outPrefix "..\..\..\shaders\build\afx_depth_ps20"
-	ShaderBuilder.exe --profile ps_2_0 --in "..\..\..\shaders\afx_drawtexture_ps20.fxc" --outPrefix "..\..\..\shaders\build\afx_drawtexture_ps20"
-	
-	The .h and .acs files build this way are required by the AfxHookSource
-	project.
-
-[X] AfxHook\recompile_586.bat, move AfxHook.dat into build\Release\bin\
-
-[X] AfxHook\recompile_x64.bat, move AfxHook.dat into build\Release\bin\x64\
-
-[X] Open advancedfx.sln in the HLAE source code ("C:\<HLAESRC>\advancedfx" folder)
-    and Build (Configuration=Release, Platform=x86) in this order:
-    AfxHookGoldSrc, AfxHookSource, AfxCppCli, injector, hlae
-    and Build (Configuration=Release, Platform=x64) in this order:
-    injector
-
 [X] Use "C:\<HLAESRC>\advancedfx\copy_resources_release.bat""
     to copy required files and folders to the
     "C:\<HLAESRC>\advancedfx\build\Release\bin" folder.
+	After that the installer and the zip can be found in "C:\<HLAESRC>\advancedfx\build\Release".
 
-[X] Copy all files
-    form "C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x86"
-    to "C:\<HLAESRC>\advancedfx\build\Release\bin"
-
-[X] Copy all files
-    form "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Redist\MSVC\14.24.28127\x86\Microsoft.VC142.CRT"
-    to "C:\<HLAESRC>\advancedfx\build\Release\bin"
-
-[X] Copy all DLL files from
-    "C:\<HLAESRC>\ilmbase-build\bin",
-    "C:\<HLAESRC>\openexr-build\bin" (except "IlmImfUtil-2_2.dll") and
-    "C:\Libraries\zlib-1.2.11"
-    to "C:\<HLAESRC>\advancedfx\build\Release\bin"
-
-[X] For ZIP Download you need to package all files covered by the 7zlistfile.txt.
-
-[X] Build the installer/setup project (if you change stuff you will need to update Product Id GUID and Version in installer/HlaeCore and Version in installer/setup (larger than build number)).
+[X] If you change stuff you will need to update Product Id GUID and Version in installer/HlaeCore and Version in installer/setup (larger than build number).
