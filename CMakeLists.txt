@@ -45,8 +45,6 @@ add_subdirectory("hlae")
 add_custom_target(l10n_update
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMAND "${CMAKE_SOURCE_DIR}/l10n_update_to_source.bat"
-    COMMAND ${CMAKE_COMMAND} -E touch "${CMAKE_CURRENT_BINARY_DIR}/l10n.stamp"
-    BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/l10n.stamp"
 )
 
 #
