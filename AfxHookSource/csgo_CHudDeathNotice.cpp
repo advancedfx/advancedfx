@@ -2016,7 +2016,7 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 		else if (0 == _stricmp("fake", arg1)) {
 			if (!CCSGO_HudDeathNotice_FireGameEvent_This)
 			{
-				Tier0_Warning("One message must have been triggerred first, before this will work.\n");
+				Tier0_Warning("One message must have been triggered first, before this will work.\n");
 				return true;
 			}
 
@@ -2396,63 +2396,82 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 					);
 					return true;
 				}
-				else if (0 == _stricmp("add", arg2)) {
-
-					if (6 <= argc)
+				else if (0 == _stricmp("edit", arg2))
+				{
+					if (4 <= argc)
 					{
-						const char * arg3 = args->ArgV(3);
-						int nr = 0;
-						int targetNr = atoi(arg3);
-						CCsgoReplaceNameEntry * entry = nullptr;
+						const char* arg3 = args->ArgV(3);
 
-						for (std::list<CCsgoReplaceNameEntry>::iterator it = g_csgo_ReplaceNameList.begin(); it != g_csgo_ReplaceNameList.end(); ++it)
+						int listNr = atoi(arg3);
+
+						if (listNr < 0 || listNr >= (int)g_csgo_ReplaceNameList.size())
 						{
-							if (nr == targetNr)
-							{
-								entry = &(*it);
-								break;
-							}
-
-							++nr;
+							Tier0_Warning("Error: %i is not in valid range for <listNr>\n", listNr);
+							return true;
 						}
 
-						if (entry)
-						{
+						std::list<CCsgoReplaceNameEntry>::iterator sourceIt = g_csgo_ReplaceNameList.begin();
 
-							const char * arg4 = args->ArgV(4);
-							const char * arg5 = args->ArgV(5);
+						std::advance(sourceIt, listNr);
+
+						if (5 <= argc)
+						{
+							const char* arg4 = args->ArgV(4);
 
 							if (0 == _stricmp("id", arg4))
 							{
-								entry->id = atoi(arg5);
+								if (6 <= argc)
+								{
+									sourceIt->id = args->ArgV(5);
+									return true;
+								}
+
+								Tier0_Msg(
+									"%s filter edit %i id <idUser> - Set new ID.\n"
+									"Current value: "
+									, arg0, listNr
+								);
+								sourceIt->id.Console_Print();
+								Tier0_Msg("\n");
+
 								return true;
 							}
 							else if (0 == _stricmp("name", arg4))
 							{
-								entry->name = arg5;
+								if (6 <= argc)
+								{
+									sourceIt->name = args->ArgV(5);
+									return true;
+								}
+
+								Tier0_Msg(
+									"%s filter edit %i name <sName> - Set new name.\n"
+									"Current value: %s\n"
+									, arg0, listNr
+									, sourceIt->name.c_str()
+								);
+
 								return true;
 							}
 						}
-						else {
-							Tier0_Warning(
-								"Error: %i is not a valid %s filter list entry."
-								, targetNr
-								, arg0
-							);
-							return true;
-						}
+
+						Tier0_Msg(
+							"%s filter edit %i id [...]\n"
+							"%s filter edit %i name [...]\n"
+							, arg0, listNr
+							, arg0, listNr
+						);
+						return true;
 					}
 
 					Tier0_Msg(
-						"%s filter edit <listNr> id <idUser> - Set new ID.\n"
-						"%s filter edit <listNr> name <sNewName> - Set new name.\n"
-						, arg0
+						"%s filter edit <listNr> [...] - Edit entry.\n"
 						, arg0
 					);
 					return true;
 				}
-				else if (0 == _stricmp("move", arg2)) {
-
+				else if (0 == _stricmp("move", arg2))
+				{
 					if (5 <= argc)
 					{
 						const char * arg3 = args->ArgV(3);
