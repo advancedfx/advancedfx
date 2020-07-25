@@ -575,7 +575,7 @@ namespace AfxInterop {
 				if (!ReadBoolean(m_hEnginePipe, m_EnabledFeatures.BeforeHud)) { errorLine = __LINE__; goto error; }
 				if (!ReadBoolean(m_hEnginePipe, m_EnabledFeatures.AfterHud)) { errorLine = __LINE__; goto error; }
 
-				if (6 == m_EngineVersion)
+				if (6 <= m_EngineVersion && m_EngineVersion <= 7)
 				{
 					if (!ReadBoolean(m_hEnginePipe, m_EnabledFeatures.AfterRenderView)) { errorLine = __LINE__; goto error; }
 				}
@@ -715,14 +715,48 @@ namespace AfxInterop {
 		{
 			if (!m_EnabledFeatures.BeforeHud) return;
 
+			int errorLine = 0;
+
+			if(m_EngineVersion == 7)
+			{
+				if (!m_EngineConnected) return;
+
+				if (!WriteInt32(m_hEnginePipe, EngineMessage_OnBeforeHud)) { errorLine = __LINE__; goto error; }
+				if (!Flush(m_hEnginePipe)) { errorLine = __LINE__; goto error; }
+			}
+
 			QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new CBeforeHudFunctor(this)));
+
+			return;
+
+		error:
+			Tier0_Warning("AfxInterop::OnBeforeHud: Error in line %i (%s).\n", errorLine, m_EnginePipeName.c_str());
+			DisconnectEngine();
+			return;
 		}
 
 		void OnAfterHud(IAfxMatRenderContext* ctx)
 		{
 			if (!m_EnabledFeatures.AfterHud) return;
 
+			int errorLine = 0;
+
+			if (m_EngineVersion == 7)
+			{
+				if (!m_EngineConnected) return;
+
+				if (!WriteInt32(m_hEnginePipe, EngineMessage_OnAfterHud)) { errorLine = __LINE__; goto error; }
+				if (!Flush(m_hEnginePipe)) { errorLine = __LINE__; goto error; }
+			}
+
 			QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new CAfterHudFunctor(this)));
+
+			return;
+
+		error:
+			Tier0_Warning("AfxInterop::OnAfterHud: Error in line %i (%s).\n", errorLine, m_EnginePipeName.c_str());
+			DisconnectEngine();
+			return;
 		}
 
 		void Shutdown() {
@@ -737,7 +771,7 @@ namespace AfxInterop {
 
 			if (!m_DrawingConnected) return;
 
-			if (6 == m_DrawingVersion)
+			if (6 <= m_DrawingVersion && m_DrawingVersion <= 7)
 			{
 				m_DrawingSkip = false;
 				return;
@@ -885,7 +919,7 @@ namespace AfxInterop {
 				}
 
 
-				if (6 == m_DrawingVersion)
+				if (6 <= m_DrawingVersion && m_DrawingVersion <= 7)
 				{
 					if(!HandleVersion6DrawingMessage(message, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
 				}
@@ -920,7 +954,7 @@ namespace AfxInterop {
 
 			int errorLine = 0;
 
-			if (6 == m_DrawingVersion)
+			if (6 <= m_DrawingVersion && m_DrawingVersion <= 7)
 			{
 				if (!HandleVersion6DrawingMessage(DrawingMessage_BeforeHud, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
 			}
@@ -954,7 +988,7 @@ namespace AfxInterop {
 
 			int errorLine = 0;
 
-			if (6 == m_DrawingVersion)
+			if (6 <= m_DrawingVersion && m_DrawingVersion <= 7)
 			{
 				if (!HandleVersion6DrawingMessage(DrawingMessage_AfterHud, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
 			}
@@ -985,7 +1019,7 @@ namespace AfxInterop {
 
 			int errorLine = 0;
 
-			if (6 == m_DrawingVersion)
+			if (6 <= m_DrawingVersion && m_DrawingVersion <= 7)
 			{
 				if (!HandleVersion6DrawingMessage(DrawingMessage_OnRenderViewEnd, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
 			}
@@ -1170,6 +1204,7 @@ namespace AfxInterop {
 							{
 							case 5:
 							case 6:
+							case 7:
 								break;
 							default:
 								Tier0_Warning("Version %d is not supported.\n", m_EngineVersion);
@@ -1622,7 +1657,9 @@ namespace AfxInterop {
 			EngineMessage_BeforeTranslucentShadow = 9,
 			EngineMessage_AfterTranslucentShadow = 10,
 			EngineMessage_BeforeTranslucent = 11,
-			EngineMessage_AfterTranslucent = 12
+			EngineMessage_AfterTranslucent = 12,
+			EngineMessage_OnBeforeHud = 13,
+			EngineMessage_OnAfterHud = 14
 		};
 
 		class CConsole
