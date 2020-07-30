@@ -530,11 +530,11 @@ int __fastcall new_CVClient_Init_Swarm(void* This, void* Edx, SOURCESDK::CreateI
 	return old_CVClient_Init_Swarm(This, Edx, AppSystemFactory_ForClient, pGlobals);
 }
 
-typedef int(__stdcall * CVClient_Init_BM_t)(DWORD *this_ptr, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CGlobalVarsBase *pGlobals);
+typedef int(__fastcall* CVClient_Init_BM_t)(void *This, void* Edx, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CGlobalVarsBase *pGlobals);
 
 CVClient_Init_BM_t old_CVClient_Init_BM;
 
-int __stdcall new_CVClient_Init_BM(DWORD *this_ptr, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CGlobalVarsBase *pGlobals)
+int __fastcall new_CVClient_Init_BM(void* This, void* Edx, SOURCESDK::CreateInterfaceFn appSystemFactory, SOURCESDK::CGlobalVarsBase *pGlobals)
 {
 	static bool bFirstCall = true;
 
@@ -545,7 +545,7 @@ int __stdcall new_CVClient_Init_BM(DWORD *this_ptr, SOURCESDK::CreateInterfaceFn
 		MySetup(appSystemFactory, new WrpGlobalsOther(pGlobals));
 	}
 
-	return old_CVClient_Init_BM(this_ptr, AppSystemFactory_ForClient, pGlobals);
+	return old_CVClient_Init_BM(This, Edx, AppSystemFactory_ForClient, pGlobals);
 }
 
 
