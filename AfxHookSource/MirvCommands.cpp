@@ -3406,7 +3406,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 			}
 
 			Tier0_Msg(
-				"mirv_fix playerAnimState 0|1|2|3- Fixes twitching of player arms, see https://github.com/advancedfx/advancedfx/wiki/Source%3ASmoother-Demos , 0 - disabled, 1 - enabled, 2/3 - debug.\n"
+				"mirv_fix playerAnimState 0|1|2|3- Fixes twitching of player arms, see https://github.com/advancedfx/advancedfx/wiki/Source%%3ASmoother-Demos , 0 - disabled, 1 - enabled, 2/3 - debug.\n"
 				"Current value: %i\n",
 				Enable_csgo_PlayerAnimStateFix_get()
 			);
