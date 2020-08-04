@@ -163,9 +163,9 @@ void CAfxGameEventListenerSerialzer::FireHandledEvent(SOURCESDK::CSGO::CGameEven
 						auto it2 = it1->second.find(keyName);
 						if (it2 != it1->second.end())
 						{
-							DWORD enrichmentType = it2->second.Type;
+							DWORD enrichmentType = it2->second;
 
-							if (enrichmentType & CEnrichment::Type_UseridWithSteamId)
+							if (enrichmentType & EnrichmentType_UseridWithSteamId)
 							{
 								int userId = gameEvent->GetInt(keyName);
 								unsigned __int64 xuid = 0;
@@ -193,7 +193,7 @@ void CAfxGameEventListenerSerialzer::FireHandledEvent(SOURCESDK::CSGO::CGameEven
 
 								WriteUInt64(xuid);
 							}
-							if (enrichmentType & CEnrichment::Type_EntnumWithOrigin)
+							if (enrichmentType & EnrichmentType_EntnumWithOrigin)
 							{
 								int entnum = gameEvent->GetInt(keyName);
 								SOURCESDK::Vector value;
@@ -215,7 +215,7 @@ void CAfxGameEventListenerSerialzer::FireHandledEvent(SOURCESDK::CSGO::CGameEven
 								WriteFloat(value.y);
 								WriteFloat(value.z);
 							}
-							if (enrichmentType & CEnrichment::Type_EntnumWithAngles)
+							if (enrichmentType & EnrichmentType_EntnumWithAngles)
 							{
 								int entnum = gameEvent->GetInt(keyName);
 								SOURCESDK::QAngle value;
@@ -238,7 +238,7 @@ void CAfxGameEventListenerSerialzer::FireHandledEvent(SOURCESDK::CSGO::CGameEven
 								WriteFloat(value.y);
 								WriteFloat(value.z);
 							}
-							if (enrichmentType & CEnrichment::Type_UseridWithEyePosition)
+							if (enrichmentType & EnrichmentType_UseridWithEyePosition)
 							{
 								int userid = gameEvent->GetInt(keyName);
 								SOURCESDK::Vector value;
@@ -269,7 +269,7 @@ void CAfxGameEventListenerSerialzer::FireHandledEvent(SOURCESDK::CSGO::CGameEven
 								WriteFloat(value.y);
 								WriteFloat(value.z);
 							}
-							if (enrichmentType & CEnrichment::Type_UseridWithEyeAngels)
+							if (enrichmentType & EnrichmentType_UseridWithEyeAngels)
 							{
 								int userid = gameEvent->GetInt(keyName);
 								SOURCESDK::QAngle value;

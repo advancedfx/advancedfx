@@ -80,6 +80,15 @@ private:
 class CAfxGameEventListenerSerialzer : public CAfxGameEventListener
 {
 public:
+	enum EnrichmentType_e {
+		EnrichmentType_None = 0,
+		EnrichmentType_UseridWithSteamId = 1 << 0,
+		EnrichmentType_EntnumWithOrigin = 1 << 1,
+		EnrichmentType_EntnumWithAngles = 1 << 2,
+		EnrichmentType_UseridWithEyePosition = 1 << 3,
+		EnrichmentType_UseridWithEyeAngels = 1 << 4
+	};
+
 	bool TransmitClientTime = false;
 	bool TransmitTick = false;
 	bool TransmitSystemTime = false;
@@ -102,48 +111,63 @@ public:
 		m_Enrichments.clear();
 	}
 
-	void EnrichUseridWithSteamId(const char * eventName, const char * eventProperty)
+	void Enrich(const char* eventName, const char* eventProperty, bool enable, EnrichmentType_e enrichmentType)
 	{
-		m_Enrichments[eventName][eventProperty].Type |= CEnrichment::Type_UseridWithSteamId;
+		if (enable)
+			m_Enrichments[eventName][eventProperty] |= enrichmentType;
+		else {
+			auto& curType = m_Enrichments[eventName][eventProperty];
+			curType &= ~(unsigned int)enrichmentType;
+			if (EnrichmentType_None == curType)
+			{
+				auto& enrichment = m_Enrichments[eventName];
+				enrichment.erase(eventProperty);
+				if (enrichment.empty())
+					m_Enrichments.erase(eventName);
+			}
+		}
 	}
 
-	void Enrich_EntnumWithOrigin(const char * eventName, const char * eventProperty)
+	void EnrichSet(const char* eventName, const char* eventProperty, unsigned int enrichmentType)
 	{
-		m_Enrichments[eventName][eventProperty].Type |= CEnrichment::Type_EntnumWithOrigin;
+		if (EnrichmentType_None != enrichmentType)
+			m_Enrichments[eventName][eventProperty] = enrichmentType;
+		else {
+			auto& enrichment = m_Enrichments[eventName];
+			enrichment.erase(eventProperty);
+			if (enrichment.empty())
+				m_Enrichments.erase(eventName);
+		}
 	}
 
-	void Enrich_EntnumWithAngles(const char * eventName, const char * eventProperty)
+	void EnrichUseridWithSteamId(const char * eventName, const char * eventProperty, bool enable = true)
 	{
-		m_Enrichments[eventName][eventProperty].Type |= CEnrichment::Type_EntnumWithAngles;
+		Enrich(eventName, eventProperty, enable, EnrichmentType_UseridWithSteamId);
 	}
 
-	void Enrich_UseridWithEyePosition(const char * eventName, const char * eventProperty)
+	void Enrich_EntnumWithOrigin(const char * eventName, const char * eventProperty, bool enable = true)
 	{
-		m_Enrichments[eventName][eventProperty].Type |= CEnrichment::Type_UseridWithEyePosition;
+		Enrich(eventName, eventProperty, enable, EnrichmentType_EntnumWithOrigin);
 	}
 
-	void Enrich_UseridWithEyeAngels(const char * eventName, const char * eventProperty)
+	void Enrich_EntnumWithAngles(const char * eventName, const char * eventProperty, bool enable = true)
 	{
-		m_Enrichments[eventName][eventProperty].Type |= CEnrichment::Type_UseridWithEyeAngels;
+		Enrich(eventName, eventProperty, enable, EnrichmentType_EntnumWithAngles);
+	}
+
+	void Enrich_UseridWithEyePosition(const char * eventName, const char * eventProperty, bool enable = true)
+	{
+		Enrich(eventName, eventProperty, enable, EnrichmentType_UseridWithEyePosition);
+	}
+
+	void Enrich_UseridWithEyeAngels(const char * eventName, const char * eventProperty, bool enable = true)
+	{
+		Enrich(eventName, eventProperty, enable, EnrichmentType_UseridWithEyeAngels);
 	}
 
 protected:
-	struct CEnrichment
-	{
-		enum Type_e {
-			Type_None = 0,
-			Type_UseridWithSteamId = 1 << 0,
-			Type_EntnumWithOrigin = 1 << 1,
-			Type_EntnumWithAngles = 1 << 2,
-			Type_UseridWithEyePosition = 1 << 3,
-			Type_UseridWithEyeAngels = 1 << 4
-		};
 
-		unsigned __int32 Type = Type_None;
-	};
-
-
-	std::map<std::string, std::map<std::string, CEnrichment>> m_Enrichments;
+	std::map<std::string, std::map<std::string, unsigned int>> m_Enrichments;
 
 	virtual void FireHandledEvent(SOURCESDK::CSGO::CGameEvent * gameEvent) override;
 
