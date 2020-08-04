@@ -15,9 +15,6 @@ Notice:
     - You'll need to install Wix Toolset Visual Studio 2019 Extension from
       within Visual Studio later.
 
-[X] Obtain and install CMAKE from http://www.cmake.org/
-    We currently use "cmake-3.18.0-rc4-win64-x64.msi".
-	
 [X]	Obtain Python 3.8.x from https://www.python.org/downloads/windows/ .
 	We used python-3.8.3-amd64 .
 	You will need to do the custom installation
@@ -42,17 +39,16 @@ Notice:
     cd /c/<HLAESRC>
     git clone --recursive https://github.com/advancedfx/advancedfx.git
 
-[X] Open the "C:\<HLAESRC>\advancedfx" _folder_ in Visual Studio.
-	Select "Release" configuration.
-	It is important to let each of these 3 steps _fully_ finish,
-	before you continue (unless there are errors):
-	1) Right click CMakeLists.txt and select "Generate Cache". Wait for "CMake generation finished." in output!
-	2) Right click CMakeLists.txt and select "Build". Wait for the build icon in the bottom status bar to disappear!
-	3) Right click CMakeLists.txt and select "Install" Wait for "CMake install finished." in output!
+[X] Open Visual Studio 2019 Developer Command Prompt:
+	cd C:\<HLAESRC>\advancedfx\
+	mkdir build
+	cd build
+	mkdir Release
+	cd Release
+	cmake -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 16 2019" -T "v142" -A "Win32" ../..
+	cmake --build . -v -- -r
+	cmake --install . -v
 	
-[X] Use "C:\<HLAESRC>\advancedfx\copy_resources_release.bat""
-    to copy required files and folders to the
-    "C:\<HLAESRC>\advancedfx\build\Release\bin" folder.
-	After that the installer and the zip can be found in "C:\<HLAESRC>\advancedfx\build\Release".
+[X] After that the installer and the zip can be found in "C:\<HLAESRC>\advancedfx\build\Release".
 
 [X] If you change stuff you will need to update Product Id GUID and Version in installer/HlaeCore and Version in installer/setup (larger than build number).

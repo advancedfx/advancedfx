@@ -5,6 +5,8 @@ cmake_minimum_required (VERSION 3.8)
 
 project ("advancedfx")
 
+set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}")
+
 #
 # Get Microsoft Visual Studio related paths:
 #
@@ -26,12 +28,25 @@ execute_process(
 #
 
 include(FetchContent)
+include(ExternalProject)
 
 add_subdirectory("AfxHook")
 add_subdirectory("deps/release/zlib")
 add_subdirectory("deps/release/openexr")
 add_subdirectory("AfxCppCli")
-add_subdirectory("ShaderBuilder")
+
+ExternalProject_Add("shaderbuilder"
+    SOURCE_DIR "${CMAKE_SOURCE_DIR}/ShaderBuilder"
+	BINARY_DIR "${CMAKE_BINARY_DIR}/ShaderBuilder"
+    CMAKE_GENERATOR "Visual Studio 16 2019"
+    CMAKE_GENERATOR_TOOLSET "v142"
+    CMAKE_GENERATOR_PLATFORM "x64"
+    BUILD_COMMAND "${CMAKE_COMMAND}" --build . --config "${CMAKE_CFG_INTDIR}" -- -r
+	INSTALL_COMMAND ""
+)
+
+set(shaderbuilder_BINARY_DIR "${CMAKE_BINARY_DIR}/ShaderBuilder/${CMAKE_CFG_INTDIR}")
+
 add_subdirectory("AfxHookGoldSrc")
 add_subdirectory("AfxHookSource")
 add_subdirectory("injector")

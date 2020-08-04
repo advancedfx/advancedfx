@@ -9,7 +9,7 @@ project ("openexr")
 FetchContent_Declare(
 	openexr
 	GIT_REPOSITORY https://github.com/advancedfx/openexr.git
-    GIT_TAG v2.5.1
+    GIT_TAG v2.5.2
 )
 
 FetchContent_GetProperties(openexr)
