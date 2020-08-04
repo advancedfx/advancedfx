@@ -3,18 +3,18 @@ cmake_minimum_required (VERSION 3.8)
 project ("afxhooksource")
 
 set(AFXHOOKSOURCE_SHADERS
-    "${CMAKE_CURRENT_SOURCE_DIR}/../afx_line_vs20.acs"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../afx_line_vs20.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../afx_line_ps20.acs"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../afx_line_ps20.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../afx_pgldraw_vs20.acs"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../afx_pgldraw_vs20.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../afx_pgldraw_ps20.acs"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../afx_pgldraw_ps20.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../afx_depth_ps20.acs"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../afx_depth_ps20.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../afx_drawtexture_ps20.acs"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../afx_drawtexture_ps20.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_line_vs20.acs"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_line_vs20.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_line_ps20.acs"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_line_ps20.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_pgldraw_vs20.acs"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_pgldraw_vs20.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_pgldraw_ps20.acs"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_pgldraw_ps20.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_depth_ps20.acs"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_depth_ps20.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_drawtexture_ps20.acs"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_drawtexture_ps20.h"
 )
 
 set(AFXHOOKSOURCE_SHADERS_SOURCES

@@ -10,5 +10,5 @@ add_custom_target(hlae
     DEPENDS afxhook afxhook_x64 afxcppcli afxhookgoldsrc afxhooksource injector injector_x64
     WORKING_DIRECTORY ${hlae_BINARY_DIR}
     BYPRODUCTS "${hlae_BINARY_DIR}/HLAE.exe"
-    COMMAND ${VS16_MSBUILD} "${hlae_SOURCE_DIR}/hlae.csproj" "-property:Configuration=Release" "-property:Platform=x86" "/p:OutDir=${hlae_BINARY_DIR}/" "-property:ApplicationVersion=${hlae_VERSION_MAJOR}.${hlae_VERSION_MINOR}.${hlae_VERSION_PATCH}.0"
+    COMMAND ${VS16_MSBUILD} "${hlae_SOURCE_DIR}/hlae.csproj" -r "-property:Configuration=Release" "-property:Platform=x86" "/p:OutDir=${hlae_BINARY_DIR}/" "-property:Version=${hlae_VERSION_MAJOR}.${hlae_VERSION_MINOR}.${hlae_VERSION_PATCH}.0"
 )

@@ -1,4 +1,6 @@
+/.vs
 /bin
+/build
 /obj
 /*.suo
 /*.user
