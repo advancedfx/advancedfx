@@ -525,7 +525,7 @@
             this.MainMenuStrip = this.mainMenu;
             this.MinimumSize = new System.Drawing.Size(600, 400);
             this.Name = "MainForm";
-            this.Text = "L10n Half-Life Advanced Effects";
+            this.Text = "L10n Half-Life Advanced Effects 0.0.0.0";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainForm_FormClosed);
             this.Shown += new System.EventHandler(this.MainForm_Shown);
             this.mainMenu.ResumeLayout(false);

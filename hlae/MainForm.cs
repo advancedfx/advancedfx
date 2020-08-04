@@ -23,7 +23,7 @@ namespace AfxGui
             this.Icon = Program.Icon;
             this.pictureBoxHelp.Image = SystemIcons.Information.ToBitmap();
 
-            this.Text = L10n._p("Main window", "Half-Life Advanced Effects");
+            this.Text = L10n._p("Window title, args: {0} - version", "Half-Life Advanced Effects {0}", System.Diagnostics.FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).FileVersion);
 
             this.fileToolStripMenuItem.Text = L10n._p("Main window | menu", "File");
             this.menuLaunchCSGO.Text = L10n._p("Main window | menu | File", "Launch CS:GO");
