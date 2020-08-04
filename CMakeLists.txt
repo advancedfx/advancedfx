@@ -105,6 +105,7 @@ install(
 install(
     FILES
         "${afxhook_BINARY_DIR}/AfxHook.dat"
+        "${hlae_BINARY_DIR}/VERSION"
     DESTINATION "bin"
 )
 
