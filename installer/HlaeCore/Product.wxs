@@ -18,8 +18,8 @@
 
     <MediaTemplate EmbedCab="yes" />
        
-    <Icon Id="icon.ico" SourceFile="../../hlae/app.ico"/>
-    <Property Id="ARPPRODUCTICON" Value="icon.ico" />
+    <Icon Id="HLAEIcon.exe" SourceFile="$(sys.SOURCEFILEDIR)../../hlae/app.ico"/>
+    <Property Id="ARPPRODUCTICON" Value="HLAEIcon.exe" />
     
     <Property Id="ApplicationFolderName" Value="HLAE" />
     
@@ -289,7 +289,7 @@
                     Directory="ApplicationProgramsFolder"
                     Description="Half-Life Advanced Effects"
                     WorkingDirectory="APPLICATIONFOLDER"
-                    Icon="icon.ico"
+                    Icon="HLAEIcon.exe"
                     Advertise="yes"/>
         </File>
       </Component>
