@@ -27,18 +27,6 @@
 </release>
 
 
-
-<release>
-<name>AfxHookSource</name>
-<version>1.86.0</version>
-<time>2020-07-19T16:04Z</time>
-<changes>
-<change type="fixed">Fixed mask (used by green-screen matte) / black / white action material brightness on maps like e.g. de_cache by overriding tone-map light scale for these actions (reported by GamingEngine).</change>
-<change type="fixed">Fixed lots of typos, thank you Dec.</change>
-</changes>
-</release>
-
-
 <release>
 <name>AfxHookSource</name>
 <version>1.85.0</version>
