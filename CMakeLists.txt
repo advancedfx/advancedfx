@@ -16,12 +16,14 @@ execute_process(
     OUTPUT_VARIABLE VS16_INSTALLPATH
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
+string(REPLACE "\\" "/" VS16_INSTALLPATH ${VS16_INSTALLPATH})
 
 execute_process(
     COMMAND "$ENV{ProgramFiles\(x86\)}\\Microsoft Visual Studio\\Installer\\vswhere.exe" "-latest" "-version" "[16.0,17.0)" "-requires" "Microsoft.Component.MSBuild" "-find" "MSBuild\\**\\**\\Bin\\MSBuild.exe"
     OUTPUT_VARIABLE VS16_MSBUILD
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
+string(REPLACE "\\" "/" VS16_MSBUILD ${VS16_MSBUILD})
 
 #
 # Include dependencies:
@@ -136,18 +138,23 @@ install(
     DESTINATION "pdb/x64"
 )
 
-install (CODE "execute_process( WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} COMMAND \"${CMAKE_SOURCE_DIR}/copy_resources_release.bat\" \"${CMAKE_INSTALL_PREFIX}/bin\" )")
-install (CODE "execute_process( WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} COMMAND \"${CMAKE_SOURCE_DIR}/l10n_update_to_source.bat\" \"${CMAKE_INSTALL_PREFIX}/bin\" )")
+install(
+	CODE
+	"
+	execute_process( WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}\" COMMAND \"${CMAKE_SOURCE_DIR}/copy_resources_release.bat\" \"${CMAKE_INSTALL_PREFIX}/bin\" )
+	execute_process( WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}\" COMMAND \"${CMAKE_SOURCE_DIR}/l10n_update_to_source.bat\" \"${CMAKE_INSTALL_PREFIX}/bin\" )
+	
+	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}/bin\" COMMAND \"${CMAKE_COMMAND}\" -E tar cfv  \"${CMAKE_INSTALL_PREFIX}/hlae.zip\" --format=zip -- . )
+	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}/pdb\" COMMAND \"${CMAKE_COMMAND}\" -E tar cfv  \"${CMAKE_INSTALL_PREFIX}/hlae_pdb.zip\" --format=zip -- . )
 
-install (CODE "execute_process( WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin COMMAND \"${CMAKE_COMMAND}\" -E tar cfv  \"${CMAKE_INSTALL_PREFIX}/hlae.zip\" --format=zip -- . )")
-install (CODE "execute_process( WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/pdb COMMAND \"${CMAKE_COMMAND}\" -E tar cfv  \"${CMAKE_INSTALL_PREFIX}/hlae_pdb.zip\" --format=zip -- . )")
-
-install (CODE "execute_process( WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX} COMMAND \"${CMAKE_COMMAND}\" -E make_directory installer)")
-install (CODE "execute_process( WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX} COMMAND \"${CMAKE_COMMAND}\" -E make_directory installer/hlae)")
-install (CODE "execute_process( WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX} COMMAND \"${CMAKE_COMMAND}\" -E copy_directory bin installer/hlae)")
-install (CODE "execute_process( WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX} COMMAND \"${CMAKE_COMMAND}\" -E rm -Rf installer/hlae/ffmpeg)")
-install (CODE "execute_process( WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX} COMMAND \"${CMAKE_COMMAND}\" -E rm -Rf installer/hlae/locales)")
-install (CODE "execute_process( WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX} COMMAND \"${CMAKE_COMMAND}\" -E rm -f installer/hlae/HLAE.exe)")
-install (CODE "execute_process( WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} COMMAND \"${VS16_MSBUILD}\" \"${CMAKE_SOURCE_DIR}/installer/setup/setup.wixproj\" -property:Configuration=Release -property:Platform=x86 \"-property:OutputPath=${CMAKE_INSTALL_PREFIX}/installer/build\")")
-install (CODE "execute_process( WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX} COMMAND \"${CMAKE_COMMAND}\" -E copy installer/build/HLAE_Setup.exe ./HLAE_Setup.exe)")
-install (CODE "execute_process( WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX} COMMAND \"${CMAKE_COMMAND}\" -E copy installer/build/HLAE_Setup.wixpdb ./HLAE_Setup.wixpdb)")
+	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E make_directory installer)
+	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E make_directory installer/hlae)
+	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E copy_directory bin installer/hlae)
+	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -Rf installer/hlae/ffmpeg)
+	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -Rf installer/hlae/locales)
+	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -f installer/hlae/HLAE.exe)
+	execute_process( WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}/installer/setup\" COMMAND \"${VS16_MSBUILD}\" \"${CMAKE_SOURCE_DIR}/installer/setup/setup.wixproj\" -property:Configuration=Release -property:Platform=x86 \"-property:OutputPath=${CMAKE_INSTALL_PREFIX}/installer/build\")
+	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E copy installer/build/HLAE_Setup.exe ./HLAE_Setup.exe)
+	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E copy installer/build/HLAE_Setup.wixpdb ./HLAE_Setup.wixpdb)
+	"
+)

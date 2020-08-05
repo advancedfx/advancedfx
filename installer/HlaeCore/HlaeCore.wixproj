@@ -10,6 +10,7 @@
     <OutputType>Package</OutputType>
     <Name>HlaeCore</Name>
     <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
+	<DefineSolutionProperties>false</DefineSolutionProperties>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
@@ -86,16 +87,16 @@
   </Target>
   <Target Name="AfterBuild">
     <!-- https://stackoverflow.com/questions/10330436/how-to-use-wix-torch-msbuild-task -->
-    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\de-de\HlaeCore.msi" OutputFile="bin\Release\de-de\HlaeCore.mst" ToolPath="$(WixToolPath)" />
-    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\fi-fi\HlaeCore.msi" OutputFile="bin\Release\fi-fi\HlaeCore.mst" ToolPath="$(WixToolPath)" />
-    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\hu-hu\HlaeCore.msi" OutputFile="bin\Release\hu-hu\HlaeCore.mst" ToolPath="$(WixToolPath)" />
-    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\it-it\HlaeCore.msi" OutputFile="bin\Release\it-it\HlaeCore.mst" ToolPath="$(WixToolPath)" />
-    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\ja-jp\HlaeCore.msi" OutputFile="bin\Release\ja-jp\HlaeCore.mst" ToolPath="$(WixToolPath)" />
-    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\nl-nl\HlaeCore.msi" OutputFile="bin\Release\nl-nl\HlaeCore.mst" ToolPath="$(WixToolPath)" />
-    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\pl-pl\HlaeCore.msi" OutputFile="bin\Release\pl-pl\HlaeCore.mst" ToolPath="$(WixToolPath)" />
-    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\pt-pt\HlaeCore.msi" OutputFile="bin\Release\pt-pt\HlaeCore.mst" ToolPath="$(WixToolPath)" />
-    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\ru-ru\HlaeCore.msi" OutputFile="bin\Release\ru-ru\HlaeCore.mst" ToolPath="$(WixToolPath)" />
-    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\tr-tr\HlaeCore.msi" OutputFile="bin\Release\tr-tr\HlaeCore.mst" ToolPath="$(WixToolPath)" />
-    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="bin\Release\en-us\HlaeCore.msi" UpdateFile="bin\Release\zh-cn\HlaeCore.msi" OutputFile="bin\Release\zh-cn\HlaeCore.mst" ToolPath="$(WixToolPath)" />
+    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="$(TargetDir)en-us\HlaeCore.msi" UpdateFile="$(TargetDir)de-de\HlaeCore.msi" OutputFile="$(TargetDir)de-de\HlaeCore.mst" ToolPath="$(WixToolPath)" />
+    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="$(TargetDir)en-us\HlaeCore.msi" UpdateFile="$(TargetDir)fi-fi\HlaeCore.msi" OutputFile="$(TargetDir)fi-fi\HlaeCore.mst" ToolPath="$(WixToolPath)" />
+    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="$(TargetDir)en-us\HlaeCore.msi" UpdateFile="$(TargetDir)hu-hu\HlaeCore.msi" OutputFile="$(TargetDir)hu-hu\HlaeCore.mst" ToolPath="$(WixToolPath)" />
+    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="$(TargetDir)en-us\HlaeCore.msi" UpdateFile="$(TargetDir)it-it\HlaeCore.msi" OutputFile="$(TargetDir)it-it\HlaeCore.mst" ToolPath="$(WixToolPath)" />
+    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="$(TargetDir)en-us\HlaeCore.msi" UpdateFile="$(TargetDir)ja-jp\HlaeCore.msi" OutputFile="$(TargetDir)ja-jp\HlaeCore.mst" ToolPath="$(WixToolPath)" />
+    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="$(TargetDir)en-us\HlaeCore.msi" UpdateFile="$(TargetDir)nl-nl\HlaeCore.msi" OutputFile="$(TargetDir)nl-nl\HlaeCore.mst" ToolPath="$(WixToolPath)" />
+    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="$(TargetDir)en-us\HlaeCore.msi" UpdateFile="$(TargetDir)pl-pl\HlaeCore.msi" OutputFile="$(TargetDir)pl-pl\HlaeCore.mst" ToolPath="$(WixToolPath)" />
+    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="$(TargetDir)en-us\HlaeCore.msi" UpdateFile="$(TargetDir)pt-pt\HlaeCore.msi" OutputFile="$(TargetDir)pt-pt\HlaeCore.mst" ToolPath="$(WixToolPath)" />
+    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="$(TargetDir)en-us\HlaeCore.msi" UpdateFile="$(TargetDir)ru-ru\HlaeCore.msi" OutputFile="$(TargetDir)ru-ru\HlaeCore.mst" ToolPath="$(WixToolPath)" />
+    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="$(TargetDir)en-us\HlaeCore.msi" UpdateFile="$(TargetDir)tr-tr\HlaeCore.msi" OutputFile="$(TargetDir)tr-tr\HlaeCore.mst" ToolPath="$(WixToolPath)" />
+    <Torch PreserveUnmodifiedContent="true" TransformValidationType="language" BaselineFile="$(TargetDir)en-us\HlaeCore.msi" UpdateFile="$(TargetDir)zh-cn\HlaeCore.msi" OutputFile="$(TargetDir)zh-cn\HlaeCore.mst" ToolPath="$(WixToolPath)" />
   </Target>
 </Project>
