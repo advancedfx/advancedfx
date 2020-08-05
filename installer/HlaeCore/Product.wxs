@@ -2,8 +2,8 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <!-- Update this on release: Id, Version -->
 	<Product
-    Id='{DD0DCD36-DA10-4F29-8524-6868F3B2E063}'
-    Version='2.103.0'
+    Id='{0C2ABAEA-9125-4FD1-925E-19AB9896B51F}'
+    Version='2.103.1'
     Name="!(loc.ApplicationName)"
     Language="1033"
     Manufacturer="!(loc.Manufacturer)"
@@ -283,7 +283,7 @@
   <Fragment>   
     <DirectoryRef Id="APPLICATIONFOLDER">   
       <Component Id="_E77FBD5C_A4F1_429D_B750_9C270BD89C18_HLAE.exe">
-        <File Id="_E77FBD5C_A4F1_429D_B750_9C270BD89C18_HLAE.exe" Name="HLAE.exe" Source="$(var.hlae.TargetDir)\HLAE.exe" KeyPath="yes" Checksum="yes">
+        <File Id="_E77FBD5C_A4F1_429D_B750_9C270BD89C18_HLAE.exe" Name="HLAE.exe" Source="..\..\build\Release\bin\HLAE.exe" KeyPath="yes" Checksum="yes">
           <Shortcut Id="HaleStartMenuShortcut" 
                     Name="HLAE"
                     Directory="ApplicationProgramsFolder"

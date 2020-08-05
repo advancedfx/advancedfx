@@ -6,6 +6,17 @@
 
 <release>
 <name>HLAE</name>
+<version>2.103.1</version>
+<time>2020-08-05T19:45Z</time>
+<changes>
+<change type="removed">Removed VERSION file.</change>
+<change type="fixed">Fixed version number / HLAE.exe packaging in installer.</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.103.0</version>
 <time>2020-08-05T05:00Z</time>
 <changes>
