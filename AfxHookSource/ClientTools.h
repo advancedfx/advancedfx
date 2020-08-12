@@ -112,6 +112,16 @@ public:
 		m_RecordInvisible = value;
 	}
 
+	int RecordPlayerCameras_get(void)
+	{
+		return m_RecordPlayerCameras;
+	}
+
+	void RecordPlayerCameras_set(int value)
+	{
+		m_RecordPlayerCameras = value;
+	}
+
 protected:
 	virtual float ScaleFov(int width, int height, float fov) { return fov; }
 
@@ -143,6 +153,7 @@ private:
 	int m_Debug = 0;
 	bool m_RecordCamera = true;
 	bool m_RecordPlayers = true;
+	int m_RecordPlayerCameras = -1;
 	bool m_RecordWeapons = true;
 	bool m_RecordProjectiles = true;
 	bool m_RecordViewModel = false;

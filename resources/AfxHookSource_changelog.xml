@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.88.0</version>
+<time>2020-08-12T07:27Z</time>
+<changes>
+<change type="updated">Updated AGR to version 5: Now supports camera for each player recorded (controlled by mirv_agr recordPlayerCameras) and now records viewmodels of all players when recordViewModel is enabled.</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.87.0</version>
 <time>2020-08-05T05:00Z</time>
 <changes>

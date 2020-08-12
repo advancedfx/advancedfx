@@ -114,7 +114,7 @@ void CClientTools::StartRecording(wchar_t const * fileName)
 	{
 		fputs("afxGameRecord", m_File);
 		fputc('\0', m_File);
-		int version = 4;
+		int version = 5;
 		fwrite(&version, sizeof(version), 1, m_File);
 	}
 	else
@@ -123,7 +123,7 @@ void CClientTools::StartRecording(wchar_t const * fileName)
 	if (!EnableRecordingMode_get() && !SuppotsAutoEnableRecordingMode()) {
 		Tier0_Warning(
 			"WARNING: The recording needs to be enabled with [...] enabled 1 before loading the demo!\n"
-			"(This is required, because this game leaks memory when recording mode is enabled.)\n"
+			"(This is required, because either this game leaks memory when recording mode is enabled or because some features won't work otherwise.)\n"
 			"Enabling the recording (but it might be too late already).\n"
 		);
 		EnableRecordingMode_set(true);
@@ -278,6 +278,24 @@ bool ClientTools_Console_Cfg(IWrpCommandArgs * args)
 			);
 			return true;
 		}
+		else if (0 == _stricmp("recordPlayerCameras", cmd1))
+		{
+			if (3 <= argc)
+			{
+				char const* cmd2 = args->ArgV(2);
+
+				clientTools->RecordPlayerCameras_set(atoi(cmd2));
+				return true;
+			}
+
+			Tier0_Msg(
+				"%s recordPlayerCameras 0|<iEntIndex>|-1 - Disable (0), all (-1, default) or entity index of player camera to record. Needs recordPlayers enabled to work.\n"
+				"Current value: %i.\n"
+				, prefix
+				, clientTools->RecordPlayerCameras_get()
+			);
+			return true;
+		}
 		else if (0 == _stricmp("recordWeapons", cmd1))
 		{
 			if (3 <= argc)
@@ -381,11 +399,13 @@ bool ClientTools_Console_Cfg(IWrpCommandArgs * args)
 	Tier0_Msg(
 		"%s recordCamera [...]\n"
 		"%s recordPlayers [...]\n"
+		"%s recordPlayerCameras [...]\n"
 		"%s recordWeapons [...]\n"
 		"%s recordProjectiles [...]\n"
 		"%s recordViewmodel [...] - (not recommended)\n"
 		"%s recordInvisible [...] - (not recommended)\n"
 		"%s debug [...]\n"
+		, prefix
 		, prefix
 		, prefix
 		, prefix

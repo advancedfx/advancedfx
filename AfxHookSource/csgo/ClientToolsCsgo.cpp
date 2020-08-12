@@ -246,6 +246,19 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 					}
 				}
 
+				if(RecordPlayerCameras_get() != 0 && (RecordPlayerCameras_get() == -1 || be && RecordPlayerCameras_get() == be->entindex()))
+				{
+					struct SOURCESDK::CSGO::CameraRecordingState_t* pCameraRecordingState = (struct SOURCESDK::CSGO::CameraRecordingState_t*)(msg->GetPtr("camera"));
+					if (pCameraRecordingState)
+					{
+						WriteDictionary("camera");
+						Write((bool)pCameraRecordingState->m_bThirdPerson);
+						Write(pCameraRecordingState->m_vecEyePosition);
+						Write(pCameraRecordingState->m_vecEyeAngles);
+						Write((float)ScaleFov(g_Hook_VClient_RenderView.LastWidth, g_Hook_VClient_RenderView.LastHeight, (float)pCameraRecordingState->m_flFOV));
+					}
+				}
+
 				WriteDictionary("/");
 
 				bool viewModel = msg->GetBool("viewmodel");
@@ -292,7 +305,35 @@ void CClientToolsCsgo::OnBeforeFrameRenderStart(void)
 {
 	CClientTools::OnBeforeFrameRenderStart();
 
+	if (GetRecording() && RecordViewModel_get())
+	{
+		int numRecordAbles = m_ClientTools->GetNumRecordables();
+		for (int i = 0; i < numRecordAbles; ++i)
+		{
+			HTOOLHANDLE hEntity = m_ClientTools->GetRecordable(i);
+
+			if (m_ClientTools->ShouldRecord(hEntity))
+			{
+				EntitySearchResult ent = m_ClientTools->GetEntity(hEntity);
+
+				if (m_ClientTools->IsPlayer(ent))
+				{
+					SOURCESDK::C_BasePlayer_csgo* player = reinterpret_cast<SOURCESDK::C_BasePlayer_csgo*>(ent);
+
+					SOURCESDK::Vector eyeOrigin;
+					SOURCESDK::QAngle eyeAngles;
+					float fov;
+					float zNear = 0;
+					float zFar = 1;
+
+					player->CalcView(eyeOrigin, eyeAngles, zNear, zFar, fov);
+					player->CalcViewModelView(eyeOrigin, eyeAngles);
+				}
+			}
+		}
+	}
 }
+
 
 void CClientToolsCsgo::OnAfterFrameRenderEnd(void)
 {
