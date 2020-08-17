@@ -4,7 +4,7 @@
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
   <!-- Update this on release: Version -->
   <Bundle
-    Name="HLAE Setup"
+    Name="HLAE Installer"
     Version="2.104.0"
     Manufacturer="advancedfx.org"
     UpgradeCode="{35C8D990-6C4F-4639-ADF7-D259B06E070B}"
