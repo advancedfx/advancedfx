@@ -93,7 +93,7 @@ void CClientToolsCssV34::OnPostToolMessageCssV34(SOURCESDK::CSSV34::HTOOLHANDLE 
 				|| RecordPlayers_get() && isPlayer
 				|| RecordWeapons_get() && isWeapon
 				|| RecordProjectiles_get() && isProjectile
-				|| RecordViewModel_get() && isViewModel
+				|| RecordViewModels_get() && isViewModel
 				)
 			{
 				SOURCESDK::CSSV34::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::CSSV34::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity"));

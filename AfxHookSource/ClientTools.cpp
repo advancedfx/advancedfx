@@ -336,25 +336,34 @@ bool ClientTools_Console_Cfg(IWrpCommandArgs * args)
 		{
 			if (3 <= argc)
 			{
+				char const* cmd2 = args->ArgV(2);
+
+				clientTools->RecordViewModels_set(0 != atoi(cmd2) ? -1 : 0);
+				return true;
+			}
+		}
+		else if (0 == _stricmp("recordViewModels", cmd1))
+		{
+			if (3 <= argc)
+			{
 				char const * cmd2 = args->ArgV(2);
 
-				clientTools->RecordViewModel_set(0 != atoi(cmd2));
+				clientTools->RecordViewModels_set(atoi(cmd2));
 				return true;
 			}
 
 			Tier0_Msg(
-				"%s recordViewModel 0|1 - Enable (1) / Disable (0) recording of view models.\n"
+				"%s recordViewModels 0|<iPlayerEntIndex>|-1 - Disable (0), all (-1, default) or entity index (CS:GO only) of player of whom record view models.\n"
 				"Current value: %i.\n"
 				, prefix
-				, clientTools->RecordViewModel_get() ? 1 : 0
+				, clientTools->RecordViewModels_get()
 			);
 			Tier0_Warning(
 				"This feature is not fully supported, will only work in CSSV34 and CS:GO at the moment.\n"
 				"It has the following general problems:\n"
 				"- Most import plugins won't know how to handle the viewmodel FOV properly, meaning it will look different from in-game.\n"
-				"In CS:GO it will have the following problems:\n"
+				"In CS:GO it will have the following additional problems:\n"
 				"- You'll need to set cl_custom_material_override 0.\n"
-				"- There will be several trash viewmodels, not much we can do about."
 			);
 			return true;
 		}
@@ -402,7 +411,7 @@ bool ClientTools_Console_Cfg(IWrpCommandArgs * args)
 		"%s recordPlayerCameras [...]\n"
 		"%s recordWeapons [...]\n"
 		"%s recordProjectiles [...]\n"
-		"%s recordViewmodel [...] - (not recommended)\n"
+		"%s recordViewmodels [...]\n"
 		"%s recordInvisible [...] - (not recommended)\n"
 		"%s debug [...]\n"
 		, prefix

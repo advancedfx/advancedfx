@@ -94,7 +94,7 @@ void CClientToolsMom::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 				|| RecordPlayers_get() && isPlayer
 				|| RecordWeapons_get() && isWeapon
 				|| RecordProjectiles_get() && isProjectile
-				|| RecordViewModel_get() && isViewModel
+				|| RecordViewModels_get() && isViewModel
 				)
 			{
 

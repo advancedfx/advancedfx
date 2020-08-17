@@ -118,12 +118,31 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 					)
 				;
 
+			bool isRecordedViewModel = false;
+			if (isViewModel && RecordViewModels_get())
+			{
+				if (-1 == RecordViewModels_get())
+					isRecordedViewModel = true;
+				else
+				{
+					int weaponIdx = m_ClientTools->GetOwningWeaponEntIndex(m_ClientTools->GetEntIndex(ent));
+					HTOOLHANDLE weaponHandle = m_ClientTools->GetToolHandleForEntityByIndex(weaponIdx);
+					if(EntitySearchResult weaponEnt = m_ClientTools->GetEntity(weaponHandle))
+					{
+						if (EntitySearchResult ownerEnt = m_ClientTools->GetOwnerEntity(weaponEnt))
+						{
+							isRecordedViewModel = RecordViewModels_get() == m_ClientTools->GetEntIndex(ownerEnt);
+						}
+					}
+				}
+			}
+
 			if (ce
 				&& (
 					RecordPlayers_get() && isPlayer
 					|| RecordWeapons_get() && isWeapon
 					|| RecordProjectiles_get() && isProjectile
-					|| RecordViewModel_get() && isViewModel
+					|| isRecordedViewModel
 					)
 				)
 			{
@@ -305,7 +324,7 @@ void CClientToolsCsgo::OnBeforeFrameRenderStart(void)
 {
 	CClientTools::OnBeforeFrameRenderStart();
 
-	if (GetRecording() && RecordViewModel_get())
+	if (GetRecording() && RecordViewModels_get())
 	{
 		int numRecordAbles = m_ClientTools->GetNumRecordables();
 		for (int i = 0; i < numRecordAbles; ++i)
@@ -320,14 +339,17 @@ void CClientToolsCsgo::OnBeforeFrameRenderStart(void)
 				{
 					SOURCESDK::C_BasePlayer_csgo* player = reinterpret_cast<SOURCESDK::C_BasePlayer_csgo*>(ent);
 
-					SOURCESDK::Vector eyeOrigin;
-					SOURCESDK::QAngle eyeAngles;
-					float fov;
-					float zNear = 0;
-					float zFar = 1;
+					if (-1 == RecordViewModels_get() || player->entindex() == RecordViewModels_get())
+					{
+						SOURCESDK::Vector eyeOrigin;
+						SOURCESDK::QAngle eyeAngles;
+						float fov;
+						float zNear = 0;
+						float zFar = 1;
 
-					player->CalcView(eyeOrigin, eyeAngles, zNear, zFar, fov);
-					player->CalcViewModelView(eyeOrigin, eyeAngles);
+						player->CalcView(eyeOrigin, eyeAngles, zNear, zFar, fov);
+						player->CalcViewModelView(eyeOrigin, eyeAngles);
+					}
 				}
 			}
 		}
