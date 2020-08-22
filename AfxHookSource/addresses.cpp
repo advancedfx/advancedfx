@@ -79,6 +79,7 @@ AFXADDR_DEF(csgo_RTTI_IGameEvent)
 //AFXADDR_DEF(csgo_client_dynamic_cast);
 //AFXADDR_DEF(csgo_client_RTTI_IClientRenderable);
 AFXADDR_DEF(csgo_GlowCurrentPlayer_JMPS)
+AFXADDR_DEF(csgo_C_CSPlayer_UpdateClientSideAnimation)
 
 void ErrorBox(char const * messageText);
 
@@ -1852,6 +1853,16 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			AFXADDR_SET(csgo_C_BaseEntity_ofs_m_iWorldModelIndex, ofs_m_iWorldModelIndex);
 		}
 		*/
+
+		// csgo_C_CSPlayer_UpdateClientSideAnimation // Checked 2020-08-22.
+		{
+			AFXADDR_SET(csgo_C_CSPlayer_UpdateClientSideAnimation, 0x0);
+			DWORD tmpAddr = FindClassVtable((HMODULE)clientDll, ".?AVC_CSPlayer@@", 0, 0x0);
+			if (tmpAddr) {
+				AFXADDR_SET(csgo_C_CSPlayer_UpdateClientSideAnimation, ((DWORD*)tmpAddr)[223]);
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
 	}
 	else
 	{
@@ -1892,6 +1903,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_GlowCurrentPlayer_JMPS, 0x0);
 		//AFXADDR_SET(csgo_C_BaseEntity_ofs_m_nModelIndex, -1);
 		//AFXADDR_SET(csgo_C_BaseEntity_ofs_m_iWorldModelIndex, -1);
+		AFXADDR_SET(csgo_C_CSPlayer_UpdateClientSideAnimation, 0x0);
 	}
 
 	//AFXADDR_SET(csgo_CPredictionCopy_TransferData_DSZ, 0x0a);

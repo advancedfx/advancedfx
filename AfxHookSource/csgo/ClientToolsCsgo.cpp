@@ -8,6 +8,7 @@
 #include <shared/StringTools.h>
 
 #include <Windows.h>
+#include <deps/release/Detours/src/detours.h>
 
 
 using namespace SOURCESDK::CSGO;
@@ -26,6 +27,30 @@ void Call_CBaseAnimating_GetToolRecordingState(SOURCESDK::C_BaseEntity_csgo * ob
 			call functionPtr
 		}
 	}
+}
+
+typedef void (__fastcall * csgo_C_CSPLayer_UpdateClientSideAnimation_t)(void * This, void * Edx);
+
+csgo_C_CSPLayer_UpdateClientSideAnimation_t csgo_TrueC_CSPLayer_UpdateClientSideAnimation = nullptr;
+
+void __fastcall csgo_MyC_CSPLayer_UpdateClientSideAnimation(void* This, void* Edx)
+{
+	if (CClientToolsCsgo::Instance() && CClientToolsCsgo::Instance()->GetRecording() && CClientToolsCsgo::Instance()->RecordViewModels_get())
+	{
+		// When recording viewmodels we make the C_CSPlayers think that they are the local player (so they will make their viewmodel and attachments) =)
+
+		unsigned char* p_m_IsLocalPlayer = (unsigned char*)This + 0x3624;
+		unsigned char oldValue = *p_m_IsLocalPlayer;
+
+		*p_m_IsLocalPlayer = 1;
+
+		csgo_TrueC_CSPLayer_UpdateClientSideAnimation(This, Edx);
+
+		*p_m_IsLocalPlayer = oldValue;
+		return;
+	}
+
+	csgo_TrueC_CSPLayer_UpdateClientSideAnimation(This, Edx);
 }
 
 CClientToolsCsgo * CClientToolsCsgo::m_Instance = 0;
@@ -111,12 +136,10 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 				className && StringEndsWith(className, "Projectile")
 				;
 
-			bool isViewModel =
-				className && (
-					!strcmp(className, "predicted_viewmodel")
-					|| !strcmp(className, "class C_ViewmodelAttachmentModel")
-					)
-				;
+			bool isPredictedViewmodel = 0 == strcmp(className, "predicted_viewmodel");
+			bool isViewmodelAttachment = 0 == strcmp(className, "class C_ViewmodelAttachmentModel");
+
+			bool isViewModel = className && (isPredictedViewmodel || isViewmodelAttachment);
 
 			bool isRecordedViewModel = false;
 			if (isViewModel && RecordViewModels_get())
@@ -125,7 +148,16 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 					isRecordedViewModel = true;
 				else
 				{
-					int weaponIdx = m_ClientTools->GetOwningWeaponEntIndex(m_ClientTools->GetEntIndex(ent));
+					int weaponIdx;
+
+					if (isViewmodelAttachment && SOURCESDK::g_Entitylist_csgo && be)
+					{
+						CBaseHandle viewModelEntBaseHandle = be->AfxGetMoveParentHandle();
+						weaponIdx = m_ClientTools->GetOwningWeaponEntIndex(viewModelEntBaseHandle.GetEntryIndex());
+					}
+					else
+						weaponIdx = m_ClientTools->GetOwningWeaponEntIndex(m_ClientTools->GetEntIndex(ent));
+
 					HTOOLHANDLE weaponHandle = m_ClientTools->GetToolHandleForEntityByIndex(weaponIdx);
 					if(EntitySearchResult weaponEnt = m_ClientTools->GetEntity(weaponHandle))
 					{
@@ -371,6 +403,32 @@ void CClientToolsCsgo::StartRecording(wchar_t const * fileName)
 	if (GetRecording())
 	{
 		m_ClientTools->EnableRecordingMode(true);
+
+		if (RecordViewModels_get())
+		{
+			if (nullptr == csgo_TrueC_CSPLayer_UpdateClientSideAnimation)
+			{
+				if (AFXADDR_GET(csgo_C_CSPlayer_UpdateClientSideAnimation))
+				{
+					LONG error = NO_ERROR;
+
+					csgo_TrueC_CSPLayer_UpdateClientSideAnimation = (csgo_C_CSPLayer_UpdateClientSideAnimation_t)AFXADDR_GET(csgo_C_CSPlayer_UpdateClientSideAnimation);
+
+					DetourTransactionBegin();
+					DetourUpdateThread(GetCurrentThread());
+					DetourAttach(&(PVOID&)csgo_TrueC_CSPLayer_UpdateClientSideAnimation, csgo_MyC_CSPLayer_UpdateClientSideAnimation);
+					error = DetourTransactionCommit();
+
+					if (NO_ERROR != error)
+					{
+						Tier0_Warning("AFX: Error detouring C_CSPlayer::UpdateClientSideAnimation.\n");
+					}
+				}
+				else {
+					Tier0_Warning("AFX: Missing address for C_CSPlayer::UpdateClientSideAnimation.\n");
+				}
+			}
+		}
 	}
 }
 

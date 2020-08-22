@@ -88,6 +88,7 @@ AFXADDR_DECL(csgo_RTTI_IGameEvent)
 //AFXADDR_DECL(csgo_client_dynamic_cast)
 //AFXADDR_DECL(csgo_client_RTTI_IClientRenderable)
 AFXADDR_DECL(csgo_GlowCurrentPlayer_JMPS)
+AFXADDR_DECL(csgo_C_CSPlayer_UpdateClientSideAnimation)
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);
