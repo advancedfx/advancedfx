@@ -140,6 +140,7 @@ public:
 	IMirvCamCalc * NewCamCalc(char const * name, const char * camFileName, const char * startClientTime);
 	IMirvCamCalc * NewGameCalc(char const * name);
 	IMirvCamCalc * NewCurrentCalc(char const * name);
+	IMirvCamCalc * NewPlayerCalc(char const* name, IMirvHandleCalc* handleCalc);
 	IMirvCamCalc * NewSmoothCalc(char const * name, IMirvCamCalc * parent, IMirvHandleCalc * trackHandle);
 	IMirvCamCalc * NewVecAngFovCalc(char const * name, IMirvVecAngCalc * vecAng, IMirvFovCalc * fov);
 

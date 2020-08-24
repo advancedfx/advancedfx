@@ -3073,6 +3073,60 @@ private:
 
 };
 
+
+class CMirvCamPlayerCalc : public CMirvCamCalc
+{
+public:
+	CMirvCamPlayerCalc(char const* name, IMirvHandleCalc * handleCalc)
+		: CMirvCamCalc(name)
+		, m_HandleCalc(handleCalc)
+	{
+		m_HandleCalc->AddRef();
+	}
+
+	virtual void Console_PrintBegin(void)
+	{
+		CMirvCamCalc::Console_PrintBegin();
+
+		Tier0_Msg(", fn: \"player\"");
+	}
+
+	virtual void Console_Edit(IWrpCommandArgs* args)
+	{
+		CMirvCamCalc::Console_Edit(args);
+	}
+
+	virtual bool CalcCam(SOURCESDK::Vector& outVector, SOURCESDK::QAngle& outAngles, float& outFov)
+	{
+		SOURCESDK::CSGO::CBaseHandle handle;
+
+		if (m_HandleCalc->CalcHandle(handle) && handle.IsValid())
+		{
+			SOURCESDK::IClientEntity_csgo* clientEntity = SOURCESDK::g_Entitylist_csgo->GetClientEntityFromHandle(handle);
+			SOURCESDK::C_BaseEntity_csgo* baseEntity = clientEntity ? clientEntity->GetBaseEntity() : nullptr;
+			if (baseEntity && baseEntity->IsPlayer())
+			{
+				float dummy1 = 0;
+				float dummy2 = 1;
+				SOURCESDK::C_BasePlayer_csgo* player = (SOURCESDK::C_BasePlayer_csgo*)baseEntity;
+				player->CalcView(outVector, outAngles, dummy1, dummy2, outFov);
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+protected:
+	virtual ~CMirvCamPlayerCalc()
+	{
+		m_HandleCalc->Release();
+	}
+
+private:
+	IMirvHandleCalc * m_HandleCalc;
+};
+
 class CMirvVecAngCamCalc : public CMirvVecAngCalc
 {
 public:
@@ -4506,6 +4560,23 @@ IMirvCamCalc * CMirvCamCalcs::NewCurrentCalc(char const * name)
 	return result;
 }
 
+IMirvCamCalc* CMirvCamCalcs::NewPlayerCalc(char const* name, IMirvHandleCalc* handleCalc)
+{
+	if (name && !Console_CheckName(name))
+		return 0;
+
+	IMirvCamCalc* result = new CMirvCamPlayerCalc(name, handleCalc);
+
+	if (name)
+	{
+		result->AddRef();
+
+		m_Calcs.push_back(result);
+	}
+
+	return result;
+}
+
 IMirvCamCalc * CMirvCamCalcs::NewSmoothCalc(char const * name, IMirvCamCalc * parent, IMirvHandleCalc * trackHandle)
 {
 	if (name && !Console_CheckName(name))
@@ -5750,14 +5821,26 @@ void mirv_calcs_cam(IWrpCommandArgs * args)
 
 					return;
 				}
+				else if (0 == _stricmp("player", arg2) && 5 <= argc)
+				{
+					char const * handleCalcName = args->ArgV(4);
+
+					if (IMirvHandleCalc * handleCalc = g_MirvHandleCalcs.GetByName(handleCalcName))
+					{
+						g_MirvCamCalcs.NewPlayerCalc(args->ArgV(3), handleCalc);
+					}
+					else Tier0_Warning("Error: No handle calc with name \"%s\" found.\n", handleCalcName);
+					
+					return;
+				}
 				else if (0 == _stricmp("smooth", arg2) && 6 <= argc)
 				{
-					char const * parentCalcName = args->ArgV(4);
-					char const * trackHandleCalcName = args->ArgV(5);
+					char const* parentCalcName = args->ArgV(4);
+					char const* trackHandleCalcName = args->ArgV(5);
 
-					if (IMirvCamCalc * parentCalc = g_MirvCamCalcs.GetByName(parentCalcName))
+					if (IMirvCamCalc* parentCalc = g_MirvCamCalcs.GetByName(parentCalcName))
 					{
-						if (IMirvHandleCalc * trackHandleCalc = g_MirvHandleCalcs.GetByName(trackHandleCalcName))
+						if (IMirvHandleCalc* trackHandleCalc = g_MirvHandleCalcs.GetByName(trackHandleCalcName))
 						{
 							g_MirvCamCalcs.NewSmoothCalc(args->ArgV(3), parentCalc, trackHandleCalc);
 						}
@@ -5790,8 +5873,10 @@ void mirv_calcs_cam(IWrpCommandArgs * args)
 				"%s add cam <sName> <sfilePath> <fStartTime>|current - Adds a mirv_camio file as calc.\n"
 				"%s add game <sName> - Current game camera.\n"
 				"%s add current <sName> - Current camera (depends on mirv_cam order and overrides).\n"
+				"%s add player <sName> <sPlayerHandleCalcName> - Camera of player.\n"
 				"%s add smooth <sName> <sParentCamCalcName> <sTrackHandleCalcName>- Smooth calc.\n"
 				"%s add vecAngFov <sName> <sVecAngCalcName> <sFovCalcName>- Combine a vecAng and a fov calc into a cam calc.\n"
+				, arg0
 				, arg0
 				, arg0
 				, arg0
