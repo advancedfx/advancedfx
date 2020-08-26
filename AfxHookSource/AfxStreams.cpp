@@ -9618,8 +9618,6 @@ CAfxOutVideoStream * CAfxClassicRecordingSettings::CreateOutVideoStream(const CA
 
 void CAfxFfmpegRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 {
-	Tier0_Msg("%s (type ffmpeg) recording setting options:\n", m_Name.c_str());
-
 	int argC = args->ArgC();
 	const char * arg0 = args->ArgV(0);
 
@@ -9651,6 +9649,7 @@ void CAfxFfmpegRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 		}
 	}
 
+	Tier0_Msg("%s (type ffmpeg) recording setting options:\n", m_Name.c_str());
 	Tier0_Msg(
 		"%s options [...] - FFMPEG options.\n"
 		, arg0
@@ -9700,8 +9699,6 @@ CAfxOutVideoStream * CAfxFfmpegRecordingSettings::CreateOutVideoStream(const CAf
 
 void CAfxDefaultRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 {
-	Tier0_Msg("%s (type default) recording setting options:\n", m_Name.c_str());
-
 	int argC = args->ArgC();
 	const char * arg0 = args->ArgV(0);
 
@@ -9743,6 +9740,7 @@ void CAfxDefaultRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 		}
 	}
 
+	Tier0_Msg("%s (type default) recording setting options:\n", m_Name.c_str());
 	Tier0_Msg(
 		"%s settings [...] - Set default settings.\n"
 		, arg0
@@ -9754,8 +9752,6 @@ void CAfxDefaultRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 
 void CAfxMultiRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 {
-	Tier0_Msg("%s (type multi) recording setting options:\n", m_Name.c_str());
-
 	int argC = args->ArgC();
 	const char * arg0 = args->ArgV(0);
 
@@ -9838,6 +9834,7 @@ void CAfxMultiRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 		}
 	}
 
+	Tier0_Msg("%s (type multi) recording setting options:\n", m_Name.c_str());
 	Tier0_Msg(
 		"%s add <settingsName> - Add settings.\n"
 		"%s remove <settingsName> - Remove settings.\n"
@@ -9865,8 +9862,6 @@ CAfxOutVideoStream * CAfxSamplingRecordingSettings::CreateOutVideoStream(const C
 
 void CAfxSamplingRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 {
-	Tier0_Msg("%s (type sampling) recording setting options:\n", m_Name.c_str());
-
 	int argC = args->ArgC();
 	const char * arg0 = args->ArgV(0);
 
@@ -10021,6 +10016,7 @@ void CAfxSamplingRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 		}
 	}
 
+	Tier0_Msg("%s (type sampling) recording setting options:\n", m_Name.c_str());
 	Tier0_Msg(
 		"%s settings [...] - Output settings.\n"
 		"%s fps [...] - Output fps.\n"
