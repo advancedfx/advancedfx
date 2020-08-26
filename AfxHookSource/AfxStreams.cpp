@@ -10021,7 +10021,7 @@ void CAfxSamplingRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 		"%s settings [...] - Output settings.\n"
 		"%s fps [...] - Output fps.\n"
 		"%s method [...] - Sampling method (default: trapezoid).\n"
-		"%s exposure [...] - Frame exposure (0.0 (0° shutter angle) - 1.0 (360° shutter angle), default: 1.0).\n"
+		"%s exposure [...] - Frame exposure (0.0 (0\xc2\xb0 shutter angle) - 1.0 (360\xc2\xb0 shutter angle), default: 1.0).\n"
 		"%s strength [...] - Frame strength (0.0 (max cross-frame blur) - 1.0 (no cross-frame blur), default: 1.0).\n"
 		, arg0
 		, arg0
