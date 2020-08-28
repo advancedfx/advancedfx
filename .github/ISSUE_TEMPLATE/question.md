@@ -7,4 +7,4 @@ assignees: ''
 
 ---
 
-(Please search exiting **open and closed** issues first to verify this is a new question.)
+(Please search existing **open and closed** issues first to verify this is a new question.)
