@@ -34,12 +34,37 @@
 #include "../gui/Gui.h"
 #endif // AFX_GUI
 
+#include <shared/AfxConsole.h>
+
 #include <Windows.h>
 #include <deps/release/Detours/src/detours.h>
 
 struct cl_enginefuncs_s * pEngfuncs		= (struct cl_enginefuncs_s *)0;
 struct engine_studio_api_s * pEngStudio	= (struct engine_studio_api_s *)0;
 struct playermove_s * ppmove			= (struct playermove_s *)0;
+
+void Mirv_Msg(const char* format, ...)
+{
+	char buffer[1024];
+	va_list args;
+	va_start(args, format);
+	vsprintf_s(buffer, format, args);
+	pEngfuncs->Con_Printf("%s", buffer);
+	va_end(args);
+}
+
+void Mirv_DevMsg(int level, const char* format, ...)
+{
+	if (level <= pEngfuncs->pfnGetCvarFloat("developer"))
+	{
+		char buffer[1024];
+		va_list args;
+		va_start(args, format);
+		vsprintf_s(buffer, format, args);
+		pEngfuncs->Con_Printf("%s", buffer);
+		va_end(args);
+	}
+}
 
 FARPROC WINAPI NewSdlGetProcAddress(HMODULE hModule, LPCSTR lpProcName);
 CAfxImportFuncHook<FARPROC(WINAPI*)(HMODULE, LPCSTR)> g_Import_sdl2_KERNEL32_GetProcAddress("GetProcAddress", NewSdlGetProcAddress);
@@ -287,6 +312,14 @@ void HookHw(HMODULE hHw)
 	::pEngfuncs = (cl_enginefuncs_s *)AFXADDR_GET(pEngfuncs);
 	::ppmove = (struct playermove_s *)AFXADDR_GET(ppmove);
 	::pEngStudio = (struct engine_studio_api_s *)AFXADDR_GET(pstudio);
+
+	if (::pEngfuncs)
+	{
+		advancedfx::Message = Mirv_Msg;
+		advancedfx::Warning = Mirv_Msg;
+		advancedfx::DevMessage = Mirv_DevMsg;
+		advancedfx::DevWarning = Mirv_DevMsg;
+}
 
 #ifdef AFX_GUI
 	g_Import_hw_sdl2.Append(CAfxImportDllHooks{

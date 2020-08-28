@@ -83,7 +83,7 @@ bool SuggestTakePath(wchar_t const * takePath, int takeDigits, std::wstring & ou
 }
 
 
-bool CreatePath(wchar_t const * path, std::wstring & outPath)
+bool CreatePath(wchar_t const * path, std::wstring & outPath, bool noErrorIfExits)
 {
 	bool bOk;
 	LPWSTR buf = NULL;
@@ -110,7 +110,7 @@ bool CreatePath(wchar_t const * path, std::wstring & outPath)
 				numstacked++;
 			}
 
-			bCreated = 0 != CreateDirectoryW(buf, NULL);
+			bCreated = CreateDirectoryW(buf, NULL) || noErrorIfExits && GetLastError() == ERROR_ALREADY_EXISTS;
 		} while(!bCreated && 0 != (findPos = wcsrchr(buf, '\\')));
 
 		// try to walk down again until the last directory is created:

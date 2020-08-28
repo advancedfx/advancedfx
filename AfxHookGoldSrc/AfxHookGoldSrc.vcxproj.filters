@@ -312,6 +312,9 @@
     <ClCompile Include="..\shared\AfxMath.cpp">
       <Filter>shared</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared\AfxOutStreams.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="aiming.h">
@@ -528,6 +531,12 @@
       <Filter>shared</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\AfxRefCounted.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\AfxImageBuffer.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\AfxOutStreams.h">
       <Filter>shared</Filter>
     </ClInclude>
   </ItemGroup>

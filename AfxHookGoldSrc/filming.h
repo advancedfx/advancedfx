@@ -13,6 +13,7 @@
 #include "supportrender.h"
 
 #include <shared/CamPath.h>
+#include <shared/AfxOutStreams.h>
 
 void LinearizeFloatDepthBuffer(GLfloat *pBuffer, unsigned int count, GLdouble zNear, GLdouble zFar);
 void InverseFloatDepthBuffer(GLfloat *pBuffer, unsigned int count, GLdouble zNear, GLdouble zFar);
@@ -43,7 +44,8 @@ public:
 		FILMING_BUFFER buffer,
 		double samplingFrameDuration,
 		bool TASMode,
-		int x, int y, int width, int height
+		int x, int y, int width, int height,
+		const wchar_t * ffMpegOptions = nullptr
 	);
 	~FilmingStream();
 
@@ -72,6 +74,8 @@ private:
 	bool m_TASMode;
 	CMdt_Media_RAWGLPIC m_PreviousFrame;
 	double m_NextFrameIsAt;
+	advancedfx::COutFFMPEGVideoStream* m_FfmpegOutStream = nullptr;
+	std::wstring m_FfmpegOptions;
 
 	void WriteFrame(CMdt_Media_RAWGLPIC& frame, double time);
 

@@ -66,25 +66,25 @@ private:
 		if (Pitch == 0)
 		{
 			Pitch = Width;
-		}
 
-		switch (Format)
-		{
-		case ImageFormat::BGR:
-			Pitch *= 3 * sizeof(char);
-			break;
-		case ImageFormat::BGRA:
-			Pitch *= 4 * sizeof(char);
-			break;
-		case ImageFormat::A:
-			Pitch *= 1 * sizeof(char);
-			break;
-		case ImageFormat::ZFloat:
-			Pitch *= 1 * sizeof(float);
-			break;
-		default:
-			Pitch = 0;
-			break;
+			switch (Format)
+			{
+			case ImageFormat::BGR:
+				Pitch *= 3 * sizeof(char);
+				break;
+			case ImageFormat::BGRA:
+				Pitch *= 4 * sizeof(char);
+				break;
+			case ImageFormat::A:
+				Pitch *= 1 * sizeof(char);
+				break;
+			case ImageFormat::ZFloat:
+				Pitch *= 1 * sizeof(float);
+				break;
+			default:
+				Pitch = 0;
+				break;
+			}
 		}
 
 		Bytes = Height * Pitch;

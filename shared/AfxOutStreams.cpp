@@ -57,7 +57,7 @@ bool COutImageStream::CreateCapturePath(const char* fileExtension, std::wstring&
 	{
 		m_TriedCreatePath = true;
 
-		bool dirCreated = CreatePath(m_Path.c_str(), m_Path);
+		bool dirCreated = CreatePath(m_Path.c_str(), m_Path, true);
 		if (dirCreated)
 		{
 			m_SucceededCreatePath = true;
@@ -181,11 +181,15 @@ COutFFMPEGVideoStream::COutFFMPEGVideoStream(const CImageFormat& imageFormat, co
 {
 	std::wstring myPath(path);
 
-	if (!m_TriedCreatePath)
+	if (frameRate < 1)
+	{
+		advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::COutFFMPEGVideoStream: FPS %f < 1.\n", frameRate);
+	}
+	else if (!m_TriedCreatePath)
 	{
 		m_TriedCreatePath = true;
 
-		bool dirCreated = CreatePath(myPath.c_str(), myPath);
+		bool dirCreated = CreatePath(myPath.c_str(), myPath, true);
 		if (dirCreated)
 		{
 			m_SucceededCreatePath = true;

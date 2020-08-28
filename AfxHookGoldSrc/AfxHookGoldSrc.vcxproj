@@ -224,6 +224,7 @@
     <ClCompile Include="..\shared\AfxConsole.cpp" />
     <ClCompile Include="..\shared\AfxDetours.cpp" />
     <ClCompile Include="..\shared\AfxMath.cpp" />
+    <ClCompile Include="..\shared\AfxOutStreams.cpp" />
     <ClCompile Include="..\shared\binutils.cpp" />
     <ClCompile Include="..\shared\CamPath.cpp" />
     <ClCompile Include="..\deps\release\Detours\src\detours.cpp">
@@ -352,7 +353,9 @@
     <ClInclude Include="..\deps\release\rapidxml\rapidxml_utils.hpp" />
     <ClInclude Include="..\shared\AfxConsole.h" />
     <ClInclude Include="..\shared\AfxDetours.h" />
+    <ClInclude Include="..\shared\AfxImageBuffer.h" />
     <ClInclude Include="..\shared\AfxMath.h" />
+    <ClInclude Include="..\shared\AfxOutStreams.h" />
     <ClInclude Include="..\shared\AfxRefCounted.h" />
     <ClInclude Include="..\shared\binutils.h" />
     <ClInclude Include="..\shared\CamPath.h" />

@@ -108,13 +108,35 @@ Filming g_Filming;
 FilmingStream * g_Filming_Stream[13];
 
 enum FilmingStreamSlot {
-	FS_all, FS_all_right,
-	FS_world, FS_world_right,
-	FS_entity, 	FS_entity_right,
-	FS_depthall, FS_depthall_right,
-	FS_depthworld, FS_depthworld_right,
-	FS_hudcolor, FS_hudalpha,
-	FS_debug
+	FS_all = 0, FS_all_right = 1,
+	FS_world = 2, FS_world_right = 3,
+	FS_entity = 4, 	FS_entity_right = 5,
+	FS_depthall = 6, FS_depthall_right = 7,
+	FS_depthworld = 8, FS_depthworld_right = 9,
+	FS_hudcolor = 10, FS_hudalpha = 11,
+	FS_debug = 12
+};
+
+const wchar_t* g_DefaultFfmpegOptionsColor = L"-c:v libx264 -pix_fmt yuv420p -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}";
+
+std::wstring g_FilmingStream_FfmpegOptions[13] = {
+	g_DefaultFfmpegOptionsColor, g_DefaultFfmpegOptionsColor,
+	g_DefaultFfmpegOptionsColor, g_DefaultFfmpegOptionsColor,
+	g_DefaultFfmpegOptionsColor, g_DefaultFfmpegOptionsColor,
+	g_DefaultFfmpegOptionsColor, g_DefaultFfmpegOptionsColor,
+	g_DefaultFfmpegOptionsColor, g_DefaultFfmpegOptionsColor,
+	g_DefaultFfmpegOptionsColor, g_DefaultFfmpegOptionsColor,
+	g_DefaultFfmpegOptionsColor
+};
+
+bool g_FilmingStream_FfmpegEnable[13] = {
+	false, false,
+	false, false,
+	false, false,
+	false, false,
+	false, false,
+	false, false,
+	false
 };
 
 // from HL1SDK/multiplayer/common/mathlib.h:
@@ -842,6 +864,7 @@ void Filming::Start()
 				samplingFrameDuration,
 				m_TASMode,
 				x, y, width, height
+				, g_FilmingStream_FfmpegEnable[FS_all] ? g_FilmingStream_FfmpegOptions[FS_all].c_str() : nullptr
 			);
 
 			if(m_EnableStereoMode)
@@ -852,6 +875,7 @@ void Filming::Start()
 					samplingFrameDuration,
 					m_TASMode,
 					x, y, width, height
+					, g_FilmingStream_FfmpegEnable[FS_all_right] ? g_FilmingStream_FfmpegOptions[FS_all_right].c_str() : nullptr
 				);
 			}
 		}
@@ -864,6 +888,7 @@ void Filming::Start()
 				samplingFrameDuration,
 				m_TASMode,
 				x, y, width, height
+				, g_FilmingStream_FfmpegEnable[FS_world] ? g_FilmingStream_FfmpegOptions[FS_world].c_str() : nullptr
 			);
 
 			if(m_EnableStereoMode)
@@ -874,6 +899,7 @@ void Filming::Start()
 					samplingFrameDuration,
 					m_TASMode,
 					x, y, width, height
+					, g_FilmingStream_FfmpegEnable[FS_world_right] ? g_FilmingStream_FfmpegOptions[FS_world_right].c_str() : nullptr
 				);
 			}
 		}
@@ -886,6 +912,7 @@ void Filming::Start()
 				samplingFrameDuration,
 				m_TASMode,
 				x, y, width, height
+				, g_FilmingStream_FfmpegEnable[FS_entity] ? g_FilmingStream_FfmpegOptions[FS_entity].c_str() : nullptr
 			);
 
 			if(m_EnableStereoMode)
@@ -896,6 +923,7 @@ void Filming::Start()
 					samplingFrameDuration,
 					m_TASMode,
 					x, y, width, height
+					, g_FilmingStream_FfmpegEnable[FS_entity_right] ? g_FilmingStream_FfmpegOptions[FS_entity_right].c_str() : nullptr
 				);
 			}
 		}
@@ -908,6 +936,7 @@ void Filming::Start()
 				0.0, // Sampling not supported // samplingFrameDuration,
 				m_TASMode,
 				x, y, width, height
+				, g_FilmingStream_FfmpegEnable[FS_hudcolor] ? g_FilmingStream_FfmpegOptions[FS_hudcolor].c_str() : nullptr
 			);
 		}
 
@@ -919,6 +948,7 @@ void Filming::Start()
 				0.0, // Sampling not supported // samplingFrameDuration,
 				m_TASMode,
 				x, y, width, height
+				, g_FilmingStream_FfmpegEnable[FS_hudalpha] ? g_FilmingStream_FfmpegOptions[FS_hudalpha].c_str() : nullptr
 			);
 		}
 
@@ -930,6 +960,7 @@ void Filming::Start()
 				samplingFrameDuration,
 				m_TASMode,
 				x, y, width, height
+				, g_FilmingStream_FfmpegEnable[FS_depthall] ? g_FilmingStream_FfmpegOptions[FS_depthall].c_str() : nullptr
 			);
 
 			if(m_EnableStereoMode)
@@ -940,6 +971,7 @@ void Filming::Start()
 					samplingFrameDuration,
 					m_TASMode,
 					x, y, width, height
+					, g_FilmingStream_FfmpegEnable[FS_depthall_right] ? g_FilmingStream_FfmpegOptions[FS_depthall_right].c_str() : nullptr
 				);
 			}
 		}
@@ -952,6 +984,7 @@ void Filming::Start()
 				samplingFrameDuration,
 				m_TASMode,
 				x, y, width, height
+				, g_FilmingStream_FfmpegEnable[FS_depthworld] ? g_FilmingStream_FfmpegOptions[FS_depthworld].c_str() : nullptr
 			);
 
 			if(m_EnableStereoMode)
@@ -962,6 +995,7 @@ void Filming::Start()
 					samplingFrameDuration,
 					m_TASMode,
 					x, y, width, height
+					, g_FilmingStream_FfmpegEnable[FS_depthworld_right] ? g_FilmingStream_FfmpegOptions[FS_depthworld_right].c_str() : nullptr
 				);
 			}
 		}
@@ -974,6 +1008,7 @@ void Filming::Start()
 				samplingFrameDuration,
 				m_TASMode,
 				x, y, width, height
+				, g_FilmingStream_FfmpegEnable[FS_debug] ? g_FilmingStream_FfmpegOptions[FS_debug].c_str() : nullptr
 			);
 		}
 	}
@@ -1795,9 +1830,11 @@ FilmingStream::FilmingStream(
 	FILMING_BUFFER buffer,
 	double samplingFrameDuration,
 	bool TASMode,
-	int x, int y, int width, int height
-)
+	int x, int y, int width, int height,
+	const wchar_t * ffMpegOptions)
 {
+	if (ffMpegOptions) m_FfmpegOptions = ffMpegOptions;
+
 	size_t nameBufferLength = wcslen(name) +1;
 
 	m_Bmp = 0.0f != movie_bmp->value;
@@ -1942,6 +1979,7 @@ FilmingStream::FilmingStream(
 FilmingStream::~FilmingStream()
 {
 	if(m_Sampler) delete m_Sampler;
+	if (m_FfmpegOutStream) m_FfmpegOutStream->Release();
 }
 
 void FilmingStream::Capture(double time, CMdt_Media_RAWGLPIC * usePic, float spsHint)
@@ -2095,13 +2133,55 @@ void FilmingStream::Print(unsigned char const * data)
 
 	bool bColor = m_Buffer == FB_COLOR;
 	
-	std::wostringstream os;
-	os << m_Path << L"\\" << setfill(L'0') << setw(5) << m_FrameCount << setw(0) << (m_Bmp ? L".bmp" : L".tga");
-	
-	if( m_Bmp )
-		WriteRawBitmap(data, os.str().c_str(), m_Width, m_Height, m_BytesPerPixel<<3, m_Pitch); // align is still 4 byte probably
+	if (!m_FfmpegOptions.empty())
+	{
+		advancedfx::ImageFormat format = advancedfx::ImageFormat::Unkown;
+
+		switch (m_BytesPerPixel)
+		{
+		case 1:
+			format = advancedfx::ImageFormat::A;
+			break;
+		case 3:
+			format = advancedfx::ImageFormat::BGR;
+			break;
+		case 4:
+			format = advancedfx::ImageFormat::BGRA;
+			break;
+		}
+
+		advancedfx::CImageFormat imageFormat(
+			format, m_Width, m_Height, m_Pitch);
+
+		if (nullptr == m_FfmpegOutStream)
+		{
+			m_FfmpegOutStream = new advancedfx::COutFFMPEGVideoStream(imageFormat, m_Path, m_FfmpegOptions, movie_fps->value);
+			m_FfmpegOutStream->AddRef();
+		}
+		
+		advancedfx::CImageBuffer buffer;
+		buffer.Format = imageFormat;
+		buffer.Buffer = const_cast<unsigned char *>(data); //TODO: not nice this cast.
+
+		if (!m_FfmpegOutStream->SupplyVideoData(buffer))
+		{
+			std::string path("n/a");
+			WideStringToUTF8String(m_Path.c_str(), path);
+			pEngfuncs->Con_Printf("AFXERROR: Failed writing image to stream for \"%s\".\n", path.c_str());
+		}
+
+		buffer.Buffer = nullptr;
+	}	
 	else
-		WriteRawTarga(data, os.str().c_str(), m_Width, m_Height, m_BytesPerPixel<<3, !bColor, m_Pitch);
+	{
+		std::wostringstream os;
+		os << m_Path << L"\\" << setfill(L'0') << setw(5) << m_FrameCount << setw(0) << (m_Bmp ? L".bmp" : L".tga");
+		
+		if (m_Bmp)
+			WriteRawBitmap(data, os.str().c_str(), m_Width, m_Height, m_BytesPerPixel << 3, m_Pitch); // align is still 4 byte probably
+		else
+			WriteRawTarga(data, os.str().c_str(), m_Width, m_Height, m_BytesPerPixel << 3, !bColor, m_Pitch);
+	}
 
 	m_FrameCount++;
 }
@@ -2361,5 +2441,180 @@ REGISTER_CMD_FUNC(fov)
 		"Usage:\n"
 		PREFIX "fov f - Override fov with given floating point value (f).\n"
 		PREFIX "fov default - Revert to the game's default behaviour.\n"
+	);
+}
+
+REGISTER_CMD_FUNC(movie_ffmpeg)
+{
+	int argC = pEngfuncs->Cmd_Argc();
+	const char* arg0 = pEngfuncs->Cmd_Argv(0);
+
+	if (3 <= argC)
+	{
+		std::list<int> selectedStreams;
+		const char* arg1 = pEngfuncs->Cmd_Argv(1);
+		const char* arg2 = pEngfuncs->Cmd_Argv(2);
+
+		if (0 == _stricmp("all", arg1))
+		{
+			selectedStreams.push_back(FS_all);
+			selectedStreams.push_back(FS_all_right);
+			selectedStreams.push_back(FS_world);
+			selectedStreams.push_back(FS_world_right);
+			selectedStreams.push_back(FS_entity);
+			selectedStreams.push_back(FS_entity_right);
+			selectedStreams.push_back(FS_depthall);
+			selectedStreams.push_back(FS_depthall_right);
+			selectedStreams.push_back(FS_depthworld);
+			selectedStreams.push_back(FS_depthworld_right);
+			selectedStreams.push_back(FS_hudcolor);
+			selectedStreams.push_back(FS_hudalpha);
+			selectedStreams.push_back(FS_debug);
+		}
+		else if (0 == _stricmp("allMain", arg1))
+		{
+			selectedStreams.push_back(FS_all);
+			selectedStreams.push_back(FS_all_right);
+		}
+		else if (0 == _stricmp("allWorld", arg1))
+		{
+			selectedStreams.push_back(FS_world);
+			selectedStreams.push_back(FS_world_right);
+		}
+		else if (0 == _stricmp("allEntity", arg1))
+		{
+			selectedStreams.push_back(FS_entity);
+			selectedStreams.push_back(FS_entity_right);
+		}
+		else if (0 == _stricmp("allDepth", arg1))
+		{
+			selectedStreams.push_back(FS_depthall);
+			selectedStreams.push_back(FS_depthall_right);
+			selectedStreams.push_back(FS_depthworld);
+			selectedStreams.push_back(FS_depthworld_right);
+		}
+		else if (0 == _stricmp("main", arg1))
+		{
+			selectedStreams.push_back(FS_all);
+		}
+		else if (0 == _stricmp("mainRight", arg1))
+		{
+			selectedStreams.push_back(FS_all_right);
+		}
+		else if (0 == _stricmp("world", arg1))
+		{
+			selectedStreams.push_back(FS_world);
+		}
+		else if (0 == _stricmp("worldRight", arg1))
+		{
+			selectedStreams.push_back(FS_world_right);
+		}
+		else if (0 == _stricmp("entity", arg1))
+		{
+			selectedStreams.push_back(FS_entity);
+		}
+		else if (0 == _stricmp("entityRight", arg1))
+		{
+			selectedStreams.push_back(FS_entity_right);
+		}
+		else if (0 == _stricmp("depthMain", arg1))
+		{
+			selectedStreams.push_back(FS_depthall);
+		}
+		else if (0 == _stricmp("depthMainRight", arg1))
+		{
+			selectedStreams.push_back(FS_depthall_right);
+		}
+		else if (0 == _stricmp("depthWorld", arg1))
+		{
+			selectedStreams.push_back(FS_depthworld);
+		}
+		else if (0 == _stricmp("depthWorldRight", arg1))
+		{
+			selectedStreams.push_back(FS_depthworld_right);
+		}
+		else if (0 == _stricmp("hudColor", arg1))
+		{
+			selectedStreams.push_back(FS_hudcolor);
+		}
+		else if (0 == _stricmp("hudAlpha", arg1))
+		{
+			selectedStreams.push_back(FS_hudalpha);
+		}
+		else if (0 == _stricmp("debug", arg1))
+		{
+			selectedStreams.push_back(FS_debug);
+		}
+
+		if (!selectedStreams.empty())
+		{
+			if (0 == _stricmp("enabled", arg2))
+			{
+				if (4 == argC)
+				{
+					bool enable = 0 != atoi(pEngfuncs->Cmd_Argv(3));
+
+					for (std::list<int>::iterator it = selectedStreams.begin(); it != selectedStreams.end(); ++it)
+					{
+						g_FilmingStream_FfmpegEnable[*it] = enable;
+					}
+					return;
+				}
+
+				if (1 == selectedStreams.size())
+				{
+					pEngfuncs->Con_Printf("%s %s enabled = %i\n", arg0, arg1, g_Filming_Stream[selectedStreams.front()] ? 1 : 0);
+					return;
+				}
+			}
+			else if (0 == _stricmp("options", arg2))
+			{
+				if (4 == argC)
+				{
+					std::wstring wOptions;
+					if (!UTF8StringToWideString(pEngfuncs->Cmd_Argv(3), wOptions))
+					{
+						pEngfuncs->Con_Printf("Error, can not convert \"%s\" from UTF8 to wide string.\n", pEngfuncs->Cmd_Argv(3));
+						return;
+					}
+
+					for (std::list<int>::iterator it = selectedStreams.begin(); it != selectedStreams.end(); ++it)
+					{
+						g_FilmingStream_FfmpegOptions[*it] = wOptions;
+					}
+					return;
+				}
+
+				if (1 == selectedStreams.size())
+				{
+					std::string options;
+					if(!WideStringToUTF8String(g_FilmingStream_FfmpegOptions[selectedStreams.front()].c_str(), options))
+					{
+						pEngfuncs->Con_Printf("Error, can not convert wide string to UTF8.\n", pEngfuncs->Cmd_Argv(3));
+						return;
+					}
+
+					pEngfuncs->Con_Printf("%s %s options = \"%s\"\n", arg0, arg1, options.c_str());
+					return;
+				}
+			}
+		}
+	}
+
+	pEngfuncs->Con_Printf(
+		"%s all|allColor|allMain|allWorld|allEntity|allDepth enabled 0|1 - Disables/enables FFMPEG for the given group of streams.\n"
+		, arg0
+	);
+	pEngfuncs->Con_Printf(
+		"%s main|mainRight|world|worldRight|entity|entityRight|depthMain|depthMainRight|depthWorld|depthWorldRight|hudColor|hudAlpha|debug enabled [0|1] - Gets or sets current enabled state on the given stream.\n"
+		, arg0
+	);
+	pEngfuncs->Con_Printf(
+		"%s all|allColor|allMain|allWorld|allEntity|allDepth options <sOptions> - Sets <sOptions> for the given group of streams.\n"
+		, arg0
+	);
+	pEngfuncs->Con_Printf(
+		"%s main|mainRight|world|worldRight|entity|entityRight|depthMain|depthMainRight|depthWorld|depthWorldRight|hudColor|hudAlpha|debug options [<sOptions>] - Gets or sets options on the given stream.\n"
+		, arg0
 	);
 }

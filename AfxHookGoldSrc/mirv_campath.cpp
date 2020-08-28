@@ -78,7 +78,7 @@ void MirvCampath_Msg(const char* format, ...)
 	va_list args;
 	va_start(args, format);
 	vsprintf_s(buffer, format, args);
-	pEngfuncs->Con_Printf(buffer);
+	pEngfuncs->Con_Printf("%s", buffer);
 	va_end(args);
 }
 
