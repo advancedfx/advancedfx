@@ -353,6 +353,7 @@
     <ClInclude Include="..\shared\AfxConsole.h" />
     <ClInclude Include="..\shared\AfxDetours.h" />
     <ClInclude Include="..\shared\AfxMath.h" />
+    <ClInclude Include="..\shared\AfxRefCounted.h" />
     <ClInclude Include="..\shared\binutils.h" />
     <ClInclude Include="..\shared\CamPath.h" />
     <ClInclude Include="..\deps\release\Detours\src\detours.h" />

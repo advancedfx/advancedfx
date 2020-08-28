@@ -527,5 +527,8 @@
     <ClInclude Include="..\shared\AfxMath.h">
       <Filter>shared</Filter>
     </ClInclude>
+    <ClInclude Include="..\shared\AfxRefCounted.h">
+      <Filter>shared</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

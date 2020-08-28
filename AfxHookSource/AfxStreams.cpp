@@ -537,11 +537,11 @@ void CAfxRenderViewStream::Capture(CAfxRecordStream * captureTarget, size_t stre
 
 	bool isDepthF = m_StreamCaptureType == CAfxRenderViewStream::SCT_DepthF || m_StreamCaptureType == CAfxRenderViewStream::SCT_DepthFZIP;
 
-	CAfxImageBuffer * buffer = g_AfxStreams.ImageBufferPool.AquireBuffer();
+	advancedfx::CImageBuffer * buffer = g_AfxStreams.ImageBufferPool.AquireBuffer();
 
 	if(isDepthF)
 	{
-		if(buffer->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_ZFloat, width, height)))
+		if(buffer->AutoRealloc(advancedfx::CImageFormat(advancedfx::ImageFormat::ZFloat, width, height)))
 		{
 			unsigned char * pBuffer = (unsigned char*)buffer->Buffer;
 			int imagePitch = buffer->Format.Pitch;
@@ -581,12 +581,12 @@ void CAfxRenderViewStream::Capture(CAfxRecordStream * captureTarget, size_t stre
 		}
 		else
 		{
-			buffer->Release();
+			g_AfxStreams.ImageBufferPool.ReleaseBuffer(buffer);
 			Tier0_Warning("CAfxRenderViewStream::Capture: Failed to realloc buffer.\n");
 		}
 	}
 	else
-	if(buffer->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_BGR, width, height)))
+	if(buffer->AutoRealloc(advancedfx::CImageFormat(advancedfx::ImageFormat::BGR, width, height)))
 	{
 		unsigned char * pBuffer = (unsigned char*)buffer->Buffer;
 		int imagePitch = buffer->Format.Pitch;
@@ -611,7 +611,7 @@ void CAfxRenderViewStream::Capture(CAfxRecordStream * captureTarget, size_t stre
 			int oldImagePitch =  imagePitch;
 
 			// make the 24bit RGB into a float buffer:
-			if(buffer->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_ZFloat, width, height)))
+			if(buffer->AutoRealloc(advancedfx::CImageFormat(advancedfx::ImageFormat::ZFloat, width, height)))
 			{
 				unsigned char * pBuffer = (unsigned char*)buffer->Buffer;
 				int imagePitch = buffer->Format.Pitch;
@@ -640,7 +640,7 @@ void CAfxRenderViewStream::Capture(CAfxRecordStream * captureTarget, size_t stre
 			}
 			else
 			{
-				buffer->Release();
+				g_AfxStreams.ImageBufferPool.ReleaseBuffer(buffer);
 				Tier0_Warning("CAfxRenderViewStream::Capture: Failed to realloc buffer.\n");
 			}
 		}
@@ -677,7 +677,7 @@ void CAfxRenderViewStream::Capture(CAfxRecordStream * captureTarget, size_t stre
 	}
 	else
 	{
-		buffer->Release();
+		g_AfxStreams.ImageBufferPool.ReleaseBuffer(buffer);
 		Tier0_Warning("CAfxRenderViewStream::Capture: Failed to realloc buffer.\n");
 	}
 }
@@ -733,6 +733,36 @@ CAfxRecordStream::CAfxRecordStream(char const * streamName, std::vector<CAfxRend
 	m_Buffers.resize(m_Streams.size());
 }
 
+CAfxRecordStream::~CAfxRecordStream()
+{
+	for (size_t i = 0; i < m_Streams.size(); ++i)
+	{
+		if (advancedfx::CImageBuffer* buffer = m_Buffers[i])
+		{
+			g_AfxStreams.ImageBufferPool.ReleaseBuffer(buffer);
+		}
+	}
+
+	for (size_t i = 0; i < m_Streams.size(); ++i)
+	{
+		m_Streams[i]->Release();
+	}
+
+	m_Settings->Release();
+}
+
+void CAfxRecordStream::CaptureEnd()
+{
+	for (size_t i = 0; i < m_Buffers.size(); ++i)
+	{
+		if (advancedfx::CImageBuffer*& buffer = m_Buffers[i])
+		{
+			g_AfxStreams.ImageBufferPool.ReleaseBuffer(buffer);
+			buffer = nullptr;
+		}
+	}
+}
+
 bool CAfxRecordStream::Record_get(void)
 {
 	return m_Record;
@@ -774,7 +804,7 @@ void CAfxRecordStream::QueueCaptureEnd(IAfxMatRenderContextOrg * ctx)
 	QueueOrExecute(ctx, new CAfxLeafExecute_Functor(new CCaptureEndFunctor(*this)));
 }
 
-void CAfxRecordStream::OnImageBufferCaptured(size_t index, CAfxImageBuffer * buffer)
+void CAfxRecordStream::OnImageBufferCaptured(size_t index, advancedfx::CImageBuffer * buffer)
 {
 	m_Buffers[index] = buffer;
 }
@@ -859,7 +889,7 @@ CAfxSingleStream::CAfxSingleStream(char const * streamName, CAfxRenderViewStream
 
 void CAfxSingleStream::CaptureEnd()
 {
-	if (CAfxImageBuffer *& buffer = m_Buffers[0])
+	if (advancedfx::CImageBuffer *& buffer = m_Buffers[0])
 	{
 		if (nullptr == m_OutVideoStream)
 		{
@@ -948,8 +978,8 @@ CAfxRenderViewStream::StreamCaptureType CAfxTwinStream::GetCaptureType() const
 
 void CAfxTwinStream::CaptureEnd()
 {
-	CAfxImageBuffer * bufferA = m_Buffers[0];
-	CAfxImageBuffer * bufferB = m_Buffers[1];
+	advancedfx::CImageBuffer * bufferA = m_Buffers[0];
+	advancedfx::CImageBuffer * bufferB = m_Buffers[1];
 	//CAfxRenderViewStream::StreamCaptureType captureType;
 
 	enum ECombineOp {
@@ -993,10 +1023,10 @@ void CAfxTwinStream::CaptureEnd()
 				canCombine =
 					bufferA->Format.Width == bufferB->Format.Width
 					&& bufferA->Format.Height == bufferB->Format.Height
-					&& bufferA->Format.PixelFormat == CAfxImageFormat::PF_BGR
-					&& bufferA->Format.PixelFormat == bufferB->Format.PixelFormat
+					&& bufferA->Format.Format == advancedfx::ImageFormat::BGR
+					&& bufferA->Format.Format == bufferB->Format.Format
 					&& (orgImagePitch = bufferA->Format.Pitch) == bufferB->Format.Pitch
-					&& bufferA->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_BGRA, bufferA->Format.Width, bufferA->Format.Height))
+					&& bufferA->AutoRealloc(advancedfx::CImageFormat(advancedfx::ImageFormat::BGRA, bufferA->Format.Width, bufferA->Format.Height))
 					;
 
 				if (canCombine)
@@ -1053,10 +1083,10 @@ void CAfxTwinStream::CaptureEnd()
 				canCombine =
 					bufferA->Format.Width == bufferB->Format.Width
 					&& bufferA->Format.Height == bufferB->Format.Height
-					&& bufferA->Format.PixelFormat == CAfxImageFormat::PF_BGR
-					&& bufferA->Format.PixelFormat == bufferB->Format.PixelFormat
+					&& bufferA->Format.Format == advancedfx::ImageFormat::BGR
+					&& bufferA->Format.Format == bufferB->Format.Format
 					&& (orgImagePitch = bufferA->Format.Pitch) == bufferB->Format.Pitch
-					&& bufferA->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_BGRA, bufferA->Format.Width, bufferA->Format.Height))
+					&& bufferA->AutoRealloc(advancedfx::CImageFormat(advancedfx::ImageFormat::BGRA, bufferA->Format.Width, bufferA->Format.Height))
 					;
 
 				if (canCombine)
@@ -1375,16 +1405,16 @@ void CAfxMatteStream::Console_Edit_Tail(IWrpCommandArgs * args)
 
 void CAfxMatteStream::CaptureEnd()
 {
-	CAfxImageBuffer * bufferEntBlack = m_Buffers[0];
-	CAfxImageBuffer * bufferEntWhite = m_Buffers[1];
+	advancedfx::CImageBuffer * bufferEntBlack = m_Buffers[0];
+	advancedfx::CImageBuffer * bufferEntWhite = m_Buffers[1];
 
 	int orgImagePitch;
 
 	bool canCombine =
 		bufferEntBlack && bufferEntWhite
 		&& bufferEntBlack->Format == bufferEntWhite->Format
-		&& bufferEntBlack->Format.PixelFormat == CAfxImageFormat::PF_BGR
-		&& (orgImagePitch = bufferEntBlack->Format.Pitch, bufferEntBlack->AutoRealloc(CAfxImageFormat(CAfxImageFormat::PF_BGRA, bufferEntBlack->Format.Width, bufferEntBlack->Format.Height)));
+		&& bufferEntBlack->Format.Format == advancedfx::ImageFormat::BGR
+		&& (orgImagePitch = bufferEntBlack->Format.Pitch, bufferEntBlack->AutoRealloc(advancedfx::CImageFormat(advancedfx::ImageFormat::BGRA, bufferEntBlack->Format.Width, bufferEntBlack->Format.Height)));
 
 	if (canCombine)
 	{
@@ -9591,7 +9621,7 @@ void CAfxClassicRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 	Tier0_Warning("The classic settings are controlled through mirv_streams settings and can not be edited.\n");
 }
 
-CAfxOutVideoStream * CAfxClassicRecordingSettings::CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float frameRate, const char * pathSuffix) const
+advancedfx::COutVideoStream * CAfxClassicRecordingSettings::CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const advancedfx::CImageFormat & imageFormat, float frameRate, const char * pathSuffix) const
 {
 	std::wstring wideStreamName;
 	std::wstring widePathSuffix;
@@ -9604,7 +9634,7 @@ CAfxOutVideoStream * CAfxClassicRecordingSettings::CreateOutVideoStream(const CA
 
 		CAfxRenderViewStream::StreamCaptureType captureType = stream.GetCaptureType();
 
-		return new CAfxOutImageStream(imageFormat, capturePath, (captureType == CAfxRenderViewStream::SCT_Depth24ZIP || captureType == CAfxRenderViewStream::SCT_DepthFZIP), streams.m_FormatBmpAndNotTga);
+		return new advancedfx::COutImageStream(imageFormat, capturePath, (captureType == CAfxRenderViewStream::SCT_Depth24ZIP || captureType == CAfxRenderViewStream::SCT_DepthFZIP), streams.m_FormatBmpAndNotTga);
 	}
 	else
 	{
@@ -9656,7 +9686,7 @@ void CAfxFfmpegRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 	);
 }
 
-CAfxOutVideoStream * CAfxFfmpegRecordingSettings::CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float frameRate, const char * pathSuffix) const
+advancedfx::COutVideoStream * CAfxFfmpegRecordingSettings::CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const advancedfx::CImageFormat & imageFormat, float frameRate, const char * pathSuffix) const
 {
 	std::wstring widePathSuffix;
 	if (UTF8StringToWideString(pathSuffix, widePathSuffix))
@@ -9674,7 +9704,7 @@ CAfxOutVideoStream * CAfxFfmpegRecordingSettings::CreateOutVideoStream(const CAf
 
 				CAfxRenderViewStream::StreamCaptureType captureType = stream.GetCaptureType();
 
-				return new CAfxOutFFMPEGVideoStream(imageFormat, capturePath, wideOptions, frameRate);
+				return new advancedfx::COutFFMPEGVideoStream(imageFormat, capturePath, wideOptions, frameRate);
 			}
 			else
 			{
@@ -9847,13 +9877,13 @@ void CAfxMultiRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 
 // CAfxSamplingRecordingSettings ///////////////////////////////////////////////
 
-CAfxOutVideoStream * CAfxSamplingRecordingSettings::CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float frameRate, const char * pathSuffix) const
+advancedfx::COutVideoStream * CAfxSamplingRecordingSettings::CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const advancedfx::CImageFormat & imageFormat, float frameRate, const char * pathSuffix) const
 {
 	if (m_OutputSettings)
 	{
-		if (CAfxOutVideoStream * outVideoStream = m_OutputSettings->CreateOutVideoStream(streams, stream, imageFormat, m_OutFps, pathSuffix))
+		if (advancedfx::COutVideoStream * outVideoStream = m_OutputSettings->CreateOutVideoStream(streams, stream, imageFormat, m_OutFps, pathSuffix))
 		{
-			return new CAfxOutSamplingStream(imageFormat, outVideoStream, frameRate, m_Method, m_OutFps ? 1.0 / m_OutFps : 0.0, m_Exposure, m_FrameStrength);
+			return new advancedfx::COutSamplingStream(imageFormat, outVideoStream, frameRate, m_Method, m_OutFps ? 1.0 / m_OutFps : 0.0, m_Exposure, m_FrameStrength, &g_AfxStreams.ImageBufferPool);
 		}
 	}
 

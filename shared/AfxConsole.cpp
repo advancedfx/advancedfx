@@ -6,6 +6,25 @@
 
 namespace advancedfx {
 
+
+void Printf_Null(const char* fmt, ...)
+{
+
+}
+
+
+void DevPrintf_Null(int, const char* fmt, ...)
+{
+
+}
+
+Con_Printf_t Message = Printf_Null;
+Con_Printf_t Warning = Printf_Null;
+
+Con_DevPrintf_t DevMessage = DevPrintf_Null;
+Con_DevPrintf_t DevWarning = DevPrintf_Null;
+
+
 // CSubCommandArgs /////////////////////////////////////////////////////////////
 
 CSubCommandArgs::CSubCommandArgs(ICommandArgs* commandArgs, int offset)

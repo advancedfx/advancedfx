@@ -411,7 +411,9 @@ bool CMdt_Media_RAWGLPIC::_adjustMemory(unsigned int iNewSize,bool bOnlyWhenGrea
 {
 	if ((iNewSize>_uiBytesAllocated)||(!bOnlyWhenGreater && iNewSize != _uiBytesAllocated))
 	{
-		_pBuffer = (unsigned char *)realloc(_pBuffer,iNewSize);
+		unsigned char * new_pBuffer = (unsigned char *)realloc(_pBuffer,iNewSize);
+		if (nullptr == new_pBuffer) free(_pBuffer);
+		_pBuffer = new_pBuffer;
 		if(!_pBuffer && iNewSize)
 		{
 			_freeAndClean();

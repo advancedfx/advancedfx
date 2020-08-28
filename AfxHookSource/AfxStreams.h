@@ -11,8 +11,6 @@
 #include "csgo_Stdshader_dx9_Hooks.h"
 #include "CamIO.h"
 #include "MatRenderContextHook.h"
-#include "AfxImageBuffer.h"
-#include "AfxOutStreams.h"
 #include "AfxWriteFileLimiter.h"
 #include "AfxThreadedRefCounted.h"
 #include "MirvCalcs.h"
@@ -32,6 +30,8 @@
 #include <shaders/build/afxHook_vertexlit_and_unlit_generic_ps30.h>
 #endif
 
+#include <shared/AfxImageBuffer.h>
+#include <shared/AfxOutStreams.h>
 #include <shared/bvhexport.h>
 #include <shared/AfxColorLut.h>
 
@@ -591,7 +591,7 @@ public:
 
 	virtual void Console_Edit(IWrpCommandArgs * args) = 0;
 
-	virtual CAfxOutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float fps, const char * pathSuffix) const = 0;
+	virtual advancedfx::COutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const advancedfx::CImageFormat & imageFormat, float fps, const char * pathSuffix) const = 0;
 
 	virtual bool InheritsFrom(CAfxRecordingSettings * setting) const
 	{
@@ -692,7 +692,7 @@ public:
 
 	virtual void Console_Edit(IWrpCommandArgs * args) override;
 
-	virtual CAfxOutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float fps, const char * pathSuffix) const override
+	virtual advancedfx::COutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const advancedfx::CImageFormat & imageFormat, float fps, const char * pathSuffix) const override
 	{
 		if (m_DefaultSettings)
 			return m_DefaultSettings->CreateOutVideoStream(streams, stream, imageFormat, fps, pathSuffix);
@@ -732,9 +732,9 @@ public:
 
 	virtual void Console_Edit(IWrpCommandArgs * args) override;
 
-	virtual CAfxOutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float fps, const char * pathSuffix) const override
+	virtual advancedfx::COutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const advancedfx::CImageFormat & imageFormat, float fps, const char * pathSuffix) const override
 	{
-		std::list<CAfxOutVideoStream * > outVideoStreams;
+		std::list<advancedfx::COutVideoStream * > outVideoStreams;
 
 		for (auto it = m_Settings.begin(); it != m_Settings.end(); ++it)
 		{
@@ -748,7 +748,7 @@ public:
 			}
 		}
 
-		return new CAfxOutMultiVideoStream(imageFormat, std::move(outVideoStreams));
+		return new advancedfx::COutMultiVideoStream(imageFormat, std::move(outVideoStreams));
 	}
 
 	virtual bool InheritsFrom(CAfxRecordingSettings * setting) const override
@@ -786,7 +786,7 @@ public:
 
 	virtual void Console_Edit(IWrpCommandArgs * args) override;
 
-	virtual CAfxOutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float fps, const char * pathSuffix) const override;
+	virtual advancedfx::COutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const advancedfx::CImageFormat & imageFormat, float fps, const char * pathSuffix) const override;
 };
 
 class CAfxFfmpegRecordingSettings : public CAfxRecordingSettings
@@ -801,7 +801,7 @@ public:
 
 	virtual void Console_Edit(IWrpCommandArgs * args) override;
 
-	virtual CAfxOutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float fps, const char * pathSuffix) const override;
+	virtual advancedfx::COutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const advancedfx::CImageFormat & imageFormat, float fps, const char * pathSuffix) const override;
 
 private:
 	std::string m_FfmpegOptions;
@@ -824,7 +824,7 @@ public:
 
 	virtual void Console_Edit(IWrpCommandArgs * args) override;
 
-	virtual CAfxOutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const CAfxImageFormat & imageFormat, float fps, const char * pathSuffix) const override;
+	virtual advancedfx::COutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const advancedfx::CImageFormat & imageFormat, float fps, const char * pathSuffix) const override;
 
 protected:
 	virtual ~CAfxSamplingRecordingSettings()
@@ -884,7 +884,7 @@ public:
 	void QueueCaptureEnd(IAfxMatRenderContextOrg * ctx);
 
 	/// <remarks>This is not guaranteed to be called, i.e. not called upon buffer re-allocation error.</remarks>
-	void OnImageBufferCaptured(size_t index, CAfxImageBuffer * buffer);
+	void OnImageBufferCaptured(size_t index, advancedfx::CImageBuffer * buffer);
 
 	virtual CAfxRenderViewStream::StreamCaptureType GetCaptureType() const = 0;
 
@@ -913,45 +913,19 @@ public:
 protected:
 	std::vector<CAfxRenderViewStream *> m_Streams;
 
-	std::vector<CAfxImageBuffer *> m_Buffers;
+	std::vector<advancedfx::CImageBuffer *> m_Buffers;
 
 	CAfxRecordingSettings * m_Settings;
-	CAfxOutVideoStream * m_OutVideoStream;
+	advancedfx::COutVideoStream * m_OutVideoStream;
 
-	virtual ~CAfxRecordStream() override
-	{
-		for (size_t i = 0; i < m_Streams.size(); ++i)
-		{
-			if (CAfxImageBuffer * buffer = m_Buffers[i])
-			{
-				buffer->Release();
-			}
-		}
-
-		for (size_t i = 0; i < m_Streams.size(); ++i)
-		{
-			m_Streams[i]->Release();
-		}
-
-		m_Settings->Release();
-	}
+	virtual ~CAfxRecordStream() override;
 
 	virtual void CaptureStart(void)
 	{
 
 	}
 
-	virtual void CaptureEnd()
-	{
-		for (size_t i = 0; i < m_Buffers.size(); ++i)
-		{
-			if (CAfxImageBuffer *& buffer = m_Buffers[i])
-			{
-				buffer->Release();
-				buffer = nullptr;
-			}
-		}
-	}
+	virtual void CaptureEnd();
 
 private:
 	class CCaptureStartFunctor
@@ -3156,7 +3130,7 @@ class CAfxStreams
 public:
 	typedef SOURCESDK::IMatRenderContext_csgo CMatQueuedRenderContext_csgo;
 
-	CAfxImageBufferPool ImageBufferPool;
+	advancedfx::CImageBufferPool ImageBufferPool;
 
 	bool m_FormatBmpAndNotTga;
 

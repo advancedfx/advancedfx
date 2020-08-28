@@ -1,28 +1,27 @@
 #include "stdafx.h"
 
 #include "AfxOutStreams.h"
-#include "AfxWriteFileLimiter.h"
-#include "hlaeFolder.h"
-#include "AfxStreams.h"
+#include "AfxConsole.h"
 
-#include <shared/RawOutput.h>
-#include <shared/OpenExrOutput.h>
-#include <shared/StringTools.h>
-#include <shared/FileTools.h>
+#include "RawOutput.h"
+#include "OpenExrOutput.h"
+#include "StringTools.h"
+#include "FileTools.h"
 
-#include <AfxHookSource/SourceInterfaces.h>
-
+#include <map>
 #include <string>
 #include <sstream>
 #include <iomanip>
 
-bool CAfxOutImageStream::SupplyVideoData(const CAfxImageBuffer & buffer)
-{
-	CAfxWriteFileLimiterScope writeFileLimiterScope;
+#include <hlaeFolder.h>
 
+namespace advancedfx {
+
+bool COutImageStream::SupplyVideoData(const CImageBuffer& buffer)
+{
 	std::wstring path;
 
-	if (CAfxImageFormat::PF_ZFloat == buffer.Format.PixelFormat)
+	if (ImageFormat::ZFloat == buffer.Format.Format)
 	{
 		return CreateCapturePath(".exr", path) && WriteFloatZOpenExr(
 			path.c_str(),
@@ -35,7 +34,7 @@ bool CAfxOutImageStream::SupplyVideoData(const CAfxImageBuffer & buffer)
 		);
 	}
 
-	if (CAfxImageFormat::PF_A == buffer.Format.PixelFormat)
+	if (ImageFormat::A == buffer.Format.Format)
 	{
 		return m_IfBmpNotTga
 			? CreateCapturePath(".bmp", path) && WriteRawBitmap((unsigned char*)buffer.Buffer, path.c_str(), buffer.Format.Width, buffer.Format.Height, 8, buffer.Format.Pitch)
@@ -43,7 +42,7 @@ bool CAfxOutImageStream::SupplyVideoData(const CAfxImageBuffer & buffer)
 			;
 	}
 
-	bool isBgra = CAfxImageFormat::PF_BGRA == buffer.Format.PixelFormat;
+	bool isBgra = ImageFormat::BGRA == buffer.Format.Format;
 
 	return m_IfBmpNotTga && !isBgra
 		? CreateCapturePath(".bmp", path) && WriteRawBitmap((unsigned char*)buffer.Buffer, path.c_str(), buffer.Format.Width, buffer.Format.Height, 24, buffer.Format.Pitch)
@@ -52,7 +51,7 @@ bool CAfxOutImageStream::SupplyVideoData(const CAfxImageBuffer & buffer)
 }
 
 
-bool CAfxOutImageStream::CreateCapturePath(const char * fileExtension, std::wstring &outPath)
+bool COutImageStream::CreateCapturePath(const char* fileExtension, std::wstring& outPath)
 {
 	if (!m_TriedCreatePath)
 	{
@@ -68,7 +67,7 @@ bool CAfxOutImageStream::CreateCapturePath(const char * fileExtension, std::wstr
 			std::string ansiString;
 			if (!WideStringToUTF8String(m_Path.c_str(), ansiString)) ansiString = "[n/a]";
 
-			Tier0_Warning("ERROR: could not create \"%s\"\n", ansiString.c_str());
+			advancedfx::Warning("ERROR: could not create \"%s\"\n", ansiString.c_str());
 		}
 	}
 
@@ -86,7 +85,7 @@ bool CAfxOutImageStream::CreateCapturePath(const char * fileExtension, std::wstr
 }
 
 
-void ReplaceAllW(std::wstring & str, const std::map<std::wstring, std::wstring> & replacements)
+void ReplaceAllW(std::wstring& str, const std::map<std::wstring, std::wstring>& replacements)
 {
 	size_t start_pos = 0;
 	while (true)
@@ -117,7 +116,7 @@ void ReplaceAllW(std::wstring & str, const std::map<std::wstring, std::wstring> 
 }
 
 BOOL AfxOutFFMPEGVideoStream_CreatePipe(
-	const char * pipeName,
+	const char* pipeName,
 	OUT LPHANDLE lpReadPipe,
 	OUT LPHANDLE lpWritePipe,
 	IN LPSECURITY_ATTRIBUTES lpPipeAttributes,
@@ -177,8 +176,8 @@ BOOL AfxOutFFMPEGVideoStream_CreatePipe(
 	return(TRUE);
 }
 
-CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & imageFormat, const std::wstring & path, const std::wstring & ffmpegOptions, float frameRate)
-	: CAfxOutVideoStream(imageFormat)
+COutFFMPEGVideoStream::COutFFMPEGVideoStream(const CImageFormat& imageFormat, const std::wstring& path, const std::wstring& ffmpegOptions, float frameRate)
+	: COutVideoStream(imageFormat)
 {
 	std::wstring myPath(path);
 
@@ -196,7 +195,7 @@ CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & image
 			std::string ansiString;
 			if (!WideStringToUTF8String(myPath.c_str(), ansiString)) ansiString = "[n/a]";
 
-			Tier0_Warning("AFXERROR: CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream: could not create path \"%s\"\n", ansiString.c_str());
+			advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::COutFFMPEGVideoStream: could not create path \"%s\"\n", ansiString.c_str());
 		}
 	}
 
@@ -205,7 +204,7 @@ CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & image
 		std::wstring ffmpegIni(GetHlaeFolderW());
 		ffmpegIni.append(L"ffmpeg\\ffmpeg.ini");
 
-		wchar_t ffmpegPath[MAX_PATH+3];
+		wchar_t ffmpegPath[MAX_PATH + 3];
 
 		std::wstring ffmpegExe;
 
@@ -216,7 +215,7 @@ CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & image
 			ffmpegPath,
 			MAX_PATH + 3,
 			ffmpegIni.c_str());
-		if(0 < nSize && nSize <= MAX_PATH)
+		if (0 < nSize && nSize <= MAX_PATH)
 		{
 			ffmpegExe.assign(ffmpegPath);
 		}
@@ -231,19 +230,19 @@ CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & image
 		ffmpegArgs << L"\"" << ffmpegExe << L"\"";
 		ffmpegArgs << L" -f rawvideo -pixel_format ";
 
-		switch (imageFormat.PixelFormat)
+		switch (imageFormat.Format)
 		{
-		case CAfxImageFormat::PF_BGR:
+		case ImageFormat::BGR:
 			ffmpegArgs << L"bgr24";
 			break;
-		case CAfxImageFormat::PF_BGRA:
+		case ImageFormat::BGRA:
 			ffmpegArgs << L"bgra";
 			break;
-		case CAfxImageFormat::PF_A:
+		case ImageFormat::A:
 			ffmpegArgs << L"gray";
 			break;
 		default:
-			Tier0_Warning("AFXERROR: CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream: Unsupported image format.");
+			advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::COutFFMPEGVideoStream: Unsupported image format.");
 			return;
 		}
 
@@ -297,12 +296,12 @@ CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & image
 			20 * 1000,
 			0, 0))
 		{
-			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream: Could not create STDOUT.\n");
+			advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::COutFFMPEGVideoStream: Could not create STDOUT.\n");
 		}
 
 		if (INVALID_HANDLE_VALUE != m_hChildStd_OUT_Rd && !SetHandleInformation(m_hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0))
 		{
-			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream:STDOUT SetHandleInformation.\n");
+			advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::COutFFMPEGVideoStream:STDOUT SetHandleInformation.\n");
 			CloseHandle(m_hChildStd_OUT_Rd);
 			m_hChildStd_OUT_Rd = INVALID_HANDLE_VALUE;
 		}
@@ -310,7 +309,7 @@ CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & image
 		/*
 		if (INVALID_HANDLE_VALUE == (m_OverlappedStdout.hEvent = CreateEventA(NULL, true, true, NULL)))
 		{
-			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream:STDOUT CreateEventA.\n");
+			advancedfx::Warning("AFXERROR: CERRFFMPEGVideoStream::CERRFFMPEGVideoStream:STDOUT CreateEventA.\n");
 		}
 		*/
 
@@ -329,12 +328,12 @@ CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & image
 			20 * 1000,
 			0, 0))
 		{
-			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream: Could not create STDERR.\n");
+			advancedfx::Warning("AFXERROR: CERRFFMPEGVideoStream::CERRFFMPEGVideoStream: Could not create STDERR.\n");
 		}
 
 		if (INVALID_HANDLE_VALUE != m_hChildStd_ERR_Rd && !SetHandleInformation(m_hChildStd_ERR_Rd, HANDLE_FLAG_INHERIT, 0))
 		{
-			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream:STDERR SetHandleInformation.\n");
+			advancedfx::Warning("AFXERROR: CERRFFMPEGVideoStream::CERRFFMPEGVideoStream:STDERR SetHandleInformation.\n");
 			CloseHandle(m_hChildStd_ERR_Rd);
 			m_hChildStd_ERR_Rd = INVALID_HANDLE_VALUE;
 		}
@@ -342,14 +341,14 @@ CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & image
 		/*
 		if (INVALID_HANDLE_VALUE == (m_OverlappedStderr.hEvent = CreateEventA(NULL, true, true, NULL)))
 		{
-			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream:STDERR CreateEventA.\n");
+			advancedfx::Warning("AFXERROR: CERRFFMPEGVideoStream::CERRFFMPEGVideoStream:STDERR CreateEventA.\n");
 		}
 		*/
 
 		// Create STDIN:
 
 		std::ostringstream stdInPipeNameStream;
-		stdInPipeNameStream << "\\\\.\\pipe\\AfxHookSource_FFMPEG_In_" << GetCurrentProcessId() << "_" << (void *)this;
+		stdInPipeNameStream << "\\\\.\\pipe\\AfxHookSource_FFMPEG_In_" << GetCurrentProcessId() << "_" << (void*)this;
 		std::string stdInPipeName(stdInPipeNameStream.str());
 
 		if (TRUE != AfxOutFFMPEGVideoStream_CreatePipe(
@@ -361,19 +360,19 @@ CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & image
 			20 * 1000,
 			0, FILE_FLAG_OVERLAPPED))
 		{
-			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream: Could not create STDIN.\n");
+			advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::COutFFMPEGVideoStream: Could not create STDIN.\n");
 		}
 
 		if (INVALID_HANDLE_VALUE != m_hChildStd_IN_Wr && !SetHandleInformation(m_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0))
 		{
-			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream:STDIN SetHandleInformation.\n");
+			advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::COutFFMPEGVideoStream:STDIN SetHandleInformation.\n");
 			CloseHandle(m_hChildStd_IN_Wr);
 			m_hChildStd_IN_Wr = INVALID_HANDLE_VALUE;
 		}
 
 		if (INVALID_HANDLE_VALUE == (m_OverlappedStdin.hEvent = CreateEventA(NULL, true, true, NULL)))
 		{
-			Tier0_Warning("AFXERROR: CAfxERRFFMPEGVideoStream::CAfxERRFFMPEGVideoStream:STDIN CreateEventA.\n");
+			advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::COutFFMPEGVideoStream:STDIN CreateEventA.\n");
 		}
 
 		//
@@ -409,7 +408,7 @@ CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & image
 
 			if (TRUE != m_Okay)
 			{
-				Tier0_Warning("AFXERROR: CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream: CreateProcessW.\n");
+				advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::COutFFMPEGVideoStream: CreateProcessW.\n");
 			}
 		}
 		if (m_Okay)
@@ -423,7 +422,7 @@ CAfxOutFFMPEGVideoStream::CAfxOutFFMPEGVideoStream(const CAfxImageFormat & image
 	else m_Okay = FALSE;
 }
 
-void CAfxOutFFMPEGVideoStream::Close()
+void COutFFMPEGVideoStream::Close()
 {
 	if (INVALID_HANDLE_VALUE != m_hChildStd_IN_Wr)
 	{
@@ -435,7 +434,7 @@ void CAfxOutFFMPEGVideoStream::Close()
 	{
 		DWORD waitCode = WAIT_TIMEOUT;
 		//for (int i = 0; i < 20000 && WAIT_TIMEOUT == waitCode; ++i)
-		while(WAIT_TIMEOUT == waitCode)
+		while (WAIT_TIMEOUT == waitCode)
 		{
 			if (HandleOutAndErr())
 			{
@@ -447,7 +446,7 @@ void CAfxOutFFMPEGVideoStream::Close()
 
 		if (WAIT_OBJECT_0 != waitCode)
 		{
-			Tier0_Warning("AFXERROR: CAfxOutFFMPEGVideoStream::Close.\n");
+			advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::Close.\n");
 		}
 
 		CloseHandle(m_ProcessInfo.hProcess);
@@ -503,19 +502,19 @@ void CAfxOutFFMPEGVideoStream::Close()
 	*/
 }
 
-bool CAfxOutFFMPEGVideoStream::SupplyVideoData(const CAfxImageBuffer & buffer)
+bool COutFFMPEGVideoStream::SupplyVideoData(const CImageBuffer& buffer)
 {
 	/*
 	static DWORD frames = 0;
 	static DWORD firstTickCount = GetTickCount();
-	
+
 	++frames;
 	DWORD delta = GetTickCount() - firstTickCount;
 
 	if (1000 < delta)
 	{
 		float fps = delta ? (float)frames / (delta / 1000.0f): 0;
-		Tier0_Msg("FPS: %f\n",fps);
+		advancedfx::Message("FPS: %f\n",fps);
 		frames = 0;
 		firstTickCount = GetTickCount();
 	}
@@ -527,7 +526,7 @@ bool CAfxOutFFMPEGVideoStream::SupplyVideoData(const CAfxImageBuffer & buffer)
 
 	if (!(buffer.Format == m_ImageFormat))
 	{
-		Tier0_Warning("AFXERROR: CAfxOutFFMPEGVideoStream::SupplyVideoData: Format mismatch.\n");
+		advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::SupplyVideoData: Format mismatch.\n");
 		Close();
 		return false;
 	}
@@ -538,8 +537,8 @@ bool CAfxOutFFMPEGVideoStream::SupplyVideoData(const CAfxImageBuffer & buffer)
 	DWORD length = (DWORD)buffer.Format.Bytes;
 
 	if (WriteFile(m_hChildStd_IN_Wr, (LPVOID) & (((char*)buffer.Buffer)[offset]), length, NULL, &m_OverlappedStdin)) return true;
-	
-	if(ERROR_IO_PENDING != GetLastError())
+
+	if (ERROR_IO_PENDING != GetLastError())
 		return false;
 
 	bool completed = false;
@@ -557,19 +556,19 @@ bool CAfxOutFFMPEGVideoStream::SupplyVideoData(const CAfxImageBuffer & buffer)
 				if (ReadFile(m_hChildStd_ERR_Rd, chBuf, min(bytesAvail, 250), &dwBytesRead, NULL))
 				{
 					chBuf[dwBytesRead] = 0;
-					Tier0_Warning("%s", chBuf);
+					advancedfx::DevMessage(1, "%s", chBuf);
 					bytesAvail -= dwBytesRead;
 				}
 				else
 				{
-					Tier0_Warning("AFXERROR: CAfxOutFFMPEGVideoStream::HandleOutAndErr: StdErr ReadFile.\n");
+					advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::HandleOutAndErr: StdErr ReadFile.\n");
 					return false;
 				}
 			}
 		}
 		else
 		{
-			Tier0_Warning("AFXERROR: CAfxOutFFMPEGVideoStream::HandleOutAndErr: StdErr PeekNamedPipe.\n");
+			advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::HandleOutAndErr: StdErr PeekNamedPipe.\n");
 			return false;
 		}
 
@@ -581,19 +580,19 @@ bool CAfxOutFFMPEGVideoStream::SupplyVideoData(const CAfxImageBuffer & buffer)
 				if (ReadFile(m_hChildStd_OUT_Rd, chBuf, min(bytesAvail, 250), &dwBytesRead, NULL))
 				{
 					chBuf[dwBytesRead] = 0;
-					Tier0_Msg("%s", chBuf);
+					advancedfx::Message("%s", chBuf);
 					bytesAvail -= dwBytesRead;
 				}
 				else
 				{
-					Tier0_Warning("AFXERROR: CAfxOutFFMPEGVideoStream::HandleOutAndErr: StdOut ReadFile.\n");
+					advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::HandleOutAndErr: StdOut ReadFile.\n");
 					return false;
 				}
 			}
 		}
 		else
 		{
-			Tier0_Warning("AFXERROR: CAfxOutFFMPEGVideoStream::HandleOutAndErr: StdOut PeekNamedPipe.\n");
+			advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::HandleOutAndErr: StdOut PeekNamedPipe.\n");
 			return false;
 		}
 
@@ -617,12 +616,12 @@ bool CAfxOutFFMPEGVideoStream::SupplyVideoData(const CAfxImageBuffer & buffer)
 	return true;
 }
 
-CAfxOutFFMPEGVideoStream::~CAfxOutFFMPEGVideoStream()
+COutFFMPEGVideoStream::~COutFFMPEGVideoStream()
 {
 	Close();
 }
 
-bool CAfxOutFFMPEGVideoStream::HandleOutAndErr()
+bool COutFFMPEGVideoStream::HandleOutAndErr()
 {
 	if (!m_Okay) return false;
 
@@ -637,19 +636,19 @@ bool CAfxOutFFMPEGVideoStream::HandleOutAndErr()
 			if (ReadFile(m_hChildStd_ERR_Rd, chBuf, min(bytesAvail, 250), &dwBytesRead, NULL))
 			{
 				chBuf[dwBytesRead] = 0;
-				Tier0_Warning("%s", chBuf);
+				advancedfx::DevMessage(1, "%s", chBuf);
 				bytesAvail -= dwBytesRead;
 			}
 			else
 			{
-				Tier0_Warning("AFXERROR: CAfxOutFFMPEGVideoStream::HandleOutAndErr: StdErr ReadFile.\n");
+				advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::HandleOutAndErr: StdErr ReadFile.\n");
 				return false;
 			}
 		}
 	}
 	else
 	{
-		Tier0_Warning("AFXERROR: CAfxOutFFMPEGVideoStream::HandleOutAndErr: StdErr PeekNamedPipe.\n");
+		advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::HandleOutAndErr: StdErr PeekNamedPipe.\n");
 		return false;
 	}
 
@@ -661,19 +660,19 @@ bool CAfxOutFFMPEGVideoStream::HandleOutAndErr()
 			if (ReadFile(m_hChildStd_OUT_Rd, chBuf, min(bytesAvail, 250), &dwBytesRead, NULL))
 			{
 				chBuf[dwBytesRead] = 0;
-				Tier0_Msg("%s", chBuf);
+				advancedfx::DevMessage(1, "%s", chBuf);
 				bytesAvail -= dwBytesRead;
 			}
 			else
 			{
-				Tier0_Warning("AFXERROR: CAfxOutFFMPEGVideoStream::HandleOutAndErr: StdOut ReadFile.\n");
+				advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::HandleOutAndErr: StdOut ReadFile.\n");
 				return false;
 			}
 		}
 	}
 	else
 	{
-		Tier0_Warning("AFXERROR: CAfxOutFFMPEGVideoStream::HandleOutAndErr: StdOut PeekNamedPipe.\n");
+		advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::HandleOutAndErr: StdOut PeekNamedPipe.\n");
 		return false;
 	}
 
@@ -686,21 +685,22 @@ bool CAfxOutFFMPEGVideoStream::HandleOutAndErr()
 	return true;
 }
 
-// CAfxOutSamplingStream ///////////////////////////////////////////////////////
+// COutSamplingStream ///////////////////////////////////////////////////////
 
-CAfxOutSamplingStream::CAfxOutSamplingStream(const CAfxImageFormat & imageFormat, CAfxOutVideoStream * outVideoStream, float frameRate, EasySamplerSettings::Method method, double frameDuration, double exposure, float frameStrength)
-	: CAfxOutVideoStream(imageFormat)
+COutSamplingStream::COutSamplingStream(const CImageFormat& imageFormat, COutVideoStream* outVideoStream, float frameRate, EasySamplerSettings::Method method, double frameDuration, double exposure, float frameStrength, CImageBufferPool * imageBufferPool)
+	: COutVideoStream(imageFormat)
 	, m_OutVideoStream(outVideoStream)
 	, m_Time(0.0)
 	, m_InputFrameDuration(frameRate ? 1.0 / frameRate : 0.0)
+	, m_ImageBufferPool(imageBufferPool)
 {
-	if(m_OutVideoStream) m_OutVideoStream->AddRef();
+	if (m_OutVideoStream) m_OutVideoStream->AddRef();
 
 	unsigned int bytesPerPixel = 1;
 
-	switch (imageFormat.PixelFormat)
+	switch (imageFormat.Format)
 	{
-	case CAfxImageFormat::PF_BGR:
+	case ImageFormat::BGR:
 		m_EasySampler.Byte = new EasyByteSampler(EasySamplerSettings(
 			imageFormat.Width * 3,
 			imageFormat.Height,
@@ -711,7 +711,7 @@ CAfxOutSamplingStream::CAfxOutSamplingStream(const CAfxImageFormat & imageFormat
 			frameStrength
 		), (int)imageFormat.Pitch, this);
 		break;
-	case CAfxImageFormat::PF_BGRA:
+	case ImageFormat::BGRA:
 		m_EasySampler.Byte = new EasyByteSampler(EasySamplerSettings(
 			imageFormat.Width * 4,
 			imageFormat.Height,
@@ -722,7 +722,7 @@ CAfxOutSamplingStream::CAfxOutSamplingStream(const CAfxImageFormat & imageFormat
 			frameStrength
 		), (int)imageFormat.Pitch, this);
 		break;
-	case CAfxImageFormat::PF_A:
+	case ImageFormat::A:
 		m_EasySampler.Byte = new EasyByteSampler(EasySamplerSettings(
 			imageFormat.Width * 1,
 			imageFormat.Height,
@@ -733,7 +733,7 @@ CAfxOutSamplingStream::CAfxOutSamplingStream(const CAfxImageFormat & imageFormat
 			frameStrength
 		), (int)imageFormat.Pitch, this);
 		break;
-	case CAfxImageFormat::PF_ZFloat:
+	case ImageFormat::ZFloat:
 		m_EasySampler.Float = new EasyFloatSampler(EasySamplerSettings(
 			imageFormat.Width,
 			imageFormat.Height,
@@ -745,44 +745,44 @@ CAfxOutSamplingStream::CAfxOutSamplingStream(const CAfxImageFormat & imageFormat
 		), this);
 		break;
 	default:
-		Tier0_Warning("AFXERROR: CAfxOutSamplingStream::CAfxOutSamplingStream: Unspoported image format.");
+		advancedfx::Warning("AFXERROR: COutSamplingStream::COutSamplingStream: Unspoported image format.");
 	}
 }
 
-CAfxOutSamplingStream::~CAfxOutSamplingStream()
+COutSamplingStream::~COutSamplingStream()
 {
-	switch (m_ImageFormat.PixelFormat)
+	switch (m_ImageFormat.Format)
 	{
-	case CAfxImageFormat::PF_BGR:
-	case CAfxImageFormat::PF_BGRA:
-	case CAfxImageFormat::PF_A:
+	case ImageFormat::BGR:
+	case ImageFormat::BGRA:
+	case ImageFormat::A:
 		delete m_EasySampler.Byte;
 		break;
-	case CAfxImageFormat::PF_ZFloat:
+	case ImageFormat::ZFloat:
 		delete m_EasySampler.Float;
 	};
 
 	if (m_OutVideoStream) m_OutVideoStream->Release();
 }
 
-bool CAfxOutSamplingStream::SupplyVideoData(const CAfxImageBuffer & buffer)
+bool COutSamplingStream::SupplyVideoData(const CImageBuffer& buffer)
 {
 	if (nullptr == m_OutVideoStream) return false;
 
 	if (!(buffer.Format == m_ImageFormat))
 	{
-		Tier0_Warning("AFXERROR: CAfxOutSamplingStream::SupplyVideoData: Format mismatch.\n");
+		advancedfx::Warning("AFXERROR: COutSamplingStream::SupplyVideoData: Format mismatch.\n");
 		return false;
 	}
 
-	switch (m_ImageFormat.PixelFormat)
+	switch (m_ImageFormat.Format)
 	{
-	case CAfxImageFormat::PF_BGR:
-	case CAfxImageFormat::PF_BGRA:
-	case CAfxImageFormat::PF_A:
+	case ImageFormat::BGR:
+	case ImageFormat::BGRA:
+	case ImageFormat::A:
 		m_EasySampler.Byte->Sample((const unsigned char*)buffer.Buffer, m_Time);
 		break;
-	case CAfxImageFormat::PF_ZFloat:
+	case ImageFormat::ZFloat:
 		m_EasySampler.Float->Sample((const float*)buffer.Buffer, m_Time);
 	};
 
@@ -791,24 +791,26 @@ bool CAfxOutSamplingStream::SupplyVideoData(const CAfxImageBuffer & buffer)
 	return true;
 }
 
-void CAfxOutSamplingStream::Print(unsigned char const * data)
+void COutSamplingStream::Print(unsigned char const* data)
 {
-	if (CAfxImageBuffer * buffer = g_AfxStreams.ImageBufferPool.AquireBuffer())
+	if (CImageBuffer* buffer = m_ImageBufferPool->AquireBuffer())
 	{
 		buffer->AutoRealloc(m_ImageFormat);
 		memcpy(buffer->Buffer, data, buffer->Format.Bytes);
 		m_OutVideoStream->SupplyVideoData(*buffer);
-		buffer->Release();
+		m_ImageBufferPool->ReleaseBuffer(buffer);
 	}
 }
 
-void CAfxOutSamplingStream::Print(float const * data)
+void COutSamplingStream::Print(float const* data)
 {
-	if (CAfxImageBuffer * buffer = g_AfxStreams.ImageBufferPool.AquireBuffer())
+	if (CImageBuffer* buffer = m_ImageBufferPool->AquireBuffer())
 	{
 		buffer->AutoRealloc(m_ImageFormat);
 		memcpy(buffer->Buffer, data, buffer->Format.Bytes);
 		m_OutVideoStream->SupplyVideoData(*buffer);
-		buffer->Release();
+		m_ImageBufferPool->ReleaseBuffer(buffer);
 	}
 }
+
+} // namespace advancedfx {

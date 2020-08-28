@@ -37,8 +37,15 @@ void CalculateHlaeFolderOnce()
 		length = 100;
 		fileName = (LPWSTR)malloc(length*sizeof(WCHAR));
 
-		while(fileName && length == GetModuleFileNameW(hm, fileName, length))
-			fileName = (LPWSTR)realloc(fileName, (length += 100)*sizeof(WCHAR));
+		while (fileName && length == GetModuleFileNameW(hm, fileName, length))
+		{
+			LPWSTR newFileName;
+			if (nullptr == (newFileName = (LPWSTR)realloc(fileName, (length += 100) * sizeof(WCHAR))))
+			{
+				free(fileName);
+			}
+			fileName = newFileName;
+		}
 
 		if(!fileName)
 			return;

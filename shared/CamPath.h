@@ -1,7 +1,7 @@
 #pragma once
 
-#include "RefCounted.h"
-#include <shared/AfxMath.h>
+#include "AfxRefCounted.h"
+#include "AfxMath.h"
 
 using namespace Afx;
 using namespace Afx::Math;

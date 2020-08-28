@@ -294,9 +294,6 @@
     <ClCompile Include="..\shared\OpenExrOutput.cpp">
       <Filter>shared</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\RefCounted.cpp">
-      <Filter>shared</Filter>
-    </ClCompile>
     <ClCompile Include="aiming.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
@@ -432,12 +429,6 @@
     <ClCompile Include="csgo_CRendering3dView.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
-    <ClCompile Include="AfxImageBuffer.cpp">
-      <Filter>AfxHookSource</Filter>
-    </ClCompile>
-    <ClCompile Include="AfxOutStreams.cpp">
-      <Filter>AfxHookSource</Filter>
-    </ClCompile>
     <ClCompile Include="AfxWriteFileLimiter.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
@@ -472,6 +463,9 @@
       <Filter>AfxHookSource\momentum</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\AfxMath.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\AfxOutStreams.cpp">
       <Filter>shared</Filter>
     </ClCompile>
   </ItemGroup>
@@ -564,9 +558,6 @@
       <Filter>AfxHookSource</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\OpenExrOutput.h">
-      <Filter>shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\RefCounted.h">
       <Filter>shared</Filter>
     </ClInclude>
     <ClInclude Include="aiming.h">
@@ -824,12 +815,6 @@
     <ClInclude Include="csgo_CRendering3dView.h">
       <Filter>AfxHookSource</Filter>
     </ClInclude>
-    <ClInclude Include="AfxImageBuffer.h">
-      <Filter>AfxHookSource</Filter>
-    </ClInclude>
-    <ClInclude Include="AfxOutStreams.h">
-      <Filter>AfxHookSource</Filter>
-    </ClInclude>
     <ClInclude Include="AfxWriteFileLimiter.h">
       <Filter>AfxHookSource</Filter>
     </ClInclude>
@@ -879,6 +864,15 @@
       <Filter>deps\release\rapidxml</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\AfxMath.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\AfxImageBuffer.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\AfxOutStreams.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\AfxRefCounted.h">
       <Filter>shared</Filter>
     </ClInclude>
   </ItemGroup>

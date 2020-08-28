@@ -6,6 +6,12 @@
 namespace advancedfx {
 
 typedef void (*Con_Printf_t)(const char* fmt, ...);
+typedef void (*Con_DevPrintf_t)(int level, const char* fmt, ...);
+
+extern Con_Printf_t Message;
+extern Con_Printf_t Warning;
+extern Con_DevPrintf_t DevMessage;
+extern Con_DevPrintf_t DevWarning;
 
 // ICommandArgs ////////////////////////////////////////////////////////////////
 
