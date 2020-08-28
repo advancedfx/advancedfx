@@ -6,13 +6,25 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.89.0</version>
+<time>2020-08-28T18:31Z</time>
+<changes>
+<change type="added">Added mirv_agr recordViewmodels - replaces recordViewmodel, allows to limit to player index.</change>
+<change type="added">Added mirv_calcs cam add player.</change>
+<change type="updated">Limited console spam of FFMPEG mirv_streams when developer is 0.</change>
+<change type="fixed">Fixed some bugs.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.88.0</version>
 <time>2020-08-12T07:27Z</time>
 <changes>
 <change type="updated">Updated AGR to version 5: Now supports camera for each player recorded (controlled by mirv_agr recordPlayerCameras) and now records viewmodels of all players when recordViewModel is enabled.</change>
 </changes>
 </release>
-
 
 
 <release>

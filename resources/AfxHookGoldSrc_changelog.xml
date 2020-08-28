@@ -4,6 +4,21 @@
 <changelog>
 
 
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.10.0</version>
+<time>2020-08-28T18:31Z</time>
+<changes>
+<change type="added">
+Added mirv_movie_ffmpeg (needs FFMPEG configured / installed, similar to AfxHookSource).
+</change>
+<change type="fixed">
+Fixed some bugs.
+</change>
+</changes>
+</release>
+
+
 
 <release>
 <name>AfxHookGoldSrc</name>
