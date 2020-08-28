@@ -2037,6 +2037,7 @@ CAfxImportDllHook g_Import_Tier0_USER32("USER32.dll", CAfxImportDllHooks({
 CAfxImportsHook g_Import_Tier0(CAfxImportsHooks({
 	&g_Import_Tier0_USER32}));
 
+
 void CommonHooks()
 {
 	static bool bFirstRun = true;
@@ -2132,16 +2133,12 @@ void CommonHooks()
 		{
 			bFirstTier0 = false;
 
-			Tier0_Msg = (Tier0MsgFn)GetProcAddress(hTier0, "Msg");
-			Tier0_DMsg = (Tier0DMsgFn)GetProcAddress(hTier0, "DMsg");
-			Tier0_Warning = (Tier0MsgFn)GetProcAddress(hTier0, "Warning");
-			Tier0_DWarning = (Tier0DMsgFn)GetProcAddress(hTier0, "DWarning");
-			Tier0_Log = (Tier0MsgFn)GetProcAddress(hTier0, "Log");
-			Tier0_DLog = (Tier0DMsgFn)GetProcAddress(hTier0, "DLog");
+			advancedfx::Message = Tier0_Msg = (Tier0MsgFn)GetProcAddress(hTier0, "Msg");
+			advancedfx::Warning = Tier0_Warning = (Tier0MsgFn)GetProcAddress(hTier0, "Warning");
 			Tier0_Error = (Tier0MsgFn)GetProcAddress(hTier0, "Error");
-			Tier0_ConMsg = (Tier0MsgFn)GetProcAddress(hTier0, "ConMsg");
-			Tier0_ConWarning = (Tier0MsgFn)GetProcAddress(hTier0, "ConWarning");
-			Tier0_ConLog = (Tier0MsgFn)GetProcAddress(hTier0, "ConLog");
+
+			advancedfx::DevMessage = Tier0_DevMsg = (Tier0DevMsgFn)GetProcAddress(hTier0, "DevMsg");
+			advancedfx::DevWarning = Tier0_DevWarning = (Tier0DevMsgFn)GetProcAddress(hTier0, "DevWarning");
 
 			if (SourceSdkVer_CSSV34 == g_SourceSdkVer)
 			{
