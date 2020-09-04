@@ -260,7 +260,7 @@ GameEventUnserializer.prototype.unserialize = function unserialize(bufferReader)
 		
 		if(this.enrichments[gameEvent.eventName]) gameEvent.enrichments = this.enrichments[gameEvent.eventName];
 	}
-	else gameEvent = this.knownEvents[gameEvent.eventId];
+	else gameEvent = this.knownEvents[eventId];
 	
 	if(undefined === gameEvent) throw new "GameEventUnserializer.prototype.unserialize";
 	
