@@ -102,11 +102,6 @@ namespace AfxInterop {
 
 			if (!Flush(m_hEnginePipe)) { errorLine = __LINE__; goto error; }
 
-			if (7 <= m_EngineVersion)
-			{
-				if(!ReadGameEventSettings(true)) { errorLine = __LINE__; goto error; }
-			}
-
 			UINT32 commandCount;
 
 			if (!ReadCompressedUInt32(m_hEnginePipe, commandCount)) { errorLine = __LINE__; goto error; }
@@ -141,6 +136,11 @@ namespace AfxInterop {
 			if (!WriteInt32(m_hEnginePipe, EngineMessage_BeforeFrameRenderStart)) { errorLine = __LINE__; goto error; }
 
 			if (!Flush(m_hEnginePipe)) { errorLine = __LINE__; goto error; }
+
+			if (7 <= m_EngineVersion)
+			{
+				if (!ReadGameEventSettings(true)) { errorLine = __LINE__; goto error; }
+			}
 
 			return;
 
@@ -1339,7 +1339,16 @@ namespace AfxInterop {
 			if (!m_EngineConnected)
 				return false;
 
+			int errorLine = 0;
+			
+			if (!WriteInt32(m_hEnginePipe, EngineMessage_OnGameEvent)) { errorLine = __LINE__; goto error; }
+
 			return true;
+
+		error:
+			Tier0_Warning("AfxInterop::CAfxGameEventListenerSerialzer::BeginSerialize: Error in line %i (%s).\n", errorLine, m_EnginePipeName.c_str());
+			DisconnectEngine();
+			return false;
 		}
 
 		virtual void CAfxGameEventListenerSerialzer::EndSerialize() override
@@ -1816,7 +1825,8 @@ namespace AfxInterop {
 			EngineMessage_BeforeTranslucent = 11,
 			EngineMessage_AfterTranslucent = 12,
 			EngineMessage_OnBeforeHud = 13,
-			EngineMessage_OnAfterHud = 14
+			EngineMessage_OnAfterHud = 14,
+			EngineMessage_OnGameEvent = 15
 		};
 
 		class CConsole
@@ -2083,7 +2093,7 @@ namespace AfxInterop {
 				&& WriteUInt32(hFile, value);
 		}
 
-		bool WriteUInt64(HANDLE hFile, unsigned __int64 value) {
+		bool WriteUInt64(HANDLE hFile, uint64_t value) {
 			return WriteBytes(hFile, &value, 0, sizeof(value));
 		}
 
@@ -2094,7 +2104,7 @@ namespace AfxInterop {
 
 		bool WriteCString(HANDLE hFile, const char* value)
 		{
-			UINT32 length = (UINT32)(strlen(value) + 1);
+			UINT32 length = (UINT32)(strlen(value));
 
 			return WriteCompressedUInt32(hFile, length)
 				&& WriteBytes(hFile, (LPVOID)value, 0, length);
@@ -2125,20 +2135,22 @@ namespace AfxInterop {
 
 		bool ReadGameEventSettings(bool delta)
 		{
+			bool bEnable;
+
+			if (!ReadBoolean(m_hEnginePipe, bEnable)) return false;
+
+			if (!bEnable)
+			{
+				g_AfxGameEvents.RemoveListener(this);
+				return true;
+			}
+			
+			g_AfxGameEvents.AddListener(this);
+				
 			if (!delta)
 			{
-				bool bEnable;
-
-				if (!ReadBoolean(m_hEnginePipe, bEnable)) return false;
-
-				if (!bEnable) return true;
-
-				g_AfxGameEvents.AddListener(this);
 				CAfxGameEventListenerSerialzer::Restart();
 			}
-
-			std::string eventName;
-			unsigned int listSize;
 
 			if (delta)
 			{
@@ -2149,6 +2161,22 @@ namespace AfxInterop {
 
 				if (!bChanged) return true;
 			}
+
+			{
+				bool bValue;
+
+				if (!ReadBoolean(m_hEnginePipe, bValue)) return false;
+				TransmitClientTime = bValue;
+
+				if (!ReadBoolean(m_hEnginePipe, bValue)) return false;
+				TransmitTick = bValue;
+
+				if (!ReadBoolean(m_hEnginePipe, bValue)) return false;
+				TransmitSystemTime = bValue;
+			}
+
+			std::string eventName;
+			unsigned int listSize;
 
 			if (delta)
 			{
