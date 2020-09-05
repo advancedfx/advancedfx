@@ -1569,6 +1569,7 @@ namespace MirvPgl
 	{
 		g_AfxGameEvents.RemoveListener(&MirvPgl::g_MirvPglGameEventSerializer);
 		g_MirvPglGameEventSerializer.Restart();
+		g_MirvPglGameEventSerializer.SetUseGameEventCache(false);
 	}
 }
 
@@ -1643,6 +1644,14 @@ CON_COMMAND(mirv_pgl, "PGL")
 						g_AfxGameEvents.AddListener(&MirvPgl::g_MirvPglGameEventSerializer);
 					else
 						g_AfxGameEvents.RemoveListener(&MirvPgl::g_MirvPglGameEventSerializer);
+
+					return;
+				}
+				else if (0 == _stricmp(arg2, "useCache") && 4 <= argc)
+				{
+					bool enable = 0 != atoi(args->ArgV(3));
+
+					MirvPgl::g_MirvPglGameEventSerializer.SetUseGameEventCache(enable);
 
 					return;
 				}
@@ -1755,6 +1764,7 @@ CON_COMMAND(mirv_pgl, "PGL")
 
 			Tier0_Msg(
 				"mirv_pgl events enabled 0|1\n"
+				"mirv_pgl events useCache 0|1\n"
 				"mirv_pgl events whitelist clear\n"
 				"mirv_pgl events whitelist add <eventName>\n"
 				"mirv_pgl events whitelist remove <eventName>\n"

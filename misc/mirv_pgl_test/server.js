@@ -253,6 +253,7 @@ GameEventUnserializer.prototype.unserialize = function unserialize(bufferReader)
 {
 	var eventId = bufferReader.readInt32LE();
 	var gameEvent;
+	
 	if(0 == eventId)
 	{
 		gameEvent = new GameEventDescription(bufferReader);
@@ -634,6 +635,10 @@ wss.on('connection', function(newWs) {
 								'exec\0mirv_pgl events enabled 1\0'
 							,'utf8')), {binary: true});
 							
+							ws.send(new Uint8Array(Buffer.from(
+								'exec\0mirv_pgl events useCache 1\0'
+							,'utf8')), {binary: true});
+
 							ws.send(new Uint8Array(Buffer.from(
 								'transEnd\0'
 							,'utf8')), {binary: true});

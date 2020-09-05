@@ -165,6 +165,14 @@ public:
 		Enrich(eventName, eventProperty, enable, EnrichmentType_UseridWithEyeAngels);
 	}
 
+	void SetUseGameEventCache(bool value) {
+		m_UseCache = value;
+	}
+
+	bool GetUseGameEventCache() {
+		return m_UseCache;
+	}
+
 protected:
 
 	std::map<std::string, std::map<std::string, unsigned int>> m_Enrichments;
@@ -199,6 +207,8 @@ protected:
 	virtual void WriteUInt64(unsigned __int64 value) = 0;
 
 private:
+	bool m_UseCache = true;
+		
 	std::set<int> m_KnownEventIds;
 };
 

@@ -44,7 +44,7 @@ void CAfxGameEventListenerSerialzer::FireHandledEvent(SOURCESDK::CSGO::CGameEven
 
 		int eventId = descriptor->eventid;
 
-		if (m_KnownEventIds.end() != m_KnownEventIds.find(eventId))
+		if (m_UseCache && m_KnownEventIds.end() != m_KnownEventIds.find(eventId))
 		{
 			WriteLong(eventId);
 		}
