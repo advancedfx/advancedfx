@@ -1158,6 +1158,8 @@ __declspec(naked) void CAfxBaseClientDll::_UNKOWN_035(void)
 __declspec(naked) void CAfxBaseClientDll::_UNKOWN_036(void)
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 36) }
 
+int g_iForcePostDataUpdateChanged = -1;
+
 //__declspec(naked)
 void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t curStage)
 { // NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 37)
@@ -1217,6 +1219,14 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 	case SOURCESDK::CSGO::FRAME_RENDER_END:
 		csgo_Audio_FRAME_RENDEREND();
 		Shared_AfterFrameRenderEnd();
+		break;
+
+	case SOURCESDK::CSGO::FRAME_NET_UPDATE_POSTDATAUPDATE_END:
+		if (-1 != g_iForcePostDataUpdateChanged)
+		{
+			if(SOURCESDK::IClientEntity_csgo* ce = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_iForcePostDataUpdateChanged))
+				ce->PostDataUpdate(SOURCESDK::CSGO::DATA_UPDATE_CREATED);
+		}
 		break;
 	}
 }

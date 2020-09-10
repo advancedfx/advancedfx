@@ -6,6 +6,40 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.90.1</version>
+<time>2020-09-10T10:00Z</time>
+<changes>
+<change type="added">Added mirv_fix forcePostDataUpdateChanged. This breaks e.g. the player model animations of the entity index set, but in-return makes things work in case the demo contains data about that entity, but the update is not triggered. This will help for checking some older demos for coach bug abuse in case where the replay / game would disagree with other detection tools that relay only on the network origin and angles otherwise.</change>
+</changes>
+<comments>
+// Updated example config:<br />
+<br />
+// Notes:<br />
+// - Cfg should be loaded _after_ loading the level.<br />
+// - You should go into freelok mode since it only gets the player view and overrides the engine view with it, so view position and angles should be correct.<br />
+// - playerIndex you can get from the first column in mirv_listentities isPlayer=1<br />
+// - If the camera is not overriden, then the selected player has no view currently.<br />
+<br />
+mirv_calcs handle add index playerIndex 0<br />
+mirv_calcs cam add player playerCam playerIndex<br />
+mirv_calcs vecAng add cam playerCam playerCam<br />
+mirv_calcs fov add cam playerCam playerCam<br />
+<br />
+// To change enter this (and change the index at the end):<br />
+mirv_calcs handle edit playerIndex index 5<br />
+mirv_fix forcePostDataUpdateChanged 5<br />
+<br />
+// To exit enter this:<br />
+mirv_cam source calcVecAngClear; mirv_cam fov calcClear<br />
+<br />
+// To activate enter this:<br />
+mirv_cam source calcVecAng playerCam; mirv_cam fov calc playerCam
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.89.0</version>
 <time>2020-08-28T18:31Z</time>
 <changes>

@@ -3305,6 +3305,8 @@ CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 	return;
 }
 
+extern int g_iForcePostDataUpdateChanged;
+
 CON_COMMAND(mirv_fix, "Various fixes")
 {
 	int argc = args->ArgC();
@@ -3466,6 +3468,21 @@ CON_COMMAND(mirv_fix, "Various fixes")
 
 			return;
 		}
+		else if (0 == _stricmp("forcePostDataUpdateChanged", cmd1))
+		{
+			if (3 <= argc)
+			{
+				g_iForcePostDataUpdateChanged = atoi(args->ArgV(2));
+				return;
+			}
+
+			Tier0_Msg(
+				"mirv_fix forcePostDataUpdateChanged 0|1\n",
+				"Current value: %i\n"
+				, g_iForcePostDataUpdateChanged);
+
+			return;
+		}
 	}
 
 	Tier0_Msg(
@@ -3474,7 +3491,8 @@ CON_COMMAND(mirv_fix, "Various fixes")
 		"mirv_fix oldDuckFix [...] - Can fix player stuck in duck for old demos.\n"
 		"mirv_fix playerAnimState [...] - Fixes twitching of player arms/legs, see https://github.com/advancedfx/advancedfx/wiki/Source%3ASmoother-Demos\n"
 		//"mirv_fix demoIndexTicks [...] - Tries to make backward skipping faster in demos.\n"
-		"mirv_fix selectedPlayerGlow 0|1 - If to allow selected player glow (1, default) or not (0).\n"
+		"mirv_fix selectedPlayerGlow -1|<iEntityId> - If to force post data update changed on <iEntityId> or not (-1, default).\n"
+		"mirv_fix forcePostDataUpdateChanged [...].\n"
 	);
 	return;
 }
