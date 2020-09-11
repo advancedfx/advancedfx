@@ -10,8 +10,8 @@ include(FetchContent)
 
 FetchContent_Declare(
 	nasm
-	URL https://github.com/advancedfx/nasm/releases/download/v2.14.02/nasm-2.14.02-win64.zip https://www.nasm.us/pub/nasm/releasebuilds/2.14.02/win64/nasm-2.14.02-win64.zip
-	URL_HASH SHA512=D1C691DF380F53E5D620CC82E607BF78427817BE588B90617268B6D7253CA06CFA98A893F5BCA4C6D325C1A44B51C208719F8113DCF25207DBD51F33098D7051
+	URL https://github.com/advancedfx/nasm-mirror/releases/download/nasm-2.15.05/nasm-2.15.05-win64.zip https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win64/nasm-2.15.05-win64.zip
+	URL_HASH SHA512=0d0469f3d475f3d192b9b5b7ee74662cbcb9e02efa0d51839c12cbf6f5de5cd58b32e1d12c9ee4381a63e99a4956e03df7decaf1369e598e0edff19a12629073
 )
 
 FetchContent_GetProperties(nasm)
