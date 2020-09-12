@@ -5,11 +5,11 @@
 [submodule "shared/easywsclient"]
 	path = deps/release/easywsclient
 	url = https://github.com/advancedfx/easywsclient.git
-	branch = master
+	branch = upstream
 [submodule "shared/Detours"]
 	path = deps/release/Detours
 	url = https://github.com/advancedfx/Detours
-	branch = master
+	branch = upstream
 [submodule "shared/halflife"]
 	path = deps/release/halflife
 	url = https://github.com/advancedfx/halflife.git
@@ -17,10 +17,11 @@
 [submodule "contrib"]
 	path = deps/release/contrib
 	url = https://github.com/advancedfx/contrib.git
-	branch = master
+	branch = main
 [submodule "l10n"]
 	path = deps/release/l10n
 	url = https://github.com/advancedfx/l10n.git
+	branch = main
 [submodule "deps/wxl-po-tools"]
 	path = deps/dev/wxl-po-tools
 	url = https://github.com/advancedfx/wxl-po-tools.git
@@ -28,4 +29,4 @@
 [submodule "deps/release/rapidxml"]
 	path = deps/release/rapidxml
 	url = https://github.com/advancedfx/rapidxml.git
-	branch = master
+	branch = upstream
