@@ -6,6 +6,17 @@
 
 <release>
 <name>HLAE</name>
+<version>2.107.2</version>
+<time>2020-09-16T20:43Z</time>
+<changes>
+<change type="updated">Changed FFMPEG URLs in HLAE_Setup.exe to https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror because https://ffmpeg.zeranoe.com/builds/ is closing down, see https://twitter.com/Zeranoe/status/1300596971934224385 - thanks to https://github.com/wordlesswind for informing us about the issue.</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>HLAE</name>
 <version>2.107.1</version>
 <time>2020-09-10T10:00Z</time>
 <changes>

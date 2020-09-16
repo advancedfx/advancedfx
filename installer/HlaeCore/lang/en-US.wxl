@@ -9,7 +9,7 @@
   <String Id="FfmpegDlgTitle">{\WixUI_Font_Title}FFMPEG</String>
   <String Id="FfmpegDlgDescription">Install FFMPEG or use exsiting one.</String>
   <String Id="FfmpegDlgReinstall">Reinstall FFMPEG</String>
-  <String Id="FfmpegDlgDownloaded">FFMPEG will be downloaded from https://ffmpeg.zeranoe.com/builds/ and installed using your current internet connection and proxy settings.</String>
+  <String Id="FfmpegDlgDownloaded">FFMPEG will be downloaded from GitHub.com and installed using your current internet connection and proxy settings.</String>
   <String Id="FfmpegDlgVersion">Select version:</String>
   <String Id="FfmpegDlgLatest">latest (recommended)</String>
   <String Id="FfmpegDlgCustom">Select existing on disk</String>
@@ -27,6 +27,8 @@
   <String Id="InstallFfmpegConnect_Template">...</String>
   <String Id="InstallFfmpegDownload">Downloading [AFX_FFMPEGURL]</String>
   <String Id="InstallFfmpegDownload_Template">[1] of [2] Bytes</String>
+  <String Id="InstallFfmpegChecksum">Verifying checksum</String>
+  <String Id="InstallFfmpegChecksum_Template">[1] of [2] Bytes</String>
   <String Id="InstallFfmpegExtract">Extracting FFMPEG</String>
   <String Id="InstallFfmpegExtract_Template">Item [1] of [2] ...</String>  
   <String Id="AppFolderMustBeLatin">The HLAE application folder path contains invalid characters: Only basic latin character set is allowed (7bit ASCII).</String>

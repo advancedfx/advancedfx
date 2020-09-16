@@ -1,0 +1,85 @@
+function makeList() {
+	var result = '';
+
+	var str = `626cdbaa41469bd9d7d34d580190625174782f9cd820d40e30b4ccd31c25663a10c388b3c7de75f786fb962cd0387ecfbc7880fcf00800149596376da6590537 *./ffmpeg-4.2.1-win32-shared-lgpl.zip
+a32591422f29d0bdb8ad8c3692705d821f668bf18501f43fbee2182b683ff383b54ba37ab80dba2159e778062d4426484c7d22d85d19f4d80f4349309defcda1 *./ffmpeg-4.2.1-win32-shared.zip
+1d6f9acfdd64840799f7ed75f429635b610b41241602658b75c083f86cf0a88a68f8d8a0edb18e1a3270f7cba1657d4c7253e2c4987dfeaa9a6166de39fb1306 *./ffmpeg-4.2.1-win32-static-lgpl.zip
+1eca0751c630c8c589a2a86dc1cbddb8e65d941d7cb0ff99d8a65b7ae97e883c9bdc90ff8e8e86f3506d4a9ee1ca7df060b4872f22adb2c90776c24cb6c7ab2a *./ffmpeg-4.2.1-win32-static.zip
+c47e5970009189abc867d1af1c35743b821f1072bb103e2b61ba473655df36f25a3426f848a4016fc31fa13ce0a4692aefc3a34bf9ccc7de3d8c0215ed654c0d *./ffmpeg-4.2.1-win64-shared-lgpl.zip
+8d799ebaa39fd0f6cb6c81d3fa4b8b40f4b70ce56e4728f32b18b906cdfaba506b2f1c3d93807cee45756eca4cec2a3d4a461bfbb5a0f403a011b1aedb782654 *./ffmpeg-4.2.1-win64-shared.zip
+86dc01d72cf6d180961de981c4216707edfa25fab3b33b1ac0b1d5bc99c5db44fb97a089e6e7765e9c18e42544dc1a98070c6fe54b777a3c31e7000119952283 *./ffmpeg-4.2.1-win64-static-lgpl.zip
+1b4f7d75f19594b1df14acf44a260435625d94e9636be6c8b548891f182c7fbdf2820395908fc431197b58ee6ce50c5f88f544855b7fc0b1a3d813fc4b38e700 *./ffmpeg-4.2.1-win64-static.zip
+910c1857c9f08a887f1af6d0123fcddcce8afb93ad5c523225e401077e4b652de68998799bfbdc3cc0ae6ada4f1c9681357eaf41f4ae10b1f99e5bbfb79e0735 *./ffmpeg-4.2.2-win32-shared-lgpl.zip
+2e62b078890a432ee4b1e991040298aad63b2f1e7b1c66f151ae8bad35da8e3ca406d5c17ecb462280af79e16e21453ba552347346bf539eba1d4e55605bb39d *./ffmpeg-4.2.2-win32-shared.zip
+e8d5160bc436ff6f55fcbf3a4b7408cced7bc369183089f3b6f7f15176b34e637449ab2ab092604b9d17698c153ff0c1ccbbff6815693b16459841f4d02ad9eb *./ffmpeg-4.2.2-win32-static-lgpl.zip
+b384397b401c870041b21ae291f4e62e7030303057e4b6a81ed473b23613528ce4e5dcf10c4753e8321a17b78bac8c34de6c5e52ae8acf034718a2214aa669cb *./ffmpeg-4.2.2-win32-static.zip
+23b429a590afa337a6ed00256cbbb8aa1784ef2d149c5c32df2a12b998aea5c6c49463c23dbf35f65a3d5b221e93b6bba207b3b0e9d4915f0229358f7e63d129 *./ffmpeg-4.2.2-win64-shared-lgpl.zip
+79a9d7d462ca9d04343e87d368578e827b4f5046a95edbf17e255a16f62d08e712c9fefb977cc0bcc528e1b0ccfe745497d7743b017a1f5d760cdd371961b212 *./ffmpeg-4.2.2-win64-shared.zip
+f92f76c0d4a2f55775a334c471b3f98f65f1bdb405f84cbda8e8449509834f1dcffa168c88e5e0b73e083b485c18753b7166dae95c08ebcabaff9caa008e8237 *./ffmpeg-4.2.2-win64-static-lgpl.zip
+53dac6f1f8c23777bd01aac585e991d1b44390e0195bb76b10980cfef2d85a2187fa8fea59b109eaa01407d3f94a8df0952b5b950f3ae26c3c40752c3a9c70bd *./ffmpeg-4.2.2-win64-static.zip
+fc20936c7562fda4294874c8807defbf7b398c71d5a1e250a764d6955940390017575d12643bbdcd30436286d9c9fa26dbb47c53d76509d5979ce72ffd8c38c2 *./ffmpeg-4.2.3-win32-shared-lgpl.zip
+2f1bf8fd9ab138567630fe72e98fc3fd9233bc9f9f717980b209363fda8ad111080c35a6698a6745dce6d3a841b4e40d8a5a2f837d802b17de8acc16bbfb0c53 *./ffmpeg-4.2.3-win32-shared.zip
+3cea20518c663a14506e1ec823f2bac305a8414ee446b72aa8d4c3b8ededdd99178faf86ccb065414b58626e8fb6e80d3c7ff972b76cda78f42d12d370f13c50 *./ffmpeg-4.2.3-win32-static-lgpl.zip
+62e4863c849377814cc942ea336d92efe26a4a1d577040dd8bc03955778092779edde5988a9c0fcaa8138ee5785e8cb3658d2214fa3c7808f61a7bcc796b9e74 *./ffmpeg-4.2.3-win32-static.zip
+9bb53465417c6336f192a824883505bf61ab29c836ba9da9ffaba94d02745b0eab4b997e4e717fd3df786b082c7cab352e544f3a1336fc38104e83fd96a2727f *./ffmpeg-4.2.3-win64-shared-lgpl.zip
+411642afa3e6fa7bd49816bcf843cbf1b878725ca37cb112b9045221b27552f11303b0cdb45025cad4e330e6ca77b869b376deea400754eab82e66998767f296 *./ffmpeg-4.2.3-win64-shared.zip
+18678d012ef42c674287c34f832ae8df6c78388444442369271f92a3580a1ab61887425bde5629f130979919a1cb4aecc1e28d13b8c6794be7c4e33fcde7d85d *./ffmpeg-4.2.3-win64-static-lgpl.zip
+a75ece06d054b67cad09055bde86177768d77c31c4cd7acc6e119671899c8cd0450eedbbb74de64d9d0f4a1dca727aed5db8155cf6e9df8f1fb7c5cb7983611e *./ffmpeg-4.2.3-win64-static.zip
+2622134e8a9ff5bd69d4dcfe0467012f6985ee68d759e659a9a78c82963fdfe78fc52b3b843e996d2cd2446e101d0b7d6852529b2f1e2c272b8f68fa9bcc1cc6 *./ffmpeg-4.3-win32-shared-lgpl.zip
+12585fe382f3050ed87132cef9289de44680c1ae7ce7cad1396b5eed00a862594f56dee62e53328d288de77ce8d512d5056d2f2defb14ea8b5ad4f2f121634a6 *./ffmpeg-4.3-win32-shared.zip
+acfdce30307d967d0f79acb0256934e8fdead2f61670fdf34b9282a1d1a9fc0437d20921c588ee7550c62c4198aff659ecddb701c2c1d741739575b5fec4fe40 *./ffmpeg-4.3-win32-static-lgpl.zip
+cc0f1f141b916bd7113943c9452719980008192aff9c64176eb94f4b22731db61c233855a951df829dc9e9050b596cf8a13b39092fd00aae7cab47a1f8d5892a *./ffmpeg-4.3-win64-shared-lgpl.zip
+52e954708d9cf18f98d66acbdef88bdea76fd3b3dbe2f1097cd1ae4897273192ab18350fb7c7501093cf8ef1b5ab70dd2cf2f17c1cb5c43e07898a5a8ba87b52 *./ffmpeg-4.3-win64-shared.zip
+341efce82787f512b67a8b242debd78083e4d9c681a5c4ec61db95307b19a97b27aa95000a4e816f4f77f0dae75bd04ed9a58f2daf78108d983dd654cb90caaf *./ffmpeg-4.3-win64-static-lgpl.zip
+e29255de686c5cfe34af1f9a260b376ab8400b59121857ff0172e44f395545212eeadcc16637ec15e4087348105764d86e59603f51dea5475e185448d26f763a *./ffmpeg-4.3-win64-static.zip
+d8506c5cfabb219b32285e6bbaf3cca38bf486b8d8c8b7f9e4425dcb852ad40b9970f83f587ee2d7a83c5373bef74753fe1dcdb6aa48f76109be74abc7256f8c *./ffmpeg-4.3.1-win32-shared-lgpl.zip
+3abcfbc457b978469aa7582a91bfb0904c0febe8952de94ddef1d92e81d89f8d7f5107000c6e5a43a1e00f6525d557d787f3516777ebb3bc2a3a86d0d018d2b4 *./ffmpeg-4.3.1-win32-shared.zip
+9be85148079ab135a38622380f3a9307af8086c9982d9c2bfdebe427783afe48a2a2e63f113b7f4232814a3c8056032bdd6065358ba2e728cfbbe1eea7dfcb68 *./ffmpeg-4.3.1-win32-static-lgpl.zip
+822336566583e5bbabd140c927456346dec0c3b0f42685dc65dce3cb3e9d640e1cbb951c8d6442887ac51ba2337aa472d095af8f4326140ab2d5d6402f43019d *./ffmpeg-4.3.1-win32-static.zip
+3cef1d9bdc9669ef1d461aa9772c151c229a2de47df76b11be70cebb63a2d83ada24df455d443002e9fffc7b5cd395a9bdcd525ee570093d2963965b772b90bb *./ffmpeg-4.3.1-win64-shared-lgpl.zip
+bd8c1fc91019f7efad5cc8bfb18233658431c96af29ea0b54bb8c2ac263d8225cfd1487236e221380ef377db750cb33d06e22f1d584c04d34662616ef313e495 *./ffmpeg-latest-win32-shared.zip
+a17d5d5f9d71b71416f356f9b7ef3a2b2a2c399a0bf14b87a23cf021922f3e2c7948251f370507fdad59ff30ba828c92d0746817103a22e47396610c5273e416 *./ffmpeg-latest-win32-static.zip
+9b1699c20ed047f246ba91426ea6c811f1d89bf14ced62e668e4cb22e20dbc079fe280a05a3758ad875490de007e453ac9ffe2d0985d05637f0b5ee87831f63c *./ffmpeg-latest-win64-shared.zip
+ed129d16cdc8701b934f49fba3cfff2b32bf127d70be2a655c35eb02757d06ea27045fe8408379c28d4edcd33d49ab91bc6ad4c6599fc6f9cabae8b4dece2d7a *./ffmpeg-latest-win64-static.zip`;
+
+	var tpl = `
+	<SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_{INDEX}" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="{VERSION}">
+		<![CDATA[AFX_FFMPEG_VERSION="{VERSION_FULL}"]]>
+	</SetProperty>
+	<SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_{INDEX}" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="{LINKING}">
+		<![CDATA[AFX_FFMPEG_VERSION="{VERSION_FULL}"]]>
+	</SetProperty>
+	<SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_{INDEX}" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="{LICENSE}">
+		<![CDATA[AFX_FFMPEG_VERSION="{VERSION_FULL}"]]>
+	</SetProperty>
+	<SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_{INDEX}" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="{URL}">
+		<![CDATA[AFX_FFMPEG_VERSION="{VERSION_FULL}"]]>
+	</SetProperty>
+	<SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_{INDEX}" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="{SUM}">
+		<![CDATA[AFX_FFMPEG_VERSION="{VERSION_FULL}"]]>
+	</SetProperty>`;
+
+	var strs = str.split('\n');
+	
+	strs.forEach(function(e,idx){
+		var lines = e.trim().split(' ');
+		var sha512 = lines[0].trim();
+		var file = lines[1].trim().substring(3);
+		var dash1 = file.indexOf('-');
+		var dash2 = file.indexOf('-', dash1+1);
+		var dash3 = file.indexOf('-', dash2+1);
+		var dash4 = file.indexOf('-', dash3+1);
+		var pos4 = dash4 < 0 ? file.indexOf('.', dash3+1) : dash4;
+		var version = file.substring(dash1+1,dash2);
+		if(version != 'latest') version = 'v' + version;
+		var version_full = file.substring(dash1+1,file.length-4);
+		var platform = file.substring(dash2+1,dash3);
+		var linking = file.substring(dash3+1,pos4);
+		var license = dash4 < 0 ? 'gpl3' : 'lgpl3';
+		var url = 'https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/raw/main/'+file;
+		
+		result = result + tpl.replaceAll('{INDEX}',idx).replaceAll('{VERSION_FULL}',version_full).replaceAll('{VERSION}',version).replaceAll('{LINKING}',linking).replaceAll('{LICENSE}',license).replaceAll('{URL}',url).replaceAll('{SUM}',sha512);
+	});
+	
+	return result;
+}

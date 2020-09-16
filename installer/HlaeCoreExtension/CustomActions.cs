@@ -15,6 +15,7 @@ namespace HlaeCoreExtension
     public class CustomActions
     {
         const long ticksFfmpegDownload = 100 * 1000 * 1000;
+        const long ticksFfmpegChecksum = 100 * 1000 * 1000;
         const long ticksFfmpegExctract = 250 * 1000 * 1000;
 
         const int msidbComponentAttributesLocalOnly = 0x0000;
@@ -235,7 +236,7 @@ namespace HlaeCoreExtension
             {
                 Record progressRec = new Record(2);
                 progressRec[1] = 3;
-                progressRec[2] = ticksFfmpegDownload + ticksFfmpegExctract; // ticks
+                progressRec[2] = ticksFfmpegDownload + ticksFfmpegChecksum + ticksFfmpegExctract; // ticks
                 if (MessageResult.Cancel == session.Message(InstallMessage.Progress, progressRec)) return ActionResult.UserExit;
 
                 CustomActionData _data = new CustomActionData();
@@ -244,10 +245,13 @@ namespace HlaeCoreExtension
                 _data["TEMPFOLDER"] = session["TEMPFOLDER"].Replace(";", ";;");
                 _data["AFX_FFMPEGFOLDER"] = session["AFX_FFMPEGFOLDER"].Replace("; ", ";;");
                 _data["AFX_FFMPEGURL"] = session["AFX_FFMPEGURL"].Replace("; ", ";;");
+                _data["AFX_FFMPEGSUM"] = session["AFX_FFMPEGSUM"].Replace("; ", ";;");
                 _data["InstallFfmpegConnect"] = ((string)session.Database.ExecuteScalar("SELECT `Text` FROM `UIText` WHERE `Key`='InstallFfmpegConnect'")).Replace(";", ";;");
                 _data["InstallFfmpegConnect_Template"] = ((string)session.Database.ExecuteScalar("SELECT `Text` FROM `UIText` WHERE `Key`='InstallFfmpegConnect_Template'")).Replace(";", ";;");
                 _data["InstallFfmpegDownload"] = ((string)session.Database.ExecuteScalar("SELECT `Text` FROM `UIText` WHERE `Key`='InstallFfmpegDownload'")).Replace(";", ";;");
                 _data["InstallFfmpegDownload_Template"] = ((string)session.Database.ExecuteScalar("SELECT `Text` FROM `UIText` WHERE `Key`='InstallFfmpegDownload_Template'")).Replace(";", ";;");
+                _data["InstallFfmpegChecksum"] = ((string)session.Database.ExecuteScalar("SELECT `Text` FROM `UIText` WHERE `Key`='InstallFfmpegChecksum'")).Replace(";", ";;");
+                _data["InstallFfmpegChecksum_Template"] = ((string)session.Database.ExecuteScalar("SELECT `Text` FROM `UIText` WHERE `Key`='InstallFfmpegChecksum_Template'")).Replace(";", ";;");
                 _data["InstallFfmpegExtract"] = ((string)session.Database.ExecuteScalar("SELECT `Text` FROM `UIText` WHERE `Key`='InstallFfmpegExtract'")).Replace(";", ";;");
                 _data["InstallFfmpegExtract_Template"] = ((string)session.Database.ExecuteScalar("SELECT `Text` FROM `UIText` WHERE `Key`='InstallFfmpegExtract_Template'")).Replace(";", ";;");
 
@@ -283,13 +287,15 @@ namespace HlaeCoreExtension
 
                 string afxFfmpegFolder = session.CustomActionData["AFX_FFMPEGFOLDER"].TrimEnd('/', '\\');
                 string downloadUrl = session.CustomActionData["AFX_FFMPEGURL"];
-                //string targetHash = session.CustomActionData["AFX_FFMPEGHASH"];
+                string targetHash = session.CustomActionData["AFX_FFMPEGSUM"];
                 bool is64BitOs = System.Environment.Is64BitOperatingSystem;
 
                 string locInstallFfmpegConnect = session.CustomActionData["InstallFfmpegConnect"];
                 string locInstallFfmpegConnect_Template = session.CustomActionData["InstallFfmpegConnect_Template"];
                 string locInstallFfmpegDownload = session.CustomActionData["InstallFfmpegDownload"];
                 string locInstallFfmpegDownload_Template = session.CustomActionData["InstallFfmpegDownload_Template"];
+                string locInstallFfmpegChecksum = session.CustomActionData["InstallFfmpegChecksum"];
+                string locInstallFfmpegChecksum_Template = session.CustomActionData["InstallFfmpegChecksum_Template"];
                 string locInstallFfmpegExtract = session.CustomActionData["InstallFfmpegExtract"];
                 string locInstallFfmpegExtract_Template = session.CustomActionData["InstallFfmpegExtract_Template"];
 
@@ -307,6 +313,8 @@ namespace HlaeCoreExtension
                 System.Net.WebRequest.DefaultWebProxy.Credentials = System.Net.CredentialCache.DefaultNetworkCredentials;
 
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(downloadUrl);
+
+                long downloadSize = 0;
 
                 using (FileStream download = new FileStream(tempFolder + "\\" + fileName, FileMode.Create))
                 {
@@ -339,26 +347,27 @@ namespace HlaeCoreExtension
                     download.Close();
 
                     if (MessageResult.Cancel == progress.SetAbsTick(ticksFfmpegDownload, lengthRead, length)) return ActionResult.UserExit;
+
+                    downloadSize = lengthRead;
                 }
 
-                /*
-                if (MessageResult.Cancel == progress.Init("InstallFfmpegAction", "Verifiying checksum", "...", 1)) throw new ApplicationException("Aborted by user.");
+                //
 
-                string tempFile = tempFolder+"\\ffmpeg-20190712-81d3d7d-win64-static.zip";
+                if (MessageResult.Cancel == progress.Init(actionName, locInstallFfmpegChecksum, locInstallFfmpegChecksum_Template, ticksFfmpegChecksum)) return ActionResult.UserExit;
 
-                using (FileStream fs = File.OpenRead(
-                    tempFile
-                    //directoryPath + "\\" + fileName
-                    ))
+                if (null != targetHash)
                 {
-                    HashAlgorithm sha512 = new SHA512CryptoServiceProvider();
-                    string hash = BitConverter.ToString(sha512.ComputeHash(fs)).ToUpper().Replace("-", "");
-                    if(0 != hash.CompareTo(targetHash)) throw new ApplicationException("SHA512 hash mismatch.");
+                    using (FileStream fs = File.OpenRead(tempFolder + "\\" + fileName))
+                    {
+                        HashAlgorithm sha512 = new SHA512CryptoServiceProvider();
+                        string hash = BitConverter.ToString(sha512.ComputeHash(fs)).ToLower().Replace("-", "");
+                        if (0 != hash.CompareTo(targetHash)) throw new ApplicationException("SHA512 hash mismatch.");
+                    }
                 }
 
-                progress.SetAbsTick(1)) return ActionResult.UserExit;
+                if (MessageResult.Cancel == progress.SetAbsTick(ticksFfmpegDownload, downloadSize, downloadSize)) return ActionResult.UserExit;
 
-                */
+                //
 
                 using (System.IO.Compression.ZipArchive zip = new System.IO.Compression.ZipArchive(new FileStream(
                     tempFolder + "\\" + fileName,
