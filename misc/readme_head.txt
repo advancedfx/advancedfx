@@ -110,6 +110,14 @@ id Software
 	For Quake 1 source code.
 	https://www.idsoftware.com/
 
+protobuf
+	https://github.com/protocolbuffers/protobuf
+	License: ./LICENSES/protobuf/LICENSE
+
+steamdb.info
+	For https://github.com/SteamDatabase/GameTracking-CSGO
+	which we used for the latest protobufs.
+
 qspline CC0
 	Thanks to James McEnnan for putting essential parts of qspline under the CC0
 	license.
@@ -118,7 +126,7 @@ qspline CC0
 
 zLib
 	https://zlib.net/
-	License::/LICENSES/zlib/README
+	License: ./LICENSES/zlib/README
 
 And everyone that feels he/she/it should have been mentioned here.
 

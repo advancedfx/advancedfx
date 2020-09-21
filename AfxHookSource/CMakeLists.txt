@@ -42,9 +42,33 @@ add_custom_target(afxhooksourceshaders
     DEPENDS ${AFXHOOKSOURCE_SHADERS}
 )
 
+set(AFXHOOKSOURCE_PROTOBUFS
+	"${CMAKE_CURRENT_SOURCE_DIR}/../build/protobuf/csgo/netmessages.pb.cc"
+	"${CMAKE_CURRENT_SOURCE_DIR}/../build/protobuf/csgo/netmessages.pb.h"
+)
+
+set(AFXHOOKSOURCE_PROTOBUF_SOURCES
+	"${CMAKE_CURRENT_SOURCE_DIR}/../deps/release/prop/protobuf/csgo/netmessages.proto"
+)
+
+add_custom_command(
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../build"
+    OUTPUT ${AFXHOOKSOURCE_PROTOBUFS}
+    DEPENDS protobuf_build ${AFXHOOKSOURCE_PROTOBUF_SOURCES}
+	COMMAND "${CMAKE_COMMAND}" -E make_directory "protobuf/csgo"
+    COMMAND "${protobuf_BINARY_DIR}/Release/protoc.exe" "--proto_path=${protobuf_SOURCE_DIR}/src" "--proto_path=${CMAKE_CURRENT_SOURCE_DIR}/../deps/release/prop/protobuf/csgo" "--cpp_out=${CMAKE_CURRENT_SOURCE_DIR}/../build/protobuf/csgo" "${CMAKE_CURRENT_SOURCE_DIR}/../deps/release/prop/protobuf/csgo/netmessages.proto"
+)
+
+add_custom_target(afxhooksourceprotobufs
+    DEPENDS ${AFXHOOKSOURCE_PROTOBUFS}
+)
+
+separate_arguments(AFXHOOKSOURCE_ARGS)
+
 add_custom_target(afxhooksource
-    DEPENDS ilmbase_build openexr_build afxhooksourceshaders
+    DEPENDS ilmbase_build openexr_build afxhooksourceshaders afxhooksourceprotobufs afx
     WORKING_DIRECTORY ${afxhooksource_BINARY_DIR}
     BYPRODUCTS "${afxhooksource_BINARY_DIR}/AfxHookSource.dll"
-    COMMAND ${VS16_MSBUILD} "${afxhooksource_SOURCE_DIR}/AfxHookSource.vcxproj" "/p:Configuration=Release" "/p:Platform=Win32" "/p:OutDir=${afxhooksource_BINARY_DIR}/" "/p:ILMBASE_BUILD_DIR=${ILMBASE_BUILD_DIR};OPENEXR_BUILD_DIR=${OPENEXR_BUILD_DIR}"
+    COMMAND "${VS16_MSBUILD}" "${afxhooksource_SOURCE_DIR}/AfxHookSource.vcxproj" /p:Configuration=Release /p:Platform=Win32 "/p:OutDir=${afxhooksource_BINARY_DIR}" "/p:ILMBASE_BUILD_DIR=${ILMBASE_BUILD_DIR}" "/p:OPENEXR_BUILD_DIR=${OPENEXR_BUILD_DIR}" "/p:PROTOBUF_BINARY_DIR=${protobuf_BINARY_DIR}" "/p:PROTOBUF_SOURCE_DIR=${protobuf_SOURCE_DIR}"
+	VERBATIM
 )

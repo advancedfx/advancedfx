@@ -3477,7 +3477,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 			}
 
 			Tier0_Msg(
-				"mirv_fix forcePostDataUpdateChanged 0|1\n",
+				"mirv_fix forcePostDataUpdateChanged -1|<iEntityIndex>\n"
 				"Current value: %i\n"
 				, g_iForcePostDataUpdateChanged);
 

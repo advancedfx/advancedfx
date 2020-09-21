@@ -80,7 +80,9 @@ AFXADDR_DEF(csgo_RTTI_IGameEvent)
 //AFXADDR_DEF(csgo_client_RTTI_IClientRenderable);
 AFXADDR_DEF(csgo_GlowCurrentPlayer_JMPS)
 AFXADDR_DEF(csgo_C_CSPlayer_UpdateClientSideAnimation)
-
+AFXADDR_DEF(csgo_CNetChan_ProcessMessages)
+AFXADDR_DEF(csgo_C_CSPlayer_vtable)
+AFXADDR_DEF(csgo_C_CSPlayer_ofs_m_angEyeAngles)
 void ErrorBox(char const * messageText);
 
 #define STRINGIZE(x) STRINGIZE2(x)
@@ -557,6 +559,28 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		// csgo_CStaticProp_IClientEntity_vtable // Checked 2019-08-24.
 		AFXADDR_SET(csgo_CStaticProp_IClientEntity_vtable, FindClassVtable((HMODULE)engineDll, ".?AVCStaticProp@@", 0, 0x4));
 		if (!AFXADDR_GET(csgo_CStaticProp_IClientEntity_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+		// csgo_CNetChan_ProcessMessages // Checked 2020-09-20.
+		// This function references string "ProcessMessages %s: incoming buffer overflow!\n".
+		{
+			DWORD addr = 0;
+
+			ImageSectionsReader sections((HMODULE)engineDll);
+			if (!sections.Eof())
+			{
+				MemRange textRange = sections.GetMemRange();
+
+				MemRange result = FindPatternString(textRange, "55 8B EC 83 E4 F0 81 EC 88 00 00 00 56 57 8B F9 B9 ?? ?? ?? ?? C6 47 16 00 F7 05 ?? ?? ?? ?? 00 10 00 00");
+
+				if (!result.IsEmpty())
+					addr = result.Start;
+				else
+					ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			AFXADDR_SET(csgo_CNetChan_ProcessMessages, addr);
+		}
 	}
 	else
 	{
@@ -572,6 +596,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_RTTI_CGameEvent, 0);
 		AFXADDR_SET(csgo_RTTI_IGameEvent, 0);
 		AFXADDR_SET(csgo_CStaticProp_IClientEntity_vtable, 0x0);
+		AFXADDR_SET(csgo_CNetChan_ProcessMessages, 0x0);
 	}
 	AFXADDR_SET(csgo_snd_mix_timescale_patch_DSZ, 0x08);
 	AFXADDR_SET(csgo_MIX_PaintChannels_DSZ, 0x9);
@@ -1855,13 +1880,61 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		*/
 
 		// csgo_C_CSPlayer_UpdateClientSideAnimation // Checked 2020-08-22.
+		// csgo_C_CSPlayer_EyeAngles // Checked 2020-09-21.
 		{
 			AFXADDR_SET(csgo_C_CSPlayer_UpdateClientSideAnimation, 0x0);
 			DWORD tmpAddr = FindClassVtable((HMODULE)clientDll, ".?AVC_CSPlayer@@", 0, 0x0);
 			if (tmpAddr) {
+				AFXADDR_SET(csgo_C_CSPlayer_vtable, tmpAddr);
 				AFXADDR_SET(csgo_C_CSPlayer_UpdateClientSideAnimation, ((DWORD*)tmpAddr)[223]);
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+
+		// csgo_C_CSPlayer_ofs_m_angEyeAngles
+		{
+			DWORD strAddr = 0;
+			DWORD ofs = -1;
+			{
+				ImageSectionsReader sections((HMODULE)clientDll);
+				if (!sections.Eof())
+				{
+					sections.Next(); // skip .text
+					if (!sections.Eof())
+					{
+						{
+							MemRange result = FindCString(sections.GetMemRange(), "m_angEyeAngles");
+							if (!result.IsEmpty())
+							{
+								strAddr = result.Start;
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+
+			if (strAddr)
+			{
+				{
+					ImageSectionsReader sections((HMODULE)clientDll);
+
+					MemRange baseRange = sections.GetMemRange();
+					MemRange result = FindBytes(baseRange, (char const *)&strAddr, sizeof(strAddr));
+					if (!result.IsEmpty())
+					{
+						DWORD addr = result.Start;
+						addr += 0x0a;
+						addr = *(DWORD *)addr;
+						ofs = addr;
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+			}
+
+			AFXADDR_SET(csgo_C_CSPlayer_ofs_m_angEyeAngles, ofs);
 		}
 	}
 	else
@@ -1903,6 +1976,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_GlowCurrentPlayer_JMPS, 0x0);
 		//AFXADDR_SET(csgo_C_BaseEntity_ofs_m_nModelIndex, -1);
 		//AFXADDR_SET(csgo_C_BaseEntity_ofs_m_iWorldModelIndex, -1);
+		AFXADDR_SET(csgo_C_CSPlayer_vtable, 0x0);
 		AFXADDR_SET(csgo_C_CSPlayer_UpdateClientSideAnimation, 0x0);
 	}
 

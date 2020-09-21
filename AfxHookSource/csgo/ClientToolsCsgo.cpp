@@ -2,14 +2,18 @@
 
 #include "ClientToolsCsgo.h"
 
+#include "csgo_net_chan.h"
+
 #include "addresses.h"
 #include "RenderView.h"
+#include "WrpVEngineClient.h"
 
 #include <shared/StringTools.h>
 
 #include <Windows.h>
 #include <deps/release/Detours/src/detours.h>
 
+extern WrpVEngineClient* g_VEngineClient;
 
 using namespace SOURCESDK::CSGO;
 
@@ -35,6 +39,33 @@ csgo_C_CSPLayer_UpdateClientSideAnimation_t csgo_TrueC_CSPLayer_UpdateClientSide
 
 void __fastcall csgo_MyC_CSPLayer_UpdateClientSideAnimation(void* This, void* Edx)
 {
+	/*
+	if (g_i_MirvPov)
+	{
+		SOURCESDK::C_BasePlayer_csgo* csPlayer = reinterpret_cast<SOURCESDK::C_BasePlayer_csgo*>(This);
+		if (csPlayer->entindex() == g_i_MirvPov)
+		{
+			SOURCESDK::QAngle angles = csPlayer->EyeAngles();
+			g_VEngineClient->SetViewAngles(angles);
+			Tier0_Msg("%i: %f %f %f\n", csPlayer->entindex(), angles.x, angles.y, angles.z);
+
+			unsigned char* p_m_IsLocalPlayer = (unsigned char*)This + 0x3624;
+			unsigned char oldValue = *p_m_IsLocalPlayer;
+
+			*p_m_IsLocalPlayer = 0;
+
+			csgo_TrueC_CSPLayer_UpdateClientSideAnimation(This, Edx);
+
+			*p_m_IsLocalPlayer = oldValue;
+
+			angles = csPlayer->EyeAngles();
+			//g_VEngineClient->SetViewAngles(angles);
+			Tier0_Msg("%i: %f %f %f\n", csPlayer->entindex(), angles.x, angles.y, angles.z);
+
+			return;
+		}
+	}
+	*/
 	if (CClientToolsCsgo::Instance() && CClientToolsCsgo::Instance()->GetRecording() && CClientToolsCsgo::Instance()->RecordViewModels_get())
 	{
 		// When recording viewmodels we make the C_CSPlayers think that they are the local player (so they will make their viewmodel and attachments) =)
@@ -47,10 +78,36 @@ void __fastcall csgo_MyC_CSPLayer_UpdateClientSideAnimation(void* This, void* Ed
 		csgo_TrueC_CSPLayer_UpdateClientSideAnimation(This, Edx);
 
 		*p_m_IsLocalPlayer = oldValue;
-		return;
+	}
+	else
+	{
+		csgo_TrueC_CSPLayer_UpdateClientSideAnimation(This, Edx);
+	}
+}
+
+
+bool csgo_C_CSPlayer_UpdateClientSideAnimation_Install(void)
+{
+	static bool firstResult = false;
+	static bool firstRun = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	if (AFXADDR_GET(csgo_CNetChan_ProcessMessages))
+	{
+		LONG error = NO_ERROR;
+
+		csgo_TrueC_CSPLayer_UpdateClientSideAnimation = (csgo_C_CSPLayer_UpdateClientSideAnimation_t)AFXADDR_GET(csgo_C_CSPlayer_UpdateClientSideAnimation);
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)csgo_TrueC_CSPLayer_UpdateClientSideAnimation, csgo_MyC_CSPLayer_UpdateClientSideAnimation);
+		error = DetourTransactionCommit();
+
+		firstResult = NO_ERROR == error;
 	}
 
-	csgo_TrueC_CSPLayer_UpdateClientSideAnimation(This, Edx);
+	return firstResult;
 }
 
 CClientToolsCsgo * CClientToolsCsgo::m_Instance = 0;
@@ -408,23 +465,8 @@ void CClientToolsCsgo::StartRecording(wchar_t const * fileName)
 		{
 			if (nullptr == csgo_TrueC_CSPLayer_UpdateClientSideAnimation)
 			{
-				if (AFXADDR_GET(csgo_C_CSPlayer_UpdateClientSideAnimation))
+				if (!csgo_C_CSPlayer_UpdateClientSideAnimation_Install())
 				{
-					LONG error = NO_ERROR;
-
-					csgo_TrueC_CSPLayer_UpdateClientSideAnimation = (csgo_C_CSPLayer_UpdateClientSideAnimation_t)AFXADDR_GET(csgo_C_CSPlayer_UpdateClientSideAnimation);
-
-					DetourTransactionBegin();
-					DetourUpdateThread(GetCurrentThread());
-					DetourAttach(&(PVOID&)csgo_TrueC_CSPLayer_UpdateClientSideAnimation, csgo_MyC_CSPLayer_UpdateClientSideAnimation);
-					error = DetourTransactionCommit();
-
-					if (NO_ERROR != error)
-					{
-						Tier0_Warning("AFX: Error detouring C_CSPlayer::UpdateClientSideAnimation.\n");
-					}
-				}
-				else {
 					Tier0_Warning("AFX: Missing address for C_CSPlayer::UpdateClientSideAnimation.\n");
 				}
 			}

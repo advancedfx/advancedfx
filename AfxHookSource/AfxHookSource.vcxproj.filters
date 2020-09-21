@@ -202,6 +202,18 @@
     <Filter Include="deps\release\rapidxml">
       <UniqueIdentifier>{115c22f5-0cc1-433f-b2d1-0aec6d6d8529}</UniqueIdentifier>
     </Filter>
+    <Filter Include="deps\release\prop\AfxHookSource\csgo\bitbuf">
+      <UniqueIdentifier>{327029c8-9add-44ef-97cb-59e7449efb71}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="build">
+      <UniqueIdentifier>{eb755710-7d03-489f-a3f9-a9b29d02dcbd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="build\protobuf">
+      <UniqueIdentifier>{a77d2b60-319e-48df-aa66-b152cf1af9db}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="build\protobuf\csgo">
+      <UniqueIdentifier>{34f554f5-817e-4abd-aab6-18b4be1e817c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\bvhexport.cpp">
@@ -467,6 +479,15 @@
     </ClCompile>
     <ClCompile Include="..\shared\AfxOutStreams.cpp">
       <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo_net_chan.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\deps\release\prop\AfxHookSource\csgo\bitbuf\demofilebitbuf.cpp">
+      <Filter>deps\release\prop\AfxHookSource\csgo\bitbuf</Filter>
+    </ClCompile>
+    <ClCompile Include="..\build\protobuf\csgo\netmessages.pb.cc">
+      <Filter>build\protobuf\csgo</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -874,6 +895,15 @@
     </ClInclude>
     <ClInclude Include="..\shared\AfxRefCounted.h">
       <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\csgo\bitbuf\demofilebitbuf.h">
+      <Filter>deps\release\prop\AfxHookSource\csgo\bitbuf</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo_net_chan.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\build\protobuf\csgo\netmessages.pb.h">
+      <Filter>build\protobuf\csgo</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

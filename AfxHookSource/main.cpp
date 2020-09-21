@@ -59,6 +59,7 @@
 #include "MirvTime.h"
 #include "csgo_CRendering3dView.h"
 //#include "csgo_CDemoFile.h"
+#include "csgo_net_chan.h"
 
 #include <Windows.h>
 #include <deps/release/Detours/src/detours.h>
@@ -192,8 +193,10 @@ public:
 	
 	virtual bool SetupEngineView(SOURCESDK::Vector &origin, SOURCESDK::QAngle &angles, float &fov )
 	{
+		bool bRet = false;
+
 		//Tier0_Msg("ClientEngineTools::SetupEngineView\n");
-		bool bRet = g_Engine_ClientEngineTools->SetupEngineView(origin, angles, fov);
+		if (g_Engine_ClientEngineTools->SetupEngineView(origin, angles, fov)) bRet = true;
 
 		g_Hook_VClient_RenderView.OnViewOverride(
 			origin.x, origin.y, origin.z,
@@ -1222,6 +1225,24 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 		break;
 
 	case SOURCESDK::CSGO::FRAME_NET_UPDATE_POSTDATAUPDATE_END:
+		/*
+		if (g_i_MirvPov)
+		{
+			if (SOURCESDK::IClientEntity_csgo* ce = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_i_MirvPov))
+			{
+				if (SOURCESDK::C_BaseEntity_csgo* be = ce->GetBaseEntity())
+				{
+					if (be->IsPlayer())
+					{
+						bool isLocalPlayer = *(bool *)((char *)be + 0x3624);
+						SOURCESDK::QAngle angles = be->EyeAngles();
+						Tier0_Msg("%i: %f %f %f\n", isLocalPlayer ? 1 : 0, angles.x, angles.y, angles.z);
+						//if (g_VEngineClient) g_VEngineClient->SetViewAngles(angles);
+					}
+				}
+			}
+		}
+		*/
 		if (-1 != g_iForcePostDataUpdateChanged)
 		{
 			if(SOURCESDK::IClientEntity_csgo* ce = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_iForcePostDataUpdateChanged))
@@ -1583,6 +1604,75 @@ void HookClientDllInterface_Garrysmod_Init(void* iface)
 SOURCESDK::IClientEntityList_csgo * SOURCESDK::g_Entitylist_csgo = 0;
 
 SOURCESDK::CreateInterfaceFn old_Client_CreateInterface = 0;
+
+class CAfxCsgoPrediction : public SOURCESDK::CSGO::IPrediction
+{
+public:
+	CAfxCsgoPrediction(SOURCESDK::CSGO::IPrediction * prediction) : m_Prediction(prediction) {}
+
+	virtual			~CAfxCsgoPrediction(void) {
+		delete m_Prediction;
+	};
+
+	virtual void	Init(void) {
+		m_Prediction->Init();
+	}
+	virtual void	Shutdown(void) {
+		m_Prediction->Shutdown();
+	}
+
+	virtual void	Update (int startframe, bool validframe, int incoming_acknowledged,	 int outgoing_command) {
+		if (g_i_MirvPov) return;
+
+		m_Prediction->Update(startframe, validframe, incoming_acknowledged, outgoing_command);
+	}
+
+	virtual void	PreEntityPacketReceived(int commands_acknowledged, int current_world_update_packet) {
+		m_Prediction->PreEntityPacketReceived(commands_acknowledged, current_world_update_packet);
+	}
+
+	virtual void	PostEntityPacketReceived(void) {
+		m_Prediction->PostEntityPacketReceived();
+	}
+	virtual void	PostNetworkDataReceived(int commands_acknowledged) {
+		m_Prediction->PostNetworkDataReceived(commands_acknowledged);
+	}
+
+	virtual void	OnReceivedUncompressedPacket(void) {
+		m_Prediction->OnReceivedUncompressedPacket();
+	}
+
+	virtual void	GetViewOrigin(SOURCESDK::Vector& org) {
+		m_Prediction->GetViewOrigin(org);
+	}
+	virtual void	SetViewOrigin(SOURCESDK::Vector& org) {
+		if (g_i_MirvPov) return;
+
+		m_Prediction->SetViewOrigin(org);
+	}
+	virtual void	GetViewAngles(SOURCESDK::QAngle& ang) {
+		m_Prediction->GetViewAngles(ang);
+	}
+	virtual void	SetViewAngles(SOURCESDK::QAngle& ang) {
+		if (g_i_MirvPov) return;
+
+		m_Prediction->SetViewAngles(ang);
+	}
+	virtual void	GetLocalViewAngles(SOURCESDK::QAngle& ang) {
+		m_Prediction->GetLocalViewAngles(ang);
+	}
+	virtual void	SetLocalViewAngles(SOURCESDK::QAngle& ang) {
+		if (g_i_MirvPov) return;
+
+		m_Prediction->SetLocalViewAngles(ang);
+	}
+
+private:
+	SOURCESDK::CSGO::IPrediction* m_Prediction;
+
+};
+
+CAfxCsgoPrediction* g_AfxCsgoPrediction = nullptr;
 
 void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 {

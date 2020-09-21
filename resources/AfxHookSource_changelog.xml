@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.91.0</version>
+<time>2020-09-21T08:15Z</time>
+<changes>
+<change type="added">Added mirv_pov. Set to 0 to disable or set to entity index of player you want to have POV view of _before_ loading the GOTV demo. Can be combined with mirv_fix forcePostDataUpdateChanged.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.90.1</version>
 <time>2020-09-10T10:00Z</time>
 <changes>

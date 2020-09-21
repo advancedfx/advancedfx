@@ -34,6 +34,7 @@ include(ExternalProject)
 
 add_subdirectory("AfxHook")
 add_subdirectory("deps/release/zlib")
+add_subdirectory("deps/release/protobuf")
 add_subdirectory("deps/release/openexr")
 add_subdirectory("AfxCppCli")
 
