@@ -148,11 +148,60 @@ bool csgo_C_CSPlayer_EyeAngles_Install(void)
 	return firstResult;
 }
 
-extern bool csgo_C_CSPlayer_UpdateClientSideAnimation_Install(void);
+
+typedef int(__fastcall* csgo_DamageIndicator_MessageFunc_t)(void* This, void* Edx, const char * pMsg);
+csgo_DamageIndicator_MessageFunc_t Truecsgo_DamageIndicator_MessageFunc = 0;
+
+bool __fastcall MYcsgo_DamageIndicator_MessageFunc(void* This, void* Edx, const char* pMsg)
+{
+	if (g_i_MirvPov)
+	{
+		bool abort = false;
+
+		__asm mov eax, pMsg
+		__asm mov eax, [eax + 0x10]
+		__asm cmp eax, g_i_MirvPov
+		__asm jz __cont
+		__asm mov abort, 1
+		__asm __cont:
+
+		if (abort) return true;
+	}
+
+	return Truecsgo_DamageIndicator_MessageFunc(This, Edx, pMsg);
+}
+
+bool csgo_DamageIndicator_MessageFunc_Install(void)
+{
+	static bool firstResult = false;
+	static bool firstRun = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	if (AFXADDR_GET(csgo_DamageIndicator_MessageFunc))
+	{
+		LONG error = NO_ERROR;
+
+		Truecsgo_DamageIndicator_MessageFunc = (csgo_DamageIndicator_MessageFunc_t)AFXADDR_GET(csgo_DamageIndicator_MessageFunc);
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)Truecsgo_DamageIndicator_MessageFunc, MYcsgo_DamageIndicator_MessageFunc);
+		error = DetourTransactionCommit();
+
+		firstResult = NO_ERROR == error;
+	}
+
+	return firstResult;
+}
 
 CON_COMMAND(mirv_pov, "Forces a POV on a GOTV demo.")
 {
-	if (!(AFXADDR_GET(csgo_C_CSPlayer_ofs_m_angEyeAngles) && csgo_CNetChan_ProcessMessages_Install() && csgo_C_CSPlayer_EyeAngles_Install() /*&& csgo_C_CSPlayer_UpdateClientSideAnimation_Install()*/))
+	if (!(AFXADDR_GET(csgo_C_CSPlayer_ofs_m_angEyeAngles)
+		&& csgo_CNetChan_ProcessMessages_Install()
+		&& csgo_C_CSPlayer_EyeAngles_Install()
+		&& csgo_DamageIndicator_MessageFunc_Install()
+		))
 	{
 		Tier0_Warning("Not supported for your engine / missing hooks,!\n");
 		return;
@@ -163,6 +212,25 @@ CON_COMMAND(mirv_pov, "Forces a POV on a GOTV demo.")
 	if (2 <= argC)
 	{
 		g_i_MirvPov = atoi(args->ArgV(1));
+
+		char* pData = (char *)AFXADDR_GET(csgo_crosshair_localplayer_check) + 15;
+
+		MdtMemBlockInfos mbis;
+		MdtMemAccessBegin(pData, 2, &mbis);
+
+		if (g_i_MirvPov)
+		{
+			pData[0] = 0x90;
+			pData[1] = 0x90;
+		}
+		else
+		{
+			pData[0] = 0x74;
+			pData[1] = 0x0cc;
+		}
+
+		MdtMemAccessEnd(&mbis);
+
 		return;
 	}
 

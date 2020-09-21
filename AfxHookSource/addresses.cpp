@@ -83,6 +83,10 @@ AFXADDR_DEF(csgo_C_CSPlayer_UpdateClientSideAnimation)
 AFXADDR_DEF(csgo_CNetChan_ProcessMessages)
 AFXADDR_DEF(csgo_C_CSPlayer_vtable)
 AFXADDR_DEF(csgo_C_CSPlayer_ofs_m_angEyeAngles)
+AFXADDR_DEF(csgo_crosshair_localplayer_check)
+AFXADDR_DEF(csgo_DamageIndicator_MessageFunc)
+
+
 void ErrorBox(char const * messageText);
 
 #define STRINGIZE(x) STRINGIZE2(x)
@@ -1936,6 +1940,46 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 
 			AFXADDR_SET(csgo_C_CSPlayer_ofs_m_angEyeAngles, ofs);
 		}
+
+		{
+			DWORD addr = 0;
+
+			ImageSectionsReader sections((HMODULE)clientDll);
+			if (!sections.Eof())
+			{
+				MemRange textRange = sections.GetMemRange();
+
+				MemRange result = FindPatternString(textRange, "8B 01 FF 50 34 85 C0 74 D4 3B 35 ?? ?? ?? ?? 74 CC 8B 46 08 8D 7E 08 8B CF FF 50 28");
+
+				if (!result.IsEmpty())
+					addr = result.Start;
+				else
+					ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			AFXADDR_SET(csgo_crosshair_localplayer_check, addr);
+		}
+
+		{
+			DWORD addr = 0;
+
+			ImageSectionsReader sections((HMODULE)clientDll);
+			if (!sections.Eof())
+			{
+				MemRange textRange = sections.GetMemRange();
+
+				MemRange result = FindPatternString(textRange, "55 8B EC 83 E4 F8 81 EC 94 00 00 00 80 3D ?? ?? ?? ?? 00 53 8B 5D 08");
+
+				if (!result.IsEmpty())
+					addr = result.Start;
+				else
+					ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			AFXADDR_SET(csgo_DamageIndicator_MessageFunc, addr);
+		}
 	}
 	else
 	{
@@ -1978,6 +2022,8 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		//AFXADDR_SET(csgo_C_BaseEntity_ofs_m_iWorldModelIndex, -1);
 		AFXADDR_SET(csgo_C_CSPlayer_vtable, 0x0);
 		AFXADDR_SET(csgo_C_CSPlayer_UpdateClientSideAnimation, 0x0);
+		AFXADDR_SET(csgo_crosshair_localplayer_check, 0x0);
+		AFXADDR_SET(csgo_DamageIndicator_MessageFunc, 0x0);
 	}
 
 	//AFXADDR_SET(csgo_CPredictionCopy_TransferData_DSZ, 0x0a);

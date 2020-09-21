@@ -92,6 +92,8 @@ AFXADDR_DECL(csgo_C_CSPlayer_UpdateClientSideAnimation)
 AFXADDR_DECL(csgo_CNetChan_ProcessMessages)
 AFXADDR_DECL(csgo_C_CSPlayer_vtable)
 AFXADDR_DECL(csgo_C_CSPlayer_ofs_m_angEyeAngles)
+AFXADDR_DECL(csgo_crosshair_localplayer_check)
+AFXADDR_DECL(csgo_DamageIndicator_MessageFunc)
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);
