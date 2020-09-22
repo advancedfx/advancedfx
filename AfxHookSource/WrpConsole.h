@@ -278,6 +278,8 @@ private:
 class WrpConVarRef
 {
 public:
+	WrpConVarRef();
+
 	WrpConVarRef(char const * pName);
 
 	float GetFloat(void) const;
@@ -290,6 +292,8 @@ public:
 
 	/// <summary>This sets the values directly, without calling callbacks, this might have unwanted side-effects!</summary>
 	void SetDirectHack(float value);
+
+	void RetryIfNull(char const* pName);
 
 private:
 	SOURCESDK::CSGO::ConVar * m_pConVar007;

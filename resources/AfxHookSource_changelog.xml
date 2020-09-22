@@ -6,14 +6,12 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>1.91.2</version>
-<time>2020-09-21T19:09Z</time>
+<version>1.91.3</version>
+<time>2020-09-22T07:22Z</time>
 <changes>
-<change type="fixed">Fixed #393 (mirv_pov) "Randomly" showing damager indicator even when the player we're currently observing hasn't taken any damage.</change>
-<change type="fixed">Fixed #394 (mirv_pov) Crosshair of spectated player isn't show despite "cl_show_observer_crosshair 2" enabled.</change>
+<change type="fixed">Fixed mirv_pov for demos where player is not there right at start, thanks to csgo-demo-manager.com for helping with testing / reporting it.</change>
 </changes>
 </release>
-
 
 
 <release>

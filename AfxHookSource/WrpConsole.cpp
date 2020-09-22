@@ -296,18 +296,31 @@ bool WrpConCommandsRegistrar_BM::RegisterConCommandBase(SOURCESDK::BM::ConComman
 
 // WrpConVar ///////////////////////////////////////////////////////////////////
 
-WrpConVarRef::WrpConVarRef(char const * pName)
-: m_pConVar007(0)
+
+WrpConVarRef::WrpConVarRef()
+	: m_pConVar007(0)
 {
-	if(SOURCESDK::CSGO::g_pCVar)
-	{
-		m_pConVar007 = SOURCESDK::CSGO::g_pCVar->FindVar(pName);
-	}
+
+}
+
+WrpConVarRef::WrpConVarRef(char const * pName)
+	: m_pConVar007(0)
+{
+	RetryIfNull(pName);
 
 	if(!m_pConVar007)
 	{
 		Tier0_Warning("AfxError: WrpConVarRef::WrpConVarRef(%s): Could not get ConVar.\n", pName);
 	}
+}
+
+void WrpConVarRef::RetryIfNull(char const* pName)
+{
+	if (SOURCESDK::CSGO::g_pCVar && nullptr == m_pConVar007)
+	{
+		m_pConVar007 = SOURCESDK::CSGO::g_pCVar->FindVar(pName);
+	}
+
 }
 
 typedef union {

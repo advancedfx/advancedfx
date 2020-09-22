@@ -72,9 +72,6 @@ int __fastcall Mycsgo_CNetChan_ProcessMessages(csgo_CNetChan_t* This, void* Edx,
 						if (msg.has_is_hltv())
 						{
 							msg.set_is_hltv(false);
-
-							WrpConVarRef cvarClPredict("cl_predict"); // GOTV would have this on 0, so force it too.
-							cvarClPredict.SetDirectHack(0);
 						}
 						if (msg.has_player_slot())
 						{
@@ -103,7 +100,16 @@ int __fastcall Mycsgo_CNetChan_ProcessMessages(csgo_CNetChan_t* This, void* Edx,
 		}
 	}
 
-	return Truecsgo_CNetChan_ProcessMessages(This, Edx, pReadBuf, bWasReliable);
+	bool result = Truecsgo_CNetChan_ProcessMessages(This, Edx, pReadBuf, bWasReliable);
+
+	if (g_i_MirvPov)
+	{
+		static WrpConVarRef cvarClPredict;
+		cvarClPredict.RetryIfNull("cl_predict"); // GOTV would have this on 0, so force it too.
+		cvarClPredict.SetDirectHack(0);
+	}
+
+	return result;
 }
 
 bool csgo_CNetChan_ProcessMessages_Install(void)
