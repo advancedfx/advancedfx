@@ -1225,24 +1225,21 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 		break;
 
 	case SOURCESDK::CSGO::FRAME_NET_UPDATE_POSTDATAUPDATE_END:
-		/*
-		if (g_i_MirvPov)
+		if (g_i_MirvPov && 1 != g_i_MirvPov)
 		{
-			if (SOURCESDK::IClientEntity_csgo* ce = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_i_MirvPov))
+			// Make sure the GOTV player doesn't think it's the local one as well:
+			if (SOURCESDK::IClientEntity_csgo* ce = SOURCESDK::g_Entitylist_csgo->GetClientEntity(1))
 			{
 				if (SOURCESDK::C_BaseEntity_csgo* be = ce->GetBaseEntity())
 				{
 					if (be->IsPlayer())
 					{
-						bool isLocalPlayer = *(bool *)((char *)be + 0x3624);
-						SOURCESDK::QAngle angles = be->EyeAngles();
-						Tier0_Msg("%i: %f %f %f\n", isLocalPlayer ? 1 : 0, angles.x, angles.y, angles.z);
-						//if (g_VEngineClient) g_VEngineClient->SetViewAngles(angles);
+						bool *pOsLocalPlayer = (bool *)((char *)be + 0x3624);
+						*pOsLocalPlayer = false;
 					}
 				}
 			}
 		}
-		*/
 		if (-1 != g_iForcePostDataUpdateChanged)
 		{
 			if(SOURCESDK::IClientEntity_csgo* ce = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_iForcePostDataUpdateChanged))
