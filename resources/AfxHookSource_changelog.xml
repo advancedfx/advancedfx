@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.91.4</version>
+<time>2020-09-24T05:31Z</time>
+<changes>
+<change type="fixed">Fixed #395 (mirv_pov) Occlusion flickering.</change>
+<change type="fixed">Fixed #396 (mirv_pov) CS:GO crashes when attached player disconnects.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.91.3</version>
 <time>2020-09-22T07:22Z</time>
 <changes>
