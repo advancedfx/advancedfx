@@ -85,6 +85,7 @@ AFXADDR_DEF(csgo_C_CSPlayer_vtable)
 AFXADDR_DEF(csgo_C_CSPlayer_ofs_m_angEyeAngles)
 AFXADDR_DEF(csgo_crosshair_localplayer_check)
 AFXADDR_DEF(csgo_DamageIndicator_MessageFunc)
+AFXADDR_DEF(csgo_C_BasePlayer_SetAsLocalPlayer)
 
 
 void ErrorBox(char const * messageText);
@@ -1980,6 +1981,26 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 
 			AFXADDR_SET(csgo_DamageIndicator_MessageFunc, addr);
 		}
+
+		{
+			DWORD addr = 0;
+
+			ImageSectionsReader sections((HMODULE)clientDll);
+			if (!sections.Eof())
+			{
+				MemRange textRange = sections.GetMemRange();
+
+				MemRange result = FindPatternString(textRange, "C6 81 24 36 00 00 01 C7 81 1C 36 00 00 00 00 00 00 89 0D ?? ?? ?? ?? C7 81 20 36 00 00 FF FF FF FF B9 ?? ?? ?? ?? E8 ?? ?? ?? ??");
+
+				if (!result.IsEmpty())
+					addr = result.Start;
+				else
+					ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			AFXADDR_SET(csgo_C_BasePlayer_SetAsLocalPlayer, addr);
+		}
 	}
 	else
 	{
@@ -2024,6 +2045,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_C_CSPlayer_UpdateClientSideAnimation, 0x0);
 		AFXADDR_SET(csgo_crosshair_localplayer_check, 0x0);
 		AFXADDR_SET(csgo_DamageIndicator_MessageFunc, 0x0);
+		AFXADDR_SET(csgo_C_BasePlayer_SetAsLocalPlayer, 0x0);
 	}
 
 	//AFXADDR_SET(csgo_CPredictionCopy_TransferData_DSZ, 0x0a);

@@ -60,7 +60,6 @@ int __fastcall Mycsgo_CNetChan_ProcessMessages(csgo_CNetChan_t* This, void* Edx,
 		{
 			int packet_cmd = readBuf.ReadVarInt32();
 			int packet_size = readBuf.ReadVarInt32();
-
 			if (packet_size < readBuf.GetNumBytesLeft())
 			{
 				switch (packet_cmd)
@@ -207,6 +206,7 @@ CON_COMMAND(mirv_pov, "Forces a POV on a GOTV demo.")
 		&& csgo_CNetChan_ProcessMessages_Install()
 		&& csgo_C_CSPlayer_EyeAngles_Install()
 		&& csgo_DamageIndicator_MessageFunc_Install()
+		&& AFXADDR_GET(csgo_C_BasePlayer_SetAsLocalPlayer)
 		))
 	{
 		Tier0_Warning("Not supported for your engine / missing hooks,!\n");
@@ -219,7 +219,7 @@ CON_COMMAND(mirv_pov, "Forces a POV on a GOTV demo.")
 	{
 		g_i_MirvPov = atoi(args->ArgV(1));
 
-		char* pData = (char *)AFXADDR_GET(csgo_crosshair_localplayer_check) + 15;
+		unsigned char* pData = (unsigned char *)AFXADDR_GET(csgo_crosshair_localplayer_check) + 15;
 
 		MdtMemBlockInfos mbis;
 		MdtMemAccessBegin(pData, 2, &mbis);
@@ -232,7 +232,7 @@ CON_COMMAND(mirv_pov, "Forces a POV on a GOTV demo.")
 		else
 		{
 			pData[0] = 0x74;
-			pData[1] = 0x0cc;
+			pData[1] = 0xcc;
 		}
 
 		MdtMemAccessEnd(&mbis);
