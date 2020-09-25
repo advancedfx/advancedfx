@@ -4714,6 +4714,8 @@ public:
 #if AFX_INTEROP
 		if (AfxInterop::Enabled())
 		{
+			AfxInterop::DrawingThread_DeviceLost();
+
 			ReleaseQueries();
 
 			/*
@@ -4737,6 +4739,8 @@ public:
 			if (AfxInterop::Enabled())
 			{
 				CreateQueries();
+
+				AfxInterop::DrawingThread_DeviceRestored();
 			}
 #endif
 			HookInitialBuffers();

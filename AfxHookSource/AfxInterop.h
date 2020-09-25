@@ -126,6 +126,8 @@ namespace AfxInterop {
 	void OnSetRenderTarget(DWORD RenderTargetIndex, IAfxInteropSurface * surface);
 
 	void DrawingThread_DeviceLost();
+
+	void DrawingThread_DeviceRestored();
 }
 
 #endif
