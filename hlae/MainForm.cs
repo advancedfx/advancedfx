@@ -22,6 +22,7 @@ namespace AfxGui
             InitializeComponent();
             this.Icon = Program.Icon;
             this.pictureBoxHelp.Image = SystemIcons.Information.ToBitmap();
+            this.pictureBoxPathError.Image = SystemIcons.Warning.ToBitmap();
 
             this.Text = L10n._p("Window title, args: {0} - version", "Half-Life Advanced Effects {0}", System.Diagnostics.FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).FileVersion);
 
@@ -120,6 +121,14 @@ namespace AfxGui
 
                 if (selectIndex != -1) comboBoxHelpLanguage.SelectedIndex = selectIndex;
             }
+
+            bool bHlaePathOk = System.Text.RegularExpressions.Regex.IsMatch(Program.BaseDir, "^\\p{IsBasicLatin}*$");
+            this.groupBoxPathError.Visible = !bHlaePathOk;
+            this.groupBoxPathError.Enabled = !bHlaePathOk;
+            this.groupBoxPathError.Text = L10n._("HLAE path error");
+            this.labelHlaePath.Text = L10n._("HLAE path:");
+            this.textBoxHlaePath.Text = Program.BaseDir;
+            this.labelHlaePathError.Text = L10n._("Warning: Your HLAE path shown above contains non-basic latin characters (meaning characters outside the 7-bit ASCII range), which will lead to multiple problems in-game if not fixed!");
 
             m_UpdateCheckNotification = new UpdateCheckNotificationTarget(this, new UpdateCheckedDelegate(OnUpdateChecked));
         }
