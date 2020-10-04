@@ -87,6 +87,9 @@ AFXADDR_DEF(csgo_crosshair_localplayer_check)
 AFXADDR_DEF(csgo_DamageIndicator_MessageFunc)
 AFXADDR_DEF(csgo_C_BasePlayer_SetAsLocalPlayer)
 AFXADDR_DEF(csgo_C_BasePlayer_GetToolRecordingState)
+AFXADDR_DEF(csgo_C_CSPlayer_PostDataUpdate)
+AFXADDR_DEF(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer)
+
 
 void ErrorBox(char const * messageText);
 
@@ -1897,6 +1900,13 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 				AFXADDR_SET(csgo_C_CSPlayer_UpdateClientSideAnimation, ((DWORD*)tmpAddr)[223]);
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			AFXADDR_SET(csgo_C_CSPlayer_PostDataUpdate, 0x0);
+			tmpAddr = FindClassVtable((HMODULE)clientDll, ".?AVC_CSPlayer@@", 0, 0x8);
+			if (tmpAddr) {
+				AFXADDR_SET(csgo_C_CSPlayer_PostDataUpdate, ((DWORD*)tmpAddr)[7]);
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
 
 		// csgo_C_CSPlayer_ofs_m_angEyeAngles
@@ -2004,6 +2014,8 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 
 			AFXADDR_SET(csgo_C_BasePlayer_SetAsLocalPlayer, addr);
 		}
+
+		AFXADDR_SET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer, 0x3624);
 	}
 	else
 	{
@@ -2050,6 +2062,8 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_DamageIndicator_MessageFunc, 0x0);
 		AFXADDR_SET(csgo_C_BasePlayer_SetAsLocalPlayer, 0x0);
 		AFXADDR_SET(csgo_C_BasePlayer_GetToolRecordingState, 0x0);
+		AFXADDR_SET(csgo_C_CSPlayer_PostDataUpdate, 0x0);
+		AFXADDR_SET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer, 0x0);
 	}
 
 	//AFXADDR_SET(csgo_CPredictionCopy_TransferData_DSZ, 0x0a);

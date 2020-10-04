@@ -46,23 +46,22 @@ void __fastcall Mycsgo_C_BasePlayer_GetToolRecordingState(void* This, void* Edx,
 	bool recordingPlayerCamerasOrViewModels = CClientToolsCsgo::Instance() && CClientToolsCsgo::Instance()->GetRecording() && (
 		CClientToolsCsgo::Instance()->RecordPlayerCameras_get() || CClientToolsCsgo::Instance()->RecordViewModels_get());
 
+	SOURCESDK::IClientEntity_csgo* localPlayer = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_VEngineClient->GetLocalPlayer());
 
-	if (recordingPlayerCamerasOrViewModels && setAsLocalPlayer)
+	if (recordingPlayerCamerasOrViewModels && setAsLocalPlayer && localPlayer != This)
 	{
 		setAsLocalPlayer(This, 0);
 	}
 	
 	Truecsgo_C_BasePlayer_GetToolRecordingState(This, Edx, msg);
 
-	if (recordingPlayerCamerasOrViewModels && setAsLocalPlayer)
+	if (recordingPlayerCamerasOrViewModels && setAsLocalPlayer && localPlayer != This)
 	{
-		if (SOURCESDK::IClientEntity_csgo* ce = SOURCESDK::g_Entitylist_csgo->GetClientEntity(1))
-		{
-			if (SOURCESDK::C_BaseEntity_csgo* be = ce->GetBaseEntity())
-			{
-				setAsLocalPlayer(be, 0);
-			}
-		}
+		bool* pIsLocalPlayer = (bool*)((char*)This + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
+		*pIsLocalPlayer = false;
+
+		setAsLocalPlayer(localPlayer, 0);
+
 	}
 }
 
@@ -90,34 +89,105 @@ bool csgo_C_BasePlayer_GetToolRecordingState_Install(void)
 	return firstResult;
 }
 
+typedef void(__fastcall* csgo_C_CSPlayer_PostDataUpdate_t)(SOURCESDK::C_BasePlayer_csgo* This, void* Edx, SOURCESDK::CSGO::DataUpdateType_t updateType);
 
-typedef void (__fastcall * csgo_C_CSPLayer_UpdateClientSideAnimation_t)(void * This, void * Edx);
+csgo_C_CSPlayer_PostDataUpdate_t Truecsgo_C_CSPlayer_PostDataUpdate = nullptr;
 
-csgo_C_CSPLayer_UpdateClientSideAnimation_t csgo_TrueC_CSPLayer_UpdateClientSideAnimation = nullptr;
-
-void __fastcall csgo_MyC_CSPLayer_UpdateClientSideAnimation(void* This, void* Edx)
+void __fastcall Mycsgo_C_CSPlayer_PostDataUpdate(SOURCESDK::C_BasePlayer_csgo* This, void* Edx, SOURCESDK::CSGO::DataUpdateType_t updateType)
 {
+	if (updateType != SOURCESDK::CSGO::DATA_UPDATE_POST_UPDATE)
+	{
+		Truecsgo_C_CSPlayer_PostDataUpdate(This, Edx, updateType);
+		return;
+	}
+
 	static csgo_C_BasePlayer_SetAsLocalPlayer_t setAsLocalPlayer = (csgo_C_BasePlayer_SetAsLocalPlayer_t)AFXADDR_GET(csgo_C_BasePlayer_SetAsLocalPlayer);
 	bool recordingPlayerCamerasOrViewModels = CClientToolsCsgo::Instance() && CClientToolsCsgo::Instance()->GetRecording() && (
 		CClientToolsCsgo::Instance()->RecordPlayerCameras_get() || CClientToolsCsgo::Instance()->RecordViewModels_get());
 
-	if (recordingPlayerCamerasOrViewModels && setAsLocalPlayer)
+	SOURCESDK::IClientEntity_csgo* localPlayer = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_VEngineClient->GetLocalPlayer());
+
+	if (recordingPlayerCamerasOrViewModels && setAsLocalPlayer && localPlayer != This)
 	{
 		setAsLocalPlayer(This, 0);
 	}
 
+	Truecsgo_C_CSPlayer_PostDataUpdate(This, Edx, updateType);
+
+	if (recordingPlayerCamerasOrViewModels && setAsLocalPlayer && localPlayer != This)
+	{
+		bool* pIsLocalPlayer = (bool*)((char*)This + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
+		*pIsLocalPlayer = false;
+
+		setAsLocalPlayer(localPlayer, 0);
+	}
+}
+
+bool csgo_C_BasePlayer_PostDataUpdate_Install(void)
+{
+	static bool firstResult = false;
+	static bool firstRun = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	if (AFXADDR_GET(csgo_C_CSPlayer_PostDataUpdate))
+	{
+		LONG error = NO_ERROR;
+
+		Truecsgo_C_CSPlayer_PostDataUpdate = (csgo_C_CSPlayer_PostDataUpdate_t)AFXADDR_GET(csgo_C_CSPlayer_PostDataUpdate);
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)Truecsgo_C_CSPlayer_PostDataUpdate, Mycsgo_C_CSPlayer_PostDataUpdate);
+		error = DetourTransactionCommit();
+
+		firstResult = NO_ERROR == error;
+	}
+
+	return firstResult;
+}
+
+typedef void (__fastcall * csgo_C_CSPLayer_UpdateClientSideAnimation_t)(SOURCESDK::C_BaseAnimating_csgo* This, void * Edx);
+
+csgo_C_CSPLayer_UpdateClientSideAnimation_t csgo_TrueC_CSPLayer_UpdateClientSideAnimation = nullptr;
+
+void __fastcall csgo_MyC_CSPLayer_UpdateClientSideAnimation(SOURCESDK::C_BaseAnimating_csgo* This, void* Edx)
+{
+	if (!This->IsPlayer())
+	{
+		csgo_TrueC_CSPLayer_UpdateClientSideAnimation(This, Edx);
+		return;
+	}
+
+	static csgo_C_BasePlayer_SetAsLocalPlayer_t setAsLocalPlayer = (csgo_C_BasePlayer_SetAsLocalPlayer_t)AFXADDR_GET(csgo_C_BasePlayer_SetAsLocalPlayer);
+	bool recordingPlayerCamerasOrViewModels = CClientToolsCsgo::Instance() && CClientToolsCsgo::Instance()->GetRecording() && (
+		CClientToolsCsgo::Instance()->RecordPlayerCameras_get() || CClientToolsCsgo::Instance()->RecordViewModels_get());
+	SOURCESDK::C_BasePlayer_csgo* player = (SOURCESDK::C_BasePlayer_csgo*)This;
+	SOURCESDK::IClientEntity_csgo* localPlayer;
+
+	if (!(recordingPlayerCamerasOrViewModels && setAsLocalPlayer && player->ShouldDraw() && player != (localPlayer = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_VEngineClient->GetLocalPlayer()))))
+	{
+		csgo_TrueC_CSPLayer_UpdateClientSideAnimation(This, Edx);
+		return;
+	}
+
+	setAsLocalPlayer(This, 0);
+
 	csgo_TrueC_CSPLayer_UpdateClientSideAnimation(This, Edx);
 
-	if (recordingPlayerCamerasOrViewModels && setAsLocalPlayer)
-	{
-		if (SOURCESDK::IClientEntity_csgo* ce = SOURCESDK::g_Entitylist_csgo->GetClientEntity(1))
-		{
-			if (SOURCESDK::C_BaseEntity_csgo* be = ce->GetBaseEntity())
-			{
-				setAsLocalPlayer(be, 0);
-			}
-		}
-	}
+	SOURCESDK::Vector eyeOrigin;
+	SOURCESDK::QAngle eyeAngles;
+	float fov;
+	float zNear = 0;
+	float zFar = 1;
+
+	player->CalcView(eyeOrigin, eyeAngles, zNear, zFar, fov);
+	player->CalcViewModelView(eyeOrigin, eyeAngles);
+
+	bool* pIsLocalPlayer = (bool*)((char*)This + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
+	*pIsLocalPlayer = false;
+
+	setAsLocalPlayer(localPlayer, 0);
 }
 
 
@@ -447,37 +517,6 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 void CClientToolsCsgo::OnBeforeFrameRenderStart(void)
 {
 	CClientTools::OnBeforeFrameRenderStart();
-
-	if (GetRecording() && RecordViewModels_get())
-	{
-		int numRecordAbles = m_ClientTools->GetNumRecordables();
-		for (int i = 0; i < numRecordAbles; ++i)
-		{
-			HTOOLHANDLE hEntity = m_ClientTools->GetRecordable(i);
-
-			if (m_ClientTools->ShouldRecord(hEntity))
-			{
-				EntitySearchResult ent = m_ClientTools->GetEntity(hEntity);
-
-				if (m_ClientTools->IsPlayer(ent))
-				{
-					SOURCESDK::C_BasePlayer_csgo* player = reinterpret_cast<SOURCESDK::C_BasePlayer_csgo*>(ent);
-
-					if (-1 == RecordViewModels_get() || player->entindex() == RecordViewModels_get())
-					{
-						SOURCESDK::Vector eyeOrigin;
-						SOURCESDK::QAngle eyeAngles;
-						float fov;
-						float zNear = 0;
-						float zFar = 1;
-
-						player->CalcView(eyeOrigin, eyeAngles, zNear, zFar, fov);
-						player->CalcViewModelView(eyeOrigin, eyeAngles);
-					}
-				}
-			}
-		}
-	}
 }
 
 
@@ -496,25 +535,19 @@ void CClientToolsCsgo::StartRecording(wchar_t const * fileName)
 	{
 		m_ClientTools->EnableRecordingMode(true);
 
-		if (RecordPlayerCameras_get())
+		if (RecordPlayerCameras_get() || RecordViewModels_get())
 		{
-			if (nullptr == Truecsgo_C_BasePlayer_GetToolRecordingState)
+			if (!csgo_C_BasePlayer_GetToolRecordingState_Install())
 			{
-				if (!csgo_C_BasePlayer_GetToolRecordingState_Install())
-				{
-					Tier0_Warning("AFX: Missing address for C_BasePlayer::GetToolRecordingState.\n");
-				}
+				Tier0_Warning("AFX: Failed to install C_BasePlayer::GetToolRecordingState hook.\n");
 			}
-		}
-
-		if (RecordViewModels_get())
-		{
-			if (nullptr == csgo_TrueC_CSPLayer_UpdateClientSideAnimation)
+			if (!csgo_C_CSPlayer_UpdateClientSideAnimation_Install())
 			{
-				if (!csgo_C_CSPlayer_UpdateClientSideAnimation_Install())
-				{
-					Tier0_Warning("AFX: Missing address for C_CSPlayer::UpdateClientSideAnimation.\n");
-				}
+				Tier0_Warning("AFX: Failed to install C_CSPlayer::UpdateClientSideAnimation hook.\n");
+			}
+			if (!csgo_C_BasePlayer_PostDataUpdate_Install())
+			{
+				Tier0_Warning("AFX: Failed to install C_CSPlayer::PostDataUpdate hook.\n");
 			}
 		}
 	}

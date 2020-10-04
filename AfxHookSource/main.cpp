@@ -1256,7 +1256,7 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 					{
 						if (be->IsPlayer())
 						{
-							bool* pOsLocalPlayer = (bool*)((char*)be + 0x3624);
+							bool* pOsLocalPlayer = (bool*)((char*)be + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
 							*pOsLocalPlayer = false;
 						}
 					}
