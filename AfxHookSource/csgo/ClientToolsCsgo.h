@@ -18,6 +18,8 @@ public:
 
 	virtual void OnBeforeFrameRenderStart(void);
 
+	virtual void OnAfterSetupEngineView(void) override;
+
 	virtual void OnAfterFrameRenderEnd(void);
 
 	virtual bool SuppotsAutoEnableRecordingMode(void) {

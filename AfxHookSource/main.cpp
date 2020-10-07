@@ -204,6 +204,8 @@ public:
 			fov
 		);
 
+		if (CClientTools::Instance()) CClientTools::Instance()->OnAfterSetupEngineView();
+
 		return bRet;
 	}
 	

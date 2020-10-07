@@ -22,6 +22,10 @@ public:
 
 	virtual void OnBeforeFrameRenderStart(void);
 
+	virtual void OnAfterSetupEngineView(void) {
+
+	}
+
 	virtual void OnAfterFrameRenderEnd(void);
 
 	virtual bool SuppotsAutoEnableRecordingMode(void) {
