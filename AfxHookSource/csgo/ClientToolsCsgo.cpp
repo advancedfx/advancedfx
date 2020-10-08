@@ -33,56 +33,130 @@ void Call_CBaseAnimating_GetToolRecordingState(SOURCESDK::C_BaseEntity_csgo * ob
 	}
 }
 
-typedef void (__fastcall * csgo_C_CSPLayer_UpdateClientSideAnimation_t)(void * This, void * Edx);
+typedef bool(__fastcall * csgo_C_BaseEntity_ShouldInterpolate_t)(SOURCESDK::C_BaseEntity_csgo* This, void* Edx);
 
-csgo_C_CSPLayer_UpdateClientSideAnimation_t csgo_TrueC_CSPLayer_UpdateClientSideAnimation = nullptr;
+csgo_C_BaseEntity_ShouldInterpolate_t Truecsgo_C_BaseEntity_ShouldInterpolate = nullptr;
 
-void __fastcall csgo_MyC_CSPLayer_UpdateClientSideAnimation(void* This, void* Edx)
+bool __fastcall Mycsgo_C_BaseEntity_ShouldInterpolate(SOURCESDK::C_BaseEntity_csgo* This, void* Edx)
 {
-	/*
-	if (g_i_MirvPov)
+	bool bRet = Truecsgo_C_BaseEntity_ShouldInterpolate(This, Edx);
+
+	if (CClientToolsCsgo::Instance() && CClientToolsCsgo::Instance()->GetRecording() && CClientToolsCsgo::Instance()->RecordViewModels_get())
 	{
-		SOURCESDK::C_BasePlayer_csgo* csPlayer = reinterpret_cast<SOURCESDK::C_BasePlayer_csgo*>(This);
-		if (csPlayer->entindex() == g_i_MirvPov)
+		if (SOURCESDK::CSGO::IClientTools * clientTools = CClientToolsCsgo::Instance()->GetClientToolsInterface())
 		{
-			SOURCESDK::QAngle angles = csPlayer->EyeAngles();
-			g_VEngineClient->SetViewAngles(angles);
-			Tier0_Msg("%i: %f %f %f\n", csPlayer->entindex(), angles.x, angles.y, angles.z);
+			if (clientTools->IsViewModel((EntitySearchResult)This))
+			{
+				return true;
+			}
+		}
+	}
 
-			unsigned char* p_m_IsLocalPlayer = (unsigned char*)This + 0x3624;
-			unsigned char oldValue = *p_m_IsLocalPlayer;
+	return bRet;
+}
 
-			*p_m_IsLocalPlayer = 0;
+bool csgo_C_BaseEntity_ShouldInterpolate_Install(void)
+{
+	static bool firstResult = false;
+	static bool firstRun = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
 
-			csgo_TrueC_CSPLayer_UpdateClientSideAnimation(This, Edx);
+	if (AFXADDR_GET(csgo_C_BaseEntity_ShouldInterpolate))
+	{
+		LONG error = NO_ERROR;
 
-			*p_m_IsLocalPlayer = oldValue;
+		Truecsgo_C_BaseEntity_ShouldInterpolate = (csgo_C_BaseEntity_ShouldInterpolate_t)AFXADDR_GET(csgo_C_BaseEntity_ShouldInterpolate);
 
-			angles = csPlayer->EyeAngles();
-			//g_VEngineClient->SetViewAngles(angles);
-			Tier0_Msg("%i: %f %f %f\n", csPlayer->entindex(), angles.x, angles.y, angles.z);
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)Truecsgo_C_BaseEntity_ShouldInterpolate, Mycsgo_C_BaseEntity_ShouldInterpolate);
+		error = DetourTransactionCommit();
+
+		firstResult = NO_ERROR == error;
+	}
+
+	return firstResult;
+}
+
+typedef void(__fastcall* csgo_C_BasePlayer_SetAsLocalPlayer_t)(void* This, void* Edx);
+
+typedef void(__fastcall* csgo_C_BasePlayer_GetToolRecordingState_t)(void* This, void* Edx, SOURCESDK::CSGO::KeyValues* msg);
+
+csgo_C_BasePlayer_GetToolRecordingState_t Truecsgo_C_BasePlayer_GetToolRecordingState = nullptr;
+
+void __fastcall Mycsgo_C_BasePlayer_GetToolRecordingState(void* This, void* Edx, SOURCESDK::CSGO::KeyValues* msg)
+{
+	if (CClientToolsCsgo::Instance() && CClientToolsCsgo::Instance()->GetRecording() && CClientToolsCsgo::Instance()->RecordViewModels_get())
+	{
+		SOURCESDK::IClientEntity_csgo* localPlayer = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_VEngineClient->GetLocalPlayer());
+
+		if (localPlayer != This)
+		{
+			unsigned char* pIsLocalPlayer = (unsigned char*)This + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer);
+
+			*pIsLocalPlayer = 1;
+
+			Truecsgo_C_BasePlayer_GetToolRecordingState(This, Edx, msg);
+
+			*pIsLocalPlayer = This == localPlayer ? 1 : 0;
 
 			return;
 		}
 	}
-	*/
-	if (CClientToolsCsgo::Instance() && CClientToolsCsgo::Instance()->GetRecording() && CClientToolsCsgo::Instance()->RecordViewModels_get())
+
+	Truecsgo_C_BasePlayer_GetToolRecordingState(This, Edx, msg);
+}
+
+bool csgo_C_BasePlayer_GetToolRecordingState_Install(void)
+{
+	static bool firstResult = false;
+	static bool firstRun = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	if (AFXADDR_GET(csgo_C_BasePlayer_GetToolRecordingState))
 	{
+		LONG error = NO_ERROR;
+
+		Truecsgo_C_BasePlayer_GetToolRecordingState = (csgo_C_BasePlayer_GetToolRecordingState_t)AFXADDR_GET(csgo_C_BasePlayer_GetToolRecordingState);
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)Truecsgo_C_BasePlayer_GetToolRecordingState, Mycsgo_C_BasePlayer_GetToolRecordingState);
+		error = DetourTransactionCommit();
+
+		firstResult = NO_ERROR == error;
+	}
+
+	return firstResult;
+}
+
+typedef void (__fastcall * csgo_C_CSPLayer_UpdateClientSideAnimation_t)(SOURCESDK::C_BaseAnimating_csgo* This, void * Edx);
+
+csgo_C_CSPLayer_UpdateClientSideAnimation_t csgo_TrueC_CSPLayer_UpdateClientSideAnimation = nullptr;
+
+void __fastcall csgo_MyC_CSPLayer_UpdateClientSideAnimation(SOURCESDK::C_BaseAnimating_csgo* This, void* Edx)
+{
+	if (CClientToolsCsgo::Instance() && CClientToolsCsgo::Instance()->GetRecording() && CClientToolsCsgo::Instance()->RecordViewModels_get() && This->IsPlayer())
+	{
+		SOURCESDK::IClientEntity_csgo* localPlayer = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_VEngineClient->GetLocalPlayer());
+		SOURCESDK::C_BasePlayer_csgo * player = static_cast<SOURCESDK::C_BasePlayer_csgo *>(This);
+
 		// When recording viewmodels we make the C_CSPlayers think that they are the local player (so they will make their viewmodel and attachments) =)
 
-		unsigned char* p_m_IsLocalPlayer = (unsigned char*)This + 0x3624;
-		unsigned char oldValue = *p_m_IsLocalPlayer;
+		unsigned char* pIsLocalPlayer = (unsigned char*)This + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer);
 
-		*p_m_IsLocalPlayer = 1;
+		*pIsLocalPlayer = player->IsAlive() ? 1 : 0;
 
 		csgo_TrueC_CSPLayer_UpdateClientSideAnimation(This, Edx);
 
-		*p_m_IsLocalPlayer = oldValue;
+		*pIsLocalPlayer = player == localPlayer ? 1 : 0;
+
+		return;
 	}
-	else
-	{
-		csgo_TrueC_CSPLayer_UpdateClientSideAnimation(This, Edx);
-	}
+
+	csgo_TrueC_CSPLayer_UpdateClientSideAnimation(This, Edx);
 }
 
 
@@ -93,7 +167,7 @@ bool csgo_C_CSPlayer_UpdateClientSideAnimation_Install(void)
 	if (!firstRun) return firstResult;
 	firstRun = false;
 
-	if (AFXADDR_GET(csgo_CNetChan_ProcessMessages))
+	if (AFXADDR_GET(csgo_C_CSPlayer_UpdateClientSideAnimation))
 	{
 		LONG error = NO_ERROR;
 
@@ -161,8 +235,10 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 
 			if (2 <= Debug_get())
 			{
+				SOURCESDK::CSGO::EntitySearchResult ent = m_ClientTools->GetEntity(hEntity);
+
 				Tier0_Msg("-- %s (%i) --\n", className, hEntity);
-				for (SOURCESDK::CSGO::KeyValues * subKey = msg->GetFirstSubKey(); 0 != subKey; subKey = subKey->GetNextKey())
+				for (SOURCESDK::CSGO::KeyValues* subKey = msg->GetFirstSubKey(); 0 != subKey; subKey = subKey->GetNextKey())
 					Tier0_Msg("%s,\n", subKey->GetName());
 				Tier0_Msg("----\n");
 			}
@@ -201,27 +277,23 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 			bool isRecordedViewModel = false;
 			if (isViewModel && RecordViewModels_get())
 			{
-				if (-1 == RecordViewModels_get())
-					isRecordedViewModel = true;
-				else
+				int weaponIdx;
+
+				if (isViewmodelAttachment && SOURCESDK::g_Entitylist_csgo && be)
 				{
-					int weaponIdx;
+					CBaseHandle viewModelEntBaseHandle = be->AfxGetMoveParentHandle();
+					weaponIdx = m_ClientTools->GetOwningWeaponEntIndex(viewModelEntBaseHandle.GetEntryIndex());
+				}
+				else
+					weaponIdx = m_ClientTools->GetOwningWeaponEntIndex(m_ClientTools->GetEntIndex(ent));
 
-					if (isViewmodelAttachment && SOURCESDK::g_Entitylist_csgo && be)
+				HTOOLHANDLE weaponHandle = m_ClientTools->GetToolHandleForEntityByIndex(weaponIdx);
+				if(EntitySearchResult weaponEnt = m_ClientTools->GetEntity(weaponHandle))
+				{
+					if (EntitySearchResult ownerEnt = m_ClientTools->GetOwnerEntity(weaponEnt))
 					{
-						CBaseHandle viewModelEntBaseHandle = be->AfxGetMoveParentHandle();
-						weaponIdx = m_ClientTools->GetOwningWeaponEntIndex(viewModelEntBaseHandle.GetEntryIndex());
-					}
-					else
-						weaponIdx = m_ClientTools->GetOwningWeaponEntIndex(m_ClientTools->GetEntIndex(ent));
-
-					HTOOLHANDLE weaponHandle = m_ClientTools->GetToolHandleForEntityByIndex(weaponIdx);
-					if(EntitySearchResult weaponEnt = m_ClientTools->GetEntity(weaponHandle))
-					{
-						if (EntitySearchResult ownerEnt = m_ClientTools->GetOwnerEntity(weaponEnt))
-						{
-							isRecordedViewModel = RecordViewModels_get() == m_ClientTools->GetEntIndex(ownerEnt);
-						}
+						isRecordedViewModel = RecordViewModels_get() == m_ClientTools->GetEntIndex(ownerEnt)
+							|| -1 == RecordViewModels_get() && m_ClientTools->IsPlayer(ownerEnt) && static_cast<SOURCESDK::C_BasePlayer_csgo*>(ent)->IsAlive();
 					}
 				}
 			}
@@ -413,8 +485,14 @@ void CClientToolsCsgo::OnBeforeFrameRenderStart(void)
 {
 	CClientTools::OnBeforeFrameRenderStart();
 
+}
+
+void CClientToolsCsgo::OnAfterSetupEngineView(void)
+{
 	if (GetRecording() && RecordViewModels_get())
 	{
+		SOURCESDK::IClientEntity_csgo* localPlayer = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_VEngineClient->GetLocalPlayer());
+
 		int numRecordAbles = m_ClientTools->GetNumRecordables();
 		for (int i = 0; i < numRecordAbles; ++i)
 		{
@@ -428,16 +506,23 @@ void CClientToolsCsgo::OnBeforeFrameRenderStart(void)
 				{
 					SOURCESDK::C_BasePlayer_csgo* player = reinterpret_cast<SOURCESDK::C_BasePlayer_csgo*>(ent);
 
-					if (-1 == RecordViewModels_get() || player->entindex() == RecordViewModels_get())
+					if ((-1 == RecordViewModels_get() || player->entindex() == RecordViewModels_get())
+						&& player->IsAlive() && player != localPlayer)
 					{
 						SOURCESDK::Vector eyeOrigin;
 						SOURCESDK::QAngle eyeAngles;
-						float fov;
+						float fov = 90.0;
 						float zNear = 0;
 						float zFar = 1;
 
+						unsigned char* pIsLocalPlayer = (unsigned char*)player + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer);
+
+						*pIsLocalPlayer = 1;
+
 						player->CalcView(eyeOrigin, eyeAngles, zNear, zFar, fov);
 						player->CalcViewModelView(eyeOrigin, eyeAngles);
+
+						*pIsLocalPlayer = localPlayer == player ? 1 : 0;
 					}
 				}
 			}
@@ -445,9 +530,33 @@ void CClientToolsCsgo::OnBeforeFrameRenderStart(void)
 	}
 }
 
-
 void CClientToolsCsgo::OnAfterFrameRenderEnd(void)
 {
+	if (GetRecording() && RecordViewModels_get() && -1 != AFXADDR_GET(csgo_C_BaseViewModel_ofs_m_nAnimationParity) && -1 != AFXADDR_GET(csgo_C_BaseViewModel_ofs_m_nOldAnimationParity))
+	{
+		int numRecordAbles = m_ClientTools->GetNumRecordables();
+		for (int i = 0; i < numRecordAbles; ++i)
+		{
+			HTOOLHANDLE hEntity = m_ClientTools->GetRecordable(i);
+
+			if (m_ClientTools->ShouldRecord(hEntity))
+			{
+				EntitySearchResult ent = m_ClientTools->GetEntity(hEntity);
+
+				if (m_ClientTools->IsViewModel(ent))
+				{
+					// The engine usually runs this code after a viewmodel model has been drawn, since we are not drawing it we run it ourselves:
+
+					SOURCESDK::C_BaseEntity_csgo* vm = reinterpret_cast<SOURCESDK::C_BaseEntity_csgo*>(ent);
+
+					int* p_csgo_C_BaseViewModel_ofs_m_nAnimationParity = (int*)((char*)vm + AFXADDR_GET(csgo_C_BaseViewModel_ofs_m_nAnimationParity));
+					int* p_csgo_C_BaseViewModel_ofs_m_nOldAnimationParity = (int*)((char*)vm + AFXADDR_GET(csgo_C_BaseViewModel_ofs_m_nOldAnimationParity));
+
+					*p_csgo_C_BaseViewModel_ofs_m_nOldAnimationParity = *p_csgo_C_BaseViewModel_ofs_m_nAnimationParity;
+				}
+			}
+		}
+	}
 
 	CClientTools::OnAfterFrameRenderEnd();
 }
@@ -461,14 +570,19 @@ void CClientToolsCsgo::StartRecording(wchar_t const * fileName)
 	{
 		m_ClientTools->EnableRecordingMode(true);
 
-		if (RecordViewModels_get())
+		if (RecordPlayerCameras_get() || RecordViewModels_get())
 		{
-			if (nullptr == csgo_TrueC_CSPLayer_UpdateClientSideAnimation)
+			if (!csgo_C_BasePlayer_GetToolRecordingState_Install())
 			{
-				if (!csgo_C_CSPlayer_UpdateClientSideAnimation_Install())
-				{
-					Tier0_Warning("AFX: Missing address for C_CSPlayer::UpdateClientSideAnimation.\n");
-				}
+				Tier0_Warning("AFX: Failed to install C_BasePlayer::GetToolRecordingState hook.\n");
+			}
+			if (!csgo_C_CSPlayer_UpdateClientSideAnimation_Install())
+			{
+				Tier0_Warning("AFX: Failed to install C_BaseAnimating::UpdateClientSideAnimation hook.\n");
+			}
+			if(!csgo_C_BaseEntity_ShouldInterpolate_Install())
+			{
+				Tier0_Warning("AFX: Failed to install C_BaseEntity::ShouldInterpolate hook.\n");
 			}
 		}
 	}

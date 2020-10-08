@@ -26,7 +26,7 @@ This repository contains the parts of advancedfx project that are under MIT lice
 
 ## How to build
 
-[how_to_build.txt](https://raw.githubusercontent.com/advancedfx/advancedfx/master/how_to_build.txt)
+[how_to_build.txt](https://raw.githubusercontent.com/advancedfx/advancedfx/main/how_to_build.txt)
 
 ## Credits
 

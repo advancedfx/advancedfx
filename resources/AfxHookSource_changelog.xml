@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.92.0</version>
+<time>2020-10-08T17:53Z</time>
+<changes>
+<change type="fixed">Fixed #399 Misplacements of recordViewmodels and recordPlayerCameras.</change>
+<change type="fixed">Fixed recordViewmodels viewmodel animations not interpolating.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.91.4</version>
 <time>2020-09-24T05:31Z</time>
 <changes>

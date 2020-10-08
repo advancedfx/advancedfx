@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
             this.mainMenu = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuLaunchCSGO = new System.Windows.Forms.ToolStripMenuItem();
@@ -67,7 +66,6 @@
             this.checkUpdatesLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.statusLabelAutoYes = new System.Windows.Forms.ToolStripStatusLabel();
             this.statusLabelAutoNo = new System.Windows.Forms.ToolStripStatusLabel();
-            this.panel1 = new System.Windows.Forms.Panel();
             this.groupBoxHelp = new System.Windows.Forms.GroupBox();
             this.comboBoxHelpEntries = new System.Windows.Forms.ComboBox();
             this.labelHelpSelection = new System.Windows.Forms.Label();
@@ -75,13 +73,18 @@
             this.labelHelpLanguage = new System.Windows.Forms.Label();
             this.buttonManual = new System.Windows.Forms.Button();
             this.pictureBoxHelp = new System.Windows.Forms.PictureBox();
-            this.notifyIcon1 = new System.Windows.Forms.NotifyIcon(this.components);
+            this.groupBoxPathError = new System.Windows.Forms.GroupBox();
+            this.pictureBoxPathError = new System.Windows.Forms.PictureBox();
+            this.labelHlaePath = new System.Windows.Forms.Label();
+            this.textBoxHlaePath = new System.Windows.Forms.TextBox();
+            this.labelHlaePathError = new System.Windows.Forms.Label();
             this.mainMenu.SuspendLayout();
             this.statusStrip.SuspendLayout();
             this.stripEnableUpdateCheck.SuspendLayout();
-            this.panel1.SuspendLayout();
             this.groupBoxHelp.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxHelp)).BeginInit();
+            this.groupBoxPathError.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxPathError)).BeginInit();
             this.SuspendLayout();
             // 
             // mainMenu
@@ -337,7 +340,7 @@
             // statusLabelUpdate
             // 
             this.statusLabelUpdate.Name = "statusLabelUpdate";
-            this.statusLabelUpdate.Size = new System.Drawing.Size(441, 19);
+            this.statusLabelUpdate.Size = new System.Drawing.Size(514, 19);
             this.statusLabelUpdate.Spring = true;
             this.statusLabelUpdate.Text = "L10n Update status unknown";
             this.statusLabelUpdate.Click += new System.EventHandler(this.StatusLabelUpdate_Click);
@@ -409,19 +412,8 @@
             this.statusLabelAutoNo.Text = "L10n No";
             this.statusLabelAutoNo.Click += new System.EventHandler(this.StatusLabelAuto_Click);
             // 
-            // panel1
-            // 
-            this.panel1.Controls.Add(this.groupBoxHelp);
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel1.Location = new System.Drawing.Point(0, 24);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(584, 337);
-            this.panel1.TabIndex = 1;
-            // 
             // groupBoxHelp
             // 
-            this.groupBoxHelp.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBoxHelp.BackColor = System.Drawing.Color.LightBlue;
             this.groupBoxHelp.Controls.Add(this.comboBoxHelpEntries);
             this.groupBoxHelp.Controls.Add(this.labelHelpSelection);
@@ -429,12 +421,14 @@
             this.groupBoxHelp.Controls.Add(this.labelHelpLanguage);
             this.groupBoxHelp.Controls.Add(this.buttonManual);
             this.groupBoxHelp.Controls.Add(this.pictureBoxHelp);
-            this.groupBoxHelp.Location = new System.Drawing.Point(3, 175);
+            this.groupBoxHelp.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.groupBoxHelp.ForeColor = System.Drawing.Color.Black;
+            this.groupBoxHelp.Location = new System.Drawing.Point(0, 202);
             this.groupBoxHelp.Name = "groupBoxHelp";
-            this.groupBoxHelp.Size = new System.Drawing.Size(578, 159);
+            this.groupBoxHelp.Size = new System.Drawing.Size(584, 159);
             this.groupBoxHelp.TabIndex = 0;
             this.groupBoxHelp.TabStop = false;
-            this.groupBoxHelp.Text = "L10n Hilfe";
+            this.groupBoxHelp.Text = "L10n Help";
             // 
             // comboBoxHelpEntries
             // 
@@ -444,7 +438,7 @@
             this.comboBoxHelpEntries.FormattingEnabled = true;
             this.comboBoxHelpEntries.Location = new System.Drawing.Point(229, 46);
             this.comboBoxHelpEntries.Name = "comboBoxHelpEntries";
-            this.comboBoxHelpEntries.Size = new System.Drawing.Size(340, 21);
+            this.comboBoxHelpEntries.Size = new System.Drawing.Size(346, 21);
             this.comboBoxHelpEntries.TabIndex = 4;
             this.comboBoxHelpEntries.SelectedIndexChanged += new System.EventHandler(this.comboBoxHelpEntry_SelectedIndexChanged);
             // 
@@ -465,7 +459,7 @@
             this.comboBoxHelpLanguage.FormattingEnabled = true;
             this.comboBoxHelpLanguage.Location = new System.Drawing.Point(229, 19);
             this.comboBoxHelpLanguage.Name = "comboBoxHelpLanguage";
-            this.comboBoxHelpLanguage.Size = new System.Drawing.Size(340, 21);
+            this.comboBoxHelpLanguage.Size = new System.Drawing.Size(346, 21);
             this.comboBoxHelpLanguage.TabIndex = 2;
             this.comboBoxHelpLanguage.SelectedIndexChanged += new System.EventHandler(this.comboBoxHelpLanguage_SelectedIndexChanged);
             // 
@@ -493,7 +487,7 @@
             this.buttonManual.Location = new System.Drawing.Point(6, 89);
             this.buttonManual.Name = "buttonManual";
             this.buttonManual.Padding = new System.Windows.Forms.Padding(8);
-            this.buttonManual.Size = new System.Drawing.Size(566, 64);
+            this.buttonManual.Size = new System.Drawing.Size(572, 64);
             this.buttonManual.TabIndex = 0;
             this.buttonManual.Text = "[URL]";
             this.buttonManual.UseVisualStyleBackColor = false;
@@ -508,17 +502,63 @@
             this.pictureBoxHelp.TabIndex = 0;
             this.pictureBoxHelp.TabStop = false;
             // 
-            // notifyIcon1
+            // groupBoxPathError
             // 
-            this.notifyIcon1.Text = "notifyIcon1";
-            this.notifyIcon1.Visible = true;
+            this.groupBoxPathError.BackColor = System.Drawing.Color.MistyRose;
+            this.groupBoxPathError.Controls.Add(this.labelHlaePathError);
+            this.groupBoxPathError.Controls.Add(this.textBoxHlaePath);
+            this.groupBoxPathError.Controls.Add(this.labelHlaePath);
+            this.groupBoxPathError.Controls.Add(this.pictureBoxPathError);
+            this.groupBoxPathError.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.groupBoxPathError.ForeColor = System.Drawing.Color.Black;
+            this.groupBoxPathError.Location = new System.Drawing.Point(0, 102);
+            this.groupBoxPathError.Name = "groupBoxPathError";
+            this.groupBoxPathError.Size = new System.Drawing.Size(584, 100);
+            this.groupBoxPathError.TabIndex = 3;
+            this.groupBoxPathError.TabStop = false;
+            this.groupBoxPathError.Text = "L10n Path Error";
+            // 
+            // pictureBoxPathError
+            // 
+            this.pictureBoxPathError.Location = new System.Drawing.Point(6, 19);
+            this.pictureBoxPathError.Name = "pictureBoxPathError";
+            this.pictureBoxPathError.Size = new System.Drawing.Size(48, 48);
+            this.pictureBoxPathError.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
+            this.pictureBoxPathError.TabIndex = 1;
+            this.pictureBoxPathError.TabStop = false;
+            // 
+            // labelHlaePath
+            // 
+            this.labelHlaePath.AutoSize = true;
+            this.labelHlaePath.Location = new System.Drawing.Point(66, 22);
+            this.labelHlaePath.Name = "labelHlaePath";
+            this.labelHlaePath.Size = new System.Drawing.Size(90, 13);
+            this.labelHlaePath.TabIndex = 2;
+            this.labelHlaePath.Text = "L10n HLAE Path:";
+            // 
+            // textBoxHlaePath
+            // 
+            this.textBoxHlaePath.Location = new System.Drawing.Point(229, 19);
+            this.textBoxHlaePath.Name = "textBoxHlaePath";
+            this.textBoxHlaePath.ReadOnly = true;
+            this.textBoxHlaePath.Size = new System.Drawing.Size(346, 20);
+            this.textBoxHlaePath.TabIndex = 3;
+            // 
+            // labelHlaePathError
+            // 
+            this.labelHlaePathError.Location = new System.Drawing.Point(66, 42);
+            this.labelHlaePathError.Name = "labelHlaePathError";
+            this.labelHlaePathError.Size = new System.Drawing.Size(509, 55);
+            this.labelHlaePathError.TabIndex = 4;
+            this.labelHlaePathError.Text = "L10n Path error text here ...";
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(584, 361);
-            this.Controls.Add(this.panel1);
+            this.Controls.Add(this.groupBoxPathError);
+            this.Controls.Add(this.groupBoxHelp);
             this.Controls.Add(this.mainMenu);
             this.Controls.Add(this.statusStrip);
             this.Controls.Add(this.stripEnableUpdateCheck);
@@ -534,10 +574,12 @@
             this.statusStrip.PerformLayout();
             this.stripEnableUpdateCheck.ResumeLayout(false);
             this.stripEnableUpdateCheck.PerformLayout();
-            this.panel1.ResumeLayout(false);
             this.groupBoxHelp.ResumeLayout(false);
             this.groupBoxHelp.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxHelp)).EndInit();
+            this.groupBoxPathError.ResumeLayout(false);
+            this.groupBoxPathError.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxPathError)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -580,7 +622,6 @@
         private System.Windows.Forms.ToolStripMenuItem skyManagerToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem donateToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripMenuItem5;
-        private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.GroupBox groupBoxHelp;
         private System.Windows.Forms.ComboBox comboBoxHelpEntries;
         private System.Windows.Forms.Label labelHelpSelection;
@@ -588,9 +629,13 @@
         private System.Windows.Forms.Label labelHelpLanguage;
         private System.Windows.Forms.Button buttonManual;
         private System.Windows.Forms.PictureBox pictureBoxHelp;
-        private System.Windows.Forms.NotifyIcon notifyIcon1;
         private System.Windows.Forms.ToolStripMenuItem menuAfxRgbaLut;
         private System.Windows.Forms.ToolStripMenuItem menuVoronoi;
         private System.Windows.Forms.ToolStripMenuItem menuContact;
+        private System.Windows.Forms.GroupBox groupBoxPathError;
+        private System.Windows.Forms.Label labelHlaePathError;
+        private System.Windows.Forms.TextBox textBoxHlaePath;
+        private System.Windows.Forms.Label labelHlaePath;
+        private System.Windows.Forms.PictureBox pictureBoxPathError;
     }
 }
