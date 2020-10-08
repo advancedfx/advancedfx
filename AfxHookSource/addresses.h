@@ -96,8 +96,10 @@ AFXADDR_DECL(csgo_crosshair_localplayer_check)
 AFXADDR_DECL(csgo_DamageIndicator_MessageFunc)
 AFXADDR_DECL(csgo_C_BasePlayer_SetAsLocalPlayer)
 AFXADDR_DECL(csgo_C_BasePlayer_GetToolRecordingState)
-AFXADDR_DECL(csgo_C_CSPlayer_PostDataUpdate)
 AFXADDR_DECL(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer)
+AFXADDR_DECL(csgo_C_BaseViewModel_ofs_m_nAnimationParity)
+AFXADDR_DECL(csgo_C_BaseViewModel_ofs_m_nOldAnimationParity)
+AFXADDR_DECL(csgo_C_BaseEntity_ShouldInterpolate)
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);
