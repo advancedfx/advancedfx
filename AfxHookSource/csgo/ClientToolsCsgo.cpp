@@ -45,7 +45,10 @@ bool __fastcall Mycsgo_C_BaseEntity_ShouldInterpolate(SOURCESDK::C_BaseEntity_cs
 	{
 		if (SOURCESDK::CSGO::IClientTools * clientTools = CClientToolsCsgo::Instance()->GetClientToolsInterface())
 		{
-			if(clientTools->IsViewModel((EntitySearchResult)This)) return true;
+			if (clientTools->IsViewModel((EntitySearchResult)This))
+			{
+				return true;
+			}
 		}
 	}
 
@@ -86,19 +89,17 @@ void __fastcall Mycsgo_C_BasePlayer_GetToolRecordingState(void* This, void* Edx,
 {
 	if (CClientToolsCsgo::Instance() && CClientToolsCsgo::Instance()->GetRecording() && CClientToolsCsgo::Instance()->RecordViewModels_get())
 	{
-		static csgo_C_BasePlayer_SetAsLocalPlayer_t setAsLocalPlayer = (csgo_C_BasePlayer_SetAsLocalPlayer_t)AFXADDR_GET(csgo_C_BasePlayer_SetAsLocalPlayer);
 		SOURCESDK::IClientEntity_csgo* localPlayer = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_VEngineClient->GetLocalPlayer());
 
-		if (setAsLocalPlayer && localPlayer != This)
+		if (localPlayer != This)
 		{
-			setAsLocalPlayer(This, 0);
+			unsigned char* pIsLocalPlayer = (unsigned char*)This + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer);
+
+			*pIsLocalPlayer = 1;
 
 			Truecsgo_C_BasePlayer_GetToolRecordingState(This, Edx, msg);
 
-			bool* pIsLocalPlayer = (bool*)((char*)This + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
-			*pIsLocalPlayer = false;
-
-			setAsLocalPlayer(localPlayer, 0);
+			*pIsLocalPlayer = This == localPlayer ? 1 : 0;
 
 			return;
 		}
@@ -140,24 +141,19 @@ void __fastcall csgo_MyC_CSPLayer_UpdateClientSideAnimation(SOURCESDK::C_BaseAni
 	if (CClientToolsCsgo::Instance() && CClientToolsCsgo::Instance()->GetRecording() && CClientToolsCsgo::Instance()->RecordViewModels_get() && This->IsPlayer())
 	{
 		SOURCESDK::IClientEntity_csgo* localPlayer = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_VEngineClient->GetLocalPlayer());
+		SOURCESDK::C_BasePlayer_csgo * player = static_cast<SOURCESDK::C_BasePlayer_csgo *>(This);
 
-		if (This != localPlayer)
-		{
-			// When recording viewmodels we make the C_CSPlayers think that they are the local player (so they will make their viewmodel and attachments) =)
+		// When recording viewmodels we make the C_CSPlayers think that they are the local player (so they will make their viewmodel and attachments) =)
 
-			static csgo_C_BasePlayer_SetAsLocalPlayer_t setAsLocalPlayer = (csgo_C_BasePlayer_SetAsLocalPlayer_t)AFXADDR_GET(csgo_C_BasePlayer_SetAsLocalPlayer);
+		unsigned char* pIsLocalPlayer = (unsigned char*)This + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer);
 
-			setAsLocalPlayer(This, 0);
+		*pIsLocalPlayer = player->IsAlive() ? 1 : 0;
 
-			csgo_TrueC_CSPLayer_UpdateClientSideAnimation(This, Edx);
+		csgo_TrueC_CSPLayer_UpdateClientSideAnimation(This, Edx);
 
-			bool* pIsLocalPlayer = (bool*)((char*)This + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
-			*pIsLocalPlayer = false;
+		*pIsLocalPlayer = player == localPlayer ? 1 : 0;
 
-			setAsLocalPlayer(localPlayer, 0);
-
-			return;
-		}
+		return;
 	}
 
 	csgo_TrueC_CSPLayer_UpdateClientSideAnimation(This, Edx);
@@ -239,8 +235,10 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 
 			if (2 <= Debug_get())
 			{
+				SOURCESDK::CSGO::EntitySearchResult ent = m_ClientTools->GetEntity(hEntity);
+
 				Tier0_Msg("-- %s (%i) --\n", className, hEntity);
-				for (SOURCESDK::CSGO::KeyValues * subKey = msg->GetFirstSubKey(); 0 != subKey; subKey = subKey->GetNextKey())
+				for (SOURCESDK::CSGO::KeyValues* subKey = msg->GetFirstSubKey(); 0 != subKey; subKey = subKey->GetNextKey())
 					Tier0_Msg("%s,\n", subKey->GetName());
 				Tier0_Msg("----\n");
 			}
@@ -279,27 +277,23 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 			bool isRecordedViewModel = false;
 			if (isViewModel && RecordViewModels_get())
 			{
-				if (-1 == RecordViewModels_get())
-					isRecordedViewModel = true;
-				else
+				int weaponIdx;
+
+				if (isViewmodelAttachment && SOURCESDK::g_Entitylist_csgo && be)
 				{
-					int weaponIdx;
+					CBaseHandle viewModelEntBaseHandle = be->AfxGetMoveParentHandle();
+					weaponIdx = m_ClientTools->GetOwningWeaponEntIndex(viewModelEntBaseHandle.GetEntryIndex());
+				}
+				else
+					weaponIdx = m_ClientTools->GetOwningWeaponEntIndex(m_ClientTools->GetEntIndex(ent));
 
-					if (isViewmodelAttachment && SOURCESDK::g_Entitylist_csgo && be)
+				HTOOLHANDLE weaponHandle = m_ClientTools->GetToolHandleForEntityByIndex(weaponIdx);
+				if(EntitySearchResult weaponEnt = m_ClientTools->GetEntity(weaponHandle))
+				{
+					if (EntitySearchResult ownerEnt = m_ClientTools->GetOwnerEntity(weaponEnt))
 					{
-						CBaseHandle viewModelEntBaseHandle = be->AfxGetMoveParentHandle();
-						weaponIdx = m_ClientTools->GetOwningWeaponEntIndex(viewModelEntBaseHandle.GetEntryIndex());
-					}
-					else
-						weaponIdx = m_ClientTools->GetOwningWeaponEntIndex(m_ClientTools->GetEntIndex(ent));
-
-					HTOOLHANDLE weaponHandle = m_ClientTools->GetToolHandleForEntityByIndex(weaponIdx);
-					if(EntitySearchResult weaponEnt = m_ClientTools->GetEntity(weaponHandle))
-					{
-						if (EntitySearchResult ownerEnt = m_ClientTools->GetOwnerEntity(weaponEnt))
-						{
-							isRecordedViewModel = RecordViewModels_get() == m_ClientTools->GetEntIndex(ownerEnt);
-						}
+						isRecordedViewModel = RecordViewModels_get() == m_ClientTools->GetEntIndex(ownerEnt)
+							|| -1 == RecordViewModels_get() && m_ClientTools->IsPlayer(ownerEnt) && static_cast<SOURCESDK::C_BasePlayer_csgo*>(ent)->IsAlive();
 					}
 				}
 			}
@@ -493,24 +487,10 @@ void CClientToolsCsgo::OnBeforeFrameRenderStart(void)
 
 }
 
-enum
-{
-	OBS_MODE_NONE = 0,
-	OBS_MODE_DEATHCAM,
-	OBS_MODE_FREEZECAM,
-	OBS_MODE_FIXED,
-	OBS_MODE_IN_EYE,
-	OBS_MODE_CHASE,
-	OBS_MODE_ROAMING,
-
-	NUM_OBSERVER_MODES,
-};
-
 void CClientToolsCsgo::OnAfterSetupEngineView(void)
 {
 	if (GetRecording() && RecordViewModels_get())
 	{
-		static csgo_C_BasePlayer_SetAsLocalPlayer_t setAsLocalPlayer = (csgo_C_BasePlayer_SetAsLocalPlayer_t)AFXADDR_GET(csgo_C_BasePlayer_SetAsLocalPlayer);
 		SOURCESDK::IClientEntity_csgo* localPlayer = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_VEngineClient->GetLocalPlayer());
 
 		int numRecordAbles = m_ClientTools->GetNumRecordables();
@@ -527,10 +507,7 @@ void CClientToolsCsgo::OnAfterSetupEngineView(void)
 					SOURCESDK::C_BasePlayer_csgo* player = reinterpret_cast<SOURCESDK::C_BasePlayer_csgo*>(ent);
 
 					if ((-1 == RecordViewModels_get() || player->entindex() == RecordViewModels_get())
-						&& player != localPlayer
-						&& player->IsAlive()
-						&& (nullptr == localPlayer || OBS_MODE_IN_EYE != reinterpret_cast<SOURCESDK::C_BasePlayer_csgo*>(localPlayer)->GetObserverMode() || player != reinterpret_cast<SOURCESDK::C_BasePlayer_csgo*>(localPlayer)->GetObserverTarget())
-						)
+						&& player->IsAlive() && player != localPlayer)
 					{
 						SOURCESDK::Vector eyeOrigin;
 						SOURCESDK::QAngle eyeAngles;
@@ -538,30 +515,25 @@ void CClientToolsCsgo::OnAfterSetupEngineView(void)
 						float zNear = 0;
 						float zFar = 1;
 
-						setAsLocalPlayer(player, 0);
+						unsigned char* pIsLocalPlayer = (unsigned char*)player + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer);
+
+						*pIsLocalPlayer = 1;
 
 						player->CalcView(eyeOrigin, eyeAngles, zNear, zFar, fov);
 						player->CalcViewModelView(eyeOrigin, eyeAngles);
 
-						setAsLocalPlayer(localPlayer, 0);
-
-						bool* pIsLocalPlayer = (bool*)((char*)player + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
-						*pIsLocalPlayer = false;
+						*pIsLocalPlayer = localPlayer == player ? 1 : 0;
 					}
 				}
 			}
 		}
 	}
-
 }
 
 void CClientToolsCsgo::OnAfterFrameRenderEnd(void)
 {
 	if (GetRecording() && RecordViewModels_get() && -1 != AFXADDR_GET(csgo_C_BaseViewModel_ofs_m_nAnimationParity) && -1 != AFXADDR_GET(csgo_C_BaseViewModel_ofs_m_nOldAnimationParity))
 	{
-		static csgo_C_BasePlayer_SetAsLocalPlayer_t setAsLocalPlayer = (csgo_C_BasePlayer_SetAsLocalPlayer_t)AFXADDR_GET(csgo_C_BasePlayer_SetAsLocalPlayer);
-		SOURCESDK::IClientEntity_csgo* localPlayer = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_VEngineClient->GetLocalPlayer());
-
 		int numRecordAbles = m_ClientTools->GetNumRecordables();
 		for (int i = 0; i < numRecordAbles; ++i)
 		{
