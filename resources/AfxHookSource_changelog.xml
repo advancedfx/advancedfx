@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.92.2</version>
+<time>2020-11-03T16:48Z</time>
+<changes>
+<change type="fixed">Fixed #402 mirv_pov and FOV zooming, thanks to lorem.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.92.1</version>
 <time>2020-10-20T12:04Z</time>
 <changes>
