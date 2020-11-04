@@ -1199,9 +1199,20 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 				{
 					if (be->IsPlayer())
 					{
-						static csgo_C_BasePlayer_SetAsLocalPlayer_t setAsLocalPlayer = (csgo_C_BasePlayer_SetAsLocalPlayer_t)AFXADDR_GET(csgo_C_BasePlayer_SetAsLocalPlayer);
+						bool* pOsLocalPlayer = (bool*)((char*)be + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
+						*pOsLocalPlayer = false;
+					}
+				}
+			}
 
-						setAsLocalPlayer(be, 0);
+			if (SOURCESDK::IClientEntity_csgo* ce1 = SOURCESDK::g_Entitylist_csgo->GetClientEntity(1))
+			{
+				if (SOURCESDK::C_BaseEntity_csgo* be1 = ce1->GetBaseEntity())
+				{
+					if (be1->IsPlayer())
+					{
+						bool* pOsLocalPlayer = (bool*)((char*)be1 + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
+						*pOsLocalPlayer = true;
 					}
 				}
 			}
@@ -1220,9 +1231,28 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 				{
 					if (be->IsPlayer())
 					{
-						static csgo_C_BasePlayer_SetAsLocalPlayer_t setAsLocalPlayer = (csgo_C_BasePlayer_SetAsLocalPlayer_t)AFXADDR_GET(csgo_C_BasePlayer_SetAsLocalPlayer);
+						if (g_i_MirvPov != g_VEngineClient->GetLocalPlayer())
+						{
+							// E.g. disconnected and we switch back to player 1, now we can switch back to target again.
 
-						setAsLocalPlayer(be, 0);
+							static csgo_C_BasePlayer_SetAsLocalPlayer_t setAsLocalPlayer = (csgo_C_BasePlayer_SetAsLocalPlayer_t)AFXADDR_GET(csgo_C_BasePlayer_SetAsLocalPlayer);
+							setAsLocalPlayer(be, 0);
+						}
+
+						bool* pOsLocalPlayer = (bool*)((char*)be + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
+						*pOsLocalPlayer = true;
+
+						if (SOURCESDK::IClientEntity_csgo* ce1 = SOURCESDK::g_Entitylist_csgo->GetClientEntity(1))
+						{
+							if (SOURCESDK::C_BaseEntity_csgo* be1 = ce1->GetBaseEntity())
+							{
+								if (be1->IsPlayer())
+								{
+									bool* pOsLocalPlayer = (bool*)((char*)be1 + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
+									*pOsLocalPlayer = false;
+								}
+							}
+						}
 					}
 				}
 			}
@@ -1247,24 +1277,6 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 		break;
 
 	case SOURCESDK::CSGO::FRAME_NET_UPDATE_POSTDATAUPDATE_END:
-		if (g_i_MirvPov && 1 != g_i_MirvPov)
-		{
-			if (SOURCESDK::IClientEntity_csgo* cePov = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_i_MirvPov))
-			{
-				// Make sure the GOTV player doesn't think it's the local one as well:
-				if (SOURCESDK::IClientEntity_csgo* ce = SOURCESDK::g_Entitylist_csgo->GetClientEntity(1))
-				{
-					if (SOURCESDK::C_BaseEntity_csgo* be = ce->GetBaseEntity())
-					{
-						if (be->IsPlayer())
-						{
-							bool* pOsLocalPlayer = (bool*)((char*)be + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
-							*pOsLocalPlayer = false;
-						}
-					}
-				}
-			}
-		}
 		if (-1 != g_iForcePostDataUpdateChanged)
 		{
 			if (SOURCESDK::IClientEntity_csgo* ce = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_iForcePostDataUpdateChanged))

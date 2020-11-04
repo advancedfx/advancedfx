@@ -14,6 +14,7 @@
 #include <Windows.h>
 #include <deps/release/Detours/src/detours.h>
 
+
 int g_i_MirvPov = 0;
 
 struct csgo_bf_read {
@@ -154,6 +155,49 @@ bool csgo_C_CSPlayer_EyeAngles_Install(void)
 }
 
 
+typedef float(__fastcall* csgo_C_CS_Player__GetFOV_t)(SOURCESDK::C_BasePlayer_csgo* This, void* Edx);
+
+csgo_C_CS_Player__GetFOV_t True_csgo_C_CS_Player__GetFOV;
+
+float __fastcall My_csgo_C_CS_Player__GetFOV(SOURCESDK::C_BasePlayer_csgo * This, void* Edx)
+{
+	if (g_i_MirvPov && This->entindex() == g_i_MirvPov)
+	{
+		bool* pIsLocalPlayer = (bool*)((char*)This + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
+
+		bool oldIsLocalPlayer = *pIsLocalPlayer;
+		
+		*pIsLocalPlayer = false;
+
+		float result = True_csgo_C_CS_Player__GetFOV(This, Edx);
+
+		*pIsLocalPlayer = oldIsLocalPlayer;
+
+		return result;
+	}
+
+	return True_csgo_C_CS_Player__GetFOV(This, Edx);
+}
+
+bool Install_csgo_C_CS_Player__GetFOVs(void)
+{
+	static bool firstResult = false;
+	static bool firstRun = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	if (AFXADDR_GET(csgo_C_CSPlayer_vtable))
+	{
+		AfxDetourPtr((PVOID*)&(((DWORD*)AFXADDR_GET(csgo_C_CSPlayer_vtable))[331]), My_csgo_C_CS_Player__GetFOV, (PVOID*)&True_csgo_C_CS_Player__GetFOV);
+
+		firstResult = true;
+	}
+
+	return firstResult;
+}
+
+
+
 typedef int(__fastcall* csgo_DamageIndicator_MessageFunc_t)(void* This, void* Edx, const char * pMsg);
 csgo_DamageIndicator_MessageFunc_t Truecsgo_DamageIndicator_MessageFunc = 0;
 
@@ -200,12 +244,61 @@ bool csgo_DamageIndicator_MessageFunc_Install(void)
 	return firstResult;
 }
 
+
+typedef void(__fastcall* csgo_C_CSPlayer_UpdateOnRemove_t)(SOURCESDK::C_BasePlayer_csgo* This, void* Edx);
+
+csgo_C_CSPlayer_UpdateOnRemove_t Truecsgo_C_CSPlayer_UpdateOnRemove = nullptr;
+
+typedef void(__fastcall* csgo_C_BasePlayer_SetAsLocalPlayer_t)(void* Ecx, void* Edx);
+
+void __fastcall Mycsgo_C_CSPlayer_UpdateOnRemove(SOURCESDK::C_BasePlayer_csgo* This, void* Edx)
+{
+	if (g_i_MirvPov && This->entindex() == g_i_MirvPov)
+	{
+		if (SOURCESDK::IClientEntity_csgo* ce1 = SOURCESDK::g_Entitylist_csgo->GetClientEntity(1))
+		{
+			if (SOURCESDK::C_BaseEntity_csgo* be1 = ce1->GetBaseEntity())
+			{
+				if (be1->IsPlayer())
+				{
+					// The target fake local player is being deleted, emergency case, switch back to real one.
+
+					static csgo_C_BasePlayer_SetAsLocalPlayer_t setAsLocalPlayer = (csgo_C_BasePlayer_SetAsLocalPlayer_t)AFXADDR_GET(csgo_C_BasePlayer_SetAsLocalPlayer);
+					setAsLocalPlayer(be1, 0);
+				}
+			}
+		}
+	}
+
+	Truecsgo_C_CSPlayer_UpdateOnRemove(This, Edx);
+}
+
+bool csgo_C_CSPlayer_UpdateOnRemove_Install(void)
+{
+	static bool firstResult = false;
+	static bool firstRun = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	if (AFXADDR_GET(csgo_C_CSPlayer_vtable))
+	{
+		AfxDetourPtr((PVOID*)&(((DWORD*)AFXADDR_GET(csgo_C_CSPlayer_vtable))[126]), Mycsgo_C_CSPlayer_UpdateOnRemove, (PVOID*)&Truecsgo_C_CSPlayer_UpdateOnRemove);
+
+		firstResult = true;
+	}
+
+	return firstResult;
+}
+
+
 CON_COMMAND(mirv_pov, "Forces a POV on a GOTV demo.")
 {
 	if (!(AFXADDR_GET(csgo_C_CSPlayer_ofs_m_angEyeAngles)
 		&& csgo_CNetChan_ProcessMessages_Install()
 		&& csgo_C_CSPlayer_EyeAngles_Install()
 		&& csgo_DamageIndicator_MessageFunc_Install()
+		&& csgo_C_CSPlayer_UpdateOnRemove_Install()
+		&& Install_csgo_C_CS_Player__GetFOVs()
 		&& AFXADDR_GET(csgo_C_BasePlayer_SetAsLocalPlayer)
 		))
 	{

@@ -51,4 +51,8 @@ Notice:
 	
 [X] After that the installer and the zip can be found in "C:\<HLAESRC>\advancedfx\build\Release".
 
-[X] If you change stuff you will need to update Product Id GUID and Version in installer/HlaeCore and Version in installer/setup (larger than build number).
+[X] Things you should do before releasing a new version:
+  - Update version in hlae/CMakeLists.txt
+  - Update GUIDs in hlae/UpdateCheck.cs
+  - Update id GUID and version in installer/HlaeCore/Product.wxs
+  - Update version in installer/setup/Bundle.wxs
