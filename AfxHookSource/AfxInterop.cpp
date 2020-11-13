@@ -1391,9 +1391,13 @@ namespace AfxInterop {
 			{
 				INT32 value;
 				if (!ReadInt32(m_hDrawingPipe, value)) { errorLine = __LINE__; goto error; }
+				rect.left = value;
 				if (!ReadInt32(m_hDrawingPipe, value)) { errorLine = __LINE__; goto error; }
+				rect.top = value;
 				if (!ReadInt32(m_hDrawingPipe, value)) { errorLine = __LINE__; goto error; }
+				rect.right = value;
 				if (!ReadInt32(m_hDrawingPipe, value)) { errorLine = __LINE__; goto error; }
+				rect.bottom = value;
 			}
 			if (!ReadUInt32(m_hDrawingPipe, rowCount)) { errorLine = __LINE__; goto error; }
 			if (!ReadUInt32(m_hDrawingPipe, rowBytes)) { errorLine = __LINE__; goto error; }
@@ -1409,7 +1413,7 @@ namespace AfxInterop {
 						for (UINT32 i = 0; i < rowCount && 0 == errorLine; ++i)
 						{
 							if (!ReadBytes(m_hDrawingPipe, pData, 0, rowBytes)) errorLine = __LINE__;
-							pData = (unsigned char*)pData + rowBytes;
+							pData = (unsigned char*)pData + lockedRect.Pitch;
 						}
 						it->second->UnlockRect(level);
 					}
