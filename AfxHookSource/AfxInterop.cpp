@@ -799,16 +799,7 @@ namespace AfxInterop {
 
 			if (7 == m_DrawingVersion)
 			{
-				if (m_DrawingDeviceLost)
-				{
-					if (!Send_DrawingThread_DeviceLost_Message()) { errorLine = __LINE__; goto error; }
-				}
-				if (m_DrawingDeviceRestored)
-				{
-					if (!Send_DrawingThread_DeviceRestored_Message()) { errorLine = __LINE__; goto error; }
-				}
-
-				m_DrawingSkip = false;
+				if(!Send_DrawingThread_NOP_Message()) { errorLine = __LINE__; goto error; }
 				return;
 			}
 
@@ -954,7 +945,7 @@ namespace AfxInterop {
 
 				if (6 <= m_DrawingVersion && m_DrawingVersion <= 7)
 				{
-					if(!HandleVersion6DrawingMessage(message, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
+					if(!HandleDrawingMessage(message, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
 				}
 				else
 				{
@@ -989,7 +980,7 @@ namespace AfxInterop {
 
 			if (6 <= m_DrawingVersion && m_DrawingVersion <= 7)
 			{
-				if (!HandleVersion6DrawingMessage(DrawingMessage_BeforeHud, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
+				if (!HandleDrawingMessage(DrawingMessage_BeforeHud, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
 			}
 			else
 			{
@@ -1023,7 +1014,7 @@ namespace AfxInterop {
 
 			if (6 <= m_DrawingVersion && m_DrawingVersion <= 7)
 			{
-				if (!HandleVersion6DrawingMessage(DrawingMessage_AfterHud, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
+				if (!HandleDrawingMessage(DrawingMessage_AfterHud, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
 			}
 			else
 			{
@@ -1054,7 +1045,7 @@ namespace AfxInterop {
 
 			if (6 <= m_DrawingVersion && m_DrawingVersion <= 7)
 			{
-				if (!HandleVersion6DrawingMessage(DrawingMessage_OnRenderViewEnd, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
+				if (!HandleDrawingMessage(DrawingMessage_OnRenderViewEnd, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
 			}
 			else
 			{
@@ -1076,11 +1067,6 @@ namespace AfxInterop {
 			if (m_DrawingVersion == 7)
 			{
 				if (!WriteInt32(m_hDrawingPipe, DrawingMessage_DeviceLost)) { errorLine = __LINE__; goto error; }
-
-				bool bConfirmed = false;
-				if (!ReadBoolean(m_hDrawingPipe, bConfirmed) || !bConfirmed) { errorLine = __LINE__; goto error; }
-
-				m_DrawingDeviceLost = false;
 			}
 
 			return true;
@@ -1090,11 +1076,25 @@ namespace AfxInterop {
 			return false;
 		}
 
+
+		bool Send_DrawingThread_NOP_Message()
+		{
+			int errorLine = 0;
+
+			if (m_DrawingVersion == 7)
+			{
+				if (!HandleDrawingMessage(DrawingMessage_NOP,m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
+			}
+
+			return true;
+
+		error:
+			Tier0_Warning("AfxInterop::Send_DrawingThread_NOP_Message: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
+			return false;
+		}
+
 		void DrawingThread_DeviceLost(bool disconnecting = false)
 		{
-			m_DrawingDeviceLost = true;
-			m_DrawingDeviceRestored = false;
-
 			if (m_SharedSurface.Texture)
 			{
 				m_SharedSurface.Texture->Release();
@@ -1108,17 +1108,20 @@ namespace AfxInterop {
 			for (auto it = m_D3d9VertexShaders.begin(); it != m_D3d9VertexShaders.end(); ++it) it->second->Release(); m_D3d9VertexShaders.clear();
 			for (auto it = m_D3d9PixelShaders.begin(); it != m_D3d9PixelShaders.end(); ++it) it->second->Release(); m_D3d9PixelShaders.clear();
 
-			if (disconnecting) return;
+			if (disconnecting || !m_DrawingConnected) return;
 
 			int errorLine = 0;
 			
-			if(!Send_DrawingThread_DeviceLost_Message()) { errorLine = __LINE__; goto error; }
+			if (m_DrawingConnected)
+			{
+				if (!Send_DrawingThread_DeviceLost_Message()) { errorLine = __LINE__; goto error; }
+			}
 
 			return;
 
 		error:
 			Tier0_Warning("AfxInterop::DrawingThread_DeviceLost: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
-			DisconnectDrawing();
+			if(!disconnecting) DisconnectDrawing();
 			return;
 		}
 
@@ -1525,55 +1528,6 @@ namespace AfxInterop {
 			if (m_DrawingVersion == 7)
 			{
 				if (!WriteInt32(m_hDrawingPipe, DrawingMessage_DeviceRestored)) { errorLine = __LINE__; goto error; }
-
-				int errorLine = 0;
-
-				bool bFinished = false;
-
-				while (!bFinished)
-				{
-					INT32 drawingReply;
-					if (!ReadInt32(m_hDrawingPipe, drawingReply)) { errorLine = __LINE__; goto error; }
-
-					switch ((DrawingReply)drawingReply)
-					{
-					case DrawingReply::Finished:
-						bFinished = true;
-						break;
-					case DrawingReply::D3d9CreateVertexDeclaration:
-						if (!HandleVersion7DrawingReply_D3d9CreateVertexDeclaration()) { errorLine = __LINE__; goto error; }
-						break;
-					case DrawingReply::D3d9CreateIndexBuffer:
-						if (!HandleVersion7DrawingReply_D3d9CreateIndexBuffer()) { errorLine = __LINE__; goto error; }
-						break;
-					case DrawingReply::UpdateD3d9IndexBuffer:
-						if (!HandleVersion7DrawingReply_UpdateD3d9IndexBuffer()) { errorLine = __LINE__; goto error; }
-						break;
-					case DrawingReply::D3d9CreateVertexBuffer:
-						if (!HandleVersion7DrawingReply_D3d9CreateVertexBuffer()) { errorLine = __LINE__; goto error; }
-						break;
-					case DrawingReply::UpdateD3d9VertexBuffer:
-						if (!HandleVersion7DrawingReply_UpdateD3d9VertexBuffer()) { errorLine = __LINE__; goto error; }
-						break;
-					case DrawingReply::D3d9CreateTexture:
-						if (!HandleVersion7DrawingReply_D3d9CreateTexture()) { errorLine = __LINE__; goto error; }
-						break;
-					case DrawingReply::UpdateD3d9Texture:
-						if (!HandleVersion7DrawingReply_UpdateD3d9Texture()) { errorLine = __LINE__; goto error; }
-						break;
-					case DrawingReply::D3d9CreateVertexShader:
-						if (!HandleVersion7DrawingReply_D3d9CreateVertexShader()) { errorLine = __LINE__; goto error; }
-						break;
-					case DrawingReply::D3d9CreatePixelShader:
-						if (!HandleVersion7DrawingReply_D3d9CreatePixelShader()) { errorLine = __LINE__; goto error; }
-						break;
-					default:
-						{ errorLine = __LINE__; goto error; }
-					}
-
-				}
-
-				m_DrawingDeviceRestored = false;
 			}
 
 			return true;
@@ -1585,17 +1539,18 @@ namespace AfxInterop {
 
 		void DrawingThread_DeviceRestored()
 		{
-			m_DrawingDeviceRestored = true;
-
 			int errorLine = 0;
 
-			if (!Send_DrawingThread_DeviceRestored_Message()) { errorLine = __LINE__; goto error; }
+			if (m_DrawingConnected)
+			{				
+				if (!Send_DrawingThread_DeviceRestored_Message()) { errorLine = __LINE__; goto error; }
+			}
 
 			return;
 
 		error:
 			Tier0_Warning("AfxInterop::Send_DrawingThread_DeviceRestored_Message: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
-			return;
+			DisconnectDrawing();
 		}
 
 		bool ConnectDrawing() {
@@ -1650,6 +1605,8 @@ namespace AfxInterop {
 					}
 					else if (m_EngineConnected)
 					{
+						m_DrawingConnected = true;
+						m_DrawingPass = 0;
 						return true;
 					}
 
@@ -2125,6 +2082,7 @@ namespace AfxInterop {
 
 			DrawingMessage_DeviceLost = 9,
 			DrawingMessage_DeviceRestored = 10,
+			DrawingMessage_NOP = 11
 		};
 
 		enum PrepareDrawReply
@@ -2321,14 +2279,12 @@ namespace AfxInterop {
 		bool m_DrawingWantsConnect = false;
 		bool m_DrawingPreConnect = false;
 		bool m_DrawingConnected = false;
+		int m_DrawingPass = 0;
 
 		HANDLE m_hDrawingPipe = INVALID_HANDLE_VALUE;		
 
 		bool m_DrawingSkip = true;
 		int m_DrawingFrameCount = -1;
-
-		bool m_DrawingDeviceLost = false;
-		bool m_DrawingDeviceRestored = true;
 
 		std::map<UINT64, IDirect3DVertexDeclaration9*> m_D3d9VertexDeclarations;
 		std::map<UINT64, IDirect3DIndexBuffer9*> m_D3d9IndexBuffers;
@@ -2347,7 +2303,7 @@ namespace AfxInterop {
 
 		SharedSurfacesValue m_SharedSurface;
 
-		bool HandleVersion6DrawingMessage(DrawingMessage message, int frameCount)
+		bool HandleDrawingMessage(DrawingMessage message, int frameCount)
 		{
 			int errorLine = 0;
 			bool bInSafeState = false;
@@ -2356,6 +2312,7 @@ namespace AfxInterop {
 			{
 				if (!WriteInt32(m_hDrawingPipe, message)) { errorLine = __LINE__; goto error; }
 				if (!WriteInt32(m_hDrawingPipe, frameCount)) { errorLine = __LINE__; goto error; }
+				if (7 == m_DrawingVersion) if (!WriteUInt32(m_hDrawingPipe, m_DrawingPass)) { errorLine = __LINE__; goto error; }
 				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 
 				INT32 drawingReply;
@@ -2420,6 +2377,7 @@ namespace AfxInterop {
 					{
 						AfxD3D9EndCleanState();
 					}
+					++m_DrawingPass;
 					return true;
 
 				case DrawingReply::D3d9CreateVertexDeclaration:
