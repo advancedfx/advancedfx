@@ -1101,12 +1101,12 @@ namespace AfxInterop {
 				m_SharedSurface.Texture = nullptr;
 			}
 
-			for (auto it = m_D3d9VertexDeclarations.begin(); it != m_D3d9VertexDeclarations.end(); ++it) it->second->Release(); m_D3d9VertexDeclarations.clear();
+			if (disconnecting) for (auto it = m_D3d9VertexDeclarations.begin(); it != m_D3d9VertexDeclarations.end(); ++it) it->second->Release(); m_D3d9VertexDeclarations.clear();
 			for (auto it = m_D3d9IndexBuffers.begin(); it != m_D3d9IndexBuffers.end(); ++it) it->second->Release(); m_D3d9IndexBuffers.clear();
 			for (auto it = m_D3d9VertexBuffers.begin(); it != m_D3d9VertexBuffers.end(); ++it) it->second->Release(); m_D3d9VertexBuffers.clear();
 			for (auto it = m_D3d9Textures.begin(); it != m_D3d9Textures.end(); ++it) it->second->Release(); m_D3d9Textures.clear();
-			for (auto it = m_D3d9VertexShaders.begin(); it != m_D3d9VertexShaders.end(); ++it) it->second->Release(); m_D3d9VertexShaders.clear();
-			for (auto it = m_D3d9PixelShaders.begin(); it != m_D3d9PixelShaders.end(); ++it) it->second->Release(); m_D3d9PixelShaders.clear();
+			if (disconnecting) for (auto it = m_D3d9VertexShaders.begin(); it != m_D3d9VertexShaders.end(); ++it) it->second->Release(); m_D3d9VertexShaders.clear();
+			if (disconnecting) for (auto it = m_D3d9PixelShaders.begin(); it != m_D3d9PixelShaders.end(); ++it) it->second->Release(); m_D3d9PixelShaders.clear();
 
 			if (disconnecting || !m_DrawingConnected) return;
 
@@ -1554,6 +1554,7 @@ namespace AfxInterop {
 		}
 
 		bool ConnectDrawing() {
+			m_DrawingPass = 0;
 			{
 				std::shared_lock<std::shared_timed_mutex> sharedLock(m_DrawingConnectMutex);
 
@@ -1606,7 +1607,6 @@ namespace AfxInterop {
 					else if (m_EngineConnected)
 					{
 						m_DrawingConnected = true;
-						m_DrawingPass = 0;
 						return true;
 					}
 
@@ -3676,7 +3676,7 @@ CON_COMMAND(afx_interop, "Controls advancedfxInterop (i.e. with Unity engine).")
 					Tier0_Warning("Invalid index %i\n", idx);
 					return;
 				}
-				else if (0 == _stricmp(arg2, "edit") && 4 == argc)
+				else if (0 == _stricmp(arg2, "edit") && 4 <= argc)
 				{
 					int target = atoi(args->ArgV(3));
 					int idx = 0;
