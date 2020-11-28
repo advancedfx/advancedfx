@@ -614,7 +614,7 @@ namespace AfxInterop {
 			if (!m_EngineConnected) return;
 
 			int errorLine = 0;
-			if (!(m_EngineVersion == 7) || m_EnabledFeatures.AfterRenderView)
+			if (true || m_EnabledFeatures.AfterRenderView)
 			{
 				{
 					if (!WriteUInt32(m_hEnginePipe, EngineMessage_OnRenderViewEnd)) { errorLine = __LINE__; goto error; }
@@ -1538,10 +1538,10 @@ namespace AfxInterop {
 							if (lastError != ERROR_PIPE_BUSY)
 							{
 								Tier0_Warning("Could not open pipe. GLE=%d (%s)\n", lastError, strPipeName.c_str());
-								{ errorLine = __LINE__; goto error; }
+								if(lastError != ERROR_FILE_NOT_FOUND) { errorLine = __LINE__; goto error; }
+								return false;
 							}
-
-							if (!WaitNamedPipe(strPipeName.c_str(), 5000))
+							else if (!WaitNamedPipe(strPipeName.c_str(), 5000))
 							{
 								Tier0_Warning("WaitNamedPipe: timed out (%s).\n", strPipeName.c_str());
 								{ errorLine = __LINE__; goto error; }
@@ -1594,6 +1594,9 @@ namespace AfxInterop {
 				m_DrawingMainSurface->AfxSetDepthSurface(NULL);
 				m_DrawingMainSurface = nullptr;
 			}
+
+			m_DrawingConnectMutex.unlock();
+			DisconnectEngine();
 		}
 
 		bool ConnectEngine() {
@@ -1641,10 +1644,10 @@ namespace AfxInterop {
 								if (lastError != ERROR_PIPE_BUSY)
 								{
 									Tier0_Warning("Could not open pipe. GLE=%d (%s)\n", lastError, strPipeName.c_str());
-									{ errorLine = __LINE__; goto error; }
+									if (lastError != ERROR_FILE_NOT_FOUND) { errorLine = __LINE__; goto error; }
+									return false;
 								}
-
-								if (!WaitNamedPipe(strPipeName.c_str(), 5000))
+								else if (!WaitNamedPipe(strPipeName.c_str(), 5000))
 								{
 									Tier0_Warning("WaitNamedPipe: timed out (%s).\n", strPipeName.c_str());
 									{ errorLine = __LINE__; goto error; }
@@ -1654,7 +1657,6 @@ namespace AfxInterop {
 							Tier0_Msg("Connected to \"%s\".\n", strPipeName.c_str());
 
 							m_DrawingWantsConnect = true;
-							m_DrawingVersion = m_EngineVersion;
 							m_EnginePreConnected = true;
 							return true;
 						}
@@ -1664,6 +1666,8 @@ namespace AfxInterop {
 						m_EnginePreConnected = false;
 
 						if (!ReadInt32(m_hEnginePipe, m_EngineVersion)) { errorLine = __LINE__; goto error; }
+
+						m_DrawingVersion = m_EngineVersion;
 
 						switch (m_EngineVersion)
 						{
@@ -2915,6 +2919,7 @@ namespace AfxInterop {
 					case DrawingReply::WaitForGpu:
 						AfxD3D_WaitForGPU();
 						if (!WriteBoolean(m_hDrawingPipe, true)) { errorLine = __LINE__; goto error; }
+						if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 						break;
 
 					case DrawingReply::BeginCleanState:
