@@ -28,6 +28,8 @@ CMirvBoolCalcs g_MirvBoolCalcs;
 CMirvIntCalcs g_MirvIntCalcs;
 CMirvFloatCalcs g_MirvFloatCalcs;
 
+int g_LevelInitCount = 0;
+
 void CalcDeltaSmooth(double deltaT, double targetDeltaPos, double & resultDeltaPos, double & lastVel, double LimitVelocity, double LimitAcceleration)
 {
 	if (deltaT <= 0)
@@ -1083,18 +1085,32 @@ public:
 
 double CalcExpSmooth(double deltaT, double oldVal, double newVal)
 {
+	const double limitTime = 19.931568569324174087221916576936;
+
+	if (deltaT < 0)
+		return oldVal;
+	else if (limitTime < deltaT)
+		return newVal;
+
 	const double halfTime = 0.69314718055994530941723212145818;
 
-	double x = 1 / exp(deltaT / halfTime);
+	double x = 1 / exp(deltaT * halfTime);
 
 	return x * oldVal +  (1 - x) * newVal;
 }
 
 double CalcDeltaExpSmooth(double deltaT, double deltaVal)
 {
+	const double limitTime = 19.931568569324174087221916576936;
+
+	if (deltaT < 0)
+		return 0;
+	else if (limitTime < deltaT)
+		return deltaVal;
+
 	const double halfTime = 0.69314718055994530941723212145818;
 
-	double x = 1 / exp(deltaT / halfTime);
+	double x = 1 / exp(deltaT * halfTime);
 
 	return (1 - x) * deltaVal;
 }
@@ -1102,6 +1118,11 @@ double CalcDeltaExpSmooth(double deltaT, double deltaVal)
 class CMirvCamSmoothCalc : public CMirvCamCalc
 {
 public:
+	static void LevelInitPreEntity()
+	{
+
+	}
+
 	CMirvCamSmoothCalc(char const * name, IMirvCamCalc * cam, IMirvHandleCalc * trackHandle)
 		: CMirvCamCalc(name)
 		, m_Parent(cam)
@@ -1216,6 +1237,12 @@ public:
 		bool calcedParent = m_Parent->CalcCam(parentVector, parentAngles, parentFov);
 		bool calcedHandle = m_TrackHandle->CalcHandle(handle);
 
+		if (m_LevelInitCount != g_LevelInitCount)
+		{
+			m_LevelInitCount = g_LevelInitCount;
+			m_Reset = true;
+		}
+
 		m_Reset = m_Reset || !(calcedParent && calcedHandle && m_LastHandle == handle);
 
 		if(calcedHandle) m_LastHandle = handle;
@@ -1322,6 +1349,7 @@ private:
 	IMirvHandleCalc * m_TrackHandle;
 
 	bool m_Reset = true;
+	int m_LevelInitCount = 0;
 	SOURCESDK::CSGO::CBaseHandle m_LastHandle;
 	float m_LastClientTime = 0;
 
@@ -2223,6 +2251,12 @@ public:
 		bool calcedParent = m_Parent->CalcVecAng(parentVector, parentAngles);
 		bool calcedHandle = m_TrackHandle->CalcHandle(handle);
 
+		if (m_LevelInitCount != g_LevelInitCount)
+		{
+			m_LevelInitCount = g_LevelInitCount;
+			m_Reset = true;
+		}
+
 		m_Reset = m_Reset || !(calcedParent && calcedHandle && m_LastHandle == handle);
 
 		if (calcedHandle) m_LastHandle = handle;
@@ -2307,6 +2341,7 @@ private:
 	IMirvHandleCalc * m_TrackHandle;
 
 	bool m_Reset = true;
+	int m_LevelInitCount = 0;
 	SOURCESDK::CSGO::CBaseHandle m_LastHandle;
 	float m_LastClientTime = 0;
 
@@ -6600,4 +6635,9 @@ CON_COMMAND(mirv_calcs, "Expressions, currently mainly for usage mirv_calcs, mir
 		, arg0
 		, arg0
 	);
+}
+
+void MirvCalcs_LevelInitPreEntity()
+{
+	++g_LevelInitCount;
 }

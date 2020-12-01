@@ -255,4 +255,5 @@ private:
 
 extern CMirvFloatCalcs g_MirvFloatCalcs;
 
+void MirvCalcs_LevelInitPreEntity();
 
