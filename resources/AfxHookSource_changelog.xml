@@ -9,7 +9,7 @@
 <version>1.92.3</version>
 <time>2020-12-01T18:39Z</time>
 <changes>
-<change type="fixed">mirv_calcs cam smooth calc: Fixed the map change problem and also the crash problem if the delta time gets too large. If you customized the timing (halfTimeXXX) you will need to divide them by 2*ln(2) = approximately 1.3862943611198906188344642429164</change>
+<change type="fixed">mirv_calcs cam smooth calc: Fixed the map change problem and also the crash problem if the delta time gets too large. If you customized the timing (halfTimeXXX) you will need to divide them by ln(2)^2 = approximately 2.1</change>
 </changes>
 </release>
 
