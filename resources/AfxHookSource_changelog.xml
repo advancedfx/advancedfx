@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.92.4</version>
+<time>2020-12-04T10:46Z</time>
+<changes>
+<change type="fixed">Adjusted to CS:GO 12/03/2020 update: Fixes mirv_pov crashing / error adresses.cpp:1965.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.92.3</version>
 <time>2020-12-01T18:39Z</time>
 <changes>
