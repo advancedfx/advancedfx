@@ -300,9 +300,10 @@ CON_COMMAND(mirv_pov, "Forces a POV on a GOTV demo.")
 		&& csgo_C_CSPlayer_UpdateOnRemove_Install()
 		&& Install_csgo_C_CS_Player__GetFOVs()
 		&& AFXADDR_GET(csgo_C_BasePlayer_SetAsLocalPlayer)
+		&& AFXADDR_GET(csgo_crosshair_localplayer_check)
 		))
 	{
-		Tier0_Warning("Not supported for your engine / missing hooks,!\n");
+		Tier0_Warning("Not supported for your engine / missing hooks!\n");
 		return;
 	}
 
@@ -312,7 +313,7 @@ CON_COMMAND(mirv_pov, "Forces a POV on a GOTV demo.")
 	{
 		g_i_MirvPov = atoi(args->ArgV(1));
 
-		unsigned char* pData = (unsigned char *)AFXADDR_GET(csgo_crosshair_localplayer_check) + 15;
+		unsigned char* pData = (unsigned char *)AFXADDR_GET(csgo_crosshair_localplayer_check) +17;
 
 		MdtMemBlockInfos mbis;
 		MdtMemAccessBegin(pData, 2, &mbis);
@@ -325,7 +326,7 @@ CON_COMMAND(mirv_pov, "Forces a POV on a GOTV demo.")
 		else
 		{
 			pData[0] = 0x74;
-			pData[1] = 0xcc;
+			pData[1] = 0xc8;
 		}
 
 		MdtMemAccessEnd(&mbis);

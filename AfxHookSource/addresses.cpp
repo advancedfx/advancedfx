@@ -1949,6 +1949,10 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			AFXADDR_SET(csgo_C_CSPlayer_ofs_m_angEyeAngles, ofs);
 		}
 
+		// csgo_crosshair_localplayer_check // Last checked: 2020-04-12
+		// Hook needs updating as well!
+		//
+		// (Right after the first XOR of cvar cl_show_observer_crosshair value.)
 		{
 			DWORD addr = 0;
 
@@ -1957,7 +1961,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			{
 				MemRange textRange = sections.GetMemRange();
 
-				MemRange result = FindPatternString(textRange, "8B 01 FF 50 34 85 C0 74 D4 3B 35 ?? ?? ?? ?? 74 CC 8B 46 08 8D 7E 08 8B CF FF 50 28");
+				MemRange result = FindPatternString(textRange, "8B 01 FF 50 34 85 C0 74 D2 8B 3D ?? ?? ?? ?? 3B F7 74 C8");
 
 				if (!result.IsEmpty())
 					addr = result.Start;

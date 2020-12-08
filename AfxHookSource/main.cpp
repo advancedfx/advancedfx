@@ -996,6 +996,8 @@ void CAfxBaseClientDll::Shutdown(void)
 	m_Parent->Shutdown();
 }
 
+void MirvCalcs_LevelInitPreEntity();
+
 //__declspec(naked) 
 void CAfxBaseClientDll::LevelInitPreEntity(char const* pMapName)
 { // NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 5)
@@ -1011,6 +1013,8 @@ void CAfxBaseClientDll::LevelInitPreEntity(char const* pMapName)
 #ifdef AFX_MIRV_PGL
 	MirvPgl::SupplyLevelInit(pMapName);
 #endif
+
+	MirvCalcs_LevelInitPreEntity();
 }
 
 void CAfxBaseClientDll::LevelInitPostEntity()
