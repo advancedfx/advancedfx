@@ -6,6 +6,17 @@
 
 <release>
 <name>HLAE</name>
+<version>2.109.5</version>
+<time>2020-12-12T08:29Z</time>
+<changes>
+<change type="fixed">Fixed UI Language detection in installer.</change>
+<change type="fixed">Added latest FFMPEG from https://github.com/BtbN/FFmpeg-Builds/releases to installer, removed some older ones from the selection.</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.109.4</version>
 <time>2020-12-04T10:46Z</time>
 <changes>

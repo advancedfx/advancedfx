@@ -2,8 +2,8 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <!-- Update this on release: Id, Version -->
 	<Product
-    Id='{3FD8A69A-E132-4751-A110-8EC0E569DF02}'
-    Version='2.109.4'
+    Id='{7565F4FA-285B-4261-BC46-EE7C2E12D9D5}'
+    Version='2.109.5'
     Name="!(loc.ApplicationName)"
     Language="1033"
     Manufacturer="!(loc.Manufacturer)"
@@ -36,75 +36,17 @@
     <SetProperty Sequence="first" Action="SetFFMPEG_REINSTALL_1" Id="FFMPEG_REINSTALL" After="AppSearch" Value="1"><![CDATA[_FFMPEG_REINSTALL = "#1" OR INSTALL AND NOT REINSTALL]]></SetProperty>
     <SetProperty Sequence="first" Action="SetFFMPEG_REINSTALL_0" Id="FFMPEG_REINSTALL" After="AppSearch" Value="{}"><![CDATA[NOT (_FFMPEG_REINSTALL = "#1" OR INSTALL AND NOT REINSTALL)]]></SetProperty>
 
-    <Property Id="FFMPEG_VERSION" Value="latest" Secure="yes" />
-    <Property Id="_FFMPEG_VERSION" Value="latest">
+    <Property Id="FFMPEG_VERSION" Value="latest-win64-static" Secure="yes" />
+    <Property Id="_FFMPEG_VERSION" Value="latest-win64-static">
       <RegistrySearch Id="FFMPEG_VERSION_reg" Type="raw" Root="HKLM" Key="Software\advancedfx\HLAE\FFMPEG" Name="version" />
     </Property>
     <SetProperty Sequence="first" Action="SetFFMPEG_VERSION" Id="FFMPEG_VERSION" After="AppSearch" Value="[_FFMPEG_VERSION]">1</SetProperty>
 
-    <Property Id="FFMPEG_LINKING" Value="static" Secure="yes" />
-    <Property Id="_FFMPEG_LINKING" Value="static">
-      <RegistrySearch Id="FFMPEG_LINKING_reg" Type="raw" Root="HKLM" Key="Software\advancedfx\HLAE\FFMPEG" Name="linking" />
-    </Property>
-    <SetProperty Sequence="first" Action="SetFFMPEG_LINKING_static" Id="FFMPEG_LINKING" After="AppSearch" Value="static"><![CDATA["static" = _FFMPEG_LINKING]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetFFMPEG_LINKING_shared" Id="FFMPEG_LINKING" After="AppSearch" Value="shared"><![CDATA["shared" = _FFMPEG_LINKING]]></SetProperty>
-
-    <Property Id="FFMPEG_LICENSE" Value="gpl3" Secure="yes">
-    </Property>
-    <Property Id="_FFMPEG_LICENSE" Value="gpl3">
-      <RegistrySearch Id="FFMPEG_LICENSE_reg" Type="raw" Root="HKLM" Key="Software\advancedfx\HLAE\FFMPEG" Name="license" />
-    </Property>
-    <SetProperty Sequence="first" Action="SetFFMPEG_LICENSE_gpl3" Id="FFMPEG_LICENSE" After="AppSearch" Value="gpl3"><![CDATA["gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetFFMPEG_LICENSE_lgpl3" Id="FFMPEG_LICENSE" After="AppSearch" Value="lgpl3"><![CDATA["lgpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    
     <Property Id="FFMPEG_CUSTOM" Value="(unset)" Secure="yes">
       <RegistrySearch Id="FFMPEG_CUSTOM_reg" Type="file" Root="HKLM" Key="Software\advancedfx\HLAE\FFMPEG" Name="custom">
         <FileSearch Id="FFMPEG_CUSTOM_reg" Name="[FFMPEG_CUSTOM]" />
       </RegistrySearch>
     </Property>
-
-    <Property Id="AFX_FFMPEG_VERSION" Value="latest-win64-static" Secure="yes" />            
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_0" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="latest-win64-static"><![CDATA[VersionNT64 AND "latest" = _FFMPEG_VERSION AND "static" = _FFMPEG_LINKING AND "gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_1" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="latest-win64-shared"><![CDATA[VersionNT64 AND "latest" = _FFMPEG_VERSION AND "shared" = _FFMPEG_LINKING AND "gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_2" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="custom"><![CDATA["custom" = _FFMPEG_VERSION]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_3" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.3-win64-static"><![CDATA[VersionNT64 AND "v4.3" = _FFMPEG_VERSION AND "static" = _FFMPEG_LINKING AND "gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_4" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.3-win64-shared"><![CDATA[VersionNT64 AND "v4.3" = _FFMPEG_VERSION AND "shared" = _FFMPEG_LINKING AND "gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_5" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.3-win64-static"><![CDATA[VersionNT64 AND "v4.2.3" = _FFMPEG_VERSION AND "statuc" = _FFMPEG_LINKING AND "gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_6" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.3-win64-shared"><![CDATA[VersionNT64 AND "v4.2.3" = _FFMPEG_VERSION AND "shared" = _FFMPEG_LINKING AND "gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_7" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.2-win64-static"><![CDATA[VersionNT64 AND "v4.2.2" = _FFMPEG_VERSION AND "static" = _FFMPEG_LINKING AND "gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_8" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.2-win64-shared"><![CDATA[VersionNT64 AND "v4.2.2" = _FFMPEG_VERSION AND "shared" = _FFMPEG_LINKING AND "gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_9" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.1-win64-static"><![CDATA[VersionNT64 AND "v4.2.1" = _FFMPEG_VERSION AND "static" = _FFMPEG_LINKING AND "gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_10" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.1-win64-shared"><![CDATA[VersionNT64 AND "v4.2.1" = _FFMPEG_VERSION AND "shared" = _FFMPEG_LINKING AND "gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_11" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.3.1-win64-shared-lgpl"><![CDATA[VersionNT64 AND "v4.3.1" = _FFMPEG_VERSION AND "shared" = _FFMPEG_LINKING AND "lgpl" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_12" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.3-win64-static-lgpl"><![CDATA[VersionNT64 AND "v4.3" = _FFMPEG_VERSION AND "static" = _FFMPEG_LINKING AND "lgpl" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_13" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.3-win64-shared-lgpl"><![CDATA[VersionNT64 AND "v4.3" = _FFMPEG_VERSION AND "shared" = _FFMPEG_LINKING AND "lgpl" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_14" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.3-win64-static-lgpl"><![CDATA[VersionNT64 AND "v4.2.3" = _FFMPEG_VERSION AND "static" = _FFMPEG_LINKING AND "lgpl" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_15" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.3-win64-shared-lgpl"><![CDATA[VersionNT64 AND "v4.2.3" = _FFMPEG_VERSION AND "shared" = _FFMPEG_LINKING AND "lgpl" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_16" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.2-win64-static-lgpl"><![CDATA[VersionNT64 AND "v4.2.2" = _FFMPEG_VERSION AND "static" = _FFMPEG_LINKING AND "lgpl" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_17" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.2-win64-shared-lgpl"><![CDATA[VersionNT64 AND "v4.2.2" = _FFMPEG_VERSION AND "shared" = _FFMPEG_LINKING AND "lgpl" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_18" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.1-win64-static-lgpl"><![CDATA[VersionNT64 AND "v4.2.1" = _FFMPEG_VERSION AND "static" = _FFMPEG_LINKING AND "lgpl" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_19" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.1-win64-shared-lgpl"><![CDATA[VersionNT64 AND "v4.2.1" = _FFMPEG_VERSION AND "shared" = _FFMPEG_LINKING AND "lgpl" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_20" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="latest-win32-static"><![CDATA[NOT VersionNT64 AND "latest" = _FFMPEG_VERSION AND "static" = _FFMPEG_LINKING AND "gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_21" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="latest-win32-shared"><![CDATA[NOT VersionNT64 AND "latest" = _FFMPEG_VERSION AND "shared" = _FFMPEG_LINKING AND "gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_22" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.3.1-win32-static"><![CDATA[NOT VersionNT64 AND "v4.3.1" = _FFMPEG_VERSION AND "static" = _FFMPEG_LINKING AND "gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_23" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.3.1-win32-shared"><![CDATA[NOT VersionNT64 AND "v4.3.1" = _FFMPEG_VERSION AND "shared" = _FFMPEG_LINKING AND "gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_24" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.3-win32-shared"><![CDATA[NOT VersionNT64 AND "v4.3" = _FFMPEG_VERSION AND "shared" = _FFMPEG_LINKING AND "gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_25" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.3-win32-static"><![CDATA[NOT VersionNT64 AND "v4.2.3" = _FFMPEG_VERSION AND "static" = _FFMPEG_LINKING AND "gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_26" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.3-win32-shared"><![CDATA[NOT VersionNT64 AND "v4.2.3" = _FFMPEG_VERSION AND "shared" = _FFMPEG_LINKING AND "gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_27" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.2-win32-static"><![CDATA[NOT VersionNT64 AND "v4.2.2" = _FFMPEG_VERSION AND "static" = _FFMPEG_LINKING AND "gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_28" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.2-win32-shared"><![CDATA[NOT VersionNT64 AND "v4.2.2" = _FFMPEG_VERSION AND "shared" = _FFMPEG_LINKING AND "gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_29" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.1-win32-static"><![CDATA[NOT VersionNT64 AND "v4.2.1" = _FFMPEG_VERSION AND "static" = _FFMPEG_LINKING AND "gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_30" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.1-win32-shared"><![CDATA[NOT VersionNT64 AND "v4.2.1" = _FFMPEG_VERSION AND "shared" = _FFMPEG_LINKING AND "gpl3" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_31" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.3.1-win32-static-lgpl"><![CDATA[NOT VersionNT64 AND "v4.3.1" = _FFMPEG_VERSION AND "static" = _FFMPEG_LINKING AND "lgpl" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_32" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.3.1-win32-shared-lgpl"><![CDATA[NOT VersionNT64 AND "v4.3.1" = _FFMPEG_VERSION AND "shared" = _FFMPEG_LINKING AND "lgpl" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_33" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.3-win32-static-lgpl"><![CDATA[NOT VersionNT64 AND "v4.3" = _FFMPEG_VERSION AND "static" = _FFMPEG_LINKING AND "lgpl" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_34" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.3-win32-shared-lgpl"><![CDATA[NOT VersionNT64 AND "v4.3" = _FFMPEG_VERSION AND "shared" = _FFMPEG_LINKING AND "lgpl" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_35" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.3-win32-static-lgpl"><![CDATA[NOT VersionNT64 AND "v4.2.3" = _FFMPEG_VERSION AND "static" = _FFMPEG_LINKING AND "lgpl" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_36" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.3-win32-shared-lgpl"><![CDATA[NOT VersionNT64 AND "v4.2.3" = _FFMPEG_VERSION AND "shared" = _FFMPEG_LINKING AND "lgpl" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_37" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.2-win32-static-lgpl"><![CDATA[NOT VersionNT64 AND "v4.2.2" = _FFMPEG_VERSION AND "static" = _FFMPEG_LINKING AND "lgpl" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_38" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.2-win32-shared-lgpl"><![CDATA[NOT VersionNT64 AND "v4.2.2" = _FFMPEG_VERSION AND "shared" = _FFMPEG_LINKING AND "lgpl" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_39" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.1-win32-static-lgpl"><![CDATA[NOT VersionNT64 AND "v4.2.1" = _FFMPEG_VERSION AND "static" = _FFMPEG_LINKING AND "lgpl" = _FFMPEG_LICENSE]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetAFX_FFMPEG_VERSION_40" Id="AFX_FFMPEG_VERSION" After="AppSearch" Value="4.2.1-win32-shared-lgpl"><![CDATA[NOT VersionNT64 AND "v4.2.1" = _FFMPEG_VERSION AND "shared" = _FFMPEG_LINKING AND "lgpl" = _FFMPEG_LICENSE]]></SetProperty>
 
     <Feature Id='Hlae' Title='!(loc.ApplicationName)' Display='expand' Level='1'
              ConfigurableDirectory='APPLICATIONFOLDER'
@@ -149,613 +91,131 @@
       <Error Id="25001">!(loc.AppFolderMustBeLatin)</Error>
     </UI>
     
-    <Property Id="AFX_FFMPEGURL" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-latest-win64-static.zip" />
-    <Property Id="AFX_FFMPEGSUM" Value="ed129d16cdc8701b934f49fba3cfff2b32bf127d70be2a655c35eb02757d06ea27045fe8408379c28d4edcd33d49ab91bc6ad4c6599fc6f9cabae8b4dece2d7a" />
+    <Property Id="AFX_FFMPEGURL" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2020-12-10-12-59/ffmpeg-N-100388-g412c3b37a4-win64-gpl.zip" />
+    <Property Id="AFX_FFMPEGSUM" Value="5b26abb429d79103321af8bda4dcde4b094d970ae97c0b394966507608d2ec277cb5914ae9fecef6002fd6b38b446c25971028539fc0565886800257fa033706" />
 
-    <SetProperty Sequence="execute" Action="SetFFMPEG_VERSION_custom" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="custom">
-      <![CDATA[AFX_FFMPEG_VERSION="custom"]]>
-    </SetProperty>
-
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_0" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.1">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win32-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_0" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="shared">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win32-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_0" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="lgpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win32-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_0" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.1-win32-shared-lgpl.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win32-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_0" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="626cdbaa41469bd9d7d34d580190625174782f9cd820d40e30b4ccd31c25663a10c388b3c7de75f786fb962cd0387ecfbc7880fcf00800149596376da6590537">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win32-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_1" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.1">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_1" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="shared">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_1" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="gpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_1" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.1-win32-shared.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_1" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="a32591422f29d0bdb8ad8c3692705d821f668bf18501f43fbee2182b683ff383b54ba37ab80dba2159e778062d4426484c7d22d85d19f4d80f4349309defcda1">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_2" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.1">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win32-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_2" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="static">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win32-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_2" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="lgpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win32-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_2" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.1-win32-static-lgpl.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win32-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_2" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="1d6f9acfdd64840799f7ed75f429635b610b41241602658b75c083f86cf0a88a68f8d8a0edb18e1a3270f7cba1657d4c7253e2c4987dfeaa9a6166de39fb1306">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win32-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_3" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.1">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win32-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_3" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="static">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win32-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_3" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="gpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win32-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_3" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.1-win32-static.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win32-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_3" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="1eca0751c630c8c589a2a86dc1cbddb8e65d941d7cb0ff99d8a65b7ae97e883c9bdc90ff8e8e86f3506d4a9ee1ca7df060b4872f22adb2c90776c24cb6c7ab2a">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win32-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_4" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.1">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win64-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_4" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="shared">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win64-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_4" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="lgpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win64-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_4" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.1-win64-shared-lgpl.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win64-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_4" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="c47e5970009189abc867d1af1c35743b821f1072bb103e2b61ba473655df36f25a3426f848a4016fc31fa13ce0a4692aefc3a34bf9ccc7de3d8c0215ed654c0d">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win64-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_5" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.1">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win64-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_5" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="shared">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win64-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_5" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="gpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win64-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_5" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.1-win64-shared.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win64-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_5" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="8d799ebaa39fd0f6cb6c81d3fa4b8b40f4b70ce56e4728f32b18b906cdfaba506b2f1c3d93807cee45756eca4cec2a3d4a461bfbb5a0f403a011b1aedb782654">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win64-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_6" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.1">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win64-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_6" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="static">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win64-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_6" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="lgpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win64-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_6" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.1-win64-static-lgpl.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win64-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_6" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="86dc01d72cf6d180961de981c4216707edfa25fab3b33b1ac0b1d5bc99c5db44fb97a089e6e7765e9c18e42544dc1a98070c6fe54b777a3c31e7000119952283">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win64-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_7" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.1">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win64-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_7" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="static">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win64-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_7" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="gpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win64-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_7" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.1-win64-static.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win64-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_7" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="1b4f7d75f19594b1df14acf44a260435625d94e9636be6c8b548891f182c7fbdf2820395908fc431197b58ee6ce50c5f88f544855b7fc0b1a3d813fc4b38e700">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.1-win64-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_8" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.2">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win32-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_8" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="shared">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win32-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_8" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="lgpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win32-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_8" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.2-win32-shared-lgpl.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win32-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_8" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="910c1857c9f08a887f1af6d0123fcddcce8afb93ad5c523225e401077e4b652de68998799bfbdc3cc0ae6ada4f1c9681357eaf41f4ae10b1f99e5bbfb79e0735">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win32-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_9" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.2">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_9" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="shared">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_9" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="gpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_9" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.2-win32-shared.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_9" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="2e62b078890a432ee4b1e991040298aad63b2f1e7b1c66f151ae8bad35da8e3ca406d5c17ecb462280af79e16e21453ba552347346bf539eba1d4e55605bb39d">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_10" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.2">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win32-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_10" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="static">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win32-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_10" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="lgpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win32-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_10" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.2-win32-static-lgpl.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win32-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_10" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="e8d5160bc436ff6f55fcbf3a4b7408cced7bc369183089f3b6f7f15176b34e637449ab2ab092604b9d17698c153ff0c1ccbbff6815693b16459841f4d02ad9eb">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win32-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_11" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.2">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win32-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_11" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="static">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win32-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_11" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="gpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win32-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_11" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.2-win32-static.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win32-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_11" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="b384397b401c870041b21ae291f4e62e7030303057e4b6a81ed473b23613528ce4e5dcf10c4753e8321a17b78bac8c34de6c5e52ae8acf034718a2214aa669cb">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win32-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_12" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.2">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win64-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_12" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="shared">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win64-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_12" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="lgpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win64-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_12" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.2-win64-shared-lgpl.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win64-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_12" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="23b429a590afa337a6ed00256cbbb8aa1784ef2d149c5c32df2a12b998aea5c6c49463c23dbf35f65a3d5b221e93b6bba207b3b0e9d4915f0229358f7e63d129">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win64-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_13" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.2">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win64-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_13" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="shared">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win64-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_13" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="gpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win64-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_13" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.2-win64-shared.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win64-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_13" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="79a9d7d462ca9d04343e87d368578e827b4f5046a95edbf17e255a16f62d08e712c9fefb977cc0bcc528e1b0ccfe745497d7743b017a1f5d760cdd371961b212">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win64-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_14" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.2">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win64-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_14" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="static">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win64-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_14" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="lgpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win64-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_14" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.2-win64-static-lgpl.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win64-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_14" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="f92f76c0d4a2f55775a334c471b3f98f65f1bdb405f84cbda8e8449509834f1dcffa168c88e5e0b73e083b485c18753b7166dae95c08ebcabaff9caa008e8237">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win64-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_15" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.2">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win64-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_15" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="static">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win64-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_15" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="gpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win64-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_15" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.2-win64-static.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win64-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_15" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="53dac6f1f8c23777bd01aac585e991d1b44390e0195bb76b10980cfef2d85a2187fa8fea59b109eaa01407d3f94a8df0952b5b950f3ae26c3c40752c3a9c70bd">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.2-win64-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_16" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win32-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_16" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="shared">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win32-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_16" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="lgpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win32-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_16" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.3-win32-shared-lgpl.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win32-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_16" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="fc20936c7562fda4294874c8807defbf7b398c71d5a1e250a764d6955940390017575d12643bbdcd30436286d9c9fa26dbb47c53d76509d5979ce72ffd8c38c2">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win32-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_17" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_17" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="shared">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_17" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="gpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_17" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.3-win32-shared.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_17" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="2f1bf8fd9ab138567630fe72e98fc3fd9233bc9f9f717980b209363fda8ad111080c35a6698a6745dce6d3a841b4e40d8a5a2f837d802b17de8acc16bbfb0c53">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_18" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win32-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_18" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="static">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win32-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_18" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="lgpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win32-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_18" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.3-win32-static-lgpl.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win32-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_18" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="3cea20518c663a14506e1ec823f2bac305a8414ee446b72aa8d4c3b8ededdd99178faf86ccb065414b58626e8fb6e80d3c7ff972b76cda78f42d12d370f13c50">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win32-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_19" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win32-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_19" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="static">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win32-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_19" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="gpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win32-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_19" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.3-win32-static.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win32-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_19" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="62e4863c849377814cc942ea336d92efe26a4a1d577040dd8bc03955778092779edde5988a9c0fcaa8138ee5785e8cb3658d2214fa3c7808f61a7bcc796b9e74">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win32-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_20" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win64-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_20" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="shared">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win64-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_20" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="lgpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win64-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_20" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.3-win64-shared-lgpl.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win64-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_20" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="9bb53465417c6336f192a824883505bf61ab29c836ba9da9ffaba94d02745b0eab4b997e4e717fd3df786b082c7cab352e544f3a1336fc38104e83fd96a2727f">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win64-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_21" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win64-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_21" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="shared">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win64-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_21" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="gpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win64-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_21" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.3-win64-shared.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win64-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_21" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="411642afa3e6fa7bd49816bcf843cbf1b878725ca37cb112b9045221b27552f11303b0cdb45025cad4e330e6ca77b869b376deea400754eab82e66998767f296">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win64-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_22" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win64-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_22" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="static">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win64-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_22" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="lgpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win64-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_22" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.3-win64-static-lgpl.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win64-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_22" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="18678d012ef42c674287c34f832ae8df6c78388444442369271f92a3580a1ab61887425bde5629f130979919a1cb4aecc1e28d13b8c6794be7c4e33fcde7d85d">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win64-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_23" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.2.3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win64-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_23" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="static">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win64-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_23" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="gpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win64-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_23" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.2.3-win64-static.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win64-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_23" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="a75ece06d054b67cad09055bde86177768d77c31c4cd7acc6e119671899c8cd0450eedbbb74de64d9d0f4a1dca727aed5db8155cf6e9df8f1fb7c5cb7983611e">
-      <![CDATA[AFX_FFMPEG_VERSION="4.2.3-win64-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_24" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win32-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_24" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="shared">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win32-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_24" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="lgpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win32-shared-lgpl"]]>
-    </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_24" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.3-win32-shared-lgpl.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win32-shared-lgpl"]]>
+      <![CDATA[FFMPEG_VERSION="4.3-win32-shared-lgpl"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_24" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="2622134e8a9ff5bd69d4dcfe0467012f6985ee68d759e659a9a78c82963fdfe78fc52b3b843e996d2cd2446e101d0b7d6852529b2f1e2c272b8f68fa9bcc1cc6">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win32-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_25" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_25" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="shared">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_25" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="gpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win32-shared"]]>
+      <![CDATA[FFMPEG_VERSION="4.3-win32-shared-lgpl"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_25" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.3-win32-shared.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win32-shared"]]>
+      <![CDATA[FFMPEG_VERSION="4.3-win32-shared"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_25" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="12585fe382f3050ed87132cef9289de44680c1ae7ce7cad1396b5eed00a862594f56dee62e53328d288de77ce8d512d5056d2f2defb14ea8b5ad4f2f121634a6">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_26" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win32-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_26" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="static">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win32-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_26" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="lgpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win32-static-lgpl"]]>
+      <![CDATA[FFMPEG_VERSION="4.3-win32-shared"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_26" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.3-win32-static-lgpl.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win32-static-lgpl"]]>
+      <![CDATA[FFMPEG_VERSION="4.3-win32-static-lgpl"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_26" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="acfdce30307d967d0f79acb0256934e8fdead2f61670fdf34b9282a1d1a9fc0437d20921c588ee7550c62c4198aff659ecddb701c2c1d741739575b5fec4fe40">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win32-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_27" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win64-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_27" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="shared">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win64-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_27" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="lgpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win64-shared-lgpl"]]>
+      <![CDATA[FFMPEG_VERSION="4.3-win32-static-lgpl"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_27" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.3-win64-shared-lgpl.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win64-shared-lgpl"]]>
+      <![CDATA[FFMPEG_VERSION="4.3-win64-shared-lgpl"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_27" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="cc0f1f141b916bd7113943c9452719980008192aff9c64176eb94f4b22731db61c233855a951df829dc9e9050b596cf8a13b39092fd00aae7cab47a1f8d5892a">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win64-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_28" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win64-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_28" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="shared">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win64-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_28" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="gpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win64-shared"]]>
+      <![CDATA[FFMPEG_VERSION="4.3-win64-shared-lgpl"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_28" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.3-win64-shared.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win64-shared"]]>
+      <![CDATA[FFMPEG_VERSION="4.3-win64-shared"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_28" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="52e954708d9cf18f98d66acbdef88bdea76fd3b3dbe2f1097cd1ae4897273192ab18350fb7c7501093cf8ef1b5ab70dd2cf2f17c1cb5c43e07898a5a8ba87b52">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win64-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_29" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win64-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_29" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="static">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win64-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_29" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="lgpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win64-static-lgpl"]]>
+      <![CDATA[FFMPEG_VERSION="4.3-win64-shared"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_29" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.3-win64-static-lgpl.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win64-static-lgpl"]]>
+      <![CDATA[FFMPEG_VERSION="4.3-win64-static-lgpl"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_29" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="341efce82787f512b67a8b242debd78083e4d9c681a5c4ec61db95307b19a97b27aa95000a4e816f4f77f0dae75bd04ed9a58f2daf78108d983dd654cb90caaf">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win64-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_30" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win64-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_30" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="static">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win64-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_30" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="gpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win64-static"]]>
+      <![CDATA[FFMPEG_VERSION="4.3-win64-static-lgpl"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_30" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.3-win64-static.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win64-static"]]>
+      <![CDATA[FFMPEG_VERSION="4.3-win64-static"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_30" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="e29255de686c5cfe34af1f9a260b376ab8400b59121857ff0172e44f395545212eeadcc16637ec15e4087348105764d86e59603f51dea5475e185448d26f763a">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3-win64-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_31" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.3.1">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win32-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_31" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="shared">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win32-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_31" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="lgpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win32-shared-lgpl"]]>
+      <![CDATA[FFMPEG_VERSION="4.3-win64-static"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_31" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.3.1-win32-shared-lgpl.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win32-shared-lgpl"]]>
+      <![CDATA[FFMPEG_VERSION="4.3.1-win32-shared-lgpl"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_31" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="d8506c5cfabb219b32285e6bbaf3cca38bf486b8d8c8b7f9e4425dcb852ad40b9970f83f587ee2d7a83c5373bef74753fe1dcdb6aa48f76109be74abc7256f8c">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win32-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_32" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.3.1">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_32" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="shared">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_32" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="gpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win32-shared"]]>
+      <![CDATA[FFMPEG_VERSION="4.3.1-win32-shared-lgpl"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_32" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.3.1-win32-shared.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win32-shared"]]>
+      <![CDATA[FFMPEG_VERSION="4.3.1-win32-shared"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_32" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="3abcfbc457b978469aa7582a91bfb0904c0febe8952de94ddef1d92e81d89f8d7f5107000c6e5a43a1e00f6525d557d787f3516777ebb3bc2a3a86d0d018d2b4">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_33" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.3.1">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win32-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_33" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="static">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win32-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_33" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="lgpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win32-static-lgpl"]]>
+      <![CDATA[FFMPEG_VERSION="4.3.1-win32-shared"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_33" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.3.1-win32-static-lgpl.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win32-static-lgpl"]]>
+      <![CDATA[FFMPEG_VERSION="4.3.1-win32-static-lgpl"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_33" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="9be85148079ab135a38622380f3a9307af8086c9982d9c2bfdebe427783afe48a2a2e63f113b7f4232814a3c8056032bdd6065358ba2e728cfbbe1eea7dfcb68">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win32-static-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_34" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.3.1">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win32-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_34" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="static">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win32-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_34" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="gpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win32-static"]]>
+      <![CDATA[FFMPEG_VERSION="4.3.1-win32-static-lgpl"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_34" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.3.1-win32-static.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win32-static"]]>
+      <![CDATA[FFMPEG_VERSION="4.3.1-win32-static"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_34" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="822336566583e5bbabd140c927456346dec0c3b0f42685dc65dce3cb3e9d640e1cbb951c8d6442887ac51ba2337aa472d095af8f4326140ab2d5d6402f43019d">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win32-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_35" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="v4.3.1">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win64-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_35" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="shared">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win64-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_35" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="lgpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win64-shared-lgpl"]]>
+      <![CDATA[FFMPEG_VERSION="4.3.1-win32-static"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_35" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.3.1-win64-shared-lgpl.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win64-shared-lgpl"]]>
+      <![CDATA[FFMPEG_VERSION="4.3.1-win64-shared-lgpl"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_35" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="3cef1d9bdc9669ef1d461aa9772c151c229a2de47df76b11be70cebb63a2d83ada24df455d443002e9fffc7b5cd395a9bdcd525ee570093d2963965b772b90bb">
-      <![CDATA[AFX_FFMPEG_VERSION="4.3.1-win64-shared-lgpl"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_36" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="latest">
-      <![CDATA[AFX_FFMPEG_VERSION="latest-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_36" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="shared">
-      <![CDATA[AFX_FFMPEG_VERSION="latest-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_36" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="gpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="latest-win32-shared"]]>
+      <![CDATA[FFMPEG_VERSION="4.3.1-win64-shared-lgpl"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_36" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-latest-win32-shared.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="latest-win32-shared"]]>
+      <![CDATA[FFMPEG_VERSION="20200915-latest-win32-shared"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_36" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="bd8c1fc91019f7efad5cc8bfb18233658431c96af29ea0b54bb8c2ac263d8225cfd1487236e221380ef377db750cb33d06e22f1d584c04d34662616ef313e495">
-      <![CDATA[AFX_FFMPEG_VERSION="latest-win32-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_37" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="latest">
-      <![CDATA[AFX_FFMPEG_VERSION="latest-win32-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_37" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="static">
-      <![CDATA[AFX_FFMPEG_VERSION="latest-win32-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_37" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="gpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="latest-win32-static"]]>
+      <![CDATA[FFMPEG_VERSION="20200915-latest-win32-shared"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_37" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-latest-win32-static.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="latest-win32-static"]]>
+      <![CDATA[FFMPEG_VERSION="20200915-latest-win32-static"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_37" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="a17d5d5f9d71b71416f356f9b7ef3a2b2a2c399a0bf14b87a23cf021922f3e2c7948251f370507fdad59ff30ba828c92d0746817103a22e47396610c5273e416">
-      <![CDATA[AFX_FFMPEG_VERSION="latest-win32-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_38" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="latest">
-      <![CDATA[AFX_FFMPEG_VERSION="latest-win64-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_38" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="shared">
-      <![CDATA[AFX_FFMPEG_VERSION="latest-win64-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_38" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="gpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="latest-win64-shared"]]>
+      <![CDATA[FFMPEG_VERSION="20200915-latest-win32-static"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_38" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-latest-win64-shared.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="latest-win64-shared"]]>
+      <![CDATA[FFMPEG_VERSION="20200915-latest-win64-shared"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_38" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="9b1699c20ed047f246ba91426ea6c811f1d89bf14ced62e668e4cb22e20dbc079fe280a05a3758ad875490de007e453ac9ffe2d0985d05637f0b5ee87831f63c">
-      <![CDATA[AFX_FFMPEG_VERSION="latest-win64-shared"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_VERSION_39" Id="FFMPEG_VERSION" Before="SetInstallFfmpegPrepareUrlAction" Value="latest">
-      <![CDATA[AFX_FFMPEG_VERSION="latest-win64-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LINKING_39" Id="FFMPEG_LINKING" Before="SetInstallFfmpegPrepareUrlAction" Value="static">
-      <![CDATA[AFX_FFMPEG_VERSION="latest-win64-static"]]>
-    </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_FFMPEG_LICENSE_39" Id="FFMPEG_LICENSE" Before="SetInstallFfmpegPrepareUrlAction" Value="gpl3">
-      <![CDATA[AFX_FFMPEG_VERSION="latest-win64-static"]]>
+      <![CDATA[FFMPEG_VERSION="20200915-latest-win64-shared"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_39" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-latest-win64-static.zip">
-      <![CDATA[AFX_FFMPEG_VERSION="latest-win64-static"]]>
+      <![CDATA[FFMPEG_VERSION="20200915-latest-win64-static"]]>
     </SetProperty>
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_39" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="ed129d16cdc8701b934f49fba3cfff2b32bf127d70be2a655c35eb02757d06ea27045fe8408379c28d4edcd33d49ab91bc6ad4c6599fc6f9cabae8b4dece2d7a">
-      <![CDATA[AFX_FFMPEG_VERSION="latest-win64-static"]]>
+      <![CDATA[FFMPEG_VERSION="20200915-latest-win64-static"]]>
     </SetProperty>
+
+    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_40" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2020-12-10-12-59/ffmpeg-N-100388-g412c3b37a4-win64-lgpl-shared.zip">
+      <![CDATA[FFMPEG_VERSION="latest-win64-shared-lgpl"]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_40" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="1cd505c0512fc723dd5f1873c96f22c88eec6d72abe01a5ef0db03ede7f1b61058b3e3211e6a2168a2ae21f1ed77ed904a5efbd1a583e104ad6afaefdf4408a4">
+      <![CDATA[FFMPEG_VERSION="latest-win64-shared-lgpl"]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_41" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2020-12-10-12-59/ffmpeg-N-100388-g412c3b37a4-win64-lgpl.zip">
+      <![CDATA[FFMPEG_VERSION="latest-win64-static-lgpl"]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_41" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="8b6450cb34d0c55a4ef1cc86bea7f372d434dea5161554a315b4f33a04a001422f79e1bef340ac0dea6183ad636dee4601d2133a380587151de895d01c67157d">
+      <![CDATA[FFMPEG_VERSION="latest-win64-static-lgpl"]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_42" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2020-12-10-12-59/ffmpeg-N-100388-g412c3b37a4-win64-gpl-shared.zip">
+      <![CDATA[FFMPEG_VERSION="latest-win64-shared"]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_42" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="e3491f9df5aea05cf7af0b740bc7d445486cbbffc1bfeab336a5d24d09645b4fd4fa695ecb72ce890ad45f38008fa338c79d20a8f6ca2daca42c6463ebcff89a ">
+      <![CDATA[FFMPEG_VERSION="latest-win64-shared"]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_43" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2020-12-10-12-59/ffmpeg-N-100388-g412c3b37a4-win64-gpl.zip">
+      <![CDATA[FFMPEG_VERSION="latest-win64-static"]]>
+    </SetProperty>
+    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_43" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="5b26abb429d79103321af8bda4dcde4b094d970ae97c0b394966507608d2ec277cb5914ae9fecef6002fd6b38b446c25971028539fc0565886800257fa033706">
+      <![CDATA[FFMPEG_VERSION="latest-win64-static"]]>
+    </SetProperty>
+
 
     <InstallExecuteSequence>
       <Custom Action="ValidateAppFolderIsLatinAction" Before="CostFinalize">1</Custom>
@@ -790,7 +250,7 @@
     <SetProperty Action="SetFfmpegCreateDirectory" Id="FfmpegCreateDirectory" Value="AFX_CREATEFOLDER=[_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg]" Before="FfmpegCreateDirectory" Sequence="execute" />
     <CustomAction Id='FfmpegCreateDirectory' BinaryKey='HlaeCoreExtension' DllEntry='CreateDirectory' Execute='deferred' Impersonate='no' Return='check'/>
     
-    <SetProperty Action="SetFinalizeFfmpegInstallAction" Id="FinalizeFfmpegInstallAction" Value="FFMPEG_REINSTALL=[FFMPEG_REINSTALL];FFMPEG_VERSION=[FFMPEG_VERSION];FFMPEG_LINKING=[FFMPEG_LINKING];FFMPEG_LICENSE=[FFMPEG_LICENSE];FFMPEG_CUSTOM=[FFMPEG_CUSTOM];AFX_FFMPEGFOLDER=[_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg]" Before="FinalizeFfmpegInstallAction" Sequence="execute" />
+    <SetProperty Action="SetFinalizeFfmpegInstallAction" Id="FinalizeFfmpegInstallAction" Value="FFMPEG_REINSTALL=[FFMPEG_REINSTALL];FFMPEG_VERSION=[FFMPEG_VERSION];FFMPEG_CUSTOM=[FFMPEG_CUSTOM];AFX_FFMPEGFOLDER=[_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg]" Before="FinalizeFfmpegInstallAction" Sequence="execute" />
     <CustomAction Id='FinalizeFfmpegInstallAction' BinaryKey='HlaeCoreExtension' DllEntry='FinalizeFfmpegInstall' Execute='deferred' Impersonate='no' Return='check'/>
 
     <SetProperty Action="SetFfmpegRollbackAction" Id="FfmpegRollbackAction" Value="AFX_REMOVEFOLDER=[_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg]" Before="FfmpegRollbackAction" Sequence="execute" />
