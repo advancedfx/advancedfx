@@ -1212,6 +1212,22 @@ public:
 				);
 				return;
 			}
+			else if (0 == _stricmp("rotShortestPath", arg1))
+			{
+				if (3 <= argc)
+				{
+					m_RotShortestPath = 0 != atoi(args->ArgV(2));
+					return;
+				}
+
+				Tier0_Msg(
+					"%s rotShortestPath 0|1 - Set new value.\n"
+					"Current value: %i\n"
+					, arg0
+					, m_RotShortestPath ? 1 : 0
+				);
+				return;
+			}
 		}
 
 		Tier0_Msg(
@@ -1219,6 +1235,8 @@ public:
 			"%s halfTimeVec [...]\n"
 			"%s halfTimeAng [...]\n"
 			"%s halfTimeFov [...]\n"
+			"%s rotShortestPath [...] - If to rotate shortest path.\n"
+			, arg0
 			, arg0
 			, arg0
 			, arg0
@@ -1277,6 +1295,16 @@ public:
 					double t = deltaT / m_HalfTimeAng;
 
 					Quaternion targetQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(parentAngles.x, parentAngles.y, parentAngles.z))).Normalized();
+
+					if (m_RotShortestPath)
+					{
+						// Take shortest path:
+						double dotProduct = DotProduct(targetQuat, m_LastOutQuat);
+						if (dotProduct < 0)
+						{
+							targetQuat = -1.0 * targetQuat;
+						}
+					}
 
 					double targetAngle = m_LastOutQuat.GetAng(targetQuat, Vector3()) * 180.0 / M_PI;
 					double angle = CalcDeltaExpSmooth(t, targetAngle);
@@ -1352,6 +1380,7 @@ private:
 	int m_LevelInitCount = 0;
 	SOURCESDK::CSGO::CBaseHandle m_LastHandle;
 	float m_LastClientTime = 0;
+	bool m_RotShortestPath = true;
 
 	double m_LastX = 0;
 	double m_LastY = 0;
@@ -2215,6 +2244,22 @@ public:
 				);
 				return;
 			}
+			else if (0 == _stricmp("rotShortestPath", arg1))
+			{
+				if (3 <= argc)
+				{
+					m_RotShortestPath = 0 != atoi(args->ArgV(2));
+					return;
+				}
+
+				Tier0_Msg(
+					"%s rotShortestPath 0|1 - Set new value.\n"
+					"Current value: %i\n"
+					, arg0
+					, m_RotShortestPath ? 1: 0
+				);
+				return;
+			}
 		}
 
 		Tier0_Msg(
@@ -2226,9 +2271,7 @@ public:
 			"%s limZAcel [...] - Z-location acceleration limit in inch.\n"
 			"%s limAngVelo [...] - Angular velocity limit in degrees.\n"
 			"%s limAngAcel [...] - Angular acceleration limit in degrees.\n"
-			, arg0
-			, arg0
-			, arg0
+			"%s rotShortestPath [...] - If to rotate shortest path.\n"
 			, arg0
 			, arg0
 			, arg0
@@ -2295,6 +2338,16 @@ public:
 
 				Quaternion targetQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(parentAngles.x, parentAngles.y, parentAngles.z))).Normalized();
 
+				if (m_RotShortestPath)
+				{
+					// Take shortest path:
+					double dotProduct = DotProduct(targetQuat, m_LastOutQuat);
+					if (dotProduct < 0)
+					{
+						targetQuat = -1.0 * targetQuat;
+					}
+				}
+
 				double targetAngle = m_LastOutQuat.GetAng(targetQuat, Vector3()) * 180.0 / M_PI;
 				double angle;
 
@@ -2344,6 +2397,7 @@ private:
 	int m_LevelInitCount = 0;
 	SOURCESDK::CSGO::CBaseHandle m_LastHandle;
 	float m_LastClientTime = 0;
+	bool m_RotShortestPath = true;
 
 	double m_LastX = 0;
 	double m_LastY = 0;
