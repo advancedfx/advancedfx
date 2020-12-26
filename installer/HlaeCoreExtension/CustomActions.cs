@@ -20,12 +20,6 @@ namespace HlaeCoreExtension
 
         const int msidbComponentAttributesLocalOnly = 0x0000;
 
-        const string ffmpegWin64Url = "https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-latest-win64-static.zip";
-        //const string ffmpegWin64Sha512 = "BC9670EE122F099E9133343C94E5337DA07CD72875985F694231BDD0644E262EA46B61361C815092AFD89686B236717AEE092D4F27090D7FEA90F2DEA3F8F4B1";
-
-        const string ffmpegWin32Url = "https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-latest-win32-static.zip";
-        //const string ffmpegWin32Sha512 = "3F00BDC729D5F6B5A3BE025074B68F9EB07939078E8C38E2FB0E45C798F607E1791EEDB964BB5886820DD9B3CAA4ED0E18A7CD2900031BAFFBE7B2B3ECA4818A";
-
         class Progress
         {
             public Progress(Session session)
@@ -485,8 +479,6 @@ namespace HlaeCoreExtension
 
                 key.SetValue("reinstall", reinstall);
                 key.SetValue("version", session.CustomActionData["FFMPEG_VERSION"]);
-                key.SetValue("linking", session.CustomActionData["FFMPEG_LINKING"]);
-                key.SetValue("license", session.CustomActionData["FFMPEG_LICENSE"]);
                 key.SetValue("custom", session.CustomActionData["FFMPEG_CUSTOM"]);
 
                 if (session.CustomActionData["FFMPEG_VERSION"].Equals("custom"))

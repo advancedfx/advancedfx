@@ -13,144 +13,124 @@
           <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL]]></Condition>
           <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL]]></Condition>
         </Control>
-        <Control Id="FfmpegVersion" Type="ComboBox" X="6" Y="86" Width="358" Height="16" Property="AFX_FFMPEG_VERSION" ComboList="yes" Sorted="yes" Disabled="no" Hidden="no">
-          <ComboBox Property="AFX_FFMPEG_VERSION">
+        <Control Id="FfmpegVersion" Type="ComboBox" X="6" Y="86" Width="358" Height="16" Property="FFMPEG_VERSION" ComboList="yes" Sorted="yes" Disabled="no" Hidden="no">
+          <ComboBox Property="FFMPEG_VERSION">
             <ListItem Text="!(loc.FfmpegDlgCustom)" Value="custom"/>
-            <ListItem Text="latest-win64-static" Value="latest-win64-static" />
-            <ListItem Text="latest-win64-shared" Value="latest-win64-shared" />
-            <ListItem Text="4.3-win64-static" Value="4.3-win64-static" />
-            <ListItem Text="4.3-win64-shared" Value="4.3-win64-shared" />
-            <ListItem Text="4.2.3-win64-static" Value="4.2.3-win64-static" />
-            <ListItem Text="4.2.3-win64-shared" Value="4.2.3-win64-shared" />
-            <ListItem Text="4.2.2-win64-static" Value="4.2.2-win64-static" />
-            <ListItem Text="4.2.2-win64-shared" Value="4.2.2-win64-shared" />
-            <ListItem Text="4.2.1-win64-static" Value="4.2.1-win64-static" />
-            <ListItem Text="4.2.1-win64-shared" Value="4.2.1-win64-shared" />
-            <ListItem Text="4.3.1-win64-shared-lgpl" Value="4.3.1-win64-shared-lgpl" />
-            <ListItem Text="4.3-win64-static-lgpl" Value="4.3-win64-static-lgpl" />
-            <ListItem Text="4.3-win64-shared-lgpl" Value="4.3-win64-shared-lgpl" />
-            <ListItem Text="4.2.3-win64-static-lgpl" Value="4.2.3-win64-static-lgpl" />
-            <ListItem Text="4.2.3-win64-shared-lgpl" Value="4.2.3-win64-shared-lgpl" />
-            <ListItem Text="4.2.2-win64-static-lgpl" Value="4.2.2-win64-static-lgpl" />
-            <ListItem Text="4.2.2-win64-shared-lgpl" Value="4.2.2-win64-shared-lgpl" />
-            <ListItem Text="4.2.1-win64-static-lgpl" Value="4.2.1-win64-static-lgpl" />
-            <ListItem Text="4.2.1-win64-shared-lgpl" Value="4.2.1-win64-shared-lgpl" />
-            <ListItem Text="latest-win32-static" Value="latest-win32-static" />
-            <ListItem Text="latest-win32-shared" Value="latest-win32-shared" />
-            <ListItem Text="4.3.1-win32-static" Value="4.3.1-win32-static" />
-            <ListItem Text="4.3.1-win32-shared" Value="4.3.1-win32-shared" />
-            <ListItem Text="4.3-win32-shared" Value="4.3-win32-shared" />
-            <ListItem Text="4.2.3-win32-static" Value="4.2.3-win32-static" />
-            <ListItem Text="4.2.3-win32-shared" Value="4.2.3-win32-shared" />
-            <ListItem Text="4.2.2-win32-static" Value="4.2.2-win32-static" />
-            <ListItem Text="4.2.2-win32-shared" Value="4.2.2-win32-shared" />
-            <ListItem Text="4.2.1-win32-static" Value="4.2.1-win32-static" />
-            <ListItem Text="4.2.1-win32-shared" Value="4.2.1-win32-shared" />
-            <ListItem Text="4.3.1-win32-static-lgpl" Value="4.3.1-win32-static-lgpl" />
-            <ListItem Text="4.3.1-win32-shared-lgpl" Value="4.3.1-win32-shared-lgpl" />
-            <ListItem Text="4.3-win32-static-lgpl" Value="4.3-win32-static-lgpl" />
-            <ListItem Text="4.3-win32-shared-lgpl" Value="4.3-win32-shared-lgpl" />
-            <ListItem Text="4.2.3-win32-static-lgpl" Value="4.2.3-win32-static-lgpl" />
-            <ListItem Text="4.2.3-win32-shared-lgpl" Value="4.2.3-win32-shared-lgpl" />
-            <ListItem Text="4.2.2-win32-static-lgpl" Value="4.2.2-win32-static-lgpl" />
-            <ListItem Text="4.2.2-win32-shared-lgpl" Value="4.2.2-win32-shared-lgpl" />
-            <ListItem Text="4.2.1-win32-static-lgpl" Value="4.2.1-win32-static-lgpl" />
-            <ListItem Text="4.2.1-win32-shared-lgpl" Value="4.2.1-win32-shared-lgpl" />
+            <ListItem Text="latest-win64-static-gpl //github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2020-12-10-12-59" Value="latest-win64-static" />
+            <ListItem Text="latest-win64-shared-gpl //github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2020-12-10-12-59" Value="latest-win64-shared" />
+            <ListItem Text="latest-win64-static-lgpl //github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2020-12-10-12-59" Value="latest-win64-static-lgpl" />
+            <ListItem Text="latest-win64-shared-lgpl //github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2020-12-10-12-59" Value="latest-win64-shared-lgpl" />
+            <ListItem Text="20200915-latest-win64-static-gpl //github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/" Value="20200915-latest-win64-static" />
+            <ListItem Text="20200915-latest-win64-shared-gpl //github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/" Value="20200915-latest-win64-shared" />
+            <ListItem Text="4.3-win64-static-gpl //github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/" Value="4.3-win64-static" />
+            <ListItem Text="4.3-win64-shared-gpl //github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/" Value="4.3-win64-shared" />
+            <ListItem Text="4.3.1-win64-shared-lgpl //github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/" Value="4.3.1-win64-shared-lgpl" />
+            <ListItem Text="4.3-win64-static-lgpl //github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/" Value="4.3-win64-static-lgpl" />
+            <ListItem Text="4.3-win64-shared-lgpl //github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/" Value="4.3-win64-shared-lgpl" />
+            <ListItem Text="20200915-latest-win32-static-gpl //github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/" Value="20200915-latest-win32-static" />
+            <ListItem Text="20200915-latest-win32-shared-gpl //github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/" Value="20200915-latest-win32-shared" />
+            <ListItem Text="4.3.1-win32-static-gpl //github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/" Value="4.3.1-win32-static" />
+            <ListItem Text="4.3.1-win32-shared-gpl //github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/" Value="4.3.1-win32-shared" />
+            <ListItem Text="4.3-win32-shared-gpl //github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/" Value="4.3-win32-shared" />
+            <ListItem Text="4.3.1-win32-static-lgpl //github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/" Value="4.3.1-win32-static-lgpl" />
+            <ListItem Text="4.3.1-win32-shared-lgpl //github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/" Value="4.3.1-win32-shared-lgpl" />
+            <ListItem Text="4.3-win32-static-lgpl //github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/" Value="4.3-win32-static-lgpl" />
+            <ListItem Text="4.3-win32-shared-lgpl //github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/" Value="4.3-win32-shared-lgpl" />
           </ComboBox>
           <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL]]></Condition>
           <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL]]></Condition>
         </Control>
 
         <Control Id="FfmpegDownloadedText" Type="Text" X="6" Y="108" Width="358" Height="24" Text="!(loc.FfmpegDlgDownloaded)" Disabled="no" Hidden="no">
-          <Condition Action="show"><![CDATA[NOT ("custom" = AFX_FFMPEG_VERSION)]]></Condition>
-          <Condition Action="hide"><![CDATA["custom" = AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = AFX_FFMPEG_VERSION]]></Condition>
+          <Condition Action="show"><![CDATA[NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Condition Action="hide"><![CDATA["custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> FFMPEG_VERSION]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = FFMPEG_VERSION]]></Condition>
         </Control>
         <Control Id="FfmpegLinkingText" Type="Text" X="6" Y="138" Width="358" Height="12" Text="!(loc.FfmpegDlgLinking)" Disabled="no" Hidden="no">
-          <Condition Action="show"><![CDATA[NOT ("custom" = AFX_FFMPEG_VERSION)]]></Condition>
-          <Condition Action="hide"><![CDATA["custom" = AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = AFX_FFMPEG_VERSION]]></Condition>
+          <Condition Action="show"><![CDATA[NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Condition Action="hide"><![CDATA["custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> FFMPEG_VERSION]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = FFMPEG_VERSION]]></Condition>
         </Control>
         <Control Id="FfmpegLinkingStaticLabelText" Type="Text" X="6" Y="150" Width="100" Height="12" Text="static:" Disabled="no" Hidden="no">
-          <Condition Action="show"><![CDATA[NOT ("custom" = AFX_FFMPEG_VERSION)]]></Condition>
-          <Condition Action="hide"><![CDATA["custom" = AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = AFX_FFMPEG_VERSION]]></Condition>
+          <Condition Action="show"><![CDATA[NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Condition Action="hide"><![CDATA["custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> FFMPEG_VERSION]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = FFMPEG_VERSION]]></Condition>
         </Control>
         <Control Id="FfmpegLinkingStaticDescText" Type="Text" X="100" Y="150" Width="258" Height="12" Text="!(loc.FfmpegDlgStatic)" Disabled="no" Hidden="no">
-          <Condition Action="show"><![CDATA[NOT ("custom" = AFX_FFMPEG_VERSION)]]></Condition>
-          <Condition Action="hide"><![CDATA["custom" = AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = AFX_FFMPEG_VERSION]]></Condition>
+          <Condition Action="show"><![CDATA[NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Condition Action="hide"><![CDATA["custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> FFMPEG_VERSION]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = FFMPEG_VERSION]]></Condition>
         </Control>
         <Control Id="FfmpegLinkingSharedLabelText" Type="Text" X="6" Y="162" Width="100" Height="12" Text="shared:" Disabled="no" Hidden="no">
-          <Condition Action="show"><![CDATA[NOT ("custom" = AFX_FFMPEG_VERSION)]]></Condition>
-          <Condition Action="hide"><![CDATA["custom" = AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = AFX_FFMPEG_VERSION]]></Condition>
+          <Condition Action="show"><![CDATA[NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Condition Action="hide"><![CDATA["custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> FFMPEG_VERSION]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = FFMPEG_VERSION]]></Condition>
         </Control>
         <Control Id="FfmpegLinkingSharedDescText" Type="Text" X="100" Y="162" Width="258" Height="12" Text="!(loc.FfmpegDlgShared)" Disabled="no" Hidden="no">
-          <Condition Action="show"><![CDATA[NOT ("custom" = AFX_FFMPEG_VERSION)]]></Condition>
-          <Condition Action="hide"><![CDATA["custom" = AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = AFX_FFMPEG_VERSION]]></Condition>
+          <Condition Action="show"><![CDATA[NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Condition Action="hide"><![CDATA["custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> FFMPEG_VERSION]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = FFMPEG_VERSION]]></Condition>
         </Control>
         <Control Id="FfmpegLicenseText" Type="Text" X="6" Y="180" Width="358" Height="12" Text="!(loc.FfmpegDlgLicense)" Disabled="no" Hidden="no">
-          <Condition Action="show"><![CDATA[NOT ("custom" = AFX_FFMPEG_VERSION)]]></Condition>
-          <Condition Action="hide"><![CDATA["custom" = AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = AFX_FFMPEG_VERSION]]></Condition>
+          <Condition Action="show"><![CDATA[NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Condition Action="hide"><![CDATA["custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> FFMPEG_VERSION]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = FFMPEG_VERSION]]></Condition>
         </Control>
-        <Control Id="FfmpegLicenseGpl3LabelText" Type="Text" X="6" Y="192" Width="100" Height="12" Text=":" Disabled="no" Hidden="no">
-          <Condition Action="show"><![CDATA[NOT ("custom" = AFX_FFMPEG_VERSION)]]></Condition>
-          <Condition Action="hide"><![CDATA["custom" = AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = AFX_FFMPEG_VERSION]]></Condition>
+        <Control Id="FfmpegLicenseGpl3LabelText" Type="Text" X="6" Y="192" Width="100" Height="12" Text="gpl:" Disabled="no" Hidden="no">
+          <Condition Action="show"><![CDATA[NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Condition Action="hide"><![CDATA["custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> FFMPEG_VERSION]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = FFMPEG_VERSION]]></Condition>
         </Control>
         <Control Id="FfmpegLicenseGpl3DescText" Type="Text" X="100" Y="192" Width="258" Height="12" Text="!(loc.FfmpegDlgGpl3)" Disabled="no" Hidden="no">
-          <Condition Action="show"><![CDATA[NOT ("custom" = AFX_FFMPEG_VERSION)]]></Condition>
-          <Condition Action="hide"><![CDATA["custom" = AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = AFX_FFMPEG_VERSION]]></Condition>
+          <Condition Action="show"><![CDATA[NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Condition Action="hide"><![CDATA["custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> FFMPEG_VERSION]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = FFMPEG_VERSION]]></Condition>
         </Control>
         <Control Id="FfmpegLicenseLgpl3LabelText" Type="Text" X="6" Y="204" Width="100" Height="12" Text="lpgl:" Disabled="no" Hidden="no">
-          <Condition Action="show"><![CDATA[NOT ("custom" = AFX_FFMPEG_VERSION)]]></Condition>
-          <Condition Action="hide"><![CDATA["custom" = AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = AFX_FFMPEG_VERSION]]></Condition>
+          <Condition Action="show"><![CDATA[NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Condition Action="hide"><![CDATA["custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> FFMPEG_VERSION]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = FFMPEG_VERSION]]></Condition>
         </Control>
         <Control Id="FfmpegLicenseLgpl3DescText" Type="Text" X="100" Y="204" Width="258" Height="12" Text="!(loc.FfmpegDlgLgpl3)" Disabled="no" Hidden="no">
-          <Condition Action="show"><![CDATA[NOT ("custom" = AFX_FFMPEG_VERSION)]]></Condition>
-          <Condition Action="hide"><![CDATA["custom" = AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = AFX_FFMPEG_VERSION]]></Condition>
+          <Condition Action="show"><![CDATA[NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Condition Action="hide"><![CDATA["custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" <> FFMPEG_VERSION]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR "custom" = FFMPEG_VERSION]]></Condition>
         </Control>
         
         <Control Id="FfmpegPathText" Type="Text" X="6" Y="108" Width="358" Height="12" Text="!(loc.FfmpegDlgPath)" Disabled="no" Hidden="yes">
-          <Condition Action="show"><![CDATA["custom" = AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="hide"><![CDATA[NOT ("custom" = AFX_FFMPEG_VERSION)]]></Condition>
-          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" = AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR NOT ("custom" = AFX_FFMPEG_VERSION)]]></Condition>
+          <Condition Action="show"><![CDATA["custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="hide"><![CDATA[NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR NOT ("custom" = FFMPEG_VERSION)]]></Condition>
         </Control>
         <Control Id="FfmpegPath" Type="Edit" X="6" Y="120" Width="260" Height="18" TabSkip="no" Property="FFMPEG_CUSTOM" Disabled="yes" Hidden="yes">
-          <Condition Action="show"><![CDATA["custom" = AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="hide"><![CDATA[NOT ("custom" = AFX_FFMPEG_VERSION)]]></Condition>
-          <Publish Event="DoAction" Value="ValidateFfmpegCustomPathAction"><![CDATA[AFX_FFMPEG_VERSION = "custom"]]></Publish>
+          <Condition Action="show"><![CDATA["custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="hide"><![CDATA[NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Publish Event="DoAction" Value="ValidateFfmpegCustomPathAction"><![CDATA[FFMPEG_VERSION = "custom"]]></Publish>
         </Control>
         <Control Id="FfmpegPathBrowse" Type="PushButton" X="266" Y="120" Width="100" Height="18" Text="!(loc.FfmpegDlgPathBrowse)" Disabled="yes" Hidden="yes">
-          <Condition Action="show"><![CDATA["custom" = AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="hide"><![CDATA[NOT ("custom" = AFX_FFMPEG_VERSION)]]></Condition>
-          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" = AFX_FFMPEG_VERSION]]></Condition>
-          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR NOT ("custom" = AFX_FFMPEG_VERSION)]]></Condition>
+          <Condition Action="show"><![CDATA["custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="hide"><![CDATA[NOT ("custom" = FFMPEG_VERSION)]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL AND "custom" = FFMPEG_VERSION]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL OR NOT ("custom" = FFMPEG_VERSION)]]></Condition>
           <Publish Event="DoAction" Value="FfmpegCustomPathDlgAction">1</Publish>
           <Publish Event="DoAction" Value="ValidateFfmpegCustomPathAction">1</Publish>
           <Publish Property="FFMPEG_CUSTOM" Value="[FFMPEG_CUSTOM]">1</Publish>
         </Control>
         <Control Id="FfmpegPathError" Type="Text" X="6" Y="138" Width="362" Height="56" Text="!(loc.FfmpegDlgPathError)" Disabled="no" Hidden="yes">
-          <Condition Action="show"><![CDATA[FFMPEG_REINSTALL AND AFX_FFMPEG_VERSION = "custom" AND NOT (AFX_FFMPEGPATH_OK = "1")]]></Condition>
-          <Condition Action="hide"><![CDATA[NOT (FFMPEG_REINSTALL AND AFX_FFMPEG_VERSION = "custom" AND NOT (AFX_FFMPEGPATH_OK = "1"))]]></Condition>
+          <Condition Action="show"><![CDATA[FFMPEG_REINSTALL AND FFMPEG_VERSION = "custom" AND NOT (AFX_FFMPEGPATH_OK = "1")]]></Condition>
+          <Condition Action="hide"><![CDATA[NOT (FFMPEG_REINSTALL AND FFMPEG_VERSION = "custom" AND NOT (AFX_FFMPEGPATH_OK = "1"))]]></Condition>
         </Control>
 
         <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.WixUIBack)" />

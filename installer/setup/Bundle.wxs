@@ -5,7 +5,7 @@
   <!-- Update this on release: Version -->
   <Bundle
     Name="HLAE Installer"
-    Version="2.109.4"
+    Version="2.109.6"
     Manufacturer="advancedfx.org"
     UpgradeCode="{35C8D990-6C4F-4639-ADF7-D259B06E070B}"
     AboutUrl="https://www.advancedfx.org/"
@@ -13,7 +13,7 @@
     Compressed="yes"
     >
 
-    <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.HyperlinkSidebarLicense">
+    <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.HyperlinkSidebarLicense" bal:UseUILanguages="yes">
       <bal:WixStandardBootstrapperApplication
         LicenseUrl=""
         SuppressOptionsUI="yes"
@@ -37,7 +37,7 @@
     </BootstrapperApplicationRef>
 
     <Variable Name='InstallFolder' Type='string' Value='[ProgramFilesFolder]HLAE' Persisted='yes' bal:Overridable='yes'/>
-    <Variable Name="LangId" Type="string" Value="" Persisted="yes" bal:Overridable="yes" />
+    <Variable Name="LangId" Type="string" Value="" Persisted="no" bal:Overridable="yes" />
     <Variable Name='HlaeRemoveAppData' Type='numeric' Value='0' Persisted='no' bal:Overridable='yes' />
 
     <Chain>

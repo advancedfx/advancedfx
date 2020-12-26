@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.92.5</version>
+<time>2020-12-21T08:09Z</time>
+<changes>
+<change type="fixed">Fixed quaternion interpolation not taking shortest path for mirv_calcs cam smooth, mirv_cals vecAng motionProfile2, fixes #413. To restore the old behaviour set rotShortestPath 0 on those calcs by editing them.</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.92.4</version>
 <time>2020-12-04T10:46Z</time>
 <changes>
