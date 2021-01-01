@@ -92,12 +92,11 @@ CON_COMMAND(__mirv_memdiff, "")
 
 #endif
 
-
-float mirv_setup_add = 0;
+void PrintInfo();
 
 CON_COMMAND(__mirv_info, "")
 {
-
+	PrintInfo();
 }
 
 CON_COMMAND(__mirv_test6, "")
@@ -146,20 +145,6 @@ CON_COMMAND(__mirv_test6, "")
 	}
 }
 
-std::map<void *, float> m_MirvSetupMap;
-
-//extern HMODULE g_H_ClientDll;
-
-void  __declspec(naked) __declspec(dllexport) mirv_setup(void)
-{
-	/*
-	__asm mov eax, [g_H_ClientDll]
-	__asm add eax, 0x1D8D97
-	__asm mov tmp, eax
-	__asm jmp [tmp]
-	*/
-}
-
 CON_COMMAND(__mirv_ct, "")
 {
 	int argc = args->ArgC();
@@ -176,10 +161,6 @@ CON_COMMAND(__mirv_ct, "")
 	}
 }
 
-CON_COMMAND(__mirv_test5, "")
-{
-	g_VEngineClient->ClientCmd_Unrestricted("echo test");
-}
 
 CON_COMMAND(__mirv_addr, "")
 {
@@ -234,26 +215,6 @@ CON_COMMAND(__mirv_addr, "")
 	}
 	else
 		Tier0_Msg("__mirv_addr <moduleName> <hexPatternString>\n");
-}
-
-CON_COMMAND(__mirv_test4, "")
-{
-	if (3 <= args->ArgC())
-	{
-		WrpConVarRef ref(args->ArgV(1));
-
-		ref.SetValue((float)atof(args->ArgV(2)));
-	}
-}
-
-CON_COMMAND(__mirv_test3, "")
-{
-	if (2 <= args->ArgC())
-	{
-		WrpConVarRef ref(args->ArgV(1));
-
-		Tier0_Msg("%s: f:%f, i:%i\n", args->ArgV(1), ref.GetFloat(), ref.GetInt());
-	}
 }
 
 CON_COMMAND(__mirv_test2, "")

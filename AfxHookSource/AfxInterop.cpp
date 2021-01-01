@@ -1168,12 +1168,18 @@ namespace AfxInterop {
 			if (IDirect3DDevice9Ex* device = AfxGetDirect3DDevice9Ex())
 			{
 				IDirect3DIndexBuffer9* pValue = nullptr;
+				bool bWriteBack = NULL == handle;
 				if (SUCCEEDED(device->CreateIndexBuffer(length, usage, (D3DFORMAT)format, (D3DPOOL)pool, &pValue, hasHandle ? &handle : NULL)))
 				{
 					auto result = m_D3d9IndexBuffers.emplace(index,pValue);
 					if (!result.second) {
 						result.first->second->Release();
 						result.first->second = pValue;
+					}
+					if (bWriteBack)
+					{
+						if(!WriteHandle(m_hDrawingPipe, handle)) { errorLine = __LINE__; goto error; }
+						if(!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 					}
 				}
 				else { errorLine = __LINE__; goto error; }
@@ -1239,12 +1245,18 @@ namespace AfxInterop {
 			if (IDirect3DDevice9Ex* device = AfxGetDirect3DDevice9Ex())
 			{
 				IDirect3DVertexBuffer9* pValue = nullptr;
+				bool bWriteBack = NULL == handle;
 				if (SUCCEEDED(device->CreateVertexBuffer(length, usage, fvf, (D3DPOOL)pool, &pValue, hasHandle ? &handle : NULL)))
 				{
 					auto result = m_D3d9VertexBuffers.emplace(index, pValue);
 					if (!result.second) {
 						result.first->second->Release();
 						result.first->second = pValue;
+					}
+					if (bWriteBack)
+					{
+						if (!WriteHandle(m_hDrawingPipe, handle)) { errorLine = __LINE__; goto error; }
+						if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 					}
 				}
 				else { errorLine = __LINE__; goto error; }
@@ -1316,12 +1328,18 @@ namespace AfxInterop {
 			if (IDirect3DDevice9Ex* device = AfxGetDirect3DDevice9Ex())
 			{
 				IDirect3DTexture9* pValue = nullptr;
+				bool bWriteBack = NULL == handle;
 				if (SUCCEEDED(device->CreateTexture(width, height, levels, usage, (D3DFORMAT)format, (D3DPOOL)pool, &pValue, hasHandle ? &handle : NULL)))
 				{
 					auto result = m_D3d9Textures.emplace(index,pValue);
 					if (!result.second) {
 						result.first->second->Release();
 						result.first->second = pValue;
+					}
+					if (bWriteBack)
+					{
+						if (!WriteHandle(m_hDrawingPipe, handle)) { errorLine = __LINE__; goto error; }
+						if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 					}
 				}
 				else { errorLine = __LINE__; goto error; }
