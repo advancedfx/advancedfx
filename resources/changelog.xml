@@ -6,6 +6,17 @@
 
 <release>
 <name>HLAE</name>
+<version>2.109.7</version>
+<time>2021-01-01T19:32Z</time>
+<changes>
+<change type="fixed">Fixed installer failing due to downloading removed BtbN FFmpeg-Builds release by default, switched it to release being available approximately 2 years, fixes #415.</change>
+<change type="updated">Updated translations, thanks to the translators!</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.109.6</version>
 <time>2020-12-21T08:09Z</time>
 <changes>
