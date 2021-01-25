@@ -1168,7 +1168,7 @@ namespace AfxInterop {
 			if (IDirect3DDevice9Ex* device = AfxGetDirect3DDevice9Ex())
 			{
 				IDirect3DIndexBuffer9* pValue = nullptr;
-				bool bWriteBack = NULL == handle;
+				bool bWriteBack = hasHandle && NULL == handle;
 				if (SUCCEEDED(device->CreateIndexBuffer(length, usage, (D3DFORMAT)format, (D3DPOOL)pool, &pValue, hasHandle ? &handle : NULL)))
 				{
 					auto result = m_D3d9IndexBuffers.emplace(index,pValue);
@@ -1245,7 +1245,7 @@ namespace AfxInterop {
 			if (IDirect3DDevice9Ex* device = AfxGetDirect3DDevice9Ex())
 			{
 				IDirect3DVertexBuffer9* pValue = nullptr;
-				bool bWriteBack = NULL == handle;
+				bool bWriteBack = hasHandle && NULL == handle;
 				if (SUCCEEDED(device->CreateVertexBuffer(length, usage, fvf, (D3DPOOL)pool, &pValue, hasHandle ? &handle : NULL)))
 				{
 					auto result = m_D3d9VertexBuffers.emplace(index, pValue);
@@ -1328,8 +1328,9 @@ namespace AfxInterop {
 			if (IDirect3DDevice9Ex* device = AfxGetDirect3DDevice9Ex())
 			{
 				IDirect3DTexture9* pValue = nullptr;
-				bool bWriteBack = NULL == handle;
-				if (SUCCEEDED(device->CreateTexture(width, height, levels, usage, (D3DFORMAT)format, (D3DPOOL)pool, &pValue, hasHandle ? &handle : NULL)))
+				bool bWriteBack = hasHandle && NULL == handle;
+				HRESULT hr =device->CreateTexture(width, height, levels, usage, (D3DFORMAT)format, (D3DPOOL)pool, &pValue, hasHandle ? &handle : NULL);
+				if (SUCCEEDED(hr))
 				{
 					auto result = m_D3d9Textures.emplace(index,pValue);
 					if (!result.second) {
@@ -1342,7 +1343,10 @@ namespace AfxInterop {
 						if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 					}
 				}
-				else { errorLine = __LINE__; goto error; }
+				else {
+					Tier0_Warning("AfxInterop::HandleVersion7DrawingReply_D3d9CreateTexture: HRESULT: 0x%08x\n", hr);
+					errorLine = __LINE__; goto error;
+				}
 			}
 			else { errorLine = __LINE__; goto error; }
 
@@ -2306,7 +2310,7 @@ namespace AfxInterop {
 						break;
 					case DrawingReply::Continue:
 						loopReply = false;
-							{
+						{
 							HANDLE sharedTextureHandle;
 							UINT32 texWidth;
 							UINT32 texHeight;
