@@ -65,8 +65,6 @@ public:
 
 	virtual bool ViewRenderShouldForceNoVis(bool orgValue) = 0;
 
-	virtual void SetClientRenderable(SOURCESDK::IClientRenderable_csgo * renderable) = 0;
-
 	//
 	// General state:
 
@@ -1279,8 +1277,6 @@ public:
 
 	virtual void OnRenderEnd(void) override;
 
-	void SetClientRenderable(SOURCESDK::IClientRenderable_csgo * renderable);
-
 	void Console_ActionFilter_Add(const char * expression, CAction * action);
 	void Console_ActionFilter_AddEx(CAfxStreams * streams, IWrpCommandArgs * args);
 	void Console_ActionFilter_Print(void);
@@ -2345,8 +2341,6 @@ private:
 
 		virtual bool ViewRenderShouldForceNoVis(bool orgValue);
 
-		virtual void SetClientRenderable(SOURCESDK::IClientRenderable_csgo * renderable) override;
-
 		virtual void DrawingHudBegin(void);
 
 		virtual void DrawingHudEnd(void);
@@ -2599,13 +2593,13 @@ private:
 
 		CAction* RetrieveAction(const CAfxTrackedMaterialRef& trackedMaterial, const CEntityInfo& currentEntity);
 
-		void IfRootThenUpdateCurrentEntity()
+		void IfRootThenUpdateCurrentEntity(void *proxyData)
 		{
 			IAfxMatRenderContext* rootContext = m_RootContext;
 
 			if (rootContext && rootContext == GetCurrentContext())
 			{
-				m_Stream->UpdateCurrentEntity();
+				m_Stream->UpdateCurrentEntity(proxyData);
 			}
 		}
 	};
@@ -2614,7 +2608,7 @@ private:
 
 	SOURCESDK::CSGO::CBaseHandle m_CurrentEntity = SOURCESDK_CSGO_INVALID_EHANDLE_INDEX;
 
-	void UpdateCurrentEntity();
+	void UpdateCurrentEntity(void* proxyData);
 
 	bool m_DebugPrint;
 
@@ -3266,8 +3260,6 @@ public:
 
 	bool DrawPhiGrid = false;
 	bool DrawRuleOfThirds = false;
-
-	virtual void SetClientRenderable(SOURCESDK::IClientRenderable_csgo * renderable);
 
 	void BeforeFrameStart()
 	{

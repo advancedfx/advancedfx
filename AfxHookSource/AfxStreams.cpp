@@ -2697,7 +2697,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd(bool isRoot)
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueFunctorInternal(IAfxCallQueue * aq, SOURCESDK::CSGO::CFunctor *pFunctor)
 {
-	this->IfRootThenUpdateCurrentEntity();
+	this->IfRootThenUpdateCurrentEntity(nullptr);
 	//aq->GetParent()->QueueFunctor(new CAfxLeafExecute_Functor(new CAfxD3D9PushOverrideState_Functor(true)));
 	aq->GetParent()->QueueFunctorInternal(pFunctor);
 	//aq->GetParent()->QueueFunctor(new CAfxLeafExecute_Functor(new CAfxD3D9PopOverrideState_Functor()));
@@ -2869,14 +2869,44 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::UpdateCurrentEntity(const CEntit
 	}
 }
 
-void CAfxBaseFxStream::UpdateCurrentEntity()
+typedef void* (__cdecl* csgo_client_dynamic_cast_t)(void* from, void* unk1, void* baseClassRtti, void* classRtti, void* unk2);
+
+void CAfxBaseFxStream::UpdateCurrentEntity(void* proxyData)
 {
 	CEntityInfo info;
 
-	if (SOURCESDK::IViewRender_csgo * view = GetView_csgo())
+	/*
+	if (proxyData)
+	{
+		if (csgo_client_dynamic_cast_t csgo_client_dynamic_cast = (csgo_client_dynamic_cast_t)AFXADDR_GET(csgo_client_dynamic_cast))
+		{
+			if (void* rttiIClientRenderAble = (void*)AFXADDR_GET(csgo_client_RTTI_IClientRenderable))
+			{
+				if (SOURCESDK::IClientRenderable_csgo* re = (SOURCESDK::IClientRenderable_csgo*)csgo_client_dynamic_cast(proxyData, 0, rttiIClientRenderAble, rttiIClientRenderAble, 0))
+				{
+					if (SOURCESDK::IClientUnknown_csgo* unk = re->GetIClientUnknown())
+					{
+						SOURCESDK::CSGO::CBaseHandle current = unk->GetRefEHandle();
+						if (m_CurrentEntity == current) return;
+
+						info.Handle.AfxAssign(current);
+
+						if (SOURCESDK::C_BaseEntity_csgo* be = unk->GetBaseEntity())
+						{
+							info.Data.ClassName = be->GetClassname();
+							info.Data.IsPlayer = be->IsPlayer();
+							info.Data.TeamNumber = be->GetTeamNumber();
+						}
+					}
+				}
+			}
+		}
+	}
+	*/
+	if (SOURCESDK::IViewRender_csgo* view = GetView_csgo())
 	{
 
-		if (SOURCESDK::C_BaseEntity_csgo * be = view->GetCurrentlyDrawingEntity())
+		if (SOURCESDK::C_BaseEntity_csgo* be = view->GetCurrentlyDrawingEntity())
 		{
 			SOURCESDK::CSGO::CBaseHandle current = be->GetRefEHandle();
 
@@ -2896,31 +2926,9 @@ void CAfxBaseFxStream::UpdateCurrentEntity()
 	}
 }
 
-typedef void * (__cdecl * csgo_client_dynamic_cast_t)(void * from, void * unk1, void * baseClassRtti, void * classRtti, void * unk2);
-
 SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::MaterialHook(IAfxMatRenderContext* ctx, SOURCESDK::IMaterial_csgo * material, void * proxyData)
 {
-	this->IfRootThenUpdateCurrentEntity();
-
-	/*
-	if (m_IsRootCtx)
-	{
-		if (csgo_client_dynamic_cast_t csgo_client_dynamic_cast = (csgo_client_dynamic_cast_t)AFXADDR_GET(csgo_client_dynamic_cast))
-		{
-			if (void * rttiIClientRenderAble = (void *)AFXADDR_GET(csgo_client_RTTI_IClientRenderable))
-			{
-				if (SOURCESDK::IClientRenderable_csgo * re = (SOURCESDK::IClientRenderable_csgo *)csgo_client_dynamic_cast(proxyData, 0, rttiIClientRenderAble, rttiIClientRenderAble, 0))
-				{
-					SetClientRenderable(re);
-				}
-				else
-				{
-					SetClientRenderable(nullptr);
-				}
-			}
-		}
-	}
-	*/
+	this->IfRootThenUpdateCurrentEntity(proxyData);
 
 	if (nullptr == ctx->GetOrg()->GetCallQueue())
 	{
@@ -10071,72 +10079,4 @@ SOURCESDK::C_BaseEntity_csgo * GetMoveParent(SOURCESDK::C_BaseEntity_csgo * valu
 	}
 
 	return nullptr;
-}
-
-void CAfxBaseFxStream::CAfxBaseFxStreamContext::SetClientRenderable(SOURCESDK::IClientRenderable_csgo * renderable)
-{
-	CEntityInfo info;
-	info.Handle = SOURCESDK_CSGO_INVALID_EHANDLE_INDEX;
-	//info.RootHandle = SOURCESDK_CSGO_INVALID_EHANDLE_INDEX;
-	//info.RootMoveHandle = SOURCESDK_CSGO_INVALID_EHANDLE_INDEX;
-	//info.ClassName = "";
-		
-	if (renderable)
-	{
-		SOURCESDK::IClientUnknown_csgo * cu = renderable->GetIClientUnknown();
-
-		info.Handle = cu->GetRefEHandle();
-		//info.RootHandle = info.Handle;
-		//info.RootMoveHandle = info.Handle;
-		/*
-		if (SOURCESDK::C_BaseEntity_csgo * be = cu->GetBaseEntity())
-		{
-			info.ClassName = be->GetClassname();
-			
-			if (CClientToolsCsgo::Instance())
-			{
-				SOURCESDK::CSGO::IClientTools * tools = CClientToolsCsgo::Instance()->GetClientToolsInterface();
-				SOURCESDK::C_BaseEntity_csgo * re = be;
-				while (true)
-				{
-					if (SOURCESDK::C_BaseEntity_csgo * ne = reinterpret_cast<SOURCESDK::C_BaseEntity_csgo *>(tools->GetOwnerEntity(reinterpret_cast<SOURCESDK::CSGO::EntitySearchResult>(re))))
-						re = ne;
-					else
-						break;
-				}
-
-				info.RootHandle = re->GetRefEHandle();
-			}
-
-			SOURCESDK::C_BaseEntity_csgo * rm = be;
-			while (true)
-			{
-				if (SOURCESDK::C_BaseEntity_csgo * ne = GetMoveParent(rm))
-					rm = ne;
-				else
-					break;
-			}
-
-			info.RootMoveHandle = rm->GetRefEHandle();
-		}
-		*/
-	}
-
-	UpdateCurrentEntity(info);
-}
-
-void CAfxBaseFxStream::SetClientRenderable(SOURCESDK::IClientRenderable_csgo * renderable)
-{
-	//TODO: ? if(m_ActiveStreamContext) m_ActiveStreamContext->SetClientRenderable(renderable);
-}
-
-void CAfxStreams::SetClientRenderable(SOURCESDK::IClientRenderable_csgo * renderable)
-{
-	if (CAfxRenderViewStream * renderViewStream = CAfxRenderViewStream::EngineThreadStream_get())
-	{
-		if (CAfxBaseFxStream * baseFxStream = renderViewStream->AsAfxBaseFxStream())
-		{
-			baseFxStream->SetClientRenderable(renderable);
-		}
-	}
 }
