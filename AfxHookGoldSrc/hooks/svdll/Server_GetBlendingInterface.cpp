@@ -64,11 +64,8 @@ float (*rotationmatrix)[3][4], float (*bonetransform)[MAXSTUDIOBONES][3][4] )
 {
 	OldBlendingInterface = 0;
 
-	if(Old_Server_GetBlendingInterface)
-	{
-		Old_Server_GetBlendingInterface(version, &OldBlendingInterface, pstudio,
-			rotationmatrix, bonetransform);
-	}
+	Old_Server_GetBlendingInterface(version, &OldBlendingInterface, pstudio,
+		rotationmatrix, bonetransform);
 
 	*ppinterface = &svBlending;
 
@@ -84,10 +81,13 @@ FARPROC Hook_ServerGetBlendingInterface(FARPROC oldProc)
 {
 	Old_Server_GetBlendingInterface = (Server_GetBlendingInterface_t)oldProc;
 
-	return (FARPROC)&New_Server_GetBlendingInterface;
+	if(Old_Server_GetBlendingInterface) return (FARPROC)&New_Server_GetBlendingInterface;
+
+	return NULL;
 }
 
 REGISTER_DEBUGCMD_FUNC(debug_blendiface)
 {
-	pEngfuncs->Con_Printf("0x%08x\n",OldBlendingInterface->SV_StudioSetupBones);
+	if(OldBlendingInterface) pEngfuncs->Con_Printf("0x%08x\n",OldBlendingInterface->SV_StudioSetupBones);
+	else pEngfuncs->Con_Printf("n/a\n");
 }

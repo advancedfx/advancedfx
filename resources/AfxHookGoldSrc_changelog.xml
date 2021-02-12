@@ -6,6 +6,20 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.10.1</version>
+<time>2021-01-25T13:23Z</time>
+<changes>
+<change type="added">
+Fixed wrongly returning a function for server.dll GetBlendingInterface when there actually is none, which causes errors for live TAS captures with HLAE in Half-Life.
+Please note that we do not recommend to live capture with HLAE, HLAE is meant for demos only mostly.
+Thanks to quadkid from advancedfx Discord for reporting the issue.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.10.0</version>
 <time>2020-08-28T18:31Z</time>
 <changes>
