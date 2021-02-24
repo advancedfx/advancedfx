@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.10.2</version>
+<time>2021-02-24T22:03Z</time>
+<changes>
+<change type="fixed">
+Fix mirv_movie_playdemostop not working for GoldSrc #598 - Thanks https://github.com/hobokenn
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.10.1</version>
 <time>2021-01-25T13:23Z</time>
 <changes>

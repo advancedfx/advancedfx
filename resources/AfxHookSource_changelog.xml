@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.92.6</version>
+<time>2021-02-24T22:03Z</time>
+<changes>
+<change type="updated">Minor cosmetic changes in mirv_streams code (should not affect users).</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.92.5</version>
 <time>2020-12-21T08:09Z</time>
 <changes>
