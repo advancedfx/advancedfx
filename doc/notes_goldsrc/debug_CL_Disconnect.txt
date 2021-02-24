@@ -3,4 +3,4 @@ Version: May 16 update
 For more information see:
 C:\Libraries\q1source\QW\client\cl_main.c
 
-To find CL_Disconnect search for usage of the C-string "cd stop\n", it's the function call before that.
+To find CL_Disconnect search for usage of the C-string "ExitGame".
