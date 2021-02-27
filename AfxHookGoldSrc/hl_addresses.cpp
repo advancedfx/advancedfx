@@ -305,31 +305,13 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
 
-	// CL_Disconnect // [16] // Checked: 2018-09-01
+	// CL_Disconnect // [16] // Checked: 2021-02-24
 	{
-		MemRange tmp1 = MemRange(data2Range.Start, data2Range.Start);
-		
-		for (int i = 0; i < 2; ++i)
+		MemRange r1 = FindPatternString(textRange, "55 8B EC 83 EC 14 53 56 33 DB");
+
+		if (!r1.IsEmpty())
 		{
-			tmp1 = FindCString(MemRange(tmp1.End, data2Range.End), "cd stop\n");
-		}
-		if (!tmp1.IsEmpty())
-		{
-			MemRange refTmp1 = FindBytes(textRange, (const char *)&tmp1.Start, sizeof(tmp1.Start));
-			if (!refTmp1.IsEmpty())
-			{
-				MemRange tmp2 = textRange.And(MemRange(refTmp1.Start - 0x6, refTmp1.Start - 0x6 + 0x5));
-				if (!tmp2.IsEmpty())
-				{
-					if (!FindPatternString(tmp2, "E8 ?? ?? ?? ??").IsEmpty())
-					{
-						AFXADDR_SET(CL_Disconnect, *(DWORD *)(tmp2.Start + 0x1) + (DWORD)(tmp2.Start + 0x1 + 0x4)); // Decode Call
-					}
-					else ErrorBox(MkErrStr(__FILE__, __LINE__));
-				}
-				else ErrorBox(MkErrStr(__FILE__, __LINE__));
-			}
-			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			AFXADDR_SET(CL_Disconnect, r1.Start);
 		}
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}

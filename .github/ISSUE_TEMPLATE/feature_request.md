@@ -1,10 +1,10 @@
 ---
 name: Feature request
-about: Suggest an idea for this project
+about: Please use Discussions > Ideas instead
 title: ''
 labels: enhancement
 assignees: ''
 
 ---
 
-(Please search existing **open and closed** issues first to verify this is a new feature request.)
+https://github.com/advancedfx/advancedfx/discussions/categories/ideas
