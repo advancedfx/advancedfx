@@ -6,6 +6,23 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.93.0</version>
+<time>2021-03-05T12:02Z</time>
+<changes>
+<change type="fixed">Fixed mirv_streams baseFx streams not getting truly removed and lingering around, causing oddities, fixes #601.</change>
+<change type="added">Added option 2 to mirv_fix selectedPlayerGlow 0|1|2 (2 means always glow selected player), required for #603.</change>
+<change type="updated">Improved glow color render passs detection, required for #603.</change>
+<change type="added">Added option normailze 0|1 to glowColorMap action, required for #603. This option is disabled (0) by default for backwards compatibility, but we strongly recommend to enable it (1).</change>
+</changes>
+<comments>
+The HLAE Wiki article https://github.com/advancedfx/advancedfx/wiki/CS:GO-Changing-X-Ray-color will be updated with an example
+how to glow/xray only on the spectated player using 3rd person camera (#603).
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.92.6</version>
 <time>2021-02-24T22:03Z</time>
 <changes>

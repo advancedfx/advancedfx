@@ -6,11 +6,21 @@
 
 <release>
 <name>HLAE</name>
+<version>2.110.0</version>
+<time>2021-03-05T12:02Z</time>
+<changes>
+<change type="updated">Included AfxHookSource 1.93.0 (2021-03-05T12:02Z).</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.109.9</version>
 <time>2021-02-24T22:03Z</time>
 <changes>
 <change type="updated">Included AfxHookGoldSrc 2.10.2 (2021-02-24T22:03Z).</change>
-<change type="updated">Included AfxHookSource 1.92.7 (2021-02-24T22:03Z).</change>
+<change type="updated">Included AfxHookSource 1.92.6 (2021-02-24T22:03Z).</change>
 <change type="updated">Updated installer FFMPEG download latest to https://github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2021-01-31-12-37.</change>
 </changes>
 </release>
