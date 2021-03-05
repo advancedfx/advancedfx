@@ -3921,10 +3921,27 @@ void CAfxBaseFxStream::CActionGlowColorMap::Console_Edit(IWrpCommandArgs* args)
 				,m_DebugColor);
 			return;
 		}
+		else if(0 == _stricmp("normalize", arg1))
+		{
+			if (3 == argC)
+			{
+				std::unique_lock<std::shared_timed_mutex> lock(m_EditMutex);
+				m_Normalize = 0 != atoi(args->ArgV(2));
+				return;
+			}
+
+			Tier0_Msg(
+				"%s normalize 0|1 - Enable alpha normalization for mapping.\n"
+				"Current value: %i\n"
+				, arg0
+				, m_Normalize ? 1 : 0);
+			return;
+		}
 	}
 
 	Tier0_Msg("%s load <aFilePath> - Load color mapping tree form file.\n", arg0);
 	Tier0_Msg("%s clear - Clear color mapping tree.\n", arg0);
+	Tier0_Msg("%s normalize [...]\n", arg0);
 	Tier0_Msg("%s debugColor [...]\n", arg0);
 }
 
