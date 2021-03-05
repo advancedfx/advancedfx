@@ -132,16 +132,16 @@ public:
 	//
 	// Reference counting:
 
-	virtual int AddRef(bool mutex = false) override
+	virtual int AddRef(bool keepLocked = false) override
 	{
 		AFXSTREAMS_REFTRACKER_INC
 
-		return CAfxThreadedRefCounted::AddRef(mutex);
+		return CAfxThreadedRefCounted::AddRef(keepLocked);
 	}
 
-	virtual int Release(bool mutex = false) override
+	virtual int Release(bool isLocked = false) override
 	{
-		int result = CAfxThreadedRefCounted::Release(mutex);
+		int result = CAfxThreadedRefCounted::Release(isLocked);
 
 		AFXSTREAMS_REFTRACKER_DEC
 
@@ -2305,12 +2305,10 @@ private:
 			, m_Stream(stream)
 		{
 			m_MapRleaseNotification = new CMapRleaseNotification(this);
-			m_Stream->AddRef();
 		}
 
 		~CAfxBaseFxStreamContext()
 		{
-			m_Stream->Release();
 			delete m_MapRleaseNotification;
 		}
 

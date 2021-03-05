@@ -2597,6 +2597,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin(const CAfxBaseFxStrea
 	if (isRoot)
 	{
 		m_RootContext = ctx;
+		m_Stream->AddRef();
 	}
 
 	if (SOURCESDK::CSGO::ICallQueue * queue = ctx->GetOrg()->GetCallQueue())
@@ -2685,6 +2686,8 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd(bool isRoot)
 		}
 
 		m_MapMutex.unlock();
+
+		m_Stream->Release();
 	}
 
 	if (isRoot)
