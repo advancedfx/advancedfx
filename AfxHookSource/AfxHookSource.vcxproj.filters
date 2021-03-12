@@ -489,6 +489,9 @@
     <ClCompile Include="..\build\protobuf\csgo\netmessages.pb.cc">
       <Filter>build\protobuf\csgo</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared\AfxGameRecord.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\bvhexport.h">
@@ -904,6 +907,9 @@
     </ClInclude>
     <ClInclude Include="..\build\protobuf\csgo\netmessages.pb.h">
       <Filter>build\protobuf\csgo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\AfxGameRecord.h">
+      <Filter>shared</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

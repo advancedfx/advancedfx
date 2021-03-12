@@ -315,6 +315,12 @@
     <ClCompile Include="..\shared\AfxOutStreams.cpp">
       <Filter>shared</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared\AfxGameRecord.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="GameRecord.cpp">
+      <Filter>AfxHookGoldSrc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="aiming.h">
@@ -538,6 +544,12 @@
     </ClInclude>
     <ClInclude Include="..\shared\AfxOutStreams.h">
       <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\AfxGameRecord.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="GameRecord.h">
+      <Filter>AfxHookGoldSrc</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

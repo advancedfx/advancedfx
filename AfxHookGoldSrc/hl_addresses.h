@@ -68,6 +68,9 @@ AFXADDR_DECL(tfc_MsgFunc_DeathMsg)
 AFXADDR_DECL(tfc_TeamFortressViewport_UpdateSpecatorPanel)
 AFXADDR_DECL(tfc_rgDeathNoticeList)
 AFXADDR_DECL(valve_TeamFortressViewport_UpdateSpecatorPanel)
+AFXADDR_DECL(hw_HUD_GetStudioModelInterface_version)
+AFXADDR_DECL(hw_HUD_GetStudioModelInterface_pInterface)
+AFXADDR_DECL(hw_HUD_GetStudioModelInterface_pStudio)
 
 void Addresses_InitHlExe(AfxAddr hlExe);
 void Addresses_InitHwDll(AfxAddr hwDll);

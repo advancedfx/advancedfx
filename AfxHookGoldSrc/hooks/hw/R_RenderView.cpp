@@ -9,6 +9,8 @@
 
 #include "../../CampathDrawer.h"
 
+#include "../../GameRecord.h"
+
 #include <Windows.h>
 #include <deps/release/Detours/src/detours.h>
 
@@ -105,11 +107,21 @@ void New_R_RenderView(void)
 		*(float*)HL_ADDR_GET(g_fov) = cur_fov;
 	}
 
+	if (g_R_RenderViewCallFromEngine)
+	{
+		g_GameRecord.OnFrameBegin();
+	}
+
 	g_Old_R_RenderView();		
 
 	g_CampathDrawer.Draw(p_r_refdef->vrect.width - p_r_refdef->vrect.x, p_r_refdef->vrect.height - p_r_refdef->vrect.y, p_r_refdef->vieworg, p_r_refdef->viewangles);
 
-	if(g_R_RenderViewCallFromEngine) g_R_RenderViewCalledFromEngine = true;
+	if (g_R_RenderViewCallFromEngine)
+	{
+		g_R_RenderViewCalledFromEngine = true;
+
+		g_GameRecord.OnFrameEnd(p_r_refdef->vieworg, p_r_refdef->viewangles, cur_fov);
+	}
 
 	// restore original values
 	memcpy (p_r_refdef->vieworg,oldorigin,3*sizeof(float));

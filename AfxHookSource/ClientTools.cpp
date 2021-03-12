@@ -16,7 +16,6 @@ CClientTools * CClientTools::m_Instance = 0;
 
 
 CClientTools::CClientTools()
-: m_Recording(false)
 {
 	if (0 != m_Instance)
 		throw "CClientTools::CClientTools: singelton pattern void.";
@@ -35,191 +34,79 @@ void CClientTools::OnPostToolMessage(void * hEntity, void * msg)
 
 void CClientTools::OnBeforeFrameRenderStart(void)
 {
-	if (!m_Recording)
+	if (!m_AfxGameRecord.GetRecording())
 		return;
 
-	if (m_File)
-	{
-		WriteDictionary("afxFrame");
-		Write((float)g_Hook_VClient_RenderView.GetGlobals()->absoluteframetime_get());
-		m_HiddenFileOffset = ftell(m_File);
-		Write((int)0);
-	}
-	
+	m_AfxGameRecord.BeginFrame((float)g_Hook_VClient_RenderView.GetGlobals()->absoluteframetime_get());
 }
 
 void CClientTools::OnAfterFrameRenderEnd(void)
 {
-	if (!m_Recording)
+	if (!m_AfxGameRecord.GetRecording())
 		return;
 
 	if(m_RecordCamera)
 	{
-		WriteDictionary("afxCam");
-		Write((float)g_Hook_VClient_RenderView.LastCameraOrigin[0]);
-		Write((float)g_Hook_VClient_RenderView.LastCameraOrigin[1]);
-		Write((float)g_Hook_VClient_RenderView.LastCameraOrigin[2]);
-		Write((float)g_Hook_VClient_RenderView.LastCameraAngles[0]);
-		Write((float)g_Hook_VClient_RenderView.LastCameraAngles[1]);
-		Write((float)g_Hook_VClient_RenderView.LastCameraAngles[2]);
-		Write((float)ScaleFov(g_Hook_VClient_RenderView.LastWidth, g_Hook_VClient_RenderView.LastHeight, (float)g_Hook_VClient_RenderView.LastCameraFov));
+		m_AfxGameRecord.WriteDictionary("afxCam");
+		m_AfxGameRecord.Write((float)g_Hook_VClient_RenderView.LastCameraOrigin[0]);
+		m_AfxGameRecord.Write((float)g_Hook_VClient_RenderView.LastCameraOrigin[1]);
+		m_AfxGameRecord.Write((float)g_Hook_VClient_RenderView.LastCameraOrigin[2]);
+		m_AfxGameRecord.Write((float)g_Hook_VClient_RenderView.LastCameraAngles[0]);
+		m_AfxGameRecord.Write((float)g_Hook_VClient_RenderView.LastCameraAngles[1]);
+		m_AfxGameRecord.Write((float)g_Hook_VClient_RenderView.LastCameraAngles[2]);
+		m_AfxGameRecord.Write((float)ScaleFov(g_Hook_VClient_RenderView.LastWidth, g_Hook_VClient_RenderView.LastHeight, (float)g_Hook_VClient_RenderView.LastCameraFov));
 	}
 
-	if (m_File && m_HiddenFileOffset && 0 < m_Hidden.size())
-	{
-		WriteDictionary("afxHidden");
-
-		size_t curOffset = ftell(m_File);
-
-		int offset = (int)(curOffset - m_HiddenFileOffset);
-
-		fseek(m_File, m_HiddenFileOffset, SEEK_SET);
-		Write((int)offset);
-		fseek(m_File, curOffset, SEEK_SET);
-
-		Write((int)m_Hidden.size());
-
-		for (std::set<int>::iterator it = m_Hidden.begin(); it != m_Hidden.end(); ++it)
-		{
-			Write((int)(*it));
-		}
-
-		m_Hidden.clear();
-		m_HiddenFileOffset = 0;
-	}
-
-	WriteDictionary("afxFrameEnd");
+	m_AfxGameRecord.EndFrame();
 }
 
 bool CClientTools::GetRecording(void)
 {
-	return m_Recording;
+	return m_AfxGameRecord.GetRecording();
 }
 
 void CClientTools::StartRecording(wchar_t const * fileName)
 {
-	EndRecording();
-
-	m_Recording = true;
-
-	Dictionary_Clear();
-	m_File = 0;
-
-	m_HiddenFileOffset = 0;
-	m_Hidden.clear();
-
-	_wfopen_s(&m_File, fileName, L"wb");
-
-	if (m_File)
+	if(m_AfxGameRecord.StartRecording(fileName, 5))
 	{
-		fputs("afxGameRecord", m_File);
-		fputc('\0', m_File);
-		int version = 5;
-		fwrite(&version, sizeof(version), 1, m_File);
+		if (!EnableRecordingMode_get() && !SuppotsAutoEnableRecordingMode()) {
+			Tier0_Warning(
+				"WARNING: The recording needs to be enabled with [...] enabled 1 before loading the demo!\n"
+				"(This is required, because either this game leaks memory when recording mode is enabled or because some features won't work otherwise.)\n"
+				"Enabling the recording (but it might be too late already).\n"
+			);
+			EnableRecordingMode_set(true);
+		}
 	}
 	else
 		Tier0_Warning("ERROR opening file \"%s\" for writing.\n", fileName);
-
-	if (!EnableRecordingMode_get() && !SuppotsAutoEnableRecordingMode()) {
-		Tier0_Warning(
-			"WARNING: The recording needs to be enabled with [...] enabled 1 before loading the demo!\n"
-			"(This is required, because either this game leaks memory when recording mode is enabled or because some features won't work otherwise.)\n"
-			"Enabling the recording (but it might be too late already).\n"
-		);
-		EnableRecordingMode_set(true);
-	}
 }
 
 void CClientTools::EndRecording()
 {
-	if (!m_Recording)
-		return;
-
-	if (m_File)
-	{
-		fclose(m_File);
-	}
-
-	Dictionary_Clear();
-
-	m_Recording = false;
-}
-
-void CClientTools::WriteDictionary(char const * value)
-{
-	int idx = Dictionary_Get(value);
-
-	Write(idx);
-
-	if (-1 == idx)
-	{
-		Write(value);
-	}
-}
-
-void CClientTools::Write(bool value)
-{
-	if (!m_File) return;
-
-	unsigned char ucValue = value ? 1 : 0;
-
-	fwrite(&ucValue, sizeof(ucValue), 1, m_File);
-}
-
-void CClientTools::Write(int value)
-{
-	if (!m_File) return;
-
-	fwrite(&value, sizeof(value), 1, m_File);
-}
-
-void CClientTools::Write(float value)
-{
-	if (!m_File) return;
-
-	fwrite(&value, sizeof(value), 1, m_File);
-}
-
-void CClientTools::Write(double value)
-{
-	if (!m_File) return;
-
-	fwrite(&value, sizeof(value), 1, m_File);
-}
-
-void CClientTools::Write(char const * value)
-{
-	if (!m_File) return;
-
-	fputs(value, m_File);
-	fputc('\0', m_File);
+	m_AfxGameRecord.EndRecording();
 }
 
 void CClientTools::Write(SOURCESDK::Vector const & value)
 {
-	Write((float)value.x);
-	Write((float)value.y);
-	Write((float)value.z);
+	m_AfxGameRecord.Write((float)value.x);
+	m_AfxGameRecord.Write((float)value.y);
+	m_AfxGameRecord.Write((float)value.z);
 }
 
 void CClientTools::Write(SOURCESDK::QAngle const & value)
 {
-	Write((float)value.x);
-	Write((float)value.y);
-	Write((float)value.z);
+	m_AfxGameRecord.Write((float)value.x);
+	m_AfxGameRecord.Write((float)value.y);
+	m_AfxGameRecord.Write((float)value.z);
 }
 
 void CClientTools::Write(SOURCESDK::Quaternion const & value)
 {
-	Write((float)value.x);
-	Write((float)value.y);
-	Write((float)value.z);
-	Write((float)value.w);
-}
-
-void CClientTools::MarkHidden(int value)
-{
-	m_Hidden.insert(value);
+	m_AfxGameRecord.Write((float)value.x);
+	m_AfxGameRecord.Write((float)value.y);
+	m_AfxGameRecord.Write((float)value.z);
+	m_AfxGameRecord.Write((float)value.w);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
