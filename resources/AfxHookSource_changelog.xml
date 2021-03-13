@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.93.1</version>
+<time>2021-03-13T13:03Z</time>
+<changes>
+<change type="updated">Minor cosmetic code structure changes related to AGR.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.93.0</version>
 <time>2021-03-05T12:02Z</time>
 <changes>
