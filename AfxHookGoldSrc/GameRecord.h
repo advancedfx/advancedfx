@@ -27,8 +27,12 @@ public:
 
 	void RecordCurrentEntity();
 
+	void SetRenderModel(struct model_s* model);
+
 private:
 	std::list<int> m_Indexes;
+
+	struct model_s* m_Model;
 
 	advancedfx::CAfxGameRecord m_AfxGameRecord;
 

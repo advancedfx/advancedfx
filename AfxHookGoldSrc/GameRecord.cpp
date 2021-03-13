@@ -27,6 +27,50 @@ extern double * g_phost_frametime;
 
 bool g_bStudioWasPlayer = false;
 
+typedef void	(*R_SetRenderModel_t)(struct model_s* model);
+
+R_SetRenderModel_t g_OldSetRenderModel = nullptr;
+
+void MySetRenderModel(struct model_s* model)
+{
+	g_OldSetRenderModel(model);
+	g_GameRecord.SetRenderModel(model);
+}
+
+
+bool Hook_R_SetRenderModel()
+{
+	static bool firstRun = true;
+	static bool firstResult = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	struct engine_studio_api_s* pstudio = (struct engine_studio_api_s*)HL_ADDR_GET(hw_HUD_GetStudioModelInterface_pStudio);
+
+	if (!pstudio) {
+		firstResult = false;
+	}
+	else
+	{
+		LONG error = NO_ERROR;
+
+		g_OldSetRenderModel = pstudio->SetRenderModel;
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)g_OldSetRenderModel, MySetRenderModel);
+		error = DetourTransactionCommit();
+
+		if (NO_ERROR != error)
+		{
+			firstResult = false;
+			ErrorBox("Interception failed:\nHook_R_SetRenderModel");
+		}
+	}
+
+	return firstResult;
+}
+
 typedef void (*R_RestoreRenderer_t)(void);
 
 R_RestoreRenderer_t g_OldRestoreRenderer = nullptr;
@@ -78,6 +122,7 @@ bool CGameRecord::HooksValid() {
 		&& Hook_Host_Frame()
 		&& Hook_R_RenderView()
 		&& Hook_R_RestoreRenderer()
+		&& Hook_R_SetRenderModel()
 	;
 }
 
@@ -116,6 +161,8 @@ void CGameRecord::EndRecording()
 void CGameRecord::OnFrameBegin()
 {
 	if (!GetRecording()) return;
+
+	m_Model = nullptr;
 
 	m_AfxGameRecord.BeginFrame((float)*g_phost_frametime);
 }
@@ -166,16 +213,16 @@ void CGameRecord::RecordCurrentEntity()
 
 	if (cl_entity_s* ent = pstudio->GetCurrentEntity())
 	{
-		if (model_t* model = ent->model)
+		if (model_t* model = m_Model)
 		{
 			m_AfxGameRecord.WriteDictionary("entity_state");
-			m_AfxGameRecord.Write((int)(ent->index + 1));
+			m_AfxGameRecord.Write((int)(ent->index));
 
-			m_Indexes.emplace_back(ent->index + 1);
+			m_Indexes.emplace_back(ent->index);
 
 			m_AfxGameRecord.WriteDictionary("baseentity");
 			//Write((float)pBaseEntityRs->m_flTime);
-			m_AfxGameRecord.WriteDictionary(ent->model->name);
+			m_AfxGameRecord.WriteDictionary(model->name);
 			m_AfxGameRecord.Write((bool)true);
 			WriteVector(ent->origin);
 			WriteQAngle(ent->angles);
@@ -351,6 +398,11 @@ void CGameRecord::RecordCurrentEntity()
 			m_AfxGameRecord.Write((bool)viewModel);
 		}
 	}
+}
+
+void CGameRecord::SetRenderModel(struct model_s* model)
+{
+	m_Model = model;
 }
 
 void CGameRecord::WriteVector(float  value[3])
