@@ -210,10 +210,12 @@ struct DeathMsgId
 	union {
 		int userId;
 		unsigned long long xuid;
+		int specKey;
 	} Id;
 	enum {
 		Id_UserId,
-		Id_Xuid
+		Id_Xuid,
+		Id_Key
 	} Mode;
 
 	DeathMsgId()
@@ -251,8 +253,12 @@ struct DeathMsgId
 		if (!consoleValue)
 			return;
 
-
-		if (StringBeginsWith(consoleValue, "x"))
+		if (StringBeginsWith(consoleValue, "k"))
+		{
+			this->Mode = Id_Key;
+			this->Id.specKey = atoi(consoleValue +1);
+		}
+		else if (StringBeginsWith(consoleValue, "x"))
 		{
 			unsigned long long val;
 			
@@ -296,38 +302,62 @@ struct DeathMsgId
 
 	int ResolveToUserId()
 	{
-		if (Mode == Id_Xuid)
+		switch(Mode)
 		{
-			SOURCESDK::player_info_t_csgo pinfo;
-			SOURCESDK::IVEngineClient_014_csgo * vengineClient = g_VEngineClient->GetVEngineClient_csgo();
-			int maxClients = g_VEngineClient->GetMaxClients();
-			for (int i = 0; i < maxClients; ++i)
+		case Id_Key:
 			{
-				if (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(i, &pinfo) && pinfo.xuid == Id.xuid)
+				SOURCESDK::player_info_t_csgo pinfo;
+				SOURCESDK::IVEngineClient_014_csgo * vengineClient = g_VEngineClient->GetVEngineClient_csgo();
+				int maxClients = g_VEngineClient->GetMaxClients();
+				for (int i = 0; i < maxClients; ++i)
 				{
-					return pinfo.userID;
+					if (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(i, &pinfo))
+					{
+						if(GetSpecKeyNumber(g_VEngineClient->GetVEngineClient_csgo()->GetPlayerForUserID(pinfo.userID)) == Id.specKey)
+							return pinfo.userID;
+					}
 				}
 			}
-
+			return 0;
+		case Id_Xuid:
+			{
+				SOURCESDK::player_info_t_csgo pinfo;
+				SOURCESDK::IVEngineClient_014_csgo * vengineClient = g_VEngineClient->GetVEngineClient_csgo();
+				int maxClients = g_VEngineClient->GetMaxClients();
+				for (int i = 0; i < maxClients; ++i)
+				{
+					if (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(i, &pinfo) && pinfo.xuid == Id.xuid)
+					{
+						return pinfo.userID;
+					}
+				}
+			}			
 			return 0;
 		}
-
+		
 		return Id.userId;
 	}
 
 	void Console_Print()
 	{
-		if (Mode == Id_Xuid)
+		switch(Mode)
 		{
-			std::ostringstream oss;
+		case Id_Key:
+			Tier0_Msg("k%i", Id.specKey);
+			break;
+		case Id_Xuid:
+			{
+				std::ostringstream oss;
 
-			oss << Id.xuid;
+				oss << Id.xuid;
 
-			Tier0_Msg("x%s", oss.str().c_str());
-		}
-		else
-		{
+				Tier0_Msg("x%s", oss.str().c_str());
+			}
+			break;
+		case Id_UserId:
+		default:
 			Tier0_Msg("%i", Id.userId);
+			break;
 		}
 	}
 
@@ -338,13 +368,30 @@ struct DeathMsgId
 		if (userId < 1)
 			return false;
 
-		if (g_VEngineClient)
+		switch(Mode)
 		{
-			if (SOURCESDK::IVEngineClient_014_csgo * pEngine = g_VEngineClient->GetVEngineClient_csgo())
+		case Id_Key:
+			if (g_VEngineClient)
 			{
-				SOURCESDK::player_info_t_csgo pInfo;
-				return (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(g_VEngineClient->GetVEngineClient_csgo()->GetPlayerForUserID(userId), &pInfo) && pInfo.xuid == Id.xuid);
+				if (SOURCESDK::IVEngineClient_014_csgo * pEngine = g_VEngineClient->GetVEngineClient_csgo())
+				{
+					int entIndex = g_VEngineClient->GetVEngineClient_csgo()->GetPlayerForUserID(userId);
+					return GetSpecKeyNumber(entIndex) == Id.specKey;
+				}
 			}
+			break;
+
+		case Id_Xuid:
+			if (g_VEngineClient)
+			{
+				if (SOURCESDK::IVEngineClient_014_csgo * pEngine = g_VEngineClient->GetVEngineClient_csgo())
+				{
+					SOURCESDK::player_info_t_csgo pInfo;
+					return (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(g_VEngineClient->GetVEngineClient_csgo()->GetPlayerForUserID(userId), &pInfo) && pInfo.xuid == Id.xuid);
+				}
+			}
+			break;
+					
 		}
 
 		return false;
@@ -1617,8 +1664,11 @@ wchar_t * __stdcall touring_csgo_CUnknown_GetPlayerName(DWORD *this_ptr, int ent
 		for (std::list<CCsgoReplaceNameEntry>::iterator it = g_csgo_ReplaceNameList.begin(); it != g_csgo_ReplaceNameList.end(); ++it) {
 			CCsgoReplaceNameEntry & e = *it;
 
-			if ((e.id.Mode == DeathMsgId::Id_UserId && e.id.Id.userId == pinfo.userID) || (e.id.Mode == DeathMsgId::Id_Xuid && e.id.Id.xuid == pinfo.xuid))
-			{
+			if (
+				(e.id.Mode == DeathMsgId::Id_UserId && e.id.Id.userId == pinfo.userID)
+				|| (e.id.Mode == DeathMsgId::Id_Xuid && e.id.Id.xuid == pinfo.xuid)
+				|| e.id.Mode == DeathMsgId::Id_Key && e.id.Id.specKey == GetSpecKeyNumber(g_VEngineClient->GetVEngineClient_csgo()->GetPlayerForUserID(pinfo.userID))
+			) {
 				std::wstring widePlayerName;
 				if (UTF8StringToWideString(it->name.c_str(), widePlayerName))
 				{
@@ -2391,7 +2441,7 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 					}
 
 					Tier0_Msg(
-						"%s filter add <idUser> <sNewName>\n"
+						"%s filter add <idUser>|trace|x<XUID>|xTrace|k<spectatorKey> <sNewName>\n"
 						, arg0
 					);
 					return true;
@@ -2427,7 +2477,7 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 								}
 
 								Tier0_Msg(
-									"%s filter edit %i id <idUser> - Set new ID.\n"
+									"%s filter edit %i id <idUser>|trace|x<XUID>|xTrace|k<spectatorKey> - Set new ID.\n"
 									"Current value: "
 									, arg0, listNr
 								);
@@ -2552,6 +2602,38 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 					);
 					return true;
 				}
+				else if (0 == _stricmp("removeMatching", arg2))
+				{
+					if (4 <= argc)
+					{
+						CSubWrpCommandArgs subArgs(args, 3);
+						DeathMsgId id;
+						id = args->ArgV(3);
+
+						int userId = id.ResolveToUserId();
+						if(userId)
+						{
+							for(auto it = g_csgo_ReplaceNameList.begin(); it != g_csgo_ReplaceNameList.end(); )
+							{
+								if(it->id.EqualsUserId(userId))
+								{
+									auto itDelete = it;
+									++it;
+									g_csgo_ReplaceNameList.erase(itDelete);
+								}
+								else ++it;
+							}
+						}
+
+						return true;
+					}
+
+					Tier0_Msg(
+						"%s filter removeMatching <idUser>|trace|x<XUID>|xTrace|k<spectatorKey> - Remove entries that _currently_ match.\n"
+						, arg0
+					);
+					return true;
+				}				
 				else if (0 == _stricmp("clear", arg2)) {
 
 					g_csgo_ReplaceNameList.clear();
@@ -2588,8 +2670,10 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 				"%s filter edit [...] - Edit an entry.\n"
 				"%s filter move [...] - Move an entry.\n"
 				"%s filter remove [...] - Remove an entry.\n"
+				"%s filter removeMatching [...] - Remove matching entries.\n"
 				"%s filter clear - Clear filter list.\n"
 				"%s filter print - Print current list entries.\n"
+				, arg0
 				, arg0
 				, arg0
 				, arg0
