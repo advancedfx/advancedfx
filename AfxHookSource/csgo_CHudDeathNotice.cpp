@@ -1825,6 +1825,7 @@ void Console_DeathMsgId_PrintHelp(const char * cmd)
 		"trace - UserID from a screen trace (i.e. current POV).\n"
 		"x<iNumber> - XUID, Example: x76561197961927915\n"
 		"xTrace - XUID from a screen trace (i.e. current POV).\n"
+		"k<iNumber> - Spectator key number.\n"
 		"We recommend getting the numbers from the output of \"mirv_listentities isPlayer=1\".\n"
 		, cmd
 	);

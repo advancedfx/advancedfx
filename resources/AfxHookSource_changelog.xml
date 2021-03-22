@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.94.0</version>
+<time>2021-03-22T07:11Z</time>
+<changes>
+<change type="added">Added support for spectator key to mirv_replace_name and mirv_deathmsg (prefix k).</change>
+<change type="added">Addded mirv_replace_name filter removeMatching, which will remove all from the list that _currently_ match the given argument.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.93.1</version>
 <time>2021-03-13T13:03Z</time>
 <changes>
