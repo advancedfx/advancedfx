@@ -45,7 +45,6 @@ AFXADDR_DECL(csgo_CGlowOverlay_Draw)
 AFXADDR_DECL(csgo_CGlowOverlay_Draw_DSZ)
 AFXADDR_DECL(csgo_CCSGO_HudDeathNotice_FireGameEvent)
 AFXADDR_DECL(csgo_CUnknown_GetPlayerName)
-AFXADDR_DECL(csgo_CUnknown_GetPlayerName_DSZ)
 AFXADDR_DECL(csgo_CCSGameMovement_vtable)
 AFXADDR_DECL(csgo_CSkyboxView_Draw)
 AFXADDR_DECL(csgo_CSkyboxView_Draw_DSZ)
@@ -100,6 +99,8 @@ AFXADDR_DECL(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer)
 AFXADDR_DECL(csgo_C_BaseViewModel_ofs_m_nAnimationParity)
 AFXADDR_DECL(csgo_C_BaseViewModel_ofs_m_nOldAnimationParity)
 AFXADDR_DECL(csgo_C_BaseEntity_ShouldInterpolate)
+AFXADDR_DECL(csgo_C_CS_PlayerResource_IGameResources_vtable)
+AFXADDR_DECL(csgo_C_Team_vtable)
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);

@@ -1776,7 +1776,12 @@ CON_COMMAND(mirv_fov,"allows overriding FOV (Field Of View) of the camera")
 
 CON_COMMAND(mirv_replace_name, "allows replacing player names")
 {
-	csgo_ReplaceName_Console(args);
+	csgo_ReplacePlayerName_Console(args);
+}
+
+CON_COMMAND(mirv_replace_team_name, "allows replacing player team names")
+{
+	csgo_ReplaceTeamName_Console(args);
 }
 
 CON_COMMAND(mirv_input, "Input mode configuration.")
