@@ -223,6 +223,7 @@
   <ItemGroup>
     <ClCompile Include="..\shared\AfxConsole.cpp" />
     <ClCompile Include="..\shared\AfxDetours.cpp" />
+    <ClCompile Include="..\shared\AfxGameRecord.cpp" />
     <ClCompile Include="..\shared\AfxMath.cpp" />
     <ClCompile Include="..\shared\AfxOutStreams.cpp" />
     <ClCompile Include="..\shared\binutils.cpp" />
@@ -290,6 +291,7 @@
     <ClCompile Include="filming.cpp" />
     <ClCompile Include="forcePlayersSolid.cpp" />
     <ClCompile Include="fx_noblend.cpp" />
+    <ClCompile Include="GameRecord.cpp" />
     <ClCompile Include="GlPrimMods.cpp" />
     <ClCompile Include="hlaeFolder.cpp" />
     <ClCompile Include="hl_addresses.cpp" />
@@ -353,6 +355,7 @@
     <ClInclude Include="..\deps\release\rapidxml\rapidxml_utils.hpp" />
     <ClInclude Include="..\shared\AfxConsole.h" />
     <ClInclude Include="..\shared\AfxDetours.h" />
+    <ClInclude Include="..\shared\AfxGameRecord.h" />
     <ClInclude Include="..\shared\AfxImageBuffer.h" />
     <ClInclude Include="..\shared\AfxMath.h" />
     <ClInclude Include="..\shared\AfxOutStreams.h" />
@@ -380,6 +383,7 @@
     <ClInclude Include="cmdregister.h" />
     <ClInclude Include="film_sound.h" />
     <ClInclude Include="filming.h" />
+    <ClInclude Include="GameRecord.h" />
     <ClInclude Include="GlPrimMods.h" />
     <ClInclude Include="hlaeFolder.h" />
     <ClInclude Include="hl_addresses.h" />

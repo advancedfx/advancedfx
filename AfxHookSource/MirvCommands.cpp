@@ -1737,7 +1737,12 @@ CON_COMMAND(mirv_fov,"allows overriding FOV (Field Of View) of the camera")
 
 CON_COMMAND(mirv_replace_name, "allows replacing player names")
 {
-	csgo_ReplaceName_Console(args);
+	csgo_ReplacePlayerName_Console(args);
+}
+
+CON_COMMAND(mirv_replace_team_name, "allows replacing player team names")
+{
+	csgo_ReplaceTeamName_Console(args);
 }
 
 CON_COMMAND(mirv_input, "Input mode configuration.")
@@ -3412,14 +3417,25 @@ CON_COMMAND(mirv_fix, "Various fixes")
 
 			MdtMemAccessBegin((LPVOID)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS), 5 * sizeof(unsigned char), &mdtInfos);
 
-			if (0 != atoi(args->ArgV(2)))
+			int iArg2 = atoi(args->ArgV(2));
+
+			if (2 == iArg2)
 			{
+				// Always glow selected.
+				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 0) = 0x90;
+				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 1) = 0x90;
+				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 5) = 0x90;
+			}
+			else if (0 != iArg2)
+			{
+				// Normal mode.
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 0) = 0x75;
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 1) = 0x05;
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 5) = 0x74;
 			}
 			else
 			{
+				// Never glow slected.
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 0) = 0x90;
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 1) = 0x90;
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 5) = 0xEB;
@@ -3452,7 +3468,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 		"mirv_fix oldDuckFix [...] - Can fix player stuck in duck for old demos.\n"
 		"mirv_fix playerAnimState [...] - Fixes twitching of player arms/legs, see https://github.com/advancedfx/advancedfx/wiki/Source%3ASmoother-Demos\n"
 		//"mirv_fix demoIndexTicks [...] - Tries to make backward skipping faster in demos.\n"
-		"mirv_fix selectedPlayerGlow -1|<iEntityId> - If to force post data update changed on <iEntityId> or not (-1, default).\n"
+		"mirv_fix selectedPlayerGlow 0|1|2 - 1: Game default, 2: Always glow, 0 : never glow.\n"
 		"mirv_fix forcePostDataUpdateChanged [...].\n"
 	);
 	return;

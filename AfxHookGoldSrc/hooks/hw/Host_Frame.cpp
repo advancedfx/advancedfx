@@ -3,6 +3,7 @@
 #include "Host_Frame.h"
 #include <hl_addresses.h>
 #include "../HookGameLoaded.h"
+#include "../../GameRecord.h"
 
 #include <Windows.h>
 #include <deps/release/Detours/src/detours.h>
@@ -18,6 +19,8 @@ bool g_Host_Frame_Called = false;
 void New_Host_Frame (float time)
 {
 	g_Host_Frame_Called = true;
+
+	g_GameRecord.BeforeHostFrame();
 
 	g_Host_Frame_time = time;
 	g_Old_HostFrame(time);

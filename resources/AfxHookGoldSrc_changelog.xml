@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.11.2</version>
+<time>2021-03-13T13:03Z</time>
+<changes>
+<change type="added">
+Added mirv_agr command for GoldSrc. Known problems: Some special effects on models (e.g. the distortion on the hologram or left-handed models) will not be accurate, because they can't be accurately represented in AGR version 5.<br />
+Tested with Blender Source Tools 3.1.0, afx-blender-scripts 1.12.1, Crowbar 0.71.<br />
+Please note when using games with hires models (e.g. Half-Life single player regardless of cl_himodels, Half-Life multiplayer with cl_himodels 1), you will need to make sure to extract the right models, otherwise you will get broken results!
+If hires models are used decompile lowres version (e.g. valve/models) first and on-top of that decompile hires models (e.g. valve_hd/models).
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.10.2</version>
 <time>2021-02-24T22:03Z</time>
 <changes>

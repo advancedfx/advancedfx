@@ -3,6 +3,8 @@
 #include "SourceInterfaces.h"
 #include "WrpConsole.h"
 
+#include <shared/AfxGameRecord.h>
+
 #include <string>
 #include <set>
 #include <map>
@@ -129,30 +131,32 @@ public:
 protected:
 	virtual float ScaleFov(int width, int height, float fov) { return fov; }
 
-	void WriteDictionary(char const * value);
+	void WriteDictionary(char const * value) {
+		m_AfxGameRecord.WriteDictionary(value);
+	}
 
-	void Write(bool value);
-	void Write(int value);
-	void Write(float value);
-	void Write(double value);
-	void Write(char const * value); // Consider using WriteDictionary instead (if string is long enough and likely to repeat often).
+	void Write(bool value) { m_AfxGameRecord.Write(value); }
+	void Write(int value) { m_AfxGameRecord.Write(value); }
+	void Write(float value) { m_AfxGameRecord.Write(value); }
+	void Write(double value) { m_AfxGameRecord.Write(value); }
+
+	/// Consider using WriteDictionary instead (if string is long enough and likely to repeat often).
+	void Write(char const * value) { m_AfxGameRecord.Write(value); } 
+
 	void Write(SOURCESDK::Vector const & value);
 	void Write(SOURCESDK::QAngle const & value);
 	void Write(SOURCESDK::Quaternion const & value);
 
-	void MarkHidden(int value);
+	void MarkHidden(int value) {
+		m_AfxGameRecord.MarkHidden(value);
+	}
 
 private:
 	static CClientTools * m_Instance;
 
-	std::map<std::string, int> m_Dictionary;
-
-	size_t m_HiddenFileOffset;
-	std::set<int> m_Hidden;
+	advancedfx::CAfxGameRecord m_AfxGameRecord;
 
 	bool m_EnableRecording = false;
-	bool m_Recording;
-	FILE * m_File;
 
 	int m_Debug = 0;
 	bool m_RecordCamera = true;
@@ -163,28 +167,6 @@ private:
 	int m_RecordViewModels = 0;
 	bool m_RecordInvisible = false;
 
-	void Dictionary_Clear()
-	{
-		m_Dictionary.clear();
-	}
-
-	int Dictionary_Get(char const * value)
-	{
-		std::string sValue(value);
-
-		std::map<std::string, int>::iterator it = m_Dictionary.find(sValue);
-
-		if (it != m_Dictionary.end())
-		{
-			const std::pair<const std::string, int> & pair = *it;
-			return pair.second;
-		}
-
-		size_t oldDictSize = m_Dictionary.size();
-
-		m_Dictionary[sValue] = oldDictSize;
-		return -1;
-	}
 };
 
 bool ClientTools_Console_Cfg(IWrpCommandArgs * args);

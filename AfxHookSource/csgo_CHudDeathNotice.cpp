@@ -210,10 +210,12 @@ struct DeathMsgId
 	union {
 		int userId;
 		unsigned long long xuid;
+		int specKey;
 	} Id;
 	enum {
 		Id_UserId,
-		Id_Xuid
+		Id_Xuid,
+		Id_Key
 	} Mode;
 
 	DeathMsgId()
@@ -251,8 +253,12 @@ struct DeathMsgId
 		if (!consoleValue)
 			return;
 
-
-		if (StringBeginsWith(consoleValue, "x"))
+		if (StringBeginsWith(consoleValue, "k"))
+		{
+			this->Mode = Id_Key;
+			this->Id.specKey = atoi(consoleValue +1);
+		}
+		else if (StringBeginsWith(consoleValue, "x"))
 		{
 			unsigned long long val;
 			
@@ -296,38 +302,62 @@ struct DeathMsgId
 
 	int ResolveToUserId()
 	{
-		if (Mode == Id_Xuid)
+		switch(Mode)
 		{
-			SOURCESDK::player_info_t_csgo pinfo;
-			SOURCESDK::IVEngineClient_014_csgo * vengineClient = g_VEngineClient->GetVEngineClient_csgo();
-			int maxClients = g_VEngineClient->GetMaxClients();
-			for (int i = 0; i < maxClients; ++i)
+		case Id_Key:
 			{
-				if (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(i, &pinfo) && pinfo.xuid == Id.xuid)
+				SOURCESDK::player_info_t_csgo pinfo;
+				SOURCESDK::IVEngineClient_014_csgo * vengineClient = g_VEngineClient->GetVEngineClient_csgo();
+				int maxClients = g_VEngineClient->GetMaxClients();
+				for (int i = 0; i < maxClients; ++i)
 				{
-					return pinfo.userID;
+					if (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(i, &pinfo))
+					{
+						if(GetSpecKeyNumber(g_VEngineClient->GetVEngineClient_csgo()->GetPlayerForUserID(pinfo.userID)) == Id.specKey)
+							return pinfo.userID;
+					}
 				}
 			}
-
+			return 0;
+		case Id_Xuid:
+			{
+				SOURCESDK::player_info_t_csgo pinfo;
+				SOURCESDK::IVEngineClient_014_csgo * vengineClient = g_VEngineClient->GetVEngineClient_csgo();
+				int maxClients = g_VEngineClient->GetMaxClients();
+				for (int i = 0; i < maxClients; ++i)
+				{
+					if (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(i, &pinfo) && pinfo.xuid == Id.xuid)
+					{
+						return pinfo.userID;
+					}
+				}
+			}			
 			return 0;
 		}
-
+		
 		return Id.userId;
 	}
 
 	void Console_Print()
 	{
-		if (Mode == Id_Xuid)
+		switch(Mode)
 		{
-			std::ostringstream oss;
+		case Id_Key:
+			Tier0_Msg("k%i", Id.specKey);
+			break;
+		case Id_Xuid:
+			{
+				std::ostringstream oss;
 
-			oss << Id.xuid;
+				oss << Id.xuid;
 
-			Tier0_Msg("x%s", oss.str().c_str());
-		}
-		else
-		{
+				Tier0_Msg("x%s", oss.str().c_str());
+			}
+			break;
+		case Id_UserId:
+		default:
 			Tier0_Msg("%i", Id.userId);
+			break;
 		}
 	}
 
@@ -338,13 +368,30 @@ struct DeathMsgId
 		if (userId < 1)
 			return false;
 
-		if (g_VEngineClient)
+		switch(Mode)
 		{
-			if (SOURCESDK::IVEngineClient_014_csgo * pEngine = g_VEngineClient->GetVEngineClient_csgo())
+		case Id_Key:
+			if (g_VEngineClient)
 			{
-				SOURCESDK::player_info_t_csgo pInfo;
-				return (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(g_VEngineClient->GetVEngineClient_csgo()->GetPlayerForUserID(userId), &pInfo) && pInfo.xuid == Id.xuid);
+				if (SOURCESDK::IVEngineClient_014_csgo * pEngine = g_VEngineClient->GetVEngineClient_csgo())
+				{
+					int entIndex = g_VEngineClient->GetVEngineClient_csgo()->GetPlayerForUserID(userId);
+					return GetSpecKeyNumber(entIndex) == Id.specKey;
+				}
 			}
+			break;
+
+		case Id_Xuid:
+			if (g_VEngineClient)
+			{
+				if (SOURCESDK::IVEngineClient_014_csgo * pEngine = g_VEngineClient->GetVEngineClient_csgo())
+				{
+					SOURCESDK::player_info_t_csgo pInfo;
+					return (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(g_VEngineClient->GetVEngineClient_csgo()->GetPlayerForUserID(userId), &pInfo) && pInfo.xuid == Id.xuid);
+				}
+			}
+			break;
+					
 		}
 
 		return false;
@@ -1532,16 +1579,30 @@ struct CCsgoReplaceNameEntry
 {
 	DeathMsgId id;
 	std::string name;
+	int mode;
 
-	CCsgoReplaceNameEntry(const char * id, const char * name)
+	CCsgoReplaceNameEntry(const char * id, const char * name, int mode)
 	{
 		this->id = id;
 		this->name = name;
+		this->mode = mode;
 	}
 };
 
-bool g_csgo_ReplaceNameDebug = false;
-std::list<CCsgoReplaceNameEntry> g_csgo_ReplaceNameList;
+struct CCsgoREplaceTeamNameEntry {
+	bool Use_ClanName = false;
+	std::string ClanName;
+	bool Use_FlagImageString = false;
+	std::string FlagImageString;
+	bool Use_LogoImageString = false;
+	std::string LogoImageString;
+};
+
+bool g_csgo_ReplaceTeamNameDebug = false;
+std::map<int,CCsgoREplaceTeamNameEntry> g_csgo_ReplaceTeamNameList;
+
+bool g_csgo_ReplacePlayerNameDebug = false;
+std::list<CCsgoReplaceNameEntry> g_csgo_ReplacePlayerNameList;
 
 // This function has a bug: entindex != entnum (returned by GetPlayerForUserID), but it's fine for now here.
 
@@ -1571,14 +1632,177 @@ int __fastcall Mycsgo_C_CSPlayer_IClientNetworkable_entindex(csgo_C_CSPlayer_IUn
 	return Truecsgo_C_CSPlayer_IClientNetworkable_entindex(This, edx);
 }
 
+typedef char *(__fastcall *csgo_C_Team_Get_ClanName_t)( SOURCESDK::C_BaseEntity_csgo * This, void * Edx );
+typedef char *(__fastcall *csgo_C_Team_Get_FlagImageString_t)( SOURCESDK::C_BaseEntity_csgo * This, void * Edx );
+typedef char *(__fastcall *csgo_C_Team_Get_LogoImageString_t)( SOURCESDK::C_BaseEntity_csgo * This, void * Edx );
 
-typedef wchar_t * (__stdcall *csgo_CUnknown_GetPlayerName_t)(DWORD *this_ptr, int entIndex, wchar_t * targetBuffer, DWORD targetByteCount, DWORD unknownArg1);
+csgo_C_Team_Get_ClanName_t g_Old_csgo_C_Team_Get_ClanName = nullptr;
+csgo_C_Team_Get_FlagImageString_t g_Old_csgo_C_Team_Get_FlagImageString = nullptr;
+csgo_C_Team_Get_LogoImageString_t g_Old_csgo_C_Team_Get_LogoImageString = nullptr;
 
-csgo_CUnknown_GetPlayerName_t detoured_csgo_CUnknown_GetPlayerName;
+char * __fastcall My_csgo_C_Team_Get_ClanName( SOURCESDK::C_BaseEntity_csgo * This, void * Edx ) {
+	char * result = g_Old_csgo_C_Team_Get_ClanName( This, Edx );
 
-wchar_t * __stdcall touring_csgo_CUnknown_GetPlayerName(DWORD *this_ptr, int entIndex, wchar_t * targetBuffer, DWORD targetByteCount, DWORD unknownArg1)
+	int teamNumber = This->GetTeamNumber();
+
+	if(g_csgo_ReplaceTeamNameDebug)
+	{
+		Tier0_Msg("C_Team::Get_ClanName: %i -> %s\n", teamNumber, result);
+	}
+
+	auto it = g_csgo_ReplaceTeamNameList.find(teamNumber);
+	if(it != g_csgo_ReplaceTeamNameList.end() && it->second.Use_ClanName)
+	{
+		result = const_cast<char *>(it->second.ClanName.c_str());
+	}
+
+	return result;
+}
+
+char * __fastcall My_csgo_C_Team_Get_FlagImageString( SOURCESDK::C_BaseEntity_csgo * This, void * Edx ) {
+	char * result = g_Old_csgo_C_Team_Get_FlagImageString( This, Edx );
+
+	int teamNumber = This->GetTeamNumber();
+
+	if(g_csgo_ReplaceTeamNameDebug)
+	{
+		Tier0_Msg("C_Team::Get_FlagImageString: %i -> %s\n", teamNumber, result);
+	}
+
+	auto it = g_csgo_ReplaceTeamNameList.find(teamNumber);
+	if(it != g_csgo_ReplaceTeamNameList.end() && it->second.Use_FlagImageString)
+	{
+		result = const_cast<char *>(it->second.FlagImageString.c_str());
+	}
+
+	return result;
+}
+
+char * __fastcall My_csgo_C_Team_Get_LogoImageString( SOURCESDK::C_BaseEntity_csgo * This, void * Edx ) {
+	char * result = g_Old_csgo_C_Team_Get_LogoImageString( This, Edx );
+
+	int teamNumber = This->GetTeamNumber();
+
+	if(g_csgo_ReplaceTeamNameDebug)
+	{
+		Tier0_Msg("C_Team::Get_LogoImageString: %i -> %s\n", teamNumber, result);
+	}
+
+	auto it = g_csgo_ReplaceTeamNameList.find(teamNumber);
+	if(it != g_csgo_ReplaceTeamNameList.end() && it->second.Use_LogoImageString)
+	{
+		result = const_cast<char *>(it->second.LogoImageString.c_str());
+	}
+
+	return result;
+}
+
+
+bool Hookcsgo_Team_GetFunctions(void)
 {
-	wchar_t * result = detoured_csgo_CUnknown_GetPlayerName(this_ptr, entIndex, targetBuffer, targetByteCount, unknownArg1);
+	static bool firstResult = false;
+	static bool firstRun = true;
+	if(!firstRun) return firstResult;
+	firstRun = false;
+	
+	if(
+		AFXADDR_GET(csgo_C_Team_vtable)
+	)
+	{
+		LONG error = NO_ERROR;
+
+
+		void **vtable = (void **)AFXADDR_GET(csgo_C_Team_vtable);
+		
+		g_Old_csgo_C_Team_Get_ClanName = (csgo_C_Team_Get_ClanName_t)vtable[187];
+		g_Old_csgo_C_Team_Get_FlagImageString = (csgo_C_Team_Get_FlagImageString_t)vtable[188];
+		g_Old_csgo_C_Team_Get_LogoImageString = (csgo_C_Team_Get_LogoImageString_t)vtable[189];
+		
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)g_Old_csgo_C_Team_Get_ClanName, My_csgo_C_Team_Get_ClanName);
+		DetourAttach(&(PVOID&)g_Old_csgo_C_Team_Get_FlagImageString, My_csgo_C_Team_Get_FlagImageString);
+		DetourAttach(&(PVOID&)g_Old_csgo_C_Team_Get_LogoImageString, My_csgo_C_Team_Get_LogoImageString);
+		error = DetourTransactionCommit();
+		
+		firstResult = NO_ERROR == error;
+	}
+
+	return firstResult;
+}
+
+typedef const char *(__fastcall *csgo_CPlayerResource_GetPlayerName_t)( void* This, void* Edx, int index );
+
+csgo_CPlayerResource_GetPlayerName_t g_Touring_csgo_CPlayerResource_GetPlayerName = nullptr;
+
+const char * __fastcall My_csgo_CPlayerResource_GetPlayerName( void* This, void* Edx, int index ) {
+	const char * result = g_Touring_csgo_CPlayerResource_GetPlayerName(This, Edx, index);
+
+	SOURCESDK::player_info_t_csgo pinfo;
+
+	if (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(index, &pinfo))
+	{
+		if (g_csgo_ReplacePlayerNameDebug) {
+
+			Tier0_Msg("CPlayerResource::GetPlayerName: %i -> %s\n", pinfo.userID, result);
+		}
+
+		for (std::list<CCsgoReplaceNameEntry>::iterator it = g_csgo_ReplacePlayerNameList.begin(); it != g_csgo_ReplacePlayerNameList.end(); ++it) {
+			CCsgoReplaceNameEntry & e = *it;
+
+			if(!(e.mode & (1 << 0))) continue;
+
+			if (
+				(e.id.Mode == DeathMsgId::Id_UserId && e.id.Id.userId == pinfo.userID)
+				|| (e.id.Mode == DeathMsgId::Id_Xuid && e.id.Id.xuid == pinfo.xuid)
+				|| e.id.Mode == DeathMsgId::Id_Key && e.id.Id.specKey == GetSpecKeyNumber(g_VEngineClient->GetVEngineClient_csgo()->GetPlayerForUserID(pinfo.userID))
+			) {
+				result = it->name.c_str();
+				break;
+			}
+		}
+	}
+
+	return result;
+}
+
+bool Hookcsgo_CPlayerResource_GetPlayerName(void)
+{
+	static bool firstResult = false;
+	static bool firstRun = true;
+	if(!firstRun) return firstResult;
+	firstRun = false;
+	
+	if(
+		g_VEngineClient->GetVEngineClient_csgo()
+		&& AFXADDR_GET(csgo_C_CS_PlayerResource_IGameResources_vtable)
+	)
+	{
+		LONG error = NO_ERROR;
+
+
+		void **vtable = (void **)AFXADDR_GET(csgo_C_CS_PlayerResource_IGameResources_vtable);
+
+		g_Touring_csgo_CPlayerResource_GetPlayerName = (csgo_CPlayerResource_GetPlayerName_t)vtable[8];
+		
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)g_Touring_csgo_CPlayerResource_GetPlayerName, My_csgo_CPlayerResource_GetPlayerName);
+		error = DetourTransactionCommit();
+		
+		firstResult = NO_ERROR == error;
+	}
+
+	return firstResult;
+}
+
+typedef wchar_t * (__fastcall *csgo_CUnknown_GetPlayerName_t)(void * This, void * Edx, int entIndex, wchar_t * targetBuffer, DWORD targetByteCount, DWORD unknownArg1);
+
+csgo_CUnknown_GetPlayerName_t g_Old_csgo_CUnknown_GetPlayerName;
+
+wchar_t * __fastcall My_csgo_CUnknown_GetPlayerName(void * This, void * Edx, int entIndex, wchar_t * targetBuffer, DWORD targetByteCount, DWORD unknownArg1)
+{
+	wchar_t * result = g_Old_csgo_CUnknown_GetPlayerName(This, Edx, entIndex, targetBuffer, targetByteCount, unknownArg1);
 
 	SOURCESDK::player_info_t_csgo pinfo;
 	MyDeathMsgPlayerEntry * playerEntry = nullptr;
@@ -1604,7 +1828,7 @@ wchar_t * __stdcall touring_csgo_CUnknown_GetPlayerName(DWORD *this_ptr, int ent
 
 	if (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(entIndex, &pinfo))
 	{
-		if (g_csgo_ReplaceNameDebug) {
+		if (g_csgo_ReplacePlayerNameDebug) {
 
 			std::string utf8PlayerName;
 
@@ -1614,11 +1838,16 @@ wchar_t * __stdcall touring_csgo_CUnknown_GetPlayerName(DWORD *this_ptr, int ent
 				Tier0_Msg("CUnknown::GetPlayerName: %i ERROR: could not get UTF8-String for player name.\n", pinfo.userID);
 		}
 
-		for (std::list<CCsgoReplaceNameEntry>::iterator it = g_csgo_ReplaceNameList.begin(); it != g_csgo_ReplaceNameList.end(); ++it) {
+		for (std::list<CCsgoReplaceNameEntry>::iterator it = g_csgo_ReplacePlayerNameList.begin(); it != g_csgo_ReplacePlayerNameList.end(); ++it) {
 			CCsgoReplaceNameEntry & e = *it;
 
-			if ((e.id.Mode == DeathMsgId::Id_UserId && e.id.Id.userId == pinfo.userID) || (e.id.Mode == DeathMsgId::Id_Xuid && e.id.Id.xuid == pinfo.xuid))
-			{
+			if(!(e.mode & (1 << 1))) continue;
+
+			if (
+				(e.id.Mode == DeathMsgId::Id_UserId && e.id.Id.userId == pinfo.userID)
+				|| (e.id.Mode == DeathMsgId::Id_Xuid && e.id.Id.xuid == pinfo.xuid)
+				|| e.id.Mode == DeathMsgId::Id_Key && e.id.Id.specKey == GetSpecKeyNumber(g_VEngineClient->GetVEngineClient_csgo()->GetPlayerForUserID(pinfo.userID))
+			) {
 				std::wstring widePlayerName;
 				if (UTF8StringToWideString(it->name.c_str(), widePlayerName))
 				{
@@ -1683,23 +1912,32 @@ wchar_t * __stdcall touring_csgo_CUnknown_GetPlayerName(DWORD *this_ptr, int ent
 }
 
 
-bool csgo_GetPlayerName_Install(void)
+bool Hook_csgo_CUnknown_GetPlayerName(void)
 {
 	static bool firstResult = false;
 	static bool firstRun = true;
-	if (!firstRun) return firstResult;
+	if(!firstRun) return firstResult;
 	firstRun = false;
-
-	if (AFXADDR_GET(csgo_CUnknown_GetPlayerName))
+	
+	if(
+		g_VEngineClient->GetVEngineClient_csgo()
+		&& AFXADDR_GET(csgo_CUnknown_GetPlayerName)
+	)
 	{
-		detoured_csgo_CUnknown_GetPlayerName = (csgo_CUnknown_GetPlayerName_t)DetourClassFunc((BYTE *)AFXADDR_GET(csgo_CUnknown_GetPlayerName), (BYTE *)touring_csgo_CUnknown_GetPlayerName, (int)AFXADDR_GET(csgo_CUnknown_GetPlayerName_DSZ));
+		LONG error = NO_ERROR;
 
-		firstResult = true;
+		g_Old_csgo_CUnknown_GetPlayerName = (csgo_CUnknown_GetPlayerName_t)AFXADDR_GET(csgo_CUnknown_GetPlayerName);
+		
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)g_Old_csgo_CUnknown_GetPlayerName, My_csgo_CUnknown_GetPlayerName);
+		error = DetourTransactionCommit();
+		
+		firstResult = NO_ERROR == error;
 	}
 
 	return firstResult;
 }
-
 
 void __fastcall Mycsgo_panorama_CUIPanel_UnkSetFloatProp(csgo_panorama_CUIPanel * This, void * edx, WORD propId, float value) {
 
@@ -1737,7 +1975,7 @@ bool csgo_CHudDeathNotice_Install_Panorama(void)
 	firstRun = false;
 	
 	if(
-		csgo_GetPlayerName_Install()
+		Hook_csgo_CUnknown_GetPlayerName()
 		&& AFXADDR_GET(csgo_CCSGO_HudDeathNotice_FireGameEvent)
 		&& AFXADDR_GET(csgo_panorama_AVCUIPanel_UnkSetFloatProp)
 		&& AFXADDR_GET(csgo_C_CSPlayer_IClientNetworkable_entindex)
@@ -1775,6 +2013,7 @@ void Console_DeathMsgId_PrintHelp(const char * cmd)
 		"trace - UserID from a screen trace (i.e. current POV).\n"
 		"x<iNumber> - XUID, Example: x76561197961927915\n"
 		"xTrace - XUID from a screen trace (i.e. current POV).\n"
+		"k<iNumber> - Spectator key number.\n"
 		"We recommend getting the numbers from the output of \"mirv_listentities isPlayer=1\".\n"
 		, cmd
 	);
@@ -2357,9 +2596,9 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 
 }
 
-bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
-
-	if (!csgo_GetPlayerName_Install())
+bool csgo_ReplacePlayerName_Console(IWrpCommandArgs * args)
+{
+	if (!Hook_csgo_CUnknown_GetPlayerName() || !Hookcsgo_CPlayerResource_GetPlayerName())
 	{
 		Tier0_Warning("Error: Required hooks not installed.\n");
 		return true;
@@ -2385,13 +2624,12 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 						const char * arg3 = args->ArgV(3);
 						const char * arg4 = args->ArgV(4);
 
-
-						g_csgo_ReplaceNameList.emplace_back(arg3, arg4);
+						g_csgo_ReplacePlayerNameList.emplace_back(arg3, arg4, 6 <= argc ? atoi(args->ArgV(5)) : 3);
 						return true;
 					}
 
 					Tier0_Msg(
-						"%s filter add <idUser> <sNewName>\n"
+						"%s filter add <idUser>|trace|x<XUID>|xTrace|k<spectatorKey> <sNewName> [<iMode>] - <iMode>: 1 name only, 2 decorated, 3 both (default)\n"
 						, arg0
 					);
 					return true;
@@ -2404,13 +2642,13 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 
 						int listNr = atoi(arg3);
 
-						if (listNr < 0 || listNr >= (int)g_csgo_ReplaceNameList.size())
+						if (listNr < 0 || listNr >= (int)g_csgo_ReplacePlayerNameList.size())
 						{
 							Tier0_Warning("Error: %i is not in valid range for <listNr>\n", listNr);
 							return true;
 						}
 
-						std::list<CCsgoReplaceNameEntry>::iterator sourceIt = g_csgo_ReplaceNameList.begin();
+						std::list<CCsgoReplaceNameEntry>::iterator sourceIt = g_csgo_ReplacePlayerNameList.begin();
 
 						std::advance(sourceIt, listNr);
 
@@ -2427,7 +2665,7 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 								}
 
 								Tier0_Msg(
-									"%s filter edit %i id <idUser> - Set new ID.\n"
+									"%s filter edit %i id <idUser>|trace|x<XUID>|xTrace|k<spectatorKey> - Set new ID.\n"
 									"Current value: "
 									, arg0, listNr
 								);
@@ -2480,21 +2718,21 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 						int listNr = atoi(arg3);
 						int targetNr = atoi(arg4);
 
-						if (listNr < 0 || listNr >= (int)g_csgo_ReplaceNameList.size())
+						if (listNr < 0 || listNr >= (int)g_csgo_ReplacePlayerNameList.size())
 						{
 							Tier0_Warning("Error: %i is not in valid range for <listNr>\n", listNr);
 							return true;
 						}
 
-						if (targetNr < 0 || targetNr > (int)g_csgo_ReplaceNameList.size())
+						if (targetNr < 0 || targetNr > (int)g_csgo_ReplacePlayerNameList.size())
 						{
 							Tier0_Warning("Error: %i is not in valid range for <tragetNr>\n", targetNr);
 							return true;
 						}
 
-						std::list<CCsgoReplaceNameEntry>::iterator sourceIt = g_csgo_ReplaceNameList.begin();
+						std::list<CCsgoReplaceNameEntry>::iterator sourceIt = g_csgo_ReplacePlayerNameList.begin();
 
-						std::list<CCsgoReplaceNameEntry>::iterator targetIt = g_csgo_ReplaceNameList.begin();
+						std::list<CCsgoReplaceNameEntry>::iterator targetIt = g_csgo_ReplacePlayerNameList.begin();
 
 						if (listNr <= targetNr)
 						{
@@ -2513,7 +2751,7 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 							std::advance(sourceIt, listNr - targetNr);
 						}
 
-						g_csgo_ReplaceNameList.splice(targetIt, g_csgo_ReplaceNameList, sourceIt);
+						g_csgo_ReplacePlayerNameList.splice(targetIt, g_csgo_ReplacePlayerNameList, sourceIt);
 
 						return true;
 					}
@@ -2532,16 +2770,16 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 
 						int listNr = atoi(arg3);
 
-						if (listNr < 0 || listNr >= (int)g_csgo_ReplaceNameList.size())
+						if (listNr < 0 || listNr >= (int)g_csgo_ReplacePlayerNameList.size())
 						{
 							Tier0_Warning("Error: %i is not in valid range for <listNr>\n", listNr);
 							return true;
 						}
-						std::list<CCsgoReplaceNameEntry>::iterator sourceIt = g_csgo_ReplaceNameList.begin();
+						std::list<CCsgoReplaceNameEntry>::iterator sourceIt = g_csgo_ReplacePlayerNameList.begin();
 
 						std::advance(sourceIt, listNr);
 
-						g_csgo_ReplaceNameList.erase(sourceIt);
+						g_csgo_ReplacePlayerNameList.erase(sourceIt);
 
 						return true;
 					}
@@ -2552,9 +2790,41 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 					);
 					return true;
 				}
+				else if (0 == _stricmp("removeMatching", arg2))
+				{
+					if (4 <= argc)
+					{
+						CSubWrpCommandArgs subArgs(args, 3);
+						DeathMsgId id;
+						id = args->ArgV(3);
+
+						int userId = id.ResolveToUserId();
+						if(userId)
+						{
+							for(auto it = g_csgo_ReplacePlayerNameList.begin(); it != g_csgo_ReplacePlayerNameList.end(); )
+							{
+								if(it->id.EqualsUserId(userId))
+								{
+									auto itDelete = it;
+									++it;
+									g_csgo_ReplacePlayerNameList.erase(itDelete);
+								}
+								else ++it;
+							}
+						}
+
+						return true;
+					}
+
+					Tier0_Msg(
+						"%s filter removeMatching <idUser>|trace|x<XUID>|xTrace|k<spectatorKey> - Remove entries that _currently_ match.\n"
+						, arg0
+					);
+					return true;
+				}				
 				else if (0 == _stricmp("clear", arg2)) {
 
-					g_csgo_ReplaceNameList.clear();
+					g_csgo_ReplacePlayerNameList.clear();
 				
 					return true;
 				}			
@@ -2564,7 +2834,7 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 
 					int nr = 0;
 
-					for (std::list<CCsgoReplaceNameEntry>::iterator it = g_csgo_ReplaceNameList.begin(); it != g_csgo_ReplaceNameList.end(); ++it)
+					for (std::list<CCsgoReplaceNameEntry>::iterator it = g_csgo_ReplacePlayerNameList.begin(); it != g_csgo_ReplacePlayerNameList.end(); ++it)
 					{
 						Tier0_Msg(
 							"%i: "
@@ -2588,8 +2858,10 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 				"%s filter edit [...] - Edit an entry.\n"
 				"%s filter move [...] - Move an entry.\n"
 				"%s filter remove [...] - Remove an entry.\n"
+				"%s filter removeMatching [...] - Remove matching entries.\n"
 				"%s filter clear - Clear filter list.\n"
 				"%s filter print - Print current list entries.\n"
+				, arg0
 				, arg0
 				, arg0
 				, arg0
@@ -2616,11 +2888,16 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 
 			Tier0_Msg(
 				"Usage:\n"
-				"mirv_replace_name <playerId> <name> - replace <playerId> with given <name>.\n"
-				"mirv_replace_name debug 0|1 - print <playerId> -> <name> pairs into console as they get queried by the game.\n"
-				"mirv_replace_name delete <playerId> - delete replacement for <playerId>.\n"
-				"mirv_replace_name list - list all <playerId> -> <name> replacements currently active.\n"
-				"mirv_replace_name clear - clear all replacements.\n"
+				"%s <playerId> <name> - replace <playerId> with given <name>.\n"
+				"%s debug 0|1 - print <playerId> -> <name> pairs into console as they get queried by the game.\n"
+				"%s delete <playerId> - delete replacement for <playerId>.\n"
+				"%s list - list all <playerId> -> <name> replacements currently active.\n"
+				"%s clear - clear all replacements.\n"
+				, arg0
+				, arg0
+				, arg0
+				, arg0
+				, arg0
 			);
 			return true;
 		}
@@ -2628,11 +2905,11 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 
 			//Tier0_Warning("This command is deprecated.\n"); // Deprecated.
 
-			CFakeWrpCommandArgs fakeArgs("mirv_replace_name");
+			CFakeWrpCommandArgs fakeArgs(args->ArgV(0));
 			fakeArgs.AddArg("filter");
 			fakeArgs.AddArg("print");
 
-			csgo_ReplaceName_Console(&fakeArgs);
+			csgo_ReplacePlayerName_Console(&fakeArgs);
 
 			return true;
 		}
@@ -2640,11 +2917,11 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 
 			//Tier0_Warning("This command is deprecated.\n"); // Deprecated.
 
-			CFakeWrpCommandArgs fakeArgs("mirv_replace_name");
+			CFakeWrpCommandArgs fakeArgs(args->ArgV(0));
 			fakeArgs.AddArg("filter");
 			fakeArgs.AddArg("clear");
 
-			csgo_ReplaceName_Console(&fakeArgs);
+			csgo_ReplacePlayerName_Console(&fakeArgs);
 
 			return true;
 		}
@@ -2656,7 +2933,7 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 			{
 				//Tier0_Warning("This command is deprecated.\n"); // Deprecated.
 
-				g_csgo_ReplaceNameDebug = 0 != atoi(arg2);
+				g_csgo_ReplacePlayerNameDebug = 0 != atoi(arg2);
 				return true;
 			}
 			else if (0 == _stricmp("delete", arg1)) {
@@ -2665,14 +2942,14 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 
 				int id = atoi(arg2);
 
-				for (std::list<CCsgoReplaceNameEntry>::iterator it = g_csgo_ReplaceNameList.begin(); it != g_csgo_ReplaceNameList.end(); ++it)
+				for (std::list<CCsgoReplaceNameEntry>::iterator it = g_csgo_ReplacePlayerNameList.begin(); it != g_csgo_ReplacePlayerNameList.end(); ++it)
 				{
 					CCsgoReplaceNameEntry & entry = *it;
 
 					if(id == entry.id.ResolveToUserId())
 					{
-						it = g_csgo_ReplaceNameList.erase(it);
-						if (it == g_csgo_ReplaceNameList.end())
+						it = g_csgo_ReplacePlayerNameList.erase(it);
+						if (it == g_csgo_ReplacePlayerNameList.end())
 							break;
 					}
 				}
@@ -2682,7 +2959,7 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 
 				//Tier0_Warning("This command is deprecated.\n"); // Deprecated.
 
-				g_csgo_ReplaceNameList.emplace_back(arg1, arg2);
+				g_csgo_ReplacePlayerNameList.emplace_back(arg1, arg2, 3);
 				return true;
 
 			}
@@ -2694,7 +2971,111 @@ bool csgo_ReplaceName_Console(IWrpCommandArgs * args) {
 		"%s filter [...] - Filter names.\n"
 		"%s help id [...]- Print help on <id...> usage.\n"
 		"%s deprecated - Print deprecated commands.\n"
+		"%s debug 0|1"
 		"Please note: The engine might cache names, so set the filter up early enough!\n"
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+	);
+	return true;
+}
+
+
+bool csgo_ReplaceTeamName_Console(IWrpCommandArgs * args)
+{
+	if (!Hookcsgo_Team_GetFunctions())
+	{
+		Tier0_Warning("Error: Required hooks not installed.\n");
+		return true;
+	}
+
+	int argC = args->ArgC();
+	const char * arg0 = args->ArgV(0);
+
+	if(2 <= argC)
+	{
+		const char * arg1 = args->ArgV(1);
+
+		if(0 == _stricmp("add", arg1) && 3 <= argC)
+		{
+			int index = atoi(args->ArgV(2));
+			CCsgoREplaceTeamNameEntry entry;
+
+			for(int i = 3; i < argC; ++i)
+			{
+				const char * curArg = args->ArgV(i);
+				if(StringBeginsWith(curArg, "clanName="))
+				{
+					entry.Use_ClanName = true;
+					entry.ClanName = curArg + strlen("clanName=");
+				}
+				else if(StringBeginsWith(curArg, "flagImageString="))
+				{
+					entry.Use_FlagImageString = true;
+					entry.FlagImageString = curArg + strlen("flagImageString=");
+				}
+				else if(StringBeginsWith(curArg, "logoImageString="))
+				{
+					entry.Use_LogoImageString = true;
+					entry.LogoImageString = curArg + strlen("logoImageString=");
+				}
+				else {
+					Tier0_Warning("Argument %i (\"%s\") is not valid.\n", i, curArg);
+					return true;
+				}
+			}
+
+			g_csgo_ReplaceTeamNameList[index] = entry;
+			return true;
+		}
+		else if(0 == _stricmp("remove", arg1) && 3 <= argC)
+		{
+			int index = atoi(args->ArgV(2));
+			auto it = g_csgo_ReplaceTeamNameList.find(index);
+			if(it != g_csgo_ReplaceTeamNameList.end())
+			{
+				g_csgo_ReplaceTeamNameList.erase(it);
+			}
+			else Tier0_Warning("AFXERROR: Invalid index.\n");
+
+			return true;
+		}
+		else if(0 == _stricmp("clear", arg1))
+		{
+			g_csgo_ReplaceTeamNameList.clear();
+			return true;
+		}
+		else if(0 == _stricmp("print", arg1))
+		{
+			for(auto it=g_csgo_ReplaceTeamNameList.begin(); it !=g_csgo_ReplaceTeamNameList.end(); ++it)
+			{
+				CCsgoREplaceTeamNameEntry &entry = it->second;
+
+				Tier0_Msg("%i ->", it->first);
+				if(entry.Use_ClanName) Tier0_Msg(" \"clanName=%s\"", entry.ClanName.c_str());
+				if(entry.Use_FlagImageString) Tier0_Msg(" \"flagImageString=%s\"", entry.FlagImageString.c_str());
+				if(entry.Use_LogoImageString) Tier0_Msg(" \"logoImageString=%s\"", entry.LogoImageString.c_str());
+				Tier0_Msg("\n");
+			}
+			return true;
+		}
+		else if(0 == _stricmp("debug", arg1) && 3 <= argC)
+		{
+			g_csgo_ReplaceTeamNameDebug = 0 != atoi(args->ArgV(2));
+			return true;
+		}
+	}
+
+	Tier0_Msg(
+		"%s add <iTeamNumber> <sTeamName> (\"clanName=<sText>\"|\"flagImageString=<sText>\"|\"logoImageString=<sText>\")* - Replace team text(s) (team numbers: 1 = Spectator, 2 = TERRORIST, 3 = CT, ...)\n"
+		"%s remove <iTeamNumber>\n"
+		"%s clear\n"
+		"%s print\n"
+		"%s debug 0|1\n"
+		"Please note: The engine might cache names, so set the filter up early enough!\n"
+		, arg0
+		, arg0
 		, arg0
 		, arg0
 		, arg0

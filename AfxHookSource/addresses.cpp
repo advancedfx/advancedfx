@@ -36,7 +36,6 @@ AFXADDR_DEF(csgo_CGlowOverlay_Draw)
 AFXADDR_DEF(csgo_CGlowOverlay_Draw_DSZ)
 AFXADDR_DEF(csgo_CCSGO_HudDeathNotice_FireGameEvent)
 AFXADDR_DEF(csgo_CUnknown_GetPlayerName)
-AFXADDR_DEF(csgo_CUnknown_GetPlayerName_DSZ)
 AFXADDR_DEF(csgo_CCSGameMovement_vtable)
 AFXADDR_DEF(csgo_CSkyboxView_Draw)
 AFXADDR_DEF(csgo_CSkyboxView_Draw_DSZ)
@@ -91,6 +90,8 @@ AFXADDR_DEF(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer)
 AFXADDR_DEF(csgo_C_BaseViewModel_ofs_m_nAnimationParity)
 AFXADDR_DEF(csgo_C_BaseViewModel_ofs_m_nOldAnimationParity)
 AFXADDR_DEF(csgo_C_BaseEntity_ShouldInterpolate)
+AFXADDR_DEF(csgo_C_CS_PlayerResource_IGameResources_vtable)
+AFXADDR_DEF(csgo_C_Team_vtable)
 
 void ErrorBox(char const * messageText);
 
@@ -663,7 +664,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));	
 		}
-		
+
 		// csgo_CUnknown_GetPlayerName: // Checked 2019-03-07
 		{
 			DWORD addr = 0;
@@ -2068,6 +2069,16 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
+
+		{
+			AFXADDR_SET(csgo_C_CS_PlayerResource_IGameResources_vtable,FindClassVtable((HMODULE)clientDll, ".?AVC_CS_PlayerResource@@", 0, 0x9D8));
+			if(!AFXADDR_GET(csgo_C_CS_PlayerResource_IGameResources_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+
+		{
+			AFXADDR_SET(csgo_C_Team_vtable,FindClassVtable((HMODULE)clientDll, ".?AVC_Team@@", 0, 0x0));
+			if(!AFXADDR_GET(csgo_C_Team_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
 	}
 	else
 	{
@@ -2088,7 +2099,6 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_C_BasePlayer_RecvProxy_ObserverTarget, 0x0);
 		AFXADDR_SET(csgo_CGlowOverlay_Draw, 0x0);
 		AFXADDR_SET(csgo_CCSGO_HudDeathNotice_FireGameEvent, 0x0);
-		AFXADDR_SET(csgo_CUnknown_GetPlayerName, 0x0);
 		AFXADDR_SET(csgo_CCSGameMovement_vtable, 0x0);
 		AFXADDR_SET(csgo_CSkyboxView_Draw, 0x0);
 		//AFXADDR_SET(csgo_CViewRender_Render, 0x0);
@@ -2118,6 +2128,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_C_BaseViewModel_ofs_m_nAnimationParity, -1);
 		AFXADDR_SET(csgo_C_BaseViewModel_ofs_m_nOldAnimationParity, -1);
 		AFXADDR_SET(csgo_C_BaseEntity_ShouldInterpolate, 0x0);
+		AFXADDR_SET(csgo_C_CS_PlayerResource_IGameResources_vtable, 0x0);
 	}
 
 	//AFXADDR_SET(csgo_CPredictionCopy_TransferData_DSZ, 0x0a);
@@ -2132,7 +2143,6 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 	AFXADDR_SET(cstrike_gpGlobals_OFS_absoluteframetime, 2*4);
 	AFXADDR_SET(cstrike_gpGlobals_OFS_interpolation_amount, 8*4);
 	AFXADDR_SET(cstrike_gpGlobals_OFS_interval_per_tick, 7*4);
-	AFXADDR_SET(csgo_CUnknown_GetPlayerName_DSZ, 0x0B);
 }
 
 /*

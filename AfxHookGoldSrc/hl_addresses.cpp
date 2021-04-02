@@ -67,6 +67,9 @@ AFXADDR_DEF(tfc_MsgFunc_DeathMsg)
 AFXADDR_DEF(tfc_TeamFortressViewport_UpdateSpecatorPanel)
 AFXADDR_DEF(tfc_rgDeathNoticeList)
 AFXADDR_DEF(valve_TeamFortressViewport_UpdateSpecatorPanel)
+AFXADDR_DEF(hw_HUD_GetStudioModelInterface_version)
+AFXADDR_DEF(hw_HUD_GetStudioModelInterface_pInterface)
+AFXADDR_DEF(hw_HUD_GetStudioModelInterface_pStudio)
 
 //
 // Documentation (in HLAE source code)
@@ -651,6 +654,47 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 
 						AFXADDR_SET(msg_readcount, *(DWORD *)(r3.Start + 1));
 						AFXADDR_SET(net_message, *(DWORD *)(r3.Start + 7));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
+
+	//
+	// Studio interface related:
+	//
+	// 2020-03-12
+	//
+	{
+		MemRange s1 = FindCString(data2Range, "HUD_GetStudioModelInterface");
+
+		if (!s1.IsEmpty()) {
+
+			s1 = FindCString(MemRange(s1.End, data2Range.End), "HUD_GetStudioModelInterface");
+
+			if (!s1.IsEmpty()) {
+
+				MemRange s1Ref = FindBytes(textRange, (const char*)(&s1.Start), sizeof(s1.Start));
+
+				if (!s1Ref.IsEmpty()) {
+
+					/*
+					push    offset off_1E53248
+					push    offset off_1E5330C
+					push    1
+					call    eax
+					*/
+					MemRange r2 = FindPatternString(textRange.And(MemRange(s1Ref.Start + 0x14, s1Ref.Start + 0x14 + 0xE)), "68 ?? ?? ?? ?? 68 ?? ?? ?? ?? 6A ?? FF ??");
+
+					if (!r2.IsEmpty()) {
+
+						AFXADDR_SET(hw_HUD_GetStudioModelInterface_pStudio, *(DWORD*)(r2.Start + 1));
+						AFXADDR_SET(hw_HUD_GetStudioModelInterface_pInterface, *(DWORD*)(r2.Start + 6));
+						AFXADDR_SET(hw_HUD_GetStudioModelInterface_version, *(BYTE*)(r2.Start + 11));
 					}
 					else ErrorBox(MkErrStr(__FILE__, __LINE__));
 				}

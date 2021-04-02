@@ -6,6 +6,56 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.95.0</version>
+<time>2021-03-24T06:00Z</time>
+<changes>
+<change type="fixed">Fixed mirv_replace_name not working e.g. in defusal message.</change>
+<change type="added">Added optional mode parameter to mirv_replace_name filter add to specify if to replace name (1), decorated name(2) or both (3, default).</change>
+<change type="added">Added mirv_replace_team_name.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.94.0</version>
+<time>2021-03-22T07:11Z</time>
+<changes>
+<change type="added">Added support for spectator key to mirv_replace_name and mirv_deathmsg (prefix k).</change>
+<change type="added">Addded mirv_replace_name filter removeMatching, which will remove all from the list that _currently_ match the given argument.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.93.1</version>
+<time>2021-03-13T13:03Z</time>
+<changes>
+<change type="updated">Minor cosmetic code structure changes related to AGR.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
+<version>1.93.0</version>
+<time>2021-03-05T12:02Z</time>
+<changes>
+<change type="fixed">Fixed mirv_streams baseFx streams not getting truly removed and lingering around, causing oddities, fixes #601.</change>
+<change type="added">Added option 2 to mirv_fix selectedPlayerGlow 0|1|2 (2 means always glow selected player), required for #603.</change>
+<change type="updated">Improved glow color render passs detection, required for #603.</change>
+<change type="added">Added option normalize 0|1 to glowColorMap action, required for #603. This option is disabled (0) by default for backwards compatibility, but we strongly recommend to enable it (1).</change>
+</changes>
+<comments>
+The HLAE Wiki article https://github.com/advancedfx/advancedfx/wiki/CS:GO-Changing-X-Ray-color will be updated with an example
+how to glow/xray only on the spectated player using 3rd person camera (#603).
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.92.6</version>
 <time>2021-02-24T22:03Z</time>
 <changes>
