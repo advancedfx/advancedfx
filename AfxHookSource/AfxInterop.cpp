@@ -3115,26 +3115,25 @@ namespace AfxInterop {
 			return okay;
 		}
 
-		bool ReadBytes(HANDLE hFile, LPVOID lpBuffer, int offset, DWORD numBytes)
+		bool ReadBytes(HANDLE hFile, LPVOID bytes, int offset, DWORD length)
 		{
-			lpBuffer = &(((char*)lpBuffer)[offset]);
-			BOOL success = false;
+			while (0 < length) {
+				DWORD bytesRead = 0;
 
-			while (0 < numBytes)
-			{
-				DWORD bytesRead;
-
-				success = ReadFile(hFile, lpBuffer, numBytes, &bytesRead, NULL);
-
-				if (!success)
+				if (!(ReadFile(hFile, (unsigned char *)bytes + offset, length,
+							&bytesRead, NULL)))
 				{
-					Tier0_Warning("!ReadBytes: GetLastError=%d\n", GetLastError());
+					Tier0_Warning("ReadBytes GetLastError=%u\n", GetLastError());
 					return false;
 				}
 
-				numBytes -= bytesRead;
-				lpBuffer = &(((char*)lpBuffer)[bytesRead]);
+				if(0 == bytesRead)
+				{
+					MessageBoxA(0,"RTF","RTF",MB_OK);
+				}
 
+				offset += bytesRead;
+				length -= bytesRead;
 			}
 
 			return true;
@@ -3239,12 +3238,26 @@ namespace AfxInterop {
 			return true;
 		}
 
-		bool WriteBytes(HANDLE hFile, LPVOID lpBuffer, int offset, DWORD numBytes)
+		bool WriteBytes(HANDLE hFile, LPVOID bytes, int offset, DWORD length)
 		{
-			DWORD bytesWritten;
+			while (0 < length) {
+				DWORD bytesWritten = 0;
 
-			if (!WriteFile(hFile, &(((char*)lpBuffer)[offset]), numBytes, &bytesWritten, NULL) || numBytes != bytesWritten)
-				return false;
+				if (!(WriteFile(hFile, (unsigned char *)bytes + offset, length,
+								&bytesWritten, NULL)))
+				{
+					Tier0_Warning("WriteBytes GetLastError=%u\n", GetLastError());
+					return false;
+				}
+
+				if(0 == bytesWritten)
+				{
+					MessageBoxA(0,"WTF","WTF",MB_OK);
+				}
+
+				offset += bytesWritten;
+				length -= bytesWritten;
+			}
 
 			return true;
 		}
@@ -3330,7 +3343,10 @@ namespace AfxInterop {
 		bool Flush(HANDLE hFile)
 		{
 			if (!FlushFileBuffers(hFile))
+			{
+				Tier0_Msg("FlushFileBuffers GetLastError=%u\n", GetLastError());
 				return false;
+			}
 
 			return true;
 		}
