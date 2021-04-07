@@ -16,7 +16,7 @@ void APIENTRY NewGlFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdou
 
 void APIENTRY NewGlBlendFunc (GLenum sfactor, GLenum dfactor);
 
-extern CAfxImportFuncHookBase* g_pImport_GDI32_SwapBuffers;
+extern CAfxImportFuncHookBase* Get_Import_GDI32_SwapBuffers();
 
 HGLRC WINAPI NewWglCreateContext(HDC);
 
