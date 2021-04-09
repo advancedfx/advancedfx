@@ -21,8 +21,13 @@ void MbPrintPixelFormatDescriptor(char const * title, PIXELFORMATDESCRIPTOR cons
 }
 
 BOOL WINAPI NewSetPixelFormat(__in HDC hdc, __in int format, __in CONST PIXELFORMATDESCRIPTOR* ppfd);
-CAfxImportFuncHook<BOOL(WINAPI*)(HDC, int, CONST PIXELFORMATDESCRIPTOR*)> g_Import_GDI32_SetPixelFormat("SetPixelFormat", NewSetPixelFormat);
-CAfxImportFuncHookBase* g_pImport_GDI32_SetPixelFormat = &g_Import_GDI32_SetPixelFormat;
+CAfxImportFuncHook<BOOL(WINAPI*)(HDC, int, CONST PIXELFORMATDESCRIPTOR*)>* Get_Import_GDI32_SetPixelFormat_Internal() {
+	static CAfxImportFuncHook<BOOL(WINAPI*)(HDC, int, CONST PIXELFORMATDESCRIPTOR*)> g_Import_GDI32_SetPixelFormat("SetPixelFormat", NewSetPixelFormat);
+	return &g_Import_GDI32_SetPixelFormat;
+}
+CAfxImportFuncHookBase* Get_Import_GDI32_SetPixelFormat() {
+	return Get_Import_GDI32_SetPixelFormat_Internal();
+}
 BOOL WINAPI NewSetPixelFormat(__in HDC hdc, __in int format, __in CONST PIXELFORMATDESCRIPTOR * ppfd)
 {
 	if (!g_AfxSettings.ForceAlpha8_get())
@@ -34,5 +39,5 @@ BOOL WINAPI NewSetPixelFormat(__in HDC hdc, __in int format, __in CONST PIXELFOR
 	myppfd->cAlphaBits = 8; // request alpha bit planes (generic implementation doesn't support that)
 	myppfd->cAlphaShift = 24;
 
-	return g_Import_GDI32_SetPixelFormat.TrueFunc(hdc, ChoosePixelFormat(hdc, myppfd), myppfd);
+	return Get_Import_GDI32_SetPixelFormat_Internal()->TrueFunc(hdc, ChoosePixelFormat(hdc, myppfd), myppfd);
 }

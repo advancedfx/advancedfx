@@ -14,7 +14,8 @@ int _tmain(int argc, TCHAR * argv[])
 	{
 		_tprintf(_T("Loading: \"%s\" "), argv[i]);
 		HMODULE hm = LoadLibrary(argv[i]);
-		_tprintf(_T("[ %s ]\n"), hm ? _T("OK") : _T("FAIL"));
+		DWORD lastError = GetLastError();
+		_tprintf(_T("[ %s ] GetLastError = %u\n"), hm ? _T("OK") : _T("FAIL"), lastError);
 	}
 
 	return 0;

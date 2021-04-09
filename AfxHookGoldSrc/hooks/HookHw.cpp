@@ -285,12 +285,12 @@ CAfxImportDllHook g_Import_sdl2_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
 	&g_Import_sdl2_KERNEL32_GetProcAddress }));
 
 CAfxImportDllHook g_Import_sdl2_USER32("USER32.dll", CAfxImportDllHooks({
-	g_pImport_USER32_CreateWindowExW,
-	g_pImport_USER32_DestroyWindow }));
+	Get_Import_USER32_CreateWindowExW(),
+	Get_Import_USER32_DestroyWindow() }));
 
 CAfxImportDllHook g_Import_sdl2_GDI32("GDI32.dll", CAfxImportDllHooks({
-	g_pImport_GDI32_SetPixelFormat,
-	g_pImport_GDI32_SwapBuffers }));
+	Get_Import_GDI32_SetPixelFormat(),
+	Get_Import_GDI32_SwapBuffers() }));
 
 
 CAfxImportsHook g_Import_sdl2(CAfxImportsHooks({
@@ -344,10 +344,10 @@ void HookHw(HMODULE hHw)
 		g_Import_sdl2.Apply(hSdl);
 
 		if(!g_Import_sdl2_KERNEL32_GetProcAddress.TrueFunc) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:Kernel32.dll!GetProcAddress","MDT_ERROR",MB_OK|MB_ICONHAND); }
-		if(!*g_pImport_USER32_CreateWindowExW->GetTrueFunc()) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:user32.dll!CreateWindowExW","MDT_ERROR",MB_OK|MB_ICONHAND); }
-		if(!*g_pImport_USER32_DestroyWindow->GetTrueFunc()) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:user32.dll!DestroyWindow","MDT_ERROR",MB_OK|MB_ICONHAND); }
-		if(!*g_pImport_GDI32_SwapBuffers->GetTrueFunc()) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:gdi32.dll!SwapBuffers","MDT_ERROR",MB_OK|MB_ICONHAND); }
-		if(!*g_pImport_GDI32_SetPixelFormat->GetTrueFunc()) { bIcepOk = false; MessageBox(0,"Interception failed: gdi32.dll!SetPixelFormat","MDT_ERROR",MB_OK|MB_ICONHAND); }
+		if(!*Get_Import_USER32_CreateWindowExW()->GetTrueFunc()) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:user32.dll!CreateWindowExW","MDT_ERROR",MB_OK|MB_ICONHAND); }
+		if(!*Get_Import_USER32_DestroyWindow()->GetTrueFunc()) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:user32.dll!DestroyWindow","MDT_ERROR",MB_OK|MB_ICONHAND); }
+		if(!*Get_Import_GDI32_SwapBuffers()->GetTrueFunc()) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:gdi32.dll!SwapBuffers","MDT_ERROR",MB_OK|MB_ICONHAND); }
+		if(!*Get_Import_GDI32_SetPixelFormat()->GetTrueFunc()) { bIcepOk = false; MessageBox(0,"Interception failed: gdi32.dll!SetPixelFormat","MDT_ERROR",MB_OK|MB_ICONHAND); }
 	}
 	else
 	{
