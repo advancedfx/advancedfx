@@ -4,7 +4,7 @@
 
 #include <shared/AfxGameRecord.h>
 
-#include <list>
+#include <map>
 
 class CGameRecord
 {
@@ -28,17 +28,23 @@ public:
 	void RecordCurrentEntity();
 
 	void SetRenderModel(struct model_s* model);
+	void StudioSetHeader(void * header);
 
 private:
-	std::list<int> m_Indexes;
+	int m_Index = 0;	
+	std::map<cl_entity_t*, std::map<void*, int>> m_Indexes;
 
-	struct model_s* m_Model;
+	struct model_s* m_Model = nullptr;
+	void* m_Header = nullptr;
+	int m_RenderCount = 0;
 
 	advancedfx::CAfxGameRecord m_AfxGameRecord;
 
 	void WriteVector(float  value[3]);
 	void WriteQAngle(float value[3]);
 	void WriteQuaternion(float value[4]);
+
+	void RecordModel(cl_entity_t* entity, struct model_s* model, void* v_header);
 };
 
 extern class CGameRecord g_GameRecord;
