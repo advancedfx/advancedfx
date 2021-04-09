@@ -6,6 +6,17 @@
 
 <release>
 <name>HLAE</name>
+<version>2.113.1</version>
+<time>2021-04-09T05:05Z</time>
+<changes>
+<change type="updated">Included AfxHookGoldSrc 2.11.3 (2021-04-09T05:05Z).</change>
+</changes>
+<comments>Since the binaries are fully rebuilt it might temporarily trigger your anti virus with a false positive on injector.exe, please either add an exception or use the previous version until this issue is resolved.</comments>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.113.0</version>
 <time>2021-03-24T06:00Z</time>
 <changes>
