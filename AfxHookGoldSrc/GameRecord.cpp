@@ -18,6 +18,11 @@
 #include <Windows.h>
 #include <deps/release/Detours/src/detours.h>
 
+#undef vec3_t
+extern "C" {
+#include <deps/release/halflife/utils/common/mathlib.h>
+}
+
 class CGameRecord g_GameRecord;
 
 extern cl_enginefuncs_s* pEngfuncs;
@@ -295,6 +300,62 @@ void CGameRecord::RecordCurrentEntity()
 	}
 }
 
+bool InvertMatrix(const float matrix[3][4], float out_matrix[3][4]) {
+
+	double b0[4] = { 1, 0, 0, 0 };
+	double b1[4] = { 0, 1, 0, 0 };
+	double b2[4] = { 0, 0, 1, 0 };
+	double b3[4] = { 0, 0, 0, 1 };
+
+	double M[4][4] = {
+		matrix[0][0], matrix[0][1], matrix[0][2],  matrix[0][3],
+		matrix[1][0], matrix[1][1],matrix[1][2],  matrix[1][3],
+		matrix[2][0], matrix[2][1], matrix[2][2],  matrix[2][3],
+		0, 0, 0, 1
+	};
+
+	unsigned char P[4];
+	unsigned char Q[4];
+
+	double L[4][4];
+	double U[4][4];
+
+	if (!Afx::Math::LUdecomposition(M, P, Q, L, U))
+		return false;
+
+	double inv0[4] = { 1,0,0,0 };
+	double inv1[4] = { 0,1,0,0 };
+	double inv2[4] = { 0,0,1,0 };
+	double inv3[4] = { 0,0,0,1 };
+
+	Afx::Math::SolveWithLU(L, U, P, Q, b0, inv0);
+	Afx::Math::SolveWithLU(L, U, P, Q, b1, inv1);
+	Afx::Math::SolveWithLU(L, U, P, Q, b2, inv2);
+	Afx::Math::SolveWithLU(L, U, P, Q, b3, inv3);
+
+	out_matrix[0][0] = (float)inv0[0];
+	out_matrix[0][1] = (float)inv1[0];
+	out_matrix[0][2] = (float)inv2[0];
+	out_matrix[0][3] = (float)inv3[0];
+
+	out_matrix[1][0] = (float)inv0[1];
+	out_matrix[1][1] = (float)inv1[1];
+	out_matrix[1][2] = (float)inv2[1];
+	out_matrix[1][3] = (float)inv3[1];
+
+	out_matrix[2][0] = (float)inv0[2];
+	out_matrix[2][1] = (float)inv1[2];
+	out_matrix[2][2] = (float)inv2[2];
+	out_matrix[2][3] = (float)inv3[2];
+
+	out_matrix[3][0] = (float)inv0[3];
+	out_matrix[3][1] = (float)inv1[3];
+	out_matrix[3][2] = (float)inv2[3];
+	out_matrix[3][3] = (float)inv3[3];
+
+	return true;
+}
+
 void CGameRecord::RecordModel(cl_entity_t* ent, struct model_s* model, void* v_header)
 {
 	struct engine_studio_api_s* pstudio = (struct engine_studio_api_s*)HL_ADDR_GET(hw_HUD_GetStudioModelInterface_pStudio);
@@ -344,15 +405,30 @@ void CGameRecord::RecordModel(cl_entity_t* ent, struct model_s* model, void* v_h
 
 		if (0 < numbones && pBoneM && pRotM)
 		{
+			float entOrigin[3][4] = {
+				{1.0f,0,0,ent->origin.x},
+				{0,1.0f,0,ent->origin.y},
+				{0,0,1.0f,ent->origin.z},
+			};
+
+			float entRotation[3][4];
+			AngleMatrix(ent->angles, entRotation);
+
+			float entMatrix[3][4];
+			R_ConcatTransforms(entOrigin, entRotation, entMatrix);
+
+			float inverseEntMatrix[3][4];
+			if(!InvertMatrix(entMatrix, inverseEntMatrix))
+				pEngfuncs->Con_Printf("AFXERROR: matrix inversion failed for entity matrix\n");
+
+			float rootMatrix[3][4];
+			R_ConcatTransforms(inverseEntMatrix, *pRotM, rootMatrix);
+
 			m_AfxGameRecord.Write((bool)true);
 
 			m_AfxGameRecord.Write((int)header->numbones);
 
-			double b0[4] = { 1, 0, 0, 0 };
-			double b1[4] = { 0, 1, 0, 0 };
-			double b2[4] = { 0, 0, 1, 0 };
-			double b3[4] = { 0, 0, 0, 1 };
-
+			float inverseParent[3][4];
 			float bones[3][4];
 
 			for (int i = 0; i < header->numbones; ++i)
@@ -360,53 +436,25 @@ void CGameRecord::RecordModel(cl_entity_t* ent, struct model_s* model, void* v_h
 				int parent = pbones[i].parent;
 				bool bRoot = parent == -1;
 
-				double M[4][4] = {
-					bRoot ? (*pRotM)[0][0] : (*pBoneM)[parent][0][0], bRoot ? (*pRotM)[0][1] : (*pBoneM)[parent][0][1], bRoot ? (*pRotM)[0][2] : (*pBoneM)[parent][0][2],  bRoot ? (*pRotM)[0][3] : (*pBoneM)[parent][0][3],
-					bRoot ? (*pRotM)[1][0] : (*pBoneM)[parent][1][0], bRoot ? (*pRotM)[1][1] : (*pBoneM)[parent][1][1], bRoot ? (*pRotM)[1][2] : (*pBoneM)[parent][1][2],  bRoot ? (*pRotM)[1][3] : (*pBoneM)[parent][1][3],
-					bRoot ? (*pRotM)[2][0] : (*pBoneM)[parent][2][0], bRoot ? (*pRotM)[2][1] : (*pBoneM)[parent][2][1], bRoot ? (*pRotM)[2][2] : (*pBoneM)[parent][2][2],  bRoot ? (*pRotM)[2][3] : (*pBoneM)[parent][2][3],
-					0, 0, 0, 1
-				};
 
-				unsigned char P[4];
-				unsigned char Q[4];
+				if (bRoot)
+				{
+					float tmp[3][4];
 
-				double L[4][4];
-				double U[4][4];
 
-				if (!Afx::Math::LUdecomposition(M, P, Q, L, U))
-					pEngfuncs->Con_Printf("AFXERROR: LUdecomposition failed for index %i\n", pbones[i].parent);
+					if (!InvertMatrix(*pRotM, inverseParent))
+						pEngfuncs->Con_Printf("AFXERROR: matrix inversion failed for index %i\n", pbones[i].parent);
 
-				double inv0[4] = { 1,0,0,0 };
-				double inv1[4] = { 0,1,0,0 };
-				double inv2[4] = { 0,0,1,0 };
-				double inv3[4] = { 0,0,0,1 };
+					R_ConcatTransforms(inverseParent, (*pBoneM)[i], tmp);
+					R_ConcatTransforms(rootMatrix, tmp, bones);
+				}
+				else {
+					if (!InvertMatrix((*pBoneM)[parent], inverseParent))
+						pEngfuncs->Con_Printf("AFXERROR: matrix inversion failed for index %i\n", pbones[i].parent);
 
-				Afx::Math::SolveWithLU(L, U, P, Q, b0, inv0);
-				Afx::Math::SolveWithLU(L, U, P, Q, b1, inv1);
-				Afx::Math::SolveWithLU(L, U, P, Q, b2, inv2);
-				Afx::Math::SolveWithLU(L, U, P, Q, b3, inv3);
+					R_ConcatTransforms(inverseParent, (*pBoneM)[i], bones);
+				}
 
-				float newMatrix[4][4] = {
-					(float)inv0[0], (float)inv1[0], (float)inv2[0], (float)inv3[0],
-					(float)inv0[1], (float)inv1[1], (float)inv2[1], (float)inv3[1],
-					(float)inv0[2], (float)inv1[2], (float)inv2[2], (float)inv3[2],
-					(float)inv0[3], (float)inv1[3], (float)inv2[3], (float)inv3[3]
-				};
-
-				bones[0][0] = newMatrix[0][0] * (*pBoneM)[i][0][0] + newMatrix[0][1] * (*pBoneM)[i][1][0] + newMatrix[0][2] * (*pBoneM)[i][2][0];
-				bones[0][1] = newMatrix[0][0] * (*pBoneM)[i][0][1] + newMatrix[0][1] * (*pBoneM)[i][1][1] + newMatrix[0][2] * (*pBoneM)[i][2][1];
-				bones[0][2] = newMatrix[0][0] * (*pBoneM)[i][0][2] + newMatrix[0][1] * (*pBoneM)[i][1][2] + newMatrix[0][2] * (*pBoneM)[i][2][2];
-				bones[0][3] = newMatrix[0][0] * (*pBoneM)[i][0][3] + newMatrix[0][1] * (*pBoneM)[i][1][3] + newMatrix[0][2] * (*pBoneM)[i][2][3] + newMatrix[0][3];
-
-				bones[1][0] = newMatrix[1][0] * (*pBoneM)[i][0][0] + newMatrix[1][1] * (*pBoneM)[i][1][0] + newMatrix[1][2] * (*pBoneM)[i][2][0];
-				bones[1][1] = newMatrix[1][0] * (*pBoneM)[i][0][1] + newMatrix[1][1] * (*pBoneM)[i][1][1] + newMatrix[1][2] * (*pBoneM)[i][2][1];
-				bones[1][2] = newMatrix[1][0] * (*pBoneM)[i][0][2] + newMatrix[1][1] * (*pBoneM)[i][1][2] + newMatrix[1][2] * (*pBoneM)[i][2][2];
-				bones[1][3] = newMatrix[1][0] * (*pBoneM)[i][0][3] + newMatrix[1][1] * (*pBoneM)[i][1][3] + newMatrix[1][2] * (*pBoneM)[i][2][3] + newMatrix[1][3];
-
-				bones[2][0] = newMatrix[2][0] * (*pBoneM)[i][0][0] + newMatrix[2][1] * (*pBoneM)[i][1][0] + newMatrix[2][2] * (*pBoneM)[i][2][0];
-				bones[2][1] = newMatrix[2][0] * (*pBoneM)[i][0][1] + newMatrix[2][1] * (*pBoneM)[i][1][1] + newMatrix[2][2] * (*pBoneM)[i][2][1];
-				bones[2][2] = newMatrix[2][0] * (*pBoneM)[i][0][2] + newMatrix[2][1] * (*pBoneM)[i][1][2] + newMatrix[2][2] * (*pBoneM)[i][2][2];
-				bones[2][3] = newMatrix[2][0] * (*pBoneM)[i][0][3] + newMatrix[2][1] * (*pBoneM)[i][1][3] + newMatrix[2][2] * (*pBoneM)[i][2][3] + newMatrix[2][3];
 
 				float pos[3] = {
 					bones[0][3],
