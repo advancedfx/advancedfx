@@ -49,6 +49,15 @@
     <Filter Include="deps\release\rapidxml">
       <UniqueIdentifier>{35d6398b-f546-46ff-8a8f-761d92b0c766}</UniqueIdentifier>
     </Filter>
+    <Filter Include="deps\release\halflife">
+      <UniqueIdentifier>{7cb62101-add2-42dd-b341-f9762b8ca3b2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="deps\release\halflife\utils">
+      <UniqueIdentifier>{b00356b3-4db7-4d2b-bb5d-f6d65a114f92}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="deps\release\halflife\utils\common">
+      <UniqueIdentifier>{be6d58ee-e2e0-42ca-b297-eeecabc2a361}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cstrike_smoke.cpp">
@@ -320,6 +329,9 @@
     </ClCompile>
     <ClCompile Include="GameRecord.cpp">
       <Filter>AfxHookGoldSrc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\deps\release\halflife\utils\common\mathlib.c">
+      <Filter>deps\release\halflife\utils\common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

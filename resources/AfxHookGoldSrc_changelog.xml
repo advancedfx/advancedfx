@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.11.4</version>
+<time>2021-04-10T04:47Z</time>
+<changes>
+<change type="added">Fix GoldSRc AGR gait sequence export.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.11.3</version>
 <time>2021-04-09T05:05Z</time>
 <changes>
