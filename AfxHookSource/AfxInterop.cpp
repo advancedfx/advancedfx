@@ -144,7 +144,9 @@ namespace AfxInterop {
 	class CInteropClient : public CAfxGameEventListenerSerialzer
 	{
 	public:
-		CInteropClient(const char * pipeName) : m_EnginePipeName(pipeName)
+		CInteropClient(const char * pipeName)
+		: m_EnginePipeName(pipeName)
+		, m_ClientVersion(8,0,0,0)
 		{
 
 		}
@@ -1206,6 +1208,7 @@ namespace AfxInterop {
 				DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 				if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 				if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 			}
 			else { errorLine = __LINE__; goto error; }
 
@@ -1293,6 +1296,7 @@ namespace AfxInterop {
 				DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 				if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 				if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 			}
 			else { errorLine = __LINE__; goto error; }
 			return true;
@@ -1374,6 +1378,7 @@ namespace AfxInterop {
 				DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 				if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 				if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 			}
 			else { errorLine = __LINE__; goto error; }
 
@@ -1487,6 +1492,7 @@ namespace AfxInterop {
 				DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 				if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 				if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 			}
 			else { errorLine = __LINE__; goto error; }
 
@@ -1525,6 +1531,7 @@ namespace AfxInterop {
 				DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 				if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 				if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 			}
 			else { errorLine = __LINE__; goto error; }
 
@@ -1568,6 +1575,7 @@ namespace AfxInterop {
 				DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 				if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 				if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 			}
 			else { errorLine = __LINE__; goto error; }
 
@@ -1786,9 +1794,9 @@ namespace AfxInterop {
 						switch (serverMajorVersion)
 						{
 						case 5:
-							m_Serversion.Set(5,0,0,0);
+							m_ServerVersion.Set(5,0,0,0);
 						case 6:
-							m_Serversion.Set(6,0,0,0);
+							m_ServerVersion.Set(6,0,0,0);
 						case 8:
 							break;
 						default:
@@ -1811,7 +1819,7 @@ namespace AfxInterop {
 							if (!ReadUInt32(m_hEnginePipe, serverSubVersion[1])) { errorLine = __LINE__; goto error; }
 							if (!ReadUInt32(m_hEnginePipe, serverSubVersion[2])) { errorLine = __LINE__; goto error; }
 							
-							m_Serversion.Set(serverMajorVersion,serverSubVersion[0],serverSubVersion[1],serverSubVersion[2]);
+							m_ServerVersion.Set(serverMajorVersion,serverSubVersion[0],serverSubVersion[1],serverSubVersion[2]);
 
 							if (!WriteUInt32(m_hEnginePipe, m_ClientVersion.GetMajor())) { errorLine = __LINE__; goto error; }
 							if (!WriteUInt32(m_hEnginePipe, m_ClientVersion.GetMinor())) { errorLine = __LINE__; goto error; }
@@ -1826,7 +1834,7 @@ namespace AfxInterop {
 							if (!ReadBoolean(m_hEnginePipe, bServerAcceptsClientVersion)) { errorLine = __LINE__; goto error; }
 
 							if(!bServerAcceptsClientVersion) {
-								Tier0_Warning("AFX_INTEROP ERROR: server v%u.%u.%u.%u does not accept our client v%u.%u.%u.%u", serverMajorVersion, serverSubVersion[0], serverSubVersion[1], serverSubVersion[2], m_ClientVersion.GetMajor()), m_ClientVersion.GetMinor(), m_ClientVersion.GetPatch(), m_ClientVersion.GetBuild());
+								Tier0_Warning("AFX_INTEROP ERROR: server v%u.%u.%u.%u does not accept our client v%u.%u.%u.%u.\n", serverMajorVersion, serverSubVersion[0], serverSubVersion[1], serverSubVersion[2], m_ClientVersion.GetMajor(), m_ClientVersion.GetMinor(), m_ClientVersion.GetPatch(), m_ClientVersion.GetBuild());
 								{ errorLine = __LINE__; goto error; }
 							}							
 
@@ -2612,6 +2620,7 @@ namespace AfxInterop {
 								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 							}
 							else { errorLine = __LINE__; goto error; }
 
@@ -2629,6 +2638,7 @@ namespace AfxInterop {
 								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 							}
 							else { errorLine = __LINE__; goto error; }
 
@@ -2648,6 +2658,7 @@ namespace AfxInterop {
 								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 							}
 							else { errorLine = __LINE__; goto error; }
 
@@ -2676,6 +2687,7 @@ namespace AfxInterop {
 								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 							}
 							else { errorLine = __LINE__; goto error; }
 
@@ -2695,6 +2707,7 @@ namespace AfxInterop {
 								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 							}
 							else { errorLine = __LINE__; goto error; }
 
@@ -2709,7 +2722,15 @@ namespace AfxInterop {
 							if (!ReadBoolean(m_hDrawingPipe, hasMatrix)) { errorLine = __LINE__; goto error; }
 							if (hasMatrix)
 							{
-								if (!ReadBytes(m_hDrawingPipe, &matrix, 0, sizeof(D3DMATRIX))) { errorLine = __LINE__; goto error; }
+								for(int i=0; i < 4; ++i)
+								{
+									for(int j=0; j < 4; ++j)
+									{
+										FLOAT val;
+										if (!ReadSingle(m_hDrawingPipe, val)) { errorLine = __LINE__; goto error; }
+										matrix.m[i][j] = val;
+									}
+								}
 							}
 
 							if (IDirect3DDevice9* device = AfxGetDirect3DDevice9()) {
@@ -2717,6 +2738,7 @@ namespace AfxInterop {
 								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 							}
 							else { errorLine = __LINE__; goto error; }
 
@@ -2743,6 +2765,7 @@ namespace AfxInterop {
 								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 							}
 							else { errorLine = __LINE__; goto error; }
 						} break;
@@ -2774,6 +2797,7 @@ namespace AfxInterop {
 								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 							}
 							else { errorLine = __LINE__; goto error; }
 						} break;
@@ -2790,6 +2814,7 @@ namespace AfxInterop {
 								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 							}
 							else { errorLine = __LINE__; goto error; }
 
@@ -2816,6 +2841,7 @@ namespace AfxInterop {
 								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 							}
 							else { errorLine = __LINE__; goto error; }
 
@@ -2842,6 +2868,7 @@ namespace AfxInterop {
 								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 							}
 							else { errorLine = __LINE__; goto error; }
 
@@ -2872,6 +2899,7 @@ namespace AfxInterop {
 									DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 									if (!WriteInt32(m_hDrawingPipe, hr)) errorLine = __LINE__;
 									else if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) errorLine = __LINE__; }
+									if(0 == errorLine) { if (!Flush(m_hDrawingPipe)) errorLine = __LINE__; }
 								}
 								else errorLine = __LINE__;
 							}
@@ -2907,6 +2935,7 @@ namespace AfxInterop {
 									DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 									if (!WriteInt32(m_hDrawingPipe, hr)) errorLine = __LINE__;
 									else if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) errorLine = __LINE__; }
+									if(0 == errorLine) {if (!Flush(m_hDrawingPipe)) errorLine = __LINE__; }
 								}
 								else errorLine = __LINE__;
 							}
@@ -2941,6 +2970,7 @@ namespace AfxInterop {
 									DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 									if (!WriteInt32(m_hDrawingPipe, hr)) errorLine = __LINE__;
 									else if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) errorLine = __LINE__; }
+									if(0 == errorLine) {if (!Flush(m_hDrawingPipe)) errorLine = __LINE__; }
 								}
 								else errorLine = __LINE__;
 							}
@@ -2968,6 +2998,7 @@ namespace AfxInterop {
 								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 							}
 						}
 						else { errorLine = __LINE__; goto error; }
@@ -2999,6 +3030,7 @@ namespace AfxInterop {
 								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 								if (!WriteInt32(m_hDrawingPipe, hr)) errorLine = __LINE__;
 								else if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) errorLine = __LINE__; }
+								if(0 == errorLine) {if (!Flush(m_hDrawingPipe)) errorLine = __LINE__; }
 							}
 							else errorLine = __LINE__;
 						}
@@ -3034,6 +3066,7 @@ namespace AfxInterop {
 								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 								if (!WriteInt32(m_hDrawingPipe, hr)) errorLine = __LINE__;
 								else if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) errorLine = __LINE__; }
+								if(0 == errorLine) {if (!Flush(m_hDrawingPipe)) errorLine = __LINE__; }
 							}
 							else errorLine = __LINE__;
 						}
@@ -3068,6 +3101,7 @@ namespace AfxInterop {
 								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 								if (!WriteInt32(m_hDrawingPipe, hr)) errorLine = __LINE__;
 								else if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError))  errorLine = __LINE__; }
+								if(0 == errorLine) {if (!Flush(m_hDrawingPipe)) errorLine = __LINE__; }
 							}
 							else errorLine = __LINE__;
 						}
@@ -3093,6 +3127,7 @@ namespace AfxInterop {
 									DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 									if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 									if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+									if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 								}
 							}
 							else { errorLine = __LINE__; goto error; }
@@ -3121,6 +3156,7 @@ namespace AfxInterop {
 									DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 									if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 									if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+									if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 								}
 							}
 							else { errorLine = __LINE__; goto error; }
@@ -3179,6 +3215,7 @@ namespace AfxInterop {
 								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 							}
 
 						} break;
@@ -3193,12 +3230,19 @@ namespace AfxInterop {
 						if (!ReadUInt32(m_hDrawingPipe, primitiveCount)) { errorLine = __LINE__; goto error; }
 						if (!ReadUInt32(m_hDrawingPipe, vertexStreamZeroStride)) { errorLine = __LINE__; goto error; }
 
-						void* pVertexStreamZeroData = malloc(primitiveCount * vertexStreamZeroStride);
-						if(0 == pVertexStreamZeroData) { errorLine = __LINE__; goto error; }
+						void* pVertexStreamZeroData = nullptr;
 
-						for (UINT32 i = 0; i < primitiveCount && 0 == errorLine; ++i)
-						{
-							if(!ReadBytes(m_hDrawingPipe,(unsigned char *)pVertexStreamZeroData + primitiveCount * vertexStreamZeroStride, 0, vertexStreamZeroStride))
+						bool hasVertexStreamZeroData;
+						if(!ReadBoolean(m_hDrawingPipe, hasVertexStreamZeroData)) { errorLine = __LINE__; goto error; }
+
+						if(hasVertexStreamZeroData) {
+							UINT32 size;
+
+							if(!ReadUInt32(m_hDrawingPipe,size)) { errorLine = __LINE__; goto error; }
+
+							if(0 == (pVertexStreamZeroData = malloc(size))) { errorLine = __LINE__; goto error; }
+
+							if(!ReadBytes(m_hDrawingPipe, pVertexStreamZeroData, 0, size))
 								errorLine = __LINE__;
 						}
 
@@ -3211,6 +3255,7 @@ namespace AfxInterop {
 									DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 									if (!WriteInt32(m_hDrawingPipe, hr)) errorLine = __LINE__;
 									else if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) errorLine = __LINE__; }
+									if (0 == errorLine) { if(!Flush(m_hDrawingPipe)) errorLine = __LINE__; }
 								}
 							}
 							else errorLine = __LINE__;
@@ -3305,7 +3350,7 @@ namespace AfxInterop {
 		
 		EnabledFeatures_t m_EnabledFeatures;
 
-		CVersion m_ClientVersion(8,0,0,0);
+		CVersion m_ClientVersion;
 		CVersion m_ServerVersion;
 		
 		bool ConsoleSend(HANDLE hPipe, CConsole & command)
@@ -3358,7 +3403,7 @@ namespace AfxInterop {
 
 				if(0 == bytesRead)
 				{
-					MessageBoxA(0,"RTF","RTF",MB_OK);
+					Tier0_Warning("ReadBytes 0\n", GetLastError());
 				}
 
 				offset += bytesRead;
@@ -3481,7 +3526,7 @@ namespace AfxInterop {
 
 				if(0 == bytesWritten)
 				{
-					MessageBoxA(0,"WTF","WTF",MB_OK);
+					Tier0_Warning("WriteBytes 0\n", GetLastError());
 				}
 
 				offset += bytesWritten;
