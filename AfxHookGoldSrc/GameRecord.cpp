@@ -348,11 +348,6 @@ bool InvertMatrix(const float matrix[3][4], float out_matrix[3][4]) {
 	out_matrix[2][2] = (float)inv2[2];
 	out_matrix[2][3] = (float)inv3[2];
 
-	out_matrix[3][0] = (float)inv0[3];
-	out_matrix[3][1] = (float)inv1[3];
-	out_matrix[3][2] = (float)inv2[3];
-	out_matrix[3][3] = (float)inv3[3];
-
 	return true;
 }
 
@@ -405,55 +400,37 @@ void CGameRecord::RecordModel(cl_entity_t* ent, struct model_s* model, void* v_h
 
 		if (0 < numbones && pBoneM && pRotM)
 		{
-			float entOrigin[3][4] = {
-				{1.0f,0,0,ent->origin.x},
-				{0,1.0f,0,ent->origin.y},
-				{0,0,1.0f,ent->origin.z},
-			};
-
-			float entRotation[3][4];
-			AngleMatrix(ent->angles, entRotation);
-
-			float entMatrix[3][4];
-			R_ConcatTransforms(entOrigin, entRotation, entMatrix);
+			float tmp1[3][4];
+			float tmp2[3][4];
+			float bones[3][4];
 
 			float inverseEntMatrix[3][4];
-			if(!InvertMatrix(entMatrix, inverseEntMatrix))
-				pEngfuncs->Con_Printf("AFXERROR: matrix inversion failed for entity matrix\n");
+			AngleMatrix(ent->angles, tmp1);
+			tmp1[0][3] = ent->origin.x;
+			tmp1[1][3] = ent->origin.y;
+			tmp1[2][3] = ent->origin.z;
 
-			float rootMatrix[3][4];
-			R_ConcatTransforms(inverseEntMatrix, *pRotM, rootMatrix);
+			if (!InvertMatrix(tmp1, inverseEntMatrix))
+				pEngfuncs->Con_Printf("AFXERROR: matrix inversion failed for entity matrix\n");
 
 			m_AfxGameRecord.Write((bool)true);
 
 			m_AfxGameRecord.Write((int)header->numbones);
 
-			float inverseParent[3][4];
-			float bones[3][4];
 
 			for (int i = 0; i < header->numbones; ++i)
 			{
 				int parent = pbones[i].parent;
 				bool bRoot = parent == -1;
 
+				R_ConcatTransforms(inverseEntMatrix, bRoot ? (*pRotM) : (*pBoneM)[parent], tmp2);
 
-				if (bRoot)
-				{
-					float tmp[3][4];
+				if (!InvertMatrix(tmp2, tmp1))
+					pEngfuncs->Con_Printf("AFXERROR: parent matrix inversion failed for index %i.\n", pbones[i].parent);
 
+				R_ConcatTransforms(inverseEntMatrix, (*pBoneM)[i], tmp2);
 
-					if (!InvertMatrix(*pRotM, inverseParent))
-						pEngfuncs->Con_Printf("AFXERROR: matrix inversion failed for index %i\n", pbones[i].parent);
-
-					R_ConcatTransforms(inverseParent, (*pBoneM)[i], tmp);
-					R_ConcatTransforms(rootMatrix, tmp, bones);
-				}
-				else {
-					if (!InvertMatrix((*pBoneM)[parent], inverseParent))
-						pEngfuncs->Con_Printf("AFXERROR: matrix inversion failed for index %i\n", pbones[i].parent);
-
-					R_ConcatTransforms(inverseParent, (*pBoneM)[i], bones);
-				}
+				R_ConcatTransforms(tmp1, tmp2, bones);
 
 
 				float pos[3] = {
@@ -490,38 +467,42 @@ void CGameRecord::RecordModel(cl_entity_t* ent, struct model_s* model, void* v_h
 					double m21 = 2.0 * (tmp1 + tmp2) * invs;
 					double m12 = 2.0 * (tmp1 - tmp2) * invs;
 
-					// https://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/ethan.htm
+					// https://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
 				*/
-
-				float tr1 = 1.0 + bones[0][0] - bones[1][1] - bones[2][2];
-				float tr2 = 1.0 - bones[0][0] + bones[1][1] - bones[2][2];
-				float tr3 = 1.0 - bones[0][0] - bones[1][1] + bones[2][2];
+				float tr = bones[0][0] + bones[1][1] + bones[2][2];
 
 				float qw = 1;
 				float qx = 0;
 				float qy = 0;
 				float qz = 0;
 
-				if ((tr1 > tr2) && (tr1 > tr3)) {
-					float S = sqrtf(tr1) * 2; // S=4*qx 
+				if (tr > 0) {
+					float S = sqrtf(tr + 1.0f) * 2; // S=4*qw 
+					qw = 0.25f * S;
+					qx = (bones[2][1] - bones[1][2]) / S;
+					qy = (bones[0][2] - bones[2][0]) / S;
+					qz = (bones[1][0] - bones[0][1]) / S;
+				}
+				else if ((bones[0][0] > bones[1][1]) && (bones[0][0] > bones[2][2])) {
+					float S = sqrtf(1.0f + bones[0][0] - bones[1][1] - bones[2][2]) * 2; // S=4*qx 
 					qw = (bones[2][1] - bones[1][2]) / S;
-					qx = 0.25 * S;
+					qx = 0.25f * S;
 					qy = (bones[0][1] + bones[1][0]) / S;
 					qz = (bones[0][2] + bones[2][0]) / S;
 				}
-				else if ((tr2 > tr1) && (tr2 > tr3)) {
-					float S = sqrtf(tr2) * 2; // S=4*qy
+				else if (bones[1][1] > bones[2][2]) {
+					float S = sqrtf(1.0f + bones[1][1] - bones[0][0] - bones[2][2]) * 2; // S=4*qy
 					qw = (bones[0][2] - bones[2][0]) / S;
 					qx = (bones[0][1] + bones[1][0]) / S;
-					qy = 0.25 * S;
+					qy = 0.25f * S;
 					qz = (bones[1][2] + bones[2][1]) / S;
 				}
 				else {
-					float S = sqrtf(tr3) * 2; // S=4*qz
+					float S = sqrtf(1.0f + bones[2][2] - bones[0][0] - bones[1][1]) * 2; // S=4*qz
 					qw = (bones[1][0] - bones[0][1]) / S;
 					qx = (bones[0][2] + bones[2][0]) / S;
 					qy = (bones[1][2] + bones[2][1]) / S;
-					qz = 0.25 * S;
+					qz = 0.25f * S;
 				}
 
 				float quat[4] = {
