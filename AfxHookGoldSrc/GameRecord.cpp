@@ -14,6 +14,7 @@
 #include <shared/AfxMath.h>
 
 #include <string>
+#include <cmath>
 
 #include <Windows.h>
 #include <deps/release/Detours/src/detours.h>
@@ -309,7 +310,7 @@ bool InvertMatrix(const float matrix[3][4], float out_matrix[3][4]) {
 
 	double M[4][4] = {
 		matrix[0][0], matrix[0][1], matrix[0][2],  matrix[0][3],
-		matrix[1][0], matrix[1][1],matrix[1][2],  matrix[1][3],
+		matrix[1][0], matrix[1][1], matrix[1][2],  matrix[1][3],
 		matrix[2][0], matrix[2][1], matrix[2][2],  matrix[2][3],
 		0, 0, 0, 1
 	};
@@ -348,12 +349,77 @@ bool InvertMatrix(const float matrix[3][4], float out_matrix[3][4]) {
 	out_matrix[2][2] = (float)inv2[2];
 	out_matrix[2][3] = (float)inv3[2];
 
-	out_matrix[3][0] = (float)inv0[3];
-	out_matrix[3][1] = (float)inv1[3];
-	out_matrix[3][2] = (float)inv2[3];
-	out_matrix[3][3] = (float)inv3[3];
+	//pEngfuncs->Con_Printf("(%f, %f, %f, %f)\n", inv0[3], inv1[3], inv2[3], inv3[3]);
 
 	return true;
+}
+
+void ToVecQuat(float bones[3][4], float out_vec[3], float out_quat[4]) {
+
+	out_vec[0] = bones[0][3];
+	out_vec[1] = bones[1][3];
+	out_vec[2] = bones[2][3];
+
+	/*
+		double sqw = W * W;
+		double sqx = X * X;
+		double sqy = Y * Y;
+		double sqz = Z * Z;
+		double ssq = sqx + sqy + sqz + sqw;
+		double invs = ssq ? 1 / ssq : 0;
+		double m00 = (sqx - sqy - sqz + sqw) * invs;
+		double m11 = (-sqx + sqy - sqz + sqw) * invs;
+		double m22 = (-sqx - sqy + sqz + sqw) * invs;
+		double tmp1 = X * Y;
+		double tmp2 = Z * W;
+		double m10 = 2.0 * (tmp1 + tmp2) * invs;
+		double m01 = 2.0 * (tmp1 - tmp2) * invs;
+		tmp1 = X * Z;
+		tmp2 = Y * W;
+		double m20 = 2.0 * (tmp1 - tmp2) * invs;
+		double m02 = 2.0 * (tmp1 + tmp2) * invs;
+		tmp1 = Y * Z;
+		tmp2 = X * W;
+		double m21 = 2.0 * (tmp1 + tmp2) * invs;
+		double m12 = 2.0 * (tmp1 - tmp2) * invs;
+		// https://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/ethan.htm
+	*/
+
+	float tr1 = 1.0 + bones[0][0] - bones[1][1] - bones[2][2];
+	float tr2 = 1.0 - bones[0][0] + bones[1][1] - bones[2][2];
+	float tr3 = 1.0 - bones[0][0] - bones[1][1] + bones[2][2];
+
+	float qw = 1;
+	float qx = 0;
+	float qy = 0;
+	float qz = 0;
+
+	if ((tr1 > tr2) && (tr1 > tr3)) {
+		float S = sqrtf(tr1) * 2; // S=4*qx 
+		qw = (bones[2][1] - bones[1][2]) / S;
+		qx = 0.25 * S;
+		qy = (bones[0][1] + bones[1][0]) / S;
+		qz = (bones[0][2] + bones[2][0]) / S;
+	}
+	else if ((tr2 > tr1) && (tr2 > tr3)) {
+		float S = sqrtf(tr2) * 2; // S=4*qy
+		qw = (bones[0][2] - bones[2][0]) / S;
+		qx = (bones[0][1] + bones[1][0]) / S;
+		qy = 0.25 * S;
+		qz = (bones[1][2] + bones[2][1]) / S;
+	}
+	else {
+		float S = sqrtf(tr3) * 2; // S=4*qz
+		qw = (bones[1][0] - bones[0][1]) / S;
+		qx = (bones[0][2] + bones[2][0]) / S;
+		qy = (bones[1][2] + bones[2][1]) / S;
+		qz = 0.25 * S;
+	}
+
+	out_quat[0] = qx;
+	out_quat[1] = qy;
+	out_quat[2] = qz;
+	out_quat[3] = qw;
 }
 
 void CGameRecord::RecordModel(cl_entity_t* ent, struct model_s* model, void* v_header)
@@ -380,164 +446,76 @@ void CGameRecord::RecordModel(cl_entity_t* ent, struct model_s* model, void* v_h
 
 	studiohdr_t* header = (studiohdr_t*)v_header;
 
-	m_AfxGameRecord.WriteDictionary("entity_state");
-	m_AfxGameRecord.Write((int)index);
-
-	m_AfxGameRecord.WriteDictionary("baseentity");
-	//Write((float)pBaseEntityRs->m_flTime);
-	m_AfxGameRecord.WriteDictionary(model->name);
-	m_AfxGameRecord.Write((bool)true);
-	WriteVector(ent->origin);
-	WriteQAngle(ent->angles);
-
 	{
 		int numbones = header->numbones;
 
 		mstudiobone_t* pbones = (mstudiobone_t*)((byte*)header + header->boneindex);
-
-		m_AfxGameRecord.WriteDictionary("baseanimating");
-		//Write((int)pBaseAnimatingRs->m_nSkin);
-		//Write((int)pBaseAnimatingRs->m_nBody);
-		//Write((int)pBaseAnimatingRs->m_nSequence);
 
 		float(*pBoneM)[MAXSTUDIOBONES][3][4] = (float(*)[MAXSTUDIOBONES][3][4])(pstudio->StudioGetBoneTransform());
 		float(*pRotM)[3][4] = (float(*)[3][4])(pstudio->StudioGetRotationMatrix());
 
 		if (0 < numbones && pBoneM && pRotM)
 		{
-			float entOrigin[3][4] = {
-				{1.0f,0,0,ent->origin.x},
-				{0,1.0f,0,ent->origin.y},
-				{0,0,1.0f,ent->origin.z},
-			};
-
-			float entRotation[3][4];
-			AngleMatrix(ent->angles, entRotation);
-
-			float entMatrix[3][4];
-			R_ConcatTransforms(entOrigin, entRotation, entMatrix);
-
-			float inverseEntMatrix[3][4];
-			if(!InvertMatrix(entMatrix, inverseEntMatrix))
-				pEngfuncs->Con_Printf("AFXERROR: matrix inversion failed for entity matrix\n");
-
+			float bones[3][4];
+			float tmp[3][4];
 			float rootMatrix[3][4];
-			R_ConcatTransforms(inverseEntMatrix, *pRotM, rootMatrix);
 
+			float pos[3];
+			float quat[4];
+
+			m_AfxGameRecord.WriteDictionary("entity_state");
+			m_AfxGameRecord.Write((int)index);
+
+			m_AfxGameRecord.WriteDictionary("baseentity");
+			//Write((float)pBaseEntityRs->m_flTime);
+			m_AfxGameRecord.WriteDictionary(model->name);
+			m_AfxGameRecord.Write((bool)true);
+
+			ToVecQuat(*pRotM, pos, quat);
+
+			WriteVector(pos);
+
+			auto ang = Afx::Math::Quaternion(quat[3], quat[0], quat[1], quat[2]).ToQREulerAngles().ToQEulerAngles();
+
+			pos[0] = ang.Pitch;
+			pos[1] = ang.Yaw;
+			pos[2] = ang.Roll;
+
+			WriteQAngle(pos);
+
+			m_AfxGameRecord.WriteDictionary("baseanimating");
+			//Write((int)pBaseAnimatingRs->m_nSkin);
+			//Write((int)pBaseAnimatingRs->m_nBody);
+			//Write((int)pBaseAnimatingRs->m_nSequence);
 			m_AfxGameRecord.Write((bool)true);
 
 			m_AfxGameRecord.Write((int)header->numbones);
 
-			float inverseParent[3][4];
-			float bones[3][4];
 
 			for (int i = 0; i < header->numbones; ++i)
 			{
-				int parent = pbones[i].parent;
-				bool bRoot = parent == -1;
+				bool bRoot = pbones[i].parent == -1;
 
+				if (!InvertMatrix(bRoot ? (*pRotM) : (*pBoneM)[pbones[i].parent], tmp))
+					pEngfuncs->Con_Printf("AFXERROR: parent matrix inversion failed for bone %i (model \"%s\").\n", i, model->name);
 
-				if (bRoot)
-				{
-					float tmp[3][4];
+				R_ConcatTransforms(tmp, (*pBoneM)[i], bones);
 
+				ToVecQuat(bones, pos, quat);
 
-					if (!InvertMatrix(*pRotM, inverseParent))
-						pEngfuncs->Con_Printf("AFXERROR: matrix inversion failed for index %i\n", pbones[i].parent);
-
-					R_ConcatTransforms(inverseParent, (*pBoneM)[i], tmp);
-					R_ConcatTransforms(rootMatrix, tmp, bones);
-				}
-				else {
-					if (!InvertMatrix((*pBoneM)[parent], inverseParent))
-						pEngfuncs->Con_Printf("AFXERROR: matrix inversion failed for index %i\n", pbones[i].parent);
-
-					R_ConcatTransforms(inverseParent, (*pBoneM)[i], bones);
-				}
-
-
-				float pos[3] = {
-					bones[0][3],
-					bones[1][3],
-					bones[2][3]
-				};
 				WriteVector(pos);
 
-				/*
-					double sqw = W * W;
-					double sqx = X * X;
-					double sqy = Y * Y;
-					double sqz = Z * Z;
-
-					double ssq = sqx + sqy + sqz + sqw;
-					double invs = ssq ? 1 / ssq : 0;
-					double m00 = (sqx - sqy - sqz + sqw) * invs;
-					double m11 = (-sqx + sqy - sqz + sqw) * invs;
-					double m22 = (-sqx - sqy + sqz + sqw) * invs;
-
-					double tmp1 = X * Y;
-					double tmp2 = Z * W;
-					double m10 = 2.0 * (tmp1 + tmp2) * invs;
-					double m01 = 2.0 * (tmp1 - tmp2) * invs;
-
-					tmp1 = X * Z;
-					tmp2 = Y * W;
-					double m20 = 2.0 * (tmp1 - tmp2) * invs;
-					double m02 = 2.0 * (tmp1 + tmp2) * invs;
-
-					tmp1 = Y * Z;
-					tmp2 = X * W;
-					double m21 = 2.0 * (tmp1 + tmp2) * invs;
-					double m12 = 2.0 * (tmp1 - tmp2) * invs;
-
-					// https://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/ethan.htm
-				*/
-
-				float tr1 = 1.0 + bones[0][0] - bones[1][1] - bones[2][2];
-				float tr2 = 1.0 - bones[0][0] + bones[1][1] - bones[2][2];
-				float tr3 = 1.0 - bones[0][0] - bones[1][1] + bones[2][2];
-
-				float qw = 1;
-				float qx = 0;
-				float qy = 0;
-				float qz = 0;
-
-				if ((tr1 > tr2) && (tr1 > tr3)) {
-					float S = sqrtf(tr1) * 2; // S=4*qx 
-					qw = (bones[2][1] - bones[1][2]) / S;
-					qx = 0.25 * S;
-					qy = (bones[0][1] + bones[1][0]) / S;
-					qz = (bones[0][2] + bones[2][0]) / S;
-				}
-				else if ((tr2 > tr1) && (tr2 > tr3)) {
-					float S = sqrtf(tr2) * 2; // S=4*qy
-					qw = (bones[0][2] - bones[2][0]) / S;
-					qx = (bones[0][1] + bones[1][0]) / S;
-					qy = 0.25 * S;
-					qz = (bones[1][2] + bones[2][1]) / S;
-				}
-				else {
-					float S = sqrtf(tr3) * 2; // S=4*qz
-					qw = (bones[1][0] - bones[0][1]) / S;
-					qx = (bones[0][2] + bones[2][0]) / S;
-					qy = (bones[1][2] + bones[2][1]) / S;
-					qz = 0.25 * S;
-				}
-
-				float quat[4] = {
-					qx, qy, qz, qw
-				};
 				WriteQuaternion(quat);
+
 			}
+
+			m_AfxGameRecord.WriteDictionary("/");
+
+			bool viewModel = false;
+
+			m_AfxGameRecord.Write((bool)viewModel);
 		}
-		else m_AfxGameRecord.Write((bool)false);
 	}
-
-	m_AfxGameRecord.WriteDictionary("/");
-
-	bool viewModel = false;
-
-	m_AfxGameRecord.Write((bool)viewModel);
 }
 
 void CGameRecord::StudioSetHeader(void* header)
