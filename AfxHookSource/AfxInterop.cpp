@@ -1101,7 +1101,7 @@ namespace AfxInterop {
 			return;
 
 		error:
-			Tier0_Warning("AfxInterop::DrawingThread_BeforeHud: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
+			Tier0_Warning("AfxInterop::DrawingThread_AfterHud: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
 			DisconnectDrawing();
 			return;
 		}
