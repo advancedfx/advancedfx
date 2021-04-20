@@ -6375,8 +6375,8 @@ void CAfxStreams::On_DrawTranslucentRenderables(SOURCESDK::CSGO::CRendering3dVie
 
 			if (beforeDepth)
 			{
-				// TODO.
-				QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new CAfxInteropDrawDepth_Functor(true, m_CurrentView->zNear, m_CurrentView->zFar, m_CurrentView->zNear, m_CurrentView->zFar)));
+				if (g_InteropFeatures.GetDepthRequired())
+					QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new CAfxInteropDrawDepth_Functor(true, m_CurrentView->zNear, m_CurrentView->zFar, m_CurrentView->zNear, m_CurrentView->zFar)));
 			}
 
 			AfxInterop::On_DrawTranslucentRenderables(afxMatRenderContext, rendering3dView, bInSkybox, bShadowDepth, afterCall);
@@ -6403,7 +6403,8 @@ void CAfxStreams::OnDrawingHudBegin(void)
 
 		if (g_InteropFeatures.BeforeHud)
 		{
-			QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new CAfxInteropDrawDepth_Functor(true, m_CurrentView->zNear, m_CurrentView->zFar, m_CurrentView->zNear, m_CurrentView->zFar)));
+			if (g_InteropFeatures.GetDepthRequired())
+				QueueOrExecute(orgCtx, new CAfxLeafExecute_Functor(new CAfxInteropDrawDepth_Functor(true, m_CurrentView->zNear, m_CurrentView->zFar, m_CurrentView->zNear, m_CurrentView->zFar)));
 
 			AfxInterop::OnBeforeHud(afxMatRenderContext);
 		}

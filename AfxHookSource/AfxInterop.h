@@ -18,23 +18,9 @@ namespace AfxInterop {
 		bool AfterHud = false;
 		bool AfterRenderView = false;
 
-		bool GetEnabled() {
-			return BeforeTranslucentShadow
-				|| AfterTranslucentShadow
-				|| BeforeTranslucent
-				|| AfterTranslucent
-				|| BeforeHud
-				|| AfterHud
-				|| AfterRenderView;
-		}
+		bool GetEnabled();
 
-		bool GetDepthRequired() {
-			return BeforeTranslucentShadow
-				|| AfterTranslucentShadow
-				|| BeforeTranslucent
-				|| AfterTranslucent
-				|| BeforeHud;
-		}
+		bool GetDepthRequired();
 
 		void Clear()
 		{

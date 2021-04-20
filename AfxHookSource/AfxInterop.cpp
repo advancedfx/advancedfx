@@ -146,7 +146,7 @@ namespace AfxInterop {
 	public:
 		CInteropClient(const char * pipeName)
 		: m_EnginePipeName(pipeName)
-		, m_ClientVersion(8,0,0,0)
+		, m_ClientVersion(7,0,0,0)
 		{
 
 		}
@@ -211,7 +211,7 @@ namespace AfxInterop {
 
 			if (!Flush(m_hEnginePipe)) { errorLine = __LINE__; goto error; }
 
-			if (8 == m_ServerVersion.GetMajor())
+			if (7 == m_ServerVersion.GetMajor())
 			{
 				if (!ReadGameEventSettings(true)) { errorLine = __LINE__; goto error; }
 			}
@@ -533,7 +533,7 @@ namespace AfxInterop {
 
 			if (!WriteUInt32(m_hEnginePipe, EngineMessage_OnViewOverride)) { errorLine = __LINE__; goto error; }
 
-			if (8 == m_ServerVersion.GetMajor())
+			if (7 == m_ServerVersion.GetMajor())
 			{
 				if (!WriteSingle(m_hEnginePipe, Tx)) { errorLine = __LINE__; goto error; }
 				if (!WriteSingle(m_hEnginePipe, Ty)) { errorLine = __LINE__; goto error; }
@@ -666,7 +666,7 @@ namespace AfxInterop {
 				if (!ReadBoolean(m_hEnginePipe, m_EnabledFeatures.AfterHud)) { errorLine = __LINE__; goto error; }
 
 				if (6 == m_ServerVersion.GetMajor()
-					|| 8 == m_ServerVersion.GetMajor())
+					|| 7 == m_ServerVersion.GetMajor())
 				{
 					if (!ReadBoolean(m_hEnginePipe, m_EnabledFeatures.AfterRenderView)) { errorLine = __LINE__; goto error; }
 				}
@@ -694,7 +694,7 @@ namespace AfxInterop {
 					if (!Flush(m_hEnginePipe)) { errorLine = __LINE__; goto error; }
 				}
 
-				if (!(m_ServerVersion.GetMajor() == 6 || m_ServerVersion.GetMajor() == 8) || m_EnabledFeatures.AfterRenderView)
+				if (!(m_ServerVersion.GetMajor() == 6 || m_ServerVersion.GetMajor() == 7) || m_EnabledFeatures.AfterRenderView)
 					QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new COnRenderViewEndFunctor(this)));
 			}
 
@@ -744,7 +744,7 @@ namespace AfxInterop {
 					}
 				}
 
-				if (!WriteInt32(m_hEnginePipe, message)) { errorLine = __LINE__; goto error; }
+				if (!WriteUInt32(m_hEnginePipe, message)) { errorLine = __LINE__; goto error; }
 
 				SOURCESDK::CViewSetup_csgo& view = rendering3dView->AfxHackGetViewSetup();
 
@@ -811,7 +811,7 @@ namespace AfxInterop {
 
 			int errorLine = 0;
 
-			if(m_ServerVersion.GetMajor() == 8)
+			if(m_ServerVersion.GetMajor() == 7)
 			{
 				if (!m_EngineConnected) return;
 
@@ -835,7 +835,7 @@ namespace AfxInterop {
 
 			int errorLine = 0;
 
-			if (m_ServerVersion.GetMajor() == 8)
+			if (m_ServerVersion.GetMajor() == 7)
 			{
 				if (!m_EngineConnected) return;
 
@@ -866,7 +866,7 @@ namespace AfxInterop {
 
 			if (!m_DrawingConnected) return;
 
-			if (6 == m_ServerVersion.GetMajor() || 8 == m_ServerVersion.GetMajor())
+			if (6 == m_ServerVersion.GetMajor() || 7 == m_ServerVersion.GetMajor())
 			{
 				m_DrawingSkip = false;
 				return;
@@ -876,12 +876,12 @@ namespace AfxInterop {
 
 			while (true)
 			{
-				if (!WriteInt32(m_hDrawingPipe, DrawingMessage_PreapareDraw)) { errorLine = __LINE__; goto error; }
+				if (!WriteUInt32(m_hDrawingPipe, DrawingMessage_PreapareDraw)) { errorLine = __LINE__; goto error; }
 				if (!WriteInt32(m_hDrawingPipe, frameCount)) { errorLine = __LINE__; goto error; }
 				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 
-				INT32 prepareDrawReply;
-				if (!ReadInt32(m_hDrawingPipe, prepareDrawReply)) { errorLine = __LINE__; goto error; }
+				UINT32 prepareDrawReply;
+				if (!ReadUInt32(m_hDrawingPipe, prepareDrawReply)) { errorLine = __LINE__; goto error; }
 
 				switch (prepareDrawReply)
 				{
@@ -1014,7 +1014,7 @@ namespace AfxInterop {
 				}
 
 
-				if (6 == m_ServerVersion.GetMajor() || m_ServerVersion.GetMajor() == 8)
+				if (6 == m_ServerVersion.GetMajor() || m_ServerVersion.GetMajor() == 7)
 				{
 					if(!HandleDrawingMessage(message, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
 				}
@@ -1049,7 +1049,7 @@ namespace AfxInterop {
 
 			int errorLine = 0;
 
-			if (6 == m_ServerVersion.GetMajor() || m_ServerVersion.GetMajor() == 8)
+			if (6 == m_ServerVersion.GetMajor() || m_ServerVersion.GetMajor() == 7)
 			{
 				if (!HandleDrawingMessage(DrawingMessage_BeforeHud, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
 			}
@@ -1057,7 +1057,7 @@ namespace AfxInterop {
 			{
 				AfxD3D_WaitForGPU();
 
-				if (!WriteInt32(m_hDrawingPipe, DrawingMessage_BeforeHud)) { errorLine = __LINE__; goto error; }
+				if (!WriteUInt32(m_hDrawingPipe, DrawingMessage_BeforeHud)) { errorLine = __LINE__; goto error; }
 
 				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 
@@ -1083,14 +1083,14 @@ namespace AfxInterop {
 
 			int errorLine = 0;
 
-			if (6 == m_ServerVersion.GetMajor() || m_ServerVersion.GetMajor() == 8)
+			if (6 == m_ServerVersion.GetMajor() || m_ServerVersion.GetMajor() == 7)
 			{
 				if (!HandleDrawingMessage(DrawingMessage_AfterHud, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
 			}
 			else
 			{
 				AfxD3D_WaitForGPU();
-				if (!WriteInt32(m_hDrawingPipe, DrawingMessage_AfterHud)) { errorLine = __LINE__; goto error; }
+				if (!WriteUInt32(m_hDrawingPipe, DrawingMessage_AfterHud)) { errorLine = __LINE__; goto error; }
 				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 				bool done;
 				do {
@@ -1114,13 +1114,13 @@ namespace AfxInterop {
 
 			int errorLine = 0;
 
-			if (6 == m_ServerVersion.GetMajor() || m_ServerVersion.GetMajor() == 8)
+			if (6 == m_ServerVersion.GetMajor() || m_ServerVersion.GetMajor() == 7)
 			{
 				if (!HandleDrawingMessage(DrawingMessage_OnRenderViewEnd, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
 			}
 			else
 			{
-				if (!WriteInt32(m_hDrawingPipe, DrawingMessage_OnRenderViewEnd)) { errorLine = __LINE__; goto error; }
+				if (!WriteUInt32(m_hDrawingPipe, DrawingMessage_OnRenderViewEnd)) { errorLine = __LINE__; goto error; }
 			}
 
 			return;
@@ -1135,9 +1135,9 @@ namespace AfxInterop {
 		{
 			int errorLine = 0;
 
-			if (m_ServerVersion.GetMajor() == 8)
+			if (m_ServerVersion.GetMajor() == 7)
 			{
-				if (!WriteInt32(m_hDrawingPipe, DrawingMessage_DeviceLost)) { errorLine = __LINE__; goto error; }
+				if (!WriteUInt32(m_hDrawingPipe, DrawingMessage_DeviceLost)) { errorLine = __LINE__; goto error; }
 			}
 
 			return true;
@@ -1594,9 +1594,9 @@ namespace AfxInterop {
 		{
 			int errorLine = 0;
 
-			if (m_ServerVersion.GetMajor() == 8)
+			if (m_ServerVersion.GetMajor() == 7)
 			{
-				if (!WriteInt32(m_hDrawingPipe, DrawingMessage_DeviceRestored)) { errorLine = __LINE__; goto error; }
+				if (!WriteUInt32(m_hDrawingPipe, DrawingMessage_DeviceRestored)) { errorLine = __LINE__; goto error; }
 			}
 
 			return true;
@@ -1651,7 +1651,7 @@ namespace AfxInterop {
 
 						while (true)
 						{
-							m_hDrawingPipe = CreateFile(strPipeName.c_str(), GENERIC_WRITE | GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+							m_hDrawingPipe = CreateFileA(strPipeName.c_str(), GENERIC_WRITE | GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
 							if (m_hDrawingPipe != INVALID_HANDLE_VALUE)
 								break;
 
@@ -1797,7 +1797,7 @@ namespace AfxInterop {
 							m_ServerVersion.Set(5,0,0,0);
 						case 6:
 							m_ServerVersion.Set(6,0,0,0);
-						case 8:
+						case 7:
 							break;
 						default:
 							Tier0_Warning("AFX_INTEROP ERROR: server v%u is not supported.\n", serverMajorVersion);
@@ -1812,7 +1812,7 @@ namespace AfxInterop {
 
 						if (!ReadBoolean(m_hEnginePipe, m_EngineServer64Bit)) { errorLine = __LINE__; goto error; }
 
-						if (8 == serverMajorVersion)
+						if (7 == serverMajorVersion)
 						{
 							unsigned int serverSubVersion[3];
 							if (!ReadUInt32(m_hEnginePipe, serverSubVersion[0])) { errorLine = __LINE__; goto error; }
@@ -2417,15 +2417,15 @@ namespace AfxInterop {
 			{
 				if (!WriteInt32(m_hDrawingPipe, message)) { errorLine = __LINE__; goto error; }
 				if (!WriteInt32(m_hDrawingPipe, frameCount)) { errorLine = __LINE__; goto error; }
-				if (m_ServerVersion.GetMajor() == 8) if (!WriteUInt32(m_hDrawingPipe, m_DrawingPass)) { errorLine = __LINE__; goto error; }
+				if (m_ServerVersion.GetMajor() == 7) if (!WriteUInt32(m_hDrawingPipe, m_DrawingPass)) { errorLine = __LINE__; goto error; }
 				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 
 				bool loopReply = true;
 
 				while(loopReply)
 				{
-					INT32 drawingReply;
-					if (!ReadInt32(m_hDrawingPipe, drawingReply)) { errorLine = __LINE__; goto error; }
+					UINT32 drawingReply;
+					if (!ReadUInt32(m_hDrawingPipe, drawingReply)) { errorLine = __LINE__; goto error; }
 
 					switch ((DrawingReply)drawingReply)
 					{
@@ -3928,6 +3928,28 @@ namespace AfxInterop {
 	bool MainEnabled() {
 		return m_MainEnabled;
 	}
+
+	bool EnabledFeatures_s::GetEnabled() {
+		return m_Enabled && (BeforeTranslucentShadow
+			|| AfterTranslucentShadow
+			|| BeforeTranslucent
+			|| AfterTranslucent
+			|| BeforeHud
+			|| AfterHud
+			|| AfterRenderView
+		);
+	}
+
+	bool EnabledFeatures_s::GetDepthRequired()	
+ 	{
+		return m_MainEnabled && (
+			BeforeTranslucentShadow
+			|| AfterTranslucentShadow
+			|| BeforeTranslucent
+			|| AfterTranslucent
+			|| BeforeHud
+		);
+	}	
 
 	bool Active() {
 		for (auto it = m_Clients.begin(); it != m_Clients.end(); ++it)
