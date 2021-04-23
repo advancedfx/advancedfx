@@ -1022,7 +1022,7 @@ namespace AfxInterop {
 				{
 					AfxD3D_WaitForGPU();
 
-					if (!WriteInt32(m_hDrawingPipe, message)) { errorLine = __LINE__; goto error; }
+					if (!WriteUInt32(m_hDrawingPipe, message)) { errorLine = __LINE__; goto error; }
 
 					if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 
@@ -2415,7 +2415,7 @@ namespace AfxInterop {
 
 			while (true)
 			{
-				if (!WriteInt32(m_hDrawingPipe, message)) { errorLine = __LINE__; goto error; }
+				if (!WriteUInt32(m_hDrawingPipe, message)) { errorLine = __LINE__; goto error; }
 				if (!WriteInt32(m_hDrawingPipe, frameCount)) { errorLine = __LINE__; goto error; }
 				if (m_ServerVersion.GetMajor() == 7) if (!WriteUInt32(m_hDrawingPipe, m_DrawingPass)) { errorLine = __LINE__; goto error; }
 				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
