@@ -1293,6 +1293,14 @@ namespace AfxInterop {
 					if (!ReadBytes(m_hDrawingPipe, pData, 0, sizeToLock)) { it->second->Unlock();  errorLine = __LINE__; goto error; }
 					hr = it->second->Unlock();
 				}
+				else {
+					BYTE dummy;
+					for(UINT32 i = 0; i < sizeToLock; ++i)
+					{
+						if (!ReadBytes(m_hDrawingPipe, &dummy, 0, sizeof(dummy))) { errorLine = __LINE__; goto error; }
+
+					}
+				}
 				DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 				if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
 				if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
@@ -1374,6 +1382,14 @@ namespace AfxInterop {
 				{
 					if (!ReadBytes(m_hDrawingPipe, pData, 0, sizeToLock)) { it->second->Unlock(); errorLine = __LINE__; goto error; }
 					hr = it->second->Unlock();
+				}
+				else {
+					BYTE dummy;
+					for(UINT32 i = 0; i < sizeToLock; ++i)
+					{
+						if (!ReadBytes(m_hDrawingPipe, &dummy, 0, sizeof(dummy))) { errorLine = __LINE__; goto error; }
+
+					}
 				}
 				DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 				if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
@@ -1488,6 +1504,16 @@ namespace AfxInterop {
 						pData = (unsigned char*)pData + lockedRect.Pitch;
 					}
 					hr = it->second->UnlockRect(level);
+				}
+				else {
+					for (UINT32 i = 0; i < rowCount && 0 == errorLine; ++i)
+					{
+						BYTE dummy;
+						for(UINT32 j = 0, j < rowBytes; ++ j)
+						{
+							if (!ReadBytes(m_hDrawingPipe, &dummy, 0, sizeof(dummy))) { errorLine = __LINE__; goto error; }
+						}
+					}
 				}
 				DWORD lastError = FAILED(hr) ? GetLastError() : 0;
 				if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
