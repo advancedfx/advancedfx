@@ -1509,7 +1509,7 @@ namespace AfxInterop {
 					for (UINT32 i = 0; i < rowCount && 0 == errorLine; ++i)
 					{
 						BYTE dummy;
-						for(UINT32 j = 0, j < rowBytes; ++ j)
+						for(UINT32 j = 0; j < rowBytes; ++ j)
 						{
 							if (!ReadBytes(m_hDrawingPipe, &dummy, 0, sizeof(dummy))) { errorLine = __LINE__; goto error; }
 						}
