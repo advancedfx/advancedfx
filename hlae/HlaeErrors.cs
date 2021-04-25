@@ -46,8 +46,8 @@ namespace AfxGui
         protected class InjectorErrorStrings
         {
             public static string AfxHookError = L10n._p("HLAE errors", "AfxHook error");
-            public static string AccessRightsSolution = L10n._p("HLAE errors", "Make sure you run the injector and the program to inject with same access rights and that no anti virus / anti cheat is blocking its calls.");
-            public static string CloseAnthiCheatsSolution = L10n._p("HLAE errors", "Make sure to exit anitcheats like ESEA client / Faceit client, Challengeme.gg before using HLAE.");
+            public static string AccessRightsSolution = L10n._p("HLAE errors", "Make sure you run the injector and the program to inject with same access rights and that no antivirus / anticheat is blocking its calls.");
+            public static string CloseAnthiCheatsSolution = L10n._p("HLAE errors", "Make sure to exit anticheats like ESEA client / Faceit client, Challengeme.gg before using HLAE.");
         }
 
         public static readonly InjectorError Unknown = new InjectorError(-1);
@@ -63,13 +63,13 @@ namespace AfxGui
         public static readonly InjectorError AfxHook10 = new InjectorError(10, InjectorErrorStrings.AfxHookError);
         public static readonly InjectorError AfxHook11 = new InjectorError(11, InjectorErrorStrings.AfxHookError);
         public static readonly InjectorError AfxHook12 = new InjectorError(12, InjectorErrorStrings.AfxHookError, L10n._p("HLAE errors", "Could not access / enter directory of DLL to inject", "Is the path given invalid? Is the directory really there or missing? Does HLAE have enough rights to access that path?"));
-        public static readonly InjectorError AfxHook13 = new InjectorError(13, InjectorErrorStrings.AfxHookError, L10n._p("HLAE errors", "DLL can't be found.", "Remove DLLs and readd them and maybe check antivirus."));
+        public static readonly InjectorError AfxHook13 = new InjectorError(13, InjectorErrorStrings.AfxHookError, L10n._p("HLAE errors", "DLL can't be found.", "Remove DLLs, re-add them and maybe check antivirus."));
         public static readonly InjectorError AfxHook14 = new InjectorError(14, InjectorErrorStrings.AfxHookError);
         public static readonly InjectorError AfxHook15 = new InjectorError(15, InjectorErrorStrings.AfxHookError);
 
         public static readonly InjectorError OpenProcessFailed = new InjectorError(1000, L10n._p("HLAE errors", "OpenProcess failed"), null, InjectorErrorStrings.AccessRightsSolution);
         public static readonly InjectorError VirtualAllocExReadWriteFailed = new InjectorError(1001, L10n._p("HLAE errors", "VirtualAllocEx read|write allocation failed."), null, InjectorErrorStrings.CloseAnthiCheatsSolution);
-        public static readonly InjectorError GetImageFailed = new InjectorError(1002, L10n._p("HLAE errors", "GetImage failed."), L10n._p("HLAE errors", "AfxHook.dat missing / broken / not accessible"), L10n._p("HLAE errors", "Try reextracting / repairing HLAE."));
+        public static readonly InjectorError GetImageFailed = new InjectorError(1002, L10n._p("HLAE errors", "GetImage failed."), L10n._p("HLAE errors", "AfxHook.dat missing / broken / not accessible"), L10n._p("HLAE errors", "Try re-extracting / repairing HLAE."));
         public static readonly InjectorError VirtualAllocExReadWriteExecuteFailed = new InjectorError(1003, L10n._p("HLAE errors", "VirtualAllocEx read|write|execute allocation failed."), null, InjectorErrorStrings.AccessRightsSolution);
         public static readonly InjectorError WriteProcessMemoryFailed = new InjectorError(1004, L10n._p("HLAE errors", "WriteProcessMemory failed."), null, InjectorErrorStrings.AccessRightsSolution);
         public static readonly InjectorError FlushInstructionCacheFailed = new InjectorError(1005, L10n._p("HLAE errors", "FlushInstructionCache failed."), null, InjectorErrorStrings.AccessRightsSolution);
@@ -107,7 +107,7 @@ namespace AfxGui
 
         public static AfxError InjectorStartException(string injectorFileName, Exception exception)
         {
-            return new AfxError(2000, L10n._p("HLAE errors", "Failed to start injector."), L10n._p("HLAE errors", "Failed to start injector: {0}", injectorFileName), L10n._p("HLAE errors", "injector.exe blocked. Probably caused by antivirus. Check it and reextract HLAE (HLAE NEEDS to be extracted, don't run it from a .zip file)."), exception);
+            return new AfxError(2000, L10n._p("HLAE errors", "Failed to start injector."), L10n._p("HLAE errors", "Failed to start injector: {0}", injectorFileName), L10n._p("HLAE errors", "injector.exe blocked. Probably caused by antivirus. Check it and re-extract HLAE (HLAE NEEDS to be extracted, don't run it from a .zip file)."), exception);
         }
 
         public static AfxError LoaderException(Exception exeception)
@@ -128,7 +128,7 @@ namespace AfxGui
                     solution = InjectorErrorStrings.CloseAnthiCheatsSolution;
                     break;
                 case 123:
-                    solution = L10n._p("HLAE errors", "Try using CSGO Launcher instead of Custom Launcher.");
+                    solution = L10n._p("HLAE errors", "Try using CS:GO Launcher instead of Custom Loader.");
                     break;
                 case 740:
                     solution = L10n._p("HLAE errors", "Make sure neither HLAE.exe nor Steam.exe nor csgo.exe are set to run as admin.");
