@@ -750,11 +750,10 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		}
 
 		// csgo_CCSViewRender_RenderSmokeOverlay_OnLoadOldAlpha: // Checked 2020-06-16.
-		// csgo_CCSViewRender_RenderSmokeOverlay_OnLoadAlphaBeforeDraw: // Checked 2020-06-16.
+		// csgo_CCSViewRender_RenderSmokeOverlay_OnLoadAlphaBeforeDraw: // Checked 2021-04-28.
 		{
 			DWORD addrOnLoadOldAlpha = 0;
 			DWORD addrOnCompareAlphaBeforeDraw = 0;
-			DWORD addrOnBeforeExitFunc = 0;
 			DWORD strAddr = 0;
 			{
 				ImageSectionsReader sections((HMODULE)clientDll);
@@ -807,7 +806,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 							DWORD tmpAddr = pushStringAddr - 0x1A;
 
 							// check for pattern nearby to see if it is the right address:
-							unsigned char pattern[7] = { 0x0F, 0x2F, 0xB7, 0x88, 0x05, 0x00, 0x00 };
+							unsigned char pattern[7] = { 0x0F, 0x2F, 0xBF, 0x88, 0x05, 0x00, 0x00 };
 
 
 							DWORD patternSize = sizeof(pattern) / sizeof(pattern[0]);
@@ -817,21 +816,6 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 								ErrorBox(MkErrStr(__FILE__, __LINE__));
 							else
 								addrOnCompareAlphaBeforeDraw = tmpAddr;
-						}
-
-						{
-							DWORD tmpAddr = pushStringAddr + 0x56;
-
-							// check for pattern nearby to see if it is the right address:
-							unsigned char pattern[11] = { 0x5F, 0x5E, 0x8B, 0xE5, 0x5D, 0x8B, 0xE3, 0x5B, 0xC2, 0x04, 0x00 };
-
-							DWORD patternSize = sizeof(pattern) / sizeof(pattern[0]);
-							MemRange patternRange(tmpAddr, tmpAddr + patternSize);
-							MemRange result = FindBytes(patternRange, (char *)pattern, patternSize);
-							if (result.Start != patternRange.Start || result.End != patternRange.End)
-								ErrorBox(MkErrStr(__FILE__, __LINE__));
-							else
-								addrOnBeforeExitFunc = tmpAddr;
 						}
 					}
 					else ErrorBox(MkErrStr(__FILE__,__LINE__));
