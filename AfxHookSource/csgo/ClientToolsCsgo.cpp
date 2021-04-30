@@ -600,7 +600,7 @@ void CClientToolsCsgo::EndRecording()
 
 float CClientToolsCsgo::ScaleFov(int width, int height, float fov)
 {
-	return (float)AlienSwarm_FovScaling(g_Hook_VClient_RenderView.LastWidth, g_Hook_VClient_RenderView.LastHeight, g_Hook_VClient_RenderView.LastCameraFov);
+	return (float)AlienSwarm_FovScaling(width, height, fov);
 }
 
 void CClientToolsCsgo::Write(SOURCESDK::CSGO::CBoneList const * value)
