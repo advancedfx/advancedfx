@@ -5743,7 +5743,7 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStream(IAfxMatRenderContextOrg * c
 IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * ctxp, CAfxRenderViewStream * previewStream, bool isLast, int slot, int cols, CCSViewRender_RenderView_t fn, void* This, void* Edx, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
 {
 	if (0 < strlen(previewStream->AttachCommands_get()))
-		g_VEngineClient->ExecuteClientCmd(previewStream->AttachCommands_get()); // Execute commands before we lock the stream!
+		WrpConCommands::ImmediatelyExecuteCommands(previewStream->AttachCommands_get()); // Execute commands before we lock the stream!
 
 	AfxViewportData_t afxViewport = {
 		view.m_nUnscaledX,
@@ -5943,7 +5943,7 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 	*smokeOverlayAlphaFactor = oldSmokeOverlayAlphaFactor;
 
 	if (0 < strlen(previewStream->DetachCommands_get()))
-		g_VEngineClient->ExecuteClientCmd(previewStream->DetachCommands_get()); // Execute commands after we unlocked the stream!
+		WrpConCommands::ImmediatelyExecuteCommands(previewStream->DetachCommands_get()); // Execute commands after we unlocked the stream!
 
 	if (isLast)
 	{
@@ -8834,7 +8834,7 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 	SetMatVarsForStreams(); // keep them set in case a mofo resets them.
 
 	if (0 < strlen(stream->AttachCommands_get()))
-		g_VEngineClient->ExecuteClientCmd(stream->AttachCommands_get()); // Execute commands before we lock the stream!
+		WrpConCommands::ImmediatelyExecuteCommands(stream->AttachCommands_get()); // Execute commands before we lock the stream!
 
 	AfxViewportData_t afxViewport = {
 		view.m_nUnscaledX,
@@ -9031,7 +9031,7 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 
 
 	if (0 < strlen(stream->DetachCommands_get()))
-		g_VEngineClient->ExecuteClientCmd(stream->DetachCommands_get()); // Execute commands after we lock the stream!
+		WrpConCommands::ImmediatelyExecuteCommands(stream->DetachCommands_get()); // Execute commands after we lock the stream!
 
 
 	if (last)
