@@ -133,7 +133,10 @@
           <Condition Action="hide"><![CDATA[NOT (FFMPEG_REINSTALL AND FFMPEG_VERSION = "custom" AND NOT (AFX_FFMPEGPATH_OK = "1"))]]></Condition>
         </Control>
 
-        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.WixUIBack)" />
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.WixUIBack)">
+			<Condition Action="disable">Installed AND (RESUME OR Preselected)</Condition>
+			<Condition Action="hide">Installed AND (RESUME OR Preselected)</Condition>
+		</Control>
         <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="!(loc.WixUINext)" />
         <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="!(loc.WixUICancel)">
         <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>

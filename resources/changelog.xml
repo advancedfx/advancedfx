@@ -6,10 +6,11 @@
 
 <release>
 <name>HLAE</name>
-<version>2.113.7</version>
-<time>2021-03-05T09:15Z</time>
+<version>2.113.8</version>
+<time>2021-03-05T14:50Z</time>
 <changes>
 <change type="fixed">Fixed update check GUIDs and version number.</change>
+<change type="fixed">Fixed Ffmpeg dialog not showing upon minor update or repair.</change>
 </changes>
 </release>
 

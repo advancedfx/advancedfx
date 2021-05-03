@@ -41,7 +41,6 @@ Patch dialog sequence:
           <DialogRef Id="MsiRMFilesInUse" />
           <DialogRef Id="PrepareDlg" />
           <DialogRef Id="ProgressDlg" />
-          <DialogRef Id="ResumeDlg" />
           <DialogRef Id="UserExit" />
 
           <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999">1</Publish>
@@ -68,7 +67,8 @@ Patch dialog sequence:
           <Publish Dialog="FfmpegDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="4">WixUI_InstallMode = "Repair"</Publish>
           <Publish Dialog="FfmpegDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2">WixUI_InstallMode = "Update"</Publish>
           <Publish Dialog="FfmpegDlg" Control="Next" Event="DoAction" Value="ValidateFfmpegCustomPathAction">FFMPEG_REINSTALL = 1 AND FFMPEG_VERSION = "custom"</Publish>
-          <Publish Dialog="FfmpegDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">NOT (FFMPEG_REINSTALL = 1) OR NOT (FFMPEG_VERSION = "custom") OR AFX_FFMPEGPATH_OK = "1"</Publish>
+          <Publish Dialog="FfmpegDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">(NOT (FFMPEG_REINSTALL = 1) OR NOT (FFMPEG_VERSION = "custom") OR AFX_FFMPEGPATH_OK = "1") AND NOT(Installed AND (RESUME OR Preselected))</Publish>
+          <Publish Dialog="FfmpegDlg" Control="Next" Event="NewDialog" Value="MyResumeDlg">(NOT (FFMPEG_REINSTALL = 1) OR NOT (FFMPEG_VERSION = "custom") OR AFX_FFMPEGPATH_OK = "1") AND (Installed AND (RESUME OR Preselected))</Publish>
 
           <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="FfmpegDlg" Order="1">
             <![CDATA[($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3) AND (WixUI_InstallMode = "InstallCustom" OR WixUI_InstallMode = "InstallTypical" OR WixUI_InstallMode = "InstallComplete")]]>

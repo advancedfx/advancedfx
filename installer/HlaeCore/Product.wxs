@@ -8,7 +8,7 @@
     -->
 	<Product
     Id='{EBBAA9C4-621F-4440-B12C-0D30E28BC95D}'
-    Version='2.113.7'
+    Version='2.113.8'
     Name="!(loc.ApplicationName)"
     Language="1033"
     Manufacturer="!(loc.Manufacturer)"
@@ -94,6 +94,10 @@
       <UIText Id="InstallFfmpegExtract_Template">!(loc.InstallFfmpegExtract_Template)</UIText>
         
       <Error Id="25001">!(loc.AppFolderMustBeLatin)</Error>
+	  
+		<InstallUISequence>
+			<Show Dialog="FfmpegDlg" Before="ProgressDlg">Installed AND (RESUME OR Preselected) AND ?Ffmpeg=3</Show>
+		</InstallUISequence>
     </UI>
     
     <Property Id="AFX_FFMPEGURL" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2021-04-30-12-35/ffmpeg-N-102186-g8b83a4a885-win64-gpl.zip" />
