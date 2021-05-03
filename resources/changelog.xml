@@ -6,6 +6,19 @@
 
 <release>
 <name>HLAE</name>
+<version>2.113.6</version>
+<time>2021-03-05T07:39Z</time>
+<changes>
+<change type="updated">Included AfxHookSource 1.95.2 (2021-03-05T07:39).</change>
+<change type="fixed">Fixed #644 not updating / re-installing FFMPEG component causes the files to be wrongly removed.</change>
+<change type="updated">Updated ffmpeg download #636.</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>HLAE</name>
 <version>2.113.5</version>
 <time>2021-04-28T16:59Z</time>
 <changes>

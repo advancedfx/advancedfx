@@ -54,5 +54,6 @@ Notice:
 [X] Things you should do before releasing a new version:
   - Update version in hlae/CMakeLists.txt
   - Update GUIDs in hlae/UpdateCheck.cs
-  - Update id GUID and version in installer/HlaeCore/Product.wxs
+  - Update Product Version (and for "Major" release Id) in installer/HlaeCore/Product.wxs
   - Update version in installer/setup/Bundle.wxs
+  
