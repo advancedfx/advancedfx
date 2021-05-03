@@ -6,6 +6,16 @@
 
 <release>
 <name>HLAE</name>
+<version>2.113.7</version>
+<time>2021-03-05T09:15Z</time>
+<changes>
+<change type="fixed">Fixed update check GUIDs and version number.</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.113.6</version>
 <time>2021-03-05T07:39Z</time>
 <changes>
@@ -14,7 +24,6 @@
 <change type="updated">Updated ffmpeg download #636.</change>
 </changes>
 </release>
-
 
 
 <release>
