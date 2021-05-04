@@ -8,7 +8,7 @@
     -->
 	<Product
     Id='{EBBAA9C4-621F-4440-B12C-0D30E28BC95D}'
-    Version='2.113.8'
+    Version='2.113.9'
     Name="!(loc.ApplicationName)"
     Language="1033"
     Manufacturer="!(loc.Manufacturer)"
@@ -101,7 +101,7 @@
     </UI>
     
     <Property Id="AFX_FFMPEGURL" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2021-04-30-12-35/ffmpeg-N-102186-g8b83a4a885-win64-gpl.zip" />
-    <Property Id="AFX_FFMPEGSUM" Value="cc2fb4304974b4bc93f6640f92a2eca2542f8c278342992f523c79c049724676546342eb47545db4f68c99a0d529a2dd9d45d87984a9e9d42a3e9713fd882786" />
+    <Property Id="AFX_FFMPEGSUM" Value="4415664204f52a91838299bcaf74a35eb821e0295097b78d2353991cacd2ee84511a64522b6d3d6f2cba406079a1de7f7e1cf88b4939a71863b3a24f452cc659" />
 
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_24" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/releases/download/20200915/ffmpeg-4.3-win32-shared-lgpl.zip">
       <![CDATA[FFMPEG_VERSION="4.3-win32-shared-lgpl"]]>

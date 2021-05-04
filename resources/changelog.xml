@@ -6,8 +6,18 @@
 
 <release>
 <name>HLAE</name>
+<version>2.113.9</version>
+<time>2021-05-04T15:14Z</time>
+<changes>
+<change type="fixed">Fixed default checksum for FFMPEG.</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.113.8</version>
-<time>2021-03-05T14:50Z</time>
+<time>2021-05-03T14:50Z</time>
 <changes>
 <change type="fixed">Fixed update check GUIDs and version number.</change>
 <change type="fixed">Fixed Ffmpeg dialog not showing upon minor update or repair.</change>
@@ -18,7 +28,7 @@
 <release>
 <name>HLAE</name>
 <version>2.113.6</version>
-<time>2021-03-05T07:39Z</time>
+<time>2021-05-03T07:39Z</time>
 <changes>
 <change type="updated">Included AfxHookSource 1.95.2 (2021-03-05T07:39).</change>
 <change type="fixed">Fixed #644 not updating / re-installing FFMPEG component causes the files to be wrongly removed.</change>
