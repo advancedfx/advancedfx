@@ -6,8 +6,132 @@
 #include <string.h>
 #include <sstream>
 #include <iomanip>
+#include <list>
 
 #include <windows.h>
+
+class CCommandsLexer {
+public:
+	std::string Value;
+
+	CCommandsLexer(const char* input) : m_Input(input) {
+
+	}
+
+	enum class Token {
+		Eof,
+		Space,
+		Quote,
+		SemiColeon,
+		Data
+	};
+
+	Token GetToken() {
+		Value = "";
+
+		if (*m_Input == '\0') {
+			Value = '\0';
+			return Token::Eof;
+		}
+
+		if (*m_Input == '"') {
+			Value = '"';
+			m_Input++;
+			return Token::Quote;
+		}
+
+		if (*m_Input == ';') {
+			Value = ';';
+			m_Input++;
+			return Token::SemiColeon;
+		}
+
+		if (std::isspace(*m_Input))
+		{
+			while (std::isspace(*m_Input))
+			{
+				Value += *m_Input;
+				m_Input++;
+			}
+
+			return Token::Space;
+		}
+
+		while (*m_Input != '\0' && *m_Input != '"' && *m_Input != ';' && !std::isspace(*m_Input))
+		{
+			Value += *m_Input;
+			m_Input++;
+		}
+
+		return Token::Data;
+	}
+
+private:
+	const char* m_Input;
+};
+
+class CCommandParser {
+public:
+	std::list<std::string> Args;
+
+	CCommandParser(const char* input) : m_CommandsLexer(input) {
+
+	}
+
+	bool Parse() {
+		Args.clear();
+
+		CCommandsLexer::Token token = CCommandsLexer::Token::Eof;
+		bool quoted = false;
+		std::string arg = "";
+
+		while(true) {
+			token = m_CommandsLexer.GetToken();
+
+			if (CCommandsLexer::Token::Eof == token)
+			{
+				if (quoted)
+				{
+					Args.push_back(arg);
+					return true;
+				}
+				return 1 <= Args.size();
+			}
+
+			if (CCommandsLexer::Token::Quote == token) {
+				if (quoted) {
+					Args.push_back(arg);
+					arg = "";
+					quoted = false;
+					continue;
+				}
+				quoted = true;
+				continue;
+			}
+
+			if (quoted)
+			{
+				arg += m_CommandsLexer.Value;
+				continue;
+			}
+
+			if (CCommandsLexer::Token::SemiColeon == token)
+			{
+				return true;
+			}
+
+			if (CCommandsLexer::Token::Space == token)
+			{
+				continue;
+			}
+
+			Args.push_back(m_CommandsLexer.Value);
+		}
+	}
+
+private:
+	CCommandsLexer m_CommandsLexer;
+};
 
 // WrpConCommand ///////////////////////////////////////////////////////////////
 
@@ -257,6 +381,50 @@ bool WrpConCommands::WrpConCommandsRegistrar_BM_Register(SOURCESDK::BM::ConComma
 	return true;
 }
 
+void WrpConCommands::ImmediatelyExecuteCommands(const char* commands) {
+	if (!m_CvarIface_CSGO) return;
+
+	CCommandParser parser(commands);
+
+	while (parser.Parse())
+	{
+		if (parser.Args.size() < 1) continue;
+
+		SOURCESDK::CSGO::ConCommandBase* cmdbase = m_CvarIface_CSGO->FindCommandBase(parser.Args.front().c_str());
+
+		if (nullptr == cmdbase) continue;
+
+		if (cmdbase->IsCommand())
+		{
+			if (SOURCESDK::CSGO::ConCommand* icmd = m_CvarIface_CSGO->FindCommand(parser.Args.front().c_str())) {
+
+				const char** args = new const char* [parser.Args.size()];
+				size_t i = 0;
+
+				for (auto it = parser.Args.begin(); it != parser.Args.end(); ++it)
+				{
+					args[i] = it->c_str();
+					++i;
+				}
+
+				SOURCESDK::CSGO::CCommand ccmd(parser.Args.size(), args);
+				icmd->Dispatch(ccmd);
+
+				delete[] args;
+			}
+		}
+		else
+		{
+			SOURCESDK::CSGO::ConVar* icvar = m_CvarIface_CSGO->FindVar(parser.Args.front().c_str());
+			if (icvar)
+			{
+				if (2 <= parser.Args.size())
+					icvar->SetValue((++parser.Args.begin())->c_str());
+			}
+		}
+	}
+}
+
 // WrpConCommandsRegistrar_003 ////////////////////////////////////////////////////
 
 bool WrpConCommandsRegistrar_003::RegisterConCommandBase(SOURCESDK::ConCommandBase_003 *pVar ) {
@@ -387,4 +555,3 @@ void WrpConVarRef::SetDirectHack(float value)
 		m_pConVar007->m_Value.m_nValue = h.i;
 	}
 }
-

@@ -237,7 +237,7 @@ void CClientToolsTf2::EndRecording()
 
 float CClientToolsTf2::ScaleFov(int width, int height, float fov)
 {
-	return (float)AlienSwarm_FovScaling(g_Hook_VClient_RenderView.LastWidth, g_Hook_VClient_RenderView.LastHeight, g_Hook_VClient_RenderView.LastCameraFov);
+	return (float)AlienSwarm_FovScaling(width, height, fov);
 }
 
 void CClientToolsTf2::Write(SOURCESDK::TF2::CBoneList const * value)

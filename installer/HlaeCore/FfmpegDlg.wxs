@@ -5,8 +5,8 @@
       <Dialog Id="FfmpegDlg" Width="370" Height="270" Title="!(loc.FfmpegTitle)">
         
         <Control Id="FfmepgReinstallCheck" Type="CheckBox" X="6" Y="52" Width="358" Height="16" Text="!(loc.FfmpegDlgReinstall)" Property="FFMPEG_REINSTALL" CheckBoxValue="1" Disabled="yes">
-          <Condition Action="enable"><![CDATA[$Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3]]></Condition>
-          <Condition Action="disable"><![CDATA[NOT($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3)]]></Condition>
+          <Condition Action="enable"><![CDATA[NOT WIX_UPGRADE_DETECTED  AND ($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3)]]></Condition>
+          <Condition Action="disable"><![CDATA[WIX_UPGRADE_DETECTED OR NOT($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3)]]></Condition>
         </Control>
 
         <Control Id="FfmpegVersionText" Type="Text" X="6" Y="74" Width="358" Height="12" Text="!(loc.FfmpegDlgVersion)" Disabled="no" Hidden="no">
@@ -16,10 +16,10 @@
         <Control Id="FfmpegVersion" Type="ComboBox" X="6" Y="86" Width="358" Height="16" Property="FFMPEG_VERSION" ComboList="yes" Sorted="yes" Disabled="no" Hidden="no">
           <ComboBox Property="FFMPEG_VERSION">
             <ListItem Text="!(loc.FfmpegDlgCustom)" Value="custom"/>
-            <ListItem Text="latest-win64-static-gpl //github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2021-02-28-12-32" Value="latest-win64-static" />
-            <ListItem Text="latest-win64-shared-gpl //github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2021-02-28-12-32" Value="latest-win64-shared" />
-            <ListItem Text="latest-win64-static-lgpl //github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2021-02-28-12-32" Value="latest-win64-static-lgpl" />
-            <ListItem Text="latest-win64-shared-lgpl //github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2021-02-28-12-32" Value="latest-win64-shared-lgpl" />
+            <ListItem Text="latest-win64-static-gpl //github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2021-04-30-12-35" Value="latest-win64-static" />
+            <ListItem Text="latest-win64-shared-gpl //github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2021-04-30-12-35" Value="latest-win64-shared" />
+            <ListItem Text="latest-win64-static-lgpl //github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2021-04-30-12-35" Value="latest-win64-static-lgpl" />
+            <ListItem Text="latest-win64-shared-lgpl //github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2021-04-30-12-35" Value="latest-win64-shared-lgpl" />
             <ListItem Text="20200915-latest-win64-static-gpl //github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/" Value="20200915-latest-win64-static" />
             <ListItem Text="20200915-latest-win64-shared-gpl //github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/" Value="20200915-latest-win64-shared" />
             <ListItem Text="4.3-win64-static-gpl //github.com/advancedfx/ffmpeg.zeranoe.com-builds-mirror/" Value="4.3-win64-static" />
@@ -133,7 +133,10 @@
           <Condition Action="hide"><![CDATA[NOT (FFMPEG_REINSTALL AND FFMPEG_VERSION = "custom" AND NOT (AFX_FFMPEGPATH_OK = "1"))]]></Condition>
         </Control>
 
-        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.WixUIBack)" />
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.WixUIBack)">
+			<Condition Action="disable">Installed AND (RESUME OR Preselected)</Condition>
+			<Condition Action="hide">Installed AND (RESUME OR Preselected)</Condition>
+		</Control>
         <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="!(loc.WixUINext)" />
         <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="!(loc.WixUICancel)">
         <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>

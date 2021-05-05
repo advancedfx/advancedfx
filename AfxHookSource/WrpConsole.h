@@ -250,6 +250,9 @@ public:
 	static bool WrpConCommandsRegistrar_L4D2_Register(SOURCESDK::L4D2::ConCommandBase *pVar);
 	static bool WrpConCommandsRegistrar_BM_Register(SOURCESDK::BM::ConCommandBase *pVar);
 
+	/// <remarks> only valid when Registered with SOURCESDK::CSGO::ICvar </remarks>
+	static void ImmediatelyExecuteCommands(const char* commands);
+
 private:
 	static SOURCESDK::ICvar_003 * m_CvarIface_003;
 	static SOURCESDK::ICvar_004 * m_CvarIface_004;

@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.95.2</version>
+<time>2021-05-03T07:39Z</time>
+<changes>
+<change type="fixed">Fixes #642 Blue Shadow Bug when using afx/wh.cfg.</change>
+<change type="fixed">Fixed #643 (crash with stream commands upon disconnect).</change>
+<change type="fixed">Fixed #641 recordPlayerCameras not recording FOV.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.95.1</version>
 <time>2021-04-28T16:59Z</time>
 <changes>
