@@ -44,6 +44,13 @@ namespace AfxGui
             }
         }
 
+        internal static void ReloadConfig()
+        {
+            if (null != GlobalConfig.Instance) GlobalConfig.Instance.Close();
+
+            GlobalConfig.Instance = Config.LoadOrCreate(System.IO.Path.Combine(m_AppDataDir, "hlaeconfig.xml"), System.IO.Path.Combine(m_BaseDir, "hlaeconfig.xml"));
+        }
+
         //
         // Private members:
 
@@ -368,7 +375,7 @@ namespace AfxGui
 
             m_Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Windows.Forms.Application.ExecutablePath);
 
-            GlobalConfig.Instance = Config.LoadOrCreate(System.IO.Path.Combine(m_AppDataDir, "hlaeconfig.xml"), System.IO.Path.Combine(m_BaseDir, "hlaeconfig.xml"));
+            ReloadConfig();
             GlobalUpdateCheck.Instance = new UpdateCheck();
 
             ProcessCommandLine();
