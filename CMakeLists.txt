@@ -32,7 +32,6 @@ string(REPLACE "\\" "/" VS16_MSBUILD ${VS16_MSBUILD})
 include(FetchContent)
 include(ExternalProject)
 
-add_subdirectory("AfxHook")
 add_subdirectory("deps/release/zlib")
 add_subdirectory("deps/release/protobuf")
 add_subdirectory("deps/release/openexr")
@@ -107,7 +106,7 @@ install(
 )
 install(
     FILES
-        "${afxhook_BINARY_DIR}/AfxHook.dat"
+        "${injector_BINARY_DIR}/AfxHook.dat"
     DESTINATION "bin"
 )
 
@@ -129,7 +128,7 @@ install(
 )
 install(
     FILES
-        "${afxhook_BINARY_DIR}/x64/AfxHook.dat"
+        "${injector_BINARY_DIR}/x64/AfxHook.dat"
     DESTINATION "bin/x64"
 )
 install(
@@ -152,6 +151,9 @@ install(
 	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E copy_directory bin installer/hlae)
 	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -Rf installer/hlae/ffmpeg)
 	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -Rf installer/hlae/locales)
+	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -f installer/hlae/AfxHook.dat)
+	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -f installer/hlae/injector.exe)
+	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -Rf installer/hlae/x64)
 	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -f installer/hlae/HLAE.exe)
 	execute_process( WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}/installer/setup\" COMMAND \"${VS16_MSBUILD}\" \"${CMAKE_SOURCE_DIR}/installer/setup/setup.wixproj\" -property:Configuration=Release -property:Platform=x86 \"-property:OutputPath=${CMAKE_INSTALL_PREFIX}/installer/build\")
 	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E copy installer/build/HLAE_Setup.exe ./HLAE_Setup.exe)

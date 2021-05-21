@@ -30,3 +30,6 @@
 	path = deps/release/rapidxml
 	url = https://github.com/advancedfx/rapidxml.git
 	branch = upstream
+[submodule "deps/release/injector"]
+	path = deps/release/injector
+	url = https://github.com/advancedfx/injector.git
