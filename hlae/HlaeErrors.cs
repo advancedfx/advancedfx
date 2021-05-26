@@ -46,8 +46,8 @@ namespace AfxGui
         protected class InjectorErrorStrings
         {
             public static string AfxHookError = L10n._p("HLAE errors", "AfxHook error");
-            public static string AccessRightsSolution = L10n._p("HLAE errors", "Make sure you run the injector and the program to inject with same access rights and that no antivirus / anticheat is blocking its calls.");
-            public static string CloseAnthiCheatsSolution = L10n._p("HLAE errors", "Make sure to exit anticheats like ESEA client / Faceit client, Challengeme.gg before using HLAE.");
+            public static string AccessRightsSolution = L10n._p("HLAE errors", "Make sure you run the injector and the program to inject with same access rights and that no antivirus or anti-cheat is blocking its calls.");
+            public static string CloseAntiCheatsSolution = L10n._p("HLAE errors", "Make sure to exit anti-cheat software such as the ESEA client, Faceit client or Challengeme.gg before using HLAE.");
         }
 
         public static readonly InjectorError Unknown = new InjectorError(-1);
@@ -68,13 +68,13 @@ namespace AfxGui
         public static readonly InjectorError AfxHook15 = new InjectorError(15, InjectorErrorStrings.AfxHookError);
 
         public static readonly InjectorError OpenProcessFailed = new InjectorError(1000, L10n._p("HLAE errors", "OpenProcess failed"), null, InjectorErrorStrings.AccessRightsSolution);
-        public static readonly InjectorError VirtualAllocExReadWriteFailed = new InjectorError(1001, L10n._p("HLAE errors", "VirtualAllocEx read|write allocation failed."), null, InjectorErrorStrings.CloseAnthiCheatsSolution);
-        public static readonly InjectorError GetImageFailed = new InjectorError(1002, L10n._p("HLAE errors", "GetImage failed."), L10n._p("HLAE errors", "AfxHook.dat missing / broken / not accessible"), L10n._p("HLAE errors", "Try re-extracting / repairing HLAE."));
+        public static readonly InjectorError VirtualAllocExReadWriteFailed = new InjectorError(1001, L10n._p("HLAE errors", "VirtualAllocEx read|write allocation failed."), null, InjectorErrorStrings.CloseAntiCheatsSolution);
+        public static readonly InjectorError GetImageFailed = new InjectorError(1002, L10n._p("HLAE errors", "GetImage failed."), L10n._p("HLAE errors", "AfxHook.dat missing, broken or not accessible"), L10n._p("HLAE errors", "Try re-extracting or repair HLAE."));
         public static readonly InjectorError VirtualAllocExReadWriteExecuteFailed = new InjectorError(1003, L10n._p("HLAE errors", "VirtualAllocEx read|write|execute allocation failed."), null, InjectorErrorStrings.AccessRightsSolution);
         public static readonly InjectorError WriteProcessMemoryFailed = new InjectorError(1004, L10n._p("HLAE errors", "WriteProcessMemory failed."), null, InjectorErrorStrings.AccessRightsSolution);
         public static readonly InjectorError FlushInstructionCacheFailed = new InjectorError(1005, L10n._p("HLAE errors", "FlushInstructionCache failed."), null, InjectorErrorStrings.AccessRightsSolution);
         public static readonly InjectorError CreateRemoteThreadFailed = new InjectorError(1006, L10n._p("HLAE errors", "CreateRemoteThread failed."), null, InjectorErrorStrings.AccessRightsSolution);
-        public static readonly InjectorError AfxHookUnknown = new InjectorError(1007, L10n._p("HLAE errors", "AfxHook error: Unknown error code."), InjectorErrorStrings.CloseAnthiCheatsSolution);
+        public static readonly InjectorError AfxHookUnknown = new InjectorError(1007, L10n._p("HLAE errors", "AfxHook error: Unknown error code."), InjectorErrorStrings.CloseAntiCheatsSolution);
 
         protected InjectorErrors()
         {
@@ -124,8 +124,10 @@ namespace AfxGui
             switch(getLastWin32ErrorValue)
             {
                 case 5:
+                    solution = L10n._p("HLAE errors", "Make sure the path ends with the game .exe!");
+                    break;
                 case 267:
-                    solution = InjectorErrorStrings.CloseAnthiCheatsSolution;
+                    solution = InjectorErrorStrings.CloseAntiCheatsSolution;
                     break;
                 case 123:
                     solution = L10n._p("HLAE errors", "Try using CS:GO Launcher instead of Custom Loader.");
