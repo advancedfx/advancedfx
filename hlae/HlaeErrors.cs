@@ -124,7 +124,7 @@ namespace AfxGui
             switch(getLastWin32ErrorValue)
             {
                 case 5:
-                    solution = L10n._p("HLAE errors", "Make sure your path ends with the game .exe!");
+                    solution = L10n._p("HLAE errors", "Make sure the path ends with the game .exe!");
                     break;
                 case 267:
                     solution = InjectorErrorStrings.CloseAntiCheatsSolution;
