@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <!--
-    Update this on "Major" release: Id, Version.
-    Update this on Minor release: Version.
-    For more information to decide between "Major" and Minor see here:
-    https://www.firegiant.com/wix/tutorial/upgrades-and-modularization/
-    -->
+	<!--
+	Update this on "Major" release: Id, Version.
+	Update this on Minor release: Version.
+	For more information to decide between "Major" and Minor see here:
+	https://www.firegiant.com/wix/tutorial/upgrades-and-modularization/
+	-->
 	<Product
-    Id='{EBBAA9C4-621F-4440-B12C-0D30E28BC95D}'
-    Version='2.114.0'
+    Id='{D51C3178-146A-412E-9C91-D7D6788B0E0C}'
+    Version='2.115.0'
     Name="!(loc.ApplicationName)"
     Language="1033"
     Manufacturer="!(loc.Manufacturer)"
@@ -19,9 +19,9 @@
     <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
 
-		<MajorUpgrade Schedule="afterInstallInitialize" DowngradeErrorMessage="!(loc.DowngradeErrorMessage)" />
+	<MajorUpgrade Schedule="afterInstallInitialize" DowngradeErrorMessage="!(loc.DowngradeErrorMessage)" />
 
-	<Media Id="1" Cabinet="product.cab" EmbedCab="yes" CompressionLevel="high" />
+	<MediaTemplate EmbedCab="yes" />
        
     <Icon Id="HLAEIcon.exe" SourceFile="$(sys.SOURCEFILEDIR)../../hlae/app.ico"/>
     <Property Id="ARPPRODUCTICON" Value="HLAEIcon.exe" />
@@ -62,8 +62,6 @@
       <ComponentRef Id="_E77FBD5C_A4F1_429D_B750_9C270BD89C18_HLAE.exe"/>
       <ComponentRef Id="HlaeStartProgramsFolder"/>
 	  
-<!--	  <MergeRef Id="injector" /> -->
-
       <Feature Id="HlaeLocales" Title="!(loc.HlaeLocalesTitle)" Level="1"
                AllowAdvertise='no' InstallDefault='local' Absent='allow'>
         <ComponentGroupRef Id="LocalesComponentGroup" />
@@ -277,7 +275,6 @@
         <Directory Id="APPLICATIONFOLDER" Name="HLAE">
           <Directory Id="LocalesDir" />
           <Directory Id="_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg" Name="ffmpeg"/>
-<!--		  <Merge Id="injector" Language="0" SourceFile="$(sys.SOURCEFILEDIR)../../build/Release/injector/HLAE.Injector-1.0.5-win32.msm" DiskId="1" /> -->
         </Directory>
       </Directory>
       <Directory Id="ProgramMenuFolder">
