@@ -3454,7 +3454,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 
 			MdtMemBlockInfos mdtInfos;
 
-			MdtMemAccessBegin((LPVOID)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS), 5 * sizeof(unsigned char), &mdtInfos);
+			MdtMemAccessBegin((LPVOID)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS), 7 * sizeof(unsigned char), &mdtInfos);
 
 			int iArg2 = atoi(args->ArgV(2));
 
@@ -3464,6 +3464,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 0) = 0x90;
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 1) = 0x90;
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 5) = 0x90;
+				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 6) = 0x90;
 			}
 			else if (0 != iArg2)
 			{
@@ -3471,6 +3472,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 0) = 0x75;
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 1) = 0x05;
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 5) = 0x74;
+				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 6) = 0x16;
 			}
 			else
 			{
@@ -3478,6 +3480,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 0) = 0x90;
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 1) = 0x90;
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 5) = 0xEB;
+				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 6) = 0x16;
 			}
 
 			MdtMemAccessEnd(&mdtInfos);

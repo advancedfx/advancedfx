@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.96.0</version>
+<time>2021-06-04T09:39Z</time>
+<changes>
+<change type="updated">Adjusted to latest CS:GO 6/3/2021 update.</change>
+<change type="fixed">Fixed #667 mirv_fix selectedPlayerGlow (used in x-ray configs) crashing with latest CS:GO update.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.95.2</version>
 <time>2021-05-03T07:39Z</time>
 <changes>
