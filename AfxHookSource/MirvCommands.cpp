@@ -2590,7 +2590,7 @@ CON_COMMAND(mirv_listentities, "Print info about currently active entites. (CS:G
 	Tier0_Msg(
 		"\n"
 		"Usage:\n"
-		"mirv_listentites [isPlayer=1] [sort=distance] [class=<wildCardString(\\* = wildcard, \\\\ = \\)>]\n"
+		"mirv_listentities [isPlayer=1] [sort=distance] [class=<wildCardString(\\* = wildcard, \\\\ = \\)>]\n"
 	);
 
 
@@ -3415,7 +3415,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 
 			MdtMemBlockInfos mdtInfos;
 
-			MdtMemAccessBegin((LPVOID)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS), 5 * sizeof(unsigned char), &mdtInfos);
+			MdtMemAccessBegin((LPVOID)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS), 7 * sizeof(unsigned char), &mdtInfos);
 
 			int iArg2 = atoi(args->ArgV(2));
 
@@ -3425,6 +3425,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 0) = 0x90;
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 1) = 0x90;
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 5) = 0x90;
+				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 6) = 0x90;
 			}
 			else if (0 != iArg2)
 			{
@@ -3432,6 +3433,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 0) = 0x75;
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 1) = 0x05;
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 5) = 0x74;
+				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 6) = 0x16;
 			}
 			else
 			{
@@ -3439,6 +3441,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 0) = 0x90;
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 1) = 0x90;
 				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 5) = 0xEB;
+				*((unsigned char*)AFXADDR_GET(csgo_GlowCurrentPlayer_JMPS) + 6) = 0x16;
 			}
 
 			MdtMemAccessEnd(&mdtInfos);

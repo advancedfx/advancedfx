@@ -1761,7 +1761,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			{
 				MemRange textRange = sections.GetMemRange();
 
-				MemRange result = FindPatternString(textRange, "75 05 38 45 FF 74 ?? C7 06 00 00 80 3F C7 46 04 00 00 80 3F C7 46 08 00 00 80 3F EB ??");
+				MemRange result = FindPatternString(textRange, "75 05 38 45 FF 74 16 C7 06 00 00 80 3F C7 46 04 00 00 80 3F C7 46 08 00 00 80 3F EB ??");
 
 				if (!result.IsEmpty())
 					addr = result.Start;

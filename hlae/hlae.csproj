@@ -4,17 +4,14 @@
     <ApplicationIcon>app.ico</ApplicationIcon>
     <StartupObject></StartupObject>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <TargetFramework>net40-client</TargetFramework>
-    <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <TargetFramework>net45</TargetFramework>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\injector\InjectorMessages.cs" Link="InjectorMessages.cs" />
+    <Compile Include="..\deps\release\injector\InjectorMessages.cs" Link="InjectorMessages.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AfxCppCli\AfxCppCli.vcxproj" />

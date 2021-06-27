@@ -32,10 +32,11 @@ string(REPLACE "\\" "/" VS16_MSBUILD ${VS16_MSBUILD})
 include(FetchContent)
 include(ExternalProject)
 
-add_subdirectory("AfxHook")
 add_subdirectory("deps/release/zlib")
 add_subdirectory("deps/release/protobuf")
 add_subdirectory("deps/release/openexr")
+add_subdirectory("deps/release/injector_bin")
+
 add_subdirectory("AfxCppCli")
 
 ExternalProject_Add("shaderbuilder"
@@ -52,7 +53,6 @@ set(shaderbuilder_BINARY_DIR "${CMAKE_BINARY_DIR}/ShaderBuilder/${CMAKE_CFG_INTD
 
 add_subdirectory("AfxHookGoldSrc")
 add_subdirectory("AfxHookSource")
-add_subdirectory("injector")
 add_subdirectory("hlae")
 
 
@@ -107,7 +107,7 @@ install(
 )
 install(
     FILES
-        "${afxhook_BINARY_DIR}/AfxHook.dat"
+        "${injector_BINARY_DIR}/AfxHook.dat"
     DESTINATION "bin"
 )
 
@@ -129,7 +129,7 @@ install(
 )
 install(
     FILES
-        "${afxhook_BINARY_DIR}/x64/AfxHook.dat"
+        "${injector_BINARY_DIR}/x64/AfxHook.dat"
     DESTINATION "bin/x64"
 )
 install(

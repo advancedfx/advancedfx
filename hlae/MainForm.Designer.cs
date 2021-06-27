@@ -638,6 +638,7 @@
             this.buttonManual.TabIndex = 0;
             this.buttonManual.Text = "[URL]";
             this.buttonManual.UseVisualStyleBackColor = false;
+            this.buttonManual.Click += new System.EventHandler(this.buttonManual_Click);
             // 
             // pictureBoxHelp
             // 
