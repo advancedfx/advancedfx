@@ -92,6 +92,7 @@ AFXADDR_DEF(csgo_C_BaseViewModel_ofs_m_nOldAnimationParity)
 AFXADDR_DEF(csgo_C_BaseEntity_ShouldInterpolate)
 AFXADDR_DEF(csgo_C_CS_PlayerResource_IGameResources_vtable)
 AFXADDR_DEF(csgo_C_Team_vtable)
+AFXADDR_DEF(csgo_engine_CModelLoader_vtable)
 
 void ErrorBox(char const * messageText);
 
@@ -591,6 +592,10 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 
 			AFXADDR_SET(csgo_CNetChan_ProcessMessages, addr);
 		}
+
+		// csgo_engine_CModelLoader_vtable
+		AFXADDR_SET(csgo_engine_CModelLoader_vtable, FindClassVtable((HMODULE)engineDll, ".?AVCModelLoader@@", 0, 0x0));
+		if (!AFXADDR_GET(csgo_engine_CModelLoader_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
 	else
 	{
@@ -607,6 +612,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_RTTI_IGameEvent, 0);
 		AFXADDR_SET(csgo_CStaticProp_IClientEntity_vtable, 0x0);
 		AFXADDR_SET(csgo_CNetChan_ProcessMessages, 0x0);
+		AFXADDR_DEF(csgo_engine_CModelLoader_Unkload, 0x0)
 	}
 	AFXADDR_SET(csgo_snd_mix_timescale_patch_DSZ, 0x08);
 	AFXADDR_SET(csgo_MIX_PaintChannels_DSZ, 0x9);

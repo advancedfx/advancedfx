@@ -101,6 +101,7 @@ AFXADDR_DECL(csgo_C_BaseViewModel_ofs_m_nOldAnimationParity)
 AFXADDR_DECL(csgo_C_BaseEntity_ShouldInterpolate)
 AFXADDR_DECL(csgo_C_CS_PlayerResource_IGameResources_vtable)
 AFXADDR_DECL(csgo_C_Team_vtable)
+AFXADDR_DECL(csgo_engine_CModelLoader_vtable)
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);

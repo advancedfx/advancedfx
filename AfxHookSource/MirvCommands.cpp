@@ -31,6 +31,7 @@
 #include "FovScaling.h"
 //#include "csgo_CDemoFile.h"
 #include "csgo_Stdshader_dx9_Hooks.h"
+#include "csgo_models_replace.h""
 //#include <csgo/sdk_src/public/tier0/memalloc.h>
 #include <shared/MirvCampath.h>
 #include <shared/AfxDetours.h>
@@ -3909,6 +3910,98 @@ CON_COMMAND(mirv_guides, "Draw guides on screen (CS:GO).")
 		"%s phiGrid enabled [...]\n"
 		"%s ruleOfThirds enabled [...]\n"
 		, arg0
+		, arg0
+	);
+}
+
+CON_COMMAND(mirv_models, "model tools") {
+	if (!g_CCsgoModelsReplace.HasHooks()) {
+		Tier0_Warning("AFXERROR: Missing hooks.\n");
+		return;
+	}
+
+	int argC = args->ArgC();
+	const char* arg0 = args->ArgV(0);
+
+	if (2 <= argC) {
+		const char* arg1 = args->ArgV(1);
+
+		if (0 == _stricmp("replace", arg1)) {
+
+			if (3 <= argC) {
+				const char* arg2 = args->ArgV(2);
+
+				if (0 == _stricmp("byWcName", arg2)) {
+
+					if (4 <= argC) {
+						const char* arg3 = args->ArgV(3);
+
+						if (0 == _stricmp("add", arg3) && 6 <= argC) {
+							g_CCsgoModelsReplace.Add(args->ArgV(4), args->ArgV(5));
+							return;
+						}
+						else if (0 == _stricmp("remove", arg3) && 5 <= argC) {
+							g_CCsgoModelsReplace.Remove(atoi(args->ArgV(4)));
+							return;
+						}
+						else if (0 == _stricmp("move", arg3) && 6 <= argC) {
+							g_CCsgoModelsReplace.MoveIndex(atoi(args->ArgV(4)), atoi(args->ArgV(5)));
+							return;
+						}
+						else if (0 == _stricmp("print", arg3)) {
+							g_CCsgoModelsReplace.Print();
+							return;
+						}
+						else if (0 == _stricmp("clear", arg3)) {
+							g_CCsgoModelsReplace.Clear();
+							return;
+						}
+						else if (0 == _stricmp("debug", arg3)) {
+							if (5 <= argC) {
+								g_CCsgoModelsReplace.SetDebug(atoi(args->ArgV(4)));
+								return;
+							}
+
+							Tier0_Msg(
+								"%s replace byWcName add debug 0|1\n"
+								"Current value: %i\n",
+								arg0, g_CCsgoModelsReplace.GetDebug() ? 1 : 0
+							);
+							return;
+						}
+					}
+
+					Tier0_Msg(
+						"%s replace byWcName add <sWildCardNameSource> <sNameTarget>\n"
+						"%s replace byWcName remove <iIndex>\n"
+						"%s replace byWcName move <iSourceIndex> <iTargetIndex>\n"
+						"%s replace byWcName print\n"
+						"%s replace byWcName clear\n"
+						"%s replace byWcName debug [...]\n"
+						"Wildcard strings: \\* = wildcard and \\\\ = \\\n"
+						, arg0
+						, arg0
+						, arg0
+						, arg0
+						, arg0
+						, arg0
+					);
+
+					return;
+				}
+			}
+
+			Tier0_Msg(
+				"%s replace byWcName [...] - Replace by wildcard string name.\n"
+				, arg0
+			);
+
+			return;
+		}
+	}
+
+	Tier0_Msg(
+		"%s replace [...] - Replaces models (be aware of model caching, might need restart of game is already loaded!)\n"
 		, arg0
 	);
 }

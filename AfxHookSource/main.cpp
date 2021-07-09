@@ -60,6 +60,7 @@
 #include "csgo_CRendering3dView.h"
 //#include "csgo_CDemoFile.h"
 #include "csgo_net_chan.h"
+#include "csgo_models_replace.h"
 
 #include <Windows.h>
 #include <deps/release/Detours/src/detours.h>
@@ -452,6 +453,12 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 			else {
 				ErrorBox("Could not get " SOURCESDK_CSGO_STUDIO_RENDER_INTERFACE_VERSION ".");
 			}
+
+
+			if (iface = appSystemFactory(SOURCESDK_CSGO_VMODELINFOCLIENT_INTERFACE_VERSION, NULL))
+				g_CCsgoModelsReplace.InstallHooks(iface);
+			else
+				ErrorBox("Could not get " SOURCESDK_CSGO_VMODELINFOCLIENT_INTERFACE_VERSION ".");
 
 
 			/*
