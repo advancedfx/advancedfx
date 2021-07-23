@@ -2,11 +2,20 @@
 
 #include <list>
 #include <string>
-
-#define SOURCESDK_CSGO_VMODELINFOCLIENT_INTERFACE_VERSION "VModelInfoClient004"
+#include <map>
 
 class CCsgoModelsReplace {
 public:
+	struct Replacement_s {
+		std::string WildcardSourceName;
+		std::string TargetName;
+		bool Transparent;
+
+		Replacement_s(const char* szWcSource, const char* szTarget, bool transparent) : WildcardSourceName(szWcSource), TargetName(szTarget), Transparent(transparent) {
+
+		}
+	};
+
 	bool GetDebug() {
 		return m_Debug;
 	}
@@ -15,37 +24,34 @@ public:
 		m_Debug = value;
 	}
 
-	bool HasHooks() {
-		return nullptr != m_True_GetModel;
-	}
+	bool InstallHooks();
 
-	void InstallHooks(void* pVModelInfoClient);
-
-	void Add(const char* szWildCardStringSourceName, const char* szTargetName);
+	void Add(const char* szWildCardStringSourceName, const char* szTargetName, bool transparent);
 	bool Remove(int index);
 	bool MoveIndex(int index, int targetIndex);
 	void Print();
 	void Clear();
 
-	const char * GetReplacement(const char * pModelName);
+	struct Replacement_s* GetLoaderReplacement(const char* pModelName) {
+		return GetSomeReplacement(pModelName, m_LoaderReplacements, "GetLoaderReplacement");
+	}
 
 private:
-	typedef void*	(__fastcall * GetModel_t)(void* This, void* Edx, const char* name, int iUnk);
+	typedef void* (__fastcall * GetModel_t)(void* This, void* Edx, const char* name, int iUnk);
+	typedef void* (__fastcall* VDtor_t)(void* This, void* Edx, bool bUnk);
+	typedef const char* (__fastcall* GetTableName_t)(void* This, void* Edx);
+	typedef const char* (__fastcall* GetString_t)(void* This, void* Edx, int stringNumber);
 
-	struct Replacement_s {
-		std::string WildcardSourceName;
-		std::string TargetName;
+	std::list<Replacement_s> m_LoaderReplacements;
 
-		Replacement_s(const char* szWcSource, const char* szTarget) : WildcardSourceName(szWcSource), TargetName(szTarget) {
-
-		}
-	};
-
-	std::list<Replacement_s> m_Replacements;
 	bool m_Debug = false;
 	
+	static bool m_HooksInstalled;
 	static GetModel_t m_True_GetModel;
+
 	static void* __fastcall My_GetModel(void* This, void* Edx, const char* name, int iUnk);
+
+	struct Replacement_s* GetSomeReplacement(const char* pModelName, std::list<Replacement_s> & replacements, const char * szDebugName);
 };
 
 extern CCsgoModelsReplace g_CCsgoModelsReplace;
