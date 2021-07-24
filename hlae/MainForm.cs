@@ -23,7 +23,6 @@ namespace AfxGui
             this.Icon = Program.Icon;
             this.pictureBoxHelp.Image = SystemIcons.Information.ToBitmap();
             this.pictureBoxPathError.Image = SystemIcons.Warning.ToBitmap();
-            pictureBoxConfigError.Image = SystemIcons.Warning.ToBitmap();
 
             this.Text = L10n._p("Window title, args: {0} - version", "Half-Life Advanced Effects {0}", System.Diagnostics.FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).FileVersion);
 
@@ -130,13 +129,6 @@ namespace AfxGui
             this.labelHlaePath.Text = L10n._("HLAE path:");
             this.textBoxHlaePath.Text = Program.BaseDir;
             this.labelHlaePathError.Text = L10n._("Warning: Your HLAE path shown above contains non-basic latin characters (meaning characters outside the 7-bit ASCII range), which will lead to multiple problems in-game if not fixed!");
-
-            groupBoxConfigError.Text = L10n._("Config error");
-            labelConfigError.Text = L10n._("The HLAE config is not writeable (e.g. in use by other HLAE or write-protected), thus opened it in read-only mode. Overwriting it can cause loss of changes made from other instances.");
-            buttonConfigReload.Text = L10n._("Reload");
-            buttonConfigOverwrite.Text = L10n._("Overwrite");
-            buttonConfigOverwrite.Image = SystemIcons.Hand.ToBitmap();
-            CheckConfigOkay();
 
             m_UpdateCheckNotification = new UpdateCheckNotificationTarget(this, new UpdateCheckedDelegate(OnUpdateChecked));
         }
@@ -427,24 +419,6 @@ namespace AfxGui
         private void menuContact_Click(object sender, EventArgs e)
         {
             System.Diagnostics.Process.Start("https://www.advancedfx.org/contact");
-        }
-
-        private void CheckConfigOkay()
-        {
-            groupBoxConfigError.Visible = GlobalConfig.Instance.ReadOnly;
-            groupBoxConfigError.Enabled = GlobalConfig.Instance.ReadOnly;
-        }
-
-        private void buttonConfigReload_Click(object sender, EventArgs e)
-        {
-            Program.ReloadConfig();
-            CheckConfigOkay();
-        }
-
-        private void buttonConfigOverwrite_Click(object sender, EventArgs e)
-        {
-            GlobalConfig.Instance.ReadOnly = !GlobalConfig.Instance.BackUp(true);
-            CheckConfigOkay();
         }
     }
 }
