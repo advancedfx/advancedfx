@@ -6,6 +6,17 @@
 
 <release>
 <name>HLAE</name>
+<version>2.119.0</version>
+<time>2021-07-24T13:20Z</time>
+<changes>
+<change type="updated">Reverted fix for double opening settings loss, since it causes more problems (random settings loss) than it actually solves.</change>
+<change type="updated">Included AfxHookSource 1.98.0 (2021-07-24T13:20Z).</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.118.0</version>
 <time>2021-07-03T06:50Z</time>
 <changes>

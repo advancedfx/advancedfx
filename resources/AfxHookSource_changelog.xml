@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.98.0</version>
+<time>2021-07-24T13:20Z</time>
+<changes>
+<change type="added">mirv_models replace byWcName - allows to swap models using wild-card based matching.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.97.0</version>
 <time>2021-06-26T15:04Z</time>
 <changes>
