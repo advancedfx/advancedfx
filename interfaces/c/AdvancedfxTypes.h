@@ -151,32 +151,77 @@ struct AdvancedfxVersion {
 };
 
 
+// AdvancedfxRegistry //////////////////////////////////////////////////////////
 
-// Process types ///////////////////////////////////////////////////////////////
+struct AdvancedfxRegistryShutdownHandlerVtable {
+	void (*OnRegistryShutdown)(struct AdvancedfxRegistryShutdownHandler* This, struct AdvancedfxRegistry* registry);
+};
 
-typedef void* (*AdvancedfxProcessGet)(
-	AdvancedfxUInt8 uuidF,
-	AdvancedfxUInt8 uuidE,
-	AdvancedfxUInt8 uuidD,
-	AdvancedfxUInt8 uuidC,
-	AdvancedfxUInt8 uuidB,
-	AdvancedfxUInt8 uuidA,
-	AdvancedfxUInt8 uuid9,
-	AdvancedfxUInt8 uuid8,
-	AdvancedfxUInt8 uuid7,
-	AdvancedfxUInt8 uuid6,
-	AdvancedfxUInt8 uuid5,
-	AdvancedfxUInt8 uuid4,
-	AdvancedfxUInt8 uuid3,
-	AdvancedfxUInt8 uuid2,
-	AdvancedfxUInt8 uuid1,
-	AdvancedfxUInt8 uuid0);
+struct AdvancedfxRegistryShutdownHandler {
+	struct AdvancedfxRegistryShutdownEventVtable* Vtable;
+};
+
+struct AdvancedfxRegistryShutdownEventVtable {
+	void (*AddRef)(struct AdvancedfxRegistryShutdownEvent * This);
+	void (*Release)(struct AdvancedfxRegistryShutdownEvent * This);
+
+	void (*AddHandler)(struct AdvancedfxRegistryShutdownEvent * This, struct AdvancedfxRegistryShutdownHandler* handler);
+	void (*RemoveHandler)(struct AdvancedfxRegistryShutdownEvent * This, struct AdvancedfxRegistryShutdownHandler* handler);
+};
+
+#define ADVANCEDFX_REGISTRY_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn, 0x6f591e73, 0x14a2, 0x4466, 0x85, 0xe1, 0xd1, 0x83, 0x79, 0x28, 0x72, 0x5a)
+
+
+struct AdvancedfxRegistryVtable {
+	void (*AddRef)(struct AdvancedfxRegistry * This);
+	void (*Release)(struct AdvancedfxRegistry * This);
+
+	void* (*Get)(struct AdvancedfxRegistry * This,
+		AdvancedfxUInt8 uuidF,
+		AdvancedfxUInt8 uuidE,
+		AdvancedfxUInt8 uuidD,
+		AdvancedfxUInt8 uuidC,
+		AdvancedfxUInt8 uuidB,
+		AdvancedfxUInt8 uuidA,
+		AdvancedfxUInt8 uuid9,
+		AdvancedfxUInt8 uuid8,
+		AdvancedfxUInt8 uuid7,
+		AdvancedfxUInt8 uuid6,
+		AdvancedfxUInt8 uuid5,
+		AdvancedfxUInt8 uuid4,
+		AdvancedfxUInt8 uuid3,
+		AdvancedfxUInt8 uuid2,
+		AdvancedfxUInt8 uuid1,
+		AdvancedfxUInt8 uuid0);
+
+	void (*Set)(struct AdvancedfxRegistry * This,
+		AdvancedfxUInt8 uuidF,
+		AdvancedfxUInt8 uuidE,
+		AdvancedfxUInt8 uuidD,
+		AdvancedfxUInt8 uuidC,
+		AdvancedfxUInt8 uuidB,
+		AdvancedfxUInt8 uuidA,
+		AdvancedfxUInt8 uuid9,
+		AdvancedfxUInt8 uuid8,
+		AdvancedfxUInt8 uuid7,
+		AdvancedfxUInt8 uuid6,
+		AdvancedfxUInt8 uuid5,
+		AdvancedfxUInt8 uuid4,
+		AdvancedfxUInt8 uuid3,
+		AdvancedfxUInt8 uuid2,
+		AdvancedfxUInt8 uuid1,
+		AdvancedfxUInt8 uuid0, void* value);
+};
+
+struct AdvancedfxRegistry {
+	struct AdvancedfxRegistryVtable* Vtable;
+};
+
+#define ADVANCEDFX_REGISTRY_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn, 0xb2dd1b8a, 0x7097, 0x4d63, 0x84, 0x8a, 0xc7, 0x12, 0x8f, 0xaa, 0xe8, 0x30)
 
 
 // Module types ////////////////////////////////////////////////////////////////
 
-typedef void (*AdvancedfxModuleInit)(AdvancedfxProcessGet processGet);
-
-
+typedef void (*AdvancedfxModuleInit)(struct AdvancedfxRegistry * registry);
 
 #endif
