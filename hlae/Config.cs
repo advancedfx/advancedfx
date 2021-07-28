@@ -266,9 +266,6 @@ public class Config
 	public String Version;
 	public CfgSettings Settings;
 
-        [XmlIgnore]
-        public bool ReadOnly { get { return m_ReadOnly; } set { m_ReadOnly = value; } }
-
     public Config()
 	{
 		Settings = new CfgSettings();
@@ -277,22 +274,9 @@ public class Config
 
         ThisDefault();
 	}
-        ~Config()
-        {
-            Close();
-        }
 
     //
     // Internal members:
-
-    internal void Close()
-        {
-            if(null != m_Fs)
-            {
-                m_Fs.Close();
-                m_Fs = null;
-            }
-        }
 
     internal static Config LoadOrCreate(String cfgPath, String oldCfgPath)
     {
@@ -320,29 +304,19 @@ public class Config
             try
             {
                 XmlSerializer serializer = new XmlSerializer(typeof(Config));
-                FileInfo fi = new FileInfo(cfgPath);
+    			fs = new FileStream( cfgPath, FileMode.Open );
 
-                    try
-                    {
-                        fs = fi.Open(FileMode.Open, FileAccess.ReadWrite, FileShare.Read);
-                    }
-                    catch (Exception)
-                    {
-                        fs = fi.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-                    }
-
-                    config = serializer.Deserialize(fs) as Config;
+                config = serializer.Deserialize(fs) as Config;
 
                     config.OnDeserialized();
-
-                    config.m_ReadOnly = !fs.CanWrite;
-                    config.m_Fs = fs;
             }
             catch(Exception)
             {
                 config = null;
-                if(null != fs) fs.Close();
             }
+
+            if (null != fs)
+                fs.Close();
         }
 
         if(null != config)
@@ -351,16 +325,14 @@ public class Config
         return config;
 	}
 
-    internal bool BackUp(bool forceWrite = false)
+    internal bool BackUp()
 	{
-        if (m_ReadOnly && !forceWrite) return false;
-
-		return WriteToFile( m_CfgPath, false );
+		return WriteToFile( m_CfgPath );
 	}
 
     internal bool BackUp(String filePath)
 	{
-		return WriteToFile( filePath, true );
+		return WriteToFile( filePath );
 	}
 
         internal void OnDeserialized()
@@ -398,64 +370,42 @@ public class Config
     // Private members:
 
 	String m_CfgPath;
-        bool m_ReadOnly = false;
-        FileStream m_Fs = null;
 
-        private void ThisDefault()
+    private void ThisDefault()
     {
         Version = "unknown";
     }
 
-        bool WriteToFile(String filePath, bool otherPath)
-        {
-            bool bOk = false;
+	bool WriteToFile( String filePath )
+	{
+		bool bOk=false;
 
-            TextWriter writer = null;
+        TextWriter writer = null;
 
-            try
-            {
+		try
+		{
                 XmlAttributeOverrides xOver = new XmlAttributeOverrides();
 
                 OnSerializeOverrides(xOver);
 
-                XmlSerializer serializer = new XmlSerializer(typeof(Config), xOver);
+                XmlSerializer serializer = new XmlSerializer( typeof(Config), xOver );
 
-                if (!otherPath && null != m_Fs)
-                {
-                    Close();
+            writer = new StreamWriter(filePath);
 
-                    FileInfo fi = new FileInfo(filePath);
+			serializer.Serialize( writer, this );
 
-                    m_Fs = fi.Open(FileMode.Open, FileAccess.ReadWrite, FileShare.Read);
+			bOk = true;
+		}
+		catch(Exception)
+		{
+			bOk = false;
+		}
 
-                    writer = new StreamWriter(m_Fs, System.Text.Encoding.UTF8, 1024, true);
-                }
-                else
-                {
-                    writer = new StreamWriter(filePath);
-                }
+        if(null != writer)
+            writer.Close();
 
-                serializer.Serialize(writer, this);
-
-                bOk = true;
-            }
-            catch (Exception)
-            {
-                bOk = false;
-            }
-
-            if (null != writer)
-            {
-                if (!otherPath && null != m_Fs)
-                {
-                    writer.Dispose();
-                }
-                else
-                    writer.Close();
-            }
-
-            return bOk;
-        }
-    }
+		return bOk;
+	}
+}
 
 } // namespace AfxGui

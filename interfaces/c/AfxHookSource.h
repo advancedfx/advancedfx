@@ -3,7 +3,7 @@
 
 #include "AdvancedfxTypes.h"
 
-
+/*
 ////////////////////////////////////////////////////////////////////////////////
 
 
@@ -122,105 +122,94 @@ struct AdvancedfxISetupEngineViewOverride
 
 #define ADVANCEDFX_ISETUPENGINEVIEWOVERRIDES_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x8164851B,0xF7F1,0x4F25,0x9A38,0x21,0x6E,0x43,0x79,0x88,0x22)
 
+*/
 
-// AdvancedfxILocale ///////////////////////////////////////////////////////////
 
-struct AdvancedfxILocaleVtable
+// AdvancedfxLocale ////////////////////////////////////////////////////////////
+
+struct AdvancedfxLocaleVtable
 {
-	const char* (*GetLanguage)(struct AdvancedfxILocale* This);
-
-	const char* (*GetRegion)(struct AdvancedfxILocale* This);
+	const char* (*GetLocaleName)(struct AdvancedfxLocale* This);
 };
 
-struct AdvancedfxILocale
+struct AdvancedfxLocale
 {
-	struct AdvancedfxILocaleVtable* Vtable;
+	struct AdvancedfxLocaleVtable* Vtable;
 };
 
-#define ADVANCEDFX_ISETUPENGINEVIEWOVERRIDES_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x20B4EE1C,0xB03F,0x4826,0x9AE2,0x1A,0xF2,0x8E,0x36,0xE9,0x79)
+#define ADVANCEDFX_LOCALE_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x20B4EE1C,0xB03F,0x4826,0x9AE2,0x1A,0xF2,0x8E,0x36,0xE9,0x79)
 
 
-// AdvancedfxILoadModule ///////////////////////////////////////////////////////
+// AdvancedfxLoadModule ////////////////////////////////////////////////////////
 
-struct AdvancedfxILoadModuleVtable
+struct AdvancedfxLoadModuleVtable
 {
-	void(*LoadModule)(struct AdvancedfxILoadModule* This, const char* filePath);
+	void(*LoadModule)(struct AdvancedfxLoadModule* This, const char* filePath);
 };
 
-struct AdvancedfxILoadModule {
-	struct AdvancedfxILoadModuleVtable* Vtable;
+struct AdvancedfxLoadModule {
+	struct AdvancedfxLoadModuleVtable* Vtable;
 };
 
-#define ADVANCEDFX_ILOADMODULE_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x6D9981A3,0x6132,0x431B,0x9A40,0x61,0x96,0xBD,0x37,0x7C,0x1F)
+#define ADVANCEDFX_LOADMODULE_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x6D9981A3,0x6132,0x431B,0x9A40,0x61,0x96,0xBD,0x37,0x7C,0x1F)
 
 
-// AdvancedfxIHook /////////////////////////////////////////////////////////////
+// AdvancedfxConsole ///////////////////////////////////////////////////////////
 
-struct AdvancedfxIHookEventHandlerVtable
+
+struct AdvancedfxConsoleCommandArgsVtable
 {
-	void(*HookSourceEvent)(struct AdvancedfxIHookEventHandler* This, struct AdvancedfxIHookSource* hookSource);
+	AdvancedfxUInt32(*ArgC)(struct AdvancedfxConsoleCommandArgs* This);
+
+	AdvancedfxUInt32(*ArgV)(struct AdvancedfxConsoleCommandArgs* This, AdvancedfxUInt32 index);
 };
 
-struct AdvancedfxIHookEventHandler
+struct AdvancedfxConsoleCommandArgs
 {
-	struct AdvancedfxIHookEventHandlerVtable* Vtable;
+	struct AdvancedfxConsoleCommandArgsVtable* Vtable;
 };
 
-struct AdvancedfxIHookVtable
+struct AdvancedfxConsoleCommandVtable
 {
-	void (*OnShutDownAdd)(struct AdvancedfxIHook* This, struct AdvancedfxIHookEventHandler* handler);
-
-	void (*OnShutDownRemove)(struct AdvancedfxIHook* This, struct AdvancedfxIHookEventHandler* handler);
+	void (*Execute)(struct  AdvancedfxConsoleCommand* This, struct AdvancedfxConsoleCommandArgs* args);
 };
 
-struct AdvancedfxIHook
+struct AdvancedfxConsoleCommand
 {
-	struct AdvancedfxIHookVtable* Vtable;
+	struct AdvancedfxConsoleCommandVtable* Vtable;
 };
 
-#define ADVANCEDFX_IHOOK_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x3F3644B5,0xDF45,0x406B,0xB0B4,0x0E,0xFD,0xA7,0xA9,0x42,0xE4)
+#define ADVANCEDFX_CONSOLE_LOG_LEVEL_WARNING 0
+#define ADVANCEDFX_CONSOLE_LOG_LEVEL_MESSAGE 1
+#define ADVANCEDFX_CONSOLE_LOG_LEVEL_VERBOSE 2
 
+struct AdvancedfxConsolePrinterVtable {
+	void (*Print)(struct AdvancedfxConsolePrinter* This, const char* text, int logLevel);
+};
 
+struct AdvancedfxConsolePrinter {
+	struct AdvancedfxConsolePrinterVtable* Vtable;
+};
 
-// AdvancedfxIConsole //////////////////////////////////////////////////////////
-
-
-struct AdvancedfxIConsoleCommandArgsVtable
+struct AdvancedfxConsoleVtable
 {
-	AdvancedfxUInt32(*ArgC)(struct AdvancedfxIConsoleCommandArgs* This);
+	void (*AddCommand)(struct AdvancedfxConsole* This, const char* name, struct AdvancedfxConsoleCommand* command);
 
-	AdvancedfxUInt32(*ArgV)(struct AdvancedfxIConsoleCommandArgs* This, AdvancedfxUInt32 index);
+	void (*RemoveCommand)(struct AdvancedfxConsole* This, const char* name, struct AdvancedfxConsoleCommand* command);
+
+	void (*Print)(struct AdvancedfxConsole* This, const char* text, int logLevel);
+
+	void (*Execute)(struct AdvancedfxConsole* This, const char* text);
+
+	void (*AddPrinter)(struct AdvancedfxConsole* This, struct AdvancedfxConsolePrinter* printer);
+	void (*RemovePrinter)(struct AdvancedfxConsole* This, struct AdvancedfxConsolePrinter* printer);
 };
 
-struct AdvancedfxIConsoleCommandArgs
-{
-	struct AdvancedfxIConsoleCommandArgsVtable* Vtable;
+struct AdvancedfxConsole {
+	struct AdvancedfxConsoleVtable* Vtable;
 };
 
-struct AdvancedfxIConsoleCommandVtable
-{
-	void (*Execute)(struct  AdvancedfxIConsoleCommand* This, struct AdvancedfxIConsoleCommandArgs* args);
-};
-
-struct AdvancedfxIConsoleCommand
-{
-	struct AdvancedfxIConsoleCommandVtable* Vtable;
-};
-
-struct AdvancedfxIConsoleVtable
-{
-	void (*AddCommand)(struct AdvancedfxIConsoleVtable* This, const char* name, struct AdvancedfxIConsoleCommand* command);
-
-	void (*RemoveCommand)(struct AdvancedfxIConsoleVtable* This, const char* name, struct AdvancedfxIConsoleCommand* command);
-
-	void (*Print)(struct AdvancedfxIConsoleVtable* This, const char* text);
-
-	void (*PrintWarning)(struct AdvancedfxIConsoleVtable* This, const char* text);
-
-	void (*Execute)(struct AdvancedfxIConsoleVtable* This, const char* text);
-};
-
-#define ADVANCEDFX_ICONSOLE_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x4B336709,0x1665,0x4FD5,0x98DC,0xCC,0x1E,0x9C,0x73,0x59,0x76)
+#define ADVANCEDFX_CONSOLE_UUID_FN(fn) ADVANCEDFX_UUID_APPLY_FN(fn,0x4B336709,0x1665,0x4FD5,0x98DC,0xCC,0x1E,0x9C,0x73,0x59,0x76)
 
 
 
