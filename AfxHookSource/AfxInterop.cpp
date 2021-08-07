@@ -14,6 +14,8 @@
 #include "AfxStreams.h"
 #include "csgo_GameEvents.h"
 
+#include "csgo/hooks/materialsystem.h"
+
 #include <Windows.h>
 
 #include <set>
@@ -1648,6 +1650,24 @@ namespace AfxInterop {
 			DisconnectDrawing();
 		}
 
+		void EngineThread_On_CMatQueuedRenderContext_EndQueue_EngineThreadFlush() {
+			int errorLine = 0;
+
+			if (m_EngineConnected)
+			{
+				if (m_ServerVersion.GetMajor() == 7)
+				{
+					if (!WriteUInt32(m_hEnginePipe, EngineMessage_ForceEndQueue)) { errorLine = __LINE__; goto error; }
+				}
+			}
+
+			return;
+
+		error:
+			Tier0_Warning("AfxInterop::On_CMatQueuedRenderContext_EndQueue_EngineThreadFlush: Error in line %i (%s).\n", errorLine, m_EnginePipeName.c_str());
+			DisconnectEngine();
+		}
+
 		bool ConnectDrawing() {
 			{
 				std::shared_lock<std::shared_timed_mutex> sharedLock(m_DrawingConnectMutex);
@@ -1840,6 +1860,10 @@ namespace AfxInterop {
 
 						if (7 == serverMajorVersion)
 						{
+							if(!Hook_Materialsystem_CMatQueuedRenderContext_EndFrame()) {
+								Tier0_Warning("AFX WARNING: MISSING hook materialsystem!CMatQueuedRenderContext::EndFrame.\n");
+							}
+
 							unsigned int serverSubVersion[3];
 							if (!ReadUInt32(m_hEnginePipe, serverSubVersion[0])) { errorLine = __LINE__; goto error; }
 							if (!ReadUInt32(m_hEnginePipe, serverSubVersion[1])) { errorLine = __LINE__; goto error; }
@@ -2449,10 +2473,12 @@ namespace AfxInterop {
 			bool bInSafeState = false;
 			bool bOrgRenderTarget = false;
 			IDirect3DSurface9 * pOrgRenderTarget = nullptr;
+			bool queuedThreaded = Hook_Materialsystem_CMatQueuedRenderContext_EndFrame() && g_AfxStreams.IsQueuedThreaded();
 
 			while (true)
 			{
 				if (!WriteUInt32(m_hDrawingPipe, message)) { errorLine = __LINE__; goto error; }
+				if (m_ServerVersion.GetMajor() == 7) if (!WriteBoolean(m_hDrawingPipe, queuedThreaded)) { errorLine = __LINE__; goto error; }
 				if (!WriteInt32(m_hDrawingPipe, frameCount)) { errorLine = __LINE__; goto error; }
 				if (m_ServerVersion.GetMajor() == 7) if (!WriteUInt32(m_hDrawingPipe, m_DrawingPass)) { errorLine = __LINE__; goto error; }
 				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
@@ -3041,21 +3067,21 @@ namespace AfxInterop {
 						if (!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
 
 						if (IDirect3DDevice9* device = AfxGetDirect3DDevice9()) {
-
+							HRESULT hr;
 							if (0 == index)
 							{
-								if (FAILED(device->SetPixelShader(NULL))) { errorLine = __LINE__; goto error; }
+								hr = device->SetPixelShader(NULL);
 							}
 							else
 							{
 								auto it = m_D3d9PixelShaders.find(index);
 								if (it == m_D3d9PixelShaders.end()) { errorLine = __LINE__; goto error; }
-								HRESULT hr = device->SetPixelShader(it->second);
-								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
-								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
-								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
-								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+								hr = device->SetPixelShader(it->second);
 							}
+							DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+							if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+							if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+							if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 						}
 						else { errorLine = __LINE__; goto error; }
 
@@ -3531,7 +3557,8 @@ namespace AfxInterop {
 			EngineMessage_AfterTranslucent = 12,
 			EngineMessage_OnBeforeHud = 13,
 			EngineMessage_OnAfterHud = 14,
-			EngineMessage_OnGameEvent = 15
+			EngineMessage_OnGameEvent = 15,
+			EngineMessage_ForceEndQueue = 16
 		};
 
 		class CConsole
@@ -4215,6 +4242,22 @@ namespace AfxInterop {
 		for (auto it = m_Clients.begin(); it != m_Clients.end(); ++it)
 		{
 			it->Get()->DrawingThread_DeviceRestored();
+		}
+	}
+
+	void On_CMatQueuedRenderContext_EndQueue(bool bCallQueued)
+	{
+		if (!m_Enabled) return;
+
+		if (!bCallQueued) return;
+
+		if (!g_AfxStreams.OnEngineThread()) return;
+
+		std::shared_lock<std::shared_timed_mutex> clientsLock(m_ClientsMutex);
+
+		for (auto it = m_Clients.begin(); it != m_Clients.end(); ++it)
+		{
+			it->Get()->EngineThread_On_CMatQueuedRenderContext_EndQueue_EngineThreadFlush();
 		}
 	}
 

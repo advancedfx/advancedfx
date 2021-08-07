@@ -5640,7 +5640,7 @@ CAfxStreams::CAfxStreams()
 , m_Recording(false)
 , m_Frame(0)
 , m_FormatBmpAndNotTga(false)
-, m_Current_View_Render_ThreadId(0)
+, m_View_Render_ThreadId(0)
 //, m_RgbaRenderTarget(0)
 , m_RenderTargetDepthF(0)
 , m_CamBvh(false)
@@ -5653,6 +5653,15 @@ CAfxStreams::~CAfxStreams()
 	ShutDown();
 }
 
+bool CAfxStreams::OnEngineThread() {
+	return GetCurrentThreadId() == m_View_Render_ThreadId;
+}
+
+bool CAfxStreams::IsQueuedThreaded() {
+	// If we are on the main engine (view) thread, then it's forcing single threaded / shutting the queue down,
+	// otherwise we need to examine if we are in desired threaded queue mode, or just single queued mode.
+	return !OnEngineThread() && nullptr != m_MaterialSystem && (m_MaterialSystem->GetThreadMode() == SOURCESDK::CSGO::MATERIAL_QUEUED_THREADED);
+}
 
 void CAfxStreams::OnMaterialSystem(SOURCESDK::IMaterialSystem_csgo * value)
 {
@@ -5661,14 +5670,14 @@ void CAfxStreams::OnMaterialSystem(SOURCESDK::IMaterialSystem_csgo * value)
 	CreateRenderTargets(value);
 }
 
-void CAfxStreams::SetCurrent_View_Render_ThreadId(DWORD id)
+void CAfxStreams::Set_View_Render_ThreadId(DWORD id)
 {
-	InterlockedExchange(&m_Current_View_Render_ThreadId, id);
+	InterlockedExchange(&m_View_Render_ThreadId, id);
 }
 
-DWORD CAfxStreams::GetCurrent_View_Render_ThreadId()
+DWORD CAfxStreams::Get_View_Render_ThreadId()
 {
-	return InterlockedCompareExchange(&m_Current_View_Render_ThreadId, -1, -1);
+	return InterlockedCompareExchange(&m_View_Render_ThreadId, -1, -1);
 }
 
 
@@ -8769,7 +8778,7 @@ MirvPgl::CamData GetMirvPglCamData(SOURCESDK::vrect_t_csgo *rect) {
 
 void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *rect)
 {
-	SetCurrent_View_Render_ThreadId(GetCurrentThreadId());
+	Set_View_Render_ThreadId(GetCurrentThreadId());
 
 	m_LastPreviewWithNoHud = false;
 
@@ -8818,8 +8827,6 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 	{
 		m_LastPreviewWithNoHud = false;
 	}
-
-	SetCurrent_View_Render_ThreadId(0);
 }
 
 IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContextOrg * ctxp, size_t streamIndex, CAfxRenderViewStream * stream, CAfxRecordStream * captureTarget, bool first, bool last, CCSViewRender_RenderView_t fn, void* This, void* Edx, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)

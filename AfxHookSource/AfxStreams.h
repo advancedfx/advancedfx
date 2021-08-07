@@ -3307,6 +3307,9 @@ public:
 		return m_Recording;
 	}
 
+	bool IsQueuedThreaded();
+	bool OnEngineThread();
+
 private:
 	std::map<SOURCESDK::C_BaseEntity_csgo*,SOURCESDK::CSGO::CBaseHandle> m_Entities;
 	std::list<SOURCESDK::CSGO::CBaseHandle> m_DeletedEntites;
@@ -3446,15 +3449,15 @@ private:
 	//ITexture_csgo * m_RgbaRenderTarget;
 	SOURCESDK::ITexture_csgo * m_RenderTargetDepthF;
 	//CAfxMaterial * m_ShowzMaterial;
-	DWORD m_Current_View_Render_ThreadId;
+	DWORD m_View_Render_ThreadId;
 	bool m_PresentBlocked = false;
 	bool m_ShutDown = false;
 
 	bool m_HudDrawn = false;
 
-	void SetCurrent_View_Render_ThreadId(DWORD id);
+	void Set_View_Render_ThreadId(DWORD id);
 
-	DWORD GetCurrent_View_Render_ThreadId();
+	DWORD Get_View_Render_ThreadId();
 
 	void OnAfxBaseClientDll_Free(void);
 

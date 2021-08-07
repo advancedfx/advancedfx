@@ -94,6 +94,7 @@ AFXADDR_DEF(csgo_C_CS_PlayerResource_IGameResources_vtable)
 AFXADDR_DEF(csgo_C_Team_vtable)
 AFXADDR_DEF(csgo_engine_CModelLoader_vtable)
 AFXADDR_DEF(csgo_client_C_TEPlayerAnimEvent_PostDataUpdate_NewModelAnims_JNZ)
+AFXADDR_DEF(csgo_materialsystem_CMatQueuedRenderContext_EndQueue)
 
 void ErrorBox(char const * messageText);
 
@@ -2378,3 +2379,30 @@ void Addresses_InitStdshader_dx9Dll(AfxAddr stdshader_dx9Dll, bool isCsgo)
 	}
 }
 */
+
+void Addresses_InitMaterialsystemDll(AfxAddr materialsystemDll, SourceSdkVer sourceSdkVer) {
+	AFXADDR_SET(csgo_materialsystem_CMatQueuedRenderContext_EndQueue, 0);
+	if (sourceSdkVer == SourceSdkVer_CSGO) {
+
+
+		// csgo_materialsystem_CMatQueuedRenderContext_EndQueue:
+		//
+		// This function calls CMatQueuedRenderContext::CallQueueue that has string
+		// "%d calls queued for %d bytes in parameters and overhead, %d bytes verts, %d bytes indices, %d bytes other\n"
+		// and after that sets a lot of class members NULL if they are not NULL yet.
+		// 
+		ImageSectionsReader sections((HMODULE)materialsystemDll);
+		if (!sections.Eof())
+		{
+			MemRange textRange = sections.GetMemRange();
+
+			MemRange result = FindPatternString(textRange, "51 56 51 8B F1 E8 ?? ?? ?? ?? 83 7E 0C 00 74 07 C7 46 0C 00 00 00 00 83 7E 18 00 74 07 C7 46 18 00 00 00 00");
+
+			if (!result.IsEmpty()) {
+				AFXADDR_SET(csgo_materialsystem_CMatQueuedRenderContext_EndQueue, result.Start);
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
+}

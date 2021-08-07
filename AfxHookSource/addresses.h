@@ -102,10 +102,11 @@ AFXADDR_DECL(csgo_C_BaseEntity_ShouldInterpolate)
 AFXADDR_DECL(csgo_C_CS_PlayerResource_IGameResources_vtable)
 AFXADDR_DECL(csgo_C_Team_vtable)
 AFXADDR_DECL(csgo_engine_CModelLoader_vtable)
-AFXADDR_DECL(csgo_client_C_TEPlayerAnimEvent_PostDataUpdate_NewModelAnims_JNZ);
+AFXADDR_DECL(csgo_client_C_TEPlayerAnimEvent_PostDataUpdate_NewModelAnims_JNZ)
+AFXADDR_DECL(csgo_materialsystem_CMatQueuedRenderContext_EndQueue)
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer);
-//void Addresses_InitStdshader_dx9Dll(AfxAddr stdshader_dx9Dll, bool isCsgo);
+void Addresses_InitMaterialsystemDll(AfxAddr materialsystemDll, SourceSdkVer sourceSdkVer);
 

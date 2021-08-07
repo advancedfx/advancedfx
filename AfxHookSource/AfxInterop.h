@@ -114,6 +114,11 @@ namespace AfxInterop {
 	void DrawingThread_DeviceLost();
 
 	void DrawingThread_DeviceRestored();
+
+	//
+	// Different Threads:
+
+	void On_CMatQueuedRenderContext_EndQueue(bool bCallQueued);
 }
 
 #endif

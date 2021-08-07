@@ -2565,6 +2565,8 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 	{
 		bFirstMaterialsystem = false;
 
+		Addresses_InitMaterialsystemDll((AfxAddr)hModule, g_SourceSdkVer);
+
 		g_Import_materialsystem.Apply(hModule);
 	}
 	else if(bFirstShaderapidx9 && StringEndsWith( lpLibFileName, "shaderapidx9.dll"))
