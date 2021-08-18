@@ -354,15 +354,17 @@ namespace AfxGui
             m_BaseDir = System.IO.Path.GetFullPath(System.Windows.Forms.Application.StartupPath).TrimEnd('\\','/');
             m_AppDataDir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HLAE");
 
+            const string defaultSteamPath = "C:\\Program Files (x86)\\Steam";
+
             try
             {
-                m_SteamInstallPath = Microsoft.Win32.Registry.LocalMachine.GetValue("Computer\\HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Valve\\Steam") as string;
+                m_SteamInstallPath = Microsoft.Win32.Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Valve\\Steam", "InstallPath", defaultSteamPath) as string;
             }
             catch
             {
                 m_SteamInstallPath = null;
             }
-            if (null == m_SteamInstallPath) m_SteamInstallPath = "C:\\Program Files(x86)\\Steam";
+            if (null == m_SteamInstallPath) m_SteamInstallPath = defaultSteamPath;
 
             if (!System.IO.Directory.Exists(m_AppDataDir)) System.IO.Directory.CreateDirectory(m_AppDataDir);
 
