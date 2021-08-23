@@ -859,7 +859,7 @@ __declspec(naked) void CAfxBaseClientDll::Disconnect()
 
 
 
-typedef void(__fastcall* CsgoFileSystemGetPureMode_t)(void* This, void* Edx);
+typedef int(__fastcall* CsgoFileSystemGetPureMode_t)(void* This, void* Edx);
 CsgoFileSystemGetPureMode_t TrueCsgoFileSystemGetPureMode = nullptr;
 
 bool __cdecl IsFileSystemDllReturnAddress(void* returnAddress)
@@ -887,10 +887,10 @@ bool __cdecl IsFileSystemDllReturnAddress(void* returnAddress)
 	return start <= returnAddress && returnAddress < end;
 }
 
-__declspec(naked) bool __fastcall MyCsgoFileSystemGetPureMode(void* This, void* Edx)
+__declspec(naked) int __fastcall MyCsgoFileSystemGetPureMode(void* This, void* Edx)
 {
 	__asm mov eax, [esp]
-		__asm push ecx
+	__asm push ecx
 	__asm push edx
 	__asm push eax
 	__asm call IsFileSystemDllReturnAddress
@@ -2159,6 +2159,39 @@ FARPROC WINAPI new_shaderapidx9_GetProcAddress(HMODULE hModule, LPCSTR lpProcNam
 	return nResult;
 }
 
+
+bool g_b_Suppress_csgo_engine_Do_CCLCMsg_FileCRCCheck = true;
+typedef void (__fastcall * csgo_engine_Do_CCLCMsg_FileCRCCheck_t)(void * This, void * Edx);
+csgo_engine_Do_CCLCMsg_FileCRCCheck_t g_Org_csgo_engine_Do_CCLCMsg_FileCRCCheck = nullptr;
+
+void __fastcall My_csgo_engine_Do_CCLCMsg_FileCRCCheck(void * This, void * Edx) {
+	if(g_b_Suppress_csgo_engine_Do_CCLCMsg_FileCRCCheck) return;
+
+	g_Org_csgo_engine_Do_CCLCMsg_FileCRCCheck(This, Edx);
+}
+
+bool Install_csgo_engine_Do_CCLCMsg_FileCRCCheck() {
+	static bool firstRun = true;
+	static bool firstResult = false;
+
+	if (firstRun) {
+		firstRun = false;
+		if(0 != AFXADDR_GET(csgo_engine_Do_CCLCMsg_FileCRCCheck)) {
+			g_Org_csgo_engine_Do_CCLCMsg_FileCRCCheck = (csgo_engine_Do_CCLCMsg_FileCRCCheck_t)AFXADDR_GET(csgo_engine_Do_CCLCMsg_FileCRCCheck);
+		
+			DetourTransactionBegin();
+			DetourUpdateThread(GetCurrentThread());
+			DetourAttach(&(PVOID&)g_Org_csgo_engine_Do_CCLCMsg_FileCRCCheck, My_csgo_engine_Do_CCLCMsg_FileCRCCheck);
+
+			firstResult = NO_ERROR == DetourTransactionCommit();
+
+		}
+	}
+
+	return firstResult;
+}
+
+
 HMODULE WINAPI new_LoadLibraryA(LPCSTR lpLibFileName);
 HMODULE WINAPI new_LoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 
@@ -2547,6 +2580,10 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		Hook_csgo_SndMixTimeScalePatch();
 		csgo_Audio_Install();
 		//Hook_csgo_DemoFile();
+
+		if(SourceSdkVer_CSGO == g_SourceSdkVer) {
+			Install_csgo_engine_Do_CCLCMsg_FileCRCCheck();
+		}
 	}
 	else if(bFirstInputsystem && StringEndsWith( lpLibFileName, "inputsystem.dll"))
 	{
