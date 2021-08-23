@@ -6,6 +6,15 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.99.0</version>
+<time>2021-08-23T17:42Z</time>
+<changes>
+<change type="added">Added "mirv_fix suppressFileCRCCheck (enabled by default), only relevant for spectator no-insecure version of HLAE though usually.</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookSource</name>
 <version>1.98.0</version>
 <time>2021-07-24T13:20Z</time>
 <changes>
