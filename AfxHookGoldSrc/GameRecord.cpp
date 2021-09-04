@@ -601,7 +601,7 @@ REGISTER_CMD_FUNC(agr)
 	}
 
 	pEngfuncs->Con_Printf(
-		"%s start <sFilePath> - Start recording to file <sFilePath>, you should set a low host_framerate before (i.e. 30) and give the \".agr\" file extension.\n"
+		"%s start <sFilePath> - Start recording to file <sFilePath>, you should set a low FPS before (i.e. using host_framerate 0.04 (1/25 FPS = 0.04 seconds per frame)) and give the \".agr\" file extension.\n"
 		"%s stop - Stop recording.\n"
 		, prefix
 		, prefix
