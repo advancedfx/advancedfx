@@ -6,8 +6,8 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
-<version>2.12.1-upcoming</version>
-<time>2021-09-04T07:54Z</time>
+<version>2.12.1</version>
+<time>2021-09-07T15:40Z</time>
 <changes>
 <change type="fixed">Fixed command help for mirv_agr regarding host_framerate (should be seconds per frame, not FPS in GoldSrc (i.e. host_framerate 0.04 for 25 FPS)).</change>
 </changes>

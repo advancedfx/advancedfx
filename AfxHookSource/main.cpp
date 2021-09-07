@@ -1175,6 +1175,7 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 { // NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 37)
 
 	static bool firstFrameAfterNetUpdateEnd = false;
+	static int oldMirvPov = 0;
 
 	switch (curStage)
 	{
@@ -1192,75 +1193,10 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 
 		g_AfxStreams.BeforeFrameStart();
 		break;
-	case SOURCESDK::CSGO::FRAME_NET_UPDATE_START:
-		// Switch to local player during updates:
-		if (g_i_MirvPov && 1 != g_i_MirvPov)
-		{
-			if (SOURCESDK::IClientEntity_csgo* ce = SOURCESDK::g_Entitylist_csgo->GetClientEntity(1))
-			{
-				if (SOURCESDK::C_BaseEntity_csgo* be = ce->GetBaseEntity())
-				{
-					if (be->IsPlayer())
-					{
-						bool* pOsLocalPlayer = (bool*)((char*)be + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
-						*pOsLocalPlayer = false;
-					}
-				}
-			}
-
-			if (SOURCESDK::IClientEntity_csgo* ce1 = SOURCESDK::g_Entitylist_csgo->GetClientEntity(1))
-			{
-				if (SOURCESDK::C_BaseEntity_csgo* be1 = ce1->GetBaseEntity())
-				{
-					if (be1->IsPlayer())
-					{
-						bool* pOsLocalPlayer = (bool*)((char*)be1 + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
-						*pOsLocalPlayer = true;
-					}
-				}
-			}
-		}
-		break;
 	case SOURCESDK::CSGO::FRAME_NET_UPDATE_END:
 		firstFrameAfterNetUpdateEnd = true;
 		break;
-	case SOURCESDK::CSGO::FRAME_NET_UPDATE_POSTDATAUPDATE_START:
-		// Switch back to target pov player before updates are applied:
-		if (g_i_MirvPov && 1 != g_i_MirvPov)
-		{
-			if (SOURCESDK::IClientEntity_csgo* ce = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_i_MirvPov))
-			{
-				if (SOURCESDK::C_BaseEntity_csgo* be = ce->GetBaseEntity())
-				{
-					if (be->IsPlayer())
-					{
-						if (g_i_MirvPov != g_VEngineClient->GetLocalPlayer())
-						{
-							// E.g. disconnected and we switch back to player 1, now we can switch back to target again.
 
-							static csgo_C_BasePlayer_SetAsLocalPlayer_t setAsLocalPlayer = (csgo_C_BasePlayer_SetAsLocalPlayer_t)AFXADDR_GET(csgo_C_BasePlayer_SetAsLocalPlayer);
-							setAsLocalPlayer(be, 0);
-						}
-
-						bool* pOsLocalPlayer = (bool*)((char*)be + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
-						*pOsLocalPlayer = true;
-
-						if (SOURCESDK::IClientEntity_csgo* ce1 = SOURCESDK::g_Entitylist_csgo->GetClientEntity(1))
-						{
-							if (SOURCESDK::C_BaseEntity_csgo* be1 = ce1->GetBaseEntity())
-							{
-								if (be1->IsPlayer())
-								{
-									bool* pOsLocalPlayer = (bool*)((char*)be1 + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
-									*pOsLocalPlayer = false;
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		break;
 	case SOURCESDK::CSGO::FRAME_RENDER_START:
 
 #ifdef AFX_INTEROP
@@ -1286,12 +1222,91 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 				ce->PostDataUpdate(SOURCESDK::CSGO::DATA_UPDATE_CREATED);
 		}
 		break;
+
+	case SOURCESDK::CSGO::FRAME_NET_UPDATE_POSTDATAUPDATE_START:
+		{
+			int newMirvPov = 0;
+			// Switch back to target pov player before updates are applied:
+			if (0 != g_i_MirvPov && g_Org_svc_ServerInfo_PlayerSlot + 1 != g_i_MirvPov)
+			{
+				if (SOURCESDK::IClientEntity_csgo* ce = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_i_MirvPov))
+				{
+					if (SOURCESDK::C_BaseEntity_csgo* be = ce->GetBaseEntity())
+					{
+						if (be->IsPlayer())
+						{
+							newMirvPov = g_i_MirvPov;
+
+							if (g_i_MirvPov != g_VEngineClient->GetLocalPlayer())
+							{
+								// E.g. earlier disconnected and had to switch back to player 1, but now we can switch back to target again.
+
+								static csgo_C_BasePlayer_SetAsLocalPlayer_t setAsLocalPlayer = (csgo_C_BasePlayer_SetAsLocalPlayer_t)AFXADDR_GET(csgo_C_BasePlayer_SetAsLocalPlayer);
+								setAsLocalPlayer(be, 0);
+							}
+
+							bool* pOsLocalPlayer = (bool*)((char*)be + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
+							*pOsLocalPlayer = true;
+
+							// make old POV non-local (if there is any):
+							if(newMirvPov != oldMirvPov && oldMirvPov != 0) {
+								if (SOURCESDK::IClientEntity_csgo* ce1 = SOURCESDK::g_Entitylist_csgo->GetClientEntity(oldMirvPov))
+								{
+									if (SOURCESDK::C_BaseEntity_csgo* be1 = ce1->GetBaseEntity())
+									{
+										if (be1->IsPlayer())
+										{
+											bool* pOsLocalPlayer = (bool*)((char*)be1 + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
+											*pOsLocalPlayer = false;
+										}
+									}
+								}
+							}
+
+							// Make sure real local player stays overriden:
+							if (SOURCESDK::IClientEntity_csgo* ce1 = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_Org_svc_ServerInfo_PlayerSlot + 1))
+							{
+								if (SOURCESDK::C_BaseEntity_csgo* be1 = ce1->GetBaseEntity())
+								{
+									if (be1->IsPlayer())
+									{
+										bool* pOsLocalPlayer = (bool*)((char*)be1 + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
+										*pOsLocalPlayer = false;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			if(oldMirvPov != newMirvPov) {
+				if(newMirvPov == 0) {
+					// Lost player, e.g. due to disconnect.
+					// Switch back to original local player:
+					if (SOURCESDK::IClientEntity_csgo* ce1 = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_Org_svc_ServerInfo_PlayerSlot + 1))
+					{
+						if (SOURCESDK::C_BaseEntity_csgo* be1 = ce1->GetBaseEntity())
+						{
+							if (be1->IsPlayer())
+							{
+								bool* pOsLocalPlayer = (bool*)((char*)be1 + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
+								*pOsLocalPlayer = true;
+							}
+						}
+					}
+				}
+				oldMirvPov = newMirvPov;
+			}
+		}
+		break;
+
 	}
 
 	m_Parent->FrameStageNotify(curStage);
 
 	switch (curStage)
 	{
+
 	case SOURCESDK::CSGO::FRAME_RENDER_START:
 #ifdef AFX_INTEROP
 		AfxInterop::AfterFrameRenderStart();
