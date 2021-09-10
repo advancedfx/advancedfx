@@ -14,8 +14,6 @@
 #include "AfxStreams.h"
 #include "csgo_GameEvents.h"
 
-#include "csgo/hooks/materialsystem.h"
-
 #include <Windows.h>
 
 #include <set>
@@ -1650,7 +1648,7 @@ namespace AfxInterop {
 			DisconnectDrawing();
 		}
 
-		void EngineThread_On_CMatQueuedRenderContext_EndQueue_EngineThreadFlush() {
+		void EngineThread_On_FlushQueueFlush() {
 			int errorLine = 0;
 
 			if (m_EngineConnected)
@@ -1860,10 +1858,6 @@ namespace AfxInterop {
 
 						if (7 == serverMajorVersion)
 						{
-							if(!Hook_Materialsystem_CMatQueuedRenderContext_EndFrame()) {
-								Tier0_Warning("AFX WARNING: MISSING hook materialsystem!CMatQueuedRenderContext::EndFrame.\n");
-							}
-
 							unsigned int serverSubVersion[3];
 							if (!ReadUInt32(m_hEnginePipe, serverSubVersion[0])) { errorLine = __LINE__; goto error; }
 							if (!ReadUInt32(m_hEnginePipe, serverSubVersion[1])) { errorLine = __LINE__; goto error; }
@@ -2473,7 +2467,7 @@ namespace AfxInterop {
 			bool bInSafeState = false;
 			bool bOrgRenderTarget = false;
 			IDirect3DSurface9 * pOrgRenderTarget = nullptr;
-			bool queuedThreaded = Hook_Materialsystem_CMatQueuedRenderContext_EndFrame() && g_AfxStreams.IsQueuedThreaded();
+			bool queuedThreaded = g_AfxStreams.IsQueuedThreaded();
 
 			while (true)
 			{
@@ -4245,19 +4239,17 @@ namespace AfxInterop {
 		}
 	}
 
-	void On_CMatQueuedRenderContext_EndQueue(bool bCallQueued)
+	void On_Materialysystem_FlushQueue()
 	{
 		if (!m_Enabled) return;
-
-		if (!bCallQueued) return;
-
+		
 		if (!g_AfxStreams.OnEngineThread()) return;
 
 		std::shared_lock<std::shared_timed_mutex> clientsLock(m_ClientsMutex);
 
 		for (auto it = m_Clients.begin(); it != m_Clients.end(); ++it)
 		{
-			it->Get()->EngineThread_On_CMatQueuedRenderContext_EndQueue_EngineThreadFlush();
+			it->Get()->EngineThread_On_FlushQueueFlush();
 		}
 	}
 

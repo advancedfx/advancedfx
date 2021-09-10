@@ -118,7 +118,7 @@ namespace AfxInterop {
 	//
 	// Different Threads:
 
-	void On_CMatQueuedRenderContext_EndQueue(bool bCallQueued);
+	void On_Materialysystem_FlushQueue();
 }
 
 #endif
