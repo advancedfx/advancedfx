@@ -3273,6 +3273,8 @@ CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 }
 
 extern int g_iForcePostDataUpdateChanged;
+extern bool g_b_Suppress_csgo_engine_Do_CCLCMsg_FileCRCCheck;
+extern bool Install_csgo_engine_Do_CCLCMsg_FileCRCCheck();
 
 CON_COMMAND(mirv_fix, "Various fixes")
 {
@@ -3497,6 +3499,18 @@ CON_COMMAND(mirv_fix, "Various fixes")
 				}
 			}
 		}
+		else if (0 == _stricmp("suppressFileCRCCheck", cmd1))
+		{
+			if(!Install_csgo_engine_Do_CCLCMsg_FileCRCCheck()) {
+				Tier0_Warning("Error: Missing hooks.\n");
+			} else if(argc < 3) {
+				Tier0_Msg("mirv_fix suppressFileCRCCheck 0|1\nCurrent Value: %i\n", g_b_Suppress_csgo_engine_Do_CCLCMsg_FileCRCCheck?1:0);
+			} else {
+				g_b_Suppress_csgo_engine_Do_CCLCMsg_FileCRCCheck = 0 != atoi(args->ArgV(2));
+			}
+
+			return;
+		}
 	}
 
 	Tier0_Msg(
@@ -3508,6 +3522,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 		"mirv_fix selectedPlayerGlow 0|1|2 - 1: Game default, 2: Always glow, 0 : never glow.\n"
 		"mirv_fix forcePostDataUpdateChanged [...].\n"
 		"mirv_fix forceDoAnimationEvents 0|1 - Only useful in combination with replaceing old models with new ones for forcing animation events to be played, defaut is 0 (off).\n"
+		"mirv_fix suppressFileCRCCheck 0|1 - This is only useful with HLAE special builds and it's on by default.\n"
 	);
 	return;
 }

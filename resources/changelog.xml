@@ -6,6 +6,37 @@
 
 <release>
 <name>HLAE</name>
+<version>2.120.1</version>
+<time>2021-09-07T15:40Z</time>
+<changes>
+<change type="updated">Included AfxHookGoldSrc 2.12.1 (2021-09-07T15:40Z).</change>
+<change type="updated">Included AfxHookSource 1.99.1 (2021-09-07T15:40Z).</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
+<version>2.120.0</version>
+<time>2021-08-23T17:42Z</time>
+<changes>
+<change type="updated">Included AfxHookSource 1.99.0 (2021-08-23T17:42Z).</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
+<version>2.119.1</version>
+<time>2021-08-18T12:14Z</time>
+<changes>
+<change type="updated">This is probably only relevant for the no-insecure special release for observers. Fixed default SteamPath environment variable value and auto detection not working. If you use custom loader you will need to fix the value for SteamPath in the second box yourself (there's a space missing, should be e.g. SteamPath=C:\Program Files (x86)\Steam instead of WRONG C:\Program Files(x86)\Steam).</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.119.0</version>
 <time>2021-07-24T13:20Z</time>
 <changes>

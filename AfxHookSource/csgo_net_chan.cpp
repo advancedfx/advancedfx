@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "csgo_net_chan.h"
 
+#include "csgo/ClientToolsCsgo.h"
+
 #include "WrpConsole.h"
 
 #include "addresses.h"
@@ -16,6 +18,7 @@
 
 
 int g_i_MirvPov = 0;
+int g_Org_svc_ServerInfo_PlayerSlot = 0;
 
 struct csgo_bf_read {
 	char const* m_pDebugName;
@@ -75,7 +78,10 @@ int __fastcall Mycsgo_CNetChan_ProcessMessages(csgo_CNetChan_t* This, void* Edx,
 						}
 						if (msg.has_player_slot())
 						{
+							g_Org_svc_ServerInfo_PlayerSlot = msg.player_slot();
 							msg.set_player_slot(g_i_MirvPov - 1);
+						} else {
+							g_Org_svc_ServerInfo_PlayerSlot = 0;
 						}
 						msg.SerializePartialToArray(const_cast<unsigned char*>(readBuf.GetBasePointer()) + readBuf.GetNumBytesRead(), packet_size);
 					}
@@ -255,7 +261,7 @@ void __fastcall Mycsgo_C_CSPlayer_UpdateOnRemove(SOURCESDK::C_BasePlayer_csgo* T
 {
 	if (g_i_MirvPov && This->entindex() == g_i_MirvPov)
 	{
-		if (SOURCESDK::IClientEntity_csgo* ce1 = SOURCESDK::g_Entitylist_csgo->GetClientEntity(1))
+		if (SOURCESDK::IClientEntity_csgo* ce1 = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_Org_svc_ServerInfo_PlayerSlot+1))
 		{
 			if (SOURCESDK::C_BaseEntity_csgo* be1 = ce1->GetBaseEntity())
 			{
@@ -290,6 +296,60 @@ bool csgo_C_CSPlayer_UpdateOnRemove_Install(void)
 	return firstResult;
 }
 
+typedef void (__fastcall * C_BaseViewModel_FireEvent_t)(SOURCESDK::C_BaseViewModel_csgo * This, void * Edx, const SOURCESDK::Vector& origin, const SOURCESDK::QAngle& angles, int event, const char *options );
+
+C_BaseViewModel_FireEvent_t g_Org_C_BaseViewModel_FireEvent;
+
+void __fastcall My_C_BaseViewModel_FireEvent(SOURCESDK::C_BaseViewModel_csgo * This, void * Edx,  const SOURCESDK::Vector& origin, const SOURCESDK::QAngle& angles, int event, const char *options ) {
+
+	if(0 != g_i_MirvPov) {
+		// Fix only play (sound) events for viewmodels of of local player in case when not observing.
+
+		if (SOURCESDK::IClientEntity_csgo* ce = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_i_MirvPov))
+		{
+			if (SOURCESDK::C_BaseEntity_csgo* be = ce->GetBaseEntity())
+			{
+				if (be->IsPlayer()
+					&& 0 == ((SOURCESDK::C_BasePlayer_csgo *)be)->GetObserverMode() // OBS_MODE_NONE
+				){
+					if(SOURCESDK::C_BaseEntity_csgo* pe = This->GetOwner()) {
+						if (pe->entindex() != ce->entindex())
+						 return;
+					}
+
+				}
+
+			}
+		}
+	}
+
+	g_Org_C_BaseViewModel_FireEvent(This, Edx, origin, angles, event, options);
+
+}
+
+bool Install_csgo_C_BaseViewModel_FireEvent(void)
+{
+	static bool firstResult = false;
+	static bool firstRun = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	if (AFXADDR_GET(csgo_C_BaseViewModel_FireEvent))
+	{
+		LONG error = NO_ERROR;
+
+		g_Org_C_BaseViewModel_FireEvent = (C_BaseViewModel_FireEvent_t)AFXADDR_GET(csgo_C_BaseViewModel_FireEvent);
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)g_Org_C_BaseViewModel_FireEvent, My_C_BaseViewModel_FireEvent);
+		error = DetourTransactionCommit();
+
+		firstResult = NO_ERROR == error;
+	}
+
+	return firstResult;
+}
 
 CON_COMMAND(mirv_pov, "Forces a POV on a GOTV demo.")
 {
@@ -301,6 +361,7 @@ CON_COMMAND(mirv_pov, "Forces a POV on a GOTV demo.")
 		&& Install_csgo_C_CS_Player__GetFOVs()
 		&& AFXADDR_GET(csgo_C_BasePlayer_SetAsLocalPlayer)
 		&& AFXADDR_GET(csgo_crosshair_localplayer_check)
+		&& Install_csgo_C_BaseViewModel_FireEvent()
 		))
 	{
 		Tier0_Warning("Not supported for your engine / missing hooks!\n");

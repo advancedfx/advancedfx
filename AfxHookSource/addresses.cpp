@@ -95,6 +95,8 @@ AFXADDR_DEF(csgo_C_Team_vtable)
 AFXADDR_DEF(csgo_engine_CModelLoader_vtable)
 AFXADDR_DEF(csgo_client_C_TEPlayerAnimEvent_PostDataUpdate_NewModelAnims_JNZ)
 AFXADDR_DEF(csgo_materialsystem_CMatQueuedRenderContext_EndQueue)
+AFXADDR_DEF(csgo_engine_Do_CCLCMsg_FileCRCCheck)
+AFXADDR_DEF(csgo_C_BaseViewModel_FireEvent)
 
 void ErrorBox(char const * messageText);
 
@@ -598,6 +600,28 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		// csgo_engine_CModelLoader_vtable
 		AFXADDR_SET(csgo_engine_CModelLoader_vtable, FindClassVtable((HMODULE)engineDll, ".?AVCModelLoader@@", 0, 0x0));
 		if (!AFXADDR_GET(csgo_engine_CModelLoader_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+		// csgo_engine_Do_CCLCMsg_FileCRCCheck
+		// This function is called right after a function that references the string "CheckUpdatingSteamResources"
+		{
+			DWORD addr = 0;
+
+			ImageSectionsReader sections((HMODULE)engineDll);
+			if (!sections.Eof())
+			{
+				MemRange textRange = sections.GetMemRange();
+
+				MemRange result = FindPatternString(textRange, "55 8B EC 81 EC ?? ?? ?? ?? 53 8B D9 89 5D F8 80 BB ?? ?? ?? ?? 00 0F 84 ?? ?? ?? ?? 83 BB 00 01 00 00 06 0F 85 ?? ?? ?? ?? FF 15 ?? ?? ?? ??");
+
+				if (!result.IsEmpty())
+					addr = result.Start;
+				else
+					ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			AFXADDR_SET(csgo_engine_Do_CCLCMsg_FileCRCCheck, addr);
+		}
 	}
 	else
 	{
@@ -615,6 +639,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_CStaticProp_IClientEntity_vtable, 0x0);
 		AFXADDR_SET(csgo_CNetChan_ProcessMessages, 0x0);
 		AFXADDR_SET(csgo_engine_CModelLoader_vtable, 0x0);
+		AFXADDR_SET(csgo_engine_Do_CCLCMsg_FileCRCCheck, 0x0);
 	}
 	AFXADDR_SET(csgo_snd_mix_timescale_patch_DSZ, 0x08);
 	AFXADDR_SET(csgo_MIX_PaintChannels_DSZ, 0x9);
@@ -2058,6 +2083,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			DWORD tmpAddr = FindClassVtable((HMODULE)clientDll, ".?AVC_BaseViewModel@@", 0, 0x0);
 			if (tmpAddr) {
 				AFXADDR_SET(csgo_C_BaseEntity_ShouldInterpolate, ((DWORD*)tmpAddr)[178]);
+				AFXADDR_SET(csgo_C_BaseViewModel_FireEvent, ((DWORD*)tmpAddr)[199]);
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
@@ -2145,6 +2171,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_C_BaseEntity_ShouldInterpolate, 0x0);
 		AFXADDR_SET(csgo_C_CS_PlayerResource_IGameResources_vtable, 0x0);
 		AFXADDR_SET(csgo_client_C_TEPlayerAnimEvent_PostDataUpdate_NewModelAnims_JNZ, 0x0);
+		AFXADDR_SET(csgo_C_BaseViewModel_FireEvent, 0x0);
 	}
 
 	//AFXADDR_SET(csgo_CPredictionCopy_TransferData_DSZ, 0x0a);
