@@ -94,7 +94,7 @@ AFXADDR_DEF(csgo_C_CS_PlayerResource_IGameResources_vtable)
 AFXADDR_DEF(csgo_C_Team_vtable)
 AFXADDR_DEF(csgo_engine_CModelLoader_vtable)
 AFXADDR_DEF(csgo_client_C_TEPlayerAnimEvent_PostDataUpdate_NewModelAnims_JNZ)
-AFXADDR_DEF(csgo_materialsystem_CMatQueuedRenderContext_EndQueue)
+AFXADDR_DEF(csgo_materialsystem_CMaterialSystem_ForceSingleThreaded)
 AFXADDR_DEF(csgo_engine_Do_CCLCMsg_FileCRCCheck)
 AFXADDR_DEF(csgo_C_BaseViewModel_FireEvent)
 
@@ -2408,25 +2408,23 @@ void Addresses_InitStdshader_dx9Dll(AfxAddr stdshader_dx9Dll, bool isCsgo)
 */
 
 void Addresses_InitMaterialsystemDll(AfxAddr materialsystemDll, SourceSdkVer sourceSdkVer) {
-	AFXADDR_SET(csgo_materialsystem_CMatQueuedRenderContext_EndQueue, 0);
+	AFXADDR_SET(csgo_materialsystem_CMaterialSystem_ForceSingleThreaded, 0);
 	if (sourceSdkVer == SourceSdkVer_CSGO) {
 
 
-		// csgo_materialsystem_CMatQueuedRenderContext_EndQueue:
+		// csgo_materialsystem_CMaterialSystem_ForceSingleThreaded:
 		//
-		// This function calls CMatQueuedRenderContext::CallQueueue that has string
-		// "%d calls queued for %d bytes in parameters and overhead, %d bytes verts, %d bytes indices, %d bytes other\n"
-		// and after that sets a lot of class members NULL if they are not NULL yet.
+		// Function references string "Can't force single thread from within thread!\n"
 		// 
 		ImageSectionsReader sections((HMODULE)materialsystemDll);
 		if (!sections.Eof())
 		{
 			MemRange textRange = sections.GetMemRange();
 
-			MemRange result = FindPatternString(textRange, "51 56 51 8B F1 E8 ?? ?? ?? ?? 83 7E 0C 00 74 07 C7 46 0C 00 00 00 00 83 7E 18 00 74 07 C7 46 18 00 00 00 00");
+			MemRange result = FindPatternString(textRange, "53 56 57 8B F9 FF 15 ?? ?? ?? ?? 84 C0 75 0E 68 ?? ?? ?? ?? FF 15 ?? ?? ?? ?? 83 C4 04 8B 07 8B CF FF 50 3C 85 C0");
 
 			if (!result.IsEmpty()) {
-				AFXADDR_SET(csgo_materialsystem_CMatQueuedRenderContext_EndQueue, result.Start);
+				AFXADDR_SET(csgo_materialsystem_CMaterialSystem_ForceSingleThreaded, result.Start);
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}

@@ -212,7 +212,7 @@
       <UniqueIdentifier>{34f554f5-817e-4abd-aab6-18b4be1e817c}</UniqueIdentifier>
     </Filter>
     <Filter Include="AfxHookSource\csgo\hooks">
-      <UniqueIdentifier>{9a4ef660-ff16-4547-ac76-cb184aa7252a}</UniqueIdentifier>
+      <UniqueIdentifier>{8fc26d1c-be6d-4655-9547-4a0e4385c77d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
