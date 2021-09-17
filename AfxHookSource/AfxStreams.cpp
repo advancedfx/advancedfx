@@ -6641,7 +6641,7 @@ void CAfxStreams::Console_Record_Start()
 			std::wstring camFileName(m_TakeDir);
 			camFileName.append(L"\\cam_main.cam");
 
-			m_CamExportObj = new CamExport(camFileName.c_str(), m_CamExportScaleFov);
+			m_CamExportObj = new CamExport(camFileName.c_str());
 		}
 
 		Tier0_Msg("done.\n");

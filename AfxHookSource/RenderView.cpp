@@ -578,7 +578,7 @@ void Hook_VClient_RenderView::Console_CamIO(IWrpCommandArgs * args)
 			{
 				char const * cmd2 = args->ArgV(2);
 
-				if (0 == _stricmp("start", cmd2) && 5 <= argc)
+				if (0 == _stricmp("start", cmd2) && 4 <= argc)
 				{
 					if (0 != m_CamExport)
 					{
@@ -590,7 +590,7 @@ void Hook_VClient_RenderView::Console_CamIO(IWrpCommandArgs * args)
 
 					if (UTF8StringToWideString(args->ArgV(3), fileName))
 					{
-						m_CamExport = new CamExport(fileName.c_str(), 0 == _stricmp("alienSwarm", args->ArgV(4)) ? CamExport::SF_AlienSwarm : CamExport::SF_None);
+						m_CamExport = new CamExport(fileName.c_str());
 					}
 					else
 						Tier0_Warning("Error: Can not convert \"%s\" from UTF-8 to WideString.\n", args->ArgV(3));
@@ -613,7 +613,7 @@ void Hook_VClient_RenderView::Console_CamIO(IWrpCommandArgs * args)
 			}
 
 			Tier0_Msg(
-				"%s export start <fileName> <fovScaling> - Starts exporting to file <fileName>, <fovScaling> can be \"none\" for engine FOV or \"alienSwarm\" for scaling like Alien Swarm SDK (i.e. CS:GO).\n"
+				"%s export start <fileName> - Starts exporting to file <fileName>.\n"
 				"%s export end - Stops exporting.\n"
 				, cmd0
 				, cmd0

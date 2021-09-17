@@ -3254,9 +3254,6 @@ public:
 	bool CamExport_get(void) { return m_CamExport;  }
 	void CamExport_set(bool value) { m_CamExport = value;  }
 
-	CamExport::ScaleFov CamExportScaleFov_get(void) { return m_CamExportScaleFov;  }
-	void CamExportScaleFov_set(CamExport::ScaleFov value) { m_CamExportScaleFov = value;  }
-
 	void Console_GameRecording(IWrpCommandArgs * args);
 
 	/// <param name="streamName">stream name to preview or empty string if to preview nothing.</param>
@@ -3398,7 +3395,6 @@ private:
 	bool m_CamBvh;
 	std::list<CEntityBvhCapture *> m_EntityBvhCaptures;
 	bool m_CamExport = false;
-	CamExport::ScaleFov m_CamExportScaleFov = CamExport::SF_None;
 	CamExport * m_CamExportObj = 0;
 	bool m_GameRecording;
 

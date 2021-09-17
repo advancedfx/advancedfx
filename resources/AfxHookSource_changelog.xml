@@ -6,10 +6,20 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.100.0</version>
+<time>2021-09-17T06:32Z</time>
+<changes>
+<change type="updated">Updated mirv_camio to version 2.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.99.1</version>
 <time>2021-09-07T15:40Z</time>
 <changes>
-<change type="added">Added "mirv_fix suppressFileCRCCheck (enabled by default), only relevant for spectator no-insecure version of HLAE though usually.</change>
+<change type="fixed">Fixed unwanted mirv_pov sounds of other viewmodel weapons.</change>
 </changes>
 </release>
 
