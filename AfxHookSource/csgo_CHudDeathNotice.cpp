@@ -1714,9 +1714,9 @@ bool Hookcsgo_Team_GetFunctions(void)
 
 		void **vtable = (void **)AFXADDR_GET(csgo_C_Team_vtable);
 		
-		g_Old_csgo_C_Team_Get_ClanName = (csgo_C_Team_Get_ClanName_t)vtable[187];
-		g_Old_csgo_C_Team_Get_FlagImageString = (csgo_C_Team_Get_FlagImageString_t)vtable[188];
-		g_Old_csgo_C_Team_Get_LogoImageString = (csgo_C_Team_Get_LogoImageString_t)vtable[189];
+		g_Old_csgo_C_Team_Get_ClanName = (csgo_C_Team_Get_ClanName_t)vtable[188];
+		g_Old_csgo_C_Team_Get_FlagImageString = (csgo_C_Team_Get_FlagImageString_t)vtable[189];
+		g_Old_csgo_C_Team_Get_LogoImageString = (csgo_C_Team_Get_LogoImageString_t)vtable[190];
 		
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());

@@ -6,6 +6,16 @@
 
 <release>
 <name>HLAE</name>
+<version>2.121.1</version>
+<time>2021-09-22T06:47Z</time>
+<changes>
+<change type="updated">Included AfxHookSource 1.100.1 2021-09-22T06:47Z).</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.121.0</version>
 <time>2021-09-17T06:32Z</time>
 <changes>
