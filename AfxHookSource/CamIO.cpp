@@ -8,7 +8,10 @@
 
 double CamIO::DoFovScaling(double width, double height, double fov)
 {
-	if (SF_AlienSwarm == m_ScaleFov)
+	if(SF_New == m_ScaleFov)
+		return Auto_FovScaling(width, height, fov);
+
+	if (SF_OldAlienSwarm == m_ScaleFov)
 		return AlienSwarm_FovScaling(width, height, fov);
 
 	return fov;
@@ -16,21 +19,24 @@ double CamIO::DoFovScaling(double width, double height, double fov)
 
 double CamIO::UndoFovScaling(double width, double height, double fov)
 {
-	if (SF_AlienSwarm == m_ScaleFov)
+	if(SF_New == m_ScaleFov)
+		return Auto_InverseFovScaling(width, height, fov);
+
+	if (SF_OldAlienSwarm == m_ScaleFov)
 		return AlienSwarm_InverseFovScaling(width, height, fov);
 
 	return fov;
 }
 
 
-CamExport::CamExport(const wchar_t * fileName, ScaleFov scaleFov)
+CamExport::CamExport(const wchar_t * fileName)
 	: m_Ofs(fileName, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc)
 {
-	m_ScaleFov = scaleFov;
+	m_ScaleFov = SF_New;
 
 	m_Ofs << "advancedfx Cam" << std::endl;
-	m_Ofs << "version 1" << std::endl;
-	m_Ofs << "scaleFov " << (m_ScaleFov == SF_AlienSwarm ? "alienSwarm" : "none") << std::endl;
+	m_Ofs << "version 2" << std::endl;
+	//m_Ofs << "scaleFov " << (m_ScaleFov == SF_AlienSwarm ? "alienSwarm" : "none") << std::endl;
 	m_Ofs << "channels time xPosition yPosition zPosition xRotation yRotation zRotation fov" << std::endl;
 	m_Ofs << "DATA" << std::endl;
 
@@ -58,7 +64,7 @@ CamImport::CamImport(char const * fileName, double startTime)
 	, m_StartTime(startTime)
 {
 	int version = 0;
-	m_ScaleFov = SF_None;
+	m_ScaleFov = SF_New;
 
 	char magic[14 + 1 + 1] = { 0 };
 
@@ -91,11 +97,13 @@ CamImport::CamImport(char const * fileName, double startTime)
 			iss >> arg;
 
 			if (0 == arg.compare("alienSwarm"))
-				m_ScaleFov = SF_AlienSwarm;
+				m_ScaleFov = SF_OldAlienSwarm;
+			else
+				m_ScaleFov = SF_OldNone;
 		}
 	}
 
-	if (1 != version) m_Ifs.setstate(m_Ifs.rdstate() | std::ifstream::badbit);
+	if (version < 1 || version > 2) m_Ifs.setstate(m_Ifs.rdstate() | std::ifstream::badbit);
 
 	m_DataStart = m_Ifs.tellg();
 }

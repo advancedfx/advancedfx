@@ -1915,8 +1915,8 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			DWORD tmpAddr = FindClassVtable((HMODULE)clientDll, ".?AVC_CSPlayer@@", 0, 0x0);
 			if (tmpAddr) {
 				AFXADDR_SET(csgo_C_CSPlayer_vtable, tmpAddr);
-				AFXADDR_SET(csgo_C_BasePlayer_GetToolRecordingState, ((DWORD*)tmpAddr)[102]);
-				AFXADDR_SET(csgo_C_CSPlayer_UpdateClientSideAnimation, ((DWORD*)tmpAddr)[223]);
+				AFXADDR_SET(csgo_C_BasePlayer_GetToolRecordingState, ((DWORD*)tmpAddr)[103]);
+				AFXADDR_SET(csgo_C_CSPlayer_UpdateClientSideAnimation, ((DWORD*)tmpAddr)[224]);
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
@@ -2011,6 +2011,9 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			AFXADDR_SET(csgo_DamageIndicator_MessageFunc, addr);
 		}
 
+		// csgo_C_BasePlayer_SetAsLocalPlayer // Last checked: 2022-09-22
+		// Also check: csgo_C_BasePlayer_ofs_m_bIsLocalPlayer!
+		// References "snd_soundmixer" and is called by function that references "Setting fallback player %s as local player\n" right before the call.
 		{
 			DWORD addr = 0;
 
@@ -2019,7 +2022,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			{
 				MemRange textRange = sections.GetMemRange();
 
-				MemRange result = FindPatternString(textRange, "C6 81 24 36 00 00 01 C7 81 1C 36 00 00 00 00 00 00 89 0D ?? ?? ?? ?? C7 81 20 36 00 00 FF FF FF FF B9 ?? ?? ?? ?? E8 ?? ?? ?? ??");
+				MemRange result = FindPatternString(textRange, "C6 81 34 36 00 00 01 C7 81 2C 36 00 00 00 00 00 00 89 0D ?? ?? ?? ?? C7 81 30 36 00 00 FF FF FF FF B9 ?? ?? ?? ?? E8 ?? ?? ?? ??");
 
 				if (!result.IsEmpty())
 					addr = result.Start;
@@ -2031,7 +2034,9 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			AFXADDR_SET(csgo_C_BasePlayer_SetAsLocalPlayer, addr);
 		}
 
-		AFXADDR_SET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer, 0x3624);
+		// csgo_C_BasePlayer_ofs_m_bIsLocalPlayer // Last checked: 2022-09-22
+		// Set to true in csgo_C_BasePlayer_SetAsLocalPlayer.
+		AFXADDR_SET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer, 0x3634);
 
 		{
 			AFXADDR_SET(csgo_C_BaseViewModel_ofs_m_nAnimationParity, -1);
@@ -2082,8 +2087,8 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			AFXADDR_SET(csgo_C_BaseEntity_ShouldInterpolate, 0x0);
 			DWORD tmpAddr = FindClassVtable((HMODULE)clientDll, ".?AVC_BaseViewModel@@", 0, 0x0);
 			if (tmpAddr) {
-				AFXADDR_SET(csgo_C_BaseEntity_ShouldInterpolate, ((DWORD*)tmpAddr)[178]);
-				AFXADDR_SET(csgo_C_BaseViewModel_FireEvent, ((DWORD*)tmpAddr)[199]);
+				AFXADDR_SET(csgo_C_BaseEntity_ShouldInterpolate, ((DWORD*)tmpAddr)[179]);
+				AFXADDR_SET(csgo_C_BaseViewModel_FireEvent, ((DWORD*)tmpAddr)[200]);
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
@@ -2098,9 +2103,10 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			if(!AFXADDR_GET(csgo_C_Team_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
 
-		// csgo_client_C_TEPlayerAnimEvent_PostDataUpdate_NewModelAnims_JNZ
+		// csgo_client_C_TEPlayerAnimEvent_PostDataUpdate_NewModelAnims_JNZ // Last Checked: 2021-09-22
 		//
 		// This is for the the JNZ C_TEPlayerAnimEvent::PostDataUpdate if not new model animations.
+		// The compiler changed class layout a bit, IClientNetworkable is at 0x4 instead of 0x8 (IClientRenderable missing).
 		{
 			DWORD addr = 0;
 
@@ -2109,7 +2115,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			{
 				MemRange textRange = sections.GetMemRange();
 
-				MemRange result = FindPatternString(textRange, "8B 57 10 38 86 C8 3A 00 00 75 14 83 FA 07 74 0F 8B 8E 10 39 00 00 FF 77 14 52 8B 01 FF 50 18");
+				MemRange result = FindPatternString(textRange, "8B 57 10 38 86 14 9B 00 00 75 14 83 FA 07 74 0F 8B 8E 5C 99 00 00 FF 77 14 52 8B 01 FF 50 18");
 
 				if (!result.IsEmpty())
 					addr = result.Start + 9;

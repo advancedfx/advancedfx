@@ -850,26 +850,10 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 							);
 							return;
 						}
-						else if (!_stricmp("fovScaling", cmd3))
-						{
-							if (5 <= argc)
-							{
-								g_AfxStreams.CamExportScaleFov_set(0 == _stricmp("alienSwarm",args->ArgV(4)) ? CamExport::SF_AlienSwarm : CamExport::SF_None);
-								return;
-							}
-
-							Tier0_Msg(
-								"mirv_streams record cam fovScaling none|alienSwarm - Use engine FOV (none) or use Alien Swarm SDK like scaling i.e. used by CS:GO (alienSwarm).\n"
-								"Current value: %s\n"
-								, g_AfxStreams.CamExportScaleFov_get() == CamExport::SF_AlienSwarm ? "alienSwarm" : "none"
-							);
-							return;
-						}
 					}
 
 					Tier0_Msg(
 						"mirv_streams record cam enabled [...]\n"
-						"mirv_streams record cam fovScaling [...]\n"
 					);
 					return;
 				}

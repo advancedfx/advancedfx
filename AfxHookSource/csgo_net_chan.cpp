@@ -152,7 +152,7 @@ bool csgo_C_CSPlayer_EyeAngles_Install(void)
 
 	if (AFXADDR_GET(csgo_C_CSPlayer_vtable))
 	{
-		AfxDetourPtr((PVOID*)&(((DWORD*)AFXADDR_GET(csgo_C_CSPlayer_vtable))[169]), Mycsgo_C_CSPlayer_EyeAngles, (PVOID*)&Truecsgo_C_CSPlayer_EyeAngles);
+		AfxDetourPtr((PVOID*)&(((DWORD*)AFXADDR_GET(csgo_C_CSPlayer_vtable))[170]), Mycsgo_C_CSPlayer_EyeAngles, (PVOID*)&Truecsgo_C_CSPlayer_EyeAngles);
 
 		firstResult = true;
 	}
@@ -194,7 +194,7 @@ bool Install_csgo_C_CS_Player__GetFOVs(void)
 
 	if (AFXADDR_GET(csgo_C_CSPlayer_vtable))
 	{
-		AfxDetourPtr((PVOID*)&(((DWORD*)AFXADDR_GET(csgo_C_CSPlayer_vtable))[331]), My_csgo_C_CS_Player__GetFOV, (PVOID*)&True_csgo_C_CS_Player__GetFOV);
+		AfxDetourPtr((PVOID*)&(((DWORD*)AFXADDR_GET(csgo_C_CSPlayer_vtable))[332]), My_csgo_C_CS_Player__GetFOV, (PVOID*)&True_csgo_C_CS_Player__GetFOV);
 
 		firstResult = true;
 	}
@@ -288,7 +288,7 @@ bool csgo_C_CSPlayer_UpdateOnRemove_Install(void)
 
 	if (AFXADDR_GET(csgo_C_CSPlayer_vtable))
 	{
-		AfxDetourPtr((PVOID*)&(((DWORD*)AFXADDR_GET(csgo_C_CSPlayer_vtable))[126]), Mycsgo_C_CSPlayer_UpdateOnRemove, (PVOID*)&Truecsgo_C_CSPlayer_UpdateOnRemove);
+		AfxDetourPtr((PVOID*)&(((DWORD*)AFXADDR_GET(csgo_C_CSPlayer_vtable))[127]), Mycsgo_C_CSPlayer_UpdateOnRemove, (PVOID*)&Truecsgo_C_CSPlayer_UpdateOnRemove);
 
 		firstResult = true;
 	}

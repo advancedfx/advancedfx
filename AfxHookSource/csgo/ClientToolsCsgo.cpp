@@ -21,7 +21,7 @@ void Call_CBaseAnimating_GetToolRecordingState(SOURCESDK::C_BaseEntity_csgo * ob
 {
 	if (g_AfxAddr_csgo_C_BaseAnimating_vtable)
 	{
-		void * functionPtr = ((void **)g_AfxAddr_csgo_C_BaseAnimating_vtable)[102];
+		void * functionPtr = ((void **)g_AfxAddr_csgo_C_BaseAnimating_vtable)[103];
 
 		__asm
 		{

@@ -582,7 +582,7 @@ void CAfxRenderViewStream::Capture(CAfxRecordStream * captureTarget, size_t stre
 		else
 		{
 			g_AfxStreams.ImageBufferPool.ReleaseBuffer(buffer);
-			Tier0_Warning("CAfxRenderViewStream::Capture: Failed to realloc buffer.\n");
+			Tier0_Warning("CAfxRenderViewStream::Capture: Failed to reallocate buffer.\n");
 		}
 	}
 	else
@@ -641,7 +641,7 @@ void CAfxRenderViewStream::Capture(CAfxRecordStream * captureTarget, size_t stre
 			else
 			{
 				g_AfxStreams.ImageBufferPool.ReleaseBuffer(buffer);
-				Tier0_Warning("CAfxRenderViewStream::Capture: Failed to realloc buffer.\n");
+				Tier0_Warning("CAfxRenderViewStream::Capture: Failed to reallocate buffer.\n");
 			}
 		}
 		else
@@ -3470,8 +3470,8 @@ CAfxBaseFxStream::CActionFilterValue * CAfxBaseFxStream::CActionFilterValue::Con
 			"\"action=<actionName>\"\n"
 			"\n"
 			"- The action option must be given!\n"
-			"- <wildCardString> is a string without quotes, where \\* is the wildcard and \\\\ is \\-"
-			"- Any option except action that is not given will be treated as if it doesn't matter for a match."
+			"- <wildCardString> is a string without quotes, where \\* is the wildcard and \\\\ is \\\n"
+			"- Any option except action that is not given will be treated as if it doesn't matter for a match.\n"
 			, args->ArgV(0)
 		);
 
@@ -6651,7 +6651,7 @@ void CAfxStreams::Console_Record_Start()
 			std::wstring camFileName(m_TakeDir);
 			camFileName.append(L"\\cam_main.cam");
 
-			m_CamExportObj = new CamExport(camFileName.c_str(), m_CamExportScaleFov);
+			m_CamExportObj = new CamExport(camFileName.c_str());
 		}
 
 		Tier0_Msg("done.\n");
@@ -6757,7 +6757,7 @@ void CAfxStreams::Console_AddDepthStream(const char * streamName, bool tryZDepth
 
 	if (tryZDepth && !AfxD3d9_DrawDepthSupported())
 	{
-		Tier0_Warning("Your graphic card does not support this feature (FOURCC_INTZ) or you are using -afxinterop, falling back to old draw depth method.\n");
+		Tier0_Warning("Your graphics card does not support this feature (FOURCC_INTZ) or you are using -afxinterop, falling back to old draw depth method.\n");
 		tryZDepth = false;
 	}
 
@@ -6779,7 +6779,7 @@ void CAfxStreams::Console_AddDepthWorldStream(const char * streamName, bool tryZ
 
 	if (tryZDepth && !AfxD3d9_DrawDepthSupported())
 	{
-		Tier0_Warning("Your graphic card does not support this feature (FOURCC_INTZ) or you are using -afxinterop, falling back to old draw depth method.\n");
+		Tier0_Warning("Your graphics card does not support this feature (FOURCC_INTZ) or you are using -afxinterop, falling back to old draw depth method.\n");
 		tryZDepth = false;
 	}
 
@@ -6801,7 +6801,7 @@ void CAfxStreams::Console_AddDepthEntityStream(const char * streamName, bool try
 
 	if (tryZDepth && !AfxD3d9_DrawDepthSupported())
 	{
-		Tier0_Warning("Your graphic card does not support this feature (FOURCC_INTZ) or you are using -afxinterop, falling back to old draw depth method.\n");
+		Tier0_Warning("Your graphics card does not support this feature (FOURCC_INTZ) or you are using -afxinterop, falling back to old draw depth method.\n");
 		tryZDepth = false;
 	}
 
@@ -7373,7 +7373,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 						{
 							if(!(AfxD3D9_Check_Supports_R32F_With_Blending() && m_RenderTargetDepthF))
 							{
-								Tier0_Warning("AFXERROR: This capture type ist not supported according to your graphics card / driver. Aborting to avoid crashes.\n");
+								Tier0_Warning("AFXERROR: This capture type is not supported according to your graphics card / driver. Aborting to avoid crashes.\n");
 								return true;
 							}
 						}
@@ -7528,7 +7528,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 						Tier0_Msg(
 							"%s actionFilter add <materialNameMask> <actionName> - Add a new filter action.\n"
 							"\t<materialNameMask> - material name/path to match, where \\* = wildcard and \\\\ = \\\n"
-							"\tTo find a material name/path enable debugPrint and use invalidateMap command in stream options!"
+							"\tTo find a material name/path enable debugPrint and use invalidateMap command in stream options!\n"
 							"\t<actionName> - name of action (see mirv_actions).\n"
 							, cmdPrefix
 						);
@@ -8179,7 +8179,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 			{
 				if (!AfxD3d9_DrawDepthSupported())
 				{
-					Tier0_Warning("Your graphic card does not support this feature (FOURCC_INTZ) or you are using -afxinterop.\n");
+					Tier0_Warning("Your graphics card does not support this feature (FOURCC_INTZ) or you are using -afxinterop.\n");
 				}
 
 				if (2 <= argc)
@@ -8230,7 +8230,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 			{
 				if (!AfxD3d9_DrawDepthSupported())
 				{
-					Tier0_Warning("Your graphic card does not support this feature (FOURCC_INTZ) or you are using -afxinterop.\n");
+					Tier0_Warning("Your graphics card does not support this feature (FOURCC_INTZ) or you are using -afxinterop.\n");
 				}
 
 				if (2 <= argc)
@@ -8371,7 +8371,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 				}
 
 				Tier0_Msg(
-					"%s testAction 0|1 - Disable / enable action for devloper testing purposes.\n"
+					"%s testAction 0|1 - Disable / enable action for developer testing purposes.\n"
 					"Current value: %s.\n"
 					, cmdPrefix
 					, curBaseFx->TestAction_get() ? "1" : "0"
@@ -8468,7 +8468,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 		Tier0_Msg("%s detachCommands [...] - Commands to be executed when stream is detached. WARNING. Use at your own risk, game may crash!\n", cmdPrefix);
 		Tier0_Msg("%s drawHud [...] - Controls whether or not HUD is drawn for this stream.\n", cmdPrefix);
 		Tier0_Msg("%s drawViewModel [...] - Controls whether or not view model (in-eye weapon) is drawn for this stream.\n", cmdPrefix);
-		Tier0_Msg("%s forceBuildingCubeMaps [...] - Control if to enable force building_cubemaps to 1. This should be set on all streams that are composited with other streams or should not have any postprocessing. For technical reasons only the first stream rendered (recorded or previewed) will obey this option, others always force this.\n", cmdPrefix);
+		Tier0_Msg("%s forceBuildingCubeMaps [...] - Control if to enable force building_cubemaps to 1. This should be set on all streams that are composited with other streams or should not have any post-processing. For technical reasons only the first stream rendered (recorded or previewed) will obey this option, others always force this.\n", cmdPrefix);
 		Tier0_Msg("%s captureType [...] - Stream capture type.\n", cmdPrefix);
 		Tier0_Msg("%s doBloomAndToneMapping [...]\n", cmdPrefix);
 		Tier0_Msg("%s doDepthOfField [...]\n", cmdPrefix);
@@ -9556,7 +9556,7 @@ void CAfxRecordingSettings::Console(IWrpCommandArgs * args)
 				}
 				else if (!m_Shared.DeleteIfUnrefrenced(it))
 				{
-					Tier0_Warning("AFXERROR: Could not delete %s, because it has further refrences.\n", arg2);
+					Tier0_Warning("AFXERROR: Could not delete %s, because it has further references.\n", arg2);
 				}
 			}
 			else

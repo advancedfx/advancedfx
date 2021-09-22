@@ -13,8 +13,9 @@ class CamIO
 public:
 	enum ScaleFov
 	{
-		SF_None = 0,
-		SF_AlienSwarm
+		SF_OldNone = 0,
+		SF_OldAlienSwarm = 1,
+		SF_New = 2
 	};
 
 	struct CamData
@@ -30,7 +31,7 @@ public:
 	};
 
 protected:
-	ScaleFov m_ScaleFov = SF_None;
+	ScaleFov m_ScaleFov = SF_New;
 
 	double DoFovScaling(double width, double height, double fov);
 	double UndoFovScaling(double width, double height, double fov);
@@ -40,7 +41,7 @@ protected:
 class CamExport : public CamIO
 {
 public:
-	CamExport(const wchar_t * fileName, ScaleFov scaleFov);
+	CamExport(const wchar_t * fileName);
 
 	~CamExport();
 

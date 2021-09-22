@@ -9,13 +9,6 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-
-enum FovScaling {
-	FovScaling_Uninitalized,
-	FovScaling_None,
-	FovScaling_AlienSwarm
-};
-
 FovScaling GetDefaultFovScaling() {
 	switch (g_SourceSdkVer)
 	{
@@ -77,10 +70,9 @@ bool CStringToFovScaling(const char * value, FovScaling & fovScaling) {
 	return false;
 }
 
-
-double Auto_FovScaling(double width, double height, double fov)
+double Apply_FovScaling(double width, double height, double fov, FovScaling fovScaling)
 {
-	switch (GetFovScaling())
+	switch (fovScaling)
 	{
 	case FovScaling_AlienSwarm:
 		return AlienSwarm_FovScaling(width, height, fov);
@@ -89,10 +81,9 @@ double Auto_FovScaling(double width, double height, double fov)
 	}
 }
 
-
-double Auto_InverseFovScaling(double width, double height, double fov)
+double Apply_InverseFovScaling(double width, double height, double fov, FovScaling fovScaling)
 {
-	switch (GetFovScaling())
+	switch (fovScaling)
 	{
 	case FovScaling_AlienSwarm:
 		return AlienSwarm_InverseFovScaling(width, height, fov);
@@ -101,6 +92,15 @@ double Auto_InverseFovScaling(double width, double height, double fov)
 	}
 }
 
+double Auto_FovScaling(double width, double height, double fov)
+{
+	return Apply_FovScaling(width, height, fov, GetFovScaling());
+}
+
+double Auto_InverseFovScaling(double width, double height, double fov)
+{
+	return Apply_InverseFovScaling(width, height, fov, GetFovScaling());
+}
 
 double AlienSwarm_FovScaling(double width, double height, double fov)
 {
