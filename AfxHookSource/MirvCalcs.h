@@ -116,6 +116,7 @@ public:
 	IMirvVecAngCalc * NewSwitchInterpCalc(char const * name, IMirvVecAngCalc * source, IMirvHandleCalc * switchHandle, IMirvHandleCalc * resetHandle, float holdTime, float interpTime);
 	IMirvVecAngCalc * NewLocalToGlobalCalc(char const * name, IMirvVecAngCalc * source, IMirvHandleCalc * handle);
 	IMirvVecAngCalc * NewGlobalToLocalCalc(char const * name, IMirvVecAngCalc * source, IMirvHandleCalc * handle);
+	IMirvVecAngCalc * NewCollisionClipCalc(char const * name, IMirvVecAngCalc * source, IMirvVecAngCalc * clipTo, IMirvHandleCalc * ignoreHandle, float safeZoneDist);
 
 	bool Console_CheckName(char const * name);
 	void Console_Remove(char const * name);

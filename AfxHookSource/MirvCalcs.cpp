@@ -2963,6 +2963,176 @@ private:
 	IMirvHandleCalc * m_Handle;
 };
 
+
+extern SOURCESDK::CSGO::IEngineTrace * g_pClientEngineTrace;
+
+class CMirvVecAngCollisionClipCalc : public CMirvVecAngCalc
+{
+public:
+	CMirvVecAngCollisionClipCalc(char const * name, IMirvVecAngCalc * source, IMirvVecAngCalc * clipTo, IMirvHandleCalc * ignoreHandle, float safeDist)
+		: CMirvVecAngCalc(name)
+		, m_Source(source)
+		, m_ClipTo(clipTo)
+		, m_Ignore(ignoreHandle)
+		, m_SafeZoneDist(safeDist)
+	{
+		m_Source->AddRef();
+		m_ClipTo->AddRef();
+		m_Ignore->AddRef();
+	}
+
+	virtual void Console_PrintBegin(void)
+	{
+		CMirvVecAngCalc::Console_PrintBegin();
+
+		Tier0_Msg(", fn: \"globalToLocal\"");
+		Tier0_Msg(", source: "); m_Source->Console_PrintBegin(); m_Source->Console_PrintEnd();
+		Tier0_Msg(", clipTo: "); m_ClipTo->Console_PrintBegin(); m_ClipTo->Console_PrintEnd();
+		Tier0_Msg(", ignore: "); m_Ignore->Console_PrintBegin(); m_Ignore->Console_PrintEnd();
+		Tier0_Msg(", safeZoneDist: %f", m_SafeZoneDist);
+	}
+
+	virtual void Console_Edit(IWrpCommandArgs * args)
+	{
+		int argc = args->ArgC();
+		char const * arg0 = args->ArgV(0);
+
+		if (2 <= argc)
+		{
+			char const * arg1 = args->ArgV(1);
+
+			if (0 == _stricmp("safeZoneDist", arg1))
+			{
+				if (3 <= argc)
+				{
+					m_SafeZoneDist = (float)atof(args->ArgV(2));
+					return;
+				}
+
+				Tier0_Msg(
+					"%s safeZoneDist <fSaveZoneDist> - Set safe zone distance.\n"
+					"Current value: %f\n"
+					, arg0
+					, m_SafeZoneDist
+				);
+				return;
+			}
+		}
+
+		Tier0_Msg(
+			"%s safeZoneDist [...]\n"
+			, arg0
+		);
+	}
+
+	virtual bool CalcVecAng(SOURCESDK::Vector & outVector, SOURCESDK::QAngle & outAngles)
+	{
+		SOURCESDK::CSGO::CBaseHandle ignore;
+		SOURCESDK::Vector sourceVector;
+		SOURCESDK::QAngle sourceAngles;
+		SOURCESDK::Vector clipToVector;
+		SOURCESDK::QAngle clipToAngles;
+
+		if (m_Ignore->CalcHandle(ignore) && m_Source->CalcVecAng(sourceVector, sourceAngles) && m_ClipTo->CalcVecAng(clipToVector, clipToAngles) )
+		{
+			CTraceFilter traceFilter;
+
+			SOURCESDK::IClientEntity_csgo* ignoreEnt = SOURCESDK::g_Entitylist_csgo->GetClientEntityFromHandle(ignore);
+			if(ignoreEnt) traceFilter.Add(ignoreEnt);
+
+			SOURCESDK::C_BaseEntity_csgo * localPlayer = reinterpret_cast<SOURCESDK::C_BaseEntity_csgo *>(CClientToolsCsgo::Instance()->GetClientToolsInterface()->GetLocalPlayer());
+			if(localPlayer && localPlayer->GetIClientEntity() != ignoreEnt) traceFilter.Add(localPlayer);
+
+
+			SOURCESDK::Vector traceEnd = sourceVector;
+
+			if(0 < m_SafeZoneDist)
+			{
+				// Over-extend for safezone:
+				SOURCESDK::Vector vSE = (traceEnd - clipToVector);
+				float sqrLen = vSE.LengthSqr();
+				if(sqrLen >= AFX_MATH_EPS) {
+					float len = std::sqrtf(sqrLen);
+					if(m_SafeZoneDist < len) {
+						SOURCESDK::Vector vDir = vSE;
+						vDir *=  m_SafeZoneDist / len;
+						traceEnd = traceEnd + vDir;
+					}
+				}
+			}
+
+			SOURCESDK::CSGO::Ray_t ray;
+			ray.Init(clipToVector, traceEnd);
+
+			SOURCESDK::CSGO::trace_t tr;
+			g_pClientEngineTrace->TraceRay(ray, SOURCESDK_CSGO_MASK_ALL, &traceFilter, &tr);
+
+			if (tr.DidHit())
+			{					
+				SOURCESDK::Vector vSE = (tr.endpos - tr.startpos);
+				vSE *= tr.fraction;
+
+				// Shorten for safezone:
+				float sqrLen = vSE.LengthSqr();
+				if(sqrLen >= AFX_MATH_EPS) {
+					float len = std::sqrtf(sqrLen);
+					if(0 < m_SafeZoneDist && m_SafeZoneDist < len) {
+						SOURCESDK::Vector vDir = vSE;
+						vDir *=  m_SafeZoneDist / len;
+						vSE = vSE - vDir;
+					}
+				}
+
+				outVector = tr.startpos + vSE;
+				outAngles = sourceAngles;
+
+				return true;
+			} 
+
+			outVector = sourceVector;
+			outAngles = sourceAngles;
+
+			return true;
+		}
+
+		return false;
+	}
+
+protected:
+	virtual ~CMirvVecAngCollisionClipCalc()
+	{
+		m_Ignore->Release();
+		m_ClipTo->Release();
+		m_Source->Release();
+	}
+
+private:
+	IMirvVecAngCalc * m_Source;
+	IMirvVecAngCalc * m_ClipTo;
+	IMirvHandleCalc * m_Ignore;
+	float m_SafeZoneDist;
+
+	class CTraceFilter : public SOURCESDK::CSGO::CTraceFilter
+	{
+	public:
+		CTraceFilter() {
+
+		}
+
+		void Add(SOURCESDK::CSGO::IHandleEntity *pHandleEntity) {
+			m_PassEnts.emplace(pHandleEntity);
+		}
+		
+		virtual bool ShouldHitEntity(SOURCESDK::CSGO::IHandleEntity *pHandleEntity, int contentsMask) {
+			return pHandleEntity && m_PassEnts.end() == m_PassEnts.find(pHandleEntity);
+		}
+
+	private:
+		std::set<const SOURCESDK::CSGO::IHandleEntity *> m_PassEnts;
+	};
+
+};
+
 class CMirvCamCamCalc : public CMirvCamCalc
 {
 public:
@@ -4507,6 +4677,24 @@ IMirvVecAngCalc * CMirvVecAngCalcs::NewGlobalToLocalCalc(char const * name, IMir
 	return result;
 }
 
+IMirvVecAngCalc * CMirvVecAngCalcs::NewCollisionClipCalc(char const * name, IMirvVecAngCalc * source, IMirvVecAngCalc * clipTo, IMirvHandleCalc * ignoreHandle, float safeZoneDist)
+{
+	if (name && !Console_CheckName(name))
+		return 0;
+
+	IMirvVecAngCalc * result = new CMirvVecAngCollisionClipCalc(name, source, clipTo, ignoreHandle, safeZoneDist);
+
+	if (name)
+	{
+		result->AddRef();
+
+		m_Calcs.push_back(result);
+	}
+
+	return result;
+}
+
+
 void CMirvVecAngCalcs::Console_Remove(char const * name)
 {
 	std::list<IMirvVecAngCalc *>::iterator it;
@@ -5556,10 +5744,10 @@ void mirv_calcs_vecang(IWrpCommandArgs * args)
 							g_MirvVecAngCalcs.NewAddCalc(args->ArgV(3), calcA, calcB);
 						}
 						else
-							Tier0_Warning("Error: No handle A with name \"%s\" found.\n", calcBName);
+							Tier0_Warning("Error: No vecAng A with name \"%s\" found.\n", calcBName);
 					}
 					else
-						Tier0_Warning("Error: No handle B with name \"%s\" found.\n", calcAName);
+						Tier0_Warning("Error: No vecAng B with name \"%s\" found.\n", calcAName);
 
 					return;
 				}
@@ -5578,10 +5766,10 @@ void mirv_calcs_vecang(IWrpCommandArgs * args)
 							g_MirvVecAngCalcs.NewSubtractCalc(args->ArgV(3), calcA, calcB);
 						}
 						else
-							Tier0_Warning("Error: No handle A with name \"%s\" found.\n", calcBName);
+							Tier0_Warning("Error: No vecAng A with name \"%s\" found.\n", calcBName);
 					}
 					else
-						Tier0_Warning("Error: No handle B with name \"%s\" found.\n", calcAName);
+						Tier0_Warning("Error: No vecAng B with name \"%s\" found.\n", calcAName);
 
 					return;
 				}
@@ -5600,10 +5788,10 @@ void mirv_calcs_vecang(IWrpCommandArgs * args)
 							g_MirvVecAngCalcs.NewOffsetCalc(args->ArgV(3), calcA, calcB, 0 != atoi(args->ArgV(6)));
 						}
 						else
-							Tier0_Warning("Error: No handle parent with name \"%s\" found.\n", calcBName);
+							Tier0_Warning("Error: No vecAng parent with name \"%s\" found.\n", calcBName);
 					}
 					else
-						Tier0_Warning("Error: No handle offset with name \"%s\" found.\n", calcAName);
+						Tier0_Warning("Error: No vecAng offset with name \"%s\" found.\n", calcAName);
 
 					return;
 				}
@@ -5661,10 +5849,10 @@ void mirv_calcs_vecang(IWrpCommandArgs * args)
 							g_MirvVecAngCalcs.NewOrCalc(args->ArgV(3), calcA, calcB);
 						}
 						else
-							Tier0_Warning("Error: No handle calcB with name \"%s\" found.\n", calcBName);
+							Tier0_Warning("Error: No vecAng calcB with name \"%s\" found.\n", calcBName);
 					}
 					else
-						Tier0_Warning("Error: No handle calcA with name \"%s\" found.\n", calcAName);
+						Tier0_Warning("Error: No vecAng calcA with name \"%s\" found.\n", calcAName);
 
 					return;
 				}
@@ -5775,6 +5963,34 @@ void mirv_calcs_vecang(IWrpCommandArgs * args)
 					
 					return;
 				}
+				else if (0 == _stricmp("collisionClip", arg2) && 8 <= argc)
+				{
+					char const * calcSourceName = args->ArgV(4);
+					IMirvVecAngCalc * calcSource = g_MirvVecAngCalcs.GetByName(calcSourceName);
+
+					if (calcSource)
+					{
+						char const * calcClipToName = args->ArgV(5);
+						IMirvVecAngCalc * calcClipTo = g_MirvVecAngCalcs.GetByName(calcClipToName);
+
+						if (calcClipTo)
+						{
+							char const * calcIngoreName = args->ArgV(6); 
+							IMirvHandleCalc * calcIgnore = g_MirvHandleCalcs.GetByName(calcIngoreName);
+
+							if(calcIgnore) {
+								g_MirvVecAngCalcs.NewCollisionClipCalc(args->ArgV(3), calcSource, calcClipTo, calcIgnore, (float)atof(args->ArgV(7)));
+							}
+							else Tier0_Warning("Error: No handle ugnore with name \"%s\" found.\n", calcIngoreName);
+						}
+						else
+							Tier0_Warning("Error: No vecAng clipTo with name \"%s\" found.\n", calcClipToName);
+					}
+					else
+						Tier0_Warning("Error: No vecAng source with name \"%s\" found.\n", calcSourceName);
+
+					return;
+				}
 			}
 
 			Tier0_Msg(
@@ -5791,6 +6007,8 @@ void mirv_calcs_vecang(IWrpCommandArgs * args)
 				"%s add switchInterp <sName> <sSourceVecAngName> <sSwitchHandleName> <sResetHandleName> <fHoldTime> <fInterpTime> - Add a calc that after <sSwitchHandleName> value changes, holds the last value <sSourceVecAngName> for <fHoldTime> seconds and then interpolates between last value and current value for <fInterpTime>, if <sResetHandleName> changes the change is instant (reset like initial).\n"
 				"%s add localToGlobal <sName> <sSourceVecAngName> <sHandleName> - Add a calc that transforms from local <sSwitchHandleName> space <sSourceVecAngName> to global space.\n"
 				"%s add globalToLocal <sName> <sSourceVecAngName> <sHandleName> - Add a calc that transforms to local <sSwitchHandleName> space <sSourceVecAngName> from global space.\n"
+				"%s add collisionClip <sName> <sSourceVecAngName> <sClipToVecAngName> <sIgnoreHandleName> <fSafeZoneDist> - Checks for collisions between source and clipTo and if there are any moves source nearer to clip accordingly.\n"
+				, arg0
 				, arg0
 				, arg0
 				, arg0
