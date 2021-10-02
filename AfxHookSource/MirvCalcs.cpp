@@ -6012,20 +6012,22 @@ void mirv_calcs_vecang(IWrpCommandArgs * args)
 				"%s add switchInterp <sName> <sSourceVecAngName> <sSwitchHandleName> <sResetHandleName> <fHoldTime> <fInterpTime> - Add a calc that after <sSwitchHandleName> value changes, holds the last value <sSourceVecAngName> for <fHoldTime> seconds and then interpolates between last value and current value for <fInterpTime>, if <sResetHandleName> changes the change is instant (reset like initial).\n"
 				"%s add localToGlobal <sName> <sSourceVecAngName> <sHandleName> - Add a calc that transforms from local <sSwitchHandleName> space <sSourceVecAngName> to global space.\n"
 				"%s add globalToLocal <sName> <sSourceVecAngName> <sHandleName> - Add a calc that transforms to local <sSwitchHandleName> space <sSourceVecAngName> from global space.\n"
+				, arg0
+				, arg0
+				, arg0
+				, arg0
+				, arg0
+				, arg0
+				, arg0
+				, arg0
+				, arg0
+				, arg0
+				, arg0
+				, arg0
+				, arg0
+			);
+			Tier0_Msg(
 				"%s add collisionClip <sName> <sSourceVecAngName> <sClipToVecAngName> <sIgnoreHandleName> <fSafeZoneDist> - Checks for collisions between source and clipTo and if there are any moves source nearer to clip accordingly.\n"
-				, arg0
-				, arg0
-				, arg0
-				, arg0
-				, arg0
-				, arg0
-				, arg0
-				, arg0
-				, arg0
-				, arg0
-				, arg0
-				, arg0
-				, arg0
 				, arg0
 			);
 			return;
