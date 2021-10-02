@@ -3035,30 +3035,20 @@ public:
 
 		if (m_Ignore->CalcHandle(ignore) && m_Source->CalcVecAng(sourceVector, sourceAngles) && m_ClipTo->CalcVecAng(clipToVector, clipToAngles) )
 		{
-			CTraceFilter traceFilter;
-
 			SOURCESDK::IClientEntity_csgo* ignoreEnt = SOURCESDK::g_Entitylist_csgo->GetClientEntityFromHandle(ignore);
+			CTraceFilter traceFilter;
 			if(ignoreEnt) traceFilter.Add(ignoreEnt);
 
 			SOURCESDK::C_BaseEntity_csgo * localPlayer = reinterpret_cast<SOURCESDK::C_BaseEntity_csgo *>(CClientToolsCsgo::Instance()->GetClientToolsInterface()->GetLocalPlayer());
 			if(localPlayer && localPlayer->GetIClientEntity() != ignoreEnt) traceFilter.Add(localPlayer);
 
-
 			SOURCESDK::Vector traceEnd = sourceVector;
-
-			if(0 < m_SafeZoneDist)
-			{
-				// Over-extend for safezone:
-				SOURCESDK::Vector vSE = (traceEnd - clipToVector);
-				float sqrLen = vSE.LengthSqr();
-				if(sqrLen >= AFX_MATH_EPS) {
-					float len = std::sqrtf(sqrLen);
-					if(m_SafeZoneDist < len) {
-						SOURCESDK::Vector vDir = vSE;
-						vDir *=  m_SafeZoneDist / len;
-						traceEnd = traceEnd + vDir;
-					}
-				}
+			SOURCESDK::Vector vTrace = (sourceVector - clipToVector);
+			float sourceSqrLen = vTrace.LengthSqr();
+			if(sourceSqrLen >= AFX_MATH_EPS) {
+				float len = std::sqrtf(sourceSqrLen);
+				vTrace *=  SOURCESDK_CSGO_MAX_TRACE_LENGTH / len;
+				traceEnd = clipToVector + vTrace;
 			}
 
 			SOURCESDK::CSGO::Ray_t ray;
@@ -3068,24 +3058,39 @@ public:
 			g_pClientEngineTrace->TraceRay(ray, SOURCESDK_CSGO_MASK_ALL, &traceFilter, &tr);
 
 			if (tr.DidHit())
-			{					
-				SOURCESDK::Vector vSE = (tr.endpos - tr.startpos);
-				vSE *= tr.fraction;
+			{
+				SOURCESDK::Vector vDir = tr.endpos - tr.startpos;
 
-				// Shorten for safezone:
-				float sqrLen = vSE.LengthSqr();
-				if(sqrLen >= AFX_MATH_EPS) {
-					float len = std::sqrtf(sqrLen);
-					if(0 < m_SafeZoneDist && m_SafeZoneDist < len) {
-						SOURCESDK::Vector vDir = vSE;
-						vDir *=  m_SafeZoneDist / len;
-						vSE = vSE - vDir;
-					}
+				if(vDir.LengthSqr() > sourceSqrLen + m_SafeZoneDist) {
+					outVector = sourceVector;
+					outAngles = sourceAngles;
+					return true;			
 				}
 
-				outVector = tr.startpos + vSE;
-				outAngles = sourceAngles;
+				if(tr.allsolid || m_SafeZoneDist <= AFX_MATH_EPS) {
+					// plane invalid
+					// OR safezone is 0
+					outVector = tr.endpos;
+					outAngles = sourceAngles;
+					return true;
+				}
 
+				// https://en.wikipedia.org/wiki/Intercept_theorem
+				// https://math.stackexchange.com/a/100783 (Projecting tr.startpos onto the plane using the plane normal)
+
+				float s = tr.plane.normal.LengthSqr();
+				float c = AFX_MATH_EPS <= s ? -(vDir.x * tr.plane.normal.x + vDir.y * tr.plane.normal.y + vDir.z * tr.plane.normal.z) / tr.plane.normal.LengthSqr() : 0;
+				SOURCESDK::Vector cV = tr.plane.normal;
+				cV *= c;
+				c = std::sqrtf(cV.LengthSqr());
+				float t = 0 != c ? 1 - m_SafeZoneDist / c : 1;
+
+				if(t < 0) t = 0;
+				else if(t > 1) t = 1;
+
+				vDir *= t;
+				outVector = tr.startpos + vDir;
+				outAngles = sourceAngles;
 				return true;
 			} 
 
