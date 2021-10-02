@@ -228,6 +228,14 @@ bool ClientTools_Console_Cfg(IWrpCommandArgs * args)
 				clientTools->RecordViewModels_set(0 != atoi(cmd2) ? -1 : 0);
 				return true;
 			}
+
+			Tier0_Msg(
+				"%s recordViewModel 0|1 - Enable (1) / Disable (0) recording of viewmodel(s).\n"
+				"Current value: %i.\n"
+				, prefix
+				, clientTools->RecordViewModels_get() ? 1 : 0
+			);
+			return true;
 		}
 		else if (0 == _stricmp("recordViewModels", cmd1))
 		{
@@ -295,18 +303,32 @@ bool ClientTools_Console_Cfg(IWrpCommandArgs * args)
 	Tier0_Msg(
 		"%s recordCamera [...]\n"
 		"%s recordPlayers [...]\n"
-		"%s recordPlayerCameras [...]\n"
+		, prefix
+		, prefix
+	);
+	if(clientTools->SupportsRecordPlayerCameras()) {
+		Tier0_Msg(
+			"%s recordPlayerCameras [...]\n"
+			, prefix
+		);
+	}
+	Tier0_Msg(
 		"%s recordWeapons [...]\n"
 		"%s recordProjectiles [...]\n"
-		"%s recordViewmodels [...]\n"
+		"%s recordViewmodel [...]\n"
+		, prefix
+		, prefix
+		, prefix
+	);
+	if(clientTools->SupportsRecordViewModelMultiple()) {
+		Tier0_Msg(
+			"%s recordViewmodels [...]\n"
+			, prefix
+		);
+	}
+	Tier0_Msg(
 		"%s recordInvisible [...] - (not recommended)\n"
 		"%s debug [...]\n"
-		, prefix
-		, prefix
-		, prefix
-		, prefix
-		, prefix
-		, prefix
 		, prefix
 		, prefix
 	);

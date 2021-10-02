@@ -85,6 +85,7 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 			bool isViewModel =
 				false
 				|| className && 0 == strcmp(className, "viewmodel")
+				|| className && 0 == strcmp(className, "class C_ViewmodelAttachmentModel")
 				;
 
 			if (false
@@ -97,7 +98,7 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 
 				SOURCESDK::TF2::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::TF2::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity"));
 
-				if (!RecordInvisible_get() && !(pBaseEntityRs && pBaseEntityRs->m_bVisible))
+				if (!RecordInvisible_get() && !(pBaseEntityRs && pBaseEntityRs->m_bVisible || isViewModel))
 				{
 					// Entity not visible, avoid trash data:
 
@@ -120,14 +121,15 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 					SOURCESDK::TF2::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::TF2::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity"));
 					if (pBaseEntityRs)
 					{
+						wasVisible = pBaseEntityRs->m_bVisible || isViewModel;
+
 						WriteDictionary("baseentity");
 						//Write((float)pBaseEntityRs->m_flTime);
 						WriteDictionary(pBaseEntityRs->m_pModelName);
-						Write((bool)pBaseEntityRs->m_bVisible);
+						Write(wasVisible);
 						Write(pBaseEntityRs->m_vecRenderOrigin);
 						Write(pBaseEntityRs->m_vecRenderAngles);
 
-						wasVisible = pBaseEntityRs->m_bVisible;
 					}
 				}
 

@@ -128,6 +128,14 @@ public:
 		m_RecordPlayerCameras = value;
 	}
 
+	virtual bool SupportsRecordPlayerCameras() {
+		return false;
+	}
+
+	virtual bool SupportsRecordViewModelMultiple() {
+		return false;
+	}
+
 protected:
 	virtual float ScaleFov(int width, int height, float fov) { return fov; }
 

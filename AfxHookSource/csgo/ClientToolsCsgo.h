@@ -41,6 +41,14 @@ public:
 		return m_ClientTools;
 	}
 
+	virtual bool SupportsRecordPlayerCameras() override {
+		return true;
+	}
+
+	virtual bool SupportsRecordViewModelMultiple() override {
+		return true;
+	}
+
 protected:
 	virtual float ScaleFov(int width, int height, float fov);
 
