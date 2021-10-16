@@ -664,6 +664,9 @@ bool g_DebugEnabled = false;
 
 bool g_csgo_FirstFrameAfterNetUpdateEnd = false;
 
+extern int g_Mirv_Pov_PingAdjustMent;
+int MirvGetPing(int playerIndex);
+
 class CAfxBaseClientDll
 : public SOURCESDK::IBaseClientDLL_csgo
 , public IAfxBaseClientDll
@@ -1279,6 +1282,9 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 					}
 				}
 			}
+			static WrpConVarRef cvar_cl_interp_npcs;
+			cvar_cl_interp_npcs.RetryIfNull("cl_interp_npcs"); // GOTV would have this on 0, so force it too.
+			bool pingUpdated = 0;
 			if(oldMirvPov != newMirvPov) {
 				if(newMirvPov == 0) {
 					// Lost player, e.g. due to disconnect.
@@ -1294,8 +1300,24 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 							}
 						}
 					}
+
+					g_Mirv_Pov_PingAdjustMent = 0;
+					pingUpdated = true;
 				}
 				oldMirvPov = newMirvPov;
+			}
+			else if(newMirvPov) {
+				// We want to adjust interpolation for the local player ping, so we get more accurate view in time:
+				g_Mirv_Pov_PingAdjustMent = MirvGetPing(newMirvPov);
+				if(g_Mirv_Pov_PingAdjustMent <= 5) g_Mirv_Pov_PingAdjustMent = 0; // 5 is minium and we can not tell.
+				pingUpdated = true;
+			}
+			if(pingUpdated) {
+				// Make it update the interpolation, since we need to adjust it for player ping.
+				cvar_cl_interp_npcs.SetDirectHack(1.0f - cvar_cl_interp_npcs.GetFloat());
+			} else if(0 == newMirvPov && cvar_cl_interp_npcs.GetFloat()) {
+				// Restore default value if not using mirv_pov.
+				cvar_cl_interp_npcs.SetDirectHack(0.0f);
 			}
 		}
 		break;

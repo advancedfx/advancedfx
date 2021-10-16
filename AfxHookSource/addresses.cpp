@@ -96,6 +96,7 @@ AFXADDR_DEF(csgo_engine_CModelLoader_vtable)
 AFXADDR_DEF(csgo_client_C_TEPlayerAnimEvent_PostDataUpdate_NewModelAnims_JNZ)
 AFXADDR_DEF(csgo_engine_Do_CCLCMsg_FileCRCCheck)
 AFXADDR_DEF(csgo_C_BaseViewModel_FireEvent)
+AFXADDR_DEF(csgo_client_AdjustInterpolationAmount)
 
 void ErrorBox(char const * messageText);
 
@@ -2125,6 +2126,29 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 
 			AFXADDR_SET(csgo_client_C_TEPlayerAnimEvent_PostDataUpdate_NewModelAnims_JNZ, addr);
 		}
+
+		// csgo_client_AdjustInterpolationAmount
+		//
+		// This static function is the first function taht references the "cl_interp_npcs" cvar.
+		{
+			DWORD addr = 0;
+
+			ImageSectionsReader sections((HMODULE)clientDll);
+			if (!sections.Eof())
+			{
+				MemRange textRange = sections.GetMemRange();
+
+				MemRange result = FindPatternString(textRange, "55 8B EC 83 EC 08 56 8B F1 F3 0F 11 4D F8 8B 0D ?? ?? ?? ?? 81 F9 ?? ?? ?? ?? 75 ?? F3 0F 10 15 ?? ?? ?? ??");
+
+				if (!result.IsEmpty())
+					addr = result.Start;
+				else
+					ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			AFXADDR_SET(csgo_client_AdjustInterpolationAmount, addr);
+		}
 	}
 	else
 	{
@@ -2177,6 +2201,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_C_CS_PlayerResource_IGameResources_vtable, 0x0);
 		AFXADDR_SET(csgo_client_C_TEPlayerAnimEvent_PostDataUpdate_NewModelAnims_JNZ, 0x0);
 		AFXADDR_SET(csgo_C_BaseViewModel_FireEvent, 0x0);
+		AFXADDR_SET(csgo_client_AdjustInterpolationAmount, 0x0);
 	}
 
 	//AFXADDR_SET(csgo_CPredictionCopy_TransferData_DSZ, 0x0a);

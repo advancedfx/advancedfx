@@ -351,6 +351,124 @@ bool Install_csgo_C_BaseViewModel_FireEvent(void)
 	return firstResult;
 }
 
+
+void * g_pGameResource = nullptr;
+
+typedef void (__fastcall * csgo_CPlayerResource_Dtor_t)( void* This, void* Edx, int flags);
+
+csgo_CPlayerResource_Dtor_t g_Touring_csgo_CPlayerResource_Dtor;
+
+void __fastcall My_csgo_CPlayerResource_Dtor( void* This, void* Edx, int flags) {
+	if(This == g_pGameResource) g_pGameResource = nullptr;
+}
+
+typedef int (__fastcall *csgo_CPlayerResource_GetPing_t)( void* This, void* Edx, int index );
+
+csgo_CPlayerResource_GetPing_t g_Touring_csgo_CPlayerResource_GetPing = nullptr;
+
+int __fastcall My_csgo_CPlayerResource_GetPing( void* This, void* Edx, int index ) {
+	g_pGameResource = This;
+
+	int result = g_Touring_csgo_CPlayerResource_GetPing(This, Edx, index);
+
+	return result;
+}
+
+int MirvGetPing(int playerIndex) {
+	if(0 == g_pGameResource) {
+		return 0;
+	}
+
+	return g_Touring_csgo_CPlayerResource_GetPing(g_pGameResource, 0, playerIndex);
+}
+
+bool Hook_csgo_CPlayerResource_GetPing(void)
+{
+	static bool firstResult = false;
+	static bool firstRun = true;
+	if(!firstRun) return firstResult;
+	firstRun = false;
+	
+	if(AFXADDR_GET(csgo_C_CS_PlayerResource_IGameResources_vtable))
+	{
+		LONG error = NO_ERROR;
+
+
+		void **vtable = (void **)AFXADDR_GET(csgo_C_CS_PlayerResource_IGameResources_vtable);
+
+		g_Touring_csgo_CPlayerResource_Dtor = (csgo_CPlayerResource_Dtor_t)vtable[0];
+		g_Touring_csgo_CPlayerResource_GetPing = (csgo_CPlayerResource_GetPing_t)vtable[10];
+		
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)g_Touring_csgo_CPlayerResource_Dtor, My_csgo_CPlayerResource_Dtor);
+		DetourAttach(&(PVOID&)g_Touring_csgo_CPlayerResource_GetPing, My_csgo_CPlayerResource_GetPing);
+		error = DetourTransactionCommit();
+		
+		firstResult = NO_ERROR == error;
+	}
+
+	return firstResult;
+}
+
+typedef void * csgo_client_AdjustInterpolationAmount_t;
+
+csgo_client_AdjustInterpolationAmount_t True_csgo_client_AdjustInterpolationAmount;
+
+int g_Mirv_Pov_PingAdjustMent = 0;
+
+float g_Mirv_Pov_Interp_OrgFac[2] = {1,1};
+float g_Mirv_Pov_Interp_PingFac[2] = {1,0};
+float g_Mirv_Pov_Interp_Offset[2] = {0,0};
+
+float __cdecl My_Adjust_csgo_client_AdjustInterpolationAmount(SOURCESDK::C_BasePlayer_csgo * This, float baseInterpolation) {
+
+	if(0 == g_i_MirvPov) return baseInterpolation;
+
+	if (This->entindex() != g_i_MirvPov)
+	{
+		return g_Mirv_Pov_Interp_OrgFac[0] * baseInterpolation + g_Mirv_Pov_Interp_PingFac[0] * (g_Mirv_Pov_PingAdjustMent / 1000.0f) + g_Mirv_Pov_Interp_Offset[0];
+	}
+
+		return g_Mirv_Pov_Interp_OrgFac[1] * baseInterpolation + g_Mirv_Pov_Interp_PingFac[1] * (g_Mirv_Pov_PingAdjustMent / 1000.0f) + g_Mirv_Pov_Interp_Offset[1];
+}
+
+void __declspec(naked) My_csgo_client_AdjustInterpolationAmount()
+{
+	__asm sub esp, 8
+	__asm mov [esp], ecx
+	__asm call True_csgo_client_AdjustInterpolationAmount
+	__asm movss dword ptr[esp+4], xmm0
+	__asm call My_Adjust_csgo_client_AdjustInterpolationAmount
+	__asm fstp [esp]
+	__asm movss xmm0, [esp]
+	__asm add esp, 8
+	__asm ret
+}
+
+bool Install_csgo_client_AdjustInterpolationAmount(void)
+{
+	static bool firstResult = false;
+	static bool firstRun = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	if (AFXADDR_GET(csgo_client_AdjustInterpolationAmount))
+	{
+		LONG error = NO_ERROR;
+
+		True_csgo_client_AdjustInterpolationAmount = (csgo_client_AdjustInterpolationAmount_t)AFXADDR_GET(csgo_client_AdjustInterpolationAmount);
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)True_csgo_client_AdjustInterpolationAmount, My_csgo_client_AdjustInterpolationAmount);
+		error = DetourTransactionCommit();
+
+		firstResult = NO_ERROR == error;
+	}
+	return firstResult;
+}
+
 CON_COMMAND(mirv_pov, "Forces a POV on a GOTV demo.")
 {
 	if (!(AFXADDR_GET(csgo_C_CSPlayer_ofs_m_angEyeAngles)
@@ -362,6 +480,8 @@ CON_COMMAND(mirv_pov, "Forces a POV on a GOTV demo.")
 		&& AFXADDR_GET(csgo_C_BasePlayer_SetAsLocalPlayer)
 		&& AFXADDR_GET(csgo_crosshair_localplayer_check)
 		&& Install_csgo_C_BaseViewModel_FireEvent()
+		&& Install_csgo_client_AdjustInterpolationAmount()
+		&& Hook_csgo_CPlayerResource_GetPing()
 		))
 	{
 		Tier0_Warning("Not supported for your engine / missing hooks!\n");

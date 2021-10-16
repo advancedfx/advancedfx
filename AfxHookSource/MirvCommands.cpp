@@ -3299,6 +3299,10 @@ extern int g_iForcePostDataUpdateChanged;
 extern bool g_b_Suppress_csgo_engine_Do_CCLCMsg_FileCRCCheck;
 extern bool Install_csgo_engine_Do_CCLCMsg_FileCRCCheck();
 
+extern float g_Mirv_Pov_Interp_OrgFac[2];
+extern float g_Mirv_Pov_Interp_PingFac[2];
+extern float g_Mirv_Pov_Interp_Offset[2];
+
 CON_COMMAND(mirv_fix, "Various fixes")
 {
 	int argc = args->ArgC();
@@ -3534,6 +3538,69 @@ CON_COMMAND(mirv_fix, "Various fixes")
 
 			return;
 		}
+		else if(0 == _stricmp("mirvPov", cmd1)) {
+
+			if(4 <= argc) {
+				const char * cmd2 = args->ArgV(2);
+				const char * cmd3 = args->ArgV(3);
+
+				int iDim = 0 == _stricmp("local", cmd3) ? 1 : 0;
+				if(iDim ||0 == _stricmp("other", cmd3))  {
+					if(0 == _stricmp("interpPingFac", cmd2)) {
+						if(5 <= argc)
+						{
+							g_Mirv_Pov_Interp_PingFac[iDim] = (float)atof(args->ArgV(4));
+							return;
+						}
+
+						Tier0_Msg(
+							"mirv_fix interpPingFac pingFac %s <fValue>\n"
+							"Current value: %f\n"
+							, cmd3
+							, g_Mirv_Pov_Interp_PingFac[iDim]
+						);
+						return;
+					}
+					else if(0 == _stricmp("interpOffset", cmd2)) {
+						if(5 <= argc)
+						{
+							g_Mirv_Pov_Interp_Offset[iDim] = (float)atof(args->ArgV(4));
+							return;
+						}
+
+						Tier0_Msg(
+							"mirv_fix mirvPovInterp interpOffset %s <fValue>\n"
+							"Current value: %f\n"
+							, cmd3
+							, g_Mirv_Pov_Interp_Offset[iDim]
+						);
+						return;
+					}
+					else if(0 == _stricmp("interpFacOrg", cmd2)) {
+						if(5 <= argc)
+						{
+							g_Mirv_Pov_Interp_OrgFac[iDim] = (float)atof(args->ArgV(43));
+							return;
+						}
+
+						Tier0_Msg(
+							"mirv_fix mirvPovInterp interpFacOrg %s <fValue>\n"
+							"Current value: %f\n"
+							, cmd3
+							, g_Mirv_Pov_Interp_OrgFac[iDim]
+						);
+						return;
+					}
+				}
+			}
+
+			Tier0_Msg(
+				"mirv_fix mirvPov interpPingFac local|other [...] - Default ,other=0,local=1, factor multiplied with ping / 1000.0 to delay interp for non-POV player-local entities.\n"
+				"mirv_fix mirvPov interpOffset local|other [...] - Default other=0,local=0, constant factor to add to interp.\n"
+				"mirv_fix mirvPov intepFacOrg local|other [...] - Default other=1,local=1 factor multiplied with original value by engine (depends on your cl_interp value!).\n"
+			);
+			return;
+		}
 	}
 
 	Tier0_Msg(
@@ -3546,6 +3613,9 @@ CON_COMMAND(mirv_fix, "Various fixes")
 		"mirv_fix forcePostDataUpdateChanged [...].\n"
 		"mirv_fix forceDoAnimationEvents 0|1 - Only useful in combination with replaceing old models with new ones for forcing animation events to be played, defaut is 0 (off).\n"
 		"mirv_fix suppressFileCRCCheck 0|1 - This is only useful with HLAE special builds and it's on by default.\n"
+	);
+	Tier0_Msg(
+		"mirv_fix mirvPov [...] - Tampers with the interp to get more accurate POV view on average.\n"
 	);
 	return;
 }

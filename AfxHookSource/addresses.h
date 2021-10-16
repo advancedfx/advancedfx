@@ -105,6 +105,7 @@ AFXADDR_DECL(csgo_engine_CModelLoader_vtable)
 AFXADDR_DECL(csgo_client_C_TEPlayerAnimEvent_PostDataUpdate_NewModelAnims_JNZ)
 AFXADDR_DECL(csgo_engine_Do_CCLCMsg_FileCRCCheck)
 AFXADDR_DECL(csgo_C_BaseViewModel_FireEvent)
+AFXADDR_DECL(csgo_client_AdjustInterpolationAmount)
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);
