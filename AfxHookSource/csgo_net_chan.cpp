@@ -417,7 +417,7 @@ csgo_client_AdjustInterpolationAmount_t True_csgo_client_AdjustInterpolationAmou
 
 int g_Mirv_Pov_PingAdjustMent = 0;
 
-float g_Mirv_Pov_Interp_OrgFac[2] = {1,1};
+float g_Mirv_Pov_Interp_OrgFac[2] = {2,1};
 float g_Mirv_Pov_Interp_PingFac[2] = {1,0};
 float g_Mirv_Pov_Interp_Offset[2] = {0,0};
 
