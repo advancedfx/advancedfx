@@ -311,6 +311,61 @@ SOURCESDK::vec_t DotProduct(const SOURCESDK::vec_t * v1, const SOURCESDK::vec_t 
 	return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
 }
 
+void VectorAngles( const SOURCESDK::Vector& forward, SOURCESDK::QAngle &angles )
+{
+	float	tmp, yaw, pitch;
+	if (forward[1] == 0 && forward[0] == 0)
+	{
+		yaw = 0;
+		if (forward[2] > 0)
+			pitch = 270;
+		else
+			pitch = 90;
+	}
+	else
+	{
+		yaw = (atan2f(forward[1], forward[0]) * 180 / (float)M_PI);
+		if (yaw < 0)
+			yaw += 360;
+
+		tmp = sqrtf(forward[0]*forward[0] + forward[1]*forward[1]);
+		pitch = (atan2f(-forward[2], tmp) * 180 / (float)M_PI);
+		if (pitch < 0)
+			pitch += 360;
+	}
+	
+	angles[0] = pitch;
+	angles[1] = yaw;
+	angles[2] = 0;
+}
+
+void AngleMatrix( const SOURCESDK::QAngle &angles,  SOURCESDK::matrix3x4_t& matrix )
+{
+	float sy = sinf(angles[1] * (float)M_PI / 180.0);
+	float cy = cosf(angles[1] * (float)M_PI / 180.0);
+
+	float sp = sinf(angles[0] * (float)M_PI / 180.0);
+	float cp = cosf(angles[0] * (float)M_PI / 180.0);
+
+	float sr = sinf(angles[2] * (float)M_PI / 180.0);
+	float cr = cosf(angles[2] * (float)M_PI / 180.0);
+
+	matrix[0][0] = cp*cy;
+	matrix[1][0] = cp*sy;
+	matrix[2][0] = -sp;
+
+	matrix[0][1] = sr*sp*cy+cr*-sy;
+	matrix[1][1] = sr*sp*sy+cr*cy;
+	matrix[2][1] = sr*cp;
+	matrix[0][2] = (cr*sp*cy+-sr*-sy);
+	matrix[1][2] = (cr*sp*sy+-sr*cy);
+	matrix[2][2] = cr*cp;
+
+	matrix[0][3] = 0.0f;
+	matrix[1][3] = 0.0f;
+	matrix[2][3] = 0.0f;
+}
+
 void VectorTransform(const SOURCESDK::Vector & in1, const SOURCESDK::matrix3x4_t & in2, SOURCESDK::Vector & out)
 {
 	out[0] = DotProduct(in1.Base(), in2[0]) + in2[0][3];
@@ -3043,59 +3098,94 @@ public:
 			if(localPlayer && localPlayer->GetIClientEntity() != ignoreEnt) traceFilter.Add(localPlayer);
 
 			SOURCESDK::Vector traceEnd = sourceVector;
-			SOURCESDK::Vector vTrace = (sourceVector - clipToVector);
-			float sourceSqrLen = vTrace.LengthSqr();
-			if(sourceSqrLen >= AFX_MATH_EPS) {
-				float len = std::sqrtf(sourceSqrLen);
-				vTrace *=  SOURCESDK_CSGO_MAX_TRACE_LENGTH / len;
+			SOURCESDK::Vector vDirOrg = (sourceVector - clipToVector);
+			SOURCESDK::Vector vTrace = vDirOrg;
+			float sourceLenSqr = vTrace.LengthSqr();
+			float bestLenSqr = sourceLenSqr;
+			if(sourceLenSqr >= AFX_MATH_EPS) {
+				float sourceLen = std::sqrtf(sourceLenSqr);
+				vDirOrg *= 1 / sourceLen;
+				vTrace = vDirOrg;
+				vTrace *= SOURCESDK_CSGO_MAX_TRACE_LENGTH;
 				traceEnd = clipToVector + vTrace;
 			}
 
-			SOURCESDK::CSGO::Ray_t ray;
-			ray.Init(clipToVector, traceEnd);
+			// c^2 = d^2 + d^2
+			// c = sqrt(2) * d
+			const float ofsLen = 1.4142135623730950488016887242097f * m_SafeZoneDist;
 
-			SOURCESDK::CSGO::trace_t tr;
-			g_pClientEngineTrace->TraceRay(ray, SOURCESDK_CSGO_MASK_ALL, &traceFilter, &tr);
+			float ofsSourceVecs[5][3] = {
+				{0,0,0},
+				{0,ofsLen,ofsLen},
+				{0,ofsLen,-ofsLen},
+				{0,-ofsLen,-ofsLen},
+				{0,-ofsLen,ofsLen},
+			};
 
-			if (tr.DidHit())
-			{
-				SOURCESDK::Vector vDir = tr.endpos - tr.startpos;
+			SOURCESDK::QAngle traceAngs;
+			VectorAngles(vDirOrg,traceAngs);
+			SOURCESDK::matrix3x4_t traceRotMatrix;
+			AngleMatrix(traceAngs,traceRotMatrix);
 
-				if(vDir.LengthSqr() > sourceSqrLen + m_SafeZoneDist) {
-					outVector = sourceVector;
-					outAngles = sourceAngles;
-					return true;			
+			for(int i =0; i < 5; ++i) {
+				SOURCESDK::Vector vOffs;
+				VectorTransform(SOURCESDK::Vector(ofsSourceVecs[i][0],ofsSourceVecs[i][1],ofsSourceVecs[i][2]), traceRotMatrix, vOffs);
+
+				SOURCESDK::Vector srcVec = clipToVector + vOffs;
+				SOURCESDK::Vector dstVec = traceEnd + vOffs;
+
+				SOURCESDK::CSGO::Ray_t ray;
+				ray.Init(srcVec, dstVec);
+
+				SOURCESDK::CSGO::trace_t tr;
+				g_pClientEngineTrace->TraceRay(ray, SOURCESDK_CSGO_MASK_ALL, &traceFilter, &tr);
+
+				if (tr.DidHit())
+				{
+					SOURCESDK::Vector vDir = tr.endpos - tr.startpos;
+					float curLenSqr = vDir.LengthSqr();
+
+					//Tier0_Msg("[%d]: %f\n", i, std::sqrtf(vDir.LengthSqr()));
+
+					if(curLenSqr > bestLenSqr + m_SafeZoneDist) {
+						continue;	
+					}
+
+					if(tr.allsolid || m_SafeZoneDist <= AFX_MATH_EPS) {
+						// plane invalid
+						// OR safezone is 0
+						bestLenSqr = curLenSqr;
+						continue;
+					}
+
+					// https://en.wikipedia.org/wiki/Intercept_theorem
+					// https://math.stackexchange.com/a/100783 (Projecting tr.startpos onto the plane using the plane normal)
+
+					float s = tr.plane.normal.LengthSqr();
+					float c = AFX_MATH_EPS <= s ? -(vDir.x * tr.plane.normal.x + vDir.y * tr.plane.normal.y + vDir.z * tr.plane.normal.z) / tr.plane.normal.LengthSqr() : 0;
+					SOURCESDK::Vector cV = tr.plane.normal;
+					cV *= c;
+					c = std::sqrtf(cV.LengthSqr());
+					float t = 0 != c ? 1 - m_SafeZoneDist / c : 1;
+
+					if(t < 0) t = 0;
+					else if(t > 1) t = 1;
+
+					vDir *= t;
+					bestLenSqr = std::min(bestLenSqr, vDir.LengthSqr());
+					continue;
 				}
+			}
 
-				if(tr.allsolid || m_SafeZoneDist <= AFX_MATH_EPS) {
-					// plane invalid
-					// OR safezone is 0
-					outVector = tr.endpos;
-					outAngles = sourceAngles;
-					return true;
-				}
-
-				// https://en.wikipedia.org/wiki/Intercept_theorem
-				// https://math.stackexchange.com/a/100783 (Projecting tr.startpos onto the plane using the plane normal)
-
-				float s = tr.plane.normal.LengthSqr();
-				float c = AFX_MATH_EPS <= s ? -(vDir.x * tr.plane.normal.x + vDir.y * tr.plane.normal.y + vDir.z * tr.plane.normal.z) / tr.plane.normal.LengthSqr() : 0;
-				SOURCESDK::Vector cV = tr.plane.normal;
-				cV *= c;
-				c = std::sqrtf(cV.LengthSqr());
-				float t = 0 != c ? 1 - m_SafeZoneDist / c : 1;
-
-				if(t < 0) t = 0;
-				else if(t > 1) t = 1;
-
-				vDir *= t;
-				outVector = tr.startpos + vDir;
+			if(AFX_MATH_EPS >= std::abs(sourceLenSqr - bestLenSqr)) {
+				// Not much of a change ...
+				outVector = sourceVector;
 				outAngles = sourceAngles;
-				return true;
-			} 
-
-			outVector = sourceVector;
-			outAngles = sourceAngles;
+			} else {
+				vDirOrg *= std::sqrtf(bestLenSqr);
+				outVector = clipToVector + vDirOrg;
+				outAngles = sourceAngles;
+			}
 
 			return true;
 		}
