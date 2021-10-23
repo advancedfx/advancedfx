@@ -417,9 +417,33 @@ csgo_client_AdjustInterpolationAmount_t True_csgo_client_AdjustInterpolationAmou
 
 int g_Mirv_Pov_PingAdjustMent = 0;
 
-float g_Mirv_Pov_Interp_OrgFac[2] = {2,1};
-float g_Mirv_Pov_Interp_PingFac[2] = {1,0};
+// [0] - other, [1] - mirv_pov "local" player
+// Default is currently normal engine behaviour.
+float g_Mirv_Pov_Interp_OrgFac[2] = {1,1};
+float g_Mirv_Pov_Interp_PingFac[2] = {0,0};
 float g_Mirv_Pov_Interp_Offset[2] = {0,0};
+
+void Mirv_Pov_Interp_CompensateLatencyOn() {
+	g_Mirv_Pov_Interp_OrgFac[0] = 2;
+	g_Mirv_Pov_Interp_PingFac[0] = 1;
+	g_Mirv_Pov_Interp_Offset[0] = 0;
+	g_Mirv_Pov_Interp_OrgFac[1] = 1;
+	g_Mirv_Pov_Interp_PingFac[1] = 0;
+	g_Mirv_Pov_Interp_Offset[1] = 0;
+}
+
+void Mirv_Pov_Interp_CompensateLatencyOff() {
+	g_Mirv_Pov_Interp_OrgFac[0] = 1;
+	g_Mirv_Pov_Interp_PingFac[0] = 0;
+	g_Mirv_Pov_Interp_Offset[0] = 0;
+	g_Mirv_Pov_Interp_OrgFac[1] = 1;
+	g_Mirv_Pov_Interp_PingFac[1] = 0;
+	g_Mirv_Pov_Interp_Offset[1] = 0;
+}
+
+void Mirv_Pov_Interp_Default() {
+	Mirv_Pov_Interp_CompensateLatencyOff();
+}
 
 float __cdecl My_Adjust_csgo_client_AdjustInterpolationAmount(SOURCESDK::C_BasePlayer_csgo * This, float baseInterpolation) {
 

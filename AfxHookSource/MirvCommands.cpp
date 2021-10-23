@@ -3796,6 +3796,9 @@ CON_COMMAND(mirv_time, "time control")
 	);
 }
 
+void Mirv_Pov_Interp_CompensateLatencyOn();
+void Mirv_Pov_Interp_CompensateLatencyOff();
+void Mirv_Pov_Interp_Default();
 
 CON_COMMAND(mirv_cfg, "general HLAE configuration")
 {
@@ -3845,68 +3848,88 @@ CON_COMMAND(mirv_cfg, "general HLAE configuration")
 			return;
 		}
 		else if(0 == _stricmp("mirvPov", arg1)) {
-
-			if(4 <= argC) {
+			if(3 <= argC) {
 				const char * cmd2 = args->ArgV(2);
-				const char * cmd3 = args->ArgV(3);
+				
+				if(0 == _stricmp("interpDefault", cmd2)) {
+					Mirv_Pov_Interp_Default();
+					return;
+				}
+				else if(0 == _stricmp("interpCompensateLatencyOn", cmd2)) {
+					Mirv_Pov_Interp_CompensateLatencyOn();
+					return;
+				}
+				else if(0 == _stricmp("interpCompensateLatencyOff", cmd2)) {
+					Mirv_Pov_Interp_CompensateLatencyOff();
+					return;
+				}
+				else if(4 <= argC) {
+					const char * cmd3 = args->ArgV(3);
 
-				int iDim = 0 == _stricmp("local", cmd3) ? 1 : 0;
-				if(iDim ||0 == _stricmp("other", cmd3))  {
-					if(0 == _stricmp("interpPingFac", cmd2)) {
-						if(5 <= argC)
-						{
-							g_Mirv_Pov_Interp_PingFac[iDim] = (float)atof(args->ArgV(4));
+					int iDim = 0 == _stricmp("local", cmd3) ? 1 : 0;
+					if(iDim ||0 == _stricmp("other", cmd3))  {
+						if(0 == _stricmp("interpPingFac", cmd2)) {
+							if(5 <= argC)
+							{
+								g_Mirv_Pov_Interp_PingFac[iDim] = (float)atof(args->ArgV(4));
+								return;
+							}
+
+							Tier0_Msg(
+								"%s interpPingFac pingFac %s <fValue>\n"
+								"Current value: %f\n"
+								, arg0
+								, cmd3
+								, g_Mirv_Pov_Interp_PingFac[iDim]
+							);
 							return;
 						}
+						else if(0 == _stricmp("interpOffset", cmd2)) {
+							if(5 <= argC)
+							{
+								g_Mirv_Pov_Interp_Offset[iDim] = (float)atof(args->ArgV(4));
+								return;
+							}
 
-						Tier0_Msg(
-							"%s interpPingFac pingFac %s <fValue>\n"
-							"Current value: %f\n"
-							, arg0
-							, cmd3
-							, g_Mirv_Pov_Interp_PingFac[iDim]
-						);
-						return;
-					}
-					else if(0 == _stricmp("interpOffset", cmd2)) {
-						if(5 <= argC)
-						{
-							g_Mirv_Pov_Interp_Offset[iDim] = (float)atof(args->ArgV(4));
+							Tier0_Msg(
+								"%s mirvPovInterp interpOffset %s <fValue>\n"
+								"Current value: %f\n"
+								, arg0
+								, cmd3
+								, g_Mirv_Pov_Interp_Offset[iDim]
+							);
 							return;
 						}
+						else if(0 == _stricmp("interpFacOrg", cmd2)) {
+							if(5 <= argC)
+							{
+								g_Mirv_Pov_Interp_OrgFac[iDim] = (float)atof(args->ArgV(4));
+								return;
+							}
 
-						Tier0_Msg(
-							"%s mirvPovInterp interpOffset %s <fValue>\n"
-							"Current value: %f\n"
-							, arg0
-							, cmd3
-							, g_Mirv_Pov_Interp_Offset[iDim]
-						);
-						return;
-					}
-					else if(0 == _stricmp("interpFacOrg", cmd2)) {
-						if(5 <= argC)
-						{
-							g_Mirv_Pov_Interp_OrgFac[iDim] = (float)atof(args->ArgV(4));
+							Tier0_Msg(
+								"%s mirvPovInterp interpFacOrg %s <fValue>\n"
+								"Current value: %f\n"
+								, arg0
+								, cmd3
+								, g_Mirv_Pov_Interp_OrgFac[iDim]
+							);
 							return;
 						}
-
-						Tier0_Msg(
-							"%s mirvPovInterp interpFacOrg %s <fValue>\n"
-							"Current value: %f\n"
-							, arg0
-							, cmd3
-							, g_Mirv_Pov_Interp_OrgFac[iDim]
-						);
-						return;
 					}
 				}
 			}
-
+			
 			Tier0_Msg(
+				"%s mirvPov interpDefault - Restore default interp settings.\n"
+				"%s mirvPov interpCompensateLatencyOn - Enable (approximate) latency compenstation interp settings.\n"
+				"%s mirvPov interpCompensateLatencyOff - Disable (approximate) latency compenstation interp settings.\n"
 				"%s mirvPov interpPingFac local|other [...] - Default ,other=0,local=1, factor multiplied with ping / 1000.0 to delay interp for non-POV player-local entities.\n"
 				"%s mirvPov interpOffset local|other [...] - Default other=0,local=0, constant factor to add to interp.\n"
 				"%s mirvPov interpFacOrg local|other [...] - Default other=1,local=1 factor multiplied with original value by engine (depends on your cl_interp value!).\n"
+				, arg0
+				, arg0
+				, arg0
 				, arg0
 				, arg0
 				, arg0

@@ -6,6 +6,32 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.101.0</version>
+<time>2021-10-23T16:24Z</time>
+<changes>
+<change type="added">Added mirv_calc vecAng collisionClip that allows to push towards the source point an nother point, based on 5 rays to check for collisons with level or other stuff (#713). Recommend is safeZoneDist of 7 units (7*12/16 inch) for pushing cameras.</change>
+<change type="fixed">Fixed #714 AGR command interface, and viewmodels in TF2.</change>
+<change type="added">Added optional (default is currently OFF, in case there are bugs) mirv_pov player latency compensation to make GOTVs with mirv_pov a bit more accurate. You can enable it with: mirv_cfg mirvPov interpCompensateLatencyOn, disable with mirv_cfg mirvPov interpCompensateLatencyOff, default with mirv_cfg mirvPov interpDefault. This feature has been / is being developed thanks to input and ideas from David Durst (https://davidbdurst.com/).</change>
+<change type="updated">Merged afx-interop-v7 branch into current branch. This should not neagtively affect existing afx_interop features (up to v6, v7 is still under developement), in case you find (new) problems with it, please file a bug report.</change>
+</changes>
+<comments>
+// Example config for collisionClip<br />
+<br />
+mirv_calcs handle add localPlayer localPlayer20211023<br />
+mirv_calcs handle add observerTarget observerTarget20211023 localPlayer20211023<br />
+<br />
+mirv_calcs vecAng add handleAttachment facemaskOrigin20211023 observerTarget20211023 facemask<br />
+mirv_calcs vecAng add value faceMaskOffset20211023 100 0 0 0 0 179.9<br />
+mirv_calcs vecAng add offset facemaskSource20211023 facemaskOrigin20211023 faceMaskOffset20211023 1<br />
+mirv_calcs vecAng add collisionClip facemask20211023 facemaskSource20211023 facemaskOrigin20211023 observerTarget20211023 10.0<br />
+<br />
+spec_mode 5; mirv_cam source calcVecAng facemask20211023
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.100.1</version>
 <time>2021-09-22T06:47Z</time>
 <changes>
