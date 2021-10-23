@@ -8,6 +8,7 @@
 #include "WrpConsole.h"
 #include "RenderView.h"
 #include "MirvTime.h"
+#include "MirvTime.h"
 #include "MirvCalcs.h"
 #include "AfxCommandLine.h"
 #include "AfxStreams.h"
@@ -69,10 +70,83 @@ extern SOURCESDK::IVRenderView_csgo * g_pVRenderView_csgo;
 namespace AfxInterop {
 	IAfxInteropSurface* m_Surface = NULL;
 
+	class CVersion {
+	public:
+		CVersion() : 
+			m_Major(0), m_Minor(0), m_Patch(0), m_Build(0)
+		{
+
+		}
+
+		CVersion(unsigned int major, unsigned int minor, unsigned int patch, unsigned int build)
+		: m_Major(major), m_Minor(minor), m_Patch(patch), m_Build(build)
+		{
+
+		}
+
+		CVersion(const CVersion & other)
+		: m_Major(other.m_Major), m_Minor(other.m_Minor), m_Patch(other.m_Patch), m_Build(other.m_Build)
+		{
+
+		}
+
+		void operator =(const CVersion & other) {
+			m_Major = other.m_Major;
+			m_Minor = other.m_Minor;
+			m_Patch = other.m_Patch;
+			m_Build = other.m_Build;
+		}
+
+		bool operator <(const CVersion & other) const {
+			return Compare(other) < 0;
+		}
+
+		bool operator ==(const CVersion & other) const {
+			return Compare(other) == 0;
+		}
+
+		bool operator >(const CVersion & other) const {
+			return Compare(other) > 0;
+		}
+
+		int Compare(const CVersion & other) const {
+			if(m_Major < other.m_Major) return -1;
+			else if(m_Major > other.m_Major) return 1;
+			if(m_Minor < other.m_Minor) return -1;
+			else if(m_Minor > other.m_Minor) return 1;
+			if(m_Patch < other.m_Patch) return -1;
+			else if(m_Patch > other.m_Patch) return 1;
+			if(m_Build < other.m_Build) return -1;
+			else if(m_Build > other.m_Build) return 1;
+			return 0;
+		}
+
+		void Set(unsigned int major, unsigned int minor, unsigned int patch, unsigned int build) {
+			m_Major = major;
+			m_Minor = minor;
+			m_Patch = patch;
+			m_Build = build;
+			
+		}
+
+		unsigned int GetMajor() const { return m_Major; }
+		unsigned int GetMinor() const { return m_Minor; }
+		unsigned int GetPatch() const { return m_Patch; }
+		unsigned int GetBuild() const { return m_Build; }
+
+		private:
+			unsigned int m_Major;
+			unsigned int m_Minor;
+			unsigned int m_Patch;
+			unsigned int m_Build;
+	};
+
 	class CInteropClient : public CAfxGameEventListenerSerialzer
 	{
 	public:
-		CInteropClient(const char * pipeName) : m_EnginePipeName(pipeName)
+		CInteropClient(const char * pipeName)
+		: m_EnginePipeName(pipeName)
+		, m_ClientVersion(7,0,0,0)
 		{
 
 		}
@@ -96,7 +170,7 @@ namespace AfxInterop {
 
 			int errorLine = 0;
 
-			if (!WriteInt32(m_hEnginePipe, EngineMessage_BeforeFrameStart)) { errorLine = __LINE__; goto error; }
+			if (!WriteUInt32(m_hEnginePipe, EngineMessage_BeforeFrameStart)) { errorLine = __LINE__; goto error; }
 
 			if (!SendCommands(m_hEnginePipe)) { errorLine = __LINE__; goto error; }
 
@@ -133,11 +207,11 @@ namespace AfxInterop {
 
 			int errorLine = 0;
 
-			if (!WriteInt32(m_hEnginePipe, EngineMessage_BeforeFrameRenderStart)) { errorLine = __LINE__; goto error; }
+			if (!WriteUInt32(m_hEnginePipe, EngineMessage_BeforeFrameRenderStart)) { errorLine = __LINE__; goto error; }
 
 			if (!Flush(m_hEnginePipe)) { errorLine = __LINE__; goto error; }
 
-			if (7 <= m_EngineVersion)
+			if (7 == m_ServerVersion.GetMajor())
 			{
 				if (!ReadGameEventSettings(true)) { errorLine = __LINE__; goto error; }
 			}
@@ -156,7 +230,7 @@ namespace AfxInterop {
 
 			int errorLine = 0;
 
-			if (!WriteInt32(m_hEnginePipe, EngineMessage_AfterFrameRenderStart)) { errorLine = __LINE__; goto error; }
+			if (!WriteUInt32(m_hEnginePipe, EngineMessage_AfterFrameRenderStart)) { errorLine = __LINE__; goto error; }
 
 			if (!Flush(m_hEnginePipe)) { errorLine = __LINE__; goto error; }
 
@@ -457,7 +531,18 @@ namespace AfxInterop {
 
 			int errorLine = 0;
 
-			if (!WriteInt32(m_hEnginePipe, EngineMessage_OnViewOverride)) { errorLine = __LINE__; goto error; }
+			if (!WriteUInt32(m_hEnginePipe, EngineMessage_OnViewOverride)) { errorLine = __LINE__; goto error; }
+
+			if (7 == m_ServerVersion.GetMajor())
+			{
+				if (!WriteSingle(m_hEnginePipe, Tx)) { errorLine = __LINE__; goto error; }
+				if (!WriteSingle(m_hEnginePipe, Ty)) { errorLine = __LINE__; goto error; }
+				if (!WriteSingle(m_hEnginePipe, Tz)) { errorLine = __LINE__; goto error; }
+				if (!WriteSingle(m_hEnginePipe, Rx)) { errorLine = __LINE__; goto error; }
+				if (!WriteSingle(m_hEnginePipe, Ry)) { errorLine = __LINE__; goto error; }
+				if (!WriteSingle(m_hEnginePipe, Rz)) { errorLine = __LINE__; goto error; }
+				if (!WriteSingle(m_hEnginePipe, Fov)) { errorLine = __LINE__; goto error; }
+			}
 
 			if (!Flush(m_hEnginePipe)) { errorLine = __LINE__; goto error; }
 
@@ -517,8 +602,7 @@ namespace AfxInterop {
 
 			int errorLine = 0;
 			{
-
-				if (!WriteInt32(m_hEnginePipe, EngineMessage_OnRenderView)) { errorLine = __LINE__; goto error; }
+				if (!WriteUInt32(m_hEnginePipe, EngineMessage_OnRenderView)) { errorLine = __LINE__; goto error; }
 
 				if (!WriteInt32(m_hEnginePipe, engineFrame)) { errorLine = __LINE__; goto error; }
 
@@ -581,13 +665,14 @@ namespace AfxInterop {
 				if (!ReadBoolean(m_hEnginePipe, m_EnabledFeatures.BeforeHud)) { errorLine = __LINE__; goto error; }
 				if (!ReadBoolean(m_hEnginePipe, m_EnabledFeatures.AfterHud)) { errorLine = __LINE__; goto error; }
 
-				if (6 <= m_EngineVersion && m_EngineVersion <= 7)
+				if (6 == m_ServerVersion.GetMajor()
+					|| 7 == m_ServerVersion.GetMajor())
 				{
 					if (!ReadBoolean(m_hEnginePipe, m_EnabledFeatures.AfterRenderView)) { errorLine = __LINE__; goto error; }
 				}
 			}
 
-			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CPrepareDrawFunctor(this, AfxInterop::GetFrameCount())));
+			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CPrepareDrawFunctor(this, engineFrame)));
 
 			return;
 
@@ -602,13 +687,16 @@ namespace AfxInterop {
 			if (!m_EngineConnected) return;
 
 			int errorLine = 0;
+			if (true || m_EnabledFeatures.AfterRenderView)
 			{
-				if (!WriteInt32(m_hEnginePipe, EngineMessage_OnRenderViewEnd)) { errorLine = __LINE__; goto error; }
-				if (!Flush(m_hEnginePipe)) { errorLine = __LINE__; goto error; }
-			}
+				{
+					if (!WriteUInt32(m_hEnginePipe, EngineMessage_OnRenderViewEnd)) { errorLine = __LINE__; goto error; }
+					if (!Flush(m_hEnginePipe)) { errorLine = __LINE__; goto error; }
+				}
 
-			if(m_EngineVersion != 6 || m_EnabledFeatures.AfterRenderView)
-				QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new COnRenderViewEndFunctor(this)));
+				if (!(m_ServerVersion.GetMajor() == 6 || m_ServerVersion.GetMajor() == 7) || m_EnabledFeatures.AfterRenderView)
+					QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new COnRenderViewEndFunctor(this)));
+			}
 
 			return;
 
@@ -656,7 +744,7 @@ namespace AfxInterop {
 					}
 				}
 
-				if (!WriteInt32(m_hEnginePipe, message)) { errorLine = __LINE__; goto error; }
+				if (!WriteUInt32(m_hEnginePipe, message)) { errorLine = __LINE__; goto error; }
 
 				SOURCESDK::CViewSetup_csgo& view = rendering3dView->AfxHackGetViewSetup();
 
@@ -723,11 +811,11 @@ namespace AfxInterop {
 
 			int errorLine = 0;
 
-			if(m_EngineVersion == 7)
+			if(m_ServerVersion.GetMajor() == 7)
 			{
 				if (!m_EngineConnected) return;
 
-				if (!WriteInt32(m_hEnginePipe, EngineMessage_OnBeforeHud)) { errorLine = __LINE__; goto error; }
+				if (!WriteUInt32(m_hEnginePipe, EngineMessage_OnBeforeHud)) { errorLine = __LINE__; goto error; }
 				if (!Flush(m_hEnginePipe)) { errorLine = __LINE__; goto error; }
 			}
 
@@ -747,11 +835,11 @@ namespace AfxInterop {
 
 			int errorLine = 0;
 
-			if (m_EngineVersion == 7)
+			if (m_ServerVersion.GetMajor() == 7)
 			{
 				if (!m_EngineConnected) return;
 
-				if (!WriteInt32(m_hEnginePipe, EngineMessage_OnAfterHud)) { errorLine = __LINE__; goto error; }
+				if (!WriteUInt32(m_hEnginePipe, EngineMessage_OnAfterHud)) { errorLine = __LINE__; goto error; }
 				if (!Flush(m_hEnginePipe)) { errorLine = __LINE__; goto error; }
 			}
 
@@ -774,10 +862,11 @@ namespace AfxInterop {
 		{
 			m_DrawingSkip = true;
 			m_DrawingFrameCount = frameCount;
+			m_DrawingPass = 0;
 
 			if (!m_DrawingConnected) return;
 
-			if (6 <= m_DrawingVersion && m_DrawingVersion <= 7)
+			if (6 == m_ServerVersion.GetMajor() || 7 == m_ServerVersion.GetMajor())
 			{
 				m_DrawingSkip = false;
 				return;
@@ -787,12 +876,12 @@ namespace AfxInterop {
 
 			while (true)
 			{
-				if (!WriteInt32(m_hDrawingPipe, DrawingMessage_PreapareDraw)) { errorLine = __LINE__; goto error; }
+				if (!WriteUInt32(m_hDrawingPipe, DrawingMessage_PreapareDraw)) { errorLine = __LINE__; goto error; }
 				if (!WriteInt32(m_hDrawingPipe, frameCount)) { errorLine = __LINE__; goto error; }
 				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 
-				INT32 prepareDrawReply;
-				if (!ReadInt32(m_hDrawingPipe, prepareDrawReply)) { errorLine = __LINE__; goto error; }
+				UINT32 prepareDrawReply;
+				if (!ReadUInt32(m_hDrawingPipe, prepareDrawReply)) { errorLine = __LINE__; goto error; }
 
 				switch (prepareDrawReply)
 				{
@@ -925,15 +1014,15 @@ namespace AfxInterop {
 				}
 
 
-				if (6 <= m_DrawingVersion && m_DrawingVersion <= 7)
+				if (6 == m_ServerVersion.GetMajor() || m_ServerVersion.GetMajor() == 7)
 				{
-					if(!HandleVersion6DrawingMessage(message, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
+					if(!HandleDrawingMessage(message, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
 				}
 				else
 				{
 					AfxD3D_WaitForGPU();
 
-					if (!WriteInt32(m_hDrawingPipe, message)) { errorLine = __LINE__; goto error; }
+					if (!WriteUInt32(m_hDrawingPipe, message)) { errorLine = __LINE__; goto error; }
 
 					if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 
@@ -960,15 +1049,15 @@ namespace AfxInterop {
 
 			int errorLine = 0;
 
-			if (6 <= m_DrawingVersion && m_DrawingVersion <= 7)
+			if (6 == m_ServerVersion.GetMajor() || m_ServerVersion.GetMajor() == 7)
 			{
-				if (!HandleVersion6DrawingMessage(DrawingMessage_BeforeHud, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
+				if (!HandleDrawingMessage(DrawingMessage_BeforeHud, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
 			}
 			else
 			{
 				AfxD3D_WaitForGPU();
 
-				if (!WriteInt32(m_hDrawingPipe, DrawingMessage_BeforeHud)) { errorLine = __LINE__; goto error; }
+				if (!WriteUInt32(m_hDrawingPipe, DrawingMessage_BeforeHud)) { errorLine = __LINE__; goto error; }
 
 				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 
@@ -994,14 +1083,14 @@ namespace AfxInterop {
 
 			int errorLine = 0;
 
-			if (6 <= m_DrawingVersion && m_DrawingVersion <= 7)
+			if (6 == m_ServerVersion.GetMajor() || m_ServerVersion.GetMajor() == 7)
 			{
-				if (!HandleVersion6DrawingMessage(DrawingMessage_AfterHud, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
+				if (!HandleDrawingMessage(DrawingMessage_AfterHud, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
 			}
 			else
 			{
 				AfxD3D_WaitForGPU();
-				if (!WriteInt32(m_hDrawingPipe, DrawingMessage_AfterHud)) { errorLine = __LINE__; goto error; }
+				if (!WriteUInt32(m_hDrawingPipe, DrawingMessage_AfterHud)) { errorLine = __LINE__; goto error; }
 				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 				bool done;
 				do {
@@ -1012,7 +1101,7 @@ namespace AfxInterop {
 			return;
 
 		error:
-			Tier0_Warning("AfxInterop::DrawingThread_BeforeHud: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
+			Tier0_Warning("AfxInterop::DrawingThread_AfterHud: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
 			DisconnectDrawing();
 			return;
 		}
@@ -1025,13 +1114,13 @@ namespace AfxInterop {
 
 			int errorLine = 0;
 
-			if (6 <= m_DrawingVersion && m_DrawingVersion <= 7)
+			if (6 == m_ServerVersion.GetMajor() || m_ServerVersion.GetMajor() == 7)
 			{
-				if (!HandleVersion6DrawingMessage(DrawingMessage_OnRenderViewEnd, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
+				if (!HandleDrawingMessage(DrawingMessage_OnRenderViewEnd, m_DrawingFrameCount)) { errorLine = __LINE__; goto error; }
 			}
 			else
 			{
-				if (!WriteInt32(m_hDrawingPipe, DrawingMessage_OnRenderViewEnd)) { errorLine = __LINE__; goto error; }
+				if (!WriteUInt32(m_hDrawingPipe, DrawingMessage_OnRenderViewEnd)) { errorLine = __LINE__; goto error; }
 			}
 
 			return;
@@ -1042,13 +1131,539 @@ namespace AfxInterop {
 			return;
 		}
 
-		void DrawingThread_DeviceLost()
+		bool Send_DrawingThread_DeviceLost_Message()
 		{
-			while (m_SharedSurface.Texture)
+			int errorLine = 0;
+
+			if (m_ServerVersion.GetMajor() == 7)
+			{
+				if (!WriteUInt32(m_hDrawingPipe, DrawingMessage_DeviceLost)) { errorLine = __LINE__; goto error; }
+			}
+
+			return true;
+
+		error:
+			Tier0_Warning("AfxInterop::Send_DrawingThread_DeviceLost_Message: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
+			return false;
+		}
+
+		void DrawingThread_DeviceLost(bool disconnecting = false)
+		{
+			if (m_SharedSurface.Texture)
 			{
 				m_SharedSurface.Texture->Release();
 				m_SharedSurface.Texture = nullptr;
 			}
+
+			if (disconnecting) for (auto it = m_D3d9VertexDeclarations.begin(); it != m_D3d9VertexDeclarations.end(); ++it) it->second->Release(); m_D3d9VertexDeclarations.clear();
+			for (auto it = m_D3d9IndexBuffers.begin(); it != m_D3d9IndexBuffers.end(); ++it) it->second->Release(); m_D3d9IndexBuffers.clear();
+			for (auto it = m_D3d9VertexBuffers.begin(); it != m_D3d9VertexBuffers.end(); ++it) it->second->Release(); m_D3d9VertexBuffers.clear();
+			for (auto it = m_D3d9Textures.begin(); it != m_D3d9Textures.end(); ++it) it->second->Release(); m_D3d9Textures.clear();
+			if (disconnecting) for (auto it = m_D3d9VertexShaders.begin(); it != m_D3d9VertexShaders.end(); ++it) it->second->Release(); m_D3d9VertexShaders.clear();
+			if (disconnecting) for (auto it = m_D3d9PixelShaders.begin(); it != m_D3d9PixelShaders.end(); ++it) it->second->Release(); m_D3d9PixelShaders.clear();
+
+			if (disconnecting || !m_DrawingConnected) return;
+
+			int errorLine = 0;
+			
+			if (m_DrawingConnected)
+			{
+				if (!Send_DrawingThread_DeviceLost_Message()) { errorLine = __LINE__; goto error; }
+			}
+
+			return;
+
+		error:
+			Tier0_Warning("AfxInterop::DrawingThread_DeviceLost: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
+			if(!disconnecting) DisconnectDrawing();
+			return;
+		}
+
+		bool HandleVersion7DrawingReply_D3d9CreateVertexDeclaration() {
+			int errorLine = 0;
+			void* pData = nullptr;
+			D3DVERTEXELEMENT9 declEnd = D3DDECL_END();
+
+			UINT64 index;
+			UINT32 size;
+			if(!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+			if(!ReadUInt32(m_hDrawingPipe, size)) { errorLine = __LINE__; goto error; }
+
+			if(0 == (pData = malloc(size))) { errorLine = __LINE__; goto error; }
+
+			if(!ReadBytes(m_hDrawingPipe, pData, 0, size)) { errorLine = __LINE__; goto error; }
+
+			if (IDirect3DDevice9Ex* device = AfxGetDirect3DDevice9Ex())
+			{
+				IDirect3DVertexDeclaration9* pValue = nullptr;
+				HRESULT hr = device->CreateVertexDeclaration((D3DVERTEXELEMENT9*)pData, &pValue);
+				if (SUCCEEDED(hr))
+				{
+					auto result = m_D3d9VertexDeclarations.emplace(index, pValue);
+					if (!result.second) {
+						result.first->second->Release();
+						result.first->second = pValue;
+					}
+				}
+				DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+				if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+				if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+			}
+			else { errorLine = __LINE__; goto error; }
+
+			free(pData);
+
+			return true;
+
+		error:
+			free(pData);
+			Tier0_Warning("AfxInterop::HandleVersion7DrawingReply_D3d9CreateVertexDeclaration: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
+			DisconnectDrawing();
+			return false;
+		}
+
+		bool HandleVersion7DrawingReply_D3d9CreateIndexBuffer() {
+			int errorLine = 0;
+
+			UINT64 index;
+			UINT32 length;
+			UINT32 usage;
+			UINT32 format;
+			UINT32 pool;
+			bool hasHandle;
+			HANDLE handle;
+
+			if (!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, length)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, usage)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, format)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, pool)) { errorLine = __LINE__; goto error; }
+			if (!ReadBoolean(m_hDrawingPipe, hasHandle)) { errorLine = __LINE__; goto error; }
+			if (hasHandle && !ReadHandle(m_hDrawingPipe, handle)) { errorLine = __LINE__; goto error; }
+
+			if (IDirect3DDevice9Ex* device = AfxGetDirect3DDevice9Ex())
+			{
+				IDirect3DIndexBuffer9* pValue = nullptr;
+				HRESULT hr = device->CreateIndexBuffer(length, usage, (D3DFORMAT)format, (D3DPOOL)pool, &pValue, hasHandle ? &handle : NULL);
+				if (SUCCEEDED(hr))
+				{
+					auto result = m_D3d9IndexBuffers.emplace(index,pValue);
+					if (!result.second) {
+						result.first->second->Release();
+						result.first->second = pValue;
+					}
+				}
+				DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+				if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+				if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+				else if (hasHandle)
+				{
+					if (!WriteHandle(m_hDrawingPipe, handle)) { errorLine = __LINE__; goto error; }
+				}
+				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+			}
+			else { errorLine = __LINE__; goto error; }
+
+			return true;
+
+		error:
+			Tier0_Warning("AfxInterop::HandleVersion7DrawingReply_D3d9CreateIndexBuffer: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
+			return false;
+		}
+
+		bool HandleVersion7DrawingReply_UpdateD3d9IndexBuffer() {
+			int errorLine = 0;
+
+			UINT64 index;
+			UINT32 offsetToLock;
+			UINT32 sizeToLock;
+
+			if (!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, offsetToLock)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, sizeToLock)) { errorLine = __LINE__; goto error; }
+			
+			auto it = m_D3d9IndexBuffers.find(index);
+			if (it != m_D3d9IndexBuffers.end())
+			{
+				void* pData = nullptr;
+				HRESULT hr = it->second->Lock(offsetToLock, sizeToLock, &pData, 0);
+				if (SUCCEEDED(hr))
+				{
+					if (!ReadBytes(m_hDrawingPipe, pData, 0, sizeToLock)) { it->second->Unlock();  errorLine = __LINE__; goto error; }
+					hr = it->second->Unlock();
+				}
+				else {
+					BYTE dummy;
+					for(UINT32 i = 0; i < sizeToLock; ++i)
+					{
+						if (!ReadBytes(m_hDrawingPipe, &dummy, 0, sizeof(dummy))) { errorLine = __LINE__; goto error; }
+
+					}
+				}
+				DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+				if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+				if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+			}
+			else { errorLine = __LINE__; goto error; }
+			return true;
+
+		error:
+			Tier0_Warning("AfxInterop::HandleVersion7DrawingReply_UpdateD3d9IndexBuffer: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
+			return false;
+		}
+
+		bool HandleVersion7DrawingReply_D3d9CreateVertexBuffer() {
+			int errorLine = 0;
+
+			UINT64 index;
+			UINT32 length;
+			UINT32 usage;
+			UINT32 fvf;
+			UINT32 pool;
+			bool hasHandle;
+			HANDLE handle;
+
+			if (!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, length)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, usage)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, fvf)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, pool)) { errorLine = __LINE__; goto error; }
+			if (!ReadBoolean(m_hDrawingPipe, hasHandle)) { errorLine = __LINE__; goto error; }
+			if (hasHandle && !ReadHandle(m_hDrawingPipe, handle)) { errorLine = __LINE__; goto error; }
+
+			if (IDirect3DDevice9Ex* device = AfxGetDirect3DDevice9Ex())
+			{
+				IDirect3DVertexBuffer9* pValue = nullptr;
+				HRESULT hr = device->CreateVertexBuffer(length, usage, fvf, (D3DPOOL)pool, &pValue, hasHandle ? &handle : NULL);
+				if (SUCCEEDED(hr))
+				{
+					auto result = m_D3d9VertexBuffers.emplace(index, pValue);
+					if (!result.second) {
+						result.first->second->Release();
+						result.first->second = pValue;
+					}
+				}
+				DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+				if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+				if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+				else if (hasHandle)
+				{
+					if (!WriteHandle(m_hDrawingPipe, handle)) { errorLine = __LINE__; goto error; }
+				}
+				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+			}
+			else { errorLine = __LINE__; goto error; }
+
+			return true;
+
+		error:
+			Tier0_Warning("AfxInterop::HandleVersion7DrawingReply_D3d9CreateVertexBuffer: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
+			return false;
+		}
+
+		bool HandleVersion7DrawingReply_UpdateD3d9VertexBuffer() {
+			int errorLine = 0;
+			UINT64 index;
+			UINT32 offsetToLock;
+			UINT32 sizeToLock;
+
+			if (!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, offsetToLock)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, sizeToLock)) { errorLine = __LINE__; goto error; }
+
+			auto it = m_D3d9VertexBuffers.find(index);
+			if (it != m_D3d9VertexBuffers.end())
+			{
+				void* pData = nullptr;
+				HRESULT hr = it->second->Lock(offsetToLock, sizeToLock, &pData, 0);
+				if (SUCCEEDED(hr))
+				{
+					if (!ReadBytes(m_hDrawingPipe, pData, 0, sizeToLock)) { it->second->Unlock(); errorLine = __LINE__; goto error; }
+					hr = it->second->Unlock();
+				}
+				else {
+					BYTE dummy;
+					for(UINT32 i = 0; i < sizeToLock; ++i)
+					{
+						if (!ReadBytes(m_hDrawingPipe, &dummy, 0, sizeof(dummy))) { errorLine = __LINE__; goto error; }
+
+					}
+				}
+				DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+				if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+				if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+			}
+			else { errorLine = __LINE__; goto error; }
+
+			return true;
+
+		error:
+			Tier0_Warning("AfxInterop::HandleVersion7DrawingReply_UpdateD3d9VertexBuffer: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
+			return false;
+		}
+
+		/////
+
+		bool HandleVersion7DrawingReply_D3d9CreateTexture() {
+			int errorLine = 0;
+
+			UINT64 index;
+			UINT32 width;
+			UINT32 height;
+			UINT32 levels;
+			UINT32 usage;
+			UINT32 format;
+			UINT32 pool;
+			bool hasHandle;
+			HANDLE handle;
+
+			if (!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, width)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, height)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, levels)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, usage)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, format)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, pool)) { errorLine = __LINE__; goto error; }
+			if (!ReadBoolean(m_hDrawingPipe, hasHandle)) { errorLine = __LINE__; goto error; }
+			if (hasHandle && !ReadHandle(m_hDrawingPipe, handle)) { errorLine = __LINE__; goto error; }
+
+			if (IDirect3DDevice9Ex* device = AfxGetDirect3DDevice9Ex())
+			{
+				IDirect3DTexture9* pValue = nullptr;
+				HRESULT hr = device->CreateTexture(width, height, levels, usage, (D3DFORMAT)format, (D3DPOOL)pool, &pValue, hasHandle ? &handle : NULL);
+				if (SUCCEEDED(hr))
+				{
+					auto result = m_D3d9Textures.emplace(index,pValue);
+					if (!result.second) {
+						result.first->second->Release();
+						result.first->second = pValue;
+					}
+				}
+				DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+				if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+				if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+				else if (hasHandle)
+				{
+					if (!WriteHandle(m_hDrawingPipe, handle)) { errorLine = __LINE__; goto error; }
+				}
+				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+
+			}
+			else { errorLine = __LINE__; goto error; }
+
+			return true;
+
+		error:
+			Tier0_Warning("AfxInterop::HandleVersion7DrawingReply_D3d9CreateTexture: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
+			return false;
+		}
+
+		bool HandleVersion7DrawingReply_UpdateD3d9Texture() {
+			int errorLine = 0;
+
+			UINT64 index;
+			UINT32 level;
+			bool hasRect;
+			RECT rect;
+			UINT32 rowCount;
+			UINT32 rowBytes;
+
+			if (!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, level)) { errorLine = __LINE__; goto error; }
+			if (!ReadBoolean(m_hDrawingPipe, hasRect)) { errorLine = __LINE__; goto error; }
+			if (hasRect)
+			{
+				INT32 value;
+				if (!ReadInt32(m_hDrawingPipe, value)) { errorLine = __LINE__; goto error; }
+				rect.left = value;
+				if (!ReadInt32(m_hDrawingPipe, value)) { errorLine = __LINE__; goto error; }
+				rect.top = value;
+				if (!ReadInt32(m_hDrawingPipe, value)) { errorLine = __LINE__; goto error; }
+				rect.right = value;
+				if (!ReadInt32(m_hDrawingPipe, value)) { errorLine = __LINE__; goto error; }
+				rect.bottom = value;
+			}
+			if (!ReadUInt32(m_hDrawingPipe, rowCount)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, rowBytes)) { errorLine = __LINE__; goto error; }
+
+
+			auto it = m_D3d9Textures.find(index);
+			if (it != m_D3d9Textures.end())
+			{
+				D3DLOCKED_RECT lockedRect;
+				HRESULT hr = it->second->LockRect(level, &lockedRect, hasRect ? &rect : NULL, 0);
+				if (SUCCEEDED(hr))
+				{
+					void* pData = lockedRect.pBits;
+					for (UINT32 i = 0; i < rowCount && 0 == errorLine; ++i)
+					{
+						if (!ReadBytes(m_hDrawingPipe, pData, 0, rowBytes)) { it->second->UnlockRect(level); errorLine = __LINE__; goto error; }
+						pData = (unsigned char*)pData + lockedRect.Pitch;
+					}
+					hr = it->second->UnlockRect(level);
+				}
+				else {
+					for (UINT32 i = 0; i < rowCount && 0 == errorLine; ++i)
+					{
+						BYTE dummy;
+						for(UINT32 j = 0; j < rowBytes; ++ j)
+						{
+							if (!ReadBytes(m_hDrawingPipe, &dummy, 0, sizeof(dummy))) { errorLine = __LINE__; goto error; }
+						}
+					}
+				}
+				DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+				if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+				if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+			}
+			else { errorLine = __LINE__; goto error; }
+
+			return true;
+
+		error:
+			Tier0_Warning("AfxInterop::HandleVersion7DrawingReply_UpdateD3d9Texture: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
+			return false;
+		}
+
+		bool HandleVersion7DrawingReply_D3d9CreateVertexShader() {
+			int errorLine = 0;
+			void* pData = nullptr;
+
+			UINT64 index;
+			UINT32 size;
+			if (!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, size)) { errorLine = __LINE__; goto error; }
+
+			if (0 == (pData = malloc(size))) { errorLine = __LINE__; goto error; }
+
+			if (!ReadBytes(m_hDrawingPipe, pData, 0, size)) { errorLine = __LINE__; goto error; }
+
+			if (IDirect3DDevice9Ex* device = AfxGetDirect3DDevice9Ex())
+			{
+				IDirect3DVertexShader9* pValue = nullptr;
+				HRESULT hr = device->CreateVertexShader((DWORD*)pData, &pValue);
+				if (SUCCEEDED(hr))
+				{
+					auto result = m_D3d9VertexShaders.emplace(index, pValue);
+					if (!result.second) {
+						result.first->second->Release();
+						result.first->second = pValue;
+					}
+				}
+				DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+				if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+				if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+			}
+			else { errorLine = __LINE__; goto error; }
+
+			free(pData);
+
+			return true;
+
+		error:
+			free(pData);
+			Tier0_Warning("AfxInterop::HandleVersion7DrawingReply_D3d9CreateVertexShader: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
+			DisconnectDrawing();
+			return false;
+		}
+
+
+		bool HandleVersion7DrawingReply_D3d9CreatePixelShader() {
+			int errorLine = 0;
+			void* pData = nullptr;
+
+			UINT64 index;
+			UINT32 size;
+			if (!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+			if (!ReadUInt32(m_hDrawingPipe, size)) { errorLine = __LINE__; goto error; }
+
+			if (0 == (pData = malloc(size))) { errorLine = __LINE__; goto error; }
+
+			if (!ReadBytes(m_hDrawingPipe, pData, 0, size)) { errorLine = __LINE__; goto error; }
+
+			if (IDirect3DDevice9Ex* device = AfxGetDirect3DDevice9Ex())
+			{
+				IDirect3DPixelShader9* pValue = nullptr;
+				HRESULT hr = device->CreatePixelShader((DWORD*)pData, &pValue);
+				if (SUCCEEDED(hr))
+				{
+					auto result = m_D3d9PixelShaders.emplace(index, pValue);
+					if (!result.second) {
+						result.first->second->Release();
+						result.first->second = pValue;
+					}
+				}
+				DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+				if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+				if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+			}
+			else { errorLine = __LINE__; goto error; }
+
+			free(pData);
+
+			return true;
+
+		error:
+			free(pData);
+			Tier0_Warning("AfxInterop::HandleVersion7DrawingReply_D3d9CreatePixelShader: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
+			DisconnectDrawing();
+			return false;
+		}
+
+		bool Send_DrawingThread_DeviceRestored_Message()
+		{
+			int errorLine = 0;
+
+			if (m_ServerVersion.GetMajor() == 7)
+			{
+				if (!WriteUInt32(m_hDrawingPipe, DrawingMessage_DeviceRestored)) { errorLine = __LINE__; goto error; }
+			}
+
+			return true;
+
+		error:
+			Tier0_Warning("AfxInterop::Send_DrawingThread_DeviceRestored_Message: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
+			return false;
+		}
+
+		void DrawingThread_DeviceRestored()
+		{
+			int errorLine = 0;
+
+			if (m_DrawingConnected)
+			{				
+				if (!Send_DrawingThread_DeviceRestored_Message()) { errorLine = __LINE__; goto error; }
+			}
+
+			return;
+
+		error:
+			Tier0_Warning("AfxInterop::Send_DrawingThread_DeviceRestored_Message: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
+			DisconnectDrawing();
+		}
+
+		void EngineThread_On_FlushQueueFlush() {
+			int errorLine = 0;
+
+			if (m_EngineConnected)
+			{
+				if (m_ServerVersion.GetMajor() == 7)
+				{
+					if (!WriteUInt32(m_hEnginePipe, EngineMessage_ForceEndQueue)) { errorLine = __LINE__; goto error; }
+				}
+			}
+
+			return;
+
+		error:
+			Tier0_Warning("AfxInterop::On_CMatQueuedRenderContext_EndQueue_EngineThreadFlush: Error in line %i (%s).\n", errorLine, m_EnginePipeName.c_str());
+			DisconnectEngine();
 		}
 
 		bool ConnectDrawing() {
@@ -1056,7 +1671,8 @@ namespace AfxInterop {
 				std::shared_lock<std::shared_timed_mutex> sharedLock(m_DrawingConnectMutex);
 
 				if (!m_DrawingWantsConnect) {
-					if (m_DrawingPreConnect) {
+					if (m_DrawingPreConnected || m_DrawingConnected)
+					{
 						sharedLock.unlock();
 						DisconnectDrawing();
 					}
@@ -1070,16 +1686,16 @@ namespace AfxInterop {
 				std::shared_lock< std::shared_timed_mutex> engineSharedLock(m_EngineConnectMutex);
 				std::unique_lock<std::shared_timed_mutex> drawingLock(m_DrawingConnectMutex);
 
-				if (m_DrawingWantsConnect && !m_DrawingConnected)
+				if (m_DrawingWantsConnect)
 				{
-					if (!m_DrawingPreConnect)
+					if (!m_DrawingPreConnected && !m_DrawingConnected)
 					{
 						std::string strPipeName("\\\\.\\pipe\\");
 						strPipeName.append(m_DrawingPipeName);
 
 						while (true)
 						{
-							m_hDrawingPipe = CreateFile(strPipeName.c_str(), GENERIC_WRITE | GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+							m_hDrawingPipe = CreateFileA(strPipeName.c_str(), GENERIC_WRITE | GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
 							if (m_hDrawingPipe != INVALID_HANDLE_VALUE)
 								break;
 
@@ -1088,10 +1704,10 @@ namespace AfxInterop {
 							if (lastError != ERROR_PIPE_BUSY)
 							{
 								Tier0_Warning("Could not open pipe. GLE=%d (%s)\n", lastError, strPipeName.c_str());
-								{ errorLine = __LINE__; goto error; }
+								if(lastError != ERROR_FILE_NOT_FOUND) { errorLine = __LINE__; goto error; }
+								return false;
 							}
-
-							if (!WaitNamedPipe(strPipeName.c_str(), 5000))
+							else if (!WaitNamedPipe(strPipeName.c_str(), 5000))
 							{
 								Tier0_Warning("WaitNamedPipe: timed out (%s).\n", strPipeName.c_str());
 								{ errorLine = __LINE__; goto error; }
@@ -1099,14 +1715,15 @@ namespace AfxInterop {
 						}
 
 						Tier0_Msg("Connected to \"%s\".\n", strPipeName.c_str());
-						m_DrawingPreConnect = true;
-					}
-					else if (m_EngineConnected)
-					{
-						m_DrawingConnected = true;
+						m_DrawingPreConnected = true;
+
 						return true;
 					}
-
+					else if (m_EnginePreConnected)
+					{
+						m_DrawingConnected = true;
+						m_DrawingPreConnected = false;
+					}
 				}
 			}
 			return false;
@@ -1121,7 +1738,7 @@ namespace AfxInterop {
 		{
 			std::unique_lock<std::shared_timed_mutex> darwingLock(m_DrawingConnectMutex);
 
-			DrawingThread_DeviceLost();
+			DrawingThread_DeviceLost(true);
 
 			if (INVALID_HANDLE_VALUE != m_hDrawingPipe)
 			{
@@ -1133,7 +1750,8 @@ namespace AfxInterop {
 			}
 
 			m_DrawingConnected = false;
-			m_DrawingPreConnect = false;
+			m_DrawingWantsConnect = false;
+			m_DrawingPreConnected = false;
 
 			if (m_DrawingMainSurface)
 			{
@@ -1142,6 +1760,9 @@ namespace AfxInterop {
 				m_DrawingMainSurface->AfxSetDepthSurface(NULL);
 				m_DrawingMainSurface = nullptr;
 			}
+
+			m_DrawingConnectMutex.unlock();
+			DisconnectEngine();
 		}
 
 		bool ConnectEngine() {
@@ -1150,7 +1771,8 @@ namespace AfxInterop {
 				std::shared_lock<std::shared_timed_mutex> sharedLock(m_EngineConnectMutex);
 
 				if (!m_EngineWantsConnect) {
-					if (m_EnginePreConnect) {
+					if (m_EnginePreConnected || m_EngineConnected)
+					{
 						sharedLock.unlock();
 						DisconnectEngine();
 					}
@@ -1164,11 +1786,12 @@ namespace AfxInterop {
 				std::unique_lock<std::shared_timed_mutex> darwingLock(m_DrawingConnectMutex);
 				std::unique_lock<std::shared_timed_mutex> engineLock(m_EngineConnectMutex);
 
-				if(!m_DrawingConnected) // do not do stuff while drawing thread is still connected
+
+				if (m_EngineWantsConnect)
 				{
-					if (m_EngineWantsConnect && !m_EngineConnected)
+					if (!m_EnginePreConnected)
 					{
-						if (!m_EnginePreConnect)
+						if (!m_DrawingPreConnected && !m_DrawingConnected) // Don't connect while still connected in drawing.
 						{
 							std::string strPipeName("\\\\.\\pipe\\");
 							strPipeName.append(m_EnginePipeName);
@@ -1187,10 +1810,10 @@ namespace AfxInterop {
 								if (lastError != ERROR_PIPE_BUSY)
 								{
 									Tier0_Warning("Could not open pipe. GLE=%d (%s)\n", lastError, strPipeName.c_str());
-									{ errorLine = __LINE__; goto error; }
+									if (lastError != ERROR_FILE_NOT_FOUND) { errorLine = __LINE__; goto error; }
+									return false;
 								}
-
-								if (!WaitNamedPipe(strPipeName.c_str(), 5000))
+								else if (!WaitNamedPipe(strPipeName.c_str(), 5000))
 								{
 									Tier0_Warning("WaitNamedPipe: timed out (%s).\n", strPipeName.c_str());
 									{ errorLine = __LINE__; goto error; }
@@ -1199,43 +1822,72 @@ namespace AfxInterop {
 
 							Tier0_Msg("Connected to \"%s\".\n", strPipeName.c_str());
 
-							m_EnginePreConnect = true;
 							m_DrawingWantsConnect = true;
+							m_EnginePreConnected = true;
+							return true;
 						}
-						else if(m_DrawingPreConnect) // do not do furhter stuff until drawing thread is preconnected (to maintain backwards compat)
-						{
-							if (!ReadInt32(m_hEnginePipe, m_EngineVersion)) { errorLine = __LINE__; goto error; }
+					}
+					else if (m_DrawingConnected) {
+						m_EngineConnected = true;
+						m_EnginePreConnected = false;
 
-							switch (m_EngineVersion)
-							{
-							case 5:
-							case 6:
-							case 7:
-								break;
-							default:
-								Tier0_Warning("Version %d is not supported.\n", m_EngineVersion);
-								if (!WriteBoolean(m_hEnginePipe, false)) { errorLine = __LINE__; goto error; }
-								if (!Flush(m_hEnginePipe)) { errorLine = __LINE__; goto error; }
-								{ errorLine = __LINE__; goto error; }
-							}
+						int serverMajorVersion = 0;
+
+						if (!ReadInt32(m_hEnginePipe, serverMajorVersion)) { errorLine = __LINE__; goto error; }
+
+						switch (serverMajorVersion)
+						{
+						case 5:
+							m_ServerVersion.Set(5,0,0,0);
+						case 6:
+							m_ServerVersion.Set(6,0,0,0);
+						case 7:
+							break;
+						default:
+							Tier0_Warning("AFX_INTEROP ERROR: server v%u is not supported.\n", serverMajorVersion);
+							if (!WriteBoolean(m_hEnginePipe, false)) { errorLine = __LINE__; goto error; }
+							if (!Flush(m_hEnginePipe)) { errorLine = __LINE__; goto error; }
+							{ errorLine = __LINE__; goto error; }
+						}
+
+						if (!WriteBoolean(m_hEnginePipe, true)) { errorLine = __LINE__; goto error; }
+
+						if (!Flush(m_hEnginePipe)) { errorLine = __LINE__; goto error; }
+
+						if (!ReadBoolean(m_hEnginePipe, m_EngineServer64Bit)) { errorLine = __LINE__; goto error; }
+
+						if (7 == serverMajorVersion)
+						{
+							unsigned int serverSubVersion[3];
+							if (!ReadUInt32(m_hEnginePipe, serverSubVersion[0])) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hEnginePipe, serverSubVersion[1])) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hEnginePipe, serverSubVersion[2])) { errorLine = __LINE__; goto error; }
+							
+							m_ServerVersion.Set(serverMajorVersion,serverSubVersion[0],serverSubVersion[1],serverSubVersion[2]);
+
+							if (!WriteUInt32(m_hEnginePipe, m_ClientVersion.GetMajor())) { errorLine = __LINE__; goto error; }
+							if (!WriteUInt32(m_hEnginePipe, m_ClientVersion.GetMinor())) { errorLine = __LINE__; goto error; }
+							if (!WriteUInt32(m_hEnginePipe, m_ClientVersion.GetPatch())) { errorLine = __LINE__; goto error; }
+							if (!WriteUInt32(m_hEnginePipe, m_ClientVersion.GetBuild())) { errorLine = __LINE__; goto error; }
 
 							if (!WriteBoolean(m_hEnginePipe, true)) { errorLine = __LINE__; goto error; }
 
 							if (!Flush(m_hEnginePipe)) { errorLine = __LINE__; goto error; }
 
-							if (!ReadBoolean(m_hEnginePipe, m_EngineServer64Bit)) { errorLine = __LINE__; goto error; }
+							bool bServerAcceptsClientVersion = false;
+							if (!ReadBoolean(m_hEnginePipe, bServerAcceptsClientVersion)) { errorLine = __LINE__; goto error; }
 
-							if (7 <= m_EngineVersion)
-							{
-								if(!ReadGameEventSettings(false)) { errorLine = __LINE__; goto error; }
-							}
+							if(!bServerAcceptsClientVersion) {
+								Tier0_Warning("AFX_INTEROP ERROR: server v%u.%u.%u.%u does not accept our client v%u.%u.%u.%u.\n", serverMajorVersion, serverSubVersion[0], serverSubVersion[1], serverSubVersion[2], m_ClientVersion.GetMajor(), m_ClientVersion.GetMinor(), m_ClientVersion.GetPatch(), m_ClientVersion.GetBuild());
+								{ errorLine = __LINE__; goto error; }
+							}							
 
-							m_DrawingVersion = m_EngineVersion;
-							m_EngineConnected = true;
-							return true;
+							if (!ReadGameEventSettings(false)) { errorLine = __LINE__; goto error; }
 						}
+
+						return true;
 					}
-				}			
+				}
 			}
 			return false;
 
@@ -1246,8 +1898,8 @@ namespace AfxInterop {
 		}
 
 		void DisconnectEngine() {
-			std::unique_lock<std::shared_timed_mutex> drawingLock(m_DrawingConnectMutex);
 			std::unique_lock<std::shared_timed_mutex> engineLock(m_EngineConnectMutex);
+			std::unique_lock<std::shared_timed_mutex> drwaingLockLock(m_DrawingConnectMutex);
 
 			if (INVALID_HANDLE_VALUE != m_hEnginePipe)
 			{
@@ -1258,9 +1910,9 @@ namespace AfxInterop {
 				m_hEnginePipe = INVALID_HANDLE_VALUE;
 			}
 
-			m_EngineConnected = false;
-			m_EnginePreConnect = false;
 			m_DrawingWantsConnect = false;
+			m_EngineConnected = false;
+			m_EnginePreConnected = false;
 
 			g_AfxGameEvents.RemoveListener(this);
 		}
@@ -1341,7 +1993,7 @@ namespace AfxInterop {
 
 			int errorLine = 0;
 			
-			if (!WriteInt32(m_hEnginePipe, EngineMessage_OnGameEvent)) { errorLine = __LINE__; goto error; }
+			if (!WriteUInt32(m_hEnginePipe, EngineMessage_OnGameEvent)) { errorLine = __LINE__; goto error; }
 
 			return true;
 
@@ -1488,6 +2140,7 @@ namespace AfxInterop {
 		}
 
 	private:
+
 		std::atomic_int m_RefCount;
 
 		struct HandleCalcResult
@@ -1574,7 +2227,10 @@ namespace AfxInterop {
 			DrawingMessage_AfterTranslucent = 5,
 			DrawingMessage_BeforeHud = 6,
 			DrawingMessage_AfterHud = 7,
-			DrawingMessage_OnRenderViewEnd = 8
+			DrawingMessage_OnRenderViewEnd = 8,
+
+			DrawingMessage_DeviceLost = 9,
+			DrawingMessage_DeviceRestored = 10
 		};
 
 		enum PrepareDrawReply
@@ -1584,7 +2240,70 @@ namespace AfxInterop {
 			PrepareDrawReply_Continue = 3
 		};
 
+		enum class DrawingReply : unsigned int
+		{
+			Skip = 1,
+			Retry = 2,
+			Continue = 3,
+			Finished = 4,
 
+			D3d9CreateVertexDeclaration = 5,
+			ReleaseD3d9VertexDeclaration = 6,
+
+			D3d9CreateIndexBuffer = 7,
+			ReleaseD3d9IndexBuffer = 8,
+			UpdateD3d9IndexBuffer = 9,
+
+			D3d9CreateVertexBuffer = 10,
+			ReleaseD3d9VertexBuffer = 11,
+			UpdateD3d9VertexBuffer = 12,
+
+			D3d9CreateTexture = 13,
+			ReleaseD3d9Texture = 14,
+			UpdateD3d9Texture = 15,
+
+			D3d9CreateVertexShader = 16,
+			ReleaseD3d9VertexShader = 17,
+
+			D3d9CreatePixelShader = 18,
+			ReleaseD3d9PixelShader = 19,
+
+			D3d9SetViewport = 20,
+			D3d9SetRenderState = 21,
+			D3d9SetSamplerState = 22,
+			D3d9SetTexture = 23,
+			D3d9SetTextureStageState = 24,
+			D3d9SetTransform = 25,
+			D3d9SetIndices = 26,
+			D3d9SetStreamSource = 27,
+			D3d9SetStreamSourceFreq = 28,
+			D3d9SetVertexDeclaration = 29,
+			D3d9SetVertexShader = 30,
+			D3d9SetVertexShaderConstantF = 31,
+			D3d9SetVertexShaderConstantI = 32,
+			D3d9SetVertexShaderConstantB = 33,
+			D3d9SetPixelShader = 34,
+			D3d9SetPixelShaderConstantB = 35,
+			D3d9SetPixelShaderConstantF = 36,
+			D3d9SetPixelShaderConstantI = 37,
+			D3d9DrawPrimitive = 38,
+			D3d9DrawIndexedPrimitive = 39,
+
+			WaitForGpu = 40,
+			BeginCleanState = 41,
+			EndCleanState = 42,
+
+			D3d9UpdateTexture = 43,
+			DrawPrimitiveUP = 44,
+
+			GetRenderTarget = 45,
+			SetRenderTarget = 46,
+
+			ReleaseD3d9Surface = 47,
+			D3d9TextureGetSurfaceLevel = 48,
+
+			D3d9StretchRect = 49
+		};
 
 		class CConnectFunctor
 			: public CAfxFunctor
@@ -1715,13 +2434,22 @@ namespace AfxInterop {
 		std::shared_timed_mutex m_DrawingConnectMutex;
 		std::string m_DrawingPipeName;
 		bool m_DrawingWantsConnect = false;
-		bool m_DrawingPreConnect = false;
 		bool m_DrawingConnected = false;
+		bool m_DrawingPreConnected = false;
+		int m_DrawingPass = 0;
 
-		HANDLE m_hDrawingPipe = INVALID_HANDLE_VALUE;
+		HANDLE m_hDrawingPipe = INVALID_HANDLE_VALUE;		
 
 		bool m_DrawingSkip = true;
 		int m_DrawingFrameCount = -1;
+
+		std::map<UINT64, IDirect3DVertexDeclaration9*> m_D3d9VertexDeclarations;
+		std::map<UINT64, IDirect3DIndexBuffer9*> m_D3d9IndexBuffers;
+		std::map<UINT64, IDirect3DVertexBuffer9*> m_D3d9VertexBuffers;
+		std::map<UINT64, IDirect3DTexture9*> m_D3d9Textures;
+		std::map<UINT64, IDirect3DSurface9*> m_D3d9Surfaces;
+		std::map<UINT64, IDirect3DVertexShader9*> m_D3d9VertexShaders;
+		std::map<UINT64, IDirect3DPixelShader9*> m_D3d9PixelShaders;
 
 		IAfxInteropSurface* m_DrawingMainSurface = nullptr;
 
@@ -1733,80 +2461,1077 @@ namespace AfxInterop {
 
 		SharedSurfacesValue m_SharedSurface;
 
-		bool HandleVersion6DrawingMessage(DrawingMessage message, int frameCount)
+		bool HandleDrawingMessage(DrawingMessage message, int frameCount)
 		{
 			int errorLine = 0;
+			bool bInSafeState = false;
+			bool bOrgRenderTarget = false;
+			IDirect3DSurface9 * pOrgRenderTarget = nullptr;
+			bool queuedThreaded = g_AfxStreams.IsQueuedThreaded();
 
 			while (true)
 			{
-				if (!WriteInt32(m_hDrawingPipe, message)) { errorLine = __LINE__; goto error; }
+				if (!WriteUInt32(m_hDrawingPipe, message)) { errorLine = __LINE__; goto error; }
+				if (m_ServerVersion.GetMajor() == 7) if (!WriteBoolean(m_hDrawingPipe, queuedThreaded)) { errorLine = __LINE__; goto error; }
 				if (!WriteInt32(m_hDrawingPipe, frameCount)) { errorLine = __LINE__; goto error; }
+				if (m_ServerVersion.GetMajor() == 7) if (!WriteUInt32(m_hDrawingPipe, m_DrawingPass)) { errorLine = __LINE__; goto error; }
 				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 
-				INT32 prepareDrawReply;
-				if (!ReadInt32(m_hDrawingPipe, prepareDrawReply)) { errorLine = __LINE__; goto error; }
+				bool loopReply = true;
 
-				switch (prepareDrawReply)
+				while(loopReply)
 				{
-				case PrepareDrawReply_Skip:
-					m_DrawingSkip = true;
-					return true;
-				case PrepareDrawReply_Retry:
-					break;
-				case PrepareDrawReply_Continue:
-				{
-					HANDLE sharedTextureHandle;
-					UINT32 texWidth;
-					UINT32 texHeight;
-					UINT32 d3dFormat;
+					UINT32 drawingReply;
+					if (!ReadUInt32(m_hDrawingPipe, drawingReply)) { errorLine = __LINE__; goto error; }
 
-					if (!ReadHandle(m_hDrawingPipe, sharedTextureHandle)) { errorLine = __LINE__; goto error; }
-					if (!ReadUInt32(m_hDrawingPipe, texWidth)) { errorLine = __LINE__; goto error; }
-					if (!ReadUInt32(m_hDrawingPipe, texHeight)) { errorLine = __LINE__; goto error; }
-					if (!ReadUInt32(m_hDrawingPipe, d3dFormat)) { errorLine = __LINE__; goto error; }
-
-					if (m_SharedSurface.Handle && m_SharedSurface.Handle != sharedTextureHandle)
+					switch ((DrawingReply)drawingReply)
 					{
-						if (m_SharedSurface.Texture) {
-							m_SharedSurface.Texture->Release();
-							m_SharedSurface.Texture = nullptr;
-						}
-					}
-
-					if (sharedTextureHandle && nullptr == m_SharedSurface.Texture)
-					{
-						if (IDirect3DDevice9Ex* device = AfxGetDirect3DDevice9Ex())
+					case DrawingReply::Skip:
+						m_DrawingSkip = true;
+						return true;
+					case DrawingReply::Retry:
+						loopReply = false;
+						break;
+					case DrawingReply::Continue:
+						loopReply = false;
 						{
-							IDirect3DTexture9* texture = NULL;
+							HANDLE sharedTextureHandle;
+							UINT32 texWidth;
+							UINT32 texHeight;
+							UINT32 d3dFormat;
 
-							HRESULT hr = device->CreateTexture(texWidth, texHeight, 1, D3DUSAGE_RENDERTARGET, (D3DFORMAT)d3dFormat, D3DPOOL_DEFAULT, &texture, &sharedTextureHandle);
+							if (!ReadHandle(m_hDrawingPipe, sharedTextureHandle)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hDrawingPipe, texWidth)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hDrawingPipe, texHeight)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hDrawingPipe, d3dFormat)) { errorLine = __LINE__; goto error; }
 
-							if (SUCCEEDED(hr))
+							if (m_SharedSurface.Handle && m_SharedSurface.Handle != sharedTextureHandle)
 							{
-								m_SharedSurface.Handle = sharedTextureHandle;
-								m_SharedSurface.Texture = texture;
+								if (m_SharedSurface.Texture) {
+									m_SharedSurface.Texture->Release();
+									m_SharedSurface.Texture = nullptr;
+								}
 							}
-						}
-					}
 
-					if (m_SharedSurface.Handle && texWidth && texHeight)
-					{
-						AfxDrawRect(m_SharedSurface.Texture, 0, 0, texWidth, texHeight, 0, 0, 1, 1);
-						AfxD3D_WaitForGPU(); // TODO: Improve. We are slowing down more than we have to.
-					}
+							if (sharedTextureHandle && nullptr == m_SharedSurface.Texture)
+							{
+								if (IDirect3DDevice9Ex* device = AfxGetDirect3DDevice9Ex())
+								{
+									IDirect3DTexture9* Texture = NULL;
+
+									HRESULT hr = device->CreateTexture(texWidth, texHeight, 1, D3DUSAGE_RENDERTARGET, (D3DFORMAT)d3dFormat, D3DPOOL_DEFAULT, &Texture, &sharedTextureHandle);
+
+									if (SUCCEEDED(hr))
+									{
+										m_SharedSurface.Handle = sharedTextureHandle;
+										m_SharedSurface.Texture = Texture;
+									}
+								}
+							}
+
+							if (m_SharedSurface.Handle && texWidth && texHeight)
+							{
+								AfxDrawRect(m_SharedSurface.Texture, 0, 0, texWidth, texHeight, 0, 0, 1, 1);
+								AfxD3D_WaitForGPU(); // TODO: Improve. We are slowing down more than we have to.
+							}
 					
-					if (!WriteBoolean(m_hDrawingPipe, true)) { errorLine = __LINE__; goto error; }
+							if (!WriteBoolean(m_hDrawingPipe, true)) { errorLine = __LINE__; goto error; }
+						}
+						return true;
 
-					return true;
-				}
-				default:
-					{ errorLine = __LINE__; goto error; }
-				}
+					case DrawingReply::Finished:
+						if (bOrgRenderTarget) {
+							if (IDirect3DDevice9Ex* device = AfxGetDirect3DDevice9Ex())
+							{
+								device->SetRenderTarget(0, pOrgRenderTarget);
+							} else Tier0_Warning("AfxInterop::HandleDrawingMessage: FATAL ERROR in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
+							if(pOrgRenderTarget) pOrgRenderTarget->Release();
+						}
+						if (bInSafeState)
+						{
+							AfxD3D9EndCleanState();
+						}
+						++m_DrawingPass;
+						return true;
 
+					case DrawingReply::D3d9CreateVertexDeclaration:
+						if (!HandleVersion7DrawingReply_D3d9CreateVertexDeclaration()) { errorLine = __LINE__; goto error; }
+						break;
+					case DrawingReply::ReleaseD3d9VertexDeclaration:
+						{
+							UINT64 index;
+							if(!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+
+							auto it = m_D3d9VertexDeclarations.find(index);
+							if (it != m_D3d9VertexDeclarations.end()) {
+								it->second->Release();
+								m_D3d9VertexDeclarations.erase(it);
+							}
+							else { errorLine = __LINE__; goto error; }
+						} break;
+					case DrawingReply::D3d9CreateIndexBuffer:
+						if (!HandleVersion7DrawingReply_D3d9CreateIndexBuffer()) { errorLine = __LINE__; goto error; }
+						break;
+					case DrawingReply::UpdateD3d9IndexBuffer:
+						if (!HandleVersion7DrawingReply_UpdateD3d9IndexBuffer()) { errorLine = __LINE__; goto error; }
+						break;
+					case DrawingReply::ReleaseD3d9IndexBuffer:
+						{
+							UINT64 index;
+							if(!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+
+							auto it = m_D3d9IndexBuffers.find(index);
+							if (it != m_D3d9IndexBuffers.end()) {
+								it->second->Release();
+								m_D3d9IndexBuffers.erase(it);
+							}
+							else { errorLine = __LINE__; goto error; }
+						} break;
+					case DrawingReply::D3d9CreateVertexBuffer:
+						if (!HandleVersion7DrawingReply_D3d9CreateVertexBuffer()) { errorLine = __LINE__; goto error; }
+						break;
+					case DrawingReply::UpdateD3d9VertexBuffer:
+						if (!HandleVersion7DrawingReply_UpdateD3d9VertexBuffer()) { errorLine = __LINE__; goto error; }
+						break;
+					case DrawingReply::ReleaseD3d9VertexBuffer:
+						{
+							UINT64 index;
+							if(!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+
+							auto it = m_D3d9VertexBuffers.find(index);
+							if (it != m_D3d9VertexBuffers.end()) {
+								it->second->Release();
+								m_D3d9VertexBuffers.erase(it);
+							}
+							else { errorLine = __LINE__; goto error; }
+						} break;
+					case DrawingReply::D3d9CreateTexture:
+						if (!HandleVersion7DrawingReply_D3d9CreateTexture()) { errorLine = __LINE__; goto error; }
+						break;
+					case DrawingReply::UpdateD3d9Texture:
+						if (!HandleVersion7DrawingReply_UpdateD3d9Texture()) { errorLine = __LINE__; goto error; }
+						break;
+					case DrawingReply::ReleaseD3d9Texture:
+						{
+							UINT64 index;
+							if(!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+
+							auto it = m_D3d9Textures.find(index);
+							if (it != m_D3d9Textures.end()) {
+								it->second->Release();
+								m_D3d9Textures.erase(it);
+							}
+							else { errorLine = __LINE__; goto error; }
+						} break;
+					case DrawingReply::ReleaseD3d9Surface:
+					{
+						UINT64 index;
+						if (!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+
+						auto it = m_D3d9Surfaces.find(index);
+						if (it != m_D3d9Surfaces.end()) {
+							it->second->Release();
+							m_D3d9Surfaces.erase(it);
+						}
+						else { errorLine = __LINE__; goto error; }
+					} break;
+					case DrawingReply::D3d9CreateVertexShader:
+						if (!HandleVersion7DrawingReply_D3d9CreateVertexShader()) { errorLine = __LINE__; goto error; }
+						break;
+					case DrawingReply::ReleaseD3d9VertexShader:
+						{
+							UINT64 index;
+							if(!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+
+							auto it = m_D3d9VertexShaders.find(index);
+							if (it != m_D3d9VertexShaders.end()) {
+								it->second->Release();
+								m_D3d9VertexShaders.erase(it);
+							}
+							else { errorLine = __LINE__; goto error; }
+						} break;
+					case DrawingReply::D3d9CreatePixelShader:
+						if (!HandleVersion7DrawingReply_D3d9CreatePixelShader()) { errorLine = __LINE__; goto error; }
+						break;
+					case DrawingReply::ReleaseD3d9PixelShader:
+						{
+							UINT64 index;
+							if(!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+
+							auto it = m_D3d9PixelShaders.find(index);
+							if (it != m_D3d9PixelShaders.end()) {
+								it->second->Release();
+								m_D3d9PixelShaders.erase(it);
+							}
+							else { errorLine = __LINE__; goto error; }
+						} break;
+
+					case DrawingReply::D3d9SetViewport:
+						{
+							bool hasViewPort;
+							UINT32 x;
+							UINT32 y;
+							UINT32 width;
+							UINT32 height;
+							float minZ;
+							float maxZ;
+
+
+							if (!ReadBoolean(m_hDrawingPipe, hasViewPort)) { errorLine = __LINE__; goto error; }
+
+							if (hasViewPort)
+							{
+								if (!ReadUInt32(m_hDrawingPipe, x)) { errorLine = __LINE__; goto error; }
+								if (!ReadUInt32(m_hDrawingPipe, y)) { errorLine = __LINE__; goto error; }
+								if (!ReadUInt32(m_hDrawingPipe, width)) { errorLine = __LINE__; goto error; }
+								if (!ReadUInt32(m_hDrawingPipe, height)) { errorLine = __LINE__; goto error; }
+								if (!ReadSingle(m_hDrawingPipe, minZ)) { errorLine = __LINE__; goto error; }
+								if (!ReadSingle(m_hDrawingPipe, maxZ)) { errorLine = __LINE__; goto error; }
+							}
+
+							D3DVIEWPORT9 viewPort = { x,y,width,height,minZ,maxZ };
+
+							if (IDirect3DDevice9* device = AfxGetDirect3DDevice9()) {
+								HRESULT hr = device->SetViewport(hasViewPort ? &viewPort : NULL);
+								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+							}
+							else { errorLine = __LINE__; goto error; }
+
+						} break;
+					case DrawingReply::D3d9SetRenderState:
+						{
+							UINT32 state;
+							UINT32 value;
+
+							if (!ReadUInt32(m_hDrawingPipe, state)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hDrawingPipe, value)) { errorLine = __LINE__; goto error; }
+
+							if (IDirect3DDevice9* device = AfxGetDirect3DDevice9()) {
+								HRESULT hr = device->SetRenderState((D3DRENDERSTATETYPE)state, (DWORD)value);
+								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+							}
+							else { errorLine = __LINE__; goto error; }
+
+						} break;
+					case DrawingReply::D3d9SetSamplerState:
+						{
+							UINT32 sampler;
+							UINT32 type;
+							UINT32 value;
+
+							if (!ReadUInt32(m_hDrawingPipe, sampler)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hDrawingPipe, type)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hDrawingPipe, value)) { errorLine = __LINE__; goto error; }
+
+							if (IDirect3DDevice9* device = AfxGetDirect3DDevice9()) {
+								HRESULT hr = device->SetSamplerState((DWORD)sampler, (D3DSAMPLERSTATETYPE)type, (DWORD)value);
+								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+							}
+							else { errorLine = __LINE__; goto error; }
+
+						} break;
+					case DrawingReply::D3d9SetTexture:
+						{
+							UINT32 stage;
+							UINT64 index;
+
+							if (!ReadUInt32(m_hDrawingPipe, stage)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+
+							if (IDirect3DDevice9* device = AfxGetDirect3DDevice9())
+							{
+								HRESULT hr;
+								if (0 == index)
+								{
+									hr = device->SetTexture((DWORD)stage, NULL);
+								}
+								else
+								{
+									auto it = m_D3d9Textures.find(index);
+									if (it == m_D3d9Textures.end()) { errorLine = __LINE__; goto error; }
+									hr = device->SetTexture((DWORD)stage, it->second);
+								}
+								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+							}
+							else { errorLine = __LINE__; goto error; }
+
+						} break;
+					case DrawingReply::D3d9SetTextureStageState:
+						{
+							UINT32 stage;
+							UINT32 type;
+							UINT32 value;
+
+							if (!ReadUInt32(m_hDrawingPipe, stage)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hDrawingPipe, type)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hDrawingPipe, value)) { errorLine = __LINE__; goto error; }
+
+							if (IDirect3DDevice9* device = AfxGetDirect3DDevice9()) {
+								HRESULT hr = device->SetTextureStageState((DWORD)stage, (D3DTEXTURESTAGESTATETYPE)type, (DWORD)value);
+								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+							}
+							else { errorLine = __LINE__; goto error; }
+
+						} break;
+					case DrawingReply::D3d9SetTransform:
+						{
+							UINT32 state;
+							bool hasMatrix;
+							D3DMATRIX matrix;
+
+							if (!ReadUInt32(m_hDrawingPipe, state)) { errorLine = __LINE__; goto error; }
+							if (!ReadBoolean(m_hDrawingPipe, hasMatrix)) { errorLine = __LINE__; goto error; }
+							if (hasMatrix)
+							{
+								for(int i=0; i < 4; ++i)
+								{
+									for(int j=0; j < 4; ++j)
+									{
+										FLOAT val;
+										if (!ReadSingle(m_hDrawingPipe, val)) { errorLine = __LINE__; goto error; }
+										matrix.m[i][j] = val;
+									}
+								}
+							}
+
+							if (IDirect3DDevice9* device = AfxGetDirect3DDevice9()) {
+								HRESULT hr = device->SetTransform((D3DTRANSFORMSTATETYPE)state, hasMatrix ? &matrix : NULL);
+								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+							}
+							else { errorLine = __LINE__; goto error; }
+
+						} break;
+					case DrawingReply::D3d9SetIndices:
+						{
+							UINT64 index;
+
+							if (!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+
+							if (IDirect3DDevice9* device = AfxGetDirect3DDevice9())
+							{
+								HRESULT hr;
+								if (0 == index)
+								{
+									hr = device->SetIndices(NULL);
+								}
+								else
+								{
+									auto it = m_D3d9IndexBuffers.find(index);
+									if(it == m_D3d9IndexBuffers.end()) { errorLine = __LINE__; goto error; }
+									hr = device->SetIndices(it->second);
+								}
+								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+							}
+							else { errorLine = __LINE__; goto error; }
+						} break;
+					case DrawingReply::D3d9SetStreamSource:
+						{
+							UINT32 streamNumber;
+							UINT64 index;
+							UINT32 offsetInBytes;
+							UINT32 stride;
+
+							if (!ReadUInt32(m_hDrawingPipe, streamNumber)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hDrawingPipe, offsetInBytes)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hDrawingPipe, stride)) { errorLine = __LINE__; goto error; }
+
+							if (IDirect3DDevice9* device = AfxGetDirect3DDevice9())
+							{
+								HRESULT hr;
+								if (0 == index)
+								{
+									hr = device->SetStreamSource(streamNumber, NULL, offsetInBytes, stride);
+								}
+								else
+								{
+									auto it = m_D3d9VertexBuffers.find(index);
+									if (it == m_D3d9VertexBuffers.end()) { errorLine = __LINE__; goto error; }
+									hr = device->SetStreamSource(streamNumber, it->second, offsetInBytes, stride);
+								}
+								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+							}
+							else { errorLine = __LINE__; goto error; }
+						} break;
+					case DrawingReply::D3d9SetStreamSourceFreq:
+						{
+							UINT32 streamNumber;
+							UINT32 setting;
+
+							if (!ReadUInt32(m_hDrawingPipe, streamNumber)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hDrawingPipe, setting)) { errorLine = __LINE__; goto error; }
+
+							if (IDirect3DDevice9* device = AfxGetDirect3DDevice9()) {
+								HRESULT hr = device->SetStreamSourceFreq(streamNumber, setting);
+								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+							}
+							else { errorLine = __LINE__; goto error; }
+
+						} break;
+					case DrawingReply::D3d9SetVertexDeclaration:
+						{
+							UINT64 index;
+
+							if (!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+
+							if (IDirect3DDevice9* device = AfxGetDirect3DDevice9())
+							{
+								HRESULT hr;
+								if (index == 0)
+								{
+									hr = device->SetVertexDeclaration(NULL);
+								}
+								else
+								{
+									auto it = m_D3d9VertexDeclarations.find(index);
+									if (it == m_D3d9VertexDeclarations.end()) { errorLine = __LINE__; goto error; }
+									hr = device->SetVertexDeclaration(it->second);
+								}
+								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+							}
+							else { errorLine = __LINE__; goto error; }
+
+						} break;
+					case DrawingReply::D3d9SetVertexShader:
+						{
+							UINT64 index;
+
+							if (!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+
+							if (IDirect3DDevice9* device = AfxGetDirect3DDevice9())
+							{
+								HRESULT hr;
+								if (0 == index)
+								{
+									hr = device->SetVertexShader(NULL);
+								}
+								else
+								{
+									auto it = m_D3d9VertexShaders.find(index);
+									if (it == m_D3d9VertexShaders.end()) { errorLine = __LINE__; goto error; }
+									hr = device->SetVertexShader(it->second);
+								}
+								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+							}
+							else { errorLine = __LINE__; goto error; }
+
+						} break;
+					case DrawingReply::D3d9SetVertexShaderConstantB:
+						{
+							UINT32 startRegister;
+							UINT32 count;
+
+							if (!ReadUInt32(m_hDrawingPipe, startRegister)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hDrawingPipe, count)) { errorLine = __LINE__; goto error; }
+
+							BOOL* pData = (BOOL *)malloc(sizeof(BOOL) * count);
+							if (0 == pData) { errorLine = __LINE__; goto error; }
+
+							for (UINT32 i = 0; i < count && 0 == errorLine; ++i)
+							{
+								bool bValue;
+								if (!ReadBoolean(m_hDrawingPipe, bValue)) errorLine = __LINE__;
+								else pData[i] = bValue ? 1 : 0;
+							}
+							
+							if (0 == errorLine)
+							{
+								if (IDirect3DDevice9* device = AfxGetDirect3DDevice9())
+								{
+									HRESULT hr = device->SetVertexShaderConstantB(startRegister, pData, count);
+									DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+									if (!WriteInt32(m_hDrawingPipe, hr)) errorLine = __LINE__;
+									else if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) errorLine = __LINE__; }
+									if(0 == errorLine) { if (!Flush(m_hDrawingPipe)) errorLine = __LINE__; }
+								}
+								else errorLine = __LINE__;
+							}
+
+							free(pData);
+
+							if (errorLine) goto error;
+
+						} break;
+					case DrawingReply::D3d9SetVertexShaderConstantF:
+						{
+							UINT32 startRegister;
+							UINT32 count4;
+
+							if (!ReadUInt32(m_hDrawingPipe, startRegister)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hDrawingPipe, count4)) { errorLine = __LINE__; goto error; }
+
+							float* pData = (FLOAT *)malloc(sizeof(float) * 4 * count4);
+							if (0 == pData) { errorLine = __LINE__; goto error; }
+
+							for (UINT32 i = 0; i < 4 * count4 && 0 == errorLine; ++i)
+							{
+								float value;
+								if (!ReadSingle(m_hDrawingPipe, value)) errorLine = __LINE__;
+								else pData[i] = value;
+							}
+							
+							if (0 == errorLine)
+							{
+								if (IDirect3DDevice9* device = AfxGetDirect3DDevice9())
+								{
+									HRESULT hr = device->SetVertexShaderConstantF(startRegister, pData, count4);
+									DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+									if (!WriteInt32(m_hDrawingPipe, hr)) errorLine = __LINE__;
+									else if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) errorLine = __LINE__; }
+									if(0 == errorLine) {if (!Flush(m_hDrawingPipe)) errorLine = __LINE__; }
+								}
+								else errorLine = __LINE__;
+							}
+
+							free(pData);
+
+							if (errorLine) goto error;
+
+						} break;
+					case DrawingReply::D3d9SetVertexShaderConstantI:
+						{
+							UINT32 startRegister;
+							UINT32 count4;
+
+							if (!ReadUInt32(m_hDrawingPipe, startRegister)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hDrawingPipe, count4)) { errorLine = __LINE__; goto error; }
+
+							int* pData = (int*)malloc(sizeof(int) * 4 * count4);
+							if (0 == pData) { errorLine = __LINE__; goto error; }
+
+							for (UINT32 i = 0; i < 4 * count4 && 0 == errorLine; ++i)
+							{
+								int value;
+								if (!ReadInt32(m_hDrawingPipe, value)) errorLine = __LINE__;
+								else pData[i] = value;
+							}
+
+							if (0 == errorLine)
+							{
+								if (IDirect3DDevice9* device = AfxGetDirect3DDevice9()) {
+									HRESULT hr = device->SetVertexShaderConstantI(startRegister, pData, count4);
+									DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+									if (!WriteInt32(m_hDrawingPipe, hr)) errorLine = __LINE__;
+									else if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) errorLine = __LINE__; }
+									if(0 == errorLine) {if (!Flush(m_hDrawingPipe)) errorLine = __LINE__; }
+								}
+								else errorLine = __LINE__;
+							}
+
+							free(pData);
+
+						} break;
+					case DrawingReply::D3d9SetPixelShader:
+					{
+						UINT64 index;
+
+						if (!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+
+						if (IDirect3DDevice9* device = AfxGetDirect3DDevice9()) {
+							HRESULT hr;
+							if (0 == index)
+							{
+								hr = device->SetPixelShader(NULL);
+							}
+							else
+							{
+								auto it = m_D3d9PixelShaders.find(index);
+								if (it == m_D3d9PixelShaders.end()) { errorLine = __LINE__; goto error; }
+								hr = device->SetPixelShader(it->second);
+							}
+							DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+							if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+							if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+							if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+						}
+						else { errorLine = __LINE__; goto error; }
+
+					} break;
+					case DrawingReply::D3d9SetPixelShaderConstantB:
+					{
+						UINT32 startRegister;
+						UINT32 count;
+
+						if (!ReadUInt32(m_hDrawingPipe, startRegister)) { errorLine = __LINE__; goto error; }
+						if (!ReadUInt32(m_hDrawingPipe, count)) { errorLine = __LINE__; goto error; }
+
+						BOOL* pData = (BOOL*)malloc(sizeof(BOOL) * count);
+						if (0 == pData) { errorLine = __LINE__; goto error; }
+
+						for (UINT32 i = 0; i < count && 0 == errorLine; ++i)
+						{
+							bool bValue;
+							if (!ReadBoolean(m_hDrawingPipe, bValue)) errorLine = __LINE__;
+							else pData[i] = bValue ? 1 : 0;
+						}
+
+						if (0 == errorLine)
+						{
+							if (IDirect3DDevice9* device = AfxGetDirect3DDevice9())
+							{
+								HRESULT hr = device->SetPixelShaderConstantB(startRegister, pData, count);
+								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+								if (!WriteInt32(m_hDrawingPipe, hr)) errorLine = __LINE__;
+								else if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) errorLine = __LINE__; }
+								if(0 == errorLine) {if (!Flush(m_hDrawingPipe)) errorLine = __LINE__; }
+							}
+							else errorLine = __LINE__;
+						}
+
+						free(pData);
+
+						if (errorLine) goto error;
+
+					} break;
+					case DrawingReply::D3d9SetPixelShaderConstantF:
+					{
+						UINT32 startRegister;
+						UINT32 count4;
+
+						if (!ReadUInt32(m_hDrawingPipe, startRegister)) { errorLine = __LINE__; goto error; }
+						if (!ReadUInt32(m_hDrawingPipe, count4)) { errorLine = __LINE__; goto error; }
+
+						float* pData = (FLOAT*)malloc(sizeof(float) * 4 * count4);
+						if (0 == pData) { errorLine = __LINE__; goto error; }
+
+						for (UINT32 i = 0; i < 4 * count4 && 0 == errorLine; ++i)
+						{
+							float value;
+							if (!ReadSingle(m_hDrawingPipe, value)) errorLine = __LINE__;
+							else pData[i] = value;
+						}
+
+						if (0 == errorLine)
+						{
+							if (IDirect3DDevice9* device = AfxGetDirect3DDevice9())
+							{
+								HRESULT hr = device->SetPixelShaderConstantF(startRegister, pData, count4);
+								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+								if (!WriteInt32(m_hDrawingPipe, hr)) errorLine = __LINE__;
+								else if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) errorLine = __LINE__; }
+								if(0 == errorLine) {if (!Flush(m_hDrawingPipe)) errorLine = __LINE__; }
+							}
+							else errorLine = __LINE__;
+						}
+
+						free(pData);
+
+						if (errorLine) goto error;
+
+					} break;
+					case DrawingReply::D3d9SetPixelShaderConstantI:
+					{
+						UINT32 startRegister;
+						UINT32 count4;
+
+						if (!ReadUInt32(m_hDrawingPipe, startRegister)) { errorLine = __LINE__; goto error; }
+						if (!ReadUInt32(m_hDrawingPipe, count4)) { errorLine = __LINE__; goto error; }
+
+						int* pData = (int*)malloc(sizeof(int) * 4 * count4);
+						if (0 == pData) { errorLine = __LINE__; goto error; }
+
+						for (UINT32 i = 0; i < 4 * count4 && 0 == errorLine; ++i)
+						{
+							int value;
+							if (!ReadInt32(m_hDrawingPipe, value)) errorLine = __LINE__;
+							else pData[i] = value;
+						}
+
+						if (0 == errorLine)
+						{
+							if (IDirect3DDevice9* device = AfxGetDirect3DDevice9()) {
+								HRESULT hr = device->SetPixelShaderConstantI(startRegister, pData, count4);
+								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+								if (!WriteInt32(m_hDrawingPipe, hr)) errorLine = __LINE__;
+								else if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError))  errorLine = __LINE__; }
+								if(0 == errorLine) {if (!Flush(m_hDrawingPipe)) errorLine = __LINE__; }
+							}
+							else errorLine = __LINE__;
+						}
+
+						free(pData);
+
+					} break;
+					case DrawingReply::D3d9DrawPrimitive:
+						{					
+							UINT32 primitiveType;
+							UINT32 startVertex;
+							UINT32 primitiveCount;
+
+							if (!ReadUInt32(m_hDrawingPipe, primitiveType)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hDrawingPipe, startVertex)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hDrawingPipe, primitiveCount)) { errorLine = __LINE__; goto error; }
+
+
+							if (IDirect3DDevice9* device = AfxGetDirect3DDevice9()) {
+								if (0 == errorLine)
+								{
+									HRESULT hr = device->DrawPrimitive((D3DPRIMITIVETYPE)primitiveType, startVertex, primitiveCount);
+									DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+									if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+									if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+									if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+								}
+							}
+							else { errorLine = __LINE__; goto error; }
+						} break;
+					case DrawingReply::D3d9DrawIndexedPrimitive:
+						{					
+							UINT32 primitiveType;
+							INT32 baseVertexIndex;
+							UINT32 minVertexIndex;
+							UINT32 numVertices;
+							UINT32 startIndex;
+							UINT32 primCount;
+
+							if (!ReadUInt32(m_hDrawingPipe, primitiveType)) { errorLine = __LINE__; goto error; }
+							if (!ReadInt32(m_hDrawingPipe, baseVertexIndex)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hDrawingPipe, minVertexIndex)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hDrawingPipe, numVertices)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hDrawingPipe, startIndex)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt32(m_hDrawingPipe, primCount)) { errorLine = __LINE__; goto error; }
+
+
+							if (IDirect3DDevice9* device = AfxGetDirect3DDevice9()) {
+								if (0 == errorLine)
+								{
+									HRESULT hr = device->DrawIndexedPrimitive((D3DPRIMITIVETYPE)primitiveType, baseVertexIndex, minVertexIndex, numVertices, startIndex, primCount);
+									DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+									if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+									if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+									if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+								}
+							}
+							else { errorLine = __LINE__; goto error; }
+						} break;
+
+					case DrawingReply::WaitForGpu:
+						AfxD3D_WaitForGPU();
+						if (!WriteBoolean(m_hDrawingPipe, true)) { errorLine = __LINE__; goto error; }
+						if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+						break;
+
+					case DrawingReply::BeginCleanState:
+						if (!bInSafeState) {
+							AfxD3D9BeginCleanState();
+							bInSafeState = true;
+						}
+						break;
+
+					case DrawingReply::EndCleanState:
+						if (bInSafeState)
+						{
+							AfxD3D9EndCleanState();
+							bInSafeState = false;
+						}
+						break;
+
+					case DrawingReply::D3d9UpdateTexture:
+						{
+							UINT32 stage;
+							UINT64 index;
+							UINT64 index2;
+
+							if (!ReadUInt32(m_hDrawingPipe, stage)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+							if (!ReadUInt64(m_hDrawingPipe, index2)) { errorLine = __LINE__; goto error; }
+
+							if (IDirect3DDevice9* device = AfxGetDirect3DDevice9()) {
+
+								IDirect3DTexture9* tex = nullptr;
+								IDirect3DTexture9* tex2 = nullptr;
+
+								if (0 != index)
+								{
+									auto it = m_D3d9Textures.find(index);
+									if(it == m_D3d9Textures.end()) { errorLine = __LINE__; goto error; }
+									tex = it->second;
+								}
+								if (0 != index2)
+								{
+									auto it = m_D3d9Textures.find(index2);
+									if (it == m_D3d9Textures.end()) { errorLine = __LINE__; goto error; }
+									tex2 = it->second;
+								}
+
+								HRESULT hr = device->UpdateTexture(tex, tex2);
+								DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+								if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+								if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+								if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+							}
+
+						} break;
+
+					case DrawingReply::DrawPrimitiveUP:
+					{
+						UINT32 primitiveType;
+						UINT32 primitiveCount;
+						UINT32 vertexStreamZeroStride;
+
+						if (!ReadUInt32(m_hDrawingPipe, primitiveType)) { errorLine = __LINE__; goto error; }
+						if (!ReadUInt32(m_hDrawingPipe, primitiveCount)) { errorLine = __LINE__; goto error; }
+						if (!ReadUInt32(m_hDrawingPipe, vertexStreamZeroStride)) { errorLine = __LINE__; goto error; }
+
+						void* pVertexStreamZeroData = nullptr;
+
+						bool hasVertexStreamZeroData;
+						if(!ReadBoolean(m_hDrawingPipe, hasVertexStreamZeroData)) { errorLine = __LINE__; goto error; }
+
+						if(hasVertexStreamZeroData) {
+							UINT32 size;
+
+							if(!ReadUInt32(m_hDrawingPipe,size)) { errorLine = __LINE__; goto error; }
+
+							if(0 == (pVertexStreamZeroData = malloc(size))) { errorLine = __LINE__; goto error; }
+
+							if(!ReadBytes(m_hDrawingPipe, pVertexStreamZeroData, 0, size))
+								errorLine = __LINE__;
+						}
+
+						if (0 == errorLine)
+						{
+							if (IDirect3DDevice9* device = AfxGetDirect3DDevice9()) {
+								if (0 == errorLine)
+								{
+									HRESULT hr = device->DrawPrimitiveUP((D3DPRIMITIVETYPE)primitiveType, (UINT)primitiveCount, pVertexStreamZeroData, (UINT)vertexStreamZeroStride);
+									DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+									if (!WriteInt32(m_hDrawingPipe, hr)) errorLine = __LINE__;
+									else if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) errorLine = __LINE__; }
+									if (0 == errorLine) { if(!Flush(m_hDrawingPipe)) errorLine = __LINE__; }
+								}
+							}
+							else errorLine = __LINE__;
+						}
+
+						free(pVertexStreamZeroData);
+						
+						if(errorLine) goto error;
+					} break;
+
+					case DrawingReply::GetRenderTarget: {
+
+						UINT64 index;
+						if (!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+
+						if (IDirect3DDevice9Ex* device = AfxGetDirect3DDevice9Ex()) {
+							IDirect3DSurface9 * pRenderTarget = nullptr;
+
+							if(SUCCEEDED(device->GetRenderTarget(0, &pRenderTarget))) {
+
+								bOrgRenderTarget = true;
+
+								if (pRenderTarget) {
+
+									auto result = m_D3d9Surfaces.emplace(index, pRenderTarget);
+									if (!result.second) {
+										result.first->second->Release();
+										result.first->second = pRenderTarget;
+									}
+
+									if (nullptr == pOrgRenderTarget) {
+										pRenderTarget->AddRef();
+										pOrgRenderTarget = pRenderTarget;
+									}
+
+									if (!WriteBoolean(m_hDrawingPipe, true)) { errorLine = __LINE__; goto error; }
+									if (!WriteBoolean(m_hDrawingPipe, true)) { errorLine = __LINE__; goto error; }
+								}
+								else {
+									if (!WriteBoolean(m_hDrawingPipe, true)) { errorLine = __LINE__; goto error; }
+									if (!WriteBoolean(m_hDrawingPipe, false)) { errorLine = __LINE__; goto error; }
+								}
+							} else if(!WriteBoolean(m_hDrawingPipe, false)) { errorLine = __LINE__; goto error; }
+						} else { errorLine = __LINE__; goto error; }
+
+						if(!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+					} break;
+
+					case DrawingReply::SetRenderTarget: {
+
+						UINT64 index;
+						if (!ReadUInt64(m_hDrawingPipe, index)) { errorLine = __LINE__; goto error; }
+
+						if (IDirect3DDevice9Ex* device = AfxGetDirect3DDevice9Ex()) {
+							if(0 == index) {
+								if(SUCCEEDED(device->SetRenderTarget(0, NULL))) {
+									if(!WriteBoolean(m_hDrawingPipe, true)) { errorLine = __LINE__; goto error; } 
+								} else if(!WriteBoolean(m_hDrawingPipe, false)) { errorLine = __LINE__; goto error; } 
+							} else {
+								auto it = m_D3d9Surfaces.find(index);
+								if(it == m_D3d9Surfaces.end()) { errorLine = __LINE__; goto error; }
+								IDirect3DSurface9* surface = it->second;
+
+								if(SUCCEEDED(device->SetRenderTarget(0, surface))) {
+									surface->Release();
+									if(!WriteBoolean(m_hDrawingPipe, true)) { errorLine = __LINE__; goto error; } 
+								} else {
+									surface->Release();
+									if(!WriteBoolean(m_hDrawingPipe, false)) { errorLine = __LINE__; goto error; } 
+								}
+							}
+						} else { errorLine = __LINE__; goto error; }	
+
+						if(!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+					} break;
+
+					case DrawingReply::D3d9TextureGetSurfaceLevel:
+					{
+						UINT64 textureIndex;
+						UINT32 level;
+						UINT64 surfaceLevelIndex;
+
+						if (!ReadUInt64(m_hDrawingPipe, textureIndex)) { errorLine = __LINE__; goto error; }
+						if (!ReadUInt32(m_hDrawingPipe, level)) { errorLine = __LINE__; goto error; }
+						if (!ReadUInt64(m_hDrawingPipe, surfaceLevelIndex)) { errorLine = __LINE__; goto error; }
+
+						if (IDirect3DDevice9* device = AfxGetDirect3DDevice9())
+						{
+							HRESULT hr;
+							IDirect3DSurface9* pSurfaceLevel = nullptr;
+
+							auto it = m_D3d9Textures.find(textureIndex);
+							if (it == m_D3d9Textures.end()) { errorLine = __LINE__; goto error; }
+							hr = it->second->GetSurfaceLevel(level, &pSurfaceLevel);
+
+							if (SUCCEEDED(hr)) {
+								auto result = m_D3d9Surfaces.emplace(surfaceLevelIndex, pSurfaceLevel);
+								if (!result.second) {
+									result.first->second->Release();
+									result.first->second = pSurfaceLevel;
+								}
+							}
+
+							DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+							if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+							if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+							if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+						}
+						else { errorLine = __LINE__; goto error; }
+
+					} break;
+
+					case DrawingReply::D3d9StretchRect:
+					{
+						UINT64 sourceSurfaceIndex;
+						bool bSourceRect;
+						RECT sourceRect;
+						UINT64 destSurfaceIndex;
+						bool bDestRect;
+						RECT destRect;
+						UINT32 Filter;
+
+						if (!ReadUInt64(m_hDrawingPipe, sourceSurfaceIndex)) { errorLine = __LINE__; goto error; }
+						if (!ReadBoolean(m_hDrawingPipe, bSourceRect)) { errorLine = __LINE__; goto error; }
+						if (bSourceRect) {
+							INT32 val;
+							if (!ReadInt32(m_hDrawingPipe, val)) { errorLine = __LINE__; goto error; }
+							sourceRect.left = val;
+							if (!ReadInt32(m_hDrawingPipe, val)) { errorLine = __LINE__; goto error; }
+							sourceRect.top = val;
+							if (!ReadInt32(m_hDrawingPipe, val)) { errorLine = __LINE__; goto error; }
+							sourceRect.right = val;
+							if (!ReadInt32(m_hDrawingPipe, val)) { errorLine = __LINE__; goto error; }
+							sourceRect.bottom = val;
+						}
+
+						if (!ReadUInt64(m_hDrawingPipe, destSurfaceIndex)) { errorLine = __LINE__; goto error; }
+						if (!ReadBoolean(m_hDrawingPipe, bDestRect)) { errorLine = __LINE__; goto error; }
+						if (bDestRect) {
+							INT32 val;
+							if (!ReadInt32(m_hDrawingPipe, val)) { errorLine = __LINE__; goto error; }
+							destRect.left = val;
+							if (!ReadInt32(m_hDrawingPipe, val)) { errorLine = __LINE__; goto error; }
+							destRect.top = val;
+							if (!ReadInt32(m_hDrawingPipe, val)) { errorLine = __LINE__; goto error; }
+							destRect.right = val;
+							if (!ReadInt32(m_hDrawingPipe, val)) { errorLine = __LINE__; goto error; }
+							destRect.bottom = val;
+						}
+
+						if (!ReadUInt32(m_hDrawingPipe, Filter)) { errorLine = __LINE__; goto error; }
+
+						if (IDirect3DDevice9* device = AfxGetDirect3DDevice9())
+						{
+							HRESULT hr;
+							IDirect3DSurface9* pSourceSurface = nullptr;
+							IDirect3DSurface9* pDestSurface = nullptr;
+
+							if (0 != sourceSurfaceIndex) {
+								auto it = m_D3d9Surfaces.find(sourceSurfaceIndex);
+								if (it == m_D3d9Surfaces.end()) { errorLine = __LINE__; goto error; }
+								pSourceSurface = it->second;
+							}
+							if (0 != destSurfaceIndex) {
+								auto it = m_D3d9Surfaces.find(destSurfaceIndex);
+								if (it == m_D3d9Surfaces.end()) { errorLine = __LINE__; goto error; }
+								pDestSurface = it->second;
+							}
+
+							hr = device->StretchRect(pSourceSurface, bSourceRect ? &sourceRect : NULL, pDestSurface, bDestRect ? &destRect : NULL, (D3DTEXTUREFILTERTYPE)Filter);
+
+							DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+							if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+							if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+							if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+						}
+						else { errorLine = __LINE__; goto error; }
+
+					} break;
+
+
+					default:
+						{ errorLine = __LINE__; goto error; }
+					}
+				}
 			}
 
 		error:
-			Tier0_Warning("AfxInterop::HandleVersion6DrawingReply: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
+			if (pOrgRenderTarget) {
+				if (IDirect3DDevice9Ex* device = AfxGetDirect3DDevice9Ex())
+				{
+					device->SetRenderTarget(0, pOrgRenderTarget);
+				} else Tier0_Warning("AfxInterop::HandleDrawingMessage: FATAL ERROR in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
+				pOrgRenderTarget->Release();
+			}
+			if (bInSafeState)
+			{
+				AfxD3D9EndCleanState();
+			}
+			Tier0_Warning("AfxInterop::HandleDrawingMessage: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
 			return false;
 		}
 
@@ -1826,7 +3551,8 @@ namespace AfxInterop {
 			EngineMessage_AfterTranslucent = 12,
 			EngineMessage_OnBeforeHud = 13,
 			EngineMessage_OnAfterHud = 14,
-			EngineMessage_OnGameEvent = 15
+			EngineMessage_OnGameEvent = 15,
+			EngineMessage_ForceEndQueue = 16
 		};
 
 		class CConsole
@@ -1868,8 +3594,8 @@ namespace AfxInterop {
 
 		std::shared_timed_mutex m_EngineConnectMutex;
 		bool m_EngineWantsConnect = false;
-		bool m_EnginePreConnect = false;
 		bool m_EngineConnected = false;
+		bool m_EnginePreConnected = false;
 
 		HANDLE m_hEnginePipe = INVALID_HANDLE_VALUE;
 
@@ -1879,9 +3605,9 @@ namespace AfxInterop {
 		
 		EnabledFeatures_t m_EnabledFeatures;
 
-		int m_EngineVersion = 5;
-		int m_DrawingVersion = 5;
-
+		CVersion m_ClientVersion;
+		CVersion m_ServerVersion;
+		
 		bool ConsoleSend(HANDLE hPipe, CConsole & command)
 		{
 			if (!WriteCompressedUInt32(hPipe, (UINT32)command.GetArgCount())) return false;
@@ -1918,27 +3644,26 @@ namespace AfxInterop {
 			return okay;
 		}
 
-		bool ReadBytes(HANDLE hFile, LPVOID lpBuffer, int offset, DWORD numBytes)
+		bool ReadBytes(HANDLE hFile, LPVOID bytes, int offset, DWORD length)
 		{
-			lpBuffer = &(((char*)lpBuffer)[offset]);
-			BOOL success = false;
+			while (0 < length) {
+				DWORD bytesRead = 0;
 
-			do
-			{
-				DWORD bytesRead;
-
-				success = ReadFile(hFile, lpBuffer, numBytes, &bytesRead, NULL);
-
-				if (!success)
+				if (!(ReadFile(hFile, (unsigned char *)bytes + offset, length,
+							&bytesRead, NULL)))
 				{
-					Tier0_Warning("!ReadBytes: GetLastError=%d\n", GetLastError());
+					Tier0_Warning("ReadBytes GetLastError=%u\n", GetLastError());
 					return false;
 				}
 
-				numBytes -= bytesRead;
-				lpBuffer = &(((char*)lpBuffer)[bytesRead]);
+				if(0 == bytesRead)
+				{
+					Tier0_Warning("ReadBytes 0\n", GetLastError());
+				}
 
-			} while (0 < numBytes);
+				offset += bytesRead;
+				length -= bytesRead;
+			}
 
 			return true;
 		}
@@ -2006,6 +3731,11 @@ namespace AfxInterop {
 			return ReadInt32(hFile, outValue);
 		}
 
+		bool ReadUInt64(HANDLE hFile, UINT64& outValue)
+		{
+			return ReadBytes(hFile, &outValue, 0, sizeof(outValue));
+		}
+
 		bool ReadHandle(HANDLE hFile, HANDLE& outValue)
 		{
 			DWORD value32;
@@ -2037,12 +3767,26 @@ namespace AfxInterop {
 			return true;
 		}
 
-		bool WriteBytes(HANDLE hFile, LPVOID lpBuffer, int offset, DWORD numBytes)
+		bool WriteBytes(HANDLE hFile, LPVOID bytes, int offset, DWORD length)
 		{
-			DWORD bytesWritten;
+			while (0 < length) {
+				DWORD bytesWritten = 0;
 
-			if (!WriteFile(hFile, &(((char*)lpBuffer)[offset]), numBytes, &bytesWritten, NULL) || numBytes != bytesWritten)
-				return false;
+				if (!(WriteFile(hFile, (unsigned char *)bytes + offset, length,
+								&bytesWritten, NULL)))
+				{
+					Tier0_Warning("WriteBytes GetLastError=%u\n", GetLastError());
+					return false;
+				}
+
+				if(0 == bytesWritten)
+				{
+					Tier0_Warning("WriteBytes 0\n", GetLastError());
+				}
+
+				offset += bytesWritten;
+				length -= bytesWritten;
+			}
 
 			return true;
 		}
@@ -2128,7 +3872,10 @@ namespace AfxInterop {
 		bool Flush(HANDLE hFile)
 		{
 			if (!FlushFileBuffers(hFile))
+			{
+				Tier0_Msg("FlushFileBuffers GetLastError=%u\n", GetLastError());
 				return false;
+			}
 
 			return true;
 		}
@@ -2437,6 +4184,28 @@ namespace AfxInterop {
 		return m_MainEnabled;
 	}
 
+	bool EnabledFeatures_s::GetEnabled() {
+		return m_Enabled && (BeforeTranslucentShadow
+			|| AfterTranslucentShadow
+			|| BeforeTranslucent
+			|| AfterTranslucent
+			|| BeforeHud
+			|| AfterHud
+			|| AfterRenderView
+		);
+	}
+
+	bool EnabledFeatures_s::GetDepthRequired()	
+ 	{
+		return m_MainEnabled && (
+			BeforeTranslucentShadow
+			|| AfterTranslucentShadow
+			|| BeforeTranslucent
+			|| AfterTranslucent
+			|| BeforeHud
+		);
+	}	
+
 	bool Active() {
 		for (auto it = m_Clients.begin(); it != m_Clients.end(); ++it)
 		{
@@ -2455,6 +4224,32 @@ namespace AfxInterop {
 		for (auto it = m_Clients.begin(); it != m_Clients.end(); ++it)
 		{
 			it->Get()->DrawingThread_DeviceLost();
+		}
+	}
+
+	void DrawingThread_DeviceRestored()
+	{
+		if (!m_Enabled) return;
+
+		std::shared_lock<std::shared_timed_mutex> clientsLock(m_ClientsMutex);
+
+		for (auto it = m_Clients.begin(); it != m_Clients.end(); ++it)
+		{
+			it->Get()->DrawingThread_DeviceRestored();
+		}
+	}
+
+	void On_Materialysystem_FlushQueue()
+	{
+		if (!m_Enabled) return;
+		
+		if (!g_AfxStreams.OnEngineThread()) return;
+
+		std::shared_lock<std::shared_timed_mutex> clientsLock(m_ClientsMutex);
+
+		for (auto it = m_Clients.begin(); it != m_Clients.end(); ++it)
+		{
+			it->Get()->EngineThread_On_FlushQueueFlush();
 		}
 	}
 
@@ -2546,7 +4341,7 @@ CON_COMMAND(afx_interop, "Controls advancedfxInterop (i.e. with Unity engine).")
 					Tier0_Warning("Invalid index %i\n", idx);
 					return;
 				}
-				else if (0 == _stricmp(arg2, "edit") && 4 == argc)
+				else if (0 == _stricmp(arg2, "edit") && 4 <= argc)
 				{
 					int target = atoi(args->ArgV(3));
 					int idx = 0;

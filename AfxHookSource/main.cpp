@@ -60,6 +60,7 @@
 #include "csgo_CRendering3dView.h"
 //#include "csgo_CDemoFile.h"
 #include "csgo_net_chan.h"
+#include "csgo/hooks/materialsystem.h"
 
 #include <Windows.h>
 #include <deps/release/Detours/src/detours.h>
@@ -390,6 +391,7 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 			if(iface = appSystemFactory(MATERIAL_SYSTEM_INTERFACE_VERSION_CSGO_80, NULL))
 			{
 				g_MaterialSystem_csgo = (SOURCESDK::IMaterialSystem_csgo *)iface;
+				Hook_csgo_Materialsystem(g_MaterialSystem_csgo);
 				g_AfxStreams.OnMaterialSystem(g_MaterialSystem_csgo);
 			}
 			else {
@@ -2638,6 +2640,8 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 	else if(bFirstMaterialsystem && StringEndsWith( lpLibFileName, "materialsystem.dll"))
 	{
 		bFirstMaterialsystem = false;
+
+		Addresses_InitMaterialsystemDll((AfxAddr)hModule, g_SourceSdkVer);
 
 		g_Import_materialsystem.Apply(hModule);
 	}

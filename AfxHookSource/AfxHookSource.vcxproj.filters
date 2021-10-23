@@ -31,9 +31,6 @@
     <Filter Include="interfaces">
       <UniqueIdentifier>{fd3279bd-298a-45ca-8335-92e8c0e7ef1c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="AfxHookSource\csgo\hooks">
-      <UniqueIdentifier>{eed7fb6d-936e-41f5-823f-82f0fdffc7c1}</UniqueIdentifier>
-    </Filter>
     <Filter Include="interfaces\c">
       <UniqueIdentifier>{c4b62cbe-42a8-4391-841a-7d6faf3cba23}</UniqueIdentifier>
     </Filter>
@@ -213,6 +210,9 @@
     </Filter>
     <Filter Include="build\protobuf\csgo">
       <UniqueIdentifier>{34f554f5-817e-4abd-aab6-18b4be1e817c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AfxHookSource\csgo\hooks">
+      <UniqueIdentifier>{8fc26d1c-be6d-4655-9547-4a0e4385c77d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -494,6 +494,9 @@
     </ClCompile>
     <ClCompile Include="csgo_models_replace.cpp">
       <Filter>AfxHookSource</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo\hooks\materialsystem.cpp">
+      <Filter>AfxHookSource\csgo\hooks</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -916,6 +919,9 @@
     </ClInclude>
     <ClInclude Include="csgo_models_replace.h">
       <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo\hooks\materialsystem.h">
+      <Filter>AfxHookSource\csgo\hooks</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

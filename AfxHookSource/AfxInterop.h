@@ -18,23 +18,9 @@ namespace AfxInterop {
 		bool AfterHud = false;
 		bool AfterRenderView = false;
 
-		bool GetEnabled() {
-			return BeforeTranslucentShadow
-				|| AfterTranslucentShadow
-				|| BeforeTranslucent
-				|| AfterTranslucent
-				|| BeforeHud
-				|| AfterHud
-				|| AfterRenderView;
-		}
+		bool GetEnabled();
 
-		bool GetDepthRequired() {
-			return BeforeTranslucentShadow
-				|| AfterTranslucentShadow
-				|| BeforeTranslucent
-				|| AfterTranslucent
-				|| BeforeHud;
-		}
+		bool GetDepthRequired();
 
 		void Clear()
 		{
@@ -126,6 +112,13 @@ namespace AfxInterop {
 	void OnSetRenderTarget(DWORD RenderTargetIndex, IAfxInteropSurface * surface);
 
 	void DrawingThread_DeviceLost();
+
+	void DrawingThread_DeviceRestored();
+
+	//
+	// Different Threads:
+
+	void On_Materialysystem_FlushQueue();
 }
 
 #endif

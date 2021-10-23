@@ -1,0 +1,21 @@
+{
+    "C_Cpp.dimInactiveRegions": true,
+    "files.associations": {
+        "xmemory": "cpp",
+        "xlocale": "cpp",
+        "deque": "cpp",
+        "initializer_list": "cpp",
+        "list": "cpp",
+        "queue": "cpp",
+        "stack": "cpp",
+        "type_traits": "cpp",
+        "vector": "cpp",
+        "xstring": "cpp",
+        "xtree": "cpp",
+        "xutility": "cpp",
+        "system_error": "cpp",
+        "xlocmon": "cpp",
+        "xlocnum": "cpp",
+        "xtr1common": "cpp"
+    }
+}

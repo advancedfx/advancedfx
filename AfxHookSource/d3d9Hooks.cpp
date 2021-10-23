@@ -2665,7 +2665,7 @@ struct AFXDRAWDEPTHVERTEX
 	float    pos[3];
 	float    uv[2];
 };
-#define D3DFVF_AFXDRAWDEPTHVERTEX (D3DFVF_XYZ|D3DFVF_TEX1|D3DFVF_TEXCOORDSIZE1(1))
+#define D3DFVF_AFXDRAWDEPTHVERTEX (D3DFVF_XYZ|D3DFVF_TEX1|D3DFVF_TEXCOORDSIZE2(0))
 
 struct AFXDRAWGUIDEVERTEX
 {
@@ -4714,6 +4714,8 @@ public:
 #if AFX_INTEROP
 		if (AfxInterop::Enabled())
 		{
+			AfxInterop::DrawingThread_DeviceLost();
+
 			ReleaseQueries();
 
 			/*
@@ -4737,6 +4739,8 @@ public:
 			if (AfxInterop::Enabled())
 			{
 				CreateQueries();
+
+				AfxInterop::DrawingThread_DeviceRestored();
 			}
 #endif
 			HookInitialBuffers();
