@@ -23,7 +23,7 @@ mirv_calcs handle add observerTarget observerTarget20211023 localPlayer20211023<
 mirv_calcs vecAng add handleAttachment facemaskOrigin20211023 observerTarget20211023 facemask<br />
 mirv_calcs vecAng add value faceMaskOffset20211023 100 0 0 0 0 179.9<br />
 mirv_calcs vecAng add offset facemaskSource20211023 facemaskOrigin20211023 faceMaskOffset20211023 1<br />
-mirv_calcs vecAng add collisionClip facemask20211023 facemaskSource20211023 facemaskOrigin20211023 observerTarget20211023 10.0<br />
+mirv_calcs vecAng add collisionClip facemask20211023 facemaskSource20211023 facemaskOrigin20211023 observerTarget20211023 7.0<br />
 <br />
 spec_mode 5; mirv_cam source calcVecAng facemask20211023
 </comments>

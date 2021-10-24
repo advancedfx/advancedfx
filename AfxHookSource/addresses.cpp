@@ -98,6 +98,7 @@ AFXADDR_DEF(csgo_materialsystem_CMaterialSystem_ForceSingleThreaded)
 AFXADDR_DEF(csgo_engine_Do_CCLCMsg_FileCRCCheck)
 AFXADDR_DEF(csgo_C_BaseViewModel_FireEvent)
 AFXADDR_DEF(csgo_client_AdjustInterpolationAmount)
+//AFXADDR_DEF(csgo_C_BaseEntity_ofs_m_bPredictable)
 
 void ErrorBox(char const * messageText);
 
@@ -2150,6 +2151,10 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 
 			AFXADDR_SET(csgo_client_AdjustInterpolationAmount, addr);
 		}
+
+		// csgo_C_BaseEntity_ofs_m_bPredictable // Last checked: 2022-10-24
+		// referenced by Second function that uses cl_interp_all cvar (meaning CheckInitPredictable).
+		//AFXADDR_SET(csgo_C_BaseEntity_ofs_m_bPredictable, 0x2ee);
 	}
 	else
 	{
@@ -2203,6 +2208,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_client_C_TEPlayerAnimEvent_PostDataUpdate_NewModelAnims_JNZ, 0x0);
 		AFXADDR_SET(csgo_C_BaseViewModel_FireEvent, 0x0);
 		AFXADDR_SET(csgo_client_AdjustInterpolationAmount, 0x0);
+		//AFXADDR_SET(csgo_C_BaseEntity_ofs_m_bPredictable, 0x0);
 	}
 
 	//AFXADDR_SET(csgo_CPredictionCopy_TransferData_DSZ, 0x0a);

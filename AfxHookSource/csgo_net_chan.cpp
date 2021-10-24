@@ -449,12 +449,23 @@ float __cdecl My_Adjust_csgo_client_AdjustInterpolationAmount(SOURCESDK::C_BaseP
 
 	if(0 == g_i_MirvPov) return baseInterpolation;
 
-	if (This->entindex() != g_i_MirvPov)
+	bool wasProbablyPredicted = false;
+
+	if(This->ShouldPredict()) {
+		if(SOURCESDK::C_BasePlayer_csgo * pOwner = This->GetPredictionOwner())
+		{
+			wasProbablyPredicted = pOwner->entindex() == g_i_MirvPov;
+		}
+	}
+
+	if (This->entindex() != g_i_MirvPov && !wasProbablyPredicted && !This->IsClientCreated())
 	{
 		return g_Mirv_Pov_Interp_OrgFac[0] * baseInterpolation + g_Mirv_Pov_Interp_PingFac[0] * (g_Mirv_Pov_PingAdjustMent / 1000.0f) + g_Mirv_Pov_Interp_Offset[0];
 	}
 
-		return g_Mirv_Pov_Interp_OrgFac[1] * baseInterpolation + g_Mirv_Pov_Interp_PingFac[1] * (g_Mirv_Pov_PingAdjustMent / 1000.0f) + g_Mirv_Pov_Interp_Offset[1];
+	Tier0_Msg("Local: %i\n", This->entindex());
+
+	return g_Mirv_Pov_Interp_OrgFac[1] * baseInterpolation + g_Mirv_Pov_Interp_PingFac[1] * (g_Mirv_Pov_PingAdjustMent / 1000.0f) + g_Mirv_Pov_Interp_Offset[1];
 }
 
 void __declspec(naked) My_csgo_client_AdjustInterpolationAmount()
@@ -506,6 +517,7 @@ CON_COMMAND(mirv_pov, "Forces a POV on a GOTV demo.")
 		&& Install_csgo_C_BaseViewModel_FireEvent()
 		&& Install_csgo_client_AdjustInterpolationAmount()
 		&& Hook_csgo_CPlayerResource_GetPing()
+		//&& AFXADDR_GET(csgo_C_BaseEntity_ofs_m_bPredictable)
 		))
 	{
 		Tier0_Warning("Not supported for your engine / missing hooks!\n");
