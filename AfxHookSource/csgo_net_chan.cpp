@@ -463,7 +463,7 @@ float __cdecl My_Adjust_csgo_client_AdjustInterpolationAmount(SOURCESDK::C_BaseP
 		return g_Mirv_Pov_Interp_OrgFac[0] * baseInterpolation + g_Mirv_Pov_Interp_PingFac[0] * (g_Mirv_Pov_PingAdjustMent / 1000.0f) + g_Mirv_Pov_Interp_Offset[0];
 	}
 
-	Tier0_Msg("Local: %i\n", This->entindex());
+	//Tier0_Msg("Local: %i\n", This->entindex());
 
 	return g_Mirv_Pov_Interp_OrgFac[1] * baseInterpolation + g_Mirv_Pov_Interp_PingFac[1] * (g_Mirv_Pov_PingAdjustMent / 1000.0f) + g_Mirv_Pov_Interp_Offset[1];
 }
