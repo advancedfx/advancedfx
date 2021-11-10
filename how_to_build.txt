@@ -3,7 +3,7 @@ Notice:
   code and also for applying the .patch files to libraries where neccessary.
   
   For some of the files required we have a backup on Google Drive:
-  https://drive.google.com/drive/folders/0B4_pxNNt7RqmdXVmbUk0aVA3Qk0?usp=sharing
+  https://drive.google.com/drive/folders/0B4_pxNNt7RqmdXVmbUk0aVA3Qk0?resourcekey=0-5MvnHEezVZhY6pBoGpIt4g&usp=sharing
   But we recommend getting them from the original sources.
 
 
