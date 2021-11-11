@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.103.0</version>
+<time>2021-11-11T07:15Z</time>
+<changes>
+<change type="fixed">Fixed afx_interop v5 being broken (used by afx-unity-interop).</change>
+<change type="added">Added mirv_block_commands, allows to block e.g. commands recorded in demos. Example: mirv_block_commands add 5 &quot;volume\*&quot;</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.102.0</version>
 <time>2021-10-26T07:00Z</time>
 <changes>
