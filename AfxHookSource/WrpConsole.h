@@ -253,6 +253,12 @@ public:
 	/// <remarks> only valid when Registered with SOURCESDK::CSGO::ICvar </remarks>
 	static void ImmediatelyExecuteCommands(const char* commands);
 
+	static bool IsRegisteredSlow(const char* command) {
+		for (WrpConCommandsListEntry* cmd = m_CommandListRoot; nullptr != cmd; cmd = cmd->Next)
+			if (0 == _stricmp(cmd->Command->GetName(), command)) return true;
+		return false;
+	}
+
 private:
 	static SOURCESDK::ICvar_003 * m_CvarIface_003;
 	static SOURCESDK::ICvar_004 * m_CvarIface_004;

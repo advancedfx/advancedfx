@@ -9,7 +9,7 @@
 <version>1.102.0</version>
 <time>2021-10-26T07:00Z</time>
 <changes>
-<change type="updated">Updated mirv_pov: The GOTV mirv_pov lag compensation feature (implemented thanks to ideas and input from https://davidbdurst.com/) is now enabled by default, also entities predicted / local to the POV-player should be detected accurately now (e.g. viewmodel). If you don't like it, you can disable it with mirv_cfg mirvPov interpCompensateLatencyOff. The default cl_interp is a good value, if you happen to know the actual value of the player you can try to get even more accurate by setting it with: mirv_cvar_hack cl_interp clInterpValueHere</change>
+<change type="updated">Updated mirv_pov: The GOTV mirv_pov latency compensation feature (implemented thanks to ideas and input from https://davidbdurst.com/) is now enabled by default, also entities predicted / local to the POV-player should be detected accurately now (e.g. viewmodel). If you don't like it, you can disable it with mirv_cfg mirvPov interpCompensateLatencyOff. The default cl_interp is a good value, if you happen to know the actual value of the player you can try to get even more accurate by setting it with: mirv_cvar_hack cl_interp clInterpValueHere</change>
 </changes>
 </release>
 

@@ -61,6 +61,7 @@
 //#include "csgo_CDemoFile.h"
 #include "csgo_net_chan.h"
 #include "csgo/hooks/materialsystem.h"
+#include "csgo/hooks/engine/cmd.h"
 
 #include <Windows.h>
 #include <deps/release/Detours/src/detours.h>
@@ -2622,6 +2623,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 
 		if(SourceSdkVer_CSGO == g_SourceSdkVer) {
 			Install_csgo_engine_Do_CCLCMsg_FileCRCCheck();
+			Install_csgo_Cmd_ExecuteCommand();
 		}
 	}
 	else if(bFirstInputsystem && StringEndsWith( lpLibFileName, "inputsystem.dll"))

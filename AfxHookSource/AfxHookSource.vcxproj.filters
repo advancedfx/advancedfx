@@ -214,6 +214,9 @@
     <Filter Include="AfxHookSource\csgo\hooks">
       <UniqueIdentifier>{8fc26d1c-be6d-4655-9547-4a0e4385c77d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="AfxHookSource\csgo\hooks\engine">
+      <UniqueIdentifier>{ca277372-6aeb-4fb1-bb5f-8a49f2aa7745}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\bvhexport.cpp">
@@ -497,6 +500,9 @@
     </ClCompile>
     <ClCompile Include="csgo\hooks\materialsystem.cpp">
       <Filter>AfxHookSource\csgo\hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo\hooks\engine\cmd.cpp">
+      <Filter>AfxHookSource\csgo\hooks\engine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -922,6 +928,9 @@
     </ClInclude>
     <ClInclude Include="csgo\hooks\materialsystem.h">
       <Filter>AfxHookSource\csgo\hooks</Filter>
+    </ClInclude>
+    <ClInclude Include="csgo\hooks\engine\cmd.h">
+      <Filter>AfxHookSource\csgo\hooks\engine</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

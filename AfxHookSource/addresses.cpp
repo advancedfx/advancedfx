@@ -99,6 +99,7 @@ AFXADDR_DEF(csgo_engine_Do_CCLCMsg_FileCRCCheck)
 AFXADDR_DEF(csgo_C_BaseViewModel_FireEvent)
 AFXADDR_DEF(csgo_client_AdjustInterpolationAmount)
 //AFXADDR_DEF(csgo_C_BaseEntity_ofs_m_bPredictable)
+AFXADDR_DEF(csgo_engine_Cmd_ExecuteCommand)
 
 void ErrorBox(char const * messageText);
 
@@ -624,6 +625,62 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 
 			AFXADDR_SET(csgo_engine_Do_CCLCMsg_FileCRCCheck, addr);
 		}
+
+		// csgo_engine_Cmd_ExecuteCommand: // Checked 2019-11-11.
+		{
+			DWORD addr = 0;
+			DWORD strAddr = 0;
+			{
+				ImageSectionsReader sections((HMODULE)engineDll);
+				if (!sections.Eof())
+				{
+					sections.Next(); // skip .text
+					if (!sections.Eof())
+					{
+						MemRange result = FindCString(sections.GetMemRange(), "WARNING: INVALID EXECUTION MARKER.\n");
+						if (!result.IsEmpty())
+						{
+							strAddr = result.Start;
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			if (strAddr)
+			{
+				ImageSectionsReader sections((HMODULE)engineDll);
+
+				MemRange baseRange = sections.GetMemRange();
+				MemRange result = FindBytes(baseRange, (char const *)&strAddr, sizeof(strAddr));
+				if (!result.IsEmpty())
+				{
+					addr = result.Start - 0x79;
+
+					// check for pattern to see if it is the right address:
+					unsigned char pattern[6] = { 0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08 };
+
+					DWORD patternSize = sizeof(pattern) / sizeof(pattern[0]);
+					MemRange patternRange(addr, addr + patternSize);
+					MemRange result = FindBytes(patternRange, (char *)pattern, patternSize);
+					if (result.Start != patternRange.Start || result.End != patternRange.End)
+					{
+						addr = 0;
+						ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			if (addr)
+			{
+				AFXADDR_SET(csgo_engine_Cmd_ExecuteCommand, addr);
+			}
+			else
+			{
+				AFXADDR_SET(csgo_engine_Cmd_ExecuteCommand, 0x0);
+			}
+		}
 	}
 	else
 	{
@@ -642,6 +699,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_CNetChan_ProcessMessages, 0x0);
 		AFXADDR_SET(csgo_engine_CModelLoader_vtable, 0x0);
 		AFXADDR_SET(csgo_engine_Do_CCLCMsg_FileCRCCheck, 0x0);
+		AFXADDR_SET(csgo_engine_Cmd_ExecuteCommand, 0x0);
 	}
 	AFXADDR_SET(csgo_snd_mix_timescale_patch_DSZ, 0x08);
 	AFXADDR_SET(csgo_MIX_PaintChannels_DSZ, 0x9);
