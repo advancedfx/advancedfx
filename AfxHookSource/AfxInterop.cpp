@@ -1839,8 +1839,10 @@ namespace AfxInterop {
 						{
 						case 5:
 							m_ServerVersion.Set(5,0,0,0);
+							break;
 						case 6:
 							m_ServerVersion.Set(6,0,0,0);
+							break;
 						case 7:
 							break;
 						default:
