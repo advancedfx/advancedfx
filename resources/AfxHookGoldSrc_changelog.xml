@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.12.2</version>
+<time>2021-11-24T09:49Z</time>
+<changes>
+<change type="fixed">Fixed #734 wrong quaternion rotation data for mirv_agr even when model is correctly non-mirrored.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.12.1</version>
 <time>2021-09-07T15:40Z</time>
 <changes>
