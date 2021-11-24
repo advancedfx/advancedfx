@@ -360,60 +360,39 @@ void ToVecQuat(float bones[3][4], float out_vec[3], float out_quat[4]) {
 	out_vec[1] = bones[1][3];
 	out_vec[2] = bones[2][3];
 
-	/*
-		double sqw = W * W;
-		double sqx = X * X;
-		double sqy = Y * Y;
-		double sqz = Z * Z;
-		double ssq = sqx + sqy + sqz + sqw;
-		double invs = ssq ? 1 / ssq : 0;
-		double m00 = (sqx - sqy - sqz + sqw) * invs;
-		double m11 = (-sqx + sqy - sqz + sqw) * invs;
-		double m22 = (-sqx - sqy + sqz + sqw) * invs;
-		double tmp1 = X * Y;
-		double tmp2 = Z * W;
-		double m10 = 2.0 * (tmp1 + tmp2) * invs;
-		double m01 = 2.0 * (tmp1 - tmp2) * invs;
-		tmp1 = X * Z;
-		tmp2 = Y * W;
-		double m20 = 2.0 * (tmp1 - tmp2) * invs;
-		double m02 = 2.0 * (tmp1 + tmp2) * invs;
-		tmp1 = Y * Z;
-		tmp2 = X * W;
-		double m21 = 2.0 * (tmp1 + tmp2) * invs;
-		double m12 = 2.0 * (tmp1 - tmp2) * invs;
-		// https://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/ethan.htm
-	*/
+	// https://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
 
-	float tr1 = 1.0 + bones[0][0] - bones[1][1] - bones[2][2];
-	float tr2 = 1.0 - bones[0][0] + bones[1][1] - bones[2][2];
-	float tr3 = 1.0 - bones[0][0] - bones[1][1] + bones[2][2];
+	float qw = 1.0f;
+	float qx = 0.0f;
+	float qy = 0.0f;
+	float qz = 0.0f;
 
-	float qw = 1;
-	float qx = 0;
-	float qy = 0;
-	float qz = 0;
+	float tr = bones[0][0] + bones[1][1] + bones[2][2];
 
-	if ((tr1 > tr2) && (tr1 > tr3)) {
-		float S = sqrtf(tr1) * 2; // S=4*qx 
-		qw = (bones[2][1] - bones[1][2]) / S;
-		qx = 0.25 * S;
-		qy = (bones[0][1] + bones[1][0]) / S;
-		qz = (bones[0][2] + bones[2][0]) / S;
-	}
-	else if ((tr2 > tr1) && (tr2 > tr3)) {
-		float S = sqrtf(tr2) * 2; // S=4*qy
-		qw = (bones[0][2] - bones[2][0]) / S;
-		qx = (bones[0][1] + bones[1][0]) / S;
-		qy = 0.25 * S;
-		qz = (bones[1][2] + bones[2][1]) / S;
-	}
-	else {
-		float S = sqrtf(tr3) * 2; // S=4*qz
-		qw = (bones[1][0] - bones[0][1]) / S;
-		qx = (bones[0][2] + bones[2][0]) / S;
-		qy = (bones[1][2] + bones[2][1]) / S;
-		qz = 0.25 * S;
+	if (tr > 0) { 
+	float S = sqrt(tr+1.0) * 2; // S=4*qw 
+	qw = 0.25 * S;
+	qx = (bones[2][1] - bones[1][2]) / S;
+	qy = (bones[0][2] - bones[2][0]) / S; 
+	qz = (bones[1][0] - bones[0][1]) / S; 
+	} else if ((bones[0][0] > bones[1][1])&&(bones[0][0] > bones[2][2])) { 
+	float S = sqrt(1.0 + bones[0][0] - bones[1][1] - bones[2][2]) * 2; // S=4*qx 
+	qw = (bones[2][1] - bones[1][2]) / S;
+	qx = 0.25 * S;
+	qy = (bones[0][1] + bones[1][0]) / S; 
+	qz = (bones[0][2] + bones[2][0]) / S; 
+	} else if (bones[1][1] > bones[2][2]) { 
+	float S = sqrt(1.0 + bones[1][1] - bones[0][0] - bones[2][2]) * 2; // S=4*qy
+	qw = (bones[0][2] - bones[2][0]) / S;
+	qx = (bones[0][1] + bones[1][0]) / S; 
+	qy = 0.25 * S;
+	qz = (bones[1][2] + bones[2][1]) / S; 
+	} else { 
+	float S = sqrt(1.0 + bones[2][2] - bones[0][0] - bones[1][1]) * 2; // S=4*qz
+	qw = (bones[1][0] - bones[0][1]) / S;
+	qx = (bones[0][2] + bones[2][0]) / S;
+	qy = (bones[1][2] + bones[2][1]) / S;
+	qz = 0.25 * S;
 	}
 
 	out_quat[0] = qx;
