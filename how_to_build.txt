@@ -45,7 +45,7 @@ Notice:
 	cd build
 	mkdir Release
 	cd Release
-	cmake -G "Visual Studio 16 2019" -T "v142" -A "Win32" ../..
+	cmake -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 16 2019" -T "v142" -A "Win32" ../..
 	cmake --build . --config Release -v -- -r
 	cmake --install . --config Release -v
 	

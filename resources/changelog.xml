@@ -6,6 +6,17 @@
 
 <release>
 <name>HLAE</name>
+<version>2.124.2</version>
+<time>2021-11-28T09:04Z</time>
+<changes>
+<change type="updated">Included AfxHookGoldSrc 1.104.0 (2021-11-28T09:04Z).</change>
+<change type="fixed">Fixed the HLAE project to support Debug builds again, see how_to_build.txt for instructions.</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.124.1</version>
 <time>2021-11-24T09:49Z</time>
 <changes>

@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.104.0</version>
+<time>2021-11-28T09:04Z</time>
+<changes>
+<change type="fixed">mirv_agr export: try to fix viewmodel / camera discrepancy in GOTV. Do not forget smoother demos guide, even when recording AGR only.</change>
+<change type="fixed">Fixed afx_interop v7 getting stuck, by removing queued rendering indication and handling (now always indicates it to be non-queued, there were simply too many problems with detecting if we need to flush or not).</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.103.0</version>
 <time>2021-11-11T07:15Z</time>
 <changes>
