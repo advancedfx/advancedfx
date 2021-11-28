@@ -210,7 +210,6 @@
     <ClCompile Include="ClientTools.cpp" />
     <ClCompile Include="CommandSystem.cpp" />
     <ClCompile Include="csgo\hooks\engine\cmd.cpp" />
-    <ClCompile Include="csgo\hooks\materialsystem.cpp" />
     <ClCompile Include="csgo_CRendering3dView.cpp" />
     <ClCompile Include="csgo\ClientToolsCsgo.cpp" />
     <ClCompile Include="csgo\Panorama.cpp" />
@@ -349,7 +348,6 @@
     <ClInclude Include="CommandSystem.h" />
     <ClInclude Include="csgo\ClientToolsCsgo.h" />
     <ClInclude Include="csgo\hooks\engine\cmd.h" />
-    <ClInclude Include="csgo\hooks\materialsystem.h" />
     <ClInclude Include="csgo\Panorama.h" />
     <ClInclude Include="csgo_Audio.h" />
     <ClInclude Include="csgo_CBasePlayer.h" />

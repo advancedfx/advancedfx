@@ -5658,9 +5658,7 @@ bool CAfxStreams::OnEngineThread() {
 }
 
 bool CAfxStreams::IsQueuedThreaded() {
-	// If we are on the main engine (view) thread, then it's forcing single threaded / shutting the queue down,
-	// otherwise we need to examine if we are in desired threaded queue mode, or just single queued mode.
-	return !OnEngineThread() && nullptr != m_MaterialSystem && (m_MaterialSystem->GetThreadMode() == SOURCESDK::CSGO::MATERIAL_QUEUED_THREADED);
+	return nullptr != m_MaterialSystem && (m_MaterialSystem->GetThreadMode() == SOURCESDK::CSGO::MATERIAL_QUEUED_THREADED);
 }
 
 void CAfxStreams::OnMaterialSystem(SOURCESDK::IMaterialSystem_csgo * value)

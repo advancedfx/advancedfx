@@ -856,6 +856,7 @@ namespace AfxInterop {
 		void Shutdown() {
 			DisconnectDrawing();
 			DisconnectEngine();
+			g_AfxGameEvents.RemoveListener(this);
 		}
 
 		void DrawingThreadPrepareDraw(int frameCount, IAfxInteropSurface * mainSurface)
@@ -1653,7 +1654,10 @@ namespace AfxInterop {
 			DisconnectDrawing();
 		}
 
-		void EngineThread_On_FlushQueueFlush() {
+		/// WARNING: This must be interlocked with engine thread!
+		void On_FlushQueueFlush_BEGIN() {
+			m_FlushingQueue = true;
+
 			int errorLine = 0;
 
 			if (m_EngineConnected)
@@ -1667,8 +1671,12 @@ namespace AfxInterop {
 			return;
 
 		error:
-			Tier0_Warning("AfxInterop::On_CMatQueuedRenderContext_EndQueue_EngineThreadFlush: Error in line %i (%s).\n", errorLine, m_EnginePipeName.c_str());
+			Tier0_Warning("AfxInterop::On_FlushQueueFlush: Error in line %i (%s).\n", errorLine, m_EnginePipeName.c_str());
 			DisconnectEngine();
+		}
+
+		void On_FlushQueueFlush_END() {
+			m_FlushingQueue = false;
 		}
 
 		bool ConnectDrawing() {
@@ -1921,7 +1929,7 @@ namespace AfxInterop {
 			m_EngineConnected = false;
 			m_EnginePreConnected = false;
 
-			g_AfxGameEvents.RemoveListener(this);
+			// We'll leave the GameEvents on / off as is, better than to do mutex / sync logic that will cause problems.
 		}
 
 		bool Console_Edit(IWrpCommandArgs* args)
@@ -2474,7 +2482,7 @@ namespace AfxInterop {
 			bool bInSafeState = false;
 			bool bOrgRenderTarget = false;
 			IDirect3DSurface9 * pOrgRenderTarget = nullptr;
-			bool queuedThreaded = g_AfxStreams.IsQueuedThreaded();
+			bool queuedThreaded = false; // not supported atm, since there's too many problems with deciding when we need to flush.
 
 			while (true)
 			{
@@ -3614,7 +3622,9 @@ namespace AfxInterop {
 
 		CVersion m_ClientVersion;
 		CVersion m_ServerVersion;
-		
+
+		std::atomic_bool m_FlushingQueue = false;
+
 		bool ConsoleSend(HANDLE hPipe, CConsole & command)
 		{
 			if (!WriteCompressedUInt32(hPipe, (UINT32)command.GetArgCount())) return false;
@@ -4243,20 +4253,6 @@ namespace AfxInterop {
 		for (auto it = m_Clients.begin(); it != m_Clients.end(); ++it)
 		{
 			it->Get()->DrawingThread_DeviceRestored();
-		}
-	}
-
-	void On_Materialysystem_FlushQueue()
-	{
-		if (!m_Enabled) return;
-		
-		if (!g_AfxStreams.OnEngineThread()) return;
-
-		std::shared_lock<std::shared_timed_mutex> clientsLock(m_ClientsMutex);
-
-		for (auto it = m_Clients.begin(); it != m_Clients.end(); ++it)
-		{
-			it->Get()->EngineThread_On_FlushQueueFlush();
 		}
 	}
 

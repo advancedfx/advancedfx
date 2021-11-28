@@ -498,9 +498,6 @@
     <ClCompile Include="csgo_models_replace.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
-    <ClCompile Include="csgo\hooks\materialsystem.cpp">
-      <Filter>AfxHookSource\csgo\hooks</Filter>
-    </ClCompile>
     <ClCompile Include="csgo\hooks\engine\cmd.cpp">
       <Filter>AfxHookSource\csgo\hooks\engine</Filter>
     </ClCompile>
@@ -925,9 +922,6 @@
     </ClInclude>
     <ClInclude Include="csgo_models_replace.h">
       <Filter>AfxHookSource</Filter>
-    </ClInclude>
-    <ClInclude Include="csgo\hooks\materialsystem.h">
-      <Filter>AfxHookSource\csgo\hooks</Filter>
     </ClInclude>
     <ClInclude Include="csgo\hooks\engine\cmd.h">
       <Filter>AfxHookSource\csgo\hooks\engine</Filter>

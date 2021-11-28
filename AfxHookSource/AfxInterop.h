@@ -117,8 +117,6 @@ namespace AfxInterop {
 
 	//
 	// Different Threads:
-
-	void On_Materialysystem_FlushQueue();
 }
 
 #endif
