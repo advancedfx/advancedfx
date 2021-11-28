@@ -15,14 +15,14 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>Debug;LocalesDir=..\..\build\Release\bin\locales;HlaeDir=..\..\build\Release\installer\hlae</DefineConstants>
+    <DefineConstants>Debug;LocalesDir=..\..\build\$(Configuration)\bin\locales;HlaeDir=..\..\build\$(Configuration)\installer\hlae</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <WixVariables>
     </WixVariables>
-    <DefineConstants>LocalesDir=..\..\build\Release\bin\locales;HlaeDir=..\..\build\Release\installer\hlae</DefineConstants>
+    <DefineConstants>LocalesDir=..\..\build\$(Configuration)\bin\locales;HlaeDir=..\..\build\$(Configuration)\installer\hlae</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="FfmpegDlg.wxs" />
@@ -83,8 +83,8 @@
     <Error Text="The WiX Toolset v3.11 (or newer) build tools must be installed to build this project. To download the WiX Toolset, see http://wixtoolset.org/releases/" />
   </Target>
   <Target Name="BeforeBuild">
-    <HeatDirectory OutputFile="$(ProjectDir)\HlaeFiles.wxs" Directory="..\..\build\Release\installer\hlae" PreprocessorVariable="var.HlaeDir" ComponentGroupName="HlaeComponentGroup" DirectoryRefId="APPLICATIONFOLDER" AutogenerateGuids="true" SuppressRegistry="true" SuppressRootDirectory="true" ToolPath="$(WixToolPath)" NoLogo="true" />
-    <HeatDirectory OutputFile="$(ProjectDir)\LocaleFiles.wxs" Directory="..\..\build\Release\bin\locales" PreprocessorVariable="var.LocalesDir" ComponentGroupName="LocalesComponentGroup" DirectoryRefId="LocalesDir" AutogenerateGuids="true" SuppressRegistry="true" SuppressRootDirectory="false" ToolPath="$(WixToolPath)" NoLogo="true" />
+    <HeatDirectory OutputFile="$(ProjectDir)\HlaeFiles.wxs" Directory="..\..\build\$(Configuration)\installer\hlae" PreprocessorVariable="var.HlaeDir" ComponentGroupName="HlaeComponentGroup" DirectoryRefId="APPLICATIONFOLDER" AutogenerateGuids="true" SuppressRegistry="true" SuppressRootDirectory="true" ToolPath="$(WixToolPath)" NoLogo="true" />
+    <HeatDirectory OutputFile="$(ProjectDir)\LocaleFiles.wxs" Directory="..\..\build\$(Configuration)\bin\locales" PreprocessorVariable="var.LocalesDir" ComponentGroupName="LocalesComponentGroup" DirectoryRefId="LocalesDir" AutogenerateGuids="true" SuppressRegistry="true" SuppressRootDirectory="false" ToolPath="$(WixToolPath)" NoLogo="true" />
   </Target>
   <Target Name="AfterBuild">
     <!-- https://stackoverflow.com/questions/10330436/how-to-use-wix-torch-msbuild-task -->

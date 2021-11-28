@@ -286,7 +286,7 @@
   <Fragment>   
     <DirectoryRef Id="APPLICATIONFOLDER">   
       <Component Id="_E77FBD5C_A4F1_429D_B750_9C270BD89C18_HLAE.exe">
-        <File Id="_E77FBD5C_A4F1_429D_B750_9C270BD89C18_HLAE.exe" Name="HLAE.exe" Source="..\..\build\Release\bin\HLAE.exe" KeyPath="yes" Checksum="yes">
+        <File Id="_E77FBD5C_A4F1_429D_B750_9C270BD89C18_HLAE.exe" Name="HLAE.exe" Source="..\..\build\$(var.Configuration)\bin\HLAE.exe" KeyPath="yes" Checksum="yes">
           <Shortcut Id="HaleStartMenuShortcut" 
                     Name="HLAE"
                     Directory="ApplicationProgramsFolder"
