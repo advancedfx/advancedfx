@@ -1653,32 +1653,7 @@ namespace AfxInterop {
 			Tier0_Warning("AfxInterop::Send_DrawingThread_DeviceRestored_Message: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
 			DisconnectDrawing();
 		}
-
-		/// WARNING: This must be interlocked with engine thread!
-		void On_FlushQueueFlush_BEGIN() {
-			m_FlushingQueue = true;
-
-			int errorLine = 0;
-
-			if (m_EngineConnected)
-			{
-				if (m_ServerVersion.GetMajor() == 7)
-				{
-					if (!WriteUInt32(m_hEnginePipe, EngineMessage_ForceEndQueue)) { errorLine = __LINE__; goto error; }
-				}
-			}
-
-			return;
-
-		error:
-			Tier0_Warning("AfxInterop::On_FlushQueueFlush: Error in line %i (%s).\n", errorLine, m_EnginePipeName.c_str());
-			DisconnectEngine();
-		}
-
-		void On_FlushQueueFlush_END() {
-			m_FlushingQueue = false;
-		}
-
+		
 		bool ConnectDrawing() {
 			{
 				std::shared_lock<std::shared_timed_mutex> sharedLock(m_DrawingConnectMutex);
@@ -3622,8 +3597,6 @@ namespace AfxInterop {
 
 		CVersion m_ClientVersion;
 		CVersion m_ServerVersion;
-
-		std::atomic_bool m_FlushingQueue = false;
 
 		bool ConsoleSend(HANDLE hPipe, CConsole & command)
 		{
