@@ -25,14 +25,7 @@ int g_DebugExecuteCommand = 0;
 
 void * g_Org_csgo_Cmd_ExecuteCommand;
 
-__declspec(naked) SOURCESDK::CSGO::ConCommandBase* __fastcall  My_csgo_Cmd_ExecuteCommand(int eTarget, const SOURCESDK::CSGO::CCommand& command) {
-
-	__asm push ebp
-	__asm mov ebp, esp
-	__asm sub esp, __LOCAL_SIZE
-	__asm mov eTarget, ecx
-	__asm mov command, edx
-
+bool My_csgo_Cmd_ExecuteCommand_Do(int eTarget, const SOURCESDK::CSGO::CCommand& command) {
 	if (command.ArgC()) {
 		if (g_DebugExecuteCommand) {
 			Tier0_Msg("Cmd_ExecuteCommand: %i -> \"%s\"\n", (int)(command.Source()), command.GetCommandString());
@@ -47,26 +40,36 @@ __declspec(naked) SOURCESDK::CSGO::ConCommandBase* __fastcall  My_csgo_Cmd_Execu
 					if (g_DebugExecuteCommand) {
 						Tier0_Msg("BLOCKED: Cmd_ExecuteCommand: %i -> \"%s\"\n", (int)(command.Source()), command.GetCommandString());
 					}
-					__asm mov edx, command
-					__asm mov ecx, eTarget
-					__asm mov esp, ebp
-					__asm pop ebp
-					__asm mov eax, 0
-					__asm ret
+					return true;
 				}
-					
+
 			}
 		}
 
 		if (command.Source() == SOURCESDK::CSGO::kCommandSrcDemoFile && WrpConCommands::IsRegisteredSlow(command.ArgV()[0])) {
 			Tier0_Warning("AFXWARNING: BLOCKED HLAE COMMAND FROM DEMO STREAM: \"%s\"\n", command.GetCommandString());
-			__asm mov edx, command
-			__asm mov ecx, eTarget
-			__asm mov esp, ebp
-			__asm pop ebp
-			__asm mov eax, 0
-			__asm ret
+			return true;
 		}
+	}
+
+	return false;
+}
+
+__declspec(naked) SOURCESDK::CSGO::ConCommandBase* __fastcall  My_csgo_Cmd_ExecuteCommand(int eTarget, const SOURCESDK::CSGO::CCommand& command) {
+
+	__asm push ebp
+	__asm mov ebp, esp
+	__asm sub esp, __LOCAL_SIZE
+	__asm mov eTarget, ecx
+	__asm mov command, edx
+
+	if (My_csgo_Cmd_ExecuteCommand_Do(eTarget, command)) {
+		__asm mov edx, command
+		__asm mov ecx, eTarget
+		__asm mov esp, ebp
+		__asm pop ebp
+		__asm mov eax, 0
+		__asm ret
 	}
 
 	__asm mov edx, command

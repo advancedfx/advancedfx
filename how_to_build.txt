@@ -45,10 +45,12 @@ Notice:
 	cd build
 	mkdir Release
 	cd Release
-	cmake -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 16 2019" -T "v142" -A "Win32" ../..
-	cmake --build . -v -- -r
-	cmake --install . -v
+	cmake -G "Visual Studio 16 2019" -T "v142" -A "Win32" ../..
+	cmake --build . --config Release -v -- -r
+	cmake --install . --config Release -v
 	
+	(For Debug builds replace Release with Debug in the instructions above.)
+
 [X] After that the installer and the zip can be found in "C:\<HLAESRC>\advancedfx\build\Release".
 
 [X] Things you should do before releasing a new version:

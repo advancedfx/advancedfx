@@ -1283,30 +1283,32 @@ namespace AfxInterop {
 			if (!ReadUInt32(m_hDrawingPipe, offsetToLock)) { errorLine = __LINE__; goto error; }
 			if (!ReadUInt32(m_hDrawingPipe, sizeToLock)) { errorLine = __LINE__; goto error; }
 			
-			auto it = m_D3d9IndexBuffers.find(index);
-			if (it != m_D3d9IndexBuffers.end())
 			{
-				void* pData = nullptr;
-				HRESULT hr = it->second->Lock(offsetToLock, sizeToLock, &pData, 0);
-				if (SUCCEEDED(hr))
+				auto it = m_D3d9IndexBuffers.find(index);
+				if (it != m_D3d9IndexBuffers.end())
 				{
-					if (!ReadBytes(m_hDrawingPipe, pData, 0, sizeToLock)) { it->second->Unlock();  errorLine = __LINE__; goto error; }
-					hr = it->second->Unlock();
-				}
-				else {
-					BYTE dummy;
-					for(UINT32 i = 0; i < sizeToLock; ++i)
+					void* pData = nullptr;
+					HRESULT hr = it->second->Lock(offsetToLock, sizeToLock, &pData, 0);
+					if (SUCCEEDED(hr))
 					{
-						if (!ReadBytes(m_hDrawingPipe, &dummy, 0, sizeof(dummy))) { errorLine = __LINE__; goto error; }
-
+						if (!ReadBytes(m_hDrawingPipe, pData, 0, sizeToLock)) { it->second->Unlock();  errorLine = __LINE__; goto error; }
+						hr = it->second->Unlock();
 					}
+					else {
+						BYTE dummy;
+						for (UINT32 i = 0; i < sizeToLock; ++i)
+						{
+							if (!ReadBytes(m_hDrawingPipe, &dummy, 0, sizeof(dummy))) { errorLine = __LINE__; goto error; }
+
+						}
+					}
+					DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+					if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+					if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+					if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 				}
-				DWORD lastError = FAILED(hr) ? GetLastError() : 0;
-				if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
-				if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
-				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+				else { errorLine = __LINE__; goto error; }
 			}
-			else { errorLine = __LINE__; goto error; }
 			return true;
 
 		error:
@@ -1373,30 +1375,32 @@ namespace AfxInterop {
 			if (!ReadUInt32(m_hDrawingPipe, offsetToLock)) { errorLine = __LINE__; goto error; }
 			if (!ReadUInt32(m_hDrawingPipe, sizeToLock)) { errorLine = __LINE__; goto error; }
 
-			auto it = m_D3d9VertexBuffers.find(index);
-			if (it != m_D3d9VertexBuffers.end())
 			{
-				void* pData = nullptr;
-				HRESULT hr = it->second->Lock(offsetToLock, sizeToLock, &pData, 0);
-				if (SUCCEEDED(hr))
+				auto it = m_D3d9VertexBuffers.find(index);
+				if (it != m_D3d9VertexBuffers.end())
 				{
-					if (!ReadBytes(m_hDrawingPipe, pData, 0, sizeToLock)) { it->second->Unlock(); errorLine = __LINE__; goto error; }
-					hr = it->second->Unlock();
-				}
-				else {
-					BYTE dummy;
-					for(UINT32 i = 0; i < sizeToLock; ++i)
+					void* pData = nullptr;
+					HRESULT hr = it->second->Lock(offsetToLock, sizeToLock, &pData, 0);
+					if (SUCCEEDED(hr))
 					{
-						if (!ReadBytes(m_hDrawingPipe, &dummy, 0, sizeof(dummy))) { errorLine = __LINE__; goto error; }
-
+						if (!ReadBytes(m_hDrawingPipe, pData, 0, sizeToLock)) { it->second->Unlock(); errorLine = __LINE__; goto error; }
+						hr = it->second->Unlock();
 					}
+					else {
+						BYTE dummy;
+						for (UINT32 i = 0; i < sizeToLock; ++i)
+						{
+							if (!ReadBytes(m_hDrawingPipe, &dummy, 0, sizeof(dummy))) { errorLine = __LINE__; goto error; }
+
+						}
+					}
+					DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+					if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+					if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+					if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 				}
-				DWORD lastError = FAILED(hr) ? GetLastError() : 0;
-				if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
-				if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
-				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+				else { errorLine = __LINE__; goto error; }
 			}
-			else { errorLine = __LINE__; goto error; }
 
 			return true;
 
@@ -1489,38 +1493,39 @@ namespace AfxInterop {
 			if (!ReadUInt32(m_hDrawingPipe, rowCount)) { errorLine = __LINE__; goto error; }
 			if (!ReadUInt32(m_hDrawingPipe, rowBytes)) { errorLine = __LINE__; goto error; }
 
-
-			auto it = m_D3d9Textures.find(index);
-			if (it != m_D3d9Textures.end())
 			{
-				D3DLOCKED_RECT lockedRect;
-				HRESULT hr = it->second->LockRect(level, &lockedRect, hasRect ? &rect : NULL, 0);
-				if (SUCCEEDED(hr))
+				auto it = m_D3d9Textures.find(index);
+				if (it != m_D3d9Textures.end())
 				{
-					void* pData = lockedRect.pBits;
-					for (UINT32 i = 0; i < rowCount && 0 == errorLine; ++i)
+					D3DLOCKED_RECT lockedRect;
+					HRESULT hr = it->second->LockRect(level, &lockedRect, hasRect ? &rect : NULL, 0);
+					if (SUCCEEDED(hr))
 					{
-						if (!ReadBytes(m_hDrawingPipe, pData, 0, rowBytes)) { it->second->UnlockRect(level); errorLine = __LINE__; goto error; }
-						pData = (unsigned char*)pData + lockedRect.Pitch;
-					}
-					hr = it->second->UnlockRect(level);
-				}
-				else {
-					for (UINT32 i = 0; i < rowCount && 0 == errorLine; ++i)
-					{
-						BYTE dummy;
-						for(UINT32 j = 0; j < rowBytes; ++ j)
+						void* pData = lockedRect.pBits;
+						for (UINT32 i = 0; i < rowCount && 0 == errorLine; ++i)
 						{
-							if (!ReadBytes(m_hDrawingPipe, &dummy, 0, sizeof(dummy))) { errorLine = __LINE__; goto error; }
+							if (!ReadBytes(m_hDrawingPipe, pData, 0, rowBytes)) { it->second->UnlockRect(level); errorLine = __LINE__; goto error; }
+							pData = (unsigned char*)pData + lockedRect.Pitch;
+						}
+						hr = it->second->UnlockRect(level);
+					}
+					else {
+						for (UINT32 i = 0; i < rowCount && 0 == errorLine; ++i)
+						{
+							BYTE dummy;
+							for (UINT32 j = 0; j < rowBytes; ++j)
+							{
+								if (!ReadBytes(m_hDrawingPipe, &dummy, 0, sizeof(dummy))) { errorLine = __LINE__; goto error; }
+							}
 						}
 					}
+					DWORD lastError = FAILED(hr) ? GetLastError() : 0;
+					if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
+					if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
+					if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
 				}
-				DWORD lastError = FAILED(hr) ? GetLastError() : 0;
-				if (!WriteInt32(m_hDrawingPipe, hr)) { errorLine = __LINE__; goto error; }
-				if (FAILED(hr)) { if (!WriteUInt32(m_hDrawingPipe, lastError)) { errorLine = __LINE__; goto error; } }
-				if (!Flush(m_hDrawingPipe)) { errorLine = __LINE__; goto error; }
+				else { errorLine = __LINE__; goto error; }
 			}
-			else { errorLine = __LINE__; goto error; }
 
 			return true;
 

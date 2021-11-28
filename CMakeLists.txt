@@ -1,11 +1,13 @@
 ﻿# CMakeList.txt : Top-level CMake project file, do global configuration
 # and include sub-projects here.
 #
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.14)
 
 project ("advancedfx")
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}")
+
+set(VS16_CONFIGURATION $<IF:$<CONFIG:Debug>,Debug,Release>)
 
 #
 # Get Microsoft Visual Studio related paths:
@@ -79,9 +81,12 @@ add_custom_target(advancedfx ALL
 
 set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
 set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
+set(CMAKE_INSTALL_DEBUG_LIBRARIES $<$<CONFIG:Debug>:TRUE>)
 include(InstallRequiredSystemLibraries)
-set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} "${MSVC_CRT_DIR}/vccorlib${v}.dll")
-
+set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} "${MSVC_CRT_DIR}/vccorlib${v}$<$<CONFIG:Debug>:d>.dll")
+if($<CONFIG:Debug>)
+	set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} "${MSVC_REDIST_DIR}/${CMAKE_MSVC_ARCH}/Microsoft.${MSVC_REDIST_NAME}.CRT/vccorlib${v}d.dll>")
+endif()
 
 install(
     PROGRAMS
@@ -96,12 +101,8 @@ install(
 
         "${zlib_SOURCE_DIR}/zlib1.dll"
 
-	    "${ILMBASE_BUILD_DIR}/bin/Half-2_5.dll"
-        "${ILMBASE_BUILD_DIR}/bin/Iex-2_5.dll"
-        "${ILMBASE_BUILD_DIR}/bin/IexMath-2_5.dll"
-        "${ILMBASE_BUILD_DIR}/bin/IlmThread-2_5.dll"
-        "${ILMBASE_BUILD_DIR}/bin/Imath-2_5.dll"
-        "${OPENEXR_BUILD_DIR}/bin/IlmImf-2_5.dll"
+		${ILMBASE_BUILD_BINARIES}
+		${OPENEXR_BUILD_BINARIES}
 
     DESTINATION "bin"
 )
@@ -118,7 +119,6 @@ install(
         "${afxhooksource_BINARY_DIR}/AfxHookSource.pdb"
         "${hlae_BINARY_DIR}/HLAE.pdb"
         "${injector_BINARY_DIR}/injector.pdb"
-
     DESTINATION "pdb"
 )
 
@@ -153,7 +153,7 @@ install(
 	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -Rf installer/hlae/ffmpeg)
 	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -Rf installer/hlae/locales)
 	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -f installer/hlae/HLAE.exe)
-	execute_process( WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}/installer/setup\" COMMAND \"${VS16_MSBUILD}\" \"${CMAKE_SOURCE_DIR}/installer/setup/setup.wixproj\" -property:Configuration=Release -property:Platform=x86 \"-property:OutputPath=${CMAKE_INSTALL_PREFIX}/installer/build\")
+	execute_process( WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}/installer/setup\" COMMAND \"${VS16_MSBUILD}\" \"${CMAKE_SOURCE_DIR}/installer/setup/setup.wixproj\" \"-property:Configuration=${VS16_CONFIGURATION}\" \"-property:Platform=x86\" \"-property:OutputPath=${CMAKE_INSTALL_PREFIX}/installer/build\")
 	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E copy installer/build/HLAE_Setup.exe ./HLAE_Setup.exe)
 	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E copy installer/build/HLAE_Setup.wixpdb ./HLAE_Setup.wixpdb)
 	"

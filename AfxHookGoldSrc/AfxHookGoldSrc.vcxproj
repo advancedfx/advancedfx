@@ -104,7 +104,7 @@
       </DataExecutionPrevention>
       <ImportLibrary>$(OutDir)AfxHookGoldSrc.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalDependencies>IlmImf-2_5.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>IlmImf-2_5_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>

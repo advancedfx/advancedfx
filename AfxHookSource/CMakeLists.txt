@@ -69,6 +69,6 @@ add_custom_target(afxhooksource
     DEPENDS ilmbase_build openexr_build afxhooksourceshaders afxhooksourceprotobufs afx
     WORKING_DIRECTORY ${afxhooksource_BINARY_DIR}
     BYPRODUCTS "${afxhooksource_BINARY_DIR}/AfxHookSource.dll"
-    COMMAND "${VS16_MSBUILD}" "${afxhooksource_SOURCE_DIR}/AfxHookSource.vcxproj" /p:Configuration=Release /p:Platform=Win32 "/p:OutDir=${afxhooksource_BINARY_DIR}/" "/p:ILMBASE_BUILD_DIR=${ILMBASE_BUILD_DIR}" "/p:OPENEXR_BUILD_DIR=${OPENEXR_BUILD_DIR}" "/p:PROTOBUF_BINARY_DIR=${protobuf_BINARY_DIR}" "/p:PROTOBUF_SOURCE_DIR=${protobuf_SOURCE_DIR}"
+    COMMAND "${VS16_MSBUILD}" "${afxhooksource_SOURCE_DIR}/AfxHookSource.vcxproj" "/p:Configuration=${VS16_CONFIGURATION}" "/p:Platform=Win32" "/p:OutDir=${afxhooksource_BINARY_DIR}/" "/p:ILMBASE_BUILD_DIR=${ILMBASE_BUILD_DIR}" "/p:OPENEXR_BUILD_DIR=${OPENEXR_BUILD_DIR}" "/p:PROTOBUF_BINARY_DIR=${protobuf_BINARY_DIR}" "/p:PROTOBUF_SOURCE_DIR=${protobuf_SOURCE_DIR}"
 	VERBATIM
 )

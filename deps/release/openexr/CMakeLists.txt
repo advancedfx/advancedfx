@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.14)
 
 project ("openexr")
 
@@ -38,21 +38,21 @@ add_custom_target(openexr_build_dirs
 )
 
 set(ILMBASE_BUILD_BINARIES
-	"${ILMBASE_BUILD_DIR}/bin/Half-2_5.dll"
-	"${ILMBASE_BUILD_DIR}/bin/Iex-2_5.dll"
-	"${ILMBASE_BUILD_DIR}/bin/IexMath-2_5.dll"
-	"${ILMBASE_BUILD_DIR}/bin/IlmThread-2_5.dll"
-	"${ILMBASE_BUILD_DIR}/bin/Imath-2_5.dll"
+	"${ILMBASE_BUILD_DIR}/bin/Half-2_5$<$<CONFIG:Debug>:_d>.dll"
+	"${ILMBASE_BUILD_DIR}/bin/Iex-2_5$<$<CONFIG:Debug>:_d>.dll"
+	"${ILMBASE_BUILD_DIR}/bin/IexMath-2_5$<$<CONFIG:Debug>:_d>.dll"
+	"${ILMBASE_BUILD_DIR}/bin/IlmThread-2_5$<$<CONFIG:Debug>:_d>.dll"
+	"${ILMBASE_BUILD_DIR}/bin/Imath-2_5$<$<CONFIG:Debug>:_d>.dll"
 )
-
+set(ILMBASE_BUILD_BINARIES ${ILMBASE_BUILD_BINARIES} PARENT_SCOPE)
 
 add_custom_command(
     WORKING_DIRECTORY ${ILMBASE_TMP_DIR}
     OUTPUT ${ILMBASE_BUILD_BINARIES}
     DEPENDS openexr openexr_build_dirs
     COMMAND ${CMAKE_COMMAND} "-DBUILD_SHARED_LIBS=1" "-DCMAKE_INSTALL_PREFIX=${ILMBASE_BUILD_DIR}" -G "Visual Studio 16 2019" -T "v142" -A "Win32" "${openexr_SOURCE_DIR}/IlmBase"
-    COMMAND ${VS16_MSBUILD} "ALL_BUILD.vcxproj" "/p:Configuration=Release" "/p:Platform=Win32"
-    COMMAND ${VS16_MSBUILD} "INSTALL.vcxproj" "/p:Configuration=Release" "/p:Platform=Win32"
+    COMMAND ${VS16_MSBUILD} "ALL_BUILD.vcxproj" "/p:Configuration=${VS16_CONFIGURATION}" "/p:Platform=Win32"
+    COMMAND ${VS16_MSBUILD} "INSTALL.vcxproj" "/p:Configuration=${VS16_CONFIGURATION}" "/p:Platform=Win32"
 )
 
 add_custom_target(ilmbase_build
@@ -60,16 +60,17 @@ add_custom_target(ilmbase_build
 )
 
 set(OPENEXR_BUILD_BINARIES
-    "${OPENEXR_BUILD_DIR}/bin/IlmImf-2_5.dll"
+    "${OPENEXR_BUILD_DIR}/bin/IlmImf-2_5$<$<CONFIG:Debug>:_d>.dll"
 )
+set(ILMBASE_BUILD_BINARIES ${OPENEXR_BUILD_BINARIES} PARENT_SCOPE)
 
 add_custom_command(
     WORKING_DIRECTORY ${OPENEXR_TMP_DIR}
     OUTPUT ${OPENEXR_BUILD_BINARIES}
     DEPENDS openexr openexr_build_dirs ilmbase_build zlib_build
     COMMAND ${CMAKE_COMMAND} "-DBUILD_SHARED_LIBS=1" "-DZLIB_ROOT=${zlib_SOURCE_DIR}" "-DCMAKE_PREFIX_PATH=${ILMBASE_BUILD_DIR}" "-DCMAKE_SYSTEM_PREFIX=${ILMBASE_BUILD_DIR}" "-DCMAKE_INSTALL_PREFIX=${OPENEXR_BUILD_DIR}" -G "Visual Studio 16 2019" -T "v142" -A "Win32" "${openexr_SOURCE_DIR}/OpenEXR"
-    COMMAND ${VS16_MSBUILD} "ALL_BUILD.vcxproj" "/p:Configuration=Release" "/p:Platform=Win32"
-    COMMAND ${VS16_MSBUILD} "INSTALL.vcxproj" "/p:Configuration=Release" "/p:Platform=Win32"
+    COMMAND ${VS16_MSBUILD} "ALL_BUILD.vcxproj" "/p:Configuration=${VS16_CONFIGURATION}" "/p:Platform=Win32"
+    COMMAND ${VS16_MSBUILD} "INSTALL.vcxproj" "/p:Configuration=${VS16_CONFIGURATION}" "/p:Platform=Win32"
 )
 
 add_custom_target(openexr_build
