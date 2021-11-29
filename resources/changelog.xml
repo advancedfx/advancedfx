@@ -6,6 +6,16 @@
 
 <release>
 <name>HLAE</name>
+<version>2.124.3</version>
+<time>2021-11-29T09:13Z</time>
+<changes>
+<change type="fixed">Fixed missing DLL files causing hooks to not work.</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.124.2</version>
 <time>2021-11-28T09:04Z</time>
 <changes>
