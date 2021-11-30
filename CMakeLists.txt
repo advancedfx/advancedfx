@@ -64,15 +64,6 @@ add_subdirectory("hlae")
 
 
 #
-# Update translation files
-#
-
-add_custom_target(l10n_update
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    COMMAND "${CMAKE_SOURCE_DIR}/l10n_update_to_source.bat"
-)
-
-#
 # advancedfx
 #
 
