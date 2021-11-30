@@ -19,7 +19,7 @@ if(NOT openexr_POPULATED)
 endif()
 
 set(PROTOBUF_BUILD_BINARIES
-	"${protobuf_BINARY_DIR}/${CMAKE_CFG_INTDIR}/libprotobuf$<CONFIG:Debug,d>.lib"
+	"${protobuf_BINARY_DIR}/${CMAKE_CFG_INTDIR}/libprotobuf$<$<CONFIG:Debug>:d>.lib"
 	"${protobuf_BINARY_DIR}/${CMAKE_CFG_INTDIR}/protoc.exe"
 )
 
@@ -30,7 +30,7 @@ add_custom_command(
     WORKING_DIRECTORY ${protobuf_BINARY_DIR}
 	OUTPUT ${PROTOBUF_BUILD_BINARIES}
     DEPENDS protobuf
-    COMMAND ${CMAKE_COMMAND} "-DCMAKE_INSTALL_PREFIX=${protobuf_BINARY_DIR}/install" -Dprotobuf_BUILD_SHARED_LIBS=OFF -Dprotobuf_MSVC_STATIC_RUNTIME=OFF -G "Visual Studio 16 2019" -T "v142" -A "Win32" "${protobuf_SOURCE_DIR}/cmake"
+    COMMAND ${CMAKE_COMMAND} "-DCMAKE_INSTALL_PREFIX=${protobuf_BINARY_DIR}/install" -Dprotobuf_BUILD_SHARED_LIBS=OFF -Dprotobuf_MSVC_STATIC_RUNTIME=OFF -G "Visual Studio 16 2019" -T "v142" -A "Win32"  "${protobuf_SOURCE_DIR}/cmake"
     COMMAND ${VS16_MSBUILD} "libprotobuf.vcxproj" "/p:Configuration=${VS16_CONFIGURATION}" "/p:Platform=Win32"
     COMMAND ${VS16_MSBUILD} "protoc.vcxproj" "/p:Configuration=${VS16_CONFIGURATION}" "/p:Platform=Win32"
 )
