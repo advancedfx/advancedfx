@@ -530,7 +530,7 @@ CON_COMMAND(mirv_pov, "Forces a POV on a GOTV demo.")
 	{
 		g_i_MirvPov = atoi(args->ArgV(1));
 
-		unsigned char* pData = (unsigned char *)AFXADDR_GET(csgo_crosshair_localplayer_check) +17;
+		unsigned char* pData = (unsigned char *)AFXADDR_GET(csgo_crosshair_localplayer_check) +25;
 
 		MdtMemBlockInfos mbis;
 		MdtMemAccessBegin(pData, 2, &mbis);

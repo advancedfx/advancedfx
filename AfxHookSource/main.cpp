@@ -1237,7 +1237,7 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 				{
 					if (SOURCESDK::C_BaseEntity_csgo* be = ce->GetBaseEntity())
 					{
-						if (be->IsPlayer())
+						if (be->IsPlayer() && !be->IsDormant())
 						{
 							newMirvPov = g_i_MirvPov;
 
@@ -1286,8 +1286,8 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 			static WrpConVarRef cvar_cl_interp_npcs;
 			cvar_cl_interp_npcs.RetryIfNull("cl_interp_npcs"); // GOTV would have this on 0, so force it too.
 			bool pingUpdated = 0;
-			if(oldMirvPov != newMirvPov || g_i_MirvPov && g_i_MirvPov != newMirvPov) {
-				if(newMirvPov == 0 && g_VEngineClient->IsConnected()) {
+			if(oldMirvPov != newMirvPov) {
+				if(newMirvPov == 0) {
 					// Lost player, e.g. due to disconnect.
 					// Switch back to original local player:
 					if (SOURCESDK::IClientEntity_csgo* ce1 = SOURCESDK::g_Entitylist_csgo->GetClientEntity(g_Org_svc_ServerInfo_PlayerSlot + 1))
@@ -1296,9 +1296,8 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 						{
 							if (be1->IsPlayer())
 							{
-
-								static csgo_C_BasePlayer_SetAsLocalPlayer_t setAsLocalPlayer = (csgo_C_BasePlayer_SetAsLocalPlayer_t)AFXADDR_GET(csgo_C_BasePlayer_SetAsLocalPlayer);
-								setAsLocalPlayer(be1, 0);
+								bool* pOsLocalPlayer = (bool*)((char*)be1 + AFXADDR_GET(csgo_C_BasePlayer_ofs_m_bIsLocalPlayer));
+								*pOsLocalPlayer = true;
 							}
 						}
 					}
