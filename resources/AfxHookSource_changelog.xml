@@ -4,6 +4,15 @@
 <changelog>
 
 
+<release>
+<name>AfxHookSource</name>
+<version>1.104.2</version>
+<time>2021-12-11T20:20Z</time>
+<changes>
+<change type="fixed">Fixed mirv_pov crashing on demos when local palyer was not connected after adjusting to CS:GO 12/10/2021 update.</change>
+</changes>
+</release>
+
 
 <release>
 <name>AfxHookSource</name>
