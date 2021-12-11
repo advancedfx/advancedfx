@@ -543,7 +543,7 @@ CON_COMMAND(mirv_pov, "Forces a POV on a GOTV demo.")
 		else
 		{
 			pData[0] = 0x74;
-			pData[1] = 0xc8;
+			pData[1] = 0xC0;
 		}
 
 		MdtMemAccessEnd(&mbis);

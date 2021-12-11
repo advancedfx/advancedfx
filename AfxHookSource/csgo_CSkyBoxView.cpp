@@ -5,6 +5,8 @@
 #include "addresses.h"
 #include "AfxStreams.h"
 
+#include "csgo/ClientToolsCsgo.h"
+
 #include <shared/AfxDetours.h>
 
 typedef void (__stdcall *csgo_CSkyBoxView_Draw_t)(DWORD *this_ptr);
@@ -39,13 +41,13 @@ bool csgo_CSkyBoxView_Draw_Install(void)
 
 float csgo_CSkyBoxView_GetScale(void)
 {
-	if(AFXADDR_GET(csgo_pLocalPlayer)
-		&& AFXADDR_GET(csgo_C_BasePlayer_OFS_m_skybox3d_scale) != (AfxAddr)-1
-		&& 0 != *(unsigned char **)AFXADDR_GET(csgo_pLocalPlayer))
-	{
-		int skyBoxScale = *(int *)(*(unsigned char **)AFXADDR_GET(csgo_pLocalPlayer) +AFXADDR_GET(csgo_C_BasePlayer_OFS_m_skybox3d_scale));
+	if(AFXADDR_GET(csgo_C_BasePlayer_OFS_m_skybox3d_scale) != (AfxAddr)-1) {
+		if(auto pLocalPlayer = CClientToolsCsgo::GetLocalPlayer())
+		{
+			int skyBoxScale = *(int *)((unsigned char *)pLocalPlayer +AFXADDR_GET(csgo_C_BasePlayer_OFS_m_skybox3d_scale));
 
-		return skyBoxScale ? 1.0f / skyBoxScale : 0.0f;
+			return skyBoxScale ? 1.0f / skyBoxScale : 0.0f;
+		}
 	}
 
 	return 1.0f;

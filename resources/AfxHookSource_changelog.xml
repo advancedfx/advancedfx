@@ -4,6 +4,17 @@
 <changelog>
 
 
+
+<release>
+<name>AfxHookSource</name>
+<version>1.104.1/version>
+<time>2021-12-11T17:06Z</time>
+<changes>
+<change type="fixed">Adjusted to CS:GO 12/10/2021 update: Fixed local player detection for sky-box scale (required for depth streams). Fixed GetPlayerName function hook (required for mirv_detahmsg / mirv_replace_name). Fixed mirv_pov / crosshair hook for showing custom crosshair of player.</change>
+</changes>
+</release>
+
+
 <release>
 <name>AfxHookSource</name>
 <version>1.104.0</version>

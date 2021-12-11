@@ -10,6 +10,15 @@ public:
 		return m_Instance;
 	}
 
+	static inline SOURCESDK::C_BasePlayer_csgo* GetLocalPlayer(void) {
+		if(m_Instance) {
+			if(auto iface = m_Instance->m_ClientTools) {
+				return reinterpret_cast<SOURCESDK::C_BasePlayer_csgo *>(iface->GetLocalPlayer());
+			}
+		}
+		return nullptr;
+	}	
+
 	CClientToolsCsgo(SOURCESDK::CSGO::IClientTools * clientTools);
 
 	virtual ~CClientToolsCsgo();
