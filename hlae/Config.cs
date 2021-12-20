@@ -147,7 +147,7 @@ public class CfgCustomLoader
 		ProgramPath = "";
 		CmdLine = "-steam -insecure +sv_lan 1 -window -console -game csgo";
         InjectDlls = new List<CfgInjectDll>();
-        AddEnvironmentVars = "SteamPath=" + Program.SteamInstallPath + "\n" + "SteamClientLaunch=1" + "\n" + "SteamGameId=730" + "\n" + "SteamAppId=730" + "\n" + "SteamOverlayGameId=730";
+        AddEnvironmentVars = "SteamPath=" + Program.SteamInstallPath + "\n" + "SteamClientLaunch=1" + "\n" + "SteamGameId=Enter ID here" + "\n" + "SteamAppId=Enter ID here" + "\n" + "SteamOverlayGameId=Enter ID here";
     }
 }
 
