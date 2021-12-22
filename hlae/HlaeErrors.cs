@@ -123,6 +123,9 @@ namespace AfxGui
 
             switch(getLastWin32ErrorValue)
             {
+                case 2:
+                    solution = L10n._p("HLAE errors", "Make sure you entered the correct path to the game .exe and included the .exe file. Copy the path from the game properties in Steam to make sure you are using the correct path.");
+                    break;
                 case 5:
                     solution = L10n._p("HLAE errors", "Make sure to close any anti-cheat software and that the path to the game .exe is correct.");
                     break;
@@ -133,7 +136,7 @@ namespace AfxGui
                     solution = L10n._p("HLAE errors", "Try using CS:GO Launcher instead of Custom Loader.");
                     break;
                 case 740:
-                    solution = L10n._p("HLAE errors", "Make sure neither HLAE.exe nor Steam.exe nor csgo.exe are set to run as admin.");
+                    solution = L10n._p("HLAE errors", "Make sure neither HLAE.exe, Steam.exe nor csgo.exe are set to run as admin.");
                     break;
             }
 
