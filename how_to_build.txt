@@ -9,14 +9,14 @@ Notice:
 
 [X] Download and install Microsoft Visual Studio 2019 Community, which you can
     obtain for free from https://www.visualstudio.com/downloads/ .
-    (We are using 16.6.3 at the moment.)
+    (We are using one of the latest 16.x at the moment.)
     - Select Desktop .NET Desktop Development component
     - Select Desktop Development with C++ component
     - You'll need to install Wix Toolset Visual Studio 2019 Extension from
       within Visual Studio later.
 
 [X]	Obtain Python 3.8.x from https://www.python.org/downloads/windows/ .
-	We used python-3.8.3-amd64 .
+	We used python-3.8.3-amd64, but any 3.8 should do.
 	You will need to do the custom installation
 	with pip and py launcher.
 	
