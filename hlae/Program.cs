@@ -212,7 +212,12 @@ namespace AfxGui
                     case "-addEnv":
                         if (i + 1 < args.Length)
                         {
-                            if (firstEnv) GlobalConfig.Instance.Settings.CustomLoader.AddEnvironmentVars = "";
+                            if (firstEnv)
+                            {
+                                firstEnv = false;
+
+                                GlobalConfig.Instance.Settings.CustomLoader.AddEnvironmentVars = "";
+                            }
                             GlobalConfig.Instance.Settings.CustomLoader.AddEnvironmentVars += args[i + 1] + "\n";
                             i++;
                         }
