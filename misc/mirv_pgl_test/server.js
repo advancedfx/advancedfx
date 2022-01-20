@@ -14,7 +14,9 @@
 
   Hints:
 
-  - Text entered (with enter) is sent to client as exec.
+  - exec ... - is sent to client as exec.
+  - setCam x y z rX rY rZ realFov - sets camera, youshould maybe "exec spec_mode 6" (freelook) first.
+  - setCamEnd - ends set camera.
   - You might want to whitelist / blacklist events from being transmitted if you need to reduce the data transmitted.
 */
 
@@ -305,7 +307,31 @@ wsConsole.on('close', function close() {
 
 wsConsole.on('line', function line(data) {
   if (ws) {
-    ws.send(new Uint8Array(Buffer.from('exec\0'+data.trim()+'\0','utf8')),{binary: true});
+	data = data.split(' ');
+	if(1 <= data.length) {
+		if(data[0] == 'setCam' && 8 <= data.length) {
+			var prefix = Buffer.from('setCam\0','utf8');
+			var arrayBuffer = new ArrayBuffer(7 * 4);
+			var arrayBufferView = new DataView(arrayBuffer);
+			arrayBufferView.setFloat32(0*4, data[1], true);
+			arrayBufferView.setFloat32(1*4, data[2], true);
+			arrayBufferView.setFloat32(2*4, data[3], true);
+			arrayBufferView.setFloat32(3*4, data[4], true);
+			arrayBufferView.setFloat32(4*4, data[5], true);
+			arrayBufferView.setFloat32(5*4, data[6], true);
+			arrayBufferView.setFloat32(6*4, data[7], true);
+			var buf = new Uint8Array(prefix.byteLength+arrayBuffer.byteLength)
+			buf.set(new Uint8Array(prefix),0);
+			buf.set(new Uint8Array(arrayBuffer),prefix.byteLength);
+			ws.send(buf,{binary: true});
+		} else if(data[0] == 'setCamEnd') {
+			ws.send(new Uint8Array(Buffer.from('setCamEnd\0','utf8')),{binary: true});
+		} else if(data[0] == 'exec' && 2 <= data.length) {
+			data.shift();
+			data = data.join(' ');
+			ws.send(new Uint8Array(Buffer.from('exec\0'+data.trim()+'\0','utf8')),{binary: true});
+		}
+	}
   }
 });
 

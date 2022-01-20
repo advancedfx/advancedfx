@@ -212,6 +212,8 @@ namespace MirvPgl
 	void SupplyLevelInit(char const * mapName);
 	void SupplyLevelShutdown();
 
+	bool OnViewOverride(float& Tx, float& Ty, float& Tz, float& Rx, float& Ry, float& Rz, float& Fov);
+
 	// On Drawing thead:
 
 	void D3D9_BeginDevice(IDirect3DDevice9 * device);
@@ -221,6 +223,7 @@ namespace MirvPgl
 	void DrawingThread_SupplyCamData(CamData const & camData);
 
 	void DrawingThread_UnleashData();
+
 }
 
 #endif

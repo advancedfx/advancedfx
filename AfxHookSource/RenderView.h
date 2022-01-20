@@ -29,7 +29,8 @@ public:
 		Override_Aim = 6,
 		Override_CamOffset = 7,
 		Override_CamFov = 8,
-		Override_Interop = 9
+		Override_MirvPgl = 9,
+		Override_Interop = 10
 	};
 
 	CamPath m_CamPath;
@@ -111,7 +112,7 @@ private:
 	CamExport * m_CamExport = 0;
 	CamImport * m_CamImport = 0;
 
-	Override m_Overrides[10];
+	Override m_Overrides[11];
 
 	void SetDefaultOverrides();
 

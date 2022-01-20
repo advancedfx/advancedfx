@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
 #ifdef AFX_MIRV_PGL
-// Shit needs to be included for d3d9.h or we a doomed (great!):
+// Needs to be included for d3d9.h or we a doomed (great!):
 #include <deps/release/easywsclient/easywsclient.hpp>
 #include <deps/release/easywsclient/easywsclient.cpp>
 #pragma comment( lib, "ws2_32" )
@@ -17,6 +17,8 @@
 #include "AfxStreams.h"
 #include "AfxShaders.h"
 #include "csgo_GameEvents.h"
+#include "FovScaling.h"
+#include "RenderView.h"
 
 #include <shared/AfxMath.h>
 
@@ -1019,6 +1021,31 @@ namespace MirvPgl
 	std::list<std::string> m_Commands;
 	std::mutex m_CommandsMutex;
 
+	std::mutex m_CamOverrideMutex;
+	bool m_CamOverride = false;
+	float m_CamXPosition = 0;
+	float m_CamYPosition = 0;
+	float m_CamZPosition = 0;
+	float m_CamXRotation = 0;
+	float m_CamYRotation = 0;
+	float m_CamZRotation = 0;
+	float m_CamFov = 90;
+
+	bool OnViewOverride(float& Tx, float& Ty, float& Tz, float& Rx, float& Ry, float& Rz, float& Fov) {
+		std::unique_lock<std::mutex> lock(m_CamOverrideMutex);
+		if (m_CamOverride) {
+			Tx = m_CamXPosition;
+			Ty = m_CamYPosition;
+			Tz = m_CamZPosition;
+			Rz = m_CamXRotation;
+			Rx = m_CamYRotation;
+			Ry = m_CamZRotation;
+			Fov = Auto_InverseFovScaling(g_Hook_VClient_RenderView.LastWidth, g_Hook_VClient_RenderView.LastHeight, m_CamFov);
+			return true;
+		}
+		return false;
+	}
+
 	std::vector<uint8_t> m_SendThreadTempData;
 
 	std::vector<uint8_t> m_DataForSendThread;
@@ -1141,7 +1168,23 @@ namespace MirvPgl
 
 				char const * code = strCode.c_str();
 
-				if (0 == strcmp("exec", code))
+				if (0 == strcmp("setCam", code) && message.size() >= strCode.size() + 1 + 7*sizeof(float)) {
+					size_t ofs = strCode.size() + 1;
+					std::unique_lock<std::mutex> lock(m_CamOverrideMutex);
+					m_CamOverride = true;
+					memcpy(&m_CamXPosition, (float*)&message[ofs + 0], sizeof(float));
+					memcpy(&m_CamYPosition, (float*)&message[ofs + 1 * sizeof(float)], sizeof(float));
+					memcpy(&m_CamZPosition, (float*)&message[ofs + 2 * sizeof(float)], sizeof(float));
+					memcpy(&m_CamXRotation, (float*)&message[ofs + 3 * sizeof(float)], sizeof(float));
+					memcpy(&m_CamYRotation, (float*)&message[ofs + 4 * sizeof(float)], sizeof(float));
+					memcpy(&m_CamZRotation, (float*)&message[ofs + 5 * sizeof(float)], sizeof(float));
+					memcpy(&m_CamFov, (float*)&message[ofs + 6 * sizeof(float)], sizeof(float));
+				}
+				if (0 == strcmp("setCamEnd", code)) {
+					std::unique_lock<std::mutex> lock(m_CamOverrideMutex);
+					m_CamOverride = false;
+				}
+				else if (0 == strcmp("exec", code))
 				{
 					std::unique_lock<std::mutex> lock(m_CommandsMutex);
 

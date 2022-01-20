@@ -24,6 +24,7 @@
 #include "MirvCam.h"
 #include "AfxInterop.h"
 #include "csgo/ClientToolsCSgo.h"
+#include "MirvPgl.h"
 
 
 BvhExport * g_BvhExport = NULL;
@@ -249,7 +250,7 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 	GameCameraAngles[2] = Rz;
 	GameCameraFov = Fov;
 
-	for (int i = 0; i < 10; ++i)
+	for (int i = 0; i < 11; ++i)
 	{
 		CurrentCameraOrigin[0] = Tx;
 		CurrentCameraOrigin[1] = Ty;
@@ -465,6 +466,10 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 			g_MirvCam.ApplyFov(Fov);
 			break;
 
+		case Override_MirvPgl:
+			if (MirvPgl::OnViewOverride(Tx, Ty, Tz, Rx, Ry, Rz, Fov)) originOrAnglesOverriden = true;
+			break;
+
 		case Override_Interop:
 #ifdef AFX_INTEROP
 			if (AfxInterop::OnViewOverride(Tx, Ty, Tz, Rx, Ry, Rz, Fov)) originOrAnglesOverriden = true;
@@ -676,7 +681,8 @@ void Hook_VClient_RenderView::SetDefaultOverrides()
 	m_Overrides[6] = Override_Aim;
 	m_Overrides[7] = Override_CamOffset;
 	m_Overrides[8] = Override_CamFov;
-	m_Overrides[9] = Override_Interop;
+	m_Overrides[9] = Override_MirvPgl;
+	m_Overrides[10] = Override_Interop;
 }
 
 bool Hook_VClient_RenderView::OverrideFromString(const char * value, Override & outOverride)
@@ -717,6 +723,10 @@ bool Hook_VClient_RenderView::OverrideFromString(const char * value, Override & 
 		outOverride = Override_CamFov;
 		return true;
 	}
+	if (0 == _stricmp("mirvPgl", value)) {
+		outOverride = Override_MirvPgl;
+		return true;
+	}
 	if (0 == _stricmp("interop", value)) {
 		outOverride = Override_Interop;
 		return true;
@@ -741,7 +751,7 @@ void Hook_VClient_RenderView::Console_Overrides(IWrpCommandArgs * args)
 		}
 		else if (0 == _stricmp("print", arg1))
 		{
-			const char * text[10] = {
+			const char * text[11] = {
 				"camSource (of mirv_cam)"
 				, "camPath"
 				, "bvh"
@@ -751,14 +761,15 @@ void Hook_VClient_RenderView::Console_Overrides(IWrpCommandArgs * args)
 				, "aim (mirv_aim)"
 				, "camOffset (of mirv_cam)"
 				, "camFov (of mirv_cam)"
+				, "mirvPgl"
 				, "interop (afx_interop)"
 			};
 
-			for (int i = 0; i < 10; ++i)
+			for (int i = 0; i < 11; ++i)
 			{
 				int value = m_Overrides[i];
 
-				if (0 <= value && value < 10)
+				if (0 <= value && value < 11)
 				{
 					Tier0_Msg("%i: %s\n", i, text[m_Overrides[i]]);
 				}
@@ -785,7 +796,7 @@ void Hook_VClient_RenderView::Console_Overrides(IWrpCommandArgs * args)
 			{
 				int orgPos;
 
-				for (int i = 0; i < 10; ++i)
+				for (int i = 0; i < 11; ++i)
 				{
 					if (m_Overrides[i] == overrideVal)
 					{
