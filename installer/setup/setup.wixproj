@@ -9,7 +9,7 @@
     <OutputName>HLAE_Setup</OutputName>
     <OutputType>Bundle</OutputType>
     <Name>setup</Name>
-	<DefineSolutionProperties>false</DefineSolutionProperties>
+    <DefineSolutionProperties>false</DefineSolutionProperties>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
@@ -92,6 +92,7 @@
     <None Include="lang\HyperlinkTheme_tr-TR.wxl" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="lang\HyperlinkTheme_pt-BR.wxl" />
     <None Include="lang\HyperlinkTheme_it-IT.wxl" />
     <EmbeddedResource Include="lang\HyperlinkTheme_pl-PL.wxl" />
   </ItemGroup>
