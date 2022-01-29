@@ -136,7 +136,7 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 					{
 						char const* cmd3 = args->ArgV(3);
 
-						mirvDrawer->SetDrawKeyframeIndex(atof(cmd3));
+						mirvDrawer->SetDrawKeyframeIndex((float)atof(cmd3));
 						return;
 					}
 
@@ -295,8 +295,8 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 				camera.Z,
 				camera.Fov,
 				camera.Pitch,
-				camera.Roll,
-				camera.Yaw
+				camera.Yaw,
+				camera.Roll
 			);
 
 			return;
