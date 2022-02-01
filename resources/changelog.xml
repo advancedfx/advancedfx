@@ -6,6 +6,21 @@
 
 <release>
 <name>HLAE</name>
+<version>2.125.0</version>
+<time>2021-02-01T11:00Z</time>
+<changes>
+<change type="updated">Included AfxHookSource 1.105.0 (2022-02-01T11:00Z).</change>
+<change type="fixed">Custom loader will not have AppIDs by default, so games like TF2 will not crash.</change>
+<change type="added">Added pt-BR language to translations (thanks Rillet).</change>
+<change type="updated">Updated translations(thanks yovaN, Twissen).</change>
+<change type="updated">Updated FFMPEG downloadd in installer to https://github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2022-01-31-12-27, removed other downloads.</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>HLAE</name>
 <version>2.124.6</version>
 <time>2021-12-11T21:41Z</time>
 <changes>

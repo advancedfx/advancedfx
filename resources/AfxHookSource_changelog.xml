@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.105.0</version>
+<time>2022-02-01T11:00Z</time>
+<changes>
+<change type="added"> Add feature to set camera faster than normal command execution (which is tickrate limited) in mirv_pgl, see https://github.com/advancedfx/advancedfx/blob/main/misc/mirv_pgl_test/server.js#L18 for an example.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.104.3</version>
 <time>2021-12-11T21:41Z</time>
 <changes>
