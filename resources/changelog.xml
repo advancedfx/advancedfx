@@ -7,8 +7,8 @@
 
 <release>
 <name>HLAE</name>
-<version>2.125.1</version>
-<time>2021-02-02T14:02Z</time>
+<version>2.125.2</version>
+<time>2021-02-02T13:17Z</time>
 <changes>
 <change type="fixed">Fixed HLAE version number.</change>
 </changes>
