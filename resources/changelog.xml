@@ -4,6 +4,17 @@
 <changelog>
 
 
+
+<release>
+<name>HLAE</name>
+<version>2.125.1</version>
+<time>2021-02-02T14:02Z</time>
+<changes>
+<change type="fixed">Fixed HLAE version number.</change>
+</changes>
+</release>
+
+
 <release>
 <name>HLAE</name>
 <version>2.125.0</version>
@@ -16,7 +27,6 @@
 <change type="updated">Updated FFMPEG downloadd in installer to https://github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2022-01-31-12-27, removed other downloads.</change>
 </changes>
 </release>
-
 
 
 <release>
