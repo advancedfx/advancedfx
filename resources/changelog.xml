@@ -8,7 +8,7 @@
 <release>
 <name>HLAE</name>
 <version>2.125.2</version>
-<time>2021-02-02T13:17Z</time>
+<time>2022-02-02T13:17Z</time>
 <changes>
 <change type="fixed">Fixed HLAE version number.</change>
 </changes>
@@ -18,7 +18,7 @@
 <release>
 <name>HLAE</name>
 <version>2.125.0</version>
-<time>2021-02-01T11:00Z</time>
+<time>2022-02-01T11:00Z</time>
 <changes>
 <change type="updated">Included AfxHookSource 1.105.0 (2022-02-01T11:00Z).</change>
 <change type="fixed">Custom loader will not have AppIDs by default, so games like TF2 will not crash.</change>
