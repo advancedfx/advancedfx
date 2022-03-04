@@ -38,6 +38,7 @@ AFXADDR_DEF(csgo_CSkyboxView_Draw)
 AFXADDR_DEF(csgo_CSkyboxView_Draw_DSZ)
 AFXADDR_DEF(csgo_CViewRender_RenderView_VGui_DrawHud_In)
 AFXADDR_DEF(csgo_CViewRender_RenderView_VGui_DrawHud_Out)
+AFXADDR_DEF(csgo_CViewRender_ShouldForceNoVis_vtable_index)
 AFXADDR_DEF(csgo_g_AudioDevice2)
 AFXADDR_DEF(csgo_MIX_PaintChannels)
 AFXADDR_DEF(csgo_MIX_PaintChannels_DSZ)
@@ -88,6 +89,7 @@ AFXADDR_DEF(csgo_C_BaseEntity_ShouldInterpolate)
 AFXADDR_DEF(csgo_C_CS_PlayerResource_IGameResources_vtable)
 AFXADDR_DEF(csgo_C_Team_vtable)
 AFXADDR_DEF(csgo_engine_CModelLoader_vtable)
+AFXADDR_DEF(csgo_engine_CModelLoader_GetModel_vtable_index)
 AFXADDR_DEF(csgo_client_C_TEPlayerAnimEvent_PostDataUpdate_NewModelAnims_JNZ)
 AFXADDR_DEF(csgo_materialsystem_CMaterialSystem_ForceSingleThreaded)
 AFXADDR_DEF(csgo_engine_Do_CCLCMsg_FileCRCCheck)
@@ -95,6 +97,18 @@ AFXADDR_DEF(csgo_C_BaseViewModel_FireEvent)
 AFXADDR_DEF(csgo_client_AdjustInterpolationAmount)
 //AFXADDR_DEF(csgo_C_BaseEntity_ofs_m_bPredictable)
 AFXADDR_DEF(csgo_engine_Cmd_ExecuteCommand)
+AFXADDR_DEF(csgo_client_C_CSPlayer_EyeAngles_vtable_index)
+AFXADDR_DEF(csgo_client_C_CS_Player_GetFOV_vtable_index)
+AFXADDR_DEF(csgo_client_C_CSPlayer_UpdateOnRemove_vtable_index)
+AFXADDR_DEF(csgo_client_CPlayerResource_Dtor_vtable_index)
+AFXADDR_DEF(csgo_client_CPlayerResource_GetPing_vtable_index)
+AFXADDR_DEF(csgo_materialsystem_Material_InterlockedDecrement_vtable_index)
+AFXADDR_DEF(csgo_engine_CAudioXAudio2_UnkSupplyAudio_vtable_index)
+AFXADDR_DEF(csgo_client_C_Team_Get_ClanName_vtable_index)
+AFXADDR_DEF(csgo_client_C_Team_Get_FlagImageString_vtable_index)
+AFXADDR_DEF(csgo_client_C_Team_Get_LogoImageString_vtable_index)
+AFXADDR_DEF(csgo_client_CPlayerResource_GetPlayerName_vtable_index)
+AFXADDR_DEF(csgo_client_CCSViewRender_RenderView_vtable_index)
 
 void ErrorBox(char const * messageText);
 
@@ -178,6 +192,8 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 {
 	if (SourceSdkVer_CSGO == sourceSdkVer)
 	{
+		AFXADDR_SET(csgo_engine_CAudioXAudio2_UnkSupplyAudio_vtable_index, 1);
+
 		// csgo_snd_mix_timescale_patch: // Checked 2018-12-07.
 		{
 			DWORD addr = 0;
@@ -551,9 +567,10 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 			AFXADDR_SET(csgo_CNetChan_ProcessMessages, addr);
 		}
 
-		// csgo_engine_CModelLoader_vtable
+		// csgo_engine_CModelLoader_vtable	
 		AFXADDR_SET(csgo_engine_CModelLoader_vtable, FindClassVtable((HMODULE)engineDll, ".?AVCModelLoader@@", 0, 0x0));
 		if (!AFXADDR_GET(csgo_engine_CModelLoader_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
+		AFXADDR_SET(csgo_engine_CModelLoader_GetModel_vtable_index, 7);
 
 		// csgo_engine_Do_CCLCMsg_FileCRCCheck
 		// This function is called right after a function that references the string "CheckUpdatingSteamResources"
@@ -789,11 +806,14 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 					
 			}
 			else ErrorBox(MkErrStr(__FILE__,__LINE__));
-
 		}
+		AFXADDR_SET(csgo_CViewRender_ShouldForceNoVis_vtable_index, 42);
 
+		// Smoke overlay related.
+		//
 		// csgo_CCSViewRender_RenderSmokeOverlay_OnLoadOldAlpha: // Checked 2020-06-16.
 		// csgo_CCSViewRender_RenderSmokeOverlay_OnLoadAlphaBeforeDraw: // Checked 2021-04-28.
+		// If these change, multiple ASM snippets and offsets need to be changed in csgo_CViewRender.cpp
 		{
 			DWORD addrOnLoadOldAlpha = 0;
 			DWORD addrOnCompareAlphaBeforeDraw = 0;
@@ -868,6 +888,8 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			AFXADDR_SET(csgo_CCSViewRender_RenderSmokeOverlay_OnLoadOldAlpha, addrOnLoadOldAlpha);
 			AFXADDR_SET(csgo_CCSViewRender_RenderSmokeOverlay_OnCompareAlphaBeforeDraw, addrOnCompareAlphaBeforeDraw);
 		}
+		AFXADDR_SET(csgo_client_CCSViewRender_RenderView_vtable_index, 6);
+
 
 		// csgo_CSkyboxView_Draw: // Checked 2017-05-13.
 		{
@@ -1896,7 +1918,17 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 
 			AFXADDR_SET(csgo_crosshair_localplayer_check, addr);
 		}
+		
+		// mirv_pov related
+		//
+		AFXADDR_SET(csgo_client_C_CSPlayer_EyeAngles_vtable_index, 170);
+		AFXADDR_SET(csgo_client_C_CS_Player_GetFOV_vtable_index, 332);
+		AFXADDR_SET(csgo_client_C_CSPlayer_UpdateOnRemove_vtable_index, 127);
+		AFXADDR_SET(csgo_client_CPlayerResource_GetPing_vtable_index, 10);
 
+		// mirv_pov related
+		//
+		// If this changes MYcsgo_DamageIndicator_MessageFunc asm needs adjustments.
 		{
 			DWORD addr = 0;
 
@@ -2034,6 +2066,8 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		}
 
 		// csgo_client_AdjustInterpolationAmount
+		// mirv_pov related
+		// My_csgo_client_AdjustInterpolationAmount asm needs update if this changes
 		//
 		// This static function is the first function taht references the "cl_interp_npcs" cvar.
 		{
@@ -2059,6 +2093,13 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		// csgo_C_BaseEntity_ofs_m_bPredictable // Last checked: 2022-10-24
 		// referenced by Second function that uses cl_interp_all cvar (meaning CheckInitPredictable).
 		//AFXADDR_SET(csgo_C_BaseEntity_ofs_m_bPredictable, 0x2ee);
+
+		// Deathnotice releated:
+		//
+		AFXADDR_SET(csgo_client_C_Team_Get_ClanName_vtable_index, 188);
+		AFXADDR_SET(csgo_client_C_Team_Get_FlagImageString_vtable_index, 189);
+		AFXADDR_SET(csgo_client_C_Team_Get_LogoImageString_vtable_index, 190);
+		AFXADDR_SET(csgo_client_CPlayerResource_GetPlayerName_vtable_index, 8);
 	}
 	else
 	{
@@ -2348,6 +2389,7 @@ void Addresses_InitMaterialsystemDll(AfxAddr materialsystemDll, SourceSdkVer sou
 	AFXADDR_SET(csgo_materialsystem_CMaterialSystem_ForceSingleThreaded, 0);
 	if (sourceSdkVer == SourceSdkVer_CSGO) {
 
+		AFXADDR_SET(csgo_materialsystem_Material_InterlockedDecrement_vtable_index, 13);
 
 		// csgo_materialsystem_CMaterialSystem_ForceSingleThreaded:
 		//

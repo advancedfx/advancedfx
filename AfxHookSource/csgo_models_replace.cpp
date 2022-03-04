@@ -35,11 +35,11 @@ void* __fastcall CCsgoModelsReplace::My_GetModel(void* This, void* Edx, const ch
 bool CCsgoModelsReplace::InstallHooks() {
 	if (m_HooksInstalled) return true;
 
-	if (0 == AFXADDR_GET(csgo_engine_CModelLoader_vtable)) return false;
+	if (!(AFXADDR_GET(csgo_engine_CModelLoader_vtable) && AFXADDR_GET(csgo_engine_CModelLoader_GetModel_vtable_index))) return false;
 
 	void** vtable_CModelLoader = (void**)AFXADDR_GET(csgo_engine_CModelLoader_vtable);
 
-	m_True_GetModel = (GetModel_t)(vtable_CModelLoader[7]);
+	m_True_GetModel = (GetModel_t)(vtable_CModelLoader[AFXADDR_GET(csgo_engine_CModelLoader_GetModel_vtable_index)]);
 
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());

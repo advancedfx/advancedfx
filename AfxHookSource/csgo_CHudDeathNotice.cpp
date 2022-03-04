@@ -1707,6 +1707,9 @@ bool Hookcsgo_Team_GetFunctions(void)
 	
 	if(
 		AFXADDR_GET(csgo_C_Team_vtable)
+		&& AFXADDR_GET(csgo_client_C_Team_Get_ClanName_vtable_index)
+		&& AFXADDR_GET(csgo_client_C_Team_Get_FlagImageString_vtable_index)
+		&& AFXADDR_GET(csgo_client_C_Team_Get_LogoImageString_vtable_index)
 	)
 	{
 		LONG error = NO_ERROR;
@@ -1714,9 +1717,9 @@ bool Hookcsgo_Team_GetFunctions(void)
 
 		void **vtable = (void **)AFXADDR_GET(csgo_C_Team_vtable);
 		
-		g_Old_csgo_C_Team_Get_ClanName = (csgo_C_Team_Get_ClanName_t)vtable[188];
-		g_Old_csgo_C_Team_Get_FlagImageString = (csgo_C_Team_Get_FlagImageString_t)vtable[189];
-		g_Old_csgo_C_Team_Get_LogoImageString = (csgo_C_Team_Get_LogoImageString_t)vtable[190];
+		g_Old_csgo_C_Team_Get_ClanName = (csgo_C_Team_Get_ClanName_t)vtable[AFXADDR_GET(csgo_client_C_Team_Get_ClanName_vtable_index)];
+		g_Old_csgo_C_Team_Get_FlagImageString = (csgo_C_Team_Get_FlagImageString_t)vtable[AFXADDR_GET(csgo_client_C_Team_Get_FlagImageString_vtable_index)];
+		g_Old_csgo_C_Team_Get_LogoImageString = (csgo_C_Team_Get_LogoImageString_t)vtable[AFXADDR_GET(csgo_client_C_Team_Get_LogoImageString_vtable_index)];
 		
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
@@ -1776,6 +1779,7 @@ bool Hookcsgo_CPlayerResource_GetPlayerName(void)
 	if(
 		g_VEngineClient->GetVEngineClient_csgo()
 		&& AFXADDR_GET(csgo_C_CS_PlayerResource_IGameResources_vtable)
+		&& AFXADDR_GET(csgo_client_CPlayerResource_GetPlayerName_vtable_index)
 	)
 	{
 		LONG error = NO_ERROR;
@@ -1783,7 +1787,7 @@ bool Hookcsgo_CPlayerResource_GetPlayerName(void)
 
 		void **vtable = (void **)AFXADDR_GET(csgo_C_CS_PlayerResource_IGameResources_vtable);
 
-		g_Touring_csgo_CPlayerResource_GetPlayerName = (csgo_CPlayerResource_GetPlayerName_t)vtable[8];
+		g_Touring_csgo_CPlayerResource_GetPlayerName = (csgo_CPlayerResource_GetPlayerName_t)vtable[AFXADDR_GET(csgo_client_CPlayerResource_GetPlayerName_vtable_index)];
 		
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());

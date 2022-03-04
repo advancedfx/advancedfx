@@ -42,11 +42,11 @@ bool Hook_csgo_CViewRender_ShouldForceNoVis(void)
 
 	SOURCESDK::IViewRender_csgo * view = GetView_csgo();
 
-	if (view)
+	if (view && AFXADDR_GET(csgo_CViewRender_ShouldForceNoVis_vtable_index))
 	{
 		int * vtable = *(int**)view;
 
-		AfxDetourPtr((PVOID *)&(vtable[42]), csgo_CViewRender_ShouldForceNoVis, (PVOID*)&detoured_csgo_CViewRender_ShouldForceNoVis);
+		AfxDetourPtr((PVOID *)&(vtable[AFXADDR_GET(csgo_CViewRender_ShouldForceNoVis_vtable_index)]), csgo_CViewRender_ShouldForceNoVis, (PVOID*)&detoured_csgo_CViewRender_ShouldForceNoVis);
 
 		firstResult = true;
 	}

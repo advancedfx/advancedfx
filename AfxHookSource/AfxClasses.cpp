@@ -1,9 +1,8 @@
 #include "stdafx.h"
 
 #include "AfxClasses.h"
-
+#include "addresses.h"
 #include <shared/AfxDetours.h>
-
 #include <string.h>
 
 
@@ -163,7 +162,7 @@ void CAfxTrackedMaterial::HooKVtable(SOURCESDK::IMaterial_csgo * orgMaterial)
 
 	CMaterialDetours & m_Detours = m_VtableMap[vtable];
 
-	AfxDetourPtr((PVOID *)&(vtable[13]), Material_InterlockedDecrement, (PVOID *)&m_Detours.InterlockedDecrement);
+	AfxDetourPtr((PVOID *)&(vtable[AFXADDR_GET(csgo_materialsystem_Material_InterlockedDecrement_vtable_index)]), Material_InterlockedDecrement, (PVOID *)&m_Detours.InterlockedDecrement);
 
 	m_VtableMapMutex.unlock();
 }

@@ -150,9 +150,9 @@ bool csgo_C_CSPlayer_EyeAngles_Install(void)
 	if (!firstRun) return firstResult;
 	firstRun = false;
 
-	if (AFXADDR_GET(csgo_C_CSPlayer_vtable))
+	if (AFXADDR_GET(csgo_C_CSPlayer_vtable) && AFXADDR_GET(csgo_client_C_CSPlayer_EyeAngles_vtable_index))
 	{
-		AfxDetourPtr((PVOID*)&(((DWORD*)AFXADDR_GET(csgo_C_CSPlayer_vtable))[170]), Mycsgo_C_CSPlayer_EyeAngles, (PVOID*)&Truecsgo_C_CSPlayer_EyeAngles);
+		AfxDetourPtr((PVOID*)&(((DWORD*)AFXADDR_GET(csgo_C_CSPlayer_vtable))[AFXADDR_GET(csgo_client_C_CSPlayer_EyeAngles_vtable_index)]), Mycsgo_C_CSPlayer_EyeAngles, (PVOID*)&Truecsgo_C_CSPlayer_EyeAngles);
 
 		firstResult = true;
 	}
@@ -192,9 +192,9 @@ bool Install_csgo_C_CS_Player__GetFOVs(void)
 	if (!firstRun) return firstResult;
 	firstRun = false;
 
-	if (AFXADDR_GET(csgo_C_CSPlayer_vtable))
+	if (AFXADDR_GET(csgo_C_CSPlayer_vtable) && AFXADDR_GET(csgo_client_C_CS_Player_GetFOV_vtable_index))
 	{
-		AfxDetourPtr((PVOID*)&(((DWORD*)AFXADDR_GET(csgo_C_CSPlayer_vtable))[332]), My_csgo_C_CS_Player__GetFOV, (PVOID*)&True_csgo_C_CS_Player__GetFOV);
+		AfxDetourPtr((PVOID*)&(((DWORD*)AFXADDR_GET(csgo_C_CSPlayer_vtable))[AFXADDR_GET(csgo_client_C_CS_Player_GetFOV_vtable_index)]), My_csgo_C_CS_Player__GetFOV, (PVOID*)&True_csgo_C_CS_Player__GetFOV);
 
 		firstResult = true;
 	}
@@ -286,9 +286,9 @@ bool csgo_C_CSPlayer_UpdateOnRemove_Install(void)
 	if (!firstRun) return firstResult;
 	firstRun = false;
 
-	if (AFXADDR_GET(csgo_C_CSPlayer_vtable))
+	if (AFXADDR_GET(csgo_C_CSPlayer_vtable) && AFXADDR_GET(csgo_client_C_CSPlayer_UpdateOnRemove_vtable_index))
 	{
-		AfxDetourPtr((PVOID*)&(((DWORD*)AFXADDR_GET(csgo_C_CSPlayer_vtable))[127]), Mycsgo_C_CSPlayer_UpdateOnRemove, (PVOID*)&Truecsgo_C_CSPlayer_UpdateOnRemove);
+		AfxDetourPtr((PVOID*)&(((DWORD*)AFXADDR_GET(csgo_C_CSPlayer_vtable))[AFXADDR_GET(csgo_client_C_CSPlayer_UpdateOnRemove_vtable_index)]), Mycsgo_C_CSPlayer_UpdateOnRemove, (PVOID*)&Truecsgo_C_CSPlayer_UpdateOnRemove);
 
 		firstResult = true;
 	}
@@ -389,7 +389,8 @@ bool Hook_csgo_CPlayerResource_GetPing(void)
 	if(!firstRun) return firstResult;
 	firstRun = false;
 	
-	if(AFXADDR_GET(csgo_C_CS_PlayerResource_IGameResources_vtable))
+	if(AFXADDR_GET(csgo_C_CS_PlayerResource_IGameResources_vtable)
+		&& AFXADDR_GET(csgo_client_CPlayerResource_GetPing_vtable_index))
 	{
 		LONG error = NO_ERROR;
 
@@ -397,7 +398,7 @@ bool Hook_csgo_CPlayerResource_GetPing(void)
 		void **vtable = (void **)AFXADDR_GET(csgo_C_CS_PlayerResource_IGameResources_vtable);
 
 		g_Touring_csgo_CPlayerResource_Dtor = (csgo_CPlayerResource_Dtor_t)vtable[0];
-		g_Touring_csgo_CPlayerResource_GetPing = (csgo_CPlayerResource_GetPing_t)vtable[10];
+		g_Touring_csgo_CPlayerResource_GetPing = (csgo_CPlayerResource_GetPing_t)vtable[AFXADDR_GET(csgo_client_CPlayerResource_GetPing_vtable_index)];
 		
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());

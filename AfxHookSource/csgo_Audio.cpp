@@ -96,7 +96,7 @@ void __cdecl touring_csgo_MIX_PaintChannels(int endtime, int unknown)
 
 		if (iAudioDevice2Vtables.insert(vtable).second)
 		{
-			AfxDetourPtr((PVOID *)&(vtable[1]), touring_CAudioXAudio2_UnkSupplyAudio, (PVOID *)&detoured_CAudioXAudio2_UnkSupplyAudio);
+			AfxDetourPtr((PVOID *)&(vtable[AFXADDR_GET(csgo_engine_CAudioXAudio2_UnkSupplyAudio_vtable_index)]), touring_CAudioXAudio2_UnkSupplyAudio, (PVOID *)&detoured_CAudioXAudio2_UnkSupplyAudio);
 		}
 	}
 
