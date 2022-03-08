@@ -369,7 +369,6 @@ namespace AfxGui
             demoWiz.ShowDialog(this);
 
             GlobalConfig.Instance.Settings.DemoTools.OutputFolder = demoWiz.OutputPath;
-            GlobalConfig.Instance.BackUp();
 
             //demoWiz.Dispose();
         }

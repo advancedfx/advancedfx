@@ -304,7 +304,7 @@ public class Config
             try
             {
                 XmlSerializer serializer = new XmlSerializer(typeof(Config));
-    			fs = new FileStream( cfgPath, FileMode.Open );
+    			fs = new FileStream( cfgPath, FileMode.Open, FileAccess.Read, FileShare.Read );
 
                 config = serializer.Deserialize(fs) as Config;
 

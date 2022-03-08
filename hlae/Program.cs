@@ -157,9 +157,6 @@ namespace AfxGui
                         break;
                 }
             }
-
-            // backup potential config changes:
-            GlobalConfig.Instance.BackUp();
         }
 
         static void ProcessArgsCustomLoader(string[] args)
@@ -224,9 +221,6 @@ namespace AfxGui
                         break;
                 }
             }
-
-            // backup potential config changes:
-            GlobalConfig.Instance.BackUp();
         }
 
         static void ProcessArgsCsgoLauncher(string[] args)
@@ -307,9 +301,6 @@ namespace AfxGui
                         break;
                 }
             }
-
-            // backup potential config changes:
-            GlobalConfig.Instance.BackUp();
         }
 
         static void ProcessCommandLine()

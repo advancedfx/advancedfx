@@ -49,8 +49,6 @@ class CustomLoader
                 cfg.CmdLine = frm.CmdLine;
                 cfg.AddEnvironmentVars = frm.AddEnvironmentVars.Replace(System.Environment.NewLine, "\n");
 
-                GlobalConfig.Instance.BackUp();
-
                 string[] envVars = cfg.AddEnvironmentVars.Split(new char[]{ '\n'}, StringSplitOptions.RemoveEmptyEntries);
                 string environment = null;        
                 foreach(string line in envVars)
