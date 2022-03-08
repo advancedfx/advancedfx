@@ -21,7 +21,6 @@ namespace AfxGui
                     if (cfg.RememberChanges)
                     {
                         GlobalConfig.Instance.Settings.LauncherCsgo = cfg;
-                        GlobalConfig.Instance.BackUp();
                     }
                     else
                     {

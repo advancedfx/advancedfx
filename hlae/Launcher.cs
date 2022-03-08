@@ -27,7 +27,6 @@ class Launcher
                 if (cfg.RememberChanges)
                 {
                     GlobalConfig.Instance.Settings.Launcher.CopyFrom(cfg);
-                    GlobalConfig.Instance.BackUp();
                 }
 
                 bOk = Launch(cfg);
