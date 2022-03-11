@@ -190,7 +190,7 @@ bool CGameRecord::StartRecording(const char* fileName)
 		return false;
 	}
 
-	if (!m_AfxGameRecord.StartRecording(strFileName.c_str(), 5))
+	if (!m_AfxGameRecord.StartRecording(strFileName.c_str(), 6))
 	{
 		pEngfuncs->Con_Printf("AfxError: could not start recording to \"%s\".\n", fileName);
 		return false;
@@ -439,9 +439,6 @@ void CGameRecord::RecordModel(cl_entity_t* ent, struct model_s* model, void* v_h
 			float tmp[3][4];
 			float rootMatrix[3][4];
 
-			float pos[3];
-			float quat[4];
-
 			m_AfxGameRecord.WriteDictionary("entity_state");
 			m_AfxGameRecord.Write((int)index);
 
@@ -450,17 +447,7 @@ void CGameRecord::RecordModel(cl_entity_t* ent, struct model_s* model, void* v_h
 			m_AfxGameRecord.WriteDictionary(model->name);
 			m_AfxGameRecord.Write((bool)true);
 
-			ToVecQuat(*pRotM, pos, quat);
-
-			WriteVector(pos);
-
-			auto ang = Afx::Math::Quaternion(quat[3], quat[0], quat[1], quat[2]).ToQREulerAngles().ToQEulerAngles();
-
-			pos[0] = ang.Pitch;
-			pos[1] = ang.Yaw;
-			pos[2] = ang.Roll;
-
-			WriteQAngle(pos);
+			WriteMatrix3x4(*pRotM);
 
 			m_AfxGameRecord.WriteDictionary("baseanimating");
 			//Write((int)pBaseAnimatingRs->m_nSkin);
@@ -480,12 +467,7 @@ void CGameRecord::RecordModel(cl_entity_t* ent, struct model_s* model, void* v_h
 
 				R_ConcatTransforms(tmp, (*pBoneM)[i], bones);
 
-				ToVecQuat(bones, pos, quat);
-
-				WriteVector(pos);
-
-				WriteQuaternion(quat);
-
+				WriteMatrix3x4(bones);
 			}
 
 			m_AfxGameRecord.WriteDictionary("/");
@@ -526,6 +508,24 @@ void CGameRecord::WriteQuaternion(float value[4])
 	m_AfxGameRecord.Write(value[1]);
 	m_AfxGameRecord.Write(value[2]);
 	m_AfxGameRecord.Write(value[3]);
+}
+
+void CGameRecord::WriteMatrix3x4(float matrix[3][4])
+{
+	m_AfxGameRecord.Write(matrix[0][0]);
+	m_AfxGameRecord.Write(matrix[0][1]);
+	m_AfxGameRecord.Write(matrix[0][2]);
+	m_AfxGameRecord.Write(matrix[0][3]);
+
+	m_AfxGameRecord.Write(matrix[1][0]);
+	m_AfxGameRecord.Write(matrix[1][1]);
+	m_AfxGameRecord.Write(matrix[1][2]);
+	m_AfxGameRecord.Write(matrix[1][3]);
+
+	m_AfxGameRecord.Write(matrix[2][0]);
+	m_AfxGameRecord.Write(matrix[2][1]);
+	m_AfxGameRecord.Write(matrix[2][2]);
+	m_AfxGameRecord.Write(matrix[2][3]);
 }
 
 REGISTER_CMD_FUNC(agr)

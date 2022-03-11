@@ -43,6 +43,7 @@ private:
 	void WriteVector(float  value[3]);
 	void WriteQAngle(float value[3]);
 	void WriteQuaternion(float value[4]);
+	void WriteMatrix3x4(float matrix[3][4]);
 
 	void RecordModel(cl_entity_t* entity, struct model_s* model, void* v_header);
 };
