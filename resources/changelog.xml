@@ -4,6 +4,15 @@
 <changelog>
 
 
+<release>
+<name>HLAE</name>
+<version>2.126.0</version>
+<time>2022-03-11T22:36Z</time>
+<changes>
+<change type="fixed">Fixed #637 Parallely opening HLAE can cause HLAE settings loss.</change>
+</changes>
+</release>
+
 
 <release>
 <name>HLAE</name>

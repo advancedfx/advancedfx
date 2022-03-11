@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.13.2</version>
+<time>2022-03-11T22:36Z</time>
+<changes>
+<change type="updated">Updated to AGR version 6 (mirrored models etc are properly supported now).</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.12.2</version>
 <time>2021-11-24T09:49Z</time>
 <changes>
