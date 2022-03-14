@@ -3802,6 +3802,8 @@ void Mirv_Pov_Interp_CompensateLatencyOn();
 void Mirv_Pov_Interp_CompensateLatencyOff();
 void Mirv_Pov_Interp_Default();
 
+extern bool g_csgo_spectatortools_extend_overviewmap;
+
 CON_COMMAND(mirv_cfg, "general HLAE configuration")
 {
 	int argC = args->ArgC();
@@ -3811,7 +3813,23 @@ CON_COMMAND(mirv_cfg, "general HLAE configuration")
 	{
 		const char * arg1 = args->ArgV(1);
 
-		if (0 == _stricmp("fovScaling", arg1))
+		if(0 == _stricmp("mirvForceSpectatorToolsMapOverviewShowAll", arg1))
+		{
+			if (3 <= argC)
+			{
+				g_csgo_spectatortools_extend_overviewmap = 0 != atoi(args->ArgV(2));
+				return;
+			}
+
+			Tier0_Msg(
+				"%s mirvForceSpectatorToolsMapOverviewShowAll 0|1\n"
+				"Current value: %i\n"
+				, arg0
+				, g_csgo_spectatortools_extend_overviewmap ? 1 : 0
+			);
+			return;
+		}
+		else if (0 == _stricmp("fovScaling", arg1))
 		{
 			CSubWrpCommandArgs subArgs(args, 2);
 			Console_MirvFovScaling(&subArgs);
@@ -3944,6 +3962,8 @@ CON_COMMAND(mirv_cfg, "general HLAE configuration")
 		"%s fovScaling [...] - Set default fov scaling.\n"
 		"%s forceViewOverride [...] - If to force the view override onto the local player, can fix a few bugs (CS:GO only).\n"
 		"%s viewOverrideReset [...] - If to reset roll to 0 and fov to 90 (unscaled) after ending a view override (CS:GO only).\n"
+		"%s mirvForceSpectatorToolsMapOverviewShowAll [...] - If to extend map overivew in mirv_force_spectatortools.\n"
+		, arg0
 		, arg0
 		, arg0
 		, arg0

@@ -4,12 +4,15 @@
 #include "WrpConsole.h"
 #include "addresses.h"
 #include <shared/AfxDetours.h>
+#include <shared/StringTools.h>
 #include <Windows.h>
 #include <deps/release/Detours/src/detours.h>
 #include <vector>
 
+//extern WrpVEngineClient * g_VEngineClient;
 
 bool g_csgo_speactortools_force_enabled = false;
+bool g_csgo_spectatortools_extend_overviewmap = true;
 
 
 typedef bool(__fastcall * csgo_client_CCSGO_MapOverview_CanShowOverview_t)(void * This, void * Edx);
@@ -22,6 +25,44 @@ bool __fastcall My_csgo_client_CCSGO_MapOverview_CanShowOverview(void * This, vo
 
 	return True_csgo_client_CCSGO_MapOverview_CanShowOverview(This,Edx);
 }
+
+
+typedef void(__fastcall * csgo_client_CCSGO_MapOverview_FireGameEvent_t)(void * This, void * Edx,  SOURCESDK::CSGO::IGameEvent * ev);
+
+csgo_client_CCSGO_MapOverview_FireGameEvent_t True_csgo_client_CCSGO_MapOverview_FireGameEvent;
+
+void __fastcall My_csgo_client_CCSGO_MapOverview_FireGameEvent(void * This, void * Edx, SOURCESDK::CSGO::IGameEvent * ev)
+{
+    if(g_csgo_speactortools_force_enabled && g_csgo_spectatortools_extend_overviewmap) {
+        unsigned char *pVal = (unsigned char *)AFXADDR_GET(csgo_client_g_bEngineIsHLTV);
+        unsigned char oldVal = *pVal;
+        *pVal = 1;
+        True_csgo_client_CCSGO_MapOverview_FireGameEvent(This,Edx,ev);
+        *pVal = oldVal;
+        return;
+    }
+
+	True_csgo_client_CCSGO_MapOverview_FireGameEvent(This,Edx,ev);
+}
+
+typedef void(__fastcall * csgo_client_CCSGO_MapOverview_ProcessInput_t)(void * This, void * Edx);
+
+csgo_client_CCSGO_MapOverview_ProcessInput_t True_csgo_client_CCSGO_MapOverview_ProcessInput;
+
+void __fastcall My_csgo_client_CCSGO_MapOverview_ProcessInput(void * This, void * Edx)
+{
+    if(g_csgo_speactortools_force_enabled && g_csgo_spectatortools_extend_overviewmap) {
+        unsigned char *pVal = (unsigned char *)AFXADDR_GET(csgo_client_g_bEngineIsHLTV);
+        unsigned char oldVal = *pVal;
+        *pVal = 1;
+        True_csgo_client_CCSGO_MapOverview_ProcessInput(This,Edx);
+        *pVal = oldVal;
+        return;
+    }
+
+    True_csgo_client_CCSGO_MapOverview_ProcessInput(This,Edx);
+}
+
 
 
 bool csgo_speactortools_force_enable(bool value) {
@@ -105,6 +146,28 @@ bool csgo_speactortools_force_enable(bool value) {
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
             DetourAttach(&(PVOID&)True_csgo_client_CCSGO_MapOverview_CanShowOverview, My_csgo_client_CCSGO_MapOverview_CanShowOverview);
+            if(NO_ERROR != DetourTransactionCommit()) bOk = false;
+        }
+    } else bOk = false;
+
+    if(AFXADDR_GET(csgo_client_CCSGO_MapOverview_FireGameEvent) && AFXADDR_GET(csgo_client_g_bEngineIsHLTV)) {
+        if(nullptr == True_csgo_client_CCSGO_MapOverview_FireGameEvent) {
+            True_csgo_client_CCSGO_MapOverview_FireGameEvent = (csgo_client_CCSGO_MapOverview_FireGameEvent_t)AFXADDR_GET(csgo_client_CCSGO_MapOverview_FireGameEvent);
+            
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+            DetourAttach(&(PVOID&)True_csgo_client_CCSGO_MapOverview_FireGameEvent, My_csgo_client_CCSGO_MapOverview_FireGameEvent);
+            if(NO_ERROR != DetourTransactionCommit()) bOk = false;
+        }
+    } else bOk = false;
+
+    if(AFXADDR_GET(csgo_client_CCSGO_MapOverview_ProcessInput) && AFXADDR_GET(csgo_client_g_bEngineIsHLTV)) {
+        if(nullptr == True_csgo_client_CCSGO_MapOverview_ProcessInput) {
+            True_csgo_client_CCSGO_MapOverview_ProcessInput = (csgo_client_CCSGO_MapOverview_ProcessInput_t)AFXADDR_GET(csgo_client_CCSGO_MapOverview_ProcessInput);
+            
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+            DetourAttach(&(PVOID&)True_csgo_client_CCSGO_MapOverview_ProcessInput, My_csgo_client_CCSGO_MapOverview_ProcessInput);
             if(NO_ERROR != DetourTransactionCommit()) bOk = false;
         }
     } else bOk = false;

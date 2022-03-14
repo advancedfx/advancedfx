@@ -127,6 +127,10 @@ AFXADDR_DECL(csgo_client_CanSeeSpectatorOnlyTools_4_OFS)
 AFXADDR_DECL(csgo_client_CanSeeSpectatorOnlyTools_4_LEN)
 AFXADDR_DECL(csgo_client_CCSGO_MapOverview_CanShowOverview)
 AFXADDR_DECL(csgo_client_CCSGO_Scoreboard_OpenScoreboard_jz_addr)
+AFXADDR_DECL(csgo_client_CCSGO_MapOverview_FireGameEvent)
+AFXADDR_DECL(csgo_client_CCSGO_MapOverview_ProcessInput)
+AFXADDR_DECL(csgo_client_C_BaseEntity_GetTeamNumber)
+AFXADDR_DECL(csgo_client_g_bEngineIsHLTV)
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);

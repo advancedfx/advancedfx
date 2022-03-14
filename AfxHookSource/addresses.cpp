@@ -122,6 +122,9 @@ AFXADDR_DEF(csgo_client_CanSeeSpectatorOnlyTools_4_OFS)
 AFXADDR_DEF(csgo_client_CanSeeSpectatorOnlyTools_4_LEN)
 AFXADDR_DEF(csgo_client_CCSGO_MapOverview_CanShowOverview)
 AFXADDR_DEF(csgo_client_CCSGO_Scoreboard_OpenScoreboard_jz_addr)
+AFXADDR_DEF(csgo_client_CCSGO_MapOverview_FireGameEvent)
+AFXADDR_DEF(csgo_client_CCSGO_MapOverview_ProcessInput)
+AFXADDR_DEF(csgo_client_g_bEngineIsHLTV)
 
 void ErrorBox(char const * messageText);
 
@@ -2283,7 +2286,36 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 			AFXADDR_SET(csgo_client_CCSGO_Scoreboard_OpenScoreboard_jz_addr, addr);
-		}		
+		}	
+
+		{
+			DWORD addr = 0;
+			DWORD tmpAddr = FindClassVtable((HMODULE)clientDll, ".?AVCHLClient@@", 0, 0x0);
+			if (tmpAddr) {
+				tmpAddr = ((DWORD *)tmpAddr)[37]; // ::FrameStageNotify
+				ImageSectionsReader sections((HMODULE)clientDll);
+				if (!sections.Eof())
+				{
+					MemRange textRange = sections.GetMemRange();
+					MemRange result = FindPatternString(MemRange(tmpAddr+0x13, tmpAddr+0x13+5), "A2 ?? ?? ?? ??");
+					if(!result.IsEmpty()) {
+						AFXADDR_SET(csgo_client_g_bEngineIsHLTV, *(DWORD *)(result.Start+1));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+
+		{
+			DWORD tmpAddr = FindClassVtable((HMODULE)clientDll, ".?AVCCSGO_MapOverview@@", 0, 0x14);
+			if (tmpAddr) {
+				AFXADDR_SET(csgo_client_CCSGO_MapOverview_FireGameEvent, ((DWORD *)tmpAddr)[1]);
+				AFXADDR_SET(csgo_client_CCSGO_MapOverview_ProcessInput, ((DWORD *)tmpAddr)[9]);
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));	
+		}
 
 		// csgo_client_AdjustInterpolationAmount
 		// mirv_pov related
