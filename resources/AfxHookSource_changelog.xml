@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.106.0</version>
+<time>2022-03-14T05:48Z</time>
+<changes>
+<change type="added">Added mirv_force_spectatortools 0|1 - "Enable / Disable allowing spectator tools (e.g. makes spec_show_xray 1 work) and also enables scoreboard and drawoverviewmap in POV demos (most useful in fake mirv_pov POV demos).</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.105.0</version>
 <time>2022-02-01T11:00Z</time>
 <changes>

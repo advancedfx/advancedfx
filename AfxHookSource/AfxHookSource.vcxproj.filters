@@ -217,6 +217,9 @@
     <Filter Include="AfxHookSource\csgo\hooks\engine">
       <UniqueIdentifier>{ca277372-6aeb-4fb1-bb5f-8a49f2aa7745}</UniqueIdentifier>
     </Filter>
+    <Filter Include="AfxHookSource\csgo\hooks\client">
+      <UniqueIdentifier>{d124cf87-e4cf-408a-a0cd-ede3bcce8ac3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\bvhexport.cpp">
@@ -500,6 +503,9 @@
     </ClCompile>
     <ClCompile Include="csgo\hooks\engine\cmd.cpp">
       <Filter>AfxHookSource\csgo\hooks\engine</Filter>
+    </ClCompile>
+    <ClCompile Include="csgo\hooks\client\csgo_spectatortools.cpp">
+      <Filter>AfxHookSource\csgo\hooks\client</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

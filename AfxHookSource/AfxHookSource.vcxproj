@@ -209,6 +209,7 @@
     <ClCompile Include="CampathDrawer.cpp" />
     <ClCompile Include="ClientTools.cpp" />
     <ClCompile Include="CommandSystem.cpp" />
+    <ClCompile Include="csgo\hooks\client\csgo_spectatortools.cpp" />
     <ClCompile Include="csgo\hooks\engine\cmd.cpp" />
     <ClCompile Include="csgo_CRendering3dView.cpp" />
     <ClCompile Include="csgo\ClientToolsCsgo.cpp" />

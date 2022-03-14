@@ -6,10 +6,22 @@
 
 <release>
 <name>HLAE</name>
+<version>2.127.0</version>
+<time>2022-03-14T05:48Z</time>
+<changes>
+<change type="updated">Included AfxHookSource 1.106.0 (2022-03-14T05:48Z).</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>HLAE</name>
 <version>2.126.0</version>
 <time>2022-03-11T22:36Z</time>
 <changes>
 <change type="fixed">Fixed #637 Parallely opening HLAE can cause HLAE settings loss.</change>
+<change type="updated">Included AfxHookGoldSrc 2.13.2 (2022-03-11T22:36Z).</change>
 </changes>
 </release>
 
