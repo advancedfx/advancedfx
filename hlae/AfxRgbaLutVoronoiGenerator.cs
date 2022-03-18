@@ -531,48 +531,38 @@ namespace AfxGui
                             HlaeColor xx = new HlaeColor(fiR, fiG, fiB, fiA);
 
                             bool hasBest = false;
+                            KeyValuePair<HlaeCommentedColor, HlaeWeightedColor> best = m_Colors.First();
                             float bestDist = 0;
-                            float bestTargetDist = 0;
-                            HlaeColor cur_y = new HlaeColor(0, 0, 0, 0);
-                            float cur_s = 0;
+                            float dist;
+
+                            float maxWeight = 1;
 
                             foreach (KeyValuePair<HlaeCommentedColor, HlaeWeightedColor> kvp in m_Colors)
                             {
-                                float dist = xx.CalcDistanceSquared(kvp.Key.Color, kvp.Value.Weight);
-                                float targetDist = x.CalcDistanceSquared(kvp.Key.Color, kvp.Value.Weight);
+                                dist = xx.CalcDistanceSquared(kvp.Key.Color, kvp.Value.Weight);
 
-                                if(!hasBest)
+                                if (!hasBest || dist < bestDist)
                                 {
                                     hasBest = true;
                                     bestDist = dist;
-                                    bestTargetDist = targetDist;
-                                    cur_y = kvp.Value.Color;
-                                    cur_s = 1;
-                                } else
-                                {
-                                    if (dist < bestDist)
-                                    {
-                                        bestDist = dist;
-                                        cur_y = kvp.Value.Color;
-                                        cur_s = 1;
-                                    }
-                                    else if(dist == bestDist)
-                                    {
-                                        cur_y += kvp.Value.Color;
-                                        cur_s += 1;
-                                    }
-                                    if (targetDist < bestTargetDist)
-                                    {
-                                        bestTargetDist = targetDist;
-                                    }
+                                    best = kvp;
                                 }
-
                             }
 
-                            if(xx.CalcDistanceSquared(x, 1.0f) <= bestTargetDist)
+                            if (!hasBest)
                             {
-                                y += cur_y;
-                                s += cur_s;
+                                outR = best.Value.Color.R;
+                                outG = best.Value.Color.G;
+                                outB = best.Value.Color.B;
+                                outA = best.Value.Color.A;
+                                return false;
+                            }
+
+                            dist = xx.CalcDistanceSquared(x, 1.0f);
+                            if(dist <= bestDist)
+                            {
+                                y = y + best.Value.Color;
+                                s = s + 1;
                             }
                         }
                     }
