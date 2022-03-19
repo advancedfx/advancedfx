@@ -2287,6 +2287,8 @@ void CommonHooks()
 				const wchar_t* game = g_CommandLine->GetArgV(gameIdx);
 				if (0 == _wcsicmp(L"tf", game))
 					g_SourceSdkVer = SourceSdkVer_TF2;
+				else if (0 == _wcsicmp(L"csgo", game))
+					g_SourceSdkVer = SourceSdkVer_CSGO;
 				else if (0 == _wcsicmp(L"css", game))
 					g_SourceSdkVer = SourceSdkVer_CSS;
 				else if (0 == _wcsicmp(L"css_v34", game))
