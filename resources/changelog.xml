@@ -6,6 +6,16 @@
 
 <release>
 <name>HLAE</name>
+<version>2.127.2</version>
+<time>2022-04-12T20:47Z</time>
+<changes>
+<change type="updated">Updated build and HLAE_Setup.exe to .NET 4.6.2.</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.127.1</version>
 <time>2022-03-14T09:03Z</time>
 <changes>
