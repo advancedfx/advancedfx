@@ -11,14 +11,14 @@ cd ..
 echo "Project : installer\HlaeCore"
 cd installer\HlaeCore
 mkdir ..\..\deps\release\l10n\locales\en-US\installer\HlaeCore\
-py -3.8 -m pip install polib 
-py -3.8 ..\..\deps\dev\wxl-po-tools\wxl2pot.py -f -l LangId lang/en-US.wxl ..\..\deps\release\l10n\locales\en-US\installer\HlaeCore\messages.pot
+py -3 -m pip install polib 
+py -3 ..\..\deps\dev\wxl-po-tools\wxl2pot.py -f -l LangId lang/en-US.wxl ..\..\deps\release\l10n\locales\en-US\installer\HlaeCore\messages.pot
 cd ..\..
 
 
 echo "Project : installer\setup"
 cd installer\setup
 mkdir ..\..\deps\release\l10n\locales\en-US\installer\setup\
-py -3.8 -m pip install polib 
-py -3.8 ..\..\deps\dev\wxl-po-tools\wxl2pot.py -f -l LangId lang/HyperlinkTheme_en-US.wxl ..\..\deps\release\l10n\locales\en-US\installer\setup\messages.pot
+py -3 -m pip install polib 
+py -3 ..\..\deps\dev\wxl-po-tools\wxl2pot.py -f -l LangId lang/HyperlinkTheme_en-US.wxl ..\..\deps\release\l10n\locales\en-US\installer\setup\messages.pot
 cd ..\..
