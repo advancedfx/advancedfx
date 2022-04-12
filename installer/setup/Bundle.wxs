@@ -5,7 +5,7 @@
   <!-- Update this on release: Version -->
   <Bundle
     Name="HLAE Installer"
-    Version="2.127.1"
+    Version="2.127.2"
     Manufacturer="advancedfx.org"
     UpgradeCode="{35C8D990-6C4F-4639-ADF7-D259B06E070B}"
     AboutUrl="https://www.advancedfx.org/"
@@ -42,7 +42,7 @@
     <Variable Name='HlaeRemoveAppData' Type='numeric' Value='0' Persisted='no' bal:Overridable='yes' />
 
     <Chain>
-      <PackageGroupRef Id="NetFx45Web" />
+      <PackageGroupRef Id="NetFx462Web" />
       <RollbackBoundary />
       <PackageGroupRef Id="HlaeCore" />
     </Chain>

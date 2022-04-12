@@ -4,7 +4,7 @@
     <ApplicationIcon>app.ico</ApplicationIcon>
     <StartupObject></StartupObject>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <TargetFramework>net45</TargetFramework>
+    <TargetFramework>net462</TargetFramework>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -19,7 +19,7 @@
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Windows.Forms" />
-    <PackageReference Include="NGettext" Version="0.6.6" />
+    <PackageReference Include="NGettext" Version="0.6.7" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Properties\Resources.Designer.cs">
