@@ -17,6 +17,44 @@ extern WrpVEngineClient* g_VEngineClient;
 
 using namespace SOURCESDK::CSGO;
 
+SOURCESDK::CStudioHdr * g_csgo_hdr = nullptr;
+std::vector<SOURCESDK::matrix3x4_t> g_csgo_BoneState;
+
+typedef void *  (__fastcall * csgo_C_BaseAnimating_RecordBones_t)(void * This, void* Edx, SOURCESDK::CStudioHdr *hdr, SOURCESDK::matrix3x4_t *pBoneState );
+csgo_C_BaseAnimating_RecordBones_t True_csgo_C_BaseAnimating_RecordBones = nullptr;
+void * __fastcall My_csgo_C_BaseAnimating_RecordBones(void * This, void* Edx, SOURCESDK::CStudioHdr *hdr, SOURCESDK::matrix3x4_t *pBoneState ) {
+	void * result = True_csgo_C_BaseAnimating_RecordBones(This, Edx, hdr, pBoneState);
+	g_csgo_hdr =  hdr;
+	if(g_csgo_BoneState.size() < hdr->numbones()) g_csgo_BoneState.resize(hdr->numbones());
+	memcpy(&(g_csgo_BoneState[0]),pBoneState,sizeof(SOURCESDK::matrix3x4_t) * hdr->numbones());
+	return result;
+}
+
+bool csgo_C_BaseAnimating_RecordBones_Install(void)
+{
+	static bool firstResult = false;
+	static bool firstRun = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	if (AFXADDR_GET(csgo_client_C_BaseAnimating_RecordBones))
+	{
+		LONG error = NO_ERROR;
+
+		True_csgo_C_BaseAnimating_RecordBones = (csgo_C_BaseAnimating_RecordBones_t)AFXADDR_GET(csgo_client_C_BaseAnimating_RecordBones);
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)True_csgo_C_BaseAnimating_RecordBones, My_csgo_C_BaseAnimating_RecordBones);
+		error = DetourTransactionCommit();
+
+		firstResult = NO_ERROR == error;
+	}
+
+	return firstResult;
+}
+
+
 void Call_CBaseAnimating_GetToolRecordingState(SOURCESDK::C_BaseEntity_csgo * object, SOURCESDK::CSGO::KeyValues * msg)
 {
 	if (g_AfxAddr_csgo_C_BaseAnimating_vtable)
@@ -338,6 +376,8 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 				}
 
 				bool wasVisible = false;
+				bool hasParentTransform = false;
+				SOURCESDK::matrix3x4_t parentTransform;				
 
 				WriteDictionary("entity_state");
 				Write((int)hEntity);
@@ -351,8 +391,10 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 						//Write((float)pBaseEntityRs->m_flTime);
 						WriteDictionary(pBaseEntityRs->m_pModelName);
 						Write((bool)wasVisible);
-						Write(pBaseEntityRs->m_vecRenderOrigin);
-						Write(pBaseEntityRs->m_vecRenderAngles);
+
+						hasParentTransform = true;
+						SOURCESDK::AngleMatrix(pBaseEntityRs->m_vecRenderAngles, pBaseEntityRs->m_vecRenderOrigin, parentTransform);
+						WriteMatrix3x4(parentTransform);
 					}
 				}
 
@@ -360,18 +402,13 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 
 				{
 					SOURCESDK::CSGO::BaseAnimatingRecordingState_t * pBaseAnimatingRs = (SOURCESDK::CSGO::BaseAnimatingRecordingState_t *)(msg->GetPtr("baseanimating"));
-					if (pBaseAnimatingRs)
+					if (pBaseAnimatingRs && hasParentTransform)
 					{
 						WriteDictionary("baseanimating");
 						//Write((int)pBaseAnimatingRs->m_nSkin);
 						//Write((int)pBaseAnimatingRs->m_nBody);
 						//Write((int)pBaseAnimatingRs->m_nSequence);
-						Write((bool)(0 != pBaseAnimatingRs->m_pBoneList));
-						if (pBaseAnimatingRs->m_pBoneList)
-						{
-							bool hasError = false;
-							Write(pBaseAnimatingRs->m_pBoneList);
-						}
+						WriteBones(g_csgo_hdr, &(g_csgo_BoneState[0]), parentTransform);
 					}
 				}
 
@@ -523,6 +560,10 @@ void CClientToolsCsgo::StartRecording(wchar_t const * fileName)
 			if(!csgo_C_BaseEntity_ShouldInterpolate_Install())
 			{
 				Tier0_Warning("AFX: Failed to install C_BaseEntity::ShouldInterpolate hook.\n");
+			}
+			if(!csgo_C_BaseAnimating_RecordBones_Install())
+			{
+				Tier0_Warning("AFX: Failed to install IClientRenderable::SetupBones hook.\n");
 			}
 		}
 	}

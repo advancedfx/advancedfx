@@ -10,7 +10,49 @@
 
 #include <shared/StringTools.h>
 
+#include <Windows.h>
+#include <deps/release/Detours/src/detours.h>
+
 using namespace SOURCESDK::CSSV34;
+
+
+SOURCESDK::CStudioHdr * g_cssv34_hdr = nullptr;
+std::vector<SOURCESDK::matrix3x4_t> g_cssv34_BoneState;
+
+typedef void *  (__fastcall * cssv34_C_BaseAnimating_RecordBones_t)(void * This, void* Edx, SOURCESDK::CStudioHdr *hdr, SOURCESDK::matrix3x4_t *pBoneState );
+cssv34_C_BaseAnimating_RecordBones_t True_cssv34_C_BaseAnimating_RecordBones = nullptr;
+void * __fastcall My_cssv34_C_BaseAnimating_RecordBones(void * This, void* Edx, SOURCESDK::CStudioHdr *hdr, SOURCESDK::matrix3x4_t *pBoneState ) {
+	void * result = True_cssv34_C_BaseAnimating_RecordBones(This, Edx, hdr, pBoneState);
+	g_cssv34_hdr =  hdr;
+	if(g_cssv34_BoneState.size() < hdr->numbones()) g_cssv34_BoneState.resize(hdr->numbones());
+	memcpy(&(g_cssv34_BoneState[0]),pBoneState,sizeof(SOURCESDK::matrix3x4_t) * hdr->numbones());
+	return result;
+}
+
+bool cssv34_C_BaseAnimating_RecordBones_Install(void)
+{
+	static bool firstResult = false;
+	static bool firstRun = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	if (AFXADDR_GET(cssv34_client_C_BaseAnimating_RecordBones))
+	{
+		LONG error = NO_ERROR;
+
+		True_cssv34_C_BaseAnimating_RecordBones = (cssv34_C_BaseAnimating_RecordBones_t)AFXADDR_GET(cssv34_client_C_BaseAnimating_RecordBones);
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)True_cssv34_C_BaseAnimating_RecordBones, My_cssv34_C_BaseAnimating_RecordBones);
+		error = DetourTransactionCommit();
+
+		firstResult = NO_ERROR == error;
+	}
+
+	return firstResult;
+}
+
 
 CClientToolsCssV34 * CClientToolsCssV34::m_Instance = 0;
 
@@ -114,6 +156,8 @@ void CClientToolsCssV34::OnPostToolMessageCssV34(SOURCESDK::CSSV34::HTOOLHANDLE 
 				}
 
 				bool wasVisible = false;
+				bool hasParentTransform = false;
+				SOURCESDK::matrix3x4_t parentTransform;				
 
 				WriteDictionary("entity_state");
 				Write((int)hEntity);
@@ -124,11 +168,11 @@ void CClientToolsCssV34::OnPostToolMessageCssV34(SOURCESDK::CSSV34::HTOOLHANDLE 
 						WriteDictionary("baseentity");
 						//Write((float)pBaseEntityRs->m_flTime);
 						WriteDictionary(pBaseEntityRs->m_pModelName);
-						Write((bool)pBaseEntityRs->m_bVisible);
-						Write(pBaseEntityRs->m_vecRenderOrigin);
-						Write(pBaseEntityRs->m_vecRenderAngles);
+						Write((bool)wasVisible);
 
-						wasVisible = pBaseEntityRs->m_bVisible;
+						hasParentTransform = true;
+						SOURCESDK::AngleMatrix(pBaseEntityRs->m_vecRenderAngles, pBaseEntityRs->m_vecRenderOrigin, parentTransform);
+						WriteMatrix3x4(parentTransform);
 					}
 				}
 
@@ -136,17 +180,13 @@ void CClientToolsCssV34::OnPostToolMessageCssV34(SOURCESDK::CSSV34::HTOOLHANDLE 
 
 				{
 					SOURCESDK::CSSV34::BaseAnimatingRecordingState_t * pBaseAnimatingRs = (SOURCESDK::CSSV34::BaseAnimatingRecordingState_t *)(msg->GetPtr("baseanimating"));
-					if (pBaseAnimatingRs)
+					if (pBaseAnimatingRs && hasParentTransform)
 					{
 						WriteDictionary("baseanimating");
 						//Write((int)pBaseAnimatingRs->m_nSkin);
 						//Write((int)pBaseAnimatingRs->m_nBody);
 						//Write((int)pBaseAnimatingRs->m_nSequence);
-						Write((bool)(0 != pBaseAnimatingRs->m_pBoneList));
-						if (pBaseAnimatingRs->m_pBoneList)
-						{
-							Write(pBaseAnimatingRs->m_pBoneList);
-						}
+						WriteBones(g_cssv34_hdr, &(g_cssv34_BoneState[0]), parentTransform);
 					}
 				}
 
@@ -216,6 +256,11 @@ void CClientToolsCssV34::StartRecording(wchar_t const * fileName)
 
 	if (GetRecording())
 	{
+		if(!cssv34_C_BaseAnimating_RecordBones_Install())
+		{
+			Tier0_Warning("AFX: Failed to install IClientRenderable::SetupBones hook.\n");
+		}
+
 		for (std::map<SOURCESDK::CSSV34::HTOOLHANDLE, bool>::iterator it = m_TrackedHandles.begin(); it != m_TrackedHandles.end(); ++it)
 		{
 			m_ClientTools->SetRecording(it->first, true);

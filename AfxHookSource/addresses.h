@@ -131,6 +131,10 @@ AFXADDR_DECL(csgo_client_CCSGO_MapOverview_FireGameEvent)
 AFXADDR_DECL(csgo_client_CCSGO_MapOverview_ProcessInput)
 AFXADDR_DECL(csgo_client_C_BaseEntity_GetTeamNumber)
 AFXADDR_DECL(csgo_client_g_bEngineIsHLTV)
+AFXADDR_DECL(csgo_client_C_BaseAnimating_RecordBones)
+AFXADDR_DECL(css_client_C_BaseAnimating_RecordBones)
+AFXADDR_DECL(cssv34_client_C_BaseAnimating_RecordBones)
+AFXADDR_DECL(tf2_client_C_BaseAnimating_RecordBones)
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);

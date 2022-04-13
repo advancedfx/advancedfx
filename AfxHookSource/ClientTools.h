@@ -44,6 +44,10 @@ public:
 
 	bool GetRecording(void);
 
+	virtual int GetAgrVersion() {
+		return 5;
+	}
+
 	virtual void StartRecording(wchar_t const * fileName);
 
 	virtual void EndRecording();
@@ -154,10 +158,14 @@ protected:
 	void Write(SOURCESDK::Vector const & value);
 	void Write(SOURCESDK::QAngle const & value);
 	void Write(SOURCESDK::Quaternion const & value);
+	void WriteMatrix3x4(SOURCESDK::matrix3x4_t const &value);
+	void WriteBones(SOURCESDK::CStudioHdr * hdr, SOURCESDK::matrix3x4_t const *boneState, const SOURCESDK::matrix3x4_t & parentTransform);
 
 	void MarkHidden(int value) {
 		m_AfxGameRecord.MarkHidden(value);
 	}
+
+	static bool InvertMatrix(const SOURCESDK::matrix3x4_t &matrix, SOURCESDK::matrix3x4_t &out_matrix);
 
 private:
 	static CClientTools * m_Instance;

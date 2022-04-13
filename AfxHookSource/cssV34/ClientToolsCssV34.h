@@ -25,6 +25,10 @@ public:
 
 	virtual bool EnableRecordingMode_get();
 
+	virtual int GetAgrVersion() override {
+		return 6;
+	}
+
 	virtual void StartRecording(wchar_t const * fileName);
 
 	virtual void EndRecording();

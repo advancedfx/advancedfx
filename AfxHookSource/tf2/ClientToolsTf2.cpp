@@ -10,6 +10,49 @@
 
 #include <shared/StringTools.h>
 
+#include <Windows.h>
+#include <deps/release/Detours/src/detours.h>
+
+
+
+SOURCESDK::CStudioHdr * g_tf2_hdr = nullptr;
+std::vector<SOURCESDK::matrix3x4_t> g_tf2_BoneState;
+
+typedef void *  (__fastcall * tf2_C_BaseAnimating_RecordBones_t)(void * This, void* Edx, SOURCESDK::CStudioHdr *hdr, SOURCESDK::matrix3x4_t *pBoneState );
+tf2_C_BaseAnimating_RecordBones_t True_tf2_C_BaseAnimating_RecordBones = nullptr;
+void * __fastcall My_tf2_C_BaseAnimating_RecordBones(void * This, void* Edx, SOURCESDK::CStudioHdr *hdr, SOURCESDK::matrix3x4_t *pBoneState ) {
+	void * result = True_tf2_C_BaseAnimating_RecordBones(This, Edx, hdr, pBoneState);
+	g_tf2_hdr =  hdr;
+	if(g_tf2_BoneState.size() < hdr->numbones()) g_tf2_BoneState.resize(hdr->numbones());
+	memcpy(&(g_tf2_BoneState[0]),pBoneState,sizeof(SOURCESDK::matrix3x4_t) * hdr->numbones());
+	return result;
+}
+
+bool tf2_C_BaseAnimating_RecordBones_Install(void)
+{
+	static bool firstResult = false;
+	static bool firstRun = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	if (AFXADDR_GET(tf2_client_C_BaseAnimating_RecordBones))
+	{
+		LONG error = NO_ERROR;
+
+		True_tf2_C_BaseAnimating_RecordBones = (tf2_C_BaseAnimating_RecordBones_t)AFXADDR_GET(tf2_client_C_BaseAnimating_RecordBones);
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)True_tf2_C_BaseAnimating_RecordBones, My_tf2_C_BaseAnimating_RecordBones);
+		error = DetourTransactionCommit();
+
+		firstResult = NO_ERROR == error;
+	}
+
+	return firstResult;
+}
+
+
 CClientToolsTf2 * CClientToolsTf2::m_Instance = 0;
 
 CClientToolsTf2::CClientToolsTf2(SOURCESDK::TF2::IClientTools * clientTools)
@@ -114,6 +157,8 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 				}
 
 				bool wasVisible = false;
+				bool hasParentTransform = false;
+				SOURCESDK::matrix3x4_t parentTransform;
 
 				WriteDictionary("entity_state");
 				Write((int)hEntity);
@@ -126,10 +171,11 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 						WriteDictionary("baseentity");
 						//Write((float)pBaseEntityRs->m_flTime);
 						WriteDictionary(pBaseEntityRs->m_pModelName);
-						Write(wasVisible);
-						Write(pBaseEntityRs->m_vecRenderOrigin);
-						Write(pBaseEntityRs->m_vecRenderAngles);
+						Write((bool)wasVisible);
 
+						hasParentTransform = true;
+						SOURCESDK::AngleMatrix(pBaseEntityRs->m_vecRenderAngles, pBaseEntityRs->m_vecRenderOrigin, parentTransform);
+						WriteMatrix3x4(parentTransform);
 					}
 				}
 
@@ -137,17 +183,13 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 
 				{
 					SOURCESDK::TF2::BaseAnimatingRecordingState_t * pBaseAnimatingRs = (SOURCESDK::TF2::BaseAnimatingRecordingState_t *)(msg->GetPtr("baseanimating"));
-					if (pBaseAnimatingRs)
+					if (pBaseAnimatingRs && hasParentTransform)
 					{
 						WriteDictionary("baseanimating");
 						//Write((int)pBaseAnimatingRs->m_nSkin);
 						//Write((int)pBaseAnimatingRs->m_nBody);
 						//Write((int)pBaseAnimatingRs->m_nSequence);
-						Write((bool)(0 != pBaseAnimatingRs->m_pBoneList));
-						if (pBaseAnimatingRs->m_pBoneList)
-						{
-							Write(pBaseAnimatingRs->m_pBoneList);
-						}
+						WriteBones(g_tf2_hdr, &(g_tf2_BoneState[0]), parentTransform);
 					}
 				}
 
@@ -217,6 +259,11 @@ void CClientToolsTf2::StartRecording(wchar_t const * fileName)
 
 	if (GetRecording())
 	{
+		if(!tf2_C_BaseAnimating_RecordBones_Install())
+		{
+			Tier0_Warning("AFX: Failed to install IClientRenderable::SetupBones hook.\n");
+		}
+
 		for (std::map<SOURCESDK::TF2::HTOOLHANDLE, bool>::iterator it = m_TrackedHandles.begin(); it != m_TrackedHandles.end(); ++it)
 		{
 			m_ClientTools->SetRecording(it->first, true);

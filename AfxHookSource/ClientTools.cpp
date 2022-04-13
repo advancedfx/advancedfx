@@ -67,7 +67,7 @@ bool CClientTools::GetRecording(void)
 
 void CClientTools::StartRecording(wchar_t const * fileName)
 {
-	if(m_AfxGameRecord.StartRecording(fileName, 5))
+	if(m_AfxGameRecord.StartRecording(fileName, GetAgrVersion()))
 	{
 		if (!EnableRecordingMode_get() && !SuppotsAutoEnableRecordingMode()) {
 			Tier0_Warning(
@@ -107,6 +107,113 @@ void CClientTools::Write(SOURCESDK::Quaternion const & value)
 	m_AfxGameRecord.Write((float)value.y);
 	m_AfxGameRecord.Write((float)value.z);
 	m_AfxGameRecord.Write((float)value.w);
+}
+
+void CClientTools::WriteMatrix3x4(SOURCESDK::matrix3x4_t const &value)
+{
+	m_AfxGameRecord.Write(value[0][0]);
+	m_AfxGameRecord.Write(value[0][1]);
+	m_AfxGameRecord.Write(value[0][2]);
+	m_AfxGameRecord.Write(value[0][3]);
+
+	m_AfxGameRecord.Write(value[1][0]);
+	m_AfxGameRecord.Write(value[1][1]);
+	m_AfxGameRecord.Write(value[1][2]);
+	m_AfxGameRecord.Write(value[1][3]);
+
+	m_AfxGameRecord.Write(value[2][0]);
+	m_AfxGameRecord.Write(value[2][1]);
+	m_AfxGameRecord.Write(value[2][2]);
+	m_AfxGameRecord.Write(value[2][3]);
+}
+
+void CClientTools::WriteBones(SOURCESDK::CStudioHdr * hdr, SOURCESDK::matrix3x4_t const *boneState, const SOURCESDK::matrix3x4_t & parentTransform) {
+	if(nullptr != hdr && nullptr != boneState) {
+		SOURCESDK::matrix3x4_t tmp;
+		SOURCESDK::matrix3x4_t bones;
+
+		m_AfxGameRecord.Write((bool)true);
+
+		m_AfxGameRecord.Write((int)hdr->numbones());
+
+		for (int i = 0; i < hdr->numbones(); ++i)
+		{
+			const SOURCESDK::mstudiobone_t *pBone = hdr->pBone(i);
+
+			if ( !(pBone->flags & SOURCESDK_BONE_USED_BY_ANYTHING ) )
+			{
+				bones[0][0] = 1; bones[0][1] = 0; bones[0][2] = 0;  bones[0][3] = 0;
+				bones[1][0] = 0; bones[1][1] = 1; bones[1][2] = 0;  bones[1][3] = 0;
+				bones[2][0] = 0; bones[2][1] = 0; bones[2][2] = 1;  bones[2][3] = 0;
+			} else {
+				bool bRoot = pBone->parent == -1;
+
+				if (!InvertMatrix(bRoot ? parentTransform : boneState[pBone->parent], tmp))
+					Tier0_Warning("AFXERROR: parent matrix inversion failed for bone %i (parent bone %i).\n", i,pBone->parent);
+
+				R_ConcatTransforms(tmp, boneState[i], bones);
+			}
+
+			WriteMatrix3x4(bones);
+		}
+
+	} else {
+		m_AfxGameRecord.Write((bool)false);
+	}
+}
+
+bool CClientTools::InvertMatrix(const SOURCESDK::matrix3x4_t &matrix, SOURCESDK::matrix3x4_t &out_matrix)
+{
+
+	double b0[4] = { 1, 0, 0, 0 };
+	double b1[4] = { 0, 1, 0, 0 };
+	double b2[4] = { 0, 0, 1, 0 };
+	double b3[4] = { 0, 0, 0, 1 };
+
+	double M[4][4] = {
+		matrix[0][0], matrix[0][1], matrix[0][2],  matrix[0][3],
+		matrix[1][0], matrix[1][1], matrix[1][2],  matrix[1][3],
+		matrix[2][0], matrix[2][1], matrix[2][2],  matrix[2][3],
+		0, 0, 0, 1
+	};
+
+	unsigned char P[4];
+	unsigned char Q[4];
+
+	double L[4][4];
+	double U[4][4];
+
+	if (!Afx::Math::LUdecomposition(M, P, Q, L, U))
+		return false;
+
+	double inv0[4] = { 1,0,0,0 };
+	double inv1[4] = { 0,1,0,0 };
+	double inv2[4] = { 0,0,1,0 };
+	double inv3[4] = { 0,0,0,1 };
+
+	Afx::Math::SolveWithLU(L, U, P, Q, b0, inv0);
+	Afx::Math::SolveWithLU(L, U, P, Q, b1, inv1);
+	Afx::Math::SolveWithLU(L, U, P, Q, b2, inv2);
+	Afx::Math::SolveWithLU(L, U, P, Q, b3, inv3);
+
+	out_matrix[0][0] = (float)inv0[0];
+	out_matrix[0][1] = (float)inv1[0];
+	out_matrix[0][2] = (float)inv2[0];
+	out_matrix[0][3] = (float)inv3[0];
+
+	out_matrix[1][0] = (float)inv0[1];
+	out_matrix[1][1] = (float)inv1[1];
+	out_matrix[1][2] = (float)inv2[1];
+	out_matrix[1][3] = (float)inv3[1];
+
+	out_matrix[2][0] = (float)inv0[2];
+	out_matrix[2][1] = (float)inv1[2];
+	out_matrix[2][2] = (float)inv2[2];
+	out_matrix[2][3] = (float)inv3[2];
+
+	//pEngfuncs->Con_Printf("(%f, %f, %f, %f)\n", inv0[3], inv1[3], inv2[3], inv3[3]);
+
+	return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

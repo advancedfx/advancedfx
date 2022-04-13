@@ -306,103 +306,6 @@ void CalcSmooth(double deltaT, double targetPos, double & lastPos, double & last
 	lastPos += deltaPos;
 }
 
-SOURCESDK::vec_t DotProduct(const SOURCESDK::vec_t * v1, const SOURCESDK::vec_t * v2)
-{
-	return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-}
-
-void VectorAngles( const SOURCESDK::Vector& forward, SOURCESDK::QAngle &angles )
-{
-	float	tmp, yaw, pitch;
-	if (forward[1] == 0 && forward[0] == 0)
-	{
-		yaw = 0;
-		if (forward[2] > 0)
-			pitch = 270;
-		else
-			pitch = 90;
-	}
-	else
-	{
-		yaw = (atan2f(forward[1], forward[0]) * 180 / (float)M_PI);
-		if (yaw < 0)
-			yaw += 360;
-
-		tmp = sqrtf(forward[0]*forward[0] + forward[1]*forward[1]);
-		pitch = (atan2f(-forward[2], tmp) * 180 / (float)M_PI);
-		if (pitch < 0)
-			pitch += 360;
-	}
-	
-	angles[0] = pitch;
-	angles[1] = yaw;
-	angles[2] = 0;
-}
-
-void AngleMatrix( const SOURCESDK::QAngle &angles,  SOURCESDK::matrix3x4_t& matrix )
-{
-	float sy = sinf(angles[1] * (float)M_PI / 180.0);
-	float cy = cosf(angles[1] * (float)M_PI / 180.0);
-
-	float sp = sinf(angles[0] * (float)M_PI / 180.0);
-	float cp = cosf(angles[0] * (float)M_PI / 180.0);
-
-	float sr = sinf(angles[2] * (float)M_PI / 180.0);
-	float cr = cosf(angles[2] * (float)M_PI / 180.0);
-
-	matrix[0][0] = cp*cy;
-	matrix[1][0] = cp*sy;
-	matrix[2][0] = -sp;
-
-	matrix[0][1] = sr*sp*cy+cr*-sy;
-	matrix[1][1] = sr*sp*sy+cr*cy;
-	matrix[2][1] = sr*cp;
-	matrix[0][2] = (cr*sp*cy+-sr*-sy);
-	matrix[1][2] = (cr*sp*sy+-sr*cy);
-	matrix[2][2] = cr*cp;
-
-	matrix[0][3] = 0.0f;
-	matrix[1][3] = 0.0f;
-	matrix[2][3] = 0.0f;
-}
-
-void VectorTransform(const SOURCESDK::Vector & in1, const SOURCESDK::matrix3x4_t & in2, SOURCESDK::Vector & out)
-{
-	out[0] = DotProduct(in1.Base(), in2[0]) + in2[0][3];
-	out[1] = DotProduct(in1.Base(), in2[1]) + in2[1][3];
-	out[2] = DotProduct(in1.Base(), in2[2]) + in2[2][3];
-}
-
-void MatrixAngles(const SOURCESDK::matrix3x4_t & matrix, SOURCESDK::QAngle & angles)
-{
-	float forward[3];
-	float left[3];
-	float up[3];
-
-	forward[0] = matrix[0][0];
-	forward[1] = matrix[1][0];
-	forward[2] = matrix[2][0];
-	left[0] = matrix[0][1];
-	left[1] = matrix[1][1];
-	left[2] = matrix[2][1];
-	up[2] = matrix[2][2];
-
-	float xyDist = sqrtf(forward[0] * forward[0] + forward[1] * forward[1]);
-
-	if (xyDist > 0.001f)
-	{
-		angles[1] = (atan2f(forward[1], forward[0])) * 180.0f / (float)M_PI;
-		angles[0] = (atan2f(-forward[2], xyDist)) * 180.0f / (float)M_PI;
-		angles[2] = (atan2f(left[2], up[2])) * 180.0f / (float)M_PI;
-	}
-	else
-	{
-		angles[1] = (atan2f(-left[0], left[1])) * 180.0f / (float)M_PI;
-		angles[0] = (atan2f(-forward[2], xyDist)) * 180.0f / (float)M_PI;
-		angles[2] = 0;
-	}
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 
 class CMirvCalc : public IMirvCalc
@@ -2880,11 +2783,11 @@ public:
 			{
 				const SOURCESDK::matrix3x4_t & matrix = re->RenderableToWorldTransform();
 				
-				VectorTransform(sourceVector, matrix, outVector);
+				SOURCESDK::VectorTransform(sourceVector, matrix, outVector);
 
 				SOURCESDK::QAngle matrixAngles;
 
-				MatrixAngles(matrix, matrixAngles);
+				SOURCESDK::MatrixAngles(matrix, matrixAngles);
 
 				Quaternion sourceQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(sourceAngles.x, sourceAngles.y, sourceAngles.z)));
 				Quaternion matrixQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(matrixAngles.x, matrixAngles.y, matrixAngles.z)));
@@ -2977,15 +2880,15 @@ public:
 				tmp[1] = matrix[1][3];
 				tmp[2] = matrix[2][3];
 
-				transposed[0][3] = -DotProduct(tmp, transposed[0]);
-				transposed[1][3] = -DotProduct(tmp, transposed[1]);
-				transposed[2][3] = -DotProduct(tmp, transposed[2]);
+				transposed[0][3] = -SOURCESDK::DotProduct(tmp, transposed[0]);
+				transposed[1][3] = -SOURCESDK::DotProduct(tmp, transposed[1]);
+				transposed[2][3] = -SOURCESDK::DotProduct(tmp, transposed[2]);
 
-				VectorTransform(sourceVector, transposed, outVector);
+				SOURCESDK::VectorTransform(sourceVector, transposed, outVector);
 
 				SOURCESDK::QAngle matrixAngles;
 
-				MatrixAngles(transposed, matrixAngles);
+				SOURCESDK::MatrixAngles(transposed, matrixAngles);
 
 				Quaternion sourceQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(sourceAngles.x, sourceAngles.y, sourceAngles.z)));
 				Quaternion matrixQuat = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(matrixAngles.x, matrixAngles.y, matrixAngles.z)));
@@ -3123,13 +3026,13 @@ public:
 			};
 
 			SOURCESDK::QAngle traceAngs;
-			VectorAngles(vDirOrg,traceAngs);
+			SOURCESDK::VectorAngles(vDirOrg,traceAngs);
 			SOURCESDK::matrix3x4_t traceRotMatrix;
-			AngleMatrix(traceAngs,traceRotMatrix);
+			SOURCESDK::AngleMatrix(traceAngs,traceRotMatrix);
 
 			for(int i =0; i < 5; ++i) {
 				SOURCESDK::Vector vOffs;
-				VectorTransform(SOURCESDK::Vector(ofsSourceVecs[i][0],ofsSourceVecs[i][1],ofsSourceVecs[i][2]), traceRotMatrix, vOffs);
+				SOURCESDK::VectorTransform(SOURCESDK::Vector(ofsSourceVecs[i][0],ofsSourceVecs[i][1],ofsSourceVecs[i][2]), traceRotMatrix, vOffs);
 
 				SOURCESDK::Vector srcVec = clipToVector + vOffs;
 				SOURCESDK::Vector dstVec = traceEnd + vOffs;
