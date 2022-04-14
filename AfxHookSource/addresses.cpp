@@ -128,6 +128,7 @@ AFXADDR_DEF(csgo_client_g_bEngineIsHLTV)
 AFXADDR_DEF(csgo_client_C_BaseAnimating_RecordBones)
 AFXADDR_DEF(css_client_C_BaseAnimating_RecordBones)
 AFXADDR_DEF(cssv34_client_C_BaseAnimating_RecordBones)
+AFXADDR_DEF(cssv34_client_C_BaseAnimating_m_BoneAccessor_m_pBones)
 AFXADDR_DEF(tf2_client_C_BaseAnimating_RecordBones)
 
 void ErrorBox(char const * messageText);
@@ -2459,8 +2460,10 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 							case SourceSdkVer_CSSV34:
 								{
 									MemRange result = FindPatternString(textRange.And(MemRange(refStrAddr - 0x1e, refStrAddr -0x1e + 6)), "81 EC 9C 00 00 00");
-									if(!result.IsEmpty())
+									if(!result.IsEmpty()) {
 										AFXADDR_SET(cssv34_client_C_BaseAnimating_RecordBones, result.Start);
+										AFXADDR_DEF(cssv34_client_C_BaseAnimating_m_BoneAccessor_m_pBones,  0x4A8);
+									}
 									else ErrorBox(MkErrStr(__FILE__, __LINE__));	
 								}
 								break;
