@@ -74,8 +74,6 @@ private:
 	SOURCESDK::CSGO::IClientTools * m_ClientTools;
 	std::map<SOURCESDK::CSGO::HTOOLHANDLE, bool> m_TrackedHandles;
 
-	void Write(SOURCESDK::CSGO::CBoneList const * value);
-
 	void OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntity, SOURCESDK::CSGO::KeyValues * msg);
 
 	bool IsViewmodel(SOURCESDK::CSGO::HTOOLHANDLE hEntity);

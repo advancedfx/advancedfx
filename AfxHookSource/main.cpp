@@ -33,6 +33,7 @@
 #include "csgo/ClientToolsCsgo.h"
 #include "tf2/ClientToolsTf2.h"
 #include "momentum/ClientToolsMom.h"
+#include "css/ClientToolsCss.h"
 #include "cssV34/ClientToolsCssV34.h"
 #include "MatRenderContextHook.h"
 //#include "csgo_IPrediction.h"
@@ -621,6 +622,42 @@ void __fastcall new_CVClient_FrameStageNotify_TF2(void* This, void* Edx, SOURCES
 	switch (curStage)
 	{
 	case SOURCESDK::TF2::FRAME_RENDER_END:
+		Shared_AfterFrameRenderEnd();
+		break;
+	}
+}
+
+
+typedef void(__fastcall* CVClient_Shutdown_CSS_t)(void* This, void* Edx);
+
+CVClient_Shutdown_CSS_t old_CVClient_Shutdown_CSS;
+
+void __fastcall new_CVClient_Shutdown_CSS(void* This, void* Edx)
+{
+	Shared_Shutdown();
+
+	old_CVClient_Shutdown_CSS(This, Edx);
+}
+
+typedef void(__fastcall* CVClient_FrameStageNotify_CSS_t)(void* This, void* Edxr, SOURCESDK::CSS::ClientFrameStage_t curStage);
+
+CVClient_FrameStageNotify_CSS_t old_CVClient_FrameStageNotify_CSS;
+
+// Notification that we're moving into another stage during the frame.
+void __fastcall new_CVClient_FrameStageNotify_CSS(void* This, void* Edx, SOURCESDK::CSS::ClientFrameStage_t curStage)
+{
+	switch (curStage)
+	{
+	case SOURCESDK::CSS::FRAME_RENDER_START:
+		Shared_BeforeFrameRenderStart();
+		break;
+	}
+
+	old_CVClient_FrameStageNotify_CSS(This, Edx, curStage);
+
+	switch (curStage)
+	{
+	case SOURCESDK::CSS::FRAME_RENDER_END:
 		Shared_AfterFrameRenderEnd();
 		break;
 	}
@@ -1853,6 +1890,14 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 				AfxDetourPtr((PVOID*) & (vtable[35]), new_CVClient_FrameStageNotify_TF2, (PVOID*)&old_CVClient_FrameStageNotify_TF2);
 			}
 
+			if (iface && SourceSdkVer_CSS == g_SourceSdkVer)
+			{
+				int* vtable = *(int**)iface;
+
+				AfxDetourPtr((PVOID*)&(vtable[2]), new_CVClient_Shutdown_CSS, (PVOID*)&old_CVClient_Shutdown_CSS);
+				AfxDetourPtr((PVOID*)&(vtable[35]), new_CVClient_FrameStageNotify_CSS, (PVOID*)&old_CVClient_FrameStageNotify_CSS);
+			}
+
 			if (iface && SourceSdkVer_CSSV34 == g_SourceSdkVer)
 			{
 				int * vtable = *(int**)iface;
@@ -1879,6 +1924,12 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 
 			if (SOURCESDK::TF2::IClientTools* iface = (SOURCESDK::TF2::IClientTools*)old_Client_CreateInterface(SOURCESDK_TF2_VCLIENTTOOLS_INTERFACE_VERSION, NULL))
 				new CClientToolsMom(iface);
+		}
+		if (SourceSdkVer_CSS == g_SourceSdkVer)
+		{
+
+			if (SOURCESDK::CSS::IClientTools* iface = (SOURCESDK::CSS::IClientTools*)old_Client_CreateInterface(SOURCESDK_CSS_VCLIENTTOOLS_INTERFACE_VERSION, NULL))
+				new CClientToolsCss(iface);
 		}
 		if(SourceSdkVer_CSSV34 == g_SourceSdkVer)
 		{

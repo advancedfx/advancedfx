@@ -160,10 +160,11 @@
   <ItemGroup>
     <ClCompile Include="..\build\protobuf\csgo\netmessages.pb.cc" />
     <ClCompile Include="..\deps\release\prop\AfxHookSource\csgo\bitbuf\demofilebitbuf.cpp" />
+    <ClCompile Include="..\deps\release\prop\AfxHookSource\css\sdk_src\tier1\KeyValues.cpp" />
     <ClCompile Include="..\interfaces\c\test.c" />
     <ClCompile Include="..\deps\release\prop\AfxHookSource\csgo\sdk_src\public\tier1\convar.cpp" />
     <ClCompile Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\tools\bonelist.cpp" />
-    <ClCompile Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\tier1\keyvalues.cpp" />
+    <ClCompile Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\tier1\KeyValues.cpp" />
     <ClCompile Include="..\deps\release\prop\AfxHookSource\l4d2\sdk_src\public\tier1\convar.cpp" />
     <ClCompile Include="..\deps\release\prop\AfxHookSource\bm\sdk_src\public\tier1\convar.cpp" />
     <ClCompile Include="..\deps\release\prop\AfxHookSource\SourceSdkShared.cpp" />
@@ -230,6 +231,7 @@
     <ClCompile Include="csgo_view.cpp" />
     <ClCompile Include="csgo_vphysics.cpp" />
     <ClCompile Include="cssV34\ClientToolsCssV34.cpp" />
+    <ClCompile Include="css\ClientToolsCss.cpp" />
     <ClCompile Include="d3d9Hooks.cpp" />
     <ClCompile Include="FovScaling.cpp" />
     <ClCompile Include="Gui.cpp" />
@@ -257,6 +259,15 @@
   <ItemGroup>
     <ClInclude Include="..\build\protobuf\csgo\netmessages.pb.h" />
     <ClInclude Include="..\deps\release\prop\AfxHookSource\csgo\bitbuf\demofilebitbuf.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\css\sdk_src\public\basehandle.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\css\sdk_src\public\const.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\css\sdk_src\public\engine\ishadowmgr.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\css\sdk_src\public\iclientrenderable.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\css\sdk_src\public\ihandleentity.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\css\sdk_src\public\tier1\KeyValues.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\css\sdk_src\public\toolframework\itoolentity.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\css\sdk_src\public\toolframework\itoolframework.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\css\sdk_src\public\vstdlib\IKeyValuesSystem.h" />
     <ClInclude Include="..\deps\release\rapidxml\rapidxml.hpp" />
     <ClInclude Include="..\deps\release\rapidxml\rapidxml_iterators.hpp" />
     <ClInclude Include="..\deps\release\rapidxml\rapidxml_print.hpp" />
@@ -275,7 +286,7 @@
     <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\engine\ishadowmgr.h" />
     <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\iclientrenderable.h" />
     <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\ihandleentity.h" />
-    <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\tier1\keyvalues.h" />
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\tier1\KeyValues.h" />
     <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\toolframework\itoolentity.h" />
     <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\toolframework\itoolframework.h" />
     <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\tools\bonelist.h" />
@@ -367,6 +378,7 @@
     <ClInclude Include="csgo_view.h" />
     <ClInclude Include="csgo_vphysics.h" />
     <ClInclude Include="cssV34\ClientToolsCssV34.h" />
+    <ClInclude Include="css\ClientToolsCss.h" />
     <ClInclude Include="d3d9Hooks.h" />
     <ClInclude Include="FovScaling.h" />
     <ClInclude Include="Gui.h" />

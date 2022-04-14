@@ -44,7 +44,5 @@ private:
 	SOURCESDK::TF2::IClientTools * m_ClientTools;
 	std::map<SOURCESDK::TF2::HTOOLHANDLE, bool> m_TrackedHandles;
 
-	void Write(SOURCESDK::TF2::CBoneList const * value);
-
 	void OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, SOURCESDK::TF2::KeyValues * msg);
 };

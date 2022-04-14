@@ -584,35 +584,6 @@ float CClientToolsCsgo::ScaleFov(int width, int height, float fov)
 	return (float)AlienSwarm_FovScaling(width, height, fov);
 }
 
-void CClientToolsCsgo::Write(SOURCESDK::CSGO::CBoneList const * value)
-{
-	Write((int)value->m_nBones);
-
-	for (int i = 0; i < value->m_nBones; ++i)
-	{
-		if (0 != Debug_get() && (
-			std::isnan(value->m_vecPos[i].x) || std::isnan(value->m_vecPos[i].y) || std::isnan(value->m_vecPos[i].z)
-			|| std::isnan(value->m_quatRot[i].w) || std::isnan(value->m_quatRot[i].x) || std::isnan(value->m_quatRot[i].y) || std::isnan(value->m_quatRot[i].z)
-		)) {
-			// This error condition happens with bugged weaponworldmodels that have no movementowner a lot.
-
-			Tier0_Warning("ClientToolsCsgo::Write(SOURCESDK::CSGO::CBoneList const * value): %i: (%f, %f, %f) (%f, %f, %f, %f)\n"
-				, i
-				, value->m_vecPos[i].x
-				, value->m_vecPos[i].y
-				, value->m_vecPos[i].z
-				, value->m_quatRot[i].w
-				, value->m_quatRot[i].x
-				, value->m_quatRot[i].y
-				, value->m_quatRot[i].z
-			);
-		}
-
-		Write(value->m_vecPos[i]);
-		Write(value->m_quatRot[i]);
-	}
-}
-
 void CClientToolsCsgo::DebugEntIndex(int index)
 {
 	if (!m_ClientTools)

@@ -288,14 +288,3 @@ float CClientToolsTf2::ScaleFov(int width, int height, float fov)
 {
 	return (float)AlienSwarm_FovScaling(width, height, fov);
 }
-
-void CClientToolsTf2::Write(SOURCESDK::TF2::CBoneList const * value)
-{
-	Write((int)value->m_nBones);
-
-	for (int i = 0; i < value->m_nBones; ++i)
-	{
-		Write(value->m_vecPos[i]);
-		Write(value->m_quatRot[i]);
-	}
-}

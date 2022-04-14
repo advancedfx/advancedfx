@@ -1,19 +1,19 @@
 #pragma once
 
 #include "../ClientTools.h"
-#include <cssV34/sdk_src/public/toolframework/itoolframework.h>
+#include <css/sdk_src/public/toolframework/itoolframework.h>
 
-class CClientToolsCssV34 : public CClientTools
+class CClientToolsCss : public CClientTools
 {
 public:
-	static inline CClientToolsCssV34 * Instance(void)
+	static inline CClientToolsCss * Instance(void)
 	{
 		return m_Instance;
 	}
 
-	CClientToolsCssV34(SOURCESDK::CSSV34::IClientTools * clientTools);
+	CClientToolsCss(SOURCESDK::CSS::IClientTools * clientTools);
 
-	virtual ~CClientToolsCssV34();
+	virtual ~CClientToolsCss();
 
 	virtual void OnPostToolMessage(void * hEntity, void * msg);
 
@@ -37,10 +37,10 @@ protected:
 	using CClientTools::Write;
 
 private:
-	static CClientToolsCssV34 * m_Instance;
+	static CClientToolsCss * m_Instance;
 
-	SOURCESDK::CSSV34::IClientTools * m_ClientTools;
-	std::map<SOURCESDK::CSSV34::HTOOLHANDLE, bool> m_TrackedHandles;
+	SOURCESDK::CSS::IClientTools * m_ClientTools;
+	std::map<SOURCESDK::CSS::HTOOLHANDLE, bool> m_TrackedHandles;
 
-	void OnPostToolMessageCssV34(SOURCESDK::CSSV34::HTOOLHANDLE hEntity, SOURCESDK::CSSV34::KeyValues * msg);
+	void OnPostToolMessageCss(SOURCESDK::CSS::HTOOLHANDLE hEntity, SOURCESDK::CSS::KeyValues * msg);
 };

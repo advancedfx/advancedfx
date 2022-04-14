@@ -220,6 +220,33 @@
     <Filter Include="AfxHookSource\csgo\hooks\client">
       <UniqueIdentifier>{d124cf87-e4cf-408a-a0cd-ede3bcce8ac3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="AfxHookSource\css">
+      <UniqueIdentifier>{452136fb-fc4f-4d0a-b023-ca95bd6ad4fd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="deps\release\prop\AfxHookSource\css">
+      <UniqueIdentifier>{5f5744a8-5c9e-4d76-a4ca-2f03e2f57343}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="deps\release\prop\AfxHookSource\css\sdk_src">
+      <UniqueIdentifier>{5c9cf558-6989-410f-8240-bd5a387635a5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="deps\release\prop\AfxHookSource\css\sdk_src\public">
+      <UniqueIdentifier>{77a3c7fc-e114-442e-9bfc-b16e95c4c21d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="deps\release\prop\AfxHookSource\css\sdk_src\public\toolframework">
+      <UniqueIdentifier>{421ddea5-7467-4208-ade6-331a9a6f6c57}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="deps\release\prop\AfxHookSource\css\sdk_src\public\engine">
+      <UniqueIdentifier>{463a560c-a60f-4444-b2f4-9ef7dde4be4f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="deps\release\prop\AfxHookSource\css\sdk_src\public\tier1">
+      <UniqueIdentifier>{1795b4c2-1ea2-407f-ba79-5be75d55186d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="deps\release\prop\AfxHookSource\css\sdk_src\tier1">
+      <UniqueIdentifier>{24ddb3b6-0197-47b1-b48d-6fdb063455cc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="deps\release\prop\AfxHookSource\css\sdk_src\public\vstdlib">
+      <UniqueIdentifier>{6431911c-cf4c-4199-987a-33fafc4ae683}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\bvhexport.cpp">
@@ -378,7 +405,7 @@
     <ClCompile Include="cssV34\ClientToolsCssV34.cpp">
       <Filter>AfxHookSource\cssV34</Filter>
     </ClCompile>
-    <ClCompile Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\tier1\keyvalues.cpp">
+    <ClCompile Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\tier1\KeyValues.cpp">
       <Filter>deps\release\prop\AfxHookSource\cssV34\sdk_src\tier1</Filter>
     </ClCompile>
     <ClCompile Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\tools\bonelist.cpp">
@@ -506,6 +533,12 @@
     </ClCompile>
     <ClCompile Include="csgo\hooks\client\csgo_spectatortools.cpp">
       <Filter>AfxHookSource\csgo\hooks\client</Filter>
+    </ClCompile>
+    <ClCompile Include="css\ClientToolsCss.cpp">
+      <Filter>AfxHookSource\css</Filter>
+    </ClCompile>
+    <ClCompile Include="..\deps\release\prop\AfxHookSource\css\sdk_src\tier1\KeyValues.cpp">
+      <Filter>deps\release\prop\AfxHookSource\css\sdk_src\tier1</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -698,7 +731,7 @@
     <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\engine\ishadowmgr.h">
       <Filter>deps\release\prop\AfxHookSource\cssV34\sdk_src\public\engine</Filter>
     </ClInclude>
-    <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\tier1\keyvalues.h">
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\tier1\KeyValues.h">
       <Filter>deps\release\prop\AfxHookSource\cssV34\sdk_src\public\tier1</Filter>
     </ClInclude>
     <ClInclude Include="..\deps\release\prop\AfxHookSource\cssV34\sdk_src\public\tools\bonelist.h">
@@ -931,6 +964,36 @@
     </ClInclude>
     <ClInclude Include="csgo\hooks\engine\cmd.h">
       <Filter>AfxHookSource\csgo\hooks\engine</Filter>
+    </ClInclude>
+    <ClInclude Include="css\ClientToolsCss.h">
+      <Filter>AfxHookSource\css</Filter>
+    </ClInclude>
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\css\sdk_src\public\toolframework\itoolframework.h">
+      <Filter>deps\release\prop\AfxHookSource\css\sdk_src\public\toolframework</Filter>
+    </ClInclude>
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\css\sdk_src\public\toolframework\itoolentity.h">
+      <Filter>deps\release\prop\AfxHookSource\css\sdk_src\public\toolframework</Filter>
+    </ClInclude>
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\css\sdk_src\public\engine\ishadowmgr.h">
+      <Filter>deps\release\prop\AfxHookSource\css\sdk_src\public\engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\css\sdk_src\public\basehandle.h">
+      <Filter>deps\release\prop\AfxHookSource\css\sdk_src\public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\css\sdk_src\public\const.h">
+      <Filter>deps\release\prop\AfxHookSource\css\sdk_src\public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\css\sdk_src\public\iclientrenderable.h">
+      <Filter>deps\release\prop\AfxHookSource\css\sdk_src\public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\css\sdk_src\public\ihandleentity.h">
+      <Filter>deps\release\prop\AfxHookSource\css\sdk_src\public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\css\sdk_src\public\tier1\KeyValues.h">
+      <Filter>deps\release\prop\AfxHookSource\css\sdk_src\public\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\deps\release\prop\AfxHookSource\css\sdk_src\public\vstdlib\IKeyValuesSystem.h">
+      <Filter>deps\release\prop\AfxHookSource\css\sdk_src\public\vstdlib</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
