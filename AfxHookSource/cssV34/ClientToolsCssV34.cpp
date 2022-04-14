@@ -22,7 +22,7 @@ std::vector<SOURCESDK::matrix3x4_t> g_cssv34_BoneState;
 typedef void *  (__fastcall * cssv34_C_BaseAnimating_RecordBones_t)(void* This, void* Edx, SOURCESDK::CStudioHdr *hdr);
 cssv34_C_BaseAnimating_RecordBones_t True_cssv34_C_BaseAnimating_RecordBones = nullptr;
 void * __fastcall My_cssv34_C_BaseAnimating_RecordBones(void* This, void* Edx, SOURCESDK::CStudioHdr *hdr) {
-	void * result = True_cssv34_C_BaseAnimating_RecordBones(hdr, Edx, hdr);
+	void * result = True_cssv34_C_BaseAnimating_RecordBones(This, Edx, hdr);
 	g_cssv34_hdr =  hdr;
 	SOURCESDK::matrix3x4_t *pBoneState = *(SOURCESDK::matrix3x4_t **)((unsigned char *)This + AFXADDR_GET(cssv34_client_C_BaseAnimating_m_BoneAccessor_m_pBones));
 	if(g_cssv34_BoneState.size() < hdr->numbones()) g_cssv34_BoneState.resize(hdr->numbones());
