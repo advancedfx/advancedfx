@@ -14,8 +14,7 @@ add_executable(ShaderBuilder
     "Properties/AssemblyInfo.cs"
 )
 
-set(CMAKE_DOTNET_TARGET_FRAMEWORK_VERSION "v4.6.2")
-#set(CMAKE_DOTNET_TARGET_FRAMEWORK_PROFILE "Client")
+set(CMAKE_DOTNET_TARGET_FRAMEWORK "net462")
 
 set_property(TARGET ShaderBuilder PROPERTY WIN32_EXECUTABLE TRUE)
 set_property(TARGET ShaderBuilder PROPERTY VS_PACKAGE_REFERENCES "SharpDX_4.2.0;SharpDX.D3DCompiler_4.2.0")
