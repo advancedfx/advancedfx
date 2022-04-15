@@ -7,7 +7,7 @@
 <release>
 <name>AfxHookSource</name>
 <version>1.107.0</version>
-<time>2022-04-16T12:40Z</time>
+<time>2022-04-15T13:44Z</time>
 <changes>
 <change type="updated">Updated AGR to v6 for CS:GO, TF2, CSSv34.</change>
 <change type="added">Added AGR v6 support to official Steam CSS.</change>
