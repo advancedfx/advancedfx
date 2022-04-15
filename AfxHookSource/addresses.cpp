@@ -2462,7 +2462,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 									MemRange result = FindPatternString(textRange.And(MemRange(refStrAddr - 0x1e, refStrAddr -0x1e + 6)), "81 EC 9C 00 00 00");
 									if(!result.IsEmpty()) {
 										AFXADDR_SET(cssv34_client_C_BaseAnimating_RecordBones, result.Start);
-										AFXADDR_DEF(cssv34_client_C_BaseAnimating_m_BoneAccessor_m_pBones,  0x4A8);
+										AFXADDR_SET(cssv34_client_C_BaseAnimating_m_BoneAccessor_m_pBones, 0x4A8);
 									}
 									else ErrorBox(MkErrStr(__FILE__, __LINE__));	
 								}
