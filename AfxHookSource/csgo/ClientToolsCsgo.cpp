@@ -551,6 +551,10 @@ void CClientToolsCsgo::StartRecording(wchar_t const * fileName)
 	{
 		m_ClientTools->EnableRecordingMode(true);
 
+		if(!csgo_C_BaseAnimating_RecordBones_Install())
+		{
+			Tier0_Warning("AFX: Failed to install IClientRenderable::SetupBones hook.\n");
+		}
 		if (RecordPlayerCameras_get() || RecordViewModels_get())
 		{
 			if (!csgo_C_CSPlayer_UpdateClientSideAnimation_Install())
@@ -560,10 +564,6 @@ void CClientToolsCsgo::StartRecording(wchar_t const * fileName)
 			if(!csgo_C_BaseEntity_ShouldInterpolate_Install())
 			{
 				Tier0_Warning("AFX: Failed to install C_BaseEntity::ShouldInterpolate hook.\n");
-			}
-			if(!csgo_C_BaseAnimating_RecordBones_Install())
-			{
-				Tier0_Warning("AFX: Failed to install IClientRenderable::SetupBones hook.\n");
 			}
 		}
 	}

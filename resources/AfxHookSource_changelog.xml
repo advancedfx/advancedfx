@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.107.1</version>
+<time>2022-04-17T18:16Z</time>
+<changes>
+<change type="fixed">Fixed CS:GO AGR v6 not working properly when neither player camera nor view model recording was enabled.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.107.0</version>
 <time>2022-04-15T13:44Z</time>
 <changes>
