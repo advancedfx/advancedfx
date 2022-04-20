@@ -4,6 +4,17 @@
 <changelog>
 
 
+
+<release>
+<name>AfxHookSource</name>
+<version>1.107.2</version>
+<time>2022-04-20T14:42Z</time>
+<changes>
+<change type="fixed">Fixed visibility flag for CSS and CSSv34 AGR v6, thanks @filiperino.</change>
+</changes>
+</release>
+
+
 <release>
 <name>AfxHookSource</name>
 <version>1.107.1</version>

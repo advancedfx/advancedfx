@@ -166,6 +166,8 @@ void CClientToolsCssV34::OnPostToolMessageCssV34(SOURCESDK::CSSV34::HTOOLHANDLE 
 					SOURCESDK::CSSV34::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::CSSV34::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity"));
 					if (pBaseEntityRs)
 					{
+						wasVisible = pBaseEntityRs->m_bVisible;
+
 						WriteDictionary("baseentity");
 						//Write((float)pBaseEntityRs->m_flTime);
 						WriteDictionary(pBaseEntityRs->m_pModelName);

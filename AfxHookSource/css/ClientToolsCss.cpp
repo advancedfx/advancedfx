@@ -164,6 +164,8 @@ void CClientToolsCss::OnPostToolMessageCss(SOURCESDK::CSS::HTOOLHANDLE hEntity, 
 					SOURCESDK::CSS::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::CSS::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity"));
 					if (pBaseEntityRs)
 					{
+						wasVisible = pBaseEntityRs->m_bVisible;
+
 						WriteDictionary("baseentity");
 						//Write((float)pBaseEntityRs->m_flTime);
 						WriteDictionary(pBaseEntityRs->m_pModelName);
