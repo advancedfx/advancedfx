@@ -136,6 +136,7 @@ AFXADDR_DECL(css_client_C_BaseAnimating_RecordBones)
 AFXADDR_DECL(cssv34_client_C_BaseAnimating_RecordBones)
 AFXADDR_DECL(cssv34_client_C_BaseAnimating_m_BoneAccessor_m_pBones)
 AFXADDR_DECL(tf2_client_C_BaseAnimating_RecordBones)
+AFXADDR_DECL(csgo_client_CModelRenderSystem_SetupBones)
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);

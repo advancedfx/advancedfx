@@ -32,6 +32,8 @@ class CAfxMatRenderContext;
 class IAfxMatRenderContextOrg abstract
 {
 public:
+	virtual void Bind(SOURCESDK::IMaterial_csgo * material, void *proxyData) = 0; //:009
+
 	virtual void ClearBuffers(bool bClearColor, bool bClearDepth, bool bClearStencil = false) = 0; //:012
 
 	virtual void ReadPixels(int x, int y, int width, int height, unsigned char *data, SOURCESDK::ImageFormat_csgo dstFormat, unsigned __int32 _unknown7 = 0) = 0; //:013

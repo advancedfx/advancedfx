@@ -454,6 +454,11 @@ typedef void (__fastcall* MatRenderContextHook_DrawScreenSpaceQuad_t)(
 	void* This, void* Edx,
 	SOURCESDK::IMaterial_csgo * pMaterial);
 
+//:106
+typedef void* (__fastcall* MatRenderContextHook_LockRenderData_t)(
+	void* This, void* Edx,
+	int nSizeInBytes);
+
 //:113
 typedef void (__fastcall* MatRenderContextHook_DrawScreenSpaceRectangle_t)(
 	void* This, void* Edx,
@@ -511,6 +516,9 @@ struct CMatRenderContextDetours
 
 	//:081
 	MatRenderContextHook_DrawScreenSpaceQuad_t DrawScreenSpaceQuad;
+
+	//:106
+	MatRenderContextHook_LockRenderData_t LockRenderData;
 
 	//:113
 	MatRenderContextHook_DrawScreenSpaceRectangle_t DrawScreenSpaceRectangle;
@@ -609,6 +617,11 @@ public:
 
 	//
 	////
+
+	virtual void Bind(SOURCESDK::IMaterial_csgo * material, void *proxyData) {
+		// This is hooked, so use detour:
+		return m_Detours->Bind((DWORD *)m_Ctx,0,material,proxyData);
+	}
 
 	virtual void ClearBuffers(bool bClearColor, bool bClearDepth, bool bClearStencil = false)
 	{
@@ -732,6 +745,18 @@ public:
 			pMaterial
 		);
 	}
+
+	void* Hook_LockRenderData(void* Edx,
+		int nSizeInBytes )
+	{
+		void * result = m_Detours->LockRenderData(m_Ctx, Edx, nSizeInBytes);
+
+		IAfxStreamContext * afxStream = Hook_get();
+		if (afxStream && result)
+			afxStream->OnLockRenderData(this, nSizeInBytes, result);
+
+		return result;
+	}	
 
 	void Hook_DrawScreenSpaceRectangle(void* Edx,
 		SOURCESDK::IMaterial_csgo *pMaterial,
@@ -955,6 +980,15 @@ void __fastcall MatRenderContextHook_DrawScreenSpaceQuad(
 	return ctxh->Hook_DrawScreenSpaceQuad(Edx, pMaterial);
 }
 
+void* __fastcall MatRenderContextHook_LockRenderData(
+	void* This, void* Edx,
+	int nSizeInBytes )
+{
+	CMatRenderContextHook * ctxh = CMatRenderContextHook::GetMatRenderContextHook((SOURCESDK::IMatRenderContext_csgo *)This);
+	return ctxh->Hook_LockRenderData(Edx, nSizeInBytes);
+}
+
+
 void __fastcall MatRenderContextHook_DrawScreenSpaceRectangle(
 	void* This, void* Edx,
 	SOURCESDK::IMaterial_csgo *pMaterial,
@@ -1031,9 +1065,12 @@ void CMatRenderContextHook::HooKVtable(SOURCESDK::IMatRenderContext_csgo * orgCt
 
 	//OutputDebugString("HooKVtable DETOUR BEGIN\n");
 	AfxDetourPtr((PVOID *)&(vtable[9]), MatRenderContextHook_Bind, (PVOID*)&m_Detours->Bind);
+	//AfxDetourPtr((PVOID *)&(vtable[22]), MatRenderContextHook_MatrixMode, (PVOID*)&m_Detours->MatrixMode);
+	//AfxDetourPtr((PVOID *)&(vtable[25]), MatRenderContextHook_LoadMatrix, (PVOID*)&m_Detours->LoadMatrix);
 	//AfxDetourPtr((PVOID *)&(vtable[40]), MatRenderContextHook_Viewport, (PVOID *)&m_Detours->Viewport);
 	AfxDetourPtr((PVOID*)&(vtable[62]), MatRenderContextHook_GetDynamicMesh, (PVOID*)&m_Detours->GetDynamicMesh);
 	AfxDetourPtr((PVOID*)&(vtable[81]), MatRenderContextHook_DrawScreenSpaceQuad, (PVOID*)&m_Detours->DrawScreenSpaceQuad);
+	AfxDetourPtr((PVOID*)&(vtable[106]), MatRenderContextHook_LockRenderData, (PVOID*)&m_Detours->LockRenderData);
 	AfxDetourPtr((PVOID*)&(vtable[114]), MatRenderContextHook_DrawScreenSpaceRectangle, (PVOID*)&m_Detours->DrawScreenSpaceRectangle);
 	AfxDetourPtr((PVOID*)&(vtable[151]), MatRenderContextHook_GetCallQueue, (PVOID*)&m_Detours->GetCallQueue);
 	AfxDetourPtr((PVOID*)&(vtable[169]), MatRenderContextHook_GetDynamicMeshEx, (PVOID*)&m_Detours->GetDynamicMeshEx);

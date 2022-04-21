@@ -31,7 +31,7 @@
 #include "FovScaling.h"
 //#include "csgo_CDemoFile.h"
 #include "csgo_Stdshader_dx9_Hooks.h"
-#include "csgo_models_replace.h""
+#include "csgo_models_replace.h"
 //#include <csgo/sdk_src/public/tier0/memalloc.h>
 #include <shared/MirvCampath.h>
 #include <shared/AfxDetours.h>

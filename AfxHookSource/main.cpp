@@ -258,6 +258,8 @@ SOURCESDK::CSGO::CPanoramaUIClient * g_pPanoramaUIClient = nullptr;
 
 SOURCESDK::CSGO::IStudioRender * g_pStudioRender = nullptr;
 
+SOURCESDK::CSGO::IVModelInfoClient* g_pModelInfo = nullptr;	
+
 void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals)
 {
 	static bool bFirstRun = true;
@@ -453,6 +455,12 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 			}
 			else {
 				ErrorBox("Could not get " SOURCESDK_CSGO_STUDIO_RENDER_INTERFACE_VERSION ".");
+			}
+
+			if(iface = appSystemFactory(SOURCESDK_CSGO_VMODELINFO_CLIENT_INTERFACE_VERSION, NULL)) {
+				g_pModelInfo = (SOURCESDK::CSGO::IVModelInfoClient *)iface;
+			} else {
+				ErrorBox("Could not get " SOURCESDK_CSGO_VMODELINFO_CLIENT_INTERFACE_VERSION ".");
 			}
 
 			/*
@@ -1009,7 +1017,7 @@ int CAfxBaseClientDll::Init(SOURCESDK::CreateInterfaceFn appSystemFactory, SOURC
 	MirvPgl::Init();
 #endif	
 
-	CAfxBaseFxStream::AfxStreamsInit();
+	CAfxStreams::AfxStreamsInit();
 
 	return result;
 }
