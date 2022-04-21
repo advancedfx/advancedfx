@@ -6,8 +6,8 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>1.109.0</version>
-<time>2022-04-21T16:00Z</time>
+<version>1.109.1</version>
+<time>2022-04-21T18:40Z</time>
 <changes>
 <change type="updated">Vastly improved the HLAE mirv_streams entity detection capabilities. This is also reflected in the updated afx/wh.cfg, since it now no more needs wonky tampering with disabling fastpath.</change>
 </changes>

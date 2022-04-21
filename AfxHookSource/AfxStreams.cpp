@@ -218,29 +218,32 @@ void __fastcall My_csgo_CModelRenderSystem_SetupBones( void * This, void* Edx, i
 	if (hook) {
 		hook->Set_In_CModelRenderSystem_SetupBones(true);
 		for(int i=0; i < nModelTypeCount; ++i) {
-			SOURCESDK::IClientRenderable_csgo *clientRenderAble = *(SOURCESDK::IClientRenderable_csgo **)(*(unsigned char **)((unsigned char *)pModelList + 0x1c + 0x0c) +0x60 * i +0x48);
-			if(clientRenderAble) {
-				CEntityMetaRef entMeta(std::unique_ptr<CEntityMeta>(new CEntityMeta(clientRenderAble->GetIClientUnknown())));
-				SOURCESDK::IClientUnknown_csgo * clientUnknown = clientRenderAble->GetIClientUnknown();
-				SOURCESDK::IClientUnknown_csgo * clientEntity = clientUnknown ? clientUnknown->GetIClientEntity() : nullptr;
-				SOURCESDK::C_BaseEntity_csgo * baseEntity = clientEntity ? clientEntity->GetBaseEntity() : nullptr;
-				entMeta->Handle = clientUnknown ? clientUnknown->GetRefEHandle() : SOURCESDK_CSGO_INVALID_EHANDLE_INDEX;
-				entMeta->ClassName = baseEntity ? baseEntity->GetClassname() : "";
-				entMeta->IsPlayer = baseEntity ? baseEntity->IsPlayer() : false;
-				entMeta->TeamNumber = baseEntity ? baseEntity->GetTeamNumber() : 0;
-				if(g_pModelInfo) {
-					const SOURCESDK::CSGO::model_t * pModel = clientRenderAble->GetModel();
-					if(pModel) {
-						entMeta->ModelName = g_pModelInfo->GetModelName(pModel);
+			unsigned char * pI = (unsigned char *)pModelList + 0x1c +0x30*i;
+			int count = *(int *)pI;
+			for(int j=0; j<count;++j) {
+				SOURCESDK::IClientRenderable_csgo *clientRenderAble = *(SOURCESDK::IClientRenderable_csgo **)(*(unsigned char **)(pI + 0x0c) +0x60 * j +0x48);
+				if(clientRenderAble) {
+					CEntityMetaRef entMeta(std::unique_ptr<CEntityMeta>(new CEntityMeta(clientRenderAble->GetIClientUnknown())));
+					SOURCESDK::IClientUnknown_csgo * clientUnknown = clientRenderAble->GetIClientUnknown();
+					SOURCESDK::IClientUnknown_csgo * clientEntity = clientUnknown ? clientUnknown->GetIClientEntity() : nullptr;
+					SOURCESDK::C_BaseEntity_csgo * baseEntity = clientEntity ? clientEntity->GetBaseEntity() : nullptr;
+					entMeta->Handle = clientUnknown ? clientUnknown->GetRefEHandle() : SOURCESDK_CSGO_INVALID_EHANDLE_INDEX;
+					entMeta->ClassName = baseEntity ? baseEntity->GetClassname() : "";
+					entMeta->IsPlayer = baseEntity ? baseEntity->IsPlayer() : false;
+					entMeta->TeamNumber = baseEntity ? baseEntity->GetTeamNumber() : 0;
+					if(g_pModelInfo) {
+						const SOURCESDK::CSGO::model_t * pModel = clientRenderAble->GetModel();
+						if(pModel) {
+							entMeta->ModelName = g_pModelInfo->GetModelName(pModel);
+						}
 					}
+					g_DrawingThread_CurrentMeta.push_back(entMeta);
+					TrackRenderableLifeTime(clientRenderAble);
+				} else {
+					CEntityMetaRef entMeta = nullptr;
+					g_DrawingThread_CurrentMeta.push_back(entMeta);
 				}
-				g_DrawingThread_CurrentMeta.push_back(entMeta);
-				TrackRenderableLifeTime(clientRenderAble);
-			} else {
-				CEntityMetaRef entMeta = nullptr;
-				g_DrawingThread_CurrentMeta.push_back(entMeta);
 			}
-
 		}
 	}
 	True_csgo_CModelRenderSystem_SetupBones(This,Edx,nModelTypeCount,pModelList);
@@ -3136,35 +3139,6 @@ void CAfxBaseFxStream::UpdateCurrentEntity(void* proxyData)
 	m_CurrentEntityMeta = CEntityMetaRef();
 }
 
-SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::UpdateAction(IAfxMatRenderContext* ctx,SOURCESDK::IMaterial_csgo * material) {
-
-	CAfxTrackedMaterialRef trackedMaterial(CAfxTrackedMaterial::TrackMaterial(material));	
-
-	CAction * action = m_Stream->RetrieveAction(
-		trackedMaterial
-		, m_CurrentEntityMeta
-	);
-
-	if (nullptr == action) action = this->RetrieveAction(trackedMaterial, m_CurrentEntityMeta);
-
-	if (m_Data.Modifier)
-	{
-		action = m_Data.Modifier->OverrideAction(action);
-	}
-
-	BindAction(action);
-
-	if (m_CurrentAction)
-	{
-		m_CurrentAction->MaterialHook(this, ctx, trackedMaterial);
-	}
-
-	if (SOURCESDK::IMaterial_csgo * replacementMaterial = trackedMaterial.Get()->GetReplacement())
-		return replacementMaterial;
-
-	return material;
-}
-
 SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::MaterialHook(IAfxMatRenderContext* ctx, SOURCESDK::IMaterial_csgo * material, void * proxyData)
 {
 	this->IfRootThenUpdateCurrentEntity(proxyData);
@@ -3174,7 +3148,33 @@ SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::MaterialH
 		// This means we are on the rendering thread and can go through with the current material.
 
 		m_CurrentMaterialOrg = material;
-		m_CurrentMaterial = UpdateAction(ctx, material);
+		
+		CAfxTrackedMaterialRef trackedMaterial(CAfxTrackedMaterial::TrackMaterial(material));	
+
+		CAction * action = m_Stream->RetrieveAction(
+			trackedMaterial
+			, m_CurrentEntityMeta
+		);
+
+		if (nullptr == action) action = this->RetrieveAction(trackedMaterial, m_CurrentEntityMeta);
+
+		if (m_Data.Modifier)
+		{
+			action = m_Data.Modifier->OverrideAction(action);
+		}
+
+		BindAction(action);
+
+		if (m_CurrentAction)
+		{
+			m_CurrentAction->MaterialHook(this, ctx, trackedMaterial);
+		}
+
+		if (SOURCESDK::IMaterial_csgo * replacementMaterial = trackedMaterial.Get()->GetReplacement())
+			m_CurrentMaterial = replacementMaterial;
+		else
+			m_CurrentMaterial = material;
+
 		m_CurrentProxyData = proxyData;
 		return m_CurrentMaterial;
 	}
@@ -3202,45 +3202,99 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawInstances(IAfxMatRenderConte
 		return;
 	}
 
+	CAfxTrackedMaterialRef trackedMaterial(CAfxTrackedMaterial::TrackMaterial(m_CurrentMaterialOrg));		
+
 	int m_LastDrawnCount = 0;
 	m_CurrentEntityMeta = m_CurrentEntityMetaOrg;
 	m_CurrentMaterial = m_CurrentMaterialOrg;
 	int i;
+	CAction * orgAction = m_CurrentAction;
+	orgAction->AddRef();
 	for(i=0;i<nInstanceCount;++i) {
 		CEntityMetaRef currentEntityI = m_CurrentEntityMetaOrg;
-		auto result = g_DrawingThread_BonesPtr_To_Meta.find(pInstance->m_pPoseToWorld);
+		auto result = g_DrawingThread_BonesPtr_To_Meta.find((pInstance + i)->m_pPoseToWorld);
 		if(result != g_DrawingThread_BonesPtr_To_Meta.end()) {
 			currentEntityI = result->second;
 		}
 		if(currentEntityI != m_CurrentEntityMeta) {
 			m_CurrentEntityMeta = currentEntityI;
-			SOURCESDK::IMaterial_csgo * currentMaterialI = UpdateAction(ctx, m_CurrentMaterialOrg);
-			if(m_CurrentMaterial != currentMaterialI) {
-				pInstance += m_LastDrawnCount;
+
+			// BEGIN determine new action
+
+			CAction * action = m_Stream->RetrieveAction(
+				trackedMaterial
+				, m_CurrentEntityMeta
+			);
+
+			if (nullptr == action) action = this->RetrieveAction(trackedMaterial, m_CurrentEntityMeta);
+
+			if (m_Data.Modifier)
+			{
+				action = m_Data.Modifier->OverrideAction(action);
+			}
+
+			// END determine new action
+
+			if(action != m_CurrentAction) {
+				// Action differs, we gotta do something.
+
 				if (m_CurrentAction)
-					m_CurrentAction->DrawInstances(this, ctx, i - m_LastDrawnCount, pInstance);
+					m_CurrentAction->DrawInstances(this, ctx, i - m_LastDrawnCount, pInstance + m_LastDrawnCount);
 				else
-					ctx->GetOrg()->DrawInstances(i - m_LastDrawnCount, pInstance);
+					ctx->GetOrg()->DrawInstances(i - m_LastDrawnCount, pInstance + m_LastDrawnCount);
 				m_LastDrawnCount = i;
-				m_CurrentMaterial = currentMaterialI;
-				ctx->GetOrg()->Bind(m_CurrentMaterial, m_CurrentProxyData);
+				
+				// BEGIN switch to new action
+
+				BindAction(action);
+
+				if (m_CurrentAction)
+				{
+					m_CurrentAction->MaterialHook(this, ctx, trackedMaterial);
+				}
+
+				if (SOURCESDK::IMaterial_csgo * replacementMaterial = trackedMaterial.Get()->GetReplacement())
+					m_CurrentMaterial = replacementMaterial;
+				else
+					m_CurrentMaterial = m_CurrentMaterialOrg;
+
+				ctx->GetOrg()->Bind(m_CurrentMaterial, m_CurrentProxyData);					
+
+				// END SWITCH to new action
 			}
 		}
 	}
 
 	if(m_LastDrawnCount < nInstanceCount) {
-		pInstance += m_LastDrawnCount;
 		if (m_CurrentAction)
-			m_CurrentAction->DrawInstances(this, ctx, i - m_LastDrawnCount, pInstance);
+			m_CurrentAction->DrawInstances(this, ctx, i - m_LastDrawnCount, pInstance + m_LastDrawnCount);
 		else
-			ctx->GetOrg()->DrawInstances(i - m_LastDrawnCount, pInstance);
+			ctx->GetOrg()->DrawInstances(i - m_LastDrawnCount, pInstance + m_LastDrawnCount);
 		m_LastDrawnCount = i;
 	}
 	m_CurrentEntityMeta = m_CurrentEntityMetaOrg;
-	if(m_CurrentMaterial != m_CurrentMaterialOrg) {
-		m_CurrentMaterial = m_CurrentMaterialOrg;
+
+	if(orgAction != m_CurrentAction)
+	{
+		// BEGIN switch back
+
+		BindAction(orgAction);
+
+		if (m_CurrentAction)
+		{
+			m_CurrentAction->MaterialHook(this, ctx, trackedMaterial);
+		}
+
+		if (SOURCESDK::IMaterial_csgo * replacementMaterial = trackedMaterial.Get()->GetReplacement())
+			m_CurrentMaterial = replacementMaterial;
+		else
+			m_CurrentMaterial = m_CurrentMaterialOrg;
+
 		ctx->GetOrg()->Bind(m_CurrentMaterial, m_CurrentProxyData);
-	}	
+
+		// END switch back
+	}
+	orgAction->Release();	
 }
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::Draw(IAfxMesh * am, int firstIndex, int numIndices)

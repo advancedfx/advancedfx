@@ -2514,8 +2514,6 @@ private:
 
 		std::atomic<IAfxMatRenderContext *> m_RootContext = nullptr;
 
-		SOURCESDK::IMaterial_csgo * UpdateAction(IAfxMatRenderContext* ctx, SOURCESDK::IMaterial_csgo * material);
-
 		class CQueueBeginFunctor
 			: public CAfxFunctor
 		{
