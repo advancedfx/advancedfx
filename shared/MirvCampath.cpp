@@ -727,14 +727,14 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 										}
 			}
 
-			conMessage("%s edit start - Sets current demotime as new start time for the path [or selected keyframes].\n", args->ArgV(0));
+			conMessage("%s edit start - Sets current demo time as new start time for the path [or selected keyframes].\n", args->ArgV(0));
 			conMessage("%s edit start abs <dValue> - Sets a given floating point value as new start time for the path [or selected keyframes].\n", args->ArgV(0));
 			conMessage("%s edit start delta(+|-)<dValue> - Offsets the path [or selected keyframes] by the given <dValue> delta value (Example: \"mirv_campath edit start delta-1.5\" moves the path [or selected keyframes] 1.5 seconds back in time).\n", args->ArgV(0));
 			conMessage("%s edit duration <dValue> - set floating point value <dValue> as new duration for the path [or selected keyframes] (in seconds). Please see remarks in HLAE manual.\n", args->ArgV(0));
 			conMessage("%s edit position current|(<dX> <dY> <dZ>) - Edit position of the path [or selected keyframes]. The position is applied to the center of the bounding box (\"middle\") of all [or the selected] keyframes, meaning the keyframes are moved relative to that. Current uses the current camera position, otherwise you can give the exact position.\n", args->ArgV(0));
 			conMessage("%s edit angles current|(<dPitchY> <dYawZ> <dRollX>) - Edit angles of the path [or selected keyframes]. All keyframes are assigned the same angles. Current uses the current camera angles, otherwise you can give the exact angles.\n", args->ArgV(0));
 			conMessage("%s edit fov current|<dFov> - Similar to mirv_campath edit angles, except for field of view (fov).\n", args->ArgV(0));
-			conMessage("%s  edit rotate <dPitchY> <dYawZ> <dRollX> - Rotate path [or selected keyframes] around the middle of their bounding box by the given angles in degrees.\n", args->ArgV(0));
+			conMessage("%s edit rotate <dPitchY> <dYawZ> <dRollX> - Rotate path [or selected keyframes] around the middle of their bounding box by the given angles in degrees.\n", args->ArgV(0));
 			conMessage("%s edit anchor #<anchorId>|(<anchorX > <anchorY> <anchorZ> <anchorPitchY> <anchorYawZ> <anchorRollX>) current|(<destX > <destY> <destZ> <destPitchY> <destYawZ> <destRollX>) - This translates and rotates a path using a given anchor (either a keyframe ID or actual values) and a destination for the anchor (use current for current camera view).\n", args->ArgV(0));
 			conMessage("%s edit interp [...] - Edit interpolation properties.\n", args->ArgV(0));
 			return;
@@ -891,7 +891,7 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 			}
 
 			conMessage("%s select all - Select all points.\n", args->ArgV(0));
-			conMessage("%s select none - Selects no points.\n", args->ArgV(0));
+			conMessage("%s select none - Deselect all points.\n", args->ArgV(0));
 			conMessage("%s select invert - Invert selection.\n", args->ArgV(0));
 			conMessage("%s select [add] #<idBegin> #<idEnd> - Select keyframes starting at id <idBegin> and ending at id <idEnd>. If add is given, then selection is added to the current one.\n", args->ArgV(0));
 			conMessage("%s select [add] current[(+|-)<dOfsMin>]|<dMin> #<count> - Select keyframes starting at given time and up to <count> number of keyframes. If add is given, then selection is added to the current one.\n", args->ArgV(0));
@@ -1017,7 +1017,7 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 	conMessage("%s enabled 0|1 - Set whether the camera path is active or not. Please note that currently at least 4 points are required to make it active successfully!\n", args->ArgV(0));
 	conMessage("%s draw [...] - Controls drawing of the camera path.\n", args->ArgV(0));
 	conMessage("%s clear - Removes all [or all selected] keyframes.\n", args->ArgV(0));
-	conMessage("%s print - Prints keyframes.\n", args->ArgV(0));
+	conMessage("%s print - Prints detailed information.\n", args->ArgV(0));
 	conMessage("%s remove <id> - Removes a keyframe.\n", args->ArgV(0));
 	conMessage("%s load <fileName> - Loads the campath from the file (XML format).\n", args->ArgV(0));
 	conMessage("%s save <fileName> - Saves the campath to the file (XML format).\n", args->ArgV(0));
