@@ -53,7 +53,7 @@ namespace AfxGui
                 // current GUID:
                 new Guid("7621cb5b-705f-4fb3-9464-39f6a8772fc5"),
                 // current roll-back GUID:
-                new Guid("21c97700-adfd-4704-89ec-20c52fef8420"),
+                new Guid("4cb25bca-6d46-4280-837f-1e9e7149e441"),
                 // old GUID(s) to accept:
                 new Guid("51e64831-36a2-4613-a367-748ca3c34c50")
             };

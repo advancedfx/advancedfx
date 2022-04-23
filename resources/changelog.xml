@@ -6,6 +6,17 @@
 
 <release>
 <name>HLAE</name>
+<version>2.130.2</version>
+<time>2022-04-23T16:30Z</time>
+<changes>
+<change type="updated">Included AfxHookSource 1.109.2 (2022-04-23T16:30Z).</change>
+</changes>
+<comments>Since apart from minor typo fixes this release is functionally the same as the last one, people on 2.130.1 won't be notified of the update.</comments>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.130.1</version>
 <time>2022-04-21T18:40Z</time>
 <changes>

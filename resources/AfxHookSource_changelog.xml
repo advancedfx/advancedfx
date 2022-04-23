@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.109.2</version>
+<time>2022-04-23T16:30Z</time>
+<changes>
+<change type="fixed">Fixed some minor typos, apart from that same as last release (thanks Dec).</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.109.1</version>
 <time>2022-04-21T18:40Z</time>
 <changes>
@@ -16,7 +26,6 @@ IMPORTANT: Do not forget to update your own configs (e.g. wh related cfgs) that 
 You should REMOVE any of these from your configs: cl_modelfastpath 0; cl_tlucfastpath 0; cl_brushfastpath 0
 </comments>
 </release>
-
 
 
 <release>
