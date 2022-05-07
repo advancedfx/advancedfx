@@ -118,7 +118,9 @@ namespace AfxGui
 	        if( this.comboBoxModSel.SelectedIndex < 0 || this.comboBoxModSel.SelectedIndex >= this.modificiationValues.Length)
 	        {
 		        cfg.Modification = this.textBoxCustMod.Text;
-	        } else {
+	        } 
+            else
+            {
                 cfg.Modification = this.modificiationValues[this.comboBoxModSel.SelectedIndex];
 	        }
 

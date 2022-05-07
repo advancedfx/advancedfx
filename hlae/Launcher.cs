@@ -69,15 +69,19 @@ class Launcher
             cmds += cfg.FullScreen ? " -full -stretchaspect" : " -window";
 
             s1 = cfg.GfxBpp.ToString();
-            if (0 < s1.Length) cmds += " -" + s1 + "bpp";
+            if (0 < s1.Length)
+                cmds += " -" + s1 + "bpp";
 
             s1 = cfg.GfxWidth.ToString();
-            if (0 < s1.Length) cmds += " -w " + s1;
+            if (0 < s1.Length)
+                cmds += " -w " + s1;
 
             s1 = cfg.GfxHeight.ToString();
-            if (0 < s1.Length) cmds += " -h " + s1;
+            if (0 < s1.Length)
+                cmds += " -h " + s1;
 
-            if (cfg.GfxForce) cmds += " -forceres";
+            if (cfg.GfxForce)
+                cmds += " -forceres";
 
             // advanced
 

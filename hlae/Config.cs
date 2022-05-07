@@ -72,7 +72,8 @@ public class CfgLauncher
     public class CfgInjectDll
     {
         public String Path {
-            get {
+            get
+            {
                 string basePath = (Program.BaseDir + System.IO.Path.DirectorySeparatorChar);
                 if (null != m_Path && m_Path.StartsWith(basePath)) return m_Path.Substring(basePath.Length);
                 return m_Path;
@@ -384,11 +385,11 @@ public class Config
 
 		try
 		{
-                XmlAttributeOverrides xOver = new XmlAttributeOverrides();
+            XmlAttributeOverrides xOver = new XmlAttributeOverrides();
 
-                OnSerializeOverrides(xOver);
+            OnSerializeOverrides(xOver);
 
-                XmlSerializer serializer = new XmlSerializer( typeof(Config), xOver );
+            XmlSerializer serializer = new XmlSerializer( typeof(Config), xOver );
 
             writer = new StreamWriter(filePath);
 
