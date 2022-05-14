@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.13.3</version>
+<time>2022-05-14T09:15Z</time>
+<changes>
+<change type="fixed">Fixed possible buffer format confusion between different streams for FFMPEG.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.13.2</version>
 <time>2022-03-11T22:36Z</time>
 <changes>

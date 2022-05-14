@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.109.4</version>
+<time>2022-05-14T09:15Z</time>
+<changes>
+<change type="fixed">Fixed possible buffer format confusion between different streams for FFMPEG.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.109.3</version>
 <time>2022-05-14T08:00Z</time>
 <changes>

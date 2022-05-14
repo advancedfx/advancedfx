@@ -73,7 +73,7 @@ protected:
 
 	}
 
-	const CImageFormat& m_ImageFormat;
+	const CImageFormat m_ImageFormat;
 };
 
 class COutImageStream : public COutVideoStream
