@@ -1950,7 +1950,9 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 
 		// mirv_pov related
 		//
-		// If this changes MYcsgo_DamageIndicator_MessageFunc asm needs adjustments.
+		// Called by function that references string "CCSGO_HudDamageIndicator".
+		// 
+		// If this changes MYcsgo_DamageIndicator_MessageFunc asm might need adjustments.
 		{
 			DWORD addr = 0;
 
@@ -1959,7 +1961,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			{
 				MemRange textRange = sections.GetMemRange();
 
-				MemRange result = FindPatternString(textRange, "55 8B EC 83 E4 F8 81 EC 94 00 00 00 80 3D ?? ?? ?? ?? 00 53 8B 5D 08");
+				MemRange result = FindPatternString(textRange, "55 8B EC 83 E4 F8 81 EC 94 00 00 00 80 3D ?? ?? ?? ?? 00 53 56 57 8B D9");
 
 				if (!result.IsEmpty())
 					addr = result.Start;

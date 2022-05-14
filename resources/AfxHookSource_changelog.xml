@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.109.3</version>
+<time>2022-05-14T08:00Z</time>
+<changes>
+<change type="fixed">Adjusted to CS:GO 5/13/2022 update.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.109.2</version>
 <time>2022-04-23T16:30Z</time>
 <changes>
