@@ -96,7 +96,7 @@ private:
 	bool m_IfBmpNotTga;
 
 	bool m_TriedCreatePath = false;
-	bool m_SucceededCreatePath;
+	bool m_SucceededCreatePath = false;
 
 	size_t m_FrameNumber = 0;
 
@@ -116,7 +116,7 @@ protected:
 private:
 	PROCESS_INFORMATION m_ProcessInfo;
 	bool m_TriedCreatePath = false;
-	bool m_SucceededCreatePath;
+	bool m_SucceededCreatePath = false;
 	BOOL m_Okay = FALSE;
 	HANDLE m_hChildStd_IN_Rd = NULL;
 	HANDLE m_hChildStd_IN_Wr = NULL;
