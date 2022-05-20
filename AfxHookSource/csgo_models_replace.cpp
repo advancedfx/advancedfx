@@ -13,13 +13,13 @@
 
 
 bool CCsgoModelsReplace::m_HooksInstalled = false;
-CCsgoModelsReplace::FindModel_t CCsgoModelsReplace::m_True_FindModel = nullptr;
+CCsgoModelsReplace::GetModel_t CCsgoModelsReplace::m_True_GetModel = nullptr;
 
 
-void* __fastcall CCsgoModelsReplace::My_FindModel(void* This, void* Edx, const char* name) {
+void* __fastcall CCsgoModelsReplace::My_GetModel(void* This, void* Edx, const char* name, int iUnk) {
 	auto replacement = g_CCsgoModelsReplace.GetLoaderReplacement(name);
 
-	void* result = m_True_FindModel(This, Edx, (nullptr != replacement ? replacement->TargetName.c_str() : name));
+	void* result = m_True_GetModel(This, Edx, (nullptr != replacement ? replacement->TargetName.c_str() : name), iUnk);
 
 	if (result && replacement && replacement->Transparent) {
 		// Fix up model name.
@@ -35,13 +35,15 @@ void* __fastcall CCsgoModelsReplace::My_FindModel(void* This, void* Edx, const c
 bool CCsgoModelsReplace::InstallHooks() {
 	if (m_HooksInstalled) return true;
 
-	if (!AFXADDR_GET(csgo_engine_CModelLoader_FindModel)) return false;
+	if (!(AFXADDR_GET(csgo_engine_CModelLoader_vtable) && AFXADDR_GET(csgo_engine_CModelLoader_GetModel_vtable_index))) return false;
 
-	m_True_FindModel = (FindModel_t)AFXADDR_GET(csgo_engine_CModelLoader_FindModel);
+	void** vtable_CModelLoader = (void**)AFXADDR_GET(csgo_engine_CModelLoader_vtable);
+
+	m_True_GetModel = (GetModel_t)(vtable_CModelLoader[AFXADDR_GET(csgo_engine_CModelLoader_GetModel_vtable_index)]);
 
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
-	DetourAttach(&(PVOID&)m_True_FindModel, My_FindModel);
+	DetourAttach(&(PVOID&)m_True_GetModel, My_GetModel);
 
 	m_HooksInstalled = NO_ERROR == DetourTransactionCommit();
 

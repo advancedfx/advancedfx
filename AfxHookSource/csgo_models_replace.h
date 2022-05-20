@@ -37,16 +37,19 @@ public:
 	}
 
 private:
-	typedef void* (__fastcall * FindModel_t)(void* This, void* Edx, const char* name);
+	typedef void* (__fastcall * GetModel_t)(void* This, void* Edx, const char* name, int iUnk);
+	typedef void* (__fastcall* VDtor_t)(void* This, void* Edx, bool bUnk);
+	typedef const char* (__fastcall* GetTableName_t)(void* This, void* Edx);
+	typedef const char* (__fastcall* GetString_t)(void* This, void* Edx, int stringNumber);
 
 	std::list<Replacement_s> m_LoaderReplacements;
 
 	bool m_Debug = false;
 	
 	static bool m_HooksInstalled;
-	static FindModel_t m_True_FindModel;
+	static GetModel_t m_True_GetModel;
 
-	static void* __fastcall My_FindModel(void* This, void* Edx, const char* name);
+	static void* __fastcall My_GetModel(void* This, void* Edx, const char* name, int iUnk);
 
 	struct Replacement_s* GetSomeReplacement(const char* pModelName, std::list<Replacement_s> & replacements, const char * szDebugName);
 };
