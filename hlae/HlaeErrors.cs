@@ -134,7 +134,7 @@ namespace AfxGui
                     solution = HlaeErrorStrings.IncorrectPath;
                     break;
                 case 123:
-                    solution = L10n._p("HLAE errors", "Try using CS:GO Launcher instead of Custom Loader.");
+                    solution = HlaeErrorStrings.IncorrectPath;
                     break;
                 case 740:
                     solution = L10n._p("HLAE errors", "Make sure neither HLAE.exe, Steam.exe nor csgo.exe are set to run as admin.");
