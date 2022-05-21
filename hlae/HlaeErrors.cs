@@ -103,6 +103,7 @@ namespace AfxGui
 
         protected class HlaeErrorStrings
         {
+            public static string IncorrectPath = L10n._p("HLAE errors", "Make sure you entered the correct path to the game .exe and included the .exe file. Copy the path from the game properties in Steam to make sure you are using the correct path.");
         }
 
         public static AfxError InjectorStartException(string injectorFileName, Exception exception)
@@ -124,13 +125,13 @@ namespace AfxGui
             switch(getLastWin32ErrorValue)
             {
                 case 2:
-                    solution = L10n._p("HLAE errors", "Make sure you entered the correct path to the game .exe and included the .exe file. Copy the path from the game properties in Steam to make sure you are using the correct path.");
+                    solution = HlaeErrorStrings.IncorrectPath;
                     break;
                 case 5:
                     solution = L10n._p("HLAE errors", "Make sure to close any anti-cheat software and that the path to the game .exe is correct.");
                     break;
                 case 267:
-                    solution = InjectorErrorStrings.CloseAntiCheatsSolution;
+                    solution = HlaeErrorStrings.IncorrectPath;
                     break;
                 case 123:
                     solution = L10n._p("HLAE errors", "Try using CS:GO Launcher instead of Custom Loader.");
