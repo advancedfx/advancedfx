@@ -30,9 +30,9 @@ add_custom_command(
     WORKING_DIRECTORY ${protobuf_BINARY_DIR}
 	OUTPUT ${PROTOBUF_BUILD_BINARIES}
     DEPENDS protobuf
-    COMMAND ${CMAKE_COMMAND} "-DCMAKE_INSTALL_PREFIX=${protobuf_BINARY_DIR}/install" -Dprotobuf_BUILD_SHARED_LIBS=OFF -Dprotobuf_MSVC_STATIC_RUNTIME=OFF -G "Visual Studio 16 2019" -T "v142" -A "Win32"  "${protobuf_SOURCE_DIR}/cmake"
-    COMMAND ${VS16_MSBUILD} "libprotobuf.vcxproj" "/p:Configuration=${VS16_CONFIGURATION}" "/p:Platform=Win32"
-    COMMAND ${VS16_MSBUILD} "protoc.vcxproj" "/p:Configuration=${VS16_CONFIGURATION}" "/p:Platform=Win32"
+    COMMAND ${CMAKE_COMMAND} "-DCMAKE_INSTALL_PREFIX=${protobuf_BINARY_DIR}/install" -Dprotobuf_BUILD_SHARED_LIBS=OFF -Dprotobuf_MSVC_STATIC_RUNTIME=OFF -G "${CMAKE_GENERATOR}" -T "${CMAKE_GENERATOR_TOOLSET}" -A "Win32"  "${protobuf_SOURCE_DIR}/cmake"
+    COMMAND ${VS_MSBUILD} "libprotobuf.vcxproj" "/p:Configuration=${VS_CONFIGURATION}" "/p:Platform=Win32"
+    COMMAND ${VS_MSBUILD} "protoc.vcxproj" "/p:Configuration=${VS_CONFIGURATION}" "/p:Platform=Win32"
 )
 
 add_custom_target(protobuf_build

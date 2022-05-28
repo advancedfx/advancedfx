@@ -22,7 +22,7 @@ set(zlib_SOURCE_DIR ${zlib_SOURCE_DIR} PARENT_SCOPE)
 add_custom_command(
     WORKING_DIRECTORY "${zlib_SOURCE_DIR}"
 	OUTPUT "${zlib_SOURCE_DIR}/zlib1.dll"
-    COMMAND "${VS16_INSTALLPATH}\\VC\\Auxiliary\\Build\\vcvarsall.bat" "x86" "&&" "nmake" "-f" "win32/Makefile.msc" "zlib1.dll"
+    COMMAND "${VS_INSTALLPATH}\\VC\\Auxiliary\\Build\\vcvarsall.bat" "x86" "&&" "nmake" "-f" "win32/Makefile.msc" "zlib1.dll"
 	USES_TERMINAL
 	VERBATIM
     COMMAND ${CMAKE_COMMAND} -E touch "${zlib_SOURCE_DIR}/zlib.stamp"

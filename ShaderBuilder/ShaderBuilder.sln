@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32519.379
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShaderBuilder", "ShaderBuilder.csproj", "{13FFE5F3-05BA-4EA0-A727-553A156E083E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{13FFE5F3-05BA-4EA0-A727-553A156E083E}.Debug|x64.ActiveCfg = Debug|x64
+		{13FFE5F3-05BA-4EA0-A727-553A156E083E}.Debug|x64.Build.0 = Debug|x64
+		{13FFE5F3-05BA-4EA0-A727-553A156E083E}.Release|x64.ActiveCfg = Release|x64
+		{13FFE5F3-05BA-4EA0-A727-553A156E083E}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2F8D12D7-481F-4420-9C98-821255DD86E1}
+	EndGlobalSection
+EndGlobal

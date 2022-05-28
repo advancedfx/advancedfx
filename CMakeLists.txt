@@ -12,25 +12,25 @@ if(${CMAKE_BUILD_TYPE} STREQUAL Debug)
 	set(CMAKE_BUILD_TYPE_DEBUG 1)
 endif()
 
-set(VS16_CONFIGURATION $<IF:$<CONFIG:Debug>,Debug,Release>)
+set(VS_CONFIGURATION $<IF:$<CONFIG:Debug>,Debug,Release>)
 
 #
 # Get Microsoft Visual Studio related paths:
 #
 
 execute_process(
-    COMMAND "$ENV{ProgramFiles\(x86\)}\\Microsoft Visual Studio\\Installer\\vswhere.exe" "-latest" "-version" "[16.0,17.0)" "-property" "installationPath"
-    OUTPUT_VARIABLE VS16_INSTALLPATH
+    COMMAND "$ENV{ProgramFiles\(x86\)}\\Microsoft Visual Studio\\Installer\\vswhere.exe" "-latest" "-version" "[17.0,18.0)" "-property" "installationPath"
+    OUTPUT_VARIABLE VS_INSTALLPATH
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-string(REPLACE "\\" "/" VS16_INSTALLPATH ${VS16_INSTALLPATH})
+string(REPLACE "\\" "/" VS_INSTALLPATH ${VS_INSTALLPATH})
 
 execute_process(
-    COMMAND "$ENV{ProgramFiles\(x86\)}\\Microsoft Visual Studio\\Installer\\vswhere.exe" "-latest" "-version" "[16.0,17.0)" "-requires" "Microsoft.Component.MSBuild" "-find" "MSBuild\\**\\**\\Bin\\MSBuild.exe"
-    OUTPUT_VARIABLE VS16_MSBUILD
+    COMMAND "$ENV{ProgramFiles\(x86\)}\\Microsoft Visual Studio\\Installer\\vswhere.exe" "-latest" "-version" "[17.0,18.0)" "-requires" "Microsoft.Component.MSBuild" "-find" "MSBuild\\**\\**\\Bin\\MSBuild.exe"
+    OUTPUT_VARIABLE VS_MSBUILD
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-string(REPLACE "\\" "/" VS16_MSBUILD ${VS16_MSBUILD})
+string(REPLACE "\\" "/" VS_MSBUILD ${VS_MSBUILD})
 
 #
 # Include dependencies:
@@ -45,19 +45,7 @@ add_subdirectory("deps/release/openexr")
 add_subdirectory("deps/release/injector_bin")
 
 add_subdirectory("AfxCppCli")
-
-ExternalProject_Add("shaderbuilder"
-    SOURCE_DIR "${CMAKE_SOURCE_DIR}/ShaderBuilder"
-	BINARY_DIR "${CMAKE_BINARY_DIR}/ShaderBuilder"
-    CMAKE_GENERATOR "Visual Studio 16 2019"
-    CMAKE_GENERATOR_TOOLSET "v142"
-    CMAKE_GENERATOR_PLATFORM "x64"
-    BUILD_COMMAND "${CMAKE_COMMAND}" --build . --config "${CMAKE_CFG_INTDIR}" -- -r
-	INSTALL_COMMAND ""
-)
-
-set(shaderbuilder_BINARY_DIR "${CMAKE_BINARY_DIR}/ShaderBuilder/${CMAKE_CFG_INTDIR}")
-
+add_subdirectory("ShaderBuilder")
 add_subdirectory("AfxHookGoldSrc")
 add_subdirectory("AfxHookSource")
 add_subdirectory("hlae")
@@ -152,7 +140,7 @@ install(
 	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -Rf installer/hlae/ffmpeg)
 	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -Rf installer/hlae/locales)
 	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -f installer/hlae/HLAE.exe)
-	execute_process( WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}/installer/setup\" COMMAND \"${VS16_MSBUILD}\" \"${CMAKE_SOURCE_DIR}/installer/setup/setup.wixproj\" \"-property:Configuration=${VS16_CONFIGURATION}\" \"-property:Platform=x86\" \"-property:OutputPath=${CMAKE_INSTALL_PREFIX}/installer/build\")
+	execute_process( WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}/installer/setup\" COMMAND \"${VS_MSBUILD}\" \"${CMAKE_SOURCE_DIR}/installer/setup/setup.wixproj\" \"-property:Configuration=${VS_CONFIGURATION}\" \"-property:Platform=x86\" \"-property:OutputPath=${CMAKE_INSTALL_PREFIX}/installer/build\")
 	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E copy installer/build/HLAE_Setup.exe ./HLAE_Setup.exe)
 	execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E copy installer/build/HLAE_Setup.wixpdb ./HLAE_Setup.wixpdb)
 	"

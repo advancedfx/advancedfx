@@ -1,20 +1,14 @@
 Notice:
   We recommend using GIT Bash of https://git-scm.com/ to obtain the HLAE source
   code and also for applying the .patch files to libraries where neccessary.
-  
-  For some of the files required we have a backup on Google Drive:
-  https://drive.google.com/drive/folders/0B4_pxNNt7RqmdXVmbUk0aVA3Qk0?resourcekey=0-5MvnHEezVZhY6pBoGpIt4g&usp=sharing
-  But we recommend getting them from the original sources.
 
-
-[X] Download and install Microsoft Visual Studio 2019 Community, which you can
+[X] Download and install Microsoft Visual Studio Community 2022, which you can
     obtain for free from https://www.visualstudio.com/downloads/ .
-    (We are using one of the latest 16.x at the moment.)
     - Select Desktop .NET Desktop Development component
 	- Select Desktop .NET 4.6.2 Desktop Development component
     - Select Desktop Development with C++ component
-    - You'll need to install Wix Toolset Visual Studio 2019 Extension from
-      within Visual Studio later.
+    - You'll need to install Wix Toolset Visual Studio 2022 Extension from
+      within Visual Studio afterwards.
 
 [X]	Obtain Python 3 from https://www.python.org/downloads/windows/ .
 	We used python-3.8.3-amd64, but any 3.8 or newer 3 should do.
@@ -24,7 +18,7 @@ Notice:
 [X]	Obtain GNU gettext Windows binaries from https://www.gnu.org/software/gettext/ .
 	We used gettext0.20.1-iconv1.16-shared-64.exe .
 	
-[X] Install WiX Toolsetfrom https://github.com/wixtoolset/wix3/releases
+[X] Install WiX Toolset from https://github.com/wixtoolset/wix3/releases
 	We used WiX Toolset v3.11.2.
 	
 [X] Currently it's required to change the PowerShell execution policy to
@@ -40,13 +34,13 @@ Notice:
     cd /c/<HLAESRC>
     git clone --recursive https://github.com/advancedfx/advancedfx.git
 
-[X] Open Visual Studio 2019 Developer Command Prompt:
+[X] Open Visual Studio 2022 Developer Command Prompt:
 	cd C:\<HLAESRC>\advancedfx\
 	mkdir build
 	cd build
 	mkdir Release
 	cd Release
-	cmake -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 16 2019" -T "v142" -A "Win32" ../..
+	cmake -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 17 2022" -T "v143" -A "Win32" ../..
 	cmake --build . --config Release -v -- -r
 	cmake --install . --config Release -v
 	
