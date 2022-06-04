@@ -874,7 +874,7 @@ void CAfxRenderViewStream::Capture(CAfxRecordStream * captureTarget, size_t stre
 	else
 	{
 		g_AfxStreams.ImageBufferPool.ReleaseBuffer(buffer);
-		Tier0_Warning("CAfxRenderViewStream::Capture: Failed to realloc buffer.\n");
+		Tier0_Warning("CAfxRenderViewStream::Capture: Failed to reallocate buffer.\n");
 	}
 }
 
@@ -1092,7 +1092,7 @@ void CAfxSingleStream::CaptureEnd()
 			m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, buffer->Format, g_AfxStreams.GetStartHostFrameRate(), "");
 			if (nullptr == m_OutVideoStream)
 			{
-				Tier0_Warning("AFXERROR: Failed to create out video stream for %s.\n", this->StreamName_get());
+				Tier0_Warning("AFXERROR: Failed to create image stream for %s.\n", this->StreamName_get());
 			}
 			else
 			{
@@ -1257,7 +1257,7 @@ void CAfxTwinStream::CaptureEnd()
 						m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, bufferA->Format, g_AfxStreams.GetStartHostFrameRate(), "");
 						if (nullptr == m_OutVideoStream)
 						{
-							Tier0_Warning("AFXERROR: Failed to create out video stream for %s.\n", this->StreamName_get());
+							Tier0_Warning("AFXERROR: Failed to create image stream for %s.\n", this->StreamName_get());
 						}
 						else
 						{
@@ -1649,7 +1649,7 @@ void CAfxMatteStream::CaptureEnd()
 			m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, bufferEntBlack->Format, g_AfxStreams.GetStartHostFrameRate(), "");
 			if (nullptr == m_OutVideoStream)
 			{
-				Tier0_Warning("AFXERROR: Failed to create out video stream for %s.\n", this->StreamName_get());
+				Tier0_Warning("AFXERROR: Failed to create image stream for %s.\n", this->StreamName_get());
 			}
 			else
 			{
@@ -7416,7 +7416,7 @@ void CAfxStreams::Console_MainStream(IWrpCommandArgs * args)
 	}
 
 	Tier0_Msg(
-		"%s none - Never use a mainstream, instead always do a (hidden) render to cache the scene state.\n"
+		"%s none - Never use a main stream, instead always do a (hidden) render to cache the scene state.\n"
 		"%s firstActive - Default: The first stream recorded or previewed is considered the main stream.\n"
 		"%s first - The first stream in the list is considered the main stream.\n"
 		"%s set <sStreamName> - Set a stream named <sStreamName> to use as main stream.\n"
@@ -7894,7 +7894,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 							"%s actionFilter add <materialNameMask> <actionName> - Add a new filter action.\n"
 							"\t<materialNameMask> - material name/path to match, where \\* = wildcard and \\\\ = \\\n"
 							"\tTo find a material name/path enable debugPrint and use invalidateMap command in stream options!\n"
-							"\t<actionName> - name of action (see mirv_actions).\n"
+							"\t<actionName> - name of action (see mirv_streams actions).\n"
 							, cmdPrefix
 						);
 						return true;
@@ -10005,7 +10005,7 @@ void CAfxRecordingSettings::Console(IWrpCommandArgs * args)
 	}
 
 	Tier0_Msg(
-		"%s print - List currently registerred settings\n"
+		"%s print - List currently registered settings\n"
 		"%s edit <name> - Edit setting.\n"
 		"%s remove <name> - Remove setting.\n"
 		"%s add [...] - Add a setting.\n"
@@ -10147,7 +10147,7 @@ void CAfxDefaultRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 
 				if (nullptr == settings)
 				{
-					Tier0_Warning("AFXERROR: There's no settings named %s.\n", args->ArgV(2));
+					Tier0_Warning("AFXERROR: There is no setting named %s.\n", args->ArgV(2));
 				}
 				else if(settings->InheritsFrom(this))
 				{
@@ -10164,7 +10164,7 @@ void CAfxDefaultRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 			}
 
 			Tier0_Msg(
-				"%s settings <settingsName> - Use a settings with name <settingsName> as default settings.\n"
+				"%s settings <settingsName> - Use settings with name <settingsName> as default settings.\n"
 				"Current value: \"%s\"\n"
 				, arg0
 				, m_DefaultSettings ? m_DefaultSettings->GetName() : "[null]"
@@ -10200,7 +10200,7 @@ void CAfxMultiRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 
 				if (nullptr == settings)
 				{
-					Tier0_Warning("AFXERROR: There's no setting named %s.\n", args->ArgV(2));
+					Tier0_Warning("AFXERROR: There is no setting named %s.\n", args->ArgV(2));
 				}
 				else if (settings->InheritsFrom(this))
 				{
@@ -10229,7 +10229,7 @@ void CAfxMultiRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 
 				if (nullptr == settings)
 				{
-					Tier0_Warning("AFXERROR: There's no setting named %s.\n", args->ArgV(2));
+					Tier0_Warning("AFXERROR: There is no setting named %s.\n", args->ArgV(2));
 				}
 				else
 				{
@@ -10310,7 +10310,7 @@ void CAfxSamplingRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 
 				if (nullptr == settings)
 				{
-					Tier0_Warning("AFXERROR: There's no settings named %s.\n", args->ArgV(2));
+					Tier0_Warning("AFXERROR: There is no setting named %s.\n", args->ArgV(2));
 				}
 				else if (settings->InheritsFrom(this))
 				{
@@ -10327,7 +10327,7 @@ void CAfxSamplingRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 			}
 
 			Tier0_Msg(
-				"%s settings <settingsName> - Use a settings with name <settingsName> as output settings.\n"
+				"%s settings <settingsName> - Use settings with name <settingsName> as output settings.\n"
 				"Current value: \"%s\"\n"
 				, arg0
 				, m_OutputSettings ? m_OutputSettings->GetName() : "[null]"
