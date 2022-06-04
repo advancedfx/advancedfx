@@ -1092,7 +1092,7 @@ void CAfxSingleStream::CaptureEnd()
 			m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, buffer->Format, g_AfxStreams.GetStartHostFrameRate(), "");
 			if (nullptr == m_OutVideoStream)
 			{
-				Tier0_Warning("AFXERROR: Failed to create video stream for %s.\n", this->StreamName_get());
+				Tier0_Warning("AFXERROR: Failed to create image stream for %s.\n", this->StreamName_get());
 			}
 			else
 			{
@@ -1257,7 +1257,7 @@ void CAfxTwinStream::CaptureEnd()
 						m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, bufferA->Format, g_AfxStreams.GetStartHostFrameRate(), "");
 						if (nullptr == m_OutVideoStream)
 						{
-							Tier0_Warning("AFXERROR: Failed to create video stream for %s.\n", this->StreamName_get());
+							Tier0_Warning("AFXERROR: Failed to create image stream for %s.\n", this->StreamName_get());
 						}
 						else
 						{
@@ -1649,7 +1649,7 @@ void CAfxMatteStream::CaptureEnd()
 			m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, bufferEntBlack->Format, g_AfxStreams.GetStartHostFrameRate(), "");
 			if (nullptr == m_OutVideoStream)
 			{
-				Tier0_Warning("AFXERROR: Failed to create video stream for %s.\n", this->StreamName_get());
+				Tier0_Warning("AFXERROR: Failed to create image stream for %s.\n", this->StreamName_get());
 			}
 			else
 			{
