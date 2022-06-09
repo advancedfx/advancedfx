@@ -10,6 +10,7 @@
 #include "AfxShaders.h"
 #include "MirvPgl.h"
 #include "AfxInterop.h"
+#include "ReShadeAdvancedfx.h"
 
 #include <shared/AfxDetours.h>
 
@@ -4820,11 +4821,17 @@ public:
 		if (m_Block_Present)
 			return D3D_OK;
 
+		if (g_ReShadeAdvancedfx.IsConnected() && !g_ReShadeAdvancedfx.HasRendered()) {
+			g_ReShadeAdvancedfx.AdvancedfxRenderEffects(nullptr, nullptr);
+		}
+
 		Afx_Present_Before(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, 0);
 
 		HRESULT result = g_OldDirect3DDevice9->Present(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 
 		Afx_Present_After(result);
+
+		g_ReShadeAdvancedfx.ResetHasRendered();
 
 		return result;
 	}

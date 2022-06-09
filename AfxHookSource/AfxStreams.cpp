@@ -23,6 +23,7 @@
 //#include "csgo/hooks/c_basecombatweapon.h"
 //#include "csgo/hooks/staticpropmgr.h"
 #include "csgo/ClientToolsCsgo.h"
+#include "ReShadeAdvancedfx.h"
 
 #include <shared/StringTools.h>
 #include <shared/FileTools.h>
@@ -587,8 +588,25 @@ private:
 	bool m_RuleOfThrids;
 };
 
-#ifdef AFX_INTEROP
+class CAfxReShadeRenderEffectsFunctor
+	: public CAfxFunctor {
+public:
+	CAfxReShadeRenderEffectsFunctor(CAfxRenderViewStream &stream)
+	: m_Stream(stream) {
+		m_Stream.AddRef();
 
+	}
+
+	virtual void operator()() override
+	{
+		g_ReShadeAdvancedfx.AdvancedfxRenderEffects(AfxGetRenderTargetSurface(), nullptr);
+		m_Stream.Release();
+	}
+private:
+	CAfxRenderViewStream& m_Stream;
+};
+
+#ifdef AFX_INTEROP
 
 class CAfxInteropDrawDepth_Functor
 	: public CAfxFunctor
@@ -6733,6 +6751,11 @@ void CAfxStreams::On_DrawTranslucentRenderables(SOURCESDK::CSGO::CRendering3dVie
 void CAfxStreams::OnDrawingHudBegin(void)
 {
 	IAfxMatRenderContext * afxMatRenderContext = GetCurrentContext();
+	CAfxRenderViewStream* stream = CAfxRenderViewStream::EngineThreadStream_get();
+
+	if (stream && stream->ReShadeEnabled_get()) {
+		QueueOrExecute(afxMatRenderContext->GetOrg(), new CAfxLeafExecute_Functor(new CAfxReShadeRenderEffectsFunctor(*stream)));
+	}
 
 	if (IAfxStreamContext * hook = FindStreamContext(afxMatRenderContext)) hook->DrawingHudBegin();
 
@@ -6756,7 +6779,7 @@ void CAfxStreams::OnDrawingHudBegin(void)
 	}
 #endif
 
-	if (CAfxRenderViewStream * stream = CAfxRenderViewStream::EngineThreadStream_get())
+	if (stream)
 	{
 		if (CAfxRenderViewStream::DT_NoDraw == stream->DrawHud_get())
 		{
@@ -7805,6 +7828,41 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 				return true;
 			}
 			*/
+			else if (0 == _stricmp("reshade", cmd0))
+			{
+				if (!g_ReShadeAdvancedfx.IsConnected()) {
+					Tier0_Warning("AFXERROR: ReShade or ReShade_advancedfx.addon not loaded.\n");
+					return true;
+				}
+
+				if (2 <= argc)
+				{
+					char const* cmd1 = args->ArgV(argcOffset + 1);
+
+					if (0 == _stricmp("enabled", cmd1)) {
+
+						if (3 <= argc) {
+							curRenderView->ReShadeEnabled_set(0 != atoi(args->ArgV(argcOffset + 2)));
+							return true;
+						}
+
+						Tier0_Msg(
+							"%s reshade enabled 0|1 - Enable / disable reshade addon on this stream (usually you want to do this on the main stream).\n"
+							"Current value: %s\n"
+							, cmdPrefix
+							, curRenderView->ReShadeEnabled_get() ? "1" : "0"
+						);
+						return true;
+					}
+				}
+
+				Tier0_Msg(
+					"%s reshade enabled [...].\n"
+					, cmdPrefix
+				);
+
+				return true;
+			}
 		}
 	}
 
@@ -8841,6 +8899,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 		//Tier0_Msg("%s cullFrontFaces [...]\n", cmdPrefix);
 		//Tier0_Msg("%s renderFlashlightDepthTranslucents [...]\n", cmdPrefix);
 		//Tier0_Msg("%s disableFastPath [...]\n", cmdPrefix);
+		Tier0_Msg("%s reshade [...] - Control the ReShade_advancedfx.addon settings.\n", cmdPrefix);
 	}
 
 	return false;

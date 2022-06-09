@@ -249,6 +249,7 @@
     <ClCompile Include="momentum\ClientToolsMom.cpp" />
     <ClCompile Include="RenderView.cpp" />
     <ClCompile Include="..\deps\release\prop\AfxHookSource\SourceInterfaces.cpp" />
+    <ClCompile Include="ReShadeAdvancedfx.cpp" />
     <ClCompile Include="tf2\ClientToolsTf2.cpp" />
     <ClCompile Include="AfxInterop.cpp" />
     <ClCompile Include="WrpConsole.cpp" />
@@ -401,6 +402,7 @@
     <ClInclude Include="momentum\ClientToolsMom.h" />
     <ClInclude Include="RenderView.h" />
     <ClInclude Include="..\deps\release\prop\AfxHookSource\SourceInterfaces.h" />
+    <ClInclude Include="ReShadeAdvancedfx.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="tf2\ClientToolsTf2.h" />
     <ClInclude Include="AfxInterop.h" />

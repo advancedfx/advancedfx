@@ -576,6 +576,15 @@ public:
 	DrawType DrawViewModel_get(void);
 	void DrawViewModel_set(DrawType value);
 
+	bool ReShadeEnabled_get() {
+		return m_ReShadeEnabled;
+	}
+
+	void ReShadeEnabled_set(bool value) {
+		m_ReShadeEnabled = value;
+	}
+
+
 	virtual float SmokeOverlayAlphaFactor_get(void)
 	{
 		return 1.0f;
@@ -640,6 +649,7 @@ protected:
 	StreamCaptureType m_StreamCaptureType;
 	bool m_DrawingSkyBox;
 	//bool m_DisableFastPath = false;
+	bool m_ReShadeEnabled = false;
 
 
 	virtual ~CAfxRenderViewStream();

@@ -62,6 +62,7 @@
 //#include "csgo_CDemoFile.h"
 #include "csgo_net_chan.h"
 #include "csgo/hooks/engine/cmd.h"
+#include "ReShadeAdvancedfx.h"
 
 #include <Windows.h>
 #include <deps/release/Detours/src/detours.h>
@@ -981,6 +982,11 @@ int CAfxBaseClientDll::Init(SOURCESDK::CreateInterfaceFn appSystemFactory, SOURC
 		// Install early hooks:
 
 		csgo_CHudDeathNotice_Install();
+
+		// Connect to reshade addon if present:
+		//
+
+		g_ReShadeAdvancedfx.Connect();
 	}
 
 	int result = m_Parent->Init(AppSystemFactory_ForClient, pGlobals);

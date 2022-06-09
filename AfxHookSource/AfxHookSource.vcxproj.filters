@@ -540,6 +540,9 @@
     <ClCompile Include="..\deps\release\prop\AfxHookSource\css\sdk_src\tier1\KeyValues.cpp">
       <Filter>deps\release\prop\AfxHookSource\css\sdk_src\tier1</Filter>
     </ClCompile>
+    <ClCompile Include="ReShadeAdvancedfx.cpp">
+      <Filter>AfxHookSource</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\bvhexport.h">
@@ -994,6 +997,9 @@
     </ClInclude>
     <ClInclude Include="..\deps\release\prop\AfxHookSource\css\sdk_src\public\vstdlib\IKeyValuesSystem.h">
       <Filter>deps\release\prop\AfxHookSource\css\sdk_src\public\vstdlib</Filter>
+    </ClInclude>
+    <ClInclude Include="ReShadeAdvancedfx.h">
+      <Filter>AfxHookSource</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
