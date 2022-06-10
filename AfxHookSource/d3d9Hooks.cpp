@@ -2707,6 +2707,8 @@ private:
 	CAfxTrackedSurface * trackedRenderTarget = nullptr;
 	CAfxTrackedSurface * trackedDepthStencil = nullptr;
 
+	IDirect3DTexture9* r32fRenderTarget = nullptr;
+
 #ifdef AFX_INTEROP
 	IDirect3DQuery9 * waitQuery = nullptr;
 #endif
@@ -2822,7 +2824,7 @@ public:
 	}
 #endif
 
-	void AfxOverrideDefaultBuffersWithIntz(bool value)
+	void AfxOverrideDefaultBuffersWithIntz(bool value, bool noReplacement)
 	{
 		if (m_OverrideDefaultBuffersWithIntz != value)
 		{
@@ -2832,9 +2834,11 @@ public:
 
 			// Base RenderTarget:
 
+			if (true
 #ifdef AFX_INTEROP
-			if (!AfxInterop::MainEnabled())
+				&& !AfxInterop::MainEnabled()
 #endif
+				&& !noReplacement)
 			{
 				// (Re-)Create replacements:
 
@@ -2876,18 +2880,18 @@ public:
 					}
 					else
 					{
-						trackedSurface->AfxReplacementEnabled_set(false);
+					trackedSurface->AfxReplacementEnabled_set(false);
 					}
 
 					// Update current:
 
-					IDirect3DSurface9 * renderTarget;
+					IDirect3DSurface9* renderTarget;
 
-					if (SUCCEEDED(g_OldDirect3DDevice9->GetRenderTarget(0, &renderTarget)))					
+					if (SUCCEEDED(g_OldDirect3DDevice9->GetRenderTarget(0, &renderTarget)))
 					{
 						if (CAfxTrackedSurface::Get(renderTarget) == trackedSurface)
 						{
-							IDirect3DSurface9 * replacement = CAfxTrackedSurface::Replacement(renderTarget);
+							IDirect3DSurface9* replacement = CAfxTrackedSurface::Replacement(renderTarget);
 
 							if (replacement != renderTarget)
 							{
@@ -2896,73 +2900,135 @@ public:
 						}
 
 						renderTarget->Release();
-					}					
+					}
 				}
 			}
 
 			// Base DepthStencil:
 
 			{
-				// (Re-)Create replacements:
+			// (Re-)Create replacements:
 
-				if (CAfxTrackedSurface * trackedSurface = trackedDepthStencil)
+			if (CAfxTrackedSurface* trackedSurface = trackedDepthStencil)
+			{
+				if (m_OverrideDefaultBuffersWithIntz)
 				{
-					if (m_OverrideDefaultBuffersWithIntz)
+					if (nullptr == trackedSurface->AfxGetReplacement())
 					{
-						if (nullptr == trackedSurface->AfxGetReplacement())
+						D3DSURFACE_DESC desc;
+						if (SUCCEEDED(trackedSurface->AfxGetSurface()->GetDesc(&desc)))
 						{
-							D3DSURFACE_DESC desc;
-							if (SUCCEEDED(trackedSurface->AfxGetSurface()->GetDesc(&desc)))
-							{
-								IDirect3DTexture9 * texture = NULL;
+							IDirect3DTexture9* texture = NULL;
 
-								if (SUCCEEDED(g_OldDirect3DDevice9->CreateTexture(
-									desc.Width, desc.Height, 1,
-									D3DUSAGE_DEPTHSTENCIL, FOURCC_INTZ,
-									D3DPOOL_DEFAULT, &texture,
-									NULL)))
+							if (SUCCEEDED(g_OldDirect3DDevice9->CreateTexture(
+								desc.Width, desc.Height, 1,
+								D3DUSAGE_DEPTHSTENCIL, FOURCC_INTZ,
+								D3DPOOL_DEFAULT, &texture,
+								NULL)))
+							{
+								IDirect3DSurface9* replacement = NULL;
+
+								if (SUCCEEDED(texture->GetSurfaceLevel(0, &replacement)))
 								{
-									IDirect3DSurface9 * replacement = NULL;
-
-									if (SUCCEEDED(texture->GetSurfaceLevel(0, &replacement)))
-									{
-										trackedSurface->AfxSetReplacement(replacement);
-										replacement->Release();
-									}
-
-									texture->Release();
+									trackedSurface->AfxSetReplacement(replacement);
+									replacement->Release();
 								}
+
+								texture->Release();
 							}
 						}
-
-						trackedSurface->AfxReplacementEnabled_set(true);
-					}
-					else
-					{
-						trackedSurface->AfxReplacementEnabled_set(false);
 					}
 
-					// Update current:
+					trackedSurface->AfxReplacementEnabled_set(true);
+				}
+				else
+				{
+					trackedSurface->AfxReplacementEnabled_set(false);
+				}
 
-					IDirect3DSurface9 * depthStencil;
+				// Update current:
 
-					if (SUCCEEDED(g_OldDirect3DDevice9->GetDepthStencilSurface(&depthStencil)))
+				IDirect3DSurface9* depthStencil;
+
+				if (SUCCEEDED(g_OldDirect3DDevice9->GetDepthStencilSurface(&depthStencil)))
+				{
+					if (CAfxTrackedSurface::Get(depthStencil) == trackedSurface)
 					{
-						if (CAfxTrackedSurface::Get(depthStencil) == trackedSurface)
+						IDirect3DSurface9* replacement = CAfxTrackedSurface::Replacement(depthStencil);
+
+						if (replacement != depthStencil)
 						{
-							IDirect3DSurface9 * replacement = CAfxTrackedSurface::Replacement(depthStencil);
+							g_OldDirect3DDevice9->SetDepthStencilSurface(replacement);
+						}
+					}
+					depthStencil->Release();
+				}
+			}
+			}
+		}
+	}
 
-							if (replacement != depthStencil)
-							{
-								g_OldDirect3DDevice9->SetDepthStencilSurface(replacement);
+
+	IDirect3DSurface9* AfxSetRenderTargetR32FDepthTexture() {
+		if (CAfxTrackedSurface* trackedSurface = trackedDepthStencil) {
+			D3DSURFACE_DESC desc;
+			if (SUCCEEDED(trackedSurface->AfxGetSurface()->GetDesc(&desc)))
+			{
+				bool bCreate = nullptr == r32fRenderTarget;
+
+				if (!bCreate && r32fRenderTarget) {
+					D3DSURFACE_DESC desc2;
+					if (FAILED(r32fRenderTarget->GetLevelDesc(0, &desc2)) || desc2.Width != desc.Width || desc2.Height != desc.Height) {
+						r32fRenderTarget->Release();
+						r32fRenderTarget = nullptr;
+						bCreate = true;
+					}
+				}
+
+				if (bCreate && FAILED(g_OldDirect3DDevice9->CreateTexture(
+					desc.Width, desc.Height, 1,
+					D3DUSAGE_RENDERTARGET,
+					D3DFMT_R32F,
+					D3DPOOL_DEFAULT, &r32fRenderTarget,
+					NULL)))
+				{
+					r32fRenderTarget = nullptr;
+				}
+
+				if (r32fRenderTarget) {
+					IDirect3DSurface9* surface = nullptr;
+					if (SUCCEEDED(r32fRenderTarget->GetSurfaceLevel(0, &surface))) {
+						IDirect3DSurface9* oldRenderTarget = NULL;
+						if (SUCCEEDED(g_OldDirect3DDevice9->GetRenderTarget(0, &oldRenderTarget))) {
+							if (SUCCEEDED(g_OldDirect3DDevice9->SetRenderTarget(0, surface))) {
+								surface->Release();
+								return oldRenderTarget;
+							}
+							if (oldRenderTarget) {
+								oldRenderTarget->Release();
+								oldRenderTarget = nullptr;
 							}
 						}
-						depthStencil->Release();
+						surface->Release();
 					}
 				}
 			}
 		}
+
+		return nullptr;
 	}
+
+	void AfxSetRenderTargetR32FDepthTexture_Restore(IDirect3DSurface9* renderTarget) {
+		g_OldDirect3DDevice9->SetRenderTarget(0, renderTarget);
+		if (renderTarget) {
+			renderTarget->Release();
+		}
+	}
+
+	IDirect3DTexture9* AfxGetR32FDepthTexture() {
+		return r32fRenderTarget;
+	}
+
 
 	void AfxDrawDepth(AfxDrawDepthEncode encode, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, bool drawToScreen, float projectionMatrix[4][4])
 	{
@@ -3042,11 +3108,14 @@ public:
 
 			if (FAILED(g_OldDirect3DDevice9->GetRenderTarget(0, &oldRenderTarget)))
 			{
+				AfxEndCleanState();
 				goto exit;
 			}
 
 #ifdef AFX_INTEROP
-			if (AfxInterop::MainEnabled())
+			if (
+				AfxInterop::MainEnabled()
+			)
 			{
 				if (CAfxTrackedSurface * afxTrackedSurface = trackedRenderTarget)
 				{
@@ -3058,6 +3127,7 @@ public:
 					{
 						// Not connected.
 						oldRenderTarget->Release();
+						AfxEndCleanState();
 						goto exit;
 					}
 				}
@@ -4691,6 +4761,11 @@ public:
 		{
 			m_InitialState->Release();
 			m_InitialState = NULL;
+		}
+
+		if (r32fRenderTarget) {
+			r32fRenderTarget->Release();
+			r32fRenderTarget = nullptr;
 		}
 
 		if (trackedRenderTarget)
@@ -6368,7 +6443,7 @@ bool AfxD3D9_Check_Supports_R32F_With_Blending(void)
 {
 	if(g_OldDirect3D9 && g_OldDirect3DDevice9)
 	{
-		if((g_OldDirect3D9->CheckDeviceFormat(
+		if(SUCCEEDED(g_OldDirect3D9->CheckDeviceFormat(
 			g_Adapter,
 			D3DDEVTYPE_HAL,
 			D3DFMT_R8G8B8,
@@ -6381,6 +6456,25 @@ bool AfxD3D9_Check_Supports_R32F_With_Blending(void)
 
 	return false;
 }
+
+bool AfxD3D9_Check_Supports_R32F(void)
+{
+	if (g_OldDirect3D9)
+	{
+		if (SUCCEEDED(g_OldDirect3D9->CheckDeviceFormat(
+			g_Adapter,
+			D3DDEVTYPE_HAL,
+			D3DFMT_R8G8B8,
+			D3DUSAGE_RENDERTARGET,
+			D3DRTYPE_TEXTURE,
+			D3DFMT_R32F
+		)))
+			return true;
+	}
+
+	return false;
+}
+
 
 void AfxD3D9BeginCleanState()
 {
@@ -6700,14 +6794,14 @@ bool AfxD3d9_DrawDepthSupported(void)
 }
 
 
-void AfxIntzOverrideBegin()
+void AfxIntzOverrideBegin(bool bNoReplacement)
 {
-	if (g_OldDirect3DDevice9) g_NewDirect3DDevice9.AfxOverrideDefaultBuffersWithIntz(true);
+	if (g_OldDirect3DDevice9) g_NewDirect3DDevice9.AfxOverrideDefaultBuffersWithIntz(true, bNoReplacement);
 }
 
-void AfxIntzOverrideEnd()
+void AfxIntzOverrideEnd(bool bNoReplacement)
 {
-	if (g_OldDirect3DDevice9) g_NewDirect3DDevice9.AfxOverrideDefaultBuffersWithIntz(false);
+	if (g_OldDirect3DDevice9) g_NewDirect3DDevice9.AfxOverrideDefaultBuffersWithIntz(false, bNoReplacement);
 }
 
 void AfxDrawDepth(AfxDrawDepthEncode encode, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, bool drawToScreen, float projectionMatrix[4][4])
@@ -6740,4 +6834,17 @@ IDirect3DDevice9Ex* AfxGetDirect3DDevice9Ex()
 IDirect3DSurface9* AfxGetRenderTargetSurface()
 {
 	return g_NewDirect3DDevice9.AfxGetRenderTargetSurface();
+}
+
+
+IDirect3DSurface9* AfxSetRenderTargetR32FDepthTexture() {
+	return g_NewDirect3DDevice9.AfxSetRenderTargetR32FDepthTexture();
+}
+
+void AfxSetRenderTargetR32FDepthTexture_Restore(IDirect3DSurface9* renderTarget) {
+	g_NewDirect3DDevice9.AfxSetRenderTargetR32FDepthTexture_Restore(renderTarget);
+}
+
+IDirect3DTexture9* AfxGetR32FDepthTexture() {
+	return g_NewDirect3DDevice9.AfxGetR32FDepthTexture();
 }

@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.110.0</version>
+<time>2022-06-10T14:41Z</time>
+<changes>
+<change type="added">Added reshade option on baseFx based mirv_streams for connecting HLAE to the ReShade_advancedfx.addon. This addon for ReShade will be released in a separate repository.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.109.5</version>
 <time>2022-05-16T04:00Z</time>
 <changes>

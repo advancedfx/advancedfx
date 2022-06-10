@@ -576,15 +576,6 @@ public:
 	DrawType DrawViewModel_get(void);
 	void DrawViewModel_set(DrawType value);
 
-	bool ReShadeEnabled_get() {
-		return m_ReShadeEnabled;
-	}
-
-	void ReShadeEnabled_set(bool value) {
-		m_ReShadeEnabled = value;
-	}
-
-
 	virtual float SmokeOverlayAlphaFactor_get(void)
 	{
 		return 1.0f;
@@ -649,8 +640,6 @@ protected:
 	StreamCaptureType m_StreamCaptureType;
 	bool m_DrawingSkyBox;
 	//bool m_DisableFastPath = false;
-	bool m_ReShadeEnabled = false;
-
 
 	virtual ~CAfxRenderViewStream();
 
@@ -1520,6 +1509,14 @@ public:
 	void ConvertDepthActions(bool to24);
 	*/
 
+	bool ReShadeEnabled_get() {
+		return m_ReShadeEnabled;
+	}
+
+	void ReShadeEnabled_set(bool value) {
+		m_ReShadeEnabled = value;
+	}
+
 protected:
 	class CShared
 	{
@@ -1606,6 +1603,8 @@ protected:
 	EClearBeforeHud m_ClearBeforeHud = EClearBeforeHud_No;
 	EDrawDepth m_DrawDepth = EDrawDepth_None;
 	EDrawDepthMode m_DrawDepthMode = EDrawDepthMode_Linear;
+
+	bool m_ReShadeEnabled = false;
 
 	virtual ~CAfxBaseFxStream();
 

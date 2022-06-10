@@ -588,24 +588,6 @@ private:
 	bool m_RuleOfThrids;
 };
 
-class CAfxReShadeRenderEffectsFunctor
-	: public CAfxFunctor {
-public:
-	CAfxReShadeRenderEffectsFunctor(CAfxRenderViewStream &stream)
-	: m_Stream(stream) {
-		m_Stream.AddRef();
-
-	}
-
-	virtual void operator()() override
-	{
-		g_ReShadeAdvancedfx.AdvancedfxRenderEffects(AfxGetRenderTargetSurface(), nullptr);
-		m_Stream.Release();
-	}
-private:
-	CAfxRenderViewStream& m_Stream;
-};
-
 #ifdef AFX_INTEROP
 
 class CAfxInteropDrawDepth_Functor
@@ -2846,13 +2828,16 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin(const CAfxBaseFxStrea
 		m_CurrentEntityMeta = nullptr;
 		m_CurrentEntityMetaOrg = nullptr;
 
-		if (EDrawDepth_None != this->GetStream()->m_DrawDepth)
+		bool bDrawDepth = EDrawDepth_None != this->GetStream()->m_DrawDepth;
+		bool bReShade = this->GetStream()->ReShadeEnabled_get();
+
+		if (bDrawDepth || bReShade)
 		{
-			AfxD3D9PushOverrideState(false);
+			if (bDrawDepth) AfxD3D9PushOverrideState(false);
 
-			AfxIntzOverrideBegin();
+			AfxIntzOverrideBegin(!bDrawDepth);
 
-			AfxD3D9OverrideBegin_D3DRS_COLORWRITEENABLE(0);
+			if(bDrawDepth) AfxD3D9OverrideBegin_D3DRS_COLORWRITEENABLE(0);
 		}
 
 		if (m_Stream->GetClearBeforeRender())
@@ -2895,13 +2880,16 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd(bool isRoot)
 
 		BindAction(0);
 
-		if (EDrawDepth_None != this->GetStream()->m_DrawDepth)
+		bool bDrawDepth = EDrawDepth_None != this->GetStream()->m_DrawDepth;
+		bool bReShade = this->GetStream()->ReShadeEnabled_get();
+
+		if (bDrawDepth || bReShade)
 		{
-			AfxD3D9OverrideEnd_D3DRS_COLORWRITEENABLE();
+			if(bDrawDepth) AfxD3D9OverrideEnd_D3DRS_COLORWRITEENABLE();
 
-			AfxIntzOverrideEnd();
+			AfxIntzOverrideEnd(!bDrawDepth);
 
-			AfxD3D9PopOverrideState();
+			if (bDrawDepth) AfxD3D9PopOverrideState();
 		}
 
 		m_MapMutex.unlock();
@@ -2967,13 +2955,32 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 
 		BindAction(0);
 
-		if (EDrawDepth_None != m_Stream->m_DrawDepth)
-		{
-			float flDepthFactor = m_Stream->m_DepthVal;
-			float flDepthFactorMax = m_Stream->m_DepthValMax;
+		bool bDrawDepth = EDrawDepth_None != m_Stream->m_DrawDepth;
+		bool bReShade = m_Stream->ReShadeEnabled_get();
 
-			AfxDrawDepth(EDrawDepth_Rgb == m_Stream->m_DrawDepth ? AfxDrawDepthEncode_Rgb : AfxDrawDepthEncode_Gray, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Data.Viewport.x, m_Data.Viewport.y, m_Data.Viewport.width, m_Data.Viewport.height, m_Data.Viewport.zNear, m_Data.Viewport.zFar, true, m_Data.ProjectionMatrix.m);
+		if (bDrawDepth || bReShade)
+		{
+			float flDepthFactor = bDrawDepth ? m_Stream->m_DepthVal : m_Data.Viewport.zNear;
+			float flDepthFactorMax = bDrawDepth ? m_Stream->m_DepthValMax : m_Data.Viewport.zFar;
+			AfxDrawDepthEncode drawDepthEncode = bDrawDepth ? (EDrawDepth_Rgb == m_Stream->m_DrawDepth ? AfxDrawDepthEncode_Rgb : AfxDrawDepthEncode_Gray) : AfxDrawDepthEncode_Gray;
+			AfxDrawDepthMode drawDepthMode = bDrawDepth ? AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()) : AfxDrawDepthMode_Inverse;
+
+			IDirect3DSurface9* oldRenderTarget = AfxSetRenderTargetR32FDepthTexture();
+			AfxDrawDepth(
+				drawDepthEncode,
+				drawDepthMode,
+				m_IsNextDepth,
+				flDepthFactor, flDepthFactorMax,
+				m_Data.Viewport.x, m_Data.Viewport.y, m_Data.Viewport.width, m_Data.Viewport.height, m_Data.Viewport.zNear, m_Data.Viewport.zFar,
+				bDrawDepth,
+				bDrawDepth ? m_Data.ProjectionMatrix.m : nullptr
+			);
+			AfxSetRenderTargetR32FDepthTexture_Restore(oldRenderTarget);
 			m_IsNextDepth = true;
+		}
+
+		if (bReShade) {
+			g_ReShadeAdvancedfx.AdvancedfxRenderEffects(AfxGetRenderTargetSurface(), AfxGetR32FDepthTexture());
 		}
 		
 		// Do the clearing if wanted:
@@ -3050,14 +3057,29 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 
 		BindAction(0);
 
-		if (EDrawDepth_None != m_Stream->m_DrawDepth)
+		bool bDrawDepth = EDrawDepth_None != m_Stream->m_DrawDepth;
+		bool bReShade = m_Stream->ReShadeEnabled_get();
+
+		if (bDrawDepth || bReShade)
 		{
 			float scale = csgo_CSkyBoxView_GetScale();
 
-			float flDepthFactor = m_Stream->m_DepthVal * scale;
-			float flDepthFactorMax = m_Stream->m_DepthValMax * scale;
+			float flDepthFactor = (bDrawDepth ? m_Stream->m_DepthVal : m_Data.Viewport.zNear) * scale;
+			float flDepthFactorMax = (bDrawDepth ? m_Stream->m_DepthValMax : m_Data.Viewport.zFar) * scale;
+			AfxDrawDepthEncode drawDepthEncode = bDrawDepth ? (EDrawDepth_Rgb == m_Stream->m_DrawDepth ? AfxDrawDepthEncode_Rgb : AfxDrawDepthEncode_Gray) : AfxDrawDepthEncode_Gray;
+			AfxDrawDepthMode drawDepthMode = bDrawDepth ? AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()) : AfxDrawDepthMode_Inverse;
 
-			AfxDrawDepth(EDrawDepth_Rgb == m_Stream->m_DrawDepth ? AfxDrawDepthEncode_Rgb : AfxDrawDepthEncode_Gray, AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()), m_IsNextDepth, flDepthFactor, flDepthFactorMax, m_Data.Viewport.x, m_Data.Viewport.y, m_Data.Viewport.width, m_Data.Viewport.height, 2.0f, (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH, false, m_Data.ProjectionMatrixSky.m);
+			IDirect3DSurface9* oldRenderTarget = AfxSetRenderTargetR32FDepthTexture();
+			AfxDrawDepth(
+				drawDepthEncode,
+				drawDepthMode,
+				m_IsNextDepth,
+				flDepthFactor, flDepthFactorMax,
+				m_Data.Viewport.x, m_Data.Viewport.y, m_Data.Viewport.width, m_Data.Viewport.height, 2.0f, (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH,
+				false,
+				bDrawDepth ? m_Data.ProjectionMatrixSky.m : nullptr);
+			AfxSetRenderTargetR32FDepthTexture_Restore(oldRenderTarget);
+
 			m_IsNextDepth = true;
 		}
 	}
@@ -6753,10 +6775,6 @@ void CAfxStreams::OnDrawingHudBegin(void)
 	IAfxMatRenderContext * afxMatRenderContext = GetCurrentContext();
 	CAfxRenderViewStream* stream = CAfxRenderViewStream::EngineThreadStream_get();
 
-	if (stream && stream->ReShadeEnabled_get()) {
-		QueueOrExecute(afxMatRenderContext->GetOrg(), new CAfxLeafExecute_Functor(new CAfxReShadeRenderEffectsFunctor(*stream)));
-	}
-
 	if (IAfxStreamContext * hook = FindStreamContext(afxMatRenderContext)) hook->DrawingHudBegin();
 
 	if (DrawPhiGrid || DrawRuleOfThirds)
@@ -7828,41 +7846,6 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 				return true;
 			}
 			*/
-			else if (0 == _stricmp("reshade", cmd0))
-			{
-				if (!g_ReShadeAdvancedfx.IsConnected()) {
-					Tier0_Warning("AFXERROR: ReShade or ReShade_advancedfx.addon not loaded.\n");
-					return true;
-				}
-
-				if (2 <= argc)
-				{
-					char const* cmd1 = args->ArgV(argcOffset + 1);
-
-					if (0 == _stricmp("enabled", cmd1)) {
-
-						if (3 <= argc) {
-							curRenderView->ReShadeEnabled_set(0 != atoi(args->ArgV(argcOffset + 2)));
-							return true;
-						}
-
-						Tier0_Msg(
-							"%s reshade enabled 0|1 - Enable / disable reshade addon on this stream (usually you want to do this on the main stream).\n"
-							"Current value: %s\n"
-							, cmdPrefix
-							, curRenderView->ReShadeEnabled_get() ? "1" : "0"
-						);
-						return true;
-					}
-				}
-
-				Tier0_Msg(
-					"%s reshade enabled [...].\n"
-					, cmdPrefix
-				);
-
-				return true;
-			}
 		}
 	}
 
@@ -8839,6 +8822,49 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 				Tier0_Warning("Warning: Due to CS:GO 17th Ferbuary 2016 update this feature is not available.\n");
 				return true;
 			}
+			else if (0 == _stricmp("reshade", cmd0))
+			{
+				if (!g_ReShadeAdvancedfx.IsConnected()) {
+					Tier0_Warning("AFXERROR: ReShade or ReShade_advancedfx.addon not loaded.\n");
+					return true;
+				}
+
+				if (2 <= argc)
+				{
+					char const* cmd1 = args->ArgV(argcOffset + 1);
+
+					if (0 == _stricmp("enabled", cmd1)) {
+						if (3 <= argc) {
+							bool bEnabled = 0 != atoi(args->ArgV(argcOffset + 2));
+
+							if (bEnabled && !AfxD3d9_DrawDepthSupported()) {
+								Tier0_Warning("Your graphics card does not support FOURCC_INTZ or you are using -afxinterop, thus ReShade addon will not work correctly.\n");
+							}
+							if (bEnabled && !AfxD3D9_Check_Supports_R32F()) {
+								Tier0_Warning("Your graphics card does not support D3DFMT_R32F render targets, thus ReShade addon will not work correctly.\n");
+							}
+
+							curBaseFx->ReShadeEnabled_set(bEnabled);
+							return true;
+						}
+
+						Tier0_Msg(
+							"%s reshade enabled 0|1 - Enable / disable reshade addon on this stream (usually you want to do this on the main stream).\n"
+							"Current value: %s\n"
+							, cmdPrefix
+							, curBaseFx->ReShadeEnabled_get() ? "1" : "0"
+						);
+						return true;
+					}
+				}
+
+				Tier0_Msg(
+					"%s reshade enabled [...].\n"
+					, cmdPrefix
+				);
+
+				return true;
+			}
 		}
 	}
 
@@ -8882,6 +8908,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 		//Tier0_Msg("%s man [...] - Manipulate stream more easily (i.e. depth to depth24).\n", cmdPrefix);
 		// testAction options is not displayed, because we don't want users to use it.
 		// Tier0_Msg("%s testAction [...]\n", cmdPrefix);
+		Tier0_Msg("%s reshade [...] - Control the ReShade_advancedfx.addon settings.\n", cmdPrefix);
 	}
 
 	if (curRenderView)
@@ -8899,7 +8926,6 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 		//Tier0_Msg("%s cullFrontFaces [...]\n", cmdPrefix);
 		//Tier0_Msg("%s renderFlashlightDepthTranslucents [...]\n", cmdPrefix);
 		//Tier0_Msg("%s disableFastPath [...]\n", cmdPrefix);
-		Tier0_Msg("%s reshade [...] - Control the ReShade_advancedfx.addon settings.\n", cmdPrefix);
 	}
 
 	return false;
