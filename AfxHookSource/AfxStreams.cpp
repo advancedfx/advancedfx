@@ -2965,7 +2965,8 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 			AfxDrawDepthEncode drawDepthEncode = bDrawDepth ? (EDrawDepth_Rgb == m_Stream->m_DrawDepth ? AfxDrawDepthEncode_Rgb : AfxDrawDepthEncode_Gray) : AfxDrawDepthEncode_Gray;
 			AfxDrawDepthMode drawDepthMode = bDrawDepth ? AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()) : AfxDrawDepthMode_Inverse;
 
-			IDirect3DSurface9* oldRenderTarget = AfxSetRenderTargetR32FDepthTexture();
+			IDirect3DSurface9* oldRenderTarget = nullptr;
+			if(bReShade) oldRenderTarget = AfxSetRenderTargetR32FDepthTexture();
 			AfxDrawDepth(
 				drawDepthEncode,
 				drawDepthMode,
@@ -2975,7 +2976,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 				bDrawDepth,
 				bDrawDepth ? m_Data.ProjectionMatrix.m : nullptr
 			);
-			AfxSetRenderTargetR32FDepthTexture_Restore(oldRenderTarget);
+			if (bReShade) AfxSetRenderTargetR32FDepthTexture_Restore(oldRenderTarget);
 			m_IsNextDepth = true;
 		}
 
@@ -3069,7 +3070,8 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 			AfxDrawDepthEncode drawDepthEncode = bDrawDepth ? (EDrawDepth_Rgb == m_Stream->m_DrawDepth ? AfxDrawDepthEncode_Rgb : AfxDrawDepthEncode_Gray) : AfxDrawDepthEncode_Gray;
 			AfxDrawDepthMode drawDepthMode = bDrawDepth ? AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()) : AfxDrawDepthMode_Inverse;
 
-			IDirect3DSurface9* oldRenderTarget = AfxSetRenderTargetR32FDepthTexture();
+			IDirect3DSurface9* oldRenderTarget = nullptr;
+			if (bReShade) oldRenderTarget = AfxSetRenderTargetR32FDepthTexture();
 			AfxDrawDepth(
 				drawDepthEncode,
 				drawDepthMode,
@@ -3078,7 +3080,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 				m_Data.Viewport.x, m_Data.Viewport.y, m_Data.Viewport.width, m_Data.Viewport.height, 2.0f, (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH,
 				false,
 				bDrawDepth ? m_Data.ProjectionMatrixSky.m : nullptr);
-			AfxSetRenderTargetR32FDepthTexture_Restore(oldRenderTarget);
+			if (bReShade) AfxSetRenderTargetR32FDepthTexture_Restore(oldRenderTarget);
 
 			m_IsNextDepth = true;
 		}
