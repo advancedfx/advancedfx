@@ -4,6 +4,17 @@
 <changelog>
 
 
+
+<release>
+<name>AfxHookSource</name>
+<version>1.110.2</version>
+<time>2022-06-24T09:22Z</time>
+<changes>
+<change type="fixed">Adjusted to latest CS:GO update.</change>
+</changes>
+</release>
+
+
 <release>
 <name>AfxHookSource</name>
 <version>1.110.1</version>
@@ -12,7 +23,6 @@
 <change type="fixed">Fixed mirv_streams depth streams being broken by last update.</change>
 </changes>
 </release>
-
 
 
 <release>
