@@ -4,6 +4,15 @@
 <changelog>
 
 
+<release>
+<name>AfxHookSource</name>
+<version>1.110.3</version>
+<time>2022-06-24T13:50Z</time>
+<changes>
+<change type="fixed">Adjusted to latest CS:GO update, fixed KeyValues not working (e.g. in mirv_pgl) (based on AlliedModders commits).</change>
+</changes>
+</release>
+
 
 <release>
 <name>AfxHookSource</name>
