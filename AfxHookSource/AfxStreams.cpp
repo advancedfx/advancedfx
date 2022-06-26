@@ -541,28 +541,6 @@ private:
 	bool m_Value;
 };
 
-#ifdef AFX_MIRV_PGL
-
-class AfxSupplyCamData_Functor
-	: public CAfxFunctor
-{
-public:
-	AfxSupplyCamData_Functor(MirvPgl::CamData const & value)
-		: m_Value(value)
-	{
-	}
-
-	virtual void operator()()
-	{
-		MirvPgl::DrawingThread_SupplyCamData(m_Value);
-	}
-
-private:
-	MirvPgl::CamData m_Value;
-};
-
-#endif
-
 class AfxDrawGuidesFunctor
 	: public CAfxFunctor
 {
@@ -9215,6 +9193,8 @@ void CAfxStreams::LevelShutdown()
 
 extern bool g_bD3D9DebugPrint;
 
+#ifdef AFX_MIRV_PGL
+
 MirvPgl::CamData GetMirvPglCamData(SOURCESDK::vrect_t_csgo *rect) {
 	return MirvPgl::CamData(
 		g_MirvTime.GetTime(),
@@ -9228,6 +9208,8 @@ MirvPgl::CamData GetMirvPglCamData(SOURCESDK::vrect_t_csgo *rect) {
 	);
 }
 
+#endif
+
 void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *rect)
 {
 	Set_View_Render_ThreadId(GetCurrentThreadId());
@@ -9236,10 +9218,12 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 
 	//GetCsgoCGlowOverlayFix()->OnMainViewRenderBegin();
 
+#ifdef AFX_MIRV_PGL
 	if (MirvPgl::IsDataActive())
 	{
-		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new AfxSupplyCamData_Functor(GetMirvPglCamData(rect))));
+		MirvPgl::SupplyCamData(GetMirvPglCamData(rect));
 	}
+#endif
 
 	cl->GetParent()->View_Render(rect);
 

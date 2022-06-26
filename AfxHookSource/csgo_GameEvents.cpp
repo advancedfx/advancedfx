@@ -44,7 +44,9 @@ void CAfxGameEventListenerSerialzer::FireHandledEvent(SOURCESDK::CSGO::CGameEven
 
 		int eventId = descriptor->eventid;
 
-		if (m_UseCache && m_KnownEventIds.end() != m_KnownEventIds.find(eventId))
+		if (
+			eventId != 0 // yup, we can not cache event ID 0 due to a design assumption flaw on my end, luckily it's pretty inferquent (server_spawn).
+			&& m_UseCache && m_KnownEventIds.end() != m_KnownEventIds.find(eventId))
 		{
 			WriteLong(eventId);
 		}

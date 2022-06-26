@@ -4,6 +4,22 @@
 <changelog>
 
 
+
+<release>
+<name>AfxHookSource</name>
+<version>1.111.0</version>
+<time>2022-06-26T00:19Z</time>
+<changes>
+<change type="fixed">Fixed multiple bugs in mirv_pgl.</change>
+<change type="fixed">Fixed a bug with game events cache for server_spawn (id 0) CS:GO event in mirv_pgl and afx_interop, that could cause state errors / freezes / exceptions in afx_interop or in mirv_pgl when useCache is 1 when the event would appear a second time and wrongly encoded as cached (id 0 can not be cached and will not be cached anymore due to a protocol design flaw on my end (id 0 indicates uncached transmission, so it can not be told part from real id 0, so that one is always uncached now)).</change>
+</changes>
+<comments>
+The changes to mirv_pgl and afx_interop should be backwards compatible and have no negative side effects, testing is advised nevertheless.<br />
+Please note that CS:GO has a crash bug in the current latest release, that can be triggered upon level changed, especially when changing levels quickly and doing a lot of console toggling / keyboard input with F11 upon level loading. This is not an HLAE bug, it happens without HLAE as well.
+</comments>
+</release>
+
+
 <release>
 <name>AfxHookSource</name>
 <version>1.110.3</version>

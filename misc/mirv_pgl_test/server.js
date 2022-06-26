@@ -117,7 +117,7 @@ BufferReader.prototype.readCString = function readCString()
 		return result;
 	}
 	
-	throw new "BufferReader.prototype.readCString"; 
+	throw "BufferReader.prototype.readCString"; 
 }
 
 BufferReader.prototype.eof = function eof()
@@ -188,7 +188,7 @@ GameEventDescription.prototype.unserialize = function unserialize(bufferReader)
 			keyValue = bufferReader.readBigUInt64LE();
 			break;
 		default:
-			throw new "GameEventDescription.prototype.unserialize";
+			throw "GameEventDescription.prototype.unserialize: key.type="+key.type;
 		}
 		
 		if(this.enrichments && this.enrichments[keyName])
@@ -256,16 +256,19 @@ GameEventUnserializer.prototype.unserialize = function unserialize(bufferReader)
 	var eventId = bufferReader.readInt32LE();
 	var gameEvent;
 	
+	//wsConsole.print("=> "+eventId);
 	if(0 == eventId)
 	{
 		gameEvent = new GameEventDescription(bufferReader);
 		this.knownEvents[gameEvent.eventId] = gameEvent;
 		
 		if(this.enrichments[gameEvent.eventName]) gameEvent.enrichments = this.enrichments[gameEvent.eventName];
+		
+		//wsConsole.print(gameEvent.eventName+" -> "+gameEvent.eventId);
 	}
 	else gameEvent = this.knownEvents[eventId];
 	
-	if(undefined === gameEvent) throw new "GameEventUnserializer.prototype.unserialize";
+	if(undefined === gameEvent) throw "GameEventUnserializer.prototype.unserialize: eventId="+eventId;
 	
 	return gameEvent.unserialize(bufferReader);
 }

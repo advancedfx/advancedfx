@@ -185,8 +185,6 @@ namespace MirvPgl
 		CamData(float time, float xPosition, float yPosition, float zPosition, float xRotation, float yRotation, float zRotation, float fov);
 	};
 
-	class CThreadData;
-
 	// On Main thread:
 
 	void Init();
@@ -209,6 +207,8 @@ namespace MirvPgl
 	void QueueThreadDataForDrawingThread(void);
 	void QueueDrawing(CamData const & camData, int width, int height);
 
+	void SupplyCamData(CamData const & camData);
+
 	void SupplyLevelInit(char const * mapName);
 	void SupplyLevelShutdown();
 
@@ -220,10 +220,7 @@ namespace MirvPgl
 	void D3D9_EndDevice();
 	void D3D9_Reset();
 
-	void DrawingThread_SupplyCamData(CamData const & camData);
-
 	void DrawingThread_UnleashData();
-
 }
 
 #endif

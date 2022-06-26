@@ -1263,9 +1263,6 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 		g_csgo_FirstFrameAfterNetUpdateEnd = firstFrameAfterNetUpdateEnd;
 		firstFrameAfterNetUpdateEnd = false;
 
-#ifdef AFX_MIRV_PGL
-		MirvPgl::QueueThreadDataForDrawingThread();
-#endif
 		CAfxStreams::MainThreadInitialize();
 
 		break;
@@ -1382,6 +1379,9 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 	{
 
 	case SOURCESDK::CSGO::FRAME_RENDER_START:
+#ifdef AFX_MIRV_PGL
+		MirvPgl::QueueThreadDataForDrawingThread();
+#endif
 #ifdef AFX_INTEROP
 		AfxInterop::AfterFrameRenderStart();
 #endif
