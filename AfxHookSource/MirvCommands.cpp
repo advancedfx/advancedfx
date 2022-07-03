@@ -1396,12 +1396,6 @@ public:
 		return g_CampathDrawer.Draw_get();
 	}
 	virtual void SetEnabled(bool value) {
-		if (value)
-		{
-			Tier0_Msg("AFXINFO: Forcing mat_queue_mode 0\n");
-			g_VEngineClient->ExecuteClientCmd("mat_queue_mode 0");
-		}
-
 		g_CampathDrawer.Draw_set(value);
 	}
 	virtual bool GetDrawKeyframeAxis() {

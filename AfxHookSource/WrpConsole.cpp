@@ -491,6 +491,10 @@ void WrpConVarRef::RetryIfNull(char const* pName)
 
 }
 
+bool WrpConVarRef::IsValid() {
+	return nullptr != m_pConVar007;
+}
+
 typedef union {
 	DWORD d;
 	float f;

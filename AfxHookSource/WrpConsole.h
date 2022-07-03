@@ -304,6 +304,8 @@ public:
 
 	void RetryIfNull(char const* pName);
 
+	bool IsValid();
+
 private:
 	SOURCESDK::CSGO::ConVar * m_pConVar007;
 

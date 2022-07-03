@@ -152,7 +152,34 @@ public:
 
 		//Tier0_Msg("ClientEngineTools::PostRenderAllTools\n");
 
-		g_CampathDrawer.OnPostRenderAllTools();
+		static bool wasDrawing = false;
+		static float oldMatQueueMode = 0;
+		m_Mat_Queue_Mode.RetryIfNull("mat_queue_mode");
+		if (g_CampathDrawer.Draw_get()) {
+			if (m_Mat_Queue_Mode.IsValid()) {
+				float matQueueMode = m_Mat_Queue_Mode.GetFloat();
+				if (!wasDrawing) {
+					oldMatQueueMode = matQueueMode;
+					wasDrawing = true;
+				}
+
+				if (0 != matQueueMode)
+					g_VEngineClient->ExecuteClientCmd("mat_queue_mode 0");
+				g_CampathDrawer.OnPostRenderAllTools();
+			}
+			else {
+				g_VEngineClient->ExecuteClientCmd("mat_queue_mode 0");
+				g_CampathDrawer.OnPostRenderAllTools();
+			}
+		}
+		else {
+			if (m_Mat_Queue_Mode.IsValid()) {
+				if (wasDrawing) {
+					wasDrawing = false;
+					m_Mat_Queue_Mode.SetValue(oldMatQueueMode);
+				}
+			}
+		}
 
 		g_Engine_ClientEngineTools->PostRenderAllTools();
 	}
@@ -237,6 +264,9 @@ public:
 
 		return g_Engine_ClientEngineTools->InToolMode();
 	}
+
+private:
+	WrpConVarRef m_Mat_Queue_Mode;
 
 } g_ClientEngineTools;
 
