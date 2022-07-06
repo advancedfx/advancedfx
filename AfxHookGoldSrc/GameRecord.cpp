@@ -273,22 +273,17 @@ void CGameRecord::OnFrameEnd(float view_origin[3], float view_angles[3], float f
 	//
 	// Find any entities that are still alive but weren't recorded this frame and thus should be hidden:
 	
-	for (auto it = m_Indexes.begin(); it != m_Indexes.end(); )
+	for (auto it = m_Indexes.begin(); it != m_Indexes.end(); ++it)
 	{
-		if (m_FrameEnts.find(it->first) == m_FrameEnts.end())
+		for (auto it2 = it->second.begin(); it2 != it->second.end(); ++it2)
 		{
-			for (auto it2 = it->second.begin(); it2 != it->second.end(); ++it2)
+			if (m_FrameIndexes.find(it2->second) == m_FrameIndexes.end())
 			{
 				m_AfxGameRecord.MarkHidden(it2->second);
 			}
-
-			it = m_Indexes.erase(it);
 		}
-		else ++it;
 	}
-	m_FrameEnts.clear();
-	
-	//
+	m_FrameIndexes.clear();
 
 	m_AfxGameRecord.EndFrame();
 }
@@ -446,7 +441,7 @@ void CGameRecord::RecordModel(cl_entity_t* ent, struct model_s* model, void* v_h
 		}
 		else index = emplaced2.first->second;
 	}
-	m_FrameEnts.emplace(ent);
+	m_FrameIndexes.emplace(index);
 
 	studiohdr_t* header = (studiohdr_t*)v_header;
 

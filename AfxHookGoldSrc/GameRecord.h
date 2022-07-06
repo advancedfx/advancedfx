@@ -34,7 +34,7 @@ public:
 private:
 	int m_Index = 0;	
 	std::map<cl_entity_t*, std::map<void*, int>> m_Indexes;
-	std::set<cl_entity_t*> m_FrameEnts;
+	std::set<int> m_FrameIndexes;
 
 	struct model_s* m_Model = nullptr;
 	void* m_Header = nullptr;

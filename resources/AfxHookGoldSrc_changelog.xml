@@ -4,11 +4,21 @@
 <changelog>
 
 
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.13.5</version>
+<time>2022-07-06T19:33Z</time>
+<changes>
+<change type="fixed">Fixed AGR export visiblity marking issues, thanks to @instincthns.</change>
+</changes>
+</release>
+
+
 
 <release>
 <name>AfxHookGoldSrc</name>
 <version>2.13.4</version>
-<time>2022-07-07T13:37Z</time>
+<time>2022-07-06T13:37Z</time>
 <changes>
 <change type="fixed">Fixed AGR export visiblity marking issues.</change>
 </changes>
