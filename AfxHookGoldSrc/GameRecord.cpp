@@ -220,6 +220,10 @@ void CGameRecord::OnFrameBegin()
 void CGameRecord::BeforeHostFrame()
 {
 	if (!GetRecording()) return;
+	
+	//
+	// Find if entities have been deleted,
+	// _before_ new ones are created (otherwise we can't tell them apart):
 
 	std::set<cl_entity_t*> ents;
 
@@ -265,6 +269,26 @@ void CGameRecord::OnFrameEnd(float view_origin[3], float view_angles[3], float f
 		m_AfxGameRecord.Write((float)view_angles[2]);
 		m_AfxGameRecord.Write((float)fov);
 	}
+	
+	//
+	// Find any entities that are still alive but weren't recorded this frame and thus should be hidden:
+	
+	for (auto it = m_Indexes.begin(); it != m_Indexes.end(); )
+	{
+		if (m_FrameEnts.find(it->first) == m_FrameEnts.end())
+		{
+			for (auto it2 = it->second.begin(); it2 != it->second.end(); ++it2)
+			{
+				m_AfxGameRecord.MarkHidden(it2->second);
+			}
+
+			it = m_Indexes.erase(it);
+		}
+		else ++it;
+	}
+	m_FrameEnts.clear();
+	
+	//
 
 	m_AfxGameRecord.EndFrame();
 }
@@ -422,6 +446,7 @@ void CGameRecord::RecordModel(cl_entity_t* ent, struct model_s* model, void* v_h
 		}
 		else index = emplaced2.first->second;
 	}
+	m_FrameEnts.emplace(ent);
 
 	studiohdr_t* header = (studiohdr_t*)v_header;
 
