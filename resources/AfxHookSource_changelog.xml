@@ -7,6 +7,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.111.1</version>
+<time>2022-07-07T13:37Z</time>
+<changes>
+<change type="fixed">Fixed crash / breaks of mirv_campath draw upon opening video settings in CS:GO.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.111.0</version>
 <time>2022-06-26T00:19Z</time>
 <changes>
