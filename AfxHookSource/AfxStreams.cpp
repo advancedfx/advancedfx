@@ -24,6 +24,7 @@
 //#include "csgo/hooks/staticpropmgr.h"
 #include "csgo/ClientToolsCsgo.h"
 #include "ReShadeAdvancedfx.h"
+#include "AfxCommandLine.h"
 
 #include <shared/StringTools.h>
 #include <shared/FileTools.h>
@@ -83,6 +84,17 @@ IAfxMatRenderContext * GetCurrentContext()
 }
 
 CAfxStreams g_AfxStreams;
+
+
+int GetMaterialSystemThread() {
+	static bool bRun = false;
+	static int iFirstResult = 0;
+
+	if (bRun) return iFirstResult;
+	iFirstResult = g_CommandLine->FindParam(L"-swapcores") ? 1 : 0;
+	bRun = true;
+	return iFirstResult;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -6328,11 +6340,13 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 
 		// Work around game running out of memory because of too much shit on the queue
 		// aka issue ripieces/advancedfx-prop#22 by using a sub-context:
-		m_MaterialSystem->EndFrame();
-		m_MaterialSystem->SwapBuffers(); // Apparently we have to do this always, otherwise the state is messed up.
-		m_MaterialSystem->BeginFrame(0);
-
-		ctxp = GetCurrentContext()->GetOrg(); // We are potentially on a new context now
+		if (m_MaterialSystem->GetThreadMode() != SOURCESDK::CSGO::MATERIAL_SINGLE_THREADED) {
+			// Only do this when we are in threaded mode, it's only needed then and otherwise we will crash when switching from un-threaded to threaded.
+			m_MaterialSystem->EndFrame();
+			m_MaterialSystem->SwapBuffers(); // Apparently we have to do this always, otherwise the state is messed up.
+			m_MaterialSystem->BeginFrame(0);
+			ctxp = GetCurrentContext()->GetOrg(); // We are potentially on a new context now
+		}
 	}
 	
 
@@ -6559,11 +6573,13 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * This, void*
 
 			// Work around game running out of memory because of too much shit on the queue
 			// aka issue ripieces/advancedfx-prop#22 by using a sub-context:
-			m_MaterialSystem->EndFrame();
-			m_MaterialSystem->SwapBuffers(); // Apparently we have to do this always, otherwise the state is messed up.
-			m_MaterialSystem->BeginFrame(0);
-
-			ctxp = GetCurrentContext()->GetOrg(); // We are potentially on a new context now
+			if (m_MaterialSystem->GetThreadMode() != SOURCESDK::CSGO::MATERIAL_SINGLE_THREADED) {
+				// Only do this when we are in threaded mode, it's only needed then and otherwise we will crash when switching from un-threaded to threaded.
+				m_MaterialSystem->EndFrame();
+				m_MaterialSystem->SwapBuffers(); // Apparently we have to do this always, otherwise the state is messed up.
+				m_MaterialSystem->BeginFrame(0);
+				ctxp = GetCurrentContext()->GetOrg(); // We are potentially on a new context now
+			}
 		}
 	}
 
@@ -9496,11 +9512,13 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 
 	// Work around game running out of memory because of too much shit on the queue
 	// aka issue ripieces/advancedfx-prop#22 by using a sub-context:
-	m_MaterialSystem->EndFrame();
-	m_MaterialSystem->SwapBuffers(); // Apparently we have to do this always, otherwise the state is messed up.
-	m_MaterialSystem->BeginFrame(0);
-
-	ctxp = GetCurrentContext()->GetOrg(); // We are potentially on a new context now
+	if (m_MaterialSystem->GetThreadMode() != SOURCESDK::CSGO::MATERIAL_SINGLE_THREADED) {
+		// Only do this when we are in threaded mode, it's only needed then and otherwise we will crash when switching from un-threaded to threaded.
+		m_MaterialSystem->EndFrame();
+		m_MaterialSystem->SwapBuffers(); // Apparently we have to do this always, otherwise the state is messed up.
+		m_MaterialSystem->BeginFrame(0);
+		ctxp = GetCurrentContext()->GetOrg(); // We are potentially on a new context now
+	}
 
 	return ctxp;
 }

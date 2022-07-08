@@ -7,6 +7,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.111.2</version>
+<time>2022-07-08T07:00Z</time>
+<changes>
+<change type="fixed">Fixed crash when previewing / recording mirv_streams / doing multiple renderpasses when mat_queue_mode would switch from 0 to an other value.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.111.1</version>
 <time>2022-07-06T13:37Z</time>
 <changes>

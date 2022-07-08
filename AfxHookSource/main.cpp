@@ -153,11 +153,11 @@ public:
 		//Tier0_Msg("ClientEngineTools::PostRenderAllTools\n");
 
 		static bool wasDrawing = false;
-		static float oldMatQueueMode = 0;
+		static int oldMatQueueMode = 0;
 		m_Mat_Queue_Mode.RetryIfNull("mat_queue_mode");
 		if (g_CampathDrawer.Draw_get()) {
 			if (m_Mat_Queue_Mode.IsValid()) {
-				float matQueueMode = m_Mat_Queue_Mode.GetFloat();
+				float matQueueMode = m_Mat_Queue_Mode.GetInt();
 				if (!wasDrawing) {
 					oldMatQueueMode = matQueueMode;
 					wasDrawing = true;
@@ -176,7 +176,9 @@ public:
 			if (m_Mat_Queue_Mode.IsValid()) {
 				if (wasDrawing) {
 					wasDrawing = false;
-					m_Mat_Queue_Mode.SetValue(oldMatQueueMode);
+					char buffer[100];
+					snprintf(buffer, 100, "mat_queue_mode %i", (int)oldMatQueueMode);
+					g_VEngineClient->ExecuteClientCmd(buffer);
 				}
 			}
 		}
