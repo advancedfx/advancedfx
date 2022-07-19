@@ -121,65 +121,82 @@ void CamImport::SetStart(double startTime)
 bool CamImport::GetCamData(double time, double width, double height, CamData & outCamData)
 {
 	if (m_Ifs.bad())
-		return false;
+		return false; // too broken
 
 	if (time - m_StartTime < 0)
-		return false;
+		return false; // too early
 
 	if (m_HasFinalFrame && m_FinalFrameTime - m_FirstFrameTime < time - m_StartTime)
-		return false;
+		return false; // too late
 
-	// Jump direcltly to beginning if possible and required:
+	if (!m_HasLastFrame) {
 
-	if (m_HasLastFrame && 0 >= time - m_StartTime)
-	{
-		if (m_Ifs.seekg(m_DataStart).bad()) return false;
-
-		m_HasLastFrame = false; // potentially invalid, go into backwards seek mode.
-	}
-
-	// Seek backwards if required:
-
-	while (
-		!m_HasLastFrame // has not read any frame yet
-		|| m_LastFrame.Time - m_FirstFrameTime > time - m_StartTime // OR time is before current interval
-		&& m_Ifs.tellg() != m_DataStart // AND not at start of current file
-		)
-	{
-		int lineBreakCount = 0;
-
-		while (m_Ifs.tellg() != m_DataStart)
-		{
-			if(m_Ifs.seekg(-1, std::ios_base::cur).bad()) return false;
-
-			char c = m_Ifs.peek();
-
-			if (m_Ifs.bad())
-				return false;
-
-			if ('\n' == c)
-				++lineBreakCount;
-
-			if (3 <= lineBreakCount)
-			{
-				if (m_Ifs.seekg(1, std::ios_base::cur).bad()) return false;
-
-				break;
-			}
-		}
-
-		bool hadFrame = m_HasLastFrame;
-
+		m_CurPos = m_Ifs.tellg();
 		m_HasLastFrame = ReadDataLine(m_LastFrame);
 		if (!m_HasLastFrame)
 			return false;
 
-		if (!hadFrame)
-		{
-			// First frame read.
-			m_FirstFrameTime = m_LastFrame.Time;
+		// First frame
+		m_FirstFrameTime = m_LastFrame.Time;
+
+		m_LastQuat = Afx::Math::Quaternion::FromQREulerAngles(Afx::Math::QREulerAngles::FromQEulerAngles(Afx::Math::QEulerAngles(m_LastFrame.YRotation, m_LastFrame.ZRotation, m_LastFrame.XRotation)));
+		m_NextFrame = m_LastFrame;
+		m_NextQuat = m_LastQuat;
+	}
+
+	// Jump backwards if required:
+	if (
+		m_LastFrame.Time - m_FirstFrameTime > time - m_StartTime // time is before current interval
+		)
+	{
+		size_t loPos = m_DataStart;
+		size_t hiPos = m_CurPos;
+
+		m_Ifs.clear(std::ios::eofbit);
+		if (m_Ifs.seekg(m_DataStart, std::ios_base::beg).bad()) return false;
+		if(!ReadDataLine(m_LastFrame))
+			return false;
+		
+		CamData curFrame;
+		while (loPos < hiPos) {
+			size_t curPos = (loPos + hiPos) / 2;
+
+			m_Ifs.clear(std::ios::eofbit);
+			if (m_Ifs.seekg(curPos, std::ios_base::beg).bad()) return false;
+
+			while (!m_Ifs.bad() && !m_Ifs.eof() && '\n' != m_Ifs.get()); // seek until next line
+
+			if (m_Ifs.bad())
+				return false;
+
+			if (m_Ifs.eof()) {
+				hiPos = curPos;
+				continue;
+			}
+
+			if (ReadDataLine(curFrame)) {
+				float sub = (curFrame.Time - m_FirstFrameTime) - (time - m_StartTime);
+
+				if (sub == 0) {
+					m_LastFrame = curFrame;
+					break;
+				}
+				else if (sub > 0) {
+					hiPos = curPos;
+				}
+				else {
+					loPos = curPos;
+					m_LastFrame = curFrame;
+				}
+			}
+			
+			if (m_Ifs.bad())
+				return false;
+			
+			hiPos = curPos;
 		}
 
+		m_CurPos = loPos;
 		m_LastQuat = Afx::Math::Quaternion::FromQREulerAngles(Afx::Math::QREulerAngles::FromQEulerAngles(Afx::Math::QEulerAngles(m_LastFrame.YRotation, m_LastFrame.ZRotation, m_LastFrame.XRotation)));
 		m_NextFrame = m_LastFrame;
 		m_NextQuat = m_LastQuat;
@@ -192,6 +209,7 @@ bool CamImport::GetCamData(double time, double width, double height, CamData & o
 		m_LastFrame = m_NextFrame;
 		m_LastQuat = m_NextQuat;
 		
+		m_CurPos = m_Ifs.tellg();
 		if (!ReadDataLine(m_NextFrame)) {
 			m_FinalFrameTime = m_LastFrame.Time;
 			m_HasFinalFrame = true;

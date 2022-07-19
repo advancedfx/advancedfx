@@ -73,6 +73,7 @@ private:
 	std::ifstream m_Ifs;
 	double m_StartTime;
 	std::streampos m_DataStart;
+	std::streampos m_CurPos;
 	double m_FirstFrameTime;
 	bool m_HasLastFrame = false;
 	double m_FinalFrameTime;
