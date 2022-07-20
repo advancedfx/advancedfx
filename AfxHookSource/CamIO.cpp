@@ -178,6 +178,7 @@ bool CamImport::GetCamData(double time, double width, double height, CamData & o
 				float sub = (curFrame.Time - m_FirstFrameTime) - (time - m_StartTime);
 
 				if (sub == 0) {
+					m_CurPos = curPos;
 					m_LastFrame = curFrame;
 					break;
 				}
@@ -186,6 +187,7 @@ bool CamImport::GetCamData(double time, double width, double height, CamData & o
 				}
 				else {
 					loPos = curPos;
+					m_CurPos = curPos;
 					m_LastFrame = curFrame;
 				}
 			}
@@ -196,7 +198,6 @@ bool CamImport::GetCamData(double time, double width, double height, CamData & o
 			hiPos = curPos;
 		}
 
-		m_CurPos = loPos;
 		m_LastQuat = Afx::Math::Quaternion::FromQREulerAngles(Afx::Math::QREulerAngles::FromQEulerAngles(Afx::Math::QEulerAngles(m_LastFrame.YRotation, m_LastFrame.ZRotation, m_LastFrame.XRotation)));
 		m_NextFrame = m_LastFrame;
 		m_NextQuat = m_LastQuat;
