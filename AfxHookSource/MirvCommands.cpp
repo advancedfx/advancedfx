@@ -1396,6 +1396,14 @@ public:
 		return g_CampathDrawer.Draw_get();
 	}
 	virtual void SetEnabled(bool value) {
+		if (value) {
+			static WrpConVarRef m_Mat_Queue_Mode;
+			m_Mat_Queue_Mode.RetryIfNull("mat_queue_mode");
+			if (!m_Mat_Queue_Mode.IsValid()) {
+				// For engines where we don't have cvar access:
+				g_VEngineClient->ExecuteClientCmd("mat_queue_mode 0");
+			}
+		}
 		g_CampathDrawer.Draw_set(value);
 	}
 	virtual bool GetDrawKeyframeAxis() {

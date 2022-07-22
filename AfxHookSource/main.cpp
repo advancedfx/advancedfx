@@ -155,8 +155,9 @@ public:
 		static bool wasDrawing = false;
 		static int oldMatQueueMode = 0;
 		m_Mat_Queue_Mode.RetryIfNull("mat_queue_mode");
-		if (g_CampathDrawer.Draw_get()) {
-			if (m_Mat_Queue_Mode.IsValid()) {
+		if (m_Mat_Queue_Mode.IsValid()) {
+			// For engines where have cvar access:
+			if (g_CampathDrawer.Draw_get()) {
 				float matQueueMode = m_Mat_Queue_Mode.GetInt();
 				if (!wasDrawing) {
 					oldMatQueueMode = matQueueMode;
@@ -165,15 +166,8 @@ public:
 
 				if (0 != matQueueMode)
 					g_VEngineClient->ExecuteClientCmd("mat_queue_mode 0");
-				g_CampathDrawer.OnPostRenderAllTools();
 			}
 			else {
-				g_VEngineClient->ExecuteClientCmd("mat_queue_mode 0");
-				g_CampathDrawer.OnPostRenderAllTools();
-			}
-		}
-		else {
-			if (m_Mat_Queue_Mode.IsValid()) {
 				if (wasDrawing) {
 					wasDrawing = false;
 					char buffer[100];
@@ -182,6 +176,7 @@ public:
 				}
 			}
 		}
+		g_CampathDrawer.OnPostRenderAllTools();
 
 		g_Engine_ClientEngineTools->PostRenderAllTools();
 	}

@@ -4,6 +4,18 @@
 <changelog>
 
 
+
+<release>
+<name>AfxHookSource</name>
+<version>1.111.4</version>
+<time>2022-07-22T06:23Z</time>
+<changes>
+<change type="fixed">Fixed advancedfx/advancedfx#783 crash in older Source engine games for mirv_campath draw enabled 1.</change>
+<change type="fixed">Fixed campath number image being broken.</change>
+</changes>
+</release>
+
+
 <release>
 <name>AfxHookSource</name>
 <version>1.111.3</version>
@@ -12,7 +24,6 @@
 <change type="fixed">Fixed advancedfx/advancedfx#782 deadlocks in mirv_camio import e.g. when jumping back to the beginning after path ended, also improved performance in case of backwards seeking. Thanks for reporting to @DuKeM-CSGO</change>
 </changes>
 </release>
-
 
 
 <release>
