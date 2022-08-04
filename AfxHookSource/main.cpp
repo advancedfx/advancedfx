@@ -42,7 +42,6 @@
 #include "csgo_CHudDeathNotice.h"
 #include "MirvPgl.h"
 #include "AfxInterop.h"
-#include "csgo_Audio.h"
 #include "mirv_voice.h"
 #include "Gui.h"
 #include <csgo/sdk_src/public/tier0/memalloc.h>
@@ -1415,7 +1414,6 @@ void CAfxBaseClientDll::FrameStageNotify(SOURCESDK::CSGO::ClientFrameStage_t cur
 		break;
 
 	case SOURCESDK::CSGO::FRAME_RENDER_END:
-		csgo_Audio_FRAME_RENDEREND();
 		Shared_AfterFrameRenderEnd();
 		break;
 	}
@@ -2710,7 +2708,6 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 
 		// Init the hook early, so we don't run into issues with threading:
 		Hook_csgo_SndMixTimeScalePatch();
-		csgo_Audio_Install();
 		//Hook_csgo_DemoFile();
 
 		if(SourceSdkVer_CSGO == g_SourceSdkVer) {

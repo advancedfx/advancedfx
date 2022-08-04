@@ -3,8 +3,8 @@ cmake_minimum_required (VERSION 3.20)
 project ("hlae")
 
 set(hlae_VERSION_MAJOR 2)
-set(hlae_VERSION_MINOR 132)
-set(hlae_VERSION_PATCH 5)
+set(hlae_VERSION_MINOR 133)
+set(hlae_VERSION_PATCH 0)
 set(hlae_VERSION_REVISON 0)
 
 add_custom_target(hlae

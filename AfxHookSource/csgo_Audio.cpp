@@ -7,6 +7,7 @@
 #include "addresses.h"
 #include "MirvWav.h"
 #include "MirvTime.h"
+#include "WrpConsole.h"
 
 #include <shared/AfxDetours.h>
 
@@ -16,111 +17,123 @@
 #include <sstream>
 #include <set>
 
-typedef void(__fastcall * CAudioXAudio2_UnkSupplyAudio_t)(void* This, void* Edx, int numChannels, float * audioData);
-typedef void(__cdecl * csgo_MIX_PaintChannels_t)(int paintCountTarget, int unknown);
+typedef void * WaveAppendTmpFile_t;
+typedef void(__fastcall* CVideoMode_Common_WriteMovieFrame_t)(void* This, void* Edx, void* pInfo);
+typedef bool(__fastcall* CEngineVgui_ConIsVisible_t)(void* This, void* Edx);
+typedef void(__cdecl* S_ExtraUpdate_t)(void);
+typedef void(__cdecl* S_Update__t)(float mixAheadTime);
+typedef void(__cdecl* CL_StartMovie_t)(void);
 
-CAudioXAudio2_UnkSupplyAudio_t detoured_CAudioXAudio2_UnkSupplyAudio;
+WaveAppendTmpFile_t detoured_WaveAppendTmpFile;
+CVideoMode_Common_WriteMovieFrame_t detoured_CVideoMode_Common_WriteMovieFrame;
+CEngineVgui_ConIsVisible_t detoured_CEngineVgui_ConIsVisible;
+S_ExtraUpdate_t detoured_S_ExtraUpdate;
+S_Update__t detoured_S_Update_;
 
-csgo_MIX_PaintChannels_t detoured_csgo_MIX_PaintChannels;
-
-std::mutex g_csgo_Audio_Mutex;
-double g_csgo_Audio_TimeDue = 0;
-double g_csgo_Audio_Remainder = 0;
-bool g_CAudioXAudio2_RecordAudio_Active = false;
-bool g_CAudioXAudio2_FirstCallInLoop = true;
+DWORD g_csgo_Audio_EngineThreadId = 0;
+bool g_csgo_Audio_Record = false;
+bool g_csgo_Audio_In_S_ExtraUpdate = false;
+bool g_csgo_Audio_In_S_Update_ = false;
 std::wstring g_CAudioXAudio2_RecordAudio_Dir;
-std::map<void*, CMirvWav> g_CAudioXAudio2_RecordAudio_Files;
+CMirvWav* g_CAudioXAudio2_RecordAudio_File = nullptr;;
 
 std::vector<WORD> g_CAudioXAudio2_ChannelData;
 
-void __fastcall touring_CAudioXAudio2_UnkSupplyAudio(void* This, void* Edx, int numChannels, float * audioData)
+
+bool __cdecl My_WaveAppendTmpFile(void* buffer, int sampleBits, int numSamples)
 {
-	if (g_CAudioXAudio2_RecordAudio_Active)
+	if (g_csgo_Audio_Record && GetCurrentThreadId() == g_csgo_Audio_EngineThreadId)
 	{
 		//Tier0_Msg("Calling CAudioXAudio2_UnkSupplyAudio.\n");
 
-		std::map<void*, CMirvWav>::iterator it = g_CAudioXAudio2_RecordAudio_Files.find(This);
+		const int samplesPerChannel = 512;
+		const int numChannels = numSamples / samplesPerChannel;
 
-		if (it == g_CAudioXAudio2_RecordAudio_Files.end())
+		if (nullptr == g_CAudioXAudio2_RecordAudio_File)
 		{
 			std::wostringstream os;
-			os << g_CAudioXAudio2_RecordAudio_Dir << L"\\audio_" << This << L".wav";
+			os << g_CAudioXAudio2_RecordAudio_Dir << L"\\audio.wav";
 			std::wstring fileName = os.str();
 
-			it = g_CAudioXAudio2_RecordAudio_Files.emplace(std::piecewise_construct, std::forward_as_tuple(This), std::forward_as_tuple(fileName.c_str(), numChannels, 44100)).first;
+			g_CAudioXAudio2_RecordAudio_File = new CMirvWav(fileName.c_str(), numChannels, 44100);
 		}
-
-		const int samples = 512;
 
 		if ((int)g_CAudioXAudio2_ChannelData.size() < numChannels)
 			g_CAudioXAudio2_ChannelData.resize(numChannels);
 
-		for (int j = 0; j < samples; ++j)
-		{
-			for (int i = 0; i < numChannels; ++i)
-			{
-				float fVal = audioData[i*samples + j];
-				fVal = min(max(fVal, -32768), 32767);
-				fVal = std::round(fVal);
-				int iVal = (int)fVal;
-				WORD wVal = (WORD)iVal;
-				g_CAudioXAudio2_ChannelData[i] = wVal;
-			}
+		for(int i=0; i < samplesPerChannel; i++)
+			g_CAudioXAudio2_RecordAudio_File->Append(numChannels, &(((WORD *)buffer)[i*numChannels]));
 
-			it->second.Append(numChannels, &g_CAudioXAudio2_ChannelData[0]);
-		}
+		// Pass through in case someone is recording WAV with startmovie atm:
+		if (0 != strcmp(":afx", (char*)AFXADDR_GET(csgo_engine_cl_movieinfo_moviename)))
+			return true;
 
+		return false;
 	}
 
-	// sorry, but we can't forward mutliple calls in a loop, that will overrun buffers!
-	if(g_CAudioXAudio2_FirstCallInLoop)
-		detoured_CAudioXAudio2_UnkSupplyAudio(This, Edx, numChannels, audioData);
+	return true;
 }
 
+__declspec(naked) void __cdecl touring_WaveAppendTmpFile() {
+	__asm push eax
+	__asm push ecx
+	__asm push ebp
+	__asm mov ebp, esp
 
-void __cdecl touring_csgo_MIX_PaintChannels(int endtime, int unknown)
-{
-	std::unique_lock<std::mutex> lock(g_csgo_Audio_Mutex);
+	__asm sub esp, __LOCAL_SIZE
 
-	if (!g_CAudioXAudio2_RecordAudio_Active)
-	{
-		detoured_csgo_MIX_PaintChannels(endtime, unknown);
-		return;
-	}
+	__asm mov eax, [ebp + 0x14]
+	__asm push eax // numSamples
+	__asm push 16 // sampleBits
+	__asm push edx // buffer
+	__asm call My_WaveAppendTmpFile
+	__asm pop edx
 
-	static std::set<void *> iAudioDevice2Vtables;
+	__asm cmp al, 0
+	__asm jnz __continue_call
+	__asm mov esp, ebp
+	__asm pop ebp
+	__asm pop ecx
+	__asm pop eax
+	__asm ret
 
-	if (void * csgo_g_AudioDevice2 = *(void **)AFXADDR_GET(csgo_g_AudioDevice2))
-	{
-		void ** vtable = *(void ***)csgo_g_AudioDevice2;
-
-		if (iAudioDevice2Vtables.insert(vtable).second)
-		{
-			AfxDetourPtr((PVOID *)&(vtable[AFXADDR_GET(csgo_engine_CAudioXAudio2_UnkSupplyAudio_vtable_index)]), touring_CAudioXAudio2_UnkSupplyAudio, (PVOID *)&detoured_CAudioXAudio2_UnkSupplyAudio);
-		}
-	}
-
-	if (g_csgo_Audio_TimeDue <= 0)
-		return;
-
-	double fDeltaTime = g_csgo_Audio_TimeDue*44100.0 + g_csgo_Audio_Remainder;
-	g_csgo_Audio_TimeDue = 0;
-	int deltaTime = (int)(fDeltaTime);
-	deltaTime = deltaTime - (deltaTime % 512);
-	g_csgo_Audio_Remainder = fDeltaTime - deltaTime;
-
-	while (0 < deltaTime)
-	{
-		detoured_csgo_MIX_PaintChannels(endtime, unknown);
-		deltaTime -= 512;
-		endtime += 512;
-
-		g_CAudioXAudio2_FirstCallInLoop = false;
-	}
-
-	g_CAudioXAudio2_FirstCallInLoop = true;
+	__asm __continue_call:
+	__asm mov esp, ebp
+	__asm pop ebp
+	__asm pop ecx
+	__asm pop eax
+	__asm jmp [detoured_WaveAppendTmpFile]
 }
 
+bool __fastcall touring_CEngineVgui_ConIsVisible(void* This, void* Edx) {
+
+	// The engine checks when recording startmovie wav (which we force it temporarily into) if the console is down (if yes it doesn't record), so let it think it is not.
+	if (g_csgo_Audio_Record && 0 == strcmp(":afx", (char*)AFXADDR_GET(csgo_engine_cl_movieinfo_moviename)))
+		return false;
+
+	return detoured_CEngineVgui_ConIsVisible(This, Edx);
+}
+
+void __fastcall touring_CVideoMode_Common_WriteMovieFrame(void* This, void* Edx, void* pInfo) {
+
+	// Prevent video frame capture if no one is using startmovie atm:
+	if (g_csgo_Audio_Record && 0 == strcmp(":afx", (char*)AFXADDR_GET(csgo_engine_cl_movieinfo_moviename)))
+		return;
+
+	detoured_CVideoMode_Common_WriteMovieFrame(This, Edx, pInfo);
+}
+
+void __cdecl touring_S_ExtraUpdate(void) {
+	g_csgo_Audio_In_S_ExtraUpdate = true;
+	detoured_S_ExtraUpdate();
+	g_csgo_Audio_In_S_ExtraUpdate = false;
+}
+
+void __cdecl touring_S_Update_(float mixAheadTime) {
+	g_csgo_Audio_In_S_Update_ = true;
+	detoured_S_Update_(mixAheadTime);
+	g_csgo_Audio_In_S_Update_ = false;
+}
 
 bool csgo_Audio_Install(void)
 {
@@ -130,14 +143,48 @@ bool csgo_Audio_Install(void)
 	if (!firstRun) return firstResult;
 	firstRun = false;
 
-	if (AFXADDR_GET(csgo_MIX_PaintChannels) && AFXADDR_GET(csgo_g_AudioDevice2))
-	{
-		detoured_csgo_MIX_PaintChannels = (csgo_MIX_PaintChannels_t)DetourApply((BYTE*)AFXADDR_GET(csgo_MIX_PaintChannels), (BYTE *)touring_csgo_MIX_PaintChannels, (int)AFXADDR_GET(csgo_MIX_PaintChannels_DSZ));
+	if (
+		AFXADDR_GET(csgo_engine_WaveAppendTmpFile)
+		&& AFXADDR_GET(csgo_engine_cl_movieinfo_moviename)
+		&& AFXADDR_GET(csgo_engine_CVideoMode_Common_vtable)
+		&& AFXADDR_GET(csgo_engine_S_ExtraUpdate)
+		&& AFXADDR_GET(csgo_engine_S_Update_)
+		&& AFXADDR_GET(csgo_engine_CEngineVGui_vtable)
+		&& AFXADDR_GET(csgo_engine_CL_StartMovie)
+		) {
+
+		detoured_WaveAppendTmpFile = (WaveAppendTmpFile_t)AFXADDR_GET(csgo_engine_WaveAppendTmpFile);
+		detoured_CVideoMode_Common_WriteMovieFrame = (CVideoMode_Common_WriteMovieFrame_t)(((void**)AFXADDR_GET(csgo_engine_CVideoMode_Common_vtable))[23]);
+		detoured_S_ExtraUpdate = (S_ExtraUpdate_t)AFXADDR_GET(csgo_engine_S_ExtraUpdate);
+		detoured_S_Update_ = (S_Update__t)AFXADDR_GET(csgo_engine_S_Update_);
+		detoured_CEngineVgui_ConIsVisible = (CEngineVgui_ConIsVisible_t)(((void**)AFXADDR_GET(csgo_engine_CEngineVGui_vtable))[18]);
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)detoured_WaveAppendTmpFile, touring_WaveAppendTmpFile);
+		DetourAttach(&(PVOID&)detoured_CVideoMode_Common_WriteMovieFrame, touring_CVideoMode_Common_WriteMovieFrame);
+		DetourAttach(&(PVOID&)detoured_S_ExtraUpdate, touring_S_ExtraUpdate);
+		DetourAttach(&(PVOID&)detoured_S_Update_, touring_S_Update_);
+		DetourAttach(&(PVOID&)detoured_CEngineVgui_ConIsVisible, touring_CEngineVgui_ConIsVisible);
+		LONG error = DetourTransactionCommit();
+		firstResult = NO_ERROR == error;
 	}
 	else
 		firstResult = false;
 
 	return firstResult;
+}
+
+__declspec(naked) void __fastcall call_CL_StartMovie(const char * filename, int flags, int nWidth, int nHeight, float flFrameRate, int nJpegQuality, void * dummy) {
+	
+	__asm pop eax
+	__asm mov [esp+0x10], eax
+
+	__asm mov eax, AFXADDR_GET(csgo_engine_CL_StartMovie)
+	__asm call eax
+
+	__asm add esp, 0x10
+	__asm ret
 }
 
 bool csgo_Audio_StartRecording(const wchar_t * ansiTakeDir)
@@ -147,40 +194,43 @@ bool csgo_Audio_StartRecording(const wchar_t * ansiTakeDir)
 
 	csgo_Audio_EndRecording();
 
-	std::unique_lock<std::mutex> lock(g_csgo_Audio_Mutex);
-
 	g_CAudioXAudio2_RecordAudio_Dir = ansiTakeDir;
-	g_CAudioXAudio2_RecordAudio_Active = true;
-	g_csgo_Audio_TimeDue = 0;
-	g_csgo_Audio_Remainder = 0;
+	g_csgo_Audio_Record = true;
+
+	g_csgo_Audio_EngineThreadId = GetCurrentThreadId();
+
+	// If we are not already recording with startmovie:
+	if ('\0' == *(char*)AFXADDR_GET(csgo_engine_cl_movieinfo_moviename)) {
+		// Make it still init sound related variables without actually creating stuff
+
+		WrpConVarRef host_framerate_cvar("host_framerate");
+		float oldHostFrameRateValue = host_framerate_cvar.GetFloat();
+
+		call_CL_StartMovie(
+			":afx", // fake filename
+			1 << 2, // do wav
+			0, 0, 0, 0, nullptr);
+
+		host_framerate_cvar.SetValue(oldHostFrameRateValue);
+	}
 
 	return true;
 }
 
 void csgo_Audio_EndRecording(void)
 {
-	std::unique_lock<std::mutex> lock(g_csgo_Audio_Mutex);
-
-	if (!g_CAudioXAudio2_RecordAudio_Active)
+	if (!g_csgo_Audio_Record)
 		return;
 
-	g_CAudioXAudio2_RecordAudio_Files.clear();
+	if (0 == strcmp(":afx", (char*)AFXADDR_GET(csgo_engine_cl_movieinfo_moviename))) {
+		// If they are still recording with us, then stop the fake recording:
+		*(char*)AFXADDR_GET(csgo_engine_cl_movieinfo_moviename) = '\0';
+	}
 
-	g_CAudioXAudio2_RecordAudio_Active = false;
-}
+	if (g_CAudioXAudio2_RecordAudio_File) {
+		delete g_CAudioXAudio2_RecordAudio_File;
+		g_CAudioXAudio2_RecordAudio_File = nullptr;
+	}
 
-void csgo_Audio_FRAME_RENDEREND(void)
-{
-	std::unique_lock<std::mutex> lock(g_csgo_Audio_Mutex);
-
-	WrpGlobals * glob = g_Hook_VClient_RenderView.GetGlobals();
-
-	if (!glob)
-		return;
-
-	float frameTime = glob->absoluteframetime_get();
-
-	if (g_MirvTime.GetDriveTimeEnabled() && g_MirvTime.GetDrivingByFps()) frameTime /= g_MirvTime.GetDriveTimeFactor();
-
-	g_csgo_Audio_TimeDue += frameTime;
+	g_csgo_Audio_Record = false;
 }

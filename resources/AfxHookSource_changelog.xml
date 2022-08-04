@@ -4,6 +4,16 @@
 <changelog>
 
 
+<release>
+<name>AfxHookSource</name>
+<version>1.112.0</version>
+<time>2022-08-04T16:45Z</time>
+<changes>
+<change type="fixed">Fixed various sound recording issues with mirv_streams in CS:GO.</change>
+</changes>
+</release>
+
+
 
 <release>
 <name>AfxHookSource</name>

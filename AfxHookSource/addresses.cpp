@@ -42,9 +42,13 @@ AFXADDR_DEF(csgo_CSkyboxView_Draw_DSZ)
 AFXADDR_DEF(csgo_CViewRender_RenderView_VGui_DrawHud_In)
 AFXADDR_DEF(csgo_CViewRender_RenderView_VGui_DrawHud_Out)
 AFXADDR_DEF(csgo_CViewRender_ShouldForceNoVis_vtable_index)
-AFXADDR_DEF(csgo_g_AudioDevice2)
-AFXADDR_DEF(csgo_MIX_PaintChannels)
-AFXADDR_DEF(csgo_MIX_PaintChannels_DSZ)
+AFXADDR_DEF(csgo_engine_WaveAppendTmpFile)
+AFXADDR_DEF(csgo_engine_S_ExtraUpdate)
+AFXADDR_DEF(csgo_engine_S_Update_)
+AFXADDR_DEF(csgo_engine_cl_movieinfo_moviename)
+AFXADDR_DEF(csgo_engine_CL_StartMovie)
+AFXADDR_DEF(csgo_engine_CVideoMode_Common_vtable)
+AFXADDR_DEF(csgo_engine_CEngineVGui_vtable)
 AFXADDR_DEF(csgo_SplineRope_CShader_vtable)
 AFXADDR_DEF(csgo_Spritecard_CShader_vtable)
 AFXADDR_DEF(csgo_UnlitGeneric_CShader_vtable)
@@ -106,7 +110,6 @@ AFXADDR_DEF(csgo_client_C_CSPlayer_UpdateOnRemove_vtable_index)
 AFXADDR_DEF(csgo_client_CPlayerResource_Dtor_vtable_index)
 AFXADDR_DEF(csgo_client_CPlayerResource_GetPing_vtable_index)
 AFXADDR_DEF(csgo_materialsystem_Material_InterlockedDecrement_vtable_index)
-AFXADDR_DEF(csgo_engine_CAudioXAudio2_UnkSupplyAudio_vtable_index)
 AFXADDR_DEF(csgo_client_C_Team_Get_ClanName_vtable_index)
 AFXADDR_DEF(csgo_client_C_Team_Get_FlagImageString_vtable_index)
 AFXADDR_DEF(csgo_client_C_Team_Get_LogoImageString_vtable_index)
@@ -214,8 +217,6 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 {
 	if (SourceSdkVer_CSGO == sourceSdkVer)
 	{
-		AFXADDR_SET(csgo_engine_CAudioXAudio2_UnkSupplyAudio_vtable_index, 1);
-
 		// csgo_snd_mix_timescale_patch: // Checked 2018-12-07.
 		{
 			DWORD addr = 0;
@@ -355,31 +356,86 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 			}
 		}
 
-		// csgo_g_AudioDevice2: // Checked 2019-08-22.
+		// csgo_engine_WaveAppendTmpFile: // Checked 2022-08-02.
 		{
-			DWORD addr = 0;
+			ImageSectionsReader sections((HMODULE)engineDll);
+			if (!sections.Eof())
 			{
-				ImageSectionsReader sections((HMODULE)engineDll);
+				MemRange textRange = sections.GetMemRange();
+				sections.Next(); // skip .text
 				if (!sections.Eof())
 				{
-					MemRange textRange = sections.GetMemRange();
-					sections.Next(); // skip .text
-					if (!sections.Eof())
+					MemRange firstDataRange = sections.GetMemRange();
+
+					MemRange result = FindCString(sections.GetMemRange(), ".WAV");
+					if (!result.IsEmpty())
 					{
-						MemRange firstDataRange = sections.GetMemRange();
+						DWORD strAddr = result.Start;
+						MemRange result = textRange;
 
-						MemRange result = FindCString(sections.GetMemRange(), "Sound system not active\n");
-						if (!result.IsEmpty())
+						for (int i = 0; i < 2 && !(result = FindBytes(result, (const char*)&strAddr, sizeof(strAddr))).IsEmpty(); ++i)
 						{
-							DWORD tmpAddr = result.Start;
+							if (i < 1)
+							{
+								result.Start = result.End;
+								result.End = textRange.End;
+							}
+						}
 
-							result = FindBytes(textRange, (char const *)&tmpAddr, sizeof(tmpAddr));
+						if (!result.IsEmpty()) {
+							result = FindPatternString(MemRange(result.Start - 0x28, result.Start - 0x28 + 3).And(textRange), "55 8B EC");
 							if (!result.IsEmpty())
 							{
-								result = FindPatternString(MemRange(result.Start - 0x0c, result.Start - 0x0c + 6).And(textRange), "A1 ?? ?? ?? ?? 80");
-								if (!result.IsEmpty())
-								{
-									addr = *(DWORD *)(result.Start + 1);
+								AFXADDR_SET(csgo_engine_WaveAppendTmpFile, result.Start);
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+			}
+		}
+
+
+		// csgo_S_ExtraUpdate: // Checked 2022-08-02.
+		// csgo_S_Update_: // Checked 2022-08-02.
+		// csgo_engine_cl_movieinfo_moviename // Checked 2022-08-02.
+		// csgo_engine_cl_movieinfo_type // Checked 2022-08-02.
+		{
+			ImageSectionsReader sections((HMODULE)engineDll);
+			if (!sections.Eof())
+			{
+				MemRange textRange = sections.GetMemRange();
+				sections.Next(); // skip .text
+				if (!sections.Eof())
+				{
+					MemRange firstDataRange = sections.GetMemRange();
+
+					MemRange result = FindCString(sections.GetMemRange(), "CEngineClient::Sound_ExtraUpdate()");
+					if (!result.IsEmpty())
+					{
+						DWORD tmpAddr = result.Start;
+
+						result = FindBytes(textRange, (char const*)&tmpAddr, sizeof(tmpAddr));
+						if (!result.IsEmpty())
+						{
+							result = FindPatternString(MemRange(result.Start - 0x77, result.Start - 0x77 + 3).And(textRange), "55 8B EC");
+							if (!result.IsEmpty())
+							{
+								AFXADDR_SET(csgo_engine_S_ExtraUpdate, result.Start);
+
+								MemRange result2 = FindPatternString(MemRange(result.Start + 0x54, result.Start + 0x54 + 6).And(textRange), "38 05 ?? ?? ?? ??");
+								if (!result2.IsEmpty()) {
+									DWORD addr_cl_movieinfo_moviename = *(DWORD*)(result2.Start + 2);
+									AFXADDR_SET(csgo_engine_cl_movieinfo_moviename, addr_cl_movieinfo_moviename);
+								}
+								else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+								result2 = FindPatternString(MemRange(result.Start + 0x14F, result.Start + 0x14F + 5).And(textRange), "E8 ?? ?? ?? ??");
+								if (!result2.IsEmpty()) {
+									DWORD addr_S_Update_ = result2.Start + 5 + *(DWORD*)(result2.Start + 1); // decode call address.
+									AFXADDR_SET(csgo_engine_S_Update_, addr_S_Update_);
 								}
 								else ErrorBox(MkErrStr(__FILE__, __LINE__));
 							}
@@ -391,46 +447,33 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 				}
 				else ErrorBox(MkErrStr(__FILE__, __LINE__));
 			}
-
-			AFXADDR_SET(csgo_g_AudioDevice2, addr);
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
 
-		// csgo_MIX_PaintChannels: // Checked 2017-07-18.
+		// csgo_engine_CL_StartMovie: // Checked 2022-08-04.
 		{
-			DWORD addr = 0;
+			ImageSectionsReader sections((HMODULE)engineDll);
+			if (!sections.Eof())
 			{
-				ImageSectionsReader sections((HMODULE)engineDll);
+				MemRange textRange = sections.GetMemRange();
+				sections.Next(); // skip .text
 				if (!sections.Eof())
 				{
-					MemRange textRange = sections.GetMemRange();
-					sections.Next(); // skip .text
-					if (!sections.Eof())
-					{
-						MemRange firstDataRange = sections.GetMemRange();
+					MemRange firstDataRange = sections.GetMemRange();
 
-						MemRange result = FindCString(sections.GetMemRange(), "%d milliseconds \n");
+					MemRange result = FindCString(sections.GetMemRange(), "Started recording movie, frames will record after console is cleared...\n");
+					if (!result.IsEmpty())
+					{
+						DWORD tmpAddr = result.Start;
+
+						result = FindBytes(textRange, (char const*)&tmpAddr, sizeof(tmpAddr));
 						if (!result.IsEmpty())
 						{
-							DWORD tmpAddr = result.Start;
-
-							result = FindBytes(textRange, (char const *)&tmpAddr, sizeof(tmpAddr));
+							result = FindPatternString(MemRange(result.Start - 0x6, result.Start - 0x6 + 5).And(textRange), "E8 ?? ?? ?? ??");
 							if (!result.IsEmpty())
 							{
-								result = FindBytes(MemRange(result.End, textRange.End), (char const *)&tmpAddr, sizeof(tmpAddr));
-								if (!result.IsEmpty())
-								{
-									DWORD tmpAddr = result.Start;
-									tmpAddr -= 0xA;
-
-									result = FindPatternString(MemRange(tmpAddr - 0x1, tmpAddr - 0x1 + 0x7), "E8 ?? ?? ?? ?? FF D6");
-									if (!result.IsEmpty())
-									{
-										addr = tmpAddr;
-										addr = addr + 4 + *(DWORD *)addr; // get CALL address
-									}
-									else ErrorBox(MkErrStr(__FILE__, __LINE__));
-								}
-								else ErrorBox(MkErrStr(__FILE__, __LINE__));
+								DWORD addrFn = result.Start + 5 + *(DWORD*)(result.Start + 1); // decode call address.
+								AFXADDR_SET(csgo_engine_CL_StartMovie, addrFn);
 							}
 							else ErrorBox(MkErrStr(__FILE__, __LINE__));
 						}
@@ -440,8 +483,16 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 				}
 				else ErrorBox(MkErrStr(__FILE__, __LINE__));
 			}
-			AFXADDR_SET(csgo_MIX_PaintChannels, addr);
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
+
+		//csgo_engine_CVideoMode_Common_vtable // Checked 2022-08-04
+		AFXADDR_SET(csgo_engine_CVideoMode_Common_vtable, FindClassVtable((HMODULE)engineDll, ".?AVCVideoMode_Common@@", 0, 0x0));
+		if (!AFXADDR_GET(csgo_engine_CVideoMode_Common_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+		//csgo_engine_CEngineVGui_vtable // Checked 2022-08-02
+		AFXADDR_SET(csgo_engine_CEngineVGui_vtable, FindClassVtable((HMODULE)engineDll, ".?AVCEngineVGui@@", 0, 0x0));
+		if (!AFXADDR_GET(csgo_engine_CEngineVGui_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 		// csgo_CClientState_ProcessVoiceData: // Checked 2017-09-21.
 		{
@@ -676,8 +727,6 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 	{
 		AFXADDR_SET(csgo_snd_mix_timescale_patch, 0x0);
 		AFXADDR_SET(csgo_S_StartSound_StringConversion, 0x0);
-		AFXADDR_SET(csgo_g_AudioDevice2, 0x0);
-		AFXADDR_SET(csgo_MIX_PaintChannels, 0x0);
 		AFXADDR_SET(csgo_CClientState_ProcessVoiceData, 0x0);
 		AFXADDR_SET(csgo_CVoiceWriter_AddDecompressedData, 0x0);
 		AFXADDR_SET(csgo_CGameEventManger_FireEventIntern, 0);
@@ -691,7 +740,6 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_engine_Cmd_ExecuteCommand, 0x0);
 	}
 	AFXADDR_SET(csgo_snd_mix_timescale_patch_DSZ, 0x08);
-	AFXADDR_SET(csgo_MIX_PaintChannels_DSZ, 0x9);
 	AFXADDR_SET(csgo_CClientState_ProcessVoiceData_DSZ, 0x6);
 	AFXADDR_SET(csgo_CVoiceWriter_AddDecompressedData_DSZ, 0x8);
 }
