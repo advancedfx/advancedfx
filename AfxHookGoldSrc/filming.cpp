@@ -276,6 +276,7 @@ void do_camera_test(float vieworg[3], float viewangles[3]) {
 		pEngfuncs->pfnCenterPrint("zZz");
 }
 
+
 void Filming::FovOverride(double value)
 {
 	m_FovValue = value;
@@ -285,6 +286,17 @@ void Filming::FovOverride(double value)
 void Filming::FovDefault()
 {
 	m_FovOverride = false;
+}
+
+void Filming::RollOverride(double value)
+{
+	m_RollValue = value;
+	m_RollOverride = true;
+}
+
+void Filming::RollDefault()
+{
+	m_RollOverride = false;
 }
 
 void Filming::OnR_RenderView(float vieworg[3], float viewangles[3], float & fov)
@@ -305,9 +317,10 @@ void Filming::OnR_RenderView(float vieworg[3], float viewangles[3], float & fov)
 	}
 
 	if(m_FovOverride)
-	{
 		fov = (float)m_FovValue;
-	}
+
+	if(m_RollOverride)
+		viewangles[ROLL] = (float)m_RollValue;
 
 	//
 	// Camera spline interaction:
@@ -2441,6 +2454,33 @@ REGISTER_CMD_FUNC(fov)
 		"Usage:\n"
 		PREFIX "fov f - Override fov with given floating point value (f).\n"
 		PREFIX "fov default - Revert to the game's default behaviour.\n"
+	);
+}
+
+REGISTER_CMD_FUNC(roll)
+{
+	int argc = pEngfuncs->Cmd_Argc();;
+
+	if(2 <= argc)
+	{
+		char const * arg1 = pEngfuncs->Cmd_Argv(1);
+
+		if(0 == _stricmp("default", arg1))
+		{
+			g_Filming.RollDefault();
+			return;
+		}
+		else
+		{
+			g_Filming.RollOverride(atof(arg1));
+			return;
+		}
+	}
+
+	pEngfuncs->Con_Printf(
+		"Usage:\n"
+		PREFIX "roll f - Override camera roll with given floating point value (f).\n"
+		PREFIX "v default - Revert to the game's default behaviour.\n"
 	);
 }
 
