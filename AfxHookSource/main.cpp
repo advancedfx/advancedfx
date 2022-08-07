@@ -175,7 +175,9 @@ public:
 				}
 			}
 		}
-		g_CampathDrawer.OnPostRenderAllTools();
+
+		if (g_SourceSdkVer != SourceSdkVer::SourceSdkVer_CSGO || g_AfxStreams.IsSingleThreaded())
+			g_CampathDrawer.OnPostRenderAllTools();
 
 		g_Engine_ClientEngineTools->PostRenderAllTools();
 	}

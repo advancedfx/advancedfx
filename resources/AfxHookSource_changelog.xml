@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.112.1</version>
+<time>2022-08-07T22:33Z</time>
+<changes>
+<change type="fixed">Fix mirv_campath draw enabled crashing / blanking out.</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.112.0</version>
 <time>2022-08-04T16:45Z</time>
 <changes>

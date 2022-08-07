@@ -6031,6 +6031,10 @@ bool CAfxStreams::IsQueuedThreaded() {
 	return nullptr != m_MaterialSystem && (m_MaterialSystem->GetThreadMode() == SOURCESDK::CSGO::MATERIAL_QUEUED_THREADED);
 }
 
+bool CAfxStreams::IsSingleThreaded() {
+	return nullptr != m_MaterialSystem && (m_MaterialSystem->GetThreadMode() == SOURCESDK::CSGO::MATERIAL_SINGLE_THREADED);
+}
+
 void CAfxStreams::OnMaterialSystem(SOURCESDK::IMaterialSystem_csgo * value)
 {
 	m_MaterialSystem = value;

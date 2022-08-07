@@ -3414,6 +3414,9 @@ public:
 	}
 
 	bool IsQueuedThreaded();
+
+	bool IsSingleThreaded();
+
 	bool OnEngineThread();
 
 	IAfxStreamContext * FindStreamContext(IAfxMatRenderContext * ctx);
