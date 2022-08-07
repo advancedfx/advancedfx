@@ -106,6 +106,9 @@ public:
 
 	void FovOverride(double value);
 	void FovDefault();
+	
+	void RollOverride(double value);
+	void RollDefault();
 
 	// used in OpenGl32Hooks.cpp
 	void FullClear();
@@ -217,7 +220,9 @@ private:
 	bool m_DebugCapture;
 	bool m_EnableStereoMode;
 	bool m_FovOverride;
+	bool m_RollOverride;
 	double m_FovValue;
+	double m_RollValue;
 	int m_Height;
 	unsigned int m_HostFrameCount;
 	bool m_HudDrawnInFrame;
