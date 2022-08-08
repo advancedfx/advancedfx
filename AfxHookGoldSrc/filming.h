@@ -105,6 +105,7 @@ public:
 	~Filming();
 
 	void FovOverride(double value);
+	void FovZoomFix(bool bEnable);
 	void FovDefault();
 	
 	void RollOverride(double value);
@@ -220,6 +221,7 @@ private:
 	bool m_DebugCapture;
 	bool m_EnableStereoMode;
 	bool m_FovOverride;
+	bool m_FovZoomFix;
 	bool m_RollOverride;
 	double m_FovValue;
 	double m_RollValue;

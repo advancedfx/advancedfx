@@ -288,6 +288,11 @@ void Filming::FovDefault()
 	m_FovOverride = false;
 }
 
+void Filming::FovZoomFix(bool value)
+{
+	m_FovZoomFix = value;
+}
+
 void Filming::RollOverride(double value)
 {
 	m_RollValue = value;
@@ -316,7 +321,12 @@ void Filming::OnR_RenderView(float vieworg[3], float viewangles[3], float & fov)
 		viewangles[ROLL] = (float)A.Roll;
 	}
 
-	if(m_FovOverride)
+	if (m_FovZoomFix && m_FovOverride) 
+	{
+		if(fov == 90.0f)
+			fov = (float)m_FovValue;
+	}
+	else if(m_FovOverride) 
 		fov = (float)m_FovValue;
 
 	if(m_RollOverride)
@@ -2454,6 +2464,32 @@ REGISTER_CMD_FUNC(fov)
 		"Usage:\n"
 		PREFIX "fov f - Override fov with given floating point value (f).\n"
 		PREFIX "fov default - Revert to the game's default behaviour.\n"
+	);
+}
+
+REGISTER_CMD_FUNC(fov_zoom_fix)
+{
+	int argc = pEngfuncs->Cmd_Argc();;
+
+	if (2 <= argc)
+	{
+		char const* arg1 = pEngfuncs->Cmd_Argv(1);
+
+		if (0 == _stricmp("1", arg1))
+		{
+			g_Filming.FovZoomFix(true);
+			return;
+		}
+		else
+		{
+			g_Filming.FovZoomFix(false);
+			return;
+		}
+	}
+
+	pEngfuncs->Con_Printf(
+		"Usage:\n"
+		PREFIX "fov_zoom_fix 0 | 1 - Stops mirv_fov from overriding the default fov when the player is zooming in.\n"
 	);
 }
 
