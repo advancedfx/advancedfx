@@ -105,7 +105,6 @@ public:
 	~Filming();
 
 	void FovOverride(double value);
-	void FovZoomFix(bool bEnable);
 	void FovDefault();
 	
 	void RollOverride(double value);
@@ -183,6 +182,8 @@ public:
 	double LastCameraAngles[3];
 	double LastCameraFov;
 
+	bool m_HandleZoomEnabled;
+	float m_HandleZoomMinUnzoomedFov;
 
 	void GetCameraOfs(float &right, float &up, float &forward); // will copy the current camera ofs to the supplied addresses
 	void GetCameraAngs(float& pitch, float& yaw, float& roll);
@@ -221,7 +222,6 @@ private:
 	bool m_DebugCapture;
 	bool m_EnableStereoMode;
 	bool m_FovOverride;
-	bool m_FovZoomFix;
 	bool m_RollOverride;
 	double m_FovValue;
 	double m_RollValue;
