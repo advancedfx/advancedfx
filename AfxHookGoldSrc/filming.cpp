@@ -556,37 +556,11 @@ void Filming::SetStereoOfs(float left_and_rightofs)
 }
 
 Filming::Filming()
-// constructor
 {
-	m_bInWireframe = false;
-	m_EnableStereoMode = false;
-
-		_fStereoOffset = (float)1.27;
-		
-		// this is currently done globally: _detoured_R_RenderView = NULL; // only hook when requested
-
-		_bRecordBuffers_FirstCall = true; //has to be set here cause it is checked by isFinished()
-
-		// (will be set in Start again)
-		_stereo_state = STS_LEFT;
-
-		_HudRqState = HUDRQ_NORMAL;
-
-		_bSimulate2 = false;
-
-	_fx_whRGBf[0]=0.0f;
-	_fx_whRGBf[1]=0.5f;	
-	_fx_whRGBf[2]=1.0f;
-
-	m_HandleZoomEnabled = false;
-	m_HandleZoomMinUnzoomedFov = 90.0f;
-
-	bRequestingMatteTextUpdate=false;
-	matte_entities_r.bNotEmpty=false; // by default empty
+	// this is currently done globally: _detoured_R_RenderView = NULL; // only hook when requested
 }
 
 Filming::~Filming()
-// destructor
 {
 }
 
@@ -1335,7 +1309,7 @@ void GLfloatArrayToXByteArray(GLfloat *pBuffer, unsigned int width, unsigned int
 Filming::DRAW_RESULT Filming::shouldDraw(GLenum mode)
 {
 	bool bMatteXray = 0 != matte_xray->value ;
-	bool bFilterEntities = matte_entities_r.bNotEmpty;
+	bool bFilterEntities = !matt_entities_ids.empty();
 
 	int iMatteParticles = (int)matte_particles->value;
 	bool bParticleWorld  = 0 != (0x01 & iMatteParticles);
@@ -1440,8 +1414,7 @@ bool Filming::_InMatteEntities(int iid)
 {
 	bool bFound=false;
 
-	std::list<int>::iterator iterend = matte_entities_r.ids.end();
-	for (std::list<int>::iterator iter = matte_entities_r.ids.begin(); iter != iterend; iter++)
+	for (std::list<int>::iterator iter = matt_entities_ids.begin(); iter != matt_entities_ids.end(); iter++)
 	{
 		if (*iter == iid)
 		{
@@ -2375,8 +2348,7 @@ REGISTER_CMD_FUNC(matte_entities)
 		{
 			// list
 			pEngfuncs->Con_Printf("Ids: ");
-			std::list<int>::iterator iterend = g_Filming.matte_entities_r.ids.end();
-			for (std::list<int>::iterator iter = g_Filming.matte_entities_r.ids.begin(); iter != iterend; iter++)
+			for (std::list<int>::iterator iter = g_Filming.matt_entities_ids.begin(); iter != g_Filming.matt_entities_ids.end(); iter++)
 			{
 				pEngfuncs->Con_Printf("%i, ",*iter);
 			}
@@ -2387,23 +2359,20 @@ REGISTER_CMD_FUNC(matte_entities)
 		{
 			// add
 			int iid = atoi(pEngfuncs->Cmd_Argv(2));
-			g_Filming.matte_entities_r.ids.push_front(iid);
-			g_Filming.matte_entities_r.bNotEmpty=true;
+			g_Filming.matt_entities_ids.push_front(iid);
 			bShowHelp=false;
 		}
 		else if (!lstrcmp(pcmd ,"del") && icarg==3)
 		{
 			// del
 			int iid = atoi(pEngfuncs->Cmd_Argv(2));
-			g_Filming.matte_entities_r.ids.remove(iid);
-			g_Filming.matte_entities_r.bNotEmpty=!(g_Filming.matte_entities_r.ids.empty());
+			g_Filming.matt_entities_ids.remove(iid);
 			bShowHelp=false;
 		}
 		else if (!lstrcmp(pcmd ,"clear") && icarg==2)
 		{
 			// clear
-			g_Filming.matte_entities_r.ids.clear();
-			g_Filming.matte_entities_r.bNotEmpty=false;
+			g_Filming.matt_entities_ids.clear();
 			bShowHelp=false;
 		}
 	}

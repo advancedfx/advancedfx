@@ -141,13 +141,7 @@ public:
 
 	Filming::DRAW_RESULT doWireframe(GLenum mode);
 
-	struct matte_entities_s
-	{
-		bool bNotEmpty;
-		::std::list<int> ids;
-		bool b_doors;
-		bool b_weapon;
-	} matte_entities_r;
+	::std::list<int> matt_entities_ids;
 
 	// WH fx:
 	void DoWorldFxBegin(GLenum mode); // begin and end have to maintain the order
@@ -156,7 +150,7 @@ public:
 	// lightmap fx:
 	void DoWorldFx2(GLenum mode);
 
-	float m_MatteColour[3];
+	float m_MatteColour[3] = {0,0,0};
 
 	void setMatteColour(float r, float g, float b)
 	{
@@ -176,14 +170,14 @@ public:
 
 	bool GetSimulate2() { return _bSimulate2; }
 
-	bool bRequestingMatteTextUpdate;
+	bool bRequestingMatteTextUpdate = false;
 
-	double LastCameraOrigin[3];
-	double LastCameraAngles[3];
-	double LastCameraFov;
+	double LastCameraOrigin[3] = { 0,0,0 };
+	double LastCameraAngles[3] = { 0,0,0 };
+	double LastCameraFov = 90;
 
-	bool m_HandleZoomEnabled;
-	float m_HandleZoomMinUnzoomedFov;
+	bool m_HandleZoomEnabled = false;
+	float m_HandleZoomMinUnzoomedFov = 90.0f;
 
 	void GetCameraOfs(float &right, float &up, float &forward); // will copy the current camera ofs to the supplied addresses
 	void GetCameraAngs(float& pitch, float& yaw, float& roll);
@@ -218,67 +212,67 @@ private:
 	enum FILMING_STATE { FS_INACTIVE, FS_STARTING, FS_ACTIVE };
 
 	CamPath m_CamPath;
-	bool m_CaptureEarly;
-	bool m_DebugCapture;
-	bool m_EnableStereoMode;
-	bool m_FovOverride;
-	bool m_RollOverride;
-	double m_FovValue;
-	double m_RollValue;
-	int m_Height;
-	unsigned int m_HostFrameCount;
-	bool m_HudDrawnInFrame;
-	unsigned int m_LastCamFrameMid;
-	unsigned int m_LastCamFrameLeft;
-	unsigned int m_LastCamFrameRight;
-	MATTE_METHOD m_MatteMethod;
-	double m_StartClientTime;
-	DWORD m_StartTickCount;
+	bool m_CaptureEarly = false;
+	bool m_DebugCapture = false;
+	bool m_EnableStereoMode = false;
+	bool m_FovOverride = false;
+	bool m_RollOverride = false;
+	double m_FovValue = 90.0;
+	double m_RollValue = 0.0;
+	int m_Height = 480;
+	unsigned int m_HostFrameCount = 0;
+	bool m_HudDrawnInFrame = false;
+	unsigned int m_LastCamFrameMid = 0;
+	unsigned int m_LastCamFrameLeft = 0;
+	unsigned int m_LastCamFrameRight = 0;
+	MATTE_METHOD m_MatteMethod = MM_KEY;
+	double m_StartClientTime = 0;
+	DWORD m_StartTickCount = 0;
 	std::wstring m_TakeDir;
-	int m_Width;
-	GLdouble m_ZFar;
-	GLdouble m_ZNear;
-	float m_fps;
-	double m_time;
-	double m_LastHostTime;
-	bool m_TASMode;
+	int m_Width = 640;
+	GLdouble m_ZFar = 1;
+	GLdouble m_ZNear = 0;
+	float m_fps = 0;
+	double m_time = 0;
+	double m_LastHostTime = 0;
+	bool m_TASMode = false;
 
 
-	CHlaeSupportRender *_pSupportRender;
+	CHlaeSupportRender *_pSupportRender = nullptr;
 
 	CFilmSound _FilmSound; // our sound filming class
-	bool _bExportingSound;
+	bool _bExportingSound = false;
 
-	unsigned int m_nFrames;
+	unsigned int m_nFrames = 0;
 
 	CMdt_Media_RAWGLPIC m_GlRawPic;
 
-	MATTE_STAGE m_iMatteStage;
+	MATTE_STAGE m_iMatteStage = MS_ALL;
 
-	FILMING_STATE m_iFilmingState;
+	FILMING_STATE m_iFilmingState = FS_INACTIVE;
 
-	bool m_bInWireframe;
-	GLenum m_iLastMode;
+	bool m_bInWireframe = false;
+	GLenum m_iLastMode = 0;
 
 	struct _cameraofs_s { float right; float up; float forward; float pitch; float yaw; float roll; } _cameraofs = { 0,0,0,0,0,0 };
-	float	_fStereoOffset;
+	float	_fStereoOffset = (float)1.27;
 
-	STEREO_STATE _stereo_state;
+	STEREO_STATE _stereo_state = STS_LEFT;
 
 	// it is very important to understand this and the things connected to it right:
-	bool _bRecordBuffers_FirstCall; 
+	bool _bRecordBuffers_FirstCall = false; 
 	// On the one hand Filming::recordBuffres() can get called because the engine advanced in time and rendered an new frame, in this case _bRecordBuffers_FirstCall is true
 	// On the other hand we might have triggered a new frame our self by doing an manual call to R_RenderView, in that case _bRecordBuffers_FirstCall is false!!
 	// The second case usually can only happen when we have the R_RenderView hook and therefore the code connected to it enabled (which is the defualt).
 
-	HUD_REQUEST_STATE _HudRqState;
+	HUD_REQUEST_STATE _HudRqState = HUDRQ_NORMAL;
 
-	bool _bSimulate2;
+	bool _bSimulate2 = false;
 
-	bool _bWorldFxDisableBlend;
-	bool _bWorldFxEnableDepth;
+	bool _bWorldFxDisableBlend = false;
+	bool _bWorldFxEnableDepth = false;
 
-	float _fx_whRGBf[3];
+	float _fx_whRGBf[3] = {0.0f, 0.5f, 1.0f};
 
 	bool _InMatteEntities(int iid);
 
