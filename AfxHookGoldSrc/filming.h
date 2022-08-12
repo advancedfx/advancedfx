@@ -182,6 +182,8 @@ public:
 	double LastCameraAngles[3];
 	double LastCameraFov;
 
+	bool m_HandleZoomEnabled;
+	float m_HandleZoomMinUnzoomedFov;
 
 	void GetCameraOfs(float &right, float &up, float &forward); // will copy the current camera ofs to the supplied addresses
 	void GetCameraAngs(float& pitch, float& yaw, float& roll);

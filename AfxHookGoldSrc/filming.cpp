@@ -316,7 +316,7 @@ void Filming::OnR_RenderView(float vieworg[3], float viewangles[3], float & fov)
 		viewangles[ROLL] = (float)A.Roll;
 	}
 
-	if(m_FovOverride)
+	if (m_FovOverride && (!m_HandleZoomEnabled || m_HandleZoomMinUnzoomedFov <= fov))
 		fov = (float)m_FovValue;
 
 	if(m_RollOverride)
@@ -578,9 +578,11 @@ Filming::Filming()
 	_fx_whRGBf[1]=0.5f;	
 	_fx_whRGBf[2]=1.0f;
 
-	 bRequestingMatteTextUpdate=false;
+	m_HandleZoomEnabled = false;
+	m_HandleZoomMinUnzoomedFov = 90.0f;
 
-	 matte_entities_r.bNotEmpty=false; // by default empty
+	bRequestingMatteTextUpdate=false;
+	matte_entities_r.bNotEmpty=false; // by default empty
 }
 
 Filming::~Filming()
@@ -2443,10 +2445,54 @@ REGISTER_CMD_FUNC(fov)
 			g_Filming.FovDefault();
 			return;
 		}
-		else
+
+		if(atof(arg1) != 0.0f)
 		{
 			g_Filming.FovOverride(atof(arg1));
 			return;
+		}
+		
+		if (0 == _stricmp("handleZoom", arg1))
+		{
+			if (3 <= argc)
+			{
+				const char* arg2 = pEngfuncs->Cmd_Argv(2);
+
+				if (!_stricmp(arg2, "enabled"))
+				{
+					if (4 <= argc)
+					{
+						const char* arg3 = pEngfuncs->Cmd_Argv(3);
+						g_Filming.m_HandleZoomEnabled = atoi(arg3);
+
+						return;
+					}
+
+					pEngfuncs->Con_Printf(
+						"Usage:\n"
+						PREFIX "mirv_fov handleZoom enabled 0|1 - Enable (1), disable (0).\n"
+						PREFIX "Current value: %s\n", g_Filming.m_HandleZoomEnabled ? "1" : "0"
+					);
+					return;
+				}
+				else if (!_stricmp(arg2, "minUnzoomedFov"))
+				{
+					const char* arg3 = pEngfuncs->Cmd_Argv(3);
+
+					if (atof(arg3) != 0.0f) 
+					{
+						g_Filming.m_HandleZoomMinUnzoomedFov = atof(arg3);
+						return;
+					}
+
+					pEngfuncs->Con_Printf(
+						"Usage:\n"
+						PREFIX "mirv_fov handleZoom minUnzoomedFov f - Set minimum fov as threshold.\n"
+						PREFIX "Current value: %f\n", g_Filming.m_HandleZoomMinUnzoomedFov
+					);
+					return;
+				}
+			}
 		}
 	}
 
@@ -2454,6 +2500,8 @@ REGISTER_CMD_FUNC(fov)
 		"Usage:\n"
 		PREFIX "fov f - Override fov with given floating point value (f).\n"
 		PREFIX "fov default - Revert to the game's default behaviour.\n"
+		PREFIX "fov handleZoom enabled [...] - Whether to enable zoom handling (if enabled mirv_fov is only active if it's not below minUnzoomedFov (not zoomed)).\n"
+		PREFIX "fov handleZoom minUnzoomedFov [...] - Zoom detection threshold.\n"
 	);
 }
 
