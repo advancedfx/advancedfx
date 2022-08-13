@@ -5,6 +5,7 @@
 #include "../HookHw.h"
 
 #include "cstrike/CrossHairFix.h"
+#include "cstrike/SpectatorFix.h"
 
 void HookClient()
 {
@@ -22,5 +23,6 @@ void HookClient()
 	if(0 == _stricmp("cstrike",gamedir))
 	{
 		Hook_Cstrike_CrossHair_Fix();
+		Hook_Cstrike_Spectator_Fix();
 	}
 }

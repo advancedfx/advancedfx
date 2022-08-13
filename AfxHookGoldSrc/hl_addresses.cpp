@@ -47,6 +47,7 @@ AFXADDR_DEF(cstrike_UnkCrosshairFn)
 AFXADDR_DEF(cstrike_UnkCrosshairFn_add_fac)
 AFXADDR_DEF(cstrike_UnkCrosshairFn_mul_fac)
 AFXADDR_DEF(cstrike_rgDeathNoticeList)
+AFXADDR_DEF(cstrike_PM_CatagorizePositionFn)
 AFXADDR_DEF(g_fov)
 AFXADDR_DEF(hlExe)
 AFXADDR_DEF(hwDll)
@@ -762,6 +763,16 @@ void Addresses_InitClientDll(AfxAddr clientDll, const char * gamedir)
 				else ErrorBox(MkErrStr(__FILE__, __LINE__));
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+
+		// cstrike spectator fix, gets PM_CatagorizePosition
+		{
+			MemRange r1 = FindPatternString(textRange, "81 EC 94 00 00 00 55 56 57 E8 32 FE FF FF 8B 0D");
+
+			if (!r1.IsEmpty())
+				AFXADDR_SET(cstrike_PM_CatagorizePositionFn, r1.Start);
+			else 
+				ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
 
 		// cstrike_EV_CreateSmoke: // [3]

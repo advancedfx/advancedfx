@@ -25,6 +25,7 @@
 #include "hooks/hw/R_DrawViewModel.h"
 #include "hooks/hw/R_RenderView.h"
 #include "hooks/client/cstrike/CrossHairFix.h"
+#include "hooks/client/cstrike/SpectatorFix.h"
 #include "mirv_time.h"
 
 #include "AfxSettings.h"
@@ -70,6 +71,7 @@ REGISTER_CVAR(fx_wh_tint_enable, "0", 0);
 REGISTER_CVAR(fx_wh_xtendvis, "1", 0);
 REGISTER_CVAR(fx_xtendvis, "0", 0);
 REGISTER_CVAR(tas_mode, "0", 0);
+REGISTER_CVAR(cstrike_spectator_fix, "0", 0);
 
 REGISTER_CVAR(matte_entityquads, "2", 0);
 REGISTER_CVAR(matte_method, "1", 0);
