@@ -5,28 +5,33 @@
 #include "SpectatorFix.h"
 
 #include <windows.h>
-
+#include <gl/gl.h>
 #include <shared/AfxDetours.h>
 #include <hlsdk.h>
-#include "../../../hl_addresses.h"
-
-#include "../../HookHw.h"
-#include "../../hw/Host_Frame.h"
-
-#include <gl/gl.h>
-
-#include <Windows.h>
 #include <deps/release/Detours/src/detours.h>
 
-typedef int (__cdecl*UnkCstrikeSpectatorFn_t)();
+#include "../../../hl_addresses.h"
+#include "../../HookHw.h"
+#include "../../hw/Host_Frame.h"
+#include "../../../cmdregister.h"
+
+REGISTER_CVAR(cstrike_spectator_fix, "1", 0);
+
+typedef void (__cdecl*UnkCstrikeSpectatorFn_t)();
 UnkCstrikeSpectatorFn_t g_pfnSpectatorFix_Hooked_Func = NULL;
 
-int __cdecl SpectatorFix_Hooking_Func()
-{
-	if (pEngfuncs->pfnGetCvarFloat("mirv_cstrike_spectator_fix") == 0.0f)
-		g_pfnSpectatorFix_Hooked_Func();
+extern playermove_s* ppmove;
 
-	return 0;
+void __cdecl SpectatorFix_Hooking_Func()
+{
+	if ((ppmove->spectator || ppmove->iuser1 > 0) && cstrike_spectator_fix->value != 0) {
+		ppmove->onground = -1;
+		ppmove->waterlevel = 0;
+		ppmove->watertype = CONTENTS_EMPTY;
+		return;
+	}
+
+	g_pfnSpectatorFix_Hooked_Func();
 }
 
 bool Hook_Cstrike_Spectator_Fix()
