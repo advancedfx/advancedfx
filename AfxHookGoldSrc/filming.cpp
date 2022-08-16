@@ -2456,7 +2456,7 @@ REGISTER_CMD_FUNC(fov)
 
 					pEngfuncs->Con_Printf(
 						"Usage:\n"
-						PREFIX "mirv_fov handleZoom minUnzoomedFov f - Set minimum fov as threshold.\n"
+						PREFIX "mirv_fov handleZoom minUnzoomedFov <fDegrees> - Set minimum fov as threshold.\n"
 						PREFIX "Current value: %f\n", g_Filming.m_HandleZoomMinUnzoomedFov
 					);
 					return;
