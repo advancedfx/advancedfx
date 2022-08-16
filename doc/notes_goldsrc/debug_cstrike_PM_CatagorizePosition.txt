@@ -1,0 +1,22 @@
+Version: May 16 update
+
+Modules:
+client 0d1c0000 - 0d31d000
+
+Clues:
+https://github.com/ValveSoftware/halflife/blob/c7240b965743a53a29491dd49320c88eecf6257b/pm_shared/pm_shared.c#L2964
+
+Find PM_PlayerMove from HUD_PlayerMove
+client.dll exports HUD_PlayerMove, very easy to find in ghidra/ida
+
+Cross compare the decompiled code with the publicly available source code
+You know youre at the right function when a float/double gets multiplied with 0.001
+
+*(float *)(pmove + 16) = (double)servera * 0.001;
+PM_ReduceTimers();
+AngleVectors(pmove + 68, pmove + 20, pmove + 32, pmove + 44);
+if ( *(_DWORD *)(pmove + 216) || *(int *)(pmove + 508) > 0 )
+{
+PM_SpectatorMove();
+return PM_CatagorizePosition();
+}
