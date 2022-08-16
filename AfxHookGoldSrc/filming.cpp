@@ -25,7 +25,6 @@
 #include "hooks/hw/R_DrawViewModel.h"
 #include "hooks/hw/R_RenderView.h"
 #include "hooks/client/cstrike/CrossHairFix.h"
-#include "hooks/client/cstrike/SpectatorFix.h"
 #include "mirv_time.h"
 
 #include "AfxSettings.h"
