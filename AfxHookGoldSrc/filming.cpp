@@ -2496,8 +2496,8 @@ REGISTER_CMD_FUNC(roll)
 
 	pEngfuncs->Con_Printf(
 		"Usage:\n"
-		PREFIX "roll f - Override camera roll with given floating point value (f).\n"
-		PREFIX "v default - Revert to the game's default behaviour.\n"
+		PREFIX "roll <fDegrees> - Override camera roll with given floating point value (<fDegrees>).\n"
+		PREFIX "roll default - Revert to the game's default behaviour.\n"
 	);
 }
 
