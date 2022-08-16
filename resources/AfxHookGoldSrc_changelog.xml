@@ -6,13 +6,22 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
-<version>2.15.0</version>
-<time>2022-08-12T09:21Z</time>
+<version>2.16.0</version>
+<time>2022-08-16T08:37Z</time>
 <changes>
-<change type="added">Added mirv_fov handleZoom, mirv_fov minUnzoomedFov  by @mallgrab.</change>
+<change type="added"> Add cvar mirv_cstrike_spectator_fix, unstucks the camera when colliding into the ground by @mallgrab.</change>
 </changes>
 </release>
 
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.15.0</version>
+<time>2022-08-12T09:21Z</time>
+<changes>
+<change type="added">Added mirv_fov handleZoom, mirv_fov minUnzoomedFov by @mallgrab.</change>
+</changes>
+</release>
 
 
 <release>
