@@ -79,6 +79,7 @@ public:
 	IMirvHandleCalc * NewActiveWeaponCalc(char const * name, IMirvHandleCalc * parent, bool world);
 	IMirvHandleCalc * NewLocalPlayerCalc(char const * name);
 	IMirvHandleCalc * NewObserverTargetCalc(char const * name, IMirvHandleCalc * parent);
+	IMirvHandleCalc * NewOrCalc(char const * name, IMirvHandleCalc * a, IMirvHandleCalc * b);
 	IMirvHandleCalc * NewOwnerEntityCalc(char const * name, IMirvHandleCalc * calc, unsigned int maxDepth = 1);
 
 	bool Console_CheckName(char const * name);

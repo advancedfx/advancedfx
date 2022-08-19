@@ -862,6 +862,43 @@ private:
 	IMirvHandleCalc * m_ParentCalc;
 };
 
+class CMirvHandleOrCalc : public CMirvHandleCalc
+{
+public:
+	CMirvHandleOrCalc(char const * name, IMirvHandleCalc * a, IMirvHandleCalc * b)
+		: CMirvHandleCalc(name)
+		, m_A(a)
+		, m_B(b)
+	{
+		m_A->AddRef();
+		m_B->AddRef();
+	}
+
+	virtual void Console_PrintBegin(void)
+	{
+		CMirvHandleCalc::Console_PrintBegin();
+
+		Tier0_Msg(", fn: \"or\"");
+		Tier0_Msg(", a: "); m_A->Console_PrintBegin(); m_A->Console_PrintEnd();
+		Tier0_Msg(", b: "); m_B->Console_PrintBegin(); m_B->Console_PrintEnd();
+	}
+
+	virtual bool CalcHandle(SOURCESDK::CSGO::CBaseHandle & outHandle)
+	{
+		return m_A->CalcHandle(outHandle) || m_B->CalcHandle(outHandle);
+	}
+
+protected:
+	virtual ~CMirvHandleOrCalc()
+	{
+		m_B->Release();
+		m_A->Release();
+	}
+
+private:
+	IMirvHandleCalc * m_A;
+	IMirvHandleCalc * m_B;
+};
 
 class CMirvHandleOwnerEntityCalc : public CMirvHandleCalc
 {
@@ -4296,6 +4333,23 @@ IMirvHandleCalc *  CMirvHandleCalcs::NewObserverTargetCalc(char const * name, IM
 	return result;
 }
 
+IMirvHandleCalc * CMirvHandleCalcs::NewOrCalc(char const * name, IMirvHandleCalc * a, IMirvHandleCalc * b)
+{
+	if (name && !Console_CheckName(name))
+		return 0;
+
+	IMirvHandleCalc * result = new CMirvHandleOrCalc(name, a, b);
+
+	if (name)
+	{
+		result->AddRef();
+
+		m_Calcs.push_back(result);
+	}
+
+	return result;
+}
+
 IMirvHandleCalc *  CMirvHandleCalcs::NewOwnerEntityCalc(char const * name, IMirvHandleCalc * calc, unsigned int maxDepth)
 {
 	if (name && !Console_CheckName(name))
@@ -5608,7 +5662,29 @@ void mirv_calcs_handle(IWrpCommandArgs * args)
 
 					return;
 				}
-				else if (0 == _stricmp("observerTarget", arg2) && 6 <= argc)
+				else if (0 == _stricmp("or", arg2) && 6 <= argc)
+				{
+					char const * calcAName = args->ArgV(4);
+					IMirvHandleCalc * calcA = g_MirvHandleCalcs.GetByName(calcAName);
+
+					if (calcA)
+					{
+						char const * calcBName = args->ArgV(5);
+						IMirvHandleCalc * calcB = g_MirvHandleCalcs.GetByName(calcBName);
+
+						if (calcB)
+						{
+							g_MirvHandleCalcs.NewOrCalc(args->ArgV(3), calcA, calcB);
+						}
+						else
+							Tier0_Warning("Error: No handle calcB with name \"%s\" found.\n", calcBName);
+					}
+					else
+						Tier0_Warning("Error: No handle calcA with name \"%s\" found.\n", calcAName);
+
+					return;
+				}
+				else if (0 == _stricmp("ownerEntity", arg2) && 6 <= argc)
 				{
 					char const * parentCalcName = args->ArgV(4);
 					unsigned int maxDepth = strtoul(args->ArgV(5), nullptr, 10);
@@ -5631,7 +5707,9 @@ void mirv_calcs_handle(IWrpCommandArgs * args)
 				"%s add activeWeapon <sName> <sParentCalcHandleName> <bGetWorld> - Add an active weapon calc, <bGetWorld> is 0 or 1.\n"
 				"%s add localPlayer <sName> - Add localPlayer calc.\n"
 				"%s add observerTarget <sName> <sParentCalcHandleName> - Add observer target calc (use e.g. localPlayer calc as parent name).\n"
-				"%s add ownerEntityCalc <sName> <sCalcHandleName> <iMaxDepth>\n"
+				"%s add or <sName> <sAName> <sBName> - Add an OR calc.\n"
+				"%s add ownerEntity <sName> <sCalcHandleName> <iMaxDepth>\n"
+				, arg0
 				, arg0
 				, arg0
 				, arg0
