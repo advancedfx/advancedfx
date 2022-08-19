@@ -10,7 +10,7 @@
 <time>2022-08-19T16:00Z</time>
 <changes>
 <change type="fixed">Fixed mirv_cals handle add ownerEntity being inaccessible.</change>
-<change type="add">Fixed mirv_cals handle add or.</change>
+<change type="added">Added mirv_cals handle add or.</change>
 </changes>
 </release>
 
