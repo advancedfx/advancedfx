@@ -2456,7 +2456,7 @@ REGISTER_CMD_FUNC(fov)
 
 					pEngfuncs->Con_Printf(
 						"Usage:\n"
-						PREFIX "mirv_fov handleZoom minUnzoomedFov f - Set minimum fov as threshold.\n"
+						PREFIX "mirv_fov handleZoom minUnzoomedFov <fDegrees> - Set minimum fov as threshold.\n"
 						PREFIX "Current value: %f\n", g_Filming.m_HandleZoomMinUnzoomedFov
 					);
 					return;
@@ -2496,8 +2496,8 @@ REGISTER_CMD_FUNC(roll)
 
 	pEngfuncs->Con_Printf(
 		"Usage:\n"
-		PREFIX "roll f - Override camera roll with given floating point value (f).\n"
-		PREFIX "v default - Revert to the game's default behaviour.\n"
+		PREFIX "roll <fDegrees> - Override camera roll with given floating point value (<fDegrees>).\n"
+		PREFIX "roll default - Revert to the game's default behaviour.\n"
 	);
 }
 
