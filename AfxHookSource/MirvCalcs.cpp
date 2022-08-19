@@ -954,7 +954,7 @@ public:
 	{
 		CMirvHandleCalc::Console_PrintBegin();
 
-		Tier0_Msg(", fn: \"observerTarget\"");
+		Tier0_Msg(", fn: \"ownerEntity\"");
 		Tier0_Msg(", calc: "); m_ParentCalc->Console_PrintBegin(); m_ParentCalc->Console_PrintEnd();
 		Tier0_Msg(", maxDepth: %u", m_MaxDepth);
 	}
