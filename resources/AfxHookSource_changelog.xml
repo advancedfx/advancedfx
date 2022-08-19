@@ -6,7 +6,7 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>1.113.1</version>
+<version>1.113.2</version>
 <time>2022-08-19T16:00Z</time>
 <changes>
 <change type="fixed">Fixed mirv_cals handle add ownerEntity being inaccessible.</change>
