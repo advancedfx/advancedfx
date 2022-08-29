@@ -654,7 +654,7 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 					if (!r3.IsEmpty()) {
 
 						AFXADDR_SET(msg_readcount, *(DWORD *)(r3.Start + 1));
-						AFXADDR_SET(net_message, *(DWORD *)(r3.Start + 7));
+						AFXADDR_SET(net_message, *(DWORD *)(r3.Start + 7) - 0x10);
 					}
 					else ErrorBox(MkErrStr(__FILE__, __LINE__));
 				}
