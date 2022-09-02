@@ -6,10 +6,20 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.16.1</version>
+<time>2022-09-02T19:39Z</time>
+<changes>
+<change type="fixed">Fixed mirv_voice_block command.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.16.0</version>
 <time>2022-08-16T08:37Z</time>
 <changes>
-<change type="added"> Add cvar mirv_cstrike_spectator_fix, unstucks the camera when colliding into the ground by @mallgrab.</change>
+<change type="added">Add cvar mirv_cstrike_spectator_fix, unstucks the camera when colliding into the ground by @mallgrab.</change>
 </changes>
 </release>
 
