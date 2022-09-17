@@ -3853,6 +3853,22 @@ CON_COMMAND(mirv_cfg, "general HLAE configuration")
 			);
 			return;
 		}
+		else if (0 == _stricmp("forceViewOverrideHltv", arg1))
+		{
+			if (3 <= argC)
+			{
+				g_Hook_VClient_RenderView.ForceViewOverrideHltv = 0 != atoi(args->ArgV(2));
+				return;
+			}
+
+			Tier0_Msg(
+				"%s forceViewOverrideHltv 0|1\n"
+				"Current value: %i\n"
+				, arg0
+				, g_Hook_VClient_RenderView.ForceViewOverrideHltv ? 1 : 0
+			);
+			return;
+		}
 		else if (0 == _stricmp("viewOverrideReset", arg1))
 		{
 			if (3 <= argC)
@@ -3963,6 +3979,7 @@ CON_COMMAND(mirv_cfg, "general HLAE configuration")
 	Tier0_Msg(
 		"%s fovScaling [...] - Set default fov scaling.\n"
 		"%s forceViewOverride [...] - If to force the view override onto the local player, can fix a few bugs (CS:GO only).\n"
+		"%s forceViewOverrideHltv [...] - If to force the view override onto the HLTVCamera (e.g. for GOTV). (CS:GO only).\n"
 		"%s viewOverrideReset [...] - If to reset roll to 0 and fov to 90 (unscaled) after ending a view override (CS:GO only).\n"
 		"%s mirvForceSpectatorToolsMapOverviewShowAll [...] - If to extend map overivew in mirv_force_spectatortools.\n"
 		, arg0

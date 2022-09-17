@@ -37,6 +37,7 @@ public:
 
 	bool ViewOverrideReset = true;
 	bool ForceViewOverride = true;
+	bool ForceViewOverrideHltv = false;
 
 	float GameCameraOrigin[3] = { 0.0f, 0.0f, 0.0f };
 	float GameCameraAngles[3] = { 0.0f, 0.0f, 0.0f };

@@ -26,6 +26,7 @@
 #include "csgo/ClientToolsCSgo.h"
 #include "MirvPgl.h"
 
+#undef CreateEvent
 
 BvhExport * g_BvhExport = NULL;
 
@@ -170,12 +171,16 @@ bool Hook_VClient_RenderView::IsInstalled(void) {
 	return m_IsInstalled;
 }
 
+extern WrpVEngineClient * g_VEngineClient;
+
+typedef void (__fastcall * csgo_C_HLTVCamera_SpecCameraGotoPos_t)(void * This, void * Edx, SOURCESDK::Vector vecPos, SOURCESDK::QAngle angAngle, int nPlayerIndex );
+
 void TrySetView(float Tx, float Ty, float Tz, float Rx, float Ry, float Rz, float fov, float * outOrgRz, float * outOrgFov)
 {
 	static bool firstRun = true;
 	static SOURCESDK::CSGO::IServerTools * serverTools = nullptr;
 
-	if (firstRun)
+	if (firstRun && g_Hook_VClient_RenderView.ForceViewOverride)
 	{
 		firstRun = false;
 		
@@ -203,7 +208,23 @@ void TrySetView(float Tx, float Ty, float Tz, float Rx, float Ry, float Rz, floa
 		}
 	}
 
-	if (serverTools)
+	if(g_Hook_VClient_RenderView.ForceViewOverrideHltv && g_VEngineClient && g_VEngineClient->IsHLTV() && AFXADDR_GET(csgo_client_s_HLTVCamera) && AFXADDR_GET(csgo_client_CHLTVCamera_SpecCameraGotoPos)) {
+		csgo_C_HLTVCamera_SpecCameraGotoPos_t fn = (csgo_C_HLTVCamera_SpecCameraGotoPos_t)AFXADDR_GET(csgo_client_CHLTVCamera_SpecCameraGotoPos);
+		SOURCESDK::Vector origin;
+		SOURCESDK::QAngle angles;
+
+		origin.x = Tx;
+		origin.y = Ty;
+		origin.z = Tz;
+
+		angles.x = Rx;
+		angles.y = Ry;
+		angles.z = Rz;
+
+		fn((void*)AFXADDR_GET(csgo_client_s_HLTVCamera), nullptr, origin, angles, 0);
+	}
+
+	if (g_Hook_VClient_RenderView.ForceViewOverride && serverTools)
 	{
 		if (SOURCESDK::C_BaseEntity_csgo * localPlayer = reinterpret_cast<SOURCESDK::C_BaseEntity_csgo *>(CClientToolsCsgo::Instance()->GetClientToolsInterface()->GetLocalPlayer()))
 		{
@@ -484,7 +505,7 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 	
 	static bool viewOverriding = false;
 
-	if (originOrAnglesOverriden && this->ForceViewOverride)
+	if (originOrAnglesOverriden && (this->ForceViewOverride || this->ForceViewOverrideHltv))
 	{
 		TrySetView(Tx, Ty, Tz, Rx, Ry, Rz, Fov, nullptr, nullptr);
 

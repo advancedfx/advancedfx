@@ -134,6 +134,8 @@ AFXADDR_DEF(cssv34_client_C_BaseAnimating_RecordBones)
 AFXADDR_DEF(cssv34_client_C_BaseAnimating_m_BoneAccessor_m_pBones)
 AFXADDR_DEF(tf2_client_C_BaseAnimating_RecordBones)
 AFXADDR_DEF(csgo_client_CModelRenderSystem_SetupBones)
+AFXADDR_DEF(csgo_client_s_HLTVCamera)
+AFXADDR_DEF(csgo_client_CHLTVCamera_SpecCameraGotoPos)
 
 void ErrorBox(char const * messageText);
 
@@ -2428,7 +2430,67 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 					ErrorBox(MkErrStr(__FILE__, __LINE__));
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
-		}			
+		}
+
+		// csgo_client_s_HLTVCamera // 2022-09-17.
+		{
+			DWORD strAddr = 0;
+			{
+				ImageSectionsReader sections((HMODULE)clientDll);
+				if (!sections.Eof())
+				{
+					sections.Next(); // skip .text
+					if (!sections.Eof())
+					{
+						{
+							MemRange result = FindCString(sections.GetMemRange(), "items_gifted");
+							if (!result.IsEmpty())
+							{
+								strAddr = result.Start;
+							}
+							else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						}
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+
+			if (strAddr)
+			{
+				ImageSectionsReader sections((HMODULE)clientDll);
+
+				MemRange baseRange = sections.GetMemRange();
+				MemRange result = FindBytes(baseRange, (char const*)&strAddr, sizeof(strAddr));
+				if (!result.IsEmpty())
+				{
+					result = FindPatternString(MemRange(result.Start + 0x0a, result.Start + 0x0a +5), "B9 ?? ?? ?? ??");
+					if(!result.IsEmpty()) {
+						AFXADDR_SET(csgo_client_s_HLTVCamera, *(DWORD*)((DWORD)result.Start + 0x1));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+		}
+
+		// C_HLTVCamera::SpecCameraGotoPos // 2022
+		// Second ref to "spec_target_updated".
+		{
+			ImageSectionsReader sections((HMODULE)clientDll);
+			if (!sections.Eof())
+			{
+				MemRange textRange = sections.GetMemRange();
+
+				MemRange result = FindPatternString(textRange, "55 8B EC 83 E4 F8 8B 45 20 81 EC 70 01 00 00 56 8B F1 57 C7 46 10 00 00 00 00 85 C0");
+
+				if (!result.IsEmpty())
+					AFXADDR_SET(csgo_client_CHLTVCamera_SpecCameraGotoPos, result.Start);
+				else
+					ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}		
 	}
 	else
 	{
