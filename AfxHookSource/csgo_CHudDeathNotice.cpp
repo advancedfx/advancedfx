@@ -1274,6 +1274,13 @@ public:
 		return m_Event->GetString(keyName, defaultValue);
 	}
 
+	virtual const wchar_t *GetWString(char const *keyName = NULL, const wchar_t *defaultValue = L"") {
+		return m_Event->GetWString(keyName, defaultValue);
+	}
+	virtual const void *GetPtr( const char *keyname = NULL, const void *defaultValues = NULL ) {
+		return m_Event->GetPtr(keyname, defaultValues);
+	}
+
 	virtual void SetBool(const char *keyName, bool value) {
 		m_Event->SetBool(keyName, value);
 	}
@@ -1292,6 +1299,14 @@ public:
 
 	virtual void SetString(const char *keyName, const char *value) {
 		m_Event->SetString(keyName, value);
+	}
+
+	virtual void SetWString( const char *keyName, const wchar_t *value ) {
+		m_Event->SetWString(keyName, value);
+	}
+	
+	virtual void SetPtr( const char *keyname, const void *value ) {
+		m_Event->SetPtr(keyname, value);
 	}
 
 private:
@@ -1551,6 +1566,13 @@ public:
 		return defaultValue;
 	}
 
+	virtual const wchar_t *GetWString(char const *keyName = NULL, const wchar_t *defaultValue = L"") {
+		return defaultValue;
+	}
+	virtual const void *GetPtr( const char *keyname = NULL, const void *defaultValues = NULL ) {
+		return defaultValues;
+	}
+
 	virtual void SetBool(const char *keyName, bool value) {
 		return;
 	}
@@ -1568,6 +1590,14 @@ public:
 	}
 
 	virtual void SetString(const char *keyName, const char *value) {
+		return;
+	}
+
+	virtual void SetWString( const char *keyName, const wchar_t *value ) {
+		return;
+	}
+
+	virtual void SetPtr( const char *keyname, const void *value ) {
 		return;
 	}
 
