@@ -6,13 +6,22 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.114.1</version>
+<time>2022-09-17T15:34Z</time>
+<changes>
+<change type="fixed">Fixed crash introduced in 1.114.0 when using mirv_cfg command without parameters to print help.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.114.0</version>
 <time>2022-09-17T08:57Z</time>
 <changes>
 <change type="added">Added mirv_cfg forceViewOverrideHltv. Set to 1 and use spec_mode 6 in order to make HLTVCamera follow HLAE campaths / camera overrides. Roll is ignored by HLTVCamera. This feature might be useful for live observers but is off by default, since it would disturb some movie maker's work flow.</change>
 </changes>
 </release>
-
 
 
 <release>

@@ -3986,6 +3986,7 @@ CON_COMMAND(mirv_cfg, "general HLAE configuration")
 		, arg0
 		, arg0
 		, arg0
+		, arg0
 	);
 	Tier0_Msg(
 		"%s mirvPov [...] - Tampers with the interp to get more accurate POV view on average.\n"
