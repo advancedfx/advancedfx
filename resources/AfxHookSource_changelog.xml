@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.114.0</version>
+<time>2022-09-17T08:57Z</time>
+<changes>
+<change type="added">Added mirv_cfg forceViewOverrideHltv. Set to 1 and use spec_mode 6 in order to make HLTVCamera follow HLAE campaths / camera overrides. Roll is ignored by HLTVCamera. This feature might be useful for live observers but is off by default, since it would disturb some movie maker's work flow.</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.113.2</version>
 <time>2022-08-19T16:00Z</time>
 <changes>
