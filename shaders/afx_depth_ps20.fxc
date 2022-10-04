@@ -134,7 +134,7 @@ float4 main( PS_INPUT i ) : COLOR
 	float grid_position = frac(dot(i.t0, (float2(g_Afx_width,g_Afx_height) * float2(1.0 / 16.0, 10.0 / 36.0)) + 0.25));
 	float dither_shift = 0.5 / 255.0;
 	float3 dither_shift_rgb = float3(dither_shift, -dither_shift, dither_shift);
-	dither_shift_rgb = lerp(dither_shift_rgb, dither_shift_rgb, grid_position);
+	dither_shift_rgb = lerp(dither_shift_rgb, -dither_shift_rgb, grid_position);
 	return float4(depth + dither_shift_rgb.r, depth - dither_shift_rgb.g, depth + dither_shift_rgb.b, 1.0);
 #endif
 }
