@@ -130,6 +130,7 @@ float4 main( PS_INPUT i ) : COLOR
 #elif 3 == AFXD24
 	//float2 fac2 = frac(i.t0 * float2(g_Afx_width,g_Afx_height) / 7.0) * 7.0;
 	//float fac = (fmod(fac2.x * fac2.y + 4,7) -3) / 7.0 / 255.0;
+	//return float4(depth + fac, depth - fac, depth + fac, 1.0);
 	// ^^ Sadly I couldn't beat the ReShade.me pattern.
 	float grid_position = frac(dot(i.t0, (float2(g_Afx_width,g_Afx_height) * float2(1.0 / 16.0, 10.0 / 36.0)) + 0.25));
 	float dither_shift = 0.5 / 255.0;
