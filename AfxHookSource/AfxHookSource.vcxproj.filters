@@ -477,9 +477,6 @@
     <ClCompile Include="AfxWriteFileLimiter.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
-    <ClCompile Include="AfxThreadedRefCounted.cpp">
-      <Filter>AfxHookSource</Filter>
-    </ClCompile>
     <ClCompile Include="csgo_GameEvents.cpp">
       <Filter>AfxHookSource</Filter>
     </ClCompile>
@@ -891,9 +888,6 @@
       <Filter>AfxHookSource</Filter>
     </ClInclude>
     <ClInclude Include="AfxWriteFileLimiter.h">
-      <Filter>AfxHookSource</Filter>
-    </ClInclude>
-    <ClInclude Include="AfxThreadedRefCounted.h">
       <Filter>AfxHookSource</Filter>
     </ClInclude>
     <ClInclude Include="csgo_GameEvents.h">

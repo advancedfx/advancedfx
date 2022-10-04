@@ -12,7 +12,6 @@
 #include "CamIO.h"
 #include "MatRenderContextHook.h"
 #include "AfxWriteFileLimiter.h"
-#include "AfxThreadedRefCounted.h"
 #include "MirvCalcs.h"
 #include "d3d9Hooks.h"
 
@@ -245,31 +244,55 @@ int AfxStreams_RefTracker_Get(void);
 
 class CAfxRecordStream;
 
-class CAfxStreamShared : public CAfxThreadedRefCounted
+class CAfxStreamShared
 {
 public:
-	//
-	// Reference counting:
-
-	virtual int AddRef(bool keepLocked = false) override
+	virtual int AddRef()
 	{
 		AFXSTREAMS_REFTRACKER_INC
 
-		return CAfxThreadedRefCounted::AddRef(keepLocked);
+		return ++m_RefCount;
 	}
 
-	virtual int Release(bool isLocked = false) override
+	virtual int Release()
 	{
-		int result = CAfxThreadedRefCounted::Release(isLocked);
-
+		int result = --m_RefCount;
+		
+		if (0 == result)
+			delete this;
+		
 		AFXSTREAMS_REFTRACKER_DEC
 
 		return result;
 	}
+	
+	void EnterCritical() {
+		m_CriticalCount++;
+		
+	}
+	
+	void ExitCritical() {
+		m_CriticalCount--;
+	}
+
+	int GetRefCount()
+	{
+		return m_RefCount;
+	}
+
+	void WaitUncritical()
+	{
+		while(0 < m_CriticalCount);
+	}
+
+protected:
+	virtual ~CAfxStreamShared()
+	{
+	}
 
 private:
-	std::mutex m_RefMutex;
-	int m_RefCount = 0;
+	std::atomic_int m_RefCount = 0;
+	std::atomic_int m_CriticalCount = 0;
 };
 
 class CAfxStream
@@ -675,9 +698,23 @@ private:
 class CAfxSingleStream;
 class CAfxTwinStream;
 
-class CAfxRecordingSettings : public CAfxThreadedRefCounted
+class CAfxRecordingSettings
 {
 public:
+
+	void AddRef() {
+		m_RefCount++;
+	}
+	
+	void Release() {
+		if(0 == --m_RefCount)
+			delete this;
+	}
+
+	int GetRefCount() {
+		return m_RefCount;
+	}
+
 	static CAfxRecordingSettings * GetDefault()
 	{
 		return m_Shared.m_DefaultSettings;
@@ -723,6 +760,10 @@ public:
 	}
 
 protected:
+	virtual ~CAfxRecordingSettings() {		
+	}
+
+	int m_RefCount;
 	std::string m_Name;
 	bool m_Protected;
 
@@ -781,17 +822,15 @@ protected:
 		{
 			if (it->second.Settings)
 			{
-				it->second.Settings->Lock();
 				if (1 == it->second.Settings->GetRefCount())
 				{
-					it->second.Settings->Release(true);
+					it->second.Settings->Release();
 					it->second.Settings = nullptr;
 					m_NamedSettings.erase(it);
 					return true;
 				}
 				else
 				{
-					it->second.Settings->Unlock();
 					return false;
 				}
 			}
@@ -1453,7 +1492,8 @@ public:
 	{
 		EDrawDepth_None,
 		EDrawDepth_Gray,
-		EDrawDepth_Rgb
+		EDrawDepth_Rgb,
+		EDrawDepth_Dithered
 	};
 
 	EDrawDepth DrawDepth_get(void)
@@ -2942,7 +2982,7 @@ public:
 	CAfxZDepthStream() : CAfxBaseFxStream()
 	{
 		DrawHud_set(DT_Draw);
-		DrawDepth_set(EDrawDepth_Gray);
+		DrawDepth_set(EDrawDepth_Dithered);
 	}
 };
 
@@ -3015,7 +3055,7 @@ public:
 	CAfxZDepthWorldStream() : CAfxMatteWorldStream()
 	{
 		DrawHud_set(DT_Draw);
-		DrawDepth_set(EDrawDepth_Gray);
+		DrawDepth_set(EDrawDepth_Dithered);
 	}
 };
 

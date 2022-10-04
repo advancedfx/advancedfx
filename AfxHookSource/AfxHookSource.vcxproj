@@ -209,7 +209,6 @@
     <ClCompile Include="AfxHookSourceInput.cpp" />
     <ClCompile Include="AfxShaders.cpp" />
     <ClCompile Include="AfxStreams.cpp" />
-    <ClCompile Include="AfxThreadedRefCounted.cpp" />
     <ClCompile Include="AfxWriteFileLimiter.cpp" />
     <ClCompile Include="aiming.cpp" />
     <ClCompile Include="CamIO.cpp" />
@@ -357,7 +356,6 @@
     <ClInclude Include="AfxInterfaces.h" />
     <ClInclude Include="AfxShaders.h" />
     <ClInclude Include="AfxStreams.h" />
-    <ClInclude Include="AfxThreadedRefCounted.h" />
     <ClInclude Include="AfxWriteFileLimiter.h" />
     <ClInclude Include="aiming.h" />
     <ClInclude Include="CamIO.h" />

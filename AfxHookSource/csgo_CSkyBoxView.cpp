@@ -39,16 +39,14 @@ bool csgo_CSkyBoxView_Draw_Install(void)
 	return firstResult;
 }
 
-float csgo_CSkyBoxView_GetScale(void)
+int csgo_CSkyBoxView_GetScale(void)
 {
 	if(AFXADDR_GET(csgo_C_BasePlayer_OFS_m_skybox3d_scale) != (AfxAddr)-1) {
 		if(auto pLocalPlayer = CClientToolsCsgo::GetLocalPlayer())
 		{
-			int skyBoxScale = *(int *)((unsigned char *)pLocalPlayer +AFXADDR_GET(csgo_C_BasePlayer_OFS_m_skybox3d_scale));
-
-			return skyBoxScale ? 1.0f / skyBoxScale : 0.0f;
+			return *(int *)((unsigned char *)pLocalPlayer +AFXADDR_GET(csgo_C_BasePlayer_OFS_m_skybox3d_scale));
 		}
 	}
 
-	return 1.0f;
+	return 1;
 }

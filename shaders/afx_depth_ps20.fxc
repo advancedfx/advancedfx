@@ -1,6 +1,6 @@
 // AFX: "AFXCLIP" "0..1"
 // AFX: "AFXDEPTHMODE" "0..4"
-// AFX: "AFXD24" "0..2"
+// AFX: "AFXD24" "0..3"
 
 // SKIP: $AFXD24 == 2 && ($AFXDEPTHMODE != 0)
 
@@ -19,12 +19,13 @@
 // 0 - draw gray depth
 // 1 - draw rgb-encoded depth
 // 2 - rgba pack (for afx_interop)
+// 3 - draw dithered
 
 // AFXSPHERICAL:
 // 0 - no correction
 // 1 - convert pyramidal depth buffer to spherical depth
 
-const float4 g_AfxConstants : register( c5 );
+const float4 g_AfxConstants : register( c0 );
 
 #define g_Afx_zNear g_AfxConstants.x
 #define g_Afx_zFar g_AfxConstants.y
@@ -32,8 +33,15 @@ const float4 g_AfxConstants : register( c5 );
 #define g_Afx_OutFar g_AfxConstants.w
 
 #if 1 == AFXDEPTHMODE || 2 == AFXDEPTHMODE
-const float4x4 g_AfxInvProjection : register( c6 );
+const float4x4 g_AfxInvProjection : register( c1 );
 #endif
+
+#if 3 == AFXD24
+const float4 g_AfxConstants2 : register( c5 );
+#define g_Afx_width g_AfxConstants2.x
+#define g_Afx_height g_AfxConstants2.y
+#endif
+
 
 sampler g_sDepthTextureSampler : register( s0 );
 
@@ -63,22 +71,18 @@ float4 main( PS_INPUT i ) : COLOR
 #elif 1 == AFXDEPTHMODE || 2 == AFXDEPTHMODE
 
 	// Linearize Quake-like depth buffer with spherical correction using the inverse projection matrix:
-
+	
 	float4 eyeVec = mul(g_AfxInvProjection, float4(2 * i.t0.x - 1, 2 * i.t0.y - 1, depth, 1.0));
 	
 	eyeVec.xyz /= eyeVec.w;
-	
+
 	depth = length(eyeVec.xyz);
 	
 	// Transform [outNear,OutFar] to [0,1]
-	
-	depth = (depth - g_Afx_OutNear) / (g_Afx_OutFar - g_Afx_OutNear);
-	
 #if 2 == AFXDEPTHMODE
-	
-	// Logarithmize depth buffer:
-	
-	depth = log(1 + depth);
+	depth = log(1 + depth - g_Afx_OutNear) / log(1 + g_Afx_OutFar - g_Afx_OutNear);
+#else
+	depth = (depth - g_Afx_OutNear) / (g_Afx_OutFar - g_Afx_OutNear);
 #endif
 
 #elif 3 == AFXDEPTHMODE || 4 == AFXDEPTHMODE
@@ -91,15 +95,12 @@ float4 main( PS_INPUT i ) : COLOR
 	depth = f1/(depth * xD -g_Afx_zFar);
 	
 	// Transform [outNear,OutFar] to [0,1]
-	
-	depth = (depth - g_Afx_OutNear) / (g_Afx_OutFar - g_Afx_OutNear);
-	
 #if 4 == AFXDEPTHMODE
-	
-	// Logarithmize depth buffer:
-	
-	depth = log(1 + depth);
+	depth = log(1 + depth - g_Afx_OutNear) / log(1 + g_Afx_OutFar - g_Afx_OutNear);
+#else
+	depth = (depth - g_Afx_OutNear) / (g_Afx_OutFar - g_Afx_OutNear);
 #endif
+
 
 #endif
 
@@ -126,5 +127,10 @@ float4 main( PS_INPUT i ) : COLOR
     enc = frac (enc);
     enc -= enc.yzww * kEncodeBit;
     return enc;
+#elif 3 == AFXD24
+	float2 fac2 = frac(i.t0 * float2(g_Afx_width,g_Afx_height) / 7.0) * 7.0;
+	float fac = (fmod(fac2.x * fac2.y + 4,7) -3) / 7.0 / 255.0;
+	//return float4(fac,fac,fac,1);
+	return float4(depth + fac, depth - fac, depth + fac, 1.0);
 #endif
 }

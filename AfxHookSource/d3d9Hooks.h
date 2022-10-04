@@ -166,7 +166,8 @@ enum AfxDrawDepthEncode
 {
 	AfxDrawDepthEncode_Gray,
 	AfxDrawDepthEncode_Rgb,
-	AfxDrawDepthEncode_Rgba
+	AfxDrawDepthEncode_Rgba,
+	AfxDrawDepthEncode_Dithered
 };
 
 void AfxIntzOverrideBegin(bool bNoReplacement = false);

@@ -4,6 +4,19 @@
 <changelog>
 
 
+
+<release>
+<name>AfxHookSource</name>
+<version>1.115.0</version>
+<time>2022-10-04T10:20Z</time>
+<changes>
+<change type="added">Added mirv_streams stream drawZ dithered and made it default for depth streams. This greatly reduces the perceived color banding for 8 bit streams. Thanks to https://www.youtube.com/c/RikkiLove for suggesting to copy this ReShade feature and helping with testing.</change>
+<change type="fixed">Fixed potential threading issues / crashes in mirv_streams when editing or deleting streams while they are in preview or capture.</change>
+<change type="updated">Renamed mirv_streams stream drawZMode values logE, pyramidalLogE to log, pyramidalLog (old values are silently mapped to new values) and made the logarithm effect meaningful.</change>
+</changes>
+</release>
+
+
 <release>
 <name>AfxHookSource</name>
 <version>1.114.1</version>

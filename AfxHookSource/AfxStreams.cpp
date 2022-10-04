@@ -2793,6 +2793,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin(const CAfxBaseFxStrea
 	{
 		m_RootContext = ctx;
 		m_Stream->AddRef();
+		m_Stream->EnterCritical();
 	}
 
 	if (SOURCESDK::CSGO::ICallQueue * queue = ctx->GetOrg()->GetCallQueue())
@@ -2884,6 +2885,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd(bool isRoot)
 
 		m_MapMutex.unlock();
 
+		m_Stream->ExitCritical();
 		m_Stream->Release();
 	}
 
@@ -2927,6 +2929,22 @@ AfxDrawDepthMode AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(CAfxBaseFxStre
 	return AfxDrawDepthMode_Linear;
 }
 
+AfxDrawDepthEncode AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthEncode(CAfxBaseFxStream::EDrawDepth value)
+{
+	switch (value) {
+	case CAfxBaseFxStream::EDrawDepth_None:
+		return AfxDrawDepthEncode_Gray;
+	case CAfxBaseFxStream::EDrawDepth_Gray:
+		return AfxDrawDepthEncode_Gray;
+	case CAfxBaseFxStream::EDrawDepth_Rgb:
+		return AfxDrawDepthEncode_Rgb;
+	case CAfxBaseFxStream::EDrawDepth_Dithered:
+		return AfxDrawDepthEncode_Dithered;
+	}
+
+	return AfxDrawDepthEncode_Gray;
+}
+
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 {
 	IAfxMatRenderContext* ctx = GetCurrentContext();
@@ -2952,7 +2970,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 		{
 			float flDepthFactor = bDrawDepth ? m_Stream->m_DepthVal : m_Data.Viewport.zNear;
 			float flDepthFactorMax = bDrawDepth ? m_Stream->m_DepthValMax : m_Data.Viewport.zFar;
-			AfxDrawDepthEncode drawDepthEncode = bDrawDepth ? (EDrawDepth_Rgb == m_Stream->m_DrawDepth ? AfxDrawDepthEncode_Rgb : AfxDrawDepthEncode_Gray) : AfxDrawDepthEncode_Gray;
+			AfxDrawDepthEncode drawDepthEncode = bDrawDepth ? AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthEncode(m_Stream->DrawDepth_get()) : AfxDrawDepthEncode_Gray;
 			AfxDrawDepthMode drawDepthMode = bDrawDepth ? AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()) : AfxDrawDepthMode_Inverse;
 
 			IDirect3DSurface9* oldRenderTarget = nullptr;
@@ -3053,11 +3071,11 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 
 		if (bDrawDepth || bReShade)
 		{
-			float scale = csgo_CSkyBoxView_GetScale();
+			int scale = csgo_CSkyBoxView_GetScale();
 
-			float flDepthFactor = (bDrawDepth ? m_Stream->m_DepthVal : m_Data.Viewport.zNear) * scale;
-			float flDepthFactorMax = (bDrawDepth ? m_Stream->m_DepthValMax : m_Data.Viewport.zFar) * scale;
-			AfxDrawDepthEncode drawDepthEncode = bDrawDepth ? (EDrawDepth_Rgb == m_Stream->m_DrawDepth ? AfxDrawDepthEncode_Rgb : AfxDrawDepthEncode_Gray) : AfxDrawDepthEncode_Gray;
+			float flDepthFactor = (bDrawDepth ? m_Stream->m_DepthVal : m_Data.Viewport.zNear);
+			float flDepthFactorMax = (bDrawDepth ? m_Stream->m_DepthValMax : m_Data.Viewport.zFar);
+			AfxDrawDepthEncode drawDepthEncode = bDrawDepth ? AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthEncode(m_Stream->DrawDepth_get()) : AfxDrawDepthEncode_Gray;
 			AfxDrawDepthMode drawDepthMode = bDrawDepth ? AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()) : AfxDrawDepthMode_Inverse;
 
 			IDirect3DSurface9* oldRenderTarget = nullptr;
@@ -3067,7 +3085,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 				drawDepthMode,
 				m_IsNextDepth,
 				flDepthFactor, flDepthFactorMax,
-				m_Data.Viewport.x, m_Data.Viewport.y, m_Data.Viewport.width, m_Data.Viewport.height, 2.0f, (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH,
+				m_Data.Viewport.x, m_Data.Viewport.y, m_Data.Viewport.width, m_Data.Viewport.height, 2.0f * scale, (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH * scale,
 				false,
 				bDrawDepth ? m_Data.ProjectionMatrixSky.m : nullptr);
 			if (bReShade) AfxSetRenderTargetR32FDepthTexture_Restore(oldRenderTarget);
@@ -4057,9 +4075,9 @@ void CAfxBaseFxStream::CActionDebugDepth::MaterialHook(CAfxBaseFxStreamContext *
 {
 
 
-	float scale = ch->DrawingSkyBoxView_get() ? csgo_CSkyBoxView_GetScale() : 1.0f;
-	float flDepthFactor = scale * ch->GetStream()->m_DepthVal;
-	float flDepthFactorMax = scale * ch->GetStream()->m_DepthValMax;
+	int scale = ch->DrawingSkyBoxView_get() ? csgo_CSkyBoxView_GetScale() : 1;
+	float flDepthFactor = ch->GetStream()->m_DepthVal / scale;
+	float flDepthFactorMax = ch->GetStream()->m_DepthValMax / scale;
 
 	if (m_DebugDepthMaterial)
 	{
@@ -5337,9 +5355,9 @@ IMaterial_csgo * CAfxBaseFxStream::CActionAfxVertexLitGenericHook::MaterialHook(
 {
 	// depth factors:
 
-	float scale = g_bIn_csgo_CSkyBoxView_Draw ? csgo_CSkyBoxView_GetScale() : 1.0f;
-	float flDepthFactor = scale * CAfxBaseFxStream::m_Shared.m_ActiveBaseFxStream->m_DepthVal;
-	float flDepthFactorMax = scale * CAfxBaseFxStream::m_Shared.m_ActiveBaseFxStream->m_DepthValMax;
+	int scale = g_bIn_csgo_CSkyBoxView_Draw ? csgo_CSkyBoxView_GetScale() : 1;
+	float flDepthFactor = CAfxBaseFxStream::m_Shared.m_ActiveBaseFxStream->m_DepthVal / scale;
+	float flDepthFactorMax = CAfxBaseFxStream::m_Shared.m_ActiveBaseFxStream->m_DepthValMax / scale;
 
 	// Foce multisampling off for depth24:
 	//if(m_Key.AFXMODE == ShaderCombo_afxHook_vertexlit_and_unlit_generic_ps30::AFXMODE_1)
@@ -5527,10 +5545,9 @@ void CAfxBaseFxStream::CActionAfxSpritecardHook::AfxUnbind(IAfxMatRenderContext 
 IMaterial_csgo * CAfxBaseFxStream::CActionAfxSpritecardHook::MaterialHook(IAfxMatRenderContext * ctx, IMaterial_csgo * material)
 {
 	// depth factors:
-
-	float scale = g_bIn_csgo_CSkyBoxView_Draw ? csgo_CSkyBoxView_GetScale() : 1.0f;
-	float flDepthFactor = scale * CAfxBaseFxStream::m_Shared.m_ActiveBaseFxStream->m_DepthVal;
-	float flDepthFactorMax = scale * CAfxBaseFxStream::m_Shared.m_ActiveBaseFxStream->m_DepthValMax;
+	int scale = g_bIn_csgo_CSkyBoxView_Draw ? csgo_CSkyBoxView_GetScale() : 1;
+	float flDepthFactor = CAfxBaseFxStream::m_Shared.m_ActiveBaseFxStream->m_DepthVal / scale;
+	float flDepthFactorMax = CAfxBaseFxStream::m_Shared.m_ActiveBaseFxStream->m_DepthValMax / scale;
 
 	// Force wanted state:
 
@@ -5871,9 +5888,9 @@ IMaterial_csgo * CAfxBaseFxStream::CActionAfxSplineRopeHook::MaterialHook(IAfxMa
 {
 	// depth factors:
 
-	float scale = g_bIn_csgo_CSkyBoxView_Draw ? csgo_CSkyBoxView_GetScale() : 1.0f;
-	float flDepthFactor = scale * CAfxBaseFxStream::m_Shared.m_ActiveBaseFxStream->m_DepthVal;
-	float flDepthFactorMax = scale * CAfxBaseFxStream::m_Shared.m_ActiveBaseFxStream->m_DepthValMax;
+	int scale = g_bIn_csgo_CSkyBoxView_Draw ? csgo_CSkyBoxView_GetScale() : 1;
+	float flDepthFactor = CAfxBaseFxStream::m_Shared.m_ActiveBaseFxStream->m_DepthVal / scale;
+	float flDepthFactorMax = CAfxBaseFxStream::m_Shared.m_ActiveBaseFxStream->m_DepthValMax / scale;
 
 	// Foce multisampling off for depth24:
 	//if(m_Key.AFXMODE == ShaderCombo_afxHook_splinerope_ps20b::AFXMODE_1)
@@ -6145,8 +6162,10 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 	{
 		SOURCESDK::CViewSetup_csgo skyView = view;
 
-		skyView.zNear = 2.0f;
-		skyView.zFar = (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH;
+		int scale = csgo_CSkyBoxView_GetScale();
+
+		skyView.zNear = 2.0f * scale;
+		skyView.zFar = (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH * scale;
 
 		g_pVRenderView_csgo->GetMatricesForView(skyView, &worldToView, &viewToProjectionSky, &worldToProjection, &worldToPixels);
 	}
@@ -6853,8 +6872,8 @@ void CAfxStreams::OnDrawingSkyBoxViewEnd(void)
 	{
 		if (g_InteropFeatures.GetDepthRequired())
 		{
-			float scale = csgo_CSkyBoxView_GetScale();
-			QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropDrawDepth_Functor(false, scale * m_CurrentView->zNear, scale * m_CurrentView->zFar, 2.0f, (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH)));
+			int scale = csgo_CSkyBoxView_GetScale();
+			QueueOrExecute(ctx->GetOrg(), new CAfxLeafExecute_Functor(new CAfxInteropDrawDepth_Functor(false, m_CurrentView->zNear, m_CurrentView->zFar, 2.0f * scale, (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH * scale)));
 		}
 	}
 #endif
@@ -7404,8 +7423,8 @@ void CAfxStreams::Console_RemoveStream(const char * streamName)
 
 			m_Streams.erase(it);
 
-			cur->WaitLastRefAndLock();
-			cur->Release(true);
+			cur->WaitUncritical();
+			cur->Release();
 
 			return;
 		}
@@ -7597,10 +7616,9 @@ void CAfxStreams::Console_EditStream(CAfxStream * stream, IWrpCommandArgs * args
 	CAfxStream * cur = stream;
 	CAfxRecordStream * curRecord = nullptr;
 
-	CAfxThreadedRefCountedUniqueLock afxStreamInterLock(cur);
-	
 	if(cur)
 	{
+		cur->WaitUncritical();
 		curRecord = cur->AsAfxRecordStream();
 	}
 
@@ -7622,10 +7640,9 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 	CAfxRenderViewStream * curRenderView = stream;
 	CAfxBaseFxStream * curBaseFx = 0;
 	
-	CAfxThreadedRefCountedUniqueLock afxRenderViewStreamInterLock(curRenderView);
-
 	if(curRenderView)
 	{
+		curRenderView->WaitUncritical();
 		curBaseFx = curRenderView->AsAfxBaseFxStream();
 	}
 
@@ -8607,6 +8624,11 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 						curBaseFx->DrawDepth_set(CAfxBaseFxStream::EDrawDepth_Rgb);
 						return true;
 					}
+					else if (0 == _stricmp(cmd1, "dithered"))
+					{
+						curBaseFx->DrawDepth_set(CAfxBaseFxStream::EDrawDepth_Dithered);
+						return true;
+					}
 				}
 
 				CAfxBaseFxStream::EDrawDepth value = curBaseFx->DrawDepth_get();
@@ -8622,10 +8644,13 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 				case CAfxBaseFxStream::EDrawDepth_Rgb:
 					pszValue = "rgb";
 					break;
+				case CAfxBaseFxStream::EDrawDepth_Dithered:
+					pszValue = "dithered";
+					break;
 				}
 
 				Tier0_Msg(
-					"%s drawZ none|gray|rgb - Use special shader to draw the z-(depth) buffer (does not support HUD atm).\n"
+					"%s drawZ none|gray|rgb|dithered - Use special shader to draw the z-(depth) buffer (does not support HUD atm).\n"
 					"Current value: %s\n"
 					, cmdPrefix
 					, pszValue
@@ -8653,7 +8678,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 						curBaseFx->DrawDepthMode_set(CAfxBaseFxStream::EDrawDepthMode_Linear);
 						return true;
 					}
-					else if (0 == _stricmp(cmd1, "logE"))
+					else if (0 == _stricmp(cmd1, "logE") || 0 == _stricmp(cmd1, "log"))
 					{
 						curBaseFx->DrawDepthMode_set(CAfxBaseFxStream::EDrawDepthMode_LogE);
 						return true;
@@ -8663,7 +8688,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 						curBaseFx->DrawDepthMode_set(CAfxBaseFxStream::EDrawDepthMode_PyramidalLinear);
 						return true;
 					}
-					else if (0 == _stricmp(cmd1, "pyramidalLogE"))
+					else if (0 == _stricmp(cmd1, "pyramidalLogE") || 0 == _stricmp(cmd1, "pyramidalLog"))
 					{
 						curBaseFx->DrawDepthMode_set(CAfxBaseFxStream::EDrawDepthMode_PyramidalLogE);
 						return true;
@@ -8681,18 +8706,18 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 					pszValue = "linear";
 					break;
 				case CAfxBaseFxStream::EDrawDepthMode_LogE:
-					pszValue = "logE";
+					pszValue = "log";
 					break;
 				case CAfxBaseFxStream::EDrawDepthMode_PyramidalLinear:
 					pszValue = "pyramidalLinear";
 					break;
 				case CAfxBaseFxStream::EDrawDepthMode_PyramidalLogE:
-					pszValue = "pyramidalLogE";
+					pszValue = "pyramidalLog";
 					break;
 				}
 
 				Tier0_Msg(
-					"%s drawZMode inverse|linear|logE|pyramidalLinear|pyramidalLogE - Mode to use for drawZ.\n"
+					"%s drawZMode inverse|linear|log|pyramidalLinear|pyramidalLog - Mode to use for drawZ.\n"
 					"Current value: %s\n"
 					, cmdPrefix
 					, pszValue

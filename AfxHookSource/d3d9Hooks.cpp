@@ -3070,6 +3070,9 @@ public:
 		case AfxDrawDepthEncode_Rgba:
 			afxEncode = ShaderCombo_afx_depth_ps20::AFXD24_2;
 			break;
+		case AfxDrawDepthEncode_Dithered:
+			afxEncode = ShaderCombo_afx_depth_ps20::AFXD24_3;
+			break;
 		}
 
 		IAfxPixelShader * afxPixelShader = g_AfxShaders.GetAcsPixelShader(L"afx_depth_ps20.acs", ShaderCombo_afx_depth_ps20::GetCombo(
@@ -3197,7 +3200,7 @@ public:
 			g_OldDirect3DDevice9->SetTexture(0, depthTexture);
 
 			FLOAT overFac[4] = { zNear, zFar, depthVal, depthValMax };
-			g_OldDirect3DDevice9->SetPixelShaderConstantF(5, overFac, 1);
+			g_OldDirect3DDevice9->SetPixelShaderConstantF(0, overFac, 1);
 
 			if (projectionMatrix)
 			{
@@ -3239,8 +3242,13 @@ public:
 						(FLOAT)inv3[0], (FLOAT)inv3[1], (FLOAT)inv3[2], (FLOAT)inv3[3]
 					};
 
-					g_OldDirect3DDevice9->SetPixelShaderConstantF(6, &(newMatrix[0][0]), 4);
+					g_OldDirect3DDevice9->SetPixelShaderConstantF(1, &(newMatrix[0][0]), 4);
 				}
+			}
+
+			if (encode == AfxDrawDepthEncode_Dithered) {
+				FLOAT facs2[4] = { (float)width, (float)height, 0, 0 };
+				g_OldDirect3DDevice9->SetPixelShaderConstantF(5, facs2, 1);
 			}
 
 			// Draw rectangle:
