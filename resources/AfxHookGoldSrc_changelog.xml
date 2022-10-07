@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.17.0</version>
+<time>2022-10-07T18:28Z</time>
+<changes>
+<change type="added">Added #798 cstrike viewmodel animations to hltv demos by @mallgrab. See mirv_cstrike_hltv_animation_fix command for more information.</change>
+<change type="added">Added mirv_cstrike_force_knife_righthand 0|1 cvar by @mallgrab.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.16.1</version>
 <time>2022-09-02T19:39Z</time>
 <changes>
