@@ -48,6 +48,9 @@ AFXADDR_DEF(cstrike_UnkCrosshairFn_add_fac)
 AFXADDR_DEF(cstrike_UnkCrosshairFn_mul_fac)
 AFXADDR_DEF(cstrike_rgDeathNoticeList)
 AFXADDR_DEF(cstrike_PM_CatagorizePositionFn)
+AFXADDR_DEF(cstrike_ViewmodelSequenceFn)
+AFXADDR_DEF(cstrike_EV_FireM4A1Fn)
+AFXADDR_DEF(cstrike_EV_FireUSPFn)
 AFXADDR_DEF(g_fov)
 AFXADDR_DEF(hlExe)
 AFXADDR_DEF(hwDll)
@@ -135,6 +138,16 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
+
+	// cstrike htlv viewmodel animation fix
+	{
+		MemRange r1 = FindPatternString(textRange, "55 8B EC 8D 45 0C 8D 4D 08 50 51 FF 15 ?? ?? ?? ?? 8B 15 ?? ?? ?? ?? 8B 45 08 8B 4D 0C 83 C4 08");
+
+		if (!r1.IsEmpty())
+			AFXADDR_SET(cstrike_ViewmodelSequenceFn, r1.Start);
+		else
+			ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
 
 	// pEngfuncs // [5] // Checked: 2018-10-06
@@ -763,6 +776,26 @@ void Addresses_InitClientDll(AfxAddr clientDll, const char * gamedir)
 				else ErrorBox(MkErrStr(__FILE__, __LINE__));
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+
+		// hooks cstrike EV_FireM4A1
+		{
+			MemRange r1 = FindPatternString(textRange, "81 EC 9C 00 00 00 E8 ?? ?? ?? ?? 89 44 24 00 A1 ?? ?? ?? ?? C7 44 24 1C 01");
+
+			if (!r1.IsEmpty())
+				AFXADDR_SET(cstrike_EV_FireM4A1Fn, r1.Start);
+			else
+				ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+
+		// hooks cstrike EV_FireUSP
+		{
+			MemRange r1 = FindPatternString(textRange, "81 EC A0 00 00 00 E8 ?? ?? ?? ?? 89 44 24 30 A1 ?? ?? ?? ?? C7 44 24 38");
+
+			if (!r1.IsEmpty())
+				AFXADDR_SET(cstrike_EV_FireUSPFn, r1.Start);
+			else
+				ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
 
 		// cstrike spectator fix, gets PM_CatagorizePosition

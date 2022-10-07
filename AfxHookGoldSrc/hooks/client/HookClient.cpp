@@ -6,6 +6,7 @@
 
 #include "cstrike/CrossHairFix.h"
 #include "cstrike/SpectatorFix.h"
+#include "cstrike/ViewmodelAnimationFix.h"
 
 void HookClient()
 {
@@ -24,5 +25,6 @@ void HookClient()
 	{
 		Hook_Cstrike_CrossHair_Fix();
 		Hook_Cstrike_Spectator_Fix();
+		Hook_Cstrike_Viewmodel_Animation_Fix();
 	}
 }
