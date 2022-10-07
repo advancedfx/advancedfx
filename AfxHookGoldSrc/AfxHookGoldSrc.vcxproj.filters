@@ -177,6 +177,9 @@
     <ClCompile Include="hooks\client\cstrike\SpectatorFix.cpp">
       <Filter>AfxHookGoldSrc\hooks\client\cstrike</Filter>
     </ClCompile>
+    <ClCompile Include="hooks\client\cstrike\ViewmodelAnimationFix.cpp">
+      <Filter>AfxHookGoldSrc\hooks\client\cstrike</Filter>
+    </ClCompile>
     <ClCompile Include="hooks\client\HookClient.cpp">
       <Filter>AfxHookGoldSrc\hooks\client</Filter>
     </ClCompile>
@@ -441,6 +444,9 @@
       <Filter>AfxHookGoldSrc\hooks\client\cstrike</Filter>
     </ClInclude>
     <ClInclude Include="hooks\client\cstrike\SpectatorFix.h">
+      <Filter>AfxHookGoldSrc\hooks\client\cstrike</Filter>
+    </ClInclude>
+    <ClInclude Include="hooks\client\cstrike\ViewmodelAnimationFix.h">
       <Filter>AfxHookGoldSrc\hooks\client\cstrike</Filter>
     </ClInclude>
     <ClInclude Include="hooks\client\HookClient.h">

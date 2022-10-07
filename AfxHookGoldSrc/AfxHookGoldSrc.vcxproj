@@ -301,6 +301,7 @@
     <ClCompile Include="HltvFix.cpp" />
     <ClCompile Include="hooks\client\cstrike\CrossHairFix.cpp" />
     <ClCompile Include="hooks\client\cstrike\SpectatorFix.cpp" />
+    <ClCompile Include="hooks\client\cstrike\ViewmodelAnimationFix.cpp" />
     <ClCompile Include="hooks\client\HookClient.cpp" />
     <ClCompile Include="hooks\DemoPlayer\DemoPlayer.cpp" />
     <ClCompile Include="hooks\hw\ClientFunctions.cpp" />
@@ -396,6 +397,7 @@
     <ClInclude Include="HltvFix.h" />
     <ClInclude Include="hooks\client\cstrike\CrossHairFix.h" />
     <ClInclude Include="hooks\client\cstrike\SpectatorFix.h" />
+    <ClInclude Include="hooks\client\cstrike\ViewmodelAnimationFix.h" />
     <ClInclude Include="hooks\client\HookClient.h" />
     <ClInclude Include="hooks\DemoPlayer\DemoPlayer.h" />
     <ClInclude Include="hooks\hw\ClientFunctions.h" />
