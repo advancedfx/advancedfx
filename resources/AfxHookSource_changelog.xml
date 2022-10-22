@@ -4,6 +4,15 @@
 <changelog>
 
 
+<release>
+<name>AfxHookSource</name>
+<version>1.116.1</version>
+<time>2022-10-22T14:46Z</time>
+<changes>
+<change type="fixed">Fixed mirv_cvar_unhide_all crashing.</change>
+</changes>
+</release>
+
 
 <release>
 <name>AfxHookSource</name>
