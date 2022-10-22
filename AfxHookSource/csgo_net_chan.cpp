@@ -529,22 +529,28 @@ CON_COMMAND(mirv_pov, "Forces a POV on a GOTV demo.")
 
 	if (2 <= argC)
 	{
+		static bool firstRun = true;
+		static unsigned char mem_jz[6] = { 0 };
+
 		g_i_MirvPov = atoi(args->ArgV(1));
 
-		unsigned char* pData = (unsigned char *)AFXADDR_GET(csgo_crosshair_localplayer_check) +25;
+		unsigned char* pData = (unsigned char *)AFXADDR_GET(csgo_crosshair_localplayer_check);
 
 		MdtMemBlockInfos mbis;
-		MdtMemAccessBegin(pData, 2, &mbis);
+		MdtMemAccessBegin(pData, 6, &mbis);
+
+		if (firstRun) {
+			firstRun = false;
+			memcpy(mem_jz, pData, 6);
+		}
 
 		if (g_i_MirvPov)
 		{
-			pData[0] = 0x90;
-			pData[1] = 0x90;
+			memset(pData, 0x90, 6);
 		}
 		else
 		{
-			pData[0] = 0x74;
-			pData[1] = 0xC0;
+			memcpy(pData, mem_jz, 6);
 		}
 
 		MdtMemAccessEnd(&mbis);

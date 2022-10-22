@@ -219,87 +219,29 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 {
 	if (SourceSdkVer_CSGO == sourceSdkVer)
 	{
-		// csgo_snd_mix_timescale_patch: // Checked 2018-12-07.
+		// csgo_snd_mix_timescale_patch: // Last checked 2022-10-22
 		{
-			DWORD addr = 0;
-			DWORD strAddr = 0;
-			{
-				ImageSectionsReader sections((HMODULE)engineDll);
-				if (!sections.Eof())
-				{
-					sections.Next(); // skip .text
-					if (!sections.Eof())
-					{
-						MemRange result = FindCString(sections.GetMemRange(), "Start profiling MIX_PaintChannels\n");
-						if (!result.IsEmpty())
-						{
-							strAddr = result.Start;
-						}
-						else ErrorBox(MkErrStr(__FILE__, __LINE__));
-					}
-					else ErrorBox(MkErrStr(__FILE__, __LINE__));
-				}
-				else ErrorBox(MkErrStr(__FILE__, __LINE__));
-			}
-			if (strAddr)
-			{
-				ImageSectionsReader sections((HMODULE)engineDll);
+			ImageSectionsReader sections((HMODULE)engineDll);
+			MemRange textRange = sections.GetMemRange();
 
-				MemRange baseRange = sections.GetMemRange();
-				MemRange result = FindBytes(baseRange, (char const *)&strAddr, sizeof(strAddr));
+			// MIX_MixChannelsToPaintbuffer // Last checked 2022-10-22
+			// Second function to reference "snd_pause_all" cvar this (ecx).
+			MemRange result = FindPatternString(textRange, "55 8B EC 83 EC 14 89 55 F4 B8 44 AC 00 00 99");
+			if (!result.IsEmpty()) {
+
+				DWORD tempAddr = result.Start + 0xB3;
+
+				MemRange result = FindPatternString(MemRange(tempAddr - 2, tempAddr - 2 + 2), "FF D0");
 				if (!result.IsEmpty())
 				{
-					DWORD tempAddr = result.Start + 0xB9;
-
-					MemRange result = FindPatternString(MemRange(tempAddr - 3, tempAddr - 3 + 3), "51 52 E8");
-					if (!result.IsEmpty())
-					{
-						tempAddr = tempAddr + 4 + *(DWORD *)tempAddr;
-						// in MIX_PaintChannels now.
-
-						tempAddr = tempAddr + 0x273;
-
-						MemRange result = FindPatternString(MemRange(tempAddr - 7, tempAddr - 7 + 7), "8D 8D D0 FC FF FF E8");
-						if (!result.IsEmpty())
-						{
-							tempAddr = tempAddr + 4 + *(DWORD *)tempAddr;
-							// In SoundMixFunction2 now.
-
-							tempAddr = tempAddr + 0xEA;
-
-							MemRange result = FindPatternString(MemRange(tempAddr - 5, tempAddr - 5 + 5), "33 D2 8B CE E8");
-							if (!result.IsEmpty())
-							{
-								tempAddr = tempAddr + 4 + *(DWORD *)tempAddr;
-								// In SoundMixFunction now.
-
-								tempAddr = tempAddr + 0x66;
-
-								MemRange result = FindPatternString(MemRange(tempAddr - 2, tempAddr - 2 + 2), "FF D0");
-								if (!result.IsEmpty())
-								{
-									// After call VEnglineClient013::GetTimeScale now.
-
-									addr = tempAddr;
-								}
-								else ErrorBox(MkErrStr(__FILE__, __LINE__));
-							}
-							else ErrorBox(MkErrStr(__FILE__, __LINE__));
-						}
-						else ErrorBox(MkErrStr(__FILE__, __LINE__));
-					}
-					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					// After call VEnglineClient013::GetTimeScale now.
+					AFXADDR_SET(csgo_snd_mix_timescale_patch, tempAddr);
+					AFXADDR_SET(csgo_snd_mix_timescale_patch_DSZ, 0x8);
 				}
 				else ErrorBox(MkErrStr(__FILE__, __LINE__));
 			}
-			if (addr)
-			{
-				AFXADDR_SET(csgo_snd_mix_timescale_patch, addr);
-			}
 			else
-			{
-				AFXADDR_SET(csgo_snd_mix_timescale_patch, 0x0);
-			}
+				ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
 
 		// csgo_S_StartSound_StringConversion: // Checked 2017-05-13.
@@ -400,10 +342,10 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		}
 
 
-		// csgo_S_ExtraUpdate: // Checked 2022-08-02.
-		// csgo_S_Update_: // Checked 2022-08-02.
-		// csgo_engine_cl_movieinfo_moviename // Checked 2022-08-02.
-		// csgo_engine_cl_movieinfo_type // Checked 2022-08-02.
+		// csgo_S_ExtraUpdate: // Checked 2022-10-22.
+		// csgo_S_Update_: // Checked 2022-10-22.
+		// csgo_engine_cl_movieinfo_moviename // Checked 2022-10-22.
+		// csgo_engine_cl_movieinfo_type // Checked 2022-10-22.
 		{
 			ImageSectionsReader sections((HMODULE)engineDll);
 			if (!sections.Eof())
@@ -422,19 +364,19 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 						result = FindBytes(textRange, (char const*)&tmpAddr, sizeof(tmpAddr));
 						if (!result.IsEmpty())
 						{
-							result = FindPatternString(MemRange(result.Start - 0x77, result.Start - 0x77 + 3).And(textRange), "55 8B EC");
+							result = FindPatternString(MemRange(result.Start - 0xC9, result.Start - 0xC9 + 3).And(textRange), "55 8B EC");
 							if (!result.IsEmpty())
 							{
 								AFXADDR_SET(csgo_engine_S_ExtraUpdate, result.Start);
 
-								MemRange result2 = FindPatternString(MemRange(result.Start + 0x54, result.Start + 0x54 + 6).And(textRange), "38 05 ?? ?? ?? ??");
+								MemRange result2 = FindPatternString(MemRange(result.Start + 0xA6, result.Start + 0xA6 + 6).And(textRange), "38 0D ?? ?? ?? ??");
 								if (!result2.IsEmpty()) {
 									DWORD addr_cl_movieinfo_moviename = *(DWORD*)(result2.Start + 2);
 									AFXADDR_SET(csgo_engine_cl_movieinfo_moviename, addr_cl_movieinfo_moviename);
 								}
 								else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-								result2 = FindPatternString(MemRange(result.Start + 0x14F, result.Start + 0x14F + 5).And(textRange), "E8 ?? ?? ?? ??");
+								result2 = FindPatternString(MemRange(result.Start + 0x244, result.Start + 0x244 + 5).And(textRange), "E8 ?? ?? ?? ??");
 								if (!result2.IsEmpty()) {
 									DWORD addr_S_Update_ = result2.Start + 5 + *(DWORD*)(result2.Start + 1); // decode call address.
 									AFXADDR_SET(csgo_engine_S_Update_, addr_S_Update_);
@@ -581,9 +523,9 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 			AFXADDR_SET(csgo_CVoiceWriter_AddDecompressedData, addr);
 		}
 
-		// csgo_CGameEventManger_FireEventIntern:
+		// csgo_CGameEventManger_FireEventIntern: // Last checked 2022-10-22
 		//
-		// (References ""Game event \"%s\", Tick %i:\n".)
+		// (References "Game event \"%s\", Tick %i:\n".)
 		{
 			AFXADDR_SET(csgo_CGameEventManger_FireEventIntern, 0);
 			AFXADDR_SET(csgo_dynamic_cast, 0);
@@ -595,13 +537,13 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 			{
 				MemRange textRange = sections.GetMemRange();
 
-				MemRange result = FindPatternString(textRange, "55 8B EC 83 E4 F8 83 EC 0C 53 8B D9 56 57 89 5C 24 0C 8D B3 ?? ?? ?? ?? 89 74 24 14 FF 15 ?? ?? ?? ??");
+				MemRange result = FindPatternString(textRange, "55 8B EC 83 E4 F8 83 EC 0C 8B C1 53 56 57 8D B0 98 00 00 00 89 44 24 10 89 74 24 14 FF 15 ?? ?? ?? ??");
 
 				if (!result.IsEmpty())
 				{
 					AFXADDR_SET(csgo_CGameEventManger_FireEventIntern, result.Start);
 
-					result = FindPatternString(MemRange(result.Start, result.Start + 0x25C).And(textRange), "6A 00 68 ?? ?? ?? ?? 68 ?? ?? ?? ?? 6A 00 57 E8 ?? ?? ?? ??");
+					result = FindPatternString(MemRange(result.Start, result.Start + 310).And(textRange), "6A 00 68 ?? ?? ?? ?? 68 ?? ?? ?? ?? 6A 00 53 E8 ?? ?? ?? ??");
 
 					if (!result.IsEmpty())
 					{
@@ -727,7 +669,6 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 	}
 	else
 	{
-		AFXADDR_SET(csgo_snd_mix_timescale_patch, 0x0);
 		AFXADDR_SET(csgo_S_StartSound_StringConversion, 0x0);
 		AFXADDR_SET(csgo_CClientState_ProcessVoiceData, 0x0);
 		AFXADDR_SET(csgo_CVoiceWriter_AddDecompressedData, 0x0);
@@ -741,7 +682,6 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_engine_Do_CCLCMsg_FileCRCCheck, 0x0);
 		AFXADDR_SET(csgo_engine_Cmd_ExecuteCommand, 0x0);
 	}
-	AFXADDR_SET(csgo_snd_mix_timescale_patch_DSZ, 0x08);
 	AFXADDR_SET(csgo_CClientState_ProcessVoiceData_DSZ, 0x6);
 	AFXADDR_SET(csgo_CVoiceWriter_AddDecompressedData_DSZ, 0x8);
 }
@@ -1967,7 +1907,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			AFXADDR_SET(csgo_C_CSPlayer_ofs_m_angEyeAngles, ofs);
 		}
 
-		// csgo_crosshair_localplayer_check // Last checked: 2020-04-12
+		// csgo_crosshair_localplayer_check // Last checked: 2022-10-22
 		// Hook needs updating as well!
 		//
 		// (Right after the first XOR of cvar cl_show_observer_crosshair value.)
@@ -1979,16 +1919,15 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			{
 				MemRange textRange = sections.GetMemRange();
 
-				MemRange result = FindPatternString(textRange, "8B 01 FF 50 34 85 C0 74 D2 ?? ?? ?? ?? ?? ?? ?? ?? 8B 3D ?? ?? ?? ?? 3B F7 74 C0");
+				MemRange result = FindPatternString(textRange, "8B 01 FF 50 34 8B D0 85 D2 74 82 ?? ?? ?? ?? ?? ?? ?? ?? 8B 3D ?? ?? ?? ?? 3B F7 0F 84 ?? ?? ?? ??");
 
 				if (!result.IsEmpty())
-					addr = result.Start;
+					AFXADDR_SET(csgo_crosshair_localplayer_check, result.Start + 27);				
 				else
 					ErrorBox(MkErrStr(__FILE__, __LINE__));
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-			AFXADDR_SET(csgo_crosshair_localplayer_check, addr);
 		}
 		
 		// mirv_pov related
@@ -2260,7 +2199,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 								}
 								if(!result.IsEmpty())
 								{
-									const char * fmt = "E8 ?? ?? ?? ?? 84 C0 74 5D A1 %02x %02x %02x %02x B9 %02x %02x %02x %02x 8B 40 34 FF D0";
+									const char * fmt = "E8 ?? ?? ?? ?? 84 C0 0F 84 ?? ?? ?? ?? A1 %02x %02x %02x %02x B9 %02x %02x %02x %02x 8B 40 34 FF D0";
 									int sz = snprintf(nullptr, 0, fmt,
 										(csgo_client_sv_competitive_official_5v5_cvar >> 0) &0xff,
 										(csgo_client_sv_competitive_official_5v5_cvar >> 8) &0xff,
@@ -2284,7 +2223,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 									);
 
 									result = FindPatternString(MemRange(result.End,textRange.End), &buf[0]);
-									if (!result.IsEmpty()) {
+									if (!result.IsEmpty()) {	
 										AFXADDR_SET(csgo_client_CanSeeSpectatorOnlyTools_4_OFS, result.Start);
 										AFXADDR_SET(csgo_client_CanSeeSpectatorOnlyTools_4_LEN, (sz+1) / 3);
 									}
@@ -2375,11 +2314,11 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));	
 		}
 
-		// csgo_client_AdjustInterpolationAmount
+		// csgo_client_AdjustInterpolationAmount // Last checked: 2022-10-22
 		// mirv_pov related
 		// My_csgo_client_AdjustInterpolationAmount asm needs update if this changes
 		//
-		// This static function is the first function taht references the "cl_interp_npcs" cvar.
+		// This static function is the 2nd function taht references the "cl_interp_npcs" cvar.
 		{
 			DWORD addr = 0;
 
@@ -2388,16 +2327,14 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 			{
 				MemRange textRange = sections.GetMemRange();
 
-				MemRange result = FindPatternString(textRange, "55 8B EC 83 EC 08 56 8B F1 F3 0F 11 4D F8 8B 0D ?? ?? ?? ?? 81 F9 ?? ?? ?? ?? 75 ?? F3 0F 10 15 ?? ?? ?? ??");
+				MemRange result = FindPatternString(textRange, "55 8B EC 83 EC 08 8B 15 ?? ?? ?? ?? F3 0F 11 4D F8 56 8B F1 81 FA ?? ?? ?? ?? 75 71 F3 0F 10 05 ?? ?? ?? ?? F3 0F 10 15 ?? ?? ?? ?? 0F 2E C2 9F");
 
 				if (!result.IsEmpty())
-					addr = result.Start;
+					AFXADDR_SET(csgo_client_AdjustInterpolationAmount, result.Start);
 				else
 					ErrorBox(MkErrStr(__FILE__, __LINE__));
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
-
-			AFXADDR_SET(csgo_client_AdjustInterpolationAmount, addr);
 		}
 
 		// csgo_C_BaseEntity_ofs_m_bPredictable // Last checked: 2022-10-24
@@ -2528,7 +2465,6 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		//AFXADDR_SET(csgo_C_BaseEntity_ofs_m_iWorldModelIndex, -1);
 		AFXADDR_SET(csgo_C_CSPlayer_vtable, 0x0);
 		AFXADDR_SET(csgo_C_CSPlayer_UpdateClientSideAnimation, 0x0);
-		AFXADDR_SET(csgo_crosshair_localplayer_check, 0x0);
 		AFXADDR_SET(csgo_DamageIndicator_MessageFunc, 0x0);
 		AFXADDR_SET(csgo_C_BasePlayer_SetAsLocalPlayer, 0x0);
 		AFXADDR_SET(csgo_C_BasePlayer_GetToolRecordingState, 0x0);
@@ -2539,7 +2475,6 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_C_CS_PlayerResource_IGameResources_vtable, 0x0);
 		AFXADDR_SET(csgo_client_C_TEPlayerAnimEvent_PostDataUpdate_NewModelAnims_JNZ, 0x0);
 		AFXADDR_SET(csgo_C_BaseViewModel_FireEvent, 0x0);
-		AFXADDR_SET(csgo_client_AdjustInterpolationAmount, 0x0);
 		//AFXADDR_SET(csgo_C_BaseEntity_ofs_m_bPredictable, 0x0);
 	}
 
