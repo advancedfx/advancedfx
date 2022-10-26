@@ -9344,8 +9344,10 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 	{
 		SOURCESDK::CViewSetup_csgo skyView = view;
 
-		skyView.zNear = 2.0f;
-		skyView.zFar = (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH;
+		int scale = csgo_CSkyBoxView_GetScale();
+
+		skyView.zNear = 2.0f * scale;
+		skyView.zFar = (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH * scale;
 
 		g_pVRenderView_csgo->GetMatricesForView(skyView, &worldToView, &viewToProjectionSky, &worldToProjection, &worldToPixels);
 	}
