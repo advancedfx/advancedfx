@@ -27,13 +27,9 @@ typedef void(__cdecl* CL_StartMovie_t)(void);
 WaveAppendTmpFile_t detoured_WaveAppendTmpFile;
 CVideoMode_Common_WriteMovieFrame_t detoured_CVideoMode_Common_WriteMovieFrame;
 CEngineVgui_ConIsVisible_t detoured_CEngineVgui_ConIsVisible;
-S_ExtraUpdate_t detoured_S_ExtraUpdate;
-S_Update__t detoured_S_Update_;
 
 DWORD g_csgo_Audio_EngineThreadId = 0;
 bool g_csgo_Audio_Record = false;
-bool g_csgo_Audio_In_S_ExtraUpdate = false;
-bool g_csgo_Audio_In_S_Update_ = false;
 std::wstring g_CAudioXAudio2_RecordAudio_Dir;
 CMirvWav* g_CAudioXAudio2_RecordAudio_File = nullptr;;
 
@@ -108,7 +104,7 @@ __declspec(naked) void __cdecl touring_WaveAppendTmpFile() {
 bool __fastcall touring_CEngineVgui_ConIsVisible(void* This, void* Edx) {
 
 	// The engine checks when recording startmovie wav (which we force it temporarily into) if the console is down (if yes it doesn't record), so let it think it is not.
-	if (g_csgo_Audio_Record && 0 == strcmp(":afx", (char*)AFXADDR_GET(csgo_engine_cl_movieinfo_moviename)))
+	if (g_csgo_Audio_Record && GetCurrentThreadId() == g_csgo_Audio_EngineThreadId && 0 == strcmp(":afx", (char*)AFXADDR_GET(csgo_engine_cl_movieinfo_moviename)))
 		return false;
 
 	return detoured_CEngineVgui_ConIsVisible(This, Edx);
@@ -117,23 +113,12 @@ bool __fastcall touring_CEngineVgui_ConIsVisible(void* This, void* Edx) {
 void __fastcall touring_CVideoMode_Common_WriteMovieFrame(void* This, void* Edx, void* pInfo) {
 
 	// Prevent video frame capture if no one is using startmovie atm:
-	if (g_csgo_Audio_Record && 0 == strcmp(":afx", (char*)AFXADDR_GET(csgo_engine_cl_movieinfo_moviename)))
+	if (g_csgo_Audio_Record && GetCurrentThreadId() == g_csgo_Audio_EngineThreadId && 0 == strcmp(":afx", (char*)AFXADDR_GET(csgo_engine_cl_movieinfo_moviename)))
 		return;
 
 	detoured_CVideoMode_Common_WriteMovieFrame(This, Edx, pInfo);
 }
 
-void __cdecl touring_S_ExtraUpdate(void) {
-	g_csgo_Audio_In_S_ExtraUpdate = true;
-	detoured_S_ExtraUpdate();
-	g_csgo_Audio_In_S_ExtraUpdate = false;
-}
-
-void __cdecl touring_S_Update_(float mixAheadTime) {
-	g_csgo_Audio_In_S_Update_ = true;
-	detoured_S_Update_(mixAheadTime);
-	g_csgo_Audio_In_S_Update_ = false;
-}
 
 bool csgo_Audio_Install(void)
 {
@@ -147,24 +132,18 @@ bool csgo_Audio_Install(void)
 		AFXADDR_GET(csgo_engine_WaveAppendTmpFile)
 		&& AFXADDR_GET(csgo_engine_cl_movieinfo_moviename)
 		&& AFXADDR_GET(csgo_engine_CVideoMode_Common_vtable)
-		&& AFXADDR_GET(csgo_engine_S_ExtraUpdate)
-		&& AFXADDR_GET(csgo_engine_S_Update_)
 		&& AFXADDR_GET(csgo_engine_CEngineVGui_vtable)
 		&& AFXADDR_GET(csgo_engine_CL_StartMovie)
 		) {
 
 		detoured_WaveAppendTmpFile = (WaveAppendTmpFile_t)AFXADDR_GET(csgo_engine_WaveAppendTmpFile);
 		detoured_CVideoMode_Common_WriteMovieFrame = (CVideoMode_Common_WriteMovieFrame_t)(((void**)AFXADDR_GET(csgo_engine_CVideoMode_Common_vtable))[23]);
-		detoured_S_ExtraUpdate = (S_ExtraUpdate_t)AFXADDR_GET(csgo_engine_S_ExtraUpdate);
-		detoured_S_Update_ = (S_Update__t)AFXADDR_GET(csgo_engine_S_Update_);
 		detoured_CEngineVgui_ConIsVisible = (CEngineVgui_ConIsVisible_t)(((void**)AFXADDR_GET(csgo_engine_CEngineVGui_vtable))[18]);
 
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
 		DetourAttach(&(PVOID&)detoured_WaveAppendTmpFile, touring_WaveAppendTmpFile);
 		DetourAttach(&(PVOID&)detoured_CVideoMode_Common_WriteMovieFrame, touring_CVideoMode_Common_WriteMovieFrame);
-		DetourAttach(&(PVOID&)detoured_S_ExtraUpdate, touring_S_ExtraUpdate);
-		DetourAttach(&(PVOID&)detoured_S_Update_, touring_S_Update_);
 		DetourAttach(&(PVOID&)detoured_CEngineVgui_ConIsVisible, touring_CEngineVgui_ConIsVisible);
 		LONG error = DetourTransactionCommit();
 		firstResult = NO_ERROR == error;
@@ -195,9 +174,8 @@ bool csgo_Audio_StartRecording(const wchar_t * ansiTakeDir)
 	csgo_Audio_EndRecording();
 
 	g_CAudioXAudio2_RecordAudio_Dir = ansiTakeDir;
-	g_csgo_Audio_Record = true;
-
 	g_csgo_Audio_EngineThreadId = GetCurrentThreadId();
+	g_csgo_Audio_Record = true;
 
 	// If we are not already recording with startmovie:
 	if ('\0' == *(char*)AFXADDR_GET(csgo_engine_cl_movieinfo_moviename)) {

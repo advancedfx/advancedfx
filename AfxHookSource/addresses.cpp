@@ -43,8 +43,6 @@ AFXADDR_DEF(csgo_CViewRender_RenderView_VGui_DrawHud_In)
 AFXADDR_DEF(csgo_CViewRender_RenderView_VGui_DrawHud_Out)
 AFXADDR_DEF(csgo_CViewRender_ShouldForceNoVis_vtable_index)
 AFXADDR_DEF(csgo_engine_WaveAppendTmpFile)
-AFXADDR_DEF(csgo_engine_S_ExtraUpdate)
-AFXADDR_DEF(csgo_engine_S_Update_)
 AFXADDR_DEF(csgo_engine_cl_movieinfo_moviename)
 AFXADDR_DEF(csgo_engine_CL_StartMovie)
 AFXADDR_DEF(csgo_engine_CVideoMode_Common_vtable)
@@ -342,10 +340,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		}
 
 
-		// csgo_S_ExtraUpdate: // Checked 2022-10-22.
-		// csgo_S_Update_: // Checked 2022-10-22.
 		// csgo_engine_cl_movieinfo_moviename // Checked 2022-10-22.
-		// csgo_engine_cl_movieinfo_type // Checked 2022-10-22.
 		{
 			ImageSectionsReader sections((HMODULE)engineDll);
 			if (!sections.Eof())
@@ -367,7 +362,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 							result = FindPatternString(MemRange(result.Start - 0xC9, result.Start - 0xC9 + 3).And(textRange), "55 8B EC");
 							if (!result.IsEmpty())
 							{
-								AFXADDR_SET(csgo_engine_S_ExtraUpdate, result.Start);
+								//AFXADDR_SET(csgo_engine_S_ExtraUpdate, result.Start);
 
 								MemRange result2 = FindPatternString(MemRange(result.Start + 0xA6, result.Start + 0xA6 + 6).And(textRange), "38 0D ?? ?? ?? ??");
 								if (!result2.IsEmpty()) {
@@ -376,12 +371,12 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 								}
 								else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-								result2 = FindPatternString(MemRange(result.Start + 0x244, result.Start + 0x244 + 5).And(textRange), "E8 ?? ?? ?? ??");
-								if (!result2.IsEmpty()) {
-									DWORD addr_S_Update_ = result2.Start + 5 + *(DWORD*)(result2.Start + 1); // decode call address.
-									AFXADDR_SET(csgo_engine_S_Update_, addr_S_Update_);
-								}
-								else ErrorBox(MkErrStr(__FILE__, __LINE__));
+								//result2 = FindPatternString(MemRange(result.Start + 0x244, result.Start + 0x244 + 5).And(textRange), "E8 ?? ?? ?? ??");
+								//if (!result2.IsEmpty()) {
+								//	DWORD addr_S_Update_ = result2.Start + 5 + *(DWORD*)(result2.Start + 1); // decode call address.
+								//	AFXADDR_SET(csgo_engine_S_Update_, addr_S_Update_);
+								//}
+								//else ErrorBox(MkErrStr(__FILE__, __LINE__));
 							}
 							else ErrorBox(MkErrStr(__FILE__, __LINE__));
 						}
