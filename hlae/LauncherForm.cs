@@ -48,7 +48,7 @@ namespace AfxGui
             });
 
             this.groupBoxMisc.Text = L10n._p("Launch GoldSrc dialog", "Advanced Settings");
-            this.checkBoxForceAlpha.Text = L10n._p("Launch GoldSrc dialog", "Force 8 bit alpha channel");
+            this.checkBoxForceAlpha.Text = L10n._p("Launch GoldSrc dialog", "Force 8-bit alpha channel");
             this.checkBoxVisbility.Text = L10n._p("Launch GoldSrc dialog", "Optimize window visibilty on capture");
             this.checkBoxDesktopRes.Text = L10n._p("Launch GoldSrc dialog", "Optimize desktop resolution");
 
@@ -165,11 +165,11 @@ namespace AfxGui
             if (this.checkBoxFullScreen.Checked)
             {
                 DialogResult dr = MessageBox.Show(
-                    "Switching to full screen is not recommended,\n"
-                    + "i.e. full screen supports much fewer resolutions.\n"
+                    "Switching to full-screen is not recommended,\n"
+                    + "as full-screen supports fewer resolutions.\n"
                     + "\n"
-                    + "Do you still want to switch to fullscreen?",
-                    "Really switch to full screen?",
+                    + "Do you still want to switch to full-screen?",
+                    "Really switch to full-screen?",
                     MessageBoxButtons.YesNo,
                     MessageBoxIcon.Information,
                     MessageBoxDefaultButton.Button2
@@ -201,7 +201,7 @@ namespace AfxGui
             if (!UInt16.TryParse(this.textBoxResHeight.Text, out height))
                 errorProvider.SetError(this.textBoxResHeight, "Invalid value.");
             else if(height < 480)
-                errorProvider.SetError(this.textBoxResHeight, "Warning: Values bellow 480 won't work properly\nunless an EngineFont for this case is added to TrackerScheme.res\nin Half-Life\\platform\\resource\\TracherScheme.res.");
+                errorProvider.SetError(this.textBoxResHeight, "Warning: Values below 480 won't work properly\nunless an EngineFont for this case is added to TrackerScheme.res\nin Half-Life\\platform\\resource\\TracherScheme.res.");
             else
                 errorProvider.SetError(this.textBoxResHeight, null);
         }
