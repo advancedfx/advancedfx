@@ -219,7 +219,7 @@ private:
 	bool m_RollOverride = false;
 	double m_FovValue = 90.0;
 	double m_RollValue = 0.0;
-	int m_Height = 480;
+	int m_Height = 1;
 	unsigned int m_HostFrameCount = 0;
 	bool m_HudDrawnInFrame = false;
 	unsigned int m_LastCamFrameMid = 0;
@@ -229,7 +229,7 @@ private:
 	double m_StartClientTime = 0;
 	DWORD m_StartTickCount = 0;
 	std::wstring m_TakeDir;
-	int m_Width = 640;
+	int m_Width = 1;
 	GLdouble m_ZFar = 1;
 	GLdouble m_ZNear = 0;
 	float m_fps = 0;
