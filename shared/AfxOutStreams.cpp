@@ -250,6 +250,7 @@ COutFFMPEGVideoStream::COutFFMPEGVideoStream(const CImageFormat& imageFormat, co
 			return;
 		}
 
+		ffmpegArgs << " -loglevel repeat+level+warning";
 		ffmpegArgs << " -framerate " << frameRate;
 		ffmpegArgs << " -video_size " << imageFormat.Width << "x" << imageFormat.Height;
 		ffmpegArgs << " -i pipe:0 -vf vflip,setsar=sar=1/1";
@@ -552,55 +553,10 @@ bool COutFFMPEGVideoStream::SupplyVideoData(const CImageBuffer& buffer)
 
 	while (!completed)
 	{
-		if (PeekNamedPipe(m_hChildStd_ERR_Rd, chBuf, 250, NULL, &bytesAvail, NULL))
-		{
-			while (0 < bytesAvail)
-			{
-				DWORD dwBytesRead;
-				if (ReadFile(m_hChildStd_ERR_Rd, chBuf, min(bytesAvail, 250), &dwBytesRead, NULL))
-				{
-					chBuf[dwBytesRead] = 0;
-					advancedfx::DevMessage(1, "%s", chBuf);
-					bytesAvail -= dwBytesRead;
-				}
-				else
-				{
-					advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::HandleOutAndErr: StdErr ReadFile.\n");
-					return false;
-				}
-			}
-		}
-		else
-		{
-			advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::HandleOutAndErr: StdErr PeekNamedPipe.\n");
+		if (!HandleOutAndErr())
 			return false;
-		}
 
-		if (PeekNamedPipe(m_hChildStd_OUT_Rd, NULL, 0, NULL, &bytesAvail, NULL))
-		{
-			while (0 < bytesAvail)
-			{
-				DWORD dwBytesRead;
-				if (ReadFile(m_hChildStd_OUT_Rd, chBuf, min(bytesAvail, 250), &dwBytesRead, NULL))
-				{
-					chBuf[dwBytesRead] = 0;
-					advancedfx::Message("%s", chBuf);
-					bytesAvail -= dwBytesRead;
-				}
-				else
-				{
-					advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::HandleOutAndErr: StdOut ReadFile.\n");
-					return false;
-				}
-			}
-		}
-		else
-		{
-			advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::HandleOutAndErr: StdOut PeekNamedPipe.\n");
-			return false;
-		}
-
-		DWORD result = WaitForSingleObject(m_OverlappedStdin.hEvent, 0);
+		DWORD result = WaitForSingleObject(m_OverlappedStdin.hEvent, 1000);
 		switch (result)
 		{
 		case WAIT_OBJECT_0:
@@ -640,7 +596,7 @@ bool COutFFMPEGVideoStream::HandleOutAndErr()
 			if (ReadFile(m_hChildStd_ERR_Rd, chBuf, min(bytesAvail, 250), &dwBytesRead, NULL))
 			{
 				chBuf[dwBytesRead] = 0;
-				advancedfx::DevMessage(1, "%s", chBuf);
+				advancedfx::Warning("%s", chBuf);
 				bytesAvail -= dwBytesRead;
 			}
 			else
@@ -664,7 +620,7 @@ bool COutFFMPEGVideoStream::HandleOutAndErr()
 			if (ReadFile(m_hChildStd_OUT_Rd, chBuf, min(bytesAvail, 250), &dwBytesRead, NULL))
 			{
 				chBuf[dwBytesRead] = 0;
-				advancedfx::DevMessage(1, "%s", chBuf);
+				advancedfx::Message("%s", chBuf);
 				bytesAvail -= dwBytesRead;
 			}
 			else
