@@ -2985,6 +2985,9 @@ public:
 		Tier0_Msg(", clipTo: "); m_ClipTo->Console_PrintBegin(); m_ClipTo->Console_PrintEnd();
 		Tier0_Msg(", ignore: "); m_Ignore->Console_PrintBegin(); m_Ignore->Console_PrintEnd();
 		Tier0_Msg(", safeZoneDist: %f", m_SafeZoneDist);
+		Tier0_Msg(", smoothTime: %f", m_SmoothTime);
+		Tier0_Msg(", sleepTime: %f", m_SleepTime);
+		Tier0_Msg(", ignoreSome: %i", m_IgnoreSomeEntites ? 1 : 0);
 	}
 
 	virtual void Console_Edit(IWrpCommandArgs * args)
@@ -3012,10 +3015,64 @@ public:
 				);
 				return;
 			}
+			else if (0 == _stricmp("smoothTime", arg1))
+			{
+				if (3 <= argc)
+				{
+					m_SmoothTime = (float)atof(args->ArgV(2));
+					return;
+				}
+
+				Tier0_Msg(
+					"%s smoothTime <fValue> - Set 0 to disable, greater than 0 for smoothing out time in seconds.\n"
+					"Current value: %f\n"
+					, arg0
+					, m_SmoothTime
+				);
+				return;
+			}
+			else if (0 == _stricmp("sleepTime", arg1))
+			{
+				if (3 <= argc)
+				{
+					m_SleepTime = (float)atof(args->ArgV(2));
+					return;
+				}
+
+				Tier0_Msg(
+					"%s sleepTime <fValue> - Set time to hold before smoothing out.\n"
+					"Current value: %f\n"
+					, arg0
+					, m_SleepTime
+				);
+				return;
+			}
+			else if (0 == _stricmp("ignoreSome", arg1))
+			{
+				if (3 <= argc)
+				{
+					m_IgnoreSomeEntites = (0 != atoi(args->ArgV(2)));
+					return;
+				}
+
+				Tier0_Msg(
+					"%s ignoreSome 0|1 - If to ignore some more entities.\n"
+					"Current value: %i\n"
+					, arg0
+					, (m_IgnoreSomeEntites ? 1 : 0)
+				);
+				return;
+			}
 		}
 
 		Tier0_Msg(
 			"%s safeZoneDist [...]\n"
+			"%s smoothTime [...]\n"
+			"%s sleepTime [...]\n"
+			"%s ignoreSome [...]\n"
+			, arg0
+			, arg0
+			, arg0
 			, arg0
 		);
 	}
@@ -3031,11 +3088,11 @@ public:
 		if (m_Ignore->CalcHandle(ignore) && m_Source->CalcVecAng(sourceVector, sourceAngles) && m_ClipTo->CalcVecAng(clipToVector, clipToAngles) )
 		{
 			SOURCESDK::IClientEntity_csgo* ignoreEnt = SOURCESDK::g_Entitylist_csgo->GetClientEntityFromHandle(ignore);
-			CTraceFilter traceFilter;
-			if(ignoreEnt) traceFilter.Add(ignoreEnt);
+			CTraceFilter * pTraceFilter = m_IgnoreSomeEntites ? new CTraceFilterSome() : new CTraceFilter();
+			if(ignoreEnt) pTraceFilter->Add(ignoreEnt);
 
 			SOURCESDK::C_BaseEntity_csgo * localPlayer = reinterpret_cast<SOURCESDK::C_BaseEntity_csgo *>(CClientToolsCsgo::Instance()->GetClientToolsInterface()->GetLocalPlayer());
-			if(localPlayer && localPlayer->GetIClientEntity() != ignoreEnt) traceFilter.Add(localPlayer);
+			if(localPlayer && localPlayer->GetIClientEntity() != ignoreEnt) pTraceFilter->Add(localPlayer);
 
 			SOURCESDK::Vector traceEnd = sourceVector;
 			SOURCESDK::Vector vDirOrg = (sourceVector - clipToVector);
@@ -3078,7 +3135,7 @@ public:
 				ray.Init(srcVec, dstVec);
 
 				SOURCESDK::CSGO::trace_t tr;
-				g_pClientEngineTrace->TraceRay(ray, SOURCESDK_CSGO_MASK_ALL, &traceFilter, &tr);
+				g_pClientEngineTrace->TraceRay(ray, SOURCESDK_CSGO_MASK_ALL, pTraceFilter, &tr);
 
 				if (tr.DidHit())
 				{
@@ -3117,16 +3174,57 @@ public:
 				}
 			}
 
-			if(AFX_MATH_EPS >= std::abs(sourceLenSqr - bestLenSqr)) {
-				// Not much of a change ...
-				outVector = sourceVector;
-				outAngles = sourceAngles;
-			} else {
-				vDirOrg *= std::sqrtf(bestLenSqr);
-				outVector = clipToVector + vDirOrg;
-				outAngles = sourceAngles;
+			float clientTime = g_MirvTime.GetTime();
+
+			float bestLen = std::sqrtf(bestLenSqr);
+
+			if (m_LevelInitCount != g_LevelInitCount) {
+				m_LevelInitCount = g_LevelInitCount;
+
+				m_LastLen = bestLen;
+				m_LastTime = clientTime;
+				m_LastVelocity = 0;
+				m_SleepLeft = m_SleepTime;
 			}
 
+			float newLen;
+			if(m_LastLen <= bestLen) {
+				if(0 < m_SleepTime) m_SleepLeft = std::min(m_SleepLeft,(double)m_SleepTime); else m_SleepLeft = 0;
+				double deltaT = clientTime -m_LastTime - m_SleepLeft;
+				if(0 < deltaT) {
+					if(0 < m_SmoothTime) {
+						double newDelta = 0;
+						double deltaY = bestLen - m_LastLen;
+						if(AFX_MATH_EPS < deltaY) {
+							CalcDeltaSmooth(deltaT, deltaY, newDelta, m_LastVelocity, 2.0f * deltaY / m_SmoothTime, 2.0f * deltaY / m_SmoothTime / m_SmoothTime);
+							newLen = m_LastLen + newDelta;
+						} else {
+							newLen = m_LastLen;
+						}
+					} else {
+						newLen = bestLen;
+						m_LastVelocity = 0;
+						m_SleepLeft = m_SleepTime;
+					}
+				} else {
+					newLen = m_LastLen;
+					m_LastVelocity = 0;
+					m_SleepLeft = -deltaT;
+				}
+			} else {
+				newLen = bestLen;
+				m_LastVelocity = 0;
+				m_SleepLeft = m_SleepTime;
+			}
+			vDirOrg *= newLen;
+
+			outVector = clipToVector + vDirOrg;
+			outAngles = sourceAngles;
+
+			delete pTraceFilter;
+
+			m_LastLen = newLen;
+			m_LastTime = clientTime;
 			return true;
 		}
 
@@ -3146,6 +3244,14 @@ private:
 	IMirvVecAngCalc * m_ClipTo;
 	IMirvHandleCalc * m_Ignore;
 	float m_SafeZoneDist;
+	float m_SmoothTime = 0;
+	float m_SleepTime = 0;
+	bool m_IgnoreSomeEntites = false;
+	int m_LevelInitCount = 0;
+	float m_LastLen = 0;
+	float m_LastTime = 0;
+	double m_LastVelocity = 0;
+	double m_SleepLeft = 0;
 
 	class CTraceFilter : public SOURCESDK::CSGO::CTraceFilter
 	{
@@ -3153,6 +3259,8 @@ private:
 		CTraceFilter() {
 
 		}
+
+		virtual ~CTraceFilter() {}
 
 		void Add(SOURCESDK::CSGO::IHandleEntity *pHandleEntity) {
 			m_PassEnts.emplace(pHandleEntity);
@@ -3164,6 +3272,27 @@ private:
 
 	private:
 		std::set<const SOURCESDK::CSGO::IHandleEntity *> m_PassEnts;
+	};
+
+	class CTraceFilterSome : public CTraceFilter
+	{
+	public:
+		CTraceFilterSome() {
+
+		}
+
+		virtual bool ShouldHitEntity(SOURCESDK::CSGO::IHandleEntity *pHandleEntity, int contentsMask) {
+			if(!CTraceFilter::ShouldHitEntity(pHandleEntity,contentsMask))
+				return false;
+
+			if(SOURCESDK::IClientEntity_csgo* clientEntity = SOURCESDK::g_Entitylist_csgo->GetClientEntityFromHandle(pHandleEntity->GetRefEHandle())) {
+				if (SOURCESDK::C_BaseEntity_csgo* baseEntity = clientEntity->GetBaseEntity())
+					return baseEntity->ShouldCollide(SOURCESDK::CSGO::COLLISION_GROUP_PLAYER_MOVEMENT, SOURCESDK_CSGO_CONTENTS_SOLID|SOURCESDK_CSGO_CONTENTS_WINDOW|SOURCESDK_CSGO_CONTENTS_MOVEABLE|SOURCESDK_CSGO_CONTENTS_GRATE)
+						&& !StringBeginsWith(baseEntity->GetClassname(), "weapon_");
+			}			
+
+			return true;
+		}
 	};
 
 };
