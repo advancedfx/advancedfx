@@ -1090,7 +1090,6 @@ protected:
 
 	virtual void CaptureStart(void)
 	{
-
 	}
 
 	virtual void CaptureEnd();
@@ -1138,6 +1137,7 @@ private:
 
 	std::string m_StreamName;
 	bool m_Record;
+	std::atomic_int m_CapturesLeft;
 };
 
 class CAfxSingleStream

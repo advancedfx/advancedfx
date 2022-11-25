@@ -947,6 +947,8 @@ void CAfxRecordStream::CaptureEnd()
 			buffer = nullptr;
 		}
 	}
+
+	m_CapturesLeft--;
 }
 
 bool CAfxRecordStream::Record_get(void)
@@ -968,6 +970,8 @@ void CAfxRecordStream::RecordStart()
 
 void CAfxRecordStream::RecordEnd()
 {
+	while(m_CapturesLeft); // busy wait for capturing to finish, because g_AfxStreams and m_OutVideoStream are accessed in CaptureEnd on the drawing thread and must remain consistent.
+
 	if (m_OutVideoStream)
 	{
 		m_OutVideoStream->Release();
@@ -982,6 +986,7 @@ char const * CAfxRecordStream::StreamName_get(void) const
 
 void CAfxRecordStream::QueueCaptureStart(IAfxMatRenderContextOrg * ctx)
 {
+	m_CapturesLeft++;
 	QueueOrExecute(ctx, new CAfxLeafExecute_Functor(new CCaptureStartFunctor(*this)));
 }
 
