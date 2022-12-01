@@ -13,9 +13,14 @@
 
 #include <string>
 #include <mutex>
+#include <condition_variable>
+#include <chrono>
 #include <map>
 #include <sstream>
 #include <set>
+
+
+using namespace std::chrono_literals;
 
 typedef void * WaveAppendTmpFile_t;
 typedef void(__fastcall* CVideoMode_Common_WriteMovieFrame_t)(void* This, void* Edx, void* pInfo);
@@ -120,6 +125,24 @@ void __fastcall touring_CVideoMode_Common_WriteMovieFrame(void* This, void* Edx,
 }
 
 
+typedef float (__cdecl * csgo_engine_S_MixAsync_t)(void);
+csgo_engine_S_MixAsync_t detoured_csgo_engine_S_MixAsync;
+std::mutex g_SoundRecordingMutex;
+bool g_SoundRecordingValue = false;
+
+float __cdecl touring_csgo_engine_S_MixAsync(void) {
+	static float lastResult = 120.0f;
+
+	std::unique_lock<std::mutex> lock(g_SoundRecordingMutex);
+
+	if(g_SoundRecordingValue) {
+		return -1;
+	}
+
+	lastResult = detoured_csgo_engine_S_MixAsync();
+	return lastResult;
+}
+
 bool csgo_Audio_Install(void)
 {
 	static bool firstResult = true;
@@ -134,17 +157,20 @@ bool csgo_Audio_Install(void)
 		&& AFXADDR_GET(csgo_engine_CVideoMode_Common_vtable)
 		&& AFXADDR_GET(csgo_engine_CEngineVGui_vtable)
 		&& AFXADDR_GET(csgo_engine_CL_StartMovie)
+		&& AFXADDR_GET(csgo_engine_S_MixAsync)
 		) {
 
 		detoured_WaveAppendTmpFile = (WaveAppendTmpFile_t)AFXADDR_GET(csgo_engine_WaveAppendTmpFile);
 		detoured_CVideoMode_Common_WriteMovieFrame = (CVideoMode_Common_WriteMovieFrame_t)(((void**)AFXADDR_GET(csgo_engine_CVideoMode_Common_vtable))[23]);
 		detoured_CEngineVgui_ConIsVisible = (CEngineVgui_ConIsVisible_t)(((void**)AFXADDR_GET(csgo_engine_CEngineVGui_vtable))[18]);
+		detoured_csgo_engine_S_MixAsync = (csgo_engine_S_MixAsync_t)AFXADDR_GET(csgo_engine_S_MixAsync);
 
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
 		DetourAttach(&(PVOID&)detoured_WaveAppendTmpFile, touring_WaveAppendTmpFile);
 		DetourAttach(&(PVOID&)detoured_CVideoMode_Common_WriteMovieFrame, touring_CVideoMode_Common_WriteMovieFrame);
 		DetourAttach(&(PVOID&)detoured_CEngineVgui_ConIsVisible, touring_CEngineVgui_ConIsVisible);
+		DetourAttach(&(PVOID&)detoured_CEngineVgui_ConIsVisible, touring_csgo_engine_S_MixAsync);
 		LONG error = DetourTransactionCommit();
 		firstResult = NO_ERROR == error;
 	}
@@ -181,6 +207,13 @@ bool csgo_Audio_StartRecording(const wchar_t * ansiTakeDir)
 	if ('\0' == *(char*)AFXADDR_GET(csgo_engine_cl_movieinfo_moviename)) {
 		// Make it still init sound related variables without actually creating stuff
 
+		// Work around threading bug in CS:GO code (other wise there can be crashes).
+		// Wait for active async sound mix thread to shut down / Signal to it to shut down in the next schedule.
+		{
+			std::unique_lock<std::mutex> lock(g_SoundRecordingMutex);
+			g_SoundRecordingValue = true;
+		}
+		
 		WrpConVarRef host_framerate_cvar("host_framerate");
 		float oldHostFrameRateValue = host_framerate_cvar.GetFloat();
 
@@ -208,6 +241,11 @@ void csgo_Audio_EndRecording(void)
 	if (g_CAudioXAudio2_RecordAudio_File) {
 		delete g_CAudioXAudio2_RecordAudio_File;
 		g_CAudioXAudio2_RecordAudio_File = nullptr;
+	}
+
+	{
+		std::unique_lock<std::mutex> lock(g_SoundRecordingMutex);
+		g_SoundRecordingValue = false;
 	}
 
 	g_csgo_Audio_Record = false;

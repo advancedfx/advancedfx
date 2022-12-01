@@ -42,6 +42,7 @@ AFXADDR_DEF(csgo_CSkyboxView_Draw_DSZ)
 AFXADDR_DEF(csgo_CViewRender_RenderView_VGui_DrawHud_In)
 AFXADDR_DEF(csgo_CViewRender_RenderView_VGui_DrawHud_Out)
 AFXADDR_DEF(csgo_CViewRender_ShouldForceNoVis_vtable_index)
+AFXADDR_DEF(csgo_engine_S_MixAsync)
 AFXADDR_DEF(csgo_engine_WaveAppendTmpFile)
 AFXADDR_DEF(csgo_engine_cl_movieinfo_moviename)
 AFXADDR_DEF(csgo_engine_CL_StartMovie)
@@ -296,6 +297,43 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 			{
 				AFXADDR_SET(csgo_S_StartSound_StringConversion, 0x0);
 			}
+		}
+
+		// csgo_engine_S_MixAsync // Checked 2022-12-01.
+		{
+			ImageSectionsReader sections((HMODULE)engineDll);
+			if (!sections.Eof())
+			{
+				MemRange textRange = sections.GetMemRange();
+				sections.Next(); // skip .text
+				if (!sections.Eof())
+				{
+					MemRange firstDataRange = sections.GetMemRange();
+
+					MemRange result = FindCString(sections.GetMemRange(), "snd_mix_async_frequency");
+					if (!result.IsEmpty())
+					{
+						DWORD tmpAddr = result.Start;
+
+						result = FindBytes(textRange, (char const*)&tmpAddr, sizeof(tmpAddr));
+						if (!result.IsEmpty())
+						{
+							result = FindPatternString(MemRange(result.Start - 0x1, result.Start - 0x1 + 10).And(textRange), "68 ?? ?? ?? ?? B9 ?? ?? ?? ??");
+							if (!result.IsEmpty()) {
+								DWORD cvarThisAddr = *(DWORD *)(result.Start + 6);
+								// this is the first match of this cvar in current code, we look for the second one:
+								result = FindBytes(MemRange(result.Start - 0x1 + 10, textRange.End), (const char*)&cvarThisAddr, sizeof(cvarThisAddr));
+								if(!result.IsEmpty()) {
+									result = FindPatternString(MemRange(result.Start - 0xE, result.Start - 0xE + 3).And(textRange), "55 8B EC");
+									if(!result.IsEmpty())
+										AFXADDR_SET(csgo_engine_S_MixAsync, result.Start);
+									else ErrorBox(MkErrStr(__FILE__, __LINE__));
+								} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+							} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
 
 		// csgo_engine_WaveAppendTmpFile: // Checked 2022-08-02.
