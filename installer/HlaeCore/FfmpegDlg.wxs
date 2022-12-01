@@ -16,10 +16,10 @@
         <Control Id="FfmpegVersion" Type="ComboBox" X="6" Y="86" Width="358" Height="16" Property="FFMPEG_VERSION" ComboList="yes" Sorted="yes" Disabled="no" Hidden="no">
           <ComboBox Property="FFMPEG_VERSION">
             <ListItem Text="!(loc.FfmpegDlgCustom)" Value="custom"/>
-            <ListItem Text="5.1-2-win64-gpl //github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2022-07-31-12-37" Value="latest-win64-static" />
-            <ListItem Text="5.1-2-win64-gpl-shared //github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2022-07-31-12-37" Value="latest-win64-shared" />
-            <ListItem Text="5.1-2-win64-lgpl //github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2022-07-31-12-37" Value="latest-win64-static-lgpl" />
-            <ListItem Text="5.1-2-win64-lgpl-shared //github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2022-07-31-12-37" Value="latest-win64-shared-lgpl" />
+            <ListItem Text="5.1.2-8-win64-gpl //github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2022-11-30-12-36" Value="latest-win64-static" />
+            <ListItem Text="5.1.2-8-win64-gpl-shared //github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2022-11-30-12-36" Value="latest-win64-shared" />
+            <ListItem Text="5.1.2-8-win64-lgpl //github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2022-11-30-12-36" Value="latest-win64-static-lgpl" />
+            <ListItem Text="5.1.2-8-win64-lgpl-shared //github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2022-11-30-12-36" Value="latest-win64-shared-lgpl" />
            </ComboBox>
           <Condition Action="enable"><![CDATA[FFMPEG_REINSTALL]]></Condition>
           <Condition Action="disable"><![CDATA[NOT FFMPEG_REINSTALL]]></Condition>

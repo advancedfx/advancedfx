@@ -8,7 +8,7 @@
 	-->
 	<Product
     Id='{D51C3178-146A-412E-9C91-D7D6788B0E0C}'
-    Version='2.141.2'
+    Version='2.142.0'
     Name="!(loc.ApplicationName)"
     Language="1033"
     Manufacturer="!(loc.Manufacturer)"
@@ -100,31 +100,31 @@
 		</InstallUISequence>
     </UI>
     
-    <Property Id="AFX_FFMPEGURL" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-07-31-12-37/ffmpeg-n5.1-2-g915ef932a3-win64-gpl-5.1.zip" />
-    <Property Id="AFX_FFMPEGSUM" Value="1a9d423b2b0b844bb941fa793e8a7490e80dbea7a5096319fc0ecad4c90c59aabb24ad34d23f603696338dff44ba7dd714fd61e8c78d65b4596f819b6133d041" />
+    <Property Id="AFX_FFMPEGURL" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-11-30-12-36/ffmpeg-n5.1.2-8-g5746987bad-win64-gpl-5.1.zip" />
+    <Property Id="AFX_FFMPEGSUM" Value="18ae3d1904fa00d574d6134ecf7c120fd47db4011628c2e39c7680294d244ba128506d0f8c152e6cd9d630212acb579d1f9bbdd5220be32fb7e6d1c62e2cc947" />
 
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_40" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-07-31-12-37/ffmpeg-n5.1-2-g915ef932a3-win64-lgpl-shared-5.1.zip">
+    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_40" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-11-30-12-36/ffmpeg-n5.1.2-8-g5746987bad-win64-lgpl-shared-5.1.zip">
       <![CDATA[FFMPEG_VERSION="latest-win64-shared-lgpl"]]>
     </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_40" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="8ac7c916704ee6706edf7ead35617448261a8d17d94f842caa7794a4d75086992a333b9d29c82ff7931f5bdc16ab05c5ec70a5066d85cb4fc65c28eda5f1669b">
+    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_40" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="0486ffa87b1f92e733e90c3545044bb9b7a8a7d831d86b252026f72ac1df34cfd4a24841fc31ddbc135fc76205dc4053d5e44f48e8ff2290d745f54d3f9c294c">
       <![CDATA[FFMPEG_VERSION="latest-win64-shared-lgpl"]]>
     </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_41" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-07-31-12-37/ffmpeg-n5.1-2-g915ef932a3-win64-lgpl-5.1.zip">
+    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_41" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-11-30-12-36/ffmpeg-n5.1.2-8-g5746987bad-win64-lgpl-5.1.zip">
       <![CDATA[FFMPEG_VERSION="latest-win64-static-lgpl"]]>
     </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_41" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="498a5bb325cafaa4237b8137d30190c96f664a6af9d26b36370f33a9355d4608165be9a11787a0ae87447086cd3de71a357763d06f283d799ff0943de89e513a">
+    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_41" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="015bbe4c6ef3099e3c67d416902e43e041b750aec63e917581df60563f4f510afccd7d42dc86f3869b37a45f6b775145b7a7f7ecafdcfb79f7bd0e7d97f7e93c">
       <![CDATA[FFMPEG_VERSION="latest-win64-static-lgpl"]]>
     </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_42" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-07-31-12-37/ffmpeg-n5.1-2-g915ef932a3-win64-gpl-shared-5.1.zip">
+    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_42" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-11-30-12-36/ffmpeg-n5.1.2-8-g5746987bad-win64-gpl-shared-5.1.zip">
       <![CDATA[FFMPEG_VERSION="latest-win64-shared"]]>
     </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_42" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="033de65cf424b9c4e10d397fec5826569ad849d13c341e4a77406878ee7804f9137f2b3eecdfdb3172254d63fb5a8b066c50436cf60747846fa53bf26530461e">
+    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_42" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="6552c7b0ab72d3ad00f6300728b150113d707a37fe96e17bbbdae029d1b56322126f058c4f886282bd168ce61580071cdd328f6b531607b94cd4f6b39ed6220f">
       <![CDATA[FFMPEG_VERSION="latest-win64-shared"]]>
     </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_43" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-07-31-12-37/ffmpeg-n5.1-2-g915ef932a3-win64-gpl-5.1.zip">
+    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_43" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-11-30-12-36/ffmpeg-n5.1.2-8-g5746987bad-win64-gpl-5.1.zip">
       <![CDATA[FFMPEG_VERSION="latest-win64-static"]]>
     </SetProperty>
-    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_43" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="1a9d423b2b0b844bb941fa793e8a7490e80dbea7a5096319fc0ecad4c90c59aabb24ad34d23f603696338dff44ba7dd714fd61e8c78d65b4596f819b6133d041">
+    <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_43" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="18ae3d1904fa00d574d6134ecf7c120fd47db4011628c2e39c7680294d244ba128506d0f8c152e6cd9d630212acb579d1f9bbdd5220be32fb7e6d1c62e2cc947">
       <![CDATA[FFMPEG_VERSION="latest-win64-static"]]>
     </SetProperty>
 
