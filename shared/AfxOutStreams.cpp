@@ -437,17 +437,8 @@ void COutFFMPEGVideoStream::Close()
 
 	if (FALSE != m_Okay)
 	{
-		DWORD waitCode = WAIT_TIMEOUT;
-		//for (int i = 0; i < 20000 && WAIT_TIMEOUT == waitCode; ++i)
-		while (WAIT_TIMEOUT == waitCode)
-		{
-			if (HandleOutAndErr())
-			{
-				waitCode = WaitForSingleObject(m_ProcessInfo.hProcess, 1);
-
-			}
-			else waitCode = WAIT_FAILED;
-		}
+		while (HandleOutAndErr(100));
+		DWORD waitCode = WaitForSingleObject(m_ProcessInfo.hProcess, 0);
 
 		if (WAIT_OBJECT_0 != waitCode)
 		{
@@ -581,7 +572,7 @@ COutFFMPEGVideoStream::~COutFFMPEGVideoStream()
 	Close();
 }
 
-bool COutFFMPEGVideoStream::HandleOutAndErr()
+bool COutFFMPEGVideoStream::HandleOutAndErr(DWORD processWaitTimeOut)
 {
 	if (!m_Okay) return false;
 
@@ -637,7 +628,7 @@ bool COutFFMPEGVideoStream::HandleOutAndErr()
 	}
 
 	// Check if FFMPEG exited:
-	if (WAIT_TIMEOUT != WaitForSingleObject(m_ProcessInfo.hProcess, 0))
+	if (WAIT_TIMEOUT != WaitForSingleObject(m_ProcessInfo.hProcess, processWaitTimeOut))
 	{
 		return false;
 	}

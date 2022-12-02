@@ -130,7 +130,7 @@ private:
 
 	void Close();
 
-	bool HandleOutAndErr();
+	bool HandleOutAndErr(DWORD processWaitTimeOut = 0);
 };
 
 
