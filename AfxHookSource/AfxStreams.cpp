@@ -1345,10 +1345,17 @@ void CAfxTwinStream::CaptureEnd()
 					if (nullptr == m_OutVideoStream)
 					{
 						m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, bufferA->Format, g_AfxStreams.GetStartHostFrameRate(), "");
-						m_OutVideoStream->AddRef();
+						if (nullptr == m_OutVideoStream)
+						{
+							Tier0_Warning("AFXERROR: Failed to create image stream for %s.\n", this->StreamName_get());
+						}
+						else
+						{
+							m_OutVideoStream->AddRef();
+						}
 					}
 
-					if (!m_OutVideoStream->SupplyVideoData(*bufferA))
+					if (nullptr != m_OutVideoStream && !m_OutVideoStream->SupplyVideoData(*bufferA))
 					{
 						Tier0_Warning("AFXERROR: Failed writing image for stream %s\n.", this->StreamName_get());
 					}
