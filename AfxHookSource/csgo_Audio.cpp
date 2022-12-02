@@ -170,7 +170,7 @@ bool csgo_Audio_Install(void)
 		DetourAttach(&(PVOID&)detoured_WaveAppendTmpFile, touring_WaveAppendTmpFile);
 		DetourAttach(&(PVOID&)detoured_CVideoMode_Common_WriteMovieFrame, touring_CVideoMode_Common_WriteMovieFrame);
 		DetourAttach(&(PVOID&)detoured_CEngineVgui_ConIsVisible, touring_CEngineVgui_ConIsVisible);
-		DetourAttach(&(PVOID&)detoured_CEngineVgui_ConIsVisible, touring_csgo_engine_S_MixAsync);
+		DetourAttach(&(PVOID&)detoured_csgo_engine_S_MixAsync, touring_csgo_engine_S_MixAsync);
 		LONG error = DetourTransactionCommit();
 		firstResult = NO_ERROR == error;
 	}
