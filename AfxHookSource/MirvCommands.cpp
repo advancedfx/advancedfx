@@ -4143,3 +4143,24 @@ CON_COMMAND(mirv_models, "model tools") {
 		, arg0
 	);
 }
+
+extern SOURCESDK::C_BaseEntity_csgo * GetSpectatorPlayerForKey(int key);
+
+CON_COMMAND(mirv_spec_player_key, "Spectate player by spectatorslot index") {
+
+	int argC = args->ArgC();
+	const char* arg0 = args->ArgV(0);
+
+	if (2 <= argC) {
+		if(SOURCESDK::C_BaseEntity_csgo * be = GetSpectatorPlayerForKey(atoi(args->ArgV(1)))) {
+			std::string str("spec_player ");
+			str.append(std::to_string(be->entindex()));
+			g_VEngineClient->ExecuteClientCmd(str.c_str());
+		}
+		return;
+	}
+	Tier0_Msg(
+		"%s <iKeyNumber> - Spectate player for given spectator slot key number.\n"
+		, arg0
+	);	
+}

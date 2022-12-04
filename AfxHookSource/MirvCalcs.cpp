@@ -549,19 +549,9 @@ private:
 
 typedef bool(*csgon_fnPlayerSidesWappedOnScreen_t)(void);
 
-class CMirvHandleKeyCalc : public CMirvHandleCalc
-{
-public:
-	CMirvHandleKeyCalc(char const * name, int key)
-		: CMirvHandleCalc(name)
-		, m_Key(key)
-		, m_ClSpecSwapPlayerSides("cl_spec_swapplayersides")
-	{
+SOURCESDK::C_BaseEntity_csgo * GetSpectatorPlayerForKey(int key) {
 
-	}
-
-	virtual bool CalcHandle(SOURCESDK::CSGO::CBaseHandle & outHandle)
-	{
+	if(AFXADDR_GET(csgo_Unknown_GetTeamsSwappedOnScreen)) {
 		// Left screen side keys: 1, 2, 3, 4, 5
 		// Right screen side keys: 6, 7, 8, 9, 0
 
@@ -569,7 +559,7 @@ public:
 
 		bool swapPlayerSide = fnPlayerSidesWappedOnScreen && fnPlayerSidesWappedOnScreen();
 
-		int nr = ((m_Key +9) % 10);
+		int nr = ((key +9) % 10);
 
 		bool isOtherScreenSide = 0 != ((nr / 5) % 2);
 
@@ -593,8 +583,7 @@ public:
 				{
 					if (isOtherScreenSide == swapPlayerSide && slotCT == slot)
 					{
-						outHandle = ce->GetRefEHandle();
-						return true;
+						return be;
 					}
 
 					++slotCT;
@@ -603,13 +592,35 @@ public:
 				{
 					if (isOtherScreenSide != swapPlayerSide && slotT == slot)
 					{
-						outHandle = ce->GetRefEHandle();
-						return true;
+						return be;
 					}
 
 					++slotT;
 				}
 			}
+		}
+	}
+
+	return nullptr;	
+}
+
+class CMirvHandleKeyCalc : public CMirvHandleCalc
+{
+public:
+	CMirvHandleKeyCalc(char const * name, int key)
+		: CMirvHandleCalc(name)
+		, m_Key(key)
+		, m_ClSpecSwapPlayerSides("cl_spec_swapplayersides")
+	{
+
+	}
+
+	virtual bool CalcHandle(SOURCESDK::CSGO::CBaseHandle & outHandle)
+	{
+		if(SOURCESDK::C_BaseEntity_csgo * be = GetSpectatorPlayerForKey(m_Key)) {
+
+			outHandle = be->GetRefEHandle();
+			return true;
 		}
 
 		return false;
