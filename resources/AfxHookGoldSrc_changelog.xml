@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.17.1</version>
+<time>2022-12-06T16:12Z</time>
+<changes>
+<change type="fixed">Fixed dead-lock if FFMPEG writes to stderr and exits (advancedfx/advancedfx#809).</change>
+<change type="fixed">Fixed GoldSrc black bars when using 800x450 (cstrike) (advancedfx/advancedfx#808).</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.17.0</version>
 <time>2022-10-07T18:28Z</time>
 <changes>

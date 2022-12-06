@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.117.1</version>
+<time>2022-12-05T10:18Z</time>
+<changes>
+<change type="fixed">Fixed dead-lock if FFMPEG writes to stderr and exits (advancedfx/advancedfx#809).</change>
+<change type="updated">Optional improvements to collisionClip mirv_calc (advancedfx/advancedfx#804).</change>
+<change type="added">Added mirv_spec_player_key (advancedfx/advancedfx#815).</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.116.2</version>
 <time>2022-10-26T16:28Z</time>
 <changes>
