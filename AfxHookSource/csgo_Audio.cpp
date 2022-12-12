@@ -131,7 +131,7 @@ std::mutex g_SoundRecordingMutex;
 bool g_SoundRecordingValue = false;
 
 float __cdecl touring_csgo_engine_S_MixAsync(void) {
-	static float lastResult = 120.0f;
+	static float lastResult = 1.0f/120.0f;
 
 	std::unique_lock<std::mutex> lock(g_SoundRecordingMutex);
 
