@@ -20,6 +20,30 @@
 #include <list>
 #include <regex>
 
+#include <fstream>
+
+static std::fstream g_Command_Logfile;
+
+void Log_Command(int source, const char * commandString, bool before) {
+	if(!g_Command_Logfile.is_open())
+		return;
+
+	try {
+		std::string strSrc("\"");
+		std::string strDst("\"\"");
+		std::string cmdString(commandString);
+		size_t pos = 0;
+		while((pos = cmdString.find(strSrc, pos)) != std::string::npos) {
+			cmdString.replace(pos,strSrc.length(), strDst);
+			pos += strDst.length();
+		}
+		g_Command_Logfile << std::to_string(GetTickCount()) << ";"  << std::to_string(source) << ";"  << (before ? "BEGIN" : "END") << ";\"" << cmdString << "\"" << std::endl;
+		g_Command_Logfile.flush();
+	} catch(std::system_error) {
+
+	}
+}
+
 std::map<int, std::list<std::string>> g_CmdExecuteCommand_Blocks;
 int g_DebugExecuteCommand = 0;
 
@@ -63,6 +87,8 @@ __declspec(naked) SOURCESDK::CSGO::ConCommandBase* __fastcall  My_csgo_Cmd_Execu
 	__asm mov eTarget, ecx
 	__asm mov command, edx
 
+	SOURCESDK::CSGO::ConCommandBase* result; 
+	
 	if (My_csgo_Cmd_ExecuteCommand_Do(eTarget, command)) {
 		__asm mov edx, command
 		__asm mov ecx, eTarget
@@ -71,12 +97,25 @@ __declspec(naked) SOURCESDK::CSGO::ConCommandBase* __fastcall  My_csgo_Cmd_Execu
 		__asm mov eax, 0
 		__asm ret
 	}
+	
+	Log_Command(eTarget, command.GetCommandString(), true);
 
+	__asm mov edx, command
+	__asm mov ecx, eTarget
+
+	__asm call [g_Org_csgo_Cmd_ExecuteCommand] 
+
+	__asm mov result, eax
+
+	Log_Command(eTarget, command.GetCommandString(), false);
+
+	__asm mov eax, result
+	
 	__asm mov edx, command
 	__asm mov ecx, eTarget
 	__asm mov esp, ebp
 	__asm pop ebp
-	__asm jmp [g_Org_csgo_Cmd_ExecuteCommand]
+	__asm ret
 }
 
 
@@ -127,6 +166,37 @@ CON_COMMAND(mirv_block_commands, "")
 				"Current Value: %i\n"
 				, arg0
 				, g_DebugExecuteCommand ? 1 : 0
+			);
+			return;
+		}
+		else if (0 == _stricmp(arg1, "logFile")) {
+			if (3 <= argC) {
+				std::string filePath(args->ArgV(2));
+				if(filePath.empty()) {
+					if(g_Command_Logfile.is_open()) {
+						try {
+							g_Command_Logfile << "---- END session ----" << std::endl;
+							g_Command_Logfile.close();
+						} catch(std::system_error) {
+							Tier0_Warning("AFXERROR: Could not close commmand log file.", filePath.c_str());
+						}
+					}
+				} else {
+					try {
+						g_Command_Logfile.open(filePath, std::fstream::out | std::fstream::binary | std::fstream::app);
+						g_Command_Logfile << "---- BEGIN session ----" << std::endl;
+						g_Command_Logfile << "tick count;eTarget;begin/end;command" << std::endl;
+					} catch(std::system_error) {
+						Tier0_Warning("AFXERROR: Could not open file \"%s\" for appending.", filePath.c_str());
+					}
+				}
+				return;
+			}
+			Tier0_Msg(
+				"%s \"\"|<sFilePath> - Empty means no logfile.\n"
+				"Current Status: %s\n"
+				, arg0
+				, g_Command_Logfile.is_open() ? "ACTIVE" : "inactive"
 			);
 			return;
 		}
@@ -226,6 +296,7 @@ CON_COMMAND(mirv_block_commands, "")
 
 	Tier0_Msg(
 		"%s debug [...] - Debug commands beging executed.\n"
+		"%s logFile [...] - Log to file (slow, use for debug only).\n"
 		"%s print [<iStack>] - Prints command blocks.\n"
 		"%s clear [<iStack>] - Clears command blocks.\n"
 		"%s remove <iStack> <iNr> - Removes a block.\n"
@@ -233,6 +304,7 @@ CON_COMMAND(mirv_block_commands, "")
 		"%s add <iStack> <sWildCard> - Adds a block.\n"
 		"\t<iStack> - 0 Code, 1 Client Cmd, 2 User Input, 3 Net Client, 4 Net Server, 5 Demo File.\n"
 		"\t<sWildCard> - Wild card string (\\* = wildcard and \\\\ = \\).\n"
+		, arg0
 		, arg0
 		, arg0
 		, arg0
