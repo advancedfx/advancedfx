@@ -696,7 +696,7 @@ COutSamplingStream::COutSamplingStream(const CImageFormat& imageFormat, COutVide
 		), this);
 		break;
 	default:
-		advancedfx::Warning("AFXERROR: COutSamplingStream::COutSamplingStream: Unspoported image format.");
+		advancedfx::Warning("AFXERROR: COutSamplingStream::COutSamplingStream: Unsupported image format.");
 	}
 }
 
