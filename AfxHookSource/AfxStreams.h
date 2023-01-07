@@ -3399,6 +3399,7 @@ public:
 	void Console_AddHudWhiteStream(const char * streamName);
 	void Console_AddHudBlackStream(const char * streamName);
 	void Console_PrintStreams();
+	void Console_PrintStreams2();
 	void Console_MoveStream(IWrpCommandArgs * args);
 	void Console_RemoveStream(const char * streamName);
 	void Console_EditStream(const char * streamName, IWrpCommandArgs * args);

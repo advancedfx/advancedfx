@@ -7339,6 +7339,83 @@ void CAfxStreams::Console_PrintStreams()
 	);
 }
 
+struct StreamInfoList_s {
+	CAfxRecordStream * Stream;
+	int Index;
+	int PreviewSlot;
+
+	StreamInfoList_s(CAfxRecordStream * stream, int index, int previewSlot)
+		: Stream(stream)
+		, Index(index)
+		, PreviewSlot(previewSlot)
+	{
+
+	}
+};
+
+void CAfxStreams::Console_PrintStreams2()
+{
+	Tier0_Msg(
+		"============================================================\n"
+		"index: name (recording preset)\n"
+	);
+	std::list<StreamInfoList_s> streams[3];
+	int index = 0;
+	for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
+	{
+		if (1 == (*it)->GetStreamCount())
+		{
+			for (int i = 0; i < (int)(sizeof(m_PreviewStreams) / sizeof(m_PreviewStreams[0])); ++i)
+			{
+				if (m_PreviewStreams[i] == (*it))
+				{
+					streams[0].emplace_back(*it,index,i);
+				}
+			}
+		}
+
+		if((*it)->Record_get())
+			streams[1].emplace_back(*it,index,-1);
+		else
+			streams[2].emplace_back(*it,index,-1);
+		++index;
+	}
+
+	for(int i=0;i<3;i++) {
+		if(0 == streams[i].size()) continue;
+		Tier0_Msg("\n");
+		switch(i) {
+		case 0:
+			Tier0_Msg("[*] PREVIEWING\n");
+			break;
+		case 1:
+			Tier0_Msg("[R] RECORD ON\n");
+			break;
+		case 2:
+			Tier0_Msg("[-] RECORD OFF\n");
+			break;
+		}
+		for(auto it = streams[i].begin(); it != streams[i].end(); it++) {
+			const char * streamName = it->Stream->StreamName_get();
+			const char * settingName = "";
+			if(CAfxRecordingSettings * setting =  it->Stream->GetSettings()) {
+				settingName = setting->GetName();
+			}
+			if(i == 0 && streams[i].size() > 1 || it->PreviewSlot > 0) {
+				Tier0_Msg("%i: %s (%s) @%i\n", it->Index, streamName, settingName, it->PreviewSlot);
+			} else {
+				Tier0_Msg("%i: %s (%s)\n", it->Index, streamName, settingName);
+			}
+		}
+	}
+
+	Tier0_Msg(
+		"\n"
+		"==== Total streams: %i ====\n",
+		index
+	);
+}
+
 void CAfxStreams::Console_MoveStream(IWrpCommandArgs * args)
 {
 	int argC = args->ArgC();

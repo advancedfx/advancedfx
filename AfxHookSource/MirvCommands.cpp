@@ -657,6 +657,13 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			return;
 		}
 		else
+		if(!_stricmp(cmd1, "print2"))
+		{
+			g_AfxStreams.Console_PrintStreams2();
+
+			return;
+		}
+		else
 		if(!_stricmp(cmd1, "record"))
 		{
 			if(3 <= argc)
@@ -985,6 +992,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 		"mirv_streams previewEnd [<iSlot>] - End preview.\n"
 		"mirv_streams previewSuspend [...] - Suspend all previews.\n"
 		"mirv_streams print - Print current streams.\n"
+		"mirv_streams print2 - Print current streams.\n"
 		"mirv_streams record [...] - Recording control.\n"
 		"mirv_streams actions [...] - Actions control (for baseFx based streams).\n"
 		"mirv_streams settings [...] - Recording settings.\n"
