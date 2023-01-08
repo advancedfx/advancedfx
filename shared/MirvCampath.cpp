@@ -163,7 +163,7 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 		}
 		else if (!_stricmp("print", subcmd) && 2 == argc)
 		{
-			conMessage("passed? selected? id: tick[offset](approximate!), demoTime[offset](approximate!), gameTime[offset] -> (x,y,z) fov (pitch,yaw,roll)\n");
+			conMessage("passed? selected? id : tick[offset](approximate!) , demoTime[offset](approximate!) , gameTime[offset] -> ( x , y , z ) fov ( pitch , yaw , roll )\n");
 
 			double curtime = mirvTime->GetTime();
 
@@ -190,7 +190,7 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 				fov = val.Fov;
 
 				conMessage(
-					"%s %s %i: ",
+					"%s %s %i : ",
 					time <= curtime + offset ? "Y" : "n",
 					selected ? "Y" : "n",
 					i
@@ -216,7 +216,7 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 						conMessage("n/a");
 				}
 
-				conMessage(", ");
+				conMessage(" , ");
 
 				double myDemoTime;
 				if (mirvTime->GetDemoTimeFromTime(curtime, time, myDemoTime))
@@ -236,7 +236,7 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 
 				if (offset > 0)
 				{
-					conMessage(", %f+%f -> (%f,%f,%f) %f (%f,%f,%f)\n",
+					conMessage(" , %f+%f -> ( %f , %f , %f ) %f ( %f , %f , %f )\n",
 						time, offset,
 						vieworigin[0], vieworigin[1], vieworigin[2],
 						fov,
@@ -245,7 +245,7 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 				}
 				else if (offset < 0)
 				{
-					conMessage(", %f%f -> (%f,%f,%f) %f (%f,%f,%f)\n",
+					conMessage(" , %f%f -> ( %f , %f , %f ) %f ( %f , %f , %f )\n",
 						time, offset,
 						vieworigin[0], vieworigin[1], vieworigin[2],
 						fov,
@@ -254,7 +254,7 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 				}
 				else
 				{
-					conMessage(", %f -> (%f,%f,%f) %f (%f,%f,%f)\n",
+					conMessage(" , %f -> ( %f , %f , %f ) %f ( %f , %f , %f )\n",
 						time,
 						vieworigin[0], vieworigin[1], vieworigin[2],
 						fov,
@@ -289,7 +289,7 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 
 			SMirvCameraValue camera = mirvCamera->GetCamera();
 
-			conMessage("Current (x,y,z) fov (pitch,yaw,roll): (%f,%f,%f), %f, (%f,%f,%f)\n",
+			conMessage("Current ( x , y , z ) fov ( pitch , yaw , roll ): ( %f , %f , %f ) %f ( %f , %f , %f )\n",
 				camera.X,
 				camera.Y,
 				camera.Z,
@@ -436,10 +436,18 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 								{
 									char const* arg4 = args->ArgV(4);
 									char const* arg5 = args->ArgV(5);
+
+									bool setX = 0 != strcmp("*", arg3);
+									bool setY = 0 != strcmp("*", arg4);
+									bool setZ = 0 != strcmp("*", arg5);
+
 									camPath->SetPosition(
 										atof(arg3),
 										atof(arg4),
-										atof(arg5)
+										atof(arg5),
+										setX,
+										setY,
+										setZ
 									);
 
 									return;
@@ -467,10 +475,18 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 									{
 										char const* arg4 = args->ArgV(4);
 										char const* arg5 = args->ArgV(5);
+
+									bool setY = 0 != strcmp("*", arg3);
+									bool setZ = 0 != strcmp("*", arg4);
+									bool setX = 0 != strcmp("*", arg5);
+
 										camPath->SetAngles(
 											atof(arg3),
 											atof(arg4),
-											atof(arg5)
+											atof(arg5),
+											setY,
+											setZ,
+											setX
 										);
 
 										return;
@@ -731,8 +747,8 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 			conMessage("%s edit start abs <dValue> - Sets a given floating point value as new start time for the path [or selected keyframes].\n", args->ArgV(0));
 			conMessage("%s edit start delta(+|-)<dValue> - Offsets the path [or selected keyframes] by the given <dValue> delta value (Example: \"mirv_campath edit start delta-1.5\" moves the path [or selected keyframes] 1.5 seconds back in time).\n", args->ArgV(0));
 			conMessage("%s edit duration <dValue> - set floating point value <dValue> as new duration for the path [or selected keyframes] (in seconds). Please see remarks in HLAE manual.\n", args->ArgV(0));
-			conMessage("%s edit position current|(<dX> <dY> <dZ>) - Edit position of the path [or selected keyframes]. The position is applied to the center of the bounding box (\"middle\") of all [or the selected] keyframes, meaning the keyframes are moved relative to that. Current uses the current camera position, otherwise you can give the exact position.\n", args->ArgV(0));
-			conMessage("%s edit angles current|(<dPitchY> <dYawZ> <dRollX>) - Edit angles of the path [or selected keyframes]. All keyframes are assigned the same angles. Current uses the current camera angles, otherwise you can give the exact angles.\n", args->ArgV(0));
+			conMessage("%s edit position current|(<dX>|* <dY>|* <dZ>|*) - Edit position of the path [or selected keyframes]. The position is applied to the center of the bounding box (\"middle\") of all [or the selected] keyframes, meaning the keyframes are moved relative to that. Current uses the current camera position, otherwise you can give the exact position. Use * to indicate to not change an axis.\n", args->ArgV(0));
+			conMessage("%s edit angles current|(<dPitchY>|* <dYawZ>|* <dRollX>|*) - Edit angles of the path [or selected keyframes]. All keyframes are assigned the same angles. Current uses the current camera angles, otherwise you can give the exact angles. Use * to indicate to not change an axis (actual values can still change due to multiple ways to express the same result).\n", args->ArgV(0));
 			conMessage("%s edit fov current|<dFov> - Similar to mirv_campath edit angles, except for field of view (fov).\n", args->ArgV(0));
 			conMessage("%s edit rotate <dPitchY> <dYawZ> <dRollX> - Rotate path [or selected keyframes] around the middle of their bounding box by the given angles in degrees.\n", args->ArgV(0));
 			conMessage("%s edit anchor #<anchorId>|(<anchorX > <anchorY> <anchorZ> <anchorPitchY> <anchorYawZ> <anchorRollX>) current|(<destX > <destY> <destZ> <destPitchY> <destYawZ> <destRollX>) - This translates and rotates a path using a given anchor (either a keyframe ID or actual values) and a destination for the anchor (use current for current camera view).\n", args->ArgV(0));

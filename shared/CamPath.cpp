@@ -803,7 +803,7 @@ void CamPath::SetDuration(double t)
 	Changed();
 }
 
-void CamPath::SetPosition(double x, double y, double z)
+void CamPath::SetPosition(double x, double y, double z, bool setX, bool setY, bool setZ)
 {
 	if(m_Map.size()<1) return;
 
@@ -865,9 +865,9 @@ void CamPath::SetPosition(double x, double y, double z)
 
 		if(selectAll || curValue.Selected)
 		{
-			curValue.X = x +(curValue.X -x0);
-			curValue.Y = y +(curValue.Y -y0);
-			curValue.Z = z +(curValue.Z -z0);
+			if(setX) curValue.X = x +(curValue.X -x0);
+			if(setY) curValue.Y = y +(curValue.Y -y0);
+			if(setZ) curValue.Z = z +(curValue.Z -z0);
 
 			it->second = curValue;
 		}
@@ -880,7 +880,7 @@ void CamPath::SetPosition(double x, double y, double z)
 	Changed();
 }
 
-void CamPath::SetAngles(double yPitch, double zYaw, double xRoll)
+void CamPath::SetAngles(double yPitch, double zYaw, double xRoll, bool setY, bool setZ, bool setX)
 {
 	if(m_Map.size()<1) return;
 
@@ -905,7 +905,16 @@ void CamPath::SetAngles(double yPitch, double zYaw, double xRoll)
 
 		if(selectAll || curValue.Selected)
 		{
-			curValue.R = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(yPitch, zYaw, xRoll)));
+			if(setY && setZ && setX) {
+				curValue.R = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(yPitch, zYaw, xRoll)));
+			} else {
+				QEulerAngles angles = curValue.R.ToQREulerAngles().ToQEulerAngles();
+				curValue.R = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(
+					(setY ? yPitch : angles.Pitch),
+					(setZ ? zYaw : angles.Yaw),
+					(setX ? xRoll : angles.Roll)
+				)));
+			}
 
 			it->second = curValue;
 		}

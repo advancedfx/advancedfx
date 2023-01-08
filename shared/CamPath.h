@@ -124,9 +124,9 @@ public:
 	/// Setting duration for a path with less than 2 points will do nothing.</remarks>
 	void SetDuration(double t);
 
-	void SetPosition(double x, double y, double z);
+	void SetPosition(double x, double y, double z, bool setX = true, bool setY = true, bool setZ = true);
 
-	void SetAngles(double yPitch, double zYaw, double xRoll);
+	void SetAngles(double yPitch, double zYaw, double xRoll, bool setY = true, bool setZ = true, bool setX = true);
 
 	void SetFov(double fov);
 
