@@ -3193,8 +3193,17 @@ public:
 
 			// Render:
 
-			// Unbind INTZ depth stencil, so we can use it as texture:
-			// not required // g_OldDirect3DDevice9->SetDepthStencilSurface(NULL);
+			// Unbind INTZ depth stencil texture for the depth buffer, so we can use it as texture:
+			// 
+			// According to AMD's / former ATI's own documentation (https://developer.amd.com/wordpress/media/2012/10/Advanced-DX9-Capabilities-for-ATI-Radeon-Cards_v2.pdf)
+			// we shouldn't have to do this: "
+			//   Note that an INTZ depth buffer may be used as a texture concurrently to the same INTZ
+			//   surface being used for depth buffering, as long as depth writes are disabled.
+			// ", but it stoped working on the 7900 XTX GPU, while it works fine with NVIDA GPUs still.
+			// 
+			// Maybe someone bored can fille a bug report with them, or maybe I misunederstood s.th. I dunno.
+			//
+			g_OldDirect3DDevice9->SetDepthStencilSurface(NULL);
 
 			// Bind depth as texture:
 			g_OldDirect3DDevice9->SetTexture(0, depthTexture);
