@@ -10,7 +10,7 @@
 <version>2.143.0</version>
 <time>2023-01-21T06:17Z</time>
 <changes>
-<change type="updated">Included AfxHookSource 1.117.1 (2023-01-21T06:17Z).</change>
+<change type="updated">Included AfxHookSource 1.118.0 (2023-01-21T06:17Z).</change>
 </changes>
 <comments>
 The AfxHookSource contains a breaking change for people using vflip video filter in custom ffmpeg settings, the filter needs to be removed.
