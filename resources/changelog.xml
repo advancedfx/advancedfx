@@ -4,13 +4,27 @@
 <changelog>
 
 
+
+<release>
+<name>HLAE</name>
+<version>2.143.0</version>
+<time>2023-01-21T06:17Z</time>
+<changes>
+<change type="updated">Included AfxHookSource 1.117.1 (2023-01-21T06:17Z).</change>
+</changes>
+<comments>
+The AfxHookSource contains a breaking change for people using vflip video filter in custom ffmpeg settings, the filter needs to be removed.
+</comments>
+</release>
+
+
 <release>
 <name>HLAE</name>
 <version>2.142.1</version>
 <time>2022-12-06T16:12Z</time>
 <changes>
 <change type="updated">Included AfxHookSource 1.117.1 (2022-12-06T16:12Z).</change>
-<change type="updated">Included AfxHookSource 2.17.1 (2022-12-06T16:12Z).</change>
+<change type="updated">Included AfxHookGoldSrc 2.17.1 (2022-12-06T16:12Z).</change>
 <change type="updated">Updated FFMPEG build used in installer.</change>
 </changes>
 </release>

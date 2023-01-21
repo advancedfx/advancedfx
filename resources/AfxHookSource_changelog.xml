@@ -6,6 +6,23 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.118.0</version>
+<time>2023-01-21T06:17Z</time>
+<changes>
+<change type="added">Added mirv_streams print2 - alternative way to display the current setup (advancedfx/advancedfx#797).</change>
+<change type="updated">Updated mirv_campath print - to allow easier copy and paste in CS:GO console. (advancedfx/advancedfx#816).</change>
+<change type="updated">Updated mirv_campath edit position, updated mirv_campath edit angles - to accept asterisks as input for not changing certain axis. (advancedfx/advancedfx#816).</change>
+<change type="fixed">Fixed depth "bug" with 7900 XTX GPU (advancedfx/advancedfx#820) thanks @Markxy for testing.</change>
+<change type="updated">Multiple improvements to make recording of HLAE faster (advancedfx/advancedfx#295). Breaking change: If you are using a custom ffmpeg setting and have the vflip video filter inside, you will need to remove the vflip! Typical improvements on modern setups are 40% faster on SSD / 20% faster on HDD. Thanks @Dechno1337, @Purple-CSGO, @ShyRikki, @DuKeM-CSGO for testing. For more detailed test results and settings see the issue on GitHub: https://github.com/advancedfx/advancedfx/issues/295</change>
+</changes>
+<comments>
+This release contains a breaking change for people using vflip video filter in custom ffmpeg settings, the filter needs to be removed.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.117.1</version>
 <time>2022-12-05T10:18Z</time>
 <changes>
