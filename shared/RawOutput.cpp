@@ -26,7 +26,8 @@ bool WriteRawBitmap(
 	unsigned short usWidth,
 	unsigned short usHeight,
 	unsigned char ucBpp,
-	int pitch
+	int pitch,
+	bool bTopDown
 )
 {
 	if(ucBpp > 24) return false;
@@ -43,7 +44,7 @@ bool WriteRawBitmap(
 
 	bmInfoH.biSize = sizeof(bmInfoH);
 	bmInfoH.biWidth = (LONG)usWidth;
-	bmInfoH.biHeight = (LONG)usHeight;
+	bmInfoH.biHeight = bTopDown ? -(LONG)usHeight : (LONG)usHeight;
 	bmInfoH.biPlanes = 1;
 	bmInfoH.biBitCount = ucBpp;
 	bmInfoH.biCompression = BI_RGB;
@@ -150,14 +151,15 @@ bool WriteRawTarga(
 	unsigned char ucBpp,
 	bool bGrayScale,
 	int pitch,
-	unsigned char ucAlphaBpp
+	unsigned char ucAlphaBpp,
+	bool bTopDown
 )
 {
 	unsigned char ucBppCeilDiv8 =  (ucBpp & 0x07) ? (ucBpp >> 3)+1 : (ucBpp >> 3);
 	unsigned char ucGray = (bGrayScale ? 3 : 2);
 	unsigned char szTgaheader[12] = { 0, 0, ucGray, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	unsigned char szHeader[6] = { 
-		(unsigned char)(usWidth & 0xFF), (unsigned char)(usWidth >> 8), (unsigned char)(usHeight & 0xFF), (unsigned char)(usHeight >> 8), ucBpp, (unsigned char)(ucAlphaBpp & 0xF) };
+		(unsigned char)(usWidth & 0xFF), (unsigned char)(usWidth >> 8), (unsigned char)(usHeight & 0xFF), (unsigned char)(usHeight >> 8), ucBpp, (unsigned char)(ucAlphaBpp & 0xF) | (bTopDown ? ((unsigned char)1<<5) : 0)};
 	FILE *pFile;
 
 	_wfopen_s(&pFile, fileName, L"wb");

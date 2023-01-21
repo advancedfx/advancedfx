@@ -1,12 +1,13 @@
 #pragma once
 
+#include <atomic>
+
 namespace advancedfx {
 
-
-class CRefCounted
+class CRefCountedThreadSafe
 {
 public:
-	CRefCounted()
+	CRefCountedThreadSafe()
 		: m_RefCount(0) {
 	}
 
@@ -21,12 +22,12 @@ public:
 	}
 
 protected:
-	virtual ~CRefCounted() {
+	virtual ~CRefCountedThreadSafe() {
 
 	}
 
 private:
-	int m_RefCount;
+	std::atomic_int m_RefCount;
 };
 
 

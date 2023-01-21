@@ -995,5 +995,17 @@
     <ClInclude Include="ReShadeAdvancedfx.h">
       <Filter>AfxHookSource</Filter>
     </ClInclude>
+    <ClInclude Include="D3D9ImageBuffer.h">
+      <Filter>AfxHookSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\RefCountedThreadSafe.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\ThreadPool.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\ImageBufferPoolThreadSafe.h">
+      <Filter>shared</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

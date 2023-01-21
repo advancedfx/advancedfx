@@ -334,6 +334,9 @@
     <ClInclude Include="..\shared\AfxMath.h" />
     <ClInclude Include="..\shared\AfxOutStreams.h" />
     <ClInclude Include="..\shared\AfxRefCounted.h" />
+    <ClInclude Include="..\shared\ImageBufferPoolThreadSafe.h" />
+    <ClInclude Include="..\shared\ThreadPool.h" />
+    <ClInclude Include="..\shared\RefCountedThreadSafe.h" />
     <ClInclude Include="..\shared\MirvCampath.h" />
     <ClInclude Include="..\shared\AfxConsole.h" />
     <ClInclude Include="..\shared\AfxDetours.h" />
@@ -385,6 +388,7 @@
     <ClInclude Include="cssV34\ClientToolsCssV34.h" />
     <ClInclude Include="css\ClientToolsCss.h" />
     <ClInclude Include="d3d9Hooks.h" />
+    <ClInclude Include="D3D9ImageBuffer.h" />
     <ClInclude Include="FovScaling.h" />
     <ClInclude Include="Gui.h" />
     <ClInclude Include="hlaeFolder.h" />

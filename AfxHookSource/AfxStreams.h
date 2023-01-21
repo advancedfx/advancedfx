@@ -14,6 +14,7 @@
 #include "AfxWriteFileLimiter.h"
 #include "MirvCalcs.h"
 #include "d3d9Hooks.h"
+#include "D3D9ImageBuffer.h"
 
 #define AFX_SHADERS_CSGO 0
 
@@ -29,7 +30,10 @@
 #include <shaders/build/afxHook_vertexlit_and_unlit_generic_ps30.h>
 #endif
 
+#include <shared/AfxRefCounted.h>
+#include <shared/RefCountedThreadSafe.h>
 #include <shared/AfxImageBuffer.h>
+#include <shared/ImageBufferPoolThreadSafe.h>
 #include <shared/AfxOutStreams.h>
 #include <shared/bvhexport.h>
 #include <shared/AfxColorLut.h>
@@ -47,6 +51,270 @@
 #include <mutex>
 #include <condition_variable>
 #include <memory>
+#include <thread>
+#include <chrono>
+
+using namespace advancedfx;
+
+class ICaptureInput {
+public:
+	/**
+	 * Called from engine thread.
+	 */
+	virtual void AddRef() = 0;
+
+	/**
+	 * Called from engine thread.
+	 */
+	virtual void Release() = 0;
+
+	/**
+	 * Called from GPU thread.
+	 */
+	virtual IAfxD3D9Capture * GpuCreateCapture() = 0;
+};
+
+class CCaptureInputRenderTarget
+: public CRefCounted
+, public ICaptureInput {
+	virtual void AddRef() override {
+		advancedfx::CRefCounted::AddRef();
+	}
+
+	virtual void Release() override {
+		advancedfx::CRefCounted::Release();
+	}
+
+	virtual IAfxD3D9Capture * GpuCreateCapture() {
+		return AfxD3d9CreateRenderTargetCompatibleCapture();
+	}
+};
+
+class ICapture {
+public:
+	/**
+	 * Thread safe.
+	 */
+	virtual void AddRef() = 0;
+
+	/**
+	 * Thread safe.
+	 */
+	virtual void Release() = 0;
+
+	/**
+	 * Thread safe.
+	 * @return nullptr on failure.
+	 */
+	virtual const advancedfx::IImageBuffer* GetBuffer() const = 0;
+};
+
+class ICaptureOutput {
+public:
+	/**
+	 * Thread safe.
+	 */
+	virtual void AddRef() = 0;
+
+	/**
+	 * Thread safe.
+	 */
+	virtual void Release() = 0;
+
+	/**
+	 * Called from drawing thread.
+	 */
+	virtual void OnCapture(class ICapture * capture) = 0;
+};
+
+class CCaptureNode
+	: public CRefCountedThreadSafe
+	, private IAfxD3D9OnRelease
+{
+public:
+	static void GpuExecuteLockQueue() {
+		s_GpuLockQueue.Execute();
+	}
+
+	static void GpuExecuteReleaseQueue() {
+		s_GpuReleaseQueue.Execute();
+	}
+
+	CCaptureNode(ICaptureInput * input, ICaptureOutput * output)
+		: m_Input(input)
+		, m_Output(output)
+	{
+		input->AddRef();
+		output->AddRef();
+	}
+
+    void GpuCapture() {
+		GpuUnlock();
+
+		if(nullptr == m_D3d9Capture) {
+			m_D3d9Capture = m_Input->GpuCreateCapture();
+			if(m_D3d9Capture)
+				AfxD3D9OnReleaseAdd(this);
+		}
+		
+		m_CaptureOK = nullptr != m_D3d9Capture && m_D3d9Capture->Capture();
+
+		s_GpuLockQueue.Add(this);
+	}
+
+	void CpuQueueGpuRelease() {
+		s_GpuReleaseQueue.Add(this);
+	}
+
+protected:
+	virtual ~CCaptureNode() {
+		Assert(m_ProcessBuffer == false);
+		Assert(m_D3d9Capture == nullptr);
+		Assert(m_Buffer == nullptr);
+
+		m_Output->Release();
+		m_Input->Release();
+	}
+
+private:
+	template <typename T> class CExecutionQueue {
+	public:
+		~CExecutionQueue() {
+			Clear();
+		}
+
+		void Add(T * capture) {
+			capture->AddRef();
+			m_Queue.emplace(capture);
+		}
+
+		void Execute() {
+			while(!m_Queue.empty()) {
+				T * item = m_Queue.front();
+				ExecuteItem(item);
+				item->Release();
+				m_Queue.pop();
+			}
+		}
+
+		void Clear() {
+			while(!m_Queue.empty()) {
+				m_Queue.front()->Release();
+				m_Queue.pop();
+			}
+		}
+
+	protected:
+		virtual void ExecuteItem(T * item) = 0;
+
+	private:
+		std::queue<T *> m_Queue;
+	};
+
+	static class CGpuLockQueue
+	: public CExecutionQueue<CCaptureNode> {
+
+	protected:
+		virtual void ExecuteItem(CCaptureNode* item) {
+			item->GpuLock();
+		}
+
+	} s_GpuLockQueue;
+
+	static class CGpuReleaseQueue
+		: public CExecutionQueue<CCaptureNode> {
+
+	protected:
+		virtual void ExecuteItem(CCaptureNode* item) {
+			item->ReleaseD3d9Capture();
+		}
+
+	} s_GpuReleaseQueue;
+
+	class CCapture
+		: public advancedfx::CRefCountedThreadSafe
+		, public ICapture {
+	public:
+		CCapture(CCaptureNode* captureNode)
+			: advancedfx::CRefCountedThreadSafe()
+			, m_CaptureNode(captureNode)
+		{
+
+		}
+		virtual void AddRef() override {
+			advancedfx::CRefCountedThreadSafe::AddRef();
+		}
+
+		virtual void Release() override {
+			advancedfx::CRefCountedThreadSafe::Release();
+		}
+
+		virtual const advancedfx::IImageBuffer* GetBuffer() const {
+			return m_CaptureNode->m_Buffer;
+		}
+
+	protected:
+		virtual ~CCapture() {
+			std::unique_lock<std::mutex> lock(m_CaptureNode->m_BufferMutex);
+			m_CaptureNode->m_ProcessBuffer = false;
+			m_CaptureNode->m_ProcessedCondition.notify_one();
+		}
+
+	private:
+		CCaptureNode* m_CaptureNode;
+
+	};
+
+	ICaptureInput * m_Input;
+	ICaptureOutput * m_Output;
+	IAfxD3D9Capture * m_D3d9Capture = nullptr;
+	bool m_CaptureOK = false;
+	bool m_ProcessBuffer = false;
+	std::condition_variable m_ProcessCondition;
+	std::condition_variable m_ProcessedCondition;
+	std::mutex m_BufferMutex;
+	const advancedfx::IImageBuffer * m_Buffer = nullptr;
+	bool m_GpuReleased = false;
+	bool m_CpuReleased = false;
+
+	virtual void AfxD3D9OnRelease() {
+		ReleaseD3d9Capture();
+	}
+
+	void ReleaseD3d9Capture() {
+		GpuUnlock();
+		if(m_D3d9Capture) {
+			AfxD3D9OnReleaseRemove(this);
+			m_D3d9Capture->Release();
+			m_D3d9Capture = nullptr;
+		}
+	}
+
+	void GpuLock() {
+		m_ProcessBuffer = true;
+		if(m_CaptureOK) {
+			m_Buffer = m_D3d9Capture->LockCpu();
+		}
+		CCapture* capture = new CCapture(this);
+		capture->AddRef();
+		m_Output->OnCapture(capture);
+		capture->Release();
+	}
+
+	void GpuUnlock() {
+		std::unique_lock<std::mutex> lock(m_BufferMutex);
+		if (m_ProcessBuffer) {
+			m_ProcessedCondition.wait(lock, [this] {
+				return m_ProcessBuffer == false;
+			});
+		}
+		if (m_Buffer) {
+			m_D3d9Capture->UnlockCpu();
+			m_Buffer = nullptr;
+		}
+	}
+};
+
 
 //typedef void(__fastcall * CCSViewRender_Render_t)(void * This, void* Edx, const SOURCESDK::vrect_t_csgo * rect);
 typedef void(__fastcall* CCSViewRender_RenderView_t)(void * This, void* Edx, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw);
@@ -549,6 +817,30 @@ struct AfxViewportData_t
 	float zFar;
 };
 
+class CAfxStreamsCaptureOutput
+	: public advancedfx::CRefCountedThreadSafe
+	, public ICaptureOutput {
+public:
+	CAfxStreamsCaptureOutput(class CAfxRecordStream* target, size_t streamIndex);
+
+	virtual void AddRef() override {
+		advancedfx::CRefCountedThreadSafe::AddRef();
+	}
+
+	virtual void Release() override {
+		advancedfx::CRefCountedThreadSafe::Release();
+	}
+
+	virtual void OnCapture(class ICapture* capture);
+
+protected:
+	~CAfxStreamsCaptureOutput();
+
+private:
+	class CAfxRecordStream* m_Target;
+	size_t m_StreamIndex;
+};
+
 class CAfxRenderViewStream
 	: public CAfxStreamShared
 {
@@ -581,6 +873,21 @@ public:
 	//
 	//
 
+	bool IsTrulyNormalGameView() {
+		return nullptr == AsAfxBaseFxStream()
+			&& m_AttachCommands.empty()
+			&& m_DetachCommands.empty()
+			&& m_DrawViewModel == DT_NoChange
+			&& m_DrawHud == DT_NoChange
+			&& m_StreamCaptureType == SCT_Normal
+			&& m_ForceBuildingCubemaps == false
+			&& !DoBloomAndToneMapping.GetOverride()
+			&& !DoDepthOfField.GetOverride()
+			&& !DrawWorldNormal.GetOverride()
+			&& !CullFrontFaces.GetOverride()
+			&& !RenderFlashlightDepthTranslucents.GetOverride();
+	}
+
 	virtual CAfxRenderViewStream * AsAfxRenderViewStream(void) { return this; }
 
 	virtual CAfxBaseFxStream * AsAfxBaseFxStream(void) { return 0; }
@@ -606,6 +913,18 @@ public:
 
 	StreamCaptureType StreamCaptureType_get(void) const;
 	void StreamCaptureType_set(StreamCaptureType value);
+
+	bool IsDepth() {
+		switch (m_StreamCaptureType) {
+		case SCT_Depth24:
+		case SCT_Depth24ZIP:
+		case SCT_DepthF:
+		case SCT_DepthFZIP:
+			return true;
+		}
+
+		return false;
+	}
 
 	bool ForceBuildingCubemaps_get(void)
 	{
@@ -643,8 +962,6 @@ public:
 	{
 	}
 
-	void QueueCapture(IAfxMatRenderContextOrg * ctx, CAfxRecordStream * captureTarget, size_t streamIndex, int x, int y, int width, int height);
-
 	//
 	// State information:
 
@@ -667,32 +984,12 @@ protected:
 	virtual ~CAfxRenderViewStream();
 
 private:
-	class CCaptureFunctor :
-		public CAfxFunctor
-	{
-	public:
-		CCaptureFunctor(CAfxRenderViewStream & stream, CAfxRecordStream * captureTarget, size_t streamIndex, int x, int y, int width, int height);
-
-		void operator()();
-
-	private:
-		CAfxRenderViewStream & m_Stream;
-		CAfxRecordStream * m_CaptureTarget;
-		size_t m_StreamIndex;
-		int m_X;
-		int m_Y;
-		int m_Width;
-		int m_Height;
-	};
-
 	static CAfxRenderViewStream * m_EngineThreadStream;
 
 	DrawType m_DrawViewModel;
 	DrawType m_DrawHud;
 	std::string m_AttachCommands;
 	std::string m_DetachCommands;
-
-	void Capture(CAfxRecordStream * captureTarget, size_t streamIndex, int x, int y, int width, int height);
 };
 
 class CAfxSingleStream;
@@ -1040,12 +1337,10 @@ public:
 	/// <remarks>This is called regardless of Record value.</remarks>
 	void RecordEnd();
 
-	void QueueCaptureStart(IAfxMatRenderContextOrg * ctx);
-
-	void QueueCaptureEnd(IAfxMatRenderContextOrg * ctx);
+	void DoCaptureStart(IAfxMatRenderContextOrg* ctx, const AfxViewportData_t& viewport);
 
 	/// <remarks>This is not guaranteed to be called, i.e. not called upon buffer re-allocation error.</remarks>
-	void OnImageBufferCaptured(size_t index, advancedfx::CImageBuffer * buffer);
+	void OnImageBufferCaptured(size_t index, class ICapture* buffer);
 
 	virtual CAfxRenderViewStream::StreamCaptureType GetCaptureType() const = 0;
 
@@ -1078,66 +1373,86 @@ public:
 	virtual bool Console_Edit_Head(IWrpCommandArgs * args);
 	virtual void Console_Edit_Tail(IWrpCommandArgs * args);
 
+	void QueueCapture(IAfxMatRenderContextOrg* ctx, size_t index);
+
+	bool IsTrulyNormalGameView() {
+		return 1 == m_Streams.size() && m_Streams[0]->IsTrulyNormalGameView();
+	}
+
 protected:
 	std::vector<CAfxRenderViewStream *> m_Streams;
+	std::vector<class ICapture *> m_Buffers;
+	std::vector<class CCaptureNode*> m_CaptureNodes;
 
-	std::vector<advancedfx::CImageBuffer *> m_Buffers;
+	void SetCaptureNode(size_t index, class CCaptureNode* node) {
+		if (node) node->AddRef();
+		class CCaptureNode*& vecNode = m_CaptureNodes[index];
+		if (vecNode) vecNode->Release();
+		vecNode = node;
+	}
+
+	class CCaptureNode* GetCaptureNode(size_t index) {
+		class CCaptureNode* node = m_CaptureNodes[index];
+		if (node) node->AddRef();
+		return node;
+	}
 
 	CAfxRecordingSettings * m_Settings;
 	advancedfx::COutVideoStream * m_OutVideoStream;
 
 	virtual ~CAfxRecordStream() override;
 
-	virtual void CaptureStart(void)
+	virtual void CaptureStart(bool bFirstCapture, const AfxViewportData_t & viewport)
 	{
 	}
 
 	virtual void CaptureEnd();
 
 private:
-	class CCaptureStartFunctor
-		: public CAfxFunctor
+	class CCaptureFunctor :
+		public CAfxFunctor
 	{
 	public:
-		CCaptureStartFunctor(CAfxRecordStream & stream)
-			: m_Stream(stream)
-		{
-			m_Stream.AddRef();
-		}
+		CCaptureFunctor(CAfxRecordStream& stream, size_t index);
 
-		void operator()()
-		{
-			m_Stream.CaptureStart();
-		}
+		void operator()();
 
 	private:
-		CAfxRecordStream & m_Stream;
-	};
-
-	class CCaptureEndFunctor
-		: public CAfxFunctor
-	{
-	public:
-		CCaptureEndFunctor(CAfxRecordStream & stream)
-			: m_Stream(stream)
-		{
-		}
-
-		void operator()()
-		{
-			m_Stream.CaptureEnd();
-			m_Stream.Release();
-		}
-
-	private:
-		CAfxRecordStream & m_Stream;
-		std::wstring m_OutPath;
-		bool m_OutPathOk;
+		CAfxRecordStream& m_Stream;
+		size_t m_Index;
 	};
 
 	std::string m_StreamName;
 	bool m_Record;
-	std::atomic_int m_CapturesLeft;
+	
+	std::atomic_int m_CapturesLeft = 0;
+
+	std::mutex m_ProcessingThreadMutex;
+	int m_CapturesReady = 0;
+	std::condition_variable m_ProcessingThreadCv;
+	std::thread m_ProcessingThread;
+	bool m_Recording = false;
+	bool m_FirstCapture = false;
+
+	void ProcessingThreadFunc() {
+		std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
+		while (m_Recording || 0 < m_CapturesLeft) {
+			m_ProcessingThreadCv.wait(lock);
+			if (m_CapturesReady == m_Streams.size()) {
+				CaptureEnd();
+				m_CapturesReady = 0;
+			}
+		}
+	}
+
+	/**
+	 * @remarks On GPU thread.
+	 */
+	void Capture(size_t index) {
+		if (class CCaptureNode* node = m_CaptureNodes[index]) {
+			node->GpuCapture();
+		}
+	}
 };
 
 class CAfxSingleStream
@@ -1152,6 +1467,7 @@ public:
 	virtual void Console_Edit_Tail(IWrpCommandArgs * args) override;
 
 protected:
+	virtual void CaptureStart(bool bFirstCapture, const AfxViewportData_t& viewport) override;
 	virtual void CaptureEnd() override;
 
 private:
@@ -1165,8 +1481,7 @@ public:
 	enum StreamCombineType
 	{
 		SCT_ARedAsAlphaBColor,
-		SCT_AColorBRedAsAlpha,
-		SCT_AHudWhiteBHudBlack
+		SCT_AColorBRedAsAlpha
 	};
 
 	/// <remarks>Takes ownership of given streams.</remarks>
@@ -1181,6 +1496,7 @@ public:
 	virtual void Console_Edit_Tail(IWrpCommandArgs * args) override;
 
 protected:
+	virtual void CaptureStart(bool bFirstCapture, const AfxViewportData_t& viewport) override;
 	virtual void CaptureEnd() override;
 
 private:
@@ -2932,6 +3248,7 @@ public:
 protected:
 	virtual ~CAfxMatteStream();
 
+	virtual void CaptureStart(bool bFirstCapture, const AfxViewportData_t& viewport) override;
 	virtual void CaptureEnd() override;
 
 private:
@@ -3307,7 +3624,7 @@ class CAfxStreams
 public:
 	typedef SOURCESDK::IMatRenderContext_csgo CMatQueuedRenderContext_csgo;
 
-	advancedfx::CImageBufferPool ImageBufferPool;
+	advancedfx::CImageBufferPoolThreadSafe ImageBufferPoolThreadSafe;
 
 	bool m_FormatBmpAndNotTga;
 
@@ -3381,6 +3698,13 @@ public:
 	void Console_PreviewSuspend_set(bool value);
 	bool Console_PreviewSuspend_get();
 
+	void Console_ShowRenderViewCountSet(bool value) {
+		m_ShowRenderViewCount = value;
+	}
+	bool Console_ShowRenderViewCountGet() {
+		return m_ShowRenderViewCount;
+	}
+
 	void Console_Record_Start();
 	void Console_Record_End();
 	void Console_AddStream(const char * streamName);
@@ -3394,8 +3718,7 @@ public:
 	void Console_AddAlphaEntityStream(const char * streamName);
 	void Console_AddAlphaWorldStream(const char * streamName);
 	void Console_AddAlphaMatteEntityStream(const char * streamName);
-	void Console_AddMatteStream(const char * streamName);
-	void Console_AddHudStream(const char * streamName);
+	void Console_AddMatteStream(const char* streamName);
 	void Console_AddHudWhiteStream(const char * streamName);
 	void Console_AddHudBlackStream(const char * streamName);
 	void Console_PrintStreams();
@@ -3529,6 +3852,9 @@ private:
 	std::string m_RecordName;
 	bool m_FirstRenderAfterLevelInit = true;
 	bool m_FirstStreamToBeRendered;
+	int m_DoRenderViewCount = 0;
+	bool m_ShowRenderViewCount = false;
+	bool m_PresentLastStream;
 	bool m_SuspendPreview = false;
 	bool m_PresentRecordOnScreen;
 	bool m_StartMovieWav;
@@ -3536,8 +3862,6 @@ private:
 
 	bool m_RecordVoices;
 	bool m_RecordVoicesUsed;
-
-	bool m_LastPreviewWithNoHud;
 
 	const SOURCESDK::CViewSetup_csgo * m_CurrentView;
 
@@ -3595,8 +3919,8 @@ private:
 	//int m_Old_r_drawstaticprops;
 
 	std::wstring m_TakeDir;
-	//ITexture_csgo * m_RgbaRenderTarget;
-	SOURCESDK::ITexture_csgo * m_RenderTargetDepthF;
+	//SOURCESDK::ITexture_csgo * m_RgbaRenderTarget;
+	//SOURCESDK::ITexture_csgo * m_RenderTargetDepthF;
 	//CAfxMaterial * m_ShowzMaterial;
 	DWORD m_View_Render_ThreadId;
 	bool m_PresentBlocked = false;
@@ -3632,7 +3956,7 @@ private:
 	IAfxMatRenderContextOrg * CaptureStream(IAfxMatRenderContextOrg * ctxp, CAfxRecordStream * stream, CCSViewRender_RenderView_t fn, void* This, void* Edx, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer);
 	IAfxMatRenderContextOrg * CaptureStreamToBuffer(IAfxMatRenderContextOrg * ctxp, size_t streamIndex, CAfxRenderViewStream * stream, CAfxRecordStream * captureTarget, bool first, bool last, CCSViewRender_RenderView_t fn, void* This, void* Edx, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer);
 
-	IAfxMatRenderContextOrg * PreviewStream(IAfxMatRenderContextOrg * ctxp, CAfxRenderViewStream * previewStream, bool isLast, int slot, int cols, CCSViewRender_RenderView_t fn, void* This, void* Edx, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer);
+	IAfxMatRenderContextOrg * PreviewStream(IAfxMatRenderContextOrg * ctxp, CAfxRenderViewStream * previewStream, int slot, int cols, CCSViewRender_RenderView_t fn, void* This, void* Edx, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer);
 
 	void BlockPresent(IAfxMatRenderContextOrg * ctx, bool value);
 
@@ -3641,4 +3965,6 @@ private:
 	void CalcMainStream();
 
 	void UpdateStreamDeps();
+
+	IAfxMatRenderContextOrg* CommitDrawingContext(IAfxMatRenderContextOrg* context, bool blockPresent);
 };

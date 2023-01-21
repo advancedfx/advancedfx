@@ -276,6 +276,22 @@ CON_COMMAND(__mirv_skyboxscale, "print skyboxscale in CS:GO")
 	Tier0_Msg("skyBoxScale: n/a\n");
 }
 
+CON_COMMAND(__mirv_show_renderview_count, "") {
+	int argc = args->ArgC();
+
+	if (2 <= argc) {
+		g_AfxStreams.Console_ShowRenderViewCountSet(0 != atoi(args->ArgV(1)));
+		return;
+	}
+
+	Tier0_Msg(
+		"%s 0|1\n"
+		"Current value: %i\n",
+		args->ArgV(0),
+		g_AfxStreams.Console_ShowRenderViewCountGet() ? 1 : 0
+	);
+}
+
 CON_COMMAND(mirv_streams, "Access to streams system.")
 {
 	int argc = args->ArgC();
@@ -323,24 +339,6 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					);
 					return;
 				}
-				/*
-				else if (!_stricmp(cmd2, "hud"))
-				{
-					if (4 <= argc)
-					{
-						char const * cmd3 = args->ArgV(3);
-
-						g_AfxStreams.Console_AddHudStream(cmd3);
-
-						return;
-					}
-
-					Tier0_Msg(
-						"mirv_streams add hud <name> - Add a hud (RGBA) stream with name <name>.\n"
-					);
-					return;
-				}
-				*/
 				else if (!_stricmp(cmd2, "hudWhite"))
 				{
 					if (4 <= argc)

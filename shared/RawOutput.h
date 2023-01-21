@@ -33,7 +33,8 @@ bool WriteRawTarga(
 	unsigned short usWidth, unsigned short usHeight,
 	unsigned char ucBpp, bool bGrayScale,
 	int pitch,
-	unsigned char ucAlphaBpp = 0
+	unsigned char ucAlphaBpp = 0,
+	bool bTopDown = false
 );
 
 //	WriteRawBitmap
@@ -42,10 +43,11 @@ bool WriteRawTarga(
 //	ucBpp <= 24
 //	pitch // number of bytes in a row
 bool WriteRawBitmap(
-	unsigned char const * pData,
-	wchar_t const * fileName,
+	unsigned char const* pData,
+	wchar_t const* fileName,
 	unsigned short usWidth,
 	unsigned short usHeight,
 	unsigned char ucBpp,
-	int pitch
+	int pitch,
+	bool bTopDown = false
 );

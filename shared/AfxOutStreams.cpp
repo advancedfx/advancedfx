@@ -17,36 +17,37 @@
 
 namespace advancedfx {
 
-bool COutImageStream::SupplyVideoData(const CImageBuffer& buffer)
+bool COutImageStream::SupplyImageFrame(double secondsSinceLastFrame, const unsigned char* pBuffer)
 {
 	std::wstring path;
 
-	if (ImageFormat::ZFloat == buffer.Format.Format)
+	if (ImageFormat::ZFloat == m_ImageFormat.Format)
 	{
 		return CreateCapturePath(".exr", path) && WriteFloatZOpenExr(
 			path.c_str(),
-			(unsigned char*)buffer.Buffer,
-			buffer.Format.Width,
-			buffer.Format.Height,
+			pBuffer,
+			m_ImageFormat.Width,
+			m_ImageFormat.Height,
 			sizeof(float),
-			buffer.Format.Pitch,
-			m_IfZip ? WFZOEC_Zip : WFZOEC_None
+			m_ImageFormat.Pitch,
+			m_IfZip ? WFZOEC_Zip : WFZOEC_None,
+			m_ImageFormat.Origin == ImageOrigin::TopLeft
 		);
 	}
 
-	if (ImageFormat::A == buffer.Format.Format)
+	if (ImageFormat::A == m_ImageFormat.Format)
 	{
 		return m_IfBmpNotTga
-			? CreateCapturePath(".bmp", path) && WriteRawBitmap((unsigned char*)buffer.Buffer, path.c_str(), buffer.Format.Width, buffer.Format.Height, 8, buffer.Format.Pitch)
-			: CreateCapturePath(".tga", path) && WriteRawTarga((unsigned char*)buffer.Buffer, path.c_str(), buffer.Format.Width, buffer.Format.Height, 8, true, buffer.Format.Pitch, 0)
+			? CreateCapturePath(".bmp", path) && WriteRawBitmap(pBuffer, path.c_str(), m_ImageFormat.Width, m_ImageFormat.Height, 8, m_ImageFormat.Pitch, m_ImageFormat.Origin == ImageOrigin::TopLeft)
+			: CreateCapturePath(".tga", path) && WriteRawTarga(pBuffer, path.c_str(), m_ImageFormat.Width, m_ImageFormat.Height, 8, true, m_ImageFormat.Pitch, 0, m_ImageFormat.Origin == ImageOrigin::TopLeft)
 			;
 	}
 
-	bool isBgra = ImageFormat::BGRA == buffer.Format.Format;
+	bool isBgra = ImageFormat::BGRA == m_ImageFormat.Format;
 
 	return m_IfBmpNotTga && !isBgra
-		? CreateCapturePath(".bmp", path) && WriteRawBitmap((unsigned char*)buffer.Buffer, path.c_str(), buffer.Format.Width, buffer.Format.Height, 24, buffer.Format.Pitch)
-		: CreateCapturePath(".tga", path) && WriteRawTarga((unsigned char*)buffer.Buffer, path.c_str(), buffer.Format.Width, buffer.Format.Height, isBgra ? 32 : 24, false, buffer.Format.Pitch, isBgra ? 8 : 0)
+		? CreateCapturePath(".bmp", path) && WriteRawBitmap(pBuffer, path.c_str(), m_ImageFormat.Width, m_ImageFormat.Height, 24, m_ImageFormat.Pitch, m_ImageFormat.Origin == ImageOrigin::TopLeft)
+		: CreateCapturePath(".tga", path) && WriteRawTarga(pBuffer, path.c_str(), m_ImageFormat.Width, m_ImageFormat.Height, isBgra ? 32 : 24, false, m_ImageFormat.Pitch, isBgra ? 8 : 0, m_ImageFormat.Origin == ImageOrigin::TopLeft)
 		;
 }
 
@@ -253,7 +254,8 @@ COutFFMPEGVideoStream::COutFFMPEGVideoStream(const CImageFormat& imageFormat, co
 		ffmpegArgs << " -loglevel repeat+level+warning";
 		ffmpegArgs << " -framerate " << frameRate;
 		ffmpegArgs << " -video_size " << imageFormat.Width << "x" << imageFormat.Height;
-		ffmpegArgs << " -i pipe:0 -vf vflip,setsar=sar=1/1";
+		ffmpegArgs << " -i pipe:0 -vf setsar=sar=1/1";
+		if (imageFormat.Origin != ImageOrigin::TopLeft) ffmpegArgs << ",vflip";
 
 		std::wstring myFFMPEGOptions(ffmpegOptions);
 
@@ -498,7 +500,7 @@ void COutFFMPEGVideoStream::Close()
 	*/
 }
 
-bool COutFFMPEGVideoStream::SupplyVideoData(const CImageBuffer& buffer)
+bool COutFFMPEGVideoStream::SupplyImageFrame(double secondsSinceLastFrame, const unsigned char* pBuffer)
 {
 	/*
 	static DWORD frames = 0;
@@ -520,49 +522,51 @@ bool COutFFMPEGVideoStream::SupplyVideoData(const CImageBuffer& buffer)
 
 	if (TRUE != m_Okay) return false;
 
-	if (!(buffer.Format == m_ImageFormat))
-	{
-		advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::SupplyVideoData: Format mismatch.\n");
-		Close();
-		return false;
-	}
-
 	//DWORD lastTickCount = GetTickCount();
 
-	DWORD offset = 0;
-	DWORD length = (DWORD)buffer.Format.Bytes;
+	DWORD length = (DWORD)m_ImageFormat.Bytes;
+	DWORD srcStride = m_ImageFormat.GetPixelStride();
+	DWORD batchLength = (DWORD)(srcStride * m_ImageFormat.Width);
+	if (batchLength == m_ImageFormat.GetLineStride()) batchLength *= (DWORD)m_ImageFormat.Height;
 
-	if (WriteFile(m_hChildStd_IN_Wr, (LPVOID) & (((char*)buffer.Buffer)[offset]), length, NULL, &m_OverlappedStdin)) return true;
+	while (0 < length) {
 
-	if (ERROR_IO_PENDING != GetLastError())
-		return false;
-
-	bool completed = false;
-
-	char chBuf[251];
-	DWORD bytesAvail;
-
-	while (!completed)
-	{
-		if (!HandleOutAndErr())
-			return false;
-
-		DWORD result = WaitForSingleObject(m_OverlappedStdin.hEvent, 1000);
-		switch (result)
-		{
-		case WAIT_OBJECT_0:
-			completed = true;
-			break;
-		case WAIT_TIMEOUT:
-			break;
-		default:
-			return false;
+		if (WriteFile(m_hChildStd_IN_Wr, (LPCVOID)pBuffer, batchLength, NULL, &m_OverlappedStdin)) {
+			length -= batchLength;
+			pBuffer += batchLength;
+			continue;
 		}
-	}
 
-	DWORD bytesWritten;
-	if (!GetOverlappedResult(m_hChildStd_IN_Wr, &m_OverlappedStdin, &bytesWritten, FALSE) || bytesWritten != length)
-		return false;
+		if (ERROR_IO_PENDING != GetLastError())
+			return false;
+
+		bool completed = false;
+
+		while (!completed)
+		{
+			if (!HandleOutAndErr())
+				return false;
+
+			DWORD result = WaitForSingleObject(m_OverlappedStdin.hEvent, 1000);
+			switch (result)
+			{
+			case WAIT_OBJECT_0:
+				completed = true;
+				break;
+			case WAIT_TIMEOUT:
+				break;
+			default:
+				return false;
+			}
+		}
+
+		DWORD bytesWritten;
+		if (!GetOverlappedResult(m_hChildStd_IN_Wr, &m_OverlappedStdin, &bytesWritten, FALSE) || bytesWritten != length)
+			return false;
+
+		length -= batchLength;
+		pBuffer += batchLength;
+	}
 
 	return true;
 }
@@ -638,7 +642,7 @@ bool COutFFMPEGVideoStream::HandleOutAndErr(DWORD processWaitTimeOut)
 
 // COutSamplingStream ///////////////////////////////////////////////////////
 
-COutSamplingStream::COutSamplingStream(const CImageFormat& imageFormat, COutVideoStream* outVideoStream, float frameRate, EasySamplerSettings::Method method, double frameDuration, double exposure, float frameStrength, CImageBufferPool * imageBufferPool)
+COutSamplingStream::COutSamplingStream(const CImageFormat& imageFormat, COutVideoStream* outVideoStream, float frameRate, EasySamplerSettings::Method method, double frameDuration, double exposure, float frameStrength, IImageBufferPool * imageBufferPool)
 	: COutVideoStream(imageFormat)
 	, m_OutVideoStream(outVideoStream)
 	, m_Time(0.0)
@@ -716,25 +720,19 @@ COutSamplingStream::~COutSamplingStream()
 	if (m_OutVideoStream) m_OutVideoStream->Release();
 }
 
-bool COutSamplingStream::SupplyVideoData(const CImageBuffer& buffer)
+bool COutSamplingStream::SupplyImageFrame(double secondsSinceLastFrame, const unsigned char* pBuffer)
 {
 	if (nullptr == m_OutVideoStream) return false;
-
-	if (!(buffer.Format == m_ImageFormat))
-	{
-		advancedfx::Warning("AFXERROR: COutSamplingStream::SupplyVideoData: Format mismatch.\n");
-		return false;
-	}
 
 	switch (m_ImageFormat.Format)
 	{
 	case ImageFormat::BGR:
 	case ImageFormat::BGRA:
 	case ImageFormat::A:
-		m_EasySampler.Byte->Sample((const unsigned char*)buffer.Buffer, m_Time);
+		m_EasySampler.Byte->Sample(pBuffer, m_Time);
 		break;
 	case ImageFormat::ZFloat:
-		m_EasySampler.Float->Sample((const float*)buffer.Buffer, m_Time);
+		m_EasySampler.Float->Sample((const float*)pBuffer, m_Time);
 	};
 
 	m_Time += m_InputFrameDuration;

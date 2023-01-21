@@ -14,6 +14,12 @@ enum class ImageFormat : unsigned int {
 	ZFloat = 4
 };
 
+enum class ImageOrigin : unsigned int {
+	Unknown = 0,
+	TopLeft = 1,
+	BottomLeft = 2
+};
+
 class CImageFormat
 {
 public:
@@ -22,12 +28,14 @@ public:
 	int Height;
 	size_t Pitch;
 	size_t Bytes;
+	ImageOrigin Origin;
 
 	CImageFormat()
 		: Format(ImageFormat::Unkown)
 		, Width(0)
 		, Height(0)
 		, Pitch(0)
+		, Origin(ImageOrigin::Unknown)
 	{
 		Calc();
 	}
@@ -37,6 +45,7 @@ public:
 		, Width(width)
 		, Height(height)
 		, Pitch(0)
+		, Origin(ImageOrigin::TopLeft)
 	{
 		Calc();
 	}
@@ -47,6 +56,7 @@ public:
 		, Width(width)
 		, Height(height)
 		, Pitch(pitch)
+		, Origin(ImageOrigin::TopLeft)
 	{
 		Calc();
 	}
@@ -57,7 +67,32 @@ public:
 			&& Width == other.Width
 			&& Height == other.Height
 			&& Pitch == other.Pitch
-			&& Bytes == other.Bytes;
+			&& Bytes == other.Bytes
+			&& Origin == other.Origin;
+	}
+
+	void SetOrigin(ImageOrigin origin) {
+		Origin = origin;
+	}
+
+	size_t GetLineStride() const {
+		return Pitch;
+	}
+
+	size_t GetPixelStride() const {
+		switch (Format)
+		{
+		case ImageFormat::BGR:
+			return 3 * sizeof(unsigned char);
+		case ImageFormat::BGRA:
+			return 4 * sizeof(unsigned char);
+		case ImageFormat::A:
+			return 1 * sizeof(unsigned char);
+		case ImageFormat::ZFloat:
+			return 1 * sizeof(float);
+		}
+
+		return 0;	
 	}
 
 private:
@@ -65,26 +100,7 @@ private:
 	{
 		if (Pitch == 0)
 		{
-			Pitch = Width;
-
-			switch (Format)
-			{
-			case ImageFormat::BGR:
-				Pitch *= 3 * sizeof(char);
-				break;
-			case ImageFormat::BGRA:
-				Pitch *= 4 * sizeof(char);
-				break;
-			case ImageFormat::A:
-				Pitch *= 1 * sizeof(char);
-				break;
-			case ImageFormat::ZFloat:
-				Pitch *= 1 * sizeof(float);
-				break;
-			default:
-				Pitch = 0;
-				break;
-			}
+			Pitch = Width * GetPixelStride();
 		}
 
 		Bytes = Height * Pitch;
@@ -92,7 +108,14 @@ private:
 };
 
 
+class IImageBuffer abstract {
+public:
+	virtual const CImageFormat * GetImageBufferFormat() const = 0;
+	virtual const void * GetImageBufferData() const = 0;
+};
+
 class CImageBuffer
+	: public IImageBuffer
 {
 public:
 	CImageFormat Format;
@@ -131,12 +154,26 @@ public:
 		return 0 != Buffer;
 	}
 
+	virtual const CImageFormat * GetImageBufferFormat() const {
+		return &Format;
+	}
+	virtual const void * GetImageBufferData() const {
+		return Buffer;
+	}
+
 private:
 	size_t m_BufferBytesAllocated;
 };
 
 
+class IImageBufferPool {
+public:
+	virtual class CImageBuffer* AquireBuffer(void) = 0;
+	virtual void ReleaseBuffer(class CImageBuffer* buffer) = 0;
+};
+
 class CImageBufferPool
+	: public IImageBufferPool
 {
 public:
 	~CImageBufferPool()
@@ -147,7 +184,7 @@ public:
 		}
 	}
 
-	CImageBuffer* AquireBuffer(void) {
+	virtual CImageBuffer* AquireBuffer(void) {
 		if (m_Buffers.empty()) return new CImageBuffer();
 
 		CImageBuffer* result = m_Buffers.top();
@@ -155,7 +192,7 @@ public:
 		return result;
 	}
 
-	void ReleaseBuffer(CImageBuffer* buffer) {
+	virtual void ReleaseBuffer(CImageBuffer* buffer) {
 		m_Buffers.push(buffer);
 	}
 

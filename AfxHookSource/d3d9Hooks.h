@@ -16,7 +16,7 @@ HRESULT WINAPI new_Direct3DCreate9Ex(UINT SDKVersion, IDirect3D9Ex** ppD3DDevice
 /// <remarks>IDirect3D9Device only (i.e. CS:GO but not CSS).</remarks>
 bool AfxD3D9_Check_Supports_R32F_With_Blending(void);
 
-bool AfxD3D9_Check_Supports_R32F(void);
+bool AfxD3D9_Check_Supports_R32F(bool bTextureNotSurface);
 
 
 class __declspec(novtable) ID3d9HooksFloat4ParamOverride abstract
@@ -220,3 +220,6 @@ IDirect3DSurface9* AfxSetRenderTargetR32FDepthTexture();
 void AfxSetRenderTargetR32FDepthTexture_Restore(IDirect3DSurface9* oldRenderTarget);
 
 IDirect3DTexture9* AfxGetR32FDepthTexture();
+
+void AfxD3d9PushRenderTarget();
+void AfxD3d9PopRenderTarget();

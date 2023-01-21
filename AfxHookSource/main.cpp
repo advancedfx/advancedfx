@@ -68,6 +68,7 @@
 #include <deps/release/Detours/src/detours.h>
 
 #include <shared/binutils.h>
+#include <shared/ThreadPool.h>
 
 #include <set>
 #include <map>
@@ -2860,6 +2861,9 @@ CAfxImportDllHook g_Import_PROCESS_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
 CAfxImportsHook g_Import_PROCESS(CAfxImportsHooks({
 	&g_Import_PROCESS_KERNEL32 }));
 
+
+class advancedfx::CThreadPool* g_pThreadPool = nullptr;
+
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 {
 	switch (fdwReason) 
@@ -2883,7 +2887,14 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 #ifdef _DEBUG
 			MessageBox(0,"DLL_PROCESS_ATTACH","MDT_DEBUG",MB_OK);
 #endif
-			//break;
+			size_t thread_pool_thread_count = advancedfx::CThreadPool::GetDefaultThreadCount();
+			if (int idx = g_CommandLine->FindParam(L"-afxThreadPoolSize")) {
+				if (idx + 1 < g_CommandLine->GetArgC()) {
+					thread_pool_thread_count = (size_t)wcstoul( g_CommandLine->GetArgV(idx + 1), nullptr, 10);
+				}
+			}
+
+			g_pThreadPool = new advancedfx::CThreadPool(thread_pool_thread_count);
 
 			g_Import_PROCESS.Apply(GetModuleHandle(NULL));
 
@@ -2913,6 +2924,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 			if(g_AfxBaseClientDll) { delete g_AfxBaseClientDll; g_AfxBaseClientDll = 0; }
 
 			AfxHookSource::Gui::DllProcessDetach();
+
+			delete g_pThreadPool;
 
 			delete g_CommandLine;
 

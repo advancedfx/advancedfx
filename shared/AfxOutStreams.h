@@ -63,7 +63,19 @@ public:
 		return m_ImageFormat;
 	}
 
-	virtual bool SupplyVideoData(const CImageBuffer& buffer) = 0;
+	virtual bool SupplyImageFrame(double secondsSinceLastFrame, const unsigned char* pBuffer) = 0;
+
+	bool SupplyVideoData(const CImageBuffer& buffer) {
+		if (!(buffer.Format == m_ImageFormat))
+			return false;
+		return SupplyImageFrame(-1, static_cast<const unsigned char*>(buffer.Buffer));
+	}
+
+	bool SupplyImageBuffer(const IImageBuffer* buffer) {
+		if (!(nullptr != buffer && *buffer->GetImageBufferFormat() == m_ImageFormat))
+			return false;
+		return SupplyImageFrame(-1, static_cast<const unsigned char*>(buffer->GetImageBufferData()));
+	}
 
 protected:
 	COutVideoStream(const CImageFormat& imageFormat)
@@ -88,7 +100,7 @@ public:
 
 	}
 
-	virtual bool SupplyVideoData(const CImageBuffer& buffer) override;
+	virtual bool SupplyImageFrame(double secondsSinceLastFrame, const unsigned char* pBuffer) override;
 
 private:
 	std::wstring m_Path;
@@ -108,7 +120,7 @@ class COutFFMPEGVideoStream : public COutVideoStream
 public:
 	COutFFMPEGVideoStream(const CImageFormat& imageFormat, const std::wstring& path, const std::wstring& ffmpegOptions, float frameRate);
 
-	virtual bool SupplyVideoData(const CImageBuffer& buffer) override;
+	virtual bool SupplyImageFrame(double secondsSinceLastFrame, const unsigned char* pBuffer) override;
 
 protected:
 	virtual ~COutFFMPEGVideoStream() override;
@@ -143,9 +155,9 @@ class COutSamplingStream : public COutVideoStream
 	, public IFloatFramePrinter
 {
 public:
-	COutSamplingStream(const CImageFormat& imageFormat, COutVideoStream* outVideoStream, float frameRate, EasySamplerSettings::Method method, double frameDuration, double exposure, float frameStrength, CImageBufferPool* imageBufferPool);
+	COutSamplingStream(const CImageFormat& imageFormat, COutVideoStream* outVideoStream, float frameRate, EasySamplerSettings::Method method, double frameDuration, double exposure, float frameStrength, IImageBufferPool* imageBufferPool);
 
-	virtual bool SupplyVideoData(const CImageBuffer& buffer) override;
+	virtual bool SupplyImageFrame(double secondsSinceLastFrame, const unsigned char* pBuffer) override;
 
 	virtual void Print(unsigned char const* data) override;
 	virtual void Print(float const* data) override;
@@ -161,7 +173,7 @@ private:
 	COutVideoStream* m_OutVideoStream;
 	double m_Time;
 	double m_InputFrameDuration;
-	CImageBufferPool* m_ImageBufferPool;
+	IImageBufferPool* m_ImageBufferPool;
 };
 
 class COutMultiVideoStream : public COutVideoStream
@@ -177,7 +189,7 @@ public:
 		}
 	}
 
-	virtual bool SupplyVideoData(const CImageBuffer& buffer) override
+	virtual bool SupplyImageFrame(double secondsSinceLastFrame, const unsigned char* pBuffer) override
 	{
 		bool okay = true;
 
@@ -185,7 +197,7 @@ public:
 		{
 			if (COutVideoStream* stream = *it)
 			{
-				if (!stream->SupplyVideoData(buffer)) okay = false;
+				if (!stream->SupplyImageFrame(secondsSinceLastFrame, pBuffer)) okay = false;
 			}
 		}
 

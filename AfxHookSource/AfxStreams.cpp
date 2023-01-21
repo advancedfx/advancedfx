@@ -10,6 +10,7 @@
 #include "RenderView.h"
 #include "ClientTools.h"
 #include "d3d9Hooks.h"
+#include "D3D9ImageBuffer.h"
 #include "csgo_GlowOverlay.h"
 #include "MirvPgl.h"
 #include "AfxInterop.h"
@@ -28,6 +29,7 @@
 
 #include <shared/StringTools.h>
 #include <shared/FileTools.h>
+#include <shared/ThreadPool.h>
 
 #include <Windows.h>
 #include <deps/release/Detours/src/detours.h>
@@ -37,6 +39,9 @@
 #include <iomanip>
 #include <algorithm>
 #include <utility>
+
+#undef min
+#undef max
 
 //#define CAFXBASEFXSTREAM_STREAMCOMBINETYPES "aRedAsAlphaBColor|aColorBRedAsAlpha|aHudWhiteBHudBlack"
 #define CAFXBASEFXSTREAM_STREAMCOMBINETYPES "aRedAsAlphaBColor|aColorBRedAsAlpha"
@@ -97,6 +102,9 @@ int GetMaterialSystemThread() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+class CCaptureNode::CGpuLockQueue CCaptureNode::s_GpuLockQueue;
+class CCaptureNode::CGpuReleaseQueue CCaptureNode::s_GpuReleaseQueue;
 
 std::map<SOURCESDK::matrix3x4_t *, CEntityMetaRef> g_DrawingThread_BonesPtr_To_Meta;
 std::map<SOURCESDK::IHandleEntity_csgo *, SOURCESDK::matrix3x4_t *> g_DrawingThread_EntityPtr_To_BonesPtr;
@@ -712,162 +720,702 @@ void CAfxRenderViewStream::StreamCaptureType_set(StreamCaptureType value)
 	m_StreamCaptureType = value;
 }
 
-void CAfxRenderViewStream::QueueCapture(IAfxMatRenderContextOrg * ctx, CAfxRecordStream * captureTarget, size_t streamIndex, int x, int y, int width, int height)
-{
-	QueueOrExecute(ctx, new CAfxLeafExecute_Functor(new CCaptureFunctor(*this, captureTarget, streamIndex, x, y, width, height)));
-}
+extern class advancedfx::CThreadPool* g_pThreadPool;
 
-void CAfxRenderViewStream::Capture(CAfxRecordStream * captureTarget, size_t streamIndex, int x, int y, int width, int height)
-{
-	IAfxMatRenderContextOrg * ctx = GetCurrentContext()->GetOrg();
+class CAfxTransformer {
+public:
+/*
+	static class ICapture* DummyCapture() {
+		advancedfx::CImageFormat format(advancedfx::ImageFormat::BGRA, 1280, 720);
+		format.SetOrigin(advancedfx::ImageOrigin::TopLeft);
+		CAfxImageBufferCapture * result = CAfxImageBufferCapture::Create(format);
+		result->AddRef();
+		return result;
+	}
+*/
+	static class ICapture* TransformStripAlpha(class ICapture* capture) {
 
-	bool isDepthF = m_StreamCaptureType == CAfxRenderViewStream::SCT_DepthF || m_StreamCaptureType == CAfxRenderViewStream::SCT_DepthFZIP;
+		if (nullptr == capture) return nullptr;
 
-	advancedfx::CImageBuffer * buffer = g_AfxStreams.ImageBufferPool.AquireBuffer();
-
-	if(isDepthF)
-	{
-		if(buffer->AutoRealloc(advancedfx::CImageFormat(advancedfx::ImageFormat::ZFloat, width, height)))
-		{
-			unsigned char * pBuffer = (unsigned char*)buffer->Buffer;
-			int imagePitch = buffer->Format.Pitch;
-
-			ctx->ReadPixels(
-				x, y, width, height,
-				pBuffer,
-				SOURCESDK::IMAGE_FORMAT_R32F
-			);
-
-			// Post process buffer:
-
-			float depthScale = 1.0f;
-			float depthOfs = 0.0f;
-
-			if(CAfxBaseFxStream * baseFx = this->AsAfxBaseFxStream())
-			{
-				depthScale = baseFx->DepthValMax_get() - baseFx->DepthVal_get();
-				depthOfs = baseFx->DepthVal_get();
+		if (const class advancedfx::IImageBuffer* pBuffer = capture->GetBuffer()) {
+			if (const class advancedfx::CImageFormat* pFormat = pBuffer->GetImageBufferFormat()) {
+				if (pFormat->Format == advancedfx::ImageFormat::BGR) return capture;
 			}
+		}
 
-			for(int y=0; y < height; ++y)
-			{
-				for(int x=0; x < width; ++x)
-				{
-					float depth = *(float *)((unsigned char *)pBuffer +y*imagePitch +x*sizeof(float));
+		CTransformStripAlpha transform(capture);
+		return Transform(&transform);
+	}
 
-					depth *= depthScale;
-					depth += depthOfs;
+	static class ICapture* TransformDepthF(class ICapture* capture, float depthScale, float depthOfs) {
+		CTransformDepthF transform(capture, depthScale, depthOfs);
+		return Transform(&transform);
+	}
 
-					*(float *)((unsigned char *)pBuffer +y*imagePitch +x*sizeof(float))
-						= depth;
+	static class ICapture* TransformDepth24(class ICapture* capture, float depthScale, float depthOfs) {
+		CTransformDepth24 transform(capture, depthScale, depthOfs);
+		return Transform(&transform);
+	}
+
+	static class ICapture* TransformMatte(class ICapture* captureEntBlack, class ICapture* captureEntWhite) {
+		CTransformMatte transform(captureEntBlack, captureEntWhite);
+		return Transform(&transform);
+	}
+
+	static class ICapture* TransformAColorBRedAsAlpha(class ICapture* aColor, class ICapture* bRedAsAlpha) {
+		CTransformAColorBRedAsAlpha transform(aColor, bRedAsAlpha);
+		return Transform(&transform);
+	}
+
+private:
+	class CAfxImageBufferCapture
+		: public advancedfx::CRefCountedThreadSafe
+		, public ICapture
+	{
+	public:
+		static class CAfxImageBufferCapture* Create(const class advancedfx::CImageFormat& format) {
+			class CAfxImageBufferCapture* result = new CAfxImageBufferCapture();
+			result->AddRef();
+			if (!result->AutoRealloc(format)) {
+				result->Release();
+				Tier0_Warning("CAfxImageBufferCapture::Create: Failed to reallocate buffer.\n");
+				return nullptr;
+			}
+			return result;
+		}
+
+		virtual void AddRef() override {
+			advancedfx::CRefCountedThreadSafe::AddRef();
+		}
+
+		virtual void Release() override {
+			advancedfx::CRefCountedThreadSafe::Release();
+		}
+
+		virtual const advancedfx::IImageBuffer* GetBuffer() const {
+			return m_ImageBuffer;
+		}
+
+		void * GetImageBufferDataRw() const {
+			return m_ImageBuffer->Buffer;
+		}
+
+	protected:
+		CAfxImageBufferCapture()
+			: advancedfx::CRefCountedThreadSafe()
+		{
+			m_ImageBuffer = g_AfxStreams.ImageBufferPoolThreadSafe.AquireBuffer();
+		}
+
+		virtual ~CAfxImageBufferCapture() {
+			g_AfxStreams.ImageBufferPoolThreadSafe.ReleaseBuffer(m_ImageBuffer);
+		}
+
+	private:
+		advancedfx::CImageBuffer* m_ImageBuffer;
+
+		bool AutoRealloc(const class advancedfx::CImageFormat& format) {
+			return m_ImageBuffer->AutoRealloc(format);
+		}
+	};
+
+	class CTranformTask
+		: public advancedfx::CThreadPool::CTask
+	{
+	public:
+		CTranformTask(std::atomic_int& task_counter)
+			: task_counter(task_counter)			
+		{
+			task_counter++;
+		}
+
+		virtual ~CTranformTask() {
+			task_counter--;
+		}
+
+	protected:
+
+	private:
+		std::atomic_int& task_counter;
+	};
+
+	class ITransform {
+	public:
+		virtual CAfxImageBufferCapture* CreateOutput(void) = 0;
+		virtual size_t GetTaskSize() = 0;
+		virtual CTranformTask* CreateTask(std::atomic_int& task_counter, int taskIndex, int taskSize) = 0;
+	};
+	class CTransformAColorBRedAsAlpha
+		: public ITransform {
+	public:
+		CTransformAColorBRedAsAlpha(class ICapture* aColor, class ICapture* bRedAsAlpha)
+			: m_CaptureA(aColor)
+			, m_CaptureB(bRedAsAlpha)
+		{
+		}
+
+		virtual CAfxImageBufferCapture* CreateOutput(void) {
+			if (nullptr != m_CaptureA && nullptr != m_CaptureB) {
+
+				if (const class advancedfx::IImageBuffer* pBufferA = m_CaptureA->GetBuffer()) {
+					if (const unsigned char* pDataA = static_cast<const unsigned char*>(pBufferA->GetImageBufferData())) {
+						m_pInDataA = pDataA;
+						if (const class advancedfx::CImageFormat* pFormatA = pBufferA->GetImageBufferFormat()) {
+							m_InFormatA = *pFormatA;
+							if (m_InFormatA.Format == advancedfx::ImageFormat::BGRA || m_InFormatA.Format == advancedfx::ImageFormat::BGR) {
+
+								if (const class advancedfx::IImageBuffer* pBufferB = m_CaptureB->GetBuffer()) {
+									if (const unsigned char* pDataB = static_cast<const unsigned char*>(pBufferB->GetImageBufferData())) {
+										m_pInDataB = pDataB;
+										if (const class advancedfx::CImageFormat* pFormatB = pBufferB->GetImageBufferFormat()) {
+											m_InFormatB = *pFormatB;
+											if (
+												(m_InFormatB.Format == advancedfx::ImageFormat::BGRA || m_InFormatB.Format == advancedfx::ImageFormat::BGR)
+												&& m_InFormatB.Width == m_InFormatA.Width
+												&& m_InFormatB.Height == m_InFormatA.Height
+												&& m_InFormatB.Origin == m_InFormatA.Origin)
+											{
+												m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::BGRA, m_InFormatA.Width, m_InFormatA.Height);
+												m_OutFormat.SetOrigin(m_InFormatA.Origin);
+												class CAfxImageBufferCapture* pOutCapture = CAfxImageBufferCapture::Create(m_OutFormat);
+												if (pOutCapture) {
+													m_pOutData = static_cast<unsigned char*>(pOutCapture->GetImageBufferDataRw());
+												}
+												return pOutCapture;
+											}
+										}
+									}
+								}
+
+							}
+						}
+					}
 				}
 			}
 
-			captureTarget->OnImageBufferCaptured(streamIndex, buffer);
+			return nullptr;
 		}
-		else
-		{
-			g_AfxStreams.ImageBufferPool.ReleaseBuffer(buffer);
-			Tier0_Warning("CAfxRenderViewStream::Capture: Failed to reallocate buffer.\n");
+
+		virtual size_t GetTaskSize() {
+			return (size_t)std::abs(m_OutFormat.Height);
 		}
-	}
-	else
-	if(buffer->AutoRealloc(advancedfx::CImageFormat(advancedfx::ImageFormat::BGR, width, height)))
-	{
-		unsigned char * pBuffer = (unsigned char*)buffer->Buffer;
-		int imagePitch = buffer->Format.Pitch;
 
-		ctx->ReadPixels(
-			x, y, width, height,
-			(unsigned char*)pBuffer,
-			SOURCESDK::IMAGE_FORMAT_RGB888
-		);
+		virtual CTranformTask* CreateTask(std::atomic_int& task_counter, int taskIndex, int taskSize) {
+			return new CMyTransformTask(task_counter,
+				m_pInDataA + taskIndex * m_InFormatA.Pitch, m_InFormatA.Pitch, m_InFormatA.GetPixelStride(),
+				m_pInDataB + taskIndex * m_InFormatB.Pitch, m_InFormatB.Pitch, m_InFormatB.GetPixelStride(),
+				m_pOutData + taskIndex * m_OutFormat.Pitch, m_OutFormat.Width, taskSize);
+		}
 
-		if(CAfxRenderViewStream::SCT_Depth24 == m_StreamCaptureType || CAfxRenderViewStream::SCT_Depth24ZIP == m_StreamCaptureType)
-		{
-			float depthScale = 1.0f;
-			float depthOfs = 0.0f;
-
-			if(CAfxBaseFxStream * baseFx = this->AsAfxBaseFxStream())
+	private:
+		class CMyTransformTask : public CTranformTask {
+		public:
+			CMyTransformTask(std::atomic_int& task_counter, const unsigned char* pDataA, size_t pitchA, size_t pixelPichtA, const unsigned char* pDataB, size_t pitchB, size_t pixelPichtB, unsigned char* pOutData, size_t width, size_t height)
+				: CTranformTask(task_counter)
+				, pDataA(pDataA)
+				, pitchA(pitchA)
+				, pixelPichtA(pixelPichtA)
+				, pDataB(pDataB)
+				, pitchB(pitchB)
+				, pixelPichtB(pixelPichtB)
+				, pOutData(pOutData)
+				, width(width)
+				, height(height)
 			{
-				depthScale = baseFx->DepthValMax_get() - baseFx->DepthVal_get();
-				depthOfs = baseFx->DepthVal_get();
 			}
 
-			int oldImagePitch =  imagePitch;
-
-			// make the 24bit RGB into a float buffer:
-			if(buffer->AutoRealloc(advancedfx::CImageFormat(advancedfx::ImageFormat::ZFloat, width, height)))
-			{
-				unsigned char * pBuffer = (unsigned char*)buffer->Buffer;
-				int imagePitch = buffer->Format.Pitch;
-
-				for(int y = height-1; y >= 0; --y)
+			virtual void Execute() {
+				size_t targetPitch = width * 4 * sizeof(unsigned char);
+				for (size_t y = 0; y < height; ++y)
 				{
-					for(int x = width-1; x >= 0; --x)
+					for (size_t x = 0; x < width; ++x)
 					{
-						unsigned char r = ((unsigned char *)pBuffer)[y*oldImagePitch +3*x +0];
-						unsigned char g = ((unsigned char *)pBuffer)[y*oldImagePitch +3*x +1];
-						unsigned char b = ((unsigned char *)pBuffer)[y*oldImagePitch +3*x +2];
+						const unsigned char* pInA = (const unsigned char*)(pDataA + y * pitchA + x * pixelPichtA);
+						const unsigned char* pInB = (const unsigned char*)(pDataB + y * pitchB + x * pixelPichtB);
+						unsigned char* pOut = (unsigned char*)(pOutData + y * targetPitch + x * 4 * sizeof(unsigned char));
 
-						float depth;
+						pOut[0] = pInA[0];
+						pOut[1] = pInA[1];
+						pOut[2] = pInA[2];
+						pOut[3] = pInB[0];
 
-						depth = (1.0f/16777215.0f)*r +(256.0f/16777215.0f)*g +(65536.0f/16777215.0f)*b;
+					}
+				}
+			}
+
+		private:
+			const unsigned char* pDataA;
+			size_t pitchA;
+			size_t pixelPichtA;
+			const unsigned char* pDataB;
+			size_t pitchB;
+			size_t pixelPichtB;
+			unsigned char* pOutData;
+			size_t width;
+			size_t height;
+		};
+
+		class ICapture* m_CaptureA;
+		class ICapture* m_CaptureB;
+		advancedfx::CImageFormat m_InFormatA;
+		advancedfx::CImageFormat m_InFormatB;
+		const unsigned char* m_pInDataA;
+		const unsigned char* m_pInDataB;
+		advancedfx::CImageFormat m_OutFormat;
+		unsigned char* m_pOutData;
+	};
+
+	class CTransformMatte
+		: public ITransform {
+	public:
+		CTransformMatte(class ICapture* captureEntBlack, class ICapture* captureEntWhite)
+			: m_CaptureEntBlack(captureEntBlack)
+			, m_CaptureEntWhite(captureEntWhite)
+		{
+		}
+
+		virtual CAfxImageBufferCapture* CreateOutput(void) {
+			if (nullptr != m_CaptureEntBlack && nullptr != m_CaptureEntWhite) {
+
+				if (const class advancedfx::IImageBuffer* pBufferEntBlack = m_CaptureEntBlack->GetBuffer()) {
+					if (const unsigned char* pDataEntBlack = static_cast<const unsigned char*>(pBufferEntBlack->GetImageBufferData())) {
+						m_pInDataEntBlack = pDataEntBlack;
+						if (const class advancedfx::CImageFormat* pFormatEntBlack = pBufferEntBlack->GetImageBufferFormat()) {
+							m_InFormatEntBlack = *pFormatEntBlack;
+							if (m_InFormatEntBlack.Format == advancedfx::ImageFormat::BGRA || m_InFormatEntBlack.Format == advancedfx::ImageFormat::BGR) {
+
+								if (const class advancedfx::IImageBuffer* pBufferEntWhite = m_CaptureEntWhite->GetBuffer()) {
+									if (const unsigned char* pDataEntWhite = static_cast<const unsigned char*>(pBufferEntWhite->GetImageBufferData())) {
+										m_pInDataEntWhite = pDataEntWhite;
+										if (const class advancedfx::CImageFormat* pFormatEntWhite = pBufferEntWhite->GetImageBufferFormat()) {
+											m_InFormatEntWhite = *pFormatEntWhite;
+											if (
+												(m_InFormatEntWhite.Format == advancedfx::ImageFormat::BGRA || m_InFormatEntWhite.Format == advancedfx::ImageFormat::BGR)
+												&& m_InFormatEntWhite.Width == m_InFormatEntBlack.Width
+												&& m_InFormatEntWhite.Height == m_InFormatEntBlack.Height
+												&& m_InFormatEntWhite.Origin == m_InFormatEntBlack.Origin)
+											{
+												m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::BGRA, m_InFormatEntBlack.Width, m_InFormatEntBlack.Height);
+												m_OutFormat.SetOrigin(m_InFormatEntBlack.Origin);
+												class CAfxImageBufferCapture* pOutCapture = CAfxImageBufferCapture::Create(m_OutFormat);
+												if (pOutCapture) {
+													m_pOutData = static_cast<unsigned char*>(pOutCapture->GetImageBufferDataRw());
+												}
+												return pOutCapture;
+											}
+										}
+									}
+								}
+
+							}
+						}
+					}
+				}
+			}
+
+			return nullptr;
+		}
+
+		virtual size_t GetTaskSize() {
+			return (size_t)std::abs(m_OutFormat.Height);
+		}
+
+		virtual CTranformTask* CreateTask(std::atomic_int& task_counter, int taskIndex, int taskSize) {
+			return new CMyTransformTask(task_counter,
+				m_pInDataEntBlack + taskIndex * m_InFormatEntBlack.Pitch, m_InFormatEntBlack.Pitch, m_InFormatEntBlack.GetPixelStride(),
+				m_pInDataEntWhite + taskIndex * m_InFormatEntWhite.Pitch, m_InFormatEntWhite.Pitch, m_InFormatEntWhite.GetPixelStride(),
+				m_pOutData + taskIndex * m_OutFormat.Pitch, m_OutFormat.Width, taskSize);
+		}
+
+	private:
+		class CMyTransformTask : public CTranformTask {
+		public:
+			CMyTransformTask(std::atomic_int& task_counter, const unsigned char* pDataEntBlack, size_t pitchEntBlack, size_t pixelPichtEntBlack, const unsigned char* pDataEntWhite, size_t pitchEntWhite, size_t pixelPichtEntWhite, unsigned char* pOutData, size_t width, size_t height)
+				: CTranformTask(task_counter)
+				, pDataEntBlack(pDataEntBlack)
+				, pitchEntBlack(pitchEntBlack)
+				, pixelPichtEntBlack(pixelPichtEntBlack)
+				, pDataEntWhite(pDataEntWhite)
+				, pitchEntWhite(pitchEntWhite)
+				, pixelPichtEntWhite(pixelPichtEntWhite)
+				, pOutData(pOutData)
+				, width(width)
+				, height(height)
+			{
+			}
+
+			virtual void Execute() {
+				size_t targetPitch = width * 4 * sizeof(unsigned char);
+				for (size_t y = 0; y < height; ++y)
+				{
+					for (size_t x = 0; x < width; ++x)
+					{
+						const unsigned char* pInEntBlack = (const unsigned char*)(pDataEntBlack + y * pitchEntBlack + x * pixelPichtEntBlack);
+						const unsigned char* pInEntWhite = (const unsigned char*)(pDataEntWhite + y * pitchEntWhite + x * pixelPichtEntWhite);
+						unsigned char* pOut = (unsigned char*)(pOutData + y * targetPitch + x * 4 * sizeof(unsigned char));
+
+						unsigned char entBlack_b = pInEntBlack[0];
+						unsigned char entBlack_g = pInEntBlack[1];
+						unsigned char entBlack_r = pInEntBlack[2];
+
+						unsigned char entWhite_b = pInEntWhite[0];
+						unsigned char entWhite_g = pInEntWhite[1];
+						unsigned char entWhite_r = pInEntWhite[2];
+
+						//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 0] = y < 1 * height / 3 ? entBlack_b : (y < 2 * height / 3 ? entWhite_b : (unsigned char)(((int)entBlack_b + (int)entWhite_b)/2));
+						//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 1] = y < 1 * height / 3 ? entBlack_g : (y < 2 * height / 3 ? entWhite_g : (unsigned char)(((int)entBlack_g + (int)entWhite_g)/2));
+						//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 2] = y < 1 * height / 3 ? entBlack_r : (y < 2 * height / 3 ? entWhite_r : (unsigned char)(((int)entBlack_r + (int)entWhite_r)/2));
+						//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 3] = y < 1 * height / 3 ? 255 : (y < 2 * height / 3 ? 255 : (unsigned char)min(max((255l - (int)entWhite_b + (int)entBlack_b + 255l - (int)entWhite_g + (int)entBlack_g + 255l - (int)entWhite_r + (int)entBlack_r) / 3l, 0), 255));
+						pOut[0] = (unsigned char)(((int)entBlack_b + (int)entWhite_b) / 2);
+						pOut[1] = (unsigned char)(((int)entBlack_g + (int)entWhite_g) / 2);
+						pOut[2] = (unsigned char)(((int)entBlack_r + (int)entWhite_r) / 2);
+						pOut[3] = (unsigned char)std::min(std::max((255l - (int)entWhite_b + (int)entBlack_b + 255l - (int)entWhite_g + (int)entBlack_g + 255l - (int)entWhite_r + (int)entBlack_r) / 3l, 0l), 255l);
+
+					}
+				}
+			}
+
+		private:
+			const unsigned char* pDataEntBlack;
+			size_t pitchEntBlack;
+			size_t pixelPichtEntBlack;
+			const unsigned char* pDataEntWhite;
+			size_t pitchEntWhite;
+			size_t pixelPichtEntWhite;
+			unsigned char* pOutData;
+			size_t width;
+			size_t height;
+		};
+
+		class ICapture* m_CaptureEntBlack;
+		class ICapture* m_CaptureEntWhite;
+		advancedfx::CImageFormat m_InFormatEntBlack;
+		advancedfx::CImageFormat m_InFormatEntWhite;
+		const unsigned char* m_pInDataEntBlack;
+		const unsigned char* m_pInDataEntWhite;
+		advancedfx::CImageFormat m_OutFormat;
+		unsigned char* m_pOutData;
+	};
+
+	class CTransformStripAlpha
+		: public ITransform {
+	public:
+		CTransformStripAlpha(class ICapture* capture)
+			: m_Capture(capture)
+		{
+		}
+
+		virtual CAfxImageBufferCapture* CreateOutput(void) {
+			if (nullptr != m_Capture) {
+				if (const class advancedfx::IImageBuffer* pBuffer = m_Capture->GetBuffer()) {
+					if (const unsigned char* pData = static_cast<const unsigned char*>(pBuffer->GetImageBufferData())) {
+						if (const class advancedfx::CImageFormat* pFormat = pBuffer->GetImageBufferFormat()) {
+							m_InFormat = *pFormat;
+							if (m_InFormat.Format == advancedfx::ImageFormat::BGRA) {
+								m_pInData = pData;
+								m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::BGR, m_InFormat.Width, m_InFormat.Height);
+								m_OutFormat.SetOrigin(m_InFormat.Origin);
+								class CAfxImageBufferCapture* pOutCapture = CAfxImageBufferCapture::Create(m_OutFormat);
+								if (pOutCapture) {
+									m_pOutData = static_cast<unsigned char*>(pOutCapture->GetImageBufferDataRw());
+								}
+								return pOutCapture;
+							}
+						}
+					}
+				}
+			}
+
+			return nullptr;
+		}
+
+		virtual size_t GetTaskSize() {
+			return (size_t)std::abs(m_InFormat.Height);
+		}
+
+		virtual CTranformTask* CreateTask(std::atomic_int& task_counter, int taskIndex, int taskSize) {
+			return new CMyTransformTask(task_counter, m_pInData + taskIndex * m_InFormat.Pitch, m_InFormat.Pitch, m_pOutData + taskIndex * m_OutFormat.Pitch, m_OutFormat.Width, taskSize);
+		}
+
+	private:
+		class CMyTransformTask : public CTranformTask {
+		public:
+			CMyTransformTask(std::atomic_int& task_counter, const unsigned char* pData, size_t pitch, unsigned char* pOutData, size_t width, size_t height)
+				: CTranformTask(task_counter)
+				, pData(pData)
+				, pitch(pitch)
+				, pOutData(pOutData)
+				, width(width)
+				, height(height)
+			{
+			}
+
+			virtual void Execute() {
+				size_t targetPitch = width * 3 * sizeof(unsigned char);
+				for (size_t y = 0; y < height; ++y)
+				{
+					for (size_t x = 0; x < width; ++x)
+					{
+						const unsigned char * pIn = (const unsigned char *)(pData + y * pitch + x * 4 * sizeof(unsigned char));
+						unsigned char * pOut = (unsigned char*)(pOutData + y * targetPitch + x * 3 * sizeof(unsigned char));
+	
+						pOut[0] = pIn[0];
+						pOut[1] = pIn[1];
+						pOut[2] = pIn[2];
+					}
+				}
+			}
+
+		private:
+			const unsigned char* pData;
+			size_t pitch;
+			unsigned char* pOutData;
+			size_t width;
+			size_t height;
+		};
+
+		class ICapture* m_Capture;
+		advancedfx::CImageFormat m_InFormat;
+		const unsigned char* m_pInData;
+		advancedfx::CImageFormat m_OutFormat;
+		unsigned char* m_pOutData;
+	};
+
+	class CTransformDepthF 
+		: public ITransform {
+	public:
+		CTransformDepthF(class ICapture* capture, float depthScale, float depthOfs)
+			: m_Capture(capture)
+			, m_DepthScale(depthScale)
+			, m_DepthOfs(depthOfs)
+		{
+		}
+
+		virtual CAfxImageBufferCapture* CreateOutput(void) {
+			if (nullptr != m_Capture) {
+				if (const class advancedfx::IImageBuffer* pBuffer = m_Capture->GetBuffer()) {
+					if (const unsigned char* pData = static_cast<const unsigned char*>(pBuffer->GetImageBufferData())) {
+						if (const class advancedfx::CImageFormat* pFormat = pBuffer->GetImageBufferFormat()) {
+							m_InFormat = *pFormat;
+							if (m_InFormat.Format == advancedfx::ImageFormat::ZFloat) {
+								m_pInData = pData;
+								m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::ZFloat, m_InFormat.Width, m_InFormat.Height);
+								m_OutFormat.SetOrigin(m_InFormat.Origin);
+								class CAfxImageBufferCapture* pOutCapture = CAfxImageBufferCapture::Create(m_OutFormat);
+								if (pOutCapture) {
+									m_pOutData = static_cast<unsigned char*>(pOutCapture->GetImageBufferDataRw());
+								}
+								return pOutCapture;
+							}
+						}
+					}
+				}
+			}
+
+			return nullptr;
+		}
+
+		virtual CAfxImageBufferCapture* CreateCapture(void) {
+			class CAfxImageBufferCapture* pOutCapture = CAfxImageBufferCapture::Create(m_OutFormat);
+			if(pOutCapture) {
+				m_pOutData = static_cast<unsigned char*>(pOutCapture->GetImageBufferDataRw());
+			}
+			return pOutCapture;							
+		}
+
+		virtual size_t GetTaskSize() {
+			return (size_t)std::abs(m_InFormat.Height);
+		}
+
+		virtual CTranformTask* CreateTask(std::atomic_int& task_counter, int taskIndex, int taskSize) {
+			return new CMyTransformTask(task_counter, m_pInData + taskIndex * m_InFormat.Pitch, m_InFormat.Pitch, m_pOutData + taskIndex * m_OutFormat.Pitch, m_OutFormat.Width, taskSize, m_DepthScale, m_DepthOfs);
+		}
+
+	private:
+		class CMyTransformTask : public CTranformTask {
+		public:
+			CMyTransformTask(std::atomic_int& task_counter, const unsigned char* pData, size_t pitch, unsigned char* pOutData, size_t width, size_t height, float depthScale, float depthOfs)
+				: CTranformTask(task_counter)
+				, pData(pData)
+				, pitch(pitch)
+				, pOutData(pOutData)
+				, width(width)
+				, height(height)
+				, depthScale(depthScale)
+				, depthOfs(depthOfs)
+			{
+			}
+
+			virtual void Execute() {
+				size_t targetPitch = width * sizeof(float);
+				for (size_t y = 0; y < height; ++y)
+				{
+					for (size_t x = 0; x < width; ++x)
+					{
+						float depth = *(const float*)(pData + y * pitch + x * sizeof(float));
 
 						depth *= depthScale;
 						depth += depthOfs;
 
-						*(float *)((unsigned char *)pBuffer +y*imagePitch +x*sizeof(float))
+						*(float*)(pOutData + y * targetPitch + x * sizeof(float))
 							= depth;
 					}
 				}
+			}
 
-				captureTarget->OnImageBufferCaptured(streamIndex, buffer);
-			}
-			else
-			{
-				g_AfxStreams.ImageBufferPool.ReleaseBuffer(buffer);
-				Tier0_Warning("CAfxRenderViewStream::Capture: Failed to reallocate buffer.\n");
-			}
-		}
-		else
+		private:
+			const unsigned char* pData;
+			size_t pitch;
+			unsigned char* pOutData;
+			size_t width;
+			size_t height;
+			float depthScale;
+			float depthOfs;
+		};
+
+		class ICapture* m_Capture;
+		advancedfx::CImageFormat m_InFormat;
+		const unsigned char* m_pInData;
+		advancedfx::CImageFormat m_OutFormat;
+		unsigned char* m_pOutData;
+		float m_DepthScale;
+		float m_DepthOfs;
+	};
+
+	class CTransformDepth24
+		: public ITransform {
+	public:
+		CTransformDepth24(class ICapture* capture, float depthScale, float depthOfs)
+			: m_Capture(capture)
+			, m_DepthScale(depthScale)
+			, m_DepthOfs(depthOfs)
 		{
-			// (back) transform to MDT native format:
+		}
 
-			int lastLine = height >> 1;
-			if (height & 0x1) ++lastLine;
-
-			for (int y = 0; y < lastLine; ++y)
-			{
-				int srcLine = y;
-				int dstLine = height - 1 - y;
-
-				for (int x = 0; x < width; ++x)
-				{
-					unsigned char r = ((unsigned char*)pBuffer)[dstLine * imagePitch + 3 * x + 0];
-					unsigned char g = ((unsigned char*)pBuffer)[dstLine * imagePitch + 3 * x + 1];
-					unsigned char b = ((unsigned char*)pBuffer)[dstLine * imagePitch + 3 * x + 2];
-
-					((unsigned char*)pBuffer)[dstLine * imagePitch + 3 * x + 0] = ((unsigned char*)pBuffer)[srcLine * imagePitch + 3 * x + 2];
-					((unsigned char*)pBuffer)[dstLine * imagePitch + 3 * x + 1] = ((unsigned char*)pBuffer)[srcLine * imagePitch + 3 * x + 1];
-					((unsigned char*)pBuffer)[dstLine * imagePitch + 3 * x + 2] = ((unsigned char*)pBuffer)[srcLine * imagePitch + 3 * x + 0];
-
-					((unsigned char*)pBuffer)[srcLine * imagePitch + 3 * x + 0] = b;
-					((unsigned char*)pBuffer)[srcLine * imagePitch + 3 * x + 1] = g;
-					((unsigned char*)pBuffer)[srcLine * imagePitch + 3 * x + 2] = r;
+		virtual CAfxImageBufferCapture* CreateOutput(void) {
+			if (nullptr != m_Capture) {
+				if (const class advancedfx::IImageBuffer* pBuffer = m_Capture->GetBuffer()) {
+					if (const unsigned char* pData = static_cast<const unsigned char*>(pBuffer->GetImageBufferData())) {
+						if (const class advancedfx::CImageFormat* pFormat = pBuffer->GetImageBufferFormat()) {
+							m_InFormat = *pFormat;
+							if (m_InFormat.Format == advancedfx::ImageFormat::BGR || m_InFormat.Format == advancedfx::ImageFormat::BGRA) {
+								m_pInData = pData;
+								m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::ZFloat, m_InFormat.Width, m_InFormat.Height);
+								m_OutFormat.SetOrigin(m_InFormat.Origin);
+								class CAfxImageBufferCapture* pOutCapture = CAfxImageBufferCapture::Create(m_OutFormat);
+								if (pOutCapture) {
+									m_pOutData = static_cast<unsigned char*>(pOutCapture->GetImageBufferDataRw());
+								}
+								return pOutCapture;
+							}
+						}
+					}
 				}
 			}
 
-			captureTarget->OnImageBufferCaptured(streamIndex, buffer);
+			return nullptr;
 		}
-	}
-	else
-	{
-		g_AfxStreams.ImageBufferPool.ReleaseBuffer(buffer);
-		Tier0_Warning("CAfxRenderViewStream::Capture: Failed to reallocate buffer.\n");
-	}
-}
 
+		virtual size_t GetTaskSize() {
+			return (size_t)std::abs(m_InFormat.Height);
+		}
+
+		virtual CTranformTask* CreateTask(std::atomic_int& task_counter, int taskIndex, int taskSize) {
+			return new CMyTransformTask(task_counter, m_pInData + taskIndex * m_InFormat.Pitch, m_InFormat.Pitch, m_InFormat.GetPixelStride(), m_pOutData + taskIndex * m_OutFormat.Pitch, m_OutFormat.Width, taskSize, m_DepthScale, m_DepthOfs);
+		}
+
+	private:
+		class CMyTransformTask : public CTranformTask {
+		public:
+			CMyTransformTask(std::atomic_int& task_counter, const unsigned char* pData, size_t pitch, size_t pixelPitch, unsigned char* pOutData, size_t width, size_t height, float depthScale, float depthOfs)
+				: CTranformTask(task_counter)
+				, pData(pData)
+				, pitch(pitch)
+				, pixelPitch(pixelPitch)
+				, pOutData(pOutData)
+				, width(width)
+				, height(height)
+				, depthScale(depthScale)
+				, depthOfs(depthOfs)
+			{
+			}
+
+			virtual void Execute() {
+				size_t targetPitch = width * sizeof(float);
+				for (size_t y = 0; y < height; ++y)
+				{
+					for (size_t x = 0; x < width; ++x)
+					{
+						const unsigned char b = pData[y * pitch + x * pixelPitch + 0];
+						const unsigned char g = pData[y * pitch + x * pixelPitch + 1];
+						const unsigned char r = pData[y * pitch + x * pixelPitch + 2];
+
+						float depth;
+
+						depth = (1.0f / 16777215.0f) * r + (256.0f / 16777215.0f) * g + (65536.0f / 16777215.0f) * b;
+
+						depth *= depthScale;
+						depth += depthOfs;
+
+						*(float*)(pOutData + y * targetPitch + x * sizeof(float)) = depth;
+					}
+				}
+			}
+
+		private:
+			const unsigned char* pData;
+			size_t pitch;
+			size_t pixelPitch;
+			unsigned char* pOutData;
+			size_t width;
+			size_t height;
+			float depthScale;
+			float depthOfs;
+		};
+
+		class ICapture* m_Capture;
+		advancedfx::CImageFormat m_InFormat;
+		const unsigned char* m_pInData;
+		advancedfx::CImageFormat m_OutFormat;
+		unsigned char* m_pOutData;
+		float m_DepthScale;
+		float m_DepthOfs;
+	};
+
+	static class ICapture* Transform(class ITransform* transform) {
+		if (class CAfxImageBufferCapture* pOutCapture = transform->CreateOutput()) {
+			size_t outTaskSize = transform->GetTaskSize();
+			size_t thread_count = std::min(g_pThreadPool->GetThreadCount() + 1, outTaskSize);
+			size_t lines_per_task = outTaskSize / thread_count;
+			size_t lines_per_task_remainder = outTaskSize % thread_count;
+			std::atomic_int task_counter(0);
+			size_t line = 0;
+			if (1 < thread_count) {
+				std::vector<advancedfx::CThreadPool::CTask*> tasks(thread_count - 1);
+				for (size_t i = 0; i < tasks.size(); i++) {
+					size_t cur_task_lines = lines_per_task;
+					if (0 < lines_per_task_remainder) {
+						cur_task_lines += 1;
+						lines_per_task_remainder--;
+					}
+					tasks[i] = transform->CreateTask(task_counter, line, cur_task_lines);
+					line += cur_task_lines;
+				}
+				g_pThreadPool->QueueTasks(tasks);
+			}
+			{
+				advancedfx::CThreadPool::CTask* lastTask = transform->CreateTask(task_counter, line, lines_per_task);
+				lastTask->Execute();
+				delete lastTask;
+			}
+			while (0 < task_counter) {}
+
+			return pOutCapture;
+		}
+
+		return nullptr;
+	}
+};
 
 /*
 void CAfxRenderViewStream::Console_DisableFastPathRequired()
@@ -880,24 +1428,28 @@ void CAfxRenderViewStream::Console_DisableFastPathRequired()
 }
 */
 
-// CAfxRenderViewStream::CCaptureFunctor ///////////////////////////////////////
+// CAfxRecordStream::CCaptureFunctor ///////////////////////////////////////////
 
-CAfxRenderViewStream::CCaptureFunctor::CCaptureFunctor(CAfxRenderViewStream & stream, CAfxRecordStream * captureTarget, size_t streamIndex, int x, int y, int width, int height)
+CAfxRecordStream::CCaptureFunctor::CCaptureFunctor(CAfxRecordStream& stream, size_t index)
 	: m_Stream(stream)
-	, m_CaptureTarget(captureTarget)
-	, m_StreamIndex(streamIndex)
-	, m_X(x), m_Y(y), m_Width(width), m_Height(height)
+	, m_Index(index)
 {
 	m_Stream.AddRef();
-
-	m_CaptureTarget->AddRef();
 }
 
-void CAfxRenderViewStream::CCaptureFunctor::operator()()
+void CAfxRecordStream::CCaptureFunctor::operator()()
 {
-	m_Stream.Capture(m_CaptureTarget, m_StreamIndex, m_X, m_Y, m_Width, m_Height);
-
-	m_CaptureTarget->Release();
+	bool bDepthF = false;
+	switch (m_Stream.m_Streams[m_Index]->StreamCaptureType_get()) {
+	case CAfxRenderViewStream::SCT_DepthF:
+	case CAfxRenderViewStream::SCT_DepthFZIP:
+		bDepthF = true;
+		break;
+	}
+	IDirect3DSurface9* oldRenderTarget = nullptr;
+	if (bDepthF) oldRenderTarget = AfxSetRenderTargetR32FDepthTexture();
+	m_Stream.Capture(m_Index);
+	if (bDepthF) AfxSetRenderTargetR32FDepthTexture_Restore(oldRenderTarget);
 
 	m_Stream.Release();
 }
@@ -915,7 +1467,7 @@ CAfxRecordStream::CAfxRecordStream(char const * streamName, std::vector<CAfxRend
 	{
 		m_Streams[i]->AddRef();
 	}
-
+	m_CaptureNodes.resize(m_Streams.size());
 	m_Buffers.resize(m_Streams.size());
 }
 
@@ -923,9 +1475,10 @@ CAfxRecordStream::~CAfxRecordStream()
 {
 	for (size_t i = 0; i < m_Streams.size(); ++i)
 	{
-		if (advancedfx::CImageBuffer* buffer = m_Buffers[i])
+		if (ICapture * capture = m_Buffers[i])
 		{
-			g_AfxStreams.ImageBufferPool.ReleaseBuffer(buffer);
+			// TODO: This is probably too late.
+			capture->Release();
 		}
 	}
 
@@ -941,10 +1494,10 @@ void CAfxRecordStream::CaptureEnd()
 {
 	for (size_t i = 0; i < m_Buffers.size(); ++i)
 	{
-		if (advancedfx::CImageBuffer*& buffer = m_Buffers[i])
+		if (ICapture*& captureRef = m_Buffers[i])
 		{
-			g_AfxStreams.ImageBufferPool.ReleaseBuffer(buffer);
-			buffer = nullptr;
+			captureRef->Release();
+			captureRef = nullptr;
 		}
 	}
 
@@ -965,17 +1518,35 @@ void CAfxRecordStream::RecordStart()
 {
 	if (m_Record)
 	{
+		m_Recording = true;
+		m_FirstCapture = true;
+		m_ProcessingThread = std::thread(&CAfxRecordStream::ProcessingThreadFunc, this);
 	}
 }
 
 void CAfxRecordStream::RecordEnd()
 {
-	while(m_CapturesLeft); // busy wait for capturing to finish, because g_AfxStreams and m_OutVideoStream are accessed in CaptureEnd on the drawing thread and must remain consistent.
+	if (m_Recording) {
+		{
+			std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
+			m_Recording = false;
+			m_ProcessingThreadCv.notify_one();
+		}
+		m_ProcessingThread.join();
 
-	if (m_OutVideoStream)
-	{
-		m_OutVideoStream->Release();
-		m_OutVideoStream = nullptr;
+		for (size_t i = 0; i < m_CaptureNodes.size(); ++i) {
+			if (class CCaptureNode*& nodeRef = m_CaptureNodes[i]) {
+				nodeRef->CpuQueueGpuRelease();
+				nodeRef->Release();
+				nodeRef = nullptr;
+			}
+		}
+
+		if (m_OutVideoStream)
+		{
+			m_OutVideoStream->Release();
+			m_OutVideoStream = nullptr;
+		}
 	}
 }
 
@@ -984,20 +1555,22 @@ char const * CAfxRecordStream::StreamName_get(void) const
 	return m_StreamName.c_str();
 }
 
-void CAfxRecordStream::QueueCaptureStart(IAfxMatRenderContextOrg * ctx)
+void CAfxRecordStream::DoCaptureStart(IAfxMatRenderContextOrg * ctx, const AfxViewportData_t& viewport)
 {
 	m_CapturesLeft++;
-	QueueOrExecute(ctx, new CAfxLeafExecute_Functor(new CCaptureStartFunctor(*this)));
+	CaptureStart(m_FirstCapture, viewport);
+	m_FirstCapture = false;
 }
 
-void CAfxRecordStream::QueueCaptureEnd(IAfxMatRenderContextOrg * ctx)
+void CAfxRecordStream::OnImageBufferCaptured(size_t index, class ICapture* buffer)
 {
-	QueueOrExecute(ctx, new CAfxLeafExecute_Functor(new CCaptureEndFunctor(*this)));
-}
-
-void CAfxRecordStream::OnImageBufferCaptured(size_t index, advancedfx::CImageBuffer * buffer)
-{
+	std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
+	if (buffer) buffer->AddRef();
 	m_Buffers[index] = buffer;
+	m_CapturesReady++;
+	if (m_CapturesReady == m_Streams.size()) {
+		m_ProcessingThreadCv.notify_one();
+	}
 }
 
 bool CAfxRecordStream::Console_Edit_Head(IWrpCommandArgs * args)
@@ -1069,6 +1642,12 @@ void CAfxRecordStream::Console_Edit_Tail(IWrpCommandArgs * args)
 	Tier0_Msg("%s settings [...] - Recording settings to use.\n", arg0);
 }
 
+
+void CAfxRecordStream::QueueCapture(IAfxMatRenderContextOrg* ctx, size_t index)
+{
+	QueueOrExecute(ctx, new CAfxLeafExecute_Functor(new CCaptureFunctor(*this, index)));
+}
+
 // CAfxSingleStream ////////////////////////////////////////////////////////////
 
 CAfxSingleStream::CAfxSingleStream(char const * streamName, CAfxRenderViewStream * stream)
@@ -1078,26 +1657,91 @@ CAfxSingleStream::CAfxSingleStream(char const * streamName, CAfxRenderViewStream
 	m_Settings->AddRef();
 }
 
+
+void CAfxSingleStream::CaptureStart(bool bFirstCapture, const AfxViewportData_t& viewport) {
+	CAfxRecordStream::CaptureStart(bFirstCapture, viewport);
+
+	if (bFirstCapture) {
+		/*bool isDepthCapture = false;
+		switch (m_Streams[0]->StreamCaptureType_get()) {
+		case CAfxRenderViewStream::SCT_DepthF:
+		case CAfxRenderViewStream::SCT_DepthFZIP:
+			isDepthCapture = true;
+			break;
+		}*/
+		class CCaptureNode* node0 = new CCaptureNode(
+			new CCaptureInputRenderTarget(),
+			new CAfxStreamsCaptureOutput(this, 0));
+		node0->AddRef();
+		m_CaptureNodes[0] = node0;
+	}
+}
+
 void CAfxSingleStream::CaptureEnd()
 {
-	if (advancedfx::CImageBuffer *& buffer = m_Buffers[0])
+	if (ICapture *& capture = m_Buffers[0])
 	{
-		if (nullptr == m_OutVideoStream)
-		{
-			m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, buffer->Format, g_AfxStreams.GetStartHostFrameRate(), "");
-			if (nullptr == m_OutVideoStream)
+		CAfxRenderViewStream::StreamCaptureType streamCaptureType = m_Streams[0]->StreamCaptureType_get();
+
+		if (streamCaptureType == CAfxRenderViewStream::SCT_DepthF || streamCaptureType == CAfxRenderViewStream::SCT_DepthFZIP) {
+			float depthScale = 1.0f;
+			float depthOfs = 0.0f;
+			if (CAfxBaseFxStream* baseFx = m_Streams[0]->AsAfxBaseFxStream())
 			{
-				Tier0_Warning("AFXERROR: Failed to create image stream for %s.\n", this->StreamName_get());
+				depthScale = baseFx->DepthValMax_get() - baseFx->DepthVal_get();
+				depthOfs = baseFx->DepthVal_get();
 			}
-			else
+
+			ICapture* outCapture = CAfxTransformer::TransformDepthF(capture, depthScale, depthOfs);
+			if (capture) capture->Release();
+			capture = outCapture;
+		}
+		else if (CAfxRenderViewStream::SCT_Depth24 == streamCaptureType || CAfxRenderViewStream::SCT_Depth24ZIP == streamCaptureType) {
+			float depthScale = 1.0f;
+			float depthOfs = 0.0f;
+			if (CAfxBaseFxStream* baseFx = m_Streams[0]->AsAfxBaseFxStream())
 			{
-				m_OutVideoStream->AddRef();
+				depthScale = baseFx->DepthValMax_get() - baseFx->DepthVal_get();
+				depthOfs = baseFx->DepthVal_get();
 			}
+
+			ICapture* outCapture = CAfxTransformer::TransformDepth24(capture, depthScale, depthOfs);
+			if (capture) capture->Release();
+			capture = outCapture;
+		}
+		else {
+			ICapture* outCapture = CAfxTransformer::TransformStripAlpha(capture);
+			if (capture) capture->Release();
+			capture = outCapture;
 		}
 
-		if (nullptr != m_OutVideoStream && !m_OutVideoStream->SupplyVideoData(*buffer))
-		{
-			Tier0_Warning("AFXERROR: Failed writing image for stream %s.\n", this->StreamName_get());
+		if (capture) {
+			if (const advancedfx::IImageBuffer* buffer = capture->GetBuffer()) {
+
+				if (nullptr == m_OutVideoStream)
+				{
+					m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, *buffer->GetImageBufferFormat(), g_AfxStreams.GetStartHostFrameRate(), "");
+					if (nullptr == m_OutVideoStream)
+					{
+						Tier0_Warning("AFXERROR: Failed to create image stream for %s.\n", this->StreamName_get());
+					}
+					else
+					{
+						m_OutVideoStream->AddRef();
+					}
+				}
+
+				if (nullptr != m_OutVideoStream && !m_OutVideoStream->SupplyImageBuffer(buffer))
+				{
+					Tier0_Warning("AFXERROR: Failed writing image for stream %s.\n", this->StreamName_get());
+				}
+			}
+			else {
+				Tier0_Warning("AFXERROR: Could not get capture buffer for stream %s.\n", this->StreamName_get());
+			}
+		}
+		else {
+			Tier0_Warning("AFXERROR: Captured image transform failed for stream %s.\n", this->StreamName_get());
 		}
 	}
 
@@ -1159,217 +1803,73 @@ CAfxRenderViewStream::StreamCaptureType CAfxTwinStream::GetCaptureType() const
 	{
 		return m_Streams[0]->StreamCaptureType_get();
 	}
-	else if (CAfxTwinStream::SCT_AHudWhiteBHudBlack == m_StreamCombineType)
-	{
-		return m_Streams[1]->StreamCaptureType_get();
-	}
 
 	return CAfxRenderViewStream::SCT_Invalid;
 }
 
+void CAfxTwinStream::CaptureStart(bool bFirstCapture, const AfxViewportData_t& viewport) {
+	CAfxRecordStream::CaptureStart(bFirstCapture, viewport);
+
+	if (bFirstCapture) {
+		class CCaptureNode* node0 = new CCaptureNode(static_cast<class ICaptureInput*>(new CCaptureInputRenderTarget()), new CAfxStreamsCaptureOutput(this, 0));
+		node0->AddRef();
+		m_CaptureNodes[0] = node0;
+		class CCaptureNode* node1 = new CCaptureNode(static_cast<class ICaptureInput*>(new CCaptureInputRenderTarget()), new CAfxStreamsCaptureOutput(this, 1));
+		node1->AddRef();
+		m_CaptureNodes[1] = node1;
+	}
+}
+
 void CAfxTwinStream::CaptureEnd()
 {
-	advancedfx::CImageBuffer * bufferA = m_Buffers[0];
-	advancedfx::CImageBuffer * bufferB = m_Buffers[1];
-	//CAfxRenderViewStream::StreamCaptureType captureType;
-
-	enum ECombineOp {
-		ECombineOp_None,
-		ECombineOp_AColorBRedAsAlpha,
-		ECombineOp_AHudWhiteBHudBlack
-	} combineOp = ECombineOp_None;
+	class ICapture*& captureA = m_Buffers[0];
+	class ICapture*& captureB = m_Buffers[1];
+	ICapture* outCapture = nullptr;
 
 	if (CAfxTwinStream::SCT_ARedAsAlphaBColor == m_StreamCombineType)
 	{
-		bufferA = m_Buffers[1];
-		//captureType = m_StreamB->StreamCaptureType_get();
-		bufferB = m_Buffers[0];
-		combineOp = ECombineOp_AColorBRedAsAlpha;
+		outCapture = CAfxTransformer::TransformAColorBRedAsAlpha(captureB, captureA);
 	}
 	else if (CAfxTwinStream::SCT_AColorBRedAsAlpha == m_StreamCombineType)
 	{
-		bufferA = m_Buffers[0];
-		//captureType = m_StreamA->StreamCaptureType_get();
-		bufferB = m_Buffers[1];
-		combineOp = ECombineOp_AColorBRedAsAlpha;
-	}
-	else if (CAfxTwinStream::SCT_AHudWhiteBHudBlack == m_StreamCombineType)
-	{
-		bufferA = m_Buffers[0];
-		//captureType = m_StreamA->StreamCaptureType_get();
-		bufferB = m_Buffers[1];
-		combineOp = ECombineOp_AHudWhiteBHudBlack;
+		outCapture = CAfxTransformer::TransformAColorBRedAsAlpha(captureA, captureB);
 	}
 
-	bool canCombine = bufferA && bufferB;
+	if (outCapture) {
 
-	if (canCombine)
-	{
-		switch(combineOp)
-		{
-		case ECombineOp_AColorBRedAsAlpha:
+		if (captureA) captureA->Release();
+		captureA = nullptr;
+		if (captureB) captureB->Release();
+		captureB = nullptr;
+
+		if (const advancedfx::IImageBuffer* buffer = outCapture->GetBuffer()) {
+
+			if (nullptr == m_OutVideoStream)
 			{
-				int orgImagePitch;
-
-				canCombine =
-					bufferA->Format.Width == bufferB->Format.Width
-					&& bufferA->Format.Height == bufferB->Format.Height
-					&& bufferA->Format.Format == advancedfx::ImageFormat::BGR
-					&& bufferA->Format.Format == bufferB->Format.Format
-					&& (orgImagePitch = bufferA->Format.Pitch) == bufferB->Format.Pitch
-					&& bufferA->AutoRealloc(advancedfx::CImageFormat(advancedfx::ImageFormat::BGRA, bufferA->Format.Width, bufferA->Format.Height))
-					;
-
-				if (canCombine)
+				m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, *buffer->GetImageBufferFormat(), g_AfxStreams.GetStartHostFrameRate(), "");
+				if (nullptr == m_OutVideoStream)
 				{
-					// interleave B as alpha into A:
-
-					int height = bufferA->Format.Height;
-					int width = bufferA->Format.Width;
-					int newImagePitchA = bufferA->Format.Pitch;
-
-					unsigned char * pBufferA = (unsigned char *)(bufferA->Buffer);
-					unsigned char * pBufferB = (unsigned char *)(bufferB->Buffer);
-
-					for (int y = height - 1; y >= 0; --y)
-					{
-						for (int x = width - 1; x >= 0; --x)
-						{
-							unsigned char b = ((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 0];
-							unsigned char g = ((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 1];
-							unsigned char r = ((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 2];
-							unsigned char a = ((unsigned char *)pBufferB)[y*orgImagePitch + x * 3 + 0];
-
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 0] = b;
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 1] = g;
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 2] = r;
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 3] = a;
-						}
-					}
-
-					if (nullptr == m_OutVideoStream)
-					{
-						m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, bufferA->Format, g_AfxStreams.GetStartHostFrameRate(), "");
-						if (nullptr == m_OutVideoStream)
-						{
-							Tier0_Warning("AFXERROR: Failed to create image stream for %s.\n", this->StreamName_get());
-						}
-						else
-						{
-							m_OutVideoStream->AddRef();
-						}
-					}
-
-					if(nullptr != m_OutVideoStream && !m_OutVideoStream->SupplyVideoData(*bufferA))
-					{
-						Tier0_Warning("AFXERROR: Failed writing image for stream %s\n.", this->StreamName_get());
-					}
+					Tier0_Warning("AFXERROR: Failed to create image stream for %s.\n", this->StreamName_get());
+				}
+				else
+				{
+					m_OutVideoStream->AddRef();
 				}
 			}
-			break;
-		case ECombineOp_AHudWhiteBHudBlack:
+
+			if (nullptr != m_OutVideoStream && !m_OutVideoStream->SupplyImageBuffer(buffer))
 			{
-				int orgImagePitch;
-
-				canCombine =
-					bufferA->Format.Width == bufferB->Format.Width
-					&& bufferA->Format.Height == bufferB->Format.Height
-					&& bufferA->Format.Format == advancedfx::ImageFormat::BGR
-					&& bufferA->Format.Format == bufferB->Format.Format
-					&& (orgImagePitch = bufferA->Format.Pitch) == bufferB->Format.Pitch
-					&& bufferA->AutoRealloc(advancedfx::CImageFormat(advancedfx::ImageFormat::BGRA, bufferA->Format.Width, bufferA->Format.Height))
-					;
-
-				if (canCombine)
-				{
-					int height = bufferA->Format.Height;
-					int width = bufferA->Format.Width;
-					int newImagePitchA = bufferA->Format.Pitch;
-
-					unsigned char * pBufferA = (unsigned char *)(bufferA->Buffer);
-					unsigned char * pBufferB = (unsigned char *)(bufferB->Buffer);
-
-					for (int y = height - 1; y >= 0; --y)
-					{
-						for (int x = width - 1; x >= 0; --x)
-						{
-							// game = (1 - a/255) * gameBg + a/255 * hud
-							// hudBlack = a/255 * hud
-							// hudWhite = min(255, 255 - a + a/255 * hud)
-							//
-							// hudWhite - hudBlack 
-							// = min(255, 255 - a + a/255 * hud) - a/255 * hud
-							// = min(255 - a/255 * hud, 255 -a)
-							// = min(255 - hudBlack, 255 -a)
-							// 
-							// hudBlack - hudWhite
-							// = max(hudBlack -255, a -255)
-							//
-							// 255 + hudBlack - hudWhite
-							// = max(hudBlack, a)
-							// = max(a/255 * hud, a)
-							// 
-							// a/255 * hud >= a
-							// hud >= 255
-
-							unsigned char white[3] = {
-								((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 0],
-								((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 1],
-								((unsigned char *)pBufferA)[y*orgImagePitch + x * 3 + 2]
-							};
-							unsigned char black[3] = {
-								((unsigned char *)pBufferB)[y*orgImagePitch + x * 3 + 0],
-								((unsigned char *)pBufferB)[y*orgImagePitch + x * 3 + 1],
-								((unsigned char *)pBufferB)[y*orgImagePitch + x * 3 + 2]
-							};
-
-							signed short whiteMinusBlack[3] = {
-								white[2] - black[2],
-								white[1] - black[1],
-								white[0] - black[0]
-							};
-
-							float hudB =  0.0f;
-							float hudG =  0.0f;
-							float hudR =  0.0f;
-
-							float alpha  = 0.5;
-
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 0] = (unsigned char)hudB;
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 1] = (unsigned char)hudG;
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 2] = (unsigned char)hudR;
-							((unsigned char *)pBufferA)[y*newImagePitchA + x * 4 + 3] = (unsigned char)alpha;
-						}
-					}
-
-					if (nullptr == m_OutVideoStream)
-					{
-						m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, bufferA->Format, g_AfxStreams.GetStartHostFrameRate(), "");
-						if (nullptr == m_OutVideoStream)
-						{
-							Tier0_Warning("AFXERROR: Failed to create image stream for %s.\n", this->StreamName_get());
-						}
-						else
-						{
-							m_OutVideoStream->AddRef();
-						}
-					}
-
-					if (nullptr != m_OutVideoStream && !m_OutVideoStream->SupplyVideoData(*bufferA))
-					{
-						Tier0_Warning("AFXERROR: Failed writing image for stream %s\n.", this->StreamName_get());
-					}
-				}
+				Tier0_Warning("AFXERROR: Failed writing image for stream %s.\n", this->StreamName_get());
 			}
-			break;
-		default:
-			canCombine = false;
-			break;
 		}
-	}
+		else {
+			Tier0_Warning("AFXERROR: Could not get capture buffer for stream %s.\n", this->StreamName_get());
+		}
 
-	if (!canCombine)
-	{
+		outCapture->Release();
+
+	}
+	else {
 		Tier0_Warning("CAfxTwinStream::CaptureEnd: Combining sub-streams for stream %s, failed.\n", this->StreamName_get());
 	}
 
@@ -1601,71 +2101,59 @@ void CAfxMatteStream::Console_Edit_Tail(IWrpCommandArgs * args)
 	CAfxRecordStream::Console_Edit_Tail(args);
 }
 
+void CAfxMatteStream::CaptureStart(bool bFirstCapture, const AfxViewportData_t& viewport) {
+	CAfxRecordStream::CaptureStart(bFirstCapture, viewport);
+
+	if (bFirstCapture) {
+		class CCaptureNode* node0 = new CCaptureNode(static_cast<class ICaptureInput*>(new CCaptureInputRenderTarget()), new CAfxStreamsCaptureOutput(this, 0));
+		node0->AddRef();
+		m_CaptureNodes[0] = node0;
+		class CCaptureNode* node1 = new CCaptureNode(static_cast<class ICaptureInput*>(new CCaptureInputRenderTarget()), new CAfxStreamsCaptureOutput(this, 1));
+		node1->AddRef();
+		m_CaptureNodes[1] = node1;
+	}
+}
+
+
 void CAfxMatteStream::CaptureEnd()
 {
-	advancedfx::CImageBuffer * bufferEntBlack = m_Buffers[0];
-	advancedfx::CImageBuffer * bufferEntWhite = m_Buffers[1];
+	class ICapture*& captureA = m_Buffers[0];
+	class ICapture*& captureB = m_Buffers[1];
 
-	int orgImagePitch;
+	if(ICapture* outCapture = CAfxTransformer::TransformMatte(captureA, captureB)) {
 
-	bool canCombine =
-		bufferEntBlack && bufferEntWhite
-		&& bufferEntBlack->Format == bufferEntWhite->Format
-		&& bufferEntBlack->Format.Format == advancedfx::ImageFormat::BGR
-		&& (orgImagePitch = bufferEntBlack->Format.Pitch, bufferEntBlack->AutoRealloc(advancedfx::CImageFormat(advancedfx::ImageFormat::BGRA, bufferEntBlack->Format.Width, bufferEntBlack->Format.Height)));
+		if (captureA) captureA->Release();
+		captureA = nullptr;
+		if (captureB) captureB->Release();
+		captureB = nullptr;
 
-	if (canCombine)
-	{
-		int height = bufferEntBlack->Format.Height;
-		int width = bufferEntBlack->Format.Width;
-		int newImagePitchA = bufferEntBlack->Format.Pitch;
+		if (const advancedfx::IImageBuffer* buffer = outCapture->GetBuffer()) {
 
-		unsigned char * pBufferEntBlack = (unsigned char *)(bufferEntBlack->Buffer);
-		unsigned char * pBufferEntWhite = (unsigned char *)(bufferEntWhite->Buffer);
-
-		for (int y = height - 1; y >= 0; --y)
-		{
-			for (int x = width - 1; x >= 0; --x)
-			{
-				unsigned char entBlack_b = ((unsigned char *)pBufferEntBlack)[y*orgImagePitch + x * 3 + 0];
-				unsigned char entBlack_g = ((unsigned char *)pBufferEntBlack)[y*orgImagePitch + x * 3 + 1];
-				unsigned char entBlack_r = ((unsigned char *)pBufferEntBlack)[y*orgImagePitch + x * 3 + 2];
-
-				unsigned char entWhite_b = ((unsigned char *)pBufferEntWhite)[y*orgImagePitch + x * 3 + 0];
-				unsigned char entWhite_g = ((unsigned char *)pBufferEntWhite)[y*orgImagePitch + x * 3 + 1];
-				unsigned char entWhite_r = ((unsigned char *)pBufferEntWhite)[y*orgImagePitch + x * 3 + 2];
-
-				//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 0] = y < 1 * height / 3 ? entBlack_b : (y < 2 * height / 3 ? entWhite_b : (unsigned char)(((int)entBlack_b + (int)entWhite_b)/2));
-				//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 1] = y < 1 * height / 3 ? entBlack_g : (y < 2 * height / 3 ? entWhite_g : (unsigned char)(((int)entBlack_g + (int)entWhite_g)/2));
-				//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 2] = y < 1 * height / 3 ? entBlack_r : (y < 2 * height / 3 ? entWhite_r : (unsigned char)(((int)entBlack_r + (int)entWhite_r)/2));
-				//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 3] = y < 1 * height / 3 ? 255 : (y < 2 * height / 3 ? 255 : (unsigned char)min(max((255l - (int)entWhite_b + (int)entBlack_b + 255l - (int)entWhite_g + (int)entBlack_g + 255l - (int)entWhite_r + (int)entBlack_r) / 3l, 0), 255));
-				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 0] = (unsigned char)(((int)entBlack_b + (int)entWhite_b)/2);
-				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 1] = (unsigned char)(((int)entBlack_g + (int)entWhite_g)/2);
-				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 2] = (unsigned char)(((int)entBlack_r + (int)entWhite_r)/2);
-				((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 3] = (unsigned char)min(max((255l - (int)entWhite_b + (int)entBlack_b + 255l - (int)entWhite_g + (int)entBlack_g + 255l - (int)entWhite_r + (int)entBlack_r) / 3l, 0), 255);
-			}
-		}
-
-		if (nullptr == m_OutVideoStream)
-		{
-			m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, bufferEntBlack->Format, g_AfxStreams.GetStartHostFrameRate(), "");
 			if (nullptr == m_OutVideoStream)
 			{
-				Tier0_Warning("AFXERROR: Failed to create image stream for %s.\n", this->StreamName_get());
+				m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, *buffer->GetImageBufferFormat(), g_AfxStreams.GetStartHostFrameRate(), "");
+				if (nullptr == m_OutVideoStream)
+				{
+					Tier0_Warning("AFXERROR: Failed to create image stream for %s.\n", this->StreamName_get());
+				}
+				else
+				{
+					m_OutVideoStream->AddRef();
+				}
 			}
-			else
+
+			if (nullptr != m_OutVideoStream && !m_OutVideoStream->SupplyImageBuffer(buffer))
 			{
-				m_OutVideoStream->AddRef();
+				Tier0_Warning("AFXERROR: Failed writing image for stream %s.\n", this->StreamName_get());
 			}
+		}
+		else {
+			Tier0_Warning("AFXERROR: Could not get capture buffer for stream %s.\n", this->StreamName_get());
 		}
 
-		if (nullptr != m_OutVideoStream && !m_OutVideoStream->SupplyVideoData(*bufferEntBlack))
-		{
-			Tier0_Warning("AFXERROR: Failed writing image for stream %s\n.", this->StreamName_get());
-		}
-	}
-	else
-	{
+		outCapture->Release();
+
+	} else {
 		Tier0_Warning("CAfxMatteStream::CaptureEnd: Combining sub-streams for stream %s, failed.\n", this->StreamName_get());
 	}
 
@@ -2975,18 +3463,25 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 
 		BindAction(0);
 
+		bool bDepthF = false;
+		switch (m_Stream->StreamCaptureType_get()) {
+		case CAfxRenderViewStream::SCT_DepthF:
+		case CAfxRenderViewStream::SCT_DepthFZIP:
+			bDepthF = true;
+			break;
+		}
 		bool bDrawDepth = EDrawDepth_None != m_Stream->m_DrawDepth;
 		bool bReShade = m_Stream->ReShadeEnabled_get();
 
-		if (bDrawDepth || bReShade)
+		if (bDrawDepth || bDepthF || bReShade)
 		{
-			float flDepthFactor = bDrawDepth ? m_Stream->m_DepthVal : m_Data.Viewport.zNear;
-			float flDepthFactorMax = bDrawDepth ? m_Stream->m_DepthValMax : m_Data.Viewport.zFar;
-			AfxDrawDepthEncode drawDepthEncode = bDrawDepth ? AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthEncode(m_Stream->DrawDepth_get()) : AfxDrawDepthEncode_Gray;
-			AfxDrawDepthMode drawDepthMode = bDrawDepth ? AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()) : AfxDrawDepthMode_Inverse;
+			float flDepthFactor = (bDrawDepth || bDepthF) ? m_Stream->m_DepthVal : m_Data.Viewport.zNear;
+			float flDepthFactorMax = (bDrawDepth || bDepthF) ? m_Stream->m_DepthValMax : m_Data.Viewport.zFar;
+			AfxDrawDepthEncode drawDepthEncode = bDrawDepth && !bDepthF ? AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthEncode(m_Stream->DrawDepth_get()) : AfxDrawDepthEncode_Gray;
+			AfxDrawDepthMode drawDepthMode = (bDrawDepth || bDepthF) ? AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()) : AfxDrawDepthMode_Inverse;
 
 			IDirect3DSurface9* oldRenderTarget = nullptr;
-			if(bReShade) oldRenderTarget = AfxSetRenderTargetR32FDepthTexture();
+			if(bDepthF || bReShade) oldRenderTarget = AfxSetRenderTargetR32FDepthTexture();
 			AfxDrawDepth(
 				drawDepthEncode,
 				drawDepthMode,
@@ -2996,7 +3491,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 				bDrawDepth,
 				bDrawDepth ? m_Data.ProjectionMatrix.m : nullptr
 			);
-			if (bReShade) AfxSetRenderTargetR32FDepthTexture_Restore(oldRenderTarget);
+			if (bDepthF || bReShade) AfxSetRenderTargetR32FDepthTexture_Restore(oldRenderTarget);
 			m_IsNextDepth = true;
 		}
 
@@ -3078,20 +3573,27 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 
 		BindAction(0);
 
+		bool bDepthF = false;
+		switch (m_Stream->StreamCaptureType_get()) {
+		case CAfxRenderViewStream::SCT_DepthF:
+		case CAfxRenderViewStream::SCT_DepthFZIP:
+			bDepthF = true;
+			break;
+		}
 		bool bDrawDepth = EDrawDepth_None != m_Stream->m_DrawDepth;
 		bool bReShade = m_Stream->ReShadeEnabled_get();
 
-		if (bDrawDepth || bReShade)
+		if (bDrawDepth || bDepthF || bReShade)
 		{
 			int scale = csgo_CSkyBoxView_GetScale();
 
-			float flDepthFactor = (bDrawDepth ? m_Stream->m_DepthVal : m_Data.Viewport.zNear);
-			float flDepthFactorMax = (bDrawDepth ? m_Stream->m_DepthValMax : m_Data.Viewport.zFar);
-			AfxDrawDepthEncode drawDepthEncode = bDrawDepth ? AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthEncode(m_Stream->DrawDepth_get()) : AfxDrawDepthEncode_Gray;
-			AfxDrawDepthMode drawDepthMode = bDrawDepth ? AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()) : AfxDrawDepthMode_Inverse;
+			float flDepthFactor = (bDrawDepth || bDepthF) ? m_Stream->m_DepthVal : m_Data.Viewport.zNear;
+			float flDepthFactorMax = (bDrawDepth || bDepthF) ? m_Stream->m_DepthValMax : m_Data.Viewport.zFar;
+			AfxDrawDepthEncode drawDepthEncode = bDrawDepth && !bDepthF ? AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthEncode(m_Stream->DrawDepth_get()) : AfxDrawDepthEncode_Gray;
+			AfxDrawDepthMode drawDepthMode = (bDrawDepth || bDepthF) ? AfxBasefxStreamDrawDepthMode_To_AfxDrawDepthMode(m_Stream->DrawDepthMode_get()) : AfxDrawDepthMode_Inverse;
 
 			IDirect3DSurface9* oldRenderTarget = nullptr;
-			if (bReShade) oldRenderTarget = AfxSetRenderTargetR32FDepthTexture();
+			if (bDepthF || bReShade) oldRenderTarget = AfxSetRenderTargetR32FDepthTexture();
 			AfxDrawDepth(
 				drawDepthEncode,
 				drawDepthMode,
@@ -3100,7 +3602,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 				m_Data.Viewport.x, m_Data.Viewport.y, m_Data.Viewport.width, m_Data.Viewport.height, 2.0f * scale, (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH * scale,
 				false,
 				bDrawDepth ? m_Data.ProjectionMatrixSky.m : nullptr);
-			if (bReShade) AfxSetRenderTargetR32FDepthTexture_Restore(oldRenderTarget);
+			if (bDepthF || bReShade) AfxSetRenderTargetR32FDepthTexture_Restore(oldRenderTarget);
 
 			m_IsNextDepth = true;
 		}
@@ -4371,10 +4873,10 @@ void CAfxBaseFxStream::CActionGlowColorMap::UnlockMesh(CAfxBaseFxStreamContext* 
 				RemapColor(rgba.R, rgba.G, rgba.B, rgba.A);
 			}
 
-			Color[2] = (unsigned char)min(255.0f, rgba.R * 255.0f + 0.5f);
-			Color[1] = (unsigned char)min(255.0f, rgba.G * 255.0f + 0.5f);
-			Color[0] = (unsigned char)min(255.0f, rgba.B * 255.0f + 0.5f);
-			Color[3] = (unsigned char)min(255.0f, rgba.A * 255.0f + 0.5f);
+			Color[2] = (unsigned char)std::min(255.0f, rgba.R * 255.0f + 0.5f);
+			Color[1] = (unsigned char)std::min(255.0f, rgba.G * 255.0f + 0.5f);
+			Color[0] = (unsigned char)std::min(255.0f, rgba.B * 255.0f + 0.5f);
+			Color[3] = (unsigned char)std::min(255.0f, rgba.A * 255.0f + 0.5f);
 		}
 	}
 	am->GetParent()->UnlockMesh(numVerts, numIndices, desc);
@@ -6019,6 +6521,24 @@ void CAfxBaseFxStream::CActionAfxSplineRopeHook::SetPixelShader(CAfx_csgo_Shader
 }
 #endif
 
+// CAfxStreamsCaptureOutput ////////////////////////////////////////////////////
+
+CAfxStreamsCaptureOutput::CAfxStreamsCaptureOutput(class CAfxRecordStream* target, size_t streamIndex)
+	: advancedfx::CRefCountedThreadSafe()
+	, m_Target(target)
+	, m_StreamIndex(streamIndex) {
+	target->AddRef();
+}
+
+CAfxStreamsCaptureOutput::~CAfxStreamsCaptureOutput() {
+	m_Target->Release();
+}
+
+void CAfxStreamsCaptureOutput::OnCapture(class ICapture* capture) {
+	m_Target->OnImageBufferCaptured(m_StreamIndex, capture);
+}
+
+
 // CAfxStreams /////////////////////////////////////////////////////////////////
 
 CAfxStreams::CAfxStreams()
@@ -6033,11 +6553,12 @@ CAfxStreams::CAfxStreams()
 , m_Frame(0)
 , m_FormatBmpAndNotTga(false)
 , m_View_Render_ThreadId(0)
-//, m_RgbaRenderTarget(0)
-, m_RenderTargetDepthF(0)
+//, m_RgbaRenderTarget(nullptr)
+//, m_RenderTargetDepthF(nullptr)
 , m_CamBvh(false)
 , m_GameRecording(false)
 {
+
 }
 
 CAfxStreams::~CAfxStreams()
@@ -6093,18 +6614,19 @@ void CAfxStreams::OnAfxBaseClientDll(IAfxBaseClientDll * value)
 
 void CAfxStreams::OnAfxBaseClientDll_Free(void)
 {
+	/*
 	if(m_RenderTargetDepthF)
 	{
 		m_RenderTargetDepthF->DecrementReferenceCount();
 		m_RenderTargetDepthF = 0;
 	}
+	*/
 	/*
 	if(m_RgbaRenderTarget)
 	{
 		m_RgbaRenderTarget->DecrementReferenceCount();
 		m_RgbaRenderTarget = 0;
-	}
-	*/
+	}*/
 
 	if(m_AfxBaseClientDll)
 	{
@@ -6150,8 +6672,18 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStream(IAfxMatRenderContextOrg * c
 	return ctxp;
 }
 
-IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * ctxp, CAfxRenderViewStream * previewStream, bool isLast, int slot, int cols, CCSViewRender_RenderView_t fn, void* This, void* Edx, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
+IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * ctxp, CAfxRenderViewStream * previewStream, int slot, int cols, CCSViewRender_RenderView_t fn, void* This, void* Edx, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
 {
+	if (m_FirstStreamToBeRendered) {
+		m_FirstStreamToBeRendered = false;
+	}
+	else {
+		ctxp = CommitDrawingContext(ctxp, !m_PresentLastStream);
+		m_PresentLastStream = false;
+	}
+
+	SetMatVarsForStreams(); // keep them set in case someone resets them.
+
 	if (0 < strlen(previewStream->AttachCommands_get()))
 		WrpConCommands::ImmediatelyExecuteCommands(previewStream->AttachCommands_get()); // Execute commands before we lock the stream!
 
@@ -6246,7 +6778,7 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 		float oldFrameTime;
 		int oldBuildingCubeMaps;
 
-		if (true || m_FirstStreamToBeRendered)
+		if (true)
 		{
 			forceBuildingCubeMaps = previewStream->ForceBuildingCubemaps_get();
 		}
@@ -6262,9 +6794,7 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 			m_BuildingCubemaps->SetValue(1.0f);
 		}
 
-		if(isLast && !(myWhatToDraw & SOURCESDK::RENDERVIEW_DRAWHUD)) m_LastPreviewWithNoHud = true;
-
-		ctxp->PushRenderTargetAndViewport(0, 0, newView.m_nUnscaledX, newView.m_nUnscaledY, newView.m_nUnscaledWidth, newView.m_nUnscaledHeight);
+		ctxp->PushRenderTargetAndViewport( nullptr, nullptr, newView.m_nUnscaledX, newView.m_nUnscaledY, newView.m_nUnscaledWidth, newView.m_nUnscaledHeight);
 
 
 		bool oldDoBloomAndToneMapping;
@@ -6342,9 +6872,8 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 			m_BuildingCubemaps->SetValue((float)oldBuildingCubeMaps);
 		}
 
-		if (true || m_FirstStreamToBeRendered)
+		if (true)
 		{
-			m_FirstStreamToBeRendered = false;
 		}
 		else
 		{
@@ -6357,47 +6886,14 @@ IAfxMatRenderContextOrg * CAfxStreams::PreviewStream(IAfxMatRenderContextOrg * c
 	if (0 < strlen(previewStream->DetachCommands_get()))
 		WrpConCommands::ImmediatelyExecuteCommands(previewStream->DetachCommands_get()); // Execute commands after we unlocked the stream!
 
-	if (isLast)
-	{
-		if (m_PresentBlocked)
-		{
-			BlockPresent(ctxp, false);
-			m_PresentBlocked = false;
-		}
-	}
-	else
-	{
-		if (!m_PresentBlocked)
-		{
-			BlockPresent(ctxp, true);
-			m_PresentBlocked = true;
-		}
-
-		// Work around game running out of memory because of too much shit on the queue
-		// aka issue ripieces/advancedfx-prop#22 by using a sub-context:
-		if (m_MaterialSystem->GetThreadMode() != SOURCESDK::CSGO::MATERIAL_SINGLE_THREADED) {
-			// Only do this when we are in threaded mode, it's only needed then and otherwise we will crash when switching from un-threaded to threaded.
-			m_MaterialSystem->EndFrame();
-			m_MaterialSystem->SwapBuffers(); // Apparently we have to do this always, otherwise the state is messed up.
-			m_MaterialSystem->BeginFrame(0);
-			ctxp = GetCurrentContext()->GetOrg(); // We are potentially on a new context now
-		}
-	}
-	
-
-	//m_MaterialSystem->SetRenderContext(orgCtx);
-	//orgCtx->Release();  // SetRenderContext calls AddRef
-	//ctxp = orgCtxp;
-	//
-	//QueueOrExecute(ctxp, new CAfxSubContextEndQueue_Functor(subCtx));
-
-	//QueueOrExecute(orgCtxp, new CAfxSubContextEndQueue_Functor(subCtx));
-
 	return ctxp;
 }
 
 void CAfxStreams::DoRenderView(CCSViewRender_RenderView_t fn, void* This, void* Edx, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw)
 {
+	m_DoRenderViewCount++;
+	if(m_ShowRenderViewCount) Tier0_Msg("m_DoRenderViewCount: %i (m_ForceCacheFullSceneState: %i)\n", m_DoRenderViewCount, m_ForceCacheFullSceneState ? 1 : 0);
+
 #ifdef AFX_INTEROP
 	if (AfxInterop::Enabled() && AfxInterop::Active())
 	{
@@ -6487,6 +6983,88 @@ void CAfxStreams::CalcMainStream()
 	}
 }
 
+class CCaptureNodeGpuQueuesExecution
+	: public CAfxFunctor
+{
+public:
+	virtual void operator()() {
+		CCaptureNode::GpuExecuteLockQueue();
+	}
+};
+
+void QueueCaptureGpuQueuesExecution() {
+	QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new class CCaptureNodeGpuQueuesExecution()));
+}
+
+class CCaptureNodeGpuQueuesRelease
+	: public CAfxFunctor
+{
+public:
+	virtual void operator()() {
+		CCaptureNode::GpuExecuteReleaseQueue();
+	}
+};
+
+void QueueCaptureGpuQueuesRelease() {
+	QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new class CCaptureNodeGpuQueuesRelease()));
+}
+
+class CPushRenderTargetFunctor
+	: public CAfxFunctor
+{
+public:
+	virtual void operator()() {
+		AfxD3d9PushRenderTarget();
+	}
+};
+
+void QueuePushRenderTarget() {
+	QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new class CPushRenderTargetFunctor()));
+}
+
+class CPopRenderTargetFunctor
+	: public CAfxFunctor
+{
+public:
+	virtual void operator()() {
+		AfxD3d9PopRenderTarget();
+	}
+};
+
+void QueuePopRenderTarget() {
+	QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new class CPopRenderTargetFunctor()));
+}
+
+
+IAfxMatRenderContextOrg* CAfxStreams::CommitDrawingContext(IAfxMatRenderContextOrg* context, bool blockPresent) {
+	if (blockPresent)
+	{
+		if (!m_PresentBlocked) {
+			BlockPresent(context, true);
+			m_PresentBlocked = true;
+		}
+	}
+	else {
+		if (m_PresentBlocked)
+		{
+			BlockPresent(context, false);
+			m_PresentBlocked = false;
+		}
+	}
+
+	// Work around game running out of memory because of too much shit on the queue
+	// aka issue ripieces/advancedfx-prop#22 by using a sub-context:
+	if (m_MaterialSystem->GetThreadMode() != SOURCESDK::CSGO::MATERIAL_SINGLE_THREADED) {
+		// Only do this when we are in threaded mode, it's only needed then and otherwise we will crash when switching from un-threaded to threaded.
+		m_MaterialSystem->EndFrame();
+		m_MaterialSystem->SwapBuffers(); // Apparently we have to do this always, otherwise the state is messed up.
+		m_MaterialSystem->BeginFrame(0);
+		context = GetCurrentContext()->GetOrg(); // We are potentially on a new context now
+	}
+
+	return context;
+}
+
 void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * This, void* Edx, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
 {
 	m_ForceCacheFullSceneState = false;
@@ -6505,6 +7083,8 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * This, void*
 		return;
 	}
 
+	QueueCaptureGpuQueuesRelease();
+
 	//Hook_csgo_C_BaseEntity_IClientRenderable_DrawModel();
 	//Hook_csgo_C_BaseAnimating_IClientRenderable_DrawModel();
 	//Hook_csgo_C_BaseCombatWeapon_IClientRenderable_DrawModel();
@@ -6512,210 +7092,177 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * This, void*
 
 	IAfxMatRenderContextOrg * ctxp = GetCurrentContext()->GetOrg();
 
-	m_FirstStreamToBeRendered = true;
-
 	CalcMainStream();
 
-	if (m_Recording && m_MainStream && m_MainStream->Record_get())
-	{
-		// We can render and record it as first thing.
+	std::list<CAfxRecordStream*> recordStreams;
+	int previewNumSlots = 0;
+	std::map<int, CAfxRecordStream*> previewSlotsToStreams;
+	CAfxRecordStream* firstPreviewedStream = nullptr;
+	CAfxRecordStream* lastStreamRecorded = nullptr;
 
-		m_ForceCacheFullSceneState = true; // There's always another render in this case at the moment, so cache!
-
-		// Record it first
-		ctxp = CaptureStream(ctxp, m_MainStream, fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+	if (!CheckCanFeedStreams()) {
+		Tier0_Warning("Error: Cannot record / preview streams due to missing dependencies!\n");
 	}
-	else if (m_MainStream)
-	{
-		// There's a main stream, but it's not recorded.
-
-		// If there's more streams to be rendered, then we need to cache the scene state:
-
-		bool otherStreams = false;
-		bool mainStreamPreview = false;
-
+	else {
 		if (m_Recording)
 		{
-			for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
-			{
-				if (!(*it)->Record_get() || (*it) == m_MainStream) continue;
-
-				otherStreams = true;
-				break;
-			}
-		}
-
-		for (int i = 0; i < 16; ++i)
-		{
-			if (m_PreviewStreams[i])
-			{
-				if (m_PreviewStreams[i] == m_MainStream) mainStreamPreview = true;
-
-				if (1 <= m_PreviewStreams[i]->GetStreamCount() && (i != 0 || m_PreviewStreams[i] != m_MainStream))
-				{
-					otherStreams = true;
-				}
-			}
-		}
-
-		if (otherStreams || mainStreamPreview)
-		{
-			if (otherStreams) m_ForceCacheFullSceneState = true;
-			
-			CAfxRenderViewStream * previewStream = m_MainStream->GetStream(0);
-			ctxp = PreviewStream(ctxp, previewStream, !otherStreams, 0, 1, fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
-		}
-	}
-	else
-	{
-		// There is no mainstream, so use the original game (if there's other streams):
-
-		bool otherStreams = false;
-
-		if (m_Recording)
-		{
-			for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
+			for (std::list<CAfxRecordStream*>::iterator it = m_Streams.begin(); it != m_Streams.end(); it++)
 			{
 				if (!(*it)->Record_get()) continue;
 
-				otherStreams = true;
-				break;
+				if ((*it) == m_MainStream) {
+					recordStreams.emplace_front(*it);
+				}
+				else
+					recordStreams.emplace_back(*it);
 			}
 		}
 
-		for (int i = 0; i < 16; ++i)
+		if (!m_SuspendPreview)
 		{
-			if (m_PreviewStreams[i])
+			for (int i = 0; i < 16; ++i)
 			{
-				if (1 <= m_PreviewStreams[i]->GetStreamCount())
+				if (m_PreviewStreams[i])
 				{
-					otherStreams = true;
+					if (1 <= m_PreviewStreams[i]->GetStreamCount())
+					{
+						previewNumSlots = 1 + i;
+						previewSlotsToStreams[i] = m_PreviewStreams[i];
+						if (firstPreviewedStream == nullptr)
+							firstPreviewedStream = m_PreviewStreams[i];
+					}
 				}
 			}
 		}
+	}
 
-		// Render it only if there's other streams:
-		if (otherStreams)
-		{			
-			m_ForceCacheFullSceneState = true; // There's more streams to be rendered, so we need to cache the scene state.
-			DoRenderView(fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw);
+	bool hasPushedTarget = false;
 
-			if (!m_PresentBlocked)
-			{
-				BlockPresent(ctxp, true);
-				m_PresentBlocked = true;
+	bool bNeedsPreRender =
+		nullptr != m_MainStream && (
+			1 <= recordStreams.size() && recordStreams.front() != m_MainStream
+			|| 0 == recordStreams.size() && 1 <= previewNumSlots && previewSlotsToStreams.begin()->second != m_MainStream
+		)
+		|| nullptr == m_MainStream && (
+			1 <= recordStreams.size() && !recordStreams.front()->IsTrulyNormalGameView()
+			|| 0 == recordStreams.size() && 1 <= previewNumSlots && !previewSlotsToStreams.begin()->second->IsTrulyNormalGameView()
+		)
+	;
+
+	bool bPushedRenderTarget = false;
+
+	m_FirstStreamToBeRendered = true;
+	m_PresentLastStream = false;
+	m_DoRenderViewCount = 0;
+
+	if (bNeedsPreRender) {
+		m_ForceCacheFullSceneState = true;
+		if (m_MainStream) {
+			if (m_MainStream->Record_get()) {
+				ctxp = CaptureStream(ctxp, m_MainStream, fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+				lastStreamRecorded = m_MainStream;
 			}
-
-			// Work around game running out of memory because of too much shit on the queue
-			// aka issue ripieces/advancedfx-prop#22 by using a sub-context:
-			if (m_MaterialSystem->GetThreadMode() != SOURCESDK::CSGO::MATERIAL_SINGLE_THREADED) {
-				// Only do this when we are in threaded mode, it's only needed then and otherwise we will crash when switching from un-threaded to threaded.
-				m_MaterialSystem->EndFrame();
-				m_MaterialSystem->SwapBuffers(); // Apparently we have to do this always, otherwise the state is messed up.
-				m_MaterialSystem->BeginFrame(0);
-				ctxp = GetCurrentContext()->GetOrg(); // We are potentially on a new context now
+			else {
+				CAfxRenderViewStream* previewStream = m_MainStream->GetStream(0);
+				ctxp = PreviewStream(ctxp, previewStream, 0, 1, fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+			}
+			if (previewNumSlots == 1 && firstPreviewedStream == m_MainStream)
+			{
+				QueuePushRenderTarget();
+				bPushedRenderTarget = true;
 			}
 		}
+		else {
+			// Render normal game view and freeze it
+			m_FirstStreamToBeRendered = false;
+			DoRenderView(fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw);
+
+			if (previewNumSlots == 1 && firstPreviewedStream->IsTrulyNormalGameView())
+			{
+				QueuePushRenderTarget();
+				bPushedRenderTarget = true;
+			}
+		}
+	}
+
+	for (auto it = recordStreams.begin(); it != recordStreams.end(); it++) {
+		if (*it == m_MainStream && bNeedsPreRender) continue;
+
+		auto nextIt = it;
+		nextIt++;
+		m_ForceCacheFullSceneState = false
+			|| nextIt != recordStreams.end()
+			|| 1 < previewNumSlots
+			|| 1 == previewNumSlots && *it != previewSlotsToStreams.begin()->second && !bPushedRenderTarget
+			|| 0 == previewNumSlots && !(*it)->IsTrulyNormalGameView() && !bPushedRenderTarget
+			;
+		ctxp = CaptureStream(ctxp, *it, fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+		lastStreamRecorded = *it;
+		if (!bPushedRenderTarget && m_ForceCacheFullSceneState && 1 == previewNumSlots && *it == previewSlotsToStreams.begin()->second) {
+			QueuePushRenderTarget();
+			bPushedRenderTarget = true;
+		}
+	}
+
+	if (1 <= previewNumSlots) {
+		int cols = 1;
+
+		if (4 < previewNumSlots)
+			cols = 4;
+		else if (1 < previewNumSlots)
+			cols = 2;
+
+		int num = 0;
+
+		for (auto it = previewSlotsToStreams.begin(); it != previewSlotsToStreams.end(); it++)
+		{
+			num++;
+			if (bPushedRenderTarget) {
+				QueuePopRenderTarget();
+				bPushedRenderTarget = false;
+				continue;
+			}
+			else if (1 == previewNumSlots && lastStreamRecorded == it->second) {
+				continue;
+			}
+
+			int slot = it->first;
+
+			slot = cols * cols - slot - 1; // We draw backwards (bottom,right) -> (top,left) in order to solve some weird problem.
+
+			CAfxRenderViewStream* previewStream = it->second->GetStream(0);
+
+			m_ForceCacheFullSceneState = num != previewSlotsToStreams.size();
+			ctxp = PreviewStream(ctxp, previewStream, slot, cols, fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
+		}
+	}
+	else if (bPushedRenderTarget) {
+		QueuePopRenderTarget();
+		bPushedRenderTarget = false;
+
+	}
+	else if(m_FirstStreamToBeRendered || m_ForceCacheFullSceneState) {
+		if (m_FirstStreamToBeRendered) {
+			m_FirstStreamToBeRendered = false;
+		}
+		else {
+			ctxp = CommitDrawingContext(ctxp, true);
+		}
+		m_ForceCacheFullSceneState = false;
+		DoRenderView(fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw);
 	}
 
 	if (m_Recording)
 	{
-		if (!CheckCanFeedStreams())
-		{
-			Tier0_Warning("Error: Cannot record streams due to missing dependencies!\n");
-		}
-		else
-		{
-			for (std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
-			{
-				if (!(*it)->Record_get() || (*it) == m_MainStream) continue;
-
-				ctxp = CaptureStream(ctxp, (*it), fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
-			}
-		}
+		QueueCaptureGpuQueuesExecution();
 
 		++m_Frame;
 	}
 
-	// m_PresentBlocked can be true now (due to recording).
-
-	if (m_SuspendPreview)
+	if (m_PresentBlocked)
 	{
-		if (m_PresentBlocked)
-		{
-			BlockPresent(ctxp, false);
-			m_PresentBlocked = false;
-		}
-
-		DoRenderView(fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw);
-	}
-	else
-	{
-		int previewNumSlots = 0;
-		std::map<int, CAfxRenderViewStream *> previewStreams;
-
-		for (int i = 0; i < 16; ++i)
-		{
-			if (m_PreviewStreams[i])
-			{
-				if (1 <= m_PreviewStreams[i]->GetStreamCount())
-				{
-					previewNumSlots = 1 + i;
-					previewStreams[i] = m_PreviewStreams[i]->GetStream(0);
-				}
-			}
-		}
-
-		if (previewNumSlots <= 0)
-		{
-			if (m_PresentBlocked)
-			{
-				BlockPresent(ctxp, false);
-				m_PresentBlocked = false;
-			}
-
-			DoRenderView(fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw);
-		}
-		else
-		{
-
-			if (!CheckCanFeedStreams())
-			{
-				Tier0_Warning("Error: Cannot preview stream(s) due to missing dependencies!\n");
-				DoRenderView(fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw);
-				return;
-			}
-
-			SetMatVarsForStreams(); // keep them set in case a mofo resets them.
-
-			int cols = 1;
-
-			if (4 < previewNumSlots)
-				cols = 4;
-			else if (1 < previewNumSlots)
-				cols = 2;
-
-			int num = 0;
-
-			for (std::map<int, CAfxRenderViewStream *>::iterator it = previewStreams.begin(); it != previewStreams.end(); ++it)
-			{
-				int slot = it->first;
-
-				if (!m_Recording && slot == 0 && previewStreams.size() == 1 && m_PreviewStreams[slot] == m_MainStream)
-				{
-					// This streams has been rendered correctly alreday, no need to render it again.
-					continue;
-				}
-
-				slot = cols * cols - slot - 1; // We draw backwards (bottom,right) -> (top,left) in order to solve some weird problem.
-
-				CAfxRenderViewStream * previewStream = it->second;
-
-				ctxp = PreviewStream(ctxp, previewStream, num + 1 == (int)previewStreams.size(), slot, cols, fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw, smokeOverlayAlphaFactor, smokeOverlayAlphaFactorMultiplyer);
-
-				++num;
-			}
-		}
+		BlockPresent(ctxp, false);
+		m_PresentBlocked = false;
 	}
 }
 
@@ -7268,14 +7815,6 @@ void CAfxStreams::Console_AddMatteStream(const char * streamName)
 	auto meStream = new CAfxMatteFxStream();
 	AddStream(new CAfxMatteStream(streamName, meStream));
 	meStream->SetClearBeforeRender(true);
-}
-
-void CAfxStreams::Console_AddHudStream(const char * streamName)
-{
-	if (!Console_CheckStreamName(streamName))
-		return;
-
-	AddStream(new CAfxTwinStream(streamName, new CAfxHudWhiteStream(), new CAfxHudBlackStream(), CAfxTwinStream::SCT_AHudWhiteBHudBlack));
 }
 
 void CAfxStreams::Console_AddHudWhiteStream(const char * streamName)
@@ -7883,7 +8422,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 					{
 						if(value == CAfxRenderViewStream::SCT_DepthF || value == CAfxRenderViewStream::SCT_DepthFZIP)
 						{
-							if(!(AfxD3D9_Check_Supports_R32F_With_Blending() && m_RenderTargetDepthF))
+							if(!AfxD3D9_Check_Supports_R32F(false))
 							{
 								Tier0_Warning("AFXERROR: This capture type is not supported according to your graphics card / driver. Aborting to avoid crashes.\n");
 								return true;
@@ -8954,7 +9493,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 							if (bEnabled && !AfxD3d9_DrawDepthSupported()) {
 								Tier0_Warning("Your graphics card does not support FOURCC_INTZ or you are using -afxinterop, thus ReShade addon will not work correctly.\n");
 							}
-							if (bEnabled && !AfxD3D9_Check_Supports_R32F()) {
+							if (bEnabled && !AfxD3D9_Check_Supports_R32F(true)) {
 								Tier0_Warning("Your graphics card does not support D3DFMT_R32F render targets, thus ReShade addon will not work correctly.\n");
 							}
 
@@ -9348,8 +9887,6 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 {
 	Set_View_Render_ThreadId(GetCurrentThreadId());
 
-	m_LastPreviewWithNoHud = false;
-
 	//GetCsgoCGlowOverlayFix()->OnMainViewRenderBegin();
 
 #ifdef AFX_MIRV_PGL
@@ -9392,27 +9929,17 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 	{
 		(*it)->CaptureFrame();
 	}
-
-	if (m_LastPreviewWithNoHud)
-	{
-		m_LastPreviewWithNoHud = false;
-	}
 }
 
 IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContextOrg * ctxp, size_t streamIndex, CAfxRenderViewStream * stream, CAfxRecordStream * captureTarget, bool first, bool last, CCSViewRender_RenderView_t fn, void* This, void* Edx, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
 {
-	if (first)
-	{
-		captureTarget->QueueCaptureStart(ctxp);
+	if (m_FirstStreamToBeRendered) {
+		m_FirstStreamToBeRendered = false;
 	}
-
-	CAfxRenderViewStream::StreamCaptureType captureType = stream->StreamCaptureType_get();
-	bool isDepthF = captureType == CAfxRenderViewStream::SCT_DepthF || captureType == CAfxRenderViewStream::SCT_DepthFZIP;
-
-	SetMatVarsForStreams(); // keep them set in case a mofo resets them.
-
-	if (0 < strlen(stream->AttachCommands_get()))
-		WrpConCommands::ImmediatelyExecuteCommands(stream->AttachCommands_get()); // Execute commands before we lock the stream!
+	else {
+		ctxp = CommitDrawingContext(ctxp, !m_PresentLastStream);
+		m_PresentLastStream = m_PresentRecordOnScreen;
+	}
 
 	AfxViewportData_t afxViewport = {
 		view.m_nUnscaledX,
@@ -9422,6 +9949,19 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 		view.zNear,
 		view.zFar
 	};
+
+	if (first)
+	{
+		captureTarget->DoCaptureStart(ctxp, afxViewport);
+	}
+
+	CAfxRenderViewStream::StreamCaptureType captureType = stream->StreamCaptureType_get();
+	bool isDepthF = captureType == CAfxRenderViewStream::SCT_DepthF || captureType == CAfxRenderViewStream::SCT_DepthFZIP;
+
+	SetMatVarsForStreams(); // keep them set in case someone resets them.
+
+	if (0 < strlen(stream->AttachCommands_get()))
+		WrpConCommands::ImmediatelyExecuteCommands(stream->AttachCommands_get()); // Execute commands before we lock the stream!
 
 	SOURCESDK::VMatrix worldToView;
 	SOURCESDK::VMatrix viewToProjection;
@@ -9481,7 +10021,7 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 		float oldFrameTime;
 		int oldBuildingCubeMaps;
 
-		if (true || m_FirstStreamToBeRendered)
+		if (true)
 		{
 			forceBuildingCubeMaps = stream->ForceBuildingCubemaps_get();
 		}
@@ -9496,7 +10036,7 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 			oldBuildingCubeMaps = m_BuildingCubemaps->GetInt();
 			m_BuildingCubemaps->SetValue(1.0f);
 		}
-
+		/*
 		if (isDepthF)
 		{
 			if (m_RenderTargetDepthF)
@@ -9515,7 +10055,7 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 				Tier0_Warning("AFXERROR: CAfxStreams::CaptureStreamToBuffer: missing render target.\n");
 				isDepthF = false;
 			}
-		}
+		}*/
 
 		bool oldDoBloomAndToneMapping;
 		bool overrideDoBloomAndToneMapping;
@@ -9572,12 +10112,7 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 
 		DoRenderView(fn, This, Edx, view, hudViewSetup, SOURCESDK::VIEW_CLEAR_STENCIL | SOURCESDK::VIEW_CLEAR_DEPTH, myWhatToDraw);
 
-		stream->QueueCapture(ctxp, captureTarget, streamIndex,
-			view.m_nUnscaledX,
-			view.m_nUnscaledY,
-			view.m_nUnscaledWidth,
-			view.m_nUnscaledHeight
-		);
+		captureTarget->QueueCapture(ctxp, streamIndex);
 
 		stream->OnRenderEnd();
 
@@ -9587,19 +10122,20 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 		if (overrideDoDepthOfField) const_cast<SOURCESDK::CViewSetup_csgo &>(view).m_bDoDepthOfField = oldDoDepthOfField;
 		if (overrideDoBloomAndToneMapping) const_cast<SOURCESDK::CViewSetup_csgo &>(view).m_bDoBloomAndToneMapping = oldDoBloomAndToneMapping;
 
+		/*
 		if (isDepthF)
 		{
 			ctxp->PopRenderTargetAndViewport();
 		}
+		*/
 
 		if (forceBuildingCubeMaps)
 		{
 			m_BuildingCubemaps->SetValue((float)oldBuildingCubeMaps);
 		}
 
-		if (true || m_FirstStreamToBeRendered)
+		if (true)
 		{
-			m_FirstStreamToBeRendered = false;
 		}
 		else
 		{
@@ -9616,28 +10152,7 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 
 	if (last)
 	{
-		captureTarget->QueueCaptureEnd(ctxp);
-	}
-
-	if (!m_PresentRecordOnScreen)
-	{
-		BlockPresent(ctxp, true);
-		m_PresentBlocked = true;
-	}
-	else if (m_PresentBlocked)
-	{
-		BlockPresent(ctxp, false);
-		m_PresentBlocked = false;
-	}
-
-	// Work around game running out of memory because of too much shit on the queue
-	// aka issue ripieces/advancedfx-prop#22 by using a sub-context:
-	if (m_MaterialSystem->GetThreadMode() != SOURCESDK::CSGO::MATERIAL_SINGLE_THREADED) {
-		// Only do this when we are in threaded mode, it's only needed then and otherwise we will crash when switching from un-threaded to threaded.
-		m_MaterialSystem->EndFrame();
-		m_MaterialSystem->SwapBuffers(); // Apparently we have to do this always, otherwise the state is messed up.
-		m_MaterialSystem->BeginFrame(0);
-		ctxp = GetCurrentContext()->GetOrg(); // We are potentially on a new context now
+		// This is now done implicitely instead // captureTarget->QueueCaptureEnd(ctxp);
 	}
 
 	return ctxp;
@@ -9710,25 +10225,18 @@ bool CAfxStreams::Console_ToStreamCombineType(char const * value, CAfxTwinStream
 		streamCombineType = CAfxTwinStream::SCT_AColorBRedAsAlpha;
 		return true;
 	}
-	else if (!_stricmp(value, "aHudWhiteBHudBlack"))
-	{
-		streamCombineType = CAfxTwinStream::SCT_AHudWhiteBHudBlack;
-		return true;
-	}
 
 	return false;
 }
 
 char const * CAfxStreams::Console_FromStreamCombineType(CAfxTwinStream::StreamCombineType streamCombineType)
 {
-	switch(streamCombineType)
+	switch (streamCombineType)
 	{
 	case CAfxTwinStream::SCT_ARedAsAlphaBColor:
 		return "aRedAsAlphaBColor";
 	case CAfxTwinStream::SCT_AColorBRedAsAlpha:
 		return "aColorBRedAsAlpha";
-	case CAfxTwinStream::SCT_AHudWhiteBHudBlack:
-		return "aHudWhiteBHudBlack";
 	}
 
 	return "[unkown]";
@@ -9885,20 +10393,17 @@ void CAfxStreams::AddStream(CAfxRecordStream * stream)
 
 void CAfxStreams::CreateRenderTargets(SOURCESDK::IMaterialSystem_csgo * materialSystem)
 {
-	materialSystem->BeginRenderTargetAllocation();
-
+	//materialSystem->BeginRenderTargetAllocation();
 /*
-	m_RgbaRenderTarget = materialSystem->CreateRenderTargetTexture(0,0,RT_SIZE_FULL_FRAME_BUFFER,IMAGE_FORMAT_RGBA8888);
+	m_RgbaRenderTarget = materialSystem->CreateRenderTargetTexture(0, 0, SOURCESDK::RT_SIZE_FULL_FRAME_BUFFER, SOURCESDK::IMAGE_FORMAT_RGBA8888);
 	if(m_RgbaRenderTarget)
 	{
 		m_RgbaRenderTarget->IncrementReferenceCount();
 	}
 	else
 	{
-		Tier0_Warning("AFXERROR: CAfxStreams::CreateRenderTargets no m_RgbaRenderTarget (affects rgba captures)!\n");
+		Tier0_Warning("AFXERROR: CAfxStreams::CreateRenderTargets no m_RgbaRenderTarget!\n");
 	}
-*/
-
 	m_RenderTargetDepthF = materialSystem->CreateRenderTargetTexture(0,0, SOURCESDK::RT_SIZE_FULL_FRAME_BUFFER, SOURCESDK::IMAGE_FORMAT_R32F, SOURCESDK::MATERIAL_RT_DEPTH_SHARED);
 	if(m_RenderTargetDepthF)
 	{
@@ -9908,8 +10413,8 @@ void CAfxStreams::CreateRenderTargets(SOURCESDK::IMaterialSystem_csgo * material
 	{
 		Tier0_Warning("AFXWARNING: CAfxStreams::CreateRenderTargets no m_RenderTargetDepthF (affects high precision depthF captures)!\n");
 	}
-
-	materialSystem->EndRenderTargetAllocation();
+*/
+	//materialSystem->EndRenderTargetAllocation();
 
 }
 
@@ -10495,7 +11000,7 @@ advancedfx::COutVideoStream * CAfxSamplingRecordingSettings::CreateOutVideoStrea
 	{
 		if (advancedfx::COutVideoStream * outVideoStream = m_OutputSettings->CreateOutVideoStream(streams, stream, imageFormat, m_OutFps, pathSuffix))
 		{
-			return new advancedfx::COutSamplingStream(imageFormat, outVideoStream, frameRate, m_Method, m_OutFps ? 1.0 / m_OutFps : 0.0, m_Exposure, m_FrameStrength, &g_AfxStreams.ImageBufferPool);
+			return new advancedfx::COutSamplingStream(imageFormat, outVideoStream, frameRate, m_Method, m_OutFps ? 1.0 / m_OutFps : 0.0, m_Exposure, m_FrameStrength, &g_AfxStreams.ImageBufferPoolThreadSafe);
 		}
 	}
 
