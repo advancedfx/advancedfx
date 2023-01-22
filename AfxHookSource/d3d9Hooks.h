@@ -186,26 +186,6 @@ void AfxDrawRect(IDirect3DTexture9* texture, int x, int y, int width, int height
 
 void AfxD3D_WaitForGPU();
 
-class __declspec(novtable) IAfxInteropSurface abstract
-{
-public:
-	virtual IDirect3DSurface9 * AfxGetSurface() = 0;
-
-	virtual void AfxReplacementEnabled_set(bool value) = 0;
-
-	virtual bool AfdxReplacementEnabled_get() = 0;
-
-	virtual void AfxSetReplacement(IDirect3DSurface9 * surface) = 0;
-
-	virtual IDirect3DSurface9 * AfxGetReplacement() = 0;
-
-	virtual void AfxSetDepthSurface(IDirect3DSurface9 * surface) = 0;
-
-	virtual IDirect3DSurface9 * AfxGetDepthSurface() = 0;
-
-	virtual IDirect3DSurface9 * AfxGetCurrentSurface() = 0;
-};
-
 #endif
 
 IDirect3DDevice9* AfxGetDirect3DDevice9();
@@ -214,6 +194,7 @@ IDirect3DDevice9Ex* AfxGetDirect3DDevice9Ex();
 
 IDirect3DSurface9* AfxGetRenderTargetSurface();
 
+IDirect3DSurface9* AfxGetDepthStencilSurface();
 
 IDirect3DSurface9* AfxSetRenderTargetR32FDepthTexture();
 
@@ -221,5 +202,9 @@ void AfxSetRenderTargetR32FDepthTexture_Restore(IDirect3DSurface9* oldRenderTarg
 
 IDirect3DTexture9* AfxGetR32FDepthTexture();
 
+void AfxD3d9PushRenderTargetEx(IDirect3DSurface9* replacementSurface);
 void AfxD3d9PushRenderTarget();
-void AfxD3d9PopRenderTarget();
+void AfxD3d9PopRenderTarget(bool stretchRect = false);
+
+void AfxD3d9PushDepthStencilEx(IDirect3DSurface9* replacementSurface);
+void AfxD3d9PopDepthStencil();

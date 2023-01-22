@@ -608,7 +608,7 @@ public:
 		int x, y, width, height;
 		context->GetViewport(x, y, width, height);
 
-		AfxDrawDepth(AfxDrawDepthEncode_Rgba, AfxDrawDepthMode_Inverse, m_IsNextDepth, m_OutZNear, m_OutZFar, x, y, width, height, m_ZNear, m_ZFar, false, nullptr);
+		AfxInterop::DrawingThread_DrawDepth(m_IsNextDepth, m_OutZNear, m_OutZFar, x, y, width, height, m_ZNear, m_ZFar);
 	}
 
 private:

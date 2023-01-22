@@ -68,8 +68,6 @@ extern Hook_VClient_RenderView g_Hook_VClient_RenderView;
 extern SOURCESDK::IVRenderView_csgo * g_pVRenderView_csgo;
 
 namespace AfxInterop {
-	IAfxInteropSurface* m_Surface = NULL;
-
 	class CVersion {
 	public:
 		CVersion() : 
@@ -859,7 +857,7 @@ namespace AfxInterop {
 			g_AfxGameEvents.RemoveListener(this);
 		}
 
-		void DrawingThreadPrepareDraw(int frameCount, IAfxInteropSurface * mainSurface)
+		void DrawingThreadPrepareDraw(int frameCount)
 		{
 			m_DrawingSkip = true;
 			m_DrawingFrameCount = frameCount;
@@ -905,63 +903,64 @@ namespace AfxInterop {
 					if (!ReadBoolean(m_hDrawingPipe, colorDepthTextureWasLost)) { errorLine = __LINE__; goto error; }
 					if (!ReadHandle(m_hDrawingPipe, sharedColorDepthTextureHandle)) { errorLine = __LINE__; goto error; }
 
-					m_DrawingMainSurface = mainSurface;
+					if (colorTextureWasLost) {
+						if (m_RenderTargetReplacement) {
+							m_RenderTargetReplacement->Release();
+							m_RenderTargetReplacement = nullptr;
+						}
+					}
+					if (colorDepthTextureWasLost) {
+						if (m_DepthSurface) {
+							m_DepthSurface->Release();
+							m_DepthSurface = nullptr;
+						}
+					}
 
-					if (mainSurface)
+					if (nullptr == m_RenderTargetReplacement && NULL != sharedColorTextureHandle)
 					{
-						if (colorTextureWasLost) mainSurface->AfxSetReplacement(NULL);
-						if (colorDepthTextureWasLost) mainSurface->AfxSetDepthSurface(NULL);
-
-						if (colorTextureWasLost && NULL != sharedColorTextureHandle || colorDepthTextureWasLost && NULL != sharedColorDepthTextureHandle)
-						{
-							IDirect3DDevice9* device = NULL;
-							if (SUCCEEDED(mainSurface->AfxGetSurface()->GetDevice(&device)))
+						if (IDirect3DDevice9* device = AfxGetDirect3DDevice9()) {
+							if (IDirect3DSurface9* trackedRendertarget = AfxGetRenderTargetSurface())
 							{
 								D3DSURFACE_DESC desc;
-
-								if (SUCCEEDED(mainSurface->AfxGetSurface()->GetDesc(&desc)))
+								if (SUCCEEDED(trackedRendertarget->GetDesc(&desc)))
 								{
-									if (colorTextureWasLost && NULL != sharedColorTextureHandle)
+									IDirect3DTexture9* replacementTexture = NULL;
+									if (SUCCEEDED(device->CreateTexture(desc.Width, desc.Height, 1, D3DUSAGE_RENDERTARGET, desc.Format, D3DPOOL_DEFAULT, &replacementTexture, &sharedColorTextureHandle)))
 									{
-										IDirect3DTexture9* replacementTexture = NULL;
-										if (sharedColorTextureHandle)
+										if (SUCCEEDED(replacementTexture->GetSurfaceLevel(0, &m_RenderTargetReplacement)))
 										{
-											if (SUCCEEDED(device->CreateTexture(desc.Width, desc.Height, 1, D3DUSAGE_RENDERTARGET, desc.Format, D3DPOOL_DEFAULT, &replacementTexture, &sharedColorTextureHandle)))
-											{
-												IDirect3DSurface9* replacementSurface = NULL;
-
-												if (SUCCEEDED(replacementTexture->GetSurfaceLevel(0, &replacementSurface)))
-												{
-													mainSurface->AfxSetReplacement(replacementSurface);
-													mainSurface->AfxReplacementEnabled_set(true);
-													replacementSurface->Release();
-												}
-												replacementTexture->Release();
-											}
 										}
-									}
-									if (colorDepthTextureWasLost && NULL != sharedColorDepthTextureHandle)
-									{
-										IDirect3DTexture9* replacementTexture = NULL;
-										if (sharedColorDepthTextureHandle)
-										{
-											if (SUCCEEDED(device->CreateTexture(desc.Width, desc.Height, 1, D3DUSAGE_RENDERTARGET, desc.Format, D3DPOOL_DEFAULT, &replacementTexture, &sharedColorDepthTextureHandle)))
-											{
-												IDirect3DSurface9* replacementSurface = NULL;
-
-												if (SUCCEEDED(replacementTexture->GetSurfaceLevel(0, &replacementSurface)))
-												{
-													mainSurface->AfxSetDepthSurface(replacementSurface);
-													replacementSurface->Release();
-												}
-												replacementTexture->Release();
-											}
-										}
+										replacementTexture->Release();
 									}
 								}
-								device->Release();
 							}
 						}
+					}
+
+					if(nullptr == m_DepthSurface && NULL != sharedColorDepthTextureHandle) {
+						if (IDirect3DDevice9* device = AfxGetDirect3DDevice9()) {
+							if (IDirect3DSurface9* trackedRendertarget = AfxGetRenderTargetSurface())
+							{
+								D3DSURFACE_DESC desc;
+								if (SUCCEEDED(trackedRendertarget->GetDesc(&desc)))
+								{
+									IDirect3DTexture9* replacementTexture = NULL;
+									if (SUCCEEDED(device->CreateTexture(desc.Width, desc.Height, 1, D3DUSAGE_RENDERTARGET, desc.Format, D3DPOOL_DEFAULT, &replacementTexture, &sharedColorDepthTextureHandle)))
+									{
+
+										if (SUCCEEDED(replacementTexture->GetSurfaceLevel(0, &m_DepthSurface)))
+										{
+										}
+										replacementTexture->Release();
+									}
+								}
+							}
+						}
+					}
+
+					if (m_RenderTargetReplacement) {
+						AfxD3d9PushRenderTargetEx(m_RenderTargetReplacement);
+						m_PushedRenderTarget = true;
 					}
 
 					return;
@@ -1109,6 +1108,11 @@ namespace AfxInterop {
 
 		void DrawingThread_OnRenderViewEnd()
 		{
+			if (m_PushedRenderTarget) {
+				m_PushedRenderTarget = false;
+				AfxD3d9PopRenderTarget(true);
+			}
+
 			if (m_DrawingSkip) return;
 
 			if (!m_DrawingConnected) return;
@@ -1162,6 +1166,22 @@ namespace AfxInterop {
 			for (auto it = m_D3d9Textures.begin(); it != m_D3d9Textures.end(); ++it) it->second->Release(); m_D3d9Textures.clear();
 			if (disconnecting) for (auto it = m_D3d9VertexShaders.begin(); it != m_D3d9VertexShaders.end(); ++it) it->second->Release(); m_D3d9VertexShaders.clear();
 			if (disconnecting) for (auto it = m_D3d9PixelShaders.begin(); it != m_D3d9PixelShaders.end(); ++it) it->second->Release(); m_D3d9PixelShaders.clear();
+
+	
+			if (m_PushedRenderTarget) {
+				m_PushedRenderTarget = false;
+				AfxD3d9PopRenderTarget(true);
+			}
+
+			if (m_RenderTargetReplacement) {
+				m_RenderTargetReplacement->Release();
+				m_RenderTargetReplacement = nullptr;
+			}
+
+			if (m_DepthSurface) {
+				m_DepthSurface->Release();
+				m_DepthSurface = nullptr;
+			}
 
 			if (disconnecting || !m_DrawingConnected) return;
 
@@ -1653,6 +1673,14 @@ namespace AfxInterop {
 			Tier0_Warning("AfxInterop::Send_DrawingThread_DeviceRestored_Message: Error in line %i (%s).\n", errorLine, m_DrawingPipeName.c_str());
 			DisconnectDrawing();
 		}
+
+		void DrawingThread_DrawDepth(bool isNextDepth, float outZNear, float outZFar, int x, int y, int width, int height, float zNear, float zFar) {
+			if (m_DepthSurface) {
+				AfxD3d9PushRenderTargetEx(m_DepthSurface);
+				AfxDrawDepth(AfxDrawDepthEncode_Rgba, AfxDrawDepthMode_Inverse, isNextDepth, outZNear, outZFar, x, y, width, height, zNear, zFar, false, nullptr);
+				AfxD3d9PopRenderTarget();
+			}
+		}
 		
 		bool ConnectDrawing() {
 			{
@@ -1740,14 +1768,6 @@ namespace AfxInterop {
 			m_DrawingConnected = false;
 			m_DrawingWantsConnect = false;
 			m_DrawingPreConnected = false;
-
-			if (m_DrawingMainSurface)
-			{
-				m_DrawingMainSurface->AfxReplacementEnabled_set(false);
-				m_DrawingMainSurface->AfxSetReplacement(NULL);
-				m_DrawingMainSurface->AfxSetDepthSurface(NULL);
-				m_DrawingMainSurface = nullptr;
-			}
 
 			m_DrawingConnectMutex.unlock();
 			DisconnectEngine();
@@ -2328,7 +2348,7 @@ namespace AfxInterop {
 
 			virtual void operator()()
 			{
-				m_Client->DrawingThreadPrepareDraw(m_FrameCount, m_Surface);
+				m_Client->DrawingThreadPrepareDraw(m_FrameCount);
 				m_Client->Release();
 			}
 
@@ -2441,7 +2461,9 @@ namespace AfxInterop {
 		std::map<UINT64, IDirect3DVertexShader9*> m_D3d9VertexShaders;
 		std::map<UINT64, IDirect3DPixelShader9*> m_D3d9PixelShaders;
 
-		IAfxInteropSurface* m_DrawingMainSurface = nullptr;
+		IDirect3DSurface9* m_RenderTargetReplacement = nullptr;
+		bool m_PushedRenderTarget = false;
+		IDirect3DSurface9* m_DepthSurface = nullptr;
 
 		struct SharedSurfacesValue
 		{
@@ -4229,37 +4251,17 @@ namespace AfxInterop {
 		}
 	}
 
-	void OnCreatedSurface(IAfxInteropSurface * surface)
+	void DrawingThread_DrawDepth(bool isNextDepth, float outZNear, float outZFar, int x, int y, int width, int height, float zNear, float zFar)
 	{
-		if (m_Surface)
+		if (!m_Enabled) return;
+
+		std::shared_lock<std::shared_timed_mutex> clientsLock(m_ClientsMutex);
+
+		for (auto it = m_Clients.begin(); it != m_Clients.end(); ++it)
 		{
-			OnReleaseSurface(m_Surface);
-		}
-
-		m_Surface = surface;
-	}
-
-	void OnReleaseSurface(IAfxInteropSurface * surface)
-	{
-		if (surface)
-		{
-			surface->AfxReplacementEnabled_set(false);
-			surface->AfxSetReplacement(NULL);
-			surface->AfxSetDepthSurface(NULL);
-
-			m_Surface = NULL;
+			it->Get()->DrawingThread_DrawDepth(isNextDepth, outZNear, outZFar, x ,y ,width, height, zNear, zFar);
 		}
 	}
-
-	/// <param name="info">can be nullptr</param>
-	void OnSetRenderTarget(DWORD RenderTargetIndex, IAfxInteropSurface * surface)
-	{
-		if (0 == RenderTargetIndex)
-		{
-			// Hm.
-		}
-	}
-
 }
 
 CON_COMMAND(afx_interop, "Controls advancedfxInterop (i.e. with Unity engine).")

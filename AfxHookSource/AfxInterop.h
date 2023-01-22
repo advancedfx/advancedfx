@@ -102,18 +102,16 @@ namespace AfxInterop {
 	// Drawing thread:
 
 	/// <remarks>Must be called from drawing thread only.</remarks>
-	void OnCreatedSurface(IAfxInteropSurface * surface);
+	void OnCreatedRenderTarget(IDirect3DSurface9 * surface);
 
 	/// <remarks>Must be called from drawing thread only.</remarks>
-	void OnReleaseSurface(IAfxInteropSurface * surface);
-
-	/// <param name="info">can be nullptr</param>
-	/// <remarks>Must be called from drawing thread only.</remarks>
-	void OnSetRenderTarget(DWORD RenderTargetIndex, IAfxInteropSurface * surface);
+	void OnReleaseRenderTarget(IDirect3DSurface9* surface);
 
 	void DrawingThread_DeviceLost();
 
 	void DrawingThread_DeviceRestored();
+
+	void DrawingThread_DrawDepth(bool isNextDepth, float outZNear, float outZFar, int x, int y, int width, int height, float zNear, float zFar);
 
 	//
 	// Different Threads:

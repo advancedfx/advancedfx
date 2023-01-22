@@ -100,6 +100,26 @@ CON_COMMAND(__mirv_info, "")
 	PrintInfo();
 }
 
+
+void mirv_test_msg_parallel_func() {
+	for (size_t i = 0; i < 150; i++) {
+		Sleep(150);
+		Tier0_Warning("Thread: %i @ %i\n", i, GetTickCount());
+	}
+}
+
+CON_COMMAND(__mirv_test_msg_parallel, "") {
+	Tier0_Warning("Main: START @ %i\n", GetTickCount());
+	std::thread thread(mirv_test_msg_parallel_func);
+	for (size_t i = 0; i < 150; i++) {
+		Sleep(100);
+		Tier0_Warning("Main: %i @ %i\n", i, GetTickCount());
+	}
+	Tier0_Warning("Main: JOIN @ %i\n", GetTickCount());
+	thread.join();
+	Tier0_Warning("Main: FINISH @ %i\n", GetTickCount());
+}
+
 CON_COMMAND(__mirv_test6, "")
 {
 	int argc = args->ArgC();
