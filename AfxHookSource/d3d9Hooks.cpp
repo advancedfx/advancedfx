@@ -2331,7 +2331,7 @@ public:
 						desc.Format, D3DPOOL_SYSTEMMEM,
 						&pOffscreenSurface, NULL
 					))) {
-						result = new CAfxD3D9Capture(pSrcSurf, pIntermediateSurface, pOffscreenSurface);
+						result = new CAfxD3D9Capture(pIntermediateSurface, pOffscreenSurface);
 					}
 				}
 			}
@@ -2344,13 +2344,11 @@ public:
 		return result;
 	}
 
-	CAfxD3D9Capture(IDirect3DSurface9 * pSourceSurface, IDirect3DSurface9 * pIntermediateSurface, IDirect3DSurface9 * pOffscreenSurface)
+	CAfxD3D9Capture(IDirect3DSurface9 * pIntermediateSurface, IDirect3DSurface9 * pOffscreenSurface)
 		: m_RefCount(1)
-		, m_pSourceSurface(pSourceSurface)
 		, m_pIntermediateSurface(pIntermediateSurface)
 		, m_pOffscreenSurface(pOffscreenSurface)
 	{
-		pSourceSurface->AddRef();
 		if(pIntermediateSurface) pIntermediateSurface->AddRef();
 		pOffscreenSurface->AddRef();
 	}
@@ -2365,13 +2363,14 @@ public:
 	}
 
 	virtual bool Capture() {
+		IDirect3DSurface9* sourceSurface = AfxGetRenderTargetSurface();
 		IDirect3DDevice9 * pDevice = nullptr;
 		bool result = false;
 
 		if (m_pIntermediateSurface) {
 			if (SUCCEEDED(m_pIntermediateSurface->GetDevice(&pDevice))) {
 				if (SUCCEEDED(pDevice->StretchRect(
-					m_pSourceSurface, NULL,
+					sourceSurface, NULL,
 					m_pIntermediateSurface, NULL,
 					D3DTEXF_NONE
 				))) {
@@ -2384,9 +2383,9 @@ public:
 			}
 		}
 		else {
-			if (SUCCEEDED(m_pSourceSurface->GetDevice(&pDevice))) {
+			if (SUCCEEDED(sourceSurface->GetDevice(&pDevice))) {
 				if (SUCCEEDED(pDevice->GetRenderTargetData(
-					m_pSourceSurface, m_pOffscreenSurface
+					sourceSurface, m_pOffscreenSurface
 				))) {
 					result = true;
 				}
@@ -2431,8 +2430,7 @@ protected:
 private:
 	~CAfxD3D9Capture() {
 		m_pOffscreenSurface->Release();
-		if(m_pIntermediateSurface) m_pIntermediateSurface->Release();
-		m_pSourceSurface->Release();
+		if (m_pIntermediateSurface) m_pIntermediateSurface->Release();
 	}
 
 	class CImageBufferWrapper
@@ -2458,7 +2456,6 @@ private:
 	};
 
 	int m_RefCount = 0;
-	IDirect3DSurface9 * m_pSourceSurface;
 	IDirect3DSurface9 * m_pIntermediateSurface;
 	IDirect3DSurface9 * m_pOffscreenSurface;
 	CImageBufferWrapper * m_ImageBuffer;
@@ -2509,6 +2506,7 @@ private:
 	IDirect3DStateBlock9* m_InitialState = nullptr;
 	IDirect3DStateBlock9* m_CurrentState = nullptr;
 
+	bool trackedRenderTargetMultisampled = false;
 	IDirect3DSurface9 * trackedRenderTarget = nullptr;
 	IDirect3DSurface9 * trackedDepthStencil = nullptr;
 
@@ -2567,21 +2565,22 @@ public:
 			AfxLinkReplacementSurface(trackedRenderTarget, replacementSurface);
 			IDirect3DSurface9* currentTarget = nullptr;
 			if (SUCCEEDED(g_OldDirect3DDevice9->GetRenderTarget(0, &currentTarget))) {
-				if (currentTarget == trackedRenderTarget)
+				if (currentTarget == trackedRenderTarget) {
 					g_OldDirect3DDevice9->SetRenderTarget(0, replacementSurface);
-					currentTarget->Release();
+				}
+				currentTarget->Release();
 			}
 			trackedRenderTarget = replacementSurface;
 			trackedRenderTarget->AddRef();
 		}
 	}
 
-	void AfxD3d9PushRenderTarget() {
+	void AfxD3d9PushRenderTarget(bool forceNoMsaa = false) {
 		if (trackedRenderTarget) {
 			D3DSURFACE_DESC desc;
 			if (SUCCEEDED(trackedRenderTarget->GetDesc(&desc))) {
 				IDirect3DSurface9* replacementSurface = nullptr;
-				if (SUCCEEDED(g_OldDirect3DDevice9->CreateRenderTarget(desc.Width, desc.Height, desc.Format, desc.MultiSampleType, desc.MultiSampleQuality, FALSE, &replacementSurface, nullptr))) {
+				if (SUCCEEDED(g_OldDirect3DDevice9->CreateRenderTarget(desc.Width, desc.Height, desc.Format, (forceNoMsaa ? D3DMULTISAMPLE_NONE : desc.MultiSampleType), (forceNoMsaa ? 0 : desc.MultiSampleQuality), FALSE, &replacementSurface, nullptr))) {
 					AfxD3d9PushRenderTargetEx(replacementSurface);
 					replacementSurface->Release();
 				}
@@ -2594,8 +2593,9 @@ public:
 			if (IDirect3DSurface9* oldSurface = AfxGetSourceSurface(trackedRenderTarget)) {
 				IDirect3DSurface9* currentTarget = nullptr;
 				if (SUCCEEDED(g_OldDirect3DDevice9->GetRenderTarget(0, &currentTarget))) {
-					if (currentTarget == trackedRenderTarget)
+					if (currentTarget == trackedRenderTarget) {
 						g_OldDirect3DDevice9->SetRenderTarget(0, oldSurface);
+					}
 					currentTarget->Release();
 				}
 				if (stretchRect) {
@@ -2612,7 +2612,7 @@ public:
 		if (trackedDepthStencil) {
 			AfxLinkReplacementSurface(trackedDepthStencil, replacementSurface);
 			IDirect3DSurface9* currentTarget = nullptr;
-			if (SUCCEEDED(g_OldDirect3DDevice9->GetDepthStencilSurface(& currentTarget))) {
+			if (SUCCEEDED(g_OldDirect3DDevice9->GetDepthStencilSurface(&currentTarget))) {
 				if (currentTarget == trackedDepthStencil)
 					g_OldDirect3DDevice9->SetDepthStencilSurface(replacementSurface);
 				currentTarget->Release();
@@ -2713,6 +2713,10 @@ public:
 		{
 			if (SUCCEEDED(g_OldDirect3DDevice9->GetRenderTarget(0, &trackedRenderTarget)))
 			{
+				D3DSURFACE_DESC desc;
+				if (SUCCEEDED(trackedRenderTarget->GetDesc(&desc))) {
+					trackedRenderTargetMultisampled = desc.MultiSampleType != D3DMULTISAMPLE_NONE;
+				}
 			}
 		}
 
@@ -2736,58 +2740,18 @@ public:
 	}
 #endif
 
-	void AfxOverrideDefaultBuffersWithIntz(bool value, bool noReplacement)
+	void AfxOverrideDefaultBuffersWithIntz(bool value)
 	{
+		const bool handleMsaa = true;
+
 		if (m_OverrideDefaultBuffersWithIntz != value)
 		{
 			// Update:
 
 			m_OverrideDefaultBuffersWithIntz = value;
 
-			// Base RenderTarget:
-
-			if (true
-#ifdef AFX_INTEROP
-				&& !AfxInterop::MainEnabled()
-#endif
-				&& !noReplacement)
-			{
-				// (Re-)Create replacements:
-
-				if (trackedRenderTarget)
-				{
-					if (m_OverrideDefaultBuffersWithIntz)
-					{
-						D3DSURFACE_DESC desc;
-						if (SUCCEEDED(trackedRenderTarget->GetDesc(&desc)))
-						{
-							IDirect3DTexture9 * texture = NULL;
-							if (SUCCEEDED(g_OldDirect3DDevice9->CreateTexture(
-								desc.Width,
-								desc.Height,
-								1,
-								D3DUSAGE_RENDERTARGET,
-								desc.Format,
-								D3DPOOL_DEFAULT,
-								&texture,
-								NULL)))
-							{
-								IDirect3DSurface9 * replacement = nullptr;
-								if (SUCCEEDED(texture->GetSurfaceLevel(0, &replacement)))
-								{
-									AfxD3d9PushRenderTargetEx(replacement);
-									replacement->Release();
-								}
-
-								texture->Release();
-							}
-						}
-					}
-					else
-					{
-						AfxD3d9PopRenderTarget(false);
-					}
-				}
+			if (handleMsaa && trackedRenderTargetMultisampled && m_OverrideDefaultBuffersWithIntz) {
+					AfxD3d9PushRenderTarget(true);
 			}
 
 			// Base DepthStencil:
@@ -2827,6 +2791,11 @@ public:
 					}
 				}
 			}
+
+			if (handleMsaa && trackedRenderTargetMultisampled && !m_OverrideDefaultBuffersWithIntz) {
+				AfxD3d9PopRenderTarget(true); // TODO: if a stream is not visible on-screen, this stretch is usless / not even recorded.
+			}
+
 		}
 	}
 
@@ -2894,7 +2863,7 @@ public:
 	}
 
 
-	void AfxDrawDepth(AfxDrawDepthEncode encode, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, bool drawToScreen, float projectionMatrix[4][4])
+	void AfxDrawDepth(AfxDrawDepthEncode encode, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, float projectionMatrix[4][4])
 	{
 		if (!g_bSupportsIntz) return;
 
@@ -2950,30 +2919,25 @@ public:
 		IDirect3DTexture9 * depthTexture = NULL;
 		IDirect3DSurface9 * depthSurface = NULL;
 
+		if (trackedDepthStencil)
 		{
-			if (SUCCEEDED(g_OldDirect3DDevice9->GetDepthStencilSurface(&depthSurface)))
+			if (FAILED(trackedDepthStencil->GetContainer(__uuidof(IDirect3DTexture9), (void **)&depthTexture)))
 			{
-				if (FAILED(depthSurface->GetContainer(__uuidof(IDirect3DTexture9), (void **)&depthTexture)))
-				{
-					depthTexture = NULL;
-				}			
-			}
-			else
-			{
-				depthSurface = NULL;
-			}
+				depthTexture = NULL;
+			}			
+		}
+		else
+		{
+			depthSurface = NULL;
 		}
 
 		if (pixelShader && depthTexture && trackedRenderTarget)
 		{
 			AfxBeginCleanState();
 
-			IDirect3DSurface9 * oldRenderTarget = AfxGetSourceSurface(trackedRenderTarget);
-			if (oldRenderTarget)
-				oldRenderTarget->AddRef();
-			else {
-				AfxEndCleanState();
-				goto exit;
+			IDirect3DSurface9* oldTarget = nullptr;
+			if (SUCCEEDED(g_OldDirect3DDevice9->GetRenderTarget(0, &oldTarget)) && oldTarget) {
+				g_OldDirect3DDevice9->SetRenderTarget(0, trackedRenderTarget);
 			}
 
 			//
@@ -3111,47 +3075,19 @@ public:
 
 			g_OldDirect3DDevice9->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, &vertexData, sizeof(AFXDRAWDEPTHVERTEX));
 
-			if (drawToScreen)
-			{
-				if (IDirect3DSurface9* src = trackedRenderTarget) {
-					if (IDirect3DSurface9* dst = oldRenderTarget)
-					{
-						if (IDirect3DPixelShader9* drawTextureShader = g_AfxShaders.GetAcsPixelShader(L"afx_drawtexture_ps20.acs", ShaderCombo_afx_drawtexture_ps20::GetCombo())->GetPixelShader())
-						{
-							g_OldDirect3DDevice9->SetPixelShader(drawTextureShader);
-
-							IDirect3DTexture9* srcTex = NULL;
-							if (SUCCEEDED(src->GetContainer(__uuidof(IDirect3DTexture9), (void**)&srcTex)))
-							{
-								g_OldDirect3DDevice9->SetDepthStencilSurface(NULL);
-
-								g_OldDirect3DDevice9->SetRenderTarget(0, dst);
-								g_OldDirect3DDevice9->SetTexture(0, srcTex);
-								g_OldDirect3DDevice9->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-								g_OldDirect3DDevice9->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-
-								g_OldDirect3DDevice9->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, &vertexData, sizeof(AFXDRAWDEPTHVERTEX));
-
-								srcTex->Release();
-
-								g_OldDirect3DDevice9->SetDepthStencilSurface(depthSurface);
-							}
-						}
-					}
-				}
-			}
-
 			//
 			// Restore old Direct3D9 state:
 
-			g_OldDirect3DDevice9->SetRenderTarget(0, oldRenderTarget);
+			if (oldTarget) {
+				g_OldDirect3DDevice9->SetRenderTarget(0, oldTarget);
+				oldTarget->Release();
+			}
 
-			if (oldRenderTarget) oldRenderTarget->Release();
+			g_OldDirect3DDevice9->SetDepthStencilSurface(depthSurface);
 
 			AfxEndCleanState();
 		}
 
-	exit:
 		if (depthTexture) depthTexture->Release();
 		if (depthSurface) depthSurface->Release();
 	}
@@ -3469,8 +3405,8 @@ private:
 			}
 		}
 #endif
-		if (IDirect3DSurface9* result = AfxGetReplacementSurface(surface)) {
-			return result;
+		while (IDirect3DSurface9* result = AfxGetReplacementSurface(surface)) {
+			surface = result;
 		}
 
 		return surface;
@@ -3514,9 +3450,10 @@ private:
 		}
 #endif
 
-		if (IDirect3DSurface9* result = AfxGetSourceSurface(surface)) {
+		while (IDirect3DSurface9* result = AfxGetSourceSurface(surface)) {
+			result->AddRef();
 			surface->Release();
-			return result;
+			surface = result;
 		}
 
 		return surface;
@@ -4608,13 +4545,7 @@ public:
     IFACE_PASSTHROUGH_DECL(IDirect3DDevice9, GetNumberOfSwapChains);
 
 	IAfxD3D9Capture * AfxD3d9CreateRenderTargetCompatibleCapture() {
-		IDirect3DSurface9* pSrcSurface = nullptr;
-		if (SUCCEEDED(g_OldDirect3DDevice9->GetRenderTarget(0, &pSrcSurface))) {
-			IAfxD3D9Capture* result = CAfxD3D9Capture::Create(pSrcSurface);
-			pSrcSurface->Release();
-			return result;
-		}
-		return nullptr;
+			return CAfxD3D9Capture::Create(trackedRenderTarget);
 	}
 
 	void Afx_Reset_Before(D3DPRESENT_PARAMETERS* pPresentationParameters, D3DDISPLAYMODEEX *pFullscreenDisplayMode)
@@ -5045,8 +4976,7 @@ public:
 
 	STDMETHOD(SetRenderTarget)(THIS_ DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget)
 	{
-		pRenderTarget = UnwrapSurface(pRenderTarget);
-		return g_OldDirect3DDevice9->SetRenderTarget(RenderTargetIndex, pRenderTarget);
+		return g_OldDirect3DDevice9->SetRenderTarget(RenderTargetIndex, UnwrapSurface(pRenderTarget));
 	}
 
 	STDMETHOD(GetRenderTarget)(THIS_ DWORD RenderTargetIndex, IDirect3DSurface9** ppRenderTarget)
@@ -6644,21 +6574,21 @@ bool AfxD3d9_DrawDepthSupported(void)
 }
 
 
-void AfxIntzOverrideBegin(bool bNoReplacement)
+void AfxIntzOverrideBegin()
 {
-	if (g_OldDirect3DDevice9) g_NewDirect3DDevice9.AfxOverrideDefaultBuffersWithIntz(true, bNoReplacement);
+	if (g_OldDirect3DDevice9) g_NewDirect3DDevice9.AfxOverrideDefaultBuffersWithIntz(true);
 }
 
-void AfxIntzOverrideEnd(bool bNoReplacement)
+void AfxIntzOverrideEnd()
 {
-	if (g_OldDirect3DDevice9) g_NewDirect3DDevice9.AfxOverrideDefaultBuffersWithIntz(false, bNoReplacement);
+	if (g_OldDirect3DDevice9) g_NewDirect3DDevice9.AfxOverrideDefaultBuffersWithIntz(false);
 }
 
-void AfxDrawDepth(AfxDrawDepthEncode encode, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, bool drawToScreen, float projectionMatrix[4][4])
+void AfxDrawDepth(AfxDrawDepthEncode encode, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, float projectionMatrix[4][4])
 {
 	if (!g_bSupportsIntz) return;
 
-	g_NewDirect3DDevice9.AfxDrawDepth(encode, mode, clip, depthVal, depthValMax, x, y, width, height, zNear, zFar, drawToScreen, projectionMatrix);
+	g_NewDirect3DDevice9.AfxDrawDepth(encode, mode, clip, depthVal, depthValMax, x, y, width, height, zNear, zFar, projectionMatrix);
 }
 
 void AfxDrawGuides(int x, int y, int width, int height, bool phiGrid, bool ruleOfThirds)

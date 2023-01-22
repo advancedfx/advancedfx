@@ -3326,7 +3326,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin(const CAfxBaseFxStrea
 		{
 			if (bDrawDepth) AfxD3D9PushOverrideState(false);
 
-			AfxIntzOverrideBegin(!bDrawDepth);
+			AfxIntzOverrideBegin();
 
 			if(bDrawDepth) AfxD3D9OverrideBegin_D3DRS_COLORWRITEENABLE(0);
 		}
@@ -3378,7 +3378,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd(bool isRoot)
 		{
 			if(bDrawDepth) AfxD3D9OverrideEnd_D3DRS_COLORWRITEENABLE();
 
-			AfxIntzOverrideEnd(!bDrawDepth);
+			AfxIntzOverrideEnd();
 
 			if (bDrawDepth) AfxD3D9PopOverrideState();
 		}
@@ -3488,9 +3488,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 				m_IsNextDepth,
 				flDepthFactor, flDepthFactorMax,
 				m_Data.Viewport.x, m_Data.Viewport.y, m_Data.Viewport.width, m_Data.Viewport.height, m_Data.Viewport.zNear, m_Data.Viewport.zFar,
-				bDrawDepth,
-				bDrawDepth ? m_Data.ProjectionMatrix.m : nullptr
-			);
+				(bDrawDepth || bDepthF) ? m_Data.ProjectionMatrix.m : nullptr);
 			if (bDepthF || bReShade) AfxSetRenderTargetR32FDepthTexture_Restore(oldRenderTarget);
 			m_IsNextDepth = true;
 		}
@@ -3600,8 +3598,7 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 				m_IsNextDepth,
 				flDepthFactor, flDepthFactorMax,
 				m_Data.Viewport.x, m_Data.Viewport.y, m_Data.Viewport.width, m_Data.Viewport.height, 2.0f * scale, (float)SOURCESDK_CSGO_MAX_TRACE_LENGTH * scale,
-				false,
-				bDrawDepth ? m_Data.ProjectionMatrixSky.m : nullptr);
+				(bDrawDepth || bDepthF) ? m_Data.ProjectionMatrixSky.m : nullptr);
 			if (bDepthF || bReShade) AfxSetRenderTargetR32FDepthTexture_Restore(oldRenderTarget);
 
 			m_IsNextDepth = true;

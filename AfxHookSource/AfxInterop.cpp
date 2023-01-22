@@ -1677,7 +1677,7 @@ namespace AfxInterop {
 		void DrawingThread_DrawDepth(bool isNextDepth, float outZNear, float outZFar, int x, int y, int width, int height, float zNear, float zFar) {
 			if (m_DepthSurface) {
 				AfxD3d9PushRenderTargetEx(m_DepthSurface);
-				AfxDrawDepth(AfxDrawDepthEncode_Rgba, AfxDrawDepthMode_Inverse, isNextDepth, outZNear, outZFar, x, y, width, height, zNear, zFar, false, nullptr);
+				AfxDrawDepth(AfxDrawDepthEncode_Rgba, AfxDrawDepthMode_Inverse, isNextDepth, outZNear, outZFar, x, y, width, height, zNear, zFar, nullptr);
 				AfxD3d9PopRenderTarget();
 			}
 		}
