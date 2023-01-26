@@ -27,10 +27,10 @@ public:
 		outDemoTime = Mirv_GetDemoTimeOrClientTime();
 		return outDemoTime;
 	}
-	virtual bool GetDemoTickFromTime(double curTime, double time, int& outTick) {
+	virtual bool GetDemoTickFromDemoTime(double curTime, double time, int& outTick) {
 		return false;
 	}
-	virtual bool GetDemoTimeFromTime(double curTime, double time, double& outDemoTime) {
+	virtual bool GetDemoTimeFromClientTime(double curTime, double time, double& outDemoTime) {
 		return false;
 	}
 } g_MirvCampath_Time;

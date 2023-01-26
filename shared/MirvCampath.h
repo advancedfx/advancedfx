@@ -11,8 +11,8 @@ public:
 	virtual double GetCurTime() abstract = 0;
 	virtual bool GetCurrentDemoTick(int& outTick) abstract = 0;
 	virtual bool GetCurrentDemoTime(double& outDemoTime) abstract = 0;
-	virtual bool GetDemoTickFromTime(double curTime, double time, int& outTick) abstract = 0;
-	virtual bool GetDemoTimeFromTime(double curTime, double time, double& outDemoTime) abstract = 0;
+	virtual bool GetDemoTickFromDemoTime(double curTime, double demoTime, int& outTick) abstract = 0;
+	virtual bool GetDemoTimeFromClientTime(double curTime, double clientTime, double& outDemoTime) abstract = 0;
 };
 
 struct SMirvCameraValue

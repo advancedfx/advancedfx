@@ -177,6 +177,8 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 				double fov;
 
 				double time = it.GetTime();
+				double demoTime = 0;
+				bool bDemoTime = mirvTime->GetDemoTimeFromClientTime(curtime, time, demoTime);
 				CamPathValue val = it.GetValue();
 				bool selected = val.Selected;
 				QEulerAngles ang = val.R.ToQREulerAngles().ToQEulerAngles();
@@ -199,7 +201,7 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 				if (offset)
 				{
 					int myTick, myTickOffset;
-					if (mirvTime->GetDemoTickFromTime(curtime, time, myTick) && mirvTime->GetDemoTickFromTime(curtime + offset, time, myTickOffset))
+					if (bDemoTime && mirvTime->GetDemoTickFromDemoTime(curtime, demoTime, myTick) && mirvTime->GetDemoTickFromDemoTime(curtime + offset, demoTime, myTickOffset))
 					{
 						int delta = myTickOffset - myTick;
 						conMessage("%i%s%i", myTick, delta < 0 ? "" : "+", delta);
@@ -210,7 +212,7 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 				else
 				{
 					int myTick;
-					if (mirvTime->GetDemoTickFromTime(curtime, time, myTick))
+					if (bDemoTime && mirvTime->GetDemoTickFromDemoTime(curtime, demoTime, myTick))
 						conMessage("%i", myTick);
 					else
 						conMessage("n/a");
@@ -219,7 +221,7 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 				conMessage(" , ");
 
 				double myDemoTime;
-				if (mirvTime->GetDemoTimeFromTime(curtime, time, myDemoTime))
+				if (bDemoTime)
 				{
 					MirvCampath_PrintTimeFormated(myDemoTime, conMessage);
 					if (offset > 0)

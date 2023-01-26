@@ -1140,56 +1140,32 @@ bool GetCurrentDemoTick(int &outTick)
 	return false;
 }
 
-bool GetDemoTickFromTime(double curTime, double time, int &outTick)
+bool GetDemoTimeFromClientTime(double curTime, double clientTime, double &outDemoTime)
 {
 	WrpVEngineClientDemoInfoEx * di = g_VEngineClient->GetDemoInfoEx();
 	WrpGlobals * gl = g_Hook_VClient_RenderView.GetGlobals();
-
 	if(di && gl)
 	{
-		int client_current_tick = di->GetDemoPlaybackTick();
-
+		int current_tick = di->GetDemoPlaybackTick();
 		double tick_interval = gl->interval_per_tick_get();
-
-		double interpolation_amount = gl->interpolation_amount_get();
-
-		double demoTime = (client_current_tick +interpolation_amount) * tick_interval;
-
-		double deltaTime = curTime -demoTime;
-
-		time -= deltaTime;
-
-		outTick = (int)round(time / tick_interval);
-
+		outDemoTime = clientTime - (curTime - current_tick * tick_interval);
 		return true;
 	}
-
 	return false;
 }
 
-bool GetDemoTimeFromTime(double curTime, double time, double &outDemoTime)
+
+bool GetDemoTickFromDemoTime(double curTime, double demoTime, int& outTick)
 {
-	WrpVEngineClientDemoInfoEx * di = g_VEngineClient->GetDemoInfoEx();
-	WrpGlobals * gl = g_Hook_VClient_RenderView.GetGlobals();
+	WrpVEngineClientDemoInfoEx* di = g_VEngineClient->GetDemoInfoEx();
+	WrpGlobals* gl = g_Hook_VClient_RenderView.GetGlobals();
 
-	if(di && gl)
+	if (di && gl)
 	{
-		int client_current_tick = di->GetDemoPlaybackTick();
-
 		double tick_interval = gl->interval_per_tick_get();
-
-		double interpolation_amount = gl->interpolation_amount_get();
-
-		double demoTime = (client_current_tick +interpolation_amount) * tick_interval;
-
-		double deltaTime = curTime -demoTime;
-
-		time -= deltaTime;
-
-		outDemoTime = time;
+		outTick = (int)round(demoTime / tick_interval);
 
 		return true;
-
 	}
 
 	return false;
@@ -1217,6 +1193,13 @@ bool GetCurrentDemoTime(double &outDemoTime)
 
 	return false;
 }
+
+bool GetDemoTickFromClientTime(double curTime, double targetTime, int& outTick)
+{
+	double demoTime;
+	return GetDemoTimeFromClientTime(curTime, targetTime, demoTime) && GetDemoTickFromDemoTime(curTime, demoTime, outTick);
+}
+
 
 void PrintTimeFormated(double time)
 {
@@ -1302,8 +1285,8 @@ CON_COMMAND(mirv_skip, "for skipping trhough demos (uses demo_gototick)")
 		else
 		if(!_stricmp(arg1, "time"))
 		{
-			double curTime;
-			if(!GetCurrentDemoTime(curTime))
+			double demoTime;
+			if(!GetCurrentDemoTime(demoTime))
 			{
 				Tier0_Warning("Error: GetCurrentDemoTime failed!\n");
 				return;
@@ -1318,7 +1301,7 @@ CON_COMMAND(mirv_skip, "for skipping trhough demos (uses demo_gototick)")
 					double targetTime = atof(args->ArgV(3));
 					int targetTick;
 
-					if(!GetDemoTickFromTime(curTime, targetTime, targetTick))
+					if(!GetDemoTickFromDemoTime(g_MirvTime.GetCurTime(), targetTime, targetTick))
 					{
 						Tier0_Warning("Error: GetDemoTickFromTime failed!\n");
 						return;
@@ -1332,14 +1315,33 @@ CON_COMMAND(mirv_skip, "for skipping trhough demos (uses demo_gototick)")
 					
 					return;
 				}
+				else if (0 == _stricmp(arg2, "toGame") && 4 <= argc)
+				{
+					double targetClientTime = atof(args->ArgV(3));
+					int targetTick;
+
+					if (!GetDemoTickFromClientTime(g_MirvTime.GetCurTime(), targetClientTime, targetTick))
+					{
+						Tier0_Warning("Error: GetDemoTickFromClientTime failed!\n");
+						return;
+					}
+
+					std::ostringstream oss;
+
+					oss << "demo_gototick " << targetTick;
+
+					g_VEngineClient->ExecuteClientCmd(oss.str().c_str());
+
+					return;
+				}
 
 				if(3 <= argc)
 				{
 					double deltaTime = atof(arg2);
-					double targetTime = curTime+deltaTime;
+					double targetTime = g_MirvTime.GetCurTime() +deltaTime;
 					int targetTick;
 
-					if(!GetDemoTickFromTime(curTime, targetTime, targetTick))
+					if(!GetDemoTickFromClientTime(g_MirvTime.GetCurTime(), targetTime, targetTick))
 					{
 						Tier0_Warning("Error: GetDemoTickFromTime failed!\n");
 						return;
@@ -1358,10 +1360,11 @@ CON_COMMAND(mirv_skip, "for skipping trhough demos (uses demo_gototick)")
 			Tier0_Msg(
 				"mirv_skip time <dValue> - skip approximately time <dValue> seconds (negative values skip back).\n"
 				"mirv_skip time to <dValue> - go approximately to demo time <dValue> seconds\n"
+				"mirv_skip time toGame <dValue> - go approximately to game (client) time <dValue> seconds\n"
 				"Current demo time in seconds: %f (",
-				curTime
+				demoTime
 			);
-			PrintTimeFormated(curTime);
+			PrintTimeFormated(demoTime);
 			Tier0_Msg(")\n");
 
 			return;
@@ -1390,11 +1393,11 @@ public:
 	virtual bool GetCurrentDemoTime(double& outDemoTime) {
 		return ::GetCurrentDemoTime(outDemoTime);
 	}
-	virtual bool GetDemoTickFromTime(double curTime, double time, int& outTick) {
-		return ::GetDemoTickFromTime(curTime, time, outTick);
+	virtual bool GetDemoTickFromDemoTime(double curTime, double time, int& outTick) {
+		return ::GetDemoTickFromDemoTime(curTime, time, outTick);
 	}
-	virtual bool GetDemoTimeFromTime(double curTime, double time, double& outDemoTime) {
-		return ::GetDemoTimeFromTime(curTime, time, outDemoTime);
+	virtual bool GetDemoTimeFromClientTime(double curTime, double time, double& outDemoTime) {
+		return ::GetDemoTimeFromClientTime(curTime, time, outDemoTime);
 	}
 } g_MirvCampath_Time;
 
