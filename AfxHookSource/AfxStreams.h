@@ -1265,6 +1265,23 @@ private:
 	std::string m_FfmpegOptions;
 };
 
+class CAfxFfmpegExRecordingSettings : public CAfxRecordingSettings
+{
+public:
+	CAfxFfmpegExRecordingSettings(const char * name, bool bProtected, const char * szFfmpegOptions)
+		: CAfxRecordingSettings(name, bProtected)
+		, m_FfmpegOptions(szFfmpegOptions)
+	{
+
+	}
+
+	virtual void Console_Edit(IWrpCommandArgs * args) override;
+
+	virtual advancedfx::COutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const advancedfx::CImageFormat & imageFormat, float fps, const char * pathSuffix) const override;
+
+private:
+	std::string m_FfmpegOptions;
+};
 
 class CAfxSamplingRecordingSettings : public CAfxRecordingSettings
 {

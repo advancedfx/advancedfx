@@ -230,39 +230,37 @@ COutFFMPEGVideoStream::COutFFMPEGVideoStream(const CImageFormat& imageFormat, co
 			ffmpegExe.append(L"ffmpeg\\bin\\ffmpeg.exe");
 		}
 
-		std::wostringstream ffmpegArgs;
-
-		ffmpegArgs << L"\"" << ffmpegExe << L"\"";
-		ffmpegArgs << L" -f rawvideo -pixel_format ";
+		std::wstring pixelFormat;
 
 		switch (imageFormat.Format)
 		{
 		case ImageFormat::BGR:
-			ffmpegArgs << L"bgr24";
+			pixelFormat =  L"bgr24";
 			break;
 		case ImageFormat::BGRA:
-			ffmpegArgs << L"bgra";
+			pixelFormat =  L"bgra";
 			break;
 		case ImageFormat::A:
-			ffmpegArgs << L"gray";
+			pixelFormat = L"gray";
 			break;
 		default:
 			advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::COutFFMPEGVideoStream: Unsupported image format.");
 			return;
 		}
 
-		ffmpegArgs << " -loglevel repeat+level+warning";
-		ffmpegArgs << " -framerate " << frameRate;
-		ffmpegArgs << " -video_size " << imageFormat.Width << "x" << imageFormat.Height;
-		ffmpegArgs << " -i pipe:0 -vf setsar=sar=1/1";
-		if (imageFormat.Origin != ImageOrigin::TopLeft) ffmpegArgs << ",vflip";
+		//if (imageFormat.Origin != ImageOrigin::TopLeft) ffmpegArgs << ",vflip";
 
 		std::wstring myFFMPEGOptions(ffmpegOptions);
 
 		// breaking change: // myPath.append(L"\\");
 
 		std::map<std::wstring, std::wstring> replacements;
+		replacements[L"{FFMPEG_PATH}"] = ffmpegExe;
 		replacements[L"{AFX_STREAM_PATH}"] = myPath;
+		replacements[L"{WIDTH}"] = std::to_wstring(imageFormat.Width);
+		replacements[L"{HEIGHT}"] = std::to_wstring(imageFormat.Height);
+		replacements[L"{PIXEL_FORMAT}"] = pixelFormat;
+		replacements[L"{FRAMERATE}"] = std::to_wstring(frameRate);
 		replacements[L"{QUOTE}"] = L"\"";
 		replacements[L"\\{"] = L"{";
 		replacements[L"\\}"] = L"}";
@@ -270,10 +268,7 @@ COutFFMPEGVideoStream::COutFFMPEGVideoStream(const CImageFormat& imageFormat, co
 
 		ReplaceAllW(myFFMPEGOptions, replacements);
 
-		ffmpegArgs << " " << myFFMPEGOptions;
-		ffmpegArgs << L"\0";
-
-		std::wstring commandLine(ffmpegArgs.str());
+		std::wstring commandLine(myFFMPEGOptions.append(L"\0"));
 
 		STARTUPINFOW startupInfo;
 

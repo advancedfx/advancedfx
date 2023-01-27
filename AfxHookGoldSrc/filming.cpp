@@ -2640,6 +2640,30 @@ REGISTER_CMD_FUNC(movie_ffmpeg)
 
 					for (std::list<int>::iterator it = selectedStreams.begin(); it != selectedStreams.end(); ++it)
 					{
+						g_FilmingStream_FfmpegOptions[*it] = std::wstring(L"{QUOTE}{FFMPEG_PATH}{QUOTE} -f rawvideo -pixel_format {PIXEL_FORMAT} -loglevel repeat+level+warning -framerate {FRAMERATE} -video_size {WIDTH}x{HEIGHT} -i pipe:0 -vf setsar=sar=1/1 ").append(wOptions);
+					}
+					return;
+				}
+
+				if (1 == selectedStreams.size())
+				{
+					pEngfuncs->Con_Printf("Use %s %s optionsEx instead.\n", arg0, arg1);
+					return;
+				}
+			}
+			else if (0 == _stricmp("optionsEx", arg2))
+			{
+				if (4 == argC)
+				{
+					std::wstring wOptions;
+					if (!UTF8StringToWideString(pEngfuncs->Cmd_Argv(3), wOptions))
+					{
+						pEngfuncs->Con_Printf("Error, can not convert \"%s\" from UTF8 to wide string.\n", pEngfuncs->Cmd_Argv(3));
+						return;
+					}
+
+					for (std::list<int>::iterator it = selectedStreams.begin(); it != selectedStreams.end(); ++it)
+					{
 						g_FilmingStream_FfmpegOptions[*it] = wOptions;
 					}
 					return;
@@ -2654,7 +2678,7 @@ REGISTER_CMD_FUNC(movie_ffmpeg)
 						return;
 					}
 
-					pEngfuncs->Con_Printf("%s %s options = \"%s\"\n", arg0, arg1, options.c_str());
+					pEngfuncs->Con_Printf("%s %s optionsEx = \"%s\"\n", arg0, arg1, options.c_str());
 					return;
 				}
 			}
@@ -2674,7 +2698,15 @@ REGISTER_CMD_FUNC(movie_ffmpeg)
 		, arg0
 	);
 	pEngfuncs->Con_Printf(
-		"%s main|mainRight|world|worldRight|entity|entityRight|depthMain|depthMainRight|depthWorld|depthWorldRight|hudColor|hudAlpha|debug options [<sOptions>] - Gets or sets options on the given stream.\n"
+		"%s all|allColor|allMain|allWorld|allEntity|allDepth optionsEx <sOptions> - Sets extended <sOptions> for the given group of streams.\n"
+		, arg0
+	);
+	pEngfuncs->Con_Printf(
+		"%s main|mainRight|world|worldRight|entity|entityRight|depthMain|depthMainRight|depthWorld|depthWorldRight|hudColor|hudAlpha|debug options <sOptions> - Sets options on the given stream.\n"
+		, arg0
+	);
+	pEngfuncs->Con_Printf(
+		"%s main|mainRight|world|worldRight|entity|entityRight|depthMain|depthMainRight|depthWorld|depthWorldRight|hudColor|hudAlpha|debug optionsEx [<sOptions>] - Gets or sets exteneded options on the given stream.\n"
 		, arg0
 	);
 }
