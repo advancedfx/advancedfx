@@ -10547,32 +10547,32 @@ CAfxClassicRecordingSettings::CShared::CShared()
 	m_NamedSettings.emplace(m_DefaultSettings->GetName(), m_DefaultSettings);
 
 	{
-		CAfxRecordingSettings * settings = new CAfxFfmpegExRecordingSettings("afxFfmpeg", true, "{QUOTE}{FFMPEG_PATH}{QUOTE} -f rawvideo -pixel_format {PIXEL_FORMAT} -loglevel repeat+level+warning -framerate {FRAMERATE} -video_size {WIDTH}x{HEIGHT} -i pipe:0 -vf setsar=sar=1/1 -c:v libx264 -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}");
+		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpeg", true, "-c:v libx264 -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 
 	{
-		CAfxRecordingSettings * settings = new CAfxFfmpegExRecordingSettings("afxFfmpegYuv420p", true, "{QUOTE}{FFMPEG_PATH}{QUOTE} -f rawvideo -pixel_format {PIXEL_FORMAT} -loglevel repeat+level+warning -framerate {FRAMERATE} -video_size {WIDTH}x{HEIGHT} -i pipe:0 -vf setsar=sar=1/1 -c:v libx264 -pix_fmt yuv420p -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}");
+		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegYuv420p", true, "-c:v libx264 -pix_fmt yuv420p -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 
 	{
-		CAfxRecordingSettings * settings = new CAfxFfmpegExRecordingSettings("afxFfmpegLosslessFast", true, "{QUOTE}{FFMPEG_PATH}{QUOTE} -f rawvideo -pixel_format {PIXEL_FORMAT} -loglevel repeat+level+warning -framerate {FRAMERATE} -video_size {WIDTH}x{HEIGHT} -i pipe:0 -vf setsar=sar=1/1 -c:v libx264rgb -preset ultrafast -crf 0 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}");
+		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegLosslessFast", true, "-c:v libx264rgb -preset ultrafast -crf 0 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 
 	{
-		CAfxRecordingSettings * settings = new CAfxFfmpegExRecordingSettings("afxFfmpegLosslessBest", true, "{QUOTE}{FFMPEG_PATH}{QUOTE} -f rawvideo -pixel_format {PIXEL_FORMAT} -loglevel repeat+level+warning -framerate {FRAMERATE} -video_size {WIDTH}x{HEIGHT} -i pipe:0 -vf setsar=sar=1/1 -c:v libx264rgb -preset veryslow -crf 0 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}");
+		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegLosslessBest", true, "-c:v libx264rgb -preset veryslow -crf 0 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 
 	{
-		CAfxRecordingSettings * settings = new CAfxFfmpegExRecordingSettings("afxFfmpegRaw", true, "{QUOTE}{FFMPEG_PATH}{QUOTE} -f rawvideo -pixel_format {PIXEL_FORMAT} -loglevel repeat+level+warning -framerate {FRAMERATE} -video_size {WIDTH}x{HEIGHT} -i pipe:0 -vf setsar=sar=1/1 -c:v rawvideo {QUOTE}{AFX_STREAM_PATH}\\\\video.avi{QUOTE}");
+		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegRaw", true, "-c:v rawvideo {QUOTE}{AFX_STREAM_PATH}\\\\video.avi{QUOTE}");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 
 	{
-		CAfxRecordingSettings * settings = new CAfxFfmpegExRecordingSettings("afxFfmpegHuffyuv", true, "{QUOTE}{FFMPEG_PATH}{QUOTE} -f rawvideo -pixel_format {PIXEL_FORMAT} -loglevel repeat+level+warning -framerate {FRAMERATE} -video_size {WIDTH}x{HEIGHT} -i pipe:0 -vf setsar=sar=1/1 -c:v huffyuv {QUOTE}{AFX_STREAM_PATH}\\\\video.avi{QUOTE}");
+		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegHuffyuv", true, "-c:v huffyuv {QUOTE}{AFX_STREAM_PATH}\\\\video.avi{QUOTE}");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 

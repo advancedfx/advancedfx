@@ -118,7 +118,7 @@ enum FilmingStreamSlot {
 	FS_debug = 12
 };
 
-const wchar_t* g_DefaultFfmpegOptionsColor = L"-c:v libx264 -pix_fmt yuv420p -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}";
+const wchar_t* g_DefaultFfmpegOptionsColor = L"{QUOTE}{FFMPEG_PATH}{QUOTE} -f rawvideo -pixel_format {PIXEL_FORMAT} -loglevel repeat+level+warning -framerate {FRAMERATE} -video_size {WIDTH}x{HEIGHT} -i pipe:0 -vf setsar=sar=1/1 -c:v libx264 -pix_fmt yuv420p -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}";
 
 std::wstring g_FilmingStream_FfmpegOptions[13] = {
 	g_DefaultFfmpegOptionsColor, g_DefaultFfmpegOptionsColor,
@@ -2647,7 +2647,20 @@ REGISTER_CMD_FUNC(movie_ffmpeg)
 
 				if (1 == selectedStreams.size())
 				{
-					pEngfuncs->Con_Printf("Use %s %s optionsEx instead.\n", arg0, arg1);
+					std::string options;
+					if(!WideStringToUTF8String(g_FilmingStream_FfmpegOptions[selectedStreams.front()].c_str(), options))
+					{
+						pEngfuncs->Con_Printf("Error, can not convert wide string to UTF8.\n", pEngfuncs->Cmd_Argv(3));
+						return;
+					}
+
+					std::string prefix("{QUOTE}{FFMPEG_PATH}{QUOTE} -f rawvideo -pixel_format {PIXEL_FORMAT} -loglevel repeat+level+warning -framerate {FRAMERATE} -video_size {WIDTH}x{HEIGHT} -i pipe:0 -vf setsar=sar=1/1 ");
+					if(StringBeginsWith(options.c_str(), prefix.c_str())) {
+						pEngfuncs->Con_Printf("%s %s options = \"%s\"\n", arg0, arg1, options.substr(prefix.length()).c_str());
+						return;
+					}
+
+					pEngfuncs->Con_Printf("Currently extended options are in use, use %s %s optionsEx instead.\n", arg0, arg1);
 					return;
 				}
 			}
