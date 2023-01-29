@@ -9,13 +9,15 @@
 
 void MirvCampath_PrintTimeFormated(double time, advancedfx::Con_Printf_t conMessage)
 {
-	int seconds = (int)time % 60;
+	int intTime = (int)std::round(time);
 
-	time /= 60;
-	int minutes = (int)time % 60;
+	int hours = intTime / 60 / 60;
+	intTime -= hours * 60 * 60;
 
-	time /= 60;
-	int hours = (int)time;
+	int minutes = intTime / 60;
+	intTime -= minutes * 60;
+
+	int seconds = (int)intTime;
 
 	std::ostringstream oss;
 
@@ -220,10 +222,9 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 
 				conMessage(" , ");
 
-				double myDemoTime;
 				if (bDemoTime)
 				{
-					MirvCampath_PrintTimeFormated(myDemoTime, conMessage);
+					MirvCampath_PrintTimeFormated(demoTime, conMessage);
 					if (offset > 0)
 					{
 						conMessage("+");
