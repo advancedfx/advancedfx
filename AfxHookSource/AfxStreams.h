@@ -3802,7 +3802,38 @@ public:
 
 	IAfxStreamContext * FindStreamContext(IAfxMatRenderContext * ctx);
 
+	void DrawingThread_DeviceLost();
+
+	void DrawingThread_DeviceRestored();
+
+	IDirect3DSurface9* DrawingThread_GetOrCreateRenderTargetSurface();
+
+	bool DrawingThread_HasRenderTargetMsaa();
+
+	IDirect3DSurface9* DrawingThread_GetOrCreateRenderTargetSurfaceNoMssaa();
+
+	void DrawingThread_SetRenderTarget();
+
+	void DrawingThread_UnsetRenderTarget(bool strechtRect);
+
+	void DrawingThread_SetRenderTargetNoMsaa();
+
+	void DrawingThread_UnsetRenderTargetNoMsaa(bool strechtRect);
+
+	IDirect3DSurface9* DrawingThread_GetOrCreateIntZTextureSurface();
+
+	void DrawingThread_SetIntZTextureSurface();
+
+	void DrawingThread_UnsetIntZTextureSurface();
+
 private:
+	IDirect3DSurface9* m_RenderTargetSurface = nullptr;
+	IDirect3DSurface9* m_RenderTargetSurfaceNoMsaa = nullptr;
+	IDirect3DSurface9* m_IntZTextureSurface = nullptr;
+
+	int m_SetRenderTarget = 0;
+	int m_SetRenderTargetNoMsaa = 0;
+	int m_SetIntZTextureSurface = 0;
 
 	enum MainStreamMode_e
 	{

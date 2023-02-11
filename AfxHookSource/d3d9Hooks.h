@@ -170,9 +170,6 @@ enum AfxDrawDepthEncode
 	AfxDrawDepthEncode_Dithered
 };
 
-void AfxIntzOverrideBegin();
-void AfxIntzOverrideEnd();
-
 /// <param name="projectionMatrix">Can currently be null if AfxDrawDepthMode_Inverse, otherwise has to be projection matrix from engine.</param>
 void AfxDrawDepth(AfxDrawDepthEncode encode, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, float projectionMatrix[4][4]);
 
@@ -202,9 +199,17 @@ void AfxSetRenderTargetR32FDepthTexture_Restore(IDirect3DSurface9* oldRenderTarg
 
 IDirect3DTexture9* AfxGetR32FDepthTexture();
 
+/**
+ * @remarks Retrurned object must be released.
+ */
+IDirect3DSurface9* AfxCreateCompatibleRenderTarget(IDirect3DSurface9* renderTarget, bool autoMsaa);
+
+IDirect3DSurface9* AfxCreateCompatibleDepthStencilINTZTextureSurface(IDirect3DSurface9* depthStencil);
+
 void AfxD3d9PushRenderTargetEx(IDirect3DSurface9* replacementSurface);
-void AfxD3d9PushRenderTarget();
 void AfxD3d9PopRenderTarget(bool stretchRect = false);
 
 void AfxD3d9PushDepthStencilEx(IDirect3DSurface9* replacementSurface);
 void AfxD3d9PopDepthStencil();
+
+bool AfxD3d9HashRenderTargetMsaa();

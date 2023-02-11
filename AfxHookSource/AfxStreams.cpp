@@ -624,13 +624,13 @@ class CAfxInteropOverrideDepthBegin_Functor
 {
 public:
 	CAfxInteropOverrideDepthBegin_Functor()
-
 	{
 	}
 
 	virtual void operator()()
 	{
-		AfxIntzOverrideBegin();
+		g_AfxStreams.DrawingThread_SetRenderTargetNoMsaa();
+		g_AfxStreams.DrawingThread_SetIntZTextureSurface();
 	}
 
 private:
@@ -646,7 +646,8 @@ public:
 
 	virtual void operator()()
 	{
-		AfxIntzOverrideEnd();
+		g_AfxStreams.DrawingThread_UnsetIntZTextureSurface();
+		g_AfxStreams.DrawingThread_UnsetRenderTargetNoMsaa(false);
 	}
 
 private:
@@ -3326,9 +3327,13 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueBegin(const CAfxBaseFxStrea
 		{
 			if (bDrawDepth) AfxD3D9PushOverrideState(false);
 
-			AfxIntzOverrideBegin();
+			g_AfxStreams.DrawingThread_SetIntZTextureSurface();
 
+			if (g_AfxStreams.DrawingThread_HasRenderTargetMsaa())
+				g_AfxStreams.DrawingThread_SetRenderTargetNoMsaa();
+			
 			if(bDrawDepth) AfxD3D9OverrideBegin_D3DRS_COLORWRITEENABLE(0);
+
 		}
 
 		if (m_Stream->GetClearBeforeRender())
@@ -3378,7 +3383,10 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::QueueEnd(bool isRoot)
 		{
 			if(bDrawDepth) AfxD3D9OverrideEnd_D3DRS_COLORWRITEENABLE();
 
-			AfxIntzOverrideEnd();
+			if (g_AfxStreams.DrawingThread_HasRenderTargetMsaa())
+				g_AfxStreams.DrawingThread_UnsetRenderTargetNoMsaa(bDrawDepth);
+
+			g_AfxStreams.DrawingThread_UnsetIntZTextureSurface();
 
 			if (bDrawDepth) AfxD3D9PopOverrideState();
 		}
@@ -7011,7 +7019,7 @@ class CPushRenderTargetFunctor
 {
 public:
 	virtual void operator()() {
-		AfxD3d9PushRenderTarget();
+		g_AfxStreams.DrawingThread_SetRenderTarget();
 	}
 };
 
@@ -7024,7 +7032,7 @@ class CPopRenderTargetFunctor
 {
 public:
 	virtual void operator()() {
-		AfxD3d9PopRenderTarget();
+		g_AfxStreams.DrawingThread_UnsetRenderTarget(false);
 	}
 };
 
@@ -10511,6 +10519,8 @@ void CAfxStreams::ShutDown(void)
 	if (!m_ShutDown)
 	{
 		m_ShutDown = true;
+
+		DrawingThread_DeviceLost();
 		
 		CAfxBaseFxStream::AfxStreamsShutdown();
 
@@ -11288,4 +11298,111 @@ SOURCESDK::C_BaseEntity_csgo * GetMoveParent(SOURCESDK::C_BaseEntity_csgo * valu
 	}
 
 	return nullptr;
+}
+
+
+void CAfxStreams::DrawingThread_DeviceLost() {
+	if (m_IntZTextureSurface) {
+		m_IntZTextureSurface->Release();
+		m_IntZTextureSurface = nullptr;
+	}
+
+	if (m_RenderTargetSurfaceNoMsaa) {
+		m_RenderTargetSurfaceNoMsaa->Release();
+		m_RenderTargetSurfaceNoMsaa = nullptr;
+	}
+
+	if (m_RenderTargetSurface) {
+		m_RenderTargetSurface->Release();
+		m_RenderTargetSurface = nullptr;
+	}
+}
+
+void CAfxStreams::DrawingThread_DeviceRestored() {
+
+}
+
+IDirect3DSurface9* CAfxStreams::DrawingThread_GetOrCreateRenderTargetSurface() {
+	if (nullptr == m_RenderTargetSurface) {
+		m_RenderTargetSurface = AfxCreateCompatibleRenderTarget(AfxGetRenderTargetSurface(), true);
+	}
+
+	return m_RenderTargetSurface;
+}
+
+bool CAfxStreams::DrawingThread_HasRenderTargetMsaa() {
+	return AfxD3d9HashRenderTargetMsaa();
+}
+
+IDirect3DSurface9* CAfxStreams::DrawingThread_GetOrCreateRenderTargetSurfaceNoMssaa() {
+	if (nullptr == m_RenderTargetSurfaceNoMsaa) {
+		m_RenderTargetSurfaceNoMsaa = AfxCreateCompatibleRenderTarget(AfxGetRenderTargetSurface(), false);
+	}
+
+	return m_RenderTargetSurfaceNoMsaa;
+}
+
+void CAfxStreams::DrawingThread_SetRenderTarget() {
+	if (m_SetRenderTarget) {
+		m_SetRenderTarget++;
+		return;
+	}
+
+	if (IDirect3DSurface9* surface = DrawingThread_GetOrCreateRenderTargetSurface()) {
+		AfxD3d9PushRenderTargetEx(surface);
+	}
+
+	m_SetRenderTarget++;
+}
+
+void CAfxStreams::DrawingThread_UnsetRenderTarget(bool strechtRect) {
+	if (m_SetRenderTarget) {
+		AfxD3d9PopRenderTarget(strechtRect);
+		m_SetRenderTarget--;
+	}
+}
+
+void CAfxStreams::DrawingThread_SetRenderTargetNoMsaa() {
+	if (m_SetRenderTargetNoMsaa) {
+		m_SetRenderTargetNoMsaa++;
+		return;
+	}
+
+	if (IDirect3DSurface9* surface = DrawingThread_GetOrCreateRenderTargetSurfaceNoMssaa()) {
+		AfxD3d9PushRenderTargetEx(surface);
+	}
+
+	m_SetRenderTargetNoMsaa++;
+}
+
+void CAfxStreams::DrawingThread_UnsetRenderTargetNoMsaa(bool strechtRect) {
+	if (m_SetRenderTargetNoMsaa) {
+		AfxD3d9PopRenderTarget(strechtRect);
+		m_SetRenderTargetNoMsaa--;
+	}
+}
+
+IDirect3DSurface9* CAfxStreams::DrawingThread_GetOrCreateIntZTextureSurface() {
+	if (nullptr == m_IntZTextureSurface) {
+		m_IntZTextureSurface = AfxCreateCompatibleDepthStencilINTZTextureSurface(AfxGetDepthStencilSurface());
+	}
+
+	return m_IntZTextureSurface;
+}
+
+void CAfxStreams::DrawingThread_SetIntZTextureSurface() {
+	if (m_SetIntZTextureSurface)
+		return;
+
+	if (IDirect3DSurface9* surface = DrawingThread_GetOrCreateIntZTextureSurface()) {
+		AfxD3d9PushDepthStencilEx(surface);
+		m_SetIntZTextureSurface = true;
+	}
+}
+
+void CAfxStreams::DrawingThread_UnsetIntZTextureSurface() {
+	if (m_SetIntZTextureSurface) {
+		AfxD3d9PopDepthStencil();
+		m_SetIntZTextureSurface = false;
+	}
 }

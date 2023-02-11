@@ -101,12 +101,6 @@ namespace AfxInterop {
 	//
 	// Drawing thread:
 
-	/// <remarks>Must be called from drawing thread only.</remarks>
-	void OnCreatedRenderTarget(IDirect3DSurface9 * surface);
-
-	/// <remarks>Must be called from drawing thread only.</remarks>
-	void OnReleaseRenderTarget(IDirect3DSurface9* surface);
-
 	void DrawingThread_DeviceLost();
 
 	void DrawingThread_DeviceRestored();
