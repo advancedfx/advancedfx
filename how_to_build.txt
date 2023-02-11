@@ -4,9 +4,9 @@ Notice:
 
 [X] Download and install Microsoft Visual Studio Community 2022, which you can
     obtain for free from https://www.visualstudio.com/downloads/ .
-    - Select Desktop .NET Desktop Development component
-	- Select Desktop .NET 4.6.2 Desktop Development component
-    - Select Desktop Development with C++ component
+    - Select Workloads - Desktop & Mobile - .NET Desktop Development
+    - Select Workloads - Desktop & Mobile - Desktop development with C++
+	- Select Individual Components - .NET Framework 4.6.2 targeting pack
     - You'll need to install Wix Toolset Visual Studio 2022 Extension from
       within Visual Studio afterwards.
 
@@ -32,7 +32,7 @@ Notice:
     We recommend using the GIT Bash to obtain the source code, so you can
     easily fetch and merge updates from the advancedfx repository:
     cd /c/<HLAESRC>
-    git clone --recursive https://github.com/advancedfx/advancedfx.git
+    git clone --recurse-submodules https://github.com/advancedfx/advancedfx.git
 
 [X] Open Visual Studio 2022 Developer Command Prompt:
 	cd C:\<HLAESRC>\advancedfx\
