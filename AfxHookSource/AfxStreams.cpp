@@ -629,7 +629,6 @@ public:
 
 	virtual void operator()()
 	{
-		g_AfxStreams.DrawingThread_SetRenderTargetNoMsaa();
 		g_AfxStreams.DrawingThread_SetIntZTextureSurface();
 	}
 
@@ -647,7 +646,6 @@ public:
 	virtual void operator()()
 	{
 		g_AfxStreams.DrawingThread_UnsetIntZTextureSurface();
-		g_AfxStreams.DrawingThread_UnsetRenderTargetNoMsaa(false);
 	}
 
 private:

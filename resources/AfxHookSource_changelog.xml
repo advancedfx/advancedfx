@@ -6,8 +6,8 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>1.119.1</version>
-<time>2023-02-12Z11:00Z</time>
+<version>1.119.2</version>
+<time>2023-02-12Z11:40Z</time>
 <changes>
 <change type="added">Added mirv_streams print2 - alternative way to display the current setup (advancedfx/advancedfx#797).</change>
 <change type="updated">Updated mirv_campath print - to allow easier copy and paste in CS:GO console. (advancedfx/advancedfx#816).</change>

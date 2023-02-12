@@ -6,8 +6,8 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
-<version>2.18.1</version>
-<time>2023-02-12Z11:00Z</time>
+<version>2.18.2</version>
+<time>2023-02-12Z11:40Z</time>
 <changes>
 <change type="added">Added possibility to customize FFMPEG settings even more mirv_movie_ffmpeg command (optionsEx sub-command). Use - mirv_movie_ffmpeg main optionsEx - to get an example from the default settings.</change>
 </changes>
