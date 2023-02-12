@@ -2687,12 +2687,12 @@ public:
 
 	IDirect3DSurface9* AfxGetRenderTargetSurface()
 	{
-		return trackedRenderTarget;
+		return UnwrapSurface(trackedRenderTarget);
 	}
 
 	IDirect3DSurface9* AfxGetDepthStencilSurface()
 	{
-		return trackedDepthStencil;
+		return UnwrapSurface(trackedDepthStencil);
 	}
 
 	bool AfxGetSurfaceDesc(IDirect3DSurface9* surface, D3DSURFACE_DESC * pDesc)
@@ -2841,8 +2841,6 @@ public:
 	void AfxDrawDepth(AfxDrawDepthEncode encode, AfxDrawDepthMode mode, bool clip, float depthVal, float depthValMax, int x, int y, int width, int height, float zNear, float zFar, float projectionMatrix[4][4])
 	{
 		if (!g_bSupportsIntz) return;
-
-		if (!m_OverrideDefaultBuffersWithIntz) return;
 
 		ShaderCombo_afx_depth_ps20::AFXDEPTHMODE_e afxDepthMode = ShaderCombo_afx_depth_ps20::AFXDEPTHMODE_0;
 

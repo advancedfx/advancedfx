@@ -11396,13 +11396,14 @@ void CAfxStreams::DrawingThread_SetIntZTextureSurface() {
 
 	if (IDirect3DSurface9* surface = DrawingThread_GetOrCreateIntZTextureSurface()) {
 		AfxD3d9PushDepthStencilEx(surface);
-		m_SetIntZTextureSurface = true;
 	}
+
+	m_SetIntZTextureSurface++;
 }
 
 void CAfxStreams::DrawingThread_UnsetIntZTextureSurface() {
 	if (m_SetIntZTextureSurface) {
 		AfxD3d9PopDepthStencil();
-		m_SetIntZTextureSurface = false;
+		m_SetIntZTextureSurface--;
 	}
 }
