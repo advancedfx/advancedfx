@@ -532,15 +532,19 @@ bool COutFFMPEGVideoStream::SupplyImageFrame(double secondsSinceLastFrame, const
 			continue;
 		}
 
-		if (ERROR_IO_PENDING != GetLastError())
+		if (ERROR_IO_PENDING != GetLastError()) {
+			Close();
 			return false;
+		}
 
 		bool completed = false;
 
 		while (!completed)
 		{
-			if (!HandleOutAndErr())
+			if (!HandleOutAndErr()) {
+				Close();
 				return false;
+			}
 
 			DWORD result = WaitForSingleObject(m_OverlappedStdin.hEvent, 1000);
 			switch (result)
@@ -551,13 +555,16 @@ bool COutFFMPEGVideoStream::SupplyImageFrame(double secondsSinceLastFrame, const
 			case WAIT_TIMEOUT:
 				break;
 			default:
+				Close();
 				return false;
 			}
 		}
 
 		DWORD bytesWritten;
-		if (!GetOverlappedResult(m_hChildStd_IN_Wr, &m_OverlappedStdin, &bytesWritten, FALSE) || bytesWritten != length)
+		if (!GetOverlappedResult(m_hChildStd_IN_Wr, &m_OverlappedStdin, &bytesWritten, FALSE) || bytesWritten != length) {
+			Close();
 			return false;
+		}
 
 		length -= batchLength;
 		pBuffer += batchLength;
