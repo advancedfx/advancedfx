@@ -63,7 +63,7 @@ namespace AfxGui
         public static readonly InjectorError AfxHook10 = new InjectorError(10, InjectorErrorStrings.AfxHookError);
         public static readonly InjectorError AfxHook11 = new InjectorError(11, InjectorErrorStrings.AfxHookError);
         public static readonly InjectorError AfxHook12 = new InjectorError(12, InjectorErrorStrings.AfxHookError, L10n._p("HLAE errors", "Could not access / enter directory of DLL to inject", "Is the path given invalid? Is the directory really there or missing? Does HLAE have enough rights to access that path?"));
-        public static readonly InjectorError AfxHook13 = new InjectorError(13, InjectorErrorStrings.AfxHookError, L10n._p("HLAE errors", "DLL can't be found.", "Remove DLLs, re-add them and maybe check antivirus."));
+        public static readonly InjectorError AfxHook13 = new InjectorError(13, InjectorErrorStrings.AfxHookError, L10n._p("HLAE errors", "DLL can't be loaded.", "Remove DLLs, re-add them and maybe check antivirus."));
         public static readonly InjectorError AfxHook14 = new InjectorError(14, InjectorErrorStrings.AfxHookError);
         public static readonly InjectorError AfxHook15 = new InjectorError(15, InjectorErrorStrings.AfxHookError);
 
