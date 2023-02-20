@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.119.3</version>
+<time>2023-02-20T15:32Z</time>
+<changes>
+<change type="fixed">Fixed mirv_streams with FFMPEG can crash CS:GO when there's problems / errors (advancedfx/advancedfx#826).</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.119.2</version>
 <time>2023-02-12Z11:40Z</time>
 <changes>
