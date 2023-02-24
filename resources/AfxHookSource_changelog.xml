@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.119.4</version>
+<time>2023-02-24T14:28Z</time>
+<changes>
+<change type="fixed">Fixed mirv_streams settings reference count not being initialized. Thanks runie and AnthonyP.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.119.3</version>
 <time>2023-02-20T15:32Z</time>
 <changes>
