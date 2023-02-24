@@ -4,4 +4,4 @@ xcopy "deps\release\rapidxml\license.txt" "%~1\LICENSES\rapidxml\" /D /Y
 xcopy "deps/release/easywsclient\COPYING" "%~1\LICENSES\easywsclient\" /D /Y
 xcopy "LICENSE" "%~1\LICENSES\advancedfx\" /D /Y
 xcopy "shaders\build\*.acs" "%~1\resources\AfxHookSource\shaders\" /D /Y
-powershell .\make_readme.ps1 "%~1"
+py -3 "%~dp0\make_readme.py" "%~1"

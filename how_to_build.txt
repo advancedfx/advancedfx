@@ -20,10 +20,6 @@ Notice:
 	
 [X] Install WiX Toolset from https://github.com/wixtoolset/wix3/releases
 	We used WiX Toolset v3.11.2.
-	
-[X] Currently it's required to change the PowerShell execution policy to
-    RemoteSigned:
-	https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_execution_policies?view=powershell-7
 
 [X] Obtain the HLAE source code from https://github.com/advancedfx/advancedfx into a
     folder you like, we'll call it <HLAESRC> from now on (by that I mean
