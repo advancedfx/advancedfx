@@ -1060,7 +1060,7 @@ protected:
 	virtual ~CAfxRecordingSettings() {		
 	}
 
-	int m_RefCount;
+	int m_RefCount = 0;
 	std::string m_Name;
 	bool m_Protected;
 
