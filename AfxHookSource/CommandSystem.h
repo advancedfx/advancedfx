@@ -73,6 +73,7 @@ private:
 			: m_Map(copyFrom.m_Map)
 			, m_View(&m_Map, Selector)
 			, m_Interp(nullptr)
+			, m_Method(copyFrom.m_Method)
 		{
 		
 

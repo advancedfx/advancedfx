@@ -230,7 +230,7 @@ bool CommandSystem::Save(wchar_t const * fileName)
 			rapidxml::xml_node<>* curve = doc.allocate_node(rapidxml::node_element, "curve");
 
 			if (it->second->GetInterp(idxCurve) == CDoubleInterp::Method_Cubic)
-				cmd->append_attribute(doc.allocate_attribute("interp", "cubic"));
+				curve->append_attribute(doc.allocate_attribute("interp", "cubic"));
 
 			for (auto itPt = it->second->GetMap(idxCurve).begin(); itPt != it->second->GetMap(idxCurve).end(); ++itPt)
 			{
@@ -277,7 +277,7 @@ bool CommandSystem::Save(wchar_t const * fileName)
 			rapidxml::xml_node<>* curve = doc.allocate_node(rapidxml::node_element, "curve");
 			
 			if(it->second->GetInterp(idxCurve) == CDoubleInterp::Method_Cubic)
-				cmd->append_attribute(doc.allocate_attribute("interp", "cubic"));
+				curve->append_attribute(doc.allocate_attribute("interp", "cubic"));
 
 			for (auto itPt = it->second->GetMap(idxCurve).begin(); itPt != it->second->GetMap(idxCurve).end(); ++itPt)
 			{
@@ -395,7 +395,7 @@ bool CommandSystem::Load(wchar_t const * fileName)
 						{
 							cmd->SetSize(cmd->GetSize() + 1);
 
-							if (rapidxml::xml_attribute<>* methodAttr = cur_node->first_attribute("interp"))
+							if (rapidxml::xml_attribute<>* methodAttr = cur_curve->first_attribute("interp"))
 							{
 								if (0 == strcmp("cubic", methodAttr->value()))
 									cmd->SetInterp(cmd->GetSize() - 1, CDoubleInterp::Method_Cubic);
@@ -457,7 +457,7 @@ bool CommandSystem::Load(wchar_t const * fileName)
 						{
 							cmd->SetSize(cmd->GetSize() + 1);
 
-							if (rapidxml::xml_attribute<>* methodAttr = cur_node->first_attribute("interp"))
+							if (rapidxml::xml_attribute<>* methodAttr = cur_curve->first_attribute("interp"))
 							{
 								if (0 == strcmp("cubic", methodAttr->value()))
 									cmd->SetInterp(cmd->GetSize() - 1, CDoubleInterp::Method_Cubic);
