@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.120.0</version>
+<time>2023-03-10T12:00Z</time>
+<changes>
+<change type="fixed">Fixed multiple mirv_cmd curve interp bugs (advancedfx/advancedfx#832).</change>
+<change type="added">Added fix for Panorama UI HUD speed / timings when host_framerate not 0 (e.g. recording) or otherwise when demo_timescale is not 1 (advancedfx/advancedfx#834).</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.119.4</version>
 <time>2023-02-24T14:28Z</time>
 <changes>
