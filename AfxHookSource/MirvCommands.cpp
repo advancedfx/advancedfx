@@ -3297,6 +3297,8 @@ extern float g_Mirv_Pov_Interp_OrgFac[2];
 extern float g_Mirv_Pov_Interp_PingFac[2];
 extern float g_Mirv_Pov_Interp_Offset[2];
 
+extern bool g_panorama_fix_timing;
+
 CON_COMMAND(mirv_fix, "Various fixes")
 {
 	int argc = args->ArgC();
@@ -3532,6 +3534,23 @@ CON_COMMAND(mirv_fix, "Various fixes")
 
 			return;
 		}
+		else if (!_stricmp("panoramaTiming", cmd1))
+		{
+			if (3 <= argc)
+			{
+				char const * cmd2 = args->ArgV(2);
+
+				g_panorama_fix_timing = 0 != atoi(cmd2);
+				return;
+			}
+
+			Tier0_Msg(
+				"mirv_fix panoramaTiming 0|1 - Fix Panorama UI timing (default: 1).\n"
+				"Current value: %i\n",
+				g_panorama_fix_timing ? 1 : 0
+			);
+			return;
+		}
 	}
 
 	Tier0_Msg(
@@ -3544,6 +3563,9 @@ CON_COMMAND(mirv_fix, "Various fixes")
 		"mirv_fix forcePostDataUpdateChanged [...].\n"
 		"mirv_fix forceDoAnimationEvents 0|1 - Only useful in combination with replaceing old models with new ones for forcing animation events to be played, defaut is 0 (off).\n"
 		"mirv_fix suppressFileCRCCheck 0|1 - This is only useful with HLAE special builds and it's on by default.\n"
+	);
+	Tier0_Msg(
+		"mirv_fix panoramaTiming [...]\n"
 	);
 }
 

@@ -70,6 +70,7 @@ AFXADDR_DEF(csgo_CVoiceWriter_AddDecompressedData)
 AFXADDR_DEF(csgo_CVoiceWriter_AddDecompressedData_DSZ)
 AFXADDR_DEF(csgo_panorama_AVCUIPanel_UnkSetFloatProp)
 AFXADDR_DEF(csgo_panorama_CZip_UnkLoadFiles)
+AFXADDR_DEF(csgo_panorama_CUIEngine_RunFrame_Plat_FloatTime_Address)
 AFXADDR_DEF(csgo_C_CSPlayer_IClientNetworkable_entindex)
 AFXADDR_DEF(csgo_CShaderAPIDx8_UnkCreateTexture)
 AFXADDR_DEF(csgo_CRendering3dView_DrawTranslucentRenderables)
@@ -746,11 +747,55 @@ void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer)
 
 			AFXADDR_SET(csgo_panorama_CZip_UnkLoadFiles, addr);
 		}
-	}
-	else
-	{
-		AFXADDR_SET(csgo_panorama_AVCUIPanel_UnkSetFloatProp, 0);
-		AFXADDR_SET(csgo_panorama_CZip_UnkLoadFiles, 0);
+
+		// csgo_panorama_CUIEngine_RunFrame_Plat_FloatTime_Address // Checked 2023-03-10
+		{
+			DWORD addr = 0;
+			DWORD strAddr = 0;
+			{
+				ImageSectionsReader sections((HMODULE)panoramaDll);
+				if (!sections.Eof())
+				{
+					sections.Next(); // skip .text
+					if (!sections.Eof())
+					{
+						MemRange result = FindCString(sections.GetMemRange(), "CUIEngine::RunFrame");
+						if (!result.IsEmpty())
+						{
+							strAddr = result.Start;
+						}
+						else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					}
+					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+			if (strAddr)
+			{
+				ImageSectionsReader sections((HMODULE)panoramaDll);
+
+				MemRange baseRange = sections.GetMemRange();
+				MemRange result = FindBytes(baseRange, (char const *)&strAddr, sizeof(strAddr));
+				if (!result.IsEmpty())
+				{
+					addr = result.Start + 31;
+
+					// check for pattern to see if it is the right address:
+					unsigned char pattern[2] = { 0xFF, 0x15 };
+
+					DWORD patternSize = sizeof(pattern) / sizeof(pattern[0]);
+					MemRange patternRange(addr, addr + patternSize);
+					MemRange result = FindBytes(patternRange, (char *)pattern, patternSize);
+					if (result.Start != patternRange.Start || result.End != patternRange.End)
+					{
+						ErrorBox(MkErrStr(__FILE__, __LINE__));
+					} else {
+						AFXADDR_SET(csgo_panorama_CUIEngine_RunFrame_Plat_FloatTime_Address, addr + 2);
+					}
+				}
+				else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}
+		}			
 	}
 }
 

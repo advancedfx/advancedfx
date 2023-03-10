@@ -2647,6 +2647,56 @@ CAfxImportDllHook g_Import_vgui2_USER32("USER32.dll", CAfxImportDllHooks({
 CAfxImportsHook g_Import_vgui2(CAfxImportsHooks({
 	&g_Import_vgui2_USER32 }));
 
+
+typedef double (* Plat_FloatTime_t)(void);
+double new_csgo_panorama_tier0_Plat_FloatTime(void);
+bool g_panorama_fix_timing = true;
+
+CAfxImportFuncHook<Plat_FloatTime_t> g_Import_panorama_tier0_PlatFloatTime("Plat_FloatTime", &new_csgo_panorama_tier0_Plat_FloatTime);
+
+double new_csgo_panorama_tier0_Plat_FloatTime(void){
+	static bool first_call = true;
+	static double last_time = 0.0;
+	static double last_time_result = 0.0;
+	static int last_frame_count = 0;
+	static WrpConVarRef cvar_ref_host_framerate;
+	double new_time = ((Plat_FloatTime_t)g_Import_panorama_tier0_PlatFloatTime.TrueFunc)();
+	double result_delta = new_time - last_time;
+	if(first_call)
+		first_call = false;
+	else {
+		if(g_panorama_fix_timing && !g_MirvTime.IsPaused()) {
+			cvar_ref_host_framerate.RetryIfNull("host_framerate");
+			float host_framerate = 0.0f;
+			float demoTimeScale = 1.0f;
+			WrpVEngineClientDemoInfoEx* di = g_VEngineClient ? g_VEngineClient->GetDemoInfoEx() : nullptr;
+			if (di) demoTimeScale = di->GetDemoPlaybackTimeScale();
+
+			if(cvar_ref_host_framerate.IsValid())
+				host_framerate = cvar_ref_host_framerate.GetFloat();
+			
+			if(host_framerate != 0.0f || demoTimeScale != 1.0f) {
+				int frame_count = g_MirvTime.GetFrameCount();
+				if(frame_count != last_frame_count) {
+					last_frame_count = frame_count;
+					result_delta = g_MirvTime.GetFrameTime() * (host_framerate ? 1.0f : demoTimeScale); // I'd prefer just to multiply them, but this is consistent with other HLAE behaviour sSee mirv_time).
+				} else {
+					result_delta = 0.0;
+				}
+			}
+		}
+	}
+	last_time = new_time;
+	last_time_result += result_delta;
+	return last_time_result;
+}
+
+CAfxImportDllHook g_Import_panorama_tier0("tier0.dll", CAfxImportDllHooks({
+	&g_Import_panorama_tier0_PlatFloatTime }));
+
+CAfxImportsHook g_Import_panorama(CAfxImportsHooks({
+	&g_Import_panorama_tier0 }));
+
 void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 {
 	static bool bFirstLauncher = true;
@@ -2774,6 +2824,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		//
 		// Install hooks:
 
+		g_Import_panorama.Apply(hModule);
 		PanoramaHooks_Install();
 	}
 	else if(bFirstStdshader_dx9 && StringEndsWith( lpLibFileName, "stdshader_dx9.dll"))
