@@ -100,7 +100,8 @@ void CClientToolsMom::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 
 				SOURCESDK::TF2::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::TF2::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity"));
 
-				if (!RecordInvisible_get() && !(pBaseEntityRs && pBaseEntityRs->m_bVisible))
+				if (!RecordInvisible_get() && !(pBaseEntityRs && pBaseEntityRs->m_bVisible)
+					|| msg->GetInt("worldmodel") != 0)
 				{
 					// Entity not visible, avoid trash data:
 
@@ -138,7 +139,7 @@ void CClientToolsMom::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 
 				{
 					SOURCESDK::TF2::BaseAnimatingRecordingState_t * pBaseAnimatingRs = (SOURCESDK::TF2::BaseAnimatingRecordingState_t *)(msg->GetPtr("baseanimating"));
-					if (pBaseAnimatingRs)
+					if (pBaseAnimatingRs && nullptr != pBaseAnimatingRs->m_pBoneList)
 					{
 						WriteDictionary("baseanimating");
 						//Write((int)pBaseAnimatingRs->m_nSkin);

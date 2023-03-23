@@ -13,18 +13,14 @@
 #include <Windows.h>
 #include <deps/release/Detours/src/detours.h>
 
-
-
-SOURCESDK::CStudioHdr * g_tf2_hdr = nullptr;
-std::vector<SOURCESDK::matrix3x4_t> g_tf2_BoneState;
-
 typedef void *  (__fastcall * tf2_C_BaseAnimating_RecordBones_t)(void * This, void* Edx, SOURCESDK::CStudioHdr *hdr, SOURCESDK::matrix3x4_t *pBoneState );
 tf2_C_BaseAnimating_RecordBones_t True_tf2_C_BaseAnimating_RecordBones = nullptr;
 void * __fastcall My_tf2_C_BaseAnimating_RecordBones(void * This, void* Edx, SOURCESDK::CStudioHdr *hdr, SOURCESDK::matrix3x4_t *pBoneState ) {
 	void * result = True_tf2_C_BaseAnimating_RecordBones(This, Edx, hdr, pBoneState);
-	g_tf2_hdr =  hdr;
-	if(g_tf2_BoneState.size() < hdr->numbones()) g_tf2_BoneState.resize(hdr->numbones());
-	memcpy(&(g_tf2_BoneState[0]),pBoneState,sizeof(SOURCESDK::matrix3x4_t) * hdr->numbones());
+
+	if(CClientTools * instance = CClientTools::Instance())
+		instance->CaptureBones(hdr, pBoneState);
+
 	return result;
 }
 
@@ -117,6 +113,8 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 				|| className && (
 					StringBeginsWith(className, "tf_weapon_")
 					|| !strcmp(className, "grenade")
+					|| 0 == strcmp(className, "class C_TFDroppedWeapon")
+					|| 0 == strcmp(className, "class C_TFAmmoPack")
 					)
 				;
 
@@ -138,7 +136,6 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 				|| RecordViewModels_get() && isViewModel
 				)
 			{
-
 				SOURCESDK::TF2::BaseEntityRecordingState_t * pBaseEntityRs = (SOURCESDK::TF2::BaseEntityRecordingState_t *)(msg->GetPtr("baseentity"));
 
 				if (!RecordInvisible_get() && !(pBaseEntityRs && pBaseEntityRs->m_bVisible || isViewModel))
@@ -189,7 +186,7 @@ void CClientToolsTf2::OnPostToolMessageTf2(SOURCESDK::TF2::HTOOLHANDLE hEntity, 
 						//Write((int)pBaseAnimatingRs->m_nSkin);
 						//Write((int)pBaseAnimatingRs->m_nBody);
 						//Write((int)pBaseAnimatingRs->m_nSequence);
-						WriteBones(g_tf2_hdr, &(g_tf2_BoneState[0]), parentTransform);
+						WriteBones(nullptr != pBaseAnimatingRs->m_pBoneList, parentTransform);
 					}
 				}
 

@@ -14,17 +14,14 @@
 
 using namespace SOURCESDK::CSS;
 
-
-SOURCESDK::CStudioHdr* g_css_hdr = nullptr;
-std::vector<SOURCESDK::matrix3x4_t> g_css_BoneState;
-
 typedef void* (__fastcall* css_C_BaseAnimating_RecordBones_t)(void* This, void* Edx, SOURCESDK::CStudioHdr* hdr, SOURCESDK::matrix3x4_t* pBoneState);
 css_C_BaseAnimating_RecordBones_t True_css_C_BaseAnimating_RecordBones = nullptr;
 void* __fastcall My_css_C_BaseAnimating_RecordBones(void* This, void* Edx, SOURCESDK::CStudioHdr* hdr, SOURCESDK::matrix3x4_t* pBoneState) {
 	void* result = True_css_C_BaseAnimating_RecordBones(This, Edx, hdr, pBoneState);
-	g_css_hdr = hdr;
-	if (g_css_BoneState.size() < hdr->numbones()) g_css_BoneState.resize(hdr->numbones());
-	memcpy(&(g_css_BoneState[0]), pBoneState, sizeof(SOURCESDK::matrix3x4_t) * hdr->numbones());
+	
+	if(CClientTools * instance = CClientTools::Instance())
+		instance->CaptureBones(hdr, pBoneState);
+
 	return result;
 }
 
@@ -187,7 +184,7 @@ void CClientToolsCss::OnPostToolMessageCss(SOURCESDK::CSS::HTOOLHANDLE hEntity, 
 						//Write((int)pBaseAnimatingRs->m_nSkin);
 						//Write((int)pBaseAnimatingRs->m_nBody);
 						//Write((int)pBaseAnimatingRs->m_nSequence);
-						WriteBones(g_css_hdr, &(g_css_BoneState[0]), parentTransform);
+						WriteBones(nullptr != pBaseAnimatingRs->m_pBoneList, parentTransform);
 					}
 				}
 

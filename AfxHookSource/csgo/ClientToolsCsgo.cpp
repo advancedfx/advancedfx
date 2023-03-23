@@ -17,16 +17,14 @@ extern WrpVEngineClient* g_VEngineClient;
 
 using namespace SOURCESDK::CSGO;
 
-SOURCESDK::CStudioHdr * g_csgo_hdr = nullptr;
-std::vector<SOURCESDK::matrix3x4_t> g_csgo_BoneState;
-
 typedef void *  (__fastcall * csgo_C_BaseAnimating_RecordBones_t)(void * This, void* Edx, SOURCESDK::CStudioHdr *hdr, SOURCESDK::matrix3x4_t *pBoneState );
 csgo_C_BaseAnimating_RecordBones_t True_csgo_C_BaseAnimating_RecordBones = nullptr;
 void * __fastcall My_csgo_C_BaseAnimating_RecordBones(void * This, void* Edx, SOURCESDK::CStudioHdr *hdr, SOURCESDK::matrix3x4_t *pBoneState ) {
 	void * result = True_csgo_C_BaseAnimating_RecordBones(This, Edx, hdr, pBoneState);
-	g_csgo_hdr =  hdr;
-	if(g_csgo_BoneState.size() < hdr->numbones()) g_csgo_BoneState.resize(hdr->numbones());
-	memcpy(&(g_csgo_BoneState[0]),pBoneState,sizeof(SOURCESDK::matrix3x4_t) * hdr->numbones());
+
+	if(CClientTools * instance = CClientTools::Instance())
+		instance->CaptureBones(hdr, pBoneState);
+
 	return result;
 }
 
@@ -408,7 +406,7 @@ void CClientToolsCsgo::OnPostToolMessageCsgo(SOURCESDK::CSGO::HTOOLHANDLE hEntit
 						//Write((int)pBaseAnimatingRs->m_nSkin);
 						//Write((int)pBaseAnimatingRs->m_nBody);
 						//Write((int)pBaseAnimatingRs->m_nSequence);
-						WriteBones(g_csgo_hdr, &(g_csgo_BoneState[0]), parentTransform);
+						WriteBones(nullptr != pBaseAnimatingRs->m_pBoneList, parentTransform);
 					}
 				}
 

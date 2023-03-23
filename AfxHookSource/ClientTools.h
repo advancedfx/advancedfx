@@ -8,6 +8,7 @@
 #include <string>
 #include <set>
 #include <map>
+#include <vector>
 
 class CClientTools abstract
 {
@@ -140,6 +141,10 @@ public:
 		return false;
 	}
 
+	static bool InvertMatrix(const SOURCESDK::matrix3x4_t &matrix, SOURCESDK::matrix3x4_t &out_matrix);
+
+	void CaptureBones( SOURCESDK::CStudioHdr *hdr, SOURCESDK::matrix3x4_t *pBoneState );
+
 protected:
 	virtual float ScaleFov(int width, int height, float fov) { return fov; }
 
@@ -159,13 +164,11 @@ protected:
 	void Write(SOURCESDK::QAngle const & value);
 	void Write(SOURCESDK::Quaternion const & value);
 	void WriteMatrix3x4(SOURCESDK::matrix3x4_t const &value);
-	void WriteBones(SOURCESDK::CStudioHdr * hdr, SOURCESDK::matrix3x4_t const *boneState, const SOURCESDK::matrix3x4_t & parentTransform);
+	void WriteBones(bool hasBones, const SOURCESDK::matrix3x4_t & parentTransform);
 
 	void MarkHidden(int value) {
 		m_AfxGameRecord.MarkHidden(value);
 	}
-
-	static bool InvertMatrix(const SOURCESDK::matrix3x4_t &matrix, SOURCESDK::matrix3x4_t &out_matrix);
 
 private:
 	static CClientTools * m_Instance;
@@ -182,7 +185,8 @@ private:
 	bool m_RecordProjectiles = true;
 	int m_RecordViewModels = 0;
 	bool m_RecordInvisible = false;
-
+	
+	std::vector<std::pair<SOURCESDK::matrix3x4_t,bool>> m_BoneState;
 };
 
 bool ClientTools_Console_Cfg(IWrpCommandArgs * args);
