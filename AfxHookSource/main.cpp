@@ -2679,7 +2679,7 @@ double new_csgo_panorama_tier0_Plat_FloatTime(void){
 				int frame_count = g_MirvTime.GetFrameCount();
 				if(frame_count != last_frame_count) {
 					last_frame_count = frame_count;
-					result_delta = g_MirvTime.GetFrameTime() * (host_framerate ? 1.0f : demoTimeScale); // I'd prefer just to multiply them, but this is consistent with other HLAE behaviour sSee mirv_time).
+					result_delta = g_MirvTime.GetFrameTime();
 				} else {
 					result_delta = 0.0;
 				}

@@ -4,6 +4,16 @@
 <changelog>
 
 
+
+<release>
+<name>AfxHookSource</name>
+<version>1.120.2</version>
+<time>2023-03-24T19:00Z</time>
+<changes>
+<change type="fixed">Fixed fix for Panorama UI HUD speed.</change>
+</changes>
+</release>
+
 <release>
 <name>AfxHookSource</name>
 <version>1.120.1</version>
