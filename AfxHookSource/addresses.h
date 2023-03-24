@@ -143,6 +143,11 @@ AFXADDR_DECL(tf2_client_C_BaseAnimating_RecordBones)
 AFXADDR_DECL(csgo_client_CModelRenderSystem_SetupBones)
 AFXADDR_DECL(csgo_client_s_HLTVCamera)
 AFXADDR_DECL(csgo_client_CHLTVCamera_SpecCameraGotoPos)
+AFXADDR_DECL(csgo_engine_CBoundedCvar_CmdRate_vtable)
+AFXADDR_DECL(csgo_engine_CBoundedCvar_UpdateRate_vtable)
+AFXADDR_DECL(csgo_engine_CBoundedCvar_Rate_vtable)
+AFXADDR_DECL(csgo_engine_m_SplitScreenPlayers)
+AFXADDR_DECL(csgo_engine_m_SplitScreenPlayers_ishltv_ofs)
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);

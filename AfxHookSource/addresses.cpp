@@ -136,6 +136,12 @@ AFXADDR_DEF(tf2_client_C_BaseAnimating_RecordBones)
 AFXADDR_DEF(csgo_client_CModelRenderSystem_SetupBones)
 AFXADDR_DEF(csgo_client_s_HLTVCamera)
 AFXADDR_DEF(csgo_client_CHLTVCamera_SpecCameraGotoPos)
+AFXADDR_DEF(csgo_engine_CBoundedCvar_CmdRate_vtable)
+AFXADDR_DEF(csgo_engine_CBoundedCvar_UpdateRate_vtable)
+AFXADDR_DEF(csgo_engine_CBoundedCvar_Rate_vtable)
+AFXADDR_DEF(csgo_engine_LocalClientClientState_ishltv)
+AFXADDR_DEF(csgo_engine_m_SplitScreenPlayers)
+AFXADDR_DEF(csgo_engine_m_SplitScreenPlayers_ishltv_ofs)
 
 void ErrorBox(char const * messageText);
 
@@ -699,7 +705,33 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 			{
 				AFXADDR_SET(csgo_engine_Cmd_ExecuteCommand, 0x0);
 			}
-		}	
+		}
+
+		// mirv_pov related
+		// csgo_engine_CBoundedCvar_CmdRate_vtable // Checked 2023-03-24
+		{
+			AFXADDR_SET(csgo_engine_CBoundedCvar_CmdRate_vtable,FindClassVtable((HMODULE)engineDll, ".?AVCBoundedCvar_CmdRate@@", 0, 0x0));
+			if(!AFXADDR_GET(csgo_engine_CBoundedCvar_CmdRate_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+		// csgo_engine_CBoundedCvar_UpradteRate_vtable // Checked 2023-03-24
+		{
+			AFXADDR_SET(csgo_engine_CBoundedCvar_UpdateRate_vtable,FindClassVtable((HMODULE)engineDll, ".?AVCBoundedCvar_UpdateRate@@", 0, 0x0));
+			if(!AFXADDR_GET(csgo_engine_CBoundedCvar_UpdateRate_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
+			else {
+				void **vtable = (void **)AFXADDR_GET(csgo_engine_CBoundedCvar_UpdateRate_vtable);
+				auto result = FindPatternString(MemRange((size_t)vtable[12],(size_t)vtable[12]+0x1c),"55 8B EC 83 EC 0C E8 ?? ?? ?? ?? A1 ?? ?? ?? ?? F3 0F 11 45 F4 80 B8 ?? ?? ?? ?? 00");
+				if(result.IsEmpty()) ErrorBox(MkErrStr(__FILE__, __LINE__));
+				else {
+					AFXADDR_SET(csgo_engine_m_SplitScreenPlayers, *(size_t*)(result.Start + 12));
+					AFXADDR_SET(csgo_engine_m_SplitScreenPlayers_ishltv_ofs, *(size_t*)(result.Start + 23));
+				}
+			}
+		}
+		// csgo_engine_CBoundedCvar_Rate_vtable // Checked 2023-03-24
+		{
+			AFXADDR_SET(csgo_engine_CBoundedCvar_Rate_vtable,FindClassVtable((HMODULE)engineDll, ".?AVCBoundedCvar_Rate@@", 0, 0x0));
+			if(!AFXADDR_GET(csgo_engine_CBoundedCvar_Rate_vtable)) ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
 	}
 	else
 	{

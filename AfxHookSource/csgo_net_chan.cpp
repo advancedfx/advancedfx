@@ -4,6 +4,7 @@
 #include "csgo/ClientToolsCsgo.h"
 
 #include "WrpConsole.h"
+#include "WrpVEngineClient.h"
 
 #include "addresses.h"
 #include <SourceInterfaces.h>
@@ -19,6 +20,7 @@
 
 int g_i_MirvPov = 0;
 int g_Org_svc_ServerInfo_PlayerSlot = 0;
+bool g_WasHltv = 0;
 
 struct csgo_bf_read {
 	char const* m_pDebugName;
@@ -72,8 +74,10 @@ int __fastcall Mycsgo_CNetChan_ProcessMessages(csgo_CNetChan_t* This, void* Edx,
 					{
 						CSVCMsg_ServerInfo msg;
 						msg.ParseFromArray(readBuf.GetBasePointer() + readBuf.GetNumBytesRead(), packet_size);
+						g_WasHltv = false;
 						if (msg.has_is_hltv())
 						{
+							g_WasHltv = msg.is_hltv();
 							msg.set_is_hltv(false);
 						}
 						if (msg.has_player_slot())
@@ -505,6 +509,82 @@ bool Install_csgo_client_AdjustInterpolationAmount(void)
 	return firstResult;
 }
 
+typedef float(__fastcall* csgo_CBoundedCvar_GetFloat_t)(void * This, void* Edx);
+csgo_CBoundedCvar_GetFloat_t True_csgo_CBoundedCvar_CmdRate_GetFloat;
+csgo_CBoundedCvar_GetFloat_t True_csgo_CBoundedCvar_UpdateRate_GetFloat;
+csgo_CBoundedCvar_GetFloat_t True_csgo_CBoundedCvar_Rate_GetFloat;
+
+extern WrpVEngineClient * g_VEngineClient;
+
+float Do_csgo_CBoundedCvar_GetFloat_WithOrgLocalPlayer(void * This, void * Edx, csgo_CBoundedCvar_GetFloat_t fn) {
+	if (g_i_MirvPov && g_VEngineClient && g_VEngineClient->IsConnected()) {
+		unsigned char * p_b_ishltv = *((unsigned char **)AFXADDR_GET(csgo_engine_m_SplitScreenPlayers)) + AFXADDR_GET(csgo_engine_m_SplitScreenPlayers_ishltv_ofs);
+		unsigned char b_was_hltv = *p_b_ishltv;
+		*p_b_ishltv = g_WasHltv ? 1 : 0;
+
+		float result = fn(This, Edx);
+
+		*p_b_ishltv = b_was_hltv;				
+		return result;
+	}
+
+	return fn(This, Edx);
+}
+
+float __fastcall My_csgo_CBoundedCvar_CmdRate_GetFloat(SOURCESDK::C_BasePlayer_csgo * This, void* Edx) {
+	return Do_csgo_CBoundedCvar_GetFloat_WithOrgLocalPlayer(This, Edx, True_csgo_CBoundedCvar_CmdRate_GetFloat);
+}
+
+float __fastcall My_csgo_CBoundedCvar_UpdateRate_GetFloat(SOURCESDK::C_BasePlayer_csgo * This, void* Edx) {
+	return Do_csgo_CBoundedCvar_GetFloat_WithOrgLocalPlayer(This, Edx, True_csgo_CBoundedCvar_UpdateRate_GetFloat);
+}
+
+float __fastcall My_csgo_CBoundedCvar_Rate_GetFloat(SOURCESDK::C_BasePlayer_csgo * This, void* Edx) {
+	return Do_csgo_CBoundedCvar_GetFloat_WithOrgLocalPlayer(This, Edx, True_csgo_CBoundedCvar_Rate_GetFloat);
+}
+
+
+bool Install_csgo_engine_RateCvarHooks(void)
+{
+	static bool firstResult = false;
+	static bool firstRun = true;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	if (AFXADDR_GET(csgo_engine_CBoundedCvar_CmdRate_vtable)
+		&& AFXADDR_GET(csgo_engine_CBoundedCvar_UpdateRate_vtable)
+		&& AFXADDR_GET(csgo_engine_CBoundedCvar_Rate_vtable)
+		&& AFXADDR_GET(csgo_engine_m_SplitScreenPlayers)
+		&& AFXADDR_GET(csgo_engine_m_SplitScreenPlayers_ishltv_ofs))
+	{
+		LONG error = NO_ERROR;
+
+		{
+			void **vtable = (void **)AFXADDR_GET(csgo_engine_CBoundedCvar_CmdRate_vtable);
+			True_csgo_CBoundedCvar_CmdRate_GetFloat = (csgo_CBoundedCvar_GetFloat_t)vtable[12];
+		}
+		{
+			void **vtable = (void **)AFXADDR_GET(csgo_engine_CBoundedCvar_UpdateRate_vtable);
+			True_csgo_CBoundedCvar_UpdateRate_GetFloat = (csgo_CBoundedCvar_GetFloat_t)vtable[12];
+		}
+		{
+			void **vtable = (void **)AFXADDR_GET(csgo_engine_CBoundedCvar_Rate_vtable);
+			True_csgo_CBoundedCvar_Rate_GetFloat = (csgo_CBoundedCvar_GetFloat_t)vtable[12];
+		}
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)True_csgo_CBoundedCvar_CmdRate_GetFloat, My_csgo_CBoundedCvar_CmdRate_GetFloat);
+		DetourAttach(&(PVOID&)True_csgo_CBoundedCvar_UpdateRate_GetFloat, My_csgo_CBoundedCvar_UpdateRate_GetFloat);
+		DetourAttach(&(PVOID&)True_csgo_CBoundedCvar_Rate_GetFloat, My_csgo_CBoundedCvar_Rate_GetFloat);
+		error = DetourTransactionCommit();
+
+		firstResult = NO_ERROR == error;
+	}
+	return firstResult;
+}
+
+
 CON_COMMAND(mirv_pov, "Forces a POV on a GOTV demo.")
 {
 	if (!(AFXADDR_GET(csgo_C_CSPlayer_ofs_m_angEyeAngles)
@@ -519,6 +599,7 @@ CON_COMMAND(mirv_pov, "Forces a POV on a GOTV demo.")
 		&& Install_csgo_client_AdjustInterpolationAmount()
 		&& Hook_csgo_CPlayerResource_GetPing()
 		//&& AFXADDR_GET(csgo_C_BaseEntity_ofs_m_bPredictable)
+		&& Install_csgo_engine_RateCvarHooks()
 		))
 	{
 		Tier0_Warning("Not supported for your engine / missing hooks!\n");
