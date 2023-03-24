@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.120.1</version>
+<time>2023-03-24T15:20Z</time>
+<changes>
+<change type="fixed">Fixed  mirv_pov doesn't automatically use the correct rates for GOTV demos (advancedfx/advancedfx#835).</change>
+<change type="fixed">Fixed possible mirv_agr crash e.g. in TF2 when weapons are carried (advancedfx/advancedfx#837).</change>
+<change type="updated">Added more stuff to mirv_agr in TF2.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.120.0</version>
 <time>2023-03-10T12:00Z</time>
 <changes>
