@@ -4,6 +4,15 @@
 <changelog>
 
 
+<release>
+<name>AfxHookSource</name>
+<version>1.120.3</version>
+<time>2023-04-02T10:35Z</time>
+<changes>
+<change type="updated">Updated mirv_fix panoramaTiming, enter without options for built-in command help.</change>
+</changes>
+</release>
+
 
 <release>
 <name>AfxHookSource</name>
@@ -13,6 +22,7 @@
 <change type="fixed">Fixed fix for Panorama UI HUD speed.</change>
 </changes>
 </release>
+
 
 <release>
 <name>AfxHookSource</name>

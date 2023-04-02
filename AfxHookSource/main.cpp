@@ -2650,7 +2650,7 @@ CAfxImportsHook g_Import_vgui2(CAfxImportsHooks({
 
 typedef double (* Plat_FloatTime_t)(void);
 double new_csgo_panorama_tier0_Plat_FloatTime(void);
-bool g_panorama_fix_timing = true;
+float g_panorama_fps = -1;
 
 CAfxImportFuncHook<Plat_FloatTime_t> g_Import_panorama_tier0_PlatFloatTime("Plat_FloatTime", &new_csgo_panorama_tier0_Plat_FloatTime);
 
@@ -2665,24 +2665,17 @@ double new_csgo_panorama_tier0_Plat_FloatTime(void){
 	if(first_call)
 		first_call = false;
 	else {
-		if(g_panorama_fix_timing && !g_MirvTime.IsPaused()) {
-			cvar_ref_host_framerate.RetryIfNull("host_framerate");
-			float host_framerate = 0.0f;
-			float demoTimeScale = 1.0f;
-			WrpVEngineClientDemoInfoEx* di = g_VEngineClient ? g_VEngineClient->GetDemoInfoEx() : nullptr;
-			if (di) demoTimeScale = di->GetDemoPlaybackTimeScale();
-
-			if(cvar_ref_host_framerate.IsValid())
-				host_framerate = cvar_ref_host_framerate.GetFloat();
-			
-			if(host_framerate != 0.0f || demoTimeScale != 1.0f) {
-				int frame_count = g_MirvTime.GetFrameCount();
-				if(frame_count != last_frame_count) {
-					last_frame_count = frame_count;
-					result_delta = g_MirvTime.GetFrameTime();
-				} else {
-					result_delta = 0.0;
-				}
+		if(0.0f != g_panorama_fps && !g_MirvTime.IsPaused()) {
+			int frame_count = g_MirvTime.GetFrameCount();
+			if(frame_count != last_frame_count) {
+				last_frame_count = frame_count;
+				result_delta = g_MirvTime.GetFrameTime();
+				if(0 < g_panorama_fps)
+					result_delta = 1.0f < g_panorama_fps ? (1.0f / g_panorama_fps) : g_panorama_fps;
+				else if(g_panorama_fps < 0)
+					result_delta *= -g_panorama_fps;
+			} else {
+				result_delta = 0.0;
 			}
 		}
 	}

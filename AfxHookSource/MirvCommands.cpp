@@ -3297,7 +3297,7 @@ extern float g_Mirv_Pov_Interp_OrgFac[2];
 extern float g_Mirv_Pov_Interp_PingFac[2];
 extern float g_Mirv_Pov_Interp_Offset[2];
 
-extern bool g_panorama_fix_timing;
+extern float g_panorama_fps;
 
 CON_COMMAND(mirv_fix, "Various fixes")
 {
@@ -3539,16 +3539,54 @@ CON_COMMAND(mirv_fix, "Various fixes")
 			if (3 <= argc)
 			{
 				char const * cmd2 = args->ArgV(2);
-
-				g_panorama_fix_timing = 0 != atoi(cmd2);
-				return;
+				if(0 == _stricmp("factor", cmd2) && 4 <= argc) {
+					float value = (float)atof(args->ArgV(3));
+					if(0 < value)
+						g_panorama_fps = -value;
+					else
+						Tier0_Warning("Error: <fFactor> must be greater than 0.\n");
+					return;
+				}
+				else if(0 == _stricmp("framerate", cmd2) && 4 <= argc) {
+					float value = (float)atof(args->ArgV(3));
+					if(0 < value)
+						g_panorama_fps = value;
+					else
+						Tier0_Warning("Error: <fFrameRateOrFps> must be greater than 0.\n");
+					return;
+				}
+				else if(0 == _stricmp("disable", cmd2)) {
+					g_panorama_fps = 0;
+					return;
+				}
+				else if(0 == _stricmp("1", cmd2)) {
+					g_panorama_fps = -1;
+					return;
+				}
+				else if(0 == _stricmp("0", cmd2)) {
+					g_panorama_fps = 0;
+					return;
+				}
 			}
 
 			Tier0_Msg(
-				"mirv_fix panoramaTiming 0|1 - Fix Panorama UI timing (default: 1).\n"
-				"Current value: %i\n",
-				g_panorama_fix_timing ? 1 : 0
+				"mirv_fix panoramaTiming 0 - Shortcut for mirv_fix panoramaTiming disable.\n"
+				"mirv_fix panoramaTiming 1 - Shortcut for mirv_fix panoramaTiming factor 1.\n"
+				"mirv_fix panoramaTiming factor <fFactor> - Use realtime multiplied with <fFactor>.\n"
+				"mirv_fix panoramaTiming framerate <fFrameRateOrFps> - Fix Panorama UI timing (default: 1).\n"
+				"mirv_fix panoramaTiming disable - Restore original broken behavior.\n"
+				"Default: factor 1\n"
+				"Current value: "
 			);
+			if(0 == g_panorama_fps)
+				Tier0_Msg("disable");
+			else if(g_panorama_fps < 0) {
+				Tier0_Msg("factor %f", -g_panorama_fps);
+			}
+			else {
+				Tier0_Msg("framerate %f", g_panorama_fps);
+			}
+			Tier0_Msg("\n");
 			return;
 		}
 	}
