@@ -130,25 +130,41 @@ void CClientTools::WriteBones(bool hasBones, const SOURCESDK::matrix3x4_t & pare
 	m_AfxGameRecord.Write((bool)hasBones);
 	if(hasBones) {
 		m_AfxGameRecord.Write((int)m_BoneState.size());
+		SOURCESDK::matrix3x4_t bones;
+		SOURCESDK::matrix3x4_t tmp;
 		SOURCESDK::matrix3x4_t parentInverse;
 		if (!InvertMatrix(parentTransform, parentInverse))
 			Tier0_Warning("AFXERROR: parent matrix inversion failed .\n");
-		for (int i = 0; i < m_BoneState.size(); i++)
+		for (size_t i = 0; i < m_BoneState.size(); i++)
 		{
-			if(m_BoneState[i].second) {
-				SOURCESDK::matrix3x4_t bones;
-				R_ConcatTransforms(parentInverse, m_BoneState[i].first, bones);
-				WriteMatrix3x4(bones);
+			auto & boneState = m_BoneState[i];
+
+			if ( !(boneState.Flags & SOURCESDK_BONE_USED_BY_ANYTHING ) )
+			{
+				bones[0][0] = 1; bones[0][1] = 0; bones[0][2] = 0;  bones[0][3] = 0;
+				bones[1][0] = 0; bones[1][1] = 1; bones[1][2] = 0;  bones[1][3] = 0;
+				bones[2][0] = 0; bones[2][1] = 0; bones[2][2] = 1;  bones[2][3] = 0;
 			} else {
-				WriteMatrix3x4(m_BoneState[i].first);
+				bool bRoot = boneState.Parent == -1;
+				
+				if (!bRoot) {
+					if(!CClientTools::InvertMatrix(m_BoneState[boneState.Parent].Matrix, tmp)) {
+						Tier0_Warning("AFXERROR: parent matrix inversion failed for bone %i (parent bone %i).\n", i, boneState.Parent);
+					}
+					R_ConcatTransforms(tmp, boneState.Matrix, bones);
+				} else {
+					R_ConcatTransforms(parentInverse, boneState.Matrix, bones);
+				}
+
 			}
+
+			WriteMatrix3x4(bones);
 		}
 	} 
 }
 
 bool CClientTools::InvertMatrix(const SOURCESDK::matrix3x4_t &matrix, SOURCESDK::matrix3x4_t &out_matrix)
 {
-
 	double b0[4] = { 1, 0, 0, 0 };
 	double b1[4] = { 0, 1, 0, 0 };
 	double b2[4] = { 0, 0, 1, 0 };
@@ -203,35 +219,16 @@ bool CClientTools::InvertMatrix(const SOURCESDK::matrix3x4_t &matrix, SOURCESDK:
 void CClientTools::CaptureBones( SOURCESDK::CStudioHdr *hdr, SOURCESDK::matrix3x4_t *pBoneState ) {
 	m_BoneState.clear();
 	if(nullptr != hdr && nullptr != pBoneState) {
-		SOURCESDK::matrix3x4_t tmp;
-
 		m_BoneState.resize(hdr->numbones());
-
 		for (int i = 0; i < hdr->numbones(); ++i)
 		{
 			const SOURCESDK::mstudiobone_t *pBone = hdr->pBone(i);
-			SOURCESDK::matrix3x4_t & boneRef = m_BoneState[i].first;
 
-			if ( !(pBone->flags & SOURCESDK_BONE_USED_BY_ANYTHING ) )
-			{
-				m_BoneState[i].second = false;
-				boneRef[0][0] = 1; boneRef[0][1] = 0; boneRef[0][2] = 0;  boneRef[0][3] = 0;
-				boneRef[1][0] = 0; boneRef[1][1] = 1; boneRef[1][2] = 0;  boneRef[1][3] = 0;
-				boneRef[2][0] = 0; boneRef[2][1] = 0; boneRef[2][2] = 1;  boneRef[2][3] = 0;
-			} else {
-				bool bRoot = pBone->parent == -1;
-				m_BoneState[i].second = bRoot;
-				
-				if (!bRoot) {
-					if(!CClientTools::InvertMatrix(pBoneState[pBone->parent], tmp)) {
-						Tier0_Warning("AFXERROR: parent matrix inversion failed for bone %i (parent bone %i).\n", i,pBone->parent);
-					}
-					R_ConcatTransforms(tmp, pBoneState[i], boneRef);
-				} else {
-					boneRef = pBoneState[i];
-				}
+			auto & boneState = m_BoneState[i];
 
-			}
+			boneState.Parent = pBone->parent;
+			boneState.Flags = pBone->flags;
+			boneState.Matrix = pBoneState[i];
 		}
 	}
 }

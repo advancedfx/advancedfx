@@ -186,7 +186,13 @@ private:
 	int m_RecordViewModels = 0;
 	bool m_RecordInvisible = false;
 	
-	std::vector<std::pair<SOURCESDK::matrix3x4_t,bool>> m_BoneState;
+	struct BoneState_s {
+		SOURCESDK::matrix3x4_t Matrix;
+		int Parent;
+		int Flags;
+	};
+
+	std::vector<BoneState_s> m_BoneState;
 };
 
 bool ClientTools_Console_Cfg(IWrpCommandArgs * args);

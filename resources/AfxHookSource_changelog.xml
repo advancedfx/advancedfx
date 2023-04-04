@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.120.4</version>
+<time>2023-04-04T08:31Z</time>
+<changes>
+<change type="fixed">Fixed mirv_agr inverting matrices for bone matrices that won't be actually exported in the end, leading to console spam upon problems in e.g. CS:GO.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.120.3</version>
 <time>2023-04-02T10:35Z</time>
 <changes>
