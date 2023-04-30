@@ -4,6 +4,18 @@
 <changelog>
 
 
+
+<release>
+<name>HLAE</name>
+<version>2.145.5</version>
+<time>2023-04-30Z17:12Z</time>
+<changes>
+<change type="updated">Included AfxHookGoldSrc 2.18.3 (2023-04-30Z17:12Z).</change>
+<change type="updated">Updated installer FFMPEG version to 6.0 of https://github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2023-04-30-12-46.</change>
+</changes>
+</release>
+
+
 <release>
 <name>HLAE</name>
 <version>2.145.4</version>
@@ -12,8 +24,6 @@
 <change type="updated">Included AfxHookSource 1.120.4 (2023-04-04T08:31Z).</change>
 </changes>
 </release>
-
-
 
 
 <release>

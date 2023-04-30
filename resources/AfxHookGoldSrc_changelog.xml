@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.18.3</version>
+<time>2023-04-30Z17:12Z</time>
+<changes>
+<change type="fixed">Fixed advancedfx/advancedfx#842 GoldSrc FFMPEG videos flipped since AfxHookGoldSrc 2.18.2.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.18.2</version>
 <time>2023-02-12Z11:40Z</time>
 <changes>
