@@ -118,7 +118,9 @@ enum FilmingStreamSlot {
 	FS_debug = 12
 };
 
-const wchar_t* g_DefaultFfmpegOptionsColor = L"{QUOTE}{FFMPEG_PATH}{QUOTE} -f rawvideo -pixel_format {PIXEL_FORMAT} -loglevel repeat+level+warning -framerate {FRAMERATE} -video_size {WIDTH}x{HEIGHT} -i pipe:0 -vf setsar=sar=1/1 -c:v libx264 -pix_fmt yuv420p -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}";
+#define MIRV_GOLDSRC_DEFAULT_OPTIONS_PREFIX_WSZ "{QUOTE}{FFMPEG_PATH}{QUOTE} -f rawvideo -pixel_format {PIXEL_FORMAT} -loglevel repeat+level+warning -framerate {FRAMERATE} -video_size {WIDTH}x{HEIGHT} -i pipe:0 -vf setsar=sar=1/1,vflip "
+
+const wchar_t* g_DefaultFfmpegOptionsColor = L"" MIRV_GOLDSRC_DEFAULT_OPTIONS_PREFIX_WSZ "-c:v libx264 -pix_fmt yuv420p -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}";
 
 std::wstring g_FilmingStream_FfmpegOptions[13] = {
 	g_DefaultFfmpegOptionsColor, g_DefaultFfmpegOptionsColor,
@@ -2640,7 +2642,7 @@ REGISTER_CMD_FUNC(movie_ffmpeg)
 
 					for (std::list<int>::iterator it = selectedStreams.begin(); it != selectedStreams.end(); ++it)
 					{
-						g_FilmingStream_FfmpegOptions[*it] = std::wstring(L"{QUOTE}{FFMPEG_PATH}{QUOTE} -f rawvideo -pixel_format {PIXEL_FORMAT} -loglevel repeat+level+warning -framerate {FRAMERATE} -video_size {WIDTH}x{HEIGHT} -i pipe:0 -vf setsar=sar=1/1 ").append(wOptions);
+						g_FilmingStream_FfmpegOptions[*it] = std::wstring( L"" MIRV_GOLDSRC_DEFAULT_OPTIONS_PREFIX_WSZ ).append(wOptions);
 					}
 					return;
 				}
@@ -2654,7 +2656,7 @@ REGISTER_CMD_FUNC(movie_ffmpeg)
 						return;
 					}
 
-					std::string prefix("{QUOTE}{FFMPEG_PATH}{QUOTE} -f rawvideo -pixel_format {PIXEL_FORMAT} -loglevel repeat+level+warning -framerate {FRAMERATE} -video_size {WIDTH}x{HEIGHT} -i pipe:0 -vf setsar=sar=1/1 ");
+					std::string prefix( MIRV_GOLDSRC_DEFAULT_OPTIONS_PREFIX_WSZ );
 					if(StringBeginsWith(options.c_str(), prefix.c_str())) {
 						pEngfuncs->Con_Printf("%s %s options = \"%s\"\n", arg0, arg1, options.substr(prefix.length()).c_str());
 						return;
