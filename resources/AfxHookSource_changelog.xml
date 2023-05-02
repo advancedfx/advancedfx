@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.120.5</version>
+<time>2023-05-02Z20:10Z</time>
+<changes>
+<change type="fixed">Fixed a long standing race condition that would lead to a double free upon release that was copied and pasted in multiple places. Thanks to Flakura YT#2574 in our Discord channel. Updating is recommended.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.120.4</version>
 <time>2023-04-04T08:31Z</time>
 <changes>

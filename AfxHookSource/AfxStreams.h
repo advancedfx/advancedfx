@@ -524,7 +524,7 @@ public:
 
 	virtual int Release()
 	{
-		int result = --m_RefCount;
+		int result = std::atomic_fetch_sub_explicit(&m_RefCount, 1, std::memory_order_relaxed) - 1;
 		
 		if (0 == result)
 			delete this;
@@ -669,7 +669,7 @@ public:
 
 	virtual int Release(void)
 	{
-		int result = --m_RefCount;
+		int result = std::atomic_fetch_sub_explicit(&m_RefCount, 1, std::memory_order_relaxed) - 1;
 		
 		if (0 == result)
 			delete this;

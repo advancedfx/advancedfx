@@ -738,7 +738,10 @@ public:
 
 		if (const class advancedfx::IImageBuffer* pBuffer = capture->GetBuffer()) {
 			if (const class advancedfx::CImageFormat* pFormat = pBuffer->GetImageBufferFormat()) {
-				if (pFormat->Format == advancedfx::ImageFormat::BGR) return capture;
+				if (pFormat->Format == advancedfx::ImageFormat::BGR) {
+					capture->AddRef();
+					return capture;
+				}
 			}
 		}
 

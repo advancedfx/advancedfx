@@ -16,8 +16,7 @@ public:
 	}
 
 	void Release(void) {
-		m_RefCount--;
-		if (0 == m_RefCount)
+		if(1 == std::atomic_fetch_sub_explicit(&m_RefCount, 1, std::memory_order_relaxed))
 			delete this;
 	}
 

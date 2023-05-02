@@ -223,18 +223,14 @@ void CAfxTrackedMaterial::AddRef()
 
 void CAfxTrackedMaterial::Release()
 {
-	--m_RefCount;
-
-	if (0 == m_RefCount)
-	{
+	if (1 == std::atomic_fetch_sub_explicit(&m_RefCount, 1, std::memory_order_relaxed))
 		delete this;
-	}
 }
 
 
 // CAfxOwnedMaterial ///////////////////////////////////////////////////////////
 
-std::map<SOURCESDK::IMaterial_csgo *, std::atomic_int> CAfxOwnedMaterial::m_OwnedMaterials;
+std::map<SOURCESDK::IMaterial_csgo *, int> CAfxOwnedMaterial::m_OwnedMaterials;
 std::shared_timed_mutex CAfxOwnedMaterial::m_OwnedMaterialsMutex;
 
 CAfxOwnedMaterial::CAfxOwnedMaterial(SOURCESDK::IMaterial_csgo * material)
@@ -252,7 +248,7 @@ void CAfxOwnedMaterial::AddRef(SOURCESDK::IMaterial_csgo * material)
 {
 	m_OwnedMaterialsMutex.lock_shared();
 
-	std::map<SOURCESDK::IMaterial_csgo *, std::atomic_int>::iterator it = m_OwnedMaterials.find(material);
+	std::map<SOURCESDK::IMaterial_csgo *, int>::iterator it = m_OwnedMaterials.find(material);
 
 	if (it != m_OwnedMaterials.end())
 	{
@@ -264,7 +260,7 @@ void CAfxOwnedMaterial::AddRef(SOURCESDK::IMaterial_csgo * material)
 		m_OwnedMaterialsMutex.unlock_shared();
 		m_OwnedMaterialsMutex.lock();
 
-		const std::pair<const std::map<SOURCESDK::IMaterial_csgo *,std::atomic_int>::iterator, bool> & emp = m_OwnedMaterials.try_emplace(material, 1);
+		const std::pair<const std::map<SOURCESDK::IMaterial_csgo *, int>::iterator, bool> & emp = m_OwnedMaterials.try_emplace(material, 1);
 
 		if (!emp.second)
 		{
@@ -283,7 +279,7 @@ void CAfxOwnedMaterial::Release(SOURCESDK::IMaterial_csgo * material)
 {
 	m_OwnedMaterialsMutex.lock_shared();
 
-	std::map<SOURCESDK::IMaterial_csgo *, std::atomic_int>::iterator it = m_OwnedMaterials.find(material);
+	std::map<SOURCESDK::IMaterial_csgo *, int>::iterator it = m_OwnedMaterials.find(material);
 
 	if (it != m_OwnedMaterials.end())
 	{
@@ -294,7 +290,7 @@ void CAfxOwnedMaterial::Release(SOURCESDK::IMaterial_csgo * material)
 		{
 			m_OwnedMaterialsMutex.lock();
 
-			std::map<SOURCESDK::IMaterial_csgo *, std::atomic_int>::iterator it = m_OwnedMaterials.find(material);
+			std::map<SOURCESDK::IMaterial_csgo *, int>::iterator it = m_OwnedMaterials.find(material);
 
 			if (it != m_OwnedMaterials.end())
 			{

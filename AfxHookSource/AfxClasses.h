@@ -45,7 +45,7 @@ public:
 	virtual ~CAfxOwnedMaterial();
 
 private:
-	static std::map<SOURCESDK::IMaterial_csgo *, std::atomic_int> m_OwnedMaterials;
+	static std::map<SOURCESDK::IMaterial_csgo *, int> m_OwnedMaterials;
 	static std::shared_timed_mutex m_OwnedMaterialsMutex;
 
 	static void AddRef(SOURCESDK::IMaterial_csgo * material);

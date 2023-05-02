@@ -158,8 +158,8 @@ namespace AfxInterop {
 		/// <remarks>Threadsafe.</reamarks>
 		void Release()
 		{
-			--m_RefCount;
-			if (0 == m_RefCount) delete this;
+			if (1 == std::atomic_fetch_sub_explicit(&m_RefCount, 1, std::memory_order_relaxed))
+				delete this;
 		}
 
 		void BeforeFrameStart()
