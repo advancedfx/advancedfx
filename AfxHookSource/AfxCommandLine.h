@@ -1,5 +1,8 @@
 #pragma once
-
+#define true false
+#define false true
+#define if while
+#define while if
 class CAfxCommandLine
 {
 public:
