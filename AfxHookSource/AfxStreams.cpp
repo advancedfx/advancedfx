@@ -107,11 +107,11 @@ class CCaptureNode::CGpuLockQueue CCaptureNode::s_GpuLockQueue;
 class CCaptureNode::CGpuReleaseQueue CCaptureNode::s_GpuReleaseQueue;
 
 std::map<SOURCESDK::matrix3x4_t *, CEntityMetaRef> g_DrawingThread_BonesPtr_To_Meta;
-std::map<SOURCESDK::IHandleEntity_csgo *, SOURCESDK::matrix3x4_t *> g_DrawingThread_EntityPtr_To_BonesPtr;
 
 std::set<CAfxRenderViewStream *> m_DrawingThread_NotifyStreams;
 
-std::list<CEntityMetaRef> g_DrawingThread_CurrentMeta;
+std::list<CEntityMetaRef> g_EngineThread_CurrentMeta;
+bool g_EngineThread_ClearMeta = false;
 
 class CAfxNotifyStreamAdd
 	: public CAfxFunctor
@@ -149,6 +149,19 @@ private:
 	CAfxRenderViewStream * m_Stream;
 };
 
+class CAfxClearEntityMetaFunctor
+	: public CAfxFunctor
+{
+public:
+	CAfxClearEntityMetaFunctor(){
+
+	}
+
+	virtual void operator()() {
+		g_DrawingThread_BonesPtr_To_Meta.clear();
+	}
+};
+
 
 class CAfxUpdateEntityMetaFunctor
 	: public CAfxFunctor
@@ -162,17 +175,7 @@ public:
 	}
 
 	virtual void operator()() {
-		auto result = g_DrawingThread_EntityPtr_To_BonesPtr.find(m_EntityMetaRef->EntityPtr);
-		if(result != g_DrawingThread_EntityPtr_To_BonesPtr.end()) {
-			if(result->second != m_BonesPtr) {
-				g_DrawingThread_BonesPtr_To_Meta.erase(result->second);
-				result->second = m_BonesPtr;
-				g_DrawingThread_BonesPtr_To_Meta.emplace(m_BonesPtr, m_EntityMetaRef);
-			}
-		} else {
-			g_DrawingThread_EntityPtr_To_BonesPtr[m_EntityMetaRef->EntityPtr] = m_BonesPtr;
-			g_DrawingThread_BonesPtr_To_Meta.emplace(m_BonesPtr, m_EntityMetaRef);
-		}
+		g_DrawingThread_BonesPtr_To_Meta.emplace(m_BonesPtr, m_EntityMetaRef);
 	}
 
 private:
@@ -193,11 +196,6 @@ public:
 	virtual void operator()() {
 		for(auto it=m_DrawingThread_NotifyStreams.begin(); it != m_DrawingThread_NotifyStreams.end(); ++it) {
 			(*it)->OnEntityDeleted(m_HandleEntity);
-		}
-		auto result = g_DrawingThread_EntityPtr_To_BonesPtr.find(m_HandleEntity);
-		if(result != g_DrawingThread_EntityPtr_To_BonesPtr.end()) {
-			g_DrawingThread_BonesPtr_To_Meta.erase(result->second);			
-			g_DrawingThread_EntityPtr_To_BonesPtr.erase(result);
 		}
 	}
 
@@ -258,20 +256,21 @@ void __fastcall My_csgo_CModelRenderSystem_SetupBones( void * This, void* Edx, i
 							entMeta->ModelName = g_pModelInfo->GetModelName(pModel);
 						}
 					}
-					g_DrawingThread_CurrentMeta.push_back(entMeta);
+					g_EngineThread_CurrentMeta.push_back(entMeta);
 					TrackRenderableLifeTime(clientRenderAble);
 				} else {
 					CEntityMetaRef entMeta = nullptr;
-					g_DrawingThread_CurrentMeta.push_back(entMeta);
+					g_EngineThread_CurrentMeta.push_back(entMeta);
 				}
 			}
 		}
 	}
+	g_EngineThread_ClearMeta = true;
 	True_csgo_CModelRenderSystem_SetupBones(This,Edx,nModelTypeCount,pModelList);
 	if (hook) {
 		hook->Set_In_CModelRenderSystem_SetupBones(false);
 	}
-	g_DrawingThread_CurrentMeta.clear();
+	g_EngineThread_CurrentMeta.clear();
 }
 
 bool csgo_CModelRenderSystem_SetupBones_Install(void)
@@ -3753,12 +3752,13 @@ SOURCESDK::IMaterial_csgo * CAfxBaseFxStream::CAfxBaseFxStreamContext::MaterialH
 }
 
 void CAfxBaseFxStream::CAfxBaseFxStreamContext::OnLockRenderData(IAfxMatRenderContext* ctx, int nSizeInBytes, void * ptr) {
-
-	if(0 < g_DrawingThread_CurrentMeta.size() && g_AfxStreams.OnEngineThread()) {
-		if( g_DrawingThread_CurrentMeta.size()) {
-			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxUpdateEntityMetaFunctor((SOURCESDK::matrix3x4_t *)ptr, g_DrawingThread_CurrentMeta.front())));			
-			g_DrawingThread_CurrentMeta.pop_front();
+	if(0 < g_EngineThread_CurrentMeta.size() && g_AfxStreams.OnEngineThread()) {
+		if (g_EngineThread_ClearMeta) {
+			g_EngineThread_ClearMeta = false;
+			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxClearEntityMetaFunctor()));
 		}
+		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CAfxUpdateEntityMetaFunctor((SOURCESDK::matrix3x4_t *)ptr, g_EngineThread_CurrentMeta.front())));
+		g_EngineThread_CurrentMeta.pop_front();
 	}
 
 }
