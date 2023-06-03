@@ -551,7 +551,9 @@ typedef bool(*csgon_fnPlayerSidesWappedOnScreen_t)(void);
 
 SOURCESDK::C_BaseEntity_csgo * GetSpectatorPlayerForKey(int key) {
 
-	if(AFXADDR_GET(csgo_Unknown_GetTeamsSwappedOnScreen)) {
+	if(AFXADDR_GET(csgo_Unknown_GetTeamsSwappedOnScreen)
+		&& g_VEngineClient->IsInGame() // will crash otherwise
+	) {
 		// Left screen side keys: 1, 2, 3, 4, 5
 		// Right screen side keys: 6, 7, 8, 9, 0
 
