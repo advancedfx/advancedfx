@@ -100,7 +100,7 @@
 		</InstallUISequence>
     </UI>
     
-    <Property Id="AFX_FFMPEGURL" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-11-30-12-36/ffmpeg-n5.1.2-8-g5746987bad-win64-gpl-5.1.zip" />
+    <Property Id="AFX_FFMPEGURL" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2023-04-30-12-46/ffmpeg-n6.0-18-g27205c0b47-win64-gpl-6.0.zip" />
     <Property Id="AFX_FFMPEGSUM" Value="1dd289e648a9e065bc1fe2f5581c959a06f2163a756663b1758d8352f2353778e74ffece752927dd94522db45a92f8b0dc6177b388e036b91a1376e3a080eea7" />
 
     <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_40" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2023-04-30-12-46/ffmpeg-n6.0-18-g27205c0b47-win64-lgpl-shared-6.0.zip">
