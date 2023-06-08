@@ -155,18 +155,25 @@ public:
 
 		static bool wasDrawing = false;
 		static int oldMatQueueMode = 0;
-		m_Mat_Queue_Mode.RetryIfNull("mat_queue_mode");
-		if (m_Mat_Queue_Mode.IsValid()) {
-			// For engines where have cvar access:
-			if (g_CampathDrawer.Draw_get()) {
-				float matQueueMode = m_Mat_Queue_Mode.GetInt();
-				if (!wasDrawing) {
-					oldMatQueueMode = matQueueMode;
-					wasDrawing = true;
-				}
+			if (
+				g_CampathDrawer.Draw_get() // Campath drawer can't handle queued rendering
+				|| g_SourceSdkVer != SourceSdkVer::SourceSdkVer_CSGO && g_AfxStreams.IsRecording() // neither can recording in other mods than cs:go
+			) {
+				m_Mat_Queue_Mode.RetryIfNull("mat_queue_mode");
+				if (m_Mat_Queue_Mode.IsValid()) {
+					// For engines where have cvar access:
+					float matQueueMode = m_Mat_Queue_Mode.GetInt();
+					if (!wasDrawing) {
+						oldMatQueueMode = matQueueMode;
+						wasDrawing = true;
+					}
 
-				if (0 != matQueueMode)
+					if (0 != matQueueMode)
+						g_VEngineClient->ExecuteClientCmd("mat_queue_mode 0");
+				}
+				else {
 					g_VEngineClient->ExecuteClientCmd("mat_queue_mode 0");
+				}
 			}
 			else {
 				if (wasDrawing) {
@@ -176,7 +183,7 @@ public:
 					g_VEngineClient->ExecuteClientCmd(buffer);
 				}
 			}
-		}
+		
 
 		if (g_SourceSdkVer != SourceSdkVer::SourceSdkVer_CSGO || g_AfxStreams.IsSingleThreaded())
 			g_CampathDrawer.OnPostRenderAllTools();
@@ -239,7 +246,16 @@ public:
 		return bRet;
 	}
 	
-	virtual bool SetupAudioState(SOURCESDK::AudioState_t &audioState ) { return g_Engine_ClientEngineTools->SetupAudioState(audioState); }
+	virtual bool SetupAudioState(SOURCESDK::AudioState_t &audioState ) {
+		static bool bWasRecording = false;
+		if (g_SourceSdkVer != SourceSdkVer::SourceSdkVer_CSGO && (g_AfxStreams.IsRecording() && g_VEngineClient && !g_VEngineClient->Con_IsVisible() || bWasRecording && !g_AfxStreams.IsRecording())) {
+			bWasRecording = g_AfxStreams.IsRecording();
+			g_AfxStreams.Set_View_Render_ThreadId(GetCurrentThreadId());
+			g_AfxStreams.EngineThread_QueuePresent();
+		}
+
+		return g_Engine_ClientEngineTools->SetupAudioState(audioState);
+	}
 	
 	virtual void VGui_PreRenderAllTools( int paintMode )
 	{
@@ -524,6 +540,8 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 		//AfxV34HookWindow();
 
 		PrintInfo();
+
+		CAfxStreams::AfxStreamsInit();
 	}
 }
 
@@ -628,6 +646,8 @@ void Shared_AfterFrameRenderEnd(void)
 
 void Shared_Shutdown(void)
 {
+	g_AfxStreams.ShutDown();
+
 	if (CClientTools * instance = CClientTools::Instance()) delete instance;
 }
 
@@ -1053,8 +1073,6 @@ int CAfxBaseClientDll::Init(SOURCESDK::CreateInterfaceFn appSystemFactory, SOURC
 	MirvPgl::Init();
 #endif	
 
-	CAfxStreams::AfxStreamsInit();
-
 	return result;
 }
 
@@ -1064,8 +1082,6 @@ __declspec(naked) void CAfxBaseClientDll::PostInit()
  //__declspec(naked) 
 void CAfxBaseClientDll::Shutdown(void)
 { // NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 4)
-
-	g_AfxStreams.ShutDown();
 
 #ifdef AFX_MIRV_PGL
 	MirvPgl::Shutdown();
@@ -2535,12 +2551,51 @@ CAfxImportDllHook g_Import_filesystem_steam_KERNEL32("KERNEL32.dll", CAfxImportD
 CAfxImportsHook g_Import_filesystem_steam(CAfxImportsHooks({
 	&g_Import_filesystem_steam_KERNEL32 }));
 
+HANDLE
+WINAPI
+new_CreateFileW(
+	_In_ LPCWSTR lpFileName,
+	_In_ DWORD dwDesiredAccess,
+	_In_ DWORD dwShareMode,
+	_In_opt_ LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+	_In_ DWORD dwCreationDisposition,
+	_In_ DWORD dwFlagsAndAttributes,
+	_In_opt_ HANDLE hTemplateFile
+);
+
 CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR)> g_Import_filesystem_stdio_KERNEL32_LoadLibraryA("LoadLibraryA", &new_LoadLibraryA);
 CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR, HANDLE, DWORD)> g_Import_filesystem_stdio_KERNEL32_LoadLibraryExA("LoadLibraryExA", &new_LoadLibraryExA);
+CAfxImportFuncHook<HANDLE(WINAPI*)(LPCWSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE)> g_Import_filesystem_stdio_KERNEL32_CreateFileW("CreateFileW", &new_CreateFileW);
+
+HANDLE WINAPI new_CreateFileW(
+	_In_ LPCWSTR lpFileName,
+	_In_ DWORD dwDesiredAccess,
+	_In_ DWORD dwShareMode,
+	_In_opt_ LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+	_In_ DWORD dwCreationDisposition,
+	_In_ DWORD dwFlagsAndAttributes,
+	_In_opt_ HANDLE hTemplateFile
+)
+{
+	static bool bWasRecording = false; // allow startmovie wav-fixup by engine to get through one more time.
+	if (g_SourceSdkVer != SourceSdkVer_CSGO && (g_AfxStreams.IsRecording() || bWasRecording)) {
+		std::wstring strFileName(lpFileName);
+		for (auto& c : strFileName) c = std::tolower(c);
+		if (StringEndsWithW(strFileName.c_str(), L"" ADVNACEDFX_STARTMOIVE_WAV_KEY ".wav")) {
+			bWasRecording = g_AfxStreams.IsRecording();
+			std::wstring newPath(g_AfxStreams.GetTakeDir());
+			newPath.append(L"\\audio.wav");
+			return g_Import_filesystem_stdio_KERNEL32_CreateFileW.TrueFunc(newPath.c_str(), dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+		}
+	}
+
+	return g_Import_filesystem_stdio_KERNEL32_CreateFileW.TrueFunc(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+}
 
 CAfxImportDllHook g_Import_filesystem_stdio_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
 	&g_Import_filesystem_stdio_KERNEL32_LoadLibraryA
-	, &g_Import_filesystem_stdio_KERNEL32_LoadLibraryExA }));
+	, &g_Import_filesystem_stdio_KERNEL32_LoadLibraryExA
+	, &g_Import_filesystem_stdio_KERNEL32_CreateFileW }));
 
 CAfxImportsHook g_Import_filesystem_stdio(CAfxImportsHooks({
 	&g_Import_filesystem_stdio_KERNEL32 }));

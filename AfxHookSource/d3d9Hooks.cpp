@@ -14,6 +14,7 @@
 #include "AfxStreams.h"
 #include "AfxInterop.h"
 #include "ReShadeAdvancedfx.h"
+#include "addresses.h"
 
 #include <shared/AfxDetours.h>
 
@@ -4651,6 +4652,9 @@ public:
 
 	void Afx_Present_Before(CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion, DWORD dwFlags)
 	{
+		if (g_SourceSdkVer != SourceSdkVer::SourceSdkVer_CSGO) {
+			g_AfxStreams.DrawingThread_BeforePresent();
+		}
 	}
 
 	void Afx_Present_After(HRESULT hResult)

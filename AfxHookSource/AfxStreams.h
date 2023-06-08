@@ -54,6 +54,8 @@
 #include <thread>
 #include <chrono>
 
+#define ADVNACEDFX_STARTMOIVE_WAV_KEY "advancedfx-a6948f6e-7217-4dc1-b29a-ba055242ab43"
+
 using namespace advancedfx;
 
 class ICaptureInput {
@@ -132,6 +134,14 @@ class CCaptureNode
 	, private IAfxD3D9OnRelease
 {
 public:
+	static void Init() {
+		s_GpuReleaseQueue.Init();
+	}
+
+	static void Shutdown() {
+		s_GpuReleaseQueue.Shutdown();
+	}
+
 	static void GpuExecuteLockQueue() {
 		s_GpuLockQueue.Execute();
 	}
@@ -166,6 +176,13 @@ public:
 		s_GpuReleaseQueue.Add(this);
 	}
 
+	/**
+	 * @remarks use only if wanting to release directl vom GPU thread, otherwise use CpuQueueGpuRelease
+	 */
+	void GpuRelease() {
+		this->ReleaseD3d9Capture();
+	}
+
 protected:
 	virtual ~CCaptureNode() {
 		Assert(m_ProcessBuffer == false);
@@ -177,58 +194,77 @@ protected:
 	}
 
 private:
-	template <typename T> class CExecutionQueue {
+	static class CGpuLockQueue {
 	public:
-		~CExecutionQueue() {
+		~CGpuLockQueue() {
 			Clear();
 		}
 
-		void Add(T * capture) {
+		void Add(CCaptureNode* capture) {
 			capture->AddRef();
 			m_Queue.emplace(capture);
 		}
 
 		void Execute() {
-			while(!m_Queue.empty()) {
-				T * item = m_Queue.front();
-				ExecuteItem(item);
+			while (!m_Queue.empty()) {
+				CCaptureNode* item = m_Queue.front();
+				item->GpuLock();
 				item->Release();
 				m_Queue.pop();
 			}
 		}
 
 		void Clear() {
-			while(!m_Queue.empty()) {
+			while (!m_Queue.empty()) {
 				m_Queue.front()->Release();
 				m_Queue.pop();
 			}
 		}
 
-	protected:
-		virtual void ExecuteItem(T * item) = 0;
-
 	private:
-		std::queue<T *> m_Queue;
-	};
-
-	static class CGpuLockQueue
-	: public CExecutionQueue<CCaptureNode> {
-
-	protected:
-		virtual void ExecuteItem(CCaptureNode* item) {
-			item->GpuLock();
-		}
-
+		std::queue<CCaptureNode*> m_Queue;
 	} s_GpuLockQueue;
 
-	static class CGpuReleaseQueue
-		: public CExecutionQueue<CCaptureNode> {
-
-	protected:
-		virtual void ExecuteItem(CCaptureNode* item) {
-			item->ReleaseD3d9Capture();
+	static class CGpuReleaseQueue {
+	public:
+		void Init() {
+			m_Mutex = new std::mutex();
 		}
 
+		void Shutdown() {
+			Clear();
+			delete m_Mutex;
+			m_Mutex = nullptr;
+		}
+
+		void Add(CCaptureNode * capture) {
+			std::unique_lock<std::mutex> lock(*m_Mutex);
+			capture->AddRef();
+			m_Queue.emplace(capture);
+		}
+
+		void Execute() {
+			std::unique_lock<std::mutex> lock(*m_Mutex);
+			while (!m_Queue.empty()) {
+				CCaptureNode* item = m_Queue.front();
+				item->ReleaseD3d9Capture();
+				item->Release();
+				m_Queue.pop();
+			}
+		}
+
+		void Clear() {
+			std::unique_lock<std::mutex> lock(*m_Mutex);
+			while (!m_Queue.empty()) {
+				m_Queue.front()->Release();
+				m_Queue.pop();
+			}
+		}
+
+	private:
+		std::queue<CCaptureNode*> m_Queue;
+		std::mutex *m_Mutex = nullptr;
+	
 	} s_GpuReleaseQueue;
 
 	class CCapture
@@ -995,6 +1031,19 @@ private:
 class CAfxSingleStream;
 class CAfxTwinStream;
 
+class CAfxOutVideoStreamCreator
+	: public advancedfx::CRefCountedThreadSafe
+{
+public:
+	virtual advancedfx::COutVideoStream* CreateOutVideoStream(const advancedfx::CImageFormat& imageFormat) const = 0;
+};
+
+class IAfxRecordStreamSettings {
+public:
+	virtual bool GetStreamFolder(std::wstring& outFolder) const = 0;
+	virtual CAfxRenderViewStream::StreamCaptureType GetCaptureType() const = 0;
+};
+
 class CAfxRecordingSettings
 {
 public:
@@ -1047,7 +1096,7 @@ public:
 
 	virtual void Console_Edit(IWrpCommandArgs * args) = 0;
 
-	virtual advancedfx::COutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const advancedfx::CImageFormat & imageFormat, float fps, const char * pathSuffix) const = 0;
+	virtual class CAfxOutVideoStreamCreator* CreateOutVideoStreamCreator(const CAfxStreams & streams, const IAfxRecordStreamSettings& stream, float fps, const char * pathSuffix) const = 0;
 
 	virtual bool InheritsFrom(CAfxRecordingSettings * setting) const
 	{
@@ -1150,10 +1199,10 @@ public:
 
 	virtual void Console_Edit(IWrpCommandArgs * args) override;
 
-	virtual advancedfx::COutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const advancedfx::CImageFormat & imageFormat, float fps, const char * pathSuffix) const override
+	virtual class CAfxOutVideoStreamCreator* CreateOutVideoStreamCreator(const CAfxStreams & streams, const IAfxRecordStreamSettings& stream, float fps, const char * pathSuffix) const override
 	{
 		if (m_DefaultSettings)
-			return m_DefaultSettings->CreateOutVideoStream(streams, stream, imageFormat, fps, pathSuffix);
+			return m_DefaultSettings->CreateOutVideoStreamCreator(streams, stream, fps, pathSuffix);
 
 		return nullptr;
 	}
@@ -1190,9 +1239,9 @@ public:
 
 	virtual void Console_Edit(IWrpCommandArgs * args) override;
 
-	virtual advancedfx::COutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const advancedfx::CImageFormat & imageFormat, float fps, const char * pathSuffix) const override
+	virtual class CAfxOutVideoStreamCreator* CreateOutVideoStreamCreator(const CAfxStreams & streams, const IAfxRecordStreamSettings& stream, float fps, const char * pathSuffix) const override
 	{
-		std::list<advancedfx::COutVideoStream * > outVideoStreams;
+		std::list<CAfxOutVideoStreamCreator*> outVideoStreams;
 
 		for (auto it = m_Settings.begin(); it != m_Settings.end(); ++it)
 		{
@@ -1202,11 +1251,13 @@ public:
 				mySuffix.append("\\");
 				mySuffix.append(setting->GetName());
 
-				outVideoStreams.push_back(setting->CreateOutVideoStream(streams, stream, imageFormat, fps, mySuffix.c_str()));
+				CAfxOutVideoStreamCreator* item = setting->CreateOutVideoStreamCreator(streams, stream, fps, mySuffix.c_str());
+				item->AddRef();
+				outVideoStreams.push_back(item);
 			}
 		}
 
-		return new advancedfx::COutMultiVideoStream(imageFormat, std::move(outVideoStreams));
+		return new CMyAfxOutVideoStreamCreator(std::move(outVideoStreams));
 	}
 
 	virtual bool InheritsFrom(CAfxRecordingSettings * setting) const override
@@ -1232,6 +1283,35 @@ protected:
 	}
 private:
 	std::list<CAfxRecordingSettings *> m_Settings;
+
+	class CMyAfxOutVideoStreamCreator
+		: public CAfxOutVideoStreamCreator {
+	public:
+		CMyAfxOutVideoStreamCreator(std::list<CAfxOutVideoStreamCreator*>&& list)
+			: m_List(list)
+		{
+
+		}
+
+		virtual advancedfx::COutVideoStream* CreateOutVideoStream(const advancedfx::CImageFormat& imageFormat) const override {
+			std::list<advancedfx::COutVideoStream*> outVideoStreams;
+			for (auto it = m_List.begin(); it != m_List.end(); it++) {
+				outVideoStreams.push_back((*it)->CreateOutVideoStream(imageFormat));
+			}
+			return new advancedfx::COutMultiVideoStream(imageFormat, std::move(outVideoStreams));
+		}
+
+	protected:
+		~CMyAfxOutVideoStreamCreator() {
+			for (auto it = m_List.begin(); it != m_List.end(); it++) {
+				(*it)->Release();
+			}
+			m_List.clear();
+		}
+
+	private:
+		std::list<CAfxOutVideoStreamCreator*> m_List;
+	};
 };
 
 class CAfxClassicRecordingSettings : public CAfxRecordingSettings
@@ -1244,7 +1324,7 @@ public:
 
 	virtual void Console_Edit(IWrpCommandArgs * args) override;
 
-	virtual advancedfx::COutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const advancedfx::CImageFormat & imageFormat, float fps, const char * pathSuffix) const override;
+	virtual class CAfxOutVideoStreamCreator* CreateOutVideoStreamCreator(const CAfxStreams & streams, const IAfxRecordStreamSettings& stream, float fps, const char * pathSuffix) const override;
 };
 
 class CAfxFfmpegRecordingSettings : public CAfxRecordingSettings
@@ -1259,7 +1339,7 @@ public:
 
 	virtual void Console_Edit(IWrpCommandArgs * args) override;
 
-	virtual advancedfx::COutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const advancedfx::CImageFormat & imageFormat, float fps, const char * pathSuffix) const override;
+	virtual class CAfxOutVideoStreamCreator* CreateOutVideoStreamCreator(const CAfxStreams & streams, const IAfxRecordStreamSettings& stream, float fps, const char * pathSuffix) const override;
 
 private:
 	std::string m_FfmpegOptions;
@@ -1277,7 +1357,7 @@ public:
 
 	virtual void Console_Edit(IWrpCommandArgs * args) override;
 
-	virtual advancedfx::COutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const advancedfx::CImageFormat & imageFormat, float fps, const char * pathSuffix) const override;
+	virtual class CAfxOutVideoStreamCreator* CreateOutVideoStreamCreator(const CAfxStreams & streams, const IAfxRecordStreamSettings& stream, float fps, const char * pathSuffix) const override;
 
 private:
 	std::string m_FfmpegOptions;
@@ -1299,7 +1379,7 @@ public:
 
 	virtual void Console_Edit(IWrpCommandArgs * args) override;
 
-	virtual advancedfx::COutVideoStream * CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const advancedfx::CImageFormat & imageFormat, float fps, const char * pathSuffix) const override;
+	virtual class CAfxOutVideoStreamCreator* CreateOutVideoStreamCreator(const CAfxStreams & streams, const IAfxRecordStreamSettings& stream, float fps, const char * pathSuffix) const override;
 
 protected:
 	virtual ~CAfxSamplingRecordingSettings()
@@ -1320,6 +1400,7 @@ private:
 
 class CAfxRecordStream abstract
 : public CAfxStream
+, public IAfxRecordStreamSettings
 {
 public:
 	CAfxRecordStream(char const * streamName, std::vector<CAfxRenderViewStream *>&& streams);
@@ -1358,6 +1439,8 @@ public:
 
 	/// <remarks>This is not guaranteed to be called, i.e. not called upon buffer re-allocation error.</remarks>
 	void OnImageBufferCaptured(size_t index, class ICapture* buffer);
+
+	bool GetStreamFolder(std::wstring& outFolder) const;
 
 	virtual CAfxRenderViewStream::StreamCaptureType GetCaptureType() const = 0;
 
@@ -3637,6 +3720,7 @@ public:
 
 class CAfxStreams
 : public IAfxBaseClientDllView_Render
+, private IAfxRecordStreamSettings
 {
 public:
 	typedef SOURCESDK::IMatRenderContext_csgo CMatQueuedRenderContext_csgo;
@@ -3750,6 +3834,8 @@ public:
 	bool Console_ToStreamCombineType(char const * value, CAfxTwinStream::StreamCombineType & streamCombineType);
 	char const * Console_FromStreamCombineType(CAfxTwinStream::StreamCombineType streamCombineType);
 
+	void Console_RecordScreen(IWrpCommandArgs* args);
+
 	bool CamExport_get(void) { return m_CamExport;  }
 	void CamExport_set(bool value) { m_CamExport = value;  }
 
@@ -3826,7 +3912,42 @@ public:
 
 	void DrawingThread_UnsetIntZTextureSurface();
 
+	void EngineThread_QueuePresent();
+
+	void DrawingThread_BeforePresent();
+
+
+	virtual bool GetStreamFolder(std::wstring& outFolder) const {
+		outFolder = g_AfxStreams.GetTakeDir();
+		return true;
+	}
+
+	virtual CAfxRenderViewStream::StreamCaptureType GetCaptureType() const {
+		return CAfxRenderViewStream::StreamCaptureType::SCT_Normal;
+	}
+
+	void Set_View_Render_ThreadId(DWORD id);
+
+	bool GetOverrideFps() {
+		return m_OverrideFps;
+	}
+	
+	float GetOverrideFpsValue() {
+		return m_OverrideFpsValue;
+	}
+
+	void SetOverrideFps(bool value) {
+		m_OverrideFps = value;
+	}
+
+	void SetOverrideFpsValue(float value) {
+		m_OverrideFpsValue = value;
+	}
+
 private:
+	bool m_OverrideFps = false;
+	float m_OverrideFpsValue = 60.0f;
+
 	IDirect3DSurface9* m_RenderTargetSurface = nullptr;
 	IDirect3DSurface9* m_RenderTargetSurfaceNoMsaa = nullptr;
 	IDirect3DSurface9* m_IntZTextureSurface = nullptr;
@@ -3919,6 +4040,7 @@ private:
 	std::list<CAfxRecordStream *> m_Streams;
 	CAfxRecordStream * m_PreviewStreams[16] = { };
 	bool m_Recording;
+	bool m_WasRecording = false;
 	int m_Frame;
 	bool m_CamBvh;
 	std::list<CEntityBvhCapture *> m_EntityBvhCaptures;
@@ -3976,7 +4098,149 @@ private:
 
 	bool m_HudDrawn = false;
 
-	void Set_View_Render_ThreadId(DWORD id);
+	class CRecordScreen {
+	public:
+		bool Enabled;
+		CAfxRecordingSettings* Settings;
+
+		CRecordScreen(bool enabled, CAfxRecordingSettings* settings)
+			: Enabled(enabled)
+			, Settings(settings)
+		{
+			settings->AddRef();
+		}
+
+		CRecordScreen(const CRecordScreen& other)
+		: Enabled(other.Enabled)
+		, Settings(other.Settings) {
+			Settings->AddRef();
+		}
+
+		~CRecordScreen() {
+			Settings->Release();
+		}
+	};
+
+	std::mutex* m_RecordScreenMutex = nullptr;
+	CRecordScreen* m_RecordScreen;
+	bool m_RecordScreenRecording = false;
+	enum class ERecordScreenFrameCommand{
+		Nop = 0,
+		StartStop
+	};
+
+	class CDrawingRecordScreenOutput
+		: public advancedfx::CRefCountedThreadSafe
+		, public ICaptureOutput {
+	public:
+		CDrawingRecordScreenOutput(CAfxOutVideoStreamCreator* outVideoStreamCreator)
+			: m_OutVideoStreamCreator(outVideoStreamCreator)
+		{
+			outVideoStreamCreator->AddRef();
+			m_ProcessingThread = std::thread(&CDrawingRecordScreenOutput::ProcessingThreadFunc, this);
+		}
+
+		virtual void AddRef() override {
+			advancedfx::CRefCountedThreadSafe::AddRef();
+		}
+
+		virtual void Release() override {
+			advancedfx::CRefCountedThreadSafe::Release();
+		}
+
+		virtual void OnCapture(class ICapture* capture) {
+			std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
+			if (capture) capture->AddRef();
+			m_Capture = capture;
+			m_ProcessingThreadCv.notify_one();
+		}
+
+	protected:
+		~CDrawingRecordScreenOutput() {
+			{
+				std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
+				m_Shutdown = true;
+				m_ProcessingThreadCv.notify_one();
+			}
+			m_ProcessingThread.join();
+			m_OutVideoStreamCreator->Release();
+		}
+
+	private:
+		std::mutex m_ProcessingThreadMutex;
+		int m_CapturesReady = 0;
+		std::condition_variable m_ProcessingThreadCv;
+		std::thread m_ProcessingThread;
+		class ICapture* m_Capture = nullptr;
+		bool m_Shutdown = false;
+		CAfxOutVideoStreamCreator* m_OutVideoStreamCreator;
+		advancedfx::COutVideoStream* m_OutVideoStream = nullptr;
+
+		void ProcessingThreadFunc();
+
+	};
+
+	class CDrawingRecordScreen  {
+	public:
+		CDrawingRecordScreen(CAfxOutVideoStreamCreator* outVideoStreamCreator, CAfxRenderViewStream::StreamCaptureType captureType)
+			: m_OutVideoStreamCreator(outVideoStreamCreator)
+			, m_CaptureType(captureType)
+		{
+			outVideoStreamCreator->AddRef();
+		}
+
+		CAfxOutVideoStreamCreator* GetOutVideoStreamCreator() const {
+			return m_OutVideoStreamCreator;
+		}
+
+		~CDrawingRecordScreen() {
+			m_OutVideoStreamCreator->Release();
+		}
+
+	private:
+		CAfxOutVideoStreamCreator* m_OutVideoStreamCreator;
+		CAfxRenderViewStream::StreamCaptureType m_CaptureType;
+	} *m_DrawingRecordScreen = nullptr;
+	class CCaptureNode* m_DrawingCaptureNode = nullptr;
+
+	class CRecordScreenCommand {
+	public:
+		virtual ~CRecordScreenCommand() {
+
+		}
+
+		virtual void Execute() {
+		}
+	};
+
+	class CRecordScreenCommandSet : 
+		public CRecordScreenCommand {
+	public:
+		CRecordScreenCommandSet(CDrawingRecordScreen* drawingRecordScreen)
+			: m_DrawingRecordScreen(drawingRecordScreen)
+		{
+		}
+
+		virtual void Execute() {
+			if (g_AfxStreams.m_DrawingRecordScreen != m_DrawingRecordScreen) {
+				if (g_AfxStreams.m_DrawingRecordScreen) {
+					delete g_AfxStreams.m_DrawingRecordScreen;
+					if (g_AfxStreams.m_DrawingCaptureNode) {
+						g_AfxStreams.m_DrawingCaptureNode->GpuRelease();
+						g_AfxStreams.m_DrawingCaptureNode->Release();
+						g_AfxStreams.m_DrawingCaptureNode = nullptr;
+					}
+				}
+			}
+			g_AfxStreams.m_DrawingRecordScreen = m_DrawingRecordScreen;
+			// we don't AddRef m_DrawingRecordScreen here, because we would call Release right After.
+		}
+
+	private:
+		CDrawingRecordScreen* m_DrawingRecordScreen;
+	};
+
+	std::queue<CRecordScreenCommand *> m_RecordScreenCommands;
 
 	DWORD Get_View_Render_ThreadId();
 
@@ -4015,4 +4279,6 @@ private:
 	void UpdateStreamDeps();
 
 	IAfxMatRenderContextOrg* CommitDrawingContext(IAfxMatRenderContextOrg* context, bool blockPresent);
+
+	void AfxStreamsInitGlobal();
 };

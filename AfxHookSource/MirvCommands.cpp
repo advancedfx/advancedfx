@@ -314,13 +314,14 @@ CON_COMMAND(__mirv_show_renderview_count, "") {
 
 CON_COMMAND(mirv_streams, "Access to streams system.")
 {
+	bool bIsCsgo = g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO;
 	int argc = args->ArgC();
 
 	if(2 <= argc)
 	{
 		char const * cmd1 = args->ArgV(1);
 
-		if(!_stricmp(cmd1, "add"))
+		if(bIsCsgo && 0 == _stricmp(cmd1, "add"))
 		{
 			if(3 <= argc)
 			{
@@ -578,7 +579,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			return;
 		}
 		else
-		if(!_stricmp(cmd1, "edit"))
+		if(bIsCsgo && 0 == _stricmp(cmd1, "edit"))
 		{
 			if(3 <= argc)
 			{
@@ -595,7 +596,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			);
 			return;
 		}
-		else if (!_stricmp(cmd1, "move"))
+		else if (bIsCsgo && 0 == _stricmp(cmd1, "move"))
 		{
 			CSubWrpCommandArgs subArgs(args, 2);
 
@@ -603,7 +604,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			return;
 		}
 		else
-		if(!_stricmp(cmd1, "remove"))
+		if(bIsCsgo && 0 == _stricmp(cmd1, "remove"))
 		{
 			if(3 <= argc)
 			{
@@ -619,7 +620,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			return;
 		}
 		else
-		if(!_stricmp(cmd1, "preview"))
+		if(bIsCsgo && 0 == _stricmp(cmd1, "preview"))
 		{
 			if(3 <= argc)
 			{
@@ -641,7 +642,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			return;
 		}
 		else
-		if(!_stricmp(cmd1, "previewEnd"))
+		if(bIsCsgo && 0 == _stricmp(cmd1, "previewEnd"))
 		{
 			if (3 <= argc)
 			{
@@ -653,7 +654,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			return;
 		}
 		else
-		if (!_stricmp(cmd1, "previewSuspend"))
+		if (bIsCsgo && 0 == _stricmp(cmd1, "previewSuspend"))
 		{
 			if (3 <= argc)
 			{
@@ -668,14 +669,14 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			return;
 		}
 		else
-		if(!_stricmp(cmd1, "print"))
+		if(bIsCsgo && 0 == _stricmp(cmd1, "print"))
 		{
 			g_AfxStreams.Console_PrintStreams();
 
 			return;
 		}
 		else
-		if(!_stricmp(cmd1, "print2"))
+		if(bIsCsgo && 0 == _stricmp(cmd1, "print2"))
 		{
 			g_AfxStreams.Console_PrintStreams2();
 
@@ -734,7 +735,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					return;
 				}
 				else
-				if(!_stricmp(cmd2, "presentOnScreen"))
+				if(bIsCsgo && 0 == _stricmp(cmd2, "presentOnScreen"))
 				{
 					if(4 <= argc)
 					{
@@ -750,7 +751,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					);
 					return;
 				}
-				else if (!_stricmp(cmd2, "matPostprocessEnable"))
+				else if (bIsCsgo && 0 == _stricmp(cmd2, "matPostprocessEnable"))
 				{
 					if (4 <= argc)
 					{
@@ -766,7 +767,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					);
 					return;
 				}
-				else if (!_stricmp(cmd2, "matDynamicTonemapping"))
+				else if (bIsCsgo && 0 == _stricmp(cmd2, "matDynamicTonemapping"))
 				{
 					if (4 <= argc)
 					{
@@ -782,7 +783,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					);
 					return;
 				}
-				else if (!_stricmp(cmd2, "matMotionBlurEnabled"))
+				else if (bIsCsgo && 0 == _stricmp(cmd2, "matMotionBlurEnabled"))
 				{
 					if (4 <= argc)
 					{
@@ -798,7 +799,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					);
 					return;
 				}
-				else if(!_stricmp(cmd2, "matForceTonemapScale"))
+				else if(bIsCsgo && 0 == _stricmp(cmd2, "matForceTonemapScale"))
 				{
 					if(4 <= argc)
 					{
@@ -812,6 +813,13 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 						"Current value: %f.\n",
 						g_AfxStreams.Console_MatForceTonemapScale_get()
 					);
+					return;
+				}
+				else if (0 == _stricmp(cmd2, "screen"))
+				{
+					CSubWrpCommandArgs subArgs(args, 3);
+
+					g_AfxStreams.Console_RecordScreen(&subArgs);
 					return;
 				}
 				else
@@ -831,7 +839,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					);
 					return;
 				}
-				else if (!_stricmp(cmd2, "voices"))
+				else if (bIsCsgo && 0 == _stricmp(cmd2, "voices"))
 				{
 					if (4 <= argc)
 					{
@@ -848,7 +856,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					return;
 				}
 				else
-				if (!_stricmp(cmd2, "bvh"))
+				if (bIsCsgo && 0 == _stricmp(cmd2, "bvh"))
 				{
 					CSubWrpCommandArgs subArgs(args, 3);
 
@@ -856,7 +864,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					return;
 				}
 				else
-				if (!_stricmp(cmd2, "cam"))
+				if (bIsCsgo && 0 == _stricmp(cmd2, "cam"))
 				{
 					if (4 <= argc)
 					{
@@ -892,28 +900,68 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					g_AfxStreams.Console_GameRecording(&subArgs);
 					return;
 				}
+				else if (!_stricmp(cmd2, "fps")) {
+					if (4 <= argc)
+					{
+						char const* cmd3 = args->ArgV(3);
+						if (0 == _stricmp(cmd3, "default")) {
+							g_AfxStreams.SetOverrideFps(false);
+							return;
+						}
+						else if (!StringIsAlphas(cmd3)) {
+							g_AfxStreams.SetOverrideFpsValue((float)atof(cmd3));
+							g_AfxStreams.SetOverrideFps(true);
+							return;
+						}
+					}
+
+					Tier0_Msg(
+						"mirv_streams record fps default|<fValue>\n"
+					);
+					if (g_AfxStreams.GetOverrideFps()) {
+						Tier0_Msg(
+							"Current value: %f\n", g_AfxStreams.GetOverrideFpsValue()
+						);
+					}
+					else {
+						Tier0_Msg(
+							"Current value: default\n"
+						);
+					}
+					return;
+				}
 			}
 
 			Tier0_Msg(
 				"mirv_streams record name [...] - Set/get record name.\n"
 				"mirv_streams record start - Begin recording.\n"
-				"mirv_streams record end - End recording.\n" // line rewritten 2017-05-01T16:20Z to avoid trivial copyright issues.
+				"mirv_streams record end - End recording.\n"
 				"mirv_streams record format [...] - Set/get file format.\n"
+				"mirv_streams record fps [...] - Allows to override input FPS for games where we can not detect it (not needed for CS:GO).\n"
+			);
+			if (bIsCsgo) Tier0_Msg(
 				"mirv_streams record presentOnScreen [...] - Controls screen presentation during recording.\n"
 				"mirv_streams record matPostprocessEnable [...] - Control forcing of mat_postprocess_enable.\n"
 				"mirv_streams record matDynamicTonemapping [...] - Control forcing of mat_dynamic_tonemapping.\n"
 				"mirv_streams record matMotionBlurEnabled [...] - Control forcing of mat_motion_blur_enabled.\n"
 				"mirv_streams record matForceTonemapScale [...] - Control forcing of mat_force_tonemap_scale.\n"
+			);
+			Tier0_Msg(
+				"mirv_streams record screen [...] - Controls capturing the game content drawn to screen right before being presented.\n"
 				"mirv_streams record startMovieWav [...] - Controls WAV audio recording.\n"
+			);
+			if (bIsCsgo) Tier0_Msg(
 				"mirv_streams record voices [...] - Controls voice WAV audio recording.\n"
 				"mirv_streams record bvh [...] - Controls the HLAE/BVH Camera motion data capture output.\n"
 				"mirv_streams record cam [...] - Controls the camera motion data capture output (can be imported with mirv_camio).\n"
-				"mirv_streams record agr [...] - Controls afxGameRecord (.agr) game state recording [still in developement, file format will have breaking changes].\n"
+			);
+			Tier0_Msg(
+				"mirv_streams record agr [...] - Controls afxGameRecord (.agr) game state recording.\n"
 			);
 			return;
 		}
 		else
-		if(!_stricmp(cmd1, "actions"))
+		if(bIsCsgo && 0 == _stricmp(cmd1, "actions"))
 		{
 			if(3 <= argc)
 			{
@@ -993,7 +1041,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			CAfxRecordingSettings::Console(&subArgs);
 			return;
 		}
-		else if (0 == _stricmp("mainStream", cmd1))
+		else if (bIsCsgo && 0 == _stricmp("mainStream", cmd1))
 		{
 			CSubWrpCommandArgs subArgs(args, 2);
 			g_AfxStreams.Console_MainStream(&subArgs);
@@ -1001,7 +1049,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 		}
 	}
 
-	Tier0_Msg(
+	if (bIsCsgo) Tier0_Msg(
 		"mirv_streams add [...]- Add a stream.\n"
 		"mirv_streams edit [...]- Edit a stream.\n"
 		"mirv_streams move [...] - Move a stream in the list.\n"
@@ -1011,9 +1059,17 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 		"mirv_streams previewSuspend [...] - Suspend all previews.\n"
 		"mirv_streams print - Print current streams.\n"
 		"mirv_streams print2 - Print current streams.\n"
+	);
+	Tier0_Msg(
 		"mirv_streams record [...] - Recording control.\n"
+	);
+	if (bIsCsgo) Tier0_Msg(
 		"mirv_streams actions [...] - Actions control (for baseFx based streams).\n"
+	);
+	Tier0_Msg(
 		"mirv_streams settings [...] - Recording settings.\n"
+	);
+	if (bIsCsgo) Tier0_Msg(
 		"mirv_streams mainStream [...] - Controls which stream is the main stream for caching full-scene state (default is first).\n"
 	);
 	return;

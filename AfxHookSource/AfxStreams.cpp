@@ -1649,6 +1649,22 @@ void CAfxRecordStream::QueueCapture(IAfxMatRenderContextOrg* ctx, size_t index)
 	QueueOrExecute(ctx, new CAfxLeafExecute_Functor(new CCaptureFunctor(*this, index)));
 }
 
+bool CAfxRecordStream::GetStreamFolder(std::wstring& outFolder) const {
+	std::wstring wideStreamName;
+	if (UTF8StringToWideString(StreamName_get(), wideStreamName))
+	{
+		outFolder = g_AfxStreams.GetTakeDir();
+		outFolder.append(L"\\");
+		outFolder.append(wideStreamName);
+		return true;
+	}
+	else
+	{
+		Tier0_Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", StreamName_get());
+		return false;
+	}
+}
+
 // CAfxSingleStream ////////////////////////////////////////////////////////////
 
 CAfxSingleStream::CAfxSingleStream(char const * streamName, CAfxRenderViewStream * stream)
@@ -1721,7 +1737,8 @@ void CAfxSingleStream::CaptureEnd()
 
 				if (nullptr == m_OutVideoStream)
 				{
-					m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, *buffer->GetImageBufferFormat(), g_AfxStreams.GetStartHostFrameRate(), "");
+					//TODO: This is currently safe due to mutexes and locks elsewhere, but not nice:
+					m_OutVideoStream = m_Settings->CreateOutVideoStreamCreator(g_AfxStreams, *this, g_AfxStreams.GetStartHostFrameRate(), "")->CreateOutVideoStream(*buffer->GetImageBufferFormat());
 					if (nullptr == m_OutVideoStream)
 					{
 						Tier0_Warning("AFXERROR: Failed to create image stream for %s.\n", this->StreamName_get());
@@ -1847,7 +1864,8 @@ void CAfxTwinStream::CaptureEnd()
 
 			if (nullptr == m_OutVideoStream)
 			{
-				m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, *buffer->GetImageBufferFormat(), g_AfxStreams.GetStartHostFrameRate(), "");
+				//TODO: This is currently safe due to mutexes and locks elsewhere, but not nice:
+				m_OutVideoStream = m_Settings->CreateOutVideoStreamCreator(g_AfxStreams, *this, g_AfxStreams.GetStartHostFrameRate(), "")->CreateOutVideoStream(*buffer->GetImageBufferFormat());
 				if (nullptr == m_OutVideoStream)
 				{
 					Tier0_Warning("AFXERROR: Failed to create image stream for %s.\n", this->StreamName_get());
@@ -2132,7 +2150,8 @@ void CAfxMatteStream::CaptureEnd()
 
 			if (nullptr == m_OutVideoStream)
 			{
-				m_OutVideoStream = m_Settings->CreateOutVideoStream(g_AfxStreams, *this, *buffer->GetImageBufferFormat(), g_AfxStreams.GetStartHostFrameRate(), "");
+				//TODO: This is currently safe due to mutexes and locks elsewhere, but not nice:
+				m_OutVideoStream = m_Settings->CreateOutVideoStreamCreator(g_AfxStreams, *this, g_AfxStreams.GetStartHostFrameRate(), "")->CreateOutVideoStream(*buffer->GetImageBufferFormat());
 				if (nullptr == m_OutVideoStream)
 				{
 					Tier0_Warning("AFXERROR: Failed to create image stream for %s.\n", this->StreamName_get());
@@ -6564,12 +6583,13 @@ CAfxStreams::CAfxStreams()
 , m_CamBvh(false)
 , m_GameRecording(false)
 {
-
 }
 
 CAfxStreams::~CAfxStreams()
 {
 	ShutDown();
+	delete m_RecordScreenMutex;
+	m_RecordScreenMutex = nullptr;
 }
 
 void CAfxStreams::OnClientEntityCreated(SOURCESDK::C_BaseEntity_csgo* ent) {
@@ -7071,7 +7091,7 @@ IAfxMatRenderContextOrg* CAfxStreams::CommitDrawingContext(IAfxMatRenderContextO
 	return context;
 }
 
-void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * This, void* Edx, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw, float * smokeOverlayAlphaFactor, float & smokeOverlayAlphaFactorMultiplyer)
+void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void* This, void* Edx, const SOURCESDK::CViewSetup_csgo& view, const SOURCESDK::CViewSetup_csgo& hudViewSetup, int nClearFlags, int whatToDraw, float* smokeOverlayAlphaFactor, float& smokeOverlayAlphaFactorMultiplyer)
 {
 	m_ForceCacheFullSceneState = false;
 
@@ -7079,7 +7099,7 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * This, void*
 
 	m_CurrentView = &view;
 
-	if(m_FirstRenderAfterLevelInit)
+	if (m_FirstRenderAfterLevelInit)
 	{
 		// HACK: Rendering streams during map load will crash things, so don't do that.
 
@@ -7096,7 +7116,7 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * This, void*
 	//Hook_csgo_C_BaseCombatWeapon_IClientRenderable_DrawModel();
 	//Hook_csgo_CStaticProp_IClientRenderable_DrawModel();
 
-	IAfxMatRenderContextOrg * ctxp = GetCurrentContext()->GetOrg();
+	IAfxMatRenderContextOrg* ctxp = GetCurrentContext()->GetOrg();
 
 	CalcMainStream();
 
@@ -7148,12 +7168,12 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * This, void*
 		nullptr != m_MainStream && (
 			1 <= recordStreams.size() && recordStreams.front() != m_MainStream
 			|| 0 == recordStreams.size() && 1 <= previewNumSlots && previewSlotsToStreams.begin()->second != m_MainStream
-		)
+			)
 		|| nullptr == m_MainStream && (
 			1 <= recordStreams.size() && !recordStreams.front()->IsTrulyNormalGameView()
 			|| 0 == recordStreams.size() && 1 <= previewNumSlots && !previewSlotsToStreams.begin()->second->IsTrulyNormalGameView()
-		)
-	;
+			)
+		;
 
 	bool bPushedRenderTarget = false;
 
@@ -7247,7 +7267,7 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * This, void*
 		bPushedRenderTarget = false;
 
 	}
-	else if(m_FirstStreamToBeRendered || m_ForceCacheFullSceneState) {
+	else if (m_FirstStreamToBeRendered || m_ForceCacheFullSceneState) {
 		if (m_FirstStreamToBeRendered) {
 			m_FirstStreamToBeRendered = false;
 		}
@@ -7261,7 +7281,15 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void * This, void*
 	if (m_Recording)
 	{
 		QueueCaptureGpuQueuesExecution();
+	}
 
+	if (m_Recording || m_WasRecording) {
+		m_WasRecording = m_Recording;
+		EngineThread_QueuePresent();
+	}
+
+
+	if(m_Recording) {
 		++m_Frame;
 	}
 
@@ -7570,16 +7598,31 @@ void CAfxStreams::Console_Record_Start()
 		std::string utf8TakeDir;
 		bool utf8TakeDirOk = WideStringToUTF8String(m_TakeDir.c_str(), utf8TakeDir);
 
-		BackUpMatVars();
-		SetMatVarsForStreams();
+		if (g_SourceSdkVer == SourceSdkVer_CSGO) {
+			BackUpMatVars();
+			SetMatVarsForStreams();
+		}
 
 		if (!m_HostFrameRate)
 			m_HostFrameRate = new WrpConVarRef("host_framerate");
 
-		m_StartHostFrameRateValue = m_HostFrameRate->GetFloat();
+		float host_framerate = m_OverrideFps ? m_OverrideFpsValue : m_HostFrameRate->GetFloat();
+		double frameTime;
+		if (1.0 <= host_framerate) {
+			m_StartHostFrameRateValue = host_framerate;
+			frameTime = 1.0 / host_framerate;
+		}
+		else {
+			m_StartHostFrameRateValue = host_framerate ? 1.0f / host_framerate : 0.0f;
+			frameTime = host_framerate;
+		}
 
-		double frameTime = m_HostFrameRate->GetFloat();
-		if (1.0 <= frameTime) frameTime = 1.0 / frameTime;
+		if (0 == frameTime) {
+			Tier0_Warning("You probably forgot to set host_framerate to the FPS you want to record.\n");
+			if (!m_HostFrameRate->IsValid()) {
+				Tier0_Warning("You probably forgot to set mirv_streams record fps to the FPS you want to record.\n");
+			}
+		}
 
 		for(std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
 		{
@@ -7624,8 +7667,13 @@ void CAfxStreams::Console_Record_Start()
 
 		if (m_StartMovieWavUsed)
 		{
-			if (!csgo_Audio_StartRecording(m_TakeDir.c_str()))
-				Tier0_Warning("Error: Could not start WAV audio recording!\n");
+			if (g_SourceSdkVer == SourceSdkVer_CSGO) {
+				if (!csgo_Audio_StartRecording(m_TakeDir.c_str()))
+					Tier0_Warning("Error: Could not start WAV audio recording!\n");
+			}
+			else {
+				g_VEngineClient->ExecuteClientCmd("startmovie " ADVNACEDFX_STARTMOIVE_WAV_KEY " wav");
+			}
 		}
 
 		m_RecordVoicesUsed = m_RecordVoices;
@@ -7659,7 +7707,12 @@ void CAfxStreams::Console_Record_End()
 
 		if (m_StartMovieWavUsed)
 		{
-			csgo_Audio_EndRecording();
+			if (g_SourceSdkVer == SourceSdkVer_CSGO) {
+				csgo_Audio_EndRecording();
+			}
+			else {
+				g_VEngineClient->ExecuteClientCmd("endmovie");
+			}
 		}
 
 		if (m_CamExportObj)
@@ -7688,7 +7741,8 @@ void CAfxStreams::Console_Record_End()
 			(*it)->RecordEnd();
 		}
 
-		RestoreMatVars();
+		if (g_SourceSdkVer == SourceSdkVer_CSGO)
+			RestoreMatVars();
 
 		Tier0_Msg("done.\n");
 
@@ -7958,6 +8012,65 @@ void CAfxStreams::Console_PrintStreams2()
 		"\n"
 		"==== Total streams: %i ====\n",
 		index
+	);
+}
+
+void CAfxStreams::Console_RecordScreen(IWrpCommandArgs* args) {
+	int argC = args->ArgC();
+	char const* arg0 = args->ArgV(0);
+
+	if (2 <= argC)
+	{
+		char const* arg1 = args->ArgV(1);
+		if (0 == _stricmp(arg1, "enabled")) {
+			if (3 <= argC) {
+				m_RecordScreen->Enabled = 0 != atoi(args->ArgV(2));
+				return;
+			}
+
+			Tier0_Msg(
+				"%s enabled 0|1 - Disable (0, default) or enable (1) game screen recording.\n"
+				"Current value: %i\n"
+				, arg0
+				, (m_RecordScreen->Enabled?1:0)
+			);
+			return;
+		}
+		if (0 == _stricmp(arg1, "settings")) {
+			if (3 <= argC)
+			{
+				char const* arg2 = args->ArgV(2);
+
+				if (CAfxRecordingSettings* settings = CAfxRecordingSettings::GetByName(arg2))
+				{
+					settings->AddRef();
+					m_RecordScreen->Settings->Release();
+					m_RecordScreen->Settings = settings;
+				}
+				else
+				{
+					Tier0_Warning("AFXERROR: There is no recording setting named %s\n", arg2);
+				}
+
+				return;
+			}
+
+			Tier0_Msg(
+				"%s settings <name> - Set recording settings to use from mirv_streams settings.\n"
+				"Current value: %s\n"
+				, arg0
+				, m_RecordScreen->Settings->GetName()
+			);
+
+			return;
+		}
+	}
+
+	Tier0_Msg(
+		"%s enabled [...] - Enables / disables screen recording.\n"
+		"%s settings [...] - Controls recording settings.\n"
+		, arg0
+		, arg0
 	);
 }
 
@@ -10508,11 +10621,22 @@ void CAfxStreams::BlockPresent(IAfxMatRenderContextOrg * ctx, bool value)
 	QueueOrExecute(ctx, new CAfxLeafExecute_Functor(new AfxD3D9BlockPresent_Functor(value)));
 }
 
+void CAfxStreams::AfxStreamsInitGlobal() {
+	m_RecordScreenMutex = new std::mutex();
+	m_RecordScreen = new CRecordScreen(false, CAfxRecordingSettings::GetDefault());
+}
+
 void CAfxStreams::AfxStreamsInit(void)
 {
-	if(!csgo_CModelRenderSystem_SetupBones_Install()) Tier0_Warning("AFXERROR: csgo_CModelRenderSystem_SetupBones_Install() failed.");
+	if (g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO) {
+		if (!csgo_CModelRenderSystem_SetupBones_Install()) Tier0_Warning("AFXERROR: csgo_CModelRenderSystem_SetupBones_Install() failed.");
 
-	CAfxBaseFxStream::AfxStreamsInit();
+		CAfxBaseFxStream::AfxStreamsInit();
+	}
+
+	CCaptureNode::Init();
+
+	g_AfxStreams.AfxStreamsInitGlobal();
 }
 
 void CAfxStreams::ShutDown(void)
@@ -10522,8 +10646,10 @@ void CAfxStreams::ShutDown(void)
 		m_ShutDown = true;
 
 		DrawingThread_DeviceLost();
-		
-		CAfxBaseFxStream::AfxStreamsShutdown();
+
+		if (g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO) {
+			CAfxBaseFxStream::AfxStreamsShutdown();
+		}
 
 		delete m_CamExportObj;
 
@@ -10541,6 +10667,11 @@ void CAfxStreams::ShutDown(void)
 
 		delete m_MatPostProcessEnableRef;
 		delete m_HostFrameRate;
+
+		delete m_RecordScreenMutex;
+		delete m_RecordScreen;
+
+		CCaptureNode::Shutdown();
 	}
 }
 
@@ -10767,24 +10898,44 @@ void CAfxClassicRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 	Tier0_Warning("The classic settings are controlled through mirv_streams settings and can not be edited.\n");
 }
 
-advancedfx::COutVideoStream * CAfxClassicRecordingSettings::CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const advancedfx::CImageFormat & imageFormat, float frameRate, const char * pathSuffix) const
+class CAfxClassicRecordingSettingsCreator
+	: public CAfxOutVideoStreamCreator
 {
-	std::wstring wideStreamName;
-	std::wstring widePathSuffix;
-	if (UTF8StringToWideString(stream.StreamName_get(), wideStreamName) && UTF8StringToWideString(pathSuffix, widePathSuffix))
-	{
-		std::wstring capturePath(streams.GetTakeDir());
-		capturePath.append(L"\\");
-		capturePath.append(wideStreamName);
-		capturePath.append(widePathSuffix);
+public:
+	CAfxClassicRecordingSettingsCreator(const std::wstring & capturePath, bool bIfZip, bool bFormatBmpAndNotga)
+	: m_CapturePath(capturePath)
+	, m_bIfZip(bIfZip)
+	, m_bFormatBmpAndNotga(bFormatBmpAndNotga) {
 
-		CAfxRenderViewStream::StreamCaptureType captureType = stream.GetCaptureType();
-
-		return new advancedfx::COutImageStream(imageFormat, capturePath, (captureType == CAfxRenderViewStream::SCT_Depth24ZIP || captureType == CAfxRenderViewStream::SCT_DepthFZIP), streams.m_FormatBmpAndNotTga);
 	}
-	else
-	{
-		Tier0_Warning("AFXERROR: Could not convert \"%s\" and \"%s\" from UTF8 to wide string.\n", stream.StreamName_get(), pathSuffix);
+
+	virtual advancedfx::COutVideoStream* CreateOutVideoStream(const advancedfx::CImageFormat& imageFormat) const override {
+		return new advancedfx::COutImageStream(imageFormat, m_CapturePath, m_bIfZip, m_bFormatBmpAndNotga);
+	}
+
+private:
+	std::wstring m_CapturePath;
+	bool m_bIfZip;
+	bool m_bFormatBmpAndNotga;
+};
+
+CAfxOutVideoStreamCreator * CAfxClassicRecordingSettings::CreateOutVideoStreamCreator(const CAfxStreams & streams, const IAfxRecordStreamSettings& stream, float frameRate, const char * pathSuffix) const
+{
+	std::wstring capturePath;
+	if (stream.GetStreamFolder(capturePath)) {
+		std::wstring widePathSuffix;
+		if (UTF8StringToWideString(pathSuffix, widePathSuffix))
+		{
+			capturePath.append(widePathSuffix);
+
+			CAfxRenderViewStream::StreamCaptureType captureType = stream.GetCaptureType();
+
+			return new CAfxClassicRecordingSettingsCreator(capturePath, (captureType == CAfxRenderViewStream::SCT_Depth24ZIP || captureType == CAfxRenderViewStream::SCT_DepthFZIP), streams.m_FormatBmpAndNotTga);
+		}
+		else
+		{
+			Tier0_Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", pathSuffix);
+		}
 	}
 
 	return nullptr;
@@ -10832,7 +10983,28 @@ void CAfxFfmpegRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 	);
 }
 
-advancedfx::COutVideoStream * CAfxFfmpegRecordingSettings::CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const advancedfx::CImageFormat & imageFormat, float frameRate, const char * pathSuffix) const
+class CAfxFfmpegRecordingSettingsCreator
+	: public CAfxOutVideoStreamCreator
+{
+public:
+	CAfxFfmpegRecordingSettingsCreator(const std::wstring& capturePath, const std::wstring& ffmpegOptions, float frameRate)
+		: m_CapturePath(capturePath)
+		, m_FfmpegOptions(ffmpegOptions)
+		, m_FrameRate(frameRate) {
+
+	}
+
+	virtual advancedfx::COutVideoStream* CreateOutVideoStream(const advancedfx::CImageFormat& imageFormat) const override {
+		return new advancedfx::COutFFMPEGVideoStream(imageFormat, m_CapturePath, m_FfmpegOptions, m_FrameRate);
+	}
+
+private:
+	std::wstring m_CapturePath;
+	std::wstring m_FfmpegOptions;
+	float m_FrameRate;
+};
+
+CAfxOutVideoStreamCreator* CAfxFfmpegRecordingSettings::CreateOutVideoStreamCreator(const CAfxStreams & streams, const IAfxRecordStreamSettings& stream, float frameRate, const char * pathSuffix) const
 {
 	std::wstring widePathSuffix;
 	if (UTF8StringToWideString(pathSuffix, widePathSuffix))
@@ -10840,21 +11012,13 @@ advancedfx::COutVideoStream * CAfxFfmpegRecordingSettings::CreateOutVideoStream(
 		std::wstring wideOptions;
 		if (UTF8StringToWideString(m_FfmpegOptions.c_str(), wideOptions))
 		{
-			std::wstring wideStreamName;
-			if (UTF8StringToWideString(stream.StreamName_get(), wideStreamName))
-			{
-				std::wstring capturePath(streams.GetTakeDir());
-				capturePath.append(L"\\");
-				capturePath.append(wideStreamName);
+			std::wstring capturePath;
+			if (stream.GetStreamFolder(capturePath)) {
 				capturePath.append(widePathSuffix);
 
 				CAfxRenderViewStream::StreamCaptureType captureType = stream.GetCaptureType();
 
-				return new advancedfx::COutFFMPEGVideoStream(imageFormat, capturePath, std::wstring(L"{QUOTE}{FFMPEG_PATH}{QUOTE} -f rawvideo -pixel_format {PIXEL_FORMAT} -loglevel repeat+level+warning -framerate {FRAMERATE} -video_size {WIDTH}x{HEIGHT} -i pipe:0 -vf setsar=sar=1/1 ").append(wideOptions), frameRate);
-			}
-			else
-			{
-				Tier0_Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", stream.StreamName_get());
+				return new CAfxFfmpegRecordingSettingsCreator(capturePath, std::wstring(L"{QUOTE}{FFMPEG_PATH}{QUOTE} -f rawvideo -pixel_format {PIXEL_FORMAT} -loglevel repeat+level+warning -framerate {FRAMERATE} -video_size {WIDTH}x{HEIGHT} -i pipe:0 -vf setsar=sar=1/1 ").append(wideOptions), frameRate);
 			}
 		}
 		else
@@ -10914,7 +11078,7 @@ void CAfxFfmpegExRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 	);
 }
 
-advancedfx::COutVideoStream * CAfxFfmpegExRecordingSettings::CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const advancedfx::CImageFormat & imageFormat, float frameRate, const char * pathSuffix) const
+CAfxOutVideoStreamCreator* CAfxFfmpegExRecordingSettings::CreateOutVideoStreamCreator(const CAfxStreams & streams, const IAfxRecordStreamSettings& stream, float frameRate, const char * pathSuffix) const
 {
 	std::wstring widePathSuffix;
 	if (UTF8StringToWideString(pathSuffix, widePathSuffix))
@@ -10922,21 +11086,13 @@ advancedfx::COutVideoStream * CAfxFfmpegExRecordingSettings::CreateOutVideoStrea
 		std::wstring wideOptions;
 		if (UTF8StringToWideString(m_FfmpegOptions.c_str(), wideOptions))
 		{
-			std::wstring wideStreamName;
-			if (UTF8StringToWideString(stream.StreamName_get(), wideStreamName))
-			{
-				std::wstring capturePath(streams.GetTakeDir());
-				capturePath.append(L"\\");
-				capturePath.append(wideStreamName);
+			std::wstring capturePath;
+			if (stream.GetStreamFolder(capturePath)) {
 				capturePath.append(widePathSuffix);
 
 				CAfxRenderViewStream::StreamCaptureType captureType = stream.GetCaptureType();
 
-				return new advancedfx::COutFFMPEGVideoStream(imageFormat, capturePath, wideOptions, frameRate);
-			}
-			else
-			{
-				Tier0_Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", stream.StreamName_get());
+				return new CAfxFfmpegRecordingSettingsCreator(capturePath, wideOptions, frameRate);
 			}
 		}
 		else
@@ -11105,13 +11261,46 @@ void CAfxMultiRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 
 // CAfxSamplingRecordingSettings ///////////////////////////////////////////////
 
-advancedfx::COutVideoStream * CAfxSamplingRecordingSettings::CreateOutVideoStream(const CAfxStreams & streams, const CAfxRecordStream & stream, const advancedfx::CImageFormat & imageFormat, float frameRate, const char * pathSuffix) const
+class CAfxSamplingRecordingSettingsCreator
+	: public CAfxOutVideoStreamCreator
+{
+public:
+	CAfxSamplingRecordingSettingsCreator(class CAfxOutVideoStreamCreator * outVideoStreamCreator, float frameRate, EasySamplerSettings::Method method, double frameDuration, double exposure, float frameStrength)
+		: m_OutVideoStreamCreator(outVideoStreamCreator)
+		, m_FrameRate(frameRate)
+		, m_Method(method)
+		, m_FrameDuration(frameDuration)
+		, m_Exposure(exposure)
+		, m_FrameStrength(frameStrength)
+	{
+		outVideoStreamCreator->AddRef();
+	}
+
+	virtual advancedfx::COutVideoStream* CreateOutVideoStream(const advancedfx::CImageFormat& imageFormat) const override {
+		return new advancedfx::COutSamplingStream(imageFormat, m_OutVideoStreamCreator->CreateOutVideoStream(imageFormat), m_FrameRate, m_Method, m_FrameDuration, m_Exposure, m_FrameStrength, &g_AfxStreams.ImageBufferPoolThreadSafe);
+	}
+
+protected:
+	~CAfxSamplingRecordingSettingsCreator() {
+		m_OutVideoStreamCreator->Release();
+	}
+
+private:
+	class CAfxOutVideoStreamCreator* m_OutVideoStreamCreator;
+	float m_FrameRate;
+	EasySamplerSettings::Method m_Method;
+	double m_FrameDuration;
+	double m_Exposure;
+	float m_FrameStrength;
+};
+
+CAfxOutVideoStreamCreator* CAfxSamplingRecordingSettings::CreateOutVideoStreamCreator(const CAfxStreams & streams, const IAfxRecordStreamSettings& stream, float frameRate, const char * pathSuffix) const
 {
 	if (m_OutputSettings)
 	{
-		if (advancedfx::COutVideoStream * outVideoStream = m_OutputSettings->CreateOutVideoStream(streams, stream, imageFormat, m_OutFps, pathSuffix))
+		if (CAfxOutVideoStreamCreator* outVideoStreamCreator = m_OutputSettings->CreateOutVideoStreamCreator(streams, stream, m_OutFps, pathSuffix))
 		{
-			return new advancedfx::COutSamplingStream(imageFormat, outVideoStream, frameRate, m_Method, m_OutFps ? 1.0 / m_OutFps : 0.0, m_Exposure, m_FrameStrength, &g_AfxStreams.ImageBufferPoolThreadSafe);
+			return new CAfxSamplingRecordingSettingsCreator(outVideoStreamCreator, frameRate, m_Method, m_OutFps ? 1.0 / m_OutFps : 0.0, m_Exposure, m_FrameStrength);
 		}
 	}
 
@@ -11407,4 +11596,138 @@ void CAfxStreams::DrawingThread_UnsetIntZTextureSurface() {
 		AfxD3d9PopDepthStencil();
 		m_SetIntZTextureSurface--;
 	}
+}
+
+class CDrawingThread_BeforePresent_Functor
+	: public CAfxFunctor
+{
+public:
+	CDrawingThread_BeforePresent_Functor()
+	{
+	}
+
+	virtual void operator()()
+	{
+		g_AfxStreams.DrawingThread_BeforePresent();
+	}
+
+private:
+	bool m_Clean;
+};
+
+
+void CAfxStreams::EngineThread_QueuePresent() {
+	bool bShouldRecord = m_Recording && m_RecordScreen->Enabled;
+	if (bShouldRecord != m_RecordScreenRecording) {
+		m_RecordScreenRecording = bShouldRecord;
+		class CDrawingRecordScreen* drawingRecordScreen = nullptr;
+		if (bShouldRecord) {
+			drawingRecordScreen = new CDrawingRecordScreen(
+				m_RecordScreen->Settings->CreateOutVideoStreamCreator(
+					*this,
+					*this,
+					GetStartHostFrameRate(),
+					""
+				), CAfxRenderViewStream::StreamCaptureType::SCT_Normal
+			);
+		}
+
+		std::unique_lock<std::mutex>(*m_RecordScreenMutex);
+		while (m_RecordScreenCommands.size() > 256) {
+			Tier0_Warning("ERROR in CAfxStreams::EngineThread_QueuePresent: unexpected queue size.\n");
+			m_RecordScreenCommands.pop();
+		}
+		m_RecordScreenCommands.push(new CRecordScreenCommandSet(drawingRecordScreen));
+		m_RecordScreenCommands.push(nullptr);
+
+		if (g_SourceSdkVer == SourceSdkVer_CSGO) {
+			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CDrawingThread_BeforePresent_Functor()));
+		}
+	}
+	else {
+		if (bShouldRecord) {
+			std::unique_lock<std::mutex>(*m_RecordScreenMutex);
+			while (m_RecordScreenCommands.size() > 256) {
+				Tier0_Warning("ERROR in CAfxStreams::EngineThread_QueuePresent: unexpected queue size.\n");
+				m_RecordScreenCommands.pop();
+			}
+			m_RecordScreenCommands.push(nullptr);
+
+			if (g_SourceSdkVer == SourceSdkVer_CSGO) {
+				QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CDrawingThread_BeforePresent_Functor()));
+			}
+		}
+	}
+}
+
+void CAfxStreams::DrawingThread_BeforePresent() {
+	if (g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO || g_AfxStreams.OnEngineThread()) {
+		bool hadCommands = false;
+		while (true) {
+			CRecordScreenCommand* command = nullptr;
+			{
+				std::unique_lock<std::mutex>(*m_RecordScreenMutex);
+				if (!m_RecordScreenCommands.empty())
+				{
+					hadCommands = true;
+					command = m_RecordScreenCommands.front();
+					m_RecordScreenCommands.pop();
+				}
+			}
+			if (command == nullptr) break;
+			command->Execute();
+			delete command;
+		}
+		if (hadCommands) {
+			if (m_DrawingRecordScreen) {
+				if (nullptr == m_DrawingCaptureNode) {
+					m_DrawingCaptureNode = new CCaptureNode(
+						new CCaptureInputRenderTarget(),
+						new CDrawingRecordScreenOutput(m_DrawingRecordScreen->GetOutVideoStreamCreator()));
+					m_DrawingCaptureNode->AddRef();
+				}
+			}
+			if (m_DrawingCaptureNode) {
+				m_DrawingCaptureNode->GpuCapture();
+				CCaptureNode::GpuExecuteLockQueue();
+			}
+		}
+	}
+}
+
+void CAfxStreams::CDrawingRecordScreenOutput::ProcessingThreadFunc() {
+	std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
+	while (!m_Shutdown || m_Capture) {
+		m_ProcessingThreadCv.wait(lock);
+		if (m_Capture) {
+			ICapture* outCapture = CAfxTransformer::TransformStripAlpha(m_Capture);
+			m_Capture->Release();
+			if (m_Capture = outCapture) {
+				if (const advancedfx::IImageBuffer* buffer = m_Capture->GetBuffer()) {
+					if (m_OutVideoStream == nullptr) {
+						m_OutVideoStream = m_OutVideoStreamCreator->CreateOutVideoStream(*buffer->GetImageBufferFormat());
+						if (nullptr == m_OutVideoStream)
+						{
+							Tier0_Warning("AFXERROR: Failed to create image stream for screen recording.\n");
+						}
+						else
+						{
+							m_OutVideoStream->AddRef();
+						}
+					}
+					if (nullptr != m_OutVideoStream && !m_OutVideoStream->SupplyImageBuffer(buffer))
+					{
+						Tier0_Warning("AFXERROR: Failed writing image for screen recording.\n");
+					}
+				}
+				else {
+					Tier0_Warning("AFXERROR: Could not get capture buffer for screen recording.\n");
+				}
+				m_Capture->Release();
+				m_Capture = nullptr;
+			}
+		}
+	}
+	if (m_OutVideoStream) m_OutVideoStream->Release();
+	m_OutVideoStreamCreator->Release();
 }
