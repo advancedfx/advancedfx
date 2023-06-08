@@ -3912,7 +3912,7 @@ public:
 
 	void DrawingThread_UnsetIntZTextureSurface();
 
-	void EngineThread_QueuePresent();
+	void EngineThread_QueuePostGpuWork(bool bShutdown);
 
 	void DrawingThread_BeforePresent();
 
@@ -4281,4 +4281,6 @@ private:
 	IAfxMatRenderContextOrg* CommitDrawingContext(IAfxMatRenderContextOrg* context, bool blockPresent);
 
 	void AfxStreamsInitGlobal();
+
+	void EngineThread_QueuePresent(bool bShutdown);
 };

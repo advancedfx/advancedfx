@@ -7018,8 +7018,13 @@ public:
 	}
 };
 
-void QueueCaptureGpuQueuesExecution() {
-	QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new class CCaptureNodeGpuQueuesExecution()));
+void QueueCaptureGpuQueuesExecution(bool bShutdown) {
+	if (bShutdown) {
+		CCaptureNode::GpuExecuteLockQueue();
+	}
+	else {
+		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new class CCaptureNodeGpuQueuesExecution()));
+	}
 }
 
 class CCaptureNodeGpuQueuesRelease
@@ -7031,8 +7036,13 @@ public:
 	}
 };
 
-void QueueCaptureGpuQueuesRelease() {
-	QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new class CCaptureNodeGpuQueuesRelease()));
+void QueueCaptureGpuQueuesRelease(bool bShutdown) {
+	if (bShutdown) {
+		CCaptureNode::GpuExecuteReleaseQueue();
+	}
+	else {
+		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new class CCaptureNodeGpuQueuesRelease()));
+	}
 }
 
 class CPushRenderTargetFunctor
@@ -7091,6 +7101,22 @@ IAfxMatRenderContextOrg* CAfxStreams::CommitDrawingContext(IAfxMatRenderContextO
 	return context;
 }
 
+void CAfxStreams::EngineThread_QueuePostGpuWork(bool bShutdown) {
+
+	if (m_Recording)
+	{
+		if (g_SourceSdkVer == SourceSdkVer_CSGO) {
+			QueueCaptureGpuQueuesExecution(bShutdown);
+		}
+	}
+
+	if (m_Recording || m_WasRecording) {
+		m_WasRecording = m_Recording;
+		EngineThread_QueuePresent(bShutdown);
+	}
+
+}
+
 void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void* This, void* Edx, const SOURCESDK::CViewSetup_csgo& view, const SOURCESDK::CViewSetup_csgo& hudViewSetup, int nClearFlags, int whatToDraw, float* smokeOverlayAlphaFactor, float& smokeOverlayAlphaFactorMultiplyer)
 {
 	m_ForceCacheFullSceneState = false;
@@ -7109,7 +7135,7 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void* This, void* 
 		return;
 	}
 
-	QueueCaptureGpuQueuesRelease();
+	QueueCaptureGpuQueuesRelease(false);
 
 	//Hook_csgo_C_BaseEntity_IClientRenderable_DrawModel();
 	//Hook_csgo_C_BaseAnimating_IClientRenderable_DrawModel();
@@ -7278,16 +7304,7 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void* This, void* 
 		DoRenderView(fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw);
 	}
 
-	if (m_Recording)
-	{
-		QueueCaptureGpuQueuesExecution();
-	}
-
-	if (m_Recording || m_WasRecording) {
-		m_WasRecording = m_Recording;
-		EngineThread_QueuePresent();
-	}
-
+	EngineThread_QueuePostGpuWork(false);
 
 	if(m_Recording) {
 		++m_Frame;
@@ -10645,6 +10662,14 @@ void CAfxStreams::ShutDown(void)
 	{
 		m_ShutDown = true;
 
+		if (m_Recording) {
+			Console_Record_End();
+		}
+
+		EngineThread_QueuePostGpuWork(true);
+
+		// We can do this here, because the dedicated drawing thread is shutdown by then (I think.):
+		QueueCaptureGpuQueuesRelease(true);
 		DrawingThread_DeviceLost();
 
 		if (g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO) {
@@ -11616,7 +11641,7 @@ private:
 };
 
 
-void CAfxStreams::EngineThread_QueuePresent() {
+void CAfxStreams::EngineThread_QueuePresent(bool bShutdown) {
 	bool bShouldRecord = m_Recording && m_RecordScreen->Enabled;
 	if (bShouldRecord != m_RecordScreenRecording) {
 		m_RecordScreenRecording = bShouldRecord;
@@ -11640,7 +11665,10 @@ void CAfxStreams::EngineThread_QueuePresent() {
 		m_RecordScreenCommands.push(new CRecordScreenCommandSet(drawingRecordScreen));
 		m_RecordScreenCommands.push(nullptr);
 
-		if (g_SourceSdkVer == SourceSdkVer_CSGO) {
+		if (bShutdown) {
+			DrawingThread_BeforePresent();
+		}
+		else if (g_SourceSdkVer == SourceSdkVer_CSGO) {
 			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CDrawingThread_BeforePresent_Functor()));
 		}
 	}
@@ -11653,7 +11681,10 @@ void CAfxStreams::EngineThread_QueuePresent() {
 			}
 			m_RecordScreenCommands.push(nullptr);
 
-			if (g_SourceSdkVer == SourceSdkVer_CSGO) {
+			if (bShutdown) {
+				DrawingThread_BeforePresent();
+			}
+			else if (g_SourceSdkVer == SourceSdkVer_CSGO) {
 				QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CDrawingThread_BeforePresent_Functor()));
 			}
 		}

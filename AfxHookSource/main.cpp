@@ -251,7 +251,7 @@ public:
 		if (g_SourceSdkVer != SourceSdkVer::SourceSdkVer_CSGO && (g_AfxStreams.IsRecording() && g_VEngineClient && !g_VEngineClient->Con_IsVisible() || bWasRecording && !g_AfxStreams.IsRecording())) {
 			bWasRecording = g_AfxStreams.IsRecording();
 			g_AfxStreams.Set_View_Render_ThreadId(GetCurrentThreadId());
-			g_AfxStreams.EngineThread_QueuePresent();
+			g_AfxStreams.EngineThread_QueuePostGpuWork(false);
 		}
 
 		return g_Engine_ClientEngineTools->SetupAudioState(audioState);
