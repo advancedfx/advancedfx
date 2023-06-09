@@ -2043,10 +2043,10 @@ void Console_DeathMsgId_PrintHelp(const char * cmd)
 {
 	Tier0_Msg(
 		"%s accepts the following as <id...>:\n"
-		"<iNumber> - UserID, Example: 2\n"
-		"trace - UserID from a screen trace (i.e. current POV).\n"
-		"x<iNumber> - XUID, Example: x76561197961927915\n"
-		"xTrace - XUID from a screen trace (i.e. current POV).\n"
+		"<iNumber> - UserID. Example: 2\n"
+		"trace - UserID from a screen trace (e.g. current POV).\n"
+		"x<iNumber> - XUID. Example: x76561197961927915\n"
+		"xTrace - XUID from a screen trace (e.g. current POV).\n"
 		"k<iNumber> - Spectator key number.\n"
 		"We recommend getting the numbers from the output of \"mirv_listentities isPlayer=1\".\n"
 		, cmd
@@ -2071,7 +2071,7 @@ void Console_DeathMsgArgs_PrintHelp(const char * cmd, bool showMatch)
 		"\t\"victimId=<id>\" - New victim id.\n"
 		"\t\"victimIsLocal=(0|1)\" - If to be considered local player.\n"
 		"\t\"assistedflash=<iVal>\" - If flash assist.\n"
-		"\t\"weapon=<sWeaponName>\" - Weapon name (i.e. ak47).\n"
+		"\t\"weapon=<sWeaponName>\" - Weapon name (e.g. ak47).\n"
 		"\t\"headshot=<iVal>\" - If headshot.\n"
 		"\t\"penetrated=<iVal>\" - If penetrated.\n"
 		"\t\"dominated=<iVal>\" - If dominated.\n"
@@ -2429,11 +2429,11 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 
 			Tier0_Msg(
 					"Usage:\n"
-					"mirv_deathmsg block [...] - block specific death messages.\n"
-					"mirv_deathmsg cfg [...] - configure death message properties, i.e. noticeLifeTime.\n"
-					"mirv_deathmsg highLightId [...] - control highlighting.\n"
+					"mirv_deathmsg block [...] - Block specific death messages.\n"
+					"mirv_deathmsg cfg [...] - Configure death message properties, e.g. noticeLifeTime.\n"
+					"mirv_deathmsg highLightId [...] - Control highlighting.\n"
 					"mirv_deathmsg help id - Display help on the ids that can be used.\n"
-					"mirv_deathmsg debug [...] - enable debug message in console.\n"
+					"mirv_deathmsg debug [...] - Enable debug message in console.\n"
 			);
 
 			return true;
@@ -2609,13 +2609,13 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 		"%s filter [...] - Filter death messages.\n"
 		"%s fake [...] - Fake a death message (needs one message being triggered earlier).\n"
 		"%s help id [...] - Print help on <id...> usage.\n"
-		"%s lifetime [...] - Controls lifetime of deathmessages.\n"
-		"%s lifetimeMod [...] - Controls lifetime modifier of deathmessages for the \"local\" player.\n"
+		"%s lifetime [...] - Controls lifetime of death messages.\n"
+		"%s lifetimeMod [...] - Controls lifetime modifier of death messages for the \"local\" player.\n"
 		"%s localPlayer [...] - Controls what is considered \"local\" player (and thus highlighted in death notices).\n"
 		"%s showNumbers [...] - Controls if and in what style to show numbers instead of player names.\n"
 		"%s debug [...] - Enable / Disable debug spew upon death messages.\n"
 		"%s deprecated - Print deprecated commands.\n"
-		"Hint: Jump back in demo (i.e. to round start) to clear death messages.\n"
+		"Hint: Rewind the demo (to the round start for example) to clear death messages.\n"
 		, arg0
 		, arg0
 		, arg0
