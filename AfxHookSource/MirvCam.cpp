@@ -306,7 +306,7 @@ CON_COMMAND(mirv_cam, "Control camera source entity and offset.")
 					}
 
 					Tier0_Msg(
-						"mirv_cam source attachment <sName> - use i.e. \"muzzle_flash\" for 3rd person weapon entites for great results.\n"
+						"mirv_cam source attachment <sName> - use e.g. \"muzzle_flash\" for 3rd person weapon entites for great results.\n"
 						"Current value: %s\n"
 						, g_MirvCam.m_SourceAttachment.c_str()
 					);
