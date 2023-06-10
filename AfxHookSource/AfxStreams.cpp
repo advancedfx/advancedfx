@@ -4171,7 +4171,7 @@ void CAfxBaseFxStream::CShared::Console_AddReplaceAction(IWrpCommandArgs * args)
 	{
 		Tier0_Msg(
 			"%s <actionName> <materialName> [option]*\n"
-			"Options (yes you can specify multiple) can be:\n"
+			"Options can be (you can specify multiple):\n"
 			"\t\"overrideColor=<rF> <gF> <bF>\" - Where <.F> is a floating point value between 0.0 and 1.0\n"
 			"\t\"overrideBlend=<bF>\" - Where <bF> is a floating point value between 0.0 and 1.0\n"
 			"\t\"overrideDepthWrite=<iF>\" - Where <iF> is 0 (don't write depth) or 1 (write depth)\n"
@@ -9499,7 +9499,7 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 				}
 
 				Tier0_Msg(
-					"%s smokeOverlayAlphaFactor <fValue> - Set new factor that is multiplied with smoke overlay alpha (i.e. 0 would disable it completely).\n"
+					"%s smokeOverlayAlphaFactor <fValue> - Set new factor that is multiplied with smoke overlay alpha (e.g. 0 would disable it completely).\n"
 					"Current value: %f.\n"
 					, cmdPrefix
 					, curBaseFx->SmokeOverlayAlphaFactor_get()
@@ -10298,7 +10298,7 @@ bool CAfxStreams::Console_CheckStreamName(char const * value)
 {
 	if(StringIsEmpty(value))
 	{
-		Tier0_Msg("Error: Stream name can not be emty.\n");
+		Tier0_Msg("Error: Stream name can not be empty.\n");
 		return false;
 	}
 	if(!StringIsAlNum(value))
