@@ -490,7 +490,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					}
 
 					Tier0_Msg(
-						"mirv_streams add alphaMatteEntity <name> - DEPRECATED: Add a alpha matte entity stream with name <name>.\n"
+						"mirv_streams add alphaMatteEntity <name> - DEPRECATED: Add an alpha matte entity stream with name <name>.\n"
 					);
 					return;
 				}				
@@ -507,7 +507,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					}
 
 					Tier0_Msg(
-						"mirv_streams add alphaMatte <name> - DEPRECATED: Add a alpha matte stream with name <name>.\n"
+						"mirv_streams add alphaMatte <name> - DEPRECATED: Add an alpha matte stream with name <name>.\n"
 					);
 					return;
 				}				
@@ -524,7 +524,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					}
 
 					Tier0_Msg(
-						"mirv_streams add alphaEntity <name> -DEPRECATED:  Add a alpha entity stream with name <name>.\n"
+						"mirv_streams add alphaEntity <name> -DEPRECATED:  Add an alpha entity stream with name <name>.\n"
 					);
 					return;
 				}				
@@ -541,7 +541,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					}
 
 					Tier0_Msg(
-						"mirv_streams add alphaWorld <name> - DEPRECATED: Add a alpha world stream with name <name>.\n"
+						"mirv_streams add alphaWorld <name> - DEPRECATED: Add an alpha world stream with name <name>.\n"
 					);
 					return;
 				}	
@@ -615,7 +615,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			}
 
 			Tier0_Msg(
-				"mirv_streams remove <streamName> - Remove a stream with name <streamName>, you can get the value from mirv_streams print.\n"
+				"mirv_streams remove <streamName> - Remove a stream with name <streamName>, you can get the name from mirv_streams print.\n"
 			);
 			return;
 		}
@@ -637,7 +637,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			}
 
 			Tier0_Msg(
-				"mirv_streams preview <streamName> [<iSlot>]- Preview the stream with name <streamName>, you can get the value from mirv_streams print. To end previewing enter \"\" (empty string) for <streamName>!\n"
+				"mirv_streams preview <streamName> [<iSlot>]- Preview the stream with name <streamName>, you can get the name from mirv_streams print. To end previewing enter \"\" (empty string) for <streamName>!\n"
 			);
 			return;
 		}
@@ -952,7 +952,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			);
 			if (bIsCsgo) Tier0_Msg(
 				"mirv_streams record voices [...] - Controls voice WAV audio recording.\n"
-				"mirv_streams record bvh [...] - Controls the HLAE/BVH Camera motion data capture output.\n"
+				"mirv_streams record bvh [...] - Controls the HLAE/BVH camera motion data capture output.\n"
 				"mirv_streams record cam [...] - Controls the camera motion data capture output (can be imported with mirv_camio).\n"
 			);
 			Tier0_Msg(
@@ -1281,7 +1281,7 @@ void PrintTimeFormated(double time)
 	Tier0_Msg("%s", oss.str().c_str());
 }
 
-CON_COMMAND(mirv_skip, "for skipping trhough demos (uses demo_gototick)")
+CON_COMMAND(mirv_skip, "for skipping through demos (uses demo_gototick)")
 {
 	int argc = args->ArgC();
 
@@ -1796,7 +1796,7 @@ CON_COMMAND(mirv_fov,"allows overriding FOV (Field Of View) of the camera")
 		"Usage:\n"
 		"mirv_fov [real] <f> - Override fov with given floating point value <f>.\n"
 		"mirv_fov default - Revert to the game's default behaviour.\n"
-		"mirv_fov handleZoom [...] - Handle zooming (i.e. AWP in CS:GO).\n"
+		"mirv_fov handleZoom [...] - Handle zooming (e.g. AWP in CS:GO).\n"
 	);
 	{
 		Tier0_Msg("Current value: ");
@@ -2208,9 +2208,9 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 
 			Tier0_Msg(
 				"Usage:\n"
-				"mirv_input cfg mouseMoveSupport - Get Value.\n"
+				"mirv_input cfg mouseMoveSupport - Get value.\n"
 				"mirv_input cfg mouseMoveSupport 0|1 - Disable / Enable mouse move support (use left / right mouse button).\n"
-				"mirv_input cfg offsetMode - Get Value.\n"
+				"mirv_input cfg offsetMode - Get value.\n"
 				"mirv_input cfg offsetMode last|ownLast|game|current - Default: current, last = old method (last outputted), ownLast = as outputted by mirv_input, game = as outputted by game, current = as outputted by current overrides.\n"
 				"mirv_input cfg msens - Get mouse sensitivity.\n"
 				"mirv_input cfg msens <dValue> - Set mouse sensitivity.\n"
@@ -2365,7 +2365,7 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 
 	Tier0_Msg(
 		"Usage:\n"
-		"mirv_input camera - Enable camera input mode, see HLAE manual for keys etc.\n"
+		"mirv_input camera - Enable camera input mode, see HLAE manual for keybinds etc.\n"
 		"mirv_input cfg [...] - Control input mode configuration.\n"
 		"mirv_input end - End input mode(s).\n"
 		"mirv_input position [...]\n"
@@ -2435,7 +2435,7 @@ CON_COMMAND(mirv_gameoverlay, "GameOverlayRenderer control.")
 	);
 }
 
-CON_COMMAND(mirv_snd_filter, "Sound control (i.e. blocking sounds).")
+CON_COMMAND(mirv_snd_filter, "Sound control (e.g. blocking sounds).")
 {
 	if(!csgo_S_StartSound_Install())
 	{
@@ -3404,7 +3404,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 			}
 
 			Tier0_Msg(
-				"mirv_fix blockObserverTarget 0|1 - Fixes unwanted player switching i.e. upon bomb plant (blocks C_BasePlayer::RecvProxy_ObserverTarget).\n"
+				"mirv_fix blockObserverTarget 0|1 - Fixes unwanted player switching e.g. upon bomb plant (blocks C_BasePlayer::RecvProxy_ObserverTarget).\n"
 				"Current value: %i\n",
 				g_csgo_Block_C_BasePlayer_RecvProxy_ObserverTarget ? 1 : 0
 			);
@@ -3648,14 +3648,14 @@ CON_COMMAND(mirv_fix, "Various fixes")
 	}
 
 	Tier0_Msg(
-		"mirv_fix physicsMaxFps [...] - Can raise the FPS limit for physics (i.e. rag dolls, so they don't freeze upon high host_framerate).\n"
-		"mirv_fix blockObserverTarget [...] - Fixes unwanted player switching i.e. upon bomb plant (blocks C_BasePlayer::RecvProxy_ObserverTarget).\n"
+		"mirv_fix physicsMaxFps [...] - Can raise the FPS limit for physics (e.g. rag dolls, so they don't freeze upon high host_framerate).\n"
+		"mirv_fix blockObserverTarget [...] - Fixes unwanted player switching, e.g. upon bomb plant (blocks C_BasePlayer::RecvProxy_ObserverTarget).\n"
 		"mirv_fix oldDuckFix [...] - Can fix player stuck in duck for old demos.\n"
 		"mirv_fix playerAnimState [...] - Fixes twitching of player arms/legs, see https://github.com/advancedfx/advancedfx/wiki/Source%3ASmoother-Demos\n"
 		//"mirv_fix demoIndexTicks [...] - Tries to make backward skipping faster in demos.\n"
 		"mirv_fix selectedPlayerGlow 0|1|2 - 1: Game default, 2: Always glow, 0 : never glow.\n"
 		"mirv_fix forcePostDataUpdateChanged [...].\n"
-		"mirv_fix forceDoAnimationEvents 0|1 - Only useful in combination with replaceing old models with new ones for forcing animation events to be played, defaut is 0 (off).\n"
+		"mirv_fix forceDoAnimationEvents 0|1 - Only useful in combination with replacing old models with new ones for forcing animation events to be played, defaut is 0 (off).\n"
 		"mirv_fix suppressFileCRCCheck 0|1 - This is only useful with HLAE special builds and it's on by default.\n"
 	);
 	Tier0_Msg(
@@ -4105,11 +4105,11 @@ CON_COMMAND(mirv_cfg, "general HLAE configuration")
 			
 			Tier0_Msg(
 				"%s mirvPov interpDefault - Restore default interp settings.\n"
-				"%s mirvPov interpCompensateLatencyOn - Enable (approximate) latency compenstation interp settings.\n"
-				"%s mirvPov interpCompensateLatencyOff - Disable (approximate) latency compenstation interp settings.\n"
-				"%s mirvPov interpPingFac local|other [...] - Default ,other=0,local=1, factor multiplied with ping / 1000.0 to delay interp for non-POV player-local entities.\n"
-				"%s mirvPov interpOffset local|other [...] - Default other=0,local=0, constant factor to add to interp.\n"
-				"%s mirvPov interpFacOrg local|other [...] - Default other=1,local=1 factor multiplied with original value by engine (depends on your cl_interp value!).\n"
+				"%s mirvPov interpCompensateLatencyOn - Enable (approximate) latency compensation interp settings.\n"
+				"%s mirvPov interpCompensateLatencyOff - Disable (approximate) latency compensation interp settings.\n"
+				"%s mirvPov interpPingFac local|other [...] - Default: local=1 and other=0. Factor multiplied with ping / 1000.0 to delay interp for non-POV player-local entities.\n"
+				"%s mirvPov interpOffset local|other [...] - Default: local=0 and other=0. Constant factor to add to interp.\n"
+				"%s mirvPov interpFacOrg local|other [...] - Default: local=1 and other=1. Factor multiplied with original value by engine (depends on your cl_interp value!).\n"
 				, arg0
 				, arg0
 				, arg0
@@ -4255,7 +4255,7 @@ CON_COMMAND(mirv_models, "model tools") {
 					}
 
 					Tier0_Msg(
-						"%s replace byWcName add <sWildCardNameSource> <sNameTarget> [<iTransparent=0|1>] - Add a replacement, <iTransparent> defaults to 1 if omitted and tries to hide the replacment a bit more from the engine.\n"
+						"%s replace byWcName add <sWildCardNameSource> <sNameTarget> [<iTransparent=0|1>] - Add a replacement, <iTransparent> defaults to 1 if omitted and tries to hide the replacement a bit more from the engine.\n"
 						"%s replace byWcName remove <iIndex>\n"
 						"%s replace byWcName move <iSourceIndex> <iTargetIndex>\n"
 						"%s replace byWcName print\n"
