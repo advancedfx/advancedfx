@@ -541,7 +541,7 @@ CON_COMMAND(mirv_agr, "AFX GameRecord")
 	}
 
 	Tier0_Msg(
-		"%s start <sFilePath> - Start recording to file <sFilePath>, you should set a low host_framerate before (i.e. 30) and give the \".agr\" file extension.\n"
+		"%s start <sFilePath> - Start recording to file <sFilePath>, you should set a low host_framerate before (e.g. 30) and give the \".agr\" file extension.\n"
 		"%s stop - Stop recording.\n"
 		, prefix
 		, prefix
