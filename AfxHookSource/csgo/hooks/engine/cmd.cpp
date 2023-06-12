@@ -295,14 +295,14 @@ CON_COMMAND(mirv_block_commands, "")
 	}
 
 	Tier0_Msg(
-		"%s debug [...] - Debug commands beging executed.\n"
+		"%s debug [...] - Debug commands being executed.\n"
 		"%s logFile [...] - Log to file (slow, use for debug only).\n"
 		"%s print [<iStack>] - Prints command blocks.\n"
 		"%s clear [<iStack>] - Clears command blocks.\n"
 		"%s remove <iStack> <iNr> - Removes a block.\n"
 		"%s move <iStack> <iSourceNr> <iTargetNr> - Moves a block.\n"
 		"%s add <iStack> <sWildCard> - Adds a block.\n"
-		"\t<iStack> - 0 Code, 1 Client Cmd, 2 User Input, 3 Net Client, 4 Net Server, 5 Demo File.\n"
+		"\t<iStack> - 0 = Code, 1 = Client Cmd, 2 = User Input, 3 = Net Client, 4 = Net Server, 5 = Demo File.\n"
 		"\t<sWildCard> - Wild card string (\\* = wildcard and \\\\ = \\).\n"
 		, arg0
 		, arg0
