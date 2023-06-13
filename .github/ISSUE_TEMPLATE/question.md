@@ -7,4 +7,4 @@ assignees: ''
 
 ---
 
-https://github.com/advancedfx/advancedfx/discussions/categories/q-a
+(Please search existing **open and closed** issues first to verify this is a new question.)
