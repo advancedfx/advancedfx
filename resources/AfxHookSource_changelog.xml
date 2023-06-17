@@ -6,8 +6,27 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.121.0</version>
+<time>2023-06-17T11:38Z</time>
+<changes>
+<change type="fixed">Mr. Dec fixed various typos in various user facing mirv_ command interfaces, thank you.</change>
+<change type="updated">Update mirv_streams to cleanly finish the recording upon closing of the game (advancedfx/advancedfx#847).</change>
+<change type="added">Added support for screen capturing in a feww mods other than CS:GO (e.g. TF2) (advancedfx/advancedfx#836).<br />
+Because no new hooks were introduced for it, the capturing process will force mat_queue_mode 0 in games other than CS:GO and will only record when the console is closed (just like startmovie) and additionally to the host_framerate you will need to set mirv_streams record fps to the same value.<br />
+Example:<br />
+host_framerate 1200; mirv_streams record fps 1200; mirv_streams record screen enabled 1; mirv_streams record screen settings afxFfmpegYuv420p; mirv_streams record start<br />
+// ... close console to record a bit ...<br />
+mirv_streams record end</change>
+<change type="fixed">Fix crash in GetSpectatorPlayerForKey when not in-game: Affects mirv_calcs handle add key, mirv_spec_player_key.</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.120.6</version>
-<time>2023-05-27Z17:43Z</time>
+<time>2023-05-27T17:43Z</time>
 <changes>
 <change type="fixed">Fixed a long standing bug in the fastpath entity detection (causing e.g. things to temporary flicker or wrongly being replaced in afx/wh). Thanks to Chet Jong and Riki from our Discord channel.</change>
 </changes>
@@ -17,7 +36,7 @@
 <release>
 <name>AfxHookSource</name>
 <version>1.120.5</version>
-<time>2023-05-02Z20:10Z</time>
+<time>2023-05-02T20:10Z</time>
 <changes>
 <change type="fixed">Fixed a long standing race condition that would lead to a double free upon release that was copied and pasted in multiple places. Thanks to Flakura YT#2574 in our Discord channel. Updating is recommended.</change>
 </changes>

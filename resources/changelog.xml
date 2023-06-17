@@ -6,10 +6,21 @@
 
 <release>
 <name>HLAE</name>
-<version>2.145.7</version>
-<time>2023-05-27Z17:43Z</time>
+<version>2.146.0</version>
+<time>2023-06-17T11:38Z</time>
 <changes>
-<change type="updated">Included AfxHookSource 1.120.6 (2023-05-27Z17:43Z).</change>
+<change type="updated">Included AfxHookSource 1.121.0 (2023-06-17T11:38Z).</change>
+<change type="fixed">Fixed default FFMPEG download URL in installer (usually not used).</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
+<version>2.145.7</version>
+<time>2023-05-27T17:43Z</time>
+<changes>
+<change type="updated">Included AfxHookSource 1.120.6 (2023-05-27T17:43Z).</change>
 </changes>
 </release>
 
@@ -17,9 +28,9 @@
 <release>
 <name>HLAE</name>
 <version>2.145.6</version>
-<time>2023-05-02Z20:10Z</time>
+<time>2023-05-02T20:10Z</time>
 <changes>
-<change type="updated">Included AfxHookSource 1.120.5 (2023-05-02Z20:10Z).</change>
+<change type="updated">Included AfxHookSource 1.120.5 (2023-05-02T20:10Z).</change>
 </changes>
 </release>
 
