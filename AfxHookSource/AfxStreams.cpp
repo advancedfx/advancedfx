@@ -11384,6 +11384,7 @@ void CAfxSamplingRecordingSettings::Console_Edit(IWrpCommandArgs * args)
 				}
 
 				m_OutFps = (float)atof(args->ArgV(2));
+				return;
 			}
 
 			Tier0_Msg(
