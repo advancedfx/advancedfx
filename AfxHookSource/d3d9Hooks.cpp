@@ -6519,6 +6519,8 @@ bool AfxD3D9_BeginOwnRender()
 		return false;
 	
 	g_NewDirect3DDevice9.EndScene();
+
+	return true;
 }
 
 void AfxD3D9_EndOwnRender()
