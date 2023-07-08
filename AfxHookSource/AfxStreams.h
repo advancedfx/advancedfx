@@ -1603,10 +1603,6 @@ private:
 	StreamCombineType m_StreamCombineType;
 };
 
-
-extern bool g_DebugEnabled;
-
-
 class CAfxBaseFxStream
 : public CAfxRenderViewStream
 {

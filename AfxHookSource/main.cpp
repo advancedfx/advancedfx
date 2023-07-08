@@ -757,8 +757,6 @@ void __fastcall new_CVClient_FrameStageNotify_CSSV34(void* This, void* Edx, SOUR
 	}
 }
 
-bool g_DebugEnabled = false;
-
 bool g_csgo_FirstFrameAfterNetUpdateEnd = false;
 
 extern int g_Mirv_Pov_PingAdjustMent;
