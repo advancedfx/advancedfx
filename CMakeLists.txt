@@ -1,7 +1,7 @@
 ﻿# CMakeList.txt : Top-level CMake project file, do global configuration
 # and include sub-projects here.
 #
-cmake_minimum_required (VERSION 3.20)
+cmake_minimum_required (VERSION 3.24)
 
 project ("advancedfx")
 
@@ -50,6 +50,11 @@ add_subdirectory("AfxHookGoldSrc")
 add_subdirectory("AfxHookSource")
 add_subdirectory("hlae")
 
+#add_subdirectory("deps/dev/npm")
+#add_subdirectory("deps/dev/open-rpc-generator")
+#add_subdirectory("merge-json")
+#add_subdirectory("afx-core")
+
 
 #
 # advancedfx
@@ -81,7 +86,7 @@ install(
 
         "${afxcppcli_BINARY_DIR}/AfxCppCli.dll"
         "${afxhookgoldsrc_BINARY_DIR}/AfxHookGoldSrc.dll"
-        "${afxhooksource_BINARY_DIR}/AfxHookSource.dll"
+        "$<TARGET_FILE:AfxHookSource>"
         "${hlae_BINARY_DIR}/HLAE.exe"
         "${hlae_BINARY_DIR}/NGettext.dll"
         "${injector_BINARY_DIR}/injector.exe"
@@ -103,7 +108,7 @@ install(
     FILES
         "${afxcppcli_BINARY_DIR}/AfxCppCli.pdb"
         "${afxhookgoldsrc_BINARY_DIR}/AfxHookGoldSrc.pdb"
-        "${afxhooksource_BINARY_DIR}/AfxHookSource.pdb"
+        "$<TARGET_PDB_FILE:AfxHookSource>"
         "${hlae_BINARY_DIR}/HLAE.pdb"
         "${injector_BINARY_DIR}/injector.pdb"
     DESTINATION "pdb"
