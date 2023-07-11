@@ -1,6 +1,7 @@
 /build
 /ipch
 /.vs
+/.vscode
 /*.VC.*
 /packages
 /out

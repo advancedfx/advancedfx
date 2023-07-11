@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Windows.h>
-#include <deps/release/Detours/src/detours.h>
+#include "../deps/release/Detours/src/detours.h"
 #include <vector>
 #include <map>
 #include <string>

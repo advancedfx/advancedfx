@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-#include <shared/AfxDetours.h>
+#include "AfxDetours.h"
 
 //TODO: MdtAllocExecuteableMemory needs probably FlushInstructionCache right after when used
 // but we currently only obey that in DetourClassFunc.

@@ -364,7 +364,7 @@ target_sources(AfxHookSource PRIVATE
     ../shared/ThreadPool.h
 )
 
-# This is far form  / proper, but it will do for now:
+# This is far form proper, but it will do for now:
 source_group("AfxHookSource" REGULAR_EXPRESSION "/AfxHookSource/")
 source_group("AfxHookSource/csgo" REGULAR_EXPRESSION "/AfxHookSource/csgo/")
 source_group("AfxHookSource/csgo/hooks" REGULAR_EXPRESSION "/AfxHookSource/csgo/hooks/")
@@ -445,9 +445,3 @@ source_group("deps/release/rapidxml" REGULAR_EXPRESSION "/deps/release/rapidxml/
 source_group("shared" REGULAR_EXPRESSION "/shared/")
 source_group("shared/hooks" REGULAR_EXPRESSION "/shared/hooks/")
 source_group("shared/vcpp" REGULAR_EXPRESSION "/shared/vcpp/")
-
-
-
-
-
-
