@@ -855,3 +855,171 @@ WrpVEngineClientDemoInfoEx * WrpVEngineClient_bm::GetDemoInfoEx(void)
 {
 	return this;
 }
+
+// WrpVEngineClient_L4D2 ///////////////////////////////////////////////////////////
+
+WrpVEngineClient_L4D2::WrpVEngineClient_L4D2(SOURCESDK::L4D2::IVEngineClient * iface) {
+	m_VEngineClient = iface;
+}
+
+void WrpVEngineClient_L4D2::GetScreenSize( int& width, int& height ) {
+	m_VEngineClient->GetScreenSize(width, height);
+}
+
+void WrpVEngineClient_L4D2::ServerCmd( const char *szCmdString, bool bReliable) {
+	m_VEngineClient->ServerCmd(szCmdString, bReliable);
+}
+
+void WrpVEngineClient_L4D2::ClientCmd( const char *szCmdString ) {
+	m_VEngineClient->ClientCmd(szCmdString);
+}
+
+bool WrpVEngineClient_L4D2::Con_IsVisible( void ) {
+	return m_VEngineClient->Con_IsVisible();
+}
+
+int	WrpVEngineClient_L4D2::GetLocalPlayer(void) {
+	return m_VEngineClient->GetLocalPlayer();
+}
+
+void WrpVEngineClient_L4D2::GetViewAngles(SOURCESDK::QAngle& va ) {
+	m_VEngineClient->GetViewAngles(va);
+}
+
+void WrpVEngineClient_L4D2::SetViewAngles(SOURCESDK::QAngle& va ) {
+	m_VEngineClient->SetViewAngles(va);
+}
+
+int WrpVEngineClient_L4D2::GetMaxClients( void ) {
+	return m_VEngineClient->GetMaxClients();
+}
+
+bool WrpVEngineClient_L4D2::IsInGame( void ) {
+	return m_VEngineClient->IsInGame();
+}
+
+bool WrpVEngineClient_L4D2::IsConnected( void ) {
+	return m_VEngineClient->IsConnected();
+}
+
+bool WrpVEngineClient_L4D2::IsDrawingLoadingImage( void ) {
+	return m_VEngineClient->IsDrawingLoadingImage();
+}
+
+void WrpVEngineClient_L4D2::Con_NPrintf( int pos, const char *fmt, ... ) {
+	va_list argptr;
+	va_start(argptr, fmt);
+	m_VEngineClient->Con_NPrintf(pos, fmt, argptr);
+}
+
+const char *  WrpVEngineClient_L4D2::GetGameDirectory( void ) {
+	return m_VEngineClient->GetGameDirectory();
+}
+
+const SOURCESDK::VMatrix& WrpVEngineClient_L4D2::WorldToScreenMatrix()
+{
+	return m_VEngineClient->WorldToScreenMatrix();
+}
+
+const SOURCESDK::VMatrix& WrpVEngineClient_L4D2::WorldToViewMatrix()
+{
+	return m_VEngineClient->WorldToViewMatrix();
+}
+
+
+char const *  WrpVEngineClient_L4D2::GetLevelName( void ) {
+	return m_VEngineClient->GetLevelName();
+}
+
+void WrpVEngineClient_L4D2::EngineStats_BeginFrame( void ) {
+	return m_VEngineClient->EngineStats_BeginFrame();
+}
+
+void WrpVEngineClient_L4D2::EngineStats_EndFrame( void ) {
+	return m_VEngineClient->EngineStats_EndFrame();
+}
+
+bool WrpVEngineClient_L4D2::IsPlayingDemo( void ) {
+	return m_VEngineClient->IsPlayingDemo();
+}
+
+bool WrpVEngineClient_L4D2::IsRecordingDemo( void ) {
+	return m_VEngineClient->IsRecordingDemo();
+}
+
+bool WrpVEngineClient_L4D2::IsPlayingTimeDemo( void ) {
+	return m_VEngineClient->IsPlayingTimeDemo();
+}
+
+int WrpVEngineClient_L4D2::GetDemoRecordingTick( void )
+{
+	return m_VEngineClient->GetDemoRecordingTick();
+}
+
+int	WrpVEngineClient_L4D2::GetDemoPlaybackTick( void )
+{
+	return m_VEngineClient->GetDemoPlaybackTick();
+}
+
+int	WrpVEngineClient_L4D2::GetDemoPlaybackStartTick( void )
+{
+	return m_VEngineClient->GetDemoPlaybackStartTick();
+}
+
+float WrpVEngineClient_L4D2::GetDemoPlaybackTimeScale( void )
+{
+	return m_VEngineClient->GetDemoPlaybackTimeScale();
+}
+
+int WrpVEngineClient_L4D2::GetDemoPlaybackTotalTicks( void )
+{
+	return m_VEngineClient->GetDemoPlaybackTotalTicks();
+}
+
+bool WrpVEngineClient_L4D2::IsPaused( void ) {
+	return m_VEngineClient->IsPaused();
+}
+
+bool WrpVEngineClient_L4D2::IsTakingScreenshot( void ) {
+	return m_VEngineClient->IsTakingScreenshot();
+}
+bool WrpVEngineClient_L4D2::IsHLTV( void ) {
+	return m_VEngineClient->IsHLTV();
+}
+
+bool WrpVEngineClient_L4D2::IsLevelMainMenuBackground( void ) {
+	return m_VEngineClient->IsLevelMainMenuBackground();
+}
+
+void WrpVEngineClient_L4D2::GetMainMenuBackgroundName( char *dest, int destlen ) {
+	return m_VEngineClient->GetMainMenuBackgroundName(dest, destlen);
+}
+
+bool WrpVEngineClient_L4D2::IsInEditMode( void ) {
+	return m_VEngineClient->IsInEditMode();
+}
+
+unsigned int WrpVEngineClient_L4D2::GetEngineBuildNumber() {
+	return m_VEngineClient->GetEngineBuildNumber();
+}
+
+const char * WrpVEngineClient_L4D2::GetProductVersionString() {
+	return m_VEngineClient->GetProductVersionString();
+}
+
+bool WrpVEngineClient_L4D2::IsHammerRunning( ) const {
+	return m_VEngineClient->IsHammerRunning();
+}
+
+void WrpVEngineClient_L4D2::ExecuteClientCmd( const char *szCmdString ) {
+	m_VEngineClient->ExecuteClientCmd(szCmdString);
+}
+
+void WrpVEngineClient_L4D2::ClientCmd_Unrestricted( const char *szCmdString ) {
+	m_VEngineClient->ClientCmd_Unrestricted(szCmdString);
+}
+
+WrpVEngineClientDemoInfoEx * WrpVEngineClient_L4D2::GetDemoInfoEx(void)
+{
+	return this;
+}

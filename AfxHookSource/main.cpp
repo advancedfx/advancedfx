@@ -344,6 +344,13 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 				g_VEngineClient = new WrpVEngineClient_Insurgency2((SOURCESDK::INSURGENCY2::IVEngineClient*)iface);
 			}
 			break;
+		case SourceSdkVer_L4D2:
+			if (iface = appSystemFactory(SOURCESDK_L4D2_VENGINE_CLIENT_INTERFACE_VERSION, NULL))
+			{
+				g_Info_VEngineClient = SOURCESDK_L4D2_VENGINE_CLIENT_INTERFACE_VERSION " (Left 4 Dead 2)";
+				g_VEngineClient = new WrpVEngineClient_L4D2((SOURCESDK::L4D2::IVEngineClient*)iface);
+			}
+			break;
 		default:
 			if (iface = appSystemFactory(VENGINE_CLIENT_INTERFACE_VERSION_015, NULL))
 			{
