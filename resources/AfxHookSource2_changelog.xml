@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="changelog.xsl"?>
+
+<changelog>
+
+<release>
+<name>AfxHookSource2</name>
+<version>0.0.1</version>
+<time>2023-07-14T18:50Z</time>
+<changes>
+<change type="added">
+First version. Can not do much, all it currently does is unlock hidden / protected cvars and cmds in CS2 when used with custom loader:<br />
+ProgramPath: C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive\game\bin\win64\cs2.exe<br />
+CommandLine: -steam -insecure +sv_lan 1 -console -novid -window -w 1920 -h 1080<br />
+DLLs to inject: hlae-folder\x64\AfxHookSource2.dll
+</change>
+</changes>
+</release>
+
+</changelog>

@@ -6,6 +6,19 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.121.1</version>
+<time>2023-07-14T18:50Z</time>
+<changes>
+<change type="fixed">Fixed L4D2 campath draw and some other suppported L4D2 features: #858 - thanks to @Dechno1337 for testing and @RichardHafer</change>
+<change type="fixed">Some other fixes e.g. by Dec, thank you.</change>
+<change type="updated">Updated project to use a CMAKE project instead of VS2017 directly.</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.121.0</version>
 <time>2023-06-17T11:38Z</time>
 <changes>
