@@ -11,7 +11,7 @@
 <changes>
 <change type="fixed">Fixed L4D2 campath draw and some other suppported L4D2 features: #858 - thanks to @Dechno1337 for testing and @RichardHafer</change>
 <change type="fixed">Some other fixes e.g. by Dec, thank you.</change>
-<change type="updated">Updated project to use a CMAKE project instead of VS2017 directly.</change>
+<change type="updated">Updated project to use a CMAKE project instead of VS2022 directly.</change>
 </changes>
 </release>
 
