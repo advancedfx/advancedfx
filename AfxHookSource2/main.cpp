@@ -4,8 +4,10 @@
 #include "../deps/release/prop/AfxHookSource/SourceInterfaces.h"
 #include "../deps/release/prop/cs2/Source2Client.h"
 #include "../deps/release/prop/cs2/sdk_src/public/tier1/convar.h"
+#include "../deps/release/prop/cs2/sdk_src/public/icvar.h"
 #include "../shared/AfxDetours.h"
 #include "../shared/StringTools.h"
+#include "../shared/AfxConsole.h"
 #include "../AfxHookSource/AfxCommandLine.h"
 
 #include <Windows.h>
@@ -43,50 +45,64 @@ int new_CCS2_Client_Connect(void* This, SOURCESDK::CreateInterfaceFn appSystemFa
 	return old_CCS2_Client_Connect(This, appSystemFactory);
 }
 
+class CMirvCvarUnhideAllCommandCallback
+	: public SOURCESDK::CS2::ICommandCallback {
+public:
+	virtual void CommandCallback(void * _unknown1_rdx_ptr, SOURCESDK::CS2::CCommand * pArgs) {			
+		int total = 0;
+		int nUnhidden = 0;
+		for(size_t i = 0; i < 65536; i++ )
+		{
+			SOURCESDK::CS2::CCmd * cmd = SOURCESDK::CS2::g_pCVar->GetCmd(i);
+			if(nullptr == cmd) break;
+			int nFlags = cmd->GetFlags();
+			if(nFlags == 0x400) break;
+			total++;
+			if(nFlags & (FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN)) {
+	//			fprintf(f1,"[+] %lli: 0x%08x: %s : %s\n", i, cmd->m_nFlags, cmd->m_pszName, cmd->m_pszHelpString);
+				cmd->SetFlags(nFlags &= ~(int)(FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN));
+				nUnhidden++;
+			} else {
+	//			fprintf(f1,"[ ] %lli: 0x%08x: %s : %s\n", i, cmd->m_nFlags, cmd->m_pszName, cmd->m_pszHelpString);
+			}
+		}
+		advancedfx::Message("==== Cmds total: %i (Cmds unhidden: %i) ====\n",total,nUnhidden);
+
+		total = 0;
+		nUnhidden = 0;
+		for(size_t i = 0; i < 65536; i++ )
+		{
+			SOURCESDK::CS2::Cvar_s * cvar = SOURCESDK::CS2::g_pCVar->GetCvar(i);
+			if(nullptr == cvar) break;
+			total++;
+			if(cvar->m_nFlags & (FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN)) {
+	//			fprintf(f1,"[+] %lli: 0x%08x: %s : %s\n", i, cvar->m_nFlags, cvar->m_pszName, cvar->m_pszHelpString);
+				cvar->m_nFlags &= ~(int)(FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN);
+				nUnhidden++;
+			} else {
+	//			fprintf(f1,"[ ] %lli: 0x%08x: %s : %s\n", i, cvar->m_nFlags, cvar->m_pszName, cvar->m_pszHelpString);
+			}
+		}
+		
+		advancedfx::Message("==== Cvars total: %i (Cvars unhidden: %i) ====\n",total,nUnhidden);
+	}
+} g_MirvCvarUnhideAllCommandCallback;
+
+class CMirvCvarUnhideAllCommand : public SOURCESDK::CS2::CCmd {
+public:
+	CMirvCvarUnhideAllCommand() : SOURCESDK::CS2::CCmd("mirv_cvar_unhide_all", "Unlocks cmds and cvars.", 0, &g_MirvCvarUnhideAllCommandCallback) {
+
+	}
+
+} g_MirvCvarUnhideAllCommand;
+
+
 typedef int(* CCS2_Client_Init_t)(void* This);
 CCS2_Client_Init_t old_CCS2_Client_Init;
 int new_CCS2_Client_Init(void* This) {
 	int result = old_CCS2_Client_Init(This);
 
-//	static FILE *f1=NULL;
-//	if( !f1 ) f1=fopen("hlae_log_commands.txt","wb");
-
-	int total = 0;
-	int nUnhidden = 0;
-	for(size_t i = 0; i < 65536; i++ )
-	{
-		SOURCESDK::CS2::Cmd_s * cmd = SOURCESDK::CS2::g_pCVar->GetCmd(i);
-		if(nullptr == cmd || cmd->m_nFlags == 0x400) break;
-		total++;
-		if(cmd->m_nFlags & (FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN)) {
-//			fprintf(f1,"[+] %lli: 0x%08x: %s : %s\n", i, cmd->m_nFlags, cmd->m_pszName, cmd->m_pszHelpString);
-			cmd->m_nFlags &= ~(int)(FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN);
-			nUnhidden++;
-		} else {
-//			fprintf(f1,"[ ] %lli: 0x%08x: %s : %s\n", i, cmd->m_nFlags, cmd->m_pszName, cmd->m_pszHelpString);
-		}
-	}
-//	fprintf(f1,"==== Cmds total: %i (Cmds unhidden: %i) ====\n",total,nUnhidden);
-
-	total = 0;
-	nUnhidden = 0;
-	for(size_t i = 0; i < 65536; i++ )
-	{
-		SOURCESDK::CS2::Cvar_s * cvar = SOURCESDK::CS2::g_pCVar->GetCvar(i);
-		if(nullptr == cvar) break;
-		total++;
-		if(cvar->m_nFlags & (FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN)) {
-//			fprintf(f1,"[+] %lli: 0x%08x: %s : %s\n", i, cvar->m_nFlags, cvar->m_pszName, cvar->m_pszHelpString);
-			cvar->m_nFlags &= ~(int)(FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN);
-			nUnhidden++;
-		} else {
-//			fprintf(f1,"[ ] %lli: 0x%08x: %s : %s\n", i, cvar->m_nFlags, cvar->m_pszName, cvar->m_pszHelpString);
-		}
-	}
-	
-//	fprintf(f1,"==== Cvars total: %i (Cvars unhidden: %i) ====\n",total,nUnhidden);
-
-//	fclose(f1);
+	 SOURCESDK::CS2::g_pCVar->RegisterConCommand(&g_MirvCvarUnhideAllCommand);
 
 	return result;
 }
@@ -282,7 +298,12 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		
 		g_Import_tier0.Apply(hModule);
 
-		SOURCESDK::CS2::g_pMemAlloc = *(SOURCESDK::CS2::IMemAlloc **)GetProcAddress(hModule, "g_pMemAlloc");		
+		SOURCESDK::CS2::g_pMemAlloc = *(SOURCESDK::CS2::IMemAlloc **)GetProcAddress(hModule, "g_pMemAlloc");
+
+		advancedfx::Message = (Tier0MsgFn)GetProcAddress(hModule, "Msg");
+		advancedfx::Warning = (Tier0MsgFn)GetProcAddress(hModule, "Warning");
+		advancedfx::DevMessage = (Tier0DevMsgFn)GetProcAddress(hModule, "DevMsg");
+		advancedfx::DevWarning = (Tier0DevMsgFn)GetProcAddress(hModule, "DevWarning");		
 	}
 	/*else if(bFirstfilesystem_stdio && StringEndsWithW( lpLibFileName, L"filesystem_stdio.dll"))
 	{
@@ -369,7 +390,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 				while (true);
 			}
 
-#ifdef _DEBUG
+#if 1
 			MessageBox(0,"DLL_PROCESS_ATTACH","MDT_DEBUG",MB_OK);
 #endif
 			g_Import_PROCESS.Apply(GetModuleHandle(NULL));

@@ -32,11 +32,15 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../deps/release/prop/cs2/sdk_src/public/appframework/IAppSystem.h
     ../deps/release/prop/cs2/sdk_src/public/interfaces/interfaces.h
     ../deps/release/prop/cs2/sdk_src/public/tier0/memalloc.h
-    ../deps/release/prop/cs2/sdk_src/public/tier1/convar.cpp
     ../deps/release/prop/cs2/sdk_src/public/tier1/convar.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/iconvar.h
     ../deps/release/prop/cs2/sdk_src/public/icvar.h    
+    ../deps/release/prop/AfxHookSource/SourceSdkShared.cpp
+    ../deps/release/prop/AfxHookSource/SourceSdkShared.h
+    ../deps/release/prop/AfxHookSource/SourceInterfaces.h
     
+    ../shared/AfxConsole.cpp
+    ../shared/AfxConsole.h
     ../shared/AfxDetours.cpp
     ../shared/AfxDetours.h
     ../shared/StringTools.cpp
