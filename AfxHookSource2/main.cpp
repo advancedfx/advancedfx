@@ -1,5 +1,7 @@
 #include "stdafx.h"
 
+#include "WrpConsole.h"
+
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
 #include "../deps/release/prop/AfxHookSource/SourceInterfaces.h"
 #include "../deps/release/prop/cs2/Source2Client.h"
@@ -48,64 +50,51 @@ int new_CCS2_Client_Connect(void* This, SOURCESDK::CreateInterfaceFn appSystemFa
 	return old_CCS2_Client_Connect(This, appSystemFactory);
 }
 
-class CMirvCvarUnhideAllCommandCallback
-	: public SOURCESDK::CS2::ICommandCallback {
-public:
-	virtual void CommandCallback(void * _unknown1_rdx_ptr, SOURCESDK::CS2::CCommand * pArgs) {			
-		int total = 0;
-		int nUnhidden = 0;
-		for(size_t i = 0; i < 65536; i++ )
-		{
-			SOURCESDK::CS2::CCmd * cmd = SOURCESDK::CS2::g_pCVar->GetCmd(i);
-			if(nullptr == cmd) break;
-			int nFlags = cmd->GetFlags();
-			if(nFlags == 0x400) break;
-			total++;
-			if(nFlags & (FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN)) {
-	//			fprintf(f1,"[+] %lli: 0x%08x: %s : %s\n", i, cmd->m_nFlags, cmd->m_pszName, cmd->m_pszHelpString);
-				cmd->SetFlags(nFlags &= ~(int)(FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN));
-				nUnhidden++;
-			} else {
-	//			fprintf(f1,"[ ] %lli: 0x%08x: %s : %s\n", i, cmd->m_nFlags, cmd->m_pszName, cmd->m_pszHelpString);
-			}
+CON_COMMAND(mirv_cvar_unhide_all, "Unlocks cmds and cvars.") {
+	int total = 0;
+	int nUnhidden = 0;
+	for(size_t i = 0; i < 65536; i++ )
+	{
+		SOURCESDK::CS2::CCmd * cmd = SOURCESDK::CS2::g_pCVar->GetCmd(i);
+		if(nullptr == cmd) break;
+		int nFlags = cmd->GetFlags();
+		if(nFlags == 0x400) break;
+		total++;
+		if(nFlags & (FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN)) {
+//			fprintf(f1,"[+] %lli: 0x%08x: %s : %s\n", i, cmd->m_nFlags, cmd->m_pszName, cmd->m_pszHelpString);
+			cmd->SetFlags(nFlags &= ~(int)(FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN));
+			nUnhidden++;
+		} else {
+//			fprintf(f1,"[ ] %lli: 0x%08x: %s : %s\n", i, cmd->m_nFlags, cmd->m_pszName, cmd->m_pszHelpString);
 		}
-		advancedfx::Message("==== Cmds total: %i (Cmds unhidden: %i) ====\n",total,nUnhidden);
+	}
+	advancedfx::Message("==== Cmds total: %i (Cmds unhidden: %i) ====\n",total,nUnhidden);
 
-		total = 0;
-		nUnhidden = 0;
-		for(size_t i = 0; i < 65536; i++ )
-		{
-			SOURCESDK::CS2::Cvar_s * cvar = SOURCESDK::CS2::g_pCVar->GetCvar(i);
-			if(nullptr == cvar) break;
-			total++;
-			if(cvar->m_nFlags & (FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN)) {
-	//			fprintf(f1,"[+] %lli: 0x%08x: %s : %s\n", i, cvar->m_nFlags, cvar->m_pszName, cvar->m_pszHelpString);
-				cvar->m_nFlags &= ~(int)(FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN);
-				nUnhidden++;
-			} else {
-	//			fprintf(f1,"[ ] %lli: 0x%08x: %s : %s\n", i, cvar->m_nFlags, cvar->m_pszName, cvar->m_pszHelpString);
-			}
+	total = 0;
+	nUnhidden = 0;
+	for(size_t i = 0; i < 65536; i++ )
+	{
+		SOURCESDK::CS2::Cvar_s * cvar = SOURCESDK::CS2::g_pCVar->GetCvar(i);
+		if(nullptr == cvar) break;
+		total++;
+		if(cvar->m_nFlags & (FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN)) {
+//			fprintf(f1,"[+] %lli: 0x%08x: %s : %s\n", i, cvar->m_nFlags, cvar->m_pszName, cvar->m_pszHelpString);
+			cvar->m_nFlags &= ~(int)(FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN);
+			nUnhidden++;
+		} else {
+//			fprintf(f1,"[ ] %lli: 0x%08x: %s : %s\n", i, cvar->m_nFlags, cvar->m_pszName, cvar->m_pszHelpString);
 		}
-		
-		advancedfx::Message("==== Cvars total: %i (Cvars unhidden: %i) ====\n",total,nUnhidden);
 	}
-} g_MirvCvarUnhideAllCommandCallback;
-
-class CMirvCvarUnhideAllCommand : public SOURCESDK::CS2::CCmd {
-public:
-	CMirvCvarUnhideAllCommand() : SOURCESDK::CS2::CCmd("mirv_cvar_unhide_all", "Unlocks cmds and cvars.", 0, &g_MirvCvarUnhideAllCommandCallback) {
-
-	}
-
-} g_MirvCvarUnhideAllCommand;
-
+	
+	advancedfx::Message("==== Cvars total: %i (Cvars unhidden: %i) ====\n",total,nUnhidden);
+}
 
 typedef int(* CCS2_Client_Init_t)(void* This);
 CCS2_Client_Init_t old_CCS2_Client_Init;
 int new_CCS2_Client_Init(void* This) {
 	int result = old_CCS2_Client_Init(This);
 
-	 SOURCESDK::CS2::g_pCVar->RegisterConCommand(&g_MirvCvarUnhideAllCommand);
+	WrpRegisterCommands();
 
 	return result;
 }

@@ -49,6 +49,9 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/StringTools.h
 
     main.cpp
+
+    WrpConsole.cpp
+    WrpConsole.h
 )
 
 # This is far form proper, but it will do for now:
