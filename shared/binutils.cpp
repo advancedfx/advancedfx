@@ -12,10 +12,10 @@ namespace BinUtils {
 ////////////////////////////////////////////////////////////////////////////////
 
 // TODO: optimize this.
-MemRange FindBytes(MemRange memRange, char const * pattern, DWORD patternSize)
+MemRange FindBytes(MemRange memRange, char const * pattern, size_t patternSize)
 {
-	DWORD matchDepth = 0;
-	DWORD oldMemRangeStart = memRange.Start;
+	size_t matchDepth = 0;
+	size_t oldMemRangeStart = memRange.Start;
 
 	if(!pattern)
 		return MemRange(oldMemRangeStart, min(oldMemRangeStart, memRange.End));
@@ -55,8 +55,8 @@ MemRange FindWCString(MemRange memRange, wchar_t const * pattern)
 
 MemRange FindPatternString(MemRange memRange, char const * hexBytePattern)
 {
-	DWORD matchDepth = 0;
-	DWORD oldMemRangeStart = memRange.Start;
+	size_t matchDepth = 0;
+	size_t oldMemRangeStart = memRange.Start;
 	size_t patternPos = 0;
 
 	if (!hexBytePattern)
@@ -267,23 +267,23 @@ PIMAGE_SECTION_HEADER ImageSectionsReader::Get(void)
 
 MemRange ImageSectionsReader::GetMemRange(void)
 {
-	DWORD startAddress = GetStartAddress();
+	size_t startAddress = GetStartAddress();
 	return MemRange(startAddress, startAddress+GetSize());
 }
 
-DWORD ImageSectionsReader::GetStartAddress(void)
+size_t ImageSectionsReader::GetStartAddress(void)
 {
-	return (DWORD)PtrFromRva(m_hModule, m_Section->VirtualAddress);
+	return (size_t)PtrFromRva(m_hModule, m_Section->VirtualAddress);
 }
 
-DWORD ImageSectionsReader::GetSize(void)
+size_t ImageSectionsReader::GetSize(void)
 {
 	return m_Section->Misc.VirtualSize;
 }
 
 // MemRange ////////////////////////////////////////////////////////////////////
 
-MemRange MemRange::FromSize(DWORD address, DWORD size)
+MemRange MemRange::FromSize(size_t address, size_t size)
 {
 	return MemRange(address, address + size);
 }
@@ -293,7 +293,7 @@ MemRange::MemRange()
 	Start = End = 0;
 }
 
-MemRange::MemRange(DWORD start, DWORD end)
+MemRange::MemRange(size_t start, size_t end)
 {
 	Start = start;
 	End = end;

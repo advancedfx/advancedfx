@@ -2,10 +2,10 @@
 
 #include "gameOverlayRenderer.h"
 
-#include <Windows.h>
-#include <shared/AfxDetours.h>
+#include "../AfxDetours.h"
+#include "../binutils.h"
 
-#include <shared/binutils.h>
+#include <Windows.h>
 
 using namespace Afx::BinUtils;
 

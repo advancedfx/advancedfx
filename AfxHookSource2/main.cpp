@@ -12,11 +12,16 @@
 #include "../shared/AfxConsole.h"
 #include "../shared/AfxDetours.h"
 #include "../shared/StringTools.h"
+#include "../shared/binutils.h"
 
 #include <Windows.h>
 #include "../deps/release/Detours/src/detours.h"
 
 advancedfx::CCommandLine  * g_CommandLine = nullptr;
+
+#define STRINGIZE(x) STRINGIZE2(x)
+#define STRINGIZE2(x) #x
+#define MkErrStr(file,line) "Problem in " file ":" STRINGIZE(line)
 
 void ErrorBox(char const * messageText) {
 	MessageBoxA(0, messageText, "Error - AfxHookCS2", MB_OK|MB_ICONERROR);
@@ -25,6 +30,62 @@ void ErrorBox(char const * messageText) {
 void ErrorBox() {
 	ErrorBox("Something went wrong.");
 }
+
+
+int g_nIgnoreNextDisconnects = 0;
+
+typedef void (*Unknown_ExecuteClientCommandFromNetChan_t)(void * Ecx, void * Edx, void *R8);
+Unknown_ExecuteClientCommandFromNetChan_t g_Old_Unknown_ExecuteClientCommandFromNetChan = nullptr;
+void New_Unknown_ExecuteClientCommandFromNetChan(void * Ecx, void * Edx, SOURCESDK::CS2::CCommand *r8Command) {
+	if(0 < g_nIgnoreNextDisconnects && 0 < r8Command->ArgC()) {
+		if(0 == stricmp("disconnect",r8Command->ArgV(0))) {
+			if(0 < g_nIgnoreNextDisconnects) g_nIgnoreNextDisconnects--;
+			return;
+		}
+	}
+	g_Old_Unknown_ExecuteClientCommandFromNetChan(Ecx, Edx, r8Command);
+}
+
+
+void HookEngineDll(HMODULE engineDll) {
+
+	static bool bFirstCall = true;
+	if(!bFirstCall) return;
+	bFirstCall = false;
+	
+	// Unknown_ExecuteClientCommandFromNetChan: // Last checked 2023-07-19
+	/*
+		The function we hook is called in the function referencing the string
+		"Client %s(%d) tried to execute command \"%s\" before being fully connected.\n"
+		or the other function referencing "SV: Cheat command '%s' ignored.\n"
+		as follows:
+
+		loc_1801842F0:
+		mov     r8, rdi
+		lea     rdx, [rsp+0D68h+var_D38]
+		lea     rcx, [rsp+0D68h+arg_18]
+		call    sub_180329DD0 <---
+		lea     rcx, [rsp+0D68h+var_D30]
+		call    sub_180183A60	
+	*/
+	{
+		Afx::BinUtils::ImageSectionsReader sections((HMODULE)engineDll);
+		Afx::BinUtils::MemRange textRange = sections.GetMemRange();
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "4C 8B D1 48 8B 0D ?? ?? ?? ?? 48 85 C9 74 13 48 8B 01 4D 8B C8 4C 8B C2 49 8B 12 48 FF A0 90 00 00 00 C3");
+		if (!result.IsEmpty()) {
+			g_Old_Unknown_ExecuteClientCommandFromNetChan = (Unknown_ExecuteClientCommandFromNetChan_t)result.Start;	
+			DetourTransactionBegin();
+			DetourUpdateThread(GetCurrentThread());
+			DetourAttach(&(PVOID&)g_Old_Unknown_ExecuteClientCommandFromNetChan, New_Unknown_ExecuteClientCommandFromNetChan);
+			if(NO_ERROR != DetourTransactionCommit())
+				ErrorBox("Failed to detour Unknown_ExecuteClientCommandFromNetChan.");
+		}
+		else
+			ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
+
+}
+
 
 SOURCESDK::CreateInterfaceFn g_AppSystemFactory = 0;
 SOURCESDK::CS2::IMemAlloc *SOURCESDK::CS2::g_pMemAlloc = 0;
@@ -48,6 +109,21 @@ int new_CCS2_Client_Connect(void* This, SOURCESDK::CreateInterfaceFn appSystemFa
 	}
 
 	return old_CCS2_Client_Connect(This, appSystemFactory);
+}
+
+CON_COMMAND(mirv_suppress_disconnects, "Suppresses given number disconnect commands. Can help to test demo system.") {
+	int argC = args->ArgC();
+	const char * arg0 = args->ArgV(0);
+	if(2 <= argC) {
+			g_nIgnoreNextDisconnects = atoi(args->ArgV(1));
+			return;
+	}
+	advancedfx::Message(
+		"mirv_suppress_disconnects <iSuppressTimes> - Use -1 to always suppress, or a positive number to suppress a certain count.\n"
+		"Eample: \"mirv_suppress_disconnects -1; playdemo test.dem\" - Please don't report bugs for this to Valve, the system is not meant to be used yet!\n"
+		"Current value: %i\n",
+		g_nIgnoreNextDisconnects
+	);
 }
 
 CON_COMMAND(mirv_cvar_unhide_all, "Unlocks cmds and cvars.") {
@@ -302,16 +378,18 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		bFirstfilesystem_stdio = false;
 		
 		g_Import_filesystem_stdio.Apply(hModule);
-	}
+	}*/
 	else if(bFirstEngine2 && StringEndsWithW( lpLibFileName, L"engine2.dll"))
 	{
 		bFirstEngine2 = false;
 
 		g_h_engine2Dll = hModule;
 
-		g_Import_engine2.Apply(hModule);
+		HookEngineDll(hModule);
+
+		//g_Import_engine2.Apply(hModule);
 	}
-	else if(bFirstMaterialsystem2 && StringEndsWithW( lpLibFileName, L"materialsystem2.dll"))
+	/*else if(bFirstMaterialsystem2 && StringEndsWithW( lpLibFileName, L"materialsystem2.dll"))
 	{
 		bFirstMaterialsystem2 = false;
 
@@ -382,7 +460,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 				while (true);
 			}
 
-#if 1
+#if _DEBUG
 			MessageBox(0,"DLL_PROCESS_ATTACH","MDT_DEBUG",MB_OK);
 #endif
 			g_Import_PROCESS.Apply(GetModuleHandle(NULL));

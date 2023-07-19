@@ -7,16 +7,16 @@ namespace BinUtils {
 
 struct MemRange
 {
-	static MemRange FromSize(DWORD address, DWORD size);
+	static MemRange FromSize(size_t address, size_t size);
 
 	// inclusive
-	DWORD Start;
+	size_t Start;
 
 	// exclusive
-	DWORD End;
+	size_t End;
 
 	MemRange();
-	MemRange(DWORD start, DWORD end);
+	MemRange(size_t start, size_t end);
 
 	bool IsEmpty(void) const;
 
@@ -37,21 +37,23 @@ public:
 
 	PIMAGE_SECTION_HEADER Get(void);
 	MemRange GetMemRange(void);
-	DWORD GetStartAddress(void);
-	DWORD GetSize(void);
+	size_t GetStartAddress(void);
+	size_t GetSize(void);
 
 private:
 	HMODULE m_hModule;
 	PIMAGE_SECTION_HEADER m_Section;
-	DWORD m_SectionsLeft;
+	size_t m_SectionsLeft;
 };
 
 /// <remarks>The memory specified by memRange must be readable.</remarks>
-MemRange FindBytes(MemRange memRange, char const * pattern, DWORD patternSize);
+MemRange FindBytes(MemRange memRange, char const * pattern, size_t patternSize);
 
+/// <remarks>Doesn't work on x64 atm!</remarks>
 /// <remarks>The memory specified by memRange must be readable.</remarks>
 MemRange FindCString(MemRange memRange, char const * pattern);
 
+/// <remarks>Doesn't work on x64 atm!</remarks>
 /// <remarks>The memory specified by memRange must be readable.</remarks>
 MemRange FindWCString(MemRange memRange, wchar_t const * pattern);
 
@@ -63,6 +65,7 @@ MemRange FindWCString(MemRange memRange, wchar_t const * pattern);
 /// </param>
 MemRange FindPatternString(MemRange memRange, char const * hexBytePattern);
 
+/// <remarks>Doesn't work on x64 atm!</remarks>
 /// <returns>0 if not found, otherwise address of vtable</returns>
 DWORD FindClassVtable(HMODULE hModule, const char * name, DWORD rttiBaseClassArrayOffset, DWORD completeObjectLocatorOffset);
 

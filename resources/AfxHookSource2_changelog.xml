@@ -5,6 +5,23 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.0.2</version>
+<time>2023-07-19T15:30Z</time>
+<changes>
+<change type="removed">
+Removed auto cvar / cmd unlock.
+</change>
+<change type="added">
+Added mirv_cvar_unhide_all.
+</change>
+<change type="added">
+Added mirv_suppress_disconnects.
+</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.0.1</version>
 <time>2023-07-14T18:50Z</time>
 <changes>

@@ -47,6 +47,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/AfxDetours.h
     ../shared/StringTools.cpp
     ../shared/StringTools.h
+    ../shared/binutils.cpp
+    ../shared/binutils.h
 
     main.cpp
 
