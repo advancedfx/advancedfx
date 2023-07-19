@@ -9,7 +9,7 @@
 
 #include <shared/AfxDetours.h>
 
-#include "AfxCommandLine.h"
+#include "../shared/AfxCommandLine.h"
 #include "addresses.h"
 #include "RenderView.h"
 #include "SourceInterfaces.h"
@@ -73,6 +73,8 @@
 #include <set>
 #include <map>
 #include <string>
+
+advancedfx::CCommandLine  * g_CommandLine = nullptr;
 
 WrpVEngineClient * g_VEngineClient = 0;
 SOURCESDK::ICvar_003 * g_Cvar = 0;
@@ -2974,7 +2976,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 	{ 
 		case DLL_PROCESS_ATTACH:
 		{
-			g_CommandLine = new CAfxCommandLine();
+			g_CommandLine = new advancedfx::CCommandLine();
 
 			if(!g_CommandLine->FindParam(L"-insecure"))
 			{

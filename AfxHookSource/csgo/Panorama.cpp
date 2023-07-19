@@ -4,13 +4,15 @@
 
 #include "../addresses.h"
 #include "../hlaeFolder.h"
-#include "AfxCommandLine.h"
+#include "../shared/AfxCommandLine.h"
 
 #include <shared/AfxDetours.h>
 #include <Windows.h>
 #include <deps/release/Detours/src/detours.h>
 
 #include <string>
+
+extern advancedfx::CCommandLine  * g_CommandLine;
 
 typedef void(__fastcall * Panorama_CZip_UnkLoadFiles_t)(void * This, void * edx, void * pData, unsigned int countBytes);
 

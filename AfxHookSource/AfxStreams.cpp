@@ -25,7 +25,7 @@
 //#include "csgo/hooks/staticpropmgr.h"
 #include "csgo/ClientToolsCsgo.h"
 #include "ReShadeAdvancedfx.h"
-#include "AfxCommandLine.h"
+#include "../shared/AfxCommandLine.h"
 
 #include <shared/StringTools.h>
 #include <shared/FileTools.h>
@@ -72,6 +72,7 @@ int AfxStreams_RefTracker_Get(void)
 
 #endif
 
+extern advancedfx::CCommandLine  * g_CommandLine;
 
 extern WrpVEngineClient * g_VEngineClient;
 extern SOURCESDK::IMaterialSystem_csgo * g_MaterialSystem_csgo;

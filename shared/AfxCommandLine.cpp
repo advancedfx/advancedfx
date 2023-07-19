@@ -4,32 +4,32 @@
 
 #include <Windows.h>
 
-CAfxCommandLine  * g_CommandLine = nullptr;
+namespace advancedfx {
 
-CAfxCommandLine::CAfxCommandLine()
+CCommandLine::CCommandLine()
 {
 	m_Args = CommandLineToArgvW(GetCommandLineW(), &m_nArgs);
 	if (nullptr == m_Args) m_nArgs = 0;
 }
 
-CAfxCommandLine::~CAfxCommandLine()
+CCommandLine::~CCommandLine()
 {
 	if(m_Args) LocalFree(m_Args);
 }
 
-int CAfxCommandLine::GetArgC() const
+int CCommandLine::GetArgC() const
 {
 	return m_nArgs;
 }
 
-const wchar_t * CAfxCommandLine::GetArgV(int index) const
+const wchar_t * CCommandLine::GetArgV(int index) const
 {
 	if (index < 0 || m_nArgs <= index) return L"";
 
 	return m_Args[index];
 }
 
-int CAfxCommandLine::FindParam(const wchar_t * param) const
+int CCommandLine::FindParam(const wchar_t * param) const
 {
 	for (int i = 1; i < m_nArgs; ++i)
 	{
@@ -38,3 +38,5 @@ int CAfxCommandLine::FindParam(const wchar_t * param) const
 
 	return 0;
 }
+
+} // namespace advancedfx {

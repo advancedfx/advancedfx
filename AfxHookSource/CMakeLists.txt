@@ -127,8 +127,6 @@ target_sources(AfxHookSource PRIVATE
     addresses.h
     AfxClasses.cpp
     AfxClasses.h
-    AfxCommandLine.cpp
-    AfxCommandLine.h
     AfxHookSourceInput.cpp
     AfxHookSourceInput.h
     AfxInterfaces.h
@@ -327,6 +325,8 @@ target_sources(AfxHookSource PRIVATE
     ../shared/vcpp/AfxAddr.h
     ../shared/AfxColorLut.cpp
     ../shared/AfxColorLut.h
+    ../shared/AfxCommandLine.cpp
+    ../shared/AfxCommandLine.h
     ../shared/AfxConsole.cpp
     ../shared/AfxConsole.h
     ../shared/AfxDetours.cpp

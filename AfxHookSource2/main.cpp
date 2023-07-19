@@ -5,13 +5,16 @@
 #include "../deps/release/prop/cs2/Source2Client.h"
 #include "../deps/release/prop/cs2/sdk_src/public/tier1/convar.h"
 #include "../deps/release/prop/cs2/sdk_src/public/icvar.h"
+
+#include "../shared/AfxCommandLine.h"
+#include "../shared/AfxConsole.h"
 #include "../shared/AfxDetours.h"
 #include "../shared/StringTools.h"
-#include "../shared/AfxConsole.h"
-#include "../AfxHookSource/AfxCommandLine.h"
 
 #include <Windows.h>
 #include "../deps/release/Detours/src/detours.h"
+
+advancedfx::CCommandLine  * g_CommandLine = nullptr;
 
 void ErrorBox(char const * messageText) {
 	MessageBoxA(0, messageText, "Error - AfxHookCS2", MB_OK|MB_ICONERROR);
@@ -376,7 +379,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 	{ 
 		case DLL_PROCESS_ATTACH:
 		{
-			g_CommandLine = new CAfxCommandLine();
+			g_CommandLine = new advancedfx::CCommandLine();
 
 			if(!g_CommandLine->FindParam(L"-insecure"))
 			{

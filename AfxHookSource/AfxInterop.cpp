@@ -10,7 +10,7 @@
 #include "MirvTime.h"
 #include "MirvTime.h"
 #include "MirvCalcs.h"
-#include "AfxCommandLine.h"
+#include "../shared/AfxCommandLine.h"
 #include "AfxStreams.h"
 #include "csgo_GameEvents.h"
 
@@ -26,6 +26,8 @@
 #include <memory>
 
 #include <strsafe.h>
+
+extern advancedfx::CCommandLine  * g_CommandLine;
 
 void ErrorExit(LPTSTR lpszFunction, DWORD dw)
 {

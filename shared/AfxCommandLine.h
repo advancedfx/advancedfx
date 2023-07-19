@@ -1,10 +1,12 @@
 #pragma once
 
-class CAfxCommandLine
+namespace advancedfx {
+
+class CCommandLine
 {
 public:
-	CAfxCommandLine();
-	~CAfxCommandLine();
+	CCommandLine();
+	~CCommandLine();
 
 	int GetArgC() const;
 	const wchar_t * GetArgV(int index) const;
@@ -16,4 +18,4 @@ private:
 	int m_nArgs;
 };
 
-extern CAfxCommandLine  * g_CommandLine;
+} // namespace advancedfx {

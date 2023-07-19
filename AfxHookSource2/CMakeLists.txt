@@ -39,15 +39,14 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../deps/release/prop/AfxHookSource/SourceSdkShared.h
     ../deps/release/prop/AfxHookSource/SourceInterfaces.h
     
+    ../shared/AfxCommandLine.cpp
+    ../shared/AfxCommandLine.h
     ../shared/AfxConsole.cpp
     ../shared/AfxConsole.h
     ../shared/AfxDetours.cpp
     ../shared/AfxDetours.h
     ../shared/StringTools.cpp
     ../shared/StringTools.h
-
-    ../AfxHookSource/AfxCommandLine.cpp
-    ../AfxHookSource/AfxCommandLine.h
 
     main.cpp
 )
