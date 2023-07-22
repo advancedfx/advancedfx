@@ -1480,8 +1480,29 @@ public:
 	}
 
 protected:
+	class CBuffers {
+	public:
+		CBuffers(size_t size) : m_Buffers(size) {
+		}
+
+		size_t GetSize() const {
+			return m_Buffers.size();
+		}
+
+		class ICapture * GetAt(size_t index) const {
+			return m_Buffers[index];
+		}
+
+		void SetAt(size_t index, class ICapture * value) {
+			m_Buffers[index] = value;
+		}
+
+	private:
+		std::vector<class ICapture *> m_Buffers;
+	};
+
 	std::vector<CAfxRenderViewStream *> m_Streams;
-	std::vector<std::queue<class ICapture *>> m_Buffers;
+	class CBuffers* m_Task = nullptr;
 	std::vector<class CCaptureNode*> m_CaptureNodes;
 
 	void SetCaptureNode(size_t index, class CCaptureNode* node) {
@@ -1528,18 +1549,24 @@ private:
 	std::atomic_int m_CapturesLeft = 0;
 
 	std::mutex m_ProcessingThreadMutex;
-	int m_CapturesReady = 0;
 	std::condition_variable m_ProcessingThreadCv;
 	std::thread m_ProcessingThread;
 	bool m_Recording = false;
 	bool m_FirstCapture = false;
 
+	std::list<class CBuffers*> m_In;
+
 	void ProcessingThreadFunc() {
 		std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
-		while (m_Recording || 0 < m_CapturesLeft) {
-			if (m_CapturesReady >= m_Streams.size()) {
+		while (m_Recording || 0 < m_CapturesLeft || !m_In.empty()) {
+			if (!m_In.empty()) {
+				m_Task = m_In.front();
+				m_In.pop_front();
+				lock.unlock();
 				CaptureEnd();
-				m_CapturesReady -= m_Streams.size();
+				delete m_Task;
+				m_Task = nullptr;
+				lock.lock();
 			} else {
 				m_ProcessingThreadCv.wait(lock);
 			}
@@ -4165,7 +4192,6 @@ private:
 
 	private:
 		std::mutex m_ProcessingThreadMutex;
-		int m_CapturesReady = 0;
 		std::condition_variable m_ProcessingThreadCv;
 		std::thread m_ProcessingThread;
 		class ICapture* m_Capture = nullptr;

@@ -1470,22 +1470,10 @@ CAfxRecordStream::CAfxRecordStream(char const * streamName, std::vector<CAfxRend
 		m_Streams[i]->AddRef();
 	}
 	m_CaptureNodes.resize(m_Streams.size());
-	m_Buffers.resize(m_Streams.size());
 }
 
 CAfxRecordStream::~CAfxRecordStream()
 {
-	for (size_t i = 0; i < m_Streams.size(); ++i)
-	{
-		auto & buffer = m_Buffers[i];
-		while(!buffer.empty())
-		{
-			// TODO: This is probably too late.
-			buffer.front()->Release();
-			buffer.pop();
-		}
-	}
-
 	for (size_t i = 0; i < m_Streams.size(); ++i)
 	{
 		m_Streams[i]->Release();
@@ -1496,17 +1484,6 @@ CAfxRecordStream::~CAfxRecordStream()
 
 void CAfxRecordStream::CaptureEnd()
 {
-	for (size_t i = 0; i < m_Buffers.size(); ++i)
-	{
-		auto & buffer = m_Buffers[i];
-		while(!buffer.empty())
-		{
-			// Usually means we did s.th. wrong if we get here.
-			buffer.front()->Release();
-			buffer.pop();
-		}
-	}
-
 	m_CapturesLeft--;
 }
 
@@ -1570,11 +1547,13 @@ void CAfxRecordStream::DoCaptureStart(IAfxMatRenderContextOrg * ctx, const AfxVi
 
 void CAfxRecordStream::OnImageBufferCaptured(size_t index, class ICapture* buffer)
 {
-	std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
 	if (buffer) buffer->AddRef();
-	m_Buffers[index].push(buffer);
-	m_CapturesReady++;
-	if (m_CapturesReady == m_Streams.size()) {
+	std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
+	if(index == 0) {
+		m_In.push_back(new CBuffers(m_Streams.size()));
+	}
+	(*m_In.rbegin())->SetAt(index, buffer);
+	if (index + 1  >= m_Streams.size()) {
 		m_ProcessingThreadCv.notify_one();
 	}
 }
@@ -1701,13 +1680,7 @@ void CAfxSingleStream::CaptureStart(bool bFirstCapture, const AfxViewportData_t&
 
 void CAfxSingleStream::CaptureEnd()
 {
-	auto & buffer0 = m_Buffers[0];
-	ICapture * capture;
-	if(buffer0.empty()) capture = nullptr;
-	else {
-		capture = buffer0.front();
-		buffer0.pop();
-	}
+	ICapture * capture = m_Task->GetAt(0);
 
 	if (capture)
 	{
@@ -1855,24 +1828,8 @@ void CAfxTwinStream::CaptureStart(bool bFirstCapture, const AfxViewportData_t& v
 
 void CAfxTwinStream::CaptureEnd()
 {
-	ICapture * captureA;
-	{
-		auto & buffer = m_Buffers[0];
-		if(buffer.empty()) captureA = nullptr;
-		else {
-			captureA = buffer.front();
-			buffer.pop();
-		}
-	}
-	ICapture * captureB;
-	{
-		auto & buffer = m_Buffers[1];
-		if(buffer.empty()) captureB = nullptr;
-		else {
-			captureB = buffer.front();
-			buffer.pop();
-		}
-	}
+	ICapture * captureA = m_Task->GetAt(0);
+	ICapture * captureB = m_Task->GetAt(1);
 
 	ICapture* outCapture = nullptr;
 
@@ -2164,26 +2121,11 @@ void CAfxMatteStream::CaptureStart(bool bFirstCapture, const AfxViewportData_t& 
 
 void CAfxMatteStream::CaptureEnd()
 {
-	ICapture * captureA;
-	{
-		auto & buffer = m_Buffers[0];
-		if(buffer.empty()) captureA = nullptr;
-		else {
-			captureA = buffer.front();
-			buffer.pop();
-		}
-	}
-	ICapture * captureB;
-	{
-		auto & buffer = m_Buffers[1];
-		if(buffer.empty()) captureB = nullptr;
-		else {
-			captureB = buffer.front();
-			buffer.pop();
-		}
-	}
+	ICapture * captureA = m_Task->GetAt(0);
+	ICapture * captureB = m_Task->GetAt(1);
 
 	ICapture* outCapture = CAfxTransformer::TransformMatte(captureA, captureB);
+
 	if (captureA) captureA->Release();
 	if (captureB) captureB->Release();
 
