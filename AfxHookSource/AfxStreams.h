@@ -1481,7 +1481,7 @@ public:
 
 protected:
 	std::vector<CAfxRenderViewStream *> m_Streams;
-	std::vector<class ICapture *> m_Buffers;
+	std::vector<std::queue<class ICapture *>> m_Buffers;
 	std::vector<class CCaptureNode*> m_CaptureNodes;
 
 	void SetCaptureNode(size_t index, class CCaptureNode* node) {
@@ -1537,10 +1537,11 @@ private:
 	void ProcessingThreadFunc() {
 		std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
 		while (m_Recording || 0 < m_CapturesLeft) {
-			m_ProcessingThreadCv.wait(lock);
-			if (m_CapturesReady == m_Streams.size()) {
+			if (m_CapturesReady >= m_Streams.size()) {
 				CaptureEnd();
-				m_CapturesReady = 0;
+				m_CapturesReady -= m_Streams.size();
+			} else {
+				m_ProcessingThreadCv.wait(lock);
 			}
 		}
 	}

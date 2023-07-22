@@ -1477,10 +1477,12 @@ CAfxRecordStream::~CAfxRecordStream()
 {
 	for (size_t i = 0; i < m_Streams.size(); ++i)
 	{
-		if (ICapture * capture = m_Buffers[i])
+		auto & buffer = m_Buffers[i];
+		while(!buffer.empty())
 		{
 			// TODO: This is probably too late.
-			capture->Release();
+			buffer.front()->Release();
+			buffer.pop();
 		}
 	}
 
@@ -1496,10 +1498,12 @@ void CAfxRecordStream::CaptureEnd()
 {
 	for (size_t i = 0; i < m_Buffers.size(); ++i)
 	{
-		if (ICapture*& captureRef = m_Buffers[i])
+		auto & buffer = m_Buffers[i];
+		while(!buffer.empty())
 		{
-			captureRef->Release();
-			captureRef = nullptr;
+			// Usually means we did s.th. wrong if we get here.
+			buffer.front()->Release();
+			buffer.pop();
 		}
 	}
 
@@ -1568,7 +1572,7 @@ void CAfxRecordStream::OnImageBufferCaptured(size_t index, class ICapture* buffe
 {
 	std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
 	if (buffer) buffer->AddRef();
-	m_Buffers[index] = buffer;
+	m_Buffers[index].push(buffer);
 	m_CapturesReady++;
 	if (m_CapturesReady == m_Streams.size()) {
 		m_ProcessingThreadCv.notify_one();
@@ -1697,7 +1701,15 @@ void CAfxSingleStream::CaptureStart(bool bFirstCapture, const AfxViewportData_t&
 
 void CAfxSingleStream::CaptureEnd()
 {
-	if (ICapture *& capture = m_Buffers[0])
+	auto & buffer0 = m_Buffers[0];
+	ICapture * capture;
+	if(buffer0.empty()) capture = nullptr;
+	else {
+		capture = buffer0.front();
+		buffer0.pop();
+	}
+
+	if (capture)
 	{
 		CAfxRenderViewStream::StreamCaptureType streamCaptureType = m_Streams[0]->StreamCaptureType_get();
 
@@ -1757,7 +1769,9 @@ void CAfxSingleStream::CaptureEnd()
 			}
 			else {
 				Tier0_Warning("AFXERROR: Could not get capture buffer for stream %s.\n", this->StreamName_get());
-			}
+			}	
+
+			capture->Release();
 		}
 		else {
 			Tier0_Warning("AFXERROR: Captured image transform failed for stream %s.\n", this->StreamName_get());
@@ -1841,8 +1855,25 @@ void CAfxTwinStream::CaptureStart(bool bFirstCapture, const AfxViewportData_t& v
 
 void CAfxTwinStream::CaptureEnd()
 {
-	class ICapture*& captureA = m_Buffers[0];
-	class ICapture*& captureB = m_Buffers[1];
+	ICapture * captureA;
+	{
+		auto & buffer = m_Buffers[0];
+		if(buffer.empty()) captureA = nullptr;
+		else {
+			captureA = buffer.front();
+			buffer.pop();
+		}
+	}
+	ICapture * captureB;
+	{
+		auto & buffer = m_Buffers[1];
+		if(buffer.empty()) captureB = nullptr;
+		else {
+			captureB = buffer.front();
+			buffer.pop();
+		}
+	}
+
 	ICapture* outCapture = nullptr;
 
 	if (CAfxTwinStream::SCT_ARedAsAlphaBColor == m_StreamCombineType)
@@ -1854,13 +1885,10 @@ void CAfxTwinStream::CaptureEnd()
 		outCapture = CAfxTransformer::TransformAColorBRedAsAlpha(captureA, captureB);
 	}
 
+	if (captureA) captureA->Release();
+	if (captureB) captureB->Release();
+
 	if (outCapture) {
-
-		if (captureA) captureA->Release();
-		captureA = nullptr;
-		if (captureB) captureB->Release();
-		captureB = nullptr;
-
 		if (const advancedfx::IImageBuffer* buffer = outCapture->GetBuffer()) {
 
 			if (nullptr == m_OutVideoStream)
@@ -1887,7 +1915,6 @@ void CAfxTwinStream::CaptureEnd()
 		}
 
 		outCapture->Release();
-
 	}
 	else {
 		Tier0_Warning("CAfxTwinStream::CaptureEnd: Combining sub-streams for stream %s, failed.\n", this->StreamName_get());
@@ -2137,16 +2164,30 @@ void CAfxMatteStream::CaptureStart(bool bFirstCapture, const AfxViewportData_t& 
 
 void CAfxMatteStream::CaptureEnd()
 {
-	class ICapture*& captureA = m_Buffers[0];
-	class ICapture*& captureB = m_Buffers[1];
+	ICapture * captureA;
+	{
+		auto & buffer = m_Buffers[0];
+		if(buffer.empty()) captureA = nullptr;
+		else {
+			captureA = buffer.front();
+			buffer.pop();
+		}
+	}
+	ICapture * captureB;
+	{
+		auto & buffer = m_Buffers[1];
+		if(buffer.empty()) captureB = nullptr;
+		else {
+			captureB = buffer.front();
+			buffer.pop();
+		}
+	}
 
-	if(ICapture* outCapture = CAfxTransformer::TransformMatte(captureA, captureB)) {
+	ICapture* outCapture = CAfxTransformer::TransformMatte(captureA, captureB);
+	if (captureA) captureA->Release();
+	if (captureB) captureB->Release();
 
-		if (captureA) captureA->Release();
-		captureA = nullptr;
-		if (captureB) captureB->Release();
-		captureB = nullptr;
-
+	if(outCapture) {
 		if (const advancedfx::IImageBuffer* buffer = outCapture->GetBuffer()) {
 
 			if (nullptr == m_OutVideoStream)
