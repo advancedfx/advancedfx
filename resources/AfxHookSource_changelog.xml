@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.121.3</version>
+<time>2023-07-24T15:50Z</time>
+<changes>
+<change type="fixed">Fixed #859 hlae sometimes freezes when recording with mirv_streams. Thanks @LuCree</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.121.2</version>
 <time>2023-07-19T15:30Z</time>
 <changes>

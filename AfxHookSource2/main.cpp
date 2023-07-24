@@ -6,6 +6,7 @@
 #include "../deps/release/prop/AfxHookSource/SourceInterfaces.h"
 #include "../deps/release/prop/cs2/Source2Client.h"
 #include "../deps/release/prop/cs2/sdk_src/public/tier1/convar.h"
+#include "../deps/release/prop/cs2/sdk_src/public/cdll_int.h"
 #include "../deps/release/prop/cs2/sdk_src/public/icvar.h"
 
 #include "../shared/AfxCommandLine.h"
@@ -13,6 +14,7 @@
 #include "../shared/AfxDetours.h"
 #include "../shared/StringTools.h"
 #include "../shared/binutils.h"
+#include "../shared/MirvCampath.h"
 
 #include <Windows.h>
 #include "../deps/release/Detours/src/detours.h"
@@ -86,6 +88,249 @@ void HookEngineDll(HMODULE engineDll) {
 
 }
 
+SOURCESDK::CS2::ISource2EngineToClient * g_pEngineToClient = nullptr;
+
+////////////////////////////////////////////////////////////////////////////////
+
+//TODO: Some bellow here might be not accurate yet.
+
+typedef void * Cs2Gloabls_t;
+Cs2Gloabls_t g_pGlobals = nullptr;
+
+float curtime_get(void)
+{
+	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals + 0*4) : 0;
+}
+
+int framecount_get(void)
+{
+	return g_pGlobals ? *(int *)((unsigned char *)g_pGlobals + 1*4) : 0;
+}
+
+float frametime_get(void)
+{
+	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +2*4) : 0;
+}
+
+float absoluteframetime_get(void)
+{
+	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +3*4) : 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+CamPath g_CamPath;
+
+struct CameraData_s {
+	float Origin[3];
+	float Angles[3];
+	float Fov;
+
+	CameraData_s(){
+
+	}
+
+	CameraData_s(float origin[3], float angles[3], float fov)
+	{
+		Origin[0] = origin[0];
+		Origin[1] = origin[1];
+		Origin[2] = origin[2];
+
+		Angles[0] = angles[0];
+		Angles[1] = angles[1];
+		Angles[2] = angles[2];
+
+		Fov = fov;
+	}
+
+	CameraData_s(const CameraData_s & other) {
+		*this = other;
+	}
+
+	CameraData_s & operator=(const CameraData_s & other) {
+		Origin[0] = other.Origin[0];
+		Origin[1] = other.Origin[1];
+		Origin[2] = other.Origin[2];
+
+		Angles[0] = other.Angles[0];
+		Angles[1] = other.Angles[1];
+		Angles[2] = other.Angles[2];
+
+		Fov = other.Fov;
+
+		return * this;
+	}
+	
+
+} g_LastCameraData;
+
+class CMirvCampath_Time : public IMirvCampath_Time
+{
+public:
+	virtual double GetTime() {
+		// Can be paused time, we don't support that currently.
+
+		return curtime_get();
+	}
+	virtual double GetCurTime() {
+		return curtime_get();
+	}
+	virtual bool GetCurrentDemoTick(int& outTick) {
+		return false;
+	}
+	virtual bool GetCurrentDemoTime(double& outDemoTime) {
+		return false;
+	}
+	virtual bool GetDemoTickFromDemoTime(double curTime, double time, int& outTick) {
+		return false;
+	}
+	virtual bool GetDemoTimeFromClientTime(double curTime, double time, double& outDemoTime) {
+		return false;
+	}
+} g_MirvCampath_Time;
+
+class CMirvCampath_Camera : public IMirvCampath_Camera
+{
+public:
+	virtual SMirvCameraValue GetCamera() {
+		return SMirvCameraValue(
+			g_LastCameraData.Origin[0],
+			g_LastCameraData.Origin[1],
+			g_LastCameraData.Origin[2],
+			g_LastCameraData.Angles[0],
+			g_LastCameraData.Angles[1],
+			g_LastCameraData.Angles[2],
+			g_LastCameraData.Fov
+		);
+	}
+} g_MirvCampath_Camera;
+
+
+CON_COMMAND(mirv_campath, "camera paths")
+{
+	if (nullptr == g_pGlobals)
+	{
+		advancedfx::Warning("Error: Hooks not installed.\n");
+		return;
+	}
+
+	MirvCampath_ConCommand(args, advancedfx::Message, advancedfx::Warning, &g_CamPath, &g_MirvCampath_Time, &g_MirvCampath_Camera, nullptr);
+}
+
+bool CS2_Client_CSetupView_Trampoline_IsPlayingDemo(void *ThisCViewSetup) {
+	if(!g_pEngineToClient) return false;
+
+	bool originOrAnglesOverriden = false;
+
+	float curTime = curtime_get(); //TODO: + m_PausedTime
+
+	float *pFov = (float*)((unsigned __int64)ThisCViewSetup + 0x4d8);
+	float *pViewOrigin = (float*)((unsigned __int64)ThisCViewSetup + 0x4e0);
+	float *pViewAngles = (float*)((unsigned __int64)ThisCViewSetup + 0x4f8);
+
+	//advancedfx::Message("%f: (%f,%f,%f) (%f,%f,%f) [%f]\n",curTime,pViewOrigin[0],pViewOrigin[1],pViewOrigin[2],pViewAngles[0],pViewAngles[1],pViewAngles[2],*pFov);
+
+	CameraData_s cameraData(pViewOrigin, pViewAngles, *pFov);
+
+	if (g_CamPath.Enabled_get() && g_CamPath.CanEval())
+	{
+		double campathCurTime = curTime - g_CamPath.GetOffset();
+
+		// no extrapolation:
+		if (g_CamPath.GetLowerBound() <= campathCurTime && campathCurTime <= g_CamPath.GetUpperBound())
+		{
+			CamPathValue val = g_CamPath.Eval(campathCurTime);
+			QEulerAngles ang = val.R.ToQREulerAngles().ToQEulerAngles();
+
+			//Tier0_Msg("================",curTime);
+			//Tier0_Msg("currenTime = %f",curTime);
+			//Tier0_Msg("vCp = %f %f %f\n", val.X, val.Y, val.Z);
+
+			originOrAnglesOverriden = true;
+
+			cameraData.Origin[0] = (float)val.X;
+			cameraData.Origin[1] = (float)val.Y;
+			cameraData.Origin[2] = (float)val.Z;
+
+			cameraData.Angles[0] = (float)ang.Pitch;
+			cameraData.Angles[1] = (float)ang.Yaw;
+			cameraData.Angles[2] = (float)ang.Roll;
+
+			cameraData.Fov = (float)val.Fov;
+		}
+	}
+
+	if(originOrAnglesOverriden) {
+		pViewOrigin[0] = cameraData.Origin[0];
+		pViewOrigin[1] = cameraData.Origin[1];
+		pViewOrigin[2] = cameraData.Origin[2];
+
+		pViewAngles[0] = cameraData.Angles[0];
+		pViewAngles[1] = cameraData.Angles[1];
+		pViewAngles[2] = cameraData.Angles[2];
+
+		*pFov = cameraData.Fov;
+	}
+
+	g_LastCameraData = cameraData;
+
+	return g_pEngineToClient->IsPlayingDemo();
+}
+
+void HookClientDll(HMODULE clientDll) {
+	static bool bFirstCall = true;
+	if(!bFirstCall) return;
+	bFirstCall = false;
+
+	// 
+	/*
+		This is where it checks for engine->IsPlayingDemo() (and afterwards for cl_demoviewoverriode (float))
+		before under these conditions it is calling CalcDemoViewOverride, so this is in CViewRender::SetUpView:
+
+.text:0000000180768B22                 mov     rcx, cs:qword_18163E0F0
+.text:0000000180768B29                 mov     rax, [rcx]
+.text:0000000180768B2C                 call    qword ptr [rax+108h]
+.text:0000000180768B32                 mov     rbp, [rsp+978h+var_28]
+.text:0000000180768B3A                 xorps   xmm6, xmm6
+.text:0000000180768B3D                 test    al, al
+.text:0000000180768B3F                 jz      short loc_180768BB8
+.text:0000000180768B41
+.text:0000000180768B41 loc_180768B41:                          ; DATA XREF: .pdata:000000018184283C↓o
+.text:0000000180768B41                                         ; .pdata:0000000181842848↓o
+.text:0000000180768B41                 mov     edx, 0FFFFFFFFh
+	*/
+	{
+		Afx::BinUtils::ImageSectionsReader sections((HMODULE)clientDll);
+		Afx::BinUtils::MemRange textRange = sections.GetMemRange();
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8B 0D ?? ?? ?? ?? 48 8B 01 FF 90 08 01 00 00 48 8B AC 24 50 09 00 00 0F 57 F6 84 C0 74 77 BA FF FF FF FF");
+		if (!result.IsEmpty()) {
+			/*
+				These are the top 16 bytes we change to:
+
+00007fff`95518b22 4889f1               mov     rcx, rsi
+00007fff`95518b25 48b8???????????????? mov     rax, ???????????????? <-- here we load our hook's address
+00007fff`95518b2f ff10                 call    qword ptr [rax]
+00007fff`95518b31 90                   nop
+			*/
+			unsigned char asmCode[16]={
+				0x48, 0x89, 0xf1,
+				0x48, 0xb8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+				0xff, 0x10,
+				0x90
+			};
+			static LPVOID ptr = CS2_Client_CSetupView_Trampoline_IsPlayingDemo;
+			LPVOID ptrPtr = &ptr;
+			memcpy(&asmCode[5], &ptrPtr, sizeof(LPVOID));
+
+			MdtMemBlockInfos mbis;
+			MdtMemAccessBegin((LPVOID)result.Start, 16, &mbis);
+			memcpy((LPVOID)result.Start, asmCode, 16);
+			MdtMemAccessEnd(&mbis);
+		}
+		else
+			ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}	
+}
 
 SOURCESDK::CreateInterfaceFn g_AppSystemFactory = 0;
 SOURCESDK::CS2::IMemAlloc *SOURCESDK::CS2::g_pMemAlloc = 0;
@@ -106,6 +351,11 @@ int new_CCS2_Client_Connect(void* This, SOURCESDK::CreateInterfaceFn appSystemFa
 		{
 			//
 		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+		if (g_pEngineToClient = (SOURCESDK::CS2::ISource2EngineToClient*)appSystemFactory(SOURCESDK_CS2_ENGINE_TO_CLIENT_INTERFACE_VERSION, NULL)) {
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
 
 	return old_CCS2_Client_Connect(This, appSystemFactory);
@@ -120,7 +370,7 @@ CON_COMMAND(mirv_suppress_disconnects, "Suppresses given number disconnect comma
 	}
 	advancedfx::Message(
 		"mirv_suppress_disconnects <iSuppressTimes> - Use -1 to always suppress, or a positive number to suppress a certain count.\n"
-		"Eample: \"mirv_suppress_disconnects -1; playdemo test.dem\" - Please don't report bugs for this to Valve, the system is not meant to be used yet!\n"
+		"Eample: \"mirv_suppress_disconnects 1; playdemo test.dem\" - Please don't report bugs for this to Valve, the system is not meant to be used yet!\n"
 		"Current value: %i\n",
 		g_nIgnoreNextDisconnects
 	);
@@ -175,12 +425,23 @@ int new_CCS2_Client_Init(void* This) {
 	return result;
 }
 
+typedef void * (* CS2_Client_SetGlobals_t)(void* This, void * pGlobals);
+CS2_Client_SetGlobals_t old_CS2_Client_SetGlobals;
+void *  new_CS2_Client_SetGlobals(void* This, void * pGlobals) {
+
+	g_pGlobals = (Cs2Gloabls_t)pGlobals;
+
+	return old_CS2_Client_SetGlobals(This, pGlobals);
+}
+
+
 void CS2_HookClientDllInterface(void * iface)
 {
 	void ** vtable = *(void***)iface;
 
 	AfxDetourPtr((PVOID *)&(vtable[0]), new_CCS2_Client_Connect, (PVOID*)&old_CCS2_Client_Connect);
 	AfxDetourPtr((PVOID *)&(vtable[3]), new_CCS2_Client_Init, (PVOID*)&old_CCS2_Client_Init);
+	AfxDetourPtr((PVOID *)&(vtable[11]), new_CS2_Client_SetGlobals, (PVOID*)&old_CS2_Client_SetGlobals);
 }
 
 SOURCESDK::CreateInterfaceFn old_Client_CreateInterface = 0;
@@ -400,6 +661,8 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		bFirstClient = false;
 
 		g_H_ClientDll = hModule;
+
+		HookClientDll(hModule);
 	}
 }
 

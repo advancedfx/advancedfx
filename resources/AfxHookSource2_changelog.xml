@@ -3,6 +3,18 @@
 
 <changelog>
 
+
+<release>
+<name>AfxHookSource2</name>
+<version>0.1.0</version>
+<time>2023-07-24T15:50Z</time>
+<changes>
+<change type="added">
+Added mirv_campath. There's currently no mirv_input camera, so you can only make campaths on a map or in a HLTV demo I think. You could work around mirv_input missing for POV demos using mirv_cvar_unhide_all, cl_demoviewoverride 1, and setang / setang_exact (because you can't rotate the view otherwise) or similar tricks maybe.
+</change>
+</changes>
+</release>
+
 <release>
 <name>AfxHookSource2</name>
 <version>0.0.2</version>

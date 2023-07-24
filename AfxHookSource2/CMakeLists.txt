@@ -34,6 +34,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../deps/release/prop/cs2/sdk_src/public/tier0/memalloc.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/convar.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/iconvar.h
+    ../deps/release/prop/cs2/sdk_src/public/cdll_int.h    
     ../deps/release/prop/cs2/sdk_src/public/icvar.h    
     ../deps/release/prop/AfxHookSource/SourceSdkShared.cpp
     ../deps/release/prop/AfxHookSource/SourceSdkShared.h
@@ -45,10 +46,16 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/AfxConsole.h
     ../shared/AfxDetours.cpp
     ../shared/AfxDetours.h
+    ../shared/AfxMath.cpp
+    ../shared/AfxMath.h
+    ../shared/CamPath.cpp
+    ../shared/CamPath.h
     ../shared/StringTools.cpp
     ../shared/StringTools.h
     ../shared/binutils.cpp
     ../shared/binutils.h
+    ../shared/MirvCampath.cpp
+    ../shared/MirvCampath.h
 
     main.cpp
 
