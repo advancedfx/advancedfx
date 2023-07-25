@@ -2625,7 +2625,7 @@ REGISTER_CMD_FUNC(movie_ffmpeg)
 
 				if (1 == selectedStreams.size())
 				{
-					pEngfuncs->Con_Printf("%s %s enabled = %i\n", arg0, arg1, g_Filming_Stream[selectedStreams.front()] ? 1 : 0);
+					pEngfuncs->Con_Printf("%s %s enabled = %i\n", arg0, arg1, g_FilmingStream_FfmpegEnable[selectedStreams.front()] ? 1 : 0);
 					return;
 				}
 			}
