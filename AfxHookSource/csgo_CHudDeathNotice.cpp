@@ -1412,7 +1412,7 @@ void __fastcall MyCCSGO_HudDeathNotice_FireGameEvent(CCSGO_HudDeathNotice_t * Th
 
 	if(0 < g_HudDeathNoticeHookGlobals.Settings.Debug)
 	{
-		Tier0_Msg("CHudDeathNotice::FireGameEvent: uidAttaker=%i, uidVictim=%i, uidAssister=%i weapon=\"%s\"\n", uidAttacker, uidVictim, uidAssister, event->GetString("weapon"));
+		Tier0_Msg("CHudDeathNotice::FireGameEvent: uidAttacker=%i, uidVictim=%i, uidAssister=%i weapon=\"%s\"\n", uidAttacker, uidVictim, uidAssister, event->GetString("weapon"));
 	}
 
 	for(std::list<DeathMsgFilterEntry>::iterator it = g_HudDeathNoticeHookGlobals.Filter.begin(); it != g_HudDeathNoticeHookGlobals.Filter.end(); it++)
