@@ -6,6 +6,20 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.2.0</version>
+<time>2023-08-26T19:11Z</time>
+<changes>
+<change type="added">
+Added mirv_input.
+</change>
+<change type="fixed">
+Fixed mirv_campath not working with latest CS2 update.
+</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.1.0</version>
 <time>2023-07-24T15:50Z</time>
 <changes>

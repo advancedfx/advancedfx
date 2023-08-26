@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.121.4</version>
+<time>2023-08-26T19:11Z</time>
+<changes>
+<change type="updated">Updated mirv_input / shared code with AfxHookSource2.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.121.3</version>
 <time>2023-07-24T15:50Z</time>
 <changes>
