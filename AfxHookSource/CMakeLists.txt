@@ -127,8 +127,6 @@ target_sources(AfxHookSource PRIVATE
     addresses.h
     AfxClasses.cpp
     AfxClasses.h
-    AfxHookSourceInput.cpp
-    AfxHookSourceInput.h
     AfxInterfaces.h
     AfxInterop.cpp
     AfxInterop.h
@@ -200,8 +198,6 @@ target_sources(AfxHookSource PRIVATE
     MirvCam.cpp
     MirvCam.h
     MirvCommands.cpp
-    MirvInputMem.cpp
-    MirvInputMem.h
     MirvPgl.cpp
     MirvPgl.h
     MirvTime.cpp
@@ -354,6 +350,8 @@ target_sources(AfxHookSource PRIVATE
     ../shared/ImageBufferPoolThreadSafe.h
     ../shared/MirvCampath.cpp
     ../shared/MirvCampath.h
+    ../shared/MirvInput.cpp
+    ../shared/MirvInput.h
     ../shared/OpenExrOutput.cpp
     ../shared/OpenExrOutput.h
     ../shared/RawOutput.cpp

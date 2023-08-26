@@ -8,6 +8,7 @@
 #include "../deps/release/prop/cs2/sdk_src/public/tier1/convar.h"
 #include "../deps/release/prop/cs2/sdk_src/public/cdll_int.h"
 #include "../deps/release/prop/cs2/sdk_src/public/icvar.h"
+#include "../deps/release/prop/cs2/sdk_src/public/igameuiservice.h"
 
 #include "../shared/AfxCommandLine.h"
 #include "../shared/AfxConsole.h"
@@ -15,9 +16,13 @@
 #include "../shared/StringTools.h"
 #include "../shared/binutils.h"
 #include "../shared/MirvCampath.h"
+#include "../shared/MirvInput.h"
 
 #include <Windows.h>
 #include "../deps/release/Detours/src/detours.h"
+
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 advancedfx::CCommandLine  * g_CommandLine = nullptr;
 
@@ -119,50 +124,300 @@ float absoluteframetime_get(void)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CamPath g_CamPath;
+SOURCESDK::CS2::IGameUIService * g_pGameUIService = nullptr;
 
-struct CameraData_s {
-	float Origin[3];
-	float Angles[3];
-	float Fov;
+class MirvInputEx : private IMirvInputDependencies
+{
+public:
+	MirvInputEx() {
+		LastWidth = 1920;
+		LastHeight = 1080;
 
-	CameraData_s(){
+		LastCameraOrigin[0] = 0.0;
+		LastCameraOrigin[1] = 0.0;
+		LastCameraOrigin[2] = 0.0;
+		LastCameraAngles[0] = 0.0;
+		LastCameraAngles[1] = 0.0;
+		LastCameraAngles[2] = 0.0;
+		LastCameraFov = 90.0;
 
+		GameCameraOrigin[0] = 0.0;
+		GameCameraOrigin[1] = 0.0;
+		GameCameraOrigin[2] = 0.0;
+		GameCameraAngles[0] = 0.0;
+		GameCameraAngles[1] = 0.0;
+		GameCameraAngles[2] = 0.0;
+		GameCameraFov = 90.0;
+
+		LastFrameTime = 0;
+
+		m_MirvInput = new MirvInput(this);
 	}
 
-	CameraData_s(float origin[3], float angles[3], float fov)
+	~MirvInputEx() {
+		delete this;
+	}
+
+	MirvInput * m_MirvInput;
+
+	double LastCameraOrigin[3];
+	double LastCameraAngles[3];
+	double LastCameraFov;
+
+	double GameCameraOrigin[3];
+	double GameCameraAngles[3];
+	double GameCameraFov;
+
+	double LastFrameTime;
+
+	int LastWidth;
+	int LastHeight;
+
+private:
+	virtual bool GetSuspendMirvInput() override {
+		return g_pGameUIService && g_pGameUIService->Con_IsVisible();
+	}
+
+	virtual void GetLastCameraData(double & x, double & y, double & z, double & rX, double & rY, double & rZ, double & fov) override {
+		x = LastCameraOrigin[0];
+		y = LastCameraOrigin[1];
+		z = LastCameraOrigin[2];
+		rX = LastCameraAngles[0];
+		rY = LastCameraAngles[1];
+		rZ = LastCameraAngles[2];
+		fov = LastCameraFov;
+	}
+
+	virtual void GetGameCameraData(double & x, double & y, double & z, double & rX, double & rY, double & rZ, double & fov) override {
+		x = GameCameraOrigin[0];
+		y = GameCameraOrigin[1];
+		z = GameCameraOrigin[2];
+		rX = GameCameraAngles[0];
+		rY = GameCameraAngles[1];
+		rZ = GameCameraAngles[2];
+		fov = GameCameraFov;
+	}
+
+	virtual double GetInverseScaledFov(double fov) override {
+		return ScaleFovInverse(LastWidth, LastHeight, fov);
+	}
+
+private:
+
+	double ScaleFovInverse(double width, double height, double fov) {
+		if (!height) return fov;
+
+		double engineAspectRatio = width / height;
+		double defaultAscpectRatio = 4.0 / 3.0;
+		double ratio = engineAspectRatio / defaultAscpectRatio;
+		double t = tan(0.5 * fov * (2.0 * M_PI / 360.0));
+		double halfAngle = atan(t / ratio);
+		return 2.0 * halfAngle / (2.0 * M_PI / 360.0);
+	}
+
+} g_MirvInputEx;
+
+CON_COMMAND(mirv_input, "Input mode configuration.")
+{
+	g_MirvInputEx.m_MirvInput->ConCommand(args);
+}
+
+
+WNDPROC g_NextWindProc;
+static bool g_afxWindowProcSet = false;
+
+LRESULT CALLBACK new_Afx_WindowProc(
+	__in HWND hwnd,
+	__in UINT uMsg,
+	__in WPARAM wParam,
+	__in LPARAM lParam
+)
+{
+//	if (AfxHookSource::Gui::WndProcHandler(hwnd, uMsg, wParam, lParam))
+//		return 0;
+
+	switch(uMsg)
 	{
-		Origin[0] = origin[0];
-		Origin[1] = origin[1];
-		Origin[2] = origin[2];
+	case WM_ACTIVATE:
+		g_MirvInputEx.m_MirvInput->Supply_Focus(LOWORD(wParam) != 0);
+		break;
+	case WM_CHAR:
+		if(g_MirvInputEx.m_MirvInput->Supply_CharEvent(wParam, lParam))
+			return 0;
+		break;
+	case WM_KEYDOWN:
+		if(g_MirvInputEx.m_MirvInput->Supply_KeyEvent(MirvInput::KS_DOWN, wParam, lParam))
+			return 0;
+		break;
+	case WM_KEYUP:
+		if(g_MirvInputEx.m_MirvInput->Supply_KeyEvent(MirvInput::KS_UP,wParam, lParam))
+			return 0;
+		break;
+	case WM_LBUTTONDBLCLK:
+	case WM_LBUTTONDOWN:
+	case WM_LBUTTONUP:
+	case WM_MBUTTONDBLCLK:
+	case WM_MBUTTONDOWN:
+	case WM_MBUTTONUP:
+	case WM_RBUTTONDBLCLK:
+	case WM_RBUTTONDOWN:
+	case WM_RBUTTONUP:
+	case WM_MOUSEMOVE:
+	case WM_MOUSEWHEEL:
+		if (g_MirvInputEx.m_MirvInput->Supply_MouseEvent(uMsg, wParam, lParam))
+			return 0;
+		break;
+	case WM_INPUT:
+		{
+			HRAWINPUT hRawInput = (HRAWINPUT)lParam;
+			RAWINPUT inp;
+			UINT size = sizeof(inp);
 
-		Angles[0] = angles[0];
-		Angles[1] = angles[1];
-		Angles[2] = angles[2];
+			UINT getRawInputResult = GetRawInputData(hRawInput, RID_INPUT, &inp, &size, sizeof(RAWINPUTHEADER));
 
-		Fov = fov;
+			if(-1 != getRawInputResult && inp.header.dwType == RIM_TYPEMOUSE)
+			{
+				RAWMOUSE * rawmouse = &inp.data.mouse;
+				LONG dX, dY;
+
+				if((rawmouse->usFlags & 0x01) == MOUSE_MOVE_RELATIVE)
+				{
+					dX = rawmouse->lLastX;
+					dY = rawmouse->lLastY;
+				}
+				else
+				{
+					static bool initial = true;
+					static LONG lastX = 0;
+					static LONG lastY = 0;
+
+					if(initial)
+					{
+						initial = false;
+						lastX = rawmouse->lLastX;
+						lastY = rawmouse->lLastY;
+					}
+
+					dX = rawmouse->lLastX -lastX;
+					dY = rawmouse->lLastY -lastY;
+
+					lastX = rawmouse->lLastX;
+					lastY = rawmouse->lLastY;
+				}
+
+				if (g_MirvInputEx.m_MirvInput->Supply_RawMouseMotion(dX, dY))
+					return DefWindowProcW(hwnd, uMsg, wParam, lParam);
+			}
+		}
+		break;
+	}
+	return CallWindowProcW(g_NextWindProc, hwnd, uMsg, wParam, lParam);
+}
+
+// TODO: this is risky, actually we should track the hWnd maybe.
+LONG_PTR WINAPI new_GetWindowLongPtrW(
+  __in HWND hWnd,
+  __in int  nIndex
+)
+{
+	if(nIndex == GWLP_WNDPROC)
+	{
+		if(g_afxWindowProcSet)
+		{
+			return (LONG_PTR)g_NextWindProc;
+		}
 	}
 
-	CameraData_s(const CameraData_s & other) {
-		*this = other;
+	return GetWindowLongPtrW(hWnd, nIndex);
+}
+
+// TODO: this is risky, actually we should track the hWnd maybe.
+LONG_PTR WINAPI new_SetWindowLongPtrW(
+  __in HWND     hWnd,
+  __in int      nIndex,
+  __in LONG_PTR dwNewLong
+)
+{
+	if(nIndex == GWLP_WNDPROC)
+	{
+		LONG lResult = SetWindowLongPtrW(hWnd, nIndex, (LONG_PTR)new_Afx_WindowProc);
+
+		if(!g_afxWindowProcSet)
+		{
+			g_afxWindowProcSet = true;
+		}
+		else
+		{
+			lResult = (LONG_PTR)g_NextWindProc;
+		}
+
+		g_NextWindProc = (WNDPROC)dwNewLong;
+
+		return lResult;
 	}
 
-	CameraData_s & operator=(const CameraData_s & other) {
-		Origin[0] = other.Origin[0];
-		Origin[1] = other.Origin[1];
-		Origin[2] = other.Origin[2];
+	return SetWindowLongPtrW(hWnd, nIndex, dwNewLong);
+}
 
-		Angles[0] = other.Angles[0];
-		Angles[1] = other.Angles[1];
-		Angles[2] = other.Angles[2];
+BOOL WINAPI new_GetCursorPos(
+	__out LPPOINT lpPoint
+)
+{
+	BOOL result = GetCursorPos(lpPoint);
 
-		Fov = other.Fov;
+//	if (AfxHookSource::Gui::OnGetCursorPos(lpPoint))
+//		return TRUE;
 
-		return * this;
-	}
-	
+	g_MirvInputEx.m_MirvInput->Supply_GetCursorPos(lpPoint);
 
-} g_LastCameraData;
+	return result;
+}
+
+BOOL WINAPI new_SetCursorPos(
+	__in int X,
+	__in int Y
+)
+{
+//	if (AfxHookSource::Gui::OnSetCursorPos(X, Y))
+//		return TRUE;
+
+	g_MirvInputEx.m_MirvInput->Supply_SetCursorPos(X,Y);
+
+	return SetCursorPos(X,Y);
+}
+
+HCURSOR WINAPI new_SetCursor(__in_opt HCURSOR hCursor)
+{
+//	HCURSOR result;
+
+//	if (AfxHookSource::Gui::OnSetCursor(hCursor, result))
+//		return result;
+
+	return SetCursor(hCursor);
+}
+
+HWND WINAPI new_SetCapture(__in HWND hWnd)
+{
+//	HWND result;
+
+//	if (AfxHookSource::Gui::OnSetCapture(hWnd, result))
+//		return result;
+
+	return SetCapture(hWnd);
+}
+
+BOOL WINAPI new_ReleaseCapture()
+{
+//	if (AfxHookSource::Gui::OnReleaseCapture())
+//		return TRUE;
+
+	return ReleaseCapture();
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+CamPath g_CamPath;
 
 class CMirvCampath_Time : public IMirvCampath_Time
 {
@@ -193,14 +448,14 @@ class CMirvCampath_Camera : public IMirvCampath_Camera
 {
 public:
 	virtual SMirvCameraValue GetCamera() {
-		return SMirvCameraValue(
-			g_LastCameraData.Origin[0],
-			g_LastCameraData.Origin[1],
-			g_LastCameraData.Origin[2],
-			g_LastCameraData.Angles[0],
-			g_LastCameraData.Angles[1],
-			g_LastCameraData.Angles[2],
-			g_LastCameraData.Fov
+		return SMirvCameraValue(			
+			g_MirvInputEx.LastCameraOrigin[0],
+			g_MirvInputEx.LastCameraOrigin[1],
+			g_MirvInputEx.LastCameraOrigin[2],
+			g_MirvInputEx.LastCameraAngles[0],
+			g_MirvInputEx.LastCameraAngles[1],
+			g_MirvInputEx.LastCameraAngles[2],
+			g_MirvInputEx.LastCameraFov
 		);
 	}
 } g_MirvCampath_Camera;
@@ -217,20 +472,46 @@ CON_COMMAND(mirv_campath, "camera paths")
 	MirvCampath_ConCommand(args, advancedfx::Message, advancedfx::Warning, &g_CamPath, &g_MirvCampath_Time, &g_MirvCampath_Camera, nullptr);
 }
 
+static bool g_bViewOverriden = false;
+static float g_fFovOverride = 90.0f;
+static float * g_pFov = nullptr;
+
 bool CS2_Client_CSetupView_Trampoline_IsPlayingDemo(void *ThisCViewSetup) {
 	if(!g_pEngineToClient) return false;
 
 	bool originOrAnglesOverriden = false;
 
 	float curTime = curtime_get(); //TODO: + m_PausedTime
+	float absTime = absoluteframetime_get();
 
-	float *pFov = (float*)((unsigned __int64)ThisCViewSetup + 0x4d8);
-	float *pViewOrigin = (float*)((unsigned __int64)ThisCViewSetup + 0x4e0);
-	float *pViewAngles = (float*)((unsigned __int64)ThisCViewSetup + 0x4f8);
+	int *pWidth = (int*)((unsigned char *)ThisCViewSetup + 0x474);
+	int *pHeight = (int*)((unsigned char *)ThisCViewSetup + 0x47c);
+
+	float *pFov = (float*)((unsigned char *)ThisCViewSetup + 0x4d8);
+	float *pViewOrigin = (float*)((unsigned char *)ThisCViewSetup + 0x4e0);
+	float *pViewAngles = (float*)((unsigned char *)ThisCViewSetup + 0x4f8);
+
+	int width = *pWidth;
+	int height = *pHeight;
+	float Tx = pViewOrigin[0];
+	float Ty = pViewOrigin[1];
+	float Tz = pViewOrigin[2];
+	float Rx = pViewAngles[0];
+	float Ry = pViewAngles[1];
+	float Rz = pViewAngles[2];
+	float Fov = *pFov;
+
+	//advancedfx::Message("Console: %i [%ix%i]\n", (g_pGameUIService->Con_IsVisible()?1:0),width,height);
 
 	//advancedfx::Message("%f: (%f,%f,%f) (%f,%f,%f) [%f]\n",curTime,pViewOrigin[0],pViewOrigin[1],pViewOrigin[2],pViewAngles[0],pViewAngles[1],pViewAngles[2],*pFov);
 
-	CameraData_s cameraData(pViewOrigin, pViewAngles, *pFov);
+	g_MirvInputEx.GameCameraOrigin[0] = Tx;
+	g_MirvInputEx.GameCameraOrigin[1] = Ty;
+	g_MirvInputEx.GameCameraOrigin[2] = Tz;
+	g_MirvInputEx.GameCameraAngles[0] = Rx;
+	g_MirvInputEx.GameCameraAngles[1] = Ry;
+	g_MirvInputEx.GameCameraAngles[2] = Rz;
+	g_MirvInputEx.GameCameraFov = Fov;
 
 	if (g_CamPath.Enabled_get() && g_CamPath.CanEval())
 	{
@@ -248,33 +529,64 @@ bool CS2_Client_CSetupView_Trampoline_IsPlayingDemo(void *ThisCViewSetup) {
 
 			originOrAnglesOverriden = true;
 
-			cameraData.Origin[0] = (float)val.X;
-			cameraData.Origin[1] = (float)val.Y;
-			cameraData.Origin[2] = (float)val.Z;
+			Tx = (float)val.X;
+			Ty = (float)val.Y;
+			Tz = (float)val.Z;
 
-			cameraData.Angles[0] = (float)ang.Pitch;
-			cameraData.Angles[1] = (float)ang.Yaw;
-			cameraData.Angles[2] = (float)ang.Roll;
+			Rx = (float)ang.Pitch;
+			Ry = (float)ang.Yaw;
+			Rz = (float)ang.Roll;
 
-			cameraData.Fov = (float)val.Fov;
+			Fov = (float)val.Fov;
 		}
 	}
 
+	if(g_MirvInputEx.m_MirvInput->Override(g_MirvInputEx.LastFrameTime, Tx,Ty,Tz,Rx,Ry,Rz,Fov)) originOrAnglesOverriden = true;
+
 	if(originOrAnglesOverriden) {
-		pViewOrigin[0] = cameraData.Origin[0];
-		pViewOrigin[1] = cameraData.Origin[1];
-		pViewOrigin[2] = cameraData.Origin[2];
+		pViewOrigin[0] = Tx;
+		pViewOrigin[1] = Ty;
+		pViewOrigin[2] = Tz;
 
-		pViewAngles[0] = cameraData.Angles[0];
-		pViewAngles[1] = cameraData.Angles[1];
-		pViewAngles[2] = cameraData.Angles[2];
+		pViewAngles[0] = Rx;
+		pViewAngles[1] = Ry;
+		pViewAngles[2] = Rz;
 
-		*pFov = cameraData.Fov;
+		*pFov = Fov;
+
+		g_bViewOverriden = true;
+		g_fFovOverride = Fov;
+		g_pFov = pFov;
+	} else {
+		g_bViewOverriden = false;
 	}
 
-	g_LastCameraData = cameraData;
+	g_MirvInputEx.LastCameraOrigin[0] = Tx;
+	g_MirvInputEx.LastCameraOrigin[1] = Ty;
+	g_MirvInputEx.LastCameraOrigin[2] = Tz;
+	g_MirvInputEx.LastCameraAngles[0] = Rx;
+	g_MirvInputEx.LastCameraAngles[1] = Ry;
+	g_MirvInputEx.LastCameraAngles[2] = Rz;
+	g_MirvInputEx.LastCameraFov = Fov;
+
+	g_MirvInputEx.LastFrameTime = absTime;
+
+	g_MirvInputEx.LastWidth = width;
+	g_MirvInputEx.LastHeight = height;
+
+	g_MirvInputEx.m_MirvInput->Supply_MouseFrameEnd();
 
 	return g_pEngineToClient->IsPlayingDemo();
+}
+
+float CS2_Client_CSetupView_InsideComputeViewMatrix(void) {
+	if(g_bViewOverriden) {
+		float * pWeaponFov = g_pFov + 1;
+		float oldFov = *g_pFov;
+		*g_pFov = g_fFovOverride;
+		return 0 != *pWeaponFov ? g_fFovOverride - oldFov : 0; // update fov difference if necessary.
+	}
+	return 0;
 }
 
 void HookClientDll(HMODULE clientDll) {
@@ -282,27 +594,27 @@ void HookClientDll(HMODULE clientDll) {
 	if(!bFirstCall) return;
 	bFirstCall = false;
 
-	// 
+	Afx::BinUtils::ImageSectionsReader sections((HMODULE)clientDll);
+	Afx::BinUtils::MemRange textRange = sections.GetMemRange();
+
 	/*
-		This is where it checks for engine->IsPlayingDemo() (and afterwards for cl_demoviewoverriode (float))
+		This is where it checks for engine->IsPlayingDemo() (and afterwards for cl_demoviewoverride (float))
 		before under these conditions it is calling CalcDemoViewOverride, so this is in CViewRender::SetUpView:
 
-.text:0000000180768B22                 mov     rcx, cs:qword_18163E0F0
-.text:0000000180768B29                 mov     rax, [rcx]
-.text:0000000180768B2C                 call    qword ptr [rax+108h]
-.text:0000000180768B32                 mov     rbp, [rsp+978h+var_28]
-.text:0000000180768B3A                 xorps   xmm6, xmm6
-.text:0000000180768B3D                 test    al, al
-.text:0000000180768B3F                 jz      short loc_180768BB8
-.text:0000000180768B41
-.text:0000000180768B41 loc_180768B41:                          ; DATA XREF: .pdata:000000018184283C↓o
-.text:0000000180768B41                                         ; .pdata:0000000181842848↓o
-.text:0000000180768B41                 mov     edx, 0FFFFFFFFh
+.text:0000000180778701                 mov     rcx, cs:qword_18166D8E8
+.text:0000000180778708                 mov     rax, [rcx]
+.text:000000018077870B                 call    qword ptr [rax+108h]
+.text:0000000180778711                 mov     rbp, [rsp+978h+var_30]
+.text:0000000180778719                 xorps   xmm6, xmm6
+.text:000000018077871C                 test    al, al
+.text:000000018077871E                 jz      short loc_180778797
+.text:0000000180778720
+.text:0000000180778720 loc_180778720:                          ; DATA XREF: .pdata:00000001818724D4↓o
+.text:0000000180778720                                         ; .pdata:00000001818724E0↓o
+.text:0000000180778720                 mov     edx, 0FFFFFFFFh
 	*/
 	{
-		Afx::BinUtils::ImageSectionsReader sections((HMODULE)clientDll);
-		Afx::BinUtils::MemRange textRange = sections.GetMemRange();
-		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8B 0D ?? ?? ?? ?? 48 8B 01 FF 90 08 01 00 00 48 8B AC 24 50 09 00 00 0F 57 F6 84 C0 74 77 BA FF FF FF FF");
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8B 0D ?? ?? ?? ?? 48 8B 01 FF 90 08 01 00 00 48 8B AC 24 48 09 00 00 0F 57 F6 84 C0 74 77 BA FF FF FF FF");
 		if (!result.IsEmpty()) {
 			/*
 				These are the top 16 bytes we change to:
@@ -330,6 +642,80 @@ void HookClientDll(HMODULE clientDll) {
 		else
 			ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}	
+
+	/*
+		The FOV is overridden / computed a second time in the function called at the very end of
+		CViewRender::SetUpView (see hook above on how to find it):
+
+.text:000000018076F387                 movss   xmm0, dword ptr [rax]
+.text:000000018076F38B                 movss   dword ptr [rbp+4E8h], xmm0
+.text:000000018076F393
+.text:000000018076F393 loc_18076F393:                          ; CODE XREF: sub_18076F120+460↓j
+.text:000000018076F393                 xorps   xmm6, xmm6
+.text:000000018076F396
+.text:000000018076F396 loc_18076F396:                          ; CODE XREF: sub_18076F120+47D↓j
+                                       <-- snip -->
+.text:000000018076F396                 mov     ecx, ebx
+.text:000000018076F398                 call    sub_1807F27D0
+.text:000000018076F39D                 mov     rcx, rax
+.text:000000018076F3A0                 mov     rdx, [rax]
+                                       <-- snap -->
+.text:000000018076F3A3                 call    qword ptr [rdx+0D8h]
+	*/
+
+	{
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "F3 0F 10 00 F3 0F 11 85 E8 04 00 00 0F 57 F6 8B CB E8 ?? ?? ?? ?? 48 8B C8 48 8B 10 FF 92 D8 00 00 00");
+		if (!result.IsEmpty()) {
+			MdtMemBlockInfos mbis;
+			MdtMemAccessBegin((LPVOID)(result.Start+15), 13, &mbis);
+
+			static LPVOID ptr2 = CS2_Client_CSetupView_InsideComputeViewMatrix;
+			LPVOID ptrPtr2 = &ptr2;
+			size_t pCallAddress3 = result.Start+15+2+5+(*(unsigned int*)(result.Start+15+3));
+			static LPVOID ptr3 = (LPVOID)pCallAddress3;
+			LPVOID ptrPtr3 = &ptr3;
+			size_t pCallAddress4 = result.Start+15+13;
+			static LPVOID ptr4 = (LPVOID)pCallAddress4;
+			LPVOID ptrPtr4 = &ptr4;
+			unsigned char asmCode2[48]={
+				0x48, 0xb8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // mov rax, qword addr
+				0xff, 0x10, // call    qword ptr [rax] // our function to reapply FOV
+				0xf3, 0x0f, 0x5c, 0xf0, // subss   xmm6, xmm0 // update intermediate FOV value with the difference
+				0x8B, 0xCB, // mov     ecx, ebx
+				0x48, 0xb8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // mov rax, qword addr
+				0xff, 0x10, // call    qword ptr [rax] // the original function in the detour area
+				0x48, 0x8B, 0xC8, // mov     rcx, rax
+				0x48, 0x8B, 0x10, // rdx, [rax]
+				0x48, 0xb8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // mov rax, qword addr
+				0xff, 0x20 // jmp [rax] // back to where to continue
+			};
+			memcpy(&asmCode2[2], &ptrPtr2, sizeof(LPVOID));
+			memcpy(&asmCode2[20], &ptrPtr3, sizeof(LPVOID));
+			memcpy(&asmCode2[38], &ptrPtr4, sizeof(LPVOID));
+
+			LPVOID pTrampoline = MdtAllocExecuteableMemory(48);
+			memcpy(pTrampoline, asmCode2, 48);
+
+/*
+	00007ff9`3170f396 48b80000000000000000 mov     rax, 0
+	00007ff9`3170f3a0 ff20                 jmp     qword ptr [rax]
+	00007ff9`3170f3a2 90                   nop 
+*/
+			unsigned char asmCode[13]={
+				0x48, 0xb8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // mov rax, qword addr
+				0xff, 0x20, // jmp [rax]
+				0x90 // nop
+			};
+			static LPVOID ptr = pTrampoline;
+			LPVOID ptrPtr = &ptr;
+			memcpy(&asmCode[2], &ptrPtr, sizeof(LPVOID));
+
+			memcpy((LPVOID)(result.Start+15), asmCode, 13);
+			MdtMemAccessEnd(&mbis);
+		}
+		else
+			ErrorBox(MkErrStr(__FILE__, __LINE__));				
+	}
 }
 
 SOURCESDK::CreateInterfaceFn g_AppSystemFactory = 0;
@@ -347,15 +733,17 @@ int new_CCS2_Client_Connect(void* This, SOURCESDK::CreateInterfaceFn appSystemFa
 
 		void * iface = NULL;
 
-		if (SOURCESDK::CS2::g_pCVar = SOURCESDK::CS2::cvar = (SOURCESDK::CS2::ICvar*)appSystemFactory(SOURCESDK_CS2_CVAR_INTERFACE_VERSION, NULL))
-		{
-			//
+		if (SOURCESDK::CS2::g_pCVar = SOURCESDK::CS2::cvar = (SOURCESDK::CS2::ICvar*)appSystemFactory(SOURCESDK_CS2_CVAR_INTERFACE_VERSION, NULL)) {
 		}
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 		if (g_pEngineToClient = (SOURCESDK::CS2::ISource2EngineToClient*)appSystemFactory(SOURCESDK_CS2_ENGINE_TO_CLIENT_INTERFACE_VERSION, NULL)) {
 		}
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+		if (g_pGameUIService = (SOURCESDK::CS2::IGameUIService*)appSystemFactory(SOURCESDK_CS2_GAMEUISERVICE_INTERFACE_VERSION, NULL)) {
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));		
 	}
 
 	return old_CCS2_Client_Connect(This, appSystemFactory);
@@ -583,6 +971,47 @@ CAfxImportDllHook g_Import_materialsystem2_KERNEL32("KERNEL32.dll", CAfxImportDl
 CAfxImportsHook g_Import_materialsystem2(CAfxImportsHooks({
 	&g_Import_materialsystem2_KERNEL32 }));
 
+
+CAfxImportFuncHook<LONG_PTR(WINAPI*)(HWND, int)> g_Import_SDL3_USER32_GetWindowLongW("GetWindowLongPtrW", &new_GetWindowLongPtrW);
+CAfxImportFuncHook<LONG_PTR(WINAPI*)(HWND, int, LONG_PTR)> g_Import_SDL3_USER32_SetWindowLongW("SetWindowLongPtrW", &new_SetWindowLongPtrW);
+CAfxImportFuncHook<HCURSOR(WINAPI*)(HCURSOR)> g_Import_SDL3_USER32_SetCursor("SetCursor", &new_SetCursor);
+CAfxImportFuncHook<HWND(WINAPI*)(HWND)> g_Import_SDL3_USER32_SetCapture("SetCapture", &new_SetCapture);
+CAfxImportFuncHook<BOOL(WINAPI*)()> g_Import_SDL3_USER32_ReleaseCapture("ReleaseCapture", &new_ReleaseCapture);
+CAfxImportFuncHook<BOOL(WINAPI*)(LPPOINT)> g_Import_SDL3_USER32_GetCursorPos("GetCursorPos", &new_GetCursorPos);
+CAfxImportFuncHook<BOOL(WINAPI*)(int, int)> g_Import_SDL3_USER32_SetCursorPos("SetCursorPos", &new_SetCursorPos);
+
+CAfxImportDllHook g_Import_SDL3_USER32("USER32.dll", CAfxImportDllHooks({
+	&g_Import_SDL3_USER32_GetWindowLongW,
+	&g_Import_SDL3_USER32_SetWindowLongW,
+	&g_Import_SDL3_USER32_SetCursor,
+	&g_Import_SDL3_USER32_SetCapture,
+	&g_Import_SDL3_USER32_ReleaseCapture,
+	&g_Import_SDL3_USER32_GetCursorPos,
+	&g_Import_SDL3_USER32_SetCursorPos }));
+
+CAfxImportsHook g_Import_SDL3(CAfxImportsHooks({
+	&g_Import_SDL3_USER32 }));
+
+CAfxImportFuncHook<LONG_PTR(WINAPI*)(HWND, int)> g_Import_inputsystem_USER32_GetWindowLongW("GetWindowLongPtrW", &new_GetWindowLongPtrW);
+CAfxImportFuncHook<LONG_PTR(WINAPI*)(HWND, int, LONG_PTR)> g_Import_inputsystem_USER32_SetWindowLongW("SetWindowLongPtrW", &new_SetWindowLongPtrW);
+CAfxImportFuncHook<HCURSOR(WINAPI*)(HCURSOR)> g_Import_inputsystem_USER32_SetCursor("SetCursor", &new_SetCursor);
+CAfxImportFuncHook<HWND(WINAPI*)(HWND)> g_Import_inputsystem_USER32_SetCapture("SetCapture", &new_SetCapture);
+CAfxImportFuncHook<BOOL(WINAPI*)()> g_Import_inputsystem_USER32_ReleaseCapture("ReleaseCapture", &new_ReleaseCapture);
+CAfxImportFuncHook<BOOL(WINAPI*)(LPPOINT)> g_Import_inputsystem_USER32_GetCursorPos("GetCursorPos", &new_GetCursorPos);
+CAfxImportFuncHook<BOOL(WINAPI*)(int, int)> g_Import_inputsystem_USER32_SetCursorPos("SetCursorPos", &new_SetCursorPos);
+
+CAfxImportDllHook g_Import_inputsystem_USER32("USER32.dll", CAfxImportDllHooks({
+	&g_Import_inputsystem_USER32_GetWindowLongW,
+	&g_Import_inputsystem_USER32_SetWindowLongW,
+	&g_Import_inputsystem_USER32_SetCursor,
+	&g_Import_inputsystem_USER32_SetCapture,
+	&g_Import_inputsystem_USER32_ReleaseCapture,
+	&g_Import_inputsystem_USER32_GetCursorPos,
+	&g_Import_inputsystem_USER32_SetCursorPos }));
+
+CAfxImportsHook g_Import_inputsystem(CAfxImportsHooks({
+	&g_Import_inputsystem_USER32 }));
+
 void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 {
 	CommonHooks();
@@ -606,6 +1035,8 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 	static bool bFirstEngine2 = true;
 	static bool bFirstfilesystem_stdio = true;
 	static bool bFirstMaterialsystem2 = true;
+	static bool bFirstInputsystem = true;
+	static bool bFirstSDL3 = true;
 	
 	CommonHooks();
 
@@ -640,6 +1071,18 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		
 		g_Import_filesystem_stdio.Apply(hModule);
 	}*/
+	else if(bFirstInputsystem && StringEndsWithW(lpLibFileName, L"inputsystem.dll"))
+	{
+		bFirstInputsystem = false;
+
+		g_Import_inputsystem.Apply(hModule);
+	}	
+	else if(bFirstSDL3 && StringEndsWithW(lpLibFileName, L"SDL3.dll"))
+	{
+		bFirstSDL3 = false;
+
+		g_Import_SDL3.Apply(hModule);
+	}
 	else if(bFirstEngine2 && StringEndsWithW( lpLibFileName, L"engine2.dll"))
 	{
 		bFirstEngine2 = false;

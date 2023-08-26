@@ -18,6 +18,9 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#undef min
+#undef max
+
 extern WrpVEngineClient * g_VEngineClient;
 
 CMirvHandleCalcs g_MirvHandleCalcs;

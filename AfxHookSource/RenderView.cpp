@@ -19,7 +19,6 @@
 
 #include "addresses.h"
 #include "WrpVEngineClient.h"
-#include "AfxHookSourceInput.h"
 #include "aiming.h"
 #include "MirvCam.h"
 #include "AfxInterop.h"
@@ -27,6 +26,8 @@
 #include "MirvPgl.h"
 
 #undef CreateEvent
+
+extern WrpVEngineClient * g_VEngineClient;
 
 BvhExport * g_BvhExport = NULL;
 
@@ -85,6 +86,7 @@ Hook_VClient_RenderView::Hook_VClient_RenderView()
 	CurrentCameraAngles[2] = 0.0;
 	CurrentCameraFov = 90.0;
 
+	m_MirvInput = new MirvInput(this);
 
 	SetDefaultOverrides();
 }
@@ -96,7 +98,38 @@ Hook_VClient_RenderView::~Hook_VClient_RenderView() {
 
 	delete m_CamExport;
 	delete m_CamImport;
+
+	delete m_MirvInput;
 }
+
+bool Hook_VClient_RenderView::GetSuspendMirvInput() {
+	return g_VEngineClient && g_VEngineClient->Con_IsVisible();
+}
+
+void Hook_VClient_RenderView::GetLastCameraData(double & x, double & y, double & z, double & rX, double & rY, double & rZ, double & fov) {
+	x = LastCameraOrigin[0];
+	y = LastCameraOrigin[1];
+	z = LastCameraOrigin[2];
+	rX = LastCameraAngles[0];
+	rY = LastCameraAngles[1];
+	rZ = LastCameraAngles[2];
+	fov = LastCameraFov;
+}
+
+void Hook_VClient_RenderView::GetGameCameraData(double & x, double & y, double & z, double & rX, double & rY, double & rZ, double & fov) {
+	x = GameCameraOrigin[0];
+	y = GameCameraOrigin[1];
+	z = GameCameraOrigin[2];
+	rX = GameCameraAngles[0];
+	rY = GameCameraAngles[1];
+	rZ = GameCameraAngles[2];
+	fov = GameCameraFov;
+}
+
+double Hook_VClient_RenderView::GetInverseScaledFov(double fov) {
+	return Auto_InverseFovScaling(LastWidth, LastHeight, fov);
+}
+
 
 bool Hook_VClient_RenderView::ExportBegin(wchar_t const *fileName, double frameTime) {
 	ExportEnd();
@@ -170,8 +203,6 @@ WrpGlobals * Hook_VClient_RenderView::GetGlobals()
 bool Hook_VClient_RenderView::IsInstalled(void) {
 	return m_IsInstalled;
 }
-
-extern WrpVEngineClient * g_VEngineClient;
 
 typedef void (__fastcall * csgo_C_HLTVCamera_SpecCameraGotoPos_t)(void * This, void * Edx, SOURCESDK::Vector vecPos, SOURCESDK::QAngle angAngle, int nPlayerIndex );
 
@@ -363,102 +394,7 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 			break;
 
 		case Override_Input:
-			if (g_AfxHookSourceInput.GetCameraControlMode() && m_Globals)
-			{
-				originOrAnglesOverriden = true;
-
-				if (!m_InputOn)
-				{
-					m_InputOn = true;
-
-					InputCameraOrigin[0] = LastCameraOrigin[0];
-					InputCameraOrigin[1] = LastCameraOrigin[1];
-					InputCameraOrigin[2] = LastCameraOrigin[2];
-					InputCameraAngles[0] = LastCameraAngles[0];
-					InputCameraAngles[1] = LastCameraAngles[1];
-					InputCameraAngles[2] = LastCameraAngles[2];
-					InputCameraFov = LastCameraFov;
-				}
-
-				switch (g_AfxHookSourceInput.GetOffsetMode())
-				{
-				case AfxHookSourceInput::OffsetMode_Last:
-					InputCameraOrigin[0] = LastCameraOrigin[0];
-					InputCameraOrigin[1] = LastCameraOrigin[1];
-					InputCameraOrigin[2] = LastCameraOrigin[2];
-					InputCameraAngles[0] = LastCameraAngles[0];
-					InputCameraAngles[1] = LastCameraAngles[1];
-					InputCameraAngles[2] = LastCameraAngles[2];
-					InputCameraFov = LastCameraFov;
-					break;
-				case AfxHookSourceInput::OffsetMode_Game:
-					InputCameraOrigin[0] = GameCameraOrigin[0];
-					InputCameraOrigin[1] = GameCameraOrigin[1];
-					InputCameraOrigin[2] = GameCameraOrigin[2];
-					InputCameraAngles[0] = GameCameraAngles[0];
-					InputCameraAngles[1] = GameCameraAngles[1];
-					InputCameraAngles[2] = GameCameraAngles[2];
-					InputCameraFov = GameCameraFov;
-					break;
-				case AfxHookSourceInput::OffsetMode_Current:
-					InputCameraOrigin[0] = Tx;
-					InputCameraOrigin[1] = Ty;
-					InputCameraOrigin[2] = Tz;
-					InputCameraAngles[0] = Rx;
-					InputCameraAngles[1] = Ry;
-					InputCameraAngles[2] = Rz;
-					InputCameraFov = Fov;
-					break;
-				}
-
-				double dT = 0 == m_LastFrameTime ? 1 : m_LastFrameTime;
-				double dForward = dT * g_AfxHookSourceInput.GetCamDForward();
-				double dLeft = dT * g_AfxHookSourceInput.GetCamDLeft();
-				double dUp = dT * g_AfxHookSourceInput.GetCamDUp();
-				double dPitch = dT * g_AfxHookSourceInput.GetCamDPitch();
-				double dRoll = dT * g_AfxHookSourceInput.GetCamDRoll();
-				double dYaw = dT * g_AfxHookSourceInput.GetCamDYaw();
-				double dFov = dT * g_AfxHookSourceInput.GetCamDFov();
-				double forward[3], right[3], up[3];
-
-				Rx = (float)(InputCameraAngles[0] + dPitch);
-				Ry = (float)(InputCameraAngles[1] + dYaw);
-				Rz = (float)(InputCameraAngles[2] + dRoll);
-				Fov = (float)(InputCameraFov + dFov);
-
-				// limit fov to sane values:
-				if (Fov < 1) Fov = 1;
-				else if (Fov > 179) Fov = 179;
-
-				if (g_AfxHookSourceInput.GetCamResetView())
-				{
-					Rx = 0;
-					Ry = 0;
-					Rz = 0;
-					Fov = 90.0;
-				}
-
-				MakeVectors(Rz, Rx, Ry, forward, right, up);
-
-				Tx = (float)(InputCameraOrigin[0] + dForward * forward[0] - dLeft * right[0] + dUp * up[0]);
-				Ty = (float)(InputCameraOrigin[1] + dForward * forward[1] - dLeft * right[1] + dUp * up[1]);
-				Tz = (float)(InputCameraOrigin[2] + dForward * forward[2] - dLeft * right[2] + dUp * up[2]);
-
-				g_AfxHookSourceInput.Override(Tx, Ty, Tz, Rx, Ry, Rz, Fov);
-
-				InputCameraOrigin[0] = Tx;
-				InputCameraOrigin[1] = Ty;
-				InputCameraOrigin[2] = Tz;
-				InputCameraAngles[0] = Rx;
-				InputCameraAngles[1] = Ry;
-				InputCameraAngles[2] = Rz;
-
-				InputCameraFov = Fov;
-			}
-			else
-			{
-				m_InputOn = false;
-			}
+			if (m_MirvInput->Override(m_LastFrameTime, Tx, Ty, Tz, Rx, Ry, Rz, Fov)) originOrAnglesOverriden = true;
 			break;
 
 		case Override_Aim:
@@ -553,7 +489,7 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 	LastCameraAngles[2] = Rz;
 	LastCameraFov = Fov;
 
-	g_AfxHookSourceInput.Supply_MouseFrameEnd();
+	m_MirvInput->Supply_MouseFrameEnd();
 
 	m_LastFrameTime = m_Globals->absoluteframetime_get();
 

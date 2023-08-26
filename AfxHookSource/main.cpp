@@ -19,7 +19,6 @@
 #include "d3d9Hooks.h"
 #include "csgo_SndMixTimeScalePatch.h"
 #include "csgo_CSkyBoxView.h"
-#include "AfxHookSourceInput.h"
 #include "AfxClasses.h"
 #include "AfxStreams.h"
 #include "hlaeFolder.h"
@@ -2073,18 +2072,18 @@ LRESULT CALLBACK new_Afx_WindowProc(
 	switch(uMsg)
 	{
 	case WM_ACTIVATE:
-		g_AfxHookSourceInput.Supply_Focus(LOWORD(wParam) != 0);
+		g_Hook_VClient_RenderView.m_MirvInput->Supply_Focus(LOWORD(wParam) != 0);
 		break;
 	case WM_CHAR:
-		if(g_AfxHookSourceInput.Supply_CharEvent(wParam, lParam))
+		if(g_Hook_VClient_RenderView.m_MirvInput->Supply_CharEvent(wParam, lParam))
 			return 0;
 		break;
 	case WM_KEYDOWN:
-		if(g_AfxHookSourceInput.Supply_KeyEvent(AfxHookSourceInput::KS_DOWN, wParam, lParam))
+		if(g_Hook_VClient_RenderView.m_MirvInput->Supply_KeyEvent(MirvInput::KS_DOWN, wParam, lParam))
 			return 0;
 		break;
 	case WM_KEYUP:
-		if(g_AfxHookSourceInput.Supply_KeyEvent(AfxHookSourceInput::KS_UP,wParam, lParam))
+		if(g_Hook_VClient_RenderView.m_MirvInput->Supply_KeyEvent(MirvInput::KS_UP,wParam, lParam))
 			return 0;
 		break;
 	case WM_LBUTTONDBLCLK:
@@ -2098,7 +2097,7 @@ LRESULT CALLBACK new_Afx_WindowProc(
 	case WM_RBUTTONUP:
 	case WM_MOUSEMOVE:
 	case WM_MOUSEWHEEL:
-		if (g_AfxHookSourceInput.Supply_MouseEvent(uMsg, wParam, lParam))
+		if (g_Hook_VClient_RenderView.m_MirvInput->Supply_MouseEvent(uMsg, wParam, lParam))
 			return 0;
 		break;
 	case WM_INPUT:
@@ -2139,7 +2138,7 @@ LRESULT CALLBACK new_Afx_WindowProc(
 					lastY = rawmouse->lLastY;
 				}
 
-				if (g_AfxHookSourceInput.Supply_RawMouseMotion(dX, dY))
+				if (g_Hook_VClient_RenderView.m_MirvInput->Supply_RawMouseMotion(dX, dY))
 					return DefWindowProcW(hwnd, uMsg, wParam, lParam);
 			}
 		}
@@ -2247,7 +2246,7 @@ BOOL WINAPI new_GetCursorPos(
 	if (AfxHookSource::Gui::OnGetCursorPos(lpPoint))
 		return TRUE;
 
-	g_AfxHookSourceInput.Supply_GetCursorPos(lpPoint);
+	g_Hook_VClient_RenderView.m_MirvInput->Supply_GetCursorPos(lpPoint);
 
 	return result;
 }
@@ -2260,7 +2259,7 @@ BOOL WINAPI new_SetCursorPos(
 	if (AfxHookSource::Gui::OnSetCursorPos(X, Y))
 		return TRUE;
 
-	g_AfxHookSourceInput.Supply_SetCursorPos(X,Y);
+	g_Hook_VClient_RenderView.m_MirvInput->Supply_SetCursorPos(X,Y);
 
 	return SetCursorPos(X,Y);
 }

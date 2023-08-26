@@ -36,6 +36,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../deps/release/prop/cs2/sdk_src/public/tier1/iconvar.h
     ../deps/release/prop/cs2/sdk_src/public/cdll_int.h    
     ../deps/release/prop/cs2/sdk_src/public/icvar.h    
+    ../deps/release/prop/cs2/sdk_src/public/igameuiservice.h    
     ../deps/release/prop/AfxHookSource/SourceSdkShared.cpp
     ../deps/release/prop/AfxHookSource/SourceSdkShared.h
     ../deps/release/prop/AfxHookSource/SourceInterfaces.h
@@ -56,6 +57,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/binutils.h
     ../shared/MirvCampath.cpp
     ../shared/MirvCampath.h
+    ../shared/MirvInput.cpp
+    ../shared/MirvInput.h
 
     main.cpp
 

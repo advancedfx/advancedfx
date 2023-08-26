@@ -4,6 +4,7 @@
 #include "WrpConsole.h"
 #include "CamIO.h"
 #include <shared/CamPath.h>
+#include "../shared/MirvInput.h"
 
 #include <list>
 
@@ -16,6 +17,7 @@ extern Hook_VClient_RenderView g_Hook_VClient_RenderView;
 // Hook_VClient_RenderView /////////////////////////////////////////////////////
 
 class Hook_VClient_RenderView
+	: private IMirvInputDependencies
 {
 public:
 	enum Override
@@ -94,6 +96,12 @@ public:
 
 	void Console_Overrides(IWrpCommandArgs * args);
 
+	void Console_MirvInput(IWrpCommandArgs * args) {
+		m_MirvInput->ConCommand(args);
+	}
+
+	MirvInput * m_MirvInput;
+
 private:
 	float m_LastFrameTime = 0;
 
@@ -105,15 +113,15 @@ private:
 	float m_ImportBaseTime;
 	bool m_IsInstalled;
 
-	bool m_InputOn = false;
-	double InputCameraOrigin[3];
-	double InputCameraAngles[3];
-	double InputCameraFov;
-
 	CamExport * m_CamExport = 0;
 	CamImport * m_CamImport = 0;
 
 	Override m_Overrides[11];
+
+	virtual bool GetSuspendMirvInput() override;
+	virtual void GetLastCameraData(double & x, double & y, double & z, double & rX, double & rY, double & rZ, double & fov) override;
+	virtual void GetGameCameraData(double & x, double & y, double & z, double & rX, double & rY, double & rZ, double & fov) override;
+	virtual double GetInverseScaledFov(double fov) override;
 
 	void SetDefaultOverrides();
 

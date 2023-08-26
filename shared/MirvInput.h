@@ -1,8 +1,21 @@
 #pragma once
 
+#include "AfxConsole.h"
+
+#include <string>
+#include <map>
+
 #include <windows.h>
 
-class AfxHookSourceInput
+class IMirvInputDependencies {
+public:
+	virtual bool GetSuspendMirvInput() = 0;
+	virtual void GetLastCameraData(double & x, double & y, double & z, double & rX, double & rY, double & rZ, double & fov) = 0;
+	virtual void GetGameCameraData(double & x, double & y, double & z, double & rX, double & rY, double & rZ, double & fov) = 0;
+	virtual double GetInverseScaledFov(double fov) = 0;
+};
+
+class MirvInput
 {
 public:
 	enum KeyState
@@ -19,9 +32,20 @@ public:
 		OffsetMode_Current
 	};
 
-	AfxHookSourceInput();
+	MirvInput(IMirvInputDependencies * dependencies);
 
-	bool Override(float & Tx, float &Ty, float & Tz, float & Rx, float & Ry, float & Rz, float & Fov);
+	bool Override(float deltaT, float & Tx, float &Ty, float & Tz, float & Rx, float & Ry, float & Rz, float & Fov);
+	
+	bool Supply_CharEvent(WPARAM wParam, LPARAM lParam);
+	bool Supply_KeyEvent(KeyState keyState, WPARAM wParam, LPARAM lParam);
+	bool Supply_MouseEvent(DWORD uMsg, WPARAM & wParam, LPARAM & lParam);
+	bool Supply_RawMouseMotion(int dX, int dY);
+	void Supply_GetCursorPos(LPPOINT lpPoint);
+	void Supply_SetCursorPos(int x, int y);
+	void Supply_MouseFrameEnd(void);
+	void Supply_Focus(bool hasFocus);
+
+	//
 
 	bool GetCamResetView(void);
 	double GetCamDForward(void);
@@ -113,15 +137,6 @@ public:
 	void SetMouseForwardSpeed(double value) { m_MouseForwardSpeed = value; }
 	void SetMouseBackwardSpeed(double value) { m_MouseBackwardSpeed = value; }
 
-	bool Supply_CharEvent(WPARAM wParam, LPARAM lParam);
-	bool Supply_KeyEvent(KeyState keyState, WPARAM wParam, LPARAM lParam);
-	bool Supply_MouseEvent(DWORD uMsg, WPARAM & wParam, LPARAM & lParam);
-	bool Supply_RawMouseMotion(int dX, int dY);
-	void Supply_GetCursorPos(LPPOINT lpPoint);
-	void Supply_SetCursorPos(int x, int y);
-	void Supply_MouseFrameEnd(void);
-	void Supply_Focus(bool hasFocus);
-
 	OffsetMode GetOffsetMode() { return m_OffsetMode; }
 	void SetOffsetMode(OffsetMode value) { m_OffsetMode = value; }
 
@@ -167,12 +182,76 @@ public:
 		m_SetFovValue = value;
 	}
 
+	void ConCommand(advancedfx::ICommandArgs * args);
+
 private:
+	class Mem
+	{
+	public:
+		void Connect(MirvInput * input) {
+			m_Input = input;
+		}
+
+		void Console(advancedfx::ICommandArgs * args);
+
+	private:
+		struct CData
+		{
+			double Origin[3];
+			double Angles[3];
+			double Fov;
+
+			CData()
+			{
+
+			}
+
+			CData(double x, double y, double z, double  yPitch, double xRoll, double zYaw, double fov)
+			{
+				Origin[0] = x;
+				Origin[1] = y;
+				Origin[2] = z;
+				Angles[0] = yPitch;
+				Angles[1] = xRoll;
+				Angles[2] = zYaw;
+				Fov = fov;
+			}
+		};
+
+		// this is not unicode aware, but whatever:
+		struct ci_less : std::binary_function<std::string, std::string, bool>
+		{
+			struct ci_less_char : public std::binary_function<unsigned char, unsigned char, bool>
+			{
+				bool operator() (const unsigned char& c1, const unsigned char& c2) const {
+					return tolower(c1) < tolower(c2);
+				}
+			};
+			bool operator() (const std::string & s1, const std::string & s2) const {
+				return std::lexicographical_compare(
+					s1.begin(), s1.end(),
+					s2.begin(), s2.end(),
+					ci_less_char());
+			}
+		};
+
+		MirvInput * m_Input;
+
+		std::map<std::string, CData, ci_less> m_Map;
+
+		bool Save(wchar_t const * fileName);
+
+		bool Load(wchar_t const * fileName);
+
+	};
+
 	static const double m_CamSpeedFacMove;
 	static const double m_CamSpeedFacRotate;
 	static const double m_CamSpeedFacZoom;
+
+	IMirvInputDependencies * m_Dependencies;
 	
-	double m_FirstGetCursorPos;
+	bool m_FirstGetCursorPos;
 	double m_MouseSens;
 	double m_KeyboardSens;
 
@@ -250,10 +329,17 @@ private:
 
 	OffsetMode m_OffsetMode = OffsetMode_Last;
 
-	bool GetConsoleOpen(void);
+	bool m_InputOn = false;
+	double m_InputX = 0;
+	double m_InputY = 0;
+	double m_InputZ = 0;
+	double m_InputRx = 0;
+	double m_InputRy = 0;
+	double m_InputRz = 0;
+	double m_InputFov = 90.0;
+
+	Mem m_Mem;
 
 	void DoCamSpeedDecrease(void);
 	void DoCamSpeedIncrease(void);
 };
-
-extern AfxHookSourceInput g_AfxHookSourceInput;
