@@ -601,20 +601,17 @@ void HookClientDll(HMODULE clientDll) {
 		This is where it checks for engine->IsPlayingDemo() (and afterwards for cl_demoviewoverride (float))
 		before under these conditions it is calling CalcDemoViewOverride, so this is in CViewRender::SetUpView:
 
-.text:0000000180778701                 mov     rcx, cs:qword_18166D8E8
-.text:0000000180778708                 mov     rax, [rcx]
-.text:000000018077870B                 call    qword ptr [rax+108h]
-.text:0000000180778711                 mov     rbp, [rsp+978h+var_30]
-.text:0000000180778719                 xorps   xmm6, xmm6
-.text:000000018077871C                 test    al, al
-.text:000000018077871E                 jz      short loc_180778797
-.text:0000000180778720
-.text:0000000180778720 loc_180778720:                          ; DATA XREF: .pdata:00000001818724D4↓o
-.text:0000000180778720                                         ; .pdata:00000001818724E0↓o
-.text:0000000180778720                 mov     edx, 0FFFFFFFFh
+.text:000000018076F3C1                 mov     rcx, cs:qword_18167FE18
+.text:000000018076F3C8                 mov     rax, [rcx]
+.text:000000018076F3CB                 call    qword ptr [rax+110h]
+.text:000000018076F3D1                 mov     rbp, [rsp+948h]
+.text:000000018076F3D9                 xorps   xmm6, xmm6
+.text:000000018076F3DC                 test    al, al
+.text:000000018076F3DE                 jz      short loc_18076F457
+.text:000000018076F3E0                 mov     edx, 0FFFFFFFFh
 	*/
 	{
-		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8B 0D ?? ?? ?? ?? 48 8B 01 FF 90 08 01 00 00 48 8B AC 24 48 09 00 00 0F 57 F6 84 C0 74 77 BA FF FF FF FF");
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8B 0D ?? ?? ?? ?? 48 8B 01 FF 90 10 01 00 00 48 8B AC 24 48 09 00 00 0F 57 F6 84 C0 74 77 BA FF FF FF FF");
 		if (!result.IsEmpty()) {
 			/*
 				These are the top 16 bytes we change to:
