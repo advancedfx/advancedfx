@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.2.2</version>
+<time>2023-09-06T19:00Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_campath using real time instead of game time.
+</change>
+<change type="updated">
+Updated mirv_campath to recognize demo time and tick.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.2.1</version>
 <time>2023-09-01T18:13Z</time>
 <changes>
@@ -14,7 +29,6 @@ Adjusted to CS2 update.
 </change>
 </changes>
 </release>
-
 
 
 <release>

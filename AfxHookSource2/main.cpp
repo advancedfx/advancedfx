@@ -104,7 +104,7 @@ Cs2Gloabls_t g_pGlobals = nullptr;
 
 float curtime_get(void)
 {
-	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals + 0*4) : 0;
+	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals + 0x2c) : 0;
 }
 
 int framecount_get(void)
@@ -120,6 +120,11 @@ float frametime_get(void)
 float absoluteframetime_get(void)
 {
 	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +3*4) : 0;
+}
+
+float interval_per_tick_get(void)
+{
+	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +0x44) : 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -431,15 +436,34 @@ public:
 		return curtime_get();
 	}
 	virtual bool GetCurrentDemoTick(int& outTick) {
+		if(g_pEngineToClient) {
+			if(SOURCESDK::CS2::IDemoFile * pDemoFile = g_pEngineToClient->GetDemoFile()) {
+				outTick = pDemoFile->GetDemoTick();
+				return true;
+			}
+		}
 		return false;
 	}
 	virtual bool GetCurrentDemoTime(double& outDemoTime) {
+		int tick;
+		if(GetCurrentDemoTick(tick)) {
+			outDemoTime = tick * (double)interval_per_tick_get();
+			return true;
+		}
+
+
 		return false;
 	}
 	virtual bool GetDemoTickFromDemoTime(double curTime, double time, int& outTick) {
-		return false;
+		outTick = (int)round(time / interval_per_tick_get());
+		return true;
 	}
 	virtual bool GetDemoTimeFromClientTime(double curTime, double time, double& outDemoTime) {
+		int current_tick;
+		if(GetCurrentDemoTick(current_tick)) {
+			outDemoTime = time - (curTime - current_tick * (double)interval_per_tick_get());
+			return true;
+		}
 		return false;
 	}
 } g_MirvCampath_Time;
