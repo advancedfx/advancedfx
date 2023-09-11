@@ -24,6 +24,8 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include <mutex>
+
 advancedfx::CCommandLine  * g_CommandLine = nullptr;
 
 #define STRINGIZE(x) STRINGIZE2(x)
@@ -1049,6 +1051,211 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 #endif
 }
 
+advancedfx::Con_Printf_t Tier0_Message = nullptr;
+advancedfx::Con_Printf_t Tier0_Warning = nullptr;
+advancedfx::Con_DevPrintf_t Tier0_DevMessage = nullptr;
+advancedfx::Con_DevPrintf_t Tier0_DevWarning = nullptr;
+
+class IConsolePrint {
+public:
+	virtual void Print(const char * text) = 0;
+};
+
+class CConsolePrint_Message : public IConsolePrint {
+public:
+	virtual void Print(const char * text) {
+		Tier0_Message(text);
+	}
+};
+
+class CConsolePrint_Warning : public IConsolePrint {
+public:
+	virtual void Print(const char * text) {
+		Tier0_Warning(text);
+	}
+};
+
+class CConsolePrint_DevMessage : public IConsolePrint {
+public:
+	CConsolePrint_DevMessage(int level)
+	: m_Level(level) {
+
+	}
+
+	virtual void Print(const char * text) {
+		Tier0_DevMessage(m_Level, text);
+	}
+private:
+	int m_Level;
+};
+
+class CConsolePrint_DevWarning : public IConsolePrint {
+public:
+	CConsolePrint_DevWarning(int level)
+	: m_Level(level) {
+
+	}
+
+	virtual void Print(const char * text) {
+		Tier0_DevWarning(m_Level, text);
+	}
+private:
+	int m_Level;
+};
+
+class CConsolePrinter {
+public:
+	void Print(IConsolePrint * pConsolePrint, const char* fmt, va_list args) {
+		std::unique_lock<std::mutex> lock(m_Print_Mutex);
+		if(nullptr == m_Print_Memory) {
+			m_Print_Memory = (char *)malloc(sizeof(char)*512);
+			if(nullptr != m_Print_Memory) m_Print_MemorySize = 512;
+			else return;
+		}
+		int chars = vsnprintf(m_Print_Memory,m_Print_MemorySize,fmt,args);
+		if(chars < 0) return;
+		if(chars >= m_Print_MemorySize) {
+			m_Print_Memory = (char *)realloc(m_Print_Memory,sizeof(char)*(chars+1));
+			if(nullptr != m_Print_Memory) m_Print_MemorySize = chars+1;
+			else return;		
+			vsnprintf(m_Print_Memory,m_Print_MemorySize,fmt,args);
+		}
+		char * ptr = m_Print_Memory;
+		for(int i = 0; true; ) {
+			bool bEndReached = false;
+			bool bNewLine = false;
+			size_t length = 1;
+			size_t size = 1;
+			unsigned char lb = ptr[i];
+			if (( lb & 0x80 ) == 0 ) { // lead bit is zero, must be a single ascii
+				switch(lb) {
+				case '\0':
+					length = 0;
+					bEndReached = true;
+					break;
+				case '\n':
+					length = 0;
+					bNewLine = true;
+					break;
+				default:
+					length = 1;
+				}
+			}
+			else if (( lb & 0xE0 ) == 0xC0 ) { // 110x xxxx
+				size = 2;
+			} else if (( lb & 0xF0 ) == 0xE0 ) { // 1110 xxxx
+				size = 3;
+			} else if (( lb & 0xF8 ) == 0xF0 ) { // 1111 0xxx
+				size = 4;
+			} else {
+				// invalid UTF-8 length.
+				ptr[i] = '\0';
+				bEndReached = true;
+			}
+			if(i+size > chars) {
+				// UTF-8 too long / invalid
+				ptr[i] = '\0';
+				bEndReached = true;
+				length = 0;
+				size = 1;
+			} else {
+				for(size_t j=1; j < size; j++) {		
+					if((ptr[i+j] & 0xC0) != 0x8) {
+						// following octets must be 0x10xxxxxx, so  this is invalid.
+						ptr[i] = '\0';
+						bEndReached = true;
+						length = 0;
+						size = 1;
+						break;
+					}
+				}
+			}
+			if(bEndReached) {
+				pConsolePrint->Print(ptr);
+				m_Print_Length += length;
+				break;
+			}
+			bool bSizeLimitReached = i + size >= m_Print_SizeLimit;
+			if(bSizeLimitReached) {
+				char tmp = ptr[i];
+				ptr[i] = '\0';
+				pConsolePrint->Print(ptr);
+				ptr[i] = tmp;
+				ptr = &(ptr[i]);
+				m_Print_Length += length;
+				chars -= i;
+				i = 0;
+				continue;
+			}
+			if(bNewLine) {
+				i += size;
+				m_Print_Length = 0;
+			} else {
+				bool bLineLimitReached = 0 < m_Print_LineLimit && m_Print_Length + length >= m_Print_LineLimit;
+				if(bLineLimitReached) {
+					char tmp = ptr[i];
+					char tmp2 = ptr[i+1];
+					ptr[i] = '\n';
+					ptr[i+1] = '\0';
+					pConsolePrint->Print(ptr);
+					ptr[i] = tmp;
+					ptr[i+1] = tmp2;
+					ptr = &(ptr[i]);
+					m_Print_Length = 0;
+					chars -= i;
+					i = 0;
+					continue;
+				} else {
+					i += size;
+					m_Print_Length += length;
+				}
+			}
+		}
+	}
+
+private:
+	std::mutex m_Print_Mutex;
+	char * m_Print_Memory = nullptr;
+	size_t m_Print_MemorySize = 0;
+	size_t m_Print_Length = 0;
+	size_t m_Print_SizeLimit = 200;
+	size_t m_Print_LineLimit = 240; // There's currently a bug with the CS2 console where it won't show text if there's no line-break after 300 characters.
+};
+
+CConsolePrinter * g_ConsolePrinter = nullptr;
+
+void My_Console_Message(const char* fmt, ...) {
+	CConsolePrint_Message consolePrint;
+	va_list args;
+	va_start(args, fmt);
+	g_ConsolePrinter->Print(&consolePrint, fmt, args);
+	va_end(args);
+}
+
+void My_Console_Warning(const char* fmt, ...) {
+	CConsolePrint_Warning consolePrint;
+	va_list args;
+	va_start(args, fmt);
+	g_ConsolePrinter->Print(&consolePrint, fmt, args);
+	va_end(args);
+}
+
+void My_Console_DevMessage(int level, const char* fmt, ...) {
+	CConsolePrint_DevMessage consolePrint(level);
+	va_list args;
+	va_start(args, fmt);
+	g_ConsolePrinter->Print(&consolePrint, fmt, args);
+	va_end(args);
+}
+
+void My_Console_DevWarning(int level, const char* fmt, ...) {
+	CConsolePrint_DevWarning consolePrint(level);
+	va_list args;
+	va_start(args, fmt);
+	g_ConsolePrinter->Print(&consolePrint, fmt, args);
+	va_end(args);
+}
+
 void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 {
 	static bool bFirstTier0 = true;
@@ -1081,10 +1288,22 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 
 		SOURCESDK::CS2::g_pMemAlloc = *(SOURCESDK::CS2::IMemAlloc **)GetProcAddress(hModule, "g_pMemAlloc");
 
-		advancedfx::Message = (Tier0MsgFn)GetProcAddress(hModule, "Msg");
-		advancedfx::Warning = (Tier0MsgFn)GetProcAddress(hModule, "Warning");
-		advancedfx::DevMessage = (Tier0DevMsgFn)GetProcAddress(hModule, "DevMsg");
-		advancedfx::DevWarning = (Tier0DevMsgFn)GetProcAddress(hModule, "DevWarning");		
+		if(Tier0_Message = (Tier0MsgFn)GetProcAddress(hModule, "Msg"))
+			advancedfx::Message = My_Console_Message;
+		else
+			ErrorBox(MkErrStr(__FILE__, __LINE__));
+		if(Tier0_Warning = (Tier0MsgFn)GetProcAddress(hModule, "Warning"))
+			advancedfx::Warning = My_Console_Warning;
+		else
+			ErrorBox(MkErrStr(__FILE__, __LINE__));
+		if(Tier0_DevMessage = (Tier0DevMsgFn)GetProcAddress(hModule, "DevMsg"))
+			advancedfx::DevMessage = My_Console_DevMessage;
+		else
+			ErrorBox(MkErrStr(__FILE__, __LINE__));
+		if(Tier0_DevWarning = (Tier0DevMsgFn)GetProcAddress(hModule, "DevWarning"))
+			advancedfx::DevWarning = My_Console_DevWarning;
+		else
+			ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
 	/*else if(bFirstfilesystem_stdio && StringEndsWithW( lpLibFileName, L"filesystem_stdio.dll"))
 	{
@@ -1201,11 +1420,15 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 			// things here that would have problems with that.
 			//
 
+			g_ConsolePrinter = new CConsolePrinter();
+
 			break;
 		}
 		case DLL_PROCESS_DETACH:
 		{
 			// actually this gets called now.
+
+			delete g_ConsolePrinter;
 
 #ifdef _DEBUG
 			_CrtDumpMemoryLeaks();
