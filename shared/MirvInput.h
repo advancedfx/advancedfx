@@ -219,9 +219,9 @@ private:
 		};
 
 		// this is not unicode aware, but whatever:
-		struct ci_less : std::binary_function<std::string, std::string, bool>
+		struct ci_less
 		{
-			struct ci_less_char : public std::binary_function<unsigned char, unsigned char, bool>
+			struct ci_less_char
 			{
 				bool operator() (const unsigned char& c1, const unsigned char& c2) const {
 					return tolower(c1) < tolower(c2);
