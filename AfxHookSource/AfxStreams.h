@@ -10,6 +10,7 @@
 #include "csgo_Stdshader_dx9_Hooks.h"
 #include "csgo_Stdshader_dx9_Hooks.h"
 #include "CamIO.h"
+#include "MaterialSystemHooks.h"
 #include "MatRenderContextHook.h"
 #include "AfxWriteFileLimiter.h"
 #include "MirvCalcs.h"
@@ -3936,10 +3937,7 @@ public:
 
 	void DrawingThread_UnsetIntZTextureSurface();
 
-	void EngineThread_QueuePostGpuWork(bool bShutdown);
-
-	void DrawingThread_BeforePresent();
-
+	void EngineThread_QueueCapture();
 
 	virtual bool GetStreamFolder(std::wstring& outFolder) const {
 		outFolder = g_AfxStreams.GetTakeDir();
@@ -4064,8 +4062,6 @@ private:
 	std::list<CAfxRecordStream *> m_Streams;
 	CAfxRecordStream * m_PreviewStreams[16] = { };
 	bool m_Recording;
-	bool m_WasRecording = false;
-	int m_Frame;
 	bool m_CamBvh;
 	std::list<CEntityBvhCapture *> m_EntityBvhCaptures;
 	bool m_CamExport = false;
@@ -4223,47 +4219,41 @@ private:
 	private:
 		CAfxOutVideoStreamCreator* m_OutVideoStreamCreator;
 		CAfxRenderViewStream::StreamCaptureType m_CaptureType;
-	} *m_DrawingRecordScreen = nullptr;
+	} * m_DrawingRecordScreen = nullptr;
 	class CCaptureNode* m_DrawingCaptureNode = nullptr;
 
-	class CRecordScreenCommand {
+	class CCreateScreenCaptureNodeFunctor : public CMaterialSystemFunctor {
 	public:
-		virtual ~CRecordScreenCommand() {
-
+		CCreateScreenCaptureNodeFunctor(CAfxOutVideoStreamCreator* outVideoStreamCreator)
+		: m_OutVideoStreamCreator(outVideoStreamCreator) {
 		}
 
-		virtual void Execute() {
-		}
-	};
-
-	class CRecordScreenCommandSet : 
-		public CRecordScreenCommand {
-	public:
-		CRecordScreenCommandSet(CDrawingRecordScreen* drawingRecordScreen)
-			: m_DrawingRecordScreen(drawingRecordScreen)
-		{
-		}
-
-		virtual void Execute() {
-			if (g_AfxStreams.m_DrawingRecordScreen != m_DrawingRecordScreen) {
-				if (g_AfxStreams.m_DrawingRecordScreen) {
-					delete g_AfxStreams.m_DrawingRecordScreen;
-					if (g_AfxStreams.m_DrawingCaptureNode) {
-						g_AfxStreams.m_DrawingCaptureNode->GpuRelease();
-						g_AfxStreams.m_DrawingCaptureNode->Release();
-						g_AfxStreams.m_DrawingCaptureNode = nullptr;
-					}
-				}
-			}
-			g_AfxStreams.m_DrawingRecordScreen = m_DrawingRecordScreen;
-			// we don't AddRef m_DrawingRecordScreen here, because we would call Release right After.
+		virtual void operator()() {
+			g_AfxStreams.m_DrawingCaptureNode = new CCaptureNode(
+				new CCaptureInputRenderTarget(),
+				new CDrawingRecordScreenOutput(m_OutVideoStreamCreator));
+			g_AfxStreams.m_DrawingCaptureNode->AddRef();
 		}
 
 	private:
-		CDrawingRecordScreen* m_DrawingRecordScreen;
+		CAfxOutVideoStreamCreator* m_OutVideoStreamCreator;
 	};
 
-	std::queue<CRecordScreenCommand *> m_RecordScreenCommands;
+	class CDeleteScreenCaptureNodeFunctor : public CMaterialSystemFunctor {
+	public:
+		virtual void operator()() {
+			g_AfxStreams.m_DrawingCaptureNode->GpuRelease();
+			g_AfxStreams.m_DrawingCaptureNode->Release();
+			g_AfxStreams.m_DrawingCaptureNode = nullptr;			
+		}
+	};
+
+	class CQueueCaptureFunctor : public CMaterialSystemFunctor {
+	public:
+		virtual void operator()() {
+			g_AfxStreams.DrawingThread_Capture();
+		}
+	};
 
 	DWORD Get_View_Render_ThreadId();
 
@@ -4305,5 +4295,5 @@ private:
 
 	void AfxStreamsInitGlobal();
 
-	void EngineThread_QueuePresent(bool bShutdown);
+	void DrawingThread_Capture();
 };

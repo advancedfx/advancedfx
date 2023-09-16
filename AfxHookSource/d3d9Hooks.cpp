@@ -4652,9 +4652,6 @@ public:
 
 	void Afx_Present_Before(CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion, DWORD dwFlags)
 	{
-		if (g_SourceSdkVer != SourceSdkVer::SourceSdkVer_CSGO) {
-			g_AfxStreams.DrawingThread_BeforePresent();
-		}
 	}
 
 	void Afx_Present_After(HRESULT hResult)

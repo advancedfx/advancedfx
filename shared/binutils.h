@@ -49,6 +49,9 @@ private:
 /// <remarks>The memory specified by memRange must be readable.</remarks>
 MemRange FindBytes(MemRange memRange, char const * pattern, size_t patternSize);
 
+/// <remarks>The memory specified by memRange must be readable.</remarks>
+MemRange FindBytesReverse(MemRange memRange, char const * pattern, size_t patternSize);
+
 /// <remarks>Doesn't work on x64 atm!</remarks>
 /// <remarks>The memory specified by memRange must be readable.</remarks>
 MemRange FindCString(MemRange memRange, char const * pattern);

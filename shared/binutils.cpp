@@ -43,6 +43,38 @@ MemRange FindBytes(MemRange memRange, char const * pattern, size_t patternSize)
 	return MemRange(oldMemRangeStart, min(oldMemRangeStart, memRange.End));
 }
 
+MemRange FindBytesReverse(MemRange memRange, char const * pattern, size_t patternSize)
+{
+	size_t matchDepth = 0;
+	size_t oldMemRangeEnd = memRange.End;
+
+	if(!pattern)
+		return MemRange(max(oldMemRangeEnd, memRange.Start), oldMemRangeEnd);
+
+	if(1 > patternSize)
+		return MemRange(max(oldMemRangeEnd -1, memRange.Start), oldMemRangeEnd);
+
+	for(;memRange.Start < memRange.End;)
+	{
+		memRange.End--;
+		char cur = *(char const *)memRange.End;
+
+		if(cur == pattern[patternSize - matchDepth - 1])
+			matchDepth++;
+		else
+		{
+			memRange.End += matchDepth;
+			matchDepth = 0;
+			continue;
+		}
+
+		if(matchDepth == patternSize)
+			return MemRange(memRange.End, memRange.End+matchDepth);
+	}
+
+	return MemRange(max(oldMemRangeEnd, memRange.Start), oldMemRangeEnd);
+}
+
 MemRange FindCString(MemRange memRange, char const * pattern)
 {
 	return FindBytes(memRange, pattern, strlen(pattern)+1);

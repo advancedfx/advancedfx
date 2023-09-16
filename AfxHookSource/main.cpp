@@ -34,6 +34,7 @@
 #include "momentum/ClientToolsMom.h"
 #include "css/ClientToolsCss.h"
 #include "cssV34/ClientToolsCssV34.h"
+#include "MaterialSystemHooks.h"
 #include "MatRenderContextHook.h"
 //#include "csgo_IPrediction.h"
 #include "csgo_MemAlloc.h"
@@ -125,6 +126,8 @@ void PrintInfo() {
 
 SOURCESDK::IClientEngineTools_001 * g_Engine_ClientEngineTools;
 
+bool g_bFirstSwapBuffersCallForFrame = false;
+
 class ClientEngineTools : public SOURCESDK::IClientEngineTools_001
 {
 public:
@@ -142,6 +145,7 @@ public:
 	virtual void PreRenderAllTools()
 	{
 		//Tier0_Msg("ClientEngineTools::PreRenderAllTools\n");
+		// Warning: This can be called multiple times during a frame (i.e. for skybox view and normal world view)!
 
 		g_CommandSystem.Do_Commands();
 
@@ -150,15 +154,13 @@ public:
 	
 	virtual void PostRenderAllTools()
 	{
-		// Warning: This can be called multiple times during a frame (i.e. for skybox view and normal world view)!
-
 		//Tier0_Msg("ClientEngineTools::PostRenderAllTools\n");
+		// Warning: This can be called multiple times during a frame (i.e. for skybox view and normal world view)!
 
 		static bool wasDrawing = false;
 		static int oldMatQueueMode = 0;
 			if (
 				g_CampathDrawer.Draw_get() // Campath drawer can't handle queued rendering
-				|| g_SourceSdkVer != SourceSdkVer::SourceSdkVer_CSGO && g_AfxStreams.IsRecording() // neither can recording in other mods than cs:go
 			) {
 				m_Mat_Queue_Mode.RetryIfNull("mat_queue_mode");
 				if (m_Mat_Queue_Mode.IsValid()) {
@@ -248,12 +250,9 @@ public:
 	}
 	
 	virtual bool SetupAudioState(SOURCESDK::AudioState_t &audioState ) {
-		static bool bWasRecording = false;
-		if (g_SourceSdkVer != SourceSdkVer::SourceSdkVer_CSGO && (g_AfxStreams.IsRecording() && g_VEngineClient && !g_VEngineClient->Con_IsVisible() || bWasRecording && !g_AfxStreams.IsRecording())) {
-			bWasRecording = g_AfxStreams.IsRecording();
-			g_AfxStreams.Set_View_Render_ThreadId(GetCurrentThreadId());
-			g_AfxStreams.EngineThread_QueuePostGpuWork(false);
-		}
+		g_bFirstSwapBuffersCallForFrame = true;
+
+		g_AfxStreams.Set_View_Render_ThreadId(GetCurrentThreadId());
 
 		return g_Engine_ClientEngineTools->SetupAudioState(audioState);
 	}
@@ -286,6 +285,13 @@ private:
 	WrpConVarRef m_Mat_Queue_Mode;
 
 } g_ClientEngineTools;
+
+void OnBefore_CMaterialSystem_SwappBuffers() {
+	if(g_bFirstSwapBuffersCallForFrame) {
+		g_bFirstSwapBuffersCallForFrame = false;
+		g_AfxStreams.EngineThread_QueueCapture();
+	}
+}
 
 SOURCESDK::CreateInterfaceFn g_AppSystemFactory = 0;
 
@@ -2844,6 +2850,8 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		Addresses_InitMaterialsystemDll((AfxAddr)hModule, g_SourceSdkVer);
 
 		g_Import_materialsystem.Apply(hModule);
+
+		Hook_MaterialSystem();
 	}
 	else if(bFirstShaderapidx9 && StringEndsWith( lpLibFileName, "shaderapidx9.dll"))
 	{

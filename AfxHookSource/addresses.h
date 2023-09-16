@@ -104,7 +104,6 @@ AFXADDR_DECL(csgo_C_Team_vtable)
 AFXADDR_DECL(csgo_engine_CModelLoader_vtable)
 AFXADDR_DECL(csgo_engine_CModelLoader_GetModel_vtable_index)
 AFXADDR_DECL(csgo_client_C_TEPlayerAnimEvent_PostDataUpdate_NewModelAnims_JNZ)
-AFXADDR_DECL(csgo_materialsystem_CMaterialSystem_ForceSingleThreaded)
 AFXADDR_DECL(csgo_engine_Do_CCLCMsg_FileCRCCheck)
 AFXADDR_DECL(csgo_C_BaseViewModel_FireEvent)
 AFXADDR_DECL(csgo_client_AdjustInterpolationAmount)
@@ -148,6 +147,10 @@ AFXADDR_DECL(csgo_engine_CBoundedCvar_UpdateRate_vtable)
 AFXADDR_DECL(csgo_engine_CBoundedCvar_Rate_vtable)
 AFXADDR_DECL(csgo_engine_m_SplitScreenPlayers)
 AFXADDR_DECL(csgo_engine_m_SplitScreenPlayers_ishltv_ofs)
+AFXADDR_DECL(materialsystem_GetRenderCallQueue)
+AFXADDR_DECL(materialsystem_CFunctor_vtable_size)
+AFXADDR_DECL(materialsystem_CMaterialSystem_SwapBuffers)
+AFXADDR_DECL(materialsystem_CMatCallQueue_QueueFunctor)
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);

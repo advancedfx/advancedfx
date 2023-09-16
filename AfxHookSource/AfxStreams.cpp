@@ -6559,7 +6559,6 @@ CAfxStreams::CAfxStreams()
 , m_AfxBaseClientDll(0)
 , m_ShaderShadow(0)
 , m_Recording(false)
-, m_Frame(0)
 , m_FormatBmpAndNotTga(false)
 , m_View_Render_ThreadId(0)
 //, m_RgbaRenderTarget(nullptr)
@@ -7085,22 +7084,6 @@ IAfxMatRenderContextOrg* CAfxStreams::CommitDrawingContext(IAfxMatRenderContextO
 	return context;
 }
 
-void CAfxStreams::EngineThread_QueuePostGpuWork(bool bShutdown) {
-
-	if (m_Recording)
-	{
-		if (g_SourceSdkVer == SourceSdkVer_CSGO) {
-			QueueCaptureGpuQueuesExecution(bShutdown);
-		}
-	}
-
-	if (m_Recording || m_WasRecording) {
-		m_WasRecording = m_Recording;
-		EngineThread_QueuePresent(bShutdown);
-	}
-
-}
-
 void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void* This, void* Edx, const SOURCESDK::CViewSetup_csgo& view, const SOURCESDK::CViewSetup_csgo& hudViewSetup, int nClearFlags, int whatToDraw, float* smokeOverlayAlphaFactor, float& smokeOverlayAlphaFactorMultiplyer)
 {
 	m_ForceCacheFullSceneState = false;
@@ -7288,10 +7271,8 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void* This, void* 
 		DoRenderView(fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw);
 	}
 
-	EngineThread_QueuePostGpuWork(false);
-
 	if(m_Recording) {
-		++m_Frame;
+		QueueCaptureGpuQueuesExecution(false);
 	}
 
 	if (m_PresentBlocked)
@@ -7593,7 +7574,6 @@ void CAfxStreams::Console_Record_Start()
 	)
 	{
 		m_Recording = true;
-		m_Frame = 0;
 		m_StartMovieWavUsed = false;
 
 		std::string utf8TakeDir;
@@ -7623,6 +7603,19 @@ void CAfxStreams::Console_Record_Start()
 			if (!m_HostFrameRate->IsValid()) {
 				Tier0_Warning("You probably forgot to set mirv_streams record fps to the FPS you want to record.\n");
 			}
+		}
+
+		if(m_RecordScreen->Enabled) {
+			m_DrawingRecordScreen = new CDrawingRecordScreen(
+				m_RecordScreen->Settings->CreateOutVideoStreamCreator(
+					*this,
+					*this,
+					GetStartHostFrameRate(),
+					""
+				), CAfxRenderViewStream::StreamCaptureType::SCT_Normal
+			);
+
+			MaterialSystem_ExecuteOnRenderThread(new CCreateScreenCaptureNodeFunctor(m_DrawingRecordScreen->GetOutVideoStreamCreator()));
 		}
 
 		for(std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
@@ -7740,6 +7733,12 @@ void CAfxStreams::Console_Record_End()
 		for(std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); ++it)
 		{
 			(*it)->RecordEnd();
+		}
+
+		if(m_DrawingRecordScreen) {
+			delete g_AfxStreams.m_DrawingRecordScreen;
+			g_AfxStreams.m_DrawingRecordScreen = nullptr;
+			MaterialSystem_ExecuteOnRenderThread(new CDeleteScreenCaptureNodeFunctor());
 		}
 
 		if (g_SourceSdkVer == SourceSdkVer_CSGO)
@@ -10650,7 +10649,9 @@ void CAfxStreams::ShutDown(void)
 			Console_Record_End();
 		}
 
-		EngineThread_QueuePostGpuWork(true);
+		if (g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO && m_Recording) {
+			QueueCaptureGpuQueuesExecution(true);
+		}
 
 		// We can do this here, because the dedicated drawing thread is shutdown by then (I think.):
 		QueueCaptureGpuQueuesRelease(true);
@@ -11608,106 +11609,18 @@ void CAfxStreams::DrawingThread_UnsetIntZTextureSurface() {
 	}
 }
 
-class CDrawingThread_BeforePresent_Functor
-	: public CAfxFunctor
-{
-public:
-	CDrawingThread_BeforePresent_Functor()
-	{
-	}
-
-	virtual void operator()()
-	{
-		g_AfxStreams.DrawingThread_BeforePresent();
-	}
-
-private:
-	bool m_Clean;
-};
-
-
-void CAfxStreams::EngineThread_QueuePresent(bool bShutdown) {
-	bool bShouldRecord = m_Recording && m_RecordScreen->Enabled;
-	if (bShouldRecord != m_RecordScreenRecording) {
-		m_RecordScreenRecording = bShouldRecord;
-		class CDrawingRecordScreen* drawingRecordScreen = nullptr;
-		if (bShouldRecord) {
-			drawingRecordScreen = new CDrawingRecordScreen(
-				m_RecordScreen->Settings->CreateOutVideoStreamCreator(
-					*this,
-					*this,
-					GetStartHostFrameRate(),
-					""
-				), CAfxRenderViewStream::StreamCaptureType::SCT_Normal
-			);
-		}
-
-		std::unique_lock<std::mutex>(*m_RecordScreenMutex);
-		while (m_RecordScreenCommands.size() > 256) {
-			Tier0_Warning("ERROR in CAfxStreams::EngineThread_QueuePresent: unexpected queue size.\n");
-			m_RecordScreenCommands.pop();
-		}
-		m_RecordScreenCommands.push(new CRecordScreenCommandSet(drawingRecordScreen));
-		m_RecordScreenCommands.push(nullptr);
-
-		if (bShutdown) {
-			DrawingThread_BeforePresent();
-		}
-		else if (g_SourceSdkVer == SourceSdkVer_CSGO) {
-			QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CDrawingThread_BeforePresent_Functor()));
-		}
-	}
-	else {
-		if (bShouldRecord) {
-			std::unique_lock<std::mutex>(*m_RecordScreenMutex);
-			while (m_RecordScreenCommands.size() > 256) {
-				Tier0_Warning("ERROR in CAfxStreams::EngineThread_QueuePresent: unexpected queue size.\n");
-				m_RecordScreenCommands.pop();
-			}
-			m_RecordScreenCommands.push(nullptr);
-
-			if (bShutdown) {
-				DrawingThread_BeforePresent();
-			}
-			else if (g_SourceSdkVer == SourceSdkVer_CSGO) {
-				QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new CDrawingThread_BeforePresent_Functor()));
-			}
+void CAfxStreams::EngineThread_QueueCapture() {
+	if(m_Recording && m_RecordScreen->Enabled) {
+		if(g_AfxStreams.IsRecording() && (g_VEngineClient && !g_VEngineClient->Con_IsVisible() || g_SourceSdkVer == SourceSdkVer_CSGO)) {
+			MaterialSystem_ExecuteOnRenderThread(new CQueueCaptureFunctor());
 		}
 	}
 }
 
-void CAfxStreams::DrawingThread_BeforePresent() {
-	if (g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO || g_AfxStreams.OnEngineThread()) {
-		bool hadCommands = false;
-		while (true) {
-			CRecordScreenCommand* command = nullptr;
-			{
-				std::unique_lock<std::mutex>(*m_RecordScreenMutex);
-				if (!m_RecordScreenCommands.empty())
-				{
-					hadCommands = true;
-					command = m_RecordScreenCommands.front();
-					m_RecordScreenCommands.pop();
-				}
-			}
-			if (command == nullptr) break;
-			command->Execute();
-			delete command;
-		}
-		if (hadCommands) {
-			if (m_DrawingRecordScreen) {
-				if (nullptr == m_DrawingCaptureNode) {
-					m_DrawingCaptureNode = new CCaptureNode(
-						new CCaptureInputRenderTarget(),
-						new CDrawingRecordScreenOutput(m_DrawingRecordScreen->GetOutVideoStreamCreator()));
-					m_DrawingCaptureNode->AddRef();
-				}
-			}
-			if (m_DrawingCaptureNode) {
-				m_DrawingCaptureNode->GpuCapture();
-				CCaptureNode::GpuExecuteLockQueue();
-			}
-		}
+void CAfxStreams::DrawingThread_Capture() {
+	if (m_DrawingCaptureNode) {
+		m_DrawingCaptureNode->GpuCapture();
+		CCaptureNode::GpuExecuteLockQueue();
 	}
 }
 

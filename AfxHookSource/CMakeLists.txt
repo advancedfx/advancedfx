@@ -189,6 +189,8 @@ target_sources(AfxHookSource PRIVATE
     hlaeFolder.cpp
     hlaeFolder.h
     main.cpp
+    MaterialSystemHooks.cpp
+    MaterialSystemHooks.h
     MatRenderContextHook.cpp
     MatRenderContextHook.h
     mirv_voice.cpp

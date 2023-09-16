@@ -98,7 +98,6 @@ AFXADDR_DEF(csgo_C_Team_vtable)
 AFXADDR_DEF(csgo_engine_CModelLoader_vtable)
 AFXADDR_DEF(csgo_engine_CModelLoader_GetModel_vtable_index)
 AFXADDR_DEF(csgo_client_C_TEPlayerAnimEvent_PostDataUpdate_NewModelAnims_JNZ)
-AFXADDR_DEF(csgo_materialsystem_CMaterialSystem_ForceSingleThreaded)
 AFXADDR_DEF(csgo_engine_Do_CCLCMsg_FileCRCCheck)
 AFXADDR_DEF(csgo_C_BaseViewModel_FireEvent)
 AFXADDR_DEF(csgo_client_AdjustInterpolationAmount)
@@ -142,6 +141,10 @@ AFXADDR_DEF(csgo_engine_CBoundedCvar_Rate_vtable)
 AFXADDR_DEF(csgo_engine_LocalClientClientState_ishltv)
 AFXADDR_DEF(csgo_engine_m_SplitScreenPlayers)
 AFXADDR_DEF(csgo_engine_m_SplitScreenPlayers_ishltv_ofs)
+AFXADDR_DEF(materialsystem_GetRenderCallQueue)
+AFXADDR_DEF(materialsystem_CFunctor_vtable_size)
+AFXADDR_DEF(materialsystem_CMaterialSystem_SwapBuffers)
+AFXADDR_DEF(materialsystem_CMatCallQueue_QueueFunctor)
 
 void ErrorBox(char const * messageText);
 
@@ -2887,27 +2890,136 @@ void Addresses_InitStdshader_dx9Dll(AfxAddr stdshader_dx9Dll, bool isCsgo)
 */
 
 void Addresses_InitMaterialsystemDll(AfxAddr materialsystemDll, SourceSdkVer sourceSdkVer) {
-	AFXADDR_SET(csgo_materialsystem_CMaterialSystem_ForceSingleThreaded, 0);
+
+	MemRange textRange;
+	MemRange firstDataRange;
+	ImageSectionsReader sections((HMODULE)materialsystemDll);
+	if(!sections.Eof()) {
+	 	textRange = sections.GetMemRange();
+		sections.Next();
+		if(!sections.Eof()) {
+			firstDataRange = sections.GetMemRange();
+		}
+	}
+
 	if (sourceSdkVer == SourceSdkVer_CSGO) {
 
 		AFXADDR_SET(csgo_materialsystem_Material_InterlockedDecrement_vtable_index, 13);
-
-		// csgo_materialsystem_CMaterialSystem_ForceSingleThreaded:
-		//
-		// Function references string "Can't force single thread from within thread!\n"
-		// 
-		ImageSectionsReader sections((HMODULE)materialsystemDll);
-		if (!sections.Eof())
-		{
-			MemRange textRange = sections.GetMemRange();
-
-			MemRange result = FindPatternString(textRange, "53 56 57 8B F9 FF 15 ?? ?? ?? ?? 84 C0 75 0E 68 ?? ?? ?? ?? FF 15 ?? ?? ?? ?? 83 C4 04 8B 07 8B CF FF 50 3C 85 C0");
-
-			if (!result.IsEmpty()) {
-				AFXADDR_SET(csgo_materialsystem_CMaterialSystem_ForceSingleThreaded, result.Start);
-			}
-			else ErrorBox(MkErrStr(__FILE__, __LINE__));
-		}
-		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
+
+	// Queued rendering related hooks.
+	//
+	// Dependencies:
+	// - materialsystem_CMaterialSystem_SwapBuffers address.
+	// - mirv_campath draw (in future, not yet).
+	// - mirv_streams record screen.
+	//
+	int materialsystem_GetRenderCallQueue_vtable_offset = -1;
+	{
+		switch(sourceSdkVer) {
+		case SourceSdkVer_SWARM:
+			// Checked 2023-09-16.
+			materialsystem_GetRenderCallQueue_vtable_offset = 141;
+			AFXADDR_SET(materialsystem_CFunctor_vtable_size, 3);
+			break;
+		case SourceSdkVer_CSGO:
+			// Checked 2023-09-16.
+			materialsystem_GetRenderCallQueue_vtable_offset = 179;
+			AFXADDR_SET(materialsystem_CFunctor_vtable_size, 4);
+			break;
+		case SourceSdkVer_TF2:
+			// Checked 2023-09-16.
+			materialsystem_GetRenderCallQueue_vtable_offset = 147;
+			AFXADDR_SET(materialsystem_CFunctor_vtable_size, 4);
+			break;
+		case SourceSdkVer_CSS:
+			// Checked 2023-09-16.
+			materialsystem_GetRenderCallQueue_vtable_offset = 143;
+			AFXADDR_SET(materialsystem_CFunctor_vtable_size, 4);
+			break;
+		case SourceSdkVer_CSSV34:
+			// Checked 2023-09-16.
+			// this game is non-queued.
+			materialsystem_GetRenderCallQueue_vtable_offset = -1;
+			break;
+		case SourceSdkVer_Insurgency2:
+			// Checked 2023-09-16.
+			materialsystem_GetRenderCallQueue_vtable_offset = 171;
+			AFXADDR_SET(materialsystem_CFunctor_vtable_size, 4);
+			break;
+		}
+
+		if(0 <= materialsystem_GetRenderCallQueue_vtable_offset) {
+			// materialsystem_GetRenderCallQueue
+			{
+				// CMaterialSystem inherhits from IMaterialSystemInternal inherits from IMaterialSystem, so
+				// we guess that GetRenderCallQueue is the 3rd last function.
+				AfxAddr addr_CMaterialSystem_vtable = FindClassVtable((HMODULE)materialsystemDll, ".?AVCMaterialSystem@@", 0, 0x0);
+				if (!addr_CMaterialSystem_vtable) ErrorBox(MkErrStr(__FILE__, __LINE__));
+				else {
+					AFXADDR_SET(materialsystem_GetRenderCallQueue, (size_t)*(void**)(addr_CMaterialSystem_vtable + sizeof(void*)*materialsystem_GetRenderCallQueue_vtable_offset));
+				}
+			}
+
+
+			// materialsystem_CMatCallQueue_QueueFunctor // Checked 2023-09-16.
+			//
+			// This is called by CCallQueueExternal::QueueFunctorInternal (the only virtual function),
+			// so we can get the address that way.
+			{
+				AfxAddr vtable_addr = FindClassVtable((HMODULE)materialsystemDll, ".?AVCCallQueueExternal@CMatQueuedRenderContext@@", 0, 0x0);
+				if (vtable_addr)
+				{
+					AfxAddr tmpAddr = (size_t)*(void**)vtable_addr;
+					/* We search the first call inside the function:
+		call    sub_10013A70			
+					*/
+					MemRange result = FindPatternString(MemRange(tmpAddr, tmpAddr + 0x40).And(textRange), "E8 ?? ?? ?? ??");
+					if (!result.IsEmpty()) {
+						AfxAddr tmpAddr2 = ((size_t)*(void**)(result.Start + 1)) + result.Start + 5;
+						if(!MemRange::FromSize(tmpAddr2,sizeof(void*)).And(textRange).IsEmpty()) {
+							AFXADDR_SET(materialsystem_CMatCallQueue_QueueFunctor, tmpAddr2);
+						} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			}	
+		}
+	}
+
+	// materialsystem_CMaterialSystem_SwapBuffers // Checked 2023-08-30
+	//
+	// Dependencies:
+	// - mirv_streams record screen.
+	//
+	if(0 <= materialsystem_GetRenderCallQueue_vtable_offset || g_SourceSdkVer == SourceSdkVer_CSSV34) {
+		MemRange result = FindCString(firstDataRange, "CMaterialSystem::SwapBuffers");
+		if (!result.IsEmpty())
+		{
+			AfxAddr tmpAddr = result.Start;
+
+			result = FindBytes(textRange, (char const*)&tmpAddr, sizeof(tmpAddr));
+			if (!result.IsEmpty())
+			{
+				if( g_SourceSdkVer == SourceSdkVer_CSSV34 ) {
+					/*
+mov     ecx, ds:g_VProfCurrentProfile
+push    4
+push    0						
+					*/
+						result = FindPatternString(MemRange(result.Start - 0x12, result.Start).And(textRange), "8B 0D ?? ?? ?? ?? 6A 04  6A 00");
+				} else {
+					/*
+	push    ebp
+	mov     ebp, esp
+					*/
+					unsigned char pattern[3] = {0x55, 0x8B, 0xEC};
+					// We have a bigger search range intentionally here, since we want to support several mods.
+					result = FindBytesReverse(MemRange(result.Start - 0x50, result.Start).And(textRange), (char *)pattern, sizeof(pattern));
+				}
+				if (!result.IsEmpty()) {
+						AFXADDR_SET(materialsystem_CMaterialSystem_SwapBuffers, result.Start);
+				} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}		
 }
