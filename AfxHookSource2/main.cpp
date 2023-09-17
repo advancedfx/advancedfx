@@ -772,6 +772,15 @@ int new_CCS2_Client_Connect(void* This, SOURCESDK::CreateInterfaceFn appSystemFa
 	return old_CCS2_Client_Connect(This, appSystemFactory);
 }
 
+CON_COMMAND(mirv_test, "") {
+	if(g_pEngineToClient) {
+		g_pEngineToClient->ExecuteClientCmd(
+			0,
+			"echo test; echo test2",
+			true);
+	}
+}
+
 CON_COMMAND(mirv_suppress_disconnects, "Suppresses given number disconnect commands. Can help to test demo system.") {
 	int argC = args->ArgC();
 	const char * arg0 = args->ArgV(0);
