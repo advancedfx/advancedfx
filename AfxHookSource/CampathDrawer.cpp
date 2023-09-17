@@ -57,7 +57,6 @@ struct AFXDRAWTEXTUREVERTEX
 
 CCampathDrawer::CCampathDrawer()
 : m_Draw(false)
-, m_RebuildDrawing(true)
 , m_VertexBuffer(0)
 , m_VertexBufferVertexCount(0)
 , m_LockedVertexBuffer(0)
@@ -72,6 +71,7 @@ CCampathDrawer::~CCampathDrawer()
 	if (m_DrawTextureShader) m_DrawTextureShader->Release();
 	if(m_PixelShader) m_PixelShader->Release();
 	if(m_VertexShader) m_VertexShader->Release();
+	if(m_LessDynamicProperties) m_LessDynamicProperties->Release();
 }
 
 void CCampathDrawer::AutoPolyLineStart()
@@ -180,11 +180,6 @@ void CCampathDrawer::BeginDevice(IDirect3DDevice9 * device)
 	device->AddRef();
 
 	m_Device = device;
-	m_Device = device;
-
-	g_Hook_VClient_RenderView.m_CamPath.OnChanged_set(this);
-
-	m_RebuildDrawing = true;
 }
 
 void CCampathDrawer::BuildPolyLinePoint(Vector3 previous, Vector3 current, DWORD currentColor, Vector3 next, Vertex * pOutVertexData)
@@ -217,7 +212,11 @@ void CCampathDrawer::BuildPolyLinePoint(Vector3 previous, Vector3 current, DWORD
 
 void CCampathDrawer::CamPathChanged(CamPath * obj)
 {
-	m_RebuildDrawing = true;
+	if(m_LessDynamicProperties) {
+		m_LessDynamicProperties->Release();
+	}
+	m_LessDynamicProperties = new CLessDynamicProperties(this);
+	m_LessDynamicProperties->AddRef();
 }
 
 void CCampathDrawer::Draw_set(bool value)
@@ -235,25 +234,206 @@ void CCampathDrawer::EndDevice()
 	if(0 == m_Device)
 		return;
 
-	g_Hook_VClient_RenderView.m_CamPath.OnChanged_set(0);
-
 	UnloadVertexBuffer();
 
 	m_Device->Release();
 	m_Device = 0;
 }
 
+void CCampathDrawer::Begin() {
+	g_Hook_VClient_RenderView.m_CamPath.OnChanged_set(this);
+	CamPathChanged(&(g_Hook_VClient_RenderView.m_CamPath));
+}
+
+void CCampathDrawer::End() {
+	g_Hook_VClient_RenderView.m_CamPath.OnChanged_set(nullptr);
+}
+
 #define ValToUCCondInv(value,invert) ((invert) ? 0xFF -(unsigned char)(value) : (unsigned char)(value) )
 
-void CCampathDrawer::OnPostRenderAllTools()
-{
-	// Actually we are often called twice per frame due to an engine bug(?), once after 3d skybox
-	// and once after world is drawn, maybe we will be even called more times,
-	// but we can not care about that for now.
-	
-	if(!m_Draw)
-		return;
+CCampathDrawer::CDynamicProperties::CDynamicProperties(CCampathDrawer * drawer) {
+	m_CurTime = g_MirvTime.GetTime() - g_Hook_VClient_RenderView.m_CamPath.GetOffset();
+	m_InCampath = 1 <= g_Hook_VClient_RenderView.m_CamPath.GetSize()
+		&&	g_Hook_VClient_RenderView.m_CamPath.GetLowerBound() <= m_CurTime
+		&& m_CurTime <= g_Hook_VClient_RenderView.m_CamPath.GetUpperBound();
+	m_CampathEnabled = g_Hook_VClient_RenderView.m_CamPath.Enabled_get();
 
+	g_VEngineClient->GetScreenSize(m_ScreenWidth, m_ScreenHeight);
+
+	m_WorldToScreenMatrix = g_VEngineClient->WorldToScreenMatrix();
+
+	// Provide view plane info for line clipping:
+	double plane0[4] = { 0,0,0,1 };
+	double planeN[4] = { 1,0,0,1 };
+	double planeR[4] = { 0,-1,0,1 };
+	double planeU[4] = { 0,0,1,1 };
+	{
+
+		unsigned char P[4];
+		unsigned char Q[4];
+
+		double L[4][4];
+		double U[4][4];
+
+		double M[4][4] = {
+			m_WorldToScreenMatrix.m[0][0], m_WorldToScreenMatrix.m[0][1], m_WorldToScreenMatrix.m[0][2], 0,
+			m_WorldToScreenMatrix.m[1][0], m_WorldToScreenMatrix.m[1][1], m_WorldToScreenMatrix.m[1][2], 0,
+			m_WorldToScreenMatrix.m[2][0], m_WorldToScreenMatrix.m[2][1], m_WorldToScreenMatrix.m[2][2], 0,
+			m_WorldToScreenMatrix.m[3][0], m_WorldToScreenMatrix.m[3][1], m_WorldToScreenMatrix.m[3][2], -1,
+		};
+
+		double b0[4] = {
+			0 - m_WorldToScreenMatrix.m[0][3],
+			0 - m_WorldToScreenMatrix.m[1][3],
+			0 - m_WorldToScreenMatrix.m[2][3],
+			-m_WorldToScreenMatrix.m[3][3],
+		};
+
+		double bN[4] = {
+			0 - m_WorldToScreenMatrix.m[0][3],
+			0 - m_WorldToScreenMatrix.m[1][3],
+			1 - m_WorldToScreenMatrix.m[2][3],
+			-m_WorldToScreenMatrix.m[3][3],
+		};
+		double bR[4] = {
+			1 - m_WorldToScreenMatrix.m[0][3],
+			0 - m_WorldToScreenMatrix.m[1][3],
+			0 - m_WorldToScreenMatrix.m[2][3],
+			-m_WorldToScreenMatrix.m[3][3],
+		};
+
+		double bU[4] = {
+			0 - m_WorldToScreenMatrix.m[0][3],
+			1 - m_WorldToScreenMatrix.m[1][3],
+			0 - m_WorldToScreenMatrix.m[2][3],
+			-m_WorldToScreenMatrix.m[3][3],
+		};
+		if (!LUdecomposition(M, P, Q, L, U))
+		{
+			Tier0_Warning("AFXERROR in CCampathDrawer::OnPostRenderAllTools: LUdecomposition failed\n");
+		}
+		else
+		{
+			SolveWithLU(L, U, P, Q, b0, plane0);
+			SolveWithLU(L, U, P, Q, bN, planeN);
+
+			SolveWithLU(L, U, P, Q, bR, planeR);
+			SolveWithLU(L, U, P, Q, bU, planeU);
+		}
+
+		/*
+		vvPos = Vector3(plane0[0], plane0[1], plane0[2]);
+		vvForward = Vector3(planeN[0] -vvPos.X, planeN[1] -vvPos.Y, planeN[2]-vvPos.Z);
+		vvForward.Normalize();
+		vvRight = Vector3(planeR[0] -vvPos.X, planeR[1] -vvPos.Y, planeR[2]-vvPos.Z);
+		vvRight.Normalize();
+		vvUp = Vector3(planeU[0] -vvPos.X, planeU[1] -vvPos.Y, planeU[2]-vvPos.Z);
+		vvUp.Normalize();
+		*/
+
+		/*
+		Tier0_Msg("CCampathDrawer::OnPostRenderAllTools: curTime = %f\n",curTime);
+		Tier0_Msg("M[0]=%f %f %f %f\nM[1]=%f %f %f %f\nM[2]=%f %f %f %f\nM[3]=%f %f %f %f\n", M[0][0],M[0][1],M[0][2],M[0][3], M[1][0],M[1][1],M[1][2],M[1][3], M[2][0],M[2][1],M[2][2],M[2][3], M[3][0],M[3][1],M[3][2],M[3][3]);
+		Tier0_Msg("b0[0]=%f %f %f %f\n", b0[0], b0[1], b0[2], b0[3]);
+		Tier0_Msg("bN[0]=%f %f %f %f\n", bN[0], bN[1], bN[2], bN[3]);
+		Tier0_Msg("plane0=%f %f %f %f\n", plane0[0], plane0[1], plane0[2], plane0[3]);
+		Tier0_Msg("planeN=%f %f %f %f\n", planeN[0], planeN[1], planeN[2], planeN[3]);
+		*/
+
+		m_PlaneOrigin = Vector3(plane0[0],plane0[1],plane0[2]);
+		
+		m_PlaneNormal = Vector3(planeN[0] - plane0[0], planeN[1] - plane0[1], planeN[2] - plane0[2]); 
+		m_PlaneNormal.Normalize();
+
+		m_PlaneRight = Vector3(planeR[0] - plane0[0], planeR[1] - plane0[1], planeR[2] - plane0[2]);
+		m_PlaneRight.Normalize();
+
+		m_PlaneUp = Vector3(planeU[0] - plane0[0], planeU[1] - plane0[1], planeU[2] - plane0[2]);
+		m_PlaneUp.Normalize();		
+	}
+
+	m_DrawKeyFrameIndex = drawer->m_DrawKeyframIndex;
+	m_DrawKeyframeAxis = drawer->m_DrawKeyframeAxis;
+	m_DrawKeyframeCam = drawer->m_DrawKeyframeCam;
+
+	if(g_Hook_VClient_RenderView.m_CamPath.CanEval() && 2 <= g_Hook_VClient_RenderView.m_CamPath.GetSize()) {
+		m_CurrentValue = g_Hook_VClient_RenderView.m_CamPath.Eval(m_CurTime);
+	}
+}
+
+CCampathDrawer::CLessDynamicProperties::CLessDynamicProperties(CCampathDrawer * drawer) {
+
+	m_CampathCanEval = g_Hook_VClient_RenderView.m_CamPath.CanEval();
+
+	for (CamPathIterator it = g_Hook_VClient_RenderView.m_CamPath.GetBegin(); it != g_Hook_VClient_RenderView.m_CamPath.GetEnd(); ++it)
+	{
+		m_Keyframes.emplace_back(it.GetTime(), it.GetValue());
+	}
+
+	if(m_CampathCanEval && 2 <= m_Keyframes.size()) {
+		// Build trajectory points.
+		// This operation can be quite expensive (up to O(N^2)),
+		// so it should be done only when s.th.
+		// changed (which is what we do here).
+
+		auto last = g_Hook_VClient_RenderView.m_CamPath.GetBegin();
+		auto it = last;
+
+		TempPoint * pts = new TempPoint[c_CameraTrajectoryMaxPointsPerInterval];
+
+		for(++it; it != g_Hook_VClient_RenderView.m_CamPath.GetEnd(); ++it)
+		{
+			double delta = it.GetTime() - last.GetTime();
+
+			for(size_t i = 0; i<c_CameraTrajectoryMaxPointsPerInterval; i++)
+			{
+				double t = last.GetTime() + delta*((double)i/(c_CameraTrajectoryMaxPointsPerInterval-1));
+
+				CamPathValue cpv = g_Hook_VClient_RenderView.m_CamPath.Eval(t);
+
+				pts[i].t = t;
+				pts[i].y = Vector3(cpv.X, cpv.Y, cpv.Z);
+				pts[i].nextPt = i+1 <c_CameraTrajectoryMaxPointsPerInterval ? &(pts[i+1]) : 0;
+			}
+
+			RamerDouglasPeucker(&(pts[0]), &(pts[c_CameraTrajectoryMaxPointsPerInterval-1]), c_CameraTrajectoryEpsilon);
+
+			// add all points except the last one (to avoid duplicates):
+			for(TempPoint * pt = &(pts[0]); pt && pt->nextPt; pt = pt->nextPt)
+			{
+				m_TrajectoryPoints.emplace_back(
+					pt->t,
+					g_Hook_VClient_RenderView.m_CamPath.Eval(pt->t));
+			}
+
+			last = it;
+		}
+
+		// add last point:
+		m_TrajectoryPoints.emplace_back(
+			pts[c_CameraTrajectoryMaxPointsPerInterval-1].t,
+			g_Hook_VClient_RenderView.m_CamPath.Eval(pts[c_CameraTrajectoryMaxPointsPerInterval-1].t));
+
+		delete[] pts;
+	}
+}
+
+void CCampathDrawer::CCampathDrawerFunctor::operator()() {
+	g_CampathDrawer.OnPostRenderAllTools_DrawingThread(m_DynamicProperties, m_LessDynamicProperties);
+}
+
+void CCampathDrawer::OnPostRenderAllTools_EngineThread() {
+	// Actually we are often called twice per frame , once after 3d skybox
+	// and once after world is drawn, maybe we will be even called more times.
+
+	if(!m_Draw || nullptr == m_LessDynamicProperties)
+		return;
+	
+	MaterialSystem_ExecuteOnRenderThread(new CCampathDrawerFunctor(this));
+}
+
+void CCampathDrawer::OnPostRenderAllTools_DrawingThread(CDynamicProperties * dynamicPorperties, CLessDynamicProperties * lessDynamicProperties)
+{
 	if(!m_VertexShader)
 	{
 		m_VertexShader = g_AfxShaders.GetAcsVertexShader(L"afx_line_vs20.acs", ShaderCombo_afx_line_vs20::GetCombo());
@@ -298,103 +478,24 @@ void CCampathDrawer::OnPostRenderAllTools()
 	{
 		//Vector3 vvForward, vvUp, vvRight, vvPos;
 
-		double curTime = g_MirvTime.GetTime() - g_Hook_VClient_RenderView.m_CamPath.GetOffset();
-		bool inCampath = 1 <= g_Hook_VClient_RenderView.m_CamPath.GetSize()
-			&&	g_Hook_VClient_RenderView.m_CamPath.GetLowerBound() <= curTime
-			&& curTime <= g_Hook_VClient_RenderView.m_CamPath.GetUpperBound();
-		bool campathCanEval = g_Hook_VClient_RenderView.m_CamPath.CanEval();
-		bool campathEnabled = g_Hook_VClient_RenderView.m_CamPath.Enabled_get();
+		double curTime = dynamicPorperties->GetCurTime();
+		bool inCampath = dynamicPorperties->GetInCampath();
+		bool campathCanEval = lessDynamicProperties->GetCampathCanEval();
+		bool campathEnabled = dynamicPorperties->GetCampathEnabled();
 		bool cameraMightBeSelected = false;
 
-		int screenWidth, screenHeight;
-		g_VEngineClient->GetScreenSize(screenWidth, screenHeight);
+		int screenWidth = dynamicPorperties->GetScreenWidth();
+		int screenHeight = dynamicPorperties->GetScreenHeight();
 		FLOAT newCScreenInfo[4] = { 0 != screenWidth ? 1.0f / screenWidth : 0.0f, 0 != screenHeight ? 1.0f / screenHeight : 0.0f, 0.0, 0.0f };
 
-		m_WorldToScreenMatrix = g_VEngineClient->WorldToScreenMatrix();
+		const SOURCESDK::VMatrix & worldToScreenMatrix = dynamicPorperties->GetWorldToScreenMatrix();
 
 		// Provide view plane info for line clipping:
-		double plane0[4] = { 0,0,0,1 };
-		double planeN[4] = { 1,0,0,1 };
-		double planeR[4] = { 0,-1,0,1 };
-		double planeU[4] = { 0,0,1,1 };
 		{
+			const Vector3 & planeOrigin = dynamicPorperties->GetPlaneOrigin();
+			const Vector3 & planeNormal = dynamicPorperties->GetPlaneNormal();
 
-			unsigned char P[4];
-			unsigned char Q[4];
-
-			double L[4][4];
-			double U[4][4];
-
-			double M[4][4] = {
-				m_WorldToScreenMatrix.m[0][0], m_WorldToScreenMatrix.m[0][1], m_WorldToScreenMatrix.m[0][2], 0,
-				m_WorldToScreenMatrix.m[1][0], m_WorldToScreenMatrix.m[1][1], m_WorldToScreenMatrix.m[1][2], 0,
-				m_WorldToScreenMatrix.m[2][0], m_WorldToScreenMatrix.m[2][1], m_WorldToScreenMatrix.m[2][2], 0,
-				m_WorldToScreenMatrix.m[3][0], m_WorldToScreenMatrix.m[3][1], m_WorldToScreenMatrix.m[3][2], -1,
-			};
-
-			double b0[4] = {
-				0 - m_WorldToScreenMatrix.m[0][3],
-				0 - m_WorldToScreenMatrix.m[1][3],
-				0 - m_WorldToScreenMatrix.m[2][3],
-				-m_WorldToScreenMatrix.m[3][3],
-			};
-
-			double bN[4] = {
-				0 - m_WorldToScreenMatrix.m[0][3],
-				0 - m_WorldToScreenMatrix.m[1][3],
-				1 - m_WorldToScreenMatrix.m[2][3],
-				-m_WorldToScreenMatrix.m[3][3],
-			};
-			double bR[4] = {
-				1 - m_WorldToScreenMatrix.m[0][3],
-				0 - m_WorldToScreenMatrix.m[1][3],
-				0 - m_WorldToScreenMatrix.m[2][3],
-				-m_WorldToScreenMatrix.m[3][3],
-			};
-
-			double bU[4] = {
-				0 - m_WorldToScreenMatrix.m[0][3],
-				1 - m_WorldToScreenMatrix.m[1][3],
-				0 - m_WorldToScreenMatrix.m[2][3],
-				-m_WorldToScreenMatrix.m[3][3],
-			};
-			if (!LUdecomposition(M, P, Q, L, U))
-			{
-				Tier0_Warning("AFXERROR in CCampathDrawer::OnPostRenderAllTools: LUdecomposition failed\n");
-			}
-			else
-			{
-				SolveWithLU(L, U, P, Q, b0, plane0);
-				SolveWithLU(L, U, P, Q, bN, planeN);
-
-				SolveWithLU(L, U, P, Q, bR, planeR);
-				SolveWithLU(L, U, P, Q, bU, planeU);
-			}
-
-			/*
-			vvPos = Vector3(plane0[0], plane0[1], plane0[2]);
-			vvForward = Vector3(planeN[0] -vvPos.X, planeN[1] -vvPos.Y, planeN[2]-vvPos.Z);
-			vvForward.Normalize();
-			vvRight = Vector3(planeR[0] -vvPos.X, planeR[1] -vvPos.Y, planeR[2]-vvPos.Z);
-			vvRight.Normalize();
-			vvUp = Vector3(planeU[0] -vvPos.X, planeU[1] -vvPos.Y, planeU[2]-vvPos.Z);
-			vvUp.Normalize();
-			*/
-
-			/*
-			Tier0_Msg("CCampathDrawer::OnPostRenderAllTools: curTime = %f\n",curTime);
-			Tier0_Msg("M[0]=%f %f %f %f\nM[1]=%f %f %f %f\nM[2]=%f %f %f %f\nM[3]=%f %f %f %f\n", M[0][0],M[0][1],M[0][2],M[0][3], M[1][0],M[1][1],M[1][2],M[1][3], M[2][0],M[2][1],M[2][2],M[2][3], M[3][0],M[3][1],M[3][2],M[3][3]);
-			Tier0_Msg("b0[0]=%f %f %f %f\n", b0[0], b0[1], b0[2], b0[3]);
-			Tier0_Msg("bN[0]=%f %f %f %f\n", bN[0], bN[1], bN[2], bN[3]);
-			Tier0_Msg("plane0=%f %f %f %f\n", plane0[0], plane0[1], plane0[2], plane0[3]);
-			Tier0_Msg("planeN=%f %f %f %f\n", planeN[0], planeN[1], planeN[2], planeN[3]);
-			*/
-
-			FLOAT vPlane0[4] = { (float)plane0[0], (float)plane0[1], (float)plane0[2], 0.0f };
-
-			Vector3 planeNormal(planeN[0] - plane0[0], planeN[1] - plane0[1], planeN[2] - plane0[2]);
-			planeNormal.Normalize();
-
+			FLOAT vPlane0[4] = { (float)planeOrigin.X, (float)planeOrigin.Y, (float)planeOrigin.Z, 0.0f };
 			FLOAT vPlaneN[4] = { (float)planeNormal.X, (float)planeNormal.Y, (float)planeNormal.Z, 0.0f };
 
 			m_Device->SetVertexShaderConstantF(49, vPlane0, 1);
@@ -402,7 +503,8 @@ void CCampathDrawer::OnPostRenderAllTools()
 		}
 
 		// Draw keyframes index:
-		if (m_DrawKeyframIndex) {
+		float drawKeyFrameIndex = dynamicPorperties->GetDrawKeyframeIndex();
+		if (drawKeyFrameIndex) {
 			if (nullptr == m_DigitsTexture)
 			{
 				if (SUCCEEDED(m_Device->CreateTexture(256, 128, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_DigitsTexture, NULL)))
@@ -498,10 +600,10 @@ void CCampathDrawer::OnPostRenderAllTools()
 						D3DMATRIX mat_identity = { { 1.0f, 0.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,  0.0f, 0.0f, 0.0f, 1.0f } };
 						D3DMATRIX mat_projection =
 						{
-							m_WorldToScreenMatrix.m[0][0], m_WorldToScreenMatrix.m[1][0], m_WorldToScreenMatrix.m[2][0], m_WorldToScreenMatrix.m[3][0],
-							m_WorldToScreenMatrix.m[0][1], m_WorldToScreenMatrix.m[1][1], m_WorldToScreenMatrix.m[2][1], m_WorldToScreenMatrix.m[3][1],
-							m_WorldToScreenMatrix.m[0][2], m_WorldToScreenMatrix.m[1][2], m_WorldToScreenMatrix.m[2][2], m_WorldToScreenMatrix.m[3][2],
-							m_WorldToScreenMatrix.m[0][3], m_WorldToScreenMatrix.m[1][3], m_WorldToScreenMatrix.m[2][3], m_WorldToScreenMatrix.m[3][3]
+							worldToScreenMatrix.m[0][0], worldToScreenMatrix.m[1][0], worldToScreenMatrix.m[2][0], worldToScreenMatrix.m[3][0],
+							worldToScreenMatrix.m[0][1], worldToScreenMatrix.m[1][1], worldToScreenMatrix.m[2][1], worldToScreenMatrix.m[3][1],
+							worldToScreenMatrix.m[0][2], worldToScreenMatrix.m[1][2], worldToScreenMatrix.m[2][2], worldToScreenMatrix.m[3][2],
+							worldToScreenMatrix.m[0][3], worldToScreenMatrix.m[1][3], worldToScreenMatrix.m[2][3], worldToScreenMatrix.m[3][3]
 						};
 						m_Device->SetTransform(D3DTS_WORLD, &mat_identity);
 						m_Device->SetTransform(D3DTS_VIEW, &mat_identity);
@@ -510,12 +612,10 @@ void CCampathDrawer::OnPostRenderAllTools()
 
 					int index = 0;
 
-					Vector3 vvRight(planeR[0] - plane0[0], planeR[1] - plane0[1], planeR[2] - plane0[2]);
-					vvRight.Normalize();
-					Vector3 vvUp(planeU[0] - plane0[0], planeU[1] - plane0[1], planeU[2] - plane0[2]);
-					vvUp.Normalize();
+					const Vector3 & vvRight = dynamicPorperties->GetPlaneRight();
+					const Vector3 & vvUp = dynamicPorperties->GetPlaneUp();
 
-					for (CamPathIterator it = g_Hook_VClient_RenderView.m_CamPath.GetBegin(); it != g_Hook_VClient_RenderView.m_CamPath.GetEnd(); ++it)
+					for (auto it = lessDynamicProperties->GetKeyframesBegin(); it != lessDynamicProperties->GetKeyframesEnd(); it++)
 					{
 						int digits = 0;
 						for (int t = index; 0 < t; t = t / 10)
@@ -524,8 +624,8 @@ void CCampathDrawer::OnPostRenderAllTools()
 						}
 						if (digits < 1) digits = 1;
 
-						double cpT = it.GetTime();
-						CamPathValue cpv = it.GetValue();
+						double cpT = it->GetTime();
+						CamPathValue cpv = it->GetValue();
 
 						int val = index;
 
@@ -534,10 +634,10 @@ void CCampathDrawer::OnPostRenderAllTools()
 							int cval = val % 10;
 							val = val / 10;
 
-							float left = -0.5f * m_DrawKeyframIndex * (i + 1);
-							float top = 0.5f * m_DrawKeyframIndex;
-							float bottom = -0.5f * m_DrawKeyframIndex;
-							float right = left + 0.5f * m_DrawKeyframIndex;
+							float left = -0.5f * drawKeyFrameIndex * (i + 1);
+							float top = 0.5f * drawKeyFrameIndex;
+							float bottom = -0.5f * drawKeyFrameIndex;
+							float right = left + 0.5f * drawKeyFrameIndex;
 
 							float tx = (32 * (cval % 8)) / 256.0f;
 							float ty = (64 * (cval / 8)) / 128.0f;
@@ -575,72 +675,24 @@ void CCampathDrawer::OnPostRenderAllTools()
 		m_Device->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
 
 		m_Device->SetVertexShader(vertexShader);
-		m_Device->SetVertexShaderConstantF(8, m_WorldToScreenMatrix.m[0], 4);
+		m_Device->SetVertexShaderConstantF(8, worldToScreenMatrix.m[0], 4);
 
 		m_Device->SetPixelShader(pixelShader);
 
 		m_Device->SetFVF(CCampathDrawer_VertexFVF);
 
 		// Draw trajectory:
-		if(2 <= g_Hook_VClient_RenderView.m_CamPath.GetSize() && campathCanEval)
+		if(2 <= lessDynamicProperties->GetKeyframesSize() && lessDynamicProperties->GetCampathCanEval())
 		{
-			if(m_RebuildDrawing)
-			{
-				// Rebuild trajectory points.
-				// This operation can be quite expensive (up to O(N^2)),
-				// so it should be done only when s.th.
-				// changed (which is what we do here).
-
-				m_TrajectoryPoints.clear();
-				
-				CamPathIterator last = g_Hook_VClient_RenderView.m_CamPath.GetBegin();				
-				CamPathIterator it = last;
-
-				TempPoint * pts = new TempPoint[c_CameraTrajectoryMaxPointsPerInterval];
-
-				for(++it; it != g_Hook_VClient_RenderView.m_CamPath.GetEnd(); ++it)
-				{
-					double delta = it.GetTime() -last.GetTime();
-
-					for(size_t i = 0; i<c_CameraTrajectoryMaxPointsPerInterval; i++)
-					{
-						double t = last.GetTime() + delta*((double)i/(c_CameraTrajectoryMaxPointsPerInterval-1));
-
-						CamPathValue cpv = g_Hook_VClient_RenderView.m_CamPath.Eval(t);
-
-						pts[i].t = t;
-						pts[i].y = Vector3(cpv.X, cpv.Y, cpv.Z);
-						pts[i].nextPt = i+1 <c_CameraTrajectoryMaxPointsPerInterval ? &(pts[i+1]) : 0;
-					}
-
-					RamerDouglasPeucker(&(pts[0]), &(pts[c_CameraTrajectoryMaxPointsPerInterval-1]), c_CameraTrajectoryEpsilon);
-
-					// add all points except the last one (to avoid duplicates):
-					for(TempPoint * pt = &(pts[0]); pt && pt->nextPt; pt = pt->nextPt)
-					{
-						m_TrajectoryPoints.push_back(pt->t);
-					}
-
-					last = it;
-				}
-
-				// add last point:
-				m_TrajectoryPoints.push_back(pts[c_CameraTrajectoryMaxPointsPerInterval-1].t);
-
-				delete[] pts;
-
-				m_RebuildDrawing = false;
-			}
-
 			newCScreenInfo[2] = c_CameraTrajectoryPixelWidth;
 			m_Device->SetVertexShaderConstantF(48, newCScreenInfo, 1);
 
 			AutoPolyLineStart();
 
-			std::list<double>::iterator itPts = m_TrajectoryPoints.begin();
+			auto itPts = lessDynamicProperties->GetTrajectoryPointsBegin();
 
-			CamPathIterator itKeysLast = g_Hook_VClient_RenderView.m_CamPath.GetBegin();
-			CamPathIterator itKeysNext = itKeysLast;
+			auto itKeysLast = lessDynamicProperties->GetKeyframesBegin();
+			auto itKeysNext = itKeysLast;
 			++itKeysNext;
 
 			bool hasLastPt = false;
@@ -671,22 +723,22 @@ void CCampathDrawer::OnPostRenderAllTools()
 				else
 				{
 					hasCurPt = true;
-					curPtTime = *itPts;
-					curPtValue = g_Hook_VClient_RenderView.m_CamPath.Eval(curPtTime);
+					curPtTime = itPts->GetTime();
+					curPtValue = itPts->GetValue();
 					++itPts;
 				}
 
-				while(itKeysNext.GetTime() < curPtTime)
+				while(itKeysNext->GetTime() < curPtTime)
 				{
 					itKeysLast = itKeysNext;
 					++itKeysNext;
 				}
 
-				if(itPts != m_TrajectoryPoints.end())
+				if(itPts != lessDynamicProperties->GetTrajectoryPointsEnd())
 				{
 					hasNextPt = true;
-					nextPtTime = *itPts;
-					nextPtValue = g_Hook_VClient_RenderView.m_CamPath.Eval(nextPtTime);
+					nextPtTime = itPts->GetTime();
+					nextPtValue = itPts->GetValue();
 					++itPts;
 				}
 				else
@@ -760,10 +812,10 @@ void CCampathDrawer::OnPostRenderAllTools()
 			bool lpSelected = false;
 			double lpTime;
 			
-			for(CamPathIterator it = g_Hook_VClient_RenderView.m_CamPath.GetBegin(); it != g_Hook_VClient_RenderView.m_CamPath.GetEnd(); ++it)
+			for(auto it = lessDynamicProperties->GetKeyframesBegin(); it != lessDynamicProperties->GetKeyframesEnd(); it++)
 			{
-				double cpT = it.GetTime();
-				CamPathValue cpv = it.GetValue();
+				double cpT = it->GetTime();
+				CamPathValue cpv = it->GetValue();
 
 				cameraMightBeSelected = cameraMightBeSelected || lpSelected && cpv.Selected && lpTime <= curTime && curTime <= cpT;
 
@@ -808,7 +860,7 @@ void CCampathDrawer::OnPostRenderAllTools()
 					);
 				}
 
-				if (m_DrawKeyframeAxis)
+				if (dynamicPorperties->GetDrawKeyframeAxis())
 				{
 					// x / forward line:
 
@@ -838,16 +890,16 @@ void CCampathDrawer::OnPostRenderAllTools()
 					);
 				}
 
-				if(m_DrawKeyframeCam) DrawCamera(cpv, colour, newCScreenInfo);
+				if(dynamicPorperties->GetDrawKeyframeCam()) DrawCamera(cpv, colour, newCScreenInfo);
 			}
 
 			AutoSingleLineFlush();
 		}
 
 		// Draw wireframe camera:
-		if(inCampath && campathCanEval)
+		if(dynamicPorperties->GetInCampath() && lessDynamicProperties->GetCampathCanEval())
 		{
-			DWORD colourCam = campathEnabled
+			DWORD colourCam = dynamicPorperties->GetCampathEnabled()
 				? D3DCOLOR_RGBA(
 					ValToUCCondInv(255,cameraMightBeSelected),
 					ValToUCCondInv(0,cameraMightBeSelected),
@@ -859,7 +911,7 @@ void CCampathDrawer::OnPostRenderAllTools()
 					ValToUCCondInv(255,cameraMightBeSelected),
 					128);
 
-			CamPathValue cpv = g_Hook_VClient_RenderView.m_CamPath.Eval(curTime);
+			CamPathValue cpv = dynamicPorperties->GetCurrentValue();
 
 			DrawCamera(cpv, colourCam, newCScreenInfo);
 		}

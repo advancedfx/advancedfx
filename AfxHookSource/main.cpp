@@ -157,40 +157,7 @@ public:
 		//Tier0_Msg("ClientEngineTools::PostRenderAllTools\n");
 		// Warning: This can be called multiple times during a frame (i.e. for skybox view and normal world view)!
 
-		static bool wasDrawing = false;
-		static int oldMatQueueMode = 0;
-			if (
-				g_CampathDrawer.Draw_get() // Campath drawer can't handle queued rendering
-			) {
-				m_Mat_Queue_Mode.RetryIfNull("mat_queue_mode");
-				if (m_Mat_Queue_Mode.IsValid()) {
-					// For engines where have cvar access:
-					float matQueueMode = m_Mat_Queue_Mode.GetInt();
-					if (!wasDrawing) {
-						oldMatQueueMode = matQueueMode;
-						wasDrawing = true;
-					}
-
-					if (0 != matQueueMode)
-						g_VEngineClient->ExecuteClientCmd("mat_queue_mode 0");
-				}
-				else {
-					g_VEngineClient->ExecuteClientCmd("mat_queue_mode 0");
-				}
-			}
-			else {
-				if (wasDrawing) {
-					wasDrawing = false;
-					char buffer[100];
-					snprintf(buffer, 100, "mat_queue_mode %i", (int)oldMatQueueMode);
-					g_VEngineClient->ExecuteClientCmd(buffer);
-				}
-			}
-		
-
-		if (g_SourceSdkVer != SourceSdkVer::SourceSdkVer_CSGO || g_AfxStreams.IsSingleThreaded())
-			g_CampathDrawer.OnPostRenderAllTools();
-
+		g_CampathDrawer.OnPostRenderAllTools_EngineThread();
 		g_Engine_ClientEngineTools->PostRenderAllTools();
 	}
 
@@ -3026,11 +2993,15 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 
 			AfxHookSource::Gui::DllProcessAttach();
 
+			g_CampathDrawer.Begin();
+
 			break;
 		}
 		case DLL_PROCESS_DETACH:
 		{
 			// actually this gets called now.
+
+			g_CampathDrawer.End();
 
 			MatRenderContextHook_Shutdown();
 
