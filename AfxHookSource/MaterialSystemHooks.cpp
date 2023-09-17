@@ -32,12 +32,13 @@ public:
     }
 
 	virtual int AddRef() {
-        return m_RefCount++;
+        int value = ++m_RefCount;
+        return value;
     }
 
 	virtual int Release() {
-        int value = m_RefCount--;
-        if(0 ==value) {
+        int value = --m_RefCount;
+        if(0 == value) {
             delete m_Functor;
             delete this;
         }
@@ -62,12 +63,13 @@ public:
     }
 
 	virtual int AddRef() {
-        return m_RefCount++;
+        int value = ++m_RefCount;
+        return value;
     }
 
 	virtual int Release() {
-        int value = m_RefCount--;
-        if(0 ==value) {
+        int value = --m_RefCount;
+        if(0 == value) {
             delete m_Functor;
             delete this;
         }
