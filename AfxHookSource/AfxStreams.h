@@ -1561,13 +1561,18 @@ private:
 		std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
 		while (m_Recording || 0 < m_CapturesLeft || !m_In.empty()) {
 			if (!m_In.empty()) {
-				m_Task = m_In.front();
-				m_In.pop_front();
-				lock.unlock();
-				CaptureEnd();
-				delete m_Task;
-				m_Task = nullptr;
-				lock.lock();
+				class CBuffers* buffers = m_In.front();
+				if(buffers->GetSize() >= m_Streams.size()) {
+					m_Task = buffers;
+					m_In.pop_front();
+					lock.unlock();
+					CaptureEnd();
+					delete m_Task;
+					m_Task = nullptr;
+					lock.lock();
+				} else {
+					m_ProcessingThreadCv.wait(lock);
+				}
 			} else {
 				m_ProcessingThreadCv.wait(lock);
 			}
@@ -4171,7 +4176,7 @@ private:
 		virtual void OnCapture(class ICapture* capture) {
 			std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
 			if (capture) capture->AddRef();
-			m_Capture = capture;
+			m_Captures.push_back(capture);
 			m_ProcessingThreadCv.notify_one();
 		}
 
@@ -4190,7 +4195,7 @@ private:
 		std::mutex m_ProcessingThreadMutex;
 		std::condition_variable m_ProcessingThreadCv;
 		std::thread m_ProcessingThread;
-		class ICapture* m_Capture = nullptr;
+		std::list<class ICapture*> m_Captures;
 		bool m_Shutdown = false;
 		CAfxOutVideoStreamCreator* m_OutVideoStreamCreator;
 		advancedfx::COutVideoStream* m_OutVideoStream = nullptr;

@@ -11626,35 +11626,45 @@ void CAfxStreams::DrawingThread_Capture() {
 
 void CAfxStreams::CDrawingRecordScreenOutput::ProcessingThreadFunc() {
 	std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
-	while (!m_Shutdown || m_Capture) {
-		m_ProcessingThreadCv.wait(lock);
-		if (m_Capture) {
-			ICapture* outCapture = CAfxTransformer::TransformStripAlpha(m_Capture);
-			m_Capture->Release();
-			if (m_Capture = outCapture) {
-				if (const advancedfx::IImageBuffer* buffer = m_Capture->GetBuffer()) {
-					if (m_OutVideoStream == nullptr) {
-						m_OutVideoStream = m_OutVideoStreamCreator->CreateOutVideoStream(*buffer->GetImageBufferFormat());
-						if (nullptr == m_OutVideoStream)
-						{
-							Tier0_Warning("AFXERROR: Failed to create image stream for screen recording.\n");
+	while (!m_Shutdown || !m_Captures.empty()) {
+		if (!m_Captures.empty()) {
+			ICapture* capture = m_Captures.front();
+			m_Captures.pop_front();
+			
+			lock.unlock();
+
+			if(capture) {
+				ICapture* outCapture = CAfxTransformer::TransformStripAlpha(capture);
+				capture->Release();
+				if (outCapture) {
+					if (const advancedfx::IImageBuffer* buffer = outCapture->GetBuffer()) {
+						if (m_OutVideoStream == nullptr) {
+							m_OutVideoStream = m_OutVideoStreamCreator->CreateOutVideoStream(*buffer->GetImageBufferFormat());
+							if (nullptr == m_OutVideoStream)
+							{
+								Tier0_Warning("AFXERROR: Failed to create image stream for screen recording.\n");
+							}
+							else
+							{
+								m_OutVideoStream->AddRef();
+							}
 						}
-						else
+						if (nullptr != m_OutVideoStream && !m_OutVideoStream->SupplyImageBuffer(buffer))
 						{
-							m_OutVideoStream->AddRef();
+							Tier0_Warning("AFXERROR: Failed writing image for screen recording.\n");
 						}
 					}
-					if (nullptr != m_OutVideoStream && !m_OutVideoStream->SupplyImageBuffer(buffer))
-					{
-						Tier0_Warning("AFXERROR: Failed writing image for screen recording.\n");
+					else {
+						Tier0_Warning("AFXERROR: Could not get capture buffer for screen recording.\n");
 					}
+					outCapture->Release();
+					outCapture = nullptr;
 				}
-				else {
-					Tier0_Warning("AFXERROR: Could not get capture buffer for screen recording.\n");
-				}
-				m_Capture->Release();
-				m_Capture = nullptr;
 			}
+
+			lock.lock();
+		} else {
+			m_ProcessingThreadCv.wait(lock);
 		}
 	}
 	if (m_OutVideoStream) m_OutVideoStream->Release();

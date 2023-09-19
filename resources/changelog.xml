@@ -6,6 +6,18 @@
 
 <release>
 <name>HLAE</name>
+<version>2.148.3.2</version>
+<time>2023-09-19T15:15Z</time>
+<changes>
+<change type="updated">Included AfxHookSource 2.121.5.1 (2023-09-19T15:15Z).</change>
+<change type="updated">Updated zlib dependency.</change>
+<change type="updated">Updated Visual Studio / did a full rebuild of binaries.</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.148.2</version>
 <time>2023-09-06T19:00Z</time>
 <changes>

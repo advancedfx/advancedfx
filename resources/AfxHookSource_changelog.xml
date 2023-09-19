@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.121.5.2</version>
+<time>2023-09-19T15:15Z</time>
+<changes>
+<change type="fixed">Fixes #861 mat_queue_mode forcing related crash when drawing campaths / screen recording e.g. in TF2.</change>
+<change type="fixed">Fixed crashes in mirv_streams under some conditions e.g. when using matte (alpha) stream, thanks Anthony.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.121.4</version>
 <time>2023-08-26T19:11Z</time>
 <changes>
