@@ -1,58 +1,51 @@
 #pragma once
 
-#include <WrpConsole.h>
-
-#include <shared/AfxMath.h>
+#include "AfxConsole.h"
+#include "AfxMath.h"
 
 #include <string>
 #include <map>
 #include <vector>
 #include <list>
+#include <queue>
+
+class IExecuteClientCmdForCommandSystem {
+public:
+	virtual void ExecuteClientCmd(const char * value) = 0;
+};
+
+class IGetTickForCommandSystem {
+public:
+	virtual float GetTick() = 0;
+};
+
+class IGetTimeForCommandSystem {
+public:
+	virtual float GetTime() = 0;
+};
 
 class CommandSystem
 {
 public:
 	bool Enabled;
 
-	CommandSystem();
+	/// <param name="pExecuteClientCmd">must not be nullptr</param>
+	/// <param name="pGetTick">can be nullptr</param>
+	/// <param name="pGetTime">can be nullptr</param>
+	CommandSystem(class IExecuteClientCmdForCommandSystem * pExecuteClientCmd,
+		class IGetTickForCommandSystem * pGetTick,
+		class IGetTimeForCommandSystem * pGetTime
+	);
 
 	~CommandSystem() {
 		Clear();
 	}
 
-	void Add(char const * command);
-	void AddTick(char const * command);
+	void OnExecuteCommands(void);
 
-	void AddAtTime(char const* command, double time);
-	void AddAtTick(char const* command, double tick);
+	void OnLevelInitPreEntity(void);
 
-	void AddCurves(IWrpCommandArgs* args);
-
-	void EditStart(double startTime);
-	void EditStartTick(double startTick);
-
-	void EditCommand(IWrpCommandArgs* args);
-
-	bool Remove(int index);
-
-	void Clear(void);
-
-	bool Save(wchar_t const * fileName);
-	bool Load(wchar_t const * fileName);
-
-	void Console_List(void);
-
-	void Do_Commands(void);
-
-	void OnLevelInitPreEntityAllTools(void);
-
-	double GetLastTime(void) {
-		return m_LastTime;
-	}
-
-	double GetLastTick(void) {
-		return m_LastTick;
-	}
+	void Console_Command(advancedfx::ICommandArgs* args);
 
 private:
 	class CDoubleInterp
@@ -196,7 +189,7 @@ private:
 			m_Interp.clear();
 		}
 
-		bool DoCommand(double t01);
+		bool DoCommand(double t01, std::queue<std::string> & commandsToExecute);
 
 	private:
 		bool m_OnlyOnce = false;
@@ -292,7 +285,7 @@ private:
 				if (t01 < 0) t01 = 0;
 				else if (1 < t01) t01 = 1;
 
-				root->Command->DoCommand(t01);
+				root->Command->DoCommand(t01, m_CommandsToExecute);
 			}
 		}
 
@@ -307,6 +300,8 @@ private:
 
 	std::multimap<Interval, CCommand*> m_TickMap;
 	std::multimap<Interval, CCommand*> m_TimeMap;
+
+	std::queue<std::string> m_CommandsToExecute;
 
 	void DeleteTickTree()
 	{
@@ -348,7 +343,39 @@ private:
 	bool IsSupportedByTime(void);
 	bool IsSupportedByTick(void);
 
-	void EditCommandCurves(Interval I, CCommand * c, IWrpCommandArgs* args);
-};
+	void EditCommandCurves(Interval I, CCommand * c, advancedfx::ICommandArgs* args);
 
-extern CommandSystem g_CommandSystem;
+	class IExecuteClientCmdForCommandSystem * m_pExecuteClientCmd = nullptr;
+	class IGetTickForCommandSystem * m_pGetTick = nullptr;
+	class IGetTimeForCommandSystem * m_pGetTime = nullptr;
+
+	void Add(char const * command);
+	void AddTick(char const * command);
+
+	void AddAtTime(char const* command, double time);
+	void AddAtTick(char const* command, double tick);
+
+	void AddCurves(advancedfx::ICommandArgs* args);
+
+	void EditStart(double startTime);
+	void EditStartTick(double startTick);
+
+	void EditCommand(advancedfx::ICommandArgs* args);
+
+	bool Remove(int index);
+
+	void Clear(void);
+
+	bool Save(wchar_t const * fileName);
+	bool Load(wchar_t const * fileName);
+
+	void Console_List(void);
+
+	double GetLastTime(void) {
+		return m_LastTime;
+	}
+
+	double GetLastTick(void) {
+		return m_LastTick;
+	}
+};

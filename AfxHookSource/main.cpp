@@ -27,7 +27,7 @@
 #include "csgo_Stdshader_dx9_Hooks.h"
 #include "AfxShaders.h"
 #include "csgo_CViewRender.h"
-#include "CommandSystem.h"
+#include "../shared/CommandSystem.h"
 #include "ClientTools.h"
 #include "csgo/ClientToolsCsgo.h"
 #include "tf2/ClientToolsTf2.h"
@@ -128,6 +128,40 @@ SOURCESDK::IClientEngineTools_001 * g_Engine_ClientEngineTools;
 
 bool g_bFirstSwapBuffersCallForFrame = false;
 
+extern WrpVEngineClient * g_VEngineClient;
+
+class CExecuteClientCmdForCommandSystem : public IExecuteClientCmdForCommandSystem {
+public:
+	virtual void ExecuteClientCmd(const char * value) {
+		if(g_VEngineClient) g_VEngineClient->ExecuteClientCmd(value);
+	}
+} g_ExecuteClientCmdForCommandSystem;
+
+class CGetTickForCommandSystem : public IGetTickForCommandSystem {
+public:
+	virtual float GetTick() {
+		float tick = 0;
+		if(g_VEngineClient) {
+			if(auto pDemoInfoEx = g_VEngineClient->GetDemoInfoEx()) {
+				tick = (float) pDemoInfoEx->GetDemoPlaybackTick();
+				if(auto pGlobals = g_Hook_VClient_RenderView.GetGlobals()) {
+					tick += pGlobals->interpolation_amount_get();
+				}
+			}
+		}
+		return tick;
+	}
+} g_GetTickForCommandSystem;
+
+class CGetTimeForCommandSystem : public IGetTimeForCommandSystem {
+public:
+	virtual float GetTime() {
+		return g_MirvTime.GetTime();
+	}
+} g_GetTimeForCommandSystem;
+
+class CommandSystem g_CommandSystem(&g_ExecuteClientCmdForCommandSystem, &g_GetTickForCommandSystem, &g_GetTimeForCommandSystem);
+
 class ClientEngineTools : public SOURCESDK::IClientEngineTools_001
 {
 public:
@@ -135,7 +169,7 @@ public:
 
 	virtual void LevelInitPreEntityAllTools()
 	{
-		g_CommandSystem.OnLevelInitPreEntityAllTools();
+		g_CommandSystem.OnLevelInitPreEntity();
 
 		g_Engine_ClientEngineTools->LevelInitPreEntityAllTools();
 	}
@@ -147,7 +181,7 @@ public:
 		//Tier0_Msg("ClientEngineTools::PreRenderAllTools\n");
 		// Warning: This can be called multiple times during a frame (i.e. for skybox view and normal world view)!
 
-		g_CommandSystem.Do_Commands();
+		g_CommandSystem.OnExecuteCommands();
 
 		g_Engine_ClientEngineTools->PreRenderAllTools();
 	}

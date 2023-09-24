@@ -2,25 +2,22 @@
 
 #include "CommandSystem.h"
 
-#include "WrpVEngineClient.h"
-#include "RenderView.h"
-#include "MirvTime.h"
+#include "StringTools.h"
 
-#include <deps/release/rapidxml/rapidxml.hpp>
-#include <deps/release/rapidxml/rapidxml_print.hpp>
-
-#include <shared/StringTools.h>
+#include "../deps/release/rapidxml/rapidxml.hpp"
+#include "../deps/release/rapidxml/rapidxml_print.hpp"
 
 //TODO: Reduce code duplication.
 
-extern WrpVEngineClient * g_VEngineClient;
-
-CommandSystem g_CommandSystem;
-
-CommandSystem::CommandSystem()
+CommandSystem::CommandSystem(class IExecuteClientCmdForCommandSystem * pExecuteClientCmd,
+		class IGetTickForCommandSystem * pGetTick,
+		class IGetTimeForCommandSystem * pGetTime)
 : Enabled(true)
 , m_LastTime(-1)
 , m_LastTick(-1)
+, m_pExecuteClientCmd(pExecuteClientCmd)
+, m_pGetTick(pGetTick)
+, m_pGetTime(pGetTime)
 {
 
 }
@@ -36,8 +33,7 @@ void CommandSystem::AddAtTime(char const* command, double time)
 {
 	if (!IsSupportedByTime())
 	{
-		Tier0_Warning("Error: Missing hooks for supporting scheduling by time.\n");
-		return;
+		advancedfx::Warning("Warning: Missing hooks for supporting scheduling by time.\n");
 	}
 
 	CCommand* cmd = new CCommand();
@@ -60,8 +56,7 @@ void CommandSystem::AddAtTick(char const* command, double tick)
 {
 	if (!IsSupportedByTick())
 	{
-		Tier0_Warning("Error: Missing hooks for supporting scheduling by tick.\n");
-		return;
+		advancedfx::Warning("Warning: Missing hooks for supporting scheduling by tick.\n");
 	}
 
 	CCommand* cmd = new CCommand();
@@ -495,11 +490,11 @@ bool CommandSystem::Load(wchar_t const * fileName)
 
 	if (bUsedByTick && !IsSupportedByTick())
 	{
-		Tier0_Warning("Error: Missing hooks for supporting scheduling by tick.\n");
+		advancedfx::Warning("Warning: Missing hooks for supporting scheduling by tick.\n");
 	}
 	if (bUsedByTick && !IsSupportedByTime())
 	{
-		Tier0_Warning("Error: Missing hooks for supporting scheduling by time.\n");
+		advancedfx::Warning("Warning: Missing hooks for supporting scheduling by time.\n");
 	}
 
 	return bOk;
@@ -509,13 +504,13 @@ void CommandSystem::Console_List(void)
 {
 	int idx = 0;
 
-	Tier0_Msg("index: tick -> command\n");
+	advancedfx::Message("index: tick -> command\n");
 
 	for (auto it = m_TickMap.begin(); it != m_TickMap.end(); ++it)
 	{
 		if (it->first.Low == it->first.High)
 		{
-			Tier0_Msg("%i: %f (eps=%i) -> %s\n",
+			advancedfx::Message("%i: %f (eps=%i) -> %s\n",
 				idx,
 				it->first.Low,
 				it->first.Epsilon,
@@ -524,7 +519,7 @@ void CommandSystem::Console_List(void)
 		}
 		else
 		{
-			Tier0_Msg("%i: %f - %f (eps=%i) -> %s\n",
+			advancedfx::Message("%i: %f - %f (eps=%i) -> %s\n",
 				idx,
 				it->first.Low,
 				it->first.High,
@@ -535,15 +530,15 @@ void CommandSystem::Console_List(void)
 		++idx;
 	}
 
-	Tier0_Msg("----\n");
+	advancedfx::Message("----\n");
 
-	Tier0_Msg("index: time -> command\n");
+	advancedfx::Message("index: time -> command\n");
 
 	for (auto it = m_TimeMap.begin(); it != m_TimeMap.end(); ++it)
 	{
 		if (it->first.Low == it->first.High)
 		{
-			Tier0_Msg("%i: %f (eps=%i) -> %s\n",
+			advancedfx::Message("%i: %f (eps=%i) -> %s\n",
 				idx,
 				it->first.Low,
 				it->first.Epsilon,
@@ -552,7 +547,7 @@ void CommandSystem::Console_List(void)
 		}
 		else
 		{
-			Tier0_Msg("%i: %f - %f (eps=%i) -> %s\n",
+			advancedfx::Message("%i: %f - %f (eps=%i) -> %s\n",
 				idx,
 				it->first.Low,
 				it->first.High,
@@ -563,16 +558,19 @@ void CommandSystem::Console_List(void)
 		++idx;
 	}
 
-	Tier0_Msg("----\n");
+	advancedfx::Message("----\n");
 }
 
-void CommandSystem::Do_Commands(void)
+void CommandSystem::OnExecuteCommands(void)
 {
+	// We first collect all commands to be execute and only then execute them to prevent consistency errors
+	// due to commands accessing the command system itself.
+
 	if (IsSupportedByTick())
 	{
-		double tick = (double)g_VEngineClient->GetDemoInfoEx()->GetDemoPlaybackTick() + (double)g_Hook_VClient_RenderView.GetGlobals()->interpolation_amount_get();
+		double tick = (double)m_pGetTick->GetTick();
 
-		//Tier0_Msg("%i\n", tick);
+		//advancedfx::Message("%i\n", tick);
 
 		if (0 != tick) // this can happen when using the prev-tick button on demoui
 		{
@@ -589,9 +587,9 @@ void CommandSystem::Do_Commands(void)
 
 	if (IsSupportedByTime())
 	{
-		double time = g_MirvTime.GetTime();
+		double time = (double)m_pGetTime->GetTime();
 
-		//Tier0_Msg("%f\n", time);
+		//advancedfx::Message("%f\n", time);
 
 		if (Enabled && 0 < m_TimeMap.size() && m_LastTime != time)
 		{
@@ -602,9 +600,14 @@ void CommandSystem::Do_Commands(void)
 
 		m_LastTime = time;
 	}
+
+	while(!m_CommandsToExecute.empty()) {
+		if(m_pExecuteClientCmd) m_pExecuteClientCmd->ExecuteClientCmd(m_CommandsToExecute.front().c_str());
+		m_CommandsToExecute.pop();
+	}
 }
 
-void CommandSystem::OnLevelInitPreEntityAllTools(void)
+void CommandSystem::OnLevelInitPreEntity(void)
 {
 	m_LastTime = -1;
 	m_LastTick = -1;
@@ -612,20 +615,19 @@ void CommandSystem::OnLevelInitPreEntityAllTools(void)
 
 bool CommandSystem::IsSupportedByTime(void)
 {
-	return 0 != g_VEngineClient && 0 != g_Hook_VClient_RenderView.GetGlobals();
+	return nullptr != m_pGetTime;
 }
 
 bool CommandSystem::IsSupportedByTick(void)
 {
-	return 0 != g_VEngineClient && 0 != g_Hook_VClient_RenderView.GetGlobals() && 0 != g_VEngineClient->GetDemoInfoEx();
+	return nullptr != m_pGetTick;
 }
 
-
-bool CommandSystem::CCommand::DoCommand(double t01)
+bool CommandSystem::CCommand::DoCommand(double t01, std::queue<std::string> & commandsToExecute)
 {
 	if (!m_Formated)
 	{
-		g_VEngineClient->ClientCmd_Unrestricted(m_Command.c_str()); // We don't use ExecuteCliendCmd here, because people might clear the commands while they are executed, which we would need to track otherwise in order to prevent crashes, should be accurate enough hopefully.
+		commandsToExecute.emplace(m_Command);
 		return true;
 	}
 	
@@ -695,12 +697,11 @@ bool CommandSystem::CCommand::DoCommand(double t01)
 		}
 	}
 
-	g_VEngineClient->ClientCmd_Unrestricted(fCommand.c_str());
-
+	commandsToExecute.emplace(fCommand);
 	return true;
 }
 
-void CommandSystem::AddCurves(IWrpCommandArgs* args)
+void CommandSystem::AddCurves(advancedfx::ICommandArgs* args)
 {
 	const char* arg0 = args->ArgV(0);
 	int argC = args->ArgC();
@@ -727,7 +728,7 @@ void CommandSystem::AddCurves(IWrpCommandArgs* args)
 			tick = false;
 		}
 		else {
-			Tier0_Warning("AFXERRORR: Expected time or tick.\n");
+			advancedfx::Warning("AFXERRORR: Expected time or tick.\n");
 			delete cmd;
 			return;
 		}
@@ -765,7 +766,7 @@ void CommandSystem::AddCurves(IWrpCommandArgs* args)
 
 			if ((breakPoint - idx) & 0x1)
 			{
-				Tier0_Warning("AFXERRORR: CurveTime-Value pairs are not balanced (are odd).\n");
+				advancedfx::Warning("AFXERRORR: CurveTime-Value pairs are not balanced (are odd).\n");
 				delete cmd;
 				return;
 			}
@@ -787,7 +788,7 @@ void CommandSystem::AddCurves(IWrpCommandArgs* args)
 
 		if(argC <= idx || 0 != strcmp("--", args->ArgV(idx)))
 		{
-			Tier0_Warning("AFXERRORR: Commands separator \"--\" not found.\n");
+			advancedfx::Warning("AFXERRORR: Commands separator \"--\" not found.\n");
 			delete cmd;
 			return;
 		}
@@ -821,7 +822,7 @@ void CommandSystem::AddCurves(IWrpCommandArgs* args)
 		return;
 	}
 
-	Tier0_Msg(
+	advancedfx::Message(
 		"%s tick <iStartTick> <iEndTick> [\"-\" [interp=(linear|cubic)] [space=rel|abs] <fCurveTime1> <fCurveValue1> ... <fCurveTimeN> <fCurveValueN>]* \"--\" <formatedCommand1> ... <formatedCommandM> - adds a curve based on ticks, curveTime is in [0,1]. \n"
 		"%s time <fStartTime> <iEndTime> [\"-\" [interp=(linear|cubic)] [space=rel|abs] <fCurveTime1> <fCurveValue1> ... <fCurveTimeN> <fCurveValueN>]* \"--\" <formatedCommand1> ... <formatedCommandM> - adds a curve based on time, curveTime is in [0,1]. \n"
 		, arg0
@@ -829,7 +830,7 @@ void CommandSystem::AddCurves(IWrpCommandArgs* args)
 	);
 }
 
-void CommandSystem::EditCommand(IWrpCommandArgs* args)
+void CommandSystem::EditCommand(advancedfx::ICommandArgs* args)
 {
 	const char* arg0 = args->ArgV(0);
 	int argC = args->ArgC();
@@ -882,7 +883,7 @@ void CommandSystem::EditCommand(IWrpCommandArgs* args)
 
 		if (nullptr == cmd)
 		{
-			Tier0_Warning("AFXERROR: Invalid command index.\n");
+			advancedfx::Warning("AFXERROR: Invalid command index.\n");
 			return;
 		}
 
@@ -921,7 +922,7 @@ void CommandSystem::EditCommand(IWrpCommandArgs* args)
 				return;
 			}
 
-			Tier0_Msg(
+			advancedfx::Message(
 				"%s start [noAuto] <fValue> -  Set start tick / time, if noAuto option is given, then the end is not automatically shifted as well.\n"
 				"Current value: %i\n"
 				, arg0
@@ -962,7 +963,7 @@ void CommandSystem::EditCommand(IWrpCommandArgs* args)
 				return;
 			}
 
-			Tier0_Msg(
+			advancedfx::Message(
 				"%s end [noAuto] <fValue> -  Set start tick / time, if noAuto option is given, then the start is not automatically shifted as well.\n"
 				"Current value: %i\n"
 				, arg0
@@ -994,7 +995,7 @@ void CommandSystem::EditCommand(IWrpCommandArgs* args)
 				return;
 			}
 
-			Tier0_Msg(
+			advancedfx::Message(
 				"%s epsilon 0|1 -  Set if command string is formated (1) (usually e.g. for curve values) or not (0).\n"
 				"Current value: %i\n"
 				, arg0
@@ -1018,7 +1019,7 @@ void CommandSystem::EditCommand(IWrpCommandArgs* args)
 				return;
 			}
 
-			Tier0_Msg(
+			advancedfx::Message(
 				"%s cmd <sSommand1> ... <sSommandN> - Set if to use open (0) or closed interval (1) end.\n"
 				"Current value: %s\n"
 				, arg0
@@ -1034,7 +1035,7 @@ void CommandSystem::EditCommand(IWrpCommandArgs* args)
 				return;
 			}
 
-			Tier0_Msg(
+			advancedfx::Message(
 				"%s formated 0|1 -  Set if command string is formated (1) (usually e.g. for curve values) or not (0}.\n"
 				"Current value: %i\n"
 				, arg0
@@ -1044,13 +1045,13 @@ void CommandSystem::EditCommand(IWrpCommandArgs* args)
 		}
 		else if (0 == _stricmp("curves", arg2))
 		{
-			CSubWrpCommandArgs subArgs(args, 3);
+			advancedfx::CSubCommandArgs subArgs(args, 3);
 			EditCommandCurves(interval, cmd, &subArgs);
 			return;
 		}
 	}
 
-	Tier0_Msg(
+	advancedfx::Message(
 		"%s <index> start [...] - Edit start tick / time.\n"
 		"%s <index> end [...] - Edit end tick / time.\n"
 		"%s <index> epsilon [...] - Edit if to use open or closed interval end.\n"
@@ -1067,7 +1068,7 @@ void CommandSystem::EditCommand(IWrpCommandArgs* args)
 	);
 }
 
-void CommandSystem::EditCommandCurves(Interval I, CCommand* c, IWrpCommandArgs* args)
+void CommandSystem::EditCommandCurves(Interval I, CCommand* c, advancedfx::ICommandArgs* args)
 {
 	const char* arg0 = args->ArgV(0);
 	int argC = args->ArgC();
@@ -1082,7 +1083,7 @@ void CommandSystem::EditCommandCurves(Interval I, CCommand* c, IWrpCommandArgs* 
 			if (-1 == curveIndex) curveIndex = (int)c->GetSize();
 			if (curveIndex < 0 || (int)c->GetSize() < curveIndex)
 			{
-				Tier0_Warning("Invalid curve index.\n");
+				advancedfx::Warning("Invalid curve index.\n");
 				return;
 			}
 
@@ -1094,7 +1095,7 @@ void CommandSystem::EditCommandCurves(Interval I, CCommand* c, IWrpCommandArgs* 
 			int curveIndex = atoi(args->ArgV(2));
 			if (curveIndex < 0 || (int)c->GetSize() <= curveIndex)
 			{
-				Tier0_Warning("Invalid curve index.\n");
+				advancedfx::Warning("Invalid curve index.\n");
 				return;
 			}
 			if (4 <= argC)
@@ -1137,7 +1138,7 @@ void CommandSystem::EditCommandCurves(Interval I, CCommand* c, IWrpCommandArgs* 
 						++cidx;
 					}
 
-					Tier0_Warning("Invalid key/value index.\n");
+					advancedfx::Warning("Invalid key/value index.\n");
 					return;
 				}
 				else if (0 == _stricmp("remove", curveCmd) && 5 <= argC)
@@ -1156,7 +1157,7 @@ void CommandSystem::EditCommandCurves(Interval I, CCommand* c, IWrpCommandArgs* 
 						++cidx;
 					}
 
-					Tier0_Warning("Invalid key/value index.\n");
+					advancedfx::Warning("Invalid key/value index.\n");
 					return;
 				}
 				else if (0 == _stricmp("clear", curveCmd) && 4 <= argC)
@@ -1175,7 +1176,7 @@ void CommandSystem::EditCommandCurves(Interval I, CCommand* c, IWrpCommandArgs* 
 						double d = I.High - I.Low;
 						double absKey = key * d + I.Low;
 
-						Tier0_Msg(
+						advancedfx::Message(
 							"%i: %f (%f) -> %f\n",
 							idx,
 							key,
@@ -1190,7 +1191,7 @@ void CommandSystem::EditCommandCurves(Interval I, CCommand* c, IWrpCommandArgs* 
 				}
 			}
 
-			Tier0_Msg(
+			advancedfx::Message(
 				"%s edit %i add [abs] <fKey> <fValue> - Insert value at key (overwriting existing values), use \"abs\" for inserting in absolute tick / time space of the command.\n"
 				"%s edit %i edit <iIndex> <fValue> - Edit value position <iIndex>.\n"
 				"%s edit %i remove <iIndex> - Remove at position <iIndex>.\n"
@@ -1209,7 +1210,7 @@ void CommandSystem::EditCommandCurves(Interval I, CCommand* c, IWrpCommandArgs* 
 			int curveIndex = atoi(args->ArgV(2));
 			if (curveIndex < 0 || (int)c->GetSize() <= curveIndex)
 			{
-				Tier0_Warning("Invalid curve index.\n");
+				advancedfx::Warning("Invalid curve index.\n");
 				return;
 			}
 			
@@ -1220,7 +1221,7 @@ void CommandSystem::EditCommandCurves(Interval I, CCommand* c, IWrpCommandArgs* 
 			int curveIndex = atoi(args->ArgV(2));
 			if (curveIndex < 0 || (int)c->GetSize() <= curveIndex)
 			{
-				Tier0_Warning("Invalid curve index.\n");
+				advancedfx::Warning("Invalid curve index.\n");
 				return;
 			}
 
@@ -1235,10 +1236,10 @@ void CommandSystem::EditCommandCurves(Interval I, CCommand* c, IWrpCommandArgs* 
 		}
 		else if (0 == _stricmp("print", arg1))
 		{
-			Tier0_Msg("Curves:\n");
+			advancedfx::Message("Curves:\n");
 			for (int i = 0; i < (int)c->GetSize(); ++i)
 			{
-				Tier0_Msg("%i: interp=%s size=%i\n"
+				advancedfx::Message("%i: interp=%s size=%i\n"
 					, i
 					, c->GetInterp(i) == CDoubleInterp::Method_Linear ? "linear" : "cubic"
 					, c->GetMap(i).size()
@@ -1249,13 +1250,220 @@ void CommandSystem::EditCommandCurves(Interval I, CCommand* c, IWrpCommandArgs* 
 		}
 	}
 
-	Tier0_Msg(
+	advancedfx::Message(
 		"%s add <iIndex> - Add a curve at position <iIndex> (use -1 for inserting at the end).\n"
 		"%s edit <iIndex> [...] - Edit curve at position <iIndex>.\n"
 		"%s remove <iIndex> - Remove curve at position <iIndex>.\n"
 		"%s interp <iIndex> linear|cubic - Edit interpolation of curve at position <iIndex>.\n"
 		"%s clear - Remove all curves.\n"
 		"%s print - Print curves briefly.\n"
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+	);
+}
+
+void CommandSystem::Console_Command(advancedfx::ICommandArgs* args) {
+	int argc = args->ArgC();
+	const char * arg0 = args->ArgV(0);
+
+	if(2 <= argc)
+	{
+		char const * subcmd = args->ArgV(1);
+
+		if (!_stricmp("addTick", subcmd))
+		{
+			std::string cmds("");
+
+			for (int i = 2; i < args->ArgC(); ++i)
+			{
+				if (2 < i) cmds.append(" ");
+
+				cmds.append(args->ArgV(i));
+			}
+
+			this->AddTick(
+				cmds.c_str()
+			);
+			return;
+		}
+		else if(!_stricmp("add", subcmd))
+		{
+			std::string cmds("");
+
+			for(int i = 2; i < args->ArgC(); ++i)
+			{
+				if(2 < i) cmds.append(" ");
+				
+				cmds.append(args->ArgV(i));
+			}
+
+			this->Add(
+				cmds.c_str()
+			);
+			return;
+		}
+		else if (!_stricmp("addAtTick", subcmd) && 3 <= args->ArgC())
+		{
+			std::string cmds("");
+
+			for (int i = 3; i < args->ArgC(); ++i)
+			{
+				if (3 < i) cmds.append(" ");
+
+				cmds.append(args->ArgV(i));
+			}
+
+			this->AddAtTick(
+				cmds.c_str(),
+				atof(args->ArgV(2))
+			);
+			return;
+		}
+		else if (!_stricmp("addAtTime", subcmd) && 3 <= args->ArgC())
+		{
+			std::string cmds("");
+
+			for (int i = 3; i < args->ArgC(); ++i)
+			{
+				if (3 < i) cmds.append(" ");
+
+				cmds.append(args->ArgV(i));
+			}
+
+			this->AddAtTime(
+				cmds.c_str(),
+				atof(args->ArgV(2))
+			);
+			return;
+		}
+		else if (0 == _stricmp("addCurves", subcmd))
+		{
+			advancedfx::CSubCommandArgs subArgs(args, 2);
+
+			this->AddCurves(&subArgs);
+			return;
+		}
+		else if(!_stricmp("enabled", subcmd))
+		{
+			if(3 <= argc)
+			{
+				this->Enabled = 0 != atof(args->ArgV(2));
+				return;
+			}
+
+			advancedfx::Message(
+				"%s enabled 0|1 - Disable / enable command system.\n"
+				"Current value: %s\n"
+				, arg0
+				, this->Enabled ? "1" : "0"
+			);
+			return;
+		}
+		else if(!_stricmp("clear", subcmd) && 2 == argc)
+		{
+			this->Clear();
+
+			return;
+		}
+		else if(!_stricmp("print", subcmd) && 2 == argc)
+		{
+			this->Console_List();
+
+			if(this->Enabled)
+				advancedfx::Message("Command system is enabled (%s enabled is 1).\n", arg0);
+			else
+				advancedfx::Message("COMMAND SYSTEM IS NOT ENABLED (%s enabled is 0).\n", arg0);
+
+			return;
+		}
+		else if(!_stricmp("remove", subcmd) && 3 <= argc)
+		{
+			this->Remove(atoi(args->ArgV(2)));
+			return;
+		}
+		else if(!_stricmp("load", subcmd) && 3 == argc)
+		{	
+			std::wstring wideString;
+			bool bOk = UTF8StringToWideString(args->ArgV(2), wideString)
+				&& this->Load(wideString.c_str())
+			;
+
+			advancedfx::Message("Loading command system: %s.\n", bOk ? "OK" : "ERROR");
+
+			return;
+		}
+		else if(!_stricmp("save", subcmd) && 3 == argc)
+		{	
+			std::wstring wideString;
+			bool bOk = UTF8StringToWideString(args->ArgV(2), wideString)
+				&& this->Save(wideString.c_str())
+			;
+
+			advancedfx::Message("Saving command system: %s.\n", bOk ? "OK" : "ERROR");
+
+			return;
+		}
+		else if (0 == _stricmp("edit", subcmd) && 3 <= argc)
+		{
+			const char * subcmd2 = args->ArgV(2);
+
+			if (0 == _stricmp("startTime", subcmd2))
+			{
+				this->EditStart(4 <= argc ? atof(args->ArgV(3)) : std::nextafter(this->GetLastTime(), this->GetLastTime() + 1.0));
+
+				return;
+			}
+			else if (0 == _stricmp("startTick", subcmd2))
+			{
+				this->EditStartTick(4 <= argc ? atof(args->ArgV(3)) : (double)this->GetLastTick());
+
+				return;
+			}
+			else if (0 == _stricmp("start", subcmd2))
+			{
+				this->EditStart(this->GetLastTime());
+				this->EditStartTick(this->GetLastTick());
+
+				return;
+			}
+			else if (0 == _stricmp("cmd", subcmd2))
+			{
+				advancedfx::CSubCommandArgs subArgs(args, 3);
+				this->EditCommand(&subArgs);
+				return;
+			}
+		}
+	}
+
+	advancedfx::Message(
+		"%s enabled [...] - Control if command system is enabled (by default it is).\n"
+		"%s addTick [commandPart1] [commandPart2] ... [commandPartN] - Adds commands at the current tick.\n"
+		"%s add [commandPart1] [commandPart2] ... [commandPartN] - Adds commands at the current time.\n"
+		"%s addAtTick <iTick> [commandPart1] [commandPart2] ... [commandPartN] - Adds commands at the given tick.\n"
+		"%s addAtTime <fTime> [commandPart1] [commandPart2] ... [commandPartN] - Adds commands at the given time.\n"
+		"%s addCurves [...] - Allows to add animated commands.\n"
+		"%s edit start - Set current time and tick as start time / tick.\n"
+		"%s edit startTime [fTime] - Set start time, current if argument not given.\n"
+		"%s edit startTick [fTick] - Set start tick, current if argument not given.\n"
+		"%s edit cmd [...] - Edit a specific command.\n"
+		"%s clear - Removes all commands.\n"
+		"%s print - Prints commands / state.\n"
+		"%s remove <index> - Removes a command by its index.\n"
+		"%s load <fileName> - loads commands from the file (XML format)\n"
+		"%s save <fileName> - saves commands to the file (XML format)\n"
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+		, arg0
 		, arg0
 		, arg0
 		, arg0

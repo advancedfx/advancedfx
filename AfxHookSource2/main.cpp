@@ -15,6 +15,7 @@
 #include "../shared/AfxDetours.h"
 #include "../shared/StringTools.h"
 #include "../shared/binutils.h"
+#include "../shared/CommandSystem.h"
 #include "../shared/MirvCampath.h"
 #include "../shared/MirvInput.h"
 
@@ -772,15 +773,6 @@ int new_CCS2_Client_Connect(void* This, SOURCESDK::CreateInterfaceFn appSystemFa
 	return old_CCS2_Client_Connect(This, appSystemFactory);
 }
 
-CON_COMMAND(mirv_test, "") {
-	if(g_pEngineToClient) {
-		g_pEngineToClient->ExecuteClientCmd(
-			0,
-			"echo test; echo test2",
-			true);
-	}
-}
-
 CON_COMMAND(mirv_suppress_disconnects, "Suppresses given number disconnect commands. Can help to test demo system.") {
 	int argC = args->ArgC();
 	const char * arg0 = args->ArgV(0);
@@ -854,6 +846,63 @@ void *  new_CS2_Client_SetGlobals(void* This, void * pGlobals) {
 	return old_CS2_Client_SetGlobals(This, pGlobals);
 }
 
+class CExecuteClientCmdForCommandSystem : public IExecuteClientCmdForCommandSystem {
+public:
+	virtual void ExecuteClientCmd(const char * value) {
+		if(g_pEngineToClient) g_pEngineToClient->ExecuteClientCmd(0,value,true);
+	}
+} g_ExecuteClientCmdForCommandSystem;
+
+class CGetTickForCommandSystem : public IGetTickForCommandSystem {
+public:
+	virtual float GetTick() {
+		float tick = 0;
+		if(g_pEngineToClient) {
+			if(SOURCESDK::CS2::IDemoFile * pDemoFile = g_pEngineToClient->GetDemoFile()) {
+				tick = (float)pDemoFile->GetDemoTick(); //TODO: add interp sub-tick precision
+			}
+		}
+		return tick;
+	}
+} g_GetTickForCommandSystem;
+
+class CGetTimeForCommandSystem : public IGetTimeForCommandSystem {
+public:
+	virtual float GetTime() {
+		return curtime_get();
+	}
+} g_GetTimeForCommandSystem;
+
+class CommandSystem g_CommandSystem(&g_ExecuteClientCmdForCommandSystem, &g_GetTickForCommandSystem, &g_GetTimeForCommandSystem);
+
+CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
+{
+	g_CommandSystem.Console_Command(args);
+}
+
+typedef int (* CS2_Client_LevelInitPreEntity_t)(void* This, void * pKeyValues);
+CS2_Client_LevelInitPreEntity_t old_CS2_Client_LevelInitPreEntity;
+int  new_CS2_Client_LevelInitPreEntity(void* This, void * pKeyValues) {
+	int result = old_CS2_Client_LevelInitPreEntity(This, pKeyValues);
+
+	g_CommandSystem.OnLevelInitPreEntity();
+
+	return result;
+}
+
+typedef void (* CS2_Client_FrameStageNotify_t)(void* This, SOURCESDK::CS2::ClientFrameStage_t curStage);
+CS2_Client_FrameStageNotify_t old_CS2_Client_FrameStageNotify;
+void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameStage_t curStage) {
+
+	switch(curStage) {
+	case SOURCESDK::CS2::FRAME_RENDER_START:
+		g_CommandSystem.OnExecuteCommands();
+		break;
+	}
+
+	old_CS2_Client_FrameStageNotify(This, curStage);
+}
+
 
 void CS2_HookClientDllInterface(void * iface)
 {
@@ -862,6 +911,8 @@ void CS2_HookClientDllInterface(void * iface)
 	AfxDetourPtr((PVOID *)&(vtable[0]), new_CCS2_Client_Connect, (PVOID*)&old_CCS2_Client_Connect);
 	AfxDetourPtr((PVOID *)&(vtable[3]), new_CCS2_Client_Init, (PVOID*)&old_CCS2_Client_Init);
 	AfxDetourPtr((PVOID *)&(vtable[11]), new_CS2_Client_SetGlobals, (PVOID*)&old_CS2_Client_SetGlobals);
+	//AfxDetourPtr((PVOID *)&(vtable[30]), new_CS2_Client_LevelInitPreEntity, (PVOID*)&old_CS2_Client_LevelInitPreEntity);
+	AfxDetourPtr((PVOID *)&(vtable[31]), new_CS2_Client_FrameStageNotify, (PVOID*)&old_CS2_Client_FrameStageNotify);
 }
 
 SOURCESDK::CreateInterfaceFn old_Client_CreateInterface = 0;

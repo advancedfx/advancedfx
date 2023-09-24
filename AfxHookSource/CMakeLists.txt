@@ -145,8 +145,6 @@ target_sources(AfxHookSource PRIVATE
     CampathDrawer.h
     ClientTools.cpp
     ClientTools.h
-    CommandSystem.cpp
-    CommandSystem.h
     csgo_Audio.cpp
     csgo_Audio.h
     csgo_c_baseanimatingoverlay.cpp
@@ -345,6 +343,8 @@ target_sources(AfxHookSource PRIVATE
     ../shared/bvhimport.h
     ../shared/CamPath.cpp
     ../shared/CamPath.h
+    ../shared/CommandSystem.cpp
+    ../shared/CommandSystem.h
     ../shared/EasySampler.cpp
     ../shared/EasySampler.h
     ../shared/FileTools.cpp

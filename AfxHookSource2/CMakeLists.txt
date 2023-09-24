@@ -51,6 +51,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/AfxMath.h
     ../shared/CamPath.cpp
     ../shared/CamPath.h
+    ../shared/CommandSystem.cpp
+    ../shared/CommandSystem.h
     ../shared/StringTools.cpp
     ../shared/StringTools.h
     ../shared/binutils.cpp
