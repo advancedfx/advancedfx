@@ -1,6 +1,6 @@
 #pragma once
 
-#include <shared/AfxMath.h>
+#include "AfxMath.h"
 #include "FovScaling.h"
 
 #include <stdio.h>

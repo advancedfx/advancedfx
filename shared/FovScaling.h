@@ -1,12 +1,18 @@
 #pragma once
 
-#include "WrpConsole.h"
+#include "AfxConsole.h"
 
 enum FovScaling {
 	FovScaling_Uninitalized,
 	FovScaling_None,
 	FovScaling_AlienSwarm
 };
+
+// This must be implemented by the consumer:
+
+extern FovScaling GetDefaultFovScaling();
+
+// This is supplied:
 
 FovScaling GetFovScaling();
 
@@ -22,4 +28,4 @@ double AlienSwarm_FovScaling(double width, double height, double fov);
 
 double AlienSwarm_InverseFovScaling(double width, double height, double fov);
 
-void Console_MirvFovScaling(IWrpCommandArgs * args);
+void Console_MirvFovScaling(advancedfx::ICommandArgs * args);

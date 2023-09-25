@@ -26,7 +26,7 @@
 #include "csgo_vphysics.h"
 #include "csgo_c_baseentity.h"
 #include "csgo_c_baseanimatingoverlay.h"
-#include "FovScaling.h"
+#include "../shared/FovScaling.h"
 //#include "csgo_CDemoFile.h"
 #include "csgo_Stdshader_dx9_Hooks.h"
 #include "csgo_models_replace.h"

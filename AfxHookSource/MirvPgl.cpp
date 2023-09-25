@@ -17,7 +17,7 @@
 #include "AfxStreams.h"
 #include "AfxShaders.h"
 #include "csgo_GameEvents.h"
-#include "FovScaling.h"
+#include "../shared/FovScaling.h"
 #include "RenderView.h"
 
 #include <shared/AfxMath.h>

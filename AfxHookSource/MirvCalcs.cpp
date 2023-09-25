@@ -7,7 +7,7 @@
 #include "RenderView.h"
 #include "MirvTime.h"
 #include "addresses.h"
-#include "CamIO.h"
+#include "../shared/CamIO.h"
 #include "csgo/ClientToolsCsgo.h"
 
 #include <shared/StringTools.h>

@@ -16,6 +16,7 @@
 #include "../shared/StringTools.h"
 #include "../shared/binutils.h"
 #include "../shared/CommandSystem.h"
+#include "../shared/MirvCamIO.h"
 #include "../shared/MirvCampath.h"
 #include "../shared/MirvInput.h"
 
@@ -41,6 +42,9 @@ void ErrorBox() {
 	ErrorBox("Something went wrong.");
 }
 
+FovScaling GetDefaultFovScaling() {
+	return FovScaling_AlienSwarm;
+}
 
 int g_nIgnoreNextDisconnects = 0;
 
@@ -499,6 +503,18 @@ CON_COMMAND(mirv_campath, "camera paths")
 	MirvCampath_ConCommand(args, advancedfx::Message, advancedfx::Warning, &g_CamPath, &g_MirvCampath_Time, &g_MirvCampath_Camera, nullptr);
 }
 
+double MirvCamIO_GetTimeFn(void) {
+	return curtime_get();
+}
+
+CamImport * g_CamImport = nullptr;
+CamExport * g_CamExport = nullptr;
+
+CON_COMMAND(mirv_camio, "New camera motion data import / export.") {
+	MirvCamIO_ConsoleCommand(args, g_CamImport, g_CamExport, MirvCamIO_GetTimeFn);
+}
+
+
 static bool g_bViewOverriden = false;
 static float g_fFovOverride = 90.0f;
 static float * g_pFov = nullptr;
@@ -568,7 +584,41 @@ bool CS2_Client_CSetupView_Trampoline_IsPlayingDemo(void *ThisCViewSetup) {
 		}
 	}
 
+	if (g_CamImport)
+	{
+		CamIO::CamData camData;
+
+		if (g_CamImport->GetCamData(curTime, width, height, camData))
+		{
+			originOrAnglesOverriden = true;
+
+			Tx = (float)camData.XPosition;
+			Ty = (float)camData.YPosition;
+			Tz = (float)camData.ZPosition;
+			Rx = (float)camData.YRotation;
+			Ry = (float)camData.ZRotation;
+			Rz = (float)camData.XRotation;
+			Fov = (float)camData.Fov;
+		}
+	}	
+
 	if(g_MirvInputEx.m_MirvInput->Override(g_MirvInputEx.LastFrameTime, Tx,Ty,Tz,Rx,Ry,Rz,Fov)) originOrAnglesOverriden = true;
+
+	if (g_CamExport)
+	{
+		CamIO::CamData camData;
+
+		camData.Time = curTime;
+		camData.XPosition = Tx;
+		camData.YPosition = Ty;
+		camData.ZPosition = Tz;
+		camData.YRotation = Rx;
+		camData.ZRotation = Ry;
+		camData.XRotation = Rz;
+		camData.Fov = Fov;
+
+		g_CamExport->WriteFrame(width, height, camData);
+	}	
 
 	if(originOrAnglesOverriden) {
 		pViewOrigin[0] = Tx;
@@ -1487,6 +1537,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 		case DLL_PROCESS_DETACH:
 		{
 			// actually this gets called now.
+
+			delete g_CamExport;
+			delete g_CamImport;
 
 			delete g_ConsolePrinter;
 

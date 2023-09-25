@@ -3,7 +3,7 @@
 #include "ClientTools.h"
 
 #include "RenderView.h"
-#include "CamIO.h"
+#include "../shared/CamIO.h"
 #include "WrpConsole.h"
 
 #include <shared/StringTools.h>

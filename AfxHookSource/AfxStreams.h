@@ -9,7 +9,7 @@
 #include "AfxShaders.h"
 #include "csgo_Stdshader_dx9_Hooks.h"
 #include "csgo_Stdshader_dx9_Hooks.h"
-#include "CamIO.h"
+#include "../shared/CamIO.h"
 #include "MaterialSystemHooks.h"
 #include "MatRenderContextHook.h"
 #include "AfxWriteFileLimiter.h"

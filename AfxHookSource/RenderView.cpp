@@ -24,6 +24,7 @@
 #include "AfxInterop.h"
 #include "csgo/ClientToolsCSgo.h"
 #include "MirvPgl.h"
+#include "../shared/MirvCamIO.h"
 
 #undef CreateEvent
 
@@ -524,107 +525,13 @@ bool Hook_VClient_RenderView::ImportToCamPath(bool adjustInterp, double fov)
 	return bOk;
 }
 
+double MirvCamIO_GetTimeFn(void) {
+	return g_MirvTime.GetTime();
+}
+
 void Hook_VClient_RenderView::Console_CamIO(IWrpCommandArgs * args)
 {
-	int argc = args->ArgC();
-
-	char const * cmd0 = args->ArgV(0);
-
-	if (2 <= argc)
-	{
-		char const * cmd1 = args->ArgV(1);
-
-		if (0 == _stricmp("export", cmd1))
-		{
-			if (3 <= argc)
-			{
-				char const * cmd2 = args->ArgV(2);
-
-				if (0 == _stricmp("start", cmd2) && 4 <= argc)
-				{
-					if (0 != m_CamExport)
-					{
-						delete m_CamExport;
-						m_CamExport = 0;
-					}
-
-					std::wstring fileName(L"");
-
-					if (UTF8StringToWideString(args->ArgV(3), fileName))
-					{
-						m_CamExport = new CamExport(fileName.c_str());
-					}
-					else
-						Tier0_Warning("Error: Can not convert \"%s\" from UTF-8 to WideString.\n", args->ArgV(3));
-
-
-					return;
-				}
-				else if (0 == _stricmp("end", cmd2))
-				{
-					if (0 != m_CamExport)
-					{
-						delete m_CamExport;
-						m_CamExport = 0;
-					}
-					else
-						Tier0_Warning("No cam export was active.\n");
-
-					return;
-				}
-			}
-
-			Tier0_Msg(
-				"%s export start <fileName> - Starts exporting to file <fileName>.\n"
-				"%s export end - Stops exporting.\n"
-				, cmd0
-				, cmd0
-			);
-			return;
-		}
-		else if (0 == _stricmp("import", cmd1))
-		{
-			if (3 <= argc)
-			{
-				char const * cmd2 = args->ArgV(2);
-
-				if (0 == _stricmp("start", cmd2) && 4 <= argc)
-				{
-					if (0 != m_CamImport)
-					{
-						delete m_CamImport;
-						m_CamImport = 0;
-					}
-
-					m_CamImport = new CamImport(args->ArgV(3), g_MirvTime.GetTime());
-					if (m_CamImport->IsBad()) Tier0_Warning("Error importing CAM file \"%s\"\n", args->ArgV(3));
-					return;
-				}
-				else if (0 == _stricmp("end", cmd2))
-				{
-					delete m_CamImport;
-					m_CamImport = 0;
-					return;
-				}
-
-			}
-
-			Tier0_Msg(
-				"%s import start <fileName> - Starts importing cam from file <fileName>.\n"
-				"%s import end - Stops importing.\n"
-				, cmd0
-				, cmd0
-			);
-			return;
-		}
-	}
-
-	Tier0_Msg(
-		"%s export [...] - Controls export of new camera motion data.\n"
-		"%s import [...] - Controls import of new camera motion data.\n"
-		, cmd0
-		, cmd0
-	);
+	MirvCamIO_ConsoleCommand(args, m_CamImport, m_CamExport, MirvCamIO_GetTimeFn);
 }
 
 void Hook_VClient_RenderView::SetDefaultOverrides()

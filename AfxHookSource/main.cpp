@@ -130,6 +130,21 @@ bool g_bFirstSwapBuffersCallForFrame = false;
 
 extern WrpVEngineClient * g_VEngineClient;
 
+FovScaling GetDefaultFovScaling() {
+	switch (g_SourceSdkVer)
+	{
+	case SourceSdkVer_CSGO:
+	case SourceSdkVer_TF2:
+	case SourceSdkVer_SWARM:
+	case SourceSdkVer_L4D2:
+	case SourceSdkVer_Momentum:
+		return FovScaling_AlienSwarm;
+	case SourceSdkVer_BM:
+	default:
+		return FovScaling_None;
+	}
+}
+
 class CExecuteClientCmdForCommandSystem : public IExecuteClientCmdForCommandSystem {
 public:
 	virtual void ExecuteClientCmd(const char * value) {

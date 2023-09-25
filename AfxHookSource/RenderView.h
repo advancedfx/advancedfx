@@ -2,7 +2,7 @@
 
 #include "WrpGlobals.h"
 #include "WrpConsole.h"
-#include "CamIO.h"
+#include "../shared/CamIO.h"
 #include <shared/CamPath.h>
 #include "../shared/MirvInput.h"
 

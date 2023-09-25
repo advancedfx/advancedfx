@@ -139,8 +139,6 @@ target_sources(AfxHookSource PRIVATE
     aiming.cpp
     aiming.h
     asmClassTools.h
-    CamIO.cpp
-    CamIO.h
     CampathDrawer.cpp
     CampathDrawer.h
     ClientTools.cpp
@@ -180,8 +178,6 @@ target_sources(AfxHookSource PRIVATE
     d3d9Hooks.cpp
     d3d9Hooks.h
     D3D9ImageBuffer.h
-    FovScaling.cpp
-    FovScaling.h
     Gui.cpp
     Gui.h
     hlaeFolder.cpp
@@ -341,6 +337,8 @@ target_sources(AfxHookSource PRIVATE
     ../shared/bvhexport.h
     ../shared/bvhimport.cpp
     ../shared/bvhimport.h
+    ../shared/CamIO.cpp
+    ../shared/CamIO.h
     ../shared/CamPath.cpp
     ../shared/CamPath.h
     ../shared/CommandSystem.cpp
@@ -349,7 +347,11 @@ target_sources(AfxHookSource PRIVATE
     ../shared/EasySampler.h
     ../shared/FileTools.cpp
     ../shared/FileTools.h
+    ../shared/FovScaling.cpp
+    ../shared/FovScaling.h
     ../shared/ImageBufferPoolThreadSafe.h
+    ../shared/MirvCamIO.cpp
+    ../shared/MirvCamIO.h
     ../shared/MirvCampath.cpp
     ../shared/MirvCampath.h
     ../shared/MirvInput.cpp

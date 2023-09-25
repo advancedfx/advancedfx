@@ -49,14 +49,20 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/AfxDetours.h
     ../shared/AfxMath.cpp
     ../shared/AfxMath.h
+    ../shared/CamIO.cpp
+    ../shared/CamIO.h
     ../shared/CamPath.cpp
     ../shared/CamPath.h
     ../shared/CommandSystem.cpp
     ../shared/CommandSystem.h
+    ../shared/FovScaling.cpp
+    ../shared/FovScaling.h
     ../shared/StringTools.cpp
     ../shared/StringTools.h
     ../shared/binutils.cpp
     ../shared/binutils.h
+    ../shared/MirvCamIO.cpp
+    ../shared/MirvCamIO.h
     ../shared/MirvCampath.cpp
     ../shared/MirvCampath.h
     ../shared/MirvInput.cpp

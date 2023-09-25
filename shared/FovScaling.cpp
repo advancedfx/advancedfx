@@ -2,27 +2,8 @@
 
 #include "FovScaling.h"
 
-#include "addresses.h"
-#include "WrpVEngineClient.h"
-#include "WrpConsole.h"
-
 #define _USE_MATH_DEFINES
 #include <math.h>
-
-FovScaling GetDefaultFovScaling() {
-	switch (g_SourceSdkVer)
-	{
-	case SourceSdkVer_CSGO:
-	case SourceSdkVer_TF2:
-	case SourceSdkVer_SWARM:
-	case SourceSdkVer_L4D2:
-	case SourceSdkVer_Momentum:
-		return FovScaling_AlienSwarm;
-	case SourceSdkVer_BM:
-	default:
-		return FovScaling_None;
-	}
-}
 
 FovScaling g_FovScaling = FovScaling_Uninitalized;
 
@@ -126,7 +107,7 @@ double AlienSwarm_InverseFovScaling(double width, double height, double fov)
 	return 2.0 * halfAngle / (2.0 * M_PI / 360.0);
 }
 
-void Console_MirvFovScaling(IWrpCommandArgs * args)
+void Console_MirvFovScaling(advancedfx::ICommandArgs * args)
 {
 	int argC = args->ArgC();
 
@@ -141,12 +122,12 @@ void Console_MirvFovScaling(IWrpCommandArgs * args)
 		if (CStringToFovScaling(arg1, fovScaling)) {
 			SetFovScaling(fovScaling);
 		}
-		else Tier0_Warning("Error: \"%s\" is not a valid fovScaling.\n", arg1);
+		else advancedfx::Warning("Error: \"%s\" is not a valid fovScaling.\n", arg1);
 
 		return;
 	}
 
-	Tier0_Msg(
+	advancedfx::Message(
 		"%s default|none|alienSwarm - Set default fov scaling.\n"
 		"Current: %s\n"
 		"Default: %s\n"
@@ -156,4 +137,3 @@ void Console_MirvFovScaling(IWrpCommandArgs * args)
 	);
 	return;
 }
-
