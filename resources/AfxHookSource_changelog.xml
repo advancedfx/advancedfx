@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.121.6</version>
+<time>2023-09-29T10:14Z</time>
+<changes>
+<change type="fixed">Fixed crashes when using mirv_cmd e.g. with playdemo introduced in HLAE 2.148.4 (2023-09-24T14:39Z).</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.121.5.2</version>
 <time>2023-09-19T15:15Z</time>
 <changes>

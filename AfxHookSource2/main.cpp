@@ -51,6 +51,9 @@ int g_nIgnoreNextDisconnects = 0;
 typedef void (*Unknown_ExecuteClientCommandFromNetChan_t)(void * Ecx, void * Edx, void *R8);
 Unknown_ExecuteClientCommandFromNetChan_t g_Old_Unknown_ExecuteClientCommandFromNetChan = nullptr;
 void New_Unknown_ExecuteClientCommandFromNetChan(void * Ecx, void * Edx, SOURCESDK::CS2::CCommand *r8Command) {
+	//for(int i = 0; i < r8Command->ArgC(); i++) {
+	//	advancedfx::Message("Command %i: %s\n",i,r8Command->ArgV(i));
+	//}
 	if(0 < g_nIgnoreNextDisconnects && 0 < r8Command->ArgC()) {
 		if(0 == stricmp("disconnect",r8Command->ArgV(0))) {
 			if(0 < g_nIgnoreNextDisconnects) g_nIgnoreNextDisconnects--;
@@ -131,7 +134,20 @@ float absoluteframetime_get(void)
 
 float interval_per_tick_get(void)
 {
-	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +0x44) : 1;
+	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +0x14) : 1.0f/64;
+}
+
+float interpolation_amount_get(void)
+{
+	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +13*4) : 0;
+}
+
+CON_COMMAND(__mirv_test,"") {
+	static int offset = 13;
+
+	if(2 <= args->ArgC()) offset = atoi(args->ArgV(1));
+
+	advancedfx::Message("g_pGlobals[%i]: int: %i , float: %f\n",offset,(g_pGlobals ? *(int *)((unsigned char *)g_pGlobals +offset*4) : 0),(g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +offset*4) : 0));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -454,7 +470,7 @@ public:
 	virtual bool GetCurrentDemoTime(double& outDemoTime) {
 		int tick;
 		if(GetCurrentDemoTick(tick)) {
-			outDemoTime = tick * (double)interval_per_tick_get();
+			outDemoTime = (tick + interpolation_amount_get())* (double)interval_per_tick_get();
 			return true;
 		}
 
@@ -466,9 +482,9 @@ public:
 		return true;
 	}
 	virtual bool GetDemoTimeFromClientTime(double curTime, double time, double& outDemoTime) {
-		int current_tick;
-		if(GetCurrentDemoTick(current_tick)) {
-			outDemoTime = time - (curTime - current_tick * (double)interval_per_tick_get());
+		double current_demo_time;
+		if(GetCurrentDemoTime(current_demo_time)) {
+			outDemoTime = time - (curTime - current_demo_time);
 			return true;
 		}
 		return false;
@@ -909,7 +925,7 @@ public:
 		float tick = 0;
 		if(g_pEngineToClient) {
 			if(SOURCESDK::CS2::IDemoFile * pDemoFile = g_pEngineToClient->GetDemoFile()) {
-				tick = (float)pDemoFile->GetDemoTick(); //TODO: add interp sub-tick precision
+				tick = (float)pDemoFile->GetDemoTick() + interpolation_amount_get();
 			}
 		}
 		return tick;

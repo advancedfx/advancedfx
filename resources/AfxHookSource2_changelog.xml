@@ -7,6 +7,21 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.4.1</version>
+<time>2023-09-29T10:14Z</time>
+<changes>
+<change type="fixed">
+Fixed mirv_cmd, mirv_campath ticks / demo time being broken / wrong.
+</change>
+<change type="updated">
+Updated mirv_cmd to support sub-tick in CS2 too.
+</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.4.0</version>
 <time>2023-09-25T10:50Z</time>
 <changes>
