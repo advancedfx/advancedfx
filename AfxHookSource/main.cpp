@@ -148,7 +148,7 @@ FovScaling GetDefaultFovScaling() {
 class CExecuteClientCmdForCommandSystem : public IExecuteClientCmdForCommandSystem {
 public:
 	virtual void ExecuteClientCmd(const char * value) {
-		if(g_VEngineClient) g_VEngineClient->ExecuteClientCmd(value);
+		if(g_VEngineClient) g_VEngineClient->ClientCmd_Unrestricted(value); // // We don't use ExecuteCliendCmd here, because it might be executed at awkward times that make the engine crash (e.g. when using playdemo).
 	}
 } g_ExecuteClientCmdForCommandSystem;
 
