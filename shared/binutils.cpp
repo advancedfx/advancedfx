@@ -149,7 +149,7 @@ MemRange FindPatternString(MemRange memRange, char const * hexBytePattern)
 	return MemRange(oldMemRangeStart, min(oldMemRangeStart, memRange.End));
 }
 
-DWORD FindClassVtable(HMODULE hModule, const char * name, DWORD rttiBaseClassArrayOffset, DWORD completeObjectLocatorOffset)
+size_t FindClassVtable(HMODULE hModule, const char * name, DWORD rttiBaseClassArrayOffset, DWORD completeObjectLocatorOffset)
 {
 	ImageSectionsReader imageSectionReader(hModule);
 
@@ -172,54 +172,79 @@ DWORD FindClassVtable(HMODULE hModule, const char * name, DWORD rttiBaseClassArr
 	if (rangeName.IsEmpty())
 		return 0;
 
-	MemRange rangeRttiTypeDescriptor = data3Range.And(MemRange::FromSize((DWORD)(rangeName.Start - 0x8), (DWORD)sizeof(DWORD)));
+	MemRange rangeRttiTypeDescriptor = data3Range.And(MemRange::FromSize((size_t)(rangeName.Start - 2*sizeof(void*)), (size_t)sizeof(DWORD)));
 
 	if (rangeRttiTypeDescriptor.IsEmpty())
 		return 0;
 
+#ifndef _WIN64
+	DWORD dwOffsetRttiTypeDescriptor = rangeRttiTypeDescriptor.Start;
+#else
+	DWORD dwOffsetRttiTypeDescriptor = (DWORD)(rangeRttiTypeDescriptor.Start - (size_t)hModule);
+#endif
+
 	MemRange rangeMaybeRttiBaseClassDescriptor = MemRange(data2Range.Start,data2Range.Start);
 	while(true)
 	{
-		rangeMaybeRttiBaseClassDescriptor = FindBytes(MemRange(rangeMaybeRttiBaseClassDescriptor.End, data2Range.End), (const char *)&rangeRttiTypeDescriptor.Start, sizeof(DWORD));
+		rangeMaybeRttiBaseClassDescriptor = FindBytes(MemRange(rangeMaybeRttiBaseClassDescriptor.End, data2Range.End), (const char *)&dwOffsetRttiTypeDescriptor, sizeof(DWORD));
 
 		if (rangeMaybeRttiBaseClassDescriptor.IsEmpty())
 			break;
 
+#ifndef _WIN64
+		DWORD dwOffsetMaybeRttiBaseClassDescriptor = rangeMaybeRttiBaseClassDescriptor.Start;
+#else
+		DWORD dwOffsetMaybeRttiBaseClassDescriptor = (DWORD)(rangeMaybeRttiBaseClassDescriptor.Start - (size_t)hModule);
+#endif		
+
 		MemRange rangeMaybeRttiBaseClassArrayRef = MemRange(data2Range.Start, data2Range.Start);
 		while (true)
 		{
-			rangeMaybeRttiBaseClassArrayRef = FindBytes(MemRange(rangeMaybeRttiBaseClassArrayRef.End, data2Range.End), (char const *)&rangeMaybeRttiBaseClassDescriptor.Start, sizeof(DWORD));
+			rangeMaybeRttiBaseClassArrayRef = FindBytes(MemRange(rangeMaybeRttiBaseClassArrayRef.End, data2Range.End), (char const *)&dwOffsetMaybeRttiBaseClassDescriptor, sizeof(DWORD));
 
 			if (rangeMaybeRttiBaseClassArrayRef.IsEmpty())
 				break;
 
-			MemRange rangeMaybeRttiBaseClassArray = data2Range.And(MemRange::FromSize((DWORD)(rangeMaybeRttiBaseClassArrayRef.Start - sizeof(DWORD) * rttiBaseClassArrayOffset), (DWORD)sizeof(DWORD)));
+			MemRange rangeMaybeRttiBaseClassArray = data2Range.And(MemRange::FromSize((size_t)(rangeMaybeRttiBaseClassArrayRef.Start - sizeof(DWORD) * rttiBaseClassArrayOffset), (size_t)sizeof(DWORD)));
 
 			if (rangeMaybeRttiBaseClassArray.IsEmpty())
 				continue;
 
+#ifndef _WIN64
+			DWORD dwOffsetMaybeRttiBaseClassArray = rangeMaybeRttiBaseClassArray.Start;
+#else
+			DWORD dwOffsetMaybeRttiBaseClassArray = (DWORD)(rangeMaybeRttiBaseClassArray.Start - (size_t)hModule);
+#endif		
+
+
 			MemRange rangeMaybeRttiClassHirachyDescriptorRef = MemRange(data2Range.Start, data2Range.Start);
 			while (true)
 			{
-				rangeMaybeRttiClassHirachyDescriptorRef = FindBytes(MemRange(rangeMaybeRttiClassHirachyDescriptorRef.End, data2Range.End), (const char *)&rangeMaybeRttiBaseClassArray, sizeof(DWORD));
+				rangeMaybeRttiClassHirachyDescriptorRef = FindBytes(MemRange(rangeMaybeRttiClassHirachyDescriptorRef.End, data2Range.End), (const char *)&dwOffsetMaybeRttiBaseClassArray, sizeof(DWORD));
 
 				if (rangeMaybeRttiClassHirachyDescriptorRef.IsEmpty())
 					break;
 
-				MemRange rangeMaybeRttiClassHirachyDescriptor = data2Range.And(MemRange::FromSize((DWORD)(rangeMaybeRttiClassHirachyDescriptorRef.Start - 0x0c), (DWORD)sizeof(DWORD)));
+				MemRange rangeMaybeRttiClassHirachyDescriptor = data2Range.And(MemRange::FromSize((size_t)(rangeMaybeRttiClassHirachyDescriptorRef.Start - 0x0c), (size_t)sizeof(DWORD)));
 
 				if (rangeMaybeRttiClassHirachyDescriptor.IsEmpty())
 					continue;
 
+#ifndef _WIN64
+				DWORD dwOffsetMaybeRttiClassHirachyDescriptor = rangeMaybeRttiClassHirachyDescriptor.Start;
+#else
+				DWORD dwOffsetMaybeRttiClassHirachyDescriptor = (DWORD)(rangeMaybeRttiClassHirachyDescriptor.Start - (size_t)hModule);
+#endif	
+
 				MemRange rangeMaybeCompleteObjectAllocatorRef = MemRange(data2Range.Start, data2Range.Start);
 				while (true)
 				{
-					rangeMaybeCompleteObjectAllocatorRef = FindBytes(MemRange(rangeMaybeCompleteObjectAllocatorRef.End, data2Range.End), (const char *)&rangeMaybeRttiClassHirachyDescriptor.Start, sizeof(DWORD));
+					rangeMaybeCompleteObjectAllocatorRef = FindBytes(MemRange(rangeMaybeCompleteObjectAllocatorRef.End, data2Range.End), (const char *)&dwOffsetMaybeRttiClassHirachyDescriptor, sizeof(DWORD));
 
 					if (rangeMaybeCompleteObjectAllocatorRef.IsEmpty())
 						break;
 
-					MemRange rangeMaybeCompleteObjectAllocator = data2Range.And(MemRange::FromSize((DWORD)(rangeMaybeCompleteObjectAllocatorRef.Start - 0x10), (DWORD)sizeof(DWORD)));
+					MemRange rangeMaybeCompleteObjectAllocator = data2Range.And(MemRange::FromSize((size_t)(rangeMaybeCompleteObjectAllocatorRef.Start - 0x10), (size_t)sizeof(DWORD)));
 
 					if (rangeMaybeCompleteObjectAllocator.IsEmpty())
 						continue;
@@ -230,12 +255,12 @@ DWORD FindClassVtable(HMODULE hModule, const char * name, DWORD rttiBaseClassArr
 					MemRange rangeMaybeVTableRef = MemRange(data2Range.Start, data2Range.Start);
 					while (true)
 					{
-						rangeMaybeVTableRef = FindBytes(MemRange(rangeMaybeVTableRef.End, data2Range.End), (const char *)&rangeMaybeCompleteObjectAllocator.Start, sizeof(DWORD));
+						rangeMaybeVTableRef = FindBytes(MemRange(rangeMaybeVTableRef.End, data2Range.End), (const char *)&rangeMaybeCompleteObjectAllocator.Start, sizeof(size_t));
 
 						if (rangeMaybeVTableRef.IsEmpty())
 							break;
 
-						MemRange rangeMaybeVTable = data2Range.And(MemRange::FromSize((DWORD)(rangeMaybeVTableRef.Start + 0x4), (DWORD)sizeof(DWORD)));
+						MemRange rangeMaybeVTable = data2Range.And(MemRange::FromSize((size_t)(rangeMaybeVTableRef.Start + sizeof(void*)), (size_t)sizeof(DWORD)));
 
 						if (rangeMaybeVTable.IsEmpty())
 							continue;

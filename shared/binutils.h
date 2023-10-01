@@ -52,11 +52,9 @@ MemRange FindBytes(MemRange memRange, char const * pattern, size_t patternSize);
 /// <remarks>The memory specified by memRange must be readable.</remarks>
 MemRange FindBytesReverse(MemRange memRange, char const * pattern, size_t patternSize);
 
-/// <remarks>Doesn't work on x64 atm!</remarks>
 /// <remarks>The memory specified by memRange must be readable.</remarks>
 MemRange FindCString(MemRange memRange, char const * pattern);
 
-/// <remarks>Doesn't work on x64 atm!</remarks>
 /// <remarks>The memory specified by memRange must be readable.</remarks>
 MemRange FindWCString(MemRange memRange, wchar_t const * pattern);
 
@@ -68,9 +66,8 @@ MemRange FindWCString(MemRange memRange, wchar_t const * pattern);
 /// </param>
 MemRange FindPatternString(MemRange memRange, char const * hexBytePattern);
 
-/// <remarks>Doesn't work on x64 atm!</remarks>
 /// <returns>0 if not found, otherwise address of vtable</returns>
-DWORD FindClassVtable(HMODULE hModule, const char * name, DWORD rttiBaseClassArrayOffset, DWORD completeObjectLocatorOffset);
+size_t FindClassVtable(HMODULE hModule, const char * name, DWORD rttiBaseClassArrayOffset, DWORD completeObjectLocatorOffset);
 
-} // namespace Afx {
 } // namespace BinUtils {
+} // namespace Afx {
