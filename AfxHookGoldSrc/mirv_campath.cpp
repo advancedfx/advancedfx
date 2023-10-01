@@ -33,6 +33,9 @@ public:
 	virtual bool GetDemoTimeFromClientTime(double curTime, double time, double& outDemoTime) {
 		return false;
 	}
+    virtual bool GetDemoTickFromClientTime(double curTime, double targetTime, int& outTick) {
+        return false;
+    }
 } g_MirvCampath_Time;
 
 class CMirvCampath_Camera : public IMirvCampath_Camera

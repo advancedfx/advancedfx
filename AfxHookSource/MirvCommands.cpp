@@ -33,6 +33,7 @@
 //#include <csgo/sdk_src/public/tier0/memalloc.h>
 #include <shared/MirvCampath.h>
 #include <shared/AfxDetours.h>
+#include "../shared/MirvSkip.h"
 
 #include <malloc.h>
 #include <stdlib.h>
@@ -1254,183 +1255,12 @@ bool GetDemoTickFromClientTime(double curTime, double targetTime, int& outTick)
 	return GetDemoTimeFromClientTime(curTime, targetTime, demoTime) && GetDemoTickFromDemoTime(curTime, demoTime, outTick);
 }
 
-
-void PrintTimeFormated(double time)
-{
-	int seconds = (int)time % 60;
-
-	time /= 60;
-	int minutes = (int)time % 60;
-
-	time /= 60;
-	int hours = (int)time;
-
-	std::ostringstream oss;
-
-	oss << std::setfill('0') << std::setw(2);
-
-	if(hours)
-	{
-		oss << hours << "h";
-	}
-
-	oss << minutes << "m" << seconds << "s";
-	
-	Tier0_Msg("%s", oss.str().c_str());
-}
-
-CON_COMMAND(mirv_skip, "for skipping through demos (uses demo_gototick)")
-{
-	int argc = args->ArgC();
-
-	if(2 <= argc)
-	{
-		char const * arg1 = args->ArgV(1);
-
-		if(!_stricmp(arg1, "tick"))
-		{
-			int curTick;
-			if(!GetCurrentDemoTick(curTick))
-			{
-				Tier0_Warning("Error: GetCurrentDemoTick failed!\n");
-				return;
-			}
-
-			if(3 <= argc)
-			{
-				char const * arg2 = args->ArgV(2);
-
-				if(!_stricmp(arg2, "to") && 4 <= argc)
-				{
-					int targetTick = atoi(args->ArgV(3));
-
-					std::ostringstream oss;
-
-					oss << "demo_gototick " << targetTick;
-
-					g_VEngineClient->ExecuteClientCmd(oss.str().c_str());
-					
-					return;
-				}
-
-				if(3 <= argc)
-				{
-					int deltaTicks = atoi(arg2);
-					int targetTick = curTick + deltaTicks;
-
-					std::ostringstream oss;
-
-					oss << "demo_gototick " << targetTick;
-
-					g_VEngineClient->ExecuteClientCmd(oss.str().c_str());
-
-					return;
-				}
-			}
-
-			Tier0_Msg(
-				"mirv_skip tick <iValue> - skip approximately integer value <iValue> ticks (negative values skip back).\n"
-				"mirv_skip tick to <iValue> - go approximately to demo tick <iValue>\n"
-				"Current demo tick: %i\n",
-				curTick
-			);
-			return;
-		}
-		else
-		if(!_stricmp(arg1, "time"))
-		{
-			double demoTime;
-			if(!GetCurrentDemoTime(demoTime))
-			{
-				Tier0_Warning("Error: GetCurrentDemoTime failed!\n");
-				return;
-			}
-
-			if(3 <= argc)
-			{
-				char const * arg2 = args->ArgV(2);
-
-				if(!_stricmp(arg2, "to") && 4 <= argc)
-				{
-					double targetTime = atof(args->ArgV(3));
-					int targetTick;
-
-					if(!GetDemoTickFromDemoTime(g_MirvTime.GetCurTime(), targetTime, targetTick))
-					{
-						Tier0_Warning("Error: GetDemoTickFromTime failed!\n");
-						return;
-					}
-
-					std::ostringstream oss;
-
-					oss << "demo_gototick " << targetTick;
-
-					g_VEngineClient->ExecuteClientCmd(oss.str().c_str());
-					
-					return;
-				}
-				else if (0 == _stricmp(arg2, "toGame") && 4 <= argc)
-				{
-					double targetClientTime = atof(args->ArgV(3));
-					int targetTick;
-
-					if (!GetDemoTickFromClientTime(g_MirvTime.GetCurTime(), targetClientTime, targetTick))
-					{
-						Tier0_Warning("Error: GetDemoTickFromClientTime failed!\n");
-						return;
-					}
-
-					std::ostringstream oss;
-
-					oss << "demo_gototick " << targetTick;
-
-					g_VEngineClient->ExecuteClientCmd(oss.str().c_str());
-
-					return;
-				}
-
-				if(3 <= argc)
-				{
-					double deltaTime = atof(arg2);
-					double targetTime = g_MirvTime.GetCurTime() +deltaTime;
-					int targetTick;
-
-					if(!GetDemoTickFromClientTime(g_MirvTime.GetCurTime(), targetTime, targetTick))
-					{
-						Tier0_Warning("Error: GetDemoTickFromTime failed!\n");
-						return;
-					}
-
-					std::ostringstream oss;
-
-					oss << "demo_gototick " << targetTick;
-
-					g_VEngineClient->ExecuteClientCmd(oss.str().c_str());
-					
-					return;
-				}
-			}
-
-			Tier0_Msg(
-				"mirv_skip time <dValue> - skip approximately time <dValue> seconds (negative values skip back).\n"
-				"mirv_skip time to <dValue> - go approximately to demo time <dValue> seconds\n"
-				"mirv_skip time toGame <dValue> - go approximately to game (client) time <dValue> seconds\n"
-				"Current demo time in seconds: %f (",
-				demoTime
-			);
-			PrintTimeFormated(demoTime);
-			Tier0_Msg(")\n");
-
-			return;
-		}
-	}
-
-	Tier0_Msg(
-		"mirv_skip tick [...] - skip demo ticks\n"
-		"mirv_skip time [...] - skip demo time\n"
-	);
-	return;
-}
+extern class CExecuteClientCmdForCommandSystem : public IExecuteClientCmdForCommandSystem {
+public:
+    virtual void ExecuteClientCmd(const char * value) {
+        if(g_VEngineClient) g_VEngineClient->ClientCmd_Unrestricted(value); // // We don't use ExecuteCliendCmd here, because it might be executed at awkward times that make the engine crash (e.g. when using playdemo).
+    }
+} g_ExecuteClientCmdForCommandSystem;
 
 class CMirvCampath_Time : public IMirvCampath_Time
 {
@@ -1453,7 +1283,15 @@ public:
 	virtual bool GetDemoTimeFromClientTime(double curTime, double time, double& outDemoTime) {
 		return ::GetDemoTimeFromClientTime(curTime, time, outDemoTime);
 	}
+    virtual bool GetDemoTickFromClientTime(double curTime, double targetTime, int& outTick) {
+        return ::GetDemoTickFromClientTime(curTime, targetTime, outTick);
+    }
 } g_MirvCampath_Time;
+
+CON_COMMAND(mirv_skip, "for skipping through demos (uses demo_gototick)")
+{
+    MirvSkip_ConsoleCommand(args, &g_MirvCampath_Time, &g_ExecuteClientCmdForCommandSystem);
+}
 
 class CMirvCampath_Camera : public IMirvCampath_Camera
 {

@@ -19,6 +19,7 @@
 #include "../shared/MirvCamIO.h"
 #include "../shared/MirvCampath.h"
 #include "../shared/MirvInput.h"
+#include "../shared/MirvSkip.h"
 
 #include <Windows.h>
 #include "../deps/release/Detours/src/detours.h"
@@ -489,6 +490,11 @@ public:
 		}
 		return false;
 	}
+    virtual bool GetDemoTickFromClientTime(double curTime, double targetTime, int& outTick)
+    {
+        double demoTime;
+        return GetDemoTimeFromClientTime(curTime, targetTime, demoTime) && GetDemoTickFromDemoTime(curTime, demoTime, outTick);
+    }
 } g_MirvCampath_Time;
 
 class CMirvCampath_Camera : public IMirvCampath_Camera
@@ -944,6 +950,11 @@ class CommandSystem g_CommandSystem(&g_ExecuteClientCmdForCommandSystem, &g_GetT
 CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 {
 	g_CommandSystem.Console_Command(args);
+}
+
+CON_COMMAND(mirv_skip, "for skipping through demos (uses demo_gototick)")
+{
+    MirvSkip_ConsoleCommand(args, &g_MirvCampath_Time, &g_ExecuteClientCmdForCommandSystem);
 }
 
 typedef int (* CS2_Client_LevelInitPreEntity_t)(void* This, void * pKeyValues);
