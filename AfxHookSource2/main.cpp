@@ -28,6 +28,9 @@
 
 #include <mutex>
 
+HMODULE g_h_engine2Dll = 0;
+HMODULE g_H_ClientDll = 0;
+
 advancedfx::CCommandLine  * g_CommandLine = nullptr;
 
 #define STRINGIZE(x) STRINGIZE2(x)
@@ -148,6 +151,15 @@ CON_COMMAND(__mirv_test,"") {
 	if(2 <= args->ArgC()) offset = atoi(args->ArgV(1));
 
 	advancedfx::Message("g_pGlobals[%i]: int: %i , float: %f\n",offset,(g_pGlobals ? *(int *)((unsigned char *)g_pGlobals +offset*4) : 0),(g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +offset*4) : 0));
+}
+
+CON_COMMAND(__mirv_find_vtable,"") {
+	if(args->ArgC()<5) return;
+
+	HMODULE hModule = GetModuleHandleA(args->ArgV(1));
+	size_t addr = hModule != 0 ? Afx::BinUtils::FindClassVtable(hModule,args->ArgV(2),atoi(args->ArgV(3)),atoi(args->ArgV(4))) : 0;
+	DWORD offset = (DWORD)(addr-(size_t)hModule);
+	advancedfx::Message("Result: 0x%016llx (Offset: 0x%08x)\n",addr,offset);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1008,8 +1020,6 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 }
 
 
-HMODULE g_H_ClientDll = 0;
-
 FARPROC WINAPI new_tier0_GetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 {
 	FARPROC nResult;
@@ -1038,9 +1048,6 @@ FARPROC WINAPI new_tier0_GetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 HMODULE WINAPI new_LoadLibraryA(LPCSTR lpLibFileName);
 HMODULE WINAPI new_LoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 HMODULE WINAPI new_LoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
-
-HMODULE g_h_engine2Dll;
-
 
 CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR, HANDLE, DWORD)> g_Import_tier0_KERNEL32_LoadLibraryExA("LoadLibraryExA", &new_LoadLibraryExA);
 CAfxImportFuncHook<HMODULE(WINAPI*)(LPCWSTR, HANDLE, DWORD)> g_Import_tier0_KERNEL32_LoadLibraryExW("LoadLibraryExW", &new_LoadLibraryExW);
