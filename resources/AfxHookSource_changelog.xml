@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.121.7</version>
+<time>2023-10-02T04:54Z</time>
+<changes>
+<change type="updated">Removed mat_qeueue_mode 0 forcing from mirv_campath draw enabeld 1 (not required anymore since a few versions).</change>
+<change type="updated">Shared mirv_skip with AfxHookSource2 (thanks @ficcialfaint).</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.121.6</version>
 <time>2023-09-29T10:14Z</time>
 <changes>
