@@ -356,6 +356,8 @@ target_sources(AfxHookSource PRIVATE
     ../shared/MirvCampath.h
     ../shared/MirvInput.cpp
     ../shared/MirvInput.h
+	../shared/MirvSkip.cpp
+	../shared/MirvSkip.h
     ../shared/OpenExrOutput.cpp
     ../shared/OpenExrOutput.h
     ../shared/RawOutput.cpp

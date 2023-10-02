@@ -19,6 +19,7 @@
 #include "../shared/MirvCamIO.h"
 #include "../shared/MirvCampath.h"
 #include "../shared/MirvInput.h"
+#include "../shared/MirvSkip.h"
 
 #include <Windows.h>
 #include "../deps/release/Detours/src/detours.h"
@@ -26,6 +27,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include <sstream>
 #include <mutex>
 
 HMODULE g_h_engine2Dll = 0;
@@ -501,6 +503,11 @@ public:
 		}
 		return false;
 	}
+    virtual bool GetDemoTickFromClientTime(double curTime, double targetTime, int& outTick)
+    {
+        double demoTime;
+        return GetDemoTimeFromClientTime(curTime, targetTime, demoTime) && GetDemoTickFromDemoTime(curTime, demoTime, outTick);
+    }
 } g_MirvCampath_Time;
 
 class CMirvCampath_Camera : public IMirvCampath_Camera
@@ -956,6 +963,19 @@ class CommandSystem g_CommandSystem(&g_ExecuteClientCmdForCommandSystem, &g_GetT
 CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 {
 	g_CommandSystem.Console_Command(args);
+}
+
+class CMirvSkip_GotoDemoTick : public IMirvSkip_GotoDemoTick {
+	virtual void GotoDemoTick(int tick) {
+        std::ostringstream oss;
+        oss << "demo_gototick " << tick;
+        if(g_pEngineToClient) g_pEngineToClient->ExecuteClientCmd(0,oss.str().c_str(),true);		
+	}
+} g_MirvSkip_GotoDemoTick;
+
+CON_COMMAND(mirv_skip, "for skipping through demos (uses demo_gototick)")
+{
+    MirvSkip_ConsoleCommand(args, &g_MirvCampath_Time, &g_MirvSkip_GotoDemoTick);
 }
 
 typedef int (* CS2_Client_LevelInitPreEntity_t)(void* This, void * pKeyValues);

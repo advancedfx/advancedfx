@@ -67,6 +67,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/MirvCampath.h
     ../shared/MirvInput.cpp
     ../shared/MirvInput.h
+    ../shared/MirvSkip.cpp
+    ../shared/MirvSkip.h
 
     main.cpp
 
