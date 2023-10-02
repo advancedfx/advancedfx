@@ -28,7 +28,7 @@ void MirvSkip_PrintTimeFormated(double time)
     advancedfx::Message("%s", oss.str().c_str());
 }
 
-void MirvSkip_ConsoleCommand(advancedfx::ICommandArgs * args, IMirvCampath_Time* mirvTime, IExecuteClientCmdForCommandSystem* cmdSystem)
+void MirvSkip_ConsoleCommand(advancedfx::ICommandArgs * args, IMirvCampath_Time* mirvTime, IMirvSkip_GotoDemoTick * pGotoDemoTick)
 {
     int argc = args->ArgC();
 
@@ -54,11 +54,7 @@ void MirvSkip_ConsoleCommand(advancedfx::ICommandArgs * args, IMirvCampath_Time*
                 {
                     int targetTick = atoi(args->ArgV(3));
 
-                    std::ostringstream oss;
-
-                    oss << "demo_gototick " << targetTick;
-
-                    cmdSystem->ExecuteClientCmd(oss.str().c_str());
+                    pGotoDemoTick->GotoDemoTick(targetTick);
 
                     return;
                 }
@@ -68,11 +64,7 @@ void MirvSkip_ConsoleCommand(advancedfx::ICommandArgs * args, IMirvCampath_Time*
                     int deltaTicks = atoi(arg2);
                     int targetTick = curTick + deltaTicks;
 
-                    std::ostringstream oss;
-
-                    oss << "demo_gototick " << targetTick;
-
-                    cmdSystem->ExecuteClientCmd(oss.str().c_str());
+                    pGotoDemoTick->GotoDemoTick(targetTick);
 
                     return;
                 }
@@ -111,11 +103,7 @@ void MirvSkip_ConsoleCommand(advancedfx::ICommandArgs * args, IMirvCampath_Time*
                         return;
                     }
 
-                    std::ostringstream oss;
-
-                    oss << "demo_gototick " << targetTick;
-
-                    cmdSystem->ExecuteClientCmd(oss.str().c_str());
+                    pGotoDemoTick->GotoDemoTick(targetTick);
 
                     return;
                 }
@@ -130,11 +118,7 @@ void MirvSkip_ConsoleCommand(advancedfx::ICommandArgs * args, IMirvCampath_Time*
                         return;
                     }
 
-                    std::ostringstream oss;
-
-                    oss << "demo_gototick " << targetTick;
-
-                    cmdSystem->ExecuteClientCmd(oss.str().c_str());
+                    pGotoDemoTick->GotoDemoTick(targetTick);
 
                     return;
                 }
@@ -151,11 +135,7 @@ void MirvSkip_ConsoleCommand(advancedfx::ICommandArgs * args, IMirvCampath_Time*
                         return;
                     }
 
-                    std::ostringstream oss;
-
-                    oss << "demo_gototick " << targetTick;
-
-                    cmdSystem->ExecuteClientCmd(oss.str().c_str());
+                    pGotoDemoTick->GotoDemoTick(targetTick);
 
                     return;
                 }

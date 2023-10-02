@@ -1288,9 +1288,17 @@ public:
     }
 } g_MirvCampath_Time;
 
+class CMirvSkip_GotoDemoTick : public IMirvSkip_GotoDemoTick {
+	virtual void GotoDemoTick(int tick) {
+        std::ostringstream oss;
+        oss << "demo_gototick " << tick;
+        g_VEngineClient->ExecuteClientCmd(oss.str().c_str());
+	}
+} g_MirvSkip_GotoDemoTick;
+
 CON_COMMAND(mirv_skip, "for skipping through demos (uses demo_gototick)")
 {
-    MirvSkip_ConsoleCommand(args, &g_MirvCampath_Time, &g_ExecuteClientCmdForCommandSystem);
+    MirvSkip_ConsoleCommand(args, &g_MirvCampath_Time, &g_MirvSkip_GotoDemoTick);
 }
 
 class CMirvCampath_Camera : public IMirvCampath_Camera

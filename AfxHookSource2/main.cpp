@@ -27,6 +27,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include <sstream>
 #include <mutex>
 
 advancedfx::CCommandLine  * g_CommandLine = nullptr;
@@ -952,9 +953,17 @@ CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
 	g_CommandSystem.Console_Command(args);
 }
 
+class CMirvSkip_GotoDemoTick : public IMirvSkip_GotoDemoTick {
+	virtual void GotoDemoTick(int tick) {
+        std::ostringstream oss;
+        oss << "demo_gototick " << tick;
+        if(g_pEngineToClient) g_pEngineToClient->ExecuteClientCmd(0,oss.str().c_str(),true);		
+	}
+} g_MirvSkip_GotoDemoTick;
+
 CON_COMMAND(mirv_skip, "for skipping through demos (uses demo_gototick)")
 {
-    MirvSkip_ConsoleCommand(args, &g_MirvCampath_Time, &g_ExecuteClientCmdForCommandSystem);
+    MirvSkip_ConsoleCommand(args, &g_MirvCampath_Time, &g_MirvSkip_GotoDemoTick);
 }
 
 typedef int (* CS2_Client_LevelInitPreEntity_t)(void* This, void * pKeyValues);
