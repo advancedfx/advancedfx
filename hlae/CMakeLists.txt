@@ -3,9 +3,9 @@ cmake_minimum_required (VERSION 3.20)
 project ("hlae")
 
 set(hlae_VERSION_MAJOR 2)
-set(hlae_VERSION_MINOR 148)
-set(hlae_VERSION_PATCH 7)
-set(hlae_VERSION_REVISON 0)
+set(hlae_VERSION_MINOR 149)
+set(hlae_VERSION_PATCH 0)
+set(hlae_VERSION_REVISON 1)
 
 add_custom_target(hlae
     DEPENDS afxcppcli afxhookgoldsrc AfxHookSource injector
