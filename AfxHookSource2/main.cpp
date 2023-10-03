@@ -1,5 +1,6 @@
 #include "stdafx.h"
 
+#include "GameEvents.h"
 #include "WrpConsole.h"
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
@@ -163,6 +164,31 @@ CON_COMMAND(__mirv_find_vtable,"") {
 	DWORD offset = (DWORD)(addr-(size_t)hModule);
 	advancedfx::Message("Result: 0x%016llx (Offset: 0x%08x)\n",addr,offset);
 }
+
+extern bool g_bDebugGameClientEvents;
+
+CON_COMMAND(__mirv_debug_client_game_events, "") {
+
+	if(2 <= args->ArgC()) {
+		g_bDebugGameClientEvents = 0 != atoi(args->ArgV(1));
+	}
+}
+
+/*CON_COMMAND(mirv_exec,"") {
+    std::ostringstream oss;
+
+	for(int i=1; i < args->ArgC(); i++) {
+		if(1 < i ) oss << " ";
+		std::string strArg(args->ArgV(i));
+
+		// Escape quotes:
+		for (size_t pos = strArg.find('\"', 0); std::string::npos != pos; pos = strArg.find('\"', pos + 2 ) ) strArg.replace(pos, 1, "\\\"");
+
+		oss << "\"" << strArg << "\"";
+	}
+
+    if(g_pEngineToClient) g_pEngineToClient->ExecuteClientCmd(0, oss.str().c_str(), false);	
+}*/
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -715,7 +741,7 @@ void HookClientDll(HMODULE clientDll) {
 
 .text:000000018076F3C1                 mov     rcx, cs:qword_18167FE18
 .text:000000018076F3C8                 mov     rax, [rcx]
-.text:000000018076F3CB                 call    qword ptr [rax+110h]
+.text:000000018076F3CB                 call    qword ptr [rax+118h]
 .text:000000018076F3D1                 mov     rbp, [rsp+948h]
 .text:000000018076F3D9                 xorps   xmm6, xmm6
 .text:000000018076F3DC                 test    al, al
@@ -723,7 +749,7 @@ void HookClientDll(HMODULE clientDll) {
 .text:000000018076F3E0                 mov     edx, 0FFFFFFFFh
 	*/
 	{
-		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8B 0D ?? ?? ?? ?? 48 8B 01 FF 90 10 01 00 00 48 8B AC 24 48 09 00 00 0F 57 F6 84 C0 74 77 BA FF FF FF FF");
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8B 0D ?? ?? ?? ?? 48 8B 01 FF 90 18 01 00 00 48 8B AC 24 48 09 00 00 0F 57 F6 84 C0 74 77 BA FF FF FF FF");
 		if (!result.IsEmpty()) {
 			/*
 				These are the top 16 bytes we change to:
@@ -823,8 +849,10 @@ void HookClientDll(HMODULE clientDll) {
 			MdtMemAccessEnd(&mbis);
 		}
 		else
-			ErrorBox(MkErrStr(__FILE__, __LINE__));				
+			ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
+
+	if(!Hook_CGameEventManager((void*)clientDll)) ErrorBox(MkErrStr(__FILE__, __LINE__));
 }
 
 SOURCESDK::CreateInterfaceFn g_AppSystemFactory = 0;

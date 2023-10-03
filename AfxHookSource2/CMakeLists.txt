@@ -34,9 +34,13 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../deps/release/prop/cs2/sdk_src/public/tier0/memalloc.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/convar.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/iconvar.h
+    ../deps/release/prop/cs2/sdk_src/public/tier1/KeyValues.h
+    ../deps/release/prop/cs2/sdk_src/public/vstdlib/IKeyValuesSystem.h
     ../deps/release/prop/cs2/sdk_src/public/cdll_int.h    
     ../deps/release/prop/cs2/sdk_src/public/icvar.h    
+    ../deps/release/prop/cs2/sdk_src/public/igameevents.h    
     ../deps/release/prop/cs2/sdk_src/public/igameuiservice.h    
+    ../deps/release/prop/cs2/sdk_src/tier1/KeyValues.cpp
     ../deps/release/prop/AfxHookSource/SourceSdkShared.cpp
     ../deps/release/prop/AfxHookSource/SourceSdkShared.h
     ../deps/release/prop/AfxHookSource/SourceInterfaces.h
@@ -69,6 +73,9 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/MirvInput.h
     ../shared/MirvSkip.cpp
     ../shared/MirvSkip.h
+
+    GameEvents.cpp
+    GameEvents.h
 
     main.cpp
 
