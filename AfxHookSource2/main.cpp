@@ -60,6 +60,10 @@ void New_Unknown_ExecuteClientCommandFromNetChan(void * Ecx, void * Edx, SOURCES
 	//for(int i = 0; i < r8Command->ArgC(); i++) {
 	//	advancedfx::Message("Command %i: %s\n",i,r8Command->ArgV(i));
 	//}
+	if(0 == stricmp("connect",r8Command->ArgV(0))) {
+		if(IDYES != MessageBoxA(0,"YOU ARE TRYING TO CONNECT TO A SERVER - THIS WILL GET YOU VAC BANNED.\nARE YOU SURE?", "HLAE WARNING", MB_YESNOCANCEL|MB_ICONHAND|MB_DEFBUTTON2))
+			return;
+	}
 	if(0 < g_nIgnoreNextDisconnects && 0 < r8Command->ArgC()) {
 		if(0 == stricmp("disconnect",r8Command->ArgV(0))) {
 			if(0 < g_nIgnoreNextDisconnects) g_nIgnoreNextDisconnects--;
@@ -154,6 +158,14 @@ CON_COMMAND(__mirv_test,"") {
 	if(2 <= args->ArgC()) offset = atoi(args->ArgV(1));
 
 	advancedfx::Message("g_pGlobals[%i]: int: %i , float: %f\n",offset,(g_pGlobals ? *(int *)((unsigned char *)g_pGlobals +offset*4) : 0),(g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +offset*4) : 0));
+}
+
+extern const char * GetStringForSymbol(int value);
+
+CON_COMMAND(__mirv_get_string_for_symbol,"") {
+	if (2<= args->ArgC()) {
+		advancedfx::Message("%i: %s\n",atoi(args->ArgV(1)),GetStringForSymbol(atoi(args->ArgV(1))));
+	}
 }
 
 CON_COMMAND(__mirv_find_vtable,"") {
@@ -726,6 +738,38 @@ float CS2_Client_CSetupView_InsideComputeViewMatrix(void) {
 	}
 	return 0;
 }
+/*
+class CCSGOVScriptGameSystem;
+CCSGOVScriptGameSystem * g_pCCSGOVScriptGameSystem = nullptr;
+typedef void (__fastcall * CCSGOVScriptGameSystem_UnkAddon_t)(CCSGOVScriptGameSystem *This); //:000
+typedef unsigned long long int (__fastcall * CCSGOVScriptGameSystem_UnkLoadScriptFile_t)(CCSGOVScriptGameSystem *This, const char * pszFileName, bool bDebugPrint); //:008
+CCSGOVScriptGameSystem_UnkAddon_t g_Old_CCSGOVScriptGameSystem_UnkAddon = nullptr;
+CCSGOVScriptGameSystem_UnkLoadScriptFile_t g_Old_CCSGOVScriptGameSystem_UnkLoadScriptFile = nullptr;
+
+void __fastcall New_CSGOVScriptGameSystem_UnkAddon(CCSGOVScriptGameSystem *This) {
+	g_pCCSGOVScriptGameSystem = This;
+	//advancedfx::Message("GOT IT\n");
+	g_Old_CCSGOVScriptGameSystem_UnkAddon(This);
+}
+
+unsigned long long int __fastcall New_CCSGOVScriptGameSystem_UnkLoadScriptFile(CCSGOVScriptGameSystem *This, const char * pszFileName, bool bDebugPrint) {
+	g_pCCSGOVScriptGameSystem = This;
+	advancedfx::Message("LoadScriptFile: %s\n",pszFileName);
+	return g_Old_CCSGOVScriptGameSystem_UnkLoadScriptFile(This, pszFileName, bDebugPrint);
+}
+
+CON_COMMAND(mirv_vscript_exec,"") {
+	int argC = args->ArgC();
+	const char * arg0 = args->ArgV(0);
+
+	if(2 <= argC) {
+		if(g_pCCSGOVScriptGameSystem) {
+			g_Old_CCSGOVScriptGameSystem_UnkLoadScriptFile(g_pCCSGOVScriptGameSystem,args->ArgV(1),3 <= argC ? (0 != atoi(args->ArgV(2))) : true);
+		} else advancedfx::Warning("Missing hooks.\n");
+		return;
+	}
+	advancedfx::Message("%s <script_file_name> [<debug_print=0|1>]\n",arg0);
+}*/
 
 void HookClientDll(HMODULE clientDll) {
 	static bool bFirstCall = true;
@@ -853,6 +897,17 @@ void HookClientDll(HMODULE clientDll) {
 	}
 
 	if(!Hook_CGameEventManager((void*)clientDll)) ErrorBox(MkErrStr(__FILE__, __LINE__));
+/*
+	if(void ** vtable = (void**)Afx::BinUtils::FindClassVtable(clientDll,".?AVCCSGOVScriptGameSystem@@", 0, 0x10)) {
+		g_Old_CCSGOVScriptGameSystem_UnkAddon = (CCSGOVScriptGameSystem_UnkAddon_t)vtable[0] ;
+		g_Old_CCSGOVScriptGameSystem_UnkLoadScriptFile = (CCSGOVScriptGameSystem_UnkLoadScriptFile_t)vtable[5] ;
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourAttach(&(PVOID&)g_Old_CCSGOVScriptGameSystem_UnkAddon,New_CSGOVScriptGameSystem_UnkAddon);
+        // doesn't work without error // DetourAttach(&(PVOID&)g_Old_CCSGOVScriptGameSystem_UnkLoadScriptFile, New_CCSGOVScriptGameSystem_UnkLoadScriptFile);
+        if(NO_ERROR != DetourTransactionCommit()) ErrorBox(MkErrStr(__FILE__, __LINE__));
+		else AfxDetourPtr((PVOID *)&(vtable[7]), New_CCSGOVScriptGameSystem_UnkLoadScriptFile, (PVOID*)&g_Old_CCSGOVScriptGameSystem_UnkLoadScriptFile);
+	} else ErrorBox(MkErrStr(__FILE__, __LINE__));*/
 }
 
 SOURCESDK::CreateInterfaceFn g_AppSystemFactory = 0;

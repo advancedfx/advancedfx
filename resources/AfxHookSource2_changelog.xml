@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.5.2</version>
+<time>2023-10-05T13:44Z</time>
+<changes>
+<change type="updated">Renamed DLL to inject, to make it clear that you can get VAC banned if you join servers despite -insecure mode (probably new CS2 bug).</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.5.1</version>
 <time>2023-10-03T05:04Z</time>
 <changes>

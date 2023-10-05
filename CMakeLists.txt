@@ -214,13 +214,13 @@ elseif(CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
         PROGRAMS
             ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS}
 
-            "${AfxHookSource2_BINARY_DIR}/$<CONFIG>/AfxHookSource2.dll"
+            "${AfxHookSource2_BINARY_DIR}/$<CONFIG>/AfxHookSource2_IF_YOU_USE_THIS_TO_JOIN_GOTV_OR_VAC_SERVERS_YOU_WILL_GET_VAC_BANNED.dll"
         DESTINATION "bin/x64"
     )    
 
     install(
         FILES
-            "${AfxHookSource2_BINARY_DIR}/$<CONFIG>/AfxHookSource2.pdb"
+            "${AfxHookSource2_BINARY_DIR}/$<CONFIG>/AfxHookSource2_IF_YOU_USE_THIS_TO_JOIN_GOTV_OR_VAC_SERVERS_YOU_WILL_GET_VAC_BANNED.pdb"
         DESTINATION "pdb/x64"
     )    
 endif()

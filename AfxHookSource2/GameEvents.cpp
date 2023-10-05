@@ -38,32 +38,59 @@ CGameEventManager_FreeEvent_t g_CGameEventManager_FreeEvent = nullptr;
 CGameEventManager_FireEvent_t g_Old_CGameEventManager_FireEvent = nullptr;
 CGameEventManager_FireEventClientSide_t g_Old_CGameEventManager_FireEventClientSide = nullptr;
 
+extern const char * GetStringForSymbol(int value);
+
+typedef const char * (__fastcall * KeyValues_GetName_t)(SOURCESDK::CS2::KeyValues * This);
+typedef unsigned long long int (__fastcall * KeyValues_GetInt_t)(SOURCESDK::CS2::KeyValues * This, const char * keyName, unsigned long long int defaultValue);
+typedef SOURCESDK::CS2::KeyValues * (__fastcall * KeyValues_GetFirstSubKey_t)(SOURCESDK::CS2::KeyValues * This);
+typedef SOURCESDK::CS2::KeyValues * (__fastcall * KeyValues_GetNextKey_t)(SOURCESDK::CS2::KeyValues * This);
+typedef void (__fastcall * DebugPrintKV3_t)(const struct KeyValues3 *);
+
+DebugPrintKV3_t g_DebugPrintKV3 = nullptr;
+KeyValues_GetName_t g_KeyValues_GetName = nullptr;
+KeyValues_GetInt_t g_KeyValues_GetInt = nullptr;
+KeyValues_GetFirstSubKey_t g_KeyValues_GetFirstSubKey = nullptr;
+KeyValues_GetNextKey_t g_KeyValues_GetNextKey = nullptr;
+
+void DumpGameEventKeys(SOURCESDK::CS2::KeyValues * keys, int depth) {
+    while (keys)
+    {
+        if(auto subKeys = g_KeyValues_GetFirstSubKey(keys))
+            DumpGameEventKeys(subKeys, depth + 1);
+        else {
+            for(int i = 0; i < depth; i++) advancedfx::Message("\t");
+            advancedfx::Message("%s\n",g_KeyValues_GetName(keys));
+        }
+        keys = g_KeyValues_GetNextKey(keys);
+    }
+}
+
 void DumpGameEvent(SOURCESDK::CS2::CGameEvent *event) {
+
+    static bool firstRun = true;
+    if(firstRun) {
+        firstRun = false;
+		HMODULE hModule = GetModuleHandleA("tier0.dll");
+		if (hModule)
+		{
+            g_DebugPrintKV3 = (DebugPrintKV3_t)GetProcAddress(hModule,"?DebugPrintKV3@@YAXPEBVKeyValues3@@@Z");
+			g_KeyValues_GetName = (KeyValues_GetName_t)GetProcAddress(hModule, "?GetName@KeyValues@@QEBAPEBDXZ");
+			g_KeyValues_GetInt = (KeyValues_GetInt_t)GetProcAddress(hModule, "?GetInt@KeyValues@@QEBAHPEBDH@Z");
+			g_KeyValues_GetFirstSubKey = (KeyValues_GetFirstSubKey_t)GetProcAddress(hModule, "?GetFirstSubKey@KeyValues@@QEBAPEAV1@XZ");
+            g_KeyValues_GetNextKey = (KeyValues_GetNextKey_t)GetProcAddress(hModule, "?GetNextKey@KeyValues@@QEBAPEAV1@XZ");
+		}        
+    }
+
     advancedfx::Message("Event: \"%s\" (%i)", event->GetName(), event->GetID());
 
-    if (SOURCESDK::CS2::CGameEventDescriptor * descriptor = event->m_pDescriptor)
-	{
-		int eventId = descriptor->eventid;
+    g_DebugPrintKV3((struct KeyValues3 *)(event->GetDataKeys()));
 
-        advancedfx::Message(" (%i) {\n",eventId);
+    //DumpGameEventKeys(event->GetDataKeys(), 1);
 
-        if (descriptor->keys)
-        {
-            if (SOURCESDK::CS2::KeyValues *key = descriptor->keys)
-            {
-                while (key)
-                {
-                    int type = key->GetInt();
-
-                    advancedfx::Message("\t(%i) %s;\n",key->GetInt(),key->GetName());
-
-                    key = key->GetNextKey();
-                }
-            }
-        }
-
-        advancedfx::Message("}"); 
-    }
+    //if (SOURCESDK::CS2::CGameEventDescriptor * descriptor = event->m_pDescriptor)
+	//{
+        //DumpGameEventKeys(descriptor->keys, 1);
+    //}
 
     advancedfx::Message("\n"); 
 }
