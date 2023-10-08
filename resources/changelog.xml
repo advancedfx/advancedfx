@@ -4,6 +4,39 @@
 <changelog>
 
 
+<release>
+<name>HLAE</name>
+<version>2.150.0</version>
+<time>2023-10-08T16:44Z</time>
+<changes>
+<change type="updated">Included AfxHookSource2 0.6.0 (2023-10-08T16:44Z).</change>
+<change type="updated">Included AfxHookSource 1.122.0 (2023-10-08T16:44Z).</change>
+</changes>
+<comments>
+// Example for mirv_input smooth:<br />
+// For key assignment see: https://github.com/advancedfx/advancedfx/wiki/Source%3Amirv_input#mirv_input-camera (New mouse buttons (left / right) + mousemove and mousewheel are not documented there yet.)<br />
+<br />
+mirv_input cfg ksens 1<br />
+mirv_input cfg msens 0.05<br />
+<br />
+mirv_input cfg smooth halfTime 0.5 // sets all half life time for vec (position), and (rotation), fov (field of view) to same value in seconds.<br />
+<br />
+// Uncomment to set independently:<br />
+//mirv_input cfg smooth halfTimeVec 0.5<br />
+//mirv_input cfg smooth halfTimeAng 0.5 // Tip: Use 0 value to disable smoothing, or use e.g. 0.1 value for lower delay and less smoothing.<br />
+//mirv_input cfg smooth halfTimeFov 0.5<br />
+<br />
+//mirv_input cfg smooth rotShortestPath 0 // Uncomment / try this on 0 when bored, default 1 is cooler, but already snaps at 180°.<br />
+<br />
+alias "afx_smooth_on" "mirv_input cfg smooth enabled 1; mirv_input cfg offsetMode ownLast; mirv_input cfg mouseMoveSupport 1; mirv_input camera"<br />
+alias "afx_smooth_off" "mirv_input end; mirv_input cfg offsetMode last; mirv_input cfg mouseMoveSupport 0; mirv_input cfg smooth enabled 0"<br />
+<br />
+afx_smooth_on<br />
+<br />
+echo "enter afx_smooth_off to turn smooth off"<br />
+</comments>
+</release>
+
 
 <release>
 <name>HLAE</name>

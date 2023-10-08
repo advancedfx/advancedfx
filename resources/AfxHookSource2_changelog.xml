@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.6.0</version>
+<time>2023-10-08T16:44Z</time>
+<changes>
+<change type="added">Added mirv_input smooth.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.5.2</version>
 <time>2023-10-05T13:44Z</time>
 <changes>

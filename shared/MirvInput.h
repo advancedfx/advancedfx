@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AfxConsole.h"
+#include "AfxMath.h"
 
 #include <string>
 #include <map>
@@ -340,6 +341,30 @@ private:
 
 	Mem m_Mem;
 
+	// BEGIN Smooth feature related
+
+	bool m_SmoothEnabled = false;
+	bool m_SmoothWasEnabled = false;
+
+	double m_LastX = 0;
+	double m_LastY = 0;
+	double m_LastZ = 0;
+
+	Afx::Math::Quaternion m_LastOutQuat;
+
+	double m_LastFov = 90.0;
+
+	double m_HalfTimeVec = 0.5;
+	double m_HalfTimeAng = 0.5;
+	double m_HalfTimeFov = 0.5;
+
+	bool m_RotShortestPath = true;
+
+	// END Smooth feature related
+
 	void DoCamSpeedDecrease(void);
 	void DoCamSpeedIncrease(void);
+
+	double CalcExpSmooth(double deltaT, double oldVal, double newVal);
+	double CalcDeltaExpSmooth(double deltaT, double deltaVal);
 };

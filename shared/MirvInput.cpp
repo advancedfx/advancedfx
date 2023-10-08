@@ -2,13 +2,17 @@
 
 #include "MirvInput.h"
 
-#include "AfxMath.h"
 #include "AfxConsole.h"
 #include "StringTools.h"
 
 #include "../deps/release/rapidxml/rapidxml.hpp"
 #include "../deps/release/rapidxml/rapidxml_print.hpp"
 
+#define _USE_MATH_DEFINES
+#include <math.h>
+
+#undef min
+#undef max
 
 void MirvInput::Mem::Console(advancedfx::ICommandArgs * args)
 {
@@ -1086,7 +1090,124 @@ bool MirvInput::Override(float deltaT, float & Tx, float &Ty, float & Tz, float 
 		m_InputFov = Fov;
 	}
 
+	if(!m_InputOn || !m_SmoothEnabled || !m_SmoothWasEnabled) {
+		m_LastX = Tx;
+		m_LastY = Tx;
+		m_LastZ = Tz;
+		m_LastFov = Fov;
+		m_LastOutQuat = Afx::Math::Quaternion::FromQREulerAngles(Afx::Math::QREulerAngles::FromQEulerAngles(Afx::Math::QEulerAngles(Rx, Ry, Rz)));
+
+		if(m_InputOn && m_SmoothEnabled) {
+			m_SmoothWasEnabled = true;
+		} else {
+			m_SmoothWasEnabled = false;
+		}
+	} else {
+		if (m_HalfTimeAng)
+		{
+			double t = deltaT / m_HalfTimeAng;
+
+			Afx::Math::Quaternion targetQuat = Afx::Math::Quaternion::FromQREulerAngles(Afx::Math::QREulerAngles::FromQEulerAngles(Afx::Math::QEulerAngles(Rx, Ry, Rz))).Normalized();
+
+			if (m_RotShortestPath)
+			{
+				// Take shortest path:
+				double dotProduct = Afx::Math::DotProduct(targetQuat, m_LastOutQuat);
+				if (dotProduct < 0)
+				{
+					targetQuat = -1.0 * targetQuat;
+				}
+			}
+
+			double targetAngle = m_LastOutQuat.GetAng(targetQuat, Afx::Math::Vector3()) * 180.0 / M_PI;
+			double angle = CalcDeltaExpSmooth(t, targetAngle);
+
+			if (abs(angle) > AFX_MATH_EPS)
+			{
+				m_LastOutQuat = m_LastOutQuat.Slerp(targetQuat, angle / targetAngle).Normalized();
+			}
+
+			Afx::Math::QEulerAngles newAngles = m_LastOutQuat.ToQREulerAngles().ToQEulerAngles();
+
+			Rx = (float)newAngles.Pitch;
+			Ry = (float)newAngles.Yaw;
+			Rz = (float)newAngles.Roll;
+
+			overriden = true;
+		}
+		else
+		{
+			m_LastOutQuat = Afx::Math::Quaternion::FromQREulerAngles(Afx::Math::QREulerAngles::FromQEulerAngles(Afx::Math::QEulerAngles(Rx, Ry, Rz)));
+		}
+
+		if (m_HalfTimeVec)
+		{
+			double t = deltaT / m_HalfTimeVec;
+
+			m_LastX = Tx = (float)CalcExpSmooth(t, m_LastX, Tx);
+			m_LastY = Ty = (float)CalcExpSmooth(t, m_LastY, Ty);
+			m_LastZ = Tz = (float)CalcExpSmooth(t, m_LastZ, Tz);
+
+			overriden = true;
+		}
+		else
+		{
+			m_LastX = Tx;
+			m_LastY = Ty;
+			m_LastZ = Tz;
+		}
+
+		if (m_HalfTimeFov)
+		{
+			double t = deltaT / m_HalfTimeFov;
+
+			double oldOpposite = 2 * tan(0.5 * m_LastFov * M_PI / 180.0);
+			double targetOpposite = 2 * tan(0.5 * Fov * M_PI / 180.0);
+
+			double newOppposite = CalcExpSmooth(t, oldOpposite, targetOpposite);
+			m_LastFov = Fov = (float)(2 * atan(0.5 * newOppposite) * 180.0 / M_PI);
+
+			overriden = true;
+		}
+		else
+		{
+			m_LastFov = Fov;
+		}
+	}
+
 	return overriden;
+}
+
+double MirvInput::CalcExpSmooth(double deltaT, double oldVal, double newVal)
+{
+	const double limitTime = 19.931568569324174087221916576936;
+
+	if (deltaT < 0)
+		return oldVal;
+	else if (limitTime < deltaT)
+		return newVal;
+
+	const double halfTime = 0.69314718055994530941723212145818;
+
+	double x = 1 / exp(deltaT * halfTime);
+
+	return x * oldVal +  (1 - x) * newVal;
+}
+
+double MirvInput::CalcDeltaExpSmooth(double deltaT, double deltaVal)
+{
+	const double limitTime = 19.931568569324174087221916576936;
+
+	if (deltaT < 0)
+		return 0;
+	else if (limitTime < deltaT)
+		return deltaVal;
+
+	const double halfTime = 0.69314718055994530941723212145818;
+
+	double x = 1 / exp(deltaT * halfTime);
+
+	return (1 - x) * deltaVal;
 }
 
 void MirvInput::ConCommand(advancedfx::ICommandArgs * args)
@@ -1475,6 +1596,125 @@ void MirvInput::ConCommand(advancedfx::ICommandArgs * args)
 					advancedfx::Message("Value: %s\n", szOffsetMode);
 					return;
 				}
+				else if(0 == _stricmp("smooth",arg2)) {
+
+					if (4 <= argc)
+					{
+						char const * arg3 = args->ArgV(3);
+
+						if (0 == _stricmp("enabled", arg3))
+						{
+							if (5 <= argc)
+							{
+								m_SmoothEnabled = 0 != atoi(args->ArgV(4));
+								return;
+							}
+
+							advancedfx::Message(
+								"%s cfg smooth enabled 0|1 - Disable / Enabele smoothing.\n"
+								"Current value: %i\n"
+								, arg0
+								, (m_SmoothEnabled?1:0)
+							);
+							return;
+						}
+						else if (0 == _stricmp("halfTime", arg3))
+						{
+							if (5 <= argc)
+							{
+								m_HalfTimeVec = m_HalfTimeAng = m_HalfTimeFov = atof(args->ArgV(4));
+								return;
+							}
+
+							advancedfx::Message(
+								"%s cfg smooth halfTime <fHalfTimeSecs> - Set new value for vec,ang,fov.\n"
+								, arg0
+							);
+							return;
+						}
+						else if (0 == _stricmp("halfTimeVec", arg3))
+						{
+							if (5 <= argc)
+							{
+								m_HalfTimeVec = atof(args->ArgV(4));
+								return;
+							}
+
+							advancedfx::Message(
+								"%s cfg smooth halfTimeVec <fHalfTimeSecs> - Set new value.\n"
+								"Current value: %f\n"
+								, arg0
+								, m_HalfTimeVec
+							);
+							return;
+						}
+						else if (0 == _stricmp("halfTimeAng", arg3))
+						{
+							if (5 <= argc)
+							{
+								m_HalfTimeAng = atof(args->ArgV(4));
+								return;
+							}
+
+							advancedfx::Message(
+								"%s cfg smooth halfTimeAng <fHalfTimeSecs> - Set new value.\n"
+								"Current value: %f\n"
+								, arg0
+								, m_HalfTimeAng
+							);
+							return;
+						}
+						else if (0 == _stricmp("halfTimeFov", arg3))
+						{
+							if (5 <= argc)
+							{
+								m_HalfTimeFov = atof(args->ArgV(4));
+								return;
+							}
+
+							advancedfx::Message(
+								"%s cfg smooth halfTimeFov <fHalfTimeSecs> - Set new value.\n"
+								"Current value: %f\n"
+								, arg0
+								, m_HalfTimeFov
+							);
+							return;
+						}
+						else if (0 == _stricmp("rotShortestPath", arg3))
+						{
+							if (5 <= argc)
+							{
+								m_RotShortestPath = 0 != atoi(args->ArgV(4));
+								return;
+							}
+
+							advancedfx::Message(
+								"%s cfg smooth rotShortestPath 0|1 - Set new value.\n"
+								"Current value: %i\n"
+								, arg0
+								, m_RotShortestPath ? 1 : 0
+							);
+							return;
+						}
+					}
+
+					advancedfx::Message(
+						"%s cfg smooth enabled [...]\n"
+						"%s cfg smooth halfTime [...]\n"
+						"%s cfg smooth halfTimeVec [...]\n"
+						"%s cfg smooth halfTimeAng [...]\n"
+						"%s cfg smooth halfTimeFov [...]\n"
+						"%s cfg smooth rotShortestPath [...] - If to rotate shortest path.\n"
+						, arg0
+						, arg0
+						, arg0
+						, arg0
+						, arg0
+						, arg0
+					);
+
+					return;
+				}
 			}
 
 			advancedfx::Message(
@@ -1594,6 +1834,10 @@ void MirvInput::ConCommand(advancedfx::ICommandArgs * args)
 				, arg0
 				, arg0
 				, arg0
+				, arg0
+			);
+			advancedfx::Message(
+				"%s cfg smooth [...]\n"
 				, arg0
 			);
 			return;
