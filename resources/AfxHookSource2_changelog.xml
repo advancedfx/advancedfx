@@ -9,7 +9,7 @@
 <version>0.6.0</version>
 <time>2023-10-08T16:44Z</time>
 <changes>
-<change type="added">Added mirv_input smooth.</change>
+<change type="added">Added mirv_input cfg smooth.</change>
 </changes>
 </release>
 
