@@ -235,7 +235,7 @@ public:
 	}
 
 	~MirvInputEx() {
-		delete this;
+		delete m_MirvInput;
 	}
 
 	MirvInput * m_MirvInput;
