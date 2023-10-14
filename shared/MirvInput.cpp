@@ -1092,7 +1092,7 @@ bool MirvInput::Override(float deltaT, float & Tx, float &Ty, float & Tz, float 
 
 	if(!m_InputOn || !m_SmoothEnabled || !m_SmoothWasEnabled) {
 		m_LastX = Tx;
-		m_LastY = Tx;
+		m_LastY = Ty;
 		m_LastZ = Tz;
 		m_LastFov = Fov;
 		m_LastOutQuat = Afx::Math::Quaternion::FromQREulerAngles(Afx::Math::QREulerAngles::FromQEulerAngles(Afx::Math::QEulerAngles(Rx, Ry, Rz)));
