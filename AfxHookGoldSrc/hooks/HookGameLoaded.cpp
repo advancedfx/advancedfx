@@ -172,7 +172,6 @@ REGISTER_DEBUGCMD_FUNC(debug_spec)
 
 }
 
-
 void HookGameLoaded()
 {
 	SCREENINFO screeninfo;
@@ -220,4 +219,9 @@ void HookGameLoaded()
 	if (!(OldClientCmdDemForceHltv = g_CmdTools.HookCommand("dem_forcehltv", NewClientCmdDemForceHltv))) pEngfuncs->Con_Printf("HLAE warning: Failed hooking dem_forcehltv");
 	if (!(g_CmdTools.HookCommand("startmovie", Hook_startmovie))) pEngfuncs->Con_Printf("HLAE warning: Failed hooking startmovie");
 	if (!(g_CmdTools.HookCommand("endmovie", Hook_endmovie))) pEngfuncs->Con_Printf("HLAE warning: Failed hooking endmovie");
+
+	/*bool bIsSecureGame = false;
+	if (HMODULE hClientDll = GetModuleHandleA("client.dll")) {
+		bIsSecureGame = nullptr != GetProcAddress(hClientDll, "F");
+	}*/
 }

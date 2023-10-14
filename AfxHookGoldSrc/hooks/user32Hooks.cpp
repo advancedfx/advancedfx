@@ -6,30 +6,97 @@
 
 #include "../AfxSettings.h"
 #include "../supportrender.h"
+#include "../mirv_input.h"
+
+#include "../shared/MirvInput.h"
 
 HWND g_GameWindow = NULL;
 bool g_GameWindowActive = false;
-WNDPROC g_GameWindowProc = NULL;
 bool g_GameWindowUndocked = false;
 DWORD g_OldWindowStyle;
 
+WNDPROC g_NextWindProc;
+static bool g_afxWindowProcSet = false;
 
-LRESULT CALLBACK NewGameWindowProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
+LRESULT CALLBACK new_Afx_WindowProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 {
-	// one could filter window unspecific messages here.
-
-	if (hWnd==NULL || hWnd != g_GameWindow)
-		// this is not the GameWindow we want to control
-		return g_GameWindowProc(hWnd,uMsg,wParam,lParam);
-
-	// filter GameWindow specific messages:
-
 	switch (uMsg)
 	{
 	case WM_ACTIVATE:
 		if( LOWORD(wParam) == WA_INACTIVE )
 			g_GameWindowActive = false;
+		
+		MirvInput_Get()->Supply_Focus(LOWORD(wParam) != 0);
 		break;
+	case WM_CHAR:
+		if (MirvInput_Get()->Supply_CharEvent(wParam, lParam))
+			return 0;
+		break;
+	case WM_KEYDOWN:
+		if (MirvInput_Get()->Supply_KeyEvent(MirvInput::KS_DOWN, wParam, lParam))
+			return 0;
+		break;
+	case WM_KEYUP:
+		if (MirvInput_Get()->Supply_KeyEvent(MirvInput::KS_UP, wParam, lParam))
+			return 0;
+		break;
+	case WM_LBUTTONDBLCLK:
+	case WM_LBUTTONDOWN:
+	case WM_LBUTTONUP:
+	case WM_MBUTTONDBLCLK:
+	case WM_MBUTTONDOWN:
+	case WM_MBUTTONUP:
+	case WM_RBUTTONDBLCLK:
+	case WM_RBUTTONDOWN:
+	case WM_RBUTTONUP:
+	case WM_MOUSEMOVE:
+	case WM_MOUSEWHEEL:
+		if (MirvInput_Get()->Supply_MouseEvent(uMsg, wParam, lParam))
+			return 0;
+		break;
+	case WM_INPUT:
+	{
+		HRAWINPUT hRawInput = (HRAWINPUT)lParam;
+		RAWINPUT inp;
+		UINT size = sizeof(inp);
+
+		UINT getRawInputResult = GetRawInputData(hRawInput, RID_INPUT, &inp, &size, sizeof(RAWINPUTHEADER));
+
+		if (-1 != getRawInputResult && inp.header.dwType == RIM_TYPEMOUSE)
+		{
+			RAWMOUSE* rawmouse = &inp.data.mouse;
+			LONG dX, dY;
+
+			if ((rawmouse->usFlags & 0x01) == MOUSE_MOVE_RELATIVE)
+			{
+				dX = rawmouse->lLastX;
+				dY = rawmouse->lLastY;
+			}
+			else
+			{
+				static bool initial = true;
+				static LONG lastX = 0;
+				static LONG lastY = 0;
+
+				if (initial)
+				{
+					initial = false;
+					lastX = rawmouse->lLastX;
+					lastY = rawmouse->lLastY;
+				}
+
+				dX = rawmouse->lLastX - lastX;
+				dY = rawmouse->lLastY - lastY;
+
+				lastX = rawmouse->lLastX;
+				lastY = rawmouse->lLastY;
+			}
+
+			if (MirvInput_Get()->Supply_RawMouseMotion(dX, dY))
+				return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+		}
+	}
+	break;
 	case WM_MOUSEACTIVATE:
 		if( !g_AfxSettings.FullScreen_get() && !g_GameWindowUndocked && !g_GameWindowActive )
 		{
@@ -37,9 +104,9 @@ LRESULT CALLBACK NewGameWindowProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lPar
 			// so we will fake them:
 			g_GameWindowActive = true;
 
-			LRESULT lr = g_GameWindowProc(hWnd,uMsg,wParam,lParam); // pass on WM_MOUSEACTIVATE
-			g_GameWindowProc(hWnd, WM_ACTIVATEAPP, TRUE, NULL);
-			g_GameWindowProc(hWnd, WM_ACTIVATE, WA_ACTIVE, NULL);//lParam);
+			LRESULT lr = g_NextWindProc(hWnd,uMsg,wParam,lParam); // pass on WM_MOUSEACTIVATE
+			g_NextWindProc(hWnd, WM_ACTIVATEAPP, TRUE, NULL);
+			g_NextWindProc(hWnd, WM_ACTIVATE, WA_ACTIVE, NULL);//lParam);
 
 			// Don't let strange mods like Natural Selection mess with us:
 			ShowCursor(TRUE);
@@ -54,14 +121,14 @@ LRESULT CALLBACK NewGameWindowProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lPar
 		if( !g_AfxSettings.FullScreen_get() && !g_GameWindowUndocked && g_GameWindowActive )
 		{
 			g_GameWindowActive = false;
-			g_GameWindowProc(hWnd, WM_ACTIVATE, WA_INACTIVE, NULL);//lParam);
-			g_GameWindowProc(hWnd, WM_ACTIVATEAPP, FALSE, NULL);
-			return g_GameWindowProc(hWnd, uMsg,wParam,lParam); // PASS ON WM_KILLFOCUS
+			g_NextWindProc(hWnd, WM_ACTIVATE, WA_INACTIVE, NULL);//lParam);
+			g_NextWindProc(hWnd, WM_ACTIVATEAPP, FALSE, NULL);
+			return g_NextWindProc(hWnd, uMsg,wParam,lParam); // PASS ON WM_KILLFOCUS
 		}
 		break;
 	}
 
-	return g_GameWindowProc(hWnd, uMsg, wParam, lParam);
+	return g_NextWindProc(hWnd, uMsg, wParam, lParam);
 }
 
 HWND APIENTRY NewCreateWindowExW(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWindowName, DWORD dwStyle, int x, int y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam);
@@ -93,15 +160,16 @@ HWND APIENTRY NewCreateWindowExW(DWORD dwExStyle,LPCWSTR lpClassName,LPCWSTR lpW
 	
 	g_GameWindow = Get_Import_USER32_CreateWindowExW_Internal()->TrueFunc( dwExStyle, lpClassName, lpWindowName, dwStyle, x, y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam );
 
-	g_GameWindowProc = (WNDPROC)GetWindowLongPtrW(g_GameWindow, GWLP_WNDPROC);
+	g_NextWindProc = (WNDPROC)GetWindowLongPtrW(g_GameWindow, GWLP_WNDPROC);
 	//char t[100];
 	//sprintf_s(t,"0x%08x",g_GameWindowProc);
 	//MessageBox(0,t,"g_GameWIndowProc",MB_OK);
 
 	// We can't set a new windowproc, this will get us an endless loop because SDL
 	// is just fucked up, so we hook the SDL one:
-	//SetWindowLongPtrW(g_GameWindow, GWLP_WNDPROC, (LONG)NewGameWindowProc);
-	//g_GameWindowProc = (WNDPROC)DetourApply((BYTE *)g_GameWindowProc, (BYTE *)NewGameWindowProc, 0x09);
+	//SetWindowLongPtrW(g_GameWindow, GWLP_WNDPROC, (LONG)new_Afx_WindowProc);
+	//g_afxWindowProcSet = true;
+	g_NextWindProc = (WNDPROC)DetourApply((BYTE *)g_NextWindProc, (BYTE *)new_Afx_WindowProc, 0x09);
 
 	return g_GameWindow;
 }
@@ -171,4 +239,65 @@ void UndockGameWindowForCapture()
 		AdjustWindowRectEx(&windowRect, WS_POPUP, FALSE, dwExStyle);
 		SetWindowPos( g_GameWindow, HWND_TOPMOST, 0, 0, windowRect.right -windowRect.left, windowRect.bottom -windowRect.top, SWP_FRAMECHANGED|SWP_SHOWWINDOW);
 	}
+}
+
+BOOL WINAPI new_GetCursorPos(
+	__out LPPOINT lpPoint
+)
+{
+	BOOL result = GetCursorPos(lpPoint);
+
+	//	if (AfxHookSource::Gui::OnGetCursorPos(lpPoint))
+	//		return TRUE;
+
+	MirvInput_Get()->Supply_GetCursorPos(lpPoint);
+
+	return result;
+}
+
+BOOL WINAPI new_SetCursorPos(
+	__in int X,
+	__in int Y
+)
+{
+	//	if (AfxHookSource::Gui::OnSetCursorPos(X, Y))
+	//		return TRUE;
+
+	MirvInput_Get()->Supply_SetCursorPos(X, Y);
+
+	return SetCursorPos(X, Y);
+}
+
+
+
+CAfxImportFuncHook<BOOL(WINAPI*)(LPPOINT)>* Get_Import_USER32_GetCursorPos_Internal() {
+	static CAfxImportFuncHook<BOOL(WINAPI*)(LPPOINT)> g_Import_USER32_GetCursorPos("GetCursorPos", &new_GetCursorPos);
+	return &g_Import_USER32_GetCursorPos;
+}
+CAfxImportFuncHookBase* Get_Import_USER32_GetCursorPos() {
+	return Get_Import_USER32_GetCursorPos_Internal();
+}
+
+CAfxImportFuncHook<BOOL(WINAPI*)(int, int)>* Get_Import_USER32_SetCursorPos_Internal() {
+	static CAfxImportFuncHook<BOOL(WINAPI*)(int, int)> g_Import_USER32_SetCursorPos("SetCursorPos", &new_SetCursorPos);
+	return &g_Import_USER32_SetCursorPos;
+}
+CAfxImportFuncHookBase* Get_Import_USER32_SetCursorPos() {
+	return Get_Import_USER32_SetCursorPos_Internal();
+}
+
+CAfxImportFuncHook<BOOL(WINAPI*)(LPPOINT)>* Get_Import_client_USER32_GetCursorPos_Internal() {
+	static CAfxImportFuncHook<BOOL(WINAPI*)(LPPOINT)> g_Import_client_USER32_GetCursorPos("GetCursorPos", &new_GetCursorPos);
+	return &g_Import_client_USER32_GetCursorPos;
+}
+CAfxImportFuncHookBase* Get_Import_client_USER32_GetCursorPos() {
+	return Get_Import_client_USER32_GetCursorPos_Internal();
+}
+
+CAfxImportFuncHook<BOOL(WINAPI*)(int, int)>* Get_Import_client_USER32_SetCursorPos_Internal() {
+	static CAfxImportFuncHook<BOOL(WINAPI*)(int, int)> g_Import_client_USER32_SetCursorPos("SetCursorPos", &new_SetCursorPos);
+	return &g_Import_client_USER32_SetCursorPos;
+}
+CAfxImportFuncHookBase* Get_Import_client_USER32_SetCursorPos() {
+	return Get_Import_client_USER32_SetCursorPos_Internal();
 }

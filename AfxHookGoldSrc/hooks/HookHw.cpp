@@ -215,7 +215,7 @@ HMODULE WINAPI NewHwLoadLibraryA( LPCSTR lpLibFileName )
 
 		Addresses_InitClientDll((AfxAddr)hRet, pEngfuncs->pfnGetGameDirectory());
 
-		HookClient();
+		HookClient((void*)hRet);
 	}
 	else if( !bDemoPlayerLoaded && StringEndsWith( lpLibFileName, "demoplayer.dll") && hRet )
 	{
@@ -278,7 +278,7 @@ CAfxImportDllHook g_Import_hw_sdl2("SDL2.dll", CAfxImportDllHooks({
 
 CAfxImportsHook g_Import_hw(CAfxImportsHooks({
 	&g_Import_hw_KERNEL32,
-	&g_Import_hw_sdl2
+	&g_Import_hw_sdl2,
 	}));
 
 CAfxImportDllHook g_Import_sdl2_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
@@ -286,7 +286,10 @@ CAfxImportDllHook g_Import_sdl2_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
 
 CAfxImportDllHook g_Import_sdl2_USER32("USER32.dll", CAfxImportDllHooks({
 	Get_Import_USER32_CreateWindowExW(),
-	Get_Import_USER32_DestroyWindow() }));
+	Get_Import_USER32_DestroyWindow(),
+	Get_Import_USER32_GetCursorPos(),
+	Get_Import_USER32_SetCursorPos()
+	}));
 
 CAfxImportDllHook g_Import_sdl2_GDI32("GDI32.dll", CAfxImportDllHooks({
 	Get_Import_GDI32_SetPixelFormat(),
@@ -297,6 +300,7 @@ CAfxImportsHook g_Import_sdl2(CAfxImportsHooks({
 	&g_Import_sdl2_KERNEL32,
 	&g_Import_sdl2_USER32,
 	& g_Import_sdl2_GDI32 }));
+
 
 void HookHw(HMODULE hHw)
 {
@@ -346,6 +350,8 @@ void HookHw(HMODULE hHw)
 		if(!g_Import_sdl2_KERNEL32_GetProcAddress.TrueFunc) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:Kernel32.dll!GetProcAddress","MDT_ERROR",MB_OK|MB_ICONHAND); }
 		if(!*Get_Import_USER32_CreateWindowExW()->GetTrueFunc()) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:user32.dll!CreateWindowExW","MDT_ERROR",MB_OK|MB_ICONHAND); }
 		if(!*Get_Import_USER32_DestroyWindow()->GetTrueFunc()) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:user32.dll!DestroyWindow","MDT_ERROR",MB_OK|MB_ICONHAND); }
+		if (!*Get_Import_USER32_GetCursorPos()->GetTrueFunc()) { /* That's ok. bIcepOk = false; MessageBox(0, "Interception failed:\nsdl2.dll:user32.dll!GetCursorPos", "MDT_ERROR", MB_OK | MB_ICONHAND); */ }
+		if (!*Get_Import_USER32_SetCursorPos()->GetTrueFunc()) { bIcepOk = false; MessageBox(0, "Interception failed:\nsdl2.dll:user32.dll!Get_Import_USER32_SetCursorPos", "MDT_ERROR", MB_OK | MB_ICONHAND); }
 		if(!*Get_Import_GDI32_SwapBuffers()->GetTrueFunc()) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:gdi32.dll!SwapBuffers","MDT_ERROR",MB_OK|MB_ICONHAND); }
 		if(!*Get_Import_GDI32_SetPixelFormat()->GetTrueFunc()) { bIcepOk = false; MessageBox(0,"Interception failed: gdi32.dll!SetPixelFormat","MDT_ERROR",MB_OK|MB_ICONHAND); }
 	}

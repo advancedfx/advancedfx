@@ -27,6 +27,7 @@
 #include "hooks/client/cstrike/CrossHairFix.h"
 #include "hooks/client/cstrike/ViewmodelAnimationFix.h"
 #include "mirv_time.h"
+#include "mirv_input.h"
 
 #include "AfxSettings.h"
 #include "supportrender.h"
@@ -304,6 +305,14 @@ void Filming::RollDefault()
 
 void Filming::OnR_RenderView(float vieworg[3], float viewangles[3], float & fov)
 {
+	GameCameraOrigin[0] = vieworg[0];
+	GameCameraOrigin[1] = vieworg[1];
+	GameCameraOrigin[2] = vieworg[2];
+	GameCameraAngles[PITCH] = viewangles[PITCH];
+	GameCameraAngles[YAW] = viewangles[YAW];
+	GameCameraAngles[ROLL] = viewangles[ROLL];
+	GameCameraFov = fov;
+
 	if(debug_quat->value)
 	{
 		Quaternion Q = Quaternion::FromQREulerAngles(QREulerAngles::FromQEulerAngles(QEulerAngles(
@@ -430,6 +439,10 @@ void Filming::OnR_RenderView(float vieworg[3], float viewangles[3], float & fov)
 	if(camera_test->value)
 		do_camera_test(vieworg, viewangles);
 
+	if (MirvInput_Override(m_LastFrameTime, vieworg[0], vieworg[1], vieworg[2], viewangles[0], viewangles[1], viewangles[2], fov)) {
+		// originOrAnglesOverriden = true;
+	}
+
 	// export:
 
 	if(g_CamExport.HasFileMain()
@@ -506,6 +519,15 @@ void Filming::OnR_RenderView(float vieworg[3], float viewangles[3], float & fov)
 	LastCameraAngles[YAW] = viewangles[YAW];
 	LastCameraAngles[ROLL] = viewangles[ROLL];
 	LastCameraFov = fov;
+	if (std::numeric_limits<double>::infinity() == m_LastAbsoluteTime) {
+		m_LastAbsoluteTime = pEngfuncs->GetAbsoluteTime();
+		m_LastFrameTime = 0;
+	}
+	else {
+		float fNewAbsoluteFrameTime = pEngfuncs->GetAbsoluteTime();
+		m_LastFrameTime = fNewAbsoluteFrameTime - m_LastAbsoluteTime;
+		m_LastAbsoluteTime = fNewAbsoluteFrameTime;
+	}
 
 	if(print_pos->value!=0.0)
 		pEngfuncs->Con_Printf("(%f,%f,%f) (%f,%f,%f)\n",
@@ -516,6 +538,8 @@ void Filming::OnR_RenderView(float vieworg[3], float viewangles[3], float & fov)
 			viewangles[YAW],
 			viewangles[ROLL]
 		);
+
+	MirvInput_SupplyMouseFrameEnd();
 }
 
 void Filming::On_CL_Disconnect(void)
@@ -561,6 +585,7 @@ void Filming::SetStereoOfs(float left_and_rightofs)
 }
 
 Filming::Filming()
+	: m_LastAbsoluteTime(std::numeric_limits<double>::infinity())
 {
 	// this is currently done globally: _detoured_R_RenderView = NULL; // only hook when requested
 }

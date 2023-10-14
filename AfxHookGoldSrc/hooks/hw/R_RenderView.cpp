@@ -98,7 +98,11 @@ void New_R_RenderView(void)
 	old_fov = *(float*)HL_ADDR_GET(g_fov);
 
 	cur_fov = old_fov;
-	g_Filming.OnR_RenderView(p_r_refdef->vieworg, p_r_refdef->viewangles, cur_fov);
+
+	if (0 == p_r_refdef->vrect.x && 0 == p_r_refdef->vrect.y) // this check is required for games like dod (Day Of Defeat) that render an in-set e.g. for the radar
+	{
+		g_Filming.OnR_RenderView(p_r_refdef->vieworg, p_r_refdef->viewangles, cur_fov);
+	}
 
 	if(cur_fov != old_fov)
 	{

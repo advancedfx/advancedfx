@@ -1,6 +1,7 @@
 #include "stdafx.h"
 
 #include "cmdregister.h"
+#include "MirvCommandArgs.h"
 #include "filming.h"
 #include "CampathDrawer.h"
 #include "mirv_time.h"
@@ -54,26 +55,6 @@ public:
 	}
 } g_MirvCampath_Camera;
 
-class CMirvCommandArgs : public advancedfx::ICommandArgs
-{
-public:
-	CMirvCommandArgs(struct cl_enginefuncs_s* pEngfuncs)
-		: pEngfuncs(pEngfuncs)
-	{
-
-	}
-
-	virtual int ArgC() {
-		return pEngfuncs->Cmd_Argc();
-	}
-
-	virtual char const* ArgV(int i) {
-		return pEngfuncs->Cmd_Argv(i);
-	}
-
-private:
-	struct cl_enginefuncs_s* pEngfuncs;
-};
 
 void MirvCampath_Msg(const char* format, ...)
 {

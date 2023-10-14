@@ -342,6 +342,18 @@
     <ClCompile Include="mirv_time.cpp">
       <Filter>AfxHookGoldSrc</Filter>
     </ClCompile>
+    <ClCompile Include="mirv_input.cpp">
+      <Filter>AfxHookGoldSrc</Filter>
+    </ClCompile>
+    <ClCompile Include="MirvCommandArgs.h">
+      <Filter>AfxHookGoldSrc</Filter>
+    </ClCompile>
+    <ClCompile Include="MirvCommandArgs.cpp">
+      <Filter>AfxHookGoldSrc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\MirvInput.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="aiming.h">
@@ -580,6 +592,12 @@
     </ClInclude>
     <ClInclude Include="mirv_time.h">
       <Filter>AfxHookGoldSrc</Filter>
+    </ClInclude>
+    <ClInclude Include="mirv_input.h">
+      <Filter>AfxHookGoldSrc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\MirvInput.h">
+      <Filter>shared</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

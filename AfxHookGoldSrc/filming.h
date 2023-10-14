@@ -172,9 +172,15 @@ public:
 
 	bool bRequestingMatteTextUpdate = false;
 
+	double GameCameraOrigin[3] = { 0,0,0 };
+	double GameCameraAngles[3] = { 0,0,0 };
+	double GameCameraFov = 90;
+
 	double LastCameraOrigin[3] = { 0,0,0 };
 	double LastCameraAngles[3] = { 0,0,0 };
 	double LastCameraFov = 90;
+
+	double m_LastFrameTime = 0;
 
 	bool m_HandleZoomEnabled = false;
 	float m_HandleZoomMinUnzoomedFov = 90.0f;
@@ -236,6 +242,7 @@ private:
 	double m_time = 0;
 	double m_LastHostTime = 0;
 	bool m_TASMode = false;
+	double m_LastAbsoluteTime;
 
 
 	CHlaeSupportRender *_pSupportRender = nullptr;

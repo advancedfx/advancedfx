@@ -271,6 +271,7 @@
     <ClCompile Include="..\shared\FileTools.cpp" />
     <ClCompile Include="..\shared\hooks\gameOverlayRenderer.cpp" />
     <ClCompile Include="..\shared\MirvCampath.cpp" />
+    <ClCompile Include="..\shared\MirvInput.cpp" />
     <ClCompile Include="..\shared\OpenExrOutput.cpp" />
     <ClCompile Include="..\shared\StringTools.cpp" />
     <ClCompile Include="..\shared\vcpp\AfxAddr.cpp" />
@@ -315,10 +316,13 @@
     <ClCompile Include="hooks\svdll\Server_GetBlendingInterface.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mdt_media.cpp" />
+    <ClCompile Include="MirvCommandArgs.cpp" />
+    <ClCompile Include="MirvCommandArgs.h" />
     <ClCompile Include="mirv_campath.cpp" />
     <ClCompile Include="mirv_commands.cpp" />
     <ClCompile Include="mirv_glext.cpp" />
     <ClCompile Include="mirv_info.cpp" />
+    <ClCompile Include="mirv_input.cpp" />
     <ClCompile Include="mirv_time.cpp" />
     <ClCompile Include="move_to.cpp" />
     <ClCompile Include="newsky.cpp" />
@@ -374,6 +378,7 @@
     <ClInclude Include="..\shared\FileTools.h" />
     <ClInclude Include="..\shared\hooks\gameOverlayRenderer.h" />
     <ClInclude Include="..\shared\MirvCampath.h" />
+    <ClInclude Include="..\shared\MirvInput.h" />
     <ClInclude Include="..\shared\OpenExrOutput.h" />
     <ClInclude Include="..\shared\StringTools.h" />
     <ClInclude Include="..\shared\vcpp\AfxAddr.h" />
@@ -412,6 +417,7 @@
     <ClInclude Include="mdt_media.h" />
     <ClInclude Include="mirv_commands.h" />
     <ClInclude Include="mirv_glext.h" />
+    <ClInclude Include="mirv_input.h" />
     <ClInclude Include="mirv_time.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Store.h" />
