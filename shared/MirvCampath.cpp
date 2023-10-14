@@ -239,7 +239,7 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 
 				if (offset > 0)
 				{
-					conMessage(" , %f+%f -> ( %f %f %f ) %f ( %f %f %f )\n",
+					conMessage(" , %f+%f -> ( %f  %f  %f ) %f ( %f  %f  %f )\n",
 						time, offset,
 						vieworigin[0], vieworigin[1], vieworigin[2],
 						fov,
@@ -248,7 +248,7 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 				}
 				else if (offset < 0)
 				{
-					conMessage(" , %f%f -> ( %f %f %f ) %f ( %f %f %f )\n",
+					conMessage(" , %f%f -> ( %f  %f  %f ) %f ( %f  %f  %f )\n",
 						time, offset,
 						vieworigin[0], vieworigin[1], vieworigin[2],
 						fov,
@@ -257,7 +257,7 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 				}
 				else
 				{
-					conMessage(" , %f -> ( %f %f %f ) %f ( %f %f %f )\n",
+					conMessage(" , %f -> ( %f  %f  %f ) %f ( %f  %f  %f )\n",
 						time,
 						vieworigin[0], vieworigin[1], vieworigin[2],
 						fov,
@@ -292,7 +292,7 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 
 			SMirvCameraValue camera = mirvCamera->GetCamera();
 
-			conMessage("Current ( x y z ) fov ( pitch yaw roll ): ( %f %f %f ) %f ( %f %f %f )\n",
+			conMessage("Current ( x y z ) fov ( pitch yaw roll ): ( %f  %f  %f ) %f ( %f  %f  %f )\n",
 				camera.X,
 				camera.Y,
 				camera.Z,
