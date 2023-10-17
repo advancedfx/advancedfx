@@ -41,7 +41,7 @@ advancedfx::CCommandLine  * g_CommandLine = nullptr;
 #define MkErrStr(file,line) "Problem in " file ":" STRINGIZE(line)
 
 void ErrorBox(char const * messageText) {
-	MessageBoxA(0, messageText, "Error - AfxHookCS2", MB_OK|MB_ICONERROR);
+	MessageBoxA(0, messageText, "Error - AfxHookSource2", MB_OK|MB_ICONERROR);
 }
 
 void ErrorBox() {
@@ -941,7 +941,7 @@ int new_CCS2_Client_Connect(void* This, SOURCESDK::CreateInterfaceFn appSystemFa
 	return old_CCS2_Client_Connect(This, appSystemFactory);
 }
 
-CON_COMMAND(mirv_suppress_disconnects, "Suppresses given number disconnect commands. Can help to test demo system.") {
+CON_COMMAND(mirv_suppress_disconnects, "Suppresses given number disconnect commands. Can help to test demo system in the CS2 Limited Test.") {
 	int argC = args->ArgC();
 	const char * arg0 = args->ArgV(0);
 	if(2 <= argC) {
@@ -950,7 +950,7 @@ CON_COMMAND(mirv_suppress_disconnects, "Suppresses given number disconnect comma
 	}
 	advancedfx::Message(
 		"mirv_suppress_disconnects <iSuppressTimes> - Use -1 to always suppress, or a positive number to suppress a certain count.\n"
-		"Eample: \"mirv_suppress_disconnects 1; playdemo test.dem\" - Please don't report bugs for this to Valve, the system is not meant to be used yet!\n"
+		"Eample: \"mirv_suppress_disconnects 1; playdemo test.dem\" - Deprecated command. May get removed in the future.\n"
 		"Current value: %i\n",
 		g_nIgnoreNextDisconnects
 	);
@@ -1632,7 +1632,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 
 			if(!g_CommandLine->FindParam(L"-insecure"))
 			{
-				ErrorBox("Please add -insecure to launch options, AfxHookCS2 will refuse to work without it!");
+				ErrorBox("Please add -insecure to launch options, AfxHookSource2 will refuse to work without it!");
 
 				HANDLE hproc = OpenProcess(PROCESS_TERMINATE, true, GetCurrentProcessId());
 				TerminateProcess(hproc, 0);
