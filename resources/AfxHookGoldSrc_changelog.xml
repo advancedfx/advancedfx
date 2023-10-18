@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.19.0</version>
+<time>2023-10-18T06:47Z</time>
+<changes>
+<change type="added">Added mirv_input.</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.18.3</version>
 <time>2023-04-30Z17:12Z</time>
 <changes>

@@ -317,7 +317,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mdt_media.cpp" />
     <ClCompile Include="MirvCommandArgs.cpp" />
-    <ClCompile Include="MirvCommandArgs.h" />
+    <ClInclude Include="MirvCommandArgs.h" />
     <ClCompile Include="mirv_campath.cpp" />
     <ClCompile Include="mirv_commands.cpp" />
     <ClCompile Include="mirv_glext.cpp" />

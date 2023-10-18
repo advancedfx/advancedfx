@@ -6,6 +6,18 @@
 
 <release>
 <name>HLAE</name>
+<version>2.151.0</version>
+<time>2023-10-18T06:47Z</time>
+<changes>
+<change type="updated">Included AfxHookGoldSrc 2.19.0 (2023-10-08T06:44Z).</change>
+<change type="updated">Included AfxHookSource 1.122.1 (2023-10-08T06:44Z).</change>
+<change type="updated">Included AfxHookSource2 0.6.1 (2023-10-18T06:47Z).</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.150.0</version>
 <time>2023-10-08T16:44Z</time>
 <changes>

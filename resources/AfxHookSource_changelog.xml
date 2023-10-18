@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.122.1</version>
+<time>2023-10-18T06:47Z</time>
+<changes>
+<change type="fixed">Fixed mirv_input cfg smooth start position.</change>
+<change type="fixed">Removed commans in mirv_campath print to make copy & paste easier.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.122.0</version>
 <time>2023-10-08T16:44Z</time>
 <changes>

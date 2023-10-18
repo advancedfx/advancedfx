@@ -6,6 +6,23 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.6.1</version>
+<time>2023-10-18T06:47Z</time>
+<changes>
+<change type="fixed">Fixed mirv_input cfg smooth start position.</change>
+<change type="updated">Removed commas in mirv_campath print to make copy and paste easier.</change>
+<change type="updated">Renamed DLL back from AfxHookSource2_IF_YOU_USE_THIS_TO_JOIN_GOTV_OR_VAC_SERVERS_YOU_WILL_GET_VAC_BANNED.dll to AfxHookSource2.dll, since Valve seems to have addressed the issue.</change>
+</changes>
+<comments>
+While we believe that Valve addressed the issue of -insecure not working in some circumstances, we are not sure,<br />
+so please make sure to not connect to live GOTV servers or game servers in order to avoid a VAC ban! Watching demos is fine.
+</comments>
+</release>
+
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.6.0</version>
 <time>2023-10-08T16:44Z</time>
 <changes>

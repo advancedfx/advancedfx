@@ -4,11 +4,11 @@ project ("AfxHookSource2")
 
 add_library(${PROJECT_NAME} MODULE)
 
-set_target_properties(
-    ${PROJECT_NAME}
-    PROPERTIES 
-        OUTPUT_NAME "${PROJECT_NAME}_IF_YOU_USE_THIS_TO_JOIN_GOTV_OR_VAC_SERVERS_YOU_WILL_GET_VAC_BANNED"
-)
+#set_target_properties(
+#    ${PROJECT_NAME}
+#    PROPERTIES 
+#        OUTPUT_NAME "${PROJECT_NAME}_IF_YOU_USE_THIS_TO_JOIN_GOTV_OR_VAC_SERVERS_YOU_WILL_GET_VAC_BANNED"
+#)
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     _CRT_SECURE_NO_WARNINGS

@@ -345,9 +345,6 @@
     <ClCompile Include="mirv_input.cpp">
       <Filter>AfxHookGoldSrc</Filter>
     </ClCompile>
-    <ClCompile Include="MirvCommandArgs.h">
-      <Filter>AfxHookGoldSrc</Filter>
-    </ClCompile>
     <ClCompile Include="MirvCommandArgs.cpp">
       <Filter>AfxHookGoldSrc</Filter>
     </ClCompile>
@@ -598,6 +595,9 @@
     </ClInclude>
     <ClInclude Include="..\shared\MirvInput.h">
       <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="MirvCommandArgs.h">
+      <Filter>AfxHookGoldSrc</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
