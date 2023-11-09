@@ -1638,7 +1638,7 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 	{
 		bFirstRenderSystemDX11 = false;
 
-		Hook_RenderSystemDX11((void*)hModule);
+		//Hook_RenderSystemDX11((void*)hModule); // this crashes
 	}
 	else if(bFirstClient && StringEndsWithW(lpLibFileName, L"csgo\\bin\\win64\\client.dll"))
 	{

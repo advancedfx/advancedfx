@@ -6,6 +6,19 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.6.3</version>
+<time>2023-09-11T18:30Z</time>
+<changes>
+<change type="fixed">Fixes #884 OBS studio crashing.</change>
+</changes>
+<comments>
+While we believe that Valve addressed the issue of -insecure not working in CS2 in some circumstances, we are not sure, so please make sure to not connect to live CSTV servers or game servers in order to avoid a VAC ban! Watching demos is fine.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.6.2</version>
 <time>2023-09-11T13:46Z</time>
 <changes>
@@ -15,7 +28,6 @@
 While we believe that Valve addressed the issue of -insecure not working in CS2 in some circumstances, we are not sure, so please make sure to not connect to live CSTV servers or game servers in order to avoid a VAC ban! Watching demos is fine.
 </comments>
 </release>
-
 
 
 <release>
@@ -31,7 +43,6 @@ While we believe that Valve addressed the issue of -insecure not working in CS2 
 While we believe that Valve addressed the issue of -insecure not working in CS2 in some circumstances, we are not sure, so please make sure to not connect to live CSTV servers or game servers in order to avoid a VAC ban! Watching demos is fine.
 </comments>
 </release>
-
 
 
 <release>

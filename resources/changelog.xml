@@ -4,6 +4,20 @@
 <changelog>
 
 
+
+<release>
+<name>HLAE</name>
+<version>2.151.2</version>
+<time>2023-09-11T18:30Z</time>
+<changes>
+<change type="updated">Included AfxHookSource2 0.6.3 (2023-09-11T18:30Z).</change>
+</changes>
+<comments>
+Added CI (build) pipeline on GitHub, thanks to https://github.com/ficcialfaint
+</comments>
+</release>
+
+
 <release>
 <name>HLAE</name>
 <version>2.151.1</version>
