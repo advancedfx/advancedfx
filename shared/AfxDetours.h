@@ -124,6 +124,14 @@ public:
 	{
 		return (PVOID*)&TrueFunc;
 	}
+
+	T GetMyFuncValue() const {
+		return MyFunc;
+	}
+
+	T GetTrueFuncValue() const {
+		return TrueFunc;
+	}
 };
 
 typedef std::vector<CAfxImportFuncHookBase*> CAfxImportDllHooks;

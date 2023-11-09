@@ -7,8 +7,10 @@ namespace BinUtils {
 
 struct MemRange
 {
-	static MemRange FromSize(size_t address, size_t size);
+	static MemRange FromEmpty();
 
+	static MemRange FromSize(size_t address, size_t size);
+	
 	// inclusive
 	size_t Start;
 

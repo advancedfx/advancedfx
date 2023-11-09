@@ -10,6 +10,7 @@
 <time>2023-10-18T06:47Z</time>
 <changes>
 <change type="added">Added mirv_input.</change>
+<change type="updated">Removed commas in mirv_campath print to make copy and paste easier.</change>
 </changes>
 </release>
 

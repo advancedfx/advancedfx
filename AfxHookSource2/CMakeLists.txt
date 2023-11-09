@@ -85,6 +85,9 @@ target_sources(${PROJECT_NAME} PRIVATE
 
     main.cpp
 
+    RenderSystemDX11Hooks.cpp
+    RenderSystemDX11Hooks.h
+
     WrpConsole.cpp
     WrpConsole.h
 )

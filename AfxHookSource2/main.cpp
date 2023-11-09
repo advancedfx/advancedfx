@@ -1,6 +1,7 @@
 #include "stdafx.h"
 
 #include "GameEvents.h"
+#include "RenderSystemDX11Hooks.h"
 #include "WrpConsole.h"
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
@@ -771,13 +772,45 @@ CON_COMMAND(mirv_vscript_exec,"") {
 	advancedfx::Message("%s <script_file_name> [<debug_print=0|1>]\n",arg0);
 }*/
 
+extern void DrawCampath();
+/*
+typedef void (__fastcall * CViewRender_RenderView_t)(void* This, void * pViewSetup, void * pHudViewSetup, void * nClearFlags, void * whatToDraw);
+CViewRender_RenderView_t g_Old_CViewRender_RenderView = nullptr;
+
+enum ClearFlags_t
+{
+	VIEW_CLEAR_COLOR = 0x1,
+	VIEW_CLEAR_DEPTH = 0x2,
+	VIEW_CLEAR_FULL_TARGET = 0x4,
+	VIEW_NO_DRAW = 0x8,
+	VIEW_CLEAR_OBEY_STENCIL = 0x10, // Draws a quad allowing stencil test to clear through portals
+	VIEW_CLEAR_STENCIL = 0x20,
+};
+void __fastcall New_CViewRender_RenderView(void* This, void * pViewSetup, void * pHudViewSetup, void * nClearFlags, void * whatToDraw) {
+	return;
+	g_Old_CViewRender_RenderView(This, pViewSetup, pHudViewSetup, nClearFlags, whatToDraw);
+	//if((nClearFlags & VIEW_CLEAR_COLOR)&&(nClearFlags && VIEW_CLEAR_DEPTH)) {
+		DrawCampath();
+	//}
+}*/
+
 void HookClientDll(HMODULE clientDll) {
 	static bool bFirstCall = true;
 	if(!bFirstCall) return;
 	bFirstCall = false;
 
-	Afx::BinUtils::ImageSectionsReader sections((HMODULE)clientDll);
-	Afx::BinUtils::MemRange textRange = sections.GetMemRange();
+	Afx::BinUtils::MemRange textRange = Afx::BinUtils::MemRange::FromEmpty();
+	Afx::BinUtils::MemRange dataRange = Afx::BinUtils::MemRange::FromEmpty();
+	{
+		Afx::BinUtils::ImageSectionsReader sections((HMODULE)clientDll);
+		if(!sections.Eof()) {
+			textRange = sections.GetMemRange();
+			sections.Next();
+			if(!sections.Eof()){
+				dataRange = sections.GetMemRange();
+			}
+		}
+	}
 
 	/*
 		This is where it checks for engine->IsPlayingDemo() (and afterwards for cl_demoviewoverride (float))
@@ -895,6 +928,15 @@ void HookClientDll(HMODULE clientDll) {
 		else
 			ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
+/*
+	if(void ** vtable = (void**)Afx::BinUtils::FindClassVtable(clientDll,".?AVCRenderingPipelineCsgo@@", 0, 0x0)) {
+		g_Old_CViewRender_RenderView = (CViewRender_RenderView_t)vtable[0] ;
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourAttach(&(PVOID&)g_Old_CViewRender_RenderView,New_CViewRender_RenderView);
+        // doesn't work without error // DetourAttach(&(PVOID&)g_Old_CCSGOVScriptGameSystem_UnkLoadScriptFile, New_CCSGOVScriptGameSystem_UnkLoadScriptFile);
+        if(NO_ERROR != DetourTransactionCommit()) ErrorBox(MkErrStr(__FILE__, __LINE__));
+	} else ErrorBox(MkErrStr(__FILE__, __LINE__));*/
 
 	if(!Hook_CGameEventManager((void*)clientDll)) ErrorBox(MkErrStr(__FILE__, __LINE__));
 /*
@@ -910,12 +952,22 @@ void HookClientDll(HMODULE clientDll) {
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));*/
 }
 
-SOURCESDK::CreateInterfaceFn g_AppSystemFactory = 0;
-SOURCESDK::CS2::IMemAlloc *SOURCESDK::CS2::g_pMemAlloc = 0;
-SOURCESDK::CS2::ICvar * SOURCESDK::CS2::cvar = 0;
-SOURCESDK::CS2::ICvar * SOURCESDK::CS2::g_pCVar = 0;
+SOURCESDK::CreateInterfaceFn g_AppSystemFactory = nullptr;
+SOURCESDK::CS2::IMemAlloc *SOURCESDK::CS2::g_pMemAlloc = nullptr;
+SOURCESDK::CS2::ICvar * SOURCESDK::CS2::cvar = nullptr;
+SOURCESDK::CS2::ICvar * SOURCESDK::CS2::g_pCVar = nullptr;
+void * g_pSceneSystem = nullptr;
 
-typedef int(* CCS2_Client_Connect_t)(void* This, SOURCESDK::CreateInterfaceFn appSystemFactor);
+typedef bool (__fastcall * CSceneSystem_WaitForRenderingToComplete_t)(void * This);
+CSceneSystem_WaitForRenderingToComplete_t g_Old_CSceneSystem_WaitForRenderingToComplete = nullptr;
+
+bool __fastcall New_CSceneSystem_WaitForRenderingToComplete(void * This) {
+	bool result = g_Old_CSceneSystem_WaitForRenderingToComplete(This);
+	//DrawCampath();
+	return result;
+}
+
+typedef int(* CCS2_Client_Connect_t)(void* This, SOURCESDK::CreateInterfaceFn appSystemFactory);
 CCS2_Client_Connect_t old_CCS2_Client_Connect;
 int new_CCS2_Client_Connect(void* This, SOURCESDK::CreateInterfaceFn appSystemFactory) {
 	static bool bFirstCall = true;
@@ -935,7 +987,13 @@ int new_CCS2_Client_Connect(void* This, SOURCESDK::CreateInterfaceFn appSystemFa
 
 		if (g_pGameUIService = (SOURCESDK::CS2::IGameUIService*)appSystemFactory(SOURCESDK_CS2_GAMEUISERVICE_INTERFACE_VERSION, NULL)) {
 		}
-		else ErrorBox(MkErrStr(__FILE__, __LINE__));		
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+/*
+		if(g_pSceneSystem = (void*)appSystemFactory("SceneSystem_002", NULL)) {
+			void ** vtable = *(void***)g_pSceneSystem;
+			AfxDetourPtr((PVOID *)&(vtable[26]), New_CSceneSystem_WaitForRenderingToComplete, (PVOID*)&g_Old_CSceneSystem_WaitForRenderingToComplete);
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));*/
 	}
 
 	return old_CCS2_Client_Connect(This, appSystemFactory);
@@ -1093,7 +1151,7 @@ void CS2_HookClientDllInterface(void * iface)
 	AfxDetourPtr((PVOID *)&(vtable[3]), new_CCS2_Client_Init, (PVOID*)&old_CCS2_Client_Init);
 	AfxDetourPtr((PVOID *)&(vtable[11]), new_CS2_Client_SetGlobals, (PVOID*)&old_CS2_Client_SetGlobals);
 	//AfxDetourPtr((PVOID *)&(vtable[30]), new_CS2_Client_LevelInitPreEntity, (PVOID*)&old_CS2_Client_LevelInitPreEntity);
-	AfxDetourPtr((PVOID *)&(vtable[31]), new_CS2_Client_FrameStageNotify, (PVOID*)&old_CS2_Client_FrameStageNotify);
+	AfxDetourPtr((PVOID *)&(vtable[32]), new_CS2_Client_FrameStageNotify, (PVOID*)&old_CS2_Client_FrameStageNotify);
 }
 
 SOURCESDK::CreateInterfaceFn old_Client_CreateInterface = 0;
@@ -1501,6 +1559,7 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 	static bool bFirstMaterialsystem2 = true;
 	static bool bFirstInputsystem = true;
 	static bool bFirstSDL3 = true;
+	static bool bFirstRenderSystemDX11 = true;
 	
 	CommonHooks();
 
@@ -1575,6 +1634,12 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 
 		g_Import_materialsystem2.Apply(hModule);
 	}*/
+	else if(bFirstRenderSystemDX11 && StringEndsWithW( lpLibFileName, L"rendersystemdx11.dll"))
+	{
+		bFirstRenderSystemDX11 = false;
+
+		Hook_RenderSystemDX11((void*)hModule);
+	}
 	else if(bFirstClient && StringEndsWithW(lpLibFileName, L"csgo\\bin\\win64\\client.dll"))
 	{
 		bFirstClient = false;
@@ -1583,6 +1648,7 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 
 		HookClientDll(hModule);
 	}
+	
 }
 
 HMODULE WINAPI new_LoadLibraryA( LPCSTR lpLibFileName ) {

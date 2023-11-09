@@ -340,6 +340,11 @@ size_t ImageSectionsReader::GetSize(void)
 
 // MemRange ////////////////////////////////////////////////////////////////////
 
+
+MemRange MemRange::FromEmpty() {
+	return MemRange(0,0);
+}
+
 MemRange MemRange::FromSize(size_t address, size_t size)
 {
 	return MemRange(address, address + size);

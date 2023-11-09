@@ -6,6 +6,20 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.6.2</version>
+<time>2023-09-11T13:46Z</time>
+<changes>
+<change type="fixed">Adjusted to latest CS2 update.</change>
+</changes>
+<comments>
+While we believe that Valve addressed the issue of -insecure not working in CS2 in some circumstances, we are not sure, so please make sure to not connect to live CSTV servers or game servers in order to avoid a VAC ban! Watching demos is fine.
+</comments>
+</release>
+
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.6.1</version>
 <time>2023-10-18T06:47Z</time>
 <changes>
@@ -14,8 +28,7 @@
 <change type="updated">Renamed DLL back from AfxHookSource2_IF_YOU_USE_THIS_TO_JOIN_GOTV_OR_VAC_SERVERS_YOU_WILL_GET_VAC_BANNED.dll to AfxHookSource2.dll, since Valve seems to have addressed the issue.</change>
 </changes>
 <comments>
-While we believe that Valve addressed the issue of -insecure not working in some circumstances, we are not sure,<br />
-so please make sure to not connect to live GOTV servers or game servers in order to avoid a VAC ban! Watching demos is fine.
+While we believe that Valve addressed the issue of -insecure not working in CS2 in some circumstances, we are not sure, so please make sure to not connect to live CSTV servers or game servers in order to avoid a VAC ban! Watching demos is fine.
 </comments>
 </release>
 
