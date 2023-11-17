@@ -65,6 +65,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/CamPath.h
     ../shared/CommandSystem.cpp
     ../shared/CommandSystem.h
+    ../shared/FileTools.cpp
+    ../shared/FileTools.h
     ../shared/FovScaling.cpp
     ../shared/FovScaling.h
     ../shared/StringTools.cpp
@@ -80,11 +82,11 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/MirvSkip.cpp
     ../shared/MirvSkip.h
 
-    //AfxShaders.cpp
-    //AfxShaders.h
+    #AfxShaders.cpp
+    #AfxShaders.h
 
-    //CampathDrawer.cpp
-    //CampathDrawer.h
+    #CampathDrawer.cpp
+    #CampathDrawer.h
 
     GameEvents.cpp
     GameEvents.h
@@ -94,8 +96,8 @@ target_sources(${PROJECT_NAME} PRIVATE
 
     main.cpp
 
-    //RenderSystemDX11Hooks.cpp
-    //RenderSystemDX11Hooks.h
+    #RenderSystemDX11Hooks.cpp
+    #RenderSystemDX11Hooks.h
 
     WrpConsole.cpp
     WrpConsole.h

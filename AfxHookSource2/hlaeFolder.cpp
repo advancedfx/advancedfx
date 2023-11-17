@@ -2,8 +2,8 @@
 
 #include "hlaeFolder.h"
 
-#include <shared/StringTools.h>
-#include <shared/FileTools.h>
+#include "../shared/StringTools.h"
+#include "../shared/FileTools.h"
 
 #include <Windows.h>
 #include <Shlobj.h>
@@ -65,7 +65,7 @@ void CalculateHlaeFolderOnce()
 		}
 		
 		// strip x64 Folder:
-		size_t fp = g_HlaeFolderW.find_last_of(L'\\');
+		fp = g_HlaeFolderW.find_last_of(L'\\');
 		if(std::string::npos != fp)
 		{
 			g_HlaeFolderW.resize(fp +1, L'\\');

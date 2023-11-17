@@ -1151,7 +1151,7 @@ void CS2_HookClientDllInterface(void * iface)
 	AfxDetourPtr((PVOID *)&(vtable[3]), new_CCS2_Client_Init, (PVOID*)&old_CCS2_Client_Init);
 	AfxDetourPtr((PVOID *)&(vtable[11]), new_CS2_Client_SetGlobals, (PVOID*)&old_CS2_Client_SetGlobals);
 	//AfxDetourPtr((PVOID *)&(vtable[30]), new_CS2_Client_LevelInitPreEntity, (PVOID*)&old_CS2_Client_LevelInitPreEntity);
-	AfxDetourPtr((PVOID *)&(vtable[32]), new_CS2_Client_FrameStageNotify, (PVOID*)&old_CS2_Client_FrameStageNotify);
+	AfxDetourPtr((PVOID *)&(vtable[33]), new_CS2_Client_FrameStageNotify, (PVOID*)&old_CS2_Client_FrameStageNotify);
 }
 
 SOURCESDK::CreateInterfaceFn old_Client_CreateInterface = 0;
