@@ -451,7 +451,7 @@ void CCampathDrawer::OnPostRenderAllTools_DrawingThread(CDynamicProperties * dyn
 		m_DrawTextureShader = g_AfxShaders.GetAcsPixelShader(L"afx_drawtexture_ps20.acs", ShaderCombo_afx_drawtexture_ps20::GetCombo());
 	}
 
-	if(!(m_Device && vertexShader && pixelShader && g_VEngineClient))
+	if(!(m_Device && vertexShader && pixelShader))
 	{
 		static bool firstError = true;
 
@@ -459,11 +459,10 @@ void CCampathDrawer::OnPostRenderAllTools_DrawingThread(CDynamicProperties * dyn
 		{
 			firstError = false;
 			Tier0_Msg(
-				"AFXERROR: CCampathDrawer::OnEndScene: Missing required dependencies:%s%s%s%s.\n",
+				"AFXERROR: CCampathDrawer::OnEndScene: Missing required dependencies:%s%s%s.\n",
 				!m_Device ? " m_Device" : "",
 				!vertexShader ? " vertexShader" : "",
-				!pixelShader ? " pixelShader" : "",
-				!g_VEngineClient ? " g_VEngineClient" : ""
+				!pixelShader ? " pixelShader" : ""
 			);
 		}
 
@@ -890,7 +889,7 @@ void CCampathDrawer::OnPostRenderAllTools_DrawingThread(CDynamicProperties * dyn
 					);
 				}
 
-				if(dynamicPorperties->GetDrawKeyframeCam()) DrawCamera(cpv, colour, newCScreenInfo);
+				if(dynamicPorperties->GetDrawKeyframeCam()) DrawCamera(cpv, colour, newCScreenInfo, dynamicPorperties->GetScreenWidth(), dynamicPorperties->GetScreenHeight());
 			}
 
 			AutoSingleLineFlush();
@@ -913,7 +912,7 @@ void CCampathDrawer::OnPostRenderAllTools_DrawingThread(CDynamicProperties * dyn
 
 			CamPathValue cpv = dynamicPorperties->GetCurrentValue();
 
-			DrawCamera(cpv, colourCam, newCScreenInfo);
+			DrawCamera(cpv, colourCam, newCScreenInfo, dynamicPorperties->GetScreenWidth(), dynamicPorperties->GetScreenHeight());
 		}
 	}
 
@@ -922,7 +921,7 @@ void CCampathDrawer::OnPostRenderAllTools_DrawingThread(CDynamicProperties * dyn
 	AfxD3D9EndCleanState();
 }
 
-void CCampathDrawer::DrawCamera(const CamPathValue & cpv, DWORD colour, FLOAT screenInfo[4])
+void CCampathDrawer::DrawCamera(const CamPathValue & cpv, DWORD colour, FLOAT screenInfo[4], int screenWidth, int screenHeight)
 {
 	screenInfo[2] = c_CameraPixelWidth;
 	m_Device->SetVertexShaderConstantF(48, screenInfo, 1);
@@ -941,9 +940,6 @@ void CCampathDrawer::DrawCamera(const CamPathValue & cpv, DWORD colour, FLOAT sc
 
 	double a = sin(fov * M_PI / 360.0) * c_CameraRadius;
 	double b = a;
-
-	int screenWidth, screenHeight;
-	g_VEngineClient->GetScreenSize(screenWidth, screenHeight);
 
 	double aspectRatio = screenWidth ? (double)screenHeight / (double)screenWidth : 1.0;
 

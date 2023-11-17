@@ -265,7 +265,7 @@ private:
 	static void RamerDouglasPeucker(TempPoint * start, TempPoint * end, double epsilon);
 	static double ShortestDistanceToSegment(TempPoint * pt, TempPoint * start, TempPoint * end);
 
-	void DrawCamera(const CamPathValue & cpv, DWORD colour, FLOAT screenInfo[4]);
+	void DrawCamera(const CamPathValue & cpv, DWORD colour, FLOAT screenInfo[4], int screenWidth, int screenHeight);
 
 	void OnPostRenderAllTools_DrawingThread(CDynamicProperties * dynamicPorperties, CLessDynamicProperties * lessDynamicProperties);
 };
