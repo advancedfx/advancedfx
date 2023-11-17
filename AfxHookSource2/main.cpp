@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
 #include "GameEvents.h"
-#include "RenderSystemDX11Hooks.h"
+//#include "RenderSystemDX11Hooks.h"
 #include "WrpConsole.h"
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
@@ -1638,7 +1638,7 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 	{
 		bFirstRenderSystemDX11 = false;
 
-		//Hook_RenderSystemDX11((void*)hModule); // this crashes
+		// Hook_RenderSystemDX11((void*)hModule);
 	}
 	else if(bFirstClient && StringEndsWithW(lpLibFileName, L"csgo\\bin\\win64\\client.dll"))
 	{

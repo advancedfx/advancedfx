@@ -80,13 +80,22 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/MirvSkip.cpp
     ../shared/MirvSkip.h
 
+    //AfxShaders.cpp
+    //AfxShaders.h
+
+    //CampathDrawer.cpp
+    //CampathDrawer.h
+
     GameEvents.cpp
     GameEvents.h
 
+    hlaeFolder.cpp
+    hlaeFolder.h
+
     main.cpp
 
-    RenderSystemDX11Hooks.cpp
-    RenderSystemDX11Hooks.h
+    //RenderSystemDX11Hooks.cpp
+    //RenderSystemDX11Hooks.h
 
     WrpConsole.cpp
     WrpConsole.h
