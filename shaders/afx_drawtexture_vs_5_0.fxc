@@ -1,0 +1,40 @@
+cbuffer VS_CONSTANT_BUFFER : register(b0)
+{
+    float4x4 cViewProj;
+	float3 cPlane0; // unused
+	float3 cPlaneN; // unused
+	float2 cScreenInfo; // unused
+};
+
+struct VS_INPUT
+{
+	float3 xyz : POSITION;
+	float4 diffuse : COLOR;	// unused	
+	float3 t0 : TEXCOORD0; // .z unused
+	float3 t1 : TEXCOORD1; // unused
+	float3 t2 : TEXCOORD2; // unused
+};
+
+struct VS_OUTPUT
+{
+	float4 xyzw : SV_POSITION;
+	float2 t0 : TEXCOORD0;	
+};
+
+float4 projPos(float3 worldPos)
+{
+	return mul(float4(worldPos, 1), cViewProj);	
+}
+
+
+VS_OUTPUT main( const VS_INPUT i )
+{
+	VS_OUTPUT o;
+		
+	float4 curProj = projPos(i.xyz);
+	
+	o.xyzw = curProj / curProj.w;
+	o.t0 = i.t0.xy;
+	
+	return o;
+}

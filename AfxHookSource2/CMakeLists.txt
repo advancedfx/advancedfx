@@ -2,7 +2,48 @@ cmake_minimum_required (VERSION 3.24)
 
 project ("AfxHookSource2")
 
+################################################################################
+
+set(AFXHOOKSOURCE2_SHADERS
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_line_vs_5_0.acs"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_line_vs_5_0.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_line_ps_5_0.acs"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_line_ps_5_0.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_drawtexture_vs_5_0.acs"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_drawtexture_vs_5_0.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_drawtexture_ps_5_0.acs"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_drawtexture_ps_5_0.h"
+)
+
+set(AFXHOOKSOURCE2_SHADERS_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/afx_line_vs_5_0.fxc"
+	"${CMAKE_CURRENT_SOURCE_DIR}/../shaders/afx_line_ps_5_0.fxc"
+	"${CMAKE_CURRENT_SOURCE_DIR}/../shaders/afx_drawtexture_vs_5_0.fxc"
+	"${CMAKE_CURRENT_SOURCE_DIR}/../shaders/afx_drawtexture_ps_5_0.fxc"
+)
+
+add_custom_command(
+    WORKING_DIRECTORY ${shaderbuilder_BINARY_DIR}
+    OUTPUT ${AFXHOOKSOURCE2_SHADERS}
+    DEPENDS shaderbuilder ${AFXHOOKSOURCE2_SHADERS_SOURCES}
+    COMMAND ShaderBuilder.exe --profile vs_5_0 --in "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/afx_line_vs_5_0.fxc" --outPrefix "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_line_vs_5_0"
+	COMMAND ShaderBuilder.exe --profile ps_5_0 --in "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/afx_line_ps_5_0.fxc" --outPrefix "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_line_ps_5_0"
+    COMMAND ShaderBuilder.exe --profile vs_5_0 --in "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/afx_drawtexture_vs_5_0.fxc" --outPrefix "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_drawtexture_vs_5_0"
+	COMMAND ShaderBuilder.exe --profile ps_5_0 --in "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/afx_drawtexture_ps_5_0.fxc" --outPrefix "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_drawtexture_ps_5_0"
+)
+
+add_custom_target(AfxHookSource2Shaders
+    DEPENDS ${AFXHOOKSOURCE2_SHADERS}
+)
+
+
+################################################################################
+
 add_library(${PROJECT_NAME} MODULE)
+
+add_dependencies(${PROJECT_NAME}
+    AfxHookSource2Shaders
+)
 
 #set_target_properties(
 #    ${PROJECT_NAME}
@@ -82,11 +123,11 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/MirvSkip.cpp
     ../shared/MirvSkip.h
 
-    #AfxShaders.cpp
-    #AfxShaders.h
+    AfxShaders.cpp
+    AfxShaders.h
 
-    #CampathDrawer.cpp
-    #CampathDrawer.h
+    CampathDrawer.cpp
+    CampathDrawer.h
 
     GameEvents.cpp
     GameEvents.h
@@ -96,8 +137,8 @@ target_sources(${PROJECT_NAME} PRIVATE
 
     main.cpp
 
-    #RenderSystemDX11Hooks.cpp
-    #RenderSystemDX11Hooks.h
+    RenderSystemDX11Hooks.cpp
+    RenderSystemDX11Hooks.h
 
     WrpConsole.cpp
     WrpConsole.h

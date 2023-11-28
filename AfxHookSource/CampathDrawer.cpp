@@ -236,8 +236,14 @@ void CCampathDrawer::EndDevice()
 
 	UnloadVertexBuffer();
 
+	if (m_DigitsTexture)
+	{
+		m_DigitsTexture->Release();
+		m_DigitsTexture = nullptr;
+	}
+
 	m_Device->Release();
-	m_Device = 0;
+	m_Device = nullptr;
 }
 
 void CCampathDrawer::Begin() {

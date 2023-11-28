@@ -13,11 +13,13 @@ public:
 #include "../shared/CamPath.h"
 
 #include <d3d11.h>
+#define _XM_NO_INTRINSICS_
 #include <DirectXMath.h>
+
+#include <queue>
 #include <list>
 #include <atomic>
-
-#define CCampathDrawer_VertexFVF D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX0 | D3DFVF_TEXCOORDSIZE3(0) | D3DFVF_TEX1 | D3DFVF_TEXCOORDSIZE3(1) | D3DFVF_TEX2 | D3DFVF_TEXCOORDSIZE3(2)
+#include <mutex>
 
 // TODO: most line vertices can be cached if the colouring is done through the vertex shader.
 class CCampathDrawer
@@ -47,7 +49,10 @@ public:
 	void EndDevice();
 	void Reset();
 
-	void OnPostRenderAllTools_EngineThread();
+	void OnRenderThread_Present(ID3D11DeviceContext * pImmediateContext, ID3D11RenderTargetView * pRenderTargetView);
+
+	void OnEngineThread_SetupViewDone();
+	void OnEngineThread_EndFrame();
 
 	virtual void CamPathChanged(CamPath * obj);
 
@@ -234,40 +239,53 @@ private:
 		CLessDynamicProperties * m_LessDynamicProperties;
 	};
 
+	std::mutex m_FunctorMutex;
+	std::queue<CMaterialSystemFunctor*> m_FunctorQueue;
+
 	bool m_DrawKeyframeAxis = false;
 	bool m_DrawKeyframeCam = true;
 
-	ID3D11Device * m_Device;
+	ID3D11Device * m_Device = nullptr;
 	ID3D11DeviceContext * m_DeviceContext = nullptr;
+	ID3D11DeviceContext * m_ImmediateContext = nullptr;
+	ID3D11RenderTargetView * m_Rtv = nullptr;
 
-	struct VS_CONSTANT_BUFFER_VIEWPLANES {
-		XMFLOAT4 plane0;
-		XMFLOAT4 paneN;
+	ID3D11DepthStencilState * m_DepthStencilStateDigits = nullptr;
+	ID3D11DepthStencilState * m_DepthStencilStateLines = nullptr;
+	ID3D11SamplerState * m_SamplerState = nullptr;
+	ID3D11RasterizerState * m_RasterizerStateDigits = nullptr;
+	ID3D11RasterizerState * m_RasterizerStateLines = nullptr;
+	ID3D11BlendState * m_BlendState = nullptr;
+	ID3D11InputLayout * m_InputLayoutDigits = nullptr;
+	ID3D11InputLayout * m_InputLayoutLines = nullptr;
+
+	struct VS_CONSTANT_BUFFER {
+		DirectX::XMFLOAT4X4 matrix;
+		DirectX::XMFLOAT4 plane0;
+		DirectX::XMFLOAT4 paneN;
+		DirectX::XMFLOAT4 screenInfo;
 	};
-	ID3D11Buffer * m_BufferViewPlanes = nullptr;
+	ID3D11Buffer * m_ConstantBuffer = nullptr;
 
-	struct VS_CONSTANT_BUFFER_WORLDRTOSCREEN {
-		XMFLOAT4X4 matrix;
+	struct VS_CONSTANT_BUFFER_WIDTH {
+		DirectX::XMFLOAT4 width;
 	};
-	ID3D11Buffer * m_BufferWorldToScreen = nullptr;
+	ID3D11Buffer * m_ConstantBufferWidth = nullptr;
 
-	struct VS_CONSTANT_BUFFER_SCREENINFO {
-		XMFLOAT4 screenInfo;
-	};
-	ID3D11Buffer * m_BufferScreenInfo = nullptr;
-
-	bool m_Draw;
+	bool m_Draw = false;
 	DWORD m_OldCurrentColor;
 	Vector3 m_OldPreviousPolyLinePoint;
-	IAfxPixelShader * m_PixelShader;
+	ID3D11PixelShader * m_PixelShader = nullptr;
 	bool m_PolyLineStarted;
-	IAfxVertexShader * m_VertexShader;
-	ID3D11Buffer * m_VertexBuffer;
-	UINT m_VertexBufferVertexCount; // c_VertexBufferVertexCount
-	Vertex * m_LockedVertexBuffer;
+	ID3D11VertexShader * m_VertexShader = nullptr;
+	ID3D11Buffer * m_VertexBuffer = nullptr;
+	UINT m_VertexBufferVertexCount = 0; // c_VertexBufferVertexCount
+	Vertex * m_LockedVertexBuffer = nullptr;
 	float m_DrawKeyframIndex = 18.0f;
 	ID3D11Texture2D* m_DigitsTexture = nullptr;
-	IAfxPixelShader* m_DrawTextureShader = nullptr;
+	ID3D11ShaderResourceView * m_DigitsTextureRV = nullptr;
+	ID3D11VertexShader * m_DrawTextureVertexShader = nullptr;
+	ID3D11PixelShader * m_DrawTextureShader = nullptr;
 
 	CLessDynamicProperties * m_LessDynamicProperties = nullptr;
 
@@ -276,12 +294,17 @@ private:
 	void BuildSingleLine(Vector3 from, Vector3 to, Vertex * pOutVertexData);
 	void BuildSingleLine(DWORD colorFrom, DWORD colorTo, Vertex * pOutVertexData);
 
+	void BuildSingleQuad(Vector3 p0, float t0x, float t0y, Vector3 p1, float t1x, float t1y, Vector3 p2, float t2x, float t2y, Vector3 p3, float t3x, float t3y, Vertex * pOutVertexData);
+
 	void AutoSingleLine(Vector3 from, DWORD colorFrom, Vector3 to, DWORD colorTo);
 	void AutoSingleLineFlush();
 
 	void AutoPolyLineStart();
 	void AutoPolyLinePoint(Vector3 previous, Vector3 current, DWORD colorCurrent, Vector3 next);
 	void AutoPolyLineFlush();
+
+	void AutoSingleQuad(Vector3 p0, float t0x, float t0y, Vector3 p1, float t1x, float t1y, Vector3 p2, float t2x, float t2y, Vector3 p3, float t3x, float t3y);
+	void AutoSingleQuadFlush();
 
 	bool LockVertexBuffer();
 	void UnlockVertexBuffer();
@@ -291,11 +314,11 @@ private:
 	static void RamerDouglasPeucker(TempPoint * start, TempPoint * end, double epsilon);
 	static double ShortestDistanceToSegment(TempPoint * pt, TempPoint * start, TempPoint * end);
 
-	void DrawCamera(const CamPathValue & cpv, DWORD colour, FLOAT screenInfo[4], int screenWidth, int screenHeight);
+	void DrawCamera(const CamPathValue & cpv, DWORD colour, int screenWidth, int screenHeight);
 
 	void OnPostRenderAllTools_DrawingThread(CDynamicProperties * dynamicPorperties, CLessDynamicProperties * lessDynamicProperties);
 
-	void SetNewScreenInfo(FLOAT * newScreenInfo);
+	void SetLineWidth(float lineWidth);
 };
 
 extern CCampathDrawer g_CampathDrawer;

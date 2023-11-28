@@ -61,7 +61,7 @@ void CalculateHlaeFolderOnce()
 		size_t fp = g_HlaeFolderW.find_last_of(L'\\');
 		if(std::string::npos != fp)
 		{
-			g_HlaeFolderW.resize(fp +1, L'\\');
+			g_HlaeFolderW.resize(fp, L'\\');
 		}
 		
 		// strip x64 Folder:

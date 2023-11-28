@@ -1,7 +1,8 @@
 #include "stdafx.h"
 
+#include "CampathDrawer.h"
 #include "GameEvents.h"
-//#include "RenderSystemDX11Hooks.h"
+#include "RenderSystemDX11Hooks.h"
 #include "WrpConsole.h"
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
@@ -565,6 +566,32 @@ public:
 	}
 } g_MirvCampath_Camera;
 
+class CMirvCampath_Drawer : public IMirvCampath_Drawer
+{
+public:
+	virtual bool GetEnabled() {
+		return g_CampathDrawer.Draw_get();
+	}
+	virtual void SetEnabled(bool value) {
+		g_CampathDrawer.Draw_set(value);
+	}
+	virtual bool GetDrawKeyframeAxis() {
+		return g_CampathDrawer.GetDrawKeyframeAxis();
+	}
+	virtual void SetDrawKeyframeAxis(bool value) {
+		g_CampathDrawer.SetDrawKeyframeAxis(value);
+	}
+	virtual bool GetDrawKeyframeCam() {
+		return g_CampathDrawer.GetDrawKeyframeCam();
+	}
+	virtual void SetDrawKeyframeCam(bool value) {
+		g_CampathDrawer.SetDrawKeyframeCam(value);
+	}
+
+	virtual float GetDrawKeyframeIndex() { return g_CampathDrawer.GetDrawKeyframeIndex(); }
+	virtual void SetDrawKeyframeIndex(float value) { g_CampathDrawer.SetDrawKeyframeIndex(value); }
+
+} g_MirvCampath_Drawer;
 
 CON_COMMAND(mirv_campath, "camera paths")
 {
@@ -574,7 +601,7 @@ CON_COMMAND(mirv_campath, "camera paths")
 		return;
 	}
 
-	MirvCampath_ConCommand(args, advancedfx::Message, advancedfx::Warning, &g_CamPath, &g_MirvCampath_Time, &g_MirvCampath_Camera, nullptr);
+	MirvCampath_ConCommand(args, advancedfx::Message, advancedfx::Warning, &g_CamPath, &g_MirvCampath_Time, &g_MirvCampath_Camera, &g_MirvCampath_Drawer);
 }
 
 double MirvCamIO_GetTimeFn(void) {
@@ -592,6 +619,9 @@ CON_COMMAND(mirv_camio, "New camera motion data import / export.") {
 static bool g_bViewOverriden = false;
 static float g_fFovOverride = 90.0f;
 static float * g_pFov = nullptr;
+int g_iWidth = 1920;
+int g_iHeight = 1080;
+SOURCESDK::VMatrix g_WorldToScreenMatrix;
 
 bool CS2_Client_CSetupView_Trampoline_IsPlayingDemo(void *ThisCViewSetup) {
 	if(!g_pEngineToClient) return false;
@@ -712,6 +742,9 @@ bool CS2_Client_CSetupView_Trampoline_IsPlayingDemo(void *ThisCViewSetup) {
 		g_bViewOverriden = false;
 	}
 
+	g_iWidth = width;
+	g_iHeight = height;
+
 	g_MirvInputEx.LastCameraOrigin[0] = Tx;
 	g_MirvInputEx.LastCameraOrigin[1] = Ty;
 	g_MirvInputEx.LastCameraOrigin[2] = Tz;
@@ -731,6 +764,7 @@ bool CS2_Client_CSetupView_Trampoline_IsPlayingDemo(void *ThisCViewSetup) {
 }
 
 float CS2_Client_CSetupView_InsideComputeViewMatrix(void) {
+
 	if(g_bViewOverriden) {
 		float * pWeaponFov = g_pFov + 1;
 		float oldFov = *g_pFov;
@@ -739,6 +773,142 @@ float CS2_Client_CSetupView_InsideComputeViewMatrix(void) {
 	}
 	return 0;
 }
+
+/*size_t ofsProj = 0;
+
+DirectX::XMMATRIX g_Mul = {
+	{1,0,0,0},
+	{0,1,0,0},
+	{0,0,1,0},
+	{0,0,0,1}
+};
+
+bool transpose = false;
+
+CON_COMMAND(__mirv_t,"") {
+	if(args->ArgC()>=2) transpose = 0 != atoi(args->ArgV(1));
+}
+
+CON_COMMAND(__mirv_o,"") {
+	advancedfx::Message("=> %i\n",ofsProj);
+
+	float b0 = ((ofsProj>>0) & 1) ? -1 : 1;
+	float b1 = ((ofsProj>>1) & 1) ? -1 : 1;
+	float b2 = ((ofsProj>>2) & 1) ? -1 : 1;
+
+	switch((ofsProj>>3)%6) {
+	default:
+	case 0:
+		// 0 1 2
+		g_Mul = DirectX::XMMATRIX(
+			b0, 0, 0, 0,
+			0, b1, 0, 0,
+			0, 0, b2, 0,
+			0, 0, 0, 1
+		);
+		break;
+	case 1:
+		// 0 2 1
+		g_Mul = DirectX::XMMATRIX(
+			b0, 0, 0, 0,
+			0, 0, b2, 0,
+			0, b1, 0, 0,
+			0, 0, 0, 1
+		);
+		break;
+	case 2:
+		// 1 0 2
+		g_Mul = DirectX::XMMATRIX(
+			0, b1, 0, 0,
+			b0, 0, 0, 0,
+			0, 0, b2, 0,
+			0, 0, 0, 1
+		);
+		break;
+	case 3:
+		// 1 2 0
+		// 0 1 2
+		g_Mul = DirectX::XMMATRIX(
+			0, b1, 0, 0,
+			0, 0, b2, 0,
+			b0, 0, 0, 0,
+			0, 0, 0, 1
+		);
+		break;
+	case 4:
+		// 2 0 1
+		g_Mul = DirectX::XMMATRIX(
+			0, 0, b2, 0,
+			b0, 0, 0, 0,
+			0, b1, 0, 0,
+			0, 0, 0, 1
+		);		
+		break;
+	case 5:
+		// 2 1 0
+		g_Mul = DirectX::XMMATRIX(
+			0, 0, b2, 0,
+			0, b1, 0, 0,
+			b0, 0, 0, 0,
+			0, 0, 0, 1
+		);		
+		break;
+	}
+
+
+	ofsProj = (ofsProj + 1)%48;
+}*/
+
+typedef void (__fastcall * CViewRender_UnkMakeMatrix_t)(void* This);
+CViewRender_UnkMakeMatrix_t g_Old_CViewRender_UnkMakeMatrix = nullptr;
+void __fastcall New_CViewRender_UnkMakeMatrix(void* This) {
+	g_Old_CViewRender_UnkMakeMatrix(This);
+	//memcpy(g_WorldToScreenMatrix.m,(unsigned char*)This + 0x1b8,sizeof(g_WorldToScreenMatrix.m));
+
+
+	/*DirectX::XMMATRIX * proj = (DirectX::XMMATRIX *)((unsigned char*)This + 0x298);
+	DirectX::XMMATRIX result = g_Mul * *proj;
+	if(transpose) result = DirectX::XMMatrixTranspose(result);
+
+	g_WorldToScreenMatrix.m[0][0] = result(0,0);
+	g_WorldToScreenMatrix.m[0][1] = result(0,1);
+	g_WorldToScreenMatrix.m[0][2] = result(0,2);
+	g_WorldToScreenMatrix.m[0][3] = result(0,3);
+	g_WorldToScreenMatrix.m[1][0] = result(1,0);
+	g_WorldToScreenMatrix.m[1][1] = result(1,1);
+	g_WorldToScreenMatrix.m[1][2] = result(1,2);
+	g_WorldToScreenMatrix.m[1][3] = result(1,3);
+	g_WorldToScreenMatrix.m[2][0] = result(2,0);
+	g_WorldToScreenMatrix.m[2][1] = result(2,1);
+	g_WorldToScreenMatrix.m[2][2] = result(2,2);
+	g_WorldToScreenMatrix.m[2][3] = result(2,3);
+	g_WorldToScreenMatrix.m[3][0] = result(3,0);
+	g_WorldToScreenMatrix.m[3][1] = result(3,1);
+	g_WorldToScreenMatrix.m[3][2] = result(3,2);
+	g_WorldToScreenMatrix.m[3][3] = result(3,3);*/
+
+	float * proj = (float *)((unsigned char*)This + 0x298);
+
+	g_WorldToScreenMatrix.m[0][0] = proj[4*0+0];
+	g_WorldToScreenMatrix.m[0][1] = proj[4*0+1];
+	g_WorldToScreenMatrix.m[0][2] = proj[4*0+2];
+	g_WorldToScreenMatrix.m[0][3] = proj[4*0+3];
+	g_WorldToScreenMatrix.m[1][0] = proj[4*1+0];
+	g_WorldToScreenMatrix.m[1][1] = proj[4*1+1];
+	g_WorldToScreenMatrix.m[1][2] = proj[4*1+2];
+	g_WorldToScreenMatrix.m[1][3] = proj[4*1+3];
+	g_WorldToScreenMatrix.m[2][0] = proj[4*2+0];
+	g_WorldToScreenMatrix.m[2][1] = proj[4*2+1];
+	g_WorldToScreenMatrix.m[2][2] = proj[4*2+2];
+	g_WorldToScreenMatrix.m[2][3] = proj[4*2+3];
+	g_WorldToScreenMatrix.m[3][0] = proj[4*3+0];
+	g_WorldToScreenMatrix.m[3][1] = proj[4*3+1];
+	g_WorldToScreenMatrix.m[3][2] = proj[4*3+2];
+	g_WorldToScreenMatrix.m[3][3] = proj[4*3+3];
+
+	g_CampathDrawer.OnEngineThread_SetupViewDone();
+}
+
 /*
 class CCSGOVScriptGameSystem;
 CCSGOVScriptGameSystem * g_pCCSGOVScriptGameSystem = nullptr;
@@ -772,7 +942,6 @@ CON_COMMAND(mirv_vscript_exec,"") {
 	advancedfx::Message("%s <script_file_name> [<debug_print=0|1>]\n",arg0);
 }*/
 
-extern void DrawCampath();
 /*
 typedef void (__fastcall * CViewRender_RenderView_t)(void* This, void * pViewSetup, void * pHudViewSetup, void * nClearFlags, void * whatToDraw);
 CViewRender_RenderView_t g_Old_CViewRender_RenderView = nullptr;
@@ -950,6 +1119,14 @@ void HookClientDll(HMODULE clientDll) {
         if(NO_ERROR != DetourTransactionCommit()) ErrorBox(MkErrStr(__FILE__, __LINE__));
 		else AfxDetourPtr((PVOID *)&(vtable[7]), New_CCSGOVScriptGameSystem_UnkLoadScriptFile, (PVOID*)&g_Old_CCSGOVScriptGameSystem_UnkLoadScriptFile);
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));*/
+
+	if(void ** vtable = (void**)Afx::BinUtils::FindClassVtable(clientDll,".?AVCViewRender@@", 0, 0x0)) {
+		g_Old_CViewRender_UnkMakeMatrix = (CViewRender_UnkMakeMatrix_t)vtable[4] ;
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourAttach(&(PVOID&)g_Old_CViewRender_UnkMakeMatrix,New_CViewRender_UnkMakeMatrix);
+        if(NO_ERROR != DetourTransactionCommit()) ErrorBox(MkErrStr(__FILE__, __LINE__));
+	} else ErrorBox(MkErrStr(__FILE__, __LINE__));	
 }
 
 SOURCESDK::CreateInterfaceFn g_AppSystemFactory = nullptr;
@@ -1140,6 +1317,12 @@ void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameSta
 	}
 
 	old_CS2_Client_FrameStageNotify(This, curStage);
+
+	switch(curStage) {
+	case SOURCESDK::CS2::FRAME_RENDER_END:
+		g_CampathDrawer.OnEngineThread_EndFrame();
+		break;
+	}
 }
 
 
@@ -1638,7 +1821,7 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 	{
 		bFirstRenderSystemDX11 = false;
 
-		// Hook_RenderSystemDX11((void*)hModule);
+		Hook_RenderSystemDX11((void*)hModule);
 	}
 	else if(bFirstClient && StringEndsWithW(lpLibFileName, L"csgo\\bin\\win64\\client.dll"))
 	{
@@ -1724,11 +1907,15 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 
 			g_ConsolePrinter = new CConsolePrinter();
 
+			g_CampathDrawer.Begin();
+
 			break;
 		}
 		case DLL_PROCESS_DETACH:
 		{
 			// actually this gets called now.
+
+			g_CampathDrawer.End();
 
 			delete g_CamExport;
 			delete g_CamImport;

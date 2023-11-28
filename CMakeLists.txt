@@ -136,6 +136,7 @@ if(CMAKE_GENERATOR_PLATFORM STREQUAL "Win32")
 	    DEPENDS hlae
     )
 elseif(CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
+    add_subdirectory("ShaderBuilder")
     add_subdirectory("AfxHookSource2")
 
     add_custom_target(advancedfx ALL

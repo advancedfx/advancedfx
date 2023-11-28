@@ -1034,7 +1034,7 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 
 	conMessage("%s add - Adds current demotime and view as keyframe.\n", args->ArgV(0));
 	conMessage("%s enabled 0|1 - Set whether the camera path is active or not. Please note that currently at least 4 points are required to make it active successfully!\n", args->ArgV(0));
-	conMessage("%s draw [...] - Controls drawing of the camera path.\n", args->ArgV(0));
+	if(mirvDrawer) conMessage("%s draw [...] - Controls drawing of the camera path.\n", args->ArgV(0));
 	conMessage("%s clear - Removes all [or all selected] keyframes.\n", args->ArgV(0));
 	conMessage("%s print - Prints detailed information.\n", args->ArgV(0));
 	conMessage("%s remove <id> - Removes a keyframe.\n", args->ArgV(0));

@@ -13,7 +13,7 @@ bool GetShaderDirectory(std::wstring & outShaderDirectory)
 {
 	outShaderDirectory.assign(GetHlaeFolderW());
 
-	outShaderDirectory.append(L"resources\\AfxHookSource\\shaders\\");
+	outShaderDirectory.append(L"resources\\shaders\\");
 
 	return true;
 }
