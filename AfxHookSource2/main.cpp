@@ -1296,13 +1296,11 @@ CON_COMMAND(mirv_skip, "for skipping through demos (uses demo_gototick)")
     MirvSkip_ConsoleCommand(args, &g_MirvCampath_Time, &g_MirvSkip_GotoDemoTick);
 }
 
-typedef int (* CS2_Client_LevelInitPreEntity_t)(void* This, void * pKeyValues);
+typedef void * (* CS2_Client_LevelInitPreEntity_t)(void* This, void * pUnk1, void * pUnk2);
 CS2_Client_LevelInitPreEntity_t old_CS2_Client_LevelInitPreEntity;
-int  new_CS2_Client_LevelInitPreEntity(void* This, void * pKeyValues) {
-	int result = old_CS2_Client_LevelInitPreEntity(This, pKeyValues);
-
+void * new_CS2_Client_LevelInitPreEntity(void* This, void * pUnk1, void * pUnk2) {
+	void * result = old_CS2_Client_LevelInitPreEntity(This, pUnk1, pUnk2);
 	g_CommandSystem.OnLevelInitPreEntity();
-
 	return result;
 }
 
@@ -1333,7 +1331,7 @@ void CS2_HookClientDllInterface(void * iface)
 	AfxDetourPtr((PVOID *)&(vtable[0]), new_CCS2_Client_Connect, (PVOID*)&old_CCS2_Client_Connect);
 	AfxDetourPtr((PVOID *)&(vtable[3]), new_CCS2_Client_Init, (PVOID*)&old_CCS2_Client_Init);
 	AfxDetourPtr((PVOID *)&(vtable[11]), new_CS2_Client_SetGlobals, (PVOID*)&old_CS2_Client_SetGlobals);
-	//AfxDetourPtr((PVOID *)&(vtable[30]), new_CS2_Client_LevelInitPreEntity, (PVOID*)&old_CS2_Client_LevelInitPreEntity);
+	AfxDetourPtr((PVOID *)&(vtable[32]), new_CS2_Client_LevelInitPreEntity, (PVOID*)&old_CS2_Client_LevelInitPreEntity);
 	AfxDetourPtr((PVOID *)&(vtable[33]), new_CS2_Client_FrameStageNotify, (PVOID*)&old_CS2_Client_FrameStageNotify);
 }
 
