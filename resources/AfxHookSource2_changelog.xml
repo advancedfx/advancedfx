@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.7.0</version>
+<time>2023-12-05T07:24Z</time>
+<changes>
+<change type="added">Added #880 CS2: mirv_campath draw.</change>
+<change type="fixed">Fixed #888 CS2: mirv_cmd will only work once (not detect level change).</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.6.4</version>
 <time>2023-11-17T08:46Z</time>
 <changes>
