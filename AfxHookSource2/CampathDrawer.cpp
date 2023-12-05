@@ -289,7 +289,7 @@ void CCampathDrawer::BeginDevice(ID3D11Device * device)
 		D3D11_DEPTH_STENCIL_DESC depthStencilDesc {
 			TRUE, // DepthEnable;
 			D3D11_DEPTH_WRITE_MASK_ALL, // DepthWriteMask
-			D3D11_COMPARISON_ALWAYS, //D3D11_COMPARISON_LESS_EQUAL, // DepthFunc
+			D3D11_COMPARISON_LESS_EQUAL, // DepthFunc
 			FALSE, // StencilEnable
 			D3D11_DEFAULT_STENCIL_WRITE_MASK, // StencilReadMask
 			D3D11_DEFAULT_STENCIL_READ_MASK, // StencilWriteMask
@@ -302,7 +302,7 @@ void CCampathDrawer::BeginDevice(ID3D11Device * device)
 		D3D11_DEPTH_STENCIL_DESC depthStencilDesc {
 			TRUE, // DepthEnable;
 			D3D11_DEPTH_WRITE_MASK_ZERO, // DepthWriteMask
-			D3D11_COMPARISON_ALWAYS, //D3D11_COMPARISON_LESS_EQUAL, // DepthFunc
+			D3D11_COMPARISON_LESS_EQUAL, // DepthFunc
 			FALSE, // StencilEnable
 			D3D11_DEFAULT_STENCIL_WRITE_MASK, // StencilReadMask
 			D3D11_DEFAULT_STENCIL_READ_MASK, // StencilWriteMask
@@ -676,12 +676,14 @@ CCampathDrawer::CDynamicProperties::CDynamicProperties(CCampathDrawer * drawer) 
 		vvUp.Normalize();
 		*/
 
+		/*
 		advancedfx::Message("CCampathDrawer::OnPostRenderAllTools: curTime = %f\n",m_CurTime);
 		advancedfx::Message("M[0]=%f %f %f %f\nM[1]=%f %f %f %f\nM[2]=%f %f %f %f\nM[3]=%f %f %f %f\n", M[0][0],M[0][1],M[0][2],M[0][3], M[1][0],M[1][1],M[1][2],M[1][3], M[2][0],M[2][1],M[2][2],M[2][3], M[3][0],M[3][1],M[3][2],M[3][3]);
 		advancedfx::Message("b0[0]=%f %f %f %f\n", b0[0], b0[1], b0[2], b0[3]);
 		advancedfx::Message("bN[0]=%f %f %f %f\n", bN[0], bN[1], bN[2], bN[3]);
 		advancedfx::Message("plane0=%f %f %f %f\n", plane0[0], plane0[1], plane0[2], plane0[3]);
 		advancedfx::Message("planeN=%f %f %f %f\n", planeN[0], planeN[1], planeN[2], planeN[3]);
+		*/
 
 		m_PlaneOrigin = Vector3(plane0[0],plane0[1],plane0[2]);
 		
@@ -773,62 +775,60 @@ void CCampathDrawer::OnEngineThread_SetupViewDone() {
 		return;
 	{
 		std::unique_lock<std::mutex> lock(m_FunctorMutex);
-		m_FunctorQueue.emplace(new CCampathDrawerFunctor(this));
+		if(m_Functors.empty() || nullptr == *m_Functors.rbegin()) {
+			m_Functors.emplace_back(new CCampathDrawerFunctor(this));
+		}
 	}
 }
 
 void CCampathDrawer::OnEngineThread_EndFrame() {
 	{
 		std::unique_lock<std::mutex> lock(m_FunctorMutex);
-		while(m_FunctorQueue.size() > 128) {
-			advancedfx::Warning("AfxHookSource2 CCampathDrawer::m_FunctorQueue overrun\n");
-			if(m_FunctorQueue.front()) delete m_FunctorQueue.front();
-			m_FunctorQueue.pop();
-		}
-		m_FunctorQueue.emplace(nullptr);
+		m_Functors.emplace_back(nullptr);
 	}
 }
 
-void CCampathDrawer::OnRenderThread_Present(ID3D11DeviceContext * pImmediateContext, ID3D11RenderTargetView * pRenderTargetView) {
-	m_ImmediateContext = pImmediateContext;
-	m_Rtv = pRenderTargetView;
-	while(true) {
-		CMaterialSystemFunctor* pFunctor = nullptr;		
-		{
-			std::unique_lock<std::mutex> lock(m_FunctorMutex);
-			if(m_FunctorQueue.empty()) break; // underun
-			pFunctor = m_FunctorQueue.front();
-			m_FunctorQueue.pop();
+void CCampathDrawer::OnRenderThread_Draw(ID3D11DeviceContext * pImmediateContext, const D3D11_VIEWPORT * pViewPort, ID3D11RenderTargetView * pRenderTargetView2, ID3D11DepthStencilView * pDepthStencilView2) {
+	CMaterialSystemFunctor* pFunctor = nullptr;		
+	{
+		std::unique_lock<std::mutex> lock(m_FunctorMutex);
+		while(!m_Functors.empty()) {
+			auto it = m_Functors.begin();
+			pFunctor = *it;
+			if(nullptr == pFunctor) {
+				m_Functors.erase(it);
+			} else break;
 		}
-		if(nullptr == pFunctor) break;
-
-		pFunctor->operator()();
-/*
-		if(pImmediateContext) {
-			ID3D11RenderTargetView *pRtvs[1] = {nullptr};
-			ID3D11DepthStencilView *pDsvs[1] = {nullptr};
-			pImmediateContext->OMGetRenderTargets(1,pRtvs,pDsvs);
-			if(pRenderTargetView) {
-				ID3D11RenderTargetView *pRtvs2[1] = {pRenderTargetView};
-				//FLOAT clearColor[4]={0.5f, 0.0f, 0.0f, 1.0f};
-				//if(pRtvs2[0]) pImmediateContext->ClearRenderTargetView(pRtvs2[0],clearColor);
-				pImmediateContext->OMSetRenderTargets(1,pRtvs2,nullptr);
-
-				pFunctor->operator()();
-
-			} else {
-				//FLOAT clearColor[4]={0.5f, 0.0f, 0.0f, 1.0f};
-				//if(pRtvs[0]) pImmediateContext->ClearRenderTargetView(pRtvs[0],clearColor);
-				pFunctor->operator()();
-			}
-			pImmediateContext->OMSetRenderTargets(1,pRtvs,(pDsvs[0]?pDsvs[0]:nullptr));
-			if(pRtvs[0]) pRtvs[0]->Release();
-			if(pDsvs[0]) pDsvs[0]->Release();
-		}*/
-		delete pFunctor;
 	}
-	m_Rtv = nullptr;
-	m_ImmediateContext = nullptr;
+
+	if(pFunctor) {
+		m_ImmediateContext = pImmediateContext;
+		m_Rtv2 = pRenderTargetView2;
+		m_Dsv2 = pDepthStencilView2;
+		m_pViewPort = pViewPort;
+		pFunctor->operator()();
+		m_pViewPort = nullptr;
+		m_Dsv2 = nullptr;
+		m_Rtv2 = nullptr;
+		m_ImmediateContext = nullptr;
+	}
+}
+
+void CCampathDrawer::OnRenderThread_Present() {
+	CMaterialSystemFunctor* pFunctor = nullptr;		
+	{
+		std::unique_lock<std::mutex> lock(m_FunctorMutex);
+		while(!m_Functors.empty()) {
+			auto it = m_Functors.begin();
+			pFunctor = *it;
+			if(nullptr != pFunctor) {
+				delete pFunctor;
+				m_Functors.erase(it);
+			} else {
+				m_Functors.erase(it);
+			}
+		}
+	}	
 }
 
 void CCampathDrawer::SetLineWidth(float width) {
@@ -861,7 +861,9 @@ void CCampathDrawer::OnPostRenderAllTools_DrawingThread(CDynamicProperties * dyn
 		&& m_InputLayoutDigits
 		&& m_InputLayoutLines
 		&& m_ImmediateContext
-		&& m_Rtv
+		&& m_Rtv2
+		&& m_pViewPort
+		//&& m_Dsv2
 		))
 	{
 		static bool firstError = true;
@@ -879,14 +881,14 @@ void CCampathDrawer::OnPostRenderAllTools_DrawingThread(CDynamicProperties * dyn
 
 	//FLOAT clearColor[4]={0.0f, 0.0f, 0.5f, 1.0f};
 	//m_DeviceContext->ClearRenderTargetView(m_Rtv,clearColor);
-	m_DeviceContext->OMSetRenderTargets(1,&m_Rtv,nullptr);
+	m_DeviceContext->OMSetRenderTargets(1,&m_Rtv2,m_Dsv2);
 
 	m_DeviceContext->PSSetSamplers(0,1,&m_SamplerState);
 	m_DeviceContext->OMSetBlendState(m_BlendState,NULL, 0xffffffff);
 
 	int screenWidth = dynamicPorperties->GetScreenWidth();
 	int screenHeight = dynamicPorperties->GetScreenHeight();
-
+/*
 	D3D11_VIEWPORT viewPort = {
 		0, // TopLeftX
 		0, // TopLeftY
@@ -895,7 +897,10 @@ void CCampathDrawer::OnPostRenderAllTools_DrawingThread(CDynamicProperties * dyn
 		0, // MinDepth
 		1 // MaxDepth
 	};
-	m_DeviceContext->RSSetViewports(1,&viewPort);
+	UINT numViewports = 1;
+	m_ImmediateContext->RSGetViewports(&numViewports,&viewPort);
+*/
+	m_DeviceContext->RSSetViewports(1,m_pViewPort);
 
 	const SOURCESDK::VMatrix & worldToScreenMatrix = dynamicPorperties->GetWorldToScreenMatrix();
 	const Vector3 & planeOrigin = dynamicPorperties->GetPlaneOrigin();

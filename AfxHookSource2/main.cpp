@@ -774,6 +774,13 @@ float CS2_Client_CSetupView_InsideComputeViewMatrix(void) {
 	return 0;
 }
 
+extern size_t g_RTCount;
+
+CON_COMMAND(__mirv_t,"") {
+	if(args->ArgC()>=2) g_RTCount = (size_t)atoi(args->ArgV(1));
+}
+
+
 /*size_t ofsProj = 0;
 
 DirectX::XMMATRIX g_Mul = {
@@ -1312,15 +1319,12 @@ void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameSta
 	case SOURCESDK::CS2::FRAME_RENDER_START:
 		g_CommandSystem.OnExecuteCommands();
 		break;
-	}
-
-	old_CS2_Client_FrameStageNotify(This, curStage);
-
-	switch(curStage) {
 	case SOURCESDK::CS2::FRAME_RENDER_END:
 		g_CampathDrawer.OnEngineThread_EndFrame();
 		break;
 	}
+
+	old_CS2_Client_FrameStageNotify(This, curStage);
 }
 
 

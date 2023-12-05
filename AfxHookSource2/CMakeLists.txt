@@ -55,9 +55,16 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     _CRT_SECURE_NO_WARNINGS
 )
 
-# generate PDB in release too:
-target_compile_options(${PROJECT_NAME} PRIVATE $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<CONFIG:RELEASE>>:/Zi>)
-target_link_options(${PROJECT_NAME} PRIVATE $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<CONFIG:RELEASE>>:/DEBUG /DEBUG /OPT:REF /OPT:ICF>)
+# - generate PDB in Release too
+# - enable Hot Reload in Debug
+target_compile_options(${PROJECT_NAME} PRIVATE
+	$<$<AND:$<CXX_COMPILER_ID:MSVC>,$<CONFIG:Release>>:/Zi>
+	$<$<AND:$<CXX_COMPILER_ID:MSVC>,$<CONFIG:Debug>>:/ZI>
+	)
+target_link_options(${PROJECT_NAME} PRIVATE
+	$<$<AND:$<CXX_COMPILER_ID:MSVC>,$<CONFIG:Release>>:/DEBUG /OPT:REF /OPT:ICF>
+	$<$<AND:$<CXX_COMPILER_ID:MSVC>,$<CONFIG:Debug>>:/INCREMENTAL>
+	)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ./
@@ -148,6 +155,7 @@ target_sources(${PROJECT_NAME} PRIVATE
 source_group("deps/release/Detours" REGULAR_EXPRESSION "/deps/release/Detours/")
 source_group("deps/release/Detours/src" REGULAR_EXPRESSION "/deps/release/Detours/src/")
 source_group("deps/release/prop" REGULAR_EXPRESSION "/deps/release/prop/")
+source_group("deps/release/prop/AfxHookSource" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource")
 source_group("deps/release/prop/cs2" REGULAR_EXPRESSION "/deps/release/prop/cs2/")
 source_group("deps/release/prop/cs2/sdk_src/public" REGULAR_EXPRESSION "/deps/release/prop/cs2/sdk_src/public/")
 source_group("deps/release/prop/cs2/sdk_src/public/appframework" REGULAR_EXPRESSION "/deps/release/prop/cs2/sdk_src/public/appframework/")
@@ -159,4 +167,4 @@ source_group("deps/release/prop/cs2/sdk_src/public/tier1" REGULAR_EXPRESSION "/d
 source_group("shared" REGULAR_EXPRESSION "/shared/")
 source_group("shared/hooks" REGULAR_EXPRESSION "/shared/hooks/")
 source_group("shared/vcpp" REGULAR_EXPRESSION "/shared/vcpp/")
-source_group("AfxHookSource" REGULAR_EXPRESSION "/AfxHookSource/")
+source_group("AfxHookSource2" REGULAR_EXPRESSION "/AfxHookSource2/")

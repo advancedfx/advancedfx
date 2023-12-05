@@ -20,6 +20,13 @@ IDXGISwapChain * g_pSwapChain = nullptr;
 ID3D11Device * g_pDevice = nullptr;
 ID3D11DeviceContext * g_pImmediateContext = nullptr;
 ID3D11RenderTargetView * g_pRTView = nullptr;
+ID3D11Resource * g_pRTResource = nullptr;
+D3D11_TEXTURE2D_DESC g_RTDesc;
+size_t g_ClearCount = 0;
+size_t g_RTCount = 0;
+int g_iDraw = 0;
+
+extern void ErrorBox(char const * messageText);
 
 typedef HRESULT (STDMETHODCALLTYPE * CreateRenderTargetView_t)( void * This,
             /* [annotation] */ 
@@ -30,7 +37,6 @@ typedef HRESULT (STDMETHODCALLTYPE * CreateRenderTargetView_t)( void * This,
             _COM_Outptr_opt_  ID3D11RenderTargetView **ppRTView);
 
 CreateRenderTargetView_t g_Old_CreateRenderTargetView = nullptr;
-
 
 HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  void * This,
             /* [annotation] */ 
@@ -47,14 +53,167 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  void * This,
         HRESULT result2 = g_pSwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D), (void**)&pTexture);
         if(SUCCEEDED(result2)) {
             if(pResource == pTexture) {
+                pTexture->GetDesc(&g_RTDesc);
+                g_pRTResource = pResource;
                 g_pRTView = *ppRTView;
+                g_ClearCount = 0;
+                g_iDraw = 0;
             }
-
             pTexture->Release();
         }
     }
 
     return result;
+}
+
+typedef void (STDMETHODCALLTYPE * ClearDepthStencilView_t)( void * This, 
+    /* [annotation] */ 
+    _In_  ID3D11DepthStencilView *pDepthStencilView,
+    /* [annotation] */ 
+    _In_  UINT ClearFlags,
+    /* [annotation] */ 
+    _In_  FLOAT Depth,
+    /* [annotation] */ 
+    _In_  UINT8 Stencil);
+
+ClearDepthStencilView_t g_Old_ClearDepthStencilView;
+
+ID3D11Resource * g_pCurrentRenderTargetViewResource = nullptr;
+ID3D11RenderTargetView * g_pCurrentRenderTargetView = nullptr;
+ID3D11DepthStencilView * g_pCurrentDepthStencilView = nullptr;
+D3D11_VIEWPORT g_ViewPort;
+
+void STDMETHODCALLTYPE New_ClearDepthStencilView( void * This, 
+    /* [annotation] */ 
+    _In_  ID3D11DepthStencilView *pDepthStencilView,
+    /* [annotation] */ 
+    _In_  UINT ClearFlags,
+    /* [annotation] */ 
+    _In_  FLOAT Depth,
+    /* [annotation] */ 
+    _In_  UINT8 Stencil) {
+
+    if(This == g_pImmediateContext && g_iDraw == 2 && (
+        pDepthStencilView == g_pCurrentDepthStencilView && (ClearFlags & D3D11_CLEAR_DEPTH)
+        || pDepthStencilView != g_pCurrentDepthStencilView
+    )) {
+        g_iDraw = 3;
+        g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
+        g_CampathDrawer.OnRenderThread_Present();
+    }
+
+    g_Old_ClearDepthStencilView(This, pDepthStencilView, ClearFlags, Depth, Stencil);
+
+    if(This == g_pImmediateContext && pDepthStencilView && (ClearFlags & D3D11_CLEAR_DEPTH)) {
+
+        D3D11_DEPTH_STENCIL_VIEW_DESC desc;
+        pDepthStencilView->GetDesc(&desc);
+
+        if(desc.Flags == 0 && desc.Format == DXGI_FORMAT_D24_UNORM_S8_UINT
+            && (desc.ViewDimension == D3D11_DSV_DIMENSION_TEXTURE2D
+                || desc.ViewDimension == D3D11_DSV_DIMENSION_TEXTURE2DMS
+            ))
+        {
+            ID3D11Resource * pResource = nullptr;
+            pDepthStencilView->GetResource(&pResource);
+            if(pResource) {
+                ID3D11Texture2D * pTexture = nullptr;
+                if(SUCCEEDED(pResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&pTexture))) {
+                    D3D11_TEXTURE2D_DESC desc;
+                    pTexture->GetDesc(&desc);
+
+                    if(/*desc.Width == g_RTDesc.Width && desc.Height == g_RTDesc.Height && desc.MipLevels == g_RTDesc.MipLevels*/ true) {
+                        
+                        if(g_ClearCount == g_RTCount) {
+                            g_pCurrentDepthStencilView = pDepthStencilView;
+                            g_iDraw = 1;
+                        }
+
+                        g_ClearCount++;
+                    }
+
+                    pTexture->Release();
+                }
+
+                pResource->Release();
+            }
+        }
+    }
+}
+
+typedef void (STDMETHODCALLTYPE * ResolveSubresource_t)( void * This,
+    /* [annotation] */ 
+    _In_  ID3D11Resource *pDstResource,
+    /* [annotation] */ 
+    _In_  UINT DstSubresource,
+    /* [annotation] */ 
+    _In_  ID3D11Resource *pSrcResource,
+    /* [annotation] */ 
+    _In_  UINT SrcSubresource,
+    /* [annotation] */ 
+    _In_  DXGI_FORMAT Format);
+
+ResolveSubresource_t g_Old_ResolveSubresource = nullptr;
+
+void STDMETHODCALLTYPE New_ResolveSubresource( void * This,
+    /* [annotation] */ 
+    _In_  ID3D11Resource *pDstResource,
+    /* [annotation] */ 
+    _In_  UINT DstSubresource,
+    /* [annotation] */ 
+    _In_  ID3D11Resource *pSrcResource,
+    /* [annotation] */ 
+    _In_  UINT SrcSubresource,
+    /* [annotation] */ 
+    _In_  DXGI_FORMAT Format) {
+
+    if(This == g_pImmediateContext && g_iDraw == 2 &&  pSrcResource == g_pCurrentRenderTargetViewResource) {
+        g_iDraw = 3;
+        g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);        
+        g_CampathDrawer.OnRenderThread_Present();
+    }        
+
+    g_Old_ResolveSubresource(This, pDstResource, DstSubresource, pSrcResource, SrcSubresource, Format);
+ }
+
+typedef void (STDMETHODCALLTYPE * OMSetRenderTargets_t)( void * This,
+            /* [annotation] */ 
+            _In_range_( 0, D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT )  UINT NumViews,
+            /* [annotation] */ 
+            _In_reads_opt_(NumViews)  ID3D11RenderTargetView *const *ppRenderTargetViews,
+            /* [annotation] */ 
+            _In_opt_  ID3D11DepthStencilView *pDepthStencilView);
+
+OMSetRenderTargets_t g_Old_OMSetRenderTargets = nullptr;
+
+void STDMETHODCALLTYPE New_OMSetRenderTargets( void * This,
+            /* [annotation] */ 
+            _In_range_( 0, D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT )  UINT NumViews,
+            /* [annotation] */ 
+            _In_reads_opt_(NumViews)  ID3D11RenderTargetView *const *ppRenderTargetViews,
+            /* [annotation] */ 
+            _In_opt_  ID3D11DepthStencilView *pDepthStencilView) {
+
+    g_Old_OMSetRenderTargets(This, NumViews, ppRenderTargetViews, pDepthStencilView);
+
+    if(This == g_pImmediateContext) {
+        if(g_iDraw == 1 && pDepthStencilView == g_pCurrentDepthStencilView && ppRenderTargetViews && ppRenderTargetViews[0]) {
+            g_iDraw = 2;
+            UINT numViewPorts = 1;
+            g_pImmediateContext->RSGetViewports(&numViewPorts,&g_ViewPort);
+            g_pCurrentRenderTargetView = ppRenderTargetViews[0];
+            g_pCurrentRenderTargetViewResource = nullptr;
+            if(g_pCurrentRenderTargetView) {
+                g_pCurrentRenderTargetView->GetResource(&g_pCurrentRenderTargetViewResource);
+                if(g_pCurrentRenderTargetViewResource) g_pCurrentRenderTargetViewResource->Release();
+            }
+        }
+        else if (g_iDraw == 2 && pDepthStencilView && pDepthStencilView != g_pCurrentDepthStencilView && ppRenderTargetViews && ppRenderTargetViews[0]) {
+            g_iDraw = 3;
+            g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
+            g_CampathDrawer.OnRenderThread_Present();
+        }
+    }
 }
 
 typedef void (STDMETHODCALLTYPE * ID3D11Device_GetImmediateContext_t)(ID3D11Device * This, 
@@ -69,6 +228,37 @@ void STDMETHODCALLTYPE New_ID3D11Device_GetImmediateContext_t(ID3D11Device * Thi
     g_Old_ID3D11Device_GetImmediateContext(This, ppImmediateContext);
     if(ppImmediateContext && *ppImmediateContext){
         //*ppImmediateContext = new CID3D11DeviceContextHook(This,*ppImmediateContext);
+
+        if(g_Old_OMSetRenderTargets) {
+            // Unhook wrong one (happens with D3D11_CREATE_DEVICE_DEBUG).
+            void **vtable = *(void***)*ppImmediateContext;
+            AfxDetourPtr(&(vtable[33]),g_Old_OMSetRenderTargets,nullptr);
+            g_Old_OMSetRenderTargets = nullptr;
+        }
+        if(g_Old_ClearDepthStencilView) {
+            // Unhook wrong one (happens with D3D11_CREATE_DEVICE_DEBUG).
+            void **vtable = *(void***)*ppImmediateContext;
+            AfxDetourPtr(&(vtable[53]),g_Old_ClearDepthStencilView,nullptr);
+            g_Old_ClearDepthStencilView = nullptr;
+        }        
+        if(g_Old_ResolveSubresource) {
+            // Unhook wrong one (happens with D3D11_CREATE_DEVICE_DEBUG).
+            void **vtable = *(void***)*ppImmediateContext;
+            AfxDetourPtr(&(vtable[57]),g_Old_ResolveSubresource,nullptr);
+            g_Old_ResolveSubresource = nullptr;
+        }
+        if(nullptr == g_Old_OMSetRenderTargets) {
+            void **vtable = *(void***)*ppImmediateContext;
+            AfxDetourPtr(&(vtable[33]),New_OMSetRenderTargets,(PVOID*)&g_Old_OMSetRenderTargets);
+        }        
+        if(nullptr == g_Old_ClearDepthStencilView) {
+            void **vtable = *(void***)*ppImmediateContext;
+            AfxDetourPtr(&(vtable[53]),New_ClearDepthStencilView,(PVOID*)&g_Old_ClearDepthStencilView);
+        }        
+        if(nullptr == g_Old_ResolveSubresource) {
+            void **vtable = *(void***)*ppImmediateContext;
+            AfxDetourPtr(&(vtable[57]),New_ResolveSubresource,(PVOID*)&g_Old_ResolveSubresource);
+        }        
         g_pImmediateContext = *ppImmediateContext;
     }
 }
@@ -89,7 +279,7 @@ HRESULT WINAPI New_D3D11CreateDevice(
     ID3D11DeviceContext **ppImmediateContext
     ) {
 #ifdef _DEBUG
-   // Flags = Flags | D3D11_CREATE_DEVICE_DEBUG;
+    Flags = Flags | D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
     HRESULT result = g_Old_D3D11CreateDevice(
@@ -140,10 +330,21 @@ Present_t g_OldPresent = nullptr;
 HRESULT STDMETHODCALLTYPE New_Present( void * This,
             /* [in] */ UINT SyncInterval,
             /* [in] */ UINT Flags) {
-
-    g_CampathDrawer.OnRenderThread_Present(g_pImmediateContext, g_pRTView);
+    
+    if (This == g_pImmediateContext) {
+        if (g_iDraw == 2) {
+            g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
+        }
+        if (g_iDraw <= 2) {
+            g_CampathDrawer.OnRenderThread_Present();
+        }
+    }
 
     HRESULT result = g_OldPresent(This, SyncInterval, Flags);
+
+    g_ClearCount = 0;
+    g_iDraw = 0;
+
     return result;
 }
 
@@ -171,7 +372,11 @@ HRESULT STDMETHODCALLTYPE New_CreateSwapChain( void * This,
         g_pSwapChain = *ppSwapChain;
         if(nullptr == g_OldPresent) {
             void **vtable = *(void***)*ppSwapChain;
-            AfxDetourPtr(&(vtable[8]),New_Present,(PVOID*)&g_OldPresent);
+            g_OldPresent = (Present_t)vtable[8];
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+            DetourAttach(&(PVOID&)g_OldPresent, New_Present);
+            if(NO_ERROR != DetourTransactionCommit()) ErrorBox("Failed to detour IDXGISwapChain::Present.");
         }
     }
 
@@ -201,8 +406,6 @@ HRESULT WINAPI New_CreateDXGIFactory(REFIID riid, _COM_Outptr_ void **ppFactory)
 CAfxImportsHook g_Import_rendersystemdx11(CAfxImportsHooks({
 	&g_Import_rendersystemdx11_dxgi
     }));
-
-extern void ErrorBox(char const * messageText);
 
 bool Hook_RenderSystemDX11(void * hModule) {
     static bool firstResult = false;

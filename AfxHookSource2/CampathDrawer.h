@@ -49,7 +49,8 @@ public:
 	void EndDevice();
 	void Reset();
 
-	void OnRenderThread_Present(ID3D11DeviceContext * pImmediateContext, ID3D11RenderTargetView * pRenderTargetView);
+	void OnRenderThread_Draw(ID3D11DeviceContext * pImmediateContext, const D3D11_VIEWPORT * pViewPort, ID3D11RenderTargetView * pRenderTargetView2, ID3D11DepthStencilView *pDepthStencilView2);
+	void OnRenderThread_Present();
 
 	void OnEngineThread_SetupViewDone();
 	void OnEngineThread_EndFrame();
@@ -240,7 +241,7 @@ private:
 	};
 
 	std::mutex m_FunctorMutex;
-	std::queue<CMaterialSystemFunctor*> m_FunctorQueue;
+	std::list<CMaterialSystemFunctor*> m_Functors;
 
 	bool m_DrawKeyframeAxis = false;
 	bool m_DrawKeyframeCam = true;
@@ -248,7 +249,9 @@ private:
 	ID3D11Device * m_Device = nullptr;
 	ID3D11DeviceContext * m_DeviceContext = nullptr;
 	ID3D11DeviceContext * m_ImmediateContext = nullptr;
-	ID3D11RenderTargetView * m_Rtv = nullptr;
+	const D3D11_VIEWPORT * m_pViewPort = nullptr;
+	ID3D11RenderTargetView * m_Rtv2 = nullptr;
+	ID3D11DepthStencilView * m_Dsv2 = nullptr;
 
 	ID3D11DepthStencilState * m_DepthStencilStateDigits = nullptr;
 	ID3D11DepthStencilState * m_DepthStencilStateLines = nullptr;
