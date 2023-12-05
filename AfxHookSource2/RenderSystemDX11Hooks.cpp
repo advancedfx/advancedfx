@@ -19,6 +19,7 @@
 IDXGISwapChain * g_pSwapChain = nullptr;
 ID3D11Device * g_pDevice = nullptr;
 ID3D11DeviceContext * g_pImmediateContext = nullptr;
+ID3D11DeviceContext * g_pDeferredContext = nullptr;
 ID3D11RenderTargetView * g_pRTView = nullptr;
 ID3D11Resource * g_pRTResource = nullptr;
 D3D11_TEXTURE2D_DESC g_RTDesc;
@@ -66,7 +67,7 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  void * This,
     return result;
 }
 
-typedef void (STDMETHODCALLTYPE * ClearDepthStencilView_t)( void * This, 
+typedef void (STDMETHODCALLTYPE * ClearDepthStencilView_t)( ID3D11DeviceContext * This, 
     /* [annotation] */ 
     _In_  ID3D11DepthStencilView *pDepthStencilView,
     /* [annotation] */ 
@@ -76,14 +77,14 @@ typedef void (STDMETHODCALLTYPE * ClearDepthStencilView_t)( void * This,
     /* [annotation] */ 
     _In_  UINT8 Stencil);
 
-ClearDepthStencilView_t g_Old_ClearDepthStencilView;
+ClearDepthStencilView_t g_Old_ClearDepthStencilView = nullptr;
 
 ID3D11Resource * g_pCurrentRenderTargetViewResource = nullptr;
 ID3D11RenderTargetView * g_pCurrentRenderTargetView = nullptr;
 ID3D11DepthStencilView * g_pCurrentDepthStencilView = nullptr;
 D3D11_VIEWPORT g_ViewPort;
 
-void STDMETHODCALLTYPE New_ClearDepthStencilView( void * This, 
+void STDMETHODCALLTYPE New_ClearDepthStencilView( ID3D11DeviceContext * This, 
     /* [annotation] */ 
     _In_  ID3D11DepthStencilView *pDepthStencilView,
     /* [annotation] */ 
@@ -141,7 +142,7 @@ void STDMETHODCALLTYPE New_ClearDepthStencilView( void * This,
     }
 }
 
-typedef void (STDMETHODCALLTYPE * ResolveSubresource_t)( void * This,
+typedef void (STDMETHODCALLTYPE * ResolveSubresource_t)( ID3D11DeviceContext * This,
     /* [annotation] */ 
     _In_  ID3D11Resource *pDstResource,
     /* [annotation] */ 
@@ -155,7 +156,7 @@ typedef void (STDMETHODCALLTYPE * ResolveSubresource_t)( void * This,
 
 ResolveSubresource_t g_Old_ResolveSubresource = nullptr;
 
-void STDMETHODCALLTYPE New_ResolveSubresource( void * This,
+void STDMETHODCALLTYPE New_ResolveSubresource( ID3D11DeviceContext * This,
     /* [annotation] */ 
     _In_  ID3D11Resource *pDstResource,
     /* [annotation] */ 
@@ -171,12 +172,12 @@ void STDMETHODCALLTYPE New_ResolveSubresource( void * This,
         g_iDraw = 3;
         g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);        
         g_CampathDrawer.OnRenderThread_Present();
-    }        
+    }     
 
     g_Old_ResolveSubresource(This, pDstResource, DstSubresource, pSrcResource, SrcSubresource, Format);
  }
 
-typedef void (STDMETHODCALLTYPE * OMSetRenderTargets_t)( void * This,
+typedef void (STDMETHODCALLTYPE * OMSetRenderTargets_t)( ID3D11DeviceContext * This,
             /* [annotation] */ 
             _In_range_( 0, D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT )  UINT NumViews,
             /* [annotation] */ 
@@ -186,15 +187,13 @@ typedef void (STDMETHODCALLTYPE * OMSetRenderTargets_t)( void * This,
 
 OMSetRenderTargets_t g_Old_OMSetRenderTargets = nullptr;
 
-void STDMETHODCALLTYPE New_OMSetRenderTargets( void * This,
+void STDMETHODCALLTYPE New_OMSetRenderTargets( ID3D11DeviceContext * This,
             /* [annotation] */ 
             _In_range_( 0, D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT )  UINT NumViews,
             /* [annotation] */ 
             _In_reads_opt_(NumViews)  ID3D11RenderTargetView *const *ppRenderTargetViews,
             /* [annotation] */ 
             _In_opt_  ID3D11DepthStencilView *pDepthStencilView) {
-
-    g_Old_OMSetRenderTargets(This, NumViews, ppRenderTargetViews, pDepthStencilView);
 
     if(This == g_pImmediateContext) {
         if(g_iDraw == 1 && pDepthStencilView == g_pCurrentDepthStencilView && ppRenderTargetViews && ppRenderTargetViews[0]) {
@@ -214,6 +213,39 @@ void STDMETHODCALLTYPE New_OMSetRenderTargets( void * This,
             g_CampathDrawer.OnRenderThread_Present();
         }
     }
+    
+    g_Old_OMSetRenderTargets(This, NumViews, ppRenderTargetViews, pDepthStencilView);
+}
+
+void Hook_Context(ID3D11DeviceContext * pDeviceContext) {
+    static void **last_vtable = nullptr;
+    void **vtable = *(void***)pDeviceContext;
+
+    // (We can not use vtable detours here, becuse something writes them back after we did that.)
+
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    if(last_vtable) {
+        DetourDetach(&(PVOID&)g_Old_OMSetRenderTargets, New_OMSetRenderTargets);
+        DetourDetach(&(PVOID&)g_Old_ClearDepthStencilView, New_ClearDepthStencilView);
+        DetourDetach(&(PVOID&)g_Old_ResolveSubresource, New_ResolveSubresource);
+        if(NO_ERROR != DetourTransactionCommit()) {
+            ErrorBox("Failed detaching on ID1D11RenderContext.");
+        }
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+    }
+    g_Old_OMSetRenderTargets = (OMSetRenderTargets_t)vtable[33];
+    g_Old_ClearDepthStencilView = (ClearDepthStencilView_t)vtable[53];
+    g_Old_ResolveSubresource = (ResolveSubresource_t)vtable[57];
+    DetourAttach(&(PVOID&)g_Old_OMSetRenderTargets, New_OMSetRenderTargets);
+    DetourAttach(&(PVOID&)g_Old_ClearDepthStencilView, New_ClearDepthStencilView);
+    DetourAttach(&(PVOID&)g_Old_ResolveSubresource, New_ResolveSubresource);
+    if(NO_ERROR != DetourTransactionCommit()) {
+        ErrorBox("Failed attaching on ID1D11RenderContext.");
+    }
+
+    last_vtable = vtable;   
 }
 
 typedef void (STDMETHODCALLTYPE * ID3D11Device_GetImmediateContext_t)(ID3D11Device * This, 
@@ -222,43 +254,13 @@ typedef void (STDMETHODCALLTYPE * ID3D11Device_GetImmediateContext_t)(ID3D11Devi
 
 ID3D11Device_GetImmediateContext_t g_Old_ID3D11Device_GetImmediateContext = nullptr;
 
-void STDMETHODCALLTYPE New_ID3D11Device_GetImmediateContext_t(ID3D11Device * This, 
+
+void STDMETHODCALLTYPE New_ID3D11Device_GetImmediateContext(ID3D11Device * This, 
     /* [annotation] */ 
     _Outptr_  ID3D11DeviceContext **ppImmediateContext) {
     g_Old_ID3D11Device_GetImmediateContext(This, ppImmediateContext);
     if(ppImmediateContext && *ppImmediateContext){
-        //*ppImmediateContext = new CID3D11DeviceContextHook(This,*ppImmediateContext);
-
-        if(g_Old_OMSetRenderTargets) {
-            // Unhook wrong one (happens with D3D11_CREATE_DEVICE_DEBUG).
-            void **vtable = *(void***)*ppImmediateContext;
-            AfxDetourPtr(&(vtable[33]),g_Old_OMSetRenderTargets,nullptr);
-            g_Old_OMSetRenderTargets = nullptr;
-        }
-        if(g_Old_ClearDepthStencilView) {
-            // Unhook wrong one (happens with D3D11_CREATE_DEVICE_DEBUG).
-            void **vtable = *(void***)*ppImmediateContext;
-            AfxDetourPtr(&(vtable[53]),g_Old_ClearDepthStencilView,nullptr);
-            g_Old_ClearDepthStencilView = nullptr;
-        }        
-        if(g_Old_ResolveSubresource) {
-            // Unhook wrong one (happens with D3D11_CREATE_DEVICE_DEBUG).
-            void **vtable = *(void***)*ppImmediateContext;
-            AfxDetourPtr(&(vtable[57]),g_Old_ResolveSubresource,nullptr);
-            g_Old_ResolveSubresource = nullptr;
-        }
-        if(nullptr == g_Old_OMSetRenderTargets) {
-            void **vtable = *(void***)*ppImmediateContext;
-            AfxDetourPtr(&(vtable[33]),New_OMSetRenderTargets,(PVOID*)&g_Old_OMSetRenderTargets);
-        }        
-        if(nullptr == g_Old_ClearDepthStencilView) {
-            void **vtable = *(void***)*ppImmediateContext;
-            AfxDetourPtr(&(vtable[53]),New_ClearDepthStencilView,(PVOID*)&g_Old_ClearDepthStencilView);
-        }        
-        if(nullptr == g_Old_ResolveSubresource) {
-            void **vtable = *(void***)*ppImmediateContext;
-            AfxDetourPtr(&(vtable[57]),New_ResolveSubresource,(PVOID*)&g_Old_ResolveSubresource);
-        }        
+        Hook_Context(*ppImmediateContext);
         g_pImmediateContext = *ppImmediateContext;
     }
 }
@@ -297,7 +299,7 @@ HRESULT WINAPI New_D3D11CreateDevice(
             void **vtable = *(void***)g_pDevice;
             AfxDetourPtr(&(vtable[40]),g_Old_ID3D11Device_GetImmediateContext,nullptr);
             g_Old_ID3D11Device_GetImmediateContext = nullptr;
-        }
+        }     
         if(g_pDevice) {
             g_CampathDrawer.EndDevice();
             g_pDevice = nullptr;
@@ -309,25 +311,25 @@ HRESULT WINAPI New_D3D11CreateDevice(
         }
         if(nullptr == g_Old_ID3D11Device_GetImmediateContext) {
             void **vtable = *(void***)*ppDevice;
-            AfxDetourPtr(&(vtable[40]),New_ID3D11Device_GetImmediateContext_t,(PVOID*)&g_Old_ID3D11Device_GetImmediateContext);
+            AfxDetourPtr(&(vtable[40]),New_ID3D11Device_GetImmediateContext,(PVOID*)&g_Old_ID3D11Device_GetImmediateContext);
         }
         g_CampathDrawer.BeginDevice(*ppDevice);
     }
     if(SUCCEEDED(result) && ppImmediateContext && *ppImmediateContext) {
+        Hook_Context(*ppImmediateContext);
         g_pImmediateContext = *ppImmediateContext;
-        //*ppImmediateContext = new CID3D11DeviceContextHook(*ppDevice,*ppImmediateContext); // They will just release it shortly there-after, which is why we detour ID3D11Device::GetImmediateContext.
     }
 
     return result;
 }
 
-typedef HRESULT (STDMETHODCALLTYPE * Present_t)( void * This,
+typedef HRESULT (STDMETHODCALLTYPE * Present_t)( ID3D11DeviceContext * This,
             /* [in] */ UINT SyncInterval,
             /* [in] */ UINT Flags);
 
 Present_t g_OldPresent = nullptr;
 
-HRESULT STDMETHODCALLTYPE New_Present( void * This,
+HRESULT STDMETHODCALLTYPE New_Present( ID3D11DeviceContext * This,
             /* [in] */ UINT SyncInterval,
             /* [in] */ UINT Flags) {
     
@@ -339,7 +341,6 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
             g_CampathDrawer.OnRenderThread_Present();
         }
     }
-
     HRESULT result = g_OldPresent(This, SyncInterval, Flags);
 
     g_ClearCount = 0;
