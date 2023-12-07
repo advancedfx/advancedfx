@@ -1,3 +1,3 @@
 #pragma once
 
-bool Hook_RenderSystemDX11(void * hModule);
+void Hook_RenderSystemDX11(void * hModule);

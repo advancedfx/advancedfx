@@ -5,6 +5,7 @@
 #include "CampathDrawer.h"
 
 #include "../shared/AfxDetours.h"
+#include "../shared/binutils.h"
 
 #include <d3d11.h>
 
@@ -100,7 +101,6 @@ void STDMETHODCALLTYPE New_ClearDepthStencilView( ID3D11DeviceContext * This,
     )) {
         g_iDraw = 3;
         g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
-        g_CampathDrawer.OnRenderThread_Present();
     }
 
     g_Old_ClearDepthStencilView(This, pDepthStencilView, ClearFlags, Depth, Stencil);
@@ -171,7 +171,6 @@ void STDMETHODCALLTYPE New_ResolveSubresource( ID3D11DeviceContext * This,
     if(This == g_pImmediateContext && g_iDraw == 2 &&  pSrcResource == g_pCurrentRenderTargetViewResource) {
         g_iDraw = 3;
         g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);        
-        g_CampathDrawer.OnRenderThread_Present();
     }     
 
     g_Old_ResolveSubresource(This, pDstResource, DstSubresource, pSrcResource, SrcSubresource, Format);
@@ -210,7 +209,6 @@ void STDMETHODCALLTYPE New_OMSetRenderTargets( ID3D11DeviceContext * This,
         else if (g_iDraw == 2 && pDepthStencilView && pDepthStencilView != g_pCurrentDepthStencilView && ppRenderTargetViews && ppRenderTargetViews[0]) {
             g_iDraw = 3;
             g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
-            g_CampathDrawer.OnRenderThread_Present();
         }
     }
     
@@ -323,24 +321,22 @@ HRESULT WINAPI New_D3D11CreateDevice(
     return result;
 }
 
-typedef HRESULT (STDMETHODCALLTYPE * Present_t)( ID3D11DeviceContext * This,
+typedef HRESULT (STDMETHODCALLTYPE * Present_t)( void * This,
             /* [in] */ UINT SyncInterval,
             /* [in] */ UINT Flags);
 
 Present_t g_OldPresent = nullptr;
 
-HRESULT STDMETHODCALLTYPE New_Present( ID3D11DeviceContext * This,
+HRESULT STDMETHODCALLTYPE New_Present( void * This,
             /* [in] */ UINT SyncInterval,
             /* [in] */ UINT Flags) {
     
-    if (This == g_pImmediateContext) {
-        if (g_iDraw == 2) {
-            g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
-        }
-        if (g_iDraw <= 2) {
-            g_CampathDrawer.OnRenderThread_Present();
-        }
+    if (g_iDraw == 2) {
+        g_iDraw = 3;
+        g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
     }
+    g_CampathDrawer.OnRenderThread_Present();
+
     HRESULT result = g_OldPresent(This, SyncInterval, Flags);
 
     g_ClearCount = 0;
@@ -404,12 +400,30 @@ HRESULT WINAPI New_CreateDXGIFactory(REFIID riid, _COM_Outptr_ void **ppFactory)
     return result;
 }
 
+typedef bool (__fastcall * CRenderDeviceBase_Present_t)(
+    void * This, void * Rdx, void * R8d);
+
+CRenderDeviceBase_Present_t g_Old_CRenderDeviceBase_Present = nullptr;
+
+ bool __fastcall New_CRenderDeviceBase_Present(
+    void * This, void * Rdx, void * R8) {
+    
+    g_CampathDrawer.OnEngineThread_EndFrame();
+
+    bool result = g_Old_CRenderDeviceBase_Present(This, Rdx, R8);
+
+    return result;
+}
+
 CAfxImportsHook g_Import_rendersystemdx11(CAfxImportsHooks({
 	&g_Import_rendersystemdx11_dxgi
     }));
 
-bool Hook_RenderSystemDX11(void * hModule) {
-    static bool firstResult = false;
+#define STRINGIZE(x) STRINGIZE2(x)
+#define STRINGIZE2(x) #x
+#define MkErrStr(file,line) "Problem in " file ":" STRINGIZE(line)
+
+void Hook_RenderSystemDX11(void * hModule) {
     static bool firstRun = true;
 
     if(firstRun) {
@@ -423,12 +437,30 @@ bool Hook_RenderSystemDX11(void * hModule) {
                     DetourUpdateThread(GetCurrentThread());
                     DetourAttach(&(PVOID&)g_Old_D3D11CreateDevice, New_D3D11CreateDevice);
                     if(NO_ERROR == DetourTransactionCommit()) {
-                        firstResult = true;
                     } else ErrorBox("Failed to hook D3D11CreateDevice.");
                 } else ErrorBox("Failed to get D3D11CreateDevice address.");
             } else ErrorBox("Failed to get d3d11.dll module handle.");
         } else ErrorBox("Failed rendersystemdx11 import hooks.");
+
+        Afx::BinUtils::MemRange textRange = Afx::BinUtils::MemRange::FromEmpty();
+        Afx::BinUtils::MemRange dataRange = Afx::BinUtils::MemRange::FromEmpty();
+        {
+            Afx::BinUtils::ImageSectionsReader sections((HMODULE)hModule);
+            if(!sections.Eof()) {
+                textRange = sections.GetMemRange();
+                sections.Next();
+                if(!sections.Eof()){
+                    dataRange = sections.GetMemRange();
+                }
+            }
+        }
+
+        // CRenderDeviceBase::Present
+        //
+        // Function jmps into a function that references string "CRenderDeviceBase::Present(640):".
+        if(void ** vtable = (void**)Afx::BinUtils::FindClassVtable((HMODULE)hModule,".?AVCRenderDeviceDx11@@", 0, 0x0)) {
+            AfxDetourPtr(&(vtable[16]),New_CRenderDeviceBase_Present,(PVOID*)&g_Old_CRenderDeviceBase_Present);
+        } else ErrorBox(MkErrStr(__FILE__, __LINE__));	              
     }
 
-    return firstResult;
 }

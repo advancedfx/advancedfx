@@ -1319,9 +1319,6 @@ void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameSta
 	case SOURCESDK::CS2::FRAME_RENDER_START:
 		g_CommandSystem.OnExecuteCommands();
 		break;
-	case SOURCESDK::CS2::FRAME_RENDER_END:
-		g_CampathDrawer.OnEngineThread_EndFrame();
-		break;
 	}
 
 	old_CS2_Client_FrameStageNotify(This, curStage);

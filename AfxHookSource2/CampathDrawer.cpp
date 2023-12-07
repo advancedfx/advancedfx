@@ -775,29 +775,33 @@ void CCampathDrawer::OnEngineThread_SetupViewDone() {
 		return;
 	{
 		std::unique_lock<std::mutex> lock(m_FunctorMutex);
-		if(m_Functors.empty() || nullptr == *m_Functors.rbegin()) {
-			m_Functors.emplace_back(new CCampathDrawerFunctor(this));
+		if(!m_Functors.empty()) {
+			auto it = m_Functors.rbegin();
+			CMaterialSystemFunctor* pFunctor = *it;
+			if(pFunctor) {
+				delete pFunctor;
+				std::advance(it, 1);
+				m_Functors.erase(it.base());
+			}
 		}
+		m_Functors.emplace_back(new CCampathDrawerFunctor(this));
 	}
 }
 
 void CCampathDrawer::OnEngineThread_EndFrame() {
-	{
-		std::unique_lock<std::mutex> lock(m_FunctorMutex);
-		m_Functors.emplace_back(nullptr);
-	}
+	std::unique_lock<std::mutex> lock(m_FunctorMutex);
+	m_Functors.emplace_back(nullptr);
 }
 
 void CCampathDrawer::OnRenderThread_Draw(ID3D11DeviceContext * pImmediateContext, const D3D11_VIEWPORT * pViewPort, ID3D11RenderTargetView * pRenderTargetView2, ID3D11DepthStencilView * pDepthStencilView2) {
 	CMaterialSystemFunctor* pFunctor = nullptr;		
 	{
 		std::unique_lock<std::mutex> lock(m_FunctorMutex);
-		while(!m_Functors.empty()) {
+		if(!m_Functors.empty()) {
 			auto it = m_Functors.begin();
 			pFunctor = *it;
-			if(nullptr == pFunctor) {
+			if(nullptr != pFunctor)
 				m_Functors.erase(it);
-			} else break;
 		}
 	}
 
@@ -811,6 +815,7 @@ void CCampathDrawer::OnRenderThread_Draw(ID3D11DeviceContext * pImmediateContext
 		m_Dsv2 = nullptr;
 		m_Rtv2 = nullptr;
 		m_ImmediateContext = nullptr;
+		delete pFunctor;
 	}
 }
 
@@ -826,6 +831,7 @@ void CCampathDrawer::OnRenderThread_Present() {
 				m_Functors.erase(it);
 			} else {
 				m_Functors.erase(it);
+				if(m_Functors.size() <= 128) break;
 			}
 		}
 	}	
