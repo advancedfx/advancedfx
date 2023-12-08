@@ -279,7 +279,7 @@ HRESULT WINAPI New_D3D11CreateDevice(
     ID3D11DeviceContext **ppImmediateContext
     ) {
 #ifdef _DEBUG
-    Flags = Flags | D3D11_CREATE_DEVICE_DEBUG;
+    //Flags = Flags | D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
     HRESULT result = g_Old_D3D11CreateDevice(

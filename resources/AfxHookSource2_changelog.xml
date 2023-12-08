@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.7.2</version>
+<time>2023-12-08T10:58Z</time>
+<changes>
+<change type="fixed">Fixes #890 Flickering with mirv_campath draw in CS2 at high FPS.</change>
+<change type="fixed">Fixes #887 CS2: mirv_ commands do not work randomly.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.7.1</version>
 <time>2023-12-05T11:20Z</time>
 <changes>
