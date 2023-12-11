@@ -19,7 +19,7 @@
     <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
 
-	<MajorUpgrade Schedule="afterInstallInitialize" DowngradeErrorMessage="!(loc.DowngradeErrorMessage)" />
+	<MajorUpgrade Schedule="afterInstallExecuteAgain" DowngradeErrorMessage="!(loc.DowngradeErrorMessage)" />
 
 	<MediaTemplate EmbedCab="yes" />
        
@@ -33,13 +33,17 @@
     <WixVariable Id="WixUISupportPerUser" Value="0" />
     
     <Property Id="WIXUI_INSTALLDIR" Value="APPLICATIONFOLDER" />
+	
+	<Property Id="FFMPEG_WASINSTALLED" Value="1" Secure="yes">
+		<ComponentSearch Id='FFMPEG_WASINSTALLED_comp' Guid='{2D1C78F6-D5B5-499E-B596-47429893F8A8}' Type='directory' />
+	</Property>
     
     <Property Id="FFMPEG_REINSTALL" Value="1" Secure="yes" />
     <Property Id="_FFMPEG_REINSTALL" Value="#1">
       <RegistrySearch Id="FFMPEG_REINSTALL_reg" Type="raw" Root="HKLM" Key="Software\advancedfx\HLAE\FFMPEG" Name="reinstall"  />
     </Property>
-    <SetProperty Sequence="first" Action="SetFFMPEG_REINSTALL_1" Id="FFMPEG_REINSTALL" After="AppSearch" Value="1"><![CDATA[_FFMPEG_REINSTALL = "#1" OR INSTALL AND NOT REINSTALL OR WIX_UPGRADE_DETECTED ]]></SetProperty>
-    <SetProperty Sequence="first" Action="SetFFMPEG_REINSTALL_0" Id="FFMPEG_REINSTALL" After="AppSearch" Value="{}"><![CDATA[NOT (_FFMPEG_REINSTALL = "#1" OR INSTALL AND NOT REINSTALL OR WIX_UPGRADE_DETECTED )]]></SetProperty>
+    <SetProperty Sequence="first" Action="SetFFMPEG_REINSTALL_1" Id="FFMPEG_REINSTALL" After="AppSearch" Value="1"><![CDATA[_FFMPEG_REINSTALL = "#1" OR NOT(FFMPEG_WASINSTALLED)]]></SetProperty>
+    <SetProperty Sequence="first" Action="SetFFMPEG_REINSTALL_0" Id="FFMPEG_REINSTALL" After="AppSearch" Value="{}"><![CDATA[NOT (_FFMPEG_REINSTALL = "#1" OR NOT(FFMPEG_WASINSTALLED))]]></SetProperty>
 
     <Property Id="FFMPEG_VERSION" Value="latest-win64-static" Secure="yes" />
     <Property Id="_FFMPEG_VERSION" Value="latest-win64-static">
@@ -96,7 +100,7 @@
       <Error Id="25001">!(loc.AppFolderMustBeLatin)</Error>
 	  
 		<InstallUISequence>
-			<Show Dialog="FfmpegDlg" Before="ProgressDlg">Installed AND (RESUME OR Preselected) AND ?Ffmpeg=3</Show>
+			<Show Dialog="FfmpegDlg" Before="ProgressDlg"><![CDATA[Installed AND (RESUME OR Preselected) AND (?Ffmpeg=3 AND $Ffmpeg <> 2 OR $Ffmpeg=3)]]></Show>
 		</InstallUISequence>
     </UI>
     
@@ -132,14 +136,11 @@
     <InstallExecuteSequence>
       <Custom Action="ValidateAppFolderIsLatinAction" Before="CostFinalize">1</Custom>
 
-      <Custom Action="FfmpegRollbackAction" Before="FfmpegUninstallAction"><![CDATA[ $Ffmpeg = 3 AND NOT Installed ]]></Custom>
-      
-      <Custom Action="FfmpegUninstallAction" Before="RemoveFiles"><![CDATA[?Ffmpeg<>2 AND $Ffmpeg=2 OR $Ffmpeg=3 AND FFMPEG_REINSTALL]]></Custom>
-
-      <Custom Action="FfmpegCreateDirectory" Before="InstallFfmpegPrepareAction"><![CDATA[$Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3]]></Custom>
-      <Custom Action="InstallFfmpegPrepareAction" Before="InstallFfmpegAction"><![CDATA[($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3) AND FFMPEG_REINSTALL AND FFMPEG_VERSION <> "custom"]]></Custom>
-      <Custom Action="InstallFfmpegAction" After="InstallFiles"><![CDATA[($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3) AND FFMPEG_REINSTALL AND FFMPEG_VERSION <> "custom"]]></Custom>
-      <Custom Action="FinalizeFfmpegInstallAction" After="InstallFfmpegAction"><![CDATA[$Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3]]></Custom>
+      <Custom Action="FfmpegRemoveAction" Before="RemoveFiles"><![CDATA[FFMPEG_WASINSTALLED AND $Ffmpeg=2 OR FFMPEG_WASINSTALLED AND $Ffmpeg<>2 AND FFMPEG_REINSTALL]]></Custom>
+      <Custom Action="FfmpegCreateDirectory" Before="InstallFfmpegPrepareAction"><![CDATA[FFMPEG_WASINSTALLED AND $Ffmpeg<>2 AND FFMPEG_REINSTALL OR NOT(FFMPEG_WASINSTALLED) AND $Ffmpeg=3]]></Custom>
+      <Custom Action="InstallFfmpegPrepareAction" Before="InstallFfmpegAction"><![CDATA[(FFMPEG_WASINSTALLED AND $Ffmpeg<>2 AND FFMPEG_REINSTALL OR NOT(FFMPEG_WASINSTALLED) AND $Ffmpeg=3) AND FFMPEG_VERSION <> "custom"]]></Custom>
+      <Custom Action="InstallFfmpegAction" After="InstallFiles"><![CDATA[(FFMPEG_WASINSTALLED AND $Ffmpeg<>2 AND FFMPEG_REINSTALL OR NOT(FFMPEG_WASINSTALLED) AND $Ffmpeg=3) AND FFMPEG_VERSION <> "custom"]]></Custom>
+      <Custom Action="FinalizeFfmpegInstallAction" After="InstallFfmpegAction"><![CDATA[$Ffmpeg=3 OR FFMPEG_REINSTALL AND $Ffmpeg<>2]]></Custom>
     </InstallExecuteSequence>
   </Product>
 
@@ -164,12 +165,10 @@
     
     <SetProperty Action="SetFinalizeFfmpegInstallAction" Id="FinalizeFfmpegInstallAction" Value="FFMPEG_REINSTALL=[FFMPEG_REINSTALL];FFMPEG_VERSION=[FFMPEG_VERSION];FFMPEG_CUSTOM=[FFMPEG_CUSTOM];AFX_FFMPEGFOLDER=[_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg]" Before="FinalizeFfmpegInstallAction" Sequence="execute" />
     <CustomAction Id='FinalizeFfmpegInstallAction' BinaryKey='HlaeCoreExtension' DllEntry='FinalizeFfmpegInstall' Execute='deferred' Impersonate='no' Return='check'/>
-
-    <SetProperty Action="SetFfmpegRollbackAction" Id="FfmpegRollbackAction" Value="AFX_REMOVEFOLDER=[_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg]" Before="FfmpegRollbackAction" Sequence="execute" />
-    <CustomAction Id='FfmpegRollbackAction' BinaryKey='HlaeCoreExtension' DllEntry='RemoveFolder' Execute='rollback' Impersonate='no' Return='check'/>    
-    
-    <SetProperty Action="SetFfmpegUninstallAction" Id="FfmpegUninstallAction" Value="AFX_REMOVEFOLDER=[_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg]" Before="FfmpegUninstallAction" Sequence="execute" />
-    <CustomAction Id='FfmpegUninstallAction' BinaryKey='HlaeCoreExtension' DllEntry='RemoveFolder' Execute='deferred' Impersonate='no' Return='check'/>
+   
+    <SetProperty Action="SetFfmpegRemoveAction" Id="FfmpegRemoveAction" Value="AFX_REMOVEFOLDER=[_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg]" Before="FfmpegRemoveAction" Sequence="execute" />
+    <CustomAction Id='FfmpegRemoveAction' BinaryKey='HlaeCoreExtension' DllEntry='RemoveFolder' Execute='deferred' Impersonate='no' Return='check'/>
+	
 </Fragment>
 
   <Fragment>

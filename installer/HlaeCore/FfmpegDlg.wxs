@@ -5,8 +5,8 @@
       <Dialog Id="FfmpegDlg" Width="370" Height="270" Title="!(loc.FfmpegTitle)">
         
         <Control Id="FfmepgReinstallCheck" Type="CheckBox" X="6" Y="52" Width="358" Height="16" Text="!(loc.FfmpegDlgReinstall)" Property="FFMPEG_REINSTALL" CheckBoxValue="1" Disabled="yes">
-          <Condition Action="enable"><![CDATA[NOT WIX_UPGRADE_DETECTED  AND ($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3)]]></Condition>
-          <Condition Action="disable"><![CDATA[WIX_UPGRADE_DETECTED OR NOT($Ffmpeg=3 OR $Ffmpeg<>2 AND ?Ffmpeg=3)]]></Condition>
+          <Condition Action="enable"><![CDATA[FFMPEG_WASINSTALLED]]></Condition>
+          <Condition Action="disable"><![CDATA[NOT(FFMPEG_WASINSTALLED)]]></Condition>
         </Control>
 
         <Control Id="FfmpegVersionText" Type="Text" X="6" Y="74" Width="358" Height="12" Text="!(loc.FfmpegDlgVersion)" Disabled="no" Hidden="no">
