@@ -325,10 +325,8 @@ MirvInput::MirvInput(IMirvInputDependencies * dependencies)
 , m_CamFovI(0.0)
 , m_CamPitch(0.0)
 , m_CamPitchI(0.0)
-, m_CamPitchM(0.0)
 , m_CamYaw(0.0)
 , m_CamYawI(0.0)
-, m_CamYawM(0.0)
 , m_CamRoll(0.0)
 , m_CamRollI(0.0)
 , m_CamSpeed(1.0)
@@ -364,8 +362,6 @@ MirvInput::MirvInput(IMirvInputDependencies * dependencies)
 , m_MouseRightSpeed(320.0)
 , m_MouseFovPositiveSpeed(45.0)
 , m_MouseFovNegativeSpeed(45.0)
-, m_MLDown(false)
-, m_MRDown(false)
 {
 	m_Mem.Connect(this);
 }
@@ -391,27 +387,27 @@ bool MirvInput::GetCamResetView(void)
 
 double MirvInput::GetCamDForward(void)
 {
-	return m_CamSpeed * (m_CamForward -m_CamForwardI);
+	return m_CamSpeed * (m_CamForward -m_CamForwardI +m_MouseInput.GetForward());
 }
 
 double MirvInput::GetCamDLeft(void)
 {
-	return m_CamSpeed * (m_CamLeft -m_CamLeftI);
+	return m_CamSpeed * (m_CamLeft -m_CamLeftI +m_MouseInput.GetLeft());
 }
 
 double MirvInput::GetCamDUp(void)
 {
-	return m_CamSpeed * (m_CamUp -m_CamUpI);
+	return m_CamSpeed * (m_CamUp -m_CamUpI +m_MouseInput.GetUp());
 }
 
 double MirvInput::GetCamDPitch(void)
 {
-	return m_CamSpeed * (m_CamPitch -m_CamPitchI +m_CamPitchM);
+	return m_CamSpeed * (m_CamPitch -m_CamPitchI +m_MouseInput.GetPitch());
 }
 
 double MirvInput::GetCamDYaw(void)
 {
-	return m_CamSpeed * (m_CamYaw -m_CamYawI +m_CamYawM);
+	return m_CamSpeed * (m_CamYaw -m_CamYawI +m_MouseInput.GetYaw());
 }
 
 double MirvInput::GetCamDRoll(void)
@@ -421,7 +417,7 @@ double MirvInput::GetCamDRoll(void)
 
 double MirvInput::GetCamDFov(void)
 {
-	return m_CamSpeed * (m_CamFov -m_CamFovI);
+	return m_CamSpeed * (m_CamFov -m_CamFovI +m_MouseInput.GetFov());
 }
 
 bool MirvInput::GetCameraControlMode(void)
@@ -785,39 +781,44 @@ bool  MirvInput::Supply_MouseEvent(DWORD uMsg, WPARAM & wParam, LPARAM & lParam)
 		case WM_LBUTTONDBLCLK:
 			return true;
 		case WM_LBUTTONDOWN:
-			m_MLDown = true;
+			m_MouseInput.Normal.LeftButtonDown = true;
+			m_MNormalLeftButtonWasDown = true;
 			return true;
 		case WM_LBUTTONUP:
-			m_MLDown = false;
+			m_MouseInput.Normal.LeftButtonDown = false;
 			return true;
 		case WM_RBUTTONDBLCLK:
 			return true;
 		case WM_RBUTTONDOWN:
-			m_MRDown = true;
+			m_MouseInput.Normal.RightButtonDown = true;
+			m_MNormalRightButtonWasDown = false;
 			return true;
 		case WM_RBUTTONUP:
-			m_MRDown = false;
+			m_MouseInput.Normal.RightButtonDown = false;
 			return true;
 		case WM_MOUSEMOVE:
 			if (wParam & MK_LBUTTON)
 			{
-				m_MLDown = true;
+				m_MouseInput.Normal.LeftButtonDown = true;
+				m_MNormalLeftButtonWasDown = true;
 				wParam &= ~(WPARAM)MK_LBUTTON;
+			} else {
+				m_MouseInput.Normal.LeftButtonDown = false;
 			}
 			if (wParam & MK_RBUTTON)
 			{
-				m_MRDown = true;
+				m_MouseInput.Normal.RightButtonDown = true;
+				m_MNormalRightButtonWasDown = true;
 				wParam &= ~(WPARAM)MK_RBUTTON;
+			} else {
+				m_MouseInput.Normal.RightButtonDown = false;
 			}
 			break;
 		case WM_MOUSEWHEEL:
 			{
-				m_MouseFov = true;
-
 				signed short delta = GET_WHEEL_DELTA_WPARAM(wParam);
 
-				if(0 <= delta) m_CamFovI += m_MouseSens * m_MouseFovNegativeSpeed * delta;
-				else m_CamFov += m_MouseSens * m_MouseFovPositiveSpeed * -delta;
+				m_MouseInput.Normal.Fov += m_MouseSens * (0 < delta ? m_MouseFovNegativeSpeed : m_MouseFovPositiveSpeed) * -delta;
 			}
 			return true;
 		}
@@ -826,44 +827,100 @@ bool  MirvInput::Supply_MouseEvent(DWORD uMsg, WPARAM & wParam, LPARAM & lParam)
 	return false;
 }
 
-bool MirvInput::Supply_RawMouseMotion(int dX, int dY)
+UINT MirvInput::Supply_RawInputData(UINT result, _In_ HRAWINPUT hRawInput, _In_ UINT uiCommand, _Out_writes_bytes_to_opt_(*pcbSize, return) LPVOID pData, _Inout_ PUINT pcbSize, _In_ UINT cbSizeHeader)
 {
 	if(!m_Focus)
-		return false;
+		return result;
 
 	if(m_Dependencies->GetSuspendMirvInput())
-		return false;
+		return result;
 
-	if(m_CameraControlMode)
-	{
-		if (!(m_MMove && (m_MLDown || m_MRDown)))
+	if(-1 != result && nullptr != hRawInput && uiCommand == RID_INPUT && sizeof(RAWINPUTHEADER) <= cbSizeHeader && pData && pcbSize && sizeof(RAWINPUT) <= *pcbSize) {
+
+		RAWMOUSE * rawmouse = &(((RAWINPUT *)pData)->data.mouse);
+		int dX = 0;
+		int dY = 0;
+		int wheelDelta = 0;
+
+		if((rawmouse->usFlags & 0x01) == MOUSE_MOVE_RELATIVE)
 		{
-			m_CamYawM += m_MouseSens * m_MouseYawSpeed * -dX;
-			m_CamPitchM += m_MouseSens * m_MousePitchSpeed * dY;
+			dX = rawmouse->lLastX;
+			dY = rawmouse->lLastY;
+
+			if(m_CameraControlMode) {
+				rawmouse->lLastX = 0;
+				rawmouse->lLastY = 0;
+			}
 		}
 		else
 		{
-			if (0 <= dX) m_CamLeftI += m_MouseSens * m_MouseRightSpeed * dX;
-			else m_CamLeft += m_MouseSens * m_MouseLeftSpeed * - dX;
+			static bool initial = true;
+			static LONG lastX = 0;
+			static LONG lastY = 0;
 
-			if (m_MLDown)
+			if(initial)
 			{
-				m_MLWasDown = true;
-				if (0 <= dY) m_CamForwardI += m_MouseSens * m_MouseBackwardSpeed * dY;
-				else m_CamForward += m_MouseSens * m_MouseForwardSpeed * -dY;
+				initial = false;
+				lastX = rawmouse->lLastX;
+				lastY = rawmouse->lLastY;
 			}
-			if (m_MRDown)
-			{
-				m_MRWasDown = true;
-				if (0 <= dY) m_CamUpI += m_MouseSens * m_MouseDownSpeed * dY;
-				else m_CamUp += m_MouseSens * m_MouseUpSpeed * -dY;
+
+			dX = rawmouse->lLastX -lastX;
+			dY = rawmouse->lLastY -lastY;
+
+			lastX = rawmouse->lLastX;
+			lastY = rawmouse->lLastY;
+
+			if(m_CameraControlMode) {
+				rawmouse->lLastX -= dX;
+				rawmouse->lLastY -= dY;
 			}
 		}
 
-		return true;
+		m_MouseInput.Raw.LeftButtonDown = m_MouseInput.Raw.LeftButtonDown || (rawmouse->usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN);
+		m_MouseInput.Raw.RightButtonDown = m_MouseInput.Raw.RightButtonDown || (rawmouse->usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN);
+		
+
+		if(m_CameraControlMode) {
+			if (!(m_MMove && (m_MouseInput.Raw.LeftButtonDown || m_MouseInput.Raw.RightButtonDown)))
+			{
+				m_MouseInput.Raw.Yaw += m_MouseSens * m_MouseYawSpeed * -dX;
+				m_MouseInput.Raw.Pitch += m_MouseSens * m_MousePitchSpeed * dY;
+			}
+			else
+			{
+				m_MouseInput.Raw.Left += m_MouseSens * (dX < 0 ? m_MouseLeftSpeed : m_MouseRightSpeed) * -dX;
+
+				if (m_MouseInput.Raw.LeftButtonDown)
+				{
+					m_MouseInput.Raw.Forward +=  m_MouseSens * (dY < 0 ? m_MouseForwardSpeed : m_MouseBackwardSpeed) * -dY;
+				}
+				if (m_MouseInput.Raw.RightButtonDown)
+				{
+					m_MouseInput.Raw.Up += m_MouseSens * (dY < 0 ? m_MouseUpSpeed : m_MouseDownSpeed) * -dY;
+				}
+			}
+
+			if(m_MMove) {
+				if(rawmouse->usButtonFlags & RI_MOUSE_HWHEEL) {
+					float delta = (float)(short)rawmouse->usButtonData;
+					m_MouseInput.Raw.Fov = m_MouseSens * (0 < delta ? m_MouseFovNegativeSpeed : m_MouseFovPositiveSpeed) * -delta;
+					rawmouse->usButtonData = 0;
+				}
+			}
+		}
+
+		if(rawmouse->usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP) m_MouseInput.Raw.LeftButtonDown = false;
+		if(rawmouse->usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP) m_MouseInput.Raw.RightButtonDown = false;
+
+		if(m_CameraControlMode && m_MMove) {
+			rawmouse->usButtonFlags &= ~(USHORT)(RI_MOUSE_LEFT_BUTTON_DOWN|RI_MOUSE_RIGHT_BUTTON_DOWN|RI_MOUSE_LEFT_BUTTON_UP|RI_MOUSE_RIGHT_BUTTON_UP|RI_MOUSE_HWHEEL);
+		}
+
+		return result;
 	}
 
-	return false;
+	return result;
 }
 
 void MirvInput::Supply_GetCursorPos(LPPOINT lpPoint)
@@ -882,23 +939,38 @@ void MirvInput::Supply_GetCursorPos(LPPOINT lpPoint)
 		if(m_FirstGetCursorPos)
 		{
 			m_FirstGetCursorPos = false;
-
-			// Clear anything from raw input, since we override it with CursorPos method:
-			m_CamYawM = 0.0;
-			m_CamPitchM = 0.0;
 		}
 
 		// this will not work correctly if there was no SetCursorPos call prior to this call:
 		LONG dX = lpPoint->x -m_LastCursorX;
 		LONG dY = lpPoint->y -m_LastCursorY;
 
-		m_CamYawM += m_MouseSens * m_MouseYawSpeed * -dX;
-		m_CamPitchM += m_MouseSens * m_MousePitchSpeed * dY;
+		if (!(m_MMove && (m_MNormalLeftButtonWasDown || m_MouseInput.Normal.RightButtonDown)))
+		{
+			m_MouseInput.Normal.Yaw += m_MouseSens * m_MouseYawSpeed * -dX;
+			m_MouseInput.Normal.Pitch += m_MouseSens * m_MousePitchSpeed * dY;
+		}
+		else
+		{
+			m_MouseInput.Normal.Left += m_MouseSens * (dX < 0 ? m_MouseLeftSpeed : m_MouseRightSpeed) * -dX;
+
+			if (m_MNormalLeftButtonWasDown)
+			{
+				m_MouseInput.Normal.Forward +=  m_MouseSens * (dY < 0 ? m_MouseForwardSpeed : m_MouseBackwardSpeed) * -dY;
+			}
+			if (m_MNormalRightButtonWasDown)
+			{
+				m_MouseInput.Normal.Up += m_MouseSens * (dY < 0 ? m_MouseUpSpeed : m_MouseDownSpeed) * -dY;
+			}
+		}
 
 		// pretend we didn't move from last SetCursorPos call:
 		lpPoint->x = m_LastCursorX;
 		lpPoint->y = m_LastCursorY;
 	}
+
+	m_MNormalLeftButtonWasDown = m_MouseInput.Normal.LeftButtonDown;
+	m_MNormalRightButtonWasDown = m_MouseInput.Normal.RightButtonDown;		
 }
 
 void MirvInput::Supply_SetCursorPos(int x, int y)
@@ -926,37 +998,12 @@ void MirvInput::Supply_MouseFrameEnd(void)
 			SetCursorPos(m_LastCursorX, m_LastCursorY);
 		}
 
-		m_CamYawM = 0.0;
-		m_CamPitchM = 0.0;
 		m_FirstGetCursorPos = true;
-
-		if (m_MLWasDown || m_MRWasDown)
-		{
-			m_CamLeft = 0.0;
-			m_CamLeftI = 0.0;
-
-			if (m_MLWasDown)
-			{
-				m_MLWasDown = false;
-				m_CamForward = 0.0;
-				m_CamForwardI = 0.0;
-			}
-
-			if (m_MRWasDown)
-			{
-				m_MRWasDown = false;
-				m_CamUp = 0.0;
-				m_CamUpI = 0.0;
-			}
-		}
-
-		if (m_MouseFov)
-		{
-			m_MouseFov = false;
-			m_CamFov = 0.0;
-			m_CamFovI = 0.0;
-		}
 	}
+
+	m_MouseInput.Clear();
+	m_MNormalLeftButtonWasDown = m_MouseInput.Normal.LeftButtonDown;
+	m_MNormalRightButtonWasDown = m_MouseInput.Normal.RightButtonDown;	
 }
 
 void MirvInput::Supply_Focus(bool hasFocus)

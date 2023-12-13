@@ -25,6 +25,7 @@
 #include "hw/R_RenderView.h"
 #include "hw/UnkDrawHud.h"
 #include "client/HookClient.h"
+#include "mirv_input.h"
 
 #include "svdll/Server_GetBlendingInterface.h"
 #include "svdll/GiveFnptrsToDll.h"
@@ -35,6 +36,8 @@
 #endif // AFX_GUI
 
 #include <shared/AfxConsole.h>
+#include <shared/MirvInput.h>
+#include <shared/ConsolePrinter.h>
 
 #include <Windows.h>
 #include <deps/release/Detours/src/detours.h>
@@ -43,27 +46,32 @@ struct cl_enginefuncs_s * pEngfuncs		= (struct cl_enginefuncs_s *)0;
 struct engine_studio_api_s * pEngStudio	= (struct engine_studio_api_s *)0;
 struct playermove_s * ppmove			= (struct playermove_s *)0;
 
-void Mirv_Msg(const char* format, ...)
-{
-	char buffer[1024];
+
+class CConsolePrint_Message : public IConsolePrint {
+public:
+	virtual void Print(const char * text) {
+		pEngfuncs->Con_Printf(const_cast<char*>(text));
+	}
+};
+
+CConsolePrinter * g_ConsolePrinter = nullptr;
+
+void Mirv_Msg(const char* fmt, ...) {
+	CConsolePrint_Message consolePrint;
 	va_list args;
-	va_start(args, format);
-	vsprintf_s(buffer, format, args);
-	pEngfuncs->Con_Printf("%s", buffer);
+	va_start(args, fmt);
+	g_ConsolePrinter->Print(&consolePrint, fmt, args);
 	va_end(args);
 }
 
-void Mirv_DevMsg(int level, const char* format, ...)
-{
-	if (level <= pEngfuncs->pfnGetCvarFloat("developer"))
-	{
-		char buffer[1024];
-		va_list args;
-		va_start(args, format);
-		vsprintf_s(buffer, format, args);
-		pEngfuncs->Con_Printf("%s", buffer);
-		va_end(args);
+void Mirv_DevMsg(int level, const char* fmt, ...) {
+	CConsolePrint_Message consolePrint;
+	va_list args;
+	va_start(args, fmt);
+	if(level <= pEngfuncs->pfnGetCvarFloat("developer")) {
+		g_ConsolePrinter->Print(&consolePrint, fmt, args);
 	}
+	va_end(args);
 }
 
 FARPROC WINAPI NewSdlGetProcAddress(HMODULE hModule, LPCSTR lpProcName);
@@ -284,12 +292,36 @@ CAfxImportsHook g_Import_hw(CAfxImportsHooks({
 CAfxImportDllHook g_Import_sdl2_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
 	&g_Import_sdl2_KERNEL32_GetProcAddress }));
 
+
+UINT WINAPI New_GetRawInputData(
+    _In_ HRAWINPUT hRawInput,
+    _In_ UINT uiCommand,
+    _Out_writes_bytes_to_opt_(*pcbSize, return) LPVOID pData,
+    _Inout_ PUINT pcbSize,
+    _In_ UINT cbSizeHeader);
+
+CAfxImportFuncHook<UINT(WINAPI*)(_In_ HRAWINPUT, _In_ UINT, _Out_writes_bytes_to_opt_(*pcbSize, return) LPVOID pData,_Inout_ PUINT,_In_ UINT)> g_Import_SDL2_USER32_GetRawInputData("GetRawInputData", &New_GetRawInputData);
+
+UINT WINAPI New_GetRawInputData(
+    _In_ HRAWINPUT hRawInput,
+    _In_ UINT uiCommand,
+    _Out_writes_bytes_to_opt_(*pcbSize, return) LPVOID pData,
+    _Inout_ PUINT pcbSize,
+    _In_ UINT cbSizeHeader) {
+
+	UINT result = g_Import_SDL2_USER32_GetRawInputData.GetTrueFuncValue()(hRawInput,uiCommand,pData,pcbSize,cbSizeHeader);
+
+	result = MirvInput_Get()->Supply_RawInputData(result, hRawInput, uiCommand,pData,pcbSize,cbSizeHeader);
+
+	return result;
+}	
+
 CAfxImportDllHook g_Import_sdl2_USER32("USER32.dll", CAfxImportDllHooks({
 	Get_Import_USER32_CreateWindowExW(),
 	Get_Import_USER32_DestroyWindow(),
 	Get_Import_USER32_GetCursorPos(),
-	Get_Import_USER32_SetCursorPos()
-	}));
+	Get_Import_USER32_SetCursorPos(),
+	&g_Import_SDL2_USER32_GetRawInputData}));
 
 CAfxImportDllHook g_Import_sdl2_GDI32("GDI32.dll", CAfxImportDllHooks({
 	Get_Import_GDI32_SetPixelFormat(),

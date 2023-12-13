@@ -2121,50 +2121,7 @@ LRESULT CALLBACK new_Afx_WindowProc(
 	case WM_MOUSEWHEEL:
 		if (g_Hook_VClient_RenderView.m_MirvInput->Supply_MouseEvent(uMsg, wParam, lParam))
 			return 0;
-		break;
-	case WM_INPUT:
-		{
-			HRAWINPUT hRawInput = (HRAWINPUT)lParam;
-			RAWINPUT inp;
-			UINT size = sizeof(inp);
-
-			UINT getRawInputResult = GetRawInputData(hRawInput, RID_INPUT, &inp, &size, sizeof(RAWINPUTHEADER));
-
-			if(-1 != getRawInputResult && inp.header.dwType == RIM_TYPEMOUSE)
-			{
-				RAWMOUSE * rawmouse = &inp.data.mouse;
-				LONG dX, dY;
-
-				if((rawmouse->usFlags & 0x01) == MOUSE_MOVE_RELATIVE)
-				{
-					dX = rawmouse->lLastX;
-					dY = rawmouse->lLastY;
-				}
-				else
-				{
-					static bool initial = true;
-					static LONG lastX = 0;
-					static LONG lastY = 0;
-
-					if(initial)
-					{
-						initial = false;
-						lastX = rawmouse->lLastX;
-						lastY = rawmouse->lLastY;
-					}
-
-					dX = rawmouse->lLastX -lastX;
-					dY = rawmouse->lLastY -lastY;
-
-					lastX = rawmouse->lLastX;
-					lastY = rawmouse->lLastY;
-				}
-
-				if (g_Hook_VClient_RenderView.m_MirvInput->Supply_RawMouseMotion(dX, dY))
-					return DefWindowProcW(hwnd, uMsg, wParam, lParam);
-			}
-		}
-		break;
+		break;	
 	}
 	return CallWindowProcW(g_NextWindProc, hwnd, uMsg, wParam, lParam);
 }
@@ -2675,6 +2632,36 @@ CAfxImportFuncHook<BOOL(WINAPI*)()> g_Import_inputsystem_USER32_ReleaseCapture("
 CAfxImportFuncHook<BOOL(WINAPI*)(LPPOINT)> g_Import_inputsystem_USER32_GetCursorPos("GetCursorPos", &new_GetCursorPos); // not there, but heh.
 CAfxImportFuncHook<BOOL(WINAPI*)(int, int)> g_Import_inputsystem_USER32_SetCursorPos("SetCursorPos", &new_SetCursorPos);
 
+typedef UINT (WINAPI * New_GetRawInputData_t)(
+    _In_ HRAWINPUT hRawInput,
+    _In_ UINT uiCommand,
+    _Out_writes_bytes_to_opt_(*pcbSize, return) LPVOID pData,
+    _Inout_ PUINT pcbSize,
+    _In_ UINT cbSizeHeader);
+
+UINT WINAPI New_GetRawInputData(
+    _In_ HRAWINPUT hRawInput,
+    _In_ UINT uiCommand,
+    _Out_writes_bytes_to_opt_(*pcbSize, return) LPVOID pData,
+    _Inout_ PUINT pcbSize,
+    _In_ UINT cbSizeHeader);
+
+CAfxImportFuncHook<New_GetRawInputData_t> g_Import_inputsystem_USER32_GetRawInputData("GetRawInputData", &New_GetRawInputData);
+
+UINT WINAPI New_GetRawInputData(
+    _In_ HRAWINPUT hRawInput,
+    _In_ UINT uiCommand,
+    _Out_writes_bytes_to_opt_(*pcbSize, return) LPVOID pData,
+    _Inout_ PUINT pcbSize,
+    _In_ UINT cbSizeHeader) {
+
+	UINT result = g_Import_inputsystem_USER32_GetRawInputData.GetTrueFuncValue()(hRawInput,uiCommand,pData,pcbSize,cbSizeHeader);
+
+	result = g_Hook_VClient_RenderView.m_MirvInput->Supply_RawInputData(result, hRawInput, uiCommand,pData,pcbSize,cbSizeHeader);
+
+	return result;
+}
+
 CAfxImportDllHook g_Import_inputsystem_USER32("USER32.dll", CAfxImportDllHooks({
 	&g_Import_inputsystem_USER32_GetWindowLongW,
 	&g_Import_inputsystem_USER32_SetWindowLongW,
@@ -2682,10 +2669,62 @@ CAfxImportDllHook g_Import_inputsystem_USER32("USER32.dll", CAfxImportDllHooks({
 	&g_Import_inputsystem_USER32_SetCapture,
 	&g_Import_inputsystem_USER32_ReleaseCapture,
 	&g_Import_inputsystem_USER32_GetCursorPos,
-	&g_Import_inputsystem_USER32_SetCursorPos }));
+	&g_Import_inputsystem_USER32_SetCursorPos,
+	&g_Import_inputsystem_USER32_GetRawInputData}));
+
+
+FARPROC WINAPI New_inputsystem_GetProcAddress(HMODULE hModule, LPCSTR lpProcName);
+
+CAfxImportFuncHook<FARPROC(WINAPI*)(HMODULE, LPCSTR)> g_Import_inputsystem_KERNEL32_GetProcAddress("GetProcAddress", &New_inputsystem_GetProcAddress);
+
+New_GetRawInputData_t g_Old_New_GetRawInputData2 = nullptr;
+
+UINT WINAPI New_GetRawInputData2(
+    _In_ HRAWINPUT hRawInput,
+    _In_ UINT uiCommand,
+    _Out_writes_bytes_to_opt_(*pcbSize, return) LPVOID pData,
+    _Inout_ PUINT pcbSize,
+    _In_ UINT cbSizeHeader) {
+
+	UINT result = g_Old_New_GetRawInputData2(hRawInput,uiCommand,pData,pcbSize,cbSizeHeader);
+
+	result = g_Hook_VClient_RenderView.m_MirvInput->Supply_RawInputData(result, hRawInput, uiCommand,pData,pcbSize,cbSizeHeader);
+
+	return result;
+}
+
+FARPROC WINAPI New_inputsystem_GetProcAddress(HMODULE hModule, LPCSTR lpProcName)
+{
+	FARPROC nResult;
+	nResult = g_Import_inputsystem_KERNEL32_GetProcAddress.GetTrueFuncValue()(hModule, lpProcName);
+
+	if (!nResult)
+		return nResult;
+
+	if (HIWORD(lpProcName))
+	{
+		if (0 == strcmp(lpProcName, "GetProcAddress"))
+			return (FARPROC) &New_inputsystem_GetProcAddress;
+
+		if (0 == strcmp(lpProcName, "GetRawInputData")) {
+			g_Old_New_GetRawInputData2 = (New_GetRawInputData_t)(SOURCESDK::CreateInterfaceFn)nResult;
+			return (FARPROC) &New_GetRawInputData2;
+		}
+
+	}
+
+	return nResult;
+}
+
+
+
+CAfxImportDllHook g_Import_inputsystem_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
+	&g_Import_engine_KERNEL32_GetProcAddress }));
+
 
 CAfxImportsHook g_Import_inputsystem(CAfxImportsHooks({
-	& g_Import_inputsystem_USER32 }));
+	&g_Import_inputsystem_KERNEL32,
+	&g_Import_inputsystem_USER32 }));
 
 
 CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR)> g_Import_materialsystem_KERNEL32_LoadLibraryA("LoadLibraryA", &new_LoadLibraryA);

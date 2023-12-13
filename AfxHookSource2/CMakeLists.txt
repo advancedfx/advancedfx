@@ -113,6 +113,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/CamPath.h
     ../shared/CommandSystem.cpp
     ../shared/CommandSystem.h
+    ../shared/ConsolePrinter.h
     ../shared/FileTools.cpp
     ../shared/FileTools.h
     ../shared/FovScaling.cpp

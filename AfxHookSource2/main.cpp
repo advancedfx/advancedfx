@@ -16,6 +16,7 @@
 #include "../shared/AfxCommandLine.h"
 #include "../shared/AfxConsole.h"
 #include "../shared/AfxDetours.h"
+#include "../shared/ConsolePrinter.h"
 #include "../shared/StringTools.h"
 #include "../shared/binutils.h"
 #include "../shared/CommandSystem.h"
@@ -304,7 +305,6 @@ CON_COMMAND(mirv_input, "Input mode configuration.")
 	g_MirvInputEx.m_MirvInput->ConCommand(args);
 }
 
-
 WNDPROC g_NextWindProc;
 static bool g_afxWindowProcSet = false;
 
@@ -348,49 +348,6 @@ LRESULT CALLBACK new_Afx_WindowProc(
 	case WM_MOUSEWHEEL:
 		if (g_MirvInputEx.m_MirvInput->Supply_MouseEvent(uMsg, wParam, lParam))
 			return 0;
-		break;
-	case WM_INPUT:
-		{
-			HRAWINPUT hRawInput = (HRAWINPUT)lParam;
-			RAWINPUT inp;
-			UINT size = sizeof(inp);
-
-			UINT getRawInputResult = GetRawInputData(hRawInput, RID_INPUT, &inp, &size, sizeof(RAWINPUTHEADER));
-
-			if(-1 != getRawInputResult && inp.header.dwType == RIM_TYPEMOUSE)
-			{
-				RAWMOUSE * rawmouse = &inp.data.mouse;
-				LONG dX, dY;
-
-				if((rawmouse->usFlags & 0x01) == MOUSE_MOVE_RELATIVE)
-				{
-					dX = rawmouse->lLastX;
-					dY = rawmouse->lLastY;
-				}
-				else
-				{
-					static bool initial = true;
-					static LONG lastX = 0;
-					static LONG lastY = 0;
-
-					if(initial)
-					{
-						initial = false;
-						lastX = rawmouse->lLastX;
-						lastY = rawmouse->lLastY;
-					}
-
-					dX = rawmouse->lLastX -lastX;
-					dY = rawmouse->lLastY -lastY;
-
-					lastX = rawmouse->lLastX;
-					lastY = rawmouse->lLastY;
-				}
-
-				if (g_MirvInputEx.m_MirvInput->Supply_RawMouseMotion(dX, dY))
-					return DefWindowProcW(hwnd, uMsg, wParam, lParam);
-			}
-		}
 		break;
 	}
 	return CallWindowProcW(g_NextWindProc, hwnd, uMsg, wParam, lParam);
@@ -1479,6 +1436,31 @@ CAfxImportFuncHook<BOOL(WINAPI*)()> g_Import_SDL3_USER32_ReleaseCapture("Release
 CAfxImportFuncHook<BOOL(WINAPI*)(LPPOINT)> g_Import_SDL3_USER32_GetCursorPos("GetCursorPos", &new_GetCursorPos);
 CAfxImportFuncHook<BOOL(WINAPI*)(int, int)> g_Import_SDL3_USER32_SetCursorPos("SetCursorPos", &new_SetCursorPos);
 
+
+UINT WINAPI New_GetRawInputData(
+    _In_ HRAWINPUT hRawInput,
+    _In_ UINT uiCommand,
+    _Out_writes_bytes_to_opt_(*pcbSize, return) LPVOID pData,
+    _Inout_ PUINT pcbSize,
+    _In_ UINT cbSizeHeader);
+
+CAfxImportFuncHook<UINT(WINAPI*)(_In_ HRAWINPUT, _In_ UINT, _Out_writes_bytes_to_opt_(*pcbSize, return) LPVOID pData,_Inout_ PUINT,_In_ UINT)> g_Import_SDL3_USER32_GetRawInputData("GetRawInputData", &New_GetRawInputData);
+
+UINT WINAPI New_GetRawInputData(
+    _In_ HRAWINPUT hRawInput,
+    _In_ UINT uiCommand,
+    _Out_writes_bytes_to_opt_(*pcbSize, return) LPVOID pData,
+    _Inout_ PUINT pcbSize,
+    _In_ UINT cbSizeHeader) {
+
+	UINT result = g_Import_SDL3_USER32_GetRawInputData.GetTrueFuncValue()(hRawInput,uiCommand,pData,pcbSize,cbSizeHeader);
+
+	result = g_MirvInputEx.m_MirvInput->Supply_RawInputData(result, hRawInput, uiCommand,pData,pcbSize,cbSizeHeader);
+
+	return result;
+}
+
+
 CAfxImportDllHook g_Import_SDL3_USER32("USER32.dll", CAfxImportDllHooks({
 	&g_Import_SDL3_USER32_GetWindowLongW,
 	&g_Import_SDL3_USER32_SetWindowLongW,
@@ -1486,7 +1468,8 @@ CAfxImportDllHook g_Import_SDL3_USER32("USER32.dll", CAfxImportDllHooks({
 	&g_Import_SDL3_USER32_SetCapture,
 	&g_Import_SDL3_USER32_ReleaseCapture,
 	&g_Import_SDL3_USER32_GetCursorPos,
-	&g_Import_SDL3_USER32_SetCursorPos }));
+	&g_Import_SDL3_USER32_SetCursorPos,
+	&g_Import_SDL3_USER32_GetRawInputData }));
 
 CAfxImportsHook g_Import_SDL3(CAfxImportsHooks({
 	&g_Import_SDL3_USER32 }));
@@ -1532,11 +1515,6 @@ advancedfx::Con_Printf_t Tier0_Warning = nullptr;
 advancedfx::Con_DevPrintf_t Tier0_DevMessage = nullptr;
 advancedfx::Con_DevPrintf_t Tier0_DevWarning = nullptr;
 
-class IConsolePrint {
-public:
-	virtual void Print(const char * text) = 0;
-};
-
 class CConsolePrint_Message : public IConsolePrint {
 public:
 	virtual void Print(const char * text) {
@@ -1577,125 +1555,6 @@ public:
 	}
 private:
 	int m_Level;
-};
-
-class CConsolePrinter {
-public:
-	void Print(IConsolePrint * pConsolePrint, const char* fmt, va_list args) {
-		std::unique_lock<std::mutex> lock(m_Print_Mutex);
-		if(nullptr == m_Print_Memory) {
-			m_Print_Memory = (char *)malloc(sizeof(char)*512);
-			if(nullptr != m_Print_Memory) m_Print_MemorySize = 512;
-			else return;
-		}
-		int chars = vsnprintf(m_Print_Memory,m_Print_MemorySize,fmt,args);
-		if(chars < 0) return;
-		if(chars >= m_Print_MemorySize) {
-			m_Print_Memory = (char *)realloc(m_Print_Memory,sizeof(char)*(chars+1));
-			if(nullptr != m_Print_Memory) m_Print_MemorySize = chars+1;
-			else return;		
-			vsnprintf(m_Print_Memory,m_Print_MemorySize,fmt,args);
-		}
-		char * ptr = m_Print_Memory;
-		for(int i = 0; true; ) {
-			bool bEndReached = false;
-			bool bNewLine = false;
-			size_t length = 1;
-			size_t size = 1;
-			unsigned char lb = ptr[i];
-			if (( lb & 0x80 ) == 0 ) { // lead bit is zero, must be a single ascii
-				switch(lb) {
-				case '\0':
-					length = 0;
-					bEndReached = true;
-					break;
-				case '\n':
-					length = 0;
-					bNewLine = true;
-					break;
-				default:
-					length = 1;
-				}
-			}
-			else if (( lb & 0xE0 ) == 0xC0 ) { // 110x xxxx
-				size = 2;
-			} else if (( lb & 0xF0 ) == 0xE0 ) { // 1110 xxxx
-				size = 3;
-			} else if (( lb & 0xF8 ) == 0xF0 ) { // 1111 0xxx
-				size = 4;
-			} else {
-				// invalid UTF-8 length.
-				ptr[i] = '\0';
-				bEndReached = true;
-			}
-			if(i+size > chars) {
-				// UTF-8 too long / invalid
-				ptr[i] = '\0';
-				bEndReached = true;
-				length = 0;
-				size = 1;
-			} else {
-				for(size_t j=1; j < size; j++) {		
-					if((ptr[i+j] & 0xC0) != 0x8) {
-						// following octets must be 0x10xxxxxx, so  this is invalid.
-						ptr[i] = '\0';
-						bEndReached = true;
-						length = 0;
-						size = 1;
-						break;
-					}
-				}
-			}
-			if(bEndReached) {
-				pConsolePrint->Print(ptr);
-				m_Print_Length += length;
-				break;
-			}
-			bool bSizeLimitReached = i + size >= m_Print_SizeLimit;
-			if(bSizeLimitReached) {
-				char tmp = ptr[i];
-				ptr[i] = '\0';
-				pConsolePrint->Print(ptr);
-				ptr[i] = tmp;
-				ptr = &(ptr[i]);
-				m_Print_Length += length;
-				chars -= i;
-				i = 0;
-				continue;
-			}
-			if(bNewLine) {
-				i += size;
-				m_Print_Length = 0;
-			} else {
-				bool bLineLimitReached = 0 < m_Print_LineLimit && m_Print_Length + length >= m_Print_LineLimit;
-				if(bLineLimitReached) {
-					char tmp = ptr[i];
-					char tmp2 = ptr[i+1];
-					ptr[i] = '\n';
-					ptr[i+1] = '\0';
-					pConsolePrint->Print(ptr);
-					ptr[i] = tmp;
-					ptr[i+1] = tmp2;
-					ptr = &(ptr[i]);
-					m_Print_Length = 0;
-					chars -= i;
-					i = 0;
-					continue;
-				} else {
-					i += size;
-					m_Print_Length += length;
-				}
-			}
-		}
-	}
-
-private:
-	std::mutex m_Print_Mutex;
-	char * m_Print_Memory = nullptr;
-	size_t m_Print_MemorySize = 0;
-	size_t m_Print_Length = 0;
-	size_t m_Print_SizeLimit = 200;
-	size_t m_Print_LineLimit = 240; // There's currently a bug with the CS2 console where it won't show text if there's no line-break after 300 characters.
 };
 
 CConsolePrinter * g_ConsolePrinter = nullptr;

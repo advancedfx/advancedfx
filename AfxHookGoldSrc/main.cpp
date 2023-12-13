@@ -41,6 +41,9 @@
 
 #include "CampathDrawer.h"
 
+#include <shared/ConsolePrinter.h>
+
+extern CConsolePrinter * g_ConsolePrinter;
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 {
@@ -51,6 +54,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 #ifdef _DEBUG
 			MessageBox(0,"DLL_PROCESS_ATTACH","MDT_DEBUG",MB_OK);
 #endif
+			g_ConsolePrinter = new CConsolePrinter();
+
 			HookHl();
 
 			g_CampathDrawer.Begin();
@@ -68,6 +73,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 #ifdef AFX_SCRIPT
 			g_Script_CanConsolePrint = false;
 #endif // AFX_SCRIPT
+
+			delete g_ConsolePrinter;
 
 #ifdef AFX_SCRIPT
 			ScriptEngine_ShutDown();

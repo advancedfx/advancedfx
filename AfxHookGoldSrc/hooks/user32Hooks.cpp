@@ -54,49 +54,6 @@ LRESULT CALLBACK new_Afx_WindowProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lPa
 		if (MirvInput_Get()->Supply_MouseEvent(uMsg, wParam, lParam))
 			return 0;
 		break;
-	case WM_INPUT:
-	{
-		HRAWINPUT hRawInput = (HRAWINPUT)lParam;
-		RAWINPUT inp;
-		UINT size = sizeof(inp);
-
-		UINT getRawInputResult = GetRawInputData(hRawInput, RID_INPUT, &inp, &size, sizeof(RAWINPUTHEADER));
-
-		if (-1 != getRawInputResult && inp.header.dwType == RIM_TYPEMOUSE)
-		{
-			RAWMOUSE* rawmouse = &inp.data.mouse;
-			LONG dX, dY;
-
-			if ((rawmouse->usFlags & 0x01) == MOUSE_MOVE_RELATIVE)
-			{
-				dX = rawmouse->lLastX;
-				dY = rawmouse->lLastY;
-			}
-			else
-			{
-				static bool initial = true;
-				static LONG lastX = 0;
-				static LONG lastY = 0;
-
-				if (initial)
-				{
-					initial = false;
-					lastX = rawmouse->lLastX;
-					lastY = rawmouse->lLastY;
-				}
-
-				dX = rawmouse->lLastX - lastX;
-				dY = rawmouse->lLastY - lastY;
-
-				lastX = rawmouse->lLastX;
-				lastY = rawmouse->lLastY;
-			}
-
-			if (MirvInput_Get()->Supply_RawMouseMotion(dX, dY))
-				return DefWindowProcW(hWnd, uMsg, wParam, lParam);
-		}
-	}
-	break;
 	case WM_MOUSEACTIVATE:
 		if( !g_AfxSettings.FullScreen_get() && !g_GameWindowUndocked && !g_GameWindowActive )
 		{

@@ -40,7 +40,7 @@ public:
 	bool Supply_CharEvent(WPARAM wParam, LPARAM lParam);
 	bool Supply_KeyEvent(KeyState keyState, WPARAM wParam, LPARAM lParam);
 	bool Supply_MouseEvent(DWORD uMsg, WPARAM & wParam, LPARAM & lParam);
-	bool Supply_RawMouseMotion(int dX, int dY);
+	UINT Supply_RawInputData(UINT result, _In_ HRAWINPUT hRawInput, _In_ UINT uiCommand, _Out_writes_bytes_to_opt_(*pcbSize, return) LPVOID pData, _Inout_ PUINT pcbSize, _In_ UINT cbSizeHeader);
 	void Supply_GetCursorPos(LPPOINT lpPoint);
 	void Supply_SetCursorPos(int x, int y);
 	void Supply_MouseFrameEnd(void);
@@ -292,19 +292,72 @@ private:
 	double m_CamFovI;
 	double m_CamPitch;
 	double m_CamPitchI;
-	double m_CamPitchM;
 	double m_CamYaw;
 	double m_CamYawI;
-	double m_CamYawM;
 	double m_CamRoll;
 	double m_CamRollI;
 	double m_CamSpeed;
+
+	struct MouseInput {
+		double Forward = 0;
+		double Left = 0;
+		double Up = 0;
+		double Pitch = 0;
+		double Yaw = 0;
+		double Fov = 0;
+		bool LeftButtonDown = false;
+		bool RightButtonDown = false;
+
+		bool HasInput() {
+			return Forward != 0 || Left != 0 || Up != 0 || Pitch != 0 || Yaw != 0 || Fov != 0;
+		}
+
+		void Clear() {
+			Forward = 0;
+			Left = 0;
+			Up = 0;
+			Pitch = 0;
+			Yaw = 0;
+			Fov = 0;
+		}
+	};
+
+	struct MultiMouseInput {
+		MouseInput Normal;
+		MouseInput Raw;
+
+		double GetForward() {
+			return Raw.HasInput() ? Raw.Forward : Normal.Forward;
+		}
+		double GetLeft() {
+			return Raw.HasInput() ? Raw.Left : Normal.Left;
+		}
+		double GetUp() {
+			return Raw.HasInput() ? Raw.Up : Normal.Up;
+		}
+		double GetPitch() {
+			return Raw.HasInput() ? Raw.Pitch : Normal.Pitch;
+		}
+		double GetYaw() {
+			return Raw.HasInput() ? Raw.Yaw : Normal.Yaw;
+		}
+		double GetFov() {
+			return Raw.HasInput() ? Raw.Fov : Normal.Fov;
+		}
+
+		bool HasInput() {
+			return Normal.HasInput() || Raw.HasInput();
+		}
+
+		void Clear() {
+			Normal.Clear();
+			Raw.Clear();
+		}
+	} m_MouseInput;
+	bool m_MNormalLeftButtonWasDown = false;
+	bool m_MNormalRightButtonWasDown = false;
+
 	bool m_MMove = false;
-	bool m_MLDown;
-	bool m_MLWasDown = false;
-	bool m_MRDown;
-	bool m_MRWasDown = false;
-	bool m_MouseFov = true;
 	bool m_CameraControlMode;
 	bool m_Focus;
 	bool m_IgnoreKeyUp;
