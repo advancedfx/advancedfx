@@ -415,6 +415,8 @@ private:
 
 	// END Smooth feature related
 
+	bool m_RotLocalSpace = false;
+
 	void DoCamSpeedDecrease(void);
 	void DoCamSpeedIncrease(void);
 

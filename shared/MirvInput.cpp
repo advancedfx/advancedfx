@@ -1055,9 +1055,29 @@ bool MirvInput::Override(float deltaT, float & Tx, float &Ty, float & Tz, float 
 		double dFov = dT * GetCamDFov();
 		double forward[3], right[3], up[3];
 
-		Rx = (float)(m_InputRx + dPitch);
-		Ry = (float)(m_InputRy + dYaw);
-		Rz = (float)(m_InputRz + dRoll);
+		if(m_RotLocalSpace) {
+			Afx::Math::Quaternion inputQuat = Afx::Math::Quaternion::FromQREulerAngles(Afx::Math::QREulerAngles::FromQEulerAngles(Afx::Math::QEulerAngles(dPitch, dYaw, dRoll))).Normalized();
+			Afx::Math::Quaternion currentQuat = Afx::Math::Quaternion::FromQREulerAngles(Afx::Math::QREulerAngles::FromQEulerAngles(Afx::Math::QEulerAngles(m_InputRx, m_InputRy, m_InputRz))).Normalized();
+
+			/*
+			// Take shortest path:
+			double dotProduct = Afx::Math::DotProduct(inputQuat, currentQuat);
+			if (dotProduct < 0)
+			{
+				inputQuat = -1.0 * inputQuat;
+			}*/
+
+			Afx::Math::QEulerAngles newAngles = (currentQuat * inputQuat).ToQREulerAngles().ToQEulerAngles();
+
+			Rx = (float)newAngles.Pitch;
+			Ry = (float)newAngles.Yaw;
+			Rz = (float)newAngles.Roll;
+		} else {
+			Rx = (float)(m_InputRx + dPitch);
+			Ry = (float)(m_InputRy + dYaw);
+			Rz = (float)(m_InputRz + dRoll);
+		}
+
 		Fov = (float)(m_InputFov + dFov);
 
 		// limit fov to sane values:
@@ -1762,6 +1782,23 @@ void MirvInput::ConCommand(advancedfx::ICommandArgs * args)
 
 					return;
 				}
+				else if(0 == _stricmp("rotLocalSpace",arg2)) {
+
+					if (4 <= argc)
+					{
+						m_RotLocalSpace = 0 != atoi(args->ArgV(3));
+						return;
+					}
+
+					advancedfx::Message(
+						"%s cfg rotLocalSpace 0|1\n"
+						"Current value: %i\n",
+						arg0,
+						(m_RotLocalSpace ? 1 : 0)
+					);
+
+					return;
+				}
 			}
 
 			advancedfx::Message(
@@ -1885,6 +1922,10 @@ void MirvInput::ConCommand(advancedfx::ICommandArgs * args)
 			);
 			advancedfx::Message(
 				"%s cfg smooth [...]\n"
+				, arg0
+			);
+			advancedfx::Message(
+				"%s cfg rotLocalSpace [...] - Enable rotating in local space instead of global space\n"
 				, arg0
 			);
 			return;
