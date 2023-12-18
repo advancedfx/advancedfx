@@ -214,9 +214,8 @@ void CCampathDrawer::CamPathChanged(CamPath * obj)
 {
 	if(m_LessDynamicProperties) {
 		m_LessDynamicProperties->Release();
+		m_LessDynamicProperties = nullptr;
 	}
-	m_LessDynamicProperties = new CLessDynamicProperties(this);
-	m_LessDynamicProperties->AddRef();
 }
 
 void CCampathDrawer::Draw_set(bool value)
@@ -432,9 +431,14 @@ void CCampathDrawer::OnPostRenderAllTools_EngineThread() {
 	// Actually we are often called twice per frame , once after 3d skybox
 	// and once after world is drawn, maybe we will be even called more times.
 
-	if(!m_Draw || nullptr == m_LessDynamicProperties)
+	if(!m_Draw)
 		return;
 	
+	if(nullptr == m_LessDynamicProperties) {
+		m_LessDynamicProperties = new CLessDynamicProperties(this); // CPU expensive.
+		m_LessDynamicProperties->AddRef();		
+	}
+
 	MaterialSystem_ExecuteOnRenderThread(new CCampathDrawerFunctor(this));
 }
 
