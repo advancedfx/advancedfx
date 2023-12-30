@@ -2924,7 +2924,7 @@ void Addresses_InitMaterialsystemDll(AfxAddr materialsystemDll, SourceSdkVer sou
 			break;
 		case SourceSdkVer_CSGO:
 			// Checked 2023-09-16.
-			materialsystem_GetRenderCallQueue_vtable_offset = 179;
+			materialsystem_GetRenderCallQueue_vtable_offset = 179; // 3rd last
 			AFXADDR_SET(materialsystem_CFunctor_vtable_size, 4);
 			break;
 		case SourceSdkVer_TF2:
@@ -2947,13 +2947,22 @@ void Addresses_InitMaterialsystemDll(AfxAddr materialsystemDll, SourceSdkVer sou
 			materialsystem_GetRenderCallQueue_vtable_offset = 171;
 			AFXADDR_SET(materialsystem_CFunctor_vtable_size, 4);
 			break;
+		case SourceSdkVer_L4D2:
+			// Checked 2023-12-30.
+			materialsystem_GetRenderCallQueue_vtable_offset = 137; // 3rd last
+			AFXADDR_SET(materialsystem_CFunctor_vtable_size, 4);
+			break;
+		case SourceSdkVer_HL2MP:
+			materialsystem_GetRenderCallQueue_vtable_offset = 143; // 4th last
+			AFXADDR_SET(materialsystem_CFunctor_vtable_size, 4);
+			break;
 		}
 
 		if(0 <= materialsystem_GetRenderCallQueue_vtable_offset) {
 			// materialsystem_GetRenderCallQueue
 			{
 				// CMaterialSystem inherhits from IMaterialSystemInternal inherits from IMaterialSystem, so
-				// we guess that GetRenderCallQueue is the 3rd last function.
+				// we guess that GetRenderCallQueue is often the 3rd last function.
 				AfxAddr addr_CMaterialSystem_vtable = FindClassVtable((HMODULE)materialsystemDll, ".?AVCMaterialSystem@@", 0, 0x0);
 				if (!addr_CMaterialSystem_vtable) ErrorBox(MkErrStr(__FILE__, __LINE__));
 				else {
@@ -2971,7 +2980,7 @@ void Addresses_InitMaterialsystemDll(AfxAddr materialsystemDll, SourceSdkVer sou
 				if (vtable_addr)
 				{
 					AfxAddr tmpAddr = (size_t)*(void**)vtable_addr;
-					/* We search the first call inside the function:
+					/* We search the first call inside the function (ignoring interface calls to AddRef / Release):
 		call    sub_10013A70			
 					*/
 					MemRange result = FindPatternString(MemRange(tmpAddr, tmpAddr + 0x40).And(textRange), "E8 ?? ?? ?? ??");

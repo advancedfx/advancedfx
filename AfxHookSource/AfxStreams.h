@@ -55,7 +55,7 @@
 #include <thread>
 #include <chrono>
 
-#define ADVNACEDFX_STARTMOIVE_WAV_KEY "advancedfx-a6948f6e-7217-4dc1-b29a-ba055242ab43"
+#define ADVNACEDFX_STARTMOIVE_WAV_KEY "advancedfx-802bb089-972b-4841-bdf3-5108175ab59d"
 
 using namespace advancedfx;
 

@@ -106,6 +106,7 @@ bool MaterialSystem_ExecuteOnRenderThread(CMaterialSystemFunctor * pFunctor) {
             if(void * pCallQueue =  g_Old_CMaterialSystem_GetRenderCallQueue(g_pMaterialSystem, 0)) {
                 CMaterialSystemFunctor4 * pFunctor2 = new CMaterialSystemFunctor4(pFunctor);
                 pFunctor2->AddRef();
+                if(g_SourceSdkVer == SourceSdkVer_L4D2) pFunctor2->AddRef();
                 CMatCallQueue_QueueFunctor_t pQueueFunctorInternal = (CMatCallQueue_QueueFunctor_t)AFXADDR_GET(materialsystem_CMatCallQueue_QueueFunctor);
                 pQueueFunctorInternal(pCallQueue,0,pFunctor2);
                 pFunctor2->Release();

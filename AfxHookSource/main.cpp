@@ -2400,6 +2400,8 @@ void CommonHooks()
 					g_SourceSdkVer = SourceSdkVer_Insurgency2;
 				else if (0 == _wcsicmp(L"momentum", game))
 					g_SourceSdkVer = SourceSdkVer_Momentum;
+				else if (0 == _wcsicmp(L"hl2mp", game))
+					g_SourceSdkVer = SourceSdkVer_HL2MP;
 			}
 		}
 		else if (g_CommandLine->FindParam(L"-afxV34"))
@@ -2440,6 +2442,8 @@ void CommonHooks()
 					g_SourceSdkVer = SourceSdkVer_Garrysmod;
 				else if (0 == _wcsicmp(L"momentum", game))
 					g_SourceSdkVer = SourceSdkVer_Momentum;
+				else if (0 == _wcsicmp(L"hl2mp", game))
+					g_SourceSdkVer = SourceSdkVer_HL2MP;
 			}
 		}
 
@@ -2548,9 +2552,22 @@ new_CreateFileW(
 	_In_opt_ HANDLE hTemplateFile
 );
 
+HANDLE
+WINAPI
+new_CreateFileA(
+    _In_ LPCSTR lpFileName,
+    _In_ DWORD dwDesiredAccess,
+    _In_ DWORD dwShareMode,
+    _In_opt_ LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+    _In_ DWORD dwCreationDisposition,
+    _In_ DWORD dwFlagsAndAttributes,
+    _In_opt_ HANDLE hTemplateFile
+    );
+
 CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR)> g_Import_filesystem_stdio_KERNEL32_LoadLibraryA("LoadLibraryA", &new_LoadLibraryA);
 CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR, HANDLE, DWORD)> g_Import_filesystem_stdio_KERNEL32_LoadLibraryExA("LoadLibraryExA", &new_LoadLibraryExA);
 CAfxImportFuncHook<HANDLE(WINAPI*)(LPCWSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE)> g_Import_filesystem_stdio_KERNEL32_CreateFileW("CreateFileW", &new_CreateFileW);
+CAfxImportFuncHook<HANDLE(WINAPI*)(LPCSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE)> g_Import_filesystem_stdio_KERNEL32_CreateFileA("CreateFileA", &new_CreateFileA);
 
 HANDLE WINAPI new_CreateFileW(
 	_In_ LPCWSTR lpFileName,
@@ -2573,14 +2590,37 @@ HANDLE WINAPI new_CreateFileW(
 			return g_Import_filesystem_stdio_KERNEL32_CreateFileW.TrueFunc(newPath.c_str(), dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 		}
 	}
-
 	return g_Import_filesystem_stdio_KERNEL32_CreateFileW.TrueFunc(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+}
+
+HANDLE WINAPI new_CreateFileA(
+    _In_ LPCSTR lpFileName,
+    _In_ DWORD dwDesiredAccess,
+    _In_ DWORD dwShareMode,
+    _In_opt_ LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+    _In_ DWORD dwCreationDisposition,
+    _In_ DWORD dwFlagsAndAttributes,
+    _In_opt_ HANDLE hTemplateFile
+    ) {
+	static bool bWasRecording = false; // allow startmovie wav-fixup by engine to get through one more time.
+	if (g_SourceSdkVer != SourceSdkVer_CSGO && (g_AfxStreams.IsRecording() || bWasRecording)) {
+		std::string strFileName(lpFileName);
+		for (auto& c : strFileName) c = std::tolower(c);
+		if (StringEndsWith(strFileName.c_str(),"" ADVNACEDFX_STARTMOIVE_WAV_KEY ".wav")) {
+			bWasRecording = g_AfxStreams.IsRecording();
+			std::wstring newPath(g_AfxStreams.GetTakeDir());
+			newPath.append(L"\\audio.wav");
+			return CreateFileW(newPath.c_str(), dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+		}
+	}
+	return g_Import_filesystem_stdio_KERNEL32_CreateFileA.TrueFunc(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 }
 
 CAfxImportDllHook g_Import_filesystem_stdio_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
 	&g_Import_filesystem_stdio_KERNEL32_LoadLibraryA
 	, &g_Import_filesystem_stdio_KERNEL32_LoadLibraryExA
-	, &g_Import_filesystem_stdio_KERNEL32_CreateFileW }));
+	, &g_Import_filesystem_stdio_KERNEL32_CreateFileW
+	, &g_Import_filesystem_stdio_KERNEL32_CreateFileA }));
 
 CAfxImportsHook g_Import_filesystem_stdio(CAfxImportsHooks({
 	&g_Import_filesystem_stdio_KERNEL32 }));

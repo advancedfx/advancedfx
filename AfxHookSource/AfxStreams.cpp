@@ -8015,6 +8015,8 @@ void CAfxStreams::Console_PrintStreams2()
 	);
 }
 
+extern bool Hook_MaterialSystem(void);
+
 void CAfxStreams::Console_RecordScreen(IWrpCommandArgs* args) {
 	int argC = args->ArgC();
 	char const* arg0 = args->ArgV(0);
@@ -8025,6 +8027,9 @@ void CAfxStreams::Console_RecordScreen(IWrpCommandArgs* args) {
 		if (0 == _stricmp(arg1, "enabled")) {
 			if (3 <= argC) {
 				m_RecordScreen->Enabled = 0 != atoi(args->ArgV(2));
+				if(m_RecordScreen->Enabled && !Hook_MaterialSystem()) {
+					advancedfx::Warning("AFXERROR: Your Source 1 game is not supported for mirv_streams record screen. Consider to file a feature request on GitHub (and provide materialsystem.dll of your game).\n");
+				}
 				return;
 			}
 
