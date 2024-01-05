@@ -6,6 +6,20 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.123.0</version>
+<time>2023-01-05T13:20Z</time>
+<changes>
+<change type="fixed">Fixed #886 mouse3 mis-configured.</change>
+<change type="added">Added #817 mirv_input local axis movement.</change>
+<change type="fixed">Fixed #893 CS2 / CS:GO e.g. mirv_campath load takes a long time.</change>
+<change type="added">Added #897 mirv_streams record screen for L4D2 and HL2MP.</change>
+<change type="fixed">Fixed #899 mirv_streams: game other than CS:GO still (slowly) capture image (additionally) when recording audio just to throw it away. Thanks to @cademtz for informing us about that issue.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.122.2</version>
 <time>2023-11-17T08:46Z</time>
 <changes>

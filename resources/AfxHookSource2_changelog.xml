@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.8.0</version>
+<time>2023-01-05T13:20Z</time>
+<changes>
+<change type="fixed">Fixed #886 mouse3 mis-configured.</change>
+<change type="added">Added #817 mirv_input local axis movement.</change>
+<change type="fixed">Fixed #893 CS2 / CS:GO e.g. mirv_campath load takes a long time.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.7.2</version>
 <time>2023-12-08T10:58Z</time>
 <changes>

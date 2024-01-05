@@ -6,6 +6,20 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.20.0</version>
+<time>2023-01-05T13:20Z</time>
+<changes>
+<change type="fixed">Fixed #886 mouse3 mis-configured.</change>
+<change type="added">Added #817 mirv_input local axis movement.</change>
+<comment>
+Not compatible with 25th aniversary update yet - we are still working on that!
+</comment>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.19.0</version>
 <time>2023-10-18T06:47Z</time>
 <changes>
@@ -13,7 +27,6 @@
 <change type="updated">Removed commas in mirv_campath print to make copy and paste easier.</change>
 </changes>
 </release>
-
 
 
 <release>
