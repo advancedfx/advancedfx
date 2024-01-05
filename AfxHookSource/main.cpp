@@ -2852,6 +2852,32 @@ CAfxImportDllHook g_Import_panorama_tier0("tier0.dll", CAfxImportDllHooks({
 CAfxImportsHook g_Import_panorama(CAfxImportsHooks({
 	&g_Import_panorama_tier0 }));
 
+
+typedef void (__fastcall * CVideoMode_Common__WriteMovieFrame_t)( void * Ecx, void * Edx, void * movie_info );
+CVideoMode_Common__WriteMovieFrame_t g_CVideoMode_Common__WriteMovieFrame = nullptr;
+void __fastcall New_CVideoMode_Common__WriteMovieFrame( void * Ecx, void * Edx, void * movie_info ) {
+	if(g_AfxStreams.IsRecording()) return; // don't let it do that when recording ourselves, it downloads image from GPU and wastes it for nothing.
+	g_CVideoMode_Common__WriteMovieFrame(Ecx, Edx, movie_info);
+}
+
+bool Hook_CVideoMode_Common__WriteMovieFrame() {
+	bool firstRun = true;
+	bool firstResult = false;
+
+	if(firstRun) {
+		firstRun = false;
+
+		if(AFXADDR_GET(engine_CVideoMode_Common_WriteMovieFrame)) {
+			g_CVideoMode_Common__WriteMovieFrame = (CVideoMode_Common__WriteMovieFrame_t)AFXADDR_GET(engine_CVideoMode_Common_WriteMovieFrame);
+			DetourTransactionBegin();
+			DetourUpdateThread(GetCurrentThread());
+			DetourAttach(&(PVOID&)g_CVideoMode_Common__WriteMovieFrame, New_CVideoMode_Common__WriteMovieFrame);
+			firstResult = NO_ERROR == DetourTransactionCommit();
+		}
+	}
+	return firstResult;
+}
+
 void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 {
 	static bool bFirstLauncher = true;
@@ -2924,6 +2950,8 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 			Install_csgo_engine_Do_CCLCMsg_FileCRCCheck();
 			Install_csgo_Cmd_ExecuteCommand();
 		}
+
+		Hook_CVideoMode_Common__WriteMovieFrame();
 	}
 	else if(bFirstInputsystem && StringEndsWith( lpLibFileName, "inputsystem.dll"))
 	{

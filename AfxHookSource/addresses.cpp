@@ -145,6 +145,7 @@ AFXADDR_DEF(materialsystem_GetRenderCallQueue)
 AFXADDR_DEF(materialsystem_CFunctor_vtable_size)
 AFXADDR_DEF(materialsystem_CMaterialSystem_SwapBuffers)
 AFXADDR_DEF(materialsystem_CMatCallQueue_QueueFunctor)
+AFXADDR_DEF(engine_CVideoMode_Common_WriteMovieFrame)
 
 void ErrorBox(char const * messageText);
 
@@ -753,6 +754,60 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 	}
 	AFXADDR_SET(csgo_CClientState_ProcessVoiceData_DSZ, 0x6);
 	AFXADDR_SET(csgo_CVoiceWriter_AddDecompressedData_DSZ, 0x8);
+
+	// engine_CVideoMode_Common_WriteMovieFrame
+	//
+	// To find the virtual function search for string such as:
+	// - "endmovie\n"
+	// - "Tried to write movie buffer with no filename set!\n" <--
+	// - "Couldn't allocate bitmap header to snapshot.\n"
+	// - "%s%04d.tga"
+	// - "%s%04d.jpg"
+	{
+		MemRange::FromEmpty();
+		switch(sourceSdkVer) {
+		case SourceSdkVer_SWARM: {
+			// Checked 2024-01-05.
+			void **vtable = (void **)FindClassVtable((HMODULE)engineDll, ".?AVCVideoMode_Common@@", 0, 0x0);
+			if(vtable) AFXADDR_SET(engine_CVideoMode_Common_WriteMovieFrame, (size_t)(vtable[23]));
+		} break;
+		case SourceSdkVer_CSGO: {
+			// Checked 2024-01-05.
+			void **vtable = (void **)FindClassVtable((HMODULE)engineDll, ".?AVCVideoMode_Common@@", 0, 0x0);
+			if(vtable) AFXADDR_SET(engine_CVideoMode_Common_WriteMovieFrame, (size_t)(vtable[23]));
+		} break;
+		case SourceSdkVer_TF2: {
+			// Checked 2024-01-05.
+			void **vtable = (void **)FindClassVtable((HMODULE)engineDll, ".?AVCVideoMode_Common@@", 0, 0x0);
+			if(vtable) AFXADDR_SET(engine_CVideoMode_Common_WriteMovieFrame, (size_t)(vtable[26]));
+		} break;
+		case SourceSdkVer_CSS: {
+			// Checked 2024-01-05.
+			void **vtable = (void **)FindClassVtable((HMODULE)engineDll, ".?AVCVideoMode_Common@@", 0, 0x0);
+			if(vtable) AFXADDR_SET(engine_CVideoMode_Common_WriteMovieFrame, (size_t)(vtable[26]));
+		} break;
+		case SourceSdkVer_CSSV34: {
+			// Checked 2024-01-05.
+			void **vtable = (void **)FindClassVtable((HMODULE)engineDll, ".?AVCVideoMode_Common@@", 0, 0x0);
+			if(vtable) AFXADDR_SET(engine_CVideoMode_Common_WriteMovieFrame, (size_t)(vtable[22]));
+		} break;
+		case SourceSdkVer_Insurgency2: {
+			// Checked 2024-01-05.
+			void **vtable = (void **)FindClassVtable((HMODULE)engineDll, ".?AVCVideoMode_Common@@", 0, 0x0);
+			if(vtable) AFXADDR_SET(engine_CVideoMode_Common_WriteMovieFrame, (size_t)(vtable[23]));
+		} break;
+		case SourceSdkVer_L4D2: {
+			// Checked 2024-01-05.
+			void **vtable = (void **)FindClassVtable((HMODULE)engineDll, ".?AVCVideoMode_Common@@", 0, 0x0);
+			if(vtable) AFXADDR_SET(engine_CVideoMode_Common_WriteMovieFrame, (size_t)(vtable[23]));
+		} break;
+		case SourceSdkVer_HL2MP: {
+			// Checked 2024-01-05.
+			void **vtable = (void **)FindClassVtable((HMODULE)engineDll, ".?AVCVideoMode_Common@@", 0, 0x0);
+			if(vtable) AFXADDR_SET(engine_CVideoMode_Common_WriteMovieFrame, (size_t)(vtable[26]));
+		} break;
+		}
+	}
 }
 
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer)
