@@ -7,7 +7,7 @@
 <release>
 <name>AfxHookSource2</name>
 <version>0.8.0</version>
-<time>2023-01-05T13:20Z</time>
+<time>2024-01-05T13:20Z</time>
 <changes>
 <change type="fixed">Fixed #886 mouse3 mis-configured.</change>
 <change type="added">Added #817 mirv_input local axis movement.</change>

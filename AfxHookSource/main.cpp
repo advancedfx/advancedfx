@@ -2216,6 +2216,52 @@ LONG WINAPI new_SetWindowLongA(
 	return SetWindowLongA(hWnd, nIndex, dwNewLong);
 }
 
+
+// TODO: this is risky, actually we should track the hWnd maybe.
+LONG_PTR WINAPI new_GetWindowLongPtrW(
+  __in HWND hWnd,
+  __in int  nIndex
+)
+{
+	if(nIndex == GWLP_WNDPROC)
+	{
+		if(g_afxWindowProcSet)
+		{
+			return (LONG_PTR)g_NextWindProc;
+		}
+	}
+
+	return GetWindowLongPtrW(hWnd, nIndex);
+}
+
+// TODO: this is risky, actually we should track the hWnd maybe.
+LONG_PTR WINAPI new_SetWindowLongPtrW(
+  __in HWND     hWnd,
+  __in int      nIndex,
+  __in LONG_PTR dwNewLong
+)
+{
+	if(nIndex == GWLP_WNDPROC)
+	{
+		LONG lResult = SetWindowLongPtrW(hWnd, nIndex, (LONG_PTR)new_Afx_WindowProc);
+
+		if(!g_afxWindowProcSet)
+		{
+			g_afxWindowProcSet = true;
+		}
+		else
+		{
+			lResult = (LONG_PTR)g_NextWindProc;
+		}
+
+		g_NextWindProc = (WNDPROC)dwNewLong;
+
+		return lResult;
+	}
+
+	return SetWindowLongPtrW(hWnd, nIndex, dwNewLong);
+}
+
 BOOL WINAPI new_GetCursorPos(
 	__out LPPOINT lpPoint
 )
@@ -2703,6 +2749,8 @@ UINT WINAPI New_GetRawInputData(
 }
 
 CAfxImportDllHook g_Import_inputsystem_USER32("USER32.dll", CAfxImportDllHooks({
+	&g_Import_inputsystem_USER32_GetWindowLongA,
+	&g_Import_inputsystem_USER32_SetWindowLongA,
 	&g_Import_inputsystem_USER32_GetWindowLongW,
 	&g_Import_inputsystem_USER32_SetWindowLongW,
 	&g_Import_inputsystem_USER32_SetCursor,
@@ -2759,7 +2807,7 @@ FARPROC WINAPI New_inputsystem_GetProcAddress(HMODULE hModule, LPCSTR lpProcName
 
 
 CAfxImportDllHook g_Import_inputsystem_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
-	&g_Import_engine_KERNEL32_GetProcAddress }));
+	&g_Import_inputsystem_KERNEL32_GetProcAddress }));
 
 
 CAfxImportsHook g_Import_inputsystem(CAfxImportsHooks({
@@ -2956,13 +3004,6 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 	else if(bFirstInputsystem && StringEndsWith( lpLibFileName, "inputsystem.dll"))
 	{
 		bFirstInputsystem = false;
-
-		if (SourceSdkVer_CSSV34 == g_SourceSdkVer)
-		{
-			g_Import_inputsystem_USER32.Add(CAfxImportDllHooks({
-				&g_Import_inputsystem_USER32_GetWindowLongA,
-				&g_Import_inputsystem_USER32_SetWindowLongA }));
-		}
 
 		g_Import_inputsystem.Apply(hModule);
 	}

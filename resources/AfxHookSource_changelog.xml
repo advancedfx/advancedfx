@@ -6,8 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.123.1</version>
+<time>2024-01-05T19:45Z</time>
+<changes>
+<change type="fixed">Fixed mirv_input camera nor working with m_rawinput 1.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.123.0</version>
-<time>2023-01-05T13:20Z</time>
+<time>2024-01-05T13:20Z</time>
 <changes>
 <change type="fixed">Fixed #886 mouse3 mis-configured.</change>
 <change type="added">Added #817 mirv_input local axis movement.</change>

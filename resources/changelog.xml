@@ -6,13 +6,23 @@
 
 <release>
 <name>HLAE</name>
-<version>2.153.0</version>
-<time>2023-01-05T13:20Z</time>
+<version>2.153.1</version>
+<time>2024-01-05T19:45Z</time>
 <changes>
-<change type="updated">Included AfxHookGoldSrc 2.20.0 (2023-01-05T13:20Z).</change>
-<change type="updated">Included AfxHookSource 1.123.0 (2023-01-05T13:20Z).</change>
-<change type="updated">Included AfxHookSource2 0.8.0 (2023-01-05T13:20Z).</change>
-<change type="fixed"> #891 HLAE Installer lately always reinstalls FFMPEG.</change>
+<change type="updated">Included AfxHookSource 1.123.1 (2024-01-05T19:45Z).</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
+<version>2.153.0</version>
+<time>2024-01-05T13:20Z</time>
+<changes>
+<change type="updated">Included AfxHookGoldSrc 2.20.0 (2024-01-05T13:20Z).</change>
+<change type="updated">Included AfxHookSource 1.123.0 (2024-01-05T13:20Z).</change>
+<change type="updated">Included AfxHookSource2 0.8.0 (2024-01-05T13:20Z).</change>
+<change type="fixed">Fixed #891 HLAE Installer lately always reinstalls FFMPEG.</change>
 </changes>
 </release>
 
