@@ -681,15 +681,15 @@ void Shared_Shutdown(void)
 	if (CClientTools * instance = CClientTools::Instance()) delete instance;
 }
 
-typedef void(__fastcall * CVClient_Shutdown_TF2_t)(void* This, void* Edx);
+typedef void(__fastcall * CVClient_Shutdown_t)(void* This, void* Edx);
 
-CVClient_Shutdown_TF2_t old_CVClient_Shutdown_TF2;
+CVClient_Shutdown_t old_CVClient_Shutdown;
 
-void __fastcall new_CVClient_Shutdown_TF2(void* This, void* Edx)
+void __fastcall new_CVClient_Shutdown(void* This, void* Edx)
 {
 	Shared_Shutdown();
 
-	old_CVClient_Shutdown_TF2(This, Edx);
+	old_CVClient_Shutdown(This, Edx);
 }
 
 typedef void (__fastcall* CVClient_FrameStageNotify_TF2_t)(void* This, void* Edx, SOURCESDK::TF2::ClientFrameStage_t curStage);
@@ -716,18 +716,6 @@ void __fastcall new_CVClient_FrameStageNotify_TF2(void* This, void* Edx, SOURCES
 	}
 }
 
-
-typedef void(__fastcall* CVClient_Shutdown_CSS_t)(void* This, void* Edx);
-
-CVClient_Shutdown_CSS_t old_CVClient_Shutdown_CSS;
-
-void __fastcall new_CVClient_Shutdown_CSS(void* This, void* Edx)
-{
-	Shared_Shutdown();
-
-	old_CVClient_Shutdown_CSS(This, Edx);
-}
-
 typedef void(__fastcall* CVClient_FrameStageNotify_CSS_t)(void* This, void* Edxr, SOURCESDK::CSS::ClientFrameStage_t curStage);
 
 CVClient_FrameStageNotify_CSS_t old_CVClient_FrameStageNotify_CSS;
@@ -750,17 +738,6 @@ void __fastcall new_CVClient_FrameStageNotify_CSS(void* This, void* Edx, SOURCES
 		Shared_AfterFrameRenderEnd();
 		break;
 	}
-}
-
-typedef void(__fastcall* CVClient_Shutdown_CSSV34_t)(void* This, void* Edx);
-
-CVClient_Shutdown_CSSV34_t old_CVClient_Shutdown_CSSV34;
-
-void __fastcall new_CVClient_Shutdown_CSSV34(void* This, void* Edx)
-{
-	Shared_Shutdown();
-
-	old_CVClient_Shutdown_CSSV34(This,Edx);
 }
 
 typedef void (__fastcall* CVClient_FrameStageNotify_CSSV34_t)(void* This, void* Edxr, SOURCESDK::CSSV34::ClientFrameStage_t curStage);
@@ -1966,31 +1943,39 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 				ErrorBox("Could not get a supported VClient interface.");
 			}
 
-			if (iface
-				&& (SourceSdkVer_TF2 == g_SourceSdkVer
-					|| SourceSdkVer_Momentum == g_SourceSdkVer
-				)
-			) {
+			if(iface) {
 				int * vtable = *(int**)iface;
 
-				AfxDetourPtr((PVOID*) & (vtable[2]), new_CVClient_Shutdown_TF2, (PVOID*)&old_CVClient_Shutdown_TF2);
-				AfxDetourPtr((PVOID*) & (vtable[35]), new_CVClient_FrameStageNotify_TF2, (PVOID*)&old_CVClient_FrameStageNotify_TF2);
-			}
-
-			if (iface && SourceSdkVer_CSS == g_SourceSdkVer)
-			{
-				int* vtable = *(int**)iface;
-
-				AfxDetourPtr((PVOID*)&(vtable[2]), new_CVClient_Shutdown_CSS, (PVOID*)&old_CVClient_Shutdown_CSS);
-				AfxDetourPtr((PVOID*)&(vtable[35]), new_CVClient_FrameStageNotify_CSS, (PVOID*)&old_CVClient_FrameStageNotify_CSS);
-			}
-
-			if (iface && SourceSdkVer_CSSV34 == g_SourceSdkVer)
-			{
-				int * vtable = *(int**)iface;
-
-				AfxDetourPtr((PVOID*) & (vtable[1]), new_CVClient_Shutdown_CSSV34, (PVOID*)&old_CVClient_Shutdown_CSSV34);
-				AfxDetourPtr((PVOID*) & (vtable[32]), new_CVClient_FrameStageNotify_CSSV34, (PVOID*)&old_CVClient_FrameStageNotify_CSSV34);
+				switch(g_SourceSdkVer) {
+				case SourceSdkVer_TF2:
+					AfxDetourPtr((PVOID*) & (vtable[2]), new_CVClient_Shutdown, (PVOID*)&old_CVClient_Shutdown);
+					AfxDetourPtr((PVOID*) & (vtable[35]), new_CVClient_FrameStageNotify_TF2, (PVOID*)&old_CVClient_FrameStageNotify_TF2);
+					break;
+				case SourceSdkVer_Momentum:
+					AfxDetourPtr((PVOID*) & (vtable[2]), new_CVClient_Shutdown, (PVOID*)&old_CVClient_Shutdown);
+					AfxDetourPtr((PVOID*) & (vtable[35]), new_CVClient_FrameStageNotify_TF2, (PVOID*)&old_CVClient_FrameStageNotify_TF2);
+					break;
+				case SourceSdkVer_CSS:
+					AfxDetourPtr((PVOID*)&(vtable[2]), new_CVClient_Shutdown, (PVOID*)&old_CVClient_Shutdown);
+					AfxDetourPtr((PVOID*)&(vtable[35]), new_CVClient_FrameStageNotify_CSS, (PVOID*)&old_CVClient_FrameStageNotify_CSS);
+					break;
+				case SourceSdkVer_CSSV34:
+					AfxDetourPtr((PVOID*) & (vtable[1]), new_CVClient_Shutdown, (PVOID*)&old_CVClient_Shutdown);
+					AfxDetourPtr((PVOID*) & (vtable[32]), new_CVClient_FrameStageNotify_CSSV34, (PVOID*)&old_CVClient_FrameStageNotify_CSSV34);
+					break;
+				case SourceSdkVer_SWARM:
+					AfxDetourPtr((PVOID*) & (vtable[3]), new_CVClient_Shutdown, (PVOID*)&old_CVClient_Shutdown);
+					break;
+				case SourceSdkVer_Insurgency2:
+					AfxDetourPtr((PVOID*) & (vtable[3]), new_CVClient_Shutdown, (PVOID*)&old_CVClient_Shutdown);
+					break;
+				case SourceSdkVer_L4D2:
+					AfxDetourPtr((PVOID*) & (vtable[2]), new_CVClient_Shutdown, (PVOID*)&old_CVClient_Shutdown);
+					break;
+				case SourceSdkVer_HL2MP:
+					AfxDetourPtr((PVOID*) & (vtable[2]), new_CVClient_Shutdown, (PVOID*)&old_CVClient_Shutdown);
+					break;
+				}
 			}
 		}
 		if(SourceSdkVer_CSGO == g_SourceSdkVer)
@@ -2214,52 +2199,6 @@ LONG WINAPI new_SetWindowLongA(
 	}
 
 	return SetWindowLongA(hWnd, nIndex, dwNewLong);
-}
-
-
-// TODO: this is risky, actually we should track the hWnd maybe.
-LONG_PTR WINAPI new_GetWindowLongPtrW(
-  __in HWND hWnd,
-  __in int  nIndex
-)
-{
-	if(nIndex == GWLP_WNDPROC)
-	{
-		if(g_afxWindowProcSet)
-		{
-			return (LONG_PTR)g_NextWindProc;
-		}
-	}
-
-	return GetWindowLongPtrW(hWnd, nIndex);
-}
-
-// TODO: this is risky, actually we should track the hWnd maybe.
-LONG_PTR WINAPI new_SetWindowLongPtrW(
-  __in HWND     hWnd,
-  __in int      nIndex,
-  __in LONG_PTR dwNewLong
-)
-{
-	if(nIndex == GWLP_WNDPROC)
-	{
-		LONG lResult = SetWindowLongPtrW(hWnd, nIndex, (LONG_PTR)new_Afx_WindowProc);
-
-		if(!g_afxWindowProcSet)
-		{
-			g_afxWindowProcSet = true;
-		}
-		else
-		{
-			lResult = (LONG_PTR)g_NextWindProc;
-		}
-
-		g_NextWindProc = (WNDPROC)dwNewLong;
-
-		return lResult;
-	}
-
-	return SetWindowLongPtrW(hWnd, nIndex, dwNewLong);
 }
 
 BOOL WINAPI new_GetCursorPos(
@@ -2795,7 +2734,7 @@ FARPROC WINAPI New_inputsystem_GetProcAddress(HMODULE hModule, LPCSTR lpProcName
 			return (FARPROC) &New_inputsystem_GetProcAddress;
 
 		if (0 == strcmp(lpProcName, "GetRawInputData")) {
-			g_Old_New_GetRawInputData2 = (New_GetRawInputData_t)(SOURCESDK::CreateInterfaceFn)nResult;
+			g_Old_New_GetRawInputData2 = (New_GetRawInputData_t)nResult;
 			return (FARPROC) &New_GetRawInputData2;
 		}
 
