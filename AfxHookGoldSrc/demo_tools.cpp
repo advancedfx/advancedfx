@@ -111,31 +111,40 @@ void Handle_CmdRead_Intercepted(void)
 // Hooking related
 //
 
-DWORD dwHL_ADDR_CL_ParseServerMessage_CmdRead_continue=NULL;
+size_t dwHL_ADDR_CL_ParseServerMessage_CmdRead_continue=0;
 
 __declspec(naked) void tour_CL_ParseServerMessage_CmdRead()
 {
-	Handle_CmdRead_Intercepted();
-	__asm
-	{
-		JMP [dwHL_ADDR_CL_ParseServerMessage_CmdRead_continue]
-	}
+	__asm push eax
+	__asm push ecx
+	__asm push edx
+	__asm call Handle_CmdRead_Intercepted
+	__asm pop edx
+	__asm pop ecx
+	__asm pop eax
+	__asm JMP [dwHL_ADDR_CL_ParseServerMessage_CmdRead_continue]
 }
 
 void install_tour_CL_ParseServerMessage_CmdRead()
 {
 	if(dwHL_ADDR_CL_ParseServerMessage_CmdRead_continue) return;
 
-	dwHL_ADDR_CL_ParseServerMessage_CmdRead_continue = (DWORD)DetourApply((BYTE *)HL_ADDR_GET(CL_ParseServerMessage_CmdRead),(BYTE *)tour_CL_ParseServerMessage_CmdRead,HL_ADDR_GET(CL_ParseServerMessage_CmdRead_DSZ));
+	if(
+		AFXADDR_GET(CL_ParseServerMessage_CmdRead)
+		&& AFXADDR_GET(msg_readcount)
+		&& AFXADDR_GET(net_message)
+	) {
+		dwHL_ADDR_CL_ParseServerMessage_CmdRead_continue = (size_t)DetourApply((BYTE *)HL_ADDR_GET(CL_ParseServerMessage_CmdRead),(BYTE *)tour_CL_ParseServerMessage_CmdRead,HL_ADDR_GET(CL_ParseServerMessage_CmdRead_DSZ));
 
-	// adjust call in detoured part:
-	DWORD *pdwFixAdr = (DWORD *)((char *)dwHL_ADDR_CL_ParseServerMessage_CmdRead_continue + 0x02 + 0x01);
+		// adjust call in detoured part:
+		size_t *pdwFixAdr = (size_t *)((char *)dwHL_ADDR_CL_ParseServerMessage_CmdRead_continue + 0x07);
 
-	DWORD dwAdr = *pdwFixAdr;
+		size_t dwAdr = *pdwFixAdr;
 
-	dwAdr -= dwHL_ADDR_CL_ParseServerMessage_CmdRead_continue - HL_ADDR_GET(CL_ParseServerMessage_CmdRead);
+		dwAdr -= dwHL_ADDR_CL_ParseServerMessage_CmdRead_continue - HL_ADDR_GET(CL_ParseServerMessage_CmdRead);
 
-	*pdwFixAdr = dwAdr;
+		*pdwFixAdr = dwAdr;
+	}
 }
 
 REGISTER_CMD_FUNC(voice_block)

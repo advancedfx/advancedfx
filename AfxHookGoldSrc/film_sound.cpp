@@ -57,20 +57,15 @@ typedef struct
 	int				Valve_speed;			// added by Valve(?)
 } dma_HL_t;
 
-typedef void * channel_t;
-
-typedef void (*GetSoundtime_t)(void);
 typedef void (*S_PaintChannels_t)(int endtime);
 typedef void (*S_TransferPaintBuffer_t)(int endtime);
-typedef channel_t * (*SND_PickChannel_t)(int entnum, int entchannel, int _unknown1, int _unknown2);
 
-GetSoundtime_t detoured_GetSoundtime = NULL;
 S_PaintChannels_t detoured_S_PaintChannels = NULL;
 S_TransferPaintBuffer_t detoured_S_TransferPaintBuffer = NULL;
-SND_PickChannel_t detoured_SND_PickChannel = NULL;
 
 CFilmSound* g_FilmSound = 0;
 
+int g_Last_paintedtime;
 double g_TargetTime, g_CurrentTime;
 float g_Volume;
 
@@ -82,15 +77,6 @@ enum FilmSound_TimeRounding_e {
 	FS_TR_FLOOR,
 	FS_TR_CEIL
 } g_FilmSound_TimeRounding = FS_TR_FLOOR;
-
-void touring_GetSoundtime(void)
-{
-	if(!g_FilmSound_Capturing)
-	{
-		// do not update during filming
-		detoured_GetSoundtime();
-	}
-}
 
 void touring_S_PaintChannels(int endtime)
 {
@@ -124,9 +110,13 @@ void touring_S_PaintChannels(int endtime)
 
 		dDeltaTime = (double)deltaTime / (double)shm->Quake_speed;
 
+		*(int *)HL_ADDR_GET(paintedtime) = g_Last_paintedtime;
+
 		// >> Sound painting
-		detoured_S_PaintChannels(*(int *)HL_ADDR_GET(paintedtime) +deltaTime);
+		detoured_S_PaintChannels(g_Last_paintedtime +deltaTime);
 		// << Sound painting
+
+		g_Last_paintedtime = *(int *)HL_ADDR_GET(paintedtime);
 
 		// update Our class's _CurrentTime:
 		g_CurrentTime = g_CurrentTime +dDeltaTime;
@@ -190,12 +180,14 @@ void touring_S_TransferPaintBuffer(int endtime)
 
 }
 
-channel_t * touring_SND_PickChannel(int entnum, int entchannel, int _unknown1, int _unknown2) {
+typedef void sfx_t;
+typedef void (*S_StartDynamicSound_t)(int entnum, int entchannel, sfx_t *sfx, vec3_t origin, float fvol, float attenuation, unsigned int _unknown_7, int _unknown_8);
+S_StartDynamicSound_t detoured_S_StartDynamicSound = nullptr;
+void touring_S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, vec3_t origin, float fvol, float attenuation, unsigned int _unknown_7, int _unknown_8) {
 
-	if(!g_FilmSound_BlockChannels)
-		return detoured_SND_PickChannel(entnum, entchannel, _unknown1, _unknown2);
-
-	return 0;
+	if(g_FilmSound_BlockChannels) return;
+	
+	detoured_S_StartDynamicSound(entnum, entchannel, sfx, origin, fvol, attenuation,_unknown_7,_unknown_8);
 }
 
 bool InstallHooks()
@@ -205,21 +197,25 @@ bool InstallHooks()
 	if (!firstRun) return firstResult;
 	firstRun = false;
 
-	if (HL_ADDR_GET(R_DrawEntitiesOnList))
-	{
+	if (AFXADDR_GET(S_Update_)
+		&& AFXADDR_GET(S_PaintChannels)
+		&& AFXADDR_GET(S_TransferPaintBuffer)
+		&& AFXADDR_GET(S_StartDynamicSound)
+		&& AFXADDR_GET(shm)
+		&& AFXADDR_GET(paintedtime)
+		&& AFXADDR_GET(paintbuffer)
+	) {
 		LONG error = NO_ERROR;
 
-		detoured_GetSoundtime = (GetSoundtime_t)AFXADDR_GET(GetSoundtime);
 		detoured_S_PaintChannels = (S_PaintChannels_t)AFXADDR_GET(S_PaintChannels);
 		detoured_S_TransferPaintBuffer = (S_TransferPaintBuffer_t)AFXADDR_GET(S_TransferPaintBuffer);
-		detoured_SND_PickChannel = (SND_PickChannel_t)AFXADDR_GET(SND_PickChannel);
+		detoured_S_StartDynamicSound = (S_StartDynamicSound_t)AFXADDR_GET(S_StartDynamicSound);
 
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
-		DetourAttach(&(PVOID&)detoured_GetSoundtime, touring_GetSoundtime);
 		DetourAttach(&(PVOID&)detoured_S_PaintChannels, touring_S_PaintChannels);
 		DetourAttach(&(PVOID&)detoured_S_TransferPaintBuffer, touring_S_TransferPaintBuffer);
-		DetourAttach(&(PVOID&)detoured_SND_PickChannel, touring_SND_PickChannel);
+		DetourAttach(&(PVOID&)detoured_S_StartDynamicSound, touring_S_StartDynamicSound);
 		error = DetourTransactionCommit();
 
 		if (NO_ERROR != error)
@@ -338,6 +334,7 @@ bool CFilmSound::Start(wchar_t const * fileName, double dTargetTime, float fUseV
 		// init time:
 		g_TargetTime = dTargetTime;
 		g_CurrentTime = 0.0;
+		g_Last_paintedtime = 0;
 
 		// set volume:
 		g_Volume = fUseVolume;
@@ -373,6 +370,8 @@ void CFilmSound::AdvanceFrame(double dTargetTime)
 	// update frame time:
 	g_TargetTime = dTargetTime;
 }
+
+typedef void (*S_Update_t)(void);
 
 void CFilmSound::Stop()
 {
@@ -411,11 +410,10 @@ void CFilmSound::Stop()
 	pEngfuncs->Con_Printf("Sound system finished stopping (almost :).\n");
 
 	//
-	// make soundsystem catch up:
+	// make soundsystem catch up by simulating an overflow:
 
-	touring_GetSoundtime();
-	*(int *)HL_ADDR_GET(paintedtime) = (*(int *)HL_ADDR_GET(soundtime)) >> 1;
-	pEngfuncs->pfnClientCmd("stopsound");
+	*(int *)HL_ADDR_GET(paintedtime) = 0x40000000 + 1;
+	((S_Update_t)HL_ADDR_GET(S_Update_))();
 }
 
 

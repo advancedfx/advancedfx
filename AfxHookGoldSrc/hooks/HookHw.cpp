@@ -221,15 +221,15 @@ HMODULE WINAPI NewHwLoadLibraryA( LPCSTR lpLibFileName )
 	{
 		bClientLoaded = true;
 
-		Addresses_InitClientDll((AfxAddr)hRet, pEngfuncs->pfnGetGameDirectory());
+		//TODO//Addresses_InitClientDll((AfxAddr)hRet, pEngfuncs->pfnGetGameDirectory());
 
-		HookClient((void*)hRet);
+		//TODO//HookClient((void*)hRet);
 	}
 	else if( !bDemoPlayerLoaded && StringEndsWith( lpLibFileName, "demoplayer.dll") && hRet )
 	{
 		bDemoPlayerLoaded = true;
 
-		Hook_DemoPlayer((void *)hRet);
+		//TODO//Hook_DemoPlayer((void *)hRet);
 	}
 
 	return hRet;
@@ -377,7 +377,7 @@ void HookHw(HMODULE hHw)
 	HMODULE hSdl = GetModuleHandle("sdl2.dll");
 	if(hSdl)
 	{
-		g_Import_sdl2.Apply(hSdl);
+		//TODO//g_Import_sdl2.Apply(hSdl);
 
 		if(!g_Import_sdl2_KERNEL32_GetProcAddress.TrueFunc) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:Kernel32.dll!GetProcAddress","MDT_ERROR",MB_OK|MB_ICONHAND); }
 		if(!*Get_Import_USER32_CreateWindowExW()->GetTrueFunc()) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:user32.dll!CreateWindowExW","MDT_ERROR",MB_OK|MB_ICONHAND); }
@@ -396,6 +396,9 @@ void HookHw(HMODULE hHw)
 	if( !bIcepOk )
 		MessageBox(0,"One or more interceptions failed","MDT_ERROR",MB_OK|MB_ICONHAND);
 
+	//TODO: Crash in FetchHitboxes if you buy flash twice or throw one and it goes of
+
+/*TODO
 	Hook_CL_Disconnect();
 
 	Hook_Host_Init();
@@ -416,7 +419,7 @@ void HookHw(HMODULE hHw)
 
 	Hook_R_RenderView();
 
-	Hook_UnkDrawHud();
+	Hook_UnkDrawHud();*/
 
-	HookpEnginefuncs(pEngfuncs);
+	//TODO HookpEnginefuncs(pEngfuncs);
 }
