@@ -103,7 +103,7 @@ bool Hook_R_DrawSkyBoxEx()
 		MdtMemAccessEnd(&mbis);
 
 		void * R_DrawSkyBox_End_Continue = (void *)(AFXADDR_GET(R_DrawSkyBox_End)+6);
-		void * R_DrawSkyBox_End_JZ_Continue = (void *)(AFXADDR_GET(R_DrawSkyBox_End)+16);
+		void * R_DrawSkyBox_End_JZ_Continue = (void *)(AFXADDR_GET(R_DrawSkyBox_End)+6+10);
 
 		g_Old_R_DrawSkyBox_End = MdtAllocExecuteableMemory(
 			4 // for the original code (TEST, POP, POP)
@@ -113,7 +113,7 @@ bool Hook_R_DrawSkyBoxEx()
 		);
 
 		((unsigned char *)g_Old_R_DrawSkyBox_End)[4] = 0x74 ; // JZ
-		((unsigned char *)g_Old_R_DrawSkyBox_End)[5] = 10 ; // JUMP to 10 bytes after JZ.
+		((unsigned char *)g_Old_R_DrawSkyBox_End)[5] = 5 ; // JUMP 5 bytes
 
 		Asm32ReplaceWithJmp(&((unsigned char *)g_Old_R_DrawSkyBox_End)[6],5,R_DrawSkyBox_End_Continue);
 		Asm32ReplaceWithJmp(&((unsigned char *)g_Old_R_DrawSkyBox_End)[11],5,R_DrawSkyBox_End_JZ_Continue);

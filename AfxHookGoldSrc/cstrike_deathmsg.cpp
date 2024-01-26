@@ -206,22 +206,22 @@ int g_DeathMsg_Offset;
 
 __declspec(naked) void cstrike_DeathMsg_DrawHelperY() {
 	__asm {
-		mov     ebp,dword ptr [esi+18h] ; original code
+		push eax
+		mov al, g_DeathMsg_ForceOffset
+		test al, al
+		pop eax
+		JZ __Continue
 
-		mov dl, g_DeathMsg_ForceOffset
-		test dl, dl
-		JZ __OrgValue
+		mov esi, g_DeathMsg_Offset
+		mov [ebp-0x40], esi
 
-		mov edx, g_DeathMsg_Offset
-		JMP __Continue
-
-		__OrgValue:
-		mov     edx,dword ptr [esp+38h] ; original code
-		
 		__Continue:
-		; imul    ebp,ebx ; original code
-		imul    ebp, DeathMsg_Draw_ItemIndex
-		
+	
+	    MOV        ESI,dword ptr [EBP - 0x38] ; original code
+        MOV        EDI,dword ptr [EAX + 0x18] ; original code
+        ; IMUL       EDI,dword ptr [EBP - 0xc] ; original code
+		IMUL EDI, DeathMsg_Draw_ItemIndex
+
 		JMP [DeathMsg_Draw_AfterYRes]
 	}
 }

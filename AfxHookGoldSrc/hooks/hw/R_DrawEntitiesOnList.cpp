@@ -76,7 +76,7 @@ bool Hook_R_DrawEntitiesOnList()
 
 		void * R_DrawEntitiesOnList_Out_Continue = (void *)(AFXADDR_GET(R_DrawEntitiesOnList_Out)+12);
 
-		g_Old_R_DrawEntitiesOnList_In = MdtAllocExecuteableMemory(
+		g_Old_R_DrawEntitiesOnList_Out = MdtAllocExecuteableMemory(
 			12 // for the original XOR and MOV
 			+ 5 // for or JMP back into original code
 		);

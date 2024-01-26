@@ -16,8 +16,7 @@
 
 REGISTER_CVAR(cstrike_force_knife_righthand, "0", 0);
 
-typedef void(__cdecl* UnkCstrikeAnimationFixFn_t)(int sequence, int idx);
-UnkCstrikeAnimationFixFn_t g_pfnAnimationFix_Hooked_Func = NULL;
+pfnEngSrc_pfnWeaponAnim_t g_detoured_pfnWeaponAnim = NULL;
 
 typedef void(__cdecl* UnkCstrikeEV_FireM4A1Fn_t)(event_args_t *args);
 UnkCstrikeEV_FireM4A1Fn_t g_pfnCstrike_EV_FireM4A1_Hooked_Func = NULL;
@@ -223,15 +222,15 @@ AnimationType GetAnimationAction(int sequence, cl_entity_s* entity)
 
 void ViewmodelPlayAnimation(int sequence)
 {
-	g_pfnAnimationFix_Hooked_Func(sequence, 0);
+	g_detoured_pfnWeaponAnim(sequence, 0);
 }
 
-void __cdecl ViewmodelPlayIdleFunc(int sequence, int idx)
+void Touring_pfnWeaponAnim(int sequence, int idx)
 {
 	if (previousWeapon != pEngfuncs->GetViewModel()->model->name)
 		viewmodelChanged = true;
 
-	g_pfnAnimationFix_Hooked_Func(sequence, idx);
+	g_detoured_pfnWeaponAnim(sequence, idx);
 }
 
 void ForceWeaponState(int* param, WeaponState state, WeaponType type)
@@ -432,6 +431,46 @@ REGISTER_CMD_FUNC(cstrike_hltv_animation_fix)
 	);
 }
 
+bool Hook_cstrike_events_m4a1(void * pAddress) {
+	static bool firstRun = true;
+	static bool firstResult = false;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	if(pAddress) {
+		g_pfnCstrike_EV_FireM4A1_Hooked_Func = (UnkCstrikeEV_FireM4A1Fn_t)pAddress;
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)g_pfnCstrike_EV_FireM4A1_Hooked_Func, EV_FireM4A1);
+		firstResult = NO_ERROR == DetourTransactionCommit();
+	}
+
+	if(!firstResult) ErrorBox("Hook_cstrike_events_m4a1");
+
+	return firstResult;
+}
+
+bool Hook_cstrike_events_usp(void * pAddress) {
+	static bool firstRun = true;
+	static bool firstResult = false;
+	if (!firstRun) return firstResult;
+	firstRun = false;
+
+	if(pAddress) {
+		g_pfnCstrike_EV_FireUSP_Hooked_Func = (UnkCstrikeEV_FireM4A1Fn_t)pAddress;
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)g_pfnCstrike_EV_FireUSP_Hooked_Func, EV_FireUSP);
+		firstResult = NO_ERROR == DetourTransactionCommit();
+	}
+
+	if(!firstResult) ErrorBox("Hook_cstrike_events_usp");
+
+	return firstResult;
+}
+
 bool Hook_Cstrike_Viewmodel_Animation_Fix()
 {
 	static bool firstRun = true;
@@ -439,21 +478,15 @@ bool Hook_Cstrike_Viewmodel_Animation_Fix()
 	if (!firstRun) return firstResult;
 	firstRun = false;
 	
-	if (HL_ADDR_GET(cstrike_EV_FireUSPFn) && 
-		HL_ADDR_GET(cstrike_EV_FireM4A1Fn) && 
-		HL_ADDR_GET(cstrike_ViewmodelSequenceFn))
+	if (pEngfuncs)
 	{
 		LONG error = NO_ERROR;
 
-		g_pfnCstrike_EV_FireUSP_Hooked_Func = (UnkCstrikeEV_FireUSPFn_t)HL_ADDR_GET(cstrike_EV_FireUSPFn);
-		g_pfnCstrike_EV_FireM4A1_Hooked_Func = (UnkCstrikeEV_FireM4A1Fn_t)HL_ADDR_GET(cstrike_EV_FireM4A1Fn);
-		g_pfnAnimationFix_Hooked_Func = (UnkCstrikeAnimationFixFn_t)HL_ADDR_GET(cstrike_ViewmodelSequenceFn);
+		g_detoured_pfnWeaponAnim = pEngfuncs->pfnWeaponAnim;
 
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
-		DetourAttach(&(PVOID&)g_pfnCstrike_EV_FireUSP_Hooked_Func, EV_FireUSP);
-		DetourAttach(&(PVOID&)g_pfnCstrike_EV_FireM4A1_Hooked_Func, EV_FireM4A1);
-		DetourAttach(&(PVOID&)g_pfnAnimationFix_Hooked_Func, ViewmodelPlayIdleFunc);
+		DetourAttach(&(PVOID&)g_detoured_pfnWeaponAnim, Touring_pfnWeaponAnim);
 		error = DetourTransactionCommit();
 
 		if (NO_ERROR != error)

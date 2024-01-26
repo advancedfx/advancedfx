@@ -50,9 +50,6 @@ AFXADDR_DEF(cstrike_UnkCrosshairFn_add_fac)
 AFXADDR_DEF(cstrike_UnkCrosshairFn_mul_fac)
 AFXADDR_DEF(cstrike_rgDeathNoticeList)
 AFXADDR_DEF(cstrike_PM_CatagorizePositionFn)
-AFXADDR_DEF(cstrike_ViewmodelSequenceFn)
-AFXADDR_DEF(cstrike_EV_FireM4A1Fn)
-AFXADDR_DEF(cstrike_EV_FireUSPFn)
 AFXADDR_DEF(g_fov)
 AFXADDR_DEF(hlExe)
 AFXADDR_DEF(hwDll)
@@ -139,16 +136,6 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
-	}
-
-	// cstrike htlv viewmodel animation fix
-	{
-		MemRange r1 = FindPatternString(textRange, "55 8B EC 8D 45 0C 8D 4D 08 50 51 FF 15 ?? ?? ?? ?? 8B 15 ?? ?? ?? ?? 8B 45 08 8B 4D 0C 83 C4 08");
-
-		if (!r1.IsEmpty())
-			AFXADDR_SET(cstrike_ViewmodelSequenceFn, r1.Start);
-		else
-			ErrorBox(MkErrStr(__FILE__, __LINE__)); //TODO
 	}
 
 	// pEngfuncs // [5] // Checked: 2023-12-16
@@ -602,7 +589,7 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 									MemRange tmp8 = FindPatternString(textRange.And(MemRange(addr_R_MarkLeaves, addr_R_MarkLeaves +0x12C)), "50 8b c6 68 ff 00 00 00 50 e8 ?? ?? ?? ?? 83 c4 0c eb ?? ff 35 ?? ?? ?? ?? 51 e8 ?? ?? ?? ??");
 									if (!tmp8.IsEmpty())
 									{
-										AFXADDR_SET(Mod_LeafPVS, *(DWORD *)(tmp8.Start + 20) + (DWORD)(tmp8.Start + 20 + 4)); // Decode Call
+										AFXADDR_SET(Mod_LeafPVS, *(DWORD *)(tmp8.Start + 27) + (DWORD)(tmp8.Start + 27 + 4)); // Decode Call
 									}
 									else ErrorBox(MkErrStr(__FILE__, __LINE__));
 								}
@@ -709,7 +696,7 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
-		else ErrorBox(MkErrStr(__FILE__, __LINE__)); //TODO
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
 
 	// g_fov // [17] // Checked 2024-01-16
@@ -720,7 +707,7 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 		{
 			AFXADDR_SET(g_fov, *(DWORD *)(r1.Start + 67));
 		}
-		else ErrorBox(MkErrStr(__FILE__, __LINE__)); //TODO
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
 	
 	//
@@ -923,42 +910,35 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 	//
 	// Studio interface related:
 	//
-	// 2020-03-12
+	// 2024-01-22
 	//
 	{
-		MemRange s1 = FindCString(data2Range, "HUD_GetStudioModelInterface");
+		MemRange s1 = FindCString(data1Range, "HUD_GetStudioModelInterface");
 
 		if (!s1.IsEmpty()) {
+			MemRange s1Ref = FindBytes(textRange, (const char*)(&s1.Start), sizeof(s1.Start));
 
-			s1 = FindCString(MemRange(s1.End, data2Range.End), "HUD_GetStudioModelInterface");
+			if (!s1Ref.IsEmpty()) {
 
-			if (!s1.IsEmpty()) {
+				/*
+				push    offset off_1E53248
+				push    offset off_1E5330C
+				push    1
+				call    eax
+				*/
+				MemRange r2 = FindPatternString(textRange.And(MemRange(s1Ref.Start + 0x14, s1Ref.Start + 0x14 + 0xE)), "68 ?? ?? ?? ?? 68 ?? ?? ?? ?? 6A ?? FF ??");
 
-				MemRange s1Ref = FindBytes(textRange, (const char*)(&s1.Start), sizeof(s1.Start));
+				if (!r2.IsEmpty()) {
 
-				if (!s1Ref.IsEmpty()) {
-
-					/*
-					push    offset off_1E53248
-					push    offset off_1E5330C
-					push    1
-					call    eax
-					*/
-					MemRange r2 = FindPatternString(textRange.And(MemRange(s1Ref.Start + 0x14, s1Ref.Start + 0x14 + 0xE)), "68 ?? ?? ?? ?? 68 ?? ?? ?? ?? 6A ?? FF ??");
-
-					if (!r2.IsEmpty()) {
-
-						AFXADDR_SET(hw_HUD_GetStudioModelInterface_pStudio, *(DWORD*)(r2.Start + 1));
-						AFXADDR_SET(hw_HUD_GetStudioModelInterface_pInterface, *(DWORD*)(r2.Start + 6));
-						AFXADDR_SET(hw_HUD_GetStudioModelInterface_version, *(BYTE*)(r2.Start + 11));
-					}
-					else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					AFXADDR_SET(hw_HUD_GetStudioModelInterface_pStudio, *(DWORD*)(r2.Start + 1));
+					AFXADDR_SET(hw_HUD_GetStudioModelInterface_pInterface, *(DWORD*)(r2.Start + 6));
+					AFXADDR_SET(hw_HUD_GetStudioModelInterface_version, *(BYTE*)(r2.Start + 11));
 				}
 				else ErrorBox(MkErrStr(__FILE__, __LINE__));
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
-		else ErrorBox(MkErrStr(__FILE__, __LINE__)); //TODO
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
 }
 
@@ -997,66 +977,127 @@ void Addresses_InitClientDll(AfxAddr clientDll, const char * gamedir)
 	if (0 == _stricmp("cstrike", gamedir))
 	{
 		// cstrike CrossHair fix related:
-		// cstrike_UnkCrosshairFn // [1] // Checked 2018-10-06
-		// cstrike_UnkCrosshairFn_mul_fac // [1] // Checked 2018-10-06
-		// cstrike_UnkCrosshairFn_add_fac // [1] // Checked 2018-10-06
+		// cstrike_UnkCrosshairFn // [1] // Checked 2024-01-24
+		// cstrike_UnkCrosshairFn_mul_fac // [1] // Checked 2024-01-24
+		// cstrike_UnkCrosshairFn_add_fac // [1] // Checked 2024-01-24
 		{
-			MemRange r1 = FindPatternString(textRange, "83 EC 08 8B 44 24 10 53 55 56 57 8B F9 8D 48 FF 89 7C 24 14 83 F9 1D BA 04 00 00 00 BE 05 00 00 00");
+			/*
+									cstrike_UnkCrosshairFn                          XREF[2]:     FUN_10043a60:10043afe(c), 
+																								FUN_10043a60:10043c15(c)  
+				10043ff0 55              PUSH       EBP
+				10043ff1 8b ec           MOV        EBP,ESP
+				10043ff3 83 ec 0c        SUB        ESP,0xc
+				10043ff6 0f 57 c9        XORPS      XMM1,XMM1
+				10043ff9 53              PUSH       EBX
+				10043ffa 8b 5d 0c        MOV        EBX,dword ptr [EBP + param_2]
+				10043ffd 56              PUSH       ESI
+				10043ffe 4b              DEC        EBX
+				10043fff 57              PUSH       EDI
+				10044000 8b f9           MOV        EDI,this
+				10044002 83 fb 1d        CMP        EBX,0x1d
+				10044005 77 7d           JA         switchD_10044007::caseD_1			
+			*/
+			MemRange r1 = FindPatternString(textRange, "55 8b ec 83 ec 0c 0f 57 c9 53 8b 5d 0c 56 4b 57 8b f9 83 fb 1d");
 
 			if (!r1.IsEmpty()) {
 
 				AFXADDR_SET(cstrike_UnkCrosshairFn, r1.Start);
 
-				MemRange r2 = textRange.And(MemRange(r1.Start, r1.Start + 0x550));
+				MemRange r2 = textRange.And(MemRange(r1.Start, r1.Start + 0x760));
 
-				MemRange r3 = FindPatternString(r2, "D9 47 44 DD 05 ?? ?? ?? ?? D8 C9 83 C0 02 89 47 48 DC 05 ?? ?? ?? ??");
+				/*
+											LAB_10044225                                    XREF[1]:     100441e3(j)  
+						10044225 0f 5a c9        CVTPS2PD   XMM1,XMM1
+						10044228 8d 41 02        LEA        EAX,[this + 0x2]
+						1004422b 89 47 48        MOV        dword ptr [EDI + 0x48],EAX
+						1004422e 0f 28 c1        MOVAPS     XMM0,XMM1
+						10044231 f2 0f 59        MULSD      XMM0,qword ptr [cstrike_UnkCrosshairFn_mul_fac]  = 39h    9
+								05 50 eb 
+								0c 10
+						10044239 f2 0f 58        ADDSD      XMM0,qword ptr [cstrike_UnkCrosshairFn_add_fac]  = 3FB999999999999Ah
+								05 48 fc 
+								0b 10
+						10044241 f2 0f 5c c8     SUBSD      XMM1,XMM0
+						10044245 66 0f 5a c1     CVTPD2PS   XMM0,XMM1
+						10044249 f3 0f 11        MOVSS      dword ptr [EDI + 0x44],XMM0
+								47 44
+											LAB_1004424e                                    XREF[2]:     10044215(j), 10044223(j)  
+						1004424e 8b 0d 24        MOV        this,dword ptr [DAT_10117724]                    = ??
+								77 11 10
+						10044254 81 f9 58        CMP        this,0x258
+								02 00 00
+						1004425a 7e 13           JLE        LAB_1004426f
+				*/
+
+				MemRange r3 = FindPatternString(r2, "0f 28 c1 f2 0f 59 05 ?? ?? ?? ?? f2 0f 58 05 ?? ?? ?? ??");
 
 				if (!r3.IsEmpty()) {
-					AFXADDR_SET(cstrike_UnkCrosshairFn_mul_fac, *(DWORD *)(r3.Start + 5));
-					AFXADDR_SET(cstrike_UnkCrosshairFn_add_fac, *(DWORD *)(r3.Start + 19));
+					AFXADDR_SET(cstrike_UnkCrosshairFn_mul_fac, *(DWORD *)(r3.Start + 7));
+					AFXADDR_SET(cstrike_UnkCrosshairFn_add_fac, *(DWORD *)(r3.Start + 15));
 				}
 				else ErrorBox(MkErrStr(__FILE__, __LINE__));
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
 
-		// hooks cstrike EV_FireM4A1
-		{
-			MemRange r1 = FindPatternString(textRange, "81 EC 9C 00 00 00 E8 ?? ?? ?? ?? 89 44 24 00 A1 ?? ?? ?? ?? C7 44 24 1C 01");
-
-			if (!r1.IsEmpty())
-				AFXADDR_SET(cstrike_EV_FireM4A1Fn, r1.Start);
-			else
-				ErrorBox(MkErrStr(__FILE__, __LINE__));
-		}
-
-		// hooks cstrike EV_FireUSP
-		{
-			MemRange r1 = FindPatternString(textRange, "81 EC A0 00 00 00 E8 ?? ?? ?? ?? 89 44 24 30 A1 ?? ?? ?? ?? C7 44 24 38");
-
-			if (!r1.IsEmpty())
-				AFXADDR_SET(cstrike_EV_FireUSPFn, r1.Start);
-			else
-				ErrorBox(MkErrStr(__FILE__, __LINE__));
-		}
-
+		// cstrike_PM_CatagorizePositionFn // Checked 2024-01-20
+		//
 		// cstrike spectator fix, gets PM_CatagorizePosition
-		{
-			MemRange r1 = FindPatternString(textRange, "81 EC 94 00 00 00 55 56 57 E8 32 FE FF FF 8B 0D");
+		/*
+			PM_CatagorizePosition gets called in void PM_PlayerMove ( qboolean server ) (see pm_shared.c in SDK),
+			which references the string "Bogus pmove player movetype %i on (%i) 0=cl 1=sv\n":
 
-			if (!r1.IsEmpty())
-				AFXADDR_SET(cstrike_PM_CatagorizePositionFn, r1.Start);
-			else 
-				ErrorBox(MkErrStr(__FILE__, __LINE__));
+								switchD_1006146d::caseD_2                       XREF[3]:     10061460(j), 1006146d(j), 
+								switchD_1006146d::caseD_4                                    100622c0(*)  
+								switchD_1006146d::caseD_7
+								switchD_1006146d::caseD_9
+								switchD_1006146d::caseD_1
+			10062264 ff 76 04        PUSH       dword ptr [ESI + 0x4]
+			10062267 8b 86 64        MOV        EAX,dword ptr [ESI + 0x4f564]
+					f5 04 00
+			1006226d 51              PUSH       ECX
+			1006226e 68 fc 0f        PUSH       s_Bogus_pmove_player_movetype_%i_o_100d0ffc      = "Bogus pmove player movetype %
+					0d 10
+			10062273 ff d0           CALL       EAX
+			10062275 83 c4 0c        ADD        ESP,0xc
+			10062278 5f              POP        EDI
+			10062279 5e              POP        ESI
+			1006227a 8b 8c 24        MOV        ECX,dword ptr [ESP + 0xdc]
+					dc 00 00 00
+			10062281 33 cc           XOR        ECX,ESP
+			10062283 e8 96 20        CALL       FUN_100b431e                                     undefined FUN_100b431e(int param
+					05 00
+			10062288 8b e5           MOV        ESP,EBP
+			1006228a 5d              POP        EBP
+			1006228b c3              RET
+								LAB_1006228c                                    XREF[2]:     10061277(j), 10061283(j)  
+			1006228c e8 5f 01        CALL       FUN_100623f0                                     undefined FUN_100623f0(void)
+					00 00
+			10062291 e8 4a b6        CALL       PM_CatagorizePosition                            undefined PM_CatagorizePosition(
+					ff ff
+
+		*/
+		{
+			MemRange s1 = FindCString(data1Range, "Bogus pmove player movetype %i on (%i) 0=cl 1=sv\n");
+			if (!s1.IsEmpty()) {
+				MemRange r1 = FindBytes(textRange, (const char *)&s1.Start, sizeof(s1.Start));
+				if (!r1.IsEmpty()) {
+					MemRange r2 = FindPatternString(textRange.And(MemRange(r1.Start + 0x1d, r1.Start +0x1d + 10)), "e8 ?? ?? ?? ?? e8 ?? ?? ?? ??");
+					if(!r2.IsEmpty()) {
+						AFXADDR_SET(cstrike_PM_CatagorizePositionFn, *(size_t *)(r2.Start + 6) + (DWORD)(r2.Start + 6 + 4)); // Decode call address
+
+					} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+			} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
 
 		// cstrike_EV_CreateSmoke: // [3]
 		// This is set in MypfnHookEvent.
 
 		// cstrike DeathMsg related (client.dll offsets):
-		// [2] // Checked 2018-10-06
+		// [2] // Checked 2024-01-26
 		{
-			MemRange s1 = FindCString(data2Range, "DeathMsg");
+			MemRange s1 = FindCString(data1Range, "DeathMsg");
 
 			if (!s1.IsEmpty()) {
 
@@ -1070,13 +1111,13 @@ void Addresses_InitClientDll(AfxAddr clientDll, const char * gamedir)
 
 						AFXADDR_SET(cstrike_MsgFunc_DeathMsg, *(DWORD *)(r2.Start + 1));
 
-						MemRange r3 = FindPatternString(textRange.And(MemRange(AFXADDR_GET(cstrike_MsgFunc_DeathMsg), AFXADDR_GET(cstrike_MsgFunc_DeathMsg) + 0x1A)), "8B 44 24 0C 8B 4C 24 08 8B 54 24 04 50 51 52 B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? C3");
+						MemRange r3 = FindPatternString(textRange.And(MemRange(AFXADDR_GET(cstrike_MsgFunc_DeathMsg), AFXADDR_GET(cstrike_MsgFunc_DeathMsg) + 0x1A)), "55 8b ec ff 75 10 b9 ?? ?? ?? ?? ff 75 0c ff 75 08 e8 ?? ?? ?? ?? 5d c3");
 
 						if (!r3.IsEmpty())
 						{
-							AFXADDR_SET(cstrike_CHudDeathNotice_MsgFunc_DeathMsg, *(DWORD *)(r3.Start + 21) + (DWORD)(r3.Start + 25)); // Decode call address.
+							AFXADDR_SET(cstrike_CHudDeathNotice_MsgFunc_DeathMsg, *(DWORD *)(r3.Start + 17+1) + (DWORD)(r3.Start + 17+1+4)); // Decode call address.
 
-							MemRange r4 = FindPatternString(textRange.And(MemRange(AFXADDR_GET(cstrike_CHudDeathNotice_MsgFunc_DeathMsg), AFXADDR_GET(cstrike_CHudDeathNotice_MsgFunc_DeathMsg) +0x43F)), "68 80 02 00 00 68 ?? ?? ?? ?? 68 ?? ?? ?? ?? E8 ?? ?? ?? ??");
+							MemRange r4 = FindPatternString(textRange.And(MemRange(AFXADDR_GET(cstrike_CHudDeathNotice_MsgFunc_DeathMsg), AFXADDR_GET(cstrike_CHudDeathNotice_MsgFunc_DeathMsg) +0x553)), "68 80 02 00 00 68 ?? ?? ?? ?? 68 ?? ?? ?? ?? e8 ?? ?? ?? ??");
 
 							if (!r4.IsEmpty()) {
 								AFXADDR_SET(cstrike_rgDeathNoticeList, *(DWORD *)(r4.Start + 11));
@@ -1092,19 +1133,19 @@ void Addresses_InitClientDll(AfxAddr clientDll, const char * gamedir)
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-			MemRange r1 = FindPatternString(textRange, "83 EC 3C 56 8B F1 89 74 24 0C 8B 46 1C 89 44 24 2C A1 ?? ?? ?? ?? 85 C0 75 0A FF 15 ?? ?? ?? ?? 85 C0 74 12");
+			MemRange r1 = FindPatternString(textRange, "55 8b ec 83 ec 64 83 3d ?? ?? ?? ?? 00 8b c1 53 89 45 fc 8b 58 1c 89 5d c0 75 0a ff 15 ?? ?? ?? ?? 85 c0 74 11");
 
 			if (!r1.IsEmpty()) {
 
 				AFXADDR_SET(cstrike_CHudDeathNotice_Draw, r1.Start);
 
 				// Check that our Y-Res adjusting code is still correct (otherwise it needs to be adjusted):
-				//
-				// .text:01944724 04C                 mov     ebp, [esi+18h]
-				// .text:01944727 04C                 mov     edx, [esp+38h]
-				// .text:0194472B 04C                 imul    ebp, ebx
-				//
-				MemRange r2 = FindPatternString(textRange.And(MemRange(r1.Start, r1.Start + 0x37D)), "8B 6E 18 8B 54 24 38 0F AF EB");
+				/*
+					10047eec 8b 75 c8        MOV        ESI,dword ptr [EBP + local_3c]
+					10047eef 8b 78 18        MOV        EDI,dword ptr [EAX + 0x18]
+					10047ef2 0f af 7d f4     IMUL       EDI,dword ptr [EBP + local_10]				
+				*/
+				MemRange r2 = FindPatternString(textRange.And(MemRange(r1.Start, r1.Start + 0x410)), "8b 75 c8 8b 78 18 0f af 7d f4");
 
 				if (!r2.IsEmpty())
 				{
@@ -1118,7 +1159,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, const char * gamedir)
 	else if (0 == _stricmp("tfc", gamedir))
 	{
 		// tfc DeathMsg related (client.dll offsets):
-		// [14] // Checked 2018-10-06
+		// [14] // Checked 2024-01-26 (no change)
 		{
 			MemRange s1 = FindCString(data2Range, "DeathMsg");
 
@@ -1134,13 +1175,13 @@ void Addresses_InitClientDll(AfxAddr clientDll, const char * gamedir)
 
 						AFXADDR_SET(tfc_MsgFunc_DeathMsg, *(DWORD *)(r2.Start + 1));
 
-						MemRange r3 = FindPatternString(textRange.And(MemRange(AFXADDR_GET(tfc_MsgFunc_DeathMsg), AFXADDR_GET(tfc_MsgFunc_DeathMsg) + 0x1A)), "8B 44 24 0C 8B 4C 24 08 8B 54 24 04 50 51 52 B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? C3");
+						MemRange r3 = FindPatternString(textRange.And(MemRange(AFXADDR_GET(tfc_MsgFunc_DeathMsg), AFXADDR_GET(tfc_MsgFunc_DeathMsg) + 0x1A)), "8b 44 24 0c 8b 4c 24 08 8b 54 24 04 50 51 52 b9 ?? ?? ?? ?? e8 ?? ?? ?? ?? c3");
 
 						if (!r3.IsEmpty())
 						{
 							AFXADDR_SET(tfc_CHudDeathNotice_MsgFunc_DeathMsg, *(DWORD *)(r3.Start + 21) + (DWORD)(r3.Start + 25)); // Decode call address.
 
-							MemRange r4 = FindPatternString(textRange.And(MemRange(AFXADDR_GET(tfc_CHudDeathNotice_MsgFunc_DeathMsg), AFXADDR_GET(tfc_CHudDeathNotice_MsgFunc_DeathMsg) + 0x363)), "68 70 02 00 00 68 ?? ?? ?? ?? 68 ?? ?? ?? ?? E8 ?? ?? ?? ??");
+							MemRange r4 = FindPatternString(textRange.And(MemRange(AFXADDR_GET(tfc_CHudDeathNotice_MsgFunc_DeathMsg), AFXADDR_GET(tfc_CHudDeathNotice_MsgFunc_DeathMsg) + 0x363)), "68 70 02 00 00 68 ?? ?? ?? ?? 68 ?? ?? ?? ?? e8 ?? ?? ?? ??");
 
 							if (!r4.IsEmpty()) {
 								AFXADDR_SET(tfc_rgDeathNoticeList, *(DWORD *)(r4.Start + 11));
@@ -1173,7 +1214,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, const char * gamedir)
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
 
-		// tfc_TeamFortressViewport_UpdateSpecatorPanel // 4 // Checked 2018-10-06
+		// tfc_TeamFortressViewport_UpdateSpecatorPanel // [4] // Checked 2024-01-26 (no change since 2018-10-06)
 		{
 			MemRange r1 = FindPatternString(textRange, "A1 ?? ?? ?? ?? 81 EC 44 02 00 00 56 8B F1 89 86 24 02 00 00 8B 0D ?? ?? ?? ?? 89 8E 28 02 00 00 8B 8E 18 0A 00 00 8B 15 ?? ?? ?? ?? 85 C9 89 96 2C 02 00 00 0F 84 ?? ?? ?? ??");
 
@@ -1186,9 +1227,9 @@ void Addresses_InitClientDll(AfxAddr clientDll, const char * gamedir)
 	}
 	else if (0 == _stricmp("valve", gamedir)) // (Half-Life)
 	{
-		// valve_TeamFortressViewport_UpdateSpecatorPanel // 4 // Checked 2018-10-06
+		// valve_TeamFortressViewport_UpdateSpecatorPanel // [4] // Checked 2024-01-26
 		{
-			MemRange r1 = FindPatternString(textRange, "A1 ?? ?? ?? ?? 81 EC 44 02 00 00 56 8B F1 89 86 24 02 00 00 8B 0D ?? ?? ?? ?? 89 8E 28 02 00 00 8B 8E 18 0A 00 00 8B 15 ?? ?? ?? ?? 85 C9 89 96 2C 02 00 00 0F 84 ?? ?? ?? ??");
+			MemRange r1 = FindPatternString(textRange, "55 8b ec 81 ec 4c 02 00 00 a1 ?? ?? ?? ?? 33 c5 89 45 fc a1 ?? ?? ?? ?? 53 8b d9 89 9d b8 fd ff ff 8b 8b 18 0a 00 00 89 83 24 02 00 00 a1 ?? ?? ?? ?? 89 83 28 02 00 00 a1 ?? ?? ?? ?? 89 83 2c 02 00 00 85 c9 0f 84 e3 03 00 00 83 3d ?? ?? ?? ?? 00");
 
 			if (!r1.IsEmpty()) {
 
