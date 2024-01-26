@@ -419,16 +419,17 @@ BOOL APIENTRY NewWglSwapBuffers(HDC hDC)
 }
 
 
-HGLRC Init_Support_Renderer(HWND hMainWindow, HDC hMainWindowDC, int iWidth, int iHeight);
+HGLRC Init_Support_Renderer(ICreateContext * pCreateContext, HWND hMainWindow, HDC hMainWindowDC, int iWidth, int iHeight);
 
-HGLRC WINAPI NewWglCreateContext(HDC hDc)
-{
-	static int iCallCount = 0;
-	iCallCount++;
-	if(2 == iCallCount)
-		return Init_Support_Renderer( g_GameWindow, hDc, g_AfxSettings.Width_get(), g_AfxSettings.Height_get() );
+HGLRC OnWglCreateContextEx(ICreateContext * pCreateContext, HDC hDc) {
+	if(g_GameWindow) {
+		if(g_pSupportRender &&  g_pSupportRender->GetHGLRC() != NULL) {
+			g_pSupportRender->hlaeDeleteContext(g_pSupportRender->GetHGLRC());
+		}
+		return Init_Support_Renderer( pCreateContext, g_GameWindow, hDc, g_AfxSettings.Width_get(), g_AfxSettings.Height_get() );
+	}
 
-	return wglCreateContext(hDc);
+	return pCreateContext->CreateContext(hDc);
 }
 
 
@@ -446,8 +447,9 @@ BOOL WINAPI NewWglMakeCurrent(HDC hDc, HGLRC hGlRc)
 
 BOOL WINAPI NewWglDeleteContext(HGLRC hGlRc)
 {
-	if (hGlRc && g_pSupportRender && g_pSupportRender->GetHGLRC() == hGlRc)
+	if (hGlRc && g_pSupportRender && g_pSupportRender->GetHGLRC() == hGlRc) {
 		return g_pSupportRender->hlaeDeleteContext(hGlRc);
+	}
 
 	return wglDeleteContext(hGlRc);
 }
@@ -457,11 +459,8 @@ BOOL WINAPI NewWglDeleteContext(HGLRC hGlRc)
 // support functions:
 //
 
-HGLRC Init_Support_Renderer(HWND hMainWindow, HDC hMainWindowDC, int iWidth, int iHeight)
+HGLRC Init_Support_Renderer(ICreateContext * pCreateContext, HWND hMainWindow, HDC hMainWindowDC, int iWidth, int iHeight)
 {
-	if(g_pSupportRender)
-		return NULL; // already created
-	
 	// determine desired target renderer:
 	CHlaeSupportRender::ERenderTarget eRenderTarget = CHlaeSupportRender::RT_GAMEWINDOW;
 
@@ -474,11 +473,13 @@ HGLRC Init_Support_Renderer(HWND hMainWindow, HDC hMainWindowDC, int iWidth, int
 		eRenderTarget = CHlaeSupportRender::RT_MEMORYDC;
 	}
 
-	// Init support renderer:
-	g_pSupportRender = new CHlaeSupportRender(hMainWindow, iWidth, iHeight);
+	if(nullptr == g_pSupportRender) {
+		// Init support renderer:
+		g_pSupportRender = new CHlaeSupportRender(hMainWindow, iWidth, iHeight);
+	}
 
 	HGLRC tHGLRC;
-	tHGLRC = g_pSupportRender->hlaeCreateContext(eRenderTarget,hMainWindowDC);
+	tHGLRC = g_pSupportRender->hlaeCreateContext(pCreateContext, eRenderTarget,hMainWindowDC);
 
 	if (!tHGLRC)
 		MessageBoxA(0, "hlaeCreateContext failed.", "Init_Support_Renderer ERROR", MB_OK|MB_ICONERROR);

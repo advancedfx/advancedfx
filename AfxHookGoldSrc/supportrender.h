@@ -53,6 +53,8 @@
 
 #include <windows.h>
 
+#include "ICreateContext.h"
+
 class CHlaeSupportRender
 {
 public:
@@ -113,7 +115,7 @@ public:
 	//   (with a few exceptions)
 	//
 
-	HGLRC hlaeCreateContext (ERenderTarget eRenderTarget, HDC hGameWindowDC);
+	HGLRC hlaeCreateContext (ICreateContext * pCreateContext, ERenderTarget eRenderTarget, HDC hGameWindowDC);
 	// this should be placed in a wglCreateContext hook
 	// ATTENTION: Make sure you use this for the right HDC and the right CreateContext call only!
 	// ATTENTION: If there is already a managed render target, the call will fail!
@@ -195,10 +197,10 @@ private:
 
 	// functions:
 
-	HGLRC	_Create_RT_GAMEWINDOW (HDC hGameWindowDC);
+	HGLRC	_Create_RT_GAMEWINDOW (ICreateContext * pCreateContext, HDC hGameWindowDC);
 	BOOL	_Delete_RT_GAMEWINDOW ();
 
-	HGLRC	_Create_RT_MEMORYDC (HDC hGameWindowDC);
+	HGLRC	_Create_RT_MEMORYDC (ICreateContext * pCreateContext, HDC hGameWindowDC);
 	BOOL	_Delete_RT_MEMORYDC ();
 	BOOL	_MakeCurrent_RT_MEMORYDC (HDC hGameWindowDC);
 	BOOL	_SwapBuffers_RT_MEMORYDC (HDC hGameWindowDC);
@@ -208,7 +210,7 @@ private:
 	BOOL	_MakeCurrent_RT_HIDDENWINDOW (HDC hGameWindowDC);
 	BOOL	_SwapBuffers_RT_HIDDENWINDOW (HDC hGameWindowDC);
 
-	HGLRC	_Create_RT_FRAMEBUFFEROBJECT (HDC hGameWindowDC);
+	HGLRC	_Create_RT_FRAMEBUFFEROBJECT (ICreateContext * pCreateContext, HDC hGameWindowDC);
 	BOOL	_Delete_RT_FRAMEBUFFEROBJECT ();
 	BOOL	_MakeCurrent_RT_FRAMEBUFFEROBJECT (HDC hGameWindowDC); // this may instantly change target back to RT_GAMEWINDOW
 	BOOL	_SwapBuffers_RT_FRAMEBUFFEROBJECT (HDC hGameWindowDC);

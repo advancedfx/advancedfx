@@ -261,7 +261,7 @@ HWND CHlaeSupportRender::GetInternalHWND()
 	return NULL;
 }
 
-HGLRC CHlaeSupportRender::hlaeCreateContext (ERenderTarget eRenderTarget, HDC hGameWindowDC)
+HGLRC CHlaeSupportRender::hlaeCreateContext (ICreateContext * pCreateContext, ERenderTarget eRenderTarget, HDC hGameWindowDC)
 {
 	if(RT_NULL != _eRenderTarget)
 	{
@@ -275,11 +275,11 @@ HGLRC CHlaeSupportRender::hlaeCreateContext (ERenderTarget eRenderTarget, HDC hG
 		ERROR_MESSAGE("cannot Create RT_NULL target")
 		return NULL;
 	case RT_GAMEWINDOW:
-		return _Create_RT_GAMEWINDOW (hGameWindowDC);
+		return _Create_RT_GAMEWINDOW (pCreateContext,hGameWindowDC);
 	case RT_MEMORYDC:
-		return _Create_RT_MEMORYDC (hGameWindowDC);
+		return _Create_RT_MEMORYDC (pCreateContext,hGameWindowDC);
 	case RT_FRAMEBUFFEROBJECT:
-		return _Create_RT_FRAMEBUFFEROBJECT (hGameWindowDC);
+		return _Create_RT_FRAMEBUFFEROBJECT (pCreateContext,hGameWindowDC);
 	}
 
 	ERROR_MESSAGE("cannot Create unknown target")
@@ -373,9 +373,9 @@ void CHlaeSupportRender::hlaeOnFilmingStop()
 }
 
 
-HGLRC CHlaeSupportRender::_Create_RT_GAMEWINDOW (HDC hGameWindowDC)
+HGLRC CHlaeSupportRender::_Create_RT_GAMEWINDOW (ICreateContext * pCreateContext, HDC hGameWindowDC)
 {
-	_ownHGLRC = wglCreateContext(hGameWindowDC);
+	_ownHGLRC = pCreateContext->CreateContext(hGameWindowDC);
 
 	if(_ownHGLRC) _eRenderTarget=RT_GAMEWINDOW;
 
@@ -395,7 +395,7 @@ BOOL CHlaeSupportRender::_Delete_RT_GAMEWINDOW ()
 	return wbRet;
 }
 
-HGLRC CHlaeSupportRender::_Create_RT_MEMORYDC (HDC hGameWindowDC)
+HGLRC CHlaeSupportRender::_Create_RT_MEMORYDC (ICreateContext * pCreateContext, HDC hGameWindowDC)
 {
 	_MemoryDc_r.ownHDC = CreateCompatibleDC(hGameWindowDC);
 	if (!_MemoryDc_r.ownHDC)
@@ -460,7 +460,7 @@ HGLRC CHlaeSupportRender::_Create_RT_MEMORYDC (HDC hGameWindowDC)
 
 	delete ppfd;
 
-	_ownHGLRC = wglCreateContext(_MemoryDc_r.ownHDC);
+	_ownHGLRC = pCreateContext->CreateContext(_MemoryDc_r.ownHDC);
 	if (!_ownHGLRC)
 	{
 		ERROR_MESSAGE_LE("could not create own context")
@@ -515,9 +515,9 @@ BOOL CHlaeSupportRender::_SwapBuffers_RT_MEMORYDC (HDC hGameWindowDC)
 	return bwRet;
 }
 
-HGLRC CHlaeSupportRender::_Create_RT_FRAMEBUFFEROBJECT (HDC hGameWindowDC)
+HGLRC CHlaeSupportRender::_Create_RT_FRAMEBUFFEROBJECT (ICreateContext * pCreateContext, HDC hGameWindowDC)
 {
-	_ownHGLRC = wglCreateContext(hGameWindowDC);
+	_ownHGLRC = pCreateContext->CreateContext(hGameWindowDC);
 	
 	if(_ownHGLRC) _eRenderTarget=RT_FRAMEBUFFEROBJECT;
 

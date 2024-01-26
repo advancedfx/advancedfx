@@ -4,6 +4,8 @@
 #include <shared/AfxDetours.h>
 #include <gl/gl.h>
 
+#include "../ICreateContext.h"
+
 void APIENTRY NewGlBegin(GLenum mode);
 
 void APIENTRY NewGlEnd(void);
@@ -18,7 +20,7 @@ void APIENTRY NewGlBlendFunc (GLenum sfactor, GLenum dfactor);
 
 extern CAfxImportFuncHookBase* Get_Import_GDI32_SwapBuffers();
 
-HGLRC WINAPI NewWglCreateContext(HDC);
+HGLRC OnWglCreateContextEx(ICreateContext * pCreateContext, HDC hDc);
 
 BOOL WINAPI NewWglDeleteContext(HGLRC hGlRc);
 

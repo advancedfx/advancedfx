@@ -2,13 +2,17 @@
 
 #include "user32Hooks.h"
 
-#include <shared/AfxDetours.h>
-
 #include "../AfxSettings.h"
 #include "../supportrender.h"
 #include "../mirv_input.h"
 
 #include "../shared/MirvInput.h"
+
+#include "../../shared/AfxDetours.h"
+#include <Windows.h>
+#include "../../deps/release/Detours/src/detours.h"
+
+void ErrorBox(char const * messageText);
 
 HWND g_GameWindow = NULL;
 bool g_GameWindowActive = false;
@@ -98,7 +102,7 @@ CAfxImportFuncHookBase* Get_Import_USER32_CreateWindowExW() {
 }
 HWND APIENTRY NewCreateWindowExW(DWORD dwExStyle,LPCWSTR lpClassName,LPCWSTR lpWindowName,DWORD dwStyle,int x,int y,int nWidth,int nHeight,HWND hWndParent,HMENU hMenu,HINSTANCE hInstance,LPVOID lpParam)
 {
-	if (NULL != hWndParent || lstrcmpW(L"",lpWindowName))
+	if (NULL != hWndParent || 0 == HIWORD(lpClassName) || 0 != lstrcmpW(L"SDL_app",lpClassName) || 0 != lstrcmpW(L"",lpWindowName))
 		// it's not the window we want.
 		return Get_Import_USER32_CreateWindowExW_Internal()->TrueFunc(dwExStyle,lpClassName,lpWindowName,dwStyle,x,y,nWidth,nHeight,hWndParent,hMenu,hInstance,lpParam);
 
@@ -126,7 +130,12 @@ HWND APIENTRY NewCreateWindowExW(DWORD dwExStyle,LPCWSTR lpClassName,LPCWSTR lpW
 	// is just fucked up, so we hook the SDL one:
 	//SetWindowLongPtrW(g_GameWindow, GWLP_WNDPROC, (LONG)new_Afx_WindowProc);
 	//g_afxWindowProcSet = true;
-	g_NextWindProc = (WNDPROC)DetourApply((BYTE *)g_NextWindProc, (BYTE *)new_Afx_WindowProc, 0x09);
+
+	DetourTransactionBegin();
+	DetourUpdateThread(GetCurrentThread());
+	DetourAttach(&(PVOID&)g_NextWindProc, new_Afx_WindowProc);
+	if(NO_ERROR != DetourTransactionCommit())
+		ErrorBox("DetourTransactionCommit failed:\new_Afx_WindowProc");
 
 	return g_GameWindow;
 }
@@ -148,7 +157,10 @@ BOOL APIENTRY NewDestroyWindow(HWND hWnd)
 
 		g_GameWindow = NULL;
 
-		if (g_pSupportRender) delete g_pSupportRender;
+		if (g_pSupportRender) {
+			delete g_pSupportRender;
+			g_pSupportRender = nullptr;
+		}
 	}
 
 	return Get_Import_USER32_DestroyWindow_Internal()->TrueFunc(hWnd);

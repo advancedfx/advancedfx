@@ -60,18 +60,18 @@ bool Hook_R_DrawEntitiesOnList()
 	) {
 		LONG error = NO_ERROR;
 
-		void * R_DrawEntitiesOnList_In_Continue = (void *)(AFXADDR_GET(R_DrawEntitiesOnList_In)+7);
+		void * R_DrawEntitiesOnList_In_Continue = (void *)(AFXADDR_GET(R_DrawEntitiesOnList_In)+9);
 
 		g_Old_R_DrawEntitiesOnList_In = MdtAllocExecuteableMemory(
-			7 // for the original cmp
+			9 // for the original code
 			+ 5 // for or JMP back into original code
 		);
 
-		Asm32ReplaceWithJmp(&((unsigned char *)g_Old_R_DrawEntitiesOnList_In)[7],5,R_DrawEntitiesOnList_In_Continue);
+		Asm32ReplaceWithJmp(&((unsigned char *)g_Old_R_DrawEntitiesOnList_In)[9],5,R_DrawEntitiesOnList_In_Continue);
 
 		MdtMemBlockInfos mbis;
-		MdtMemAccessBegin((LPVOID)AFXADDR_GET(R_DrawEntitiesOnList_In),7,&mbis);
-		memcpy(g_Old_R_DrawEntitiesOnList_In,(LPCVOID)AFXADDR_GET(R_DrawEntitiesOnList_In),7);
+		MdtMemAccessBegin((LPVOID)AFXADDR_GET(R_DrawEntitiesOnList_In),9,&mbis);
+		memcpy(g_Old_R_DrawEntitiesOnList_In,(LPCVOID)AFXADDR_GET(R_DrawEntitiesOnList_In),9);
 		MdtMemAccessEnd(&mbis);
 
 		void * R_DrawEntitiesOnList_Out_Continue = (void *)(AFXADDR_GET(R_DrawEntitiesOnList_Out)+12);
@@ -87,7 +87,7 @@ bool Hook_R_DrawEntitiesOnList()
 		memcpy(g_Old_R_DrawEntitiesOnList_Out,(LPCVOID)AFXADDR_GET(R_DrawEntitiesOnList_Out),12);
 		MdtMemAccessEnd(&mbis);
 
-		Asm32ReplaceWithJmp((void*)AFXADDR_GET(R_DrawEntitiesOnList_In),7,Touring_R_DrawEntitiesOnList_In);
+		Asm32ReplaceWithJmp((void*)AFXADDR_GET(R_DrawEntitiesOnList_In),9,Touring_R_DrawEntitiesOnList_In);
 		Asm32ReplaceWithJmp((void*)AFXADDR_GET(R_DrawEntitiesOnList_Out),12,Touring_R_DrawEntitiesOnList_Out);
 
 		firstResult = true;

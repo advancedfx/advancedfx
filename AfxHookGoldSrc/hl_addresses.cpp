@@ -512,18 +512,14 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 									
 									{
 										/*
-											We will detour the CMP to do what we want (no need to adjust offsets):
-
-											10244349 83 3d ac        CMP        dword ptr [DAT_10dc63ac],0x0                     = ??
-													63 dc 10 00
-											10244350 0f 85 6a        JNZ        LAB_102445c0
-													02 00 00
-											10244356 e8 c5 8c        CALL       FUN_101ad020                                     undefined FUN_101ad020()
-													f6 ff
-											1024435b 85 c0           TEST       EAX,EAX
-											1024435d 74 33           JZ         LAB_10244392
+											102443b4 56              PUSH       ESI
+											102443b5 33 f6           XOR        ESI,ESI
+											102443b7 39 35 40        CMP        dword ptr [DAT_11253740],ESI                     = ??
+													37 25 11
+											102443bd 0f 8e 2f        JLE        LAB_102444f2
+													01 00 00
 										*/
-										MemRange rangeIn = FindPatternString(MemRange(tmp4.End, range_R_RenderScene.End), "83 3d ?? ?? ?? ?? 00 0f 85 ?? ?? ?? ?? e8 ?? ?? ?? ?? 85 c0 74 ??");
+										MemRange rangeIn = FindPatternString(MemRange(tmp4.End, range_R_RenderScene.End), "56 33 f6 39 35 ?? ?? ?? ?? 0f 8e 2f 01 00 00");
 
 										/*
 											We will detour on XOR ESI,ESI AND MOV (no need to adjust offsets), which is after the inlined R_DrawEntitiesOnList.

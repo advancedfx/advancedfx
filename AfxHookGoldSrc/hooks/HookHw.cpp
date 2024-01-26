@@ -74,6 +74,73 @@ void Mirv_DevMsg(int level, const char* fmt, ...) {
 	va_end(args);
 }
 
+#ifndef WGL_ARB_pixel_format_float
+#define WGL_ARB_pixel_format_float
+#define WGL_TYPE_RGBA_FLOAT_ARB 0x21A0
+#endif
+
+typedef BOOL (WINAPI *wglChoosePixelFormatARB_t)(HDC hdc, const int *piAttribIList, const FLOAT * pfAttribFList, UINT nMaxFormats, int *piFormats, UINT * nNumFormats);
+
+BOOL WINAPI New_wglChoosePixelFormatARB(HDC hdc, const int *piAttribIList, const FLOAT * pfAttribFList, UINT nMaxFormats, int *piFormats, UINT * nNumFormats) {
+
+}
+
+typedef HGLRC (WINAPI * wglCreateContextAttribsARB_t) (HDC hDC, HGLRC hShareContext, const int *attribList);
+wglCreateContextAttribsARB_t g_Old_wglCreateContextAttribsARB = nullptr;
+HGLRC WINAPI New_wglCreateContextAttribsARB(HDC hDC, HGLRC hShareContext, const int *attribList) {
+
+	class CCreateContext : public ICreateContext {
+	public:
+		CCreateContext(HGLRC hShareContext, const int *attribList) : hShareContext(hShareContext), attribList(attribList) {}
+
+		virtual HGLRC CreateContext(HDC hDc) {
+			return g_Old_wglCreateContextAttribsARB(hDc, hShareContext, attribList);
+		}
+	private:
+		HGLRC hShareContext;
+		const int *attribList;
+	} createContext(hShareContext,attribList);
+
+	return OnWglCreateContextEx(&createContext, hDC);
+}
+
+PROC WINAPI New_wglGetProcAddress(LPCSTR unnamedParam1) {
+	PROC result = wglGetProcAddress(unnamedParam1);
+	if(result)
+		if(0 == strcmp(unnamedParam1, "wglCreateContextAttribsARB") && nullptr == g_Old_wglCreateContextAttribsARB) {
+			g_Old_wglCreateContextAttribsARB = (wglCreateContextAttribsARB_t)result;
+			result = (PROC)New_wglCreateContextAttribsARB;
+		}
+
+	}
+	return result;
+}
+
+#define GL_MAJOR_VERSION 0x821B
+
+HGLRC WINAPI NewWglCreateContext(HDC hDC) {
+	GLint majVers = 0;
+	glGetIntegerv(GL_MAJOR_VERSION, &majVers);
+	if(majVers >= 3) {
+		class CCreateContext : public ICreateContext {
+		public:
+			CCreateContext() {}
+
+			virtual HGLRC CreateContext(HDC hDc) {
+				return wglCreateContext(hDc);
+			}
+		private:
+			HGLRC hShareContext;
+			const int *attribList;
+		} createContext;
+
+		return OnWglCreateContextEx(&createContext, hDC);
+	}
+
+	return wglCreateContext(hDC);
+}
+
+
 FARPROC WINAPI NewSdlGetProcAddress(HMODULE hModule, LPCSTR lpProcName);
 CAfxImportFuncHook<FARPROC(WINAPI*)(HMODULE, LPCSTR)> g_Import_sdl2_KERNEL32_GetProcAddress("GetProcAddress", NewSdlGetProcAddress);
 FARPROC WINAPI NewSdlGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
@@ -97,6 +164,8 @@ FARPROC WINAPI NewSdlGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 		if (!lstrcmp(lpProcName, "GetProcAddress"))
 			return (FARPROC) &NewSdlGetProcAddress;
 
+		if(!lstrcmp(lpProcName,"wglGetProcAddress"))
+			return (FARPROC) &New_wglGetProcAddress;
 		if (!lstrcmp(lpProcName, "wglCreateContext"))
 			return (FARPROC) &NewWglCreateContext;
 		if (!lstrcmp(lpProcName, "wglDeleteContext"))
@@ -380,7 +449,7 @@ void HookHw(HMODULE hHw)
 	HMODULE hSdl = GetModuleHandle("SDL2.dll");
 	if(hSdl)
 	{
-		//TODO//g_Import_sdl2.Apply(hSdl);/
+		g_Import_sdl2.Apply(hSdl);
 
 		if(!g_Import_sdl2_KERNEL32_GetProcAddress.TrueFunc) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:Kernel32.dll!GetProcAddress","MDT_ERROR",MB_OK|MB_ICONHAND); }
 		if(!*Get_Import_USER32_CreateWindowExW()->GetTrueFunc()) { bIcepOk = false; MessageBox(0,"Interception failed:\nsdl2.dll:user32.dll!CreateWindowExW","MDT_ERROR",MB_OK|MB_ICONHAND); }
