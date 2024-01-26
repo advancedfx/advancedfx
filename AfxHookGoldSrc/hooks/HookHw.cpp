@@ -74,19 +74,8 @@ void Mirv_DevMsg(int level, const char* fmt, ...) {
 	va_end(args);
 }
 
-#ifndef WGL_ARB_pixel_format_float
-#define WGL_ARB_pixel_format_float
-#define WGL_TYPE_RGBA_FLOAT_ARB 0x21A0
-#endif
-
-typedef BOOL (WINAPI *wglChoosePixelFormatARB_t)(HDC hdc, const int *piAttribIList, const FLOAT * pfAttribFList, UINT nMaxFormats, int *piFormats, UINT * nNumFormats);
-
-BOOL WINAPI New_wglChoosePixelFormatARB(HDC hdc, const int *piAttribIList, const FLOAT * pfAttribFList, UINT nMaxFormats, int *piFormats, UINT * nNumFormats) {
-
-}
-
-typedef HGLRC (WINAPI * wglCreateContextAttribsARB_t) (HDC hDC, HGLRC hShareContext, const int *attribList);
-wglCreateContextAttribsARB_t g_Old_wglCreateContextAttribsARB = nullptr;
+typedef HGLRC (WINAPI * PFNWGLCREATECONTEXTATTRIBSARBPROC) (HDC hDC, HGLRC hShareContext, const int *attribList);
+PFNWGLCREATECONTEXTATTRIBSARBPROC g_Old_wglCreateContextAttribsARB = nullptr;
 HGLRC WINAPI New_wglCreateContextAttribsARB(HDC hDC, HGLRC hShareContext, const int *attribList) {
 
 	class CCreateContext : public ICreateContext {
@@ -106,12 +95,9 @@ HGLRC WINAPI New_wglCreateContextAttribsARB(HDC hDC, HGLRC hShareContext, const 
 
 PROC WINAPI New_wglGetProcAddress(LPCSTR unnamedParam1) {
 	PROC result = wglGetProcAddress(unnamedParam1);
-	if(result)
-		if(0 == strcmp(unnamedParam1, "wglCreateContextAttribsARB") && nullptr == g_Old_wglCreateContextAttribsARB) {
-			g_Old_wglCreateContextAttribsARB = (wglCreateContextAttribsARB_t)result;
-			result = (PROC)New_wglCreateContextAttribsARB;
-		}
-
+	if(result && 0 == strcmp(unnamedParam1, "wglCreateContextAttribsARB") && nullptr == g_Old_wglCreateContextAttribsARB) {
+		g_Old_wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)result;
+		result = (PROC)New_wglCreateContextAttribsARB;
 	}
 	return result;
 }
