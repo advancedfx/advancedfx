@@ -471,7 +471,7 @@ void Filming::OnR_RenderView(float vieworg[3], float viewangles[3], float & fov)
 		if(sts ==Filming::STS_LEFT)
 		{
 			// left
-			fDispRight = movie_stereo_centerdist->value; // left displacement
+			fDispRight = - movie_stereo_centerdist->value; // left displacement
 			viewangles[YAW] -= movie_stereo_yawdegrees->value; // turn right
 		}
 		else
