@@ -33,7 +33,7 @@ namespace AfxGui
             });
 
             this.groupBoxCmdOpts.Text = L10n._p("Launch GoldSrc dialog", "Custom command line options");
-            this.groupBoxRes.Text = L10n._p("Launch GoldSrc dialog", "Graphic Resolution");
+            this.groupBoxRes.Text = L10n._p("Launch GoldSrc dialog", "Graphics Resolution");
             this.labelResWidth.Text = L10n._p("Launch GoldSrc dialog", "Width:");
             this.labelResHeight.Text = L10n._p("Launch GoldSrc dialog", "Height:");
             this.labelResDepth.Text = L10n._p("Launch GoldSrc dialog", "Color Depth:");
@@ -49,7 +49,7 @@ namespace AfxGui
 
             this.groupBoxMisc.Text = L10n._p("Launch GoldSrc dialog", "Advanced Settings");
             this.checkBoxForceAlpha.Text = L10n._p("Launch GoldSrc dialog", "Force 8-bit alpha channel");
-            this.checkBoxVisbility.Text = L10n._p("Launch GoldSrc dialog", "Optimize window visibilty on capture");
+            this.checkBoxVisbility.Text = L10n._p("Launch GoldSrc dialog", "Optimize window visibility on capture");
             this.checkBoxDesktopRes.Text = L10n._p("Launch GoldSrc dialog", "Optimize desktop resolution");
 
             this.labelRenderMode.Text = L10n._p("Launch GoldSrc dialog", "Render mode:");
