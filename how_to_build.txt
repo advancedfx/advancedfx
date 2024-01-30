@@ -11,7 +11,7 @@ Notice:
       within Visual Studio afterwards.
 
 [X]	Obtain Python 3 from https://www.python.org/downloads/windows/ .
-	We used python-3.8.3-amd64, but any 3.8 or newer 3 should do.
+	We used python-3.12.1-amd64, but any 3.8 or newer 3 should do.
 	You will need to do the custom installation
 	with pip and py launcher.
 	
