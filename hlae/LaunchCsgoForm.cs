@@ -25,7 +25,7 @@ namespace AfxGui
             this.buttonMmcfgInfo.Text = L10n._p("Launch CS:GO dialog", "What's this?");
             this.checkBoxEnableMmcfg.Text = L10n._p("Launch CS:GO dialog", "enable");
             this.buttonMmcfg.Text = L10n._p("Launch CS:GO dialog", "Browse ...");
-            this.groupBoxRes.Text = L10n._p("Launch CS:GO dialog", "Graphic Resolution");
+            this.groupBoxRes.Text = L10n._p("Launch CS:GO dialog", "Graphics Resolution");
             this.checkBoxEnableGfx.Text = L10n._p("Launch CS:GO dialog", "enable");
             this.labelGfxWidth.Text = L10n._p("Launch CS:GO dialog", "Width:");
             this.labelGfxHeight.Text = L10n._p("Launch CS:GO dialog", "Height:");
