@@ -807,9 +807,9 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 								10201de3 e8 28 00        CALL       S_TransferPaintBuffer                            undefined S_TransferPaintBuffer(
 										00 00						
 							*/
-							MemRange r5 = FindPatternString(MemRange(r4.End, AFXADDR_GET(S_PaintChannels) + 0x203).And(textRange), "57 E8 ?? ?? ?? ??");
+							MemRange r5 = FindPatternString(MemRange(r4.End, AFXADDR_GET(S_PaintChannels) + 0x225).And(textRange), "83 c4 0c 57 E8 ?? ?? ?? ??");
 							if (!r5.IsEmpty()) {
-								AFXADDR_SET(S_TransferPaintBuffer, *(DWORD *)(r5.Start + 2) + (DWORD)(r5.Start + 6));
+								AFXADDR_SET(S_TransferPaintBuffer, *(DWORD *)(r5.Start + 5) + (DWORD)(r5.Start + 5 + 4));
 							}
 							else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
