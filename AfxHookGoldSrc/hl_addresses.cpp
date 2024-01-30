@@ -373,7 +373,7 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 						if (!FindPatternString(tmp2, "f2 0f 10 05 ?? ?? ?? ?? 83 ec 08 f2 0f 11 04 24 e8 ?? ?? ?? ?? e8 ?? ?? ?? ?? e8 ?? ?? ?? ?? e8 ?? ?? ?? ?? f2 0f 10 05 ?? ?? ?? ?? 83 c4 04 66 0f 5a c0 f3 0f 11 04 24 e8 ?? ?? ?? ?? 83 c4 04 e8 ?? ?? ?? ??").IsEmpty())
 						{
 							AFXADDR_SET(host_frametime, *(DWORD *)(tmp2.Start + 4));
-							AFXADDR_SET(CL_EmitEntities, *(DWORD *)(tmp2.Start + 69 -0x5 -0x4) + (DWORD)(tmp2.Start + 0x69 - 0x5)); // Decode Call
+							AFXADDR_SET(CL_EmitEntities, *(DWORD *)(tmp2.Start + 0x40 + 1) + (DWORD)(tmp2.Start  + 0x40 + 0x5)); // Decode Call
 						}
 						else ErrorBox(MkErrStr(__FILE__, __LINE__));
 					}
