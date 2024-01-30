@@ -185,7 +185,7 @@
             this.groupBoxRes.Size = new System.Drawing.Size(564, 93);
             this.groupBoxRes.TabIndex = 5;
             this.groupBoxRes.TabStop = false;
-            this.groupBoxRes.Text = "L10n Graphic Resolution";
+            this.groupBoxRes.Text = "L10n Graphics Resolution";
             // 
             // checkBoxEnableGfx
             // 
