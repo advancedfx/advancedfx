@@ -2746,7 +2746,7 @@ REGISTER_CMD_FUNC(movie_ffmpeg)
 		, arg0
 	);
 	pEngfuncs->Con_Printf(
-		"%s main|mainRight|world|worldRight|entity|entityRight|depthMain|depthMainRight|depthWorld|depthWorldRight|hudColor|hudAlpha|debug optionsEx [<sOptions>] - Gets or sets exteneded options on the given stream.\n"
+		"%s main|mainRight|world|worldRight|entity|entityRight|depthMain|depthMainRight|depthWorld|depthWorldRight|hudColor|hudAlpha|debug optionsEx [<sOptions>] - Gets or sets extended options on the given stream.\n"
 		, arg0
 	);
 }
