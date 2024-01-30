@@ -10,6 +10,8 @@
 
 #include "../shared/MirvInput.h"
 
+extern bool g_b_SDL2_RelativeMouseMode;
+
 class MirvInputEx : private IMirvInputDependencies
 {
 public:
@@ -25,10 +27,7 @@ public:
 
 private:
 	virtual bool GetSuspendMirvInput() override {
-		CURSORINFO ci = { sizeof(CURSORINFO) };
-		if (GetCursorInfo(&ci))
-			return ci.flags & CURSOR_SHOWING;
-		return false;
+		return !g_b_SDL2_RelativeMouseMode;
 	}
 
 	virtual void GetLastCameraData(double& x, double& y, double& z, double& rX, double& rY, double& rZ, double& fov) override {
