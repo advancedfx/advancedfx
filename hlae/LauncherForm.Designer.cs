@@ -98,7 +98,7 @@
             this.checkBoxVisbility.Name = "checkBoxVisbility";
             this.checkBoxVisbility.Size = new System.Drawing.Size(222, 17);
             this.checkBoxVisbility.TabIndex = 1;
-            this.checkBoxVisbility.Text = "L10n Optimize window visibilty on capture";
+            this.checkBoxVisbility.Text = "L10n Optimize window visibility on capture";
             this.checkBoxVisbility.UseVisualStyleBackColor = true;
             // 
             // comboBoxResDepth
@@ -317,7 +317,7 @@
             this.groupBoxRes.Size = new System.Drawing.Size(469, 63);
             this.groupBoxRes.TabIndex = 12;
             this.groupBoxRes.TabStop = false;
-            this.groupBoxRes.Text = "L10n Graphic Resolution";
+            this.groupBoxRes.Text = "L10n Graphics Resolution";
             // 
             // labelResWidth
             // 
