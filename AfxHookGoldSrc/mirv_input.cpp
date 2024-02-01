@@ -10,6 +10,7 @@
 
 #include "../shared/MirvInput.h"
 
+extern bool g_b_SDL2_ShowCursor;
 extern bool g_b_SDL2_RelativeMouseMode;
 
 class MirvInputEx : private IMirvInputDependencies
@@ -27,7 +28,7 @@ public:
 
 private:
 	virtual bool GetSuspendMirvInput() override {
-		return !g_b_SDL2_RelativeMouseMode;
+		return g_b_SDL2_ShowCursor && !g_b_SDL2_RelativeMouseMode;
 	}
 
 	virtual void GetLastCameraData(double& x, double& y, double& z, double& rX, double& rY, double& rZ, double& fov) override {

@@ -163,8 +163,18 @@ FARPROC WINAPI NewSdlGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 	return nResult;
 }
 
-bool g_b_SDL2_RelativeMouseMode = false;
+bool g_b_SDL2_ShowCursor = true;
+int New_SDL_ShowCursor(int toggle);
+CAfxImportFuncHook<int (*)(int toggle)> g_Import_hw_sdl2_SDL_ShowCursor("SDL_ShowCursor", New_SDL_ShowCursor);
+int New_SDL_ShowCursor(int toggle) {
+	int result = g_Import_hw_sdl2_SDL_ShowCursor.TrueFunc(toggle);
 
+	if(0 <= result && (0 == toggle || 1 == toggle)) g_b_SDL2_ShowCursor = toggle == 1;
+
+	return result;
+}
+
+bool g_b_SDL2_RelativeMouseMode = false;
 int New_SDL_SetRelativeMouseMode(int enabled);
 CAfxImportFuncHook<int (*)(int enabled)> g_Import_hw_sdl2_SDL_SetRelativeMouseMode("SDL_SetRelativeMouseMode", New_SDL_SetRelativeMouseMode);
 int New_SDL_SetRelativeMouseMode(int enabled) {
@@ -341,7 +351,8 @@ CAfxImportDllHook g_Import_hw_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
 
 CAfxImportDllHook g_Import_hw_sdl2("SDL2.dll", CAfxImportDllHooks({
 	&g_Import_hw_sdl2_SDL_GL_GetProcAddress,
-	&g_Import_hw_sdl2_SDL_SetRelativeMouseMode
+	&g_Import_hw_sdl2_SDL_SetRelativeMouseMode,
+	&g_Import_hw_sdl2_SDL_ShowCursor
 	}));
 
 CAfxImportsHook g_Import_hw(CAfxImportsHooks({
