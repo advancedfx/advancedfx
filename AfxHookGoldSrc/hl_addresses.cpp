@@ -868,12 +868,12 @@ void Addresses_InitHwDll(AfxAddr hwDll)
 						101a7de2 e8 99 1d        CALL       FUN_101b9b80                                     undefined FUN_101b9b80()
 								01 00
 				*/
-				MemRange r2 = FindPatternString(textRange.And(MemRange(s1Ref.Start + 0x12, s1Ref.Start + 0x12 + 0x11)), "89 9d ?? ?? ?? ?? e8 ?? ?? ?? ??");
+				MemRange r2 = FindPatternString(textRange.And(MemRange(s1Ref.Start + 0x12, s1Ref.Start + 0x12 + 11)), "89 9d ?? ?? ?? ?? e8 ?? ?? ?? ??");
 
 				if (!r2.IsEmpty()) {
 
 					AFXADDR_SET(CL_ParseServerMessage_CmdRead, r2.Start);
-					AFXADDR_SET(CL_ParseServerMessage_CmdRead_DSZ, 0x12);
+					AFXADDR_SET(CL_ParseServerMessage_CmdRead_DSZ, 11);
 
 					DWORD addMessageReadByte = *(DWORD *)(r2.Start + 7) + (DWORD)(r2.Start + 7 + 4);
 
