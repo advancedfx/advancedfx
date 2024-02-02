@@ -90,7 +90,7 @@ REGISTER_DEBUGCMD_FUNC(moveto)
 
 	if(showHelp)
 	{
-		pEngfuncs->Con_Printf("Usage: " DEBUG_PREFIX "simorg_set x y z [ang0 ang1 ang2]\n");
+		pEngfuncs->Con_Printf("Usage: " DEBUG_PREFIX "moveto x y z [ang0 ang1 ang2]\n");
 	}
 
 
