@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.21.0</version>
+<time>2024-02-04T09:11Z</time>
+<changes>
+<change type="fixed">Adjusted to Half-Life 25th anniversary update. Thanks a lot for extensive testing to @Dechno1337</change>
+<change type="fixed">Fixed some typos, thanks @Dechno1337</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.20.0</version>
 <time>2024-01-05T13:20Z</time>
 <changes>
