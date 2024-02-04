@@ -11,8 +11,8 @@ project ("zlib")
 
 FetchContent_Declare(
 	zlib
-	URL https://zlib.net/zlib-1.3.tar.gz
-	URL_HASH SHA256=ff0ba4c292013dbc27530b3a81e1f9a813cd39de01ca5e0f8bf355702efa593e
+	URL http://www.zlib.net/zlib-1.3.1.tar.gz
+	URL_HASH SHA256=9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23
 )
 
 FetchContent_GetProperties(zlib)
