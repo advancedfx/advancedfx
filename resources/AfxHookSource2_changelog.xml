@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.8.1</version>
+<time>2024-02-07T10:00Z</time>
+<changes>
+<change type="fixed">Fixed #905 CS2 update: mirv_input camera mouse (rawinput) broken.</change>
+<change type="fixed">Fixed #906 CS2 update: mirv_campath draw broken.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.8.0</version>
 <time>2024-01-05T13:20Z</time>
 <changes>
