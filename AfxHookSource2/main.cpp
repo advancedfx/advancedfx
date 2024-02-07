@@ -1437,6 +1437,30 @@ CAfxImportFuncHook<BOOL(WINAPI*)(LPPOINT)> g_Import_SDL3_USER32_GetCursorPos("Ge
 CAfxImportFuncHook<BOOL(WINAPI*)(int, int)> g_Import_SDL3_USER32_SetCursorPos("SetCursorPos", &new_SetCursorPos);
 
 
+UINT
+WINAPI
+New_GetRawInputBuffer(
+    _Out_writes_bytes_opt_(*pcbSize) PRAWINPUT pData,
+    _Inout_ PUINT pcbSize,
+    _In_ UINT cbSizeHeader);
+
+CAfxImportFuncHook<UINT(WINAPI*)(_Out_writes_bytes_opt_(*pcbSize) PRAWINPUT, _Inout_ PUINT, _In_ UINT cbSizeHeader)> g_Import_SDL3_USER32_GetRawInputBuffer("GetRawInputBuffer", &New_GetRawInputBuffer);
+
+UINT
+WINAPI
+New_GetRawInputBuffer(
+    _Out_writes_bytes_opt_(*pcbSize) PRAWINPUT pData,
+    _Inout_ PUINT pcbSize,
+    _In_ UINT cbSizeHeader) {
+	UINT result = g_Import_SDL3_USER32_GetRawInputBuffer.GetTrueFuncValue()(pData,pcbSize,cbSizeHeader);
+
+	result = g_MirvInputEx.m_MirvInput->Supply_RawInputBuffer(result, pData,pcbSize,cbSizeHeader);
+
+	return result;
+
+}
+
+
 UINT WINAPI New_GetRawInputData(
     _In_ HRAWINPUT hRawInput,
     _In_ UINT uiCommand,
@@ -1469,7 +1493,8 @@ CAfxImportDllHook g_Import_SDL3_USER32("USER32.dll", CAfxImportDllHooks({
 	&g_Import_SDL3_USER32_ReleaseCapture,
 	&g_Import_SDL3_USER32_GetCursorPos,
 	&g_Import_SDL3_USER32_SetCursorPos,
-	&g_Import_SDL3_USER32_GetRawInputData }));
+	&g_Import_SDL3_USER32_GetRawInputData,
+	&g_Import_SDL3_USER32_GetRawInputBuffer }));
 
 CAfxImportsHook g_Import_SDL3(CAfxImportsHooks({
 	&g_Import_SDL3_USER32 }));

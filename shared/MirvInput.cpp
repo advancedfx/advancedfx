@@ -827,17 +827,8 @@ bool  MirvInput::Supply_MouseEvent(DWORD uMsg, WPARAM & wParam, LPARAM & lParam)
 	return false;
 }
 
-UINT MirvInput::Supply_RawInputData(UINT result, _In_ HRAWINPUT hRawInput, _In_ UINT uiCommand, _Out_writes_bytes_to_opt_(*pcbSize, return) LPVOID pData, _Inout_ PUINT pcbSize, _In_ UINT cbSizeHeader)
-{
-	if(!m_Focus)
-		return result;
-
-	if(m_Dependencies->GetSuspendMirvInput())
-		return result;
-
-	if(-1 != result && nullptr != hRawInput && uiCommand == RID_INPUT && sizeof(RAWINPUTHEADER) <= cbSizeHeader && pData && pcbSize && sizeof(RAWINPUT) <= *pcbSize) {
-
-		RAWMOUSE * rawmouse = &(((RAWINPUT *)pData)->data.mouse);
+void MirvInput::ProcessRawInputData(PRAWINPUT pData) {
+		RAWMOUSE * rawmouse = &(pData->data.mouse);
 		int dX = 0;
 		int dY = 0;
 		int wheelDelta = 0;
@@ -916,6 +907,36 @@ UINT MirvInput::Supply_RawInputData(UINT result, _In_ HRAWINPUT hRawInput, _In_ 
 		if(m_CameraControlMode && m_MMove) {
 			rawmouse->usButtonFlags &= ~(USHORT)(RI_MOUSE_LEFT_BUTTON_DOWN|RI_MOUSE_RIGHT_BUTTON_DOWN|RI_MOUSE_LEFT_BUTTON_UP|RI_MOUSE_RIGHT_BUTTON_UP|RI_MOUSE_HWHEEL);
 		}
+
+}
+
+UINT MirvInput::Supply_RawInputBuffer(UINT result, _Out_writes_bytes_opt_(*pcbSize) PRAWINPUT pData, _Inout_ PUINT pcbSize, _In_ UINT cbSizeHeader) {
+	if(!m_Focus)
+		return result;
+
+	if(m_Dependencies->GetSuspendMirvInput())
+		return result;
+
+	if(0 < result && nullptr != pData && sizeof(RAWINPUTHEADER) == cbSizeHeader && pData && pcbSize && sizeof(RAWINPUT)*result <= *pcbSize) {
+		for(UINT i = 0; i < result; i++) {
+			ProcessRawInputData(&pData[i]);
+		}
+	}
+
+	return result;
+}
+
+UINT MirvInput::Supply_RawInputData(UINT result, _In_ HRAWINPUT hRawInput, _In_ UINT uiCommand, _Out_writes_bytes_to_opt_(*pcbSize, return) LPVOID pData, _Inout_ PUINT pcbSize, _In_ UINT cbSizeHeader)
+{
+	if(!m_Focus)
+		return result;
+
+	if(m_Dependencies->GetSuspendMirvInput())
+		return result;
+
+	if(-1 != result && nullptr != hRawInput && uiCommand == RID_INPUT && sizeof(RAWINPUTHEADER) <= cbSizeHeader && pData && pcbSize && sizeof(RAWINPUT) <= *pcbSize) {
+
+		ProcessRawInputData((RAWINPUT *)pData);
 
 		return result;
 	}

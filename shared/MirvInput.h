@@ -40,7 +40,10 @@ public:
 	bool Supply_CharEvent(WPARAM wParam, LPARAM lParam);
 	bool Supply_KeyEvent(KeyState keyState, WPARAM wParam, LPARAM lParam);
 	bool Supply_MouseEvent(DWORD uMsg, WPARAM & wParam, LPARAM & lParam);
+
 	UINT Supply_RawInputData(UINT result, _In_ HRAWINPUT hRawInput, _In_ UINT uiCommand, _Out_writes_bytes_to_opt_(*pcbSize, return) LPVOID pData, _Inout_ PUINT pcbSize, _In_ UINT cbSizeHeader);
+	UINT Supply_RawInputBuffer(UINT result, _Out_writes_bytes_opt_(*pcbSize) PRAWINPUT pData, _Inout_ PUINT pcbSize, _In_ UINT cbSizeHeader);
+
 	void Supply_GetCursorPos(LPPOINT lpPoint);
 	void Supply_SetCursorPos(int x, int y);
 	void Supply_MouseFrameEnd(void);
@@ -422,4 +425,6 @@ private:
 
 	double CalcExpSmooth(double deltaT, double oldVal, double newVal);
 	double CalcDeltaExpSmooth(double deltaT, double deltaVal);
+
+	void ProcessRawInputData(PRAWINPUT pData);
 };
