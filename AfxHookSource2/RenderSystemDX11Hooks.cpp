@@ -253,13 +253,46 @@ typedef void (STDMETHODCALLTYPE * ID3D11Device_GetImmediateContext_t)(ID3D11Devi
 ID3D11Device_GetImmediateContext_t g_Old_ID3D11Device_GetImmediateContext = nullptr;
 
 
+typedef ULONG (STDMETHODCALLTYPE * Release_t)(ID3D11Device * This);
+Release_t g_Old_ID3D11Device_Release = nullptr;
+ULONG STDMETHODCALLTYPE New_ID3D11Device_Release(ID3D11Device * This){
+    ULONG result = g_Old_ID3D11Device_Release(This);
+    if(0 == result && This == g_pDevice) {
+            g_CampathDrawer.EndDevice();
+            if(g_Old_ID3D11Device_Release) {
+                // Unhook wrong one (happens with D3D11_CREATE_DEVICE_DEBUG).
+                void **vtable = *(void***)g_pDevice;
+                AfxDetourPtr(&(vtable[2]),g_Old_ID3D11Device_Release,nullptr);
+                g_Old_ID3D11Device_Release = nullptr;
+            }            
+            if(g_Old_CreateRenderTargetView) {
+                // Unhook wrong one (happens with D3D11_CREATE_DEVICE_DEBUG).
+                void **vtable = *(void***)g_pDevice;
+                AfxDetourPtr(&(vtable[9]),g_Old_CreateRenderTargetView,nullptr);
+                g_Old_CreateRenderTargetView = nullptr;
+            }
+            if(g_Old_ID3D11Device_GetImmediateContext) {
+                // Unhook wrong one (happens with D3D11_CREATE_DEVICE_DEBUG).
+                void **vtable = *(void***)g_pDevice;
+                AfxDetourPtr(&(vtable[40]),g_Old_ID3D11Device_GetImmediateContext,nullptr);
+                g_Old_ID3D11Device_GetImmediateContext = nullptr;
+            }             
+            g_pDevice = nullptr;
+            g_pImmediateContext = nullptr;
+    }
+    return result;
+}
+
+
 void STDMETHODCALLTYPE New_ID3D11Device_GetImmediateContext(ID3D11Device * This, 
     /* [annotation] */ 
     _Outptr_  ID3D11DeviceContext **ppImmediateContext) {
     g_Old_ID3D11Device_GetImmediateContext(This, ppImmediateContext);
-    if(ppImmediateContext && *ppImmediateContext){
-        //Hook_Context(*ppImmediateContext);
-        //g_pImmediateContext = *ppImmediateContext;
+    if(ppImmediateContext && *ppImmediateContext && g_pImmediateContext == nullptr && nullptr == g_pDevice){
+        Hook_Context(*ppImmediateContext);
+        g_pDevice = This;
+        g_CampathDrawer.BeginDevice(This);
+        g_pImmediateContext = *ppImmediateContext;
     }
 }
 
@@ -281,33 +314,14 @@ HRESULT WINAPI New_D3D11CreateDevice(
 #ifdef _DEBUG
     //Flags = Flags | D3D11_CREATE_DEVICE_DEBUG;
 #endif
-
-    static int count = 0;
-    count++;
-
     HRESULT result = g_Old_D3D11CreateDevice(
         pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, ppDevice, pFeatureLevel, ppImmediateContext);
 
-    if(2 != count) return result; // meh what a hack, but it does work :/
-
     if(SUCCEEDED(result) && ppDevice && *ppDevice) {
-        if(g_Old_CreateRenderTargetView && g_pDevice) {
-            // Unhook wrong one (happens with D3D11_CREATE_DEVICE_DEBUG).
-            void **vtable = *(void***)g_pDevice;
-            AfxDetourPtr(&(vtable[9]),g_Old_CreateRenderTargetView,nullptr);
-            g_Old_CreateRenderTargetView = nullptr;
-        }
-        if(g_Old_ID3D11Device_GetImmediateContext && g_pDevice) {
-            // Unhook wrong one (happens with D3D11_CREATE_DEVICE_DEBUG).
-            void **vtable = *(void***)g_pDevice;
-            AfxDetourPtr(&(vtable[40]),g_Old_ID3D11Device_GetImmediateContext,nullptr);
-            g_Old_ID3D11Device_GetImmediateContext = nullptr;
-        }     
-        if(g_pDevice) {
-            g_CampathDrawer.EndDevice();
-            g_pDevice = nullptr;
-        }
-        g_pDevice = *ppDevice;
+        if(nullptr == g_Old_ID3D11Device_Release) {
+            void **vtable = *(void***)*ppDevice;
+            AfxDetourPtr(&(vtable[2]),New_ID3D11Device_Release,(PVOID*)&g_Old_ID3D11Device_Release);
+        }        
         if(nullptr == g_Old_CreateRenderTargetView) {
             void **vtable = *(void***)*ppDevice;
             AfxDetourPtr(&(vtable[9]),New_CreateRenderTargetView,(PVOID*)&g_Old_CreateRenderTargetView);
@@ -316,11 +330,10 @@ HRESULT WINAPI New_D3D11CreateDevice(
             void **vtable = *(void***)*ppDevice;
             AfxDetourPtr(&(vtable[40]),New_ID3D11Device_GetImmediateContext,(PVOID*)&g_Old_ID3D11Device_GetImmediateContext);
         }
-        g_CampathDrawer.BeginDevice(*ppDevice);
     }
     if(SUCCEEDED(result) && ppImmediateContext && *ppImmediateContext) {
-        Hook_Context(*ppImmediateContext);
-        g_pImmediateContext = *ppImmediateContext;
+        //Hook_Context(*ppImmediateContext);
+        //g_pImmediateContext = *ppImmediateContext;
     }
 
     return result;

@@ -127,7 +127,7 @@ Cs2Gloabls_t g_pGlobals = nullptr;
 
 float curtime_get(void)
 {
-	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals + 0x2c) : 0;
+	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals + 11*4) : 0;
 }
 
 int framecount_get(void)
@@ -147,7 +147,7 @@ float absoluteframetime_get(void)
 
 float interval_per_tick_get(void)
 {
-	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +0x14) : 1.0f/64;
+	return g_pGlobals ? 1.0f / *(int *)((unsigned char *)g_pGlobals +4*4) : 1.0f/64;
 }
 
 float interpolation_amount_get(void)

@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.8.2</version>
+<time>2024-02-07T17:16Z</time>
+<changes>
+<change type="fixed">Fixed #906 CS2 update: mirv_campath draw broken. Again.</change>
+<change type="fixed">Fixed wrong ticks e.g. in mirv_campath print etc.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.8.1</version>
 <time>2024-02-07T10:00Z</time>
 <changes>
