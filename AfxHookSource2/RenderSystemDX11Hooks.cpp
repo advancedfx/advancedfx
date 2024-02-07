@@ -258,8 +258,8 @@ void STDMETHODCALLTYPE New_ID3D11Device_GetImmediateContext(ID3D11Device * This,
     _Outptr_  ID3D11DeviceContext **ppImmediateContext) {
     g_Old_ID3D11Device_GetImmediateContext(This, ppImmediateContext);
     if(ppImmediateContext && *ppImmediateContext){
-        Hook_Context(*ppImmediateContext);
-        g_pImmediateContext = *ppImmediateContext;
+        //Hook_Context(*ppImmediateContext);
+        //g_pImmediateContext = *ppImmediateContext;
     }
 }
 
@@ -282,8 +282,13 @@ HRESULT WINAPI New_D3D11CreateDevice(
     //Flags = Flags | D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
+    static int count = 0;
+    count++;
+
     HRESULT result = g_Old_D3D11CreateDevice(
         pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, ppDevice, pFeatureLevel, ppImmediateContext);
+
+    if(2 != count) return result; // meh what a hack, but it does work :/
 
     if(SUCCEEDED(result) && ppDevice && *ppDevice) {
         if(g_Old_CreateRenderTargetView && g_pDevice) {
