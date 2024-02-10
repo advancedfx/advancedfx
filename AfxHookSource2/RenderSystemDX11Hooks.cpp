@@ -30,7 +30,7 @@ int g_iDraw = 0;
 
 extern void ErrorBox(char const * messageText);
 
-typedef HRESULT (STDMETHODCALLTYPE * CreateRenderTargetView_t)( void * This,
+typedef HRESULT (STDMETHODCALLTYPE * CreateRenderTargetView_t)( ID3D11Device * This,
             /* [annotation] */ 
             _In_  ID3D11Resource *pResource,
             /* [annotation] */ 
@@ -40,7 +40,7 @@ typedef HRESULT (STDMETHODCALLTYPE * CreateRenderTargetView_t)( void * This,
 
 CreateRenderTargetView_t g_Old_CreateRenderTargetView = nullptr;
 
-HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  void * This,
+HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
             /* [annotation] */ 
             _In_  ID3D11Resource *pResource,
             /* [annotation] */ 
@@ -55,11 +55,18 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  void * This,
         HRESULT result2 = g_pSwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D), (void**)&pTexture);
         if(SUCCEEDED(result2)) {
             if(pResource == pTexture) {
+                if(g_pDevice) {
+                    g_CampathDrawer.EndDevice();
+                    g_pDevice = nullptr;
+                }
                 pTexture->GetDesc(&g_RTDesc);
                 g_pRTResource = pResource;
                 g_pRTView = *ppRTView;
                 g_ClearCount = 0;
                 g_iDraw = 0;
+
+                g_pDevice = This;
+                g_CampathDrawer.BeginDevice(This);
             }
             pTexture->Release();
         }
@@ -105,42 +112,49 @@ void STDMETHODCALLTYPE New_ClearDepthStencilView( ID3D11DeviceContext * This,
 
     g_Old_ClearDepthStencilView(This, pDepthStencilView, ClearFlags, Depth, Stencil);
 
-    if(This == g_pImmediateContext && pDepthStencilView && (ClearFlags & D3D11_CLEAR_DEPTH)) {
+    if(This->GetType() == D3D11_DEVICE_CONTEXT_IMMEDIATE  && g_pDevice && pDepthStencilView && (ClearFlags & D3D11_CLEAR_DEPTH)) {
+        ID3D11Device * pDevice = nullptr;
+        This->GetDevice(&pDevice);
+        if(pDevice) {
+            if(pDevice == g_pDevice) {
+                D3D11_DEPTH_STENCIL_VIEW_DESC desc;
+                pDepthStencilView->GetDesc(&desc);
 
-        D3D11_DEPTH_STENCIL_VIEW_DESC desc;
-        pDepthStencilView->GetDesc(&desc);
+                if(desc.Flags == 0 && desc.Format == DXGI_FORMAT_D24_UNORM_S8_UINT
+                    && (desc.ViewDimension == D3D11_DSV_DIMENSION_TEXTURE2D
+                        || desc.ViewDimension == D3D11_DSV_DIMENSION_TEXTURE2DMS
+                    ))
+                {
+                    ID3D11Resource * pResource = nullptr;
+                    pDepthStencilView->GetResource(&pResource);
+                    if(pResource) {
+                        ID3D11Texture2D * pTexture = nullptr;
+                        if(SUCCEEDED(pResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&pTexture))) {
+                            D3D11_TEXTURE2D_DESC desc;
+                            pTexture->GetDesc(&desc);
 
-        if(desc.Flags == 0 && desc.Format == DXGI_FORMAT_D24_UNORM_S8_UINT
-            && (desc.ViewDimension == D3D11_DSV_DIMENSION_TEXTURE2D
-                || desc.ViewDimension == D3D11_DSV_DIMENSION_TEXTURE2DMS
-            ))
-        {
-            ID3D11Resource * pResource = nullptr;
-            pDepthStencilView->GetResource(&pResource);
-            if(pResource) {
-                ID3D11Texture2D * pTexture = nullptr;
-                if(SUCCEEDED(pResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&pTexture))) {
-                    D3D11_TEXTURE2D_DESC desc;
-                    pTexture->GetDesc(&desc);
+                            if(/*desc.Width == g_RTDesc.Width && desc.Height == g_RTDesc.Height && desc.MipLevels == g_RTDesc.MipLevels*/ true) {
+                                
+                                if(g_ClearCount == g_RTCount) {
+                                    g_pImmediateContext = This;
+                                    g_pCurrentDepthStencilView = pDepthStencilView;
+                                    g_iDraw = 1;
+                                }
 
-                    if(/*desc.Width == g_RTDesc.Width && desc.Height == g_RTDesc.Height && desc.MipLevels == g_RTDesc.MipLevels*/ true) {
-                        
-                        if(g_ClearCount == g_RTCount) {
-                            g_pCurrentDepthStencilView = pDepthStencilView;
-                            g_iDraw = 1;
+                                g_ClearCount++;
+                            }
+
+                            pTexture->Release();
                         }
 
-                        g_ClearCount++;
+                        pResource->Release();
                     }
-
-                    pTexture->Release();
                 }
-
-                pResource->Release();
             }
+            pDevice->Release();
         }
     }
-}
+    }
 
 typedef void (STDMETHODCALLTYPE * ResolveSubresource_t)( ID3D11DeviceContext * This,
     /* [annotation] */ 
@@ -252,47 +266,12 @@ typedef void (STDMETHODCALLTYPE * ID3D11Device_GetImmediateContext_t)(ID3D11Devi
 
 ID3D11Device_GetImmediateContext_t g_Old_ID3D11Device_GetImmediateContext = nullptr;
 
-
-typedef ULONG (STDMETHODCALLTYPE * Release_t)(ID3D11Device * This);
-Release_t g_Old_ID3D11Device_Release = nullptr;
-ULONG STDMETHODCALLTYPE New_ID3D11Device_Release(ID3D11Device * This){
-    ULONG result = g_Old_ID3D11Device_Release(This);
-    if(0 == result && This == g_pDevice) {
-            g_CampathDrawer.EndDevice();
-            if(g_Old_ID3D11Device_Release) {
-                // Unhook wrong one (happens with D3D11_CREATE_DEVICE_DEBUG).
-                void **vtable = *(void***)g_pDevice;
-                AfxDetourPtr(&(vtable[2]),g_Old_ID3D11Device_Release,nullptr);
-                g_Old_ID3D11Device_Release = nullptr;
-            }            
-            if(g_Old_CreateRenderTargetView) {
-                // Unhook wrong one (happens with D3D11_CREATE_DEVICE_DEBUG).
-                void **vtable = *(void***)g_pDevice;
-                AfxDetourPtr(&(vtable[9]),g_Old_CreateRenderTargetView,nullptr);
-                g_Old_CreateRenderTargetView = nullptr;
-            }
-            if(g_Old_ID3D11Device_GetImmediateContext) {
-                // Unhook wrong one (happens with D3D11_CREATE_DEVICE_DEBUG).
-                void **vtable = *(void***)g_pDevice;
-                AfxDetourPtr(&(vtable[40]),g_Old_ID3D11Device_GetImmediateContext,nullptr);
-                g_Old_ID3D11Device_GetImmediateContext = nullptr;
-            }             
-            g_pDevice = nullptr;
-            g_pImmediateContext = nullptr;
-    }
-    return result;
-}
-
-
 void STDMETHODCALLTYPE New_ID3D11Device_GetImmediateContext(ID3D11Device * This, 
     /* [annotation] */ 
     _Outptr_  ID3D11DeviceContext **ppImmediateContext) {
     g_Old_ID3D11Device_GetImmediateContext(This, ppImmediateContext);
-    if(ppImmediateContext && *ppImmediateContext && g_pImmediateContext == nullptr && nullptr == g_pDevice){
-        Hook_Context(*ppImmediateContext);
-        g_pDevice = This;
-        g_CampathDrawer.BeginDevice(This);
-        g_pImmediateContext = *ppImmediateContext;
+    if(ppImmediateContext && *ppImmediateContext){
+        Hook_Context(*ppImmediateContext);        
     }
 }
 
@@ -311,6 +290,7 @@ HRESULT WINAPI New_D3D11CreateDevice(
     D3D_FEATURE_LEVEL *pFeatureLevel,
     ID3D11DeviceContext **ppImmediateContext
     ) {
+
 #ifdef _DEBUG
     //Flags = Flags | D3D11_CREATE_DEVICE_DEBUG;
 #endif
@@ -318,22 +298,31 @@ HRESULT WINAPI New_D3D11CreateDevice(
         pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, ppDevice, pFeatureLevel, ppImmediateContext);
 
     if(SUCCEEDED(result) && ppDevice && *ppDevice) {
-        if(nullptr == g_Old_ID3D11Device_Release) {
-            void **vtable = *(void***)*ppDevice;
-            AfxDetourPtr(&(vtable[2]),New_ID3D11Device_Release,(PVOID*)&g_Old_ID3D11Device_Release);
-        }        
-        if(nullptr == g_Old_CreateRenderTargetView) {
-            void **vtable = *(void***)*ppDevice;
-            AfxDetourPtr(&(vtable[9]),New_CreateRenderTargetView,(PVOID*)&g_Old_CreateRenderTargetView);
+        static void **last_vtable = nullptr;
+        void **vtable = *(void***)*ppDevice;
+        // (We can not use vtable detours here, becuse something writes them back after we did that.)
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        if(last_vtable) {
+            DetourDetach(&(PVOID&)g_Old_CreateRenderTargetView, New_CreateRenderTargetView);
+            DetourDetach(&(PVOID&)g_Old_ID3D11Device_GetImmediateContext, New_ID3D11Device_GetImmediateContext);
+            if(NO_ERROR != DetourTransactionCommit()) {
+                ErrorBox("Failed detaching in D3D11CreateDevice.");
+            }
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
         }
-        if(nullptr == g_Old_ID3D11Device_GetImmediateContext) {
-            void **vtable = *(void***)*ppDevice;
-            AfxDetourPtr(&(vtable[40]),New_ID3D11Device_GetImmediateContext,(PVOID*)&g_Old_ID3D11Device_GetImmediateContext);
+        g_Old_CreateRenderTargetView = (CreateRenderTargetView_t)vtable[9];
+        g_Old_ID3D11Device_GetImmediateContext = (ID3D11Device_GetImmediateContext_t)vtable[40];
+        DetourAttach(&(PVOID&)g_Old_CreateRenderTargetView, New_CreateRenderTargetView);
+        DetourAttach(&(PVOID&)g_Old_ID3D11Device_GetImmediateContext, New_ID3D11Device_GetImmediateContext);
+        if(NO_ERROR != DetourTransactionCommit()) {
+            ErrorBox("Failed attaching in D3D11CreateDevice.");
         }
+        last_vtable = vtable;
     }
     if(SUCCEEDED(result) && ppImmediateContext && *ppImmediateContext) {
-        //Hook_Context(*ppImmediateContext);
-        //g_pImmediateContext = *ppImmediateContext;
+        Hook_Context(*ppImmediateContext);
     }
 
     return result;
