@@ -1037,7 +1037,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 		else if (0 == _stricmp("settings", cmd1))
 		{
 			CSubWrpCommandArgs subArgs(args, 2);
-			CAfxRecordingSettings::Console(&subArgs);
+			advancedfx::CRecordingSettings::Console(&subArgs);
 			return;
 		}
 		else if (bIsCsgo && 0 == _stricmp("mainStream", cmd1))

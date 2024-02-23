@@ -350,6 +350,8 @@ target_sources(AfxHookSource PRIVATE
     ../shared/FovScaling.cpp
     ../shared/FovScaling.h
     ../shared/ImageBufferPoolThreadSafe.h
+    ../shared/ImageTransformer.cpp
+    ../shared/ImageTransformer.h
     ../shared/MirvCamIO.cpp
     ../shared/MirvCamIO.h
     ../shared/MirvCampath.cpp
@@ -360,8 +362,12 @@ target_sources(AfxHookSource PRIVATE
 	../shared/MirvSkip.h
     ../shared/OpenExrOutput.cpp
     ../shared/OpenExrOutput.h
+    ../shared/OutVideoStreamCreators.cpp
+    ../shared/OutVideoStreamCreators.h
     ../shared/RawOutput.cpp
     ../shared/RawOutput.h
+    ../shared/RecordingSettings.cpp
+    ../shared/RecordingSettings.h
     ../shared/RefCountedThreadSafe.h
     ../shared/StringTools.cpp
     ../shared/StringTools.h

@@ -11,7 +11,8 @@ enum class ImageFormat : unsigned int {
 	BGR = 1,
 	BGRA = 2,
 	A = 3,
-	ZFloat = 4
+	ZFloat = 4,
+	RGBA = 5
 };
 
 enum class ImageOrigin : unsigned int {

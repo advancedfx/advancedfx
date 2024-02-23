@@ -213,6 +213,20 @@ bool StringBeginsWith(char const * target, char const * beginning) {
 	return true;
 }
 
+bool StringBeginsWithW(wchar_t const * target, wchar_t const * beginning) {
+	while(*target && *beginning) {
+		if(*beginning != *target)
+			return false;
+		target++;
+		beginning++;
+	}
+
+	if(*beginning && !*target)
+		return false;
+
+	return true;
+}
+
 bool StringIBeginsWith(char const * target, char const * beginning)
 {
 	while (*target && *beginning) {

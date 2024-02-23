@@ -22,10 +22,16 @@ endif()
 
 set(zlib_SOURCE_DIR ${zlib_SOURCE_DIR} PARENT_SCOPE)
 
+if ("${CMAKE_GENERATOR_PLATFORM}" STREQUAL "Win32")
+	set(zlib_VCVARSALL_PLATFORM "x86")
+elseif(CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
+	set(zlib_VCVARSALL_PLATFORM "x64")
+endif ()
+
 add_custom_command(
     WORKING_DIRECTORY "${zlib_SOURCE_DIR}"
 	OUTPUT "${zlib_SOURCE_DIR}/zlib1.dll"
-    COMMAND "${VS_INSTALLPATH}\\VC\\Auxiliary\\Build\\vcvarsall.bat" "x86" "&&" "nmake" "-f" "win32/Makefile.msc" "zlib1.dll"
+    COMMAND "${VS_INSTALLPATH}\\VC\\Auxiliary\\Build\\vcvarsall.bat" "${zlib_VCVARSALL_PLATFORM}" "&&" "nmake" "-f" "win32/Makefile.msc" "zlib1.dll"
 	USES_TERMINAL
 	VERBATIM
     COMMAND ${CMAKE_COMMAND} -E touch "${zlib_SOURCE_DIR}/zlib.stamp"

@@ -56,8 +56,8 @@ public:
 void WrpRegisterCommands();
 
 #define CON_COMMAND( name, description ) \
-   static void name(IWrpCommandArgs * args); \
+   static void name(advancedfx::ICommandArgs * args); \
    static CWrpConCommandCallback name##_callback( name ); \
    static SOURCESDK::CS2::CCmd name##_command(#name, description, 0, &name##_callback); \
    static CWrpAddCommand name##_command_add(&name##_command); \
-   static void name(IWrpCommandArgs * args)
+   static void name(advancedfx::ICommandArgs * args)

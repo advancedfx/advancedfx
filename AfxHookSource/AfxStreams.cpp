@@ -27,6 +27,8 @@
 #include "ReShadeAdvancedfx.h"
 #include "../shared/AfxCommandLine.h"
 
+#include "../shared/ImageTransformer.h"
+
 #include <shared/StringTools.h>
 #include <shared/FileTools.h>
 #include <shared/ThreadPool.h>
@@ -89,6 +91,7 @@ IAfxMatRenderContext * GetCurrentContext()
 	return MatRenderContextHook(g_MaterialSystem_csgo);
 }
 
+advancedfx::CImageBufferPoolThreadSafe g_ImageBufferPoolThreadSafe;
 CAfxStreams g_AfxStreams;
 
 
@@ -661,7 +664,7 @@ CAfxRenderViewStream * CAfxRenderViewStream::m_EngineThreadStream = 0;
 CAfxRenderViewStream::CAfxRenderViewStream()
 : m_DrawViewModel(DT_NoChange)
 , m_DrawHud(DT_NoChange)
-, m_StreamCaptureType(SCT_Normal)
+, m_StreamCaptureType(advancedfx::StreamCaptureType::Normal)
 {
 }
 
@@ -709,7 +712,7 @@ void CAfxRenderViewStream::DrawViewModel_set(DrawType value)
 	m_DrawViewModel = value;
 }
 
-CAfxRenderViewStream::StreamCaptureType CAfxRenderViewStream::StreamCaptureType_get(void) const
+advancedfx::StreamCaptureType CAfxRenderViewStream::StreamCaptureType_get(void) const
 {
 	return m_StreamCaptureType;
 }
@@ -721,703 +724,7 @@ void CAfxRenderViewStream::StreamCaptureType_set(StreamCaptureType value)
 
 extern class advancedfx::CThreadPool* g_pThreadPool;
 
-class CAfxTransformer {
-public:
-/*
-	static class ICapture* DummyCapture() {
-		advancedfx::CImageFormat format(advancedfx::ImageFormat::BGRA, 1280, 720);
-		format.SetOrigin(advancedfx::ImageOrigin::TopLeft);
-		CAfxImageBufferCapture * result = CAfxImageBufferCapture::Create(format);
-		result->AddRef();
-		return result;
-	}
-*/
-	static class ICapture* TransformStripAlpha(class ICapture* capture) {
 
-		if (nullptr == capture) return nullptr;
-
-		if (const class advancedfx::IImageBuffer* pBuffer = capture->GetBuffer()) {
-			if (const class advancedfx::CImageFormat* pFormat = pBuffer->GetImageBufferFormat()) {
-				if (pFormat->Format == advancedfx::ImageFormat::BGR) {
-					capture->AddRef();
-					return capture;
-				}
-			}
-		}
-
-		CTransformStripAlpha transform(capture);
-		return Transform(&transform);
-	}
-
-	static class ICapture* TransformDepthF(class ICapture* capture, float depthScale, float depthOfs) {
-		CTransformDepthF transform(capture, depthScale, depthOfs);
-		return Transform(&transform);
-	}
-
-	static class ICapture* TransformDepth24(class ICapture* capture, float depthScale, float depthOfs) {
-		CTransformDepth24 transform(capture, depthScale, depthOfs);
-		return Transform(&transform);
-	}
-
-	static class ICapture* TransformMatte(class ICapture* captureEntBlack, class ICapture* captureEntWhite) {
-		CTransformMatte transform(captureEntBlack, captureEntWhite);
-		return Transform(&transform);
-	}
-
-	static class ICapture* TransformAColorBRedAsAlpha(class ICapture* aColor, class ICapture* bRedAsAlpha) {
-		CTransformAColorBRedAsAlpha transform(aColor, bRedAsAlpha);
-		return Transform(&transform);
-	}
-
-private:
-	class CAfxImageBufferCapture
-		: public advancedfx::CRefCountedThreadSafe
-		, public ICapture
-	{
-	public:
-		static class CAfxImageBufferCapture* Create(const class advancedfx::CImageFormat& format) {
-			class CAfxImageBufferCapture* result = new CAfxImageBufferCapture();
-			result->AddRef();
-			if (!result->AutoRealloc(format)) {
-				result->Release();
-				Tier0_Warning("CAfxImageBufferCapture::Create: Failed to reallocate buffer.\n");
-				return nullptr;
-			}
-			return result;
-		}
-
-		virtual void AddRef() override {
-			advancedfx::CRefCountedThreadSafe::AddRef();
-		}
-
-		virtual void Release() override {
-			advancedfx::CRefCountedThreadSafe::Release();
-		}
-
-		virtual const advancedfx::IImageBuffer* GetBuffer() const {
-			return m_ImageBuffer;
-		}
-
-		void * GetImageBufferDataRw() const {
-			return m_ImageBuffer->Buffer;
-		}
-
-	protected:
-		CAfxImageBufferCapture()
-			: advancedfx::CRefCountedThreadSafe()
-		{
-			m_ImageBuffer = g_AfxStreams.ImageBufferPoolThreadSafe.AquireBuffer();
-		}
-
-		virtual ~CAfxImageBufferCapture() {
-			g_AfxStreams.ImageBufferPoolThreadSafe.ReleaseBuffer(m_ImageBuffer);
-		}
-
-	private:
-		advancedfx::CImageBuffer* m_ImageBuffer;
-
-		bool AutoRealloc(const class advancedfx::CImageFormat& format) {
-			return m_ImageBuffer->AutoRealloc(format);
-		}
-	};
-
-	class CTranformTask
-		: public advancedfx::CThreadPool::CTask
-	{
-	public:
-		CTranformTask(std::atomic_int& task_counter)
-			: task_counter(task_counter)			
-		{
-			task_counter++;
-		}
-
-		virtual ~CTranformTask() {
-			task_counter--;
-		}
-
-	protected:
-
-	private:
-		std::atomic_int& task_counter;
-	};
-
-	class ITransform {
-	public:
-		virtual CAfxImageBufferCapture* CreateOutput(void) = 0;
-		virtual size_t GetTaskSize() = 0;
-		virtual CTranformTask* CreateTask(std::atomic_int& task_counter, int taskIndex, int taskSize) = 0;
-	};
-	class CTransformAColorBRedAsAlpha
-		: public ITransform {
-	public:
-		CTransformAColorBRedAsAlpha(class ICapture* aColor, class ICapture* bRedAsAlpha)
-			: m_CaptureA(aColor)
-			, m_CaptureB(bRedAsAlpha)
-		{
-		}
-
-		virtual CAfxImageBufferCapture* CreateOutput(void) {
-			if (nullptr != m_CaptureA && nullptr != m_CaptureB) {
-
-				if (const class advancedfx::IImageBuffer* pBufferA = m_CaptureA->GetBuffer()) {
-					if (const unsigned char* pDataA = static_cast<const unsigned char*>(pBufferA->GetImageBufferData())) {
-						m_pInDataA = pDataA;
-						if (const class advancedfx::CImageFormat* pFormatA = pBufferA->GetImageBufferFormat()) {
-							m_InFormatA = *pFormatA;
-							if (m_InFormatA.Format == advancedfx::ImageFormat::BGRA || m_InFormatA.Format == advancedfx::ImageFormat::BGR) {
-
-								if (const class advancedfx::IImageBuffer* pBufferB = m_CaptureB->GetBuffer()) {
-									if (const unsigned char* pDataB = static_cast<const unsigned char*>(pBufferB->GetImageBufferData())) {
-										m_pInDataB = pDataB;
-										if (const class advancedfx::CImageFormat* pFormatB = pBufferB->GetImageBufferFormat()) {
-											m_InFormatB = *pFormatB;
-											if (
-												(m_InFormatB.Format == advancedfx::ImageFormat::BGRA || m_InFormatB.Format == advancedfx::ImageFormat::BGR)
-												&& m_InFormatB.Width == m_InFormatA.Width
-												&& m_InFormatB.Height == m_InFormatA.Height
-												&& m_InFormatB.Origin == m_InFormatA.Origin)
-											{
-												m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::BGRA, m_InFormatA.Width, m_InFormatA.Height);
-												m_OutFormat.SetOrigin(m_InFormatA.Origin);
-												class CAfxImageBufferCapture* pOutCapture = CAfxImageBufferCapture::Create(m_OutFormat);
-												if (pOutCapture) {
-													m_pOutData = static_cast<unsigned char*>(pOutCapture->GetImageBufferDataRw());
-												}
-												return pOutCapture;
-											}
-										}
-									}
-								}
-
-							}
-						}
-					}
-				}
-			}
-
-			return nullptr;
-		}
-
-		virtual size_t GetTaskSize() {
-			return (size_t)std::abs(m_OutFormat.Height);
-		}
-
-		virtual CTranformTask* CreateTask(std::atomic_int& task_counter, int taskIndex, int taskSize) {
-			return new CMyTransformTask(task_counter,
-				m_pInDataA + taskIndex * m_InFormatA.Pitch, m_InFormatA.Pitch, m_InFormatA.GetPixelStride(),
-				m_pInDataB + taskIndex * m_InFormatB.Pitch, m_InFormatB.Pitch, m_InFormatB.GetPixelStride(),
-				m_pOutData + taskIndex * m_OutFormat.Pitch, m_OutFormat.Width, taskSize);
-		}
-
-	private:
-		class CMyTransformTask : public CTranformTask {
-		public:
-			CMyTransformTask(std::atomic_int& task_counter, const unsigned char* pDataA, size_t pitchA, size_t pixelPichtA, const unsigned char* pDataB, size_t pitchB, size_t pixelPichtB, unsigned char* pOutData, size_t width, size_t height)
-				: CTranformTask(task_counter)
-				, pDataA(pDataA)
-				, pitchA(pitchA)
-				, pixelPichtA(pixelPichtA)
-				, pDataB(pDataB)
-				, pitchB(pitchB)
-				, pixelPichtB(pixelPichtB)
-				, pOutData(pOutData)
-				, width(width)
-				, height(height)
-			{
-			}
-
-			virtual void Execute() {
-				size_t targetPitch = width * 4 * sizeof(unsigned char);
-				for (size_t y = 0; y < height; ++y)
-				{
-					for (size_t x = 0; x < width; ++x)
-					{
-						const unsigned char* pInA = (const unsigned char*)(pDataA + y * pitchA + x * pixelPichtA);
-						const unsigned char* pInB = (const unsigned char*)(pDataB + y * pitchB + x * pixelPichtB);
-						unsigned char* pOut = (unsigned char*)(pOutData + y * targetPitch + x * 4 * sizeof(unsigned char));
-
-						pOut[0] = pInA[0];
-						pOut[1] = pInA[1];
-						pOut[2] = pInA[2];
-						pOut[3] = pInB[0];
-
-					}
-				}
-			}
-
-		private:
-			const unsigned char* pDataA;
-			size_t pitchA;
-			size_t pixelPichtA;
-			const unsigned char* pDataB;
-			size_t pitchB;
-			size_t pixelPichtB;
-			unsigned char* pOutData;
-			size_t width;
-			size_t height;
-		};
-
-		class ICapture* m_CaptureA;
-		class ICapture* m_CaptureB;
-		advancedfx::CImageFormat m_InFormatA;
-		advancedfx::CImageFormat m_InFormatB;
-		const unsigned char* m_pInDataA;
-		const unsigned char* m_pInDataB;
-		advancedfx::CImageFormat m_OutFormat;
-		unsigned char* m_pOutData;
-	};
-
-	class CTransformMatte
-		: public ITransform {
-	public:
-		CTransformMatte(class ICapture* captureEntBlack, class ICapture* captureEntWhite)
-			: m_CaptureEntBlack(captureEntBlack)
-			, m_CaptureEntWhite(captureEntWhite)
-		{
-		}
-
-		virtual CAfxImageBufferCapture* CreateOutput(void) {
-			if (nullptr != m_CaptureEntBlack && nullptr != m_CaptureEntWhite) {
-
-				if (const class advancedfx::IImageBuffer* pBufferEntBlack = m_CaptureEntBlack->GetBuffer()) {
-					if (const unsigned char* pDataEntBlack = static_cast<const unsigned char*>(pBufferEntBlack->GetImageBufferData())) {
-						m_pInDataEntBlack = pDataEntBlack;
-						if (const class advancedfx::CImageFormat* pFormatEntBlack = pBufferEntBlack->GetImageBufferFormat()) {
-							m_InFormatEntBlack = *pFormatEntBlack;
-							if (m_InFormatEntBlack.Format == advancedfx::ImageFormat::BGRA || m_InFormatEntBlack.Format == advancedfx::ImageFormat::BGR) {
-
-								if (const class advancedfx::IImageBuffer* pBufferEntWhite = m_CaptureEntWhite->GetBuffer()) {
-									if (const unsigned char* pDataEntWhite = static_cast<const unsigned char*>(pBufferEntWhite->GetImageBufferData())) {
-										m_pInDataEntWhite = pDataEntWhite;
-										if (const class advancedfx::CImageFormat* pFormatEntWhite = pBufferEntWhite->GetImageBufferFormat()) {
-											m_InFormatEntWhite = *pFormatEntWhite;
-											if (
-												(m_InFormatEntWhite.Format == advancedfx::ImageFormat::BGRA || m_InFormatEntWhite.Format == advancedfx::ImageFormat::BGR)
-												&& m_InFormatEntWhite.Width == m_InFormatEntBlack.Width
-												&& m_InFormatEntWhite.Height == m_InFormatEntBlack.Height
-												&& m_InFormatEntWhite.Origin == m_InFormatEntBlack.Origin)
-											{
-												m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::BGRA, m_InFormatEntBlack.Width, m_InFormatEntBlack.Height);
-												m_OutFormat.SetOrigin(m_InFormatEntBlack.Origin);
-												class CAfxImageBufferCapture* pOutCapture = CAfxImageBufferCapture::Create(m_OutFormat);
-												if (pOutCapture) {
-													m_pOutData = static_cast<unsigned char*>(pOutCapture->GetImageBufferDataRw());
-												}
-												return pOutCapture;
-											}
-										}
-									}
-								}
-
-							}
-						}
-					}
-				}
-			}
-
-			return nullptr;
-		}
-
-		virtual size_t GetTaskSize() {
-			return (size_t)std::abs(m_OutFormat.Height);
-		}
-
-		virtual CTranformTask* CreateTask(std::atomic_int& task_counter, int taskIndex, int taskSize) {
-			return new CMyTransformTask(task_counter,
-				m_pInDataEntBlack + taskIndex * m_InFormatEntBlack.Pitch, m_InFormatEntBlack.Pitch, m_InFormatEntBlack.GetPixelStride(),
-				m_pInDataEntWhite + taskIndex * m_InFormatEntWhite.Pitch, m_InFormatEntWhite.Pitch, m_InFormatEntWhite.GetPixelStride(),
-				m_pOutData + taskIndex * m_OutFormat.Pitch, m_OutFormat.Width, taskSize);
-		}
-
-	private:
-		class CMyTransformTask : public CTranformTask {
-		public:
-			CMyTransformTask(std::atomic_int& task_counter, const unsigned char* pDataEntBlack, size_t pitchEntBlack, size_t pixelPichtEntBlack, const unsigned char* pDataEntWhite, size_t pitchEntWhite, size_t pixelPichtEntWhite, unsigned char* pOutData, size_t width, size_t height)
-				: CTranformTask(task_counter)
-				, pDataEntBlack(pDataEntBlack)
-				, pitchEntBlack(pitchEntBlack)
-				, pixelPichtEntBlack(pixelPichtEntBlack)
-				, pDataEntWhite(pDataEntWhite)
-				, pitchEntWhite(pitchEntWhite)
-				, pixelPichtEntWhite(pixelPichtEntWhite)
-				, pOutData(pOutData)
-				, width(width)
-				, height(height)
-			{
-			}
-
-			virtual void Execute() {
-				size_t targetPitch = width * 4 * sizeof(unsigned char);
-				for (size_t y = 0; y < height; ++y)
-				{
-					for (size_t x = 0; x < width; ++x)
-					{
-						const unsigned char* pInEntBlack = (const unsigned char*)(pDataEntBlack + y * pitchEntBlack + x * pixelPichtEntBlack);
-						const unsigned char* pInEntWhite = (const unsigned char*)(pDataEntWhite + y * pitchEntWhite + x * pixelPichtEntWhite);
-						unsigned char* pOut = (unsigned char*)(pOutData + y * targetPitch + x * 4 * sizeof(unsigned char));
-
-						unsigned char entBlack_b = pInEntBlack[0];
-						unsigned char entBlack_g = pInEntBlack[1];
-						unsigned char entBlack_r = pInEntBlack[2];
-
-						unsigned char entWhite_b = pInEntWhite[0];
-						unsigned char entWhite_g = pInEntWhite[1];
-						unsigned char entWhite_r = pInEntWhite[2];
-
-						//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 0] = y < 1 * height / 3 ? entBlack_b : (y < 2 * height / 3 ? entWhite_b : (unsigned char)(((int)entBlack_b + (int)entWhite_b)/2));
-						//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 1] = y < 1 * height / 3 ? entBlack_g : (y < 2 * height / 3 ? entWhite_g : (unsigned char)(((int)entBlack_g + (int)entWhite_g)/2));
-						//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 2] = y < 1 * height / 3 ? entBlack_r : (y < 2 * height / 3 ? entWhite_r : (unsigned char)(((int)entBlack_r + (int)entWhite_r)/2));
-						//((unsigned char *)pBufferEntBlack)[y*newImagePitchA + x * 4 + 3] = y < 1 * height / 3 ? 255 : (y < 2 * height / 3 ? 255 : (unsigned char)min(max((255l - (int)entWhite_b + (int)entBlack_b + 255l - (int)entWhite_g + (int)entBlack_g + 255l - (int)entWhite_r + (int)entBlack_r) / 3l, 0), 255));
-						pOut[0] = (unsigned char)(((int)entBlack_b + (int)entWhite_b) / 2);
-						pOut[1] = (unsigned char)(((int)entBlack_g + (int)entWhite_g) / 2);
-						pOut[2] = (unsigned char)(((int)entBlack_r + (int)entWhite_r) / 2);
-						pOut[3] = (unsigned char)std::min(std::max((255l - (int)entWhite_b + (int)entBlack_b + 255l - (int)entWhite_g + (int)entBlack_g + 255l - (int)entWhite_r + (int)entBlack_r) / 3l, 0l), 255l);
-
-					}
-				}
-			}
-
-		private:
-			const unsigned char* pDataEntBlack;
-			size_t pitchEntBlack;
-			size_t pixelPichtEntBlack;
-			const unsigned char* pDataEntWhite;
-			size_t pitchEntWhite;
-			size_t pixelPichtEntWhite;
-			unsigned char* pOutData;
-			size_t width;
-			size_t height;
-		};
-
-		class ICapture* m_CaptureEntBlack;
-		class ICapture* m_CaptureEntWhite;
-		advancedfx::CImageFormat m_InFormatEntBlack;
-		advancedfx::CImageFormat m_InFormatEntWhite;
-		const unsigned char* m_pInDataEntBlack;
-		const unsigned char* m_pInDataEntWhite;
-		advancedfx::CImageFormat m_OutFormat;
-		unsigned char* m_pOutData;
-	};
-
-	class CTransformStripAlpha
-		: public ITransform {
-	public:
-		CTransformStripAlpha(class ICapture* capture)
-			: m_Capture(capture)
-		{
-		}
-
-		virtual CAfxImageBufferCapture* CreateOutput(void) {
-			if (nullptr != m_Capture) {
-				if (const class advancedfx::IImageBuffer* pBuffer = m_Capture->GetBuffer()) {
-					if (const unsigned char* pData = static_cast<const unsigned char*>(pBuffer->GetImageBufferData())) {
-						if (const class advancedfx::CImageFormat* pFormat = pBuffer->GetImageBufferFormat()) {
-							m_InFormat = *pFormat;
-							if (m_InFormat.Format == advancedfx::ImageFormat::BGRA) {
-								m_pInData = pData;
-								m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::BGR, m_InFormat.Width, m_InFormat.Height);
-								m_OutFormat.SetOrigin(m_InFormat.Origin);
-								class CAfxImageBufferCapture* pOutCapture = CAfxImageBufferCapture::Create(m_OutFormat);
-								if (pOutCapture) {
-									m_pOutData = static_cast<unsigned char*>(pOutCapture->GetImageBufferDataRw());
-								}
-								return pOutCapture;
-							}
-						}
-					}
-				}
-			}
-
-			return nullptr;
-		}
-
-		virtual size_t GetTaskSize() {
-			return (size_t)std::abs(m_InFormat.Height);
-		}
-
-		virtual CTranformTask* CreateTask(std::atomic_int& task_counter, int taskIndex, int taskSize) {
-			return new CMyTransformTask(task_counter, m_pInData + taskIndex * m_InFormat.Pitch, m_InFormat.Pitch, m_pOutData + taskIndex * m_OutFormat.Pitch, m_OutFormat.Width, taskSize);
-		}
-
-	private:
-		class CMyTransformTask : public CTranformTask {
-		public:
-			CMyTransformTask(std::atomic_int& task_counter, const unsigned char* pData, size_t pitch, unsigned char* pOutData, size_t width, size_t height)
-				: CTranformTask(task_counter)
-				, pData(pData)
-				, pitch(pitch)
-				, pOutData(pOutData)
-				, width(width)
-				, height(height)
-			{
-			}
-
-			virtual void Execute() {
-				size_t targetPitch = width * 3 * sizeof(unsigned char);
-				for (size_t y = 0; y < height; ++y)
-				{
-					for (size_t x = 0; x < width; ++x)
-					{
-						const unsigned char * pIn = (const unsigned char *)(pData + y * pitch + x * 4 * sizeof(unsigned char));
-						unsigned char * pOut = (unsigned char*)(pOutData + y * targetPitch + x * 3 * sizeof(unsigned char));
-	
-						pOut[0] = pIn[0];
-						pOut[1] = pIn[1];
-						pOut[2] = pIn[2];
-					}
-				}
-			}
-
-		private:
-			const unsigned char* pData;
-			size_t pitch;
-			unsigned char* pOutData;
-			size_t width;
-			size_t height;
-		};
-
-		class ICapture* m_Capture;
-		advancedfx::CImageFormat m_InFormat;
-		const unsigned char* m_pInData;
-		advancedfx::CImageFormat m_OutFormat;
-		unsigned char* m_pOutData;
-	};
-
-	class CTransformDepthF 
-		: public ITransform {
-	public:
-		CTransformDepthF(class ICapture* capture, float depthScale, float depthOfs)
-			: m_Capture(capture)
-			, m_DepthScale(depthScale)
-			, m_DepthOfs(depthOfs)
-		{
-		}
-
-		virtual CAfxImageBufferCapture* CreateOutput(void) {
-			if (nullptr != m_Capture) {
-				if (const class advancedfx::IImageBuffer* pBuffer = m_Capture->GetBuffer()) {
-					if (const unsigned char* pData = static_cast<const unsigned char*>(pBuffer->GetImageBufferData())) {
-						if (const class advancedfx::CImageFormat* pFormat = pBuffer->GetImageBufferFormat()) {
-							m_InFormat = *pFormat;
-							if (m_InFormat.Format == advancedfx::ImageFormat::ZFloat) {
-								m_pInData = pData;
-								m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::ZFloat, m_InFormat.Width, m_InFormat.Height);
-								m_OutFormat.SetOrigin(m_InFormat.Origin);
-								class CAfxImageBufferCapture* pOutCapture = CAfxImageBufferCapture::Create(m_OutFormat);
-								if (pOutCapture) {
-									m_pOutData = static_cast<unsigned char*>(pOutCapture->GetImageBufferDataRw());
-								}
-								return pOutCapture;
-							}
-						}
-					}
-				}
-			}
-
-			return nullptr;
-		}
-
-		virtual CAfxImageBufferCapture* CreateCapture(void) {
-			class CAfxImageBufferCapture* pOutCapture = CAfxImageBufferCapture::Create(m_OutFormat);
-			if(pOutCapture) {
-				m_pOutData = static_cast<unsigned char*>(pOutCapture->GetImageBufferDataRw());
-			}
-			return pOutCapture;							
-		}
-
-		virtual size_t GetTaskSize() {
-			return (size_t)std::abs(m_InFormat.Height);
-		}
-
-		virtual CTranformTask* CreateTask(std::atomic_int& task_counter, int taskIndex, int taskSize) {
-			return new CMyTransformTask(task_counter, m_pInData + taskIndex * m_InFormat.Pitch, m_InFormat.Pitch, m_pOutData + taskIndex * m_OutFormat.Pitch, m_OutFormat.Width, taskSize, m_DepthScale, m_DepthOfs);
-		}
-
-	private:
-		class CMyTransformTask : public CTranformTask {
-		public:
-			CMyTransformTask(std::atomic_int& task_counter, const unsigned char* pData, size_t pitch, unsigned char* pOutData, size_t width, size_t height, float depthScale, float depthOfs)
-				: CTranformTask(task_counter)
-				, pData(pData)
-				, pitch(pitch)
-				, pOutData(pOutData)
-				, width(width)
-				, height(height)
-				, depthScale(depthScale)
-				, depthOfs(depthOfs)
-			{
-			}
-
-			virtual void Execute() {
-				size_t targetPitch = width * sizeof(float);
-				for (size_t y = 0; y < height; ++y)
-				{
-					for (size_t x = 0; x < width; ++x)
-					{
-						float depth = *(const float*)(pData + y * pitch + x * sizeof(float));
-
-						depth *= depthScale;
-						depth += depthOfs;
-
-						*(float*)(pOutData + y * targetPitch + x * sizeof(float))
-							= depth;
-					}
-				}
-			}
-
-		private:
-			const unsigned char* pData;
-			size_t pitch;
-			unsigned char* pOutData;
-			size_t width;
-			size_t height;
-			float depthScale;
-			float depthOfs;
-		};
-
-		class ICapture* m_Capture;
-		advancedfx::CImageFormat m_InFormat;
-		const unsigned char* m_pInData;
-		advancedfx::CImageFormat m_OutFormat;
-		unsigned char* m_pOutData;
-		float m_DepthScale;
-		float m_DepthOfs;
-	};
-
-	class CTransformDepth24
-		: public ITransform {
-	public:
-		CTransformDepth24(class ICapture* capture, float depthScale, float depthOfs)
-			: m_Capture(capture)
-			, m_DepthScale(depthScale)
-			, m_DepthOfs(depthOfs)
-		{
-		}
-
-		virtual CAfxImageBufferCapture* CreateOutput(void) {
-			if (nullptr != m_Capture) {
-				if (const class advancedfx::IImageBuffer* pBuffer = m_Capture->GetBuffer()) {
-					if (const unsigned char* pData = static_cast<const unsigned char*>(pBuffer->GetImageBufferData())) {
-						if (const class advancedfx::CImageFormat* pFormat = pBuffer->GetImageBufferFormat()) {
-							m_InFormat = *pFormat;
-							if (m_InFormat.Format == advancedfx::ImageFormat::BGR || m_InFormat.Format == advancedfx::ImageFormat::BGRA) {
-								m_pInData = pData;
-								m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::ZFloat, m_InFormat.Width, m_InFormat.Height);
-								m_OutFormat.SetOrigin(m_InFormat.Origin);
-								class CAfxImageBufferCapture* pOutCapture = CAfxImageBufferCapture::Create(m_OutFormat);
-								if (pOutCapture) {
-									m_pOutData = static_cast<unsigned char*>(pOutCapture->GetImageBufferDataRw());
-								}
-								return pOutCapture;
-							}
-						}
-					}
-				}
-			}
-
-			return nullptr;
-		}
-
-		virtual size_t GetTaskSize() {
-			return (size_t)std::abs(m_InFormat.Height);
-		}
-
-		virtual CTranformTask* CreateTask(std::atomic_int& task_counter, int taskIndex, int taskSize) {
-			return new CMyTransformTask(task_counter, m_pInData + taskIndex * m_InFormat.Pitch, m_InFormat.Pitch, m_InFormat.GetPixelStride(), m_pOutData + taskIndex * m_OutFormat.Pitch, m_OutFormat.Width, taskSize, m_DepthScale, m_DepthOfs);
-		}
-
-	private:
-		class CMyTransformTask : public CTranformTask {
-		public:
-			CMyTransformTask(std::atomic_int& task_counter, const unsigned char* pData, size_t pitch, size_t pixelPitch, unsigned char* pOutData, size_t width, size_t height, float depthScale, float depthOfs)
-				: CTranformTask(task_counter)
-				, pData(pData)
-				, pitch(pitch)
-				, pixelPitch(pixelPitch)
-				, pOutData(pOutData)
-				, width(width)
-				, height(height)
-				, depthScale(depthScale)
-				, depthOfs(depthOfs)
-			{
-			}
-
-			virtual void Execute() {
-				size_t targetPitch = width * sizeof(float);
-				for (size_t y = 0; y < height; ++y)
-				{
-					for (size_t x = 0; x < width; ++x)
-					{
-						const unsigned char b = pData[y * pitch + x * pixelPitch + 0];
-						const unsigned char g = pData[y * pitch + x * pixelPitch + 1];
-						const unsigned char r = pData[y * pitch + x * pixelPitch + 2];
-
-						float depth;
-
-						depth = (1.0f / 16777215.0f) * r + (256.0f / 16777215.0f) * g + (65536.0f / 16777215.0f) * b;
-
-						depth *= depthScale;
-						depth += depthOfs;
-
-						*(float*)(pOutData + y * targetPitch + x * sizeof(float)) = depth;
-					}
-				}
-			}
-
-		private:
-			const unsigned char* pData;
-			size_t pitch;
-			size_t pixelPitch;
-			unsigned char* pOutData;
-			size_t width;
-			size_t height;
-			float depthScale;
-			float depthOfs;
-		};
-
-		class ICapture* m_Capture;
-		advancedfx::CImageFormat m_InFormat;
-		const unsigned char* m_pInData;
-		advancedfx::CImageFormat m_OutFormat;
-		unsigned char* m_pOutData;
-		float m_DepthScale;
-		float m_DepthOfs;
-	};
-
-	static class ICapture* Transform(class ITransform* transform) {
-		if (class CAfxImageBufferCapture* pOutCapture = transform->CreateOutput()) {
-			size_t outTaskSize = transform->GetTaskSize();
-			size_t thread_count = std::min(g_pThreadPool->GetThreadCount() + 1, outTaskSize);
-			size_t lines_per_task = outTaskSize / thread_count;
-			size_t lines_per_task_remainder = outTaskSize % thread_count;
-			std::atomic_int task_counter(0);
-			size_t line = 0;
-			if (1 < thread_count) {
-				std::vector<advancedfx::CThreadPool::CTask*> tasks(thread_count - 1);
-				for (size_t i = 0; i < tasks.size(); i++) {
-					size_t cur_task_lines = lines_per_task;
-					if (0 < lines_per_task_remainder) {
-						cur_task_lines += 1;
-						lines_per_task_remainder--;
-					}
-					tasks[i] = transform->CreateTask(task_counter, line, cur_task_lines);
-					line += cur_task_lines;
-				}
-				g_pThreadPool->QueueTasks(tasks);
-			}
-			{
-				advancedfx::CThreadPool::CTask* lastTask = transform->CreateTask(task_counter, line, lines_per_task);
-				lastTask->Execute();
-				delete lastTask;
-			}
-			while (0 < task_counter) {}
-
-			return pOutCapture;
-		}
-
-		return nullptr;
-	}
-};
 
 /*
 void CAfxRenderViewStream::Console_DisableFastPathRequired()
@@ -1443,8 +750,8 @@ void CAfxRecordStream::CCaptureFunctor::operator()()
 {
 	bool bDepthF = false;
 	switch (m_Stream.m_Streams[m_Index]->StreamCaptureType_get()) {
-	case CAfxRenderViewStream::SCT_DepthF:
-	case CAfxRenderViewStream::SCT_DepthFZIP:
+	case StreamCaptureType::DepthF:
+	case StreamCaptureType::DepthFZIP:
 		bDepthF = true;
 		break;
 	}
@@ -1545,7 +852,7 @@ void CAfxRecordStream::DoCaptureStart(IAfxMatRenderContextOrg * ctx, const AfxVi
 	m_FirstCapture = false;
 }
 
-void CAfxRecordStream::OnImageBufferCaptured(size_t index, class ICapture* buffer)
+void CAfxRecordStream::OnImageBufferCaptured(size_t index, class advancedfx::ICapture* buffer)
 {
 	if (buffer) buffer->AddRef();
 	std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
@@ -1592,7 +899,7 @@ bool CAfxRecordStream::Console_Edit_Head(IWrpCommandArgs * args)
 			{
 				char const * arg2 = args->ArgV(2);
 
-				if (CAfxRecordingSettings * settings = CAfxRecordingSettings::GetByName(arg2))
+				if (advancedfx::CRecordingSettings * settings = advancedfx::CRecordingSettings::GetByName(arg2))
 				{
 					this->SetSettings(settings);
 				}
@@ -1654,7 +961,7 @@ bool CAfxRecordStream::GetStreamFolder(std::wstring& outFolder) const {
 CAfxSingleStream::CAfxSingleStream(char const * streamName, CAfxRenderViewStream * stream)
 	: CAfxRecordStream(streamName, std::vector<CAfxRenderViewStream *>({ stream }))
 {
-	m_Settings = CAfxRecordingSettings::GetDefault();
+	m_Settings = advancedfx::CRecordingSettings::GetDefault();
 	m_Settings->AddRef();
 }
 
@@ -1665,8 +972,8 @@ void CAfxSingleStream::CaptureStart(bool bFirstCapture, const AfxViewportData_t&
 	if (bFirstCapture) {
 		/*bool isDepthCapture = false;
 		switch (m_Streams[0]->StreamCaptureType_get()) {
-		case CAfxRenderViewStream::SCT_DepthF:
-		case CAfxRenderViewStream::SCT_DepthFZIP:
+		case StreamCaptureType::DepthF:
+		case StreamCaptureType::DepthFZIP:
 			isDepthCapture = true;
 			break;
 		}*/
@@ -1680,13 +987,13 @@ void CAfxSingleStream::CaptureStart(bool bFirstCapture, const AfxViewportData_t&
 
 void CAfxSingleStream::CaptureEnd()
 {
-	ICapture * capture = m_Task->GetAt(0);
+	advancedfx::ICapture * capture = m_Task->GetAt(0);
 
 	if (capture)
 	{
-		CAfxRenderViewStream::StreamCaptureType streamCaptureType = m_Streams[0]->StreamCaptureType_get();
+		advancedfx::StreamCaptureType streamCaptureType = m_Streams[0]->StreamCaptureType_get();
 
-		if (streamCaptureType == CAfxRenderViewStream::SCT_DepthF || streamCaptureType == CAfxRenderViewStream::SCT_DepthFZIP) {
+		if (streamCaptureType == StreamCaptureType::DepthF || streamCaptureType == StreamCaptureType::DepthFZIP) {
 			float depthScale = 1.0f;
 			float depthOfs = 0.0f;
 			if (CAfxBaseFxStream* baseFx = m_Streams[0]->AsAfxBaseFxStream())
@@ -1695,11 +1002,11 @@ void CAfxSingleStream::CaptureEnd()
 				depthOfs = baseFx->DepthVal_get();
 			}
 
-			ICapture* outCapture = CAfxTransformer::TransformDepthF(capture, depthScale, depthOfs);
+			advancedfx::ICapture* outCapture = advancedfx::ImageTransformer::DepthF(g_pThreadPool, &g_ImageBufferPoolThreadSafe, capture, depthScale, depthOfs);
 			if (capture) capture->Release();
 			capture = outCapture;
 		}
-		else if (CAfxRenderViewStream::SCT_Depth24 == streamCaptureType || CAfxRenderViewStream::SCT_Depth24ZIP == streamCaptureType) {
+		else if (StreamCaptureType::Depth24 == streamCaptureType || StreamCaptureType::Depth24ZIP == streamCaptureType) {
 			float depthScale = 1.0f;
 			float depthOfs = 0.0f;
 			if (CAfxBaseFxStream* baseFx = m_Streams[0]->AsAfxBaseFxStream())
@@ -1708,12 +1015,12 @@ void CAfxSingleStream::CaptureEnd()
 				depthOfs = baseFx->DepthVal_get();
 			}
 
-			ICapture* outCapture = CAfxTransformer::TransformDepth24(capture, depthScale, depthOfs);
+			advancedfx::ICapture* outCapture =advancedfx::ImageTransformer::Depth24(g_pThreadPool, &g_ImageBufferPoolThreadSafe, capture, depthScale, depthOfs);
 			if (capture) capture->Release();
 			capture = outCapture;
 		}
 		else {
-			ICapture* outCapture = CAfxTransformer::TransformStripAlpha(capture);
+			advancedfx::ICapture* outCapture = advancedfx::ImageTransformer::StripAlpha(g_pThreadPool,&g_ImageBufferPoolThreadSafe,capture);
 			if (capture) capture->Release();
 			capture = outCapture;
 		}
@@ -1754,7 +1061,7 @@ void CAfxSingleStream::CaptureEnd()
 	CAfxRecordStream::CaptureEnd();
 }
 
-CAfxRenderViewStream::StreamCaptureType CAfxSingleStream::GetCaptureType() const
+advancedfx::StreamCaptureType CAfxSingleStream::GetCaptureType() const
 {
 	return m_Streams[0]->StreamCaptureType_get();
 }
@@ -1785,7 +1092,7 @@ CAfxTwinStream::CAfxTwinStream(char const * streamName, CAfxRenderViewStream * s
 	: CAfxRecordStream(streamName, std::vector<CAfxRenderViewStream *>({streamA, streamB}))
 	, m_StreamCombineType(streamCombineType)
 {
-	m_Settings = CAfxRecordingSettings::GetDefault();
+	m_Settings = advancedfx::CRecordingSettings::GetDefault();
 	m_Settings->AddRef();
 }
 
@@ -1799,7 +1106,7 @@ void CAfxTwinStream::StreamCombineType_set(StreamCombineType value)
 	m_StreamCombineType = value;
 }
 
-CAfxRenderViewStream::StreamCaptureType CAfxTwinStream::GetCaptureType() const
+advancedfx::StreamCaptureType CAfxTwinStream::GetCaptureType() const
 {
 	if (CAfxTwinStream::SCT_ARedAsAlphaBColor == m_StreamCombineType)
 	{
@@ -1810,7 +1117,7 @@ CAfxRenderViewStream::StreamCaptureType CAfxTwinStream::GetCaptureType() const
 		return m_Streams[0]->StreamCaptureType_get();
 	}
 
-	return CAfxRenderViewStream::SCT_Invalid;
+	return StreamCaptureType::Invalid;
 }
 
 void CAfxTwinStream::CaptureStart(bool bFirstCapture, const AfxViewportData_t& viewport) {
@@ -1828,18 +1135,18 @@ void CAfxTwinStream::CaptureStart(bool bFirstCapture, const AfxViewportData_t& v
 
 void CAfxTwinStream::CaptureEnd()
 {
-	ICapture * captureA = m_Task->GetAt(0);
+	advancedfx::ICapture * captureA = m_Task->GetAt(0);
 	ICapture * captureB = m_Task->GetAt(1);
 
-	ICapture* outCapture = nullptr;
+	advancedfx::ICapture* outCapture = nullptr;
 
 	if (CAfxTwinStream::SCT_ARedAsAlphaBColor == m_StreamCombineType)
 	{
-		outCapture = CAfxTransformer::TransformAColorBRedAsAlpha(captureB, captureA);
+		outCapture = advancedfx::ImageTransformer::AColorBRedAsAlpha(g_pThreadPool,&g_ImageBufferPoolThreadSafe,captureB, captureA);
 	}
 	else if (CAfxTwinStream::SCT_AColorBRedAsAlpha == m_StreamCombineType)
 	{
-		outCapture = CAfxTransformer::TransformAColorBRedAsAlpha(captureA, captureB);
+		outCapture = advancedfx::ImageTransformer::AColorBRedAsAlpha(g_pThreadPool,&g_ImageBufferPoolThreadSafe,captureA, captureB);
 	}
 
 	if (captureA) captureA->Release();
@@ -1995,7 +1302,7 @@ CAfxMatteStream::CAfxMatteStream(char const * streamName, CAfxRenderViewStream *
 	: CAfxRecordStream(streamName, std::vector<CAfxRenderViewStream *>({ stream, stream }))
 	, m_HandleMaskAction(true)
 {
-	m_Settings = CAfxRecordingSettings::GetDefault();
+	m_Settings = advancedfx::CRecordingSettings::GetDefault();
 	m_Settings->AddRef();
 
 	m_Modifiers.resize(2);
@@ -2043,7 +1350,7 @@ CAfxMatteStream::~CAfxMatteStream()
 	if (m_ActionNoDraw) m_ActionNoDraw->Release();
 }
 
-CAfxRenderViewStream::StreamCaptureType CAfxMatteStream::GetCaptureType() const
+advancedfx::StreamCaptureType CAfxMatteStream::GetCaptureType() const
 {
 	return m_Streams[0]->StreamCaptureType_get();
 }
@@ -2121,10 +1428,10 @@ void CAfxMatteStream::CaptureStart(bool bFirstCapture, const AfxViewportData_t& 
 
 void CAfxMatteStream::CaptureEnd()
 {
-	ICapture * captureA = m_Task->GetAt(0);
-	ICapture * captureB = m_Task->GetAt(1);
+	advancedfx::ICapture * captureA = m_Task->GetAt(0);
+	advancedfx::ICapture * captureB = m_Task->GetAt(1);
 
-	ICapture* outCapture = CAfxTransformer::TransformMatte(captureA, captureB);
+	advancedfx::ICapture* outCapture = advancedfx::ImageTransformer::Matte(g_pThreadPool,&g_ImageBufferPoolThreadSafe,captureA, captureB);
 
 	if (captureA) captureA->Release();
 	if (captureB) captureB->Release();
@@ -3476,8 +2783,8 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingHudBegin(void)
 
 		bool bDepthF = false;
 		switch (m_Stream->StreamCaptureType_get()) {
-		case CAfxRenderViewStream::SCT_DepthF:
-		case CAfxRenderViewStream::SCT_DepthFZIP:
+		case StreamCaptureType::DepthF:
+		case StreamCaptureType::DepthFZIP:
 			bDepthF = true;
 			break;
 		}
@@ -3584,8 +2891,8 @@ void CAfxBaseFxStream::CAfxBaseFxStreamContext::DrawingSkyBoxViewEnd(void)
 
 		bool bDepthF = false;
 		switch (m_Stream->StreamCaptureType_get()) {
-		case CAfxRenderViewStream::SCT_DepthF:
-		case CAfxRenderViewStream::SCT_DepthFZIP:
+		case StreamCaptureType::DepthF:
+		case StreamCaptureType::DepthFZIP:
 			bDepthF = true;
 			break;
 		}
@@ -6543,7 +5850,7 @@ CAfxStreamsCaptureOutput::~CAfxStreamsCaptureOutput() {
 	m_Target->Release();
 }
 
-void CAfxStreamsCaptureOutput::OnCapture(class ICapture* capture) {
+void CAfxStreamsCaptureOutput::OnCapture(class advancedfx::ICapture* capture) {
 	m_Target->OnImageBufferCaptured(m_StreamIndex, capture);
 }
 
@@ -6571,8 +5878,6 @@ CAfxStreams::CAfxStreams()
 CAfxStreams::~CAfxStreams()
 {
 	ShutDown();
-	delete m_RecordScreenMutex;
-	m_RecordScreenMutex = nullptr;
 }
 
 void CAfxStreams::OnClientEntityCreated(SOURCESDK::C_BaseEntity_csgo* ent) {
@@ -7612,7 +6917,7 @@ void CAfxStreams::Console_Record_Start()
 					*this,
 					GetStartHostFrameRate(),
 					""
-				), CAfxRenderViewStream::StreamCaptureType::SCT_Normal
+				), advancedfx::StreamCaptureType::Normal
 			);
 
 			MaterialSystem_ExecuteOnRenderThread(new CCreateScreenCaptureNodeFunctor(m_DrawingRecordScreen->GetOutVideoStreamCreator()));
@@ -7997,7 +7302,7 @@ void CAfxStreams::Console_PrintStreams2()
 		for(auto it = streams[i].begin(); it != streams[i].end(); it++) {
 			const char * streamName = it->Stream->StreamName_get();
 			const char * settingName = "";
-			if(CAfxRecordingSettings * setting =  it->Stream->GetSettings()) {
+			if(advancedfx::CRecordingSettings * setting =  it->Stream->GetSettings()) {
 				settingName = setting->GetName();
 			}
 			if(i == 0 && streams[i].size() > 1 || it->PreviewSlot > 0) {
@@ -8046,7 +7351,7 @@ void CAfxStreams::Console_RecordScreen(IWrpCommandArgs* args) {
 			{
 				char const* arg2 = args->ArgV(2);
 
-				if (CAfxRecordingSettings* settings = CAfxRecordingSettings::GetByName(arg2))
+				if (advancedfx::CRecordingSettings* settings = advancedfx::CRecordingSettings::GetByName(arg2))
 				{
 					settings->AddRef();
 					m_RecordScreen->Settings->Release();
@@ -8540,11 +7845,11 @@ bool CAfxStreams::Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandA
 				if(2 <= argc)
 				{
 					char const * cmd1 = args->ArgV(argcOffset +1);
-					CAfxRenderViewStream::StreamCaptureType value;
+					advancedfx::StreamCaptureType value;
 
 					if(Console_ToStreamCaptureType(cmd1, value))
 					{
-						if(value == CAfxRenderViewStream::SCT_DepthF || value == CAfxRenderViewStream::SCT_DepthFZIP)
+						if(value == StreamCaptureType::DepthF || value == StreamCaptureType::DepthFZIP)
 						{
 							if(!AfxD3D9_Check_Supports_R32F(false))
 							{
@@ -10079,8 +9384,8 @@ IAfxMatRenderContextOrg * CAfxStreams::CaptureStreamToBuffer(IAfxMatRenderContex
 		captureTarget->DoCaptureStart(ctxp, afxViewport);
 	}
 
-	CAfxRenderViewStream::StreamCaptureType captureType = stream->StreamCaptureType_get();
-	bool isDepthF = captureType == CAfxRenderViewStream::SCT_DepthF || captureType == CAfxRenderViewStream::SCT_DepthFZIP;
+	advancedfx::StreamCaptureType captureType = stream->StreamCaptureType_get();
+	bool isDepthF = captureType == StreamCaptureType::DepthF || captureType == StreamCaptureType::DepthFZIP;
 
 	SetMatVarsForStreams(); // keep them set in case someone resets them.
 
@@ -10366,54 +9671,54 @@ char const * CAfxStreams::Console_FromStreamCombineType(CAfxTwinStream::StreamCo
 	return "[unkown]";
 }
 
-bool CAfxStreams::Console_ToStreamCaptureType(char const * value, CAfxRenderViewStream::StreamCaptureType & StreamCaptureType)
+bool CAfxStreams::Console_ToStreamCaptureType(char const * value, advancedfx::StreamCaptureType & StreamCaptureType)
 {
 	if(!_stricmp(value, "normal"))
 	{
-		StreamCaptureType = CAfxRenderViewStream::SCT_Normal;
+		StreamCaptureType = StreamCaptureType::Normal;
 		return true;
 	}
 	else
 	if(!_stricmp(value, "depth24"))
 	{
-		StreamCaptureType = CAfxRenderViewStream::SCT_Depth24;
+		StreamCaptureType = StreamCaptureType::Depth24;
 		return true;
 	}
 	else
 	if(!_stricmp(value, "depth24ZIP"))
 	{
-		StreamCaptureType = CAfxRenderViewStream::SCT_Depth24ZIP;
+		StreamCaptureType = StreamCaptureType::Depth24ZIP;
 		return true;
 	}
 	else
 	if(!_stricmp(value, "depthF"))
 	{
-		StreamCaptureType = CAfxRenderViewStream::SCT_DepthF;
+		StreamCaptureType = StreamCaptureType::DepthF;
 		return true;
 	}
 	else
 	if(!_stricmp(value, "depthFZIP"))
 	{
-		StreamCaptureType = CAfxRenderViewStream::SCT_DepthFZIP;
+		StreamCaptureType = StreamCaptureType::DepthFZIP;
 		return true;
 	}
 
 	return false;
 }
 
-char const * CAfxStreams::Console_FromStreamCaptureType(CAfxRenderViewStream::StreamCaptureType StreamCaptureType)
+char const * CAfxStreams::Console_FromStreamCaptureType(advancedfx::StreamCaptureType StreamCaptureType)
 {
 	switch(StreamCaptureType)
 	{
-	case CAfxRenderViewStream::SCT_Normal:
+	case StreamCaptureType::Normal:
 		return "normal";
-	case CAfxRenderViewStream::SCT_Depth24:
+	case StreamCaptureType::Depth24:
 		return "depth24";
-	case CAfxRenderViewStream::SCT_Depth24ZIP:
+	case StreamCaptureType::Depth24ZIP:
 		return "depth24ZIP";
-	case CAfxRenderViewStream::SCT_DepthF:
+	case StreamCaptureType::DepthF:
 		return "depthF";
-	case CAfxRenderViewStream::SCT_DepthFZIP:
+	case StreamCaptureType::DepthFZIP:
 		return "depthFZIP";
 	}
 
@@ -10627,8 +9932,7 @@ void CAfxStreams::BlockPresent(IAfxMatRenderContextOrg * ctx, bool value)
 }
 
 void CAfxStreams::AfxStreamsInitGlobal() {
-	m_RecordScreenMutex = new std::mutex();
-	m_RecordScreen = new CRecordScreen(false, CAfxRecordingSettings::GetDefault());
+	m_RecordScreen = new CRecordScreen(false, advancedfx::CRecordingSettings::GetDefault());
 }
 
 void CAfxStreams::AfxStreamsInit(void)
@@ -10683,815 +9987,10 @@ void CAfxStreams::ShutDown(void)
 		delete m_MatPostProcessEnableRef;
 		delete m_HostFrameRate;
 
-		delete m_RecordScreenMutex;
 		delete m_RecordScreen;
 
 		CCaptureNode::Shutdown();
 	}
-}
-
-// CAfxRecordingSettings ///////////////////////////////////////////////////////
-
-CAfxRecordingSettings::CShared CAfxRecordingSettings::m_Shared;
-
-CAfxClassicRecordingSettings::CShared::CShared()
-{
-	CAfxRecordingSettings * classicSettings = new CAfxClassicRecordingSettings();
-	m_NamedSettings.emplace(classicSettings->GetName(), classicSettings);
-
-	m_DefaultSettings = new CAfxDefaultRecordingSettings(classicSettings);
-	m_DefaultSettings->AddRef();
-	m_NamedSettings.emplace(m_DefaultSettings->GetName(), m_DefaultSettings);
-
-	{
-		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpeg", true, "-c:v libx264 -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}");
-		m_NamedSettings.emplace(settings->GetName(), settings);
-	}
-
-	{
-		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegYuv420p", true, "-c:v libx264 -pix_fmt yuv420p -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}");
-		m_NamedSettings.emplace(settings->GetName(), settings);
-	}
-
-	{
-		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegLosslessFast", true, "-c:v libx264rgb -preset ultrafast -crf 0 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}");
-		m_NamedSettings.emplace(settings->GetName(), settings);
-	}
-
-	{
-		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegLosslessBest", true, "-c:v libx264rgb -preset veryslow -crf 0 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}");
-		m_NamedSettings.emplace(settings->GetName(), settings);
-	}
-
-	{
-		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegRaw", true, "-c:v rawvideo {QUOTE}{AFX_STREAM_PATH}\\\\video.avi{QUOTE}");
-		m_NamedSettings.emplace(settings->GetName(), settings);
-	}
-
-	{
-		CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings("afxFfmpegHuffyuv", true, "-c:v huffyuv {QUOTE}{AFX_STREAM_PATH}\\\\video.avi{QUOTE}");
-		m_NamedSettings.emplace(settings->GetName(), settings);
-	}
-
-	{
-		CAfxRecordingSettings * settings = new CAfxSamplingRecordingSettings("afxSampler30", true, m_DefaultSettings, EasySamplerSettings::ESM_Trapezoid, 30.0f, 1.0f, 1.0f);
-		m_NamedSettings.emplace(settings->GetName(), settings);
-	}
-}
-
-CAfxClassicRecordingSettings::CShared::~CShared()
-{
-	m_NamedSettings.clear();
-	m_DefaultSettings->Release();
-}
-
-void CAfxRecordingSettings::Console(IWrpCommandArgs * args)
-{
-	int argC = args->ArgC();
-	const char * arg0 = args->ArgV(0);
-
-	if (2 <= argC)
-	{
-		const char * arg1 = args->ArgV(1);
-
-		if (0 == _stricmp("print", arg1))
-		{
-			for (auto it = m_Shared.m_NamedSettings.begin(); it != m_Shared.m_NamedSettings.end(); ++it)
-			{
-				Tier0_Msg("%s%s\n", it->second.Settings->GetName(), it->second.Settings->GetProtected() ? " (protected)" : "");
-			}
-			return;
-		}
-		else if (0 == _stricmp("edit", arg1) && 3 <= argC)
-		{
-			const char * arg2 = args->ArgV(2);
-
-			if (CAfxRecordingSettings * setting = CAfxRecordingSettings::GetByName(arg2))
-			{
-				CSubWrpCommandArgs subArgs(args, 3);
-				setting->Console_Edit(&subArgs);
-			}
-			else
-			{
-				Tier0_Warning("AFXERROR: There is no recording setting named %s.\n", arg2);
-			}
-			return;
-		}
-		else if (0 == _stricmp("remove", arg1) && 3 <= argC)
-		{
-			const char * arg2 = args->ArgV(2);
-
-			auto it = m_Shared.m_NamedSettings.find(arg2);
-
-			if (it != m_Shared.m_NamedSettings.end())
-			{
-				if (it->second.Settings->GetProtected())
-				{
-					Tier0_Warning("AFXERROR: Setting %s is protected and thus can not be deleted.\n", arg2);
-				}
-				else if (!m_Shared.DeleteIfUnrefrenced(it))
-				{
-					Tier0_Warning("AFXERROR: Could not delete %s, because it has further references.\n", arg2);
-				}
-			}
-			else
-			{
-				Tier0_Warning("AFXERROR: There is no recording setting named %s.\n", arg2);
-			}
-			return;
-		}
-		else if (0 == _strcmpi("add", arg1))
-		{
-			if (5 == argC && 0 == _stricmp("ffmpeg", args->ArgV(2)))
-			{
-				const char * arg3 = args->ArgV(3);
-
-				if (StringIBeginsWith(arg3, "afx"))
-				{
-					Tier0_Warning("AFXERROR: Custom presets must not begin with \"afx\".\n");
-				}
-				else if (nullptr != GetByName(arg3))
-				{
-					Tier0_Warning("AFXERROR: There is already a setting named %s\n", arg3);
-				}
-				else
-				{
-					CAfxRecordingSettings * settings = new CAfxFfmpegRecordingSettings(arg3, false, args->ArgV(4));
-					m_Shared.m_NamedSettings.emplace(settings->GetName(), settings);
-				}
-				return;
-			}
-			else if (5 == argC && 0 == _stricmp("ffmpegEx", args->ArgV(2)))
-			{
-				const char * arg3 = args->ArgV(3);
-
-				if (StringIBeginsWith(arg3, "afx"))
-				{
-					Tier0_Warning("AFXERROR: Custom presets must not begin with \"afx\".\n");
-				}
-				else if (nullptr != GetByName(arg3))
-				{
-					Tier0_Warning("AFXERROR: There is already a setting named %s\n", arg3);
-				}
-				else
-				{
-					CAfxRecordingSettings * settings = new CAfxFfmpegExRecordingSettings(arg3, false, args->ArgV(4));
-					m_Shared.m_NamedSettings.emplace(settings->GetName(), settings);
-				}
-				return;
-			}
-			else if (4 == argC && 0 == _stricmp("sampler", args->ArgV(2)))
-			{
-				const char * arg3 = args->ArgV(3);
-
-				if (StringIBeginsWith(arg3, "afx"))
-				{
-					Tier0_Warning("AFXERROR: Custom presets must not begin with \"afx\".\n");
-				}
-				else if (nullptr != GetByName(arg3))
-				{
-					Tier0_Warning("AFXERROR: There is already a setting named %s\n", arg3);
-				}
-				else
-				{
-					CAfxRecordingSettings * settings = new CAfxSamplingRecordingSettings(arg3, false, m_Shared.m_DefaultSettings, EasySamplerSettings::ESM_Trapezoid, 30.0f, 1.0f, 1.0f);
-					m_Shared.m_NamedSettings.emplace(settings->GetName(), settings);
-				}
-				return;
-			}
-			else if (4 == argC && 0 == _stricmp("multi", args->ArgV(2)))
-			{
-				const char * arg3 = args->ArgV(3);
-
-				if (StringIBeginsWith(arg3, "afx"))
-				{
-					Tier0_Warning("AFXERROR: Custom presets must not begin with \"afx\".\n");
-				}
-				else if (nullptr != GetByName(arg3))
-				{
-					Tier0_Warning("AFXERROR: There is already a setting named %s\n", arg3);
-				}
-				else
-				{
-					CAfxRecordingSettings * settings = new CAfxMultiRecordingSettings(arg3, false);
-					m_Shared.m_NamedSettings.emplace(settings->GetName(), settings);
-				}
-				return;
-			}
-
-			Tier0_Msg(
-				"%s add ffmpeg <name> \"<yourOptionsHere>\" - Adds an FFMPEG setting, <yourOptionsHere> are output options, use {QUOTE} for \", {AFX_STREAM_PATH} for the folder path of the stream, \\{ for {, \\} for }. For an example see one of the afxFfmpeg* templates (edit them).\n"
-				"%s add ffmpegEx <name> \"<yourOptionsHere>\" - Adds an extended FFMPEG setting, <yourOptionsHere> are output options, use {QUOTE} for \", {AFX_STREAM_PATH} for the folder path of the stream, \\{ for {, \\} for }. Further variables: {FFMPEG_PATH} {PIXEL_FORMAT} {FRAMERATE} {WIDTH} {HEIGHT} - For an example see one of the afxFfmpeg* templates (edit them).\n"
-				"%s add sampler <name> - Adds a sampler with 30 fps and default settings, edit it afterwards to change them.\n"
-				"%s add multi <name> - Adds multi settings, edit it afterwards to add settings to it.\n"
-				, arg0
-				, arg0
-				, arg0
-				, arg0
-			);
-			return;
-		}
-	}
-
-	Tier0_Msg(
-		"%s print - List currently registered settings\n"
-		"%s edit <name> - Edit setting.\n"
-		"%s remove <name> - Remove setting.\n"
-		"%s add [...] - Add a setting.\n"
-		, arg0
-		, arg0
-		, arg0
-		, arg0
-	);
-}
-
-// CAfxClassicRecordingSettings ////////////////////////////////////////////////
-
-void CAfxClassicRecordingSettings::Console_Edit(IWrpCommandArgs * args)
-{
-	Tier0_Msg("%s (type classic) recording setting options:\n", m_Name.c_str());
-	Tier0_Warning("The classic settings are controlled through mirv_streams settings and can not be edited.\n");
-}
-
-class CAfxClassicRecordingSettingsCreator
-	: public CAfxOutVideoStreamCreator
-{
-public:
-	CAfxClassicRecordingSettingsCreator(const std::wstring & capturePath, bool bIfZip, bool bFormatBmpAndNotga)
-	: m_CapturePath(capturePath)
-	, m_bIfZip(bIfZip)
-	, m_bFormatBmpAndNotga(bFormatBmpAndNotga) {
-
-	}
-
-	virtual advancedfx::COutVideoStream* CreateOutVideoStream(const advancedfx::CImageFormat& imageFormat) const override {
-		return new advancedfx::COutImageStream(imageFormat, m_CapturePath, m_bIfZip, m_bFormatBmpAndNotga);
-	}
-
-private:
-	std::wstring m_CapturePath;
-	bool m_bIfZip;
-	bool m_bFormatBmpAndNotga;
-};
-
-CAfxOutVideoStreamCreator * CAfxClassicRecordingSettings::CreateOutVideoStreamCreator(const CAfxStreams & streams, const IAfxRecordStreamSettings& stream, float frameRate, const char * pathSuffix) const
-{
-	std::wstring capturePath;
-	if (stream.GetStreamFolder(capturePath)) {
-		std::wstring widePathSuffix;
-		if (UTF8StringToWideString(pathSuffix, widePathSuffix))
-		{
-			capturePath.append(widePathSuffix);
-
-			CAfxRenderViewStream::StreamCaptureType captureType = stream.GetCaptureType();
-
-			return new CAfxClassicRecordingSettingsCreator(capturePath, (captureType == CAfxRenderViewStream::SCT_Depth24ZIP || captureType == CAfxRenderViewStream::SCT_DepthFZIP), streams.m_FormatBmpAndNotTga);
-		}
-		else
-		{
-			Tier0_Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", pathSuffix);
-		}
-	}
-
-	return nullptr;
-}
-
-// CAfxFfmpegRecordingSettings ////////////////////////////////////////////////
-
-void CAfxFfmpegRecordingSettings::Console_Edit(IWrpCommandArgs * args)
-{
-	int argC = args->ArgC();
-	const char * arg0 = args->ArgV(0);
-
-	if (2 <= argC)
-	{
-		const char * arg1 = args->ArgV(1);
-
-		if (0 == _stricmp("options", arg1))
-		{
-			if (3 == argC)
-			{
-				if (m_Protected)
-				{
-					Tier0_Warning("This setting is protected and can not be changed.\n");
-					return;
-				}
-
-				m_FfmpegOptions = args->ArgV(2);
-				return;
-			}
-
-			Tier0_Msg(
-				"%s options \"<yourOptionsHere>\" - Set output options, use {QUOTE} for \", {AFX_STREAM_PATH} for the folder path of the stream, \\{ for {, \\} for }.\n"
-				"Current value: \"%s\"\n"
-				, arg0
-				, m_FfmpegOptions.c_str()
-			);
-			return;
-		}
-	}
-
-	Tier0_Msg("%s (type ffmpeg) recording setting options:\n", m_Name.c_str());
-	Tier0_Msg(
-		"%s options [...] - FFMPEG options.\n"
-		, arg0
-	);
-}
-
-class CAfxFfmpegRecordingSettingsCreator
-	: public CAfxOutVideoStreamCreator
-{
-public:
-	CAfxFfmpegRecordingSettingsCreator(const std::wstring& capturePath, const std::wstring& ffmpegOptions, float frameRate)
-		: m_CapturePath(capturePath)
-		, m_FfmpegOptions(ffmpegOptions)
-		, m_FrameRate(frameRate) {
-
-	}
-
-	virtual advancedfx::COutVideoStream* CreateOutVideoStream(const advancedfx::CImageFormat& imageFormat) const override {
-		return new advancedfx::COutFFMPEGVideoStream(imageFormat, m_CapturePath, m_FfmpegOptions, m_FrameRate);
-	}
-
-private:
-	std::wstring m_CapturePath;
-	std::wstring m_FfmpegOptions;
-	float m_FrameRate;
-};
-
-CAfxOutVideoStreamCreator* CAfxFfmpegRecordingSettings::CreateOutVideoStreamCreator(const CAfxStreams & streams, const IAfxRecordStreamSettings& stream, float frameRate, const char * pathSuffix) const
-{
-	std::wstring widePathSuffix;
-	if (UTF8StringToWideString(pathSuffix, widePathSuffix))
-	{
-		std::wstring wideOptions;
-		if (UTF8StringToWideString(m_FfmpegOptions.c_str(), wideOptions))
-		{
-			std::wstring capturePath;
-			if (stream.GetStreamFolder(capturePath)) {
-				capturePath.append(widePathSuffix);
-
-				CAfxRenderViewStream::StreamCaptureType captureType = stream.GetCaptureType();
-
-				return new CAfxFfmpegRecordingSettingsCreator(capturePath, std::wstring(L"{QUOTE}{FFMPEG_PATH}{QUOTE} -f rawvideo -pixel_format {PIXEL_FORMAT} -loglevel repeat+level+warning -framerate {FRAMERATE} -video_size {WIDTH}x{HEIGHT} -i pipe:0 -vf setsar=sar=1/1 ").append(wideOptions), frameRate);
-			}
-		}
-		else
-		{
-			Tier0_Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", m_FfmpegOptions.c_str());
-		}
-	}
-	else
-	{
-		Tier0_Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", pathSuffix);
-	}
-
-	return nullptr;
-}
-
-
-
-// CAfxFfmpegRecordingSettings ////////////////////////////////////////////////
-
-void CAfxFfmpegExRecordingSettings::Console_Edit(IWrpCommandArgs * args)
-{
-	int argC = args->ArgC();
-	const char * arg0 = args->ArgV(0);
-
-	if (2 <= argC)
-	{
-		const char * arg1 = args->ArgV(1);
-
-		if (0 == _stricmp("options", arg1))
-		{
-			if (3 == argC)
-			{
-				if (m_Protected)
-				{
-					Tier0_Warning("This setting is protected and can not be changed.\n");
-					return;
-				}
-
-				m_FfmpegOptions = args->ArgV(2);
-				return;
-			}
-
-			Tier0_Msg(
-				"%s options \"<yourOptionsHere>\" - Set output options use {QUOTE} for \", {AFX_STREAM_PATH} for the folder path of the stream, \\{ for {, \\} for }. Further variables: {FFMPEG_PATH} {PIXEL_FORMAT} {FRAMERATE} {WIDTH} {HEIGHT}\n"
-				"Current value: \"%s\"\n"
-				, arg0
-				, m_FfmpegOptions.c_str()
-			);
-			return;
-		}
-	}
-
-	Tier0_Msg("%s (type ffmpegEx) recording setting options:\n", m_Name.c_str());
-	Tier0_Msg(
-		"%s options [...] - FFMPEG options.\n"
-		, arg0
-	);
-}
-
-CAfxOutVideoStreamCreator* CAfxFfmpegExRecordingSettings::CreateOutVideoStreamCreator(const CAfxStreams & streams, const IAfxRecordStreamSettings& stream, float frameRate, const char * pathSuffix) const
-{
-	std::wstring widePathSuffix;
-	if (UTF8StringToWideString(pathSuffix, widePathSuffix))
-	{
-		std::wstring wideOptions;
-		if (UTF8StringToWideString(m_FfmpegOptions.c_str(), wideOptions))
-		{
-			std::wstring capturePath;
-			if (stream.GetStreamFolder(capturePath)) {
-				capturePath.append(widePathSuffix);
-
-				CAfxRenderViewStream::StreamCaptureType captureType = stream.GetCaptureType();
-
-				return new CAfxFfmpegRecordingSettingsCreator(capturePath, wideOptions, frameRate);
-			}
-		}
-		else
-		{
-			Tier0_Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", m_FfmpegOptions.c_str());
-		}
-	}
-	else
-	{
-		Tier0_Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", pathSuffix);
-	}
-
-	return nullptr;
-}
-
-
-// CAfxDefaultRecordingSettings ////////////////////////////////////////////////
-
-void CAfxDefaultRecordingSettings::Console_Edit(IWrpCommandArgs * args)
-{
-	int argC = args->ArgC();
-	const char * arg0 = args->ArgV(0);
-
-	if (2 <= argC)
-	{
-		const char * arg1 = args->ArgV(1);
-
-		if (0 == _stricmp("settings", arg1))
-		{
-			if (3 == argC)
-			{
-				CAfxRecordingSettings * settings = CAfxRecordingSettings::GetByName(args->ArgV(2));
-
-				if (nullptr == settings)
-				{
-					Tier0_Warning("AFXERROR: There is no setting named %s.\n", args->ArgV(2));
-				}
-				else if(settings->InheritsFrom(this))
-				{
-					Tier0_Warning("AFXERROR: Can not assign a setting that depends on this setting.\n");
-				}
-				else
-				{
-					if (m_DefaultSettings) m_DefaultSettings->Release();
-					m_DefaultSettings = settings;
-					if (m_DefaultSettings) m_DefaultSettings->AddRef();
-				}
-
-				return;
-			}
-
-			Tier0_Msg(
-				"%s settings <settingsName> - Use settings with name <settingsName> as default settings.\n"
-				"Current value: \"%s\"\n"
-				, arg0
-				, m_DefaultSettings ? m_DefaultSettings->GetName() : "[null]"
-			);
-			return;
-		}
-	}
-
-	Tier0_Msg("%s (type default) recording setting options:\n", m_Name.c_str());
-	Tier0_Msg(
-		"%s settings [...] - Set default settings.\n"
-		, arg0
-	);
-}
-
-// CAfxMultiRecordingSettings //////////////////////////////////////////////////
-
-
-void CAfxMultiRecordingSettings::Console_Edit(IWrpCommandArgs * args)
-{
-	int argC = args->ArgC();
-	const char * arg0 = args->ArgV(0);
-
-	if (2 <= argC)
-	{
-		const char * arg1 = args->ArgV(1);
-
-		if (0 == _stricmp("add", arg1))
-		{
-			if (3 == argC)
-			{
-				CAfxRecordingSettings * settings = CAfxRecordingSettings::GetByName(args->ArgV(2));
-
-				if (nullptr == settings)
-				{
-					Tier0_Warning("AFXERROR: There is no setting named %s.\n", args->ArgV(2));
-				}
-				else if (settings->InheritsFrom(this))
-				{
-					Tier0_Warning("AFXERROR: Can not assign a setting that depends on this setting.\n");
-				}
-				else
-				{
-					if (settings) settings->AddRef();
-					m_Settings.push_back(settings);
-				}
-
-				return;
-			}
-
-			Tier0_Msg(
-				"%s add <settingsName> - Add settings with name <settingsName>.\n"
-				, arg0
-			);
-			return;
-		}
-		else if (0 == _stricmp("remove", arg1))
-		{
-			if (3 == argC)
-			{
-				CAfxRecordingSettings * settings = CAfxRecordingSettings::GetByName(args->ArgV(2));
-
-				if (nullptr == settings)
-				{
-					Tier0_Warning("AFXERROR: There is no setting named %s.\n", args->ArgV(2));
-				}
-				else
-				{
-					for (auto it = m_Settings.begin(); it != m_Settings.end(); ++it)
-					{
-						CAfxRecordingSettings * itSettings = *it;
-						if (itSettings == settings)
-						{
-							it = m_Settings.erase(it);
-							itSettings->Release();
-						}
-					}
-				}
-
-				return;
-			}
-
-			Tier0_Msg(
-				"%s remove <settingsName> - Remove settings with name <settingsName>.\n"
-				, arg0
-			);
-			return;
-		}
-		else if (0 == _stricmp("print", arg1))
-		{
-			int idx = 0;
-			for (auto it = m_Settings.begin(); it != m_Settings.end(); ++it)
-			{
-				CAfxRecordingSettings * itSettings = *it;
-				Tier0_Msg("%i: %s\n", idx, itSettings ? itSettings->GetName() : "[null]");
-				++idx;
-			}
-			if (0 == idx) Tier0_Msg("[empty]\n");
-			return;
-		}
-	}
-
-	Tier0_Msg("%s (type multi) recording setting options:\n", m_Name.c_str());
-	Tier0_Msg(
-		"%s add <settingsName> - Add settings.\n"
-		"%s remove <settingsName> - Remove settings.\n"
-		"%s print <settingsName> - List settings.\n"
-		, arg0
-		, arg0
-		, arg0
-	);
-}
-
-// CAfxSamplingRecordingSettings ///////////////////////////////////////////////
-
-class CAfxSamplingRecordingSettingsCreator
-	: public CAfxOutVideoStreamCreator
-{
-public:
-	CAfxSamplingRecordingSettingsCreator(class CAfxOutVideoStreamCreator * outVideoStreamCreator, float frameRate, EasySamplerSettings::Method method, double frameDuration, double exposure, float frameStrength)
-		: m_OutVideoStreamCreator(outVideoStreamCreator)
-		, m_FrameRate(frameRate)
-		, m_Method(method)
-		, m_FrameDuration(frameDuration)
-		, m_Exposure(exposure)
-		, m_FrameStrength(frameStrength)
-	{
-		outVideoStreamCreator->AddRef();
-	}
-
-	virtual advancedfx::COutVideoStream* CreateOutVideoStream(const advancedfx::CImageFormat& imageFormat) const override {
-		return new advancedfx::COutSamplingStream(imageFormat, m_OutVideoStreamCreator->CreateOutVideoStream(imageFormat), m_FrameRate, m_Method, m_FrameDuration, m_Exposure, m_FrameStrength, &g_AfxStreams.ImageBufferPoolThreadSafe);
-	}
-
-protected:
-	~CAfxSamplingRecordingSettingsCreator() {
-		m_OutVideoStreamCreator->Release();
-	}
-
-private:
-	class CAfxOutVideoStreamCreator* m_OutVideoStreamCreator;
-	float m_FrameRate;
-	EasySamplerSettings::Method m_Method;
-	double m_FrameDuration;
-	double m_Exposure;
-	float m_FrameStrength;
-};
-
-CAfxOutVideoStreamCreator* CAfxSamplingRecordingSettings::CreateOutVideoStreamCreator(const CAfxStreams & streams, const IAfxRecordStreamSettings& stream, float frameRate, const char * pathSuffix) const
-{
-	if (m_OutputSettings)
-	{
-		if (CAfxOutVideoStreamCreator* outVideoStreamCreator = m_OutputSettings->CreateOutVideoStreamCreator(streams, stream, m_OutFps, pathSuffix))
-		{
-			return new CAfxSamplingRecordingSettingsCreator(outVideoStreamCreator, frameRate, m_Method, m_OutFps ? 1.0 / m_OutFps : 0.0, m_Exposure, m_FrameStrength);
-		}
-	}
-
-	return nullptr;
-}
-
-void CAfxSamplingRecordingSettings::Console_Edit(IWrpCommandArgs * args)
-{
-	int argC = args->ArgC();
-	const char * arg0 = args->ArgV(0);
-
-	if (2 <= argC)
-	{
-		const char * arg1 = args->ArgV(1);
-
-		if (0 == _stricmp("settings", arg1))
-		{
-			if (3 == argC)
-			{
-				CAfxRecordingSettings * settings = CAfxRecordingSettings::GetByName(args->ArgV(2));
-
-				if (nullptr == settings)
-				{
-					Tier0_Warning("AFXERROR: There is no setting named %s.\n", args->ArgV(2));
-				}
-				else if (settings->InheritsFrom(this))
-				{
-					Tier0_Warning("AFXERROR: Can not assign a setting that depends on this setting.\n");
-				}
-				else
-				{
-					if (m_OutputSettings) m_OutputSettings->Release();
-					m_OutputSettings = settings;
-					if (m_OutputSettings) m_OutputSettings->AddRef();
-				}
-
-				return;
-			}
-
-			Tier0_Msg(
-				"%s settings <settingsName> - Use settings with name <settingsName> as output settings.\n"
-				"Current value: \"%s\"\n"
-				, arg0
-				, m_OutputSettings ? m_OutputSettings->GetName() : "[null]"
-			);
-			return;
-		}
-		else if (0 == _stricmp("fps", arg1))
-		{
-			if (3 == argC)
-			{
-				if (m_Protected)
-				{
-					Tier0_Warning("This setting is protected and can not be changed.\n");
-					return;
-				}
-
-				m_OutFps = (float)atof(args->ArgV(2));
-				return;
-			}
-
-			Tier0_Msg(
-				"%s fps <fValue> - Output FPS, has to be greater than 0.\n"
-				"Current value: %f\n"
-				, arg0
-				, m_OutFps
-			);
-			return;
-		}
-		else if (0 == _stricmp("method", arg1))
-		{
-			if (3 == argC)
-			{
-				if (m_Protected)
-				{
-					Tier0_Warning("This setting is protected and can not be changed.\n");
-					return;
-				}
-
-				const char * arg2 = args->ArgV(2);
-
-				if (0 == _stricmp(arg2, "rectangle"))
-				{
-					m_Method = EasySamplerSettings::ESM_Rectangle;
-				}
-				else if (0 == _stricmp(arg2, "trapezoid"))
-				{
-					m_Method = EasySamplerSettings::ESM_Trapezoid;
-				}
-				else
-				{
-					Tier0_Warning("AFXERROR: Invalid value.\n");
-				}
-
-				return;
-			}
-
-			const char * curMethod = "[n/a]";
-
-			switch (m_Method)
-			{
-			case EasySamplerSettings::ESM_Rectangle:
-				curMethod = "rectangle";
-				break;
-			case EasySamplerSettings::ESM_Trapezoid:
-				curMethod = "trapezoid";
-				break;
-			};
-
-			Tier0_Msg(
-				"%s method rectangle|trapezoid.\n"
-				"Current value: %s\n"
-				, arg0
-				, curMethod
-			);
-			return;
-		}
-		else if (0 == _stricmp("exposure", arg1))
-		{
-			if (3 == argC)
-			{
-				if (m_Protected)
-				{
-					Tier0_Warning("This setting is protected and can not be changed.\n");
-					return;
-				}
-
-				m_Exposure = atof(args->ArgV(2));
-				return;
-			}
-
-			Tier0_Msg(
-				"%s exposure <fValue>.\n"
-				"Current value: %f\n"
-				, arg0
-				, m_Exposure
-			);
-			return;
-		}
-		else if (0 == _stricmp("strength", arg1))
-		{
-			if (3 == argC)
-			{
-				if (m_Protected)
-				{
-					Tier0_Warning("This setting is protected and can not be changed.\n");
-					return;
-				}
-
-				m_FrameStrength = (float)atof(args->ArgV(2));
-				return;
-			}
-
-			Tier0_Msg(
-				"%s strength <fValue>.\n"
-				"Current value: %f\n"
-				, arg0
-				, m_FrameStrength
-			);
-			return;
-		}
-	}
-
-	Tier0_Msg("%s (type sampling) recording setting options:\n", m_Name.c_str());
-	Tier0_Msg(
-		"%s settings [...] - Output settings.\n"
-		"%s fps [...] - Output fps.\n"
-		"%s method [...] - Sampling method (default: trapezoid).\n"
-		"%s exposure [...] - Frame exposure (0.0 (0\xc2\xb0 shutter angle) - 1.0 (360\xc2\xb0 shutter angle), default: 1.0).\n"
-		"%s strength [...] - Frame strength (0.0 (max cross-frame blur) - 1.0 (no cross-frame blur), default: 1.0).\n"
-		, arg0
-		, arg0
-		, arg0
-		, arg0
-		, arg0
-	);
 }
 
 SOURCESDK::C_BaseEntity_csgo * GetMoveParent(SOURCESDK::C_BaseEntity_csgo * value)
@@ -11633,13 +10132,13 @@ void CAfxStreams::CDrawingRecordScreenOutput::ProcessingThreadFunc() {
 	std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
 	while (!m_Shutdown || !m_Captures.empty()) {
 		if (!m_Captures.empty()) {
-			ICapture* capture = m_Captures.front();
+			advancedfx::ICapture* capture = m_Captures.front();
 			m_Captures.pop_front();
 			
 			lock.unlock();
 
 			if(capture) {
-				ICapture* outCapture = CAfxTransformer::TransformStripAlpha(capture);
+				advancedfx::ICapture* outCapture = advancedfx::ImageTransformer::StripAlpha(g_pThreadPool,&g_ImageBufferPoolThreadSafe,capture);
 				capture->Release();
 				if (outCapture) {
 					if (const advancedfx::IImageBuffer* buffer = outCapture->GetBuffer()) {
@@ -11674,4 +10173,12 @@ void CAfxStreams::CDrawingRecordScreenOutput::ProcessingThreadFunc() {
 	}
 	if (m_OutVideoStream) m_OutVideoStream->Release();
 	m_OutVideoStreamCreator->Release();
+}
+
+advancedfx::IImageBufferPool * CAfxRecordStream::GetImageBufferPool() const {
+	return g_AfxStreams.GetImageBufferPool();
+}
+
+bool CAfxRecordStream::GetFormatBmpNotTga() const {
+	return g_AfxStreams.GetFormatBmpNotTga();
 }

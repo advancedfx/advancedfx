@@ -136,6 +136,8 @@ if(CMAKE_GENERATOR_PLATFORM STREQUAL "Win32")
 	    DEPENDS hlae
     )
 elseif(CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
+    add_subdirectory("deps/release/zlib")
+    add_subdirectory("deps/release/openexr")
     add_subdirectory("ShaderBuilder")
     add_subdirectory("AfxHookSource2")
 
@@ -216,6 +218,11 @@ elseif(CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
             ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS}
 
             "${AfxHookSource2_BINARY_DIR}/$<CONFIG>/AfxHookSource2.dll"
+
+            "${zlib_SOURCE_DIR}/zlib1.dll"
+
+            ${ILMBASE_BUILD_BINARIES}
+            ${OPENEXR_BUILD_BINARIES}            
         DESTINATION "bin/x64"
     )    
 

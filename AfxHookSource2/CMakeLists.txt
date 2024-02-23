@@ -42,6 +42,8 @@ add_custom_target(AfxHookSource2Shaders
 add_library(${PROJECT_NAME} MODULE)
 
 add_dependencies(${PROJECT_NAME}
+    ilmbase_build
+    openexr_build
     AfxHookSource2Shaders
 )
 
@@ -68,7 +70,18 @@ target_link_options(${PROJECT_NAME} PRIVATE
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ./
+    ${OPENEXR_BUILD_DIR}/include/OpenEXR
+    ${ILMBASE_BUILD_DIR}/include/OpenEXR    
 )
+
+target_link_directories(${PROJECT_NAME} PRIVATE
+    ${OPENEXR_BUILD_DIR}/lib
+)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    IlmImf-2_5$<$<CONFIG:Debug>:_d>.lib
+)
+
 
 target_sources(${PROJECT_NAME} PRIVATE
     ../deps/release/Detours/src/detours.cpp
@@ -107,6 +120,9 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/AfxDetours.h
     ../shared/AfxMath.cpp
     ../shared/AfxMath.h
+    ../shared/AfxImageBuffer.h    
+    ../shared/AfxOutStreams.cpp
+    ../shared/AfxOutStreams.h    
     ../shared/CamIO.cpp
     ../shared/CamIO.h
     ../shared/CamPath.cpp
@@ -114,12 +130,26 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/CommandSystem.cpp
     ../shared/CommandSystem.h
     ../shared/ConsolePrinter.h
+    ../shared/EasySampler.cpp
+    ../shared/EasySampler.h
     ../shared/FileTools.cpp
     ../shared/FileTools.h
     ../shared/FovScaling.cpp
     ../shared/FovScaling.h
+    ../shared/ImageBufferPoolThreadSafe.h
+    ../shared/ImageTransformer.cpp
+    ../shared/ImageTransformer.h    
+    ../shared/OutVideoStreamCreators.cpp
+    ../shared/OutVideoStreamCreators.h
+    ../shared/OpenExrOutput.cpp
+    ../shared/OpenExrOutput.h    
+    ../shared/RawOutput.cpp
+    ../shared/RawOutput.h    
+    ../shared/RecordingSettings.cpp
+    ../shared/RecordingSettings.h    
     ../shared/StringTools.cpp
     ../shared/StringTools.h
+    ../shared/ThreadPool.h
     ../shared/binutils.cpp
     ../shared/binutils.h
     ../shared/MirvCamIO.cpp

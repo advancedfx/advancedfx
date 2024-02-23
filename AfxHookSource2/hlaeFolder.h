@@ -9,3 +9,6 @@ const wchar_t * GetHlaeFolderW();
 
 const char* GetHlaeRoamingAppDataFolder();
 const wchar_t* GetHlaeRoamingAppDataFolderW();
+
+const char * GetProcessFolder();
+const wchar_t * GetProcessFolderW();

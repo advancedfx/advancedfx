@@ -144,3 +144,88 @@ const wchar_t* GetHlaeRoamingAppDataFolderW()
 
 	return g_HlaeRoamingAppDataFolderW.c_str();
 }
+
+
+std::wstring g_ProcessFolderW(L"");
+std::string g_ProcessFolder("");
+
+void CalculateProcessFolderOnce()
+{
+	static bool firstRun = true;
+	if (firstRun)
+	{
+		firstRun = false;
+	}
+	else
+		return;
+
+	LPWSTR fileName = 0;
+	DWORD length;
+
+	bool bOk = true;
+	{
+		length = 100;
+		fileName = (LPWSTR)malloc(length*sizeof(WCHAR));
+
+		while (fileName && length == GetModuleFileNameW(NULL, fileName, length))
+		{
+			LPWSTR newFileName;
+			if (nullptr == (newFileName = (LPWSTR)realloc(fileName, (length += 100) * sizeof(WCHAR))))
+			{
+				free(fileName);
+			}
+			fileName = newFileName;
+		}
+
+		if(!fileName)
+			return;
+
+		bOk = 0 < length;
+	}
+
+	if(bOk)
+	{
+		g_ProcessFolderW.assign(fileName);
+
+		// strip process file to get path:
+		size_t fp = g_ProcessFolderW.find_last_of(L'\\');
+		if(std::string::npos != fp)
+		{
+			g_ProcessFolderW.resize(fp, L'\\');
+		}
+
+		// strip bin win64:
+		fp = g_ProcessFolderW.find_last_of(L'\\');
+		if(std::string::npos != fp)
+		{
+			g_ProcessFolderW.resize(fp, L'\\');
+		}
+
+		// strip bin Folder:
+		fp = g_ProcessFolderW.find_last_of(L'\\');
+		if(std::string::npos != fp)
+		{
+			g_ProcessFolderW.resize(fp +1, L'\\');
+		}
+
+		WideStringToUTF8String(g_ProcessFolderW.c_str(), g_ProcessFolder);
+	}
+
+	free(fileName);
+
+	return;
+}
+
+const char * GetProcessFolder()
+{
+	CalculateProcessFolderOnce();
+
+	return g_ProcessFolder.c_str();
+}
+
+const wchar_t * GetProcessFolderW()
+{
+	CalculateProcessFolderOnce();
+
+	return g_ProcessFolderW.c_str();
+}

@@ -2,6 +2,7 @@
 
 #include "CampathDrawer.h"
 #include "GameEvents.h"
+#include "hlaeFolder.h"
 #include "RenderSystemDX11Hooks.h"
 #include "WrpConsole.h"
 
@@ -20,6 +21,8 @@
 #include "../shared/StringTools.h"
 #include "../shared/binutils.h"
 #include "../shared/CommandSystem.h"
+#include "../shared/ImageBufferPoolThreadSafe.h"
+#include "../shared/ThreadPool.h"
 #include "../shared/MirvCamIO.h"
 #include "../shared/MirvCampath.h"
 #include "../shared/MirvInput.h"
@@ -1349,14 +1352,113 @@ HMODULE WINAPI new_LoadLibraryA(LPCSTR lpLibFileName);
 HMODULE WINAPI new_LoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 HMODULE WINAPI new_LoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 
+HANDLE
+WINAPI
+new_CreateFileW(
+	_In_ LPCWSTR lpFileName,
+	_In_ DWORD dwDesiredAccess,
+	_In_ DWORD dwShareMode,
+	_In_opt_ LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+	_In_ DWORD dwCreationDisposition,
+	_In_ DWORD dwFlagsAndAttributes,
+	_In_opt_ HANDLE hTemplateFile
+);
+
+BOOL
+WINAPI
+new_CreateDirectoryW(
+    _In_ LPCWSTR lpPathName,
+    _In_opt_ LPSECURITY_ATTRIBUTES lpSecurityAttributes
+    );
+
+BOOL
+WINAPI
+new_GetFileAttributesExW(
+    _In_ LPCWSTR lpFileName,
+    _In_ GET_FILEEX_INFO_LEVELS fInfoLevelId,
+    _Out_writes_bytes_(sizeof(WIN32_FILE_ATTRIBUTE_DATA)) LPVOID lpFileInformation
+    );
+
 CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR, HANDLE, DWORD)> g_Import_tier0_KERNEL32_LoadLibraryExA("LoadLibraryExA", &new_LoadLibraryExA);
 CAfxImportFuncHook<HMODULE(WINAPI*)(LPCWSTR, HANDLE, DWORD)> g_Import_tier0_KERNEL32_LoadLibraryExW("LoadLibraryExW", &new_LoadLibraryExW);
 CAfxImportFuncHook<FARPROC(WINAPI*)(HMODULE, LPCSTR)> g_Import_tier0_KERNEL32_GetProcAddress("GetProcAddress", &new_tier0_GetProcAddress);
+CAfxImportFuncHook<HANDLE(WINAPI*)(LPCWSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE)> g_Import_tier0_KERNEL32_CreateFileW("CreateFileW", &new_CreateFileW);
+CAfxImportFuncHook<BOOL(WINAPI*)(LPCWSTR, LPSECURITY_ATTRIBUTES)> g_Import_tier0_KERNEL32_CreateDirectoryW("CreateDirectoryW", &new_CreateDirectoryW);
+CAfxImportFuncHook<BOOL(WINAPI*)(LPCWSTR, GET_FILEEX_INFO_LEVELS, LPVOID)> g_Import_tier0_KERNEL32_GetFileAttributesExW("GetFileAttributesExW", &new_GetFileAttributesExW);
+
+HANDLE WINAPI new_CreateFileW(
+	_In_ LPCWSTR lpFileName,
+	_In_ DWORD dwDesiredAccess,
+	_In_ DWORD dwShareMode,
+	_In_opt_ LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+	_In_ DWORD dwCreationDisposition,
+	_In_ DWORD dwFlagsAndAttributes,
+	_In_opt_ HANDLE hTemplateFile
+)
+{
+	static bool bWasRecording = false; // allow startmovie wav-fixup by engine to get through one more time.
+	if (AfxStreams_IsRcording() || bWasRecording) {
+		std::wstring strFileName(lpFileName);
+		for (auto& c : strFileName) c = std::tolower(c);
+		if (StringEndsWithW(strFileName.c_str(), L"" ADVNACEDFX_STARTMOIVE_WAV_KEY ".wav")) {
+			// Detours our wav to our folder.			
+			bWasRecording = AfxStreams_IsRcording();
+			std::wstring newPath(AfxStreams_GetTakeDir());
+			newPath.append(L"\\audio.wav");
+			return g_Import_tier0_KERNEL32_CreateFileW.TrueFunc(newPath.c_str(), dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+		}
+	}
+	return g_Import_tier0_KERNEL32_CreateFileW.TrueFunc(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+}
+
+BOOL
+WINAPI
+new_CreateDirectoryW(
+    _In_ LPCWSTR lpPathName,
+    _In_opt_ LPSECURITY_ATTRIBUTES lpSecurityAttributes
+    ) {
+
+	if (AfxStreams_IsRcording()) {
+		// Do not create dummy movie folders while recording startmovie wav.
+		std::wstring strMovieFolder(L"\\\\?\\");
+		strMovieFolder.append(GetProcessFolderW());
+		strMovieFolder.append(L"csgo\\movie\\");
+		if(StringBeginsWithW(lpPathName,strMovieFolder.c_str())) return TRUE;
+	}
+
+	return g_Import_tier0_KERNEL32_CreateDirectoryW.TrueFunc(lpPathName,lpSecurityAttributes);
+}
+
+BOOL
+WINAPI
+new_GetFileAttributesExW(
+    _In_ LPCWSTR lpFileName,
+    _In_ GET_FILEEX_INFO_LEVELS fInfoLevelId,
+    _Out_writes_bytes_(sizeof(WIN32_FILE_ATTRIBUTE_DATA)) LPVOID lpFileInformation
+    ) {
+
+	if (AfxStreams_IsRcording()) {
+		std::wstring strFileName(lpFileName);
+		for (auto& c : strFileName) c = std::tolower(c);
+		if (StringEndsWithW(strFileName.c_str(), L"" ADVNACEDFX_STARTMOIVE_WAV_KEY ".wav")) {
+			// Detours our wav to our folder.			
+			std::wstring newPath(AfxStreams_GetTakeDir());
+			newPath.append(L"\\audio.wav");
+			return g_Import_tier0_KERNEL32_GetFileAttributesExW.TrueFunc(newPath.c_str(),fInfoLevelId,lpFileInformation);
+		}
+	}
+
+	return g_Import_tier0_KERNEL32_GetFileAttributesExW.TrueFunc(lpFileName,fInfoLevelId,lpFileInformation);
+}
+
 
 CAfxImportDllHook g_Import_tier0_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
 	&g_Import_tier0_KERNEL32_LoadLibraryExA
 	, &g_Import_tier0_KERNEL32_LoadLibraryExW
-	, &g_Import_tier0_KERNEL32_GetProcAddress }));
+	, &g_Import_tier0_KERNEL32_GetProcAddress
+	, &g_Import_tier0_KERNEL32_CreateFileW
+	, &g_Import_tier0_KERNEL32_CreateDirectoryW
+	, &g_Import_tier0_KERNEL32_GetFileAttributesExW}));
 
 CAfxImportsHook g_Import_tier0(CAfxImportsHooks({
 	&g_Import_tier0_KERNEL32 }));
@@ -1395,17 +1497,6 @@ CAfxImportDllHook g_Import_filesystem_steam_KERNEL32("KERNEL32.dll", CAfxImportD
 CAfxImportsHook g_Import_filesystem_steam(CAfxImportsHooks({
 	&g_Import_filesystem_steam_KERNEL32 }));
 
-
-CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR)> g_Import_filesystem_stdio_KERNEL32_LoadLibraryA("LoadLibraryA", &new_LoadLibraryA);
-CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR, HANDLE, DWORD)> g_Import_filesystem_stdio_KERNEL32_LoadLibraryExA("LoadLibraryExA", &new_LoadLibraryExA);
-
-
-CAfxImportDllHook g_Import_filesystem_stdio_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
-	&g_Import_filesystem_stdio_KERNEL32_LoadLibraryA
-	, &g_Import_filesystem_stdio_KERNEL32_LoadLibraryExA }));
-
-CAfxImportsHook g_Import_filesystem_stdio(CAfxImportsHooks({
-	&g_Import_filesystem_stdio_KERNEL32 }));
 
 CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR)> g_Import_engine2_KERNEL32_LoadLibraryA("LoadLibraryA", &new_LoadLibraryA);
 CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR, HANDLE, DWORD)> g_Import_engine2_KERNEL32_LoadLibraryExA("LoadLibraryExA", &new_LoadLibraryExA);
@@ -1666,12 +1757,12 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		else
 			ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
-	/*else if(bFirstfilesystem_stdio && StringEndsWithW( lpLibFileName, L"filesystem_stdio.dll"))
-	{
-		bFirstfilesystem_stdio = false;
-		
-		g_Import_filesystem_stdio.Apply(hModule);
-	}*/
+	//else if(bFirstfilesystem_stdio && StringEndsWithW( lpLibFileName, L"filesystem_stdio.dll"))
+	//{
+	//	bFirstfilesystem_stdio = false;
+	//	
+	//	g_Import_filesystem_stdio.Apply(hModule);
+	//}
 	else if(bFirstInputsystem && StringEndsWithW(lpLibFileName, L"inputsystem.dll"))
 	{
 		bFirstInputsystem = false;
@@ -1754,6 +1845,9 @@ CAfxImportsHook g_Import_PROCESS(CAfxImportsHooks({
 	&g_Import_PROCESS_KERNEL32 }));
 
 
+advancedfx::CThreadPool * g_pThreadPool = nullptr;
+advancedfx::CImageBufferPoolThreadSafe * g_pImageBufferPoolThreadSafe = nullptr;
+
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 {
 	switch (fdwReason) 
@@ -1788,6 +1882,16 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 			// things here that would have problems with that.
 			//
 
+			size_t thread_pool_thread_count = advancedfx::CThreadPool::GetDefaultThreadCount();
+			if (int idx = g_CommandLine->FindParam(L"-afxThreadPoolSize")) {
+				if (idx + 1 < g_CommandLine->GetArgC()) {
+					thread_pool_thread_count = (size_t)wcstoul( g_CommandLine->GetArgV(idx + 1), nullptr, 10);
+				}
+			}
+			g_pThreadPool = new advancedfx::CThreadPool(thread_pool_thread_count);
+
+			g_pImageBufferPoolThreadSafe = new advancedfx::CImageBufferPoolThreadSafe();
+
 			g_ConsolePrinter = new CConsolePrinter();
 
 			g_CampathDrawer.Begin();
@@ -1804,6 +1908,10 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 			delete g_CamImport;
 
 			delete g_ConsolePrinter;
+
+			delete g_pImageBufferPoolThreadSafe;
+
+			delete g_pThreadPool;
 
 #ifdef _DEBUG
 			_CrtDumpMemoryLeaks();

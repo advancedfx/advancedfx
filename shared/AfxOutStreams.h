@@ -146,6 +146,7 @@ private:
 };
 
 
+// TODO: The sampler could work in parallel on the image.
 // TODO:
 // - optimize shutter to allow skipping (capturing of) frames.
 // - think about error propagation, though not entirely applicable.
@@ -176,6 +177,8 @@ private:
 	IImageBufferPool* m_ImageBufferPool;
 };
 
+
+// TODO: The out streams could work in parallel on the image.
 class COutMultiVideoStream : public COutVideoStream
 {
 public:
