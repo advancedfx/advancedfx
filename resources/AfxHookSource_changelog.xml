@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.124.0</version>
+<time>2024-02-23T18:32Z</time>
+<changes>
+<change type="added">Added: mirv_input cfg stepFactor - to set the speed multiplier.</change>
+<change type="updated">Internal changes related AfxHookSource2 CS:GO support.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.123.1</version>
 <time>2024-01-05T19:45Z</time>
 <changes>

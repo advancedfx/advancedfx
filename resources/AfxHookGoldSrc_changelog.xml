@@ -3,6 +3,14 @@
 
 <changelog>
 
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.22.0</version>
+<time>2024-02-23T18:32Z</time>
+<changes>
+<change type="added">Added: mirv_input cfg stepFactor - to set the speed multiplier.</change></changes>
+</release>
+
 
 <release>
 <name>AfxHookGoldSrc</name>

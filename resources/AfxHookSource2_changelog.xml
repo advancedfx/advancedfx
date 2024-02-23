@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.9.0</version>
+<time>2024-02-23T18:32Z</time>
+<changes>
+<change type="added">Added mirv_streams record, mirv_streams settings for simple screen-recordings. Set mirv_streams record fps - before starting to record, it will be used to set the host_framerate for the recording. The output is in the folder where cs2.exe is located.<br />
+Front-ends startmovie for audio. This feature is still experimental, e.g. if the device is reset / resolution changed during recording there will be problems, also if game is quit while recording, there will be problems.</change>
+<change type="added">Added: mirv_input cfg stepFactor - to set the speed multiplier.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.8.3</version>
 <time>2024-02-10T13:28Z</time>
 <changes>
