@@ -368,13 +368,13 @@ MirvInput::MirvInput(IMirvInputDependencies * dependencies)
 
 void MirvInput::DoCamSpeedDecrease(void)
 {
-	m_CamSpeed = m_CamSpeed / 2;
+	m_CamSpeed = m_CamSpeed / m_CamSpeedBasis;
 	if(m_CamSpeed < 1.0/256) m_CamSpeed = 1.0/256;
 }
 
 void MirvInput::DoCamSpeedIncrease(void)
 {
-	m_CamSpeed = m_CamSpeed * 2;
+	m_CamSpeed = m_CamSpeed * m_CamSpeedBasis;
 	if(m_CamSpeed > 256) m_CamSpeed = 256;
 }
 
@@ -1699,7 +1699,7 @@ void MirvInput::ConCommand(advancedfx::ICommandArgs * args)
 							}
 
 							advancedfx::Message(
-								"%s cfg smooth enabled 0|1 - Disable / Enabele smoothing.\n"
+								"%s cfg smooth enabled 0|1 - Disable / enable smoothing.\n"
 								"Current value: %i\n"
 								, arg0
 								, (m_SmoothEnabled?1:0)
@@ -1820,6 +1820,23 @@ void MirvInput::ConCommand(advancedfx::ICommandArgs * args)
 
 					return;
 				}
+				else if(0 == _stricmp("stepFactor",arg2)) {
+
+					if (4 <= argc)
+					{
+						SetCamSpeedBasis(atof(args->ArgV(3)));
+						return;
+					}
+
+					advancedfx::Message(
+						"%s cfg stepFactor <fVal> - Where 1 <= <fVal> <= 8\n"
+						"Current value: %f\n",
+						arg0,
+						GetCamSpeedBasis()
+					);
+
+					return;
+				}				
 			}
 
 			advancedfx::Message(
@@ -1947,6 +1964,10 @@ void MirvInput::ConCommand(advancedfx::ICommandArgs * args)
 			);
 			advancedfx::Message(
 				"%s cfg rotLocalSpace [...] - Enable rotating in local space instead of global space\n"
+				, arg0
+			);
+			advancedfx::Message(
+				"%s cfg stepFactor [...] - The factor to use for the speed increase/decrase.\n"
 				, arg0
 			);
 			return;

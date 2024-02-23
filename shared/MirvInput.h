@@ -144,6 +144,13 @@ public:
 	OffsetMode GetOffsetMode() { return m_OffsetMode; }
 	void SetOffsetMode(OffsetMode value) { m_OffsetMode = value; }
 
+	double GetCamSpeedBasis() { return m_CamSpeedBasis; }
+	void SetCamSpeedBasis(double value) {
+		if(value < 1) value = 1;
+		else if(8 < value) value = 8;
+		m_CamSpeedBasis = value;
+	}
+
 	void SetTx(float value)
 	{
 		m_SetTx = true;
@@ -300,6 +307,7 @@ private:
 	double m_CamRoll;
 	double m_CamRollI;
 	double m_CamSpeed;
+	double m_CamSpeedBasis = 2.0f;
 
 	struct MouseInput {
 		double Forward = 0;
