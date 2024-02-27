@@ -39,7 +39,7 @@ private:
 		/// <comments> implements advancedfx::ICommandArgs </comments>
 		virtual char const * ArgV(int i)
 		{
-			return m_Command.ArgV((size_t)i);
+			return m_Command.Arg(i);
 		}
 	private:
 		const SOURCESDK::CS2::CCommand & m_Command;

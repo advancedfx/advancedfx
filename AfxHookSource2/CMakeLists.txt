@@ -99,9 +99,13 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../deps/release/prop/cs2/sdk_src/public/appframework/IAppSystem.h
     ../deps/release/prop/cs2/sdk_src/public/interfaces/interfaces.h
     ../deps/release/prop/cs2/sdk_src/public/tier0/memalloc.h
+    ../deps/release/prop/cs2/sdk_src/public/tier1/convar.cpp
     ../deps/release/prop/cs2/sdk_src/public/tier1/convar.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/iconvar.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/KeyValues.h
+    ../deps/release/prop/cs2/sdk_src/public/tier1/utlmemory.cpp
+    ../deps/release/prop/cs2/sdk_src/public/tier1/utlmemory.h
+    ../deps/release/prop/cs2/sdk_src/public/tier1/utlvector.h
     ../deps/release/prop/cs2/sdk_src/public/vstdlib/IKeyValuesSystem.h
     ../deps/release/prop/cs2/sdk_src/public/cdll_int.h    
     ../deps/release/prop/cs2/sdk_src/public/icvar.h    

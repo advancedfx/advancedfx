@@ -6,6 +6,22 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.9.1</version>
+<time>2024-02-27T19:57Z</time>
+<changes>
+<change type="updated">mirv_streams record now detects the host_framerate or sets it if mirv_streams record fps is set accordingly.</change>
+<change type="updated">mirv_streams record now sets engine_no_focus_sleep 0 during recording.</change>
+<change type="updated">mirv_streams record now sets r_always_render_all_windows true during recording.</change>
+<change type="fixed">Tried to fix HLAE crashing e.g. when FACEIT is not disabled; Pleae note, we strongly recommend to instead disable FACEIT anti cheat by clicking the tray icon and selecting disable service (newer versions have that option) instead.</change>
+</changes>
+<comments>
+Don't forget: mirv_streams record screen enabled 1 - before recording, otherwise you will only get audio.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.9.0</version>
 <time>2024-02-23T18:32Z</time>
 <changes>

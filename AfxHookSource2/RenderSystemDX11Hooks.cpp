@@ -16,6 +16,7 @@
 #include "../shared/StringTools.h"
 
 #include "../deps/release/prop/cs2/sdk_src/public/cdll_int.h"
+#include "../deps/release/prop/cs2/sdk_src/public/icvar.h"
 
 #include <d3d11.h>
 
@@ -27,8 +28,6 @@
 #include <atomic>
 #include <thread>
 #include <functional>
-#include <format>
-#include <locale>
 
 #include <dxgi.h>
 #include <dxgi1_4.h>
@@ -37,6 +36,7 @@ extern advancedfx::CThreadPool * g_pThreadPool;
 extern advancedfx::CImageBufferPoolThreadSafe * g_pImageBufferPoolThreadSafe;
 
 extern SOURCESDK::CS2::ISource2EngineToClient * g_pEngineToClient;
+extern SOURCESDK::CS2::ICvar * SOURCESDK::CS2::g_pCVar;
 
 std::mutex g_SwapChainMutex;
 std::queue<std::function<bool(ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture)>> g_SwapchainBeforePresentQueue;
@@ -377,7 +377,9 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
     
     HRESULT result = g_Old_CreateRenderTargetView(This, pResource, pDesc, ppRTView);
 
-    if(SUCCEEDED(result) && ppRTView && *ppRTView) {
+    if(SUCCEEDED(result) && ppRTView && *ppRTView
+    &&g_pSwapChain // can be nullptr e.g. when people forget to "disable service" on FACEIT anti cheat.
+    ) {
         ID3D11Texture2D * pTexture = nullptr;
         HRESULT result2 = g_pSwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D), (void**)&pTexture);
         if(SUCCEEDED(result2)) {
@@ -676,7 +678,7 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
 
         if(!g_SwapchainBeforePresentQueue.empty()) {
             ID3D11Texture2D * pTexture = nullptr;
-            g_pSwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D), (void**)&pTexture);
+            if(g_pSwapChain) g_pSwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D), (void**)&pTexture);
             while(!g_SwapchainBeforePresentQueue.empty()) {
                 bool bBreak = g_SwapchainBeforePresentQueue.front()(g_pImmediateContext,pTexture);
                 g_SwapchainBeforePresentQueue.pop();
@@ -989,6 +991,11 @@ private:
     std::wstring m_TakeDir;
     bool m_StartMovieWavUsed = false;
     float m_StartHostFrameRateValue = 60.0;
+    
+    bool m_UsedHostFramerRateValue = false;
+    float m_OldValue_host_framerate;
+    bool m_OldValue_r_always_render_all_windows;
+    int m_OldValue_engine_no_focus_sleep;
 } g_AfxStreams;
 
 void CAfxStreams::Console_RecordScreen(advancedfx::ICommandArgs* args) {
@@ -1066,11 +1073,28 @@ void CAfxStreams::RecordStart()
 
 		std::string utf8TakeDir;
 		bool utf8TakeDirOk = WideStringToUTF8String(m_TakeDir.c_str(), utf8TakeDir);
+        SOURCESDK::CS2::Cvar_s * handle_host_framerate = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("host_framerate", false).Get());
+        SOURCESDK::CS2::Cvar_s * handle_engine_no_focus_sleep = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("engine_no_focus_sleep", false).Get());
+        SOURCESDK::CS2::Cvar_s * handle_r_always_render_all_windows = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_always_render_all_windows", false).Get());
+        
+        m_UsedHostFramerRateValue = GetOverrideFps();
 
-//		if (!m_HostFrameRate)
-//			m_HostFrameRate = new WrpConVarRef("host_framerate");
+        if(m_UsedHostFramerRateValue && handle_host_framerate) {
+            m_OldValue_host_framerate = handle_host_framerate->m_Value.m_flValue;
+            handle_host_framerate->m_Value.m_flValue = GetOverrideFpsValue();
+        }
 
-		float host_framerate = m_OverrideFps ? m_OverrideFpsValue : 0;//m_HostFrameRate->GetFloat();
+        if(handle_engine_no_focus_sleep) {
+            m_OldValue_engine_no_focus_sleep = handle_engine_no_focus_sleep->m_Value.m_i32Value;
+            handle_engine_no_focus_sleep->m_Value.m_i32Value = 0;
+        }
+
+        if(handle_r_always_render_all_windows) {
+            m_OldValue_r_always_render_all_windows = handle_r_always_render_all_windows->m_Value.m_bValue;
+            handle_r_always_render_all_windows->m_Value.m_bValue = true;
+        }
+
+		float host_framerate = m_OverrideFps ? m_OverrideFpsValue : (handle_host_framerate != nullptr ? m_OldValue_host_framerate : 0);
 		double frameTime;
 		if (1.0 <= host_framerate) {
 			m_StartHostFrameRateValue = host_framerate;
@@ -1083,15 +1107,10 @@ void CAfxStreams::RecordStart()
 
 		if (0 == frameTime) {
 			advancedfx::Warning("You probably forgot to set host_framerate to the FPS you want to record.\n");
-			if (true) {
+			if (nullptr == handle_host_framerate) {
 				advancedfx::Warning("You probably forgot to set mirv_streams record fps to the FPS you want to record.\n");
 			}
-		} else {
-            std::string strCommand("host_framerate \"");
-            strCommand.append(std::to_string((float)(1.0/frameTime)));
-            strCommand.append("\"");
-            g_pEngineToClient->ExecuteClientCmd(0,strCommand.c_str(),true);
-        }
+		}
 
 		if(m_RecordScreen->Enabled) {
 			CreateCapture(
@@ -1112,8 +1131,11 @@ void CAfxStreams::RecordStart()
 
 		if (m_StartMovieWavUsed)
 		{
-            g_pEngineToClient->ExecuteClientCmd(0,"mirv_cvar_unhide_all",true); // sorry.
-            if(utf8TakeDirOk) g_pEngineToClient->ExecuteClientCmd(0,"startmovie " ADVNACEDFX_STARTMOIVE_WAV_KEY " wav",true);
+            SOURCESDK::CS2::ConCommandHandle handle_startmovie = SOURCESDK::CS2::g_pCVar->FindCommand( "startmovie", false );
+            if(handle_startmovie.IsValid()) {
+                const char * pszArgs[3] = {"startmovie",ADVNACEDFX_STARTMOIVE_WAV_KEY,"wav"};
+                SOURCESDK::CS2::g_pCVar->DispatchConCommand(handle_startmovie, SOURCESDK::CS2::CCommandContext(SOURCESDK::CS2::CT_FIRST_SPLITSCREEN_CLIENT,0), SOURCESDK::CS2::CCommand(3,pszArgs));
+            } else advancedfx::Warning("AFXERROR: startmovie command not found, wav recording not possible.");
 		}
 	}
 	else
@@ -1131,14 +1153,33 @@ void CAfxStreams::RecordEnd()
 		advancedfx::Message("Finishing recording ... ");
 		if (m_StartMovieWavUsed)
 		{
-            g_pEngineToClient->ExecuteClientCmd(0,"endmovie",true);
+            SOURCESDK::CS2::ConCommandHandle handle_endmovie = SOURCESDK::CS2::g_pCVar->FindCommand( "endmovie", false );
+            if(handle_endmovie.IsValid()) {
+                const char * pszArgs[1] = {"endmovie"};
+                SOURCESDK::CS2::g_pCVar->DispatchConCommand(handle_endmovie, SOURCESDK::CS2::CCommandContext(SOURCESDK::CS2::CT_FIRST_SPLITSCREEN_CLIENT,0), SOURCESDK::CS2::CCommand(1,pszArgs));
+            } else advancedfx::Warning("AFXERROR: endmovie command not found, stopping the wav recording not possible.");
+
 		}
 
 		if(m_RecordScreen->Enabled) {
             EndCapture();
 		}
 
-        if(m_StartHostFrameRateValue) g_pEngineToClient->ExecuteClientCmd(0,"host_framerate 0",true);
+        SOURCESDK::CS2::Cvar_s * handle_host_framerate = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("host_framerate", false).Get());
+        SOURCESDK::CS2::Cvar_s * handle_engine_no_focus_sleep = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("engine_no_focus_sleep", false).Get());
+        SOURCESDK::CS2::Cvar_s * handle_r_always_render_all_windows = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_always_render_all_windows", false).Get());
+
+        if(m_UsedHostFramerRateValue && handle_host_framerate) {
+            handle_host_framerate->m_Value.m_flValue = m_OldValue_host_framerate;
+        }
+
+        if(handle_engine_no_focus_sleep) {
+            handle_engine_no_focus_sleep->m_Value.m_i32Value = m_OldValue_engine_no_focus_sleep;
+        }
+
+        if(handle_r_always_render_all_windows) {
+            handle_r_always_render_all_windows->m_Value.m_bValue = m_OldValue_r_always_render_all_windows;
+        }
 
 		advancedfx::Message("done.\n");
 	}

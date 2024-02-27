@@ -66,12 +66,12 @@ void New_Unknown_ExecuteClientCommandFromNetChan(void * Ecx, void * Edx, SOURCES
 	//for(int i = 0; i < r8Command->ArgC(); i++) {
 	//	advancedfx::Message("Command %i: %s\n",i,r8Command->ArgV(i));
 	//}
-	if(0 == stricmp("connect",r8Command->ArgV(0))) {
+	if(0 == stricmp("connect",r8Command->Arg(0))) {
 		if(IDYES != MessageBoxA(0,"YOU ARE TRYING TO CONNECT TO A SERVER - THIS WILL GET YOU VAC BANNED.\nARE YOU SURE?", "HLAE WARNING", MB_YESNOCANCEL|MB_ICONHAND|MB_DEFBUTTON2))
 			return;
 	}
 	if(0 < g_nIgnoreNextDisconnects && 0 < r8Command->ArgC()) {
-		if(0 == stricmp("disconnect",r8Command->ArgV(0))) {
+		if(0 == stricmp("disconnect",r8Command->Arg(0))) {
 			if(0 < g_nIgnoreNextDisconnects) g_nIgnoreNextDisconnects--;
 			return;
 		}
@@ -733,13 +733,6 @@ float CS2_Client_CSetupView_InsideComputeViewMatrix(void) {
 	}
 	return 0;
 }
-
-extern size_t g_RTCount;
-
-CON_COMMAND(__mirv_t,"") {
-	if(args->ArgC()>=2) g_RTCount = (size_t)atoi(args->ArgV(1));
-}
-
 
 /*size_t ofsProj = 0;
 
