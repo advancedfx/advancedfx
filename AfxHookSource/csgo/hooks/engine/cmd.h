@@ -1,3 +1,3 @@
 #pragma once
 
-bool Install_csgo_Cmd_ExecuteCommand(void);
+bool Install_csgo_tf2_Cmd_ExecuteCommand(void);

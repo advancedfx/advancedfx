@@ -103,6 +103,7 @@ AFXADDR_DEF(csgo_C_BaseViewModel_FireEvent)
 AFXADDR_DEF(csgo_client_AdjustInterpolationAmount)
 //AFXADDR_DEF(csgo_C_BaseEntity_ofs_m_bPredictable)
 AFXADDR_DEF(csgo_engine_Cmd_ExecuteCommand)
+AFXADDR_DEF(tf2_engine_Cmd_ExecuteCommand)
 AFXADDR_DEF(csgo_client_C_CSPlayer_EyeAngles_vtable_index)
 AFXADDR_DEF(csgo_client_C_CS_Player_GetFOV_vtable_index)
 AFXADDR_DEF(csgo_client_C_CSPlayer_UpdateOnRemove_vtable_index)
@@ -654,8 +655,12 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 
 			AFXADDR_SET(csgo_engine_Do_CCLCMsg_FileCRCCheck, addr);
 		}
+	}
 
+	if (SourceSdkVer_CSGO == sourceSdkVer || SourceSdkVer_TF2 == sourceSdkVer)
+	{
 		// csgo_engine_Cmd_ExecuteCommand: // Checked 2019-11-11.
+		// tf2_engine_Cmd_ExecuteCommand: // Checked 2024-08-03.
 		{
 			DWORD addr = 0;
 			DWORD strAddr = 0;
@@ -685,10 +690,10 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 				MemRange result = FindBytes(baseRange, (char const *)&strAddr, sizeof(strAddr));
 				if (!result.IsEmpty())
 				{
-					addr = result.Start - 0x79;
+					addr = result.Start - (SourceSdkVer_CSGO == sourceSdkVer ? 0x79 : 0x69);
 
 					// check for pattern to see if it is the right address:
-					unsigned char pattern[6] = { 0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08 };
+					unsigned char pattern[3] = { 0x55, 0x8B, 0xEC};
 
 					DWORD patternSize = sizeof(pattern) / sizeof(pattern[0]);
 					MemRange patternRange(addr, addr + patternSize);
@@ -703,14 +708,17 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 			}
 			if (addr)
 			{
-				AFXADDR_SET(csgo_engine_Cmd_ExecuteCommand, addr);
-			}
-			else
-			{
-				AFXADDR_SET(csgo_engine_Cmd_ExecuteCommand, 0x0);
+				if(SourceSdkVer_CSGO == sourceSdkVer) {
+					AFXADDR_SET(csgo_engine_Cmd_ExecuteCommand, addr);
+				} else {
+					AFXADDR_SET(tf2_engine_Cmd_ExecuteCommand, addr);
+				}
 			}
 		}
+	}
 
+	if (SourceSdkVer_CSGO == sourceSdkVer)
+	{
 		// mirv_pov related
 		// csgo_engine_CBoundedCvar_CmdRate_vtable // Checked 2023-03-24
 		{
@@ -750,7 +758,6 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		AFXADDR_SET(csgo_CNetChan_ProcessMessages, 0x0);
 		AFXADDR_SET(csgo_engine_CModelLoader_vtable, 0x0);
 		AFXADDR_SET(csgo_engine_Do_CCLCMsg_FileCRCCheck, 0x0);
-		AFXADDR_SET(csgo_engine_Cmd_ExecuteCommand, 0x0);
 	}
 	AFXADDR_SET(csgo_CClientState_ProcessVoiceData_DSZ, 0x6);
 	AFXADDR_SET(csgo_CVoiceWriter_AddDecompressedData_DSZ, 0x8);

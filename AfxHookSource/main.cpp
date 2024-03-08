@@ -2935,7 +2935,9 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 
 		if(SourceSdkVer_CSGO == g_SourceSdkVer) {
 			Install_csgo_engine_Do_CCLCMsg_FileCRCCheck();
-			Install_csgo_Cmd_ExecuteCommand();
+		}
+		if(SourceSdkVer_CSGO == g_SourceSdkVer || SourceSdkVer_TF2 == g_SourceSdkVer) {
+			Install_csgo_tf2_Cmd_ExecuteCommand();
 		}
 
 		Hook_CVideoMode_Common__WriteMovieFrame();

@@ -24,7 +24,7 @@
 
 static std::fstream g_Command_Logfile;
 
-void Log_Command(int source, const char * commandString, bool before) {
+void Log_Command(int eTarget, int eSource, const char * commandString, bool before) {
 	if(!g_Command_Logfile.is_open())
 		return;
 
@@ -37,7 +37,7 @@ void Log_Command(int source, const char * commandString, bool before) {
 			cmdString.replace(pos,strSrc.length(), strDst);
 			pos += strDst.length();
 		}
-		g_Command_Logfile << std::to_string(GetTickCount()) << ";"  << std::to_string(source) << ";"  << (before ? "BEGIN" : "END") << ";\"" << cmdString << "\"" << std::endl;
+		g_Command_Logfile << std::to_string(GetTickCount()) << ";"  << std::to_string(eTarget) << ";"  << (before ? "BEGIN" : "END") << ";\"" << cmdString << "\"" << std::endl;
 		g_Command_Logfile.flush();
 	} catch(std::system_error) {
 
@@ -49,20 +49,18 @@ int g_DebugExecuteCommand = 0;
 
 void * g_Org_csgo_Cmd_ExecuteCommand;
 
-bool My_csgo_Cmd_ExecuteCommand_Do(int eTarget, const SOURCESDK::CSGO::CCommand& command) {
+bool My_csgo_Cmd_ExecuteCommand_Do(int eTarget, int eSource, const SOURCESDK::CSGO::CCommand& command) {
 	if (command.ArgC()) {
 		if (g_DebugExecuteCommand) {
-			Tier0_Msg("Cmd_ExecuteCommand: %i -> \"%s\"\n", (int)(command.Source()), command.GetCommandString());
+			Tier0_Msg("Cmd_ExecuteCommand: %i -> \"%s\"\n", eSource, command.GetCommandString());
 		}
 
-		int cmd_source = (int)(command.Source());
-
-		auto it = g_CmdExecuteCommand_Blocks.find(cmd_source);
+		auto it = g_CmdExecuteCommand_Blocks.find(eSource);
 		if (it != g_CmdExecuteCommand_Blocks.end()) {
 			for (auto it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
 				if (StringWildCard1Matched(it2->c_str(), command.GetCommandString())) {
 					if (g_DebugExecuteCommand) {
-						Tier0_Msg("BLOCKED: Cmd_ExecuteCommand: %i -> \"%s\"\n", (int)(command.Source()), command.GetCommandString());
+						Tier0_Msg("BLOCKED: Cmd_ExecuteCommand: %i -> \"%s\"\n", eSource, command.GetCommandString());
 					}
 					return true;
 				}
@@ -70,7 +68,7 @@ bool My_csgo_Cmd_ExecuteCommand_Do(int eTarget, const SOURCESDK::CSGO::CCommand&
 			}
 		}
 
-		if (command.Source() == SOURCESDK::CSGO::kCommandSrcDemoFile && WrpConCommands::IsRegisteredSlow(command.ArgV()[0])) {
+		if (eSource == SOURCESDK::CSGO::kCommandSrcDemoFile && WrpConCommands::IsRegisteredSlow(command.ArgV()[0])) {
 			Tier0_Warning("AFXWARNING: BLOCKED HLAE COMMAND FROM DEMO STREAM: \"%s\"\n", command.GetCommandString());
 			return true;
 		}
@@ -89,7 +87,7 @@ __declspec(naked) SOURCESDK::CSGO::ConCommandBase* __fastcall  My_csgo_Cmd_Execu
 
 	SOURCESDK::CSGO::ConCommandBase* result; 
 	
-	if (My_csgo_Cmd_ExecuteCommand_Do(eTarget, command)) {
+	if (My_csgo_Cmd_ExecuteCommand_Do(eTarget, command.Source(), command)) {
 		__asm mov edx, command
 		__asm mov ecx, eTarget
 		__asm mov esp, ebp
@@ -98,7 +96,7 @@ __declspec(naked) SOURCESDK::CSGO::ConCommandBase* __fastcall  My_csgo_Cmd_Execu
 		__asm ret
 	}
 	
-	Log_Command(eTarget, command.GetCommandString(), true);
+	Log_Command(eTarget, command.Source(), command.GetCommandString(), true);
 
 	__asm mov edx, command
 	__asm mov ecx, eTarget
@@ -107,7 +105,7 @@ __declspec(naked) SOURCESDK::CSGO::ConCommandBase* __fastcall  My_csgo_Cmd_Execu
 
 	__asm mov result, eax
 
-	Log_Command(eTarget, command.GetCommandString(), false);
+	Log_Command(eTarget, command.Source(), command.GetCommandString(), false);
 
 	__asm mov eax, result
 	
@@ -118,16 +116,33 @@ __declspec(naked) SOURCESDK::CSGO::ConCommandBase* __fastcall  My_csgo_Cmd_Execu
 	__asm ret
 }
 
+typedef SOURCESDK::CSGO::ConCommandBase* (*tf2_engine_Cmd_ExecuteCommand_t)(const SOURCESDK::CSGO::CCommand& command, int eSource, int eTarget);
 
-bool Install_csgo_Cmd_ExecuteCommand(void)
+tf2_engine_Cmd_ExecuteCommand_t g_tf2_engine_Cmd_ExecuteCommand = nullptr;
+
+SOURCESDK::CSGO::ConCommandBase* My_tf2_engine_Cmd_ExecuteCommand(const SOURCESDK::CSGO::CCommand& command, int eSource, int eTarget) {
+
+	if (My_csgo_Cmd_ExecuteCommand_Do(eTarget, eSource, command)) {
+		return nullptr;
+	}
+
+	Log_Command(eTarget, eSource, command.GetCommandString(), true);
+
+	SOURCESDK::CSGO::ConCommandBase* result = g_tf2_engine_Cmd_ExecuteCommand(command,eSource,eTarget);
+
+	Log_Command(eTarget, eSource, command.GetCommandString(), false);
+
+	return result;
+}
+
+bool Install_csgo_tf2_Cmd_ExecuteCommand(void)
 {
 	static bool firstResult = false;
 	static bool firstRun = true;
 	if (!firstRun) return firstResult;
 	firstRun = false;
 
-	if (AFXADDR_GET(csgo_engine_Cmd_ExecuteCommand))
-	{
+	if (SourceSdkVer_CSGO == g_SourceSdkVer && AFXADDR_GET(csgo_engine_Cmd_ExecuteCommand)){
 		LONG error = NO_ERROR;
 
 		g_Org_csgo_Cmd_ExecuteCommand = (void *)AFXADDR_GET(csgo_engine_Cmd_ExecuteCommand);
@@ -135,6 +150,17 @@ bool Install_csgo_Cmd_ExecuteCommand(void)
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
 		DetourAttach(&(PVOID&)g_Org_csgo_Cmd_ExecuteCommand, My_csgo_Cmd_ExecuteCommand);
+		error = DetourTransactionCommit();
+
+		firstResult = NO_ERROR == error;
+	} else if(SourceSdkVer_TF2 == g_SourceSdkVer && AFXADDR_GET(tf2_engine_Cmd_ExecuteCommand)){
+		LONG error = NO_ERROR;
+
+		g_tf2_engine_Cmd_ExecuteCommand = (tf2_engine_Cmd_ExecuteCommand_t)AFXADDR_GET(tf2_engine_Cmd_ExecuteCommand);
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)g_tf2_engine_Cmd_ExecuteCommand, My_tf2_engine_Cmd_ExecuteCommand);
 		error = DetourTransactionCommit();
 
 		firstResult = NO_ERROR == error;
@@ -146,7 +172,7 @@ bool Install_csgo_Cmd_ExecuteCommand(void)
 
 CON_COMMAND(mirv_block_commands, "")
 {
-	if (!Install_csgo_Cmd_ExecuteCommand()) {
+	if (!Install_csgo_tf2_Cmd_ExecuteCommand()) {
 		Tier0_Warning("AFXERROR: Missing hooks.\n");
 		return;
 	}
