@@ -47,6 +47,7 @@
 #include "Gui.h"
 #include <csgo/sdk_src/public/tier0/memalloc.h>
 #include <csgo/sdk_src/public/tier1/convar.h>
+#include <css/sdk_src/public/tier1/convar.h>
 #include <swarm/sdk_src/public/tier0/memalloc.h>
 #include <swarm/sdk_src/public/tier1/convar.h>
 #include <l4d2/sdk_src/public/tier0/memalloc.h>
@@ -82,6 +83,10 @@ SOURCESDK::ICvar_003 * g_Cvar = 0;
 SOURCESDK::CSGO::IMemAlloc *SOURCESDK::CSGO::g_pMemAlloc = 0;
 SOURCESDK::CSGO::ICvar * SOURCESDK::CSGO::cvar = 0;
 SOURCESDK::CSGO::ICvar * SOURCESDK::CSGO::g_pCVar = 0;
+
+SOURCESDK::CSS::ICvar * SOURCESDK::CSS::cvar = 0;
+SOURCESDK::CSS::ICvar * SOURCESDK::CSS::g_pCVar = 0;
+
 
 SOURCESDK::SWARM::IMemAlloc *SOURCESDK::SWARM::g_pMemAlloc = 0;
 SOURCESDK::SWARM::ICvar * SOURCESDK::SWARM::cvar = 0;
@@ -130,6 +135,23 @@ bool g_bFirstSwapBuffersCallForFrame = false;
 
 extern WrpVEngineClient * g_VEngineClient;
 
+bool CssGetEngineIsWindowedMode() {
+	if(g_SourceSdkVer == SourceSdkVer_CSS) {
+		if(auto pEngine = g_VEngineClient->GetVEngineClient_css()) {
+			void **pVtable = *(void***)pEngine;
+			bool (__fastcall * fnIsWindowedMode)(void* This, void * Edx) = (bool (__fastcall *)(void*, void*))pVtable[134];
+			return fnIsWindowedMode(pEngine,0);
+		}
+	}
+	return true;
+}
+int GetMaxClients() {
+	if(auto pGlobals = g_Hook_VClient_RenderView.GetGlobals()) {
+		return pGlobals->maxclients_get();
+	}
+	return 1;
+}
+
 FovScaling GetDefaultFovScaling() {
 	switch (g_SourceSdkVer)
 	{
@@ -138,6 +160,21 @@ FovScaling GetDefaultFovScaling() {
 	case SourceSdkVer_SWARM:
 	case SourceSdkVer_L4D2:
 	case SourceSdkVer_Momentum:
+		return FovScaling_AlienSwarm;
+	case SourceSdkVer_CSS:
+		{
+			static SOURCESDK::CSS::ConVar * m_pConVar_sv_restrict_aspect_ratio_fov = nullptr;
+			if(m_pConVar_sv_restrict_aspect_ratio_fov == nullptr && nullptr != SOURCESDK::CSS::g_pCVar) {
+				m_pConVar_sv_restrict_aspect_ratio_fov = SOURCESDK::CSS::g_pCVar->FindVar("sv_restrict_aspect_ratio_fov");
+			}
+			int sv_restrict_aspect_ratio_fov_int = 1;
+			if(m_pConVar_sv_restrict_aspect_ratio_fov) {
+				sv_restrict_aspect_ratio_fov_int = m_pConVar_sv_restrict_aspect_ratio_fov->GetInt();
+			}
+		  if ( ( sv_restrict_aspect_ratio_fov_int > 0 && CssGetEngineIsWindowedMode() && GetMaxClients() > 1 ) ||
+		    sv_restrict_aspect_ratio_fov_int == 2 )
+			return FovScaling_Sdk2013Restricted;	
+		}
 		return FovScaling_AlienSwarm;
 	case SourceSdkVer_BM:
 	default:
@@ -441,6 +478,8 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 			else if (iface = appSystemFactory(VENGINE_CVAR_INTERFACE_VERSION_004, NULL))
 			{
 				g_Info_VEngineCvar = VENGINE_CVAR_INTERFACE_VERSION_004;
+				SOURCESDK::CSS::g_pCVar = SOURCESDK::CSS::cvar = (SOURCESDK::CSS::ICvar*)iface;
+
 				WrpConCommands::RegisterCommands((SOURCESDK::ICvar_004*)iface);
 			}
 			else if (
@@ -600,7 +639,7 @@ int __fastcall new_CVClient_Init_Unknown(void* This, void* Edx, SOURCESDK::Creat
 	if (bFirstCall) {
 		bFirstCall = false;
 
-		MySetup(appSystemFactory, new WrpGlobalsOther(pGlobals));
+		MySetup(appSystemFactory, (g_SourceSdkVer == SourceSdkVer_CSS ? new  WrpGlobalsCss(pGlobals) : new  WrpGlobalsOther(pGlobals)));
 	}
 
 	return old_CVClient_Init_Unkown(This, Edx, AppSystemFactory_ForClient, physicsFactory, pGlobals);

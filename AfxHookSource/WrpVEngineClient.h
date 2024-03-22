@@ -66,6 +66,11 @@ public:
 	{
 		return 0;
 	}
+
+	virtual SOURCESDK::IVEngineClient_013 * GetVEngineClient_css(void)
+	{
+		return 0;
+	}
 };
 
 
@@ -165,6 +170,12 @@ public:
 	virtual void ClientCmd_Unrestricted( const char *szCmdString );
 
 	virtual WrpVEngineClientDemoInfoEx * GetDemoInfoEx(void);
+
+	
+	virtual SOURCESDK::IVEngineClient_013 * GetVEngineClient_css(void)
+	{
+		return m_VEngineClient_013;
+	}
 
 private:
 	SOURCESDK::IVEngineClient_013 * m_VEngineClient_013;

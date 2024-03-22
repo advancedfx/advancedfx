@@ -3,9 +3,10 @@
 #include "AfxConsole.h"
 
 enum FovScaling {
-	FovScaling_Uninitalized,
+	FovScaling_Default,
 	FovScaling_None,
-	FovScaling_AlienSwarm
+	FovScaling_AlienSwarm,
+	FovScaling_Sdk2013Restricted
 };
 
 // This must be implemented by the consumer:
@@ -27,5 +28,9 @@ double Auto_InverseFovScaling(double width, double height, double fov);
 double AlienSwarm_FovScaling(double width, double height, double fov);
 
 double AlienSwarm_InverseFovScaling(double width, double height, double fov);
+
+double Sdk2013Restricted_FovScaling(double width, double height, double fov);
+
+double Sdk2013Restricted_InverseFovScaling(double width, double height, double fov);
 
 void Console_MirvFovScaling(advancedfx::ICommandArgs * args);

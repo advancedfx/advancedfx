@@ -855,7 +855,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					return;
 				}
 				else
-				if (bIsCsgo && 0 == _stricmp(cmd2, "bvh"))
+				if (0 == _stricmp(cmd2, "bvh"))
 				{
 					CSubWrpCommandArgs subArgs(args, 3);
 
@@ -863,7 +863,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					return;
 				}
 				else
-				if (bIsCsgo && 0 == _stricmp(cmd2, "cam"))
+				if (0 == _stricmp(cmd2, "cam"))
 				{
 					if (4 <= argc)
 					{
@@ -951,6 +951,8 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			);
 			if (bIsCsgo) Tier0_Msg(
 				"mirv_streams record voices [...] - Controls voice WAV audio recording.\n"
+			);
+			Tier0_Msg(
 				"mirv_streams record bvh [...] - Controls the HLAE/BVH camera motion data capture output.\n"
 				"mirv_streams record cam [...] - Controls the camera motion data capture output (can be imported with mirv_camio).\n"
 			);

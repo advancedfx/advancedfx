@@ -9048,8 +9048,7 @@ void CAfxStreams::Console_Bvh(IWrpCommandArgs * args)
 			);
 			return;
 		}
-		else
-		if (!_stricmp(cmd1, "ent"))
+		else if (g_SourceSdkVer == SourceSdkVer_CSGO && 0 == _stricmp(cmd1, "ent"))
 		{
 			if (3 <= argc)
 			{
@@ -9204,10 +9203,12 @@ void CAfxStreams::Console_Bvh(IWrpCommandArgs * args)
 
 	Tier0_Msg(
 		"%s cam [...] - Whether main camera export (overrides/uses mirv_camexport actually).\n"
-		"%s ent [...] - Entity BVH export list control.\n"
-		, prefix
 		, prefix
 	);
+	if(g_SourceSdkVer == SourceSdkVer_CSGO) Tier0_Msg(
+		"%s ent [...] - Entity BVH export list control.\n"
+		, prefix
+	);	
 }
 
 void CAfxStreams::Console_GameRecording(IWrpCommandArgs * args)

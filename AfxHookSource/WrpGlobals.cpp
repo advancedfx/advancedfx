@@ -89,3 +89,13 @@ float WrpGlobalsOther::interpolation_amount_get(void)
 {
 	return *(float *)((unsigned char *)m_pGlobals +AFXADDR_GET(cstrike_gpGlobals_OFS_interpolation_amount));
 }
+
+// WrpGlobalsCss ///////////////////////////////////////////////////////////////
+
+WrpGlobalsCss::WrpGlobalsCss(void * pGlobals):WrpGlobalsOther(pGlobals) {}
+
+int WrpGlobalsCss::maxclients_get(void)
+{
+	return *(int *)((unsigned char *)m_pGlobals + 5*4);
+}
+

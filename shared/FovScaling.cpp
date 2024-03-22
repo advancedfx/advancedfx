@@ -5,12 +5,12 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-FovScaling g_FovScaling = FovScaling_Uninitalized;
+FovScaling g_FovScaling = FovScaling_Default;
 
 FovScaling GetFovScaling() {
 
-	if (FovScaling_Uninitalized == g_FovScaling)
-		g_FovScaling = GetDefaultFovScaling();
+	if (FovScaling_Default == g_FovScaling)
+		return GetDefaultFovScaling(); // we need to eval this, since it can change dynamically
 
 	return g_FovScaling;
 }
@@ -24,10 +24,14 @@ const char * FovScalingToCString(FovScaling fovScaling)
 
 	switch (fovScaling)
 	{
+	case FovScaling_Default:
+		return "default";
 	case FovScaling_None:
 		return "none";
 	case FovScaling_AlienSwarm:
 		return "alienSwarm";
+	case FovScaling_Sdk2013Restricted:
+		return "sdk2013Restricted";
 	}
 
 	return "[unknown]";
@@ -43,8 +47,12 @@ bool CStringToFovScaling(const char * value, FovScaling & fovScaling) {
 		fovScaling = FovScaling::FovScaling_AlienSwarm;
 		return true;
 	}
+	else if (0 == _stricmp("sdk2013Restricted", value)) {
+		fovScaling = FovScaling::FovScaling_Sdk2013Restricted;
+		return true;
+	}
 	else if (0 == _stricmp("default", value)) {
-		fovScaling = GetDefaultFovScaling();
+		fovScaling = FovScaling::FovScaling_Default;
 		return true;
 	}
 
@@ -57,6 +65,8 @@ double Apply_FovScaling(double width, double height, double fov, FovScaling fovS
 	{
 	case FovScaling_AlienSwarm:
 		return AlienSwarm_FovScaling(width, height, fov);
+	case FovScaling_Sdk2013Restricted:
+		return Sdk2013Restricted_FovScaling(width, height, fov);
 	default:
 		return fov;
 	}
@@ -68,6 +78,8 @@ double Apply_InverseFovScaling(double width, double height, double fov, FovScali
 	{
 	case FovScaling_AlienSwarm:
 		return AlienSwarm_InverseFovScaling(width, height, fov);
+	case FovScaling_Sdk2013Restricted:
+		return Sdk2013Restricted_InverseFovScaling(width, height, fov);
 	default:
 		return fov;
 	}
@@ -107,6 +119,34 @@ double AlienSwarm_InverseFovScaling(double width, double height, double fov)
 	return 2.0 * halfAngle / (2.0 * M_PI / 360.0);
 }
 
+double Sdk2013Restricted_FovScaling(double width, double height, double fov)
+{
+	if (!height) return fov;
+
+	double engineAspectRatio = width / height;
+	double defaultAscpectRatio = 4.0 / 3.0;
+	double ratio = engineAspectRatio / defaultAscpectRatio;
+	const double ratioMin = 1.85 * 4.0 / 3.0;
+	if(ratio > ratioMin) ratio = ratioMin;
+	double halfAngle = 0.5 * fov * (2.0 * M_PI / 360.0);
+	double t = ratio * tan(halfAngle);
+	return 2.0 * atan(t) / (2.0 * M_PI / 360.0);
+}
+
+double Sdk2013Restricted_InverseFovScaling(double width, double height, double fov)
+{
+	if (!height) return fov;
+
+	double engineAspectRatio = width / height;
+	double defaultAscpectRatio = 4.0 / 3.0;
+	double ratio = engineAspectRatio / defaultAscpectRatio;
+	const double ratioMin = 1.85 * 4.0 / 3.0;
+	if(ratio > ratioMin) ratio = ratioMin;
+	double t = tan(0.5 * fov * (2.0 * M_PI / 360.0));
+	double halfAngle = atan(t / ratio);
+	return 2.0 * halfAngle / (2.0 * M_PI / 360.0);
+}
+
 void Console_MirvFovScaling(advancedfx::ICommandArgs * args)
 {
 	int argC = args->ArgC();
@@ -128,11 +168,11 @@ void Console_MirvFovScaling(advancedfx::ICommandArgs * args)
 	}
 
 	advancedfx::Message(
-		"%s default|none|alienSwarm - Set default fov scaling.\n"
+		"%s default|none|alienSwarm|sdk2013Restricted - Set default fov scaling.\n"
 		"Current: %s\n"
 		"Default: %s\n"
 		, arg0
-		, FovScalingToCString(GetFovScaling())
+		, FovScalingToCString(g_FovScaling)
 		, FovScalingToCString(GetDefaultFovScaling())
 	);
 	return;
