@@ -154,6 +154,7 @@ AFXADDR_DECL(materialsystem_CFunctor_vtable_size)
 AFXADDR_DECL(materialsystem_CMaterialSystem_SwapBuffers)
 AFXADDR_DECL(materialsystem_CMatCallQueue_QueueFunctor)
 AFXADDR_DECL(engine_CVideoMode_Common_WriteMovieFrame)
+AFXADDR_DECL(engine_CallHostError_CL_PreserveExistingEntity)
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer);
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer);

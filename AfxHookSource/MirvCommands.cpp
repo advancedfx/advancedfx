@@ -2747,6 +2747,30 @@ CON_COMMAND(mirv_fix, "Various fixes")
 			Tier0_Msg("\n");
 			return;
 		}
+		else if (0 == _stricmp("suppressClPreserveExistingEntityHostError", cmd1) && 3 <= argc)
+		{
+			if (!AFXADDR_GET(engine_CallHostError_CL_PreserveExistingEntity))
+			{
+				Tier0_Warning("Error: Required hooks not installed.\n");
+				return;
+			}
+
+			static void * pPtrOld = nullptr;
+			MdtMemBlockInfos mdtInfos;
+			MdtMemAccessBegin((LPVOID)AFXADDR_GET(engine_CallHostError_CL_PreserveExistingEntity), 5 * sizeof(unsigned char), &mdtInfos);
+
+			bool isOn = 0 != atoi(args->ArgV(2));
+			if(isOn) {
+				if(pPtrOld == nullptr) memcpy(&pPtrOld,((unsigned char*)AFXADDR_GET(engine_CallHostError_CL_PreserveExistingEntity) + 1),sizeof(void*));
+				memset(((unsigned char*)AFXADDR_GET(engine_CallHostError_CL_PreserveExistingEntity)+0),0x90,sizeof(unsigned char) + sizeof(void*));
+			} else if(nullptr != pPtrOld) {
+				*((unsigned char*)AFXADDR_GET(engine_CallHostError_CL_PreserveExistingEntity) + 0) = 0xE8;
+				memcpy(((unsigned char*)AFXADDR_GET(engine_CallHostError_CL_PreserveExistingEntity) + 1),&pPtrOld,sizeof(void*));
+			}
+			MdtMemAccessEnd(&mdtInfos);
+
+			return;
+		}
 	}
 
 	Tier0_Msg(
@@ -2762,6 +2786,9 @@ CON_COMMAND(mirv_fix, "Various fixes")
 	);
 	Tier0_Msg(
 		"mirv_fix panoramaTiming [...]\n"
+	);
+	Tier0_Msg(
+		"mirv_fix suppressClPreserveExistingEntityHostError 0|1 - https://github.com/ValveSoftware/Source-1-Games/issues/3112"
 	);
 }
 

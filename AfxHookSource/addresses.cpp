@@ -147,6 +147,7 @@ AFXADDR_DEF(materialsystem_CFunctor_vtable_size)
 AFXADDR_DEF(materialsystem_CMaterialSystem_SwapBuffers)
 AFXADDR_DEF(materialsystem_CMatCallQueue_QueueFunctor)
 AFXADDR_DEF(engine_CVideoMode_Common_WriteMovieFrame)
+AFXADDR_DEF(engine_CallHostError_CL_PreserveExistingEntity)
 
 void ErrorBox(char const * messageText);
 
@@ -814,6 +815,42 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 			if(vtable) AFXADDR_SET(engine_CVideoMode_Common_WriteMovieFrame, (size_t)(vtable[26]));
 		} break;
 		}
+	}
+
+	// engine_CallHostError_CL_PreserveExistingEntity
+	//
+	// https://github.com/0x00000ED/CSSource_TF2_FIX_Demo_CL_PreserveExistingEntity/blob/main/hl2.CT
+	{
+		switch(sourceSdkVer) {
+			case SourceSdkVer_CSS:
+			case SourceSdkVer_TF2: { // Checked 2024-03-22
+				ImageSectionsReader sections((HMODULE)engineDll);
+				if (!sections.Eof())
+				{
+					MemRange textRange = sections.GetMemRange();
+					sections.Next(); // skip .text
+					if (!sections.Eof())
+					{
+						MemRange firstDataRange = sections.GetMemRange();
+
+						MemRange result = FindCString(sections.GetMemRange(), "CL_PreserveExistingEntity: missing client entity %d.\n");
+						if (!result.IsEmpty())
+						{
+							DWORD tmpAddr = result.Start;
+
+							result = FindBytes(textRange, (char const*)&tmpAddr, sizeof(tmpAddr));
+							if (!result.IsEmpty())
+							{
+								result = FindPatternString(MemRange(result.Start + 0x4, result.Start + 0x4 + 5).And(textRange), "E8 ?? ?? ?? ??");
+								if (!result.IsEmpty()) {
+									AFXADDR_SET(engine_CallHostError_CL_PreserveExistingEntity, result.Start);
+								} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+							} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+				} else ErrorBox(MkErrStr(__FILE__, __LINE__));			
+			} break;
+		}		
 	}
 }
 
