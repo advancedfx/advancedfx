@@ -2457,6 +2457,21 @@ extern float g_Mirv_Pov_Interp_Offset[2];
 
 extern float g_panorama_fps;
 
+
+bool g_bBlockHostError = false;
+
+typedef void (*Host_Error_t)(const char * fmt, ...);
+Host_Error_t g_Org_HostError = nullptr;
+void New_HostError(const char * fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+	char buff[1024];
+	vsnprintf(buff,1023,fmt,args);
+	buff[1023] = 0;
+	advancedfx::Warning("Suppressing Host_Error: %s\n",buff);
+	va_end(args);
+}
+
 CON_COMMAND(mirv_fix, "Various fixes")
 {
 	int argc = args->ArgC();
@@ -2747,27 +2762,37 @@ CON_COMMAND(mirv_fix, "Various fixes")
 			Tier0_Msg("\n");
 			return;
 		}
-		else if (0 == _stricmp("suppressClPreserveExistingEntityHostError", cmd1) && 3 <= argc)
+		else if (0 == _stricmp("suppressHostError", cmd1) && 3 <= argc)
 		{
-			if (!AFXADDR_GET(engine_CallHostError_CL_PreserveExistingEntity))
+			if (!AFXADDR_GET(engine_HostError))
 			{
 				Tier0_Warning("Error: Required hooks not installed.\n");
 				return;
 			}
-
-			static void * pPtrOld = nullptr;
-			MdtMemBlockInfos mdtInfos;
-			MdtMemAccessBegin((LPVOID)AFXADDR_GET(engine_CallHostError_CL_PreserveExistingEntity), 5 * sizeof(unsigned char), &mdtInfos);
-
+			
 			bool isOn = 0 != atoi(args->ArgV(2));
-			if(isOn) {
-				if(pPtrOld == nullptr) memcpy(&pPtrOld,((unsigned char*)AFXADDR_GET(engine_CallHostError_CL_PreserveExistingEntity) + 1),sizeof(void*));
-				memset(((unsigned char*)AFXADDR_GET(engine_CallHostError_CL_PreserveExistingEntity)+0),0x90,sizeof(unsigned char) + sizeof(void*));
-			} else if(nullptr != pPtrOld) {
-				*((unsigned char*)AFXADDR_GET(engine_CallHostError_CL_PreserveExistingEntity) + 0) = 0xE8;
-				memcpy(((unsigned char*)AFXADDR_GET(engine_CallHostError_CL_PreserveExistingEntity) + 1),&pPtrOld,sizeof(void*));
+			bool wasOn = nullptr != g_Org_HostError;
+
+			if(wasOn != isOn) {
+				if(isOn) {
+					g_Org_HostError = (Host_Error_t)AFXADDR_GET(engine_HostError);
+					DetourTransactionBegin();
+					DetourUpdateThread(GetCurrentThread());
+					DetourAttach(&(PVOID&)g_Org_HostError, New_HostError);
+					if(NO_ERROR != DetourTransactionCommit()) {
+						advancedfx::Warning("DetourAttach failed\n");
+						g_Org_HostError = nullptr;
+					}
+				} else if(g_Org_HostError) {
+					DetourTransactionBegin();
+					DetourUpdateThread(GetCurrentThread());
+					DetourDetach(&(PVOID&)g_Org_HostError, New_HostError);
+					if(NO_ERROR != DetourTransactionCommit()) {
+						advancedfx::Warning("DetourDetach failed\n");
+					}
+					g_Org_HostError = nullptr;
+				}
 			}
-			MdtMemAccessEnd(&mdtInfos);
 
 			return;
 		}
@@ -2788,7 +2813,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 		"mirv_fix panoramaTiming [...]\n"
 	);
 	Tier0_Msg(
-		"mirv_fix suppressClPreserveExistingEntityHostError 0|1 - https://github.com/ValveSoftware/Source-1-Games/issues/3112"
+		"mirv_fix suppressHostError 0|1 - https://github.com/ValveSoftware/Source-1-Games/issues/3112"
 	);
 }
 

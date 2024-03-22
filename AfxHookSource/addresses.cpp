@@ -147,7 +147,7 @@ AFXADDR_DEF(materialsystem_CFunctor_vtable_size)
 AFXADDR_DEF(materialsystem_CMaterialSystem_SwapBuffers)
 AFXADDR_DEF(materialsystem_CMatCallQueue_QueueFunctor)
 AFXADDR_DEF(engine_CVideoMode_Common_WriteMovieFrame)
-AFXADDR_DEF(engine_CallHostError_CL_PreserveExistingEntity)
+AFXADDR_DEF(engine_HostError)
 
 void ErrorBox(char const * messageText);
 
@@ -818,8 +818,6 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 	}
 
 	// engine_CallHostError_CL_PreserveExistingEntity
-	//
-	// https://github.com/0x00000ED/CSSource_TF2_FIX_Demo_CL_PreserveExistingEntity/blob/main/hl2.CT
 	{
 		switch(sourceSdkVer) {
 			case SourceSdkVer_CSS:
@@ -843,7 +841,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 							{
 								result = FindPatternString(MemRange(result.Start + 0x4, result.Start + 0x4 + 5).And(textRange), "E8 ?? ?? ?? ??");
 								if (!result.IsEmpty()) {
-									AFXADDR_SET(engine_CallHostError_CL_PreserveExistingEntity, result.Start);
+									AFXADDR_SET(engine_HostError, result.Start + 5 + *(size_t*)(result.Start + 1));
 								} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 							} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 						} else ErrorBox(MkErrStr(__FILE__, __LINE__));
