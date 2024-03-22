@@ -6955,7 +6955,8 @@ void CAfxStreams::Console_Record_Start()
 			std::wstring camFileName(m_TakeDir);
 			camFileName.append(L"\\cam_main.cam");
 
-			m_CamExportObj = new CamExport(camFileName.c_str());
+			m_CamExportSet = true;
+			g_Hook_VClient_RenderView.SetCamExport(new CamExport(camFileName.c_str()));
 		}
 
 		Tier0_Msg("done.\n");
@@ -7014,10 +7015,9 @@ void CAfxStreams::Console_Record_End()
 			}
 		}
 
-		if (m_CamExportObj)
-		{
-			delete m_CamExportObj;
-			m_CamExportObj = 0;
+		if(m_CamExportSet) {
+			m_CamExportSet = false;
+			g_Hook_VClient_RenderView.SetCamExport(nullptr);
 		}
 
 		if (m_CamBvh)
@@ -9337,23 +9337,6 @@ void CAfxStreams::View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *r
 	}
 #endif
 
-	// Capture
-	if (m_CamExportObj)
-	{
-		CamIO::CamData camData;
-
-		camData.Time = g_MirvTime.GetTime();
-		camData.XPosition = g_Hook_VClient_RenderView.LastCameraOrigin[0];
-		camData.YPosition = g_Hook_VClient_RenderView.LastCameraOrigin[1];
-		camData.ZPosition = g_Hook_VClient_RenderView.LastCameraOrigin[2];
-		camData.YRotation = g_Hook_VClient_RenderView.LastCameraAngles[0];
-		camData.ZRotation = g_Hook_VClient_RenderView.LastCameraAngles[1];
-		camData.XRotation = g_Hook_VClient_RenderView.LastCameraAngles[2];
-		camData.Fov = g_Hook_VClient_RenderView.LastCameraFov;
-
-		m_CamExportObj->WriteFrame(g_Hook_VClient_RenderView.LastWidth, g_Hook_VClient_RenderView.LastHeight, camData);
-	}
-
 	// Capture BVHs (except main):
 	for (std::list<CEntityBvhCapture *>::iterator it = m_EntityBvhCaptures.begin(); it != m_EntityBvhCaptures.end(); ++it)
 	{
@@ -9970,8 +9953,6 @@ void CAfxStreams::ShutDown(void)
 		if (g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO) {
 			CAfxBaseFxStream::AfxStreamsShutdown();
 		}
-
-		delete m_CamExportObj;
 
 		while (!m_EntityBvhCaptures.empty())
 		{

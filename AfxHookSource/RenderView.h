@@ -102,6 +102,15 @@ public:
 
 	MirvInput * m_MirvInput;
 
+	CamExport * GetCamExport() {
+		return m_CamExport;
+	}
+
+	void SetCamExport(CamExport * pCamExport) {
+		if(m_CamExport) delete m_CamExport;
+		m_CamExport  = pCamExport;
+	}
+
 private:
 	float m_LastFrameTime = 0;
 

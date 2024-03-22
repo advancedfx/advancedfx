@@ -3691,7 +3691,7 @@ private:
 	bool m_CamBvh;
 	std::list<CEntityBvhCapture *> m_EntityBvhCaptures;
 	bool m_CamExport = false;
-	CamExport * m_CamExportObj = 0;
+	bool m_CamExportSet = false;
 	bool m_GameRecording;
 
 	WrpConVarRef * m_HostFrameRate = nullptr;

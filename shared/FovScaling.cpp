@@ -126,7 +126,7 @@ double Sdk2013Restricted_FovScaling(double width, double height, double fov)
 	double engineAspectRatio = width / height;
 	double defaultAscpectRatio = 4.0 / 3.0;
 	double ratio = engineAspectRatio / defaultAscpectRatio;
-	const double ratioMin = 1.85 * 4.0 / 3.0;
+	const double ratioMin = 1.85 / (4.0 / 3.0);
 	if(ratio > ratioMin) ratio = ratioMin;
 	double halfAngle = 0.5 * fov * (2.0 * M_PI / 360.0);
 	double t = ratio * tan(halfAngle);
@@ -140,7 +140,7 @@ double Sdk2013Restricted_InverseFovScaling(double width, double height, double f
 	double engineAspectRatio = width / height;
 	double defaultAscpectRatio = 4.0 / 3.0;
 	double ratio = engineAspectRatio / defaultAscpectRatio;
-	const double ratioMin = 1.85 * 4.0 / 3.0;
+	const double ratioMin = 1.85 / (4.0 / 3.0);
 	if(ratio > ratioMin) ratio = ratioMin;
 	double t = tan(0.5 * fov * (2.0 * M_PI / 360.0));
 	double halfAngle = atan(t / ratio);
