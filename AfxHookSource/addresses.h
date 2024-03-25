@@ -6,9 +6,10 @@ enum SourceSdkVer
 {
 	SourceSdkVer_Unknonw,
 	SourceSdkVer_CSGO,
-	SourceSdkVer_CSSV34,
 	SourceSdkVer_TF2,
 	SourceSdkVer_CSS,
+	SourceSdkVer_CSSV34,
+	SourceSdkVer_CSSV84,
 	SourceSdkVer_SWARM,
 	SourceSdkVer_L4D2,
 	SourceSdkVer_BM,

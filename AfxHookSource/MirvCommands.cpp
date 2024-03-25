@@ -2812,8 +2812,8 @@ CON_COMMAND(mirv_fix, "Various fixes")
 	Tier0_Msg(
 		"mirv_fix panoramaTiming [...]\n"
 	);
-	Tier0_Msg(
-		"mirv_fix suppressHostError 0|1 - https://github.com/ValveSoftware/Source-1-Games/issues/3112"
+	if(AFXADDR_GET(engine_HostError)) Tier0_Msg(
+		"mirv_fix suppressHostError 0|1"
 	);
 }
 

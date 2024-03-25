@@ -136,12 +136,15 @@ bool g_bFirstSwapBuffersCallForFrame = false;
 extern WrpVEngineClient * g_VEngineClient;
 
 bool CssGetEngineIsWindowedMode() {
-	if(g_SourceSdkVer == SourceSdkVer_CSS) {
-		if(auto pEngine = g_VEngineClient->GetVEngineClient_css()) {
-			void **pVtable = *(void***)pEngine;
-			bool (__fastcall * fnIsWindowedMode)(void* This, void * Edx) = (bool (__fastcall *)(void*, void*))pVtable[134];
-			return fnIsWindowedMode(pEngine,0);
-		}
+	switch(g_SourceSdkVer) {
+		case SourceSdkVer_CSSV84:
+		case SourceSdkVer_CSS:
+			if(auto pEngine = g_VEngineClient->GetVEngineClient_css()) {
+				void **pVtable = *(void***)pEngine;
+				bool (__fastcall * fnIsWindowedMode)(void* This, void * Edx) = (bool (__fastcall *)(void*, void*))pVtable[134];
+				return fnIsWindowedMode(pEngine,0);
+			}
+			break;
 	}
 	return true;
 }
@@ -161,6 +164,7 @@ FovScaling GetDefaultFovScaling() {
 	case SourceSdkVer_L4D2:
 	case SourceSdkVer_Momentum:
 		return FovScaling_AlienSwarm;
+	case SourceSdkVer_CSSV84:
 	case SourceSdkVer_CSS:
 		{
 			static SOURCESDK::CSS::ConVar * m_pConVar_sv_restrict_aspect_ratio_fov = nullptr;
@@ -639,7 +643,17 @@ int __fastcall new_CVClient_Init_Unknown(void* This, void* Edx, SOURCESDK::Creat
 	if (bFirstCall) {
 		bFirstCall = false;
 
-		MySetup(appSystemFactory, (g_SourceSdkVer == SourceSdkVer_CSS ? new  WrpGlobalsCss(pGlobals) : new  WrpGlobalsOther(pGlobals)));
+		WrpGlobals * pWrpGlobals;
+		switch(g_SourceSdkVer) {
+			case SourceSdkVer_CSSV84:
+			case SourceSdkVer_CSS:
+				pWrpGlobals =  new  WrpGlobalsCss(pGlobals);
+				break;
+			default:
+				pWrpGlobals = new  WrpGlobalsOther(pGlobals);
+				break;
+		}
+		MySetup(appSystemFactory, pWrpGlobals);
 	}
 
 	return old_CVClient_Init_Unkown(This, Edx, AppSystemFactory_ForClient, physicsFactory, pGlobals);
@@ -1994,6 +2008,7 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 					AfxDetourPtr((PVOID*) & (vtable[2]), new_CVClient_Shutdown, (PVOID*)&old_CVClient_Shutdown);
 					AfxDetourPtr((PVOID*) & (vtable[35]), new_CVClient_FrameStageNotify_TF2, (PVOID*)&old_CVClient_FrameStageNotify_TF2);
 					break;
+				case SourceSdkVer_CSSV84:
 				case SourceSdkVer_CSS:
 					AfxDetourPtr((PVOID*)&(vtable[2]), new_CVClient_Shutdown, (PVOID*)&old_CVClient_Shutdown);
 					AfxDetourPtr((PVOID*)&(vtable[35]), new_CVClient_FrameStageNotify_CSS, (PVOID*)&old_CVClient_FrameStageNotify_CSS);
@@ -2036,9 +2051,8 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 			if (SOURCESDK::TF2::IClientTools* iface = (SOURCESDK::TF2::IClientTools*)old_Client_CreateInterface(SOURCESDK_TF2_VCLIENTTOOLS_INTERFACE_VERSION, NULL))
 				new CClientToolsMom(iface);
 		}
-		if (SourceSdkVer_CSS == g_SourceSdkVer)
+		if (SourceSdkVer_CSS == g_SourceSdkVer || SourceSdkVer_CSSV84 == g_SourceSdkVer)
 		{
-
 			if (SOURCESDK::CSS::IClientTools* iface = (SOURCESDK::CSS::IClientTools*)old_Client_CreateInterface(SOURCESDK_CSS_VCLIENTTOOLS_INTERFACE_VERSION, NULL))
 				new CClientToolsCss(iface);
 		}
@@ -2408,10 +2422,12 @@ void CommonHooks()
 					g_SourceSdkVer = SourceSdkVer_TF2;
 				else if (0 == _wcsicmp(L"csgo", game))
 					g_SourceSdkVer = SourceSdkVer_CSGO;
-				else if (0 == _wcsicmp(L"css", game))
-					g_SourceSdkVer = SourceSdkVer_CSS;
 				else if (0 == _wcsicmp(L"css_v34", game))
 					g_SourceSdkVer = SourceSdkVer_CSSV34;
+				else if (0 == _wcsicmp(L"css_v84", game))
+					g_SourceSdkVer = SourceSdkVer_CSSV84;
+				else if (0 == _wcsicmp(L"css", game))
+					g_SourceSdkVer = SourceSdkVer_CSS;
 				else if (0 == _wcsicmp(L"garrysmod", game))
 					g_SourceSdkVer = SourceSdkVer_Garrysmod;
 				else if (0 == _wcsicmp(L"swarm", game))

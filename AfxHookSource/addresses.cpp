@@ -789,15 +789,20 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 			void **vtable = (void **)FindClassVtable((HMODULE)engineDll, ".?AVCVideoMode_Common@@", 0, 0x0);
 			if(vtable) AFXADDR_SET(engine_CVideoMode_Common_WriteMovieFrame, (size_t)(vtable[26]));
 		} break;
-		case SourceSdkVer_CSS: {
-			// Checked 2024-01-05.
-			void **vtable = (void **)FindClassVtable((HMODULE)engineDll, ".?AVCVideoMode_Common@@", 0, 0x0);
-			if(vtable) AFXADDR_SET(engine_CVideoMode_Common_WriteMovieFrame, (size_t)(vtable[26]));
-		} break;
 		case SourceSdkVer_CSSV34: {
 			// Checked 2024-01-05.
 			void **vtable = (void **)FindClassVtable((HMODULE)engineDll, ".?AVCVideoMode_Common@@", 0, 0x0);
 			if(vtable) AFXADDR_SET(engine_CVideoMode_Common_WriteMovieFrame, (size_t)(vtable[22]));
+		} break;
+		case SourceSdkVer_CSSV84: {
+			// Checked 2024-03-25.
+			void **vtable = (void **)FindClassVtable((HMODULE)engineDll, ".?AVCVideoMode_Common@@", 0, 0x0);
+			if(vtable) AFXADDR_SET(engine_CVideoMode_Common_WriteMovieFrame, (size_t)(vtable[26]));
+		} break;
+		case SourceSdkVer_CSS: {
+			// Checked 2024-01-05.
+			void **vtable = (void **)FindClassVtable((HMODULE)engineDll, ".?AVCVideoMode_Common@@", 0, 0x0);
+			if(vtable) AFXADDR_SET(engine_CVideoMode_Common_WriteMovieFrame, (size_t)(vtable[26]));
 		} break;
 		case SourceSdkVer_Insurgency2: {
 			// Checked 2024-01-05.
@@ -820,6 +825,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 	// engine_CallHostError_CL_PreserveExistingEntity
 	{
 		switch(sourceSdkVer) {
+			//case SourceSdkVer_CSSV84:
 			case SourceSdkVer_CSS:
 			case SourceSdkVer_TF2: { // Checked 2024-03-22
 				ImageSectionsReader sections((HMODULE)engineDll);
@@ -2728,14 +2734,6 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 									else ErrorBox(MkErrStr(__FILE__, __LINE__));	
 								}
 								break;
-							case SourceSdkVer_CSS:
-								{
-									MemRange result = FindPatternString(textRange.And(MemRange(refStrAddr - 0x3a, refStrAddr -0x3a + 3)), "55 8B EC");
-									if(!result.IsEmpty())
-										AFXADDR_SET(css_client_C_BaseAnimating_RecordBones, result.Start);
-									else ErrorBox(MkErrStr(__FILE__, __LINE__));	
-								}
-								break;
 							case SourceSdkVer_CSSV34:
 								{
 									MemRange result = FindPatternString(textRange.And(MemRange(refStrAddr - 0x1e, refStrAddr -0x1e + 6)), "81 EC 9C 00 00 00");
@@ -2743,6 +2741,15 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 										AFXADDR_SET(cssv34_client_C_BaseAnimating_RecordBones, result.Start);
 										AFXADDR_SET(cssv34_client_C_BaseAnimating_m_BoneAccessor_m_pBones, 0x4A8);
 									}
+									else ErrorBox(MkErrStr(__FILE__, __LINE__));	
+								}
+								break;
+							case SourceSdkVer_CSSV84:
+							case SourceSdkVer_CSS:
+								{
+									MemRange result = FindPatternString(textRange.And(MemRange(refStrAddr - 0x3a, refStrAddr -0x3a + 3)), "55 8B EC");
+									if(!result.IsEmpty())
+										AFXADDR_SET(css_client_C_BaseAnimating_RecordBones, result.Start);
 									else ErrorBox(MkErrStr(__FILE__, __LINE__));	
 								}
 								break;
@@ -3029,15 +3036,20 @@ void Addresses_InitMaterialsystemDll(AfxAddr materialsystemDll, SourceSdkVer sou
 			materialsystem_GetRenderCallQueue_vtable_offset = 147;
 			AFXADDR_SET(materialsystem_CFunctor_vtable_size, 4);
 			break;
-		case SourceSdkVer_CSS:
-			// Checked 2023-09-16.
-			materialsystem_GetRenderCallQueue_vtable_offset = 143;
-			AFXADDR_SET(materialsystem_CFunctor_vtable_size, 4);
-			break;
 		case SourceSdkVer_CSSV34:
 			// Checked 2023-09-16.
 			// this game is non-queued.
 			materialsystem_GetRenderCallQueue_vtable_offset = -1;
+			break;
+		case SourceSdkVer_CSSV84:
+			// Checked 2024-03-25.
+			materialsystem_GetRenderCallQueue_vtable_offset = 138;
+			AFXADDR_SET(materialsystem_CFunctor_vtable_size, 4);
+			break;
+		case SourceSdkVer_CSS:
+			// Checked 2023-09-16.
+			materialsystem_GetRenderCallQueue_vtable_offset = 143;
+			AFXADDR_SET(materialsystem_CFunctor_vtable_size, 4);
 			break;
 		case SourceSdkVer_Insurgency2:
 			// Checked 2023-09-16.
