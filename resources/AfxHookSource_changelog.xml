@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.125.0</version>
+<time>2024-02-25T12:35Z</time>
+<changes>
+<change type="added">Added support for mirv_block_commands in TF2 #898</change>
+<change type="fixed">Fixed CSS camio doesn't convert game fov #919</change>
+<change type="added">Added support for -afxGame css_v84, see #920 - will probably be removed after Valve fixes ValveSoftware/Source-1-Games#3112 ([CS:S] Demo playback becomes unusable due to &quot;Goto&quot; bug).</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.124.0</version>
 <time>2024-02-23T18:32Z</time>
 <changes>

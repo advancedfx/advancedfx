@@ -4,6 +4,19 @@
 <changelog>
 
 
+
+<release>
+<name>HLAE</name>
+<version>2.156.0</version>
+<time>2024-02-25T12:35Z</time>
+<changes>
+<change type="updated">Included AfxHookSource 1.125.0 (2024-02-25T12:35Z).</change>
+<change type="updated">Updated HLAE Installer (HLAE_Setup.exe) to WiX Toolset v3.14.1. Older WiX Toolset versions released have a vulnerability that can be used for privelege escalation by a malicious user on your system: https://wixtoolset.org/news/2024/03/22/wix-security-releases-available/</change>
+<change type="updated">Updated installer FFMPEG version to 6.1 of https://github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2024-02-29-13-02</change>
+</changes>
+</release>
+
+
 <release>
 <name>HLAE</name>
 <version>2.155.1</version>

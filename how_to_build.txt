@@ -19,7 +19,7 @@ Notice:
 	We used gettext0.20.1-iconv1.16-shared-64.exe .
 	
 [X] Install WiX Toolset from https://github.com/wixtoolset/wix3/releases
-	We used WiX Toolset v3.11.2.
+	We used WiX Toolset v3.14.1 (wix314.exe).
 
 [X] Obtain the HLAE source code from https://github.com/advancedfx/advancedfx into a
     folder you like, we'll call it <HLAESRC> from now on (by that I mean
