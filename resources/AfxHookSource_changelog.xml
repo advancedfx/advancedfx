@@ -4,6 +4,17 @@
 <changelog>
 
 
+
+<release>
+<name>AfxHookSource</name>
+<version>1.125.1</version>
+<time>2024-02-25T17:17Z</time>
+<changes>
+<change type="fixed">Fixed #921 CSSV84 sv_restrict_aspect_ratio_fov 1 is not working correctly with HLAE fov scaling.</change>
+</changes>
+</release>
+
+
 <release>
 <name>AfxHookSource</name>
 <version>1.125.0</version>

@@ -138,6 +138,12 @@ extern WrpVEngineClient * g_VEngineClient;
 bool CssGetEngineIsWindowedMode() {
 	switch(g_SourceSdkVer) {
 		case SourceSdkVer_CSSV84:
+			if(auto pEngine = g_VEngineClient->GetVEngineClient_css()) {
+				void **pVtable = *(void***)pEngine;
+				bool (__fastcall * fnIsWindowedMode)(void* This, void * Edx) = (bool (__fastcall *)(void*, void*))pVtable[133];
+				return fnIsWindowedMode(pEngine,0);
+			}
+			break;
 		case SourceSdkVer_CSS:
 			if(auto pEngine = g_VEngineClient->GetVEngineClient_css()) {
 				void **pVtable = *(void***)pEngine;
