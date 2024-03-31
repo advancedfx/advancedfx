@@ -65,7 +65,7 @@ public:
 				size = 1;
 			} else {
 				for(size_t j=1; j < size; j++) {		
-					if((ptr[i+j] & 0xC0) != 0x8) {
+					if((ptr[i+j] & 0xC0) != 0x80) {
 						// following octets must be 0x10xxxxxx, so  this is invalid.
 						ptr[i] = '\0';
 						bEndReached = true;
