@@ -1200,6 +1200,14 @@ int new_CCS2_Client_Init(void* This) {
 	return result;
 }
 
+typedef void(* CCS2_Client_Shutdown_t)(void* This);
+CCS2_Client_Shutdown_t old_CCS2_Client_Shutdown;
+void new_CCS2_Client_Shutdown(void* This) {
+
+	old_CCS2_Client_Shutdown(This);
+}
+
+
 typedef void * (* CS2_Client_SetGlobals_t)(void* This, void * pGlobals);
 CS2_Client_SetGlobals_t old_CS2_Client_SetGlobals;
 void *  new_CS2_Client_SetGlobals(void* This, void * pGlobals) {
@@ -1284,6 +1292,7 @@ void CS2_HookClientDllInterface(void * iface)
 
 	AfxDetourPtr((PVOID *)&(vtable[0]), new_CCS2_Client_Connect, (PVOID*)&old_CCS2_Client_Connect);
 	AfxDetourPtr((PVOID *)&(vtable[3]), new_CCS2_Client_Init, (PVOID*)&old_CCS2_Client_Init);
+	AfxDetourPtr((PVOID *)&(vtable[4]), new_CCS2_Client_Shutdown, (PVOID*)&old_CCS2_Client_Shutdown);
 	AfxDetourPtr((PVOID *)&(vtable[11]), new_CS2_Client_SetGlobals, (PVOID*)&old_CS2_Client_SetGlobals);
 	AfxDetourPtr((PVOID *)&(vtable[32]), new_CS2_Client_LevelInitPreEntity, (PVOID*)&old_CS2_Client_LevelInitPreEntity);
 	AfxDetourPtr((PVOID *)&(vtable[33]), new_CS2_Client_FrameStageNotify, (PVOID*)&old_CS2_Client_FrameStageNotify);
@@ -1491,15 +1500,33 @@ CAfxImportsHook g_Import_filesystem_steam(CAfxImportsHooks({
 	&g_Import_filesystem_steam_KERNEL32 }));
 
 
-CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR)> g_Import_engine2_KERNEL32_LoadLibraryA("LoadLibraryA", &new_LoadLibraryA);
-CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR, HANDLE, DWORD)> g_Import_engine2_KERNEL32_LoadLibraryExA("LoadLibraryExA", &new_LoadLibraryExA);
+//CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR)> g_Import_engine2_KERNEL32_LoadLibraryA("LoadLibraryA", &new_LoadLibraryA);
+//CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR, HANDLE, DWORD)> g_Import_engine2_KERNEL32_LoadLibraryExA("LoadLibraryExA", &new_LoadLibraryExA);
 
-CAfxImportDllHook g_Import_engine2_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
-	&g_Import_engine2_KERNEL32_LoadLibraryA
-	, &g_Import_engine2_KERNEL32_LoadLibraryExA }));
+//CAfxImportDllHook g_Import_engine2_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
+//	&g_Import_engine2_KERNEL32_LoadLibraryA
+//	, &g_Import_engine2_KERNEL32_LoadLibraryExA }));
+
+void * New_SteamInternal_FindOrCreateUserInterface(void*pUser, const char * pIntervaceName);
+
+CAfxImportFuncHook<void*(*)(void *, const char *)> g_Import_engine2_steam_api64_SteamInternal_FindOrCreateUserInterface("SteamInternal_FindOrCreateUserInterface", &New_SteamInternal_FindOrCreateUserInterface);
+
+void * New_SteamInternal_FindOrCreateUserInterface(void*pUser, const char * pInterfaceName) {
+	if(0 == strcmp(pInterfaceName,"STEAMREMOTESTORAGE_INTERFACE_VERSION016")) {
+		if (int idx = g_CommandLine->FindParam(L"-afxDisableSteamStorage")) {
+			return nullptr;
+		}
+	}
+	
+	return g_Import_engine2_steam_api64_SteamInternal_FindOrCreateUserInterface.GetTrueFuncValue()(pUser,pInterfaceName);
+}
+
+CAfxImportDllHook g_Import_engine2_steam_api64("steam_api64.dll", CAfxImportDllHooks({
+	&g_Import_engine2_steam_api64_SteamInternal_FindOrCreateUserInterface }));
 
 CAfxImportsHook g_Import_engine2(CAfxImportsHooks({
-	&g_Import_engine2_KERNEL32 }));
+	//&g_Import_engine2_KERNEL32,
+	&g_Import_engine2_steam_api64 }));
 
 CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR)> g_Import_materialsystem2_KERNEL32_LoadLibraryA("LoadLibraryA", &new_LoadLibraryA);
 CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR, HANDLE, DWORD)> g_Import_materialsystem2_KERNEL32_LoadLibraryExA("LoadLibraryExA", &new_LoadLibraryExA);
@@ -1602,6 +1629,12 @@ CAfxImportDllHook g_Import_inputsystem_USER32("USER32.dll", CAfxImportDllHooks({
 
 CAfxImportsHook g_Import_inputsystem(CAfxImportsHooks({
 	&g_Import_inputsystem_USER32 }));
+
+//CAfxImportDllHook g_Import_client_steam_api64("steam_api64.dll", CAfxImportDllHooks({
+//	&g_Import_client_steam_api64_SteamInternal_FindOrCreateUserInterface }));
+//
+//CAfxImportsHook g_Import_client(CAfxImportsHooks({
+//&g_Import_client_steam_api64 }));
 
 void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 {
@@ -1776,7 +1809,7 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 
 		HookEngineDll(hModule);
 
-		//g_Import_engine2.Apply(hModule);
+		g_Import_engine2.Apply(hModule);
 	}
 	/*else if(bFirstMaterialsystem2 && StringEndsWithW( lpLibFileName, L"materialsystem2.dll"))
 	{
@@ -1795,6 +1828,8 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		bFirstClient = false;
 
 		g_H_ClientDll = hModule;
+
+		//if(!g_Import_client.Apply(hModule)) ErrorBox("client.dll steam_api64 hooks failed.");
 
 		HookClientDll(hModule);
 	}
