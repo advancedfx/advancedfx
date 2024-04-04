@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.10.0</version>
+<time>2024-04-04T17:02Z</time>
+<changes>
+<change type="added">Added #926 command line launch option -afxDisableSteamStorage for disabling Steam cloud syncing (useful to be combined with USRLOCALCSGO environment variable).</change>
+<change type="fixed">Fixed #925 Unicode HLAE print bug in CS2.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.9.1</version>
 <time>2024-02-27T19:57Z</time>
 <changes>
