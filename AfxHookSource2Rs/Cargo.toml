@@ -1,0 +1,28 @@
+[workspace]
+
+[lib]
+crate_type = ["staticlib"]
+
+[package]
+name = "afx_hook_source2_rs"
+version = "0.1.0"
+authors = ["advancedfx.org <contact@advancedfx.org>"]
+license = "MIT"
+homepage = "https://github.com/advancedfx"
+repository = "https://github.com/advancedfx/advancedfx"
+edition = "2021"
+
+[dependencies]
+async-tungstenite = { version = "0.25.0", features = ["async-std-runtime"] }
+boa_engine = "0.18.0"
+boa_gc = "0.18.0"
+futures = "0.3.30"
+pollster = "0.3.0"
+
+[profile.release]
+strip = true
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+

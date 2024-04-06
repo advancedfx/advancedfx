@@ -5,6 +5,7 @@
 #include "hlaeFolder.h"
 #include "RenderSystemDX11Hooks.h"
 #include "WrpConsole.h"
+#include "AfxHookSource2Rs.h"
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
 #include "../deps/release/prop/AfxHookSource/SourceInterfaces.h"
@@ -1197,12 +1198,15 @@ int new_CCS2_Client_Init(void* This) {
 
 	WrpRegisterCommands();
 
+	AfxHookSource2Rs_Engine_Init();
+
 	return result;
 }
 
 typedef void(* CCS2_Client_Shutdown_t)(void* This);
 CCS2_Client_Shutdown_t old_CCS2_Client_Shutdown;
 void new_CCS2_Client_Shutdown(void* This) {
+	AfxHookSource2Rs_Engine_Shutdown();
 
 	old_CCS2_Client_Shutdown(This);
 }
@@ -1278,6 +1282,7 @@ void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameSta
 
 	switch(curStage) {
 	case SOURCESDK::CS2::FRAME_RENDER_START:
+		AfxHookSource2Rs_Engine_RunJobQueue();
 		g_CommandSystem.OnExecuteCommands();
 		break;
 	}

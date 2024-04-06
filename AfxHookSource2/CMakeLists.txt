@@ -47,6 +47,8 @@ add_dependencies(${PROJECT_NAME}
     AfxHookSource2Shaders
 )
 
+corrosion_import_crate(MANIFEST_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../AfxHookSource2Rs/Cargo.toml)
+
 #set_target_properties(
 #    ${PROJECT_NAME}
 #    PROPERTIES 
@@ -80,8 +82,8 @@ target_link_directories(${PROJECT_NAME} PRIVATE
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     IlmImf-2_5$<$<CONFIG:Debug>:_d>.lib
+    afx_hook_source2_rs
 )
-
 
 target_sources(${PROJECT_NAME} PRIVATE
     ../deps/release/Detours/src/detours.cpp
@@ -164,6 +166,9 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/MirvInput.h
     ../shared/MirvSkip.cpp
     ../shared/MirvSkip.h
+
+    AfxHookSource2Rs.cpp
+    AfxHookSource2Rs.h
 
     AfxShaders.cpp
     AfxShaders.h

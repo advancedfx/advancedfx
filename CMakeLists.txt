@@ -117,6 +117,17 @@ include(FetchContent)
 include(ExternalProject)
 
 #
+# Setup "corrosion" for including Rust code in our projects:
+#
+
+FetchContent_Declare(
+    Corrosion
+    GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git
+    GIT_TAG v0.4.7
+)
+FetchContent_MakeAvailable(Corrosion)
+
+#
 # Project setup
 #
 
