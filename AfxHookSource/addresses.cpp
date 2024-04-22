@@ -2755,7 +2755,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 								break;
 							case SourceSdkVer_TF2:
 								{
-									MemRange result = FindPatternString(textRange.And(MemRange(refStrAddr - 0x3b, refStrAddr -0x3b + 3)), "55 8B EC");
+									MemRange result = FindPatternString(textRange.And(MemRange(refStrAddr - 0x3a, refStrAddr -0x3a + 3)), "55 8B EC");
 									if(!result.IsEmpty())
 										AFXADDR_SET(tf2_client_C_BaseAnimating_RecordBones, result.Start);
 									else ErrorBox(MkErrStr(__FILE__, __LINE__));	
