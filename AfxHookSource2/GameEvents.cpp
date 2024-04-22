@@ -4,10 +4,12 @@
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
 #include "../deps/release/prop/cs2/sdk_src/public/igameevents.h"
-#include "../deps/release/prop/cs2/sdk_src/public/tier1/KeyValues.h"
+#include "../deps/release/prop/cs2/sdk_src/public/tier1/utlstring.h"
 
 #include "../shared/AfxConsole.h"
 #include "../shared/binutils.h"
+
+#include "AfxHookSource2Rs.h"
 
 #include <Windows.h>
 #include "../deps/release/Detours/src/detours.h"
@@ -38,34 +40,16 @@ CGameEventManager_FreeEvent_t g_CGameEventManager_FreeEvent = nullptr;
 CGameEventManager_FireEvent_t g_Old_CGameEventManager_FireEvent = nullptr;
 CGameEventManager_FireEventClientSide_t g_Old_CGameEventManager_FireEventClientSide = nullptr;
 
-extern const char * GetStringForSymbol(int value);
+//extern const char * GetStringForSymbol(int value);
 
-typedef const char * (__fastcall * KeyValues_GetName_t)(SOURCESDK::CS2::KeyValues * This);
-typedef unsigned long long int (__fastcall * KeyValues_GetInt_t)(SOURCESDK::CS2::KeyValues * This, const char * keyName, unsigned long long int defaultValue);
-typedef SOURCESDK::CS2::KeyValues * (__fastcall * KeyValues_GetFirstSubKey_t)(SOURCESDK::CS2::KeyValues * This);
-typedef SOURCESDK::CS2::KeyValues * (__fastcall * KeyValues_GetNextKey_t)(SOURCESDK::CS2::KeyValues * This);
-typedef void (__fastcall * DebugPrintKV3_t)(const struct KeyValues3 *);
+//typedef void ( * DebugPrintKV3_t)(const struct KeyValues3 *);
+typedef bool ( * SaveKV3AsJSON_t)( const struct SOURCESDK::CS2::KeyValues3* kv, SOURCESDK::CS2::CUtlString* error, SOURCESDK::CS2::CUtlString* output );
 
-DebugPrintKV3_t g_DebugPrintKV3 = nullptr;
-KeyValues_GetName_t g_KeyValues_GetName = nullptr;
-KeyValues_GetInt_t g_KeyValues_GetInt = nullptr;
-KeyValues_GetFirstSubKey_t g_KeyValues_GetFirstSubKey = nullptr;
-KeyValues_GetNextKey_t g_KeyValues_GetNextKey = nullptr;
+//DebugPrintKV3_t g_DebugPrintKV3 = nullptr;
+SaveKV3AsJSON_t g_SaveKV3AsJSON = nullptr;
 
-void DumpGameEventKeys(SOURCESDK::CS2::KeyValues * keys, int depth) {
-    while (keys)
-    {
-        if(auto subKeys = g_KeyValues_GetFirstSubKey(keys))
-            DumpGameEventKeys(subKeys, depth + 1);
-        else {
-            for(int i = 0; i < depth; i++) advancedfx::Message("\t");
-            advancedfx::Message("%s\n",g_KeyValues_GetName(keys));
-        }
-        keys = g_KeyValues_GetNextKey(keys);
-    }
-}
 
-void DumpGameEvent(SOURCESDK::CS2::CGameEvent *event) {
+void SendGameEvent(SOURCESDK::CS2::CGameEvent *event) {
 
     static bool firstRun = true;
     if(firstRun) {
@@ -73,26 +57,16 @@ void DumpGameEvent(SOURCESDK::CS2::CGameEvent *event) {
 		HMODULE hModule = GetModuleHandleA("tier0.dll");
 		if (hModule)
 		{
-            g_DebugPrintKV3 = (DebugPrintKV3_t)GetProcAddress(hModule,"?DebugPrintKV3@@YAXPEBVKeyValues3@@@Z");
-			g_KeyValues_GetName = (KeyValues_GetName_t)GetProcAddress(hModule, "?GetName@KeyValues@@QEBAPEBDXZ");
-			g_KeyValues_GetInt = (KeyValues_GetInt_t)GetProcAddress(hModule, "?GetInt@KeyValues@@QEBAHPEBDH@Z");
-			g_KeyValues_GetFirstSubKey = (KeyValues_GetFirstSubKey_t)GetProcAddress(hModule, "?GetFirstSubKey@KeyValues@@QEBAPEAV1@XZ");
-            g_KeyValues_GetNextKey = (KeyValues_GetNextKey_t)GetProcAddress(hModule, "?GetNextKey@KeyValues@@QEBAPEAV1@XZ");
+            //g_DebugPrintKV3 = (DebugPrintKV3_t)GetProcAddress(hModule,"?DebugPrintKV3@@YAXPEBVKeyValues3@@@Z");
+			g_SaveKV3AsJSON = (SaveKV3AsJSON_t)GetProcAddress(hModule, "?SaveKV3AsJSON@@YA_NPEBVKeyValues3@@PEAVCUtlString@@1@Z");
 		}        
     }
 
-    advancedfx::Message("Event: \"%s\" (%i)", event->GetName(), event->GetID());
+    SOURCESDK::CS2::CUtlString error;
+    SOURCESDK::CS2::CUtlString output;
 
-    g_DebugPrintKV3((struct KeyValues3 *)(event->GetDataKeys()));
-
-    //DumpGameEventKeys(event->GetDataKeys(), 1);
-
-    //if (SOURCESDK::CS2::CGameEventDescriptor * descriptor = event->m_pDescriptor)
-	//{
-        //DumpGameEventKeys(descriptor->keys, 1);
-    //}
-
-    advancedfx::Message("\n"); 
+    if(g_SaveKV3AsJSON(event->GetDataKeys(),&error,&output) && nullptr != output) AfxHookSourceRs_Engine_OnGameEvent(event->GetName(), event->GetID(), output.Get());
+    else advancedfx::Warning("Event: \"%s\" (%i): SaveKV3AsJSON failed: \"%s\"\n", event->GetName(), event->GetID(),error.Get() ? error.Get() : "[nullptr]");
 }
 
 bool New_CGameEventManager_FireEvent( void * This, SOURCESDK::CS2::CGameEvent *event, bool bDontBroadcast /*= false*/ ) {
@@ -103,12 +77,12 @@ bool New_CGameEventManager_FireEvent( void * This, SOURCESDK::CS2::CGameEvent *e
     return g_Old_CGameEventManager_FireEvent(This, event, bDontBroadcast);
 }
 
-bool g_bDebugGameClientEvents = false;
+extern bool g_b_on_game_event;
 
 bool New_CGameEventManager_FireEventClientSide( void * This, SOURCESDK::CS2::CGameEvent *event ) {
     g_pGameEventManager = This;
 
-    if(g_bDebugGameClientEvents) DumpGameEvent(event);
+    if(g_b_on_game_event) SendGameEvent(event);
 
     return g_Old_CGameEventManager_FireEventClientSide(This, event);
 }

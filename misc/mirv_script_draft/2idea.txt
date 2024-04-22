@@ -10,7 +10,7 @@ mirv.loadScript('....');
 mirv.onCViewRenderSetUpView = function(e) {
 	e.currentView
 	e.gameView
-	e.lastView	
+	e.lastView
 	e.width
 	e.height
 	e.curTime

@@ -105,11 +105,16 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../deps/release/prop/cs2/sdk_src/public/tier1/convar.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/iconvar.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/KeyValues.h
+    ../deps/release/prop/cs2/sdk_src/public/tier1/strtools.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/utlmemory.cpp
     ../deps/release/prop/cs2/sdk_src/public/tier1/utlmemory.h
+    ../deps/release/prop/cs2/sdk_src/public/tier1/utlstring.cpp
+    ../deps/release/prop/cs2/sdk_src/public/tier1/utlstring.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/utlvector.h
     ../deps/release/prop/cs2/sdk_src/public/vstdlib/IKeyValuesSystem.h
     ../deps/release/prop/cs2/sdk_src/public/cdll_int.h    
+    ../deps/release/prop/cs2/sdk_src/public/const.h    
+    ../deps/release/prop/cs2/sdk_src/public/entityhandle.h    
     ../deps/release/prop/cs2/sdk_src/public/icvar.h    
     ../deps/release/prop/cs2/sdk_src/public/igameevents.h    
     ../deps/release/prop/cs2/sdk_src/public/igameuiservice.h    
@@ -175,6 +180,9 @@ target_sources(${PROJECT_NAME} PRIVATE
 
     CampathDrawer.cpp
     CampathDrawer.h
+
+    ClientEntitySystem.cpp
+    ClientEntitySystem.h
 
     GameEvents.cpp
     GameEvents.h
