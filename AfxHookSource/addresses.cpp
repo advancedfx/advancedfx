@@ -661,7 +661,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 	if (SourceSdkVer_CSGO == sourceSdkVer || SourceSdkVer_TF2 == sourceSdkVer)
 	{
 		// csgo_engine_Cmd_ExecuteCommand: // Checked 2019-11-11.
-		// tf2_engine_Cmd_ExecuteCommand: // Checked 2024-08-03.
+		// tf2_engine_Cmd_ExecuteCommand: // Checked 2024-21-04.
 		{
 			DWORD addr = 0;
 			DWORD strAddr = 0;
@@ -691,7 +691,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 				MemRange result = FindBytes(baseRange, (char const *)&strAddr, sizeof(strAddr));
 				if (!result.IsEmpty())
 				{
-					addr = result.Start - (SourceSdkVer_CSGO == sourceSdkVer ? 0x79 : 0x69);
+					addr = result.Start - (SourceSdkVer_CSGO == sourceSdkVer ? 0x79 : 0xF1);
 
 					// check for pattern to see if it is the right address:
 					unsigned char pattern[3] = { 0x55, 0x8B, 0xEC};
