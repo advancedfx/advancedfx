@@ -7,7 +7,7 @@
 <release>
 <name>AfxHookSource</name>
 <version>1.126.0</version>
-<time>2024-02-22T12:46Z</time>
+<time>2024-04-22T12:46Z</time>
 <changes>
 <change type="fixed">Adjusted to TF2 update. For now please use the 32bit tf.exe in bin folder with AfxHookSource.dll. Fixes #928 AfxHookSource.dll is no longer loading after tf2 64bit update. Merged #929 Update various signatures for TF2 from Hold on! aka @cademtz (Thank you!).</change>
 </changes>
