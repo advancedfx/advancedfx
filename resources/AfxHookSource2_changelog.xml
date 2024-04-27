@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.11.0</version>
+<time>2024-04-27T16:43Z</time>
+<changes>
+<change type="added">Adjusted to CS2 update: Fixes #932 Camera Swapped when adding new one.</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.10.0</version>
 <time>2024-04-04T17:02Z</time>
 <changes>
