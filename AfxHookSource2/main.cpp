@@ -58,6 +58,15 @@ FovScaling GetDefaultFovScaling() {
 	return FovScaling_AlienSwarm;
 }
 
+void PrintInfo() {
+	advancedfx::Message(
+		"|" "\n"
+		"| AfxHookSource2 (" __DATE__ " " __TIME__ ")" "\n"
+		"| https://advancedfx.org/" "\n"
+		"|" "\n"
+	);
+}
+
 int g_nIgnoreNextDisconnects = 0;
 
 typedef void (*Unknown_ExecuteClientCommandFromNetChan_t)(void * Ecx, void * Edx, void *R8);
@@ -170,6 +179,10 @@ float interpolation_amount_get(void)
 	}
 
 	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +13*4) : 0;
+}
+
+CON_COMMAND(__mirv_info,"") {
+	PrintInfo();
 }
 
 CON_COMMAND(__mirv_test,"") {
@@ -1210,6 +1223,8 @@ int new_CCS2_Client_Init(void* This) {
 	int result = old_CCS2_Client_Init(This);
 
 	WrpRegisterCommands();
+
+	PrintInfo();
 
 	return result;
 }
