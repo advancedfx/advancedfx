@@ -661,7 +661,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 	if (SourceSdkVer_CSGO == sourceSdkVer || SourceSdkVer_TF2 == sourceSdkVer)
 	{
 		// csgo_engine_Cmd_ExecuteCommand: // Checked 2019-11-11.
-		// tf2_engine_Cmd_ExecuteCommand: // Checked 2024-08-03.
+		// tf2_engine_Cmd_ExecuteCommand: // Checked 2024-21-04.
 		{
 			DWORD addr = 0;
 			DWORD strAddr = 0;
@@ -691,7 +691,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 				MemRange result = FindBytes(baseRange, (char const *)&strAddr, sizeof(strAddr));
 				if (!result.IsEmpty())
 				{
-					addr = result.Start - (SourceSdkVer_CSGO == sourceSdkVer ? 0x79 : 0x69);
+					addr = result.Start - (SourceSdkVer_CSGO == sourceSdkVer ? 0x79 : 0xF1);
 
 					// check for pattern to see if it is the right address:
 					unsigned char pattern[3] = { 0x55, 0x8B, 0xEC};
@@ -786,7 +786,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		} break;
 		case SourceSdkVer_TF2: {
 			// Checked 2024-01-05.
-			void **vtable = (void **)FindClassVtable((HMODULE)engineDll, ".?AVCVideoMode_Common@@", 0, 0x0);
+			void **vtable = (void **)FindClassVtable((HMODULE)engineDll, ".?AVCVideoMode_MaterialSystem@@", 0, 0x0);
 			if(vtable) AFXADDR_SET(engine_CVideoMode_Common_WriteMovieFrame, (size_t)(vtable[26]));
 		} break;
 		case SourceSdkVer_CSSV34: {
@@ -822,7 +822,8 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		}
 	}
 
-	// engine_CallHostError_CL_PreserveExistingEntity
+	// engine_HostError
+	//
 	{
 		switch(sourceSdkVer) {
 			//case SourceSdkVer_CSSV84:
@@ -2708,6 +2709,8 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 	AFXADDR_SET(cstrike_gpGlobals_OFS_interval_per_tick, 7*4);
 
 	// C_BaseAnimating_RecordBones
+	//
+	// tf2_client_C_BaseAnimating_RecordBones // Checked 2024-04-22
 	{
 		ImageSectionsReader sections((HMODULE)clientDll);
 		if (!sections.Eof())
@@ -2755,7 +2758,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 								break;
 							case SourceSdkVer_TF2:
 								{
-									MemRange result = FindPatternString(textRange.And(MemRange(refStrAddr - 0x3b, refStrAddr -0x3b + 3)), "55 8B EC");
+									MemRange result = FindPatternString(textRange.And(MemRange(refStrAddr - 0x3a, refStrAddr -0x3a + 3)), "55 8B EC");
 									if(!result.IsEmpty())
 										AFXADDR_SET(tf2_client_C_BaseAnimating_RecordBones, result.Start);
 									else ErrorBox(MkErrStr(__FILE__, __LINE__));	
@@ -3032,8 +3035,8 @@ void Addresses_InitMaterialsystemDll(AfxAddr materialsystemDll, SourceSdkVer sou
 			AFXADDR_SET(materialsystem_CFunctor_vtable_size, 4);
 			break;
 		case SourceSdkVer_TF2:
-			// Checked 2023-09-16.
-			materialsystem_GetRenderCallQueue_vtable_offset = 147;
+			// Checked 2024-04-22.
+			materialsystem_GetRenderCallQueue_vtable_offset = 148;
 			AFXADDR_SET(materialsystem_CFunctor_vtable_size, 4);
 			break;
 		case SourceSdkVer_CSSV34:
@@ -3089,16 +3092,24 @@ void Addresses_InitMaterialsystemDll(AfxAddr materialsystemDll, SourceSdkVer sou
 				if (vtable_addr)
 				{
 					AfxAddr tmpAddr = (size_t)*(void**)vtable_addr;
-					/* We search the first call inside the function (ignoring interface calls to AddRef / Release):
-		call    sub_10013A70			
-					*/
-					MemRange result = FindPatternString(MemRange(tmpAddr, tmpAddr + 0x40).And(textRange), "E8 ?? ?? ?? ??");
-					if (!result.IsEmpty()) {
-						AfxAddr tmpAddr2 = ((size_t)*(void**)(result.Start + 1)) + result.Start + 5;
-						if(!MemRange::FromSize(tmpAddr2,sizeof(void*)).And(textRange).IsEmpty()) {
-							AFXADDR_SET(materialsystem_CMatCallQueue_QueueFunctor, tmpAddr2);
-						} else ErrorBox(MkErrStr(__FILE__, __LINE__));
-					} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+					switch(sourceSdkVer) {
+					case SourceSdkVer_TF2:
+						AFXADDR_SET(materialsystem_CMatCallQueue_QueueFunctor, tmpAddr); // If this chnanges, then this offset in MaterialSystemHooks.cpp for pQueueFunctorInternal needs to be changed!
+						break;
+					default:
+						{
+							/* We search the first call inside the function (ignoring interface calls to AddRef / Release):
+				call    sub_10013A70			
+							*/
+							MemRange result = FindPatternString(MemRange(tmpAddr, tmpAddr + 0x40).And(textRange), "E8 ?? ?? ?? ??");
+							if (!result.IsEmpty()) {
+								AfxAddr tmpAddr2 = ((size_t)*(void**)(result.Start + 1)) + result.Start + 5;
+								if(!MemRange::FromSize(tmpAddr2,sizeof(void*)).And(textRange).IsEmpty()) {
+									AFXADDR_SET(materialsystem_CMatCallQueue_QueueFunctor, tmpAddr2);
+								} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+							} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+						} break;
+					}
 				} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 			}	
 		}

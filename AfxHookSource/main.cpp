@@ -2474,6 +2474,10 @@ void CommonHooks()
 		{
 			g_SourceSdkVer = SourceSdkVer_Insurgency2;
 		}
+		else if (StringIEndsWith(filePath, "tf.exe"))
+		{
+			g_SourceSdkVer = SourceSdkVer_TF2;
+		}		
 		else if (int gameIdx = g_CommandLine->FindParam(L"-game"))
 		{
 			++gameIdx;

@@ -13,7 +13,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3.6.0
-    - uses: MinoruSekine/setup-scoop@main
+    - uses: MinoruSekine/setup-scoop@v4
 
     - name: Update submodules
       run: git submodule update --init --recursive

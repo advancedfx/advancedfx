@@ -60,6 +60,15 @@ FovScaling GetDefaultFovScaling() {
 	return FovScaling_AlienSwarm;
 }
 
+void PrintInfo() {
+	advancedfx::Message(
+		"|" "\n"
+		"| AfxHookSource2 (" __DATE__ " " __TIME__ ")" "\n"
+		"| https://advancedfx.org/" "\n"
+		"|" "\n"
+	);
+}
+
 int g_nIgnoreNextDisconnects = 0;
 
 typedef void (*Unknown_ExecuteClientCommandFromNetChan_t)(void * Ecx, void * Edx, void *R8);
@@ -130,8 +139,18 @@ SOURCESDK::CS2::ISource2EngineToClient * g_pEngineToClient = nullptr;
 typedef void * Cs2Gloabls_t;
 Cs2Gloabls_t g_pGlobals = nullptr;
 
+struct {
+	bool IsPaused = false;
+	float FirstPausedCurtime = 0.0f;
+	float FirstPausedInterpolationAmount = 0.0f;
+} g_DemoPausedData;
+
 float curtime_get(void)
 {
+	if(g_DemoPausedData.IsPaused) {
+		return g_DemoPausedData.FirstPausedCurtime;
+	}
+
 	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals + 11*4) : 0;
 }
 
@@ -157,7 +176,15 @@ float interval_per_tick_get(void)
 
 float interpolation_amount_get(void)
 {
+	if(g_DemoPausedData.IsPaused) {
+		return g_DemoPausedData.FirstPausedInterpolationAmount;
+	}
+
 	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +13*4) : 0;
+}
+
+CON_COMMAND(__mirv_info,"") {
+	PrintInfo();
 }
 
 CON_COMMAND(__mirv_test,"") {
@@ -1241,6 +1268,8 @@ int new_CCS2_Client_Init(void* This) {
 
 	AfxHookSource2Rs_Engine_Init();
 
+	PrintInfo();
+
 	return result;
 }
 
@@ -1321,8 +1350,27 @@ typedef void (* CS2_Client_FrameStageNotify_t)(void* This, SOURCESDK::CS2::Clien
 CS2_Client_FrameStageNotify_t old_CS2_Client_FrameStageNotify;
 void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameStage_t curStage) {
 
+	// React to demo being paused / unpaused to work around Valve's new bandaid client time "fix":
+	bool bIsDemoPaused = false;
+	if(g_pEngineToClient) {
+		if(SOURCESDK::CS2::IDemoFile * pDemoFile = g_pEngineToClient->GetDemoFile()) {
+			if(pDemoFile->IsPlayingDemo())
+				bIsDemoPaused = pDemoFile->IsDemoPaused();
+		}
+	}
+	if(bIsDemoPaused != g_DemoPausedData.IsPaused) {
+		if(bIsDemoPaused) {
+			g_DemoPausedData.FirstPausedCurtime = curtime_get();
+			g_DemoPausedData.FirstPausedInterpolationAmount = interpolation_amount_get();
+			g_DemoPausedData.IsPaused = true;
+		} else {
+			g_DemoPausedData.IsPaused = false;
+		}
+	}	
+
 	switch(curStage) {
 	case SOURCESDK::CS2::FRAME_RENDER_START:
+		// This apparently doesn't get called when demo is paused.
 		g_CommandSystem.OnExecuteCommands();
 		break;
 	}
@@ -1349,8 +1397,8 @@ void CS2_HookClientDllInterface(void * iface)
 	AfxDetourPtr((PVOID *)&(vtable[3]), new_CCS2_Client_Init, (PVOID*)&old_CCS2_Client_Init);
 	AfxDetourPtr((PVOID *)&(vtable[4]), new_CCS2_Client_Shutdown, (PVOID*)&old_CCS2_Client_Shutdown);
 	AfxDetourPtr((PVOID *)&(vtable[11]), new_CS2_Client_SetGlobals, (PVOID*)&old_CS2_Client_SetGlobals);
-	AfxDetourPtr((PVOID *)&(vtable[32]), new_CS2_Client_LevelInitPreEntity, (PVOID*)&old_CS2_Client_LevelInitPreEntity);
-	AfxDetourPtr((PVOID *)&(vtable[33]), new_CS2_Client_FrameStageNotify, (PVOID*)&old_CS2_Client_FrameStageNotify);
+	AfxDetourPtr((PVOID *)&(vtable[34]), new_CS2_Client_LevelInitPreEntity, (PVOID*)&old_CS2_Client_LevelInitPreEntity);
+	AfxDetourPtr((PVOID *)&(vtable[35]), new_CS2_Client_FrameStageNotify, (PVOID*)&old_CS2_Client_FrameStageNotify);
 }
 
 SOURCESDK::CreateInterfaceFn old_Client_CreateInterface = 0;
