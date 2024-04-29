@@ -47,6 +47,12 @@ void ** g_pEntityList = nullptr;
 GetHighestEntityHandle_t  g_GetHighestEntityHandle = nullptr;
 GetEntityFromIndex_t g_GetEntityFromIndex = nullptr;
 
+/*
+cl_track_render_eye_angles 1
+cl_ent_absbox 192
+cl_ent_viewoffset 192
+*/
+
 // CEntityInstance: Root class for all entities
 class CEntityInstance {
 public:
@@ -57,7 +63,7 @@ public:
         return "";
     }
 
-    // Retrieved from script function.
+    // Retrieved from script function.   
     const char * GetDebugName() {
         const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x18);
         if(pszName) return pszName;
@@ -74,10 +80,64 @@ public:
         return "";
     }
 
-    // 0x508 GetRenderEyeAngles
-
     // Retrieved from script function.
     // GetEntityHandle ...
+
+    bool IsPlayerPawn() {
+        // See cl_ent_text drawing function.
+        return ((bool (__fastcall *)(void *)) (*(void***)this)[143]) (this);
+    }
+
+    SOURCESDK::CS2::CBaseHandle GetPlayerPawnHandle() {
+        // See cl_ent_text drawing function.
+        return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + 0x604));
+    }
+
+    bool IsPlayerController() {
+        // See cl_ent_text drawing function.
+        return ((bool (__fastcall *)(void *)) (*(void***)this)[144]) (this);    
+    }
+
+    SOURCESDK::CS2::CBaseHandle GetPlayerControllerHandle() {
+        // See cl_ent_text drawing function.
+        return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + 0x1294));
+    }
+
+    unsigned int GetHealth() {
+        // See cl_ent_text drawing function.
+        return ((unsigned int (__fastcall *)(void *)) (*(void***)this)[156]) (this); 
+    }
+
+    /// @return FLOAT_MAX if invalid
+    float GetX() {
+        // See cl_ent_text drawing function.
+        return (*(float *)((unsigned char *)this + 0x138));
+    }
+    /// @return FLOAT_MAX if invalid
+    float GetY() {
+        // See cl_ent_text drawing function.
+        return (*(float *)((unsigned char *)this + 0x13c));
+    }
+    /// @return FLOAT_MAX if invalid
+    float GetZ() {
+        // See cl_ent_text drawing function.
+        return (*(float *)((unsigned char *)this + 0x140));
+    }
+
+    void GetRenderEyeOrigin(float outAngles[3]) {
+        // GetRenderEyeAngles vtable offset minus 1
+        ((void (__fastcall *)(void *,float outAngles[3])) (*(void***)this)[160]) (this,outAngles);
+    }
+
+    void GetRenderEyeAngles(float outAngles[3]) {
+        // See cl_track_render_eye_angles.
+        ((void (__fastcall *)(void *,float outAngles[3])) (*(void***)this)[161]) (this,outAngles);
+    }
+
+    CEntityInstance * GetViewEntity() {
+        // Debug code related to cl_ent_viewoffset.
+        return ((CEntityInstance * (__fastcall *)(void *)) (*(void***)this)[99]) (this);
+    }
 };
 
 bool Hook_ClientEntitySystem( void* pEntityList, void * pFnGetHighestEntityHandle, void * pFnGetEntityFromIndex ) {
@@ -99,7 +159,11 @@ CON_COMMAND(__mirv_listentities, "") {
     int highestIndex = g_GetHighestEntityHandle(*g_pEntityList).GetEntryIndex();
     for(int i = 0; i < highestIndex + 1; i++) {
         if(auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,i)) {
-            advancedfx::Message("%i: %s / %s / %s\n", i, ent->GetName(), ent->GetDebugName(), ent->GetClassName());
+            float origin[3];
+            float angles[3];
+            ent->GetRenderEyeOrigin(origin);
+            ent->GetRenderEyeAngles(angles);
+            advancedfx::Message("%i: %s / %s / %s [%f,%f,%f / %f,%f,%f] %i HP\n", i, ent->GetName(), ent->GetDebugName(), ent->GetClassName(), origin[0], origin[1], origin[2], angles[0], angles[1], angles[2], ent->GetHealth());
         }
     }
 }

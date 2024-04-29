@@ -59,8 +59,8 @@ wsConsole.on('close', function close() {
 
 wsConsole.on('line', function line(data) {
   if (ws) {
-	//ws.send(new Uint8Array(Buffer.from('exec\0'+data.trim()+'\0','utf8')),{binary: true});
-	ws.send(data);
+	  //ws.send(new Uint8Array(Buffer.from('exec\0'+data.trim()+'\0','utf8')),{binary: true});
+	  ws.send(data);
   }
 });
 
@@ -79,7 +79,7 @@ wss.on('connection', function(newWs) {
 		if (typeof data == "string") {
 			wsConsole.print(data);
 		}
-        if (data instanceof Buffer)
+    if (data instanceof Buffer)
 		{
 			wsConsole.print(data.toString());
 		}

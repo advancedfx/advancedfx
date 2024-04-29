@@ -123,7 +123,7 @@ include(ExternalProject)
 FetchContent_Declare(
     Corrosion
     GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git
-    GIT_TAG v0.4.7
+    GIT_TAG d5bdbfacb4d2c013f7bebabc6c95a118dc1e9fe1 # v0.4.8
 )
 FetchContent_MakeAvailable(Corrosion)
 
