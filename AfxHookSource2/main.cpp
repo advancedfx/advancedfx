@@ -982,7 +982,7 @@ void HookClientDll(HMODULE clientDll) {
 .text:000000018076F3E0                 mov     edx, 0FFFFFFFFh
 	*/
 	{
-		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8B 0D ?? ?? ?? ?? 48 8B 01 FF 90 18 01 00 00 48 8B AC 24 48 09 00 00 0F 57 F6 84 C0 74 77 BA FF FF FF FF");
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8B 0D ?? ?? ?? ?? 48 8B 01 FF 90 30 01 00 00 48 8B AC 24 48 09 00 00 0F 57 F6 84 C0 74 77 BA FF FF FF FF");
 		if (!result.IsEmpty()) {
 			/*
 				These are the top 16 bytes we change to:
