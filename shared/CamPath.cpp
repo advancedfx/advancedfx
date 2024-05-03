@@ -201,6 +201,16 @@ bool CamPath::Enabled_get(void)
 	return m_Enabled;
 }
 
+bool CamPath::GetHold(void)
+{
+	return m_Hold;
+}
+
+void CamPath::SetHold(bool value)
+{
+	m_Hold = value;
+}
+
 void CamPath::PositionInterpMethod_set(DoubleInterp value)
 {
 	delete m_XInterp;
@@ -405,6 +415,8 @@ bool CamPath::Save(wchar_t const * fileName)
 		cam->append_attribute(doc.allocate_attribute("fovInterp", DoubleInterp_ToString(m_FovInterpMethod)));
 	if (m_Offset)
 		cam->append_attribute(doc.allocate_attribute("offset", double2xml(doc, m_Offset)));
+	if (m_Hold)
+		cam->append_attribute(doc.allocate_attribute("hold"));
 	doc.append_node(cam);
 
 	rapidxml::xml_node<> * pts = doc.allocate_node(rapidxml::node_element, "points");
@@ -520,6 +532,10 @@ bool CamPath::Load(wchar_t const * fileName)
 				rapidxml::xml_attribute<>* offsetA = cur_node->first_attribute("offset");
 				double offset = offsetA ? atof(offsetA->value()) : 0.0;
 				SetOffset(offset);
+
+				rapidxml::xml_attribute<> * holdA = cur_node->first_attribute("hold");
+				bool bHold = nullptr != holdA;
+				SetHold(bHold);
 
 				cur_node = cur_node->first_node("points");
 				if(!cur_node) break;

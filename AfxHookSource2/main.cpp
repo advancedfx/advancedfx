@@ -645,6 +645,10 @@ bool CS2_Client_CSetupView_Trampoline_IsPlayingDemo(void *ThisCViewSetup) {
 	if (g_CamPath.Enabled_get() && g_CamPath.CanEval())
 	{
 		double campathCurTime = curTime - g_CamPath.GetOffset();
+		if(g_CamPath.GetHold()) {
+			if(campathCurTime > g_CamPath.GetUpperBound()) campathCurTime = g_CamPath.GetUpperBound();
+			else if(campathCurTime < g_CamPath.GetLowerBound()) campathCurTime = g_CamPath.GetLowerBound();
+		}
 
 		// no extrapolation:
 		if (g_CamPath.GetLowerBound() <= campathCurTime && campathCurTime <= g_CamPath.GetUpperBound())
@@ -1257,6 +1261,50 @@ CON_COMMAND(mirv_cvar_unhide_all, "Unlocks cmds and cvars.") {
 	}
 	
 	advancedfx::Message("==== Cvars total: %i (Cvars unhidden: %i) ====\n",total,nUnhidden);
+}
+
+CON_COMMAND(mirv_cvar_unlock_sv_cheats, "Unlocks sv_cheats on client (as much as possible).") {
+	int total = 0;
+	int nUnhidden = 0;
+	for(size_t i = 0; i < 65536; i++ )
+	{
+		SOURCESDK::CS2::CCmd * cmd = SOURCESDK::CS2::g_pCVar->GetCmd(i);
+		if(nullptr == cmd) break;
+		int nFlags = cmd->GetFlags();
+		if(nFlags == 0x400) break;
+		total++;
+		if(nFlags & (FCVAR_CHEAT)) {
+//			fprintf(f1,"[+] %lli: 0x%08x: %s : %s\n", i, cmd->m_nFlags, cmd->m_pszName, cmd->m_pszHelpString);
+			cmd->SetFlags(nFlags &= ~(int)(FCVAR_CHEAT));
+			nUnhidden++;
+		} else {
+//			fprintf(f1,"[ ] %lli: 0x%08x: %s : %s\n", i, cmd->m_nFlags, cmd->m_pszName, cmd->m_pszHelpString);
+		}
+	}
+	advancedfx::Message("==== Cmds total: %i (Cmds unlocked: %i) ====\n",total,nUnhidden);
+
+	total = 0;
+	nUnhidden = 0;
+	for(size_t i = 0; i < 65536; i++ )
+	{
+		SOURCESDK::CS2::Cvar_s * cvar = SOURCESDK::CS2::g_pCVar->GetCvar(i);
+		if(nullptr == cvar) break;
+		total++;
+		if(cvar->m_nFlags & (FCVAR_CHEAT)) {
+//			fprintf(f1,"[+] %lli: 0x%08x: %s : %s\n", i, cvar->m_nFlags, cvar->m_pszName, cvar->m_pszHelpString);
+			cvar->m_nFlags &= ~(int)(FCVAR_CHEAT);
+			nUnhidden++;
+		} else {
+//			fprintf(f1,"[ ] %lli: 0x%08x: %s : %s\n", i, cvar->m_nFlags, cvar->m_pszName, cvar->m_pszHelpString);
+		}
+		if(0 == strcmp("sv_cheats",cvar->m_pszName)) {
+			cvar->m_nFlags &= ~(int)(FCVAR_REPLICATED|FCVAR_NOTIFY);
+			cvar->m_nFlags |= FCVAR_CLIENTDLL;
+			cvar->m_Value.m_bValue = true;			
+		}
+	}
+	
+	advancedfx::Message("==== Cvars total: %i (Cvars unlocked: %i) ====\n",total,nUnhidden);
 }
 
 typedef int(* CCS2_Client_Init_t)(void* This);

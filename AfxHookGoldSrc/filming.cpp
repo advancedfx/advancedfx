@@ -341,7 +341,12 @@ void Filming::OnR_RenderView(float vieworg[3], float viewangles[3], float & fov)
 
 	if(m_CamPath.Enabled_get() && m_CamPath.CanEval())
 	{
-		double time = Mirv_GetDemoTimeOrClientTime();
+		double time = Mirv_GetDemoTimeOrClientTime() - m_CamPath.GetOffset();
+
+		if(m_CamPath.GetHold()) {
+			if(time > m_CamPath.GetUpperBound()) time = m_CamPath.GetUpperBound();
+			else if(time < m_CamPath.GetLowerBound()) time = m_CamPath.GetLowerBound();
+		}		
 
 		// no extrapolation:
 		if(m_CamPath.GetLowerBound() <= time && time <= m_CamPath.GetUpperBound())

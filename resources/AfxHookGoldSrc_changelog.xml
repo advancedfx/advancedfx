@@ -3,6 +3,18 @@
 
 <changelog>
 
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.23.0</version>
+<time>2024-05-03T17:45Z</time>
+<changes>
+<change type="fixed">Fixed mirv_campath offset not working.</change>
+<change type="added">Added mirv_campath hold.</change>
+</changes>
+</release>
+
+
 <release>
 <name>AfxHookGoldSrc</name>
 <version>2.22.0</version>

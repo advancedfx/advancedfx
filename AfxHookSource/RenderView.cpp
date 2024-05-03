@@ -323,7 +323,10 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 			if (m_CamPath.Enabled_get() && m_CamPath.CanEval())
 			{
 				double campathCurTime = curTime - m_CamPath.GetOffset();
-
+				if(m_CamPath.GetHold()) {
+					if(campathCurTime > m_CamPath.GetUpperBound()) campathCurTime = m_CamPath.GetUpperBound();
+					else if(campathCurTime < m_CamPath.GetLowerBound()) campathCurTime = m_CamPath.GetLowerBound();
+				}
 				// no extrapolation:
 				if (m_CamPath.GetLowerBound() <= campathCurTime && campathCurTime <= m_CamPath.GetUpperBound())
 				{
