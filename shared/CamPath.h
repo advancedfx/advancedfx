@@ -81,6 +81,9 @@ public:
 	void Enabled_set(bool enable);
 	bool Enabled_get(void);
 
+	bool GetHold(void);
+	void SetHold(bool value);
+
 	void PositionInterpMethod_set(DoubleInterp value);
 	DoubleInterp PositionInterpMethod_get(void);
 
@@ -196,6 +199,7 @@ private:
 	}
 
 	bool m_Enabled;
+	bool m_Hold = false;
 	DoubleInterp m_PositionInterpMethod;
 	QuaternionInterp m_RotationInterpMethod;
 	DoubleInterp m_FovInterpMethod;

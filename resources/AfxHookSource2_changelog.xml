@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.13.0</version>
+<time>2024-05-03T17:45Z</time>
+<changes>
+<change type="added">Added mirv_campath hold.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.12.0</version>
 <time>2024-05-01T08:19Z</time>
 <changes>

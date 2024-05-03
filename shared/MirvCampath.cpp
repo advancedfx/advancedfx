@@ -1030,6 +1030,22 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 			conMessage("%s offset none - disables it\n", args->ArgV(0));
 			return;
 		}
+		else if (0 == _stricmp("hold", subcmd))
+		{
+			if(3 == argc) {
+				bool value = 0 != atoi(args->ArgV(2));
+				camPath->SetHold(value);
+				return;
+			}
+
+			conMessage(
+				"%s hold 0|1 - Whether to hold the campath at start and end (1) or not (0, default).\n"
+				"Current value: %i\n"
+				, args->ArgV(0)
+				, camPath->GetHold() ? 1 : 0
+			);
+			return;			
+		}		
 	}
 
 	conMessage("%s add - Adds current demotime and view as keyframe.\n", args->ArgV(0));
@@ -1043,5 +1059,6 @@ void MirvCampath_ConCommand(advancedfx::ICommandArgs* args, advancedfx::Con_Prin
 	conMessage("%s edit [...] - Edit properties of the path [or selected keyframes].\n", args->ArgV(0));
 	conMessage("%s select [...] - Keyframe selection.\n", args->ArgV(0));
 	conMessage("%s offset [...] - Offset campath.\n", args->ArgV(0));
+	conMessage("%s hold [...]\n", args->ArgV(0));
 	return;
 }
