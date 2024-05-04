@@ -69,6 +69,8 @@ void PrintInfo() {
 	);
 }
 
+void * g_pGameResourceService = nullptr;
+
 int g_nIgnoreNextDisconnects = 0;
 
 typedef void (*Unknown_ExecuteClientCommandFromNetChan_t)(void * Ecx, void * Edx, void *R8);
@@ -1198,12 +1200,7 @@ int new_CCS2_Client_Connect(void* This, SOURCESDK::CreateInterfaceFn appSystemFa
 		if (g_pGameUIService = (SOURCESDK::CS2::IGameUIService*)appSystemFactory(SOURCESDK_CS2_GAMEUISERVICE_INTERFACE_VERSION, NULL)) {
 		}
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
-/*
-		if(g_pSceneSystem = (void*)appSystemFactory("SceneSystem_002", NULL)) {
-			void ** vtable = *(void***)g_pSceneSystem;
-			AfxDetourPtr((PVOID *)&(vtable[26]), New_CSceneSystem_WaitForRenderingToComplete, (PVOID*)&g_Old_CSceneSystem_WaitForRenderingToComplete);
-		}
-		else ErrorBox(MkErrStr(__FILE__, __LINE__));*/
+
 	}
 
 	return old_CCS2_Client_Connect(This, appSystemFactory);
@@ -1311,6 +1308,8 @@ typedef int(* CCS2_Client_Init_t)(void* This);
 CCS2_Client_Init_t old_CCS2_Client_Init;
 int new_CCS2_Client_Init(void* This) {
 	int result = old_CCS2_Client_Init(This);
+
+	if(!Hook_ClientEntitySystem2()) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 	WrpRegisterCommands();
 

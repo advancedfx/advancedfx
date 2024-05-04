@@ -11,9 +11,9 @@
 
 //#include "AfxHookSource2Rs.h"
 
-//#define WIN32_LEAN_AND_MEAN
-//#include <Windows.h>
-//#include "../deps/release/Detours/src/detours.h"
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#include "../deps/release/Detours/src/detours.h"
 
 
 class CGameEntitySystem {
@@ -140,6 +140,27 @@ public:
     }
 };
 
+typedef void* (__fastcall * OnAddEntity_t)(void* This, CEntityInstance* pInstance, SOURCESDK::uint32 handle);
+OnAddEntity_t g_Org_OnAddEntity = nullptr;
+
+void* __fastcall New_OnAddEntity(void* This, CEntityInstance* pInstance, SOURCESDK::uint32 handle) {
+    void * result =  g_Org_OnAddEntity(This,pInstance,handle);
+    return result;
+}
+
+typedef void* (__fastcall * OnRemoveEntity_t)(void* This, CEntityInstance* inst, SOURCESDK::uint32 handle);
+OnRemoveEntity_t g_Org_OnRemoveEntity = nullptr;
+
+void* __fastcall New_OnRemoveEntity(void* This, CEntityInstance* pInstance, SOURCESDK::uint32 handle) {
+    void * result =  g_Org_OnRemoveEntity(This,pInstance,handle);
+    return result;
+}
+
+#define STRINGIZE(x) STRINGIZE2(x)
+#define STRINGIZE2(x) #x
+#define MkErrStr(file,line) "Problem in " file ":" STRINGIZE(line)
+extern void ErrorBox(char const * messageText);
+
 bool Hook_ClientEntitySystem( void* pEntityList, void * pFnGetHighestEntityHandle, void * pFnGetEntityFromIndex ) {
     static bool firstResult = false;
     static bool firstRun = true;
@@ -155,6 +176,25 @@ bool Hook_ClientEntitySystem( void* pEntityList, void * pFnGetHighestEntityHandl
     return firstResult;
 }
 
+bool Hook_ClientEntitySystem2() {
+    static bool firstResult = false;
+    static bool firstRun = true;
+
+    if(g_pEntityList && *g_pEntityList) {
+        // https://github.com/bruhmoment21/cs2-sdk
+        void ** vtable = **(void****)g_pEntityList;
+        g_Org_OnAddEntity = (OnAddEntity_t)vtable[14];
+        g_Org_OnRemoveEntity = (OnRemoveEntity_t)vtable[15];
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourAttach(&(PVOID&)g_Org_OnAddEntity, New_OnAddEntity);
+        DetourAttach(&(PVOID&)g_Org_OnRemoveEntity, New_OnRemoveEntity);
+        firstResult = NO_ERROR == DetourTransactionCommit();                
+    }
+
+    return firstResult;    
+}
+
 CON_COMMAND(__mirv_listentities, "") {
     int highestIndex = g_GetHighestEntityHandle(*g_pEntityList).GetEntryIndex();
     for(int i = 0; i < highestIndex + 1; i++) {
@@ -165,5 +205,6 @@ CON_COMMAND(__mirv_listentities, "") {
             ent->GetRenderEyeAngles(angles);
             advancedfx::Message("%i: %s / %s / %s [%f,%f,%f / %f,%f,%f] %i HP\n", i, ent->GetName(), ent->GetDebugName(), ent->GetClassName(), origin[0], origin[1], origin[2], angles[0], angles[1], angles[2], ent->GetHealth());
         }
+        else advancedfx::Message("%i:\n",i);
     }
 }
