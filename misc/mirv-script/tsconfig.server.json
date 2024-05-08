@@ -1,0 +1,13 @@
+{
+	"compilerOptions": {
+		"target": "ES6",
+		"lib": ["ESNext", "DOM"],
+		"module": "ESNext",
+		"moduleResolution": "Node",
+		"forceConsistentCasingInFileNames": true,
+		"strict": true,
+		"esModuleInterop": true,
+		"outDir": "dist"
+	},
+	"include": ["src/server.ts"]
+}
