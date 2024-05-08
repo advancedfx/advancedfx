@@ -50,6 +50,16 @@ export type AfxHookSourceView = {
 	fov: number;
 };
 
+export type AfxHookSourceViewSet = {
+	x?: number;
+	y?: number;
+	z?: number;
+	rX?: number;
+	rY?: number;
+	rZ?: number;
+	fov?: number;
+};
+
 export interface Mirv {
 	connect_async: (address: string) => Promise<{ in: WsInOut; out: WsInOut }>;
 	onGameEvent: (e: GameEvent) => void;
@@ -72,7 +82,7 @@ declare const mirv: Mirv;
 let wsAddress = 'ws://localhost:31337/mirv';
 let wsEnable = true;
 let tickCount = 0;
-let setView: AfxHookSourceView | null = null;
+let setView: AfxHookSourceViewSet | null = null;
 let mirvFlags = {
 	gameEvents: false,
 	cViewRenderSetupView: false
@@ -148,7 +158,7 @@ export const main = (flags?: MirvFlags, address?: wsAddress) => {
 									mirv.message(message.toString() + '\n');
 									const messageObj = JSON.parse(message) as {
 										type: string;
-										data: string | AfxHookSourceView;
+										data: string | AfxHookSourceViewSet;
 									};
 									const types = [
 										'exec',
@@ -183,13 +193,13 @@ export const main = (flags?: MirvFlags, address?: wsAddress) => {
 											}
 											if (
 												typeof messageObj.data !== 'string' &&
-												'x' in messageObj.data &&
-												'y' in messageObj.data &&
-												'z' in messageObj.data &&
-												'rX' in messageObj.data &&
-												'rY' in messageObj.data &&
-												'rZ' in messageObj.data &&
-												'fov' in messageObj.data
+												('x' in messageObj.data ||
+													'y' in messageObj.data ||
+													'z' in messageObj.data ||
+													'rX' in messageObj.data ||
+													'rY' in messageObj.data ||
+													'rZ' in messageObj.data ||
+													'fov' in messageObj.data)
 											) {
 												setView = messageObj.data;
 											} else {

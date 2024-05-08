@@ -20,7 +20,7 @@ Available commands:
 -   `{"type": "quit"}`
 -   `{"type": "exec", "data": "command"}`
 -   `{"type": "getLastView"}`
--   `{"type": "setView", "data": {"x": 1, "y": 2, "z": 3, "rX": 4, "rY": 5, "rZ": 6, "fov": 7}}`
+-   `{"type": "setView", "data": {"x": 1, "y": 2, "z": 3, "rX": 4, "rY": 5, "rZ": 6, "fov": 7}}`. Values are optional. If some not set, current is used.
 -   `{"type": "gameEvents", "data": "true"}`
 -   `{"type": "gameEvents", "data": "false"}`
 -   `{"type": "cViewRenderSetupView", "data": "true"}`
