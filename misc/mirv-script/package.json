@@ -8,11 +8,11 @@
 	"engines": {
 		"node": "22.1.0"
 	},
-	"type": "module",
 	"scripts": {
 		"eslint": "eslint . --ext .ts --ignore-pattern=.gitignore,.eslintignore",
 		"compile": "rollup -c",
-		"server": "tsc --project tsconfig.server.json && node dist/server.js"
+		"server": "tsc --project tsconfig.scripts.json && node dist/server.js",
+		"compile-scripts": "tsc --project tsconfig.scripts.json"
 	},
 	"devDependencies": {
 		"@rollup/plugin-commonjs": "^25.0.7",
@@ -29,6 +29,8 @@
 		"typescript": "^5.4.5"
 	},
 	"dependencies": {
+		"simple-websockets": "^1.3.1",
+		"simple-websockets-server": "^1.3.1",
 		"ws": "^8.17.0"
 	}
 }

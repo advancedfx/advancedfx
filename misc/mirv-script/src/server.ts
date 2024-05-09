@@ -1,6 +1,7 @@
 import http from 'http';
-import { WebSocket, WebSocketServer } from 'ws';
-
+import { SimpleWebSocket, SimpleWebSocketServer } from 'simple-websockets-server';
+import { WebSocket } from 'ws';
+import { MirvMessage, events } from './types';
 const serverOptions = {
 	host: 'localhost',
 	port: 31337,
@@ -11,22 +12,21 @@ export class MirvServer {
 	host: string;
 	port: number;
 	path: string;
-	private users: Map<string, WebSocket>;
+	private users: Map<string, SimpleWebSocket>;
 	private hlae: WebSocket | null;
 	private server: http.Server;
-	private wss: WebSocketServer;
+	private wss: SimpleWebSocketServer;
 
 	constructor(options: { host: string; port: number; path: string }) {
 		this.host = options.host;
 		this.port = options.port;
 		this.path = options.path;
-		this.users = new Map<string, WebSocket>();
+		this.users = new Map<string, SimpleWebSocket>();
 		this.hlae = null;
 		this.server = http.createServer();
-		this.wss = new WebSocketServer({ server: this.server, path: this.path });
-		this.wss.on('connection', (socket, request) => {
-			console.log('/mirv	 connected');
-
+		this.wss = new SimpleWebSocketServer({ server: this.server, path: this.path });
+		// Accept here all users
+		this.wss.onConnection((socket, request) => {
 			const params = new URL(request.url || '', `wss://${request.headers.host}`).searchParams;
 			if (params.has('user')) {
 				const id = params.get('user');
@@ -34,38 +34,54 @@ export class MirvServer {
 				if (id) {
 					const localUser = this.users.get(id);
 					if (localUser) {
-						localUser.close();
+						localUser._socket.close();
 						this.users.delete(id);
 					}
 
-					socket.on('message', (data) => {
-						if (this.hlae) this.hlae.send(data.toString());
-					});
-					socket.on('close', () => {
+					socket.on('disconnect', () => {
 						console.log(`User ${id} disconnected`);
 						this.users.delete(id);
 					});
-					socket.on('error', (e) => {
-						socket.close();
+
+					socket.addListener('error', (e) => {
+						socket._socket.close();
+						this.users.delete(id);
 						console.error('Error: ' + e);
 					});
+
+					for (const event of events) {
+						socket.on(event, (data) => {
+							if (this.hlae) this.hlae.send(JSON.stringify({ type: event, data }));
+						});
+					}
 
 					this.users.set(id, socket);
 				}
 				return;
 			}
+		});
+		// Accept here only non user (hlae)
+		this.wss.on('connection', (socket, request) => {
+			const params = new URL(request.url || '', `wss://${request.headers.host}`).searchParams;
+			if (params.has('user')) return;
 
 			if (this.hlae) this.hlae.close();
 			this.hlae = socket;
+			console.log('HLAE connected');
 
-			this.hlae.on('message', function (data) {
-				if (typeof data === 'string') {
-					console.log(data);
-				}
-				if (data instanceof Buffer) {
-					console.log(data.toString());
+			this.hlae.on('message', (data) => {
+				const msg = typeof data === 'string' ? data : data.toString();
+				const msgObject = JSON.parse(msg) as MirvMessage;
+				console.log(msg);
+				if (events.includes(msgObject.type) || (msgObject.type as string) === 'warning') {
+					if (msgObject.data) {
+						this.users.forEach((user) => {
+							user.send(msgObject.type, msgObject.data);
+						});
+					}
 				}
 			});
+
 			this.hlae.on('close', function (code, reason) {
 				console.log('HLAE Connection closed: ' + code.toString() + ' / ' + reason);
 			});
@@ -83,10 +99,10 @@ export class MirvServer {
 	}
 
 	stop() {
-		this.server.close((err) => {
+		this.wss.close((err) => {
 			if (err) console.error(err);
 		});
-		this.wss.close((err) => {
+		this.server.close((err) => {
 			if (err) console.error(err);
 		});
 	}

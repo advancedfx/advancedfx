@@ -1,64 +1,12 @@
+import {
+	AfxHookSourceView,
+	AfxHookSourceViewSet,
+	GameEvent,
+	MirvEvents,
+	events,
+	onCViewRenderSetupView
+} from '../types';
 import { IWsConnection, WsConnection, WsInOut } from '../ws-connection/ws-connection';
-interface GameEvent {
-	id: string;
-	name: string;
-	data: string;
-}
-
-export type onCViewRenderSetupView = {
-	curTime: number;
-	absTime: number;
-	lastAbsTime: number;
-	currentView: {
-		x: number;
-		y: number;
-		z: number;
-		rX: number;
-		rY: number;
-		rZ: number;
-		fov: number;
-	};
-	gameView: {
-		x: number;
-		y: number;
-		z: number;
-		rX: number;
-		rY: number;
-		rZ: number;
-		fov: number;
-	};
-	lastView: {
-		x: number;
-		y: number;
-		z: number;
-		rX: number;
-		rY: number;
-		rZ: number;
-		fov: number;
-	};
-	width: number;
-	height: number;
-};
-
-export type AfxHookSourceView = {
-	x: number;
-	y: number;
-	z: number;
-	rX: number;
-	rY: number;
-	rZ: number;
-	fov: number;
-};
-
-export type AfxHookSourceViewSet = {
-	x?: number;
-	y?: number;
-	z?: number;
-	rX?: number;
-	rY?: number;
-	rZ?: number;
-	fov?: number;
-};
 
 export interface Mirv {
 	connect_async: (address: string) => Promise<{ in: WsInOut; out: WsInOut }>;
@@ -88,7 +36,7 @@ let mirvFlags = {
 	cViewRenderSetupView: false
 };
 
-export interface wsAddress {
+interface wsAddress {
 	host: string;
 	port: number;
 	path: string;
@@ -155,36 +103,41 @@ export const main = (flags?: MirvFlags, address?: wsAddress) => {
 						switch (typeof message) {
 							case 'string':
 								{
-									mirv.message(message.toString() + '\n');
+									// mirv.message(message.toString() + '\n');
 									const messageObj = JSON.parse(message) as {
-										type: string;
+										type: MirvEvents;
 										data: string | AfxHookSourceViewSet;
 									};
-									const types = [
-										'exec',
-										'quit',
-										'getLastView',
-										'setView',
-										'gameEvents',
-										'cViewRenderSetupView'
-									].join('\n');
 
 									switch (messageObj.type) {
 										case 'listTypes':
-											mirv.message('Available types:\n' + types + '\n');
-											// wsConnection.send('Available types:\n' + types + '\n');
+											mirv.message(
+												'Available types:\n' + events.join('\n') + '\n'
+											);
+											wsConnection.send(
+												JSON.stringify({ type: events[0], data: events })
+											);
 											break;
 										case 'exec':
 											if (typeof messageObj.data === 'string') {
 												mirv.exec(messageObj.data);
 											} else {
 												mirv.warning('exec error: expected string');
+												wsConnection.send(
+													JSON.stringify({
+														type: 'warning',
+														data: 'exec error: expected string'
+													})
+												);
 											}
 											break;
 										case 'getLastView':
-											if (!lastView) wsConnection.send('lastView is null');
-											if (lastView)
-												wsConnection.send(JSON.stringify(lastView));
+											wsConnection.send(
+												JSON.stringify({
+													type: events[3],
+													data: lastView
+												})
+											);
 											break;
 										case 'setView':
 											if (messageObj.data === null) {
@@ -206,6 +159,12 @@ export const main = (flags?: MirvFlags, address?: wsAddress) => {
 												mirv.warning(
 													'setView error: expected x,y,z,rX,rY,rZ,fov'
 												);
+												wsConnection.send(
+													JSON.stringify({
+														type: 'warning',
+														data: 'setView error: expected x,y,z,rX,rY,rZ,fov'
+													})
+												);
 											}
 											break;
 										case 'quit':
@@ -214,14 +173,9 @@ export const main = (flags?: MirvFlags, address?: wsAddress) => {
 											mirv.exec('quit');
 											break;
 										case 'gameEvents':
-											if (messageObj.data === 'true')
-												mirvFlags.gameEvents = true;
-											if (messageObj.data === 'false')
-												mirvFlags.gameEvents = false;
-											if (
-												messageObj.data !== 'true' &&
-												messageObj.data !== 'false'
-											)
+											if (typeof messageObj.data === 'boolean') {
+												mirvFlags.gameEvents = messageObj.data;
+											} else {
 												mirv.warning(
 													'onClientFrameStageNotify: Unknown gameEvents value: ' +
 														messageObj.data +
@@ -229,16 +183,23 @@ export const main = (flags?: MirvFlags, address?: wsAddress) => {
 														'Possible values are: true, false' +
 														'\n'
 												);
+												wsConnection.send(
+													JSON.stringify({
+														type: 'warning',
+														data:
+															'onClientFrameStageNotify: Unknown gameEvents value: ' +
+															messageObj.data +
+															'\n' +
+															'Possible values are: true, false' +
+															'\n'
+													})
+												);
+											}
 											break;
 										case 'cViewRenderSetupView':
-											if (messageObj.data === 'true')
-												mirvFlags.cViewRenderSetupView = true;
-											if (messageObj.data === 'false')
-												mirvFlags.cViewRenderSetupView = false;
-											if (
-												messageObj.data !== 'true' &&
-												messageObj.data !== 'false'
-											)
+											if (typeof messageObj.data === 'boolean') {
+												mirvFlags.cViewRenderSetupView = messageObj.data;
+											} else {
 												mirv.warning(
 													'onClientFrameStageNotify: Unknown cViewRenderSetupView value: ' +
 														messageObj.data +
@@ -246,12 +207,33 @@ export const main = (flags?: MirvFlags, address?: wsAddress) => {
 														'Possible values are: true, false' +
 														'\n'
 												);
+												wsConnection.send(
+													JSON.stringify({
+														type: 'warning',
+														data:
+															'onClientFrameStageNotify: Unknown cViewRenderSetupView value: ' +
+															messageObj.data +
+															'\n' +
+															'Possible values are: true, false' +
+															'\n'
+													})
+												);
+											}
 											break;
 										default:
 											mirv.warning(
 												'onClientFrameStageNotify: Unknown incoming message.type:' +
 													messageObj.type +
 													'\n'
+											);
+											wsConnection.send(
+												JSON.stringify({
+													type: 'warning',
+													data:
+														'onClientFrameStageNotify: Unknown incoming message.type:' +
+														messageObj.type +
+														'\n'
+												})
 											);
 											break;
 									}
@@ -261,6 +243,14 @@ export const main = (flags?: MirvFlags, address?: wsAddress) => {
 								mirv.warning(
 									'onClientFrameStageNotify: Warning: Unhandled incoming message of type: ' +
 										typeof message
+								);
+								wsConnection.send(
+									JSON.stringify({
+										type: 'warning',
+										data:
+											'onClientFrameStageNotify: Warning: Unhandled incoming message of type: ' +
+											typeof message
+									})
 								);
 								break;
 						}
@@ -291,16 +281,15 @@ export const main = (flags?: MirvFlags, address?: wsAddress) => {
 			if (null !== wsConnection) wsConnection.flush();
 		}
 	};
+
 	mirv.onGameEvent = function (e) {
 		// mirv.message("onGameEvent: "+e.name+"("+e.id+") \""+e.data+"\"\n");
 		if (null !== wsConnection && mirvFlags.gameEvents) {
 			try {
 				wsConnection.send(
 					JSON.stringify({
-						type: 'onGameEvent',
-						id: e.id,
-						name: e.name,
-						data: JSON.parse(e.data)
+						type: events[5],
+						data: e
 					})
 				);
 			} catch (err) {
@@ -315,7 +304,7 @@ export const main = (flags?: MirvFlags, address?: wsAddress) => {
 			try {
 				wsConnection.send(
 					JSON.stringify({
-						type: 'onCViewRenderSetupView',
+						type: events[6],
 						data: e
 					})
 				);
