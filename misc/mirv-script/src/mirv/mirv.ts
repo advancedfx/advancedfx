@@ -45,7 +45,7 @@ interface wsAddress {
 export const main = (flags?: MirvFlags, address?: wsAddress) => {
 	let wsConnection: IWsConnection | null = null;
 	if (flags) mirvFlags = flags;
-	if (address) wsAddress = `ws://${address.host}:${address.port}/${address.path}`;
+	if (address) wsAddress = `ws://${address.host}:${address.port}/${address.path}?hlae=1`;
 	let lastView: AfxHookSourceView;
 
 	mirv.onClientFrameStageNotify = function (e) {

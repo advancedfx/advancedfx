@@ -25,7 +25,7 @@ export class MirvServer {
 		this.hlae = null;
 		this.server = http.createServer();
 		this.wss = new SimpleWebSocketServer({ server: this.server, path: this.path });
-		// Accept here all users
+		// Accept here all users. Note it returns SimpleWebSocket.
 		this.wss.onConnection((socket, request) => {
 			const params = new URL(request.url || '', `wss://${request.headers.host}`).searchParams;
 			if (params.has('user')) {
@@ -60,10 +60,12 @@ export class MirvServer {
 				return;
 			}
 		});
-		// Accept here only non user (hlae)
+		// Accept here only hlae. Note it returns regular WebSocket.
 		this.wss.on('connection', (socket, request) => {
 			const params = new URL(request.url || '', `wss://${request.headers.host}`).searchParams;
-			if (params.has('user')) return;
+
+			if (!params.has('user') && !params.has('hlae')) socket.close();
+			if (!params.has('hlae')) return;
 
 			if (this.hlae) this.hlae.close();
 			this.hlae = socket;

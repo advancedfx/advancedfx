@@ -16,6 +16,8 @@ Node 22.1.0 is used.
 
 Note: client is based on [simple-websockets](https://github.com/osztenkurden/simple-websockets). Regular client won't work, unless you modify `server.ts` to use other implementation.
 
+Also note the connection parameters, for hlae its `?hlae=1` and for clients it's `?user=1`. Other connections will be rejected.
+
 Available commands:
 
 -   `{"type": "listTypes"}`
