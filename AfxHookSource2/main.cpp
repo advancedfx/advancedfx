@@ -1,10 +1,12 @@
 #include "stdafx.h"
 
 #include "CampathDrawer.h"
+#include "ClientEntitySystem.h"
 #include "GameEvents.h"
 #include "hlaeFolder.h"
 #include "RenderSystemDX11Hooks.h"
 #include "WrpConsole.h"
+#include "AfxHookSource2Rs.h"
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
 #include "../deps/release/prop/AfxHookSource/SourceInterfaces.h"
@@ -66,6 +68,8 @@ void PrintInfo() {
 		"|" "\n"
 	);
 }
+
+void * g_pGameResourceService = nullptr;
 
 int g_nIgnoreNextDisconnects = 0;
 
@@ -208,15 +212,6 @@ CON_COMMAND(__mirv_find_vtable,"") {
 	size_t addr = hModule != 0 ? Afx::BinUtils::FindClassVtable(hModule,args->ArgV(2),atoi(args->ArgV(3)),atoi(args->ArgV(4))) : 0;
 	DWORD offset = (DWORD)(addr-(size_t)hModule);
 	advancedfx::Message("Result: 0x%016llx (Offset: 0x%08x)\n",addr,offset);
-}
-
-extern bool g_bDebugGameClientEvents;
-
-CON_COMMAND(__mirv_debug_client_game_events, "") {
-
-	if(2 <= args->ArgC()) {
-		g_bDebugGameClientEvents = 0 != atoi(args->ArgV(1));
-	}
 }
 
 /*CON_COMMAND(mirv_exec,"") {
@@ -610,6 +605,8 @@ int g_iWidth = 1920;
 int g_iHeight = 1080;
 SOURCESDK::VMatrix g_WorldToScreenMatrix;
 
+extern bool g_b_on_c_view_render_setup_view;
+
 bool CS2_Client_CSetupView_Trampoline_IsPlayingDemo(void *ThisCViewSetup) {
 	if(!g_pEngineToClient) return false;
 
@@ -698,6 +695,26 @@ bool CS2_Client_CSetupView_Trampoline_IsPlayingDemo(void *ThisCViewSetup) {
 	}	
 
 	if(g_MirvInputEx.m_MirvInput->Override(g_MirvInputEx.LastFrameTime, Tx,Ty,Tz,Rx,Ry,Rz,Fov)) originOrAnglesOverriden = true;
+
+	if(g_b_on_c_view_render_setup_view) {
+		AfxHookSourceRsView currentView = {Tx,Ty,Tz,Rx,Ry,Rz,Fov};
+		AfxHookSourceRsView gameView = {(float)g_MirvInputEx.GameCameraOrigin[0],(float)g_MirvInputEx.GameCameraOrigin[1],(float)g_MirvInputEx.GameCameraOrigin[2],(float)g_MirvInputEx.GameCameraAngles[0],(float)g_MirvInputEx.GameCameraAngles[1],(float)g_MirvInputEx.GameCameraAngles[2],(float)g_MirvInputEx.GameCameraFov};
+		AfxHookSourceRsView lastView = {(float)g_MirvInputEx.LastCameraOrigin[0],(float)g_MirvInputEx.LastCameraOrigin[1],(float)g_MirvInputEx.LastCameraOrigin[2],(float)g_MirvInputEx.LastCameraAngles[0],(float)g_MirvInputEx.LastCameraAngles[1],(float)g_MirvInputEx.LastCameraAngles[2],(float)g_MirvInputEx.LastCameraFov};
+		if(AfxHookSource2Rs_OnCViewRenderSetupView(
+			curTime, absTime, (float)g_MirvInputEx.LastFrameTime,
+			currentView, gameView, lastView,
+			width,height
+		)) {
+			Tx = currentView.x;
+			Ty = currentView.y;
+			Tz = currentView.z;
+			Rx = currentView.rx;
+			Ry = currentView.ry;
+			Rz = currentView.rz;
+			Fov = currentView.fov;
+			originOrAnglesOverriden = true;
+		}		
+	}
 
 	if (g_CamExport)
 	{
@@ -1117,7 +1134,34 @@ void HookClientDll(HMODULE clientDll) {
         DetourUpdateThread(GetCurrentThread());
         DetourAttach(&(PVOID&)g_Old_CViewRender_UnkMakeMatrix,New_CViewRender_UnkMakeMatrix);
         if(NO_ERROR != DetourTransactionCommit()) ErrorBox(MkErrStr(__FILE__, __LINE__));
-	} else ErrorBox(MkErrStr(__FILE__, __LINE__));	
+	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+	// client entity system related
+	//
+	// This is inside the callback function for cl_showents and this function references the string "Ent %3d: %s class %s name %s\n".
+	/*
+       180733490 40 53           PUSH       RBX
+       180733492 48 81 ec        SUB        RSP,0x230
+                 30 02 00 00
+       180733499 48 8b 0d        MOV        RCX,qword ptr [DAT_181916778]                    = ??
+                 d8 32 1e 01
+       1807334a0 48 8d 94        LEA        RDX,[RSP + 0x250]
+                 24 50 02 
+                 00 00
+       1807334a8 33 db           XOR        EBX,EBX	
+	*/
+	{
+		Afx::BinUtils::MemRange range_cl_show_ents_callback = Afx::BinUtils::FindPatternString(textRange, "40 53 48 81 ec 30 02 00 00 48 8b 0d ?? ?? ?? ?? 48 8d 94 24 50 02 00 00 33 db e8 ?? ?? ?? ??");	
+		if(!range_cl_show_ents_callback.IsEmpty()) {
+			void * pEntityList = (void *)(range_cl_show_ents_callback.Start+0x9+7+*(int*)(range_cl_show_ents_callback.Start+0x9+3));
+			void * pFnGetHighestEntityHandle = (void *)(range_cl_show_ents_callback.Start+0x1a+5+*(int*)(range_cl_show_ents_callback.Start+0x1a+1));
+			Afx::BinUtils::MemRange range_call_get_entity_from_index = Afx::BinUtils::FindPatternString(Afx::BinUtils::MemRange::FromSize(range_cl_show_ents_callback.Start+0x49,5).And(textRange), "E8 ?? ?? ?? ??");
+			if(!range_call_get_entity_from_index.IsEmpty()) {
+				void * pFnGetEntityFromIndex = (void *)(range_call_get_entity_from_index.Start+5+*(int*)(range_call_get_entity_from_index.Start+1));
+				if(! Hook_ClientEntitySystem( pEntityList, pFnGetHighestEntityHandle, pFnGetEntityFromIndex )) ErrorBox(MkErrStr(__FILE__, __LINE__));
+			} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
 }
 
 SOURCESDK::CreateInterfaceFn g_AppSystemFactory = nullptr;
@@ -1156,12 +1200,7 @@ int new_CCS2_Client_Connect(void* This, SOURCESDK::CreateInterfaceFn appSystemFa
 		if (g_pGameUIService = (SOURCESDK::CS2::IGameUIService*)appSystemFactory(SOURCESDK_CS2_GAMEUISERVICE_INTERFACE_VERSION, NULL)) {
 		}
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
-/*
-		if(g_pSceneSystem = (void*)appSystemFactory("SceneSystem_002", NULL)) {
-			void ** vtable = *(void***)g_pSceneSystem;
-			AfxDetourPtr((PVOID *)&(vtable[26]), New_CSceneSystem_WaitForRenderingToComplete, (PVOID*)&g_Old_CSceneSystem_WaitForRenderingToComplete);
-		}
-		else ErrorBox(MkErrStr(__FILE__, __LINE__));*/
+
 	}
 
 	return old_CCS2_Client_Connect(This, appSystemFactory);
@@ -1270,7 +1309,11 @@ CCS2_Client_Init_t old_CCS2_Client_Init;
 int new_CCS2_Client_Init(void* This) {
 	int result = old_CCS2_Client_Init(This);
 
+	if(!Hook_ClientEntitySystem2()) ErrorBox(MkErrStr(__FILE__, __LINE__));
+
 	WrpRegisterCommands();
+
+	AfxHookSource2Rs_Engine_Init();
 
 	PrintInfo();
 
@@ -1280,6 +1323,7 @@ int new_CCS2_Client_Init(void* This) {
 typedef void(* CCS2_Client_Shutdown_t)(void* This);
 CCS2_Client_Shutdown_t old_CCS2_Client_Shutdown;
 void new_CCS2_Client_Shutdown(void* This) {
+	AfxHookSource2Rs_Engine_Shutdown();
 
 	old_CCS2_Client_Shutdown(This);
 }
@@ -1378,7 +1422,17 @@ void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameSta
 		break;
 	}
 
+	AfxHookSource2Rs_Engine_OnClientFrameStageNotify(curStage, true);
+
 	old_CS2_Client_FrameStageNotify(This, curStage);
+
+	AfxHookSource2Rs_Engine_OnClientFrameStageNotify(curStage, false);
+
+	switch(curStage) {
+	case SOURCESDK::CS2::FRAME_RENDER_END:
+		AfxHookSource2Rs_Engine_RunJobQueue();
+		break;
+	}
 }
 
 

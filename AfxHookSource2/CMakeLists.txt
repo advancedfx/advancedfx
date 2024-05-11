@@ -47,6 +47,8 @@ add_dependencies(${PROJECT_NAME}
     AfxHookSource2Shaders
 )
 
+corrosion_import_crate(MANIFEST_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../AfxHookSource2Rs/Cargo.toml)
+
 #set_target_properties(
 #    ${PROJECT_NAME}
 #    PROPERTIES 
@@ -80,8 +82,8 @@ target_link_directories(${PROJECT_NAME} PRIVATE
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     IlmImf-2_5$<$<CONFIG:Debug>:_d>.lib
+    afx_hook_source2_rs
 )
-
 
 target_sources(${PROJECT_NAME} PRIVATE
     ../deps/release/Detours/src/detours.cpp
@@ -103,11 +105,16 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../deps/release/prop/cs2/sdk_src/public/tier1/convar.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/iconvar.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/KeyValues.h
+    ../deps/release/prop/cs2/sdk_src/public/tier1/strtools.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/utlmemory.cpp
     ../deps/release/prop/cs2/sdk_src/public/tier1/utlmemory.h
+    ../deps/release/prop/cs2/sdk_src/public/tier1/utlstring.cpp
+    ../deps/release/prop/cs2/sdk_src/public/tier1/utlstring.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/utlvector.h
     ../deps/release/prop/cs2/sdk_src/public/vstdlib/IKeyValuesSystem.h
     ../deps/release/prop/cs2/sdk_src/public/cdll_int.h    
+    ../deps/release/prop/cs2/sdk_src/public/const.h    
+    ../deps/release/prop/cs2/sdk_src/public/entityhandle.h    
     ../deps/release/prop/cs2/sdk_src/public/icvar.h    
     ../deps/release/prop/cs2/sdk_src/public/igameevents.h    
     ../deps/release/prop/cs2/sdk_src/public/igameuiservice.h    
@@ -165,11 +172,17 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/MirvSkip.cpp
     ../shared/MirvSkip.h
 
+    AfxHookSource2Rs.cpp
+    AfxHookSource2Rs.h
+
     AfxShaders.cpp
     AfxShaders.h
 
     CampathDrawer.cpp
     CampathDrawer.h
+
+    ClientEntitySystem.cpp
+    ClientEntitySystem.h
 
     GameEvents.cpp
     GameEvents.h

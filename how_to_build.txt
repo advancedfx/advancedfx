@@ -1,6 +1,5 @@
-Notice:
-  We recommend using GIT Bash of https://git-scm.com/ to obtain the HLAE source
-  code and also for applying the .patch files to libraries where neccessary.
+[X]	Download and install GIT Bash of https://git-scm.com/ to be alte to obtain
+	the HLAE source code and also other source code during the build process.
 
 [X] Download and install Microsoft Visual Studio Community 2022, which you can
     obtain for free from https://www.visualstudio.com/downloads/ .
@@ -20,6 +19,9 @@ Notice:
 	
 [X] Install WiX Toolset from https://github.com/wixtoolset/wix3/releases
 	We used WiX Toolset v3.14.1 (wix314.exe).
+
+[X]	Obtain and install Rust and Cargo:
+	https://doc.rust-lang.org/cargo/getting-started/installation.html
 
 [X] Obtain the HLAE source code from https://github.com/advancedfx/advancedfx into a
     folder you like, we'll call it <HLAESRC> from now on (by that I mean
@@ -49,4 +51,5 @@ Notice:
   - Update GUIDs in hlae/UpdateCheck.cs
   - Update Product Version in installer/HlaeCore/Product.wxs
   - Update version in installer/setup/Bundle.wxs
-  
+  - In AfxHookSource2Rs run to see if THIRDPARTY.yml needs updating:
+    cargo install cargo-bundle-licenses && cargo bundle-licenses --format yaml --output CI.yaml --previous THIRDPARTY.yml --check-previous && echo DONE: Okay.
