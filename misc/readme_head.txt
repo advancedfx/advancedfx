@@ -47,6 +47,9 @@ AlliedModders
 	For csgo hl2sdk.
 	https://alliedmods.net
 	
+Boa JS
+	https://boajs.dev/
+	
 Detours
 	https://github.com/Microsoft/Detours/
 	License: ./LICENSES/Detours/LICENSE.MD
@@ -55,9 +58,8 @@ GitHub
 	For hosting the downloads, homepage, wiki and source code repository.
 	https://github.com/
 
-Hex-Rays
-	For IDA v7.0 free
-	https://www.hex-rays.com/
+GHIDRA
+	https://ghidra-sre.org/
 
 Industrial Light & Magic
 	https://openexr.com/
@@ -129,6 +131,8 @@ zLib
 	License: ./LICENSES/zlib/README
 
 And everyone that feels he/she/it should have been mentioned here.
+
+Further licenses can be found in ./LICENSES folder.
 
 
 Greetings:
