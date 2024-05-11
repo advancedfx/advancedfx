@@ -27,7 +27,7 @@ declare namespace mirv {
 	 * for a null message on the in stream, after that it's save to drop both.
 	 *
 	 * @param address - The address to connect to. Example: ws://localhost:31337/mirv
-	 * @returns An in and an out object to acccess the in and outgoing streams respectively.
+	 * @returns Promise that resolves with .in and an .out dictionary to acccess the in and outgoing streams respectively, or rejects with Error if connection fails.
 	 */
 	function connect_async(address: string): Promise<{ in: WsIn; out: WsOut }>;
 
@@ -75,11 +75,17 @@ declare namespace mirv {
 		 * Returns the data.
 		 *
 		 * @remarks After this object must not be used any further.
+		 *
+		 * @throws Error
+		 * if buffer has been already consumed.
 		 */
 		consume(): ArrayBuffer;
 
 		/**
 		 * Returns a copy of the data.
+		 *
+		 * @throws Error
+		 * if buffer has been already consumed.
 		 */
 		clone(): ArrayBuffer;
 	}
@@ -92,13 +98,16 @@ declare namespace mirv {
 		 * Drops the underlying object.
 		 *
 		 * @remarks After this object must not be used any further.
+		 *
+		 * @throws Error
+		 * If asychronous ordering is void (called while an other async operation is still pending) or if already dropped.
 		 */
 		drop(): void;
 
 		/**
 		 * Waits for the next incoming message.
 		 *
-		 * @returns String for text message, WsBinary for binary messages and null if there's no more messages (connection has been closed).
+		 * @returns Promise that resolves with string for text message, WsBinary for binary messages and null if there's no more messages (connection has been closed) or rejects with Error if recieving message failed or if asychronous ordering is void (called while an other async operation is still pending) or if already dropped.
 		 */
 		next(): Promise<string | WsBinary | null>;
 	}
@@ -109,6 +118,8 @@ declare namespace mirv {
 	class WsOut {
 		/**
 		 * Send a close request message to the server.
+		 *
+		 * @returns Promise that resolves on success or rejects with Error if asychronous ordering is voided (called while an other async operation is still pending) or if already dropped.
 		 */
 		close(): Promise<void>;
 
@@ -116,23 +127,29 @@ declare namespace mirv {
 		 * Drops the underlying object.
 		 *
 		 * @remarks After this object must not be used any further.
+		 *
+		 * @throws Error
+		 * If asychronous ordering is voided (called while an other async operation is still pending) or if already dropped.
 		 */
 		drop(): void;
 
 		/**
 		 * Queues a message for sending but does not flush it.
 		 * @param msg
+		 * @returns Promise that resolves on success or rejects with Error if asychronous ordering is voided (called while an other async operation is still pending) or if already dropped.
 		 */
 		feed(msg: string | ArrayBuffer): Promise<void>;
 
 		/**
 		 * Flushes messages in the queue.
+		 * @returns Promise that resolves on success or rejects with Error if asychronous ordering is voided (called while an other async operation is still pending) or if already dropped.
 		 */
 		flush(): Promise<void>;
 
 		/**
 		 * Queues a message for sending and flushes.
 		 * @param msg
+		 * @returns Promise that resolves on success or rejects with Error if asychronous ordering is voided (called while an other async operation is still pending) or if already dropped.
 		 */
 		send(msg: string | ArrayBuffer): Promise<void>;
 	}
