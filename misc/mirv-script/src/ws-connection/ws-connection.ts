@@ -1,45 +1,23 @@
-import { Mirv } from '../mirv/mirv';
-
-declare const mirv: Mirv;
-
 interface IWsConnectionOptions {
 	onException?: (e: unknown) => void;
 	address: string;
 }
 
-export interface WsInOut {
-	next: () => Promise<string | Message>;
-	drop: () => void;
-	close: () => Promise<void>;
-	flush: () => Promise<void>;
-	feed: (message: Message | unknown) => Promise<void>;
-	send: (message: unknown) => Promise<void>;
-	hasNext: () => boolean;
-}
-
-interface Message {
-	consume: () => string;
-}
-
-export interface IWsConnection {
+export interface IWsConnection extends Omit<mirv.WsOut, 'drop'> {
 	closed: boolean;
 	exception: unknown;
 	onException: IWsConnectionOptions['onException'];
-	wsOut: WsInOut | null;
+	wsOut: mirv.WsOut | null;
 	wsOutResolve: ((e?: unknown) => void) | null;
 	wsOutReject: ((e: unknown) => void) | null;
 	wsOutNext: Promise<unknown>;
-	wsInBuffer: (unknown | string | object)[];
-	readNext: (wsIn: WsInOut) => Promise<void>;
+	wsInBuffer: (string | ArrayBuffer)[];
+	readNext: (wsIn: mirv.WsIn) => Promise<void>;
 	setException: (e: unknown) => void;
 	getException: () => unknown;
 	hasException: () => boolean;
 	isConnected: () => boolean;
 	isClosed: () => boolean;
-	close: () => void;
-	flush: () => void;
-	feed: (message: Message | unknown) => void;
-	send: (message: unknown) => void;
 	next: () => string | object | unknown | null;
 	hasNext: () => boolean;
 }
@@ -102,25 +80,25 @@ export class WsConnection implements IWsConnection {
 		return null === this.exception && null !== this.wsOut && !this.isClosed;
 	}
 
-	close() {
+	async close() {
 		this.wsOutNext.then(() => {
 			if (this.wsOut) this.wsOut.close().catch((e) => this.setException(e));
 		});
 	}
 
-	flush() {
+	async flush() {
 		this.wsOutNext.then(() => {
 			if (this.wsOut) this.wsOut.flush().catch((e) => this.setException(e));
 		});
 	}
 
-	feed(data: string | Message | unknown) {
+	async feed(data: string | ArrayBuffer) {
 		this.wsOutNext.then(() => {
 			if (this.wsOut) this.wsOut.feed(data).catch((e) => this.setException(e));
 		});
 	}
 
-	send(data: string | Message | unknown) {
+	async send(data: string | ArrayBuffer) {
 		this.wsOutNext.then(() => {
 			if (this.wsOut) this.wsOut.send(data).catch((e) => this.setException(e));
 		});
@@ -135,7 +113,7 @@ export class WsConnection implements IWsConnection {
 		return 0 < this.wsInBuffer.length;
 	}
 
-	async readNext(wsIn: WsInOut) {
+	async readNext(wsIn: mirv.WsIn) {
 		try {
 			// eslint-disable-next-line no-constant-condition
 			while (true) {

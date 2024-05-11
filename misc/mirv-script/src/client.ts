@@ -1,24 +1,21 @@
 import { SimpleWebSocket } from 'simple-websockets';
-import {
-	AfxHookSourceView,
-	AfxHookSourceViewSet,
-	GameEvent,
-	MirvMessage,
-	events,
-	onCViewRenderSetupView
-} from './types';
+import { MirvMessage, events } from './server';
 
 type ConnectionOptions = {
 	host: string;
 	port: number;
+	path?: string;
 	user: number | string;
 };
 
 export class MirvClient {
 	private ws: SimpleWebSocket;
 
-	constructor({ host, port, user }: ConnectionOptions) {
-		this.ws = new SimpleWebSocket(`ws://${host}:${port}/mirv?user=${user}`);
+	/**
+	 * @param path - path is optional, if not provided it will default to mirv.
+	 */
+	constructor({ host, port, path, user }: ConnectionOptions) {
+		this.ws = new SimpleWebSocket(`ws://${host}:${port}/${path || 'mirv'}?user=${user}`);
 		this.ws.on('warning', (message) => {
 			console.log('warning:', message);
 		});
@@ -46,7 +43,7 @@ export class MirvClient {
 		this.ws.removeAllListeners(events[5]);
 	}
 	/** Enable transimission of game events */
-	enableGameEvents(callback: (gameEvents: GameEvent) => void) {
+	enableGameEvents(callback: (gameEvents: mirv.GameEvent) => void) {
 		this.send({ type: 'gameEvents', data: true });
 		this.ws.on(events[5], callback);
 	}
@@ -56,17 +53,17 @@ export class MirvClient {
 		this.ws.removeAllListeners(events[6]);
 	}
 	/** Enable transimission of cViewRenderSetupView */
-	enableCViewRenderSetupView(callback: (view: onCViewRenderSetupView) => void) {
+	enableCViewRenderSetupView(callback: (view: mirv.OnCViewRenderSetupViewArgs) => void) {
 		this.ws.on(events[6], callback);
 		this.send({ type: 'cViewRenderSetupView', data: true });
 	}
 	/** Get last cached render view  */
-	getLastView(callback: (view: AfxHookSourceView) => void) {
+	getLastView(callback: (view: mirv.OnCViewRenderSetupViewArgs['lastView']) => void) {
 		this.ws.once(events[3], callback);
 		this.send({ type: 'getLastView' });
 	}
 	/** Set render view */
-	setView(view: AfxHookSourceViewSet) {
+	setView(view: mirv.OnCViewRenderSetupViewSet) {
 		this.send({ type: 'setView', data: view });
 	}
 	/** Reset render view */
@@ -77,6 +74,7 @@ export class MirvClient {
 
 const client = new MirvClient({ host: 'localhost', port: 31337, user: 1 });
 
+// test that evertything works
 setTimeout(() => {
 	client.sendExec('echo test');
 	client.getTypes((types) => {
@@ -96,6 +94,7 @@ setTimeout(() => {
 		});
 	}, 7000);
 
+	// intentionally send wrong data
 	setTimeout(() => {
 		client.send({
 			type: 'setView',

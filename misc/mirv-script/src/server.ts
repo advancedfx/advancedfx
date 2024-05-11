@@ -1,7 +1,23 @@
 import http from 'http';
 import { SimpleWebSocket, SimpleWebSocketServer } from 'simple-websockets-server';
 import { WebSocket } from 'ws';
-import { MirvMessage, events } from './types';
+
+export const events = [
+	'listTypes',
+	'quit',
+	'exec',
+	'getLastView',
+	'setView',
+	'gameEvents',
+	'cViewRenderSetupView'
+] as const;
+export type MirvEvents = (typeof events)[number];
+
+export type MirvMessage = {
+	type: MirvEvents;
+	data?: string | number | object | boolean;
+};
+
 const serverOptions = {
 	host: 'localhost',
 	port: 31337,

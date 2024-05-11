@@ -9,5 +9,5 @@
 		"esModuleInterop": true,
 		"outDir": "dist"
 	},
-	"include": ["src/server.ts", "src/client.ts"]
+	"include": ["src/server.ts", "src/client.ts", "src/types/*"]
 }

@@ -1,36 +1,15 @@
-import {
-	AfxHookSourceView,
-	AfxHookSourceViewSet,
-	GameEvent,
-	MirvEvents,
-	events,
-	onCViewRenderSetupView
-} from '../types';
-import { IWsConnection, WsConnection, WsInOut } from '../ws-connection/ws-connection';
-
-export interface Mirv {
-	connect_async: (address: string) => Promise<{ in: WsInOut; out: WsInOut }>;
-	onGameEvent: (e: GameEvent) => void;
-	onClientFrameStageNotify: (e: { curStage: number; isBefore: boolean }) => void;
-	onCViewRenderSetupView: (e: onCViewRenderSetupView) => void;
-	warning: (message: string) => void;
-	message: (message: string) => void;
-	exec: (command: string) => void;
-	run_jobs: () => void;
-	run_jobs_async: () => Promise<void>;
-}
+import { MirvEvents } from '../server';
+import { IWsConnection, WsConnection } from '../ws-connection/ws-connection';
 
 export interface MirvFlags {
 	gameEvents: boolean;
 	cViewRenderSetupView: boolean;
 }
 
-declare const mirv: Mirv;
-
 let wsAddress = 'ws://localhost:31337/mirv';
 let wsEnable = true;
 let tickCount = 0;
-let setView: AfxHookSourceViewSet | null = null;
+let setView: mirv.OnCViewRenderSetupViewSet | null = null;
 let mirvFlags = {
 	gameEvents: false,
 	cViewRenderSetupView: false
@@ -46,7 +25,16 @@ export const main = (flags?: MirvFlags, address?: wsAddress) => {
 	let wsConnection: IWsConnection | null = null;
 	if (flags) mirvFlags = flags;
 	if (address) wsAddress = `ws://${address.host}:${address.port}/${address.path}?hlae=1`;
-	let lastView: AfxHookSourceView;
+	let lastView: mirv.OnCViewRenderSetupViewArgs['lastView'];
+	const events = [
+		'listTypes',
+		'quit',
+		'exec',
+		'getLastView',
+		'setView',
+		'gameEvents',
+		'cViewRenderSetupView'
+	] as const;
 
 	mirv.onClientFrameStageNotify = function (e) {
 		//mirv.message("onClientFrameStageNotify: "+e.curStage+" / "+e.isBefore+"\n");
@@ -106,7 +94,7 @@ export const main = (flags?: MirvFlags, address?: wsAddress) => {
 									// mirv.message(message.toString() + '\n');
 									const messageObj = JSON.parse(message) as {
 										type: MirvEvents;
-										data: string | AfxHookSourceViewSet;
+										data: string | boolean | mirv.OnCViewRenderSetupViewSet;
 									};
 
 									switch (messageObj.type) {
@@ -146,6 +134,7 @@ export const main = (flags?: MirvFlags, address?: wsAddress) => {
 											}
 											if (
 												typeof messageObj.data !== 'string' &&
+												typeof messageObj.data !== 'boolean' &&
 												('x' in messageObj.data ||
 													'y' in messageObj.data ||
 													'z' in messageObj.data ||
