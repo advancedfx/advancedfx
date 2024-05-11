@@ -1,5 +1,15 @@
 import { SimpleWebSocket } from 'simple-websockets';
-import { MirvMessage, events } from './server';
+import { MirvMessage } from './server';
+
+const events = [
+	'listTypes',
+	'quit',
+	'exec',
+	'getLastView',
+	'setView',
+	'gameEvents',
+	'cViewRenderSetupView'
+] as const;
 
 type ConnectionOptions = {
 	host: string;

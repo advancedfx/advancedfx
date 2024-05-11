@@ -2,7 +2,7 @@ import http from 'http';
 import { SimpleWebSocket, SimpleWebSocketServer } from 'simple-websockets-server';
 import { WebSocket } from 'ws';
 
-export const events = [
+const events = [
 	'listTypes',
 	'quit',
 	'exec',
@@ -11,6 +11,7 @@ export const events = [
 	'gameEvents',
 	'cViewRenderSetupView'
 ] as const;
+
 export type MirvEvents = (typeof events)[number];
 
 export type MirvMessage = {
