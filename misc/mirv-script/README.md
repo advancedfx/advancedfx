@@ -36,4 +36,6 @@ The idea is to abstract `mirv.js` and interact with it through websocket message
 
 So, we define the behaviour in `mirv.ts`. Then we handle messages in `server.ts` and use `client.ts`.
 
-`mirv` object in `mirv.ts` is inteface from [rust implementation](https://github.com/advancedfx/advancedfx/blob/mirv-script/AfxHookSource2Rs/src/lib.rs). Same for `wsConnection`.
+`mirv` object in `mirv.ts` is interface from [rust implementation](https://github.com/advancedfx/advancedfx/blob/mirv-script/AfxHookSource2Rs/src/lib.rs). Same for `wsConnection`.
+
+A description of the interface can be found in `./src/types/mirv.d.ts`.

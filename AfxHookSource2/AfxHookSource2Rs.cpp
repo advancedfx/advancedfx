@@ -72,6 +72,8 @@ extern "C" void afx_hook_source2_rs_destroy(AfxHookSource2Rs * this_ptr);
 
 extern "C" void afx_hook_source2_rs_execute(AfxHookSource2Rs * this_ptr, unsigned char * p_data, size_t len_data);
 
+extern "C" void afx_hook_source2_rs_load(AfxHookSource2Rs * this_ptr, const char * file_path);
+
 extern "C" void afx_hook_source2_rs_on_game_event(AfxHookSource2Rs * this_ptr, const char * event_name, int event_id, const char * json);
 
 extern "C" bool afx_hook_source2_rs_on_c_view_render_setup_view(AfxHookSource2Rs * this_ptr, float cur_time, float abs_time, float last_abs_time, struct AfxHookSourceRsView & current_view, const struct AfxHookSourceRsView & game_view, const struct AfxHookSourceRsView & last_view, int width, int height);
@@ -100,6 +102,12 @@ void AfxHookSource2Rs_Engine_Shutdown() {
 void AfxHookSourceRs_Engine_Execute(unsigned char * pData, size_t lenData) {
     if(nullptr != g_AfxHookSource2Rs_Engine) {
         afx_hook_source2_rs_execute(g_AfxHookSource2Rs_Engine, pData, lenData);
+    }
+}
+
+void AfxHookSourceRs_Engine_Load(const char * szFilePath) {
+    if(nullptr != g_AfxHookSource2Rs_Engine) {
+        afx_hook_source2_rs_load(g_AfxHookSource2Rs_Engine, szFilePath);
     }
 }
 
@@ -140,43 +148,6 @@ CON_COMMAND(mirv_script_load, "Load script from file and execute")
     int argC = args->ArgC();
 
     if(2 <= argC) {
-        const char * arg1 = args->ArgV(1);
-        std::wstring wsFileName;
-        if(UTF8StringToWideString(arg1, wsFileName)) {
-
-            FILE * file = 0;
-            bool bOk = 0 == _wfopen_s(&file, wsFileName.c_str(), L"rb");
-            unsigned char * so = 0;
-            size_t size = 0;
-
-            bOk = bOk 
-                && 0 != file
-                && 0 == fseek(file, 0, SEEK_END)
-            ;
-
-            if(bOk)
-            {
-                size = ftell(file);
-
-                so = (unsigned char *)malloc(size);
-                bOk = 0 != so
-                    && 0 == fseek(file, 0, SEEK_SET);
-            }
-
-            if(bOk)
-            {
-                bOk = size == fread(so, 1, size, file);
-            }
-
-            if(file) fclose(file);
-
-            if(bOk) {
-                AfxHookSourceRs_Engine_Execute(so, size);
-            } else {
-                advancedfx::Warning("Failed to load and execute \"%s\".\n",arg1);
-            }
-
-            free(so);
-        } else advancedfx::Warning("Can not convert \"%s\" from UTF-8 to wide string.\n",arg1);
+        AfxHookSourceRs_Engine_Load(args->ArgV(1));
     }
 }

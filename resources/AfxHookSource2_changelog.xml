@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.14.0</version>
+<time>2024-05-11T17:15Z</time>
+<changes>
+<change type="added">Added mirv_script_exec, mirv_script_load - interface to first version mirv-script features (currently mostly only useful for maybe feeding additional data to HUDs over a websocket). Huge thanks to @ChetdeJong for helping with the mirv-script example. The example can currently be found in misc/mirv-script folder of advancedfx/advancedfx repositiory.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.13.0</version>
 <time>2024-05-03T17:45Z</time>
 <changes>

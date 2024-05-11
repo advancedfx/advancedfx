@@ -2,6 +2,7 @@ use core::ffi::c_char;
 use core::ffi::CStr;
 use std::ffi::c_float;
 
+use std::error::Error;
 use std::{cell::RefCell, collections::VecDeque, future::Future, pin::Pin};
 use std::task::Poll::Ready;
 use std::rc::Rc;
@@ -924,10 +925,49 @@ pub unsafe extern "C" fn afx_hook_source2_rs_execute(this_ptr: *mut AfxHookSourc
         Err(e) => {
             use std::fmt::Write as _;
             let mut s = String::new();
-            write!(&mut s, "Uncaught {e}\n").unwrap();
+            if let Some(source) = e.source() {
+                write!(&mut s, "Uncaught {} in {}\n",e,source).unwrap();
+            } else {
+                write!(&mut s, "Uncaught {}\n",e).unwrap();
+            }
             afx_warning((*this_ptr).iface, s);
         }
     };
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn afx_hook_source2_rs_load(this_ptr: *mut AfxHookSource2Rs, file_path: *const c_char) {
+    let str_file_path = CStr::from_ptr(file_path).to_str().unwrap();
+    let path = std::path::Path::new(str_file_path);
+    match boa_engine::Source::from_filepath(path) {
+        Ok(js_source) => {
+            match (*this_ptr).context.eval(js_source) {
+                Ok(res) => {
+                    if let Ok(js_str) = res.to_string(&mut (*this_ptr).context) {
+                        let mut str = js_str.to_std_string_escaped();
+                        str.push_str("\n");
+                        afx_message((*this_ptr).iface, str);
+                    }
+                }
+                Err(e) => {
+                    use std::fmt::Write as _;
+                    let mut s = String::new();
+                    if let Some(source) = e.source() {
+                        write!(&mut s, "Uncaught {} in {}\n",e,source).unwrap();
+                    } else {
+                        write!(&mut s, "Uncaught {}\n",e).unwrap();
+                    }
+                    afx_warning((*this_ptr).iface, s);
+                }
+            };
+        }
+        Err(e) => {
+            use std::fmt::Write as _;
+            let mut s = String::new();
+            write!(&mut s, "Uncaught {e}\n").unwrap();
+            afx_warning((*this_ptr).iface, s);
+        }
+    }
 }
 
 #[no_mangle]
