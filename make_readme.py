@@ -10,8 +10,8 @@ readme_content = ''
 with open('misc/readme_head.txt', 'r') as readme_file:
     readme_content += readme_file.read()
 
-md_regex = re.compile('---(.*)---(.*)', re.DOTALL | re.MULTILINE)
-md_props_regex = re.compile('^\s*([^\:]*)\s*\:\s*(.*)$', re.MULTILINE)
+md_regex = re.compile(r'---(.*)---(.*)', re.DOTALL | re.MULTILINE)
+md_props_regex = re.compile(r'^\s*([^\:]*)\s*\:\s*(.*)$', re.MULTILINE)
 
 contrib_members_current = []
 contrib_members_past = []
