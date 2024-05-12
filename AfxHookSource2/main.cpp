@@ -76,9 +76,9 @@ int g_nIgnoreNextDisconnects = 0;
 typedef void (*Unknown_ExecuteClientCommandFromNetChan_t)(void * Ecx, void * Edx, void *R8);
 Unknown_ExecuteClientCommandFromNetChan_t g_Old_Unknown_ExecuteClientCommandFromNetChan = nullptr;
 void New_Unknown_ExecuteClientCommandFromNetChan(void * Ecx, void * Edx, SOURCESDK::CS2::CCommand *r8Command) {
-	//for(int i = 0; i < r8Command->ArgC(); i++) {
-	//	advancedfx::Message("Command %i: %s\n",i,r8Command->ArgV(i));
-	//}
+	for(int i = 0; i < r8Command->ArgC(); i++) {
+		advancedfx::Message("Command %i: %s\n",i,r8Command->Arg(i));
+	}
 	if(0 == stricmp("connect",r8Command->Arg(0))) {
 		if(IDYES != MessageBoxA(0,"YOU ARE TRYING TO CONNECT TO A SERVER - THIS WILL GET YOU VAC BANNED.\nARE YOU SURE?", "HLAE WARNING", MB_YESNOCANCEL|MB_ICONHAND|MB_DEFBUTTON2))
 			return;
@@ -1233,7 +1233,7 @@ CON_COMMAND(mirv_cvar_unhide_all, "Unlocks cmds and cvars.") {
 		total++;
 		if(nFlags & (FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN)) {
 //			fprintf(f1,"[+] %lli: 0x%08x: %s : %s\n", i, cmd->m_nFlags, cmd->m_pszName, cmd->m_pszHelpString);
-			cmd->SetFlags(nFlags &= ~(int)(FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN));
+			cmd->SetFlags(nFlags &= ~(SOURCESDK::int64)(FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN));
 			nUnhidden++;
 		} else {
 //			fprintf(f1,"[ ] %lli: 0x%08x: %s : %s\n", i, cmd->m_nFlags, cmd->m_pszName, cmd->m_pszHelpString);
@@ -1250,7 +1250,7 @@ CON_COMMAND(mirv_cvar_unhide_all, "Unlocks cmds and cvars.") {
 		total++;
 		if(cvar->m_nFlags & (FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN)) {
 //			fprintf(f1,"[+] %lli: 0x%08x: %s : %s\n", i, cvar->m_nFlags, cvar->m_pszName, cvar->m_pszHelpString);
-			cvar->m_nFlags &= ~(int)(FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN);
+			cvar->m_nFlags &= ~(SOURCESDK::int64)(FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN);
 			nUnhidden++;
 		} else {
 //			fprintf(f1,"[ ] %lli: 0x%08x: %s : %s\n", i, cvar->m_nFlags, cvar->m_pszName, cvar->m_pszHelpString);
@@ -1272,7 +1272,7 @@ CON_COMMAND(mirv_cvar_unlock_sv_cheats, "Unlocks sv_cheats on client (as much as
 		total++;
 		if(nFlags & (FCVAR_CHEAT)) {
 //			fprintf(f1,"[+] %lli: 0x%08x: %s : %s\n", i, cmd->m_nFlags, cmd->m_pszName, cmd->m_pszHelpString);
-			cmd->SetFlags(nFlags &= ~(int)(FCVAR_CHEAT));
+			cmd->SetFlags(nFlags &= ~(SOURCESDK::int64)(FCVAR_CHEAT));
 			nUnhidden++;
 		} else {
 //			fprintf(f1,"[ ] %lli: 0x%08x: %s : %s\n", i, cmd->m_nFlags, cmd->m_pszName, cmd->m_pszHelpString);
@@ -1289,13 +1289,13 @@ CON_COMMAND(mirv_cvar_unlock_sv_cheats, "Unlocks sv_cheats on client (as much as
 		total++;
 		if(cvar->m_nFlags & (FCVAR_CHEAT)) {
 //			fprintf(f1,"[+] %lli: 0x%08x: %s : %s\n", i, cvar->m_nFlags, cvar->m_pszName, cvar->m_pszHelpString);
-			cvar->m_nFlags &= ~(int)(FCVAR_CHEAT);
+			cvar->m_nFlags &= ~(SOURCESDK::int64)(FCVAR_CHEAT);
 			nUnhidden++;
 		} else {
 //			fprintf(f1,"[ ] %lli: 0x%08x: %s : %s\n", i, cvar->m_nFlags, cvar->m_pszName, cvar->m_pszHelpString);
 		}
 		if(0 == strcmp("sv_cheats",cvar->m_pszName)) {
-			cvar->m_nFlags &= ~(int)(FCVAR_REPLICATED|FCVAR_NOTIFY);
+			cvar->m_nFlags &= ~(SOURCESDK::int64)(FCVAR_REPLICATED|FCVAR_NOTIFY);
 			cvar->m_nFlags |= FCVAR_CLIENTDLL;
 			cvar->m_Value.m_bValue = true;			
 		}
