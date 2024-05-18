@@ -83,6 +83,7 @@ target_link_directories(${PROJECT_NAME} PRIVATE
 target_link_libraries(${PROJECT_NAME} PRIVATE
     IlmImf-2_5$<$<CONFIG:Debug>:_d>.lib
     afx_hook_source2_rs
+    bcrypt$<$<CONFIG:Debug>:_d>.lib # corrosion fails to detect this
 )
 
 target_sources(${PROJECT_NAME} PRIVATE
