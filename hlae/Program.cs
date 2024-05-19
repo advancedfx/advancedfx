@@ -322,6 +322,12 @@ namespace AfxGui
                 argv = tmp;
             }
 
+            if (Array.Exists<string>(argv, p => p == "-noConfig"))
+            {
+				GlobalConfig.Instance = new Config();
+				Globals.NoConfig = true;
+            }
+
             if (Array.Exists<string>(argv, p => p == "-customLoader"))
             {
                 ProcessArgsCustomLoader(argv);
@@ -424,8 +430,11 @@ namespace AfxGui
             {
                 Application.Run(new MainForm());
             }
-
-            GlobalConfig.Instance.BackUp();
+			
+			if(!Globals.NoConfig)
+			{
+				GlobalConfig.Instance.BackUp();
+			}
 
             GlobalUpdateCheck.Instance.Dispose();
 
