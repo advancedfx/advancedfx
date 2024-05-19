@@ -336,6 +336,10 @@ namespace AfxGui
             {
                 ProcessArgsCsgoLauncher(argv);
             }
+			else if (Array.Exists<string>(argv, p => p == "-afxHookGoldSrc"))
+			{
+				ProcessArgsAfxHookGoldSrc(argv);
+			}
         }
 
         /// <summary>
