@@ -22,7 +22,7 @@ export type MirvMessage = {
 const serverOptions = {
 	host: 'localhost',
 	port: 31337,
-	path: '/mirv'
+	path: 'mirv'
 };
 
 export class MirvServer {
@@ -41,7 +41,7 @@ export class MirvServer {
 		this.users = new Map<string, SimpleWebSocket>();
 		this.hlae = null;
 		this.server = http.createServer();
-		this.wss = new SimpleWebSocketServer({ server: this.server, path: this.path });
+		this.wss = new SimpleWebSocketServer({ server: this.server, path: '/' + this.path });
 		// Accept here all users. Note it returns SimpleWebSocket.
 		this.wss.onConnection((socket, request) => {
 			const params = new URL(request.url || '', `wss://${request.headers.host}`).searchParams;
@@ -91,7 +91,7 @@ export class MirvServer {
 			this.hlae.on('message', (data) => {
 				const msg = typeof data === 'string' ? data : data.toString();
 				const msgObject = JSON.parse(msg) as MirvMessage;
-				console.log(msg);
+				console.log(msgObject);
 				if (events.includes(msgObject.type) || (msgObject.type as string) === 'warning') {
 					if (msgObject.data) {
 						this.users.forEach((user) => {
@@ -111,10 +111,8 @@ export class MirvServer {
 	}
 
 	start() {
-		this.server.listen(serverOptions.port, serverOptions.host);
-		console.log(
-			`${serverOptions.host} listening on port ${serverOptions.port}, path ${serverOptions.path} ...`
-		);
+		this.server.listen(this.port, this.host);
+		console.log(`${this.host} listening on port ${this.port}, path ${this.path} ...`);
 	}
 
 	stop() {
