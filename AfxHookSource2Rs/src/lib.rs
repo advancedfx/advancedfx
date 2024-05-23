@@ -29,6 +29,7 @@ use boa_engine::{
     js_string,
     native_function::NativeFunction,
     object::ObjectInitializer,
+    object::builtins::JsArray,
     object::builtins::JsArrayBuffer,
     property::Attribute,
 };
@@ -37,22 +38,55 @@ use async_tungstenite::async_std::ConnectStream;
 use async_tungstenite::tungstenite::protocol::Message;
 use async_tungstenite::WebSocketStream;
 
+pub struct AfxEntityRef {
+
+}
+
 pub struct AfxHookSource2 {
     message: unsafe extern "C" fn(s: *const c_char),
     warning: unsafe extern "C" fn(s: *const c_char),
     exec: unsafe extern "C" fn(s: *const c_char),
     enable_on_game_event: unsafe extern "C" fn(value: bool),
     enable_on_c_view_render_setup_view: unsafe extern "C" fn(value: bool),
-    enable_on_client_frame_stage_notify: unsafe extern "C" fn(value: bool)
-//    list_entities: unsafe extern "C" fn(unsafe extern "C" fn(i32, *mut c_void) -> bool),
-}
+    enable_on_client_frame_stage_notify: unsafe extern "C" fn(value: bool),
 
-/*
-        let runtime = tokio::runtime::Builder::new_multi_thread()
-            .thread_name("afx-hook-source2-rs")
-            .build()
-            .unwrap();
-*/
+    make_handle: unsafe extern "C" fn(entry_index: i32, serial_number: i32) -> i32,
+    is_handle_valid: unsafe extern "C" fn(handle: i32) -> bool,
+    get_handle_entry_index: unsafe extern "C" fn(handle: i32) -> i32,
+    get_handle_serial_number: unsafe extern "C" fn(handle: i32) -> i32,
+    get_highest_entity_index: unsafe extern "C" fn() -> i32,
+    get_entity_ref_from_index: unsafe extern "C" fn(index: i32) -> * mut AfxEntityRef,
+    add_ref_entity_ref: unsafe extern "C" fn(p_ref: * mut AfxEntityRef),
+    release_entity_ref: unsafe extern "C" fn(p_ref: * mut AfxEntityRef),
+    enable_on_add_entity: unsafe extern "C" fn(value: bool),
+    enable_on_remove_entity: unsafe extern "C" fn(value: bool),
+    
+    get_entity_ref_is_valid: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> bool,
+    get_entity_ref_name: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> *const c_char,
+    
+    // can return nullptr to indicate no debug name.
+    get_entity_ref_debug_name: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> *const c_char,
+
+    get_entity_ref_class_name: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> *const c_char,
+
+    get_entity_ref_is_player_pawn: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> bool,
+
+    get_entity_ref_player_pawn_handle: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> i32,
+
+    get_entity_ref_is_player_controller: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> bool,
+
+    get_entity_ref_player_controller_handle: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> i32,
+
+    get_entity_ref_health: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> i32,
+
+    get_entity_ref_origin: unsafe extern "C" fn(p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32),
+
+    get_entity_ref_render_eye_origin: unsafe extern "C" fn(p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32),
+
+    get_entity_ref_render_eye_angles: unsafe extern "C" fn(p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32),
+
+    get_entity_ref_view_entity_ref: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> * mut AfxEntityRef,
+}
 
 /**
  * @todo Implement context / waker.
@@ -129,6 +163,8 @@ struct MirvEvents {
     on_game_event: RefCell<Option<JsObject>>,
     on_c_view_render_setup_view: RefCell<Option<JsObject>>,
     on_client_frame_stage_notify: RefCell<Option<JsObject>>,
+    on_add_entity: RefCell<Option<JsObject>>,
+    on_remove_entity: RefCell<Option<JsObject>>,
 }
 
 impl MirvEvents {
@@ -137,6 +173,8 @@ impl MirvEvents {
             on_game_event: RefCell::<Option<JsObject>>::new(None),
             on_c_view_render_setup_view: RefCell::<Option<JsObject>>::new(None),
             on_client_frame_stage_notify: RefCell::<Option<JsObject>>::new(None),
+            on_add_entity: RefCell::<Option<JsObject>>::new(None),
+            on_remove_entity: RefCell::<Option<JsObject>>::new(None),
         }
     }    
 }
@@ -192,6 +230,182 @@ fn afx_enable_on_client_frame_stage_notify(iface: * mut AfxHookSource2, value: b
     unsafe {
         ((*iface).enable_on_client_frame_stage_notify)(value);        
     }
+}
+
+fn afx_make_handle(iface: * mut AfxHookSource2, entry_index: i32, serial_number: i32) -> i32 {
+    let result: i32;
+    unsafe {
+        result = ((*iface).make_handle)(entry_index, serial_number);
+    }
+    return result;
+}
+
+fn afx_is_handle_valid(iface: * mut AfxHookSource2, handle: i32) -> bool {
+    let result: bool;
+    unsafe {
+        result = ((*iface).is_handle_valid)(handle);
+    }
+    return result;
+}
+
+fn afx_get_handle_entry_index(iface: * mut AfxHookSource2, handle: i32) -> i32 {
+    let result: i32;
+    unsafe {
+        result = ((*iface).get_handle_entry_index)(handle);
+    }
+    return result;
+}
+
+fn afx_get_handle_serial_number(iface: * mut AfxHookSource2, handle: i32) -> i32 {
+    let result: i32;
+    unsafe {
+        result = ((*iface).get_handle_serial_number)(handle);
+    }
+    return result;
+}
+
+fn afx_get_highest_entity_index(iface: * mut AfxHookSource2) -> i32 {
+    let result: i32;
+    unsafe {
+        result = ((*iface).get_highest_entity_index)();
+    }
+    return result;
+}
+
+fn afx_get_entity_ref_from_index(iface: * mut AfxHookSource2, index: i32) -> * mut AfxEntityRef {
+    let result: * mut AfxEntityRef;
+    unsafe {
+        result = ((*iface).get_entity_ref_from_index)(index);
+    }
+    return result;
+}
+
+
+
+fn afx_add_ref_entity_ref(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) {
+    unsafe {
+        ((*iface).add_ref_entity_ref)(p_ref);
+    }
+}
+
+fn afx_release_entity_ref(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) {
+    unsafe {
+        ((*iface).release_entity_ref)(p_ref);
+    }
+}
+
+fn afx_enable_on_add_entity(iface: * mut AfxHookSource2, value: bool) {
+    unsafe {
+        ((*iface).enable_on_add_entity)(value);        
+    }
+}
+
+fn afx_enable_on_remove_entity(iface: * mut AfxHookSource2, value: bool) {
+    unsafe {
+        ((*iface).enable_on_remove_entity)(value);        
+    }
+}
+
+fn afx_get_entity_ref_is_valid(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> bool {
+    let result: bool;
+    unsafe {
+        result = ((*iface).get_entity_ref_is_valid)(p_ref);
+    }
+    return result;
+}
+
+fn afx_get_entity_ref_name(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> String {
+    let result: *const c_char;
+    unsafe {
+        result = ((*iface).get_entity_ref_name)(p_ref);
+    }
+    return unsafe { CStr::from_ptr(result) }.to_str().unwrap().to_string() ;
+}
+
+fn afx_get_entity_ref_debug_name(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> Option<String> {
+    let result: *const c_char;
+    unsafe {
+        result = ((*iface).get_entity_ref_debug_name)(p_ref);
+    }
+    if result.is_null() {
+         return None;
+    }
+    return Some(unsafe { CStr::from_ptr(result) }.to_str().unwrap().to_string());
+}
+
+fn afx_get_entity_ref_class_name(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> String {
+    let result: *const c_char;
+    unsafe {
+        result = ((*iface).get_entity_ref_class_name)(p_ref);
+    }
+    return unsafe { CStr::from_ptr(result) }.to_str().unwrap().to_string();
+}
+
+fn afx_get_entity_ref_is_player_pawn(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> bool {
+    let result: bool;
+    unsafe {
+        result = ((*iface).get_entity_ref_is_player_pawn)(p_ref);
+    }
+    return result;
+}
+
+fn afx_get_entity_ref_player_pawn_handle(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> i32 {
+    let result: i32;
+    unsafe {
+        result = ((*iface).get_entity_ref_player_pawn_handle)(p_ref);
+    }
+    return result;
+}
+
+
+fn afx_get_entity_ref_is_player_controller(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> bool {
+    let result: bool;
+    unsafe {
+        result = ((*iface).get_entity_ref_is_player_controller)(p_ref);
+    }
+    return result;
+}
+
+fn afx_get_entity_ref_player_controller_handle(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> i32 {
+    let result: i32;
+    unsafe {
+        result = ((*iface).get_entity_ref_player_controller_handle)(p_ref);
+    }
+    return result;
+}
+
+fn afx_get_entity_ref_health(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> i32 {
+    let result: i32;
+    unsafe {
+        result = ((*iface).get_entity_ref_health)(p_ref);
+    }
+    return result;
+}
+
+fn afx_get_entity_ref_origin(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32){
+    unsafe {
+        ((*iface).get_entity_ref_origin)(p_ref, x, y, z);
+    }
+}
+
+fn afx_get_entity_ref_render_eye_origin(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32){
+    unsafe {
+        ((*iface).get_entity_ref_render_eye_origin)(p_ref, x, y, z);
+    }
+}
+
+fn afx_get_entity_ref_render_eye_angles(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32){
+    unsafe {
+        ((*iface).get_entity_ref_render_eye_angles)(p_ref, x, y, z);
+    }
+}
+
+fn afx_get_entity_ref_view_entity_ref(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> * mut AfxEntityRef {
+    let result: * mut AfxEntityRef;
+    unsafe {
+        result = ((*iface).get_entity_ref_view_entity_ref)(p_ref);
+    }
+    return result;
 }
 
 fn mirv_error_type() -> JsResult<JsValue> {
@@ -268,11 +482,6 @@ fn mirv_set_on_game_event(this: &JsValue, args: &[JsValue], _context: &mut Conte
         if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
             if 0 < args.len() {
                 match &args[0] {
-                    JsValue::Null => {
-                        mirv.events.on_game_event.replace(None);
-                        afx_enable_on_game_event(mirv.iface, false);
-                        return Ok(JsValue::Undefined); 
-                    }
                     JsValue::Undefined => {
                         mirv.events.on_game_event.replace(None);
                         afx_enable_on_game_event(mirv.iface, false);
@@ -315,11 +524,6 @@ fn mirv_set_on_c_view_render_setup_view(this: &JsValue, args: &[JsValue], _conte
         if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
             if 0 < args.len() {
                 match &args[0] {
-                    JsValue::Null => {
-                        mirv.events.on_c_view_render_setup_view.replace(None);
-                        afx_enable_on_c_view_render_setup_view(mirv.iface, false);
-                        return Ok(JsValue::Undefined); 
-                    }
                     JsValue::Undefined => {
                         mirv.events.on_c_view_render_setup_view.replace(None);
                         afx_enable_on_c_view_render_setup_view(mirv.iface, false);
@@ -362,11 +566,6 @@ fn mirv_set_on_client_frame_stage_notify(this: &JsValue, args: &[JsValue], _cont
         if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
             if 0 < args.len() {
                 match &args[0] {
-                    JsValue::Null => {
-                        mirv.events.on_client_frame_stage_notify.replace(None);
-                        afx_enable_on_client_frame_stage_notify(mirv.iface, false);
-                        return Ok(JsValue::Undefined); 
-                    }
                     JsValue::Undefined => {
                         mirv.events.on_client_frame_stage_notify.replace(None);
                         afx_enable_on_client_frame_stage_notify(mirv.iface, false);
@@ -800,6 +999,440 @@ fn mirv_connect_async(this: &JsValue, args: &[JsValue], context: &mut Context) -
     }
 }
 
+fn mirv_make_handle(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    if let Some(object) = this.as_object() {
+        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
+            if args.len() == 2 {
+                if let Some(entry_index) = args[0].as_number() {
+                    if let Some(serial_number) = args[0].as_number() {
+                        return Ok(JsValue::Integer(afx_make_handle(mirv.iface, entry_index as i32,serial_number as i32)));
+                    }
+                }
+            }
+            return mirv_error_arguments();
+        }
+    }
+    mirv_error_type()
+}
+
+fn mirv_is_handle_valid(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    if let Some(object) = this.as_object() {
+        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
+            if args.len() == 1 {
+                if let Some(handle) = args[0].as_number() {
+                    return Ok(JsValue::Boolean(afx_is_handle_valid(mirv.iface,handle as i32)));
+                }
+            }
+            return mirv_error_arguments();
+        }
+    }
+    mirv_error_type()
+}
+
+fn mirv_get_handle_entry_index(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    if let Some(object) = this.as_object() {
+        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
+            if args.len() == 1 {
+                if let Some(handle) = args[0].as_number() {
+                    return Ok(JsValue::Integer(afx_get_handle_entry_index(mirv.iface,handle as i32)));
+                }
+            }
+            return mirv_error_arguments();
+        }
+    }
+    mirv_error_type()
+}
+
+fn mirv_get_handle_serial_number(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    if let Some(object) = this.as_object() {
+        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
+            if args.len() == 1 {
+                if let Some(handle) = args[0].as_number() {
+                    return Ok(JsValue::Integer(afx_get_handle_serial_number(mirv.iface, handle as i32)));
+                }
+            }
+            return mirv_error_arguments();
+        }
+    }
+    mirv_error_type()
+}
+
+fn mirv_get_highest_entity_index(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    if let Some(object) = this.as_object() {
+        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
+            return Ok(JsValue::Integer(afx_get_highest_entity_index(mirv.iface)));
+        }
+    }
+    mirv_error_type()
+}
+
+#[derive(Trace, JsData)]
+struct MirvEntityRef {
+    #[unsafe_ignore_trace]
+    iface: * mut AfxHookSource2,
+    #[unsafe_ignore_trace]
+    entity_ref: * mut AfxEntityRef
+}
+
+impl Finalize for MirvEntityRef {
+    // Provided method
+    fn finalize(&self) {
+        afx_release_entity_ref(self.iface,self.entity_ref);
+    }
+}
+
+impl MirvEntityRef {
+    #[must_use]
+    fn new(afx_iface: * mut AfxHookSource2, afx_entity_ref: * mut AfxEntityRef) -> Self {
+        
+        afx_add_ref_entity_ref(afx_iface,afx_entity_ref);
+
+        Self {
+            iface: afx_iface,
+            entity_ref: afx_entity_ref
+        }
+    }
+
+    fn create(
+        afx_iface: * mut AfxHookSource2, afx_entity_ref: * mut AfxEntityRef,
+        context: &mut Context
+    ) -> JsObject {
+
+       return ObjectInitializer::with_native_data::<MirvEntityRef>(MirvEntityRef::new(afx_iface,afx_entity_ref), context)
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::is_valid),
+                js_string!("isValid"),
+                0,
+            )
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_name),
+                js_string!("getName"),
+                0,
+            )
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_debug_name),
+                js_string!("getDebugName"),
+                0,
+            )
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_class_name),
+                js_string!("getClassName"),
+                0,
+            )
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::is_player_pawn),
+                js_string!("isPlayerPawn"),
+                0,
+            )
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_player_pawn_handle),
+                js_string!("getPlayerPawnHandle"),
+                0,
+            )  
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::is_player_controller),
+                js_string!("isPlayerController"),
+                0,
+            )
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_player_controller_handle),
+                js_string!("getPlayerControllerHandle"),
+                0,
+            )             
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_health),
+                js_string!("getHealth"),
+                0,
+            )             
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_origin),
+                js_string!("getOrigin"),
+                0,
+            )             
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_render_eye_origin),
+                js_string!("getRenderEyeOrigin"),
+                0,
+            )             
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_render_eye_angles),
+                js_string!("getRenderEyeAngles"),
+                0,
+            )             
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_view_entity),
+                js_string!("getViewEntity"),
+                0,
+            )             
+            .build();
+    }
+
+    fn is_valid(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                return Ok(JsValue::Boolean(afx_get_entity_ref_is_valid(mirv.iface,mirv.entity_ref)));
+            }
+        }
+        mirv_error_type()
+    }
+
+    fn get_name(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                return Ok(JsValue::String(js_string!(afx_get_entity_ref_name(mirv.iface,mirv.entity_ref))));
+            }
+        }
+        mirv_error_type()
+    }
+
+    fn get_debug_name(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                if let Some(str) = afx_get_entity_ref_debug_name(mirv.iface,mirv.entity_ref) {
+                    return Ok(JsValue::String(js_string!(str)));
+                }
+                return Ok(JsValue::null());
+            }
+        }
+        mirv_error_type()
+    }
+
+    fn get_class_name(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                return Ok(JsValue::String(js_string!(afx_get_entity_ref_class_name(mirv.iface,mirv.entity_ref))));
+            }
+        }
+        mirv_error_type()
+    }
+
+    fn is_player_pawn(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                return Ok(JsValue::Boolean(afx_get_entity_ref_is_player_pawn(mirv.iface,mirv.entity_ref)));
+            }
+        }
+        mirv_error_type()
+    }
+
+    fn get_player_pawn_handle(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                return Ok(JsValue::Integer(afx_get_entity_ref_player_pawn_handle(mirv.iface,mirv.entity_ref)));
+            }
+        }
+        mirv_error_type()
+    }
+
+    fn is_player_controller(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                return Ok(JsValue::Boolean(afx_get_entity_ref_is_player_controller(mirv.iface,mirv.entity_ref)));
+            }
+        }
+        mirv_error_type()
+    }
+
+    fn get_player_controller_handle(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                return Ok(JsValue::Integer(afx_get_entity_ref_player_controller_handle(mirv.iface,mirv.entity_ref)));
+            }
+        }
+        mirv_error_type()
+    }
+    
+    fn get_health(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                return Ok(JsValue::Integer(afx_get_entity_ref_health(mirv.iface,mirv.entity_ref)));
+            }
+        }
+        mirv_error_type()
+    }
+
+    fn get_origin(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                let mut x: f32 = 0.0;
+                let mut y: f32 = 0.0;
+                let mut z: f32 = 0.0;
+
+                afx_get_entity_ref_origin(mirv.iface,mirv.entity_ref,&mut x, &mut y, &mut z);
+
+                let js_array = JsArray::from_iter(
+                    [JsValue::Rational(x.into()),JsValue::Rational(y.into()),JsValue::Rational(z.into())],
+                    context
+                );
+
+                return Ok(JsValue::Object(JsObject::from(js_array)));
+            }
+        }
+        mirv_error_type()
+    }
+
+    fn get_render_eye_origin(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                let mut x: f32 = 0.0;
+                let mut y: f32 = 0.0;
+                let mut z: f32 = 0.0;
+
+                afx_get_entity_ref_render_eye_origin(mirv.iface,mirv.entity_ref,&mut x, &mut y, &mut z);
+
+                let js_array = JsArray::from_iter(
+                    [JsValue::Rational(x.into()),JsValue::Rational(y.into()),JsValue::Rational(z.into())],
+                    context
+                );
+
+                return Ok(JsValue::Object(JsObject::from(js_array)));
+            }
+        }
+        mirv_error_type()
+    } 
+
+    fn get_render_eye_angles(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                let mut x: f32 = 0.0;
+                let mut y: f32 = 0.0;
+                let mut z: f32 = 0.0;
+
+                afx_get_entity_ref_render_eye_angles(mirv.iface,mirv.entity_ref,&mut x, &mut y, &mut z);
+
+                let js_array = JsArray::from_iter(
+                    [JsValue::Rational(x.into()),JsValue::Rational(y.into()),JsValue::Rational(z.into())],
+                    context
+                );
+
+                return Ok(JsValue::Object(JsObject::from(js_array)));
+            }
+        }
+        mirv_error_type()
+    }
+
+    fn get_view_entity(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                
+                let entity_ref: * mut AfxEntityRef;
+                entity_ref = afx_get_entity_ref_view_entity_ref(mirv.iface,mirv.entity_ref);
+
+                if entity_ref.is_null() {
+                    return Ok(JsValue::null());
+                } 
+
+                return Ok(JsValue::Object(MirvEntityRef::create(mirv.iface, entity_ref, context)));
+            }
+        }
+        mirv_error_type()
+    }     
+}
+
+fn mirv_get_entity_ref_from_index(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+    if let Some(object) = this.as_object() {
+        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
+            if 1 == args.len() {
+                if let Some(index) = args[0].as_number() {
+                    let entity_ref: * mut AfxEntityRef;
+                    entity_ref = afx_get_entity_ref_from_index(mirv.iface, index as i32);
+                    if entity_ref.is_null() {
+                        return Ok(JsValue::null());
+                    }
+                    return Ok(JsValue::Object(MirvEntityRef::create(mirv.iface,entity_ref,context)));
+                }
+            }
+            return mirv_error_arguments();
+        }
+    }
+    mirv_error_type()
+}
+
+fn mirv_set_on_add_entity(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    if let Some(object) = this.as_object() {
+        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
+            if 0 < args.len() {
+                match &args[0] {
+                    JsValue::Undefined => {
+                        mirv.events.on_add_entity.replace(None);
+                        afx_enable_on_add_entity(mirv.iface, false);
+                        return Ok(JsValue::Undefined); 
+                    }
+                    JsValue::Object(object) => {
+                        if object.is_callable() {
+                            mirv.events.on_add_entity.replace(Some(object.clone()));
+                            afx_enable_on_add_entity(mirv.iface, true);
+                            return Ok(JsValue::Undefined); 
+                        }
+                    }
+                    _ => {
+                    }
+                }
+            }
+        }
+    }
+    mirv_error_type()
+}
+
+fn mirv_get_on_add_entity(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    if let Some(object) = this.as_object() {
+        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
+            match & *mirv.events.on_add_entity.borrow() {
+                None => {
+                    return Ok(JsValue::Undefined);
+                }
+                Some(js_object) => {
+                    return Ok(JsValue::Object(js_object.clone()));
+                }
+            }
+        }
+    }
+    mirv_error_type()
+}
+
+
+fn mirv_set_on_remove_entity(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    if let Some(object) = this.as_object() {
+        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
+            if 0 < args.len() {
+                match &args[0] {
+                    JsValue::Undefined => {
+                        mirv.events.on_remove_entity.replace(None);
+                        afx_enable_on_remove_entity(mirv.iface, false);
+                        return Ok(JsValue::Undefined); 
+                    }
+                    JsValue::Object(object) => {
+                        if object.is_callable() {
+                            mirv.events.on_remove_entity.replace(Some(object.clone()));
+                            afx_enable_on_remove_entity(mirv.iface, true);
+                            return Ok(JsValue::Undefined); 
+                        }
+                    }
+                    _ => {
+                    }
+                }
+            }
+        }
+    }
+    mirv_error_type()
+}
+
+fn mirv_get_on_remove_entity(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    if let Some(object) = this.as_object() {
+        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
+            match & *mirv.events.on_remove_entity.borrow() {
+                None => {
+                    return Ok(JsValue::Undefined);
+                }
+                Some(js_object) => {
+                    return Ok(JsValue::Object(js_object.clone()));
+                }
+            }
+        }
+    }
+    mirv_error_type()
+}
+
 impl AfxHookSource2Rs {
     pub fn new(iface: * mut AfxHookSource2) -> Self {
 
@@ -821,8 +1454,42 @@ impl AfxHookSource2Rs {
         let fn_mirv_get_on_c_view_render_setup_view = NativeFunction::from_fn_ptr(mirv_get_on_c_view_render_setup_view).to_js_function(context.realm());
         let fn_mirv_set_on_client_frame_stage_notify = NativeFunction::from_fn_ptr(mirv_set_on_client_frame_stage_notify).to_js_function(context.realm());
         let fn_mirv_get_on_client_frame_stage_notify = NativeFunction::from_fn_ptr(mirv_get_on_client_frame_stage_notify).to_js_function(context.realm());
+        let fn_mirv_set_on_add_entity = NativeFunction::from_fn_ptr(mirv_set_on_add_entity).to_js_function(context.realm());
+        let fn_mirv_get_on_add_entity = NativeFunction::from_fn_ptr(mirv_get_on_add_entity).to_js_function(context.realm());
+        let fn_mirv_set_on_remove_entity = NativeFunction::from_fn_ptr(mirv_set_on_remove_entity).to_js_function(context.realm());
+        let fn_mirv_get_on_remove_entity = NativeFunction::from_fn_ptr(mirv_get_on_remove_entity).to_js_function(context.realm());
       
         let object = ObjectInitializer::with_native_data::<MirvStruct>(mirv, &mut context)
+        .function(
+            NativeFunction::from_fn_ptr(mirv_get_entity_ref_from_index),
+            js_string!("getEntityFromIndex"),
+            0,
+        )           
+        .function(
+            NativeFunction::from_fn_ptr(mirv_get_handle_entry_index),
+            js_string!("getHandleEntryIndex"),
+            0,
+        )
+        .function(
+            NativeFunction::from_fn_ptr(mirv_get_handle_serial_number),
+            js_string!("getHandleSerialNumber"),
+            0,
+        )
+        .function(
+            NativeFunction::from_fn_ptr(mirv_get_highest_entity_index),
+            js_string!("getHighestEntityIndex"),
+            0,
+        )        
+        .function(
+            NativeFunction::from_fn_ptr(mirv_is_handle_valid),
+            js_string!("isHandleValid"),
+            0,
+        )        
+        .function(
+            NativeFunction::from_fn_ptr(mirv_make_handle),
+            js_string!("makeHandle"),
+            0,
+        )                 
         .function(
             NativeFunction::from_fn_ptr(mirv_message),
             js_string!("message"),
@@ -854,6 +1521,12 @@ impl AfxHookSource2Rs {
             0,
         )
         .accessor(
+            js_string!("onAddEntity"),
+            Some(fn_mirv_get_on_add_entity),
+            Some(fn_mirv_set_on_add_entity),
+            Attribute::all()
+        )
+        .accessor(
             js_string!("onGameEvent"),
             Some(fn_mirv_get_on_game_event),
             Some(fn_mirv_set_on_game_event),
@@ -869,6 +1542,12 @@ impl AfxHookSource2Rs {
             js_string!("onClientFrameStageNotify"),
             Some(fn_mirv_get_on_client_frame_stage_notify),
             Some(fn_mirv_set_on_client_frame_stage_notify),
+            Attribute::all()
+        )
+        .accessor(
+            js_string!("onRemoveEntity"),
+            Some(fn_mirv_get_on_remove_entity),
+            Some(fn_mirv_set_on_remove_entity),
             Attribute::all()
         )
         .build();
@@ -972,7 +1651,10 @@ pub unsafe extern "C" fn afx_hook_source2_rs_load(this_ptr: *mut AfxHookSource2R
 
 #[no_mangle]
 pub unsafe extern "C" fn afx_hook_source2_rs_on_game_event(this_ptr: *mut AfxHookSource2Rs, event_name: *const c_char, event_id: i32, json: *const c_char) {
-    if let Some(on_game_event) = &*(*this_ptr).events.on_game_event.borrow() {
+    let borrowed = (*this_ptr).events.on_game_event.borrow();
+    let event_option_clone = borrowed.clone();
+    std::mem::drop(borrowed);
+    if let Some(event_clone) = event_option_clone {
         let str_event_name = CStr::from_ptr(event_name).to_str().unwrap();
         let str_json = CStr::from_ptr(json).to_str().unwrap();
 
@@ -982,7 +1664,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_game_event(this_ptr: *mut AfxHoo
         .property(js_string!("data"), JsValue::String(js_string!(str_json)), Attribute::all())
         .build();
 
-        if let Err(e) = on_game_event.call(&JsValue::null(), &[JsValue::Object(js_object)], &mut (*this_ptr).context) {
+        if let Err(e) = event_clone.call(&JsValue::null(), &[JsValue::Object(js_object)], &mut (*this_ptr).context) {
             use std::fmt::Write as _;
             let mut s = String::new();
             write!(&mut s, "Uncaught {e}\n").unwrap();
@@ -1003,7 +1685,10 @@ pub struct AfxHookSourceRsView {
 
 #[no_mangle]
 pub unsafe extern "C" fn afx_hook_source2_rs_on_c_view_render_setup_view(this_ptr: *mut AfxHookSource2Rs, cur_time: c_float, abs_time: c_float, last_abs_time: c_float, current_view: &mut AfxHookSourceRsView , game_view: &AfxHookSourceRsView, last_view: &AfxHookSourceRsView, width: i32, height: i32) -> bool {
-    if let Some(on_c_view_render_setup_view) = &*(*this_ptr).events.on_c_view_render_setup_view.borrow() {
+    let borrowed = (*this_ptr).events.on_c_view_render_setup_view.borrow();
+    let event_option_clone = borrowed.clone();
+    std::mem::drop(borrowed);  
+    if let Some(event_clone) = event_option_clone {
 
         let js_object_current_view = ObjectInitializer::new(&mut (*this_ptr).context)
         .property(js_string!("x"), JsValue::Rational(current_view.x.into()), Attribute::all())
@@ -1044,7 +1729,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_c_view_render_setup_view(this_pt
         .property(js_string!("height"), JsValue::Integer(height), Attribute::all())
         .build();
 
-        match on_c_view_render_setup_view.call(&JsValue::null(), &[JsValue::Object(js_object)], &mut (*this_ptr).context) {
+        match event_clone.call(&JsValue::null(), &[JsValue::Object(js_object)], &mut (*this_ptr).context) {
             Ok(js_value) => {
                 if let JsValue::Object(js_object) = js_value {
                     if let Ok(js_val_x) = js_object.get(js_string!("x"), &mut (*this_ptr).context) {
@@ -1098,14 +1783,48 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_c_view_render_setup_view(this_pt
 
 #[no_mangle]
 pub unsafe extern "C" fn afx_hook_source2_rs_on_client_frame_stage_notify(this_ptr: *mut AfxHookSource2Rs, event_id: i32, is_before: bool) {
-    if let Some(on_client_frame_stage_notify) = &*(*this_ptr).events.on_client_frame_stage_notify.borrow() {
-
+    let borrowed = (*this_ptr).events.on_client_frame_stage_notify.borrow();
+    let event_option_clone = borrowed.clone();
+    std::mem::drop(borrowed);
+    if let Some(event_clone) = event_option_clone {
         let js_object = ObjectInitializer::new(&mut (*this_ptr).context)
         .property(js_string!("curStage"), JsValue::Integer(event_id), Attribute::all())
         .property(js_string!("isBefore"), JsValue::Boolean(is_before), Attribute::all())
         .build();
 
-        if let Err(e) = on_client_frame_stage_notify.call(&JsValue::null(), &[JsValue::Object(js_object)], &mut (*this_ptr).context) {
+        if let Err(e) = event_clone.call(&JsValue::null(), &[JsValue::Object(js_object)], &mut (*this_ptr).context) {
+            use std::fmt::Write as _;
+            let mut s = String::new();
+            write!(&mut s, "Uncaught {e}\n").unwrap();
+            afx_warning((*this_ptr).iface, s);
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn afx_hook_source2_rs_on_add_entity(this_ptr: *mut AfxHookSource2Rs, p_ref: * mut AfxEntityRef, handle: i32) {
+    let borrowed = (*this_ptr).events.on_add_entity.borrow();
+    let event_option_clone = borrowed.clone();
+    std::mem::drop(borrowed);
+    if let Some(event_clone) = event_option_clone {
+        let entity_ref = MirvEntityRef::create((*this_ptr).iface, p_ref, &mut (*this_ptr).context);
+        if let Err(e) = event_clone.call(&JsValue::null(), &[JsValue::Object(entity_ref),JsValue::Integer(handle)], &mut (*this_ptr).context) {
+            use std::fmt::Write as _;
+            let mut s = String::new();
+            write!(&mut s, "Uncaught {e}\n").unwrap();
+            afx_warning((*this_ptr).iface, s);
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn afx_hook_source2_rs_on_remove_entity(this_ptr: *mut AfxHookSource2Rs, p_ref: * mut AfxEntityRef, handle: i32) {
+    let borrowed = (*this_ptr).events.on_remove_entity.borrow();
+    let event_option_clone = borrowed.clone();
+    std::mem::drop(borrowed);
+    if let Some(event_clone) = event_option_clone {
+        let entity_ref = MirvEntityRef::create((*this_ptr).iface, p_ref, &mut (*this_ptr).context);
+        if let Err(e) = event_clone.call(&JsValue::null(), &[JsValue::Object(entity_ref),JsValue::Integer(handle)], &mut (*this_ptr).context) {
             use std::fmt::Write as _;
             let mut s = String::new();
             write!(&mut s, "Uncaught {e}\n").unwrap();

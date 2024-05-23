@@ -18,6 +18,16 @@ declare namespace mirv {
 	let onCViewRenderSetupView: undefined | OnCViewRenderSetupView;
 
 	/**
+	 * Called after an entity has been added.
+	 */
+	let onAddEntity: undefined | OnEntityEvent;
+
+	/**
+	 * Called before an entity is removed.
+	 */
+	let onRemoveEntity: undefined | OnEntityEvent;
+
+	/**
 	 * Opens a websocket connection
 	 *
 	 * @remarks
@@ -66,6 +76,18 @@ declare namespace mirv {
 	 * which is not called by CS2 when the demo is paused. This subject to change.
 	 */
 	function run_jobs_async(): void;
+
+	function makeHandle(entryIndex: number, serialNumber: number): number;
+
+	function isHandleValid(handle: number): boolean;
+
+	function getHandleEntryIndex(handle: number): number;
+
+	function getHandleSerialNumber(handle: number): number;
+
+	function getHighestEntityIndex(): number;
+
+	function getEntityFromIndex(index: number): null | Entity;
 
 	/**
 	 * Represents a binary data message.
@@ -248,4 +270,49 @@ declare namespace mirv {
 	type OnCViewRenderSetupView = (
 		e: OnCViewRenderSetupViewArgs
 	) => undefined | OnCViewRenderSetupViewSet;
+
+	/**
+	 * An entity reference.
+	 */
+	class Entity {
+		/**
+		 * If the refernce is still valid.
+		 */
+		isValid(): boolean;
+
+		getName(): string;
+
+		getDebugName(): null | string;
+
+		getClassName(): string;
+
+		isPlayerPawn(): boolean;
+
+		getPlayerPawnHandle(): number;
+
+		isPlayerController(): boolean;
+
+		getPlayerControllerHandle(): number;
+
+		getHealth(): number;
+
+		/**
+		 * @returns Array with x,y,z.
+		 */
+		getOrigin(): number[];
+
+		/**
+		 * @returns Array with x,y,z.
+		 */
+		getRenderEyeOrigin(): number[];
+
+		/**
+		 * @returns Array with x,y,z.
+		 */
+		getRenderEyeAngles(): number[];
+
+		getViewEntity(): null | Entity;
+	}
+
+	type OnEntityEvent = (entity: Entity, handle: number) => void;
 }

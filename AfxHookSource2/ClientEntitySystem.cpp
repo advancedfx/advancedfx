@@ -9,42 +9,31 @@
 #include "../shared/AfxConsole.h"
 //#include "../shared/binutils.h"
 
-//#include "AfxHookSource2Rs.h"
+#include "AfxHookSource2Rs.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include "../deps/release/Detours/src/detours.h"
 
-
-class CGameEntitySystem {
-    
-
-    //:014 - OnAddEntity
-    //:015 - OnRemoveEntity
-};
-
+#include <map>
 
 struct EntityListIterator{
-	SOURCESDK::CS2::CBaseHandle handle = SOURCESDK_CS2_INVALID_EHANDLE_INDEX;
+	int index = -1;
 
 	bool IsValid() const {
-		return handle != SOURCESDK_CS2_INVALID_EHANDLE_INDEX;
+		return 0 < index;
 	}
 
-	SOURCESDK::CS2::CBaseHandle GetHandle() const {
-		return handle;
-	}
-
-    int GetEntryIndex() const {
-        return handle.GetEntryIndex();
+    int GetIndex() const {
+        return index;
     }
 };
 
-typedef EntityListIterator & (__fastcall * GetHighestEntityHandle_t)(void * entityList);
+typedef EntityListIterator & (__fastcall * GetHighestEntityIterator_t)(void * entityList);
 typedef void * (__fastcall * GetEntityFromIndex_t)(void * pEntityList, int index);
 
 void ** g_pEntityList = nullptr;
-GetHighestEntityHandle_t  g_GetHighestEntityHandle = nullptr;
+GetHighestEntityIterator_t  g_GetHighestEntityIterator = nullptr;
 GetEntityFromIndex_t g_GetEntityFromIndex = nullptr;
 
 /*
@@ -63,14 +52,12 @@ public:
         return "";
     }
 
-    // Retrieved from script function.   
+    // Retrieved from script function.
+    // can return nullptr!
     const char * GetDebugName() {
         const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x18);
         if(pszName) return pszName;
-        else {
-            return **(const char***)(*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x8)+0x28);
-        }
-        return "";
+        return **(const char***)(*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x8)+0x28);
     }
 
     // Retrieved from script function.
@@ -90,6 +77,7 @@ public:
 
     SOURCESDK::CS2::CBaseHandle GetPlayerPawnHandle() {
         // See cl_ent_text drawing function.
+        if(!IsPlayerController())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
         return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + 0x604));
     }
 
@@ -100,6 +88,7 @@ public:
 
     SOURCESDK::CS2::CBaseHandle GetPlayerControllerHandle() {
         // See cl_ent_text drawing function.
+        if(!IsPlayerPawn())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
         return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + 0x1294));
     }
 
@@ -108,25 +97,19 @@ public:
         return ((unsigned int (__fastcall *)(void *)) (*(void***)this)[156]) (this); 
     }
 
-    /// @return FLOAT_MAX if invalid
-    float GetX() {
+    /**
+     * @remarks FLOAT_MAX if invalid
+     */
+    void GetOrigin(float & x, float & y, float & z) {
         // See cl_ent_text drawing function.
-        return (*(float *)((unsigned char *)this + 0x138));
-    }
-    /// @return FLOAT_MAX if invalid
-    float GetY() {
-        // See cl_ent_text drawing function.
-        return (*(float *)((unsigned char *)this + 0x13c));
-    }
-    /// @return FLOAT_MAX if invalid
-    float GetZ() {
-        // See cl_ent_text drawing function.
-        return (*(float *)((unsigned char *)this + 0x140));
+        x =  (*(float *)((unsigned char *)this + 0x138));
+        y =  (*(float *)((unsigned char *)this + 0x13c));
+        z =  (*(float *)((unsigned char *)this + 0x140));
     }
 
-    void GetRenderEyeOrigin(float outAngles[3]) {
+    void GetRenderEyeOrigin(float outOrigin[3]) {
         // GetRenderEyeAngles vtable offset minus 1
-        ((void (__fastcall *)(void *,float outAngles[3])) (*(void***)this)[160]) (this,outAngles);
+        ((void (__fastcall *)(void *,float outOrigin[3])) (*(void***)this)[160]) (this,outOrigin);
     }
 
     void GetRenderEyeAngles(float outAngles[3]) {
@@ -140,11 +123,80 @@ public:
     }
 };
 
+class CAfxEntityInstanceRef {
+public:
+    static CAfxEntityInstanceRef * Aquire(CEntityInstance * pInstance) {
+        CAfxEntityInstanceRef * pRef;
+        auto it = m_Map.find(pInstance);
+        if(it != m_Map.end()) {    
+            pRef = it->second;
+        } else {
+            pRef = new CAfxEntityInstanceRef(pInstance);
+            m_Map[pInstance] = pRef;
+        }
+        pRef->AddRef();
+        return pRef;
+    }
+
+    static void Invalidate(CEntityInstance * pInstance) {
+        if(m_Map.empty()) return;
+        auto it = m_Map.find(pInstance);
+        if(it != m_Map.end()) {
+            auto & pInstance = it->second;
+            pInstance->m_pInstance = nullptr;
+            pInstance->Release();
+            m_Map.erase(it);
+        }        
+    }
+
+    CEntityInstance * GetInstance() {
+        return m_pInstance;
+    }
+
+    bool IsValid() {
+        return nullptr != m_pInstance;
+    }
+
+    void AddRef() {
+        m_RefCount++;
+    }
+
+    void Release() {
+        m_RefCount--;
+        if(0 == m_RefCount) {
+            delete this;
+        }
+    }
+
+protected:
+    CAfxEntityInstanceRef(class CEntityInstance * pInstance)
+    : m_pInstance(pInstance)
+    {
+    }
+
+private:
+    int m_RefCount = 0;
+    class CEntityInstance * m_pInstance;
+    static std::map<CEntityInstance *,CAfxEntityInstanceRef *> m_Map;
+};
+
+std::map<CEntityInstance *,CAfxEntityInstanceRef *> CAfxEntityInstanceRef::m_Map;
+
+
 typedef void* (__fastcall * OnAddEntity_t)(void* This, CEntityInstance* pInstance, SOURCESDK::uint32 handle);
 OnAddEntity_t g_Org_OnAddEntity = nullptr;
 
+
 void* __fastcall New_OnAddEntity(void* This, CEntityInstance* pInstance, SOURCESDK::uint32 handle) {
+
     void * result =  g_Org_OnAddEntity(This,pInstance,handle);
+
+    if(g_b_on_add_entity && pInstance) {
+        auto pRef = CAfxEntityInstanceRef::Aquire(pInstance);
+        AfxHookSource2Rs_Engine_OnAddEntity(pRef,handle);
+        pRef->Release();
+    }
+
     return result;
 }
 
@@ -152,6 +204,15 @@ typedef void* (__fastcall * OnRemoveEntity_t)(void* This, CEntityInstance* inst,
 OnRemoveEntity_t g_Org_OnRemoveEntity = nullptr;
 
 void* __fastcall New_OnRemoveEntity(void* This, CEntityInstance* pInstance, SOURCESDK::uint32 handle) {
+
+    if(g_b_on_remove_entity && pInstance) {
+        auto pRef = CAfxEntityInstanceRef::Aquire(pInstance);
+        AfxHookSource2Rs_Engine_OnRemoveEntity(pRef,handle);
+        pRef->Release();
+    }
+
+    CAfxEntityInstanceRef::Invalidate(pInstance);
+
     void * result =  g_Org_OnRemoveEntity(This,pInstance,handle);
     return result;
 }
@@ -161,14 +222,14 @@ void* __fastcall New_OnRemoveEntity(void* This, CEntityInstance* pInstance, SOUR
 #define MkErrStr(file,line) "Problem in " file ":" STRINGIZE(line)
 extern void ErrorBox(char const * messageText);
 
-bool Hook_ClientEntitySystem( void* pEntityList, void * pFnGetHighestEntityHandle, void * pFnGetEntityFromIndex ) {
+bool Hook_ClientEntitySystem( void* pEntityList, void * pFnGetHighestEntityIterator, void * pFnGetEntityFromIndex ) {
     static bool firstResult = false;
     static bool firstRun = true;
 
     if(firstRun) {
         firstRun = false;
         g_pEntityList = (void**)pEntityList;
-        g_GetHighestEntityHandle = (GetHighestEntityHandle_t)pFnGetHighestEntityHandle;
+        g_GetHighestEntityIterator = (GetHighestEntityIterator_t)pFnGetHighestEntityIterator;
         g_GetEntityFromIndex = (GetEntityFromIndex_t)pFnGetEntityFromIndex;
         firstResult = true;
     }
@@ -196,7 +257,7 @@ bool Hook_ClientEntitySystem2() {
 }
 
 CON_COMMAND(__mirv_listentities, "") {
-    int highestIndex = g_GetHighestEntityHandle(*g_pEntityList).GetEntryIndex();
+    int highestIndex = g_GetHighestEntityIterator(*g_pEntityList).GetIndex();
     for(int i = 0; i < highestIndex + 1; i++) {
         if(auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,i)) {
             float origin[3];
@@ -207,4 +268,119 @@ CON_COMMAND(__mirv_listentities, "") {
         }
         else advancedfx::Message("%i:\n",i);
     }
+}
+
+int afx_hook_source2_get_highest_entity_index() {
+    if(g_GetHighestEntityIterator) return g_GetHighestEntityIterator(*g_pEntityList).GetIndex();
+    return -1;
+}
+
+void * afx_hook_source2_get_entity_ref_from_index(int index) {
+    if(CEntityInstance * result = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,index)) {
+        return CAfxEntityInstanceRef::Aquire(result);
+    }
+    return nullptr;
+}
+
+void afx_hook_source2_add_ref_entity_ref(void * pRef) {
+    ((CAfxEntityInstanceRef *)pRef)->AddRef();
+}
+
+void afx_hook_source2_release_entity_ref(void * pRef) {
+    ((CAfxEntityInstanceRef *)pRef)->Release();
+}
+
+bool afx_hook_source2_getEntityRefIsValid(void * pRef) {
+    return ((CAfxEntityInstanceRef *)pRef)->IsValid();
+}
+
+const char * afx_hook_source2_getEntityRefName(void * pRef) {
+    if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+        return pInstance->GetName();
+    }
+    return "";
+}
+
+const char * afx_hook_source2_getEntityRefDebugName(void * pRef) {
+    if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+        return pInstance->GetDebugName();
+    }
+    return nullptr;
+}
+
+const char * afx_hook_source2_getEntityRefClassName(void * pRef) {
+    if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+        return pInstance->GetClassName();
+    }
+    return "";
+}
+
+bool afx_hook_source2_getEntityRefIsPlayerPawn(void * pRef) {
+    if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+        return pInstance->IsPlayerPawn();
+    }
+    return false;
+}
+
+int afx_hook_source2_getEntityRefPlayerPawnHandle(void * pRef) {
+    if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+        return pInstance->GetPlayerPawnHandle().ToInt();
+    }
+    return 0;    
+}
+
+bool afx_hook_source2_getEntityRefIsPlayerController(void * pRef) {
+    if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+        return pInstance->IsPlayerController();
+    }
+    return false;    
+}
+
+int afx_hook_source2_getEntityRefPlayerControllerHandle(void * pRef) {
+    if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+        return pInstance->GetPlayerControllerHandle().ToInt();
+    }
+    return 0;    
+}
+
+unsigned int afx_hook_source2_getEntityRefHealth(void * pRef) {
+    if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+        return pInstance->GetHealth();
+    }
+    return 0;    
+}
+
+void afx_hook_source2_getEntityRefOrigin(void * pRef, float & x, float & y, float & z) {
+    if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+       pInstance->GetOrigin(x,y,z);
+    }    
+}
+
+void afx_hook_source2_getEntityRefRenderEyeOrigin(void * pRef, float & x, float & y, float & z) {
+    if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+        float tmp[3];
+       pInstance->GetRenderEyeOrigin(tmp);
+       x = tmp[0];
+       y = tmp[1];
+       z = tmp[2];
+    }    
+}
+
+void afx_hook_source2_getEntityRefRenderEyeAngles(void * pRef, float & x, float & y, float & z) {
+    if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+        float tmp[3];
+       pInstance->GetRenderEyeAngles(tmp);
+       x = tmp[0];
+       y = tmp[1];
+       z = tmp[2];
+    }    
+}
+
+void* afx_hook_source2_getEntityRefViewEntityRef(void * pRef) {
+    if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+       if(auto result = pInstance->GetViewEntity()) {
+            return CAfxEntityInstanceRef::Aquire(result);
+       }
+    }
+    return nullptr;
 }

@@ -76,9 +76,9 @@ int g_nIgnoreNextDisconnects = 0;
 typedef void (*Unknown_ExecuteClientCommandFromNetChan_t)(void * Ecx, void * Edx, void *R8);
 Unknown_ExecuteClientCommandFromNetChan_t g_Old_Unknown_ExecuteClientCommandFromNetChan = nullptr;
 void New_Unknown_ExecuteClientCommandFromNetChan(void * Ecx, void * Edx, SOURCESDK::CS2::CCommand *r8Command) {
-	for(int i = 0; i < r8Command->ArgC(); i++) {
-		advancedfx::Message("Command %i: %s\n",i,r8Command->Arg(i));
-	}
+	//for(int i = 0; i < r8Command->ArgC(); i++) {
+	//	advancedfx::Message("Command %i: %s\n",i,r8Command->Arg(i));
+	//}
 	if(0 == stricmp("connect",r8Command->Arg(0))) {
 		if(IDYES != MessageBoxA(0,"YOU ARE TRYING TO CONNECT TO A SERVER - THIS WILL GET YOU VAC BANNED.\nARE YOU SURE?", "HLAE WARNING", MB_YESNOCANCEL|MB_ICONHAND|MB_DEFBUTTON2))
 			return;
@@ -1154,11 +1154,11 @@ void HookClientDll(HMODULE clientDll) {
 		Afx::BinUtils::MemRange range_cl_show_ents_callback = Afx::BinUtils::FindPatternString(textRange, "40 53 48 81 ec 30 02 00 00 48 8b 0d ?? ?? ?? ?? 48 8d 94 24 50 02 00 00 33 db e8 ?? ?? ?? ??");	
 		if(!range_cl_show_ents_callback.IsEmpty()) {
 			void * pEntityList = (void *)(range_cl_show_ents_callback.Start+0x9+7+*(int*)(range_cl_show_ents_callback.Start+0x9+3));
-			void * pFnGetHighestEntityHandle = (void *)(range_cl_show_ents_callback.Start+0x1a+5+*(int*)(range_cl_show_ents_callback.Start+0x1a+1));
+			void * pFnGetHighestEntityIterator = (void *)(range_cl_show_ents_callback.Start+0x1a+5+*(int*)(range_cl_show_ents_callback.Start+0x1a+1));
 			Afx::BinUtils::MemRange range_call_get_entity_from_index = Afx::BinUtils::FindPatternString(Afx::BinUtils::MemRange::FromSize(range_cl_show_ents_callback.Start+0x49,5).And(textRange), "E8 ?? ?? ?? ??");
 			if(!range_call_get_entity_from_index.IsEmpty()) {
 				void * pFnGetEntityFromIndex = (void *)(range_call_get_entity_from_index.Start+5+*(int*)(range_call_get_entity_from_index.Start+1));
-				if(! Hook_ClientEntitySystem( pEntityList, pFnGetHighestEntityHandle, pFnGetEntityFromIndex )) ErrorBox(MkErrStr(__FILE__, __LINE__));
+				if(! Hook_ClientEntitySystem( pEntityList, pFnGetHighestEntityIterator, pFnGetEntityFromIndex )) ErrorBox(MkErrStr(__FILE__, __LINE__));
 			} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
