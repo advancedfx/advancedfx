@@ -11,6 +11,20 @@ interface wsAddress {
 	path: string;
 }
 
+export type EntityObject = {
+	name: string;
+	debugName: string | null;
+	className: string;
+	isPlayerPawn: boolean;
+	isPlayerController: boolean;
+	playerPawnHandle: number;
+	playerControllerHandle: number;
+	health: number;
+	origin: number[];
+	renderEyeOrigin: number[];
+	renderEyeAngles: number[];
+};
+
 export const main = (address?: wsAddress) => {
 	let wsConnection: IWsConnection | null = null;
 	if (address) wsAddress = `ws://${address.host}:${address.port}/${address.path}?hlae=1`;
@@ -28,7 +42,8 @@ export const main = (address?: wsAddress) => {
 		'onCViewRenderSetupView',
 		'onGameEvent',
 		'onAddEntity',
-		'onRemoveEntity'
+		'onRemoveEntity',
+		'listEntities'
 	] as const;
 	// just for ease of change
 	const warningEvent = 'warning';
@@ -42,6 +57,22 @@ export const main = (address?: wsAddress) => {
 					data: msg
 				})
 			);
+	};
+
+	const makeEntityObject = (e: mirv.Entity): EntityObject => {
+		return {
+			name: e.getName(),
+			debugName: e.getDebugName(),
+			className: e.getClassName(),
+			isPlayerPawn: e.isPlayerPawn(),
+			isPlayerController: e.isPlayerController(),
+			playerPawnHandle: e.getPlayerPawnHandle(),
+			playerControllerHandle: e.getPlayerControllerHandle(),
+			health: e.getHealth(),
+			origin: e.getOrigin(),
+			renderEyeOrigin: e.getRenderEyeOrigin(),
+			renderEyeAngles: e.getRenderEyeAngles()
+		};
 	};
 
 	// here we define behaviour of websocket events and websocket connection as well
@@ -196,6 +227,23 @@ export const main = (address?: wsAddress) => {
 												);
 											}
 											break;
+										case 'listEntities':
+											{
+												const entities: EntityObject[] = [];
+												const highest = mirv.getHighestEntityIndex();
+												for (let i = 0; i < highest + 1; i++) {
+													const entity = mirv.getEntityFromIndex(i);
+													if (entity === null) continue;
+													entities.push(makeEntityObject(entity));
+												}
+												wsConnection.send(
+													JSON.stringify({
+														type: events[12],
+														data: entities
+													})
+												);
+											}
+											break;
 										default:
 											sendWarning(
 												'TypeError in onClientFrameStageNotify: Unknown incoming message.type:' +
@@ -286,7 +334,7 @@ export const main = (address?: wsAddress) => {
 				wsConnection.send(
 					JSON.stringify({
 						type: events[10],
-						data: e
+						data: makeEntityObject(e)
 					})
 				);
 			} catch (err) {
@@ -300,7 +348,7 @@ export const main = (address?: wsAddress) => {
 				wsConnection.send(
 					JSON.stringify({
 						type: events[11],
-						data: e
+						data: makeEntityObject(e)
 					})
 				);
 			} catch (err) {

@@ -1,4 +1,5 @@
 import { SimpleWebSocket } from 'simple-websockets';
+import { EntityObject } from './mirv/mirv';
 import { MirvMessage } from './server';
 
 const events = [
@@ -14,6 +15,7 @@ const events = [
 	'onGameEvent',
 	'onAddEntity',
 	'onRemoveEntity',
+	'listEntities',
 	'warning'
 ] as const;
 
@@ -101,6 +103,11 @@ export class MirvClient {
 		this.ws.removeAllListeners(events[11]);
 		this.send({ type: 'setEntityEvents', data: false });
 	}
+	/** List entities */
+	listEntities(callback: (entities: EntityObject[]) => void) {
+		this.ws.once(events[12], callback);
+		this.send({ type: 'listEntities' });
+	}
 }
 
 const client = new MirvClient({ host: 'localhost', port: 31337, user: 1 });
@@ -134,16 +141,22 @@ setTimeout(() => {
 	}, 8000);
 
 	setTimeout(() => {
-		client.enableEntityEvents(
-			(entity) => {
-				console.log(entity);
-			},
-			(entity) => {
-				console.log(entity);
-			}
-		);
-	}, 10000);
-	setTimeout(() => {
-		client.disableEntityEvents();
-	}, 11000);
+		client.listEntities((entities) => {
+			console.log(entities);
+		});
+	}, 9000);
+
+	// setTimeout(() => {
+	// 	client.enableEntityEvents(
+	// 		(entity) => {
+	// 			console.log(entity);
+	// 		},
+	// 		(entity) => {
+	// 			console.log(entity);
+	// 		}
+	// 	);
+	// }, 10000);
+	// setTimeout(() => {
+	// 	client.disableEntityEvents();
+	// }, 11000);
 }, 1000);

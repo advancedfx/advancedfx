@@ -1,6 +1,6 @@
 {
 	"name": "mirv-script",
-	"version": "0.0.0",
+	"version": "0.1.0",
 	"description": "",
 	"main": "index.js",
 	"author": "ChetdeJong",
@@ -12,7 +12,8 @@
 		"eslint": "eslint . --ext .ts --ignore-pattern=.gitignore,.eslintignore",
 		"compile": "rollup -c",
 		"server": "tsc --project tsconfig.scripts.json && node dist/server.js",
-		"compile-scripts": "tsc --project tsconfig.scripts.json"
+		"compile-scripts": "tsc --project tsconfig.scripts.json",
+		"test": "npm run compile && npm run compile-scripts && node dist/server.js"
 	},
 	"devDependencies": {
 		"@rollup/plugin-commonjs": "^25.0.7",
