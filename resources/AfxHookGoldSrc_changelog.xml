@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.23.1</version>
+<time>2024-05-24T21:00Z</time>
+<changes>
+<change type="fixed">Added raw keyboard handling to mirv_input.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.23.0</version>
 <time>2024-05-03T17:45Z</time>
 <changes>

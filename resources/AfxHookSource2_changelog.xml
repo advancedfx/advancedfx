@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.15.1</version>
+<time>2024-05-24T21:00Z</time>
+<changes>
+<change type="fixed">Added raw keyboard handling to mirv_input. Fixes #946 CS2: issue with binds in mirv_input camera.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.15.0</version>
 <time>2024-05-24T09:00Z</time>
 <changes>

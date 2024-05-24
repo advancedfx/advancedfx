@@ -828,17 +828,19 @@ bool  MirvInput::Supply_MouseEvent(DWORD uMsg, WPARAM & wParam, LPARAM & lParam)
 }
 
 void MirvInput::ProcessRawInputData(PRAWINPUT pData) {
-		RAWMOUSE * rawmouse = &(pData->data.mouse);
+	switch (pData->header.dwType) {
+	case RIM_TYPEMOUSE: {
+		RAWMOUSE* rawmouse = &(pData->data.mouse);
 		int dX = 0;
 		int dY = 0;
 		int wheelDelta = 0;
 
-		if((rawmouse->usFlags & 0x01) == MOUSE_MOVE_RELATIVE)
+		if ((rawmouse->usFlags & 0x01) == MOUSE_MOVE_RELATIVE)
 		{
 			dX = rawmouse->lLastX;
 			dY = rawmouse->lLastY;
 
-			if(m_CameraControlMode) {
+			if (m_CameraControlMode) {
 				rawmouse->lLastX = 0;
 				rawmouse->lLastY = 0;
 			}
@@ -849,20 +851,20 @@ void MirvInput::ProcessRawInputData(PRAWINPUT pData) {
 			static LONG lastX = 0;
 			static LONG lastY = 0;
 
-			if(initial)
+			if (initial)
 			{
 				initial = false;
 				lastX = rawmouse->lLastX;
 				lastY = rawmouse->lLastY;
 			}
 
-			dX = rawmouse->lLastX -lastX;
-			dY = rawmouse->lLastY -lastY;
+			dX = rawmouse->lLastX - lastX;
+			dY = rawmouse->lLastY - lastY;
 
 			lastX = rawmouse->lLastX;
 			lastY = rawmouse->lLastY;
 
-			if(m_CameraControlMode) {
+			if (m_CameraControlMode) {
 				rawmouse->lLastX -= dX;
 				rawmouse->lLastY -= dY;
 			}
@@ -870,9 +872,9 @@ void MirvInput::ProcessRawInputData(PRAWINPUT pData) {
 
 		m_MouseInput.Raw.LeftButtonDown = m_MouseInput.Raw.LeftButtonDown || (rawmouse->usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN);
 		m_MouseInput.Raw.RightButtonDown = m_MouseInput.Raw.RightButtonDown || (rawmouse->usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN);
-		
 
-		if(m_CameraControlMode) {
+
+		if (m_CameraControlMode) {
 			if (!(m_MMove && (m_MouseInput.Raw.LeftButtonDown || m_MouseInput.Raw.RightButtonDown)))
 			{
 				m_MouseInput.Raw.Yaw += m_MouseSens * m_MouseYawSpeed * -dX;
@@ -884,7 +886,7 @@ void MirvInput::ProcessRawInputData(PRAWINPUT pData) {
 
 				if (m_MouseInput.Raw.LeftButtonDown)
 				{
-					m_MouseInput.Raw.Forward +=  m_MouseSens * (dY < 0 ? m_MouseForwardSpeed : m_MouseBackwardSpeed) * -dY;
+					m_MouseInput.Raw.Forward += m_MouseSens * (dY < 0 ? m_MouseForwardSpeed : m_MouseBackwardSpeed) * -dY;
 				}
 				if (m_MouseInput.Raw.RightButtonDown)
 				{
@@ -892,8 +894,8 @@ void MirvInput::ProcessRawInputData(PRAWINPUT pData) {
 				}
 			}
 
-			if(m_MMove) {
-				if(rawmouse->usButtonFlags & RI_MOUSE_HWHEEL) {
+			if (m_MMove) {
+				if (rawmouse->usButtonFlags & RI_MOUSE_HWHEEL) {
 					float delta = (float)(short)rawmouse->usButtonData;
 					m_MouseInput.Raw.Fov = m_MouseSens * (0 < delta ? m_MouseFovNegativeSpeed : m_MouseFovPositiveSpeed) * -delta;
 					rawmouse->usButtonData = 0;
@@ -901,13 +903,60 @@ void MirvInput::ProcessRawInputData(PRAWINPUT pData) {
 			}
 		}
 
-		if(rawmouse->usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP) m_MouseInput.Raw.LeftButtonDown = false;
-		if(rawmouse->usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP) m_MouseInput.Raw.RightButtonDown = false;
+		if (rawmouse->usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP) m_MouseInput.Raw.LeftButtonDown = false;
+		if (rawmouse->usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP) m_MouseInput.Raw.RightButtonDown = false;
 
-		if(m_CameraControlMode && m_MMove) {
-			rawmouse->usButtonFlags &= ~(USHORT)(RI_MOUSE_LEFT_BUTTON_DOWN|RI_MOUSE_RIGHT_BUTTON_DOWN|RI_MOUSE_LEFT_BUTTON_UP|RI_MOUSE_RIGHT_BUTTON_UP|RI_MOUSE_HWHEEL);
+		if (m_CameraControlMode && m_MMove) {
+			rawmouse->usButtonFlags &= ~(USHORT)(RI_MOUSE_LEFT_BUTTON_DOWN | RI_MOUSE_RIGHT_BUTTON_DOWN | RI_MOUSE_LEFT_BUTTON_UP | RI_MOUSE_RIGHT_BUTTON_UP | RI_MOUSE_HWHEEL);
 		}
-
+	} break;
+	case RIM_TYPEKEYBOARD: {
+		if (m_CameraControlMode) {
+			RAWKEYBOARD* rawkeyboard = &(pData->data.keyboard);
+			if(!(m_IgnoreNextKey || m_IgnoreKeyUp && (rawkeyboard->Flags & RI_KEY_BREAK))) {
+				bool bIgnoreKey = false;
+				switch(rawkeyboard->VKey) {
+				case VK_ESCAPE:
+				case VK_CONTROL:
+				case VK_HOME:
+				case VK_NUMPAD5:
+				case 0x57: // W key
+				case VK_NUMPAD8:
+				case 0x53: // S key
+				case VK_NUMPAD2:
+				case 0x41: // A key
+				case VK_NUMPAD4:
+				case 0x44: // D key
+				case VK_NUMPAD6:
+				case 0x52: // R key
+				case VK_NUMPAD9:
+				case 0x46: // F key
+				case VK_NUMPAD3:
+				case VK_NUMPAD1:
+				case VK_NEXT:
+				case VK_NUMPAD7:
+				case VK_PRIOR:
+				case 0x58: // X key
+				case VK_DECIMAL:
+				case 0x5A: // Z key
+				case VK_NUMPAD0:
+				case VK_DOWN:
+				case VK_UP:
+				case VK_LEFT:
+				case VK_RIGHT:
+					bIgnoreKey = true;
+					break;
+				}
+				if(bIgnoreKey) {
+					rawkeyboard->MakeCode = 0;
+					rawkeyboard->VKey = 0;
+					rawkeyboard->Message = 0;
+					rawkeyboard->ExtraInformation = 0;
+				}
+			}
+		}
+	} break;
+	}
 }
 
 UINT MirvInput::Supply_RawInputBuffer(UINT result, _Out_writes_bytes_opt_(*pcbSize) PRAWINPUT pData, _Inout_ PUINT pcbSize, _In_ UINT cbSizeHeader) {
