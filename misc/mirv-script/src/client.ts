@@ -16,6 +16,7 @@ const events = [
 	'onAddEntity',
 	'onRemoveEntity',
 	'listEntities',
+	'listPlayerEntities',
 	'warning'
 ] as const;
 
@@ -90,8 +91,8 @@ export class MirvClient {
 	}
 	/** Enable transimission of entity events */
 	enableEntityEvents(
-		onAddEntity: (entity: mirv.Entity) => void,
-		onRemoveEntity: (entity: mirv.Entity) => void
+		onAddEntity: (entity: EntityObject) => void,
+		onRemoveEntity: (entity: EntityObject) => void
 	) {
 		this.ws.on(events[10], onAddEntity);
 		this.ws.on(events[11], onRemoveEntity);
@@ -103,10 +104,15 @@ export class MirvClient {
 		this.ws.removeAllListeners(events[11]);
 		this.send({ type: 'setEntityEvents', data: false });
 	}
-	/** List entities */
+	/** List all non null entities */
 	listEntities(callback: (entities: EntityObject[]) => void) {
 		this.ws.once(events[12], callback);
 		this.send({ type: 'listEntities' });
+	}
+	/** List all player entities */
+	listPlayerEntities(callback: (entities: EntityObject[]) => void) {
+		this.ws.once(events[13], callback);
+		this.send({ type: 'listPlayerEntities' });
 	}
 }
 
@@ -141,22 +147,24 @@ setTimeout(() => {
 	}, 8000);
 
 	setTimeout(() => {
-		client.listEntities((entities) => {
+		client.listPlayerEntities((entities) => {
 			console.log(entities);
 		});
 	}, 9000);
 
-	// setTimeout(() => {
-	// 	client.enableEntityEvents(
-	// 		(entity) => {
-	// 			console.log(entity);
-	// 		},
-	// 		(entity) => {
-	// 			console.log(entity);
-	// 		}
-	// 	);
-	// }, 10000);
-	// setTimeout(() => {
-	// 	client.disableEntityEvents();
-	// }, 11000);
+	setTimeout(() => {
+		console.log('enableEntityEvents');
+		client.enableEntityEvents(
+			(entity) => {
+				console.log(entity);
+			},
+			(entity) => {
+				console.log(entity);
+			}
+		);
+	}, 10000);
+	setTimeout(() => {
+		console.log('disableEntityEvents');
+		client.disableEntityEvents();
+	}, 15000);
 }, 1000);

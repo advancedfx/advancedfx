@@ -16,6 +16,7 @@ const events = [
 	'onAddEntity',
 	'onRemoveEntity',
 	'listEntities',
+	'listPlayerEntities',
 	'warning'
 ] as const;
 

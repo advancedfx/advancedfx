@@ -16,9 +16,13 @@ export type EntityObject = {
 	debugName: string | null;
 	className: string;
 	isPlayerPawn: boolean;
-	isPlayerController: boolean;
 	playerPawnHandle: number;
+	playerPawnIndex: number;
+	playerPawnSerial: number;
+	isPlayerController: boolean;
 	playerControllerHandle: number;
+	playerControllerIndex: number;
+	playerControllerSerial: number;
 	health: number;
 	origin: number[];
 	renderEyeOrigin: number[];
@@ -43,7 +47,8 @@ export const main = (address?: wsAddress) => {
 		'onGameEvent',
 		'onAddEntity',
 		'onRemoveEntity',
-		'listEntities'
+		'listEntities',
+		'listPlayerEntities'
 	] as const;
 	// just for ease of change
 	const warningEvent = 'warning';
@@ -60,14 +65,28 @@ export const main = (address?: wsAddress) => {
 	};
 
 	const makeEntityObject = (e: mirv.Entity): EntityObject => {
+		const playerPawnHandle = e.getPlayerPawnHandle();
+		const playerControllerHandle = e.getPlayerControllerHandle();
 		return {
 			name: e.getName(),
 			debugName: e.getDebugName(),
 			className: e.getClassName(),
 			isPlayerPawn: e.isPlayerPawn(),
+			playerPawnHandle: playerPawnHandle,
+			playerPawnIndex:
+				playerPawnHandle !== -1 ? mirv.getHandleEntryIndex(playerPawnHandle) : -1,
+			playerPawnSerial:
+				playerPawnHandle !== -1 ? mirv.getHandleSerialNumber(playerPawnHandle) : -1,
 			isPlayerController: e.isPlayerController(),
-			playerPawnHandle: e.getPlayerPawnHandle(),
-			playerControllerHandle: e.getPlayerControllerHandle(),
+			playerControllerHandle: playerControllerHandle,
+			playerControllerIndex:
+				playerControllerHandle !== -1
+					? mirv.getHandleEntryIndex(playerControllerHandle)
+					: -1,
+			playerControllerSerial:
+				playerControllerHandle !== -1
+					? mirv.getHandleSerialNumber(playerControllerHandle)
+					: -1,
 			health: e.getHealth(),
 			origin: e.getOrigin(),
 			renderEyeOrigin: e.getRenderEyeOrigin(),
@@ -239,6 +258,57 @@ export const main = (address?: wsAddress) => {
 												wsConnection.send(
 													JSON.stringify({
 														type: events[12],
+														data: entities
+													})
+												);
+											}
+											break;
+										case 'listPlayerEntities':
+											{
+												const entities: EntityObject[] = [];
+												const highest = mirv.getHighestEntityIndex();
+												for (let i = 0; i < highest + 1; i++) {
+													const entity = mirv.getEntityFromIndex(i);
+													if (
+														null === entity ||
+														(!entity.isPlayerPawn() &&
+															!entity.isPlayerController())
+													)
+														continue;
+													entities.push(makeEntityObject(entity));
+												}
+												const msg = [
+													[
+														'name',
+														'debugName',
+														'pawnHandle',
+														'pawnIndex',
+														'pawnSerial',
+														'controllerHandle',
+														'controllerIndex',
+														'controllerSerial',
+														'health'
+													].join(' , '),
+													entities
+														.map((ent) =>
+															[
+																ent.name,
+																ent.debugName,
+																ent.playerPawnHandle,
+																ent.playerPawnIndex,
+																ent.playerPawnSerial,
+																ent.playerControllerHandle,
+																ent.playerControllerIndex,
+																ent.playerControllerSerial,
+																ent.health
+															].join(' , ')
+														)
+														.join('\n')
+												].join('\n');
+												mirv.message(msg + '\n');
+												wsConnection.send(
+													JSON.stringify({
+														type: events[13],
 														data: entities
 													})
 												);
