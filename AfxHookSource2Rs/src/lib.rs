@@ -1004,7 +1004,7 @@ fn mirv_make_handle(this: &JsValue, args: &[JsValue], _context: &mut Context) ->
         if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
             if args.len() == 2 {
                 if let Some(entry_index) = args[0].as_number() {
-                    if let Some(serial_number) = args[0].as_number() {
+                    if let Some(serial_number) = args[1].as_number() {
                         return Ok(JsValue::Integer(afx_make_handle(mirv.iface, entry_index as i32,serial_number as i32)));
                     }
                 }
