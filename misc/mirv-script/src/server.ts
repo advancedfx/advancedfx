@@ -8,8 +8,14 @@ const events = [
 	'exec',
 	'getLastView',
 	'setView',
-	'gameEvents',
-	'cViewRenderSetupView'
+	'setGameEvents',
+	'setCViewRenderSetupView',
+	'setEntityEvents',
+	'onCViewRenderSetupView',
+	'onGameEvent',
+	'onAddEntity',
+	'onRemoveEntity',
+	'warning'
 ] as const;
 
 export type MirvEvents = (typeof events)[number];
@@ -92,7 +98,7 @@ export class MirvServer {
 				const msg = typeof data === 'string' ? data : data.toString();
 				const msgObject = JSON.parse(msg) as MirvMessage;
 				console.log(msgObject);
-				if (events.includes(msgObject.type) || (msgObject.type as string) === 'warning') {
+				if (events.includes(msgObject.type)) {
 					if (msgObject.data) {
 						this.users.forEach((user) => {
 							user.send(msgObject.type, msgObject.data);

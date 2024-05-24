@@ -7,8 +7,14 @@ const events = [
 	'exec',
 	'getLastView',
 	'setView',
-	'gameEvents',
-	'cViewRenderSetupView'
+	'setGameEvents',
+	'setCViewRenderSetupView',
+	'setEntityEvents',
+	'onCViewRenderSetupView',
+	'onGameEvent',
+	'onAddEntity',
+	'onRemoveEntity',
+	'warning'
 ] as const;
 
 type ConnectionOptions = {
@@ -47,25 +53,25 @@ export class MirvClient {
 	sendExec(command: string) {
 		this.send({ type: 'exec', data: command });
 	}
-	/** Disable transimission of game events */
-	disableGameEvents() {
-		this.send({ type: 'gameEvents', data: false });
-		this.ws.removeAllListeners(events[5]);
-	}
 	/** Enable transimission of game events */
 	enableGameEvents(callback: (gameEvents: mirv.GameEvent) => void) {
-		this.send({ type: 'gameEvents', data: true });
-		this.ws.on(events[5], callback);
+		this.ws.on(events[9], callback);
+		this.send({ type: 'setGameEvents', data: true });
 	}
-	/** Disable transimission of cViewRenderSetupView */
-	disableCViewRenderSetupView() {
-		this.send({ type: 'cViewRenderSetupView', data: false });
-		this.ws.removeAllListeners(events[6]);
+	/** Disable transimission of game events */
+	disableGameEvents() {
+		this.ws.removeAllListeners(events[9]);
+		this.send({ type: 'setGameEvents', data: false });
 	}
-	/** Enable transimission of cViewRenderSetupView */
+	/** Enable transimission of cViewRenderSetupView events */
 	enableCViewRenderSetupView(callback: (view: mirv.OnCViewRenderSetupViewArgs) => void) {
-		this.ws.on(events[6], callback);
-		this.send({ type: 'cViewRenderSetupView', data: true });
+		this.ws.on(events[8], callback);
+		this.send({ type: 'setCViewRenderSetupView', data: true });
+	}
+	/** Disable transimission of cViewRenderSetupView events */
+	disableCViewRenderSetupView() {
+		this.ws.removeAllListeners(events[8]);
+		this.send({ type: 'setCViewRenderSetupView', data: false });
 	}
 	/** Get last cached render view  */
 	getLastView(callback: (view: mirv.OnCViewRenderSetupViewArgs['lastView']) => void) {
@@ -79,6 +85,21 @@ export class MirvClient {
 	/** Reset render view */
 	resetView() {
 		this.send({ type: 'setView' });
+	}
+	/** Enable transimission of entity events */
+	enableEntityEvents(
+		onAddEntity: (entity: mirv.Entity) => void,
+		onRemoveEntity: (entity: mirv.Entity) => void
+	) {
+		this.ws.on(events[10], onAddEntity);
+		this.ws.on(events[11], onRemoveEntity);
+		this.send({ type: 'setEntityEvents', data: true });
+	}
+	/** Disable transimission of entity events */
+	disableEntityEvents() {
+		this.ws.removeAllListeners(events[10]);
+		this.ws.removeAllListeners(events[11]);
+		this.send({ type: 'setEntityEvents', data: false });
 	}
 }
 
@@ -111,4 +132,18 @@ setTimeout(() => {
 			data: 'test'
 		});
 	}, 8000);
+
+	setTimeout(() => {
+		client.enableEntityEvents(
+			(entity) => {
+				console.log(entity);
+			},
+			(entity) => {
+				console.log(entity);
+			}
+		);
+	}, 10000);
+	setTimeout(() => {
+		client.disableEntityEvents();
+	}, 11000);
 }, 1000);

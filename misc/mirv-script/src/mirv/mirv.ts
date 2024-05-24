@@ -1,19 +1,9 @@
-import { MirvEvents } from '../server';
 import { IWsConnection, WsConnection } from '../ws-connection/ws-connection';
-
-export interface MirvFlags {
-	gameEvents: boolean;
-	cViewRenderSetupView: boolean;
-}
 
 let wsAddress = 'ws://localhost:31337/mirv';
 let wsEnable = true;
 let tickCount = 0;
 let setView: mirv.OnCViewRenderSetupViewSet | null = null;
-let mirvFlags = {
-	gameEvents: false,
-	cViewRenderSetupView: false
-};
 
 interface wsAddress {
 	host: string;
@@ -21,21 +11,40 @@ interface wsAddress {
 	path: string;
 }
 
-export const main = (flags?: MirvFlags, address?: wsAddress) => {
+export const main = (address?: wsAddress) => {
 	let wsConnection: IWsConnection | null = null;
-	if (flags) mirvFlags = flags;
 	if (address) wsAddress = `ws://${address.host}:${address.port}/${address.path}?hlae=1`;
 	let lastView: mirv.OnCViewRenderSetupViewArgs['lastView'];
+	// could've been imported from other file, but not possible for now
 	const events = [
 		'listTypes',
 		'quit',
 		'exec',
 		'getLastView',
 		'setView',
-		'gameEvents',
-		'cViewRenderSetupView'
+		'setGameEvents',
+		'setCViewRenderSetupView',
+		'setEntityEvents',
+		'onCViewRenderSetupView',
+		'onGameEvent',
+		'onAddEntity',
+		'onRemoveEntity'
 	] as const;
+	// just for ease of change
+	const warningEvent = 'warning';
 
+	const sendWarning = (msg: string) => {
+		mirv.warning(msg);
+		if (wsConnection)
+			wsConnection.send(
+				JSON.stringify({
+					type: warningEvent,
+					data: msg
+				})
+			);
+	};
+
+	// here we define behaviour of websocket events and websocket connection as well
 	mirv.onClientFrameStageNotify = function (e) {
 		//mirv.message("onClientFrameStageNotify: "+e.curStage+" / "+e.isBefore+"\n");
 
@@ -93,7 +102,7 @@ export const main = (flags?: MirvFlags, address?: wsAddress) => {
 								{
 									// mirv.message(message.toString() + '\n');
 									const messageObj = JSON.parse(message) as {
-										type: MirvEvents;
+										type: (typeof events)[number];
 										data: string | boolean | mirv.OnCViewRenderSetupViewSet;
 									};
 
@@ -110,13 +119,7 @@ export const main = (flags?: MirvFlags, address?: wsAddress) => {
 											if (typeof messageObj.data === 'string') {
 												mirv.exec(messageObj.data);
 											} else {
-												mirv.warning('exec error: expected string');
-												wsConnection.send(
-													JSON.stringify({
-														type: 'warning',
-														data: 'exec error: expected string'
-													})
-												);
+												sendWarning('TypeError in exec: expected string');
 											}
 											break;
 										case 'getLastView':
@@ -145,14 +148,8 @@ export const main = (flags?: MirvFlags, address?: wsAddress) => {
 											) {
 												setView = messageObj.data;
 											} else {
-												mirv.warning(
-													'setView error: expected x,y,z,rX,rY,rZ,fov'
-												);
-												wsConnection.send(
-													JSON.stringify({
-														type: 'warning',
-														data: 'setView error: expected x,y,z,rX,rY,rZ,fov'
-													})
+												sendWarning(
+													'TypeError in setView: expected object with x,y,z,rX,rY,rZ,fov or null'
 												);
 											}
 											break;
@@ -161,86 +158,59 @@ export const main = (flags?: MirvFlags, address?: wsAddress) => {
 											wsConnection.close();
 											mirv.exec('quit');
 											break;
-										case 'gameEvents':
+										case 'setGameEvents':
 											if (typeof messageObj.data === 'boolean') {
-												mirvFlags.gameEvents = messageObj.data;
+												messageObj.data
+													? (mirv.onGameEvent = onGameEvent)
+													: (mirv.onGameEvent = undefined);
 											} else {
-												mirv.warning(
-													'onClientFrameStageNotify: Unknown gameEvents value: ' +
-														messageObj.data +
-														'\n' +
-														'Possible values are: true, false' +
-														'\n'
-												);
-												wsConnection.send(
-													JSON.stringify({
-														type: 'warning',
-														data:
-															'onClientFrameStageNotify: Unknown gameEvents value: ' +
-															messageObj.data +
-															'\n' +
-															'Possible values are: true, false' +
-															'\n'
-													})
+												sendWarning(
+													'TypeError in gameEvents: expected boolean'
 												);
 											}
 											break;
-										case 'cViewRenderSetupView':
+										case 'setCViewRenderSetupView':
 											if (typeof messageObj.data === 'boolean') {
-												mirvFlags.cViewRenderSetupView = messageObj.data;
+												messageObj.data
+													? (mirv.onCViewRenderSetupView =
+															onCViewRenderSetupView)
+													: (mirv.onCViewRenderSetupView = undefined);
 											} else {
-												mirv.warning(
-													'onClientFrameStageNotify: Unknown cViewRenderSetupView value: ' +
-														messageObj.data +
-														'\n' +
-														'Possible values are: true, false' +
-														'\n'
+												sendWarning(
+													'TypeError in cViewRenderSetupView: expected boolean'
 												);
-												wsConnection.send(
-													JSON.stringify({
-														type: 'warning',
-														data:
-															'onClientFrameStageNotify: Unknown cViewRenderSetupView value: ' +
-															messageObj.data +
-															'\n' +
-															'Possible values are: true, false' +
-															'\n'
-													})
+											}
+											break;
+
+										case 'setEntityEvents':
+											if (typeof messageObj.data === 'boolean') {
+												messageObj.data
+													? (mirv.onAddEntity = onAddEntity)
+													: (mirv.onAddEntity = undefined);
+												messageObj.data
+													? (mirv.onRemoveEntity = onRemoveEntity)
+													: (mirv.onRemoveEntity = undefined);
+											} else {
+												sendWarning(
+													'TypeError in entityEvents: expected boolean'
 												);
 											}
 											break;
 										default:
-											mirv.warning(
-												'onClientFrameStageNotify: Unknown incoming message.type:' +
-													messageObj.type +
-													'\n'
-											);
-											wsConnection.send(
-												JSON.stringify({
-													type: 'warning',
-													data:
-														'onClientFrameStageNotify: Unknown incoming message.type:' +
-														messageObj.type +
-														'\n'
-												})
+											sendWarning(
+												'TypeError in onClientFrameStageNotify: Unknown incoming message.type:' +
+													typeof messageObj.type
 											);
 											break;
 									}
 								}
 								break;
 							default:
-								mirv.warning(
-									'onClientFrameStageNotify: Warning: Unhandled incoming message of type: ' +
+								sendWarning(
+									'TypeError in onClientFrameStageNotify: Warning: Unhandled incoming message of type: ' +
 										typeof message
 								);
-								wsConnection.send(
-									JSON.stringify({
-										type: 'warning',
-										data:
-											'onClientFrameStageNotify: Warning: Unhandled incoming message of type: ' +
-											typeof message
-									})
-								);
+
 								break;
 						}
 					} catch (err) {
@@ -271,40 +241,77 @@ export const main = (flags?: MirvFlags, address?: wsAddress) => {
 		}
 	};
 
-	mirv.onGameEvent = function (e) {
-		// mirv.message("onGameEvent: "+e.name+"("+e.id+") \""+e.data+"\"\n");
-		if (null !== wsConnection && mirvFlags.gameEvents) {
-			try {
-				wsConnection.send(
-					JSON.stringify({
-						type: events[5],
-						data: e
-					})
-				);
-			} catch (err) {
-				mirv.warning('onGameEvent: Error while sending message:' + String(err) + '\n');
-			}
-		}
-	};
-
-	mirv.onCViewRenderSetupView = function (e) {
-		if (null !== wsConnection && mirvFlags.cViewRenderSetupView) {
+	// we define it here to assign later on demand, same for others
+	const onCViewRenderSetupView: mirv.OnCViewRenderSetupView = (e) => {
+		if (null !== wsConnection) {
 			lastView = e.lastView;
 			try {
 				wsConnection.send(
 					JSON.stringify({
-						type: events[6],
+						type: events[8],
 						data: e
 					})
 				);
 
 				// we could flush and then wait for a reply here to set a view instantly, but don't understimate network round-trip time!
 			} catch (err) {
-				mirv.warning('onGameEvent: Error while sending message:' + String(err) + '\n');
+				mirv.warning(
+					'onCViewRenderSetupView: Error while sending message:' + String(err) + '\n'
+				);
 			}
 		}
 		if (setView !== null) {
 			return setView;
 		}
 	};
+
+	const onGameEvent: mirv.OnGameEvent = (e) => {
+		if (null !== wsConnection) {
+			try {
+				wsConnection.send(
+					JSON.stringify({
+						type: events[9],
+						data: e
+					})
+				);
+			} catch (err) {
+				mirv.warning('onGameEvent: Error while sending message:' + String(err) + '\n');
+			}
+		}
+	};
+
+	const onAddEntity: mirv.OnEntityEvent = (e) => {
+		if (null !== wsConnection) {
+			try {
+				wsConnection.send(
+					JSON.stringify({
+						type: events[10],
+						data: e
+					})
+				);
+			} catch (err) {
+				mirv.warning('onAddEntity: Error while sending message:' + String(err) + '\n');
+			}
+		}
+	};
+	const onRemoveEntity: mirv.OnEntityEvent = (e) => {
+		if (null !== wsConnection) {
+			try {
+				wsConnection.send(
+					JSON.stringify({
+						type: events[11],
+						data: e
+					})
+				);
+			} catch (err) {
+				mirv.warning('onRemoveEntity: Error while sending message:' + String(err) + '\n');
+			}
+		}
+	};
+
+	// if set to undefined, then it's completely disabled (but can be turned on later, when defined)
+	mirv.onCViewRenderSetupView = undefined;
+	mirv.onGameEvent = undefined;
+	mirv.onAddEntity = undefined;
+	mirv.onRemoveEntity = undefined;
 };

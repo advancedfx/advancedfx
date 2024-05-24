@@ -1,11 +1,7 @@
-import { MirvFlags, main } from './mirv/mirv';
+import { main } from './mirv/mirv';
 
 {
-	const flags: MirvFlags = {
-		gameEvents: true,
-		cViewRenderSetupView: false
-	};
-	main(flags, {
+	main({
 		host: 'localhost',
 		port: 31337,
 		path: 'mirv'
