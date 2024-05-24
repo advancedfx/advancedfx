@@ -743,14 +743,31 @@ HRESULT STDMETHODCALLTYPE New_CreateSwapChain( void * This,
 }
 
 HRESULT WINAPI New_CreateDXGIFactory(REFIID riid, _COM_Outptr_ void **ppFactory);
+HRESULT WINAPI New_CreateDXGIFactory1(REFIID riid, _COM_Outptr_ void **ppFactory);
 
 CAfxImportFuncHook<HRESULT(WINAPI*)(REFIID riid, _COM_Outptr_ void **ppFactory)> g_Import_rendersystemdx11_dxgi_CreateDXGIFactory("CreateDXGIFactory", &New_CreateDXGIFactory);
+CAfxImportFuncHook<HRESULT(WINAPI*)(REFIID riid, _COM_Outptr_ void **ppFactory)> g_Import_rendersystemdx11_dxgi_CreateDXGIFactory1("CreateDXGIFactory1", &New_CreateDXGIFactory1);
+
 CAfxImportDllHook g_Import_rendersystemdx11_dxgi("dxgi.dll", CAfxImportDllHooks({
-	&g_Import_rendersystemdx11_dxgi_CreateDXGIFactory
+	&g_Import_rendersystemdx11_dxgi_CreateDXGIFactory,
+    &g_Import_rendersystemdx11_dxgi_CreateDXGIFactory1
     }));
 
 HRESULT WINAPI New_CreateDXGIFactory(REFIID riid, _COM_Outptr_ void **ppFactory) {
     HRESULT result = g_Import_rendersystemdx11_dxgi_CreateDXGIFactory.GetTrueFuncValue()(riid, ppFactory);
+
+    if(SUCCEEDED(result) && ppFactory && *ppFactory
+        && ( __uuidof(IDXGIFactory4) == riid || __uuidof(IDXGIFactory) == riid )
+        && nullptr == g_OldCreateSwapChain) {
+            void **vtable = *(void***)*ppFactory;
+            AfxDetourPtr(&(vtable[10]),New_CreateSwapChain,(PVOID*)&g_OldCreateSwapChain);
+        }
+        
+    return result;
+}
+
+HRESULT WINAPI New_CreateDXGIFactory1(REFIID riid, _COM_Outptr_ void **ppFactory) {
+    HRESULT result = g_Import_rendersystemdx11_dxgi_CreateDXGIFactory1.GetTrueFuncValue()(riid, ppFactory);
 
     if(SUCCEEDED(result) && ppFactory && *ppFactory
         && ( __uuidof(IDXGIFactory4) == riid || __uuidof(IDXGIFactory) == riid )

@@ -6,6 +6,19 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.15.0</version>
+<time>2024-05-24T09:00Z</time>
+<changes>
+<change type="fixed">Adjusted to CS2 update.</change>
+<change type="added">Added new features to mirv-script.</change>
+<change type="fixed">Fixed a few things in mirv-script.</change>
+<change type="updated">Improved parameters in HLAE interfaces advancedfx/advancedfx#944</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.14.0</version>
 <time>2024-05-11T17:15Z</time>
 <changes>

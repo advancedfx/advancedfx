@@ -72,36 +72,36 @@ public:
 
     bool IsPlayerPawn() {
         // See cl_ent_text drawing function.
-        return ((bool (__fastcall *)(void *)) (*(void***)this)[143]) (this);
+        return ((bool (__fastcall *)(void *)) (*(void***)this)[149]) (this);
     }
 
     SOURCESDK::CS2::CBaseHandle GetPlayerPawnHandle() {
         // See cl_ent_text drawing function.
         if(!IsPlayerController())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
-        return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + 0x604));
+        return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + 0x5fc));
     }
 
     bool IsPlayerController() {
-        // See cl_ent_text drawing function.
-        return ((bool (__fastcall *)(void *)) (*(void***)this)[144]) (this);    
+        // See cl_ent_text drawing function. Near "Pawn: (%d) Name: %s".
+        return ((bool (__fastcall *)(void *)) (*(void***)this)[150]) (this);    
     }
 
     SOURCESDK::CS2::CBaseHandle GetPlayerControllerHandle() {
         // See cl_ent_text drawing function.
         if(!IsPlayerPawn())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
-        return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + 0x1294));
+        return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + 0x128c));
     }
 
     unsigned int GetHealth() {
         // See cl_ent_text drawing function.
-        return ((unsigned int (__fastcall *)(void *)) (*(void***)this)[156]) (this); 
+        return ((unsigned int (__fastcall *)(void *)) (*(void***)this)[162]) (this); 
     }
 
     /**
      * @remarks FLOAT_MAX if invalid
      */
     void GetOrigin(float & x, float & y, float & z) {
-        // See cl_ent_text drawing function.
+        // See cl_ent_text drawing function. Near ""Health: %d\n".
         x =  (*(float *)((unsigned char *)this + 0x138));
         y =  (*(float *)((unsigned char *)this + 0x13c));
         z =  (*(float *)((unsigned char *)this + 0x140));
@@ -144,7 +144,6 @@ public:
         if(it != m_Map.end()) {
             auto & pInstance = it->second;
             pInstance->m_pInstance = nullptr;
-            pInstance->Release();
             m_Map.erase(it);
         }        
     }
@@ -172,6 +171,10 @@ protected:
     CAfxEntityInstanceRef(class CEntityInstance * pInstance)
     : m_pInstance(pInstance)
     {
+    }
+
+    ~CAfxEntityInstanceRef() {
+        m_Map.erase(m_pInstance);
     }
 
 private:

@@ -1085,8 +1085,6 @@ impl MirvEntityRef {
     #[must_use]
     fn new(afx_iface: * mut AfxHookSource2, afx_entity_ref: * mut AfxEntityRef) -> Self {
         
-        afx_add_ref_entity_ref(afx_iface,afx_entity_ref);
-
         Self {
             iface: afx_iface,
             entity_ref: afx_entity_ref
@@ -1807,6 +1805,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_add_entity(this_ptr: *mut AfxHoo
     let event_option_clone = borrowed.clone();
     std::mem::drop(borrowed);
     if let Some(event_clone) = event_option_clone {
+        afx_add_ref_entity_ref((*this_ptr).iface,p_ref);
         let entity_ref = MirvEntityRef::create((*this_ptr).iface, p_ref, &mut (*this_ptr).context);
         if let Err(e) = event_clone.call(&JsValue::null(), &[JsValue::Object(entity_ref),JsValue::Integer(handle)], &mut (*this_ptr).context) {
             use std::fmt::Write as _;
@@ -1823,6 +1822,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_remove_entity(this_ptr: *mut Afx
     let event_option_clone = borrowed.clone();
     std::mem::drop(borrowed);
     if let Some(event_clone) = event_option_clone {
+        afx_add_ref_entity_ref((*this_ptr).iface,p_ref);
         let entity_ref = MirvEntityRef::create((*this_ptr).iface, p_ref, &mut (*this_ptr).context);
         if let Err(e) = event_clone.call(&JsValue::null(), &[JsValue::Object(entity_ref),JsValue::Integer(handle)], &mut (*this_ptr).context) {
             use std::fmt::Write as _;

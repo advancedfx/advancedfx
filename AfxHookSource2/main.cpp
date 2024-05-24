@@ -153,7 +153,7 @@ float curtime_get(void)
 		return g_DemoPausedData.FirstPausedCurtime;
 	}
 
-	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals + 11*4) : 0;
+	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals + 13*4) : 0;
 }
 
 int framecount_get(void)
@@ -182,7 +182,7 @@ float interpolation_amount_get(void)
 		return g_DemoPausedData.FirstPausedInterpolationAmount;
 	}
 
-	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +13*4) : 0;
+	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +15*4) : 0;
 }
 
 CON_COMMAND(__mirv_info,"") {
@@ -992,18 +992,27 @@ void HookClientDll(HMODULE clientDll) {
 	/*
 		This is where it checks for engine->IsPlayingDemo() (and afterwards for cl_demoviewoverride (float))
 		before under these conditions it is calling CalcDemoViewOverride, so this is in CViewRender::SetUpView:
-
-.text:000000018076F3C1                 mov     rcx, cs:qword_18167FE18
-.text:000000018076F3C8                 mov     rax, [rcx]
-.text:000000018076F3CB                 call    qword ptr [rax+118h]
-.text:000000018076F3D1                 mov     rbp, [rsp+948h]
-.text:000000018076F3D9                 xorps   xmm6, xmm6
-.text:000000018076F3DC                 test    al, al
-.text:000000018076F3DE                 jz      short loc_18076F457
-.text:000000018076F3E0                 mov     edx, 0FFFFFFFFh
+                             LAB_1807e49b1                                   XREF[5]:     1807e4942(j), 1807e4952(j), 
+                                                                                          1807e4962(j), 1807e496e(j), 
+                                                                                          1807e497f(j)  
+       1807e49b1 48 8b 0d        MOV        RCX,qword ptr [DAT_1819feeb0]                    = ??
+                 f8 a4 21 01
+       1807e49b8 48 8b 01        MOV        RAX,qword ptr [RCX]
+       1807e49bb ff 90 30        CALL       qword ptr [RAX + 0x130]
+                 01 00 00
+       1807e49c1 4c 8b a4        MOV        R12,qword ptr [RSP + 0x940]
+                 24 40 09 
+                 00 00
+       1807e49c9 0f 57 f6        XORPS      XMM6,XMM6
+       1807e49cc 84 c0           TEST       AL,AL
+       1807e49ce 74 77           JZ         LAB_1807e4a47
+                             LAB_1807e49d0                                   XREF[2]:     181b7d5ec(*), 181b7d5f4(*)  
+       1807e49d0 ba ff ff        MOV        EDX,0xffffffff
+                 ff ff
 	*/
 	{
-		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8B 0D ?? ?? ?? ?? 48 8B 01 FF 90 30 01 00 00 48 8B AC 24 48 09 00 00 0F 57 F6 84 C0 74 77 BA FF FF FF FF");
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8b 0d ?? ?? ?? ?? 48 8b 01 ff 90 30 01 00 00 4c 8b a4 24 40 09 00 00 0f 57 f6 84 c0 74 77 ba ff ff ff ff");
+																	  
 		if (!result.IsEmpty()) {
 			/*
 				These are the top 16 bytes we change to:
@@ -1036,34 +1045,33 @@ void HookClientDll(HMODULE clientDll) {
 		The FOV is overridden / computed a second time in the function called at the very end of
 		CViewRender::SetUpView (see hook above on how to find it):
 
-.text:000000018076F387                 movss   xmm0, dword ptr [rax]
-.text:000000018076F38B                 movss   dword ptr [rbp+4E8h], xmm0
-.text:000000018076F393
-.text:000000018076F393 loc_18076F393:                          ; CODE XREF: sub_18076F120+460↓j
-.text:000000018076F393                 xorps   xmm6, xmm6
-.text:000000018076F396
-.text:000000018076F396 loc_18076F396:                          ; CODE XREF: sub_18076F120+47D↓j
-                                       <-- snip -->
-.text:000000018076F396                 mov     ecx, ebx
-.text:000000018076F398                 call    sub_1807F27D0
-.text:000000018076F39D                 mov     rcx, rax
-.text:000000018076F3A0                 mov     rdx, [rax]
-                                       <-- snap -->
-.text:000000018076F3A3                 call    qword ptr [rdx+0D8h]
+       1807db80b eb 03           JMP        LAB_1807db810
+                             LAB_1807db80d                                   XREF[1]:     1807db7f2(j)  
+       1807db80d 0f 57 f6        XORPS      XMM6,XMM6
+                             LAB_1807db810                                   XREF[1]:     1807db80b(j)  
+<-- snip -->
+       1807db810 8b cb           MOV        ECX,EBX
+       1807db812 e8 59 b7        CALL       FUN_180876f70                                    undefined FUN_180876f70()
+                 09 00
+       1807db817 48 8b c8        MOV        RCX,RAX
+       1807db81a 48 8b 10        MOV        RDX,qword ptr [RAX]
+<-- snap -->
+       1807db81d ff 92 d8        CALL       qword ptr [RDX + 0xd8]
+                 00 00 00
 	*/
 
 	{
-		Afx::BinUtils::MemRange result = FindPatternString(textRange, "F3 0F 10 00 F3 0F 11 85 E8 04 00 00 0F 57 F6 8B CB E8 ?? ?? ?? ?? 48 8B C8 48 8B 10 FF 92 D8 00 00 00");
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "eb 03 0f 57 f6 8b cb e8 ?? ?? ?? ?? 48 8b c8 48 8b 10 ff 92 d8 00 00 00");
 		if (!result.IsEmpty()) {
 			MdtMemBlockInfos mbis;
-			MdtMemAccessBegin((LPVOID)(result.Start+15), 13, &mbis);
+			MdtMemAccessBegin((LPVOID)(result.Start+2), 13, &mbis);
 
 			static LPVOID ptr2 = CS2_Client_CSetupView_InsideComputeViewMatrix;
 			LPVOID ptrPtr2 = &ptr2;
-			size_t pCallAddress3 = result.Start+15+2+5+(*(unsigned int*)(result.Start+15+3));
+			size_t pCallAddress3 = result.Start+5+2+5+(*(unsigned int*)(result.Start+5+3));
 			static LPVOID ptr3 = (LPVOID)pCallAddress3;
 			LPVOID ptrPtr3 = &ptr3;
-			size_t pCallAddress4 = result.Start+15+13;
+			size_t pCallAddress4 = result.Start+5+13;
 			static LPVOID ptr4 = (LPVOID)pCallAddress4;
 			LPVOID ptrPtr4 = &ptr4;
 			unsigned char asmCode2[48]={
@@ -1099,7 +1107,7 @@ void HookClientDll(HMODULE clientDll) {
 			LPVOID ptrPtr = &ptr;
 			memcpy(&asmCode[2], &ptrPtr, sizeof(LPVOID));
 
-			memcpy((LPVOID)(result.Start+15), asmCode, 13);
+			memcpy((LPVOID)(result.Start+5), asmCode, 13);
 			MdtMemAccessEnd(&mbis);
 		}
 		else
@@ -1444,8 +1452,8 @@ void CS2_HookClientDllInterface(void * iface)
 	AfxDetourPtr((PVOID *)&(vtable[3]), new_CCS2_Client_Init, (PVOID*)&old_CCS2_Client_Init);
 	AfxDetourPtr((PVOID *)&(vtable[4]), new_CCS2_Client_Shutdown, (PVOID*)&old_CCS2_Client_Shutdown);
 	AfxDetourPtr((PVOID *)&(vtable[11]), new_CS2_Client_SetGlobals, (PVOID*)&old_CS2_Client_SetGlobals);
-	AfxDetourPtr((PVOID *)&(vtable[34]), new_CS2_Client_LevelInitPreEntity, (PVOID*)&old_CS2_Client_LevelInitPreEntity);
-	AfxDetourPtr((PVOID *)&(vtable[35]), new_CS2_Client_FrameStageNotify, (PVOID*)&old_CS2_Client_FrameStageNotify);
+	AfxDetourPtr((PVOID *)&(vtable[35]), new_CS2_Client_LevelInitPreEntity, (PVOID*)&old_CS2_Client_LevelInitPreEntity);
+	AfxDetourPtr((PVOID *)&(vtable[36]), new_CS2_Client_FrameStageNotify, (PVOID*)&old_CS2_Client_FrameStageNotify);
 }
 
 SOURCESDK::CreateInterfaceFn old_Client_CreateInterface = 0;
