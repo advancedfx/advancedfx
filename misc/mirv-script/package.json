@@ -8,15 +8,15 @@
 	"engines": {
 		"node": "22.1.0"
 	},
+	"type": "module",
 	"scripts": {
 		"eslint": "eslint . --ext .ts --ignore-pattern=.gitignore,.eslintignore",
-		"compile": "rollup -c",
-		"server": "tsc --project tsconfig.scripts.json && node dist/server.js",
-		"compile-scripts": "tsc --project tsconfig.scripts.json",
-		"test": "npm run compile && npm run compile-scripts && node dist/server.js"
+		"build": "rollup -c",
+		"build-scripts": "tsc --project tsconfig.scripts.json",
+		"server": "npm run build-scripts && node dist/server.js",
+		"client": "npm run build-scripts && node dist/client.js"
 	},
 	"devDependencies": {
-		"@rollup/plugin-commonjs": "^25.0.7",
 		"@rollup/plugin-typescript": "^11.1.6",
 		"@types/node": "^20.12.10",
 		"@types/ws": "^8.5.10",

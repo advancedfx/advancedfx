@@ -3,10 +3,9 @@
 		"target": "ES6",
 		"lib": ["ESNext", "DOM"],
 		"module": "ESNext",
-		"moduleResolution": "Node",
+		"moduleResolution": "Bundler",
 		"forceConsistentCasingInFileNames": true,
 		"strict": true,
-		"esModuleInterop": true,
 		"noEmit": true
 	},
 	"include": ["src/**/*"]

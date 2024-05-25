@@ -2,11 +2,13 @@
 	"compilerOptions": {
 		"target": "ES6",
 		"lib": ["ESNext", "DOM"],
-		"module": "CommonJS",
-		"moduleResolution": "Node",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
 		"forceConsistentCasingInFileNames": true,
 		"strict": true,
 		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"skipLibCheck": true,
 		"outDir": "dist"
 	},
 	"include": ["src/server.ts", "src/client.ts", "src/types/*"]
