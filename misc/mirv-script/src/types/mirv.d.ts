@@ -311,7 +311,7 @@ declare namespace mirv {
 		 */
 		getRenderEyeAngles(): number[];
 
-		getViewEntity(): null | Entity;
+		getViewEntityHandle(): number;
 	}
 
 	type OnEntityEvent = (entity: Entity, handle: number) => void;

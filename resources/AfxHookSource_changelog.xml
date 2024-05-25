@@ -3,6 +3,16 @@
 
 <changelog>
 
+<release>
+<name>AfxHookSource</name>
+<version>1.127.2</version>
+<time>2024-05-25T16:10Z</time>
+<changes>
+<change type="fixed">Fixed unwanted VK_ADD / VK_SUBSTRACT passthroughs in mirv_input.</change>
+</changes>
+</release>
+
+
 
 <release>
 <name>AfxHookSource</name>

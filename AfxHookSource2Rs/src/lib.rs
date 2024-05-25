@@ -85,7 +85,7 @@ pub struct AfxHookSource2 {
 
     get_entity_ref_render_eye_angles: unsafe extern "C" fn(p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32),
 
-    get_entity_ref_view_entity_ref: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> * mut AfxEntityRef,
+    get_entity_ref_view_entity_handle: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> i32,
 }
 
 /**
@@ -400,10 +400,10 @@ fn afx_get_entity_ref_render_eye_angles(iface: * mut AfxHookSource2, p_ref: * mu
     }
 }
 
-fn afx_get_entity_ref_view_entity_ref(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> * mut AfxEntityRef {
-    let result: * mut AfxEntityRef;
+fn afx_get_entity_ref_view_entity_handle(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> i32 {
+    let result: i32;
     unsafe {
-        result = ((*iface).get_entity_ref_view_entity_ref)(p_ref);
+        result = ((*iface).get_entity_ref_view_entity_handle)(p_ref);
     }
     return result;
 }
@@ -1158,8 +1158,8 @@ impl MirvEntityRef {
                 0,
             )             
             .function(
-                NativeFunction::from_fn_ptr(MirvEntityRef::get_view_entity),
-                js_string!("getViewEntity"),
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_view_entity_handle),
+                js_string!("getViewEntityHandle"),
                 0,
             )             
             .build();
@@ -1309,18 +1309,10 @@ impl MirvEntityRef {
         mirv_error_type()
     }
 
-    fn get_view_entity(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+    fn get_view_entity_handle(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
-                
-                let entity_ref: * mut AfxEntityRef;
-                entity_ref = afx_get_entity_ref_view_entity_ref(mirv.iface,mirv.entity_ref);
-
-                if entity_ref.is_null() {
-                    return Ok(JsValue::null());
-                } 
-
-                return Ok(JsValue::Object(MirvEntityRef::create(mirv.iface, entity_ref, context)));
+                return Ok(JsValue::Integer(afx_get_entity_ref_view_entity_handle(mirv.iface,mirv.entity_ref)));
             }
         }
         mirv_error_type()

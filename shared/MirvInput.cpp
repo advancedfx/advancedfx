@@ -692,6 +692,10 @@ bool MirvInput::Supply_KeyEvent(KeyState keyState, WPARAM wParam, LPARAM lParam)
 	{
 		switch(wParam)
 		{
+		case VK_ADD:
+			return true;
+		case VK_SUBTRACT:
+			return true;
 		case VK_ESCAPE:
 			if(KS_UP == keyState) m_CameraControlMode = false;
 			return true;
@@ -916,6 +920,8 @@ void MirvInput::ProcessRawInputData(PRAWINPUT pData) {
 			if(!(m_IgnoreNextKey || m_IgnoreKeyUp && (rawkeyboard->Flags & RI_KEY_BREAK))) {
 				bool bIgnoreKey = false;
 				switch(rawkeyboard->VKey) {
+				case VK_ADD:
+				case VK_SUBTRACT:					
 				case VK_ESCAPE:
 				case VK_CONTROL:
 				case VK_HOME:
