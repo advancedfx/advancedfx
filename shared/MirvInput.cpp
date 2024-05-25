@@ -8,6 +8,9 @@
 #include "../deps/release/rapidxml/rapidxml.hpp"
 #include "../deps/release/rapidxml/rapidxml_print.hpp"
 
+// Needed for QWORD definition:
+#include <WinDNS.h>
+
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -974,7 +977,8 @@ UINT MirvInput::Supply_RawInputBuffer(UINT result, _Out_writes_bytes_opt_(*pcbSi
 
 	if(0 < result && nullptr != pData && sizeof(RAWINPUTHEADER) == cbSizeHeader && pData && pcbSize && sizeof(RAWINPUT)*result <= *pcbSize) {
 		for(UINT i = 0; i < result; i++) {
-			ProcessRawInputData(&pData[i]);
+			ProcessRawInputData(pData);
+			pData = NEXTRAWINPUTBLOCK(pData);
 		}
 	}
 

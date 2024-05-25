@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.15.3</version>
+<time>2024-05-25T20:30Z</time>
+<changes>
+<change type="fixed">Fixed mirv_input iteration of raw input buffer, causing troubles e.g. when using AutoHokey.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.15.2</version>
 <time>2024-05-25T14:10Z</time>
 <changes>
