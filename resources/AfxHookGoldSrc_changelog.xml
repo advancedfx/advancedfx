@@ -7,7 +7,7 @@
 <release>
 <name>AfxHookGoldSrc</name>
 <version>2.23.2</version>
-<time>2024-05-25T16:10Z</time>
+<time>2024-05-25T14:10Z</time>
 <changes>
 <change type="fixed">Fixed unwanted VK_ADD / VK_SUBSTRACT passthroughs in mirv_input.</change>
 </changes>
