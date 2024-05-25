@@ -1,36 +1,11 @@
 import http from 'http';
 import { SimpleWebSocket, SimpleWebSocketServer } from 'simple-websockets-server';
 import { WebSocket } from 'ws';
-
-const events = [
-	'listTypes',
-	'quit',
-	'exec',
-	'getLastView',
-	'setView',
-	'setGameEvents',
-	'setCViewRenderSetupView',
-	'setEntityEvents',
-	'onCViewRenderSetupView',
-	'onGameEvent',
-	'onAddEntity',
-	'onRemoveEntity',
-	'listEntities',
-	'listPlayerEntities',
-	'warning'
-] as const;
-
-export type MirvEvents = (typeof events)[number];
+import { MirvEvents, events } from './mirv/ws-events.js';
 
 export type MirvMessage = {
 	type: MirvEvents;
 	data?: string | number | object | boolean;
-};
-
-const serverOptions = {
-	host: 'localhost',
-	port: 31337,
-	path: 'mirv'
 };
 
 export class MirvServer {
@@ -74,9 +49,10 @@ export class MirvServer {
 						console.error('Error: ' + e);
 					});
 
-					for (const event of events) {
+					for (const event of Object.values(events)) {
 						socket.on(event, (data) => {
 							if (this.hlae) this.hlae.send(JSON.stringify({ type: event, data }));
+							console.log('User ' + id + ' sent ' + event + ': ' + data);
 						});
 					}
 
@@ -100,7 +76,7 @@ export class MirvServer {
 				const msg = typeof data === 'string' ? data : data.toString();
 				const msgObject = JSON.parse(msg) as MirvMessage;
 				console.log(msgObject);
-				if (events.includes(msgObject.type)) {
+				if (Object.values(events).includes(msgObject.type)) {
 					if (msgObject.data) {
 						this.users.forEach((user) => {
 							user.send(msgObject.type, msgObject.data);
@@ -132,6 +108,11 @@ export class MirvServer {
 		});
 	}
 }
-
+const serverOptions = {
+	host: 'localhost',
+	port: 31337,
+	path: 'mirv'
+};
+// test
 const server = new MirvServer(serverOptions);
 server.start();

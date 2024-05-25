@@ -1,435 +1,123 @@
-import { IWsConnection, WsConnection } from '../ws-connection/ws-connection';
+import { IWsConnection, WsConnection } from './ws-connection';
+import { events } from './ws-events';
+// only one instance of MirvJS is allowed
+export class MirvJS {
+	private static instance: MirvJS;
+	private static _tickCount: number = 0;
+	private static _wsConnection: IWsConnection | null = null;
+	private static _wsAddress: string = 'ws://localhost:31337/mirv';
+	private static _wsEnable: boolean = false;
+	private static _setView: mirv.OnCViewRenderSetupViewSet | null = null;
+	private static _lastView: mirv.OnCViewRenderSetupViewArgs['lastView'] | null = null;
+	private constructor() {}
+	/**
+	 * Initialize MirvJS.
+	 *
+	 * @param wsAddress - The address to connect to. Default: `ws://localhost:31337/mirv`
+	 *
+	 */
+	static init(wsAddress?: { host: string; port: number; path: string }) {
+		if (!MirvJS.instance) {
+			MirvJS.instance = new MirvJS();
+		}
+		if (wsAddress)
+			this._wsAddress = `ws://${wsAddress.host}:${wsAddress.port}/${wsAddress.path}?hlae=1`;
+		return MirvJS.instance;
+	}
+	/**
+	 * Websocket connection.
+	 */
+	static get ws() {
+		return this._wsConnection;
+	}
+	/**
+	 * Internal tick count.
+	 */
+	static get tick() {
+		return this._tickCount;
+	}
+	static set tick(value: number) {
+		this._tickCount = value;
+	}
+	/**
+	 * Render view.
+	 */
+	static get setView() {
+		return this._setView;
+	}
+	static set setView(value: mirv.OnCViewRenderSetupViewSet | null) {
+		this._setView = value;
+	}
+	/**
+	 * Last calculated render view.
+	 */
+	static get lastView() {
+		return this._lastView;
+	}
 
-let wsAddress = 'ws://localhost:31337/mirv';
-let wsEnable = true;
-let tickCount = 0;
-let setView: mirv.OnCViewRenderSetupViewSet | null = null;
+	static set lastView(value: mirv.OnCViewRenderSetupViewArgs['lastView'] | null) {
+		this._lastView = value;
+	}
+	/**
+	 * Enable/disable websocket connection.
+	 */
+	static get wsEnable() {
+		return this._wsEnable;
+	}
 
-interface wsAddress {
-	host: string;
-	port: number;
-	path: string;
-}
-
-export type EntityObject = {
-	name: string;
-	debugName: string | null;
-	className: string;
-	isPlayerPawn: boolean;
-	playerPawnHandle: number;
-	playerPawnIndex: number;
-	playerPawnSerial: number;
-	isPlayerController: boolean;
-	playerControllerHandle: number;
-	playerControllerIndex: number;
-	playerControllerSerial: number;
-	health: number;
-	origin: number[];
-	renderEyeOrigin: number[];
-	renderEyeAngles: number[];
-};
-
-export const main = (address?: wsAddress) => {
-	let wsConnection: IWsConnection | null = null;
-	if (address) wsAddress = `ws://${address.host}:${address.port}/${address.path}?hlae=1`;
-	let lastView: mirv.OnCViewRenderSetupViewArgs['lastView'];
-	// could've been imported from other file, but not possible for now
-	const events = [
-		'listTypes',
-		'quit',
-		'exec',
-		'getLastView',
-		'setView',
-		'setGameEvents',
-		'setCViewRenderSetupView',
-		'setEntityEvents',
-		'onCViewRenderSetupView',
-		'onGameEvent',
-		'onAddEntity',
-		'onRemoveEntity',
-		'listEntities',
-		'listPlayerEntities'
-	] as const;
-	// just for ease of change
-	const warningEvent = 'warning';
-
-	const sendWarning = (msg: string) => {
+	static set wsEnable(value: boolean) {
+		this._wsEnable = value;
+	}
+	/**
+	 * Connect/reconnect to the websocket server.
+	 *
+	 * @remarks
+	 * Use it in `mirv.onClientFrameStageNotify` to run on every tick.
+	 *
+	 */
+	static connect() {
+		// Restore websockett connection:
+		if (this._wsConnection === null || this._wsConnection.hasException()) {
+			if (this._wsConnection !== null) {
+				mirv.warning(
+					'onClientFrameStageNotify: wsConnection failed: ' +
+						String(this._wsConnection.getException()) +
+						'\n'
+				);
+				this._wsConnection.close();
+				this._wsConnection = null;
+				this.setView = null;
+			}
+			// Every 64 ticks we try to restore the connection:
+			if (this._wsEnable && this._tickCount % 64 === 0) {
+				mirv.message(
+					'onClientFrameStageNotify: making new wsConnection: ' + this._wsAddress + '\n'
+				);
+				this._wsConnection = new WsConnection({
+					address: this._wsAddress
+				});
+			}
+		}
+		// Close websocket connection if disabled
+		if (this._wsConnection !== null && !this._wsEnable) {
+			this._wsConnection.close();
+			this._wsConnection = null;
+		}
+		// We use this to request an extra processing of jobs from HLAE (currently by default it only proccesses jobs upon after FRAME_RENDER_END == 6)
+		mirv.run_jobs();
+		mirv.run_jobs_async();
+	}
+	/**
+	 * Send a warning message to the game console and to the websocket server.
+	 */
+	static sendWarning = (msg: string) => {
 		mirv.warning(msg);
-		if (wsConnection)
-			wsConnection.send(
+		if (this._wsConnection)
+			this._wsConnection.send(
 				JSON.stringify({
-					type: warningEvent,
+					type: events.warning,
 					data: msg
 				})
 			);
 	};
-
-	const makeEntityObject = (e: mirv.Entity): EntityObject => {
-		const playerPawnHandle = e.getPlayerPawnHandle();
-		const playerControllerHandle = e.getPlayerControllerHandle();
-		return {
-			name: e.getName(),
-			debugName: e.getDebugName(),
-			className: e.getClassName(),
-			isPlayerPawn: e.isPlayerPawn(),
-			playerPawnHandle: playerPawnHandle,
-			playerPawnIndex:
-				playerPawnHandle !== -1 ? mirv.getHandleEntryIndex(playerPawnHandle) : -1,
-			playerPawnSerial:
-				playerPawnHandle !== -1 ? mirv.getHandleSerialNumber(playerPawnHandle) : -1,
-			isPlayerController: e.isPlayerController(),
-			playerControllerHandle: playerControllerHandle,
-			playerControllerIndex:
-				playerControllerHandle !== -1
-					? mirv.getHandleEntryIndex(playerControllerHandle)
-					: -1,
-			playerControllerSerial:
-				playerControllerHandle !== -1
-					? mirv.getHandleSerialNumber(playerControllerHandle)
-					: -1,
-			health: e.getHealth(),
-			origin: e.getOrigin(),
-			renderEyeOrigin: e.getRenderEyeOrigin(),
-			renderEyeAngles: e.getRenderEyeAngles()
-		};
-	};
-
-	// here we define behaviour of websocket events and websocket connection as well
-	mirv.onClientFrameStageNotify = function (e) {
-		//mirv.message("onClientFrameStageNotify: "+e.curStage+" / "+e.isBefore+"\n");
-
-		if (
-			e.curStage == 0 && // FRAME_START - called on host_frame (1 per tick).
-			e.isBefore
-		) {
-			// Restore websockett connection:
-
-			if (null === wsConnection || wsConnection.hasException()) {
-				if (null !== wsConnection) {
-					mirv.warning(
-						'onClientFrameStageNotify: wsConnection failed: ' +
-							String(wsConnection.getException()) +
-							'\n'
-					);
-					wsConnection.close();
-					wsConnection = null;
-					// setView = null; // our connection crashed ... consider this.
-				}
-
-				// Every 64 ticks we try to restore the connection:
-				if (wsEnable && 0 == tickCount % 64) {
-					mirv.message(
-						'onClientFrameStageNotify: making new wsConnection: ' + wsAddress + '\n'
-					);
-					wsConnection = new WsConnection({
-						address: wsAddress
-					});
-				}
-			}
-
-			if (null !== wsConnection && !wsEnable) {
-				wsConnection.close();
-				wsConnection = null;
-			}
-
-			// We use this to request an extra processing of jobs from HLAE (currently by default it only proccesses jobs upon after FRAME_RENDER_END == 6)
-			mirv.run_jobs();
-			mirv.run_jobs_async();
-
-			if (null !== wsConnection) {
-				// Flush any messages that are lingering:
-				wsConnection.flush();
-
-				// Handle messages that came in meanwhile:
-				for (
-					let message = wsConnection.next();
-					message !== null;
-					message = wsConnection.next()
-				) {
-					try {
-						switch (typeof message) {
-							case 'string':
-								{
-									// mirv.message(message.toString() + '\n');
-									const messageObj = JSON.parse(message) as {
-										type: (typeof events)[number];
-										data: string | boolean | mirv.OnCViewRenderSetupViewSet;
-									};
-
-									switch (messageObj.type) {
-										case 'listTypes':
-											mirv.message(
-												'Available types:\n' + events.join('\n') + '\n'
-											);
-											wsConnection.send(
-												JSON.stringify({ type: events[0], data: events })
-											);
-											break;
-										case 'exec':
-											if (typeof messageObj.data === 'string') {
-												mirv.exec(messageObj.data);
-											} else {
-												sendWarning('TypeError in exec: expected string');
-											}
-											break;
-										case 'getLastView':
-											wsConnection.send(
-												JSON.stringify({
-													type: events[3],
-													data: lastView
-												})
-											);
-											break;
-										case 'setView':
-											if (messageObj.data === null) {
-												setView = null;
-												break;
-											}
-											if (
-												typeof messageObj.data !== 'string' &&
-												typeof messageObj.data !== 'boolean' &&
-												('x' in messageObj.data ||
-													'y' in messageObj.data ||
-													'z' in messageObj.data ||
-													'rX' in messageObj.data ||
-													'rY' in messageObj.data ||
-													'rZ' in messageObj.data ||
-													'fov' in messageObj.data)
-											) {
-												setView = messageObj.data;
-											} else {
-												sendWarning(
-													'TypeError in setView: expected object with x,y,z,rX,rY,rZ,fov or null'
-												);
-											}
-											break;
-										case 'quit':
-											wsEnable = false;
-											wsConnection.close();
-											mirv.exec('quit');
-											break;
-										case 'setGameEvents':
-											if (typeof messageObj.data === 'boolean') {
-												messageObj.data
-													? (mirv.onGameEvent = onGameEvent)
-													: (mirv.onGameEvent = undefined);
-											} else {
-												sendWarning(
-													'TypeError in gameEvents: expected boolean'
-												);
-											}
-											break;
-										case 'setCViewRenderSetupView':
-											if (typeof messageObj.data === 'boolean') {
-												messageObj.data
-													? (mirv.onCViewRenderSetupView =
-															onCViewRenderSetupView)
-													: (mirv.onCViewRenderSetupView = undefined);
-											} else {
-												sendWarning(
-													'TypeError in cViewRenderSetupView: expected boolean'
-												);
-											}
-											break;
-
-										case 'setEntityEvents':
-											if (typeof messageObj.data === 'boolean') {
-												messageObj.data
-													? (mirv.onAddEntity = onAddEntity)
-													: (mirv.onAddEntity = undefined);
-												messageObj.data
-													? (mirv.onRemoveEntity = onRemoveEntity)
-													: (mirv.onRemoveEntity = undefined);
-											} else {
-												sendWarning(
-													'TypeError in entityEvents: expected boolean'
-												);
-											}
-											break;
-										case 'listEntities':
-											{
-												const entities: EntityObject[] = [];
-												const highest = mirv.getHighestEntityIndex();
-												for (let i = 0; i < highest + 1; i++) {
-													const entity = mirv.getEntityFromIndex(i);
-													if (entity === null) continue;
-													entities.push(makeEntityObject(entity));
-												}
-												wsConnection.send(
-													JSON.stringify({
-														type: events[12],
-														data: entities
-													})
-												);
-											}
-											break;
-										case 'listPlayerEntities':
-											{
-												const entities: EntityObject[] = [];
-												const highest = mirv.getHighestEntityIndex();
-												for (let i = 0; i < highest + 1; i++) {
-													const entity = mirv.getEntityFromIndex(i);
-													if (
-														null === entity ||
-														(!entity.isPlayerPawn() &&
-															!entity.isPlayerController())
-													)
-														continue;
-													entities.push(makeEntityObject(entity));
-												}
-												const msg = [
-													[
-														'name',
-														'debugName',
-														'pawnHandle',
-														'pawnIndex',
-														'pawnSerial',
-														'controllerHandle',
-														'controllerIndex',
-														'controllerSerial',
-														'health'
-													].join(' , '),
-													entities
-														.map((ent) =>
-															[
-																ent.name,
-																ent.debugName,
-																ent.playerPawnHandle,
-																ent.playerPawnIndex,
-																ent.playerPawnSerial,
-																ent.playerControllerHandle,
-																ent.playerControllerIndex,
-																ent.playerControllerSerial,
-																ent.health
-															].join(' , ')
-														)
-														.join('\n')
-												].join('\n');
-												mirv.message(msg + '\n');
-												wsConnection.send(
-													JSON.stringify({
-														type: events[13],
-														data: entities
-													})
-												);
-											}
-											break;
-										default:
-											sendWarning(
-												'TypeError in onClientFrameStageNotify: Unknown incoming message.type:' +
-													typeof messageObj.type
-											);
-											break;
-									}
-								}
-								break;
-							default:
-								sendWarning(
-									'TypeError in onClientFrameStageNotify: Warning: Unhandled incoming message of type: ' +
-										typeof message
-								);
-
-								break;
-						}
-					} catch (err) {
-						mirv.warning(
-							'onClientFrameStageNotify: Error while handling incoming message:' +
-								String(err) +
-								'\n'
-						);
-					}
-				}
-			}
-
-			tickCount += 1;
-		}
-
-		if (
-			e.curStage == 5 && // FRAME_RENDER_START - this is not called when demo is paused (can be multiple per tick).
-			e.isBefore
-		) {
-			//
-		}
-
-		if (
-			e.curStage == 5 && // FRAME_RENDER_END - this is not called when demo is paused (can be multiple per tick).
-			e.isBefore
-		) {
-			if (null !== wsConnection) wsConnection.flush();
-		}
-	};
-
-	// we define it here to assign later on demand, same for others
-	const onCViewRenderSetupView: mirv.OnCViewRenderSetupView = (e) => {
-		if (null !== wsConnection) {
-			lastView = e.lastView;
-			try {
-				wsConnection.send(
-					JSON.stringify({
-						type: events[8],
-						data: e
-					})
-				);
-
-				// we could flush and then wait for a reply here to set a view instantly, but don't understimate network round-trip time!
-			} catch (err) {
-				mirv.warning(
-					'onCViewRenderSetupView: Error while sending message:' + String(err) + '\n'
-				);
-			}
-		}
-		if (setView !== null) {
-			return setView;
-		}
-	};
-
-	const onGameEvent: mirv.OnGameEvent = (e) => {
-		if (null !== wsConnection) {
-			try {
-				wsConnection.send(
-					JSON.stringify({
-						type: events[9],
-						data: e
-					})
-				);
-			} catch (err) {
-				mirv.warning('onGameEvent: Error while sending message:' + String(err) + '\n');
-			}
-		}
-	};
-
-	const onAddEntity: mirv.OnEntityEvent = (e) => {
-		if (null !== wsConnection) {
-			try {
-				wsConnection.send(
-					JSON.stringify({
-						type: events[10],
-						data: makeEntityObject(e)
-					})
-				);
-			} catch (err) {
-				mirv.warning('onAddEntity: Error while sending message:' + String(err) + '\n');
-			}
-		}
-	};
-	const onRemoveEntity: mirv.OnEntityEvent = (e) => {
-		if (null !== wsConnection) {
-			try {
-				wsConnection.send(
-					JSON.stringify({
-						type: events[11],
-						data: makeEntityObject(e)
-					})
-				);
-			} catch (err) {
-				mirv.warning('onRemoveEntity: Error while sending message:' + String(err) + '\n');
-			}
-		}
-	};
-
-	// if set to undefined, then it's completely disabled (but can be turned on later, when defined)
-	mirv.onCViewRenderSetupView = undefined;
-	mirv.onGameEvent = undefined;
-	mirv.onAddEntity = undefined;
-	mirv.onRemoveEntity = undefined;
-};
+}
