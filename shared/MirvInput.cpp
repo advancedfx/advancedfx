@@ -902,7 +902,7 @@ void MirvInput::ProcessRawInputData(PRAWINPUT pData) {
 			}
 
 			if (m_MMove) {
-				if (rawmouse->usButtonFlags & RI_MOUSE_HWHEEL) {
+				if (rawmouse->usButtonFlags & RI_MOUSE_WHEEL) {
 					float delta = (float)(short)rawmouse->usButtonData;
 					m_MouseInput.Raw.Fov = m_MouseSens * (0 < delta ? m_MouseFovNegativeSpeed : m_MouseFovPositiveSpeed) * -delta;
 					rawmouse->usButtonData = 0;
@@ -914,7 +914,7 @@ void MirvInput::ProcessRawInputData(PRAWINPUT pData) {
 		if (rawmouse->usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP) m_MouseInput.Raw.RightButtonDown = false;
 
 		if (m_CameraControlMode && m_MMove) {
-			rawmouse->usButtonFlags &= ~(USHORT)(RI_MOUSE_LEFT_BUTTON_DOWN | RI_MOUSE_RIGHT_BUTTON_DOWN | RI_MOUSE_LEFT_BUTTON_UP | RI_MOUSE_RIGHT_BUTTON_UP | RI_MOUSE_HWHEEL);
+			rawmouse->usButtonFlags &= ~(USHORT)(RI_MOUSE_LEFT_BUTTON_DOWN | RI_MOUSE_RIGHT_BUTTON_DOWN | RI_MOUSE_LEFT_BUTTON_UP | RI_MOUSE_RIGHT_BUTTON_UP | RI_MOUSE_WHEEL);
 		}
 	} break;
 	case RIM_TYPEKEYBOARD: {
