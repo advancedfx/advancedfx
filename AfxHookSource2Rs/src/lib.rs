@@ -6,20 +6,26 @@ use std::error::Error;
 use std::{cell::RefCell, collections::VecDeque, future::Future, pin::Pin};
 use std::task::Poll::Ready;
 use std::rc::Rc;
+use std::path::Path;
+use std::path::PathBuf;
 
 use futures::SinkExt;
 use futures::StreamExt;
 use futures::stream::SplitSink;
 use futures::stream::SplitStream;
 
+use boa_gc::GcRefCell;
 use boa_engine::{
     Context,
+    builtins::promise::PromiseState,
     context::{
         ContextBuilder,
     },
+    JsError,
     JsResult,
     JsNativeError,
     JsObject,
+    JsString,
     JsValue,
     job::{
         NativeJob,
@@ -27,11 +33,19 @@ use boa_engine::{
         JobQueue,
     },
     js_string,
+    module::{
+        ModuleLoader,
+        Referrer,
+        resolve_module_specifier
+    },
+    Module,
     native_function::NativeFunction,
     object::ObjectInitializer,
     object::builtins::JsArray,
     object::builtins::JsArrayBuffer,
+    object::builtins::JsPromise,
     property::Attribute,
+    Source
 };
 
 use async_tungstenite::async_std::ConnectStream;
@@ -87,6 +101,81 @@ pub struct AfxHookSource2 {
 
     get_entity_ref_view_entity_handle: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> i32,
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+#[derive(Debug)]
+pub struct AfxSimpleModuleLoader {
+    module_map: GcRefCell<std::collections::HashMap<PathBuf, Module>>,
+}
+
+impl AfxSimpleModuleLoader {
+    /// Creates a new `AfxSimpleModuleLoader`
+    pub fn new() -> AfxSimpleModuleLoader {
+        Self {
+            module_map: GcRefCell::default(),
+        }
+    }
+
+    /// Inserts a new module onto the module map.
+    #[inline]
+    pub fn insert(&self, path: PathBuf, module: Module) {
+        self.module_map.borrow_mut().insert(path, module);
+    }
+
+    /// Gets a module from its original path.
+    #[inline]
+    pub fn get(&self, path: &Path) -> Option<Module> {
+        self.module_map.borrow().get(path).cloned()
+    }
+}
+
+impl ModuleLoader for AfxSimpleModuleLoader {
+    fn load_imported_module(
+        &self,
+        referrer: Referrer,
+        specifier: JsString,
+        finish_load: Box<dyn FnOnce(JsResult<Module>, &mut Context)>,
+        context: &mut Context,
+    ) {
+        let result = (|| {
+            let short_path = specifier.to_std_string_escaped();
+            let path =
+                resolve_module_specifier(None, &specifier, referrer.path(), context)?;
+            if let Some(module) = self.get(&path) {
+                return Ok(module);
+            }
+
+            let source = Source::from_filepath(&path).map_err(|err| {
+                JsNativeError::typ()
+                    .with_message(format!("could not open file `{short_path}`"))
+                    .with_cause(JsError::from_opaque(js_string!(err.to_string()).into()))
+            })?;
+            let module = Module::parse(source, None, context).map_err(|err| {
+                JsNativeError::syntax()
+                    .with_message(format!("could not parse module `{short_path}`"))
+                    .with_cause(err)
+            })?;
+            self.insert(path, module.clone());
+            Ok(module)
+        })();
+
+        finish_load(result, context);
+    }
+
+    fn register_module(&self, specifier: JsString, module: Module) {
+        let path = PathBuf::from(specifier.to_std_string_escaped());
+
+        self.insert(path, module);
+    }
+
+    fn get_module(&self, specifier: JsString) -> Option<Module> {
+        let path = specifier.to_std_string_escaped();
+
+        self.get(Path::new(&path))
+    }
+}
+
 
 /**
  * @todo Implement context / waker.
@@ -181,6 +270,7 @@ impl MirvEvents {
 
 pub struct AfxHookSource2Rs {
     iface: * mut AfxHookSource2,
+    loader: Rc<AfxSimpleModuleLoader>,
     context: boa_engine::Context,
     events: Rc<MirvEvents>
 }
@@ -189,6 +279,8 @@ pub struct AfxHookSource2Rs {
 struct MirvStruct {
     #[unsafe_ignore_trace]
     iface: * mut AfxHookSource2,
+    #[unsafe_ignore_trace]
+    loader: Rc<AfxSimpleModuleLoader>,
     #[unsafe_ignore_trace]
     events: Rc<MirvEvents>
 }
@@ -1423,18 +1515,64 @@ fn mirv_get_on_remove_entity(this: &JsValue, _args: &[JsValue], _context: &mut C
     mirv_error_type()
 }
 
+fn afx_load(file_path: & Path, afx_loader: Rc<AfxSimpleModuleLoader>, context: &mut Context) -> Result<JsPromise,JsError> {
+    match boa_engine::Source::from_filepath(file_path) {
+        Ok(js_source) => {
+            match Module::parse(js_source, None, context) {
+                Ok(module) => {
+                    afx_loader.insert(file_path.to_path_buf(), module.clone());
+                    return Ok(module.load_link_evaluate(context));
+                }
+                Err(e) => {
+                    return Err(e);
+                }
+            }
+        }
+        Err(e) => {
+            return Err(JsNativeError::error().with_message(e.to_string()).into());
+        }
+    }
+}
+
+fn mirv_load(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+    if let Some(object) = this.as_object() {
+        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
+            if 1 == args.len() {
+                if let Some(js_file_path) = args[0].as_string() {
+                    if let Ok(str_file_path) = js_file_path.to_std_string() {
+                        let path = std::path::Path::new(str_file_path.as_str());
+                        match afx_load(&path, mirv.loader.clone(), context) {
+                            Ok(js_promise) => {
+                                return Ok(JsValue::Object(JsObject::from(js_promise)));
+                            }
+                            Err(e) => {
+                                return Err(e);
+                            }
+                        }
+                    }
+                }
+            }
+            return mirv_error_arguments();
+        }
+    }
+    mirv_error_type()    
+}
+
 impl AfxHookSource2Rs {
     pub fn new(iface: * mut AfxHookSource2) -> Self {
 
+        let loader = Rc::new(AfxSimpleModuleLoader::new());
+
         let mut context = ContextBuilder::default()
             .job_queue(AsyncJobQueue::new().into())
+            .module_loader(loader.clone())
             .build().unwrap();
-
 
         let events = Rc::<MirvEvents>::new(MirvEvents::new());
 
         let mirv = MirvStruct {
             iface: iface,
+            loader: loader.clone(),
             events: Rc::clone(&events)
         };
 
@@ -1473,6 +1611,11 @@ impl AfxHookSource2Rs {
         .function(
             NativeFunction::from_fn_ptr(mirv_is_handle_valid),
             js_string!("isHandleValid"),
+            0,
+        )        
+        .function(
+            NativeFunction::from_fn_ptr(mirv_load),
+            js_string!("load"),
             0,
         )        
         .function(
@@ -1547,7 +1690,10 @@ impl AfxHookSource2Rs {
         .expect("property mirv shouldn't exist");
 
         Self {
-            iface, context, events: Rc::clone(&events)
+            iface,
+            loader: loader,
+            context,
+            events: Rc::clone(&events)
         }
     }    
 }
@@ -1608,6 +1754,55 @@ pub unsafe extern "C" fn afx_hook_source2_rs_execute(this_ptr: *mut AfxHookSourc
 pub unsafe extern "C" fn afx_hook_source2_rs_load(this_ptr: *mut AfxHookSource2Rs, file_path: *const c_char) {
     let str_file_path = CStr::from_ptr(file_path).to_str().unwrap();
     let path = std::path::Path::new(str_file_path);
+    if let Some(ext) = path.extension() {
+        if ext == "mjs" {
+            match afx_load(&path, (*this_ptr).loader.clone(), &mut (*this_ptr).context) {
+                Ok(promise_result) => {
+
+                    afx_hook_source2_rs_run_jobs(this_ptr); // push forward the promise.
+
+                    match promise_result.state() {
+                        PromiseState::Pending => {
+                            afx_warning((*this_ptr).iface, "module didn't execute!\n".to_string()); 
+                        }
+                        PromiseState::Fulfilled(v) => {
+                            if let Ok(js_str) = v.to_string(&mut (*this_ptr).context) {
+                                let mut str = js_str.to_std_string_escaped();
+                                str.push_str("\n");
+                                afx_message((*this_ptr).iface, str);
+                            }
+                        }
+                        PromiseState::Rejected(err) => {
+                            if let Ok(e) = JsError::from_opaque(err).try_native(&mut (*this_ptr).context) {
+                                use std::fmt::Write as _;
+                                let mut s = String::new();
+                                if let Some(source) = e.source() {
+                                    write!(&mut s, "Rejected with {} in {}\n",e,source).unwrap();
+                                } else {
+                                    write!(&mut s, "Rejected with {}\n",e).unwrap();
+                                }
+                                afx_warning((*this_ptr).iface, s);                           
+                            } else {
+                                afx_warning((*this_ptr).iface, "module promise rejected!\n".to_string()); 
+                            }
+                        }
+                    }
+                    return;
+                }
+                Err(e) => {
+                    use std::fmt::Write as _;
+                    let mut s = String::new();
+                    if let Some(source) = e.source() {
+                        write!(&mut s, "Uncaught {} in {}\n",e,source).unwrap();
+                    } else {
+                        write!(&mut s, "Uncaught {}\n",e).unwrap();
+                    }
+                    afx_warning((*this_ptr).iface, s);
+                }                
+            }
+            return;
+        }
+    }
     match boa_engine::Source::from_filepath(path) {
         Ok(js_source) => {
             match (*this_ptr).context.eval(js_source) {

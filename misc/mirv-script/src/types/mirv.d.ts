@@ -60,6 +60,16 @@ declare namespace mirv {
 	function exec(command: string): void;
 
 	/**
+	 * Load a JavaScript module (.mjs).
+	 * @param filePath - Full path to file to load.
+	 *
+	 * @remarks
+	 * A promise is returned and the module is usually not resolved instantly,
+	 * if you need instant resolve, you need to call run_jobs to resolve the promise faster.
+	 */
+	function load(filePath: string): Promise<void>;
+
+	/**
 	 * This allows to manually trigger processing of synchronous jobs (Promises).
 	 *
 	 * @remarks
