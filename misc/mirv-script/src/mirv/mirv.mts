@@ -111,7 +111,7 @@ export class MirvJS {
 	 * Send a warning message to the game console and to the websocket server.
 	 */
 	static sendWarning = (msg: string) => {
-		mirv.warning(msg);
+		mirv.warning(msg + '\n');
 		if (this._wsConnection)
 			this._wsConnection.send(
 				JSON.stringify({
