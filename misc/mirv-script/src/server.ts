@@ -1,7 +1,7 @@
 import http from 'http';
 import { SimpleWebSocket, SimpleWebSocketServer } from 'simple-websockets-server';
 import { WebSocket } from 'ws';
-import { MirvEvents, events } from './mirv/ws-events.js';
+import { MirvEvents, events } from './mirv/ws-events.mjs';
 
 export type MirvMessage = {
 	type: MirvEvents;

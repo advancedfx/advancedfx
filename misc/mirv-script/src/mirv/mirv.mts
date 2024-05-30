@@ -1,5 +1,5 @@
-import { IWsConnection, WsConnection } from './ws-connection';
-import { events } from './ws-events';
+import { IWsConnection, WsConnection } from './ws-connection.mjs';
+import { events } from './ws-events.mjs';
 // only one instance of MirvJS is allowed
 export class MirvJS {
 	private static instance: MirvJS;

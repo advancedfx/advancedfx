@@ -9,7 +9,7 @@
 		"esModuleInterop": true,
 		"allowSyntheticDefaultImports": true,
 		"skipLibCheck": true,
-		"outDir": "dist"
+		"outDir": "dist/node"
 	},
 	"include": ["src/server.ts", "src/client.ts", "src/types/*"]
 }

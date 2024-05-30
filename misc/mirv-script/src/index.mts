@@ -1,7 +1,7 @@
-import { MirvJS } from './mirv/mirv';
-import { makeEntityObject } from './mirv/utils';
-import { events } from './mirv/ws-events';
-import { handleMessages } from './mirv/ws-events-handler';
+import { MirvJS } from './mirv/mirv.mjs';
+import { makeEntityObject } from './mirv/utils.mjs';
+import { handleMessages } from './mirv/ws-events-handler.mjs';
+import { events } from './mirv/ws-events.mjs';
 {
 	MirvJS.init({
 		host: 'localhost',

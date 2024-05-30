@@ -1,6 +1,6 @@
-import { MirvJS } from './mirv';
-import { EntityObject, makeEntityObject } from './utils';
-import { MirvEvents, events } from './ws-events';
+import { MirvJS } from './mirv.mjs';
+import { EntityObject, makeEntityObject } from './utils.mjs';
+import { MirvEvents, events } from './ws-events.mjs';
 
 export const handleMessages = (
 	message: unknown,

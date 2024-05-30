@@ -6,7 +6,8 @@
 		"moduleResolution": "Bundler",
 		"forceConsistentCasingInFileNames": true,
 		"strict": true,
-		"noEmit": true
+		"noEmit": true,
+		"allowJs": true
 	},
 	"include": ["src/**/*"]
 }

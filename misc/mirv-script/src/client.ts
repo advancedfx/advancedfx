@@ -1,6 +1,6 @@
 import { SimpleWebSocket } from 'simple-websockets';
-import { EntityObject } from './mirv/utils.js';
-import { events } from './mirv/ws-events.js';
+import { EntityObject } from './mirv/utils.mjs';
+import { events } from './mirv/ws-events.mjs';
 import { MirvMessage } from './server.js';
 
 type ConnectionOptions = {
