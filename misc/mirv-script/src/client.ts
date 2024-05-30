@@ -97,6 +97,12 @@ export class MirvClient {
 		this.ws.once(events.listPlayerEntities, callback);
 		this.send({ type: 'listPlayerEntities' });
 	}
+	/** Load a module
+	 * @param fullPath - full path to the module `.mjs` file
+	 */
+	loadModule(fullPath: string) {
+		this.send({ type: 'loadModule', data: fullPath });
+	}
 }
 
 // test
@@ -157,4 +163,9 @@ setTimeout(() => {
 		console.log('disableEntityEvents');
 		client.disableEntityEvents();
 	}, 15000);
+	setTimeout(() => {
+		console.log('loadModule');
+		const module = 'C:\\_dev\\advancedfx\\misc\\mirv-script\\dist\\mirv\\test.mjs';
+		client.loadModule(module);
+	}, 15500);
 }, 1000);

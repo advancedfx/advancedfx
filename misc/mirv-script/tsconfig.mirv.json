@@ -4,5 +4,5 @@
 		"outDir": "dist",
 		"noEmit": false
 	},
-	"include": ["src/index.mts", "src/types/*"]
+	"include": ["src/index.mts", "src/types/*", "src/mirv/test.mts"]
 }

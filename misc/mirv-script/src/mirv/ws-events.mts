@@ -1,5 +1,6 @@
 export type MirvEvents = (typeof events)[keyof typeof events];
 export const events = {
+	warning: 'warning',
 	listTypes: 'listTypes',
 	quit: 'quit',
 	exec: 'exec',
@@ -14,5 +15,5 @@ export const events = {
 	onRemoveEntity: 'onRemoveEntity',
 	listEntities: 'listEntities',
 	listPlayerEntities: 'listPlayerEntities',
-	warning: 'warning'
+	loadModule: 'loadModule'
 } as const;

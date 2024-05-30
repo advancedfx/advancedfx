@@ -168,6 +168,15 @@ export const handleMessages = (
 				);
 			}
 			break;
+		case 'loadModule':
+			if (typeof messageObj.data !== 'string') {
+				MirvJS.sendWarning('TypeError in loadModule: expected string');
+				mirv.warning('TypeError in loadModule: expected string');
+				break;
+			}
+			mirv.load(messageObj.data);
+			mirv.run_jobs();
+			break;
 		default:
 			MirvJS.sendWarning(
 				'TypeError in onClientFrameStageNotify: Unknown incoming message.type:' +
