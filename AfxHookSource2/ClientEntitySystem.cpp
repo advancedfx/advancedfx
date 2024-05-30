@@ -109,12 +109,12 @@ public:
 
     void GetRenderEyeOrigin(float outOrigin[3]) {
         // GetRenderEyeAngles vtable offset minus 1
-        ((void (__fastcall *)(void *,float outOrigin[3])) (*(void***)this)[160]) (this,outOrigin);
+        ((void (__fastcall *)(void *,float outOrigin[3])) (*(void***)this)[166]) (this,outOrigin);
     }
 
     void GetRenderEyeAngles(float outAngles[3]) {
-        // See cl_track_render_eye_angles.
-        ((void (__fastcall *)(void *,float outAngles[3])) (*(void***)this)[161]) (this,outAngles);
+        // See cl_track_render_eye_angles. Near "Render eye angles: %.7f, %.7f, %.7f\n".
+        ((void (__fastcall *)(void *,float outAngles[3])) (*(void***)this)[167]) (this,outAngles);
     }
 
     SOURCESDK::CS2::CBaseHandle GetViewEntityHandle() {
