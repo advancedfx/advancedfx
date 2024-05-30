@@ -3,10 +3,6 @@ import { EntityObject } from './mirv/utils.mjs';
 import { events } from './mirv/ws-events.mjs';
 import { MirvMessage } from './server.js';
 
-import path from 'path';
-import { fileURLToPath } from 'url';
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
 type ConnectionOptions = {
 	host: string;
 	port: number;
@@ -169,8 +165,7 @@ setTimeout(() => {
 	}, 15000);
 	setTimeout(() => {
 		console.log('loadModule');
-		console.log(__dirname);
-		const module = __dirname + '/../mirv/test.mjs';
+		const module = 'C:\\_dev\\advancedfx\\misc\\mirv-script\\dist\\mirv\\test.mjs';
 		client.loadModule(module);
 	}, 15500);
 }, 1000);
