@@ -6,6 +6,36 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.23.4</version>
+<time>2024-05-27T04:00Z</time>
+<changes>
+<change type="fixed">Fixed mirv_input raw input mouse wheel handling.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.23.3</version>
+<time>2024-05-25T20:30Z</time>
+<changes>
+<change type="fixed">Fixed mirv_input iteration of raw input buffer, causing troubles e.g. when using AutoHokey.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
+<version>2.23.2</version>
+<time>2024-05-25T14:10Z</time>
+<changes>
+<change type="fixed">Fixed unwanted VK_ADD / VK_SUBSTRACT passthroughs in mirv_input.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.23.1</version>
 <time>2024-05-24T21:00Z</time>
 <changes>

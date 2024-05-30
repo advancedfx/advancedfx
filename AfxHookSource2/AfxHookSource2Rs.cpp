@@ -95,7 +95,7 @@ int afx_hook_source2_getEntityRefPlayerPawnHandle(void * pRef);
 bool afx_hook_source2_getEntityRefIsPlayerController(void * pRef);
 int afx_hook_source2_getEntityRefPlayerControllerHandle(void * pRef);
 
-unsigned int afx_hook_source2_getEntityRefHealth(void * pRef);
+int afx_hook_source2_getEntityRefHealth(void * pRef);
 
 void afx_hook_source2_getEntityRefOrigin(void * pRef, float & x, float & y, float & z);
 
@@ -103,7 +103,7 @@ void afx_hook_source2_getEntityRefRenderEyeOrigin(void * pRef, float & x, float 
 
 void afx_hook_source2_getEntityRefRenderEyeAngles(void * pRef, float & x, float & y, float & z);
 
-void* afx_hook_source2_getEntityRefViewEntityRef(void * pRef);
+int afx_hook_source2_getEntityRefViewEntityHandle(void * pRef);
 
 struct AfxHookSource2 {
     void (*message)(const char *);
@@ -141,7 +141,7 @@ struct AfxHookSource2 {
     bool (*getEntityRefIsPlayerController)(void * pRef);
     int (*getEntityRefPlayerControllerHandle)(void * pRef);
 
-    unsigned int (*getEntityRefHealth)(void * pRef);
+    int (*getEntityRefHealth)(void * pRef);
 
     void (*getEntityRefOrigin)(void * pRef, float & x, float & y, float & z);
 
@@ -149,7 +149,7 @@ struct AfxHookSource2 {
 
     void (*getEntityRefRenderEyeAngles)(void * pRef, float & x, float & y, float & z);
 
-    void * (*getEntityRefViewEntityRef)(void * pRef);
+    int (*getEntityRefViewEntityHandle)(void * pRef);
 
 } g_AfxHookSource2 = {
     &afx_hook_source2_message,
@@ -180,7 +180,7 @@ struct AfxHookSource2 {
     &afx_hook_source2_getEntityRefOrigin,
     &afx_hook_source2_getEntityRefRenderEyeOrigin,
     &afx_hook_source2_getEntityRefRenderEyeAngles,
-    &afx_hook_source2_getEntityRefViewEntityRef
+    &afx_hook_source2_getEntityRefViewEntityHandle
 };
 
 typedef void AfxHookSource2Rs;

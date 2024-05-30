@@ -76,7 +76,7 @@ public:
     }
 
     SOURCESDK::CS2::CBaseHandle GetPlayerPawnHandle() {
-        // See cl_ent_text drawing function.
+        // See cl_ent_text drawing function. Or Schema system.
         if(!IsPlayerController())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
         return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + 0x5fc));
     }
@@ -87,13 +87,13 @@ public:
     }
 
     SOURCESDK::CS2::CBaseHandle GetPlayerControllerHandle() {
-        // See cl_ent_text drawing function.
+        // See cl_ent_text drawing function. Or Schema system.
         if(!IsPlayerPawn())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
         return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + 0x128c));
     }
 
     unsigned int GetHealth() {
-        // See cl_ent_text drawing function.
+        // See cl_ent_text drawing function. Near "Health: %d\n".
         return ((unsigned int (__fastcall *)(void *)) (*(void***)this)[162]) (this); 
     }
 
@@ -101,10 +101,10 @@ public:
      * @remarks FLOAT_MAX if invalid
      */
     void GetOrigin(float & x, float & y, float & z) {
-        // See cl_ent_text drawing function. Near ""Health: %d\n".
-        x =  (*(float *)((unsigned char *)this + 0x138));
-        y =  (*(float *)((unsigned char *)this + 0x13c));
-        z =  (*(float *)((unsigned char *)this + 0x140));
+        // See cl_ent_text drawing function. Near "Position: %0.3f, %0.3f, %0.3f\n" or cl_ent_viewoffset related function.
+        x =  (*(float *)((unsigned char *)this + 0x144));
+        y =  (*(float *)((unsigned char *)this + 0x148));
+        z =  (*(float *)((unsigned char *)this + 0x14c));
     }
 
     void GetRenderEyeOrigin(float outOrigin[3]) {
@@ -117,9 +117,10 @@ public:
         ((void (__fastcall *)(void *,float outAngles[3])) (*(void***)this)[161]) (this,outAngles);
     }
 
-    CEntityInstance * GetViewEntity() {
-        // Debug code related to cl_ent_viewoffset.
-        return ((CEntityInstance * (__fastcall *)(void *)) (*(void***)this)[99]) (this);
+    SOURCESDK::CS2::CBaseHandle GetViewEntityHandle() {
+        // Schema system.
+        //if (!IsPlayerPawn())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
+        return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int*)((unsigned char*)this + 0x9c));
     }
 };
 
@@ -329,7 +330,7 @@ int afx_hook_source2_getEntityRefPlayerPawnHandle(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
         return pInstance->GetPlayerPawnHandle().ToInt();
     }
-    return 0;    
+    return SOURCESDK_CS2_INVALID_EHANDLE_INDEX;    
 }
 
 bool afx_hook_source2_getEntityRefIsPlayerController(void * pRef) {
@@ -343,10 +344,10 @@ int afx_hook_source2_getEntityRefPlayerControllerHandle(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
         return pInstance->GetPlayerControllerHandle().ToInt();
     }
-    return 0;    
+    return SOURCESDK_CS2_INVALID_EHANDLE_INDEX;  
 }
 
-unsigned int afx_hook_source2_getEntityRefHealth(void * pRef) {
+int afx_hook_source2_getEntityRefHealth(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
         return pInstance->GetHealth();
     }
@@ -379,11 +380,9 @@ void afx_hook_source2_getEntityRefRenderEyeAngles(void * pRef, float & x, float 
     }    
 }
 
-void* afx_hook_source2_getEntityRefViewEntityRef(void * pRef) {
+int afx_hook_source2_getEntityRefViewEntityHandle(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
-       if(auto result = pInstance->GetViewEntity()) {
-            return CAfxEntityInstanceRef::Aquire(result);
-       }
+       return pInstance->GetViewEntityHandle().ToInt();
     }
-    return nullptr;
+    return SOURCESDK_CS2_INVALID_EHANDLE_INDEX;
 }

@@ -8,6 +8,9 @@
 #include "../deps/release/rapidxml/rapidxml.hpp"
 #include "../deps/release/rapidxml/rapidxml_print.hpp"
 
+// Needed for QWORD definition:
+#include <WinDNS.h>
+
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -692,6 +695,10 @@ bool MirvInput::Supply_KeyEvent(KeyState keyState, WPARAM wParam, LPARAM lParam)
 	{
 		switch(wParam)
 		{
+		case VK_ADD:
+			return true;
+		case VK_SUBTRACT:
+			return true;
 		case VK_ESCAPE:
 			if(KS_UP == keyState) m_CameraControlMode = false;
 			return true;
@@ -895,7 +902,7 @@ void MirvInput::ProcessRawInputData(PRAWINPUT pData) {
 			}
 
 			if (m_MMove) {
-				if (rawmouse->usButtonFlags & RI_MOUSE_HWHEEL) {
+				if (rawmouse->usButtonFlags & RI_MOUSE_WHEEL) {
 					float delta = (float)(short)rawmouse->usButtonData;
 					m_MouseInput.Raw.Fov = m_MouseSens * (0 < delta ? m_MouseFovNegativeSpeed : m_MouseFovPositiveSpeed) * -delta;
 					rawmouse->usButtonData = 0;
@@ -907,7 +914,7 @@ void MirvInput::ProcessRawInputData(PRAWINPUT pData) {
 		if (rawmouse->usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP) m_MouseInput.Raw.RightButtonDown = false;
 
 		if (m_CameraControlMode && m_MMove) {
-			rawmouse->usButtonFlags &= ~(USHORT)(RI_MOUSE_LEFT_BUTTON_DOWN | RI_MOUSE_RIGHT_BUTTON_DOWN | RI_MOUSE_LEFT_BUTTON_UP | RI_MOUSE_RIGHT_BUTTON_UP | RI_MOUSE_HWHEEL);
+			rawmouse->usButtonFlags &= ~(USHORT)(RI_MOUSE_LEFT_BUTTON_DOWN | RI_MOUSE_RIGHT_BUTTON_DOWN | RI_MOUSE_LEFT_BUTTON_UP | RI_MOUSE_RIGHT_BUTTON_UP | RI_MOUSE_WHEEL);
 		}
 	} break;
 	case RIM_TYPEKEYBOARD: {
@@ -916,6 +923,8 @@ void MirvInput::ProcessRawInputData(PRAWINPUT pData) {
 			if(!(m_IgnoreNextKey || m_IgnoreKeyUp && (rawkeyboard->Flags & RI_KEY_BREAK))) {
 				bool bIgnoreKey = false;
 				switch(rawkeyboard->VKey) {
+				case VK_ADD:
+				case VK_SUBTRACT:					
 				case VK_ESCAPE:
 				case VK_CONTROL:
 				case VK_HOME:
@@ -968,7 +977,8 @@ UINT MirvInput::Supply_RawInputBuffer(UINT result, _Out_writes_bytes_opt_(*pcbSi
 
 	if(0 < result && nullptr != pData && sizeof(RAWINPUTHEADER) == cbSizeHeader && pData && pcbSize && sizeof(RAWINPUT)*result <= *pcbSize) {
 		for(UINT i = 0; i < result; i++) {
-			ProcessRawInputData(&pData[i]);
+			ProcessRawInputData(pData);
+			pData = NEXTRAWINPUTBLOCK(pData);
 		}
 	}
 
