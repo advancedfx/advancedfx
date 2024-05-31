@@ -163,10 +163,24 @@ setTimeout(() => {
 		console.log('disableEntityEvents');
 		client.disableEntityEvents();
 	}, 15000);
+
 	setTimeout(() => {
 		console.log('loadModule');
 		// adjust the path, it's should be on same machine as the CS2/HLAE
-		const module = 'C:\\_dev\\advancedfx\\misc\\mirv-script\\dist\\mirv\\test.mjs';
+		const module = 'C:\\_dev\\advancedfx\\misc\\mirv-script\\dist\\mirv\\test-module.mjs';
 		client.loadModule(module);
 	}, 15500);
+
+	setTimeout(() => {
+		client.enableCViewRenderSetupView(() => {});
+		console.log('loadHookModule');
+		// adjust the path, it's should be on same machine as the CS2/HLAE
+		const module = 'C:\\_dev\\advancedfx\\misc\\mirv-script\\dist\\mirv\\test-hook-module.mjs';
+		client.loadModule(module);
+	}, 16000);
+
+	setTimeout(() => {
+		console.log('enableGameEvents');
+		client.enableGameEvents(() => {});
+	}, 16500);
 }, 1000);

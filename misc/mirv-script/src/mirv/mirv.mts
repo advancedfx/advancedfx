@@ -1,3 +1,9 @@
+import {
+	MirvHook,
+	onCViewRenderSetupViewHookFn,
+	onEntityHookFn,
+	onGameEventHookFn
+} from './utils.mjs';
 import { IWsConnection, WsConnection } from './ws-connection.mjs';
 import { events } from './ws-events.mjs';
 // only one instance of MirvJS is allowed
@@ -9,6 +15,12 @@ export class MirvJS {
 	private static _wsEnable: boolean = false;
 	private static _setView: mirv.OnCViewRenderSetupViewSet | null = null;
 	private static _lastView: mirv.OnCViewRenderSetupViewArgs['lastView'] | null = null;
+	static hooks = {
+		onGameEvent: new MirvHook<onGameEventHookFn>(),
+		onCViewRenderSetupView: new MirvHook<onCViewRenderSetupViewHookFn>(),
+		onAddEntity: new MirvHook<onEntityHookFn>(),
+		onRemoveEntity: new MirvHook<onEntityHookFn>()
+	};
 	private constructor() {}
 	/**
 	 * Initialize MirvJS.

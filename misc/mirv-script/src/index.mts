@@ -1,3 +1,8 @@
+import {
+	firstOnGameEventHook,
+	secondOnGameEventHook,
+	thirdOnGameEventHook
+} from './mirv/hooks.mjs';
 import { MirvJS } from './mirv/mirv.mjs';
 import { makeEntityObject } from './mirv/utils.mjs';
 import { handleMessages } from './mirv/ws-events-handler.mjs';
@@ -10,6 +15,10 @@ import { events } from './mirv/ws-events.mjs';
 	});
 	MirvJS.wsEnable = true;
 	const debug = false;
+	// register hooks
+	MirvJS.hooks.onGameEvent.push(firstOnGameEventHook);
+	MirvJS.hooks.onGameEvent.push(secondOnGameEventHook);
+	MirvJS.hooks.onGameEvent.push(thirdOnGameEventHook);
 	// main logic defined here, it runs on every tick
 	mirv.onClientFrameStageNotify = (e) => {
 		// FRAME_START - called on host_frame (1 per tick).
@@ -56,6 +65,11 @@ import { events } from './mirv/ws-events.mjs';
 	// we define it here separately to assign (enable) later on demand
 	const onCViewRenderSetupView: mirv.OnCViewRenderSetupView = (e) => {
 		if (debug) mirv.message('onCViewRenderSetupView\n');
+		// pass data to hooks
+		const hooksResult = MirvJS.hooks.onCViewRenderSetupView.runHooks(e);
+		if (hooksResult) {
+			// do something with the result
+		}
 		if (MirvJS.ws !== null) {
 			MirvJS.lastView = e.lastView;
 			try {
@@ -80,6 +94,18 @@ import { events } from './mirv/ws-events.mjs';
 
 	const onGameEvent: mirv.OnGameEvent = (e) => {
 		if (debug) mirv.message('onGameEvent\n');
+		// example remove hook, dont do it like this though since it will trigger every time
+		if (e.name === 'player_death') {
+			MirvJS.hooks.onGameEvent.remove(firstOnGameEventHook);
+			mirv.message('firstOnGameEventHook removed\n');
+			MirvJS.hooks.onGameEvent.remove(secondOnGameEventHook);
+			mirv.message('secondOnGameEventHook removed\n');
+		}
+		const hooksResult = MirvJS.hooks.onGameEvent.runHooks(e);
+		if (hooksResult) {
+			if (hooksResult.name === '42069' || hooksResult.name === 'player_hurt')
+				mirv.message(`onGameEventHook: name: ${hooksResult.name}, id: ${hooksResult.id}\n`);
+		}
 		if (MirvJS.ws !== null) {
 			try {
 				MirvJS.ws.send(
@@ -96,6 +122,10 @@ import { events } from './mirv/ws-events.mjs';
 
 	const onAddEntity: mirv.OnEntityEvent = (e, h) => {
 		if (debug) mirv.message('onAddEntity\n');
+		const hooksResult = MirvJS.hooks.onAddEntity.runHooks(e, h);
+		if (hooksResult !== undefined) {
+			const [entity, handle] = hooksResult;
+		}
 		if (MirvJS.ws !== null) {
 			try {
 				MirvJS.ws.send(
@@ -109,8 +139,13 @@ import { events } from './mirv/ws-events.mjs';
 			}
 		}
 	};
+
 	const onRemoveEntity: mirv.OnEntityEvent = (e, h) => {
 		if (debug) mirv.message('onRemoveEntity\n');
+		const hooksResult = MirvJS.hooks.onAddEntity.runHooks(e, h);
+		if (hooksResult !== undefined) {
+			const [entity, handle] = hooksResult;
+		}
 		if (MirvJS.ws !== null) {
 			try {
 				MirvJS.ws.send(
