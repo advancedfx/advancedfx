@@ -94,14 +94,14 @@ import { events } from './mirv/ws-events.mjs';
 		}
 	};
 
-	const onAddEntity: mirv.OnEntityEvent = (e) => {
+	const onAddEntity: mirv.OnEntityEvent = (e, h) => {
 		if (debug) mirv.message('onAddEntity\n');
 		if (MirvJS.ws !== null) {
 			try {
 				MirvJS.ws.send(
 					JSON.stringify({
 						type: events.onAddEntity,
-						data: makeEntityObject(e)
+						data: makeEntityObject(e, h)
 					})
 				);
 			} catch (err) {
@@ -109,14 +109,14 @@ import { events } from './mirv/ws-events.mjs';
 			}
 		}
 	};
-	const onRemoveEntity: mirv.OnEntityEvent = (e) => {
+	const onRemoveEntity: mirv.OnEntityEvent = (e, h) => {
 		if (debug) mirv.message('onRemoveEntity\n');
 		if (MirvJS.ws !== null) {
 			try {
 				MirvJS.ws.send(
 					JSON.stringify({
 						type: events.onRemoveEntity,
-						data: makeEntityObject(e)
+						data: makeEntityObject(e, h)
 					})
 				);
 			} catch (err) {

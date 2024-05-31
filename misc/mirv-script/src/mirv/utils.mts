@@ -1,5 +1,6 @@
 export type EntityObject = {
 	name: string;
+	handle: number;
 	debugName: string | null;
 	className: string;
 	isPlayerPawn: boolean;
@@ -16,11 +17,12 @@ export type EntityObject = {
 	renderEyeAngles: number[];
 };
 
-export const makeEntityObject = (e: mirv.Entity): EntityObject => {
+export const makeEntityObject = (e: mirv.Entity, h?: number): EntityObject => {
 	const playerPawnHandle = e.getPlayerPawnHandle();
 	const playerControllerHandle = e.getPlayerControllerHandle();
 	return {
 		name: e.getName(),
+		handle: h ? h : -1,
 		debugName: e.getDebugName(),
 		className: e.getClassName(),
 		isPlayerPawn: e.isPlayerPawn(),
