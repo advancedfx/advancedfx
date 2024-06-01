@@ -1249,11 +1249,11 @@ impl MirvEntityRef {
                 js_string!("getRenderEyeAngles"),
                 0,
             )             
-            .function(
+            /*.function(
                 NativeFunction::from_fn_ptr(MirvEntityRef::get_view_entity_handle),
                 js_string!("getViewEntityHandle"),
                 0,
-            )             
+            )*/
             .build();
     }
 

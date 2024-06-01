@@ -29,7 +29,7 @@ struct EntityListIterator{
     }
 };
 
-typedef EntityListIterator & (__fastcall * GetHighestEntityIterator_t)(void * entityList);
+typedef EntityListIterator * (__fastcall * GetHighestEntityIterator_t)(void * entityList, EntityListIterator * it);
 typedef void * (__fastcall * GetEntityFromIndex_t)(void * pEntityList, int index);
 
 void ** g_pEntityList = nullptr;
@@ -261,7 +261,8 @@ bool Hook_ClientEntitySystem2() {
 }
 
 CON_COMMAND(__mirv_listentities, "") {
-    int highestIndex = g_GetHighestEntityIterator(*g_pEntityList).GetIndex();
+    EntityListIterator it;
+    int highestIndex = g_GetHighestEntityIterator(*g_pEntityList, &it)->GetIndex();
     for(int i = 0; i < highestIndex + 1; i++) {
         if(auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,i)) {
             float origin[3];
@@ -275,7 +276,8 @@ CON_COMMAND(__mirv_listentities, "") {
 }
 
 int afx_hook_source2_get_highest_entity_index() {
-    if(g_GetHighestEntityIterator) return g_GetHighestEntityIterator(*g_pEntityList).GetIndex();
+    EntityListIterator it;
+    if(g_GetHighestEntityIterator) return g_GetHighestEntityIterator(*g_pEntityList,&it)->GetIndex();
     return -1;
 }
 
