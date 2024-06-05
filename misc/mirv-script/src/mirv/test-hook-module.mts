@@ -16,7 +16,7 @@ const sampleRenderViewHook: onCViewRenderSetupViewHookFn = (lastResult, args) =>
 
 	if (e.curTime > 50) {
 		// remove hook
-		MirvJS.hooks.onCViewRenderSetupView.push(sampleRenderViewHook);
+		MirvJS.hooks.onCViewRenderSetupView.remove(sampleRenderViewHook);
 		mirv.onCViewRenderSetupView = undefined;
 		mirv.message('test-hook-module unhooked\n');
 	}
