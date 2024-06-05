@@ -1408,9 +1408,9 @@ void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameSta
 	// React to demo being paused / unpaused to work around Valve's new bandaid client time "fix":
 	bool bIsDemoPaused = false;
 	if(g_pEngineToClient) {
-		if(SOURCESDK::CS2::IDemoFile * pDemoFile = g_pEngineToClient->GetDemoFile()) {
-			if(pDemoFile->IsPlayingDemo())
-				bIsDemoPaused = pDemoFile->IsDemoPaused();
+		if(SOURCESDK::CS2::IDemoFile * pDemoPlayer = g_pEngineToClient->GetDemoFile()) {
+			if(pDemoPlayer->IsPlayingDemo())
+				bIsDemoPaused = pDemoPlayer->IsDemoPaused();
 		}
 	}
 	if(bIsDemoPaused != g_DemoPausedData.IsPaused) {

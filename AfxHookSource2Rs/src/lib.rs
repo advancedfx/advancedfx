@@ -100,6 +100,10 @@ pub struct AfxHookSource2 {
     get_entity_ref_render_eye_angles: unsafe extern "C" fn(p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32),
 
     get_entity_ref_view_entity_handle: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> i32,
+
+    is_playing_demo:  unsafe extern "C" fn() -> bool,
+
+    is_demo_paused:  unsafe extern "C" fn() -> bool,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -499,6 +503,23 @@ fn afx_get_entity_ref_view_entity_handle(iface: * mut AfxHookSource2, p_ref: * m
     }
     return result;
 }
+
+fn afx_is_playing_demo(iface: * mut AfxHookSource2,) -> bool {
+    let result: bool;
+    unsafe {
+        result = ((*iface).is_playing_demo)();
+    }
+    return result;
+}
+
+fn afx_is_demo_paused(iface: * mut AfxHookSource2,) -> bool {
+    let result: bool;
+    unsafe {
+        result = ((*iface).is_demo_paused)();
+    }
+    return result;
+}
+
 
 fn mirv_error_type() -> JsResult<JsValue> {
     Err(JsNativeError::typ().with_message("invalid type!").into())
@@ -1558,6 +1579,24 @@ fn mirv_load(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResul
     mirv_error_type()    
 }
 
+fn mirv_is_playing_demo(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    if let Some(object) = this.as_object() {
+        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
+            return Ok(JsValue::Boolean(afx_is_playing_demo(mirv.iface)));
+        }
+    }
+    mirv_error_type()
+}
+
+fn mirv_is_demo_paused(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    if let Some(object) = this.as_object() {
+        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
+            return Ok(JsValue::Boolean(afx_is_demo_paused(mirv.iface)));
+        }
+    }
+    mirv_error_type()
+}
+
 impl AfxHookSource2Rs {
     pub fn new(iface: * mut AfxHookSource2) -> Self {
 
@@ -1613,6 +1652,16 @@ impl AfxHookSource2Rs {
             js_string!("isHandleValid"),
             0,
         )        
+        .function(
+            NativeFunction::from_fn_ptr(mirv_is_playing_demo),
+            js_string!("isPlayingDemo"),
+            0,
+        )
+        .function(
+            NativeFunction::from_fn_ptr(mirv_is_demo_paused),
+            js_string!("isDemoPaused"),
+            0,
+        )
         .function(
             NativeFunction::from_fn_ptr(mirv_load),
             js_string!("load"),
