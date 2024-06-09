@@ -6,13 +6,22 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.17.0</version>
+<time>2024-06-09T19:50Z</time>
+<changes>
+<change type="fixed">Adjusts mirv_reshade command for https://github.com/advancedfx/ReShade_advancedfx (enabled by default when present).</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.16.0</version>
 <time>2024-05-31T09:20Z</time>
 <changes>
 <change type="fixed">Adjustes to CS2 update.</change>
 </changes>
 </release>
-
 
 
 <release>
