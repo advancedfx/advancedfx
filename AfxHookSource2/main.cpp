@@ -7,6 +7,7 @@
 #include "RenderSystemDX11Hooks.h"
 #include "WrpConsole.h"
 #include "AfxHookSource2Rs.h"
+#include "ReShadeAdvancedfx.h"
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
 #include "../deps/release/prop/AfxHookSource/SourceInterfaces.h"
@@ -1317,7 +1318,10 @@ CCS2_Client_Init_t old_CCS2_Client_Init;
 int new_CCS2_Client_Init(void* This) {
 	int result = old_CCS2_Client_Init(This);
 
-	if(!Hook_ClientEntitySystem2()) ErrorBox(MkErrStr(__FILE__, __LINE__));
+	if(!Hook_ClientEntitySystem2()) ErrorBox(MkErrStr(__FILE__, __LINE__));	
+
+	// Connect to reshade addon if present:
+	g_ReShadeAdvancedfx.Connect();
 
 	WrpRegisterCommands();
 

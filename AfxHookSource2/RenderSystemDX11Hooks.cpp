@@ -3,6 +3,7 @@
 #include "RenderSystemDX11Hooks.h"
 
 #include "CampathDrawer.h"
+#include "ReShadeAdvancedfx.h"
 #include "WrpConsole.h"
 
 #include "../shared/AfxDetours.h"
@@ -41,6 +42,8 @@ extern SOURCESDK::CS2::ICvar * SOURCESDK::CS2::g_pCVar;
 std::mutex g_SwapChainMutex;
 std::queue<std::function<bool(ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture)>> g_SwapchainBeforePresentQueue;
 std::queue<std::function<bool(ID3D11DeviceContext * pDeviceContext)>> g_SwapchainAfterPresentQueue;
+
+bool g_bEnableReShade = true;
 
 class CAfxCpuTexture
 : public advancedfx::CRefCountedThreadSafe
@@ -377,7 +380,7 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
     
     HRESULT result = g_Old_CreateRenderTargetView(This, pResource, pDesc, ppRTView);
 
-    if(SUCCEEDED(result) && ppRTView && *ppRTView
+    /*if (SUCCEEDED(result) && ppRTView && *ppRTView
     &&g_pSwapChain // can be nullptr e.g. when people forget to "disable service" on FACEIT anti cheat.
     ) {
         ID3D11Texture2D * pTexture = nullptr;
@@ -399,7 +402,7 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
             }
             pTexture->Release();
         }
-    }
+    }*/
 
     return result;
 }
@@ -421,6 +424,21 @@ ID3D11RenderTargetView * g_pCurrentRenderTargetView = nullptr;
 ID3D11DepthStencilView * g_pCurrentDepthStencilView = nullptr;
 D3D11_VIEWPORT g_ViewPort;
 
+void DrawReShade(ID3D11RenderTargetView * pRendertargetView, ID3D11DepthStencilView * pDepthStencilView) {
+    if(g_ReShadeAdvancedfx.IsConnected() && !g_ReShadeAdvancedfx.HasRendered()) {
+        ID3D11Resource * pRenderTargetResource = nullptr;
+        ID3D11Resource * pDepthStencilResource = nullptr;
+
+        if(pRendertargetView) { pRendertargetView->GetResource(&pRenderTargetResource); }
+        if(pDepthStencilView) { pDepthStencilView->GetResource(&pDepthStencilResource); }
+
+        g_ReShadeAdvancedfx.AdvancedfxRenderEffects(pRenderTargetResource, pDepthStencilResource);
+
+        if(pDepthStencilResource) pDepthStencilResource->Release();
+        if(pRenderTargetResource) pRenderTargetResource->Release();
+    }
+}
+
 void STDMETHODCALLTYPE New_ClearDepthStencilView( ID3D11DeviceContext * This, 
     /* [annotation] */ 
     _In_  ID3D11DepthStencilView *pDepthStencilView,
@@ -431,59 +449,12 @@ void STDMETHODCALLTYPE New_ClearDepthStencilView( ID3D11DeviceContext * This,
     /* [annotation] */ 
     _In_  UINT8 Stencil) {
 
-    if(This == g_pImmediateContext && g_iDraw == 2 && (
-        pDepthStencilView == g_pCurrentDepthStencilView && (ClearFlags & D3D11_CLEAR_DEPTH)
-        || pDepthStencilView != g_pCurrentDepthStencilView
-    )) {
-        g_iDraw = 3;
-        g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
-    }
-
     g_Old_ClearDepthStencilView(This, pDepthStencilView, ClearFlags, Depth, Stencil);
 
-    if(This->GetType() == D3D11_DEVICE_CONTEXT_IMMEDIATE  && g_pDevice && pDepthStencilView && (ClearFlags & D3D11_CLEAR_DEPTH)) {
-        ID3D11Device * pDevice = nullptr;
-        This->GetDevice(&pDevice);
-        if(pDevice) {
-            if(pDevice == g_pDevice) {
-                D3D11_DEPTH_STENCIL_VIEW_DESC desc;
-                pDepthStencilView->GetDesc(&desc);
-
-                if(desc.Flags == 0 && desc.Format == DXGI_FORMAT_D24_UNORM_S8_UINT
-                    && (desc.ViewDimension == D3D11_DSV_DIMENSION_TEXTURE2D
-                        || desc.ViewDimension == D3D11_DSV_DIMENSION_TEXTURE2DMS
-                    ))
-                {
-                    ID3D11Resource * pResource = nullptr;
-                    pDepthStencilView->GetResource(&pResource);
-                    if(pResource) {
-                        ID3D11Texture2D * pTexture = nullptr;
-                        if(SUCCEEDED(pResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&pTexture))) {
-                            D3D11_TEXTURE2D_DESC desc;
-                            pTexture->GetDesc(&desc);
-
-                            if(/*desc.Width == g_RTDesc.Width && desc.Height == g_RTDesc.Height && desc.MipLevels == g_RTDesc.MipLevels*/ true) {
-                                
-                                if(g_ClearCount == g_RTCount) {
-                                    g_pImmediateContext = This;
-                                    g_pCurrentDepthStencilView = pDepthStencilView;
-                                    g_iDraw = 1;
-                                }
-
-                                g_ClearCount++;
-                            }
-
-                            pTexture->Release();
-                        }
-
-                        pResource->Release();
-                    }
-                }
-            }
-            pDevice->Release();
-        }
+    if (g_pImmediateContext == This && pDepthStencilView == g_pCurrentDepthStencilView && (ClearFlags && D3D11_CLEAR_DEPTH) && g_iDraw == 1) {
+        g_iDraw = 2;
     }
-    }
+}
 
 typedef void (STDMETHODCALLTYPE * ResolveSubresource_t)( ID3D11DeviceContext * This,
     /* [annotation] */ 
@@ -511,11 +482,6 @@ void STDMETHODCALLTYPE New_ResolveSubresource( ID3D11DeviceContext * This,
     /* [annotation] */ 
     _In_  DXGI_FORMAT Format) {
 
-    if(This == g_pImmediateContext && g_iDraw == 2 &&  pSrcResource == g_pCurrentRenderTargetViewResource) {
-        g_iDraw = 3;
-        g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);        
-    }     
-
     g_Old_ResolveSubresource(This, pDstResource, DstSubresource, pSrcResource, SrcSubresource, Format);
  }
 
@@ -537,11 +503,11 @@ void STDMETHODCALLTYPE New_OMSetRenderTargets( ID3D11DeviceContext * This,
             /* [annotation] */ 
             _In_opt_  ID3D11DepthStencilView *pDepthStencilView) {
 
-    if(This == g_pImmediateContext) {
-        if(g_iDraw == 1 && pDepthStencilView == g_pCurrentDepthStencilView && ppRenderTargetViews && ppRenderTargetViews[0]) {
+    if(This->GetType() == D3D11_DEVICE_CONTEXT_IMMEDIATE) {
+        if(g_iDraw == 0 && pDepthStencilView && ppRenderTargetViews && ppRenderTargetViews[0]) {
             g_iDraw = 2;
-            UINT numViewPorts = 1;
-            g_pImmediateContext->RSGetViewports(&numViewPorts,&g_ViewPort);
+            g_pImmediateContext = This;
+            g_pCurrentDepthStencilView = pDepthStencilView;
             g_pCurrentRenderTargetView = ppRenderTargetViews[0];
             g_pCurrentRenderTargetViewResource = nullptr;
             if(g_pCurrentRenderTargetView) {
@@ -549,9 +515,15 @@ void STDMETHODCALLTYPE New_OMSetRenderTargets( ID3D11DeviceContext * This,
                 if(g_pCurrentRenderTargetViewResource) g_pCurrentRenderTargetViewResource->Release();
             }
         }
-        else if (g_iDraw == 2 && pDepthStencilView && pDepthStencilView != g_pCurrentDepthStencilView && ppRenderTargetViews && ppRenderTargetViews[0]) {
+        else if (g_iDraw == 2 && pDepthStencilView == nullptr && ppRenderTargetViews && ppRenderTargetViews[0] && ppRenderTargetViews[0] == g_pCurrentRenderTargetView) {
             g_iDraw = 3;
+            UINT numViewPorts = 1;
+            g_pImmediateContext->RSGetViewports(&numViewPorts, &g_ViewPort);
             g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
+        }
+        else if (g_iDraw == 3 && pDepthStencilView == nullptr && ppRenderTargetViews && ppRenderTargetViews[0] && ppRenderTargetViews[0] != g_pRTView) {
+            g_iDraw = 4;
+            if (g_bEnableReShade) DrawReShade(g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
         }
     }
     
@@ -673,6 +645,8 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
     }
     g_CampathDrawer.OnRenderThread_Present();
 
+    DrawReShade(nullptr, nullptr);
+
     {
         std::unique_lock<std::mutex> lock(g_SwapChainMutex);
 
@@ -700,6 +674,8 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
             if(bBreak) break;
         }
     }
+
+	g_ReShadeAdvancedfx.ResetHasRendered();        
 
     g_ClearCount = 0;
     g_iDraw = 0;
@@ -1357,5 +1333,47 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 
 	advancedfx::Message(
 		"mirv_streams settings [...] - Recording settings.\n"
+    );
+}
+
+CON_COMMAND(mirv_reshade, "Control ReShade_advancedfx ReShade addon.")
+{
+    if (!g_ReShadeAdvancedfx.IsConnected()) {
+        advancedfx::Warning("AFXERROR: ReShade or ReShade_advancedfx.addon not loaded.\n");
+        return;
+    }
+
+    static bool bEnableReshade = true;
+    int argc = args->ArgC();
+    const char * cmd0 = args->ArgV(0);
+
+    if (2 <= argc)
+    {
+        char const* cmd1 = args->ArgV(1);
+
+        if (0 == _stricmp("enabled", cmd1)) {
+            if (3 <= argc) {
+                bool bDoEnableReShade = 0 != atoi(args->ArgV(2));
+                bEnableReshade = bDoEnableReShade;
+                g_SwapchainAfterPresentQueue.push([bDoEnableReShade](ID3D11DeviceContext * pDeviceContext){
+                    g_bEnableReShade = bDoEnableReShade;
+                    return false;
+                });   
+                return;
+            }
+
+            advancedfx::Message(
+                "%s enabled 0|1 - Enable / disable reshade addon.\n"
+                "Current value: %s\n"
+                , cmd0
+                , bEnableReshade ? "1" : "0"
+            );
+            return;
+        }
+    }
+
+    advancedfx::Message(
+        "%s enabled [...].\n"
+        , cmd0
     );
 }

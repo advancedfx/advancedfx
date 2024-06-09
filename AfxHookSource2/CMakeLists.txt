@@ -196,6 +196,9 @@ target_sources(${PROJECT_NAME} PRIVATE
     RenderSystemDX11Hooks.cpp
     RenderSystemDX11Hooks.h
 
+    ReShadeAdvancedfx.cpp
+    ReShadeAdvancedfx.h
+
     WrpConsole.cpp
     WrpConsole.h
 )
