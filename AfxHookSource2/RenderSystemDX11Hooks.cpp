@@ -350,12 +350,6 @@ private:
 IDXGISwapChain * g_pSwapChain = nullptr;
 ID3D11Device * g_pDevice = nullptr;
 ID3D11DeviceContext * g_pImmediateContext = nullptr;
-ID3D11DeviceContext * g_pDeferredContext = nullptr;
-ID3D11RenderTargetView * g_pRTView = nullptr;
-ID3D11Resource * g_pRTResource = nullptr;
-D3D11_TEXTURE2D_DESC g_RTDesc;
-size_t g_ClearCount = 0;
-size_t g_RTCount = 0;
 int g_iDraw = 0;
 
 extern void ErrorBox(char const * messageText);
@@ -380,7 +374,7 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
     
     HRESULT result = g_Old_CreateRenderTargetView(This, pResource, pDesc, ppRTView);
 
-    /*if (SUCCEEDED(result) && ppRTView && *ppRTView
+    if (SUCCEEDED(result) && ppRTView && *ppRTView
     &&g_pSwapChain // can be nullptr e.g. when people forget to "disable service" on FACEIT anti cheat.
     ) {
         ID3D11Texture2D * pTexture = nullptr;
@@ -391,10 +385,6 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
                     g_CampathDrawer.EndDevice();
                     g_pDevice = nullptr;
                 }
-                pTexture->GetDesc(&g_RTDesc);
-                g_pRTResource = pResource;
-                g_pRTView = *ppRTView;
-                g_ClearCount = 0;
                 g_iDraw = 0;
 
                 g_pDevice = This;
@@ -402,7 +392,7 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
             }
             pTexture->Release();
         }
-    }*/
+    }
 
     return result;
 }
@@ -521,7 +511,7 @@ void STDMETHODCALLTYPE New_OMSetRenderTargets( ID3D11DeviceContext * This,
             g_pImmediateContext->RSGetViewports(&numViewPorts, &g_ViewPort);
             g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
         }
-        else if (g_iDraw == 3 && pDepthStencilView == nullptr && ppRenderTargetViews && ppRenderTargetViews[0] && ppRenderTargetViews[0] != g_pRTView) {
+        else if (g_iDraw == 3 && pDepthStencilView == nullptr && ppRenderTargetViews && ppRenderTargetViews[0]) {
             g_iDraw = 4;
             if (g_bEnableReShade) DrawReShade(g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
         }
@@ -677,7 +667,6 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
 
 	g_ReShadeAdvancedfx.ResetHasRendered();        
 
-    g_ClearCount = 0;
     g_iDraw = 0;
 
     return result;

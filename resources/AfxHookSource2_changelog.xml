@@ -6,10 +6,20 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.17.1</version>
+<time>2024-06-11T12:55Z</time>
+<changes>
+<change type="Fixed">Fixed mirv_campath draw enabled 1 not working anymore.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.17.0</version>
 <time>2024-06-09T19:50Z</time>
 <changes>
-<change type="fixed">Adjusts mirv_reshade command for https://github.com/advancedfx/ReShade_advancedfx (enabled by default when present).</change>
+<change type="Added">Added mirv_reshade command for https://github.com/advancedfx/ReShade_advancedfx (enabled by default when present).</change>
 </changes>
 </release>
 
