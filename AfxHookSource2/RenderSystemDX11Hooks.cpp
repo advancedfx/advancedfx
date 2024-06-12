@@ -350,9 +350,134 @@ private:
 IDXGISwapChain * g_pSwapChain = nullptr;
 ID3D11Device * g_pDevice = nullptr;
 ID3D11DeviceContext * g_pImmediateContext = nullptr;
+ID3D11RenderTargetView* g_pRTView = nullptr;
 int g_iDraw = 0;
 
 extern void ErrorBox(char const * messageText);
+
+class CAfxShaderResourceViews {
+public:
+    static ID3D11ShaderResourceView* GetView(ID3D11Resource* pResource) {
+        std::shared_lock<std::shared_timed_mutex> lock(m_SharedMutex);
+        auto result = m_Resource2View.find(pResource);
+        if (result != m_Resource2View.end())
+            return result->second;
+        return nullptr;
+    }
+
+    static ID3D11Resource* GetResource(ID3D11ShaderResourceView* pView) {
+        std::shared_lock<std::shared_timed_mutex> lock(m_SharedMutex);
+        auto result = m_View2Resource.find(pView);
+        if (result != m_View2Resource.end())
+            return result->second;
+        return nullptr;
+    }
+
+
+    static void Hook(ID3D11Resource* pResource, ID3D11ShaderResourceView* pShaderResourceView) {
+        {
+            std::shared_lock<std::shared_timed_mutex> lock(m_SharedMutex);
+            if (m_View2Resource.find(pShaderResourceView) != m_View2Resource.end()) return;
+        }
+        std::unique_lock<std::shared_timed_mutex> lock(m_SharedMutex);
+        if (!m_View2Resource.emplace(pShaderResourceView, pResource).second) return;
+        m_Resource2View.emplace(pResource, pShaderResourceView);
+        HookVtable(pShaderResourceView);
+    }
+
+    static void Clear() {
+        std::unique_lock<std::shared_timed_mutex> lock(m_SharedMutex);
+        m_Resource2View.clear();
+        m_View2Resource.clear();
+    }
+
+private:
+    static std::shared_timed_mutex m_SharedMutex;
+    static std::map<ID3D11Resource*, ID3D11ShaderResourceView*> m_Resource2View;
+    static std::map<ID3D11ShaderResourceView*, ID3D11Resource*> m_View2Resource;
+
+    typedef ULONG(STDMETHODCALLTYPE* Release_t)(IUnknown* pThis);
+
+    static std::shared_timed_mutex m_VtableSharedMutex;
+    static std::map<Release_t, Release_t> m_VtableHooks;
+
+    static void OnDelete(IUnknown* pThis) {
+        {
+            std::shared_lock<std::shared_timed_mutex> lock(m_SharedMutex);
+            if (m_View2Resource.find(static_cast<ID3D11ShaderResourceView*>(pThis)) == m_View2Resource.end()) return;
+        }
+        std::unique_lock<std::shared_timed_mutex> lock(m_SharedMutex);
+        auto result = m_View2Resource.find(static_cast<ID3D11ShaderResourceView*>(pThis));
+        if (result == m_View2Resource.end()) return;
+        m_Resource2View.erase(result->second);
+        m_View2Resource.erase(result);
+    }
+
+    static ULONG STDMETHODCALLTYPE NewRelease(IUnknown* pThis) {
+        void** vtable = *(void***)pThis;
+        Release_t pRelease = (Release_t)vtable[2];
+        ULONG result;
+        {
+            std::shared_lock<std::shared_timed_mutex> lock(m_VtableSharedMutex);
+            result = m_VtableHooks.find(pRelease)->second(pThis);
+        }
+        if (0 == result) {
+            OnDelete(pThis);
+        }
+        return result;
+    }
+
+    static void HookVtable(IUnknown* pUnknown) {
+        void** vtable = *(void***)pUnknown;
+        Release_t pRelease = (Release_t)vtable[2];
+        {
+            std::shared_lock<std::shared_timed_mutex> lock(m_VtableSharedMutex);
+            if (m_VtableHooks.find(pRelease) != m_VtableHooks.end()) return;
+        }
+        std::unique_lock<std::shared_timed_mutex> lock(m_VtableSharedMutex);
+        if (m_VtableHooks.find(pRelease) != m_VtableHooks.end()) return;
+
+        Release_t oldRelease = pRelease;
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourAttach(&(PVOID&)pRelease, NewRelease);
+        if (NO_ERROR != DetourTransactionCommit()) {
+            ErrorBox("CAfxShaderResourceViews::HookVtable Failed hooking on IUnknown.");
+        } else m_VtableHooks.emplace(oldRelease, pRelease);
+    }
+};
+
+std::shared_timed_mutex CAfxShaderResourceViews::m_SharedMutex;
+std::map<ID3D11Resource*, ID3D11ShaderResourceView*> CAfxShaderResourceViews::m_Resource2View;
+std::map<ID3D11ShaderResourceView*, ID3D11Resource*> CAfxShaderResourceViews::m_View2Resource;
+std::shared_timed_mutex CAfxShaderResourceViews::m_VtableSharedMutex;
+std::map<CAfxShaderResourceViews::Release_t, CAfxShaderResourceViews::Release_t> CAfxShaderResourceViews::m_VtableHooks;
+
+typedef HRESULT (STDMETHODCALLTYPE * CreateShaderResourceView_t)(ID3D11Device* This,
+    /* [annotation] */
+    _In_  ID3D11Resource* pResource,
+    /* [annotation] */
+    _In_opt_  const D3D11_SHADER_RESOURCE_VIEW_DESC* pDesc,
+    /* [annotation] */
+    _COM_Outptr_opt_  ID3D11ShaderResourceView** ppSRView);
+
+CreateShaderResourceView_t g_Old_CreateShaderResourceView = nullptr;
+
+HRESULT STDMETHODCALLTYPE New_CreateShaderResourceView(ID3D11Device* This,
+    /* [annotation] */
+    _In_  ID3D11Resource* pResource,
+    /* [annotation] */
+    _In_opt_  const D3D11_SHADER_RESOURCE_VIEW_DESC* pDesc,
+    /* [annotation] */
+    _COM_Outptr_opt_  ID3D11ShaderResourceView** ppSRView) {
+    HRESULT result = g_Old_CreateShaderResourceView(This, pResource, pDesc, ppSRView);
+
+    if (SUCCEEDED(result) && pResource && pDesc && ppSRView && *ppSRView) {
+        CAfxShaderResourceViews::Hook(pResource, *ppSRView);
+    }
+
+    return result;
+}
 
 typedef HRESULT (STDMETHODCALLTYPE * CreateRenderTargetView_t)( ID3D11Device * This,
             /* [annotation] */ 
@@ -380,14 +505,17 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
         ID3D11Texture2D * pTexture = nullptr;
         HRESULT result2 = g_pSwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D), (void**)&pTexture);
         if(SUCCEEDED(result2)) {
-            if(pResource == pTexture) {
+            if(pResource == pTexture && (g_pDevice == nullptr || This == g_pDevice)) {
                 if(g_pDevice) {
+                    CAfxShaderResourceViews::Clear();
                     g_CampathDrawer.EndDevice();
+                    g_pDevice->Release();
                     g_pDevice = nullptr;
                 }
                 g_iDraw = 0;
-
+                g_pRTView = *ppRTView;
                 g_pDevice = This;
+                g_pDevice->AddRef();
                 g_CampathDrawer.BeginDevice(This);
             }
             pTexture->Release();
@@ -409,7 +537,7 @@ typedef void (STDMETHODCALLTYPE * ClearDepthStencilView_t)( ID3D11DeviceContext 
 
 ClearDepthStencilView_t g_Old_ClearDepthStencilView = nullptr;
 
-ID3D11Resource * g_pCurrentRenderTargetViewResource = nullptr;
+ID3D11Resource * g_pCurrentDepthStencilViewResource = nullptr;
 ID3D11RenderTargetView * g_pCurrentRenderTargetView = nullptr;
 ID3D11DepthStencilView * g_pCurrentDepthStencilView = nullptr;
 D3D11_VIEWPORT g_ViewPort;
@@ -440,10 +568,6 @@ void STDMETHODCALLTYPE New_ClearDepthStencilView( ID3D11DeviceContext * This,
     _In_  UINT8 Stencil) {
 
     g_Old_ClearDepthStencilView(This, pDepthStencilView, ClearFlags, Depth, Stencil);
-
-    if (g_pImmediateContext == This && pDepthStencilView == g_pCurrentDepthStencilView && (ClearFlags && D3D11_CLEAR_DEPTH) && g_iDraw == 1) {
-        g_iDraw = 2;
-    }
 }
 
 typedef void (STDMETHODCALLTYPE * ResolveSubresource_t)( ID3D11DeviceContext * This,
@@ -493,16 +617,16 @@ void STDMETHODCALLTYPE New_OMSetRenderTargets( ID3D11DeviceContext * This,
             /* [annotation] */ 
             _In_opt_  ID3D11DepthStencilView *pDepthStencilView) {
 
-    if(This->GetType() == D3D11_DEVICE_CONTEXT_IMMEDIATE) {
+    if(This->GetType() == D3D11_DEVICE_CONTEXT_IMMEDIATE && NumViews >= 1) {
         if(g_iDraw == 0 && pDepthStencilView && ppRenderTargetViews && ppRenderTargetViews[0]) {
             g_iDraw = 2;
             g_pImmediateContext = This;
             g_pCurrentDepthStencilView = pDepthStencilView;
             g_pCurrentRenderTargetView = ppRenderTargetViews[0];
-            g_pCurrentRenderTargetViewResource = nullptr;
-            if(g_pCurrentRenderTargetView) {
-                g_pCurrentRenderTargetView->GetResource(&g_pCurrentRenderTargetViewResource);
-                if(g_pCurrentRenderTargetViewResource) g_pCurrentRenderTargetViewResource->Release();
+            g_pCurrentDepthStencilViewResource = nullptr;
+            if (g_pCurrentRenderTargetView) {
+                g_pCurrentRenderTargetView->GetResource(&g_pCurrentDepthStencilViewResource);
+                if (g_pCurrentDepthStencilViewResource) g_pCurrentDepthStencilViewResource->Release();
             }
         }
         else if (g_iDraw == 2 && pDepthStencilView == nullptr && ppRenderTargetViews && ppRenderTargetViews[0] && ppRenderTargetViews[0] == g_pCurrentRenderTargetView) {
@@ -511,13 +635,43 @@ void STDMETHODCALLTYPE New_OMSetRenderTargets( ID3D11DeviceContext * This,
             g_pImmediateContext->RSGetViewports(&numViewPorts, &g_ViewPort);
             g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
         }
-        else if (g_iDraw == 3 && pDepthStencilView == nullptr && ppRenderTargetViews && ppRenderTargetViews[0]) {
-            g_iDraw = 4;
-            if (g_bEnableReShade) DrawReShade(g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
-        }
     }
     
     g_Old_OMSetRenderTargets(This, NumViews, ppRenderTargetViews, pDepthStencilView);
+}
+
+typedef void (STDMETHODCALLTYPE * PSSetShaderResources_t)(ID3D11DeviceContext* This,
+    /* [annotation] */
+    _In_range_(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT - 1)  UINT StartSlot,
+    /* [annotation] */
+    _In_range_(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT - StartSlot)  UINT NumViews,
+    /* [annotation] */
+    _In_reads_opt_(NumViews)  ID3D11ShaderResourceView* const* ppShaderResourceViews);
+
+PSSetShaderResources_t g_Old_PSSetShaderResources = nullptr;
+
+void STDMETHODCALLTYPE New_PSSetShaderResources(ID3D11DeviceContext* This,
+    /* [annotation] */
+    _In_range_(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT - 1)  UINT StartSlot,
+    /* [annotation] */
+    _In_range_(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT - StartSlot)  UINT NumViews,
+    /* [annotation] */
+    _In_reads_opt_(NumViews)  ID3D11ShaderResourceView* const* ppShaderResourceViews) {
+
+    if (This == g_pImmediateContext && g_iDraw == 3 && ppShaderResourceViews) {
+        for (UINT i = 0; i < NumViews; i++) {
+            auto pResource = CAfxShaderResourceViews::GetResource(ppShaderResourceViews[i]);
+            if (pResource) {
+                if (pResource == g_pCurrentDepthStencilViewResource) {
+                    g_iDraw = 4;
+                    if (g_bEnableReShade) DrawReShade(g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
+                    break;
+                }
+            }
+        }
+    }
+
+    return g_Old_PSSetShaderResources(This, StartSlot, NumViews, ppShaderResourceViews);
 }
 
 void Hook_Context(ID3D11DeviceContext * pDeviceContext) {
@@ -529,6 +683,7 @@ void Hook_Context(ID3D11DeviceContext * pDeviceContext) {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     if(last_vtable) {
+        DetourDetach(&(PVOID&)g_Old_PSSetShaderResources, New_PSSetShaderResources);
         DetourDetach(&(PVOID&)g_Old_OMSetRenderTargets, New_OMSetRenderTargets);
         DetourDetach(&(PVOID&)g_Old_ClearDepthStencilView, New_ClearDepthStencilView);
         DetourDetach(&(PVOID&)g_Old_ResolveSubresource, New_ResolveSubresource);
@@ -538,9 +693,11 @@ void Hook_Context(ID3D11DeviceContext * pDeviceContext) {
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
     }
+    g_Old_PSSetShaderResources = (PSSetShaderResources_t)vtable[8];
     g_Old_OMSetRenderTargets = (OMSetRenderTargets_t)vtable[33];
     g_Old_ClearDepthStencilView = (ClearDepthStencilView_t)vtable[53];
     g_Old_ResolveSubresource = (ResolveSubresource_t)vtable[57];
+    DetourAttach(&(PVOID&)g_Old_PSSetShaderResources, New_PSSetShaderResources);
     DetourAttach(&(PVOID&)g_Old_OMSetRenderTargets, New_OMSetRenderTargets);
     DetourAttach(&(PVOID&)g_Old_ClearDepthStencilView, New_ClearDepthStencilView);
     DetourAttach(&(PVOID&)g_Old_ResolveSubresource, New_ResolveSubresource);
@@ -591,10 +748,11 @@ HRESULT WINAPI New_D3D11CreateDevice(
     if(SUCCEEDED(result) && ppDevice && *ppDevice) {
         static void **last_vtable = nullptr;
         void **vtable = *(void***)*ppDevice;
-        // (We can not use vtable detours here, becuse something writes them back after we did that.)
+        // (We can not use vtable detours here, becuse something writes them back after we New_CreateRenderTargetViewdid that.)
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
         if(last_vtable) {
+            DetourDetach(&(PVOID&)g_Old_CreateShaderResourceView, New_CreateShaderResourceView);
             DetourDetach(&(PVOID&)g_Old_CreateRenderTargetView, New_CreateRenderTargetView);
             DetourDetach(&(PVOID&)g_Old_ID3D11Device_GetImmediateContext, New_ID3D11Device_GetImmediateContext);
             if(NO_ERROR != DetourTransactionCommit()) {
@@ -603,8 +761,10 @@ HRESULT WINAPI New_D3D11CreateDevice(
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
         }
+        g_Old_CreateShaderResourceView = (CreateShaderResourceView_t)vtable[7];
         g_Old_CreateRenderTargetView = (CreateRenderTargetView_t)vtable[9];
         g_Old_ID3D11Device_GetImmediateContext = (ID3D11Device_GetImmediateContext_t)vtable[40];
+        DetourAttach(&(PVOID&)g_Old_CreateShaderResourceView, New_CreateShaderResourceView);
         DetourAttach(&(PVOID&)g_Old_CreateRenderTargetView, New_CreateRenderTargetView);
         DetourAttach(&(PVOID&)g_Old_ID3D11Device_GetImmediateContext, New_ID3D11Device_GetImmediateContext);
         if(NO_ERROR != DetourTransactionCommit()) {
