@@ -1,5 +1,8 @@
 #include "stdafx.h"
 
+#include "Globals.h"
+#include "MirvInputEx.h"
+#include "MirvCampath.h"
 #include "CampathDrawer.h"
 #include "ClientEntitySystem.h"
 #include "GameEvents.h"
@@ -132,58 +135,9 @@ void HookEngineDll(HMODULE engineDll) {
 
 }
 
-SOURCESDK::CS2::ISource2EngineToClient * g_pEngineToClient = nullptr;
-
 ////////////////////////////////////////////////////////////////////////////////
 
 //TODO: Some bellow here might be not accurate yet.
-
-typedef void * Cs2Gloabls_t;
-Cs2Gloabls_t g_pGlobals = nullptr;
-
-struct {
-	bool IsPaused = false;
-	float FirstPausedCurtime = 0.0f;
-	float FirstPausedInterpolationAmount = 0.0f;
-} g_DemoPausedData;
-
-float curtime_get(void)
-{
-	if(g_DemoPausedData.IsPaused) {
-		return g_DemoPausedData.FirstPausedCurtime;
-	}
-
-	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals + 13*4) : 0;
-}
-
-int framecount_get(void)
-{
-	return g_pGlobals ? *(int *)((unsigned char *)g_pGlobals + 1*4) : 0;
-}
-
-float frametime_get(void)
-{
-	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +2*4) : 0;
-}
-
-float absoluteframetime_get(void)
-{
-	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +3*4) : 0;
-}
-
-float interval_per_tick_get(void)
-{
-	return g_pGlobals ? 1.0f / *(int *)((unsigned char *)g_pGlobals +4*4) : 1.0f/64;
-}
-
-float interpolation_amount_get(void)
-{
-	if(g_DemoPausedData.IsPaused) {
-		return g_DemoPausedData.FirstPausedInterpolationAmount;
-	}
-
-	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +15*4) : 0;
-}
 
 CON_COMMAND(__mirv_info,"") {
 	PrintInfo();
@@ -232,98 +186,8 @@ CON_COMMAND(__mirv_find_vtable,"") {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-SOURCESDK::CS2::IGameUIService * g_pGameUIService = nullptr;
 
-class MirvInputEx : private IMirvInputDependencies
-{
-public:
-	MirvInputEx() {
-		LastWidth = 1920;
-		LastHeight = 1080;
 
-		LastCameraOrigin[0] = 0.0;
-		LastCameraOrigin[1] = 0.0;
-		LastCameraOrigin[2] = 0.0;
-		LastCameraAngles[0] = 0.0;
-		LastCameraAngles[1] = 0.0;
-		LastCameraAngles[2] = 0.0;
-		LastCameraFov = 90.0;
-
-		GameCameraOrigin[0] = 0.0;
-		GameCameraOrigin[1] = 0.0;
-		GameCameraOrigin[2] = 0.0;
-		GameCameraAngles[0] = 0.0;
-		GameCameraAngles[1] = 0.0;
-		GameCameraAngles[2] = 0.0;
-		GameCameraFov = 90.0;
-
-		LastFrameTime = 0;
-
-		m_MirvInput = new MirvInput(this);
-	}
-
-	~MirvInputEx() {
-		delete m_MirvInput;
-	}
-
-	MirvInput * m_MirvInput;
-
-	double LastCameraOrigin[3];
-	double LastCameraAngles[3];
-	double LastCameraFov;
-
-	double GameCameraOrigin[3];
-	double GameCameraAngles[3];
-	double GameCameraFov;
-
-	double LastFrameTime;
-
-	int LastWidth;
-	int LastHeight;
-
-private:
-	virtual bool GetSuspendMirvInput() override {
-		return g_pGameUIService && g_pGameUIService->Con_IsVisible();
-	}
-
-	virtual void GetLastCameraData(double & x, double & y, double & z, double & rX, double & rY, double & rZ, double & fov) override {
-		x = LastCameraOrigin[0];
-		y = LastCameraOrigin[1];
-		z = LastCameraOrigin[2];
-		rX = LastCameraAngles[0];
-		rY = LastCameraAngles[1];
-		rZ = LastCameraAngles[2];
-		fov = LastCameraFov;
-	}
-
-	virtual void GetGameCameraData(double & x, double & y, double & z, double & rX, double & rY, double & rZ, double & fov) override {
-		x = GameCameraOrigin[0];
-		y = GameCameraOrigin[1];
-		z = GameCameraOrigin[2];
-		rX = GameCameraAngles[0];
-		rY = GameCameraAngles[1];
-		rZ = GameCameraAngles[2];
-		fov = GameCameraFov;
-	}
-
-	virtual double GetInverseScaledFov(double fov) override {
-		return ScaleFovInverse(LastWidth, LastHeight, fov);
-	}
-
-private:
-
-	double ScaleFovInverse(double width, double height, double fov) {
-		if (!height) return fov;
-
-		double engineAspectRatio = width / height;
-		double defaultAscpectRatio = 4.0 / 3.0;
-		double ratio = engineAspectRatio / defaultAscpectRatio;
-		double t = tan(0.5 * fov * (2.0 * M_PI / 360.0));
-		double halfAngle = atan(t / ratio);
-		return 2.0 * halfAngle / (2.0 * M_PI / 360.0);
-	}
-
-} g_MirvInputEx;
 
 CON_COMMAND(mirv_input, "Input mode configuration.")
 {
@@ -481,99 +345,6 @@ BOOL WINAPI new_ReleaseCapture()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CamPath g_CamPath;
-
-class CMirvCampath_Time : public IMirvCampath_Time
-{
-public:
-	virtual double GetTime() {
-		// Can be paused time, we don't support that currently.
-
-		return curtime_get();
-	}
-	virtual double GetCurTime() {
-		return curtime_get();
-	}
-	virtual bool GetCurrentDemoTick(int& outTick) {
-		if(g_pEngineToClient) {
-			if(SOURCESDK::CS2::IDemoFile * pDemoFile = g_pEngineToClient->GetDemoFile()) {
-				outTick = pDemoFile->GetDemoTick();
-				return true;
-			}
-		}
-		return false;
-	}
-	virtual bool GetCurrentDemoTime(double& outDemoTime) {
-		int tick;
-		if(GetCurrentDemoTick(tick)) {
-			outDemoTime = (tick + interpolation_amount_get())* (double)interval_per_tick_get();
-			return true;
-		}
-
-
-		return false;
-	}
-	virtual bool GetDemoTickFromDemoTime(double curTime, double time, int& outTick) {
-		outTick = (int)round(time / interval_per_tick_get());
-		return true;
-	}
-	virtual bool GetDemoTimeFromClientTime(double curTime, double time, double& outDemoTime) {
-		double current_demo_time;
-		if(GetCurrentDemoTime(current_demo_time)) {
-			outDemoTime = time - (curTime - current_demo_time);
-			return true;
-		}
-		return false;
-	}
-    virtual bool GetDemoTickFromClientTime(double curTime, double targetTime, int& outTick)
-    {
-        double demoTime;
-        return GetDemoTimeFromClientTime(curTime, targetTime, demoTime) && GetDemoTickFromDemoTime(curTime, demoTime, outTick);
-    }
-} g_MirvCampath_Time;
-
-class CMirvCampath_Camera : public IMirvCampath_Camera
-{
-public:
-	virtual SMirvCameraValue GetCamera() {
-		return SMirvCameraValue(			
-			g_MirvInputEx.LastCameraOrigin[0],
-			g_MirvInputEx.LastCameraOrigin[1],
-			g_MirvInputEx.LastCameraOrigin[2],
-			g_MirvInputEx.LastCameraAngles[0],
-			g_MirvInputEx.LastCameraAngles[1],
-			g_MirvInputEx.LastCameraAngles[2],
-			g_MirvInputEx.LastCameraFov
-		);
-	}
-} g_MirvCampath_Camera;
-
-class CMirvCampath_Drawer : public IMirvCampath_Drawer
-{
-public:
-	virtual bool GetEnabled() {
-		return g_CampathDrawer.Draw_get();
-	}
-	virtual void SetEnabled(bool value) {
-		g_CampathDrawer.Draw_set(value);
-	}
-	virtual bool GetDrawKeyframeAxis() {
-		return g_CampathDrawer.GetDrawKeyframeAxis();
-	}
-	virtual void SetDrawKeyframeAxis(bool value) {
-		g_CampathDrawer.SetDrawKeyframeAxis(value);
-	}
-	virtual bool GetDrawKeyframeCam() {
-		return g_CampathDrawer.GetDrawKeyframeCam();
-	}
-	virtual void SetDrawKeyframeCam(bool value) {
-		g_CampathDrawer.SetDrawKeyframeCam(value);
-	}
-
-	virtual float GetDrawKeyframeIndex() { return g_CampathDrawer.GetDrawKeyframeIndex(); }
-	virtual void SetDrawKeyframeIndex(float value) { g_CampathDrawer.SetDrawKeyframeIndex(value); }
-
-} g_MirvCampath_Drawer;
 
 CON_COMMAND(mirv_campath, "camera paths")
 {
