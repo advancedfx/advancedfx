@@ -173,6 +173,9 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/MirvSkip.cpp
     ../shared/MirvSkip.h
 
+	Globals.cpp
+	Globals.h
+
     AfxHookSource2Rs.cpp
     AfxHookSource2Rs.h
 
@@ -190,6 +193,12 @@ target_sources(${PROJECT_NAME} PRIVATE
 
     hlaeFolder.cpp
     hlaeFolder.h
+
+	MirvInputEx.cpp
+	MirvInputEx.h
+
+	MirvCampath.cpp
+	MirvCampath.h
 
     main.cpp
 

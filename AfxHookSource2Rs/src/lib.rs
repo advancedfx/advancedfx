@@ -56,6 +56,50 @@ pub struct AfxEntityRef {
 
 }
 
+#[repr(C)]
+pub struct AfxCampathPoint {
+ 	index: i32,
+	selected: bool,
+	tick: i32,
+	tick_offset: i32,
+	time: c_float,
+	time_offset: c_float,
+	fov: c_float,
+	x: c_float,
+	y: c_float,
+	z: c_float,
+	pitch: c_float,
+	yaw: c_float,
+	roll: c_float
+}
+
+#[repr(C)] 
+pub struct AfxCampath {
+	ptr: *const AfxCampathPoint,
+	size: usize
+}
+
+impl AfxCampathPoint {
+    pub fn to_js_object(&self, context: &mut Context) -> JsObject {
+        let obj = ObjectInitializer::new(context)
+		.property(js_string!("index"), JsValue::Integer(self.index.into()), Attribute::all())
+		.property(js_string!("selected"), JsValue::Boolean(self.selected), Attribute::all())
+		.property(js_string!("tick"), JsValue::Integer(self.tick.into()), Attribute::all())
+		.property(js_string!("tickOffset"), JsValue::Integer(self.tick_offset.into()), Attribute::all())
+		.property(js_string!("time"), JsValue::Rational(self.time.into()), Attribute::all())
+		.property(js_string!("timeOffset"), JsValue::Rational(self.time_offset.into()), Attribute::all())
+		.property(js_string!("fov"), JsValue::Rational(self.fov.into()), Attribute::all())
+		.property(js_string!("x"), JsValue::Rational(self.x.into()), Attribute::all())
+		.property(js_string!("y"), JsValue::Rational(self.y.into()), Attribute::all())
+		.property(js_string!("z"), JsValue::Rational(self.z.into()), Attribute::all())
+		.property(js_string!("pitch"), JsValue::Rational(self.pitch.into()), Attribute::all())
+		.property(js_string!("yaw"), JsValue::Rational(self.yaw.into()), Attribute::all())
+		.property(js_string!("roll"), JsValue::Rational(self.roll.into()), Attribute::all())
+		.build();
+		obj
+    }
+}
+
 pub struct AfxHookSource2 {
     message: unsafe extern "C" fn(s: *const c_char),
     warning: unsafe extern "C" fn(s: *const c_char),
@@ -104,6 +148,9 @@ pub struct AfxHookSource2 {
     is_playing_demo:  unsafe extern "C" fn() -> bool,
 
     is_demo_paused:  unsafe extern "C" fn() -> bool,
+
+	get_campath: unsafe extern "C" fn() -> AfxCampath,
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -520,6 +567,17 @@ fn afx_is_demo_paused(iface: * mut AfxHookSource2,) -> bool {
     return result;
 }
 
+fn afx_get_campath(iface: *mut AfxHookSource2) -> Option<&'static [AfxCampathPoint]> {
+    unsafe {
+        let result = ((*iface).get_campath)();
+        if result.ptr.is_null() {
+            return None;
+        }
+		
+		let slice = std::slice::from_raw_parts(result.ptr, result.size);
+		return Some(slice);
+	}
+} 
 
 fn mirv_error_type() -> JsResult<JsValue> {
     Err(JsNativeError::typ().with_message("invalid type!").into())
@@ -1597,6 +1655,26 @@ fn mirv_is_demo_paused(this: &JsValue, args: &[JsValue], _context: &mut Context)
     mirv_error_type()
 }
 
+
+
+fn mirv_get_campath(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+	if let Some(object) = this.as_object() {
+		if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
+			if let Some(campath) = afx_get_campath(mirv.iface) {
+				let array = JsArray::new(_context);
+				campath.iter().for_each(|x| {
+					let _ = array.push(x.to_js_object(_context), _context);
+				});
+				return Ok(JsValue::from(array));
+
+			} else {
+				return Ok(JsValue::null());
+			}
+		}
+	}
+	mirv_error_type()
+}
+
 impl AfxHookSource2Rs {
     pub fn new(iface: * mut AfxHookSource2) -> Self {
 
@@ -1662,6 +1740,11 @@ impl AfxHookSource2Rs {
             js_string!("isDemoPaused"),
             0,
         )
+		.function(
+			NativeFunction::from_fn_ptr(mirv_get_campath),
+			js_string!("getCampath"),
+			0,
+		)
         .function(
             NativeFunction::from_fn_ptr(mirv_load),
             js_string!("load"),

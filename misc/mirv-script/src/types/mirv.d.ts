@@ -325,4 +325,27 @@ declare namespace mirv {
 	}
 
 	type OnEntityEvent = (entity: Entity, handle: number) => void;
+
+	type CampathPoint = {
+		index: number;
+		selected: boolean;
+		tick: number;
+		tickOffset: number;
+		time: number;
+		timeOffset: number;
+		fov: number;
+		x: number;
+		y: number;
+		z: number;
+		pitch: number;
+		yaw: number;
+		roll: number;
+	};
+
+	/**
+	 * @returns campath as an array of campath points. Could be empty array.
+	 *
+	 * @remarks returns null if doesn't exist in memory.
+	 */
+	function getCampath(): CampathPoint[] | null;
 }
