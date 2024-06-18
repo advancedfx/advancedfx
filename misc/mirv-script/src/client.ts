@@ -103,6 +103,12 @@ export class MirvClient {
 	loadModule(fullPath: string) {
 		this.send({ type: 'loadModule', data: fullPath });
 	}
+
+	/** Get campath */
+	getCampath(callback: (campath: mirv.CampathPoint[] | null) => void) {
+		this.ws.once(events.getCampath, callback);
+		this.send({ type: 'getCampath' });
+	}
 }
 
 // test
@@ -183,4 +189,10 @@ setTimeout(() => {
 		console.log('enableGameEvents');
 		client.enableGameEvents(() => {});
 	}, 16500);
+
+	setTimeout(() => {
+		client.getCampath((campath) => {
+			console.log(campath);
+		});
+	}, 17000);
 }, 1000);

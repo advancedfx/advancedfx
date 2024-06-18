@@ -177,6 +177,16 @@ export const handleMessages = (
 			mirv.load(messageObj.data);
 			mirv.run_jobs();
 			break;
+		case 'getCampath':
+			{
+				MirvJS.ws.send(
+					JSON.stringify({
+						type: events.getCampath,
+						data: mirv.getCampath()
+					})
+				);
+			}
+			break;
 		default:
 			MirvJS.sendWarning(
 				'TypeError in onClientFrameStageNotify: Unknown incoming message.type:' +

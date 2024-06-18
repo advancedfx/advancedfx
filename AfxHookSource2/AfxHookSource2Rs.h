@@ -26,3 +26,26 @@ void AfxHookSource2Rs_Engine_OnAddEntity(void * pEntityRef, int handle);
 
 extern bool g_b_on_remove_entity;
 void AfxHookSource2Rs_Engine_OnRemoveEntity(void * pEntityRef, int handle);
+
+struct AfxHookSourceRsCampathPoint {
+	int index;
+	bool selected;
+	int tick;
+	int tick_offset;
+	float time;
+	float time_offset;
+	float fov;
+	float x;
+	float y;
+	float z;
+	float pitch;
+	float yaw;
+	float roll;
+};
+
+struct AfxHookSourceRsCampath {
+	AfxHookSourceRsCampathPoint * ptr;
+	size_t size; 
+};
+
+extern AfxHookSourceRsCampathPoint * g_AfxCampathPoints;

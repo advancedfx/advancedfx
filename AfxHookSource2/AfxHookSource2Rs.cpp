@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "AfxHookSource2Rs.h"
+#include "MirvCampath.h"
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
 #include "../deps/release/prop/AfxHookSource/SourceInterfaces.h"
@@ -112,7 +113,7 @@ bool afx_hook_source2_isPlayingDemo() {
         }
     }
     return false;
-}
+};
 
 bool afx_hook_source2_isDemoPaused() {
     if(g_pEngineToClient) {
@@ -121,7 +122,76 @@ bool afx_hook_source2_isDemoPaused() {
         }
     }
     return false;
-}
+};
+
+AfxHookSourceRsCampathPoint * g_AfxCampathPoints = nullptr;
+
+AfxHookSourceRsCampath afx_hook_source2_getCampath() {
+	CamPath* camPath = &g_CamPath;
+	IMirvCampath_Time* mirvTime = &g_MirvCampath_Time;
+
+	double curtime = mirvTime->GetTime();
+	double offset = camPath->GetOffset();
+
+	g_AfxCampathPoints = new AfxHookSourceRsCampathPoint[camPath->GetSize()];
+
+	int i = 0;
+	for (CamPathIterator it = camPath->GetBegin(); it != camPath->GetEnd(); ++it)
+	{
+		AfxHookSourceRsCampathPoint curPoint;
+
+		double vieworigin[3];
+		double viewangles[3];
+		double fov;
+
+		double time = it.GetTime();
+		double demoTime = 0;
+		bool bDemoTime = mirvTime->GetDemoTimeFromClientTime(curtime, time, demoTime);
+		CamPathValue val = it.GetValue();
+		bool selected = val.Selected;
+		QEulerAngles ang = val.R.ToQREulerAngles().ToQEulerAngles();
+
+		curPoint.index = i;
+		curPoint.selected = selected;
+		curPoint.x = (float)val.X;
+		curPoint.y = (float)val.Y;
+		curPoint.z = (float)val.Z;
+		curPoint.pitch = (float)ang.Pitch;
+		curPoint.yaw = (float)ang.Yaw;
+		curPoint.roll = (float)ang.Roll;
+		curPoint.fov = (float)val.Fov;
+		curPoint.time = (float)time;	
+
+		if (offset)
+		{
+			curPoint.time_offset = (float)offset;
+			int myTick, myTickOffset;
+			if (bDemoTime && mirvTime->GetDemoTickFromDemoTime(curtime, demoTime, myTick) && mirvTime->GetDemoTickFromDemoTime(curtime + offset, demoTime, myTickOffset))
+			{
+				int delta = myTickOffset - myTick;
+				curPoint.tick = myTick;
+				curPoint.tick_offset = delta;
+			}
+		}
+		else
+		{
+			curPoint.time_offset = (float)0;
+			int myTick;
+			if (bDemoTime && mirvTime->GetDemoTickFromDemoTime(curtime, demoTime, myTick))
+			{
+				curPoint.tick = myTick;
+				curPoint.tick_offset = 0;
+			}
+		}
+
+		g_AfxCampathPoints[i] = curPoint;
+
+		i++;
+	};
+
+	AfxHookSourceRsCampath result = { g_AfxCampathPoints, camPath->GetSize() };
+	return result;
+};
 
 struct AfxHookSource2 {
     void (*message)(const char *);
@@ -173,6 +243,8 @@ struct AfxHookSource2 {
 
     bool (*isDemoPaused)();
 
+	AfxHookSourceRsCampath (*getCampath)();
+
 } g_AfxHookSource2 = {
     &afx_hook_source2_message,
     &afx_hook_source2_warning,
@@ -204,7 +276,8 @@ struct AfxHookSource2 {
     &afx_hook_source2_getEntityRefRenderEyeAngles,
     &afx_hook_source2_getEntityRefViewEntityHandle,
     &afx_hook_source2_isPlayingDemo,
-    &afx_hook_source2_isDemoPaused
+    &afx_hook_source2_isDemoPaused,
+	&afx_hook_source2_getCampath
 };
 
 typedef void AfxHookSource2Rs;

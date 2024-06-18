@@ -15,5 +15,6 @@ export const events = {
 	onRemoveEntity: 'onRemoveEntity',
 	listEntities: 'listEntities',
 	listPlayerEntities: 'listPlayerEntities',
-	loadModule: 'loadModule'
+	loadModule: 'loadModule',
+	getCampath: 'getCampath'
 } as const;
