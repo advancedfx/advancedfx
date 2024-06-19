@@ -193,6 +193,9 @@ target_sources(${PROJECT_NAME} PRIVATE
 
     hlaeFolder.cpp
     hlaeFolder.h
+	
+	ViewModel.cpp
+	ViewModel.h
 
     main.cpp
 

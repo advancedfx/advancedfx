@@ -9,6 +9,7 @@
 #include "AfxHookSource2Rs.h"
 #include "ReShadeAdvancedfx.h"
 #include "CamIO.h"
+#include "ViewModel.h"
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
 #include "../deps/release/prop/AfxHookSource/SourceInterfaces.h"
@@ -1990,6 +1991,8 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		g_H_ClientDll = hModule;
 
 		//if(!g_Import_client.Apply(hModule)) ErrorBox("client.dll steam_api64 hooks failed.");
+
+		HookViewmodel(hModule);
 
 		HookClientDll(hModule);
 	}
