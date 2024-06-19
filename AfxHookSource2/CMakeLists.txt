@@ -179,6 +179,9 @@ target_sources(${PROJECT_NAME} PRIVATE
     AfxShaders.cpp
     AfxShaders.h
 
+	CamIO.cpp
+	CamIO.h
+
     CampathDrawer.cpp
     CampathDrawer.h
 
