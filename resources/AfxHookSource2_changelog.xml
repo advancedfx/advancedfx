@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.18.0</version>
+<time>2024-06-21T13:04Z</time>
+<changes>
+<change type="fixed">Fixed viewmode for AMD graphics when using ReShade_advancedfx ReShade addon.</change>
+<change type="added">Added #952 mirv_streams record cam, by @ChetdeJong.</change>
+<change type="added">Added #955 mirv_viewmodel, by @ChetdeJong.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.17.1</version>
 <time>2024-06-11T12:55Z</time>
 <changes>
