@@ -101,11 +101,14 @@ void HookViewmodel(HMODULE clientDll)
 
 	if (g_MirvViewmodel.isHooked()) return;
 
+	// This function references the cvars viewmodel_offset_x, viewmodel_offset_y, viewmodel_offset_z, viewmodel_offset_fov (usually 3rd reference).
 	size_t viewmodelAddr = getAddress(clientDll, "48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 18 57 48 83 EC 20 49 8B E8 48 8B DA 48 8B F1"); // 0x51c310 21.06.24
 	if (viewmodelAddr == 0) {
 		return;
 	}
-	size_t handAddr = getAddress(clientDll, "40 56 48 83 EC 20 80 B9 69 21 00 00 00 48 8B F1"); // 0x525170 21.06.24
+	// vtable byte offset 0xa98 for "C_CSGO_TeamPreviewModel" class (4th from end.).
+	// This function is called right after the first call to viewmodelAddr function.
+	size_t handAddr = getAddress(clientDll, "40 56 48 83 EC 20 80 B9 69 21 00 00 00 48 8B F1 ?? ?? 32 C0 48 83 C4 20 5E ?? 48 8B 89"); // 0x525170 21.06.24
 	if (handAddr == 0) {
 		return;
 	}
