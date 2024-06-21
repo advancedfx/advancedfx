@@ -179,6 +179,9 @@ target_sources(${PROJECT_NAME} PRIVATE
     AfxShaders.cpp
     AfxShaders.h
 
+	CamIO.cpp
+	CamIO.h
+
     CampathDrawer.cpp
     CampathDrawer.h
 
@@ -190,6 +193,9 @@ target_sources(${PROJECT_NAME} PRIVATE
 
     hlaeFolder.cpp
     hlaeFolder.h
+	
+	ViewModel.cpp
+	ViewModel.h
 
     main.cpp
 

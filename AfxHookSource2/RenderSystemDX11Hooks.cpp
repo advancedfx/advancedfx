@@ -5,6 +5,7 @@
 #include "CampathDrawer.h"
 #include "ReShadeAdvancedfx.h"
 #include "WrpConsole.h"
+#include "CamIO.h"
 
 #include "../shared/AfxDetours.h"
 #include "../shared/binutils.h"
@@ -15,6 +16,7 @@
 #include "../shared/RecordingSettings.h"
 #include "../shared/RefCountedThreadSafe.h"
 #include "../shared/StringTools.h"
+#include "../shared/CamIO.h"
 
 #include "../deps/release/prop/cs2/sdk_src/public/cdll_int.h"
 #include "../deps/release/prop/cs2/sdk_src/public/icvar.h"
@@ -1018,6 +1020,12 @@ advancedfx::CImageBufferPoolThreadSafe g_ImageBufferPool;
 
 class CAfxStreams : public advancedfx::IRecordStreamSettings {
 public:
+	bool m_CamExport = false;
+	bool m_CamExportSet = false;
+
+	bool CamExport_get(void) { return m_CamExport;  }
+	void CamExport_set(bool value) { m_CamExport = value;  }
+
     CAfxStreams() {
         m_RecordScreen = new CRecordScreen(false, advancedfx::CRecordingSettings::GetDefault());        
     }
@@ -1254,6 +1262,16 @@ void CAfxStreams::RecordStart()
 			}
 		}
 
+		if (m_CamExport)
+		{
+			std::wstring camFileName(m_TakeDir);
+			camFileName.append(L"\\cam_main.cam");
+
+			m_CamExportSet = true;
+			g_S2CamIO.SetCamExport(new CamExport(camFileName.c_str()));
+		}
+
+
 		if(m_RecordScreen->Enabled) {
 			CreateCapture(
 				m_RecordScreen->Settings->CreateOutVideoStreamCreator(
@@ -1301,6 +1319,11 @@ void CAfxStreams::RecordEnd()
                 SOURCESDK::CS2::g_pCVar->DispatchConCommand(handle_endmovie, SOURCESDK::CS2::CCommandContext(SOURCESDK::CS2::CT_FIRST_SPLITSCREEN_CLIENT,0), SOURCESDK::CS2::CCommand(1,pszArgs));
             } else advancedfx::Warning("AFXERROR: endmovie command not found, stopping the wav recording not possible.");
 
+		}
+
+		if(m_CamExportSet) {
+			m_CamExportSet = false;
+			g_S2CamIO.SetCamExport(nullptr);
 		}
 
 		if(m_RecordScreen->Enabled) {
@@ -1453,6 +1476,34 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					}
 					return;
 				}
+				else if (!_stricmp(cmd2, "cam"))
+				{
+					char const* cmd3 = args->ArgV(3);
+					if (4 <= argC)
+    				{
+      				    char const * cmd3 = args->ArgV(3);
+            			if (!_stricmp("enabled", cmd3))
+            			{
+              				if (5 <= argC)
+             				{
+                				char const * cmd4 = args->ArgV(4);
+               					g_AfxStreams.CamExport_set(0 != atoi(cmd4));
+                				return;
+              				}
+
+              				advancedfx::Message(
+                				"mirv_streams record cam enabled 0|1 - Disable (0) or enable (1).\n"
+                				"Current value: %i\n", g_AfxStreams.CamExport_get() ? 1 : 0
+              				);
+
+              				return;
+            			} 
+       				}		
+          			advancedfx::Message(
+           				"mirv_streams record cam enabled [...]\n"
+          			);
+          			return;
+				}
 			}
 
 			advancedfx::Message(
@@ -1465,6 +1516,9 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			advancedfx::Message(
 				"mirv_streams record screen [...] - Controls capturing the game content drawn to screen right before being presented.\n"
 				"mirv_streams record startMovieWav [...] - Controls WAV audio recording.\n"
+			);
+			advancedfx::Message(
+				"mirv_streams record cam [...] - Controls the camera motion data capture output (can be imported with mirv_camio).\n"
 			);
 			return;
 		}

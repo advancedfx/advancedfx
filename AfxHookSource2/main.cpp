@@ -8,6 +8,8 @@
 #include "WrpConsole.h"
 #include "AfxHookSource2Rs.h"
 #include "ReShadeAdvancedfx.h"
+#include "CamIO.h"
+#include "ViewModel.h"
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
 #include "../deps/release/prop/AfxHookSource/SourceInterfaces.h"
@@ -591,11 +593,8 @@ double MirvCamIO_GetTimeFn(void) {
 	return curtime_get();
 }
 
-CamImport * g_CamImport = nullptr;
-CamExport * g_CamExport = nullptr;
-
 CON_COMMAND(mirv_camio, "New camera motion data import / export.") {
-	MirvCamIO_ConsoleCommand(args, g_CamImport, g_CamExport, MirvCamIO_GetTimeFn);
+	g_S2CamIO.Console_CamIO(args);
 }
 
 
@@ -677,11 +676,11 @@ bool CS2_Client_CSetupView_Trampoline_IsPlayingDemo(void *ThisCViewSetup) {
 		}
 	}
 
-	if (g_CamImport)
+	if (g_S2CamIO.GetCamImport())
 	{
 		CamIO::CamData camData;
 
-		if (g_CamImport->GetCamData(curTime, width, height, camData))
+		if (g_S2CamIO.GetCamImport()->GetCamData(curTime, width, height, camData))
 		{
 			originOrAnglesOverriden = true;
 
@@ -717,7 +716,7 @@ bool CS2_Client_CSetupView_Trampoline_IsPlayingDemo(void *ThisCViewSetup) {
 		}		
 	}
 
-	if (g_CamExport)
+	if (g_S2CamIO.GetCamExport())
 	{
 		CamIO::CamData camData;
 
@@ -730,7 +729,7 @@ bool CS2_Client_CSetupView_Trampoline_IsPlayingDemo(void *ThisCViewSetup) {
 		camData.XRotation = Rz;
 		camData.Fov = Fov;
 
-		g_CamExport->WriteFrame(width, height, camData);
+		g_S2CamIO.GetCamExport()->WriteFrame(width, height, camData);
 	}	
 
 	if(originOrAnglesOverriden) {
@@ -1993,6 +1992,8 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 
 		//if(!g_Import_client.Apply(hModule)) ErrorBox("client.dll steam_api64 hooks failed.");
 
+		HookViewmodel(hModule);
+
 		HookClientDll(hModule);
 	}
 	
@@ -2094,8 +2095,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 
 			g_CampathDrawer.End();
 
-			delete g_CamExport;
-			delete g_CamImport;
+			g_S2CamIO.ShutDown();
 
 			delete g_ConsolePrinter;
 
