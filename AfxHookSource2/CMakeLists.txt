@@ -191,6 +191,9 @@ target_sources(${PROJECT_NAME} PRIVATE
     GameEvents.cpp
     GameEvents.h
 
+	Globals.cpp
+	Globals.h
+
     hlaeFolder.cpp
     hlaeFolder.h
 	

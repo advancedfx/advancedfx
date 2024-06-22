@@ -10,6 +10,7 @@
 #include "ReShadeAdvancedfx.h"
 #include "CamIO.h"
 #include "ViewModel.h"
+#include "Globals.h"
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
 #include "../deps/release/prop/AfxHookSource/SourceInterfaces.h"
@@ -33,7 +34,6 @@
 #include "../shared/MirvInput.h"
 #include "../shared/MirvSkip.h"
 
-#include <Windows.h>
 #include "../deps/release/Detours/src/detours.h"
 
 #define _USE_MATH_DEFINES
@@ -46,18 +46,6 @@ HMODULE g_h_engine2Dll = 0;
 HMODULE g_H_ClientDll = 0;
 
 advancedfx::CCommandLine  * g_CommandLine = nullptr;
-
-#define STRINGIZE(x) STRINGIZE2(x)
-#define STRINGIZE2(x) #x
-#define MkErrStr(file,line) "Problem in " file ":" STRINGIZE(line)
-
-void ErrorBox(char const * messageText) {
-	MessageBoxA(0, messageText, "Error - AfxHookSource2", MB_OK|MB_ICONERROR);
-}
-
-void ErrorBox() {
-	ErrorBox("Something went wrong.");
-}
 
 FovScaling GetDefaultFovScaling() {
 	return FovScaling_AlienSwarm;

@@ -1,9 +1,10 @@
 #include "ViewModel.h"
 #include "WrpConsole.h"
+#include "Globals.h"
+
 #include "../shared/binutils.h"
 
 #include <cstddef>
-#include "Windows.h"
 #include "../deps/release/Detours/src/detours.h"
 
 class MirvViewmodel 
@@ -12,9 +13,9 @@ class MirvViewmodel
 	bool m_Enabled = false;
 public:
 	int m_leftHanded = 0;
-	float m_OffsetX, m_OffsetY, m_OffsetZ = 0.0f;
+	float m_OffsetX = 0.0f, m_OffsetY = 0.0f, m_OffsetZ = 0.0f;
 	float m_Fov = 68.0f;
-
+	bool m_enabledX , m_enabledY , m_enabledZ , m_enabledFOV , m_enabledLeftHanded = false;
 	void setViewmodel
 	(
 		float x, float y, float z, float fov, int leftHanded, 
@@ -27,6 +28,20 @@ public:
 		if(setZ) m_OffsetZ = z;
 		if(setFOV) m_Fov = fov;
 		if(setLeftHanded) m_leftHanded = leftHanded;
+
+		if (setX && !m_enabledX) m_enabledX = true;
+		if (setY && !m_enabledY) m_enabledY = true;
+		if (setZ && !m_enabledZ) m_enabledZ = true;
+		if (setFOV && !m_enabledFOV) m_enabledFOV = true;
+		if (setLeftHanded && !m_enabledLeftHanded) m_enabledLeftHanded = true;	
+	};
+
+	void reset() {
+		m_enabledX = false;
+		m_enabledY = false;
+		m_enabledZ = false;
+		m_enabledFOV = false;
+		m_enabledLeftHanded = false;
 	};
 
 	void setEnabled(bool enabled) {
@@ -57,13 +72,12 @@ void __fastcall setViewmodel(void* param_1, void* viewmodel_offset, void* fov)
 
     if (viewmodel_offset != nullptr && g_MirvViewmodel.isEnabled()) {
         float* offsets = reinterpret_cast<float*>(viewmodel_offset);
-        offsets[0] = g_MirvViewmodel.m_OffsetX; // x 
-        offsets[1] = g_MirvViewmodel.m_OffsetY; // y
-        offsets[2] = g_MirvViewmodel.m_OffsetZ; // z
+        if (g_MirvViewmodel.m_enabledX) offsets[0] = g_MirvViewmodel.m_OffsetX; // x 
+        if (g_MirvViewmodel.m_enabledY) offsets[1] = g_MirvViewmodel.m_OffsetY; // y
+        if (g_MirvViewmodel.m_enabledZ) offsets[2] = g_MirvViewmodel.m_OffsetZ; // z
 
 		float* fovVal = reinterpret_cast<float*>(fov);
-		fovVal[0] = g_MirvViewmodel.m_Fov;
-
+		if (g_MirvViewmodel.m_enabledFOV) fovVal[0] = g_MirvViewmodel.m_Fov;
     }
 };
 
@@ -74,7 +88,7 @@ bool __fastcall setHand(int64_t param_1)
 {
 	bool res = g_OriginalHandFunc(param_1);
 
-	if (g_MirvViewmodel.isEnabled()) {
+	if (g_MirvViewmodel.isEnabled() && g_MirvViewmodel.m_enabledLeftHanded) {
 		return g_MirvViewmodel.m_leftHanded;
 	}
 
@@ -103,13 +117,15 @@ void HookViewmodel(HMODULE clientDll)
 
 	// This function references the cvars viewmodel_offset_x, viewmodel_offset_y, viewmodel_offset_z, viewmodel_offset_fov (usually 3rd reference).
 	size_t viewmodelAddr = getAddress(clientDll, "48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 18 57 48 83 EC 20 49 8B E8 48 8B DA 48 8B F1"); // 0x51c310 21.06.24
-	if (viewmodelAddr == 0) {
+	if (0 == viewmodelAddr) {
+		ErrorBox(MkErrStr(__FILE__, __LINE__));	
 		return;
 	}
 	// vtable byte offset 0xa98 for "C_CSGO_TeamPreviewModel" class (4th from end.).
 	// This function is called right after the first call to viewmodelAddr function.
 	size_t handAddr = getAddress(clientDll, "40 56 48 83 EC 20 80 B9 69 21 00 00 00 48 8B F1 ?? ?? 32 C0 48 83 C4 20 5E ?? 48 8B 89"); // 0x525170 21.06.24
-	if (handAddr == 0) {
+	if (0 == handAddr) {
+		ErrorBox(MkErrStr(__FILE__, __LINE__));	
 		return;
 	}
 
@@ -124,7 +140,7 @@ void HookViewmodel(HMODULE clientDll)
 
     DetourAttach(&(PVOID&)g_OriginalViewmodelFunc, setViewmodel);
 	DetourAttach(&(PVOID&)g_OriginalHandFunc, setHand);
-    DetourTransactionCommit();
+	if(NO_ERROR != DetourTransactionCommit()) ErrorBox("Failed to detour Viewmodel functions.");
 
 	g_MirvViewmodel.setHooked(true);
 };
@@ -134,11 +150,11 @@ void ViewModel_Console(advancedfx::ICommandArgs* args)
 	int argc = args->ArgC();
 	if (argc > 1) {
 		char const* subcmd = args->ArgV(1);
-		if (!_stricmp("enabled", subcmd) ) {
+		if (0 == _stricmp("enabled", subcmd) ) {
 			if (3 == argc) {
 				g_MirvViewmodel.setEnabled(0 != atoi(args->ArgV(2)));
 				return;
-			}
+			};
 			advancedfx::Message(
 				"%s enabled 0|1 - Enable / disable custom viewmodel.\n"
 				"Current value: %s\n"
@@ -146,7 +162,7 @@ void ViewModel_Console(advancedfx::ICommandArgs* args)
 				, g_MirvViewmodel.isEnabled() ? "1" : "0"
 			);
 		} else
-		if (!_stricmp("set", subcmd)) {
+		if (0 == _stricmp("set", subcmd)) {
 			if (argc == 7) {
 				bool setX = 0 != strcmp("*", args->ArgV(2));
 				bool setY = 0 != strcmp("*", args->ArgV(3));
@@ -166,29 +182,44 @@ void ViewModel_Console(advancedfx::ICommandArgs* args)
 					setLeftHanded
 				);
 				return;
-				
-			}
+			};
 			advancedfx::Message(
-				"%s set <OffsetX|*> <OffsetY|*> <OffsetZ|*> <FOV|*> <Hand|*> - Set viewmodel. Use * to indicate to not change.\n"
-				"Hand: 0 = Right Handed, 1 = Left Handed\n"
-				"Current value: OffsetX: %f, OffsetY: %f, OffsetZ: %f, FOV: %f, Hand: %i\n"
+				"%s set <OffsetX|*> <OffsetY|*> <OffsetZ|*> <FOV|*> <Hand|*>\n"
+				"Set viewmodel. Use * to indicate to not change. Hand: 0 = Right Handed, 1 = Left Handed\n"
+				"Current value: OffsetX: %.1f, OffsetY: %.1f, OffsetZ: %.1f, FOV: %.1f, Hand: %i\n"
+				"Example:\n"
+				"%s set 2 2.5 -2 68 0\n"
 				, args->ArgV(0)
 				, g_MirvViewmodel.m_OffsetX
 				, g_MirvViewmodel.m_OffsetY
 				, g_MirvViewmodel.m_OffsetZ
 				, g_MirvViewmodel.m_Fov
 				, g_MirvViewmodel.m_leftHanded
+				, args->ArgV(0)
 			);
-		}
+		} else 
+		if (0 ==_stricmp("reset", subcmd)) {
+			g_MirvViewmodel.reset();
+		};
 	} else {
 		advancedfx::Message("%s enabled <1|0> - Enables/Disables the viewmodel\n", args->ArgV(0));
-		advancedfx::Message("%s set <OffsetX|*> <OffsetY|*> <OffsetZ|*> <FOV|*> <Hand|*> - Set viewmodel. Use * to indicate to not change.\n", args->ArgV(0));
-		advancedfx::Message("Hand: 0 = Right Handed, 1 = Left Handed\n");
-		advancedfx::Message("Default values: OffsetX: 0, OffsetY: 0, OffsetZ: 0, FOV: 68, Hand: 0\n");
-	}
+		advancedfx::Message("%s reset - Reset the state, means passthrough for every value.\n", args->ArgV(0));
+		advancedfx::Message("%s set <OffsetX|*> <OffsetY|*> <OffsetZ|*> <FOV|*> <Hand|*>\n", args->ArgV(0));
+		advancedfx::Message("Set viewmodel. Use * to indicate to not change. Hand: 0 = Right Handed, 1 = Left Handed\n");
+		advancedfx::Message("Once you set values, it means no passthrough for them. You can reset it with reset command.\n");
+		advancedfx::Message("\n");
+		advancedfx::Message("Example 1 - set custom viewmodel\n");
+		advancedfx::Message("%s set 2 2.5 -2 68 0\n", args->ArgV(0));
+		advancedfx::Message("%s enabled 1\n", args->ArgV(0));
+		advancedfx::Message("\n");
+		advancedfx::Message("Example 2 - set custom viewmodel partially\n");
+		advancedfx::Message("%s set 2 2.5 -2 68 *\n", args->ArgV(0));
+		advancedfx::Message("%s enabled 1\n", args->ArgV(0));
+		advancedfx::Message("Note the * in the end, it means passthrough, which means in this case right/hand hand state will depend on engine.\n");
+	};
 };
 
-CON_COMMAND(mirv_viewmodel, "test viewmodel")
+CON_COMMAND(mirv_viewmodel, "Set custom viewmodel")
 {
 	ViewModel_Console(args);
 };
