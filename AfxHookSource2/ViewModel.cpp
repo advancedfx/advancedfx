@@ -15,7 +15,7 @@ public:
 	int m_leftHanded = 0;
 	float m_OffsetX = 0.0f, m_OffsetY = 0.0f, m_OffsetZ = 0.0f;
 	float m_Fov = 68.0f;
-	bool m_enabledX , m_enabledY , m_enabledZ , m_enabledFOV , m_enabledLeftHanded = false;
+	bool m_enabledX = false, m_enabledY = false, m_enabledZ = false, m_enabledFOV = false, m_enabledLeftHanded = false;
 	void setViewmodel
 	(
 		float x, float y, float z, float fov, int leftHanded, 
@@ -215,7 +215,7 @@ void ViewModel_Console(advancedfx::ICommandArgs* args)
 		advancedfx::Message("Example 2 - set custom viewmodel partially\n");
 		advancedfx::Message("%s set 2 2.5 -2 68 *\n", args->ArgV(0));
 		advancedfx::Message("%s enabled 1\n", args->ArgV(0));
-		advancedfx::Message("Note the * in the end, it means passthrough, which means in this case right/hand hand state will depend on engine.\n");
+		advancedfx::Message("Note the * in the end, it means passthrough, which means in this case right/left hand state will depend on engine.\n");
 	};
 };
 
