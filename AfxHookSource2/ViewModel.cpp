@@ -156,10 +156,10 @@ void ViewModel_Console(advancedfx::ICommandArgs* args)
 				return;
 			};
 			advancedfx::Message(
-				"%s enabled 0|1 - Enable / disable custom viewmodel.\n"
+				"%s enabled 0|1 - enable (1) / disable (0) custom viewmodel.\n"
 				"Current value: %s\n"
 				, args->ArgV(0)
-				, g_MirvViewmodel.isEnabled() ? "1" : "0"
+				, g_MirvViewmodel.isEnabled() ? "1 (enabled)" : "0 (disabled)"
 			);
 		} else
 		if (0 == _stricmp("set", subcmd)) {
@@ -202,7 +202,7 @@ void ViewModel_Console(advancedfx::ICommandArgs* args)
 			g_MirvViewmodel.reset();
 		};
 	} else {
-		advancedfx::Message("%s enabled <1|0> - Enables/Disables the viewmodel\n", args->ArgV(0));
+		advancedfx::Message("%s enabled <0|1> - enable (1) / disable (0) the viewmodel\n", args->ArgV(0));
 		advancedfx::Message("%s reset - Reset the state, means passthrough for every value.\n", args->ArgV(0));
 		advancedfx::Message("%s set <OffsetX|*> <OffsetY|*> <OffsetZ|*> <FOV|*> <Hand|*>\n", args->ArgV(0));
 		advancedfx::Message("Set viewmodel. Use * to indicate to not change. Hand: 0 = Right Handed, 1 = Left Handed\n");
