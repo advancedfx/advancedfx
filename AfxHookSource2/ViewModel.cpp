@@ -29,19 +29,12 @@ public:
 		if(setFOV) m_Fov = fov;
 		if(setLeftHanded) m_leftHanded = leftHanded;
 
-		if (setX && !m_enabledX) m_enabledX = true;
-		if (setY && !m_enabledY) m_enabledY = true;
-		if (setZ && !m_enabledZ) m_enabledZ = true;
-		if (setFOV && !m_enabledFOV) m_enabledFOV = true;
-		if (setLeftHanded && !m_enabledLeftHanded) m_enabledLeftHanded = true;	
-	};
-
-	void reset() {
-		m_enabledX = false;
-		m_enabledY = false;
-		m_enabledZ = false;
-		m_enabledFOV = false;
-		m_enabledLeftHanded = false;
+		m_enabledX = setX;
+		m_enabledY = setY;
+		m_enabledZ = setZ;
+		m_enabledFOV = setFOV;
+		m_enabledLeftHanded = setLeftHanded;
+	
 	};
 
 	void setEnabled(bool enabled) {
@@ -185,7 +178,8 @@ void ViewModel_Console(advancedfx::ICommandArgs* args)
 			};
 			advancedfx::Message(
 				"%s set <OffsetX|*> <OffsetY|*> <OffsetZ|*> <FOV|*> <Hand|*>\n"
-				"Set viewmodel. Use * to indicate to not change. Hand: 0 = Right Handed, 1 = Left Handed\n"
+				"Set viewmodel. Use * to indicate to not change."
+				"Hand: 0 = Right Handed, 1 = Left Handed\n"
 				"Current value: OffsetX: %.1f, OffsetY: %.1f, OffsetZ: %.1f, FOV: %.1f, Hand: %i\n"
 				"Example:\n"
 				"%s set 2 2.5 -2 68 0\n"
@@ -197,16 +191,12 @@ void ViewModel_Console(advancedfx::ICommandArgs* args)
 				, g_MirvViewmodel.m_leftHanded
 				, args->ArgV(0)
 			);
-		} else 
-		if (0 ==_stricmp("reset", subcmd)) {
-			g_MirvViewmodel.reset();
 		};
 	} else {
 		advancedfx::Message("%s enabled <0|1> - enable (1) / disable (0) the viewmodel\n", args->ArgV(0));
-		advancedfx::Message("%s reset - Reset the state, means passthrough for every value.\n", args->ArgV(0));
 		advancedfx::Message("%s set <OffsetX|*> <OffsetY|*> <OffsetZ|*> <FOV|*> <Hand|*>\n", args->ArgV(0));
-		advancedfx::Message("Set viewmodel. Use * to indicate to not change. Hand: 0 = Right Handed, 1 = Left Handed\n");
-		advancedfx::Message("Once you set values, it means no passthrough for them. You can reset it with reset command.\n");
+		advancedfx::Message("Set viewmodel. Use * to indicate passthrough, which means value will depend on engine.\n");
+		advancedfx::Message("Hand: 0 = Right Handed, 1 = Left Handed\n");
 		advancedfx::Message("\n");
 		advancedfx::Message("Example 1 - set custom viewmodel\n");
 		advancedfx::Message("%s set 2 2.5 -2 68 0\n", args->ArgV(0));
