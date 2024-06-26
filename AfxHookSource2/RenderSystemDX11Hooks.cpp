@@ -633,9 +633,6 @@ void STDMETHODCALLTYPE New_OMSetRenderTargets( ID3D11DeviceContext * This,
         }
         else if (g_iDraw == 2 && pDepthStencilView == nullptr && ppRenderTargetViews && ppRenderTargetViews[0] && ppRenderTargetViews[0] == g_pCurrentRenderTargetView) {
             g_iDraw = 3;
-            UINT numViewPorts = 1;
-            g_pImmediateContext->RSGetViewports(&numViewPorts, &g_ViewPort);
-            g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
         }
     }
     
@@ -666,6 +663,9 @@ void STDMETHODCALLTYPE New_PSSetShaderResources(ID3D11DeviceContext* This,
             if (pResource) {
                 if (pResource == g_pCurrentDepthStencilViewResource) {
                     g_iDraw = 4;
+                    UINT numViewPorts = 1;
+                    g_pImmediateContext->RSGetViewports(&numViewPorts, &g_ViewPort);
+                    g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
                     if (g_bEnableReShade) DrawReShade(g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
                     break;
                 }

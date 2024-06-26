@@ -6,10 +6,21 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.19.0</version>
+<time>2024-06-26T09:07Z</time>
+<changes>
+<change type="fixed">Adjusted to CS2 update, with help by @ChetdeJong.</change>
+<change type="updated">Updated mirv_viewmodel (* is now a true passthrough setting), by @ChetdeJong.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.18.0</version>
 <time>2024-06-21T13:04Z</time>
 <changes>
-<change type="fixed">Fixed viewmode for AMD graphics when using ReShade_advancedfx ReShade addon.</change>
+<change type="fixed">Fixed viewmodel for AMD graphics when using ReShade_advancedfx ReShade addon.</change>
 <change type="added">Added #952 mirv_streams record cam, by @ChetdeJong.</change>
 <change type="added">Added #955 mirv_viewmodel, by @ChetdeJong.</change>
 </changes>
