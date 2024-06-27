@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.19.1</version>
+<time>2024-06-27T19:32Z</time>
+<changes>
+<change type="fixed">Fixed mirv_campath draw not working under some conditions.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.19.0</version>
 <time>2024-06-26T09:07Z</time>
 <changes>

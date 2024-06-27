@@ -507,7 +507,7 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
         ID3D11Texture2D * pTexture = nullptr;
         HRESULT result2 = g_pSwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D), (void**)&pTexture);
         if(SUCCEEDED(result2)) {
-            if(pResource == pTexture && (g_pDevice == nullptr || This == g_pDevice)) {
+            if(pResource == pTexture && (g_pDevice == nullptr || This != g_pDevice)) {
                 if(g_pDevice) {
                     CAfxShaderResourceViews::Clear();
                     g_CampathDrawer.EndDevice();
