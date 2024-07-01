@@ -216,7 +216,7 @@ void TrySetView(float Tx, float Ty, float Tz, float Rx, float Ry, float Rz, floa
 	{
 		firstRun = false;
 		
-		if (SourceSdkVer_CSGO == g_SourceSdkVer)
+		if (SourceSdkVer_CSGO == g_SourceSdkVer || SourceSdkVer_CSCO == g_SourceSdkVer)
 		{
 			if (CClientToolsCsgo::Instance())
 			{

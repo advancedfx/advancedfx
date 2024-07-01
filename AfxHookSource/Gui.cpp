@@ -115,7 +115,7 @@ struct CUSTOMVERTEX
 bool IsSupported()
 {
 	//return false;
-	return SourceSdkVer_CSGO == g_SourceSdkVer;
+	return SourceSdkVer_CSGO == g_SourceSdkVer || SourceSdkVer_CSCO == g_SourceSdkVer;
 }
 
 bool IsInMouseLook()

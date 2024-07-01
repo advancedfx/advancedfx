@@ -101,6 +101,10 @@ SOURCESDK::BM::ICvar * SOURCESDK::BM::cvar = 0;
 SOURCESDK::BM::ICvar * SOURCESDK::BM::g_pCVar = 0;
 
 
+bool SOURCESDK::CSGO::IsSurceSdkVerCsCo() {
+	return g_SourceSdkVer == SourceSdkVer_CSCO;
+}
+
 void ErrorBox(char const * messageText) {
 	MessageBoxA(0, messageText, "Error - AfxHookSource", MB_OK|MB_ICONERROR);
 }
@@ -165,6 +169,7 @@ FovScaling GetDefaultFovScaling() {
 	switch (g_SourceSdkVer)
 	{
 	case SourceSdkVer_CSGO:
+	case SourceSdkVer_CSCO:
 	case SourceSdkVer_TF2:
 	case SourceSdkVer_SWARM:
 	case SourceSdkVer_L4D2:
@@ -263,7 +268,7 @@ public:
 
 		g_Engine_ClientEngineTools->PostToolMessage(hEntity, msg);
 
-		if (g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO)
+		if (g_SourceSdkVer == SourceSdkVer_CSGO || g_SourceSdkVer == SourceSdkVer_CSCO)
 		{
 			if(msg)			
 			{
@@ -394,6 +399,7 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 		switch (g_SourceSdkVer)
 		{
 		case SourceSdkVer_CSGO:
+		case SourceSdkVer_CSCO:
 			if (iface = appSystemFactory(VENGINE_CLIENT_INTERFACE_VERSION_014_CSGO, NULL))
 			{
 				g_Info_VEngineClient = VENGINE_CLIENT_INTERFACE_VERSION_014_CSGO " (CS:GO)";
@@ -450,6 +456,7 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 		switch (g_SourceSdkVer)
 		{
 		case SourceSdkVer_CSGO:
+		case SourceSdkVer_CSCO:
 		case SourceSdkVer_Insurgency2:
 			if (iface = appSystemFactory(SOURCESDK_CSGO_CVAR_INTERFACE_VERSION, NULL))
 			{
@@ -515,7 +522,7 @@ void MySetup(SOURCESDK::CreateInterfaceFn appSystemFactory, WrpGlobals *pGlobals
 
 		// Other
 
-		if(SourceSdkVer_CSGO == g_SourceSdkVer)
+		if(SourceSdkVer_CSGO == g_SourceSdkVer || g_SourceSdkVer == SourceSdkVer_CSCO)
 		{
 			if(iface = appSystemFactory(MATERIAL_SYSTEM_INTERFACE_VERSION_CSGO_80, NULL))
 			{
@@ -1937,7 +1944,7 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 
 		void * iface = NULL;
 		
-		if(SourceSdkVer_CSGO != g_SourceSdkVer)
+		if(!(SourceSdkVer_CSGO == g_SourceSdkVer || SourceSdkVer_CSCO == g_SourceSdkVer))
 		{
 			if (iface = old_Client_CreateInterface(CLIENT_DLL_INTERFACE_VERSION_018, NULL)) {
 				if( SourceSdkVer_BM == g_SourceSdkVer )
@@ -2038,7 +2045,7 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 				}
 			}
 		}
-		if(SourceSdkVer_CSGO == g_SourceSdkVer)
+		if(SourceSdkVer_CSGO == g_SourceSdkVer || SourceSdkVer_CSCO == g_SourceSdkVer)
 		{
 			// isCsgo.
 
@@ -2070,7 +2077,7 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 		}
 	}
 
-	if(SourceSdkVer_CSGO == g_SourceSdkVer)
+	if(SourceSdkVer_CSGO == g_SourceSdkVer || SourceSdkVer_CSCO == g_SourceSdkVer)
 	{
 		if(!g_AfxBaseClientDll && !strcmp(pName, CLIENT_DLL_INTERFACE_VERSION_CSGO_018))
 		{
@@ -2428,6 +2435,8 @@ void CommonHooks()
 					g_SourceSdkVer = SourceSdkVer_TF2;
 				else if (0 == _wcsicmp(L"csgo", game))
 					g_SourceSdkVer = SourceSdkVer_CSGO;
+				else if (0 == _wcsicmp(L"csco", game))
+					g_SourceSdkVer = SourceSdkVer_CSCO;
 				else if (0 == _wcsicmp(L"css_v34", game))
 					g_SourceSdkVer = SourceSdkVer_CSSV34;
 				else if (0 == _wcsicmp(L"css_v84", game))
@@ -2457,6 +2466,16 @@ void CommonHooks()
 		else if (StringIEndsWith(filePath, "csgo.exe"))
 		{
 			g_SourceSdkVer = SourceSdkVer_CSGO;
+			// Detect CS:CO which uses csgo.exe:
+			if (int gameIdx = g_CommandLine->FindParam(L"-game")) {
+				++gameIdx;
+				if (gameIdx < g_CommandLine->GetArgC())
+				{
+					const wchar_t* game = g_CommandLine->GetArgV(gameIdx);
+					if(0 == _wcsicmp(L"csco", game) || 0 == _wcsicmp(L"csco/csgo", game))
+						g_SourceSdkVer = SourceSdkVer_CSCO;
+				}				
+			}
 		}
 		else if (StringIEndsWith(filePath, "swarm.exe"))
 		{
@@ -2520,7 +2539,7 @@ void CommonHooks()
 				g_Import_Tier0.Apply(hTier0);
 			}
 
-			if (SourceSdkVer_CSGO == g_SourceSdkVer)
+			if (SourceSdkVer_CSGO == g_SourceSdkVer || SourceSdkVer_CSCO == g_SourceSdkVer)
 			{
 				SOURCESDK::CSGO::g_pMemAlloc = *(SOURCESDK::CSGO::IMemAlloc **)GetProcAddress(hTier0, "g_pMemAlloc");
 
@@ -2619,6 +2638,10 @@ CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR, HANDLE, DWORD)> g_Import_filesystem_
 CAfxImportFuncHook<HANDLE(WINAPI*)(LPCWSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE)> g_Import_filesystem_stdio_KERNEL32_CreateFileW("CreateFileW", &new_CreateFileW);
 CAfxImportFuncHook<HANDLE(WINAPI*)(LPCSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE)> g_Import_filesystem_stdio_KERNEL32_CreateFileA("CreateFileA", &new_CreateFileA);
 
+CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR)> g_csco_Import_filesystem_stdio_KERNEL32_LoadLibraryA("LoadLibraryA", &new_LoadLibraryA);
+CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR, HANDLE, DWORD)> g_csco_Import_filesystem_stdio_KERNEL32_LoadLibraryExA("LoadLibraryExA", &new_LoadLibraryExA);
+
+
 HANDLE WINAPI new_CreateFileW(
 	_In_ LPCWSTR lpFileName,
 	_In_ DWORD dwDesiredAccess,
@@ -2630,7 +2653,8 @@ HANDLE WINAPI new_CreateFileW(
 )
 {
 	static bool bWasRecording = false; // allow startmovie wav-fixup by engine to get through one more time.
-	if (g_SourceSdkVer != SourceSdkVer_CSGO && (g_AfxStreams.IsRecording() || bWasRecording)) {
+	if ((g_SourceSdkVer != SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer)
+		&& (g_AfxStreams.IsRecording() || bWasRecording)) {
 		std::wstring strFileName(lpFileName);
 		for (auto& c : strFileName) c = std::tolower(c);
 		if (StringEndsWithW(strFileName.c_str(), L"" ADVNACEDFX_STARTMOIVE_WAV_KEY ".wav")) {
@@ -2653,7 +2677,8 @@ HANDLE WINAPI new_CreateFileA(
     _In_opt_ HANDLE hTemplateFile
     ) {
 	static bool bWasRecording = false; // allow startmovie wav-fixup by engine to get through one more time.
-	if (g_SourceSdkVer != SourceSdkVer_CSGO && (g_AfxStreams.IsRecording() || bWasRecording)) {
+	if ((g_SourceSdkVer != SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer)
+		&& (g_AfxStreams.IsRecording() || bWasRecording)) {
 		std::string strFileName(lpFileName);
 		for (auto& c : strFileName) c = std::tolower(c);
 		if (StringEndsWith(strFileName.c_str(),"" ADVNACEDFX_STARTMOIVE_WAV_KEY ".wav")) {
@@ -2672,8 +2697,16 @@ CAfxImportDllHook g_Import_filesystem_stdio_KERNEL32("KERNEL32.dll", CAfxImportD
 	, &g_Import_filesystem_stdio_KERNEL32_CreateFileW
 	, &g_Import_filesystem_stdio_KERNEL32_CreateFileA }));
 
+CAfxImportDllHook g_csco_Import_filesystem_stdio_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
+	&g_csco_Import_filesystem_stdio_KERNEL32_LoadLibraryA
+	, &g_csco_Import_filesystem_stdio_KERNEL32_LoadLibraryExA}));
+
 CAfxImportsHook g_Import_filesystem_stdio(CAfxImportsHooks({
 	&g_Import_filesystem_stdio_KERNEL32 }));
+
+CAfxImportsHook g_csco_Import_filesystem_stdio(CAfxImportsHooks({
+	&g_csco_Import_filesystem_stdio_KERNEL32 }));
+
 
 CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR)> g_Import_engine_KERNEL32_LoadLibraryA("LoadLibraryA", &new_LoadLibraryA);
 CAfxImportFuncHook<HMODULE(WINAPI*)(LPCSTR, HANDLE, DWORD)> g_Import_engine_KERNEL32_LoadLibraryExA("LoadLibraryExA", &new_LoadLibraryExA);
@@ -2939,6 +2972,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 	//static bool bFirstGameOverlayRenderer = true;
 	static bool bFirstFileSystemSteam = true;
 	static bool bFirstfilesystem_stdio = true;
+	static bool bFirstfilesystem_stdio_proxied = true;
 	static bool bFirstShaderapidx9 = true;
 	static bool bFirstMaterialsystem = true;
 	static bool bFirstPanorama = true;
@@ -2973,9 +3007,22 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 	else if(bFirstfilesystem_stdio && StringEndsWith( lpLibFileName, "filesystem_stdio.dll"))
 	{
 		bFirstfilesystem_stdio = false;
-		
-		g_Import_filesystem_stdio.Apply(hModule);
+
+		if(g_SourceSdkVer == SourceSdkVer_CSCO) {
+			// csco (Classic Offensive), we need to hook into proxied instead.
+			g_csco_Import_filesystem_stdio.Apply(hModule);
+		} else {
+			g_Import_filesystem_stdio.Apply(hModule);
+		}
 	}
+	else if(g_SourceSdkVer == SourceSdkVer_CSCO && bFirstfilesystem_stdio_proxied && StringEndsWith( lpLibFileName, "filesystem_stdio_proxied.dll"))
+	{
+		bFirstfilesystem_stdio_proxied = false;
+
+		// csco (Classic Offensive).
+				
+		g_Import_filesystem_stdio.Apply(hModule);
+	}	
 	else if(bFirstEngine && StringEndsWith( lpLibFileName, "engine.dll"))
 	{
 		bFirstEngine = false;
@@ -2998,10 +3045,10 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 		csgo_Audio_Install();
 		//Hook_csgo_DemoFile();
 
-		if(SourceSdkVer_CSGO == g_SourceSdkVer) {
+		if(SourceSdkVer_CSGO == g_SourceSdkVer || SourceSdkVer_CSCO == g_SourceSdkVer) {
 			Install_csgo_engine_Do_CCLCMsg_FileCRCCheck();
 		}
-		if(SourceSdkVer_CSGO == g_SourceSdkVer || SourceSdkVer_TF2 == g_SourceSdkVer) {
+		if(SourceSdkVer_CSGO == g_SourceSdkVer || SourceSdkVer_CSCO == g_SourceSdkVer || SourceSdkVer_TF2 == g_SourceSdkVer) {
 			Install_csgo_tf2_Cmd_ExecuteCommand();
 		}
 
@@ -3031,7 +3078,7 @@ void LibraryHooksA(HMODULE hModule, LPCSTR lpLibFileName)
 
 		old_Direct3DCreate9 = (Direct3DCreate9_t)g_Import_shaderapidx9_d3d9_Direct3DCreate9.TrueFunc;
 	}
-	else if(bFirstClient && (StringEndsWith( lpLibFileName, "client_panorama.dll") || SourceSdkVer_CSGO != g_SourceSdkVer && StringEndsWith(lpLibFileName, "client.dll") || StringEndsWith(lpLibFileName, "csgo\\bin\\client.dll")))
+	else if(bFirstClient && (StringEndsWith( lpLibFileName, "client_panorama.dll") || !(SourceSdkVer_CSGO == g_SourceSdkVer || SourceSdkVer_CSCO == g_SourceSdkVer) && StringEndsWith(lpLibFileName, "client.dll") || StringEndsWith(lpLibFileName, "csgo\\bin\\client.dll")))
 	{
 		bFirstClient = false;
 

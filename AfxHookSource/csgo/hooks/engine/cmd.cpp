@@ -142,7 +142,8 @@ bool Install_csgo_tf2_Cmd_ExecuteCommand(void)
 	if (!firstRun) return firstResult;
 	firstRun = false;
 
-	if (SourceSdkVer_CSGO == g_SourceSdkVer && AFXADDR_GET(csgo_engine_Cmd_ExecuteCommand)){
+	if ((SourceSdkVer_CSGO == g_SourceSdkVer  || SourceSdkVer_CSCO == g_SourceSdkVer)
+		&& AFXADDR_GET(csgo_engine_Cmd_ExecuteCommand)){
 		LONG error = NO_ERROR;
 
 		g_Org_csgo_Cmd_ExecuteCommand = (void *)AFXADDR_GET(csgo_engine_Cmd_ExecuteCommand);

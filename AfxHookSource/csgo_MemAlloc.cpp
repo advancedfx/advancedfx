@@ -111,7 +111,7 @@ bool Hook_csgo_MemAlloc(void)
 	if (!firstRun) return firstResult;
 	firstRun = false;
 
-	if (SourceSdkVer_CSGO == g_SourceSdkVer)
+	if (SourceSdkVer_CSGO == g_SourceSdkVer || SourceSdkVer_CSCO == g_SourceSdkVer)
 	{
 		if (SOURCESDK::IMemAlloc_csgo * iface = SOURCESDK::Get_g_pMemAlloc())
 		{

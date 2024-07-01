@@ -6,6 +6,7 @@ enum SourceSdkVer
 {
 	SourceSdkVer_Unknonw,
 	SourceSdkVer_CSGO,
+	SourceSdkVer_CSCO,
 	SourceSdkVer_TF2,
 	SourceSdkVer_CSS,
 	SourceSdkVer_CSSV34,
@@ -94,6 +95,7 @@ AFXADDR_DECL(csgo_CNetChan_ProcessMessages)
 AFXADDR_DECL(csgo_C_CSPlayer_vtable)
 AFXADDR_DECL(csgo_C_CSPlayer_ofs_m_angEyeAngles)
 AFXADDR_DECL(csgo_crosshair_localplayer_check)
+AFXADDR_DECL(csgo_crosshair_localplayer_check_NOPSZ)
 AFXADDR_DECL(csgo_DamageIndicator_MessageFunc)
 AFXADDR_DECL(csgo_C_BasePlayer_SetAsLocalPlayer)
 AFXADDR_DECL(csgo_C_BasePlayer_GetToolRecordingState)

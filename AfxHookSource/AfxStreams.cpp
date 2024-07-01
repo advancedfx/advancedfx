@@ -6884,7 +6884,7 @@ void CAfxStreams::Console_Record_Start()
 		std::string utf8TakeDir;
 		bool utf8TakeDirOk = WideStringToUTF8String(m_TakeDir.c_str(), utf8TakeDir);
 
-		if (g_SourceSdkVer == SourceSdkVer_CSGO) {
+		if (g_SourceSdkVer == SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer) {
 			BackUpMatVars();
 			SetMatVarsForStreams();
 		}
@@ -6967,7 +6967,7 @@ void CAfxStreams::Console_Record_Start()
 
 		if (m_StartMovieWavUsed)
 		{
-			if (g_SourceSdkVer == SourceSdkVer_CSGO) {
+			if (g_SourceSdkVer == SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer) {
 				if (!csgo_Audio_StartRecording(m_TakeDir.c_str()))
 					Tier0_Warning("Error: Could not start WAV audio recording!\n");
 			}
@@ -7007,7 +7007,7 @@ void CAfxStreams::Console_Record_End()
 
 		if (m_StartMovieWavUsed)
 		{
-			if (g_SourceSdkVer == SourceSdkVer_CSGO) {
+			if (g_SourceSdkVer == SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer) {
 				csgo_Audio_EndRecording();
 			}
 			else {
@@ -7046,7 +7046,7 @@ void CAfxStreams::Console_Record_End()
 			MaterialSystem_ExecuteOnRenderThread(new CDeleteScreenCaptureNodeFunctor());
 		}
 
-		if (g_SourceSdkVer == SourceSdkVer_CSGO)
+		if (g_SourceSdkVer == SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer)
 			RestoreMatVars();
 
 		Tier0_Msg("done.\n");
@@ -9048,7 +9048,8 @@ void CAfxStreams::Console_Bvh(IWrpCommandArgs * args)
 			);
 			return;
 		}
-		else if (g_SourceSdkVer == SourceSdkVer_CSGO && 0 == _stricmp(cmd1, "ent"))
+		else if ((g_SourceSdkVer == SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer)
+			&& 0 == _stricmp(cmd1, "ent"))
 		{
 			if (3 <= argc)
 			{
@@ -9205,7 +9206,7 @@ void CAfxStreams::Console_Bvh(IWrpCommandArgs * args)
 		"%s cam [...] - Whether main camera export (overrides/uses mirv_camexport actually).\n"
 		, prefix
 	);
-	if(g_SourceSdkVer == SourceSdkVer_CSGO) Tier0_Msg(
+	if(g_SourceSdkVer == SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer) Tier0_Msg(
 		"%s ent [...] - Entity BVH export list control.\n"
 		, prefix
 	);	
@@ -9921,7 +9922,7 @@ void CAfxStreams::AfxStreamsInitGlobal() {
 
 void CAfxStreams::AfxStreamsInit(void)
 {
-	if (g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO) {
+	if (g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer) {
 		if (!csgo_CModelRenderSystem_SetupBones_Install()) Tier0_Warning("AFXERROR: csgo_CModelRenderSystem_SetupBones_Install() failed.");
 
 		CAfxBaseFxStream::AfxStreamsInit();
@@ -9942,7 +9943,8 @@ void CAfxStreams::ShutDown(void)
 			Console_Record_End();
 		}
 
-		if (g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO && m_Recording) {
+		if ((g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer)
+			&& m_Recording) {
 			QueueCaptureGpuQueuesExecution(true);
 		}
 
@@ -9950,7 +9952,7 @@ void CAfxStreams::ShutDown(void)
 		QueueCaptureGpuQueuesRelease(true);
 		DrawingThread_DeviceLost();
 
-		if (g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO) {
+		if (g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer) {
 			CAfxBaseFxStream::AfxStreamsShutdown();
 		}
 
@@ -10097,7 +10099,7 @@ void CAfxStreams::DrawingThread_UnsetIntZTextureSurface() {
 
 void CAfxStreams::EngineThread_QueueCapture() {
 	if(m_Recording && m_RecordScreen->Enabled) {
-		if(g_AfxStreams.IsRecording() && (g_VEngineClient && !g_VEngineClient->Con_IsVisible() || g_SourceSdkVer == SourceSdkVer_CSGO)) {
+		if(g_AfxStreams.IsRecording() && (g_VEngineClient && !g_VEngineClient->Con_IsVisible() || g_SourceSdkVer == SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer)) {
 			MaterialSystem_ExecuteOnRenderThread(new CQueueCaptureFunctor());
 		}
 	}

@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.128.0</version>
+<time>2024-07-01T14:45Z</time>
+<changes>
+<change type="added">Added Classic Offensive (CS:CO) support, should be same features as CS:GO.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.127.4</version>
 <time>2024-05-27T04:00Z</time>
 <changes>

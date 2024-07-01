@@ -313,7 +313,7 @@ CON_COMMAND(__mirv_show_renderview_count, "") {
 
 CON_COMMAND(mirv_streams, "Access to streams system.")
 {
-	bool bIsCsgo = g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO;
+	bool bIsCsgo = g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO || g_SourceSdkVer == SourceSdkVer_CSCO;
 	int argc = args->ArgC();
 
 	if(2 <= argc)
