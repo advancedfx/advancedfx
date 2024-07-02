@@ -51,9 +51,9 @@ namespace AfxGui
 
             m_Guids = new Guid[]{
                 // current GUID:
-                new Guid("8db1d0fd-6a3a-4dc7-b46b-bc0c3a2390c5"),
+                new Guid("deb0e53b-27f9-4779-ba9d-5ac246f86135"),
                 // current roll-back GUID:
-                new Guid("137b73a0-2fc8-4088-9131-a24b61e7e34a"),
+                new Guid("8667850e-3b7b-44da-8a6a-994da998630a"),
                 // old GUID(s) to accept:
                 new Guid("f1f740b1-1dd8-42fe-b76a-4f529fd10ede")
             };

@@ -335,7 +335,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 							if(sourceSdkVer == SourceSdkVer_CSGO) {
 								result = FindPatternString(MemRange(result.Start - 0x1, result.Start - 0x1 + 10).And(textRange), "68 ?? ?? ?? ?? B9 ?? ?? ?? ??");
 								if (!result.IsEmpty()) {
-									DWORD cvarThisAddr = *(DWORD *)(result.Start + 2);
+									DWORD cvarThisAddr = *(DWORD *)(result.Start + 6);
 									// this is the first match of this cvar in current code, we look for the second one:
 									result = FindBytes(MemRange(result.Start - 0x1 + 10, textRange.End), (const char*)&cvarThisAddr, sizeof(cvarThisAddr));
 									if(!result.IsEmpty()) {

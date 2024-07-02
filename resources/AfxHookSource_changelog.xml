@@ -6,6 +6,15 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.128.1</version>
+<time>2024-07-02T05:16Z</time>
+<changes>
+<change type="fixed">Fixed CS:GO.</change>
+</changes>
+</release>
+
+<release>
+<name>AfxHookSource</name>
 <version>1.128.0</version>
 <time>2024-07-01T14:45Z</time>
 <changes>
