@@ -232,9 +232,9 @@ BOOL WINAPI new_SetCursorPos(
 	//	if (AfxHookSource::Gui::OnSetCursorPos(X, Y))
 	//		return TRUE;
 
-	MirvInput_Get()->Supply_SetCursorPos(X, Y);
-
-	return SetCursorPos(X, Y);
+	BOOL result = SetCursorPos(X, Y);
+	if(result) MirvInput_Get()->Supply_SetCursorPos(X, Y);
+	return result;
 }
 
 

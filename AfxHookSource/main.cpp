@@ -2289,9 +2289,9 @@ BOOL WINAPI new_SetCursorPos(
 	if (AfxHookSource::Gui::OnSetCursorPos(X, Y))
 		return TRUE;
 
-	g_Hook_VClient_RenderView.m_MirvInput->Supply_SetCursorPos(X,Y);
-
-	return SetCursorPos(X,Y);
+	BOOL result = SetCursorPos(X, Y);
+	if(result) g_Hook_VClient_RenderView.m_MirvInput->Supply_SetCursorPos(X, Y);
+	return result;
 }
 
 HCURSOR WINAPI new_SetCursor(__in_opt HCURSOR hCursor)

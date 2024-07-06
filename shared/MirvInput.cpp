@@ -1055,8 +1055,12 @@ void MirvInput::Supply_GetCursorPos(LPPOINT lpPoint)
 
 void MirvInput::Supply_SetCursorPos(int x, int y)
 {
-	m_LastCursorX = x;
-	m_LastCursorY = y;
+	// X and Y are not reliable due to clip cursor rect e.g., so get real position from Windows:
+	POINT pt;
+	if(GetCursorPos(&pt)) {
+		m_LastCursorX = pt.x;
+		m_LastCursorY = pt.y;
+	}
 }
 
 void MirvInput::Supply_MouseFrameEnd(void)

@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.19.2</version>
+<time>2024-07-06T10:45Z</time>
+<changes>
+<change type="fixed">Fixed mirv_input camera not working when using demoui in in-eye mode.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.19.1</version>
 <time>2024-06-27T19:32Z</time>
 <changes>

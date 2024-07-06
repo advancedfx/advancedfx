@@ -436,9 +436,9 @@ BOOL WINAPI new_SetCursorPos(
 //	if (AfxHookSource::Gui::OnSetCursorPos(X, Y))
 //		return TRUE;
 
-	g_MirvInputEx.m_MirvInput->Supply_SetCursorPos(X,Y);
-
-	return SetCursorPos(X,Y);
+	BOOL result = SetCursorPos(X, Y);
+	if(result) g_MirvInputEx.m_MirvInput->Supply_SetCursorPos(X, Y);
+	return result;
 }
 
 HCURSOR WINAPI new_SetCursor(__in_opt HCURSOR hCursor)
@@ -902,7 +902,7 @@ void __fastcall New_CViewRender_UnkMakeMatrix(void* This) {
 	g_WorldToScreenMatrix.m[3][2] = proj[4*3+2];
 	g_WorldToScreenMatrix.m[3][3] = proj[4*3+3];
 
-	g_CampathDrawer.OnEngineThread_SetupViewDone();
+	g_CampathDrawer.OnEngineThread_SetupViewDone();	
 }
 
 /*
@@ -1412,6 +1412,36 @@ void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameSta
 		} else {
 			g_DemoPausedData.IsPaused = false;
 		}
+	}
+
+	// Work around demoui cursor sheningans:
+	// - Always manually fetch cursor pos.
+	// - Make room to move the cursor.
+	// - Hide cursor (can do this way because SDL3 never hides it, uses invisible one instead).
+	static bool bCursorHidden = false;
+	if(g_MirvInputEx.m_MirvInput->IsActive()) {
+		HWND hWnd = GetActiveWindow();
+		if(NULL != hWnd) {
+			if(!bCursorHidden) ShowCursor(FALSE);
+			else {
+				POINT point;
+				if(GetCursorPos(&point)) {
+					new_GetCursorPos(&point);
+				}
+			}
+			RECT rect;
+			if(GetClientRect(hWnd, &rect)) {
+				POINT pt {(rect.left+rect.right)/2,(rect.top+rect.bottom)/2};
+				if(ClientToScreen(hWnd,&pt)) {
+					new_SetCursorPos(pt.x, pt.y);
+				}
+			}
+		}
+		bCursorHidden = true;
+	}
+	else if(bCursorHidden) {
+		bCursorHidden = false;
+		ShowCursor(TRUE);
 	}	
 
 	switch(curStage) {

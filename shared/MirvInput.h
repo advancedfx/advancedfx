@@ -63,6 +63,10 @@ public:
 	bool GetCameraControlMode(void);
 	void SetCameraControlMode(bool enable);
 
+	bool IsActive() {
+		return m_Focus && !m_Dependencies->GetSuspendMirvInput() && m_CameraControlMode;
+	}
+
 	double GetKeyboardSensitivty(void);
 	void SetKeyboardSensitivity(double value);
 

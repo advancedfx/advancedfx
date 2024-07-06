@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.23.5</version>
+<time>2024-07-06T10:45Z</time>
+<changes>
+<change type="fixed">Fixed mirv_input camera not working properly in some cases for m_rawinput 1.</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.23.4</version>
 <time>2024-05-27T04:00Z</time>
 <changes>
