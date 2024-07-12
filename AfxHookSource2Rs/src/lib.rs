@@ -1,6 +1,7 @@
 use core::ffi::c_char;
 use core::ffi::CStr;
 use std::ffi::c_float;
+use std::ffi::c_void;
 
 use std::error::Error;
 use std::{cell::RefCell, collections::VecDeque, future::Future, pin::Pin};
@@ -52,58 +53,58 @@ use async_tungstenite::async_std::ConnectStream;
 use async_tungstenite::tungstenite::protocol::Message;
 use async_tungstenite::WebSocketStream;
 
-pub struct AfxEntityRef {
+type AfxEntityRef = c_void;
 
-}
+extern "C" {
+    fn afx_hook_source2_message(s: *const c_char);
+    fn afx_hook_source2_warning(s: *const c_char);
+    fn afx_hook_source2_exec(s: *const c_char);
 
-pub struct AfxHookSource2 {
-    message: unsafe extern "C" fn(s: *const c_char),
-    warning: unsafe extern "C" fn(s: *const c_char),
-    exec: unsafe extern "C" fn(s: *const c_char),
-    enable_on_game_event: unsafe extern "C" fn(value: bool),
-    enable_on_c_view_render_setup_view: unsafe extern "C" fn(value: bool),
-    enable_on_client_frame_stage_notify: unsafe extern "C" fn(value: bool),
+    fn afx_hook_source2_enable_on_game_event(value: bool);
+    fn afx_hook_source2_enable_on_c_view_render_setup_view(value: bool);
+    fn afx_hook_source2_enable_on_client_frame_stage_notify(value: bool);
 
-    make_handle: unsafe extern "C" fn(entry_index: i32, serial_number: i32) -> i32,
-    is_handle_valid: unsafe extern "C" fn(handle: i32) -> bool,
-    get_handle_entry_index: unsafe extern "C" fn(handle: i32) -> i32,
-    get_handle_serial_number: unsafe extern "C" fn(handle: i32) -> i32,
-    get_highest_entity_index: unsafe extern "C" fn() -> i32,
-    get_entity_ref_from_index: unsafe extern "C" fn(index: i32) -> * mut AfxEntityRef,
-    add_ref_entity_ref: unsafe extern "C" fn(p_ref: * mut AfxEntityRef),
-    release_entity_ref: unsafe extern "C" fn(p_ref: * mut AfxEntityRef),
-    enable_on_add_entity: unsafe extern "C" fn(value: bool),
-    enable_on_remove_entity: unsafe extern "C" fn(value: bool),
+    fn afx_hook_source2_make_handle(entry_index: i32, serial_number: i32) -> i32;
+    fn afx_hook_source2_is_handle_valid(handle: i32) -> bool;
+    fn afx_hook_source2_get_handle_entry_index(handle: i32) -> i32;
+    fn afx_hook_source2_get_handle_serial_number(handle: i32) -> i32;
+
+    fn afx_hook_source2_get_highest_entity_index() -> i32;
+
+    fn afx_hook_source2_get_entity_ref_from_index(index: i32) -> * mut AfxEntityRef;
+    fn afx_hook_source2_add_ref_entity_ref(p_ref: * mut AfxEntityRef);
+    fn afx_hook_source2_release_entity_ref(p_ref: * mut AfxEntityRef);
+
+    fn afx_hook_source2_enable_on_add_entity(value: bool);
+    fn afx_hook_source2_enable_on_remove_entity(value: bool);
     
-    get_entity_ref_is_valid: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> bool,
-    get_entity_ref_name: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> *const c_char,
+    fn afx_hook_source2_get_entity_ref_is_valid(p_ref: * mut AfxEntityRef) -> bool;
+    fn afx_hook_source2_get_entity_ref_name(p_ref: * mut AfxEntityRef) -> *const c_char;
     
     // can return nullptr to indicate no debug name.
-    get_entity_ref_debug_name: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> *const c_char,
+    fn afx_hook_source2_get_entity_ref_debug_name(p_ref: * mut AfxEntityRef) -> *const c_char;
 
-    get_entity_ref_class_name: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> *const c_char,
+    fn afx_hook_source2_get_entity_ref_class_name(p_ref: * mut AfxEntityRef) -> *const c_char;
 
-    get_entity_ref_is_player_pawn: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> bool,
+    fn afx_hook_source2_get_entity_ref_is_player_pawn(p_ref: * mut AfxEntityRef) -> bool;
 
-    get_entity_ref_player_pawn_handle: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> i32,
+    fn afx_hook_source2_get_entity_ref_player_pawn_handle(p_ref: * mut AfxEntityRef) -> i32;
 
-    get_entity_ref_is_player_controller: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> bool,
+    fn afx_hook_source2_get_entity_ref_is_player_controller(p_ref: * mut AfxEntityRef) -> bool;
 
-    get_entity_ref_player_controller_handle: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> i32,
+    fn afx_hook_source2_get_entity_ref_player_controller_handle(p_ref: * mut AfxEntityRef) -> i32;
 
-    get_entity_ref_health: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> i32,
+    fn afx_hook_source2_get_entity_ref_health(p_ref: * mut AfxEntityRef) -> i32;
 
-    get_entity_ref_origin: unsafe extern "C" fn(p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32),
+    fn afx_hook_source2_get_entity_ref_origin(p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32);
 
-    get_entity_ref_render_eye_origin: unsafe extern "C" fn(p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32),
+    fn afx_hook_source2_get_entity_ref_render_eye_origin(p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32);
 
-    get_entity_ref_render_eye_angles: unsafe extern "C" fn(p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32),
+    fn afx_hook_source2_get_entity_ref_render_eye_angles(p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32);
 
-    get_entity_ref_view_entity_handle: unsafe extern "C" fn(p_ref: * mut AfxEntityRef) -> i32,
+    fn afx_hook_source2_is_playing_demo() -> bool;
 
-    is_playing_demo:  unsafe extern "C" fn() -> bool,
-
-    is_demo_paused:  unsafe extern "C" fn() -> bool,
+    fn afx_hook_source2_is_demo_paused() -> bool;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -273,7 +274,6 @@ impl MirvEvents {
 }
 
 pub struct AfxHookSource2Rs {
-    iface: * mut AfxHookSource2,
     loader: Rc<AfxSimpleModuleLoader>,
     context: boa_engine::Context,
     events: Rc<MirvEvents>
@@ -282,146 +282,144 @@ pub struct AfxHookSource2Rs {
 #[derive(Trace, Finalize, JsData)]
 struct MirvStruct {
     #[unsafe_ignore_trace]
-    iface: * mut AfxHookSource2,
-    #[unsafe_ignore_trace]
     loader: Rc<AfxSimpleModuleLoader>,
     #[unsafe_ignore_trace]
     events: Rc<MirvEvents>
 }
 
-fn afx_message(iface: * mut AfxHookSource2, s: String) {
+fn afx_message(s: String) {
     let c_string = std::ffi::CString::new(s).unwrap();
     unsafe {
-        ((*iface).message)(c_string.as_ptr());
+        afx_hook_source2_message(c_string.as_ptr());
     }
 }
 
-fn afx_warning(iface: * mut AfxHookSource2, s: String) {
+fn afx_warning(s: String) {
     let c_string = std::ffi::CString::new(s).unwrap();
     unsafe {
-        ((*iface).warning)(c_string.as_ptr());
+        afx_hook_source2_warning(c_string.as_ptr());
     }
 }
 
-fn afx_exec(iface: * mut AfxHookSource2, s: String) {
+fn afx_exec(s: String) {
     let c_string = std::ffi::CString::new(s).unwrap();
     unsafe {
-        ((*iface).exec)(c_string.as_ptr());
+        afx_hook_source2_exec(c_string.as_ptr());
     }
 }
 
-fn afx_enable_on_game_event(iface: * mut AfxHookSource2, value: bool) {
+fn afx_enable_on_game_event(value: bool) {
     unsafe {
-        ((*iface).enable_on_game_event)(value);        
+        afx_hook_source2_enable_on_game_event(value);        
     }
 }
 
-fn afx_enable_on_c_view_render_setup_view(iface: * mut AfxHookSource2, value: bool) {
+fn afx_enable_on_c_view_render_setup_view(value: bool) {
     unsafe {
-        ((*iface).enable_on_c_view_render_setup_view)(value);        
+        afx_hook_source2_enable_on_c_view_render_setup_view(value);        
     }
 }
 
-fn afx_enable_on_client_frame_stage_notify(iface: * mut AfxHookSource2, value: bool) {
+fn afx_enable_on_client_frame_stage_notify(value: bool) {
     unsafe {
-        ((*iface).enable_on_client_frame_stage_notify)(value);        
+        afx_hook_source2_enable_on_client_frame_stage_notify(value);        
     }
 }
 
-fn afx_make_handle(iface: * mut AfxHookSource2, entry_index: i32, serial_number: i32) -> i32 {
+fn afx_make_handle(entry_index: i32, serial_number: i32) -> i32 {
     let result: i32;
     unsafe {
-        result = ((*iface).make_handle)(entry_index, serial_number);
+        result = afx_hook_source2_make_handle(entry_index, serial_number);
     }
     return result;
 }
 
-fn afx_is_handle_valid(iface: * mut AfxHookSource2, handle: i32) -> bool {
+fn afx_is_handle_valid(handle: i32) -> bool {
     let result: bool;
     unsafe {
-        result = ((*iface).is_handle_valid)(handle);
+        result = afx_hook_source2_is_handle_valid(handle);
     }
     return result;
 }
 
-fn afx_get_handle_entry_index(iface: * mut AfxHookSource2, handle: i32) -> i32 {
+fn afx_get_handle_entry_index(handle: i32) -> i32 {
     let result: i32;
     unsafe {
-        result = ((*iface).get_handle_entry_index)(handle);
+        result = afx_hook_source2_get_handle_entry_index(handle);
     }
     return result;
 }
 
-fn afx_get_handle_serial_number(iface: * mut AfxHookSource2, handle: i32) -> i32 {
+fn afx_get_handle_serial_number(handle: i32) -> i32 {
     let result: i32;
     unsafe {
-        result = ((*iface).get_handle_serial_number)(handle);
+        result = afx_hook_source2_get_handle_serial_number(handle);
     }
     return result;
 }
 
-fn afx_get_highest_entity_index(iface: * mut AfxHookSource2) -> i32 {
+fn afx_get_highest_entity_index() -> i32 {
     let result: i32;
     unsafe {
-        result = ((*iface).get_highest_entity_index)();
+        result = afx_hook_source2_get_highest_entity_index();
     }
     return result;
 }
 
-fn afx_get_entity_ref_from_index(iface: * mut AfxHookSource2, index: i32) -> * mut AfxEntityRef {
+fn afx_get_entity_ref_from_index(index: i32) -> * mut AfxEntityRef {
     let result: * mut AfxEntityRef;
     unsafe {
-        result = ((*iface).get_entity_ref_from_index)(index);
+        result = afx_hook_source2_get_entity_ref_from_index(index);
     }
     return result;
 }
 
 
 
-fn afx_add_ref_entity_ref(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) {
+fn afx_add_ref_entity_ref(p_ref: * mut AfxEntityRef) {
     unsafe {
-        ((*iface).add_ref_entity_ref)(p_ref);
+        afx_hook_source2_add_ref_entity_ref(p_ref);
     }
 }
 
-fn afx_release_entity_ref(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) {
+fn afx_release_entity_ref( p_ref: * mut AfxEntityRef) {
     unsafe {
-        ((*iface).release_entity_ref)(p_ref);
+        afx_hook_source2_release_entity_ref(p_ref);
     }
 }
 
-fn afx_enable_on_add_entity(iface: * mut AfxHookSource2, value: bool) {
+fn afx_enable_on_add_entity(value: bool) {
     unsafe {
-        ((*iface).enable_on_add_entity)(value);        
+        afx_hook_source2_enable_on_add_entity(value);        
     }
 }
 
-fn afx_enable_on_remove_entity(iface: * mut AfxHookSource2, value: bool) {
+fn afx_enable_on_remove_entity(value: bool) {
     unsafe {
-        ((*iface).enable_on_remove_entity)(value);        
+        afx_hook_source2_enable_on_remove_entity(value);        
     }
 }
 
-fn afx_get_entity_ref_is_valid(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> bool {
+fn afx_get_entity_ref_is_valid(p_ref: * mut AfxEntityRef) -> bool {
     let result: bool;
     unsafe {
-        result = ((*iface).get_entity_ref_is_valid)(p_ref);
+        result = afx_hook_source2_get_entity_ref_is_valid(p_ref);
     }
     return result;
 }
 
-fn afx_get_entity_ref_name(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> String {
+fn afx_get_entity_ref_name( p_ref: * mut AfxEntityRef) -> String {
     let result: *const c_char;
     unsafe {
-        result = ((*iface).get_entity_ref_name)(p_ref);
+        result = afx_hook_source2_get_entity_ref_name(p_ref);
     }
     return unsafe { CStr::from_ptr(result) }.to_str().unwrap().to_string() ;
 }
 
-fn afx_get_entity_ref_debug_name(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> Option<String> {
+fn afx_get_entity_ref_debug_name(p_ref: * mut AfxEntityRef) -> Option<String> {
     let result: *const c_char;
     unsafe {
-        result = ((*iface).get_entity_ref_debug_name)(p_ref);
+        result = afx_hook_source2_get_entity_ref_debug_name(p_ref);
     }
     if result.is_null() {
          return None;
@@ -429,93 +427,85 @@ fn afx_get_entity_ref_debug_name(iface: * mut AfxHookSource2, p_ref: * mut AfxEn
     return Some(unsafe { CStr::from_ptr(result) }.to_str().unwrap().to_string());
 }
 
-fn afx_get_entity_ref_class_name(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> String {
+fn afx_get_entity_ref_class_name( p_ref: * mut AfxEntityRef) -> String {
     let result: *const c_char;
     unsafe {
-        result = ((*iface).get_entity_ref_class_name)(p_ref);
+        result = afx_hook_source2_get_entity_ref_class_name(p_ref);
     }
     return unsafe { CStr::from_ptr(result) }.to_str().unwrap().to_string();
 }
 
-fn afx_get_entity_ref_is_player_pawn(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> bool {
+fn afx_get_entity_ref_is_player_pawn(p_ref: * mut AfxEntityRef) -> bool {
     let result: bool;
     unsafe {
-        result = ((*iface).get_entity_ref_is_player_pawn)(p_ref);
+        result = afx_hook_source2_get_entity_ref_is_player_pawn(p_ref);
     }
     return result;
 }
 
-fn afx_get_entity_ref_player_pawn_handle(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> i32 {
+fn afx_get_entity_ref_player_pawn_handle(p_ref: * mut AfxEntityRef) -> i32 {
     let result: i32;
     unsafe {
-        result = ((*iface).get_entity_ref_player_pawn_handle)(p_ref);
+        result = afx_hook_source2_get_entity_ref_player_pawn_handle(p_ref);
     }
     return result;
 }
 
 
-fn afx_get_entity_ref_is_player_controller(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> bool {
+fn afx_get_entity_ref_is_player_controller(p_ref: * mut AfxEntityRef) -> bool {
     let result: bool;
     unsafe {
-        result = ((*iface).get_entity_ref_is_player_controller)(p_ref);
+        result = afx_hook_source2_get_entity_ref_is_player_controller(p_ref);
     }
     return result;
 }
 
-fn afx_get_entity_ref_player_controller_handle(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> i32 {
+fn afx_get_entity_ref_player_controller_handle(p_ref: * mut AfxEntityRef) -> i32 {
     let result: i32;
     unsafe {
-        result = ((*iface).get_entity_ref_player_controller_handle)(p_ref);
+        result = afx_hook_source2_get_entity_ref_player_controller_handle(p_ref);
     }
     return result;
 }
 
-fn afx_get_entity_ref_health(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> i32 {
+fn afx_get_entity_ref_health(p_ref: * mut AfxEntityRef) -> i32 {
     let result: i32;
     unsafe {
-        result = ((*iface).get_entity_ref_health)(p_ref);
+        result = afx_hook_source2_get_entity_ref_health(p_ref);
     }
     return result;
 }
 
-fn afx_get_entity_ref_origin(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32){
+fn afx_get_entity_ref_origin(p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32){
     unsafe {
-        ((*iface).get_entity_ref_origin)(p_ref, x, y, z);
+        afx_hook_source2_get_entity_ref_origin(p_ref, x, y, z);
     }
 }
 
-fn afx_get_entity_ref_render_eye_origin(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32){
+fn afx_get_entity_ref_render_eye_origin(p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32){
     unsafe {
-        ((*iface).get_entity_ref_render_eye_origin)(p_ref, x, y, z);
+        afx_hook_source2_get_entity_ref_render_eye_origin(p_ref, x, y, z);
     }
 }
 
-fn afx_get_entity_ref_render_eye_angles(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32){
+fn afx_get_entity_ref_render_eye_angles(p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32){
     unsafe {
-        ((*iface).get_entity_ref_render_eye_angles)(p_ref, x, y, z);
+        afx_hook_source2_get_entity_ref_render_eye_angles(p_ref, x, y, z);
     }
 }
 
-fn afx_get_entity_ref_view_entity_handle(iface: * mut AfxHookSource2, p_ref: * mut AfxEntityRef) -> i32 {
-    let result: i32;
-    unsafe {
-        result = ((*iface).get_entity_ref_view_entity_handle)(p_ref);
-    }
-    return result;
-}
-
-fn afx_is_playing_demo(iface: * mut AfxHookSource2,) -> bool {
+fn afx_is_playing_demo() -> bool {
     let result: bool;
     unsafe {
-        result = ((*iface).is_playing_demo)();
+        result = afx_hook_source2_is_playing_demo();
     }
     return result;
 }
 
-fn afx_is_demo_paused(iface: * mut AfxHookSource2,) -> bool {
+fn afx_is_demo_paused() -> bool {
     let result: bool;
     unsafe {
-        result = ((*iface).is_demo_paused)();
+        result = afx_hook_source2_is_demo_paused();
     }
     return result;
 }
@@ -533,61 +523,46 @@ fn mirv_error_async_conflict()  -> JsResult<JsValue> {
     Err(JsNativeError::error().with_message("async conflict!").into())
 }
 
-fn mirv_message(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
-    if let Some(object) = this.as_object() {
-        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
-            for x in args {
-                match x.to_string(context) {
-                    Ok(s) => {
-                        afx_message(mirv.iface, s.to_std_string_escaped());
-                    }
-                    Err(e) => {
-                        return Err(e);
-                    }
-                }
+fn mirv_message(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+    for x in args {
+        match x.to_string(context) {
+            Ok(s) => {
+                afx_message(s.to_std_string_escaped());
             }
-            return Ok(JsValue::Undefined)
+            Err(e) => {
+                return Err(e);
+            }
         }
     }
-    mirv_error_type()
+    return Ok(JsValue::Undefined)
 }
 
-fn mirv_warning(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
-    if let Some(object) = this.as_object() {
-        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
-            for x in args {
-                match x.to_string(context) {
-                    Ok(s) => {
-                        afx_warning(mirv.iface, s.to_std_string_escaped());
-                    }
-                    Err(e) => {
-                        return Err(e);
-                    }
-                }
+fn mirv_warning(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+    for x in args {
+        match x.to_string(context) {
+            Ok(s) => {
+                afx_warning(s.to_std_string_escaped());
             }
-            return Ok(JsValue::Undefined)
+            Err(e) => {
+                return Err(e);
+            }
         }
     }
-    mirv_error_type()
+    return Ok(JsValue::Undefined)
 }
 
-fn mirv_exec(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
-    if let Some(object) = this.as_object() {
-        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
-            for x in args {
-                match x.to_string(context) {
-                    Ok(s) => {
-                        afx_exec(mirv.iface, s.to_std_string_escaped());
-                    }
-                    Err(e) => {
-                        return Err(e);
-                    }
-                }
+fn mirv_exec(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+    for x in args {
+        match x.to_string(context) {
+            Ok(s) => {
+                afx_exec(s.to_std_string_escaped());
             }
-            return Ok(JsValue::Undefined)
+            Err(e) => {
+                return Err(e);
+            }
         }
     }
-    mirv_error_type()
+    return Ok(JsValue::Undefined)
 }
 
 fn mirv_set_on_game_event(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -597,13 +572,13 @@ fn mirv_set_on_game_event(this: &JsValue, args: &[JsValue], _context: &mut Conte
                 match &args[0] {
                     JsValue::Undefined => {
                         mirv.events.on_game_event.replace(None);
-                        afx_enable_on_game_event(mirv.iface, false);
+                        afx_enable_on_game_event(false);
                         return Ok(JsValue::Undefined); 
                     }
                     JsValue::Object(object) => {
                         if object.is_callable() {
                             mirv.events.on_game_event.replace(Some(object.clone()));
-                            afx_enable_on_game_event(mirv.iface, true);
+                            afx_enable_on_game_event(true);
                             return Ok(JsValue::Undefined); 
                         }
                     }
@@ -639,13 +614,13 @@ fn mirv_set_on_c_view_render_setup_view(this: &JsValue, args: &[JsValue], _conte
                 match &args[0] {
                     JsValue::Undefined => {
                         mirv.events.on_c_view_render_setup_view.replace(None);
-                        afx_enable_on_c_view_render_setup_view(mirv.iface, false);
+                        afx_enable_on_c_view_render_setup_view(false);
                         return Ok(JsValue::Undefined); 
                     }
                     JsValue::Object(object) => {
                         if object.is_callable() {
                             mirv.events.on_c_view_render_setup_view.replace(Some(object.clone()));
-                            afx_enable_on_c_view_render_setup_view(mirv.iface, true);
+                            afx_enable_on_c_view_render_setup_view(true);
                             return Ok(JsValue::Undefined); 
                         }
                     }
@@ -681,13 +656,13 @@ fn mirv_set_on_client_frame_stage_notify(this: &JsValue, args: &[JsValue], _cont
                 match &args[0] {
                     JsValue::Undefined => {
                         mirv.events.on_client_frame_stage_notify.replace(None);
-                        afx_enable_on_client_frame_stage_notify(mirv.iface, false);
+                        afx_enable_on_client_frame_stage_notify(false);
                         return Ok(JsValue::Undefined); 
                     }
                     JsValue::Object(object) => {
                         if object.is_callable() {
                             mirv.events.on_client_frame_stage_notify.replace(Some(object.clone()));
-                            afx_enable_on_client_frame_stage_notify(mirv.iface, true);
+                            afx_enable_on_client_frame_stage_notify(true);
                             return Ok(JsValue::Undefined); 
                         }
                     }
@@ -1112,77 +1087,50 @@ fn mirv_connect_async(this: &JsValue, args: &[JsValue], context: &mut Context) -
     }
 }
 
-fn mirv_make_handle(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
-    if let Some(object) = this.as_object() {
-        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
-            if args.len() == 2 {
-                if let Some(entry_index) = args[0].as_number() {
-                    if let Some(serial_number) = args[1].as_number() {
-                        return Ok(JsValue::Integer(afx_make_handle(mirv.iface, entry_index as i32,serial_number as i32)));
-                    }
-                }
+fn mirv_make_handle(_this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    if args.len() == 2 {
+        if let Some(entry_index) = args[0].as_number() {
+            if let Some(serial_number) = args[1].as_number() {
+                return Ok(JsValue::Integer(afx_make_handle(entry_index as i32,serial_number as i32)));
             }
-            return mirv_error_arguments();
         }
     }
-    mirv_error_type()
+    return mirv_error_arguments();
 }
 
-fn mirv_is_handle_valid(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
-    if let Some(object) = this.as_object() {
-        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
-            if args.len() == 1 {
-                if let Some(handle) = args[0].as_number() {
-                    return Ok(JsValue::Boolean(afx_is_handle_valid(mirv.iface,handle as i32)));
-                }
-            }
-            return mirv_error_arguments();
+fn mirv_is_handle_valid(_this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    if args.len() == 1 {
+        if let Some(handle) = args[0].as_number() {
+            return Ok(JsValue::Boolean(afx_is_handle_valid(handle as i32)));
         }
     }
-    mirv_error_type()
+    return mirv_error_arguments();
 }
 
-fn mirv_get_handle_entry_index(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
-    if let Some(object) = this.as_object() {
-        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
-            if args.len() == 1 {
-                if let Some(handle) = args[0].as_number() {
-                    return Ok(JsValue::Integer(afx_get_handle_entry_index(mirv.iface,handle as i32)));
-                }
-            }
-            return mirv_error_arguments();
+fn mirv_get_handle_entry_index(_this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    if args.len() == 1 {
+        if let Some(handle) = args[0].as_number() {
+            return Ok(JsValue::Integer(afx_get_handle_entry_index(handle as i32)));
         }
     }
-    mirv_error_type()
+    return mirv_error_arguments();
 }
 
-fn mirv_get_handle_serial_number(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
-    if let Some(object) = this.as_object() {
-        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
-            if args.len() == 1 {
-                if let Some(handle) = args[0].as_number() {
-                    return Ok(JsValue::Integer(afx_get_handle_serial_number(mirv.iface, handle as i32)));
-                }
-            }
-            return mirv_error_arguments();
+fn mirv_get_handle_serial_number(_this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    if args.len() == 1 {
+        if let Some(handle) = args[0].as_number() {
+            return Ok(JsValue::Integer(afx_get_handle_serial_number(handle as i32)));
         }
     }
-    mirv_error_type()
+    return mirv_error_arguments();
 }
 
-fn mirv_get_highest_entity_index(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
-    if let Some(object) = this.as_object() {
-        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
-            return Ok(JsValue::Integer(afx_get_highest_entity_index(mirv.iface)));
-        }
-    }
-    mirv_error_type()
+fn mirv_get_highest_entity_index(_this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    return Ok(JsValue::Integer(afx_get_highest_entity_index()));
 }
 
 #[derive(Trace, JsData)]
 struct MirvEntityRef {
-    #[unsafe_ignore_trace]
-    iface: * mut AfxHookSource2,
     #[unsafe_ignore_trace]
     entity_ref: * mut AfxEntityRef
 }
@@ -1190,26 +1138,24 @@ struct MirvEntityRef {
 impl Finalize for MirvEntityRef {
     // Provided method
     fn finalize(&self) {
-        afx_release_entity_ref(self.iface,self.entity_ref);
+        afx_release_entity_ref(self.entity_ref);
     }
 }
 
 impl MirvEntityRef {
     #[must_use]
-    fn new(afx_iface: * mut AfxHookSource2, afx_entity_ref: * mut AfxEntityRef) -> Self {
+    fn new(afx_entity_ref: * mut AfxEntityRef) -> Self {
         
         Self {
-            iface: afx_iface,
             entity_ref: afx_entity_ref
         }
     }
 
-    fn create(
-        afx_iface: * mut AfxHookSource2, afx_entity_ref: * mut AfxEntityRef,
+    fn create(afx_entity_ref: * mut AfxEntityRef,
         context: &mut Context
     ) -> JsObject {
 
-       return ObjectInitializer::with_native_data::<MirvEntityRef>(MirvEntityRef::new(afx_iface,afx_entity_ref), context)
+       return ObjectInitializer::with_native_data::<MirvEntityRef>(MirvEntityRef::new(afx_entity_ref), context)
             .function(
                 NativeFunction::from_fn_ptr(MirvEntityRef::is_valid),
                 js_string!("isValid"),
@@ -1270,18 +1216,13 @@ impl MirvEntityRef {
                 js_string!("getRenderEyeAngles"),
                 0,
             )             
-            /*.function(
-                NativeFunction::from_fn_ptr(MirvEntityRef::get_view_entity_handle),
-                js_string!("getViewEntityHandle"),
-                0,
-            )*/
             .build();
     }
 
     fn is_valid(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
-                return Ok(JsValue::Boolean(afx_get_entity_ref_is_valid(mirv.iface,mirv.entity_ref)));
+                return Ok(JsValue::Boolean(afx_get_entity_ref_is_valid(mirv.entity_ref)));
             }
         }
         mirv_error_type()
@@ -1290,7 +1231,7 @@ impl MirvEntityRef {
     fn get_name(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
-                return Ok(JsValue::String(js_string!(afx_get_entity_ref_name(mirv.iface,mirv.entity_ref))));
+                return Ok(JsValue::String(js_string!(afx_get_entity_ref_name(mirv.entity_ref))));
             }
         }
         mirv_error_type()
@@ -1299,7 +1240,7 @@ impl MirvEntityRef {
     fn get_debug_name(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
-                if let Some(str) = afx_get_entity_ref_debug_name(mirv.iface,mirv.entity_ref) {
+                if let Some(str) = afx_get_entity_ref_debug_name(mirv.entity_ref) {
                     return Ok(JsValue::String(js_string!(str)));
                 }
                 return Ok(JsValue::null());
@@ -1311,7 +1252,7 @@ impl MirvEntityRef {
     fn get_class_name(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
-                return Ok(JsValue::String(js_string!(afx_get_entity_ref_class_name(mirv.iface,mirv.entity_ref))));
+                return Ok(JsValue::String(js_string!(afx_get_entity_ref_class_name(mirv.entity_ref))));
             }
         }
         mirv_error_type()
@@ -1320,7 +1261,7 @@ impl MirvEntityRef {
     fn is_player_pawn(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
-                return Ok(JsValue::Boolean(afx_get_entity_ref_is_player_pawn(mirv.iface,mirv.entity_ref)));
+                return Ok(JsValue::Boolean(afx_get_entity_ref_is_player_pawn(mirv.entity_ref)));
             }
         }
         mirv_error_type()
@@ -1329,7 +1270,7 @@ impl MirvEntityRef {
     fn get_player_pawn_handle(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
-                return Ok(JsValue::Integer(afx_get_entity_ref_player_pawn_handle(mirv.iface,mirv.entity_ref)));
+                return Ok(JsValue::Integer(afx_get_entity_ref_player_pawn_handle(mirv.entity_ref)));
             }
         }
         mirv_error_type()
@@ -1338,7 +1279,7 @@ impl MirvEntityRef {
     fn is_player_controller(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
-                return Ok(JsValue::Boolean(afx_get_entity_ref_is_player_controller(mirv.iface,mirv.entity_ref)));
+                return Ok(JsValue::Boolean(afx_get_entity_ref_is_player_controller(mirv.entity_ref)));
             }
         }
         mirv_error_type()
@@ -1347,7 +1288,7 @@ impl MirvEntityRef {
     fn get_player_controller_handle(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
-                return Ok(JsValue::Integer(afx_get_entity_ref_player_controller_handle(mirv.iface,mirv.entity_ref)));
+                return Ok(JsValue::Integer(afx_get_entity_ref_player_controller_handle(mirv.entity_ref)));
             }
         }
         mirv_error_type()
@@ -1356,7 +1297,7 @@ impl MirvEntityRef {
     fn get_health(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
-                return Ok(JsValue::Integer(afx_get_entity_ref_health(mirv.iface,mirv.entity_ref)));
+                return Ok(JsValue::Integer(afx_get_entity_ref_health(mirv.entity_ref)));
             }
         }
         mirv_error_type()
@@ -1369,7 +1310,7 @@ impl MirvEntityRef {
                 let mut y: f32 = 0.0;
                 let mut z: f32 = 0.0;
 
-                afx_get_entity_ref_origin(mirv.iface,mirv.entity_ref,&mut x, &mut y, &mut z);
+                afx_get_entity_ref_origin(mirv.entity_ref,&mut x, &mut y, &mut z);
 
                 let js_array = JsArray::from_iter(
                     [JsValue::Rational(x.into()),JsValue::Rational(y.into()),JsValue::Rational(z.into())],
@@ -1389,7 +1330,7 @@ impl MirvEntityRef {
                 let mut y: f32 = 0.0;
                 let mut z: f32 = 0.0;
 
-                afx_get_entity_ref_render_eye_origin(mirv.iface,mirv.entity_ref,&mut x, &mut y, &mut z);
+                afx_get_entity_ref_render_eye_origin(mirv.entity_ref,&mut x, &mut y, &mut z);
 
                 let js_array = JsArray::from_iter(
                     [JsValue::Rational(x.into()),JsValue::Rational(y.into()),JsValue::Rational(z.into())],
@@ -1409,7 +1350,7 @@ impl MirvEntityRef {
                 let mut y: f32 = 0.0;
                 let mut z: f32 = 0.0;
 
-                afx_get_entity_ref_render_eye_angles(mirv.iface,mirv.entity_ref,&mut x, &mut y, &mut z);
+                afx_get_entity_ref_render_eye_angles(mirv.entity_ref,&mut x, &mut y, &mut z);
 
                 let js_array = JsArray::from_iter(
                     [JsValue::Rational(x.into()),JsValue::Rational(y.into()),JsValue::Rational(z.into())],
@@ -1421,34 +1362,20 @@ impl MirvEntityRef {
         }
         mirv_error_type()
     }
-
-    fn get_view_entity_handle(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
-        if let Some(object) = this.as_object() {
-            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
-                return Ok(JsValue::Integer(afx_get_entity_ref_view_entity_handle(mirv.iface,mirv.entity_ref)));
-            }
-        }
-        mirv_error_type()
-    }     
 }
 
-fn mirv_get_entity_ref_from_index(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
-    if let Some(object) = this.as_object() {
-        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
-            if 1 == args.len() {
-                if let Some(index) = args[0].as_number() {
-                    let entity_ref: * mut AfxEntityRef;
-                    entity_ref = afx_get_entity_ref_from_index(mirv.iface, index as i32);
-                    if entity_ref.is_null() {
-                        return Ok(JsValue::null());
-                    }
-                    return Ok(JsValue::Object(MirvEntityRef::create(mirv.iface,entity_ref,context)));
-                }
+fn mirv_get_entity_ref_from_index(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+    if 1 == args.len() {
+        if let Some(index) = args[0].as_number() {
+            let entity_ref: * mut AfxEntityRef;
+            entity_ref = afx_get_entity_ref_from_index(index as i32);
+            if entity_ref.is_null() {
+                return Ok(JsValue::null());
             }
-            return mirv_error_arguments();
+            return Ok(JsValue::Object(MirvEntityRef::create(entity_ref,context)));
         }
     }
-    mirv_error_type()
+    return mirv_error_arguments();
 }
 
 fn mirv_set_on_add_entity(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -1458,13 +1385,13 @@ fn mirv_set_on_add_entity(this: &JsValue, args: &[JsValue], _context: &mut Conte
                 match &args[0] {
                     JsValue::Undefined => {
                         mirv.events.on_add_entity.replace(None);
-                        afx_enable_on_add_entity(mirv.iface, false);
+                        afx_enable_on_add_entity(false);
                         return Ok(JsValue::Undefined); 
                     }
                     JsValue::Object(object) => {
                         if object.is_callable() {
                             mirv.events.on_add_entity.replace(Some(object.clone()));
-                            afx_enable_on_add_entity(mirv.iface, true);
+                            afx_enable_on_add_entity(true);
                             return Ok(JsValue::Undefined); 
                         }
                     }
@@ -1501,13 +1428,13 @@ fn mirv_set_on_remove_entity(this: &JsValue, args: &[JsValue], _context: &mut Co
                 match &args[0] {
                     JsValue::Undefined => {
                         mirv.events.on_remove_entity.replace(None);
-                        afx_enable_on_remove_entity(mirv.iface, false);
+                        afx_enable_on_remove_entity(false);
                         return Ok(JsValue::Undefined); 
                     }
                     JsValue::Object(object) => {
                         if object.is_callable() {
                             mirv.events.on_remove_entity.replace(Some(object.clone()));
-                            afx_enable_on_remove_entity(mirv.iface, true);
+                            afx_enable_on_remove_entity(true);
                             return Ok(JsValue::Undefined); 
                         }
                     }
@@ -1579,26 +1506,16 @@ fn mirv_load(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResul
     mirv_error_type()    
 }
 
-fn mirv_is_playing_demo(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
-    if let Some(object) = this.as_object() {
-        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
-            return Ok(JsValue::Boolean(afx_is_playing_demo(mirv.iface)));
-        }
-    }
-    mirv_error_type()
+fn mirv_is_playing_demo(_this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+   return Ok(JsValue::Boolean(afx_is_playing_demo()));
 }
 
-fn mirv_is_demo_paused(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
-    if let Some(object) = this.as_object() {
-        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
-            return Ok(JsValue::Boolean(afx_is_demo_paused(mirv.iface)));
-        }
-    }
-    mirv_error_type()
+fn mirv_is_demo_paused(_this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+   return Ok(JsValue::Boolean(afx_is_demo_paused()));
 }
 
 impl AfxHookSource2Rs {
-    pub fn new(iface: * mut AfxHookSource2) -> Self {
+    pub fn new() -> Self {
 
         let loader = Rc::new(AfxSimpleModuleLoader::new());
 
@@ -1610,7 +1527,6 @@ impl AfxHookSource2Rs {
         let events = Rc::<MirvEvents>::new(MirvEvents::new());
 
         let mirv = MirvStruct {
-            iface: iface,
             loader: loader.clone(),
             events: Rc::clone(&events)
         };
@@ -1739,7 +1655,6 @@ impl AfxHookSource2Rs {
         .expect("property mirv shouldn't exist");
 
         Self {
-            iface,
             loader: loader,
             context,
             events: Rc::clone(&events)
@@ -1753,10 +1668,8 @@ use boa_engine::{Finalize, JsData, Trace};
 //fn(_: &JsValue, _: &[JsValue], _: &mut Context) -> JsResult<JsValue>;
 
 #[no_mangle]
-pub unsafe extern "C" fn afx_hook_source2_rs_new<'a>(
-    iface: * mut AfxHookSource2
-) -> * mut AfxHookSource2Rs { 
-    Box::into_raw(Box::new(AfxHookSource2Rs::new(iface)))
+pub unsafe extern "C" fn afx_hook_source2_rs_new<'a>() -> * mut AfxHookSource2Rs { 
+    Box::into_raw(Box::new(AfxHookSource2Rs::new()))
 }
 
 #[no_mangle]
@@ -1783,7 +1696,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_execute(this_ptr: *mut AfxHookSourc
             if let Ok(js_str) = res.to_string(&mut (*this_ptr).context) {
                 let mut str = js_str.to_std_string_escaped();
                 str.push_str("\n");
-                afx_message((*this_ptr).iface, str);
+                afx_message(str);
             }
         }
         Err(e) => {
@@ -1794,7 +1707,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_execute(this_ptr: *mut AfxHookSourc
             } else {
                 write!(&mut s, "Uncaught {}\n",e).unwrap();
             }
-            afx_warning((*this_ptr).iface, s);
+            afx_warning(s);
         }
     };
 }
@@ -1812,13 +1725,13 @@ pub unsafe extern "C" fn afx_hook_source2_rs_load(this_ptr: *mut AfxHookSource2R
 
                     match promise_result.state() {
                         PromiseState::Pending => {
-                            afx_warning((*this_ptr).iface, "module didn't execute!\n".to_string()); 
+                            afx_warning("module didn't execute!\n".to_string()); 
                         }
                         PromiseState::Fulfilled(v) => {
                             if let Ok(js_str) = v.to_string(&mut (*this_ptr).context) {
                                 let mut str = js_str.to_std_string_escaped();
                                 str.push_str("\n");
-                                afx_message((*this_ptr).iface, str);
+                                afx_message(str);
                             }
                         }
                         PromiseState::Rejected(err) => {
@@ -1830,9 +1743,9 @@ pub unsafe extern "C" fn afx_hook_source2_rs_load(this_ptr: *mut AfxHookSource2R
                                 } else {
                                     write!(&mut s, "Rejected with {}\n",e).unwrap();
                                 }
-                                afx_warning((*this_ptr).iface, s);                           
+                                afx_warning(s);                           
                             } else {
-                                afx_warning((*this_ptr).iface, "module promise rejected!\n".to_string()); 
+                                afx_warning("module promise rejected!\n".to_string()); 
                             }
                         }
                     }
@@ -1846,7 +1759,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_load(this_ptr: *mut AfxHookSource2R
                     } else {
                         write!(&mut s, "Uncaught {}\n",e).unwrap();
                     }
-                    afx_warning((*this_ptr).iface, s);
+                    afx_warning(s);
                 }                
             }
             return;
@@ -1859,7 +1772,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_load(this_ptr: *mut AfxHookSource2R
                     if let Ok(js_str) = res.to_string(&mut (*this_ptr).context) {
                         let mut str = js_str.to_std_string_escaped();
                         str.push_str("\n");
-                        afx_message((*this_ptr).iface, str);
+                        afx_message(str);
                     }
                 }
                 Err(e) => {
@@ -1870,7 +1783,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_load(this_ptr: *mut AfxHookSource2R
                     } else {
                         write!(&mut s, "Uncaught {}\n",e).unwrap();
                     }
-                    afx_warning((*this_ptr).iface, s);
+                    afx_warning(s);
                 }
             };
         }
@@ -1878,7 +1791,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_load(this_ptr: *mut AfxHookSource2R
             use std::fmt::Write as _;
             let mut s = String::new();
             write!(&mut s, "Uncaught {e}\n").unwrap();
-            afx_warning((*this_ptr).iface, s);
+            afx_warning(s);
         }
     }
 }
@@ -1902,7 +1815,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_game_event(this_ptr: *mut AfxHoo
             use std::fmt::Write as _;
             let mut s = String::new();
             write!(&mut s, "Uncaught {e}\n").unwrap();
-            afx_warning((*this_ptr).iface, s);
+            afx_warning(s);
         }
     }
 }
@@ -2008,7 +1921,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_c_view_render_setup_view(this_pt
                 use std::fmt::Write as _;
                 let mut s = String::new();
                 write!(&mut s, "Uncaught {e}\n").unwrap();
-                afx_warning((*this_ptr).iface, s);
+                afx_warning(s);
             }
         }
     }
@@ -2030,7 +1943,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_client_frame_stage_notify(this_p
             use std::fmt::Write as _;
             let mut s = String::new();
             write!(&mut s, "Uncaught {e}\n").unwrap();
-            afx_warning((*this_ptr).iface, s);
+            afx_warning(s);
         }
     }
 }
@@ -2041,13 +1954,13 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_add_entity(this_ptr: *mut AfxHoo
     let event_option_clone = borrowed.clone();
     std::mem::drop(borrowed);
     if let Some(event_clone) = event_option_clone {
-        afx_add_ref_entity_ref((*this_ptr).iface,p_ref);
-        let entity_ref = MirvEntityRef::create((*this_ptr).iface, p_ref, &mut (*this_ptr).context);
+        afx_add_ref_entity_ref(p_ref);
+        let entity_ref = MirvEntityRef::create(p_ref, &mut (*this_ptr).context);
         if let Err(e) = event_clone.call(&JsValue::null(), &[JsValue::Object(entity_ref),JsValue::Integer(handle)], &mut (*this_ptr).context) {
             use std::fmt::Write as _;
             let mut s = String::new();
             write!(&mut s, "Uncaught {e}\n").unwrap();
-            afx_warning((*this_ptr).iface, s);
+            afx_warning(s);
         }
     }
 }
@@ -2058,13 +1971,13 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_remove_entity(this_ptr: *mut Afx
     let event_option_clone = borrowed.clone();
     std::mem::drop(borrowed);
     if let Some(event_clone) = event_option_clone {
-        afx_add_ref_entity_ref((*this_ptr).iface,p_ref);
-        let entity_ref = MirvEntityRef::create((*this_ptr).iface, p_ref, &mut (*this_ptr).context);
+        afx_add_ref_entity_ref(p_ref);
+        let entity_ref = MirvEntityRef::create(p_ref, &mut (*this_ptr).context);
         if let Err(e) = event_clone.call(&JsValue::null(), &[JsValue::Object(entity_ref),JsValue::Integer(handle)], &mut (*this_ptr).context) {
             use std::fmt::Write as _;
             let mut s = String::new();
             write!(&mut s, "Uncaught {e}\n").unwrap();
-            afx_warning((*this_ptr).iface, s);
+            afx_warning(s);
         }
     }
 }

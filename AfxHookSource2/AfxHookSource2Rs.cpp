@@ -15,97 +15,95 @@
 
 extern SOURCESDK::CS2::ISource2EngineToClient * g_pEngineToClient;
 
-void afx_hook_source2_message(const char * pszValue) {
+extern "C" void afx_hook_source2_message(const char * pszValue) {
     advancedfx::Message(pszValue);
 }
 
-void afx_hook_source2_warning(const char * pszValue) {
+extern "C" void afx_hook_source2_warning(const char * pszValue) {
     advancedfx::Warning(pszValue);
 }
 
-void afx_hook_source2_exec(const char * pszValue) {
+extern "C" void afx_hook_source2_exec(const char * pszValue) {
     if(g_pEngineToClient) g_pEngineToClient->ExecuteClientCmd(0,pszValue,true);
 }
 
 bool g_b_on_game_event = false;
 
-void afx_hook_source2_enable_on_game_event(bool value) {
+extern "C" void afx_hook_source2_enable_on_game_event(bool value) {
     g_b_on_game_event = value;
 }
 
 bool g_b_on_c_view_render_setup_view = false;
 
-void afx_hook_source2_enable_on_c_view_render_setup_view(bool value) {
+extern "C" void afx_hook_source2_enable_on_c_view_render_setup_view(bool value) {
     g_b_on_c_view_render_setup_view = value;
 }
 
 bool g_b_on_client_frame_stage_notify = false;
 
-void afx_hook_source2_enable_on_client_frame_stage_notify(bool value) {
+extern "C" void afx_hook_source2_enable_on_client_frame_stage_notify(bool value) {
     g_b_on_client_frame_stage_notify = value;
 }
 
-int afx_hook_source2_make_handle(int entryIndex, int serialNumber) {
+extern "C" int afx_hook_source2_make_handle(int entryIndex, int serialNumber) {
     return SOURCESDK::CS2::CEntityHandle(entryIndex, serialNumber).ToInt();
 }
 
-bool afx_hook_source2_is_handle_valid(int handle) {
+extern "C" bool afx_hook_source2_is_handle_valid(int handle) {
     return SOURCESDK::CS2::CEntityHandle(handle).IsValid();
 }
 
-int afx_hook_source2_get_handle_entry_index(int handle) {
+extern "C" int afx_hook_source2_get_handle_entry_index(int handle) {
     return SOURCESDK::CS2::CEntityHandle(handle).GetEntryIndex();
 }
 
-int afx_hook_source2_get_handle_serial_number(int handle) {
+extern "C" int afx_hook_source2_get_handle_serial_number(int handle) {
     return SOURCESDK::CS2::CEntityHandle(handle).GetSerialNumber();
 }
 
-int afx_hook_source2_get_highest_entity_index();
+extern "C" int afx_hook_source2_get_highest_entity_index();
 
-void * afx_hook_source2_get_entity_ref_from_index(int index);
+extern "C" void * afx_hook_source2_get_entity_ref_from_index(int index);
 
-void afx_hook_source2_add_ref_entity_ref(void * pRef);
+extern "C" void afx_hook_source2_add_ref_entity_ref(void * pRef);
 
-void afx_hook_source2_release_entity_ref(void * pRef);
+extern "C" void afx_hook_source2_release_entity_ref(void * pRef);
 
 bool g_b_on_add_entity = false;
 
-void afx_hook_source2_enable_on_add_entity(bool value) {
+extern "C" void afx_hook_source2_enable_on_add_entity(bool value) {
     g_b_on_add_entity = value;
 }
 
 bool g_b_on_remove_entity = false;
 
-void afx_hook_source2_enable_on_remove_entity(bool value) {
+extern "C" void afx_hook_source2_enable_on_remove_entity(bool value) {
     g_b_on_remove_entity = value;
 }
 
-bool afx_hook_source2_getEntityRefIsValid(void * pRef);
+extern "C" bool afx_hook_source2_get_entity_ref_is_valid(void * pRef);
 
-const char * afx_hook_source2_getEntityRefName(void * pRef);
+extern "C" const char * afx_hook_source2_get_entity_ref_name(void * pRef);
 
-const char * afx_hook_source2_getEntityRefDebugName(void * pRef);
+extern "C" const char * afx_hook_source2_get_entity_ref_debug_name(void * pRef);
 
-const char * afx_hook_source2_getEntityRefClassName(void * pRef);
+extern "C" const char * afx_hook_source2_get_entity_ref_class_name(void * pRef);
 
-bool afx_hook_source2_getEntityRefIsPlayerPawn(void * pRef);
-int afx_hook_source2_getEntityRefPlayerPawnHandle(void * pRef);
+extern "C" bool afx_hook_source2_get_entity_ref_is_player_pawn(void * pRef);
+extern "C" int afx_hook_source2_get_entity_ref_player_pawn_handle(void * pRef);
 
-bool afx_hook_source2_getEntityRefIsPlayerController(void * pRef);
-int afx_hook_source2_getEntityRefPlayerControllerHandle(void * pRef);
+extern "C" bool afx_hook_source2_get_entity_ref_is_player_controller(void * pRef);
+extern "C" int afx_hook_source2_get_entity_ref_player_controller_handle(void * pRef);
 
-int afx_hook_source2_getEntityRefHealth(void * pRef);
+extern "C" int afx_hook_source2_get_entity_ref_health(void * pRef);
 
-void afx_hook_source2_getEntityRefOrigin(void * pRef, float & x, float & y, float & z);
+extern "C" void afx_hook_source2_get_entity_ref_origin(void * pRef, float & x, float & y, float & z);
 
-void afx_hook_source2_getEntityRefRenderEyeOrigin(void * pRef, float & x, float & y, float & z);
+extern "C" void afx_hook_source2_get_entity_ref_render_eye_origin(void * pRef, float & x, float & y, float & z);
 
-void afx_hook_source2_getEntityRefRenderEyeAngles(void * pRef, float & x, float & y, float & z);
+extern "C" void afx_hook_source2_get_entity_ref_render_eye_angles(void * pRef, float & x, float & y, float & z);
 
-int afx_hook_source2_getEntityRefViewEntityHandle(void * pRef);
-
-bool afx_hook_source2_isPlayingDemo() {
+extern "C" bool afx_hook_source2_is_playing_demo() {
     if(g_pEngineToClient) {
 		if(SOURCESDK::CS2::IDemoFile * pDemoPlayer = g_pEngineToClient->GetDemoFile()) {
 			return pDemoPlayer->IsPlayingDemo();
@@ -114,7 +112,7 @@ bool afx_hook_source2_isPlayingDemo() {
     return false;
 }
 
-bool afx_hook_source2_isDemoPaused() {
+extern "C" bool afx_hook_source2_is_demo_paused() {
     if(g_pEngineToClient) {
 		if(SOURCESDK::CS2::IDemoFile * pDemoPlayer = g_pEngineToClient->GetDemoFile()) {
 			return pDemoPlayer->IsDemoPaused();
@@ -123,95 +121,11 @@ bool afx_hook_source2_isDemoPaused() {
     return false;
 }
 
-struct AfxHookSource2 {
-    void (*message)(const char *);
-    void (*warning)(const char *);
-    void (*exec)(const char *);
-    void (*enableOnGameEvent)(bool bValue);
-    void (*enableOnCViewRenderSetupView)(bool bValue);
-    void (*enableOnClientFrameStageNotify)(bool bValue);
-
-    int (*makeHandle)(int entryIndex, int serialNumber);
-    bool (*isHandleValid)(int handle);
-    int (*getHandleEntryIndex)(int handle);
-    int (*getHandleSerialNumber)(int handle);
-    int (*getHighestEntityIndex)();
-    void * (*getEntityRefFromIndex)(int index);
-
-    void (*addRefEntityRef)(void *);
-    void (*releaseEntityRef)(void *);
-
-    void (*enableOnAddEntity)(bool bValue);
-    void (*enableOnRemoveEntity)(bool bValue);
-
-    bool (*getEntityRefIsValid)(void * pRef);
-    
-    const char * (*getEntityRefName)(void * pRef);
-
-    // can return nullptr to indicate no debug name.
-    const char * (*getEntityRefDebugName)(void * pRef);
-
-    const char * (*getEntityRefClassName)(void * pRef);
-
-    bool (*getEntityRefIsPlayerPawn)(void * pRef);
-    int (*getEntityRefPlayerPawnHandle)(void * pRef);
-
-    bool (*getEntityRefIsPlayerController)(void * pRef);
-    int (*getEntityRefPlayerControllerHandle)(void * pRef);
-
-    int (*getEntityRefHealth)(void * pRef);
-
-    void (*getEntityRefOrigin)(void * pRef, float & x, float & y, float & z);
-
-    void (*getEntityRefRenderEyeOrigin)(void * pRef, float & x, float & y, float & z);
-
-    void (*getEntityRefRenderEyeAngles)(void * pRef, float & x, float & y, float & z);
-
-    int (*getEntityRefViewEntityHandle)(void * pRef);
-
-    bool (*isPlayingDemo)();
-
-    bool (*isDemoPaused)();
-
-} g_AfxHookSource2 = {
-    &afx_hook_source2_message,
-    &afx_hook_source2_warning,
-    &afx_hook_source2_exec,
-    &afx_hook_source2_enable_on_game_event,
-    &afx_hook_source2_enable_on_c_view_render_setup_view,
-    &afx_hook_source2_enable_on_client_frame_stage_notify,
-    &afx_hook_source2_make_handle,
-    &afx_hook_source2_is_handle_valid,
-    &afx_hook_source2_get_handle_entry_index,
-    &afx_hook_source2_get_handle_serial_number,
-    &afx_hook_source2_get_highest_entity_index,
-    &afx_hook_source2_get_entity_ref_from_index,
-    &afx_hook_source2_add_ref_entity_ref,
-    &afx_hook_source2_release_entity_ref,
-    &afx_hook_source2_enable_on_add_entity,
-    &afx_hook_source2_enable_on_remove_entity,
-    &afx_hook_source2_getEntityRefIsValid,
-    &afx_hook_source2_getEntityRefName,
-    &afx_hook_source2_getEntityRefDebugName,
-    &afx_hook_source2_getEntityRefClassName,
-    &afx_hook_source2_getEntityRefIsPlayerPawn,
-    &afx_hook_source2_getEntityRefPlayerPawnHandle,
-    &afx_hook_source2_getEntityRefIsPlayerController,
-    &afx_hook_source2_getEntityRefPlayerControllerHandle,
-    &afx_hook_source2_getEntityRefHealth,
-    &afx_hook_source2_getEntityRefOrigin,
-    &afx_hook_source2_getEntityRefRenderEyeOrigin,
-    &afx_hook_source2_getEntityRefRenderEyeAngles,
-    &afx_hook_source2_getEntityRefViewEntityHandle,
-    &afx_hook_source2_isPlayingDemo,
-    &afx_hook_source2_isDemoPaused
-};
-
 typedef void AfxHookSource2Rs;
 
 AfxHookSource2Rs * g_AfxHookSource2Rs_Engine = nullptr;
 
-extern "C" AfxHookSource2Rs * afx_hook_source2_rs_new( struct AfxHookSource2 * iface );
+extern "C" AfxHookSource2Rs * afx_hook_source2_rs_new();
 
 extern "C" void afx_hook_source2_rs_run_jobs(AfxHookSource2Rs * this_ptr);
 
@@ -233,7 +147,7 @@ extern "C" void afx_hook_source2_rs_on_remove_entity(AfxHookSource2Rs * this_ptr
 
 void AfxHookSource2Rs_Engine_Init() {
     if(nullptr == g_AfxHookSource2Rs_Engine) {
-        g_AfxHookSource2Rs_Engine = afx_hook_source2_rs_new(&g_AfxHookSource2);
+        g_AfxHookSource2Rs_Engine = afx_hook_source2_rs_new();
     }
 }
 

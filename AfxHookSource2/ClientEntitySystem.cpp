@@ -275,94 +275,94 @@ CON_COMMAND(__mirv_listentities, "") {
     }
 }
 
-int afx_hook_source2_get_highest_entity_index() {
+extern "C" int afx_hook_source2_get_highest_entity_index() {
     EntityListIterator it;
     if(g_GetHighestEntityIterator) return g_GetHighestEntityIterator(*g_pEntityList,&it)->GetIndex();
     return -1;
 }
 
-void * afx_hook_source2_get_entity_ref_from_index(int index) {
+extern "C" void * afx_hook_source2_get_entity_ref_from_index(int index) {
     if(CEntityInstance * result = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,index)) {
         return CAfxEntityInstanceRef::Aquire(result);
     }
     return nullptr;
 }
 
-void afx_hook_source2_add_ref_entity_ref(void * pRef) {
+extern "C" void afx_hook_source2_add_ref_entity_ref(void * pRef) {
     ((CAfxEntityInstanceRef *)pRef)->AddRef();
 }
 
-void afx_hook_source2_release_entity_ref(void * pRef) {
+extern "C" void afx_hook_source2_release_entity_ref(void * pRef) {
     ((CAfxEntityInstanceRef *)pRef)->Release();
 }
 
-bool afx_hook_source2_getEntityRefIsValid(void * pRef) {
+extern "C" bool afx_hook_source2_get_entity_ref_is_valid(void * pRef) {
     return ((CAfxEntityInstanceRef *)pRef)->IsValid();
 }
 
-const char * afx_hook_source2_getEntityRefName(void * pRef) {
+extern "C" const char * afx_hook_source2_get_entity_ref_name(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
         return pInstance->GetName();
     }
     return "";
 }
 
-const char * afx_hook_source2_getEntityRefDebugName(void * pRef) {
+extern "C" const char * afx_hook_source2_get_entity_ref_debug_name(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
         return pInstance->GetDebugName();
     }
     return nullptr;
 }
 
-const char * afx_hook_source2_getEntityRefClassName(void * pRef) {
+extern "C" const char * afx_hook_source2_get_entity_ref_class_name(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
         return pInstance->GetClassName();
     }
     return "";
 }
 
-bool afx_hook_source2_getEntityRefIsPlayerPawn(void * pRef) {
+extern "C" bool afx_hook_source2_get_entity_ref_is_player_pawn(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
         return pInstance->IsPlayerPawn();
     }
     return false;
 }
 
-int afx_hook_source2_getEntityRefPlayerPawnHandle(void * pRef) {
+extern "C" int afx_hook_source2_get_entity_ref_player_pawn_handle(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
         return pInstance->GetPlayerPawnHandle().ToInt();
     }
     return SOURCESDK_CS2_INVALID_EHANDLE_INDEX;    
 }
 
-bool afx_hook_source2_getEntityRefIsPlayerController(void * pRef) {
+extern "C" bool afx_hook_source2_get_entity_ref_is_player_controller(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
         return pInstance->IsPlayerController();
     }
     return false;    
 }
 
-int afx_hook_source2_getEntityRefPlayerControllerHandle(void * pRef) {
+extern "C" int afx_hook_source2_get_entity_ref_player_controller_handle(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
         return pInstance->GetPlayerControllerHandle().ToInt();
     }
     return SOURCESDK_CS2_INVALID_EHANDLE_INDEX;  
 }
 
-int afx_hook_source2_getEntityRefHealth(void * pRef) {
+extern "C" int afx_hook_source2_get_entity_ref_health(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
         return pInstance->GetHealth();
     }
     return 0;    
 }
 
-void afx_hook_source2_getEntityRefOrigin(void * pRef, float & x, float & y, float & z) {
+extern "C" void afx_hook_source2_get_entity_ref_origin(void * pRef, float & x, float & y, float & z) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
        pInstance->GetOrigin(x,y,z);
     }    
 }
 
-void afx_hook_source2_getEntityRefRenderEyeOrigin(void * pRef, float & x, float & y, float & z) {
+extern "C" void afx_hook_source2_get_entity_ref_render_eye_origin(void * pRef, float & x, float & y, float & z) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
         float tmp[3];
        pInstance->GetRenderEyeOrigin(tmp);
@@ -372,7 +372,7 @@ void afx_hook_source2_getEntityRefRenderEyeOrigin(void * pRef, float & x, float 
     }    
 }
 
-void afx_hook_source2_getEntityRefRenderEyeAngles(void * pRef, float & x, float & y, float & z) {
+extern "C" void afx_hook_source2_get_entity_ref_render_eye_angles(void * pRef, float & x, float & y, float & z) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
         float tmp[3];
        pInstance->GetRenderEyeAngles(tmp);
@@ -382,9 +382,10 @@ void afx_hook_source2_getEntityRefRenderEyeAngles(void * pRef, float & x, float 
     }    
 }
 
-int afx_hook_source2_getEntityRefViewEntityHandle(void * pRef) {
+/*
+extern "C" int afx_hook_source2_getEntityRefViewEntityHandle(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
        return pInstance->GetViewEntityHandle().ToInt();
     }
     return SOURCESDK_CS2_INVALID_EHANDLE_INDEX;
-}
+}*/

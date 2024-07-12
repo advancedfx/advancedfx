@@ -49,6 +49,11 @@ add_dependencies(${PROJECT_NAME}
 
 corrosion_import_crate(MANIFEST_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../AfxHookSource2Rs/Cargo.toml)
 
+if(${CMAKE_BUILD_TYPE_DEBUG})
+    #TODO: Not quite fixed yet: https://corrosion-rs.github.io/corrosion/common_issues.html
+    corrosion_set_env_vars(afx_hook_source2_rs "CFLAGS=-MDd" "CXXFLAGS=-MDd")
+endif()
+
 #set_target_properties(
 #    ${PROJECT_NAME}
 #    PROPERTIES 
