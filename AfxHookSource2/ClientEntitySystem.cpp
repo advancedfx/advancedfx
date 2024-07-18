@@ -8,6 +8,7 @@
 
 #include "../shared/AfxConsole.h"
 //#include "../shared/binutils.h"
+#include "../shared/FFITools.h"
 
 #include "AfxHookSource2Rs.h"
 
@@ -296,8 +297,8 @@ extern "C" void afx_hook_source2_release_entity_ref(void * pRef) {
     ((CAfxEntityInstanceRef *)pRef)->Release();
 }
 
-extern "C" bool afx_hook_source2_get_entity_ref_is_valid(void * pRef) {
-    return ((CAfxEntityInstanceRef *)pRef)->IsValid();
+extern "C" FFIBool afx_hook_source2_get_entity_ref_is_valid(void * pRef) {
+    return BOOL_TO_FFIBOOL(((CAfxEntityInstanceRef *)pRef)->IsValid());
 }
 
 extern "C" const char * afx_hook_source2_get_entity_ref_name(void * pRef) {
@@ -321,11 +322,11 @@ extern "C" const char * afx_hook_source2_get_entity_ref_class_name(void * pRef) 
     return "";
 }
 
-extern "C" bool afx_hook_source2_get_entity_ref_is_player_pawn(void * pRef) {
+extern "C" FFIBool afx_hook_source2_get_entity_ref_is_player_pawn(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
-        return pInstance->IsPlayerPawn();
+        return BOOL_TO_FFIBOOL(pInstance->IsPlayerPawn());
     }
-    return false;
+    return FFIBOOL_FALSE;
 }
 
 extern "C" int afx_hook_source2_get_entity_ref_player_pawn_handle(void * pRef) {
@@ -335,11 +336,11 @@ extern "C" int afx_hook_source2_get_entity_ref_player_pawn_handle(void * pRef) {
     return SOURCESDK_CS2_INVALID_EHANDLE_INDEX;    
 }
 
-extern "C" bool afx_hook_source2_get_entity_ref_is_player_controller(void * pRef) {
+extern "C" FFIBool afx_hook_source2_get_entity_ref_is_player_controller(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
-        return pInstance->IsPlayerController();
+        return BOOL_TO_FFIBOOL(pInstance->IsPlayerController());
     }
-    return false;    
+    return FFIBOOL_FALSE;    
 }
 
 extern "C" int afx_hook_source2_get_entity_ref_player_controller_handle(void * pRef) {

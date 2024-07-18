@@ -31,9 +31,9 @@ public:
 
 	CamPathIterator(CInterpolationMap<CamPathValue>::const_iterator & it);
 
-	double GetTime();
+	double GetTime() const;
 
-	CamPathValue GetValue();
+	CamPathValue GetValue() const;
 
 	CamPathIterator& operator ++ ();
 
@@ -79,37 +79,37 @@ public:
 	~CamPath();
 
 	void Enabled_set(bool enable);
-	bool Enabled_get(void);
+	bool Enabled_get(void) const;
 
-	bool GetHold(void);
+	bool GetHold(void) const;
 	void SetHold(bool value);
 
 	void PositionInterpMethod_set(DoubleInterp value);
-	DoubleInterp PositionInterpMethod_get(void);
+	DoubleInterp PositionInterpMethod_get(void) const;
 
 	void RotationInterpMethod_set(QuaternionInterp value);
-	QuaternionInterp RotationInterpMethod_get(void);
+	QuaternionInterp RotationInterpMethod_get(void) const;
 
 	void FovInterpMethod_set(DoubleInterp value);
-	DoubleInterp FovInterpMethod_get(void);
+	DoubleInterp FovInterpMethod_get(void) const;
 
-	void Add(double time, CamPathValue value);
+	void Add(double time, const CamPathValue & value);
 
 	void Remove(double time);
 	void Clear();
 
-	size_t GetSize();
+	size_t GetSize() const;
 	CamPathIterator GetBegin();
 	CamPathIterator GetEnd();
-	double GetDuration();
+	double GetDuration() const;
 
 	/// <remarks>Must not be called if GetSize is less than 1!</remarks>
-	double GetLowerBound();
+	double GetLowerBound() const;
 
 	/// <remarks>Must not be called if GetSize is less than 1!</remarks>
-	double GetUpperBound();
+	double GetUpperBound() const;
 
-	bool CanEval(void);
+	bool CanEval(void) const;
 
 	/// <remarks>
 	/// Must not be called if CanEval() returns false!<br />
@@ -143,21 +143,21 @@ public:
 
 	size_t SelectInvert();
 
-	/// <summary>Adds a range of key frames to the selection.</param>
+	/// <summary>Adds a range of key frames to the selection.</summary>
 	/// <param name="min">Index of first keyframe to add to selection.</param>
 	/// <param name="max">Index of last keyframe to add to selection.</param>
 	/// <returns>Number of selected keyframes.</returns>
 	size_t SelectAdd(size_t min, size_t max);
 
-	/// <summary>Adds a range of key frames to the selection.</param>
+	/// <summary>Adds a range of key frames to the selection.</summary>
 	/// <param name="min">Lower bound to start adding selection at.</param>
 	/// <param name="count">Number of keyframes to select.</param>
 	/// <returns>Number of selected keyframes.</returns>
 	size_t SelectAdd(double min, size_t count);
 
-	/// <summary>Adds a range of key frames to the selection.</param>
+	/// <summary>Adds a range of key frames to the selection.</summary>
 	/// <param name="min">Lower bound to start adding selection at.</param>
-	/// <param name="count">Upper bound to end adding selection at.</param>
+	/// <param name="max">Upper bound to end adding selection at.</param>
 	/// <returns>Number of selected keyframes.</returns>
 	size_t SelectAdd(double min, double max);
 
@@ -165,7 +165,15 @@ public:
 
 	void SetOffset(double value);
 
-	double GetOffset();
+	double GetOffset() const;
+
+	bool RustGetChanged() const {
+		return m_RustChanged;
+	}
+
+	void RustResetChanged() {
+		m_RustChanged = false;
+	}
 
 private:
 	static double XSelector(CamPathValue const & value)
@@ -221,6 +229,8 @@ private:
 	CInterpolation<Quaternion> * m_RInterp;
 	CInterpolation<double> * m_FovInterp;
 	CInterpolation<bool> * m_SelectedInterp;
+
+	bool m_RustChanged = false;
 
 	void Changed();
 	void CopyMap(CInterpolationMap<CamPathValue> & dst, CInterpolationMap<CamPathValue> & src);

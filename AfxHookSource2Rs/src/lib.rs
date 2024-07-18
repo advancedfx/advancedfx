@@ -1,3 +1,5 @@
+mod advancedfx;
+
 use core::ffi::c_char;
 use core::ffi::CStr;
 use std::ffi::c_float;
