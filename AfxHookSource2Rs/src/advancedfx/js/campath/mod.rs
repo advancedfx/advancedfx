@@ -231,7 +231,7 @@ impl Campath {
 
     pub fn add_to_context(context: &mut Context) {
         context
-            .register_global_class::<Value>()
+            .register_global_class::<Campath>()
             .expect("the AdvancedfxCampath builtin shouldn't exist");        
     }
 
