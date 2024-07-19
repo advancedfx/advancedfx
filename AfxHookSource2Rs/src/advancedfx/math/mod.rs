@@ -1,12 +1,11 @@
 pub const EPSILON: f64 = 1.0E-6f64;
 
-
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct Vector3 {
-    x: f64,
-    y: f64,
-    z: f64,
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
 }
 
 impl Vector3 {
@@ -20,15 +19,16 @@ impl Vector3 {
         return (self.x*self.x + self.y*self.y * self.z*self.z).sqrt();
     }
 
-    pub fn normalized(self) -> Self {
-        self / self.length()
+    pub fn normalized(self) -> Result<Self, &'static str> {
+        let length = self.length();
+        if 0.0 == length {
+            return Err("zero length");
+        }
+        Ok(1.0 / self.length() * self)
     }
 
-    /**
-    * @remarks Differs from C++ in that it is undefined for length 0.
-    */
-    pub fn normalize(&mut self) {
-        *self = self.normalized()
+    pub fn left_mul_assign(&mut self, rhs: f64) {
+        *self = rhs * *self;
     }
 }
 
@@ -69,53 +69,33 @@ impl std::ops::SubAssign for Vector3 {
     }
 }
 
-impl std::ops::Mul<f64> for Vector3 {
-    type Output = Self;
+impl std::ops::Mul<Vector3> for f64 {
+    type Output = Vector3;
 
-    fn mul(self, rhs: f64) -> Self {
-        Self {x: self.x * rhs, y: self.y * rhs, z: self.z * rhs}
-    }
-}
-
-impl std::ops::MulAssign<f64> for Vector3 {
-    fn mul_assign(&mut self, rhs: f64) {
-        *self = *self * rhs;
-    }
-}
-
-impl std::ops::Div<f64> for Vector3 {
-    type Output = Self;
-
-    fn div(self, rhs: f64) -> Self {
-        Self {x: self.x / rhs, y: self.y / rhs, z: self.z / rhs}
-    }
-}
-
-impl std::ops::DivAssign<f64> for Vector3 {
-    fn div_assign(&mut self, rhs: f64) {
-        *self = *self / rhs;
+    fn mul(self, rhs: Vector3) -> Self::Output {
+        Self::Output {x: self * rhs.x, y: self * rhs.y, z: self * rhs.z}
     }
 }
 
 #[repr(C)]
 #[derive(Clone, Copy)]
-pub struct QEuelerAngles {
-    pitch: f64,
-    yaw: f64,
-    roll: f64
+pub struct QEulerAngles {
+    pub pitch: f64,
+    pub yaw: f64,
+    pub roll: f64
 }
 
-impl QEuelerAngles {
-    pub fn new(pitch: f64, yaw: f64, roll: f64) -> QEuelerAngles {
+impl QEulerAngles {
+    pub fn new(pitch: f64, yaw: f64, roll: f64) -> QEulerAngles {
         Self {
             pitch: pitch, yaw: yaw, roll: roll
         }
     }
 }
 
-impl std::convert::From<QREulerAngles> for QEuelerAngles {
+impl std::convert::From<QREulerAngles> for QEulerAngles {
     fn from(item: QREulerAngles) -> Self {
-        QEuelerAngles {
+        QEulerAngles {
             pitch: 180.0 * item.pitch / std::f64::consts::PI,
             yaw: 180.0 * item.yaw / std::f64::consts::PI,
             roll: 180.0 * item.roll / std::f64::consts::PI
@@ -126,9 +106,9 @@ impl std::convert::From<QREulerAngles> for QEuelerAngles {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct QREulerAngles {
-    pitch: f64,
-    yaw: f64,
-    roll: f64,
+    pub pitch: f64,
+    pub yaw: f64,
+    pub roll: f64,
 }
 
 impl QREulerAngles {
@@ -139,8 +119,8 @@ impl QREulerAngles {
     }
 }
 
-impl std::convert::From<QEuelerAngles> for QREulerAngles {
-    fn from(item: QEuelerAngles) -> Self {
+impl std::convert::From<QEulerAngles> for QREulerAngles {
+    fn from(item: QEulerAngles) -> Self {
         QREulerAngles {
             pitch: std::f64::consts::PI * item.pitch / 180.0,
             yaw: std::f64::consts::PI * item.yaw / 180.0,
@@ -248,10 +228,10 @@ impl std::convert::From<Quaternion> for QREulerAngles {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct Quaternion {
-    w: f64,
-    x: f64,
-    y: f64,
-    z: f64,
+    pub w: f64,
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
 }
 
 impl Quaternion {
@@ -275,13 +255,12 @@ impl Quaternion {
         (self.w * self.w + self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
     }
 
-    pub fn normalized(self) -> Self {
+    pub fn normalized(self) -> Result<Self, &'static str> {
         let norm = self.norm();
-        Quaternion { w: self.w / norm, x: self.x / norm, y: self.y / norm, z: self.z / norm }
-    }
-
-    pub fn normalize(&mut self) {
-        *self = self.normalized()
+        if 0.0 == norm {
+            return Err("zero norm");
+        }
+        Ok(Quaternion { w: self.w / norm, x: self.x / norm, y: self.y / norm, z: self.z / norm })
     }
 
     pub fn conjugate(self) -> Self {
@@ -301,7 +280,7 @@ impl Quaternion {
         let ca = self.x*rhs.x + self.y*rhs.y + self.z*rhs.z + self.w*rhs.w;
 
         let sa = temp.length();
-        if 0.0 < sa { temp = temp / sa };
+        if 0.0 < sa { temp = 1.0 / sa * temp };
     
         let dtheta = sa.atan2(ca) * 2.0;
 

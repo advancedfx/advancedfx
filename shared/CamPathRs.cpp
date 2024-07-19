@@ -86,32 +86,34 @@ extern "C" void advancedfx_campath_set_hold(CamPath * ptr, FFIBool value) {
     ptr->SetHold(FFIBOOL_TO_BOOL(value));
 }
 
-extern "C" int32_t advancedfx_campath_position_interp_get(const CamPath * ptr) {
-    return (int32_t)ptr->PositionInterpMethod_get();
+extern "C" uint8_t advancedfx_campath_position_interp_get(const CamPath * ptr) {
+    return (uint8_t)ptr->PositionInterpMethod_get();
 }
 
-extern "C" void advancedfx_campath_position_interp_set(CamPath * ptr, int32_t value) {
+extern "C" void advancedfx_campath_position_interp_set(CamPath * ptr, uint8_t value) {
     ptr->PositionInterpMethod_set((CamPath::DoubleInterp)value);
 }
 
-extern "C" int32_t advancedfx_campath_rotation_interp_get(const CamPath * ptr) {
-    return (int32_t)ptr->RotationInterpMethod_get();
+extern "C" uint8_t advancedfx_campath_rotation_interp_get(const CamPath * ptr) {
+    return (uint8_t)ptr->RotationInterpMethod_get();
 }
 
-extern "C" void advancedfx_campath_rotation_interp_set(CamPath * ptr, int32_t value) {
+extern "C" void advancedfx_campath_rotation_interp_set(CamPath * ptr, uint8_t value) {
     ptr->RotationInterpMethod_set((CamPath::QuaternionInterp)value);
 }
 
-extern "C" int32_t advancedfx_campath_fov_interp_get(const CamPath * ptr) {
-    return (int32_t)ptr->FovInterpMethod_get();
+extern "C" uint8_t advancedfx_campath_fov_interp_get(const CamPath * ptr) {
+    return (uint8_t)ptr->FovInterpMethod_get();
 }
 
-extern "C" void advancedfx_campath_fov_interp_set(CamPath * ptr, int32_t value) {
+extern "C" void advancedfx_campath_fov_interp_set(CamPath * ptr, uint8_t value) {
     ptr->FovInterpMethod_set((CamPath::DoubleInterp)value);
 }
 
-extern "C" void advancedfx_campath_add(CamPath * ptr, double time, const CamPathValue & value) {
-    ptr->Add(time,value);
+extern "C" void advancedfx_campath_add(CamPath * ptr, double time, const CamPathValueRs * value) {
+    ptr->Add(time,CamPathValue(
+        value->p.x, value->p.y, value->p.z, value->r.w, value->r.x, value->r.y, value->r.z, value->fov, FFIBOOL_TO_BOOL(value->selected)
+    ));
 }
 
 extern "C" void advancedfx_campath_remove(CamPath * ptr, double time) {
@@ -223,12 +225,4 @@ extern "C" size_t advancedfx_campath_select_add_min_count(CamPath * ptr, double 
 
 extern "C" size_t advancedfx_campath_select_add_min_max(CamPath * ptr, double min, double max) {
     return ptr->SelectAdd(min,max);
-}
-
-extern "C" FFIBool advancedfx_campath_get_changed(const CamPath * ptr) {
-    return BOOL_TO_FFIBOOL(ptr->RustGetChanged());
-}
-
-extern "C" void advancedfx_campath_reset_changed(CamPath * ptr) {
-    ptr->RustResetChanged();
 }

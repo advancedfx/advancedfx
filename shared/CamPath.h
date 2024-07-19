@@ -22,6 +22,8 @@ struct CamPathValue
 
 	CamPathValue(double x, double y, double z, double pitch, double yaw, double roll, double fov);
 
+	CamPathValue(double x, double y, double z, double q_w, double q_x, double q_y, double q_z, double fov, bool selected);
+
 };
 
 struct CamPathIterator
@@ -167,14 +169,6 @@ public:
 
 	double GetOffset() const;
 
-	bool RustGetChanged() const {
-		return m_RustChanged;
-	}
-
-	void RustResetChanged() {
-		m_RustChanged = false;
-	}
-
 private:
 	static double XSelector(CamPathValue const & value)
 	{
@@ -229,8 +223,6 @@ private:
 	CInterpolation<Quaternion> * m_RInterp;
 	CInterpolation<double> * m_FovInterp;
 	CInterpolation<bool> * m_SelectedInterp;
-
-	bool m_RustChanged = false;
 
 	void Changed();
 	void CopyMap(CInterpolationMap<CamPathValue> & dst, CInterpolationMap<CamPathValue> & src);

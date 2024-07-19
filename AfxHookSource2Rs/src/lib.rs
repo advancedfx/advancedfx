@@ -512,19 +512,6 @@ fn afx_is_demo_paused() -> bool {
     return result;
 }
 
-
-fn mirv_error_type() -> JsResult<JsValue> {
-    Err(JsNativeError::typ().with_message("invalid type!").into())
-}
-
-fn mirv_error_arguments() -> JsResult<JsValue> {
-    Err(JsNativeError::error().with_message("invalid arguments!").into())
-}
-
-fn mirv_error_async_conflict()  -> JsResult<JsValue> {
-    Err(JsNativeError::error().with_message("async conflict!").into())
-}
-
 fn mirv_message(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
     for x in args {
         match x.to_string(context) {
@@ -590,7 +577,7 @@ fn mirv_set_on_game_event(this: &JsValue, args: &[JsValue], _context: &mut Conte
             }
         }
     }
-    mirv_error_type()
+    Err(advancedfx::js::errors::error_type())
 }
 
 fn mirv_get_on_game_event(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -606,7 +593,7 @@ fn mirv_get_on_game_event(this: &JsValue, _args: &[JsValue], _context: &mut Cont
             }
         }
     }
-    mirv_error_type()
+    Err(advancedfx::js::errors::error_type())
 }
 
 fn mirv_set_on_c_view_render_setup_view(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -632,7 +619,7 @@ fn mirv_set_on_c_view_render_setup_view(this: &JsValue, args: &[JsValue], _conte
             }
         }
     }
-    mirv_error_type()
+    Err(advancedfx::js::errors::error_type())
 }
 
 fn mirv_get_on_c_view_render_setup_view(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -648,7 +635,7 @@ fn mirv_get_on_c_view_render_setup_view(this: &JsValue, _args: &[JsValue], _cont
             }
         }
     }
-    mirv_error_type()
+    Err(advancedfx::js::errors::error_type())
 }
 
 fn mirv_set_on_client_frame_stage_notify(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -674,7 +661,7 @@ fn mirv_set_on_client_frame_stage_notify(this: &JsValue, args: &[JsValue], _cont
             }
         }
     }
-    mirv_error_type()
+    Err(advancedfx::js::errors::error_type())
 }
 
 fn mirv_get_on_client_frame_stage_notify(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -690,7 +677,7 @@ fn mirv_get_on_client_frame_stage_notify(this: &JsValue, _args: &[JsValue], _con
             }
         }
     }
-    mirv_error_type()
+    Err(advancedfx::js::errors::error_type())
 }
 
 fn mirv_run_jobs(_this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -752,7 +739,7 @@ impl MirvWsResult {
                 }
             }
         }
-        mirv_error_type()
+        Err(advancedfx::js::errors::error_type())
     }
 
     fn clone(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -770,7 +757,7 @@ impl MirvWsResult {
                 }
             }
         }
-        mirv_error_type()
+        Err(advancedfx::js::errors::error_type())
     }
 }
 
@@ -836,11 +823,11 @@ impl MirvWsWrite {
                             return Ok(JsValue::Undefined);
                         }
                     } else {
-                        return mirv_error_async_conflict();
+                        return Err(advancedfx::js::errors::error_async_conflict());
                     }
                 }
             }
-            mirv_error_type()
+            Err(advancedfx::js::errors::error_type())
         }
     }
 
@@ -848,13 +835,13 @@ impl MirvWsWrite {
         if let Some(object) = this.as_object() {
             if let Some(mirv_ws_write) = object.downcast_ref::<MirvWsWrite>() {
                 if let Err(_) = mirv_ws_write.state.try_borrow_mut() {
-                    return mirv_error_async_conflict();
+                    return Err(advancedfx::js::errors::error_async_conflict());
                 }
                 drop(mirv_ws_write.state.replace(None));
                 return Ok(JsValue::Undefined);         
             }
         }
-        mirv_error_type()
+        Err(advancedfx::js::errors::error_type())
     }
 
     fn feed(this: &JsValue, args: &[JsValue], _: &mut Context) -> impl Future<Output = JsResult<JsValue>> {
@@ -882,18 +869,18 @@ impl MirvWsWrite {
                                         }
                                     }
                                     _ => {
-                                        return mirv_error_arguments();
+                                        return Err(advancedfx::js::errors::error_arguments());
                                     }
                                 }
                             }
                             return Ok(JsValue::Undefined)
                         }
                     } else {
-                        return mirv_error_async_conflict();
+                        return Err(advancedfx::js::errors::error_async_conflict());
                     }
                 }
             }
-            mirv_error_type()
+            Err(advancedfx::js::errors::error_type())
         }
     }
 
@@ -910,11 +897,11 @@ impl MirvWsWrite {
                             return Ok(JsValue::Undefined);
                         }
                     } else {
-                        return mirv_error_async_conflict();
+                        return Err(advancedfx::js::errors::error_async_conflict());
                     }                        
                 }
             }
-            mirv_error_type()
+            Err(advancedfx::js::errors::error_type())
         }
     }
 
@@ -943,18 +930,18 @@ impl MirvWsWrite {
                                         }
                                     }
                                     _ => {
-                                        return mirv_error_arguments();
+                                        return Err(advancedfx::js::errors::error_arguments());
                                     }
                                 }
                             }
                             return Ok(JsValue::Undefined)
                         }
                     } else {
-                        return mirv_error_async_conflict();
+                        return Err(advancedfx::js::errors::error_async_conflict());
                     }
                 }
             }
-            mirv_error_type()
+            Err(advancedfx::js::errors::error_type())
         }
     }
 }
@@ -996,13 +983,13 @@ impl MirvWsRead {
         if let Some(object) = this.as_object() {
             if let Some(mirv_ws_read) = object.downcast_ref::<MirvWsRead>() {
                 if let Err(_) = mirv_ws_read.state.try_borrow_mut() {
-                    return mirv_error_async_conflict();
+                    return Err(advancedfx::js::errors::error_async_conflict());
                 }
                 drop(mirv_ws_read.state.replace(None));
                 return Ok(JsValue::Undefined);         
             }
         }
-        mirv_error_type()
+        Err(advancedfx::js::errors::error_type())
     }    
     
     fn next(this: &JsValue, args: &[JsValue], context: &mut Context) -> impl Future<Output = JsResult<JsValue>> {
@@ -1044,11 +1031,11 @@ impl MirvWsRead {
                             }
                         }
                     } else {
-                        return mirv_error_async_conflict();
+                        return Err(advancedfx::js::errors::error_async_conflict());
                     }
                 }
             }
-            mirv_error_type()
+            Err(advancedfx::js::errors::error_type())
         }
     }    
 }
@@ -1084,8 +1071,8 @@ fn mirv_connect_async(this: &JsValue, args: &[JsValue], context: &mut Context) -
                         return Err(JsNativeError::error().with_message(s).into());
                     }
                 }
-            } else { return mirv_error_arguments(); }
-        } else { return mirv_error_arguments(); }
+            } else { return Err(advancedfx::js::errors::error_arguments()); }
+        } else { return Err(advancedfx::js::errors::error_arguments()); }
     }
 }
 
@@ -1097,7 +1084,7 @@ fn mirv_make_handle(_this: &JsValue, args: &[JsValue], _context: &mut Context) -
             }
         }
     }
-    return mirv_error_arguments();
+    return Err(advancedfx::js::errors::error_arguments());
 }
 
 fn mirv_is_handle_valid(_this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -1106,7 +1093,7 @@ fn mirv_is_handle_valid(_this: &JsValue, args: &[JsValue], _context: &mut Contex
             return Ok(JsValue::Boolean(afx_is_handle_valid(handle as i32)));
         }
     }
-    return mirv_error_arguments();
+    return Err(advancedfx::js::errors::error_arguments());
 }
 
 fn mirv_get_handle_entry_index(_this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -1115,7 +1102,7 @@ fn mirv_get_handle_entry_index(_this: &JsValue, args: &[JsValue], _context: &mut
             return Ok(JsValue::Integer(afx_get_handle_entry_index(handle as i32)));
         }
     }
-    return mirv_error_arguments();
+    return Err(advancedfx::js::errors::error_arguments());
 }
 
 fn mirv_get_handle_serial_number(_this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -1124,7 +1111,7 @@ fn mirv_get_handle_serial_number(_this: &JsValue, args: &[JsValue], _context: &m
             return Ok(JsValue::Integer(afx_get_handle_serial_number(handle as i32)));
         }
     }
-    return mirv_error_arguments();
+    return Err(advancedfx::js::errors::error_arguments());
 }
 
 fn mirv_get_highest_entity_index(_this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -1227,7 +1214,7 @@ impl MirvEntityRef {
                 return Ok(JsValue::Boolean(afx_get_entity_ref_is_valid(mirv.entity_ref)));
             }
         }
-        mirv_error_type()
+        Err(advancedfx::js::errors::error_type())
     }
 
     fn get_name(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -1236,7 +1223,7 @@ impl MirvEntityRef {
                 return Ok(JsValue::String(js_string!(afx_get_entity_ref_name(mirv.entity_ref))));
             }
         }
-        mirv_error_type()
+        Err(advancedfx::js::errors::error_type())
     }
 
     fn get_debug_name(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -1248,7 +1235,7 @@ impl MirvEntityRef {
                 return Ok(JsValue::null());
             }
         }
-        mirv_error_type()
+        Err(advancedfx::js::errors::error_type())
     }
 
     fn get_class_name(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -1257,7 +1244,7 @@ impl MirvEntityRef {
                 return Ok(JsValue::String(js_string!(afx_get_entity_ref_class_name(mirv.entity_ref))));
             }
         }
-        mirv_error_type()
+        Err(advancedfx::js::errors::error_type())
     }
 
     fn is_player_pawn(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -1266,7 +1253,7 @@ impl MirvEntityRef {
                 return Ok(JsValue::Boolean(afx_get_entity_ref_is_player_pawn(mirv.entity_ref)));
             }
         }
-        mirv_error_type()
+        Err(advancedfx::js::errors::error_type())
     }
 
     fn get_player_pawn_handle(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -1275,7 +1262,7 @@ impl MirvEntityRef {
                 return Ok(JsValue::Integer(afx_get_entity_ref_player_pawn_handle(mirv.entity_ref)));
             }
         }
-        mirv_error_type()
+        Err(advancedfx::js::errors::error_type())
     }
 
     fn is_player_controller(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -1284,7 +1271,7 @@ impl MirvEntityRef {
                 return Ok(JsValue::Boolean(afx_get_entity_ref_is_player_controller(mirv.entity_ref)));
             }
         }
-        mirv_error_type()
+        Err(advancedfx::js::errors::error_type())
     }
 
     fn get_player_controller_handle(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -1293,7 +1280,7 @@ impl MirvEntityRef {
                 return Ok(JsValue::Integer(afx_get_entity_ref_player_controller_handle(mirv.entity_ref)));
             }
         }
-        mirv_error_type()
+        Err(advancedfx::js::errors::error_type())
     }
     
     fn get_health(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -1302,7 +1289,7 @@ impl MirvEntityRef {
                 return Ok(JsValue::Integer(afx_get_entity_ref_health(mirv.entity_ref)));
             }
         }
-        mirv_error_type()
+        Err(advancedfx::js::errors::error_type())
     }
 
     fn get_origin(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -1322,7 +1309,7 @@ impl MirvEntityRef {
                 return Ok(JsValue::Object(JsObject::from(js_array)));
             }
         }
-        mirv_error_type()
+        Err(advancedfx::js::errors::error_type())
     }
 
     fn get_render_eye_origin(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -1342,7 +1329,7 @@ impl MirvEntityRef {
                 return Ok(JsValue::Object(JsObject::from(js_array)));
             }
         }
-        mirv_error_type()
+        Err(advancedfx::js::errors::error_type())
     } 
 
     fn get_render_eye_angles(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -1362,7 +1349,7 @@ impl MirvEntityRef {
                 return Ok(JsValue::Object(JsObject::from(js_array)));
             }
         }
-        mirv_error_type()
+        Err(advancedfx::js::errors::error_type())
     }
 }
 
@@ -1377,7 +1364,7 @@ fn mirv_get_entity_ref_from_index(_this: &JsValue, args: &[JsValue], context: &m
             return Ok(JsValue::Object(MirvEntityRef::create(entity_ref,context)));
         }
     }
-    return mirv_error_arguments();
+    return Err(advancedfx::js::errors::error_arguments());
 }
 
 fn mirv_set_on_add_entity(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -1403,7 +1390,7 @@ fn mirv_set_on_add_entity(this: &JsValue, args: &[JsValue], _context: &mut Conte
             }
         }
     }
-    mirv_error_type()
+    Err(advancedfx::js::errors::error_type())
 }
 
 fn mirv_get_on_add_entity(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -1419,7 +1406,7 @@ fn mirv_get_on_add_entity(this: &JsValue, _args: &[JsValue], _context: &mut Cont
             }
         }
     }
-    mirv_error_type()
+    Err(advancedfx::js::errors::error_type())
 }
 
 
@@ -1446,7 +1433,7 @@ fn mirv_set_on_remove_entity(this: &JsValue, args: &[JsValue], _context: &mut Co
             }
         }
     }
-    mirv_error_type()
+    Err(advancedfx::js::errors::error_type())
 }
 
 fn mirv_get_on_remove_entity(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -1462,7 +1449,7 @@ fn mirv_get_on_remove_entity(this: &JsValue, _args: &[JsValue], _context: &mut C
             }
         }
     }
-    mirv_error_type()
+    Err(advancedfx::js::errors::error_type())
 }
 
 fn afx_load(file_path: & Path, afx_loader: Rc<AfxSimpleModuleLoader>, context: &mut Context) -> Result<JsPromise,JsError> {
@@ -1502,10 +1489,10 @@ fn mirv_load(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResul
                     }
                 }
             }
-            return mirv_error_arguments();
+            return Err(advancedfx::js::errors::error_arguments());
         }
     }
-    mirv_error_type()    
+    Err(advancedfx::js::errors::error_type())    
 }
 
 fn mirv_is_playing_demo(_this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -1525,6 +1512,14 @@ impl AfxHookSource2Rs {
             .job_queue(AsyncJobQueue::new().into())
             .module_loader(loader.clone())
             .build().unwrap();
+
+        advancedfx::js::math::Vector3::add_to_context(&mut context);
+        advancedfx::js::math::QEulerAngles::add_to_context(&mut context);
+        advancedfx::js::math::QREulerAngles::add_to_context(&mut context);
+        advancedfx::js::math::Quaternion::add_to_context(&mut context);
+
+        advancedfx::js::campath::Value::add_to_context(&mut context);
+        advancedfx::js::campath::Campath::add_to_context(&mut context);
 
         let events = Rc::<MirvEvents>::new(MirvEvents::new());
 

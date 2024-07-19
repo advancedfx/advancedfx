@@ -111,6 +111,10 @@ CamPathValue::CamPathValue(double x, double y, double z, double pitch, double ya
 {
 }
 
+CamPathValue::CamPathValue(double x, double y, double z, double q_w, double q_x, double q_y, double q_z, double fov, bool selected)
+: X(x), Y(y), Z(z), R(Quaternion(q_w,q_x,q_y,q_z)), Fov(fov), Selected(selected) {
+}
+
 CamPathIterator::CamPathIterator(CInterpolationMap<CamPathValue>::const_iterator & it) : wrapped(it)
 {
 }
@@ -298,7 +302,6 @@ void CamPath::Add(double time, const CamPathValue & value)
 
 void CamPath::Changed()
 {
-	m_RustChanged = true;
 	if(m_OnChanged) m_OnChanged->CamPathChanged(this);
 }
 
