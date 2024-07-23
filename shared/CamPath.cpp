@@ -582,7 +582,7 @@ bool CamPath::Load(wchar_t const * fileName)
 						r.Selected = 0 != selectedA;
 
 						// Add point:
-						Add(dT, r);
+						m_Map[dT] = r;
 					}
 					else
 					{
@@ -599,7 +599,7 @@ bool CamPath::Load(wchar_t const * fileName)
 						r.Selected = 0 != selectedA;
 
 						// Add point:
-						Add(dT, r);
+						m_Map[dT] = r;
 					}
 				}
 			}
