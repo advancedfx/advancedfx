@@ -3,6 +3,8 @@
 #include "AfxRefCounted.h"
 #include "AfxMath.h"
 
+#include <list>
+
 using namespace Afx;
 using namespace Afx::Math;
 
@@ -45,13 +47,7 @@ public:
 
 };
 
-class CamPath;
-
-class ICamPathChanged abstract
-{
-public:
-	virtual void CamPathChanged(CamPath * obj) = 0;
-};
+typedef void (*CamPathChanged)(void * pUserData);
 
 class CamPath
 {
@@ -162,14 +158,37 @@ public:
 	/// <param name="max">Upper bound to end adding selection at.</param>
 	/// <returns>Number of selected keyframes.</returns>
 	size_t SelectAdd(double min, double max);
+	
+	void OnChangedAdd(CamPathChanged pCamPathChanged, void * pUserData);
 
-	void OnChanged_set(ICamPathChanged * value);
+	void OnChangedRemove(CamPathChanged pCamPathChanged, void * pUserData);
 
 	void SetOffset(double value);
 
 	double GetOffset() const;
 
 private:
+	struct CamPathChangedData {
+		CamPathChanged pFn;
+		void * pUserData;
+
+		CamPathChangedData(CamPathChanged pFn, void * pUserData)
+		: pFn(pFn), pUserData(pUserData) {
+
+		}
+
+		void Notify() {
+			pFn(pUserData);
+		}
+
+		bool operator==(const CamPathChangedData& other) const {
+			return this->pFn == other.pFn && this->pUserData == other.pUserData;
+		}
+	};
+
+	std::list<struct CamPathChangedData> m_OnChanged;
+	std::list<struct CamPathChangedData>::iterator m_OnChangedIt;
+
 	static double XSelector(CamPathValue const & value)
 	{
 		return value.X;
@@ -205,7 +224,6 @@ private:
 	DoubleInterp m_PositionInterpMethod;
 	QuaternionInterp m_RotationInterpMethod;
 	DoubleInterp m_FovInterpMethod;
-	ICamPathChanged * m_OnChanged;
 	double m_Offset;
 	
 	CInterpolationMap<CamPathValue> m_Map;

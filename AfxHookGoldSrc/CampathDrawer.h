@@ -8,8 +8,7 @@
 #include <list>
 
 class CCampathDrawer
-	: public ICamPathChanged
-	, public IMirvCampath_Drawer
+	: public IMirvCampath_Drawer
 {
 public:
 
@@ -47,7 +46,6 @@ public:
 	float GetDrawKeyframeIndex() { return m_DrawKeyframIndex; }
 	void SetDrawKeyframeIndex(float value) { m_DrawKeyframIndex = value; }
 
-	virtual void CamPathChanged(CamPath* obj);
 
 private:
 	struct TempPoint
@@ -67,6 +65,10 @@ private:
 
 	bool m_HasDigitsTexture = false;
 	GLuint m_DigitsTexture;
+
+	static void CampathChangedFn(void * pUserData);
+
+	void CamPathChanged();
 
 	void AutoPolyLineStart();
 	void AutoPolyLinePoint(Vector3 previous, Vector3 current, DWORD colorCurrent, Vector3 next);

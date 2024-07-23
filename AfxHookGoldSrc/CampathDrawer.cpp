@@ -46,18 +46,23 @@ CCampathDrawer::~CCampathDrawer()
 {
 }
 
+
 void CCampathDrawer::Begin()
 {
-	g_Filming.GetCamPath()->OnChanged_set(this);
+	g_Filming.GetCamPath()->OnChangedAdd(CCampathDrawer::CampathChangedFn,this);
 	m_RebuildDrawing = true;
 }
 
 void CCampathDrawer::End()
 {
-	g_Filming.GetCamPath()->OnChanged_set(nullptr);
+	g_Filming.GetCamPath()->OnChangedRemove(CCampathDrawer::CampathChangedFn,this);
 }
 
-void CCampathDrawer::CamPathChanged(CamPath* obj)
+void CCampathDrawer::CampathChangedFn(void * pUserData) {
+		static_cast<CCampathDrawer*>(pUserData)->CamPathChanged();
+}
+
+void CCampathDrawer::CamPathChanged()
 {
 	m_RebuildDrawing = true;
 }

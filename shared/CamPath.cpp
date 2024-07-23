@@ -148,8 +148,7 @@ bool CamPathIterator::operator != (CamPathIterator const &it) const
 // CamPath /////////////////////////////////////////////////////////////////////
 
 CamPath::CamPath()
-: m_OnChanged(0)
-, m_Offset(0)
+: m_Offset(0)
 , m_Enabled(false)
 , m_PositionInterpMethod(DI_DEFAULT)
 , m_RotationInterpMethod(QI_DEFAULT)
@@ -161,6 +160,8 @@ CamPath::CamPath()
 , m_FovView(&m_Map, FovSelector)
 , m_SelectedView(&m_Map, SelectedSelector)
 {
+	m_OnChangedIt = m_OnChanged.end();
+
 	m_XInterp = new CCubicDoubleInterpolation<CamPathValue>(&m_XView);
 	m_YInterp = new CCubicDoubleInterpolation<CamPathValue>(&m_YView);
 	m_ZInterp = new CCubicDoubleInterpolation<CamPathValue>(&m_ZView);
@@ -302,7 +303,11 @@ void CamPath::Add(double time, const CamPathValue & value)
 
 void CamPath::Changed()
 {
-	if(m_OnChanged) m_OnChanged->CamPathChanged(this);
+	for(m_OnChangedIt = m_OnChanged.begin(); m_OnChangedIt != m_OnChanged.end(); m_OnChangedIt++) {
+		m_OnChangedIt->Notify();
+		if(m_OnChangedIt == m_OnChanged.end()) break;
+	}
+	m_OnChangedIt = m_OnChanged.end();
 }
 
 void CamPath::Remove(double time)
@@ -387,11 +392,6 @@ CamPathValue CamPath::Eval(double t)
 	val.Selected = m_SelectedInterp->Eval(t);
 
 	return val;
-}
-
-void CamPath::OnChanged_set(ICamPathChanged * value)
-{
-	m_OnChanged = value;
 }
 
 char * double2xml(rapidxml::xml_document<> & doc, double value)
@@ -1254,4 +1254,18 @@ void CamPath::SetOffset(double value)
 double CamPath::GetOffset() const
 {
 	return m_Offset;
+}
+
+void CamPath::OnChangedAdd(CamPathChanged pCamPathChanged, void * pUserData) {
+	m_OnChanged.emplace_back(pCamPathChanged,pUserData);
+}
+
+void CamPath::OnChangedRemove(CamPathChanged pCamPathChanged, void * pUserData) {
+	if(m_OnChangedIt != m_OnChanged.end()) {
+		auto it = std::find(m_OnChanged.begin(), m_OnChanged.end(), CamPathChangedData(pCamPathChanged,pUserData));
+		if(m_OnChangedIt == it)
+			m_OnChangedIt = m_OnChanged.erase(it);
+		else
+			m_OnChanged.erase(it);
+	}
 }

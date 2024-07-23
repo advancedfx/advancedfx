@@ -13,7 +13,6 @@
 
 // TODO: most line vertices can be cached if the colouring is done through the vertex shader.
 class CCampathDrawer
-: public ICamPathChanged
 {
 public:
 
@@ -40,8 +39,6 @@ public:
 	void Reset();
 
 	void OnPostRenderAllTools_EngineThread();
-
-	virtual void CamPathChanged(CamPath * obj);
 
 private:
 	struct Vertex
@@ -244,6 +241,10 @@ private:
 	IAfxPixelShader* m_DrawTextureShader = nullptr;
 
 	CLessDynamicProperties * m_LessDynamicProperties = nullptr;
+
+	static void CampathChangedFn(void * pUserData);
+
+	void CamPathChanged();
 
 	void BuildPolyLinePoint(Vector3 previous, Vector3 current, DWORD currentColor, Vector3 next, Vertex * pOutVertexData);
 
