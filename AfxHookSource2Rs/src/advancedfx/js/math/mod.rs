@@ -57,9 +57,11 @@ impl Vector3 {
     fn set_x(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut object_inner) = object.downcast_mut::<Vector3>() {
-                if let Some(value) = args[0].as_number()  {
-                    object_inner.native.x = value;
-                    return Ok(JsValue::Undefined);  
+                if 1 == args.len() {
+                    if let Some(value) = args[0].as_number()  {
+                        object_inner.native.x = value;
+                        return Ok(JsValue::Undefined);  
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
             }
@@ -79,9 +81,11 @@ impl Vector3 {
     fn set_y(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut object_inner) = object.downcast_mut::<Vector3>() {
-                if let Some(value) = args[0].as_number()  {
+                if 1 == args.len() {
+                    if let Some(value) = args[0].as_number()  {
                     object_inner.native.y = value;
                     return Ok(JsValue::Undefined);  
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
             }
@@ -101,9 +105,11 @@ impl Vector3 {
     fn set_z(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut object_inner) = object.downcast_mut::<Vector3>() {
-                if let Some(value) = args[0].as_number()  {
-                    object_inner.native.z = value;
-                    return Ok(JsValue::Undefined);  
+                if 1 == args.len() {
+                    if let Some(value) = args[0].as_number()  {
+                        object_inner.native.z = value;
+                        return Ok(JsValue::Undefined);  
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
             }
@@ -147,14 +153,16 @@ impl Vector3 {
     fn add(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(object_inner) = object.downcast_ref::<Vector3>() {
-                if let Some(value_object) = args[0].as_object() {
-                    if let Some(value_object_inner) = value_object.downcast_ref::<Vector3>() {
-                        match Vector3::from_data(Vector3::new(object_inner.native + value_object_inner.native), context) {
-                            Ok(result_object) => {
-                                return Ok(JsValue::Object(result_object));
-                            }
-                            Err(e) => {
-                                return Err(e);
+                if 1 == args.len() {
+                    if let Some(value_object) = args[0].as_object() {
+                        if let Some(value_object_inner) = value_object.downcast_ref::<Vector3>() {
+                            match Vector3::from_data(Vector3::new(object_inner.native + value_object_inner.native), context) {
+                                Ok(result_object) => {
+                                    return Ok(JsValue::Object(result_object));
+                                }
+                                Err(e) => {
+                                    return Err(e);
+                                }
                             }
                         }
                     }
@@ -168,16 +176,20 @@ impl Vector3 {
     fn add_assign(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut object_inner) = object.downcast_mut::<Vector3>() {
-                if let Some(value_object) = args[0].as_object() {
-                    if JsObject::equals(&object,value_object) {
-                        let mut native: advancedfx::math::Vector3 = object_inner.native;
-                        native += native;
-                    } else {
-                        if let Some(value_object_inner) = value_object.downcast_ref::<Vector3>() {
-                            object_inner.native += value_object_inner.native;
+                if 1 == args.len() {
+                    if let Some(value_object) = args[0].as_object() {
+                        if JsObject::equals(&object,value_object) {
+                            let mut native: advancedfx::math::Vector3 = object_inner.native;
+                            native += native;
                         } else {
-                            return Err(advancedfx::js::errors::error_arguments())
+                            if let Some(value_object_inner) = value_object.downcast_ref::<Vector3>() {
+                                object_inner.native += value_object_inner.native;
+                            } else {
+                                return Err(advancedfx::js::errors::error_arguments())
+                            }
                         }
+                    } else {
+                        return Err(advancedfx::js::errors::error_arguments())
                     }
                 } else {
                     return Err(advancedfx::js::errors::error_arguments())
@@ -195,9 +207,62 @@ impl Vector3 {
     fn sub(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(object_inner) = object.downcast_ref::<Vector3>() {
-                if let Some(value_object) = args[0].as_object() {
-                    if let Some(value_object_inner) = value_object.downcast_ref::<Vector3>() {
-                        match Vector3::from_data(Vector3::new(object_inner.native - value_object_inner.native), context) {
+                if 1 == args.len() {
+                    if let Some(value_object) = args[0].as_object() {
+                        if let Some(value_object_inner) = value_object.downcast_ref::<Vector3>() {
+                            match Vector3::from_data(Vector3::new(object_inner.native - value_object_inner.native), context) {
+                                Ok(result_object) => {
+                                    return Ok(JsValue::Object(result_object));
+                                }
+                                Err(e) => {
+                                    return Err(e);
+                                }
+                            }
+                        }
+                    }
+                }
+                return Err(advancedfx::js::errors::error_arguments())
+            }
+        }
+        Self::error_typ()
+    }
+
+    fn sub_assign(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mut object_inner) = object.downcast_mut::<Vector3>() {
+                if 1 == args.len() {
+                    if let Some(value_object) = args[0].as_object() {
+                        if JsObject::equals(&object,value_object) {
+                            let mut native: advancedfx::math::Vector3 = object_inner.native;
+                            native -= native;
+                        } else {
+                            if let Some(value_object_inner) = value_object.downcast_ref::<Vector3>() {
+                                object_inner.native -= value_object_inner.native;
+                            } else {
+                                return Err(advancedfx::js::errors::error_arguments())
+                            }
+                        }
+                    } else {
+                        return Err(advancedfx::js::errors::error_arguments())
+                    }
+                } else {
+                    return Err(advancedfx::js::errors::error_arguments())
+                }                    
+            } else {
+                return Self::error_typ();
+            }
+        } else {
+            return Self::error_typ();
+        }
+        Ok(this.clone())
+    }
+
+    fn left_mul(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(object_inner) = object.downcast_ref::<Vector3>() {
+                if 1 == args.len() {
+                    if let Some(value) = args[0].as_number() {
+                        match Vector3::from_data(Vector3::new(value * object_inner.native), context) {
                             Ok(result_object) => {
                                 return Ok(JsValue::Object(result_object));
                             }
@@ -213,60 +278,19 @@ impl Vector3 {
         Self::error_typ()
     }
 
-    fn sub_assign(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
-        if let Some(object) = this.as_object() {
-            if let Some(mut object_inner) = object.downcast_mut::<Vector3>() {
-                if let Some(value_object) = args[0].as_object() {
-                    if JsObject::equals(&object,value_object) {
-                        let mut native: advancedfx::math::Vector3 = object_inner.native;
-                        native -= native;
-                    } else {
-                        if let Some(value_object_inner) = value_object.downcast_ref::<Vector3>() {
-                            object_inner.native -= value_object_inner.native;
-                        } else {
-                            return Err(advancedfx::js::errors::error_arguments())
-                        }
-                    }
-                } else {
-                    return Err(advancedfx::js::errors::error_arguments())
-                }
-            } else {
-                return Self::error_typ();
-            }
-        } else {
-            return Self::error_typ();
-        }
-        Ok(this.clone())
-    }
-
-    fn left_mul(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
-        if let Some(object) = this.as_object() {
-            if let Some(object_inner) = object.downcast_ref::<Vector3>() {
-                if let Some(value) = args[0].as_number() {
-                    match Vector3::from_data(Vector3::new(value * object_inner.native), context) {
-                        Ok(result_object) => {
-                            return Ok(JsValue::Object(result_object));
-                        }
-                        Err(e) => {
-                            return Err(e);
-                        }
-                    }
-                }
-                return Err(advancedfx::js::errors::error_arguments())
-            }
-        }
-        Self::error_typ()
-    }
-
     fn left_mul_assign(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut object_inner) = object.downcast_mut::<Vector3>() {
-                if let Some(value) = args[0].as_number() {
-                    object_inner.native.left_mul_assign(value);
+                if 1 == args.len() {
+                    if let Some(value) = args[0].as_number() {
+                        object_inner.native.left_mul_assign(value);
+                    } else {
+                        return Err(advancedfx::js::errors::error_arguments())
+                    }
                 } else {
                     return Err(advancedfx::js::errors::error_arguments())
                 }
-            } else {
+        } else {
                 return Self::error_typ();
             }
         } else {
@@ -286,10 +310,12 @@ impl Class for Vector3 {
         args: &[JsValue],
         _context: &mut Context,
     ) -> JsResult<Self> {
-        if let Some(value_x) = args[0].as_number()  {
-            if let Some(value_y) = args[1].as_number()  {
-                if let Some(value_z) = args[2].as_number()  {
-                    return Ok(Vector3::new(advancedfx::math::Vector3::new(value_x,value_y,value_z)));
+        if 3 == args.len() {
+            if let Some(value_x) = args[0].as_number()  {
+                if let Some(value_y) = args[1].as_number()  {
+                    if let Some(value_z) = args[2].as_number()  {
+                        return Ok(Vector3::new(advancedfx::math::Vector3::new(value_x,value_y,value_z)));
+                    }
                 }
             }
         }
@@ -402,9 +428,11 @@ impl QEulerAngles {
     fn set_pitch(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut object_inner) = object.downcast_mut::<QEulerAngles>() {
-                if let Some(value) = args[0].as_number()  {
-                    object_inner.native.pitch = value;
-                    return Ok(JsValue::Undefined);  
+                if 1 == args.len() {
+                    if let Some(value) = args[0].as_number()  {
+                        object_inner.native.pitch = value;
+                        return Ok(JsValue::Undefined);  
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
             }
@@ -424,9 +452,11 @@ impl QEulerAngles {
     fn set_yaw(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut object_inner) = object.downcast_mut::<QEulerAngles>() {
-                if let Some(value) = args[0].as_number()  {
-                    object_inner.native.yaw = value;
-                    return Ok(JsValue::Undefined);  
+                if 1 == args.len() {
+                    if let Some(value) = args[0].as_number()  {
+                        object_inner.native.yaw = value;
+                        return Ok(JsValue::Undefined);  
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
             }
@@ -446,9 +476,11 @@ impl QEulerAngles {
     fn set_roll(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut object_inner) = object.downcast_mut::<QEulerAngles>() {
-                if let Some(value) = args[0].as_number()  {
-                    object_inner.native.roll = value;
-                    return Ok(JsValue::Undefined);  
+                if 1 == args.len() {
+                    if let Some(value) = args[0].as_number()  {
+                        object_inner.native.roll = value;
+                        return Ok(JsValue::Undefined);  
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
             }
@@ -466,10 +498,12 @@ impl Class for QEulerAngles {
         args: &[JsValue],
         _context: &mut Context,
     ) -> JsResult<Self> {
-        if let Some(value_pitch) = args[0].as_number()  {
-            if let Some(value_yaw) = args[1].as_number()  {
-                if let Some(value_roll) = args[2].as_number()  {
-                    return Ok(QEulerAngles::new(advancedfx::math::QEulerAngles::new(value_pitch,value_yaw,value_roll)));
+        if 3 == args.len() {
+            if let Some(value_pitch) = args[0].as_number()  {
+                if let Some(value_yaw) = args[1].as_number()  {
+                    if let Some(value_roll) = args[2].as_number()  {
+                        return Ok(QEulerAngles::new(advancedfx::math::QEulerAngles::new(value_pitch,value_yaw,value_roll)));
+                    }
                 }
             }
         }
@@ -540,9 +574,11 @@ impl QREulerAngles {
     fn set_pitch(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut object_inner) = object.downcast_mut::<QREulerAngles>() {
-                if let Some(value) = args[0].as_number()  {
-                    object_inner.native.pitch = value;
-                    return Ok(JsValue::Undefined);  
+                if 1 == args.len() {
+                    if let Some(value) = args[0].as_number()  {
+                        object_inner.native.pitch = value;
+                        return Ok(JsValue::Undefined);  
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
             }
@@ -562,9 +598,11 @@ impl QREulerAngles {
     fn set_yaw(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut object_inner) = object.downcast_mut::<QREulerAngles>() {
-                if let Some(value) = args[0].as_number()  {
-                    object_inner.native.yaw = value;
-                    return Ok(JsValue::Undefined);  
+                if 1 == args.len() {
+                    if let Some(value) = args[0].as_number()  {
+                        object_inner.native.yaw = value;
+                        return Ok(JsValue::Undefined);  
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
             }
@@ -584,9 +622,11 @@ impl QREulerAngles {
     fn set_roll(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut object_inner) = object.downcast_mut::<QREulerAngles>() {
-                if let Some(value) = args[0].as_number()  {
-                    object_inner.native.roll = value;
-                    return Ok(JsValue::Undefined);  
+                if 1 == args.len() {
+                    if let Some(value) = args[0].as_number()  {
+                        object_inner.native.roll = value;
+                        return Ok(JsValue::Undefined);  
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
             }
@@ -611,14 +651,16 @@ impl QREulerAngles {
     }
 
     fn from_q_euler_angles(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
-        if let Some(object) = args[0].as_object() {
-            if let Some(object_inner) = object.downcast_ref::<QEulerAngles>() {
-                match QREulerAngles::from_data(QREulerAngles::new(advancedfx::math::QREulerAngles::from(object_inner.native)), context) {
-                    Ok(result_object) => {
-                        return Ok(JsValue::Object(result_object));
-                    }
-                    Err(e) => {
-                        return Err(e);
+        if 1 == args.len() {
+            if let Some(object) = args[0].as_object() {
+                if let Some(object_inner) = object.downcast_ref::<QEulerAngles>() {
+                    match QREulerAngles::from_data(QREulerAngles::new(advancedfx::math::QREulerAngles::from(object_inner.native)), context) {
+                        Ok(result_object) => {
+                            return Ok(JsValue::Object(result_object));
+                        }
+                        Err(e) => {
+                            return Err(e);
+                        }
                     }
                 }
             }
@@ -637,10 +679,12 @@ impl Class for QREulerAngles {
         args: &[JsValue],
         _context: &mut Context,
     ) -> JsResult<Self> {
-        if let Some(value_pitch) = args[0].as_number()  {
-            if let Some(value_yaw) = args[1].as_number()  {
-                if let Some(value_roll) = args[2].as_number()  {
-                    return Ok(QREulerAngles::new(advancedfx::math::QREulerAngles::new(value_pitch,value_yaw,value_roll)));
+        if 3 == args.len() {
+            if let Some(value_pitch) = args[0].as_number()  {
+                if let Some(value_yaw) = args[1].as_number()  {
+                    if let Some(value_roll) = args[2].as_number()  {
+                        return Ok(QREulerAngles::new(advancedfx::math::QREulerAngles::new(value_pitch,value_yaw,value_roll)));
+                    }
                 }
             }
         }
@@ -722,9 +766,11 @@ impl Quaternion {
     fn set_w(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut object_inner) = object.downcast_mut::<Quaternion>() {
-                if let Some(value) = args[0].as_number()  {
-                    object_inner.native.w = value;
-                    return Ok(JsValue::Undefined);  
+                if 1 == args.len() {
+                    if let Some(value) = args[0].as_number()  {
+                        object_inner.native.w = value;
+                        return Ok(JsValue::Undefined);  
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
             }
@@ -744,9 +790,11 @@ impl Quaternion {
     fn set_x(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut object_inner) = object.downcast_mut::<Quaternion>() {
-                if let Some(value) = args[0].as_number()  {
-                    object_inner.native.x = value;
-                    return Ok(JsValue::Undefined);  
+                if 1 == args.len() {
+                    if let Some(value) = args[0].as_number()  {
+                        object_inner.native.x = value;
+                        return Ok(JsValue::Undefined);  
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
             }
@@ -766,9 +814,11 @@ impl Quaternion {
     fn set_y(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut object_inner) = object.downcast_mut::<Quaternion>() {
-                if let Some(value) = args[0].as_number()  {
-                    object_inner.native.y = value;
-                    return Ok(JsValue::Undefined);  
+                if 1 == args.len() {
+                    if let Some(value) = args[0].as_number()  {
+                        object_inner.native.y = value;
+                        return Ok(JsValue::Undefined);  
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
             }
@@ -788,9 +838,11 @@ impl Quaternion {
     fn set_z(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut object_inner) = object.downcast_mut::<Quaternion>() {
-                if let Some(value) = args[0].as_number()  {
-                    object_inner.native.z = value;
-                    return Ok(JsValue::Undefined);  
+                if 1 == args.len() {
+                    if let Some(value) = args[0].as_number()  {
+                        object_inner.native.z = value;
+                        return Ok(JsValue::Undefined);  
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
             }
@@ -834,9 +886,11 @@ impl Quaternion {
     fn dot(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(object_inner) = object.downcast_ref::<Quaternion>() {
-                if let Some(value_object) = args[0].as_object() {
-                    if let Some(value_object_inner) = value_object.downcast_ref::<Quaternion>() {
-                        return Ok(JsValue::Rational(object_inner.native.dot(value_object_inner.native)));
+                if 1 == args.len() {
+                    if let Some(value_object) = args[0].as_object() {
+                        if let Some(value_object_inner) = value_object.downcast_ref::<Quaternion>() {
+                            return Ok(JsValue::Rational(object_inner.native.dot(value_object_inner.native)));
+                        }
                     }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
@@ -864,21 +918,23 @@ impl Quaternion {
     fn get_ang(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(object_inner) = object.downcast_ref::<Quaternion>() {
-                if let Some(value_object) = args[0].as_object() {
-                    if let Some(value_object_inner) = value_object.downcast_ref::<Quaternion>() {
-                        let (axis,ang) = object_inner.native.get_ang(value_object_inner.native);
-                        match Vector3::from_data(Vector3::new(axis), context) {
-                            Ok(result_object) => {
-                                let array = JsArray::new(context);
-                                array.push(JsValue::Object(result_object), context)?;
-                                array.push(JsValue::Rational(ang), context)?;
-                                return Ok(JsValue::Object(array.into()));
-                            }
-                            Err(e) => {
-                                return Err(e);
+                if 1 == args.len() {
+                    if let Some(value_object) = args[0].as_object() {
+                        if let Some(value_object_inner) = value_object.downcast_ref::<Quaternion>() {
+                            let (axis,ang) = object_inner.native.get_ang(value_object_inner.native);
+                            match Vector3::from_data(Vector3::new(axis), context) {
+                                Ok(result_object) => {
+                                    let array = JsArray::new(context);
+                                    array.push(JsValue::Object(result_object), context)?;
+                                    array.push(JsValue::Rational(ang), context)?;
+                                    return Ok(JsValue::Object(array.into()));
+                                }
+                                Err(e) => {
+                                    return Err(e);
+                                }
                             }
                         }
-                }
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
             }
@@ -889,15 +945,17 @@ impl Quaternion {
     fn slerp(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(object_inner) = object.downcast_ref::<Quaternion>() {
-                if let Some(value_object) = args[0].as_object() {
-                    if let Some(value_object_inner) = value_object.downcast_ref::<Quaternion>() {
-                        if let Some(t) = args[1].as_number() {
-                            match Quaternion::from_data(Quaternion::new(object_inner.native.slerp(value_object_inner.native,t)), context) {
-                                Ok(result_object) => {
-                                    return Ok(JsValue::Object(result_object));
-                                }
-                                Err(e) => {
-                                    return Err(e);
+                if 2 == args.len() {
+                    if let Some(value_object) = args[0].as_object() {
+                        if let Some(value_object_inner) = value_object.downcast_ref::<Quaternion>() {
+                            if let Some(t) = args[1].as_number() {
+                                match Quaternion::from_data(Quaternion::new(object_inner.native.slerp(value_object_inner.native,t)), context) {
+                                    Ok(result_object) => {
+                                        return Ok(JsValue::Object(result_object));
+                                    }
+                                    Err(e) => {
+                                        return Err(e);
+                                    }
                                 }
                             }
                         }
@@ -912,14 +970,16 @@ impl Quaternion {
     fn add(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(object_inner) = object.downcast_ref::<Quaternion>() {
-                if let Some(value_object) = args[0].as_object() {
-                    if let Some(value_object_inner) = value_object.downcast_ref::<Quaternion>() {
-                        match Quaternion::from_data(Quaternion::new(object_inner.native + value_object_inner.native), context) {
-                            Ok(result_object) => {
-                                return Ok(JsValue::Object(result_object));
-                            }
-                            Err(e) => {
-                                return Err(e);
+                if 1 == args.len() {
+                    if let Some(value_object) = args[0].as_object() {
+                        if let Some(value_object_inner) = value_object.downcast_ref::<Quaternion>() {
+                            match Quaternion::from_data(Quaternion::new(object_inner.native + value_object_inner.native), context) {
+                                Ok(result_object) => {
+                                    return Ok(JsValue::Object(result_object));
+                                }
+                                Err(e) => {
+                                    return Err(e);
+                                }
                             }
                         }
                     }
@@ -933,14 +993,16 @@ impl Quaternion {
     fn sub(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(object_inner) = object.downcast_ref::<Quaternion>() {
-                if let Some(value_object) = args[0].as_object() {
-                    if let Some(value_object_inner) = value_object.downcast_ref::<Quaternion>() {
-                        match Quaternion::from_data(Quaternion::new(object_inner.native - value_object_inner.native), context) {
-                            Ok(result_object) => {
-                                return Ok(JsValue::Object(result_object));
-                            }
-                            Err(e) => {
-                                return Err(e);
+                if 1 == args.len() {
+                    if let Some(value_object) = args[0].as_object() {
+                        if let Some(value_object_inner) = value_object.downcast_ref::<Quaternion>() {
+                            match Quaternion::from_data(Quaternion::new(object_inner.native - value_object_inner.native), context) {
+                                Ok(result_object) => {
+                                    return Ok(JsValue::Object(result_object));
+                                }
+                                Err(e) => {
+                                    return Err(e);
+                                }
                             }
                         }
                     }
@@ -954,15 +1016,17 @@ impl Quaternion {
     fn mul(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(object_inner) = object.downcast_ref::<Quaternion>() {
-                if args[0].is_object() {
-                    if let Some(value_object) = args[0].as_object() {
-                        if let Some(value_object_inner) = value_object.downcast_ref::<Quaternion>() {
-                            match Quaternion::from_data(Quaternion::new(object_inner.native * value_object_inner.native), context) {
-                                Ok(result_object) => {
-                                    return Ok(JsValue::Object(result_object));
-                                }
-                                Err(e) => {
-                                    return Err(e);
+                if 1 == args.len() {
+                    if args[0].is_object() {
+                        if let Some(value_object) = args[0].as_object() {
+                            if let Some(value_object_inner) = value_object.downcast_ref::<Quaternion>() {
+                                match Quaternion::from_data(Quaternion::new(object_inner.native * value_object_inner.native), context) {
+                                    Ok(result_object) => {
+                                        return Ok(JsValue::Object(result_object));
+                                    }
+                                    Err(e) => {
+                                        return Err(e);
+                                    }
                                 }
                             }
                         }
@@ -976,15 +1040,17 @@ impl Quaternion {
     fn left_mul(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(object_inner) = object.downcast_ref::<Quaternion>() {
-                if let Some(value) = args[0].as_number() {
-                    match Quaternion::from_data(Quaternion::new(value * object_inner.native), context) {
-                        Ok(result_object) => {
-                            return Ok(JsValue::Object(result_object));
-                        }
-                        Err(e) => {
-                            return Err(e);
-                        }
-                    }                    
+                if 1 == args.len() {
+                    if let Some(value) = args[0].as_number() {
+                        match Quaternion::from_data(Quaternion::new(value * object_inner.native), context) {
+                            Ok(result_object) => {
+                                return Ok(JsValue::Object(result_object));
+                            }
+                            Err(e) => {
+                                return Err(e);
+                            }
+                        }                    
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
             }
@@ -1009,14 +1075,16 @@ impl Quaternion {
     }
 
     fn from_q_r_euler_angles(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
-        if let Some(object) = args[0].as_object() {
-            if let Some(object_inner) = object.downcast_ref::<QREulerAngles>() {
-                match Quaternion::from_data(Quaternion::new(advancedfx::math::Quaternion::from(object_inner.native)), context) {
-                    Ok(result_object) => {
-                        return Ok(JsValue::Object(result_object));
-                    }
-                    Err(e) => {
-                        return Err(e);
+        if 1 == args.len() {
+            if let Some(object) = args[0].as_object() {
+                if let Some(object_inner) = object.downcast_ref::<QREulerAngles>() {
+                    match Quaternion::from_data(Quaternion::new(advancedfx::math::Quaternion::from(object_inner.native)), context) {
+                        Ok(result_object) => {
+                            return Ok(JsValue::Object(result_object));
+                        }
+                        Err(e) => {
+                            return Err(e);
+                        }
                     }
                 }
             }
@@ -1035,11 +1103,13 @@ impl Class for Quaternion {
         args: &[JsValue],
         _context: &mut Context,
     ) -> JsResult<Self> {
-        if let Some(value_w) = args[0].as_number()  {
-            if let Some(value_x) = args[1].as_number()  {
-                if let Some(value_y) = args[2].as_number()  {
-                    if let Some(value_z) = args[3].as_number()  {
-                        return Ok(Quaternion::new(advancedfx::math::Quaternion::new(value_w,value_x,value_y,value_z)));
+        if 4 == args.len() {
+            if let Some(value_w) = args[0].as_number()  {
+                if let Some(value_x) = args[1].as_number()  {
+                    if let Some(value_y) = args[2].as_number()  {
+                        if let Some(value_z) = args[3].as_number()  {
+                            return Ok(Quaternion::new(advancedfx::math::Quaternion::new(value_w,value_x,value_y,value_z)));
+                        }
                     }
                 }
             }

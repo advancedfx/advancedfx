@@ -64,13 +64,15 @@ impl Value {
     fn set_pos(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath_value) = object.downcast_mut::<Value>() {
-                if let Some(object_other) = args[0].as_object()  {
-                    if JsObject::equals(&object, object_other) {
-                        return Ok(JsValue::Undefined); 
-                    }
-                    if let Some(vector3_other) = object_other.downcast_ref::<advancedfx::js::math::Vector3>() {
-                        campath_value.native.p = vector3_other.native.clone();
-                        return Ok(JsValue::Undefined); 
+                if 1 == args.len() {
+                    if let Some(object_other) = args[0].as_object()  {
+                        if JsObject::equals(&object, object_other) {
+                            return Ok(JsValue::Undefined); 
+                        }
+                        if let Some(vector3_other) = object_other.downcast_ref::<advancedfx::js::math::Vector3>() {
+                            campath_value.native.p = vector3_other.native.clone();
+                            return Ok(JsValue::Undefined); 
+                        }
                     }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
@@ -98,13 +100,15 @@ impl Value {
     fn set_rot(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath_value) = object.downcast_mut::<Value>() {
-                if let Some(object_other) = args[0].as_object()  {
-                    if JsObject::equals(&object, object_other) {
-                        return Ok(JsValue::Undefined); 
-                    }                        
-                    if let Some(quaternion_other) = object_other.downcast_ref::<advancedfx::js::math::Quaternion>() {
-                        campath_value.native.r = quaternion_other.native.clone();
-                        return Ok(JsValue::Undefined); 
+                if 1 == args.len() {
+                    if let Some(object_other) = args[0].as_object()  {
+                        if JsObject::equals(&object, object_other) {
+                            return Ok(JsValue::Undefined); 
+                        }                        
+                        if let Some(quaternion_other) = object_other.downcast_ref::<advancedfx::js::math::Quaternion>() {
+                            campath_value.native.r = quaternion_other.native.clone();
+                            return Ok(JsValue::Undefined); 
+                        }
                     }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
@@ -125,9 +129,11 @@ impl Value {
     fn set_fov(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath_value) = object.downcast_mut::<Value>() {
-                if let Some(value) = args[0].as_number()  {
-                    campath_value.native.fov = value;
-                    return Ok(JsValue::Undefined);  
+                if 1 == args.len() {
+                    if let Some(value) = args[0].as_number()  {
+                        campath_value.native.fov = value;
+                        return Ok(JsValue::Undefined);  
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
             }
@@ -147,9 +153,11 @@ impl Value {
     fn set_selected(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath_value) = object.downcast_mut::<Value>() {
-                if let Some(value) = args[0].as_boolean()  {
-                    campath_value.native.selected = value;
-                    return Ok(JsValue::Undefined);  
+                if 1 == args.len() {
+                    if let Some(value) = args[0].as_boolean()  {
+                        campath_value.native.selected = value;
+                        return Ok(JsValue::Undefined);  
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
             }
@@ -167,13 +175,15 @@ impl Class for Value {
         args: &[JsValue],
         _context: &mut Context,
     ) -> JsResult<Self> {
-        if let Some(object_pos) = args[0].as_object()  {
-            if let Some(value_pos) = object_pos.downcast_ref::<advancedfx::js::math::Vector3>() {
-                if let Some(object_rot) = args[1].as_object()  {
-                    if let Some(value_rot) = object_rot.downcast_ref::<advancedfx::js::math::Quaternion>() {
-                        if let Some(value_fov) = args[2].as_number()  {
-                            if let Some(value_selected) = args[3].as_boolean()  {
-                                return Ok(advancedfx::js::campath::Value::new(advancedfx::campath::Value::new(value_pos.native.clone(),value_rot.native.clone(),value_fov,value_selected)));
+        if 4 == args.len() {
+            if let Some(object_pos) = args[0].as_object()  {
+                if let Some(value_pos) = object_pos.downcast_ref::<advancedfx::js::math::Vector3>() {
+                    if let Some(object_rot) = args[1].as_object()  {
+                        if let Some(value_rot) = object_rot.downcast_ref::<advancedfx::js::math::Quaternion>() {
+                            if let Some(value_fov) = args[2].as_number()  {
+                                if let Some(value_selected) = args[3].as_boolean()  {
+                                    return Ok(advancedfx::js::campath::Value::new(advancedfx::campath::Value::new(value_pos.native.clone(),value_rot.native.clone(),value_fov,value_selected)));
+                                }
                             }
                         }
                     }
@@ -253,9 +263,11 @@ impl Campath {
     fn set_enabled(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                if let Some(value) = args[0].as_boolean() {
-                    campath.native.set_enabled(value);
-                    return Ok(JsValue::undefined());
+                if 1 == args.len() {
+                    if let Some(value) = args[0].as_boolean() {
+                        campath.native.set_enabled(value);
+                        return Ok(JsValue::undefined());
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
             }
@@ -275,9 +287,11 @@ impl Campath {
     fn set_offset(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                if let Some(value) = args[0].as_number() {
-                    campath.native.set_offset(value);
-                    return Ok(JsValue::undefined());
+                if 1 == args.len() {
+                    if let Some(value) = args[0].as_number() {
+                        campath.native.set_offset(value);
+                        return Ok(JsValue::undefined());
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
             }
@@ -297,9 +311,11 @@ impl Campath {
     fn set_hold(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                if let Some(value) = args[0].as_boolean() {
-                    campath.native.set_hold(value);
-                    return Ok(JsValue::undefined());
+                if 1 == args.len() {
+                    if let Some(value) = args[0].as_boolean() {
+                        campath.native.set_hold(value);
+                        return Ok(JsValue::undefined());
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
             }            
@@ -319,10 +335,12 @@ impl Campath {
     fn set_position_interp(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                if let Ok(value) = args[0].to_uint8(context) {
-                    if let Ok(e_value) = advancedfx::campath::DoubleInterp::try_from(value) {
-                        campath.native.set_position_interp(e_value);
-                        return Ok(JsValue::undefined());
+                if 1 == args.len() {
+                    if let Ok(value) = args[0].to_uint8(context) {
+                        if let Ok(e_value) = advancedfx::campath::DoubleInterp::try_from(value) {
+                            campath.native.set_position_interp(e_value);
+                            return Ok(JsValue::undefined());
+                        }
                     }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
@@ -343,10 +361,12 @@ impl Campath {
     fn set_rotation_interp(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                if let Ok(value) = args[0].to_uint8(context) {
-                    if let Ok(e_value) = advancedfx::campath::QuaternionInterp::try_from(value) {
-                        campath.native.set_rotation_interp(e_value);
-                        return Ok(JsValue::undefined());
+                if 1 == args.len() {
+                    if let Ok(value) = args[0].to_uint8(context) {
+                        if let Ok(e_value) = advancedfx::campath::QuaternionInterp::try_from(value) {
+                            campath.native.set_rotation_interp(e_value);
+                            return Ok(JsValue::undefined());
+                        }
                     }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
@@ -367,10 +387,12 @@ impl Campath {
     fn set_fov_interp(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                if let Ok(value) = args[0].to_uint8(context) {
-                    if let Ok(e_value) = advancedfx::campath::DoubleInterp::try_from(value) {
-                        campath.native.set_fov_interp(e_value);
-                        return Ok(JsValue::undefined());
+                if 1 == args.len() {
+                    if let Ok(value) = args[0].to_uint8(context) {
+                        if let Ok(e_value) = advancedfx::campath::DoubleInterp::try_from(value) {
+                            campath.native.set_fov_interp(e_value);
+                            return Ok(JsValue::undefined());
+                        }
                     }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
@@ -382,11 +404,13 @@ impl Campath {
     fn add(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                if let Some(time) = args[0].as_number() {
-                    if let Some(value_object) = args[1].as_object() {
-                        if let Some(value_object_inner) = value_object.downcast_ref::<Value>() {
-                            campath.native.add(time,&value_object_inner.native);
-                            return Ok(JsValue::undefined());
+                if 2 == args.len() {
+                    if let Some(time) = args[0].as_number() {
+                        if let Some(value_object) = args[1].as_object() {
+                            if let Some(value_object_inner) = value_object.downcast_ref::<Value>() {
+                                campath.native.add(time,&value_object_inner.native);
+                                return Ok(JsValue::undefined());
+                            }
                         }
                     }
                 }
@@ -399,9 +423,11 @@ impl Campath {
     fn remove(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                if let Some(time) = args[0].as_number() {
-                    campath.native.remove(time);
-                    return Ok(JsValue::undefined());
+                if 1 == args.len() {
+                    if let Some(time) = args[0].as_number() {
+                        campath.native.remove(time);
+                        return Ok(JsValue::undefined());
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
             }
@@ -473,18 +499,20 @@ impl Campath {
     fn eval(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(campath) = object.downcast_ref::<Campath>() {
-                if let Some(time) = args[0].as_number() {
-                    if campath.native.can_eval() {
-                        match Value::from_data(Value::new(campath.native.eval(time)), context) {
-                            Ok(result_object) => {
-                                return Ok(JsValue::Object(result_object));
-                            }
-                            Err(e) => {
-                                return Err(e);
+                if 1 == args.len() {
+                    if let Some(time) = args[0].as_number() {
+                        if campath.native.can_eval() {
+                            match Value::from_data(Value::new(campath.native.eval(time)), context) {
+                                Ok(result_object) => {
+                                    return Ok(JsValue::Object(result_object));
+                                }
+                                Err(e) => {
+                                    return Err(e);
+                                }
                             }
                         }
+                        return Ok(JsValue::undefined());
                     }
-                    return Ok(JsValue::undefined());
                 }
                 return Err(advancedfx::js::errors::error_arguments());
             }
@@ -495,9 +523,11 @@ impl Campath {
     fn load(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                if let Some(js_file_path) = args[0].as_string() {
-                    if let Ok(str_file_path) = js_file_path.to_std_string() {
-                        return Ok(JsValue::from(campath.native.load(str_file_path)));
+                if 1 == args.len() {
+                    if let Some(js_file_path) = args[0].as_string() {
+                        if let Ok(str_file_path) = js_file_path.to_std_string() {
+                            return Ok(JsValue::from(campath.native.load(str_file_path)));
+                        }
                     }
                 }
                 return Err(advancedfx::js::errors::error_arguments());
@@ -509,9 +539,11 @@ impl Campath {
     fn save(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                if let Some(js_file_path) = args[0].as_string() {
-                    if let Ok(str_file_path) = js_file_path.to_std_string() {
-                        return Ok(JsValue::from(campath.native.save(str_file_path)));
+                if 1 == args.len() {
+                    if let Some(js_file_path) = args[0].as_string() {
+                        if let Ok(str_file_path) = js_file_path.to_std_string() {
+                            return Ok(JsValue::from(campath.native.save(str_file_path)));
+                        }
                     }
                 }
                 return Err(advancedfx::js::errors::error_arguments());
@@ -523,10 +555,18 @@ impl Campath {
     fn set_start(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                if let Some(time) = args[0].as_number() {
-                    if let Some(relative) = args[1].as_boolean() {
-                        campath.native.set_start(time,relative);
-                        return Ok(JsValue::undefined());
+                if 1 <= args.len() {
+                    if let Some(time) = args[0].as_number() {
+                        if 1 == args.len() {
+                            campath.native.set_start(time,false);
+                            return Ok(JsValue::undefined());
+                        }
+                        else if 2 == args.len() {
+                            if let Some(relative) = args[1].as_boolean() {
+                                campath.native.set_start(time,relative);
+                                return Ok(JsValue::undefined());
+                            }
+                        }
                     }
                 }
                 return Err(advancedfx::js::errors::error_arguments());
@@ -538,9 +578,11 @@ impl Campath {
     fn set_duration(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                if let Some(time) = args[0].as_number() {
-                    campath.native.set_duration(time);
-                    return Ok(JsValue::undefined());
+                if 1 == args.len() {
+                    if let Some(time) = args[0].as_number() {
+                        campath.native.set_duration(time);
+                        return Ok(JsValue::undefined());
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments());
             }
@@ -551,32 +593,34 @@ impl Campath {
     fn set_position(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                let result_x: Result<Option<f64>,()> = if args[0].is_undefined() {
-                    Ok(None)
-                } else if let Some(value) = args[0].as_number() {
-                    Ok(Some(value))
-                } else {
-                    Err(())
-                };
-                let result_y: Result<Option<f64>,()> = if args[1].is_undefined() {
-                    Ok(None)
-                } else if let Some(value) = args[1].as_number() {
-                    Ok(Some(value))
-                } else {
-                    Err(())
-                };
-                let result_z: Result<Option<f64>,()> = if args[2].is_undefined() {
-                    Ok(None)
-                } else if let Some(value) = args[2].as_number() {
-                    Ok(Some(value))
-                } else {
-                    Err(())
-                };
-                if let Ok(x) = result_x {
-                    if let Ok(y) = result_y {
-                        if let Ok(z) = result_z {
-                            campath.native.set_position(x,y,z);
-                            return Ok(JsValue::undefined());                            
+                if 3 == args.len() {
+                    let result_x: Result<Option<f64>,()> = if args[0].is_undefined() {
+                        Ok(None)
+                    } else if let Some(value) = args[0].as_number() {
+                        Ok(Some(value))
+                    } else {
+                        Err(())
+                    };
+                    let result_y: Result<Option<f64>,()> = if args[1].is_undefined() {
+                        Ok(None)
+                    } else if let Some(value) = args[1].as_number() {
+                        Ok(Some(value))
+                    } else {
+                        Err(())
+                    };
+                    let result_z: Result<Option<f64>,()> = if args[2].is_undefined() {
+                        Ok(None)
+                    } else if let Some(value) = args[2].as_number() {
+                        Ok(Some(value))
+                    } else {
+                        Err(())
+                    };
+                    if let Ok(x) = result_x {
+                        if let Ok(y) = result_y {
+                            if let Ok(z) = result_z {
+                                campath.native.set_position(x,y,z);
+                                return Ok(JsValue::undefined());                            
+                            }
                         }
                     }
                 }
@@ -589,32 +633,34 @@ impl Campath {
     fn set_angles(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                let result_x: Result<Option<f64>,()> = if args[0].is_undefined() {
-                    Ok(None)
-                } else if let Some(value) = args[0].as_number() {
-                    Ok(Some(value))
-                } else {
-                    Err(())
-                };
-                let result_y: Result<Option<f64>,()> = if args[1].is_undefined() {
-                    Ok(None)
-                } else if let Some(value) = args[1].as_number() {
-                    Ok(Some(value))
-                } else {
-                    Err(())
-                };
-                let result_z: Result<Option<f64>,()> = if args[2].is_undefined() {
-                    Ok(None)
-                } else if let Some(value) = args[2].as_number() {
-                    Ok(Some(value))
-                } else {
-                    Err(())
-                };
-                if let Ok(x) = result_x {
-                    if let Ok(y) = result_y {
-                        if let Ok(z) = result_z {
-                            campath.native.set_angles(x,y,z);
-                            return Ok(JsValue::undefined());                            
+                if 3 == args.len() {
+                    let result_x: Result<Option<f64>,()> = if args[0].is_undefined() {
+                        Ok(None)
+                    } else if let Some(value) = args[0].as_number() {
+                        Ok(Some(value))
+                    } else {
+                        Err(())
+                    };
+                    let result_y: Result<Option<f64>,()> = if args[1].is_undefined() {
+                        Ok(None)
+                    } else if let Some(value) = args[1].as_number() {
+                        Ok(Some(value))
+                    } else {
+                        Err(())
+                    };
+                    let result_z: Result<Option<f64>,()> = if args[2].is_undefined() {
+                        Ok(None)
+                    } else if let Some(value) = args[2].as_number() {
+                        Ok(Some(value))
+                    } else {
+                        Err(())
+                    };
+                    if let Ok(x) = result_x {
+                        if let Ok(y) = result_y {
+                            if let Ok(z) = result_z {
+                                campath.native.set_angles(x,y,z);
+                                return Ok(JsValue::undefined());                            
+                            }
                         }
                     }
                 }
@@ -627,9 +673,11 @@ impl Campath {
     fn set_fov(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                if let Some(fov) = args[0].as_number() {
-                    campath.native.set_fov(fov);
-                    return Ok(JsValue::undefined());
+                if 1 == args.len() {
+                    if let Some(fov) = args[0].as_number() {
+                        campath.native.set_fov(fov);
+                        return Ok(JsValue::undefined());
+                    }
                 }
                 return Err(advancedfx::js::errors::error_arguments());
             }
@@ -640,11 +688,13 @@ impl Campath {
     fn rotate(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                if let Some(y_pitch) = args[0].as_number() {
-                    if let Some(z_yaw) = args[1].as_number() {
-                        if let Some(x_roll) = args[2].as_number() {
-                            campath.native.rotate(y_pitch,z_yaw,x_roll);
-                            return Ok(JsValue::undefined());
+                if 3 == args.len() {
+                    if let Some(y_pitch) = args[0].as_number() {
+                        if let Some(z_yaw) = args[1].as_number() {
+                            if let Some(x_roll) = args[2].as_number() {
+                                campath.native.rotate(y_pitch,z_yaw,x_roll);
+                                return Ok(JsValue::undefined());
+                            }
                         }
                     }
                 }
@@ -657,20 +707,22 @@ impl Campath {
     fn anchor_transform(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                if let Some(anchor_x) = args[0].as_number() {
-                    if let Some(anchor_y) = args[1].as_number() {
-                        if let Some(anchor_z) = args[2].as_number() {
-                            if let Some(anchor_y_pitch) = args[3].as_number() {
-                                if let Some(anchor_z_yaw) = args[4].as_number() {
-                                    if let Some(anchor_x_roll) = args[5].as_number() {
-                                        if let Some(dest_x) = args[6].as_number() {
-                                            if let Some(dest_y) = args[7].as_number() {
-                                                if let Some(dest_z) = args[8].as_number() {
-                                                    if let Some(dest_y_pitch) = args[9].as_number() {
-                                                        if let Some(dest_z_yaw) = args[10].as_number() {
-                                                            if let Some(dest_x_roll) = args[11].as_number() {
-                                                                campath.native.anchor_transform(anchor_x, anchor_y, anchor_z, anchor_y_pitch, anchor_z_yaw, anchor_x_roll, dest_x, dest_y, dest_z, dest_y_pitch, dest_z_yaw, dest_x_roll);
-                                                                return Ok(JsValue::undefined());
+                if 12 == args.len() {
+                    if let Some(anchor_x) = args[0].as_number() {
+                        if let Some(anchor_y) = args[1].as_number() {
+                            if let Some(anchor_z) = args[2].as_number() {
+                                if let Some(anchor_y_pitch) = args[3].as_number() {
+                                    if let Some(anchor_z_yaw) = args[4].as_number() {
+                                        if let Some(anchor_x_roll) = args[5].as_number() {
+                                            if let Some(dest_x) = args[6].as_number() {
+                                                if let Some(dest_y) = args[7].as_number() {
+                                                    if let Some(dest_z) = args[8].as_number() {
+                                                        if let Some(dest_y_pitch) = args[9].as_number() {
+                                                            if let Some(dest_z_yaw) = args[10].as_number() {
+                                                                if let Some(dest_x_roll) = args[11].as_number() {
+                                                                    campath.native.anchor_transform(anchor_x, anchor_y, anchor_z, anchor_y_pitch, anchor_z_yaw, anchor_x_roll, dest_x, dest_y, dest_z, dest_y_pitch, dest_z_yaw, dest_x_roll);
+                                                                    return Ok(JsValue::undefined());
+                                                                }
                                                             }
                                                         }
                                                     }
@@ -720,9 +772,11 @@ impl Campath {
     fn select_add_idx(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                if let Some(min) = args[0].as_number() {
-                    if let Some(max) = args[1].as_number() {
-                        return Ok(JsValue::from(campath.native.select_add_idx(min as usize,max as usize)));
+                if 2 == args.len() {
+                    if let Some(min) = args[0].as_number() {
+                        if let Some(max) = args[1].as_number() {
+                            return Ok(JsValue::from(campath.native.select_add_idx(min as usize,max as usize)));
+                        }
                     }
                 }
             }
@@ -733,9 +787,11 @@ impl Campath {
     fn select_add_min_count(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                if let Some(min) = args[0].as_number() {
-                    if let Some(count) = args[1].as_number() {
-                        return Ok(JsValue::from(campath.native.select_add_min_count(min,count as usize)));
+                if 2 == args.len() {
+                    if let Some(min) = args[0].as_number() {
+                        if let Some(count) = args[1].as_number() {
+                            return Ok(JsValue::from(campath.native.select_add_min_count(min,count as usize)));
+                        }
                     }
                 }
             }
@@ -746,9 +802,11 @@ impl Campath {
     fn select_add_min_max(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                if let Some(min) = args[0].as_number() {
-                    if let Some(max) = args[1].as_number() {
-                        return Ok(JsValue::from(campath.native.select_add_min_max(min,max)));
+                if 2 == args.len() {
+                    if let Some(min) = args[0].as_number() {
+                        if let Some(max) = args[1].as_number() {
+                            return Ok(JsValue::from(campath.native.select_add_min_max(min,max)));
+                        }
                     }
                 }
             }
