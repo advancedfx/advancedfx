@@ -307,7 +307,6 @@ void CamPath::Changed()
 		m_OnChangedIt->Notify();
 		if(m_OnChangedIt == m_OnChanged.end()) break;
 	}
-	m_OnChangedIt = m_OnChanged.end();
 }
 
 void CamPath::Remove(double time)

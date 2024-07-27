@@ -2,6 +2,9 @@ use crate::advancedfx;
 
 use std::ffi::c_char;
 use std::ffi::c_void;
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::rc::Weak;
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -25,7 +28,7 @@ impl Value {
         }
     }
 }
-/*
+
 type IteratorType = c_void;
 
 extern "C" {
@@ -42,31 +45,49 @@ extern "C" {
 
 pub struct Iterator {
     ptr: * mut IteratorType,
+    ptr_end: * mut IteratorType,
+    valid: bool
 }
 
 impl Iterator {
-    pub fn new(ptr: * mut IteratorType) -> Self {
+    fn new(ptr: * mut IteratorType, ptr_end: * mut IteratorType) -> Self {
         Self {
-            ptr: ptr
+            ptr: ptr,
+            ptr_end: ptr_end,
+            valid: true
         }
     }
 
-    pub fn get_time(&self) -> f64 {
-        unsafe {
+    pub fn is_valid(&self) -> bool {
+        self.valid && !unsafe{ advancedfx_campath_iterator_equals(self.ptr,self.ptr_end) }
+    }
+
+    pub fn get_time(&self) -> Option<f64> {
+        if !self.is_valid() {
+            return None;
+        }
+        Some(unsafe {
             advancedfx_campath_iterator_get_time(self.ptr)
-        }   
+        })
     }
 
-    pub fn get_value(&self) -> Value {
-        unsafe {
-            advancedfx_campath_iterator_get_value(self.ptr)
-        }   
-    }
-
-    pub fn next(&mut self) {
-        unsafe {
-            advancedfx_campath_iterator_next(self.ptr)
+    pub fn get_value(&self) -> Option<Value> {
+        if !self.is_valid() {
+            return None;
         }
+        Some(unsafe {
+            advancedfx_campath_iterator_get_value(self.ptr)
+        })
+    }
+
+    pub fn next(&mut self) -> Option<()> {
+        if !self.is_valid() {
+            return None;
+        }
+        unsafe {
+            advancedfx_campath_iterator_next(self.ptr);
+        }
+        Some(())
     }
 }
 
@@ -89,7 +110,12 @@ impl PartialEq for Iterator {
 }
 
 impl Eq for Iterator {}
-*/
+
+impl CampathChangedObserver for Iterator {
+    fn notify(&mut self) {
+        self.valid = false;
+    }
+}
 
 type CampathType = c_void;
 
@@ -147,6 +173,8 @@ unsafe fn u8_to_quaternion_interp(value: u8) -> QuaternionInterp {
     unsafe { std::mem::transmute(value) }
 }
 
+type CampathChangedFn = extern "C" fn(p_user_data: * mut c_void);
+
 extern "C" {
     fn advancedfx_campath_new() -> * mut CampathType;
 
@@ -184,9 +212,9 @@ extern "C" {
 
 	fn advancedfx_campath_get_size(ptr: * const CampathType) -> usize;
 
-	//fn advancedfx_campath_get_begin(ptr: * mut CampathType) -> * mut IteratorType;
+	fn advancedfx_campath_get_begin(ptr: * mut CampathType) -> * mut IteratorType;
 
-    //fn advancedfx_campath_get_end(ptr: * mut CampathType) -> * mut IteratorType;
+    fn advancedfx_campath_get_end(ptr: * mut CampathType) -> * mut IteratorType;
 
     fn advancedfx_campath_get_duration(ptr: * const CampathType) -> f64;
 
@@ -263,11 +291,57 @@ extern "C" {
       * @returns Number of selected keyframes.
       */
     fn advancedfx_campath_select_add_min_max(ptr: * mut CampathType, min: f64, max: f64) -> usize;
+
+    fn advancedfx_campath_on_changed_add(ptr: * mut CampathType, p_campath_changed: CampathChangedFn , p_user_data: * mut c_void);
+    
+    fn advancedfx_campath_on_changed_remove(ptr: * mut CampathType, p_campath_changed: CampathChangedFn , p_user_data: * mut c_void);
+}
+
+struct CampathChangedEvent {
+    observers: Vec<Weak<RefCell<dyn CampathChangedObserver>>>
+}
+
+impl CampathChangedEvent {
+
+    #[must_use]
+    fn new() -> Self {
+        Self {
+            observers: Vec::<Weak<RefCell<dyn CampathChangedObserver>>>::new()        
+        }
+    }
+
+    fn trigger(&mut self) {
+        let mut cleanup = false;
+        for x in self.observers.iter() {
+            if let Some(x_rc) = x.upgrade() {
+                let mut observer = x_rc.borrow_mut();
+                observer.notify();
+            } else {
+                cleanup = true;
+            }
+        }
+        if cleanup {
+            self.observers.retain(|ref x| {
+                0 < x.strong_count()
+            });            
+        }
+    }
+}
+
+trait CampathChangedObservable {    
+    fn register(&mut self, observer: Weak<RefCell<dyn CampathChangedObserver>>);
+
+    /*fn unregister(&mut self, observer: Weak<RefCell<dyn CampathChangedObserver>>);*/
+}
+
+trait CampathChangedObserver {
+    fn notify(&mut self);
 }
 
 pub struct Campath {
     ptr: * mut CampathType,
     owned: bool,
+    changed_event: Option<* mut CampathChangedEvent>,
 }
 
 impl Campath {
@@ -277,7 +351,8 @@ impl Campath {
         };
         Self {
             ptr: ptr,
-            owned: true
+            owned: true,
+            changed_event: None,
         }
     }
 
@@ -382,17 +457,16 @@ impl Campath {
         }   
     }
 
-/*    pub fn get_begin(&mut self) -> Iterator {
-        Iterator::new(unsafe {
+    pub fn iterator(&mut self) -> Rc<RefCell<Iterator>> {
+        let it = Rc::<RefCell<Iterator>>::new(RefCell::<Iterator>::new(Iterator::new(unsafe {
             advancedfx_campath_get_begin(self.ptr)
-        })
-    }
-
-    pub fn get_end(&mut self) -> Iterator {
-        Iterator::new(unsafe {
+        }, unsafe {
             advancedfx_campath_get_end(self.ptr)
-        })
-    }*/
+        })));
+        let it_observer =  it.clone() as Rc<RefCell<dyn CampathChangedObserver>>;
+        self.register(Rc::downgrade(&it_observer));
+        it
+    }
 
     pub fn get_duration(&self) -> f64 {
         unsafe {
@@ -604,9 +678,53 @@ impl Campath {
     }
 }
 
+extern "C" fn advancedfx_campath_changed_fn_impl(p_user_data: * mut c_void) {
+    let changed_event: &mut CampathChangedEvent = unsafe { &mut *(p_user_data as *mut CampathChangedEvent) };
+    changed_event.trigger();
+}
+
+impl CampathChangedObservable for Campath {
+    fn register(&mut self, observer: Weak<RefCell<dyn CampathChangedObserver>>) {
+        if let Some(ptr_changed) = self.changed_event {
+            unsafe{(*ptr_changed).observers.push(observer)};
+        } else {
+            let ptr_changed = Box::into_raw(Box::new(CampathChangedEvent::new()));
+            unsafe{(*ptr_changed).observers.push(observer)};
+            self.changed_event = Some(ptr_changed);
+            unsafe {
+                advancedfx_campath_on_changed_add(self.ptr, advancedfx_campath_changed_fn_impl, ptr_changed as *mut c_void);
+            }
+        }
+    }
+
+    /*fn unregister(&mut self, observer: Weak<RefCell<dyn CampathChangedObserver>>) {
+        if let Some(ptr_changed) = self.changed_event {
+            unsafe{(*ptr_changed).observers.retain(|x| 0 < x.strong_count() && !x.ptr_eq(&observer))};
+            if 0 == unsafe{(*ptr_changed).observers.len()} {
+                unsafe {
+                    advancedfx_campath_on_changed_remove(self.ptr, advancedfx_campath_changed_fn_impl, ptr_changed as *mut c_void);
+                }
+                self.changed_event = None;
+                unsafe {
+                    drop(Box::from_raw(ptr_changed));
+                }
+            }
+        }
+    }*/
+}
+
 impl Drop for Campath {
 
     fn drop(&mut self) {
+        if let Some(ptr_changed) = self.changed_event {
+            unsafe {
+                advancedfx_campath_on_changed_remove(self.ptr, advancedfx_campath_changed_fn_impl, ptr_changed as *mut c_void);
+            }
+            self.changed_event = None;
+            unsafe {
+                drop(Box::from_raw(ptr_changed));
+            }
+        }
         if self.owned {
             unsafe {
                 advancedfx_campath_delete(self.ptr);

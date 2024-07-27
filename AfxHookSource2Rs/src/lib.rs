@@ -1519,6 +1519,7 @@ impl AfxHookSource2Rs {
         advancedfx::js::math::Quaternion::add_to_context(&mut context);
 
         advancedfx::js::campath::Value::add_to_context(&mut context);
+        advancedfx::js::campath::Iterator::add_to_context(&mut context);
         advancedfx::js::campath::Campath::add_to_context(&mut context);
 
         let events = Rc::<MirvEvents>::new(MirvEvents::new());

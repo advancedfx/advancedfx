@@ -24,7 +24,6 @@ pub struct Value {
     pub native: advancedfx::campath::Value
 }
 
-
 impl Value {
     #[must_use]
     pub fn new(native: advancedfx::campath::Value) -> Self {        
@@ -224,6 +223,140 @@ impl Class for Value {
         Ok(())
     }
 }
+
+#[derive(Trace, Finalize, JsData)]
+pub struct Iterator {
+    #[unsafe_ignore_trace]
+    pub native: std::rc::Rc<std::cell::RefCell<advancedfx::campath::Iterator>>
+}
+
+impl Iterator {
+    #[must_use]
+    pub fn new(native: std::rc::Rc<std::cell::RefCell<advancedfx::campath::Iterator>>) -> Self {        
+        Self {
+            native: native
+        }
+    }
+
+    pub fn add_to_context(context: &mut Context) {
+        context
+            .register_global_class::<Iterator>()
+            .expect("the AdvancedfxCampathIterator builtin shouldn't exist");        
+    }
+
+    fn error_typ() -> JsResult<JsValue> {
+        Err(JsNativeError::typ()
+            .with_message("'this' is not a AdvancedfxCampathIterator object")
+            .into())
+    }
+
+    fn error_not_valid() -> JsResult<JsValue> {
+        Err(JsNativeError::error().with_message("'this' AdvancedfxCampathIterator is not in valid state!").into())
+    }    
+    
+    fn is_valid(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(campath_iterator) = object.downcast_ref::<Iterator>() {
+                return Ok(JsValue::Boolean((*campath_iterator.native).borrow().is_valid()));
+            }
+        }
+        Self::error_typ()
+    }
+
+    fn get_time(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(campath_iterator) = object.downcast_ref::<Iterator>() {
+                if let Some(value) = (*campath_iterator.native).borrow().get_time()  {
+                    return Ok(JsValue::Rational(value));
+                }
+                return Self::error_not_valid();
+            }
+        }
+        Self::error_typ()
+    }     
+    
+    fn get_value(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(campath_iterator) = object.downcast_ref::<Iterator>() {
+                if let Some(value) = (*campath_iterator.native).borrow().get_value()  {
+                    match Value::from_data(Value::new(value), context) {
+                        Ok(result_object) => {
+                            return Ok(JsValue::Object(result_object));
+                        }
+                        Err(e) => {
+                            return Err(e);
+                        }
+                    }
+                }
+                return Self::error_not_valid();
+            }
+        }
+        Self::error_typ()
+    }
+    
+    fn next(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(campath_iterator) = object.downcast_ref::<Iterator>() {
+                if let Some(()) = (*campath_iterator.native).borrow_mut().next()  {
+                    return Ok(JsValue::undefined());
+                }
+                return Self::error_not_valid();
+            }
+        }
+        Self::error_typ()
+    }    
+}
+
+impl Class for Iterator {
+    const NAME: &'static str = "AdvancedfxCampathIterator";
+    const LENGTH: usize = 1;
+
+    fn data_constructor(
+        _this: &JsValue,
+        args: &[JsValue],
+        _context: &mut Context,
+    ) -> JsResult<Self> {
+        if 1 == args.len() {
+            if let Some(object_campath) = args[0].as_object()  {
+                if let Some(mut value_campath) = object_campath.downcast_mut::<Campath>() {       
+                    return Ok(Iterator::new(value_campath.native.iterator()));
+                }
+            }     
+        }
+        Err(advancedfx::js::errors::error_arguments())
+    }
+
+    fn init(class: &mut ClassBuilder<'_>) -> JsResult<()> {
+        let realm = class.context().realm().clone();
+        class
+        .accessor(
+            js_string!("valid"),
+            Some(NativeFunction::from_fn_ptr(Iterator::is_valid).to_js_function(&realm)),
+            None,
+            Attribute::all()
+        )
+        .accessor(
+            js_string!("time"),
+            Some(NativeFunction::from_fn_ptr(Iterator::get_time).to_js_function(&realm)),
+            None,
+            Attribute::all()
+        )
+        .accessor(
+            js_string!("value"),
+            Some(NativeFunction::from_fn_ptr(Iterator::get_value).to_js_function(&realm)),
+            None,
+            Attribute::all()
+        )
+        .method(
+            js_string!("next"),
+            0,
+            NativeFunction::from_fn_ptr(Iterator::next)
+        );                     
+
+        Ok(())
+    }
+}
+
 
 #[derive(Trace, Finalize, JsData)]
 pub struct Campath {

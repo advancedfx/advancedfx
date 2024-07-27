@@ -226,3 +226,11 @@ extern "C" size_t advancedfx_campath_select_add_min_count(CamPath * ptr, double 
 extern "C" size_t advancedfx_campath_select_add_min_max(CamPath * ptr, double min, double max) {
     return ptr->SelectAdd(min,max);
 }
+
+extern "C" void advancedfx_campath_on_changed_add(CamPath * ptr, CamPathChanged p_campath_changed, void * p_user_data) {
+    ptr->OnChangedAdd(p_campath_changed,p_user_data);
+}
+
+extern "C" void advancedfx_campath_on_changed_remove(CamPath * ptr, CamPathChanged p_campath_changed, void * p_user_data) {
+    ptr->OnChangedRemove(p_campath_changed,p_user_data);
+}
