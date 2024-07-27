@@ -62,9 +62,7 @@ void PrintInfo() {
 
 void * g_pGameResourceService = nullptr;
 
-int g_nIgnoreNextDisconnects = 0;
-
-typedef void (*Unknown_ExecuteClientCommandFromNetChan_t)(void * Ecx, void * Edx, void *R8);
+/*typedef void (*Unknown_ExecuteClientCommandFromNetChan_t)(void * Ecx, void * Edx, void *R8);
 Unknown_ExecuteClientCommandFromNetChan_t g_Old_Unknown_ExecuteClientCommandFromNetChan = nullptr;
 void New_Unknown_ExecuteClientCommandFromNetChan(void * Ecx, void * Edx, SOURCESDK::CS2::CCommand *r8Command) {
 	//for(int i = 0; i < r8Command->ArgC(); i++) {
@@ -74,14 +72,8 @@ void New_Unknown_ExecuteClientCommandFromNetChan(void * Ecx, void * Edx, SOURCES
 		if(IDYES != MessageBoxA(0,"YOU ARE TRYING TO CONNECT TO A SERVER - THIS WILL GET YOU VAC BANNED.\nARE YOU SURE?", "HLAE WARNING", MB_YESNOCANCEL|MB_ICONHAND|MB_DEFBUTTON2))
 			return;
 	}
-	if(0 < g_nIgnoreNextDisconnects && 0 < r8Command->ArgC()) {
-		if(0 == stricmp("disconnect",r8Command->Arg(0))) {
-			if(0 < g_nIgnoreNextDisconnects) g_nIgnoreNextDisconnects--;
-			return;
-		}
-	}
 	g_Old_Unknown_ExecuteClientCommandFromNetChan(Ecx, Edx, r8Command);
-}
+}*/
 
 
 void HookEngineDll(HMODULE engineDll) {
@@ -105,7 +97,7 @@ void HookEngineDll(HMODULE engineDll) {
 		lea     rcx, [rsp+0D68h+var_D30]
 		call    sub_180183A60	
 	*/
-	{
+	/*{
 		Afx::BinUtils::ImageSectionsReader sections((HMODULE)engineDll);
 		Afx::BinUtils::MemRange textRange = sections.GetMemRange();
 		Afx::BinUtils::MemRange result = FindPatternString(textRange, "4C 8B D1 48 8B 0D ?? ?? ?? ?? 48 85 C9 74 13 48 8B 01 4D 8B C8 4C 8B C2 49 8B 12 48 FF A0 90 00 00 00 C3");
@@ -119,8 +111,7 @@ void HookEngineDll(HMODULE engineDll) {
 		}
 		else
 			ErrorBox(MkErrStr(__FILE__, __LINE__));
-	}
-
+	}*/
 }
 
 SOURCESDK::CS2::ISource2EngineToClient * g_pEngineToClient = nullptr;
@@ -1200,21 +1191,6 @@ int new_CCS2_Client_Connect(void* This, SOURCESDK::CreateInterfaceFn appSystemFa
 	}
 
 	return old_CCS2_Client_Connect(This, appSystemFactory);
-}
-
-CON_COMMAND(mirv_suppress_disconnects, "Suppresses given number disconnect commands. Can help to test demo system in the CS2 Limited Test.") {
-	int argC = args->ArgC();
-	const char * arg0 = args->ArgV(0);
-	if(2 <= argC) {
-			g_nIgnoreNextDisconnects = atoi(args->ArgV(1));
-			return;
-	}
-	advancedfx::Message(
-		"mirv_suppress_disconnects <iSuppressTimes> - Use -1 to always suppress, or a positive number to suppress a certain count.\n"
-		"Eample: \"mirv_suppress_disconnects 1; playdemo test.dem\" - Deprecated command. May get removed in the future.\n"
-		"Current value: %i\n",
-		g_nIgnoreNextDisconnects
-	);
 }
 
 CON_COMMAND(mirv_cvar_unhide_all, "Unlocks cmds and cvars.") {
