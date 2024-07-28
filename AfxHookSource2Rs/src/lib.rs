@@ -288,8 +288,12 @@ pub struct AfxHookSource2Rs {
 struct MirvStruct {
     #[unsafe_ignore_trace]
     loader: Rc<AfxSimpleModuleLoader>,
+    
     #[unsafe_ignore_trace]
     events: Rc<MirvEvents>,
+
+    #[unsafe_ignore_trace]
+    main_campath: Option<JsValue>,
 }
 
 fn afx_message(s: String) {
@@ -1121,19 +1125,6 @@ fn mirv_get_highest_entity_index(_this: &JsValue, _args: &[JsValue], _context: &
     return Ok(JsValue::Integer(afx_get_highest_entity_index()));
 }
 
-fn mirv_get_main_campath(_this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
-    match advancedfx::js::campath::Campath::from_data(advancedfx::js::campath::Campath::new(advancedfx::campath::Campath::new_shared(unsafe{
-        afx_hook_source2_get_main_campath()
-    })), context) {
-        Ok(result_object) => {
-            return Ok(JsValue::Object(result_object));
-        }
-        Err(e) => {
-            return Err(e);
-        }
-    }
-}
-
 #[derive(Trace, JsData)]
 struct MirvEntityRef {
     #[unsafe_ignore_trace]
@@ -1519,6 +1510,29 @@ fn mirv_is_demo_paused(_this: &JsValue, _args: &[JsValue], _context: &mut Contex
    return Ok(JsValue::Boolean(afx_is_demo_paused()));
 }
 
+fn mirv_get_main_campath(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+    if let Some(object) = this.as_object() {
+        if let Some(mut mirv) = object.downcast_mut::<MirvStruct>() {
+            if let Some(value) = &mirv.main_campath {
+                return Ok(value.clone());
+            } else {
+                match advancedfx::js::campath::Campath::from_data(advancedfx::js::campath::Campath::new(advancedfx::campath::Campath::new_shared(unsafe{
+                    afx_hook_source2_get_main_campath()
+                })), context) {
+                    Ok(result_object) => {
+                        mirv.main_campath = Some(JsValue::Object(result_object.clone()));
+                        return Ok(JsValue::Object(result_object.clone()));
+                    }
+                    Err(e) => {
+                        return Err(e);
+                    }
+                }
+            }
+        }
+    }
+    Err(advancedfx::js::errors::error_type())
+}
+
 impl AfxHookSource2Rs {
     pub fn new() -> Self {
 
@@ -1542,7 +1556,8 @@ impl AfxHookSource2Rs {
 
         let mirv = MirvStruct {
             loader: loader.clone(),
-            events: Rc::clone(&events)
+            events: Rc::clone(&events),
+            main_campath: None
         };
 
         let fn_mirv_set_on_game_event = NativeFunction::from_fn_ptr(mirv_set_on_game_event).to_js_function(context.realm());
