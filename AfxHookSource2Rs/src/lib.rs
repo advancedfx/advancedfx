@@ -277,7 +277,7 @@ impl MirvEvents {
 
 pub struct AfxHookSource2Rs {
     loader: Rc<AfxSimpleModuleLoader>,
-    context: boa_engine::Context,
+    context_wrapper: Rc<RefCell<advancedfx::js::ContextWrapper>>,
     events: Rc<MirvEvents>
 }
 
@@ -286,7 +286,7 @@ struct MirvStruct {
     #[unsafe_ignore_trace]
     loader: Rc<AfxSimpleModuleLoader>,
     #[unsafe_ignore_trace]
-    events: Rc<MirvEvents>
+    events: Rc<MirvEvents>,
 }
 
 fn afx_message(s: String) {
@@ -1652,9 +1652,14 @@ impl AfxHookSource2Rs {
         .register_global_property(js_string!("mirv"), object, Attribute::all())
         .expect("property mirv shouldn't exist");
 
+        let context_wrapper = Rc::<RefCell<advancedfx::js::ContextWrapper>>::new(RefCell::<advancedfx::js::ContextWrapper>::new(advancedfx::js::ContextWrapper::new(context)));
+        let weak_context_wrapper = advancedfx::js::WeakContextWrapper::new(Rc::downgrade(&context_wrapper.clone()));
+
+        (*context_wrapper).borrow_mut().context.insert_data(weak_context_wrapper);
+
         Self {
             loader: loader,
-            context,
+            context_wrapper: context_wrapper,
             events: Rc::clone(&events)
         }
     }    
@@ -1672,7 +1677,8 @@ pub unsafe extern "C" fn afx_hook_source2_rs_new<'a>() -> * mut AfxHookSource2Rs
 
 #[no_mangle]
 pub unsafe extern "C" fn afx_hook_source2_rs_run_jobs(this_ptr: *mut AfxHookSource2Rs) {
-    let task = (*this_ptr).context.run_jobs_async();
+    let context = &mut (*(*this_ptr).context_wrapper).borrow_mut().context;
+    let task = context.run_jobs_async();
     pollster::block_on(task);
 }
 
@@ -1688,10 +1694,11 @@ pub unsafe extern "C" fn afx_hook_source2_rs_destroy(this_ptr: *mut AfxHookSourc
 
 #[no_mangle]
 pub unsafe extern "C" fn afx_hook_source2_rs_execute(this_ptr: *mut AfxHookSource2Rs, p_data: *mut u8, len_data: usize) {
+    let context = &mut (*(*this_ptr).context_wrapper).borrow_mut().context;
     let js_code = unsafe { std::slice::from_raw_parts(p_data, len_data) };
-    match (*this_ptr).context.eval(boa_engine::Source::from_bytes(js_code)) {
+    match context.eval(boa_engine::Source::from_bytes(js_code)) {
         Ok(res) => {
-            if let Ok(js_str) = res.to_string(&mut (*this_ptr).context) {
+            if let Ok(js_str) = res.to_string(context) {
                 let mut str = js_str.to_std_string_escaped();
                 str.push_str("\n");
                 afx_message(str);
@@ -1712,11 +1719,12 @@ pub unsafe extern "C" fn afx_hook_source2_rs_execute(this_ptr: *mut AfxHookSourc
 
 #[no_mangle]
 pub unsafe extern "C" fn afx_hook_source2_rs_load(this_ptr: *mut AfxHookSource2Rs, file_path: *const c_char) {
+    let context = &mut (*(*this_ptr).context_wrapper).borrow_mut().context;
     let str_file_path = CStr::from_ptr(file_path).to_str().unwrap();
     let path = std::path::Path::new(str_file_path);
     if let Some(ext) = path.extension() {
         if ext == "mjs" {
-            match afx_load(&path, (*this_ptr).loader.clone(), &mut (*this_ptr).context) {
+            match afx_load(&path, (*this_ptr).loader.clone(), context) {
                 Ok(promise_result) => {
 
                     afx_hook_source2_rs_run_jobs(this_ptr); // push forward the promise.
@@ -1726,14 +1734,14 @@ pub unsafe extern "C" fn afx_hook_source2_rs_load(this_ptr: *mut AfxHookSource2R
                             afx_warning("module didn't execute!\n".to_string()); 
                         }
                         PromiseState::Fulfilled(v) => {
-                            if let Ok(js_str) = v.to_string(&mut (*this_ptr).context) {
+                            if let Ok(js_str) = v.to_string(context) {
                                 let mut str = js_str.to_std_string_escaped();
                                 str.push_str("\n");
                                 afx_message(str);
                             }
                         }
                         PromiseState::Rejected(err) => {
-                            if let Ok(e) = JsError::from_opaque(err).try_native(&mut (*this_ptr).context) {
+                            if let Ok(e) = JsError::from_opaque(err).try_native(context) {
                                 use std::fmt::Write as _;
                                 let mut s = String::new();
                                 if let Some(source) = e.source() {
@@ -1765,9 +1773,9 @@ pub unsafe extern "C" fn afx_hook_source2_rs_load(this_ptr: *mut AfxHookSource2R
     }
     match boa_engine::Source::from_filepath(path) {
         Ok(js_source) => {
-            match (*this_ptr).context.eval(js_source) {
+            match context.eval(js_source) {
                 Ok(res) => {
-                    if let Ok(js_str) = res.to_string(&mut (*this_ptr).context) {
+                    if let Ok(js_str) = res.to_string(context) {
                         let mut str = js_str.to_std_string_escaped();
                         str.push_str("\n");
                         afx_message(str);
@@ -1796,6 +1804,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_load(this_ptr: *mut AfxHookSource2R
 
 #[no_mangle]
 pub unsafe extern "C" fn afx_hook_source2_rs_on_game_event(this_ptr: *mut AfxHookSource2Rs, event_name: *const c_char, event_id: i32, json: *const c_char) {
+    let context = &mut (*(*this_ptr).context_wrapper).borrow_mut().context;
     let borrowed = (*this_ptr).events.on_game_event.borrow();
     let event_option_clone = borrowed.clone();
     std::mem::drop(borrowed);
@@ -1803,13 +1812,13 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_game_event(this_ptr: *mut AfxHoo
         let str_event_name = CStr::from_ptr(event_name).to_str().unwrap();
         let str_json = CStr::from_ptr(json).to_str().unwrap();
 
-        let js_object = ObjectInitializer::new(&mut (*this_ptr).context)
+        let js_object = ObjectInitializer::new(context)
         .property(js_string!("name"), JsValue::String(js_string!(str_event_name)), Attribute::all())
         .property(js_string!("id"), JsValue::Integer(event_id), Attribute::all())
         .property(js_string!("data"), JsValue::String(js_string!(str_json)), Attribute::all())
         .build();
 
-        if let Err(e) = event_clone.call(&JsValue::null(), &[JsValue::Object(js_object)], &mut (*this_ptr).context) {
+        if let Err(e) = event_clone.call(&JsValue::null(), &[JsValue::Object(js_object)], context) {
             use std::fmt::Write as _;
             let mut s = String::new();
             write!(&mut s, "Uncaught {e}\n").unwrap();
@@ -1830,12 +1839,13 @@ pub struct AfxHookSourceRsView {
 
 #[no_mangle]
 pub unsafe extern "C" fn afx_hook_source2_rs_on_c_view_render_setup_view(this_ptr: *mut AfxHookSource2Rs, cur_time: c_float, abs_time: c_float, last_abs_time: c_float, current_view: &mut AfxHookSourceRsView , game_view: &AfxHookSourceRsView, last_view: &AfxHookSourceRsView, width: i32, height: i32) -> bool {
+    let context = &mut (*(*this_ptr).context_wrapper).borrow_mut().context;
     let borrowed = (*this_ptr).events.on_c_view_render_setup_view.borrow();
     let event_option_clone = borrowed.clone();
     std::mem::drop(borrowed);  
     if let Some(event_clone) = event_option_clone {
 
-        let js_object_current_view = ObjectInitializer::new(&mut (*this_ptr).context)
+        let js_object_current_view = ObjectInitializer::new(context)
         .property(js_string!("x"), JsValue::Rational(current_view.x.into()), Attribute::all())
         .property(js_string!("y"), JsValue::Rational(current_view.y.into()), Attribute::all())
         .property(js_string!("z"), JsValue::Rational(current_view.z.into()), Attribute::all())
@@ -1844,7 +1854,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_c_view_render_setup_view(this_pt
         .property(js_string!("rZ"), JsValue::Rational(current_view.rz.into()), Attribute::all())
         .property(js_string!("fov"), JsValue::Rational(current_view.fov.into()), Attribute::all())
         .build();
-        let js_object_game_view = ObjectInitializer::new(&mut (*this_ptr).context)
+        let js_object_game_view = ObjectInitializer::new(context)
         .property(js_string!("x"), JsValue::Rational(game_view.x.into()), Attribute::all())
         .property(js_string!("y"), JsValue::Rational(game_view.y.into()), Attribute::all())
         .property(js_string!("z"), JsValue::Rational(game_view.z.into()), Attribute::all())
@@ -1853,7 +1863,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_c_view_render_setup_view(this_pt
         .property(js_string!("rZ"), JsValue::Rational(game_view.rz.into()), Attribute::all())
         .property(js_string!("fov"), JsValue::Rational(game_view.fov.into()), Attribute::all())
         .build();
-        let js_object_last_view = ObjectInitializer::new(&mut (*this_ptr).context)
+        let js_object_last_view = ObjectInitializer::new(context)
         .property(js_string!("x"), JsValue::Rational(last_view.x.into()), Attribute::all())
         .property(js_string!("y"), JsValue::Rational(last_view.y.into()), Attribute::all())
         .property(js_string!("z"), JsValue::Rational(last_view.z.into()), Attribute::all())
@@ -1863,7 +1873,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_c_view_render_setup_view(this_pt
         .property(js_string!("fov"), JsValue::Rational(last_view.fov.into()), Attribute::all())
         .build();        
 
-        let js_object = ObjectInitializer::new(&mut (*this_ptr).context)
+        let js_object = ObjectInitializer::new(context)
         .property(js_string!("curTime"), JsValue::Rational(cur_time.into()), Attribute::all())
         .property(js_string!("absTime"), JsValue::Rational(abs_time.into()), Attribute::all())
         .property(js_string!("lastAbsTime"), JsValue::Rational(last_abs_time.into()), Attribute::all())
@@ -1874,40 +1884,40 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_c_view_render_setup_view(this_pt
         .property(js_string!("height"), JsValue::Integer(height), Attribute::all())
         .build();
 
-        match event_clone.call(&JsValue::null(), &[JsValue::Object(js_object)], &mut (*this_ptr).context) {
+        match event_clone.call(&JsValue::null(), &[JsValue::Object(js_object)], context) {
             Ok(js_value) => {
                 if let JsValue::Object(js_object) = js_value {
-                    if let Ok(js_val_x) = js_object.get(js_string!("x"), &mut (*this_ptr).context) {
+                    if let Ok(js_val_x) = js_object.get(js_string!("x"), context) {
                         if let Some(x) = js_val_x.as_number() {
                             current_view.x = x as f32;
                         }
                     }
-                    if let Ok(js_val_y) = js_object.get(js_string!("y"), &mut (*this_ptr).context) {
+                    if let Ok(js_val_y) = js_object.get(js_string!("y"), context) {
                         if let Some(y) = js_val_y.as_number() {
                             current_view.y = y as f32;
                         }
                     }
-                    if let Ok(js_val_z) = js_object.get(js_string!("z"), &mut (*this_ptr).context) {
+                    if let Ok(js_val_z) = js_object.get(js_string!("z"), context) {
                         if let Some(z) = js_val_z.as_number() {
                             current_view.z = z as f32;
                         }
                     }
-                    if let Ok(js_val_rx) = js_object.get(js_string!("rX"), &mut (*this_ptr).context) {
+                    if let Ok(js_val_rx) = js_object.get(js_string!("rX"), context) {
                         if let Some(rx) = js_val_rx.as_number() {
                             current_view.rx = rx as f32;
                         }
                     }
-                    if let Ok(js_val_ry) = js_object.get(js_string!("rY"), &mut (*this_ptr).context) {
+                    if let Ok(js_val_ry) = js_object.get(js_string!("rY"),context) {
                         if let Some(ry) = js_val_ry.as_number() {
                             current_view.ry = ry as f32;
                         }
                     }
-                    if let Ok(js_val_rz) = js_object.get(js_string!("rZ"), &mut (*this_ptr).context) {
+                    if let Ok(js_val_rz) = js_object.get(js_string!("rZ"), context) {
                         if let Some(rz) = js_val_rz.as_number() {
                             current_view.rz = rz as f32;
                         }
                     }
-                    if let Ok(js_val_fov) = js_object.get(js_string!("fov"), &mut (*this_ptr).context) {
+                    if let Ok(js_val_fov) = js_object.get(js_string!("fov"), context) {
                         if let Some(fov) = js_val_fov.as_number() {
                             current_view.fov = fov as f32;
                         }
@@ -1928,16 +1938,17 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_c_view_render_setup_view(this_pt
 
 #[no_mangle]
 pub unsafe extern "C" fn afx_hook_source2_rs_on_client_frame_stage_notify(this_ptr: *mut AfxHookSource2Rs, event_id: i32, is_before: bool) {
+    let context = &mut (*(*this_ptr).context_wrapper).borrow_mut().context;
     let borrowed = (*this_ptr).events.on_client_frame_stage_notify.borrow();
     let event_option_clone = borrowed.clone();
     std::mem::drop(borrowed);
     if let Some(event_clone) = event_option_clone {
-        let js_object = ObjectInitializer::new(&mut (*this_ptr).context)
+        let js_object = ObjectInitializer::new(context)
         .property(js_string!("curStage"), JsValue::Integer(event_id), Attribute::all())
         .property(js_string!("isBefore"), JsValue::Boolean(is_before), Attribute::all())
         .build();
 
-        if let Err(e) = event_clone.call(&JsValue::null(), &[JsValue::Object(js_object)], &mut (*this_ptr).context) {
+        if let Err(e) = event_clone.call(&JsValue::null(), &[JsValue::Object(js_object)], context) {
             use std::fmt::Write as _;
             let mut s = String::new();
             write!(&mut s, "Uncaught {e}\n").unwrap();
@@ -1948,13 +1959,14 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_client_frame_stage_notify(this_p
 
 #[no_mangle]
 pub unsafe extern "C" fn afx_hook_source2_rs_on_add_entity(this_ptr: *mut AfxHookSource2Rs, p_ref: * mut AfxEntityRef, handle: i32) {
+    let context = &mut (*(*this_ptr).context_wrapper).borrow_mut().context;
     let borrowed = (*this_ptr).events.on_add_entity.borrow();
     let event_option_clone = borrowed.clone();
     std::mem::drop(borrowed);
     if let Some(event_clone) = event_option_clone {
         afx_add_ref_entity_ref(p_ref);
-        let entity_ref = MirvEntityRef::create(p_ref, &mut (*this_ptr).context);
-        if let Err(e) = event_clone.call(&JsValue::null(), &[JsValue::Object(entity_ref),JsValue::Integer(handle)], &mut (*this_ptr).context) {
+        let entity_ref = MirvEntityRef::create(p_ref, context);
+        if let Err(e) = event_clone.call(&JsValue::null(), &[JsValue::Object(entity_ref),JsValue::Integer(handle)], context) {
             use std::fmt::Write as _;
             let mut s = String::new();
             write!(&mut s, "Uncaught {e}\n").unwrap();
@@ -1965,13 +1977,14 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_add_entity(this_ptr: *mut AfxHoo
 
 #[no_mangle]
 pub unsafe extern "C" fn afx_hook_source2_rs_on_remove_entity(this_ptr: *mut AfxHookSource2Rs, p_ref: * mut AfxEntityRef, handle: i32) {
+    let context = &mut (*(*this_ptr).context_wrapper).borrow_mut().context;
     let borrowed = (*this_ptr).events.on_remove_entity.borrow();
     let event_option_clone = borrowed.clone();
     std::mem::drop(borrowed);
     if let Some(event_clone) = event_option_clone {
         afx_add_ref_entity_ref(p_ref);
-        let entity_ref = MirvEntityRef::create(p_ref, &mut (*this_ptr).context);
-        if let Err(e) = event_clone.call(&JsValue::null(), &[JsValue::Object(entity_ref),JsValue::Integer(handle)], &mut (*this_ptr).context) {
+        let entity_ref = MirvEntityRef::create(p_ref, context);
+        if let Err(e) = event_clone.call(&JsValue::null(), &[JsValue::Object(entity_ref),JsValue::Integer(handle)], context) {
             use std::fmt::Write as _;
             let mut s = String::new();
             write!(&mut s, "Uncaught {e}\n").unwrap();

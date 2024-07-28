@@ -1,4 +1,8 @@
 use crate::advancedfx;
+use crate::advancedfx::campath::CampathChangedObservable;
+
+use std::cell::RefCell;
+use std::rc::Rc;
 
 use boa_engine::{
     class::{
@@ -357,18 +361,68 @@ impl Class for Iterator {
     }
 }
 
+#[derive(Trace, Finalize, JsData)]
+struct CampathChangedCallback {
+    #[unsafe_ignore_trace]
+    callback: JsObject,
+    weak_context_wrapper: advancedfx::js::WeakContextWrapper,
+    suppress: bool,
+    suppressed_change: bool
+}
+
+impl CampathChangedCallback {
+    fn new(callback: JsObject, weak_context_wrapper: advancedfx::js::WeakContextWrapper) -> Self {
+        Self {
+            callback: callback,
+            weak_context_wrapper: weak_context_wrapper,
+            suppress: false,
+            suppressed_change: false,
+        }
+    }
+
+    fn suppress(&mut self) {
+        self.suppress = true;
+    }
+
+    fn unsuppress(&mut self, context: &mut Context) -> JsResult<JsValue> {
+        self.suppress = false;
+        if self.suppressed_change {
+            self.suppressed_change = false;
+            return self.callback.call(&JsValue::null(), &[], context);
+        }
+        return Ok(JsValue::undefined());
+    }
+
+}
+
+impl advancedfx::campath::CampathChangedObserver for CampathChangedCallback {
+    fn notify(&mut self) {
+        if !self.suppress {
+            if let Some(context_wrapper_rc) = self.weak_context_wrapper.context_wrapper.upgrade() {
+                let _ = self.callback.call(&JsValue::null(), &[], &mut context_wrapper_rc.borrow_mut().context);
+            }
+        }
+        else {
+            self.suppressed_change = true;
+        }
+    }
+}
 
 #[derive(Trace, Finalize, JsData)]
 pub struct Campath {
     #[unsafe_ignore_trace]
-    pub native: advancedfx::campath::Campath
+    pub native: advancedfx::campath::Campath,
+
+    #[unsafe_ignore_trace]
+    on_changed: Option<Rc<RefCell<CampathChangedCallback>>>
 }
 
 impl Campath {
     #[must_use]
     pub fn new(native: advancedfx::campath::Campath) -> Self {        
         Self {
-            native: native
+            native: native,
+            on_changed : None
         }
     }
 
@@ -393,12 +447,16 @@ impl Campath {
         Self::error_typ()
     }
 
-    fn set_enabled(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn set_enabled(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Some(value) = args[0].as_boolean() {
+                        campath.suppress_on_changed();
                         campath.native.set_enabled(value);
+                        if let Err(e) = campath.unsuppress_on_changed(context) {
+                            return Err(e);
+                        }
                         return Ok(JsValue::undefined());
                     }
                 }
@@ -417,12 +475,16 @@ impl Campath {
         Self::error_typ()
     }
 
-    fn set_offset(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn set_offset(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Some(value) = args[0].as_number() {
+                        campath.suppress_on_changed();
                         campath.native.set_offset(value);
+                        if let Err(e) = campath.unsuppress_on_changed(context) {
+                            return Err(e);
+                        }                        
                         return Ok(JsValue::undefined());
                     }
                 }
@@ -441,12 +503,16 @@ impl Campath {
         Self::error_typ()
     }
 
-    fn set_hold(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn set_hold(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Some(value) = args[0].as_boolean() {
+                        campath.suppress_on_changed();
                         campath.native.set_hold(value);
+                        if let Err(e) = campath.unsuppress_on_changed(context) {
+                            return Err(e);
+                        }                        
                         return Ok(JsValue::undefined());
                     }
                 }
@@ -471,7 +537,11 @@ impl Campath {
                 if 1 == args.len() {
                     if let Ok(value) = args[0].to_uint8(context) {
                         if let Ok(e_value) = advancedfx::campath::DoubleInterp::try_from(value) {
+                            campath.suppress_on_changed();
                             campath.native.set_position_interp(e_value);
+                            if let Err(e) = campath.unsuppress_on_changed(context) {
+                                return Err(e);
+                            }                            
                             return Ok(JsValue::undefined());
                         }
                     }
@@ -497,7 +567,11 @@ impl Campath {
                 if 1 == args.len() {
                     if let Ok(value) = args[0].to_uint8(context) {
                         if let Ok(e_value) = advancedfx::campath::QuaternionInterp::try_from(value) {
+                            campath.suppress_on_changed();
                             campath.native.set_rotation_interp(e_value);
+                            if let Err(e) = campath.unsuppress_on_changed(context) {
+                                return Err(e);
+                            }                            
                             return Ok(JsValue::undefined());
                         }
                     }
@@ -523,7 +597,11 @@ impl Campath {
                 if 1 == args.len() {
                     if let Ok(value) = args[0].to_uint8(context) {
                         if let Ok(e_value) = advancedfx::campath::DoubleInterp::try_from(value) {
+                            campath.suppress_on_changed();
                             campath.native.set_fov_interp(e_value);
+                            if let Err(e) = campath.unsuppress_on_changed(context) {
+                                return Err(e);
+                            }                            
                             return Ok(JsValue::undefined());
                         }
                     }
@@ -534,14 +612,18 @@ impl Campath {
         Self::error_typ()
     }
 
-    fn add(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn add(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 2 == args.len() {
                     if let Some(time) = args[0].as_number() {
                         if let Some(value_object) = args[1].as_object() {
                             if let Some(value_object_inner) = value_object.downcast_ref::<Value>() {
+                                campath.suppress_on_changed();
                                 campath.native.add(time,&value_object_inner.native);
+                                if let Err(e) = campath.unsuppress_on_changed(context) {
+                                    return Err(e);
+                                }                                
                                 return Ok(JsValue::undefined());
                             }
                         }
@@ -553,12 +635,16 @@ impl Campath {
         Self::error_typ()
     }
 
-    fn remove(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn remove(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Some(time) = args[0].as_number() {
+                        campath.suppress_on_changed();
                         campath.native.remove(time);
+                        if let Err(e) = campath.unsuppress_on_changed(context) {
+                            return Err(e);
+                        }                        
                         return Ok(JsValue::undefined());
                     }
                 }
@@ -568,10 +654,14 @@ impl Campath {
         Self::error_typ()
     }
     
-    fn clear(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn clear(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
+                campath.suppress_on_changed();
                 campath.native.clear();
+                if let Err(e) = campath.unsuppress_on_changed(context) {
+                    return Err(e);
+                }                
                 return Ok(JsValue::undefined());
             }
         }
@@ -653,13 +743,18 @@ impl Campath {
         Self::error_typ()
     }
 
-    fn load(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn load(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Some(js_file_path) = args[0].as_string() {
                         if let Ok(str_file_path) = js_file_path.to_std_string() {
-                            return Ok(JsValue::from(campath.native.load(str_file_path)));
+                            campath.suppress_on_changed();
+                            let result = campath.native.load(str_file_path);
+                            if let Err(e) = campath.unsuppress_on_changed(context) {
+                                return Err(e);
+                            }                            
+                            return Ok(JsValue::from(result));
                         }
                     }
                 }
@@ -669,13 +764,18 @@ impl Campath {
         Self::error_typ()
     }
 
-    fn save(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn save(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Some(js_file_path) = args[0].as_string() {
                         if let Ok(str_file_path) = js_file_path.to_std_string() {
-                            return Ok(JsValue::from(campath.native.save(str_file_path)));
+                            campath.suppress_on_changed();
+                            let result = campath.native.save(str_file_path);
+                            if let Err(e) = campath.unsuppress_on_changed(context) {
+                                return Err(e);
+                            }                            
+                            return Ok(JsValue::from(result));
                         }
                     }
                 }
@@ -685,18 +785,26 @@ impl Campath {
         Self::error_typ()
     }
 
-    fn set_start(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn set_start(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 <= args.len() {
                     if let Some(time) = args[0].as_number() {
                         if 1 == args.len() {
+                            campath.suppress_on_changed();
                             campath.native.set_start(time,false);
+                            if let Err(e) = campath.unsuppress_on_changed(context) {
+                                return Err(e);
+                            }                                   
                             return Ok(JsValue::undefined());
                         }
                         else if 2 == args.len() {
                             if let Some(relative) = args[1].as_boolean() {
+                                campath.suppress_on_changed();
                                 campath.native.set_start(time,relative);
+                                if let Err(e) = campath.unsuppress_on_changed(context) {
+                                    return Err(e);
+                                }                                       
                                 return Ok(JsValue::undefined());
                             }
                         }
@@ -708,12 +816,16 @@ impl Campath {
         Self::error_typ()
     }  
 
-    fn set_duration(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn set_duration(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Some(time) = args[0].as_number() {
+                        campath.suppress_on_changed();
                         campath.native.set_duration(time);
+                        if let Err(e) = campath.unsuppress_on_changed(context) {
+                            return Err(e);
+                        }                               
                         return Ok(JsValue::undefined());
                     }
                 }
@@ -723,7 +835,7 @@ impl Campath {
         Self::error_typ()
     }
     
-    fn set_position(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn set_position(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 3 == args.len() {
@@ -751,7 +863,11 @@ impl Campath {
                     if let Ok(x) = result_x {
                         if let Ok(y) = result_y {
                             if let Ok(z) = result_z {
+                                campath.suppress_on_changed();
                                 campath.native.set_position(x,y,z);
+                                if let Err(e) = campath.unsuppress_on_changed(context) {
+                                    return Err(e);
+                                }                                       
                                 return Ok(JsValue::undefined());                            
                             }
                         }
@@ -763,7 +879,7 @@ impl Campath {
         Self::error_typ()
     }
 
-    fn set_angles(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn set_angles(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 3 == args.len() {
@@ -791,7 +907,11 @@ impl Campath {
                     if let Ok(x) = result_x {
                         if let Ok(y) = result_y {
                             if let Ok(z) = result_z {
+                                campath.suppress_on_changed();
                                 campath.native.set_angles(x,y,z);
+                                if let Err(e) = campath.unsuppress_on_changed(context) {
+                                    return Err(e);
+                                }                                
                                 return Ok(JsValue::undefined());                            
                             }
                         }
@@ -803,12 +923,16 @@ impl Campath {
         Self::error_typ()
     }
 
-    fn set_fov(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn set_fov(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Some(fov) = args[0].as_number() {
+                        campath.suppress_on_changed();
                         campath.native.set_fov(fov);
+                        if let Err(e) = campath.unsuppress_on_changed(context) {
+                            return Err(e);
+                        }                        
                         return Ok(JsValue::undefined());
                     }
                 }
@@ -818,14 +942,18 @@ impl Campath {
         Self::error_typ()
     }
     
-    fn rotate(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn rotate(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 3 == args.len() {
                     if let Some(y_pitch) = args[0].as_number() {
                         if let Some(z_yaw) = args[1].as_number() {
                             if let Some(x_roll) = args[2].as_number() {
+                                campath.suppress_on_changed();
                                 campath.native.rotate(y_pitch,z_yaw,x_roll);
+                                if let Err(e) = campath.unsuppress_on_changed(context) {
+                                    return Err(e);
+                                }                                
                                 return Ok(JsValue::undefined());
                             }
                         }
@@ -837,7 +965,7 @@ impl Campath {
         Self::error_typ()
     }
 
-    fn anchor_transform(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn anchor_transform(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 12 == args.len() {
@@ -853,7 +981,11 @@ impl Campath {
                                                         if let Some(dest_y_pitch) = args[9].as_number() {
                                                             if let Some(dest_z_yaw) = args[10].as_number() {
                                                                 if let Some(dest_x_roll) = args[11].as_number() {
+                                                                    campath.suppress_on_changed();
                                                                     campath.native.anchor_transform(anchor_x, anchor_y, anchor_z, anchor_y_pitch, anchor_z_yaw, anchor_x_roll, dest_x, dest_y, dest_z, dest_y_pitch, dest_z_yaw, dest_x_roll);
+                                                                    if let Err(e) = campath.unsuppress_on_changed(context) {
+                                                                        return Err(e);
+                                                                    }                                                                    
                                                                     return Ok(JsValue::undefined());
                                                                 }
                                                             }
@@ -874,41 +1006,60 @@ impl Campath {
         Self::error_typ()
     }
 
-    fn select_all(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn select_all(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                return Ok(JsValue::from(campath.native.select_all()));
+                campath.suppress_on_changed();
+                let result = campath.native.select_all();
+                if let Err(e) = campath.unsuppress_on_changed(context) {
+                    return Err(e);
+                }                
+                return Ok(JsValue::from(result));
             }
         }
         Self::error_typ()
     }
 
-    fn select_none(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn select_none(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
+                campath.suppress_on_changed();
                 campath.native.select_none();
+                if let Err(e) = campath.unsuppress_on_changed(context) {
+                    return Err(e);
+                }                  
                 return Ok(JsValue::undefined());
             }
         }
         Self::error_typ()
     }
 
-    fn select_invert(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn select_invert(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                return Ok(JsValue::from(campath.native.select_invert()));
+                campath.suppress_on_changed();
+                let result = campath.native.select_invert();
+                if let Err(e) = campath.unsuppress_on_changed(context) {
+                    return Err(e);
+                }                  
+                return Ok(JsValue::from(result));
             }
         }
         Self::error_typ()
     }
 
-    fn select_add_idx(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn select_add_idx(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 2 == args.len() {
                     if let Some(min) = args[0].as_number() {
                         if let Some(max) = args[1].as_number() {
-                            return Ok(JsValue::from(campath.native.select_add_idx(min as usize,max as usize)));
+                            campath.suppress_on_changed();
+                            let result = campath.native.select_add_idx(min as usize,max as usize);
+                            if let Err(e) = campath.unsuppress_on_changed(context) {
+                                return Err(e);
+                            }          
+                            return Ok(JsValue::from(result));
                         }
                     }
                 }
@@ -917,13 +1068,18 @@ impl Campath {
         Self::error_typ()
     }
 
-    fn select_add_min_count(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn select_add_min_count(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 2 == args.len() {
                     if let Some(min) = args[0].as_number() {
                         if let Some(count) = args[1].as_number() {
-                            return Ok(JsValue::from(campath.native.select_add_min_count(min,count as usize)));
+                            campath.suppress_on_changed();
+                            let result = campath.native.select_add_min_count(min,count as usize);
+                            if let Err(e) = campath.unsuppress_on_changed(context) {
+                                return Err(e);
+                            }                            
+                            return Ok(JsValue::from(result));
                         }
                     }
                 }
@@ -932,13 +1088,18 @@ impl Campath {
         Self::error_typ()
     }
 
-    fn select_add_min_max(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn select_add_min_max(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 2 == args.len() {
                     if let Some(min) = args[0].as_number() {
                         if let Some(max) = args[1].as_number() {
-                            return Ok(JsValue::from(campath.native.select_add_min_max(min,max)));
+                            campath.suppress_on_changed();
+                            let result = campath.native.select_add_min_max(min,max);
+                            if let Err(e) = campath.unsuppress_on_changed(context) {
+                                return Err(e);
+                            }                             
+                            return Ok(JsValue::from(result));
                         }
                     }
                 }
@@ -947,8 +1108,71 @@ impl Campath {
         Self::error_typ()
     }
 
-    fn not_implented(_this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
-        Err(JsNativeError::typ().with_message("not implemented!").into())
+    fn suppress_on_changed(&mut self) {
+        if let Some(some_on_changed) = &self.on_changed {
+            (*some_on_changed).borrow_mut().suppress();
+        }
+    }
+
+    fn unsuppress_on_changed(&mut self, context: &mut Context) -> JsResult<JsValue> {
+        if let Some(some_on_changed) = &self.on_changed {
+            return (*some_on_changed).borrow_mut().unsuppress(context);
+        }
+        return Ok(JsValue::undefined());
+    }
+
+    fn get_on_changed(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(campath) = object.downcast_ref::<Campath>() {
+                if let Some(some_on_changed) = &campath.on_changed {
+                    return Ok(JsValue::Object((*some_on_changed).borrow_mut().callback.clone()));
+                }
+                return Ok(JsValue::undefined());
+            }
+        }
+        Self::error_typ()
+    }
+
+    fn set_on_changed(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mut campath) = object.downcast_mut::<Campath>() {
+                if 1 == args.len() {
+                    match &args[0] {
+                        JsValue::Undefined => {
+                            if let Some(some_on_changed) = &campath.on_changed {
+                                let observer =  some_on_changed.clone() as Rc<RefCell<dyn advancedfx::campath::CampathChangedObserver>>;
+                                campath.native.unregister(Rc::downgrade(&observer));
+                            }
+                            campath.on_changed = None;
+                            return Ok(JsValue::Undefined); 
+                        }
+                        JsValue::Object(object) => {
+                            if object.is_callable() {
+                                if let Some(weak_context_wrapper) = context.get_data::<advancedfx::js::WeakContextWrapper>() {
+                                    if let Some(some_on_changed) = &campath.on_changed {
+                                        let observer =  some_on_changed.clone() as Rc<RefCell<dyn advancedfx::campath::CampathChangedObserver>>;
+                                        campath.native.unregister(Rc::downgrade(&observer));
+                                    }
+                                    let some_on_changed = Rc::<RefCell<CampathChangedCallback>>::new(RefCell::<CampathChangedCallback>::new(CampathChangedCallback::new(
+                                        object.clone(),
+                                        weak_context_wrapper.clone()
+                                    )));
+                                    let observer =  some_on_changed.clone() as Rc<RefCell<dyn advancedfx::campath::CampathChangedObserver>>;
+                                    campath.native.register(Rc::downgrade(&observer));                                    
+                                    campath.on_changed = Some(some_on_changed);
+                                    return Ok(JsValue::Undefined); 
+                                }
+                                return Err(JsNativeError::error().with_message("context has no advancedfx::js::WeakContextWrapper!").into())
+                            }
+                        }
+                        _ => {
+                        }
+                    }
+                }
+                return Err(advancedfx::js::errors::error_arguments())
+            }
+        }
+        Self::error_typ()
     }
 }
 
@@ -1021,18 +1245,6 @@ impl Class for Campath {
             .accessor(
                 js_string!("size"),
                 Some(NativeFunction::from_fn_ptr(Campath::get_size).to_js_function(&realm)),
-                None,
-                Attribute::all()
-            )
-            .accessor(
-                js_string!("begin"),
-                Some(NativeFunction::from_fn_ptr(Campath::not_implented).to_js_function(&realm)),
-                None,
-                Attribute::all()
-            )
-            .accessor(
-                js_string!("end"),
-                Some(NativeFunction::from_fn_ptr(Campath::not_implented).to_js_function(&realm)),
                 None,
                 Attribute::all()
             )
@@ -1142,8 +1354,8 @@ impl Class for Campath {
             )
             .accessor(
                 js_string!("onChanged"),
-                Some(NativeFunction::from_fn_ptr(Campath::not_implented).to_js_function(&realm)),
-                Some(NativeFunction::from_fn_ptr(Campath::not_implented).to_js_function(&realm)),
+                Some(NativeFunction::from_fn_ptr(Campath::get_on_changed).to_js_function(&realm)),
+                Some(NativeFunction::from_fn_ptr(Campath::set_on_changed).to_js_function(&realm)),
                 Attribute::all()
             );                    
             Ok(())

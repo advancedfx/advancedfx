@@ -328,13 +328,13 @@ impl CampathChangedEvent {
     }
 }
 
-trait CampathChangedObservable {    
+pub trait CampathChangedObservable {    
     fn register(&mut self, observer: Weak<RefCell<dyn CampathChangedObserver>>);
 
-    /*fn unregister(&mut self, observer: Weak<RefCell<dyn CampathChangedObserver>>);*/
+    fn unregister(&mut self, observer: Weak<RefCell<dyn CampathChangedObserver>>);
 }
 
-trait CampathChangedObserver {
+pub trait CampathChangedObserver {
     fn notify(&mut self);
 }
 
@@ -697,7 +697,7 @@ impl CampathChangedObservable for Campath {
         }
     }
 
-    /*fn unregister(&mut self, observer: Weak<RefCell<dyn CampathChangedObserver>>) {
+    fn unregister(&mut self, observer: Weak<RefCell<dyn CampathChangedObserver>>) {
         if let Some(ptr_changed) = self.changed_event {
             unsafe{(*ptr_changed).observers.retain(|x| 0 < x.strong_count() && !x.ptr_eq(&observer))};
             if 0 == unsafe{(*ptr_changed).observers.len()} {
@@ -710,7 +710,7 @@ impl CampathChangedObservable for Campath {
                 }
             }
         }
-    }*/
+    }
 }
 
 impl Drop for Campath {
