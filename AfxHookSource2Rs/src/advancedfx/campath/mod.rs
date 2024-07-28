@@ -117,7 +117,7 @@ impl CampathChangedObserver for Iterator {
     }
 }
 
-type CampathType = c_void;
+pub type CampathType = c_void;
 
 #[repr(u8)]
 pub enum DoubleInterp {
@@ -356,13 +356,13 @@ impl Campath {
         }
     }
 
-    /*
     pub fn new_shared(ptr: * mut CampathType) -> Self {
         Self {
             ptr: ptr,
-            owned: false
+            owned: false,
+            changed_event: None,
         }
-    }*/
+    }
 
     pub fn get_enabled(&self) -> bool {
         unsafe {

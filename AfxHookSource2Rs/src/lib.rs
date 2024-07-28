@@ -19,6 +19,7 @@ use futures::stream::SplitStream;
 
 use boa_gc::GcRefCell;
 use boa_engine::{
+    class::Class,
     Context,
     builtins::promise::PromiseState,
     context::{
@@ -107,6 +108,8 @@ extern "C" {
     fn afx_hook_source2_is_playing_demo() -> bool;
 
     fn afx_hook_source2_is_demo_paused() -> bool;
+
+    fn afx_hook_source2_get_main_campath() -> * mut advancedfx::campath::CampathType;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1118,6 +1121,19 @@ fn mirv_get_highest_entity_index(_this: &JsValue, _args: &[JsValue], _context: &
     return Ok(JsValue::Integer(afx_get_highest_entity_index()));
 }
 
+fn mirv_get_main_campath(_this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+    match advancedfx::js::campath::Campath::from_data(advancedfx::js::campath::Campath::new(advancedfx::campath::Campath::new_shared(unsafe{
+        afx_hook_source2_get_main_campath()
+    })), context) {
+        Ok(result_object) => {
+            return Ok(JsValue::Object(result_object));
+        }
+        Err(e) => {
+            return Err(e);
+        }
+    }
+}
+
 #[derive(Trace, JsData)]
 struct MirvEntityRef {
     #[unsafe_ignore_trace]
@@ -1560,7 +1576,12 @@ impl AfxHookSource2Rs {
             NativeFunction::from_fn_ptr(mirv_get_highest_entity_index),
             js_string!("getHighestEntityIndex"),
             0,
-        )        
+        )
+        .function(
+            NativeFunction::from_fn_ptr(mirv_get_main_campath),
+            js_string!("getMainCampath"),
+            0,
+        )
         .function(
             NativeFunction::from_fn_ptr(mirv_is_handle_valid),
             js_string!("isHandleValid"),

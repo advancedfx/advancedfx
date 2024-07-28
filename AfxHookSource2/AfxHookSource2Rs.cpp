@@ -7,6 +7,7 @@
 #include "../deps/release/prop/cs2/sdk_src/public/entityhandle.h"
 
 #include "../shared/AfxConsole.h"
+#include "../shared/CamPath.h"
 #include "../shared/FFITools.h"
 #include "../shared/StringTools.h"
 
@@ -120,6 +121,12 @@ extern "C" FFIBool afx_hook_source2_is_demo_paused() {
         }
     }
     return FFIBOOL_FALSE;
+}
+
+extern CamPath g_CamPath;
+
+extern "C" CamPath * afx_hook_source2_get_main_campath(void) {
+    return &g_CamPath;
 }
 
 typedef void AfxHookSource2Rs;

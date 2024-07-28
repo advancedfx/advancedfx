@@ -1357,7 +1357,7 @@ impl Class for Campath {
                 Some(NativeFunction::from_fn_ptr(Campath::get_on_changed).to_js_function(&realm)),
                 Some(NativeFunction::from_fn_ptr(Campath::set_on_changed).to_js_function(&realm)),
                 Attribute::all()
-            );                    
+            );                  
             Ok(())
     }
 }
