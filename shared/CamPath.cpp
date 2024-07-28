@@ -168,15 +168,11 @@ CamPath::CamPath()
 	m_RInterp = new CSCubicQuaternionInterpolation<CamPathValue>(&m_RView);
 	m_FovInterp = new CCubicDoubleInterpolation<CamPathValue>(&m_FovView);
 	m_SelectedInterp = new CBoolAndInterpolation<CamPathValue>(&m_SelectedView);
-
-	Changed();
 }
 
 CamPath::~CamPath()
 {
 	m_Map.clear();
-
-	Changed();
 
 	delete m_SelectedInterp;
 	delete m_FovInterp;
