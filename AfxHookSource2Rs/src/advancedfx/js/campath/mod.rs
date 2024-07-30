@@ -366,38 +366,79 @@ struct CampathChangedCallback {
     #[unsafe_ignore_trace]
     callback: JsObject,
     weak_context_wrapper: advancedfx::js::WeakContextWrapper,
-    suppress: bool,
+    suppress: u32,
     suppressed_change: bool
 }
 
 impl CampathChangedCallback {
+    #[must_use]
     fn new(callback: JsObject, weak_context_wrapper: advancedfx::js::WeakContextWrapper) -> Self {
         Self {
             callback: callback,
             weak_context_wrapper: weak_context_wrapper,
-            suppress: false,
+            suppress: 0,
             suppressed_change: false,
         }
     }
 
     fn suppress(&mut self) {
-        self.suppress = true;
+        self.suppress += 1;
     }
 
-    fn unsuppress(&mut self, context: &mut Context) -> JsResult<JsValue> {
-        self.suppress = false;
-        if self.suppressed_change {
+    fn unsuppress(&mut self) -> Option<JsObject> {
+        self.suppress -= 1;
+        if self.suppress == 0 && self.suppressed_change {
             self.suppressed_change = false;
-            return self.callback.call(&JsValue::null(), &[], context);
+            return Some(self.callback.clone());
         }
-        return Ok(JsValue::undefined());
+        return None;
     }
 
 }
 
+struct CampathChangedSuppressor {
+    callback: Option<Rc<RefCell<CampathChangedCallback>>>
+}
+
+impl CampathChangedSuppressor {
+    #[must_use]
+    fn new() -> Self {
+        Self {
+            callback: None
+        }
+    }
+
+    fn suppress(&mut self, campath: &Campath) {
+        if let Some(some_on_changed) = &campath.on_changed {
+            (*some_on_changed).borrow_mut().suppress();
+            self.callback = Some(some_on_changed.clone());
+        }
+    }
+
+    fn finish(&mut self, result: JsResult<JsValue>, context: &mut Context) -> JsResult<JsValue> {
+        let mut object_option: Option<JsObject> = None;
+        if let Some(some_on_changed) = &self.callback {
+            object_option = (*some_on_changed).borrow_mut().unsuppress();
+        }
+        if !self.result.is_err() {
+            if let Some(object) = object_option {
+                if let Err(e) = object.call(&JsValue::null(), &[], context) {
+                    return Err(e);
+                }
+            }
+        }
+        return result;
+    }
+}
+
+impl Drop for CampathChangedSuppressor {
+    fn drop(&mut self) {
+    }
+}
+
 impl advancedfx::campath::CampathChangedObserver for CampathChangedCallback {
     fn notify(&mut self) {
-        if !self.suppress {
+        if 0 == self.suppress {
             if let Some(context_wrapper_rc) = self.weak_context_wrapper.context_wrapper.upgrade() {
                 let _ = self.callback.call(&JsValue::null(), &[], &mut context_wrapper_rc.borrow_mut().context);
             }
@@ -446,17 +487,20 @@ impl Campath {
         }
         Self::error_typ()
     }
-
+    
     fn set_enabled(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::set_enabled_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)
+    }
+
+    fn set_enabled_internal (suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Some(value) = args[0].as_boolean() {
-                        campath.suppress_on_changed();
+                        suppressor.suppress(&campath);
                         campath.native.set_enabled(value);
-                        if let Err(e) = campath.unsuppress_on_changed(context) {
-                            return Err(e);
-                        }
                         return Ok(JsValue::undefined());
                     }
                 }
@@ -465,6 +509,7 @@ impl Campath {
         }
         Self::error_typ()
     }
+
 
     fn get_offset(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
@@ -476,15 +521,18 @@ impl Campath {
     }
 
     fn set_offset(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::set_offset_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)        
+    }
+
+    fn set_offset_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Some(value) = args[0].as_number() {
-                        campath.suppress_on_changed();
+                        suppressor.suppress(&campath);
                         campath.native.set_offset(value);
-                        if let Err(e) = campath.unsuppress_on_changed(context) {
-                            return Err(e);
-                        }                        
                         return Ok(JsValue::undefined());
                     }
                 }
@@ -504,15 +552,18 @@ impl Campath {
     }
 
     fn set_hold(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::set_hold_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)        
+    }
+
+    fn set_hold_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Some(value) = args[0].as_boolean() {
-                        campath.suppress_on_changed();
+                        suppressor.suppress(&campath);
                         campath.native.set_hold(value);
-                        if let Err(e) = campath.unsuppress_on_changed(context) {
-                            return Err(e);
-                        }                        
                         return Ok(JsValue::undefined());
                     }
                 }
@@ -530,18 +581,21 @@ impl Campath {
         }
         Self::error_typ()
     }
-    
+
     fn set_position_interp(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::set_position_interp_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)        
+    }
+
+    fn set_position_interp_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Ok(value) = args[0].to_uint8(context) {
                         if let Ok(e_value) = advancedfx::campath::DoubleInterp::try_from(value) {
-                            campath.suppress_on_changed();
+                            suppressor.suppress(&campath);
                             campath.native.set_position_interp(e_value);
-                            if let Err(e) = campath.unsuppress_on_changed(context) {
-                                return Err(e);
-                            }                            
                             return Ok(JsValue::undefined());
                         }
                     }
@@ -560,18 +614,21 @@ impl Campath {
         }
         Self::error_typ()
     }
-    
+
     fn set_rotation_interp(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::set_rotation_interp_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)
+    }
+    
+    fn set_rotation_interp_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Ok(value) = args[0].to_uint8(context) {
                         if let Ok(e_value) = advancedfx::campath::QuaternionInterp::try_from(value) {
-                            campath.suppress_on_changed();
+                            suppressor.suppress(&campath);
                             campath.native.set_rotation_interp(e_value);
-                            if let Err(e) = campath.unsuppress_on_changed(context) {
-                                return Err(e);
-                            }                            
                             return Ok(JsValue::undefined());
                         }
                     }
@@ -590,18 +647,21 @@ impl Campath {
         }
         Self::error_typ()
     }
-    
+
     fn set_fov_interp(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::set_fov_interp_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)
+    }
+
+    fn set_fov_interp_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Ok(value) = args[0].to_uint8(context) {
                         if let Ok(e_value) = advancedfx::campath::DoubleInterp::try_from(value) {
-                            campath.suppress_on_changed();
+                            suppressor.suppress(&campath);
                             campath.native.set_fov_interp(e_value);
-                            if let Err(e) = campath.unsuppress_on_changed(context) {
-                                return Err(e);
-                            }                            
                             return Ok(JsValue::undefined());
                         }
                     }
@@ -613,17 +673,21 @@ impl Campath {
     }
 
     fn add(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::add_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)
+    }
+
+
+    fn add_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 2 == args.len() {
                     if let Some(time) = args[0].as_number() {
                         if let Some(value_object) = args[1].as_object() {
                             if let Some(value_object_inner) = value_object.downcast_ref::<Value>() {
-                                campath.suppress_on_changed();
-                                campath.native.add(time,&value_object_inner.native);
-                                if let Err(e) = campath.unsuppress_on_changed(context) {
-                                    return Err(e);
-                                }                                
+                                suppressor.suppress(&campath);
+                                campath.native.add(time,&value_object_inner.native);                          
                                 return Ok(JsValue::undefined());
                             }
                         }
@@ -636,15 +700,17 @@ impl Campath {
     }
 
     fn remove(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::remove_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)
+    }
+    fn remove_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Some(time) = args[0].as_number() {
-                        campath.suppress_on_changed();
-                        campath.native.remove(time);
-                        if let Err(e) = campath.unsuppress_on_changed(context) {
-                            return Err(e);
-                        }                        
+                        suppressor.suppress(&campath);
+                        campath.native.remove(time);      
                         return Ok(JsValue::undefined());
                     }
                 }
@@ -653,15 +719,18 @@ impl Campath {
         }
         Self::error_typ()
     }
+
+    fn clear(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::clear_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)
+    }    
     
-    fn clear(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+    fn clear_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                campath.suppress_on_changed();
+                suppressor.suppress(&campath);
                 campath.native.clear();
-                if let Err(e) = campath.unsuppress_on_changed(context) {
-                    return Err(e);
-                }                
                 return Ok(JsValue::undefined());
             }
         }
@@ -744,16 +813,19 @@ impl Campath {
     }
 
     fn load(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::load_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)
+    }
+
+    fn load_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Some(js_file_path) = args[0].as_string() {
                         if let Ok(str_file_path) = js_file_path.to_std_string() {
-                            campath.suppress_on_changed();
+                            suppressor.suppress(&campath);
                             let result = campath.native.load(str_file_path);
-                            if let Err(e) = campath.unsuppress_on_changed(context) {
-                                return Err(e);
-                            }                            
                             return Ok(JsValue::from(result));
                         }
                     }
@@ -764,18 +836,13 @@ impl Campath {
         Self::error_typ()
     }
 
-    fn save(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+    fn save(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Some(js_file_path) = args[0].as_string() {
                         if let Ok(str_file_path) = js_file_path.to_std_string() {
-                            campath.suppress_on_changed();
-                            let result = campath.native.save(str_file_path);
-                            if let Err(e) = campath.unsuppress_on_changed(context) {
-                                return Err(e);
-                            }                            
-                            return Ok(JsValue::from(result));
+                            return Ok(JsValue::from(campath.native.save(str_file_path)));
                         }
                     }
                 }
@@ -786,25 +853,25 @@ impl Campath {
     }
 
     fn set_start(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::set_start_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)
+    }
+
+    fn set_start_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 <= args.len() {
                     if let Some(time) = args[0].as_number() {
                         if 1 == args.len() {
-                            campath.suppress_on_changed();
+                            suppressor.suppress(&campath);
                             campath.native.set_start(time,false);
-                            if let Err(e) = campath.unsuppress_on_changed(context) {
-                                return Err(e);
-                            }                                   
                             return Ok(JsValue::undefined());
                         }
                         else if 2 == args.len() {
                             if let Some(relative) = args[1].as_boolean() {
-                                campath.suppress_on_changed();
+                                suppressor.suppress(&campath);
                                 campath.native.set_start(time,relative);
-                                if let Err(e) = campath.unsuppress_on_changed(context) {
-                                    return Err(e);
-                                }                                       
                                 return Ok(JsValue::undefined());
                             }
                         }
@@ -817,15 +884,18 @@ impl Campath {
     }  
 
     fn set_duration(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::set_duration_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)        
+    }
+
+    fn set_duration_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Some(time) = args[0].as_number() {
-                        campath.suppress_on_changed();
+                        suppressor.suppress(&campath);
                         campath.native.set_duration(time);
-                        if let Err(e) = campath.unsuppress_on_changed(context) {
-                            return Err(e);
-                        }                               
                         return Ok(JsValue::undefined());
                     }
                 }
@@ -834,8 +904,14 @@ impl Campath {
         }
         Self::error_typ()
     }
-    
+
     fn set_position(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::set_position_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)
+    }
+
+    fn set_position_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 3 == args.len() {
@@ -863,11 +939,8 @@ impl Campath {
                     if let Ok(x) = result_x {
                         if let Ok(y) = result_y {
                             if let Ok(z) = result_z {
-                                campath.suppress_on_changed();
+                                suppressor.suppress(&campath);
                                 campath.native.set_position(x,y,z);
-                                if let Err(e) = campath.unsuppress_on_changed(context) {
-                                    return Err(e);
-                                }                                       
                                 return Ok(JsValue::undefined());                            
                             }
                         }
@@ -880,6 +953,12 @@ impl Campath {
     }
 
     fn set_angles(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::set_angles_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)
+    }
+
+    fn set_angles_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 3 == args.len() {
@@ -907,11 +986,8 @@ impl Campath {
                     if let Ok(x) = result_x {
                         if let Ok(y) = result_y {
                             if let Ok(z) = result_z {
-                                campath.suppress_on_changed();
+                                suppressor.suppress(&campath);
                                 campath.native.set_angles(x,y,z);
-                                if let Err(e) = campath.unsuppress_on_changed(context) {
-                                    return Err(e);
-                                }                                
                                 return Ok(JsValue::undefined());                            
                             }
                         }
@@ -924,15 +1000,18 @@ impl Campath {
     }
 
     fn set_fov(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::set_fov_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)        
+    }
+
+    fn set_fov_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Some(fov) = args[0].as_number() {
-                        campath.suppress_on_changed();
+                        suppressor.suppress(&campath);
                         campath.native.set_fov(fov);
-                        if let Err(e) = campath.unsuppress_on_changed(context) {
-                            return Err(e);
-                        }                        
                         return Ok(JsValue::undefined());
                     }
                 }
@@ -941,19 +1020,22 @@ impl Campath {
         }
         Self::error_typ()
     }
-    
+
     fn rotate(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::rotate_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)        
+    }
+
+    fn rotate_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 3 == args.len() {
                     if let Some(y_pitch) = args[0].as_number() {
                         if let Some(z_yaw) = args[1].as_number() {
                             if let Some(x_roll) = args[2].as_number() {
-                                campath.suppress_on_changed();
+                                suppressor.suppress(&campath);
                                 campath.native.rotate(y_pitch,z_yaw,x_roll);
-                                if let Err(e) = campath.unsuppress_on_changed(context) {
-                                    return Err(e);
-                                }                                
                                 return Ok(JsValue::undefined());
                             }
                         }
@@ -966,6 +1048,12 @@ impl Campath {
     }
 
     fn anchor_transform(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::anchor_transform_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)        
+    }
+
+    fn anchor_transform_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 12 == args.len() {
@@ -981,11 +1069,8 @@ impl Campath {
                                                         if let Some(dest_y_pitch) = args[9].as_number() {
                                                             if let Some(dest_z_yaw) = args[10].as_number() {
                                                                 if let Some(dest_x_roll) = args[11].as_number() {
-                                                                    campath.suppress_on_changed();
+                                                                    suppressor.suppress(&campath);
                                                                     campath.native.anchor_transform(anchor_x, anchor_y, anchor_z, anchor_y_pitch, anchor_z_yaw, anchor_x_roll, dest_x, dest_y, dest_z, dest_y_pitch, dest_z_yaw, dest_x_roll);
-                                                                    if let Err(e) = campath.unsuppress_on_changed(context) {
-                                                                        return Err(e);
-                                                                    }                                                                    
                                                                     return Ok(JsValue::undefined());
                                                                 }
                                                             }
@@ -1006,42 +1091,51 @@ impl Campath {
         Self::error_typ()
     }
 
-    fn select_all(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+    fn select_all(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::select_all_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)
+    }
+
+    fn select_all_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                campath.suppress_on_changed();
+                suppressor.suppress(&campath);
                 let result = campath.native.select_all();
-                if let Err(e) = campath.unsuppress_on_changed(context) {
-                    return Err(e);
-                }                
                 return Ok(JsValue::from(result));
             }
         }
         Self::error_typ()
     }
 
-    fn select_none(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+    fn select_none(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::select_none_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)
+    }
+
+    fn select_none_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                campath.suppress_on_changed();
+                suppressor.suppress(&campath);
                 campath.native.select_none();
-                if let Err(e) = campath.unsuppress_on_changed(context) {
-                    return Err(e);
-                }                  
                 return Ok(JsValue::undefined());
             }
         }
         Self::error_typ()
     }
 
-    fn select_invert(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+    fn select_invert(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::select_invert_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)
+    }
+
+    fn select_invert_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
-                campath.suppress_on_changed();
+                suppressor.suppress(&campath);
                 let result = campath.native.select_invert();
-                if let Err(e) = campath.unsuppress_on_changed(context) {
-                    return Err(e);
-                }                  
                 return Ok(JsValue::from(result));
             }
         }
@@ -1049,16 +1143,19 @@ impl Campath {
     }
 
     fn select_add_idx(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::select_add_idx_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)        
+    }
+
+    fn select_add_idx_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 2 == args.len() {
                     if let Some(min) = args[0].as_number() {
                         if let Some(max) = args[1].as_number() {
-                            campath.suppress_on_changed();
+                            suppressor.suppress(&campath);
                             let result = campath.native.select_add_idx(min as usize,max as usize);
-                            if let Err(e) = campath.unsuppress_on_changed(context) {
-                                return Err(e);
-                            }          
                             return Ok(JsValue::from(result));
                         }
                     }
@@ -1069,16 +1166,18 @@ impl Campath {
     }
 
     fn select_add_min_count(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::select_add_min_count_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)
+    }
+    fn select_add_min_count_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 2 == args.len() {
                     if let Some(min) = args[0].as_number() {
                         if let Some(count) = args[1].as_number() {
-                            campath.suppress_on_changed();
+                            suppressor.suppress(&campath);
                             let result = campath.native.select_add_min_count(min,count as usize);
-                            if let Err(e) = campath.unsuppress_on_changed(context) {
-                                return Err(e);
-                            }                            
                             return Ok(JsValue::from(result));
                         }
                     }
@@ -1089,16 +1188,19 @@ impl Campath {
     }
 
     fn select_add_min_max(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let mut suppressor = CampathChangedSuppressor::new();
+        let result = Self::select_add_min_max_internal(&mut suppressor, this,args,context);
+        suppressor.finish(result, context)
+    }
+
+    fn select_add_min_max_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 2 == args.len() {
                     if let Some(min) = args[0].as_number() {
                         if let Some(max) = args[1].as_number() {
-                            campath.suppress_on_changed();
+                            suppressor.suppress(&campath);
                             let result = campath.native.select_add_min_max(min,max);
-                            if let Err(e) = campath.unsuppress_on_changed(context) {
-                                return Err(e);
-                            }                             
                             return Ok(JsValue::from(result));
                         }
                     }
@@ -1106,19 +1208,6 @@ impl Campath {
             }
         }
         Self::error_typ()
-    }
-
-    fn suppress_on_changed(&mut self) {
-        if let Some(some_on_changed) = &self.on_changed {
-            (*some_on_changed).borrow_mut().suppress();
-        }
-    }
-
-    fn unsuppress_on_changed(&mut self, context: &mut Context) -> JsResult<JsValue> {
-        if let Some(some_on_changed) = &self.on_changed {
-            return (*some_on_changed).borrow_mut().unsuppress(context);
-        }
-        return Ok(JsValue::undefined());
     }
 
     fn get_on_changed(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
