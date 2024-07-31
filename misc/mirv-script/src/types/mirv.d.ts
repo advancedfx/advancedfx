@@ -99,6 +99,8 @@ declare namespace mirv {
 
 	function getEntityFromIndex(index: number): null | Entity;
 
+	function getMainCampath(): AdvancedfxCampath;
+
 	/**
 	 * Represents a binary data message.
 	 */
