@@ -1096,7 +1096,7 @@ impl Quaternion {
 
 impl Class for Quaternion {
     const NAME: &'static str = "AdvancedfxMathQuaternion";
-    const LENGTH: usize = 3;
+    const LENGTH: usize = 4;
 
     fn data_constructor(
         _this: &JsValue,
