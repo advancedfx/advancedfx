@@ -4,7 +4,6 @@
 #include "WrpConsole.h"
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
-#include "../deps/release/prop/cs2/sdk_src/public/entityhandle.h"
 
 #include "../shared/AfxConsole.h"
 //#include "../shared/binutils.h"
@@ -12,25 +11,9 @@
 #include "AfxHookSource2Rs.h"
 
 #define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
 #include "../deps/release/Detours/src/detours.h"
 
 #include <map>
-
-struct EntityListIterator{
-	int index = -1;
-
-	bool IsValid() const {
-		return 0 < index;
-	}
-
-    int GetIndex() const {
-        return index;
-    }
-};
-
-typedef EntityListIterator * (__fastcall * GetHighestEntityIterator_t)(void * entityList, EntityListIterator * it);
-typedef void * (__fastcall * GetEntityFromIndex_t)(void * pEntityList, int index);
 
 void ** g_pEntityList = nullptr;
 GetHighestEntityIterator_t  g_GetHighestEntityIterator = nullptr;
@@ -43,85 +26,82 @@ cl_ent_viewoffset 192
 */
 
 // CEntityInstance: Root class for all entities
-class CEntityInstance {
-public:
-    // Retrieved from script function.
-    const char * GetName() {
-        const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x18);
-        if(pszName) return pszName;
-        return "";
-    }
+// Retrieved from script function.
+const char * CEntityInstance::GetName() {
+	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x18);
+	if(pszName) return pszName;
+	return "";
+};
 
-    // Retrieved from script function.
-    // can return nullptr!
-    const char * GetDebugName() {
-        const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x18);
-        if(pszName) return pszName;
-        return **(const char***)(*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x8)+0x28);
-    }
+// Retrieved from script function.
+// can return nullptr!
+const char * CEntityInstance::GetDebugName() {
+	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x18);
+	if(pszName) return pszName;
+	return **(const char***)(*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x8)+0x28);
+};
 
-    // Retrieved from script function.
-    const char * GetClassName() {
-        const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x20);
-        if(pszName) return pszName;
-        return "";
-    }
+// Retrieved from script function.
+const char * CEntityInstance::GetClassName() {
+	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x20);
+	if(pszName) return pszName;
+	return "";
+};
 
-    // Retrieved from script function.
-    // GetEntityHandle ...
+// Retrieved from script function.
+// GetEntityHandle ...
 
-    bool IsPlayerPawn() {
-        // See cl_ent_text drawing function.
-        return ((bool (__fastcall *)(void *)) (*(void***)this)[149]) (this);
-    }
+bool CEntityInstance::IsPlayerPawn() {
+	// See cl_ent_text drawing function.
+	return ((bool (__fastcall *)(void *)) (*(void***)this)[149]) (this);
+};
 
-    SOURCESDK::CS2::CBaseHandle GetPlayerPawnHandle() {
-        // See cl_ent_text drawing function. Or Schema system.
-        if(!IsPlayerController())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
-        return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + 0x5fc));
-    }
+SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerPawnHandle() {
+	// See cl_ent_text drawing function. Or Schema system.
+	if(!IsPlayerController())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
+	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + 0x5fc));
+};
 
-    bool IsPlayerController() {
-        // See cl_ent_text drawing function. Near "Pawn: (%d) Name: %s".
-        return ((bool (__fastcall *)(void *)) (*(void***)this)[150]) (this);    
-    }
+bool CEntityInstance::IsPlayerController() {
+	// See cl_ent_text drawing function. Near "Pawn: (%d) Name: %s".
+	return ((bool (__fastcall *)(void *)) (*(void***)this)[150]) (this);    
+};
 
-    SOURCESDK::CS2::CBaseHandle GetPlayerControllerHandle() {
-        // See cl_ent_text drawing function. Or Schema system.
-        if(!IsPlayerPawn())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
-        return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + 0x128c));
-    }
+SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerControllerHandle() {
+	// See cl_ent_text drawing function. Or Schema system.
+	if(!IsPlayerPawn())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
+	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + 0x128c));
+};
 
-    unsigned int GetHealth() {
-        // See cl_ent_text drawing function. Near "Health: %d\n".
-        return ((unsigned int (__fastcall *)(void *)) (*(void***)this)[162]) (this); 
-    }
+unsigned int CEntityInstance::GetHealth() {
+	// See cl_ent_text drawing function. Near "Health: %d\n".
+	return ((unsigned int (__fastcall *)(void *)) (*(void***)this)[162]) (this); 
+};
 
-    /**
-     * @remarks FLOAT_MAX if invalid
-     */
-    void GetOrigin(float & x, float & y, float & z) {
-        // See cl_ent_text drawing function. Near "Position: %0.3f, %0.3f, %0.3f\n" or cl_ent_viewoffset related function.
-        x =  (*(float *)((unsigned char *)this + 0x144));
-        y =  (*(float *)((unsigned char *)this + 0x148));
-        z =  (*(float *)((unsigned char *)this + 0x14c));
-    }
+/**
+ * @remarks FLOAT_MAX if invalid
+ */
+void CEntityInstance::GetOrigin(float & x, float & y, float & z) {
+	// See cl_ent_text drawing function. Near "Position: %0.3f, %0.3f, %0.3f\n" or cl_ent_viewoffset related function.
+	x =  (*(float *)((unsigned char *)this + 0x144));
+	y =  (*(float *)((unsigned char *)this + 0x148));
+	z =  (*(float *)((unsigned char *)this + 0x14c));
+};
 
-    void GetRenderEyeOrigin(float outOrigin[3]) {
-        // GetRenderEyeAngles vtable offset minus 1
-        ((void (__fastcall *)(void *,float outOrigin[3])) (*(void***)this)[166]) (this,outOrigin);
-    }
+void CEntityInstance::GetRenderEyeOrigin(float outOrigin[3]) {
+	// GetRenderEyeAngles vtable offset minus 1
+	((void (__fastcall *)(void *,float outOrigin[3])) (*(void***)this)[166]) (this,outOrigin);
+};
 
-    void GetRenderEyeAngles(float outAngles[3]) {
-        // See cl_track_render_eye_angles. Near "Render eye angles: %.7f, %.7f, %.7f\n".
-        ((void (__fastcall *)(void *,float outAngles[3])) (*(void***)this)[167]) (this,outAngles);
-    }
+void CEntityInstance::GetRenderEyeAngles(float outAngles[3]) {
+	// See cl_track_render_eye_angles. Near "Render eye angles: %.7f, %.7f, %.7f\n".
+	((void (__fastcall *)(void *,float outAngles[3])) (*(void***)this)[167]) (this,outAngles);
+};
 
-    SOURCESDK::CS2::CBaseHandle GetViewEntityHandle() {
-        // Schema system.
-        //if (!IsPlayerPawn())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
-        return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int*)((unsigned char*)this + 0x9c));
-    }
+SOURCESDK::CS2::CBaseHandle CEntityInstance::GetViewEntityHandle() {
+	// Schema system.
+	//if (!IsPlayerPawn())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
+	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int*)((unsigned char*)this + 0x9c));
 };
 
 class CAfxEntityInstanceRef {
