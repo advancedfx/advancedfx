@@ -47,6 +47,8 @@ add_dependencies(${PROJECT_NAME}
     AfxHookSource2Shaders
 )
 
+add_definitions(-DGAME_CS2)
+
 corrosion_import_crate(MANIFEST_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../AfxHookSource2Rs/Cargo.toml)
 
 if(${CMAKE_BUILD_TYPE_DEBUG})
@@ -173,6 +175,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/MirvCamIO.h
     ../shared/MirvCampath.cpp
     ../shared/MirvCampath.h
+	../shared/MirvDeathMsgFilter.cpp
+	../shared/MirvDeathMsgFilter.h
     ../shared/MirvInput.cpp
     ../shared/MirvInput.h
     ../shared/MirvSkip.cpp

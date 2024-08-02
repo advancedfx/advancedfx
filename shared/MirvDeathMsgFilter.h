@@ -428,6 +428,10 @@ struct DeathMsgFilterEntry
 
 	MyDeathMsgIntEntry attackerblind;
 
+	#ifdef GAME_CS2
+		MyDeathMsgIntEntry attackerinair;
+	#endif
+
 	MyDeathMsgFloatEntry lifetime;
 
 	MyDeathMsgFloatEntry lifetimeMod;
@@ -543,6 +547,12 @@ struct DeathMsgFilterEntry
 			{
 				revenge.Console_Set(argI + strlen("revenge="));
 			}
+			#ifdef GAME_CS2
+			else if (StringIBeginsWith(argI, "attackerinair="))
+			{
+				attackerinair.Console_Set(argI + strlen("attackerinair="));
+			}
+			#endif
 			else if (StringIBeginsWith(argI, "lifetime="))
 			{
 				lifetime.Console_Set(argI + strlen("lifetime="));
@@ -706,6 +716,14 @@ struct DeathMsgFilterEntry
 				attackerblind.Console_Edit(args);
 				return;
 			}
+			#ifdef GAME_CS2
+			else if (0 == _stricmp("attackerinair", arg1))
+			{
+				CSubWrpCommandArgs subArgs(args, 2);
+				attackerinair.Console_Edit(args);
+				return;
+			}
+			#endif
 			else if (0 == _stricmp("lifetime", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
@@ -832,6 +850,12 @@ struct DeathMsgFilterEntry
 		attackerblind.Console_Print();
 		conMessage("\n");
 
+		#ifdef GAME_CS2
+		conMessage("%s attackerinair [...] = ", arg0);
+		attackerinair.Console_Print();
+		conMessage("\n"); 
+		#endif
+
 		conMessage("%s lifetime [...] = ", arg0);
 		lifetime.Console_Print();
 		conMessage("\n");
@@ -875,6 +899,10 @@ public:
 
 	MyDeathMsgIntEntry attackerblind;
 
+	#ifdef GAME_CS2
+	MyDeathMsgIntEntry attackerinair;
+	#endif
+
 	MyDeathMsgFloatEntry lifetime;
 
 	MyDeathMsgFloatEntry lifetimeMod;
@@ -897,6 +925,9 @@ public:
 		ApplyIntEntry(dme.noscope, noscope);
 		ApplyIntEntry(dme.thrusmoke, thrusmoke);
 		ApplyIntEntry(dme.attackerblind, attackerblind);
+		#ifdef GAME_CS2
+		ApplyIntEntry(dme.attackerinair, attackerinair);
+		#endif
 		ApplyFloatEntry(dme.lifetime, lifetime);
 		ApplyFloatEntry(dme.lifetimeMod, lifetimeMod);
 		ApplyBoolEntry(dme.block, block);

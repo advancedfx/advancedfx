@@ -36,6 +36,9 @@ void Console_DeathMsgArgs_PrintHelp(const char * cmd, bool showMatch)
 		"\t\"noscope=<iVal>\" - If noscope.\n"
 		"\t\"thrusmoke=<iVal>\" - If thrusmoke.\n"
 		"\t\"attackerblind=<iVal>\" - If attackerblind.\n"
+		#ifdef GAME_CS2
+		"\t\"attackerinair=<iVal>\" - If attackerinair.\n"
+		#endif
 		"\t\"lifetime=<fVal>\" - Life time in seconds.\n"
 		"\t\"lifetimeMod=<fVal>\" - Life time modifier (for player considered to be local player).\n"
 		"\t\"block=<iVal>\" - If to block this message (0 = No, 1 = Yes).\n"
