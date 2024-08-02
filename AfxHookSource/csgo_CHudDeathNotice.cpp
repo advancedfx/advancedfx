@@ -8,6 +8,8 @@
 #include "RenderView.h"
 #include "csgo/ClientToolsCSgo.h"
 
+#include "../shared/MirvDeathMsgFilter.h"
+
 #include "AfxStreams.h"
 
 #include <shared/AfxDetours.h>
@@ -49,14 +51,6 @@ event->GetInt("attackerblind",0) // new
 */
 
 
-enum class DeathnoticeShowNumbers_e : int
-{
-	DeathnoticeShowNumbers_Default = 0,
-	DeathnoticeShowNumbers_Numbers = 1,
-	DeathnoticeShowNumbers_PrependNumbers = 2
-};
-
-DeathnoticeShowNumbers_e g_DeathnoticeShowNumbers = DeathnoticeShowNumbers_e::DeathnoticeShowNumbers_Default;
 
 int GetSpecKeyNumber(int entindex)
 {
@@ -114,6 +108,10 @@ int GetSpecKeyNumber(int entindex)
 
 extern WrpVEngineClient * g_VEngineClient;
 
+advancedfx::Con_Printf_t conMessage = nullptr;
+advancedfx::Con_Printf_t conWarning = nullptr;
+
+MirvDeathMsg g_MirvDeathMsg;
 
 typedef void csgo_C_CSPlayer_IUnk_t;
 typedef int(__fastcall * csgo_C_CSPlayer_IClientNetworkable_entindex_t)(csgo_C_CSPlayer_IUnk_t * This, void * edx);
@@ -131,14 +129,6 @@ CCSGO_HudDeathNotice_UnkRemoveNotices_t TrueCCSGO_HudDeathNotice_UnkRemoveNotice
 typedef void csgo_panorama_CUIPanel;
 typedef void(__fastcall * csgo_panorama_CUIPanel_UnkSetFloatProp_t)(csgo_panorama_CUIPanel * This, void * edx, WORD propId, float value);
 csgo_panorama_CUIPanel_UnkSetFloatProp_t Truecsgo_panorama_CUIPanel_UnkSetFloatProp = 0;
-
-
-enum DeathMsgIdMatchMode
-{
-	DMBM_EQUAL,
-	DMBM_EXCEPT,
-	DMBM_ANY
-};
 
 extern SOURCESDK::CSGO::IEngineTrace * g_pClientEngineTrace;
 
@@ -205,1017 +195,142 @@ int EntIndexFromTrace() {
 	return 0;
 }
 
-struct DeathMsgId
+void DeathMsgId::operator=(const char* consoleValue)
 {
-	union {
-		int userId;
-		unsigned long long xuid;
-		int specKey;
-	} Id;
-	enum {
-		Id_UserId,
-		Id_Xuid,
-		Id_Key
-	} Mode;
+	if (!consoleValue)
+		return;
 
-	DeathMsgId()
+	if (StringBeginsWith(consoleValue, "k"))
 	{
-		Mode = Id_UserId;
-		Id.userId = 0;
+		this->Mode = Id_Key;
+		this->Id.specKey = atoi(consoleValue +1);
 	}
-
-	DeathMsgId(int userId)
+	else if (StringBeginsWith(consoleValue, "x"))
 	{
-		Mode = Id_UserId;
-		Id.userId = userId;
-
-	}
-	DeathMsgId(unsigned long long xuid)
-	{
-		Mode = Id_Xuid;
-		Id.xuid = xuid;
-	}
-
-	void operator =(const int userId)
-	{
-		Mode = Id_UserId;
-		Id.userId = userId;
-	}
-
-	void operator =(const unsigned long long xuid)
-	{
-		Mode = Id_Xuid;
-		Id.xuid = xuid;
-	}
-
-	void operator =(char const * consoleValue)
-	{
-		if (!consoleValue)
-			return;
-
-		if (StringBeginsWith(consoleValue, "k"))
+		unsigned long long val;
+		
+		if (0 == _stricmp("xTrace", consoleValue))
 		{
-			this->Mode = Id_Key;
-			this->Id.specKey = atoi(consoleValue +1);
-		}
-		else if (StringBeginsWith(consoleValue, "x"))
-		{
-			unsigned long long val;
-			
-			if (0 == _stricmp("xTrace", consoleValue))
+			SOURCESDK::player_info_t_csgo pinfo;
+
+			if (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(EntIndexFromTrace(), &pinfo))
 			{
-				SOURCESDK::player_info_t_csgo pinfo;
-
-				if (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(EntIndexFromTrace(), &pinfo))
-				{
-					val = pinfo.xuid;
-				}
-				else
-					val = 0;
+				val = pinfo.xuid;
 			}
 			else
-				val = strtoull(consoleValue + 1, 0, 10);
-
-			this->operator=(val);
+				val = 0;
 		}
 		else
+			val = strtoull(consoleValue + 1, 0, 10);
+
+		this->operator=(val);
+	}
+	else
+	{
+		int val;
+
+		if (0 == _stricmp("trace", consoleValue))
 		{
-			int val;
+			SOURCESDK::player_info_t_csgo pinfo;
 
-			if (0 == _stricmp("trace", consoleValue))
+			if (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(EntIndexFromTrace(), &pinfo))
 			{
-				SOURCESDK::player_info_t_csgo pinfo;
-
-				if (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(EntIndexFromTrace(), &pinfo))
-				{
-					val = pinfo.userID;
-				}
-				else
-					val = 0;
+				val = pinfo.userID;
 			}
 			else
-				val = atoi(consoleValue);
-
-			this->operator=(val);
+				val = 0;
 		}
-	}
+		else
+			val = atoi(consoleValue);
 
-	int ResolveToUserId()
+		this->operator=(val);
+	}
+};
+
+int DeathMsgId::ResolveToUserId()
+{
+	switch(Mode)
 	{
-		switch(Mode)
+	case Id_Key:
 		{
-		case Id_Key:
+			SOURCESDK::player_info_t_csgo pinfo;
+			SOURCESDK::IVEngineClient_014_csgo * vengineClient = g_VEngineClient->GetVEngineClient_csgo();
+			int maxClients = g_VEngineClient->GetMaxClients();
+			for (int i = 0; i < maxClients; ++i)
 			{
-				SOURCESDK::player_info_t_csgo pinfo;
-				SOURCESDK::IVEngineClient_014_csgo * vengineClient = g_VEngineClient->GetVEngineClient_csgo();
-				int maxClients = g_VEngineClient->GetMaxClients();
-				for (int i = 0; i < maxClients; ++i)
+				if (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(i, &pinfo))
 				{
-					if (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(i, &pinfo))
-					{
-						if(GetSpecKeyNumber(g_VEngineClient->GetVEngineClient_csgo()->GetPlayerForUserID(pinfo.userID)) == Id.specKey)
-							return pinfo.userID;
-					}
-				}
-			}
-			return 0;
-		case Id_Xuid:
-			{
-				SOURCESDK::player_info_t_csgo pinfo;
-				SOURCESDK::IVEngineClient_014_csgo * vengineClient = g_VEngineClient->GetVEngineClient_csgo();
-				int maxClients = g_VEngineClient->GetMaxClients();
-				for (int i = 0; i < maxClients; ++i)
-				{
-					if (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(i, &pinfo) && pinfo.xuid == Id.xuid)
-					{
+					if(GetSpecKeyNumber(g_VEngineClient->GetVEngineClient_csgo()->GetPlayerForUserID(pinfo.userID)) == Id.specKey)
 						return pinfo.userID;
-					}
 				}
-			}			
-			return 0;
+			}
 		}
-		
-		return Id.userId;
-	}
-
-	void Console_Print()
-	{
-		switch(Mode)
+		return 0;
+	case Id_Xuid:
 		{
-		case Id_Key:
-			Tier0_Msg("k%i", Id.specKey);
-			break;
-		case Id_Xuid:
+			SOURCESDK::player_info_t_csgo pinfo;
+			SOURCESDK::IVEngineClient_014_csgo * vengineClient = g_VEngineClient->GetVEngineClient_csgo();
+			int maxClients = g_VEngineClient->GetMaxClients();
+			for (int i = 0; i < maxClients; ++i)
 			{
-				std::ostringstream oss;
-
-				oss << Id.xuid;
-
-				Tier0_Msg("x%s", oss.str().c_str());
+				if (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(i, &pinfo) && pinfo.xuid == Id.xuid)
+				{
+					return pinfo.userID;
+				}
 			}
-			break;
-		case Id_UserId:
-		default:
-			Tier0_Msg("%i", Id.userId);
-			break;
-		}
+		}			
+		return 0;
 	}
+	
+	return Id.userId;
+};
 
-	bool EqualsUserId(int userId)
-	{
-		if (Mode == Id_UserId) return userId == Id.userId;
+bool DeathMsgId::EqualsUserId(int userId)
+{
+	if (Mode == Id_UserId) return userId == Id.userId;
 
-		if (userId < 1)
-			return false;
-
-		switch(Mode)
-		{
-		case Id_Key:
-			if (g_VEngineClient)
-			{
-				if (SOURCESDK::IVEngineClient_014_csgo * pEngine = g_VEngineClient->GetVEngineClient_csgo())
-				{
-					int entIndex = g_VEngineClient->GetVEngineClient_csgo()->GetPlayerForUserID(userId);
-					return GetSpecKeyNumber(entIndex) == Id.specKey;
-				}
-			}
-			break;
-
-		case Id_Xuid:
-			if (g_VEngineClient)
-			{
-				if (SOURCESDK::IVEngineClient_014_csgo * pEngine = g_VEngineClient->GetVEngineClient_csgo())
-				{
-					SOURCESDK::player_info_t_csgo pInfo;
-					return (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(g_VEngineClient->GetVEngineClient_csgo()->GetPlayerForUserID(userId), &pInfo) && pInfo.xuid == Id.xuid);
-				}
-			}
-			break;
-					
-		}
-
+	if (userId < 1)
 		return false;
-	}
-};
 
-struct MyDeathMsgBoolEntry
-{
-	bool use = false;
-	bool value;
-
-	bool Console_Set(char const * value) {
-		if (0 == _stricmp("default", value))
-		{
-			this->use = false;
-			return true;
-		}
-
-		this->use = true;
-		this->value = 0 != atoi(value);
-
-		return true;
-	}
-
-	void Console_Edit(IWrpCommandArgs * args) {
-
-		int argc = args->ArgC();
-		char const * arg0 = args->ArgV(0);
-
-		if (2 <= argc)
-		{
-			char const * arg1 = args->ArgV(1);
-			if (!Console_Set(arg1))
-				Tier0_Warning("Error: Could not set %s!\n", arg1);
-			return;
-		}
-
-		Tier0_Msg(
-			"%s 0|1|default\n"
-			"Current value: "
-			, arg0
-		);
-		Console_Print();
-		Tier0_Msg("\n");
-	}
-
-	void Console_Print() {
-		if (!use) Tier0_Msg("default");
-		else Tier0_Msg("%i", value ? 1 : 0);
-	}
-};
-
-struct MyDeathMsgIntEntry
-{
-	bool use = false;
-	int value;
-
-	bool Console_Set(char const * value) {
-		if (0 == _stricmp("default", value))
-		{
-			this->use = false;
-			return true;
-		}
-
-		this->use = true;
-		this->value = atoi(value);
-
-		return true;
-	}
-
-	void Console_Edit(IWrpCommandArgs * args) {
-
-		int argc = args->ArgC();
-		char const * arg0 = args->ArgV(0);
-
-		if (2 <= argc)
-		{
-			char const * arg1 = args->ArgV(1);
-			if (!Console_Set(arg1))
-				Tier0_Warning("Error: Could not set %s!\n", arg1);
-			return;
-		}
-
-		Tier0_Msg(
-			"%s <iValue>|default\n"
-			"Current value: "
-			, arg0
-		);
-		Console_Print();
-		Tier0_Msg("\n");
-	}
-
-	void Console_Print() {
-		if (!use) Tier0_Msg("default");
-		else Tier0_Msg("%i", value);
-	}
-};
-
-struct MyDeathMsgFloatEntry
-{
-	bool use = false;
-	float value;
-
-	bool Console_Set(char const * value) {
-		if (0 == _stricmp("default", value))
-		{
-			this->use = false;
-			return true;
-		}
-
-		this->use = true;
-		this->value = (float)(atof(value));
-
-		return true;
-	}
-
-	void Console_Edit(IWrpCommandArgs * args) {
-
-		int argc = args->ArgC();
-		char const * arg0 = args->ArgV(0);
-
-		if (2 <= argc)
-		{
-			char const * arg1 = args->ArgV(1);
-			if (!Console_Set(arg1))
-				Tier0_Warning("Error: Could not set %s!\n", arg1);
-			return;
-		}
-
-		Tier0_Msg(
-			"%s <fValue>|default\n"
-			"Current value: "
-			, arg0
-		);
-		Console_Print();
-		Tier0_Msg("\n");
-	}
-
-	void Console_Print() {
-		if (!use) Tier0_Msg("default");
-		else Tier0_Msg("%f", value);
-	}
-};
-
-struct MyDeathMsgCStringEntry
-{
-	bool use = false;
-	const char * value;
-};
-
-struct MyDeathMsgIdEntry
-{
-	bool use = false;
-	DeathMsgId value;
-
-	bool Console_Set(char const * value) {
-		if (0 == _stricmp("default", value))
-		{
-			this->use = false;
-			return true;
-		}
-
-		this->use = true;
-		this->value = value;
-
-		return true;
-	}
-
-	void Console_Edit(IWrpCommandArgs * args) {
-
-		int argc = args->ArgC();
-		char const * arg0 = args->ArgV(0);
-
-		if (2 <= argc)
-		{
-			char const * arg1 = args->ArgV(1);
-			if (!Console_Set(arg1))
-				Tier0_Warning("Error: Could not set %s!\n", arg1);
-			return;
-		}
-
-		Tier0_Msg(
-			"%s <id>|default\n"
-			"Current value: "
-			, arg0
-		);
-		Console_Print();
-		Tier0_Msg("\n");
-	}
-
-	void Console_Print() {
-		if (!use) Tier0_Msg("default");
-		else value.Console_Print();
-	}
-};
-
-struct MyDeathMsgPlayerEntry
-{
-	MyDeathMsgCStringEntry name;
-
-	MyDeathMsgIdEntry newId;
-
-	MyDeathMsgBoolEntry isLocal;
-};
-
-struct DeathMsgFilterEntry
-{
-	DeathMsgFilterEntry(IWrpCommandArgs * args)
+	switch(Mode)
 	{
-		this->Console_SetFromArgs(args);
-	}
-
-	struct StringEntry
-	{
-		bool use = false;
-		std::string value;
-
-		bool Console_Set(char const * value) {
-			this->use = true;
-			this->value = value;
-
-			return true;
-		}
-
-		void Console_Edit(IWrpCommandArgs * args) {
-
-			int argc = args->ArgC();
-			char const * arg0 = args->ArgV(0);
-
-			if (2 <= argc)
-			{
-				char const * arg1 = args->ArgV(1);
-
-				if (3 <= argc && 0 == _stricmp("set", arg1))
-				{
-					char const * arg2 = args->ArgV(2);
-
-					if (0 == _stricmp("default", arg2))
-					{
-						this->use = false;
-						return;
-					}
-				}
-				else if (!Console_Set(arg1))
-				{
-					Tier0_Warning("Error: Could not set %s!\n", arg1);
-					return;
-				}
-			}
-
-			Tier0_Msg(
-				"%s <strValue>|(set default)\n"
-				"Current value: "
-				, arg0
-			);
-			Console_Print();
-			Tier0_Msg("\n");
-		}
-
-		void Console_Print() {
-			if (!use) Tier0_Msg("default");
-			else Tier0_Msg("\"%s\"", value.c_str());
-		}
-	};
-
-	struct PlayerEntry
-	{
-		DeathMsgIdMatchMode mode = DMBM_ANY;
-		DeathMsgId id = (int)0;
-
-		StringEntry name;
-
-		MyDeathMsgIdEntry newId;
-
-		MyDeathMsgBoolEntry isLocal;
-
-		bool Console_MatchSet(char const * value) {
-			bool any = !strcmp("*", value);
-			bool not = StringBeginsWith(value, "!");
-
-			if (!any) id = not ? (value + 1) : value;
-
-			mode = any ? DMBM_ANY : (not ? DMBM_EXCEPT : DMBM_EQUAL);
-
-			return true;
-		}
-
-		void Console_MatchEdit(IWrpCommandArgs * args) {
-			int argc = args->ArgC();
-			char const * arg0 = args->ArgV(0);
-
-			if (2 <= argc)
-			{
-				Console_MatchSet(args->ArgV(1));
-				return;
-			}
-
-			Tier0_Msg(
-				"%s *|<id>|!<id>\n"
-				"Current value: "
-				, arg0
-			);
-			Console_MatchPrint();
-			Tier0_Msg("\n");
-		}
-
-		void Console_MatchPrint() {
-			if (DMBM_ANY == mode)
-				Tier0_Msg("*");
-			else
-			{
-				if (DMBM_EXCEPT == mode)
-				{
-					Tier0_Msg("!");
-				}
-				id.Console_Print();
-			}
-		}
-	};
-
-	PlayerEntry attacker;
-	PlayerEntry victim;
-	PlayerEntry assister;
-
-	MyDeathMsgIntEntry assistedflash;
-
-	StringEntry weapon;
-
-	MyDeathMsgIntEntry headshot;
-
-	MyDeathMsgIntEntry penetrated;
-
-	MyDeathMsgIntEntry dominated;
-
-	MyDeathMsgIntEntry revenge;
-
-	MyDeathMsgIntEntry wipe;
-
-	MyDeathMsgIntEntry noscope;
-
-	MyDeathMsgIntEntry thrusmoke;
-
-	MyDeathMsgIntEntry attackerblind;
-
-	MyDeathMsgFloatEntry lifetime;
-
-	MyDeathMsgFloatEntry lifetimeMod;
-
-	MyDeathMsgBoolEntry block;
-
-	bool lastRule = false;
-
-	void Console_Print()
-	{
-		Tier0_Msg("attackerMatch=");
-		attacker.Console_MatchPrint();
-		Tier0_Msg(" assisterMatch=");
-		assister.Console_MatchPrint();
-		Tier0_Msg(" victimMatch=");
-		victim.Console_MatchPrint();
-	}
-
-	void Console_SetFromArgs(IWrpCommandArgs * args)
-	{
-		int argc = args->ArgC();
-		const char * arg0 = args->ArgV(0);
-
-		for (int i = 1; i < argc; ++i)
+	case Id_Key:
+		if (g_VEngineClient)
 		{
-			const char * argI = args->ArgV(i);
-
-			if (StringIBeginsWith(argI, "attackerMatch="))
+			if (SOURCESDK::IVEngineClient_014_csgo * pEngine = g_VEngineClient->GetVEngineClient_csgo())
 			{
-				attacker.Console_MatchSet(argI + strlen("attackerMatch="));
-			}
-			else if (StringIBeginsWith(argI, "attackerName="))
-			{
-				attacker.name.Console_Set(argI + strlen("attackerName="));
-			}
-			else if (StringIBeginsWith(argI, "attackerId="))
-			{
-				attacker.newId.Console_Set(argI + strlen("attackerId="));
-			}
-			else if (StringIBeginsWith(argI, "attackerIsLocal="))
-			{
-				attacker.isLocal.Console_Set(argI + strlen("attackerIsLocal="));
-			}
-			else if (StringIBeginsWith(argI, "assisterMatch="))
-			{
-				assister.Console_MatchSet(argI + strlen("assisterMatch="));
-			}
-			else if (StringIBeginsWith(argI, "assisterName="))
-			{
-				assister.name.Console_Set(argI + strlen("assisterName="));
-			}
-			else if (StringIBeginsWith(argI, "assisterId="))
-			{
-				assister.newId.Console_Set(argI + strlen("assisterId="));
-			}
-			else if (StringIBeginsWith(argI, "assisterIsLocal="))
-			{
-				assister.isLocal.Console_Set(argI + strlen("assisterIsLocal="));
-			}
-			else if (StringIBeginsWith(argI, "victimMatch="))
-			{
-				victim.Console_MatchSet(argI + strlen("victimMatch="));
-			}
-			else if (StringIBeginsWith(argI, "victimName="))
-			{
-				victim.name.Console_Set(argI + strlen("victimName="));
-			}
-			else if (StringIBeginsWith(argI, "victimId="))
-			{
-				victim.newId.Console_Set(argI + strlen("victimId="));
-			}
-			else if (StringIBeginsWith(argI, "victimIsLocal="))
-			{
-				victim.isLocal.Console_Set(argI + strlen("victimIsLocal="));
-			}
-			else if (StringIBeginsWith(argI, "assistedflash="))
-			{
-				assistedflash.Console_Set(argI + strlen("assistedflash="));
-			}
-			else if (StringIBeginsWith(argI, "weapon="))
-			{
-				weapon.Console_Set(argI + strlen("weapon="));
-			}
-			else if (StringIBeginsWith(argI, "headshot="))
-			{
-				headshot.Console_Set(argI + strlen("headshot="));
-			}
-			else if (StringIBeginsWith(argI, "penetrated="))
-			{
-				penetrated.Console_Set(argI + strlen("penetrated="));
-			}
-			else if (StringIBeginsWith(argI, "wipe="))
-			{
-				wipe.Console_Set(argI + strlen("wipe="));
-			}
-			else if (StringIBeginsWith(argI, "noscope="))
-			{
-				noscope.Console_Set(argI + strlen("noscope="));
-			}
-			else if (StringIBeginsWith(argI, "thrusmoke="))
-			{
-				thrusmoke.Console_Set(argI + strlen("thrusmoke="));
-			}
-			else if (StringIBeginsWith(argI, "attackerblind="))
-			{
-				attackerblind.Console_Set(argI + strlen("attackerblind="));
-			}
-			else if (StringIBeginsWith(argI, "dominated="))
-			{
-				dominated.Console_Set(argI + strlen("dominated="));
-			}
-			else if (StringIBeginsWith(argI, "revenge="))
-			{
-				revenge.Console_Set(argI + strlen("revenge="));
-			}
-			else if (StringIBeginsWith(argI, "lifetime="))
-			{
-				lifetime.Console_Set(argI + strlen("lifetime="));
-			}
-			else if (StringIBeginsWith(argI, "lifetimeMod="))
-			{
-				lifetimeMod.Console_Set(argI + strlen("lifetimeMod="));
-			}
-			else if (StringIBeginsWith(argI, "block="))
-			{
-				block.Console_Set(argI + strlen("block="));
-			}
-			else if (StringIBeginsWith(argI, "lastRule="))
-			{
-				lastRule = 0 != atoi(argI + strlen("lastRule="));
-			}
-			else {
-				Tier0_Warning("Error: invalid option \"%s\".\n", argI);
+				int entIndex = g_VEngineClient->GetVEngineClient_csgo()->GetPlayerForUserID(userId);
+				return GetSpecKeyNumber(entIndex) == Id.specKey;
 			}
 		}
-	}
+		break;
 
-	void Console_Edit(IWrpCommandArgs * args)
-	{
-		int argc = args->ArgC();
-		const char * arg0 = args->ArgV(0);
-
-		if (2 <= argc)
+	case Id_Xuid:
+		if (g_VEngineClient)
 		{
-			const char * arg1 = args->ArgV(1);
-
-			if (0 == _stricmp("attackerMatch", arg1))
+			if (SOURCESDK::IVEngineClient_014_csgo * pEngine = g_VEngineClient->GetVEngineClient_csgo())
 			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				attacker.Console_MatchEdit(args);
-				return;
-			}
-			else if (0 == _stricmp("attackerName", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				attacker.name.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("attackerId", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				attacker.newId.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("attackerIsLocal", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				attacker.isLocal.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("assisterMatch", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				assister.Console_MatchEdit(args);
-				return;
-			}
-			else if (0 == _stricmp("assisterName", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				assister.name.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("assisterId", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				assister.newId.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("assisterIsLocal", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				assister.isLocal.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("victimMatch", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				victim.Console_MatchEdit(args);
-				return;
-			}
-			else if (0 == _stricmp("victimName", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				victim.name.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("victimId", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				victim.newId.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("victimIsLocal", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				victim.isLocal.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("assistedflash", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				assistedflash.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("weapon", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				weapon.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("headshot", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				headshot.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("penetrated", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				penetrated.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("dominated", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				dominated.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("revenge", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				revenge.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("wipe", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				wipe.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("noscope", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				noscope.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("thrusmoke", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				thrusmoke.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("attackerblind", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				attackerblind.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("lifetime", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				lifetime.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("lifetimeMod", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				lifetimeMod.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("block", arg1))
-			{
-				CSubWrpCommandArgs subArgs(args, 2);
-				block.Console_Edit(args);
-				return;
-			}
-			else if (0 == _stricmp("lastRule", arg1))
-			{
-				if (3 <= argc)
-				{
-					const char * arg2 = args->ArgV(2);
-
-					lastRule = 0 != atoi(arg2);
-					return;
-				}
-
-				Tier0_Msg(
-					"%s lastRule 0|1\n"
-					"Current value: %i"
-					, arg0
-					, lastRule ? 1 : 0
-				);
-				return;
+				SOURCESDK::player_info_t_csgo pInfo;
+				return (g_VEngineClient->GetVEngineClient_csgo()->GetPlayerInfo(g_VEngineClient->GetVEngineClient_csgo()->GetPlayerForUserID(userId), &pInfo) && pInfo.xuid == Id.xuid);
 			}
 		}
-
-		Tier0_Msg("%s attackerMatch [...] = ", arg0);
-		attacker.Console_MatchPrint();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s attackerName [...] = ", arg0);
-		attacker.name.Console_Print();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s attackerId [...] = ", arg0);
-		attacker.newId.Console_Print();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s attackerIsLocal [...] = ", arg0);
-		attacker.isLocal.Console_Print();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s assisterMatch [...] = ", arg0);
-		assister.Console_MatchPrint();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s assisterName [...] = ", arg0);
-		assister.name.Console_Print();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s assisterId [...] = ", arg0);
-		assister.newId.Console_Print();
-		Tier0_Msg("\n");
-
-		//Tier0_Msg("%s assisterIsLocal [...] = ", arg0);
-		//assister.isLocal.Console_Print();
-		//Tier0_Msg("\n");
-
-		Tier0_Msg("%s victimMatch [...] = ", arg0);
-		victim.Console_MatchPrint();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s victimName [...] = ", arg0);
-		victim.name.Console_Print();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s victimId [...] = ", arg0);
-		victim.newId.Console_Print();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s victimIsLocal [...] = ", arg0);
-		victim.isLocal.Console_Print();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s assistedflash [...] = ", arg0);
-		assistedflash.Console_Print();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s weapon [...] = ", arg0);
-		weapon.Console_Print();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s headshot [...] = ", arg0);
-		headshot.Console_Print();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s penetrated [...] = ", arg0);
-		penetrated.Console_Print();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s dominated [...] = ", arg0);
-		dominated.Console_Print();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s revenge [...] = ", arg0);
-		revenge.Console_Print();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s wipe [...] = ", arg0);
-		wipe.Console_Print();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s noscope [...] = ", arg0);
-		noscope.Console_Print();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s thrusmoke [...] = ", arg0);
-		thrusmoke.Console_Print();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s attackerblind [...] = ", arg0);
-		attackerblind.Console_Print();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s lifetime [...] = ", arg0);
-		lifetime.Console_Print();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s lifetimeMod [...] = ", arg0);
-		lifetimeMod.Console_Print();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s block [...] = ", arg0);
-		block.Console_Print();
-		Tier0_Msg("\n");
-
-		Tier0_Msg("%s lastRule [...] = %i\n", arg0, lastRule ? 1 : 0);
+		break;
+				
 	}
+
+	return false;
 };
 
 static std::list<DeathMsgFilterEntry> deathMessageFilter;
 
-class MyDeathMsgGameEventWrapper : public SOURCESDK::CSGO::IGameEvent
+class MyDeathMsgGameEventWrapper : public SOURCESDK::CSGO::IGameEvent, public MyDeathMsgGameEventWrapperBase
 {
 public:
-	MyDeathMsgPlayerEntry attacker;
-	MyDeathMsgPlayerEntry victim;
-	MyDeathMsgPlayerEntry assister;
-
-	MyDeathMsgIntEntry assistedflash;
-
-	MyDeathMsgCStringEntry weapon;
-
-	MyDeathMsgIntEntry headshot;
-
-	MyDeathMsgIntEntry penetrated;
-
-	MyDeathMsgIntEntry dominated;
-
-	MyDeathMsgIntEntry revenge;
-
-	MyDeathMsgIntEntry wipe;
-
-	MyDeathMsgIntEntry noscope;
-
-	MyDeathMsgIntEntry thrusmoke;
-
-	MyDeathMsgIntEntry attackerblind;
-
-	MyDeathMsgFloatEntry lifetime;
-
-	MyDeathMsgFloatEntry lifetimeMod;
-
-	MyDeathMsgBoolEntry block;
-
 	MyDeathMsgGameEventWrapper(SOURCESDK::CSGO::IGameEvent * event)
 		: m_Event(event)
 	{
 
 	}
-
-	void ApplyDeathMsgFilterEntry(const DeathMsgFilterEntry & dme) {
-		ApplyPlayerEntry(dme.attacker, attacker);
-		ApplyPlayerEntry(dme.victim, victim);
-		ApplyPlayerEntry(dme.assister, assister);
-		ApplyIntEntry(dme.assistedflash, assistedflash);
-		ApplyStringEntry(dme.weapon, weapon);
-		ApplyIntEntry(dme.headshot, headshot);
-		ApplyIntEntry(dme.penetrated, penetrated);
-		ApplyIntEntry(dme.dominated, dominated);
-		ApplyIntEntry(dme.revenge, revenge);
-		ApplyIntEntry(dme.wipe, wipe);
-		ApplyIntEntry(dme.noscope, noscope);
-		ApplyIntEntry(dme.thrusmoke, thrusmoke);
-		ApplyIntEntry(dme.attackerblind, attackerblind);
-		ApplyFloatEntry(dme.lifetime, lifetime);
-		ApplyFloatEntry(dme.lifetimeMod, lifetimeMod);
-		ApplyBoolEntry(dme.block, block);
-	}
-
 public:
 	virtual ~MyDeathMsgGameEventWrapper() {
 	}
@@ -1311,70 +426,11 @@ public:
 
 private:
 	SOURCESDK::CSGO::IGameEvent * m_Event;
-
-	void ApplyBoolEntry(const MyDeathMsgBoolEntry & source, MyDeathMsgBoolEntry & target) {
-		if (source.use)
-		{
-			target.use = true;
-			target.value = source.value;
-		}
-	}
-
-	void ApplyIntEntry(const MyDeathMsgIntEntry & source, MyDeathMsgIntEntry & target) {
-		if (source.use)
-		{
-			target.use = true;
-			target.value = source.value;
-		}
-	}
-
-	void ApplyDeathMsgIdEntry(const MyDeathMsgIdEntry & source, MyDeathMsgIdEntry & target) {
-		if (source.use)
-		{
-			target.use = true;
-			target.value = source.value;
-		}
-	}
-
-	void ApplyFloatEntry(const MyDeathMsgFloatEntry & source, MyDeathMsgFloatEntry & target) {
-		if (source.use)
-		{
-			target.use = true;
-			target.value = source.value;
-		}
-	}
-
-	void ApplyStringEntry(const DeathMsgFilterEntry::StringEntry & source, MyDeathMsgCStringEntry & target) {
-		if (source.use)
-		{
-			target.use = true;
-			target.value = source.value.c_str();
-		}
-	}
-
-	void ApplyPlayerEntry(const DeathMsgFilterEntry::PlayerEntry & source, MyDeathMsgPlayerEntry & target) {
-		ApplyStringEntry(source.name, target.name);
-		ApplyDeathMsgIdEntry(source.newId, target.newId);
-		ApplyBoolEntry(source.isLocal, target.isLocal);
-	}
 };
 
-struct CHudDeathNoticeHookGlobals {
-
-	struct CSettings {
-		int Debug = 0;
-	} Settings;
+struct CHudDeathNoticeHookGlobals : MirvDeathMsgGlobals {
 
 	MyDeathMsgGameEventWrapper * activeWrapper = 0;
-
-	std::list<DeathMsgFilterEntry> Filter;
-
-	MyDeathMsgFloatEntry Lifetime;
-
-	MyDeathMsgFloatEntry LifetimeMod;
-
-	bool useHighlightId;
-	DeathMsgId highlightId;
 
 	int entindex_callnum;
 	int panorama_CUIPanel_UnkSetFloatProp_callnum;
@@ -1901,17 +957,17 @@ wchar_t * __fastcall My_csgo_CUnknown_GetPlayerName(void * This, void * Edx, int
 
 		if (g_HudDeathNoticeHookGlobals.activeWrapper)
 		{
-			switch (g_DeathnoticeShowNumbers)
+			switch (g_HudDeathNoticeHookGlobals.showNumbers)
 			{
-				case DeathnoticeShowNumbers_e::DeathnoticeShowNumbers_Numbers:
-				case DeathnoticeShowNumbers_e::DeathnoticeShowNumbers_PrependNumbers:
+				case MirvDeathMsgGlobals::DeathnoticeShowNumbers_e::Numbers:
+				case MirvDeathMsgGlobals::DeathnoticeShowNumbers_e::PrependNumbers:
 				{
 					wchar_t number[33];
 					if (0 == _itow_s(GetSpecKeyNumber(entIndex), number, 10))
 					{
 						size_t len = wcslen(number);
 						size_t oldLen = wcslen(targetBuffer);
-						if (g_DeathnoticeShowNumbers == DeathnoticeShowNumbers_e::DeathnoticeShowNumbers_PrependNumbers)
+						if (g_HudDeathNoticeHookGlobals.showNumbers == MirvDeathMsgGlobals::DeathnoticeShowNumbers_e::PrependNumbers)
 						{
 							size_t pos = len + 1 + oldLen;
 							if (pos < targetByteCount)
@@ -2053,50 +1109,18 @@ void Console_DeathMsgId_PrintHelp(const char * cmd)
 	);
 }
 
-void Console_DeathMsgArgs_PrintHelp(const char * cmd, bool showMatch)
-{
-	Tier0_Msg(
-		"%s <option>+\n"
-		"Where <option> is (you don't have to use all):\n"
-		"%s"
-		"\t\"attackerName=<sName>\" - New attacker name.\n"
-		"\t\"attackerId=<id>\" - New attacker id.\n"
-		"\t\"attackerIsLocal=(0|1)\" - If to be considered local player.\n"
-		"%s"
-		"\t\"assisterName=<sName>\" - New assister name.\n"
-		"\t\"assisterId=<id>\" - New assister id.\n"
-		//"\t\"assisterIsLocal=(0|1)\" - If to be considered local player.\n"
-		"%s"
-		"\t\"victimName=<sName>\" - New victim name.\n"
-		"\t\"victimId=<id>\" - New victim id.\n"
-		"\t\"victimIsLocal=(0|1)\" - If to be considered local player.\n"
-		"\t\"assistedflash=<iVal>\" - If flash assist.\n"
-		"\t\"weapon=<sWeaponName>\" - Weapon name (e.g. ak47).\n"
-		"\t\"headshot=<iVal>\" - If headshot.\n"
-		"\t\"penetrated=<iVal>\" - If penetrated.\n"
-		"\t\"dominated=<iVal>\" - If dominated.\n"
-		"\t\"revenge=<iVal>\" - If revenge.\n"
-		"\t\"wipe=<iVal>\" - Squad wipeout in Danger Zone(?).\n"
-		"\t\"noscope=<iVal>\" - If noscope.\n"
-		"\t\"thrusmoke=<iVal>\" - If thrusmoke.\n"
-		"\t\"attackerblind=<iVal>\" - If attackerblind.\n"
-		"\t\"lifetime=<fVal>\" - Life time in seconds.\n"
-		"\t\"lifetimeMod=<fVal>\" - Life time modifier (for player considered to be local player).\n"
-		"\t\"block=<iVal>\" - If to block this message (0 = No, 1 = Yes).\n"
-		"\t\"lastRule=<iVal>\" - If this is the last rule to be applied (abort after this one), 0 = No, 1 = Yes.\n"
-		, cmd
-		, showMatch ? "\t\"attackerMatch=<matchExpr>\" - The attacker to match.\n" : ""
-		, showMatch ? "\t\"assisterMatch=<matchExpr>\" - The assister to match.\n" : ""
-		, showMatch ? "\t\"victimMatch=<matchExpr>\" - The victim to match.\n" : ""
-	);
-}
-
 bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 {
 	if (!csgo_CHudDeathNotice_Install())
 	{
 		Tier0_Warning("Error: Required hooks not installed.\n");
 		return true;
+	}
+
+	if (nullptr == conMessage || nullptr == conWarning)
+	{
+		conMessage = Tier0_Msg;
+		conWarning = Tier0_Warning;
 	}
 
 	int argc = args->ArgC();
@@ -2108,183 +1132,7 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 
 		if (0 == _stricmp("filter", arg1))
 		{
-			if (3 <= argc)
-			{
-				const char * arg2 = args->ArgV(2);
-
-				if (0 == _stricmp("add", arg2)) {
-
-					if (4 <= argc)
-					{
-						CSubWrpCommandArgs subArgs(args, 3);
-
-						g_HudDeathNoticeHookGlobals.Filter.emplace_back(&subArgs);
-						return true;
-					}
-				
-					std::string prefix(arg0);
-					prefix += " filter add";
-					Console_DeathMsgArgs_PrintHelp(prefix.c_str(), true);
-					return true;
-				}
-				else if (0 == _stricmp("move", arg2)) {
-
-					if (5 <= argc)
-					{
-						const char * arg3 = args->ArgV(3);
-						const char * arg4 = args->ArgV(4);
-
-						int listNr = atoi(arg3);
-						int targetNr = atoi(arg4);
-
-						if (listNr < 0 || listNr >= (int)g_HudDeathNoticeHookGlobals.Filter.size())
-						{
-							Tier0_Warning("Error: %i is not in valid range for <listNr>\n", listNr);
-							return true;
-						}
-
-						if (targetNr < 0 || targetNr > (int)g_HudDeathNoticeHookGlobals.Filter.size())
-						{
-							Tier0_Warning("Error: %i is not in valid range for <tragetNr>\n", targetNr);
-							return true;
-						}
-
-						std::list<DeathMsgFilterEntry>::iterator sourceIt = g_HudDeathNoticeHookGlobals.Filter.begin();
-
-						std::list<DeathMsgFilterEntry>::iterator targetIt = g_HudDeathNoticeHookGlobals.Filter.begin();
-
-						if (listNr <= targetNr)
-						{
-							std::advance(sourceIt, listNr);
-
-							targetIt = sourceIt;
-
-							std::advance(targetIt, targetNr - listNr);
-						}
-						else
-						{
-							std::advance(targetIt, targetNr);
-
-							sourceIt = targetIt;
-
-							std::advance(sourceIt, listNr - targetNr);
-						}
-
-						g_HudDeathNoticeHookGlobals.Filter.splice(targetIt, g_HudDeathNoticeHookGlobals.Filter, sourceIt);
-
-						return true;
-					}
-
-					Tier0_Msg(
-						"%s filter move <listNr> <targetListNr> - Move entry in list.\n"
-						, arg0
-					);
-					return true;
-				}
-				else if (0 == _stricmp("edit", arg2)) {
-
-					if (4 <= argc)
-					{
-						const char * arg3 = args->ArgV(3);
-
-						int listNr = atoi(arg3);
-
-						if (listNr < 0 || listNr >= (int)g_HudDeathNoticeHookGlobals.Filter.size())
-						{
-							Tier0_Warning("Error: %i is not in valid range for <listNr>\n", listNr);
-							return true;
-						}
-						std::list<DeathMsgFilterEntry>::iterator sourceIt = g_HudDeathNoticeHookGlobals.Filter.begin();
-
-						std::advance(sourceIt, listNr);
-
-						CSubWrpCommandArgs subArgs(args, 4);
-
-						sourceIt->Console_Edit(&subArgs);
-
-						return true;
-					}
-
-					Tier0_Msg(
-						"%s filter edit <listNr> - Edit entry in list.\n"
-						, arg0
-					);
-					return true;
-				}
-				else if (0 == _stricmp("remove", arg2)) {
-
-					if (4 <= argc)
-					{
-						const char * arg3 = args->ArgV(3);
-
-						int listNr = atoi(arg3);
-
-						if (listNr < 0 || listNr >= (int)g_HudDeathNoticeHookGlobals.Filter.size())
-						{
-							Tier0_Warning("Error: %i is not in valid range for <listNr>\n", listNr);
-							return true;
-						}
-						std::list<DeathMsgFilterEntry>::iterator sourceIt = g_HudDeathNoticeHookGlobals.Filter.begin();
-
-						std::advance(sourceIt, listNr);
-
-						g_HudDeathNoticeHookGlobals.Filter.erase(sourceIt);
-
-						return true;
-					}
-
-					Tier0_Msg(
-						"%s filter remove <listNr> - Remove entry in list.\n"
-						, arg0
-					);
-					return true;
-				}
-				else if (0 == _stricmp("clear", arg2)) {
-
-					g_HudDeathNoticeHookGlobals.Filter.clear();
-
-					return true;
-				}
-				else if (0 == _stricmp("print", arg2)) {
-
-					Tier0_Msg("nr: id, name\n");
-
-					int nr = 0;
-
-					for (std::list<DeathMsgFilterEntry>::iterator it = g_HudDeathNoticeHookGlobals.Filter.begin(); it != g_HudDeathNoticeHookGlobals.Filter.end(); ++it)
-					{
-						Tier0_Msg(
-							"%i: "
-							, nr
-						);
-
-						it->Console_Print();
-
-						Tier0_Msg("\n");
-
-						++nr;
-					}
-					Tier0_Msg("---- EOL ----\n");
-
-					return true;
-				}
-			}
-
-			Tier0_Msg(
-				"%s filter add [...] - Add an entry.\n"
-				"%s filter edit [...] - Edit an entry.\n"
-				"%s filter move [...] - Move an entry.\n"
-				"%s filter remove [...] - Remove an entry.\n"
-				"%s filter clear - Clear filter list.\n"
-				"%s filter print - Print current list entries.\n"
-				, arg0
-				, arg0
-				, arg0
-				, arg0
-				, arg0
-				, arg0
-			);
-			return true;
+			return g_MirvDeathMsg.filter(args, g_HudDeathNoticeHookGlobals);
 		}
 		else if (0 == _stricmp("fake", arg1)) {
 			if (!CCSGO_HudDeathNotice_FireGameEvent_This)
@@ -2324,104 +1172,20 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 			}
 		}
 		else if (0 == _stricmp("lifetime", arg1)) {
-		
-			CSubWrpCommandArgs subArgs(args, 2);
-
-			g_HudDeathNoticeHookGlobals.Lifetime.Console_Edit(&subArgs);
-			
-			return true;
+			return g_MirvDeathMsg.lifetime(args, g_HudDeathNoticeHookGlobals);
 		}
 		else if (0 == _stricmp("lifetimeMod", arg1)) {
-
-			CSubWrpCommandArgs subArgs(args, 2);
-
-			g_HudDeathNoticeHookGlobals.LifetimeMod.Console_Edit(&subArgs);
-
-			return true;
+			return g_MirvDeathMsg.lifetimeMod(args, g_HudDeathNoticeHookGlobals);
 		}
 		else if (0 == _stricmp("localPlayer", arg1)) {
-
-			if (3 <= argc)
-			{
-				const char * arg2 = args->ArgV(2);
-
-				if (0 == _stricmp("default", arg2))
-				{
-					g_HudDeathNoticeHookGlobals.useHighlightId = false;
-				}
-				else
-				{
-					g_HudDeathNoticeHookGlobals.useHighlightId = true;
-					g_HudDeathNoticeHookGlobals.highlightId = arg2;
-				}
-				
-				return true;
-			}
-
-			Tier0_Msg(
-				"%s localPlayer default|<id>\n"
-				"Current value: "
-				, arg0
-			);
-			if (g_HudDeathNoticeHookGlobals.useHighlightId)
-			{
-				g_HudDeathNoticeHookGlobals.highlightId.Console_Print();
-			}
-			else
-			{
-				Tier0_Msg("default");
-			}
-			Tier0_Msg("\n");
-			return true;
+			return g_MirvDeathMsg.localPlayer(args, g_HudDeathNoticeHookGlobals);
 		}
 		else if (0 == _stricmp("showNumbers", arg1)) {
-
-			if (3 <= argc)
-			{
-				int value = atoi(args->ArgV(2));
-
-				if (value <= 0)
-				{
-					g_DeathnoticeShowNumbers = DeathnoticeShowNumbers_e::DeathnoticeShowNumbers_Default;
-				}
-				else if(1 == value)
-				{
-					g_DeathnoticeShowNumbers = DeathnoticeShowNumbers_e::DeathnoticeShowNumbers_Numbers;
-				}
-				else
-				{
-					g_DeathnoticeShowNumbers = DeathnoticeShowNumbers_e::DeathnoticeShowNumbers_PrependNumbers;
-				}
-				
-				return true;
-			}
-
-			Tier0_Msg(
-				"%s showNumbers 0|1|2 - Default (0), only numbers (1), prepend numbers (2)\n"
-				"Current value: %i\n"
-				, arg0
-				, g_DeathnoticeShowNumbers
-			);			
-			return true;
+			return g_MirvDeathMsg.showNumbers(args, g_HudDeathNoticeHookGlobals);
 		}
 		else if (0 == _stricmp("debug", arg1))
 		{
-			if (3 <= argc)
-			{
-				const char * arg2 = args->ArgV(2);
-
-				g_HudDeathNoticeHookGlobals.Settings.Debug = atoi(arg2);
-
-				return true;
-			}
-
-			Tier0_Msg(
-				"%s debug 0|1\n"
-				"Current value: %i\n"
-				, arg0
-				, g_HudDeathNoticeHookGlobals.Settings.Debug
-			);
-			return true;
+			return g_MirvDeathMsg.debug(args, g_HudDeathNoticeHookGlobals);
 		}
 		else if (0 == _stricmp("deprecated", arg1)) {
 

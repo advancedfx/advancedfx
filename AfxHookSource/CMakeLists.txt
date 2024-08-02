@@ -356,6 +356,8 @@ target_sources(AfxHookSource PRIVATE
     ../shared/MirvCamIO.h
     ../shared/MirvCampath.cpp
     ../shared/MirvCampath.h
+	../shared/MirvDeathMsgFilter.cpp
+	../shared/MirvDeathMsgFilter.h
     ../shared/MirvInput.cpp
     ../shared/MirvInput.h
 	../shared/MirvSkip.cpp
