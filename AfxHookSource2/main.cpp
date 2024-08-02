@@ -11,6 +11,7 @@
 #include "CamIO.h"
 #include "ViewModel.h"
 #include "Globals.h"
+#include "DeathMsg.h"
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
 #include "../deps/release/prop/AfxHookSource/SourceInterfaces.h"
@@ -746,6 +747,14 @@ bool CS2_Client_CSetupView_Trampoline_IsPlayingDemo(void *ThisCViewSetup) {
 	g_MirvInputEx.LastHeight = height;
 
 	g_MirvInputEx.m_MirvInput->Supply_MouseFrameEnd();
+
+	g_CurrentGameCamera.origin[0] = Tx;
+	g_CurrentGameCamera.origin[1] = Ty;
+	g_CurrentGameCamera.origin[2] = Tz;
+	g_CurrentGameCamera.angles[0] = Rx;
+	g_CurrentGameCamera.angles[1] = Ry;
+	g_CurrentGameCamera.angles[2] = Rz;
+	g_CurrentGameCamera.time = curTime;
 
 	return g_pEngineToClient->IsPlayingDemo();
 }
@@ -1898,6 +1907,7 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 	static bool bFirstInputsystem = true;
 	static bool bFirstSDL3 = true;
 	static bool bFirstRenderSystemDX11 = true;
+	static bool bFirstPanorama = true;
 	
 	CommonHooks();
 
@@ -1988,7 +1998,14 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 
 		HookViewmodel(hModule);
 
+		HookDeathMsg(hModule);
+
 		HookClientDll(hModule);
+
+	} else if(bFirstPanorama && StringEndsWithW(lpLibFileName, L"panorama.dll"))
+	{
+		bFirstPanorama = false;
+		HookPanorama(hModule);
 	}
 	
 }

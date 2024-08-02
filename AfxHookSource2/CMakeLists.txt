@@ -197,6 +197,9 @@ target_sources(${PROJECT_NAME} PRIVATE
     ClientEntitySystem.cpp
     ClientEntitySystem.h
 
+	DeathMsg.cpp
+	DeathMsg.h
+
     GameEvents.cpp
     GameEvents.h
 
