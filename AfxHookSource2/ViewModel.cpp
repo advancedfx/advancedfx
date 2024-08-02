@@ -1,8 +1,5 @@
 #include "ViewModel.h"
-#include "WrpConsole.h"
 #include "Globals.h"
-
-#include "../shared/binutils.h"
 
 #include <cstddef>
 #include "../deps/release/Detours/src/detours.h"
@@ -87,20 +84,6 @@ bool __fastcall setHand(int64_t param_1)
 
 	return res;
 	
-};
-
-size_t getAddress(HMODULE clientDll, char const* pattern)
-{
-
-	Afx::BinUtils::ImageSectionsReader sections((HMODULE)clientDll);
-	Afx::BinUtils::MemRange textRange = sections.GetMemRange();
-	Afx::BinUtils::MemRange result = FindPatternString(textRange, pattern);
-	if (result.IsEmpty()) {
-		advancedfx::Warning("Could not find address for pattern: %s\n", pattern);
-		return 0;
-	} else {
-		return result.Start;
-	}
 };
 
 void HookViewmodel(HMODULE clientDll)
