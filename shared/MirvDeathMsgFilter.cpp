@@ -279,7 +279,7 @@ bool MirvDeathMsg::localPlayer(IWrpCommandArgs * args, MirvDeathMsgGlobals &filt
 	}
 
 	conMessage(
-		"%s localPlayer default|<id>\n"
+		"%s localPlayer default|<userid>|<xuid>|<specKey>|<trace>|<xTrace>\n"
 		"Current value: "
 		, arg0
 	);

@@ -11,8 +11,6 @@ typedef advancedfx::CSubCommandArgs CSubWrpCommandArgs;
 extern advancedfx::Con_Printf_t conMessage;
 extern advancedfx::Con_Printf_t conWarning;
 
-
-
 enum DeathMsgIdMatchMode
 {
 	DMBM_EQUAL,
@@ -587,159 +585,159 @@ struct DeathMsgFilterEntry
 			if (0 == _stricmp("attackerMatch", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				attacker.Console_MatchEdit(args);
+				attacker.Console_MatchEdit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("attackerName", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				attacker.name.Console_Edit(args);
+				attacker.name.Console_Edit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("attackerId", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				attacker.newId.Console_Edit(args);
+				attacker.newId.Console_Edit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("attackerIsLocal", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				attacker.isLocal.Console_Edit(args);
+				attacker.isLocal.Console_Edit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("assisterMatch", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				assister.Console_MatchEdit(args);
+				assister.Console_MatchEdit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("assisterName", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				assister.name.Console_Edit(args);
+				assister.name.Console_Edit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("assisterId", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				assister.newId.Console_Edit(args);
+				assister.newId.Console_Edit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("assisterIsLocal", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				assister.isLocal.Console_Edit(args);
+				assister.isLocal.Console_Edit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("victimMatch", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				victim.Console_MatchEdit(args);
+				victim.Console_MatchEdit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("victimName", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				victim.name.Console_Edit(args);
+				victim.name.Console_Edit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("victimId", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				victim.newId.Console_Edit(args);
+				victim.newId.Console_Edit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("victimIsLocal", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				victim.isLocal.Console_Edit(args);
+				victim.isLocal.Console_Edit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("assistedflash", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				assistedflash.Console_Edit(args);
+				assistedflash.Console_Edit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("weapon", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				weapon.Console_Edit(args);
+				weapon.Console_Edit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("headshot", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				headshot.Console_Edit(args);
+				headshot.Console_Edit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("penetrated", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				penetrated.Console_Edit(args);
+				penetrated.Console_Edit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("dominated", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				dominated.Console_Edit(args);
+				dominated.Console_Edit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("revenge", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				revenge.Console_Edit(args);
+				revenge.Console_Edit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("wipe", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				wipe.Console_Edit(args);
+				wipe.Console_Edit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("noscope", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				noscope.Console_Edit(args);
+				noscope.Console_Edit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("thrusmoke", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				thrusmoke.Console_Edit(args);
+				thrusmoke.Console_Edit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("attackerblind", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				attackerblind.Console_Edit(args);
+				attackerblind.Console_Edit(&subArgs);
 				return;
 			}
 			#ifdef GAME_CS2
 			else if (0 == _stricmp("attackerinair", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				attackerinair.Console_Edit(args);
+				attackerinair.Console_Edit(&subArgs);
 				return;
 			}
 			#endif
 			else if (0 == _stricmp("lifetime", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				lifetime.Console_Edit(args);
+				lifetime.Console_Edit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("lifetimeMod", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				lifetimeMod.Console_Edit(args);
+				lifetimeMod.Console_Edit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("block", arg1))
 			{
 				CSubWrpCommandArgs subArgs(args, 2);
-				block.Console_Edit(args);
+				block.Console_Edit(&subArgs);
 				return;
 			}
 			else if (0 == _stricmp("lastRule", arg1))
