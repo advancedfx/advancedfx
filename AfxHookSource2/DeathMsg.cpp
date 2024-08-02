@@ -409,8 +409,6 @@ struct myPanoramaWrapper {
 
 		bool result = false;
 
-		// advancedfx::Message("Deathnotices: %llX\n", pDeathnotices);
-
 		for (int i = 0; i < *(int*)pDeathnotices; i++) {
 			const auto panel = ((u_char***)pDeathnotices)[1][i];
 
@@ -428,7 +426,6 @@ struct myPanoramaWrapper {
 
 			setAttributeString(panel, lifeTimeSymbol, "0.001");
 			setAttributeString(panel, spawnTimeSymbol, std::to_string(g_CurrentGameCamera.time - 1).c_str());
-			// advancedfx::Message("deathnotice panel: %llX\n", panel);
 			result = true;
 		}
 
@@ -877,22 +874,6 @@ void __fastcall handleDeathnotice(u_char* hudDeathNotice, SOURCESDK::CS2::IGameE
 typedef void (__fastcall *g_Original_DeathMsgColors_t)(uint64_t a1, u_char* a2);
 g_Original_DeathMsgColors_t g_Original_DeathMsgColors = nullptr;
 
-u_char* findAddress(u_char* startAddress, size_t &range, uint32_t &targetValue) {
-
-	u_char* endAddress = startAddress + range;
-
-    for (auto ptr = startAddress; ptr <= endAddress - sizeof(uint32_t); ptr += sizeof(uint32_t)) {
-		uint32_t value = 0;
-		memcpy(&value, ptr, sizeof(uint32_t));
-        if (value == targetValue) {
-            return ptr;
-        }
-    }
-
-
-    return nullptr;
-}
-
 void __fastcall myDeathMsgColors(uint64_t a1, u_char* a2) {
 
 	if (nullptr == a2 || nullptr == *(uint32_t**)(a2 + 0x8) || nullptr == *(uint32_t**)(a2 + 0x10)) {
@@ -1057,12 +1038,12 @@ bool getPanoramaAddrsFromClient(HMODULE clientDll) {
 
 bool getPanoramaAddrs(HMODULE panoramaDll) {
 	// has "Invalid type %d on fillbrush" string
-	size_t g_Original_BackgroundColor_addr = getAddress(panoramaDll, "48 89 5C 24 ?? 57 48 83 EC ?? 48 8B DA 48 8B F9 8B 12");
-	if (g_Original_BackgroundColor_addr == 0) {
+	size_t g_Original_DeathMsgColors_addr = getAddress(panoramaDll, "48 89 5C 24 ?? 57 48 83 EC ?? 48 8B DA 48 8B F9 8B 12");
+	if (g_Original_DeathMsgColors_addr == 0) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));	
 		return false;
 	}
-	g_Original_DeathMsgColors = (g_Original_DeathMsgColors_t)g_Original_BackgroundColor_addr;
+	g_Original_DeathMsgColors = (g_Original_DeathMsgColors_t)g_Original_DeathMsgColors_addr;
 
 	// has CStylePropertyBorder or ??_7CStylePropertyBorder@panorama@@6B@
 	// also can be found in another function that has "border-color" string, it's being set to one of DATs in the end
@@ -1341,7 +1322,6 @@ bool mirvDeathMsg_Console(advancedfx::ICommandArgs* args)
 		if (0 == _stricmp("clear", arg1))
 		{
 			auto result = g_myPanoramaWrapper.clearDeathnotices();
-			advancedfx::Message("cleared deathnotices: %s\n", result ? "true" : "false");
 			return true;
 		} else
 		if (0 == _stricmp("filter", arg1))
