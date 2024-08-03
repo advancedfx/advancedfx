@@ -8,9 +8,6 @@
 typedef advancedfx::ICommandArgs IWrpCommandArgs;
 typedef advancedfx::CSubCommandArgs CSubWrpCommandArgs;
 
-extern advancedfx::Con_Printf_t conMessage;
-extern advancedfx::Con_Printf_t conWarning;
-
 enum DeathMsgIdMatchMode
 {
 	DMBM_EQUAL,
@@ -70,16 +67,16 @@ struct DeathMsgId
 		switch(Mode)
 		{
 		case Id_Key:
-			conMessage("k%i", Id.specKey);
+			advancedfx::Message("k%i", Id.specKey);
 			break;
 		case Id_Xuid:
 			{
-				conMessage("x%lld", Id.xuid);
+				advancedfx::Message("x%lld", Id.xuid);
 			}
 			break;
 		case Id_UserId:
 		default:
-			conMessage("%i", Id.userId);
+			advancedfx::Message("%i", Id.userId);
 			break;
 		}
 	};
@@ -114,22 +111,22 @@ struct MyDeathMsgBoolEntry
 		{
 			char const * arg1 = args->ArgV(1);
 			if (!Console_Set(arg1))
-				conMessage("Error: Could not set %s!\n", arg1);
+				advancedfx::Message("Error: Could not set %s!\n", arg1);
 			return;
 		}
 
-		conMessage(
+		advancedfx::Message(
 			"%s 0|1|default\n"
 			"Current value: "
 			, arg0
 		);
 		Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 	}
 
 	void Console_Print() {
-		if (!use) conMessage("default");
-		else conMessage("%i", value ? 1 : 0);
+		if (!use) advancedfx::Message("default");
+		else advancedfx::Message("%i", value ? 1 : 0);
 	}
 };
 
@@ -160,22 +157,22 @@ struct MyDeathMsgIntEntry
 		{
 			char const * arg1 = args->ArgV(1);
 			if (!Console_Set(arg1))
-				conWarning("Error: Could not set %s!\n", arg1);
+				advancedfx::Warning("Error: Could not set %s!\n", arg1);
 			return;
 		}
 
-		conMessage(
+		advancedfx::Message(
 			"%s <iValue>|default\n"
 			"Current value: "
 			, arg0
 		);
 		Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 	}
 
 	void Console_Print() {
-		if (!use) conMessage("default");
-		else conMessage("%i", value);
+		if (!use) advancedfx::Message("default");
+		else advancedfx::Message("%i", value);
 	}
 };
 
@@ -206,22 +203,22 @@ struct MyDeathMsgFloatEntry
 		{
 			char const * arg1 = args->ArgV(1);
 			if (!Console_Set(arg1))
-				conWarning("Error: Could not set %s!\n", arg1);
+				advancedfx::Warning("Error: Could not set %s!\n", arg1);
 			return;
 		}
 
-		conMessage(
+		advancedfx::Message(
 			"%s <fValue>|default\n"
 			"Current value: "
 			, arg0
 		);
 		Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 	}
 
 	void Console_Print() {
-		if (!use) conMessage("default");
-		else conMessage("%f", value);
+		if (!use) advancedfx::Message("default");
+		else advancedfx::Message("%f", value);
 	}
 };
 
@@ -258,21 +255,21 @@ struct MyDeathMsgIdEntry
 		{
 			char const * arg1 = args->ArgV(1);
 			if (!Console_Set(arg1))
-				conWarning("Error: Could not set %s!\n", arg1);
+				advancedfx::Warning("Error: Could not set %s!\n", arg1);
 			return;
 		}
 
-		conMessage(
+		advancedfx::Message(
 			"%s <id>|default\n"
 			"Current value: "
 			, arg0
 		);
 		Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 	}
 
 	void Console_Print() {
-		if (!use) conMessage("default");
+		if (!use) advancedfx::Message("default");
 		else value.Console_Print();
 	}
 };
@@ -327,23 +324,23 @@ struct DeathMsgFilterEntry
 				}
 				else if (!Console_Set(arg1))
 				{
-					conWarning("Error: Could not set %s!\n", arg1);
+					advancedfx::Warning("Error: Could not set %s!\n", arg1);
 					return;
 				}
 			}
 
-			conMessage(
+			advancedfx::Message(
 				"%s <strValue>|(set default)\n"
 				"Current value: "
 				, arg0
 			);
 			Console_Print();
-			conMessage("\n");
+			advancedfx::Message("\n");
 		}
 
 		void Console_Print() {
-			if (!use) conMessage("default");
-			else conMessage("\"%s\"", value.c_str());
+			if (!use) advancedfx::Message("default");
+			else advancedfx::Message("\"%s\"", value.c_str());
 		}
 	};
 
@@ -379,23 +376,23 @@ struct DeathMsgFilterEntry
 				return;
 			}
 
-			conMessage(
+			advancedfx::Message(
 				"%s *|<id>|!<id>\n"
 				"Current value: "
 				, arg0
 			);
 			Console_MatchPrint();
-			conMessage("\n");
+			advancedfx::Message("\n");
 		}
 
 		void Console_MatchPrint() {
 			if (DMBM_ANY == mode)
-				conMessage("*");
+				advancedfx::Message("*");
 			else
 			{
 				if (DMBM_EXCEPT == mode)
 				{
-					conMessage("!");
+					advancedfx::Message("!");
 				}
 				id.Console_Print();
 			}
@@ -440,11 +437,11 @@ struct DeathMsgFilterEntry
 
 	void Console_Print()
 	{
-		conMessage("attackerMatch=");
+		advancedfx::Message("attackerMatch=");
 		attacker.Console_MatchPrint();
-		conMessage(" assisterMatch=");
+		advancedfx::Message(" assisterMatch=");
 		assister.Console_MatchPrint();
-		conMessage(" victimMatch=");
+		advancedfx::Message(" victimMatch=");
 		victim.Console_MatchPrint();
 	}
 
@@ -568,7 +565,7 @@ struct DeathMsgFilterEntry
 				lastRule = 0 != atoi(argI + strlen("lastRule="));
 			}
 			else {
-				conWarning("Error: invalid option \"%s\".\n", argI);
+				advancedfx::Warning("Error: invalid option \"%s\".\n", argI);
 			}
 		}
 	}
@@ -750,7 +747,7 @@ struct DeathMsgFilterEntry
 					return;
 				}
 
-				conMessage(
+				advancedfx::Message(
 					"%s lastRule 0|1\n"
 					"Current value: %i"
 					, arg0
@@ -760,113 +757,113 @@ struct DeathMsgFilterEntry
 			}
 		}
 
-		conMessage("%s attackerMatch [...] = ", arg0);
+		advancedfx::Message("%s attackerMatch [...] = ", arg0);
 		attacker.Console_MatchPrint();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s attackerName [...] = ", arg0);
+		advancedfx::Message("%s attackerName [...] = ", arg0);
 		attacker.name.Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s attackerId [...] = ", arg0);
+		advancedfx::Message("%s attackerId [...] = ", arg0);
 		attacker.newId.Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s attackerIsLocal [...] = ", arg0);
+		advancedfx::Message("%s attackerIsLocal [...] = ", arg0);
 		attacker.isLocal.Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s assisterMatch [...] = ", arg0);
+		advancedfx::Message("%s assisterMatch [...] = ", arg0);
 		assister.Console_MatchPrint();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s assisterName [...] = ", arg0);
+		advancedfx::Message("%s assisterName [...] = ", arg0);
 		assister.name.Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s assisterId [...] = ", arg0);
+		advancedfx::Message("%s assisterId [...] = ", arg0);
 		assister.newId.Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
 		//Tier0_Msg("%s assisterIsLocal [...] = ", arg0);
 		//assister.isLocal.Console_Print();
 		//Tier0_Msg("\n");
 
-		conMessage("%s victimMatch [...] = ", arg0);
+		advancedfx::Message("%s victimMatch [...] = ", arg0);
 		victim.Console_MatchPrint();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s victimName [...] = ", arg0);
+		advancedfx::Message("%s victimName [...] = ", arg0);
 		victim.name.Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s victimId [...] = ", arg0);
+		advancedfx::Message("%s victimId [...] = ", arg0);
 		victim.newId.Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s victimIsLocal [...] = ", arg0);
+		advancedfx::Message("%s victimIsLocal [...] = ", arg0);
 		victim.isLocal.Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s assistedflash [...] = ", arg0);
+		advancedfx::Message("%s assistedflash [...] = ", arg0);
 		assistedflash.Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s weapon [...] = ", arg0);
+		advancedfx::Message("%s weapon [...] = ", arg0);
 		weapon.Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s headshot [...] = ", arg0);
+		advancedfx::Message("%s headshot [...] = ", arg0);
 		headshot.Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s penetrated [...] = ", arg0);
+		advancedfx::Message("%s penetrated [...] = ", arg0);
 		penetrated.Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s dominated [...] = ", arg0);
+		advancedfx::Message("%s dominated [...] = ", arg0);
 		dominated.Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s revenge [...] = ", arg0);
+		advancedfx::Message("%s revenge [...] = ", arg0);
 		revenge.Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s wipe [...] = ", arg0);
+		advancedfx::Message("%s wipe [...] = ", arg0);
 		wipe.Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s noscope [...] = ", arg0);
+		advancedfx::Message("%s noscope [...] = ", arg0);
 		noscope.Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s thrusmoke [...] = ", arg0);
+		advancedfx::Message("%s thrusmoke [...] = ", arg0);
 		thrusmoke.Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s attackerblind [...] = ", arg0);
+		advancedfx::Message("%s attackerblind [...] = ", arg0);
 		attackerblind.Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
 		#ifdef GAME_CS2
-		conMessage("%s attackerinair [...] = ", arg0);
+		advancedfx::Message("%s attackerinair [...] = ", arg0);
 		attackerinair.Console_Print();
-		conMessage("\n"); 
+		advancedfx::Message("\n"); 
 		#endif
 
-		conMessage("%s lifetime [...] = ", arg0);
+		advancedfx::Message("%s lifetime [...] = ", arg0);
 		lifetime.Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s lifetimeMod [...] = ", arg0);
+		advancedfx::Message("%s lifetimeMod [...] = ", arg0);
 		lifetimeMod.Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s block [...] = ", arg0);
+		advancedfx::Message("%s block [...] = ", arg0);
 		block.Console_Print();
-		conMessage("\n");
+		advancedfx::Message("\n");
 
-		conMessage("%s lastRule [...] = %i\n", arg0, lastRule ? 1 : 0);
+		advancedfx::Message("%s lastRule [...] = %i\n", arg0, lastRule ? 1 : 0);
 	}
 };
 

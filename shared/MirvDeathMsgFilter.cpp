@@ -7,11 +7,7 @@ bool MirvDeathMsg_Console(IWrpCommandArgs * args)
 
 void Console_DeathMsgArgs_PrintHelp(const char * cmd, bool showMatch)
 {
-	if (nullptr == conMessage) {
-		return;
-	}
-
-	conMessage(
+	advancedfx::Message(
 		"%s <option>+\n"
 		"Where <option> is (you don't have to use all):\n"
 		"%s"
@@ -52,10 +48,6 @@ void Console_DeathMsgArgs_PrintHelp(const char * cmd, bool showMatch)
 
 bool MirvDeathMsg::filter(IWrpCommandArgs * args, MirvDeathMsgGlobals &filterGlobals)
 {
-	if (nullptr == conMessage || nullptr == conWarning) {
-		return false;
-	}
-
 	int argc = args->ArgC();
 	const char * arg0 = args->ArgV(0);
 	if (3 <= argc)
@@ -89,13 +81,13 @@ bool MirvDeathMsg::filter(IWrpCommandArgs * args, MirvDeathMsgGlobals &filterGlo
 
 				if (listNr < 0 || listNr >= (int)filterGlobals.Filter.size())
 				{
-					conWarning("Error: %i is not in valid range for <listNr>\n", listNr);
+					advancedfx::Warning("Error: %i is not in valid range for <listNr>\n", listNr);
 					return true;
 				}
 
 				if (targetNr < 0 || targetNr > (int)filterGlobals.Filter.size())
 				{
-					conWarning("Error: %i is not in valid range for <tragetNr>\n", targetNr);
+					advancedfx::Warning("Error: %i is not in valid range for <tragetNr>\n", targetNr);
 					return true;
 				}
 
@@ -125,7 +117,7 @@ bool MirvDeathMsg::filter(IWrpCommandArgs * args, MirvDeathMsgGlobals &filterGlo
 				return true;
 			}
 
-			conMessage(
+			advancedfx::Message(
 				"%s filter move <listNr> <targetListNr> - Move entry in list.\n"
 				, arg0
 			);
@@ -141,7 +133,7 @@ bool MirvDeathMsg::filter(IWrpCommandArgs * args, MirvDeathMsgGlobals &filterGlo
 
 				if (listNr < 0 || listNr >= (int)filterGlobals.Filter.size())
 				{
-					conWarning("Error: %i is not in valid range for <listNr>\n", listNr);
+					advancedfx::Warning("Error: %i is not in valid range for <listNr>\n", listNr);
 					return true;
 				}
 				std::list<DeathMsgFilterEntry>::iterator sourceIt = filterGlobals.Filter.begin();
@@ -155,7 +147,7 @@ bool MirvDeathMsg::filter(IWrpCommandArgs * args, MirvDeathMsgGlobals &filterGlo
 				return true;
 			}
 
-			conMessage(
+			advancedfx::Message(
 				"%s filter edit <listNr> - Edit entry in list.\n"
 				, arg0
 			);
@@ -171,7 +163,7 @@ bool MirvDeathMsg::filter(IWrpCommandArgs * args, MirvDeathMsgGlobals &filterGlo
 
 				if (listNr < 0 || listNr >= (int)filterGlobals.Filter.size())
 				{
-					conWarning("Error: %i is not in valid range for <listNr>\n", listNr);
+					advancedfx::Warning("Error: %i is not in valid range for <listNr>\n", listNr);
 					return true;
 				}
 				std::list<DeathMsgFilterEntry>::iterator sourceIt = filterGlobals.Filter.begin();
@@ -183,7 +175,7 @@ bool MirvDeathMsg::filter(IWrpCommandArgs * args, MirvDeathMsgGlobals &filterGlo
 				return true;
 			}
 
-			conMessage(
+			advancedfx::Message(
 				"%s filter remove <listNr> - Remove entry in list.\n"
 				, arg0
 			);
@@ -197,30 +189,30 @@ bool MirvDeathMsg::filter(IWrpCommandArgs * args, MirvDeathMsgGlobals &filterGlo
 		}
 		else if (0 == _stricmp("print", arg2)) {
 
-			conMessage("nr: id, name\n");
+			advancedfx::Message("nr: id, name\n");
 
 			int nr = 0;
 
 			for (std::list<DeathMsgFilterEntry>::iterator it = filterGlobals.Filter.begin(); it != filterGlobals.Filter.end(); ++it)
 			{
-				conMessage(
+				advancedfx::Message(
 					"%i: "
 					, nr
 				);
 
 				it->Console_Print();
 
-				conMessage("\n");
+				advancedfx::Message("\n");
 
 				++nr;
 			}
-			conMessage("---- EOL ----\n");
+			advancedfx::Message("---- EOL ----\n");
 
 			return true;
 		}
 	}
 
-	conMessage(
+	advancedfx::Message(
 		"%s filter add [...] - Add an entry.\n"
 		"%s filter edit [...] - Edit an entry.\n"
 		"%s filter move [...] - Move an entry.\n"
@@ -254,10 +246,6 @@ bool MirvDeathMsg::lifetimeMod(IWrpCommandArgs * args, MirvDeathMsgGlobals &filt
 
 bool MirvDeathMsg::localPlayer(IWrpCommandArgs * args, MirvDeathMsgGlobals &filterGlobals)
 {
-	if (nullptr == conMessage || nullptr == conWarning) {
-		return false;
-	}
-
 	int argc = args->ArgC();
 	const char * arg0 = args->ArgV(0);
 
@@ -278,7 +266,7 @@ bool MirvDeathMsg::localPlayer(IWrpCommandArgs * args, MirvDeathMsgGlobals &filt
 		return true;
 	}
 
-	conMessage(
+	advancedfx::Message(
 		"%s localPlayer default|<userid>|<xuid>|<specKey>|<trace>|<xTrace>\n"
 		"Current value: "
 		, arg0
@@ -289,18 +277,14 @@ bool MirvDeathMsg::localPlayer(IWrpCommandArgs * args, MirvDeathMsgGlobals &filt
 	}
 	else
 	{
-		conMessage("default");
+		advancedfx::Message("default");
 	}
-	conMessage("\n");
+	advancedfx::Message("\n");
 	return true;
 };
 
 bool MirvDeathMsg::debug(IWrpCommandArgs * args, MirvDeathMsgGlobals &filterGlobals)
 {
-	if (nullptr == conMessage || nullptr == conWarning) {
-		return false;
-	}
-
 	int argc = args->ArgC();
 	const char * arg0 = args->ArgV(0);
 
@@ -313,7 +297,7 @@ bool MirvDeathMsg::debug(IWrpCommandArgs * args, MirvDeathMsgGlobals &filterGlob
 		return true;
 	}
 
-	conMessage(
+	advancedfx::Message(
 		"%s debug 0|1\n"
 		"Current value: %i\n"
 		, arg0
@@ -325,10 +309,6 @@ bool MirvDeathMsg::debug(IWrpCommandArgs * args, MirvDeathMsgGlobals &filterGlob
 
 bool MirvDeathMsg::showNumbers(IWrpCommandArgs * args, MirvDeathMsgGlobals &filterGlobals)
 {
-	if (nullptr == conMessage || nullptr == conWarning) {
-		return false;
-	}
-
 	int argc = args->ArgC();
 	const char * arg0 = args->ArgV(0);
 
@@ -352,7 +332,7 @@ bool MirvDeathMsg::showNumbers(IWrpCommandArgs * args, MirvDeathMsgGlobals &filt
 		return true;
 	}
 
-	conMessage(
+	advancedfx::Message(
 		"%s showNumbers 0|1|2 - Default (0), only numbers (1), prepend numbers (2)\n"
 		"Current value: %i\n"
 		, arg0

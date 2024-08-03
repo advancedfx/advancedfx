@@ -108,9 +108,6 @@ int GetSpecKeyNumber(int entindex)
 
 extern WrpVEngineClient * g_VEngineClient;
 
-advancedfx::Con_Printf_t conMessage = nullptr;
-advancedfx::Con_Printf_t conWarning = nullptr;
-
 MirvDeathMsg g_MirvDeathMsg;
 
 typedef void csgo_C_CSPlayer_IUnk_t;
@@ -1115,12 +1112,6 @@ bool csgo_CHudDeathNotice_Console(IWrpCommandArgs * args)
 	{
 		Tier0_Warning("Error: Required hooks not installed.\n");
 		return true;
-	}
-
-	if (nullptr == conMessage || nullptr == conWarning)
-	{
-		conMessage = Tier0_Msg;
-		conWarning = Tier0_Warning;
 	}
 
 	int argc = args->ArgC();

@@ -86,7 +86,7 @@ namespace afxUtils {
 		return result;
 	};
 
-	std::string rgbaToHex(std::string str, std::string delim, advancedfx::Con_Printf_t &conMessage)
+	std::string rgbaToHex(std::string str, std::string delim)
 	{
 		std::string result = "";
 		auto array = splitString(str, delim);
@@ -99,7 +99,7 @@ namespace afxUtils {
 				arrayValue.append(array[i]); 
 				if (i < array.size() - 1) arrayValue.append(delim);
 			};
-			conMessage(
+			advancedfx::Warning(
 				"Error: cannot parse %s\n"
 				"Expected 4 values.\n"
 				, arrayValue.c_str()
@@ -115,7 +115,7 @@ namespace afxUtils {
 
 			if (val < 0 || val > 255) 
 			{
-				conMessage(
+				advancedfx::Warning(
 					"Error: cannot parse %s\n"
 					"Expected a number between 0 and 255 (inclusive).\n"
 					, item.c_str()

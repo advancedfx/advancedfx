@@ -13,9 +13,6 @@
 #include "Globals.h"
 #include "ClientEntitySystem.h"
 
-advancedfx::Con_Printf_t conMessage = nullptr;
-advancedfx::Con_Printf_t conWarning = nullptr;
-
 currentGameCamera g_CurrentGameCamera;
 
 struct PlayerInfo {
@@ -319,7 +316,7 @@ struct myPanoramaWrapper {
 		bool convertColorFromStrToInt (const char* str, uint32_t* outColor) {
 			if (nullptr == str || nullptr == outColor) return false;
 
-			auto hexStr = afxUtils::rgbaToHex(str, " ", advancedfx::Warning);
+			auto hexStr = afxUtils::rgbaToHex(str, " ");
 			if (hexStr.length() != 8) return false;
 
 			*outColor = afxUtils::hexStrToInt(hexStr);
@@ -1362,12 +1359,6 @@ struct CS2_MirvDeathMsg : MirvDeathMsg {
 
 bool mirvDeathMsg_Console(advancedfx::ICommandArgs* args)
 {
-	if (nullptr == conMessage || nullptr == conWarning)
-	{
-		conMessage = advancedfx::Message;
-		conWarning = advancedfx::Warning;
-	}
-
 	const auto arg0 = args->ArgV(0);
 	int argc = args->ArgC();
 
