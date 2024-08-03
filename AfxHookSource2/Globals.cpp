@@ -86,10 +86,9 @@ namespace afxUtils {
 		return result;
 	};
 
-	std::string rgbaToHex(std::string str, advancedfx::Con_Printf_t &conMessage)
+	std::string rgbaToHex(std::string str, std::string delim, advancedfx::Con_Printf_t &conMessage)
 	{
 		std::string result = "";
-		std::string delim = ",";
 		auto array = splitString(str, delim);
 
 		if (array.size() != 4) 

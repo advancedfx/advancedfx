@@ -319,7 +319,7 @@ struct myPanoramaWrapper {
 		bool convertColorFromStrToInt (const char* str, uint32_t* outColor) {
 			if (nullptr == str || nullptr == outColor) return false;
 
-			auto hexStr = afxUtils::rgbaToHex(str, advancedfx::Warning);
+			auto hexStr = afxUtils::rgbaToHex(str, " ", advancedfx::Warning);
 			if (hexStr.length() != 8) return false;
 
 			*outColor = afxUtils::hexStrToInt(hexStr);
@@ -328,7 +328,6 @@ struct myPanoramaWrapper {
 
 		bool setColor(const char* arg) {
 			if (nullptr == arg) return false;
-
 			if (0 == _stricmp("default", arg))
 			{
 				use = false;
@@ -346,14 +345,31 @@ struct myPanoramaWrapper {
 					return true;
 				}
 			}
+			return false;
+		}
 
-			uint32_t color;
-			if (convertColorFromStrToInt(arg, &color))
+		bool setColor(advancedfx::ICommandArgs* args) {
+			auto argc = args->ArgC();
+
+			if (argc == 5)
 			{
-				use = true;
-				userValue = arg;
-				value = color;
-				return true;
+				uint32_t color;
+				std::string str = "";
+				str.append(args->ArgV(1));
+				str.append(" ");
+				str.append(args->ArgV(2));
+				str.append(" ");
+				str.append(args->ArgV(3));
+				str.append(" ");
+				str.append(args->ArgV(4));
+
+				if (convertColorFromStrToInt(str.c_str(), &color))
+				{
+					use = true;
+					userValue = str.c_str();
+					value = color;
+					return true;
+				}
 			}
 
 			return false;
@@ -1168,8 +1184,8 @@ struct CS2_MirvDeathMsg : MirvDeathMsg {
 		const char* options = 
 			"Where <option> is one of:\n"
 			"default - use default game color\n"
-			"\"i,i,i,i\" - color in rgba format e.g. \"255,0,0,255\"\n"
-			"\"option\" - one of the default colors e.g. \"red\"\n"
+			"<0-255> <0-255> <0-255> <0-255> - color in RGBA format e.g. 255 0 0 255\n"
+			"<color> - one of the default colors e.g. red\n";
 			"use \"mirv_deathmsg help colors\" to see all default colors\n";
 
 		if (3 > argc)
@@ -1206,6 +1222,13 @@ struct CS2_MirvDeathMsg : MirvDeathMsg {
 				g_myPanoramaWrapper.CTcolor.setColor(args->ArgV(3));
 				return true;
 			}
+
+			if (7 == argc)
+			{
+				advancedfx::CSubCommandArgs subArgs(args, 3);
+				g_myPanoramaWrapper.CTcolor.setColor(&subArgs);
+				return true;
+			}
 		}
 
 		if (0 == _stricmp("t", arg2))
@@ -1226,6 +1249,13 @@ struct CS2_MirvDeathMsg : MirvDeathMsg {
 				g_myPanoramaWrapper.Tcolor.setColor(args->ArgV(3));
 				return true;
 			}
+
+			if (7 == argc)
+			{
+				advancedfx::CSubCommandArgs subArgs(args, 3);
+				g_myPanoramaWrapper.Tcolor.setColor(&subArgs);
+				return true;
+			}
 		}
 
 		if (0 == _stricmp("border", arg2))
@@ -1244,6 +1274,13 @@ struct CS2_MirvDeathMsg : MirvDeathMsg {
 			if (4 == argc)
 			{
 				g_myPanoramaWrapper.BorderColor.setColor(args->ArgV(3));
+				return true;
+			}
+
+			if (7 == argc)
+			{
+				advancedfx::CSubCommandArgs subArgs(args, 3);
+				g_myPanoramaWrapper.BorderColor.setColor(&subArgs);
 				return true;
 			}
 		}
@@ -1268,6 +1305,13 @@ struct CS2_MirvDeathMsg : MirvDeathMsg {
 				g_myPanoramaWrapper.BackgroundColor.setColor(args->ArgV(3));
 				return true;
 			}
+
+			if (7 == argc)
+			{
+				advancedfx::CSubCommandArgs subArgs(args, 3);
+				g_myPanoramaWrapper.BackgroundColor.setColor(&subArgs);
+				return true;
+			}
 		}
 
 		if (0 == _stricmp("backgroundLocal", arg2))
@@ -1288,6 +1332,13 @@ struct CS2_MirvDeathMsg : MirvDeathMsg {
 			if (4 == argc)
 			{
 				g_myPanoramaWrapper.LocalBackgroundColor.setColor(args->ArgV(3));
+				return true;
+			}
+
+			if (7 == argc)
+			{
+				advancedfx::CSubCommandArgs subArgs(args, 3);
+				g_myPanoramaWrapper.LocalBackgroundColor.setColor(&subArgs);
 				return true;
 			}
 		}
