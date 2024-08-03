@@ -1077,6 +1077,7 @@ void HookPanorama(HMODULE panoramaDll)
 
 	if (!getPanoramaAddrs(panoramaDll)) return;
 
+	/*
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 
@@ -1087,6 +1088,7 @@ void HookPanorama(HMODULE panoramaDll)
 		ErrorBox("Failed to detour panorama functions.");
 		return;
 	}
+	*/
 
 	g_myPanoramaWrapper.hooked = true;
 };
@@ -1097,8 +1099,7 @@ void HookDeathMsg(HMODULE clientDll) {
     if (!getDeathMsgAddrs(clientDll)) return;
 	if (!getPanoramaAddrsFromClient(clientDll)) return;
 
-	/*
-    DetourTransactionBegin();
+	DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
 
     DetourAttach(&(PVOID&)g_Original_handlePlayerDeath, handleDeathnotice);
@@ -1107,7 +1108,7 @@ void HookDeathMsg(HMODULE clientDll) {
 	if(NO_ERROR != DetourTransactionCommit()) {
 		ErrorBox("Failed to detour DeathMsg functions.");
 		return;
-	};*/
+	}
 
 	g_MirvDeathMsgGlobals.hooked = true;
 };
