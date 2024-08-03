@@ -1163,23 +1163,20 @@ void deathMsgPlayers_PrintHelp_Console()
 	);
 };
 
-void colors_PrintHelp_Console(const char * cmd)
-{
-	std::string msg = "Available colors:\n";
-
-	for (auto it = afxBasicColors.begin(); it != afxBasicColors.end(); ++it)
-	{
-		msg.append(std::string(it->name) + "\n");
-	}
-
-	advancedfx::Message(msg.c_str());
-}
-
 struct CS2_MirvDeathMsg : MirvDeathMsg {
 	bool colors (IWrpCommandArgs * args) 
 	{
 		int argc = args->ArgC();
 		const char * arg0 = args->ArgV(0);
+
+		std::string colors = "";
+
+		for (int i = 0; i < afxBasicColors.size(); i++)
+		{
+			auto color = afxBasicColors[i];
+			colors.append(color.name);
+			if (i < afxBasicColors.size() - 1) colors.append(", ");
+		}
 
 		const char* options = 
 			"Where <option> is one of:\n"
@@ -1196,8 +1193,12 @@ struct CS2_MirvDeathMsg : MirvDeathMsg {
 				"%s colors border <option> - Control border color of local player.\n"
 				"%s colors background <option> - Control background color.\n"
 				"%s colors backgroundLocal <option> - Control background color of local player.\n"
+				"\n"
 				"%s"
-				, arg0, arg0, arg0, arg0, arg0, options
+				"\n"
+				"Available colors:\n"
+				"%s\n"
+				, arg0, arg0, arg0, arg0, arg0, options, colors.c_str()
 			);
 			return true;	
 		}
@@ -1349,8 +1350,12 @@ struct CS2_MirvDeathMsg : MirvDeathMsg {
 			"%s colors border <option> - Control border color of local player.\n"
 			"%s colors background <option> - Control background color.\n"
 			"%s colors backgroundLocal <option> - Control background color of local player.\n"
+			"\n"
 			"%s"
-			, arg0, arg0, arg0, arg0, arg0, options
+			"\n"
+			"Available colors:\n"
+			"%s\n"
+			, arg0, arg0, arg0, arg0, arg0, options, colors.c_str()
 		);
 		return true;
 	};
@@ -1413,16 +1418,10 @@ bool mirvDeathMsg_Console(advancedfx::ICommandArgs* args)
 					return true;
 				}
 
-				if (0 == _stricmp("colors", arg2))
-				{
-					colors_PrintHelp_Console(arg0);
-					return true;
-				}
 			}
 			advancedfx::Message(
 				"%s help id - Print help on <id...> usage.\n"
 				"%s help players - Print available player ids.\n"
-				"%s help colors - Print available basic colors.\n"
 				, arg0, arg0, arg0
 			);
 			return true;
