@@ -420,7 +420,7 @@ impl CampathChangedSuppressor {
         if let Some(some_on_changed) = &self.callback {
             object_option = (*some_on_changed).borrow_mut().unsuppress();
         }
-        if !self.result.is_err() {
+        if !result.is_err() {
             if let Some(object) = object_option {
                 if let Err(e) = object.call(&JsValue::null(), &[], context) {
                     return Err(e);
