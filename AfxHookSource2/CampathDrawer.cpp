@@ -470,7 +470,11 @@ void CCampathDrawer::BuildPolyLinePoint(Vector3 previous, Vector3 current, DWORD
 	pOutVertexData[1].diffuse = pOutVertexData[0].diffuse = currentColor;
 }
 
-void CCampathDrawer::CamPathChanged(CamPath * obj)
+void CCampathDrawer::CampathChangedFn(void * pUserData) {
+		static_cast<CCampathDrawer*>(pUserData)->CamPathChanged();
+}
+
+void CCampathDrawer::CamPathChanged()
 {
 	if(m_LessDynamicProperties) {
 		m_LessDynamicProperties->Release();
@@ -580,12 +584,12 @@ void CCampathDrawer::EndDevice()
 }
 
 void CCampathDrawer::Begin() {
-	g_CamPath.OnChanged_set(this);
-	CamPathChanged(&g_CamPath);
+	g_CamPath.OnChangedAdd(CCampathDrawer::CampathChangedFn,this);
+	CamPathChanged();
 }
 
 void CCampathDrawer::End() {
-	g_CamPath.OnChanged_set(nullptr);
+	g_CamPath.OnChangedRemove(CCampathDrawer::CampathChangedFn,this);
 }
 
 #define ValToUCCondInv(value,invert) ((invert) ? 0xFF -(unsigned char)(value) : (unsigned char)(value) )

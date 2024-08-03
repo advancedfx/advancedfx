@@ -3,6 +3,8 @@
 #include "AfxRefCounted.h"
 #include "AfxMath.h"
 
+#include <list>
+
 using namespace Afx;
 using namespace Afx::Math;
 
@@ -22,6 +24,8 @@ struct CamPathValue
 
 	CamPathValue(double x, double y, double z, double pitch, double yaw, double roll, double fov);
 
+	CamPathValue(double x, double y, double z, double q_w, double q_x, double q_y, double q_z, double fov, bool selected);
+
 };
 
 struct CamPathIterator
@@ -31,9 +35,9 @@ public:
 
 	CamPathIterator(CInterpolationMap<CamPathValue>::const_iterator & it);
 
-	double GetTime();
+	double GetTime() const;
 
-	CamPathValue GetValue();
+	CamPathValue GetValue() const;
 
 	CamPathIterator& operator ++ ();
 
@@ -43,13 +47,7 @@ public:
 
 };
 
-class CamPath;
-
-class ICamPathChanged abstract
-{
-public:
-	virtual void CamPathChanged(CamPath * obj) = 0;
-};
+typedef void (*CamPathChanged)(void * pUserData);
 
 class CamPath
 {
@@ -79,37 +77,37 @@ public:
 	~CamPath();
 
 	void Enabled_set(bool enable);
-	bool Enabled_get(void);
+	bool Enabled_get(void) const;
 
-	bool GetHold(void);
+	bool GetHold(void) const;
 	void SetHold(bool value);
 
 	void PositionInterpMethod_set(DoubleInterp value);
-	DoubleInterp PositionInterpMethod_get(void);
+	DoubleInterp PositionInterpMethod_get(void) const;
 
 	void RotationInterpMethod_set(QuaternionInterp value);
-	QuaternionInterp RotationInterpMethod_get(void);
+	QuaternionInterp RotationInterpMethod_get(void) const;
 
 	void FovInterpMethod_set(DoubleInterp value);
-	DoubleInterp FovInterpMethod_get(void);
+	DoubleInterp FovInterpMethod_get(void) const;
 
-	void Add(double time, CamPathValue value);
+	void Add(double time, const CamPathValue & value);
 
 	void Remove(double time);
 	void Clear();
 
-	size_t GetSize();
+	size_t GetSize() const;
 	CamPathIterator GetBegin();
 	CamPathIterator GetEnd();
-	double GetDuration();
+	double GetDuration() const;
 
 	/// <remarks>Must not be called if GetSize is less than 1!</remarks>
-	double GetLowerBound();
+	double GetLowerBound() const;
 
 	/// <remarks>Must not be called if GetSize is less than 1!</remarks>
-	double GetUpperBound();
+	double GetUpperBound() const;
 
-	bool CanEval(void);
+	bool CanEval(void) const;
 
 	/// <remarks>
 	/// Must not be called if CanEval() returns false!<br />
@@ -143,31 +141,54 @@ public:
 
 	size_t SelectInvert();
 
-	/// <summary>Adds a range of key frames to the selection.</param>
+	/// <summary>Adds a range of key frames to the selection.</summary>
 	/// <param name="min">Index of first keyframe to add to selection.</param>
 	/// <param name="max">Index of last keyframe to add to selection.</param>
 	/// <returns>Number of selected keyframes.</returns>
 	size_t SelectAdd(size_t min, size_t max);
 
-	/// <summary>Adds a range of key frames to the selection.</param>
+	/// <summary>Adds a range of key frames to the selection.</summary>
 	/// <param name="min">Lower bound to start adding selection at.</param>
 	/// <param name="count">Number of keyframes to select.</param>
 	/// <returns>Number of selected keyframes.</returns>
 	size_t SelectAdd(double min, size_t count);
 
-	/// <summary>Adds a range of key frames to the selection.</param>
+	/// <summary>Adds a range of key frames to the selection.</summary>
 	/// <param name="min">Lower bound to start adding selection at.</param>
-	/// <param name="count">Upper bound to end adding selection at.</param>
+	/// <param name="max">Upper bound to end adding selection at.</param>
 	/// <returns>Number of selected keyframes.</returns>
 	size_t SelectAdd(double min, double max);
+	
+	void OnChangedAdd(CamPathChanged pCamPathChanged, void * pUserData);
 
-	void OnChanged_set(ICamPathChanged * value);
+	void OnChangedRemove(CamPathChanged pCamPathChanged, void * pUserData);
 
 	void SetOffset(double value);
 
-	double GetOffset();
+	double GetOffset() const;
 
 private:
+	struct CamPathChangedData {
+		CamPathChanged pFn;
+		void * pUserData;
+
+		CamPathChangedData(CamPathChanged pFn, void * pUserData)
+		: pFn(pFn), pUserData(pUserData) {
+
+		}
+
+		void Notify() {
+			pFn(pUserData);
+		}
+
+		bool operator==(const CamPathChangedData& other) const {
+			return this->pFn == other.pFn && this->pUserData == other.pUserData;
+		}
+	};
+
+	std::list<struct CamPathChangedData> m_OnChanged;
+	std::list<struct CamPathChangedData>::iterator m_OnChangedIt;
+
 	static double XSelector(CamPathValue const & value)
 	{
 		return value.X;
@@ -203,7 +224,6 @@ private:
 	DoubleInterp m_PositionInterpMethod;
 	QuaternionInterp m_RotationInterpMethod;
 	DoubleInterp m_FovInterpMethod;
-	ICamPathChanged * m_OnChanged;
 	double m_Offset;
 	
 	CInterpolationMap<CamPathValue> m_Map;

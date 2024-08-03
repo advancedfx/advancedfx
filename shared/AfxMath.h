@@ -283,7 +283,7 @@ public:
 		return CInterpolationMapViewIterator<TMap, T>(m_Map->end(), m_Selector);
 	}
 
-	size_t GetSize()
+	size_t GetSize() const
 	{
 		return m_Map->size();
 	}
@@ -350,7 +350,7 @@ public:
 
 	virtual void InterpolationMapChanged(void) = 0;
 
-	virtual bool CanEval(void) = 0;
+	virtual bool CanEval(void) const = 0;
 
 	/// <remarks>
 	/// Must not be called if CanEval() returns false!<br />
@@ -376,7 +376,7 @@ public:
 		// nothing to do here.
 	}
 
-	virtual bool CanEval(void)
+	virtual bool CanEval(void) const
 	{
 		return 2 <= m_View->GetSize();
 	}
@@ -431,7 +431,7 @@ public:
 		// nothing to do here.
 	}
 
-	virtual bool CanEval(void)
+	virtual bool CanEval(void) const
 	{
 		return 2 <= m_View->GetSize();
 	}
@@ -492,7 +492,7 @@ public:
 		m_Rebuild = true;
 	}
 
-	virtual bool CanEval(void)
+	virtual bool CanEval(void) const
 	{
 		return 4 <= m_View->GetSize();
 	}
@@ -585,7 +585,7 @@ public:
 		// nothing to do here.
 	}
 
-	virtual bool CanEval(void)
+	virtual bool CanEval(void) const
 	{
 		return 2 <= m_View->GetSize();
 	}
@@ -655,7 +655,7 @@ public:
 		m_Rebuild = true;
 	}
 
-	virtual bool CanEval(void)
+	virtual bool CanEval(void) const
 	{
 		return 4 <= m_View->GetSize();
 	}

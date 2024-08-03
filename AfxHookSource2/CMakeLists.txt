@@ -146,11 +146,13 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/CamIO.h
     ../shared/CamPath.cpp
     ../shared/CamPath.h
+    ../shared/CamPathRs.cpp
     ../shared/CommandSystem.cpp
     ../shared/CommandSystem.h
     ../shared/ConsolePrinter.h
     ../shared/EasySampler.cpp
     ../shared/EasySampler.h
+    ../shared/FFITools.h
     ../shared/FileTools.cpp
     ../shared/FileTools.h
     ../shared/FovScaling.cpp

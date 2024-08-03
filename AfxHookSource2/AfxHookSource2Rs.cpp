@@ -7,6 +7,8 @@
 #include "../deps/release/prop/cs2/sdk_src/public/entityhandle.h"
 
 #include "../shared/AfxConsole.h"
+#include "../shared/CamPath.h"
+#include "../shared/FFITools.h"
 #include "../shared/StringTools.h"
 
 #include "WrpConsole.h"
@@ -29,28 +31,28 @@ extern "C" void afx_hook_source2_exec(const char * pszValue) {
 
 bool g_b_on_game_event = false;
 
-extern "C" void afx_hook_source2_enable_on_game_event(bool value) {
-    g_b_on_game_event = value;
+extern "C" void afx_hook_source2_enable_on_game_event(FFIBool value) {
+    g_b_on_game_event = FFIBOOL_TO_BOOL(value);
 }
 
 bool g_b_on_c_view_render_setup_view = false;
 
-extern "C" void afx_hook_source2_enable_on_c_view_render_setup_view(bool value) {
-    g_b_on_c_view_render_setup_view = value;
+extern "C" void afx_hook_source2_enable_on_c_view_render_setup_view(FFIBool value) {
+    g_b_on_c_view_render_setup_view = FFIBOOL_TO_BOOL(value);
 }
 
 bool g_b_on_client_frame_stage_notify = false;
 
-extern "C" void afx_hook_source2_enable_on_client_frame_stage_notify(bool value) {
-    g_b_on_client_frame_stage_notify = value;
+extern "C" void afx_hook_source2_enable_on_client_frame_stage_notify(FFIBool value) {
+    g_b_on_client_frame_stage_notify = FFIBOOL_TO_BOOL(value);
 }
 
 extern "C" int afx_hook_source2_make_handle(int entryIndex, int serialNumber) {
     return SOURCESDK::CS2::CEntityHandle(entryIndex, serialNumber).ToInt();
 }
 
-extern "C" bool afx_hook_source2_is_handle_valid(int handle) {
-    return SOURCESDK::CS2::CEntityHandle(handle).IsValid();
+extern "C" FFIBool afx_hook_source2_is_handle_valid(int handle) {
+    return BOOL_TO_FFIBOOL(SOURCESDK::CS2::CEntityHandle(handle).IsValid());
 }
 
 extern "C" int afx_hook_source2_get_handle_entry_index(int handle) {
@@ -71,17 +73,17 @@ extern "C" void afx_hook_source2_release_entity_ref(void * pRef);
 
 bool g_b_on_add_entity = false;
 
-extern "C" void afx_hook_source2_enable_on_add_entity(bool value) {
-    g_b_on_add_entity = value;
+extern "C" void afx_hook_source2_enable_on_add_entity(FFIBool value) {
+    g_b_on_add_entity = FFIBOOL_TO_BOOL(value);
 }
 
 bool g_b_on_remove_entity = false;
 
-extern "C" void afx_hook_source2_enable_on_remove_entity(bool value) {
-    g_b_on_remove_entity = value;
+extern "C" void afx_hook_source2_enable_on_remove_entity(FFIBool value) {
+    g_b_on_remove_entity = FFIBOOL_TO_BOOL(value);
 }
 
-extern "C" bool afx_hook_source2_get_entity_ref_is_valid(void * pRef);
+extern "C" FFIBool afx_hook_source2_get_entity_ref_is_valid(void * pRef);
 
 extern "C" const char * afx_hook_source2_get_entity_ref_name(void * pRef);
 
@@ -89,10 +91,10 @@ extern "C" const char * afx_hook_source2_get_entity_ref_debug_name(void * pRef);
 
 extern "C" const char * afx_hook_source2_get_entity_ref_class_name(void * pRef);
 
-extern "C" bool afx_hook_source2_get_entity_ref_is_player_pawn(void * pRef);
+extern "C" FFIBool afx_hook_source2_get_entity_ref_is_player_pawn(void * pRef);
 extern "C" int afx_hook_source2_get_entity_ref_player_pawn_handle(void * pRef);
 
-extern "C" bool afx_hook_source2_get_entity_ref_is_player_controller(void * pRef);
+extern "C" FFIBool afx_hook_source2_get_entity_ref_is_player_controller(void * pRef);
 extern "C" int afx_hook_source2_get_entity_ref_player_controller_handle(void * pRef);
 
 extern "C" int afx_hook_source2_get_entity_ref_health(void * pRef);
@@ -103,22 +105,28 @@ extern "C" void afx_hook_source2_get_entity_ref_render_eye_origin(void * pRef, f
 
 extern "C" void afx_hook_source2_get_entity_ref_render_eye_angles(void * pRef, float & x, float & y, float & z);
 
-extern "C" bool afx_hook_source2_is_playing_demo() {
+extern "C" FFIBool afx_hook_source2_is_playing_demo() {
     if(g_pEngineToClient) {
 		if(SOURCESDK::CS2::IDemoFile * pDemoPlayer = g_pEngineToClient->GetDemoFile()) {
-			return pDemoPlayer->IsPlayingDemo();
+			return BOOL_TO_FFIBOOL(pDemoPlayer->IsPlayingDemo());
         }
     }
-    return false;
+    return FFIBOOL_FALSE;
 }
 
-extern "C" bool afx_hook_source2_is_demo_paused() {
+extern "C" FFIBool afx_hook_source2_is_demo_paused() {
     if(g_pEngineToClient) {
 		if(SOURCESDK::CS2::IDemoFile * pDemoPlayer = g_pEngineToClient->GetDemoFile()) {
-			return pDemoPlayer->IsDemoPaused();
+			return BOOL_TO_FFIBOOL(pDemoPlayer->IsDemoPaused());
         }
     }
-    return false;
+    return FFIBOOL_FALSE;
+}
+
+extern CamPath g_CamPath;
+
+extern "C" CamPath * afx_hook_source2_get_main_campath(void) {
+    return &g_CamPath;
 }
 
 typedef void AfxHookSource2Rs;
@@ -137,9 +145,9 @@ extern "C" void afx_hook_source2_rs_load(AfxHookSource2Rs * this_ptr, const char
 
 extern "C" void afx_hook_source2_rs_on_game_event(AfxHookSource2Rs * this_ptr, const char * event_name, int event_id, const char * json);
 
-extern "C" bool afx_hook_source2_rs_on_c_view_render_setup_view(AfxHookSource2Rs * this_ptr, float cur_time, float abs_time, float last_abs_time, struct AfxHookSourceRsView & current_view, const struct AfxHookSourceRsView & game_view, const struct AfxHookSourceRsView & last_view, int width, int height);
+extern "C" FFIBool afx_hook_source2_rs_on_c_view_render_setup_view(AfxHookSource2Rs * this_ptr, float cur_time, float abs_time, float last_abs_time, struct AfxHookSourceRsView & current_view, const struct AfxHookSourceRsView & game_view, const struct AfxHookSourceRsView & last_view, int width, int height);
 
-extern "C" void afx_hook_source2_rs_on_client_frame_stage_notify(AfxHookSource2Rs * this_ptr, int event_id, bool is_before);
+extern "C" void afx_hook_source2_rs_on_client_frame_stage_notify(AfxHookSource2Rs * this_ptr, int event_id, FFIBool is_before);
 
 extern "C" void afx_hook_source2_rs_on_add_entity(AfxHookSource2Rs * this_ptr, void * p_ref, int handle);
 
@@ -184,14 +192,14 @@ void AfxHookSourceRs_Engine_OnGameEvent(const char * event_name, int event_id, c
 
 bool AfxHookSource2Rs_OnCViewRenderSetupView(float curTime, float absTime, float lastAbsTime, struct AfxHookSourceRsView & currentView, const struct AfxHookSourceRsView & gameView, const struct AfxHookSourceRsView & lastView, int width, int height) {
     if(nullptr != g_AfxHookSource2Rs_Engine && g_b_on_c_view_render_setup_view) {
-        return afx_hook_source2_rs_on_c_view_render_setup_view(g_AfxHookSource2Rs_Engine, curTime, absTime, lastAbsTime, currentView, gameView, lastView, width, height);
+        return FFIBOOL_TO_BOOL(afx_hook_source2_rs_on_c_view_render_setup_view(g_AfxHookSource2Rs_Engine, curTime, absTime, lastAbsTime, currentView, gameView, lastView, width, height));
     }
     return false;
 }
 
 void AfxHookSource2Rs_Engine_OnClientFrameStageNotify(int event_id, bool is_before) {
     if(nullptr != g_AfxHookSource2Rs_Engine && g_b_on_client_frame_stage_notify) {
-        afx_hook_source2_rs_on_client_frame_stage_notify(g_AfxHookSource2Rs_Engine, event_id, is_before);
+        afx_hook_source2_rs_on_client_frame_stage_notify(g_AfxHookSource2Rs_Engine, event_id, BOOL_TO_FFIBOOL(is_before));
     }
 }
 
