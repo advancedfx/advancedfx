@@ -1,4 +1,4 @@
-#define GAME_CS2
+#include "stdafx.h"
 
 #include <iostream>
 #include "WrpConsole.h"
