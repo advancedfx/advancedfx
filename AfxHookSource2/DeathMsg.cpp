@@ -1183,7 +1183,6 @@ struct CS2_MirvDeathMsg : MirvDeathMsg {
 			"default - use default game color\n"
 			"<0-255> <0-255> <0-255> <0-255> - color in RGBA format e.g. 255 0 0 255\n"
 			"<color> - one of the default colors e.g. red\n";
-			"use \"mirv_deathmsg help colors\" to see all default colors\n";
 
 		if (3 > argc)
 		{
