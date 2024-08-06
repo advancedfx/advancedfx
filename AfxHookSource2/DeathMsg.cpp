@@ -706,6 +706,9 @@ typedef void (__fastcall *g_Original_handlePlayerDeath_t)(u_char* param_1, SOURC
 g_Original_handlePlayerDeath_t g_Original_handlePlayerDeath = nullptr;
 
 void __fastcall handleDeathnotice(u_char* hudDeathNotice, SOURCESDK::CS2::IGameEvent* gameEvent) {
+
+	float orgDeathNoticeLifetime, orgDeathNoticeLocalPlayerLifetimeMod;
+
 	MyDeathMsgGameEventWrapper myWrapper(gameEvent);
 
 	auto pDeathNoticeLifetime = (float*)(hudDeathNotice + 0x74);
@@ -871,17 +874,26 @@ void __fastcall handleDeathnotice(u_char* hudDeathNotice, SOURCESDK::CS2::IGameE
 
 	if (myWrapper.lifetime.use)
 	{
+		orgDeathNoticeLifetime = *pDeathNoticeLifetime;
 		*pDeathNoticeLifetime = myWrapper.lifetime.value;
 	}
 
 	if (myWrapper.lifetimeMod.use)
 	{
+		orgDeathNoticeLocalPlayerLifetimeMod = *pDeathNoticeLocalPlayerLifetimeMod;
 		*pDeathNoticeLocalPlayerLifetimeMod = myWrapper.lifetimeMod.value;
 	}
 
 	g_MirvDeathMsgGlobals.activeWrapper = &myWrapper;
 
     g_Original_handlePlayerDeath(hudDeathNotice, &myWrapper);
+
+	if (myWrapper.lifetimeMod.use) {
+		*pDeathNoticeLocalPlayerLifetimeMod = orgDeathNoticeLocalPlayerLifetimeMod;
+	}
+	if (myWrapper.lifetime.use) {
+		*pDeathNoticeLifetime = orgDeathNoticeLifetime;
+	}
 };
 
 typedef void (__fastcall *g_Original_DeathMsgColors_t)(uint64_t a1, u_char* a2);
@@ -1077,8 +1089,7 @@ void HookPanorama(HMODULE panoramaDll)
 
 	if (!getPanoramaAddrs(panoramaDll)) return;
 
-	/*
-	DetourTransactionBegin();
+	/*DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 
 	DetourAttach(&(PVOID&)g_Original_DeathMsgColors, myDeathMsgColors);
@@ -1087,8 +1098,7 @@ void HookPanorama(HMODULE panoramaDll)
 	if(NO_ERROR != DetourTransactionCommit()) {
 		ErrorBox("Failed to detour panorama functions.");
 		return;
-	}
-	*/
+	}*/
 
 	g_myPanoramaWrapper.hooked = true;
 };
