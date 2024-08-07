@@ -1075,20 +1075,6 @@ void HookPanorama(HMODULE panoramaDll)
 
 	if (!getPanoramaAddrs(panoramaDll)) return;
 
-
-	Afx::BinUtils::MemRange textRange = Afx::BinUtils::MemRange::FromEmpty();
-	Afx::BinUtils::MemRange dataRange = Afx::BinUtils::MemRange::FromEmpty();
-	{
-		Afx::BinUtils::ImageSectionsReader sections((HMODULE)panoramaDll);
-		if(!sections.Eof()) {
-			textRange = sections.GetMemRange();
-			sections.Next();
-			if(!sections.Eof()){
-				dataRange = sections.GetMemRange();
-			}
-		}
-	}
-
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 
