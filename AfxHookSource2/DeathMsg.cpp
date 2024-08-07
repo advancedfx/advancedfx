@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <Windows.h>
+#include "../shared/binutils.h"
 #include "../deps/release/Detours/src/detours.h"
 #include "../deps/release/prop/cs2/sdk_src/public/igameevents.h"
 
@@ -213,13 +214,13 @@ void DeathMsgId::operator=(char const * consoleValue) {
 
 bool DeathMsgId::EqualsUserId(int userId)
 {
-	if (userId < 1) return false;
+	if (Mode == Id_UserId) return userId == Id.userId;
+
+	if (userId < 0)
+		return false;
 
 	switch(Mode)
 	{
-		case Id_UserId:
-			return userId == Id.userId;
-			break;
 		case Id_Key:
 			// in CS2 playercontroller entityindex is userId + 1
 			return getPlayerInfoFromControllerIndex(userId + 1).specKey == Id.specKey;
@@ -475,19 +476,22 @@ struct myPanoramaWrapper {
 
 	void applyColors() {
 		if (nullptr != BorderColor.pointer) {
-			*(uint32_t*)(BorderColor.pointer) = BorderColor.use ? BorderColor.value : BorderColor.defaultValue;
+			*(uint32_t*)(BorderColor.pointer + 0x38 + 4*0) = BorderColor.use ? BorderColor.value : BorderColor.defaultValue;
+			*(uint32_t*)(BorderColor.pointer + 0x38 + 4*1) = BorderColor.use ? BorderColor.value : BorderColor.defaultValue;
+			*(uint32_t*)(BorderColor.pointer + 0x38 + 4*2) = BorderColor.use ? BorderColor.value : BorderColor.defaultValue;
+			*(uint32_t*)(BorderColor.pointer + 0x38 + 4*3) = BorderColor.use ? BorderColor.value : BorderColor.defaultValue;
 		}
 		if (nullptr != LocalBackgroundColor.pointer) {
-			*(uint32_t*)(LocalBackgroundColor.pointer) = LocalBackgroundColor.use ? LocalBackgroundColor.value : LocalBackgroundColor.defaultValue;
+			*(uint32_t*)(LocalBackgroundColor.pointer +0x20) = LocalBackgroundColor.use ? LocalBackgroundColor.value : LocalBackgroundColor.defaultValue;
 		}	
 		if (nullptr != BackgroundColor.pointer) {
-			*(uint32_t*)(BackgroundColor.pointer) = BackgroundColor.use ? BackgroundColor.value : BackgroundColor.defaultValue;
+			*(uint32_t*)(BackgroundColor.pointer +0x20) = BackgroundColor.use ? BackgroundColor.value : BackgroundColor.defaultValue;
 		}	
 		if (nullptr != CTcolor.pointer) {
-			*(uint32_t*)(CTcolor.pointer) = CTcolor.use ? CTcolor.value : CTcolor.defaultValue;
+			*(uint32_t*)(CTcolor.pointer + 0x20) = CTcolor.use ? CTcolor.value : CTcolor.defaultValue;
 		}
 		if (nullptr != Tcolor.pointer) {
-			*(uint32_t*)(Tcolor.pointer) = Tcolor.use ? Tcolor.value : Tcolor.defaultValue;
+			*(uint32_t*)(Tcolor.pointer + 0x20) = Tcolor.use ? Tcolor.value : Tcolor.defaultValue;
 		}
 	}
 
@@ -714,9 +718,9 @@ void __fastcall handleDeathnotice(u_char* hudDeathNotice, SOURCESDK::CS2::IGameE
 	auto pDeathNoticeLifetime = (float*)(hudDeathNotice + 0x74);
 	auto pDeathNoticeLocalPlayerLifetimeMod = (float*)(hudDeathNotice + 0x78);
 
-	auto uidAttacker = gameEvent->GetInt(myWrapper.hashString("attacker"));
-	auto uidVictim = gameEvent->GetInt(myWrapper.hashString("userid"));
-	auto uidAssister = gameEvent->GetInt(myWrapper.hashString("assister"));
+	auto uidAttacker = (int)(int16_t)gameEvent->GetInt(myWrapper.hashString("attacker"));
+	auto uidVictim = (int)(int16_t)gameEvent->GetInt(myWrapper.hashString("userid"));
+	auto uidAssister = (int)(int16_t)gameEvent->GetInt(myWrapper.hashString("assister"));
 
 	myWrapper.attacker.newId.value.Id.userId = uidAttacker;
 	myWrapper.victim.newId.value.Id.userId = uidVictim;
@@ -749,7 +753,7 @@ void __fastcall handleDeathnotice(u_char* hudDeathNotice, SOURCESDK::CS2::IGameE
 				std::to_string(uidVictim),
 
 				nullptr != assisterController ? (char*)((u_char*)assisterController + CS2::CBasePlayerController::m_iszPlayerName) : "null",
-				std::to_string(nullptr != assisterController ? uidAssister : 0),
+				std::to_string(uidAssister),
 			}
 		};
 
@@ -896,97 +900,62 @@ void __fastcall handleDeathnotice(u_char* hudDeathNotice, SOURCESDK::CS2::IGameE
 	}
 };
 
-typedef void (__fastcall *g_Original_DeathMsgColors_t)(uint64_t a1, u_char* a2);
-g_Original_DeathMsgColors_t g_Original_DeathMsgColors = nullptr;
 
-void __fastcall myDeathMsgColors(uint64_t a1, u_char* a2) {
+typedef int (__fastcall * Panorama_CLayoutFile_LoadFromFile_t)(void * This, const char * pFilePath, unsigned char _unk02);
+typedef unsigned char (__fastcall * Panorama_CStyleProperty_Parse_t)(void * This, void* _unk01, const char * pValueStr);
 
-	if (nullptr == a2 || nullptr == *(uint32_t**)(a2 + 0x8) || nullptr == *(uint32_t**)(a2 + 0x10)) {
-		g_myPanoramaWrapper.applyColors();
-		g_Original_DeathMsgColors(a1, a2);
-		return;
+bool g_b_In_Panorama_CLayoutFile_LoadFromFile = false;
+Panorama_CLayoutFile_LoadFromFile_t g_Org_Panorama_CLayoutFile_LoadFromFile = nullptr;
+Panorama_CStyleProperty_Parse_t g_Org_Panorama_CStylePropertyForegroundColor_Parse = nullptr;
+Panorama_CStyleProperty_Parse_t g_Org_Panorama_CStylePropertyBackgroundColor_Parse = nullptr;
+Panorama_CStyleProperty_Parse_t g_Org_Panorama_CStylePropertyBorder_Parse = nullptr;
+
+int __fastcall My_Panorama_CLayoutFile_LoadFromFile(void * This, const char * pFilePath, unsigned char _unk02) {
+	if(0 == strcmp("panorama\\layout\\hud\\huddeathnotice.xml",pFilePath)) {
+		g_b_In_Panorama_CLayoutFile_LoadFromFile = true;
+		int result = g_Org_Panorama_CLayoutFile_LoadFromFile(This,pFilePath,_unk02);
+		g_b_In_Panorama_CLayoutFile_LoadFromFile = false;
+		return result;
 	}
 
-	auto colorProp = *(uint32_t*)(a2 + 0x8);
-	auto nextProp = *(uint32_t*)(a2 + 0x10);
+	return g_Org_Panorama_CLayoutFile_LoadFromFile(This,pFilePath,_unk02);
+}
 
-	// check for default color and next address value, they are always the same
-	// second check is needed because it can get wrong address if checks too early
-	if (nullptr == g_myPanoramaWrapper.LocalBackgroundColor.pointer && 0xE7000000 == colorProp && 0x3F800000 == nextProp)
-	{
-		// address doesn't change later
-		g_myPanoramaWrapper.LocalBackgroundColor.pointer = a2 + 0x8;
-	}
-
-	if (
-		nullptr == g_myPanoramaWrapper.BackgroundColor.pointer
-		&& colorProp == 0xA0000000 && nextProp == 0x3F800000
-	)
-	{
-		// because color is not unique and used in multiple places we have to find right one
-		// after right one there is another background color property, so we can check against it
-		// but the offset is dynamic, so we search in range
-	
-		u_char* endAddress = a2 + 0x120;
-		uint32_t nextColorProp = 0;
-		bool found = false;
-
-		for (auto ptr = a2; ptr < endAddress - 4; ptr += 4) {
-			if ((uintptr_t)ptr % 4 != 0) continue;
-
-			memcpy(&nextColorProp, ptr, 4);
-			if (nextColorProp == 0xD2060663) {
-				found = true;
-				break;
-			}
+unsigned char __fastcall My_Panorama_CStylePropertyForegroundColor_Parse(void * This, void* _unk01, const char * pValueStr) {
+	unsigned char result = g_Org_Panorama_CStylePropertyForegroundColor_Parse(This,_unk01,pValueStr);
+	if(g_b_In_Panorama_CLayoutFile_LoadFromFile) {
+		if(0 == strcmp(pValueStr,"#6f9ce6")) {
+			g_myPanoramaWrapper.CTcolor.pointer = (u_char*)This;
 		}
-
-		if (found) g_myPanoramaWrapper.BackgroundColor.pointer = a2 + 0x8;
+		else if(0 == strcmp(pValueStr,"#eabe54")) {
+			g_myPanoramaWrapper.Tcolor.pointer = (u_char*)This;
+		}		
 	}
+	return result;
+}
 
-	if (
-		nullptr == g_myPanoramaWrapper.CTcolor.pointer && nullptr == g_myPanoramaWrapper.Tcolor.pointer &&
-		0xFFE69C6F == colorProp && 0x3F800000 == nextProp &&
-		nullptr != *(uint32_t**)(a2 + 0x38) && nullptr != *(uint32_t**)(a2 + 0x40)
-	)
-	{
-		auto TcolorProp = *(uint32_t*)(a2 + 0x38);
-		auto TcolorNextProp = *(uint32_t*)(a2 + 0x40);
-		// not really needed, but just in case
-		if (0xFF54BEEA == TcolorProp && 0x3F800000 == TcolorNextProp)
-		{
-			// these always come together
-			g_myPanoramaWrapper.CTcolor.pointer = a2 + 0x8;
-			g_myPanoramaWrapper.Tcolor.pointer = a2 + 0x38;
+unsigned char __fastcall My_Panorama_CStylePropertyBackgroundColor_Parse(void * This, void* _unk01, const char * pValueStr) {
+	unsigned char result = g_Org_Panorama_CStylePropertyBackgroundColor_Parse(This,_unk01,pValueStr);
+	if(g_b_In_Panorama_CLayoutFile_LoadFromFile) {
+		if(0 == strcmp(pValueStr,"#000000a0")) {
+			g_myPanoramaWrapper.BackgroundColor.pointer = (u_char*)This;
+		}
+		else if(0 == strcmp(pValueStr,"#000000e7")) {
+			g_myPanoramaWrapper.LocalBackgroundColor.pointer = (u_char*)This;
+		}		
+	}
+	return result;
+}
+
+unsigned char __fastcall My_Panorama_CStylePropertyBorder_Parse(void * This, void* _unk01, const char * pValueStr) {
+	unsigned char result = g_Org_Panorama_CStylePropertyBorder_Parse(This,_unk01,pValueStr);
+	if(g_b_In_Panorama_CLayoutFile_LoadFromFile) {
+		if(0 == strcmp(pValueStr,"2px solid #e10000")) {
+			g_myPanoramaWrapper.BorderColor.pointer = (u_char*)This;
 		}
 	}
-
-	g_myPanoramaWrapper.applyColors();
-	g_Original_DeathMsgColors(a1, a2);
-};
-
-typedef void (__fastcall *g_Original_DeathMsgBorderColor_t)(u_char* a1);
-g_Original_DeathMsgBorderColor_t g_Original_DeathMsgBorderColor = nullptr;
-
-void __fastcall myDeathMsgBorderColor(u_char* a1) {
-
-	if (nullptr == a1 || nullptr == *(uint32_t**)(a1 + 0x38) || nullptr == *(uint32_t**)(a1 + 0x40)) {
-		g_myPanoramaWrapper.applyColors();
-		g_Original_DeathMsgBorderColor(a1);
-		return;
-	}
-
-	auto colorProp = *(uint32_t*)(a1 + 0x38);
-	auto nextProp = *(uint32_t*)(a1 + 0x40);
-
-	if (nullptr == g_myPanoramaWrapper.BorderColor.pointer && 0xFF0000E1 == colorProp && 0xFF0000E1 == nextProp)
-	{
-		g_myPanoramaWrapper.BorderColor.pointer = a1 + 0x38;
-	}
-
-	g_myPanoramaWrapper.applyColors();
-	g_Original_DeathMsgBorderColor(a1);
-};
+	return result;
+}
 
 bool getDeathMsgAddrs(HMODULE clientDll) {
 	// can be found with strings like "attacker" and "userid", etc. it basically takes all info from player_death event
@@ -1062,23 +1031,40 @@ bool getPanoramaAddrsFromClient(HMODULE clientDll) {
 };
 
 bool getPanoramaAddrs(HMODULE panoramaDll) {
-	// has "Invalid type %d on fillbrush" string
-	size_t g_Original_DeathMsgColors_addr = getAddress(panoramaDll, "48 89 5C 24 ?? 57 48 83 EC ?? 48 8B DA 48 8B F9 8B 12");
-	if (g_Original_DeathMsgColors_addr == 0) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));	
-		return false;
-	}
-	g_Original_DeathMsgColors = (g_Original_DeathMsgColors_t)g_Original_DeathMsgColors_addr;
 
-	// has CStylePropertyBorder or ??_7CStylePropertyBorder@panorama@@6B@
-	// also can be found in another function that has "border-color" string, it's being set to one of DATs in the end
-	// sig looks a bit spooky, but I doubt they will ever change this function
-	size_t g_Original_BorderColor_addr = getAddress(panoramaDll, "40 53 48 83 EC ?? 48 8B 05 ?? ?? ?? ?? 48 8B D9 BA ?? ?? ?? ?? 48 8B 08 48 8B 01 FF 50 ?? 48 8B D0 48 85 C0 74 ?? 48 8D 05 ?? ?? ?? ?? 48 89 02 48 8D 05 ?? ?? ?? ?? 0F B6 4B ?? 88 4A ?? 0F B6 4B ?? 48 89 02 88 4A ?? 8B 4B ?? 89 4A ?? 0F 10 43");
-	if (g_Original_BorderColor_addr == 0) {
+	// Refernces "CLayoutFile::LoadFromFile" string.
+	g_Org_Panorama_CLayoutFile_LoadFromFile = (Panorama_CLayoutFile_LoadFromFile_t)getAddress(panoramaDll,"40 53 55 57 41 54 48 83 ec 38 48 89 74 24 60 48 8b f2 4c 89 6c 24 68");
+	if(nullptr == g_Org_Panorama_CLayoutFile_LoadFromFile) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));	
 		return false;
 	}
-	g_Original_DeathMsgBorderColor = (g_Original_DeathMsgBorderColor_t)g_Original_BorderColor_addr;
+
+	{
+		void **vtable = (void**)Afx::BinUtils::FindClassVtable(panoramaDll,".?AVCStylePropertyForegroundColor@panorama@@",0,0);
+		if(nullptr == vtable) {
+			ErrorBox(MkErrStr(__FILE__, __LINE__));	
+			return false;
+		}
+		g_Org_Panorama_CStylePropertyForegroundColor_Parse = (Panorama_CStyleProperty_Parse_t)vtable[6];
+	}
+
+	{
+		void **vtable = (void**)Afx::BinUtils::FindClassVtable(panoramaDll,".?AVCStylePropertyBackgroundColor@panorama@@",0,0);
+		if(nullptr == vtable) {
+			ErrorBox(MkErrStr(__FILE__, __LINE__));	
+			return false;
+		}
+		g_Org_Panorama_CStylePropertyBackgroundColor_Parse = (Panorama_CStyleProperty_Parse_t)vtable[6];
+	}
+
+	{
+		void **vtable = (void**)Afx::BinUtils::FindClassVtable(panoramaDll,".?AVCStylePropertyBorder@panorama@@",0,0);
+		if(nullptr == vtable) {
+			ErrorBox(MkErrStr(__FILE__, __LINE__));	
+			return false;
+		}
+		g_Org_Panorama_CStylePropertyBorder_Parse = (Panorama_CStyleProperty_Parse_t)vtable[6];
+	}		
 
 	return true;
 };
@@ -1089,16 +1075,32 @@ void HookPanorama(HMODULE panoramaDll)
 
 	if (!getPanoramaAddrs(panoramaDll)) return;
 
-	/*DetourTransactionBegin();
+
+	Afx::BinUtils::MemRange textRange = Afx::BinUtils::MemRange::FromEmpty();
+	Afx::BinUtils::MemRange dataRange = Afx::BinUtils::MemRange::FromEmpty();
+	{
+		Afx::BinUtils::ImageSectionsReader sections((HMODULE)panoramaDll);
+		if(!sections.Eof()) {
+			textRange = sections.GetMemRange();
+			sections.Next();
+			if(!sections.Eof()){
+				dataRange = sections.GetMemRange();
+			}
+		}
+	}
+
+	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 
-	DetourAttach(&(PVOID&)g_Original_DeathMsgColors, myDeathMsgColors);
-	DetourAttach(&(PVOID&)g_Original_DeathMsgBorderColor, myDeathMsgBorderColor);
+	DetourAttach(&(PVOID&)g_Org_Panorama_CLayoutFile_LoadFromFile, My_Panorama_CLayoutFile_LoadFromFile);
+	DetourAttach(&(PVOID&)g_Org_Panorama_CStylePropertyForegroundColor_Parse, My_Panorama_CStylePropertyForegroundColor_Parse);
+	DetourAttach(&(PVOID&)g_Org_Panorama_CStylePropertyBackgroundColor_Parse, My_Panorama_CStylePropertyBackgroundColor_Parse);
+	DetourAttach(&(PVOID&)g_Org_Panorama_CStylePropertyBorder_Parse, My_Panorama_CStylePropertyBorder_Parse);
 
 	if(NO_ERROR != DetourTransactionCommit()) {
 		ErrorBox("Failed to detour panorama functions.");
 		return;
-	}*/
+	}
 
 	g_myPanoramaWrapper.hooked = true;
 };
@@ -1229,6 +1231,7 @@ struct CS2_MirvDeathMsg : MirvDeathMsg {
 			if (4 == argc)
 			{
 				g_myPanoramaWrapper.CTcolor.setColor(args->ArgV(3));
+				g_myPanoramaWrapper.applyColors();
 				return true;
 			}
 
@@ -1256,6 +1259,7 @@ struct CS2_MirvDeathMsg : MirvDeathMsg {
 			if (4 == argc)
 			{
 				g_myPanoramaWrapper.Tcolor.setColor(args->ArgV(3));
+				g_myPanoramaWrapper.applyColors();
 				return true;
 			}
 
@@ -1263,6 +1267,7 @@ struct CS2_MirvDeathMsg : MirvDeathMsg {
 			{
 				advancedfx::CSubCommandArgs subArgs(args, 3);
 				g_myPanoramaWrapper.Tcolor.setColor(&subArgs);
+				g_myPanoramaWrapper.applyColors();
 				return true;
 			}
 		}
@@ -1283,6 +1288,7 @@ struct CS2_MirvDeathMsg : MirvDeathMsg {
 			if (4 == argc)
 			{
 				g_myPanoramaWrapper.BorderColor.setColor(args->ArgV(3));
+				g_myPanoramaWrapper.applyColors();
 				return true;
 			}
 
@@ -1290,6 +1296,7 @@ struct CS2_MirvDeathMsg : MirvDeathMsg {
 			{
 				advancedfx::CSubCommandArgs subArgs(args, 3);
 				g_myPanoramaWrapper.BorderColor.setColor(&subArgs);
+				g_myPanoramaWrapper.applyColors();
 				return true;
 			}
 		}
@@ -1305,13 +1312,13 @@ struct CS2_MirvDeathMsg : MirvDeathMsg {
 					, g_myPanoramaWrapper.BackgroundColor.use ? g_myPanoramaWrapper.BackgroundColor.userValue.c_str() : "default"
 				);
 
-				advancedfx::Message("%u\n", g_myPanoramaWrapper.BackgroundColor.use ? g_myPanoramaWrapper.BackgroundColor.value : 0);
 				return true;
 			}
 
 			if (4 == argc)
 			{
 				g_myPanoramaWrapper.BackgroundColor.setColor(args->ArgV(3));
+				g_myPanoramaWrapper.applyColors();
 				return true;
 			}
 
@@ -1319,6 +1326,7 @@ struct CS2_MirvDeathMsg : MirvDeathMsg {
 			{
 				advancedfx::CSubCommandArgs subArgs(args, 3);
 				g_myPanoramaWrapper.BackgroundColor.setColor(&subArgs);
+				g_myPanoramaWrapper.applyColors();
 				return true;
 			}
 		}
@@ -1334,13 +1342,13 @@ struct CS2_MirvDeathMsg : MirvDeathMsg {
 					, g_myPanoramaWrapper.LocalBackgroundColor.use ? g_myPanoramaWrapper.LocalBackgroundColor.userValue.c_str() : "default"
 				);
 
-				advancedfx::Message("%u\n", g_myPanoramaWrapper.LocalBackgroundColor.use ? g_myPanoramaWrapper.LocalBackgroundColor.value : 0);
 				return true;
 			}
 
 			if (4 == argc)
 			{
 				g_myPanoramaWrapper.LocalBackgroundColor.setColor(args->ArgV(3));
+				g_myPanoramaWrapper.applyColors();
 				return true;
 			}
 
@@ -1348,6 +1356,7 @@ struct CS2_MirvDeathMsg : MirvDeathMsg {
 			{
 				advancedfx::CSubCommandArgs subArgs(args, 3);
 				g_myPanoramaWrapper.LocalBackgroundColor.setColor(&subArgs);
+				g_myPanoramaWrapper.applyColors();
 				return true;
 			}
 		}
