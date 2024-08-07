@@ -1433,7 +1433,7 @@ bool mirvDeathMsg_Console(advancedfx::ICommandArgs* args)
 		"%s lifetimeMod [...] - Controls lifetime modifier of death messages for the \"local\" player.\n"
 		"%s localPlayer [...] - Controls what is considered \"local\" player (and thus highlighted in death notices).\n"
 		"%s debug [...] - Enable / Disable debug spew upon death messages.\n"
-		//"%s colors [...] - Controls colors of death messages.\n"
+		"%s colors [...] - Controls colors of death messages.\n"
 		"%s help [...] - Print help.\n"
 		, arg0
 		, arg0
@@ -1441,7 +1441,7 @@ bool mirvDeathMsg_Console(advancedfx::ICommandArgs* args)
 		, arg0
 		, arg0
 		, arg0
-		//, arg0
+		, arg0
 		, arg0
 	);
 	return true;
