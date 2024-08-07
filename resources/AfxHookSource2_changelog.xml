@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.20.0</version>
+<time>2024-08-07T09:00Z</time>
+<changes>
+<change type="added">Added mirv_deathmsg, by @ChetdeJong. For details see https://github.com/advancedfx/advancedfx/wiki/Source2%3Amirv_deathmsg</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.19.2</version>
 <time>2024-07-06T10:45Z</time>
 <changes>
