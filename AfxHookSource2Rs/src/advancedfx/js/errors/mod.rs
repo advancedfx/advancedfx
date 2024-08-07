@@ -14,3 +14,7 @@ pub fn error_arguments() -> JsError {
 pub fn error_async_conflict() -> JsError {
     JsNativeError::error().with_message("async conflict!").into()
 }
+
+pub fn error_no_wrapper() -> JsError {
+    JsNativeError::error().with_message("context has no advancedfx::js::WeakContextWrapper!").into()
+}

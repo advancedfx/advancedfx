@@ -2,3 +2,4 @@
 node_modules
 dist
 rollup.config.mjs
+snippets

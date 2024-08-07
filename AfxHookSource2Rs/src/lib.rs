@@ -9,6 +9,7 @@ use std::error::Error;
 use std::{cell::RefCell, collections::VecDeque, future::Future, pin::Pin};
 use std::task::Poll::Ready;
 use std::rc::Rc;
+use std::rc::Weak;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -19,7 +20,10 @@ use futures::stream::SplitStream;
 
 use boa_gc::GcRefCell;
 use boa_engine::{
-    class::Class,
+    class::{
+        Class,
+        ClassBuilder,
+    },
     Context,
     builtins::promise::PromiseState,
     context::{
@@ -99,6 +103,8 @@ extern "C" {
 
     fn afx_hook_source2_get_entity_ref_health(p_ref: * mut AfxEntityRef) -> i32;
 
+    fn afx_hook_source2_get_entity_ref_team(p_ref: * mut AfxEntityRef) -> i32;
+
     fn afx_hook_source2_get_entity_ref_origin(p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32);
 
     fn afx_hook_source2_get_entity_ref_render_eye_origin(p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32);
@@ -111,6 +117,287 @@ extern "C" {
 
     fn afx_hook_source2_get_main_campath() -> * mut advancedfx::campath::CampathType;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+type CommandArgsRs = c_void;
+type CommandCallbackRs = extern "C" fn(p_user_data: * mut c_void, p_command_args: * mut CommandArgsRs);
+type ConCommandRs = c_void;
+
+extern "C" {
+    fn afx_hook_source2_new_command(psz_name: *const c_char, psz_help_string: *const c_char, flags: i64, additional_flags: i64, p_callback: CommandCallbackRs, p_user_data: * mut c_void) -> * mut ConCommandRs;
+
+    fn afx_hook_source2_delete_command(p_con_command: * mut ConCommandRs);
+
+    fn afx_hook_source2_command_args_argc(p_command_args: * mut CommandArgsRs) -> i32;
+    
+    fn afx_hook_source2_command_args_argv(p_command_args: * mut CommandArgsRs, index: i32) -> *const c_char;
+}
+
+#[derive(Trace, Finalize, JsData)]
+struct ConCommandsArgs {
+    #[unsafe_ignore_trace]
+    p_command_args: Weak<* mut CommandArgsRs>
+}
+
+impl ConCommandsArgs {
+    #[must_use]
+    pub fn new(p_command_args: Weak<* mut CommandArgsRs>) -> Self {
+        Self {
+            p_command_args: p_command_args
+        }   
+    }
+
+    pub fn add_to_context(context: &mut Context) {
+        context
+            .register_global_class::<ConCommandsArgs>()
+            .expect("the AdvancedfxConCommandArgs builtin shouldn't exist");        
+    }    
+
+    fn error_typ() -> JsResult<JsValue> {
+        Err(JsNativeError::typ()
+            .with_message("'this' is not a AdvancedfxConCommandArgs object")
+            .into())
+    }
+
+    fn arg_c(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(con_command_args) = object.downcast_mut::<ConCommandsArgs>() {
+                if let Some(ptr) = con_command_args.p_command_args.upgrade() {
+                    let result = unsafe {
+                        afx_hook_source2_command_args_argc(*ptr)
+                    };
+                    return Ok(JsValue::Integer(result));
+                }
+            }
+        }
+        Self::error_typ()
+    }
+
+    fn arg_v(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(con_command_args) = object.downcast_mut::<ConCommandsArgs>() {
+                if 1 == args.len() {
+                    if let Ok(index) = args[0].to_i32(context) {
+                        if let Some(ptr) = con_command_args.p_command_args.upgrade() {
+                            let str_result = unsafe {CStr::from_ptr(
+                                afx_hook_source2_command_args_argv(*ptr, index)
+                            )}.to_str().unwrap();
+                            return Ok( JsValue::String(js_string!(str_result)));
+                        }
+                    }
+                }
+                return Err(advancedfx::js::errors::error_arguments());
+            }
+        }
+        Self::error_typ()
+    }       
+}
+
+
+impl Class for ConCommandsArgs {
+    const NAME: &'static str = "AdvancedfxConCommandArgs";
+    const LENGTH: usize = 0;
+
+    fn data_constructor(
+        _this: &JsValue,
+        _args: &[JsValue],
+        _context: &mut Context,
+    ) -> JsResult<Self> {
+        return Err(advancedfx::js::errors::error_arguments())
+    }
+
+    fn init(class: &mut ClassBuilder<'_>) -> JsResult<()> {
+        class
+            .method(
+                js_string!("argC"),
+                0,
+                NativeFunction::from_fn_ptr(ConCommandsArgs::arg_c)
+            )
+            .method(
+                js_string!("argV"),
+                1,
+                NativeFunction::from_fn_ptr(ConCommandsArgs::arg_v)
+            );
+        Ok(())
+    }
+}
+
+
+#[derive(Trace, Finalize, JsData)]
+struct ConCommand {
+    #[unsafe_ignore_trace]
+    callback: JsObject,
+
+    weak_context_wrapper: advancedfx::js::WeakContextWrapper,
+}
+
+impl ConCommand {
+    #[must_use]
+    pub fn new(callback: JsObject, weak_context_wrapper: advancedfx::js::WeakContextWrapper) -> Self {
+        Self {
+            callback : callback,
+            weak_context_wrapper: weak_context_wrapper
+        }   
+    }
+
+    fn callback(&mut self, p_command_args: * mut CommandArgsRs) {
+        if let Some(context_wrapper_rc) = self.weak_context_wrapper.context_wrapper.upgrade() {
+            if let Ok(mut context_wrapper) =  context_wrapper_rc.try_borrow_mut() {
+                let rc = Rc::new(p_command_args);
+                if let Ok(result_object) = ConCommandsArgs::from_data(ConCommandsArgs::new(Rc::downgrade(&rc.clone())), &mut context_wrapper.context) {
+                    if let Err(e) = self.callback.call(&JsValue::null(), &[JsValue::Object(result_object)], &mut context_wrapper.context) {
+                        use std::fmt::Write as _;
+                        let mut s = String::new();
+                        if let Some(source) = e.source() {
+                            write!(&mut s, "Uncaught {} in {}\n",e,source).unwrap();
+                        } else {
+                            write!(&mut s, "Uncaught {}\n",e).unwrap();
+                        }
+                        afx_warning(s);
+                    }
+                }
+            }
+        }
+    }    
+} 
+
+extern "C" fn afx_hook_source2_callback_fn_impl(p_user_data: * mut c_void, p_command_args: * mut CommandArgsRs) {
+    let con_command: &mut ConCommand = unsafe { &mut *(p_user_data as *mut ConCommand) };
+    con_command.callback(p_command_args);
+}
+
+#[derive(Trace, JsData)]
+struct ConCommandBox {    
+    #[unsafe_ignore_trace]
+    ptr: * mut ConCommand,
+
+    #[unsafe_ignore_trace]
+    handle: * mut ConCommandRs,
+}
+
+impl ConCommandBox {
+    #[must_use]
+    pub fn new(ptr: * mut ConCommand) -> Self {
+        Self {
+            ptr: ptr,
+            handle: std::ptr::null_mut()
+        }   
+    }
+
+    pub fn add_to_context(context: &mut Context) {
+        context
+            .register_global_class::<ConCommandBox>()
+            .expect("the AdvancedfxConCommand builtin shouldn't exist");        
+    }
+
+    fn error_typ() -> JsResult<JsValue> {
+        Err(JsNativeError::typ()
+            .with_message("'this' is not a AdvancedfxConCommand object")
+            .into())
+    }
+
+    fn unregister(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mut con_command_box) = object.downcast_mut::<ConCommandBox>() {
+                con_command_box.do_unregister();
+                return Ok(JsValue::undefined());
+            }
+        }
+        Self::error_typ()
+    }
+    
+    fn register(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mut con_command_box) = object.downcast_mut::<ConCommandBox>() {
+                if 2 == args.len() {
+                    if let Some(name) = args[0].as_string() {
+                        if let Ok(str_name) = name.to_std_string() {
+                            if let Some(description) = args[1].as_string() {
+                                if let Ok(str_description) = description.to_std_string() {
+                                    con_command_box.do_register(str_name, str_description, 0, 0);
+                                    return Ok(JsValue::Undefined);
+                                }
+                            }
+                        }
+                    }
+                }
+                return Err(advancedfx::js::errors::error_arguments())
+            }
+        }
+        Self::error_typ()
+    }
+
+    fn do_register(&mut self, name: String, description: String, flags: i64, additional_flags: i64) {
+        self.do_unregister();
+        let c_name = std::ffi::CString::new(name).unwrap();
+        let c_description = std::ffi::CString::new(description).unwrap();
+        self.handle = unsafe { afx_hook_source2_new_command(c_name.as_ptr(), c_description.as_ptr(), flags, additional_flags, afx_hook_source2_callback_fn_impl, self.ptr as *mut c_void) };
+    }
+
+    fn do_unregister(&mut self) {
+        if !self.handle.is_null() {
+            unsafe {
+                afx_hook_source2_delete_command(self.handle);
+            }
+            self.handle = std::ptr::null_mut();
+        }
+    }
+}
+
+impl Finalize for ConCommandBox {
+    fn finalize(&self) {
+        if !self.handle.is_null() {
+            unsafe {
+                afx_hook_source2_delete_command(self.handle);
+            }
+        }
+        unsafe {
+            drop(Box::from_raw(self.ptr));
+        }
+    }
+}
+
+impl Class for ConCommandBox {
+    const NAME: &'static str = "AdvancedfxConCommand";
+    const LENGTH: usize = 1;
+
+    fn data_constructor(
+        _this: &JsValue,
+        args: &[JsValue],
+        context: &mut Context,
+    ) -> JsResult<Self> {
+        if 1 == args.len() {
+            if let Some(object) = args[0].as_object() {
+                if object.is_callable() {
+                    if let Some(weak_context_wrapper) = context.get_data::<advancedfx::js::WeakContextWrapper>() {
+                        let ptr = Box::into_raw(Box::new(ConCommand::new(object.clone(), weak_context_wrapper.clone())));
+                        return Ok(ConCommandBox::new(ptr));        
+                    }
+                    return Err(advancedfx::js::errors::error_no_wrapper());
+                }
+            }
+        }
+        return Err(advancedfx::js::errors::error_arguments())
+    }
+
+    fn init(class: &mut ClassBuilder<'_>) -> JsResult<()> {
+        class
+            .method(
+                js_string!("register"),
+                2,
+                NativeFunction::from_fn_ptr(ConCommandBox::register)
+            )
+            .method(
+                js_string!("unregister"),
+                0,
+                NativeFunction::from_fn_ptr(ConCommandBox::unregister)
+            );
+            Ok(())
+    }
+}
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -484,6 +771,15 @@ fn afx_get_entity_ref_health(p_ref: * mut AfxEntityRef) -> i32 {
     }
     return result;
 }
+
+fn afx_get_entity_ref_team(p_ref: * mut AfxEntityRef) -> i32 {
+    let result: i32;
+    unsafe {
+        result = afx_hook_source2_get_entity_ref_team(p_ref);
+    }
+    return result;
+}
+
 
 fn afx_get_entity_ref_origin(p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32){
     unsafe {
@@ -1196,7 +1492,12 @@ impl MirvEntityRef {
                 NativeFunction::from_fn_ptr(MirvEntityRef::get_health),
                 js_string!("getHealth"),
                 0,
-            )             
+            )
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_team),
+                js_string!("getTeam"),
+                0,
+            )                                  
             .function(
                 NativeFunction::from_fn_ptr(MirvEntityRef::get_origin),
                 js_string!("getOrigin"),
@@ -1294,6 +1595,15 @@ impl MirvEntityRef {
         if let Some(object) = this.as_object() {
             if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
                 return Ok(JsValue::Integer(afx_get_entity_ref_health(mirv.entity_ref)));
+            }
+        }
+        Err(advancedfx::js::errors::error_type())
+    }
+
+    fn get_team(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                return Ok(JsValue::Integer(afx_get_entity_ref_team(mirv.entity_ref)));
             }
         }
         Err(advancedfx::js::errors::error_type())
@@ -1551,6 +1861,9 @@ impl AfxHookSource2Rs {
         advancedfx::js::campath::Value::add_to_context(&mut context);
         advancedfx::js::campath::Iterator::add_to_context(&mut context);
         advancedfx::js::campath::Campath::add_to_context(&mut context);
+
+        ConCommandsArgs::add_to_context(&mut context);
+        ConCommandBox::add_to_context(&mut context);
 
         let events = Rc::<MirvEvents>::new(MirvEvents::new());
 

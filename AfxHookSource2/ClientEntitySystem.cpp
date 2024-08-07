@@ -10,6 +10,7 @@
 #include "../shared/FFITools.h"
 
 #include "AfxHookSource2Rs.h"
+#include "DeathMsg.h" //TODO: code we depend on should probably be moved elsewhere.
 
 #define WIN32_LEAN_AND_MEAN
 #include "../deps/release/Detours/src/detours.h"
@@ -78,6 +79,11 @@ unsigned int CEntityInstance::GetHealth() {
 	// See cl_ent_text drawing function. Near "Health: %d\n".
 	return ((unsigned int (__fastcall *)(void *)) (*(void***)this)[162]) (this); 
 };
+
+int CEntityInstance::GetTeam() {
+    return *(int*)((u_char*)(this) + CS2::C_BaseEntity::m_iTeamNum);
+};
+
 
 /**
  * @remarks FLOAT_MAX if invalid
@@ -336,6 +342,14 @@ extern "C" int afx_hook_source2_get_entity_ref_health(void * pRef) {
     }
     return 0;    
 }
+
+extern "C" int afx_hook_source2_get_entity_ref_team(void * pRef) {
+    if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+        return pInstance->GetTeam();
+    }
+    return 0;    
+}
+
 
 extern "C" void afx_hook_source2_get_entity_ref_origin(void * pRef, float & x, float & y, float & z) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {

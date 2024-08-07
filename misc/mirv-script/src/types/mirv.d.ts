@@ -308,6 +308,8 @@ declare namespace mirv {
 
 		getHealth(): number;
 
+		getTeam(): number;
+
 		/**
 		 * @returns Array with x,y,z.
 		 */

@@ -38,6 +38,8 @@ public:
     SOURCESDK::CS2::CBaseHandle GetPlayerControllerHandle();
 
     unsigned int GetHealth();
+
+    int GetTeam();
 	
     /**
      * @remarks FLOAT_MAX if invalid

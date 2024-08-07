@@ -1251,7 +1251,7 @@ impl Campath {
                                     campath.on_changed = Some(some_on_changed);
                                     return Ok(JsValue::Undefined); 
                                 }
-                                return Err(JsNativeError::error().with_message("context has no advancedfx::js::WeakContextWrapper!").into())
+                                return Err(advancedfx::js::errors::error_no_wrapper());
                             }
                         }
                         _ => {

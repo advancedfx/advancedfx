@@ -99,6 +99,8 @@ extern "C" int afx_hook_source2_get_entity_ref_player_controller_handle(void * p
 
 extern "C" int afx_hook_source2_get_entity_ref_health(void * pRef);
 
+extern "C" int afx_hook_source2_get_entity_ref_team(void * pRef);
+
 extern "C" void afx_hook_source2_get_entity_ref_origin(void * pRef, float & x, float & y, float & z);
 
 extern "C" void afx_hook_source2_get_entity_ref_render_eye_origin(void * pRef, float & x, float & y, float & z);

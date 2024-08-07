@@ -42,7 +42,10 @@ Also note the connection parameters, for HLAE its `?hlae=1` and for clients it's
 
 Structure:
 
-```ts
+```
+|
++---snippets // example snippets - currently unsorted and might conflict with each other and the src example (we need to make plugin system script still).
+|
 \---src
     |   client.ts // example client
     |   index.mts // mirv example entry point
