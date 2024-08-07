@@ -1225,6 +1225,7 @@ struct CS2_MirvDeathMsg : MirvDeathMsg {
 			{
 				advancedfx::CSubCommandArgs subArgs(args, 3);
 				g_myPanoramaWrapper.CTcolor.setColor(&subArgs);
+				g_myPanoramaWrapper.applyColors();
 				return true;
 			}
 		}
