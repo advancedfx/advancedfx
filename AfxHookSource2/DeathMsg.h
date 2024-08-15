@@ -26,11 +26,11 @@ namespace CS2 {
 		constexpr std::ptrdiff_t m_iTeamNum = 0x3C3; // uint8
 	}
 	namespace CBasePlayerController {
-		constexpr std::ptrdiff_t m_iszPlayerName = 0x630; // char[128]
-		constexpr std::ptrdiff_t m_steamID = 0x6B8; // uint64
+		constexpr std::ptrdiff_t m_iszPlayerName = 0x640; // char[128]
+		constexpr std::ptrdiff_t m_steamID = 0x6C8; // uint64
 	}
 	namespace CCSPlayerController {
-		constexpr std::ptrdiff_t m_sSanitizedPlayerName = 0x740; // CUtlString
+		constexpr std::ptrdiff_t m_sSanitizedPlayerName = 0x750; // CUtlString
 	}
 // https://github.com/danielkrupinski/Osiris
 	namespace PanoramaUIPanel {

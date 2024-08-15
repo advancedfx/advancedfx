@@ -65,6 +65,9 @@ PlayerInfo getSpectatedPlayer()
 			auto xuid = *(uint64_t*)((u_char*)(playerController) + CS2::CBasePlayerController::m_steamID);
 			auto name = (char*)((u_char*)(playerController) + CS2::CBasePlayerController::m_iszPlayerName);
 
+            if (0 == xuid) advancedfx::Warning("Error: could not find xuid for entity %i\n", controllerIndex);
+            if (nullptr == name || 0 == strlen(name)) advancedfx::Warning("Error: could not find name for entity %i\n", controllerIndex);
+
 			result.name = name;
 			result.xuid = xuid;
 			result.userId = controllerIndex - 1;
@@ -137,6 +140,9 @@ PlayerInfo getPlayerInfoFromControllerIndex(int entindex)
 
 			auto xuid = *(uint64_t*)((u_char*)(ent) + CS2::CBasePlayerController::m_steamID);
 			auto name = (char*)((u_char*)(ent) + CS2::CBasePlayerController::m_iszPlayerName);
+
+            if (0 == xuid) advancedfx::Warning("Error: could not find xuid for entity %i\n", i);
+            if (nullptr == name || 0 == strlen(name)) advancedfx::Warning("Error: could not find name for entity %i\n", i);
 
 			result.name = name;
 			result.xuid = xuid;
