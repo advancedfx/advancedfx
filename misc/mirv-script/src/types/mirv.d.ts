@@ -7,6 +7,10 @@ declare namespace mirv {
 	 */
 	let onClientFrameStageNotify: undefined | OnClientFrameStageNotify;
 
+	let onRecordStart: undefined | OnRecordEnd;
+
+	let onRecordEnd: undefined | OnRecordStart;
+
 	/**
 	 * Allows to handle game event system events.
 	 */
@@ -99,6 +103,8 @@ declare namespace mirv {
 
 	function getEntityFromIndex(index: number): null | Entity;
 
+	function getEntityFromSplitScreenPlayer(index: number): null | Entity;
+
 	function getMainCampath(): AdvancedfxCampath;
 
 	/**
@@ -188,6 +194,13 @@ declare namespace mirv {
 		send(msg: string | ArrayBuffer): Promise<void>;
 	}
 
+	type RecordStart = {
+		/**
+		 * @param takeFolder this will almost always be not null (only if take folder can't be converted to UTF-8, which shouldn't happen).
+		 */
+		takeFolder: null | String;
+	};
+
 	/**
 	 * Game event data.
 	 */
@@ -225,6 +238,10 @@ declare namespace mirv {
 	 * @param e - curStage - current stage, isBefore - if called before (true) or after (false) client DLL for this stage.
 	 */
 	type OnClientFrameStageNotify = (e: { curStage: number; isBefore: boolean }) => void;
+
+	type OnRecordStart = (e: RecordStart) => void;
+
+	type OnRecordEnd = () => void;
 
 	type OnGameEvent = (e: GameEvent) => void;
 
@@ -325,7 +342,41 @@ declare namespace mirv {
 		 */
 		getRenderEyeAngles(): number[];
 
+		/**
+		 * @remarks makes sense only on PlayerPawn.
+		 */
 		getViewEntityHandle(): number;
+
+		/**
+		 * @remarks makes sense only on PlayerPawn.
+		 */
+		getActiveWeaponHandle(): number;
+
+		/**
+		 * @remarks makes sense only on PlayerController.
+		 */
+		getPlayerName(): null | string;
+
+		/**
+		 * @remarks makes sense only on PlayerController.
+		 * @returns 64 bit steam id.
+		 */
+		getSteamId(): number;
+
+		/**
+		 * @remarks makes sense only on PlayerController.
+		 */
+		getSanitizedPlayerName(): null | string;
+
+		/**
+		 * @remarks makes sense only on PlayerPawn.
+		 */
+		getObserverMode(): number;
+
+		/**
+		 * @remarks makes sense only on PlayerPawn.
+		 */
+		getObserverTargetHandle(): number;
 	}
 
 	type OnEntityEvent = (entity: Entity, handle: number) => void;

@@ -67,6 +67,8 @@ extern "C" {
     fn afx_hook_source2_warning(s: *const c_char);
     fn afx_hook_source2_exec(s: *const c_char);
 
+    fn afx_hook_source2_enable_on_record_start(value: bool);
+    fn afx_hook_source2_enable_on_record_end(value: bool);
     fn afx_hook_source2_enable_on_game_event(value: bool);
     fn afx_hook_source2_enable_on_c_view_render_setup_view(value: bool);
     fn afx_hook_source2_enable_on_client_frame_stage_notify(value: bool);
@@ -79,6 +81,8 @@ extern "C" {
     fn afx_hook_source2_get_highest_entity_index() -> i32;
 
     fn afx_hook_source2_get_entity_ref_from_index(index: i32) -> * mut AfxEntityRef;
+    fn afx_hook_source2_get_entity_ref_from_split_screen_player(index: i32) -> * mut AfxEntityRef;
+
     fn afx_hook_source2_add_ref_entity_ref(p_ref: * mut AfxEntityRef);
     fn afx_hook_source2_release_entity_ref(p_ref: * mut AfxEntityRef);
 
@@ -111,11 +115,27 @@ extern "C" {
 
     fn afx_hook_source2_get_entity_ref_render_eye_angles(p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32);
 
+    fn afx_hook_source2_get_entity_ref_view_entity_handle(p_ref: * mut AfxEntityRef) -> i32;
+
+    fn afx_hook_source2_get_entity_ref_active_weapon_handle(p_ref: * mut AfxEntityRef) -> i32;
+
+    fn afx_hook_source2_get_entity_ref_observer_mode(p_ref: * mut AfxEntityRef) -> u8;
+
+    fn afx_hook_source2_get_entity_ref_observer_target_handle(p_ref: * mut AfxEntityRef) -> i32;
+
     fn afx_hook_source2_is_playing_demo() -> bool;
 
     fn afx_hook_source2_is_demo_paused() -> bool;
 
     fn afx_hook_source2_get_main_campath() -> * mut advancedfx::campath::CampathType;
+
+    // can return nullptr to indicate no debug name.
+    fn afx_hook_source2_get_entity_ref_player_name(p_ref: * mut AfxEntityRef) -> *const c_char;
+
+    fn afx_hook_source2_get_entity_ref_steam_id(p_ref: * mut AfxEntityRef) -> u64;
+
+    // can return nullptr to indicate no debug name.
+    fn afx_hook_source2_get_entity_ref_sanitized_player_name(p_ref: * mut AfxEntityRef) -> *const c_char;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -546,6 +566,8 @@ impl JobQueue for AsyncJobQueue {
 }
 
 struct MirvEvents {
+    on_record_start: RefCell<Option<JsObject>>,
+    on_record_end: RefCell<Option<JsObject>>,
     on_game_event: RefCell<Option<JsObject>>,
     on_c_view_render_setup_view: RefCell<Option<JsObject>>,
     on_client_frame_stage_notify: RefCell<Option<JsObject>>,
@@ -556,6 +578,8 @@ struct MirvEvents {
 impl MirvEvents {
     fn new() -> Self {
         Self {
+            on_record_start: RefCell::<Option<JsObject>>::new(None),
+            on_record_end: RefCell::<Option<JsObject>>::new(None),
             on_game_event: RefCell::<Option<JsObject>>::new(None),
             on_c_view_render_setup_view: RefCell::<Option<JsObject>>::new(None),
             on_client_frame_stage_notify: RefCell::<Option<JsObject>>::new(None),
@@ -601,6 +625,18 @@ fn afx_exec(s: String) {
     let c_string = std::ffi::CString::new(s).unwrap();
     unsafe {
         afx_hook_source2_exec(c_string.as_ptr());
+    }
+}
+
+fn afx_enable_on_record_start(value: bool) {
+    unsafe {
+        afx_hook_source2_enable_on_record_start(value);        
+    }
+}
+
+fn afx_enable_on_record_end(value: bool) {
+    unsafe {
+        afx_hook_source2_enable_on_record_end(value);        
     }
 }
 
@@ -671,6 +707,15 @@ fn afx_get_entity_ref_from_index(index: i32) -> * mut AfxEntityRef {
 }
 
 
+fn afx_get_entity_ref_from_split_screen_player(index: i32) -> * mut AfxEntityRef {
+    let result: * mut AfxEntityRef;
+    unsafe {
+        result = afx_hook_source2_get_entity_ref_from_split_screen_player(index);
+    }
+    return result;
+}
+
+
 
 fn afx_add_ref_entity_ref(p_ref: * mut AfxEntityRef) {
     unsafe {
@@ -722,6 +767,32 @@ fn afx_get_entity_ref_debug_name(p_ref: * mut AfxEntityRef) -> Option<String> {
     }
     return Some(unsafe { CStr::from_ptr(result) }.to_str().unwrap().to_string());
 }
+
+fn afx_get_entity_ref_player_name(p_ref: * mut AfxEntityRef) -> Option<String> {
+    let result: *const c_char;
+    unsafe {
+        result = afx_hook_source2_get_entity_ref_player_name(p_ref);
+    }
+    if result.is_null() {
+         return None;
+    }
+    return Some(unsafe { CStr::from_ptr(result) }.to_str().unwrap().to_string());
+}
+
+
+fn afx_get_entity_ref_sanitized_player_name(p_ref: * mut AfxEntityRef) -> Option<String> {
+    let result: *const c_char;
+    unsafe {
+        result = afx_hook_source2_get_entity_ref_sanitized_player_name(p_ref);
+    }
+    if result.is_null() {
+         return None;
+    }
+    return Some(unsafe { CStr::from_ptr(result) }.to_str().unwrap().to_string());
+}
+
+
+
 
 fn afx_get_entity_ref_class_name( p_ref: * mut AfxEntityRef) -> String {
     let result: *const c_char;
@@ -799,6 +870,52 @@ fn afx_get_entity_ref_render_eye_angles(p_ref: * mut AfxEntityRef, x: & mut f32,
     }
 }
 
+fn afx_get_entity_ref_view_entity_handle(p_ref: * mut AfxEntityRef) -> i32 {
+    let result: i32;
+    unsafe {
+        result = afx_hook_source2_get_entity_ref_view_entity_handle(p_ref);
+    }
+    return result;
+}
+
+fn afx_get_entity_ref_active_weapon_handle(p_ref: * mut AfxEntityRef) -> i32 {
+    let result: i32;
+    unsafe {
+        result = afx_hook_source2_get_entity_ref_active_weapon_handle(p_ref);
+    }
+    return result;
+}
+
+
+fn afx_get_entity_ref_observer_mode(p_ref: * mut AfxEntityRef) -> u8 {
+    let result: u8;
+    unsafe {
+        result = afx_hook_source2_get_entity_ref_observer_mode(p_ref);
+    }
+    return result;
+}
+
+
+fn afx_get_entity_ref_observer_target_handle(p_ref: * mut AfxEntityRef) -> i32 {
+    let result: i32;
+    unsafe {
+        result = afx_hook_source2_get_entity_ref_observer_target_handle(p_ref);
+    }
+    return result;
+}
+
+
+
+
+fn afx_get_entity_ref_steam_id(p_ref: * mut AfxEntityRef) -> u64 {
+    let result: u64;
+    unsafe {
+        result = afx_hook_source2_get_entity_ref_steam_id(p_ref);
+    }
+    return result;
+}
+
+
 fn afx_is_playing_demo() -> bool {
     let result: bool;
     unsafe {
@@ -855,6 +972,90 @@ fn mirv_exec(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResu
         }
     }
     return Ok(JsValue::Undefined)
+}
+
+fn mirv_set_on_record_start(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    if let Some(object) = this.as_object() {
+        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
+            if 0 < args.len() {
+                match &args[0] {
+                    JsValue::Undefined => {
+                        mirv.events.on_record_start.replace(None);
+                        afx_enable_on_record_start(false);
+                        return Ok(JsValue::Undefined); 
+                    }
+                    JsValue::Object(object) => {
+                        if object.is_callable() {
+                            mirv.events.on_record_start.replace(Some(object.clone()));
+                            afx_enable_on_record_start(true);
+                            return Ok(JsValue::Undefined); 
+                        }
+                    }
+                    _ => {
+                    }
+                }
+            }
+        }
+    }
+    Err(advancedfx::js::errors::error_type())
+}
+
+fn mirv_get_on_record_start(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    if let Some(object) = this.as_object() {
+        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
+            match & *mirv.events.on_record_start.borrow() {
+                None => {
+                    return Ok(JsValue::Undefined);
+                }
+                Some(js_object) => {
+                    return Ok(JsValue::Object(js_object.clone()));
+                }
+            }
+        }
+    }
+    Err(advancedfx::js::errors::error_type())
+}
+
+fn mirv_set_on_record_end(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    if let Some(object) = this.as_object() {
+        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
+            if 0 < args.len() {
+                match &args[0] {
+                    JsValue::Undefined => {
+                        mirv.events.on_record_end.replace(None);
+                        afx_enable_on_record_end(false);
+                        return Ok(JsValue::Undefined); 
+                    }
+                    JsValue::Object(object) => {
+                        if object.is_callable() {
+                            mirv.events.on_record_end.replace(Some(object.clone()));
+                            afx_enable_on_record_end(true);
+                            return Ok(JsValue::Undefined); 
+                        }
+                    }
+                    _ => {
+                    }
+                }
+            }
+        }
+    }
+    Err(advancedfx::js::errors::error_type())
+}
+
+fn mirv_get_on_record_end(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    if let Some(object) = this.as_object() {
+        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
+            match & *mirv.events.on_record_end.borrow() {
+                None => {
+                    return Ok(JsValue::Undefined);
+                }
+                Some(js_object) => {
+                    return Ok(JsValue::Object(js_object.clone()));
+                }
+            }
+        }
+    }
+    Err(advancedfx::js::errors::error_type())
 }
 
 fn mirv_set_on_game_event(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
@@ -1512,7 +1713,42 @@ impl MirvEntityRef {
                 NativeFunction::from_fn_ptr(MirvEntityRef::get_render_eye_angles),
                 js_string!("getRenderEyeAngles"),
                 0,
-            )             
+            )     
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_view_entity_handle),
+                js_string!("getViewEntityHandle"),
+                0,
+            )  
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_active_weapon_handle),
+                js_string!("getActiveWeaponHandle"),
+                0,
+            )  
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_player_name),
+                js_string!("getPlayerName"),
+                0,
+            )
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_steam_id),
+                js_string!("getSteamId"),
+                0,
+            )
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_sanitized_player_name),
+                js_string!("getSanitizedPlayerName"),
+                0,
+            )
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_observer_mode),
+                js_string!("getObserverMode"),
+                0,
+            )
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_observer_target_handle),
+                js_string!("getObserverTargetHandle"),
+                0,
+            )
             .build();
     }
 
@@ -1545,6 +1781,30 @@ impl MirvEntityRef {
         }
         Err(advancedfx::js::errors::error_type())
     }
+
+    fn get_player_name(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                if let Some(str) = afx_get_entity_ref_player_name(mirv.entity_ref) {
+                    return Ok(JsValue::String(js_string!(str)));
+                }
+                return Ok(JsValue::null());
+            }
+        }
+        Err(advancedfx::js::errors::error_type())
+    }   
+    
+    fn get_sanitized_player_name(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                if let Some(str) = afx_get_entity_ref_sanitized_player_name(mirv.entity_ref) {
+                    return Ok(JsValue::String(js_string!(str)));
+                }
+                return Ok(JsValue::null());
+            }
+        }
+        Err(advancedfx::js::errors::error_type())
+    }  
 
     fn get_class_name(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
@@ -1668,6 +1928,51 @@ impl MirvEntityRef {
         }
         Err(advancedfx::js::errors::error_type())
     }
+
+    fn get_view_entity_handle(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                return Ok(JsValue::Integer(afx_get_entity_ref_view_entity_handle(mirv.entity_ref)));
+            }
+        }
+        Err(advancedfx::js::errors::error_type())
+    }
+
+    fn get_active_weapon_handle(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                return Ok(JsValue::Integer(afx_get_entity_ref_active_weapon_handle(mirv.entity_ref)));
+            }
+        }
+        Err(advancedfx::js::errors::error_type())
+    }
+
+    fn get_steam_id(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                return Ok(JsValue::from(afx_get_entity_ref_steam_id(mirv.entity_ref)));
+            }
+        }
+        Err(advancedfx::js::errors::error_type())
+    }
+
+    fn get_observer_mode(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                return Ok(JsValue::from(afx_get_entity_ref_observer_mode(mirv.entity_ref)));
+            }
+        }
+        Err(advancedfx::js::errors::error_type())
+    }    
+    
+    fn get_observer_target_handle(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                return Ok(JsValue::Integer(afx_get_entity_ref_observer_target_handle(mirv.entity_ref)));
+            }
+        }
+        Err(advancedfx::js::errors::error_type())
+    }
 }
 
 fn mirv_get_entity_ref_from_index(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -1675,6 +1980,21 @@ fn mirv_get_entity_ref_from_index(_this: &JsValue, args: &[JsValue], context: &m
         if let Some(index) = args[0].as_number() {
             let entity_ref: * mut AfxEntityRef;
             entity_ref = afx_get_entity_ref_from_index(index as i32);
+            if entity_ref.is_null() {
+                return Ok(JsValue::null());
+            }
+            return Ok(JsValue::Object(MirvEntityRef::create(entity_ref,context)));
+        }
+    }
+    return Err(advancedfx::js::errors::error_arguments());
+}
+
+
+fn mirv_get_entity_ref_from_split_screen_player(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+    if 1 == args.len() {
+        if let Some(index) = args[0].as_number() {
+            let entity_ref: * mut AfxEntityRef;
+            entity_ref = afx_get_entity_ref_from_split_screen_player(index as i32);
             if entity_ref.is_null() {
                 return Ok(JsValue::null());
             }
@@ -1873,6 +2193,10 @@ impl AfxHookSource2Rs {
             main_campath: None
         };
 
+        let fn_mirv_set_on_record_start = NativeFunction::from_fn_ptr(mirv_set_on_record_start).to_js_function(context.realm());
+        let fn_mirv_get_on_record_start = NativeFunction::from_fn_ptr(mirv_get_on_record_start).to_js_function(context.realm());
+        let fn_mirv_set_on_record_end = NativeFunction::from_fn_ptr(mirv_set_on_record_end).to_js_function(context.realm());
+        let fn_mirv_get_on_record_end = NativeFunction::from_fn_ptr(mirv_get_on_record_end).to_js_function(context.realm());
         let fn_mirv_set_on_game_event = NativeFunction::from_fn_ptr(mirv_set_on_game_event).to_js_function(context.realm());
         let fn_mirv_get_on_game_event = NativeFunction::from_fn_ptr(mirv_get_on_game_event).to_js_function(context.realm());
         let fn_mirv_set_on_c_view_render_setup_view = NativeFunction::from_fn_ptr(mirv_set_on_c_view_render_setup_view).to_js_function(context.realm());
@@ -1888,6 +2212,11 @@ impl AfxHookSource2Rs {
         .function(
             NativeFunction::from_fn_ptr(mirv_get_entity_ref_from_index),
             js_string!("getEntityFromIndex"),
+            0,
+        )           
+        .function(
+            NativeFunction::from_fn_ptr(mirv_get_entity_ref_from_split_screen_player),
+            js_string!("getEntityFromSplitScreenPlayer"),
             0,
         )           
         .function(
@@ -1969,6 +2298,18 @@ impl AfxHookSource2Rs {
             js_string!("onAddEntity"),
             Some(fn_mirv_get_on_add_entity),
             Some(fn_mirv_set_on_add_entity),
+            Attribute::all()
+        )
+        .accessor(
+            js_string!("onRecordStart"),
+            Some(fn_mirv_get_on_record_start),
+            Some(fn_mirv_set_on_record_start),
+            Attribute::all()
+        )
+        .accessor(
+            js_string!("onRecordEnd"),
+            Some(fn_mirv_get_on_record_end),
+            Some(fn_mirv_set_on_record_end),
             Attribute::all()
         )
         .accessor(
@@ -2152,6 +2493,50 @@ pub unsafe extern "C" fn afx_hook_source2_rs_load(this_ptr: *mut AfxHookSource2R
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn afx_hook_source2_rs_on_record_start(this_ptr: *mut AfxHookSource2Rs, taker_folder_path: *const c_char) {
+    let context = &mut (*(*this_ptr).context_wrapper).borrow_mut().context;
+    let borrowed = (*this_ptr).events.on_record_start.borrow();
+    let event_option_clone = borrowed.clone();
+    std::mem::drop(borrowed);
+    if let Some(event_clone) = event_option_clone {
+
+        let mut js_value_take_folder_path: JsValue = JsValue::null();
+        if !taker_folder_path.is_null() {
+            let str_take_folder_path = CStr::from_ptr(taker_folder_path).to_str().unwrap();
+            js_value_take_folder_path = JsValue::String(js_string!(str_take_folder_path));
+        }
+
+        let js_object = ObjectInitializer::new(context)
+        .property(js_string!("takeFolder"), js_value_take_folder_path, Attribute::all())
+        .build();
+
+        if let Err(e) = event_clone.call(&JsValue::undefined(), &[JsValue::Object(js_object)], context) {
+            use std::fmt::Write as _;
+            let mut s = String::new();
+            write!(&mut s, "Uncaught {e}\n").unwrap();
+            afx_warning(s);
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn afx_hook_source2_rs_on_record_end(this_ptr: *mut AfxHookSource2Rs) {
+    let context = &mut (*(*this_ptr).context_wrapper).borrow_mut().context;
+    let borrowed = (*this_ptr).events.on_record_end.borrow();
+    let event_option_clone = borrowed.clone();
+    std::mem::drop(borrowed);
+    if let Some(event_clone) = event_option_clone {
+        if let Err(e) = event_clone.call(&JsValue::undefined(), &[], context) {
+            use std::fmt::Write as _;
+            let mut s = String::new();
+            write!(&mut s, "Uncaught {e}\n").unwrap();
+            afx_warning(s);
+        }
+    }
+}
+
+
+#[no_mangle]
 pub unsafe extern "C" fn afx_hook_source2_rs_on_game_event(this_ptr: *mut AfxHookSource2Rs, event_name: *const c_char, event_id: i32, json: *const c_char) {
     let context = &mut (*(*this_ptr).context_wrapper).borrow_mut().context;
     let borrowed = (*this_ptr).events.on_game_event.borrow();
@@ -2167,7 +2552,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_game_event(this_ptr: *mut AfxHoo
         .property(js_string!("data"), JsValue::String(js_string!(str_json)), Attribute::all())
         .build();
 
-        if let Err(e) = event_clone.call(&JsValue::null(), &[JsValue::Object(js_object)], context) {
+        if let Err(e) = event_clone.call(&JsValue::undefined(), &[JsValue::Object(js_object)], context) {
             use std::fmt::Write as _;
             let mut s = String::new();
             write!(&mut s, "Uncaught {e}\n").unwrap();
@@ -2233,7 +2618,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_c_view_render_setup_view(this_pt
         .property(js_string!("height"), JsValue::Integer(height), Attribute::all())
         .build();
 
-        match event_clone.call(&JsValue::null(), &[JsValue::Object(js_object)], context) {
+        match event_clone.call(&JsValue::undefined(), &[JsValue::Object(js_object)], context) {
             Ok(js_value) => {
                 if let JsValue::Object(js_object) = js_value {
                     if let Ok(js_val_x) = js_object.get(js_string!("x"), context) {
@@ -2297,7 +2682,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_client_frame_stage_notify(this_p
         .property(js_string!("isBefore"), JsValue::Boolean(is_before), Attribute::all())
         .build();
 
-        if let Err(e) = event_clone.call(&JsValue::null(), &[JsValue::Object(js_object)], context) {
+        if let Err(e) = event_clone.call(&JsValue::undefined(), &[JsValue::Object(js_object)], context) {
             use std::fmt::Write as _;
             let mut s = String::new();
             write!(&mut s, "Uncaught {e}\n").unwrap();
@@ -2315,7 +2700,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_add_entity(this_ptr: *mut AfxHoo
     if let Some(event_clone) = event_option_clone {
         afx_add_ref_entity_ref(p_ref);
         let entity_ref = MirvEntityRef::create(p_ref, context);
-        if let Err(e) = event_clone.call(&JsValue::null(), &[JsValue::Object(entity_ref),JsValue::Integer(handle)], context) {
+        if let Err(e) = event_clone.call(&JsValue::undefined(), &[JsValue::Object(entity_ref),JsValue::Integer(handle)], context) {
             use std::fmt::Write as _;
             let mut s = String::new();
             write!(&mut s, "Uncaught {e}\n").unwrap();
@@ -2333,7 +2718,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_remove_entity(this_ptr: *mut Afx
     if let Some(event_clone) = event_option_clone {
         afx_add_ref_entity_ref(p_ref);
         let entity_ref = MirvEntityRef::create(p_ref, context);
-        if let Err(e) = event_clone.call(&JsValue::null(), &[JsValue::Object(entity_ref),JsValue::Integer(handle)], context) {
+        if let Err(e) = event_clone.call(&JsValue::undefined(), &[JsValue::Object(entity_ref),JsValue::Integer(handle)], context) {
             use std::fmt::Write as _;
             let mut s = String::new();
             write!(&mut s, "Uncaught {e}\n").unwrap();

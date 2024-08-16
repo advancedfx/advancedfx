@@ -106,10 +106,52 @@ void CEntityInstance::GetRenderEyeAngles(float outAngles[3]) {
 };
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetViewEntityHandle() {
-	// Schema system.
-	//if (!IsPlayerPawn())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
-	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int*)((unsigned char*)this + 0x9c));
-};
+	// Schema system (m_hViewEntity).
+	if (!IsPlayerPawn())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
+    void * pCameraServices = *(void**)((unsigned char*)this + 0x1130);
+    if(nullptr == pCameraServices) return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
+	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int*)((unsigned char*)pCameraServices + 0x9c));
+}
+
+SOURCESDK::CS2::CBaseHandle CEntityInstance::GetActiveWeaponHandle() {
+	// Schema system (m_hActiveWeapon).
+	if (!IsPlayerPawn())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
+    void * pWeaponServices = *(void**)((unsigned char*)this + 0x10f8);
+    if(nullptr == pWeaponServices) return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
+	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int*)((unsigned char*)pWeaponServices + 0x58));
+}
+
+const char * CEntityInstance::GetPlayerName(){
+    if (!IsPlayerController()) return nullptr;
+    return *(const char **)((u_char*)(this) + CS2::CBasePlayerController::m_iszPlayerName);
+}
+
+uint64_t CEntityInstance::GetSteamId(){
+    if (!IsPlayerController())  return 0;
+    return *(uint64_t*)((u_char*)(this) + CS2::CBasePlayerController::m_steamID);
+}
+
+const char * CEntityInstance::GetSanitizedPlayerName() {
+   if (!IsPlayerController()) return nullptr;
+    return *(const char **)((u_char*)(this) + CS2::CCSPlayerController::m_sSanitizedPlayerName);
+
+}
+
+uint8_t CEntityInstance::GetObserverMode() {
+	// Schema system (m_iObserverMode).
+	if (!IsPlayerPawn()) return 0;
+    void * pObserverServices = *(void**)((unsigned char*)this + 0x1110);
+    if(nullptr == pObserverServices) return 0;
+	return *(uint8_t*)((unsigned char*)pObserverServices + 0x40);    
+}
+
+SOURCESDK::CS2::CBaseHandle CEntityInstance::GetObserverTarget() {
+	// Schema system (m_hObserverTarget).
+	if (!IsPlayerPawn())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
+    void * pObserverServices = *(void**)((unsigned char*)this + 0x1110);
+    if(nullptr == pObserverServices) return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
+	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int*)((unsigned char*)pObserverServices + 0x44));    
+}
 
 class CAfxEntityInstanceRef {
 public:
@@ -377,10 +419,69 @@ extern "C" void afx_hook_source2_get_entity_ref_render_eye_angles(void * pRef, f
     }    
 }
 
-/*
-extern "C" int afx_hook_source2_getEntityRefViewEntityHandle(void * pRef) {
+extern "C" int afx_hook_source2_get_entity_ref_view_entity_handle(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
        return pInstance->GetViewEntityHandle().ToInt();
     }
     return SOURCESDK_CS2_INVALID_EHANDLE_INDEX;
-}*/
+}
+
+extern "C" int afx_hook_source2_get_entity_ref_active_weapon_handle(void * pRef) {
+    if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+       return pInstance->GetActiveWeaponHandle().ToInt();
+    }
+    return SOURCESDK_CS2_INVALID_EHANDLE_INDEX;
+}
+
+extern "C" const char* afx_hook_source2_get_entity_ref_player_name(void * pRef) {
+    if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+       return pInstance->GetPlayerName();
+    }
+    return nullptr;
+}
+
+extern "C" uint64_t afx_hook_source2_get_entity_ref_steam_id(void * pRef) {
+    if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+       return pInstance->GetSteamId();
+    }
+    return 0;
+}
+
+extern "C" const char* afx_hook_source2_get_entity_ref_sanitized_player_name(void * pRef) {
+    if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+       return pInstance->GetSanitizedPlayerName();
+    }
+    return nullptr;
+}
+
+typedef CEntityInstance *  (__fastcall * ClientDll_GetSplitScreenPlayer_t)(int slot);
+ClientDll_GetSplitScreenPlayer_t g_ClientDll_GetSplitScreenPlayer = nullptr;
+
+bool Hook_GetSplitScreenPlayer( void* pAddr) {
+    g_ClientDll_GetSplitScreenPlayer = (ClientDll_GetSplitScreenPlayer_t)pAddr;
+    return true;
+}
+
+extern "C" void * afx_hook_source2_get_entity_ref_from_split_screen_player(int index) {
+    if(0 == index && g_ClientDll_GetSplitScreenPlayer) {
+        if(CEntityInstance * result = g_ClientDll_GetSplitScreenPlayer(index)) {
+            return CAfxEntityInstanceRef::Aquire(result);
+        }
+    }
+    return nullptr;
+}
+
+extern "C" uint8_t afx_hook_source2_get_entity_ref_observer_mode(void * pRef) {
+    if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+       return pInstance->GetObserverMode();
+    }
+    return 0;
+}
+
+extern "C" int afx_hook_source2_get_entity_ref_observer_target_handle(void * pRef) {
+    if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+       return pInstance->GetObserverTarget().ToInt();
+    }
+    return SOURCESDK_CS2_INVALID_EHANDLE_INDEX;
+}
+

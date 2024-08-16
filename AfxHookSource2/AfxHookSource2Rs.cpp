@@ -29,6 +29,19 @@ extern "C" void afx_hook_source2_exec(const char * pszValue) {
     if(g_pEngineToClient) g_pEngineToClient->ExecuteClientCmd(0,pszValue,true);
 }
 
+bool g_b_on_record_start = false;
+
+extern "C" void afx_hook_source2_enable_on_record_start(FFIBool value) {
+    g_b_on_record_start = FFIBOOL_TO_BOOL(value);
+}
+
+bool g_b_on_record_end = false;
+
+extern "C" void afx_hook_source2_enable_on_record_end(FFIBool value) {
+    g_b_on_record_end = FFIBOOL_TO_BOOL(value);
+}
+
+
 bool g_b_on_game_event = false;
 
 extern "C" void afx_hook_source2_enable_on_game_event(FFIBool value) {
@@ -145,6 +158,10 @@ extern "C" void afx_hook_source2_rs_execute(AfxHookSource2Rs * this_ptr, unsigne
 
 extern "C" void afx_hook_source2_rs_load(AfxHookSource2Rs * this_ptr, const char * file_path);
 
+extern "C" void afx_hook_source2_rs_on_record_start(AfxHookSource2Rs * this_ptr, const char * take_folder_path);
+
+extern "C" void afx_hook_source2_rs_on_record_end(AfxHookSource2Rs * this_ptr);
+
 extern "C" void afx_hook_source2_rs_on_game_event(AfxHookSource2Rs * this_ptr, const char * event_name, int event_id, const char * json);
 
 extern "C" FFIBool afx_hook_source2_rs_on_c_view_render_setup_view(AfxHookSource2Rs * this_ptr, float cur_time, float abs_time, float last_abs_time, struct AfxHookSourceRsView & current_view, const struct AfxHookSourceRsView & game_view, const struct AfxHookSourceRsView & last_view, int width, int height);
@@ -183,6 +200,18 @@ void AfxHookSourceRs_Engine_Execute(unsigned char * pData, size_t lenData) {
 void AfxHookSourceRs_Engine_Load(const char * szFilePath) {
     if(nullptr != g_AfxHookSource2Rs_Engine) {
         afx_hook_source2_rs_load(g_AfxHookSource2Rs_Engine, szFilePath);
+    }
+}
+
+void AfxHookSourceRs_Engine_OnRecordStart(const char * take_folder_path) {
+    if(nullptr != g_AfxHookSource2Rs_Engine && g_b_on_record_start) {
+        afx_hook_source2_rs_on_record_start(g_AfxHookSource2Rs_Engine,take_folder_path);
+    }
+}
+
+void AfxHookSourceRs_Engine_OnRecordEnd() {
+    if(nullptr != g_AfxHookSource2Rs_Engine && g_b_on_record_end) {
+        afx_hook_source2_rs_on_record_end(g_AfxHookSource2Rs_Engine);
     }
 }
 

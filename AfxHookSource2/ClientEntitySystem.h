@@ -1,11 +1,15 @@
 #pragma once
 
+#include <cstdint>
+
 #include <Windows.h>
 #include "../deps/release/prop/cs2/sdk_src/public/entityhandle.h"
 
 bool Hook_ClientEntitySystem( void* pEntityList, void * pFnGetHighestEntityIterator, void * pFnGetEntityFromIndex );
 
 bool Hook_ClientEntitySystem2();
+
+bool Hook_GetSplitScreenPlayer( void* pAddr);
 
 class CAfxEntityInstanceRef;
 
@@ -51,6 +55,17 @@ public:
     void GetRenderEyeAngles(float outAngles[3]);
 
     SOURCESDK::CS2::CBaseHandle GetViewEntityHandle();
+
+    SOURCESDK::CS2::CBaseHandle GetActiveWeaponHandle();
+
+    const char * GetPlayerName();
+
+    uint64_t GetSteamId();
+
+    const char * GetSanitizedPlayerName();
+
+    uint8_t GetObserverMode();
+    SOURCESDK::CS2::CBaseHandle GetObserverTarget();
 };
 
 typedef EntityListIterator * (__fastcall * GetHighestEntityIterator_t)(void * entityList, EntityListIterator * it);

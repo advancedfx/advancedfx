@@ -1207,6 +1207,8 @@ void CAfxStreams::Console_RecordScreen(advancedfx::ICommandArgs* args) {
 	);
 }
 
+void AfxHookSourceRs_Engine_OnRecordStart(const char * take_folder_path);
+
 void CAfxStreams::RecordStart()
 {
 	RecordEnd();
@@ -1297,6 +1299,8 @@ void CAfxStreams::RecordStart()
                 SOURCESDK::CS2::g_pCVar->DispatchConCommand(handle_startmovie, SOURCESDK::CS2::CCommandContext(SOURCESDK::CS2::CT_FIRST_SPLITSCREEN_CLIENT,0), SOURCESDK::CS2::CCommand(3,pszArgs));
             } else advancedfx::Warning("AFXERROR: startmovie command not found, wav recording not possible.");
 		}
+
+        AfxHookSourceRs_Engine_OnRecordStart(utf8TakeDirOk ? utf8TakeDir.c_str() : nullptr);
 	}
 	else
 	{
@@ -1306,10 +1310,15 @@ void CAfxStreams::RecordStart()
 
 }
 
+
+void AfxHookSourceRs_Engine_OnRecordEnd();
+
 void CAfxStreams::RecordEnd()
 {
 	if(m_Recording)
 	{
+        AfxHookSourceRs_Engine_OnRecordEnd();
+
 		advancedfx::Message("Finishing recording ... ");
 		if (m_StartMovieWavUsed)
 		{

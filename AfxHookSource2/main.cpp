@@ -1158,6 +1158,29 @@ void HookClientDll(HMODULE clientDll) {
 			} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
+
+	/*
+	   GetSplitScreenPlayer(int): This function is called in GetLocalPlayerController / GetLocalPlayerPawn script functions.
+
+       1808541f0 40 53           PUSH       RBX
+       1808541f2 48 83 ec 20     SUB        RSP,0x20
+       1808541f6 8b 91 9c        MOV        EDX,dword ptr [RCX + 0x9c]
+                 00 00 00
+       1808541fc 48 8b d9        MOV        RBX,RCX
+       1808541ff 83 fa ff        CMP        EDX,-0x1
+       180854202 0f 84 27        JZ         LAB_18085432f
+                 01 00 00
+       180854208 4c 8b 0d        MOV        R9,qword ptr [DAT_1818b7d68]
+                 59 3b 06 01
+       18085420f 4d 85 c9        TEST       R9,R9
+
+	*/
+	{
+		Afx::BinUtils::MemRange range_get_split_screen_player = Afx::BinUtils::FindPatternString(textRange, "48 83 ec 28 83 f9 ff 75 17 48 8b 0d ?? ?? ?? ?? 48 8d 54 24 30 48 8b 01 ff 90 d8 02 00 00 8b 08");	
+		if(!range_get_split_screen_player.IsEmpty()) {
+			Hook_GetSplitScreenPlayer((void*)range_get_split_screen_player.Start);
+		} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
 }
 
 SOURCESDK::CreateInterfaceFn g_AppSystemFactory = nullptr;
