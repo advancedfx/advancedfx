@@ -1,7 +1,9 @@
 {
 	var fov = 90.0;
 	var handleZoom = 90.0;
+	var re_float = /^[0-9]+(\.[0-9]+)$/;
 
+	if (mirv._mirv_script_fov !== undefined) mirv._mirv_script_fov.unregister();
 	mirv._mirv_script_fov = new AdvancedfxConCommand(function (args) {
 		let argC = args.argC();
 		let arg0 = args.argV(0);
@@ -29,7 +31,7 @@
 						'\n'
 				);
 				return;
-			} else {
+			} else if (re_float.match(arg1)) {
 				fov = parseFloat(arg1);
 				mirv.onCViewRenderSetupView = function (e) {
 					if (handleZoom === false || e.currentView.fov <= handleZoom)
