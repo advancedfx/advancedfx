@@ -59,9 +59,9 @@ bool CEntityInstance::IsPlayerPawn() {
 };
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerPawnHandle() {
-	// See cl_ent_text drawing function. Or Schema system.
+	// See cl_ent_text drawing function. Or Schema system (m_hPawn).
 	if(!IsPlayerController())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
-	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + 0x5fc));
+	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + 0x60c));
 };
 
 bool CEntityInstance::IsPlayerController() {
@@ -70,7 +70,7 @@ bool CEntityInstance::IsPlayerController() {
 };
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerControllerHandle() {
-	// See cl_ent_text drawing function. Or Schema system.
+	// See cl_ent_text drawing function. Or Schema system (m_hController).
 	if(!IsPlayerPawn())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
 	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + 0x128c));
 };
