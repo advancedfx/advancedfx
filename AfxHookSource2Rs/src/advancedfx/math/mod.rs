@@ -16,7 +16,7 @@ impl Vector3 {
     }
 
     pub fn length(self) -> f64 {
-        return (self.x*self.x + self.y*self.y * self.z*self.z).sqrt();
+        return (self.x*self.x + self.y*self.y + self.z*self.z).sqrt();
     }
 
     pub fn normalized(self) -> Result<Self, &'static str> {
