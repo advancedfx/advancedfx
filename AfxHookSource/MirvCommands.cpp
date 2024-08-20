@@ -2097,7 +2097,7 @@ CON_COMMAND(mirv_aim, "Aiming system control.")
 			IMirvVecAngCalc * vecAng = g_Aiming.Source_get();
 
 			Tier0_Msg(
-				"mirv_aim finder <sClacVecAngName> - Calc to use as source (<sClacVecAngName> is name from mirv_calcs vecAng).\n"
+				"mirv_aim calcVecAng <sClacVecAngName> - Calc to use as source (<sClacVecAngName> is name from mirv_calcs vecAng).\n"
 				"Current value: %s\n"
 				, vecAng ? "" : "(none)"
 			);
