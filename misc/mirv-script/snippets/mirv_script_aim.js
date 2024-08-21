@@ -166,8 +166,7 @@
 								mirv.message(
 									i +
 										': ' +
-										entity.getName() +
-										' / ' +
+										entity.getClientClassName() +
 										' / ' +
 										entity.getDebugName() +
 										' / ' +

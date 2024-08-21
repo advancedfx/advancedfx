@@ -315,6 +315,8 @@ declare namespace mirv {
 
 		getClassName(): string;
 
+		getClientClassName(): null | string;
+
 		isPlayerPawn(): boolean;
 
 		getPlayerPawnHandle(): number;

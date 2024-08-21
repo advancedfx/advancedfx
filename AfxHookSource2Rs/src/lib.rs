@@ -97,6 +97,8 @@ extern "C" {
 
     fn afx_hook_source2_get_entity_ref_class_name(p_ref: * mut AfxEntityRef) -> *const c_char;
 
+    fn afx_hook_source2_get_entity_ref_client_class_name(p_ref: * mut AfxEntityRef) -> *const c_char;
+
     fn afx_hook_source2_get_entity_ref_is_player_pawn(p_ref: * mut AfxEntityRef) -> bool;
 
     fn afx_hook_source2_get_entity_ref_player_pawn_handle(p_ref: * mut AfxEntityRef) -> i32;
@@ -791,9 +793,6 @@ fn afx_get_entity_ref_sanitized_player_name(p_ref: * mut AfxEntityRef) -> Option
     return Some(unsafe { CStr::from_ptr(result) }.to_str().unwrap().to_string());
 }
 
-
-
-
 fn afx_get_entity_ref_class_name( p_ref: * mut AfxEntityRef) -> String {
     let result: *const c_char;
     unsafe {
@@ -801,6 +800,18 @@ fn afx_get_entity_ref_class_name( p_ref: * mut AfxEntityRef) -> String {
     }
     return unsafe { CStr::from_ptr(result) }.to_str().unwrap().to_string();
 }
+
+fn afx_get_entity_ref_client_class_name( p_ref: * mut AfxEntityRef) -> Option<String> {
+    let result: *const c_char;
+    unsafe {
+        result = afx_hook_source2_get_entity_ref_client_class_name(p_ref);
+    }
+    if result.is_null() {
+        return None;
+    }    
+    return Some(unsafe { CStr::from_ptr(result) }.to_str().unwrap().to_string());
+}
+
 
 fn afx_get_entity_ref_is_player_pawn(p_ref: * mut AfxEntityRef) -> bool {
     let result: bool;
@@ -1670,6 +1681,11 @@ impl MirvEntityRef {
                 0,
             )
             .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_client_class_name),
+                js_string!("getClientClassName"),
+                0,
+            )
+            .function(
                 NativeFunction::from_fn_ptr(MirvEntityRef::is_player_pawn),
                 js_string!("isPlayerPawn"),
                 0,
@@ -1810,6 +1826,18 @@ impl MirvEntityRef {
         if let Some(object) = this.as_object() {
             if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
                 return Ok(JsValue::String(js_string!(afx_get_entity_ref_class_name(mirv.entity_ref))));
+            }
+        }
+        Err(advancedfx::js::errors::error_type())
+    }
+    
+    fn get_client_class_name(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                if let Some(str) = afx_get_entity_ref_client_class_name(mirv.entity_ref) {
+                    return Ok(JsValue::String(js_string!(str)));
+                }
+                return Ok(JsValue::null());
             }
         }
         Err(advancedfx::js::errors::error_type())

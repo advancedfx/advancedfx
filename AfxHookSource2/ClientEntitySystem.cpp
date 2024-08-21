@@ -33,7 +33,7 @@ const char * CEntityInstance::GetName() {
 	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x18);
 	if(pszName) return pszName;
 	return "";
-};
+}
 
 // Retrieved from script function.
 // can return nullptr!
@@ -41,14 +41,31 @@ const char * CEntityInstance::GetDebugName() {
 	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x18);
 	if(pszName) return pszName;
 	return **(const char***)(*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x8)+0x28);
-};
+}
 
 // Retrieved from script function.
 const char * CEntityInstance::GetClassName() {
 	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x20);
 	if(pszName) return pszName;
 	return "";
-};
+}
+
+extern HMODULE g_H_ClientDll;
+
+// Retrieved from script function.
+const char * CEntityInstance::GetClientClassName() {
+    void * pClientClass = nullptr;
+
+    // GetClientClass function.
+    // find it by searching for 3rd full-ptr ref to "C_PlantedC4" subtract sizeof(void*) (0x8) and search function that references this struct.
+    // you need to search for raw bytes, GiHidra doesn't seem to find the reference.
+    ((void * (__fastcall *)(void *,void*)) (*(void***)this)[38]) (this,&pClientClass);
+
+    if(pClientClass) {
+        return *(const char**)((unsigned char*)pClientClass + sizeof(void*));
+    }
+    return nullptr;
+}
 
 // Retrieved from script function.
 // GetEntityHandle ...
@@ -56,33 +73,33 @@ const char * CEntityInstance::GetClassName() {
 bool CEntityInstance::IsPlayerPawn() {
 	// See cl_ent_text drawing function.
 	return ((bool (__fastcall *)(void *)) (*(void***)this)[149]) (this);
-};
+}
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerPawnHandle() {
 	// See cl_ent_text drawing function. Or Schema system (m_hPawn).
 	if(!IsPlayerController())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
 	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + 0x60c));
-};
+}
 
 bool CEntityInstance::IsPlayerController() {
 	// See cl_ent_text drawing function. Near "Pawn: (%d) Name: %s".
 	return ((bool (__fastcall *)(void *)) (*(void***)this)[150]) (this);    
-};
+}
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerControllerHandle() {
 	// See cl_ent_text drawing function. Or Schema system (m_hController).
 	if(!IsPlayerPawn())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
 	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + 0x128c));
-};
+}
 
 unsigned int CEntityInstance::GetHealth() {
 	// See cl_ent_text drawing function. Near "Health: %d\n".
 	return ((unsigned int (__fastcall *)(void *)) (*(void***)this)[162]) (this); 
-};
+}
 
 int CEntityInstance::GetTeam() {
     return *(int*)((u_char*)(this) + CS2::C_BaseEntity::m_iTeamNum);
-};
+}
 
 
 /**
@@ -93,17 +110,17 @@ void CEntityInstance::GetOrigin(float & x, float & y, float & z) {
 	x =  (*(float *)((unsigned char *)this + 0x144));
 	y =  (*(float *)((unsigned char *)this + 0x148));
 	z =  (*(float *)((unsigned char *)this + 0x14c));
-};
+}
 
 void CEntityInstance::GetRenderEyeOrigin(float outOrigin[3]) {
 	// GetRenderEyeAngles vtable offset minus 1
 	((void (__fastcall *)(void *,float outOrigin[3])) (*(void***)this)[166]) (this,outOrigin);
-};
+}
 
 void CEntityInstance::GetRenderEyeAngles(float outAngles[3]) {
 	// See cl_track_render_eye_angles. Near "Render eye angles: %.7f, %.7f, %.7f\n".
 	((void (__fastcall *)(void *,float outAngles[3])) (*(void***)this)[167]) (this,outAngles);
-};
+}
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetViewEntityHandle() {
 	// Schema system (m_hViewEntity).
@@ -298,7 +315,7 @@ CON_COMMAND(__mirv_listentities, "") {
             float angles[3];
             ent->GetRenderEyeOrigin(origin);
             ent->GetRenderEyeAngles(angles);
-            advancedfx::Message("%i: %s / %s / %s [%f,%f,%f / %f,%f,%f] %i HP\n", i, ent->GetName(), ent->GetDebugName(), ent->GetClassName(), origin[0], origin[1], origin[2], angles[0], angles[1], angles[2], ent->GetHealth());
+            advancedfx::Message("%i: %s / %s / %s [%f,%f,%f / %f,%f,%f] %i HP\n", i, ent->GetDebugName(), ent->GetClassName(), ent->GetClientClassName(), origin[0], origin[1], origin[2], angles[0], angles[1], angles[2], ent->GetHealth());
         }
         else advancedfx::Message("%i:\n",i);
     }
@@ -346,6 +363,13 @@ extern "C" const char * afx_hook_source2_get_entity_ref_debug_name(void * pRef) 
 extern "C" const char * afx_hook_source2_get_entity_ref_class_name(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
         return pInstance->GetClassName();
+    }
+    return "";
+}
+
+extern "C" const char * afx_hook_source2_get_entity_ref_client_class_name(void * pRef) {
+    if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+        return pInstance->GetClientClassName();
     }
     return "";
 }

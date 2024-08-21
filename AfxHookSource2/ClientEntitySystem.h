@@ -33,6 +33,8 @@ public:
 
     const char * GetClassName();
 
+    const char * GetClientClassName();
+
     bool IsPlayerPawn();
 
     SOURCESDK::CS2::CBaseHandle GetPlayerPawnHandle();
