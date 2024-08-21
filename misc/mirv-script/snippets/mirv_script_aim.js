@@ -3,8 +3,6 @@
 	var M_PI = 3.14159265358979323846;
 	var index = -1;
 	var active = false;
-	var lastYPitch = 0.0;
-	var lastZYaw = 0.0;
 	var percentPerSecond = 500;
 	var snapTo = false;
 
@@ -56,30 +54,24 @@
 			var lookAngles = lookAnglesFromTo(
 				new AdvancedfxMathVector3(e.currentView.x, e.currentView.y, e.currentView.z),
 				new AdvancedfxMathVector3(eyeOrigin[0], eyeOrigin[1], eyeOrigin[2]),
-				lastYPitch,
-				lastZYaw
+				e.lastView.rX,
+				e.lastView.rY
 			);
-			lastYPitch = lookAngles.pitch;
-			lastZYaw = lookAngles.yaw;
 			if (snapTo) {
 				return {
-					rX: lastYPitch,
-					rY: lastZYaw,
+					rX: lookAngles.pitch,
+					rY: lookAngles.yaw,
 					rZ: 0.0
 				};
 			}
 			var sourceQuat = AdvancedfxMathQuaternion.fromQREulerAngles(
 				AdvancedfxMathQREulerAngles.fromQEulerAngles(
-					new AdvancedfxMathQEulerAngles(
-						e.currentView.rX,
-						e.currentView.rY,
-						e.currentView.rZ
-					)
+					new AdvancedfxMathQEulerAngles(e.lastView.rX, e.lastView.rY, e.lastView.rZ)
 				)
 			);
 			var targetQuat = AdvancedfxMathQuaternion.fromQREulerAngles(
 				AdvancedfxMathQREulerAngles.fromQEulerAngles(
-					new AdvancedfxMathQEulerAngles(lastYPitch, lastZYaw, 0.0)
+					new AdvancedfxMathQEulerAngles(lookAngles.pitch, lookAngles.yaw, 0.0)
 				)
 			);
 
@@ -97,8 +89,6 @@
 				rZ: angles.roll
 			};
 		}
-		lastYPitch = e.currentView.rX;
-		lastZYaw = e.currentView.rY;
 	}
 
 	// we use fn, otherwise we run into https://github.com/boa-dev/boa/issues/162
