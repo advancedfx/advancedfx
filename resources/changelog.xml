@@ -6,6 +6,17 @@
 
 <release>
 <name>HLAE</name>
+<version>2.171.0</version>
+<time>2024-08-21T17:20Z</time>
+<changes>
+<change type="updated">Included AfxHookSource2 0.22.0 (2024-08-21T17:20Z).</change>
+<change type="updated">Installer: updated ffmpeg download.</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.170.0</version>
 <time>2024-08-15T19:15Z</time>
 <changes>
