@@ -1,4 +1,5 @@
 xcopy "resources\*" "%~1" /D /E /Y
+xcopy "misc\mirv-script\dist\snippets\*" "%~1\resources\AfxHookSource2\snippets\" /D /Y
 xcopy "deps\release\Detours\LICENSE.md" "%~1\LICENSES\Detours\" /D /Y
 xcopy "deps\release\rapidxml\license.txt" "%~1\LICENSES\rapidxml\" /D /Y
 xcopy "deps\release\easywsclient\COPYING" "%~1\LICENSES\easywsclient\" /D /Y

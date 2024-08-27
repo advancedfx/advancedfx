@@ -65,6 +65,14 @@ if (NOT ${PROJECT_NAME}-MultiBuild)
 	    DEPENDS advancedfx-Win32 advancedfx-x64
     )
 
+	add_custom_command(
+		TARGET advancedfx
+		POST_BUILD
+		COMMAND npm run build-snippets
+		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/misc/mirv-script
+		COMMENT "Transpiling mirv-script snippets"
+	)
+
     install(
         CODE
         "
