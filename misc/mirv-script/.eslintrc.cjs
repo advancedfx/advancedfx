@@ -36,6 +36,7 @@ module.exports = {
 		],
 		'no-var': 'warn',
 		'@typescript-eslint/no-unused-vars': 'warn',
+		'@typescript-eslint/ban-ts-comment': 'off',
 		'no-shadow': 'off',
 		'@typescript-eslint/no-shadow': 'error',
 		'@typescript-eslint/naming-convention': [
