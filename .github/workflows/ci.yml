@@ -12,7 +12,11 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v3.6.0
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/iron
+          check-latest: true
       - uses: MinoruSekine/setup-scoop@v4
 
       - name: Update submodules
@@ -23,9 +27,6 @@ jobs:
 
       - name: Install WiX Toolset
         run: scoop install wixtoolset
-
-      - name: Install Node.js
-        run: scoop install nodejs-lts
 
       - name: Create build directory
         run: cmake -E make_directory "${{github.workspace}}/build/Release"

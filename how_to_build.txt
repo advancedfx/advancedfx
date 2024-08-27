@@ -1,6 +1,9 @@
 [X]	Download and install GIT Bash of https://git-scm.com/ to be alte to obtain
 	the HLAE source code and also other source code during the build process.
 
+[X] Install Node.js 20 LTS from https://nodejs.org/en/download/prebuilt-installer
+  we used v20.17.0 (LTS).
+
 [X] Download and install Microsoft Visual Studio Community 2022, which you can
     obtain for free from https://www.visualstudio.com/downloads/ .
     - Select Workloads - Desktop & Mobile - .NET Desktop Development
@@ -39,8 +42,8 @@
 	mkdir Release
 	cd Release
 	cmake -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 17 2022" -T "v143" -A "Win32" ../..
-	cmake --build . --config Release -v -- -r
-	cmake --install . --config Release -v
+	cmake --build . --config Debug -v -- -r
+	cmake --install . --config Debug -v
 	
 	(For Debug builds replace Release with Debug in the instructions above.)
 
