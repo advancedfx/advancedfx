@@ -42,8 +42,8 @@
 	mkdir Release
 	cd Release
 	cmake -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 17 2022" -T "v143" -A "Win32" ../..
-	cmake --build . --config Debug -v -- -r
-	cmake --install . --config Debug -v
+	cmake --build . --config Release -v -- -r
+	cmake --install . --config Release -v
 	
 	(For Debug builds replace Release with Debug in the instructions above.)
 
