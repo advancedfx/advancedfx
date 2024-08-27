@@ -12,7 +12,7 @@ declare class AdvancedfxMathVector3 {
 
 	readonly length: number;
 
-	readonly normalized: number;
+	readonly normalized: AdvancedfxMathVector3;
 
 	add(other: AdvancedfxMathVector3): AdvancedfxMathVector3;
 
@@ -68,7 +68,7 @@ declare class AdvancedfxMathQuaternion {
 
 	z: number;
 
-	dot(other: AdvancedfxMathQuaternion): AdvancedfxMathQuaternion;
+	dot(other: AdvancedfxMathQuaternion): number;
 
 	readonly norm: number;
 
@@ -76,7 +76,7 @@ declare class AdvancedfxMathQuaternion {
 
 	readonly conjugate: AdvancedfxMathQuaternion;
 
-	getAng(other: AdvancedfxMathQuaternion): AdvancedfxMathQuaternion;
+	getAng(other: AdvancedfxMathQuaternion): [AdvancedfxMathVector3, number];
 
 	slerp(other: AdvancedfxMathQuaternion, t: number): AdvancedfxMathQuaternion;
 

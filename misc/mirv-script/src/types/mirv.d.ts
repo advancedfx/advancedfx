@@ -107,6 +107,10 @@ declare namespace mirv {
 
 	function getMainCampath(): AdvancedfxCampath;
 
+	function isPlayingDemo(): boolean;
+
+	function isDemoPaused(): boolean;
+
 	/**
 	 * Represents a binary data message.
 	 */
@@ -198,7 +202,7 @@ declare namespace mirv {
 		/**
 		 * @param takeFolder this will almost always be not null (only if take folder can't be converted to UTF-8, which shouldn't happen).
 		 */
-		takeFolder: null | String;
+		takeFolder: null | string;
 	};
 
 	/**
