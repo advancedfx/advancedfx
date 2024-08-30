@@ -170,7 +170,7 @@ private:
     DXGI_FORMAT m_Format = DXGI_FORMAT_UNKNOWN;
     std::mutex m_Mutex;
     std::condition_variable m_Condition;
-    bool m_bCpuDone = true;
+    bool m_bCpuDone = false;
     advancedfx::CImageFormat m_ImageFormat;
     D3D11_MAPPED_SUBRESOURCE m_MappedResource;
 
@@ -282,8 +282,6 @@ private:
 		std::vector<class CAfxCpuTexture *> m_Buffers;
 	};
 
-	std::atomic_int m_CapturesLeft = 0;
-
 	std::mutex m_ProcessingThreadMutex;
 	std::condition_variable m_ProcessingThreadCv;
 	std::thread m_ProcessingThread;
@@ -293,7 +291,7 @@ private:
 
 	void ProcessingThreadFunc() {
 		std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
-		while (!m_ShutDown || 0 < m_CapturesLeft || !m_In.empty()) {
+		while (!m_ShutDown || !m_In.empty()) {
 			if (!m_In.empty()) {
 				class CBuffers* buffers = m_In.front();
 				if(buffers->GetSize() >= m_Streams_size) {
