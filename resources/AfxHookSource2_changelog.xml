@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.22.1</version>
+<time>2024-08-30T20:50Z</time>
+<changes>
+<change type="fixed">Fixed bug in mirv_streams record that would lead to missing frames.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.22.0</version>
 <time>2024-08-21T17:20Z</time>
 <changes>
