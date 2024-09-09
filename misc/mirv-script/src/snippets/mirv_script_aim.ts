@@ -5,12 +5,16 @@
 			.join('\n');
 	};
 
+	type AimResolver = (e: mirv.OnCViewRenderSetupViewArgs) => number[] | null;
+
 	const AFX_MATH_EPS = 1.0e-6;
 	const M_PI = 3.141592653589793;
 	const percentPerSecond = 500;
 	let index = -1;
 	let snapTo = false;
 	let active = false;
+	let resolver: AimResolver | null = null;
+	let lastTarget: number[] | null = null;
 
 	const lookAnglesFromTo = (
 		from: AdvancedfxMathVector3,
@@ -58,13 +62,35 @@
 		};
 	};
 
-	const aim: mirv.OnCViewRenderSetupView = (e) => {
+	const resolveEntity: AimResolver = (e) => {
 		const entity = mirv.getEntityFromIndex(index);
 		if (null !== entity) {
 			const eyeOrigin = entity.getRenderEyeOrigin();
+			return [eyeOrigin[0], eyeOrigin[1], eyeOrigin[2]];
+		}
+		return null;
+	};
+
+	const resolveLastView: AimResolver = (e) => {
+		if (lastTarget == null) {
+			lastTarget = [e.currentView.x, e.currentView.y, e.currentView.z];
+		}
+
+		return lastTarget;
+	};
+
+	const resolveLastTarget: AimResolver = (e) => {
+		return lastTarget;
+	};
+
+	const aim: mirv.OnCViewRenderSetupView = (e) => {
+		let target: number[] | null = null;
+		if (null !== resolver) target = resolver(e);
+		if (null !== target) {
+			lastTarget = target;
 			const lookAngles = lookAnglesFromTo(
 				new AdvancedfxMathVector3(e.currentView.x, e.currentView.y, e.currentView.z),
-				new AdvancedfxMathVector3(eyeOrigin[0], eyeOrigin[1], eyeOrigin[2]),
+				new AdvancedfxMathVector3(target[0], target[1], target[2]),
 				e.lastView.rX,
 				e.lastView.rY
 			);
@@ -130,6 +156,7 @@
 			} else if (arg1 === 'entityindex') {
 				if (3 === argC) {
 					index = parseInt(args.argV(2));
+					resolver = resolveEntity;
 					return;
 				}
 				mirv.message(
@@ -145,6 +172,37 @@
 				}
 				mirv.message(
 					`${arg0} snapTo 0|1 - Whether to aim non-soft (1) or not (0).
+					Current value: ${snapTo ? 1 : 0}
+					`.dedent()
+				);
+				return;
+			} else if (arg1 == 'point') {
+				if (3 <= argC) {
+					const arg2 = args.argV(2);
+					if (arg2 == 'abs') {
+						if (6 <= argC) {
+							lastTarget = [
+								parseFloat(args.argV(3)),
+								parseFloat(args.argV(4)),
+								parseFloat(args.argV(5))
+							];
+							resolver = resolveLastTarget;
+							return;
+						}
+					} else if (arg2 == 'cam') {
+						lastTarget = null;
+						resolver = resolveLastView;
+						return;
+					} else if (arg2 == 'last') {
+						resolver = resolveLastTarget;
+						return;
+					}
+				}
+
+				mirv.message(
+					`${arg0} point abs <fX> <fY> <fZ> - Aim at absolute point in world coordinates.
+					${arg0} point cam - Aim at last camera position.
+					${arg0} point last - Aim at last valid target point.
 					Current value: ${snapTo ? 1 : 0}
 					`.dedent()
 				);
@@ -187,6 +245,7 @@
 			${arg0} active [...] - Whether aiming is active.
 			${arg0} snapTo [...] - Whether to aim non-soft or not.
 			${arg0} entityIndex [...] - Entity index to aim after.
+			${arg0} point [...] - Aim at a static point.
 			${arg0} list [...] - List entites / player models
 			`.dedent()
 		);
