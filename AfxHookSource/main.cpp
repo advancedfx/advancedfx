@@ -2652,13 +2652,11 @@ HANDLE WINAPI new_CreateFileW(
 	_In_opt_ HANDLE hTemplateFile
 )
 {
-	static bool bWasRecording = false; // allow startmovie wav-fixup by engine to get through one more time.
-	if ((g_SourceSdkVer != SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer)
-		&& (g_AfxStreams.IsRecording() || bWasRecording)) {
+	if (!(g_SourceSdkVer == SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer)
+		&& g_AfxStreams.IsRecording()) {
 		std::wstring strFileName(lpFileName);
 		for (auto& c : strFileName) c = std::tolower(c);
 		if (StringEndsWithW(strFileName.c_str(), L"" ADVNACEDFX_STARTMOIVE_WAV_KEY ".wav")) {
-			bWasRecording = g_AfxStreams.IsRecording();
 			std::wstring newPath(g_AfxStreams.GetTakeDir());
 			newPath.append(L"\\audio.wav");
 			return g_Import_filesystem_stdio_KERNEL32_CreateFileW.TrueFunc(newPath.c_str(), dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
@@ -2676,13 +2674,11 @@ HANDLE WINAPI new_CreateFileA(
     _In_ DWORD dwFlagsAndAttributes,
     _In_opt_ HANDLE hTemplateFile
     ) {
-	static bool bWasRecording = false; // allow startmovie wav-fixup by engine to get through one more time.
-	if ((g_SourceSdkVer != SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer)
-		&& (g_AfxStreams.IsRecording() || bWasRecording)) {
+	if (!(g_SourceSdkVer == SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer)
+		&& g_AfxStreams.IsRecording()) {
 		std::string strFileName(lpFileName);
 		for (auto& c : strFileName) c = std::tolower(c);
 		if (StringEndsWith(strFileName.c_str(),"" ADVNACEDFX_STARTMOIVE_WAV_KEY ".wav")) {
-			bWasRecording = g_AfxStreams.IsRecording();
 			std::wstring newPath(g_AfxStreams.GetTakeDir());
 			newPath.append(L"\\audio.wav");
 			return CreateFileW(newPath.c_str(), dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);

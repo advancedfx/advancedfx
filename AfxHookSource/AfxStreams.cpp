@@ -25,6 +25,8 @@
 //#include "csgo/hooks/staticpropmgr.h"
 #include "csgo/ClientToolsCsgo.h"
 #include "ReShadeAdvancedfx.h"
+#include "MirvQueueCmd.h"
+
 #include "../shared/AfxCommandLine.h"
 
 #include "../shared/ImageTransformer.h"
@@ -6867,12 +6869,22 @@ const char * CAfxStreams::Console_RecordFormat_get()
 	return m_FormatBmpAndNotTga ? "bmp" : "tga";
 }
 
+
 void CAfxStreams::Console_Record_Start()
 {
 	Console_Record_End();
 
 	Tier0_Msg("Starting recording ... ");
-	
+
+	if (g_SourceSdkVer == SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer) {
+		Console_Record_Start2();
+	} else {
+		MirvQueueCmd([this]{this->Console_Record_Start2();});
+	}
+}
+
+void CAfxStreams::Console_Record_Start2()
+{
 	if(UTF8StringToWideString(m_RecordName.c_str(), m_TakeDir)
 		&& (m_TakeDir.append(L"\\take"), SuggestTakePath(m_TakeDir.c_str(), 4, m_TakeDir))
 		&& CreatePath(m_TakeDir.c_str(), m_TakeDir)
@@ -6994,25 +7006,38 @@ void CAfxStreams::Console_Record_Start()
 	UpdateStreamDeps();
 }
 
-void CAfxStreams::Console_Record_End()
-{
+void CAfxStreams::Console_Record_End() {
 	if(m_Recording)
 	{
 		Tier0_Msg("Finishing recording ... ");
 
+		if (g_SourceSdkVer == SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer) {
+
+			if (m_StartMovieWavUsed)
+			{
+				csgo_Audio_EndRecording();
+			}
+
+			Console_Record_End2();
+		} else {
+			if (m_StartMovieWavUsed)
+			{
+				g_VEngineClient->ExecuteClientCmd("endmovie");
+				MirvQueueCmd([this]{this->Console_Record_End2();});
+			} else {
+				Console_Record_End2();
+			}
+		}
+	}	
+}
+
+void CAfxStreams::Console_Record_End2()
+{
+	if(m_Recording)
+	{
 		if (m_RecordVoicesUsed)
 		{
 			Mirv_Voice_EndRecording();
-		}
-
-		if (m_StartMovieWavUsed)
-		{
-			if (g_SourceSdkVer == SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer) {
-				csgo_Audio_EndRecording();
-			}
-			else {
-				g_VEngineClient->ExecuteClientCmd("endmovie");
-			}
 		}
 
 		if(m_CamExportSet) {
@@ -9943,38 +9968,47 @@ void CAfxStreams::ShutDown(void)
 			Console_Record_End();
 		}
 
-		if ((g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer)
-			&& m_Recording) {
-			QueueCaptureGpuQueuesExecution(true);
-		}
-
-		// We can do this here, because the dedicated drawing thread is shutdown by then (I think.):
-		QueueCaptureGpuQueuesRelease(true);
-		DrawingThread_DeviceLost();
-
 		if (g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer) {
-			CAfxBaseFxStream::AfxStreamsShutdown();
+			ShutDown2();
+		} else {
+			MirvQueueCmd([this]{this->ShutDown2();});
 		}
-
-		while (!m_EntityBvhCaptures.empty())
-		{
-			delete m_EntityBvhCaptures.front();
-			m_EntityBvhCaptures.pop_front();
-		}
-
-		while (!m_Streams.empty())
-		{
-			m_Streams.front()->Release();
-			m_Streams.pop_front();
-		}
-
-		delete m_MatPostProcessEnableRef;
-		delete m_HostFrameRate;
-
-		delete m_RecordScreen;
-
-		CCaptureNode::Shutdown();
 	}
+}
+
+void CAfxStreams::ShutDown2(void)
+{
+	if ((g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer)
+		&& m_Recording) {
+		QueueCaptureGpuQueuesExecution(true);
+	}
+
+	// We can do this here, because the dedicated drawing thread is shutdown by then (I think.):
+	QueueCaptureGpuQueuesRelease(true);
+	DrawingThread_DeviceLost();
+
+	if (g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer) {
+		CAfxBaseFxStream::AfxStreamsShutdown();
+	}
+
+	while (!m_EntityBvhCaptures.empty())
+	{
+		delete m_EntityBvhCaptures.front();
+		m_EntityBvhCaptures.pop_front();
+	}
+
+	while (!m_Streams.empty())
+	{
+		m_Streams.front()->Release();
+		m_Streams.pop_front();
+	}
+
+	delete m_MatPostProcessEnableRef;
+	delete m_HostFrameRate;
+
+	delete m_RecordScreen;
+
+	CCaptureNode::Shutdown();
 }
 
 SOURCESDK::C_BaseEntity_csgo * GetMoveParent(SOURCESDK::C_BaseEntity_csgo * value)

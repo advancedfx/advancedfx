@@ -196,6 +196,8 @@ target_sources(AfxHookSource PRIVATE
     MirvCommands.cpp
     MirvPgl.cpp
     MirvPgl.h
+    MirvQueueCmd.cpp
+    MirvQueueCmd.h
     MirvTime.cpp
     MirvTime.h
     MirvWav.cpp

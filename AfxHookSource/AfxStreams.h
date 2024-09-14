@@ -3376,6 +3376,7 @@ public:
 	~CAfxStreams();
 
 	void ShutDown(void);
+	void ShutDown2(void);
 
 	/// <summary>Carry out initalization that cannot be done in DllMain</summary>
 	static void AfxStreamsInit(void);
@@ -3450,7 +3451,9 @@ public:
 	}
 
 	void Console_Record_Start();
+	void Console_Record_Start2();
 	void Console_Record_End();
+	void Console_Record_End2();
 	void Console_AddStream(const char * streamName);
 	void Console_AddBaseFxStream(const char * streamName);
 	void Console_AddDepthStream(const char * streamName, bool tryZDepth);
