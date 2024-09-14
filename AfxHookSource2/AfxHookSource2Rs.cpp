@@ -18,11 +18,11 @@
 extern SOURCESDK::CS2::ISource2EngineToClient * g_pEngineToClient;
 
 extern "C" void afx_hook_source2_message(const char * pszValue) {
-    advancedfx::Message(pszValue);
+    advancedfx::Message("%s",pszValue);
 }
 
 extern "C" void afx_hook_source2_warning(const char * pszValue) {
-    advancedfx::Warning(pszValue);
+    advancedfx::Warning("%s",pszValue);
 }
 
 extern "C" void afx_hook_source2_exec(const char * pszValue) {

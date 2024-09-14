@@ -1847,14 +1847,14 @@ advancedfx::Con_DevPrintf_t Tier0_DevWarning = nullptr;
 class CConsolePrint_Message : public IConsolePrint {
 public:
 	virtual void Print(const char * text) {
-		Tier0_Message(text);
+		Tier0_Message("%s", text);
 	}
 };
 
 class CConsolePrint_Warning : public IConsolePrint {
 public:
 	virtual void Print(const char * text) {
-		Tier0_Warning(text);
+		Tier0_Warning("%s", text);
 	}
 };
 
@@ -1866,7 +1866,7 @@ public:
 	}
 
 	virtual void Print(const char * text) {
-		Tier0_DevMessage(m_Level, text);
+		Tier0_DevMessage(m_Level, "%s", text);
 	}
 private:
 	int m_Level;
@@ -1880,7 +1880,7 @@ public:
 	}
 
 	virtual void Print(const char * text) {
-		Tier0_DevWarning(m_Level, text);
+		Tier0_DevWarning(m_Level, "%s", text);
 	}
 private:
 	int m_Level;

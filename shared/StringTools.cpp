@@ -6,7 +6,6 @@
 
 #include <list>
 
-
 bool UTF8StringToWideString(char const * ansiChars, std::wstring & outWideString)
 {
 	LPWSTR wideChars;
@@ -371,4 +370,23 @@ bool StringWildCard1Matched( const char * sz_Mask, const char * sz_Target )
 	}
 
 	return true;
+}
+
+void StringReplaceAll(const char * in, const std::string & replace, const std::string & replacement, std::string & out) {
+	out.clear();
+	const char * szReplace = replace.c_str();
+	size_t lenReplace = replace.length();
+	const char * pos;
+	while(pos = strstr(in, szReplace)) {
+		while(in < pos) {
+			out += *in;
+			in++;
+		}
+		out.append(replacement);
+		in += lenReplace;
+	}
+	while(const char val = *in) {
+		out += val;
+		in++;
+	}
 }

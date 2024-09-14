@@ -50,7 +50,7 @@ struct playermove_s * ppmove			= (struct playermove_s *)0;
 class CConsolePrint_Message : public IConsolePrint {
 public:
 	virtual void Print(const char * text) {
-		pEngfuncs->Con_Printf(const_cast<char*>(text));
+		pEngfuncs->Con_Printf("%s",text);
 	}
 };
 

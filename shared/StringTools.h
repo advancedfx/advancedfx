@@ -46,3 +46,5 @@ bool StringIsNull(char const * value);
 /// <param name="sz_Target">The target string to match against the mask.</param>
 /// <returns>Returns true if matched, false otherwise.</returns>
 bool StringWildCard1Matched( const char * sz_Mask, const char * sz_Target );
+
+void StringReplaceAll(const char * in, const std::string & replace, const std::string & replacement, std::string & out);
