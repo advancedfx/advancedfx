@@ -1018,8 +1018,12 @@ advancedfx::CImageBufferPoolThreadSafe g_ImageBufferPool;
 
 class CAfxStreams : public advancedfx::IRecordStreamSettings {
 public:
+    bool m_CampathAutoSave = false;
 	bool m_CamExport = false;
 	bool m_CamExportSet = false;
+
+    bool GetCampathAutosave() { return m_CampathAutoSave; }
+    void SetCampathAutosave(bool value) { m_CampathAutoSave = value; }
 
 	bool CamExport_get(void) { return m_CamExport;  }
 	void CamExport_set(bool value) { m_CamExport = value;  }
@@ -1207,6 +1211,8 @@ void CAfxStreams::Console_RecordScreen(advancedfx::ICommandArgs* args) {
 
 void AfxHookSourceRs_Engine_OnRecordStart(const char * take_folder_path);
 
+extern CamPath g_CamPath;
+
 void CAfxStreams::RecordStart()
 {
 	RecordEnd();
@@ -1261,6 +1267,14 @@ void CAfxStreams::RecordStart()
 				advancedfx::Warning("You probably forgot to set mirv_streams record fps to the FPS you want to record.\n");
 			}
 		}
+
+		if(m_CampathAutoSave && 0 < g_CamPath.GetSize())
+		{
+			std::wstring campathFileName(m_TakeDir);
+			campathFileName.append(L"\\campath.xml");
+			if(!g_CamPath.Save(campathFileName.c_str()))
+				advancedfx::Warning("Error: Failed saving campath.xml to take folder.\n");
+		}        
 
 		if (m_CamExport)
 		{
@@ -1483,6 +1497,34 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					}
 					return;
 				}
+                else if (!_stricmp(cmd2, "campath"))
+				{
+					char const* cmd3 = args->ArgV(3);
+					if (4 <= argC)
+    				{
+      				    char const * cmd3 = args->ArgV(3);
+            			if (!_stricmp("enabled", cmd3))
+            			{
+              				if (5 <= argC)
+             				{
+                				char const * cmd4 = args->ArgV(4);
+               					g_AfxStreams.SetCampathAutosave(0 != atoi(cmd4));
+                				return;
+              				}
+
+              				advancedfx::Message(
+                				"mirv_streams record campath enabled 0|1 - Disable (0) or enable (1).\n"
+                				"Current value: %i\n", g_AfxStreams.GetCampathAutosave() ? 1 : 0
+              				);
+
+              				return;
+            			} 
+       				}		
+          			advancedfx::Message(
+           				"mirv_streams record campath enabled [...]\n"
+          			);
+          			return;
+				}
 				else if (!_stricmp(cmd2, "cam"))
 				{
 					char const* cmd3 = args->ArgV(3);
@@ -1526,6 +1568,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			);
 			advancedfx::Message(
 				"mirv_streams record cam [...] - Controls the camera motion data capture output (can be imported with mirv_camio).\n"
+                "mirv_streams record campath [...] - Save current campath into take folder (if not empty).\n"
 			);
 			return;
 		}

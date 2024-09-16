@@ -3482,6 +3482,9 @@ public:
 
 	void Console_RecordScreen(IWrpCommandArgs* args);
 
+	bool GetCampathAutoSave() { return m_CampathAutoSave; }
+	void SetCampathAutoSave(bool value) { m_CampathAutoSave = value; }
+
 	bool CamExport_get(void) { return m_CamExport;  }
 	void CamExport_set(bool value) { m_CamExport = value;  }
 
@@ -3693,6 +3696,7 @@ private:
 	bool m_Recording;
 	bool m_CamBvh;
 	std::list<CEntityBvhCapture *> m_EntityBvhCaptures;
+	bool m_CampathAutoSave = false;
 	bool m_CamExport = false;
 	bool m_CamExportSet = false;
 	bool m_GameRecording;

@@ -80,6 +80,7 @@ REGISTER_CVAR(matte_viewmodel, "2", 0);
 REGISTER_CVAR(matte_worldmodels, "1", 0);
 REGISTER_CVAR(matte_xray, "0", 0);
 
+REGISTER_CVAR(movie_campath, "0", 0);
 REGISTER_CVAR(movie_clearscreen, "0", 0);
 REGISTER_CVAR(movie_bmp, "1", 0);
 REGISTER_CVAR(movie_depthdump, "0", 0);
@@ -792,6 +793,12 @@ void Filming::Start()
 	// Mod_LeafPvs (WallHack related):
 	g_Mod_LeafPvs_NoVis = ( fx_wh_enable->value == 0.0f && fx_xtendvis->value != 0.0f)||(fx_wh_enable->value != 0.0f && fx_wh_xtendvis->value != 0.0f);
 
+	// store campath autosave:
+	if(movie_campath->value && 0 < m_CamPath.GetSize()) {
+		std::wstring campathFilePath(m_TakeDir);
+		campathFilePath += L"\\campath.xml";
+		if(!m_CamPath.Save(campathFilePath.c_str())) pEngfuncs->Con_Printf("Error: Failed saving campath.xml to take folder.\n");
+	}
 
 	// setup camexport:
 	if (!_bSimulate2) {

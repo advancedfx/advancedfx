@@ -6,13 +6,22 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>upcoming</version>
+<time>2024-09-16T15:15Z</time>
+<changes>
+<change type="added">Added mirv_movie_campath. Set to 1 to save current campath to take folder (if not empty).</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.23.5</version>
 <time>2024-07-06T10:45Z</time>
 <changes>
 <change type="fixed">Fixed mirv_input camera not working properly in some cases for m_rawinput 1.</change>
 </changes>
 </release>
-
 
 
 <release>

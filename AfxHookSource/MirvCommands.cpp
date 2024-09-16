@@ -862,6 +862,33 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					g_AfxStreams.Console_Bvh(&subArgs);
 					return;
 				}
+				else if(0 == _stricmp(cmd2,"campath")) {
+					if (4 <= argc)
+					{
+						char const * cmd3 = args->ArgV(3);
+
+						if (!_stricmp("enabled", cmd3))
+						{
+							if (5 <= argc)
+							{
+								g_AfxStreams.SetCampathAutoSave(0 != atoi(args->ArgV(4)));
+								return;
+							}
+
+							Tier0_Msg(
+								"mirv_streams record campath enabled 0|1 - Disable (0) or enable (1).\n"
+								"Current value: %i\n"
+								, g_AfxStreams.GetCampathAutoSave() ? 1 : 0
+							);
+							return;
+						}
+					}
+
+					Tier0_Msg(
+						"mirv_streams record campath enabled [...]\n"
+					);
+					return;					
+				}
 				else
 				if (0 == _stricmp(cmd2, "cam"))
 				{
@@ -955,6 +982,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			Tier0_Msg(
 				"mirv_streams record bvh [...] - Controls the HLAE/BVH camera motion data capture output.\n"
 				"mirv_streams record cam [...] - Controls the camera motion data capture output (can be imported with mirv_camio).\n"
+				"mirv_streams record campath [...] - Save current campath into take folder (if not empty).\n"
 			);
 			Tier0_Msg(
 				"mirv_streams record agr [...] - Controls afxGameRecord (.agr) game state recording.\n"
