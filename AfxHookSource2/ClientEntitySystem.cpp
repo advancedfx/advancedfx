@@ -10,7 +10,7 @@
 #include "../shared/FFITools.h"
 
 #include "AfxHookSource2Rs.h"
-#include "DeathMsg.h" //TODO: code we depend on should probably be moved elsewhere.
+#include "SchemaSystem.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include "../deps/release/Detours/src/detours.h"
@@ -98,7 +98,7 @@ unsigned int CEntityInstance::GetHealth() {
 }
 
 int CEntityInstance::GetTeam() {
-    return *(int*)((u_char*)(this) + CS2::C_BaseEntity::m_iTeamNum);
+    return *(int*)((u_char*)(this) + g_clientDllOffsets.C_BaseEntity.m_iTeamNum);
 }
 
 
@@ -140,17 +140,17 @@ SOURCESDK::CS2::CBaseHandle CEntityInstance::GetActiveWeaponHandle() {
 
 const char * CEntityInstance::GetPlayerName(){
     if (!IsPlayerController()) return nullptr;
-    return *(const char **)((u_char*)(this) + CS2::CBasePlayerController::m_iszPlayerName);
+    return *(const char **)((u_char*)(this) + g_clientDllOffsets.CBasePlayerController.m_iszPlayerName);
 }
 
 uint64_t CEntityInstance::GetSteamId(){
     if (!IsPlayerController())  return 0;
-    return *(uint64_t*)((u_char*)(this) + CS2::CBasePlayerController::m_steamID);
+    return *(uint64_t*)((u_char*)(this) + g_clientDllOffsets.CBasePlayerController.m_steamID);
 }
 
 const char * CEntityInstance::GetSanitizedPlayerName() {
    if (!IsPlayerController()) return nullptr;
-    return *(const char **)((u_char*)(this) + CS2::CCSPlayerController::m_sSanitizedPlayerName);
+    return *(const char **)((u_char*)(this) + g_clientDllOffsets.CCSPlayerController.m_sSanitizedPlayerName);
 
 }
 

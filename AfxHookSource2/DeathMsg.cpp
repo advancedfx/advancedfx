@@ -13,6 +13,7 @@
 #include "DeathMsg.h"
 #include "Globals.h"
 #include "ClientEntitySystem.h"
+#include "SchemaSystem.h"
 
 currentGameCamera g_CurrentGameCamera;
 
@@ -62,8 +63,8 @@ PlayerInfo getSpectatedPlayer()
 
 			auto playerController = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,controllerIndex);
 
-			auto xuid = *(uint64_t*)((u_char*)(playerController) + CS2::CBasePlayerController::m_steamID);
-			auto name = (char*)((u_char*)(playerController) + CS2::CBasePlayerController::m_iszPlayerName);
+			auto xuid = *(uint64_t*)((u_char*)(playerController) + g_clientDllOffsets.CBasePlayerController.m_steamID);
+			auto name = (char*)((u_char*)(playerController) + g_clientDllOffsets.CBasePlayerController.m_iszPlayerName);
 
             if (0 == xuid) advancedfx::Warning("Error: could not find xuid for entity %i\n", controllerIndex);
             if (nullptr == name || 0 == strlen(name)) advancedfx::Warning("Error: could not find name for entity %i\n", controllerIndex);
@@ -135,11 +136,11 @@ PlayerInfo getPlayerInfoFromControllerIndex(int entindex)
 		{
 			if(!ent->IsPlayerController()) continue;
 
-			auto teamNumber = *(int*)((u_char*)(ent) + CS2::C_BaseEntity::m_iTeamNum);
+			auto teamNumber = *(int*)((u_char*)(ent) + g_clientDllOffsets.C_BaseEntity.m_iTeamNum);
 			if (0 == teamNumber || 1 == teamNumber) continue;
 
-			auto xuid = *(uint64_t*)((u_char*)(ent) + CS2::CBasePlayerController::m_steamID);
-			auto name = (char*)((u_char*)(ent) + CS2::CBasePlayerController::m_iszPlayerName);
+			auto xuid = *(uint64_t*)((u_char*)(ent) + g_clientDllOffsets.CBasePlayerController.m_steamID);
+			auto name = (char*)((u_char*)(ent) + g_clientDllOffsets.CBasePlayerController.m_iszPlayerName);
 
             if (0 == xuid) advancedfx::Warning("Error: could not find xuid for entity %i\n", i);
             if (nullptr == name || 0 == strlen(name)) advancedfx::Warning("Error: could not find name for entity %i\n", i);
@@ -752,13 +753,13 @@ void __fastcall handleDeathnotice(u_char* hudDeathNotice, SOURCESDK::CS2::IGameE
 			{
 				gameEvent->GetString(myWrapper.hashString("weapon")),
 
-				nullptr != attackerController ? (char*)((u_char*)attackerController + CS2::CBasePlayerController::m_iszPlayerName) : "null",
+				nullptr != attackerController ? (char*)((u_char*)attackerController + g_clientDllOffsets.CBasePlayerController.m_iszPlayerName) : "null",
 				std::to_string(uidAttacker),
 
-				nullptr != victimController ? (char*)((u_char*)victimController + CS2::CBasePlayerController::m_iszPlayerName) : "null",
+				nullptr != victimController ? (char*)((u_char*)victimController + g_clientDllOffsets.CBasePlayerController.m_iszPlayerName) : "null",
 				std::to_string(uidVictim),
 
-				nullptr != assisterController ? (char*)((u_char*)assisterController + CS2::CBasePlayerController::m_iszPlayerName) : "null",
+				nullptr != assisterController ? (char*)((u_char*)assisterController + g_clientDllOffsets.CBasePlayerController.m_iszPlayerName) : "null",
 				std::to_string(uidAssister),
 			}
 		};
@@ -851,21 +852,21 @@ void __fastcall handleDeathnotice(u_char* hudDeathNotice, SOURCESDK::CS2::IGameE
 
 	if (myWrapper.attacker.name.use && nullptr != attackerController) {
 		strcpy(
-			(*(char**)((u_char*)attackerController + CS2::CCSPlayerController::m_sSanitizedPlayerName)),
+			(*(char**)((u_char*)attackerController + g_clientDllOffsets.CCSPlayerController.m_sSanitizedPlayerName)),
 			myWrapper.attacker.name.value
 		);
 	}
 
 	if (myWrapper.victim.name.use && nullptr != victimController) {
 		strcpy(
-			(*(char**)((u_char*)victimController + CS2::CCSPlayerController::m_sSanitizedPlayerName)),
+			(*(char**)((u_char*)victimController + g_clientDllOffsets.CCSPlayerController.m_sSanitizedPlayerName)),
 			myWrapper.victim.name.value
 		);
 	}
 
 	if (myWrapper.assister.name.use && nullptr != assisterController) {
 		strcpy(
-			(*(char**)((u_char*)assisterController + CS2::CCSPlayerController::m_sSanitizedPlayerName)),
+			(*(char**)((u_char*)assisterController + g_clientDllOffsets.CCSPlayerController.m_sSanitizedPlayerName)),
 			myWrapper.assister.name.value
 		);
 	}
@@ -1144,7 +1145,7 @@ void deathMsgPlayers_PrintHelp_Console()
         if(auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,i)) {
 			if(!ent->IsPlayerController()) continue;
 
-			auto teamNumber = *(int*)((u_char*)(ent) + CS2::C_BaseEntity::m_iTeamNum);
+			auto teamNumber = *(int*)((u_char*)(ent) + g_clientDllOffsets.C_BaseEntity.m_iTeamNum);
 			if (0 == teamNumber || 1 == teamNumber) continue;
 
 			// I know it's nested loop, but on this scale it doesn't matter

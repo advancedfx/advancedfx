@@ -14,24 +14,6 @@ struct currentGameCamera {
 extern currentGameCamera g_CurrentGameCamera;
 
 namespace CS2 {
-// https://github.com/a2x/cs2-dumper/blob/main/output/client.dll.hpp
-	namespace C_CSGameRulesProxy {
-		constexpr std::ptrdiff_t m_pGameRules = 0x548; // C_CSGameRules*
-	}
-	namespace C_CSGameRules {
-		constexpr std::ptrdiff_t m_gamePhase = 0x80; // int32
-		constexpr std::ptrdiff_t m_nOvertimePlaying = 0x8C; // int32
-	}
-	namespace C_BaseEntity {
-		constexpr std::ptrdiff_t m_iTeamNum = 0x3C3; // uint8
-	}
-	namespace CBasePlayerController {
-		constexpr std::ptrdiff_t m_iszPlayerName = 0x640; // char[128]
-		constexpr std::ptrdiff_t m_steamID = 0x6C8; // uint64
-	}
-	namespace CCSPlayerController {
-		constexpr std::ptrdiff_t m_sSanitizedPlayerName = 0x750; // CUtlString
-	}
 // https://github.com/danielkrupinski/Osiris
 	namespace PanoramaUIPanel {
 		constexpr std::ptrdiff_t getAttributeString = 0x8b8;
