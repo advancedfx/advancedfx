@@ -12,6 +12,7 @@
 #include "ViewModel.h"
 #include "Globals.h"
 #include "DeathMsg.h"
+#include "SchemaSystem.h"
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
 #include "../deps/release/prop/AfxHookSource/SourceInterfaces.h"
@@ -45,6 +46,7 @@
 
 HMODULE g_h_engine2Dll = 0;
 HMODULE g_H_ClientDll = 0;
+HMODULE g_H_SchemaSystem = 0;
 
 advancedfx::CCommandLine  * g_CommandLine = nullptr;
 
@@ -1324,6 +1326,8 @@ int new_CCS2_Client_Init(void* This) {
 
 	PrintInfo();
 
+	HookSchemaSystem(g_H_SchemaSystem);
+
 	return result;
 }
 
@@ -1931,6 +1935,7 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 	static bool bFirstSDL3 = true;
 	static bool bFirstRenderSystemDX11 = true;
 	static bool bFirstPanorama = true;
+	static bool bFirstSchemaSystem = true;
 	
 	CommonHooks();
 
@@ -2025,10 +2030,16 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 
 		HookClientDll(hModule);
 
-	} else if(bFirstPanorama && StringEndsWithW(lpLibFileName, L"panorama.dll"))
+	} 
+	else if(bFirstPanorama && StringEndsWithW(lpLibFileName, L"panorama.dll"))
 	{
 		bFirstPanorama = false;
 		HookPanorama(hModule);
+	}
+	else if(bFirstSchemaSystem && StringEndsWithW(lpLibFileName, L"schemasystem.dll"))
+	{
+		bFirstSchemaSystem = false;
+		g_H_SchemaSystem = hModule;
 	}
 	
 }

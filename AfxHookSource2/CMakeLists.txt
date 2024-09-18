@@ -225,6 +225,9 @@ target_sources(${PROJECT_NAME} PRIVATE
     ReShadeAdvancedfx.cpp
     ReShadeAdvancedfx.h
 
+	SchemaSystem.cpp
+	SchemaSystem.h
+
     WrpConsole.cpp
     WrpConsole.h
 )
