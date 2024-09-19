@@ -9,7 +9,7 @@
 <version>upcoming</version>
 <time>2024-09-16T15:15Z</time>
 <changes>
-<change type="added">Added mirv_streas record campath 0|1. Set to 1 to save current campath to take folder (if not empty).</change>
+<change type="added">Added mirv_streams record campath 0|1. Set to 1 to save current campath to take folder (if not empty).</change>
 </changes>
 </release>
 
