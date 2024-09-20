@@ -25,11 +25,32 @@ struct ClientDllOffsets_t {
 	struct CBasePlayerController {
 		ptrdiff_t m_iszPlayerName = 0; // char[128]
 		ptrdiff_t m_steamID = 0; // uint64
+		ptrdiff_t m_hPawn = 0; // CHandle< C_CSPlayerPawnBase >
 	} CBasePlayerController;
 
 	struct CCSPlayerController {
 		ptrdiff_t m_sSanitizedPlayerName = 0; // CUtlString
 	} CCSPlayerController;
+
+	struct C_BasePlayerPawn {
+		ptrdiff_t m_hController = 0; // CHandle< CBasePlayerController >
+		ptrdiff_t m_pWeaponServices = 0; // CPlayer_WeaponServices*
+		ptrdiff_t m_pObserverServices = 0; // CPlayer_ObserverServices*
+		ptrdiff_t m_pCameraServices = 0; // CPlayer_CameraServices*
+	} C_BasePlayerPawn;
+
+	struct CPlayer_CameraServices {
+		ptrdiff_t m_hViewEntity = 0; // CHandle< CBaseEntity >
+	} CPlayer_CameraServices;
+
+	struct CPlayer_WeaponServices {
+		ptrdiff_t m_hActiveWeapon = 0; // CHandle< CBasePlayerWeapon >
+	} CPlayer_WeaponServices;
+
+	struct CPlayer_ObserverServices {
+		ptrdiff_t m_iObserverMode = 0; // uint8                                   
+		ptrdiff_t m_hObserverTarget  = 0; // CHandle< CBaseEntity >
+	} CPlayer_ObserverServices;
 };
 
 extern struct ClientDllOffsets_t g_clientDllOffsets;

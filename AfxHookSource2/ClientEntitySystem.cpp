@@ -76,9 +76,9 @@ bool CEntityInstance::IsPlayerPawn() {
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerPawnHandle() {
-	// See cl_ent_text drawing function. Or Schema system (m_hPawn).
+	// See cl_ent_text drawing function.
 	if(!IsPlayerController())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
-	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + 0x60c));
+	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + g_clientDllOffsets.CBasePlayerController.m_hPawn));
 }
 
 bool CEntityInstance::IsPlayerController() {
@@ -87,9 +87,9 @@ bool CEntityInstance::IsPlayerController() {
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerControllerHandle() {
-	// See cl_ent_text drawing function. Or Schema system (m_hController).
+	// See cl_ent_text drawing function.
 	if(!IsPlayerPawn())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
-	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + 0x128c));
+	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int *)((unsigned char *)this + g_clientDllOffsets.C_BasePlayerPawn.m_hController));
 }
 
 unsigned int CEntityInstance::GetHealth() {
@@ -123,19 +123,17 @@ void CEntityInstance::GetRenderEyeAngles(float outAngles[3]) {
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetViewEntityHandle() {
-	// Schema system (m_hViewEntity).
 	if (!IsPlayerPawn())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
-    void * pCameraServices = *(void**)((unsigned char*)this + 0x1130);
+    void * pCameraServices = *(void**)((unsigned char*)this + g_clientDllOffsets.C_BasePlayerPawn.m_pCameraServices);
     if(nullptr == pCameraServices) return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
-	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int*)((unsigned char*)pCameraServices + 0x9c));
+	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int*)((unsigned char*)pCameraServices + g_clientDllOffsets.CPlayer_CameraServices.m_hViewEntity));
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetActiveWeaponHandle() {
-	// Schema system (m_hActiveWeapon).
 	if (!IsPlayerPawn())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
-    void * pWeaponServices = *(void**)((unsigned char*)this + 0x10f8);
+    void * pWeaponServices = *(void**)((unsigned char*)this + g_clientDllOffsets.C_BasePlayerPawn.m_pWeaponServices);
     if(nullptr == pWeaponServices) return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
-	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int*)((unsigned char*)pWeaponServices + 0x58));
+	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int*)((unsigned char*)pWeaponServices + g_clientDllOffsets.CPlayer_WeaponServices.m_hActiveWeapon));
 }
 
 const char * CEntityInstance::GetPlayerName(){
@@ -155,19 +153,17 @@ const char * CEntityInstance::GetSanitizedPlayerName() {
 }
 
 uint8_t CEntityInstance::GetObserverMode() {
-	// Schema system (m_iObserverMode).
 	if (!IsPlayerPawn()) return 0;
-    void * pObserverServices = *(void**)((unsigned char*)this + 0x1110);
+    void * pObserverServices = *(void**)((unsigned char*)this + g_clientDllOffsets.C_BasePlayerPawn.m_pObserverServices);
     if(nullptr == pObserverServices) return 0;
-	return *(uint8_t*)((unsigned char*)pObserverServices + 0x40);    
+	return *(uint8_t*)((unsigned char*)pObserverServices + g_clientDllOffsets.CPlayer_ObserverServices.m_iObserverMode);    
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetObserverTarget() {
-	// Schema system (m_hObserverTarget).
 	if (!IsPlayerPawn())  return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
-    void * pObserverServices = *(void**)((unsigned char*)this + 0x1110);
+    void * pObserverServices = *(void**)((unsigned char*)this + g_clientDllOffsets.C_BasePlayerPawn.m_pObserverServices);
     if(nullptr == pObserverServices) return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
-	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int*)((unsigned char*)pObserverServices + 0x44));    
+	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int*)((unsigned char*)pObserverServices + g_clientDllOffsets.CPlayer_ObserverServices.m_hObserverTarget));    
 }
 
 class CAfxEntityInstanceRef {
