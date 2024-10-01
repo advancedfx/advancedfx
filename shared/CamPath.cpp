@@ -427,7 +427,7 @@ bool CamPath::Save(wchar_t const * fileName)
 		"rx (roll), ry (pitch), rz(yaw) are the Euler angles in degrees.\n"
 		"qw, qx, qy, qz are the quaternion values.\n"
 		"When read it is sufficient that either rx, ry, rz OR qw, qx, qy, qz are present.\n"
-		"If both are pesent then qw, qx, qy, qz take precedence."
+		"If both are present then qw, qx, qy, qz take precedence."
 	);
 	pts->append_node(cmt);
 
