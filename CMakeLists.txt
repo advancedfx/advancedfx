@@ -187,7 +187,7 @@ if(CMAKE_GENERATOR_PLATFORM STREQUAL "Win32")
             ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS}
 
             "${afxcppcli_BINARY_DIR}/AfxCppCli.dll"
-            "${afxhookgoldsrc_BINARY_DIR}/AfxHookGoldSrc.dll"
+            "$<TARGET_FILE:AfxHookGoldSrc>"
             "$<TARGET_FILE:AfxHookSource>"
             "${hlae_BINARY_DIR}/HLAE.exe"
             "${hlae_BINARY_DIR}/NGettext.dll"
@@ -209,7 +209,7 @@ if(CMAKE_GENERATOR_PLATFORM STREQUAL "Win32")
     install(
         FILES
             "${afxcppcli_BINARY_DIR}/AfxCppCli.pdb"
-            "${afxhookgoldsrc_BINARY_DIR}/AfxHookGoldSrc.pdb"
+            "$<TARGET_PDB_FILE:AfxHookGoldSrc>"
             "$<TARGET_PDB_FILE:AfxHookSource>"
             "${hlae_BINARY_DIR}/HLAE.pdb"
             "${injector_BINARY_DIR}/injector.pdb"
