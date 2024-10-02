@@ -115,7 +115,7 @@ bool InstallHook_Draw_DecalMaterial()
 		if (NO_ERROR != error)
 		{
 			firstResult = false;
-			ErrorBox("Interception failed:\InstallHook_Draw_DecalMaterial");
+			ErrorBox("Interception failed:\nInstallHook_Draw_DecalMaterial");
 		}
 	}
 	else
