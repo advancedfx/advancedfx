@@ -966,9 +966,9 @@ unsigned char __fastcall My_Panorama_CStylePropertyBorder_Parse(void * This, voi
 
 bool getDeathMsgAddrs(HMODULE clientDll) {
 	// can be found with strings like "attacker" and "userid", etc. it basically takes all info from player_death event
-	size_t g_Original_handlePlayerDeath_addr = getAddress(clientDll, "48 89 54 24 10 48 89 4C 24 08 55 53 57 41 56 41 57 48 8D AC 24 00 DF FF");
+	size_t g_Original_handlePlayerDeath_addr = getAddress(clientDll, "48 89 54 24 10 48 89 4c 24 08 55 53 56 57 41 56 48 8d ac 24 00 df ff ff");
 	if (g_Original_handlePlayerDeath_addr == 0) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));	
+		ErrorBox(MkErrStr(__FILE__, __LINE__));
 		return false;
 	};
 	// called in multiple places with strings like "userid", "attacker", etc. as second argument

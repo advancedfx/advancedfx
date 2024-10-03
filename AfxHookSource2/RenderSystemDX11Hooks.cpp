@@ -905,7 +905,7 @@ HRESULT WINAPI New_CreateDXGIFactory1(REFIID riid, _COM_Outptr_ void **ppFactory
 }
 
 typedef bool (__fastcall * CRenderDeviceBase_Present_t)(
-    void * This, void * Rdx, void * R8d);
+    void * This, void * Rdx, void * R8d, void * R9d, void * Stack0, void * Stack1, void * Stack2, void * Stack3, void * Stack4);
 
 CRenderDeviceBase_Present_t g_Old_CRenderDeviceBase_Present = nullptr;
 
@@ -913,7 +913,7 @@ CRenderDeviceBase_Present_t g_Old_CRenderDeviceBase_Present = nullptr;
 CAfxCapture * g_ActiveCapture = nullptr;
 
 bool __fastcall New_CRenderDeviceBase_Present(
-    void * This, void * Rdx, void * R8) {
+    void * This, void * Rdx, void * R8d, void * R9d, void * Stack0, void * Stack1, void * Stack2, void * Stack3, void * Stack4) {
     
     g_CampathDrawer.OnEngineThread_EndFrame();
 
@@ -939,7 +939,7 @@ bool __fastcall New_CRenderDeviceBase_Present(
         });    
     }
 
-    bool result = g_Old_CRenderDeviceBase_Present(This, Rdx, R8);
+    bool result = g_Old_CRenderDeviceBase_Present(This, Rdx, R8d, R9d, Stack0, Stack1, Stack2, Stack3, Stack4);
 
     return result;
 }

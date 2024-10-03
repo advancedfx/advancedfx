@@ -72,7 +72,7 @@ const char * CEntityInstance::GetClientClassName() {
 
 bool CEntityInstance::IsPlayerPawn() {
 	// See cl_ent_text drawing function.
-	return ((bool (__fastcall *)(void *)) (*(void***)this)[149]) (this);
+	return ((bool (__fastcall *)(void *)) (*(void***)this)[151]) (this);
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerPawnHandle() {
@@ -83,7 +83,7 @@ SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerPawnHandle() {
 
 bool CEntityInstance::IsPlayerController() {
 	// See cl_ent_text drawing function. Near "Pawn: (%d) Name: %s".
-	return ((bool (__fastcall *)(void *)) (*(void***)this)[150]) (this);    
+	return ((bool (__fastcall *)(void *)) (*(void***)this)[152]) (this);    
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerControllerHandle() {
@@ -94,7 +94,7 @@ SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerControllerHandle() {
 
 unsigned int CEntityInstance::GetHealth() {
 	// See cl_ent_text drawing function. Near "Health: %d\n".
-	return ((unsigned int (__fastcall *)(void *)) (*(void***)this)[162]) (this); 
+	return ((unsigned int (__fastcall *)(void *)) (*(void***)this)[165]) (this); 
 }
 
 int CEntityInstance::GetTeam() {
@@ -114,12 +114,12 @@ void CEntityInstance::GetOrigin(float & x, float & y, float & z) {
 
 void CEntityInstance::GetRenderEyeOrigin(float outOrigin[3]) {
 	// GetRenderEyeAngles vtable offset minus 1
-	((void (__fastcall *)(void *,float outOrigin[3])) (*(void***)this)[166]) (this,outOrigin);
+	((void (__fastcall *)(void *,float outOrigin[3])) (*(void***)this)[169]) (this,outOrigin);
 }
 
 void CEntityInstance::GetRenderEyeAngles(float outAngles[3]) {
 	// See cl_track_render_eye_angles. Near "Render eye angles: %.7f, %.7f, %.7f\n".
-	((void (__fastcall *)(void *,float outAngles[3])) (*(void***)this)[167]) (this,outAngles);
+	((void (__fastcall *)(void *,float outAngles[3])) (*(void***)this)[170]) (this,outAngles);
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetViewEntityHandle() {

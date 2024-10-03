@@ -982,26 +982,22 @@ void HookClientDll(HMODULE clientDll) {
 	/*
 		This is where it checks for engine->IsPlayingDemo() (and afterwards for cl_demoviewoverride (float))
 		before under these conditions it is calling CalcDemoViewOverride, so this is in CViewRender::SetUpView:
-                             LAB_1807e49b1                                   XREF[5]:     1807e4942(j), 1807e4952(j), 
-                                                                                          1807e4962(j), 1807e496e(j), 
-                                                                                          1807e497f(j)  
-       1807e49b1 48 8b 0d        MOV        RCX,qword ptr [DAT_1819feeb0]                    = ??
-                 f8 a4 21 01
-       1807e49b8 48 8b 01        MOV        RAX,qword ptr [RCX]
-       1807e49bb ff 90 30        CALL       qword ptr [RAX + 0x130]
+                             LAB_1807ea3e8                                   XREF[5]:     1807ea394(j), 1807ea3a4(j), 
+                                                                                          1807ea3b4(j), 1807ea3c0(j), 
+                                                                                          1807ea3d0(j)  
+       1807ea3e8 48 8b 0d        MOV        RCX,qword ptr [DAT_181a167b0]
+                 c1 c3 22 01
+       1807ea3ef 48 8b 01        MOV        RAX,qword ptr [RCX]
+       1807ea3f2 ff 90 30        CALL       qword ptr [RAX + 0x130]
                  01 00 00
-       1807e49c1 4c 8b a4        MOV        R12,qword ptr [RSP + 0x940]
-                 24 40 09 
-                 00 00
-       1807e49c9 0f 57 f6        XORPS      XMM6,XMM6
-       1807e49cc 84 c0           TEST       AL,AL
-       1807e49ce 74 77           JZ         LAB_1807e4a47
-                             LAB_1807e49d0                                   XREF[2]:     181b7d5ec(*), 181b7d5f4(*)  
-       1807e49d0 ba ff ff        MOV        EDX,0xffffffff
+       1807ea3f8 0f 57 f6        XORPS      XMM6,XMM6
+       1807ea3fb 84 c0           TEST       AL,AL
+       1807ea3fd 74 63           JZ         LAB_1807ea462
+       1807ea3ff ba ff ff        MOV        EDX,0xffffffff
                  ff ff
 	*/
 	{																	// 0x7d8fbb 26.06.24
-		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8B 0D ?? ?? ?? ?? 48 8B 01 FF 90 30 01 00 00 0F 57 F6 84 C0");
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8b 0d ?? ?? ?? ?? 48 8b 01 ff 90 30 01 00 00 0f 57 f6 84 c0 74 63 ba ff ff ff ff");
 																	  
 		if (!result.IsEmpty()) {
 			/*
@@ -1035,40 +1031,39 @@ void HookClientDll(HMODULE clientDll) {
 		The FOV is overridden / computed a second time in the function called at the very end of
 		CViewRender::SetUpView (see hook above on how to find it):
 
-       1807db80b eb 03           JMP        LAB_1807db810
-                             LAB_1807db80d                                   XREF[1]:     1807db7f2(j)  
-       1807db80d 0f 57 f6        XORPS      XMM6,XMM6
-                             LAB_1807db810                                   XREF[1]:     1807db80b(j)  
+       1807e0ec7 0f 57 f6        XORPS      XMM6,XMM6
+                             LAB_1807e0eca                                   XREF[1]:     1807e0eac(j)  
 <-- snip -->
-       1807db810 8b cb           MOV        ECX,EBX
-       1807db812 e8 59 b7        CALL       FUN_180876f70                                    undefined FUN_180876f70()
-                 09 00
-       1807db817 48 8b c8        MOV        RCX,RAX
-       1807db81a 48 8b 10        MOV        RDX,qword ptr [RAX]
+       1807e0eca 8b cf           MOV        ECX,EDI
+       1807e0ecc e8 bf e4        CALL       FUN_18088f390                                    undefined FUN_18088f390()
+                 0a 00
+       1807e0ed1 48 8b c8        MOV        RCX,RAX
+       1807e0ed4 48 8b 10        MOV        RDX,qword ptr [RAX]
 <-- snap -->
-       1807db81d ff 92 d8        CALL       qword ptr [RDX + 0xd8]
+       1807e0ed7 ff 92 d8        CALL       qword ptr [RDX + 0xd8]
                  00 00 00
-	*/
 
+
+	*/
 	{
-		Afx::BinUtils::MemRange result = FindPatternString(textRange, "eb 03 0f 57 f6 8b cb e8 ?? ?? ?? ?? 48 8b c8 48 8b 10 ff 92 d8 00 00 00");
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "0f 57 f6 8b cf e8 bf e4 0a 00 48 8b c8 48 8b 10 ff 92 d8 00 00 00");
 		if (!result.IsEmpty()) {
 			MdtMemBlockInfos mbis;
-			MdtMemAccessBegin((LPVOID)(result.Start+2), 13, &mbis);
+			MdtMemAccessBegin((LPVOID)(result.Start), 13, &mbis);
 
 			static LPVOID ptr2 = CS2_Client_CSetupView_InsideComputeViewMatrix;
 			LPVOID ptrPtr2 = &ptr2;
-			size_t pCallAddress3 = result.Start+5+2+5+(*(unsigned int*)(result.Start+5+3));
+			size_t pCallAddress3 = result.Start+5+5+(*(unsigned int*)(result.Start+5+1));
 			static LPVOID ptr3 = (LPVOID)pCallAddress3;
 			LPVOID ptrPtr3 = &ptr3;
-			size_t pCallAddress4 = result.Start+5+13;
+			size_t pCallAddress4 = result.Start+3+13;
 			static LPVOID ptr4 = (LPVOID)pCallAddress4;
 			LPVOID ptrPtr4 = &ptr4;
 			unsigned char asmCode2[48]={
 				0x48, 0xb8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // mov rax, qword addr
 				0xff, 0x10, // call    qword ptr [rax] // our function to reapply FOV
 				0xf3, 0x0f, 0x5c, 0xf0, // subss   xmm6, xmm0 // update intermediate FOV value with the difference
-				0x8B, 0xCB, // mov     ecx, ebx
+				0x8B, 0xcf, // mov     ecx, edi
 				0x48, 0xb8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // mov rax, qword addr
 				0xff, 0x10, // call    qword ptr [rax] // the original function in the detour area
 				0x48, 0x8B, 0xC8, // mov     rcx, rax
@@ -1097,7 +1092,7 @@ void HookClientDll(HMODULE clientDll) {
 			LPVOID ptrPtr = &ptr;
 			memcpy(&asmCode[2], &ptrPtr, sizeof(LPVOID));
 
-			memcpy((LPVOID)(result.Start+5), asmCode, 13);
+			memcpy((LPVOID)(result.Start+3), asmCode, 13);
 			MdtMemAccessEnd(&mbis);
 		}
 		else
@@ -1178,7 +1173,7 @@ void HookClientDll(HMODULE clientDll) {
 
 	*/
 	{
-		Afx::BinUtils::MemRange range_get_split_screen_player = Afx::BinUtils::FindPatternString(textRange, "48 83 ec 28 83 f9 ff 75 17 48 8b 0d ?? ?? ?? ?? 48 8d 54 24 30 48 8b 01 ff 90 d8 02 00 00 8b 08");	
+		Afx::BinUtils::MemRange range_get_split_screen_player = Afx::BinUtils::FindPatternString(textRange, "48 83 ec 28 83 f9 ff 75 17 48 8b 0d ?? ?? ?? ?? 48 8d 54 24 30 48 8b 01 ff 90 e8 02 00 00 8b 08");	
 		if(!range_get_split_screen_player.IsEmpty()) {
 			Hook_GetSplitScreenPlayer((void*)range_get_split_screen_player.Start);
 		} else ErrorBox(MkErrStr(__FILE__, __LINE__));
