@@ -140,7 +140,6 @@ int __fastcall modification ## _touring_DeathMsg_Draw(void * This, void * edx, f
 	for( \
 		std::list<modification ## _DeathNoticeItem>::iterator it =  modification ## _DeathNotices.begin(); \
 		1 == iRet && it !=  modification ## _DeathNotices.end(); \
-		it++ \
 	) { \
 		DeathMsg_Draw_ItemIndex++; \
 		modification ## _rgDeathNoticeList[0] = *it; \
@@ -153,7 +152,7 @@ int __fastcall modification ## _touring_DeathMsg_Draw(void * This, void * edx, f
 		) { \
 			DeathMsg_Draw_ItemIndex--; \
 			it =  modification ## _DeathNotices.erase(it); \
-		} \
+		} else it++; \
 		\
 		modification ## _rgDeathNoticeList[0].iId = 0; \
 	} \
@@ -228,22 +227,27 @@ __declspec(naked) void cstrike_DeathMsg_DrawHelperY() {
 
 __declspec(naked) void tfc_DeathMsg_DrawHelperY() {
 	__asm {
-		mov ebp, DeathMsg_Draw_ItemIndex
-		imul ebp, 0x14
+		push ebx
+		mov ebx, DeathMsg_Draw_ItemIndex
+		imul ebx, 0x14
 
 		push eax
 		mov al, g_DeathMsg_ForceOffset
 		test al, al
 		JZ __OrgValue
 
-		add ebp, g_DeathMsg_Offset
+		add ebx, g_DeathMsg_Offset
 		JMP __Continue
 
 		__OrgValue:
-		add ebp, 0x22
+		add ebx, 0x22
 		
 		__Continue:
+		mov dword ptr [EBP - 0x22c], ebx
 		pop eax
+		pop ebx
+		mov eax, dword ptr [EBP - 0x22c]
+		add eax, 0x4
 
 		JMP [DeathMsg_Draw_AfterYRes]
 	}
@@ -428,15 +432,32 @@ REGISTER_CMD_FUNC(deathmsg)
 				int iV = atoi(pEngfuncs->Cmd_Argv(3));
 				int iT = atoi(pEngfuncs->Cmd_Argv(4));
 				acmd = pEngfuncs->Cmd_Argv(5);
-				size_t sz = 3*sizeof(BYTE)+sizeof(char)*(1+strlen(acmd));
 
-				BYTE * pMem = (BYTE *)malloc(sz);
-				pMem[0] = iA;
-				pMem[1] = iV;
-				pMem[2] = iT;
-				strcpy_s((char *)(&pMem[3]), sz-3, acmd);
-				detoured_MsgFunc_DeathMsg("DeathMsg", (int)sz, pMem);
-				free(pMem);
+				const char *gameDir = pEngfuncs->pfnGetGameDirectory();
+				if(gameDir)
+				{	
+					if(!strcmp("cstrike",gameDir))
+					{
+						size_t sz = 3*sizeof(BYTE)+sizeof(char)*(1+strlen(acmd));
+						BYTE * pMem = (BYTE *)malloc(sz);
+						pMem[0] = iA;
+						pMem[1] = iV;
+						pMem[2] = iT;
+						strcpy_s((char *)(&pMem[3]), sz-3, acmd);
+						detoured_MsgFunc_DeathMsg("DeathMsg", (int)sz, pMem);
+						free(pMem);
+					}
+					else if(!strcmp("tfc",gameDir))
+					{
+						size_t sz = 2*sizeof(BYTE)+sizeof(char)*(1+strlen(acmd));
+						BYTE * pMem = (BYTE *)malloc(sz);
+						pMem[0] = iA;
+						pMem[1] = iV;
+						strcpy_s((char *)(&pMem[2]), sz-2, acmd);
+						detoured_MsgFunc_DeathMsg("DeathMsg", (int)sz, pMem);
+						free(pMem);
+					}
+				}
 				return;
 			}
 			pEngfuncs->Con_Printf(

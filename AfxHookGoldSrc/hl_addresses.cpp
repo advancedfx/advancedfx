@@ -88,8 +88,8 @@ AFXADDR_DEF(hw_HUD_GetStudioModelInterface_pStudio)
 // [10] doc/notes_goldsrc/debug_CL_ParseServerMessage.txt
 // [11] doc/notes_goldsrc/debug_R_DrawWorld_and_sky.txt
 // [12] doc/notes_goldsrc/debug_R_DecalShoot.txt
-// *[14] doc/notes_goldsrc/debug_tfc_deathmessage.txt
-// *[15] doc/notes_goldsrc/debug_sv_variables.txt
+// [14] doc/notes_goldsrc/debug_tfc_deathmessage.txt
+// [15] doc/notes_goldsrc/debug_sv_variables.txt
 // [16] doc/notes_goldsrc/debug_CL_Disconnect.txt
 // [17] doc/notes_goldsrc/debug_fov.txt
 // [18] doc/notes_goldsrc/debug_Host_Init.txt
@@ -1155,9 +1155,9 @@ void Addresses_InitClientDll(AfxAddr clientDll, const char * gamedir)
 	else if (0 == _stricmp("tfc", gamedir))
 	{
 		// tfc DeathMsg related (client.dll offsets):
-		// [14] // Checked 2024-01-26 (no change)
+		// [14] // Checked 2024-10-02
 		{
-			MemRange s1 = FindCString(data2Range, "DeathMsg");
+			MemRange s1 = FindCString(data1Range, "DeathMsg");
 
 			if (!s1.IsEmpty()) {
 
@@ -1171,13 +1171,13 @@ void Addresses_InitClientDll(AfxAddr clientDll, const char * gamedir)
 
 						AFXADDR_SET(tfc_MsgFunc_DeathMsg, *(DWORD *)(r2.Start + 1));
 
-						MemRange r3 = FindPatternString(textRange.And(MemRange(AFXADDR_GET(tfc_MsgFunc_DeathMsg), AFXADDR_GET(tfc_MsgFunc_DeathMsg) + 0x1A)), "8b 44 24 0c 8b 4c 24 08 8b 54 24 04 50 51 52 b9 ?? ?? ?? ?? e8 ?? ?? ?? ?? c3");
+						MemRange r3 = FindPatternString(textRange.And(MemRange(AFXADDR_GET(tfc_MsgFunc_DeathMsg), AFXADDR_GET(tfc_MsgFunc_DeathMsg) + 0x1A)), "55 8b ec ff 75 10 b9 ?? ?? ?? ?? ff 75 0c ff 75 08 e8 ?? ?? ?? ?? 5d c3");
 
 						if (!r3.IsEmpty())
 						{
-							AFXADDR_SET(tfc_CHudDeathNotice_MsgFunc_DeathMsg, *(DWORD *)(r3.Start + 21) + (DWORD)(r3.Start + 25)); // Decode call address.
+							AFXADDR_SET(tfc_CHudDeathNotice_MsgFunc_DeathMsg, *(DWORD *)(r3.Start + 0x12) + (DWORD)(r3.Start + 0x12 +4)); // Decode call address.
 
-							MemRange r4 = FindPatternString(textRange.And(MemRange(AFXADDR_GET(tfc_CHudDeathNotice_MsgFunc_DeathMsg), AFXADDR_GET(tfc_CHudDeathNotice_MsgFunc_DeathMsg) + 0x363)), "68 70 02 00 00 68 ?? ?? ?? ?? 68 ?? ?? ?? ?? e8 ?? ?? ?? ??");
+							MemRange r4 = FindPatternString(textRange.And(MemRange(AFXADDR_GET(tfc_CHudDeathNotice_MsgFunc_DeathMsg), AFXADDR_GET(tfc_CHudDeathNotice_MsgFunc_DeathMsg) + 0xC5)), "68 70 02 00 00 68 ?? ?? ?? ?? 68 ?? ?? ?? ?? e8 ?? ?? ?? ??");
 
 							if (!r4.IsEmpty()) {
 								AFXADDR_SET(tfc_rgDeathNoticeList, *(DWORD *)(r4.Start + 11));
@@ -1193,26 +1193,28 @@ void Addresses_InitClientDll(AfxAddr clientDll, const char * gamedir)
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-			MemRange r1 = FindPatternString(textRange, "83 EC 30 53 55 56 57 33 FF BD 22 00 00 00 89 4C 24 2C 89 7C 24 18 C7 44 24 14 ?? ?? ?? ?? C7 44 24 10 ?? ?? ?? ?? 89 6C 24 28 C7 44 24 1C ?? ?? ?? ??");
+			MemRange r1 = FindPatternString(textRange, "b9 ?? ?? ?? ?? b8 26 00 00 00 c7 85 cc fd ff ff ?? ?? ?? ?? bb ?? ?? ?? ?? c7 85 d0 fd ff ff ?? ?? ?? ?? c7 85 e4 fd ff ff ?? ?? ?? ?? 33 d2 89 b5 b4 fd ff ff c7 85 d4 fd ff ff 22 00 00 00");
 
 			if (!r1.IsEmpty()) {
+				MemRange r2 = FindPatternString(textRange.And(MemRange::FromSize(r1.Start-0x95,0x10)),"55 8b ec 81 ec 78 02 00 00 a1 ?? ?? ?? ?? 33 c5");
+				if(!r2.IsEmpty()) {
+					AFXADDR_SET(tfc_CHudDeathNotice_Draw, r2.Start);
 
-				AFXADDR_SET(tfc_CHudDeathNotice_Draw, r1.Start);
+					// Check that our Y-Res adjusting code is still correct (otherwise it needs to be adjusted):
+					//
+					// .text:01928069 040                 mov     ebp, 22h
+					//
 
-				// Check that our Y-Res adjusting code is still correct (otherwise it needs to be adjusted):
-				//
-				// .text:01928069 040                 mov     ebp, 22h
-				//
-
-				AFXADDR_SET(cstrike_CHudDeathNotice_Draw_YRes, r1.Start + 9);
-				AFXADDR_SET(cstrike_CHudDeathNotice_Draw_YRes_DSZ, r1.Start + 9 + 5);
+					AFXADDR_SET(tfc_CHudDeathNotice_Draw_YRes, r1.Start + 53);
+					AFXADDR_SET(tfc_CHudDeathNotice_Draw_YRes_DSZ, 10);
+				}
 			}
 			else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
 
-		// tfc_TeamFortressViewport_UpdateSpecatorPanel // [4] // Checked 2024-01-26 (no change since 2018-10-06)
+		// tfc_TeamFortressViewport_UpdateSpecatorPanel // [4] // Checked 2024-10-02
 		{
-			MemRange r1 = FindPatternString(textRange, "A1 ?? ?? ?? ?? 81 EC 44 02 00 00 56 8B F1 89 86 24 02 00 00 8B 0D ?? ?? ?? ?? 89 8E 28 02 00 00 8B 8E 18 0A 00 00 8B 15 ?? ?? ?? ?? 85 C9 89 96 2C 02 00 00 0F 84 ?? ?? ?? ??");
+			MemRange r1 = FindPatternString(textRange, "55 8b ec 81 ec 4c 02 00 00 a1 ?? ?? ?? ?? 33 c5 89 45 fc a1 ?? ?? ?? ?? 53 8b d9 89 9d b8 fd ff ff 8b 8b 18 0a 00 00 89 83 24 02 00 00 a1 ?? ?? ?? ?? 89 83 28 02 00 00 a1 ?? ?? ?? ?? 89 83 2c 02 00 00 85 c9 0f 84 e3 03 00 00");
 
 			if (!r1.IsEmpty()) {
 
