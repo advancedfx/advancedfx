@@ -6,9 +6,10 @@
 
 <release>
 <name>AfxHookSource2</name>
-<version>upcoming</version>
-<time>2024-09-16T15:15Z</time>
+<version>0.23.0</version>
+<time>2024-10-03T10:00Z</time>
 <changes>
+<change type="fixed">Adjusted to Oct 2 2024 CS2 update.</change>
 <change type="added">Added mirv_streams record campath 0|1. Set to 1 to save current campath to take folder (if not empty).</change>
 </changes>
 </release>

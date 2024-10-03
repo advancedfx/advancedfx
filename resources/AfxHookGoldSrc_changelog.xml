@@ -6,10 +6,13 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
-<version>upcoming</version>
-<time>2024-09-16T15:15Z</time>
+<version>2.24.0</version>
+<time>2024-10-03T10:00Z</time>
 <changes>
 <change type="added">Added mirv_movie_campath. Set to 1 to save current campath to take folder (if not empty).</change>
+<change type="fixed">Fixed error in hooks for TFC due to 2 Oct 2024 update.</change>
+<change type="fixed">Fixed bugs in mirv_deathmsg list handling that could have lead to crashes.</change>
+<change type="fixed">Fixed mirv_deathmsg fake for TFC.</change>
 </changes>
 </release>
 

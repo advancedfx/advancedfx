@@ -6,10 +6,11 @@
 
 <release>
 <name>AfxHookSource</name>
-<version>upcoming</version>
-<time>2024-09-16T15:15Z</time>
+<version>1.129.0</version>
+<time>2024-10-03T10:00Z</time>
 <changes>
 <change type="added">Added mirv_streams record campath 0|1. Set to 1 to save current campath to take folder (if not empty).</change>
+<change type="fixed">Fixed broken audio with mirv_streams record screen in games other than CS:GO when using scheduled recordings (e.g. with .vdm files).</change>
 </changes>
 </release>
 
