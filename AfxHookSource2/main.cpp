@@ -158,7 +158,11 @@ float absoluteframetime_get(void)
 
 float interval_per_tick_get(void)
 {
-	return g_pGlobals ? 1.0f / *(int *)((unsigned char *)g_pGlobals +4*4) : 1.0f/64;
+	const int default_value = 64;
+	if(nullptr == g_pGlobals) return default_value;
+	int value = *(int *)((unsigned char *)g_pGlobals +4*4);
+	if(value <= 1) value = default_value; // In menu it's 1.
+	return 1.0f / value;
 }
 
 float interpolation_amount_get(void)
