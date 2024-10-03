@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.24.1</version>
+<time>2024-10-03T14:00Z</time>
+<changes>
+<change type="fixed">Fixed engine to client interface again (affecing e.g. mirv_cmd or script mirv.exec) (thanks @akiver).</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.24.0</version>
 <time>2024-10-03T13:00Z</time>
 <changes>
