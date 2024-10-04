@@ -134,6 +134,7 @@ PlayerInfo getPlayerInfoFromControllerIndex(int entindex)
 	{
         if(auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,i))
 		{
+			if(i != entindex) continue;
 			if(!ent->IsPlayerController()) continue;
 
 			auto teamNumber = *(int*)((u_char*)(ent) + g_clientDllOffsets.C_BaseEntity.m_iTeamNum);
@@ -657,18 +658,26 @@ uint64_t __fastcall getLocalSteamId(void* param_1) {
 	bool use = false;
 
 	if (nullptr != g_MirvDeathMsgGlobals.activeWrapper) { 
-		if (g_MirvDeathMsgGlobals.activeWrapper->attacker.isLocal.use && g_MirvDeathMsgGlobals.activeWrapper->attacker.isLocal.value) {
+		if (g_MirvDeathMsgGlobals.activeWrapper->attacker.isLocal.use) {
 			entry = g_MirvDeathMsgGlobals.activeWrapper->attacker;			
 			use = true;
 		}
-		if (g_MirvDeathMsgGlobals.activeWrapper->victim.isLocal.use && g_MirvDeathMsgGlobals.activeWrapper->victim.isLocal.value) {
+		if (g_MirvDeathMsgGlobals.activeWrapper->victim.isLocal.use) {
 			entry = g_MirvDeathMsgGlobals.activeWrapper->victim;
 			use = true;
 		}
-		if (g_MirvDeathMsgGlobals.activeWrapper->assister.isLocal.use && g_MirvDeathMsgGlobals.activeWrapper->assister.isLocal.value) {
+		if (g_MirvDeathMsgGlobals.activeWrapper->assister.isLocal.use) {
 			entry = g_MirvDeathMsgGlobals.activeWrapper->assister;
 			use = true;
 		}
+	}
+
+	if (use && !entry.isLocal.value) return 0;
+
+	if (g_MirvDeathMsgGlobals.useHighlightId)
+	{
+		entry.newId.value = g_MirvDeathMsgGlobals.highlightId;
+		use = true;
 	}
 
 	if (!use) return g_Original_getLocalSteamId(param_1);
@@ -706,9 +715,7 @@ uint64_t __fastcall getLocalSteamId(void* param_1) {
 		break;
 	};
 
-	if (0 != result) return result;
-
-	return g_Original_getLocalSteamId(param_1);
+	return result;
 };
 
 // param 1 CCSGO_HudDeathNotice : panorama::CPanel2D : panorama::IUIPanelClient : CCSGOHudElement : CGameEventListener : IGameEventListener2
