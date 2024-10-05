@@ -1035,22 +1035,29 @@ void HookClientDll(HMODULE clientDll) {
 		The FOV is overridden / computed a second time in the function called at the very end of
 		CViewRender::SetUpView (see hook above on how to find it):
 
-       1807e0ec7 0f 57 f6        XORPS      XMM6,XMM6
-                             LAB_1807e0eca                                   XREF[1]:     1807e0eac(j)  
+       1807e10d7 0f 57 f6        XORPS      XMM6,XMM6
+                             LAB_1807e10da                                   XREF[1]:     1807e10bc(j)  
 <-- snip -->
-       1807e0eca 8b cf           MOV        ECX,EDI
-       1807e0ecc e8 bf e4        CALL       FUN_18088f390                                    undefined FUN_18088f390()
+       1807e10da 8b cf           MOV        ECX,EDI
+       1807e10dc e8 7f e4        CALL       FUN_18088f560                                    undefined FUN_18088f560()
                  0a 00
-       1807e0ed1 48 8b c8        MOV        RCX,RAX
-       1807e0ed4 48 8b 10        MOV        RDX,qword ptr [RAX]
+       1807e10e1 48 8b c8        MOV        RCX,RAX
+       1807e10e4 48 8b 10        MOV        RDX,qword ptr [RAX]
 <-- snap -->
-       1807e0ed7 ff 92 d8        CALL       qword ptr [RDX + 0xd8]
+       1807e10e7 ff 92 d8        CALL       qword ptr [RDX + 0xd8]
                  00 00 00
+       1807e10ed 48 8d 94        LEA        RDX,[RSP + 0xf0]
+                 24 f0 00 
+                 00 00
+       1807e10f5 c7 84 24        MOV        dword ptr [RSP + 0xf0],0x40a00000
+                 f0 00 00 
+                 00 00 00 
+
 
 
 	*/
 	{
-		Afx::BinUtils::MemRange result = FindPatternString(textRange, "0f 57 f6 8b cf e8 bf e4 0a 00 48 8b c8 48 8b 10 ff 92 d8 00 00 00");
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "0f 57 f6 8b cf e8 ?? ?? ?? ?? 48 8b c8 48 8b 10 ff 92 d8 00 00 00 48 8d 94 24 ?? ?? ?? ?? c7 84 24 ?? ?? ?? ?? 00 00 a0 40");
 		if (!result.IsEmpty()) {
 			MdtMemBlockInfos mbis;
 			MdtMemAccessBegin((LPVOID)(result.Start), 13, &mbis);
