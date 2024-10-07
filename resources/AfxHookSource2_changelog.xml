@@ -6,11 +6,22 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.25.0</version>
+<time>2024-10-07T16:10Z</time>
+<changes>
+<change type="added">Added -afxFixNetCon command-line parameter: Thanks to @dumbasPL (https://github.com/ValveSoftware/csgo-osx-linux/issues/3603#issuecomment-2163695087)</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.24.2</version>
 <time>2024-10-05T12:45Z</time>
 <changes>
 <change type="fixed">Adjusted to Oct 4 2024 CS2 update.</change>
-<change type="fixed">Added fix #993 for bug with local player in mirv_deathmsg in AfxHookSource2.</change>
+<change type="fixed">Added fix #993 for bug with local player in mirv_deathmsg in AfxHookSource2, thanks @ChetdeJong</change>
 </changes>
 </release>
 
