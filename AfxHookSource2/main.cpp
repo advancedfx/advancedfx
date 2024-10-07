@@ -2138,6 +2138,26 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 
 			g_CampathDrawer.Begin();
 
+			if (int idx = g_CommandLine->FindParam(L"-afxFixNetCon")) {
+				// https://github.com/ValveSoftware/csgo-osx-linux/issues/3603#issuecomment-2163695087
+
+				WORD wVersionRequested;
+    			WSADATA wsaData;
+    			int err;
+
+				wVersionRequested = MAKEWORD(2, 0);
+
+				err = WSAStartup(wVersionRequested, &wsaData);
+    			if (err != 0) {
+					ErrorBox("WSAStartup failed");
+			    }
+			
+			    if (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion) != 0) {
+			        ErrorBox("Could not find a usable version of Winsock.dll");
+        			WSACleanup();
+				}		
+			}
+
 			break;
 		}
 		case DLL_PROCESS_DETACH:
