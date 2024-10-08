@@ -6,6 +6,20 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.25.1</version>
+<time>2024-10-08T11:13Z</time>
+<changes>
+<change type="fixed">Fix another bug with localplayer.</change>
+<change type="fixed">Fix wrong spec keys.</change>
+</changes>
+<comments>
+Thanks @ChetdeJong
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.25.0</version>
 <time>2024-10-07T16:10Z</time>
 <changes>
