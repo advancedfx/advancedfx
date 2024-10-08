@@ -134,11 +134,27 @@ PlayerInfo getPlayerInfoFromControllerIndex(int entindex)
 	{
         if(auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,i))
 		{
-			if(i != entindex) continue;
 			if(!ent->IsPlayerController()) continue;
 
 			auto teamNumber = *(int*)((u_char*)(ent) + g_clientDllOffsets.C_BaseEntity.m_iTeamNum);
 			if (0 == teamNumber || 1 == teamNumber) continue;
+
+			int slot = 0;
+			if (3 == teamNumber) // CT
+			{
+				slot = 1 + slotCT;
+				if (swapPlayerSide) slot += 5;
+				++slotCT;
+			} 
+			else if (2 == teamNumber) // T
+			{
+				slot = 1 + slotT;
+				if (!swapPlayerSide) slot += 5;
+				++slotT;
+			}
+			slot = slot % 10;
+
+			if(i != entindex) continue;
 
 			auto xuid = *(uint64_t*)((u_char*)(ent) + g_clientDllOffsets.CBasePlayerController.m_steamID);
 			auto name = (char*)((u_char*)(ent) + g_clientDllOffsets.CBasePlayerController.m_iszPlayerName);
@@ -150,22 +166,6 @@ PlayerInfo getPlayerInfoFromControllerIndex(int entindex)
 			result.xuid = xuid;
 			result.playerController = (u_char*)(ent);
 			result.userId = i - 1;
-
-			int slot = 0;
-			if (3 == teamNumber) // CT
-			{
-				slot = 1 + slotCT;
-				if (swapPlayerSide) slot += 5;
-				++slotCT;
-			} else
-			if (2 == teamNumber) // T
-			{
-				slot = 1 + slotT;
-				if (!swapPlayerSide) slot += 5;
-				++slotT;
-			}
-			slot = slot % 10;
-
 			result.specKey = slot;
 
 			if (i == entindex) break;
@@ -662,23 +662,24 @@ uint64_t __fastcall getLocalSteamId(void* param_1) {
 			entry = g_MirvDeathMsgGlobals.activeWrapper->attacker;			
 			use = true;
 		}
-		if (g_MirvDeathMsgGlobals.activeWrapper->victim.isLocal.use) {
+		else if (g_MirvDeathMsgGlobals.activeWrapper->victim.isLocal.use) {
 			entry = g_MirvDeathMsgGlobals.activeWrapper->victim;
 			use = true;
 		}
-		if (g_MirvDeathMsgGlobals.activeWrapper->assister.isLocal.use) {
+		else if (g_MirvDeathMsgGlobals.activeWrapper->assister.isLocal.use) {
 			entry = g_MirvDeathMsgGlobals.activeWrapper->assister;
 			use = true;
 		}
 	}
 
-	if (use && !entry.isLocal.value) return 0;
-
 	if (g_MirvDeathMsgGlobals.useHighlightId)
 	{
 		entry.newId.value = g_MirvDeathMsgGlobals.highlightId;
+		entry.isLocal.value = true;
 		use = true;
 	}
+
+	if (use && !entry.isLocal.value) return 0;
 
 	if (!use) return g_Original_getLocalSteamId(param_1);
 
