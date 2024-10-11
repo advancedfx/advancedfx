@@ -556,15 +556,7 @@ void DrawReShade(ID3D11RenderTargetView * pRendertargetView, ID3D11DepthStencilV
     }
 }
 
-void DrawOn3DRendered() {
-    UINT numViewPorts = 1;
-    g_pImmediateContext->RSGetViewports(&numViewPorts, &g_ViewPort);
-    g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
-    if (g_bEnableReShade) DrawReShade(g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
-}
-
 void STDMETHODCALLTYPE New_ClearDepthStencilView( ID3D11DeviceContext * This, 
-    /* [annotation] */ 
     _In_  ID3D11DepthStencilView *pDepthStencilView,
     /* [annotation] */ 
     _In_  UINT ClearFlags,
@@ -574,14 +566,17 @@ void STDMETHODCALLTYPE New_ClearDepthStencilView( ID3D11DeviceContext * This,
     _In_  UINT8 Stencil) {
 
     if (g_iDraw == 3) {
-        g_pCurrentDepthStencilView = pDepthStencilView;
         g_iDraw = 4;
-        // do NOT clear, this is the depth stencil where the smoke is, not used anymore after clear
-        return;
+
+        g_pCurrentDepthStencilView = pDepthStencilView;
+
+        // do NOT clear if using re-shade, this is the depth stencil where the smoke is, used to draw view-model afterwards
+        if (g_ReShadeAdvancedfx.IsConnected() && g_bEnableReShade) return;
     }
     else if (g_iDraw == 4) {
         g_iDraw = 5;
-        DrawOn3DRendered();
+
+        if (g_bEnableReShade) DrawReShade(g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
     }
 
     g_Old_ClearDepthStencilView(This, pDepthStencilView, ClearFlags, Depth, Stencil);
@@ -637,12 +632,18 @@ void STDMETHODCALLTYPE New_OMSetRenderTargets( ID3D11DeviceContext * This,
     if(This->GetType() == D3D11_DEVICE_CONTEXT_IMMEDIATE && NumViews >= 1) {
         if(g_iDraw == 0 && pDepthStencilView && ppRenderTargetViews && ppRenderTargetViews[0]) {
             g_iDraw = 2;
+            
             g_pImmediateContext = This;
             g_pCurrentDepthStencilView = pDepthStencilView;
             g_pCurrentRenderTargetView = ppRenderTargetViews[0];
         }
         else if (g_iDraw == 2 && pDepthStencilView == nullptr && ppRenderTargetViews && ppRenderTargetViews[0] && ppRenderTargetViews[0] == g_pCurrentRenderTargetView) {
             g_iDraw = 3;
+
+            UINT numViewPorts = 1;
+            g_pImmediateContext->RSGetViewports(&numViewPorts, &g_ViewPort);
+
+            g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
         }
         else if (g_iDraw == 4 && ppRenderTargetViews && ppRenderTargetViews[0] && pDepthStencilView) {
             // last OMSetRenderTargets before (last) clearDepth, just before panorama shaders
@@ -789,10 +790,6 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
             /* [in] */ UINT SyncInterval,
             /* [in] */ UINT Flags) {
     
-    if (g_iDraw == 2) {
-        g_iDraw = 3;
-        g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
-    }
     g_CampathDrawer.OnRenderThread_Present();
 
     DrawReShade(nullptr, nullptr);
