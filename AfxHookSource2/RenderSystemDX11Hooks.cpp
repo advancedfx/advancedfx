@@ -537,7 +537,6 @@ typedef void (STDMETHODCALLTYPE * ClearDepthStencilView_t)( ID3D11DeviceContext 
 
 ClearDepthStencilView_t g_Old_ClearDepthStencilView = nullptr;
 
-ID3D11Resource * g_pCurrentDepthStencilViewResource = nullptr;
 ID3D11RenderTargetView * g_pCurrentRenderTargetView = nullptr;
 ID3D11DepthStencilView * g_pCurrentDepthStencilView = nullptr;
 D3D11_VIEWPORT g_ViewPort;
@@ -558,7 +557,6 @@ void DrawReShade(ID3D11RenderTargetView * pRendertargetView, ID3D11DepthStencilV
 }
 
 void STDMETHODCALLTYPE New_ClearDepthStencilView( ID3D11DeviceContext * This, 
-    /* [annotation] */ 
     _In_  ID3D11DepthStencilView *pDepthStencilView,
     /* [annotation] */ 
     _In_  UINT ClearFlags,
@@ -566,6 +564,20 @@ void STDMETHODCALLTYPE New_ClearDepthStencilView( ID3D11DeviceContext * This,
     _In_  FLOAT Depth,
     /* [annotation] */ 
     _In_  UINT8 Stencil) {
+
+    if (g_iDraw == 3) {
+        g_iDraw = 4;
+
+        g_pCurrentDepthStencilView = pDepthStencilView;
+
+        // do NOT clear if using re-shade, this is the depth stencil where the smoke is, used to draw view-model afterwards
+        if (g_ReShadeAdvancedfx.IsConnected() && g_bEnableReShade) return;
+    }
+    else if (g_iDraw == 4) {
+        g_iDraw = 5;
+
+        if (g_bEnableReShade) DrawReShade(g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
+    }
 
     g_Old_ClearDepthStencilView(This, pDepthStencilView, ClearFlags, Depth, Stencil);
 }
@@ -620,17 +632,22 @@ void STDMETHODCALLTYPE New_OMSetRenderTargets( ID3D11DeviceContext * This,
     if(This->GetType() == D3D11_DEVICE_CONTEXT_IMMEDIATE && NumViews >= 1) {
         if(g_iDraw == 0 && pDepthStencilView && ppRenderTargetViews && ppRenderTargetViews[0]) {
             g_iDraw = 2;
+            
             g_pImmediateContext = This;
             g_pCurrentDepthStencilView = pDepthStencilView;
             g_pCurrentRenderTargetView = ppRenderTargetViews[0];
-            g_pCurrentDepthStencilViewResource = nullptr;
-            if (g_pCurrentRenderTargetView) {
-                g_pCurrentRenderTargetView->GetResource(&g_pCurrentDepthStencilViewResource);
-                if (g_pCurrentDepthStencilViewResource) g_pCurrentDepthStencilViewResource->Release();
-            }
         }
         else if (g_iDraw == 2 && pDepthStencilView == nullptr && ppRenderTargetViews && ppRenderTargetViews[0] && ppRenderTargetViews[0] == g_pCurrentRenderTargetView) {
             g_iDraw = 3;
+
+            UINT numViewPorts = 1;
+            g_pImmediateContext->RSGetViewports(&numViewPorts, &g_ViewPort);
+
+            g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
+        }
+        else if (g_iDraw == 4 && ppRenderTargetViews && ppRenderTargetViews[0] && pDepthStencilView) {
+            // last OMSetRenderTargets before (last) clearDepth, just before panorama shaders
+            g_pCurrentRenderTargetView = ppRenderTargetViews[0];
         }
     }
     
@@ -654,22 +671,6 @@ void STDMETHODCALLTYPE New_PSSetShaderResources(ID3D11DeviceContext* This,
     _In_range_(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT - StartSlot)  UINT NumViews,
     /* [annotation] */
     _In_reads_opt_(NumViews)  ID3D11ShaderResourceView* const* ppShaderResourceViews) {
-
-    if (This == g_pImmediateContext && g_iDraw == 3 && ppShaderResourceViews) {
-        for (UINT i = 0; i < NumViews; i++) {
-            auto pResource = CAfxShaderResourceViews::GetResource(ppShaderResourceViews[i]);
-            if (pResource) {
-                if (pResource == g_pCurrentDepthStencilViewResource) {
-                    g_iDraw = 4;
-                    UINT numViewPorts = 1;
-                    g_pImmediateContext->RSGetViewports(&numViewPorts, &g_ViewPort);
-                    g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
-                    if (g_bEnableReShade) DrawReShade(g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
-                    break;
-                }
-            }
-        }
-    }
 
     return g_Old_PSSetShaderResources(This, StartSlot, NumViews, ppShaderResourceViews);
 }
@@ -789,10 +790,6 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
             /* [in] */ UINT SyncInterval,
             /* [in] */ UINT Flags) {
     
-    if (g_iDraw == 2) {
-        g_iDraw = 3;
-        g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
-    }
     g_CampathDrawer.OnRenderThread_Present();
 
     DrawReShade(nullptr, nullptr);
