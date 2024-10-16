@@ -77,7 +77,7 @@ void HookViewmodel(HMODULE clientDll)
 	}
 	// vtable byte offset 0xac8 for "C_CSGO_TeamPreviewModel" class (4th from end.).
 	// This function is called right after the first call to viewmodelAddr function.
-	size_t handAddr = getAddress(clientDll, "40 56 48 83 EC 20 80 B9 99 22 00 00 00 48 8B F1 ?? ?? 32 C0 48 83 C4 20 5E ?? 48 8B");
+	size_t handAddr = getAddress(clientDll, "40 56 48 83 EC ?? 80 B9 ?? ?? ?? ?? ?? 48 8B F1 75");
 	if (0 == handAddr) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));	
 		return;
