@@ -709,21 +709,6 @@ void Hook_Context(ID3D11DeviceContext * pDeviceContext) {
     last_vtable = vtable;   
 }
 
-typedef void (STDMETHODCALLTYPE * ID3D11Device_GetImmediateContext_t)(ID3D11Device * This, 
-    /* [annotation] */ 
-    _Outptr_  ID3D11DeviceContext **ppImmediateContext);
-
-ID3D11Device_GetImmediateContext_t g_Old_ID3D11Device_GetImmediateContext = nullptr;
-
-void STDMETHODCALLTYPE New_ID3D11Device_GetImmediateContext(ID3D11Device * This, 
-    /* [annotation] */ 
-    _Outptr_  ID3D11DeviceContext **ppImmediateContext) {
-    g_Old_ID3D11Device_GetImmediateContext(This, ppImmediateContext);
-    if(ppImmediateContext && *ppImmediateContext){
-        Hook_Context(*ppImmediateContext);        
-    }
-}
-
 typedef HRESULT(WINAPI* D3D11CreateDevice_t)(IDXGIAdapter*,D3D_DRIVER_TYPE,HMODULE,UINT,const D3D_FEATURE_LEVEL*,UINT,UINT,ID3D11Device**,D3D_FEATURE_LEVEL*,ID3D11DeviceContext**);
 D3D11CreateDevice_t g_Old_D3D11CreateDevice = nullptr;
 
@@ -755,7 +740,6 @@ HRESULT WINAPI New_D3D11CreateDevice(
         if(last_vtable) {
             DetourDetach(&(PVOID&)g_Old_CreateShaderResourceView, New_CreateShaderResourceView);
             DetourDetach(&(PVOID&)g_Old_CreateRenderTargetView, New_CreateRenderTargetView);
-            DetourDetach(&(PVOID&)g_Old_ID3D11Device_GetImmediateContext, New_ID3D11Device_GetImmediateContext);
             if(NO_ERROR != DetourTransactionCommit()) {
                 ErrorBox("Failed detaching in D3D11CreateDevice.");
             }
@@ -764,17 +748,19 @@ HRESULT WINAPI New_D3D11CreateDevice(
         }
         g_Old_CreateShaderResourceView = (CreateShaderResourceView_t)vtable[7];
         g_Old_CreateRenderTargetView = (CreateRenderTargetView_t)vtable[9];
-        g_Old_ID3D11Device_GetImmediateContext = (ID3D11Device_GetImmediateContext_t)vtable[40];
         DetourAttach(&(PVOID&)g_Old_CreateShaderResourceView, New_CreateShaderResourceView);
         DetourAttach(&(PVOID&)g_Old_CreateRenderTargetView, New_CreateRenderTargetView);
-        DetourAttach(&(PVOID&)g_Old_ID3D11Device_GetImmediateContext, New_ID3D11Device_GetImmediateContext);
         if(NO_ERROR != DetourTransactionCommit()) {
             ErrorBox("Failed attaching in D3D11CreateDevice.");
         }
         last_vtable = vtable;
-    }
-    if(SUCCEEDED(result) && ppImmediateContext && *ppImmediateContext) {
-        Hook_Context(*ppImmediateContext);
+
+        ID3D11DeviceContext * pContext = nullptr;
+        (*ppDevice)->GetImmediateContext(&pContext);
+        if(pContext) {
+            Hook_Context(pContext);
+            pContext->Release();
+        }
     }
 
     return result;
