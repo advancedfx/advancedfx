@@ -10,7 +10,7 @@
 <changes>
 <change type="fixed">Adjust to latest CS2 update, thanks @ChetdeJong</change>
 <change type="fixed">BREAKING CHANGE: Changed / fixed D3D11 context hooking. This will require updating ReShade_advancedfx to 1.3.0 or newer (only if you use ReShade_advancedfx), otherwise the ReShade_advancedfx.addon will cause a crash!</change>
-<change type="fixed">Fix a few reshade bugs - depth stencil with smokes, capture fx, thanks @Markxy and @allstar-gaming-llc - The skybox will disappear from depth stencil if smoke is in view. After Oct 2 "Armory" patch, smokes will disappear from depthStencil if too far with default cvars. Use mirv_cvar_unhide_all; smoke_volume_lod_ratio_change 0 to have them in depth stencil from afar.</changed>
+<change type="fixed">Fix a few reshade bugs - depth stencil with smokes, capture fx, thanks @Markxy and @allstar-gaming-llc - The skybox will disappear from depth stencil if smoke is in view. After Oct 2 "Armory" patch, smokes will disappear from depthStencil if too far with default cvars. Use mirv_cvar_unhide_all; smoke_volume_lod_ratio_change 0 to have them in depth stencil from afar.</change>
 </changes>
 </release>
 
