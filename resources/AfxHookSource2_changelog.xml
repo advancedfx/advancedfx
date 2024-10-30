@@ -3,6 +3,17 @@
 
 <changelog>
 
+
+<release>
+<name>AfxHookSource2</name>
+<version>0.27.0</version>
+<time>2024-10-30T07:28Z</time>
+<changes>
+<change type="fixed">Adjust to latest CS2 update, thanks @ChetdeJong</change>
+</changes>
+</release>
+
+
 <release>
 <name>AfxHookSource2</name>
 <version>0.26.0</version>
