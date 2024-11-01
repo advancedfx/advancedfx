@@ -219,6 +219,40 @@ CON_COMMAND(__mirv_find_vtable,"") {
     if(g_pEngineToClient) g_pEngineToClient->ExecuteClientCmd(0, oss.str().c_str(), false);	
 }*/
 
+CON_COMMAND(mirv_loadlibrary, "Load a DLL.")
+{
+	int argc = args->ArgC();
+
+	if (2 <= argc)
+	{
+		char const * cmd1 = args->ArgV(1);
+
+		std::wstring wCmd1;
+		if (UTF8StringToWideString(cmd1, wCmd1))
+		{
+
+			if (0 != LoadLibraryW(wCmd1.c_str()))
+			{
+				advancedfx::Message("LoadLibraryA OK.\n");
+			}
+			else
+			{
+				advancedfx::Message("LoadLibraryA failed.\n");
+			}
+		}
+		else
+		{
+			advancedfx::Message("Failed to convert \"%s\" from UFT8 to UTF-16.\n", cmd1);
+		}
+
+		return;
+	}
+
+	advancedfx::Message(
+		"mirv_loadlibrary <sDllFilePath> - Load DLL at given path.\n"
+	);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 SOURCESDK::CS2::IGameUIService * g_pGameUIService = nullptr;
