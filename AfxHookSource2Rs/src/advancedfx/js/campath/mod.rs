@@ -746,6 +746,18 @@ impl Campath {
         Self::error_typ()
     }
 
+    fn get_iterator(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mut campath) = object.downcast_mut::<Campath>() {
+                let iterator = advancedfx::js::campath::Iterator {
+                    native: campath.native.iterator()
+                };
+                return Ok(JsValue::Object(Iterator::from_data(iterator, _context)?));
+            }
+        }
+        Self::error_typ()
+    }
+
     fn get_duration(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(campath) = object.downcast_ref::<Campath>() {
@@ -1334,6 +1346,12 @@ impl Class for Campath {
             .accessor(
                 js_string!("size"),
                 Some(NativeFunction::from_fn_ptr(Campath::get_size).to_js_function(&realm)),
+                None,
+                Attribute::all()
+            )
+            .accessor(
+                js_string!("iterator"),
+                Some(NativeFunction::from_fn_ptr(Campath::get_iterator).to_js_function(&realm)),
                 None,
                 Attribute::all()
             )

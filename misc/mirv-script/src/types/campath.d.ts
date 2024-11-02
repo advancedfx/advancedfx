@@ -82,6 +82,22 @@ declare class AdvancedfxCampath {
 	readonly size: number;
 
 	/**
+	 * Iterator.
+	 * @remarks
+	 * Used to iterate over all keyframes in campath.
+	 *
+	 * Example:
+	 * ```ts
+	 * while (iterator.valid) {
+	 *		const campathPointValue = iterator.value;
+	 *		const campathPointTime = iterator.time;
+	 *		iterator.next();
+	 * }
+	 * ```
+	 */
+	readonly iterator: AdvancedfxCampathIterator;
+
+	/**
 	 * Length of path in seconds.
 	 */
 	readonly duration: number;
