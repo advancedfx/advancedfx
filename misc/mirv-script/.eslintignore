@@ -1,4 +1,0 @@
-.eslintrc.cjs
-node_modules
-dist
-rollup.config.mjs
