@@ -12,15 +12,15 @@ In game you can use `mirv_script_load` to load a script from a file and `mirv_sc
 2. `cd misc/mirv-script`
 3. Install dependencies with `npm i`
 4. Change server options in `server.ts`, `client.ts` and `index.mts` if needed
-5. Transpile mirv files with `npm run build`
-6. Transpile node files with `npm run build-scripts`
+5. Transpile scripts:
+    * mirv files with `npm run build`
+    * node files with `npm run build-scripts`
+    * snippets with `npm run build-snippets`
 
-Note: Node 22.1.0 is used.
-
-# Usage
+# Run example
 
 1. Run server with `npm run server`
-2. In game execute `mirv_script_load "./dist/index.mjs"`
+2. In game execute `mirv_script_load "./dist/index.mjs"` (has to be absolute path).
 3. Adjust paths in `client.ts` test messages
 4. Run test messages with `npm run client`
 
@@ -44,25 +44,17 @@ Structure:
 
 ```
 |
-+---snippets // example snippets - currently unsorted and might conflict with each other and the src example (we need to make plugin system script still).
 |
 \---src
     |   client.ts // example client
     |   index.mts // mirv example entry point
     |   server.ts // example server
     |
-    +---mirv
-    |       mirv.mts // simple wrapper
-	|       hooks.mts // example hooks
-    |		test-module.mts // example module
-	|		test-hook-module.mts // example hook module
-    |       utils.mts
-    |       ws-connection.mts // WebSocket connection interface
-    |       ws-events-handler.mts // Function to handle incoming websocket messages
-    |       ws-events.mts // WebSocket events
+    +---mirv // files for websockets example
     |
-    \---types
-            mirv.d.ts // Description of mirv interface
+    +---snippets // example snippets - currently unsorted and might conflict with each other and the src example (we need to make plugin system script still).
+    |
+    \---types // Description of mirv interface, etc.
 ```
 
 The general idea of this example is to abstract `mirv` object and interact with it through websocket messages.

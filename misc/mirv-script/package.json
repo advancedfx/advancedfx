@@ -10,7 +10,6 @@
 	},
 	"type": "module",
 	"scripts": {
-		"eslint": "eslint . --ext .ts,.mts --ignore-pattern=.gitignore,.eslintignore",
 		"build": "tsc --project tsconfig.mirv.json",
 		"build-scripts": "tsc --project tsconfig.scripts.json",
 		"build-snippets": "npm install && tsc --project tsconfig.snippets.json",
