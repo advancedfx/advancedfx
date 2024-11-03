@@ -28,7 +28,7 @@
 
 	const getPointByDirection = (dir: 'prev' | 'next') => {
 		const totalKeyframes = mirv.getMainCampath().size;
-		const iterator = mirv.getMainCampath().iterator;
+		const iterator = new AdvancedfxCampathIterator(mirv.getMainCampath());
 		if (!iterator.valid) {
 			mirv.warning('No campath points.\n');
 			return;
@@ -57,7 +57,7 @@
 	};
 
 	const getSelectedPoint = () => {
-		const iterator = mirv.getMainCampath().iterator;
+		const iterator = new AdvancedfxCampathIterator(mirv.getMainCampath());
 		if (!iterator.valid) {
 			mirv.warning('No campath points.\n');
 			return;
@@ -80,7 +80,7 @@
 	};
 
 	const getPointByIndex = (index: number) => {
-		const iterator = mirv.getMainCampath().iterator;
+		const iterator = new AdvancedfxCampathIterator(mirv.getMainCampath());
 		if (!iterator.valid) {
 			mirv.warning('No campath points.\n');
 			return;
