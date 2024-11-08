@@ -13,6 +13,7 @@
 #include "Globals.h"
 #include "DeathMsg.h"
 #include "SchemaSystem.h"
+#include "MirvFix.h"
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
 #include "../deps/release/prop/AfxHookSource/SourceInterfaces.h"
@@ -1976,6 +1977,7 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 	static bool bFirstRenderSystemDX11 = true;
 	static bool bFirstPanorama = true;
 	static bool bFirstSchemaSystem = true;
+	static bool bFirstSceneSystem = true;
 	
 	CommonHooks();
 
@@ -2044,6 +2046,11 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 
 		g_Import_engine2.Apply(hModule);
 	}
+	else if(bFirstSceneSystem && StringEndsWithW( lpLibFileName, L"scenesystem.dll"))
+	{
+		bFirstSceneSystem = false;
+		g_Import_SceneSystem.Apply(hModule);
+	}
 	/*else if(bFirstMaterialsystem2 && StringEndsWithW( lpLibFileName, L"materialsystem2.dll"))
 	{
 		bFirstMaterialsystem2 = false;
@@ -2074,6 +2081,7 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 	else if(bFirstPanorama && StringEndsWithW(lpLibFileName, L"panorama.dll"))
 	{
 		bFirstPanorama = false;
+		g_Import_panorama.Apply(hModule);
 		HookPanorama(hModule);
 	}
 	else if(bFirstSchemaSystem && StringEndsWithW(lpLibFileName, L"schemasystem.dll"))

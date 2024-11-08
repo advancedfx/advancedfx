@@ -219,6 +219,9 @@ target_sources(${PROJECT_NAME} PRIVATE
 
     main.cpp
 
+	MirvFix.cpp
+	MirvFix.h
+
     RenderSystemDX11Hooks.cpp
     RenderSystemDX11Hooks.h
 
