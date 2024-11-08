@@ -115,7 +115,6 @@ export class WsConnection implements IWsConnection {
 
 	async readNext(wsIn: mirv.WsIn) {
 		try {
-			// eslint-disable-next-line no-constant-condition
 			while (true) {
 				const message = await wsIn.next();
 				if (message === null) {
