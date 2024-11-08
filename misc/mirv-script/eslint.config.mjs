@@ -17,17 +17,12 @@ export default [
 	...tseslint.configs.recommended,
 	prettier,
 	{
-		ignores: [
-			'.vscode/**',
-			'**/eslint.config.mjs',
-			'**/*.js',
-			'**/*.mjs'
-		]
+		ignores: ['.vscode/**', '**/eslint.config.mjs', '**/*.js', '**/*.mjs']
 	},
 	{
 		files: ['**/*.ts', '**/*.mts'],
 		plugins: {
-			'check-file': checkFile,
+			'check-file': checkFile
 		},
 
 		languageOptions: {
@@ -39,9 +34,12 @@ export default [
 		},
 
 		rules: {
-			'prettier/prettier': ['warn', {
-				endOfLine: 'auto',
-			}],
+			'prettier/prettier': [
+				'warn',
+				{
+					endOfLine: 'auto'
+				}
+			],
 
 			'no-var': 'warn',
 			'no-empty': 'warn',
@@ -50,35 +48,69 @@ export default [
 			'no-unused-expressions': 'off',
 
 			'@typescript-eslint/no-unused-vars': ['warn', { args: 'none', caughtErrors: 'none' }],
-			'@typescript-eslint/no-unused-expressions': [ 'warn', { allowTernary: true, allowShortCircuit: true } ],
+			'@typescript-eslint/no-unused-expressions': [
+				'warn',
+				{ allowTernary: true, allowShortCircuit: true }
+			],
 			'@typescript-eslint/ban-ts-comment': 'off',
-			'@typescript-eslint/no-shadow': ['error', { ignoreTypeValueShadow: true, ignoreFunctionTypeParameterNameValueShadow: true, allow: ['T'] }],
-			'@typescript-eslint/naming-convention': ['error', {
-				selector: 'variable',
-				filter: '__typename',
-				format: null,
-			}, 
-			{
-				selector: 'variable',
-				types: ['function'],
-				format: ['camelCase', 'PascalCase'],
-				leadingUnderscore: 'allow',
-			},
-			{
-				selector: 'variable',
-				types: ['boolean', 'number', 'string', 'array'],
-				format: ['camelCase', 'UPPER_CASE'],
-				leadingUnderscore: 'allow',
-			}],
+			'@typescript-eslint/no-shadow': [
+				'error',
+				{
+					ignoreTypeValueShadow: true,
+					ignoreFunctionTypeParameterNameValueShadow: true,
+					allow: ['T']
+				}
+			],
+			'@typescript-eslint/naming-convention': [
+				'error',
+				{
+					selector: 'variable',
+					filter: '__typename',
+					format: null
+				},
+				{
+					selector: 'variable',
+					types: ['function'],
+					format: ['camelCase', 'PascalCase'],
+					leadingUnderscore: 'allow'
+				},
+				{
+					selector: 'variable',
+					types: ['boolean', 'number', 'string', 'array'],
+					format: ['camelCase', 'UPPER_CASE'],
+					leadingUnderscore: 'allow'
+				}
+			],
 
-			'check-file/filename-naming-convention': ['error', {
-				'**/*.{ts,mts}': 'KEBAB_CASE',
-			}, {
-					ignoreMiddleExtensions: true,
-			}],
-			'check-file/folder-naming-convention': ['error', {
-				'*/**': 'KEBAB_CASE',
-			}],
-		},
+			'check-file/filename-naming-convention': [
+				'error',
+				{
+					'**/*.{ts,mts}': 'KEBAB_CASE'
+				},
+				{
+					ignoreMiddleExtensions: true
+				}
+			],
+			'check-file/folder-naming-convention': [
+				'error',
+				{
+					'*/**': 'KEBAB_CASE'
+				}
+			]
+		}
+	},
+	{
+		files: ['src/snippets/mirv_script_*.ts'],
+		rules: {
+			'check-file/filename-naming-convention': [
+				'error',
+				{
+					'**/*.{ts,mts}': 'SNAKE_CASE'
+				},
+				{
+					ignoreMiddleExtensions: true
+				}
+			]
+		}
 	}
 ];
