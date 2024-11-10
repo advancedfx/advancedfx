@@ -13,6 +13,7 @@
 #include "Globals.h"
 #include "DeathMsg.h"
 #include "SchemaSystem.h"
+#include "MirvCommands.h"
 #include "MirvFix.h"
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
@@ -2070,6 +2071,8 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		g_H_ClientDll = hModule;
 
 		//if(!g_Import_client.Apply(hModule)) ErrorBox("client.dll steam_api64 hooks failed.");
+
+		HookMirvCommands(hModule);
 
 		HookViewmodel(hModule);
 
