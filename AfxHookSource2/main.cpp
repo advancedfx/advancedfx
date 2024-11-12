@@ -350,6 +350,10 @@ private:
 
 } g_MirvInputEx;
 
+float GetLastCameraFov() {
+	return (float)g_MirvInputEx.LastCameraFov;
+}
+
 CON_COMMAND(mirv_input, "Input mode configuration.")
 {
 	g_MirvInputEx.m_MirvInput->ConCommand(args);
@@ -629,6 +633,8 @@ SOURCESDK::VMatrix g_WorldToScreenMatrix;
 
 extern bool g_b_on_c_view_render_setup_view;
 
+extern bool MirvFovOverride(float &fov);
+
 bool CS2_Client_CSetupView_Trampoline_IsPlayingDemo(void *ThisCViewSetup) {
 	if(!g_pEngineToClient) return false;
 
@@ -715,6 +721,8 @@ bool CS2_Client_CSetupView_Trampoline_IsPlayingDemo(void *ThisCViewSetup) {
 			Fov = (float)camData.Fov;
 		}
 	}	
+
+	if(MirvFovOverride(Fov)) originOrAnglesOverriden = true;
 
 	if(g_MirvInputEx.m_MirvInput->Override(g_MirvInputEx.LastFrameTime, Tx,Ty,Tz,Rx,Ry,Rz,Fov)) originOrAnglesOverriden = true;
 

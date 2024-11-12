@@ -1,5 +1,7 @@
 #include "MirvCommands.h"
 
+#include "../shared/StringTools.h"
+
 bool g_bHookedMirvCommands = false;
 
 bool g_bNoFlashEnabled = false;
@@ -66,3 +68,121 @@ void HookMirvCommands(HMODULE clientDll) {
 
 	g_bHookedMirvCommands = true;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool g_bMirvFovEnabled = false;
+float g_fMirvFovValue = 90.0;
+float g_bMirvFovHandleZoom = true;
+float g_fMirvFovMinUnzoomedFov = 90.0;
+
+extern float GetLastCameraFov();
+
+bool MirvFovOverride(float &fov) {
+	if(g_bMirvFovEnabled) {
+		if(!g_bMirvFovHandleZoom || g_fMirvFovMinUnzoomedFov <= fov) {
+			fov = g_fMirvFovValue;
+			return true;
+		}
+	}
+	return false;
+}
+
+CON_COMMAND(mirv_fov,"allows overriding FOV (Field Of View) of the camera")
+{
+	int argc = args->ArgC();
+
+	if(2 <= argc)
+	{
+		char const * arg1 = args->ArgV(1);
+
+		if(!_stricmp(arg1,"default"))
+		{
+			g_bMirvFovEnabled = false;
+			return;
+		}
+		else
+		if(!_stricmp(arg1,"handleZoom"))
+		{
+			if(3 <= argc)
+			{
+				const char * arg2 = args->ArgV(2);
+
+				if(!_stricmp(arg2, "enabled"))
+				{
+					if(4 <= argc)
+					{
+						const char * arg3 = args->ArgV(3);
+
+						g_bMirvFovHandleZoom = 0 != atoi(arg3);
+						return;
+					}
+
+					advancedfx::Message(
+						"Usage:\n"
+						"mirv_fov handleZoom enabled 0|1 - Enable (1), disable (0).\n"
+						"Current value: %s\n",
+						g_bMirvFovHandleZoom ? "1" : "0"
+					);
+					return;
+				}
+				else
+				if(!_stricmp(arg2, "minUnzoomedFov"))
+				{
+					if(4 <= argc)
+					{
+						const char * arg3 = args->ArgV(3);
+
+						if(!_stricmp(arg3, "current"))
+						{
+							g_fMirvFovMinUnzoomedFov = GetLastCameraFov();
+							return;
+						}
+						else if(StringIsEmpty(arg3) || !StringIsAlphas(arg3))
+						{
+							g_fMirvFovMinUnzoomedFov = atof(arg3);
+							return;
+						}
+					}
+
+					advancedfx::Message(
+						"Usage:\n"
+						"mirv_fov handleZoom minUnzoomedFov current - Set current fov as threshold.\n"
+						"mirv_fov handleZoom minUnzoomedFov <f> - Set floating point value <f> as threshold.\n"
+						"Current value: %f\n",
+						g_fMirvFovMinUnzoomedFov
+					);
+					return;
+				}
+			}
+
+			advancedfx::Message(
+				"Usage:\n"
+				"mirv_fov handleZoom enabled [...] - Whether to enable zoom handling (if enabled mirv_fov is only active if it's not below minUnzoomedFov (not zoomed)).\n"
+				"mirv_fov handleZoom minUnzoomedFov [...] - Zoom detection threshold.\n"
+			);
+			return;
+		}
+		if(StringIsEmpty(arg1) || !StringIsAlphas(arg1))
+		{
+			g_bMirvFovEnabled = true;
+			g_fMirvFovValue = atof(arg1);
+			return;
+		}
+	}
+
+	advancedfx::Message(
+		"Usage:\n"
+		"mirv_fov <f> - Override fov with given floating point value <f>.\n"
+		"mirv_fov default - Revert to the game's default behaviour.\n"
+		"mirv_fov handleZoom [...] - Handle zooming (e.g. AWP in CS:GO).\n"
+	);
+	{
+		advancedfx::Message("Current value: ");
+
+		if(!g_bMirvFovEnabled)
+			advancedfx::Message("default (currently: %f)\n", GetLastCameraFov());
+		else
+			advancedfx::Message("%f\n", g_fMirvFovValue);
+	}
+}
