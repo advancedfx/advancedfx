@@ -4,6 +4,22 @@
 <changelog>
 
 
+
+<release>
+<name>AfxHookSource2</name>
+<version>0.28.0</version>
+<time>2024-11-12T18:00Z</time>
+<changes>
+<change type="added">Added mirv_loadlibrary DLL loading command.</change>
+<change type="updated">mirv-script updates in repositiory, thanks @ChetdeJong</change>
+<change type="added">Added mirv_script_point snippet, thanks @ChetdeJong</change>
+<change type="added">Added mirv_fix time (auto enabled) to CS2. (Fixes Panorma UI and Scene System (e.g. water shader) time when recording with mirv_streams.) Thanks @ChetdeJong</change>
+<change type="added">Added mirv_noflash, thanks @ChetdeJong</change>
+<change type="added">Added mirv_fov.</change>
+</changes>
+</release>
+
+
 <release>
 <name>AfxHookSource2</name>
 <version>0.27.0</version>
