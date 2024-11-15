@@ -2445,7 +2445,9 @@ pub unsafe extern "C" fn afx_hook_source2_rs_load(this_ptr: *mut AfxHookSource2R
             match afx_load(&path, (*this_ptr).loader.clone(), context) {
                 Ok(promise_result) => {
 
-                    afx_hook_source2_rs_run_jobs(this_ptr); // push forward the promise.
+                    // push forward the promise:
+                    let task = context.run_jobs_async();
+                    pollster::block_on(task);
 
                     match promise_result.state() {
                         PromiseState::Pending => {
