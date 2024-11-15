@@ -4,6 +4,15 @@
 <changelog>
 
 
+<release>
+<name>AfxHookSource2</name>
+<version>0.28.1</version>
+<time>2024-11-15T15:20Z</time>
+<changes>
+<change type="fixed">Fixed #1009 CS2: mirv-script crashes game when loading modules.</change>
+</changes>
+</release>
+
 
 <release>
 <name>AfxHookSource2</name>
