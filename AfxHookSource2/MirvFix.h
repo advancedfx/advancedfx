@@ -7,23 +7,19 @@ extern CAfxImportsHook g_Import_SceneSystem;
 extern CAfxImportsHook g_Import_panorama;
 
 struct MirvFix {
-	struct Time {
-		bool firstCall = true;
-		double lastTime = 0.0;
-		double lastTimeResult = 0.0;
+    struct Time {
+        bool enabled = true;
+        float value = -1;
+        float oldValue = -1;
 
-		bool enabled = true;
-		float value = -1;
-		float oldValue = -1;
+        enum Mode {
+            AUTO = 0,
+            USER
+        }; 
 
-		enum Mode {
-			AUTO = 0,
-			USER
-		}; 
+        Mode mode = AUTO;
 
-		Mode mode = AUTO;
-
-	} time;
+    } time;
 };
 
 extern MirvFix g_MirvFix;

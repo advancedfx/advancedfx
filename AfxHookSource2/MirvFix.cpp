@@ -1,6 +1,12 @@
 #include "MirvFix.h"
 #include "RenderSystemDX11Hooks.h"
 
+#undef min
+#undef max
+
+#include <mutex>
+#include <algorithm>
+
 MirvFix g_MirvFix;
 
 typedef double (* Plat_FloatTime_t)(void);
@@ -14,32 +20,68 @@ CAfxImportFuncHook<Plat_FloatTime_t> g_Import_panorama_tier0_Plat_FloatTime("Pla
 CAfxImportDllHook g_Import_panorama_tier0("tier0.dll", CAfxImportDllHooks({ &g_Import_panorama_tier0_Plat_FloatTime }));
 CAfxImportsHook g_Import_panorama(CAfxImportsHooks({ &g_Import_panorama_tier0 }));
 
+extern int framecount_get(void);
+extern float frametime_get(void);
+
+std::mutex g_Plat_FloatTime_mutex;
+
 double new_cs2_tier0_Plat_FloatTime(void) {
-	double new_time = ((Plat_FloatTime_t)g_Import_SceneSystem_tier0_Plat_FloatTime.TrueFunc)(); 
-	double result_delta = new_time - g_MirvFix.time.lastTime;
-	double multiplier = 1.0f;
+    std::unique_lock<std::mutex> lock(g_Plat_FloatTime_mutex);
 
-	g_MirvFix.time.lastTime = new_time;
+    static bool firstCall = true;
+    static double lastTime = 0.0;
+	static double lastTimeResult = 0.0;
+    static int lastFrameCount = 0;
+	static double frameTime = 0.0;
 
-	if (g_MirvFix.time.firstCall) 
-		g_MirvFix.time.firstCall = false;
-	else 
+    double new_time = ((Plat_FloatTime_t)g_Import_SceneSystem_tier0_Plat_FloatTime.TrueFunc)(); 
+    double delta = new_time - lastTime;
+
+	bool auto_fps = MirvFix::Time::Mode::AUTO == g_MirvFix.time.mode && AfxStreams_IsRcording();
+
+	if (
+		g_MirvFix.time.enabled
+		&& ( auto_fps || MirvFix::Time::Mode::USER == g_MirvFix.time.mode ) 
+	) 
 	{
+		auto frame_count = framecount_get();
 		if (
-			( (MirvFix::Time::Mode::AUTO == g_MirvFix.time.mode && AfxStreams_IsRcording())
-			|| MirvFix::Time::Mode::USER == g_MirvFix.time.mode ) 
-			&& g_MirvFix.time.enabled
-		) 
-		{
-			if (0 < g_MirvFix.time.value) 
-				multiplier = 1.0f / g_MirvFix.time.value * 100;
-			else if (0 > g_MirvFix.time.value) 
-				multiplier = -g_MirvFix.time.value;
+			(auto_fps || 0 < g_MirvFix.time.value) // drive by FPS
+			&& 0 != frame_count // we are actually counting FPS and not in other awkward loading state
+		) {
+			// The code is a bit tricky, since we must not return a 0 delta time or panorama will go apeshit,
+			/// but also not progress too much or too few time.
+			if(frame_count != lastFrameCount) {
+				lastTimeResult += frameTime; // catch up
+				frameTime = auto_fps ? frametime_get() : 1.0f / g_MirvFix.time.value;
+				lastTime = new_time;
+				lastFrameCount = frame_count;
+			}
+			double ratio = std::min(std::max(0.0,frameTime ? delta / frameTime : 0.0), 1.0);
+			double useTime = ratio * frameTime * 0.6180340;
+			frameTime -= useTime;
+			lastTimeResult += useTime;
+		}
+		else if (0 > g_MirvFix.time.value) {
+			lastTimeResult += frameTime + delta * -g_MirvFix.time.value;
+			frameTime = 0;
+			lastTime = new_time;
+			lastFrameCount = 0;
+		}
+		else {
+			lastTimeResult += frameTime +delta;
+			frameTime = 0;
+			lastTime = new_time;
+			lastFrameCount = 0;
 		}
 	}
+	else {
+		lastTimeResult += delta;
+		lastTime = new_time;
+		lastFrameCount = 0;
+	}
 
-	g_MirvFix.time.lastTimeResult += result_delta * multiplier;
-	return g_MirvFix.time.lastTimeResult;
+    return lastTimeResult;
 }
 
 CON_COMMAND(mirv_fix, "Various fixes")

@@ -1269,12 +1269,6 @@ void CAfxStreams::RecordStart()
 			g_S2CamIO.SetCamExport(new CamExport(camFileName.c_str()));
 		}
 
-		if (MirvFix::Time::Mode::AUTO == g_MirvFix.time.mode)
-		{
-			g_MirvFix.time.oldValue = g_MirvFix.time.value;
-			g_MirvFix.time.value = m_StartHostFrameRateValue;
-		}
-
 		if(m_RecordScreen->Enabled) {
 			CreateCapture(
 				m_RecordScreen->Settings->CreateOutVideoStreamCreator(
@@ -1356,12 +1350,7 @@ void CAfxStreams::RecordEnd()
             handle_r_always_render_all_windows->m_Value.m_bValue = m_OldValue_r_always_render_all_windows;
         }
 
-		if (MirvFix::Time::Mode::AUTO == g_MirvFix.time.mode)
-		{
-			g_MirvFix.time.value = g_MirvFix.time.oldValue;
-		}
-
-		advancedfx::Message("done.\n");
+    	advancedfx::Message("done.\n");
 	}
 
 	m_Recording = false;
