@@ -8,6 +8,9 @@ import { makeEntityObject } from './mirv/utils.mjs';
 import { handleMessages } from './mirv/ws-events-handler.mjs';
 import { events } from './mirv/ws-events.mjs';
 {
+	BigInt.prototype.toJSON = function () {
+		return this.toString();
+	};
 	MirvJS.init({
 		host: 'localhost',
 		port: 31337,
