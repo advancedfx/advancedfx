@@ -88,7 +88,7 @@ export class MirvServer {
 							if (key === 'steamid') return BigInt(context.source).toString();
 							return value;
 						});
-						(msgObject.data as mirv.GameEvent).data = eventData;
+						(msgObject.data as mirv.GameEvent).data = JSON.stringify(eventData);
 					}
 				}
 
