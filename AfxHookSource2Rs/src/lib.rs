@@ -35,6 +35,7 @@ use boa_engine::{
     JsObject,
     JsString,
     JsValue,
+    JsBigInt,
     job::{
         NativeJob,
         FutureJob,
@@ -1978,7 +1979,7 @@ impl MirvEntityRef {
     fn get_steam_id(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
-                return Ok(JsValue::from(afx_get_entity_ref_steam_id(mirv.entity_ref)));
+                return Ok(JsValue::from(JsBigInt::from(afx_get_entity_ref_steam_id(mirv.entity_ref))));
             }
         }
         Err(advancedfx::js::errors::error_type())

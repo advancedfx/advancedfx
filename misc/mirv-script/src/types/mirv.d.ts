@@ -367,7 +367,7 @@ declare namespace mirv {
 		 * @remarks makes sense only on PlayerController.
 		 * @returns 64 bit steam id.
 		 */
-		getSteamId(): number;
+		getSteamId(): bigint;
 
 		/**
 		 * @remarks makes sense only on PlayerController.
