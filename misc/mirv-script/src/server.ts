@@ -75,6 +75,23 @@ export class MirvServer {
 			this.hlae.on('message', (data) => {
 				const msg = typeof data === 'string' ? data : data.toString();
 				const msgObject = JSON.parse(msg) as MirvMessage;
+
+				// example how to handle 64 bit numbers to not lose precision
+				// in can be done on client side instead of server, here it's just for example
+				if (msgObject.type === 'onGameEvent') {
+					const event = msgObject.data as mirv.GameEvent;
+					// https://cs2.poggu.me/dumped-data/game-events/#player_info
+					if (event.name === 'player_info') {
+						const eventData = JSON.parse(event.data, (key, value, context) => {
+							// you can use BigInt if you need to
+							// but because we have to send it over we use string
+							if (key === 'steamid') return BigInt(context.source).toString();
+							return value;
+						});
+						(msgObject.data as mirv.GameEvent).data = eventData;
+					}
+				}
+
 				console.log(msgObject);
 				if (Object.values(events).includes(msgObject.type)) {
 					if (msgObject.data) {
