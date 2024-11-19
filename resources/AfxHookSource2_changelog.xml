@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.29.0</version>
+<time>2024-11-19T06:40Z</time>
+<changes>
+<change type="fixed">Fixed mirv_time fix.</change>
+<change type="fixed">mirv-script changes / fixes, thanks @ChetdeJong</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.28.1</version>
 <time>2024-11-15T15:20Z</time>
 <changes>
