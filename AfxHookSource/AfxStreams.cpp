@@ -6992,7 +6992,7 @@ void CAfxStreams::Console_Record_Start2()
 					Tier0_Warning("Error: Could not start WAV audio recording!\n");
 			}
 			else {
-				g_VEngineClient->ExecuteClientCmd("startmovie " ADVNACEDFX_STARTMOIVE_WAV_KEY " wav");
+				g_VEngineClient->ExecuteClientCmd("startmovie " ADVANCEDFX_STARTMOVIE_WAV_KEY " wav");
 			}
 		}
 
