@@ -1643,7 +1643,7 @@ HANDLE WINAPI new_CreateFileW(
 	if (AfxStreams_IsRcording() || bWasRecording) {
 		std::wstring strFileName(lpFileName);
 		for (auto& c : strFileName) c = std::tolower(c);
-		if (StringEndsWithW(strFileName.c_str(), L"" ADVNACEDFX_STARTMOIVE_WAV_KEY ".wav")) {
+		if (StringEndsWithW(strFileName.c_str(), L"" ADVANCEDFX_STARTMOVIE_WAV_KEY ".wav")) {
 			// Detours our wav to our folder.			
 			bWasRecording = AfxStreams_IsRcording();
 			std::wstring newPath(AfxStreams_GetTakeDir());
@@ -1683,7 +1683,7 @@ new_GetFileAttributesExW(
 	if (AfxStreams_IsRcording()) {
 		std::wstring strFileName(lpFileName);
 		for (auto& c : strFileName) c = std::tolower(c);
-		if (StringEndsWithW(strFileName.c_str(), L"" ADVNACEDFX_STARTMOIVE_WAV_KEY ".wav")) {
+		if (StringEndsWithW(strFileName.c_str(), L"" ADVANCEDFX_STARTMOVIE_WAV_KEY ".wav")) {
 			// Detours our wav to our folder.			
 			std::wstring newPath(AfxStreams_GetTakeDir());
 			newPath.append(L"\\audio.wav");
