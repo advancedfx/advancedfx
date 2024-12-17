@@ -2656,7 +2656,7 @@ HANDLE WINAPI new_CreateFileW(
 		&& g_AfxStreams.IsRecording()) {
 		std::wstring strFileName(lpFileName);
 		for (auto& c : strFileName) c = std::tolower(c);
-		if (StringEndsWithW(strFileName.c_str(), L"" ADVNACEDFX_STARTMOIVE_WAV_KEY ".wav")) {
+		if (StringEndsWithW(strFileName.c_str(), L"" ADVANCEDFX_STARTMOVIE_WAV_KEY ".wav")) {
 			std::wstring newPath(g_AfxStreams.GetTakeDir());
 			newPath.append(L"\\audio.wav");
 			return g_Import_filesystem_stdio_KERNEL32_CreateFileW.TrueFunc(newPath.c_str(), dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
@@ -2678,7 +2678,7 @@ HANDLE WINAPI new_CreateFileA(
 		&& g_AfxStreams.IsRecording()) {
 		std::string strFileName(lpFileName);
 		for (auto& c : strFileName) c = std::tolower(c);
-		if (StringEndsWith(strFileName.c_str(),"" ADVNACEDFX_STARTMOIVE_WAV_KEY ".wav")) {
+		if (StringEndsWith(strFileName.c_str(),"" ADVANCEDFX_STARTMOVIE_WAV_KEY ".wav")) {
 			std::wstring newPath(g_AfxStreams.GetTakeDir());
 			newPath.append(L"\\audio.wav");
 			return CreateFileW(newPath.c_str(), dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
