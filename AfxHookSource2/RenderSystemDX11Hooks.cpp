@@ -1290,7 +1290,7 @@ void CAfxStreams::RecordStart()
 		{
             SOURCESDK::CS2::ConCommandHandle handle_startmovie = SOURCESDK::CS2::g_pCVar->FindCommand( "startmovie", false );
             if(handle_startmovie.IsValid()) {
-                const char * pszArgs[3] = {"startmovie",ADVNACEDFX_STARTMOIVE_WAV_KEY,"wav"};
+                const char * pszArgs[3] = {"startmovie",ADVANCEDFX_STARTMOVIE_WAV_KEY,"wav"};
                 SOURCESDK::CS2::g_pCVar->DispatchConCommand(handle_startmovie, SOURCESDK::CS2::CCommandContext(SOURCESDK::CS2::CT_FIRST_SPLITSCREEN_CLIENT,0), SOURCESDK::CS2::CCommand(3,pszArgs));
             } else advancedfx::Warning("AFXERROR: startmovie command not found, wav recording not possible.");
 		}
