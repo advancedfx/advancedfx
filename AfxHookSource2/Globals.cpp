@@ -146,4 +146,12 @@ namespace afxUtils {
 
 		return result;
 	}
+
+	uint32_t rgbaToHex(RGBA& color) {
+		return	((uint32_t)(color.a) << 24) | 
+				((uint32_t)(color.b) << 16) |
+				((uint32_t)(color.g) << 8)  | 
+				 (uint32_t)(color.r);
+	}
+
 };

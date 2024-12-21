@@ -219,6 +219,8 @@ target_sources(${PROJECT_NAME} PRIVATE
 
     main.cpp
 
+	MirvColors.h
+
 	MirvCommands.cpp
 	MirvCommands.h
 

@@ -14,6 +14,7 @@
 #include "Globals.h"
 #include "ClientEntitySystem.h"
 #include "SchemaSystem.h"
+#include "MirvColors.h" //
 
 currentGameCamera g_CurrentGameCamera;
 
@@ -281,30 +282,6 @@ int DeathMsgId::ResolveToUserId()
 	return Id.userId;
 };
 
-struct AfxBasicColor {
-	char* name;
-	uint32_t value;
-};
-
-std::vector<AfxBasicColor> afxBasicColors = {
-	// format alpha blue green red
-	{"red", 0xFF0000FF},
-	{"green", 0xFF00FF00},
-	{"blue", 0xFFFF0000},
-	{"yellow", 0xFF00FFFF},
-	{"cyan", 0xFFFFFF00},
-	{"magenta", 0xFFFF00FF},
-	{"white", 0xFFFFFFFF},
-	{"black", 0xFF000000},
-	{"90black", 0xE6000000},
-	{"75black", 0xBF000000},
-	{"50black", 0x80000000},
-	{"25black", 0x40000000},
-	{"10black", 0x19000000},
-	{"transparent", 0x00000000},
-
-};
-
 struct myPanoramaWrapper {
 // credit https://github.com/danielkrupinski/Osiris 
 // for engine and panel methods
@@ -347,7 +324,8 @@ struct myPanoramaWrapper {
 				{
 					use = true;
 					userValue = arg;
-					value = it->value;
+					value = afxUtils::rgbaToHex(it->value);
+
 					return true;
 				}
 			}
