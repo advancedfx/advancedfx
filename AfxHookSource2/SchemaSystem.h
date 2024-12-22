@@ -22,6 +22,17 @@ struct ClientDllOffsets_t {
 		ptrdiff_t m_iTeamNum = 0; // uint8
 	} C_BaseEntity;
 
+	struct C_BaseCSGrenadeProjectile {
+		ptrdiff_t m_bCanCreateGrenadeTrail = 0x11BD; // bool
+		ptrdiff_t m_nSnapshotTrajectoryEffectIndex = 0; // ParticleIndex_t
+		ptrdiff_t m_flTrajectoryTrailEffectCreationTime = 0; // float32
+
+	} C_BaseCSGrenadeProjectile;
+
+	struct C_SmokeGrenadeProjectile {
+		ptrdiff_t m_vSmokeColor = 0; // Vector
+	} C_SmokeGrenadeProjectile;
+
 	struct CBasePlayerController {
 		ptrdiff_t m_iszPlayerName = 0; // char[128]
 		ptrdiff_t m_steamID = 0; // uint64

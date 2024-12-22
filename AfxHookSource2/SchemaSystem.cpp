@@ -101,6 +101,10 @@ void initSchemaSystemOffsets()
 	bOk = bOk && getOffset(&g_clientDllOffsets.CPlayer_CameraServices.m_hViewEntity, "client.dll", "CPlayer_CameraServices", "m_hViewEntity");
 	bOk = bOk && getOffset(&g_clientDllOffsets.CPlayer_ObserverServices.m_iObserverMode, "client.dll", "CPlayer_ObserverServices", "m_iObserverMode");
 	bOk = bOk && getOffset(&g_clientDllOffsets.CPlayer_ObserverServices.m_hObserverTarget, "client.dll", "CPlayer_ObserverServices", "m_hObserverTarget");
+	bOk = bOk && getOffset(&g_clientDllOffsets.C_BaseCSGrenadeProjectile.m_bCanCreateGrenadeTrail, "client.dll", "C_BaseCSGrenadeProjectile", "m_bCanCreateGrenadeTrail");
+	bOk = bOk && getOffset(&g_clientDllOffsets.C_BaseCSGrenadeProjectile.m_nSnapshotTrajectoryEffectIndex, "client.dll", "C_BaseCSGrenadeProjectile", "m_nSnapshotTrajectoryEffectIndex");
+	bOk = bOk && getOffset(&g_clientDllOffsets.C_BaseCSGrenadeProjectile.m_flTrajectoryTrailEffectCreationTime, "client.dll", "C_BaseCSGrenadeProjectile", "m_flTrajectoryTrailEffectCreationTime");
+	bOk = bOk && getOffset(&g_clientDllOffsets.C_SmokeGrenadeProjectile.m_vSmokeColor, "client.dll", "C_SmokeGrenadeProjectile", "m_vSmokeColor");
 
 	if (!bOk) ErrorBox(MkErrStr(__FILE__, __LINE__));	
 }
