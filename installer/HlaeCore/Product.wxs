@@ -8,7 +8,7 @@
 	-->
 	<Product
     Id='*'
-    Version='2.177.0'
+    Version='2.178.0'
     Name="!(loc.ApplicationName)"
     Language="1033"
     Manufacturer="!(loc.Manufacturer)"

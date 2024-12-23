@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.30.0</version>
+<time>2024-12-23T06:45Z</time>
+<changes>
+<change type="added">Added mirv_colors by / thanks to @ChetdeJong to complement mirv_deathmsg colors: set custom colors to glow, teamid_overhead (player info over heads), smokes and grenades trails (also allows to set width of trails). The game doesn't update these values instantly: Glow updates when switching spectate mode or when changing spectated player. Same applies to teamid_overhead, but it can also be updated by switching sv_teamid_overhead off/on. Trails color applies only on it's creation, same for smokes.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.29.0</version>
 <time>2024-11-19T06:40Z</time>
 <changes>
