@@ -45,7 +45,10 @@ add_dependencies(${PROJECT_NAME}
     ilmbase_build
     openexr_build
     AfxHookSource2Shaders
+    AfxHookSource2Snippets
 )
+
+SET(AFXHOOKSOURCE2SNIPPETS_OUTPUTS ${AFXHOOKSOURCE2SNIPPETS_OUTPUTS} PARENT_SCOPE)
 
 add_definitions(-DGAME_CS2)
 

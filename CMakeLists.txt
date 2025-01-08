@@ -47,7 +47,7 @@ if (NOT ${PROJECT_NAME}-MultiBuild)
             -DPROJECT_NAME_MULTI=${PROJECT_NAME}-${arch}
             "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-${arch}-install"
         BUILD_COMMAND
-            ${CMAKE_COMMAND} --build . --config $<CONFIG> -- -r
+            ${CMAKE_COMMAND} --build . --config $<CONFIG> -- ${BUILD_TOOL_OPTIONS}
         INSTALL_COMMAND
             ${CMAKE_COMMAND} --install . --config $<CONFIG>
         BUILD_ALWAYS true
@@ -65,14 +65,6 @@ if (NOT ${PROJECT_NAME}-MultiBuild)
 	    DEPENDS advancedfx-Win32 advancedfx-x64
     )
 
-	add_custom_command(
-		TARGET advancedfx
-		POST_BUILD
-		COMMAND npm run build-snippets
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/misc/mirv-script
-		COMMENT "Transpiling mirv-script snippets"
-	)
-
     install(
         CODE
         "
@@ -87,7 +79,7 @@ if (NOT ${PROJECT_NAME}-MultiBuild)
         execute_process( WORKING_DIRECTORY \"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-x64-install\" COMMAND \"${CMAKE_COMMAND}\" -E copy_directory \"bin\" \"${CMAKE_INSTALL_PREFIX}/bin\" )
         execute_process( WORKING_DIRECTORY \"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-x64-install\" COMMAND \"${CMAKE_COMMAND}\" -E copy_directory \"pdb\" \"${CMAKE_INSTALL_PREFIX}/pdb\" )
 
-        # Copy resources:
+        # Copy resources:        
         execute_process( WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}\" COMMAND \"${CMAKE_SOURCE_DIR}/copy_resources_release.bat\" \"${CMAKE_INSTALL_PREFIX}/bin\" )
 
         # Update translations from l10n repo (e.g. required for installer):
@@ -159,6 +151,7 @@ elseif(CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
     add_subdirectory("deps/release/openexr")
     add_subdirectory("ShaderBuilder")
     add_subdirectory("AfxHookSource2")
+    add_subdirectory("misc/mirv-script/src/snippets")
 
     add_custom_target(advancedfx ALL
 	    DEPENDS AfxHookSource2
@@ -249,6 +242,12 @@ elseif(CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
         FILES
             "${AfxHookSource2_BINARY_DIR}/$<CONFIG>/AfxHookSource2.pdb"
         DESTINATION "pdb/x64"
-    )    
+    )
+
+    install(
+        FILES
+            ${AFXHOOKSOURCE2SNIPPETS_OUTPUTS}
+        DESTINATION "bin/resources/AfxHookSource2/snippets"
+    )
 endif()
 

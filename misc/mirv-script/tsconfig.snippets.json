@@ -1,9 +1,0 @@
-{
-	"extends": "./tsconfig.scripts.json",
-	"compilerOptions": {
-		"outDir": "dist/snippets",
-		"module": "ESNext",
-		"moduleResolution": "Bundler"
-	},
-	"include": ["src/snippets/*", "src/types/*"]
-}

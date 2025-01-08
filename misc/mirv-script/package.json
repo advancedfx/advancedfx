@@ -12,7 +12,7 @@
 	"scripts": {
 		"build": "tsc --project tsconfig.mirv.json",
 		"build-scripts": "tsc --project tsconfig.scripts.json",
-		"build-snippets": "npm install && tsc --project tsconfig.snippets.json",
+		"tsc": "tsc",
 		"server": "npm run build-scripts && node dist/node/server.js",
 		"client": "npm run build-scripts && node dist/node/client.js"
 	},
