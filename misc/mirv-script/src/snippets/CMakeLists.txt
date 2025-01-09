@@ -39,7 +39,7 @@ add_custom_command(
     COMMAND npm install
     DEPENDS "${AfxHookSource2Snippets_SOURCE_DIR}/../../package.json"
     WORKING_DIRECTORY "${AfxHookSource2Snippets_SOURCE_DIR}/../../"
-    USES_TERMINAL VERBATIM
+    VERBATIM
 )
 
 add_custom_target(
