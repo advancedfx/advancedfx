@@ -17,7 +17,6 @@ boa_engine = "0.19.0"
 boa_gc = "0.19.0"
 async-tungstenite = { version = "0.26.2", features = ["async-std-runtime"] }
 futures = "0.3.30"
-pollster = "0.3.0"
 
 [profile.release]
 strip = true

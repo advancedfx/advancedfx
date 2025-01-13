@@ -1203,7 +1203,7 @@ fn mirv_run_jobs(_this: &JsValue, _args: &[JsValue], context: &mut Context) -> J
 
 fn mirv_run_jobs_async(_this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
     let task = context.run_jobs_async();
-    pollster::block_on(task);    
+    futures::executor::block_on(task);    
     Ok(JsValue::Undefined)
 }
 
@@ -2398,7 +2398,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_new<'a>() -> * mut AfxHookSource2Rs
 pub unsafe extern "C" fn afx_hook_source2_rs_run_jobs(this_ptr: *mut AfxHookSource2Rs) {
     let context = &mut (*(*this_ptr).context_wrapper).borrow_mut().context;
     let task = context.run_jobs_async();
-    pollster::block_on(task);
+    futures::executor::block_on(task);
 }
 
 #[no_mangle]
@@ -2448,7 +2448,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_load(this_ptr: *mut AfxHookSource2R
 
                     // push forward the promise:
                     let task = context.run_jobs_async();
-                    pollster::block_on(task);
+                    futures::executor::block_on(task);
 
                     match promise_result.state() {
                         PromiseState::Pending => {
