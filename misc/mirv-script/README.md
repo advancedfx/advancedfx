@@ -6,6 +6,12 @@ Basically, it allows to run javascript scripts in boajs, which is ECMAScript eng
 
 In game you can use `mirv_script_load` to load a script from a file and `mirv_script_exec` to execute inline.
 
+# Security warning
+
+**It is very unsafe to execute _untrusted_ scripts**.
+
+The scripting is meant to extend HLAE, as such scripts can have a huge degree of control over your PC.
+
 # Installation
 
 1. Clone repo
