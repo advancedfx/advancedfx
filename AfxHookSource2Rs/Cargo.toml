@@ -13,10 +13,10 @@ repository = "https://github.com/advancedfx/advancedfx"
 edition = "2021"
 
 [dependencies]
-boa_engine = "0.19.0"
-boa_gc = "0.19.0"
-async-tungstenite = { version = "0.26.2", features = ["async-std-runtime"] }
-futures = "0.3.30"
+boa_engine = "0.20.0"
+boa_gc = "0.20.0"
+async-tungstenite = { version = "0.28.2", features = ["async-std-runtime"] }
+futures = "0.3.31"
 
 [profile.release]
 strip = true
