@@ -593,11 +593,10 @@ impl Campath {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Ok(value) = args[0].to_uint8(context) {
-                        if let Ok(e_value) = advancedfx::campath::DoubleInterp::try_from(value) {
-                            suppressor.suppress(&campath);
-                            campath.native.set_position_interp(e_value);
-                            return Ok(JsValue::undefined());
-                        }
+                        let Ok(e_value) = advancedfx::campath::DoubleInterp::try_from(value);
+                        suppressor.suppress(&campath);
+                        campath.native.set_position_interp(e_value);
+                        return Ok(JsValue::undefined());
                     }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
@@ -626,11 +625,10 @@ impl Campath {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Ok(value) = args[0].to_uint8(context) {
-                        if let Ok(e_value) = advancedfx::campath::QuaternionInterp::try_from(value) {
-                            suppressor.suppress(&campath);
-                            campath.native.set_rotation_interp(e_value);
-                            return Ok(JsValue::undefined());
-                        }
+                        let Ok(e_value) = advancedfx::campath::QuaternionInterp::try_from(value);
+                        suppressor.suppress(&campath);
+                        campath.native.set_rotation_interp(e_value);
+                        return Ok(JsValue::undefined());
                     }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
@@ -659,11 +657,10 @@ impl Campath {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
                     if let Ok(value) = args[0].to_uint8(context) {
-                        if let Ok(e_value) = advancedfx::campath::DoubleInterp::try_from(value) {
-                            suppressor.suppress(&campath);
-                            campath.native.set_fov_interp(e_value);
-                            return Ok(JsValue::undefined());
-                        }
+                        let Ok(e_value) = advancedfx::campath::DoubleInterp::try_from(value);
+                        suppressor.suppress(&campath);
+                        campath.native.set_fov_interp(e_value);
+                        return Ok(JsValue::undefined());
                     }
                 }
                 return Err(advancedfx::js::errors::error_arguments())
