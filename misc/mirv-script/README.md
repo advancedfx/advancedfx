@@ -13,14 +13,14 @@ In game you can use `mirv_script_load` to load a script from a file and `mirv_sc
 3. Install dependencies with `npm i`
 4. Change server options in `server.ts`, `client.ts` and `index.mts` if needed
 5. Transpile scripts:
-    * mirv files with `npm run build`
-    * node files with `npm run build-scripts`
-    * snippets with `npm run build-snippets`
+    - mirv files with `npm run build`
+    - node files with `npm run build-scripts`
 
 # Run example
 
 1. Run server with `npm run server`
 2. In game execute `mirv_script_load "./dist/index.mjs"` (has to be absolute path).
+   Attention: Use an HLAE AfxHookSource2 Release build only, a Debug build will crash ( https://github.com/boa-dev/boa/issues/4089 ).
 3. Adjust paths in `client.ts` test messages
 4. Run test messages with `npm run client`
 

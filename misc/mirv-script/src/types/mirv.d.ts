@@ -64,7 +64,7 @@ declare namespace mirv {
 	function exec(command: string): void;
 
 	/**
-	 * Load a JavaScript module (.mjs).
+	 * Load a JavaScript module (.mjs) or execute script (.js).
 	 * @param filePath - Full path to file to load.
 	 *
 	 * @remarks

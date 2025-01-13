@@ -2118,23 +2118,47 @@ fn mirv_get_on_remove_entity(this: &JsValue, _args: &[JsValue], _context: &mut C
     Err(advancedfx::js::errors::error_type())
 }
 
-fn afx_load(file_path: & Path, afx_loader: Rc<AfxSimpleModuleLoader>, context: &mut Context) -> Result<JsPromise,JsError> {
-    match boa_engine::Source::from_filepath(file_path) {
-        Ok(js_source) => {
-            match Module::parse(js_source, None, context) {
-                Ok(module) => {
-                    afx_loader.insert(file_path.to_path_buf(), module.clone());
-                    return Ok(module.load_link_evaluate(context));
+fn afx_load(file_path: &JsString, afx_loader: Rc<AfxSimpleModuleLoader>, context: &mut Context) -> Result<JsPromise,JsError> {
+
+    let referrer = Referrer::Realm(context.realm().clone());  
+
+    if let Ok(path) = resolve_module_specifier(None, &file_path, referrer.path(), context) {
+        match boa_engine::Source::from_filepath(&path) {
+            Ok(js_source) => {
+                if let Some(ext) = path.extension() {
+                    if ext == "mjs" {
+                        match Module::parse(js_source, None, context) {
+                            Ok(module) => {
+                                afx_loader.insert(path, module.clone());
+                                return Ok(module.load_link_evaluate(context));
+                            }
+                            Err(e) => {
+                                return Err(e);
+                            }
+                        }
+                    }
                 }
-                Err(e) => {
-                    return Err(e);
-                }
+
+                match context.eval(js_source) {
+                    Ok(res) => {
+                        return Ok(JsPromise::resolve(res,context))
+                    }
+                    Err(e) => {
+                        return Ok(JsPromise::reject(e, context));
+                    }
+                }                
+            }
+            Err(err) => {
+                let err_path = file_path.to_std_string_lossy();
+                return Err(JsNativeError::typ()
+                .with_message(format!("could not open file `{err_path}`"))
+                .with_cause(JsError::from_opaque(js_string!(err.to_string()).into())).into());
             }
         }
-        Err(e) => {
-            return Err(JsNativeError::error().with_message(e.to_string()).into());
-        }
     }
+    let err_path = file_path.to_std_string_lossy();
+    return Err(JsNativeError::typ()
+    .with_message(format!("could not resolve path `{err_path}`")).into());  
 }
 
 fn mirv_load(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -2142,15 +2166,12 @@ fn mirv_load(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResul
         if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
             if 1 == args.len() {
                 if let Some(js_file_path) = args[0].as_string() {
-                    if let Ok(str_file_path) = js_file_path.to_std_string() {
-                        let path = std::path::Path::new(str_file_path.as_str());
-                        match afx_load(&path, mirv.loader.clone(), context) {
-                            Ok(js_promise) => {
-                                return Ok(JsValue::Object(JsObject::from(js_promise)));
-                            }
-                            Err(e) => {
-                                return Err(e);
-                            }
+                    match afx_load(&js_file_path, mirv.loader.clone(), context) {
+                        Ok(js_promise) => {
+                            return Ok(JsValue::Object(JsObject::from(js_promise)));
+                        }
+                        Err(e) => {
+                            return Err(e);
                         }
                     }
                 }
@@ -2440,86 +2461,52 @@ pub unsafe extern "C" fn afx_hook_source2_rs_execute(this_ptr: *mut AfxHookSourc
 pub unsafe extern "C" fn afx_hook_source2_rs_load(this_ptr: *mut AfxHookSource2Rs, file_path: *const c_char) {
     let context = &mut (*(*this_ptr).context_wrapper).borrow_mut().context;
     let str_file_path = CStr::from_ptr(file_path).to_str().unwrap();
-    let path = std::path::Path::new(str_file_path);
-    if let Some(ext) = path.extension() {
-        if ext == "mjs" {
-            match afx_load(&path, (*this_ptr).loader.clone(), context) {
-                Ok(promise_result) => {
+    let js_str_path = js_string!(str_file_path);
+    match afx_load(&js_str_path, (*this_ptr).loader.clone(), context) {
+        Ok(promise_result) => {
 
-                    // push forward the promise:
-                    let task = context.run_jobs_async();
-                    futures::executor::block_on(task);
+            // push forward the promise:
+            let task = context.run_jobs_async();
+            futures::executor::block_on(task);
 
-                    match promise_result.state() {
-                        PromiseState::Pending => {
-                            afx_warning("module didn't execute!\n".to_string()); 
-                        }
-                        PromiseState::Fulfilled(v) => {
-                            if let Ok(js_str) = v.to_string(context) {
-                                let mut str = js_str.to_std_string_escaped();
-                                str.push_str("\n");
-                                afx_message(str);
-                            }
-                        }
-                        PromiseState::Rejected(err) => {
-                            if let Ok(e) = JsError::from_opaque(err).try_native(context) {
-                                use std::fmt::Write as _;
-                                let mut s = String::new();
-                                if let Some(source) = e.source() {
-                                    write!(&mut s, "Rejected with {} in {}\n",e,source).unwrap();
-                                } else {
-                                    write!(&mut s, "Rejected with {}\n",e).unwrap();
-                                }
-                                afx_warning(s);                           
-                            } else {
-                                afx_warning("module promise rejected!\n".to_string()); 
-                            }
-                        }
-                    }
-                    return;
+            match promise_result.state() {
+                PromiseState::Pending => {
+                    afx_warning("module didn't execute!\n".to_string()); 
                 }
-                Err(e) => {
-                    use std::fmt::Write as _;
-                    let mut s = String::new();
-                    if let Some(source) = e.source() {
-                        write!(&mut s, "Uncaught {} in {}\n",e,source).unwrap();
-                    } else {
-                        write!(&mut s, "Uncaught {}\n",e).unwrap();
-                    }
-                    afx_warning(s);
-                }                
-            }
-            return;
-        }
-    }
-    match boa_engine::Source::from_filepath(path) {
-        Ok(js_source) => {
-            match context.eval(js_source) {
-                Ok(res) => {
-                    if let Ok(js_str) = res.to_string(context) {
+                PromiseState::Fulfilled(v) => {
+                    if let Ok(js_str) = v.to_string(context) {
                         let mut str = js_str.to_std_string_escaped();
                         str.push_str("\n");
                         afx_message(str);
                     }
                 }
-                Err(e) => {
-                    use std::fmt::Write as _;
-                    let mut s = String::new();
-                    if let Some(source) = e.source() {
-                        write!(&mut s, "Uncaught {} in {}\n",e,source).unwrap();
+                PromiseState::Rejected(err) => {
+                    if let Ok(e) = JsError::from_opaque(err).try_native(context) {
+                        use std::fmt::Write as _;
+                        let mut s = String::new();
+                        if let Some(source) = e.source() {
+                            write!(&mut s, "Rejected with {} in {}\n",e,source).unwrap();
+                        } else {
+                            write!(&mut s, "Rejected with {}\n",e).unwrap();
+                        }
+                        afx_warning(s);                           
                     } else {
-                        write!(&mut s, "Uncaught {}\n",e).unwrap();
+                        afx_warning("module promise rejected!\n".to_string()); 
                     }
-                    afx_warning(s);
                 }
-            };
+            }
+            return;
         }
         Err(e) => {
             use std::fmt::Write as _;
             let mut s = String::new();
-            write!(&mut s, "Uncaught {e}\n").unwrap();
+            if let Some(source) = e.source() {
+                write!(&mut s, "Uncaught {} in {}\n",e,source).unwrap();
+            } else {
+                write!(&mut s, "Uncaught {}\n",e).unwrap();
+            }
             afx_warning(s);
-        }
+        }                
     }
 }
 
