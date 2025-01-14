@@ -40,10 +40,9 @@ import { events } from './mirv/ws-events.mjs';
 							onRemoveEntity
 						});
 					} catch (err) {
-						mirv.warning(
-							'onClientFrameStageNotify: Error while handling incoming message:' +
-								String(err) +
-								'\n'
+						console.error(
+							'onClientFrameStageNotify: Error while handling incoming message:',
+							err
 						);
 					}
 				}
@@ -67,7 +66,7 @@ import { events } from './mirv/ws-events.mjs';
 	mirv.onRemoveEntity = undefined;
 	// we define it here separately to assign (enable) later on demand
 	const onCViewRenderSetupView: mirv.OnCViewRenderSetupView = (e) => {
-		if (debug) mirv.message('onCViewRenderSetupView\n');
+		if (debug) console.debug('onCViewRenderSetupView');
 		// pass data to hooks
 		const hooksResult = MirvJS.hooks.onCViewRenderSetupView.runHooks(e);
 		if (hooksResult) {
@@ -85,9 +84,7 @@ import { events } from './mirv/ws-events.mjs';
 
 				// we could flush and then wait for a reply here to set a view instantly, but don't understimate network round-trip time!
 			} catch (err) {
-				mirv.warning(
-					'onCViewRenderSetupView: Error while sending message:' + String(err) + '\n'
-				);
+				console.error('onCViewRenderSetupView: Error while sending message:', err);
 			}
 		}
 		if (MirvJS.setView !== null) {
@@ -96,7 +93,7 @@ import { events } from './mirv/ws-events.mjs';
 	};
 
 	const onGameEvent: mirv.OnGameEvent = (e) => {
-		if (debug) mirv.message('onGameEvent\n');
+		if (debug) console.debug('onGameEvent');
 		// example remove hook, dont do it like this though since it will trigger every time
 		if (e.name === 'player_death') {
 			MirvJS.hooks.onGameEvent.remove(firstOnGameEventHook);
@@ -118,13 +115,13 @@ import { events } from './mirv/ws-events.mjs';
 					})
 				);
 			} catch (err) {
-				mirv.warning('onGameEvent: Error while sending message:' + String(err) + '\n');
+				console.error('onGameEvent: Error while sending message:', err);
 			}
 		}
 	};
 
 	const onAddEntity: mirv.OnEntityEvent = (e, h) => {
-		if (debug) mirv.message('onAddEntity\n');
+		if (debug) console.debug('onAddEntity');
 		const hooksResult = MirvJS.hooks.onAddEntity.runHooks(e, h);
 		if (hooksResult !== undefined) {
 			const [entity, handle] = hooksResult;
@@ -138,13 +135,13 @@ import { events } from './mirv/ws-events.mjs';
 					})
 				);
 			} catch (err) {
-				mirv.warning('onAddEntity: Error while sending message:' + String(err) + '\n');
+				console.error('onAddEntity: Error while sending message:', err);
 			}
 		}
 	};
 
 	const onRemoveEntity: mirv.OnEntityEvent = (e, h) => {
-		if (debug) mirv.message('onRemoveEntity\n');
+		if (debug) console.debug('onRemoveEntity');
 		const hooksResult = MirvJS.hooks.onAddEntity.runHooks(e, h);
 		if (hooksResult !== undefined) {
 			const [entity, handle] = hooksResult;
@@ -158,7 +155,7 @@ import { events } from './mirv/ws-events.mjs';
 					})
 				);
 			} catch (err) {
-				mirv.warning('onRemoveEntity: Error while sending message:' + String(err) + '\n');
+				console.error('onRemoveEntity: Error while sending message:', err);
 			}
 		}
 	};

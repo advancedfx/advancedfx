@@ -171,7 +171,7 @@ export const handleMessages = (
 		case 'loadModule':
 			if (typeof messageObj.data !== 'string') {
 				MirvJS.sendWarning('TypeError in loadModule: expected string');
-				mirv.warning('TypeError in loadModule: expected string');
+				console.warn('TypeError in loadModule: expected string');
 				break;
 			}
 			mirv.load(messageObj.data);

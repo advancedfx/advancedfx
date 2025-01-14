@@ -88,13 +88,12 @@ export class MirvJS {
 	 *
 	 */
 	static connect() {
-		// Restore websockett connection:
+		// Restore websocket connection:
 		if (this._wsConnection === null || this._wsConnection.hasException()) {
 			if (this._wsConnection !== null) {
-				mirv.warning(
-					'onClientFrameStageNotify: wsConnection failed: ' +
-						String(this._wsConnection.getException()) +
-						'\n'
+				console.warn(
+					'onClientFrameStageNotify: wsConnection failed:',
+					this._wsConnection.getException()
 				);
 				this._wsConnection.close();
 				this._wsConnection = null;
@@ -102,9 +101,7 @@ export class MirvJS {
 			}
 			// Every 64 ticks we try to restore the connection:
 			if (this._wsEnable && this._tickCount % 64 === 0) {
-				mirv.message(
-					'onClientFrameStageNotify: making new wsConnection: ' + this._wsAddress + '\n'
-				);
+				console.info('onClientFrameStageNotify: making new wsConnection:', this._wsAddress);
 				this._wsConnection = new WsConnection({
 					address: this._wsAddress
 				});
