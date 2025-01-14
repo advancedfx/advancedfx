@@ -56,6 +56,11 @@ use boa_engine::{
     property::Attribute,
     Source
 };
+use boa_runtime::{
+    Console,
+    ConsoleState,
+    Logger
+};
 
 use async_tungstenite::async_std::ConnectStream;
 use async_tungstenite::tungstenite::protocol::Message;
@@ -942,6 +947,42 @@ fn afx_is_demo_paused() -> bool {
         result = afx_hook_source2_is_demo_paused();
     }
     return result;
+}
+
+
+#[derive(Debug, Trace, Finalize)]
+pub struct AfxLogger;
+
+impl Logger for AfxLogger {
+    #[inline]
+    fn log(&self, msg: String, state: &ConsoleState, _context: &mut Context) -> JsResult<()> {
+        let mut s = String::new();
+        let indent = state.indent();
+        use std::fmt::Write as _;
+        writeln!(&mut s, "{msg:>indent$}").map_err(JsError::from_rust)?;
+        afx_message(s);
+        Ok(())
+    }
+
+    #[inline]
+    fn info(&self, msg: String, state: &ConsoleState, context: &mut Context) -> JsResult<()> {
+        self.log(msg, state, context)
+    }
+
+    #[inline]
+    fn warn(&self, msg: String, state: &ConsoleState, _context: &mut Context) -> JsResult<()> {
+        let mut s = String::new();
+        let indent = state.indent();
+        use std::fmt::Write as _;
+        writeln!(&mut s, "{msg:>indent$}").map_err(JsError::from_rust)?;
+        afx_warning(s);
+        Ok(())
+    }
+
+    #[inline]
+    fn error(&self, msg: String, state: &ConsoleState, context: &mut Context) -> JsResult<()> {
+        self.warn(msg, state, context)
+    }
 }
 
 fn mirv_message(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -2222,6 +2263,11 @@ impl AfxHookSource2Rs {
             .job_queue(AsyncJobQueue::new().into())
             .module_loader(loader.clone())
             .build().unwrap();
+
+        let console = Console::init_with_logger(&mut context, AfxLogger);
+        context
+            .register_global_property(Console::NAME, console, Attribute::all())
+            .expect("the console builtin shouldn't exist"); 
 
         advancedfx::js::math::Vector3::add_to_context(&mut context);
         advancedfx::js::math::QEulerAngles::add_to_context(&mut context);
