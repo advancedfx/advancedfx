@@ -278,9 +278,9 @@ impl ConCommand {
                         use std::fmt::Write as _;
                         let mut s = String::new();
                         if let Some(source) = e.source() {
-                            write!(&mut s, "Uncaught {} in {}\n",e,source).unwrap();
+                            writeln!(&mut s, "Uncaught {} in {}",e,source).unwrap();
                         } else {
-                            write!(&mut s, "Uncaught {}\n",e).unwrap();
+                            writeln!(&mut s, "Uncaught {}",e).unwrap();
                         }
                         afx_warning(s);
                     }
@@ -1624,7 +1624,7 @@ fn mirv_connect_async(this: &JsValue, args: &[JsValue], context: &mut Context) -
                     Err(e) => {
                         use std::fmt::Write as _;
                         let mut s = String::new();
-                        write!(&mut s, "Uncaught {e}\n").unwrap();
+                        writeln!(&mut s, "Uncaught {e}").unwrap();
                         return Err(JsNativeError::error().with_message(s).into());
                     }
                 }
@@ -2494,9 +2494,9 @@ pub unsafe extern "C" fn afx_hook_source2_rs_execute(this_ptr: *mut AfxHookSourc
             use std::fmt::Write as _;
             let mut s = String::new();
             if let Some(source) = e.source() {
-                write!(&mut s, "Uncaught {} in {}\n",e,source).unwrap();
+                writeln!(&mut s, "Uncaught {} in {}",e,source).unwrap();
             } else {
-                write!(&mut s, "Uncaught {}\n",e).unwrap();
+                writeln!(&mut s, "Uncaught {}",e).unwrap();
             }
             afx_warning(s);
         }
@@ -2531,9 +2531,9 @@ pub unsafe extern "C" fn afx_hook_source2_rs_load(this_ptr: *mut AfxHookSource2R
                         use std::fmt::Write as _;
                         let mut s = String::new();
                         if let Some(source) = e.source() {
-                            write!(&mut s, "Rejected with {} in {}\n",e,source).unwrap();
+                            writeln(&mut s, "Rejected with {} in {}",e,source).unwrap();
                         } else {
-                            write!(&mut s, "Rejected with {}\n",e).unwrap();
+                            writeln!(&mut s, "Rejected with {}",e).unwrap();
                         }
                         afx_warning(s);                           
                     } else {
@@ -2547,9 +2547,9 @@ pub unsafe extern "C" fn afx_hook_source2_rs_load(this_ptr: *mut AfxHookSource2R
             use std::fmt::Write as _;
             let mut s = String::new();
             if let Some(source) = e.source() {
-                write!(&mut s, "Uncaught {} in {}\n",e,source).unwrap();
+                writeln!(&mut s, "Uncaught {} in {}",e,source).unwrap();
             } else {
-                write!(&mut s, "Uncaught {}\n",e).unwrap();
+                writeln!(&mut s, "Uncaught {}",e).unwrap();
             }
             afx_warning(s);
         }                
@@ -2577,7 +2577,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_record_start(this_ptr: *mut AfxH
         if let Err(e) = event_clone.call(&JsValue::undefined(), &[JsValue::Object(js_object)], context) {
             use std::fmt::Write as _;
             let mut s = String::new();
-            write!(&mut s, "Uncaught {e}\n").unwrap();
+            writeln!(&mut s, "Uncaught {e}").unwrap();
             afx_warning(s);
         }
     }
@@ -2593,7 +2593,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_record_end(this_ptr: *mut AfxHoo
         if let Err(e) = event_clone.call(&JsValue::undefined(), &[], context) {
             use std::fmt::Write as _;
             let mut s = String::new();
-            write!(&mut s, "Uncaught {e}\n").unwrap();
+            writeln!(&mut s, "Uncaught {e}").unwrap();
             afx_warning(s);
         }
     }
@@ -2619,7 +2619,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_game_event(this_ptr: *mut AfxHoo
         if let Err(e) = event_clone.call(&JsValue::undefined(), &[JsValue::Object(js_object)], context) {
             use std::fmt::Write as _;
             let mut s = String::new();
-            write!(&mut s, "Uncaught {e}\n").unwrap();
+            writeln!(&mut s, "Uncaught {e}").unwrap();
             afx_warning(s);
         }
     }
@@ -2726,7 +2726,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_c_view_render_setup_view(this_pt
             Err(e) =>  {
                 use std::fmt::Write as _;
                 let mut s = String::new();
-                write!(&mut s, "Uncaught {e}\n").unwrap();
+                writeln!(&mut s, "Uncaught {e}").unwrap();
                 afx_warning(s);
             }
         }
@@ -2749,7 +2749,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_client_frame_stage_notify(this_p
         if let Err(e) = event_clone.call(&JsValue::undefined(), &[JsValue::Object(js_object)], context) {
             use std::fmt::Write as _;
             let mut s = String::new();
-            write!(&mut s, "Uncaught {e}\n").unwrap();
+            writeln!(&mut s, "Uncaught {e}").unwrap();
             afx_warning(s);
         }
     }
@@ -2767,7 +2767,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_add_entity(this_ptr: *mut AfxHoo
         if let Err(e) = event_clone.call(&JsValue::undefined(), &[JsValue::Object(entity_ref),JsValue::Integer(handle)], context) {
             use std::fmt::Write as _;
             let mut s = String::new();
-            write!(&mut s, "Uncaught {e}\n").unwrap();
+            writeln!(&mut s, "Uncaught {e}").unwrap();
             afx_warning(s);
         }
     }
@@ -2785,7 +2785,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_remove_entity(this_ptr: *mut Afx
         if let Err(e) = event_clone.call(&JsValue::undefined(), &[JsValue::Object(entity_ref),JsValue::Integer(handle)], context) {
             use std::fmt::Write as _;
             let mut s = String::new();
-            write!(&mut s, "Uncaught {e}\n").unwrap();
+            writeln!(&mut s, "Uncaught {e}").unwrap();
             afx_warning(s);
         }
     }
