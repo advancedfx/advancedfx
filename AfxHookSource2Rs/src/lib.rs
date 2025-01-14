@@ -2531,7 +2531,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_load(this_ptr: *mut AfxHookSource2R
                         use std::fmt::Write as _;
                         let mut s = String::new();
                         if let Some(source) = e.source() {
-                            writeln(&mut s, "Rejected with {} in {}",e,source).unwrap();
+                            writeln!(&mut s, "Rejected with {} in {}",e,source).unwrap();
                         } else {
                             writeln!(&mut s, "Rejected with {}",e).unwrap();
                         }
@@ -2790,33 +2790,3 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_remove_entity(this_ptr: *mut Afx
         }
     }
 }
-
-/*
-fn main() {
-    use boa_engine::{Context, Source};
-
-    let js_code = r#"
-        let two = 1 + 1;
-        let definitely_not_four = two + "2";
-    
-        definitely_not_four
-    "#;
-    
-    // Instantiate the execution context
-    let mut context = Context::default();
-    
-    // Parse the source code
-    match context.eval(Source::from_bytes(js_code)) {
-        Ok(res) => {
-            println!(
-                "{}",
-                res.to_string(&mut context).unwrap().to_std_string_escaped()
-            );
-        }
-        Err(e) => {
-            // Pretty print the error
-            eprintln!("Uncaught {e}");
-        }
-    };
-}
-*/
