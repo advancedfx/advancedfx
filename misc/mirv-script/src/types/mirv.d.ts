@@ -45,6 +45,8 @@ declare namespace mirv {
 	 */
 	function connect_async(address: string): Promise<{ in: WsIn; out: WsOut }>;
 
+	function trace(msg: string): Array<string>;
+
 	/**
 	 * Write a warning to the game console.
 	 * @param msg
