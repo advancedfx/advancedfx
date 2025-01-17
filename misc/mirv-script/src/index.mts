@@ -44,6 +44,7 @@ import { events } from './mirv/ws-events.mjs';
 							'onClientFrameStageNotify: Error while handling incoming message:',
 							err
 						);
+						console.trace();
 					}
 				}
 			}
@@ -85,6 +86,7 @@ import { events } from './mirv/ws-events.mjs';
 				// we could flush and then wait for a reply here to set a view instantly, but don't understimate network round-trip time!
 			} catch (err) {
 				console.error('onCViewRenderSetupView: Error while sending message:', err);
+				console.trace();
 			}
 		}
 		if (MirvJS.setView !== null) {
@@ -116,6 +118,7 @@ import { events } from './mirv/ws-events.mjs';
 				);
 			} catch (err) {
 				console.error('onGameEvent: Error while sending message:', err);
+				console.trace();
 			}
 		}
 	};
@@ -136,6 +139,7 @@ import { events } from './mirv/ws-events.mjs';
 				);
 			} catch (err) {
 				console.error('onAddEntity: Error while sending message:', err);
+				console.trace();
 			}
 		}
 	};
@@ -156,6 +160,7 @@ import { events } from './mirv/ws-events.mjs';
 				);
 			} catch (err) {
 				console.error('onRemoveEntity: Error while sending message:', err);
+				console.trace();
 			}
 		}
 	};
