@@ -42,10 +42,8 @@ impl Value {
             .expect("the AdvancedfxCampathValue builtin shouldn't exist");        
     }
 
-    fn error_typ() -> JsResult<JsValue> {
-        Err(JsNativeError::typ()
-            .with_message("'this' is not a AdvancedfxCampathValue object")
-            .into())
+    fn error_typ(context: &Context) -> JsResult<JsValue> {
+        Err(advancedfx::js::errors::make_error!(JsNativeError::typ(),"'this' is not a AdvancedfxCampathValue object",context).into())
     }
 
     fn get_pos(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -61,10 +59,10 @@ impl Value {
                 }
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }   
 
-    fn set_pos(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn set_pos(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath_value) = object.downcast_mut::<Value>() {
                 if 1 == args.len() {
@@ -78,10 +76,10 @@ impl Value {
                         }
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments())
+                return Err(advancedfx::js::errors::error_arguments(context).into())
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn get_rot(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -97,10 +95,10 @@ impl Value {
                 }
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }   
 
-    fn set_rot(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn set_rot(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath_value) = object.downcast_mut::<Value>() {
                 if 1 == args.len() {
@@ -114,22 +112,22 @@ impl Value {
                         }
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments())
+                return Err(advancedfx::js::errors::error_arguments(context).into())
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
-    fn get_fov(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn get_fov(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(campath_value) = object.downcast_ref::<Value>() {
                 return Ok(JsValue::Rational(campath_value.native.fov));
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }   
 
-    fn set_fov(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn set_fov(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath_value) = object.downcast_mut::<Value>() {
                 if 1 == args.len() {
@@ -138,22 +136,22 @@ impl Value {
                         return Ok(JsValue::Undefined);  
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments())
+                return Err(advancedfx::js::errors::error_arguments(context).into())
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
-    fn get_selected(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn get_selected(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(campath_value) = object.downcast_ref::<Value>() {
                 return Ok(JsValue::Boolean(campath_value.native.selected));
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }   
 
-    fn set_selected(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn set_selected(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath_value) = object.downcast_mut::<Value>() {
                 if 1 == args.len() {
@@ -162,10 +160,10 @@ impl Value {
                         return Ok(JsValue::Undefined);  
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments())
+                return Err(advancedfx::js::errors::error_arguments(context).into())
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 }
 
@@ -176,7 +174,7 @@ impl Class for Value {
     fn data_constructor(
         _this: &JsValue,
         args: &[JsValue],
-        _context: &mut Context,
+        context: &mut Context,
     ) -> JsResult<Self> {
         if 4 == args.len() {
             if let Some(object_pos) = args[0].as_object()  {
@@ -193,7 +191,7 @@ impl Class for Value {
                 }
             }
         }
-        Err(advancedfx::js::errors::error_arguments())
+        Err(advancedfx::js::errors::error_arguments(context).into())
     }
 
     fn init(class: &mut ClassBuilder<'_>) -> JsResult<()> {
@@ -248,35 +246,33 @@ impl Iterator {
             .expect("the AdvancedfxCampathIterator builtin shouldn't exist");        
     }
 
-    fn error_typ() -> JsResult<JsValue> {
-        Err(JsNativeError::typ()
-            .with_message("'this' is not a AdvancedfxCampathIterator object")
-            .into())
+    fn error_typ(context: &Context) -> JsResult<JsValue> {
+        Err(advancedfx::js::errors::make_error!(JsNativeError::typ(),"'this' is not a AdvancedfxCampathIterator object",context).into())
     }
 
-    fn error_not_valid() -> JsResult<JsValue> {
-        Err(JsNativeError::error().with_message("'this' AdvancedfxCampathIterator is not in valid state!").into())
+    fn error_not_valid(context: &Context) -> JsResult<JsValue> {
+        Err(advancedfx::js::errors::make_error!(JsNativeError::error(),"'this' AdvancedfxCampathIterator is not in valid state!",context).into())
     }    
     
-    fn is_valid(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn is_valid(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(campath_iterator) = object.downcast_ref::<Iterator>() {
                 return Ok(JsValue::Boolean((*campath_iterator.native).borrow().is_valid()));
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
-    fn get_time(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn get_time(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(campath_iterator) = object.downcast_ref::<Iterator>() {
                 if let Some(value) = (*campath_iterator.native).borrow().get_time()  {
                     return Ok(JsValue::Rational(value));
                 }
-                return Self::error_not_valid();
+                return Self::error_not_valid(context);
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }     
     
     fn get_value(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -292,22 +288,22 @@ impl Iterator {
                         }
                     }
                 }
-                return Self::error_not_valid();
+                return Self::error_not_valid(context);
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
     
-    fn next(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn next(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(campath_iterator) = object.downcast_ref::<Iterator>() {
                 if let Some(()) = (*campath_iterator.native).borrow_mut().next()  {
                     return Ok(JsValue::undefined());
                 }
-                return Self::error_not_valid();
+                return Self::error_not_valid(context);
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }    
 }
 
@@ -318,7 +314,7 @@ impl Class for Iterator {
     fn data_constructor(
         _this: &JsValue,
         args: &[JsValue],
-        _context: &mut Context,
+        context: &mut Context,
     ) -> JsResult<Self> {
         if 1 == args.len() {
             if let Some(object_campath) = args[0].as_object()  {
@@ -327,7 +323,7 @@ impl Class for Iterator {
                 }
             }     
         }
-        Err(advancedfx::js::errors::error_arguments())
+        Err(advancedfx::js::errors::error_arguments(context).into())
     }
 
     fn init(class: &mut ClassBuilder<'_>) -> JsResult<()> {
@@ -473,19 +469,17 @@ impl Campath {
             .expect("the AdvancedfxCampath builtin shouldn't exist");        
     }
 
-    fn error_typ() -> JsResult<JsValue> {
-        Err(JsNativeError::typ()
-            .with_message("'this' is not a AdvancedfxCampath object")
-            .into())
+    fn error_typ(context: &Context) -> JsResult<JsValue> {
+        Err(advancedfx::js::errors::make_error!(JsNativeError::typ(), "'this' is not a AdvancedfxCampath object", context).into())
     }    
 
-    fn get_enabled(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn get_enabled(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(campath) = object.downcast_ref::<Campath>() {
                 return Ok(JsValue::Boolean(campath.native.get_enabled()));
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
     
     fn set_enabled(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -494,7 +488,7 @@ impl Campath {
         suppressor.finish(result, context)
     }
 
-    fn set_enabled_internal (suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn set_enabled_internal (suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
@@ -504,20 +498,20 @@ impl Campath {
                         return Ok(JsValue::undefined());
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments())
+                return Err(advancedfx::js::errors::error_arguments(context).into())
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
 
-    fn get_offset(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn get_offset(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(campath) = object.downcast_ref::<Campath>() {
                 return Ok(JsValue::Rational(campath.native.get_offset()));
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn set_offset(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -526,7 +520,7 @@ impl Campath {
         suppressor.finish(result, context)        
     }
 
-    fn set_offset_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn set_offset_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
@@ -536,19 +530,19 @@ impl Campath {
                         return Ok(JsValue::undefined());
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments())
+                return Err(advancedfx::js::errors::error_arguments(context).into())
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
-    fn get_hold(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn get_hold(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(campath) = object.downcast_ref::<Campath>() {
                 return Ok(JsValue::Boolean(campath.native.get_hold()));
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn set_hold(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -557,7 +551,7 @@ impl Campath {
         suppressor.finish(result, context)        
     }
 
-    fn set_hold_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn set_hold_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
@@ -567,19 +561,19 @@ impl Campath {
                         return Ok(JsValue::undefined());
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments())
+                return Err(advancedfx::js::errors::error_arguments(context).into())
             }            
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
-    fn get_position_interp(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn get_position_interp(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(campath) = object.downcast_ref::<Campath>() {
                 return Ok(JsValue::Integer((campath.native.get_position_interp() as u8).into()));
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn set_position_interp(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -599,19 +593,19 @@ impl Campath {
                         return Ok(JsValue::undefined());
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments())
+                return Err(advancedfx::js::errors::error_arguments(context).into())
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
-    fn get_rotation_interp(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn get_rotation_interp(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(campath) = object.downcast_ref::<Campath>() {
                 return Ok(JsValue::Integer((campath.native.get_rotation_interp() as u8).into()));
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn set_rotation_interp(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -631,19 +625,19 @@ impl Campath {
                         return Ok(JsValue::undefined());
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments())
+                return Err(advancedfx::js::errors::error_arguments(context).into())
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
-    fn get_fov_interp(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn get_fov_interp(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(campath) = object.downcast_ref::<Campath>() {
                 return Ok(JsValue::Integer((campath.native.get_fov_interp() as u8).into()));
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn set_fov_interp(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -663,10 +657,10 @@ impl Campath {
                         return Ok(JsValue::undefined());
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments())
+                return Err(advancedfx::js::errors::error_arguments(context).into())
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn add(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -676,7 +670,7 @@ impl Campath {
     }
 
 
-    fn add_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn add_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 2 == args.len() {
@@ -690,10 +684,10 @@ impl Campath {
                         }
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments())
+                return Err(advancedfx::js::errors::error_arguments(context).into())
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn remove(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -701,7 +695,7 @@ impl Campath {
         let result = Self::remove_internal(&mut suppressor, this,args,context);
         suppressor.finish(result, context)
     }
-    fn remove_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn remove_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
@@ -711,10 +705,10 @@ impl Campath {
                         return Ok(JsValue::undefined());
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments())
+                return Err(advancedfx::js::errors::error_arguments(context).into())
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn clear(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -723,7 +717,7 @@ impl Campath {
         suppressor.finish(result, context)
     }    
     
-    fn clear_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn clear_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 suppressor.suppress(&campath);
@@ -731,28 +725,28 @@ impl Campath {
                 return Ok(JsValue::undefined());
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
-    fn get_size(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn get_size(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(campath) = object.downcast_ref::<Campath>() {
                 return Ok(JsValue::from(campath.native.get_size()));
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
-    fn get_duration(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn get_duration(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(campath) = object.downcast_ref::<Campath>() {
                 return Ok(JsValue::from(campath.native.get_duration()));
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
-    fn get_lower_bound(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn get_lower_bound(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(campath) = object.downcast_ref::<Campath>() {
                 if 1 <= campath.native.get_size() {
@@ -761,10 +755,10 @@ impl Campath {
                 return Ok(JsValue::undefined());
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
-    fn get_upper_bound(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn get_upper_bound(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(campath) = object.downcast_ref::<Campath>() {
                 if 1 <= campath.native.get_size() {
@@ -773,16 +767,16 @@ impl Campath {
                 return Ok(JsValue::undefined());
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
-    fn get_can_eval(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn get_can_eval(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(campath) = object.downcast_ref::<Campath>() {
                 return Ok(JsValue::from(campath.native.can_eval()));
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn eval(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -803,10 +797,10 @@ impl Campath {
                         return Ok(JsValue::undefined());
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments());
+                return Err(advancedfx::js::errors::error_arguments(context).into());
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn load(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -815,7 +809,7 @@ impl Campath {
         suppressor.finish(result, context)
     }
 
-    fn load_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn load_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
@@ -827,13 +821,13 @@ impl Campath {
                         }
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments());
+                return Err(advancedfx::js::errors::error_arguments(context).into());
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
-    fn save(this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn save(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
@@ -843,10 +837,10 @@ impl Campath {
                         }
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments());
+                return Err(advancedfx::js::errors::error_arguments(context).into());
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn set_start(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -855,7 +849,7 @@ impl Campath {
         suppressor.finish(result, context)
     }
 
-    fn set_start_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn set_start_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 <= args.len() {
@@ -874,10 +868,10 @@ impl Campath {
                         }
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments());
+                return Err(advancedfx::js::errors::error_arguments(context).into());
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }  
 
     fn set_duration(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -886,7 +880,7 @@ impl Campath {
         suppressor.finish(result, context)        
     }
 
-    fn set_duration_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn set_duration_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
@@ -896,10 +890,10 @@ impl Campath {
                         return Ok(JsValue::undefined());
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments());
+                return Err(advancedfx::js::errors::error_arguments(context).into());
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn set_position(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -908,7 +902,7 @@ impl Campath {
         suppressor.finish(result, context)
     }
 
-    fn set_position_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn set_position_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 3 == args.len() {
@@ -943,10 +937,10 @@ impl Campath {
                         }
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments());
+                return Err(advancedfx::js::errors::error_arguments(context).into());
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn set_angles(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -955,7 +949,7 @@ impl Campath {
         suppressor.finish(result, context)
     }
 
-    fn set_angles_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn set_angles_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 3 == args.len() {
@@ -990,10 +984,10 @@ impl Campath {
                         }
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments());
+                return Err(advancedfx::js::errors::error_arguments(context).into());
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn set_fov(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -1002,7 +996,7 @@ impl Campath {
         suppressor.finish(result, context)        
     }
 
-    fn set_fov_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn set_fov_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 1 == args.len() {
@@ -1012,10 +1006,10 @@ impl Campath {
                         return Ok(JsValue::undefined());
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments());
+                return Err(advancedfx::js::errors::error_arguments(context).into());
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn rotate(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -1024,7 +1018,7 @@ impl Campath {
         suppressor.finish(result, context)        
     }
 
-    fn rotate_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn rotate_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 3 == args.len() {
@@ -1038,10 +1032,10 @@ impl Campath {
                         }
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments());
+                return Err(advancedfx::js::errors::error_arguments(context).into());
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn anchor_transform(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -1050,7 +1044,7 @@ impl Campath {
         suppressor.finish(result, context)        
     }
 
-    fn anchor_transform_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn anchor_transform_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 12 == args.len() {
@@ -1082,10 +1076,10 @@ impl Campath {
                         }
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments());
+                return Err(advancedfx::js::errors::error_arguments(context).into());
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn select_all(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -1094,7 +1088,7 @@ impl Campath {
         suppressor.finish(result, context)
     }
 
-    fn select_all_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn select_all_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 suppressor.suppress(&campath);
@@ -1102,7 +1096,7 @@ impl Campath {
                 return Ok(JsValue::from(result));
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn select_none(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -1111,7 +1105,7 @@ impl Campath {
         suppressor.finish(result, context)
     }
 
-    fn select_none_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn select_none_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 suppressor.suppress(&campath);
@@ -1119,7 +1113,7 @@ impl Campath {
                 return Ok(JsValue::undefined());
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn select_invert(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -1128,7 +1122,7 @@ impl Campath {
         suppressor.finish(result, context)
     }
 
-    fn select_invert_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn select_invert_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 suppressor.suppress(&campath);
@@ -1136,7 +1130,7 @@ impl Campath {
                 return Ok(JsValue::from(result));
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn select_add_idx(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -1145,7 +1139,7 @@ impl Campath {
         suppressor.finish(result, context)        
     }
 
-    fn select_add_idx_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn select_add_idx_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 2 == args.len() {
@@ -1159,7 +1153,7 @@ impl Campath {
                 }
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn select_add_min_count(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -1167,7 +1161,7 @@ impl Campath {
         let result = Self::select_add_min_count_internal(&mut suppressor, this,args,context);
         suppressor.finish(result, context)
     }
-    fn select_add_min_count_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn select_add_min_count_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 2 == args.len() {
@@ -1181,7 +1175,7 @@ impl Campath {
                 }
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn select_add_min_max(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -1190,7 +1184,7 @@ impl Campath {
         suppressor.finish(result, context)
     }
 
-    fn select_add_min_max_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn select_add_min_max_internal(suppressor: &mut CampathChangedSuppressor, this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(mut campath) = object.downcast_mut::<Campath>() {
                 if 2 == args.len() {
@@ -1204,10 +1198,10 @@ impl Campath {
                 }
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
-    fn get_on_changed(this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    fn get_on_changed(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(campath) = object.downcast_ref::<Campath>() {
                 if let Some(some_on_changed) = &campath.on_changed {
@@ -1216,7 +1210,7 @@ impl Campath {
                 return Ok(JsValue::undefined());
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 
     fn set_on_changed(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -1248,17 +1242,17 @@ impl Campath {
                                     campath.on_changed = Some(some_on_changed);
                                     return Ok(JsValue::Undefined); 
                                 }
-                                return Err(advancedfx::js::errors::error_no_wrapper());
+                                return Err(advancedfx::js::errors::error_no_wrapper(context).into());
                             }
                         }
                         _ => {
                         }
                     }
                 }
-                return Err(advancedfx::js::errors::error_arguments())
+                return Err(advancedfx::js::errors::error_arguments(context).into())
             }
         }
-        Self::error_typ()
+        Self::error_typ(context)
     }
 }
 
