@@ -109,11 +109,22 @@ bool MaterialSystem_ExecuteOnRenderThread(CMaterialSystemFunctor * pFunctor) {
                 switch(g_SourceSdkVer) {
                 case SourceSdkVer_L4D2:
                 case SourceSdkVer_TF2:
+                case SourceSdkVer_HL2MP:
                     pFunctor2->AddRef();
                     break;
                 }
                 CMatCallQueue_QueueFunctor_t pQueueFunctorInternal = (CMatCallQueue_QueueFunctor_t)AFXADDR_GET(materialsystem_CMatCallQueue_QueueFunctor);
-                pQueueFunctorInternal((unsigned char*)pCallQueue+(g_SourceSdkVer==SourceSdkVer_TF2?0xa4:0),0,pFunctor2);
+                size_t this_offset = 4;
+                switch(g_SourceSdkVer){
+                    case SourceSdkVer_TF2:
+                    case SourceSdkVer_HL2MP:
+                        this_offset = 0xa4;
+                        break;
+                    default:
+                        this_offset = 0x0;
+                        break;
+                }
+                pQueueFunctorInternal((unsigned char*)pCallQueue+this_offset,0,pFunctor2);
                 pFunctor2->Release();
             } else {
                 pFunctor->operator()();
