@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.30.1</version>
+<time>2025-01-19T22:06Z</time>
+<changes>
+<change type="updated">Updated mirv-script engine to Boa JS 0.30, exposed console object, internal changes.</change>
+<change type="fixed">Minor fixes changes in mirv_campath help text.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.30.0</version>
 <time>2024-12-23T06:45Z</time>
 <changes>

@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.130.0</version>
+<time>2025-01-19T22:06Z</time>
+<changes>
+<change type="fixed">Adjust to latest HL2MP release, fixes #1023.</change>
+<change type="fixed">Minor fixes changes in mirv_campath help text.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.129.0</version>
 <time>2024-10-03T10:00Z</time>
 <changes>
