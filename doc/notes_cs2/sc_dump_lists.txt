@@ -1,0 +1,669 @@
+sycenesystem.dll
+
+Function references strings such as
+- "Batchsort"
+- "Fullsort"
+- "shaded pass"
+- "depth pass"
+- "%s:%s after sort (%s %s)\n" (recommended)
+- "null material"
+- "C:\\buildworker\\csgo_rel_win64\\build\\src\\scenesystem\\scenesystem.cpp"
+
+void FUN_1800ec760(undefined8 param_1,longlong param_2,longlong param_3,uint param_4) {
+	// param_1 - unknown
+	// param_2 - * ".?AVCSceneLayer@@"
+	// param_3 - unknown
+	// param_4 - size of material dictionary(?)
+	
+	// what this function does is sort the render batches of the layer by material I guess or s.th. like that.
+	
+	const char * pszViewName =  (**(code **)**(undefined8 **)(param_2 + 0x6d0))(); // param_2 + 0x6d0 == pSceneView
+	const char* pszViewPass = (const char*)param_2 + 0x4a0;
+	uint uiFlags = *(uint *)(param_2 + 0x48);
+	if(uiFlags & 0x1000000) "depth pass" else "shaded pass"
+	if(uiFlags & 0x1) "Fullsort" else "Batchsort"
+
+}
+	
+this function is called by a single function from two places:
+
+void FUN_1800f0860(longlong param_1,longlong *param_2,longlong param_3,longlong *param_4,
+                  uint param_5,int *param_6)
+{
+	// param_1 - * ".?AVCSceneSystem@@" This
+	// param_2 - unkown
+	// param_3 - * ".?AVCSceneLayer@@"
+
+	// This function queues rendering layers.
+	// This function calls FUN_1800ec760
+	// This function also calls FUN_1800f10d0
+}
+
+the queue is popped inside function called (depth 2) in function which is :
+
+void FUN_1800f10d0(longlong param_1,undefined8 *param_2,longlong param_3) {
+	
+	// references "Thread_RenderViewLayer"
+	// This function has partially inlined Thread_RenderViewLayer stuff, so it's better to hook FUN_1800f1b30.
+	
+	// calls FUN_1800f1b30 from 2 different call stacks potentially (depending if threaded or directly).
+	// FUN_1800f1b30 can recurse in here (this FUN_1800f10d0 can recurse into itself)
+	
+	// param_1 -  * ".?AVCSceneSystem@@"
+	// param_3 - * ".?AVCSceneLayer@@"
+	
+	// [....]
+	
+}
+
+// Inside this function is where we should look (and maybe we should also hook this one, since it helps us with the layers):
+void FUN_1800f1b30(longlong param_1,longlong *param_2,longlong param_3)
+{
+	// param_1 -  * ".?AVCSceneSystem@@"
+	// param_3 - * ".?AVCSceneLayer@@"
+	
+	// lonely reference of CThreadMultiWaitEvent::Set
+	
+	// this is the one that actuall calls the popping function on the queue
+	// WARNING can recurse into itself!
+	
+	// [....]
+/*
+                             LAB_1800f2b90                                   XREF[1]:     1800f2fdf(j)  
+       1800f2b90 49 8d 5c        LEA        RBX,[R12 + 0x28]
+                 24 28
+		// R12 = This / param_1
+		[....]
+                             LAB_1800f2bb9                                   XREF[2]:     1807c5078(*), 1807c5080(*)  
+       1800f2bb9 48 8b 03        MOV        RAX,qword ptr [RBX]
+       1800f2bbc 48 8b cb        MOV        RCX,RBX
+       1800f2bbf ff 10           CALL       qword ptr [RAX] // FUN_1800fb010
+       1800f2bc1 f0 ff 4b 20     DEC.LOCK   dword ptr [RBX + 0x20]
+       1800f2bc5 48 8d 4b 08     LEA        RCX,[RBX + 0x8]
+       1800f2bc9 ff 15 49        CALL       qword ptr [->TIER0.DLL::CThreadMultiWaitEvent:   = 005bcbd6 // CThreadMultiWaitEvent::Set((CThreadMultiWaitEvent *)(param_1 + 0x30));
+                 3b 3f 00
+				 
+*/ 
+  UNLOCK();
+  if (iVar13 == 2) {
+	////////////////////////////////////////////////////////////////////////////////////////
+	// This is the function where stuff is actually drawn from, but only when iVar13 == 2:
+    (*(code *)**(undefined8 **)(param_1 + 0x28))((undefined8 *)(param_1 + 0x28));
+	// (GHIdra messed up the order of the c code a bit)
+    LOCK();
+    *(int *)(param_1 + 0x48) = *(int *)(param_1 + 0x48) + -1;
+    UNLOCK();
+    CThreadMultiWaitEvent::Set((CThreadMultiWaitEvent *)(param_1 + 0x30));
+  }	  
+}
+
+
+The function we want to hook (See how to find it in FUN_1800f1b30):
+void FUN_1800fb010(longlong param_1)
+{
+	// This function calls eventually in a function that creates the CRenderContextPtr
+	// (second reference to Warning("WARNING: Trying to create a CRenderContextPtr without a valid context.\n")):
+	
+/* a call stack:
+[0x0]   scenesystem+0x4aff0   0xd0a07f598   0x7ffcf05e8a39 <-- FUN_18004aff0 create CRenderContextPtr referencing function
+[0x1]   scenesystem+0xf8a39   0xd0a07f5a0   0x7ffcf05eb274 <-- inside FUN_1800f8780 references "SubmitAllDisplayLists" (it's a actually passed as agument to the one above)
+	this is also the only reference to "SubmitAllDisplayLists"
+[0x2]   scenesystem+0xfb274   0xd0a07f680   0x7ffcf05e2bc1 <-- inside FUN_1800fb010 this function that we want too hook
+[0x3]   scenesystem+0xf2bc1   0xd0a07f6e0   0x7ffcf05f4908 <-- inside FUN_1800f1b30
+[0x4]   scenesystem+0x104908   0xd0a07f9e0   0x7ffd1428b1f0   
+[0x5]   tier0!CThreadedJob::Execute+0x90   0xd0a07fa20   0x7ffd1428808f   
+*/
+
+	// [....]
+	local_24 = 0x18;
+	local_18 = "skinnedvertexcache";
+	local_20 = "skinnedvertexcache";
+	local_28 = iVar17;	
+	// [....]
+  DAT_1807b2938 = Plat_FloatTime();
+  return;	
+}
+
+undefined8 * FUN_18004aff0(undefined8 *param_1,undefined8 param_2,longlong *param_3) // it actually has 4
+{
+  // param_1 - probably the chunk code to execute
+  // param_2 - 0 in our case at least
+  // param_3 -  "RenderDevice003" interface
+  // param_4 - string e.g. "SubmitAllDisplayLists"
+
+  longlong *plVar1;
+  undefined8 local_98;
+  undefined8 local_90;
+  undefined8 local_88;
+  undefined8 local_80;
+  undefined8 local_78;
+  undefined8 local_70;
+  undefined8 local_68;
+  undefined8 local_60;
+  undefined8 local_58;
+  undefined8 local_50;
+  undefined8 local_48;
+  undefined8 local_40;
+  undefined8 local_38;
+  undefined4 local_30;
+  undefined8 local_2c;
+  undefined2 local_24;
+  byte local_22;
+  
+  local_22 = local_22 & 0xfe;
+  local_98 = 0;
+  local_50 = 0;
+  local_30 = 0;
+  local_90 = 0;
+  local_88 = 0;
+  local_48 = 0;
+  local_80 = 0;
+  local_78 = 0;
+  local_40 = 0;
+  local_2c = 0;
+  local_70 = 0;
+  local_68 = 0;
+  local_38 = 0;
+  local_60 = 0;
+  local_58 = 0;
+  local_24 = 0;
+  plVar1 = (longlong *)(**(code **)(*param_3 + 0x1e0))(param_3,param_2,0);
+  param_1[1] = param_3;
+  if (plVar1 == (longlong *)0x0) {
+    Warning("WARNING: Trying to create a CRenderContextPtr without a valid context.\n");
+    return param_1;
+  }
+  *param_1 = plVar1;
+  (**(code **)(*plVar1 + 0x458))(); // rendersystemdx11+0x15940 "CRenderContextBase::SetAssociatedThreadIndex" (references that string)
+  (**(code **)(*(longlong *)*param_1 + 8))((longlong *)*param_1,&local_98); //rendersystemdx11+0x290a0 
+
+  return param_1; // *CRenderContextPtr
+}
+
+void FUN_1800f8780(longlong param_1,undefined8 param_2)
+{
+// param_1 - .?AVCSceneSystem@@
+// param_2 - 
+
+  // [....]
+  FUN_1800ffdb0(param_1);
+  (**(code **)(*DAT_1807a4068 + 0x78))(DAT_1807a4068,param_2);
+  FUN_18004aff0(&local_98,0,DAT_1807a4068,"SubmitAllDisplayLists");
+  plVar11 = local_98;
+  *(int *)(param_1 + 0x1a30) = *(int *)(param_1 + 0x1a30) + 1;
+  iVar17 = 0;
+  if (0 < (longlong)*(int *)(param_1 + 0xb08)) {
+    lVar13 = 0;
+    lVar8 = 0;
+    do {
+      if (0 < *(int *)(lVar8 + *(longlong *)(param_1 + 0xb10))) {
+        uVar19 = iVar17 << 0x10;
+        goto LAB_1800f8a80;
+      }
+      iVar17 = iVar17 + 1;
+      lVar13 = lVar13 + 1;
+      lVar8 = lVar8 + 0x18;
+    } while (lVar13 < *(int *)(param_1 + 0xb08));
+  }  
+  // [....]
+  plVar11 = local_98;
+  if (0 < *(int *)(param_1 + 0x3074)) {
+    (**(code **)(*local_98 + 0x368))
+              (local_98,*(undefined8 *)(param_1 + 0x2f68),*(undefined8 *)(param_1 + 0x3040),
+               *(int *)(param_1 + 0x3074) << 5,in_stack_ffffffffffffff48 & 0xffffffff00000000);
+  }
+  (**(code **)(*plVar11 + 0x2c0))(plVar11); // CRenderContextDx11_SoftwareCommandList::_Unk_Render [!!!]
+  if ((*(char *)(param_1 + 0x3b60) != '\0') && (iVar17 = (**(code **)*DAT_1807a4068)(), iVar17 != 2)
+     ) {  
+  // [....]
+  return;
+LAB_1800f8a40:
+  plVar21 = *(longlong **)
+             (*(longlong *)(*(longlong *)(param_1 + 0xb10) + (ulonglong)(uVar19 >> 0x10) * 0x18 + 8)
+              + 8 + (ulonglong)(uVar19 & 0xffff) * 0x10);
+  // WE WANT TO DETOUR ABOUT HERE:
+  (**(code **)(*plVar21 + 0x50))(plVar21,plVar11);
+  // END WE WANT TO DETOUR ABOUT HERE:
+  uVar5 = uVar19 + 1 & 0xffff;
+  uVar14 = (ulonglong)(uVar19 + 1 >> 0x10);
+  if ((longlong)*(int *)(param_1 + 0xb08) <= (longlong)uVar14) goto LAB_1800f8ab9;
+  lVar8 = uVar14 * 0x18;
+  uVar20 = uVar14;
+  while (*(int *)(lVar8 + *(longlong *)(param_1 + 0xb10)) <= (int)uVar5) {
+    uVar5 = 0;
+    uVar20 = (ulonglong)((int)uVar20 + 1);
+    uVar14 = uVar14 + 1;
+    lVar8 = lVar8 + 0x18;
+    if ((longlong)*(int *)(param_1 + 0xb08) <= (longlong)uVar14) goto LAB_1800f8ab9;
+  }
+  uVar19 = (int)uVar20 << 0x10 | uVar5;
+  if (uVar19 == 0xffffffff) goto LAB_1800f8ab9;
+  goto LAB_1800f8a40;
+}
+
+
+
+What we need now is a way to queue an event on the render context:
+
+To find this we examined the RenderThread function:
+
+void FUN_1800572c0(longlong param_1,longlong param_2)
+{
+// ....
+          LoggingSystem_Log(DAT_18047dbec,3,"NvAPI_D3D_SetLatencyMarker returned error \'%d\'.\n",
+                            iVar14);	
+// ....
+  puVar22 = *(uint **)(param_2 + 0x20);
+  if (puVar22 == (uint *)0x0) {
+    return;
+  }
+  uVar29 = *puVar22;
+  puVar10 = puVar22;
+  local_res20 = puVar22;
+joined_r0x0001800574f8:
+  uVar16 = uVar29 & 0x7fff;				
+// ....
+	switch(uVar16) {
+  case 0:
+    CUtlMemoryPoolBase::Free((CUtlMemoryPoolBase *)&DAT_18043eeb0,puVar22);
+    if (!bVar9) {
+      return;
+    }	
+// ....
+  case 0x13: // !!!
+    (**(code **)**(undefined8 **)(puVar10 + 2))();
+    puVar30 = puVar10 + 4;
+    puVar22 = local_res20;
+    break;	
+// ....
+	}
+// ....
+}
+
+- No we now that code 0x13 is for callback.
+- We can also figure that the queue / list is at DAT_18043eeb0.
+
+PTR_FUN_1803b0b08 .?AVCRenderContextDx11 vtable:
+....
+       1803b0ec8 90 8b 01        addr       LAB_180018b90 //:120 "CRenderContextDx11::EndQuery - Bad query or D3D device\n"
+                 80 01 00 
+                 00 00
+       1803b0ed0 00 37 01        addr       _guard_check_icall
+                 80 01 00 
+                 00 00
+       1803b0ed8 00 37 01        addr       _guard_check_icall
+                 80 01 00 
+                 00 00
+       1803b0ee0 50 5b 01        addr       FUN_180015b50
+                 80 01 00 
+                 00 00
+       1803b0ee8 00 37 01        addr       _guard_check_icall
+                 80 01 00 
+                 00 00
+       1803b0ef0 00 37 01        addr       _guard_check_icall
+                 80 01 00 
+                 00 00
+       1803b0ef8 00 37 01        addr       _guard_check_icall
+                 80 01 00 
+                 00 00
+       1803b0f00 00 37 01        addr       _guard_check_icall
+                 80 01 00 
+                 00 00
+       1803b0f08 00 37 01        addr       _guard_check_icall
+                 80 01 00 
+                 00 00
+       1803b0f10 00 37 01        addr       _guard_check_icall
+                 80 01 00 
+                 00 00
+       1803b0f18 00 41 01        addr       LAB_180014100
+                 80 01 00 
+                 00 00
+       1803b0f20 20 41 01        addr       LAB_180014120
+                 80 01 00 
+                 00 00
+       1803b0f28 00 37 01        addr       _guard_check_icall
+                 80 01 00 
+                 00 00
+       1803b0f30 10 37 01        addr       FUN_180013710
+                 80 01 00 
+                 00 00
+       1803b0f38 40 1f 02        addr       FUN_180021f40 //:134 We are after this!!!!
+                 80 01 00 
+                 00 00
+       1803b0f40 10 37 01        addr       FUN_180013710
+                 80 01 00 
+                 00 00
+       1803b0f48 00 37 01        addr       _guard_check_icall
+                 80 01 00 
+                 00 00
+
+// Index 134
+void FUN_180021f40(longlong param_1,undefined8 param_2)
+
+{
+  undefined8 *puVar1;
+  undefined4 uStack_14;
+  
+  if ((*(int *)(param_1 + 0x3f8) - *(int *)(param_1 + 0x3f0)) + -0x10 < 0x10) {
+    FUN_180013620(param_1 + 0x3e0);
+  }
+  puVar1 = *(undefined8 **)(param_1 + 0x3f0);
+  *puVar1 = CONCAT44(uStack_14,0x108013);
+  puVar1[1] = param_2;
+  *(longlong *)(param_1 + 0x3f0) = *(longlong *)(param_1 + 0x3f0) + 0x10;
+  return;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+// This is just for info, you can ignore it.
+void UndefinedFunction_1800f96e0(longlong param_1,float param_2)
+{
+	// The Event set is only reset here in "FinishRenderingViews".
+	// This is called from the main thread.	
+
+	CThreadMutex::Lock((CThreadMutex *)&DAT_1807b2008,
+					   "C:\\buildworker\\csgo_rel_win64\\build\\src\\scenesystem\\scenesyste m.cpp"
+					   ,0x17f1);
+							   
+	CThreadMultiWaitEvent::Reset((CThreadMultiWaitEvent *)(param_1 + 0x30));							   
+							   
+	Plat_FatalErrorFunc("FinishRenderingViews has been called without a call to begin!!!");
+}
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+vconsole example:
+
+] sc_dump_lists 1
+
+....
+
+] sc_dump_lists 0
+  [34172] CAggregateSceneObjectDesc materials/models/props/de_mirage/brush_shapes/sitebwall13a.vmat
+  [9612] CAggregateSceneObjectDesc materials/models/props/de_inferno/artillery02.vmat
+  [4612] CAggregateSceneObjectDesc materials/models/props/de_inferno/ammo_pallet01.vmat
+  [28012] CAggregateSceneObjectDesc materials/models/cs_italy/pwtrim2.vmat
+  [31612] CAggregateSceneObjectDesc materials/models/de_dust/windows/window_4x8_square_flat.vmat
+  [40044] CAggregateSceneObjectDesc materials/models/props/de_mirage/brush_shapes/residwall04a.vmat
+  [154930] CAggregateSceneObjectDesc materials/models/props/de_mirage/wall_arch_a/wall_arch_a1.vmat
+  [0] CAggregateSceneObjectDesc materials/models/props/de_vertigo/wood_pallet_01.vmat
+  [112117] CAggregateSceneObjectDesc materials/models/props/de_vostok/trashcans.vmat
+  [46562] CAggregateSceneObjectDesc materials/models/de_dust/objects/stoneblocks01.vmat
+  [0] CAggregateSceneObjectDesc materials/models/cs_italy/plaster.vmat
+Player 0:Depth Prepass AlphaTested after sort (Batchsort depth pass)
+  [20612] CAggregateSceneObjectDesc materials/models/props_foliage/urban_trees_branches03_medium_animated.vmat
+  [8412] CAggregateSceneObjectDesc materials/models/props/de_mirage/lamp/lamp_diffuse/lamp_diffuse.vmat
+  [229250] CAggregateSceneObjectDesc materials/models/props/de_mirage/lamp/lamp_diffuse/lamp_diffuse.vmat
+  [0] CAggregateSceneObjectDesc materials/models/props_foliage/mall_trees_branches01.vmat
+  [41070] CAggregateSceneObjectDesc materials/models/props_foliage/urban_trees_branches02_mip0.vmat
+  [16885] CAnimatableSceneObjectDesc materials/models/props_junk/plasticcrate01a.vmat
+  [18596] CAnimatableSceneObjectDesc materials/models/props_junk/plasticcrate01a.vmat
+  [77281] CBaseSceneObjectDesc materials/models/props_foliage/urban_trees_branches03.vmat
+Player 0:ViewModel Depth Prepass after sort (Batchsort depth pass)
+  [0] CAnimatableSceneObjectDesc weapons/models/hkp2000/materials/weapon_pist_hkp2000.vmat
+  [0] CAnimatableSceneObjectDesc characters/models/shared/arms/bare_arms/materials/bare_arm_133.vmat
+  [0] CAnimatableSceneObjectDesc characters/models/ctm_sas/sleeve/materials/sleeve_ctm_sas.vmat
+  [0] CAnimatableSceneObjectDesc characters/models/shared/arms/glove_hardknuckle/materials/glove_hardknuckle_black.vmat
+Player 0:FirstpersonLegsPass1 after sort (Batchsort shaded pass)
+  [0] CAnimatableSceneObjectDesc weapons/models/hkp2000/materials/weapon_pist_hkp2000.vmat
+  [0] CAnimatableSceneObjectDesc characters/models/ctm_sas/materials/ctm_sas_head_gasmask.vmat
+  [0] CAnimatableSceneObjectDesc characters/models/ctm_sas/materials/ctm_sas_lenses.vmat
+  [0] CAnimatableSceneObjectDesc characters/models/shared/arms/glove_hardknuckle/materials/glove_hardknuckle_black.vmat
+  [0] CAnimatableSceneObjectDesc characters/models/ctm_sas/materials/ctm_sas_bodylegs.vmat
+  [0] CAnimatableSceneObjectDesc characters/models/ctm_sas/materials/ctm_sas_body.vmat
+  [0] CAnimatableSceneObjectDesc weapons/models/knife/knife_default_ct/materials/weapon_knife_default_ct.vmat
+Player 0:FirstpersonLegsPass2 after sort (Batchsort shaded pass)
+  [0] CAnimatableSceneObjectDesc weapons/models/hkp2000/materials/weapon_pist_hkp2000.vmat
+  [0] CAnimatableSceneObjectDesc characters/models/ctm_sas/materials/ctm_sas_head_gasmask.vmat
+  [0] CAnimatableSceneObjectDesc characters/models/ctm_sas/materials/ctm_sas_lenses.vmat
+  [0] CAnimatableSceneObjectDesc characters/models/shared/arms/glove_hardknuckle/materials/glove_hardknuckle_black.vmat
+  [0] CAnimatableSceneObjectDesc characters/models/ctm_sas/materials/ctm_sas_bodylegs.vmat
+  [0] CAnimatableSceneObjectDesc characters/models/ctm_sas/materials/ctm_sas_body.vmat
+  [0] CAnimatableSceneObjectDesc weapons/models/knife/knife_default_ct/materials/weapon_knife_default_ct.vmat
+Player 0:Cables (alphatest particle objects) Not Depth Pre-passed after sort (Fullsort shaded pass)
+  [170585] CParticleObjectDesc null material
+Player 0:Static World Overlays after sort (Fullsort shaded pass)
+  [0] CBaseSceneObjectDesc materials/de_mirage/decals/window_b_decal.vmat
+  [0] CBaseSceneObjectDesc materials/decals/win_square.vmat
+  [0] CBaseSceneObjectDesc materials/decals/bombsite_a.vmat
+  [0] CBaseSceneObjectDesc materials/decals/sanddecal01.vmat
+  [0] CBaseSceneObjectDesc materials/decals/sanddecal01.vmat
+  [0] CBaseSceneObjectDesc materials/decals/sanddecal01.vmat
+  [0] CBaseSceneObjectDesc materials/decals/sanddecal01.vmat
+  [0] CBaseSceneObjectDesc materials/decals/sanddecal01.vmat
+  [0] CBaseSceneObjectDesc materials/decals/sanddecal01.vmat
+  [0] CBaseSceneObjectDesc materials/nature/dirtfloor009c_decal.vmat
+  [0] CBaseSceneObjectDesc materials/nature/dirtfloor009c_decal.vmat
+  [0] CBaseSceneObjectDesc materials/decals/drainage_stain_01.vmat
+  [0] CBaseSceneObjectDesc materials/decals/sanddecal02.vmat
+  [0] CBaseSceneObjectDesc materials/decals/sanddecal02.vmat
+  [0] CBaseSceneObjectDesc materials/decals/sanddecal02.vmat
+  [0] CBaseSceneObjectDesc materials/decals/sanddecal02.vmat
+  [0] CBaseSceneObjectDesc materials/decals/hpe_plaster_decal_decay_brick_04.vmat
+  [0] CBaseSceneObjectDesc materials/decals/bombsite_letter_a.vmat
+  [0] CBaseSceneObjectDesc materials/decals/bombsite_right_arrow.vmat
+  [0] CBaseSceneObjectDesc materials/de_mirage/decals/sign_c_decal.vmat
+  [0] CBaseSceneObjectDesc materials/de_mirage/decals/sign_c_decal.vmat
+  [0] CBaseSceneObjectDesc materials/decals/bombsite_line_spray.vmat
+Player 0:Dynamic Opaque Forward after sort (Batchsort shaded pass)
+  [170585] CParticleObjectDesc null material
+  [16885] CAnimatableSceneObjectDesc materials/models/props_junk/plasticcrate01a.vmat
+  [18596] CAnimatableSceneObjectDesc materials/models/props_junk/plasticcrate01a.vmat
+  [66135] CAnimatableSceneObjectDesc materials/models/props_junk/physics_trash_hospital.vmat
+  [69339] CAnimatableSceneObjectDesc materials/models/props_junk/physics_trash_hospital.vmat
+  [95691] CAnimatableSceneObjectDesc materials/models/props_junk/physics_trash_hospital.vmat
+  [91100] CAnimatableSceneObjectDesc materials/models/props_c17/chair_stool01a.vmat
+  [134967] CBaseSceneObjectDesc materials/wood/woodfloor005a.vmat
+  [134967] CBaseSceneObjectDesc materials/wood/woodfloor005a.vmat
+  [141132] CBaseSceneObjectDesc materials/wood/woodfloor005a.vmat
+  [95442] CBaseSceneObjectDesc materials/wood/plywood02.vmat
+  [95442] CBaseSceneObjectDesc materials/wood/plywood02.vmat
+  [95442] CBaseSceneObjectDesc materials/wood/plywood02.vmat
+  [95442] CBaseSceneObjectDesc materials/wood/plywood02.vmat
+  [95442] CBaseSceneObjectDesc materials/wood/plywood02.vmat
+  [95442] CBaseSceneObjectDesc materials/wood/plywood02.vmat
+  [95442] CBaseSceneObjectDesc materials/wood/plywood02.vmat
+  [95442] CBaseSceneObjectDesc materials/wood/plywood02.vmat
+  [71253] CBaseSceneObjectDesc materials/metal/metalhull003a.vmat
+  [71253] CBaseSceneObjectDesc materials/metal/metalhull003a.vmat
+  [71253] CBaseSceneObjectDesc materials/metal/metalhull003a.vmat
+  [71253] CBaseSceneObjectDesc materials/metal/metalhull003a.vmat
+Player 0:Translucent Forward (Dynamic - MBOIT Pass 1) after sort (Batchsort shaded pass)
+  [2147389449] CBaseSceneObjectDesc materials/glass/glass01.vmat
+Player 0:Translucent Forward (Dynamic - MBOIT Pass 2) after sort (Batchsort shaded pass)
+  [2147389449] CBaseSceneObjectDesc materials/glass/glass01.vmat
+Player 0:ViewModelForward after sort (Fullsort shaded pass)
+  [0] CAnimatableSceneObjectDesc weapons/models/hkp2000/materials/weapon_pist_hkp2000.vmat
+  [0] CAnimatableSceneObjectDesc characters/models/shared/arms/bare_arms/materials/bare_arm_133.vmat
+  [0] CAnimatableSceneObjectDesc characters/models/ctm_sas/sleeve/materials/sleeve_ctm_sas.vmat
+  [0] CAnimatableSceneObjectDesc characters/models/shared/arms/glove_hardknuckle/materials/glove_hardknuckle_black.vmat
+Csgo3DSkyboxView:3DSkyboxLightBinnerCsgo after sort (Batchsort shaded pass)
+  [0] CEnvMapLightObjectDescGpu null material
+  [0] CLightProbeVolumeObjectDescGpu null material
+  [0] CDirectionalLightObjectDescGpu null material
+Csgo3DSkyboxView:Depth Prepass AlphaTested after sort (Batchsort depth pass)
+  [4050] CAggregateSceneObjectDesc materials/models/props_foliage/urban_trees_branches03_medium.vmat
+Csgo3DSkyboxView:Sky after sort (Fullsort shaded pass)
+  [600] CSkyBoxObjectDesc null material
+Csgo3DSkyboxView:3DSkyboxForward after sort (Batchsort shaded pass)
+  [4050] CAggregateSceneObjectDesc materials/models/props_foliage/urban_trees_branches03_medium.vmat
+  [-3760] CAggregateSceneObjectDesc materials/models/props/de_dust/skybox_dust_hotel02.vmat
+  [0] CAggregateSceneObjectDesc materials/models/props_foliage/urban_palm_trunkdust.vmat
+  [0] CAggregateSceneObjectDesc materials/models/props/de_dust/skybox_dust_hotel01.vmat
+  [0] CAggregateSceneObjectDesc materials/concrete/blend_blacktopsand_01.vmat
+  [0] CAggregateSceneObjectDesc materials/models/props/de_dust/skybox_dust_hotel02.vmat
+  [0] CAggregateSceneObjectDesc materials/models/props/de_dust/skybox_dust_hotel01.vmat
+  [9109] CAggregateSceneObjectDesc materials/models/props/de_mirage/towertop_d/towertop_d.vmat
+CSM2 "(unnamed)" (MIXED):DrawDepthOpaque after sort (Batchsort depth pass)
+  [198883] CAggregateSceneObjectDesc materials/models/props_foliage/urban_palm_trunkdust_animated.vmat
+  [93903] CAggregateSceneObjectDesc materials/models/props/de_mirage/lamp/lamp_diffuse/lamp_diffuse.vmat
+  [36232] CAggregateSceneObjectDesc materials/de_dust/sitebwall13a.vmat
+  [184497] CAggregateSceneObjectDesc materials/models/props_urban/curbs001.vmat
+  [47924] CAggregateSceneObjectDesc materials/de_mirage/brick/de_mirage_brick_ver1_diffuse.vmat
+CSM0 "(unnamed)" (MIXED):DrawDepthOpaque after sort (Batchsort depth pass)
+  [219653] CAggregateSceneObjectDesc materials/models/props_foliage/urban_trees_branches03_medium_animated.vmat
+  [198883] CAggregateSceneObjectDesc materials/models/props_foliage/urban_palm_trunkdust_animated.vmat
+  [93903] CAggregateSceneObjectDesc materials/models/props/de_mirage/lamp/lamp_diffuse/lamp_diffuse.vmat
+  [36232] CAggregateSceneObjectDesc materials/de_dust/sitebwall13a.vmat
+  [226887] CAggregateSceneObjectDesc materials/de_dust/door011.vmat
+  [121707] CAggregateSceneObjectDesc materials/models/props/props_utilities/electric_cables01.vmat
+  [184497] CAggregateSceneObjectDesc materials/models/props_urban/curbs001.vmat
+  [109637] CAggregateSceneObjectDesc materials/models/props/de_mirage/rusted_fence_a/rusted_fence_a.vmat
+  [57207] CAggregateSceneObjectDesc materials/de_mirage/marble/marble_01.vmat
+  [141719] CAggregateSceneObjectDesc materials/de_mirage/plaster/de_mirage_plaster_blue1_blend.vmat
+  [300683] CAggregateSceneObjectDesc materials/de_mirage/tile/de_mirage_tile_ver4_diffuse.vmat
+  [47924] CAggregateSceneObjectDesc materials/de_mirage/brick/de_mirage_brick_ver1_diffuse.vmat
+  [101216] CAggregateSceneObjectDesc materials/de_dust/stonestep03.vmat
+  [308847] CAnimatableSceneObjectDesc weapons/models/hkp2000/materials/weapon_pist_hkp2000.vmat
+  [325253] CAnimatableSceneObjectDesc characters/models/ctm_sas/materials/ctm_sas_head_gasmask.vmat
+  [325253] CAnimatableSceneObjectDesc characters/models/ctm_sas/materials/ctm_sas_lenses.vmat
+  [325253] CAnimatableSceneObjectDesc characters/models/shared/arms/glove_hardknuckle/materials/glove_hardknuckle_black.vmat
+  [325253] CAnimatableSceneObjectDesc characters/models/ctm_sas/materials/ctm_sas_bodylegs.vmat
+  [325253] CAnimatableSceneObjectDesc characters/models/ctm_sas/materials/ctm_sas_body.vmat
+  [312095] CAnimatableSceneObjectDesc weapons/models/knife/knife_default_ct/materials/weapon_knife_default_ct.vmat
+  [339055] CAnimatableSceneObjectDesc materials/models/props_junk/plasticcrate01a.vmat
+  [342211] CAnimatableSceneObjectDesc materials/models/props_junk/plasticcrate01a.vmat
+CSM1 "(unnamed)" (MIXED):DrawDepthOpaque after sort (Batchsort depth pass)
+  [59836] CAggregateSceneObjectDesc materials/models/props_foliage/urban_trees_branches03_medium_animated.vmat
+  [219653] CAggregateSceneObjectDesc materials/models/props_foliage/urban_trees_branches03_medium_animated.vmat
+  [44810] CAggregateSceneObjectDesc materials/models/props_foliage/urban_palm_trunkdust_animated.vmat
+  [198883] CAggregateSceneObjectDesc materials/models/props_foliage/urban_palm_trunkdust_animated.vmat
+  [93903] CAggregateSceneObjectDesc materials/models/props/de_mirage/lamp/lamp_diffuse/lamp_diffuse.vmat
+  [83202] CAggregateSceneObjectDesc materials/models/props_foliage/mall_trees_branches01.vmat
+  [97800] CAggregateSceneObjectDesc materials/models/props_foliage/mall_trees_barks01.vmat
+  [302902] CAggregateSceneObjectDesc materials/models/props_foliage/urban_trees_barks01_medium_animated.vmat
+  [125560] CAggregateSceneObjectDesc materials/models/props_urban/telephone_pole_addons001.vmat
+  [90442] CAggregateSceneObjectDesc materials/models/props_urban/chimneys001.vmat
+  [412805] CAggregateSceneObjectDesc materials/models/props/de_inferno/cannon.vmat
+  [102163] CAggregateSceneObjectDesc materials/models/props_street/electrical_boxes.vmat
+  [140880] CAggregateSceneObjectDesc materials/models/props_urban/stoop002.vmat
+  [320348] CAggregateSceneObjectDesc materials/models/props/cs_assault/camera.vmat
+  [36232] CAggregateSceneObjectDesc materials/de_dust/sitebwall13a.vmat
+  [226887] CAggregateSceneObjectDesc materials/de_dust/door011.vmat
+  [160581] CAggregateSceneObjectDesc materials/models/props/props_utilities/electric_cables01.vmat
+  [121707] CAggregateSceneObjectDesc materials/models/props/props_utilities/electric_cables01.vmat
+  [184497] CAggregateSceneObjectDesc materials/models/props_urban/curbs001.vmat
+  [58763] CAggregateSceneObjectDesc materials/wood/woodfloor005a.vmat
+  [109637] CAggregateSceneObjectDesc materials/models/props/de_mirage/rusted_fence_a/rusted_fence_a.vmat
+  [137530] CAggregateSceneObjectDesc materials/wood/plywood02.vmat
+  [161678] CAggregateSceneObjectDesc materials/wood/wood_ext_05.vmat
+  [143751] CAggregateSceneObjectDesc materials/wood/milbeams003.vmat
+  [99354] CAggregateSceneObjectDesc materials/de_mirage/hr_mirage/mirage_plaster_2.vmat
+  [153749] CAggregateSceneObjectDesc materials/de_mirage/ground/de_mirage_tilef_diffuse.vmat
+  [250112] CAggregateSceneObjectDesc materials/de_mirage/doors/door_a.vmat
+  [210254] CAggregateSceneObjectDesc materials/metal/metaldoor034a.vmat
+  [390952] CAggregateSceneObjectDesc materials/metal/metalhull003a.vmat
+  [110837] CAggregateSceneObjectDesc materials/de_dust/stonestep02.vmat
+  [130982] CAggregateSceneObjectDesc materials/de_dust/marketwall02.vmat
+  [25651] CAggregateSceneObjectDesc materials/dev/black_simple.vmat
+  [57207] CAggregateSceneObjectDesc materials/de_mirage/marble/marble_01.vmat
+  [-31744] CAggregateSceneObjectDesc materials/de_mirage/hr_mirage/mirage_plaster_blend_3.vmat
+  [141719] CAggregateSceneObjectDesc materials/de_mirage/plaster/de_mirage_plaster_blue1_blend.vmat
+  [300683] CAggregateSceneObjectDesc materials/de_mirage/tile/de_mirage_tile_ver4_diffuse.vmat
+  [83628] CAggregateSceneObjectDesc materials/de_mirage/plaster_worn/de_mirage_plaster_brick4_diffuse.vmat
+  [94277] CAggregateSceneObjectDesc materials/de_mirage/plaster/de_mirage_plaster_salmon1_diffuse.vmat
+  [146218] CAggregateSceneObjectDesc materials/de_mirage/plaster/de_mirage_plaster_blue1_diffuse.vmat
+  [131355] CAggregateSceneObjectDesc materials/de_dust/residwall04a.vmat
+  [119359] CAggregateSceneObjectDesc materials/de_dust/sitebwall08a.vmat
+  [47924] CAggregateSceneObjectDesc materials/de_mirage/brick/de_mirage_brick_ver1_diffuse.vmat
+  [101216] CAggregateSceneObjectDesc materials/de_dust/stonestep03.vmat
+  [166753] CAggregateSceneObjectDesc materials/de_mirage/base/de_mirage_base_trim_ver1_diffuse_.vmat
+  [38998] CAggregateSceneObjectDesc materials/de_mirage/base/de_mirage_mid_ver1_diffuse.vmat
+  [157202] CAggregateSceneObjectDesc materials/models/props/de_inferno/bomb_tanks.vmat
+  [81678] CAggregateSceneObjectDesc materials/models/props_rooftop/rooftopcluster06a.vmat
+  [132965] CAggregateSceneObjectDesc materials/models/props/de_dust/awning01.vmat
+  [159021] CAggregateSceneObjectDesc materials/models/props/de_inferno/hazard_ribbons.vmat
+  [427919] CAggregateSceneObjectDesc materials/models/props/de_mirage/large_door_b/large_door_b.vmat
+  [448261] CAggregateSceneObjectDesc materials/models/props/de_mirage/large_door_b/large_door_c.vmat
+  [157441] CAggregateSceneObjectDesc materials/models/props/de_inferno/ammo_pallet01.vmat
+  [101957] CAggregateSceneObjectDesc materials/models/cs_italy/pwtrim2.vmat
+  [97856] CAggregateSceneObjectDesc materials/models/de_dust/windows/window_6x8_shutters.vmat
+  [114458] CAggregateSceneObjectDesc materials/models/de_dust/windows/window_6x10_arch_flat.vmat
+  [266097] CAggregateSceneObjectDesc materials/models/de_dust/windows/window_6x8_shutters_flat.vmat
+  [160730] CAggregateSceneObjectDesc materials/models/props/de_vertigo/wood_pallet_01.vmat
+  [93743] CAggregateSceneObjectDesc materials/models/cs_italy/plaster.vmat
+  [308847] CAnimatableSceneObjectDesc weapons/models/hkp2000/materials/weapon_pist_hkp2000.vmat
+  [325253] CAnimatableSceneObjectDesc characters/models/ctm_sas/materials/ctm_sas_head_gasmask.vmat
+  [325253] CAnimatableSceneObjectDesc characters/models/ctm_sas/materials/ctm_sas_lenses.vmat
+  [325253] CAnimatableSceneObjectDesc characters/models/shared/arms/glove_hardknuckle/materials/glove_hardknuckle_black.vmat
+  [325253] CAnimatableSceneObjectDesc characters/models/ctm_sas/materials/ctm_sas_bodylegs.vmat
+  [325253] CAnimatableSceneObjectDesc characters/models/ctm_sas/materials/ctm_sas_body.vmat
+  [312095] CAnimatableSceneObjectDesc weapons/models/knife/knife_default_ct/materials/weapon_knife_default_ct.vmat
+  [339055] CAnimatableSceneObjectDesc materials/models/props_junk/plasticcrate01a.vmat
+  [342211] CAnimatableSceneObjectDesc materials/models/props_junk/plasticcrate01a.vmat
+  [367054] CAnimatableSceneObjectDesc materials/models/props_c17/chair_stool01a.vmat
+  [143228] CBaseSceneObjectDesc materials/models/props/de_inferno/ammo_pallet01.vmat
+  [143228] CBaseSceneObjectDesc materials/models/de_dust/windows/window_4x8_square_flat.vmat
+  [143228] CBaseSceneObjectDesc materials/models/props/de_mirage/wood_roof_plank/wood_ver3_diffuse.vmat
+  [143228] CBaseSceneObjectDesc materials/wood/woodsiding_ext_05.vmat
+  [143228] CBaseSceneObjectDesc materials/de_mirage/doors/door_b.vmat
+  [143228] CBaseSceneObjectDesc materials/wood/woodtrim_ext_01.vmat
+CSM2 "(unnamed)" (MIXED):DrawDepthViewModel after sort (Batchsort depth pass)
+  [299501] CAnimatableSceneObjectDesc weapons/models/hkp2000/materials/weapon_pist_hkp2000.vmat
+  [297758] CAnimatableSceneObjectDesc characters/models/shared/arms/bare_arms/materials/bare_arm_133.vmat
+  [300209] CAnimatableSceneObjectDesc characters/models/ctm_sas/sleeve/materials/sleeve_ctm_sas.vmat
+  [297758] CAnimatableSceneObjectDesc characters/models/shared/arms/glove_hardknuckle/materials/glove_hardknuckle_black.vmat
+CSM1 "(unnamed)" (MIXED):DrawDepthAlphaTest after sort (Batchsort depth pass)
+  [302461] CParticleObjectDesc null material
+  [275367] CParticleObjectDesc null material
+  [271554] CParticleObjectDesc null material
+  [271169] CParticleObjectDesc null material
+  [303899] CParticleObjectDesc null material
+Csgo3DSkyboxView:3DSkybox Translucent Forward after sort (Fullsort shaded pass)
+  [2146851588] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2146864288] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2146870085] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2146873340] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2146873408] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2146893472] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2146909402] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2146912287] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2146930460] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2146930757] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2146932987] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2146933235] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2146940616] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2146948390] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2146982473] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2146990396] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2146991652] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2146997163] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2146998141] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147001557] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147005713] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147027857] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147084077] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147087097] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147091185] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147093912] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147095952] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147096029] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147096289] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147116213] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147127939] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147129581] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147137732] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147154323] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147177433] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147178257] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147182195] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147191279] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147191279] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147210253] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147210813] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147219814] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147230769] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147276921] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147279592] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147286215] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147291209] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147294396] CBaseSceneObjectDesc materials/effects/clouds_001.vmat
+  [2147447097] CBaseSceneObjectDesc materials/effects/smoke/dust_002_skybox.vmat
+  [2147447097] CBaseSceneObjectDesc materials/effects/smoke/dust_002_skybox.vmat
+  [2147469466] CBaseSceneObjectDesc materials/effects/smoke/dust_002_skybox.vmat
+  [2147483647] CBaseSceneObjectDesc materials/effects/smoke/dust_002_skybox.vmat
+  [2147483647] CBaseSceneObjectDesc materials/effects/smoke/dust_002_skybox.vmat

@@ -6,3 +6,6 @@ bool AfxStreams_IsRcording();
 const wchar_t * AfxStreams_GetTakeDir();
 
 void Hook_RenderSystemDX11(void * hModule);
+
+void Hook_SceneSystem(void * hModule);
+

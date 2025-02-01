@@ -93,6 +93,7 @@ target_link_directories(${PROJECT_NAME} PRIVATE
 target_link_libraries(${PROJECT_NAME} PRIVATE
     IlmImf-2_5$<$<CONFIG:Debug>:_d>.lib
     afx_hook_source2_rs
+	dxguid.lib
     bcrypt.lib # corrosion fails to detect this
     $<$<CONFIG:Debug>:msvcrtd.lib> # corrision messes this up in latest rust version
 )

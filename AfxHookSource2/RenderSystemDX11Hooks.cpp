@@ -18,15 +18,18 @@
 #include "../shared/RefCountedThreadSafe.h"
 #include "../shared/StringTools.h"
 #include "../shared/CamIO.h"
+#include "../shared/ConsolePrinter.h"
 
 #include "../deps/release/prop/cs2/sdk_src/public/cdll_int.h"
 #include "../deps/release/prop/cs2/sdk_src/public/icvar.h"
 
 #include <d3d11.h>
 
+#include <set>
 #include <map>
 #include <queue>
 #include <list>
+#include <mutex>
 #include <shared_mutex>
 #include <condition_variable>
 #include <atomic>
@@ -47,6 +50,9 @@ std::queue<std::function<bool(ID3D11DeviceContext * pDeviceContext, ID3D11Textur
 std::queue<std::function<bool(ID3D11DeviceContext * pDeviceContext)>> g_SwapchainAfterPresentQueue;
 
 bool g_bEnableReShade = true;
+
+int g_iRenderThreadPassCount = -1;
+int g_iRenderThreadTargetPassCount = -1;
 
 class CAfxCpuTexture
 : public advancedfx::CRefCountedThreadSafe
@@ -351,8 +357,20 @@ private:
 IDXGISwapChain * g_pSwapChain = nullptr;
 ID3D11Device * g_pDevice = nullptr;
 ID3D11DeviceContext * g_pImmediateContext = nullptr;
+ID3D11DeviceContext * g_pOtherContext = nullptr;
 ID3D11RenderTargetView* g_pRTView = nullptr;
-int g_iDraw = 0;
+ID3D11Resource* g_pMainRenderTargetResource = nullptr;
+bool g_bInOwnDraw = false;
+
+enum class ViewPass_e {
+    None = 0,
+    BeforeGameOverlay = 1
+};
+
+struct ViewPasses_s {
+public:
+    std::queue<ViewPass_e> Queue;
+};
 
 extern void ErrorBox(char const * messageText);
 
@@ -513,8 +531,8 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
                     g_pDevice->Release();
                     g_pDevice = nullptr;
                 }
-                g_iDraw = 0;
                 g_pRTView = *ppRTView;
+                g_pMainRenderTargetResource = nullptr;
                 g_pDevice = This;
                 g_pDevice->AddRef();
                 g_CampathDrawer.BeginDevice(This);
@@ -542,21 +560,6 @@ ID3D11RenderTargetView * g_pCurrentRenderTargetView = nullptr;
 ID3D11DepthStencilView * g_pCurrentDepthStencilView = nullptr;
 D3D11_VIEWPORT g_ViewPort;
 
-void DrawReShade(ID3D11RenderTargetView * pRendertargetView, ID3D11DepthStencilView * pDepthStencilView) {
-    if(g_ReShadeAdvancedfx.IsConnected() && !g_ReShadeAdvancedfx.HasRendered()) {
-        ID3D11Resource * pRenderTargetResource = nullptr;
-        ID3D11Resource * pDepthStencilResource = nullptr;
-
-        if(pRendertargetView) { pRendertargetView->GetResource(&pRenderTargetResource); }
-        if(pDepthStencilView) { pDepthStencilView->GetResource(&pDepthStencilResource); }
-
-        g_ReShadeAdvancedfx.AdvancedfxRenderEffects(pRenderTargetResource, pDepthStencilResource);
-
-        if(pDepthStencilResource) pDepthStencilResource->Release();
-        if(pRenderTargetResource) pRenderTargetResource->Release();
-    }
-}
-
 void STDMETHODCALLTYPE New_ClearDepthStencilView( ID3D11DeviceContext * This, 
     _In_  ID3D11DepthStencilView *pDepthStencilView,
     /* [annotation] */ 
@@ -566,18 +569,15 @@ void STDMETHODCALLTYPE New_ClearDepthStencilView( ID3D11DeviceContext * This,
     /* [annotation] */ 
     _In_  UINT8 Stencil) {
 
-    if (g_iDraw == 3) {
-        g_iDraw = 4;
+    if (This == g_pImmediateContext && g_bInOwnDraw == false) {
 
-        g_pCurrentDepthStencilView = pDepthStencilView;
+        /*if (g_iDraw == 3 && pDepthStencilView != g_pCurrentDepthStencilView) {
+            g_iDraw = 4;
+            g_pCurrentDepthStencilView = pDepthStencilView;
 
-        // do NOT clear if using re-shade, this is the depth stencil where the smoke is, used to draw view-model afterwards
-        if (g_ReShadeAdvancedfx.IsConnected() && g_bEnableReShade) return;
-    }
-    else if (g_iDraw == 4) {
-        g_iDraw = 5;
-
-        if (g_bEnableReShade) DrawReShade(g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
+            // do NOT clear if using re-shade, this is the depth stencil where the smoke is, used to draw view-model afterwards
+            if (g_ReShadeAdvancedfx.IsConnected() && g_bEnableReShade) return;
+        }*/
     }
 
     g_Old_ClearDepthStencilView(This, pDepthStencilView, ClearFlags, Depth, Stencil);
@@ -609,8 +609,13 @@ void STDMETHODCALLTYPE New_ResolveSubresource( ID3D11DeviceContext * This,
     /* [annotation] */ 
     _In_  DXGI_FORMAT Format) {
 
+    if(This == g_pImmediateContext && g_bInOwnDraw == false) {
+        g_pMainRenderTargetResource = pSrcResource;
+    }
+
     g_Old_ResolveSubresource(This, pDstResource, DstSubresource, pSrcResource, SrcSubresource, Format);
  }
+
 
 typedef void (STDMETHODCALLTYPE * OMSetRenderTargets_t)( ID3D11DeviceContext * This,
             /* [annotation] */ 
@@ -628,32 +633,63 @@ void STDMETHODCALLTYPE New_OMSetRenderTargets( ID3D11DeviceContext * This,
             /* [annotation] */ 
             _In_reads_opt_(NumViews)  ID3D11RenderTargetView *const *ppRenderTargetViews,
             /* [annotation] */ 
-            _In_opt_  ID3D11DepthStencilView *pDepthStencilView) {
+            _In_opt_  ID3D11DepthStencilView *pDepthStencilView) {       
+    if (This->GetType() == D3D11_DEVICE_CONTEXT_IMMEDIATE && g_bInOwnDraw == false) {
+        g_pImmediateContext = This;
 
-    if(This->GetType() == D3D11_DEVICE_CONTEXT_IMMEDIATE && NumViews >= 1) {
-        if(g_iDraw == 0 && pDepthStencilView && ppRenderTargetViews && ppRenderTargetViews[0]) {
-            g_iDraw = 2;
-            
-            g_pImmediateContext = This;
-            g_pCurrentDepthStencilView = pDepthStencilView;
-            g_pCurrentRenderTargetView = ppRenderTargetViews[0];
-        }
-        else if (g_iDraw == 2 && pDepthStencilView == nullptr && ppRenderTargetViews && ppRenderTargetViews[0] && ppRenderTargetViews[0] == g_pCurrentRenderTargetView) {
-            g_iDraw = 3;
+        if (pDepthStencilView) g_pCurrentDepthStencilView = pDepthStencilView;
+        if (1 <= NumViews && ppRenderTargetViews && ppRenderTargetViews[0]) g_pCurrentRenderTargetView = ppRenderTargetViews[0];
 
-            UINT numViewPorts = 1;
-            g_pImmediateContext->RSGetViewports(&numViewPorts, &g_ViewPort);
-
-            g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
-        }
-        else if (g_iDraw == 4 && ppRenderTargetViews && ppRenderTargetViews[0] && pDepthStencilView) {
-            // last OMSetRenderTargets before (last) clearDepth, just before panorama shaders
-            g_pCurrentRenderTargetView = ppRenderTargetViews[0];
-        }
     }
-    
+
     g_Old_OMSetRenderTargets(This, NumViews, ppRenderTargetViews, pDepthStencilView);
+
 }
+class IRenderThreadCallback abstract {
+public:
+    virtual void OnCallback(void) abstract = 0;
+};
+
+class CAfxRenderViewCallback : public IRenderThreadCallback
+{
+public:
+    CAfxRenderViewCallback()
+    {
+
+    }
+
+    virtual void OnCallback(void) {
+        if (g_pImmediateContext) {
+            /*ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
+            ID3D11DepthStencilView* pDepthStencilView = nullptr;
+            g_pImmediateContext->OMGetRenderTargets(1, &pRenderTargetViews[0], &pDepthStencilView);*/
+
+            UINT numViewPorts[1] = { 1 };
+            g_pImmediateContext->RSGetViewports(&numViewPorts[0], &g_ViewPort);
+
+            g_bInOwnDraw = true;
+            g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
+            g_bInOwnDraw = false;
+
+            if (g_ReShadeAdvancedfx.IsConnected() && g_bEnableReShade) {
+                ID3D11Resource* pRenderTargetViewResource = nullptr;
+                ID3D11Resource* pDepthStencilResource = nullptr;
+                if (g_pCurrentRenderTargetView) g_pCurrentRenderTargetView->GetResource(&pRenderTargetViewResource);
+                if (g_pCurrentDepthStencilView) g_pCurrentDepthStencilView->GetResource(&pDepthStencilResource);
+                g_bInOwnDraw = true;
+                g_ReShadeAdvancedfx.AdvancedfxRenderEffects(pRenderTargetViewResource, pDepthStencilResource);
+                g_bInOwnDraw = false;
+                if (pDepthStencilResource) pDepthStencilResource->Release();
+                if (pRenderTargetViewResource) pRenderTargetViewResource->Release();
+            }
+
+            //if (pDepthStencilView) pDepthStencilView->Release();
+            //if (pRenderTargetViews[0]) pRenderTargetViews[0]->Release();
+        }
+        delete this;
+    }
+private:
+};
 
 typedef void (STDMETHODCALLTYPE * PSSetShaderResources_t)(ID3D11DeviceContext* This,
     /* [annotation] */
@@ -673,7 +709,63 @@ void STDMETHODCALLTYPE New_PSSetShaderResources(ID3D11DeviceContext* This,
     /* [annotation] */
     _In_reads_opt_(NumViews)  ID3D11ShaderResourceView* const* ppShaderResourceViews) {
 
+    /*if (This == g_pImmediateContext && g_iDraw == 6 && NumViews >= 1 && ppShaderResourceViews && ppShaderResourceViews[0]) {
+        g_iDraw = 7;
+        auto pResource = CAfxShaderResourceViews::GetResource(ppShaderResourceViews[0]);
+        if (pResource) {
+            if (g_ReShadeAdvancedfx.IsConnected() && g_bEnableReShade) {
+                ID3D11Resource* pDepthStencilResource = nullptr;
+                if (g_pCurrentDepthStencilView) g_pCurrentDepthStencilView->GetResource(&pDepthStencilResource);
+                g_bInOwnDraw = true;
+                g_ReShadeAdvancedfx.AdvancedfxRenderEffects(pResource, pDepthStencilResource);
+                g_bInOwnDraw = false;
+                if (pDepthStencilResource) pDepthStencilResource->Release();
+            }
+        }
+    }*/
+
     return g_Old_PSSetShaderResources(This, StartSlot, NumViews, ppShaderResourceViews);
+}
+
+typedef void (STDMETHODCALLTYPE *PSSetShader_t)(ID3D11DeviceContext* This,
+    /* [annotation] */
+    _In_opt_  ID3D11PixelShader* pPixelShader,
+    /* [annotation] */
+    _In_reads_opt_(NumClassInstances)  ID3D11ClassInstance* const* ppClassInstances,
+    UINT NumClassInstances);
+
+PSSetShader_t g_Old_PSSetShader = nullptr;
+
+
+void STDMETHODCALLTYPE New_PSSetShader(ID3D11DeviceContext* This,
+    /* [annotation] */
+    _In_opt_  ID3D11PixelShader* pPixelShader,
+    /* [annotation] */
+    _In_reads_opt_(NumClassInstances)  ID3D11ClassInstance* const* ppClassInstances,
+    UINT NumClassInstances) {
+
+    /*if (This == g_pImmediateContext) {
+        if (g_iDraw == 5 && pPixelShader && nullptr == ppClassInstances && NumClassInstances == 0) {
+            const char* pKey = "post_process.vfx_ps";
+            const size_t keyLen = 19;
+            char buffer[19];
+            UINT dataSize = keyLen;
+            if (SUCCEEDED(pPixelShader->GetPrivateData(WKPDID_D3DDebugObjectName, &dataSize, &buffer))
+                && dataSize == keyLen) {
+                size_t i = 0;
+                while (true) {
+                    if (pKey[i] != buffer[i]) break;
+                    i++;
+                    if (i == keyLen) {
+                        g_iDraw++;
+                        break;
+                    }
+                }
+            }
+        }
+    }*/
+
+    g_Old_PSSetShader(This, pPixelShader, ppClassInstances, NumClassInstances);
 }
 
 void Hook_Context(ID3D11DeviceContext * pDeviceContext) {
@@ -686,6 +778,7 @@ void Hook_Context(ID3D11DeviceContext * pDeviceContext) {
     DetourUpdateThread(GetCurrentThread());
     if(last_vtable) {
         DetourDetach(&(PVOID&)g_Old_PSSetShaderResources, New_PSSetShaderResources);
+        DetourDetach(&(PVOID&)g_Old_PSSetShader, New_PSSetShader);
         DetourDetach(&(PVOID&)g_Old_OMSetRenderTargets, New_OMSetRenderTargets);
         DetourDetach(&(PVOID&)g_Old_ClearDepthStencilView, New_ClearDepthStencilView);
         DetourDetach(&(PVOID&)g_Old_ResolveSubresource, New_ResolveSubresource);
@@ -696,10 +789,12 @@ void Hook_Context(ID3D11DeviceContext * pDeviceContext) {
         DetourUpdateThread(GetCurrentThread());
     }
     g_Old_PSSetShaderResources = (PSSetShaderResources_t)vtable[8];
+    g_Old_PSSetShader = (PSSetShader_t)vtable[9];
     g_Old_OMSetRenderTargets = (OMSetRenderTargets_t)vtable[33];
     g_Old_ClearDepthStencilView = (ClearDepthStencilView_t)vtable[53];
     g_Old_ResolveSubresource = (ResolveSubresource_t)vtable[57];
     DetourAttach(&(PVOID&)g_Old_PSSetShaderResources, New_PSSetShaderResources);
+    DetourAttach(&(PVOID&)g_Old_PSSetShader, New_PSSetShader);
     DetourAttach(&(PVOID&)g_Old_OMSetRenderTargets, New_OMSetRenderTargets);
     DetourAttach(&(PVOID&)g_Old_ClearDepthStencilView, New_ClearDepthStencilView);
     DetourAttach(&(PVOID&)g_Old_ResolveSubresource, New_ResolveSubresource);
@@ -776,10 +871,14 @@ Present_t g_OldPresent = nullptr;
 HRESULT STDMETHODCALLTYPE New_Present( void * This,
             /* [in] */ UINT SyncInterval,
             /* [in] */ UINT Flags) {
-    
+ 
+    g_bInOwnDraw = true;
+
     g_CampathDrawer.OnRenderThread_Present();
 
-    DrawReShade(nullptr, nullptr);
+    if (g_ReShadeAdvancedfx.IsConnected() && !g_ReShadeAdvancedfx.HasRendered()) {
+        g_ReShadeAdvancedfx.AdvancedfxRenderEffects(nullptr, nullptr);
+    }
 
     {
         std::unique_lock<std::mutex> lock(g_SwapChainMutex);
@@ -811,7 +910,10 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
 
 	g_ReShadeAdvancedfx.ResetHasRendered();        
 
-    g_iDraw = 0;
+    g_bInOwnDraw = false;
+
+    g_iRenderThreadPassCount = -1;
+    g_iRenderThreadTargetPassCount = -1;
 
     return result;
 }
@@ -928,6 +1030,181 @@ bool __fastcall New_CRenderDeviceBase_Present(
     return result;
 }
 
+std::string g_ViewName("Player 0");
+std::string g_ViewPass("GameOverlay");
+
+struct {
+    std::shared_timed_mutex m_Mutex;
+    std::map<DWORD, ViewPasses_s> m_ThreadToViewPasses;
+} g_RenderLayer;
+
+typedef void (__fastcall * Unk_SceneSystem_RenderLayer_t)(void * pThisCSceneSystem,void * param_2,void * pCSceneLayer);
+Unk_SceneSystem_RenderLayer_t g_Old_Unk_SceneSystem_RenderLayer = nullptr;
+void __fastcall New_Unk_SceneSystem_RenderLayer(void * pThisCSceneSystem,void * param_2,void * pCSceneLayer) {
+
+    int iWaitEventId = *(int*)((unsigned char*)pThisCSceneSystem + 0x30);
+    int iLayersLeft = *(int*)((unsigned char*)pThisCSceneSystem+0x48);
+    bool bWillSubmitDisplayLists = 2 == iLayersLeft;
+    void * pCSceneView = *(void**)((unsigned char *)pCSceneLayer+0x6d0);
+    auto fnGetViewLayerName = (const char * (__fastcall *)(void * This))(*(void***)pCSceneView)[0];
+    const char * pszViewName = fnGetViewLayerName(pCSceneView);
+    const char* pszViewPass = (const char*)pCSceneLayer + 0x4a0;
+    unsigned int flags = *(unsigned int *)((unsigned char*)pCSceneLayer + 0x48);
+    bool bDepthPassNotShadedPass = 0 != (flags & 0x1000000);
+    bool bFullSortNotBatchSort = 0 != (flags & 0x1);
+
+    ViewPass_e viewPass = ViewPass_e::None;
+    if(0 == strcmp(pszViewPass, g_ViewPass.c_str()) && 0 == strcmp(pszViewName, g_ViewName.c_str()) && bFullSortNotBatchSort && !bDepthPassNotShadedPass) {
+        viewPass = ViewPass_e::BeforeGameOverlay;
+    }
+
+    DWORD currentThreadId = 0;
+    {
+        std::unique_lock<std::shared_timed_mutex> lock(g_RenderLayer.m_Mutex);
+        g_RenderLayer.m_ThreadToViewPasses[currentThreadId].Queue.push(viewPass);
+    }
+
+    g_Old_Unk_SceneSystem_RenderLayer(pThisCSceneSystem, param_2, pCSceneLayer);
+}
+/*typedef void(__fastcall* Unk_SceneSystem_SubmitLayers_t)(void* pThisCSceneSystem, void* param_2);
+Unk_SceneSystem_SubmitLayers_t g_Old_Unk_SceneSystem_SubmitLayers = nullptr;
+void __fastcall New_Unk_SceneSystem_SubmitLayers(void * pThisCSceneSystem,void * param_2) {
+    int iBeforeGameOverlayPassCount = -1;
+    int passCount = -1;
+    {
+        std::shared_lock<std::shared_timed_mutex> lock(g_CurrentLayer.m_Mutex);
+        auto it = g_CurrentLayer.m_WaitEventIdToViewPasses.find(iWaitEventId);
+        if (it != g_CurrentLayer.m_WaitEventIdToViewPasses.end()) {
+            auto & viewPasses = it->second;
+            while(!viewPasses.Queue.empty()) {
+                passCount++;
+                if(viewPasses.Queue.front() == ViewPass_e::BeforeGameOverlay) iBeforeGameOverlayPassCount = passCount;
+                viewPasses.Queue.pop();
+            }
+        }
+    }
+
+    DWORD currentThreadId;
+    if(iBeforeGameOverlayPassCount != -1) {
+        currentThreadId = GetCurrentThreadId();
+        std::unique_lock<std::shared_timed_mutex> lock(g_CurrentScene.m_Mutex);
+        g_CurrentScene.m_ThreadIdToViewPassCount[currentThreadId] = iBeforeGameOverlayPassCount;
+    }
+
+    g_Old_Unk_SceneSystem_SubmitLayers(pThisCSceneSystem,param_2);
+}*/
+
+typedef unsigned char* (__fastcall* SceneSystem_CreateRenderContextPtr1_t)(unsigned char * param_1, unsigned char param_2, void* pDevice, void * param_4, const char * fmt, ...);
+SceneSystem_CreateRenderContextPtr1_t g_Old_SceneSystem_CreateRenderContextPtr1;
+
+extern CConsolePrinter * g_ConsolePrinter;
+extern advancedfx::Con_Printf_t Tier0_Message;
+
+class CRenderSystemConsolePrint_Message : public IConsolePrint {
+public:
+    CRenderSystemConsolePrint_Message(int nr, const char * fmt) : m_Nr(nr), m_Fmt(fmt) {
+
+    }
+
+	virtual void Print(const char * text) {
+		Tier0_Message("AFDEBUG CreateRenderContextPtr%i(%s): %s\n",m_Nr,m_Fmt,text);
+	}
+
+    int m_Nr;
+    const char * m_Fmt;
+};
+
+bool g_bRenderContextDebug = false;
+
+unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char * param_1, unsigned char param_2, void* pDevice, void * param_4, const char * fmt, ...) {
+
+    // It would be possible to pass vararg on with asm trampoline, but it seems unused?
+    unsigned char * result = g_Old_SceneSystem_CreateRenderContextPtr1(param_1,param_2,pDevice,param_4,"Hooked by HLAE / advancedfx.org, if you happen to actually see this please file a bug report, please!");
+
+    if(g_bRenderContextDebug) {
+        const char * saveFmt = fmt ? fmt : "[nullptr]";
+
+        CRenderSystemConsolePrint_Message consolePrint(1,saveFmt);
+        va_list args;
+        va_start(args, fmt);
+        g_ConsolePrinter->Print(&consolePrint, saveFmt, args);
+        va_end(args);
+    }
+
+    if(fmt && 0 == strcmp("#%s/%s/LayerClear",fmt)) {
+       va_list args;
+        va_start(args, fmt);
+        const char * pszArg0 = va_arg(args, const char *);
+        const char * pszArg1 = va_arg(args, const char *);
+        if(pszArg0 && 0 == strcmp("Player 0",pszArg0) && pszArg1 && 0 == strcmp("ClearSmokeTargets",pszArg1)) {
+            if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
+                auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
+                fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderViewCallback());
+            }
+        }
+    }       
+    else if(fmt && 0 == strcmp("#%s/SetupLightsAndViewConstants",fmt)) {
+        /*va_list args;
+        va_start(args, fmt);
+        const char * pszArg0 = va_arg(args, const char *);
+        if(pszArg0 && 0 == strcmp("CSGOHud",pszArg0)) {
+            if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
+                auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
+                fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderViewCallback());
+            }
+        }*/
+    }
+
+
+    return result;
+}
+
+typedef unsigned char* (__fastcall* SceneSystem_CreateRenderContextPtr2_t)(unsigned char* param_1, unsigned char param_2, void* pDevice, const char * fmt, ...);
+SceneSystem_CreateRenderContextPtr2_t g_Old_SceneSystem_CreateRenderContextPtr2 = nullptr;
+unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr2(unsigned char *param_1,unsigned char param_2, void* pDevice, const char * fmt, ...) {
+
+    // It would be possible to pass vararg on with asm trampoline, but it seems unused?
+    unsigned char * result = g_Old_SceneSystem_CreateRenderContextPtr2(param_1, param_2,pDevice,"Hooked by HLAE / advancedfx.org, if you happen to actually see this please file a bug report, please!");
+
+/*    if (pContextName && 0 == strcmp(pContextName, "#%s/SetupView")) {
+        if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
+            auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
+            fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderViewCallback());
+        }
+    }
+*/
+    if(g_bRenderContextDebug) {
+        const char * saveFmt = fmt ? fmt : "[nullptr]";
+
+        CRenderSystemConsolePrint_Message consolePrint(1,saveFmt);
+        va_list args;
+        va_start(args, fmt);
+        g_ConsolePrinter->Print(&consolePrint, saveFmt, args);
+        va_end(args);
+    }
+
+    return result;
+}
+
+/*
+std::string g_ObjectDesc("<unknown>");
+
+void On_CSceneSystem_RenderQueueElement(void * pCSceneObjectDesc, void * pCRenderContextDx11_SoftwareCommandList) {
+           
+    auto fnGetSceneObjectName = (const char* (__fastcall*)(void* pCSceneObjectDesc))(*(void***)pCSceneObjectDesc)[0];
+    const char * pszSceneObjectName = fnGetSceneObjectName(pCSceneObjectDesc);
+    advancedfx::Message("AFX: RenderQueueElement: %s\n",pszSceneObjectName);
+
+    if (0 == strcmp(pszSceneObjectName, g_ObjectDesc.c_str())) {
+        auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
+        fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderViewCallback());
+    }
+
+    // Execute the original function call we detoured:
+    auto fnRenderElement = (void(__fastcall*)(void* This, void* pCRenderContextDx11_SoftwareCommandList))(*(void***)pCSceneObjectDesc)[10];
+    fnRenderElement(pCSceneObjectDesc, pCRenderContextDx11_SoftwareCommandList);
+}
+*/
 CAfxImportsHook g_Import_rendersystemdx11(CAfxImportsHooks({
 	&g_Import_rendersystemdx11_dxgi
     }));
@@ -973,9 +1250,148 @@ void Hook_RenderSystemDX11(void * hModule) {
         // Function jmps into a function that references string "CRenderDeviceBase::Present(640):".
         if(void ** vtable = (void**)Afx::BinUtils::FindClassVtable((HMODULE)hModule,".?AVCRenderDeviceDx11@@", 0, 0x0)) {
             AfxDetourPtr(&(vtable[16]),New_CRenderDeviceBase_Present,(PVOID*)&g_Old_CRenderDeviceBase_Present);
-        } else ErrorBox(MkErrStr(__FILE__, __LINE__));	              
+        } else ErrorBox(MkErrStr(__FILE__, __LINE__));
     }
 
+}
+
+void Hook_SceneSystem(void * hModule) {
+    static bool firstRun = true;
+
+    if(firstRun) {
+        firstRun = false;
+
+		Afx::BinUtils::ImageSectionsReader sections((HMODULE)hModule);
+		Afx::BinUtils::MemRange textRange = sections.GetMemRange();
+
+        // See FUN_1800f1b30 doc/notes_cs2/sc_dump_lists.txt.
+        {
+            Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8b c4 4c 89 40 18 48 89 50 10 48 89 48 08 55 53 57 48 8d a8 08 fe ff ff 48 81 ec e0 02 00 00");
+            if (!result.IsEmpty()) {
+                g_Old_Unk_SceneSystem_RenderLayer = (Unk_SceneSystem_RenderLayer_t)result.Start;	
+                DetourTransactionBegin();
+                DetourUpdateThread(GetCurrentThread());
+                DetourAttach(&(PVOID&)g_Old_Unk_SceneSystem_RenderLayer, New_Unk_SceneSystem_RenderLayer);
+                if(NO_ERROR != DetourTransactionCommit())
+                    ErrorBox(MkErrStr(__FILE__, __LINE__));
+            }
+            else
+                ErrorBox(MkErrStr(__FILE__, __LINE__));
+        }
+
+        // See FUN_1800f8780 doc/notes_cs2/sc_dump_lists.txt.
+        /* {
+            Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 89 5c 24 10 55 56 57 41 54 41 55 41 56 41 57 48 8d 6c 24 d9 48 81 ec a0 00 00 00 4c 8b fa 48 8b d9 e8 ?? ?? ?? ??");
+            if (!result.IsEmpty()) {
+                g_Old_Unk_SceneSystem_SubmitLayers = (Unk_SceneSystem_SubmitLayers_t)result.Start;	
+                DetourTransactionBegin();
+                DetourUpdateThread(GetCurrentThread());
+                DetourAttach(&(PVOID&)g_Old_Unk_SceneSystem_SubmitLayers, New_Unk_SceneSystem_SubmitLayers);
+                if(NO_ERROR != DetourTransactionCommit())
+                    ErrorBox(MkErrStr(__FILE__, __LINE__));
+            }
+            else
+                ErrorBox(MkErrStr(__FILE__, __LINE__));
+        }*/
+
+        // First reference to "WARNING: Trying to create a CRenderContextPtr without a valid context.\n"
+        {
+            Afx::BinUtils::MemRange result = FindPatternString(textRange, "40 53 56 57 48 83 ec 20 49 8b 00 49 8b d8 48 8b f9 45 33 c0 48 8b cb 49 8b f1 ff 90 e0 01 00 00");
+            if (!result.IsEmpty()) {
+                g_Old_SceneSystem_CreateRenderContextPtr1 = (SceneSystem_CreateRenderContextPtr1_t)result.Start;	
+                DetourTransactionBegin();
+                DetourUpdateThread(GetCurrentThread());
+                DetourAttach(&(PVOID&)g_Old_SceneSystem_CreateRenderContextPtr1, New_SceneSystem_CreateRenderContextPtr1);
+                if(NO_ERROR != DetourTransactionCommit())
+                    ErrorBox(MkErrStr(__FILE__, __LINE__));
+            }
+            else
+                ErrorBox(MkErrStr(__FILE__, __LINE__));
+        }
+
+        // See FUN_18004aff0 doc/notes_cs2/sc_dump_lists.txt.
+        // Second reference to "WARNING: Trying to create a CRenderContextPtr without a valid context.\n"
+        {
+            Afx::BinUtils::MemRange result = FindPatternString(textRange, "40 55 53 57 48 8d 6c 24 b9 48 81 ec a0 00 00 00 80 65 3d fe 33 c0 49 8b d8 48 89 45 c7 48 89 45 0f 48 8b f9 89 45 2f 48 8b cb 48 89 45 cf 48 89 45 d7 48 89 45 17 48 89 45 df 48 89 45 e7 48 89 45 1f 48 89 45 33 48 89 45 ef 48 89 45 f7 48 89 45 27 48 89 45 ff 48 89 45 07 66 89 45 3b 49 8b 00 45 33 c0 ff 90 e0 01 00 00");
+            if (!result.IsEmpty()) {
+                g_Old_SceneSystem_CreateRenderContextPtr2 = (SceneSystem_CreateRenderContextPtr2_t)result.Start;	
+                DetourTransactionBegin();
+                DetourUpdateThread(GetCurrentThread());
+                DetourAttach(&(PVOID&)g_Old_SceneSystem_CreateRenderContextPtr2, New_SceneSystem_CreateRenderContextPtr2);
+                if(NO_ERROR != DetourTransactionCommit())
+                    ErrorBox(MkErrStr(__FILE__, __LINE__));
+            }
+            else
+                ErrorBox(MkErrStr(__FILE__, __LINE__));
+        }
+        
+
+        // See "WE WANT TO DETOUR ABOUT HERE" in FUN_1800f8780 in doc/notes_cs2/sc_dump_lists.txt.
+        /*
+                             LAB_1800f8a80                                   XREF[1]:     1800f8af7(j)  
+       1800f8a80 8b c7           MOV        EAX,EDI
+       1800f8a82 48 c1 e8 10     SHR        RAX,0x10
+       1800f8a86 48 8d 0c 40     LEA        RCX,[RAX + RAX*0x2]
+       1800f8a8a 48 8b 83        MOV        RAX,qword ptr [RBX + 0xb10]
+                 10 0b 00 00
+       1800f8a91 48 8d 14 c8     LEA        RDX,[RAX + RCX*0x8]
+       1800f8a95 0f b7 cf        MOVZX      ECX,DI
+       1800f8a98 48 8b 42 08     MOV        RAX,qword ptr [RDX + 0x8]
+       1800f8a9c 48 03 c9        ADD        RCX,RCX
+// BEGIN DETOUR       
+       1800f8a9f 48 8b d6        MOV        RDX,RSI
+       1800f8aa2 48 8b 4c        MOV        RCX,qword ptr [RAX + RCX*0x8 + 0x8]
+                 c8 08
+       1800f8aa7 48 8b 01        MOV        RAX,qword ptr [RCX]
+       1800f8aaa ff 50 50        CALL       qword ptr [RAX + 0x50]
+// END DETOUR
+       1800f8aad 4c 63 8b        MOVSXD     R9,dword ptr [RBX + 0xb08]
+                 08 0b 00 00        
+        */
+        /*{
+            Afx::BinUtils::MemRange result = FindPatternString(textRange, "8b c7 48 c1 e8 10 48 8d 0c 40 48 8b 83 10 0b 00 00 48 8d 14 c8 0f b7 cf 48 8b 42 08 48 03 c9 48 8b d6 48 8b 4c c8 08 48 8b 01 ff 50 50 4c 63 8b 08 0b 00 00");
+            if (!result.IsEmpty()) {
+                MdtMemBlockInfos mbis;
+                MdtMemAccessBegin((LPVOID)(result.Start+0x1f), 14, &mbis);
+
+                static LPVOID ptr2 = On_CSceneSystem_RenderQueueElement;
+                LPVOID ptrPtr2 = &ptr2;
+                size_t pCallAddress3 = result.Start+0x1f+14;
+                static LPVOID ptr3 = (LPVOID)pCallAddress3;
+                LPVOID ptrPtr3 = &ptr3;
+                unsigned char asmCode2[32]={
+                    0x48, 0x8b, 0xd6,               // MOV        RDX,RSI
+                    0x48, 0x8b, 0x4c, 0xc8, 0x08,   // MOV        RCX,qword ptr [RAX + RCX*0x8 + 0x8]
+
+				    0x48, 0xb8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // mov rax, qword addr
+				    0xff, 0x10, // call    qword ptr [rax] // call our function
+
+                    0x48, 0xb8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // mov rax, qword addr
+                    0xff, 0x20 // jmp [rax] // back to where to continue
+                };
+                memcpy(&asmCode2[10], &ptrPtr2, sizeof(LPVOID));
+                memcpy(&asmCode2[22], &ptrPtr3, sizeof(LPVOID));
+
+                LPVOID pTrampoline = MdtAllocExecuteableMemory(32);
+                memcpy(pTrampoline, asmCode2, 32);
+
+                unsigned char asmCode[14]={
+                    0x48, 0xba, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // mov rdx, qword addr
+                    0xff, 0x22, // jmp [rdx]
+                    0x90, // nop
+                    0x90 // nop
+                };
+                static LPVOID ptr = pTrampoline;
+                LPVOID ptrPtr = &ptr;
+                memcpy(&asmCode[2], &ptrPtr, sizeof(LPVOID));
+
+                memcpy((LPVOID)(result.Start+0x1f), asmCode, 14);
+                MdtMemAccessEnd(&mbis);
+            }
+            else
+                ErrorBox(MkErrStr(__FILE__, __LINE__));
+        }*/
+    }
 }
 
 void EndCapture() {
@@ -1612,4 +2028,35 @@ CON_COMMAND(mirv_reshade, "Control ReShade_advancedfx ReShade addon.")
         "%s enabled [...].\n"
         , cmd0
     );
+}
+
+/*CON_COMMAND(__mirv_test_object_desc, "")
+{
+    if(2<= args->ArgC()) {
+        g_ObjectDesc = args->ArgV(1);
+    }
+}*/
+
+/*CON_COMMAND(__mirv_test_20250125, "")
+{
+    if(3<= args->ArgC()) {
+        g_ViewName = args->ArgV(1);
+        g_ViewPass = args->ArgV(2);
+    }
+}*/
+
+CON_COMMAND(__mirv_debug_scenesystem_rendercontexts, "")
+{
+    int argc = args->ArgC();
+    const char * cmd0 = args->ArgV(0);
+
+    if(2 <= argc) {
+        g_bRenderContextDebug = 0 != atoi(args->ArgV(1));
+        return;
+    }
+
+    advancedfx::Message(
+        "%s 0|1\n"
+        "Current value: %i\n"
+        , cmd0, g_bRenderContextDebug ? 1 : 0);
 }
