@@ -51,9 +51,6 @@ std::queue<std::function<bool(ID3D11DeviceContext * pDeviceContext)>> g_Swapchai
 
 bool g_bEnableReShade = true;
 
-int g_iRenderThreadPassCount = -1;
-int g_iRenderThreadTargetPassCount = -1;
-
 class CAfxCpuTexture
 : public advancedfx::CRefCountedThreadSafe
 , public advancedfx::ICapture
@@ -359,8 +356,10 @@ ID3D11Device * g_pDevice = nullptr;
 ID3D11DeviceContext * g_pImmediateContext = nullptr;
 ID3D11DeviceContext * g_pOtherContext = nullptr;
 ID3D11RenderTargetView* g_pRTView = nullptr;
-ID3D11Resource* g_pMainRenderTargetResource = nullptr;
+int g_iDraw = 0;
 bool g_bInOwnDraw = false;
+ID3D11Resource* g_pMainRenderTargetResource = nullptr;
+bool g_bCaptureDepth = false;
 
 enum class ViewPass_e {
     None = 0,
@@ -531,6 +530,7 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
                     g_pDevice->Release();
                     g_pDevice = nullptr;
                 }
+                g_iDraw = 0;
                 g_pRTView = *ppRTView;
                 g_pMainRenderTargetResource = nullptr;
                 g_pDevice = This;
@@ -571,13 +571,13 @@ void STDMETHODCALLTYPE New_ClearDepthStencilView( ID3D11DeviceContext * This,
 
     if (This == g_pImmediateContext && g_bInOwnDraw == false) {
 
-        /*if (g_iDraw == 3 && pDepthStencilView != g_pCurrentDepthStencilView) {
-            g_iDraw = 4;
+        if (g_bCaptureDepth) {
+            g_bCaptureDepth = false;
             g_pCurrentDepthStencilView = pDepthStencilView;
-
-            // do NOT clear if using re-shade, this is the depth stencil where the smoke is, used to draw view-model afterwards
-            if (g_ReShadeAdvancedfx.IsConnected() && g_bEnableReShade) return;
-        }*/
+            //TODO: Instead of this, capture the smoke depth and composite it with normal depth.
+            //TODO: Also composite the skybox depth correctly (maybe can use vieport).
+            return;
+        }
     }
 
     g_Old_ClearDepthStencilView(This, pDepthStencilView, ClearFlags, Depth, Stencil);
@@ -634,20 +634,49 @@ void STDMETHODCALLTYPE New_OMSetRenderTargets( ID3D11DeviceContext * This,
             _In_reads_opt_(NumViews)  ID3D11RenderTargetView *const *ppRenderTargetViews,
             /* [annotation] */ 
             _In_opt_  ID3D11DepthStencilView *pDepthStencilView) {       
-    if (This->GetType() == D3D11_DEVICE_CONTEXT_IMMEDIATE && g_bInOwnDraw == false) {
-        g_pImmediateContext = This;
+    if (!g_bInOwnDraw && This->GetType() == D3D11_DEVICE_CONTEXT_IMMEDIATE && NumViews >= 1) {
+        if (g_iDraw == 0 && pDepthStencilView && ppRenderTargetViews && ppRenderTargetViews[0]) {
+            g_iDraw = 2;
 
-        if (pDepthStencilView) g_pCurrentDepthStencilView = pDepthStencilView;
-        if (1 <= NumViews && ppRenderTargetViews && ppRenderTargetViews[0]) g_pCurrentRenderTargetView = ppRenderTargetViews[0];
+            g_pImmediateContext = This;
+            g_pCurrentDepthStencilView = pDepthStencilView;
+            g_pCurrentRenderTargetView = ppRenderTargetViews[0];
+        }
+        else if (g_iDraw == 2 && pDepthStencilView == nullptr && ppRenderTargetViews && ppRenderTargetViews[0] && ppRenderTargetViews[0] == g_pCurrentRenderTargetView) {
+            g_iDraw = 3;
 
+            g_bInOwnDraw = true;
+
+            UINT numViewPorts = 1;
+            g_pImmediateContext->RSGetViewports(&numViewPorts, &g_ViewPort);
+
+            g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
+
+            g_bInOwnDraw = false;
+        }
     }
 
     g_Old_OMSetRenderTargets(This, NumViews, ppRenderTargetViews, pDepthStencilView);
-
 }
 class IRenderThreadCallback abstract {
 public:
     virtual void OnCallback(void) abstract = 0;
+};
+
+class CAfxRenderCallbackBeforeSmokeClear : public IRenderThreadCallback
+{
+public:
+    CAfxRenderCallbackBeforeSmokeClear()
+    {
+    }
+
+    virtual void OnCallback(void) {
+        if (g_pImmediateContext) {
+            g_bCaptureDepth = true;
+        }
+        delete this;
+    }
+private:
 };
 
 class CAfxRenderViewCallback : public IRenderThreadCallback
@@ -660,36 +689,32 @@ public:
 
     virtual void OnCallback(void) {
         if (g_pImmediateContext) {
-            /*ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
-            ID3D11DepthStencilView* pDepthStencilView = nullptr;
-            g_pImmediateContext->OMGetRenderTargets(1, &pRenderTargetViews[0], &pDepthStencilView);*/
-
-            UINT numViewPorts[1] = { 1 };
-            g_pImmediateContext->RSGetViewports(&numViewPorts[0], &g_ViewPort);
-
-            g_bInOwnDraw = true;
-            g_CampathDrawer.OnRenderThread_Draw(g_pImmediateContext, &g_ViewPort, g_pCurrentRenderTargetView, g_pCurrentDepthStencilView);
-            g_bInOwnDraw = false;
+            g_bCaptureDepth = false;
 
             if (g_ReShadeAdvancedfx.IsConnected() && g_bEnableReShade) {
+                ID3D11RenderTargetView* pRenderTargetViews[1] = { nullptr };
+                ID3D11DepthStencilView* pDepthStencilView = nullptr;
+                g_pImmediateContext->OMGetRenderTargets(1, &pRenderTargetViews[0], &pDepthStencilView);
+
                 ID3D11Resource* pRenderTargetViewResource = nullptr;
                 ID3D11Resource* pDepthStencilResource = nullptr;
-                if (g_pCurrentRenderTargetView) g_pCurrentRenderTargetView->GetResource(&pRenderTargetViewResource);
+                if (pRenderTargetViews[0]) pRenderTargetViews[0]->GetResource(&pRenderTargetViewResource);
                 if (g_pCurrentDepthStencilView) g_pCurrentDepthStencilView->GetResource(&pDepthStencilResource);
                 g_bInOwnDraw = true;
                 g_ReShadeAdvancedfx.AdvancedfxRenderEffects(pRenderTargetViewResource, pDepthStencilResource);
                 g_bInOwnDraw = false;
                 if (pDepthStencilResource) pDepthStencilResource->Release();
                 if (pRenderTargetViewResource) pRenderTargetViewResource->Release();
-            }
 
-            //if (pDepthStencilView) pDepthStencilView->Release();
-            //if (pRenderTargetViews[0]) pRenderTargetViews[0]->Release();
+                if (pDepthStencilView) pDepthStencilView->Release();
+                if (pRenderTargetViews[0]) pRenderTargetViews[0]->Release();
+            }
         }
         delete this;
     }
 private:
 };
+
 
 typedef void (STDMETHODCALLTYPE * PSSetShaderResources_t)(ID3D11DeviceContext* This,
     /* [annotation] */
@@ -710,7 +735,7 @@ void STDMETHODCALLTYPE New_PSSetShaderResources(ID3D11DeviceContext* This,
     _In_reads_opt_(NumViews)  ID3D11ShaderResourceView* const* ppShaderResourceViews) {
 
     /*if (This == g_pImmediateContext && g_iDraw == 6 && NumViews >= 1 && ppShaderResourceViews && ppShaderResourceViews[0]) {
-        g_iDraw = 7;
+        g_iDraw = 6;
         auto pResource = CAfxShaderResourceViews::GetResource(ppShaderResourceViews[0]);
         if (pResource) {
             if (g_ReShadeAdvancedfx.IsConnected() && g_bEnableReShade) {
@@ -912,8 +937,7 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
 
     g_bInOwnDraw = false;
 
-    g_iRenderThreadPassCount = -1;
-    g_iRenderThreadTargetPassCount = -1;
+    g_iDraw = 0;
 
     return result;
 }
@@ -1100,19 +1124,72 @@ SceneSystem_CreateRenderContextPtr1_t g_Old_SceneSystem_CreateRenderContextPtr1;
 extern CConsolePrinter * g_ConsolePrinter;
 extern advancedfx::Con_Printf_t Tier0_Message;
 
-class CRenderSystemConsolePrint_Message : public IConsolePrint {
+class CRenderSystemConsolePrint : public IRenderThreadCallback {
 public:
-    CRenderSystemConsolePrint_Message(int nr, const char * fmt) : m_Nr(nr), m_Fmt(fmt) {
-
+    CRenderSystemConsolePrint(int nr, const char* fmt, va_list args)
+        : m_Nr(nr), m_Fmt(fmt)
+    {
+        size_t m_Print_MemorySize = 0;
+        m_Print_Memory = (char*)malloc(sizeof(char) * 63);
+        if (nullptr != m_Print_Memory) m_Print_MemorySize = 63;
+        else return;
+        int chars = vsnprintf(m_Print_Memory, m_Print_MemorySize, fmt, args);
+        if (chars < 0) return;
+        if (chars >= m_Print_MemorySize) {
+            m_Print_Memory = (char*)realloc(m_Print_Memory, sizeof(char) * (chars + 1));
+            if (nullptr != m_Print_Memory) m_Print_MemorySize = chars + 1;
+            else return;
+            vsnprintf(m_Print_Memory, m_Print_MemorySize, fmt, args);
+        }
     }
 
-	virtual void Print(const char * text) {
-		Tier0_Message("AFDEBUG CreateRenderContextPtr%i(%s): %s\n",m_Nr,m_Fmt,text);
-	}
+    virtual void OnCallback(void) {
+        advancedfx::Message("AFXDEBUG CreateRenderContextPtr%i(%s):%s\n", m_Nr, m_Fmt, m_Print_Memory ? m_Print_Memory : "");
+    }
 
     int m_Nr;
     const char * m_Fmt;
+    char* m_Print_Memory = nullptr;
+
 };
+/* Typical print on de_mirage:
+AFXDEBUG CreateRenderContextPtr2(#%s/SetupView):#Player 0/SetupView
+AFXDEBUG CreateRenderContextPtr1(#%s/SetupLightsAndViewConstants):#ParticleSunShadow0/SetupLightsAndViewConstants
+AFXDEBUG CreateRenderContextPtr2(#%s/SetupView):#CSM0 "(unnamed)" (MIXED)/SetupView
+AFXDEBUG CreateRenderContextPtr1(#%s/SetupLightsAndViewConstants):#CSM0 "(unnamed)" (MIXED)/SetupLightsAndViewConstants
+AFXDEBUG CreateRenderContextPtr2(#%s/SetupView):#CSM1 "(unnamed)" (MIXED)/SetupView
+AFXDEBUG CreateRenderContextPtr1(#%s/SetupLightsAndViewConstants):#CSM1 "(unnamed)" (MIXED)/SetupLightsAndViewConstants
+AFXDEBUG CreateRenderContextPtr2(#%s/SetupView):#CSM2 "(unnamed)" (MIXED)/SetupView
+AFXDEBUG CreateRenderContextPtr1(#%s/SetupLightsAndViewConstants):#CSM2 "(unnamed)" (MIXED)/SetupLightsAndViewConstants
+AFXDEBUG CreateRenderContextPtr2(#%s/SetupView):#CSM3 "(unnamed)" (MIXED)/SetupView
+AFXDEBUG CreateRenderContextPtr1(#%s/SetupLightsAndViewConstants):#CSM3 "(unnamed)" (MIXED)/SetupLightsAndViewConstants
+AFXDEBUG CreateRenderContextPtr1(#%s/SetupLightsAndViewConstants):#Player 0/SetupLightsAndViewConstants
+AFXDEBUG CreateRenderContextPtr2(#%s/SetupGpuCull):#Player 0/SetupGpuCull
+AFXDEBUG CreateRenderContextPtr1(#%s/%s/LayerClear):#Player 0/Clear Color Depth Stencil/LayerClear
+AFXDEBUG CreateRenderContextPtr1(#%s/%s/LayerClear):#Player 0/ParticleShadowsCollectParticle/LayerClear
+AFXDEBUG CreateRenderContextPtr2(#%s/SetupView):#Csgo3DSkyboxView/SetupView
+AFXDEBUG CreateRenderContextPtr1(#%s/SetupLightsAndViewConstants):#Csgo3DSkyboxView/SetupLightsAndViewConstants
+AFXDEBUG CreateRenderContextPtr1(#%s/%s/LayerClear):#Player 0/StencilClear/LayerClear
+AFXDEBUG CreateRenderContextPtr1(#%s/%s/LayerClear):#Player 0/ClearSmokeTargets (4)/LayerClear
+AFXDEBUG CreateRenderContextPtr1(#%s/%s/LayerClear):#Player 0/ClearSmokeTargets (2)/LayerClear
+AFXDEBUG CreateRenderContextPtr1(#%s/%s/LayerClear):#Player 0/Translucent Forward (MBOIT(1) Smoke 1/4)/LayerClear
+AFXDEBUG CreateRenderContextPtr1(#%s/%s/LayerClear):#Player 0/Translucent Forward (MBOIT(1) Smoke 1/2)/LayerClear
+AFXDEBUG CreateRenderContextPtr1(#%s/%s/LayerClear):#Player 0/ClearSmokeTargets (1)/LayerClear
+AFXDEBUG CreateRenderContextPtr1(#%s/%s/LayerClear):#Player 0/Translucent Forward (MBOIT(1) Translucent 1/2)/LayerClear
+AFXDEBUG CreateRenderContextPtr1(#%s/%s/LayerClear):#Player 0/Translucent Forward (MBOIT(2) Smoke 1/4)/LayerClear
+AFXDEBUG CreateRenderContextPtr1(#%s/%s/LayerClear):#Player 0/Translucent Forward (MBOIT(2) Smoke 1/2)/LayerClear
+AFXDEBUG CreateRenderContextPtr1(#%s/%s/LayerClear):#Player 0/Translucent Forward (MBOIT(2) Translucent 1/2)/LayerClear
+AFXDEBUG CreateRenderContextPtr1(#%s/%s/LayerClear):#Player 0/WaterEffects/LayerClear
+AFXDEBUG CreateRenderContextPtr1(#%s/%s/LayerClear):#Player 0/EffectsOpaque/LayerClear
+AFXDEBUG CreateRenderContextPtr1(#%s/%s/LayerClear):#Player 0/EffectsBloom (Pass 2)/LayerClear
+AFXDEBUG CreateRenderContextPtr1(#%s/%s/LayerClear):#Player 0/ClearSmokeTargets/LayerClear
+AFXDEBUG CreateRenderContextPtr1(#%s/SetupLightsAndViewConstants):#CSGOHud/SetupLightsAndViewConstants
+AFXDEBUG CreateRenderContextPtr1(#%s/SetupLightsAndViewConstants):#CSGOMainMenu/SetupLightsAndViewConstants
+AFXDEBUG CreateRenderContextPtr1(#%s/SetupLightsAndViewConstants):#CSGOLoadingScreen/SetupLightsAndViewConstants
+AFXDEBUG CreateRenderContextPtr1(#%s/SetupLightsAndViewConstants):#CSGOPopups/SetupLightsAndViewConstants
+AFXDEBUG CreateRenderContextPtr1(#%s/SetupLightsAndViewConstants):#PanoramaEngineConsole/SetupLightsAndViewConstants
+AFXDEBUG CreateRenderContextPtr2(SubmitAllDisplayLists):SubmitAllDisplayLists
+*/
 
 bool g_bRenderContextDebug = false;
 
@@ -1121,30 +1198,43 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
     // It would be possible to pass vararg on with asm trampoline, but it seems unused?
     unsigned char * result = g_Old_SceneSystem_CreateRenderContextPtr1(param_1,param_2,pDevice,param_4,"Hooked by HLAE / advancedfx.org, if you happen to actually see this please file a bug report, please!");
 
+    //TODO: string comparison is expensive, consider to check string address instead.
+
     if(g_bRenderContextDebug) {
         const char * saveFmt = fmt ? fmt : "[nullptr]";
 
-        CRenderSystemConsolePrint_Message consolePrint(1,saveFmt);
-        va_list args;
-        va_start(args, fmt);
-        g_ConsolePrinter->Print(&consolePrint, saveFmt, args);
-        va_end(args);
+        if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
+            auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
+            va_list args;
+            va_start(args, fmt);
+            fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CRenderSystemConsolePrint(1, saveFmt,args));
+            va_end(args);
+        }
     }
 
-    if(fmt && 0 == strcmp("#%s/%s/LayerClear",fmt)) {
-       va_list args;
+    if (fmt && 0 == strcmp("#%s/%s/LayerClear", fmt)) {
+        va_list args;
         va_start(args, fmt);
         const char * pszArg0 = va_arg(args, const char *);
         const char * pszArg1 = va_arg(args, const char *);
-        if(pszArg0 && 0 == strcmp("Player 0",pszArg0) && pszArg1 && 0 == strcmp("ClearSmokeTargets",pszArg1)) {
+        if(pszArg0 && 0 == strcmp("Player 0",pszArg0) && pszArg1 && 0 == strcmp("WaterEffects",pszArg1)) {
+            if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
+                auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
+                fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeSmokeClear());
+            }
+        }
+    }  
+    else if(fmt && 0 == strcmp("#%s/SetupLightsAndViewConstants",fmt)) {
+        /*va_list args;
+        va_start(args, fmt);
+        const char * pszArg0 = va_arg(args, const char *);
+        if(pszArg0 && 0 == strcmp("Player 0",pszArg0)) {
             if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
                 auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
                 fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderViewCallback());
             }
-        }
-    }       
-    else if(fmt && 0 == strcmp("#%s/SetupLightsAndViewConstants",fmt)) {
-        /*va_list args;
+        }*/
+        va_list args;
         va_start(args, fmt);
         const char * pszArg0 = va_arg(args, const char *);
         if(pszArg0 && 0 == strcmp("CSGOHud",pszArg0)) {
@@ -1152,7 +1242,7 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
                 auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
                 fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderViewCallback());
             }
-        }*/
+        }
     }
 
 
@@ -1176,11 +1266,13 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr2(unsigned char
     if(g_bRenderContextDebug) {
         const char * saveFmt = fmt ? fmt : "[nullptr]";
 
-        CRenderSystemConsolePrint_Message consolePrint(1,saveFmt);
-        va_list args;
-        va_start(args, fmt);
-        g_ConsolePrinter->Print(&consolePrint, saveFmt, args);
-        va_end(args);
+        if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
+            auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
+            va_list args;
+            va_start(args, fmt);
+            fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CRenderSystemConsolePrint(2, saveFmt, args));
+            va_end(args);
+        }
     }
 
     return result;
