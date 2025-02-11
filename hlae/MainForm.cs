@@ -23,6 +23,7 @@ namespace AfxGui
             this.Icon = Program.Icon;
             this.pictureBoxHelp.Image = SystemIcons.Information.ToBitmap();
             this.pictureBoxPathError.Image = SystemIcons.Warning.ToBitmap();
+            this.pictureBoxEpilepsy.Image = this.pictureBoxVac.Image = SystemIcons.Exclamation.ToBitmap();
 
             this.Text = L10n._p("Window title, args: {0} - version", "Half-Life Advanced Effects {0}", System.Diagnostics.FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).FileVersion);
 
@@ -129,6 +130,20 @@ namespace AfxGui
             this.labelHlaePath.Text = L10n._("HLAE path:");
             this.textBoxHlaePath.Text = Program.BaseDir;
             this.labelHlaePathError.Text = L10n._("Warning: Your HLAE path shown above contains non-basic latin characters (meaning characters outside the 7-bit ASCII range), which will lead to multiple problems in-game if not fixed!");
+
+            bool bWarningVacOk = 1 == GlobalConfig.Instance.Settings.EpilepsyWarningOk;
+            this.groupBoxVac.Visible = !bWarningVacOk;
+            this.groupBoxVac.Enabled = !bWarningVacOk;
+            this.groupBoxVac.Text = L10n._("VAC warning");
+            this.labelVac.Text = L10n._("The HLAE tool is technically a hack, therefore you should only use it for making gaming videos or watching demos. Joining VAC protected servers with HLAE will probably get you VAC banned.");
+            this.buttonVacOk.Text = L10n._("OK");
+
+            bool bEpilepsyOk = 1 == GlobalConfig.Instance.Settings.EpilepsyWarningOk;
+            this.groupBoxEpilepsy.Visible = !bEpilepsyOk;
+            this.groupBoxEpilepsy.Enabled = !bEpilepsyOk;
+            this.groupBoxEpilepsy.Text = L10n._("Epilepsy warning");
+            this.labelEpilepsy.Text = L10n._("This software will cause fast-changing images and colors on your screen.");
+            this.buttonEpilepsyOk.Text = L10n._("OK");
 
             m_UpdateCheckNotification = new UpdateCheckNotificationTarget(this, new UpdateCheckedDelegate(OnUpdateChecked));
         }
@@ -419,5 +434,20 @@ namespace AfxGui
         {
             System.Diagnostics.Process.Start("https://www.advancedfx.org/contact");
         }
+
+        private void buttonVacOk_Click(object sender, EventArgs e)
+        {
+            GlobalConfig.Instance.Settings.VacWarningOk = 1;
+            this.groupBoxVac.Visible = false;
+            this.groupBoxVac.Enabled = false;
+        }
+
+        private void buttonEpilepsyOk_Click(object sender, EventArgs e)
+        {
+            GlobalConfig.Instance.Settings.EpilepsyWarningOk = 1;
+            this.groupBoxEpilepsy.Visible = false;
+            this.groupBoxEpilepsy.Enabled = false;
+        }
+
     }
 }
