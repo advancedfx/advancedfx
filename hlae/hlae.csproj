@@ -1,11 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <ApplicationIcon>app.ico</ApplicationIcon>
     <StartupObject></StartupObject>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFramework>net462</TargetFramework>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <NoWin32Manifest>true</NoWin32Manifest>
+    <RootNamespace>AfxGui</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <PlatformTarget>x86</PlatformTarget>
@@ -37,6 +39,7 @@
     <EmbeddedResource Update="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>AfxGui</CustomToolNamespace>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

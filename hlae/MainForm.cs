@@ -142,7 +142,7 @@ namespace AfxGui
             this.groupBoxEpilepsy.Visible = !bEpilepsyOk;
             this.groupBoxEpilepsy.Enabled = !bEpilepsyOk;
             this.groupBoxEpilepsy.Text = L10n._("Epilepsy warning");
-            this.labelEpilepsy.Text = L10n._("This software will cause fast-changing images and colors on your screen.");
+            this.labelEpilepsy.Text = L10n._("This software may cause fast-changing images and colors on your screen.");
             this.buttonEpilepsyOk.Text = L10n._("OK");
 
             m_UpdateCheckNotification = new UpdateCheckNotificationTarget(this, new UpdateCheckedDelegate(OnUpdateChecked));
@@ -448,6 +448,5 @@ namespace AfxGui
             this.groupBoxEpilepsy.Visible = false;
             this.groupBoxEpilepsy.Enabled = false;
         }
-
     }
 }

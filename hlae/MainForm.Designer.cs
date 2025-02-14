@@ -86,6 +86,7 @@
             this.pictureBoxEpilepsy = new System.Windows.Forms.PictureBox();
             this.labelEpilepsy = new System.Windows.Forms.Label();
             this.buttonEpilepsyOk = new System.Windows.Forms.Button();
+            this.panelNotifications = new System.Windows.Forms.Panel();
             this.mainMenu.SuspendLayout();
             this.statusStrip.SuspendLayout();
             this.stripEnableUpdateCheck.SuspendLayout();
@@ -97,6 +98,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxVac)).BeginInit();
             this.groupBoxEpilepsy.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxEpilepsy)).BeginInit();
+            this.panelNotifications.SuspendLayout();
             this.SuspendLayout();
             // 
             // mainMenu
@@ -516,40 +518,46 @@
             // 
             // groupBoxPathError
             // 
+            this.groupBoxPathError.AutoSize = true;
+            this.groupBoxPathError.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.groupBoxPathError.BackColor = System.Drawing.Color.MistyRose;
             this.groupBoxPathError.Controls.Add(this.labelHlaePathError);
             this.groupBoxPathError.Controls.Add(this.textBoxHlaePath);
             this.groupBoxPathError.Controls.Add(this.labelHlaePath);
             this.groupBoxPathError.Controls.Add(this.pictureBoxPathError);
-            this.groupBoxPathError.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.groupBoxPathError.Dock = System.Windows.Forms.DockStyle.Top;
             this.groupBoxPathError.ForeColor = System.Drawing.Color.Black;
-            this.groupBoxPathError.Location = new System.Drawing.Point(0, 144);
+            this.groupBoxPathError.Location = new System.Drawing.Point(0, 0);
             this.groupBoxPathError.Name = "groupBoxPathError";
-            this.groupBoxPathError.Size = new System.Drawing.Size(584, 100);
+            this.groupBoxPathError.Size = new System.Drawing.Size(567, 113);
             this.groupBoxPathError.TabIndex = 3;
             this.groupBoxPathError.TabStop = false;
             this.groupBoxPathError.Text = "L10n Path Error";
             // 
             // labelHlaePathError
             // 
-            this.labelHlaePathError.Location = new System.Drawing.Point(66, 42);
+            this.labelHlaePathError.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelHlaePathError.Location = new System.Drawing.Point(57, 42);
             this.labelHlaePathError.Name = "labelHlaePathError";
-            this.labelHlaePathError.Size = new System.Drawing.Size(509, 55);
+            this.labelHlaePathError.Size = new System.Drawing.Size(507, 55);
             this.labelHlaePathError.TabIndex = 4;
             this.labelHlaePathError.Text = "L10n Path error text here ...";
             // 
             // textBoxHlaePath
             // 
+            this.textBoxHlaePath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.textBoxHlaePath.Location = new System.Drawing.Point(229, 19);
             this.textBoxHlaePath.Name = "textBoxHlaePath";
             this.textBoxHlaePath.ReadOnly = true;
-            this.textBoxHlaePath.Size = new System.Drawing.Size(346, 20);
+            this.textBoxHlaePath.Size = new System.Drawing.Size(335, 20);
             this.textBoxHlaePath.TabIndex = 3;
             // 
             // labelHlaePath
             // 
             this.labelHlaePath.AutoSize = true;
-            this.labelHlaePath.Location = new System.Drawing.Point(66, 22);
+            this.labelHlaePath.Location = new System.Drawing.Point(57, 22);
             this.labelHlaePath.Name = "labelHlaePath";
             this.labelHlaePath.Size = new System.Drawing.Size(90, 13);
             this.labelHlaePath.TabIndex = 2;
@@ -557,34 +565,36 @@
             // 
             // pictureBoxPathError
             // 
-            this.pictureBoxPathError.Location = new System.Drawing.Point(6, 19);
+            this.pictureBoxPathError.Location = new System.Drawing.Point(3, 19);
             this.pictureBoxPathError.Name = "pictureBoxPathError";
             this.pictureBoxPathError.Size = new System.Drawing.Size(48, 48);
-            this.pictureBoxPathError.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
+            this.pictureBoxPathError.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
             this.pictureBoxPathError.TabIndex = 1;
             this.pictureBoxPathError.TabStop = false;
             // 
             // groupBoxVac
             // 
+            this.groupBoxVac.AutoSize = true;
+            this.groupBoxVac.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.groupBoxVac.BackColor = System.Drawing.Color.LightYellow;
             this.groupBoxVac.Controls.Add(this.pictureBoxVac);
             this.groupBoxVac.Controls.Add(this.labelVac);
             this.groupBoxVac.Controls.Add(this.buttonVacOk);
-            this.groupBoxVac.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.groupBoxVac.Dock = System.Windows.Forms.DockStyle.Top;
             this.groupBoxVac.ForeColor = System.Drawing.Color.Black;
-            this.groupBoxVac.Location = new System.Drawing.Point(0, 59);
+            this.groupBoxVac.Location = new System.Drawing.Point(0, 204);
             this.groupBoxVac.Name = "groupBoxVac";
-            this.groupBoxVac.Size = new System.Drawing.Size(584, 85);
+            this.groupBoxVac.Size = new System.Drawing.Size(567, 115);
             this.groupBoxVac.TabIndex = 4;
             this.groupBoxVac.TabStop = false;
             this.groupBoxVac.Text = "L10n VAC warning";
             // 
             // pictureBoxVac
             // 
-            this.pictureBoxVac.Location = new System.Drawing.Point(6, 19);
+            this.pictureBoxVac.Location = new System.Drawing.Point(3, 19);
             this.pictureBoxVac.Name = "pictureBoxVac";
             this.pictureBoxVac.Size = new System.Drawing.Size(24, 24);
-            this.pictureBoxVac.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
+            this.pictureBoxVac.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
             this.pictureBoxVac.TabIndex = 1;
             this.pictureBoxVac.TabStop = false;
             // 
@@ -592,9 +602,9 @@
             // 
             this.labelVac.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelVac.Location = new System.Drawing.Point(36, 19);
+            this.labelVac.Location = new System.Drawing.Point(33, 19);
             this.labelVac.Name = "labelVac";
-            this.labelVac.Size = new System.Drawing.Size(542, 33);
+            this.labelVac.Size = new System.Drawing.Size(531, 51);
             this.labelVac.TabIndex = 2;
             this.labelVac.Text = "L10n The HLAE tool is technically a hack, therefore you should only use it for ma" +
     "king gaming videos or watching demos. Joining VAC protected servers with HLAE wi" +
@@ -602,11 +612,11 @@
             // 
             // buttonVacOk
             // 
-            this.buttonVacOk.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            this.buttonVacOk.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonVacOk.Location = new System.Drawing.Point(6, 55);
+            this.buttonVacOk.Location = new System.Drawing.Point(3, 73);
             this.buttonVacOk.Name = "buttonVacOk";
-            this.buttonVacOk.Size = new System.Drawing.Size(572, 23);
+            this.buttonVacOk.Size = new System.Drawing.Size(561, 23);
             this.buttonVacOk.TabIndex = 3;
             this.buttonVacOk.Text = "L10n OK";
             this.buttonVacOk.UseVisualStyleBackColor = true;
@@ -614,25 +624,27 @@
             // 
             // groupBoxEpilepsy
             // 
+            this.groupBoxEpilepsy.AutoSize = true;
+            this.groupBoxEpilepsy.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.groupBoxEpilepsy.BackColor = System.Drawing.Color.LightYellow;
             this.groupBoxEpilepsy.Controls.Add(this.pictureBoxEpilepsy);
             this.groupBoxEpilepsy.Controls.Add(this.labelEpilepsy);
             this.groupBoxEpilepsy.Controls.Add(this.buttonEpilepsyOk);
-            this.groupBoxEpilepsy.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.groupBoxEpilepsy.Dock = System.Windows.Forms.DockStyle.Top;
             this.groupBoxEpilepsy.ForeColor = System.Drawing.Color.Black;
-            this.groupBoxEpilepsy.Location = new System.Drawing.Point(0, -26);
+            this.groupBoxEpilepsy.Location = new System.Drawing.Point(0, 113);
             this.groupBoxEpilepsy.Name = "groupBoxEpilepsy";
-            this.groupBoxEpilepsy.Size = new System.Drawing.Size(584, 85);
+            this.groupBoxEpilepsy.Size = new System.Drawing.Size(567, 91);
             this.groupBoxEpilepsy.TabIndex = 5;
             this.groupBoxEpilepsy.TabStop = false;
             this.groupBoxEpilepsy.Text = "L10n Epilepsy warning";
             // 
             // pictureBoxEpilepsy
             // 
-            this.pictureBoxEpilepsy.Location = new System.Drawing.Point(6, 19);
+            this.pictureBoxEpilepsy.Location = new System.Drawing.Point(3, 19);
             this.pictureBoxEpilepsy.Name = "pictureBoxEpilepsy";
             this.pictureBoxEpilepsy.Size = new System.Drawing.Size(24, 24);
-            this.pictureBoxEpilepsy.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
+            this.pictureBoxEpilepsy.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
             this.pictureBoxEpilepsy.TabIndex = 1;
             this.pictureBoxEpilepsy.TabStop = false;
             // 
@@ -640,33 +652,43 @@
             // 
             this.labelEpilepsy.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelEpilepsy.Location = new System.Drawing.Point(36, 19);
+            this.labelEpilepsy.Location = new System.Drawing.Point(33, 19);
             this.labelEpilepsy.Name = "labelEpilepsy";
-            this.labelEpilepsy.Size = new System.Drawing.Size(542, 24);
+            this.labelEpilepsy.Size = new System.Drawing.Size(531, 27);
             this.labelEpilepsy.TabIndex = 2;
-            this.labelEpilepsy.Text = "L10n This software will cause fast-changing images and colors on your screen.";
+            this.labelEpilepsy.Text = "L10n This software may cause fast-changing images and colors on your screen.";
             // 
             // buttonEpilepsyOk
             // 
-            this.buttonEpilepsyOk.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            this.buttonEpilepsyOk.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonEpilepsyOk.Location = new System.Drawing.Point(6, 56);
+            this.buttonEpilepsyOk.Location = new System.Drawing.Point(3, 49);
             this.buttonEpilepsyOk.Name = "buttonEpilepsyOk";
-            this.buttonEpilepsyOk.Size = new System.Drawing.Size(572, 23);
+            this.buttonEpilepsyOk.Size = new System.Drawing.Size(561, 23);
             this.buttonEpilepsyOk.TabIndex = 3;
             this.buttonEpilepsyOk.Text = "L10n OK";
             this.buttonEpilepsyOk.UseVisualStyleBackColor = true;
             this.buttonEpilepsyOk.Click += new System.EventHandler(this.buttonEpilepsyOk_Click);
+            // 
+            // panelNotifications
+            // 
+            this.panelNotifications.AutoScroll = true;
+            this.panelNotifications.Controls.Add(this.groupBoxVac);
+            this.panelNotifications.Controls.Add(this.groupBoxEpilepsy);
+            this.panelNotifications.Controls.Add(this.groupBoxPathError);
+            this.panelNotifications.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panelNotifications.Location = new System.Drawing.Point(0, 24);
+            this.panelNotifications.Name = "panelNotifications";
+            this.panelNotifications.Size = new System.Drawing.Size(584, 220);
+            this.panelNotifications.TabIndex = 6;
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(584, 361);
+            this.Controls.Add(this.panelNotifications);
             this.Controls.Add(this.mainMenu);
-            this.Controls.Add(this.groupBoxEpilepsy);
-            this.Controls.Add(this.groupBoxVac);
-            this.Controls.Add(this.groupBoxPathError);
             this.Controls.Add(this.groupBoxHelp);
             this.Controls.Add(this.statusStrip);
             this.Controls.Add(this.stripEnableUpdateCheck);
@@ -689,11 +711,11 @@
             this.groupBoxPathError.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxPathError)).EndInit();
             this.groupBoxVac.ResumeLayout(false);
-            this.groupBoxVac.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxVac)).EndInit();
             this.groupBoxEpilepsy.ResumeLayout(false);
-            this.groupBoxEpilepsy.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxEpilepsy)).EndInit();
+            this.panelNotifications.ResumeLayout(false);
+            this.panelNotifications.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -759,5 +781,6 @@
         private System.Windows.Forms.Button buttonEpilepsyOk;
         private System.Windows.Forms.Label labelEpilepsy;
         private System.Windows.Forms.PictureBox pictureBoxEpilepsy;
+        private System.Windows.Forms.Panel panelNotifications;
     }
 }
