@@ -145,6 +145,8 @@ namespace AfxGui
             this.labelEpilepsy.Text = L10n._("This software may cause fast-changing images and colors on your screen.");
             this.buttonEpilepsyOk.Text = L10n._("OK");
 
+            this.menuFaq.Text = L10n._("Frequently Asked Questions (FAQ)");
+
             m_UpdateCheckNotification = new UpdateCheckNotificationTarget(this, new UpdateCheckedDelegate(OnUpdateChecked));
         }
 
@@ -447,6 +449,11 @@ namespace AfxGui
             GlobalConfig.Instance.Settings.EpilepsyWarningOk = 1;
             this.groupBoxEpilepsy.Visible = false;
             this.groupBoxEpilepsy.Enabled = false;
+        }
+
+        private void menuFaq_Click(object sender, EventArgs e)
+        {
+            System.Diagnostics.Process.Start("https://github.com/advancedfx/advancedfx/wiki/FAQ");
         }
     }
 }

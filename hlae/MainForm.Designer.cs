@@ -55,8 +55,9 @@
             this.menuAutoUpdateCheck = new System.Windows.Forms.ToolStripMenuItem();
             this.checkNowToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem5 = new System.Windows.Forms.ToolStripSeparator();
-            this.menuContact = new System.Windows.Forms.ToolStripMenuItem();
             this.menuAdvancedFxOrg = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuFaq = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuContact = new System.Windows.Forms.ToolStripMenuItem();
             this.donateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusStrip = new System.Windows.Forms.StatusStrip();
             this.statusLabelUpdate = new System.Windows.Forms.ToolStripStatusLabel();
@@ -280,8 +281,9 @@
             this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.checkForUpdatesToolStripMenuItem,
             this.toolStripMenuItem5,
-            this.menuContact,
-            this.menuAdvancedFxOrg});
+            this.menuAdvancedFxOrg,
+            this.menuFaq,
+            this.menuContact});
             this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
             this.helpToolStripMenuItem.Size = new System.Drawing.Size(72, 20);
             this.helpToolStripMenuItem.Text = "L10n Help";
@@ -314,13 +316,6 @@
             this.toolStripMenuItem5.Name = "toolStripMenuItem5";
             this.toolStripMenuItem5.Size = new System.Drawing.Size(368, 6);
             // 
-            // menuContact
-            // 
-            this.menuContact.Name = "menuContact";
-            this.menuContact.Size = new System.Drawing.Size(371, 22);
-            this.menuContact.Text = "L10n Contact / Privacy Policy / Imprint (advancedfx.org)";
-            this.menuContact.Click += new System.EventHandler(this.menuContact_Click);
-            // 
             // menuAdvancedFxOrg
             // 
             this.menuAdvancedFxOrg.Name = "menuAdvancedFxOrg";
@@ -328,6 +323,20 @@
             this.menuAdvancedFxOrg.Text = "L10n Offical website";
             this.menuAdvancedFxOrg.ToolTipText = "https://www.advancedfx.org/";
             this.menuAdvancedFxOrg.Click += new System.EventHandler(this.MenuAdvancedFxOrg_Click);
+            // 
+            // menuFaq
+            // 
+            this.menuFaq.Name = "menuFaq";
+            this.menuFaq.Size = new System.Drawing.Size(371, 22);
+            this.menuFaq.Text = "L10n Frequently Asked Questions (FAQ)";
+            this.menuFaq.Click += new System.EventHandler(this.menuFaq_Click);
+            // 
+            // menuContact
+            // 
+            this.menuContact.Name = "menuContact";
+            this.menuContact.Size = new System.Drawing.Size(371, 22);
+            this.menuContact.Text = "L10n Contact / Privacy Policy / Imprint (advancedfx.org)";
+            this.menuContact.Click += new System.EventHandler(this.menuContact_Click);
             // 
             // donateToolStripMenuItem
             // 
@@ -782,5 +791,6 @@
         private System.Windows.Forms.Label labelEpilepsy;
         private System.Windows.Forms.PictureBox pictureBoxEpilepsy;
         private System.Windows.Forms.Panel panelNotifications;
+        private System.Windows.Forms.ToolStripMenuItem menuFaq;
     }
 }
