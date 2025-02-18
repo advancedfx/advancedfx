@@ -219,6 +219,8 @@ public class CfgSettings
     public CfgDemoTools DemoTools;
     public SByte UpdateCheck;
     public Guid IgnoreUpdateGuid;
+    public SByte VacWarningOk;
+    public SByte EpilepsyWarningOk;
 
 	public CfgSettings()
 	{
@@ -253,6 +255,8 @@ public class CfgSettings
     private void ThisDefault()
     {
         UpdateCheck = 0;
+        VacWarningOk = 0;
+        EpilepsyWarningOk = 0;
     }
 
 }
