@@ -7354,7 +7354,7 @@ void CAfxStreams::Console_PrintStreams2()
 }
 
 extern bool Hook_MaterialSystem(void);
-
+extern bool g_bCaptureAfterSwapBuffers;
 void CAfxStreams::Console_RecordScreen(IWrpCommandArgs* args) {
 	int argC = args->ArgC();
 	char const* arg0 = args->ArgV(0);
@@ -7407,11 +7407,29 @@ void CAfxStreams::Console_RecordScreen(IWrpCommandArgs* args) {
 
 			return;
 		}
+		if (0 == _stricmp(arg1, "afterSwap")) {
+			if (3 <= argC)
+			{
+				g_bCaptureAfterSwapBuffers = 0 != atoi(args->ArgV(2));
+				return;
+			}
+
+			Tier0_Msg(
+				"%s afterSwap 0|1 - If to record after (1) swapping buffers or before (0 - default).\n"
+				"Current value: %i\n"
+				, arg0
+				, g_bCaptureAfterSwapBuffers ? 1 : 0
+			);
+
+			return;
+		}		
 	}
 
 	Tier0_Msg(
 		"%s enabled [...] - Enables / disables screen recording.\n"
 		"%s settings [...] - Controls recording settings.\n"
+		"%s afterSwap [...] - If to record after swapping buffers or before (can help with ReShade).\n"
+		, arg0
 		, arg0
 		, arg0
 	);

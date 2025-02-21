@@ -354,7 +354,21 @@ private:
 
 } g_ClientEngineTools;
 
+bool g_bCaptureAfterSwapBuffers = false;
+
 void OnBefore_CMaterialSystem_SwappBuffers() {
+
+	if(g_bCaptureAfterSwapBuffers) return;
+
+	if(g_bFirstSwapBuffersCallForFrame) {
+		g_bFirstSwapBuffersCallForFrame = false;
+		g_AfxStreams.EngineThread_QueueCapture();
+	}
+}
+
+void OnAfter_CMaterialSystem_SwappBuffers() {
+	if(!g_bCaptureAfterSwapBuffers) return;
+
 	if(g_bFirstSwapBuffersCallForFrame) {
 		g_bFirstSwapBuffersCallForFrame = false;
 		g_AfxStreams.EngineThread_QueueCapture();
