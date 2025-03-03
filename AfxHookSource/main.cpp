@@ -2511,6 +2511,10 @@ void CommonHooks()
 		{
 			g_SourceSdkVer = SourceSdkVer_TF2;
 		}
+		else if (StringIEndsWith(filePath, "hl2mp.exe"))
+		{
+			g_SourceSdkVer = SourceSdkVer_HL2MP;
+		}
 		else if (StringIEndsWith(filePath, "cstrike.exe"))
 		{
 			g_SourceSdkVer = SourceSdkVer_CSS;
