@@ -16,7 +16,7 @@
 </changes>
 <comments>
 There's a known bug with HLAE_Setup.exe when upgrading from an older HLAE version to a newer one and reinstalling the newer FFMPEG:
-It will install the newer FFMPEG and the install over that the older one again.
+It will install the newer FFMPEG and then install over that the older one again.
 This issue can be worked around by doing a repair install (run newest HLAE_Setup.exe one more time and chose repair).
 </comments>
 </release>
