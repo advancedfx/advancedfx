@@ -843,8 +843,8 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 			if(vtable) AFXADDR_SET(engine_CVideoMode_Common_WriteMovieFrame, (size_t)(vtable[26]));
 		} break;
 		case SourceSdkVer_CSS: {
-			// Checked 2024-01-05.
-			void **vtable = (void **)FindClassVtable((HMODULE)engineDll, ".?AVCVideoMode_Common@@", 0, 0x0);
+			// Checked 2025-03-03.
+			void **vtable = (void **)FindClassVtable((HMODULE)engineDll, ".?AVCVideoMode_MaterialSystem@@", 0, 0x0);
 			if(vtable) AFXADDR_SET(engine_CVideoMode_Common_WriteMovieFrame, (size_t)(vtable[26]));
 		} break;
 		case SourceSdkVer_Insurgency2: {
@@ -3113,8 +3113,8 @@ void Addresses_InitMaterialsystemDll(AfxAddr materialsystemDll, SourceSdkVer sou
 			AFXADDR_SET(materialsystem_CFunctor_vtable_size, 4);
 			break;
 		case SourceSdkVer_CSS:
-			// Checked 2023-09-16.
-			materialsystem_GetRenderCallQueue_vtable_offset = 143;
+			// Checked 2025-03-03.
+			materialsystem_GetRenderCallQueue_vtable_offset = 148; // 4th last
 			AFXADDR_SET(materialsystem_CFunctor_vtable_size, 4);
 			break;
 		case SourceSdkVer_Insurgency2:
@@ -3157,6 +3157,7 @@ void Addresses_InitMaterialsystemDll(AfxAddr materialsystemDll, SourceSdkVer sou
 				{
 					AfxAddr tmpAddr = (size_t)*(void**)vtable_addr;
 					switch(sourceSdkVer) {
+					case SourceSdkVer_CSS:
 					case SourceSdkVer_TF2:
 					case SourceSdkVer_HL2MP:
 						AFXADDR_SET(materialsystem_CMatCallQueue_QueueFunctor, tmpAddr); // If this chnanges, then this offset in MaterialSystemHooks.cpp for pQueueFunctorInternal needs to be changed!

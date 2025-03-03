@@ -116,6 +116,7 @@ bool MaterialSystem_ExecuteOnRenderThread(CMaterialSystemFunctor * pFunctor) {
                 CMatCallQueue_QueueFunctor_t pQueueFunctorInternal = (CMatCallQueue_QueueFunctor_t)AFXADDR_GET(materialsystem_CMatCallQueue_QueueFunctor);
                 size_t this_offset = 4;
                 switch(g_SourceSdkVer){
+                    case SourceSdkVer_CSS:
                     case SourceSdkVer_TF2:
                     case SourceSdkVer_HL2MP:
                         this_offset = 0xa4;
