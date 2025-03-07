@@ -290,13 +290,13 @@ bool Hook_ClientEntitySystem2() {
     if(g_pEntityList && *g_pEntityList) {
         // https://github.com/bruhmoment21/cs2-sdk
         void ** vtable = **(void****)g_pEntityList;
-        g_Org_OnAddEntity = (OnAddEntity_t)vtable[14];
-        g_Org_OnRemoveEntity = (OnRemoveEntity_t)vtable[15];
+        g_Org_OnAddEntity = (OnAddEntity_t)vtable[15];
+        g_Org_OnRemoveEntity = (OnRemoveEntity_t)vtable[16];
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
         DetourAttach(&(PVOID&)g_Org_OnAddEntity, New_OnAddEntity);
         DetourAttach(&(PVOID&)g_Org_OnRemoveEntity, New_OnRemoveEntity);
-        firstResult = NO_ERROR == DetourTransactionCommit();                
+        firstResult = NO_ERROR == DetourTransactionCommit();
     }
 
     return firstResult;    
