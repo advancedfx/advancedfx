@@ -75,7 +75,7 @@
         <Payload Id="HlaeFfmpeg_zh_zn" Compressed="yes" Name="HlaeFfmpeg\2052" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\zh-CN\HlaeFfmpeg.mst" />
       </MsiPackage>
       <ExePackage Id="UninstallHlaeWixV3" After="HlaeFfmpeg" Name="HlaeCore\HlaeCore.msi" SourceFile="$(var.InstallerBuildDir)\UninstallHlaeWixV3\UninstallHlaeWixV3.exe" Compressed="yes" PerMachine="yes" Vital="yes" DetectCondition="0" Cache="remove" InstallArguments="EXECUTE [WixBundleAction]" UninstallArguments="" />
-      <ExePackage Id="DeleteHlaeAppData" After="UninstallHlaeWixV3" DisplayName="CheckDeleteHlaeAppData" SourceFile="$(var.InstallerBuildDir)\DeleteHlaeAppData\DeleteHlaeAppData.exe" Compressed="yes" PerMachine="yes" Vital="no" DetectCondition="0" Cache="remove" UninstallArguments="EXECUTE [HlaeRemoveAppData]" />
+      <ExePackage Id="DeleteHlaeAppData" After="UninstallHlaeWixV3" DisplayName="CheckDeleteHlaeAppData" SourceFile="$(var.InstallerBuildDir)\DeleteHlaeAppData\DeleteHlaeAppData.exe" Compressed="yes" PerMachine="yes" Vital="no" DetectCondition="WixBundleCommandLineAction = 3" Cache="remove" UninstallArguments="EXECUTE [HlaeRemoveAppData]" />
       <MsiPackage Id="HlaeCore" After="DeleteHlaeAppData" SourceFile="$(var.InstallerBuildDir)\HlaeCore\en-US\HlaeCore.msi" Compressed="yes" Vital="yes" EnableFeatureSelection="no" Visible="yes" bal:DisplayInternalUICondition="WixBundleUILevel &gt; 3">
         <MsiProperty Name="APPLICATIONFOLDER" Value="[InstallFolder]" />
         <MsiProperty Name="TRANSFORMS" Value="[LangId]" />
