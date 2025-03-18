@@ -6,6 +6,13 @@ and run Deinstallation Problem Fix and enter the product ID(s) if it can't be fo
 
 If that doesn't work (No actually don't do, it will make things worse!):
 
+!!!!
+If you do this you will end up with packages removed, but still lingering product codes,
+you can remove the product codes with the tool above - if you know them.
+It would probably better to make the script remove all product codes of an found upgrade code
+as well :|
+!!!!
+
 Enter in admin powershell:
 
 Get-ChildItem -path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData' -Recurse | where {
@@ -30,6 +37,15 @@ Get-ChildItem -path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\U
 Get-ChildItem -path 'HKLM:\SOFTWARE\Classes\Installer' -Recurse | where {
 	foreach ($prop in $_.Property) {
 		if($_.GetValue($prop) -match 'HLAE Core') {
+			return $true
+		}
+	}
+	return $false
+} | Remove-Item -Recurse -Force
+
+Get-ChildItem -path 'HKLM:\SOFTWARE\Classes\Installer' -Recurse | where {
+	foreach ($prop in $_.Property) {
+		if($_.GetValue($prop) -match 'HLAE FFMPEG') {
 			return $true
 		}
 	}

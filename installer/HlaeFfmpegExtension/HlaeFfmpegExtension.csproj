@@ -7,8 +7,11 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
     <PlatformTarget>x86</PlatformTarget>
-    <UserSecretsId>638739d6-ee6f-4d68-94eb-7240d43670bd</UserSecretsId>
   </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.IO.Compression" />
+  </ItemGroup>
   <ItemGroup>
     <Content Include="CustomAction.Config">
       <SubType>Designer</SubType>
@@ -16,6 +19,8 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="WixToolset.Dtf.CustomAction" />
     <PackageReference Include="WixToolset.Dtf.WindowsInstaller" />
   </ItemGroup>

@@ -1,74 +1,87 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
-     xmlns:bal="http://schemas.microsoft.com/wix/BalExtension"
-     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal" xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
   <!-- Update this on release: Version -->
-  <Bundle
-    Name="HLAE Installer"
-    Version="2.180.1"
-    Manufacturer="advancedfx.org"
-    UpgradeCode="{35C8D990-6C4F-4639-ADF7-D259B06E070B}"
-    AboutUrl="https://www.advancedfx.org/"
-    IconSourceFile="..\..\hlae\app.ico"
-    Compressed="yes"
-    >
+  <!-- For more information see:
+      - https://docs.firegiant.com/wix3/tutorial/upgrades-and-modularization/
+      - https://learn.microsoft.com/en-us/windows/win32/msi/productversion
+  -->
+  <Bundle Name="HLAE Installer" Version="2.181.0" Manufacturer="advancedfx.org" UpgradeCode="{35C8D990-6C4F-4639-ADF7-D259B06E070B}" AboutUrl="https://www.advancedfx.org/" IconSourceFile="..\..\hlae\app.ico" Compressed="yes">
 
-    <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.HyperlinkSidebarLicense" bal:UseUILanguages="yes">
-      <bal:WixStandardBootstrapperApplication
-        LicenseUrl=""
-        SuppressOptionsUI="yes"
-        LocalizationFile="lang\HyperlinkTheme_en-US.wxl"
-        ThemeFile="HyperlinkSidebarTheme.xml"
-        ShowVersion="yes"
-      />
+    <BootstrapperApplication>
+      <bal:WixStandardBootstrapperApplication LicenseUrl="" SuppressOptionsUI="yes" LocalizationFile="lang\HyperlinkTheme_en-US.wxl" ThemeFile="HyperlinkSidebarTheme.xml" ShowVersion="yes" Theme="hyperlinkSidebarLicense" />
 
-      <Payload Id="theme_de_de" Compressed="yes"  Name="1031\thm.wxl" SourceFile="lang\HyperlinkTheme_de-DE.wxl"/>
-      <Payload Id="theme_en_us" Compressed="yes"  Name="1033\thm.wxl" SourceFile="lang\HyperlinkTheme_en-US.wxl"/>
-      <Payload Id="theme_fi_fi" Compressed="yes"  Name="1035\thm.wxl" SourceFile="lang\HyperlinkTheme_fi-FI.wxl"/>
-      <Payload Id="theme_hu_hu" Compressed="yes"  Name="1038\thm.wxl" SourceFile="lang\HyperlinkTheme_hu-HU.wxl"/>
-      <Payload Id="theme_it_it" Compressed="yes"  Name="1040\thm.wxl" SourceFile="lang\HyperlinkTheme_it-IT.wxl"/>
-      <Payload Id="theme_ja_jp" Compressed="yes"  Name="1041\thm.wxl" SourceFile="lang\HyperlinkTheme_ja-JP.wxl"/>
-      <Payload Id="theme_nl_nl" Compressed="yes"  Name="1043\thm.wxl" SourceFile="lang\HyperlinkTheme_nl-NL.wxl"/>
-      <Payload Id="theme_pl_pl" Compressed="yes"  Name="1045\thm.wxl" SourceFile="lang\HyperlinkTheme_pl-PL.wxl"/>
-      <Payload Id="theme_pt_br" Compressed="yes"  Name="1046\thm.wxl" SourceFile="lang\HyperlinkTheme_pt-BR.wxl"/>
-      <Payload Id="theme_pt_pt" Compressed="yes"  Name="2070\thm.wxl" SourceFile="lang\HyperlinkTheme_pt-PT.wxl"/>
-      <Payload Id="theme_ru_ru" Compressed="yes"  Name="1049\thm.wxl" SourceFile="lang\HyperlinkTheme_ru-RU.wxl"/>
-      <Payload Id="theme_tr_tr" Compressed="yes"  Name="1055\thm.wxl" SourceFile="lang\HyperlinkTheme_tr-TR.wxl"/>
-      <Payload Id="theme_zh_zn" Compressed="yes"  Name="2052\thm.wxl" SourceFile="lang\HyperlinkTheme_zh-CN.wxl"/>
-    </BootstrapperApplicationRef>
+      <Payload Id="theme_de_de" Compressed="yes" Name="1031\thm.wxl" SourceFile="lang\HyperlinkTheme_de-DE.wxl" />
+      <Payload Id="theme_en_us" Compressed="yes" Name="1033\thm.wxl" SourceFile="lang\HyperlinkTheme_en-US.wxl" />
+      <Payload Id="theme_fi_fi" Compressed="yes" Name="1035\thm.wxl" SourceFile="lang\HyperlinkTheme_fi-FI.wxl" />
+      <Payload Id="theme_hu_hu" Compressed="yes" Name="1038\thm.wxl" SourceFile="lang\HyperlinkTheme_hu-HU.wxl" />
+      <Payload Id="theme_it_it" Compressed="yes" Name="1040\thm.wxl" SourceFile="lang\HyperlinkTheme_it-IT.wxl" />
+      <Payload Id="theme_ja_jp" Compressed="yes" Name="1041\thm.wxl" SourceFile="lang\HyperlinkTheme_ja-JP.wxl" />
+      <Payload Id="theme_nl_nl" Compressed="yes" Name="1043\thm.wxl" SourceFile="lang\HyperlinkTheme_nl-NL.wxl" />
+      <Payload Id="theme_pl_pl" Compressed="yes" Name="1045\thm.wxl" SourceFile="lang\HyperlinkTheme_pl-PL.wxl" />
+      <Payload Id="theme_pt_br" Compressed="yes" Name="1046\thm.wxl" SourceFile="lang\HyperlinkTheme_pt-BR.wxl" />
+      <Payload Id="theme_pt_pt" Compressed="yes" Name="2070\thm.wxl" SourceFile="lang\HyperlinkTheme_pt-PT.wxl" />
+      <Payload Id="theme_ru_ru" Compressed="yes" Name="1049\thm.wxl" SourceFile="lang\HyperlinkTheme_ru-RU.wxl" />
+      <Payload Id="theme_tr_tr" Compressed="yes" Name="1055\thm.wxl" SourceFile="lang\HyperlinkTheme_tr-TR.wxl" />
+      <Payload Id="theme_zh_zn" Compressed="yes" Name="2052\thm.wxl" SourceFile="lang\HyperlinkTheme_zh-CN.wxl" />
+    </BootstrapperApplication>
 
-    <Variable Name='InstallFolder' Type='string' Value='[ProgramFilesFolder]HLAE' Persisted='yes' bal:Overridable='yes'/>
-    <Variable Name="LangId" Type="string" Value="" Persisted="no" bal:Overridable="yes" />
-    <Variable Name='HlaeRemoveAppData' Type='numeric' Value='0' Persisted='no' bal:Overridable='yes' />
+    <Variable Name="InstallFolder" Type="formatted" Value="[ProgramFilesFolder]HLAE" Persisted="yes" bal:Overridable="yes" />
+    <Variable Name="LangId" Type="formatted" Value="" Persisted="no" bal:Overridable="yes" />
+    <Variable Name="HlaeRemoveWixV3" Type="numeric" Value="0" Persisted="no" bal:Overridable="yes" />
+    <Variable Name="HlaeRemoveAppData" Type="numeric" Value="0" Persisted="no" bal:Overridable="yes" />
+    <Variable Name="HlaeFfmpeg" Type="numeric" Value="0" Persisted="no" bal:Overridable="yes" />
+    
+    <Variable Name="HlaeCore" Type="string" Value="" Persisted="no" />
+    <Variable Name="HlaeFfmpegOld" Type="numeric" Value="0" Persisted="no" />
+    <Variable Name="HlaeFfmpegNew" Type="string" Value="" Persisted="no" />
+
+    <util:ProductSearch Id="HlaeCore" Result="version" UpgradeCode="{33FEF63B-4A17-4D59-ABC9-B7A06BD07F07}" Variable="HlaeCore" />
+    <SetVariable After="HlaeCore" Id="SetHlaeRemoveWixV3" Condition="HlaeCore &gt; v0.0.0.0 AND HlaeCore &lt; v2.181.0.0" Type="numeric" Value="1" Variable="HlaeRemoveWixV3" />
+    <util:ComponentSearch After="HlaeCore" Id="HlaeFfmpegOld" Result="state" Guid="{2D1C78F6-D5B5-499E-B596-47429893F8A8}" Variable="HlaeFfmpegOld" />
+    <util:ProductSearch After="HlaeFfmpegOld" Id="HlaeFfmpegNew" Result="version" UpgradeCode="{9090AE9A-4E9D-46C5-B595-9F2FBCF96945}" Variable="HlaeFfmpegNew" />
+    <SetVariable After="HlaeFfmpegNew" Id="SetHlaeFfmpeg" Condition="HlaeFfmpegOld = 3 OR HlaeFfmpegNew &gt; v0.0.0.0 OR HlaeCore = v0.0.0.0" Type="numeric" Value="1" Variable="HlaeFfmpeg" />
 
     <Chain>
-      <PackageGroupRef Id="NetFx462Web" />
+      <PackageGroupRef Id="NetFx472WebAsPrereq" />
       <RollbackBoundary />
-      <PackageGroupRef Id="HlaeCore" />
+      <PackageGroupRef Id="Hlae" />
     </Chain>
-
-
   </Bundle>
 
   <Fragment>
-
-    <PackageGroup Id="HlaeCore">
-      <ExePackage Id="DeleteHlaeAppData" DisplayName="CheckDeleteHlaeAppData" SourceFile="$(var.DeleteHlaeAppData.TargetPath)" Compressed="yes" PerMachine="yes" UninstallCommand="EXECUTE [HlaeRemoveAppData]" Vital="no" DetectCondition="WixBundleInstalled" Cache="no" />
-      <MsiPackage SourceFile="$(var.HlaeCore.en-us.TargetPath)" Compressed="yes" Vital="yes" DisplayInternalUI="yes" EnableFeatureSelection="no" Visible="yes" After="DeleteHlaeAppData">
-        <MsiProperty Name='APPLICATIONFOLDER' Value='[InstallFolder]' />
-        <MsiProperty Name='TRANSFORMS' Value='[LangId]' />
-        <Payload Id="HlaeCore_de_de" Compressed="yes" Name="1031" SourceFile="$(var.HlaeCore.TargetDir)de-de\HlaeCore.mst"/>
-        <Payload Id="HlaeCore_fi_fi" Compressed="yes" Name="1035" SourceFile="$(var.HlaeCore.TargetDir)fi-fi\HlaeCore.mst"/>
-        <Payload Id="HlaeCore_hu_hu" Compressed="yes" Name="1038" SourceFile="$(var.HlaeCore.TargetDir)hu-hu\HlaeCore.mst"/>
-        <Payload Id="HlaeCore_it_it" Compressed="yes" Name="1040" SourceFile="$(var.HlaeCore.TargetDir)it-it\HlaeCore.mst"/>
-        <Payload Id="HlaeCore_ja_jp" Compressed="yes" Name="1041" SourceFile="$(var.HlaeCore.TargetDir)ja-jp\HlaeCore.mst"/>
-        <Payload Id="HlaeCore_nl_nl" Compressed="yes" Name="1043" SourceFile="$(var.HlaeCore.TargetDir)nl-nl\HlaeCore.mst"/>
-        <Payload Id="HlaeCore_pl_pl" Compressed="yes" Name="1045" SourceFile="$(var.HlaeCore.TargetDir)pl-pl\HlaeCore.mst"/>
-        <Payload Id="HlaeCore_pt_br" Compressed="yes" Name="1046" SourceFile="$(var.HlaeCore.TargetDir)pt-br\HlaeCore.mst"/>
-        <Payload Id="HlaeCore_pt_pt" Compressed="yes" Name="2070" SourceFile="$(var.HlaeCore.TargetDir)pt-pt\HlaeCore.mst"/>
-        <Payload Id="HlaeCore_ru_ru" Compressed="yes" Name="1049" SourceFile="$(var.HlaeCore.TargetDir)ru-ru\HlaeCore.mst"/>
-        <Payload Id="HlaeCore_tr_tr" Compressed="yes" Name="1055" SourceFile="$(var.HlaeCore.TargetDir)tr-tr\HlaeCore.mst"/>
-        <Payload Id="HlaeCore_zh_zn" Compressed="yes" Name="2052" SourceFile="$(var.HlaeCore.TargetDir)zh-cn\HlaeCore.mst"/>
+    <PackageGroup Id="Hlae">
+      <MsiPackage Id="HlaeFfmpeg" InstallCondition="HlaeFfmpeg" Name="HlaeFfmpeg\HlaeFfmpeg.msi" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\en-US\HlaeFfmpeg.msi" Compressed="yes" Vital="yes" EnableFeatureSelection="no" Visible="yes" bal:DisplayInternalUICondition="WixBundleCommandLineAction &lt;&gt; 3 AND WixBundleUILevel &gt; 3">
+        <MsiProperty Name="APPLICATIONFOLDER" Value="[InstallFolder]" />
+        <MsiProperty Name="TRANSFORMS" Value="[LangId]" />
+        <Payload Id="HlaeFfmpeg_de_de" Compressed="yes" Name="HlaeFfmpeg\1031" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\de-DE\HlaeFfmpeg.mst" />
+        <Payload Id="HlaeFfmpeg_fi_fi" Compressed="yes" Name="HlaeFfmpeg\1035" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\fi-FI\HlaeFfmpeg.mst" />
+        <Payload Id="HlaeFfmpeg_hu_hu" Compressed="yes" Name="HlaeFfmpeg\1038" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\hu-HU\HlaeFfmpeg.mst" />
+        <Payload Id="HlaeFfmpeg_it_it" Compressed="yes" Name="HlaeFfmpeg\1040" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\it-IT\HlaeFfmpeg.mst" />
+        <Payload Id="HlaeFfmpeg_ja_jp" Compressed="yes" Name="HlaeFfmpeg\1041" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\ja-JP\HlaeFfmpeg.mst" />
+        <Payload Id="HlaeFfmpeg_nl_nl" Compressed="yes" Name="HlaeFfmpeg\1043" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\nl-NL\HlaeFfmpeg.mst" />
+        <Payload Id="HlaeFfmpeg_pl_pl" Compressed="yes" Name="HlaeFfmpeg\1045" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\pl-PL\HlaeFfmpeg.mst" />
+        <Payload Id="HlaeFfmpeg_pt_br" Compressed="yes" Name="HlaeFfmpeg\1046" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\pt-BR\HlaeFfmpeg.mst" />
+        <Payload Id="HlaeFfmpeg_pt_pt" Compressed="yes" Name="HlaeFfmpeg\2070" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\pt-PT\HlaeFfmpeg.mst" />
+        <Payload Id="HlaeFfmpeg_ru_ru" Compressed="yes" Name="HlaeFfmpeg\1049" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\ru-RU\HlaeFfmpeg.mst" />
+        <Payload Id="HlaeFfmpeg_tr_tr" Compressed="yes" Name="HlaeFfmpeg\1055" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\tr-TR\HlaeFfmpeg.mst" />
+        <Payload Id="HlaeFfmpeg_zh_zn" Compressed="yes" Name="HlaeFfmpeg\2052" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\zh-CN\HlaeFfmpeg.mst" />
+      </MsiPackage>
+      <ExePackage Id="UninstallHlaeWixV3" After="HlaeFfmpeg"  DisplayName="MaybeUninstallHlaeWixV3" SourceFile="$(var.InstallerBuildDir)\UninstallHlaeWixV3\UninstallHlaeWixV3.exe" Compressed="yes" PerMachine="yes" Vital="yes" DetectCondition="0" InstallArguments="EXECUTE [WixBundleAction] [HlaeRemoveWixV3]" UninstallArguments="" />
+      <ExePackage Id="DeleteHlaeAppData" After="UninstallHlaeWixV3" DisplayName="MaybeDeleteHlaeAppData" SourceFile="$(var.InstallerBuildDir)\DeleteHlaeAppData\DeleteHlaeAppData.exe" Compressed="yes" PerMachine="yes" Vital="no" DetectCondition="0" UninstallArguments="EXECUTE [WixBundleAction] [HlaeRemoveAppData]" />
+      <MsiPackage Id="HlaeCore" After="DeleteHlaeAppData" Name="HlaeCore\HlaeCore.msi" SourceFile="$(var.InstallerBuildDir)\HlaeCore\en-US\HlaeCore.msi" Compressed="yes" Vital="yes" EnableFeatureSelection="no" Visible="yes" bal:DisplayInternalUICondition="WixBundleCommandLineAction &lt;&gt; 3 AND WixBundleUILevel &gt; 3">
+        <MsiProperty Name="APPLICATIONFOLDER" Value="[InstallFolder]" />
+        <MsiProperty Name="TRANSFORMS" Value="[LangId]" />
+        <Payload Id="HlaeCore_de_de" Compressed="yes" Name="HlaeCore\1031" SourceFile="$(var.InstallerBuildDir)\HlaeCore\de-DE\HlaeCore.mst" />
+        <Payload Id="HlaeCore_fi_fi" Compressed="yes" Name="HlaeCore\1035" SourceFile="$(var.InstallerBuildDir)\HlaeCore\fi-FI\HlaeCore.mst" />
+        <Payload Id="HlaeCore_hu_hu" Compressed="yes" Name="HlaeCore\1038" SourceFile="$(var.InstallerBuildDir)\HlaeCore\hu-HU\HlaeCore.mst" />
+        <Payload Id="HlaeCore_it_it" Compressed="yes" Name="HlaeCore\1040" SourceFile="$(var.InstallerBuildDir)\HlaeCore\it-IT\HlaeCore.mst" />
+        <Payload Id="HlaeCore_ja_jp" Compressed="yes" Name="HlaeCore\1041" SourceFile="$(var.InstallerBuildDir)\HlaeCore\ja-JP\HlaeCore.mst" />
+        <Payload Id="HlaeCore_nl_nl" Compressed="yes" Name="HlaeCore\1043" SourceFile="$(var.InstallerBuildDir)\HlaeCore\nl-NL\HlaeCore.mst" />
+        <Payload Id="HlaeCore_pl_pl" Compressed="yes" Name="HlaeCore\1045" SourceFile="$(var.InstallerBuildDir)\HlaeCore\pl-PL\HlaeCore.mst" />
+        <Payload Id="HlaeCore_pt_br" Compressed="yes" Name="HlaeCore\1046" SourceFile="$(var.InstallerBuildDir)\HlaeCore\pt-BR\HlaeCore.mst" />
+        <Payload Id="HlaeCore_pt_pt" Compressed="yes" Name="HlaeCore\2070" SourceFile="$(var.InstallerBuildDir)\HlaeCore\pt-PT\HlaeCore.mst" />
+        <Payload Id="HlaeCore_ru_ru" Compressed="yes" Name="HlaeCore\1049" SourceFile="$(var.InstallerBuildDir)\HlaeCore\ru-RU\HlaeCore.mst" />
+        <Payload Id="HlaeCore_tr_tr" Compressed="yes" Name="HlaeCore\1055" SourceFile="$(var.InstallerBuildDir)\HlaeCore\tr-TR\HlaeCore.mst" />
+        <Payload Id="HlaeCore_zh_zn" Compressed="yes" Name="HlaeCore\2052" SourceFile="$(var.InstallerBuildDir)\HlaeCore\zh-CN\HlaeCore.mst" />
       </MsiPackage>
     </PackageGroup>
   </Fragment>
