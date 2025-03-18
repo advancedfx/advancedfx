@@ -31,7 +31,7 @@
                 <Text Condition="NOT WixStdBASuppressOptionsUI">#(loc.InstallMessageOptions)</Text>
             </Label>
 
-            <Label X="185" Y="167" Width="-11" Height="32" FontId="2" DisablePrefix="yes">#(loc.HaleFfmpegTitle)</Label>
+            <Label X="185" Y="167" Width="-11" Height="32" FontId="2" DisablePrefix="yes">#(loc.HlaeFfmpegTitle)</Label>
             <Checkbox X="185" Y="208" Width="-11" Height="36" FontId="3" Name="HlaeFfmpeg" TabStop="yes">#(loc.HlaeFfmpeg)</Checkbox>
 
             <Hypertext Name="EulaHyperlink" X="185" Y="-111" Width="-11" Height="17" TabStop="yes" FontId="3" HideWhenDisabled="yes">#(loc.InstallLicenseLinkText)</Hypertext>
