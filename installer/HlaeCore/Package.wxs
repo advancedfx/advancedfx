@@ -46,13 +46,13 @@
 
       <ComponentRef Id="HlaeCoreRegistry" />
 
-      <Files Include="$(sys.SOURCEFILEDIR)..\..\build\$(var.Configuration)\dist\installer\hlae\**" />
+      <Files Directory="APPLICATIONFOLDER" Include="$(sys.SOURCEFILEDIR)..\..\build\$(var.Configuration)\dist\installer\hlae\**" />
 
       <ComponentRef Id="_E77FBD5C_A4F1_429D_B750_9C270BD89C18_HLAE.exe" />
       <ComponentRef Id="HlaeStartProgramsFolder" />
 	  
       <Feature Id="HlaeLocales" Title="!(loc.HlaeLocalesTitle)" Level="1" AllowAdvertise="no" InstallDefault="local">
-        <Files Include="$(sys.SOURCEFILEDIR)..\..\build\$(var.Configuration)\dist\bin\locales\**" />
+        <Files Directory="LocalesDir" Include="$(sys.SOURCEFILEDIR)..\..\build\$(var.Configuration)\dist\bin\locales\**" />
       </Feature>
 
       <Component Id="HlaeFfmpeg" Guid="{6A621292-1C1E-4CE5-808A-A0AFAF6577CB}" Directory="_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg" NeverOverwrite="yes" KeyPath="yes" Condition="HLAE_FFMPEG_PATH">
@@ -85,7 +85,7 @@
   <Fragment>
     <StandardDirectory Id="ProgramFilesFolder">
       <Directory Id="APPLICATIONFOLDER" Name="HLAE">
-        <Directory Id="LocalesDir" />
+        <Directory Id="LocalesDir" Name="locales" />
         <Directory Id="_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg" Name="ffmpeg" />
       </Directory>
     </StandardDirectory>
