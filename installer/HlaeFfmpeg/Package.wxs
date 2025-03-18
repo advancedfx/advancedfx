@@ -1,0 +1,117 @@
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+    xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
+    >
+    <Package
+        ProductCode="{CA6490CA-3B5A-464E-9B4A-84A2B3014FF4}"
+        Version="1.1.0.0"
+        Name="!(loc.PackageName)"
+        Manufacturer="!(loc.Manufacturer)"
+        UpgradeCode="{9090AE9A-4E9D-46C5-B595-9F2FBCF96945}"
+    >
+        <MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeErrorMessage)" />
+
+	    <MediaTemplate EmbedCab="yes" />
+
+        <Icon Id="HLAEIcon.exe" SourceFile="$(sys.SOURCEFILEDIR)../../hlae/app.ico" />
+        <Property Id="ARPPRODUCTICON" Value="HLAEIcon.exe" />
+
+        <Property Id="HLAE_FFMPEG_CONFIG" Value="(none)">
+            <ComponentSearch Id="HlaeFfmpegFolder" Guid="{07854568-BA31-4064-BE28-3F79781FA09A}" Type="directory">
+                <DirectorySearch Depth="0">
+                    <FileSearch Name="config.ini" />
+                </DirectorySearch>
+            </ComponentSearch>
+        </Property>
+
+        <Property Id="FFMPEG_REINSTALL" Value="1" Secure="yes">
+            <IniFileSearch Name="[HLAE_FFMPEG_CONFIG]" Field="0" Section="Ffmpeg" Key="ReInstall" Type="raw" />
+        </Property>
+
+        <Property Id="FFMPEG_VERSION" Value="latest-win64-static" Secure="yes" >
+            <IniFileSearch Name="[HLAE_FFMPEG_CONFIG]" Field="0" Section="Ffmpeg" Key="Version" Type="raw" />
+        </Property>
+
+        <Property Id="FFMPEG_CUSTOM" Value="(unset)" Secure="yes" >
+            <IniFileSearch Name="[HLAE_FFMPEG_CONFIG]" Field="0" Section="Custom" Key="Version" Type="raw" />
+        </Property>
+
+        <Feature Id="Ffmpeg" AllowAbsent="no" InstallDefault="local">
+            <Component Id="Ffmpeg" Guid="{07854568-BA31-4064-BE28-3F79781FA09A}" Directory="INSTALLFOLDER" NeverOverwrite="yes" KeyPath="yes">
+                <CreateFolder />
+                <CreateFolder Directory="_003A8A70_121B_4771_B213_4829EFA3DEDB_ffmpeg" />
+                <File Id="_FB021288_3A4C_4AAB_8CC8_725321F2A58E_keep"  Name=".keep" Source="$(sys.SOURCEFILEDIR)..\shared\.keep" />
+                <IniFile Action="addLine" Directory="INSTALLFOLDER" Name="config.ini" Section="Ffmpeg" Key="ReInstall" Value="[FFMPEG_REINSTALL]" />
+                <IniFile Action="addLine" Directory="INSTALLFOLDER" Name="config.ini" Section="Ffmpeg" Key="Version" Value="[FFMPEG_VERSION]" />
+                <IniFile Action="addLine" Directory="INSTALLFOLDER" Name="config.ini" Section="Ffmpeg" Key="Custom" Value="[FFMPEG_CUSTOM]" />
+            </Component>
+        </Feature>            
+
+        <UI>
+            <ui:WixUI Id="MyWixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+            <UIRef Id="WixUI_ErrorProgressText" />
+
+            <ProgressText Action="InstallFfmpeg" Message="!(loc.InstallFfmpeg)" />
+            
+            <UIText Id="InstallFfmpegConnect" Value="!(loc.InstallFfmpegConnect)" />
+            <UIText Id="InstallFfmpegConnect_Template" Value="!(loc.InstallFfmpegConnect_Template)" />
+            <UIText Id="InstallFfmpegDownload" Value="!(loc.InstallFfmpegDownload)" />
+            <UIText Id="InstallFfmpegDownload_Template" Value="!(loc.InstallFfmpegDownload_Template)" />
+            <UIText Id="InstallFfmpegChecksum" Value="!(loc.InstallFfmpegChecksum)" />
+            <UIText Id="InstallFfmpegChecksum_Template" Value="!(loc.InstallFfmpegChecksum_Template)" />
+            <UIText Id="InstallFfmpegExtract" Value="!(loc.InstallFfmpegExtract)" />
+            <UIText Id="InstallFfmpegExtract_Template" Value="!(loc.InstallFfmpegExtract_Template)" />
+        </UI>
+
+        <Property Id="AFX_FFMPEGURL" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2024-12-31-13-02/ffmpeg-n7.1-62-gb168ed9b14-win64-gpl-7.1.zip" />
+        <Property Id="AFX_FFMPEGSUM" Value="1291939cb2f8bd9b22eaa65c23d332235c9eea2739f55692a30ad9b41d59f194e1fb50c9d52287659ccb5f63a9f600d7c054309d94875b17dee192401eea67d0" />
+
+        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_40" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2024-12-31-13-02/ffmpeg-n7.1-62-gb168ed9b14-win64-lgpl-shared-7.1.zip" Condition="FFMPEG_VERSION=&quot;latest-win64-shared-lgpl&quot;" />
+        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_40" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="1d0ff13c545119926bb4d11435762ea026da7d2d5cc5cc16378bb8cf8dbae16c89e11f13a54b8587c9e92946785e367e7b07917acc3d194a061d490538189487" Condition="FFMPEG_VERSION=&quot;latest-win64-shared-lgpl&quot;" />
+        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_41" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2024-12-31-13-02/ffmpeg-n7.1-62-gb168ed9b14-win64-lgpl-7.1.zip" Condition="FFMPEG_VERSION=&quot;latest-win64-static-lgpl&quot;" />
+        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_41" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="d632dc3cba5327e66972b7880319c82007a94d277bf5c94759cb17e6f3ce3f4c406ce8ab69d909fd6717c884b70d1e7f247e2a3fe6ecdbe7b82e98d39691f158" Condition="FFMPEG_VERSION=&quot;latest-win64-static-lgpl&quot;" />
+        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_42" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2024-12-31-13-02/ffmpeg-n7.1-62-gb168ed9b14-win64-gpl-shared-7.1.zip" Condition="FFMPEG_VERSION=&quot;latest-win64-shared&quot;" />
+        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_42" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="7ab01543ce117dd8de3ffd0ecd30203eeec805fc82e70365b20f7864bed1302cb0fbb8754024417805c71989f2ebbb3bfcba593731c0c1ab711eaceaf19504c2" Condition="FFMPEG_VERSION=&quot;latest-win64-shared&quot;" />
+        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_43" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2024-12-31-13-02/ffmpeg-n7.1-62-gb168ed9b14-win64-gpl-7.1.zip" Condition="FFMPEG_VERSION=&quot;latest-win64-static&quot;" />
+        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_43" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="1291939cb2f8bd9b22eaa65c23d332235c9eea2739f55692a30ad9b41d59f194e1fb50c9d52287659ccb5f63a9f600d7c054309d94875b17dee192401eea67d0" Condition="FFMPEG_VERSION=&quot;latest-win64-static&quot;" />
+
+        <InstallExecuteSequence>
+            <Custom Action="FfmpegRemoveAction" Before="RemoveFiles" Condition="$Ffmpeg=2 OR $Ffmpeg &lt;&gt; 2 AND FFMPEG_REINSTALL" />
+            <Custom Action="FfmpegCreateDirectory" Before="InstallFfmpegPrepareAction" Condition="Installed AND $Ffmpeg&lt;&gt;2 AND FFMPEG_REINSTALL OR NOT(Installed) AND $Ffmpeg=3" />
+            <Custom Action="InstallFfmpegPrepareAction" Before="InstallFfmpegAction" Condition="(Installed AND $Ffmpeg&lt;&gt;2 AND FFMPEG_REINSTALL OR NOT(Installed) AND $Ffmpeg=3) AND FFMPEG_VERSION &lt;&gt; &quot;custom&quot;" />
+            <Custom Action="InstallFfmpegAction" After="InstallFiles" Condition="(Installed AND $Ffmpeg&lt;&gt;2 AND FFMPEG_REINSTALL OR NOT(Installed) AND $Ffmpeg=3) AND FFMPEG_VERSION &lt;&gt; &quot;custom&quot;" />
+            <Custom Action="FinalizeFfmpegInstallAction" After="InstallFfmpegAction" Condition="$Ffmpeg=3 OR FFMPEG_REINSTALL AND $Ffmpeg&lt;&gt;2" />
+        </InstallExecuteSequence>
+    </Package>
+
+    <Fragment>
+        <Binary Id="FfmpegExt" SourceFile="$(var.HlaeFfmpegExtension.TargetDir)\HlaeFfmpegExtension.CA.dll" />
+
+        <CustomAction Id="FfmpegCustomPathDlgAction" DllEntry="FfmpegCustomPathDlg" Execute="immediate" Return="check" BinaryRef="FfmpegExt" />
+        <CustomAction Id="ValidateFfmpegCustomPathAction" DllEntry="ValidateFfmpegCustomPath" Execute="immediate" Return="check" BinaryRef="FfmpegExt" />
+        
+        <SetProperty Action="SetInstallFfmpegPrepareUrlAction" Id="AFX_FFMPEGURL" Value="[AFX_FFMPEGURL]" Before="InstallFfmpegPrepareAction" Sequence="execute" />
+        <SetProperty Action="SetInstallFfmpegPrepareSumAction" Id="AFX_FFMPEGSUM" Value="[AFX_FFMPEGSUM]" Before="InstallFfmpegPrepareAction" Sequence="execute" />
+        <SetProperty Action="SetInstallFfmpegPrepareFolderAction" Id="AFX_FFMPEGFOLDER" Value="[_003A8A70_121B_4771_B213_4829EFA3DEDB_ffmpeg]" Before="InstallFfmpegPrepareAction" Sequence="execute" />
+        <CustomAction Id="InstallFfmpegPrepareAction" DllEntry="InstallFfmpegPrepare" Execute="immediate" Return="check" BinaryRef="FfmpegExt" />
+        <CustomAction Id="InstallFfmpegAction" DllEntry="InstallFfmpeg" Execute="deferred" Impersonate="no" Return="check" BinaryRef="FfmpegExt" />
+
+        <SetProperty Action="SetFfmpegCreateDirectory" Id="FfmpegCreateDirectory" Value="AFX_CREATEFOLDER=[_003A8A70_121B_4771_B213_4829EFA3DEDB_ffmpeg]" Before="FfmpegCreateDirectory" Sequence="execute" />
+        <CustomAction Id="FfmpegCreateDirectory" DllEntry="CreateDirectory" Execute="deferred" Impersonate="no" Return="check" BinaryRef="FfmpegExt" />
+
+
+        <SetProperty Action="SetFinalizeFfmpegInstallActionNormal" Id="FinalizeFfmpegInstallAction" Condition="FFMPEG_VERSION &lt;&gt; &quot;custom&quot;" Value="AFX_TO=[_003A8A70_121B_4771_B213_4829EFA3DEDB_ffmpeg]" Before="FinalizeFfmpegInstallAction" Sequence="execute" />
+        <SetProperty Action="SetFinalizeFfmpegInstallActionCustom" Id="FinalizeFfmpegInstallAction" Condition="FFMPEG_VERSION = &quot;custom&quot;" Value="AFX_TO=[_003A8A70_121B_4771_B213_4829EFA3DEDB_ffmpeg];FFMPEG_CUSTOM=[FFMPEG_CUSTOM]" Before="FinalizeFfmpegInstallAction" Sequence="execute" />
+        <CustomAction Id="FinalizeFfmpegInstallAction" DllEntry="FinalizeFfmpegInstall" Execute="deferred" Impersonate="no" Return="check" BinaryRef="FfmpegExt" />
+    
+        <SetProperty Action="SetFfmpegRemoveAction" Id="FfmpegRemoveAction" Value="AFX_REMOVEFOLDER=[_003A8A70_121B_4771_B213_4829EFA3DEDB_ffmpeg]" Before="FfmpegRemoveAction" Sequence="execute" />
+        <CustomAction Id="FfmpegRemoveAction" DllEntry="RemoveFolder" Execute="deferred" Impersonate="no" Return="check" BinaryRef="FfmpegExt" />        
+    </Fragment>
+
+    <Fragment>
+        <StandardDirectory Id="ProgramFilesFolder">
+            <Directory Id="INSTALLFOLDER" Name="HLAE FFMPEG">
+                <Directory Id="_003A8A70_121B_4771_B213_4829EFA3DEDB_ffmpeg" Name="ffmpeg" />
+            </Directory>
+        </StandardDirectory>
+    </Fragment>
+</Wix>

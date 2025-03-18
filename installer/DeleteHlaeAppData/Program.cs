@@ -17,7 +17,7 @@ namespace DeleteHlaeAppData
 
                     if (System.IO.Directory.Exists(hlaeAppDataPath)) System.IO.Directory.Delete(hlaeAppDataPath, true);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                 }
             }

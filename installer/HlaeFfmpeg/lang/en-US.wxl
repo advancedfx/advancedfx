@@ -1,6 +1,5 @@
 ﻿<WixLocalization Culture="en-us" Language="1033" Codepage="1252" xmlns="http://wixtoolset.org/schemas/v4/wxl">
-  <String Id="ApplicationName" Value="HLAE" />
-  <String Id="HlaeLocalesTitle" Value="Translations" />
+  <String Id="PackageName" Value="HLAE FFMPEG" />
   <String Id="Manufacturer" Value="advancedfx.org" />
   <String Id="DowngradeErrorMessage" Value="A newer version of [ProductName] is already installed." />
   <String Id="FfmpegTitle" Value="FFMPEG" />
@@ -30,6 +29,4 @@
   <String Id="InstallFfmpegChecksum_Template" Value="[1] of [2] Bytes" />
   <String Id="InstallFfmpegExtract" Value="Extracting FFMPEG" />
   <String Id="InstallFfmpegExtract_Template" Value="Item [1] of [2] ..." />  
-  <String Id="AppFolderMustBeLatin" Value="The HLAE application folder path contains invalid characters: Only basic latin character set is allowed (7bit ASCII)." />
-  <String Id="RemoveHlaeAppDataFolder" Value="Remove HLAE application data folder (not recommended)." />
 </WixLocalization>

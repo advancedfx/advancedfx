@@ -1,0 +1,81 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+    xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
+    >
+    <Package
+        ProductCode="{CA6490CA-3B5A-464E-9B4A-84A2B3014FF4}"
+        Version="1.0.0.0"
+        Name="!(loc.PackageName)"
+        Manufacturer="!(loc.Manufacturer)"
+        UpgradeCode="{9090AE9A-4E9D-46C5-B595-9F2FBCF96945}"
+    >
+        <MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeErrorMessage)" />
+
+	    <MediaTemplate EmbedCab="yes" />
+
+        <Icon Id="HLAEIcon.exe" SourceFile="$(sys.SOURCEFILEDIR)../../hlae/app.ico" />
+        <Property Id="ARPPRODUCTICON" Value="HLAEIcon.exe" />
+
+        <Property Id="OLD_HLAE_FFMPEG_FOLDER" Secure="yes">
+            <ComponentSearch Id="HlaeFfmpegFolder" Guid="{2D1C78F6-D5B5-499E-B596-47429893F8A8}" Type="directory" />
+        </Property>
+
+        <Property Id="FFMPEG_REINSTALL" Value="1"  Secure="yes"/>
+        <Property Id="_FFMPEG_REINSTALL" Value="#1">
+            <RegistrySearch Id="FFMPEG_REINSTALL_reg" Type="raw" Root="HKLM" Key="Software\advancedfx\HLAE\FFMPEG" Name="reinstall" />
+        </Property>
+        <SetProperty Sequence="first" Action="SetFFMPEG_REINSTALL_1" Id="FFMPEG_REINSTALL" After="AppSearch" Value="1" Condition="_FFMPEG_REINSTALL=&quot;#1&quot;" />
+        <SetProperty Sequence="first" Action="SetFFMPEG_REINSTALL_0" Id="FFMPEG_REINSTALL" After="AppSearch" Value="{}" Condition="NOT (_FFMPEG_REINSTALL=&quot;#1&quot;)" />
+
+        <Property Id="FFMPEG_VERSION" Value="latest-win64-static" Secure="yes" />
+        <Property Id="_FFMPEG_VERSION" Value="latest-win64-static">
+            <RegistrySearch Id="FFMPEG_VERSION_reg" Type="raw" Root="HKLM" Key="Software\advancedfx\HLAE\FFMPEG" Name="version" />
+        </Property>
+        <SetProperty Sequence="first" Action="SetFFMPEG_VERSION" Id="FFMPEG_VERSION" After="AppSearch" Value="[_FFMPEG_VERSION]" Condition="1" />
+
+        <Property Id="FFMPEG_CUSTOM" Secure="yes">
+            <RegistrySearch Id="FFMPEG_CUSTOM_reg" Type="file" Root="HKLM" Key="Software\advancedfx\HLAE\FFMPEG" Name="custom">
+                <FileSearch Id="FFMPEG_CUSTOM_reg" Name="[FFMPEG_CUSTOM]" />
+            </RegistrySearch>
+        </Property>
+
+        <Feature Id="Ffmpeg" AllowAbsent="no" InstallDefault="local">
+            <Component Id="Ffmpeg" Guid="{07854568-BA31-4064-BE28-3F79781FA09A}" Directory="INSTALLFOLDER" NeverOverwrite="yes" KeyPath="yes">
+                <CreateFolder />
+                <CreateFolder Directory="_003A8A70_121B_4771_B213_4829EFA3DEDB_ffmpeg" />
+                <File Id="_FB021288_3A4C_4AAB_8CC8_725321F2A58E_keep" Name=".keep" Source="$(sys.SOURCEFILEDIR)..\shared\.keep" />
+                <IniFile Action="addLine" Directory="INSTALLFOLDER" Name="config.ini" Section="Ffmpeg" Key="ReInstall" Value="[FFMPEG_REINSTALL]" />
+                <IniFile Action="addLine" Directory="INSTALLFOLDER" Name="config.ini" Section="Ffmpeg" Key="Version" Value="[FFMPEG_VERSION]" />
+                <IniFile Action="addLine" Directory="INSTALLFOLDER" Name="config.ini" Section="Ffmpeg" Key="Custom" Value="[FFMPEG_CUSTOM]" />
+            </Component>
+        </Feature>
+
+        <UI>
+            <ui:WixUI Id="MyWixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+            <UIRef Id="WixUI_ErrorProgressText" />
+        </UI>
+
+        <InstallExecuteSequence>
+            <Custom Action="FfmpegRemoveAction" Before="RemoveFiles" Condition="$Ffmpeg=2 OR OLD_HLAE_FFMPEG_FOLDER AND $Ffmpeg &lt;&gt; 2 AND FFMPEG_REINSTALL" />
+            <Custom Action="MigrateFfmpegAction" After="InstallFiles" Condition="OLD_HLAE_FFMPEG_FOLDER AND $Ffmpeg &lt;&gt; 2" />
+        </InstallExecuteSequence>
+    </Package>
+
+    <Fragment>
+        <Binary Id="FfmpegMigrateExt" SourceFile="$(var.HlaeFfmpegMigrateExtension.TargetDir)\HlaeFfmpegMigrateExtension.CA.dll" />
+
+        <SetProperty Action="SetMigrateFfmpegActionNormal" Id="MigrateFfmpegAction" Condition="FFMPEG_VERSION &lt;&gt; &quot;custom&quot;" Value="AFX_FROM=[OLD_HLAE_FFMPEG_FOLDER];AFX_TO=[_003A8A70_121B_4771_B213_4829EFA3DEDB_ffmpeg]" Before="MigrateFfmpegAction" Sequence="execute" />
+        <SetProperty Action="SetMigrateFfmpegActionCustom" Id="MigrateFfmpegAction" Condition="FFMPEG_VERSION = &quot;custom&quot;" Value="AFX_FROM=[OLD_HLAE_FFMPEG_FOLDER];AFX_TO=[_003A8A70_121B_4771_B213_4829EFA3DEDB_ffmpeg];FFMPEG_CUSTOM=[FFMPEG_CUSTOM]" Before="MigrateFfmpegAction" Sequence="execute" />
+        <CustomAction Id="MigrateFfmpegAction" DllEntry="MigrateFfmpegInstall" Execute="deferred" Impersonate="no" Return="check" BinaryRef="FfmpegMigrateExt" />
+    
+        <SetProperty Action="SetFfmpegRemoveAction" Id="FfmpegRemoveAction" Value="AFX_REMOVEFOLDER=[_003A8A70_121B_4771_B213_4829EFA3DEDB_ffmpeg]" Before="FfmpegRemoveAction" Sequence="execute" />
+        <CustomAction Id="FfmpegRemoveAction" DllEntry="RemoveFolder" Execute="deferred" Impersonate="no" Return="check" BinaryRef="FfmpegMigrateExt" />        
+    </Fragment>
+
+    <Fragment>
+        <StandardDirectory Id="ProgramFilesFolder">
+            <Directory Id="INSTALLFOLDER" Name="HLAE FFMPEG">
+                <Directory Id="_003A8A70_121B_4771_B213_4829EFA3DEDB_ffmpeg" Name="ffmpeg" />
+            </Directory>
+        </StandardDirectory>
+    </Fragment>
+</Wix>
