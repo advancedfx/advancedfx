@@ -6,6 +6,37 @@ bool g_bHookedMirvCommands = false;
 
 bool g_bNoFlashEnabled = false;
 
+bool g_bEndOfMatchEnabled = true;
+
+typedef void (__fastcall *g_Original_EOM_t)(u_char* param_1, uint64_t param_2);
+g_Original_EOM_t g_Original_EOM = nullptr;
+
+void __fastcall new_EOM(u_char* param_1, uint64_t param_2) {
+	if (g_bEndOfMatchEnabled) return g_Original_EOM(param_1, param_2);
+}
+
+void mirvEndOfMatch_Console(advancedfx::ICommandArgs* args) {
+	const auto arg0 = args->ArgV(0);
+	int argc = args->ArgC();
+
+	if (2 == argc)
+	{
+		g_bEndOfMatchEnabled = 0 != atoi(args->ArgV(1));
+		return;
+	}
+
+	advancedfx::Message(
+		"%s <0|1> - Enable (1) / disable (0) end of match scene.\n"
+		"Current value: %d\n"
+		, arg0, g_bEndOfMatchEnabled
+	);
+}
+
+CON_COMMAND(mirv_endofmatch, "Disables end of match scene.")
+{
+	mirvEndOfMatch_Console(args);
+}
+
 typedef void (__fastcall *g_Original_flashFunc_t)(u_char* param_1, u_char* param_2, float* param_3);
 g_Original_flashFunc_t g_Original_flashFunc = nullptr;
 
@@ -46,7 +77,16 @@ bool getAddressesFromClient(HMODULE clientDll) {
 		return false;
 	}
 
+	// called in func with 'cs_win_panel_match' in the end in if/else statement
+	// in func itself it starts with 'if (*(char *)(param_1 + 8) == '\0')'
+	size_t g_Original_EOM_addr = getAddress(clientDll, "40 56 41 54 48 83 EC ?? 80 79");
+	if(g_Original_EOM_addr == 0) {
+		ErrorBox(MkErrStr(__FILE__, __LINE__));
+		return false;
+	}
+
 	g_Original_flashFunc = (g_Original_flashFunc_t)(g_Original_flashFunc_addr);
+	g_Original_EOM = (g_Original_EOM_t)(g_Original_EOM_addr);
 
 	return true;
 }
@@ -60,6 +100,7 @@ void HookMirvCommands(HMODULE clientDll) {
     DetourUpdateThread(GetCurrentThread());
 
 	DetourAttach(&(PVOID&)g_Original_flashFunc, new_flashFunc);
+	DetourAttach(&(PVOID&)g_Original_EOM, new_EOM);
 
 	if(NO_ERROR != DetourTransactionCommit()) {
 		ErrorBox("Failed to detour MirvCommands functions.");
