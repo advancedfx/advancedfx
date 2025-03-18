@@ -96,7 +96,7 @@ if (NOT ${PROJECT_NAME}-MultiBuild)
         execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -Rf installer/hlae/ffmpeg)
         execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -Rf installer/hlae/locales)
         execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -f installer/hlae/HLAE.exe)
-        execute_process( WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}/installer\" COMMAND \"build_installer.bat\" \"${CMAKE_INSTALL_PREFIX}/installer/build\" \"${CMAKE_INSTALL_PREFIX}\")
+        execute_process( WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}/installer\" COMMAND \"build_installer.bat\" \"${CMAKE_INSTALL_PREFIX}/installer/build\" \"${CMAKE_INSTALL_PREFIX}\" \"${VS_MSBUILD}\")
         "
     )  
     

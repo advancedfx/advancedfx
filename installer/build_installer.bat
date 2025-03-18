@@ -1,5 +1,6 @@
 @IF ["%~1"] == [""] goto :help
 @IF ["%~2"] == [""] goto :help
+@IF ["%~3"] == [""] goto :help
 
 setlocal EnableDelayedExpansion
 
@@ -29,7 +30,7 @@ wix extension add -g WixToolset.Util.wixext/5.0.2
 mkdir "%~1\HlaeFfmpegMigrateExtension"
 cd "%~1\HlaeFfmpegMigrateExtension"
 cd "%~dp0HlaeFfmpegMigrateExtension"
-msbuild -t:build -restore "%~dp0HlaeFfmpegMigrateExtension\HlaeFfmpegMigrateExtension.csproj" "-property:Configuration=Release" "-property:Platform=x86" "-property:OutputPath=%~1\HlaeFfmpegMigrateExtension"
+"%~3" -t:build -restore "%~dp0HlaeFfmpegMigrateExtension\HlaeFfmpegMigrateExtension.csproj" "-property:Configuration=Release" "-property:Platform=x86" "-property:OutputPath=%~1\HlaeFfmpegMigrateExtension"
 @IF !errorlevel! NEQ 0 EXIT /B 1
 
 @echo ==================================================
@@ -38,7 +39,7 @@ msbuild -t:build -restore "%~dp0HlaeFfmpegMigrateExtension\HlaeFfmpegMigrateExte
 mkdir "%~1\HlaeFfmpegExtension"
 cd "%~1\HlaeFfmpegExtension"
 cd "%~dp0HlaeFfmpegExtension"
-msbuild -t:build -restore "%~dp0HlaeFfmpegExtension\HlaeFfmpegExtension.csproj" "-property:Configuration=Release" "-property:Platform=x86" "-property:OutputPath=%~1\HlaeFfmpegExtension"
+"%~3" -t:build -restore "%~dp0HlaeFfmpegExtension\HlaeFfmpegExtension.csproj" "-property:Configuration=Release" "-property:Platform=x86" "-property:OutputPath=%~1\HlaeFfmpegExtension"
 @IF !errorlevel! NEQ 0 EXIT /B 1
 
 @echo ==================================================
@@ -47,7 +48,7 @@ msbuild -t:build -restore "%~dp0HlaeFfmpegExtension\HlaeFfmpegExtension.csproj" 
 mkdir "%~1\HlaeCoreExtension"
 cd "%~1\HlaeCoreExtension"
 cd "%~dp0HlaeCoreExtension"
-msbuild -t:build -restore "%~dp0HlaeCoreExtension\HlaeCoreExtension.csproj" "-property:Configuration=Release" "-property:Platform=x86" "-property:OutputPath=%~1\HlaeCoreExtension"
+"%~3" -t:build -restore "%~dp0HlaeCoreExtension\HlaeCoreExtension.csproj" "-property:Configuration=Release" "-property:Platform=x86" "-property:OutputPath=%~1\HlaeCoreExtension"
 @IF !errorlevel! NEQ 0 EXIT /B 1
 
 @echo ==================================================
@@ -113,7 +114,7 @@ cd "%~1\HlaeCore"
 mkdir "%~1\DeleteHlaeAppData"
 cd "%~1\DeleteHlaeAppData"
 cd "%~dp0DeleteHlaeAppData"
-msbuild -t:build -restore "%~dp0DeleteHlaeAppData\DeleteHlaeAppData.csproj" "-property:Configuration=Release" "-property:Platform=x86" "-property:OutputPath=%~1\DeleteHlaeAppData"
+"%~3" -t:build -restore "%~dp0DeleteHlaeAppData\DeleteHlaeAppData.csproj" "-property:Configuration=Release" "-property:Platform=x86" "-property:OutputPath=%~1\DeleteHlaeAppData"
 @IF !errorlevel! NEQ 0 EXIT /B 1
 
 @echo ==================================================
@@ -122,7 +123,7 @@ msbuild -t:build -restore "%~dp0DeleteHlaeAppData\DeleteHlaeAppData.csproj" "-pr
 mkdir "%~1\UninstallHlaeWixV3"
 cd "%~1\UninstallHlaeWixV3"
 cd "%~dp0UninstallHlaeWixV3"
-msbuild -t:build -restore "%~dp0UninstallHlaeWixV3\UninstallHlaeWixV3.csproj" "-property:Configuration=Release" "-property:Platform=x86" "-property:OutputPath=%~1\UninstallHlaeWixV3"
+"%~3" -t:build -restore "%~dp0UninstallHlaeWixV3\UninstallHlaeWixV3.csproj" "-property:Configuration=Release" "-property:Platform=x86" "-property:OutputPath=%~1\UninstallHlaeWixV3"
 @IF !errorlevel! NEQ 0 EXIT /B 1
 
 @echo ==================================================
@@ -140,5 +141,5 @@ cd "%~dp0"
 
 
 :help
-@echo Usage: %0 ^<build folder^> ^<install folder^>
+@echo Usage: %0 ^<build folder^> ^<install folder^> ^<msbuild.exe path^>
 @EXIT /B 1
