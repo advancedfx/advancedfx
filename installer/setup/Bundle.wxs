@@ -29,7 +29,7 @@
     <Variable Name="HlaeFfmpegOld" Type="numeric" Value="0" Persisted="no" />
     <Variable Name="HlaeFfmpegNew" Type="numeric" Value="0" Persisted="no" />
     <util:ComponentSearch Id="HlaeCoreOld" Condition="NOT WixBundleCommandLineAction = 3" Result="keyPath" Guid="{33FEF63B-4A17-4D59-ABC9-B7A06BD07F07}" Variable="HlaeCoreOld" />
-    <util:ComponentSearch Id="HlaeFfmpegOld" Condition="NOT WixBundleCommandLineAction = 3" Result="keyPath" Guid="{07854568-BA31-4064-BE28-3F79781FA09A}" Variable="HlaeFfmpeOld" />
+    <util:ComponentSearch Id="HlaeFfmpegOld" Condition="NOT WixBundleCommandLineAction = 3" Result="keyPath" Guid="{07854568-BA31-4064-BE28-3F79781FA09A}" Variable="HlaeFfmpegOld" />
     <util:ProductSearch After="HlaeFfmpegOld" Id="HlaeFfmpegNew" Condition="NOT WixBundleCommandLineAction = 3" Result="language" UpgradeCode="{9090AE9A-4E9D-46C5-B595-9F2FBCF96945}" Variable="HlaeFfmpegNew" />
     <SetVariable After="HlaeFfmpegNew" Id="SetHlaeFfmpeg" Condition="HlaeFfmpeOld OR HlaeFfmpegNew OR NOT HlaeCoreOld" Type="numeric" Value="1" Variable="HlaeFfmpeg" />
 
@@ -42,7 +42,7 @@
 
   <Fragment>    
     <PackageGroup Id="Hlae">
-      <MsiPackage Id="HlaeFfmpegMigrate" InstallCondition="HlaeFfmpeg AND HlaeFfmpeOld" Name="HlaeFfmpegMigrate\HlaeFfmpeg.msi" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpegMigrate\en-US\HlaeFfmpeg.msi" Compressed="yes" Vital="yes" EnableFeatureSelection="no" Visible="yes" bal:DisplayInternalUICondition="WixBundleUILevel &gt; 3">
+      <MsiPackage Id="HlaeFfmpegMigrate" InstallCondition="HlaeFfmpeg AND HlaeFfmpegOld" Name="HlaeFfmpegMigrate\HlaeFfmpeg.msi" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpegMigrate\en-US\HlaeFfmpeg.msi" Compressed="yes" Vital="yes" EnableFeatureSelection="no" Visible="yes" bal:DisplayInternalUICondition="WixBundleUILevel &gt; 3">
         <MsiProperty Name="APPLICATIONFOLDER" Value="[InstallFolder]" />
         <MsiProperty Name="TRANSFORMS" Value="[LangId]" />
         <Payload Id="HlaeFfmpegMigrate_de_de" Compressed="yes" Name="HlaeFfmpegMigrate\1031" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpegMigrate\de-DE\HlaeFfmpeg.mst" />
