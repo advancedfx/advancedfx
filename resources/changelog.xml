@@ -6,6 +6,17 @@
 
 <release>
 <name>HLAE</name>
+<version>2.181.1</version>
+<time>2025-03-24T18:18Z<</time>
+<changes>
+<change type="updated">Included AfxHookSource2 0.31.0 (2025-03-24T18:18Z).</change>
+<change type="updated">Updated installer (HLAE_Setup.exe) to WiX toolset v5.</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.180.1</version>
 <time>2025-03-07T07:30Z</time>
 <changes>
