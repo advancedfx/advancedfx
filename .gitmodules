@@ -21,7 +21,7 @@
 [submodule "l10n"]
 	path = deps/release/l10n
 	url = https://github.com/advancedfx/l10n.git
-	branch = installer-wix-v5
+	branch = main
 [submodule "deps/wxl-po-tools"]
 	path = deps/dev/wxl-po-tools
 	url = https://github.com/advancedfx/wxl-po-tools.git
