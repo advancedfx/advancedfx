@@ -354,7 +354,21 @@ private:
 
 } g_ClientEngineTools;
 
+bool g_bCaptureAfterSwapBuffers = false;
+
 void OnBefore_CMaterialSystem_SwappBuffers() {
+
+	if(g_bCaptureAfterSwapBuffers) return;
+
+	if(g_bFirstSwapBuffersCallForFrame) {
+		g_bFirstSwapBuffersCallForFrame = false;
+		g_AfxStreams.EngineThread_QueueCapture();
+	}
+}
+
+void OnAfter_CMaterialSystem_SwappBuffers() {
+	if(!g_bCaptureAfterSwapBuffers) return;
+
 	if(g_bFirstSwapBuffersCallForFrame) {
 		g_bFirstSwapBuffersCallForFrame = false;
 		g_AfxStreams.EngineThread_QueueCapture();
@@ -2496,7 +2510,15 @@ void CommonHooks()
 		else if (StringIEndsWith(filePath, "tf.exe"))
 		{
 			g_SourceSdkVer = SourceSdkVer_TF2;
-		}		
+		}
+		else if (StringIEndsWith(filePath, "hl2mp.exe"))
+		{
+			g_SourceSdkVer = SourceSdkVer_HL2MP;
+		}
+		else if (StringIEndsWith(filePath, "cstrike.exe"))
+		{
+			g_SourceSdkVer = SourceSdkVer_CSS;
+		}
 		else if (int gameIdx = g_CommandLine->FindParam(L"-game"))
 		{
 			++gameIdx;

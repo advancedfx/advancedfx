@@ -116,6 +116,7 @@ bool MaterialSystem_ExecuteOnRenderThread(CMaterialSystemFunctor * pFunctor) {
                 CMatCallQueue_QueueFunctor_t pQueueFunctorInternal = (CMatCallQueue_QueueFunctor_t)AFXADDR_GET(materialsystem_CMatCallQueue_QueueFunctor);
                 size_t this_offset = 4;
                 switch(g_SourceSdkVer){
+                    case SourceSdkVer_CSS:
                     case SourceSdkVer_TF2:
                     case SourceSdkVer_HL2MP:
                         this_offset = 0xa4;
@@ -173,13 +174,15 @@ bool Hook_MaterialSystem_GetRenderCallQueue(void)
 }
 
 void OnBefore_CMaterialSystem_SwappBuffers(void);
+void OnAfter_CMaterialSystem_SwappBuffers(void);
 
 typedef void (__fastcall * CMaterialSystem_SwapBuffers_t)(void * This, void * Edx);
 CMaterialSystem_SwapBuffers_t g_Old_CMaterialSystem_SwapBuffers = nullptr;
 void __fastcall New_CMaterialSystem_SwapBuffers(void * This, void * Edx) {
     g_pMaterialSystem = This;
     OnBefore_CMaterialSystem_SwappBuffers();
-    return g_Old_CMaterialSystem_SwapBuffers(This,Edx);
+    g_Old_CMaterialSystem_SwapBuffers(This,Edx);
+    OnAfter_CMaterialSystem_SwappBuffers();
 }
 
 bool Hook_MaterialSystem_SwapBuffers(void)

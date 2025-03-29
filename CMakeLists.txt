@@ -96,9 +96,7 @@ if (NOT ${PROJECT_NAME}-MultiBuild)
         execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -Rf installer/hlae/ffmpeg)
         execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -Rf installer/hlae/locales)
         execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -f installer/hlae/HLAE.exe)
-        execute_process( WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}/installer/setup\" COMMAND \"${VS_MSBUILD}\" \"${CMAKE_SOURCE_DIR}/installer/setup/setup.wixproj\" \"-property:Configuration=${VS_CONFIGURATION}\" \"-property:Platform=x86\" \"-property:OutputPath=${CMAKE_INSTALL_PREFIX}/installer/build\")
-        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E copy installer/build/HLAE_Setup.exe ./HLAE_Setup.exe)
-        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E copy installer/build/HLAE_Setup.wixpdb ./HLAE_Setup.wixpdb)
+        execute_process( WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}/installer\" COMMAND \"build_installer.bat\" \"${CMAKE_INSTALL_PREFIX}/installer/build\" \"${CMAKE_INSTALL_PREFIX}\" \"${VS_MSBUILD}\")
         "
     )  
     
@@ -123,7 +121,7 @@ include(ExternalProject)
 FetchContent_Declare(
     Corrosion
     GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git
-    GIT_TAG 64289b1d79d6d19cd2e241db515381a086bb8407 # v0.5
+    GIT_TAG b1fab721655c5c4b1b08a083d3cd29f163af75d0 # v0.5.1
 )
 FetchContent_MakeAvailable(Corrosion)
 

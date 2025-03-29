@@ -1,0 +1,32 @@
+﻿<WixLocalization Culture="en-us" Language="1033" Codepage="1252" xmlns="http://wixtoolset.org/schemas/v4/wxl">
+  <String Id="PackageName" Value="HLAE FFMPEG" />
+  <String Id="Manufacturer" Value="advancedfx.org" />
+  <String Id="DowngradeErrorMessage" Value="A newer version of [ProductName] is already installed." />
+  <String Id="FfmpegTitle" Value="FFMPEG" />
+  <String Id="FfmpegDescription" Value="FFMPEG can be used for encoding mirv_streams to videos." />
+  <String Id="FfmpegDlgTitle" Value="{\WixUI_Font_Title}FFMPEG" />
+  <String Id="FfmpegDlgDescription" Value="Install FFMPEG or use exsiting one." />
+  <String Id="FfmpegDlgReinstall" Value="Reinstall FFMPEG" />
+  <String Id="FfmpegDlgDownloaded" Value="FFMPEG will be downloaded from GitHub.com and installed using your current internet connection and proxy settings." />
+  <String Id="FfmpegDlgVersion" Value="Select version:" />
+  <String Id="FfmpegDlgLatest" Value="latest (recommended)" />
+  <String Id="FfmpegDlgCustom" Value="Select existing on disk" />
+  <String Id="FfmpegDlgLinking" Value="Select linking:" />
+  <String Id="FfmpegDlgStatic" Value="static (faster, 100 MB download, recommended)" />
+  <String Id="FfmpegDlgShared" Value="shared (smaller, 50 MB download)" />
+  <String Id="FfmpegDlgLicense" Value="Select license:" />
+  <String Id="FfmpegDlgGpl3" Value="GPL3 (complete, recommended)" />
+  <String Id="FfmpegDlgLgpl3" Value="LGPL3 (less features, more permissive)" />
+  <String Id="FfmpegDlgPath" Value="Please enter the full path to your custom ffmpeg.exe here:" />
+  <String Id="FfmpegDlgPathBrowse" Value="Browse" />
+  <String Id="FfmpegDlgPathError" Value="{\WixUI_Font_Bold}File does not exist or is not accessible. Please fix and click Next button to try again." />
+  <String Id="InstallFfmpeg" Value="Installing FFMPEG ..." />
+  <String Id="InstallFfmpegConnect" Value="Connecting to [AFX_FFMPEGURL]" />
+  <String Id="InstallFfmpegConnect_Template" Value="..." />
+  <String Id="InstallFfmpegDownload" Value="Downloading [AFX_FFMPEGURL]" />
+  <String Id="InstallFfmpegDownload_Template" Value="[1] of [2] Bytes" />
+  <String Id="InstallFfmpegChecksum" Value="Verifying checksum" />
+  <String Id="InstallFfmpegChecksum_Template" Value="[1] of [2] Bytes" />
+  <String Id="InstallFfmpegExtract" Value="Extracting FFMPEG" />
+  <String Id="InstallFfmpegExtract_Template" Value="Item [1] of [2] ..." />  
+</WixLocalization>

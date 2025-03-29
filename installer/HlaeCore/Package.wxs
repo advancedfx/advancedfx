@@ -1,0 +1,113 @@
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+  xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+	<!-- Update this on release: Version. -->
+  <!-- For more information see:
+        - https://docs.firegiant.com/wix3/tutorial/upgrades-and-modularization/
+        - https://learn.microsoft.com/en-us/windows/win32/msi/productversion
+  -->
+  <Package
+    Version="2.181.1"
+    Name="!(loc.ApplicationName)" Manufacturer="!(loc.Manufacturer)" UpgradeCode="{33FEF63B-4A17-4D59-ABC9-B7A06BD07F07}"
+  >
+    <MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeErrorMessage)" />
+
+	  <MediaTemplate EmbedCab="yes" />
+
+    <Property Id="HLAE_WIXV3" Secure="yes">
+        <ProductSearch IncludeMaximum="no" Maximum="2.181.0.0" UpgradeCode="{33FEF63B-4A17-4D59-ABC9-B7A06BD07F07}" />
+    </Property>
+    <Launch Condition="NOT HLAE_WIXV3" Message="Older HLAE must be uinstalled first. " />
+       
+    <Icon Id="HLAEIcon.exe" SourceFile="$(sys.SOURCEFILEDIR)../../hlae/app.ico" />
+    <Property Id="ARPPRODUCTICON" Value="HLAEIcon.exe" />
+    
+    <Property Id="ApplicationFolderName" Value="HLAE" />
+    
+    <Property Id="WixAppFolder" Value="WixPerMachineFolder" />
+    
+    <WixVariable Id="WixUISupportPerUser" Value="0" />
+    
+    <Property Id="WIXUI_INSTALLDIR" Value="APPLICATIONFOLDER" />
+
+    <Property Id="HLAE_FFMPEG_INI">
+        <ComponentSearch Id="HlaeFfmpegFolder" Guid="{07854568-BA31-4064-BE28-3F79781FA09A}" Type="directory">
+          <DirectorySearch Id="HLAE_FFMPEG_folder" Path="ffmpeg" Depth="0">
+            <FileSearch Id="HLAE_FFMPEG_ini" Name="ffmpeg.ini" />
+          </DirectorySearch>
+        </ComponentSearch>
+    </Property>
+
+    <Feature Id="Hlae" Title="!(loc.ApplicationName)" Display="expand" Level="1" ConfigurableDirectory="APPLICATIONFOLDER" AllowAdvertise="no" InstallDefault="local" AllowAbsent="no">
+
+      <ComponentRef Id="HlaeCoreRegistry" />
+
+      <Files Directory="APPLICATIONFOLDER" Include="$(sys.SOURCEFILEDIR)..\..\build\$(var.Configuration)\dist\installer\hlae\**" />
+
+      <ComponentRef Id="_E77FBD5C_A4F1_429D_B750_9C270BD89C18_HLAE.exe" />
+      <ComponentRef Id="HlaeStartProgramsFolder" />
+	  
+      <Feature Id="HlaeLocales" Title="!(loc.HlaeLocalesTitle)" Level="1" AllowAdvertise="no" InstallDefault="local">
+        <Files Directory="LocalesDir" Include="$(sys.SOURCEFILEDIR)..\..\build\$(var.Configuration)\dist\bin\locales\**" />
+      </Feature>
+
+      <Component Id="HlaeFfmpeg" Guid="{6A621292-1C1E-4CE5-808A-A0AFAF6577CB}" Directory="_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg" NeverOverwrite="yes" KeyPath="yes" Condition="HLAE_FFMPEG_INI">
+          <CreateFolder Directory="_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg" />
+          <RemoveFile Id="HlaeFfmpegIni" Directory="_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg" Name="ffmpeg.ini" On="uninstall" />
+          <CopyFile Id="HlaeFfmpegIni" Delete="no" DestinationDirectory="_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg" DestinationName="ffmpeg.ini" SourceProperty="HLAE_FFMPEG_INI" />
+      </Component>      
+  </Feature>
+      
+    <UI>
+      <ui:WixUI Id="MyWixUI_Mondo"/>
+      <UIRef Id="WixUI_ErrorProgressText"/>    
+      
+      <Error Id="25001" Message="!(loc.AppFolderMustBeLatin)" />
+    </UI>
+    
+    <InstallExecuteSequence>
+      <Custom Action="ValidateAppFolderIsLatinAction" Before="CostFinalize" />
+    </InstallExecuteSequence>
+  </Package>
+
+  <Fragment>
+    <Binary Id="HlaeCoreExtension" SourceFile="$(var.HlaeCoreExtension.TargetDir)\HlaeCoreExtension.CA.dll" />
+
+    <CustomAction Id="ValidateTargetPathAction" DllEntry="ValidateTargetPath" Execute="immediate" Return="check" BinaryRef="HlaeCoreExtension" />
+    
+    <SetProperty Action="SetValidateAppFolderIsLatinAction" Id="ValidateAppFolderIsLatinAction" Value="[APPLICATIONFOLDER]" Before="ValidateAppFolderIsLatinAction" Sequence="execute" />
+    <CustomAction Id="ValidateAppFolderIsLatinAction" DllEntry="ValidateAppFolderIsLatin" Execute="immediate" Return="check" BinaryRef="HlaeCoreExtension" />
+  </Fragment>
+
+  <Fragment>
+    <StandardDirectory Id="ProgramFilesFolder">
+      <Directory Id="APPLICATIONFOLDER" Name="HLAE">
+        <Directory Id="LocalesDir" Name="locales" />
+        <Directory Id="_8E237DD2_85C4_4D87_B4AD_4E18CE30595E_ffmpeg" Name="ffmpeg" />
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="HLAE" />
+    </StandardDirectory>
+  </Fragment>
+
+  <Fragment>
+    <DirectoryRef Id="APPLICATIONFOLDER">   
+      <Component Id="_E77FBD5C_A4F1_429D_B750_9C270BD89C18_HLAE.exe">
+        <File Id="_E77FBD5C_A4F1_429D_B750_9C270BD89C18_HLAE.exe" Name="HLAE.exe" Source="$(sys.SOURCEFILEDIR)..\..\build\$(var.Configuration)\dist\bin\HLAE.exe" KeyPath="yes" Checksum="yes">
+          <Shortcut Id="HaleStartMenuShortcut" Name="HLAE" Directory="ApplicationProgramsFolder" Description="Half-Life Advanced Effects" WorkingDirectory="APPLICATIONFOLDER" Icon="HLAEIcon.exe" Advertise="yes" />
+        </File>
+      </Component>
+    </DirectoryRef>    
+    
+    <Component Id="HlaeStartProgramsFolder" Guid="{89D3440C-0559-449F-B3A9-686573945374}" Directory="ApplicationProgramsFolder">
+        <RemoveFolder Id="CleanUpHlaeShortCut" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\advancedfx\HLAE" Name="scut" Value="1" Type="integer" KeyPath="yes" />
+    </Component>
+	
+    <Component Id="HlaeCoreRegistry" Guid="{22E1FC75-9BBA-4B86-BE8E-E7D50E44B6E6}" Directory="TARGETDIR">
+      <RegistryKey Root="HKLM" Key="Software\advancedfx\HLAE">
+        <RegistryValue Type="string" Name="APPLICATIONFOLDER" Value="[APPLICATIONFOLDER]" KeyPath="yes" />
+      </RegistryKey>
+    </Component>
+  </Fragment>
+</Wix>

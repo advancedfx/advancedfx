@@ -25,7 +25,7 @@
 [submodule "deps/wxl-po-tools"]
 	path = deps/dev/wxl-po-tools
 	url = https://github.com/advancedfx/wxl-po-tools.git
-	branch = python3
+	branch = wix-v5
 [submodule "deps/release/rapidxml"]
 	path = deps/release/rapidxml
 	url = https://github.com/advancedfx/rapidxml.git

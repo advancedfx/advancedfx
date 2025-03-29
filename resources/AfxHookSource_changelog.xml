@@ -6,6 +6,20 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.131.0</version>
+<time>2025-03-03T20:00Z</time>
+<changes>
+<change type="fixed">Adjusted to latest CSS update, fixes #1030.</change>
+<change type="added">Added mirv_streams record screen afterSwap 0|1 (helps with ReShade e.g.).</change>
+</changes>
+<comments>
+Several Source 1 games now need the -force32bit option for HLAE to work, see https://github.com/advancedfx/advancedfx/wiki/AfxHookSource for examples.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.130.0</version>
 <time>2025-01-19T22:06Z</time>
 <changes>

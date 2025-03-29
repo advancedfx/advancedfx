@@ -6,10 +6,8 @@ namespace DeleteHlaeAppData
     class Program
     {
         static void Main(string[] args)
-        {
-            int remove = 0;            
-
-            if (args.Length == 2 && args[0].Equals("EXECUTE") && int.TryParse(args[1], out remove) && 1 == remove)
+        {     
+            if (args.Length == 3 && args[0].Equals("EXECUTE") && int.TryParse(args[1], out int wixBundleAction) && int.TryParse(args[2], out int hlaeRemoveAppData) && 3 == wixBundleAction && 1 == hlaeRemoveAppData)
             {
                 try
                 {
@@ -17,7 +15,7 @@ namespace DeleteHlaeAppData
 
                     if (System.IO.Directory.Exists(hlaeAppDataPath)) System.IO.Directory.Delete(hlaeAppDataPath, true);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                 }
             }

@@ -52,7 +52,10 @@
 [X] Things you should do before releasing a new version:
   - Update version in hlae/CMakeLists.txt
   - Update GUIDs in hlae/UpdateCheck.cs
-  - Update Product Version in installer/HlaeCore/Product.wxs
-  - Update version in installer/setup/Bundle.wxs
+  - If releasing installer, all these need to be updated, because otherwise users can end up with hash collisions if you
+    don't manage to provide the exact same package binary again for same version number:
+    - Increase package version (e.g. 2nd filed (minor), at least 3rd field) in installer/HlaeCore/Product.wxs
+    - Increase package version (at least 3rd field) in installer/HlaeFfmpeg/Product.wxs
+    - Increase bundle version (e.g. 2nd filed (minor), at least 3rd field) in installer/setup/Bundle.wxs
   - In AfxHookSource2Rs run to see if THIRDPARTY.yml needs updating:
     cargo install cargo-bundle-licenses && cargo bundle-licenses --format yaml --output CI.yaml --previous THIRDPARTY.yml --check-previous && echo DONE: Okay.

@@ -6,11 +6,50 @@
 
 <release>
 <name>HLAE</name>
+<version>2.181.1</version>
+<time>2025-03-24T18:18Z</time>
+<changes>
+<change type="updated">Included AfxHookSource2 0.31.0 (2025-03-24T18:18Z).</change>
+<change type="updated">Updated installer (HLAE_Setup.exe) to WiX toolset v5.</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
+<version>2.180.1</version>
+<time>2025-03-07T07:30Z</time>
+<changes>
+<change type="updated">Included AfxHookSource2 0.30.2 (2025-03-07T07:30Z).</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
+<version>2.180.0</version>
+<time>2025-03-03T20:00Z</time>
+<changes>
+<change type="updated">Included AfxHookSource 1.131.0 (2025-03-03T20:00Z).</change>
+<change type="updated">Updated HLAE installer FFMPEG version, see comments below regarding bug workaround.</change>
+<change type="updated">Added FAQ link in help menu and re-ordered the menu.</change>
+<change type="updated">Added dismissible warnings from download page to GUI.</change>
+</changes>
+<comments>
+There's a known bug with HLAE_Setup.exe when upgrading from an older HLAE version to a newer one and reinstalling the newer FFMPEG:
+It will install the newer FFMPEG and then install over that the older one again.
+This issue can be worked around by doing a repair install (run newest HLAE_Setup.exe one more time and chose repair).
+</comments>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.179.0</version>
 <time>2025-01-19T22:06Z</time>
 <changes>
 <change type="updated">Included AfxHookGoldSrc 2.24.1 (2025-01-19T22:06Z).</change>
-<change type="updated">Included AfxHookSourece 1.130.0 (2025-01-19T22:06Z).</change>
+<change type="updated">Included AfxHookSource 1.130.0 (2025-01-19T22:06Z).</change>
 <change type="updated">Included AfxHookSource2 0.30.1 (2025-01-19T22:06Z).</change>
 </changes>
 </release>
