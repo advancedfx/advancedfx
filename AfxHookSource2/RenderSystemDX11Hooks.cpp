@@ -359,15 +359,21 @@ public:
         if(pDevice && pTexture) {
             pDevice->AddRef();    
             m_pDevice = pDevice;
-            pTexture->GetDesc(&m_TextureDesc);
-            m_HasDepth = false;
+            pTexture->GetDesc(&m_DeviceTextureDesc);
+            m_HasSmokeDepth = false;
+            m_HasNormalDepth = false;
         }
     }
 
     void OnTargetEnd() {
-        if(m_pDepthTexture) {
-            m_pDepthTexture->Release();
-            m_pDepthTexture = nullptr;
+        if(m_pSmokeDepthTexture) {
+            m_pSmokeDepthTexture->Release();
+            m_pSmokeDepthTexture = nullptr;
+        }
+
+        if (m_pNormalDepthTexture) {
+            m_pNormalDepthTexture->Release();
+            m_pNormalDepthTexture = nullptr;
         }
 
         if(m_pDevice) {
@@ -376,28 +382,25 @@ public:
         }
     }
 
-    bool CaptureSmokeDepth(ID3D11DeviceContext * pContext, ID3D11DepthStencilView * pDepthStencilView) {
-        if (m_pDevice == nullptr || pContext == nullptr || pDepthStencilView == nullptr) return false;
+    void CaptureSmokeDepth(ID3D11DeviceContext * pContext, ID3D11DepthStencilView * pDepthStencilView) {
+        if (m_pDevice == nullptr || pContext == nullptr || pDepthStencilView == nullptr) return;
 
-        bool isSmokeTexture = true;
+        D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
+        pDepthStencilView->GetDesc(&depthStencilViewDesc);
 
-        D3D11_DEPTH_STENCIL_VIEW_DESC pDepthDesc;
-        pDepthStencilView->GetDesc(&pDepthDesc);
-
-        if(D3D11_DSV_DIMENSION_TEXTURE2D == pDepthDesc.ViewDimension) {
+        if(D3D11_DSV_DIMENSION_TEXTURE2D == depthStencilViewDesc.ViewDimension
+            || D3D11_DSV_DIMENSION_TEXTURE2DMS == depthStencilViewDesc.ViewDimension // usally this is not the case for smoke buffer           
+        ) {
             ID3D11Resource * pResource = nullptr;
             pDepthStencilView->GetResource(&pResource);
             if(pResource) {
                 ID3D11Texture2D * pTexture = nullptr;
                 pResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&pTexture);
                 if(pTexture) {
-                    D3D11_TEXTURE2D_DESC pTextureDesc;
-                    pTexture->GetDesc(&pTextureDesc);
-
-                    UINT dataSize = 0;
-                    if (SUCCEEDED(pTexture->GetPrivateData(WKPDID_D3DDebugObjectName, &dataSize, nullptr))) {                        
+                    /*UINT dataSize = 0;
+                    if (SUCCEEDED(pTexture->GetPrivateData(WKPDID_D3DDebugObjectName, &dataSize, nullptr))) {
                         isSmokeTexture = true;
-                        /*if (0 < dataSize) {
+                        if (0 < dataSize) {
                             if (char* debugName = (char*)malloc(dataSize + 1)) {
                                 if (SUCCEEDED(pTexture->GetPrivateData(WKPDID_D3DDebugObjectName, &dataSize, debugName))) {
                                     debugName[dataSize] = 0;
@@ -405,75 +408,175 @@ public:
                                 }
                                 free(debugName);
                             }
-                        }*/
+                        }
+                    }*/
+
+                    D3D11_TEXTURE2D_DESC smokeDepthTextureDesc;
+                    pTexture->GetDesc(&smokeDepthTextureDesc);
+
+                    if (nullptr != m_pSmokeDepthTexture) {
+                        // Check if the texture properties changed in a relevant way that needs updating.
+                        if (m_SmokeDepthTextureDesc.Width != smokeDepthTextureDesc.Width
+                            || m_SmokeDepthTextureDesc.Height != smokeDepthTextureDesc.Height
+                            || m_SmokeDepthTextureDesc.MipLevels != smokeDepthTextureDesc.MipLevels
+                            || m_SmokeDepthTextureDesc.Format != smokeDepthTextureDesc.Format
+                            || m_SmokeDepthTextureDesc.SampleDesc.Count != smokeDepthTextureDesc.SampleDesc.Count
+                            || m_SmokeDepthTextureDesc.SampleDesc.Quality != smokeDepthTextureDesc.SampleDesc.Quality
+                            ) {
+                            m_pSmokeDepthTexture->Release();
+                            m_pSmokeDepthTexture = nullptr;
+                        }
                     }
 
-                    if (isSmokeTexture) {
-                        EnsureDepthTexture();
+                    if (nullptr == m_pSmokeDepthTexture) {
+                        m_SmokeDepthTextureDesc.Width = smokeDepthTextureDesc.Width;
+                        m_SmokeDepthTextureDesc.Height = smokeDepthTextureDesc.Height;
+                        m_SmokeDepthTextureDesc.MipLevels = smokeDepthTextureDesc.MipLevels;
+                        m_SmokeDepthTextureDesc.ArraySize = 1;
+                        m_SmokeDepthTextureDesc.Format = smokeDepthTextureDesc.Format; // Usally DXGI_FORMAT_R24G8_TYPELESS to expect here.
+                        m_SmokeDepthTextureDesc.SampleDesc.Count = smokeDepthTextureDesc.SampleDesc.Count;
+                        m_SmokeDepthTextureDesc.SampleDesc.Quality = smokeDepthTextureDesc.SampleDesc.Quality;
+                        m_SmokeDepthTextureDesc.Usage = D3D11_USAGE_DEFAULT;
+                        m_SmokeDepthTextureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_DEPTH_STENCIL;
+                        m_SmokeDepthTextureDesc.CPUAccessFlags = 0;
+                        m_SmokeDepthTextureDesc.MiscFlags = 0;
+                        m_pDevice->CreateTexture2D(&m_SmokeDepthTextureDesc, nullptr, &m_pSmokeDepthTexture);
+                    }
 
-                        if (pTextureDesc.Width != m_DepthTextureDesc.Width || pTextureDesc.Height != m_DepthTextureDesc.Height
-                            || 1 < pTextureDesc.SampleDesc.Count // multisampled
-                        ) {
-                            pContext->ResolveSubresource(m_pDepthTexture, 0, pTexture, 0, m_DepthTextureDesc.Format);
-                        }
-                        else {
-                            pContext->CopyResource(m_pDepthTexture, pTexture);
+                    if(m_pSmokeDepthTexture)
+                    {
+                        UINT numViewPorts = 1;
+                        pContext->RSGetViewports(&numViewPorts, &m_SmokeViewPort);
+
+                        ID3D11DepthStencilView* pCurrentDepthStencilView = nullptr;
+                        ID3D11DepthStencilView* pNullDepthStencilView = nullptr;
+                        pContext->OMGetRenderTargets(0, nullptr, &pCurrentDepthStencilView);
+
+                        if (pCurrentDepthStencilView == pDepthStencilView) {
+                            pContext->OMGetRenderTargets(0, nullptr, &pNullDepthStencilView);
                         }
 
-                        m_HasDepth = true;
+                        pContext->CopyResource(m_pSmokeDepthTexture, pTexture);
+
+                        if (pCurrentDepthStencilView == pDepthStencilView) {
+                            pContext->OMGetRenderTargets(0, nullptr, &pCurrentDepthStencilView);
+                        }
+
+                        if (pCurrentDepthStencilView) pCurrentDepthStencilView->Release();
+
+                        m_HasSmokeDepth = true;
                     }
                     
+                    pTexture->Release();
                     pTexture->Release();
                 }
 
                 pResource->Release();
             }
         }
-
-        return isSmokeTexture;
     }
 
-    void OnCaptureNormalDepth(ID3D11DeviceContext * pContext, ID3D11DepthStencilView * pDepthStencilView) {
-        //TODO: Capture the smoke depth and composite it with normal depth.
-        //TODO: Also composite the skybox depth correctly (maybe can use viewport).
+    void CaptureNormalDepth(ID3D11DeviceContext * pContext, ID3D11DepthStencilView * pDepthStencilView) {
+        if (m_pDevice == nullptr || pContext == nullptr || pDepthStencilView == nullptr) return;
 
+        D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
+        pDepthStencilView->GetDesc(&depthStencilViewDesc);
+
+        if (D3D11_DSV_DIMENSION_TEXTURE2D == depthStencilViewDesc.ViewDimension
+            || D3D11_DSV_DIMENSION_TEXTURE2DMS == depthStencilViewDesc.ViewDimension    
+            ) {
+            ID3D11Resource* pResource = nullptr;
+            pDepthStencilView->GetResource(&pResource);
+            if (pResource) {
+                ID3D11Texture2D* pTexture = nullptr;
+                pResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&pTexture);
+                if (pTexture) {
+                    D3D11_TEXTURE2D_DESC normalDepthTextureDesc;
+                    pTexture->GetDesc(&normalDepthTextureDesc);
+
+                    if (nullptr != m_pNormalDepthTexture) {
+                        // Check if the texture properties changed in a relevant way that needs updating.
+                        if (m_NormalDepthTextureDesc.Width != normalDepthTextureDesc.Width
+                            || m_NormalDepthTextureDesc.Height != normalDepthTextureDesc.Height
+                            ) {
+                            m_pNormalDepthTexture->Release();
+                            m_pNormalDepthTexture = nullptr;
+                        }
+                    }
+
+                    if (nullptr == m_pNormalDepthTexture) {
+                        m_NormalDepthTextureDesc.Width = normalDepthTextureDesc.Width;
+                        m_NormalDepthTextureDesc.Height = normalDepthTextureDesc.Height;
+                        m_NormalDepthTextureDesc.MipLevels = 1;
+                        m_NormalDepthTextureDesc.ArraySize = 1;
+                        m_NormalDepthTextureDesc.Format = DXGI_FORMAT_R32_FLOAT; // Usally DXGI_FORMAT_R24G8_TYPELESS to expect here.
+                        m_NormalDepthTextureDesc.SampleDesc.Count = 1;
+                        m_NormalDepthTextureDesc.SampleDesc.Quality = 0;
+                        m_NormalDepthTextureDesc.Usage = D3D11_USAGE_DEFAULT;
+                        m_NormalDepthTextureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_DEPTH_STENCIL;
+                        m_NormalDepthTextureDesc.CPUAccessFlags = 0;
+                        m_NormalDepthTextureDesc.MiscFlags = 0;
+                        m_pDevice->CreateTexture2D(&m_NormalDepthTextureDesc, nullptr, &m_pNormalDepthTexture);
+                    }
+
+                    if (m_pNormalDepthTexture)
+                    {
+                        UINT numViewPorts = 1;
+                        pContext->RSGetViewports(&numViewPorts, &m_NormalViewPort);
+
+                        ID3D11DepthStencilView* pCurrentDepthStencilView = nullptr;
+                        ID3D11DepthStencilView* pNullDepthStencilView = nullptr;
+                        pContext->OMGetRenderTargets(0, nullptr, &pCurrentDepthStencilView);
+
+                        if (pCurrentDepthStencilView == pDepthStencilView) {
+                            pContext->OMGetRenderTargets(0, nullptr, &pNullDepthStencilView);
+                        }
+
+                        //
+                        // TODO
+                        //
+
+                        if (pCurrentDepthStencilView == pDepthStencilView) {
+                            pContext->OMGetRenderTargets(0, nullptr, &pCurrentDepthStencilView);
+                        }
+
+                        if (pCurrentDepthStencilView) pCurrentDepthStencilView->Release();
+
+                        m_HasNormalDepth = true;
+                    }
+
+                    pTexture->Release();
+                }
+
+                pResource->Release();
+            }
+        }
     }
 
     ID3D11Resource * GetDepthResource() {
-        if(m_pDevice) EnsureDepthTexture(); //TODO: remove this.
-
-        if(m_pDepthTexture) m_pDepthTexture->AddRef();
-        return m_pDepthTexture;
+        if (m_HasNormalDepth) {
+            if (m_pNormalDepthTexture) m_pNormalDepthTexture->AddRef();
+            return m_pNormalDepthTexture;
+        }
+        return nullptr;
     }
 
     void OnPresent() {
-        m_HasDepth = false;
+        m_HasSmokeDepth = false;
+        m_HasNormalDepth = false;
     }
 
 private:
-    D3D11_TEXTURE2D_DESC m_TextureDesc;
     ID3D11Device * m_pDevice = nullptr;
-    ID3D11Texture2D * m_pDepthTexture = nullptr;
-    D3D11_TEXTURE2D_DESC m_DepthTextureDesc;
-    bool m_HasDepth;
-
-    void EnsureDepthTexture() { 
-        if(m_pDepthTexture == nullptr) {
-            m_DepthTextureDesc.Width = m_TextureDesc.Width;
-            m_DepthTextureDesc.Height = m_TextureDesc.Height;
-            m_DepthTextureDesc.MipLevels = 1;
-            m_DepthTextureDesc.ArraySize= 1;
-            m_DepthTextureDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
-            m_DepthTextureDesc.SampleDesc.Count = 1;
-            m_DepthTextureDesc.SampleDesc.Quality = 0;
-            m_DepthTextureDesc.Usage = D3D11_USAGE_DEFAULT;
-            m_DepthTextureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_DEPTH_STENCIL;
-            m_DepthTextureDesc.CPUAccessFlags = 0;
-            m_DepthTextureDesc.MiscFlags = 0;
-            m_pDevice->CreateTexture2D(&m_DepthTextureDesc, nullptr, &m_pDepthTexture);
-        }
-    }
-    
+    D3D11_TEXTURE2D_DESC m_DeviceTextureDesc;
+    ID3D11Texture2D * m_pSmokeDepthTexture = nullptr;
+    D3D11_TEXTURE2D_DESC m_SmokeDepthTextureDesc;
+    D3D11_VIEWPORT m_SmokeViewPort;
+    bool m_HasSmokeDepth;
+    ID3D11Texture2D* m_pNormalDepthTexture = nullptr;
+    D3D11_TEXTURE2D_DESC m_NormalDepthTextureDesc;
+    D3D11_VIEWPORT m_NormalViewPort;
+    bool m_HasNormalDepth;
 } g_DepthCompositor;
 
 
@@ -651,7 +754,7 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
         ID3D11Texture2D * pTexture = nullptr;
         HRESULT result2 = g_pSwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D), (void**)&pTexture);
         if(SUCCEEDED(result2)) {
-            if(pResource == pTexture && (g_pDevice == nullptr || This != g_pDevice)) {
+            if(pResource == pTexture/* && (g_pDevice == nullptr || This != g_pDevice)*/) {
                 if(g_pDevice) {
                     g_DepthCompositor.OnTargetEnd();
                     CAfxShaderResourceViews::Clear();
@@ -901,31 +1004,25 @@ public:
         if (g_pImmediateContext) {
             g_bDetectSmoke = false;
             if (g_ReShadeAdvancedfx.IsConnected() && g_bEnableReShade) {
+                g_DepthCompositor.CaptureNormalDepth(g_pImmediateContext, g_pCurrentDepthStencilView);
+
                 ID3D11RenderTargetView* pRenderTargetViews[1] = { nullptr };
                 ID3D11DepthStencilView* pDepthStencilView = nullptr;
                 g_pImmediateContext->OMGetRenderTargets(1, &pRenderTargetViews[0], &pDepthStencilView);
 
                 ID3D11Resource* pRenderTargetViewResource = nullptr;
-                ID3D11Resource* pDepthStencilResource = nullptr;
+                //ID3D11Resource* pDepthStencilResource = nullptr;
                 if (pRenderTargetViews[0]) pRenderTargetViews[0]->GetResource(&pRenderTargetViewResource);
-                if (g_pCurrentDepthStencilView) g_pCurrentDepthStencilView->GetResource(&pDepthStencilResource);
+                //if (g_pCurrentDepthStencilView) g_pCurrentDepthStencilView->GetResource(&pDepthStencilResource);
 
-                /*if (g_bCaptureDepth) {
-                    g_bCaptureDepth = false;
-                    g_pImmediateContext->OMSetRenderTargets(1, &pRenderTargetViews[0], nullptr);
+                if (ID3D11Resource* pResource = g_DepthCompositor.GetDepthResource()) {
+                    g_bInOwnDraw = true;
+                    g_ReShadeAdvancedfx.AdvancedfxRenderEffects(pRenderTargetViewResource, pResource);
+                    g_bInOwnDraw = false;
+                    pResource->Release();
+                }
 
-                    g_DepthCompositor.CaptureSmokeDepth(g_pImmediateContext, g_pCurrentDepthStencilView);
-
-                    g_pImmediateContext->OMSetRenderTargets(1, &pRenderTargetViews[0], pDepthStencilView);
-                }*/
-
-               if (ID3D11Resource* pResource = g_DepthCompositor.GetDepthResource()) {
-                   g_bInOwnDraw = true;
-                   g_ReShadeAdvancedfx.AdvancedfxRenderEffects(pRenderTargetViewResource, pResource);
-                   g_bInOwnDraw = false;
-                   pResource->Release();
-               }
-                if (pDepthStencilResource) pDepthStencilResource->Release();
+                //if (pDepthStencilResource) pDepthStencilResource->Release();
                 if (pRenderTargetViewResource) pRenderTargetViewResource->Release();
 
                 if (pDepthStencilView) pDepthStencilView->Release();
