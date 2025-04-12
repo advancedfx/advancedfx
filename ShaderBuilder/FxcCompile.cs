@@ -21,7 +21,8 @@ class FxcCompile
         vs_3_0,
         ps_3_0,
 		vs_5_0,
-		ps_5_0
+		ps_5_0,
+        cs_5_0
     }
 
     public delegate void MessageDelegate(FxcCompile o, string message);
