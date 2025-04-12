@@ -21,10 +21,6 @@
 // 2 - rgba pack (for afx_interop)
 // 3 - draw dithered
 
-// AFXSPHERICAL:
-// 0 - no correction
-// 1 - convert pyramidal depth buffer to spherical depth
-
 const float4 g_AfxConstants : register( c0 );
 
 #define g_Afx_zNear g_AfxConstants.x
