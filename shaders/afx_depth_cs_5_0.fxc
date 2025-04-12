@@ -74,7 +74,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 
 
 #if 1 == AFXMS
-	float depth = 0;
+	float depth = 1;
 	input.GetDimensions(dim.x, dim.y, sampleCount);
 	for (uint i = 0; i < sampleCount; i++)
 	{
