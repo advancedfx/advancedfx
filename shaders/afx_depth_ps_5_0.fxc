@@ -1,7 +1,7 @@
 // AFX: "AFXMS" "0..1"
 // AFX: "AFXSMOKE" "0..1"
 // AFX: "AFXDEPTHMODE" "0..4"
-// AFX: "AFXD24" "0..4"
+// AFX: "AFXD24" "0..3"
 
 // SKIP: ($AFXD24 == 2 || $AFXD24 == 4) && ($AFXDEPTHMODE != 0)
 
@@ -25,7 +25,6 @@
 // 1 - draw rgb-encoded depth
 // 2 - rgba pack (for afx_interop)
 // 3 - draw dithered
-// 4 - draw 1-channel float depth (for reshade)
 
 #if 1 == AFXMS
 Texture2DMS<float> input : register(t0);
@@ -37,12 +36,6 @@ Texture2D<float> input : register(t0);
 Texture2D<float> input2 : register(t1);
 #endif
 
-#if 4 == AFXDEPTHMODE
-RWTexture2D<float> output : register(u0);
-#else
-RWTexture2D<float4> output : register(u0);
-#endif
-
 cbuffer CS_CONSTANT_BUFFER : register(b0)
 {
 	float cZNear : packoffset(c0.x);
@@ -52,45 +45,45 @@ cbuffer CS_CONSTANT_BUFFER : register(b0)
 	float cNormalFar : packoffset(c1.x);
 	float cSkyNear : packoffset(c1.z);
 	float cSkyFar : packoffset(c1.w);
-	int viewportWidth : packoffset(c2.z);
-	int viewportHeight : packoffset(c2.w);
-#if 1 == AFXDEPTHMODE || 2 == AFXDEPTHMODE
-    float4x4 cInvViewProj : packoffset(c3);
-#endif	
+	int cViewportWidth : packoffset(c2.x);
+	int cViewportHeight : packoffset(c2.y);
+	int cWidth : packoffset(c2.z);
+	int cHeight : packoffset(c2.w);
+    float4x4 cInvViewProj : packoffset(c3); // only used in 1 == AFXDEPTHMODE || 2 == AFXDEPTHMODE
 };
 
-[numthreads(16, 16, 1)]
-void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+struct PS_INPUT
 {
-	uint2 outDim;
-	output.GetDimensions(outDim.x, outDim.y);	
-	if (dispatchThreadId.x > outDim.x || dispatchThreadId.y > outDim.y)
-		return;
-		
+	float4 pos : SV_POSITION;
+};
+
+float4 main( PS_INPUT i ) : SV_TARGET
+{
+	uint2 outDim = int2(cWidth, cHeight);
 	uint2 dim;
 #if 1 == AFXMS
 	uint sampleCount;
+	input.GetDimensions(dim.x, dim.y, sampleCount);
 #endif
-
+	dim = int2(cViewportWidth, cViewportHeight);
+	float2 pp = i.pos.xy - float2(0.5, 0.5);
+	
 
 #if 1 == AFXMS
 	float depth = 1;
-	input.GetDimensions(dim.x, dim.y, sampleCount);
-	for (uint i = 0; i < sampleCount; i++)
+	for (uint k = 0; k < sampleCount; k++)
 	{
-		float val = input.Load(int2(round(float2(dispatchThreadId.xy) * dim.xy / outDim.xy)), i).r;
+		float val = input.Load(int2(round(pp * dim.xy / outDim.xy)), k).r;
 		if(val>cNormalFar) val = (val - cNormalFar)/(1 - cNormalFar)*(cSkyFar - cSkyNear) + cSkyNear;
 		depth = min(depth, val);
 	}
 #else
-	input.GetDimensions(dim.x, dim.y);
-	float depth = input.Load(int3(round(float2(dispatchThreadId.xy) * dim.xy / outDim.xy),0)).r;
+	float depth = input.Load(int3(round(pp * dim.xy / outDim.xy),0)).r;
 	if(depth>cNormalFar) depth = (depth - cNormalFar)/(1 - cNormalFar)*(cSkyFar - cSkyNear) + cSkyNear;
 #endif
 
 #if 1 == AFXSMOKE
-	input2.GetDimensions(dim.x, dim.y);
-	float val = input2.Load(int3(round(float2(dispatchThreadId.xy) * dim.xy / outDim.xy),0)).r;
+	float val = input2.Load(int3(round(pp * dim.xy / outDim.xy),0)).r;
 	if(val<cNormalFar) depth = min(depth,val);
 #endif
 	
@@ -108,7 +101,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 
 	// Linearize Quake-like depth buffer with spherical correction using the inverse projection matrix:
 	
-	float4 eyeVec = mul(cInvViewProj, float4(2.0 * dim.x/outDim.x - 1, 2 * dim.y/outDim.y - 1, depth, 1.0));
+	float4 eyeVec = mul(cInvViewProj, float4(2.0 * i.pos.x * dim.x/outDim.x - 1, 2 * i.pos.y * dim.y/outDim.y - 1, depth, 1.0));
 	
 	eyeVec.xyz /= eyeVec.w;
 
@@ -141,7 +134,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 
 
 #if 0 == AFXD24
-	output[dispatchThreadId.xy] = float4(depth, depth, depth, 1.0);
+	return float4(depth, depth, depth, 1.0);
 #elif 1 == AFXD24
 	depth = saturate(depth);
 	const float maxint24 = 256*256*256-1;
@@ -150,12 +143,12 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 	color.b -= color.g/256.0;
 	color.g -= color.r/256.0;
 	color *= 256/255.0;
-	output[dispatchThreadId.xy] = float4(color, 1.0);
+	return float4(color, 1.0);
 #elif 2 == AFXD24
 	if(depth < 0)
-		output[dispatchThreadId.xy] = float4(0,0,0,0);
+		return float4(0,0,0,0);
 	else if(depth >= 1)
-		output[dispatchThreadId.xy] = float4(1,1,1,1);
+		return float4(1,1,1,1);
 	else {
 		const float4 kEncodeMul = float4(1.0, 255.0, 65025.0, 16581375.0);
 		const float4 kEncodeBit = 1.0/255.0;
@@ -163,16 +156,14 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 		float4 enc = kEncodeMul * depth;
 		enc = frac (enc);
 		enc -= enc.yzww * kEncodeBit;
-		output[dispatchThreadId.xy] = enc;
+		return enc;
 	}
 #elif 3 == AFXD24
 	// Sadly I couldn't beat the ReShade.me pattern:
-	float grid_position = frac(dot(float2(dispatchThreadId.xy)/float2(outDim.xy), (float2(outDim.xy) * float2(1.0 / 16.0, 10.0 / 36.0)) + 0.25));
+	float grid_position = frac(dot(pp/float2(outDim.xy), (float2(outDim.xy) * float2(1.0 / 16.0, 10.0 / 36.0)) + 0.25));
 	float dither_shift = 0.5 / 255.0;
 	float3 dither_shift_rgb = float3(dither_shift, -dither_shift, dither_shift);
 	dither_shift_rgb = lerp(dither_shift_rgb, -dither_shift_rgb, grid_position);
-	output[dispatchThreadId.xy] = float4(depth + dither_shift_rgb.r, depth - dither_shift_rgb.g, depth + dither_shift_rgb.b, 1.0);
-#elif 3 == AFXD24
-	output[dispatchThreadId.xy] = depth;
+	return float4(depth + dither_shift_rgb.r, depth - dither_shift_rgb.g, depth + dither_shift_rgb.b, 1.0);
 #endif
 }
