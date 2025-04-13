@@ -419,17 +419,17 @@ public:
                 depthTextureDesc.Height = m_DeviceTextureDesc.Height;
                 depthTextureDesc.MipLevels = 1;
                 depthTextureDesc.ArraySize = 1;
-                depthTextureDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+                depthTextureDesc.Format = DXGI_FORMAT_R32_FLOAT;
                 depthTextureDesc.SampleDesc.Count = 1;
                 depthTextureDesc.SampleDesc.Quality = 0;
                 depthTextureDesc.Usage = D3D11_USAGE_DEFAULT;
-                depthTextureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_RENDER_TARGET;
+                depthTextureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
                 depthTextureDesc.CPUAccessFlags = 0;
                 depthTextureDesc.MiscFlags = 0;
                 m_pDevice->CreateTexture2D(&depthTextureDesc, nullptr, &m_pDepthTexture);
 
                 D3D11_RENDER_TARGET_VIEW_DESC rtvbuffer_desc = {};
-                rtvbuffer_desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+                rtvbuffer_desc.Format = DXGI_FORMAT_R32_FLOAT;
                 rtvbuffer_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
                 rtvbuffer_desc.Texture2D.MipSlice = 0;
                 if (m_pDepthTexture) {
@@ -516,8 +516,8 @@ public:
             {
                 pVertexData[0].x = -1; pVertexData[0].y = 1;
                 pVertexData[1].x = 1; pVertexData[1].y = 1;
-                pVertexData[2].x = 1; pVertexData[2].y = -1;
-                pVertexData[3].x = -1; pVertexData[3].y = -1;
+                pVertexData[2].x = -1; pVertexData[2].y = -1;
+                pVertexData[3].x = 1; pVertexData[3].y = -1;
 
                 D3D11_SUBRESOURCE_DATA subResourceData{
                     pVertexData,
@@ -680,12 +680,13 @@ public:
 
                     if (nullptr == m_pSmokeDepthTexture) {
                         m_SmokeDepthTextureDesc = smokeDepthTextureDesc; // Usally DXGI_FORMAT_R24G8_TYPELESS to expect here.
+                        smokeDepthTextureDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
                         smokeDepthTextureDesc.Usage = D3D11_USAGE_DEFAULT;
-                        smokeDepthTextureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_DEPTH_STENCIL;
+                        smokeDepthTextureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
                         smokeDepthTextureDesc.CPUAccessFlags = 0;
                         smokeDepthTextureDesc.MiscFlags = 0;
                         D3D11_SHADER_RESOURCE_VIEW_DESC srvbuffer_desc = {};
-                        srvbuffer_desc.Format = depthStencilViewDesc.Format;
+                        srvbuffer_desc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
                         srvbuffer_desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
                         srvbuffer_desc.Texture2D.MipLevels = 1;
                         srvbuffer_desc.Texture2D.MostDetailedMip = 0;
@@ -765,13 +766,14 @@ public:
 
                     if (nullptr == m_pNormalDepthTexture) {
                         m_NormalDepthTextureDesc = normalDepthTextureDesc; // Usally DXGI_FORMAT_R24G8_TYPELESS to expect here.
+                        normalDepthTextureDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
                         normalDepthTextureDesc.Usage = D3D11_USAGE_DEFAULT;
-                        normalDepthTextureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_DEPTH_STENCIL;
+                        normalDepthTextureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
                         normalDepthTextureDesc.CPUAccessFlags = 0;
                         normalDepthTextureDesc.MiscFlags = 0;
                         D3D11_SHADER_RESOURCE_VIEW_DESC srvbuffer_desc = {};
-                        srvbuffer_desc.Format = depthStencilViewDesc.Format;
-                        srvbuffer_desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+                        srvbuffer_desc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+                        srvbuffer_desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS == depthStencilViewDesc.ViewDimension ? D3D11_SRV_DIMENSION_TEXTURE2DMS : D3D11_SRV_DIMENSION_TEXTURE2D;
                         srvbuffer_desc.Texture2D.MipLevels = 1;
                         srvbuffer_desc.Texture2D.MostDetailedMip = 0;
                         m_pDevice->CreateTexture2D(&normalDepthTextureDesc, nullptr, &m_pNormalDepthTexture);
@@ -811,7 +813,7 @@ public:
                     if (m_pDepthTextureRtv && m_pNormalDepthTextureSrv)
                     {
                         m_DeviceContext->OMSetRenderTargets(1, &m_pDepthTextureRtv, nullptr);
-                        m_DeviceContext->OMSetBlendState(m_BlendState, NULL, 0xffffffff);
+                        m_DeviceContext->OMSetBlendState(m_BlendState, NULL, 0xffffffff);                        
 
                         UINT numViewPorts = 1;
                         m_DeviceContext->RSSetViewports(1, &m_NormalViewPort);
@@ -840,8 +842,8 @@ public:
                         FLOAT newMatrix[4][4];
                         FLOAT zNear = g_ViewPort.MinDepth;
                         FLOAT zFar = g_ViewPort.MaxDepth;
-                        FLOAT zOutNear = 0.0;
-                        FLOAT zOutFar = 1.0;
+                        FLOAT zNormalNear = projectionMatrix.m[2][3] / projectionMatrix.m[2][2];
+                        FLOAT zNormalFar = projectionMatrix.m[2][3] / (projectionMatrix.m[2][2] + 1);
 
                         if (LUdecomposition(M, P, Q, L, U))
                         {
@@ -849,22 +851,17 @@ public:
                             double inv1[4] = { 0,1,0,0 };
                             double inv2[4] = { 0,0,1,0 };
                             double inv3[4] = { 0,0,0,1 };
-                            double planeN[4] = { 1,0,0,1 };
 
                             SolveWithLU(L, U, P, Q, b0, inv0);
                             SolveWithLU(L, U, P, Q, b1, inv1);
                             SolveWithLU(L, U, P, Q, b2, inv2);
                             SolveWithLU(L, U, P, Q, b3, inv3);
-                            SolveWithLU(L, U, P, Q, b3, planeN);
 
                             // Transposed for DirectX:
                             newMatrix[0][0] = (FLOAT)inv0[0]; newMatrix[0][1] = (FLOAT)inv0[1]; newMatrix[0][2] = (FLOAT)inv0[2]; newMatrix[0][3] = (FLOAT)inv0[3];
                             newMatrix[1][0] = (FLOAT)inv1[0]; newMatrix[1][1] = (FLOAT)inv1[1]; newMatrix[1][2] = (FLOAT)inv1[2]; newMatrix[1][3] = (FLOAT)inv1[3];
                             newMatrix[2][0] = (FLOAT)inv2[0]; newMatrix[2][1] = (FLOAT)inv2[1]; newMatrix[2][2] = (FLOAT)inv2[2]; newMatrix[2][3] = (FLOAT)inv2[3];
                             newMatrix[3][0] = (FLOAT)inv3[0]; newMatrix[3][1] = (FLOAT)inv3[1]; newMatrix[3][2] = (FLOAT)inv3[2]; newMatrix[3][3] = (FLOAT)inv3[3];
-
-                            zOutNear = sqrt(inv3[0] * inv3[0] + inv3[1] * inv3[1] + inv3[2] * inv3[2]);
-                            zOutFar = sqrt(planeN[0] * planeN[0] + planeN[1] * planeN[1] + planeN[2] * planeN[2]);
                         }
                         else {
                             newMatrix[0][0] = 1; newMatrix[0][1] = 0; newMatrix[0][2] = 0; newMatrix[0][3] = 0;
@@ -877,16 +874,13 @@ public:
                         FLOAT zSkyNear = 2.0f * skyBoxScale;
                         FLOAT zSkyFar = (float)(1.732050807569 * 2 * 16384 * skyBoxScale);
 
-                        zSkyNear = (zSkyNear - zOutNear) / (zOutFar - zOutNear);
-                        zSkyFar = (zSkyFar - zOutNear) / (zOutFar - zOutNear);
-
                         CS_CONSTANT_BUFFER constant_buffer = {
+                            zNormalNear,
+                            zNormalFar,
+                            zNormalNear,
+                            zNormalFar,
                             zNear,
                             zFar,
-                            zOutNear,
-                            zOutFar,
-                            zFar,
-                            0,
                             zSkyNear,
                             zSkyFar,
                             (int)g_ViewPort.Width,
@@ -935,6 +929,9 @@ public:
                             m_DepthShaderCombos[shaderCombo] = pPixelShader;
                         }
                         if (pPixelShader) {
+                            m_DeviceContext->PSSetShaderResources(0, 1, &m_pNormalDepthTextureSrv);
+                            if(compositeSmoke) m_DeviceContext->PSSetShaderResources(1, 1, &m_pSmokeDepthTextureSrv);
+
                             m_DeviceContext->VSSetShader(m_VertexShader, nullptr, 0);
                             m_DeviceContext->PSSetShader(pPixelShader, nullptr, 0);
 
@@ -1010,10 +1007,10 @@ private:
         float unused_c1y;
         float cSkyNear;
         float cSkyFar;
-        int unused_c2x;
-        int unused_c2y;
-        int viewportWidth;
-        int viewportHeight;
+        int cViewportWidth;
+        int cViewportHeight;
+        int cWidth;
+        int cHeight;
         DirectX::XMFLOAT4X4 invViewProj;
     };
     ID3D11Buffer* m_ConstantBuffer = nullptr;
@@ -1712,6 +1709,8 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
     }
 
 	g_ReShadeAdvancedfx.ResetHasRendered();
+
+    g_DepthCompositor.OnPresent();
 
     g_RenderSystemDrawingData.Pop();
 

@@ -934,7 +934,7 @@ void __fastcall New_CViewRender_UnkMakeMatrix(void* This) {
 	g_WorldToScreenMatrix.m[3][2] = result(3,2);
 	g_WorldToScreenMatrix.m[3][3] = result(3,3);*/
 
-	float* proj = (float*)((unsigned char*)This + 0x298 - 16*4);
+	float* proj = (float*)((unsigned char*)This + 0x218);
 	SOURCESDK::VMatrix projectionMatrix;
 	projectionMatrix.m[0][0] = proj[4 * 0 + 0];
 	projectionMatrix.m[0][1] = proj[4 * 0 + 1];
@@ -948,10 +948,10 @@ void __fastcall New_CViewRender_UnkMakeMatrix(void* This) {
 	projectionMatrix.m[2][1] = proj[4 * 2 + 1];
 	projectionMatrix.m[2][2] = proj[4 * 2 + 2];
 	projectionMatrix.m[2][3] = proj[4 * 2 + 3];
-	projectionMatrix.m[3][0] = proj[4 * 3 + 0];
-	projectionMatrix.m[3][1] = proj[4 * 3 + 1];
-	projectionMatrix.m[3][2] = proj[4 * 3 + 2];
-	projectionMatrix.m[3][3] = proj[4 * 3 + 3];
+	projectionMatrix.m[3][0] = 0;
+	projectionMatrix.m[3][1] = 0;
+	projectionMatrix.m[3][2] = 0;
+	projectionMatrix.m[3][3] = 1;
 	RenderSystemDX11_SupplyProjectionMatrix(projectionMatrix);
 
 	proj = (float *)((unsigned char*)This + 0x298);

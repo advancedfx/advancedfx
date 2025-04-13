@@ -42,7 +42,8 @@ cbuffer CS_CONSTANT_BUFFER : register(b0)
 	float cZFar : packoffset(c0.y);
 	float cOutNear : packoffset(c0.z);
 	float cOutFar : packoffset(c0.w);
-	float cNormalFar : packoffset(c1.x);
+	float cNormalNear : packoffset(c1.x);
+	float cNormalFar : packoffset(c1.y);
 	float cSkyNear : packoffset(c1.z);
 	float cSkyFar : packoffset(c1.w);
 	int cViewportWidth : packoffset(c2.x);
@@ -68,25 +69,38 @@ float4 main( PS_INPUT i ) : SV_TARGET
 	dim = int2(cViewportWidth, cViewportHeight);
 	float2 pp = i.pos.xy - float2(0.5, 0.5);
 	
-
 #if 1 == AFXMS
 	float depth = 1;
 	for (uint k = 0; k < sampleCount; k++)
 	{
 		float val = input.Load(int2(round(pp * dim.xy / outDim.xy)), k).r;
-		if(val>cNormalFar) val = (val - cNormalFar)/(1 - cNormalFar)*(cSkyFar - cSkyNear) + cSkyNear;
 		depth = min(depth, val);
 	}
 #else
-	float depth = input.Load(int3(round(pp * dim.xy / outDim.xy),0)).r;
-	if(depth>cNormalFar) depth = (depth - cNormalFar)/(1 - cNormalFar)*(cSkyFar - cSkyNear) + cSkyNear;
+	float depth = input.Load(int3(int2(round(pp * dim.xy / outDim.xy)),0)).r;
 #endif
 
 #if 1 == AFXSMOKE
 	float val = input2.Load(int3(round(pp * dim.xy / outDim.xy),0)).r;
-	if(val<cNormalFar) depth = min(depth,val);
+	if(val<cNormalFar) {
+		depth = min(depth,val);
+	}
 #endif
+
+if(cNormalFar < depth) {
+	depth = (depth - cNormalFar)/(1 - cNormalFar);
 	
+	float f1 = (-1) * cSkyFar * cSkyNear * 1.0;
+	float xD = cSkyFar - cSkyNear;
+
+	float outNear = (f1 / cOutNear + cSkyFar)/xD;
+	float outFar = (f1 / cOutFar + cSkyFar)/xD;
+	
+	depth = (depth - outNear) / (outFar - outNear);
+} else {
+	depth = (depth - cNormalNear)/(cNormalFar - cNormalNear);
+}
+
 #if 0 == AFXDEPTHMODE
 
 	float f1 = (-1) * cZFar * cZNear * 1.0;
