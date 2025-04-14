@@ -774,7 +774,7 @@ public:
                         D3D11_SHADER_RESOURCE_VIEW_DESC srvbuffer_desc = {};
                         srvbuffer_desc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
                         srvbuffer_desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS == depthStencilViewDesc.ViewDimension ? D3D11_SRV_DIMENSION_TEXTURE2DMS : D3D11_SRV_DIMENSION_TEXTURE2D;
-                        srvbuffer_desc.Texture2D.MipLevels = 1;
+                        srvbuffer_desc.Texture2D.MipLevels = normalDepthTextureDesc.MipLevels;
                         srvbuffer_desc.Texture2D.MostDetailedMip = 0;
                         m_pDevice->CreateTexture2D(&normalDepthTextureDesc, nullptr, &m_pNormalDepthTexture);
                         if (m_pNormalDepthTexture) {
@@ -1046,7 +1046,9 @@ int g_iDraw = 0;
 bool g_bInOwnDraw = false;
 ID3D11Resource* g_pMainRenderTargetResource = nullptr;
 bool g_bDetectSmoke = false;
+bool g_bDetectSmoke2 = false;
 bool g_bDetectedSmoke = false;
+bool g_bDetectedSmoke2 = false;
 ID3D11DepthStencilView* g_pSmokeDepthStencilView = nullptr;
 
 enum class ViewPass_e {
@@ -1353,11 +1355,15 @@ void STDMETHODCALLTYPE New_OMSetRenderTargets( ID3D11DeviceContext * This,
 
                 g_bInOwnDraw = false;
             }
-        }         
+        }
         if (g_bDetectSmoke && pDepthStencilView) {
+            g_bDetectedSmoke = true;
+            g_bDetectSmoke = false;
+        }
+        if (g_bDetectSmoke2 && pDepthStencilView) {
             static int count;
-            if (!g_bDetectedSmoke) {
-                g_bDetectedSmoke = true;
+            if (!g_bDetectedSmoke2) {
+                g_bDetectedSmoke2 = true;
                 count = 0;
             }
             //advancedfx::Message("Smoke: %i\n", count);
@@ -1376,20 +1382,32 @@ public:
     virtual void OnCallback(void) abstract = 0;
 };
 
-
-
-class CAfxRenderCallbackBeforeClearSmokeTargets1 : public IRenderThreadCallback
+class CAfxRenderCallbackBeforeDetectSmoke : public IRenderThreadCallback
 {
 public:
-    CAfxRenderCallbackBeforeClearSmokeTargets1()
+    CAfxRenderCallbackBeforeDetectSmoke()
     {
     }
 
     virtual void OnCallback(void) {
         if (g_pImmediateContext) {
             g_bDetectSmoke = true;
-            g_bDetectedSmoke = false;
-            g_pSmokeDepthStencilView = nullptr;
+        }
+        delete this;
+    }
+private:
+};
+
+class CAfxRenderCallbackAfterDetectSmoke : public IRenderThreadCallback
+{
+public:
+    CAfxRenderCallbackAfterDetectSmoke()
+    {
+    }
+
+    virtual void OnCallback(void) {
+        if (g_pImmediateContext) {
+            g_bDetectSmoke = false;
         }
         delete this;
     }
@@ -1397,16 +1415,21 @@ private:
 };
 
 
-class CAfxRenderCallbackAfterClearSmokeTargets1 : public IRenderThreadCallback
+class CAfxRenderCallbackBeforeMaybeDrawSmoke : public IRenderThreadCallback
 {
 public:
-    CAfxRenderCallbackAfterClearSmokeTargets1()
+    CAfxRenderCallbackBeforeMaybeDrawSmoke()
     {
     }
 
     virtual void OnCallback(void) {
         if (g_pImmediateContext) {
-            g_bDetectSmoke = false;
+            if (g_bDetectedSmoke) {
+                g_bDetectedSmoke = false;
+                g_bDetectSmoke2 = true;
+                g_bDetectedSmoke2 = false;
+                g_pSmokeDepthStencilView = nullptr;
+            }
         }
         delete this;
     }
@@ -1422,8 +1445,7 @@ public:
 
     virtual void OnCallback(void) {
         if (g_pImmediateContext) {
-            g_bDetectSmoke = false;
-            if (g_bDetectedSmoke && g_pSmokeDepthStencilView) {
+            if (g_bDetectedSmoke2 && g_pSmokeDepthStencilView) {
                 ID3D11DepthStencilView* pCurrentDepthStencilView = nullptr;
                 ID3D11DepthStencilView* pNullDepthStencilView = nullptr;
                 g_pImmediateContext->OMGetRenderTargets(0, nullptr, &pCurrentDepthStencilView);
@@ -1442,6 +1464,8 @@ public:
 
                 g_pSmokeDepthStencilView = nullptr;
             }
+            g_bDetectSmoke2 = false;
+            g_bDetectedSmoke2 = false;
         }
         delete this;
     }
@@ -1462,7 +1486,7 @@ public:
             if (g_ReShadeAdvancedfx.IsConnected() && g_bEnableReShade) {
                 g_DepthCompositor.CaptureNormalDepth(g_pImmediateContext, g_pCurrentDepthStencilView);
 
-                ID3D11RenderTargetView* pRenderTargetViews[1] = { nullptr };
+                ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
                 ID3D11DepthStencilView* pDepthStencilView = nullptr;
                 g_pImmediateContext->OMGetRenderTargets(1, &pRenderTargetViews[0], &pDepthStencilView);
 
@@ -1999,18 +2023,24 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
         const char * pszArg0 = va_arg(args, const char *);
         const char * pszArg1 = va_arg(args, const char *);
         if(pszArg0 && 0 == strcmp("Player 0",pszArg0) && pszArg1) {
-            if (0 == strcmp("Translucent Forward (MBOIT(2) Translucent 1/2)", pszArg1)) {
+            if (0 == strcmp("ClearSmokeTargets (4)", pszArg1)) {
                 if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
                     auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
-                    fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeClearSmokeTargets1());
+                    fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeDetectSmoke());
                 }
             }
-            /*else if (0 == strcmp("ClearSmokeTargets (4)", pszArg1)) {
+            else if (0 == strcmp("ClearSmokeTargets (2)", pszArg1)) {
                 if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
                     auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
-                    fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackAfterClearSmokeTargets1());
+                    fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackAfterDetectSmoke());
                 }
-            }*/
+            }
+            else if (0 == strcmp("Translucent Forward (MBOIT(2) Translucent 1/2)", pszArg1)) {
+                if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
+                    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
+                    fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeMaybeDrawSmoke());
+                }
+            }
             else if (0 == strcmp("WaterEffects", pszArg1)
                 || 0 == strcmp("Decals Translucent Depth", pszArg1)) {
                 if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
