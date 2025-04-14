@@ -1367,7 +1367,7 @@ void STDMETHODCALLTYPE New_OMSetRenderTargets( ID3D11DeviceContext * This,
                 count = 0;
             }
             //advancedfx::Message("Smoke: %i\n", count);
-            if (2 == count) {
+            if (4 == count) {
                 g_pSmokeDepthStencilView = pDepthStencilView;
             }
             count++;
@@ -2035,7 +2035,7 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
                     fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackAfterDetectSmoke());
                 }
             }
-            else if (0 == strcmp("Translucent Forward (MBOIT(2) Translucent 1/2)", pszArg1)) {
+            else if (0 == strcmp("Translucent Forward (MBOIT(2) Smoke 1/2)", pszArg1)) {
                 if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
                     auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
                     fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeMaybeDrawSmoke());
