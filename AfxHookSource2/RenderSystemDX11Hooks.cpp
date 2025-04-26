@@ -1072,7 +1072,7 @@ private:
             m_pDevice->CreateTexture2D(&depthTextureDesc, nullptr, &m_pDepthTexture[depthTextureType]);
 
             D3D11_RENDER_TARGET_VIEW_DESC rtvbuffer_desc = {};
-            rtvbuffer_desc.Format = DXGI_FORMAT_R32_FLOAT;
+            rtvbuffer_desc.Format = depthTextureType == DepthTextureType_R32F ? DXGI_FORMAT_R32_FLOAT : DXGI_FORMAT_R8G8B8A8_UNORM;
             rtvbuffer_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
             rtvbuffer_desc.Texture2D.MipSlice = 0;
             if (m_pDepthTexture[depthTextureType]) {
@@ -2916,6 +2916,7 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
         if(0 == _stricmp(arg1,"normal")) {
 
         } else if(0 == _stricmp(arg1,"depth")) {
+            settings.Capture = CStreamSettings::Capture_e::BeforeUi;
             settings.CaptureType = CStreamSettings::CaptureType_e::DepthRgb;
         } else {
             advancedfx::Warning("AFXERROR: \"%s\" is not a valid stream template.\n");
@@ -2931,6 +2932,7 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
         }
 
         m_Streams.emplace(arg2, settings);
+        return;
 	}
 
 	advancedfx::Message(
@@ -3354,6 +3356,7 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
             "%s %s autoForceFullResSmoke [...] - When capturing smoke depth: If to force the engine into full resolution smoke passes (recommended). (Globally shared!)\n"
             , arg0, arg1
         );
+        return;
     }
 
 	advancedfx::Message(
