@@ -909,6 +909,7 @@ CON_COMMAND(__mirv_o,"") {
 typedef void (__fastcall * CViewRender_UnkMakeMatrix_t)(void* This);
 CViewRender_UnkMakeMatrix_t g_Old_CViewRender_UnkMakeMatrix = nullptr;
 void __fastcall New_CViewRender_UnkMakeMatrix(void* This) {
+	
 	g_Old_CViewRender_UnkMakeMatrix(This);
 	//memcpy(g_WorldToScreenMatrix.m,(unsigned char*)This + 0x1b8,sizeof(g_WorldToScreenMatrix.m));
 
@@ -948,10 +949,10 @@ void __fastcall New_CViewRender_UnkMakeMatrix(void* This) {
 	projectionMatrix.m[2][1] = proj[4 * 2 + 1];
 	projectionMatrix.m[2][2] = proj[4 * 2 + 2];
 	projectionMatrix.m[2][3] = proj[4 * 2 + 3];
-	projectionMatrix.m[3][0] = 0;
-	projectionMatrix.m[3][1] = 0;
-	projectionMatrix.m[3][2] = 0;
-	projectionMatrix.m[3][3] = 1;
+	projectionMatrix.m[3][0] = proj[4 * 3 + 0];
+	projectionMatrix.m[3][1] = proj[4 * 3 + 1];
+	projectionMatrix.m[3][2] = proj[4 * 3 + 2];
+	projectionMatrix.m[3][3] = proj[4 * 3 + 3];
 	RenderSystemDX11_SupplyProjectionMatrix(projectionMatrix);
 
 	proj = (float *)((unsigned char*)This + 0x298);
@@ -972,9 +973,9 @@ void __fastcall New_CViewRender_UnkMakeMatrix(void* This) {
 	g_WorldToScreenMatrix.m[3][2] = proj[4*3+2];
 	g_WorldToScreenMatrix.m[3][3] = proj[4*3+3];
 
-	g_CampathDrawer.OnEngineThread_SetupViewDone();	
+	g_CampathDrawer.OnEngineThread_SetupViewDone();
 
-	RenderSystemDX11_EngineThread_Finish();
+	RenderSystemDX11_EngineThread_Prepare();
 }
 
 /*
@@ -1309,9 +1310,9 @@ CON_COMMAND(mirv_cvar_unhide_all, "Unlocks cmds and cvars.") {
 		int nFlags = cmd->GetFlags();
 		if(nFlags == 0x400) break;
 		total++;
-		if(nFlags & (FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN)) {
+		if(nFlags & (SOURCESDK_CS2_FCVAR_DEVELOPMENTONLY | SOURCESDK_CS2_FCVAR_HIDDEN)) {
 //			fprintf(f1,"[+] %lli: 0x%08x: %s : %s\n", i, cmd->m_nFlags, cmd->m_pszName, cmd->m_pszHelpString);
-			cmd->SetFlags(nFlags &= ~(SOURCESDK::int64)(FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN));
+			cmd->SetFlags(nFlags &= ~(SOURCESDK::int64)(SOURCESDK_CS2_FCVAR_DEVELOPMENTONLY | SOURCESDK_CS2_FCVAR_HIDDEN));
 			nUnhidden++;
 		} else {
 //			fprintf(f1,"[ ] %lli: 0x%08x: %s : %s\n", i, cmd->m_nFlags, cmd->m_pszName, cmd->m_pszHelpString);
@@ -1326,9 +1327,9 @@ CON_COMMAND(mirv_cvar_unhide_all, "Unlocks cmds and cvars.") {
 		SOURCESDK::CS2::Cvar_s * cvar = SOURCESDK::CS2::g_pCVar->GetCvar(i);
 		if(nullptr == cvar) break;
 		total++;
-		if(cvar->m_nFlags & (FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN)) {
+		if(cvar->m_nFlags & (SOURCESDK_CS2_FCVAR_DEVELOPMENTONLY | SOURCESDK_CS2_FCVAR_HIDDEN)) {
 //			fprintf(f1,"[+] %lli: 0x%08x: %s : %s\n", i, cvar->m_nFlags, cvar->m_pszName, cvar->m_pszHelpString);
-			cvar->m_nFlags &= ~(SOURCESDK::int64)(FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN);
+			cvar->m_nFlags &= ~(SOURCESDK::int64)(SOURCESDK_CS2_FCVAR_DEVELOPMENTONLY | SOURCESDK_CS2_FCVAR_HIDDEN);
 			nUnhidden++;
 		} else {
 //			fprintf(f1,"[ ] %lli: 0x%08x: %s : %s\n", i, cvar->m_nFlags, cvar->m_pszName, cvar->m_pszHelpString);
@@ -1348,9 +1349,9 @@ CON_COMMAND(mirv_cvar_unlock_sv_cheats, "Unlocks sv_cheats on client (as much as
 		int nFlags = cmd->GetFlags();
 		if(nFlags == 0x400) break;
 		total++;
-		if(nFlags & (FCVAR_CHEAT)) {
+		if(nFlags & (SOURCESDK_CS2_FCVAR_CHEAT)) {
 //			fprintf(f1,"[+] %lli: 0x%08x: %s : %s\n", i, cmd->m_nFlags, cmd->m_pszName, cmd->m_pszHelpString);
-			cmd->SetFlags(nFlags &= ~(SOURCESDK::int64)(FCVAR_CHEAT));
+			cmd->SetFlags(nFlags &= ~(SOURCESDK::int64)(SOURCESDK_CS2_FCVAR_CHEAT));
 			nUnhidden++;
 		} else {
 //			fprintf(f1,"[ ] %lli: 0x%08x: %s : %s\n", i, cmd->m_nFlags, cmd->m_pszName, cmd->m_pszHelpString);
@@ -1365,16 +1366,16 @@ CON_COMMAND(mirv_cvar_unlock_sv_cheats, "Unlocks sv_cheats on client (as much as
 		SOURCESDK::CS2::Cvar_s * cvar = SOURCESDK::CS2::g_pCVar->GetCvar(i);
 		if(nullptr == cvar) break;
 		total++;
-		if(cvar->m_nFlags & (FCVAR_CHEAT)) {
+		if(cvar->m_nFlags & (SOURCESDK_CS2_FCVAR_CHEAT)) {
 //			fprintf(f1,"[+] %lli: 0x%08x: %s : %s\n", i, cvar->m_nFlags, cvar->m_pszName, cvar->m_pszHelpString);
-			cvar->m_nFlags &= ~(SOURCESDK::int64)(FCVAR_CHEAT);
+			cvar->m_nFlags &= ~(SOURCESDK::int64)(SOURCESDK_CS2_FCVAR_CHEAT);
 			nUnhidden++;
 		} else {
 //			fprintf(f1,"[ ] %lli: 0x%08x: %s : %s\n", i, cvar->m_nFlags, cvar->m_pszName, cvar->m_pszHelpString);
 		}
 		if(0 == strcmp("sv_cheats",cvar->m_pszName)) {
-			cvar->m_nFlags &= ~(SOURCESDK::int64)(FCVAR_REPLICATED|FCVAR_NOTIFY);
-			cvar->m_nFlags |= FCVAR_CLIENTDLL;
+			cvar->m_nFlags &= ~(SOURCESDK::int64)(SOURCESDK_CS2_FCVAR_REPLICATED| SOURCESDK_CS2_FCVAR_NOTIFY);
+			cvar->m_nFlags |= SOURCESDK_CS2_FCVAR_CLIENTDLL;
 			cvar->m_Value.m_bValue = true;			
 		}
 	}

@@ -93,8 +93,8 @@ if(cNormalFar < depth) {
 	float f1 = (-1) * cSkyFar * cSkyNear * 1.0;
 	float xD = cSkyFar - cSkyNear;
 
-	float outNear = (f1 / cOutNear + cSkyFar)/xD;
-	float outFar = (f1 / cOutFar + cSkyFar)/xD;
+	float outNear = (f1 / cNormalFar + cSkyFar)/xD;
+	float outFar = (f1 / 1 + cSkyFar)/xD;
 	
 	depth = (depth - outNear) / (outFar - outNear);
 } else {
@@ -115,7 +115,7 @@ if(cNormalFar < depth) {
 
 	// Linearize Quake-like depth buffer with spherical correction using the inverse projection matrix:
 	
-	float4 eyeVec = mul(cInvViewProj, float4(2.0 * i.pos.x * dim.x/outDim.x - 1, 2 * i.pos.y * dim.y/outDim.y - 1, depth, 1.0));
+	float4 eyeVec = mul(cInvViewProj, float4(2.0 * i.pos.x / outDim.x - 1, 2.0 * i.pos.y / outDim.y - 1, depth, 1.0));
 	
 	eyeVec.xyz /= eyeVec.w;
 

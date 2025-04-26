@@ -2,18 +2,14 @@
 
 CRenderCommands::CRenderCommands() {
     m_EngineThreadCommands = new CRenderPassCommands();
-    {
-        std::unique_lock<std::shared_timed_mutex> lock(m_CommandsQueueMutex);
-        m_CommandsQueue.emplace_back(m_EngineThreadCommands);
-    }
 }
 
 CRenderCommands::~CRenderCommands() {
     {
-        std::unique_lock<std::shared_timed_mutex> lock(m_CommandsQueueMutex);
+        std::unique_lock<std::mutex> lock(m_CommandsQueueMutex);
         while(!m_CommandsQueue.empty()) {
-            delete *(m_CommandsQueue.begin());
-            m_CommandsQueue.pop_front();
+            delete m_CommandsQueue.front();
+            m_CommandsQueue.pop();
         }
     }
     {
@@ -29,43 +25,32 @@ CRenderCommands::CRenderPassCommands & CRenderCommands::EngineThread_GetCommands
     return *m_EngineThreadCommands;
 }
 
-void CRenderCommands::EngineThread_Finish() {
-    CRenderPassCommands * renderPassCommands = nullptr;
-    if(m_CommandsQueuedBeforePresent) {
-        std::unique_lock<std::shared_timed_mutex> lock(m_CommandsQueueMutex);
+void CRenderCommands::EngineThread_Present() {
+    CRenderPassCommands* pRenderPassCommands = m_EngineThreadCommands;
+    m_EngineThreadCommands = nullptr;
 
-            renderPassCommands = m_CommandsQueue.back();
-            m_CommandsQueue.pop_back();
-        } 
-        
-    if(renderPassCommands) {
-        renderPassCommands->Clear();
-        m_EngineThreadCommands = renderPassCommands;
-    } else {
+    {
+        std::unique_lock<std::mutex> lock(m_CommandsQueueMutex);
+        m_CommandsQueue.emplace(pRenderPassCommands);
+    }
+
+    {
         std::unique_lock<std::mutex> lock(m_ReusableMutex);
-        if(!m_Reusable.empty()) m_EngineThreadCommands = m_Reusable.front();
+        if (!m_Reusable.empty()) m_EngineThreadCommands = m_Reusable.front();
     }
 
     if(m_EngineThreadCommands == nullptr) m_EngineThreadCommands = new CRenderPassCommands();
-
-    {
-        std::unique_lock<std::shared_timed_mutex> lock(m_CommandsQueueMutex);
-        m_CommandsQueue.emplace_back(m_EngineThreadCommands);
-    }
-
-    m_CommandsQueuedBeforePresent = true;
 }
-
-void CRenderCommands::EngineThread_Present() {
-    m_CommandsQueuedBeforePresent = false;
-}
-
 
 CRenderCommands::CRenderPassCommands * CRenderCommands::RenderThread_GetCommands(ID3D11DeviceContext *pContext) {
     if(!m_AquiredCommands) {
         {
-            std::shared_lock<std::shared_timed_mutex> lock(m_CommandsQueueMutex);
-            m_RenderThreadCommands = m_CommandsQueue.empty()?nullptr:m_CommandsQueue.front();
+            std::unique_lock<std::mutex> lock(m_CommandsQueueMutex);
+            if (m_CommandsQueue.empty()) m_RenderThreadCommands = nullptr;
+            else {
+                m_RenderThreadCommands = m_CommandsQueue.front();
+                m_CommandsQueue.pop();
+            }
         }
         if(m_RenderThreadCommands) {
             m_RenderThreadCommands->Context = pContext;
@@ -83,22 +68,13 @@ CRenderCommands::CRenderPassCommands * CRenderCommands::RenderThread_GetCommands
 }
 
 void CRenderCommands::RenderThread_Present() {
-    CRenderPassCommands * renderPassCommand = nullptr;
-    {
-        std::unique_lock<std::shared_timed_mutex> lock(m_CommandsQueueMutex);
-        if(!m_CommandsQueue.empty()) {
-            renderPassCommand = m_CommandsQueue.front();
-            m_CommandsQueue.pop_front();
-        }
-    }
-    if(renderPassCommand) {
-        renderPassCommand->Finalize();
+    if(m_RenderThreadCommands) {
+        m_RenderThreadCommands->Finalize();
         {
             std::unique_lock<std::mutex> lock(m_ReusableMutex);
-            m_Reusable.emplace(renderPassCommand);
+            m_Reusable.emplace(m_RenderThreadCommands);
         }
+        m_RenderThreadCommands = nullptr;
     }
-
-    m_RenderThreadCommands = nullptr;
     m_AquiredCommands = false;
 }

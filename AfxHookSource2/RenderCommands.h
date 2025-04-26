@@ -5,9 +5,7 @@
 #include <functional>
 #include <atomic>
 #include <queue>
-#include <deque>
 #include <mutex>
-#include <shared_mutex>
 
 class CRenderCommands {
 public:
@@ -64,8 +62,6 @@ public:
             BeforeUi2.Clear();
             BeforePresent.Clear();
             AfterPresent.Clear();
-
-            Context = nullptr;
         }
 
         void Finalize(){
@@ -73,6 +69,7 @@ public:
             Clear();
             if(Context) {
                 OnAfterPresentOrContextLossReliable();
+                Context = nullptr;
             } else {
                 AfterPresentOrContextLossReliable.Clear();
             }
@@ -139,8 +136,6 @@ public:
 
     CRenderPassCommands & EngineThread_GetCommands();
 
-    void EngineThread_Finish();
-
     void EngineThread_Present();
 
     CRenderPassCommands * RenderThread_GetCommands(ID3D11DeviceContext *pContext);
@@ -148,9 +143,9 @@ public:
     void RenderThread_Present();
 
 private:  
-    bool m_CommandsQueuedBeforePresent = false;
-    std::shared_timed_mutex m_CommandsQueueMutex;
-    std::deque<CRenderPassCommands *> m_CommandsQueue;
+    std::mutex m_CommandsQueueMutex;
+    std::queue<CRenderPassCommands *> m_CommandsQueue;
+    bool m_QueuedCommands = false;
     std::mutex m_ReusableMutex;
     std::queue<CRenderPassCommands *> m_Reusable;
     CRenderPassCommands * m_EngineThreadCommands = nullptr;
