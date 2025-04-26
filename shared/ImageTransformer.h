@@ -10,6 +10,8 @@ namespace ImageTransformer {
 
 	class ICapture* RgbaToBgr(class CThreadPool * threadPool, class IImageBufferPool * imageBufferPool, class ICapture* capture);
 
+	class ICapture* RgbaToBgra(class CThreadPool * threadPool, class IImageBufferPool * imageBufferPool, class ICapture* capture);
+
 	class ICapture* DepthF(class CThreadPool * threadPool, class IImageBufferPool * imageBufferPool, class ICapture* capture, float depthScale, float depthOfs);
 
 	class ICapture* Depth24(class CThreadPool * threadPool, class IImageBufferPool * imageBufferPool, class ICapture* capture, float depthScale, float depthOfs);

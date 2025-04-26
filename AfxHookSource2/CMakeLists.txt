@@ -240,6 +240,9 @@ target_sources(${PROJECT_NAME} PRIVATE
 	MirvFix.cpp
 	MirvFix.h
 
+    RenderCommands.cpp
+    RenderCommands.h
+
     RenderSystemDX11Hooks.cpp
     RenderSystemDX11Hooks.h
 
@@ -248,6 +251,8 @@ target_sources(${PROJECT_NAME} PRIVATE
 
 	SchemaSystem.cpp
 	SchemaSystem.h
+
+    StreamSettings.h
 
     WrpConsole.cpp
     WrpConsole.h

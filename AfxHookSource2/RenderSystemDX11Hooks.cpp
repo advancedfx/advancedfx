@@ -8,6 +8,9 @@
 #include "CamIO.h"
 #include "MirvFix.h"
 
+#include "RenderCommands.h"
+#include "StreamSettings.h"
+
 #include "../shared/AfxDetours.h"
 #include "../shared/binutils.h"
 #include "../shared/Captures.h"
@@ -50,11 +53,11 @@ extern advancedfx::CImageBufferPoolThreadSafe * g_pImageBufferPoolThreadSafe;
 extern SOURCESDK::CS2::ISource2EngineToClient * g_pEngineToClient;
 extern SOURCESDK::CS2::ICvar * SOURCESDK::CS2::g_pCVar;
 
-std::mutex g_SwapChainMutex;
-std::queue<std::function<bool(ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture)>> g_SwapchainBeforePresentQueue;
-std::queue<std::function<bool(ID3D11DeviceContext * pDeviceContext)>> g_SwapchainAfterPresentQueue;
+CRenderCommands g_RenderCommands;
 
 bool g_bEnableReShade = true;
+bool g_bReShadeCompositeSmoke = true;
+bool g_bCompositeSmoke = false;
 
 class CAfxCpuTexture
 : public advancedfx::CRefCountedThreadSafe
@@ -193,8 +196,9 @@ private:
 
 class CAfxCapture {
 public:
-    CAfxCapture(class advancedfx::COutVideoStreamCreator* pOutVideoStreamCreator)
+    CAfxCapture(class advancedfx::COutVideoStreamCreator* pOutVideoStreamCreator, bool wantsAlpha)
      : m_pOutVideoStreamCreator(pOutVideoStreamCreator)
+     , m_WantsAlpha (wantsAlpha)
     {
         m_pOutVideoStreamCreator->AddRef();
         m_ProcessingThread = std::thread(&CAfxCapture::ProcessingThreadFunc, this);
@@ -270,6 +274,8 @@ private:
     class advancedfx::COutVideoStreamCreator* m_pOutVideoStreamCreator;
 	advancedfx::COutVideoStream* m_OutVideoStream = nullptr;
 
+    bool m_WantsAlpha;
+
 	class CBuffers {
 	public:
 		CBuffers(size_t size) : m_Buffers(size) {
@@ -312,9 +318,21 @@ private:
                     for(size_t i=0; i < taskSize; i++) {
                         auto pTexture = task->GetAt(i);
                         if(pTexture) {
-                            advancedfx::ICapture* noAlphaCapture = advancedfx::ImageTransformer::RgbaToBgr(g_pThreadPool,g_pImageBufferPoolThreadSafe,pTexture);
-                            if (noAlphaCapture) {
-                                if (const advancedfx::IImageBuffer* buffer = noAlphaCapture->GetBuffer()) {                            
+                            advancedfx::ICapture* capture = pTexture;
+                            switch(pTexture->GetImageBufferFormat()->Format) {
+                            case advancedfx::ImageFormat::RGBA:
+                                if(m_WantsAlpha) {
+                                    capture = advancedfx::ImageTransformer::RgbaToBgra(g_pThreadPool,g_pImageBufferPoolThreadSafe,pTexture);
+                                } else {
+                                    capture = advancedfx::ImageTransformer::RgbaToBgr(g_pThreadPool,g_pImageBufferPoolThreadSafe,pTexture);
+                                }
+                                break;
+                            default:
+                                capture->AddRef();
+                                break;
+                            }
+                            if (capture) {
+                                if (const advancedfx::IImageBuffer* buffer = capture->GetBuffer()) {                            
                                     if (m_OutVideoStream == nullptr) {
                                         m_OutVideoStream = m_pOutVideoStreamCreator->CreateOutVideoStream(*buffer->GetImageBufferFormat());
                                         if (nullptr == m_OutVideoStream)
@@ -334,8 +352,8 @@ private:
                                 else {
                                    advancedfx::Warning("AFXERROR: Could not get capture buffer for screen recording.\n");
                                 }
-                                noAlphaCapture->Release();
-                                noAlphaCapture = nullptr; 
+                                capture->Release();
+                                capture = nullptr; 
                             }                               
                             pTexture->CpuSignalDone();
                         }
@@ -405,37 +423,19 @@ private:
 
 class CDepthCompositor {
 public:
+    enum DepthTextureType_e {
+        DepthTextureType_R32F = 0,
+        DepthTextureType_RGB = 1,
+        DepthTextureTypeCount = 2
+    };
+
     void OnTargetBegin(ID3D11Device * pDevice, ID3D11Texture2D * pTexture) {
         if(pDevice && pTexture) {
             pDevice->AddRef();    
             m_pDevice = pDevice;
             pTexture->GetDesc(&m_DeviceTextureDesc);
             m_HasSmokeDepth = false;
-            m_HasNormalDepth = false;
-
-            {
-                D3D11_TEXTURE2D_DESC depthTextureDesc;
-                depthTextureDesc.Width = m_DeviceTextureDesc.Width;
-                depthTextureDesc.Height = m_DeviceTextureDesc.Height;
-                depthTextureDesc.MipLevels = 1;
-                depthTextureDesc.ArraySize = 1;
-                depthTextureDesc.Format = DXGI_FORMAT_R32_FLOAT;
-                depthTextureDesc.SampleDesc.Count = 1;
-                depthTextureDesc.SampleDesc.Quality = 0;
-                depthTextureDesc.Usage = D3D11_USAGE_DEFAULT;
-                depthTextureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
-                depthTextureDesc.CPUAccessFlags = 0;
-                depthTextureDesc.MiscFlags = 0;
-                m_pDevice->CreateTexture2D(&depthTextureDesc, nullptr, &m_pDepthTexture);
-
-                D3D11_RENDER_TARGET_VIEW_DESC rtvbuffer_desc = {};
-                rtvbuffer_desc.Format = DXGI_FORMAT_R32_FLOAT;
-                rtvbuffer_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-                rtvbuffer_desc.Texture2D.MipSlice = 0;
-                if (m_pDepthTexture) {
-                    m_pDevice->CreateRenderTargetView(m_pDepthTexture, &rtvbuffer_desc, &m_pDepthTextureRtv);
-                }
-            }
+            for(int i=0;i<DepthTextureTypeCount;i++) m_HasNormalDepth[i] = false;
 
             m_pDevice->CreateDeferredContext(0, &m_DeviceContext);
 
@@ -616,14 +616,18 @@ public:
             m_pNormalDepthTexture = nullptr;
         }
 
-        if (m_pDepthTextureRtv) {
-            m_pDepthTextureRtv->Release();
-            m_pDepthTextureRtv = nullptr;
+        for(int i=0; i<DepthTextureTypeCount;i++) {
+            if (m_pDepthTextureRtv[i]) {
+                m_pDepthTextureRtv[i]->Release();
+                m_pDepthTextureRtv[i] = nullptr;
+            }
         }
 
-        if (m_pDepthTexture) {
-            m_pDepthTexture->Release();
-            m_pDepthTexture = nullptr;
+        for(int i=0; i<DepthTextureTypeCount;i++) {
+            if (m_pDepthTexture[i]) {
+                m_pDepthTexture[i]->Release();
+                m_pDepthTexture[i] = nullptr;
+            }
         }
 
         if(m_pDevice) {
@@ -732,8 +736,19 @@ public:
         }
     }
 
-    void CaptureNormalDepth(ID3D11DeviceContext * pContext, ID3D11DepthStencilView * pDepthStencilView) {
+    void CaptureNormalDepth(ID3D11DeviceContext * pContext, ID3D11DepthStencilView * pDepthStencilView,
+        bool compositeSmoke,
+        DepthTextureType_e depthTextureType,
+        ShaderCombo_afx_depth_ps_5_0::AFXDEPTHMODE_e afxDepthMode,
+        ShaderCombo_afx_depth_ps_5_0::AFXD24_e afxD24,
+        float outZFar = 0.0f,
+        float outZNear = 0.0f
+    ) {
         if (!HasCoreDeps() || pContext == nullptr || pDepthStencilView == nullptr) return;
+
+        EnsureDepthTexture(depthTextureType);
+
+        if(m_pDepthTexture[depthTextureType] == nullptr || m_pDepthTextureRtv[depthTextureType] == nullptr) return;
 
         D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
         pDepthStencilView->GetDesc(&depthStencilViewDesc);
@@ -806,13 +821,11 @@ public:
                         }
 
                         if (pCurrentDepthStencilView) pCurrentDepthStencilView->Release();
-
-                        m_HasNormalDepth = true;
                     }
 
-                    if (m_pDepthTextureRtv && m_pNormalDepthTextureSrv)
+                    if (m_pDepthTextureRtv[depthTextureType] && m_pNormalDepthTextureSrv)
                     {
-                        m_DeviceContext->OMSetRenderTargets(1, &m_pDepthTextureRtv, nullptr);
+                        m_DeviceContext->OMSetRenderTargets(1, &m_pDepthTextureRtv[depthTextureType], nullptr);
                         m_DeviceContext->OMSetBlendState(m_BlendState, NULL, 0xffffffff);                        
 
                         UINT numViewPorts = 1;
@@ -874,11 +887,16 @@ public:
                         FLOAT zSkyNear = 2.0f * skyBoxScale;
                         FLOAT zSkyFar = (float)(1.732050807569 * 2 * 16384 * skyBoxScale);
 
+                        if(0.0f == outZNear && outZFar == outZNear) {
+                            outZNear = zNormalNear;
+                            outZFar = zNormalFar;
+                        }
+
                         CS_CONSTANT_BUFFER constant_buffer = {
                             zNormalNear,
                             zNormalFar,
-                            zNormalNear,
-                            zNormalFar,
+                            outZNear,
+                            outZFar,
                             zNear,
                             zFar,
                             zSkyNear,
@@ -904,13 +922,13 @@ public:
                         m_DeviceContext->PSSetConstantBuffers(0, 1, &m_ConstantBuffer);
 
                         bool multisampled = 1 < m_NormalDepthTextureDesc.SampleDesc.Count;
-                        bool compositeSmoke = m_HasSmokeDepth && m_pSmokeDepthTextureSrv;
+                        compositeSmoke = compositeSmoke && m_HasSmokeDepth && m_pSmokeDepthTextureSrv;
 
                         int shaderCombo = ShaderCombo_afx_depth_ps_5_0::GetCombo(
                             multisampled ? ShaderCombo_afx_depth_ps_5_0::AFXMS_1 : ShaderCombo_afx_depth_ps_5_0::AFXMS_0,
                             compositeSmoke ? ShaderCombo_afx_depth_ps_5_0::AFXSMOKE_1 : ShaderCombo_afx_depth_ps_5_0::AFXSMOKE_0,
-                            ShaderCombo_afx_depth_ps_5_0::AFXDEPTHMODE_0,
-                            ShaderCombo_afx_depth_ps_5_0::AFXD24_0
+                            afxDepthMode,
+                            afxD24
                         );
 
                         ID3D11PixelShader * pPixelShader = nullptr;
@@ -944,7 +962,7 @@ public:
                             m_DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
                             m_DeviceContext->Draw(4, startVertex);
 
-                            m_HasNormalDepth = true;
+                            m_HasNormalDepth[depthTextureType] = true;
                         }
 
                         //
@@ -967,17 +985,17 @@ public:
         }
     }
 
-    ID3D11Resource * GetDepthResource() {
-        if (m_HasNormalDepth) {
-            if (m_pDepthTexture) m_pDepthTexture->AddRef();
-            return m_pDepthTexture;
+    ID3D11Texture2D * GetDepthTexture(DepthTextureType_e depthTextureType) {
+        if (m_HasNormalDepth[depthTextureType]) {
+            if (m_pDepthTexture[depthTextureType]) m_pDepthTexture[depthTextureType]->AddRef();
+            return m_pDepthTexture[depthTextureType];
         }
         return nullptr;
     }
 
     void OnPresent() {
         m_HasSmokeDepth = false;
-        m_HasNormalDepth = false;
+        for(int i=0;i<DepthTextureTypeCount;i++) m_HasNormalDepth[i] = false;
     }
 
 private:
@@ -991,10 +1009,11 @@ private:
     ID3D11ShaderResourceView* m_pNormalDepthTextureSrv = nullptr;
     ID3D11Texture2D* m_pNormalDepthTexture = nullptr;
     D3D11_TEXTURE2D_DESC m_NormalDepthTextureDesc = {};
-    ID3D11Texture2D* m_pDepthTexture = nullptr;
-    ID3D11RenderTargetView* m_pDepthTextureRtv = nullptr;
+
+    ID3D11Texture2D* m_pDepthTexture[2] = {nullptr,nullptr};
+    ID3D11RenderTargetView* m_pDepthTextureRtv[2] = {nullptr,nullptr};
     D3D11_VIEWPORT m_NormalViewPort = {};
-    bool m_HasNormalDepth = false;
+    bool m_HasNormalDepth[2] = {false,false};
 
     ID3D11DeviceContext* m_DeviceContext = nullptr;
 
@@ -1032,7 +1051,34 @@ private:
     ID3D11BlendState* m_BlendState = nullptr;
 
     bool HasCoreDeps() {
-        return m_pDevice && m_DeviceContext && m_ConstantBuffer && m_VertexBuffer && m_VertexShader && m_DepthStencilState && m_RasterizerState && m_BlendState && m_pDepthTexture && m_pDepthTextureRtv;
+        return m_pDevice && m_DeviceContext && m_ConstantBuffer && m_VertexBuffer && m_VertexShader && m_DepthStencilState && m_RasterizerState && m_BlendState;
+    }
+
+    void EnsureDepthTexture(DepthTextureType_e depthTextureType) {
+        if(nullptr == m_pDevice) return;
+        if(nullptr == m_pDepthTexture[depthTextureType]) {
+            D3D11_TEXTURE2D_DESC depthTextureDesc;
+            depthTextureDesc.Width = m_DeviceTextureDesc.Width;
+            depthTextureDesc.Height = m_DeviceTextureDesc.Height;
+            depthTextureDesc.MipLevels = 1;
+            depthTextureDesc.ArraySize = 1;
+            depthTextureDesc.Format = depthTextureType == DepthTextureType_R32F ? DXGI_FORMAT_R32_FLOAT : DXGI_FORMAT_R8G8B8A8_UNORM;
+            depthTextureDesc.SampleDesc.Count = 1;
+            depthTextureDesc.SampleDesc.Quality = 0;
+            depthTextureDesc.Usage = D3D11_USAGE_DEFAULT;
+            depthTextureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+            depthTextureDesc.CPUAccessFlags = 0;
+            depthTextureDesc.MiscFlags = 0;
+            m_pDevice->CreateTexture2D(&depthTextureDesc, nullptr, &m_pDepthTexture[depthTextureType]);
+
+            D3D11_RENDER_TARGET_VIEW_DESC rtvbuffer_desc = {};
+            rtvbuffer_desc.Format = DXGI_FORMAT_R32_FLOAT;
+            rtvbuffer_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+            rtvbuffer_desc.Texture2D.MipSlice = 0;
+            if (m_pDepthTexture[depthTextureType]) {
+                m_pDevice->CreateRenderTargetView(m_pDepthTexture[depthTextureType], &rtvbuffer_desc, &m_pDepthTextureRtv[depthTextureType]);
+            }
+        }
     }
 } g_DepthCompositor;
 
@@ -1338,10 +1384,10 @@ void STDMETHODCALLTYPE New_OMSetRenderTargets( ID3D11DeviceContext * This,
         if (NumViews >= 1) {
             if (g_iDraw == 0 && pDepthStencilView && ppRenderTargetViews && ppRenderTargetViews[0]) {
                 g_iDraw = 2;
-
                 g_pImmediateContext = This;
                 g_pCurrentDepthStencilView = pDepthStencilView;
                 g_pCurrentRenderTargetView = ppRenderTargetViews[0];
+                g_RenderCommands.RenderThread_GetCommands(g_pImmediateContext);
             }
             else if (g_iDraw == 2 && pDepthStencilView == nullptr && ppRenderTargetViews && ppRenderTargetViews[0] && ppRenderTargetViews[0] == g_pCurrentRenderTargetView) {
                 g_iDraw = 3;
@@ -1445,7 +1491,10 @@ public:
 
     virtual void OnCallback(void) {
         if (g_pImmediateContext) {
-            if (g_bDetectedSmoke2 && g_pSmokeDepthStencilView) {
+            if (g_bDetectedSmoke2 && g_pSmokeDepthStencilView && (
+                g_ReShadeAdvancedfx.IsConnected() && g_bEnableReShade && g_bReShadeCompositeSmoke
+                || g_bCompositeSmoke
+            )) {
                 ID3D11DepthStencilView* pCurrentDepthStencilView = nullptr;
                 ID3D11DepthStencilView* pNullDepthStencilView = nullptr;
                 g_pImmediateContext->OMGetRenderTargets(0, nullptr, &pCurrentDepthStencilView);
@@ -1472,19 +1521,28 @@ public:
 private:
 };
 
-class CAfxRenderViewCallback : public IRenderThreadCallback
+class CAfxRenderCallbackBeforeUi : public IRenderThreadCallback
 {
 public:
-    CAfxRenderViewCallback()
+    CAfxRenderCallbackBeforeUi()
     {
 
     }
 
     virtual void OnCallback(void) {
         if (g_pImmediateContext) {
+            
             g_bDetectSmoke = false;
+
             if (g_ReShadeAdvancedfx.IsConnected() && g_bEnableReShade) {
-                g_DepthCompositor.CaptureNormalDepth(g_pImmediateContext, g_pCurrentDepthStencilView);
+                g_DepthCompositor.CaptureNormalDepth(g_pImmediateContext, g_pCurrentDepthStencilView,
+                    g_bReShadeCompositeSmoke,
+                    CDepthCompositor::DepthTextureType_R32F,
+                    ShaderCombo_afx_depth_ps_5_0::AFXDEPTHMODE_0,
+                    ShaderCombo_afx_depth_ps_5_0::AFXD24_0,
+                    0.0f,
+                    0.0f
+                );
 
                 ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
                 ID3D11DepthStencilView* pDepthStencilView = nullptr;
@@ -1495,7 +1553,7 @@ public:
                 if (pRenderTargetViews[0]) pRenderTargetViews[0]->GetResource(&pRenderTargetViewResource);
                 //if (g_pCurrentDepthStencilView) g_pCurrentDepthStencilView->GetResource(&pDepthStencilResource);
 
-                if (ID3D11Resource* pResource = g_DepthCompositor.GetDepthResource()) {
+                if (ID3D11Resource* pResource = g_DepthCompositor.GetDepthTexture(CDepthCompositor::DepthTextureType_R32F)) {
                     g_bInOwnDraw = true;
                     g_ReShadeAdvancedfx.AdvancedfxRenderEffects(pRenderTargetViewResource, pResource);
                     g_bInOwnDraw = false;
@@ -1508,6 +1566,38 @@ public:
                 if (pDepthStencilView) pDepthStencilView->Release();
                 if (pRenderTargetViews[0]) pRenderTargetViews[0]->Release();
             }
+
+            if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands(g_pImmediateContext))
+            {
+                if(!pRenderPassCommands->BeforeUi.Empty() || !pRenderPassCommands->BeforeUi2.Empty()) {
+
+                    ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
+                    g_pImmediateContext->OMGetRenderTargets(1, &pRenderTargetViews[0], nullptr);
+
+                    
+                    if (pRenderTargetViews[0]) {
+                        if(!pRenderPassCommands->BeforeUi.Empty()) {
+                            ID3D11Resource* pRenderTargetViewResource = nullptr;
+                            pRenderTargetViews[0]->GetResource(&pRenderTargetViewResource);
+                            if(pRenderTargetViewResource) {
+                                ID3D11Texture2D * pTexture = nullptr;
+                                if(SUCCEEDED(pRenderTargetViewResource->QueryInterface(__uuidof(ID3D11Texture2D),(void**)&pTexture))){
+                                    if(pTexture) {
+                                        pRenderPassCommands->OnBeforeUi(pTexture);               
+                                        pTexture->Release();
+                                    }
+                                }
+                                pRenderTargetViewResource->Release();
+                            }
+                        }
+                        if(!pRenderPassCommands->BeforeUi2.Empty()) {
+                            pRenderPassCommands->OnBeforeUi2(pRenderTargetViews[0]); 
+                        }
+
+                        pRenderTargetViews[0]->Release();
+                    }
+                }
+            }            
         }
         delete this;
     }
@@ -1704,33 +1794,24 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
         g_ReShadeAdvancedfx.AdvancedfxRenderEffects(nullptr, nullptr);
     }
 
+    if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands(g_pImmediateContext))
     {
-        std::unique_lock<std::mutex> lock(g_SwapChainMutex);
-
-        if(!g_SwapchainBeforePresentQueue.empty()) {
+        if(!pRenderPassCommands->BeforePresent.Empty()) {
             ID3D11Texture2D * pTexture = nullptr;
-            if(g_pSwapChain) g_pSwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D), (void**)&pTexture);
-            while(!g_SwapchainBeforePresentQueue.empty()) {
-                bool bBreak = g_SwapchainBeforePresentQueue.front()(g_pImmediateContext,pTexture);
-                g_SwapchainBeforePresentQueue.pop();
-                if(bBreak) break;
-            }
+            if(g_pSwapChain) g_pSwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D), (void**)&pTexture);            
+            pRenderPassCommands->OnBeforePresent(pTexture);
             if(pTexture) pTexture->Release();
         }
     }
 
     HRESULT result = g_OldPresent(This, SyncInterval, Flags);
 
-
-    {
-        std::unique_lock<std::mutex> lock(g_SwapChainMutex);
-        
-        while(!g_SwapchainAfterPresentQueue.empty()) {
-            bool bBreak = g_SwapchainAfterPresentQueue.front()(g_pImmediateContext);
-            g_SwapchainAfterPresentQueue.pop();
-            if(bBreak) break;
-        }
+    if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands(g_pImmediateContext)) {
+        pRenderPassCommands->OnAfterPresent();
+        pRenderPassCommands->OnAfterPresentOrContextLossReliable();
     }
+
+    g_RenderCommands.RenderThread_Present();
 
 	g_ReShadeAdvancedfx.ResetHasRendered();
 
@@ -1832,27 +1913,7 @@ bool __fastcall New_CRenderDeviceBase_Present(
     
     g_CampathDrawer.OnEngineThread_EndFrame();
 
-    {
-        std::unique_lock<std::mutex> lock(g_SwapChainMutex);
-        if(g_ActiveCapture) {
-            CAfxCapture * capture = g_ActiveCapture;
-            g_SwapchainBeforePresentQueue.push([capture](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
-                capture->OnBeforeGpuPresent(pDeviceContext, pTexture);
-                return false;
-            });        
-            g_SwapchainAfterPresentQueue.push([capture](ID3D11DeviceContext * pDeviceContext){
-                capture->OnAfterGpuPresent(pDeviceContext);
-                return false;
-            });
-        }
-
-        g_SwapchainBeforePresentQueue.push([](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
-            return true;
-        });
-        g_SwapchainAfterPresentQueue.push([](ID3D11DeviceContext * pDeviceContext){
-            return true;
-        });    
-    }
+    g_RenderCommands.EngineThread_Present();
 
     bool result = g_Old_CRenderDeviceBase_Present(This, Rdx, R8d, R9d, Stack0, Stack1, Stack2, Stack3, Stack4);
 
@@ -2058,7 +2119,7 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
         if(pszArg0 && 0 == strcmp("Player 0",pszArg0)) {
             if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
                 auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
-                fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderViewCallback());
+                fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeUi());
             }
         }*/
         va_list args;
@@ -2067,7 +2128,7 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
         if(pszArg0 && 0 == strcmp("CSGOHud",pszArg0)) {
             if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
                 auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
-                fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderViewCallback());
+                fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeUi());
             }
         }
     }
@@ -2086,7 +2147,7 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr2(unsigned char
 /*    if (pContextName && 0 == strcmp(pContextName, "#%s/SetupView")) {
         if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
             auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
-            fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderViewCallback());
+            fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeUi());
         }
     }
 */
@@ -2116,7 +2177,7 @@ void On_CSceneSystem_RenderQueueElement(void * pCSceneObjectDesc, void * pCRende
 
     if (0 == strcmp(pszSceneObjectName, g_ObjectDesc.c_str())) {
         auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
-        fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderViewCallback());
+        fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeUi());
     }
 
     // Execute the original function call we detoured:
@@ -2315,22 +2376,28 @@ void Hook_SceneSystem(void * hModule) {
 
 void EndCapture() {
     if(g_ActiveCapture) {
-        CAfxCapture * capture = g_ActiveCapture;
+        auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
         {
-            std::unique_lock<std::mutex> lock(g_SwapChainMutex);
-            g_SwapchainAfterPresentQueue.push([capture](ID3D11DeviceContext * pDeviceContext){
+            auto & queue = pRenderPassCommands.AfterPresentOrContextLossReliable;
+            CAfxCapture * capture = g_ActiveCapture;
+            queue.Push([capture](ID3D11DeviceContext * pDeviceContext){
                 capture->Finish(pDeviceContext);
-                delete capture;
-                return false;
-            });
+            }); 
         }
+        {
+            auto & queue = pRenderPassCommands.FinalizeReliable;
+            CAfxCapture * capture = g_ActiveCapture;
+            queue.Push([capture](){
+                delete capture;
+            }); 
+        }        
         g_ActiveCapture = nullptr;
     }
 }
 
 void CreateCapture(class advancedfx::COutVideoStreamCreator* pOutVideoStreamCreator) {
     EndCapture();
-    g_ActiveCapture = new CAfxCapture(pOutVideoStreamCreator);
+    g_ActiveCapture = new CAfxCapture(pOutVideoStreamCreator, false);
 }
 
 advancedfx::CImageBufferPoolThreadSafe g_ImageBufferPool;
@@ -2420,12 +2487,286 @@ public:
 
     void Console_RecordScreen(advancedfx::ICommandArgs* args);
 
+    void Console_Add(advancedfx::ICommandArgs* args);
+    void Console_Edit(advancedfx::ICommandArgs* args);
+    void Console_Print();
+    void Console_Remove(advancedfx::ICommandArgs* args);
+
     void RecordStart();
     void RecordEnd();
 
     bool GetRecording() { return m_Recording; }
 
+    void EngineThread_Finish() {
+        {
+            auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
+
+            if(g_ActiveCapture) {
+                {
+                    auto & queue = pRenderPassCommands.BeforePresent;
+                    CAfxCapture * capture = g_ActiveCapture;
+                    queue.Push([capture](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
+                        capture->OnBeforeGpuPresent(pDeviceContext, pTexture);
+                    }); 
+                }
+                {
+                    auto & queue = pRenderPassCommands.AfterPresent;
+                    CAfxCapture * capture = g_ActiveCapture;
+                    queue.Push([capture](ID3D11DeviceContext * pDeviceContext){
+                        capture->OnAfterGpuPresent(pDeviceContext);
+                    }); 
+                }
+            }
+        }
+
+        for(auto it = m_RecordingStreams.begin(); it != m_RecordingStreams.end(); it++) {
+            it->EngineThread_Finish();
+        }
+
+        if(!m_RecordingStreams.empty()) {
+            // ClearBeforeUI is a globally shared setting currently:
+            auto & settings = *m_RecordingStreams.begin();
+            float clearColor[4];
+            if(settings.WantsClearBeforeUi(clearColor)) {
+                float R = clearColor[0];
+                float G = clearColor[1];
+                float B = clearColor[2];
+                float A = clearColor[3];  
+                auto & renderPassCommands = g_RenderCommands.EngineThread_GetCommands();              
+                renderPassCommands.BeforeUi2.Push([R,G,B,A](ID3D11DeviceContext * pDeviceContext, ID3D11RenderTargetView * pTarget){
+                    float clearColor[4] = {R,G,B,A};
+                    pDeviceContext->ClearRenderTargetView(pTarget, clearColor);
+                });
+            }
+        }
+
+        if(m_Recording){
+            if(m_AutoForceFullReSmoke) {
+                if(SOURCESDK::CS2::Cvar_s * smoke_volume_lod_ratio_change = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("smoke_volume_lod_ratio_change", false).Get())) {
+                    if(smoke_volume_lod_ratio_change->m_Value.m_flValue != 0.0f) {
+                        if(!m_Restore_smoke_volume_lod_ratio_change) {
+                            m_Old_smoke_volume_lod_ratio_change = smoke_volume_lod_ratio_change->m_Value.m_flValue;
+                            m_Restore_smoke_volume_lod_ratio_change = true;
+                        }
+                        smoke_volume_lod_ratio_change->m_Value.m_flValue = 0.0f;
+                    }                    
+                }
+                if(SOURCESDK::CS2::Cvar_s * r_csgo_mboit_force_mixed_resolution = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_csgo_mboit_force_mixed_resolution", false).Get())) {
+                    if(r_csgo_mboit_force_mixed_resolution->m_Value.m_bValue != false) {
+                        if(!m_Restore_r_csgo_mboit_force_mixed_resolution) {
+                            m_Old_r_csgo_mboit_force_mixed_resolution = r_csgo_mboit_force_mixed_resolution->m_Value.m_bValue;
+                            m_Restore_r_csgo_mboit_force_mixed_resolution = true;
+                        }
+                        r_csgo_mboit_force_mixed_resolution->m_Value.m_bValue = false;
+                    }                    
+                }                
+            }
+        } else {
+            m_AutoForceFullReSmoke = false;
+            if(m_Restore_smoke_volume_lod_ratio_change) {
+                m_Restore_smoke_volume_lod_ratio_change = false;
+                if(SOURCESDK::CS2::Cvar_s * smoke_volume_lod_ratio_change = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("smoke_volume_lod_ratio_change", false).Get())) {
+                    smoke_volume_lod_ratio_change->m_Value.m_flValue = m_Old_smoke_volume_lod_ratio_change;
+                }
+            }
+            if(m_Restore_r_csgo_mboit_force_mixed_resolution) {
+                m_Restore_r_csgo_mboit_force_mixed_resolution = false;
+                if(SOURCESDK::CS2::Cvar_s * r_csgo_mboit_force_mixed_resolution = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_csgo_mboit_force_mixed_resolution", false).Get())) {
+                    r_csgo_mboit_force_mixed_resolution->m_Value.m_bValue = m_Old_r_csgo_mboit_force_mixed_resolution;
+                }
+            }
+        }
+    }
+
 private:
+    class CStream : public advancedfx::IRecordStreamSettings {
+	public:
+		CStream(CAfxStreams * streams, const CStreamSettings & settings)
+			: m_Streams(streams)
+            , m_Settings(settings) {
+
+            m_Capture = new CAfxCapture(m_Settings.Settings->CreateOutVideoStreamCreator(
+                *this,
+                *this,
+                m_Streams->m_StartHostFrameRateValue,
+                ""
+            ), m_Settings.CaptureType == CStreamSettings::CaptureType_e::Rgba);
+		}
+
+		~CStream() {
+            auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
+            {
+                auto & queue = pRenderPassCommands.AfterPresentOrContextLossReliable;
+                CAfxCapture * capture = m_Capture;
+                queue.Push([capture](ID3D11DeviceContext * pDeviceContext){
+                    capture->Finish(pDeviceContext);
+                }); 
+            }
+            {
+                auto & queue = pRenderPassCommands.FinalizeReliable;
+                CAfxCapture * capture = m_Capture;
+                queue.Push([capture](){
+                    delete capture;
+                }); 
+            }            
+        }
+
+        virtual bool GetStreamFolder(std::wstring& outFolder) const {
+            outFolder = m_Streams->GetTakeDir();
+            outFolder.append(L"\\");
+            outFolder.append(m_Settings.Name);
+            return true;
+        }
+        
+        virtual advancedfx::StreamCaptureType GetCaptureType() const {
+            switch(m_Settings.CaptureType) {
+            case CStreamSettings::CaptureType_e::Rgb:
+                return advancedfx::StreamCaptureType::Normal;
+            case CStreamSettings::CaptureType_e::Rgba:
+                return advancedfx::StreamCaptureType::Normal;
+            case CStreamSettings::CaptureType_e::DepthRgb:
+                if(m_Settings.Depth24) {
+                    if(m_Settings.DepthZip) {
+                        return advancedfx::StreamCaptureType::Depth24ZIP;
+                    } else {
+                        return advancedfx::StreamCaptureType::Depth24;
+                    }
+                } else {
+                    return advancedfx::StreamCaptureType::Normal;
+                }
+                break;
+            case CStreamSettings::CaptureType_e::DepthF:
+                if(m_Settings.DepthZip) {
+                    return advancedfx::StreamCaptureType::DepthFZIP;
+                } else {
+                    return advancedfx::StreamCaptureType::DepthF;
+                }                
+                break;            
+            }
+            return advancedfx::StreamCaptureType::Invalid;
+        }
+
+        virtual  advancedfx::IImageBufferPool * GetImageBufferPool() const {
+            return &g_ImageBufferPool;
+        }
+
+        virtual bool GetFormatBmpNotTga() const {
+            return m_Streams->GetFormatBmpNotTga();
+        }
+
+        void EngineThread_Finish() {
+            if(nullptr == m_Capture) return;
+
+            auto & renderPassCommands = g_RenderCommands.EngineThread_GetCommands();
+            CAfxCapture * capture = m_Capture;
+            CStreamSettings::CaptureType_e captureType = m_Settings.CaptureType;
+            bool depthCompositeSmoke = m_Settings.DepthCompositeSmoke;
+            bool depth24 = m_Settings.Depth24;
+            float depthVal = m_Settings.DepthVal;
+            float depthValMax = m_Settings.DepthValMax;
+            CStreamSettings::DepthChannels_e depthChannels = m_Settings.DepthChannels;
+            CStreamSettings::DepthMode_e depthMode = m_Settings.DepthMode;
+            {
+                auto &queue = m_Settings.Capture == CStreamSettings::Capture_e::BeforeUi ? renderPassCommands.BeforeUi : renderPassCommands.BeforePresent;
+                queue.Push([capture,captureType,depthCompositeSmoke,depth24,depthVal,depthValMax,depthChannels,depthMode](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
+                    switch(captureType) {
+                    case CStreamSettings::CaptureType_e::DepthRgb:
+                    case CStreamSettings::CaptureType_e::DepthF: {
+                        ShaderCombo_afx_depth_ps_5_0::AFXD24_e afxD24;
+                        switch(depthChannels) {
+                        case CStreamSettings::DepthChannels_e::SplitRgb:
+                            afxD24 = ShaderCombo_afx_depth_ps_5_0::AFXD24_1;
+                            break;
+                        case CStreamSettings::DepthChannels_e::Dithered:
+                            afxD24 = ShaderCombo_afx_depth_ps_5_0::AFXD24_3;
+                            break;
+                        case CStreamSettings::DepthChannels_e::Gray:
+                        default:
+                            afxD24 = ShaderCombo_afx_depth_ps_5_0::AFXD24_0;
+                            break;
+                        }
+
+                        ShaderCombo_afx_depth_ps_5_0::AFXDEPTHMODE_e afxDepthMode;
+                        switch(depthMode) {
+                        case CStreamSettings::DepthMode_e::Linear:
+                            afxDepthMode = ShaderCombo_afx_depth_ps_5_0::AFXDEPTHMODE_1; 
+                            break;
+                        case CStreamSettings::DepthMode_e::LogE:
+                            afxDepthMode = ShaderCombo_afx_depth_ps_5_0::AFXDEPTHMODE_2; 
+                            break;
+                        case CStreamSettings::DepthMode_e::PyramidalLinear:
+                            afxDepthMode = ShaderCombo_afx_depth_ps_5_0::AFXDEPTHMODE_3; 
+                            break;
+                        case CStreamSettings::DepthMode_e::PyramidalLogE:
+                            afxDepthMode = ShaderCombo_afx_depth_ps_5_0::AFXDEPTHMODE_4; 
+                            break;
+                        case CStreamSettings::DepthMode_e::Inverse:
+                        default:
+                                afxDepthMode = ShaderCombo_afx_depth_ps_5_0::AFXDEPTHMODE_0; 
+                                break;
+                        }
+
+                        g_DepthCompositor.CaptureNormalDepth(g_pImmediateContext, g_pCurrentDepthStencilView,
+                            depthCompositeSmoke,
+                            captureType == CStreamSettings::CaptureType_e::DepthF ? CDepthCompositor::DepthTextureType_R32F : CDepthCompositor::DepthTextureType_RGB,
+                            afxDepthMode,
+                            afxD24,
+                            depthVal,
+                            depthValMax
+                        );
+        
+                        ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
+                        ID3D11DepthStencilView* pDepthStencilView = nullptr;
+                        g_pImmediateContext->OMGetRenderTargets(1, &pRenderTargetViews[0], &pDepthStencilView);
+        
+                        ID3D11Resource* pRenderTargetViewResource = nullptr;
+                        if (pRenderTargetViews[0]) pRenderTargetViews[0]->GetResource(&pRenderTargetViewResource);
+        
+                        if (ID3D11Texture2D* pTexture = g_DepthCompositor.GetDepthTexture(captureType == CStreamSettings::CaptureType_e::DepthF ? CDepthCompositor::DepthTextureType_R32F : CDepthCompositor::DepthTextureType_RGB)) {
+                            capture->OnBeforeGpuPresent(pDeviceContext, pTexture);
+                            pTexture->Release();
+                        }// else capture->OnBeforeGpuPresent(pDeviceContext, nullptr);
+        
+                        if (pRenderTargetViewResource) pRenderTargetViewResource->Release();
+        
+                        if (pDepthStencilView) pDepthStencilView->Release();
+                        if (pRenderTargetViews[0]) pRenderTargetViews[0]->Release();   
+                    } break;
+                    default:
+                        capture->OnBeforeGpuPresent(pDeviceContext, pTexture);
+                        break;
+                    }                 
+                }); 
+            }
+            {
+                auto & queue = renderPassCommands.AfterPresent;
+                queue.Push([capture](ID3D11DeviceContext * pDeviceContext){
+                    capture->OnAfterGpuPresent(pDeviceContext);
+                }); 
+            }            
+        }
+
+        bool WantsClearBeforeUi(float outColor[4]) {
+            if(m_Settings.ClearBeforeUi) {
+                outColor[0] = m_Settings.ClearBeforeUiColor.R;
+                outColor[1] = m_Settings.ClearBeforeUiColor.G;
+                outColor[2] = m_Settings.ClearBeforeUiColor.B;
+                outColor[3] = m_Settings.ClearBeforeUiColor.A;
+                return true;
+            }
+            return false;
+        }
+
+    private:
+        CAfxStreams * m_Streams;
+        CStreamSettings m_Settings;
+        CAfxCapture * m_Capture;
+	};
+
+    std::list<CStream> m_RecordingStreams;
+
+    std::map<std::string, CStreamSettings> m_Streams;
+
     bool m_Shutdown = false;
     advancedfx::StreamCaptureType m_StreamCaptureType = advancedfx::StreamCaptureType::Normal;
     bool m_FormatBmpAndNotTga = false;
@@ -2467,6 +2808,39 @@ private:
     float m_OldValue_host_framerate;
     bool m_OldValue_r_always_render_all_windows;
     int m_OldValue_engine_no_focus_sleep;
+
+    bool m_AutoForceFullReSmoke = false;
+
+    bool m_CompositeSmoke = false;
+
+    bool m_Restore_smoke_volume_lod_ratio_change = false;
+    float m_Old_smoke_volume_lod_ratio_change = 0.6;
+
+    bool m_Restore_r_csgo_mboit_force_mixed_resolution = false;
+    bool m_Old_r_csgo_mboit_force_mixed_resolution = false;
+
+    bool Console_CheckStreamName(char const * value)
+    {
+        if(StringIsEmpty(value))
+        {
+            advancedfx::Warning("AFXERROR: Stream name can not be empty.\n");
+            return false;
+        }
+        if(!StringIsAlNum(value))
+        {
+            advancedfx::Warning("AFXERROR: Stream name must be alphanumeric.\n");
+            return false;
+        }
+
+        // Check if name is unique:
+        if(m_Streams.find(value) != m_Streams.end())
+        {
+            advancedfx::Warning("AFXERROR: Stream name must be unique, \"%s\" is already in use.\n", value);
+            return false;
+        }
+
+        return true;
+    }
 } g_AfxStreams;
 
 void CAfxStreams::Console_RecordScreen(advancedfx::ICommandArgs* args) {
@@ -2524,6 +2898,541 @@ void CAfxStreams::Console_RecordScreen(advancedfx::ICommandArgs* args) {
 		"%s enabled [...] - Enables / disables screen recording.\n"
 		"%s settings [...] - Controls recording settings.\n"
 		, arg0
+		, arg0
+	);
+}
+
+void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
+	int argC = args->ArgC();
+	char const* arg0 = args->ArgV(0);
+
+	if (3 <= argC)
+	{
+        char const* arg1 = args->ArgV(1);
+        char const* arg2 = args->ArgV(2);
+
+        CStreamSettings settings(advancedfx::CRecordingSettings::GetDefault());
+
+        if(0 == _stricmp(arg1,"normal")) {
+
+        } else if(0 == _stricmp(arg1,"depth")) {
+            settings.CaptureType = CStreamSettings::CaptureType_e::DepthRgb;
+        } else {
+            advancedfx::Warning("AFXERROR: \"%s\" is not a valid stream template.\n");
+            return;
+        }
+        
+        if(!Console_CheckStreamName(arg2)) return;
+
+        if (!UTF8StringToWideString(arg2, settings.Name))
+        {
+            advancedfx::Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", arg2);
+            return;
+        }
+
+        m_Streams.emplace(arg2, settings);
+	}
+
+	advancedfx::Message(
+		"%s normal|depth <sUiniqueStreamName> - Adds a stream of given type.\n"
+		, arg0
+	);
+}
+
+void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
+	int argC = args->ArgC();
+	char const* arg0 = args->ArgV(0);
+
+    if(2 <= argC) {
+        char const* arg1 = args->ArgV(1);
+
+        auto it = m_Streams.find(arg1);
+
+        if(it == m_Streams.end()) {
+            advancedfx::Warning("AFXERROR: No stream named \"%s\" exists.\n", arg1);
+            return;            
+        }
+
+        auto &stream = it->second;
+
+        if(3 <= argC) {
+            char const* arg2 = args->ArgV(2);
+
+            if(0 == _stricmp("record", arg2)) {
+                if(4 <= argC) {
+                    stream.Record = 0 != atoi(args->ArgV(3));
+                    return;
+                }
+
+                advancedfx::Message(
+                    "%s %s record 0|1 - Whether to record (1) or not (0).\n"
+                    "Current value: %i\n"
+                    , arg0, arg1
+                    , stream.Record ? 1 : 0
+                );
+                return;
+            } else if(0 == _stricmp("capture", arg2)) {
+                if(4 <= argC) {
+                    char const* arg3 = args->ArgV(3);
+
+                    if(0 == _stricmp("beforePresent", arg3)) {
+                        stream.Capture = CStreamSettings::Capture_e::BeforePresent;
+                        return;
+                    } else if(0 == _stricmp("beforeUI", arg3)) {
+                        stream.Capture = CStreamSettings::Capture_e::BeforeUi;
+                        return;
+                    }
+                }
+
+                const char * currentValue = "[unkown]";
+                switch(stream.Capture) {
+                case CStreamSettings::Capture_e::BeforePresent:
+                    currentValue ="beforePresent";
+                    break;
+                    case CStreamSettings::Capture_e::BeforeUi:
+                    currentValue ="beforeUi";
+                    break;
+                }
+
+                advancedfx::Message(
+                    "%s %s capture beforePresent|beforeUi\n"
+                    "\tbeforePresent - Capture the game presents on screen.\n"
+                    "\tbeforeUi - Capture before Panorama UI is drawn.\n"
+                    "Current value: %s\n"
+                    , arg0, arg1
+                    , currentValue
+                ); 
+                return;                 
+            } else if (0 == _stricmp("settings", arg2)) {
+                if (4 <= argC)
+                {
+                    char const* arg3 = args->ArgV(3);
+    
+                    if (advancedfx::CRecordingSettings* settings = advancedfx::CRecordingSettings::GetByName(arg3))
+                    {
+                        settings->AddRef();
+                        stream.Settings->Release();
+                        stream.Settings = settings;
+                    }
+                    else
+                    {
+                        advancedfx::Warning("AFXERROR: There is no recording setting named %s\n", arg3);
+                    }
+    
+                    return;
+                }
+    
+                advancedfx::Message(
+                    "%s settings <name> - Set recording settings to use from mirv_streams settings.\n"
+                    "Current value: %s\n"
+                    , arg0
+                    , stream.Settings->GetName()
+                );
+    
+                return;
+            } else if(0 == _stricmp("captureType", arg2)) {
+                if(4 <= argC) {
+                    char const* arg3 = args->ArgV(3);
+
+                    if(0 == _stricmp("rgb", arg3)) {
+                        stream.CaptureType = CStreamSettings::CaptureType_e::Rgb;
+                        return;
+                    } else if(0 == _stricmp("beforeUI", arg3)) {
+                        stream.CaptureType = CStreamSettings::CaptureType_e::Rgba;
+                        return;
+                    } else if(0 == _stricmp("depthRgb", arg3)) {
+                        stream.CaptureType = CStreamSettings::CaptureType_e::DepthRgb;
+                        stream.Depth24 = false;
+                        return;
+                    } else if(0 == _stricmp("depth24", arg3)) {
+                        stream.CaptureType = CStreamSettings::CaptureType_e::DepthRgb;
+                        stream.Depth24 = true;
+                        stream.DepthZip = false;
+                        return;
+                    } else if(0 == _stricmp("depthF", arg3)) {
+                        stream.CaptureType = CStreamSettings::CaptureType_e::DepthF;
+                        stream.DepthZip = false;
+                        return;
+                    } else if(0 == _stricmp("depthFZIP", arg3)) {
+                        stream.CaptureType = CStreamSettings::CaptureType_e::DepthF;
+                        stream.DepthZip = true;
+                        return;
+                    }
+                }
+
+                const char * currentValue = "[unkown]";
+                switch(stream.CaptureType) {
+                case CStreamSettings::CaptureType_e::Rgb:
+                    currentValue ="rgb";
+                    break;
+                case CStreamSettings::CaptureType_e::Rgba:
+                    currentValue ="rgba";
+                    break;
+                case CStreamSettings::CaptureType_e::DepthRgb:
+                    if(stream.Depth24) {
+                        if(stream.DepthZip) {
+                            currentValue = "depth24ZIP";
+                        } else {
+                            currentValue = "depth24";
+                        }
+                    } else {
+                        currentValue = "depthRgb";
+                    }
+                    break;
+                case CStreamSettings::CaptureType_e::DepthF:
+                    if(stream.DepthZip) {
+                        currentValue = "depthFZIP";
+                    } else {
+                        currentValue = "depthF";
+                    }                
+                    break;
+                }
+
+                advancedfx::Message(
+                    "%s %s captureType rgb|rgba|depthRgb|depth24|depth24ZIP|depthF|depthFZIP\n"
+                    "\trgb - 3 channels (RGB).\n"
+                    "\rgba - 4 channels (RGBA).\n"
+                    "\rdepthRgb - Capture depth with 3 channels (RGB).\n"
+                    "\rdepth24 - Capture depth with 3 channels (RGB) and tansform to OpenEXR depth (not recommended).\n"
+                    "\rdepth24ZIP - Capture depth with 3 channels (RGB) and tansform to compressed OpenEXR depth (not recommended).\n"
+                    "\rdepthF - Capture depth with 1 channel to OpenEXR depth.\n"
+                    "\rdepthFZIP - Capture depth with 1 channel to compressed OpenEXR depth.\n"
+                    "Current value: %s\n"
+                    , arg0, arg1
+                    , currentValue
+                ); 
+                return;            
+            } else if(0 == _stricmp("depthCompositeSmoke", arg2)) {
+                if(4 <= argC) {
+                    stream.DepthCompositeSmoke = 0 != atoi(args->ArgV(3));
+                    return;
+                }
+
+                advancedfx::Message(
+                    "%s %s depthCompositeSmoke 0|1 - Whether to composite smoke depth (1) or not (0).\n"
+                    "Current value: %i\n"
+                    , arg0, arg1
+                    , stream.DepthCompositeSmoke ? 1 : 0
+                );
+                return;
+            } else if(0 == _stricmp("depthVal", arg2)) {
+                if(4 <= argC) {
+                    stream.DepthVal = atof(args->ArgV(3));
+                    return;
+                }
+
+                advancedfx::Message(
+                    "%s %s depthVal <fValue>\n"
+                    "Current value: %f\n"
+                    , arg0, arg1
+                    , stream.DepthVal
+                );
+            } else if(0 == _stricmp("depthValMax", arg2)) {
+                if(4 <= argC) {
+                    stream.DepthValMax = atof(args->ArgV(3));
+                    return;
+                }
+
+                advancedfx::Message(
+                    "%s %s depthValMax <fValue>\n"
+                    "Current value: %f\n"
+                    , arg0, arg1
+                    , stream.DepthValMax
+                );
+                return;
+            } else if(0 == _stricmp("depthChannels", arg2)) {
+                if(4 <= argC) {
+                    char const* arg3 = args->ArgV(3);
+
+                    if(0 == _stricmp("gray", arg3)) {
+                        stream.DepthChannels = CStreamSettings::DepthChannels_e::Gray;
+                        return;
+                    } else if(0 == _stricmp("splitRgb", arg3)) {
+                        stream.DepthChannels = CStreamSettings::DepthChannels_e::SplitRgb;
+                        return;
+                    } else if(0 == _stricmp("dithered", arg3)) {
+                        stream.DepthChannels = CStreamSettings::DepthChannels_e::Dithered;
+                        return;
+                    }
+                }
+
+                const char * currentValue = "[unkown]";
+                switch(stream.DepthChannels) {
+                case CStreamSettings::DepthChannels_e::Gray:
+                    currentValue ="gray";
+                    break;
+                case CStreamSettings::DepthChannels_e::SplitRgb:
+                    currentValue ="splitRgb";
+                    break;
+                case CStreamSettings::DepthChannels_e::Dithered:
+                    currentValue ="dithered";
+                    break;
+                }
+
+                advancedfx::Message(
+                    "%s %s depthChannels gray|splitRgb|dithered\n"
+                    "\tgray - Set all 3 channels (RGB) to the same depth value.\n"
+                    "\tsplitRgb - Encode depth into 3 channels (RGB).\n"
+                    "\tgray - Dither the depth value into 3 channels (RGB) (similar to https://ReShade.me DrawDepth, reduces perceived bading effects).\n"
+                    "Current value: %s\n"
+                    , arg0, arg1
+                    , currentValue
+                ); 
+                return;
+            } else if(0 == _stricmp("depthMode", arg2)) {
+                if(4 <= argC) {
+                    char const* arg3 = args->ArgV(3);
+
+                    if(0 == _stricmp("inverse", arg3)) {
+                        stream.DepthMode = CStreamSettings::DepthMode_e::Inverse;
+                        return;
+                    } else if(0 == _stricmp("linear", arg3)) {
+                        stream.DepthMode = CStreamSettings::DepthMode_e::Linear;
+                        return;
+                    } else if(0 == _stricmp("logE", arg3) || 0 == _stricmp("log", arg3)) {
+                        stream.DepthMode = CStreamSettings::DepthMode_e::LogE;
+                        return;
+                    } else if(0 == _stricmp("pyramidalLinear", arg3)) {
+                        stream.DepthMode = CStreamSettings::DepthMode_e::PyramidalLinear;
+                        return;
+                    } else if(0 == _stricmp("pyramidalLogE", arg3) || 0 == _stricmp("pyramidalLog", arg3)) {
+                        stream.DepthMode = CStreamSettings::DepthMode_e::PyramidalLogE;
+                        return;
+                    }
+                }
+
+                const char * currentValue = "[unkown]";
+                switch(stream.DepthMode) {
+                case CStreamSettings::DepthMode_e::Inverse:
+                    currentValue ="inverse";
+                    break;
+                case CStreamSettings::DepthMode_e::Linear:
+                    currentValue ="linear";
+                    break;
+                case CStreamSettings::DepthMode_e::LogE:
+                    currentValue ="logE";
+                    break;
+                    case CStreamSettings::DepthMode_e::PyramidalLinear:
+                    currentValue ="pyramidalLinear";
+                    break;
+                    case CStreamSettings::DepthMode_e::PyramidalLogE:
+                    currentValue ="pyramidalLogE";
+                    break;
+                }
+
+                advancedfx::Message(
+                    "%s %s depthMode inverse|linear|logE|pyramidalLinear|pyramidalLogE\n"
+                    "\tinverse - Inversed like the game uses.\n"
+                    "\tlinear - Linear depth with spherical correction.\n"
+                    "\tlogE - Logarithmic depth with spherical correction.\n"
+                    "\tpyramidalLinear - Linear depth without spherical correction.\n"
+                    "\tpyramidalLogE - Logarithmic depth without spherical correction.\n"
+                    "Current value: %s\n"
+                    , arg0, arg1
+                    , currentValue
+                ); 
+                return;
+            } else if(0 == _stricmp("clearBeforeUI", arg2)) {
+                if(4 <= argC) {
+                    if(4 == argC) {
+                        if(0 == _stricmp("none", args->ArgV(3))) {
+                            bool bChanged = false;
+                            for(auto it2=m_Streams.begin();it2!=m_Streams.end();it2++) {
+                                bChanged = bChanged || it != it2 && it2->second.ClearBeforeUi != false;
+                                it2->second.ClearBeforeUi = false;
+                            }
+                            if(bChanged) {
+                                advancedfx::Warning("AFXWarning: Value is globally shared and has been changed on other streams.\n");
+                            }
+                            return;
+                        }
+                    } else if(7 == argC) {
+                        bool bChanged = false;
+                        float r = atof(args->ArgV(3));
+                        float g = atof(args->ArgV(4));
+                        float b = atof(args->ArgV(5));
+                        float a = atof(args->ArgV(6));
+                        for(auto it2=m_Streams.begin();it2!=m_Streams.end();it2++) {
+                            bChanged = bChanged || it != it2 && (
+                                it2->second.ClearBeforeUiColor.R != r
+                                || it2->second.ClearBeforeUiColor.G != g
+                                || it2->second.ClearBeforeUiColor.B != b
+                                || it2->second.ClearBeforeUiColor.A != a
+                            );
+                            it2->second.ClearBeforeUiColor.R = r;
+                            it2->second.ClearBeforeUiColor.G = g;
+                            it2->second.ClearBeforeUiColor.B = b;
+                            it2->second.ClearBeforeUiColor.A = a;
+                        }
+                        if(bChanged) {
+                            advancedfx::Warning("AFXWarning: Value is globally shared and has been changed on other streams.\n");
+                        }
+                        return;
+                    }
+                }
+
+                advancedfx::Message(
+                    "%s %s clearBeforeUI none|(<fRed> <fGreen> <fBlue> <fAlpha>) - Whether not to clear (none, default) or in which color (floating point values in range [0.0, 1.0]).\n"
+                    "\tAttention: This value is _currently_ globally shared, changeing it for one stream changes it also for all others.\n"
+                    , arg0, arg1
+                );
+                if(!stream.ClearBeforeUi) advancedfx::Message(
+                    "Current value: none\n"
+                ); else advancedfx::Message(
+                        "Current value: %f %f %f %f\n"
+                        , stream.ClearBeforeUiColor.R
+                        , stream.ClearBeforeUiColor.G
+                        , stream.ClearBeforeUiColor.B
+                        , stream.ClearBeforeUiColor.A
+                );
+                return;
+            } else if(0 == _stricmp("autoForceFullResSmoke", arg2)) {
+                if(4 <= argC) {
+                    bool bValue = 0 != atoi(args->ArgV(3));
+                    bool bChanged = false;
+                    for(auto it2=m_Streams.begin();it2!=m_Streams.end();it2++) {
+                        bChanged = bChanged || it != it2 && it2->second.AutoForceFullResSmoke != bValue;
+                        it2->second.AutoForceFullResSmoke = bValue;
+                    }
+                    if(bChanged) {
+                        advancedfx::Warning("AFXWarning: Value is globally shared and has been changed on other streams.\n");
+                    }
+                    return;
+                }
+
+                advancedfx::Message(
+                    "%s %s autoForceFullResSmoke 0|1\n"
+                    "Current value: %i\n"
+                    , arg0, arg1
+                    , stream.AutoForceFullResSmoke ? 1 : 0
+                );
+                return;
+            }
+        }
+
+        advancedfx::Message(
+            "%s %s record [...] - Whether to record.\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s capture [...] - When to capture.\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s settings [...] - Output settings to use.\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s captureType  [...] - The type of capture.\n"
+            , arg0, arg1
+        );        
+        advancedfx::Message(
+            "%s %s depthCompositeSmoke [...] - If depth capture wheter or not to composite smoke.\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s depthVal [...] - Minimum depth value.\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s depthValMax [...] - Maximum depth value.\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s depthChannels [...] - How to transform depth into color channels.\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s depthMode [...] - How transform the depth view.\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s clearBeforeUI  [...] - If and with what color to clear before Panorama UI. (Globally shared!)\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s autoForceFullResSmoke [...] - When capturing smoke depth: If to force the engine into full resolution smoke passes (recommended). (Globally shared!)\n"
+            , arg0, arg1
+        );
+    }
+
+	advancedfx::Message(
+		"%s <sUiniqueStreamName> [...] - Edit stream with given name.\n"
+		, arg0
+	);
+}
+
+
+void CAfxStreams::Console_Print() {
+	advancedfx::Message(
+		"============================================================\n"
+		"name (recording preset)\n"
+	);
+	std::list<std::map<std::string,CStreamSettings>::iterator> streams[3];
+	int index = 0;
+	for (auto it = m_Streams.begin(); it != m_Streams.end(); it++)
+	{
+		if(it->second.Record)
+			streams[1].emplace_back(it);
+		else
+			streams[2].emplace_back(it);
+		++index;
+	}
+
+	for(int i=0;i<3;i++) {
+		if(0 == streams[i].size()) continue;
+		advancedfx::Message("\n");
+		switch(i) {
+		case 0:
+            advancedfx::Message("[*] PREVIEWING\n");
+			break;
+		case 1:
+            advancedfx::Message("[R] RECORD ON\n");
+			break;
+		case 2:
+            advancedfx::Message("[-] RECORD OFF\n");
+			break;
+		}
+		for(auto it = streams[i].begin(); it != streams[i].end(); it++) {
+			const char * streamName = (*it)->first.c_str();
+			const char * settingName = "";
+			if(advancedfx::CRecordingSettings * setting =  (*it)->second.Settings) {
+				settingName = setting->GetName();
+			}
+			/*if(i == 0 && streams[i].size() > 1 || it->PreviewSlot > 0) {
+				Tier0_Msg("%i: %s (%s) @%i\n", it->Index, streamName, settingName, it->PreviewSlot);
+			} else*/ {
+				advancedfx::Message("%s (%s)\n", streamName, settingName);
+			}
+		}
+	}
+
+	advancedfx::Message(
+		"\n"
+		"==== Total streams: %i ====\n",
+		index
+	);
+}
+
+void CAfxStreams::Console_Remove(advancedfx::ICommandArgs* args) {
+	int argC = args->ArgC();
+	char const* arg0 = args->ArgV(0);
+
+    if(2 <= argC) {
+        char const* arg1 = args->ArgV(1);
+
+        auto it = m_Streams.find(arg1);
+
+        if(it == m_Streams.end()) {
+            advancedfx::Warning("AFXERROR: No stream named \"%s\" exists.\n", arg1);
+            return;            
+        }
+
+        m_Streams.erase(it);
+    }
+
+	advancedfx::Message(
+		"%s <sUiniqueStreamName> [...] - Remove stream with given name.\n"
 		, arg0
 	);
 }
@@ -2615,6 +3524,16 @@ void CAfxStreams::RecordStart()
 			);
 		}
 
+        m_AutoForceFullReSmoke = false;
+        m_CompositeSmoke = false;
+
+        for(auto it = m_Streams.begin(); it != m_Streams.end(); it++) {
+            if(!it->second.Record) continue;
+            m_CompositeSmoke = m_CompositeSmoke || it->second.WantsSmokeComposite();
+            m_AutoForceFullReSmoke = m_AutoForceFullReSmoke || it->second.WantsFullResSmoke();
+            m_RecordingStreams.emplace_back(this, it->second);
+        }
+
 		advancedfx::Message("done.\n");
 
 		advancedfx::Message("Recording to \"%s\".\n", utf8TakeDirOk ? utf8TakeDir.c_str() : "?");
@@ -2665,9 +3584,22 @@ void CAfxStreams::RecordEnd()
 			g_S2CamIO.SetCamExport(nullptr);
 		}
 
-		if(m_RecordScreen->Enabled) {
+        m_RecordingStreams.clear();
+
+        if(m_RecordScreen->Enabled) {
             EndCapture();
-		}
+        }
+
+        if(m_CompositeSmoke) {
+            auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
+            {
+                auto & queue = pRenderPassCommands.FinalizeReliable;
+                queue.Push([](){
+                    g_bCompositeSmoke = false;
+                }); 
+            }
+            m_CompositeSmoke = false;
+        }
 
         SOURCESDK::CS2::Cvar_s * handle_host_framerate = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("host_framerate", false).Get());
         SOURCESDK::CS2::Cvar_s * handle_engine_no_focus_sleep = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("engine_no_focus_sleep", false).Get());
@@ -2698,6 +3630,17 @@ const wchar_t * AfxStreams_GetTakeDir() {
     return g_AfxStreams.GetTakeDir();
 }
 
+bool g_bEngine_ReShade_Enabled = true;
+bool g_bEngine_ReShade_FoceSmokeFullresPass = true;
+
+void RenderSystemDX11_EngineThread_Finish() {
+    if(g_ReShadeAdvancedfx.IsConnected() && g_bEngine_ReShade_Enabled && g_bEngine_ReShade_FoceSmokeFullresPass) {
+
+    }
+    g_AfxStreams.EngineThread_Finish();
+    g_RenderCommands.EngineThread_Finish();
+}
+
 void RenderSystemDX11_SupplyProjectionMatrix(const SOURCESDK::VMatrix & projectionMatrix) {
     g_RenderSystemDrawingData.SetProjectionMatrix(projectionMatrix);
 }
@@ -2710,7 +3653,30 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
     if(2 <= argC)
     {
         const char * cmd1 = args->ArgV(1);
-		if(0 == _stricmp(cmd1, "record"))
+
+        if(0 == _stricmp(cmd1, "add")) {
+            advancedfx::CSubCommandArgs subArgs(args, 2);
+            g_AfxStreams.Console_Add(&subArgs);
+            return;
+        }
+        else if(0 == _stricmp(cmd1, "edit")) {
+            advancedfx::CSubCommandArgs subArgs(args, 2);
+            g_AfxStreams.Console_Edit(&subArgs);
+            return;
+
+        }
+        else if(0 == _stricmp(cmd1, "remove")) {
+            advancedfx::CSubCommandArgs subArgs(args, 2);
+            g_AfxStreams.Console_Remove(&subArgs);
+            return;
+
+        }
+        else if(0 == _stricmp(cmd1, "print")) {
+            g_AfxStreams.Console_Print();
+            return;
+
+        }          
+        else if(0 == _stricmp(cmd1, "record"))
 		{
 			if(3 <= argC)
 			{
@@ -2902,6 +3868,14 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 		}        
     }
 
+    advancedfx::Message(
+		"mirv_streams add [...] - Add a stream.\n"
+		"mirv_streams edit [...] - Edit a stream.\n"
+		"mirv_streams remove [...] - Edit a stream.\n"
+		"mirv_streams print - Print current streams.\n"
+	);
+
+
 	advancedfx::Message(
 		"mirv_streams record [...] - Recording control.\n"
 	);
@@ -2918,7 +3892,6 @@ CON_COMMAND(mirv_reshade, "Control ReShade_advancedfx ReShade addon.")
         return;
     }
 
-    static bool bEnableReshade = true;
     int argc = args->ArgC();
     const char * cmd0 = args->ArgV(0);
 
@@ -2929,11 +3902,17 @@ CON_COMMAND(mirv_reshade, "Control ReShade_advancedfx ReShade addon.")
         if (0 == _stricmp("enabled", cmd1)) {
             if (3 <= argc) {
                 bool bDoEnableReShade = 0 != atoi(args->ArgV(2));
-                bEnableReshade = bDoEnableReShade;
-                g_SwapchainAfterPresentQueue.push([bDoEnableReShade](ID3D11DeviceContext * pDeviceContext){
-                    g_bEnableReShade = bDoEnableReShade;
-                    return false;
-                });   
+                if(g_bEngine_ReShade_Enabled != bDoEnableReShade) {
+                    g_bEngine_ReShade_Enabled = bDoEnableReShade;
+
+                    auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
+                    {
+                        auto & queue = pRenderPassCommands.BeginReliable;
+                        queue.Push([bDoEnableReShade](ID3D11DeviceContext * pDeviceContext){
+                            g_bEnableReShade = bDoEnableReShade;
+                        });
+                    }
+                }
                 return;
             }
 
@@ -2941,7 +3920,44 @@ CON_COMMAND(mirv_reshade, "Control ReShade_advancedfx ReShade addon.")
                 "%s enabled 0|1 - Enable / disable reshade addon.\n"
                 "Current value: %s\n"
                 , cmd0
-                , bEnableReshade ? "1" : "0"
+                , g_bEngine_ReShade_Enabled ? "1" : "0"
+            );
+            return;
+        } else if(0 == _stricmp("depthCompositeSmoke", cmd1)) {
+            static bool s_bDepthCompositeSmoke = true;
+            if(3 <= argc) {
+                bool bNewVal = 0 != atoi(args->ArgV(2));
+                if(s_bDepthCompositeSmoke != bNewVal) {
+                    s_bDepthCompositeSmoke = bNewVal;
+                    auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
+                    {
+                        auto & queue = pRenderPassCommands.BeginReliable;
+                        queue.Push([bNewVal](ID3D11DeviceContext * pDeviceContext){
+                            g_bReShadeCompositeSmoke = bNewVal;
+                        });
+                    }                    
+                }
+                return;
+            }
+
+            advancedfx::Message(
+                "%sdepthCompositeSmoke 0|1 - Whether to composite smoke depth (1) or not (0).\n"
+                "Current value: %i\n"
+                , cmd0
+                , s_bDepthCompositeSmoke ? 1 : 0
+            );
+            return;
+        } else if(0 == _stricmp("fForceFullResSmoke", cmd1)) {
+            if(3 <= argc) {
+                g_bEngine_ReShade_FoceSmokeFullresPass = 0 != atoi(args->ArgV(2));
+                return;
+            }
+
+            advancedfx::Message(
+                "%s fForceFullResSmoke 0|1\n"
+                "Current value: %i\n"
+                , cmd0
+                , g_bEngine_ReShade_FoceSmokeFullresPass ? 1 : 0
             );
             return;
         }
@@ -2949,6 +3965,14 @@ CON_COMMAND(mirv_reshade, "Control ReShade_advancedfx ReShade addon.")
 
     advancedfx::Message(
         "%s enabled [...].\n"
+        , cmd0
+    );
+    advancedfx::Message(
+        "%s depthCompositeSmoke [...].\n"
+        , cmd0
+    );
+    advancedfx::Message(
+        "%s forceFullResSmoke [...].\n"
         , cmd0
     );
 }

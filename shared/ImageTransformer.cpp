@@ -505,6 +505,91 @@ namespace ImageTransformer {
 		unsigned char* m_pOutData;
 	};
 
+	class CTransformRgbaToBgra
+		: public ITransform {
+	public:
+		CTransformRgbaToBgra(class ICapture* capture)
+			: m_Capture(capture)
+		{
+		}
+
+		virtual CAfxImageBufferCapture* CreateOutput(class IImageBufferPool * imageBufferPool) {
+			if (nullptr != m_Capture) {
+				if (const class advancedfx::IImageBuffer* pBuffer = m_Capture->GetBuffer()) {
+					if (const unsigned char* pData = static_cast<const unsigned char*>(pBuffer->GetImageBufferData())) {
+						if (const class advancedfx::CImageFormat* pFormat = pBuffer->GetImageBufferFormat()) {
+							m_InFormat = *pFormat;
+							if (m_InFormat.Format == advancedfx::ImageFormat::RGBA) {
+								m_pInData = pData;
+								m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::BGRA, m_InFormat.Width, m_InFormat.Height);
+								m_OutFormat.SetOrigin(m_InFormat.Origin);
+								class CAfxImageBufferCapture* pOutCapture = CAfxImageBufferCapture::Create(imageBufferPool, m_OutFormat);
+								if (pOutCapture) {
+									m_pOutData = static_cast<unsigned char*>(pOutCapture->GetImageBufferDataRw());
+								}
+								return pOutCapture;
+							}
+						}
+					}
+				}
+			}
+
+			return nullptr;
+		}
+
+		virtual size_t GetTaskSize() {
+			return (size_t)std::abs(m_InFormat.Height);
+		}
+
+		virtual CTranformTask* CreateTask(std::atomic_int& task_counter, int taskIndex, int taskSize) {
+			return new CMyTransformTask(task_counter, m_pInData + taskIndex * m_InFormat.Pitch, m_InFormat.Pitch, m_pOutData + taskIndex * m_OutFormat.Pitch, m_OutFormat.Width, taskSize);
+		}
+
+	private:
+		class CMyTransformTask : public CTranformTask {
+		public:
+			CMyTransformTask(std::atomic_int& task_counter, const unsigned char* pData, size_t pitch, unsigned char* pOutData, size_t width, size_t height)
+				: CTranformTask(task_counter)
+				, pData(pData)
+				, pitch(pitch)
+				, pOutData(pOutData)
+				, width(width)
+				, height(height)
+			{
+			}
+
+			virtual void Execute() {
+				size_t targetPitch = width * 4 * sizeof(unsigned char);
+				for (size_t y = 0; y < height; ++y)
+				{
+					for (size_t x = 0; x < width; ++x)
+					{
+						const unsigned char * pIn = (const unsigned char *)(pData + y * pitch + x * 4 * sizeof(unsigned char));
+						unsigned char * pOut = (unsigned char*)(pOutData + y * targetPitch + x * 4 * sizeof(unsigned char));
+	
+						pOut[0] = pIn[2];
+						pOut[1] = pIn[1];
+						pOut[2] = pIn[0];
+						pOut[3] = pIn[3];
+					}
+				}
+			}
+
+		private:
+			const unsigned char* pData;
+			size_t pitch;
+			unsigned char* pOutData;
+			size_t width;
+			size_t height;
+		};
+
+		class ICapture* m_Capture;
+		advancedfx::CImageFormat m_InFormat;
+		const unsigned char* m_pInData;
+		advancedfx::CImageFormat m_OutFormat;
+		unsigned char* m_pOutData;
+	};	
+
 	class CTransformDepthF 
 		: public ITransform {
 	public:
@@ -774,6 +859,15 @@ class ICapture* RgbaToBgr(class CThreadPool * threadPool, class IImageBufferPool
     CTransformRgbaToBgr transform(capture);
     return Transform(threadPool, imageBufferPool, &transform);
 }
+
+class ICapture* RgbaToBgra(class CThreadPool * threadPool, class IImageBufferPool * imageBufferPool, class ICapture* capture) {
+
+    if (nullptr == capture) return nullptr;
+
+    CTransformRgbaToBgra transform(capture);
+    return Transform(threadPool, imageBufferPool, &transform);
+}
+
 
 class ICapture* DepthF(class CThreadPool * threadPool, class IImageBufferPool * imageBufferPool, class ICapture* capture, float depthScale, float depthOfs) {
     CTransformDepthF transform(capture, depthScale, depthOfs);

@@ -973,6 +973,8 @@ void __fastcall New_CViewRender_UnkMakeMatrix(void* This) {
 	g_WorldToScreenMatrix.m[3][3] = proj[4*3+3];
 
 	g_CampathDrawer.OnEngineThread_SetupViewDone();	
+
+	RenderSystemDX11_EngineThread_Finish();
 }
 
 /*
