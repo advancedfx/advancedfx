@@ -6,6 +6,20 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.32.0</version>
+<time>2025-04-27T15:10Z</time>
+<changes>
+<change type="added">Added fake mirv_streams, so you can capture depth and e.g. colors before Panorama UI at same time. Adds mirv_streams add, mirv_streams edit, mirv_streams print, mirv_streams remove. Each stream has a number of options that we will try to describe in the Manual / WIKI with a few examples.</change>
+<change type="added">Added better depth for ReShade and mirv_streams.</change>
+<change type="added">Added (optional, default on) smoke depth compositing for mirv-streams and ReShade. For this to work well a smoke full-res pass is forced in default settings when using ReShade or when recording a stream with depth.</change>
+</changes>
+<comments>Thanks to Rikki 'eirisocherry' for input and helping with testing in the early stages.</comments>
+</release>
+
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.31.0</version>
 <time>2025-03-24T18:18Z</time>
 <changes>

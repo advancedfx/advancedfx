@@ -2,7 +2,7 @@
 	the HLAE source code and also other source code during the build process.
 
 [X] Install Node.js 22 LTS from https://nodejs.org/en/download/prebuilt-installer
-  we used v22.11.0 (LTS).
+    we used v22.11.0 (LTS).
 
 [X] Download and install Microsoft Visual Studio Community 2022, which you can
     obtain for free from https://www.visualstudio.com/downloads/ .
@@ -25,6 +25,8 @@
 
 [X]	Obtain and install Rust and Cargo:
 	https://doc.rust-lang.org/cargo/getting-started/installation.html
+	Then execute the following line in command prompt of the user you will compile HLAE with:
+	rustup target add --toolchain stable-x86_64-pc-windows-msvc i686-pc-windows-msvc
 
 [X] Obtain the HLAE source code from https://github.com/advancedfx/advancedfx into a
     folder you like, we'll call it <HLAESRC> from now on (by that I mean
@@ -54,8 +56,8 @@
   - Update GUIDs in hlae/UpdateCheck.cs
   - If releasing installer, all these need to be updated, because otherwise users can end up with hash collisions if you
     don't manage to provide the exact same package binary again for same version number:
-    - Increase package version (e.g. 2nd filed (minor), at least 3rd field) in installer/HlaeCore/Product.wxs
-    - Increase package version (at least 3rd field) in installer/HlaeFfmpeg/Product.wxs
-    - Increase bundle version (e.g. 2nd filed (minor), at least 3rd field) in installer/setup/Bundle.wxs
+    - Increase package version (e.g. 2nd field (minor), at least 3rd field) in installer/HlaeCore/Package.wxs
+    - Increase package version (at least 3rd field) in installer/HlaeFfmpeg/Package.wxs
+    - Increase bundle version (e.g. 2nd field (minor), at least 3rd field) in installer/setup/Bundle.wxs
   - In AfxHookSource2Rs run to see if THIRDPARTY.yml needs updating:
     cargo install cargo-bundle-licenses && cargo bundle-licenses --format yaml --output CI.yaml --previous THIRDPARTY.yml --check-previous && echo DONE: Okay.
