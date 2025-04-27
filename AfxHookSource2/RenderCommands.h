@@ -7,15 +7,21 @@
 #include <queue>
 #include <mutex>
 
+class IRenderPassCommands {
+public:
+    virtual ID3D11DeviceContext* GetContext() = 0;
+    virtual bool GetSkipFrame() = 0;
+};
+
 class CRenderCommands {
 public:
     CRenderCommands();
     ~CRenderCommands();
 
     typedef std::function<void()> Fn;
-    typedef std::function<void(ID3D11DeviceContext * pDeviceContext)> FnContext;
-    typedef std::function<void(ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture)> FnContextTexture;
-    typedef std::function<void(ID3D11DeviceContext * pDeviceContext, ID3D11RenderTargetView * pTarget)> FnContextTarget;
+    typedef std::function<void(IRenderPassCommands* pRenderPassCommands)> FnContext;
+    typedef std::function<void(IRenderPassCommands* pRenderPassCommands, ID3D11Texture2D * pTexture)> FnContextTexture;
+    typedef std::function<void(IRenderPassCommands* pRenderPassCommands, ID3D11RenderTargetView * pTarget)> FnContextTarget;
     //typedef std::function<void(ID3D11DeviceContext * pDeviceContext, ID3D11DepthStencilView * pDepthStencil)> FnContextDepthStencil;
 
     template<class T> class CQueue {
@@ -48,13 +54,21 @@ public:
         std::queue<T> m_Queue;
     };
     
-    class CRenderPassCommands {
+    class CRenderPassCommands :public IRenderPassCommands {
     public:
         ~CRenderPassCommands() {
             Finalize();
         }
 
+        virtual ID3D11DeviceContext* GetContext() {
+            return Context;
+        }
+        virtual bool GetSkipFrame() {
+            return SkipFrame;
+        }
+
         ID3D11DeviceContext * Context = nullptr;
+        bool SkipFrame = false;
 
         void Clear() {
             //AfterSmokeDepth.Clear();
@@ -77,6 +91,7 @@ public:
                 FinalizeReliable.Front()();
                 FinalizeReliable.Pop();
             }
+            SkipFrame = false;
         }
 
         CQueue<FnContext> BeginReliable;
@@ -98,35 +113,35 @@ public:
 
         void OnBeforeUi(ID3D11Texture2D * pTexture) {
             while(!BeforeUi.Empty()) {
-                BeforeUi.Front()(Context, pTexture);
+                BeforeUi.Front()(this, pTexture);
                 BeforeUi.Pop();
             }
         }
 
         void OnBeforeUi2(ID3D11RenderTargetView * pTarget) {
             while(!BeforeUi2.Empty()) {
-                BeforeUi2.Front()(Context, pTarget);
+                BeforeUi2.Front()(this, pTarget);
                 BeforeUi2.Pop();
             }
         }        
 
         void OnBeforePresent(ID3D11Texture2D * pTexture) {
             while(!BeforePresent.Empty()) {
-                BeforePresent.Front()(Context, pTexture);
+                BeforePresent.Front()(this, pTexture);
                 BeforePresent.Pop();
             }
         }
 
         void OnAfterPresent() {
             while(!AfterPresent.Empty()) {
-                AfterPresent.Front()(Context);
+                AfterPresent.Front()(this);
                 AfterPresent.Pop();
             }            
         }
 
         void OnAfterPresentOrContextLossReliable() {    
             while(!AfterPresentOrContextLossReliable.Empty()) {
-                AfterPresentOrContextLossReliable.Front()(Context);
+                AfterPresentOrContextLossReliable.Front()(this);
                 AfterPresentOrContextLossReliable.Pop();
             }
             if(Context) Context->Release();
@@ -136,11 +151,16 @@ public:
 
     CRenderPassCommands & EngineThread_GetCommands();
 
-    void EngineThread_Present();
+    void EngineThread_BeginFrame();
 
-    CRenderPassCommands * RenderThread_GetCommands(ID3D11DeviceContext *pContext);
+    void EngineThread_BeforePresent();
+    void EngineThread_AfterPresent(bool presented);
 
-    void RenderThread_Present();
+    void RenderThread_BeginFrame(ID3D11DeviceContext* pContext);
+
+    CRenderPassCommands * RenderThread_GetCommands();
+
+    void RenderThread_EndFrame(ID3D11DeviceContext* pContext);
 
 private:  
     std::mutex m_CommandsQueueMutex;
@@ -150,6 +170,8 @@ private:
     std::queue<CRenderPassCommands *> m_Reusable;
     CRenderPassCommands * m_EngineThreadCommands = nullptr;
     CRenderPassCommands * m_RenderThreadCommands = nullptr;
-    bool m_AquiredCommands = false;
+    bool m_EngineThread_FrameBegun = false;
+    bool m_RenderThread_FrameBegun = false;
+    int m_SkipFrames = 0;
 };
  

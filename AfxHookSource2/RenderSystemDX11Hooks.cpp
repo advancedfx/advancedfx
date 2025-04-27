@@ -1366,7 +1366,6 @@ void STDMETHODCALLTYPE New_OMSetRenderTargets( ID3D11DeviceContext * This,
                 g_pImmediateContext = This;
                 g_pCurrentDepthStencilView = pDepthStencilView;
                 g_pCurrentRenderTargetView = ppRenderTargetViews[0];
-                g_RenderCommands.RenderThread_GetCommands(g_pImmediateContext);
             }
             else if (g_iDraw == 2 && pDepthStencilView == nullptr && ppRenderTargetViews && ppRenderTargetViews[0] && ppRenderTargetViews[0] == g_pCurrentRenderTargetView) {
                 g_iDraw = 3;
@@ -1406,6 +1405,21 @@ class IRenderThreadCallback abstract {
 public:
     virtual void OnCallback(void) abstract = 0;
 };
+
+class CAfxRenderCallbackSetupViewPlayer0 : public IRenderThreadCallback
+{
+public:
+    CAfxRenderCallbackSetupViewPlayer0()
+    {
+    }
+
+    virtual void OnCallback(void) {
+        g_RenderCommands.RenderThread_BeginFrame(g_pImmediateContext);
+        delete this;
+    }
+private:
+};
+
 
 class CAfxRenderCallbackBeforeDetectSmoke : public IRenderThreadCallback
 {
@@ -1546,7 +1560,7 @@ public:
                 if (pRenderTargetViews[0]) pRenderTargetViews[0]->Release();
             }
 
-            if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands(g_pImmediateContext))
+            if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands())
             {
                 if(!pRenderPassCommands->BeforeUi.Empty() || !pRenderPassCommands->BeforeUi2.Empty()) {
 
@@ -1773,7 +1787,7 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
         g_ReShadeAdvancedfx.AdvancedfxRenderEffects(nullptr, nullptr);
     }
 
-    if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands(g_pImmediateContext))
+    if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands())
     {
         if(!pRenderPassCommands->BeforePresent.Empty()) {
             ID3D11Texture2D * pTexture = nullptr;
@@ -1785,12 +1799,12 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
 
     HRESULT result = g_OldPresent(This, SyncInterval, Flags);
 
-    if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands(g_pImmediateContext)) {
+    if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands()) {
         pRenderPassCommands->OnAfterPresent();
         pRenderPassCommands->OnAfterPresentOrContextLossReliable();
     }
 
-    g_RenderCommands.RenderThread_Present();
+    g_RenderCommands.RenderThread_EndFrame(g_pImmediateContext);
 
 	g_ReShadeAdvancedfx.ResetHasRendered();
 
@@ -2111,13 +2125,18 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr2(unsigned char
     // It would be possible to pass vararg on with asm trampoline, but it seems unused?
     unsigned char * result = g_Old_SceneSystem_CreateRenderContextPtr2(param_1, param_2,pDevice,"Hooked by HLAE / advancedfx.org, if you happen to actually see this please file a bug report, please!");
 
-/*    if (pContextName && 0 == strcmp(pContextName, "#%s/SetupView")) {
-        if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-            auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
-            fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeUi());
+    if (fmt && 0 == strcmp(fmt, "#%s/SetupView")) {
+        va_list args;
+        va_start(args, fmt);
+        const char* pszArg0 = va_arg(args, const char*);
+        if (pszArg0 && 0 == strcmp("Player 0", pszArg0)) {
+            if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
+                auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
+                fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackSetupViewPlayer0());
+            }
         }
     }
-*/
+
     if(g_bRenderContextDebug) {
         const char * saveFmt = fmt ? fmt : "[nullptr]";
 
@@ -2347,8 +2366,8 @@ void EndCapture() {
         {
             auto & queue = pRenderPassCommands.AfterPresentOrContextLossReliable;
             CAfxCapture * capture = g_ActiveCapture;
-            queue.Push([capture](ID3D11DeviceContext * pDeviceContext){
-                capture->Finish(pDeviceContext);
+            queue.Push([capture](IRenderPassCommands* context){
+                capture->Finish(context->GetContext());
             }); 
         }
         {
@@ -2544,7 +2563,7 @@ public:
         }
     }
 
-    void EngineThread_Present() {
+    void EngineThread_BeginFrame() {
         if(m_Recording) {
             auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
 
@@ -2552,15 +2571,15 @@ public:
                 {
                     auto & queue = pRenderPassCommands.BeforePresent;
                     CAfxCapture * capture = g_ActiveCapture;
-                    queue.Push([capture](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
-                        capture->OnBeforeGpuPresent(pDeviceContext, pTexture);
+                    queue.Push([capture](IRenderPassCommands* context, ID3D11Texture2D * pTexture){
+                        if(!context->GetSkipFrame()) capture->OnBeforeGpuPresent(context->GetContext(), pTexture);
                     }); 
                 }
                 {
                     auto & queue = pRenderPassCommands.AfterPresent;
                     CAfxCapture * capture = g_ActiveCapture;
-                    queue.Push([capture](ID3D11DeviceContext * pDeviceContext){
-                        capture->OnAfterGpuPresent(pDeviceContext);
+                    queue.Push([capture](IRenderPassCommands* context){
+                        if (!context->GetSkipFrame()) capture->OnAfterGpuPresent(context->GetContext());
                     }); 
                 }
             }
@@ -2580,9 +2599,9 @@ public:
                 float B = clearColor[2];
                 float A = clearColor[3];  
                 auto & renderPassCommands = g_RenderCommands.EngineThread_GetCommands();              
-                renderPassCommands.BeforeUi2.Push([R,G,B,A](ID3D11DeviceContext * pDeviceContext, ID3D11RenderTargetView * pTarget){
+                renderPassCommands.BeforeUi2.Push([R,G,B,A](IRenderPassCommands* context, ID3D11RenderTargetView * pTarget){
                     float clearColor[4] = {R,G,B,A};
-                    pDeviceContext->ClearRenderTargetView(pTarget, clearColor);
+                    context->GetContext()->ClearRenderTargetView(pTarget, clearColor);
                 });
             }
         }
@@ -2608,8 +2627,8 @@ private:
             {
                 auto & queue = pRenderPassCommands.AfterPresentOrContextLossReliable;
                 CAfxCapture * capture = m_Capture;
-                queue.Push([capture](ID3D11DeviceContext * pDeviceContext){
-                    capture->Finish(pDeviceContext);
+                queue.Push([capture](IRenderPassCommands* context){
+                    capture->Finish(context->GetContext());
                 }); 
             }
             {
@@ -2678,7 +2697,10 @@ private:
             CStreamSettings::DepthMode_e depthMode = m_Settings.DepthMode;
             {
                 auto &queue = m_Settings.Capture == CStreamSettings::Capture_e::BeforeUi ? renderPassCommands.BeforeUi : renderPassCommands.BeforePresent;
-                queue.Push([capture,captureType,depthCompositeSmoke,depth24,depthVal,depthValMax,depthChannels,depthMode](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
+                queue.Push([capture,captureType,depthCompositeSmoke,depth24,depthVal,depthValMax,depthChannels,depthMode](IRenderPassCommands* context, ID3D11Texture2D * pTexture){
+                    ID3D11DeviceContext* pDeviceContext = context->GetContext();
+                    bool bSkipFrame = context->GetSkipFrame();
+
                     switch(captureType) {
                     case CStreamSettings::CaptureType_e::DepthRgb:
                     case CStreamSettings::CaptureType_e::DepthF: {
@@ -2716,7 +2738,7 @@ private:
                                 break;
                         }
 
-                        g_DepthCompositor.CaptureNormalDepth(g_pImmediateContext, g_pCurrentDepthStencilView,
+                        g_DepthCompositor.CaptureNormalDepth(pDeviceContext, g_pCurrentDepthStencilView,
                             depthCompositeSmoke,
                             captureType == CStreamSettings::CaptureType_e::DepthF ? CDepthCompositor::DepthTextureType_R32F : CDepthCompositor::DepthTextureType_RGB,
                             afxDepthMode,
@@ -2727,13 +2749,13 @@ private:
         
                         ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
                         ID3D11DepthStencilView* pDepthStencilView = nullptr;
-                        g_pImmediateContext->OMGetRenderTargets(1, &pRenderTargetViews[0], &pDepthStencilView);
+                        pDeviceContext->OMGetRenderTargets(1, &pRenderTargetViews[0], &pDepthStencilView);
         
                         ID3D11Resource* pRenderTargetViewResource = nullptr;
                         if (pRenderTargetViews[0]) pRenderTargetViews[0]->GetResource(&pRenderTargetViewResource);
         
                         if (ID3D11Texture2D* pTexture = g_DepthCompositor.GetDepthTexture(captureType == CStreamSettings::CaptureType_e::DepthF ? CDepthCompositor::DepthTextureType_R32F : CDepthCompositor::DepthTextureType_RGB)) {
-                            capture->OnBeforeGpuPresent(pDeviceContext, pTexture);
+                            if(!bSkipFrame) capture->OnBeforeGpuPresent(pDeviceContext, pTexture);
                             pTexture->Release();
                         }// else capture->OnBeforeGpuPresent(pDeviceContext, nullptr);
         
@@ -2743,15 +2765,15 @@ private:
                         if (pRenderTargetViews[0]) pRenderTargetViews[0]->Release();   
                     } break;
                     default:
-                        capture->OnBeforeGpuPresent(pDeviceContext, pTexture);
+                        if(!bSkipFrame) capture->OnBeforeGpuPresent(pDeviceContext, pTexture);
                         break;
                     }                 
                 }); 
             }
             {
                 auto & queue = renderPassCommands.AfterPresent;
-                queue.Push([capture](ID3D11DeviceContext * pDeviceContext){
-                    capture->OnAfterGpuPresent(pDeviceContext);
+                queue.Push([capture](IRenderPassCommands* context){
+                    if(!context->GetSkipFrame()) capture->OnAfterGpuPresent(context->GetContext());
                 }); 
             }            
         }
@@ -2853,27 +2875,20 @@ private:
     }
 } g_AfxStreams;
 
+bool g_bEngine_Prepared = false;
 
 bool __fastcall New_CRenderDeviceBase_Present(
     void * This, void * Rdx, void * R8d, void * R9d, void * Stack0, void * Stack1, void * Stack2, void * Stack3, void * Stack4) {
 
-    {
-        auto& pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
-        auto& queue = pRenderPassCommands.BeginReliable;
-        SOURCESDK::VMatrix projectionMatrix;
-        g_EngineThread_ProjectionMatrix.Get(projectionMatrix);
-        queue.Push([projectionMatrix](ID3D11DeviceContext* pDeviceContext) {
-            g_RenderThread_ProjectionMatrix.Set(projectionMatrix);
-            });
-    }
-
-    g_AfxStreams.EngineThread_Present();
-
-    g_RenderCommands.EngineThread_Present();
-
     g_CampathDrawer.OnEngineThread_EndFrame();
 
+    g_RenderCommands.EngineThread_BeforePresent();
+
     bool result = g_Old_CRenderDeviceBase_Present(This, Rdx, R8d, R9d, Stack0, Stack1, Stack2, Stack3, Stack4);
+
+    g_RenderCommands.EngineThread_AfterPresent(result);
+
+    g_bEngine_Prepared = false;
 
     return result;
 }
@@ -3577,7 +3592,7 @@ void CAfxStreams::RecordStart()
             auto& pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
             {
                 auto& queue = pRenderPassCommands.BeginReliable;
-                queue.Push([](ID3D11DeviceContext*) {
+                queue.Push([](IRenderPassCommands*) {
                     g_bCompositeSmoke = true;
                 });
             }
@@ -3684,6 +3699,8 @@ bool g_bEngine_ReShade_Enabled = true;
 bool g_bEngine_ReShade_FoceSmokeFullresPass = true;
 
 void RenderSystemDX11_EngineThread_Prepare() {
+    if (g_bEngine_Prepared) return;
+    g_bEngine_Prepared = true;
 
     if(g_ReShadeAdvancedfx.IsConnected() && g_bEngine_ReShade_Enabled && g_bEngine_ReShade_FoceSmokeFullresPass) {
         Update_smoke_volume_lod_ratio_change(0.0f);
@@ -3691,6 +3708,20 @@ void RenderSystemDX11_EngineThread_Prepare() {
     }
 
     g_AfxStreams.EngineThread_Prepare();
+
+    {
+        auto& pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
+        auto& queue = pRenderPassCommands.BeginReliable;
+        SOURCESDK::VMatrix projectionMatrix;
+        g_EngineThread_ProjectionMatrix.Get(projectionMatrix);
+        queue.Push([projectionMatrix](IRenderPassCommands*) {
+            g_RenderThread_ProjectionMatrix.Set(projectionMatrix);
+        });
+    }
+
+    g_AfxStreams.EngineThread_BeginFrame();
+
+    g_RenderCommands.EngineThread_BeginFrame();
 }
 
 void RenderSystemDX11_SupplyProjectionMatrix(const SOURCESDK::VMatrix & projectionMatrix) {
@@ -3960,7 +3991,7 @@ CON_COMMAND(mirv_reshade, "Control ReShade_advancedfx ReShade addon.")
                     auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
                     {
                         auto & queue = pRenderPassCommands.BeginReliable;
-                        queue.Push([bDoEnableReShade](ID3D11DeviceContext * pDeviceContext){
+                        queue.Push([bDoEnableReShade](IRenderPassCommands*){
                             g_bEnableReShade = bDoEnableReShade;
                         });
                     }
@@ -3984,7 +4015,7 @@ CON_COMMAND(mirv_reshade, "Control ReShade_advancedfx ReShade addon.")
                     auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
                     {
                         auto & queue = pRenderPassCommands.BeginReliable;
-                        queue.Push([bNewVal](ID3D11DeviceContext * pDeviceContext){
+                        queue.Push([bNewVal](IRenderPassCommands*){
                             g_bReShadeCompositeSmoke = bNewVal;
                         });
                     }                    

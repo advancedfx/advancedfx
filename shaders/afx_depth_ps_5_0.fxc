@@ -88,15 +88,15 @@ float4 main( PS_INPUT i ) : SV_TARGET
 #endif
 
 if(cNormalFar < depth) {
-	depth = (depth - cNormalFar)/(1 - cNormalFar);
-	
+	depth = (depth - cNormalFar) / (1 - cNormalFar);
+
 	float f1 = (-1) * cSkyFar * cSkyNear * 1.0;
 	float xD = cSkyFar - cSkyNear;
-
-	float outNear = (f1 / cNormalFar + cSkyFar)/xD;
-	float outFar = (f1 / 1 + cSkyFar)/xD;
+	depth = f1/(depth * xD - cSkyFar);
 	
-	depth = (depth - outNear) / (outFar - outNear);
+	float f12 = (-1) * cZFar * cZNear * 1.0;
+	float xD2 = cZFar - cZNear;
+	depth = (f12/depth + cZFar)/xD2;
 } else {
 	depth = (depth - cNormalNear)/(cNormalFar - cNormalNear);
 }

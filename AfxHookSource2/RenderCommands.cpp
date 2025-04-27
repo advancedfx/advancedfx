@@ -25,49 +25,91 @@ CRenderCommands::CRenderPassCommands & CRenderCommands::EngineThread_GetCommands
     return *m_EngineThreadCommands;
 }
 
-void CRenderCommands::EngineThread_Present() {
+void CRenderCommands::EngineThread_BeginFrame() {
+    if (m_EngineThread_FrameBegun) return;
+    m_EngineThread_FrameBegun = true;
+
     CRenderPassCommands* pRenderPassCommands = m_EngineThreadCommands;
     m_EngineThreadCommands = nullptr;
+
+    if (m_SkipFrames) {
+        // For explanation see EngineThread_AfterPresent.
+        pRenderPassCommands->SkipFrame = true;
+        m_SkipFrames--;
+    }
+    else {
+        pRenderPassCommands->SkipFrame = false;
+    }
 
     {
         std::unique_lock<std::mutex> lock(m_CommandsQueueMutex);
         m_CommandsQueue.emplace(pRenderPassCommands);
     }
-
-    {
-        std::unique_lock<std::mutex> lock(m_ReusableMutex);
-        if (!m_Reusable.empty()) m_EngineThreadCommands = m_Reusable.front();
-    }
-
-    if(m_EngineThreadCommands == nullptr) m_EngineThreadCommands = new CRenderPassCommands();
 }
 
-CRenderCommands::CRenderPassCommands * CRenderCommands::RenderThread_GetCommands(ID3D11DeviceContext *pContext) {
-    if(!m_AquiredCommands) {
-        {
-            std::unique_lock<std::mutex> lock(m_CommandsQueueMutex);
-            if (m_CommandsQueue.empty()) m_RenderThreadCommands = nullptr;
-            else {
-                m_RenderThreadCommands = m_CommandsQueue.front();
-                m_CommandsQueue.pop();
-            }
-        }
-        if(m_RenderThreadCommands) {
-            m_RenderThreadCommands->Context = pContext;
-            if(pContext) {
-                auto & beginFrameReliable = m_RenderThreadCommands->BeginReliable;
-                while(!beginFrameReliable.Empty()) {
-                    beginFrameReliable.Front()(pContext);
-                    beginFrameReliable.Pop();
-                }
-            }
-        }
-        m_AquiredCommands = true;
+void CRenderCommands::EngineThread_BeforePresent() {
+    if (!m_EngineThread_FrameBegun) {
+        // Late to the party on the engine thread.
+        EngineThread_BeginFrame();
     }
+}
+
+void CRenderCommands::EngineThread_AfterPresent(bool presented) {
+    {
+        std::unique_lock<std::mutex> lock(m_ReusableMutex);
+        if (!m_Reusable.empty()) {
+            m_EngineThreadCommands = m_Reusable.front();
+            m_Reusable.pop();
+        }
+    }
+
+    if (m_EngineThreadCommands == nullptr) m_EngineThreadCommands = new CRenderPassCommands();
+
+    if (!presented) {
+        // CS2 can render more frames that required in this case,
+        // since it only counts the presented ones for host_framerate.
+        // Thus we will drop frames to make the audio catch up.
+        //m_SkipFrames++;
+    }
+
+    m_EngineThread_FrameBegun = false;
+    
+}
+
+void CRenderCommands::RenderThread_BeginFrame(ID3D11DeviceContext* pContext) {
+    if (m_RenderThread_FrameBegun) return;
+    m_RenderThread_FrameBegun = true;
+
+    {
+        std::unique_lock<std::mutex> lock(m_CommandsQueueMutex);
+        if (m_CommandsQueue.empty()) m_RenderThreadCommands = nullptr;
+        else {
+            m_RenderThreadCommands = m_CommandsQueue.front();
+            m_CommandsQueue.pop();
+        }
+    }
+    if (m_RenderThreadCommands) {
+        m_RenderThreadCommands->Context = pContext;
+        if (pContext) {
+            auto& beginFrameReliable = m_RenderThreadCommands->BeginReliable;
+            while (!beginFrameReliable.Empty()) {
+                beginFrameReliable.Front()(m_RenderThreadCommands);
+                beginFrameReliable.Pop();
+            }
+        }
+    }
+}
+
+CRenderCommands::CRenderPassCommands * CRenderCommands::RenderThread_GetCommands() {
     return m_RenderThreadCommands;
 }
 
-void CRenderCommands::RenderThread_Present() {
+void CRenderCommands::RenderThread_EndFrame(ID3D11DeviceContext* pContext) {
+    if (!m_RenderThread_FrameBegun) {
+        // Late to the party on the render thread.
+        RenderThread_BeginFrame(pContext);
+    }
+
     if(m_RenderThreadCommands) {
         m_RenderThreadCommands->Finalize();
         {
@@ -76,5 +118,6 @@ void CRenderCommands::RenderThread_Present() {
         }
         m_RenderThreadCommands = nullptr;
     }
-    m_AquiredCommands = false;
+
+    m_RenderThread_FrameBegun = false;
 }
