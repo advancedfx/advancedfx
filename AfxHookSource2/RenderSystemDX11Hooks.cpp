@@ -3001,6 +3001,11 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
         } else if(0 == _stricmp(arg1,"depth")) {
             settings.Capture = CStreamSettings::Capture_e::BeforeUi;
             settings.CaptureType = CStreamSettings::CaptureType_e::DepthRgb;
+            // Suggested defaults by Riki:
+            settings.DepthVal = 4096;
+            settings.DepthValMax = 0;
+            settings.DepthChannels = CStreamSettings::DepthChannels_e::Dithered;
+            settings.DepthMode = CStreamSettings::DepthMode_e::PyramidalLinear;
         } else {
             advancedfx::Warning("AFXERROR: \"%s\" is not a valid stream template.\n");
             return;
