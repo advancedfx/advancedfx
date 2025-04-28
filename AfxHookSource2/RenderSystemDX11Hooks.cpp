@@ -212,7 +212,13 @@ private:
 
 class CAfxCapture {
 public:
-    CAfxCapture(class advancedfx::COutVideoStreamCreator* pOutVideoStreamCreator, CStreamSettings::CaptureType_e captureType)
+    enum CaptureType_e {
+        CaptureType_Default,
+        CaptureType_Rgba,
+        CaptureType_Depth24
+    };
+
+    CAfxCapture(class advancedfx::COutVideoStreamCreator* pOutVideoStreamCreator, CaptureType_e captureType)
      : m_pOutVideoStreamCreator(pOutVideoStreamCreator)
      , m_CaptureType(captureType)
     {
@@ -290,7 +296,7 @@ private:
     class advancedfx::COutVideoStreamCreator* m_pOutVideoStreamCreator;
 	advancedfx::COutVideoStream* m_OutVideoStream = nullptr;
 
-    CStreamSettings::CaptureType_e m_CaptureType;
+    CaptureType_e m_CaptureType;
 
 	class CBuffers {
 	public:
@@ -341,10 +347,10 @@ private:
                                 break;
                             case advancedfx::ImageFormat::RGBA:
                                 switch(m_CaptureType) {
-                                case CStreamSettings::CaptureType_e::Rgba:
+                                case CaptureType_Rgba:
                                     capture = advancedfx::ImageTransformer::RgbaToBgra(g_pThreadPool,g_pImageBufferPoolThreadSafe,pTexture);
                                     break;
-                                case CStreamSettings::CaptureType_e::DepthRgb:
+                                case CaptureType_Depth24:
                                     {
                                         capture = advancedfx::ImageTransformer::RgbaToBgr(g_pThreadPool,g_pImageBufferPoolThreadSafe,pTexture);
                                         advancedfx::ICapture* capture2 = advancedfx::ImageTransformer::Depth24(g_pThreadPool, g_pImageBufferPoolThreadSafe, capture, pTexture->GetDepthScale(), pTexture->GetDepthOffset());
@@ -2414,7 +2420,7 @@ void EndCapture() {
 
 void CreateCapture(class advancedfx::COutVideoStreamCreator* pOutVideoStreamCreator) {
     EndCapture();
-    g_ActiveCapture = new CAfxCapture(pOutVideoStreamCreator, CStreamSettings::CaptureType_e::Rgb);
+    g_ActiveCapture = new CAfxCapture(pOutVideoStreamCreator, CAfxCapture::CaptureType_Default);
 }
 
 advancedfx::CImageBufferPoolThreadSafe g_ImageBufferPool;
@@ -2645,12 +2651,24 @@ private:
 			: m_Streams(streams)
             , m_Settings(settings) {
 
+            CAfxCapture::CaptureType_e captureType;
+            switch(m_Settings.CaptureType) {
+            case CStreamSettings::CaptureType_e::Rgba:
+                captureType = CAfxCapture::CaptureType_Rgba;
+                break;
+            case CStreamSettings::CaptureType_e::DepthRgb:
+                captureType = m_Settings.Depth24 ? CAfxCapture::CaptureType_Depth24 : CAfxCapture::CaptureType_Rgba;
+                break;
+            default:
+                captureType = CAfxCapture::CaptureType_Default;
+            };
+
             m_Capture = new CAfxCapture(m_Settings.Settings->CreateOutVideoStreamCreator(
                 *this,
                 *this,
                 m_Streams->m_StartHostFrameRateValue,
                 ""
-            ), m_Settings.CaptureType);
+            ), captureType);
 		}
 
 		~CStream() {
