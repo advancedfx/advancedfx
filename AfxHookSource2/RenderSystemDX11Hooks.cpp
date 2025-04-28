@@ -3539,6 +3539,7 @@ void CAfxStreams::Console_Remove(advancedfx::ICommandArgs* args) {
         }
 
         m_Streams.erase(it);
+        return;
     }
 
 	advancedfx::Message(
