@@ -94,7 +94,9 @@ public:
         m_Condition.notify_one();
     }
 
-    void GpuCopyResource(ID3D11DeviceContext * pContext, ID3D11Texture2D * pTexture) {
+    void GpuCopyResource(ID3D11DeviceContext * pContext, ID3D11Texture2D * pTexture, float depthScale, float depthOffset) {
+        m_DepthScale = depthScale;
+        m_DepthOfs = depthOffset;
         if(m_pCpuTexture == nullptr && pTexture) {
             D3D11_TEXTURE2D_DESC desc;
             pTexture->GetDesc(&desc);
@@ -106,6 +108,10 @@ public:
             desc.SampleDesc.Quality = 0;
             advancedfx::ImageFormat format = advancedfx::ImageFormat::Unkown;
             switch(desc.Format) {
+            case DXGI_FORMAT_R32_FLOAT:
+                format = advancedfx::ImageFormat::ZFloat;
+                desc.Format = DXGI_FORMAT_R32_FLOAT;
+                break;
             case DXGI_FORMAT_R8G8B8A8_TYPELESS:
             case DXGI_FORMAT_R8G8B8A8_UNORM:
             case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
@@ -165,6 +171,14 @@ public:
         }
     }
 
+    float GetDepthScale() {
+        return m_DepthScale;
+    }
+
+    float GetDepthOffset() {
+        return m_DepthOfs;
+    }
+
 protected:
     virtual ~CAfxCpuTexture() {
         if(m_pCpuTexture) {
@@ -186,7 +200,8 @@ private:
     bool m_bCpuDone = false;
     advancedfx::CImageFormat m_ImageFormat;
     D3D11_MAPPED_SUBRESOURCE m_MappedResource;
-
+    float m_DepthScale = 1.0f;
+    float m_DepthOfs = 0.0f;
 
     void WaitForCpu() {
         std::unique_lock<std::mutex> lock(m_Mutex);
@@ -197,9 +212,9 @@ private:
 
 class CAfxCapture {
 public:
-    CAfxCapture(class advancedfx::COutVideoStreamCreator* pOutVideoStreamCreator, bool wantsAlpha)
+    CAfxCapture(class advancedfx::COutVideoStreamCreator* pOutVideoStreamCreator, CStreamSettings::CaptureType_e captureType)
      : m_pOutVideoStreamCreator(pOutVideoStreamCreator)
-     , m_WantsAlpha (wantsAlpha)
+     , m_CaptureType(captureType)
     {
         m_pOutVideoStreamCreator->AddRef();
         m_ProcessingThread = std::thread(&CAfxCapture::ProcessingThreadFunc, this);
@@ -231,7 +246,7 @@ public:
         }
     }
 
-    void OnBeforeGpuPresent(ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture) {
+    void OnBeforeGpuPresent(ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture, float depthScale, float depthOfs) {
         if(m_CpuTextures[m_Index] == nullptr) {
             ID3D11Device * pDevice = nullptr;
             pDeviceContext->GetDevice(&pDevice);
@@ -244,7 +259,7 @@ public:
         } else {
             m_CpuTextures[m_Index]->IfAcccessedWaitForCpuAndEndAccess(pDeviceContext);
         }
-        m_CpuTextures[m_Index]->GpuCopyResource(pDeviceContext, pTexture);
+        m_CpuTextures[m_Index]->GpuCopyResource(pDeviceContext, pTexture, depthScale, depthOfs);
     }
 
     void OnAfterGpuPresent(ID3D11DeviceContext * pDeviceContext) {
@@ -275,7 +290,7 @@ private:
     class advancedfx::COutVideoStreamCreator* m_pOutVideoStreamCreator;
 	advancedfx::COutVideoStream* m_OutVideoStream = nullptr;
 
-    bool m_WantsAlpha;
+    CStreamSettings::CaptureType_e m_CaptureType;
 
 	class CBuffers {
 	public:
@@ -321,15 +336,29 @@ private:
                         if(pTexture) {
                             advancedfx::ICapture* capture = pTexture;
                             switch(pTexture->GetImageBufferFormat()->Format) {
+                            case advancedfx::ImageFormat::ZFloat:
+                                capture = advancedfx::ImageTransformer::DepthF(g_pThreadPool, g_pImageBufferPoolThreadSafe, pTexture, pTexture->GetDepthScale(), pTexture->GetDepthOffset());
+                                break;
                             case advancedfx::ImageFormat::RGBA:
-                                if(m_WantsAlpha) {
+                                switch(m_CaptureType) {
+                                case CStreamSettings::CaptureType_e::Rgba:
                                     capture = advancedfx::ImageTransformer::RgbaToBgra(g_pThreadPool,g_pImageBufferPoolThreadSafe,pTexture);
-                                } else {
+                                    break;
+                                case CStreamSettings::CaptureType_e::DepthRgb:
+                                    {
+                                        capture = advancedfx::ImageTransformer::RgbaToBgr(g_pThreadPool,g_pImageBufferPoolThreadSafe,pTexture);
+                                        advancedfx::ICapture* capture2 = advancedfx::ImageTransformer::Depth24(g_pThreadPool, g_pImageBufferPoolThreadSafe, capture, pTexture->GetDepthScale(), pTexture->GetDepthOffset());
+                                        if(capture) capture->Release();
+                                        capture = capture2;
+                                    }
+                                    break;
+                                default:
                                     capture = advancedfx::ImageTransformer::RgbaToBgr(g_pThreadPool,g_pImageBufferPoolThreadSafe,pTexture);
+                                    break;
                                 }
                                 break;
                             default:
-                                capture->AddRef();
+                            pTexture->AddRef();
                                 break;
                             }
                             if (capture) {
@@ -720,8 +749,8 @@ public:
         DepthTextureType_e depthTextureType,
         ShaderCombo_afx_depth_ps_5_0::AFXDEPTHMODE_e afxDepthMode,
         ShaderCombo_afx_depth_ps_5_0::AFXD24_e afxD24,
-        float outZNear = 0.0f,
-        float outZFar = 0.0f
+        float &outZNear,
+        float &outZFar
     ) {
         if (!HasCoreDeps() || pContext == nullptr || pDepthStencilView == nullptr) return;
 
@@ -1528,13 +1557,15 @@ public:
             g_bDetectSmoke = false;
 
             if (g_ReShadeAdvancedfx.IsConnected() && g_bEnableReShade) {
+                float zNear = 0.0f;
+                float zFar = 0.0f;
                 g_DepthCompositor.CaptureNormalDepth(g_pImmediateContext, g_pCurrentDepthStencilView,
                     g_bReShadeCompositeSmoke,
                     CDepthCompositor::DepthTextureType_R32F,
                     ShaderCombo_afx_depth_ps_5_0::AFXDEPTHMODE_0,
                     ShaderCombo_afx_depth_ps_5_0::AFXD24_0,
-                    0.0f,
-                    0.0f
+                    zNear,
+                    zFar
                 );
 
                 ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
@@ -2383,7 +2414,7 @@ void EndCapture() {
 
 void CreateCapture(class advancedfx::COutVideoStreamCreator* pOutVideoStreamCreator) {
     EndCapture();
-    g_ActiveCapture = new CAfxCapture(pOutVideoStreamCreator, false);
+    g_ActiveCapture = new CAfxCapture(pOutVideoStreamCreator, CStreamSettings::CaptureType_e::Rgb);
 }
 
 advancedfx::CImageBufferPoolThreadSafe g_ImageBufferPool;
@@ -2572,7 +2603,7 @@ public:
                     auto & queue = pRenderPassCommands.BeforePresent;
                     CAfxCapture * capture = g_ActiveCapture;
                     queue.Push([capture](IRenderPassCommands* context, ID3D11Texture2D * pTexture){
-                        if(!context->GetSkipFrame()) capture->OnBeforeGpuPresent(context->GetContext(), pTexture);
+                        if(!context->GetSkipFrame()) capture->OnBeforeGpuPresent(context->GetContext(), pTexture, 1.0f, 0.0f);
                     }); 
                 }
                 {
@@ -2619,7 +2650,7 @@ private:
                 *this,
                 m_Streams->m_StartHostFrameRateValue,
                 ""
-            ), m_Settings.CaptureType == CStreamSettings::CaptureType_e::Rgba);
+            ), m_Settings.CaptureType);
 		}
 
 		~CStream() {
@@ -2700,6 +2731,8 @@ private:
                 queue.Push([capture,captureType,depthCompositeSmoke,depth24,depthVal,depthValMax,depthChannels,depthMode](IRenderPassCommands* context, ID3D11Texture2D * pTexture){
                     ID3D11DeviceContext* pDeviceContext = context->GetContext();
                     bool bSkipFrame = context->GetSkipFrame();
+                    float zNear = depthVal;
+                    float zFar = depthValMax;
 
                     switch(captureType) {
                     case CStreamSettings::CaptureType_e::DepthRgb:
@@ -2743,8 +2776,8 @@ private:
                             captureType == CStreamSettings::CaptureType_e::DepthF ? CDepthCompositor::DepthTextureType_R32F : CDepthCompositor::DepthTextureType_RGB,
                             afxDepthMode,
                             afxD24,
-                            depthVal,
-                            depthValMax
+                            zNear,
+                            zFar
                         );
         
                         ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
@@ -2755,7 +2788,7 @@ private:
                         if (pRenderTargetViews[0]) pRenderTargetViews[0]->GetResource(&pRenderTargetViewResource);
         
                         if (ID3D11Texture2D* pTexture = g_DepthCompositor.GetDepthTexture(captureType == CStreamSettings::CaptureType_e::DepthF ? CDepthCompositor::DepthTextureType_R32F : CDepthCompositor::DepthTextureType_RGB)) {
-                            if(!bSkipFrame) capture->OnBeforeGpuPresent(pDeviceContext, pTexture);
+                            if(!bSkipFrame) capture->OnBeforeGpuPresent(pDeviceContext, pTexture, zFar - zNear, zNear);
                             pTexture->Release();
                         }// else capture->OnBeforeGpuPresent(pDeviceContext, nullptr);
         
@@ -2765,7 +2798,7 @@ private:
                         if (pRenderTargetViews[0]) pRenderTargetViews[0]->Release();   
                     } break;
                     default:
-                        if(!bSkipFrame) capture->OnBeforeGpuPresent(pDeviceContext, pTexture);
+                        if(!bSkipFrame) capture->OnBeforeGpuPresent(pDeviceContext, pTexture, zFar - zNear, zNear);
                         break;
                     }                 
                 }); 
