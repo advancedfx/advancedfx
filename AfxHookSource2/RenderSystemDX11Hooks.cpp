@@ -720,9 +720,6 @@ public:
 
                     if(m_pSmokeDepthTexture)
                     {
-                        UINT numViewPorts = 1;
-                        pContext->RSGetViewports(&numViewPorts, &m_SmokeViewPort);
-
                         ID3D11DepthStencilView* pCurrentDepthStencilView = nullptr;
                         ID3D11DepthStencilView* pNullDepthStencilView = nullptr;
                         pContext->OMGetRenderTargets(0, nullptr, &pCurrentDepthStencilView);
@@ -1018,7 +1015,6 @@ private:
     ID3D11Texture2D * m_pSmokeDepthTexture = nullptr;
     ID3D11ShaderResourceView* m_pSmokeDepthTextureSrv = nullptr;
     D3D11_TEXTURE2D_DESC m_SmokeDepthTextureDesc = {};
-    D3D11_VIEWPORT m_SmokeViewPort = {};
     bool m_HasSmokeDepth = false;
     ID3D11ShaderResourceView* m_pNormalDepthTextureSrv = nullptr;
     ID3D11Texture2D* m_pNormalDepthTexture = nullptr;
@@ -1108,7 +1104,6 @@ ID3D11Resource* g_pMainRenderTargetResource = nullptr;
 bool g_bDetectSmoke = false;
 bool g_bDetectSmoke2 = false;
 bool g_bDetectedSmoke = false;
-bool g_bDetectedSmoke2 = false;
 ID3D11DepthStencilView* g_pSmokeDepthStencilView = nullptr;
 
 extern void ErrorBox(char const * messageText);
@@ -1308,31 +1303,31 @@ ID3D11DepthStencilView * g_pCurrentDepthStencilView = nullptr;
 
 void STDMETHODCALLTYPE New_ClearDepthStencilView( ID3D11DeviceContext * This, 
     _In_  ID3D11DepthStencilView *pDepthStencilView,
-    /* [annotation] */ 
     _In_  UINT ClearFlags,
-    /* [annotation] */ 
     _In_  FLOAT Depth,
-    /* [annotation] */ 
     _In_  UINT8 Stencil) {
 
     if (This == g_pImmediateContext && g_bInOwnDraw == false) {
-
-        /*if (g_bDetectedSmoke && pDepthStencilView == g_pSmokeDepthStencilView) {
-            g_bDetectedSmoke = false;
+        if (g_bDetectedSmoke && g_pSmokeDepthStencilView) {
             ID3D11DepthStencilView* pCurrentDepthStencilView = nullptr;
             ID3D11DepthStencilView* pNullDepthStencilView = nullptr;
             g_pImmediateContext->OMGetRenderTargets(0, nullptr, &pCurrentDepthStencilView);
 
-            if (pDepthStencilView && pDepthStencilView == pCurrentDepthStencilView)
-                g_pImmediateContext->OMSetRenderTargets(0, nullptr, nullptr);
+            if (pCurrentDepthStencilView == g_pSmokeDepthStencilView) {
+                g_pImmediateContext->OMGetRenderTargets(0, nullptr, &pNullDepthStencilView);
+            }
 
             g_DepthCompositor.CaptureSmokeDepth(g_pImmediateContext, g_pSmokeDepthStencilView);
 
-            if (pDepthStencilView && pDepthStencilView == pCurrentDepthStencilView)
-                g_pImmediateContext->OMSetRenderTargets(0, nullptr, pCurrentDepthStencilView);
+            if (pCurrentDepthStencilView == g_pSmokeDepthStencilView) {
+                g_pImmediateContext->OMGetRenderTargets(0, nullptr, &pCurrentDepthStencilView);
+            }
 
             if (pCurrentDepthStencilView) pCurrentDepthStencilView->Release();
-        }*/
+
+            g_pSmokeDepthStencilView = nullptr;
+            g_bDetectedSmoke = false;
+        }
     }
 
     g_Old_ClearDepthStencilView(This, pDepthStencilView, ClearFlags, Depth, Stencil);
@@ -1410,21 +1405,10 @@ void STDMETHODCALLTYPE New_OMSetRenderTargets( ID3D11DeviceContext * This,
                 g_bInOwnDraw = false;
             }
         }
-        if (g_bDetectSmoke && pDepthStencilView) {
+        if(g_bDetectSmoke2 && pDepthStencilView) {
+            g_bDetectSmoke2 = false;
             g_bDetectedSmoke = true;
-            g_bDetectSmoke = false;
-        }
-        if (g_bDetectSmoke2 && pDepthStencilView) {
-            static int count;
-            if (!g_bDetectedSmoke2) {
-                g_bDetectedSmoke2 = true;
-                count = 0;
-            }
-            //advancedfx::Message("Smoke: %i\n", count);
-            if (4 == count) {
-                g_pSmokeDepthStencilView = pDepthStencilView;
-            }
-            count++;
+            g_pSmokeDepthStencilView = pDepthStencilView;
         }
     }
 
@@ -1450,40 +1434,6 @@ public:
 private:
 };
 
-
-class CAfxRenderCallbackBeforeDetectSmoke : public IRenderThreadCallback
-{
-public:
-    CAfxRenderCallbackBeforeDetectSmoke()
-    {
-    }
-
-    virtual void OnCallback(void) {
-        if (g_pImmediateContext) {
-            g_bDetectSmoke = true;
-        }
-        delete this;
-    }
-private:
-};
-
-class CAfxRenderCallbackAfterDetectSmoke : public IRenderThreadCallback
-{
-public:
-    CAfxRenderCallbackAfterDetectSmoke()
-    {
-    }
-
-    virtual void OnCallback(void) {
-        if (g_pImmediateContext) {
-            g_bDetectSmoke = false;
-        }
-        delete this;
-    }
-private:
-};
-
-
 class CAfxRenderCallbackBeforeMaybeDrawSmoke : public IRenderThreadCallback
 {
 public:
@@ -1493,12 +1443,8 @@ public:
 
     virtual void OnCallback(void) {
         if (g_pImmediateContext) {
-            if (g_bDetectedSmoke) {
-                g_bDetectedSmoke = false;
-                g_bDetectSmoke2 = true;
-                g_bDetectedSmoke2 = false;
-                g_pSmokeDepthStencilView = nullptr;
-            }
+            g_bDetectSmoke = g_ReShadeAdvancedfx.IsConnected() && g_bEnableReShade && g_bReShadeCompositeSmoke
+                || g_bCompositeSmoke;
         }
         delete this;
     }
@@ -1514,30 +1460,7 @@ public:
 
     virtual void OnCallback(void) {
         if (g_pImmediateContext) {
-            if (g_bDetectedSmoke2 && g_pSmokeDepthStencilView && (
-                g_ReShadeAdvancedfx.IsConnected() && g_bEnableReShade && g_bReShadeCompositeSmoke
-                || g_bCompositeSmoke
-            )) {
-                ID3D11DepthStencilView* pCurrentDepthStencilView = nullptr;
-                ID3D11DepthStencilView* pNullDepthStencilView = nullptr;
-                g_pImmediateContext->OMGetRenderTargets(0, nullptr, &pCurrentDepthStencilView);
-
-                if (pCurrentDepthStencilView == g_pSmokeDepthStencilView) {
-                    g_pImmediateContext->OMGetRenderTargets(0, nullptr, &pNullDepthStencilView);
-                }
-
-                g_DepthCompositor.CaptureSmokeDepth(g_pImmediateContext, g_pSmokeDepthStencilView);
-
-                if (pCurrentDepthStencilView == g_pSmokeDepthStencilView) {
-                    g_pImmediateContext->OMGetRenderTargets(0, nullptr, &pCurrentDepthStencilView);
-                }
-
-                if (pCurrentDepthStencilView) pCurrentDepthStencilView->Release();
-
-                g_pSmokeDepthStencilView = nullptr;
-            }
-            g_bDetectSmoke2 = false;
-            g_bDetectedSmoke2 = false;
+            g_bDetectSmoke = false;
         }
         delete this;
     }
@@ -1555,8 +1478,6 @@ public:
     virtual void OnCallback(void) {
         if (g_pImmediateContext) {
             
-            g_bDetectSmoke = false;
-
             if (g_ReShadeAdvancedfx.IsConnected() && g_bEnableReShade) {
                 float zNear = 0.0f;
                 float zFar = 0.0f;
@@ -1624,6 +1545,10 @@ public:
                 }
             }            
         }
+        g_bDetectSmoke = false;
+        g_bDetectSmoke2 = false;
+        g_bDetectedSmoke = false;
+        g_pSmokeDepthStencilView = nullptr;
         delete this;
     }
 private:
@@ -1677,11 +1602,11 @@ void STDMETHODCALLTYPE New_PSSetShader(ID3D11DeviceContext* This,
     _In_reads_opt_(NumClassInstances)  ID3D11ClassInstance* const* ppClassInstances,
     UINT NumClassInstances) {
 
-    /*if (This == g_pImmediateContext) {
-        if (g_iDraw == 5 && pPixelShader && nullptr == ppClassInstances && NumClassInstances == 0) {
-            const char* pKey = "post_process.vfx_ps";
-            const size_t keyLen = 19;
-            char buffer[19];
+    if (This == g_pImmediateContext) {
+        if (g_bDetectSmoke && pPixelShader && nullptr == ppClassInstances && NumClassInstances == 0) {
+            const char* pKey = "write_smoke_depth_water_reflect";
+            const size_t keyLen = 31;
+            char buffer[31];
             UINT dataSize = keyLen;
             if (SUCCEEDED(pPixelShader->GetPrivateData(WKPDID_D3DDebugObjectName, &dataSize, &buffer))
                 && dataSize == keyLen) {
@@ -1690,13 +1615,14 @@ void STDMETHODCALLTYPE New_PSSetShader(ID3D11DeviceContext* This,
                     if (pKey[i] != buffer[i]) break;
                     i++;
                     if (i == keyLen) {
-                        g_iDraw++;
+                        g_bDetectSmoke = false;
+                        g_bDetectSmoke2 = true;
                         break;
                     }
                 }
             }
         }
-    }*/
+    }
 
     g_Old_PSSetShader(This, pPixelShader, ppClassInstances, NumClassInstances);
 }
@@ -2096,23 +2022,10 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
             if (0 == strcmp("ClearSmokeTargets (4)", pszArg1)) {
                 if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
                     auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
-                    fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeDetectSmoke());
-                }
-            }
-            else if (0 == strcmp("ClearSmokeTargets (2)", pszArg1)) {
-                if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-                    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
-                    fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackAfterDetectSmoke());
-                }
-            }
-            else if (0 == strcmp("Translucent Forward (MBOIT(2) Smoke 1/2)", pszArg1)) {
-                if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-                    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
                     fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeMaybeDrawSmoke());
                 }
             }
-            else if (0 == strcmp("WaterEffects", pszArg1)
-                || 0 == strcmp("Decals Translucent Depth", pszArg1)) {
+            else if (0 == strcmp("ClearSmokeTargets", pszArg1)) {
                 if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
                     auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
                     fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackAfterMaybeSmokeDrawn());
@@ -2122,15 +2035,6 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
         }
     }  
     else if(fmt && 0 == strcmp("#%s/SetupLightsAndViewConstants",fmt)) {
-        /*va_list args;
-        va_start(args, fmt);
-        const char * pszArg0 = va_arg(args, const char *);
-        if(pszArg0 && 0 == strcmp("Player 0",pszArg0)) {
-            if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-                auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[134];
-                fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeUi());
-            }
-        }*/
         va_list args;
         va_start(args, fmt);
         const char * pszArg0 = va_arg(args, const char *);
