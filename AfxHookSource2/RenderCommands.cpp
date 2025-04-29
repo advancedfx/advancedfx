@@ -91,6 +91,7 @@ void CRenderCommands::RenderThread_BeginFrame(ID3D11DeviceContext* pContext) {
     if (m_RenderThreadCommands) {
         m_RenderThreadCommands->Context = pContext;
         if (pContext) {
+            pContext->AddRef();
             auto& beginFrameReliable = m_RenderThreadCommands->BeginReliable;
             while (!beginFrameReliable.Empty()) {
                 beginFrameReliable.Front()(m_RenderThreadCommands);
