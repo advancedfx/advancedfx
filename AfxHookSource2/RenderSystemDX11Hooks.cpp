@@ -1111,6 +1111,9 @@ bool g_bDetectedSmoke = false;
 bool g_bDetectedSmoke2 = false;
 ID3D11DepthStencilView* g_pSmokeDepthStencilView = nullptr;
 
+extern void ErrorBox(char const * messageText);
+
+/*
 enum class ViewPass_e {
     None = 0,
     BeforeGameOverlay = 1
@@ -1120,8 +1123,6 @@ struct ViewPasses_s {
 public:
     std::queue<ViewPass_e> Queue;
 };
-
-extern void ErrorBox(char const * messageText);
 
 class CAfxShaderResourceViews {
 public:
@@ -1222,21 +1223,15 @@ std::shared_timed_mutex CAfxShaderResourceViews::m_VtableSharedMutex;
 std::map<CAfxShaderResourceViews::Release_t, CAfxShaderResourceViews::Release_t> CAfxShaderResourceViews::m_VtableHooks;
 
 typedef HRESULT (STDMETHODCALLTYPE * CreateShaderResourceView_t)(ID3D11Device* This,
-    /* [annotation] */
     _In_  ID3D11Resource* pResource,
-    /* [annotation] */
     _In_opt_  const D3D11_SHADER_RESOURCE_VIEW_DESC* pDesc,
-    /* [annotation] */
     _COM_Outptr_opt_  ID3D11ShaderResourceView** ppSRView);
 
 CreateShaderResourceView_t g_Old_CreateShaderResourceView = nullptr;
 
 HRESULT STDMETHODCALLTYPE New_CreateShaderResourceView(ID3D11Device* This,
-    /* [annotation] */
     _In_  ID3D11Resource* pResource,
-    /* [annotation] */
     _In_opt_  const D3D11_SHADER_RESOURCE_VIEW_DESC* pDesc,
-    /* [annotation] */
     _COM_Outptr_opt_  ID3D11ShaderResourceView** ppSRView) {
     HRESULT result = g_Old_CreateShaderResourceView(This, pResource, pDesc, ppSRView);
 
@@ -1245,7 +1240,7 @@ HRESULT STDMETHODCALLTYPE New_CreateShaderResourceView(ID3D11Device* This,
     }
 
     return result;
-}
+}*/
 
 typedef HRESULT (STDMETHODCALLTYPE * CreateRenderTargetView_t)( ID3D11Device * This,
             /* [annotation] */ 
@@ -1276,7 +1271,7 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
             if(pResource == pTexture/* && (g_pDevice == nullptr || This != g_pDevice)*/) {
                 if(g_pDevice) {
                     g_DepthCompositor.OnTargetEnd();
-                    CAfxShaderResourceViews::Clear();
+                    //CAfxShaderResourceViews::Clear();
                     g_CampathDrawer.EndDevice();
                     g_pDevice->Release();
                     g_pDevice = nullptr;
@@ -1634,26 +1629,20 @@ public:
 private:
 };
 
-
+/*
 typedef void (STDMETHODCALLTYPE * PSSetShaderResources_t)(ID3D11DeviceContext* This,
-    /* [annotation] */
     _In_range_(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT - 1)  UINT StartSlot,
-    /* [annotation] */
     _In_range_(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT - StartSlot)  UINT NumViews,
-    /* [annotation] */
     _In_reads_opt_(NumViews)  ID3D11ShaderResourceView* const* ppShaderResourceViews);
 
 PSSetShaderResources_t g_Old_PSSetShaderResources = nullptr;
 
 void STDMETHODCALLTYPE New_PSSetShaderResources(ID3D11DeviceContext* This,
-    /* [annotation] */
     _In_range_(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT - 1)  UINT StartSlot,
-    /* [annotation] */
     _In_range_(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT - StartSlot)  UINT NumViews,
-    /* [annotation] */
     _In_reads_opt_(NumViews)  ID3D11ShaderResourceView* const* ppShaderResourceViews) {
 
-    /*if (This == g_pImmediateContext && g_iDraw == 6 && NumViews >= 1 && ppShaderResourceViews && ppShaderResourceViews[0]) {
+    if (This == g_pImmediateContext && g_iDraw == 6 && NumViews >= 1 && ppShaderResourceViews && ppShaderResourceViews[0]) {
         g_iDraw = 6;
         auto pResource = CAfxShaderResourceViews::GetResource(ppShaderResourceViews[0]);
         if (pResource) {
@@ -1666,10 +1655,10 @@ void STDMETHODCALLTYPE New_PSSetShaderResources(ID3D11DeviceContext* This,
                 if (pDepthStencilResource) pDepthStencilResource->Release();
             }
         }
-    }*/
+    }
 
     return g_Old_PSSetShaderResources(This, StartSlot, NumViews, ppShaderResourceViews);
-}
+}*/
 
 typedef void (STDMETHODCALLTYPE *PSSetShader_t)(ID3D11DeviceContext* This,
     /* [annotation] */
@@ -1721,7 +1710,7 @@ void Hook_Context(ID3D11DeviceContext * pDeviceContext) {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     if(last_vtable) {
-        DetourDetach(&(PVOID&)g_Old_PSSetShaderResources, New_PSSetShaderResources);
+        //DetourDetach(&(PVOID&)g_Old_PSSetShaderResources, New_PSSetShaderResources);
         DetourDetach(&(PVOID&)g_Old_PSSetShader, New_PSSetShader);
         DetourDetach(&(PVOID&)g_Old_OMSetRenderTargets, New_OMSetRenderTargets);
         DetourDetach(&(PVOID&)g_Old_ClearDepthStencilView, New_ClearDepthStencilView);
@@ -1732,12 +1721,12 @@ void Hook_Context(ID3D11DeviceContext * pDeviceContext) {
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
     }
-    g_Old_PSSetShaderResources = (PSSetShaderResources_t)vtable[8];
+    //g_Old_PSSetShaderResources = (PSSetShaderResources_t)vtable[8];
     g_Old_PSSetShader = (PSSetShader_t)vtable[9];
     g_Old_OMSetRenderTargets = (OMSetRenderTargets_t)vtable[33];
     g_Old_ClearDepthStencilView = (ClearDepthStencilView_t)vtable[53];
     g_Old_ResolveSubresource = (ResolveSubresource_t)vtable[57];
-    DetourAttach(&(PVOID&)g_Old_PSSetShaderResources, New_PSSetShaderResources);
+    //DetourAttach(&(PVOID&)g_Old_PSSetShaderResources, New_PSSetShaderResources);
     DetourAttach(&(PVOID&)g_Old_PSSetShader, New_PSSetShader);
     DetourAttach(&(PVOID&)g_Old_OMSetRenderTargets, New_OMSetRenderTargets);
     DetourAttach(&(PVOID&)g_Old_ClearDepthStencilView, New_ClearDepthStencilView);
@@ -1778,7 +1767,7 @@ HRESULT WINAPI New_D3D11CreateDevice(
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
         if(last_vtable) {
-            DetourDetach(&(PVOID&)g_Old_CreateShaderResourceView, New_CreateShaderResourceView);
+            //DetourDetach(&(PVOID&)g_Old_CreateShaderResourceView, New_CreateShaderResourceView);
             DetourDetach(&(PVOID&)g_Old_CreateRenderTargetView, New_CreateRenderTargetView);
             if(NO_ERROR != DetourTransactionCommit()) {
                 ErrorBox("Failed detaching in D3D11CreateDevice.");
@@ -1786,9 +1775,9 @@ HRESULT WINAPI New_D3D11CreateDevice(
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
         }
-        g_Old_CreateShaderResourceView = (CreateShaderResourceView_t)vtable[7];
+        //g_Old_CreateShaderResourceView = (CreateShaderResourceView_t)vtable[7];
         g_Old_CreateRenderTargetView = (CreateRenderTargetView_t)vtable[9];
-        DetourAttach(&(PVOID&)g_Old_CreateShaderResourceView, New_CreateShaderResourceView);
+        //DetourAttach(&(PVOID&)g_Old_CreateShaderResourceView, New_CreateShaderResourceView);
         DetourAttach(&(PVOID&)g_Old_CreateRenderTargetView, New_CreateRenderTargetView);
         if(NO_ERROR != DetourTransactionCommit()) {
             ErrorBox("Failed attaching in D3D11CreateDevice.");
@@ -1938,6 +1927,7 @@ CAfxCapture * g_ActiveCapture = nullptr;
 bool __fastcall New_CRenderDeviceBase_Present(
     void * This, void * Rdx, void * R8d, void * R9d, void * Stack0, void * Stack1, void * Stack2, void * Stack3, void * Stack4);
 
+/*
 std::string g_ViewName("Player 0");
 std::string g_ViewPass("GameOverlay");
 
@@ -1974,7 +1964,8 @@ void __fastcall New_Unk_SceneSystem_RenderLayer(void * pThisCSceneSystem,void * 
 
     g_Old_Unk_SceneSystem_RenderLayer(pThisCSceneSystem, param_2, pCSceneLayer);
 }
-/*typedef void(__fastcall* Unk_SceneSystem_SubmitLayers_t)(void* pThisCSceneSystem, void* param_2);
+
+typedef void(__fastcall* Unk_SceneSystem_SubmitLayers_t)(void* pThisCSceneSystem, void* param_2);
 Unk_SceneSystem_SubmitLayers_t g_Old_Unk_SceneSystem_SubmitLayers = nullptr;
 void __fastcall New_Unk_SceneSystem_SubmitLayers(void * pThisCSceneSystem,void * param_2) {
     int iBeforeGameOverlayPassCount = -1;
@@ -2268,7 +2259,7 @@ void Hook_SceneSystem(void * hModule) {
 		Afx::BinUtils::MemRange textRange = sections.GetMemRange();
 
         // See FUN_1800f1b30 doc/notes_cs2/sc_dump_lists.txt.
-        {
+        /*{
             Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8b c4 4c 89 40 18 48 89 50 10 48 89 48 08 55 53 57 48 8d a8 08 fe ff ff 48 81 ec e0 02 00 00");
             if (!result.IsEmpty()) {
                 g_Old_Unk_SceneSystem_RenderLayer = (Unk_SceneSystem_RenderLayer_t)result.Start;	
@@ -2280,7 +2271,7 @@ void Hook_SceneSystem(void * hModule) {
             }
             else
                 ErrorBox(MkErrStr(__FILE__, __LINE__));
-        }
+        }*/
 
         // See FUN_1800f8780 doc/notes_cs2/sc_dump_lists.txt.
         /* {
