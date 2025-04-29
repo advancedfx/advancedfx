@@ -7,7 +7,7 @@
 <release>
 <name>AfxHookSource2</name>
 <version>0.32.1</version>
-<time>2025-04-297T13:00Z</time>
+<time>2025-04-29T13:15</time>
 <changes>
 <change type="updated">Updated depth stream defaults.</change>
 <change type="fixed">Fixed smoke depth composition bugs.</change>
