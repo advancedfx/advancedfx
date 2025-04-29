@@ -14,7 +14,7 @@
 	  <MediaTemplate EmbedCab="yes" />
 
     <Property Id="HLAE_WIXV3" Secure="yes">
-        <ProductSearch IncludeMaximum="no" Maximum="2.182.0.0" UpgradeCode="{33FEF63B-4A17-4D59-ABC9-B7A06BD07F07}" />
+        <ProductSearch IncludeMaximum="no" Maximum="2.181.0.0" UpgradeCode="{33FEF63B-4A17-4D59-ABC9-B7A06BD07F07}" />
     </Property>
     <Launch Condition="NOT HLAE_WIXV3" Message="Older HLAE must be uinstalled first. " />
        
