@@ -4,7 +4,7 @@
       - https://docs.firegiant.com/wix3/tutorial/upgrades-and-modularization/
       - https://learn.microsoft.com/en-us/windows/win32/msi/productversion
   -->
-  <Bundle Name="HLAE Installer" Version="2.182.0" Manufacturer="advancedfx.org" UpgradeCode="{35C8D990-6C4F-4639-ADF7-D259B06E070B}" AboutUrl="https://www.advancedfx.org/" IconSourceFile="..\..\hlae\app.ico" Compressed="yes">
+  <Bundle Name="HLAE Installer" Version="2.182.1" Manufacturer="advancedfx.org" UpgradeCode="{35C8D990-6C4F-4639-ADF7-D259B06E070B}" AboutUrl="https://www.advancedfx.org/" IconSourceFile="..\..\hlae\app.ico" Compressed="yes">
 
     <BootstrapperApplication>
       <bal:WixStandardBootstrapperApplication LicenseUrl="" SuppressOptionsUI="yes" LocalizationFile="lang\HyperlinkTheme_en-US.wxl" ThemeFile="HyperlinkSidebarTheme.xml" ShowVersion="yes" Theme="hyperlinkSidebarLicense" />
@@ -30,15 +30,15 @@
     <Variable Name="HlaeRemoveAppData" Type="numeric" Value="0" Persisted="no" bal:Overridable="yes" />
     <Variable Name="HlaeFfmpeg" Type="numeric" Value="0" Persisted="no" bal:Overridable="yes" />
     
-    <Variable Name="HlaeCore" Type="string" Value="" Persisted="no" />
+    <Variable Name="HlaeCoreOld" Type="string" Value="" Persisted="no" />
     <Variable Name="HlaeFfmpegOld" Type="numeric" Value="0" Persisted="no" />
     <Variable Name="HlaeFfmpegNew" Type="string" Value="" Persisted="no" />
 
-    <util:ProductSearch Id="HlaeCore" Result="version" UpgradeCode="{33FEF63B-4A17-4D59-ABC9-B7A06BD07F07}" Variable="HlaeCore" />
-    <SetVariable After="HlaeCore" Id="SetHlaeRemoveWixV3" Condition="HlaeCore &gt; v0.0.0.0 AND HlaeCore &lt; v2.181.0.0" Type="numeric" Value="1" Variable="HlaeRemoveWixV3" />
-    <util:ComponentSearch After="HlaeCore" Id="HlaeFfmpegOld" Result="state" Guid="{2D1C78F6-D5B5-499E-B596-47429893F8A8}" Variable="HlaeFfmpegOld" />
+    <util:ProductSearch Id="HlaeCoreOld" Result="version" UpgradeCode="{33FEF63B-4A17-4D59-ABC9-B7A06BD07F07}" Variable="HlaeCoreOld" />
+    <SetVariable After="HlaeCoreOld" Id="SetHlaeRemoveWixV3" Condition="(HlaeCoreOld &gt; v0.0.0.0 AND HlaeCoreOld &lt; v2.181.0.0" Type="numeric" Value="1" Variable="HlaeRemoveWixV3" />
+    <util:ComponentSearch After="HlaeCoreOld" Id="HlaeFfmpegOld" Result="state" Guid="{2D1C78F6-D5B5-499E-B596-47429893F8A8}" Variable="HlaeFfmpegOld" />
     <util:ProductSearch After="HlaeFfmpegOld" Id="HlaeFfmpegNew" Result="version" UpgradeCode="{9090AE9A-4E9D-46C5-B595-9F2FBCF96945}" Variable="HlaeFfmpegNew" />
-    <SetVariable After="HlaeFfmpegNew" Id="SetHlaeFfmpeg" Condition="HlaeFfmpegOld = 3 OR HlaeFfmpegNew &gt; v0.0.0.0 OR HlaeCore = v0.0.0.0" Type="numeric" Value="1" Variable="HlaeFfmpeg" />
+    <SetVariable After="HlaeFfmpegNew" Id="SetHlaeFfmpeg" Condition="HlaeFfmpegOld = 3 OR HlaeFfmpegNew &gt; v0.0.0.0 OR HlaeCoreOld = v0.0.0.0" Type="numeric" Value="1" Variable="HlaeFfmpeg" />
 
     <Chain>
       <PackageGroupRef Id="NetFx472WebAsPrereq" />

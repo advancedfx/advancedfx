@@ -6,6 +6,20 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.32.1</version>
+<time>2025-04-297T13:00Z</time>
+<changes>
+<change type="updated">Updated depth stream defaults.</change>
+<change type="fixed">Fixed smoke depth composition bugs.</change>
+<change type="fixed">Fixed mirv_streams captureType depth24 / depthF not working (OpenEXR).</change>
+<change type="fixed">Fixed crashes with ReShade (6.4.1).</change>
+</changes>
+<comments>When using ReShade, then ReShade 6.4.1 and ReShade_advancedfx.addon 1.4.1 are tested with and recommended for this version.</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.32.0</version>
 <time>2025-04-27T15:10Z</time>
 <changes>
@@ -15,7 +29,6 @@
 </changes>
 <comments>Thanks to Rikki 'eirisocherry' for input and helping with testing in the early stages.</comments>
 </release>
-
 
 
 <release>
