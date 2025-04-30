@@ -3040,7 +3040,7 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
                     if(0 == _stricmp("rgb", arg3)) {
                         stream.CaptureType = CStreamSettings::CaptureType_e::Rgb;
                         return;
-                    } else if(0 == _stricmp("beforeUI", arg3)) {
+                    } else if(0 == _stricmp("rgba", arg3)) {
                         stream.CaptureType = CStreamSettings::CaptureType_e::Rgba;
                         return;
                     } else if(0 == _stricmp("depthRgb", arg3)) {
@@ -3094,7 +3094,7 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
                 advancedfx::Message(
                     "%s %s captureType rgb|rgba|depthRgb|depth24|depth24ZIP|depthF|depthFZIP\n"
                     "\trgb - 3 channels (RGB).\n"
-                    "\tgba - 4 channels (RGBA).\n"
+                    "\trgba - 4 channels (RGBA).\n"
                     "\tdepthRgb - Capture depth with 3 channels (RGB).\n"
                     "\tdepth24 - Capture depth with 3 channels (RGB) and tansform to OpenEXR depth (not recommended).\n"
                     "\tdepth24ZIP - Capture depth with 3 channels (RGB) and tansform to compressed OpenEXR depth (not recommended).\n"
@@ -3258,11 +3258,13 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
                         float a = atof(args->ArgV(6));
                         for(auto it2=m_Streams.begin();it2!=m_Streams.end();it2++) {
                             bChanged = bChanged || it != it2 && (
-                                it2->second.ClearBeforeUiColor.R != r
+                                it2->second.ClearBeforeUi != true
+                                || it2->second.ClearBeforeUiColor.R != r
                                 || it2->second.ClearBeforeUiColor.G != g
                                 || it2->second.ClearBeforeUiColor.B != b
                                 || it2->second.ClearBeforeUiColor.A != a
                             );
+                            it2->second.ClearBeforeUi = true;
                             it2->second.ClearBeforeUiColor.R = r;
                             it2->second.ClearBeforeUiColor.G = g;
                             it2->second.ClearBeforeUiColor.B = b;
