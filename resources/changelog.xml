@@ -6,6 +6,16 @@
 
 <release>
 <name>HLAE</name>
+<version>2.182.4</version>
+<time>2025-04-30T12:15Z</time>
+<changes>
+<change type="fixed">Fixed HLAE Setup not uinstalling old HLAE properly and getting stuck. Otherwise this is the same as 2.182.3.</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.182.3</version>
 <time>2025-04-29T13:15Z</time>
 <changes>

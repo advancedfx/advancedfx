@@ -4,7 +4,7 @@
       - https://docs.firegiant.com/wix3/tutorial/upgrades-and-modularization/
       - https://learn.microsoft.com/en-us/windows/win32/msi/productversion
   -->
-  <Bundle Name="HLAE Installer" Version="2.182.3" Manufacturer="advancedfx.org" UpgradeCode="{35C8D990-6C4F-4639-ADF7-D259B06E070B}" AboutUrl="https://www.advancedfx.org/" IconSourceFile="..\..\hlae\app.ico" Compressed="yes">
+  <Bundle Name="HLAE Installer" Version="2.182.4" Manufacturer="advancedfx.org" UpgradeCode="{35C8D990-6C4F-4639-ADF7-D259B06E070B}" AboutUrl="https://www.advancedfx.org/" IconSourceFile="..\..\hlae\app.ico" Compressed="yes">
 
     <BootstrapperApplication>
       <bal:WixStandardBootstrapperApplication LicenseUrl="" SuppressOptionsUI="yes" LocalizationFile="lang\HyperlinkTheme_en-US.wxl" ThemeFile="HyperlinkSidebarTheme.xml" ShowVersion="yes" Theme="hyperlinkSidebarLicense" />
@@ -35,7 +35,7 @@
     <Variable Name="HlaeFfmpegNew" Type="string" Value="" Persisted="no" />
 
     <util:ProductSearch Id="HlaeCoreOld" Result="version" UpgradeCode="{33FEF63B-4A17-4D59-ABC9-B7A06BD07F07}" Variable="HlaeCoreOld" />
-    <SetVariable After="HlaeCoreOld" Id="SetHlaeRemoveWixV3" Condition="(HlaeCoreOld &gt; v0.0.0.0 AND HlaeCoreOld &lt; v2.181.0.0" Type="numeric" Value="1" Variable="HlaeRemoveWixV3" />
+    <SetVariable After="HlaeCoreOld" Id="SetHlaeRemoveWixV3" Condition="(HlaeCoreOld &gt; v0.0.0.0 AND HlaeCoreOld &lt; v2.181.0.0)" Type="numeric" Value="1" Variable="HlaeRemoveWixV3" />
     <util:ComponentSearch After="HlaeCoreOld" Id="HlaeFfmpegOld" Result="state" Guid="{2D1C78F6-D5B5-499E-B596-47429893F8A8}" Variable="HlaeFfmpegOld" />
     <util:ProductSearch After="HlaeFfmpegOld" Id="HlaeFfmpegNew" Result="version" UpgradeCode="{9090AE9A-4E9D-46C5-B595-9F2FBCF96945}" Variable="HlaeFfmpegNew" />
     <SetVariable After="HlaeFfmpegNew" Id="SetHlaeFfmpeg" Condition="HlaeFfmpegOld = 3 OR HlaeFfmpegNew &gt; v0.0.0.0 OR HlaeCoreOld = v0.0.0.0" Type="numeric" Value="1" Variable="HlaeFfmpeg" />
