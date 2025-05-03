@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.32.2</version>
+<time>2025-05-03T16:15</time>
+<changes>
+<change type="fixed">Fix captureType rgba and clearBeforeUi options in mirv_streams.</change>
+<change type="fixed">Fix globally shared mirv_streams settings not applying correctly on newly added streams.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.32.1</version>
 <time>2025-04-29T13:15</time>
 <changes>
