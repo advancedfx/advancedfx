@@ -2932,6 +2932,19 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
             return;
         }
 
+        auto it = m_Streams.begin();
+        if(it != m_Streams.end()) {
+            // Copy globally shared settings from first stream:
+
+            settings.ClearBeforeUi = it->second.ClearBeforeUi;
+            settings.ClearBeforeUiColor.R = it->second.ClearBeforeUiColor.R;
+            settings.ClearBeforeUiColor.G = it->second.ClearBeforeUiColor.G;
+            settings.ClearBeforeUiColor.B = it->second.ClearBeforeUiColor.B;
+            settings.ClearBeforeUiColor.A = it->second.ClearBeforeUiColor.A;
+
+            settings.AutoForceFullResSmoke = it->second.AutoForceFullResSmoke;
+        }
+
         m_Streams.emplace(arg2, settings);
         return;
 	}
