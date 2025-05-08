@@ -6,8 +6,18 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.32.3</version>
+<time>2025-05-08T11:45Z</time>
+<changes>
+<change type="fixed">Adjust to latest CS2 update by @ChetdeJong</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.32.2</version>
-<time>2025-05-03T16:15</time>
+<time>2025-05-03T16:15Z</time>
 <changes>
 <change type="fixed">Fix captureType rgba and clearBeforeUi options in mirv_streams.</change>
 <change type="fixed">Fix globally shared mirv_streams settings not applying correctly on newly added streams.</change>
@@ -18,7 +28,7 @@
 <release>
 <name>AfxHookSource2</name>
 <version>0.32.1</version>
-<time>2025-04-29T13:15</time>
+<time>2025-04-29T13:15Z</time>
 <changes>
 <change type="updated">Updated depth stream defaults.</change>
 <change type="fixed">Fixed smoke depth composition bugs.</change>

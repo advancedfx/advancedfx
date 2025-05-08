@@ -6,10 +6,20 @@
 
 <release>
 <name>HLAE</name>
-<version>2.182.5</version>
-<time>2025-05-03T16:15</time>
+<version>2.182.6</version>
+<time>2025-05-08T11:45Z</time>
 <changes>
-<change type="updated">Included AfxHookSource2 0.32.2 (2025-05-03T16:15).</change>
+<change type="updated">Included AfxHookSource2 0.32.3 (2025-05-08T11:45Z).</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
+<version>2.182.5</version>
+<time>2025-05-03T16:15Z</time>
+<changes>
+<change type="updated">Included AfxHookSource2 0.32.2 (2025-05-03T16:15Z).</change>
 </changes>
 </release>
 
@@ -29,7 +39,7 @@
 <version>2.182.3</version>
 <time>2025-04-29T13:15Z</time>
 <changes>
-<change type="updated">Included AfxHookSource2 0.32.1 (2025-04-29T13:15).</change>
+<change type="updated">Included AfxHookSource2 0.32.1 (2025-04-29T13:15Z).</change>
 <change type="fixed">Fixed HLAE Setup upgrade uninstalls HLAE due to wrong HlaeCore version number.</change>
 </changes>
 </release>
