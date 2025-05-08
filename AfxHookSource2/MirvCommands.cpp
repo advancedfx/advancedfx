@@ -79,7 +79,7 @@ bool getAddressesFromClient(HMODULE clientDll) {
 
 	// called in func with 'cs_win_panel_match' in the end in if/else statement
 	// in func itself it starts with 'if (*(char *)(param_1 + 8) == '\0')'
-	size_t g_Original_EOM_addr = getAddress(clientDll, "40 56 41 54 48 83 EC ?? 80 79");
+	size_t g_Original_EOM_addr = getAddress(clientDll, "41 55 41 56 48 83 EC ?? 80 79 ?? ?? 44 0F B6 EA");
 	if(g_Original_EOM_addr == 0) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));
 		return false;
