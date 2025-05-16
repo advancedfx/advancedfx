@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "AfxHookSource2Rs.h"
+#include "MirvTime.h"
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
 #include "../deps/release/prop/AfxHookSource/SourceInterfaces.h"
@@ -171,6 +172,18 @@ extern "C" void afx_hook_source2_rs_on_client_frame_stage_notify(AfxHookSource2R
 extern "C" void afx_hook_source2_rs_on_add_entity(AfxHookSource2Rs * this_ptr, void * p_ref, int handle);
 
 extern "C" void afx_hook_source2_rs_on_remove_entity(AfxHookSource2Rs * this_ptr, void * p_ref, int handle);
+
+extern "C" FFIBool afx_hook_source2_get_demo_tick(int& outTick) {
+	return BOOL_TO_FFIBOOL(g_MirvTime.GetCurrentDemoTick(outTick));
+};
+
+extern "C" FFIBool afx_hook_source2_get_demo_time(double& outTime) {
+	return BOOL_TO_FFIBOOL(g_MirvTime.GetCurrentDemoTime(outTime));
+};
+
+extern "C" void afx_hook_source2_get_cur_time(double& outCurTime) {
+	outCurTime = g_MirvTime.curtime_get();
+};
 
 void AfxHookSource2Rs_Engine_Init() {
     if(nullptr == g_AfxHookSource2Rs_Engine) {
