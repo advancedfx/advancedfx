@@ -16,6 +16,7 @@
 #include "MirvCommands.h"
 #include "MirvColors.h"
 #include "MirvFix.h"
+#include "MirvTime.h"
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
 #include "../deps/release/prop/AfxHookSource/SourceInterfaces.h"
@@ -128,54 +129,6 @@ SOURCESDK::CS2::ISource2EngineToClient * g_pEngineToClient = nullptr;
 
 typedef void * Cs2Gloabls_t;
 Cs2Gloabls_t g_pGlobals = nullptr;
-
-struct {
-	bool IsPaused = false;
-	float FirstPausedCurtime = 0.0f;
-	float FirstPausedInterpolationAmount = 0.0f;
-} g_DemoPausedData;
-
-float curtime_get(void)
-{
-	if(g_DemoPausedData.IsPaused) {
-		return g_DemoPausedData.FirstPausedCurtime;
-	}
-
-	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals + 13*4) : 0;
-}
-
-int framecount_get(void)
-{
-	return g_pGlobals ? *(int *)((unsigned char *)g_pGlobals + 1*4) : 0;
-}
-
-float frametime_get(void)
-{
-	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +2*4) : 0;
-}
-
-float absoluteframetime_get(void)
-{
-	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +3*4) : 0;
-}
-
-float interval_per_tick_get(void)
-{
-	const int default_value = 64;
-	if(nullptr == g_pGlobals) return default_value;
-	int value = *(int *)((unsigned char *)g_pGlobals +4*4);
-	if(value <= 1) value = default_value; // In menu it's 1.
-	return 1.0f / value;
-}
-
-float interpolation_amount_get(void)
-{
-	if(g_DemoPausedData.IsPaused) {
-		return g_DemoPausedData.FirstPausedInterpolationAmount;
-	}
-
-	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +15*4) : 0;
-}
 
 CON_COMMAND(__mirv_info,"") {
 	PrintInfo();
@@ -518,33 +471,19 @@ class CMirvCampath_Time : public IMirvCampath_Time
 public:
 	virtual double GetTime() {
 		// Can be paused time, we don't support that currently.
-
-		return curtime_get();
+		return g_MirvTime.curtime_get();
 	}
 	virtual double GetCurTime() {
-		return curtime_get();
+		return g_MirvTime.curtime_get();
 	}
 	virtual bool GetCurrentDemoTick(int& outTick) {
-		if(g_pEngineToClient) {
-			if(SOURCESDK::CS2::IDemoFile * pDemoFile = g_pEngineToClient->GetDemoFile()) {
-				outTick = pDemoFile->GetDemoTick();
-				return true;
-			}
-		}
-		return false;
+		return g_MirvTime.GetCurrentDemoTick(outTick);
 	}
 	virtual bool GetCurrentDemoTime(double& outDemoTime) {
-		int tick;
-		if(GetCurrentDemoTick(tick)) {
-			outDemoTime = (tick + interpolation_amount_get())* (double)interval_per_tick_get();
-			return true;
-		}
-
-
-		return false;
+		return g_MirvTime.GetCurrentDemoTime(outDemoTime);
 	}
 	virtual bool GetDemoTickFromDemoTime(double curTime, double time, int& outTick) {
-		outTick = (int)round(time / interval_per_tick_get());
+		outTick = (int)round(time / g_MirvTime.interval_per_tick_get());
 		return true;
 	}
 	virtual bool GetDemoTimeFromClientTime(double curTime, double time, double& outDemoTime) {
@@ -617,7 +556,7 @@ CON_COMMAND(mirv_campath, "camera paths")
 }
 
 double MirvCamIO_GetTimeFn(void) {
-	return curtime_get();
+	return g_MirvTime.curtime_get();
 }
 
 CON_COMMAND(mirv_camio, "New camera motion data import / export.") {
@@ -641,8 +580,8 @@ bool CS2_Client_CSetupView_Trampoline_IsPlayingDemo(void *ThisCViewSetup) {
 
 	bool originOrAnglesOverriden = false;
 
-	float curTime = curtime_get(); //TODO: + m_PausedTime
-	float absTime = absoluteframetime_get();
+	float curTime = g_MirvTime.curtime_get(); //TODO: + m_PausedTime
+	float absTime = g_MirvTime.absoluteframetime_get();
 
 	int *pWidth = (int*)((unsigned char *)ThisCViewSetup + 0x474);
 	int *pHeight = (int*)((unsigned char *)ThisCViewSetup + 0x47c);
@@ -1435,7 +1374,7 @@ public:
 		float tick = 0;
 		if(g_pEngineToClient) {
 			if(SOURCESDK::CS2::IDemoFile * pDemoFile = g_pEngineToClient->GetDemoFile()) {
-				tick = (float)pDemoFile->GetDemoTick() + interpolation_amount_get();
+				tick = (float)pDemoFile->GetDemoTick() + g_MirvTime.interpolation_amount_get();
 			}
 		}
 		return tick;
@@ -1445,7 +1384,7 @@ public:
 class CGetTimeForCommandSystem : public IGetTimeForCommandSystem {
 public:
 	virtual float GetTime() {
-		return curtime_get();
+		return g_MirvTime.curtime_get();
 	}
 } g_GetTimeForCommandSystem;
 
@@ -1491,8 +1430,8 @@ void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameSta
 	}
 	if(bIsDemoPaused != g_DemoPausedData.IsPaused) {
 		if(bIsDemoPaused) {
-			g_DemoPausedData.FirstPausedCurtime = curtime_get();
-			g_DemoPausedData.FirstPausedInterpolationAmount = interpolation_amount_get();
+			g_DemoPausedData.FirstPausedCurtime = g_MirvTime.curtime_get();
+			g_DemoPausedData.FirstPausedInterpolationAmount = g_MirvTime.interpolation_amount_get();
 			g_DemoPausedData.IsPaused = true;
 		} else {
 			g_DemoPausedData.IsPaused = false;

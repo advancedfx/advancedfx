@@ -1,4 +1,5 @@
 #include "MirvFix.h"
+#include "MirvTime.h"
 #include "RenderSystemDX11Hooks.h"
 
 #undef min
@@ -19,9 +20,6 @@ CAfxImportsHook g_Import_SceneSystem(CAfxImportsHooks({ &g_Import_SceneSystem_ti
 CAfxImportFuncHook<Plat_FloatTime_t> g_Import_panorama_tier0_Plat_FloatTime("Plat_FloatTime", &new_cs2_tier0_Plat_FloatTime);
 CAfxImportDllHook g_Import_panorama_tier0("tier0.dll", CAfxImportDllHooks({ &g_Import_panorama_tier0_Plat_FloatTime }));
 CAfxImportsHook g_Import_panorama(CAfxImportsHooks({ &g_Import_panorama_tier0 }));
-
-extern int framecount_get(void);
-extern float frametime_get(void);
 
 std::mutex g_Plat_FloatTime_mutex;
 
@@ -44,7 +42,7 @@ double new_cs2_tier0_Plat_FloatTime(void) {
 		&& ( auto_fps || MirvFix::Time::Mode::USER == g_MirvFix.time.mode ) 
 	) 
 	{
-		auto frame_count = framecount_get();
+		auto frame_count = g_MirvTime.framecount_get();
 		if (
 			(auto_fps || 0 < g_MirvFix.time.value) // drive by FPS
 			&& 0 != frame_count // we are actually counting FPS and not in other awkward loading state
@@ -53,7 +51,7 @@ double new_cs2_tier0_Plat_FloatTime(void) {
 			/// but also not progress too much or too few time.
 			if(frame_count != lastFrameCount) {
 				lastTimeResult += frameTime; // catch up
-				frameTime = auto_fps ? frametime_get() : 1.0f / g_MirvFix.time.value;
+				frameTime = auto_fps ? g_MirvTime.frametime_get() : 1.0f / g_MirvFix.time.value;
 				lastTime = new_time;
 				lastFrameCount = frame_count;
 			}

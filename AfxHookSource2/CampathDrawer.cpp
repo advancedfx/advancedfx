@@ -1,6 +1,7 @@
 #include "stdafx.h"
 
 #include "CampathDrawer.h"
+#include "MirvTime.h"
 
 #include "hlaeFolder.h"
 
@@ -594,13 +595,12 @@ void CCampathDrawer::End() {
 
 #define ValToUCCondInv(value,invert) ((invert) ? 0xFF -(unsigned char)(value) : (unsigned char)(value) )
 
-extern float curtime_get(void);
 extern int g_iWidth;
 extern int g_iHeight;
 extern SOURCESDK::VMatrix g_WorldToScreenMatrix;
 
 CCampathDrawer::CDynamicProperties::CDynamicProperties(CCampathDrawer * drawer) {
-	m_CurTime = curtime_get() - g_CamPath.GetOffset();
+	m_CurTime = g_MirvTime.curtime_get() - g_CamPath.GetOffset();
 	m_InCampath = 1 <= g_CamPath.GetSize()
 		&&	g_CamPath.GetLowerBound() <= m_CurTime
 		&& m_CurTime <= g_CamPath.GetUpperBound();

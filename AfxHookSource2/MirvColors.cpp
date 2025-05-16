@@ -1,6 +1,7 @@
 #include "MirvColors.h"
 #include "ClientEntitySystem.h"
 #include "SchemaSystem.h"
+#include "MirvTime.h"
 
 bool g_bHookedMirvColors = false;
 extern u_char* g_pHudReticle_WashColor_T;
@@ -243,8 +244,6 @@ g_Original_updateParticle_t g_Original_updateParticle = nullptr;
 typedef void (__fastcall *g_Original_drawStuff_t)(CEntityInstance* param_1, char param_2);
 g_Original_drawStuff_t g_Original_drawStuff = nullptr;
 
-extern float curtime_get(void);
-
 void __fastcall new_drawStuff(CEntityInstance* param_1, char param_2) {
 	auto name = param_1->GetClassName();
 	auto team = param_1->GetTeam();
@@ -291,7 +290,7 @@ void __fastcall new_drawStuff(CEntityInstance* param_1, char param_2) {
 			useColor &&
 			*(int *)(param_1 + g_clientDllOffsets.C_BaseCSGrenadeProjectile.m_nSnapshotTrajectoryEffectIndex) == -1
 		) {
-			*(float*)(param_1 + g_clientDllOffsets.C_BaseCSGrenadeProjectile.m_flTrajectoryTrailEffectCreationTime) = curtime_get();
+			*(float*)(param_1 + g_clientDllOffsets.C_BaseCSGrenadeProjectile.m_flTrajectoryTrailEffectCreationTime) = g_MirvTime.curtime_get();
 
 			int idx = 0;
 			g_Original_createParticle(CGameParticleManager, &idx, "particles/entity/spectator_utility_trail.vpcf", 8, 0, 0, 0, 0);

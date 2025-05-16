@@ -240,6 +240,9 @@ target_sources(${PROJECT_NAME} PRIVATE
 	MirvFix.cpp
 	MirvFix.h
 
+	MirvTime.cpp
+	MirvTime.h
+
     RenderCommands.cpp
     RenderCommands.h
 
