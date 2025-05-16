@@ -528,10 +528,10 @@ public:
 
             if(Vertex* pVertexData = (Vertex*)malloc(sizeof(Vertex) * 4))
             {
-                pVertexData[0].x = -1; pVertexData[0].y = 1;
-                pVertexData[1].x = 1; pVertexData[1].y = 1;
-                pVertexData[2].x = -1; pVertexData[2].y = -1;
-                pVertexData[3].x = 1; pVertexData[3].y = -1;
+                pVertexData[0].xy.x = -1; pVertexData[0].xy.y = 1;
+                pVertexData[1].xy.x = 1; pVertexData[1].xy.y = 1;
+                pVertexData[2].xy.x = -1; pVertexData[2].xy.y= -1;
+                pVertexData[3].xy.x = 1; pVertexData[3].xy.y = -1;
 
                 D3D11_SUBRESOURCE_DATA subResourceData{
                     pVertexData,
@@ -562,6 +562,12 @@ public:
                 void* so = LoadFromAcsShaderFileInMemory(L"afx_depth_vs_5_0.acs", ShaderCombo_afx_depth_vs_5_0::GetCombo(), size);
                 if (so) {
                     m_pDevice->CreateVertexShader(so, size, NULL, &m_VertexShader);
+
+                    D3D11_INPUT_ELEMENT_DESC inputDesc[1] = {
+                        {"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+                    };
+
+                    m_pDevice->CreateInputLayout(inputDesc,1,so,size,&m_InputLayout);
                 }
                 if (so) free(so);
             }
@@ -577,6 +583,11 @@ public:
         if (m_VertexShader) {
             m_VertexShader->Release();
             m_VertexShader = nullptr;
+        }
+        
+        if(m_InputLayout) {
+            m_InputLayout->Release();
+            m_InputLayout = nullptr;
         }
 
         while (!m_DepthShaderCombos.empty()) {
@@ -839,7 +850,6 @@ public:
                         m_DeviceContext->OMSetRenderTargets(1, &m_pDepthTextureRtv[depthTextureType], nullptr);
                         m_DeviceContext->OMSetBlendState(m_BlendState, NULL, 0xffffffff);                        
 
-                        UINT numViewPorts = 1;
                         m_DeviceContext->RSSetViewports(1, &m_NormalViewPort);
 
                         SOURCESDK::VMatrix projectionMatrix;
@@ -957,6 +967,7 @@ public:
 
                             m_DepthShaderCombos[shaderCombo] = pPixelShader;
                         }
+
                         if (pPixelShader) {
                             m_DeviceContext->PSSetShaderResources(0, 1, &m_pNormalDepthTextureSrv);
                             if(compositeSmoke) m_DeviceContext->PSSetShaderResources(1, 1, &m_pSmokeDepthTextureSrv);
@@ -964,14 +975,15 @@ public:
                             m_DeviceContext->VSSetShader(m_VertexShader, nullptr, 0);
                             m_DeviceContext->PSSetShader(pPixelShader, nullptr, 0);
 
+                            m_DeviceContext->IASetInputLayout(m_InputLayout);
+
                             UINT stride = sizeof(Vertex);
                             UINT offset = 0;
                             m_DeviceContext->IASetVertexBuffers(0, 1, &m_VertexBuffer, &stride, &offset);
 
-                            UINT startVertex = 0;
                             // Draw quad:
                             m_DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-                            m_DeviceContext->Draw(4, startVertex);
+                            m_DeviceContext->Draw(4, 0);
 
                             m_HasNormalDepth[depthTextureType] = true;
                         }
@@ -1048,9 +1060,11 @@ private:
 
     ID3D11VertexShader* m_VertexShader = nullptr;
 
+    ID3D11InputLayout * m_InputLayout = nullptr;
+
     struct Vertex
     {
-        FLOAT x, y, z;
+        DirectX::XMFLOAT2 xy;
     };
     ID3D11Buffer* m_VertexBuffer = nullptr;
 
@@ -1061,7 +1075,7 @@ private:
     ID3D11BlendState* m_BlendState = nullptr;
 
     bool HasCoreDeps() {
-        return m_pDevice && m_DeviceContext && m_ConstantBuffer && m_VertexBuffer && m_VertexShader && m_DepthStencilState && m_RasterizerState && m_BlendState;
+        return m_pDevice && m_DeviceContext && m_ConstantBuffer && m_InputLayout && m_VertexBuffer && m_VertexShader && m_DepthStencilState && m_RasterizerState && m_BlendState;
     }
 
     void EnsureDepthTexture(DepthTextureType_e depthTextureType) {
