@@ -109,6 +109,29 @@ declare namespace mirv {
 
 	function getMainCampath(): AdvancedfxCampath;
 
+	/**
+	 * Returns current game time.
+	 */
+	function getCurTime(): number;
+
+	/**
+	 * Returns current demo time in seconds.
+	 *
+	 * @remarks
+	 * Should not be used, when no demo is playing.
+	 * Can return undefined or negative values.
+	 */
+	function getDemoTime(): number | undefined;
+
+	/**
+	 * Returns current demo tick.
+	 *
+	 * @remarks
+	 * Should not be used, when no demo is playing.
+	 * Can return undefined or negative values.
+	 */
+	function getDemoTick(): number | undefined;
+
 	function isPlayingDemo(): boolean;
 
 	function isDemoPaused(): boolean;

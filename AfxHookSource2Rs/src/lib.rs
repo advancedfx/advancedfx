@@ -144,6 +144,12 @@ extern "C" {
 
     // can return nullptr to indicate no debug name.
     fn afx_hook_source2_get_entity_ref_sanitized_player_name(p_ref: * mut AfxEntityRef) -> *const c_char;
+
+    fn afx_hook_source2_get_demo_tick(outTick: & mut i32) -> bool;
+
+    fn afx_hook_source2_get_demo_time(outTime: & mut f64) -> bool;
+
+    fn afx_hook_source2_get_cur_time(outCurTime: & mut f64);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2329,6 +2335,36 @@ fn mirv_get_main_campath(this: &JsValue, _args: &[JsValue], context: &mut Contex
     Err(advancedfx::js::errors::error_type(context).into())
 }
 
+fn mirv_get_demo_tick(_this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    let mut out_tick: i32 = 0;
+
+    let result = unsafe { afx_hook_source2_get_demo_tick(&mut out_tick) };
+
+    match result {
+        true => Ok(JsValue::Integer(out_tick)),
+        false => Ok(JsValue::Undefined)
+    }
+}
+
+fn mirv_get_demo_time(_this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    let mut out_time: f64 = 0.0;
+
+    let result = unsafe { afx_hook_source2_get_demo_time(&mut out_time) };
+
+    match result {
+        true => Ok(JsValue::Rational(out_time)),
+        false => Ok(JsValue::Undefined)
+    }
+}
+
+fn mirv_get_cur_time(_this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    let mut out_time: f64 = 0.0;
+
+    unsafe { afx_hook_source2_get_cur_time(&mut out_time) };
+
+    Ok(JsValue::Rational(out_time))
+}
+
 impl AfxHookSource2Rs {
     pub fn new() -> Self {
 
@@ -2380,6 +2416,21 @@ impl AfxHookSource2Rs {
         let fn_mirv_get_on_remove_entity = NativeFunction::from_fn_ptr(mirv_get_on_remove_entity).to_js_function(context.realm());
       
         let object = ObjectInitializer::with_native_data::<MirvStruct>(mirv, &mut context)
+        .function(
+            NativeFunction::from_fn_ptr(mirv_get_cur_time),
+            js_string!("getCurTime"),
+            0,
+        )           
+        .function(
+            NativeFunction::from_fn_ptr(mirv_get_demo_time),
+            js_string!("getDemoTime"),
+            0,
+        )           
+        .function(
+            NativeFunction::from_fn_ptr(mirv_get_demo_tick),
+            js_string!("getDemoTick"),
+            0,
+        )           
         .function(
             NativeFunction::from_fn_ptr(mirv_get_entity_ref_from_index),
             js_string!("getEntityFromIndex"),
