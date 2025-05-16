@@ -33,7 +33,6 @@ void CRenderCommands::EngineThread_BeginFrame() {
     m_EngineThreadCommands = nullptr;
 
     if (m_SkipFrames) {
-        // For explanation see EngineThread_AfterPresent.
         pRenderPassCommands->SkipFrame = true;
         m_SkipFrames--;
     }
@@ -66,9 +65,6 @@ void CRenderCommands::EngineThread_AfterPresent(bool presented) {
     if (m_EngineThreadCommands == nullptr) m_EngineThreadCommands = new CRenderPassCommands();
 
     if (!presented) {
-        // CS2 can render more frames that required in this case,
-        // since it only counts the presented ones for host_framerate.
-        // Thus we will drop frames to make the audio catch up.
         //m_SkipFrames++;
     }
 
