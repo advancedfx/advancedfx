@@ -6,6 +6,19 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.33.0</version>
+<time>2025-05-16T16:30Z</time>
+<changes>
+<change type="added">Add to mirv-script: mirv.getCurTime, mirv.getDemoTick, mirv.getDemoTime by @ChetdeJong</change>
+<change type="fixed">Fixed mirv_streams frames dropped / missing.</change>
+<change type="fixed">Fixed mirv_streams depth stream not properly working due to missing shader input layout (AMD), thanks to ghettoboi for testing.</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.32.3</version>
 <time>2025-05-08T11:45Z</time>
 <changes>
