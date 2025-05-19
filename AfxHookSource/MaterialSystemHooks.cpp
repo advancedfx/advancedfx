@@ -107,6 +107,7 @@ bool MaterialSystem_ExecuteOnRenderThread(CMaterialSystemFunctor * pFunctor) {
                 CMaterialSystemFunctor4 * pFunctor2 = new CMaterialSystemFunctor4(pFunctor);
                 pFunctor2->AddRef();
                 switch(g_SourceSdkVer) {
+                case SourceSdkVer_CSS:
                 case SourceSdkVer_L4D2:
                 case SourceSdkVer_TF2:
                 case SourceSdkVer_HL2MP:
