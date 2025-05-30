@@ -8,7 +8,10 @@
 #include <Windows.h>
 #include "../shared/binutils.h"
 #include "../deps/release/Detours/src/detours.h"
+
+#include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
 #include "../deps/release/prop/cs2/sdk_src/public/igameevents.h"
+#include "../deps/release/prop/cs2/sdk_src/public/tier1/utlstring.h"
 
 #include "DeathMsg.h"
 #include "Globals.h"
@@ -837,24 +840,15 @@ void __fastcall handleDeathnotice(u_char* hudDeathNotice, SOURCESDK::CS2::IGameE
 	}
 
 	if (myWrapper.attacker.name.use && nullptr != attackerController) {
-		strcpy(
-			(*(char**)((u_char*)attackerController + g_clientDllOffsets.CCSPlayerController.m_sSanitizedPlayerName)),
-			myWrapper.attacker.name.value
-		);
+		((SOURCESDK::CS2::CUtlString *)((u_char*)attackerController + g_clientDllOffsets.CCSPlayerController.m_sSanitizedPlayerName))->Set(myWrapper.attacker.name.value);
 	}
 
 	if (myWrapper.victim.name.use && nullptr != victimController) {
-		strcpy(
-			(*(char**)((u_char*)victimController + g_clientDllOffsets.CCSPlayerController.m_sSanitizedPlayerName)),
-			myWrapper.victim.name.value
-		);
+		((SOURCESDK::CS2::CUtlString *)((u_char*)victimController + g_clientDllOffsets.CCSPlayerController.m_sSanitizedPlayerName))->Set(myWrapper.attacker.name.value);
 	}
 
 	if (myWrapper.assister.name.use && nullptr != assisterController) {
-		strcpy(
-			(*(char**)((u_char*)assisterController + g_clientDllOffsets.CCSPlayerController.m_sSanitizedPlayerName)),
-			myWrapper.assister.name.value
-		);
+		((SOURCESDK::CS2::CUtlString *)((u_char*)assisterController + g_clientDllOffsets.CCSPlayerController.m_sSanitizedPlayerName))->Set(myWrapper.attacker.name.value);
 	}
 
 	if (g_MirvDeathMsgGlobals.Lifetime.use)
