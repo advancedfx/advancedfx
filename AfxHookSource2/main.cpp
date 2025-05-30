@@ -12,6 +12,7 @@
 #include "ViewModel.h"
 #include "Globals.h"
 #include "DeathMsg.h"
+#include "ReplaceName.h"
 #include "SchemaSystem.h"
 #include "MirvCommands.h"
 #include "MirvColors.h"
@@ -2050,6 +2051,8 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		HookViewmodel(hModule);
 
 		HookDeathMsg(hModule);
+
+		HookReplaceName(hModule);
 
 		HookClientDll(hModule);
 

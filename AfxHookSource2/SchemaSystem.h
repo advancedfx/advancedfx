@@ -18,6 +18,10 @@ struct ClientDllOffsets_t {
 		ptrdiff_t m_nOvertimePlaying = 0; // int32
 	} C_CSGameRules;
 
+	struct CEntityInstance {
+		ptrdiff_t m_pEntity = 0; // CEntityIdentity*
+	} CEntityInstance;
+
 	struct C_BaseEntity {
 		ptrdiff_t m_iTeamNum = 0; // uint8
 	} C_BaseEntity;

@@ -243,6 +243,9 @@ target_sources(${PROJECT_NAME} PRIVATE
 	MirvTime.cpp
 	MirvTime.h
 
+    ReplaceName.cpp
+    ReplaceName.h
+
     RenderCommands.cpp
     RenderCommands.h
 
