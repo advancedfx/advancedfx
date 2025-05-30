@@ -10,7 +10,7 @@
 <version>1.131.1</version>
 <time>2025-05-19T12:45Z</time>
 <changes>
-<change type="fixed">"Fixes CS:S screen recording being broken / crashing.</change>
+<change type="fixed">Fixes CS:S screen recording being broken / crashing.</change>
 </changes>
 </release>
 
