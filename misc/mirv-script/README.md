@@ -1,6 +1,6 @@
 # About
 
-This is the set of examples how `mirv_script` feature of HLAE can be used. Only CS2 is supported.
+This contains some examples how `mirv_script` feature of HLAE can be used. Only CS2 is supported.
 
 Basically, it allows to run javascript scripts in boajs, which is ECMAScript engine. Note [the limitations of boajs.](https://boajs.dev/conformance)
 
@@ -17,56 +17,28 @@ The scripting is meant to extend HLAE, as such scripts can have a huge degree of
 1. Clone repo
 2. `cd misc/mirv-script`
 3. Install dependencies with `npm i`
-4. Change server options in `server.ts`, `client.ts` and `index.mts` if needed
-5. Transpile scripts:
-    - mirv files with `npm run build`
-    - node files with `npm run build-scripts`
+4. Run `npm run build` to transpile examples.
 
-# Run example
+# Usage
 
-1. Run server with `npm run server`
-2. In game execute `mirv_script_load "./dist/index.mjs"` (has to be absolute path).
-   Attention: Use an HLAE AfxHookSource2 Release build only, a Debug build will crash ( https://github.com/boa-dev/boa/issues/4089 ).
-3. Adjust paths in `client.ts` test messages
-4. Run test messages with `npm run client`
-
-Note: In this example server/client are based on [simple-websockets](https://github.com/osztenkurden/simple-websockets).
-If you want to connect without using `simple-websockets` client, then send JSON string in following format or change the implementation:
-
-```typescript
-{
-	"eventName": string,
-	"values": [...args: any] // can be empty
-}
-```
-
-Available websocket events can be found in `./src/mirv/ws-events.ts`.
-
-Also note the connection parameters, for HLAE its `?hlae=1` and for clients it's `?user=1`. Other connections will be rejected.
+1. Explore source code of examples in `src/examples`
+2. Run examples from their respected folder in `dist` after transpiling.
+3. Build your own scripts.
 
 # Notes
 
-Structure:
+- **Attention: Use an HLAE AfxHookSource2 Release build only**, a Debug build will crash ( https://github.com/boa-dev/boa/issues/4089 ).
+- Currently hooks might conflict with each other (one might overwrite another). You have to handle it yourself with custom script.
+- Global `mirv` object is interface from [rust implementation](https://github.com/advancedfx/advancedfx/blob/main/AfxHookSource2Rs/src/lib.rs). Types can be found in `types/mirv.d.ts`.
 
+Structure:
 ```
 |
-|
 \---src
-    |   client.ts // example client
-    |   index.mts // mirv example entry point
-    |   server.ts // example server
     |
-    +---mirv // files for websockets example
+    +---examples // Examples demonstrating some use cases.
     |
-    +---snippets // example snippets - currently unsorted and might conflict with each other and the src example (we need to make plugin system script still).
+    +---snippets // Example snippets - currently unsorted and might conflict with each other and the src example (we need to make plugin system script still).
     |
     \---types // Description of mirv interface, etc.
 ```
-
-The general idea of this example is to abstract `mirv` object and interact with it through websocket messages.
-
-Global `mirv` object is interface from [rust implementation](https://github.com/advancedfx/advancedfx/blob/main/AfxHookSource2Rs/src/lib.rs). Sort of the same for `wsConnection`. Types can be found in `types/mirv.d.ts`.
-
-Just explore the files to see examples how it works. In most places there are comments with additional information.
-
-P.S. this is just an example/starting point, your implementation can be different. You can also use `mirv_script` without websockets at all.
