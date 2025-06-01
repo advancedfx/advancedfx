@@ -11,7 +11,6 @@
 	"type": "module",
 	"scripts": {
 		"build": "tsc --project tsconfig.mirv.json",
-		"build-scripts": "tsc --project tsconfig.scripts.json",
 		"tsc": "tsc"
 	},
 	"devDependencies": {
