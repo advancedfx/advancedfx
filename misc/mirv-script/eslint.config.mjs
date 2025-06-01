@@ -94,7 +94,7 @@ export default [
 			'check-file/folder-naming-convention': [
 				'error',
 				{
-					'*/**': 'KEBAB_CASE'
+					'*/**/!(examples)': 'KEBAB_CASE'
 				}
 			]
 		}
