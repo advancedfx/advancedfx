@@ -2241,28 +2241,49 @@ fn mirv_get_on_remove_entity(this: &JsValue, _args: &[JsValue], context: &mut Co
     Err(advancedfx::js::errors::error_type(context).into())
 }
 
+fn afx_load_module(specifier: &JsString, afx_loader: Rc<AfxSimpleModuleLoader>, context: &mut Context) -> Result<JsPromise,JsError> {
+
+    let referrer = Referrer::Realm(context.realm().clone());  
+
+    if let Ok(path) = resolve_module_specifier(None, &specifier, referrer.path(), context) {
+        if let Some(module) = afx_loader.get(&path) {
+             return Ok(module.load_link_evaluate(context));
+        }
+        match boa_engine::Source::from_filepath(&path) {
+            Ok(js_source) => {
+                match Module::parse(js_source, None, context) {
+                    Ok(module) => {
+                        afx_loader.insert(path, module.clone());
+                        return Ok(module.load_link_evaluate(context));
+                    }
+                    Err(err) => {
+                        return Err(advancedfx::js::errors::make_error!(JsNativeError::syntax(),format!("Error parsing module `{}`",path.display()),context)
+                        .with_cause(err).into());        
+                    }
+                }
+            }
+            Err(err) => {
+                return Err(advancedfx::js::errors::make_error!(JsNativeError::error(),format!("could not open file `{}`",path.display()),context)
+                .with_cause(JsError::from_opaque(js_string!(err.to_string()).into())    ).into());
+            }
+        }
+    }
+
+    let err_path = specifier.to_std_string_lossy();
+    return Err(advancedfx::js::errors::make_error!(JsNativeError::error(), format!("could not resolve path `{err_path}`"), context).into());
+}
+
 fn afx_load(file_path: &JsString, afx_loader: Rc<AfxSimpleModuleLoader>, context: &mut Context) -> Result<JsPromise,JsError> {
+
+    if file_path.to_std_string_lossy().ends_with("mjs") {
+        return afx_load_module(file_path,afx_loader,context);
+    }
 
     let referrer = Referrer::Realm(context.realm().clone());  
 
     if let Ok(path) = resolve_module_specifier(None, &file_path, referrer.path(), context) {
         match boa_engine::Source::from_filepath(&path) {
             Ok(js_source) => {
-                if let Some(ext) = path.extension() {
-                    if ext == "mjs" {
-                        match Module::parse(js_source, None, context) {
-                            Ok(module) => {
-                                afx_loader.insert(path, module.clone());
-                                return Ok(module.load_link_evaluate(context));
-                            }
-                            Err(err) => {
-                                return Err(advancedfx::js::errors::make_error!(JsNativeError::syntax(),format!("Error parsing module `{}`",path.display()),context)
-                                .with_cause(err).into());        
-                            }
-                        }
-                    }
-                }
-
                 match context.eval(js_source) {
                     Ok(res) => {
                         return Ok(JsPromise::resolve(res,context))
