@@ -12,9 +12,7 @@
 	"scripts": {
 		"build": "tsc --project tsconfig.mirv.json",
 		"build-scripts": "tsc --project tsconfig.scripts.json",
-		"tsc": "tsc",
-		"server": "npm run build-scripts && node dist/node/server.js",
-		"client": "npm run build-scripts && node dist/node/client.js"
+		"tsc": "tsc"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.9",
