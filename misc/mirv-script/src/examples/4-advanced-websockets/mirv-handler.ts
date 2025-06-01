@@ -70,7 +70,7 @@ export const handleMessage = (wsConn: MirvWsConnection, msg: unknown) => {
 		return values as MirvEventsMap[typeof eventName];
 	}
 
-	// Ideally we should do run type checks, but we just assume data comes correctly
+	// Ideally we should do runtime checks, but we just assume data comes correctly
 	const eventName = ev.eventName as (typeof MIRV_EVENTS)[number];
 	switch (eventName) {
 		case 'exec': {

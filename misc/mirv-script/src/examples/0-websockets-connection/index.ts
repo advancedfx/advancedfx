@@ -41,7 +41,6 @@ export class MirvWsConnection {
 			this.isClosed = false;
 			this.readNext();
 		} catch (e) {
-			console.trace();
 			this._isConnecting = false;
 			this.setException(e);
 		}

@@ -1,23 +1,22 @@
 // Purpose:
 // Demonstrate how to register custom command in game and use it with mirv hooks.
 //
-// This command uses SubCommand wrapper. See subcommand.ts
-//
+// This script uses SubCommand wrapper. See subcommand.ts
 // Wrapper might not be ideal in some cases.
 // See snippets folder for examples without wrapper.
 //
 // Usage:
 // 1) Load this script in game with mirv_script_load
-// e.g. mirv_script_load "C:\advancedfx\misc\mirv-script\dist\examples\3-command-snippet\index.mjs"
+// e.g. mirv_script_load "C:\advancedfx\misc\mirv-script\dist\examples\3-command-snippet\index.js"
 //
 // 2) Enter mirv_script_example in console
 
 (async () => {
 	// We have to import class this way, so we can avoid using modules,
-	// so it allows us to run script again and redefine command
+	// it allows us to run script again and redefine command
 	const { SubCommand, subCommandsCallback } = await import('./subcommand.js');
 
-	// Alternatively you can use one subcommand and check value for 0 in hook.
+	// Alternatively, you can use just one subcommand with actual value, and then check it for 0 in hook.
 	const fovToggle = new SubCommand({
 		type: 'boolean',
 		path: ['fov', 'enabled'],
@@ -26,8 +25,8 @@
 		initialValue: false
 	});
 
-	// Ideally you don't do paths this way e.g. it's better ['fov', 'value']
-	// but this way it works too.
+	// It's not best practice to do path like that, it works this way too.
+	// The better way would be ['fov', 'value']
 	const fovState = new SubCommand({
 		type: 'float',
 		path: ['fov'],
@@ -36,7 +35,7 @@
 		initialValue: 90.0
 	});
 
-	// Custom hook that can be controlled via console
+	// Set hook that can be controlled via console
 	mirv.onCViewRenderSetupView = () => {
 		if (!fovToggle.value) return undefined;
 		return {
@@ -81,7 +80,7 @@
 			placeholder: 'Value',
 			description: 'blank desc.',
 			initialValue: 'none',
-			onSet: (v) => mirv.message(`some nested cmd was set to ${v}\n`)
+			onSet: (v) => console.log('Some nested cmd was set to', v)
 		}),
 		new SubCommand({
 			type: 'string',
@@ -96,6 +95,7 @@
 			placeholder: undefined,
 			description: 'Print hello.',
 			initialValue: undefined,
+			// For subCommands without args you can do action in "onSet"
 			onSet: () => console.log('Hello.')
 		}),
 		new SubCommand({
@@ -106,23 +106,28 @@
 			argsCount: 2,
 			initialValue: [],
 			onSet: (values) => {
-				// handle values here as they are set as is.
+				// When having multi-line subCommand,
+				// you might want to do some side effects
 				console.log(`Did set values: [${values.join(', ')}]`);
 			}
 		})
 	];
 
+	// See subcommand.ts for implementation.
+	// Or snippets folder to see ones without wrapper.
 	const fn: AdvancedfxConCommand.OnCallback = (args) => subCommandsCallback(subCommands, args);
 
 	// Note:
 	// Currently there is no automatic hooks handling
 	// you have to handle it yourself e.g. one script can overwrite another's script hook
 
-	// Register command
+	// Unregister if there's already one.
 	// @ts-ignore
 	if (mirv._mirv_script_example !== undefined) mirv._mirv_script_example.unregister();
+	// Store command in object.
 	// @ts-ignore
 	mirv._mirv_script_example = new AdvancedfxConCommand(fn);
+	// Register command
 	// @ts-ignore
 	mirv._mirv_script_example.register('mirv_script_example', 'Example command');
 })();

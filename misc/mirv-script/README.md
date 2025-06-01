@@ -21,7 +21,7 @@ The scripting is meant to extend HLAE, as such scripts can have a huge degree of
 
 # Usage
 
-1. Explore source code of examples in `src/examples`
+1. Explore source code of examples in `src/examples`. Also see `types` folder since examples do not cover everything.
 2. Run examples from their respected folder in `dist` after transpiling.
 3. Build your own scripts.
 

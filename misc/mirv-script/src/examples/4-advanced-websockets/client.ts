@@ -285,9 +285,9 @@ class MirvClient {
 	}
 }
 
-async function main() {
+function main() {
 	const client = new MirvClient();
 	client.start();
 }
 
-main().catch(console.error);
+main();

@@ -71,8 +71,6 @@ export class SubCommand<T extends SubCommandType> {
 		this.argsCount = config.type === 'multi' ? config.argsCount : 1;
 		this._value = config.initialValue as SubCommandValue<T>;
 		this.onSet = config.onSet as (value: SubCommandValue<T>) => void | undefined;
-
-		if (config.type === 'multi') this.argsCount = config.argsCount;
 	}
 
 	get value() {

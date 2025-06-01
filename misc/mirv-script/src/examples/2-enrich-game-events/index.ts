@@ -93,7 +93,8 @@
 		}
 	};
 
-	// Set the hook
+	// Set the hook. (Can be also set inline like in other examples.)
+	//
 	// Make sure this hook doesn't get overwritten elsewhere
 	// since currently HLAE doesn't handle such conflicts
 	mirv.onGameEvent = onGameEvent;

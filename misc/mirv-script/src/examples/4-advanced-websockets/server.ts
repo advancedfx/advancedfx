@@ -8,7 +8,6 @@
 //
 // We do handle hooks events for each client, based on their id.
 // Also we disable hooks if given hook is not used by anyone.
-//
 // The other events are forwarded as is.
 //
 // We use simple-websockets library for convenience
@@ -63,6 +62,7 @@ function main() {
 		});
 
 		for (const ev of MIRV_EVENTS) {
+			// We skip these since they're intended for clients.
 			if (
 				ev === 'setAddEntity' ||
 				ev === 'setRemoveEntity' ||
@@ -71,6 +71,7 @@ function main() {
 			)
 				continue;
 
+			// Handle send data from hooks to subscribed clients.
 			if (
 				ev === 'onAddEntity' ||
 				ev === 'onRemoveEntity' ||
@@ -78,18 +79,18 @@ function main() {
 				ev === 'onCViewRenderSetupView'
 			) {
 				socket.on(ev, (...data: unknown[]) => {
-					clients.entries().forEach(([_id, { socket: s, hooks }]) => {
+					clients.entries().forEach(([_id, { socket: client, hooks }]) => {
 						if (ev === 'onAddEntity' && hooks.onAddEntity)
-							s.send(ev, ...(data as MirvEventsMap['onAddEntity']));
+							client.send(ev, ...(data as MirvEventsMap['onAddEntity']));
 
 						if (ev === 'onRemoveEntity' && hooks.onRemoveEntity)
-							s.send(ev, ...(data as MirvEventsMap['onRemoveEntity']));
+							client.send(ev, ...(data as MirvEventsMap['onRemoveEntity']));
 
 						if (ev === 'onGameEvent' && hooks.onGameEvent)
-							s.send(ev, ...(data as MirvEventsMap['onGameEvent']));
+							client.send(ev, ...(data as MirvEventsMap['onGameEvent']));
 
 						if (ev === 'onCViewRenderSetupView' && hooks.onViewSetup)
-							s.send(ev, ...(data as MirvEventsMap['onCViewRenderSetupView']));
+							client.send(ev, ...(data as MirvEventsMap['onCViewRenderSetupView']));
 					});
 				});
 
@@ -129,16 +130,18 @@ function main() {
 			clients.delete(id);
 
 			if (!HLAE) return;
+
+			// Disable hooks if the given one is not used by any client.
 			for (const ev of [
 				'setAddEntity',
 				'setRemoveEntity',
 				'setGameEvent',
 				'setOnCViewRenderSetupView'
-			]) {
+			] as const) {
 				const someEnabled = clients.entries().some(([_id, { hooks }]) => {
 					if (ev === 'setAddEntity') return hooks.onAddEntity;
 					if (ev === 'setRemoveEntity') return hooks.onRemoveEntity;
-					if (ev === 'setGameEvents') return hooks.onGameEvent;
+					if (ev === 'setGameEvent') return hooks.onGameEvent;
 					if (ev === 'setOnCViewRenderSetupView') return hooks.onViewSetup;
 
 					return true;
@@ -148,6 +151,7 @@ function main() {
 		});
 
 		for (const ev of MIRV_EVENTS) {
+			// We skip those as it's intended for HLAE, see above.
 			if (
 				ev === 'onAddEntity' ||
 				ev === 'onRemoveEntity' ||
@@ -156,6 +160,7 @@ function main() {
 			)
 				continue;
 
+			// Handle hooks on/off state.
 			if (
 				ev === 'setAddEntity' ||
 				ev === 'setRemoveEntity' ||
