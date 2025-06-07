@@ -133,6 +133,7 @@ AFXADDR_DEF(csgo_client_C_BaseAnimating_RecordBones)
 AFXADDR_DEF(css_client_C_BaseAnimating_RecordBones)
 AFXADDR_DEF(cssv34_client_C_BaseAnimating_RecordBones)
 AFXADDR_DEF(cssv34_client_C_BaseAnimating_m_BoneAccessor_m_pBones)
+AFXADDR_DEF(garrysmod_client_C_BaseAnimating_RecordBones)
 AFXADDR_DEF(tf2_client_C_BaseAnimating_RecordBones)
 AFXADDR_DEF(csgo_client_CModelRenderSystem_SetupBones)
 AFXADDR_DEF(csgo_client_s_HLTVCamera)
@@ -2815,6 +2816,14 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 									MemRange result = FindPatternString(textRange.And(MemRange(refStrAddr - 0x3a, refStrAddr -0x3a + 3)), "55 8B EC");
 									if(!result.IsEmpty())
 										AFXADDR_SET(css_client_C_BaseAnimating_RecordBones, result.Start);
+									else ErrorBox(MkErrStr(__FILE__, __LINE__));	
+								}
+								break;
+							case SourceSdkVer_Garrysmod:
+								{
+									MemRange result = FindPatternString(textRange.And(MemRange(refStrAddr - 0x15C, refStrAddr - 0x15C + 6)), "55 8B EC");
+									if(!result.IsEmpty())
+										AFXADDR_SET(garrysmod_client_C_BaseAnimating_RecordBones, result.Start);
 									else ErrorBox(MkErrStr(__FILE__, __LINE__));	
 								}
 								break;

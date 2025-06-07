@@ -34,6 +34,7 @@
 #include "momentum/ClientToolsMom.h"
 #include "css/ClientToolsCss.h"
 #include "cssV34/ClientToolsCssV34.h"
+#include "garrysmod/ClientToolsGarrysmod.h"
 #include "MaterialSystemHooks.h"
 #include "MatRenderContextHook.h"
 //#include "csgo_IPrediction.h"
@@ -48,6 +49,7 @@
 #include <csgo/sdk_src/public/tier0/memalloc.h>
 #include <csgo/sdk_src/public/tier1/convar.h>
 #include <css/sdk_src/public/tier1/convar.h>
+#include <garrysmod/sdk_src/public/tier1/convar.h>
 #include <swarm/sdk_src/public/tier0/memalloc.h>
 #include <swarm/sdk_src/public/tier1/convar.h>
 #include <l4d2/sdk_src/public/tier0/memalloc.h>
@@ -87,6 +89,8 @@ SOURCESDK::CSGO::ICvar * SOURCESDK::CSGO::g_pCVar = 0;
 SOURCESDK::CSS::ICvar * SOURCESDK::CSS::cvar = 0;
 SOURCESDK::CSS::ICvar * SOURCESDK::CSS::g_pCVar = 0;
 
+SOURCESDK::GARRYSMOD::ICvar * SOURCESDK::GARRYSMOD::cvar = 0;
+SOURCESDK::GARRYSMOD::ICvar * SOURCESDK::GARRYSMOD::g_pCVar = 0;
 
 SOURCESDK::SWARM::IMemAlloc *SOURCESDK::SWARM::g_pMemAlloc = 0;
 SOURCESDK::SWARM::ICvar * SOURCESDK::SWARM::cvar = 0;
@@ -770,6 +774,30 @@ void __fastcall new_CVClient_Shutdown(void* This, void* Edx)
 	Shared_Shutdown();
 
 	old_CVClient_Shutdown(This, Edx);
+}
+
+typedef void(__fastcall* CVClient_FrameStageNotify_Garrysmod_t)(void* This, void* Edx, SOURCESDK::GARRYSMOD::ClientFrameStage_t curStage);
+
+CVClient_FrameStageNotify_Garrysmod_t old_CVClient_FrameStageNotify_Garrysmod;
+
+// Notification that we're moving into another stage during the frame.
+void __fastcall new_CVClient_FrameStageNotify_Garrysmod(void* This, void* Edx, SOURCESDK::GARRYSMOD::ClientFrameStage_t curStage)
+{
+	switch (curStage)
+	{
+	case SOURCESDK::GARRYSMOD::FRAME_RENDER_START:
+		Shared_BeforeFrameRenderStart();
+		break;
+	}
+
+	old_CVClient_FrameStageNotify_Garrysmod(This, Edx, curStage);
+
+	switch (curStage)
+	{
+	case SOURCESDK::GARRYSMOD::FRAME_RENDER_END:
+		Shared_AfterFrameRenderEnd();
+		break;
+	}
 }
 
 typedef void (__fastcall* CVClient_FrameStageNotify_TF2_t)(void* This, void* Edx, SOURCESDK::TF2::ClientFrameStage_t curStage);
@@ -2027,6 +2055,10 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 				int * vtable = *(int**)iface;
 
 				switch(g_SourceSdkVer) {
+				case SourceSdkVer_Garrysmod:
+					AfxDetourPtr((PVOID*)&(vtable[2]), new_CVClient_Shutdown, (PVOID*)&old_CVClient_Shutdown);
+					AfxDetourPtr((PVOID*)&(vtable[35]), new_CVClient_FrameStageNotify_Garrysmod, (PVOID*)&old_CVClient_FrameStageNotify_Garrysmod);
+					break;
 				case SourceSdkVer_TF2:
 					AfxDetourPtr((PVOID*) & (vtable[2]), new_CVClient_Shutdown, (PVOID*)&old_CVClient_Shutdown);
 					AfxDetourPtr((PVOID*) & (vtable[35]), new_CVClient_FrameStageNotify_TF2, (PVOID*)&old_CVClient_FrameStageNotify_TF2);
@@ -2077,6 +2109,11 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 
 			if (SOURCESDK::TF2::IClientTools* iface = (SOURCESDK::TF2::IClientTools*)old_Client_CreateInterface(SOURCESDK_TF2_VCLIENTTOOLS_INTERFACE_VERSION, NULL))
 				new CClientToolsMom(iface);
+		}
+		if (SourceSdkVer_Garrysmod == g_SourceSdkVer)
+		{
+			if (SOURCESDK::GARRYSMOD::IClientTools* iface = (SOURCESDK::GARRYSMOD::IClientTools*)old_Client_CreateInterface(SOURCESDK_GARRYSMOD_VCLIENTTOOLS_INTERFACE_VERSION, NULL))
+				new CClientToolsGarrysmod(iface);
 		}
 		if (SourceSdkVer_CSS == g_SourceSdkVer || SourceSdkVer_CSSV84 == g_SourceSdkVer)
 		{
