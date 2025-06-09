@@ -1095,6 +1095,12 @@ void MirvInput::Supply_Focus(bool hasFocus)
 	m_Focus = hasFocus;
 }
 
+double MirvInput::LimitFov(double fov) {
+	if (fov < AFX_MATH_EPS) return AFX_MATH_EPS;
+	if (fov > 180 - AFX_MATH_EPS) return 180 - AFX_MATH_EPS;
+	return fov;
+}
+
 bool MirvInput::Override(float deltaT, float & Tx, float &Ty, float & Tz, float & Rx, float & Ry, float & Rz, float & Fov)
 {
 	bool overriden = false;
@@ -1162,11 +1168,7 @@ bool MirvInput::Override(float deltaT, float & Tx, float &Ty, float & Tz, float 
 			Rz = (float)(m_InputRz + dRoll);
 		}
 
-		Fov = (float)(m_InputFov + dFov);
-
-		// limit fov to sane values:
-		if (Fov < 1) Fov = 1;
-		else if (Fov > 179) Fov = 179;
+		Fov = (float)LimitFov(m_InputFov + dFov);
 
 		if (GetCamResetView())
 		{
@@ -1227,7 +1229,7 @@ bool MirvInput::Override(float deltaT, float & Tx, float &Ty, float & Tz, float 
 	if (m_SetFov)
 	{
 		m_SetFov = false;
-		Fov = m_SetFovValue;
+		Fov = (float)LimitFov(m_SetFovValue);
 		overriden = true;
 	}	
 

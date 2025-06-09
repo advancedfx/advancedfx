@@ -439,4 +439,6 @@ private:
 	double CalcDeltaExpSmooth(double deltaT, double deltaVal);
 
 	void ProcessRawInputData(PRAWINPUT pData);
+
+	double LimitFov(double fov);
 };
