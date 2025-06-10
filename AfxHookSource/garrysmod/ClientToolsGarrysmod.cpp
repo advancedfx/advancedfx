@@ -139,10 +139,20 @@ void CClientToolsGarrysmod::OnPostToolMessageGarrysmod(SOURCESDK::GARRYSMOD::HTO
 					)
 				;
 
+			// Props are a huge gameplay part of Garrysmod, but we seperate them for possible future AGR updates. Thinking about mirv_agr recordProps for AGR 7.
+			// Props are often used like a projectile
+			bool isProp =
+				className && !strcmp(className, "prop_physics")
+				;
+			// Vehicles are recorded as Players for now, cause the player controls them instead of the character once entered.
+			bool isVehicle =
+				className && !strcmp(className, "prop_vehicle")
+				;
+
 			if (false
-				|| RecordPlayers_get() && isPlayer
+				|| RecordPlayers_get() && (isPlayer || isVehicle)
 				|| RecordWeapons_get() && isWeapon
-				|| RecordProjectiles_get() && isProjectile
+				|| RecordProjectiles_get() && (isProjectile || isProp)
 				|| RecordViewModels_get() && isViewModel
 				)
 			{
