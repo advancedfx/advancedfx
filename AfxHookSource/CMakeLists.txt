@@ -116,6 +116,9 @@ target_sources(AfxHookSource PRIVATE
     
     cssV34/ClientToolsCssV34.cpp
     cssV34/ClientToolsCssV34.h
+
+    garrysmod/ClientToolsGarrysmod.cpp
+    garrysmod/ClientToolsGarrysmod.h
     
     momentum/ClientToolsMom.cpp
     momentum/ClientToolsMom.h
@@ -272,6 +275,18 @@ target_sources(AfxHookSource PRIVATE
     ../deps/release/prop/AfxHookSource/cssV34/sdk_src/public/ihandleentity.h
     ../deps/release/prop/AfxHookSource/cssV34/sdk_src/tier1/KeyValues.cpp
 
+
+    ../deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/engine/ishadowmgr.h
+    ../deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/tier1/KeyValues.h
+    ../deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/toolframework/itoolentity.h
+    ../deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/toolframework/itoolframework.h
+    ../deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/vstdlib/IKeyValuesSystem.h
+    ../deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/basehandle.h
+    ../deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/const.h
+    ../deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/iclientrenderable.h
+    ../deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/ihandleentity.h
+    ../deps/release/prop/AfxHookSource/garrysmod/sdk_src/tier1/KeyValues.cpp
+
     ../deps/release/prop/AfxHookSource/insurgency2/public/cdll_int.h
 
     ../deps/release/prop/AfxHookSource/l4d2/sdk_src/public/appframework/IAppSystem.h
@@ -386,6 +401,7 @@ source_group("AfxHookSource/csgo/hooks/client" REGULAR_EXPRESSION "/AfxHookSourc
 source_group("AfxHookSource/csgo/hooks/engine" REGULAR_EXPRESSION "/AfxHookSource/csgo/hooks/engine/")
 source_group("AfxHookSource/css" REGULAR_EXPRESSION "/AfxHookSource/css/")
 source_group("AfxHookSource/cssV34" REGULAR_EXPRESSION "/AfxHookSource/cssV34/")
+source_group("AfxHookSource/garrysmod" REGULAR_EXPRESSION "/AfxHookSource/garrysmod/")
 source_group("AfxHookSource/momentum" REGULAR_EXPRESSION "/AfxHookSource/momentum/")
 source_group("AfxHookSource/tf2" REGULAR_EXPRESSION "/AfxHookSource/tf2/")
 source_group("build" REGULAR_EXPRESSION "/build/")
@@ -429,6 +445,16 @@ source_group("deps/release/prop/AfxHookSource/cssV34/sdk_src/public/toolframewor
 source_group("deps/release/prop/AfxHookSource/cssV34/sdk_src/public/tools" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/cssV34/sdk_src/public/tools/")
 source_group("deps/release/prop/AfxHookSource/cssV34/sdk_src/public/vstdlib" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/cssV34/sdk_src/public/vstdlib/")
 source_group("deps/release/prop/AfxHookSource/cssV34/sdk_src/tier1" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/cssV34/sdk_src/tier1/")
+
+source_group("deps/release/prop/AfxHookSource/garrysmod" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/garrysmod/")
+source_group("deps/release/prop/AfxHookSource/garrysmod/sdk_src" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/garrysmod/sdk_src/")
+source_group("deps/release/prop/AfxHookSource/garrysmod/sdk_src/public" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/")
+source_group("deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/engine" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/engine/")
+source_group("deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/tier1" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/tier1/")
+source_group("deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/toolframework" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/toolframework/")
+source_group("deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/vstdlib" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/vstdlib/")
+source_group("deps/release/prop/AfxHookSource/garrysmod/sdk_src/tier1" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/garrysmod/sdk_src/tier1/")
+
 source_group("deps/release/prop/AfxHookSource/insurgency2" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/insurgency2/")
 source_group("deps/release/prop/AfxHookSource/insurgency2/sdk_src" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/insurgency2/sdk_src/")
 source_group("deps/release/prop/AfxHookSource/insurgency2/sdk_src/public" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/insurgency2/sdk_src/public/")
