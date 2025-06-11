@@ -6,6 +6,25 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.34.0</version>
+<time>2025-06-11T15:00Z</time>
+<changes>
+<change type="added">Added #1049 mirv_replace_name</change>
+<change type="updated">Added #1052 / improved mirv-script examples (https://github.com/advancedfx/advancedfx/tree/main/misc/mirv-script) by @ChetdeJong</change>
+<change type="fixed">Fixed #1053 mirv-script examples bug: wsConnection wsInBuffer should be FIFO instead of LIFO.</change>
+<change type="fixed">Fixed #1051 mirv_script_load for .mjs should follow import rules and thus cache the entry module.</change>
+<change type="fixed">Fixed #1054 CS2: mirv_input fov 0 crashes.</change>
+</changes>
+<comments>
+mirv-script users:<br />
+1. Carefully evaluated your existing projects, that fix of #1051 (mirv_script_load for .mjs should follow import rules and thus cache the entry module), doesn't break your projects before udpdating.<br />
+2. We recommend to apply #1053 fix (https://github.com/advancedfx/advancedfx/issues/1053) to your existing projects.
+</comments>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.33.0</version>
 <time>2025-05-16T16:30Z</time>
 <changes>

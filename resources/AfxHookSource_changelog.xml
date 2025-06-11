@@ -4,6 +4,16 @@
 <changelog>
 
 
+<release>
+<name>AfxHookSource</name>
+<version>1.132.0</version>
+<time>2025-06-11T15:00Z</time>
+<changes>
+<change type="fixed">Fixes #1055 TF2 - mirv_streams screen recording broken.</change>
+<change type="added">Added #1056 Garrys Mod AGR Support. Thanks @Devostated and also @ChetdeJong</change>
+</changes>
+</release>
+
 
 <release>
 <name>AfxHookSource</name>
