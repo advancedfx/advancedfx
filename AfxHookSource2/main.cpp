@@ -1484,6 +1484,7 @@ void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameSta
 	switch(curStage) {
 	case SOURCESDK::CS2::FRAME_RENDER_PASS:
 		AfxHookSource2Rs_Engine_RunJobQueue();
+		updateAnimGraph();
 		break;
 	}
 }
@@ -2054,6 +2055,8 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		HookReplaceName(hModule);
 
 		HookClientDll(hModule);
+
+		HookFixClient(hModule);
 
 	} 
 	else if(bFirstPanorama && StringEndsWithW(lpLibFileName, L"panorama.dll"))

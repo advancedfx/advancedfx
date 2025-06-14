@@ -82,6 +82,44 @@ double new_cs2_tier0_Plat_FloatTime(void) {
     return lastTimeResult;
 }
 
+void* g_pCAnimGraphGameSystem = 0;
+
+typedef void* (__fastcall * g_CreateAnimGraphSystem_t)(void * This);
+g_CreateAnimGraphSystem_t g_orgCreateAnimGraphSystem = nullptr;
+
+void* g_newCreateAnimGraphSystem (void* This)
+{
+	g_pCAnimGraphGameSystem = g_orgCreateAnimGraphSystem(This);
+	return g_pCAnimGraphGameSystem;
+}
+
+typedef u_char* (__fastcall * g_updateAnimGraph_t)(void * This, int bClientSide);
+g_updateAnimGraph_t g_orgUpdateAnimGraph = nullptr;
+
+void updateAnimGraph() {
+	if (g_orgUpdateAnimGraph && g_pCAnimGraphGameSystem && g_MirvFix.fixAnimations) {
+		g_orgUpdateAnimGraph(g_pCAnimGraphGameSystem, 1);
+	}
+}
+
+void HookFixClient(HMODULE clientDll)
+{
+	if(void ** vtable = (void **)Afx::BinUtils::FindClassVtable(clientDll, ".?AV?$CGameSystemReallocatingFactory@VCAnimGraphGameSystem@@V1@@@", 0, 0)) {
+		MdtMemBlockInfos mbis;
+		MdtMemAccessBegin((LPVOID)&(vtable[3]), sizeof(void*), &mbis);
+		g_orgCreateAnimGraphSystem = (g_CreateAnimGraphSystem_t)vtable[3];
+		vtable[3] = &g_newCreateAnimGraphSystem;
+		MdtMemAccessEnd(&mbis);
+	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+	// 26th in vtable for CAnimGraphGameSystem, has "AnimGraph Client Tick"
+	size_t g_orgUpdateAnimGraph_addr = getAddress(clientDll, "48 89 4C 24 ?? 55 57 41 57");
+	if(g_orgUpdateAnimGraph_addr == 0) {
+		ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
+	g_orgUpdateAnimGraph = (g_updateAnimGraph_t)(g_orgUpdateAnimGraph_addr);
+}
+
 CON_COMMAND(mirv_fix, "Various fixes")
 {
 	int argc = args->ArgC();
@@ -155,9 +193,22 @@ CON_COMMAND(mirv_fix, "Various fixes")
 			}
 
 			return;
+		} else if (0 == _stricmp("animations", arg1)) {
+			if (3 == argc) {
+				g_MirvFix.fixAnimations = 0 != atoi(args->ArgV(2));
+				return;
+			}
+			advancedfx::Message(
+				"%s %s 0|1 - Enable/disable fix for smooth animations (Default: 0).\n"
+				"Current value: %i\n"
+				, arg0, arg1, g_MirvFix.fixAnimations ? 1 : 0
+			);
+
+			return;
 		}
 	}
 	advancedfx::Message(
-		"%s time [...] - Apply various time fixes (panorama and scene system).", arg0
+		"%s time [...] - Apply various time fixes (panorama and scene system).\n"
+		"%s animations 0|1 - Enable/disable fix for smooth animations (Default: 0).\n", arg0, arg0
 	);
 }

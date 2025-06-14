@@ -6,6 +6,9 @@
 extern CAfxImportsHook g_Import_SceneSystem;
 extern CAfxImportsHook g_Import_panorama;
 
+void HookFixClient(HMODULE clientDll);
+void updateAnimGraph();
+
 struct MirvFix {
     struct Time {
         bool enabled = true;
@@ -20,6 +23,8 @@ struct MirvFix {
         Mode mode = AUTO;
 
     } time;
+
+	bool fixAnimations = false;
 };
 
 extern MirvFix g_MirvFix;
