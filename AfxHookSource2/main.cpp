@@ -1470,8 +1470,7 @@ void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameSta
 	}	
 
 	switch(curStage) {
-	case SOURCESDK::CS2::FRAME_RENDER_START:
-		// This apparently doesn't get called when demo is paused.
+	case SOURCESDK::CS2::FRAME_RENDER_PASS:
 		g_CommandSystem.OnExecuteCommands();
 		break;
 	}
@@ -1483,7 +1482,7 @@ void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameSta
 	AfxHookSource2Rs_Engine_OnClientFrameStageNotify(curStage, false);
 
 	switch(curStage) {
-	case SOURCESDK::CS2::FRAME_RENDER_END:
+	case SOURCESDK::CS2::FRAME_RENDER_PASS:
 		AfxHookSource2Rs_Engine_RunJobQueue();
 		break;
 	}

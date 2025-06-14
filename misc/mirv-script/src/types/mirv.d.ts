@@ -255,14 +255,9 @@ declare namespace mirv {
 	 *
 	 * @remarks
 	 * curStage usually has one of the following values in CS2:
-	 * FRAME_UNDEFINED = -1, // usually doesn't happen.
-	 * FRAME_START = 0, // A new host frame (tick) is begun.
-	 * FRAME_NET_UPDATE_START = 1 // Processing of network data is begun
-	 * FRAME_NET_UPDATE_POSTDATAUPDATE_START = 2 // Data has been received and we're going to start calling PostDataUpdate
-	 * FRAME_NET_UPDATE_POSTDATAUPDATE_END = 3, // Data has been received and we've called PostDataUpdate on all data recipients
-	 * FRAME_NET_UPDATE_END = 4, // We've received all packets, we can now do interpolation, prediction, etc..
-	 * FRAME_RENDER_START = 5, // We're about to start rendering the scene. Currently not called in CS2 when demo is paused!
-	 * FRAME_RENDER_END = 6, // We've finished rendering the scene. Currently not called in CS2 when demo is paused!
+	 * FRAME_UNDEFINED=-1,		// (haven't run any frames yet)
+	 * FRAME_RENDER_PASS = 9	// Render a frame for display
+	 * There are more values in-between, but their meanings have changed and we did not confirm them yet.
 	 *
 	 * @param e - curStage - current stage, isBefore - if called before (true) or after (false) client DLL for this stage.
 	 */
