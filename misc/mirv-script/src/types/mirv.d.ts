@@ -79,8 +79,7 @@ declare namespace mirv {
 	 * This allows to manually trigger processing of synchronous jobs (Promises).
 	 *
 	 * @remarks
-	 * Currrently HLAE triggers this automatically upon after FRAME_RENDER_END in onClientFrameStageNotify,
-	 * which is not called by CS2 when the demo is paused. This subject to change.
+	 * Currently HLAE triggers this automatically upon after FRAME_RENDER_PASS after onClientFrameStageNotify.
 	 */
 	function run_jobs(): void;
 
@@ -88,8 +87,7 @@ declare namespace mirv {
 	 * This allows to manually trigger processing of asynchronous jobs (Futures) that turn into Promises eventually.
 	 *
 	 * @remarks
-	 * Currrently HLAE triggers this automatically upon after FRAME_RENDER_END in onClientFrameStageNotify,
-	 * which is not called by CS2 when the demo is paused. This subject to change.
+	 * Currently HLAE triggers this automatically upon after FRAME_RENDER_PASS after onClientFrameStageNotify.
 	 */
 	function run_jobs_async(): void;
 

@@ -69,8 +69,8 @@ import { handleMessage } from './mirv-handler.js';
 			mirv.run_jobs_async();
 		}
 
-		// FRAME_RENDER_END - this is not called when demo is paused (can be multiple per tick).
-		if (e.curStage === 6 && e.isBefore) {
+		// FRAME_RENDER_PASS - called when a frame is to be rendered by engine thread
+		if (e.curStage === 9 && e.isBefore) {
 			if (wsConn.isConnected()) wsConn.flush();
 		}
 	};
