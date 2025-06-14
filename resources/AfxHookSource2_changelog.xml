@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.35.0</version>
+<time>2025-06-14T16:45Z</time>
+<changes>
+<change type="added">Added #1057, joint effort with @ChetdeJong: mirv_fix animations 0|1 - Enable/disable fix for smooth animations (Default: 0).</change>
+<change type="fixed">Attention mirv-script users, we made updates / corrections you might want to apply to your own project: https://github.com/advancedfx/advancedfx/commit/eb9111185d48d21bdb1144c2ba301bf0c6332220</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.34.0</version>
 <time>2025-06-11T15:00Z</time>
 <changes>
