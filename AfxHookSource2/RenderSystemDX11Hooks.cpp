@@ -2935,7 +2935,7 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
             settings.DepthChannels = CStreamSettings::DepthChannels_e::Dithered;
             settings.DepthMode = CStreamSettings::DepthMode_e::PyramidalLinear;
         } else {
-            advancedfx::Warning("AFXERROR: \"%s\" is not a valid stream template.\n");
+            advancedfx::Warning("AFXERROR: \"%s\" is not a valid stream template.\n", arg1);
             return;
         }
         
