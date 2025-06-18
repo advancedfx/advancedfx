@@ -1481,10 +1481,11 @@ void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameSta
 
 	AfxHookSource2Rs_Engine_OnClientFrameStageNotify(curStage, false);
 
+	if (curStage == 0 || curStage == 9) updateAnimGraph();
+
 	switch(curStage) {
 	case SOURCESDK::CS2::FRAME_RENDER_PASS:
 		AfxHookSource2Rs_Engine_RunJobQueue();
-		updateAnimGraph();
 		break;
 	}
 }
