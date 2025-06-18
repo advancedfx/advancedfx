@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.35.2</version>
+<time>2025-06-18T15:00Z</time>
+<changes>
+<change type="fixed">Fixed #1059 CS2: issue with animations fix by @ChetdeJong</change>
+<change type="fixed">Fixed #1060 CS2: Crashes when trying to add a non-existing stream template</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.35.1</version>
 <time>2025-06-16T06:00Z</time>
 <changes>
