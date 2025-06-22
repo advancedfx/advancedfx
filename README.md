@@ -71,6 +71,10 @@ Thus the support we can provide is limited. We encourage you to read the Manual 
    https://hlae.site  
    This site is run by a third party and one of the HLAE team members is involved.
 
+## Releated tools
+
+For a list of related tools see [related-tools.md](https://github.com/advancedfx/advancedfx/tree/main/related-tools.md)
+
 ## Changelog
 
 Newer changelog entries are replicated on the [releases page](https://github.com/advancedfx/advancedfx/releases).  
