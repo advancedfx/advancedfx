@@ -390,7 +390,7 @@ https://github.com/cademtz
 
 #### Denis 'ChetdeJong' Karkin
 
-2024-05-08 - 2025-06-18
+2024-05-08 - 2025-07-03
 
 code, test, doc
 

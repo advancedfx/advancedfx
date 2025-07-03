@@ -51,11 +51,11 @@ namespace AfxGui
 
             m_Guids = new Guid[]{
                 // current GUID:
-                new Guid("1fc533c9-1aac-4c0b-8725-e3d77d748d77"),
+                new Guid("c76e8658-6c8c-49b6-b41a-8b6f1b34aa8a"),
                 // current roll-back GUID:
-                new Guid("3e0b7bfa-4574-405e-91ca-29a51a3646fa"),
+                new Guid("8b14f748-a6da-4fc5-93bb-301efdb2fb78"),
                 // old GUID(s) to accept:
-                new Guid("70047e36-1432-4c5e-ba1e-acf8045f05e3")
+                new Guid("1fc533c9-1aac-4c0b-8725-e3d77d748d77")
             };
 
 	        m_Targets = new LinkedList<UpdateCheckNotificationTarget>();
@@ -244,7 +244,7 @@ namespace AfxGui
         }
 
         const int m_MaxRedirects = 1;
-        const String m_Url = "https://www.advancedfx.org/update/61b65ac26b714c41a1d998af3c5bd6dd.xml";
+        const String m_Url = "https://raw.githubusercontent.com/advancedfx/advancedfx/refs/heads/update-check/hlae/61b65ac26b714c41a1d998af3c5bd6dd.xml";
 
 	    Thread m_CheckThread;
 	    bool m_CheckThreadQuit;

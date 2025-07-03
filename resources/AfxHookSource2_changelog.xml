@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.35.3</version>
+<time>2025-07-03T07:30Z</time>
+<changes>
+<change type="fixed">Adjusted to CS2 update, #1065 by @ChetdeJong</change>
+<change type="updated">Improved mirv_replace_name a bit. (Does not replace chat messages, use tv_nochat true)</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.35.2</version>
 <time>2025-06-18T15:00Z</time>
 <changes>
