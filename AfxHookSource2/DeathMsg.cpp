@@ -1011,14 +1011,14 @@ bool getDeathMsgAddrs(HMODULE clientDll) {
 bool getPanoramaAddrsFromClient(HMODULE clientDll) {
 	// credit https://github.com/danielkrupinski/Osiris
 
-	// the only function that has file://{resources}/layout/hud/hud.xml" string
-	// hudpanel is DAT that param_1 assigned to
-	size_t g_HudPanel_addr = getAddress(clientDll, "89 ?? ?? ?? ?? ?? C6 ?? ?? ?? ?? ?? ?? 48 89 ?? ?? ?? ?? ?? E8 ?? ?? ?? ?? 48");
+	// function has "file://{resources}/layout/hud/hud.xml" string and also references CCSGO_Hud vftable
+	// hudpanel is DAT that param_1 assigned to     
+	size_t g_HudPanel_addr = getAddress(clientDll, "48 8B 44 24 ?? 48 89 86 ?? ?? ?? ?? 48 89 35 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48");
 	if (g_HudPanel_addr == 0) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));	
 		return false;
 	} else {
-		g_HudPanel_addr += 16;
+		g_HudPanel_addr += 15;
 	};
 
 	// function has CreatePanelWithCurrentContext string
