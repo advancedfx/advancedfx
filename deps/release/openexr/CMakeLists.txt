@@ -6,73 +6,46 @@ project ("openexr")
 # OpenEXR
 #
 
+set(OPENEXR_INSTALL OFF)
+set(OPENEXR_BUILD_LIBS ON)
+set(OPENEXR_BUILD_TOOLS OFF)
+set(OPENEXR_INSTALL_TOOLS OFF)
+set(OPENEXR_BUILD_EXAMPLES OFF)
+set(OPENEXR_TEST_LIBRARIES ON)
+set(OPENEXR_TEST_TOOLS OFF)
+set(OPENEXR_TEST_PYTHON OFF)
+set(BUILD_SHARED_LIBS ON)
 FetchContent_Declare(
 	openexr
-	GIT_REPOSITORY https://github.com/advancedfx/openexr.git
-    GIT_TAG v2.5.2
+	GIT_REPOSITORY https://github.com/AcademySoftwareFoundation/openexr.git
+    GIT_TAG 7ec1cf59a0409d9d5c60ed111da9831890fa8296 #v3.3.4
 )
+FetchContent_MakeAvailable(openexr)
 
-FetchContent_GetProperties(openexr)
-if(NOT openexr_POPULATED)
-  FetchContent_Populate(openexr)
-  add_custom_target(openexr)
-endif()
-
-set(ILMBASE_TMP_DIR "${openexr_BINARY_DIR}/tmp-ilmbase")
-set(OPENEXR_TMP_DIR "${openexr_BINARY_DIR}/tmp-openexr")
-
-set(ILMBASE_BUILD_DIR "${openexr_BINARY_DIR}/ilmbase-build")
-set(OPENEXR_BUILD_DIR "${openexr_BINARY_DIR}/openexr-build")
-
-set(ILMBASE_BUILD_DIR ${ILMBASE_BUILD_DIR} PARENT_SCOPE)
-set(OPENEXR_BUILD_DIR ${OPENEXR_BUILD_DIR} PARENT_SCOPE)
-
-
-add_custom_target(openexr_build_dirs
-    DEPENDS openexr
-    WORKING_DIRECTORY ${openexr_BINARY_DIR}
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${ILMBASE_TMP_DIR}
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${OPENEXR_TMP_DIR}
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${ILMBASE_BUILD_DIR}
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${OPENEXR_BUILD_DIR}
+set(AFX_OPENEXR_INCLUDE_DIRECTORIES
+    ${Imath_SOURCE_DIR}/src/Imath
+    ${Imath_BINARY_DIR}/config
+    ${OpenEXR_SOURCE_DIR}/src/lib/Iex
+    ${OpenEXR_SOURCE_DIR}/src/lib/OpenEXR
+    ${OpenEXR_BINARY_DIR}/cmake
 )
+set(AFX_OPENEXR_INCLUDE_DIRECTORIES ${AFX_OPENEXR_INCLUDE_DIRECTORIES} PARENT_SCOPE)
 
-set(ILMBASE_BUILD_BINARIES
-	"${ILMBASE_BUILD_DIR}/bin/Half-2_5$<$<CONFIG:Debug>:_d>.dll"
-	"${ILMBASE_BUILD_DIR}/bin/Iex-2_5$<$<CONFIG:Debug>:_d>.dll"
-	"${ILMBASE_BUILD_DIR}/bin/IexMath-2_5$<$<CONFIG:Debug>:_d>.dll"
-	"${ILMBASE_BUILD_DIR}/bin/IlmThread-2_5$<$<CONFIG:Debug>:_d>.dll"
-	"${ILMBASE_BUILD_DIR}/bin/Imath-2_5$<$<CONFIG:Debug>:_d>.dll"
+set(AFX_OPENEXR_LINK_DIRECTORIES
+	${OpenEXR_BINARY_DIR}/src/lib
 )
-set(ILMBASE_BUILD_BINARIES ${ILMBASE_BUILD_BINARIES} PARENT_SCOPE)
+set(AFX_OPENEXR_LINK_DIRECTORIES ${AFX_OPENEXR_LINK_DIRECTORIES} PARENT_SCOPE)
 
-add_custom_command(
-    WORKING_DIRECTORY ${ILMBASE_TMP_DIR}
-    OUTPUT ${ILMBASE_BUILD_BINARIES}
-    DEPENDS openexr openexr_build_dirs
-    COMMAND ${CMAKE_COMMAND} "-DBUILD_SHARED_LIBS=1" "-DCMAKE_INSTALL_PREFIX=${ILMBASE_BUILD_DIR}" -G "${CMAKE_GENERATOR}" -T "${CMAKE_GENERATOR_TOOLSET}" -A "${CMAKE_GENERATOR_PLATFORM}" "${openexr_SOURCE_DIR}/IlmBase"
-    COMMAND ${VS_MSBUILD} "ALL_BUILD.vcxproj" "/p:Configuration=${VS_CONFIGURATION}" "/p:Platform=${CMAKE_GENERATOR_PLATFORM}"
-    COMMAND ${VS_MSBUILD} "INSTALL.vcxproj" "/p:Configuration=${VS_CONFIGURATION}" "/p:Platform=${CMAKE_GENERATOR_PLATFORM}"
+set(AFX_OPENEXR_LINK_LIBRARIES
+	${OpenEXR_BINARY_DIR}/src/lib/OpenEXR/$<CONFIG>/OpenEXR-3_3$<$<CONFIG:Debug>:_d>.lib
 )
+set(AFX_OPENEXR_LINK_LIBRARIES ${AFX_OPENEXR_LINK_LIBRARIES} PARENT_SCOPE)
 
-add_custom_target(ilmbase_build
-    DEPENDS ${ILMBASE_BUILD_BINARIES}
+set(AFX_OPENEXR_INSTALL_BINARIES
+	${CMAKE_BINARY_DIR}/bin/$<CONFIG>/Iex-3_3.dll
+	${CMAKE_BINARY_DIR}/bin/$<CONFIG>/IlmThread-3_3.dll
+	${CMAKE_BINARY_DIR}/bin/$<CONFIG>/Imath-3_1.dll
+	${CMAKE_BINARY_DIR}/bin/$<CONFIG>/OpenEXR-3_3.dll
+	${CMAKE_BINARY_DIR}/bin/$<CONFIG>/OpenEXRCore-3_3.dll
 )
-
-set(OPENEXR_BUILD_BINARIES
-    "${OPENEXR_BUILD_DIR}/bin/IlmImf-2_5$<$<CONFIG:Debug>:_d>.dll"
-)
-set(OPENEXR_BUILD_BINARIES ${OPENEXR_BUILD_BINARIES} PARENT_SCOPE)
-
-add_custom_command(
-    WORKING_DIRECTORY ${OPENEXR_TMP_DIR}
-    OUTPUT ${OPENEXR_BUILD_BINARIES}
-    DEPENDS openexr openexr_build_dirs ilmbase_build zlib_build
-    COMMAND ${CMAKE_COMMAND} "-DBUILD_SHARED_LIBS=1" "-DZLIB_ROOT=${zlib_SOURCE_DIR}" "-DCMAKE_PREFIX_PATH=${ILMBASE_BUILD_DIR}" "-DCMAKE_SYSTEM_PREFIX=${ILMBASE_BUILD_DIR}" "-DCMAKE_INSTALL_PREFIX=${OPENEXR_BUILD_DIR}" -G "${CMAKE_GENERATOR}" -T "${CMAKE_GENERATOR_TOOLSET}" -A "${CMAKE_GENERATOR_PLATFORM}" "${openexr_SOURCE_DIR}/OpenEXR"
-    COMMAND ${VS_MSBUILD} "ALL_BUILD.vcxproj" "/p:Configuration=${VS_CONFIGURATION}" "/p:Platform=${CMAKE_GENERATOR_PLATFORM}"
-    COMMAND ${VS_MSBUILD} "INSTALL.vcxproj" "/p:Configuration=${VS_CONFIGURATION}" "/p:Platform=${CMAKE_GENERATOR_PLATFORM}"
-)
-
-add_custom_target(openexr_build
-    DEPENDS ${OPENEXR_BUILD_BINARIES}
-)
+set(AFX_OPENEXR_INSTALL_BINARIES ${AFX_OPENEXR_INSTALL_BINARIES} PARENT_SCOPE)
