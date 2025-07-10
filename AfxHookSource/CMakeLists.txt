@@ -66,8 +66,7 @@ add_custom_target(AfxHookSourceProtobufs
 add_library(AfxHookSource MODULE)
 
 add_dependencies(AfxHookSource
-    ilmbase_build
-    openexr_build
+    OpenEXR
     AfxHookSourceShaders
     AfxHookSourceProtobufs
 )
@@ -87,18 +86,17 @@ target_include_directories(AfxHookSource PRIVATE
     ../deps/release/prop/AfxHookSource
     ../
     ../deps/release/prop
-    ${OPENEXR_BUILD_DIR}/include/OpenEXR
-    ${ILMBASE_BUILD_DIR}/include/OpenEXR
+    ${AFX_OPENEXR_INCLUDE_DIRECTORIES}
     ${protobuf_SOURCE_DIR}/src
 )
 
 target_link_directories(AfxHookSource PRIVATE
-    ${OPENEXR_BUILD_DIR}/lib
+    ${AFX_OPENEXR_LINK_DIRECTORIES}
     ${protobuf_BINARY_DIR}/${CMAKE_CFG_INTDIR}
 )
 
 target_link_libraries(AfxHookSource PRIVATE
-    IlmImf-2_5$<$<CONFIG:Debug>:_d>.lib
+    ${AFX_OPENEXR_LINK_LIBRARIES}
     libprotobuf$<$<CONFIG:Debug>:d>.lib
 )
 

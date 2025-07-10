@@ -50,8 +50,7 @@ add_custom_target(AfxHookSource2Shaders
 add_library(${PROJECT_NAME} MODULE)
 
 add_dependencies(${PROJECT_NAME}
-    ilmbase_build
-    openexr_build
+    OpenEXR
     AfxHookSource2Shaders
     AfxHookSource2Snippets
 )
@@ -90,16 +89,15 @@ target_link_options(${PROJECT_NAME} PRIVATE
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ./
-    ${OPENEXR_BUILD_DIR}/include/OpenEXR
-    ${ILMBASE_BUILD_DIR}/include/OpenEXR    
+    ${AFX_OPENEXR_INCLUDE_DIRECTORIES}
 )
 
 target_link_directories(${PROJECT_NAME} PRIVATE
-    ${OPENEXR_BUILD_DIR}/lib
+    ${AFX_OPENEXR_LINK_DIRECTORIES}
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    IlmImf-2_5$<$<CONFIG:Debug>:_d>.lib
+    ${AFX_OPENEXR_LINK_LIBRARIES}
     afx_hook_source2_rs
 	dxguid.lib
     bcrypt.lib # corrosion fails to detect this

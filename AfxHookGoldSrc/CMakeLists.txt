@@ -5,8 +5,7 @@ project ("AfxHookGoldSrc")
 add_library(${PROJECT_NAME} MODULE)
 
 add_dependencies(${PROJECT_NAME}
-    ilmbase_build
-    openexr_build
+    OpenEXR
 )
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
@@ -32,16 +31,15 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ../deps/release/halflife/engine
     ../deps/release/halflife/pm_shared
     ../deps/release/halflife/public
-    ${OPENEXR_BUILD_DIR}/include/OpenEXR
-    ${ILMBASE_BUILD_DIR}/include/OpenEXR    
+    ${AFX_OPENEXR_INCLUDE_DIRECTORIES}
 )
 
 target_link_directories(${PROJECT_NAME} PRIVATE
-    ${OPENEXR_BUILD_DIR}/lib
+    ${AFX_OPENEXR_LINK_DIRECTORIES}
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    IlmImf-2_5$<$<CONFIG:Debug>:_d>.lib
+    ${AFX_OPENEXR_LINK_LIBRARIES}
 )
 
 target_sources(${PROJECT_NAME} PRIVATE

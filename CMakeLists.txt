@@ -130,7 +130,6 @@ FetchContent_MakeAvailable(Corrosion)
 #
 
 if(CMAKE_GENERATOR_PLATFORM STREQUAL "Win32")
-    add_subdirectory("deps/release/zlib")
     add_subdirectory("deps/release/protobuf")
     add_subdirectory("deps/release/openexr")
     add_subdirectory("deps/release/injector_bin")
@@ -145,7 +144,6 @@ if(CMAKE_GENERATOR_PLATFORM STREQUAL "Win32")
 	    DEPENDS hlae
     )
 elseif(CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
-    add_subdirectory("deps/release/zlib")
     add_subdirectory("deps/release/openexr")
     add_subdirectory("ShaderBuilder")
     add_subdirectory("AfxHookSource2")
@@ -184,10 +182,7 @@ if(CMAKE_GENERATOR_PLATFORM STREQUAL "Win32")
             "${hlae_BINARY_DIR}/NGettext.dll"
             "${injector_BINARY_DIR}/injector.exe"
 
-            "${zlib_SOURCE_DIR}/zlib1.dll"
-
-            ${ILMBASE_BUILD_BINARIES}
-            ${OPENEXR_BUILD_BINARIES}
+            ${AFX_OPENEXR_INSTALL_BINARIES}
 
         DESTINATION "bin"
     )
@@ -229,10 +224,7 @@ elseif(CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
 
             "${AfxHookSource2_BINARY_DIR}/$<CONFIG>/AfxHookSource2.dll"
 
-            "${zlib_SOURCE_DIR}/zlib1.dll"
-
-            ${ILMBASE_BUILD_BINARIES}
-            ${OPENEXR_BUILD_BINARIES}            
+            ${AFX_OPENEXR_INSTALL_BINARIES}           
         DESTINATION "bin/x64"
     )    
 

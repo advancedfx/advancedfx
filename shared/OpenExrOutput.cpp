@@ -4,13 +4,17 @@
 
 #include "StringTools.h"
 
-#include <ImfNamespace.h>
-#include <ImfOutputFile.h>
-#include <ImfChannelList.h>
+#undef min
+#undef max
 
+#include <ImfChannelList.h>
+#include <ImfHeader.h>
+#include <ImfFrameBuffer.h>
+#include <ImfOutputFile.h>
+
+#include <ImfNamespace.h>
 namespace IMF = OPENEXR_IMF_NAMESPACE;
 
-using namespace IMF;
 
 bool WriteFloatZOpenExr(
 	wchar_t const * fileName,
@@ -29,16 +33,16 @@ bool WriteFloatZOpenExr(
 
 	try
 	{
-		Header header (width, height);
-		header.channels().insert ("Z", Channel (IMF::FLOAT));
-		header.compression() = WFZOEC_Zip == compression ? ZIP_COMPRESSION : NO_COMPRESSION;
-		if (!topDown) header.lineOrder() = DECREASING_Y;
+		IMF::Header header (width, height);
+		header.channels().insert ("Z", IMF::Channel (IMF::FLOAT));
+		header.compression() = WFZOEC_Zip == compression ? IMF::ZIP_COMPRESSION : IMF:: NO_COMPRESSION;
+		if (!topDown) header.lineOrder() = IMF::DECREASING_Y;
 
-		OutputFile file (ansiFileName.c_str(), header);
+		IMF::OutputFile file (ansiFileName.c_str(), header);
 
-		FrameBuffer frameBuffer;
+		IMF::FrameBuffer frameBuffer;
 
-		frameBuffer.insert ("Z", Slice (IMF::FLOAT, (char *) pData, xStride, yStride));
+		frameBuffer.insert ("Z", IMF::Slice (IMF::FLOAT, (char *) pData, xStride, yStride));
 
 		file.setFrameBuffer (frameBuffer);
 		file.writePixels (height);
