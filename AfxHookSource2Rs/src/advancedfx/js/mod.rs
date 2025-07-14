@@ -2,8 +2,7 @@ pub mod campath;
 pub mod errors;
 pub mod math;
 
-use std::cell::RefCell;
-use std::rc::Weak;
+use std::rc::Rc;
 
 use boa_engine::{
     Context,
@@ -12,36 +11,67 @@ use boa_engine::{
     Trace
 };
 
-pub struct ContextWrapper {
-    pub context: Context,
-}
-
-impl ContextWrapper {
-    pub fn new(context: Context) -> Self {
-        Self {
-            context: context
-        }
-    }
-}
-
 #[derive(Trace, Finalize, JsData)]
-pub struct WeakContextWrapper {
+pub struct ContextMutRef {
+
     #[unsafe_ignore_trace]
-    pub context_wrapper: Weak<RefCell<ContextWrapper>>
+    ptr: * mut Context,
+
+    #[unsafe_ignore_trace]
+    rc: Rc::<ContextHolder>
 }
 
-impl WeakContextWrapper {
-    pub fn new(context_wrapper: Weak<RefCell<ContextWrapper>>) -> Self {
+impl ContextMutRef {
+    pub fn new(context_holder: Rc::<ContextHolder>) -> Self {
         Self {
-            context_wrapper: context_wrapper
+            ptr: context_holder.ptr,
+            rc: context_holder.clone()
         }
+    }  
+    
+    pub fn get<'a>(&self) -> &'a mut Context {
+        unsafe{&mut *self.ptr}
     }
 }
 
-impl Clone for WeakContextWrapper {
+impl Clone for ContextMutRef {
     fn clone(&self) -> Self {
         Self {
-            context_wrapper: self.context_wrapper.clone()
+            ptr: self.ptr,
+            rc: self.rc.clone()
         }
+    }
+}
+
+pub struct ContextHolder {
+    ptr: * mut Context
+}
+
+impl ContextHolder {
+    pub fn new(context: Context) -> Rc<Self> {
+        let ptr = Box::into_raw(Box::new(context));
+
+        let result = Rc::<ContextHolder>::new(Self {
+            ptr: ptr
+        });
+
+        result.get().insert_data(ContextMutRef::new(result.clone()));
+
+        result
+    }
+
+    pub fn get<'a>(&self) -> &'a mut Context {
+        unsafe{&mut *self.ptr}
+    }
+}
+
+impl Drop for ContextHolder {
+    fn drop(&mut self) {
+        if self.ptr.is_null() {
+            return;
+        }
+        self.get().remove_data::<ContextMutRef>();
+        drop(unsafe{Box::from_raw(self.ptr)});
+        self.ptr = std::ptr::null_mut();
     }
 }
