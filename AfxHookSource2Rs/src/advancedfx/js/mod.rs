@@ -3,6 +3,7 @@ pub mod errors;
 pub mod math;
 
 use std::rc::Rc;
+use std::rc::Weak;
 
 use boa_engine::{
     Context,
@@ -15,30 +16,25 @@ use boa_engine::{
 pub struct ContextMutRef {
 
     #[unsafe_ignore_trace]
-    ptr: * mut Context,
-
-    #[unsafe_ignore_trace]
-    rc: Rc::<ContextHolder>
+    context_holder: Weak::<ContextHolder>
 }
 
 impl ContextMutRef {
-    pub fn new(context_holder: Rc::<ContextHolder>) -> Self {
+    pub fn new(context_holder: Weak::<ContextHolder>) -> Self {
         Self {
-            ptr: context_holder.ptr,
-            rc: context_holder.clone()
+            context_holder: context_holder
         }
     }  
     
-    pub fn get<'a>(&self) -> &'a mut Context {
-        unsafe{&mut *self.ptr}
+    pub fn get<'a>(&self) -> Option<&'a mut Context> {
+        self.context_holder.upgrade().map(|x| unsafe{&mut *x.ptr})        
     }
 }
 
 impl Clone for ContextMutRef {
     fn clone(&self) -> Self {
         Self {
-            ptr: self.ptr,
-            rc: self.rc.clone()
+            context_holder: self.context_holder.clone()
         }
     }
 }
@@ -55,7 +51,7 @@ impl ContextHolder {
             ptr: ptr
         });
 
-        result.get().insert_data(ContextMutRef::new(result.clone()));
+        result.get().insert_data(ContextMutRef::new(Rc::downgrade(&result)));
 
         result
     }

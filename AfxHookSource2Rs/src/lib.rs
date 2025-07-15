@@ -274,11 +274,12 @@ impl ConCommand {
     }
 
     fn callback(&mut self, p_command_args: * mut CommandArgsRs) {
-        let context : &mut Context = &mut self.context.get();
-        let rc = Rc::new(p_command_args);
-        if let Ok(result_object) = ConCommandsArgs::from_data(ConCommandsArgs::new(Rc::downgrade(&rc.clone())), context) {
-            if let Err(e) = self.callback.call(&JsValue::null(), &[JsValue::Object(result_object)], context) {
-                let _ = afx_on_error(&e, context);
+        if let Some(context) = self.context.get() {
+            let rc = Rc::new(p_command_args);
+            if let Ok(result_object) = ConCommandsArgs::from_data(ConCommandsArgs::new(Rc::downgrade(&rc.clone())), context) {
+                if let Err(e) = self.callback.call(&JsValue::null(), &[JsValue::Object(result_object)], context) {
+                    let _ = afx_on_error(&e, context);
+                }
             }
         }
     }    
@@ -1364,14 +1365,22 @@ impl MirvWsResult {
 macro_rules! afx_make_async_error {
     (StandardError: $macro: expr, $context_ptr_option: ident) => {
         if let Some(context_ptr) = $context_ptr_option {
-           $macro(&mut context_ptr.get())
+            if let Some(context) = context_ptr.get() {
+                $macro(context)
+            } else {
+                advancedfx::js::errors::error_resolve_wrapper_failed()
+            }
         } else {
             advancedfx::js::errors::error_resolve_wrapper_failed()
         }        
     };
     (CustomError: $js_native_error: expr, $message: expr, $context_ptr_option: ident) => {
         if let Some(context_ptr) = $context_ptr_option {
-            advancedfx::js::errors::make_error!($js_native_error, $message, &mut context_ptr.get())
+            if let Some(context) = context_ptr.get() {
+                advancedfx::js::errors::make_error!($js_native_error, $message, context)
+            } else {
+                advancedfx::js::errors::error_resolve_wrapper_failed()
+            }            
         } else {
             advancedfx::js::errors::error_resolve_wrapper_failed()
         }
