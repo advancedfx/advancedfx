@@ -376,7 +376,9 @@ impl CampathChangedCallback {
 
 impl advancedfx::campath::CampathChangedObserver for CampathChangedCallback {
     fn notify(&mut self) {
-        let _ = self.callback.call(&JsValue::null(), &[], &mut self.context_mut_ref.get());
+        if let Some(context) = self.context_mut_ref.get() {
+            let _ = self.callback.call(&JsValue::null(), &[], context);
+        }
     }
 }
 
