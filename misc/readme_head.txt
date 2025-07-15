@@ -126,10 +126,6 @@ qspline CC0
 	http://qspline.sourceforge.net/
 	https://sourceforge.net/projects/qspline-cc0
 
-zLib
-	https://zlib.net/
-	License: ./LICENSES/zlib/README
-
 And everyone that feels he/she/it should have been mentioned here.
 
 Further licenses can be found in ./LICENSES folder.
