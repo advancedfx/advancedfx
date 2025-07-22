@@ -6,15 +6,16 @@ project ("openexr")
 # OpenEXR
 #
 
-set(OPENEXR_INSTALL OFF)
-set(OPENEXR_BUILD_LIBS ON)
-set(OPENEXR_BUILD_TOOLS OFF)
-set(OPENEXR_INSTALL_TOOLS OFF)
-set(OPENEXR_BUILD_EXAMPLES OFF)
-set(OPENEXR_TEST_LIBRARIES ON)
-set(OPENEXR_TEST_TOOLS OFF)
-set(OPENEXR_TEST_PYTHON OFF)
-set(BUILD_SHARED_LIBS ON)
+set(IMATH_INSTALL Off) # this one is important, otherwise it OpenEXR Imath build shits us a DLL into installer /bin folder that will overwrite our 32 bit DLL when merging in install step.
+set(OPENEXR_INSTALL Off)
+set(OPENEXR_BUILD_LIBS On)
+set(OPENEXR_BUILD_TOOLS Off)
+set(OPENEXR_INSTALL_TOOLS Off)
+set(OPENEXR_BUILD_EXAMPLES Off)
+set(OPENEXR_TEST_LIBRARIES On)
+set(OPENEXR_TEST_TOOLS Off)
+set(OPENEXR_TEST_PYTHON Off)
+set(BUILD_SHARED_LIBS On)
 FetchContent_Declare(
 	openexr
 	GIT_REPOSITORY https://github.com/AcademySoftwareFoundation/openexr.git
