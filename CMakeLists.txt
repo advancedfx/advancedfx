@@ -2,6 +2,11 @@
 
 project ("advancedfx")
 
+# Define CMAKE_CXX_STANDARD otherwise e.g. libprotobuf will have linking problems against ABSL when compiling protobuf:
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED On)
+set(CMAKE_CXX_EXTENSIONS Off)
+
 string(TOLOWER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE)
 if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
 	set(CMAKE_BUILD_TYPE_DEBUG 1)
@@ -81,6 +86,24 @@ if (NOT ${PROJECT_NAME}-MultiBuild)
 
         # Copy resources:        
         execute_process( WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}\" COMMAND \"${CMAKE_SOURCE_DIR}/copy_resources_release.bat\" \"${CMAKE_INSTALL_PREFIX}/bin\" )
+
+        # Copy additional licenses related to corrosion:
+        execute_process( WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\" COMMAND \"${CMAKE_COMMAND}\" -E make_directory \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/corrosion\")
+        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}/bin\" COMMAND \"${CMAKE_COMMAND}\" -E copy \"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-Win32/_deps/corrosion-src/LICENSE\" -t  \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/corrosion\")
+
+        # Copy additional licenses related to OpenEXR:
+        execute_process( WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\" COMMAND \"${CMAKE_COMMAND}\" -E make_directory \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/deflate\")
+        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}/bin\" COMMAND \"${CMAKE_COMMAND}\" -E copy \"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-Win32/_deps/deflate-src/COPYING\" -t  \"${CMAKE_INSTALL_PREFIX}/bin/deflate/corrosion\")
+        execute_process( WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\" COMMAND \"${CMAKE_COMMAND}\" -E make_directory \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/imath\")
+        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}/bin\" COMMAND \"${CMAKE_COMMAND}\" -E copy \"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-Win32/_deps/imath-src/LICENSE.md\" -t  \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/imath\")
+        execute_process( WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\" COMMAND \"${CMAKE_COMMAND}\" -E make_directory \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/openexr\")
+        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}/bin\" COMMAND \"${CMAKE_COMMAND}\" -E copy \"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-Win32/_deps/openexr-src/LICENSE.md\" -t  \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/openexr\")
+
+        # Copy additional licenses related to protobuf:
+        execute_process( WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\" COMMAND \"${CMAKE_COMMAND}\" -E make_directory \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/absl\")
+        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}/bin\" COMMAND \"${CMAKE_COMMAND}\" -E copy \"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-Win32/_deps/absl-src/LICENSE\" -t  \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/absl\")
+        execute_process( WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\" COMMAND \"${CMAKE_COMMAND}\" -E make_directory \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/protobuf\")
+        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}/bin\" COMMAND \"${CMAKE_COMMAND}\" -E copy \"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-Win32/_deps/protobuf-src/LICENSE\" -t  \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/protobuf\")
 
         # Update translations from l10n repo (e.g. required for installer):
         execute_process( WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}\" COMMAND \"${CMAKE_SOURCE_DIR}/l10n_update_to_source.bat\" \"${CMAKE_INSTALL_PREFIX}/bin\" )

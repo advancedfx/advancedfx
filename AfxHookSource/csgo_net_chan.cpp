@@ -10,7 +10,7 @@
 #include <SourceInterfaces.h>
 #include <csgo/bitbuf/demofilebitbuf.h>
 
-#include <build/protobuf/csgo/netmessages.pb.h>
+#include <generated/csgo/netmessages.pb.h>
 
 #include <shared/AfxDetours.h>
 
