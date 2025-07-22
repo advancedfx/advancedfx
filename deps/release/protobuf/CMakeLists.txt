@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.24)
 
 project ("protobuf")
 
@@ -6,35 +6,17 @@ project ("protobuf")
 # protobuf
 #
 
+set(protobuf_INSTALL OFF)
+set(protobuf_BUILD_TESTS OFF)
+set(protobuf_BUILD_CONFORMANCE OFF)
+set(protobuf_BUILD_EXAMPLES OFF)
+set(protobuf_BUILD_PROTOBUF_BINARIES ON)
+set(protobuf_BUILD_PROTOC_BINARIES ON)
+set(protobuf_BUILD_SHARED_LIBS OFF)
+set(protobuf_MSVC_STATIC_RUNTIME OFF)
 FetchContent_Declare(
 	protobuf
-	GIT_REPOSITORY https://github.com/advancedfx/protobuf.git
-    GIT_TAG v3.13.0
+	GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
+    GIT_TAG 74211c0dfc2777318ab53c2cd2c317a2ef9012de #v31.1
 )
-
-FetchContent_GetProperties(protobuf)
-if(NOT openexr_POPULATED)
-  FetchContent_Populate(protobuf)
-  add_custom_target(protobuf)
-endif()
-
-set(PROTOBUF_BUILD_BINARIES
-	"${protobuf_BINARY_DIR}/${CMAKE_CFG_INTDIR}/libprotobuf$<$<CONFIG:Debug>:d>.lib"
-	"${protobuf_BINARY_DIR}/${CMAKE_CFG_INTDIR}/protoc.exe"
-)
-
-set(protobuf_BINARY_DIR ${protobuf_BINARY_DIR} PARENT_SCOPE)
-set(protobuf_SOURCE_DIR ${protobuf_SOURCE_DIR} PARENT_SCOPE)
-
-add_custom_command(
-    WORKING_DIRECTORY ${protobuf_BINARY_DIR}
-	OUTPUT ${PROTOBUF_BUILD_BINARIES}
-    DEPENDS protobuf
-    COMMAND ${CMAKE_COMMAND} "-DCMAKE_INSTALL_PREFIX=${protobuf_BINARY_DIR}/install" -Dprotobuf_BUILD_SHARED_LIBS=OFF -Dprotobuf_MSVC_STATIC_RUNTIME=OFF -G "${CMAKE_GENERATOR}" -T "${CMAKE_GENERATOR_TOOLSET}" -A "Win32"  "${protobuf_SOURCE_DIR}/cmake"
-    COMMAND ${VS_MSBUILD} "libprotobuf.vcxproj" "/p:Configuration=${VS_CONFIGURATION}" "/p:Platform=Win32"
-    COMMAND ${VS_MSBUILD} "protoc.vcxproj" "/p:Configuration=${VS_CONFIGURATION}" "/p:Platform=Win32"
-)
-
-add_custom_target(protobuf_build
-    DEPENDS ${PROTOBUF_BUILD_BINARIES}
-)
+FetchContent_MakeAvailable(protobuf)

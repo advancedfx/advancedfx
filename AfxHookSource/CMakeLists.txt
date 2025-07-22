@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.20)
+cmake_minimum_required (VERSION 3.24)
 
 project ("AfxHookSource")
 
@@ -42,33 +42,33 @@ add_custom_target(AfxHookSourceShaders
     DEPENDS ${AFXHOOKSOURCE_SHADERS}
 )
 
-set(AFXHOOKSOURCE_PROTOBUFS
-	"${CMAKE_CURRENT_SOURCE_DIR}/../build/protobuf/csgo/netmessages.pb.cc"
-	"${CMAKE_CURRENT_SOURCE_DIR}/../build/protobuf/csgo/netmessages.pb.h"
-)
 
-set(AFXHOOKSOURCE_PROTOBUF_SOURCES
-	"${CMAKE_CURRENT_SOURCE_DIR}/../deps/release/prop/protobuf/csgo/netmessages.proto"
-)
+## BEGIN protobuf
 
-add_custom_command(
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../build"
-    OUTPUT ${AFXHOOKSOURCE_PROTOBUFS}
-    DEPENDS protobuf_build ${AFXHOOKSOURCE_PROTOBUF_SOURCES}
-	COMMAND "${CMAKE_COMMAND}" -E make_directory "protobuf/csgo"
-    COMMAND "${protobuf_BINARY_DIR}/${CMAKE_CFG_INTDIR}/protoc.exe" "--proto_path=${protobuf_SOURCE_DIR}/src" "--proto_path=${CMAKE_CURRENT_SOURCE_DIR}/../deps/release/prop/protobuf/csgo" "--cpp_out=${CMAKE_CURRENT_SOURCE_DIR}/../build/protobuf/csgo" "${CMAKE_CURRENT_SOURCE_DIR}/../deps/release/prop/protobuf/csgo/netmessages.proto"
-)
+#find_package(protobuf CONFIG REQUIRED)
+include(${protobuf_SOURCE_DIR}/cmake/protobuf-generate.cmake)
 
-add_custom_target(AfxHookSourceProtobufs
-    DEPENDS ${AFXHOOKSOURCE_PROTOBUFS}
-)
+add_library(AfxHookSourceProtobufs OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/../deps/release/prop/protobuf/csgo/netmessages.proto")
+
+target_link_libraries(AfxHookSourceProtobufs PUBLIC protobuf::libprotobuf)
+
+set(PROTO_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated/csgo")
+
+target_include_directories(AfxHookSourceProtobufs PUBLIC "$<BUILD_INTERFACE:${PROTO_BINARY_DIR}>")
+
+protobuf_generate(
+    TARGET AfxHookSourceProtobufs
+    IMPORT_DIRS "${protobuf_SOURCE_DIR}/src" "${CMAKE_CURRENT_SOURCE_DIR}/../deps/release/prop/protobuf/csgo"
+    PROTOC_OUT_DIR "${PROTO_BINARY_DIR}")
+
+## END protobuf
+
 
 add_library(AfxHookSource MODULE)
 
 add_dependencies(AfxHookSource
     OpenEXR
     AfxHookSourceShaders
-    AfxHookSourceProtobufs
 )
 
 target_compile_definitions(AfxHookSource PRIVATE
@@ -86,18 +86,20 @@ target_include_directories(AfxHookSource PRIVATE
     ../deps/release/prop/AfxHookSource
     ../
     ../deps/release/prop
-    ${AFX_OPENEXR_INCLUDE_DIRECTORIES}
-    ${protobuf_SOURCE_DIR}/src
+    "${AFX_OPENEXR_INCLUDE_DIRECTORIES}"
+    "${protobuf_SOURCE_DIR}/src"
+    "${CMAKE_CURRENT_BINARY_DIR}"
+    AfxHookSourceProtobufs
 )
 
 target_link_directories(AfxHookSource PRIVATE
-    ${AFX_OPENEXR_LINK_DIRECTORIES}
-    ${protobuf_BINARY_DIR}/${CMAKE_CFG_INTDIR}
+    "${AFX_OPENEXR_LINK_DIRECTORIES}"
+    AfxHookSourceProtobufs
 )
 
 target_link_libraries(AfxHookSource PRIVATE
-    ${AFX_OPENEXR_LINK_LIBRARIES}
-    libprotobuf$<$<CONFIG:Debug>:d>.lib
+    "${AFX_OPENEXR_LINK_LIBRARIES}"
+    AfxHookSourceProtobufs
 )
 
 target_sources(AfxHookSource PRIVATE
@@ -214,9 +216,6 @@ target_sources(AfxHookSource PRIVATE
     WrpGlobals.h
     WrpVEngineClient.cpp
     WrpVEngineClient.h
-
-    ../build/protobuf/csgo/netmessages.pb.cc
-    ../build/protobuf/csgo/netmessages.pb.h
 
     ../deps/release/Detours/src/detours.cpp
     ../deps/release/Detours/src/detours.h
@@ -402,9 +401,6 @@ source_group("AfxHookSource/cssV34" REGULAR_EXPRESSION "/AfxHookSource/cssV34/")
 source_group("AfxHookSource/garrysmod" REGULAR_EXPRESSION "/AfxHookSource/garrysmod/")
 source_group("AfxHookSource/momentum" REGULAR_EXPRESSION "/AfxHookSource/momentum/")
 source_group("AfxHookSource/tf2" REGULAR_EXPRESSION "/AfxHookSource/tf2/")
-source_group("build" REGULAR_EXPRESSION "/build/")
-source_group("build/protobuf" REGULAR_EXPRESSION "/build/protobuf/")
-source_group("build/protobuf/csgo" REGULAR_EXPRESSION "/build/protobuf/csgo/")
 source_group("deps" REGULAR_EXPRESSION "/deps/")
 source_group("deps/release" REGULAR_EXPRESSION "/deps/release/")
 source_group("deps/release/Detours" REGULAR_EXPRESSION "/deps/release/Detours/")
