@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.24)
 
 project ("injector")
 
@@ -20,17 +20,9 @@ FetchContent_Declare(
 	DOWNLOAD_NO_EXTRACT TRUE
 )
 
-FetchContent_GetProperties(injector_zip)
-if(NOT injector_zip_POPULATED)
-  FetchContent_Populate(injector_zip)
-  add_custom_target(injector_zip)
-endif()
+FetchContent_MakeAvailable(injector_zip)
 
-FetchContent_GetProperties(injector_pdb)
-if(NOT injector_pdb_POPULATED)
-  FetchContent_Populate(injector_pdb)
-  add_custom_target(injector_pdb)
-endif()
+FetchContent_MakeAvailable(injector_pdb)
 
 add_custom_target(injector
 	DEPENDS injector_zip
@@ -39,6 +31,8 @@ add_custom_target(injector
 		"${injector_BINARY_DIR}/injector.exe"
 		"${injector_BINARY_DIR}/x64/AfxHook.dat"
 		"${injector_BINARY_DIR}/x64/injector.exe"
+		"${injector_BINARY_DIR}/injector.pdb"
+		"${injector_BINARY_DIR}/x64/injector.pdb"
 	COMMAND ${CMAKE_COMMAND} -E make_directory bin
 	COMMAND ${CMAKE_COMMAND} -E chdir ${injector_BINARY_DIR} ${CMAKE_COMMAND} -E tar xvf  ${injector_zip_SOURCE_DIR}/HLAE.Injector-${injector_DOWNLOAD_VERSION}-win32.zip --format=zip
 	COMMAND ${CMAKE_COMMAND} -E chdir ${injector_BINARY_DIR} ${CMAKE_COMMAND} -E tar xvf  ${injector_pdb_SOURCE_DIR}/HLAE.Injector-${injector_DOWNLOAD_VERSION}-win32.pdb.zip --format=zip
