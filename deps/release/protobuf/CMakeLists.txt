@@ -6,6 +6,8 @@ project ("protobuf")
 # protobuf
 #
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive-") # Fix internal compiler error in debug builds: https://developercommunity.visualstudio.com/t/fatal--error-C1001:-Internal-compiler-er/10906076?sort=newest
+
 set(protobuf_INSTALL OFF)
 set(protobuf_BUILD_TESTS OFF)
 set(protobuf_BUILD_CONFORMANCE OFF)
