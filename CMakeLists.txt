@@ -245,7 +245,7 @@ elseif(CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
         PROGRAMS
             ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS}
 
-            "${AfxHookSource2_BINARY_DIR}/$<CONFIG>/AfxHookSource2.dll"
+            "$<TARGET_FILE:AfxHookSource2>"
 
             ${AFX_OPENEXR_INSTALL_BINARIES}           
         DESTINATION "bin/x64"
@@ -253,7 +253,7 @@ elseif(CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
 
     install(
         FILES
-            "${AfxHookSource2_BINARY_DIR}/$<CONFIG>/AfxHookSource2.pdb"
+            "$<TARGET_PDB_FILE:AfxHookSource2>"
         DESTINATION "pdb/x64"
     )
 
