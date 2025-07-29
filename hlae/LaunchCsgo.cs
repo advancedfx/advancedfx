@@ -40,7 +40,11 @@ namespace AfxGui
         {
             if (isProcess64Bit) throw new System.ApplicationException(L10n._("64 Bit CS:GO is not supported."));
 
+#if DEBUG
+            return System.Windows.Forms.Application.StartupPath + "\\AfxHookSource_d.dll";
+#else
             return System.Windows.Forms.Application.StartupPath + "\\AfxHookSource.dll";
+#endif
         }
 
         public static bool Launch(CfgLauncherCsgo config)
