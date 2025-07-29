@@ -132,11 +132,11 @@ namespace SDK
 
 		S2_PAD(0x338);
 
-		CSchemaDeclaredClassEntry* m_pDeclaredClasses;
-
-		S2_PAD(0xE);
-
 		uint16_t m_nNumDeclaredClasses;
+
+		S2_PAD(0x6);
+
+		CSchemaDeclaredClassEntry* m_pDeclaredClasses;
 	};
 
 	class CSchemaSystem

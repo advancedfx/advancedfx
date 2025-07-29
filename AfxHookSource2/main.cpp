@@ -1148,34 +1148,29 @@ void HookClientDll(HMODULE clientDll) {
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 	// client entity system related
-	//
-	// This is inside the callback function for cl_showents and this function references the string "Ent %3d: %s class %s name %s\n".
-	/*
-       180733490 40 53           PUSH       RBX
-       180733492 48 81 ec        SUB        RSP,0x230
-                 30 02 00 00
-       180733499 48 8b 0d        MOV        RCX,qword ptr [DAT_181916778]                    = ??
-                 d8 32 1e 01
-       1807334a0 48 8d 94        LEA        RDX,[RSP + 0x250]
-                 24 50 02 
-                 00 00
-       1807334a8 33 db           XOR        EBX,EBX	
-	*/
 	{
-		Afx::BinUtils::MemRange range_cl_show_ents_callback = Afx::BinUtils::FindPatternString(textRange, "40 53 48 81 ec 30 02 00 00 48 8b 0d ?? ?? ?? ?? 48 8d 94 24 50 02 00 00 33 db e8 ?? ?? ?? ??");	
-		if(!range_cl_show_ents_callback.IsEmpty()) {
-			void * pEntityList = (void *)(range_cl_show_ents_callback.Start+0x9+7+*(int*)(range_cl_show_ents_callback.Start+0x9+3));
-			void * pFnGetHighestEntityIterator = (void *)(range_cl_show_ents_callback.Start+0x1a+5+*(int*)(range_cl_show_ents_callback.Start+0x1a+1));
-			Afx::BinUtils::MemRange range_call_get_entity_from_index = Afx::BinUtils::FindPatternString(Afx::BinUtils::MemRange::FromSize(range_cl_show_ents_callback.Start+0x49,5).And(textRange), "E8 ?? ?? ?? ??");
-			if(!range_call_get_entity_from_index.IsEmpty()) {
-				void * pFnGetEntityFromIndex = (void *)(range_call_get_entity_from_index.Start+5+*(int*)(range_call_get_entity_from_index.Start+1));
-				if(! Hook_ClientEntitySystem( pEntityList, pFnGetHighestEntityIterator, pFnGetEntityFromIndex )) ErrorBox(MkErrStr(__FILE__, __LINE__));
-			} else ErrorBox(MkErrStr(__FILE__, __LINE__));
-		} else ErrorBox(MkErrStr(__FILE__, __LINE__));
-	}
+		// "Entities/Client Entity Count"
+		auto unkFn = Afx::BinUtils::FindPatternString(textRange, "40 55 53 48 8D AC 24 ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 0D");
+		if (!unkFn.IsEmpty()) {
+			void * pEntityList = (void *)(unkFn.Start+18+7+*(int*)(unkFn.Start+18+3));
+			void * pFnGetHighestEntityIterator = (void *)(unkFn.Start+27+5+*(int*)(unkFn.Start+27+1));
 
+			// see near "no such entity %d\n" called with pEntityList and uint
+            // or near "Format: ent_find_index <index>\n" called only with uint and there's pEntityList inside with uint
+			auto fnGetEntityFromIndexMem = Afx::BinUtils::FindPatternString(textRange, "4C 8D 49 ?? 81 FA");
+			if (!fnGetEntityFromIndexMem.IsEmpty()) {
+				auto pFnGetEntityFromIndex = (void*)(fnGetEntityFromIndexMem.Start);
+				if(! Hook_ClientEntitySystem( pEntityList, pFnGetHighestEntityIterator, pFnGetEntityFromIndex )) ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+			} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+		} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+	}
 	/*
-	   GetSplitScreenPlayer(int): This function is called in GetLocalPlayerController / GetLocalPlayerPawn script functions.
+	   GetSplitScreenPlayer(int): 
+	   This function is called in GetLocalPlayerController script function in clientDll, 
+	   go inside of function there and it's called with 0.
 
        1808541f0 40 53           PUSH       RBX
        1808541f2 48 83 ec 20     SUB        RSP,0x20
@@ -1191,7 +1186,7 @@ void HookClientDll(HMODULE clientDll) {
 
 	*/
 	{
-		Afx::BinUtils::MemRange range_get_split_screen_player = Afx::BinUtils::FindPatternString(textRange, "48 83 ec 28 83 f9 ff 75 17 48 8b 0d ?? ?? ?? ?? 48 8d 54 24 30 48 8b 01 ff 90 e8 02 00 00 8b 08");	
+		Afx::BinUtils::MemRange range_get_split_screen_player = Afx::BinUtils::FindPatternString(textRange, "48 83 EC ?? 83 F9 ?? 75 ?? 48 8B 0D ?? ?? ?? ?? 48 8D 54 24 ?? 48 8B 01 FF 90 ?? ?? ?? ?? 8B 08 48 63 C1 48 8D 0D ?? ?? ?? ?? 48 8B 04 C1 48 83 C4 ?? C3");
 		if(!range_get_split_screen_player.IsEmpty()) {
 			Hook_GetSplitScreenPlayer((void*)range_get_split_screen_player.Start);
 		} else ErrorBox(MkErrStr(__FILE__, __LINE__));

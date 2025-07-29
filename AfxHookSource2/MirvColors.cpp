@@ -322,7 +322,7 @@ bool getAddresses(HMODULE clientDll) {
 	}
 
 	// not very elegant way to get it // can be found close to functions below before calling them
-	size_t g_Original_getParticleManager_addr = getAddress(clientDll, "48 8B 05 ?? ?? ?? ?? C3 CC CC CC CC CC CC CC CC 48 89 5C 24 ?? 57");
+	size_t g_Original_getParticleManager_addr = getAddress(clientDll, "48 8B 05 ?? ?? ?? ?? C3 CC CC CC CC CC CC CC CC 48 83 EC ?? 0F 29 74 24");
 	if(g_Original_getParticleManager_addr == 0) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));
 		return false;
@@ -335,7 +335,7 @@ bool getAddresses(HMODULE clientDll) {
 		return false;
 	}
 
-	size_t g_Original_createParticle_addr = getAddress(clientDll, "4C 8B DC 53 48 83 EC ?? 48 8B 84 24");
+	size_t g_Original_createParticle_addr = getAddress(clientDll, "4C 8B DC 53 48 81 EC ?? ?? ?? ?? F2 0F 10 05");
 	if(g_Original_createParticle_addr == 0) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));
 		return false;

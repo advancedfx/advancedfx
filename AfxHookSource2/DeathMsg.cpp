@@ -971,7 +971,7 @@ unsigned char __fastcall My_Panorama_CStylePropertyWashColor_Parse(void * This, 
 
 bool getDeathMsgAddrs(HMODULE clientDll) {
 	// can be found with strings like "attacker" and "userid", etc. it basically takes all info from player_death event
-	size_t g_Original_handlePlayerDeath_addr = getAddress(clientDll, "48 89 54 24 10 48 89 4c 24 08 55 53 56 57 41 56 48 8d ac 24 00 df ff ff");
+	size_t g_Original_handlePlayerDeath_addr = getAddress(clientDll, "48 89 4C 24 ?? 55 53 57 41 54 41 55 41 57 48 8D AC 24 ?? ?? ?? ?? B8");
 	if (g_Original_handlePlayerDeath_addr == 0) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));
 		return false;
@@ -1013,12 +1013,12 @@ bool getPanoramaAddrsFromClient(HMODULE clientDll) {
 
 	// function has "file://{resources}/layout/hud/hud.xml" string and also references CCSGO_Hud vftable
 	// hudpanel is DAT that param_1 assigned to     
-	size_t g_HudPanel_addr = getAddress(clientDll, "48 8B 44 24 ?? 48 89 86 ?? ?? ?? ?? 48 89 35 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48");
+	size_t g_HudPanel_addr = getAddress(clientDll, "48 89 AE ?? ?? ?? ?? 89 AE ?? ?? ?? ?? C6 86 68 ?? ?? ?? 01 48 89 86 ?? ?? ?? ?? 48 89 35 ?? ?? ?? ?? e8 ?? ?? ?? ??");
 	if (g_HudPanel_addr == 0) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));	
 		return false;
 	} else {
-		g_HudPanel_addr += 15;
+		g_HudPanel_addr += 30;
 	};
 
 	// function has CreatePanelWithCurrentContext string
@@ -1045,7 +1045,7 @@ bool getPanoramaAddrsFromClient(HMODULE clientDll) {
 bool getPanoramaAddrs(HMODULE panoramaDll) {
 
 	// Refernces "CLayoutFile::LoadFromFile" string.
-	g_Org_Panorama_CLayoutFile_LoadFromFile = (Panorama_CLayoutFile_LoadFromFile_t)getAddress(panoramaDll,"40 53 55 57 41 54 48 83 ec 38 48 89 74 24 60 48 8b f2 4c 89 6c 24 68");
+	g_Org_Panorama_CLayoutFile_LoadFromFile = (Panorama_CLayoutFile_LoadFromFile_t)getAddress(panoramaDll,"4C 8B DC 53 55 57 41 54 48 83 EC ?? 49 89 73 ?? 48 8D 05 ?? ?? ?? ??");
 	if(nullptr == g_Org_Panorama_CLayoutFile_LoadFromFile) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));	
 		return false;

@@ -2224,7 +2224,7 @@ void Hook_SceneSystem(void * hModule) {
         // See FUN_18004aff0 doc/notes_cs2/sc_dump_lists.txt.
         // Second reference to "WARNING: Trying to create a CRenderContextPtr without a valid context.\n"
         {
-            Afx::BinUtils::MemRange result = FindPatternString(textRange, "40 55 53 57 48 8d 6c 24 b9 48 81 ec a0 00 00 00 80 65 3d fe 33 c0 49 8b d8 48 89 45 c7 48 89 45 0f 48 8b f9 89 45 2f 48 8b cb 48 89 45 cf 48 89 45 d7 48 89 45 17 48 89 45 df 48 89 45 e7 48 89 45 1f 48 89 45 33 48 89 45 ef 48 89 45 f7 48 89 45 27 48 89 45 ff 48 89 45 07 66 89 45 3b 49 8b 00 45 33 c0 ff 90 e0 01 00 00");
+            Afx::BinUtils::MemRange result = FindPatternString(textRange, "40 55 53 57 48 8D 6C 24 ?? 48 81 EC ?? ?? ?? ?? 80 65 ?? ?? 33 C0");
             if (!result.IsEmpty()) {
                 g_Old_SceneSystem_CreateRenderContextPtr2 = (SceneSystem_CreateRenderContextPtr2_t)result.Start;	
                 DetourTransactionBegin();
