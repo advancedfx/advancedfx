@@ -33,6 +33,6 @@ namespace CS2 {
 //   return;
 // }
 // vtable offset for UIEngine
-		constexpr std::ptrdiff_t makeSymbol = 0x388;
+		constexpr std::ptrdiff_t makeSymbol = 0x3a0;
 	}
 };

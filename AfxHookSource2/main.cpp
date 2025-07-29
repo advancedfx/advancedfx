@@ -993,31 +993,30 @@ void HookClientDll(HMODULE clientDll) {
 	/*
 		This is where it checks for engine->IsPlayingDemo() (and afterwards for cl_demoviewoverride (float))
 		before under these conditions it is calling CalcDemoViewOverride, so this is in CViewRender::SetUpView:
-                             LAB_1807ea3e8                                   XREF[5]:     1807ea394(j), 1807ea3a4(j), 
-                                                                                          1807ea3b4(j), 1807ea3c0(j), 
-                                                                                          1807ea3d0(j)  
-       1807ea3e8 48 8b 0d        MOV        RCX,qword ptr [DAT_181a167b0]
-                 c1 c3 22 01
-       1807ea3ef 48 8b 01        MOV        RAX,qword ptr [RCX]
-       1807ea3f2 ff 90 30        CALL       qword ptr [RAX + 0x130]
+                             LAB_180882cd6                                   XREF[5]:     180882c82(j), 180882c92(j), 
+                                                                                          180882ca2(j), 180882cae(j), 
+                                                                                          180882cbe(j)  
+       180882cd6 48 8b 0d        MOV        RCX,qword ptr [DAT_181d1bfa0]
+                 c3 92 49 01
+       180882cdd 48 8b 01        MOV        RAX,qword ptr [RCX]
+       180882ce0 ff 90 38        CALL       qword ptr [RAX + 0x138]
                  01 00 00
-       1807ea3f8 0f 57 f6        XORPS      XMM6,XMM6
-       1807ea3fb 84 c0           TEST       AL,AL
-       1807ea3fd 74 63           JZ         LAB_1807ea462
-       1807ea3ff ba ff ff        MOV        EDX,0xffffffff
-                 ff ff
+       180882ce6 0f 57 f6        XORPS      XMM6,XMM6
+       180882ce9 84 c0           TEST       AL,AL
+       180882ceb 74 63           JZ         LAB_180882d50
+       180882ced ba ff ff        MOV        EDX,0xffffffff
 	*/
 	{																	// 0x7d8fbb 26.06.24
-		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8b 0d ?? ?? ?? ?? 48 8b 01 ff 90 30 01 00 00 0f 57 f6 84 c0 74 63 ba ff ff ff ff");
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8b 0d ?? ?? ?? ?? 48 8b 01 ff 90 38 01 00 00 0f 57 f6 84 c0 74 63 ba ff ff ff ff");
 																	  
 		if (!result.IsEmpty()) {
 			/*
 				These are the top 16 bytes we change to:
 
-00007fff`95518b22 4889f1               mov     rcx, rsi
-00007fff`95518b25 48b8???????????????? mov     rax, ???????????????? <-- here we load our hook's address
-00007fff`95518b2f ff10                 call    qword ptr [rax]
-00007fff`95518b31 90                   nop
+180882cd6	4889f1               mov     rcx, rsi
+			48b8???????????????? mov     rax, ???????????????? <-- here we load our hook's address
+			ff10                 call    qword ptr [rax]
+			90                   nop
 			*/
 			unsigned char asmCode[16]={
 				0x48, 0x89, 0xf1,
@@ -1039,8 +1038,80 @@ void HookClientDll(HMODULE clientDll) {
 	}	
 
 	/*
-		The FOV is overridden / computed a second time in the function called at the very end of
+		The FOV is overridden / computed a second time in the function called near the end of
 		CViewRender::SetUpView (see hook above on how to find it):
+
+
+     180882dfd 0f 28 f0        MOVAPS     XMM6,XMM0
+       180882e00 f3 0f 5c        SUBSS      XMM6,dword ptr [RSI + 0x4d8]
+                 b6 d8 04 
+                 00 00
+                             LAB_180882e08                                   XREF[1]:     180882deb(j)  
+<-- snip -->
+       180882e08 8b 8d a0        MOV        ECX,dword ptr [RBP + local_res18]
+                 08 00 00
+       180882e0e e8 2d 8f        CALL       FUN_18092bd40 <-- this is the function we are after!
+                 0a 00
+       180882e13 48 8b c8        MOV        RCX,RAX
+       180882e16 48 8b 10        MOV        RDX,qword ptr [RAX]
+<-- snap -->	   
+       180882e19 ff 92 d8        CALL       qword ptr [RDX + 0xd8]
+                 00 00 00
+       180882e1f 48 8d 95        LEA        RDX=>local_res8,[RBP + 0x890]
+                 90 08 00 00
+       180882e26 c7 85 90        MOV        dword ptr [RBP + local_res8],0x40a00000
+                 08 00 00 
+                 00 00 a0 40
+       180882e30 f3 0f 5c c6     SUBSS      XMM0,XMM6	
+	   
+	   
+                             **************************************************************
+                             *                          FUNCTION                          *
+                             **************************************************************
+                             undefined FUN_18092bd40()
+             undefined         AL:1           <RETURN>
+             undefined1        Stack[0x8]:1   local_res8                              XREF[1]:     18092bd50(*)  
+                             FUN_18092bd40                                   XREF[32]:    FUN_18074b820:18074b8f9(c), 
+                                                                                          FUN_1807c48b0:1807c48dd(c), 
+                                                                                          FUN_1807c4b40:1807c4b6a(c), 
+                                                                                          FUN_1807e2970:1807e29cd(c), 
+                                                                                          FUN_1807f06b0:1807f0760(c), 
+                                                                                          FUN_1807f06b0:1807f082d(c), 
+                                                                                          FUN_1807f0ed0:1807f10a5(c), 
+                                                                                          FUN_1807f7a50:1807f7af1(c), 
+                                                                                          FUN_1807f7c30:1807f7cdc(c), 
+                                                                                          FUN_180800080:1808000dc(c), 
+                                                                                          FUN_1808044b0:18080455f(c), 
+                                                                                          FUN_1808044b0:180804662(c), 
+                                                                                          FUN_180804720:180804772(c), 
+                                                                                          FUN_180804720:1808047d3(c), 
+                                                                                          FUN_180804800:18080487f(c), 
+                                                                                          FUN_1808048f0:18080493f(c), 
+                                                                                          FUN_180804970:1808049cf(c), 
+                                                                                          FUN_180804970:1808049e2(c), 
+                                                                                          FUN_18083d7a0:18083d7ae(c), 
+                                                                                          FUN_180869920:18086996f(c), [more]
+       18092bd40 48 83 ec 28     SUB        RSP,0x28
+       18092bd44 83 f9 ff        CMP        ECX,-0x1
+       18092bd47 75 17           JNZ        LAB_18092bd60
+       18092bd49 48 8b 0d        MOV        RCX,qword ptr [DAT_181d1bfa0]
+                 50 02 3f 01
+       18092bd50 48 8d 54        LEA        RDX=>local_res8,[RSP + 0x30]
+                 24 30
+       18092bd55 48 8b 01        MOV        RAX,qword ptr [RCX]
+       18092bd58 ff 90 f8        CALL       qword ptr [RAX + 0x2f8]
+                 02 00 00
+       18092bd5e 8b 08           MOV        ECX,dword ptr [RAX]
+                             LAB_18092bd60                                   XREF[1]:     18092bd47(j)  
+       18092bd60 48 63 c1        MOVSXD     RAX,ECX
+       18092bd63 48 8d 0d        LEA        RCX,[DAT_181d2cf90]
+                 26 12 40 01
+       18092bd6a 48 8b 04 c1     MOV        RAX,qword ptr [RCX + RAX*0x8]=>DAT_181d2cf90
+       18092bd6e 48 83 c4 28     ADD        RSP,0x28
+       18092bd72 c3              RET
+
+
+
 
        1807e10d7 0f 57 f6        XORPS      XMM6,XMM6
                              LAB_1807e10da                                   XREF[1]:     1807e10bc(j)  
@@ -1064,53 +1135,56 @@ void HookClientDll(HMODULE clientDll) {
 
 	*/
 	{
-		Afx::BinUtils::MemRange result = FindPatternString(textRange, "0f 57 f6 8b cf e8 ?? ?? ?? ?? 48 8b c8 48 8b 10 ff 92 d8 00 00 00 48 8d 94 24 ?? ?? ?? ?? c7 84 24 ?? ?? ?? ?? 00 00 a0 40");
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "8b 8d a0 08 00 00 e8 ?? ?? ?? ?? 48 8b c8 48 8b 10 ff 92 d8 00 00 00 48 8d 95 90 08 00 00 c7 85 90 08 00 00 00 00 a0 40");
 		if (!result.IsEmpty()) {
 			MdtMemBlockInfos mbis;
-			MdtMemAccessBegin((LPVOID)(result.Start), 13, &mbis);
+			MdtMemAccessBegin((LPVOID)(result.Start), 17, &mbis);
 
 			static LPVOID ptr2 = CS2_Client_CSetupView_InsideComputeViewMatrix;
 			LPVOID ptrPtr2 = &ptr2;
-			size_t pCallAddress3 = result.Start+5+5+(*(unsigned int*)(result.Start+5+1));
+			size_t pCallAddress3 = result.Start+6+5+(*(unsigned int*)(result.Start+6+1));
 			static LPVOID ptr3 = (LPVOID)pCallAddress3;
 			LPVOID ptrPtr3 = &ptr3;
-			size_t pCallAddress4 = result.Start+3+13;
+			size_t pCallAddress4 = result.Start+17;
 			static LPVOID ptr4 = (LPVOID)pCallAddress4;
 			LPVOID ptrPtr4 = &ptr4;
-			unsigned char asmCode2[48]={
+			unsigned char asmCode2[52]={
 				0x48, 0xb8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // mov rax, qword addr
 				0xff, 0x10, // call    qword ptr [rax] // our function to reapply FOV
 				0xf3, 0x0f, 0x5c, 0xf0, // subss   xmm6, xmm0 // update intermediate FOV value with the difference
-				0x8B, 0xcf, // mov     ecx, edi
+
+				0x8b, 0x8d, 0xa0, 0x08, 0x00, 0x00 , // MOV        ECX,dword ptr [RBP + local_res18]
 				0x48, 0xb8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // mov rax, qword addr
 				0xff, 0x10, // call    qword ptr [rax] // the original function in the detour area
-				0x48, 0x8B, 0xC8, // mov     rcx, rax
-				0x48, 0x8B, 0x10, // rdx, [rax]
+
+				0x48, 0x8b, 0xc8, // MOV        RCX,RAX
+       			0x48, 0x8b, 0x10, // MOV        RDX,qword ptr [RAX]
+
 				0x48, 0xb8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // mov rax, qword addr
 				0xff, 0x20 // jmp [rax] // back to where to continue
 			};
 			memcpy(&asmCode2[2], &ptrPtr2, sizeof(LPVOID));
-			memcpy(&asmCode2[20], &ptrPtr3, sizeof(LPVOID));
-			memcpy(&asmCode2[38], &ptrPtr4, sizeof(LPVOID));
+			memcpy(&asmCode2[24], &ptrPtr3, sizeof(LPVOID));
+			memcpy(&asmCode2[42], &ptrPtr4, sizeof(LPVOID));
 
-			LPVOID pTrampoline = MdtAllocExecuteableMemory(48);
-			memcpy(pTrampoline, asmCode2, 48);
+			LPVOID pTrampoline = MdtAllocExecuteableMemory(52);
+			memcpy(pTrampoline, asmCode2, 52);
 
 /*
 	00007ff9`3170f396 48b80000000000000000 mov     rax, 0
 	00007ff9`3170f3a0 ff20                 jmp     qword ptr [rax]
 	00007ff9`3170f3a2 90                   nop 
 */
-			unsigned char asmCode[13]={
+			unsigned char asmCode[17]={
 				0x48, 0xb8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // mov rax, qword addr
 				0xff, 0x20, // jmp [rax]
-				0x90 // nop
+				0x90, 0x90, 0x90, 0x90, 0x90 // NOPs
 			};
 			static LPVOID ptr = pTrampoline;
 			LPVOID ptrPtr = &ptr;
 			memcpy(&asmCode[2], &ptrPtr, sizeof(LPVOID));
 
-			memcpy((LPVOID)(result.Start+3), asmCode, 13);
+			memcpy((LPVOID)(result.Start+0), asmCode, 13);
 			MdtMemAccessEnd(&mbis);
 		}
 		else
@@ -1157,7 +1231,7 @@ void HookClientDll(HMODULE clientDll) {
 
 			// see near "no such entity %d\n" called with pEntityList and uint
             // or near "Format: ent_find_index <index>\n" called only with uint and there's pEntityList inside with uint
-			auto fnGetEntityFromIndexMem = Afx::BinUtils::FindPatternString(textRange, "4C 8D 49 ?? 81 FA");
+			auto fnGetEntityFromIndexMem = Afx::BinUtils::FindPatternString(textRange, "4c 8d 49 10 81 fa fe 7f 00 00");
 			if (!fnGetEntityFromIndexMem.IsEmpty()) {
 				auto pFnGetEntityFromIndex = (void*)(fnGetEntityFromIndexMem.Start);
 				if(! Hook_ClientEntitySystem( pEntityList, pFnGetHighestEntityIterator, pFnGetEntityFromIndex )) ErrorBox(MkErrStr(__FILE__, __LINE__));
@@ -1416,6 +1490,7 @@ typedef void (* CS2_Client_FrameStageNotify_t)(void* This, SOURCESDK::CS2::Clien
 CS2_Client_FrameStageNotify_t old_CS2_Client_FrameStageNotify;
 void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameStage_t curStage) {
 
+	/*
 	// React to demo being paused / unpaused to work around Valve's new bandaid client time "fix":
 	bool bIsDemoPaused = false;
 	if(g_pEngineToClient) {
@@ -1432,7 +1507,7 @@ void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameSta
 		} else {
 			g_DemoPausedData.IsPaused = false;
 		}
-	}
+	}*/
 
 	// Work around demoui cursor sheningans:
 	// - Always manually fetch cursor pos.
@@ -1476,7 +1551,7 @@ void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameSta
 
 	AfxHookSource2Rs_Engine_OnClientFrameStageNotify(curStage, false);
 
-	if (curStage == 0 || curStage == 9) updateAnimGraph();
+	if (curStage == 0 || curStage == 8) updateAnimGraph();
 
 	switch(curStage) {
 	case SOURCESDK::CS2::FRAME_RENDER_PASS:

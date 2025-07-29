@@ -283,59 +283,63 @@ joined_r0x0001800574f8:
 - No we now that code 0x13 is for callback.
 - We can also figure that the queue / list is at DAT_18043eeb0.
 
-PTR_FUN_1803b0b08 .?AVCRenderContextDx11 vtable:
+PTR_FUN_1803c2a08 .?AVCRenderContextDx11 vtable:
 ....
-       1803b0ec8 90 8b 01        addr       LAB_180018b90 //:120 "CRenderContextDx11::EndQuery - Bad query or D3D device\n"
+       1803c2dd0 30 b8 01        addr       LAB_18001b830 //:121 "CRenderContextDx11::EndQuery - Bad query or D3D device\n"
                  80 01 00 
                  00 00
-       1803b0ed0 00 37 01        addr       _guard_check_icall
+       1803c2dd8 30 65 01        addr       _guard_check_icall
                  80 01 00 
                  00 00
-       1803b0ed8 00 37 01        addr       _guard_check_icall
+       1803c2de0 30 65 01        addr       _guard_check_icall
                  80 01 00 
                  00 00
-       1803b0ee0 50 5b 01        addr       FUN_180015b50
+       1803c2de8 40 89 01        addr       FUN_180018940
                  80 01 00 
                  00 00
-       1803b0ee8 00 37 01        addr       _guard_check_icall
+       1803c2df0 30 65 01        addr       _guard_check_icall
                  80 01 00 
                  00 00
-       1803b0ef0 00 37 01        addr       _guard_check_icall
+       1803c2df8 30 65 01        addr       _guard_check_icall
                  80 01 00 
                  00 00
-       1803b0ef8 00 37 01        addr       _guard_check_icall
+       1803c2e00 30 65 01        addr       _guard_check_icall
                  80 01 00 
                  00 00
-       1803b0f00 00 37 01        addr       _guard_check_icall
+       1803c2e08 30 65 01        addr       _guard_check_icall
                  80 01 00 
                  00 00
-       1803b0f08 00 37 01        addr       _guard_check_icall
+       1803c2e10 30 65 01        addr       _guard_check_icall
                  80 01 00 
                  00 00
-       1803b0f10 00 37 01        addr       _guard_check_icall
+       1803c2e18 30 65 01        addr       _guard_check_icall
                  80 01 00 
                  00 00
-       1803b0f18 00 41 01        addr       LAB_180014100
+       1803c2e20 30 65 01        addr       _guard_check_icall
                  80 01 00 
                  00 00
-       1803b0f20 20 41 01        addr       LAB_180014120
+       1803c2e28 50 6e 01        addr       LAB_180016e50
                  80 01 00 
                  00 00
-       1803b0f28 00 37 01        addr       _guard_check_icall
+       1803c2e30 70 6e 01        addr       LAB_180016e70
                  80 01 00 
                  00 00
-       1803b0f30 10 37 01        addr       FUN_180013710
+       1803c2e38 30 65 01        addr       _guard_check_icall
                  80 01 00 
                  00 00
-       1803b0f38 40 1f 02        addr       FUN_180021f40 //:134 We are after this!!!!
+       1803c2e40 40 65 01        addr       FUN_180016540
                  80 01 00 
                  00 00
-       1803b0f40 10 37 01        addr       FUN_180013710
+       1803c2e48 40 44 02        addr       FUN_180024440 //:134 We are after this!!!!
                  80 01 00 
                  00 00
-       1803b0f48 00 37 01        addr       _guard_check_icall
+       1803c2e50 40 65 01        addr       FUN_180016540
                  80 01 00 
                  00 00
+       1803c2e58 30 65 01        addr       _guard_check_icall
+                 80 01 00 
+                 00 00
+
 
 // Index 134
 void FUN_180021f40(longlong param_1,undefined8 param_2)

@@ -13,18 +13,6 @@ bool Hook_GetSplitScreenPlayer( void* pAddr);
 
 class CAfxEntityInstanceRef;
 
-struct EntityListIterator{
-	int index = -1;
-
-	bool IsValid() const {
-		return 0 < index;
-	}
-
-    int GetIndex() const {
-        return index;
-    }
-};
-
 class CEntityInstance {
 public:
     const char * GetName();
@@ -70,10 +58,12 @@ public:
     SOURCESDK::CS2::CBaseHandle GetObserverTarget();
 };
 
-typedef EntityListIterator * (__fastcall * GetHighestEntityIterator_t)(void * entityList, EntityListIterator * it);
+typedef int (__fastcall * GetHighestEntityIndex_t)(void * pEntityList, bool bUnknown);
 typedef void * (__fastcall * GetEntityFromIndex_t)(void * pEntityList, int index);
 
-extern GetHighestEntityIterator_t  g_GetHighestEntityIterator;
+extern GetHighestEntityIndex_t  g_GetHighestEntityIndex;
 extern GetEntityFromIndex_t g_GetEntityFromIndex;
 
 extern void ** g_pEntityList;
+
+int GetHighestEntityIndex();

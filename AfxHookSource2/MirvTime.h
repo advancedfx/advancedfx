@@ -1,12 +1,12 @@
 #pragma once
 
-struct DemoPausedData {
+/*struct DemoPausedData {
 	bool IsPaused = false;
 	float FirstPausedCurtime = 0.0f;
 	float FirstPausedInterpolationAmount = 0.0f;
 };
 
-extern DemoPausedData g_DemoPausedData;
+extern DemoPausedData g_DemoPausedData;*/
 
 class CMirvTime
 {

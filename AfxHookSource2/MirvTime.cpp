@@ -8,15 +8,15 @@ extern Cs2Gloabls_t g_pGlobals;
 extern SOURCESDK::CS2::ISource2EngineToClient * g_pEngineToClient;
 
 CMirvTime g_MirvTime;
-DemoPausedData g_DemoPausedData;
+//DemoPausedData g_DemoPausedData;
 
 float CMirvTime::curtime_get(void)
 {
-	if(g_DemoPausedData.IsPaused) {
+	/*if(g_DemoPausedData.IsPaused) {
 		return g_DemoPausedData.FirstPausedCurtime;
-	}
+	}*/
 
-	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals + 13*4) : 0;
+	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals + 12*4) : 0;
 }
 
 int CMirvTime::framecount_get(void)
@@ -45,11 +45,11 @@ float CMirvTime::interval_per_tick_get(void)
 
 float CMirvTime::interpolation_amount_get(void)
 {
-	if(g_DemoPausedData.IsPaused) {
+	/*if(g_DemoPausedData.IsPaused) {
 		return g_DemoPausedData.FirstPausedInterpolationAmount;
-	}
+	}*/
 
-	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +15*4) : 0;
+	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +14) : 0;
 }
 
 bool CMirvTime::GetCurrentDemoTick(int& outTick) {

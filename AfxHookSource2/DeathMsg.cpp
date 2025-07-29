@@ -35,8 +35,7 @@ PlayerInfo getSpectatedPlayer()
 	auto cameraOrigin = g_CurrentGameCamera.origin;
 	auto cameraAngles = g_CurrentGameCamera.angles;
 
-	EntityListIterator it;
-    int highestIndex = g_GetHighestEntityIterator(*g_pEntityList, &it)->GetIndex();
+    int highestIndex = GetHighestEntityIndex();
 	for(int i = 0; i < highestIndex + 1; i++)
 	{
         if(auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,i))
@@ -104,8 +103,7 @@ PlayerInfo getPlayerInfoFromControllerIndex(int entindex)
 	// apparently in CS2 CT is always on the left side, so we don't have to check for swap
 	// but in case they change it in future we can probably check for gamephase like below
 
-	EntityListIterator it;
-    int highestIndex = g_GetHighestEntityIterator(*g_pEntityList, &it)->GetIndex();
+    int highestIndex = GetHighestEntityIndex();
 
 	// find gamerules, maybe we can save it since it's pointer
     // for(int i = 0; i < highestIndex + 1; i++)
@@ -252,8 +250,7 @@ int DeathMsgId::ResolveToUserId()
 	{
 	case Id_Key:
 		{
-			EntityListIterator it;
-			int highestIndex = g_GetHighestEntityIterator(*g_pEntityList, &it)->GetIndex();
+			int highestIndex = GetHighestEntityIndex();
 			for(int i = 0; i < highestIndex + 1; i++)
 			{
 				if(auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,i))
@@ -267,8 +264,7 @@ int DeathMsgId::ResolveToUserId()
 		return 0;
 	case Id_Xuid:
 		{
-			EntityListIterator it;
-			int highestIndex = g_GetHighestEntityIterator(*g_pEntityList, &it)->GetIndex();
+			int highestIndex = GetHighestEntityIndex();
 			for(int i = 0; i < highestIndex + 1; i++)
 			{
 				if(auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,i))
@@ -667,8 +663,7 @@ uint64_t __fastcall getLocalSteamId(void* param_1) {
 	switch (entry.newId.value.Mode) {
 		case DeathMsgId::Id_Key:
 		{
-			EntityListIterator it;
-			int highestIndex = g_GetHighestEntityIterator(*g_pEntityList, &it)->GetIndex();	
+			int highestIndex = GetHighestEntityIndex();	
 			for(int i = 0; i < highestIndex + 1; i++)
 			{
 				if(auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,i))
@@ -1149,8 +1144,7 @@ void deathMsgId_PrintHelp_Console(const char * cmd)
 
 void deathMsgPlayers_PrintHelp_Console()
 {
-	EntityListIterator it;
-    int highestIndex = g_GetHighestEntityIterator(*g_pEntityList, &it)->GetIndex();
+    int highestIndex = GetHighestEntityIndex();
 
 	std::vector<std::vector<std::string>> rows = {
 		{"name", "userid", "xuid", "speckey"}, {}

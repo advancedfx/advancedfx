@@ -18,7 +18,7 @@
 #include <map>
 
 void ** g_pEntityList = nullptr;
-GetHighestEntityIterator_t  g_GetHighestEntityIterator = nullptr;
+GetHighestEntityIndex_t  g_GetHighestEntityIndex = nullptr;
 GetEntityFromIndex_t g_GetEntityFromIndex = nullptr;
 
 /*
@@ -40,7 +40,7 @@ const char * CEntityInstance::GetName() {
 const char * CEntityInstance::GetDebugName() {
 	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x18);
 	if(pszName) return pszName;
-	return **(const char***)(*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x8)+0x28);
+	return **(const char***)(*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x8)+0x30);
 }
 
 // Retrieved from script function.
@@ -57,7 +57,7 @@ const char * CEntityInstance::GetClientClassName() {
     void * pClientClass = nullptr;
 
     // GetClientClass function.
-    // find it by searching for 3rd full-ptr ref to "C_PlantedC4" subtract sizeof(void*) (0x8) and search function that references this struct.
+    // find it by searching for 4th full-ptr ref to "C_PlantedC4" subtract sizeof(void*) (0x8) and search function that references this struct.
     // you need to search for raw bytes, GiHidra doesn't seem to find the reference.
     ((void * (__fastcall *)(void *,void*)) (*(void***)this)[38]) (this,&pClientClass);
 
@@ -72,7 +72,7 @@ const char * CEntityInstance::GetClientClassName() {
 
 bool CEntityInstance::IsPlayerPawn() {
 	// See cl_ent_text drawing function.
-	return ((bool (__fastcall *)(void *)) (*(void***)this)[151]) (this);
+	return ((bool (__fastcall *)(void *)) (*(void***)this)[157]) (this);
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerPawnHandle() {
@@ -83,7 +83,7 @@ SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerPawnHandle() {
 
 bool CEntityInstance::IsPlayerController() {
 	// See cl_ent_text drawing function. Near "Pawn: (%d) Name: %s".
-	return ((bool (__fastcall *)(void *)) (*(void***)this)[152]) (this);    
+	return ((bool (__fastcall *)(void *)) (*(void***)this)[158]) (this);    
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerControllerHandle() {
@@ -94,7 +94,7 @@ SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerControllerHandle() {
 
 unsigned int CEntityInstance::GetHealth() {
 	// See cl_ent_text drawing function. Near "Health: %d\n".
-	return ((unsigned int (__fastcall *)(void *)) (*(void***)this)[165]) (this); 
+	return ((unsigned int (__fastcall *)(void *)) (*(void***)this)[171]) (this); 
 }
 
 int CEntityInstance::GetTeam() {
@@ -114,12 +114,12 @@ void CEntityInstance::GetOrigin(float & x, float & y, float & z) {
 
 void CEntityInstance::GetRenderEyeOrigin(float outOrigin[3]) {
 	// GetRenderEyeAngles vtable offset minus 1
-	((void (__fastcall *)(void *,float outOrigin[3])) (*(void***)this)[169]) (this,outOrigin);
+	((void (__fastcall *)(void *,float outOrigin[3])) (*(void***)this)[175]) (this,outOrigin);
 }
 
 void CEntityInstance::GetRenderEyeAngles(float outAngles[3]) {
 	// See cl_track_render_eye_angles. Near "Render eye angles: %.7f, %.7f, %.7f\n".
-	((void (__fastcall *)(void *,float outAngles[3])) (*(void***)this)[170]) (this,outAngles);
+	((void (__fastcall *)(void *,float outAngles[3])) (*(void***)this)[176]) (this,outAngles);
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetViewEntityHandle() {
@@ -275,7 +275,7 @@ bool Hook_ClientEntitySystem( void* pEntityList, void * pFnGetHighestEntityItera
     if(firstRun) {
         firstRun = false;
         g_pEntityList = (void**)pEntityList;
-        g_GetHighestEntityIterator = (GetHighestEntityIterator_t)pFnGetHighestEntityIterator;
+        g_GetHighestEntityIndex = (GetHighestEntityIndex_t)pFnGetHighestEntityIterator;
         g_GetEntityFromIndex = (GetEntityFromIndex_t)pFnGetEntityFromIndex;
         firstResult = true;
     }
@@ -302,9 +302,14 @@ bool Hook_ClientEntitySystem2() {
     return firstResult;    
 }
 
-CON_COMMAND(__mirv_listentities, "") {
-    EntityListIterator it;
-    int highestIndex = g_GetHighestEntityIterator(*g_pEntityList, &it)->GetIndex();
+int GetHighestEntityIndex() {
+    return 2048; // Hardcoded for now, because the function we have is the count, not the index and we need to change mirv-script API to support that better.
+    //return g_pEntityList && g_GetHighestEntityIndex ? g_GetHighestEntityIndex(*g_pEntityList, false) : -1;
+}
+
+CON_COMMAND(__mirv_listentities, "")
+{
+    int highestIndex = GetHighestEntityIndex();
     for(int i = 0; i < highestIndex + 1; i++) {
         if(auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,i)) {
             float origin[3];
@@ -318,9 +323,8 @@ CON_COMMAND(__mirv_listentities, "") {
 }
 
 extern "C" int afx_hook_source2_get_highest_entity_index() {
-    EntityListIterator it;
-    if(g_GetHighestEntityIterator) return g_GetHighestEntityIterator(*g_pEntityList,&it)->GetIndex();
-    return -1;
+    int highestIndex = GetHighestEntityIndex();
+    return highestIndex;
 }
 
 extern "C" void * afx_hook_source2_get_entity_ref_from_index(int index) {

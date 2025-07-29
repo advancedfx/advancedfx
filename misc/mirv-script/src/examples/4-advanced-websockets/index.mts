@@ -70,7 +70,7 @@ import { handleMessage } from './mirv-handler.js';
 		}
 
 		// FRAME_RENDER_PASS - called when a frame is to be rendered by engine thread
-		if (e.curStage === 9 && e.isBefore) {
+		if (e.curStage === 8 && e.isBefore) {
 			if (wsConn.isConnected()) wsConn.flush();
 		}
 	};

@@ -71,7 +71,7 @@ CON_COMMAND(mirv_noflash, "Disables flash overlay.")
 bool getAddressesFromClient(HMODULE clientDll) {
 	// can be found with offsets to m_flFlashScreenshotAlpha, m_flFlashDuration, m_flFlashMaxAlpha, etc. 
 	// In this function values being assigned to all these offsets at once
-	size_t g_Original_flashFunc_addr = getAddress(clientDll, "40 53 48 83 EC ?? 48 8B D9 E8 ?? ?? ?? ?? 33 C9 48 8D 05 ?? ?? ?? ?? 48 89 03 48 8D 05 ?? ?? ?? ?? 66 C7 83");
+	size_t g_Original_flashFunc_addr = getAddress(clientDll, "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 0F 29 74 24 ?? 33 C9");
 	if(g_Original_flashFunc_addr == 0) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));
 		return false;
