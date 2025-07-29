@@ -9,7 +9,11 @@
 #include <Shlobj.h>
 #include <string>
 
+#ifdef _DEBUG
+#define DLL_NAME	L"AfxHookSource2_d.dll"
+#else
 #define DLL_NAME	L"AfxHookSource2.dll"
+#endif
 
 std::wstring g_HlaeFolderW(L"");
 std::string g_HlaeFolder("");

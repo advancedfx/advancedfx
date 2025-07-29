@@ -47,8 +47,11 @@ class Launcher
         private static string GetHookPath(bool isProcess64Bit)
         {
             if (isProcess64Bit) throw new System.ApplicationException(L10n._("64 Bit GoldSrc is not supported."));
-
+#if DEBUG
+            return System.Windows.Forms.Application.StartupPath + "\\AfxHookGoldSrc_d.dll";
+#else
             return System.Windows.Forms.Application.StartupPath + "\\AfxHookGoldSrc.dll";
+#endif
         }
 
         public static bool Launch(CfgLauncher cfg)
