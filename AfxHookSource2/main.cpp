@@ -750,15 +750,22 @@ bool CS2_Client_CSetupView_Trampoline_IsPlayingDemo(void *ThisCViewSetup) {
 	return g_pEngineToClient->IsPlayingDemo();
 }
 
-float CS2_Client_CSetupView_InsideComputeViewMatrix(void) {
+typedef void (__fastcall * Unk_Override_Fov_t)(void *param_1,int param_2);
+Unk_Override_Fov_t g_Old_Unk_Override_Fov = nullptr;
+void __fastcall New_Unk_Override_Fov(void *param_1,int param_2) {
 
 	if(g_bViewOverriden) {
 		float * pWeaponFov = g_pFov + 1;
 		float oldFov = *g_pFov;
-		*g_pFov = g_fFovOverride;
-		return 0 != *pWeaponFov ? g_fFovOverride - oldFov : 0; // update fov difference if necessary.
+		float oldWeaponFov = *pWeaponFov;
+
+		g_Old_Unk_Override_Fov(param_1,param_2);
+
+		*g_pFov = Apply_FovScaling(g_MirvInputEx.LastWidth, g_MirvInputEx.LastHeight, oldFov, FovScaling_AlienSwarm);
+		*pWeaponFov = Apply_FovScaling(g_MirvInputEx.LastWidth, g_MirvInputEx.LastHeight, oldWeaponFov, FovScaling_AlienSwarm);
+	} else {
+		g_Old_Unk_Override_Fov(param_1,param_2);
 	}
-	return 0;
 }
 
 /*size_t ofsProj = 0;
@@ -1038,157 +1045,29 @@ void HookClientDll(HMODULE clientDll) {
 	}	
 
 	/*
-		The FOV is overridden / computed a second time in the function called near the end of
+		The FOV is overridden / computed a second time in the function called in
 		CViewRender::SetUpView (see hook above on how to find it):
 
+       180882f2d 49 8b cf        MOV        RCX,R15
+       180882f30 8b 10           MOV        EDX,dword ptr [RAX]
+       180882f32 e8 f9 05        CALL       FUN_180873530 <-- we detour this function.
+                 ff ff
+       180882f37 45 88 a7        MOV        byte ptr [R15 + 0x1330],R12B
+                 30 13 00 00
+       180882f3e e8 4d 9c        CALL       FUN_1808dcb90                                    undefined FUN_1808dcb90()
+                 05 00
 
-     180882dfd 0f 28 f0        MOVAPS     XMM6,XMM0
-       180882e00 f3 0f 5c        SUBSS      XMM6,dword ptr [RSI + 0x4d8]
-                 b6 d8 04 
-                 00 00
-                             LAB_180882e08                                   XREF[1]:     180882deb(j)  
-<-- snip -->
-       180882e08 8b 8d a0        MOV        ECX,dword ptr [RBP + local_res18]
-                 08 00 00
-       180882e0e e8 2d 8f        CALL       FUN_18092bd40 <-- this is the function we are after!
-                 0a 00
-       180882e13 48 8b c8        MOV        RCX,RAX
-       180882e16 48 8b 10        MOV        RDX,qword ptr [RAX]
-<-- snap -->	   
-       180882e19 ff 92 d8        CALL       qword ptr [RDX + 0xd8]
-                 00 00 00
-       180882e1f 48 8d 95        LEA        RDX=>local_res8,[RBP + 0x890]
-                 90 08 00 00
-       180882e26 c7 85 90        MOV        dword ptr [RBP + local_res8],0x40a00000
-                 08 00 00 
-                 00 00 a0 40
-       180882e30 f3 0f 5c c6     SUBSS      XMM0,XMM6	
-	   
-	   
-                             **************************************************************
-                             *                          FUNCTION                          *
-                             **************************************************************
-                             undefined FUN_18092bd40()
-             undefined         AL:1           <RETURN>
-             undefined1        Stack[0x8]:1   local_res8                              XREF[1]:     18092bd50(*)  
-                             FUN_18092bd40                                   XREF[32]:    FUN_18074b820:18074b8f9(c), 
-                                                                                          FUN_1807c48b0:1807c48dd(c), 
-                                                                                          FUN_1807c4b40:1807c4b6a(c), 
-                                                                                          FUN_1807e2970:1807e29cd(c), 
-                                                                                          FUN_1807f06b0:1807f0760(c), 
-                                                                                          FUN_1807f06b0:1807f082d(c), 
-                                                                                          FUN_1807f0ed0:1807f10a5(c), 
-                                                                                          FUN_1807f7a50:1807f7af1(c), 
-                                                                                          FUN_1807f7c30:1807f7cdc(c), 
-                                                                                          FUN_180800080:1808000dc(c), 
-                                                                                          FUN_1808044b0:18080455f(c), 
-                                                                                          FUN_1808044b0:180804662(c), 
-                                                                                          FUN_180804720:180804772(c), 
-                                                                                          FUN_180804720:1808047d3(c), 
-                                                                                          FUN_180804800:18080487f(c), 
-                                                                                          FUN_1808048f0:18080493f(c), 
-                                                                                          FUN_180804970:1808049cf(c), 
-                                                                                          FUN_180804970:1808049e2(c), 
-                                                                                          FUN_18083d7a0:18083d7ae(c), 
-                                                                                          FUN_180869920:18086996f(c), [more]
-       18092bd40 48 83 ec 28     SUB        RSP,0x28
-       18092bd44 83 f9 ff        CMP        ECX,-0x1
-       18092bd47 75 17           JNZ        LAB_18092bd60
-       18092bd49 48 8b 0d        MOV        RCX,qword ptr [DAT_181d1bfa0]
-                 50 02 3f 01
-       18092bd50 48 8d 54        LEA        RDX=>local_res8,[RSP + 0x30]
-                 24 30
-       18092bd55 48 8b 01        MOV        RAX,qword ptr [RCX]
-       18092bd58 ff 90 f8        CALL       qword ptr [RAX + 0x2f8]
-                 02 00 00
-       18092bd5e 8b 08           MOV        ECX,dword ptr [RAX]
-                             LAB_18092bd60                                   XREF[1]:     18092bd47(j)  
-       18092bd60 48 63 c1        MOVSXD     RAX,ECX
-       18092bd63 48 8d 0d        LEA        RCX,[DAT_181d2cf90]
-                 26 12 40 01
-       18092bd6a 48 8b 04 c1     MOV        RAX,qword ptr [RCX + RAX*0x8]=>DAT_181d2cf90
-       18092bd6e 48 83 c4 28     ADD        RSP,0x28
-       18092bd72 c3              RET
-
-
-
-
-       1807e10d7 0f 57 f6        XORPS      XMM6,XMM6
-                             LAB_1807e10da                                   XREF[1]:     1807e10bc(j)  
-<-- snip -->
-       1807e10da 8b cf           MOV        ECX,EDI
-       1807e10dc e8 7f e4        CALL       FUN_18088f560                                    undefined FUN_18088f560()
-                 0a 00
-       1807e10e1 48 8b c8        MOV        RCX,RAX
-       1807e10e4 48 8b 10        MOV        RDX,qword ptr [RAX]
-<-- snap -->
-       1807e10e7 ff 92 d8        CALL       qword ptr [RDX + 0xd8]
-                 00 00 00
-       1807e10ed 48 8d 94        LEA        RDX,[RSP + 0xf0]
-                 24 f0 00 
-                 00 00
-       1807e10f5 c7 84 24        MOV        dword ptr [RSP + 0xf0],0x40a00000
-                 f0 00 00 
-                 00 00 00 
-
-
-
+		void FUN_180873530(longlong *param_1,int param_2) { ... }
 	*/
 	{
-		Afx::BinUtils::MemRange result = FindPatternString(textRange, "8b 8d a0 08 00 00 e8 ?? ?? ?? ?? 48 8b c8 48 8b 10 ff 92 d8 00 00 00 48 8d 95 90 08 00 00 c7 85 90 08 00 00 00 00 a0 40");
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "49 8b cf 8b 10 e8 ?? ?? ?? ?? 45 88 a7 30 13 00 00 e8 ?? ?? ?? ??");
 		if (!result.IsEmpty()) {
-			MdtMemBlockInfos mbis;
-			MdtMemAccessBegin((LPVOID)(result.Start), 17, &mbis);
-
-			static LPVOID ptr2 = CS2_Client_CSetupView_InsideComputeViewMatrix;
-			LPVOID ptrPtr2 = &ptr2;
-			size_t pCallAddress3 = result.Start+6+5+(*(unsigned int*)(result.Start+6+1));
-			static LPVOID ptr3 = (LPVOID)pCallAddress3;
-			LPVOID ptrPtr3 = &ptr3;
-			size_t pCallAddress4 = result.Start+17;
-			static LPVOID ptr4 = (LPVOID)pCallAddress4;
-			LPVOID ptrPtr4 = &ptr4;
-			unsigned char asmCode2[52]={
-				0x48, 0xb8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // mov rax, qword addr
-				0xff, 0x10, // call    qword ptr [rax] // our function to reapply FOV
-				0xf3, 0x0f, 0x5c, 0xf0, // subss   xmm6, xmm0 // update intermediate FOV value with the difference
-
-				0x8b, 0x8d, 0xa0, 0x08, 0x00, 0x00 , // MOV        ECX,dword ptr [RBP + local_res18]
-				0x48, 0xb8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // mov rax, qword addr
-				0xff, 0x10, // call    qword ptr [rax] // the original function in the detour area
-
-				0x48, 0x8b, 0xc8, // MOV        RCX,RAX
-       			0x48, 0x8b, 0x10, // MOV        RDX,qword ptr [RAX]
-
-				0x48, 0xb8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // mov rax, qword addr
-				0xff, 0x20 // jmp [rax] // back to where to continue
-			};
-			memcpy(&asmCode2[2], &ptrPtr2, sizeof(LPVOID));
-			memcpy(&asmCode2[24], &ptrPtr3, sizeof(LPVOID));
-			memcpy(&asmCode2[42], &ptrPtr4, sizeof(LPVOID));
-
-			LPVOID pTrampoline = MdtAllocExecuteableMemory(52);
-			memcpy(pTrampoline, asmCode2, 52);
-
-/*
-	00007ff9`3170f396 48b80000000000000000 mov     rax, 0
-	00007ff9`3170f3a0 ff20                 jmp     qword ptr [rax]
-	00007ff9`3170f3a2 90                   nop 
-*/
-			unsigned char asmCode[17]={
-				0x48, 0xb8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // mov rax, qword addr
-				0xff, 0x20, // jmp [rax]
-				0x90, 0x90, 0x90, 0x90, 0x90 // NOPs
-			};
-			static LPVOID ptr = pTrampoline;
-			LPVOID ptrPtr = &ptr;
-			memcpy(&asmCode[2], &ptrPtr, sizeof(LPVOID));
-
-			memcpy((LPVOID)(result.Start+0), asmCode, 13);
-			MdtMemAccessEnd(&mbis);
+			g_Old_Unk_Override_Fov = (Unk_Override_Fov_t)(result.Start+5+5+(*(int*)(result.Start+5+1)));
+			DetourTransactionBegin();
+			DetourUpdateThread(GetCurrentThread());
+			DetourAttach(&(PVOID&)g_Old_Unk_Override_Fov,New_Unk_Override_Fov);
+			if(NO_ERROR != DetourTransactionCommit()) ErrorBox(MkErrStr(__FILE__, __LINE__));			
 		}
-		else
-			ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
 /*
 	if(void ** vtable = (void**)Afx::BinUtils::FindClassVtable(clientDll,".?AVCRenderingPipelineCsgo@@", 0, 0x0)) {
@@ -1551,7 +1430,7 @@ void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameSta
 
 	AfxHookSource2Rs_Engine_OnClientFrameStageNotify(curStage, false);
 
-	if (curStage == 0 || curStage == 8) updateAnimGraph();
+	if (curStage == 0 || curStage == SOURCESDK::CS2::FRAME_RENDER_PASS) updateAnimGraph();
 
 	switch(curStage) {
 	case SOURCESDK::CS2::FRAME_RENDER_PASS:
