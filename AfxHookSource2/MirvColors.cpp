@@ -329,7 +329,7 @@ bool getAddresses(HMODULE clientDll) {
 	}
 
 	// next three functions can be found with "particles/entity/spectator_utility_trail.vpcf" or with offsets to m_nSnapshotTrajectoryEffectIndex, etc.
-	size_t g_Original_drawStuff_addr = getAddress(clientDll, "40 55 57 48 8D 6C 24 ?? 48 81 EC ?? ?? ?? ?? 80 B9");
+	size_t g_Original_drawStuff_addr = getAddress(clientDll, "40 55 53 48 8D 6C 24 ?? 48 81 EC ?? ?? ?? ?? 80 B9");
 	if(g_Original_drawStuff_addr == 0) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));
 		return false;
