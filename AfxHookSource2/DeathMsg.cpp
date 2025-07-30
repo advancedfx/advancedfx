@@ -717,8 +717,9 @@ void __fastcall handleDeathnotice(u_char* hudDeathNotice, SOURCESDK::CS2::IGameE
 
 	MyDeathMsgGameEventWrapper myWrapper(gameEvent);
 
-	auto pDeathNoticeLifetime = (float*)(hudDeathNotice + 0x74);
-	auto pDeathNoticeLocalPlayerLifetimeMod = (float*)(hudDeathNotice + 0x78);
+	// TODO: see if can find these with sig, but these rarely change
+	auto pDeathNoticeLifetime = (float*)(hudDeathNotice + 0x6C);
+	auto pDeathNoticeLocalPlayerLifetimeMod = (float*)(hudDeathNotice + 0x70);
 
 	auto uidAttacker = (int)(int16_t)gameEvent->GetInt(myWrapper.hashString("attacker"));
 	auto uidVictim = (int)(int16_t)gameEvent->GetInt(myWrapper.hashString("userid"));
