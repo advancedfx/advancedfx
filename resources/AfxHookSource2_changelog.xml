@@ -7,7 +7,7 @@
 <release>
 <name>AfxHookSource2</name>
 <version>0.36.1</version>
-<time>2025-07-30T12:00Z</time>
+<time>2025-07-30T14:00Z</time>
 <changes>
 <change type="fixed">Adjusted to CS2 update, with lots of support by @ChetdeJong</change>
 <change type="updated">Attention mirv-script users: breaking change in mirv.onClientFrameStageNotify: Valve changed e.curStage value 9 to value 8. We updated the example script accordingly. Also we temporarily hardcoded the highest entity index reported to 2048 (there are even higher numbers), will probably need an API change here in the future.</change>
