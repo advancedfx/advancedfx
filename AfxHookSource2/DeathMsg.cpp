@@ -21,6 +21,17 @@
 
 currentGameCamera g_CurrentGameCamera;
 
+namespace CS2 {
+	namespace PanoramaUIPanel {
+		ptrdiff_t getAttributeString = 0;
+		ptrdiff_t setAttributeString = 0;
+	}
+
+	namespace PanoramaUIEngine {
+		ptrdiff_t makeSymbol = 0;
+	}
+};
+
 struct PlayerInfo {
 	char* name;
 	uint64_t xuid;
@@ -1005,6 +1016,36 @@ bool getDeathMsgAddrs(HMODULE clientDll) {
 
 bool getPanoramaAddrsFromClient(HMODULE clientDll) {
 	// credit https://github.com/danielkrupinski/Osiris
+	
+	// in the middle of big function with "Attempted to cast panel \'%s\' to type \'%s\'"
+	//
+    //  if (DAT_181e15c18 != (longlong *)0x0) {
+    //    local_230 = FUN_1809b2650; <--------- next 2 sigs in this one
+    //    local_238 = lVar12;
+    //    (**(code **)(*DAT_181e15c18 + 0x138))(DAT_181e15c18,DAT_181b4fb44,plVar11,&local_238);
+    //  }
+    //}
+	if (auto addr = getAddress(clientDll,"12 48 8B 01 FF 90 ?? ?? ?? ?? 48 8B ?? 48 85 C0 74 ?? 80 38 00 74 ?? 48 8D 4C"); addr != 0) {
+		CS2::PanoramaUIPanel::getAttributeString = *(int32_t*)((unsigned char*)addr + 6);
+	} else {
+		ErrorBox(MkErrStr(__FILE__, __LINE__));
+		return false;
+	}
+
+	if (auto addr = getAddress(clientDll,"FF 90 ?? ?? ?? ?? 48 83 C6 ?? 48 3B ?? 75 ?? 4C"); addr != 0) {
+		CS2::PanoramaUIPanel::setAttributeString = *(int32_t*)((unsigned char*)addr + 2);
+	} else {
+		ErrorBox(MkErrStr(__FILE__, __LINE__));
+		return false;
+	}
+
+	// "Can\'t call Panorama Symbol constructor outside panorama.dll until UIEngine is i nitialized! Symbol: %s"
+	if (auto addr = getAddress(clientDll,"48 8B 01 4C 8B C3 BA ?? ?? ?? ?? FF 90 ?? ?? ?? ?? 48 8B 5C 24 ?? 66 89 07"); addr != 0) {
+		CS2::PanoramaUIEngine::makeSymbol = *(int32_t*)((unsigned char*)addr + 13);
+	} else {
+		ErrorBox(MkErrStr(__FILE__, __LINE__));
+		return false;
+	}
 
 	// function has "file://{resources}/layout/hud/hud.xml" string and also references CCSGO_Hud vftable
 	// hudpanel is DAT that param_1 assigned to     
