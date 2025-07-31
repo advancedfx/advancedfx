@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.36.2</version>
+<time>2025-07-31T11:00Z</time>
+<changes>
+<change type="fixed">Adjusted mirv_replace_name to CS2 update.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.36.1</version>
 <time>2025-07-30T14:00Z</time>
 <changes>
