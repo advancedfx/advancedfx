@@ -54,15 +54,13 @@ extern HMODULE g_H_ClientDll;
 
 // Retrieved from script function.
 const char * CEntityInstance::GetClientClassName() {
-    void * pClientClass = nullptr;
-
     // GetClientClass function.
     // find it by searching for 4th full-ptr ref to "C_PlantedC4" subtract sizeof(void*) (0x8) and search function that references this struct.
     // you need to search for raw bytes, GiHidra doesn't seem to find the reference.
-    ((void * (__fastcall *)(void *,void*)) (*(void***)this)[38]) (this,&pClientClass);
+    void * pClientClass = ((void * (__fastcall *)(void *)) (*(void***)this)[40]) (this);
 
     if(pClientClass) {
-        return *(const char**)((unsigned char*)pClientClass + sizeof(void*));
+        return *(const char**)((unsigned char*)pClientClass + 0x10);
     }
     return nullptr;
 }
