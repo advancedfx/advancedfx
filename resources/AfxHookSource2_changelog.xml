@@ -4,6 +4,17 @@
 <changelog>
 
 
+
+<release>
+<name>AfxHookSource2</name>
+<version>0.36.3</version>
+<time>2025-08-01T07:00Z</time>
+<changes>
+<change type="fixed">Fixed mirv.script Entity.getClientClassName</change>
+</changes>
+</release>
+
+
 <release>
 <name>AfxHookSource2</name>
 <version>0.36.2</version>
