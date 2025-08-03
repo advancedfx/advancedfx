@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.132.1</version>
+<time>2025-08-03T15:00Z</time>
+<changes>
+<change type="fixed">Fixes #1085 CS:GO doesn't work properly after loading HLAE.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.132.0</version>
 <time>2025-06-11T15:00Z</time>
 <changes>
