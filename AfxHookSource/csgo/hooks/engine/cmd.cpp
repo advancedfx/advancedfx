@@ -77,43 +77,26 @@ bool My_csgo_Cmd_ExecuteCommand_Do(int eTarget, int eSource, const SOURCESDK::CS
 	return false;
 }
 
-__declspec(naked) SOURCESDK::CSGO::ConCommandBase* __fastcall  My_csgo_Cmd_ExecuteCommand(int eTarget, const SOURCESDK::CSGO::CCommand& command) {
+SOURCESDK::CSGO::ConCommandBase* __fastcall  My_csgo_Cmd_ExecuteCommand(int eTarget, const SOURCESDK::CSGO::CCommand& command) {
 
-	__asm push ebp
-	__asm mov ebp, esp
-	__asm sub esp, __LOCAL_SIZE
-	__asm mov eTarget, ecx
-	__asm mov command, edx
+	SOURCESDK::CSGO::ConCommandBase* result;
 
-	SOURCESDK::CSGO::ConCommandBase* result; 
-	
 	if (My_csgo_Cmd_ExecuteCommand_Do(eTarget, command.Source(), command)) {
+		result = nullptr;
+	} else {		
+		Log_Command(eTarget, command.Source(), command.GetCommandString(), true);
+
 		__asm mov edx, command
 		__asm mov ecx, eTarget
-		__asm mov esp, ebp
-		__asm pop ebp
-		__asm mov eax, 0
-		__asm ret
+
+		__asm call [g_Org_csgo_Cmd_ExecuteCommand] 
+
+		__asm mov result, eax
+
+		Log_Command(eTarget, command.Source(), command.GetCommandString(), false);
 	}
-	
-	Log_Command(eTarget, command.Source(), command.GetCommandString(), true);
 
-	__asm mov edx, command
-	__asm mov ecx, eTarget
-
-	__asm call [g_Org_csgo_Cmd_ExecuteCommand] 
-
-	__asm mov result, eax
-
-	Log_Command(eTarget, command.Source(), command.GetCommandString(), false);
-
-	__asm mov eax, result
-	
-	__asm mov edx, command
-	__asm mov ecx, eTarget
-	__asm mov esp, ebp
-	__asm pop ebp
-	__asm ret
+	return result;
 }
 
 typedef SOURCESDK::CSGO::ConCommandBase* (*tf2_engine_Cmd_ExecuteCommand_t)(const SOURCESDK::CSGO::CCommand& command, int eSource, int eTarget);
