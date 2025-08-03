@@ -10,7 +10,7 @@
 <version>0.36.3</version>
 <time>2025-08-01T07:00Z</time>
 <changes>
-<change type="fixed">Fixed mirv.script Entity.getClientClassName</change>
+<change type="fixed">Fixed mirv.script Entity.getClientClassName thanks to @ChetdeJong</change>
 </changes>
 </release>
 
