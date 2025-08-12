@@ -37,10 +37,11 @@ float CMirvTime::absoluteframetime_get(void)
 float CMirvTime::interval_per_tick_get(void)
 {
 	const int default_value = 64;
-	if(nullptr == g_pGlobals) return default_value;
-	int value = *(int *)((unsigned char *)g_pGlobals +4*4);
-	if(value <= 1) value = default_value; // In menu it's 1.
-	return 1.0f / value;
+//	if(nullptr == g_pGlobals) return default_value;
+//	int value = *(int *)((unsigned char *)g_pGlobals +4*4);
+//	if(value <= 1) value = default_value; // In menu it's 1.
+//	return 1.0f / value;
+	return 1.0f / default_value;
 }
 
 float CMirvTime::interpolation_amount_get(void)

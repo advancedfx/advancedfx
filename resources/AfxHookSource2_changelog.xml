@@ -4,6 +4,15 @@
 <changelog>
 
 
+<release>
+<name>AfxHookSource2</name>
+<version>0.36.4</version>
+<time>2025-08-12T17:00Z</time>
+<changes>
+<change type="fixed">Fixed reported / used demo tick and time (e.g. in mirv_campath print / mirv_skip). HLAE now assumes a hardcoded interval per tick of 1s/64, since for some new demos the ticks per second reported seem bogeous.</change>
+</changes>
+</release>
+
 
 <release>
 <name>AfxHookSource2</name>
