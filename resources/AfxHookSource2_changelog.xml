@@ -6,10 +6,11 @@
 
 <release>
 <name>AfxHookSource2</name>
-<version>0.36.6</version>
-<time>2025-08-15T19:00Z</time>
+<version>0.36.7</version>
+<time>2025-08-15T20:00Z</time>
 <changes>
 <change type="fixed">Fixed bug in player pawn and player controller detection / vtable offset affecting multiple features.</change>
+<change type="fixed">Fixed crash bug in mirv_replace_name.</change>
 </changes>
 </release>
 
