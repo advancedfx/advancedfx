@@ -113,7 +113,7 @@ void HookFixClient(HMODULE clientDll)
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 	// 26th in vtable for CAnimGraphGameSystem, has "AnimGraph Client Tick"
-	size_t g_orgUpdateAnimGraph_addr = getAddress(clientDll, "89 54 24 10 55 53 57 48 8d ac 24 a0 dd fb ff b8 60 23 04 00");
+	size_t g_orgUpdateAnimGraph_addr = getAddress(clientDll, "89 54 24 ?? 55 53 57 48 8D AC 24 ?? ?? ?? ?? B8");
 	if(g_orgUpdateAnimGraph_addr == 0) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}

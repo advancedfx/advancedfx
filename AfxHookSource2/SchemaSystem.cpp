@@ -21,10 +21,10 @@ void getOffsetsFromSchemaSystem(SDK::CSchemaSystem* pSchemaSystem)
 			continue;
 		}
 
-		std::vector<SDK::CSchemaDeclaredClassEntry> declaredClassEntries(pSchemaScope->m_nNumDeclaredClasses + 1);
-		memcpy(declaredClassEntries.data(), pSchemaScope->m_pDeclaredClasses, (pSchemaScope->m_nNumDeclaredClasses + 1) * sizeof(SDK::CSchemaDeclaredClassEntry));
+		std::vector<SDK::CSchemaDeclaredClassEntry> declaredClassEntries(pSchemaScope->m_nNumDeclaredClasses);
+		memcpy(declaredClassEntries.data(), pSchemaScope->m_pDeclaredClasses, (pSchemaScope->m_nNumDeclaredClasses) * sizeof(SDK::CSchemaDeclaredClassEntry));
 
-		for (uint16_t j = 0; j <= pSchemaScope->m_nNumDeclaredClasses; ++j)
+		for (uint16_t j = 0; j < pSchemaScope->m_nNumDeclaredClasses; ++j)
 		{
 			SDK::CSchemaDeclaredClass* pDeclaredClass = declaredClassEntries[j].m_pDeclaredClass;
 			if (!pDeclaredClass) continue;

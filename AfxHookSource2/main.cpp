@@ -1000,21 +1000,21 @@ void HookClientDll(HMODULE clientDll) {
 	/*
 		This is where it checks for engine->IsPlayingDemo() (and afterwards for cl_demoviewoverride (float))
 		before under these conditions it is calling CalcDemoViewOverride, so this is in CViewRender::SetUpView:
-                             LAB_180882cd6                                   XREF[5]:     180882c82(j), 180882c92(j), 
-                                                                                          180882ca2(j), 180882cae(j), 
-                                                                                          180882cbe(j)  
-       180882cd6 48 8b 0d        MOV        RCX,qword ptr [DAT_181d1bfa0]
-                 c3 92 49 01
-       180882cdd 48 8b 01        MOV        RAX,qword ptr [RCX]
-       180882ce0 ff 90 38        CALL       qword ptr [RAX + 0x138]
+
+       180898120 48 8b 0d        MOV        RCX,qword ptr [DAT_181e2d7a8]
+                 81 56 59 01
+       180898127 48 8b 01        MOV        RAX,qword ptr [RCX]
+       18089812a ff 90 40        CALL       qword ptr [RAX + 0x140]
                  01 00 00
-       180882ce6 0f 57 f6        XORPS      XMM6,XMM6
-       180882ce9 84 c0           TEST       AL,AL
-       180882ceb 74 63           JZ         LAB_180882d50
-       180882ced ba ff ff        MOV        EDX,0xffffffff
+       180898130 0f 57 f6        XORPS      XMM6,XMM6
+       180898133 84 c0           TEST       AL,AL
+       180898135 74 63           JZ         LAB_18089819a
+       180898137 ba ff ff        MOV        EDX,0xffffffff
+                 ff ff
+
 	*/
 	{																	// 0x7d8fbb 26.06.24
-		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8b 0d ?? ?? ?? ?? 48 8b 01 ff 90 38 01 00 00 0f 57 f6 84 c0 74 63 ba ff ff ff ff");
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8b 0d ?? ?? ?? ?? 48 8b 01 ff 90 40 01 00 00 0f 57 f6 84 c0 74 63 ba ff ff ff ff");
 																	  
 		if (!result.IsEmpty()) {
 			/*
@@ -1047,27 +1047,27 @@ void HookClientDll(HMODULE clientDll) {
 	/*
 		The FOV is overridden / computed a second time in the function called in
 		CViewRender::SetUpView (see hook above on how to find it):
+		
+       180898360 49 8b cf        MOV        RCX,R15
+       180898363 8b 10           MOV        EDX,dword ptr [RAX]
+       180898365 e8 b6 fd        CALL       FUN_180888120 <-- we detour this function.                                   undefined FUN_180888120()
+                 fe ff
+       18089836a 4c 8b c7        MOV        R8,RDI
+       18089836d 41 c6 87        MOV        byte ptr [R15 + 0x1330],0x0
+                 30 13 00 
+                 00 00
 
-       180882f2d 49 8b cf        MOV        RCX,R15
-       180882f30 8b 10           MOV        EDX,dword ptr [RAX]
-       180882f32 e8 f9 05        CALL       FUN_180873530 <-- we detour this function.
-                 ff ff
-       180882f37 45 88 a7        MOV        byte ptr [R15 + 0x1330],R12B
-                 30 13 00 00
-       180882f3e e8 4d 9c        CALL       FUN_1808dcb90                                    undefined FUN_1808dcb90()
-                 05 00
-
-		void FUN_180873530(longlong *param_1,int param_2) { ... }
+		void FUN_180888120(longlong *param_1,int param_2) { ... }
 	*/
 	{
-		Afx::BinUtils::MemRange result = FindPatternString(textRange, "49 8b cf 8b 10 e8 ?? ?? ?? ?? 45 88 a7 30 13 00 00 e8 ?? ?? ?? ??");
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "49 8b cf 8b 10 e8 ?? ?? ?? ?? 4c 8b c7 41 c6 87 30 13 00 00 00");
 		if (!result.IsEmpty()) {
 			g_Old_Unk_Override_Fov = (Unk_Override_Fov_t)(result.Start+5+5+(*(int*)(result.Start+5+1)));
 			DetourTransactionBegin();
 			DetourUpdateThread(GetCurrentThread());
 			DetourAttach(&(PVOID&)g_Old_Unk_Override_Fov,New_Unk_Override_Fov);
 			if(NO_ERROR != DetourTransactionCommit()) ErrorBox(MkErrStr(__FILE__, __LINE__));			
-		}
+		} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
 /*
 	if(void ** vtable = (void**)Afx::BinUtils::FindClassVtable(clientDll,".?AVCRenderingPipelineCsgo@@", 0, 0x0)) {
@@ -1103,7 +1103,7 @@ void HookClientDll(HMODULE clientDll) {
 	// client entity system related
 	{
 		// "Entities/Client Entity Count"
-		auto unkFn = Afx::BinUtils::FindPatternString(textRange, "40 55 53 48 8D AC 24 ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 0D");
+		auto unkFn = Afx::BinUtils::FindPatternString(textRange, "40 55 53 48 8d ac 24 ?? ?? ?? ?? 48 81 ec ?? ?? ?? ?? 48 8b 0d ?? ?? ?? ?? 33 d2 e8 ?? ?? ?? ??");
 		if (!unkFn.IsEmpty()) {
 			void * pEntityList = (void *)(unkFn.Start+18+7+*(int*)(unkFn.Start+18+3));
 			void * pFnGetHighestEntityIterator = (void *)(unkFn.Start+27+5+*(int*)(unkFn.Start+27+1));
