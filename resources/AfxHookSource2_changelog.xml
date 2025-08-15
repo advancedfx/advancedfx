@@ -4,6 +4,17 @@
 <changelog>
 
 
+
+<release>
+<name>AfxHookSource2</name>
+<version>0.36.8</version>
+<time>2025-08-15T23:00Z</time>
+<changes>
+<change type="fixed">Fixed vtable offsets for render eye origin and angles (also affects e.g. mirv_deathmsg localPlayer xTrace) and offets for origin.</change>
+</changes>
+</release>
+
+
 <release>
 <name>AfxHookSource2</name>
 <version>0.36.7</version>
