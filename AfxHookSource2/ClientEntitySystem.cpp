@@ -70,7 +70,7 @@ const char * CEntityInstance::GetClientClassName() {
 
 bool CEntityInstance::IsPlayerPawn() {
 	// See cl_ent_text drawing function.
-	return ((bool (__fastcall *)(void *)) (*(void***)this)[158]) (this);
+	return ((bool (__fastcall *)(void *)) (*(void***)this)[155]) (this);
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerPawnHandle() {
@@ -81,7 +81,7 @@ SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerPawnHandle() {
 
 bool CEntityInstance::IsPlayerController() {
 	// See cl_ent_text drawing function. Near "Pawn: (%d) Name: %s".
-	return ((bool (__fastcall *)(void *)) (*(void***)this)[159]) (this);    
+	return ((bool (__fastcall *)(void *)) (*(void***)this)[156]) (this);    
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerControllerHandle() {
@@ -316,7 +316,7 @@ CON_COMMAND(__mirv_listentities, "")
             ent->GetRenderEyeOrigin(render_origin);
             ent->GetRenderEyeAngles(render_angles);
             ent->GetOrigin(origin[0],origin[1],origin[2]);
-            advancedfx::Message("%i: %s / %s / %s [%f,%f,%f / %f,%f,%f] %i HP @ [%f,%f,%f] \n", i, ent->GetDebugName(), ent->GetClassName(), ent->GetClientClassName(), render_origin[0], render_origin[1], render_origin[2], render_angles[0], render_angles[1], render_angles[2], ent->GetHealth(), origin[0], origin[1], origin[2]);
+            advancedfx::Message("%i: %s / %s / %s [%f,%f,%f / %f,%f,%f] %i HP @ [%f,%f,%f] | %i %i\n", i, ent->GetDebugName(), ent->GetClassName(), ent->GetClientClassName(), render_origin[0], render_origin[1], render_origin[2], render_angles[0], render_angles[1], render_angles[2], ent->GetHealth(), origin[0], origin[1], origin[2], ent->IsPlayerController()?1:0, ent->IsPlayerPawn()?1:0);
         }
         else advancedfx::Message("%i:\n",i);
     }

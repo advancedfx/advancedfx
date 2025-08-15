@@ -4,7 +4,7 @@
       - https://docs.firegiant.com/wix3/tutorial/upgrades-and-modularization/
       - https://learn.microsoft.com/en-us/windows/win32/msi/productversion
   -->
-  <Bundle Name="HLAE Installer" Version="2.186.6" Manufacturer="advancedfx.org" UpgradeCode="{35C8D990-6C4F-4639-ADF7-D259B06E070B}" AboutUrl="https://www.advancedfx.org/" IconSourceFile="..\..\hlae\app.ico" Compressed="yes">
+  <Bundle Name="HLAE Installer" Version="2.186.7" Manufacturer="advancedfx.org" UpgradeCode="{35C8D990-6C4F-4639-ADF7-D259B06E070B}" AboutUrl="https://www.advancedfx.org/" IconSourceFile="..\..\hlae\app.ico" Compressed="yes">
 
     <BootstrapperApplication>
       <bal:WixStandardBootstrapperApplication LicenseUrl="" SuppressOptionsUI="yes" LocalizationFile="lang\HyperlinkTheme_en-US.wxl" ThemeFile="HyperlinkSidebarTheme.xml" ShowVersion="yes" Theme="hyperlinkSidebarLicense" />
