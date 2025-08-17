@@ -491,6 +491,16 @@ struct myPanoramaWrapper {
 		}
 	}
 
+	void updateHudPanelStyles() {
+		const auto hudPanel = ((u_char***)pHudPanel)[0][1];
+		if (hudPanel) {
+			// Function is called also in if after refrence to "CUIPanel::AddClassesInternal - apply old dirty styles":
+			// and is also at vtable entry 71 of panorama panel class.
+			void (__fastcall * applyStyleFn)(void *, signed short int) = (void (__fastcall *)(void *, signed short int))((*(void***)hudPanel)[71]);
+			applyStyleFn(hudPanel, 0);
+		}
+	}
+
 } g_myPanoramaWrapper;
 
 typedef u_char* (__fastcall *g_Original_hashString_t)(uint32_t* pResult, const char* string);
@@ -974,6 +984,10 @@ unsigned char __fastcall My_Panorama_CStylePropertyWashColor_Parse(void * This, 
 		}		
 	}
 	return result;
+}
+
+void ReloadHudPanelStyles(){
+	g_myPanoramaWrapper.updateHudPanelStyles();
 }
 
 bool getDeathMsgAddrs(HMODULE clientDll) {

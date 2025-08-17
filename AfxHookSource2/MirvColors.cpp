@@ -26,6 +26,7 @@ std::vector<AfxBasicColor> afxBasicColors = {
 
 const afxUtils::RGBA TdefaultColor = { 0xE0, 0xAF, 0x56, 0xFF };
 const afxUtils::RGBA CTdefaultColor = { 0x72, 0x9B, 0xDD, 0xFF };
+const afxUtils::RGBA TdefaultWashColor = { 0xEA, 0xBE, 0x54, 0xFF };
 const afxUtils::RGBA CTdefaultWashColor = { 0x96, 0xC8, 0xFA, 0xFF };
 
 struct ParticleData {
@@ -130,10 +131,12 @@ struct MirvColors {
 	} smokes;
 
 	struct TeamIdOverhead {
-		MyColor Tcolor = { TdefaultColor, TdefaultColor };
+		MyColor Tcolor = { TdefaultWashColor, TdefaultWashColor };
 		MyColor CTcolor = { CTdefaultWashColor, CTdefaultWashColor };
 	} teamIdOverhead;
 } g_MirvColors;
+
+extern void ReloadHudPanelStyles();
 
 void applyTeamIdOverheadColors () {
 	if (nullptr != g_pHudReticle_WashColor_CT) {
@@ -162,6 +165,8 @@ void applyTeamIdOverheadColors () {
 
 	if (nullptr == g_pHudReticle_WashColor_T || nullptr == g_pHudReticle_WashColor_CT) 
 	advancedfx::Warning("AFXERROR: Couldn't apply team id overhead colors\n");
+
+	ReloadHudPanelStyles();
 }
 
 typedef void (__fastcall *g_Original_setGlowColor_t)(u_char* glowProperty, uint32_t color);

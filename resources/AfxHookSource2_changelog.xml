@@ -4,6 +4,15 @@
 <changelog>
 
 
+<release>
+<name>AfxHookSource2</name>
+<version>0.36.9</version>
+<time>2025-08-17T12:30Z</time>
+<changes>
+<change type="fixed">Fixed mirv_colors teamid not updating like before when toggling sv_teamid_overhead false/true.</change>
+</changes>
+</release>
+
 
 <release>
 <name>AfxHookSource2</name>
