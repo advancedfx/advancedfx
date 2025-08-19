@@ -1060,15 +1060,15 @@ void HookClientDll(HMODULE clientDll) {
 		void FUN_180888120(longlong *param_1,int param_2) { ... }
 	*/
 	{
-		Afx::BinUtils::MemRange result = FindPatternString(textRange, "49 8b cf 8b 10 e8 ?? ?? ?? ?? 4c 8b c7 41 c6 87 30 13 00 00 00");
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8B C4 53 55 56 57 41 56 41 57");
 		if (!result.IsEmpty()) {
-			g_Old_Unk_Override_Fov = (Unk_Override_Fov_t)(result.Start+5+5+(*(int*)(result.Start+5+1)));
+			g_Old_Unk_Override_Fov = (Unk_Override_Fov_t)result.Start;
 			DetourTransactionBegin();
 			DetourUpdateThread(GetCurrentThread());
-			DetourAttach(&(PVOID&)g_Old_Unk_Override_Fov,New_Unk_Override_Fov);
-			if(NO_ERROR != DetourTransactionCommit()) ErrorBox(MkErrStr(__FILE__, __LINE__));			
+			DetourAttach((PVOID*)&g_Old_Unk_Override_Fov, New_Unk_Override_Fov);
+			if(NO_ERROR != DetourTransactionCommit()) ErrorBox(MkErrStr(__FILE__, __LINE__));            
 		} else ErrorBox(MkErrStr(__FILE__, __LINE__));
-	}
+}
 /*
 	if(void ** vtable = (void**)Afx::BinUtils::FindClassVtable(clientDll,".?AVCRenderingPipelineCsgo@@", 0, 0x0)) {
 		g_Old_CViewRender_RenderView = (CViewRender_RenderView_t)vtable[0] ;
