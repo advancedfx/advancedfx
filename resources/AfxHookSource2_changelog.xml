@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.36.10</version>
+<time>2025-08-19T13:00Z</time>
+<changes>
+<change type="fixed">Adjusted to CS2 update / fixed mirv_input camera FOV related problems, thanks to @1mpulse</change>
+</changes>
+</release>
+
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.36.9</version>
 <time>2025-08-17T12:30Z</time>
 <changes>
