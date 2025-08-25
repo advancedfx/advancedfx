@@ -19,6 +19,10 @@ float CMirvTime::curtime_get(void)
 	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals + 12*4) : 0;
 }
 
+void CMirvTime::curtime_set(float value) {
+	if(g_pGlobals) *(float*)((unsigned char*)g_pGlobals + 12 * 4) = value;
+}
+
 int CMirvTime::framecount_get(void)
 {
 	return g_pGlobals ? *(int *)((unsigned char *)g_pGlobals + 1*4) : 0;

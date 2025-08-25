@@ -84,7 +84,8 @@ double new_cs2_tier0_Plat_FloatTime(void) {
 
 void* g_pCAnimGraphGameSystem = 0;
 
-typedef void* (__fastcall * g_CreateAnimGraphSystem_t)(void * This);
+/*
+typedef void* (__fastcall* g_CreateAnimGraphSystem_t)(void* This);
 g_CreateAnimGraphSystem_t g_orgCreateAnimGraphSystem = nullptr;
 
 void* g_newCreateAnimGraphSystem (void* This)
@@ -92,18 +93,28 @@ void* g_newCreateAnimGraphSystem (void* This)
 	g_pCAnimGraphGameSystem = g_orgCreateAnimGraphSystem(This);
 	return g_pCAnimGraphGameSystem;
 }
+*/
 
-typedef u_char* (__fastcall * g_updateAnimGraph_t)(void * This, int bClientSide);
-g_updateAnimGraph_t g_orgUpdateAnimGraph = nullptr;
+typedef void (__fastcall * UpdateAnimGraph_t)(void * This, int bClientSide);
+UpdateAnimGraph_t g_Org_UpdateAnimGraph = nullptr;
 
-void updateAnimGraph() {
-	if (g_orgUpdateAnimGraph && g_pCAnimGraphGameSystem && g_MirvFix.fixAnimations) {
-		g_orgUpdateAnimGraph(g_pCAnimGraphGameSystem, 1);
+void __fastcall New_UpdateAnimGraph(void* pCAnimGraphGameSystem, int iClientSide) {
+	g_pCAnimGraphGameSystem = pCAnimGraphGameSystem;
+	//if (1 == iClientSide && !(g_pCAnimGraphGameSystem && g_MirvFix.fixAnimations)) {
+	//	g_Org_UpdateAnimGraph(g_pCAnimGraphGameSystem, 1);
+	//} else
+		g_Org_UpdateAnimGraph(g_pCAnimGraphGameSystem, iClientSide);
+}
+
+void UpdateAnimGraph() {
+	if (g_pCAnimGraphGameSystem && g_MirvFix.fixAnimations) {
+		g_Org_UpdateAnimGraph(g_pCAnimGraphGameSystem, 1);
 	}
 }
 
 void HookFixClient(HMODULE clientDll)
 {
+	/*
 	if(void ** vtable = (void **)Afx::BinUtils::FindClassVtable(clientDll, ".?AV?$CGameSystemReallocatingFactory@VCAnimGraphGameSystem@@V1@@@", 0, 0)) {
 		MdtMemBlockInfos mbis;
 		MdtMemAccessBegin((LPVOID)&(vtable[3]), sizeof(void*), &mbis);
@@ -111,13 +122,19 @@ void HookFixClient(HMODULE clientDll)
 		vtable[3] = &g_newCreateAnimGraphSystem;
 		MdtMemAccessEnd(&mbis);
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	*/
 
 	// 26th in vtable for CAnimGraphGameSystem, has "AnimGraph Client Tick"
-	size_t g_orgUpdateAnimGraph_addr = getAddress(clientDll, "89 54 24 ?? 55 53 57 48 8D AC 24 ?? ?? ?? ?? B8");
-	if(g_orgUpdateAnimGraph_addr == 0) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));
+	g_Org_UpdateAnimGraph = (UpdateAnimGraph_t)getAddress(clientDll, "89 54 24 ?? 55 53 57 48 8D AC 24 ?? ?? ?? ?? B8");
+	if (g_Org_UpdateAnimGraph) {
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach((PVOID *)&g_Org_UpdateAnimGraph, New_UpdateAnimGraph);
+		if (NO_ERROR != DetourTransactionCommit())
+			ErrorBox("Failed to detour g_Org_UpdateAnimGraph.");
 	}
-	g_orgUpdateAnimGraph = (g_updateAnimGraph_t)(g_orgUpdateAnimGraph_addr);
+	else
+		ErrorBox(MkErrStr(__FILE__, __LINE__));
 }
 
 CON_COMMAND(mirv_fix, "Various fixes")

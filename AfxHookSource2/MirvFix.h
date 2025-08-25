@@ -7,7 +7,7 @@ extern CAfxImportsHook g_Import_SceneSystem;
 extern CAfxImportsHook g_Import_panorama;
 
 void HookFixClient(HMODULE clientDll);
-void updateAnimGraph();
+void UpdateAnimGraph();
 
 struct MirvFix {
     struct Time {

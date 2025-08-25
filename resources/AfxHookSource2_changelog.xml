@@ -6,13 +6,22 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.36.11</version>
+<time>2025-08-25T13:00Z</time>
+<changes>
+<change type="fixed">Fixed mirv_fix animations 1 causing (a lot of) duplicate particles / shells.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.36.10</version>
 <time>2025-08-19T13:00Z</time>
 <changes>
 <change type="fixed">Adjusted to CS2 update / fixed mirv_input camera FOV related problems, thanks to @1mpulse</change>
 </changes>
 </release>
-
 
 
 <release>

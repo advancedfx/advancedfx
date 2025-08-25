@@ -1430,7 +1430,12 @@ void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameSta
 
 	AfxHookSource2Rs_Engine_OnClientFrameStageNotify(curStage, false);
 
-	if (curStage == 0 || curStage == SOURCESDK::CS2::FRAME_RENDER_PASS) updateAnimGraph();
+	if (curStage == SOURCESDK::CS2::FRAME_RENDER_PASS) {
+		float time8 = g_MirvTime.curtime_get();
+		g_MirvTime.curtime_set(time8 + 1.0f / 64);
+		UpdateAnimGraph();
+		g_MirvTime.curtime_set(time8);
+	}
 
 	switch(curStage) {
 	case SOURCESDK::CS2::FRAME_RENDER_PASS:

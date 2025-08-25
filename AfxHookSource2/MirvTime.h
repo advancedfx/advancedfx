@@ -12,6 +12,7 @@ class CMirvTime
 {
 public:
 	float curtime_get(void);
+	void curtime_set(float value);
 	int framecount_get(void);
 	float frametime_get(void);
 	float absoluteframetime_get(void);
