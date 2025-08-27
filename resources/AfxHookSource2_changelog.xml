@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.36.13</version>
+<time>2025-08-27T22:30Z</time>
+<changes>
+<change type="fixed">Fixed mirv_colors teamid - toggle sv_teamid_overhead 0/1 to update.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.36.12</version>
 <time>2025-08-27T12:30Z</time>
 <changes>

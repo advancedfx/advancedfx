@@ -19,6 +19,8 @@
 #include "SchemaSystem.h"
 #include "MirvColors.h" //
 
+#include <set>
+
 currentGameCamera g_CurrentGameCamera;
 
 namespace CS2 {
@@ -491,7 +493,9 @@ struct myPanoramaWrapper {
 		}
 	}
 
+	/*
 	void updateHudPanelStyles() {
+		// currently not required.
 		const auto hudPanel = ((u_char***)pHudPanel)[0][1];
 		if (hudPanel) {
 			// Function is called also in if after refrence to "CUIPanel::AddClassesInternal - apply old dirty styles":
@@ -500,6 +504,7 @@ struct myPanoramaWrapper {
 			applyStyleFn(hudPanel, 0);
 		}
 	}
+	*/
 
 } g_myPanoramaWrapper;
 
@@ -907,20 +912,36 @@ void __fastcall handleDeathnotice(u_char* hudDeathNotice, SOURCESDK::CS2::IGameE
 
 typedef int (__fastcall * Panorama_CLayoutFile_LoadFromFile_t)(void * This, const char * pFilePath, unsigned char _unk02);
 typedef unsigned char (__fastcall * Panorama_CStyleProperty_Parse_t)(void * This, void* _unk01, const char * pValueStr);
+typedef void (__fastcall * Panorama_CStyleProperty_Clone_t)(void * This, void * pTarget);
 
 bool g_b_In_Panorama_CLayoutFile_LoadFromFile = false;
 bool g_b_In_Panorama_CLayoutFile_LoadFromFile_HudReticle = false;
+
 Panorama_CLayoutFile_LoadFromFile_t g_Org_Panorama_CLayoutFile_LoadFromFile = nullptr;
 Panorama_CStyleProperty_Parse_t g_Org_Panorama_CStylePropertyForegroundColor_Parse = nullptr;
 Panorama_CStyleProperty_Parse_t g_Org_Panorama_CStylePropertyBackgroundColor_Parse = nullptr;
 Panorama_CStyleProperty_Parse_t g_Org_Panorama_CStylePropertyBorder_Parse = nullptr;
-Panorama_CStyleProperty_Parse_t g_Org_Panorama_CStylePropertyWashColor_Parse = nullptr;
 
-u_char* g_pHudReticle_WashColor_T = nullptr;
-u_char* g_pHudReticle_WashColor_CT = nullptr;
+Panorama_CStyleProperty_Parse_t g_Org_Panorama_CStylePropertyWashColor_Parse = nullptr;
+Panorama_CStyleProperty_Clone_t g_Org_Panorama_CStylePropertyWashColor_Clone = nullptr;
+
+std::set<u_char*> g_pHudReticle_WashColor_T;
+std::set<u_char*> g_pHudReticle_WashColor_CT;
+
+void SetHudReticleWashColorT(uint32_t value) {
+	for(auto it= g_pHudReticle_WashColor_T.begin(); it != g_pHudReticle_WashColor_T.end(); it++) {
+		*(uint32_t*)(*it + 0x10) = value;
+	}
+}
+
+void SetHudReticleWashColorCT(uint32_t value) {
+	for(auto it= g_pHudReticle_WashColor_CT.begin(); it != g_pHudReticle_WashColor_CT.end(); it++) {
+		*(uint32_t*)(*it + 0x10) = value;
+	}
+}
 
 int __fastcall My_Panorama_CLayoutFile_LoadFromFile(void * This, const char * pFilePath, unsigned char _unk02) {
-	if(0 == strcmp("panorama\\layout\\hud\\huddeathnotice.xml",pFilePath)) {
+	if(0 == strcmp("panorama\\layout\\hud\\huddeathnotice.xml",pFilePath)) {		
 		g_b_In_Panorama_CLayoutFile_LoadFromFile = true;
 		int result = g_Org_Panorama_CLayoutFile_LoadFromFile(This,pFilePath,_unk02);
 		g_b_In_Panorama_CLayoutFile_LoadFromFile = false;
@@ -928,6 +949,8 @@ int __fastcall My_Panorama_CLayoutFile_LoadFromFile(void * This, const char * pF
 	}
 
 	if(0 == strcmp("panorama\\layout\\hud\\hudreticle.xml",pFilePath)) {
+		g_pHudReticle_WashColor_T.clear();
+		g_pHudReticle_WashColor_CT.clear();
 		g_b_In_Panorama_CLayoutFile_LoadFromFile_HudReticle = true;
 		int result = g_Org_Panorama_CLayoutFile_LoadFromFile(This,pFilePath,_unk02);
 		g_b_In_Panorama_CLayoutFile_LoadFromFile_HudReticle = false;
@@ -940,10 +963,10 @@ int __fastcall My_Panorama_CLayoutFile_LoadFromFile(void * This, const char * pF
 unsigned char __fastcall My_Panorama_CStylePropertyForegroundColor_Parse(void * This, void* _unk01, const char * pValueStr) {
 	unsigned char result = g_Org_Panorama_CStylePropertyForegroundColor_Parse(This,_unk01,pValueStr);
 	if(g_b_In_Panorama_CLayoutFile_LoadFromFile) {
-		if(g_myPanoramaWrapper.CTcolor.pointer == nullptr && 0 == strcmp(pValueStr,"#6f9ce6")) {
+		if(0 == strcmp(pValueStr,"#6f9ce6")) {
 			g_myPanoramaWrapper.CTcolor.pointer = (u_char*)This;
 		}
-		else if(g_myPanoramaWrapper.Tcolor.pointer == nullptr && 0 == strcmp(pValueStr,"#eabe54")) {
+		else if(0 == strcmp(pValueStr,"#eabe54")) {
 			g_myPanoramaWrapper.Tcolor.pointer = (u_char*)This;
 		}		
 	}
@@ -953,10 +976,10 @@ unsigned char __fastcall My_Panorama_CStylePropertyForegroundColor_Parse(void * 
 unsigned char __fastcall My_Panorama_CStylePropertyBackgroundColor_Parse(void * This, void* _unk01, const char * pValueStr) {
 	unsigned char result = g_Org_Panorama_CStylePropertyBackgroundColor_Parse(This,_unk01,pValueStr);
 	if(g_b_In_Panorama_CLayoutFile_LoadFromFile) {
-		if(g_myPanoramaWrapper.BackgroundColor.pointer == nullptr && 0 == strcmp(pValueStr,"#000000a0")) {
+		if(0 == strcmp(pValueStr,"#000000a0")) {
 			g_myPanoramaWrapper.BackgroundColor.pointer = (u_char*)This;
 		}
-		else if(g_myPanoramaWrapper.LocalBackgroundColor.pointer == nullptr && 0 == strcmp(pValueStr,"#000000e7")) {
+		else if(0 == strcmp(pValueStr,"#000000e7")) {
 			g_myPanoramaWrapper.LocalBackgroundColor.pointer = (u_char*)This;
 		}		
 	}
@@ -966,28 +989,39 @@ unsigned char __fastcall My_Panorama_CStylePropertyBackgroundColor_Parse(void * 
 unsigned char __fastcall My_Panorama_CStylePropertyBorder_Parse(void * This, void* _unk01, const char * pValueStr) {
 	unsigned char result = g_Org_Panorama_CStylePropertyBorder_Parse(This,_unk01,pValueStr);
 	if(g_b_In_Panorama_CLayoutFile_LoadFromFile) {
-		if(g_myPanoramaWrapper.BorderColor.pointer == nullptr && 0 == strcmp(pValueStr,"2px solid #e10000")) {
+		if(0 == strcmp(pValueStr,"2px solid #e10000")) {
 			g_myPanoramaWrapper.BorderColor.pointer = (u_char*)This;
 		}
 	}
 	return result;
 }
 
+
 unsigned char __fastcall My_Panorama_CStylePropertyWashColor_Parse(void * This, void* _unk01, const char * pValueStr) {
 	unsigned char result = g_Org_Panorama_CStylePropertyWashColor_Parse(This,_unk01,pValueStr);
 	if(g_b_In_Panorama_CLayoutFile_LoadFromFile_HudReticle) {
-		if(g_pHudReticle_WashColor_CT == nullptr && 0 == strcmp(pValueStr,"rgb(150, 200, 250)")) {
-			g_pHudReticle_WashColor_CT = (u_char*)This;
+		if(0 == strcmp(pValueStr,"rgb(150, 200, 250)")) {
+			g_pHudReticle_WashColor_CT.emplace((u_char*)This);
 		}
-		else if(g_pHudReticle_WashColor_T == nullptr && 0 == strcmp(pValueStr,"#eabe54")) {
-			g_pHudReticle_WashColor_T = (u_char*)This;
+		else if(0 == strcmp(pValueStr,"#eabe54")) {
+			g_pHudReticle_WashColor_T.emplace((u_char*)This);
 		}		
 	}
 	return result;
 }
 
-void ReloadHudPanelStyles(){
-	g_myPanoramaWrapper.updateHudPanelStyles();
+void __fastcall My_Panorama_CStylePropertyWashColor_Clone(void * This, void * pTarget) {
+	g_Org_Panorama_CStylePropertyWashColor_Clone(This, pTarget);
+	if(g_b_In_Panorama_CLayoutFile_LoadFromFile_HudReticle) {
+		auto itCT = g_pHudReticle_WashColor_CT.find((u_char*)This);
+		if(itCT != g_pHudReticle_WashColor_CT.end()) {
+			g_pHudReticle_WashColor_CT.emplace((u_char*)pTarget);
+		}
+		auto itT = g_pHudReticle_WashColor_T.find((u_char*)This);
+		if(itT != g_pHudReticle_WashColor_T.end()) {
+			g_pHudReticle_WashColor_T.emplace((u_char*)pTarget);
+		}
+	}
 }
 
 bool getDeathMsgAddrs(HMODULE clientDll) {
@@ -1155,7 +1189,7 @@ bool getPanoramaAddrs(HMODULE panoramaDll) {
 			return false;
 		}
 		g_Org_Panorama_CStylePropertyBorder_Parse = (Panorama_CStyleProperty_Parse_t)vtable[6];
-	}		
+	}
 
 	{
 		void **vtable = (void**)Afx::BinUtils::FindClassVtable(panoramaDll,".?AVCStylePropertyWashColor@panorama@@",0,0);
@@ -1163,6 +1197,7 @@ bool getPanoramaAddrs(HMODULE panoramaDll) {
 			ErrorBox(MkErrStr(__FILE__, __LINE__));	
 			return false;
 		}
+		g_Org_Panorama_CStylePropertyWashColor_Clone = (Panorama_CStyleProperty_Clone_t)vtable[1];
 		g_Org_Panorama_CStylePropertyWashColor_Parse = (Panorama_CStyleProperty_Parse_t)vtable[6];
 	}		
 
@@ -1182,6 +1217,7 @@ void HookPanorama(HMODULE panoramaDll)
 	DetourAttach(&(PVOID&)g_Org_Panorama_CStylePropertyForegroundColor_Parse, My_Panorama_CStylePropertyForegroundColor_Parse);
 	DetourAttach(&(PVOID&)g_Org_Panorama_CStylePropertyBackgroundColor_Parse, My_Panorama_CStylePropertyBackgroundColor_Parse);
 	DetourAttach(&(PVOID&)g_Org_Panorama_CStylePropertyBorder_Parse, My_Panorama_CStylePropertyBorder_Parse);
+	DetourAttach(&(PVOID&)g_Org_Panorama_CStylePropertyWashColor_Clone, My_Panorama_CStylePropertyWashColor_Clone);
 	DetourAttach(&(PVOID&)g_Org_Panorama_CStylePropertyWashColor_Parse, My_Panorama_CStylePropertyWashColor_Parse);
 
 	if(NO_ERROR != DetourTransactionCommit()) {

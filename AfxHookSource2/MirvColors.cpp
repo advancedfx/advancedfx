@@ -136,37 +136,29 @@ struct MirvColors {
 	} teamIdOverhead;
 } g_MirvColors;
 
-extern void ReloadHudPanelStyles();
+void SetHudReticleWashColorT(uint32_t value);
+void SetHudReticleWashColorCT(uint32_t value);
 
 void applyTeamIdOverheadColors () {
-	if (nullptr != g_pHudReticle_WashColor_CT) {
+	{
 		auto value = afxUtils::rgbaToHex(
 			g_MirvColors.teamIdOverhead.CTcolor.use 
 				? g_MirvColors.teamIdOverhead.CTcolor.value 
 				: g_MirvColors.teamIdOverhead.CTcolor.defaultValue
 			);
 
-		*(uint32_t*)(g_pHudReticle_WashColor_CT + 0x10) = value;
-		*(uint32_t*)(g_pHudReticle_WashColor_CT + 0x30) = value;
-		*(uint32_t*)(g_pHudReticle_WashColor_CT + 0x50) = value;
+		SetHudReticleWashColorCT(value);
 	}
 
-	if (nullptr != g_pHudReticle_WashColor_T) {
+	{
 		auto value = afxUtils::rgbaToHex(
 			g_MirvColors.teamIdOverhead.Tcolor.use 
 				? g_MirvColors.teamIdOverhead.Tcolor.value 
 				: g_MirvColors.teamIdOverhead.Tcolor.defaultValue
 			);
 
-		*(uint32_t*)(g_pHudReticle_WashColor_T + 0x10) = value;
-		*(uint32_t*)(g_pHudReticle_WashColor_T + 0x30) = value;
-		*(uint32_t*)(g_pHudReticle_WashColor_T + 0x50) = value;
+		SetHudReticleWashColorT(value);
 	}
-
-	if (nullptr == g_pHudReticle_WashColor_T || nullptr == g_pHudReticle_WashColor_CT) 
-	advancedfx::Warning("AFXERROR: Couldn't apply team id overhead colors\n");
-
-	ReloadHudPanelStyles();
 }
 
 typedef void (__fastcall *g_Original_setGlowColor_t)(u_char* glowProperty, uint32_t color);
