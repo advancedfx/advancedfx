@@ -6,6 +6,22 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.36.12</version>
+<time>2025-08-27T12:30Z</time>
+<changes>
+<change type="fixed">Adjusted mirv_replace_name to CS2 update.</change>
+<change type="fixed">Adjusted mirv_colors teamid to CS2 update - toggle sv_teamid_overhead 0/1 to update.</change>
+<comments>
+Please note that usage of HLAE with external VConsole is not recommended, even though it's common with observers.
+(There's bugs in regards for that, for us it even crashes frequently, even when using without HLAE.)
+If you only need netconport you can use -afxFixNetCon launch parameter to make it work without VConsole.
+</comments>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.36.11</version>
 <time>2025-08-25T13:00Z</time>
 <changes>

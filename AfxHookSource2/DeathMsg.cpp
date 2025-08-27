@@ -940,10 +940,10 @@ int __fastcall My_Panorama_CLayoutFile_LoadFromFile(void * This, const char * pF
 unsigned char __fastcall My_Panorama_CStylePropertyForegroundColor_Parse(void * This, void* _unk01, const char * pValueStr) {
 	unsigned char result = g_Org_Panorama_CStylePropertyForegroundColor_Parse(This,_unk01,pValueStr);
 	if(g_b_In_Panorama_CLayoutFile_LoadFromFile) {
-		if(0 == strcmp(pValueStr,"#6f9ce6")) {
+		if(g_myPanoramaWrapper.CTcolor.pointer == nullptr && 0 == strcmp(pValueStr,"#6f9ce6")) {
 			g_myPanoramaWrapper.CTcolor.pointer = (u_char*)This;
 		}
-		else if(0 == strcmp(pValueStr,"#eabe54")) {
+		else if(g_myPanoramaWrapper.Tcolor.pointer == nullptr && 0 == strcmp(pValueStr,"#eabe54")) {
 			g_myPanoramaWrapper.Tcolor.pointer = (u_char*)This;
 		}		
 	}
@@ -953,10 +953,10 @@ unsigned char __fastcall My_Panorama_CStylePropertyForegroundColor_Parse(void * 
 unsigned char __fastcall My_Panorama_CStylePropertyBackgroundColor_Parse(void * This, void* _unk01, const char * pValueStr) {
 	unsigned char result = g_Org_Panorama_CStylePropertyBackgroundColor_Parse(This,_unk01,pValueStr);
 	if(g_b_In_Panorama_CLayoutFile_LoadFromFile) {
-		if(0 == strcmp(pValueStr,"#000000a0")) {
+		if(g_myPanoramaWrapper.BackgroundColor.pointer == nullptr && 0 == strcmp(pValueStr,"#000000a0")) {
 			g_myPanoramaWrapper.BackgroundColor.pointer = (u_char*)This;
 		}
-		else if(0 == strcmp(pValueStr,"#000000e7")) {
+		else if(g_myPanoramaWrapper.LocalBackgroundColor.pointer == nullptr && 0 == strcmp(pValueStr,"#000000e7")) {
 			g_myPanoramaWrapper.LocalBackgroundColor.pointer = (u_char*)This;
 		}		
 	}
@@ -966,7 +966,7 @@ unsigned char __fastcall My_Panorama_CStylePropertyBackgroundColor_Parse(void * 
 unsigned char __fastcall My_Panorama_CStylePropertyBorder_Parse(void * This, void* _unk01, const char * pValueStr) {
 	unsigned char result = g_Org_Panorama_CStylePropertyBorder_Parse(This,_unk01,pValueStr);
 	if(g_b_In_Panorama_CLayoutFile_LoadFromFile) {
-		if(0 == strcmp(pValueStr,"2px solid #e10000")) {
+		if(g_myPanoramaWrapper.BorderColor.pointer == nullptr && 0 == strcmp(pValueStr,"2px solid #e10000")) {
 			g_myPanoramaWrapper.BorderColor.pointer = (u_char*)This;
 		}
 	}
@@ -976,10 +976,10 @@ unsigned char __fastcall My_Panorama_CStylePropertyBorder_Parse(void * This, voi
 unsigned char __fastcall My_Panorama_CStylePropertyWashColor_Parse(void * This, void* _unk01, const char * pValueStr) {
 	unsigned char result = g_Org_Panorama_CStylePropertyWashColor_Parse(This,_unk01,pValueStr);
 	if(g_b_In_Panorama_CLayoutFile_LoadFromFile_HudReticle) {
-		if(0 == strcmp(pValueStr,"rgb(150, 200, 250)")) {
+		if(g_pHudReticle_WashColor_CT == nullptr && 0 == strcmp(pValueStr,"rgb(150, 200, 250)")) {
 			g_pHudReticle_WashColor_CT = (u_char*)This;
 		}
-		else if(0 == strcmp(pValueStr,"#eabe54")) {
+		else if(g_pHudReticle_WashColor_T == nullptr && 0 == strcmp(pValueStr,"#eabe54")) {
 			g_pHudReticle_WashColor_T = (u_char*)This;
 		}		
 	}
@@ -1032,23 +1032,51 @@ bool getDeathMsgAddrs(HMODULE clientDll) {
 bool getPanoramaAddrsFromClient(HMODULE clientDll) {
 	// credit https://github.com/danielkrupinski/Osiris
 	
-	// in the middle of big function with "Attempted to cast panel \'%s\' to type \'%s\'"
-	//
-    //  if (DAT_181e15c18 != (longlong *)0x0) {
-    //    local_230 = FUN_1809b2650; <--------- next 2 sigs in this one
-    //    local_238 = lVar12;
-    //    (**(code **)(*DAT_181e15c18 + 0x138))(DAT_181e15c18,DAT_181b4fb44,plVar11,&local_238);
-    //  }
-    //}
-	if (auto addr = getAddress(clientDll,"12 48 8B 01 FF 90 ?? ?? ?? ?? 48 8B ?? 48 85 C0 74 ?? 80 38 00 74 ?? 48 8D 4C"); addr != 0) {
-		CS2::PanoramaUIPanel::getAttributeString = *(int32_t*)((unsigned char*)addr + 6);
+/* In the middle of big function with MULTIPLE (3+) references to "Attempted to cast panel '%s' to type '%s'" and multiple to "file://{images}/%s.png":
+        }
+LAB_1809a7daf:
+        if (DAT_181fc46d8 != (longlong *)0x0) {
+          local_230 = FUN_1809bf960; <-- next 2 sigs in this one!!!
+          local_238 = lVar12;
+          (**(code **)(*DAT_181fc46d8 + 0x120))(DAT_181fc46d8,DAT_181c51f4c,plVar11,&local_238);
+        }
+      }
+LAB_1809a7de1
+*/
+/*
+                             LAB_1809bf9e6                                   XREF[1]:     1809bf9d9(j)  
+       1809bf9e6 48 8b 4f 08     MOV        RCX,qword ptr [RDI + 0x8]
+       1809bf9ea 4c 8d 05        LEA        R8,[DAT_1814ed000]
+                 0f d6 b2 00
+       1809bf9f1 0f b7 12        MOVZX      EDX=>DAT_181e808b8,word ptr [RDX]
+       1809bf9f4 48 8b 01        MOV        RAX,qword ptr [RCX]
+       1809bf9f7 ff 90 d0        CALL       qword ptr [RAX + 0x8d0]
+                 08 00 00
+       1809bf9fd 48 8b f0        MOV        RSI,RAX
+       1809bfa00 48 85 c0        TEST       RAX,RAX
+*/
+	if (auto addr = getAddress(clientDll,"48 8b 4f 08 4c 8d 05 ?? ?? ?? ?? 0f b7 12 48 8b 01 ff 90 ?? ?? ?? ?? 48 8b f0 48 85 c0"); addr != 0) {
+		CS2::PanoramaUIPanel::getAttributeString = *(int32_t*)((unsigned char*)addr + 19);
 	} else {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));
 		return false;
 	}
 
-	if (auto addr = getAddress(clientDll,"FF 90 ?? ?? ?? ?? 48 83 C6 ?? 48 3B ?? 75 ?? 4C"); addr != 0) {
-		CS2::PanoramaUIPanel::setAttributeString = *(int32_t*)((unsigned char*)addr + 2);
+/*
+                             LAB_1809bfa6a                                   XREF[1]:     1809bfa5d(j)  
+       1809bfa6a 48 8b 4f 08     MOV        RCX,qword ptr [RDI + 0x8]
+       1809bfa6e 4c 8d 05        LEA        R8,[DAT_1814ed000]
+                 8b d5 b2 00
+       1809bfa75 0f b7 13        MOVZX      EDX,word ptr [RBX]=>DAT_181e808b8
+       1809bfa78 48 8b 01        MOV        RAX,qword ptr [RCX]
+       1809bfa7b ff 90 00        CALL       qword ptr [RAX + 0x900]
+                 09 00 00
+       1809bfa81 b0 01           MOV        AL,0x1
+       1809bfa83 e9 1a ff        JMP        LAB_1809bf9a2
+                 ff ff
+*/
+	if (auto addr = getAddress(clientDll,"48 8b 4f 08 4c 8d 05 ?? ?? ?? ?? 0f b7 13 48 8b 01 ff 90 ?? ?? ?? ?? b0 01 e9 ?? ?? ?? ??"); addr != 0) {
+		CS2::PanoramaUIPanel::setAttributeString = *(int32_t*)((unsigned char*)addr + 19);
 	} else {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));
 		return false;

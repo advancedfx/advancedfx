@@ -127,24 +127,28 @@ void HookReplaceName(HMODULE clientDll)
         /*
             GetDecoratedPlayerName references a function on "?AVCCSPlayerController@@" vtable as follows:
             ...
-                             LAB_1805b6966                                   XREF[4]:     1805b6889(j), 1805b6895(j), 
-                                                                                          1805b6907(j), 1805b6961(j)  
-       1805b6966 4c 8d 25        LEA        R12,[DAT_1814f0000]
-                 93 96 f3 00
-       1805b696d 48 85 c9        TEST       RCX,RCX
-       1805b6970 74 10           JZ         LAB_1805b6982
-       1805b6972 48 8b 01        MOV        RAX,qword ptr [RCX]
-       1805b6975 ff 90 20        CALL       qword ptr [RAX + 0x720]
+                             LAB_1805b4966                                   XREF[3]:     1805b4934(j), 1805b494b(j), 
+                                                                                          1805b495b(j)  
+       1805b4966 48 8b ce        MOV        RCX,RSI
+                             LAB_1805b4969                                   XREF[1]:     1805b4964(j)  
+       1805b4969 48 85 c9        TEST       RCX,RCX
+       1805b496c 74 03           JZ         LAB_1805b4971
+       1805b496e 48 8b 31        MOV        RSI,qword ptr [RCX]
+                             LAB_1805b4971                                   XREF[2]:     1805b492f(j), 1805b496c(j)  
+       1805b4971 48 8b 06        MOV        RAX,qword ptr [RSI]
+       1805b4974 48 8b ce        MOV        RCX,RSI
+       1805b4977 ff 90 18        CALL       qword ptr [RAX + 0x718]
                  07 00 00
-       1805b697b 48 89 44        MOV        qword ptr [RSP + local_bd8],RAX
-                 24 40
-       1805b6980 eb 05           JMP        LAB_1805b6987
+       1805b497d 4c 8b 0d        MOV        R9,qword ptr [DAT_18201f238]
+                 b4 a8 a6 01
+       1805b4984 4c 8b e0        MOV        R12,RAX
+
             ...
             So now know the offset of the GetPlayerNameFunction
         */
 
         if(void ** vtable = (void **)Afx::BinUtils::FindClassVtable(clientDll, ".?AVCCSPlayerController@@", 0, 0)) {
-            g_Org_CCSPlayerController_GetPlayerName = (CCSPlayerController_GetPlayerName_t)vtable[228];
+            g_Org_CCSPlayerController_GetPlayerName = (CCSPlayerController_GetPlayerName_t)vtable[227];
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
             DetourAttach(&(PVOID&)g_Org_CCSPlayerController_GetPlayerName, New_CCSPlayerController_GetPlayerName);
