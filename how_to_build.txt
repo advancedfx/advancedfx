@@ -2,26 +2,21 @@
 	the HLAE source code and also other source code during the build process.
 
 [X] Install Node.js 22 LTS from https://nodejs.org/en/download/prebuilt-installer
-    we used v22.11.0 (LTS).
+    we used v22.19.0 (LTS).
 
 [X] Download and install Microsoft Visual Studio Community 2022, which you can
     obtain for free from https://www.visualstudio.com/downloads/ .
     - Select Workloads - Desktop & Mobile - .NET Desktop Development
     - Select Workloads - Desktop & Mobile - Desktop development with C++
 	- Select Individual Components - .NET Framework 4.6.2 targeting pack
-    - You'll need to install Wix Toolset Visual Studio 2022 Extension from
-      within Visual Studio afterwards.
 
 [X]	Obtain Python 3 from https://www.python.org/downloads/windows/ .
-	We used python-3.12.1-amd64, but any 3.8 or newer 3 should do.
+	We used python-3.13.7-amd64.exe, but any 3.8 or newer 3 should do.
 	You will need to do the custom installation
 	with pip and py launcher.
 	
 [X]	Obtain GNU gettext Windows binaries from https://www.gnu.org/software/gettext/ .
-	We used gettext0.20.1-iconv1.16-shared-64.exe .
-	
-[X] Install WiX Toolset from https://github.com/wixtoolset/wix3/releases
-	We used WiX Toolset v3.14.1 (wix314.exe).
+	We used gettext0.26-iconv1.17-shared-64.exe .
 
 [X]	Obtain and install Rust and Cargo:
 	https://doc.rust-lang.org/cargo/getting-started/installation.html
