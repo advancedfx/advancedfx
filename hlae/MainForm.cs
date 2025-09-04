@@ -53,7 +53,7 @@ namespace AfxGui
             this.checkForUpdatesToolStripMenuItem.Text = L10n._p("Main window | menu | Help", "Check for Updates");
             this.menuAutoUpdateCheck.Text = L10n._p("Main window | menu | Help | Check for Updates", "Auto Check");
             this.checkNowToolStripMenuItem.Text = L10n._p("Main window | menu | Help | Check for Updates", "Check Now");
-            this.menuAdvancedFxOrg.Text = L10n._p("Main window | menu | Help", "Official Website");
+            this.menuGitHub.Text = L10n._p("Main window | menu | Help", "Official GitHub");
 
             this.donateToolStripMenuItem.Text = L10n._p("Main window | menu", "Donate");
 
@@ -66,13 +66,13 @@ namespace AfxGui
             this.statusLabelHide.Text = L10n._p("Main window | update status strip", "OK");
             this.statusLabelUpdate.Text = L10n._p("Main window | update status strip | label", "Update status unknown");
 
-            this.menuContact.Text = L10n._("Contact / Privacy Policy / Imprint (advancedfx.org)");
+            this.menuContact.Text = L10n._("Contact");
 
             this.groupBoxHelp.Text = L10n._("Help");
             this.labelHelpLanguage.Text = L10n._("Language:");
             this.labelHelpSelection.Text = L10n._("Selection:");
             {
-                HelpEntry officialEnglishSupportPage = new HelpEntry(L10n._("Official support page (English)"), "https://www.advancedfx.org/support/");
+                HelpEntry officialEnglishSupportPage = new HelpEntry(L10n._("Official support page (English)"), "https://github.com/advancedfx/advancedfx#support");
                 HelpEntry chinesePage = new HelpEntry(L10n._("HLAE Chinese Station"), "https://hlae.site/");
 
                 helpLanguages = new HelpLanguage[] {
@@ -254,14 +254,14 @@ namespace AfxGui
             (new Tools.Calculator()).Show();
         }
 
-        private void MenuAdvancedFxOrg_Click(object sender, EventArgs e)
+        private void MenuGitHub_Click(object sender, EventArgs e)
         {
-            System.Diagnostics.Process.Start("https://www.advancedfx.org/");
+            System.Diagnostics.Process.Start("https://github.com/advancedfx/advancedfx");
         }
 
         private void MenuDonate_Click(object sender, EventArgs e)
         {
-            System.Diagnostics.Process.Start("https://www.advancedfx.org/credits/#donors");
+            System.Diagnostics.Process.Start("https://github.com/advancedfx/advancedfx/blob/main/CREDITS.md#donors");
         }
 
         private void CheckNowToolStripMenuItem_Click(object sender, EventArgs e)
@@ -434,7 +434,7 @@ namespace AfxGui
 
         private void menuContact_Click(object sender, EventArgs e)
         {
-            System.Diagnostics.Process.Start("https://www.advancedfx.org/contact");
+            System.Diagnostics.Process.Start("https://github.com/advancedfx#contact");
         }
 
         private void buttonVacOk_Click(object sender, EventArgs e)

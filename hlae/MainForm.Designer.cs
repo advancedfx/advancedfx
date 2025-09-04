@@ -55,7 +55,7 @@
             this.menuAutoUpdateCheck = new System.Windows.Forms.ToolStripMenuItem();
             this.checkNowToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem5 = new System.Windows.Forms.ToolStripSeparator();
-            this.menuAdvancedFxOrg = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuGitHub = new System.Windows.Forms.ToolStripMenuItem();
             this.menuFaq = new System.Windows.Forms.ToolStripMenuItem();
             this.menuContact = new System.Windows.Forms.ToolStripMenuItem();
             this.donateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -178,7 +178,7 @@
             this.toolStripMenuItem2,
             this.developerToolStripMenuItem});
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
-            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(74, 20);
+            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(75, 20);
             this.toolsToolStripMenuItem.Text = "L10n Tools";
             // 
             // calculatorsToolStripMenuItem
@@ -186,7 +186,7 @@
             this.calculatorsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.menuFileSize});
             this.calculatorsToolStripMenuItem.Name = "calculatorsToolStripMenuItem";
-            this.calculatorsToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
+            this.calculatorsToolStripMenuItem.Size = new System.Drawing.Size(163, 22);
             this.calculatorsToolStripMenuItem.Text = "L10n Calculators";
             // 
             // menuFileSize
@@ -201,7 +201,7 @@
             this.menuAfxRgbaLut.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.menuVoronoi});
             this.menuAfxRgbaLut.Name = "menuAfxRgbaLut";
-            this.menuAfxRgbaLut.Size = new System.Drawing.Size(164, 22);
+            this.menuAfxRgbaLut.Size = new System.Drawing.Size(163, 22);
             this.menuAfxRgbaLut.Text = "L10n AfxRgbaLut";
             // 
             // menuVoronoi
@@ -217,7 +217,7 @@
             this.demoToolsToolStripMenuItem,
             this.skyManagerToolStripMenuItem});
             this.goldSrcToolStripMenuItem.Name = "goldSrcToolStripMenuItem";
-            this.goldSrcToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
+            this.goldSrcToolStripMenuItem.Size = new System.Drawing.Size(163, 22);
             this.goldSrcToolStripMenuItem.Text = "L10n GoldSrc";
             // 
             // demoToolsToolStripMenuItem
@@ -237,7 +237,7 @@
             // toolStripMenuItem2
             // 
             this.toolStripMenuItem2.Name = "toolStripMenuItem2";
-            this.toolStripMenuItem2.Size = new System.Drawing.Size(161, 6);
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(160, 6);
             // 
             // developerToolStripMenuItem
             // 
@@ -247,7 +247,7 @@
             this.menuGuidToClipBoard,
             this.menuNewGuidToClipBoard});
             this.developerToolStripMenuItem.Name = "developerToolStripMenuItem";
-            this.developerToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
+            this.developerToolStripMenuItem.Size = new System.Drawing.Size(163, 22);
             this.developerToolStripMenuItem.Text = "L10n Developer";
             // 
             // menuCustomLoader
@@ -281,7 +281,7 @@
             this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.checkForUpdatesToolStripMenuItem,
             this.toolStripMenuItem5,
-            this.menuAdvancedFxOrg,
+            this.menuGitHub,
             this.menuFaq,
             this.menuContact});
             this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
@@ -294,7 +294,7 @@
             this.menuAutoUpdateCheck,
             this.checkNowToolStripMenuItem});
             this.checkForUpdatesToolStripMenuItem.Name = "checkForUpdatesToolStripMenuItem";
-            this.checkForUpdatesToolStripMenuItem.Size = new System.Drawing.Size(371, 22);
+            this.checkForUpdatesToolStripMenuItem.Size = new System.Drawing.Size(282, 22);
             this.checkForUpdatesToolStripMenuItem.Text = "L10n Check for Updates";
             // 
             // menuAutoUpdateCheck
@@ -314,28 +314,30 @@
             // toolStripMenuItem5
             // 
             this.toolStripMenuItem5.Name = "toolStripMenuItem5";
-            this.toolStripMenuItem5.Size = new System.Drawing.Size(368, 6);
+            this.toolStripMenuItem5.Size = new System.Drawing.Size(279, 6);
             // 
-            // menuAdvancedFxOrg
+            // menuGitHub
             // 
-            this.menuAdvancedFxOrg.Name = "menuAdvancedFxOrg";
-            this.menuAdvancedFxOrg.Size = new System.Drawing.Size(371, 22);
-            this.menuAdvancedFxOrg.Text = "L10n Offical website";
-            this.menuAdvancedFxOrg.ToolTipText = "https://www.advancedfx.org/";
-            this.menuAdvancedFxOrg.Click += new System.EventHandler(this.MenuAdvancedFxOrg_Click);
+            this.menuGitHub.Name = "menuGitHub";
+            this.menuGitHub.Size = new System.Drawing.Size(282, 22);
+            this.menuGitHub.Text = "L10n Offical GitHub";
+            this.menuGitHub.ToolTipText = "https://github.com/advancedfx/advancedfx";
+            this.menuGitHub.Click += new System.EventHandler(this.MenuGitHub_Click);
             // 
             // menuFaq
             // 
             this.menuFaq.Name = "menuFaq";
-            this.menuFaq.Size = new System.Drawing.Size(371, 22);
+            this.menuFaq.Size = new System.Drawing.Size(282, 22);
             this.menuFaq.Text = "L10n Frequently Asked Questions (FAQ)";
+            this.menuFaq.ToolTipText = "https://github.com/advancedfx/advancedfx/wiki/FAQ";
             this.menuFaq.Click += new System.EventHandler(this.menuFaq_Click);
             // 
             // menuContact
             // 
             this.menuContact.Name = "menuContact";
-            this.menuContact.Size = new System.Drawing.Size(371, 22);
-            this.menuContact.Text = "L10n Contact / Privacy Policy / Imprint (advancedfx.org)";
+            this.menuContact.Size = new System.Drawing.Size(282, 22);
+            this.menuContact.Text = "L10n Contact";
+            this.menuContact.ToolTipText = "https://github.com/advancedfx#contact";
             this.menuContact.Click += new System.EventHandler(this.menuContact_Click);
             // 
             // donateToolStripMenuItem
@@ -343,7 +345,7 @@
             this.donateToolStripMenuItem.Name = "donateToolStripMenuItem";
             this.donateToolStripMenuItem.Size = new System.Drawing.Size(85, 20);
             this.donateToolStripMenuItem.Text = "L10n Donate";
-            this.donateToolStripMenuItem.ToolTipText = "https://www.advancedfx.org/credits/#donors";
+            this.donateToolStripMenuItem.ToolTipText = "https://github.com/advancedfx/advancedfx/blob/main/CREDITS.md#donors";
             this.donateToolStripMenuItem.Click += new System.EventHandler(this.MenuDonate_Click);
             // 
             // statusStrip
@@ -745,7 +747,7 @@
         private System.Windows.Forms.ToolStripMenuItem developerToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem menuCustomLoader;
         private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem menuAdvancedFxOrg;
+        private System.Windows.Forms.ToolStripMenuItem menuGitHub;
         private System.Windows.Forms.ToolStripMenuItem checkForUpdatesToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem menuAutoUpdateCheck;
         private System.Windows.Forms.ToolStripMenuItem checkNowToolStripMenuItem;
