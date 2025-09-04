@@ -1,6 +1,7 @@
 @IF ["%~1"] == [""] goto :help
 @IF ["%~2"] == [""] goto :help
 @IF ["%~3"] == [""] goto :help
+@IF ["%~4"] == [""] goto :help
 
 setlocal EnableDelayedExpansion
 
@@ -30,7 +31,7 @@ wix extension add -g WixToolset.Util.wixext/5.0.2
 mkdir "%~1\HlaeFfmpegExtension"
 cd "%~1\HlaeFfmpegExtension"
 cd "%~dp0HlaeFfmpegExtension"
-"%~3" -t:build -restore "%~dp0HlaeFfmpegExtension\HlaeFfmpegExtension.csproj" "-property:Configuration=Release" "-property:Platform=x86" "-property:OutputPath=%~1\HlaeFfmpegExtension"
+"%~3" -t:build -restore "%~dp0HlaeFfmpegExtension\HlaeFfmpegExtension.csproj" "-property:Configuration=%~4" "-property:Platform=x86" "-property:OutputPath=%~1\HlaeFfmpegExtension"
 @IF !errorlevel! NEQ 0 EXIT /B 1
 
 @echo ==================================================
@@ -39,7 +40,7 @@ cd "%~dp0HlaeFfmpegExtension"
 mkdir "%~1\HlaeCoreExtension"
 cd "%~1\HlaeCoreExtension"
 cd "%~dp0HlaeCoreExtension"
-"%~3" -t:build -restore "%~dp0HlaeCoreExtension\HlaeCoreExtension.csproj" "-property:Configuration=Release" "-property:Platform=x86" "-property:OutputPath=%~1\HlaeCoreExtension"
+"%~3" -t:build -restore "%~dp0HlaeCoreExtension\HlaeCoreExtension.csproj" "-property:Configuration=%~4" "-property:Platform=x86" "-property:OutputPath=%~1\HlaeCoreExtension"
 @IF !errorlevel! NEQ 0 EXIT /B 1
 
 @echo ==================================================
@@ -67,7 +68,7 @@ cd "%~1\HlaeFfmpeg"
     mkdir "%~1\HlaeCore\%%l"
     mkdir "%~1\HlaeCore\%%l\tmp"
     cd "%~1\HlaeCore\%%l"
-    wix build -arch x86 -defaultcompressionlevel high -culture "%%l" -intermediateFolder "%~1\HlaeCore\%%l\tmp" -o "%~1\HlaeCore\%%l\HlaeCore.msi" -ext WixToolset.UI.wixext/5.0.2 -d "var.HlaeCoreExtension.TargetDir=%~1\HlaeCoreExtension"  -d "var.Configuration=Release" "%~dp0HlaeCore\Package.wxs" "%~dp0HlaeCore\MyWixUI_Mondo.wxs" "%~dp0HlaeCore\MyBrowseDlg.wxs" "%~dp0HlaeCore\MyCustomizeDlg.wxs" "%~dp0HlaeCore\lang\%%l.wxl" "%~dp0shared\Dependency\lang\%%l.wxl"
+    wix build -arch x86 -defaultcompressionlevel high -culture "%%l" -intermediateFolder "%~1\HlaeCore\%%l\tmp" -o "%~1\HlaeCore\%%l\HlaeCore.msi" -ext WixToolset.UI.wixext/5.0.2 -d "var.HlaeCoreExtension.TargetDir=%~1\HlaeCoreExtension"  -d "var.Configuration=%~4" "%~dp0HlaeCore\Package.wxs" "%~dp0HlaeCore\MyWixUI_Mondo.wxs" "%~dp0HlaeCore\MyBrowseDlg.wxs" "%~dp0HlaeCore\MyCustomizeDlg.wxs" "%~dp0HlaeCore\lang\%%l.wxl" "%~dp0shared\Dependency\lang\%%l.wxl"
     @IF !errorlevel! NEQ 0 EXIT /B 1
     wix msi validate "%~1\HlaeCore\%%l\HlaeCore.msi"
     @IF !errorlevel! NEQ 0 EXIT /B 1
@@ -84,7 +85,7 @@ cd "%~1\HlaeCore"
 mkdir "%~1\DeleteHlaeAppData"
 cd "%~1\DeleteHlaeAppData"
 cd "%~dp0DeleteHlaeAppData"
-"%~3" -t:build -restore "%~dp0DeleteHlaeAppData\DeleteHlaeAppData.csproj" "-property:Configuration=Release" "-property:Platform=x86" "-property:OutputPath=%~1\DeleteHlaeAppData"
+"%~3" -t:build -restore "%~dp0DeleteHlaeAppData\DeleteHlaeAppData.csproj" "-property:Configuration=%~4" "-property:Platform=x86" "-property:OutputPath=%~1\DeleteHlaeAppData"
 @IF !errorlevel! NEQ 0 EXIT /B 1
 
 @echo ==================================================
@@ -93,7 +94,7 @@ cd "%~dp0DeleteHlaeAppData"
 mkdir "%~1\UninstallHlaeWixV3"
 cd "%~1\UninstallHlaeWixV3"
 cd "%~dp0UninstallHlaeWixV3"
-"%~3" -t:build -restore "%~dp0UninstallHlaeWixV3\UninstallHlaeWixV3.csproj" "-property:Configuration=Release" "-property:Platform=x86" "-property:OutputPath=%~1\UninstallHlaeWixV3"
+"%~3" -t:build -restore "%~dp0UninstallHlaeWixV3\UninstallHlaeWixV3.csproj" "-property:Configuration=%~4" "-property:Platform=x86" "-property:OutputPath=%~1\UninstallHlaeWixV3"
 @IF !errorlevel! NEQ 0 EXIT /B 1
 
 @echo ==================================================
@@ -111,5 +112,5 @@ cd "%~dp0"
 
 
 :help
-@echo Usage: %0 ^<build folder^> ^<install folder^> ^<msbuild.exe path^>
+@echo Usage: %0 ^<build folder^> ^<install folder^> ^<msbuild.exe path^> ^<Debug|Release^>
 @EXIT /B 1
