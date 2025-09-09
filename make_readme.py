@@ -53,7 +53,7 @@ for md_filename in md_filenames:
 def mk_members_string(members):
     result = ''
     
-    for m in sorted(members, key=lambda item: item.get('date_from','') + ' ' + item.get('date_to', '')):
+    for m in sorted(members, key=lambda item: (int(item.get('weight','0')), item.get('date_from',None), item.get('date_to', None))):
         result += '\n'
         result += m.get('name','') + '\n'
         val = m.get('contributions', None)
