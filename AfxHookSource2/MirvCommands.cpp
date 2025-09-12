@@ -68,6 +68,10 @@ CON_COMMAND(mirv_noflash, "Disables flash overlay.")
 	mirvNoFlash_Console(args);
 }
 
+// we probably need addresses.cpp at this point
+typedef void* (__fastcall * ForceUpdateSkybox_t)(void* This);
+extern ForceUpdateSkybox_t org_ForceUpdateSkybox;
+
 bool getAddressesFromClient(HMODULE clientDll) {
 	// can be found with offsets to m_flFlashScreenshotAlpha, m_flFlashDuration, m_flFlashMaxAlpha, etc. 
 	// In this function values being assigned to all these offsets at once
@@ -87,6 +91,22 @@ bool getAddressesFromClient(HMODULE clientDll) {
 
 	g_Original_flashFunc = (g_Original_flashFunc_t)(g_Original_flashFunc_addr);
 	g_Original_EOM = (g_Original_EOM_t)(g_Original_EOM_addr);
+
+   // has offset to material of skybox, pCSceneSystem and it's function to update skybox
+   //
+   // 1801c02cb 48  8b  0d       MOV        RCX ,qword ptr [DAT_182025518 ]
+   //           46  52  e6  01
+   // 1801c02d2 48  8d  55  30   LEA        RDX =>local_res8 ,[RBP  + 0x30 ]
+   // 1801c02d6 48  8b  01       MOV        RAX ,qword ptr [RCX ]
+   // 1801c02d9 4c  8b  88       MOV        R9,qword ptr [RAX  + 0x138 ]
+   //           38  01  00  00
+   // 1801c02e0 48  8b  87       MOV        RAX ,qword ptr [RDI  + 0xec0 ]
+   //           c0  0e  00  00
+   // 1801c02e7 48  89  45  30   MOV        qword ptr [RBP  + local_res8 ],RAX
+   // 1801c02eb 41  ff  d1       CALL       R9
+
+	org_ForceUpdateSkybox = (ForceUpdateSkybox_t)getAddress(clientDll, "48 89 5C 24 ?? 48 89 74 24 ?? 48 89 7C 24 ?? 55 41 54 41 55 41 56 41 57 48 8B EC 48 83 EC ?? 48 83 B9");
+	if (0 == org_ForceUpdateSkybox) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 	return true;
 }
