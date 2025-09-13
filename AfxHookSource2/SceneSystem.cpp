@@ -16,7 +16,7 @@ typedef void* (__fastcall * ForceUpdateSkybox_t)(void* This);
 ForceUpdateSkybox_t org_ForceUpdateSkybox = nullptr;
 
 struct CustomSkyState {
-	std::string currentSkyName;
+	std::string currentSkyName = "";
 	std::string colorStr = "255 255 255 255";
 	uint32_t color = -1;
 	float brightness = 1.0f;
@@ -105,8 +105,10 @@ CMaterial2** CResourceSystem::PreCache (const char* name) {
 
 void* new_ForceUpdateSkybox(void* This) {
 	if (g_CustomSky.enabled) {
-		auto newMat = g_pCResourceSystem->PreCache(g_CustomSky.currentSkyName.c_str());
-		*(CMaterial2***)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_hSkyMaterial) = newMat;
+		if (g_CustomSky.currentSkyName.size() != 0) {
+			auto newMat = g_pCResourceSystem->PreCache(g_CustomSky.currentSkyName.c_str());
+			*(CMaterial2***)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_hSkyMaterial) = newMat;
+		}
 
 		*(uint32_t*)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_vTintColor) = g_CustomSky.color;
 		*(float*)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_flBrightnessScale) = g_CustomSky.brightness;
@@ -144,8 +146,16 @@ CON_COMMAND(mirv_skybox, "")
 		{
 			if (3 <= argc)
 			{
-				std::string filePath = args->ArgV(2);
-				if (StringEndsWith(filePath.c_str(), "_c")) {
+				auto arg2 = args->ArgV(2);
+
+				if (!_stricmp(arg2, "none")) {
+					g_CustomSky.currentSkyName = "";
+					if (g_CustomSky.enabled) updateSkyboxEntities();
+					return;
+				}
+
+				std::string filePath = arg2;
+				if (StringEndsWith(arg2, "_c")) {
 					filePath.erase(filePath.size() - 2);
 				}
 				g_CustomSky.currentSkyName = filePath.c_str();
@@ -158,7 +168,7 @@ CON_COMMAND(mirv_skybox, "")
 				"%s %s  <sRelativePathToFile> - Set skybox material.\n"
 				"Current value: %s\n",
 				arg0, arg1,
-				g_CustomSky.currentSkyName.c_str()
+				g_CustomSky.currentSkyName.size() == 0 ? "none" : g_CustomSky.currentSkyName.c_str()
 			);
 			return;
 		}
@@ -221,7 +231,7 @@ CON_COMMAND(mirv_skybox, "")
 	advancedfx::Message(
 		"Usage:\n"
 		"%s color <iR> <iG> <iB> <iA> - Set color override. RGBA format, values from 0 to 255.\n"
-		"%s material <sRelativePathToFile> - Set skybox material.\n"
+		"%s material <sRelativePathToFile> | none - Set skybox material.\n"
 		"%s enabled 0|1 - Enable (1) / disable (0) custom skybox.\n"
 		"Note: see wiki on GitHub for this command for details.\n"
 		, arg0
