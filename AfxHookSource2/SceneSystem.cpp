@@ -4,6 +4,7 @@
 #include "../shared/StringTools.h"
 #include "../deps/release/prop/cs2/sdk_src/public/tier1/bufferstring.h"
 #include "SchemaSystem.h"
+#include "MirvColors.h"
 
 CResourceSystem* g_pCResourceSystem = nullptr;
 
@@ -17,8 +18,8 @@ ForceUpdateSkybox_t org_ForceUpdateSkybox = nullptr;
 
 struct CustomSkyState {
 	std::string currentSkyName = "";
-	std::string colorStr = "255 255 255 255";
-	uint32_t color = -1;
+
+	MyColor color;
 	float brightness = 1.0f;
 	bool enabled = false;
 } g_CustomSky;
@@ -110,8 +111,10 @@ void* new_ForceUpdateSkybox(void* This) {
 			*(CMaterial2***)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_hSkyMaterial) = newMat;
 		}
 
-		*(uint32_t*)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_vTintColor) = g_CustomSky.color;
-		*(float*)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_flBrightnessScale) = g_CustomSky.brightness;
+		if (g_CustomSky.color.use) {
+			*(uint32_t*)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_vTintColor) = afxUtils::rgbaToHex(g_CustomSky.color.value);
+			*(float*)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_flBrightnessScale) = g_CustomSky.brightness;
+		}
 	}
 
 	return org_ForceUpdateSkybox(This);
@@ -148,7 +151,7 @@ CON_COMMAND(mirv_skybox, "")
 			{
 				auto arg2 = args->ArgV(2);
 
-				if (!_stricmp(arg2, "none")) {
+				if (!_stricmp(arg2, "default")) {
 					g_CustomSky.currentSkyName = "";
 					if (g_CustomSky.enabled) updateSkyboxEntities();
 					return;
@@ -168,7 +171,7 @@ CON_COMMAND(mirv_skybox, "")
 				"%s %s  <sRelativePathToFile> - Set skybox material.\n"
 				"Current value: %s\n",
 				arg0, arg1,
-				g_CustomSky.currentSkyName.size() == 0 ? "none" : g_CustomSky.currentSkyName.c_str()
+				g_CustomSky.currentSkyName.size() == 0 ? "default" : g_CustomSky.currentSkyName.c_str()
 			);
 			return;
 		}
@@ -193,22 +196,17 @@ CON_COMMAND(mirv_skybox, "")
 		}
 
 		if(!_stricmp(arg1, "color")) {
+			if (3 <= argc && !_stricmp(args->ArgV(2), "default"))
+			{
+				g_CustomSky.color.use = false;
+				if (g_CustomSky.enabled) updateSkyboxEntities();
+				return;
+			}
+
 			if (6 <= argc)
 			{
-				uint32_t color;
-				std::string str = "";
-				str.append(args->ArgV(2));
-				str.append(" ");
-				str.append(args->ArgV(3));
-				str.append(" ");
-				str.append(args->ArgV(4));
-				str.append(" ");
-				str.append("255");
-				g_CustomSky.colorStr = str;
-
-				auto hexStr = afxUtils::rgbaToHex(str, " ");
-				if (hexStr.length() == 8) {
-					g_CustomSky.color = afxUtils::hexStrToInt(hexStr);
+				advancedfx::CSubCommandArgs subArgs(args, 2);
+				if (g_CustomSky.color.setColor(&subArgs)) {
 					g_CustomSky.brightness = atoi(args->ArgV(5)) / 255.0;
 					if (g_CustomSky.brightness < 0.000001f) g_CustomSky.brightness = 0.000001f;
 					if (g_CustomSky.enabled) updateSkyboxEntities();
@@ -219,10 +217,10 @@ CON_COMMAND(mirv_skybox, "")
 
 			advancedfx::Message(
 				"Usage:\n"
-				"%s %s <iR> <iG> <iB> <iA> - Set color override in RGBA format, values from 0 to 255.\n"
+				"%s %s <iR> <iG> <iB> <iA> | default - Set color override in RGBA format, values from 0 to 255.\n"
 				"Current value: %s\n",
 				arg0, arg1,
-				g_CustomSky.colorStr.c_str()
+				g_CustomSky.color.use ? g_CustomSky.color.userValue.c_str() : "default"
 			);
 			return;
 		}
@@ -230,8 +228,8 @@ CON_COMMAND(mirv_skybox, "")
 
 	advancedfx::Message(
 		"Usage:\n"
-		"%s color <iR> <iG> <iB> <iA> - Set color override. RGBA format, values from 0 to 255.\n"
-		"%s material <sRelativePathToFile> | none - Set skybox material.\n"
+		"%s color <iR> <iG> <iB> <iA> | default - Set color override. RGBA format, values from 0 to 255.\n"
+		"%s material <sRelativePathToFile> | default - Set skybox material.\n"
 		"%s enabled 0|1 - Enable (1) / disable (0) custom skybox.\n"
 		"Note: see wiki on GitHub for this command for details.\n"
 		, arg0

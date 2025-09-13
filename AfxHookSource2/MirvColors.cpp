@@ -35,82 +35,75 @@ struct ParticleData {
 	float a3;
 };
 
-struct MyColor {
-	afxUtils::RGBA value;
-	afxUtils::RGBA defaultValue;
-	std::string userValue = "";
-	bool use = false;
-
-	bool setColor(const char* arg) {
-		if (nullptr == arg) return false;
-		if (0 == _stricmp("default", arg))
-		{
-			use = false;
-			value = defaultValue;
-			return true;
-		}
-
-		for (int i = 0; i < 8; i++)
-		{
-			if (0 == _stricmp(afxBasicColors[i].name, arg))
-			{
-				use = true;
-				userValue = arg;
-				value = afxBasicColors[i].value;
-
-				return true;
-			}
-		}
-		return false;
+bool MyColor::setColor(const char* arg) {
+	if (nullptr == arg) return false;
+	if (0 == _stricmp("default", arg))
+	{
+		use = false;
+		value = defaultValue;
+		return true;
 	}
 
-	bool setColor(advancedfx::ICommandArgs* args) {
-		auto argc = args->ArgC();
-
-		if (4 == argc)
+	for (int i = 0; i < 8; i++)
+	{
+		if (0 == _stricmp(afxBasicColors[i].name, arg))
 		{
-			std::string str = "";
-			str.append(args->ArgV(1));
-			str.append(" ");
-			str.append(args->ArgV(2));
-			str.append(" ");
-			str.append(args->ArgV(3));
-
 			use = true;
-			userValue = str.c_str();
-			value = { 
-				(uint8_t)atoi(args->ArgV(1)),
-				(uint8_t)atoi(args->ArgV(2)),
-				(uint8_t)atoi(args->ArgV(3)),
-				255
-			};
+			userValue = arg;
+			value = afxBasicColors[i].value;
+
 			return true;
 		}
+	}
+	return false;
+}
 
-		if (5 == argc)
-		{
-			std::string str = "";
-			str.append(args->ArgV(1));
-			str.append(" ");
-			str.append(args->ArgV(2));
-			str.append(" ");
-			str.append(args->ArgV(3));
-			str.append(" ");
-			str.append(args->ArgV(4));
+bool MyColor::setColor(advancedfx::ICommandArgs* args) {
+	auto argc = args->ArgC();
 
-			use = true;
-			userValue = str.c_str();
-			value = { 
-				(uint8_t)atoi(args->ArgV(1)),
-				(uint8_t)atoi(args->ArgV(2)),
-				(uint8_t)atoi(args->ArgV(3)),
-				(uint8_t)atoi(args->ArgV(4))
-			};
-			return true;
-		}
+	if (4 == argc)
+	{
+		std::string str = "";
+		str.append(args->ArgV(1));
+		str.append(" ");
+		str.append(args->ArgV(2));
+		str.append(" ");
+		str.append(args->ArgV(3));
 
-		return false;
-	};
+		use = true;
+		userValue = str.c_str();
+		value = { 
+			(uint8_t)atoi(args->ArgV(1)),
+			(uint8_t)atoi(args->ArgV(2)),
+			(uint8_t)atoi(args->ArgV(3)),
+			255
+		};
+		return true;
+	}
+
+	if (5 == argc)
+	{
+		std::string str = "";
+		str.append(args->ArgV(1));
+		str.append(" ");
+		str.append(args->ArgV(2));
+		str.append(" ");
+		str.append(args->ArgV(3));
+		str.append(" ");
+		str.append(args->ArgV(4));
+
+		use = true;
+		userValue = str.c_str();
+		value = { 
+			(uint8_t)atoi(args->ArgV(1)),
+			(uint8_t)atoi(args->ArgV(2)),
+			(uint8_t)atoi(args->ArgV(3)),
+			(uint8_t)atoi(args->ArgV(4))
+		};
+		return true;
+	}
+
+	return false;
 };
 
 struct MirvColors {
