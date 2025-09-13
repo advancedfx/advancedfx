@@ -1,11 +1,9 @@
-#include "Globals.h"
-
 #include "SceneSystem.h"
 #include "ClientEntitySystem.h"
 
 #include "../shared/StringTools.h"
-#include "../deps/release/Detours/src/detours.h"
 #include "../deps/release/prop/cs2/sdk_src/public/tier1/bufferstring.h"
+#include "SchemaSystem.h"
 
 CResourceSystem* g_pCResourceSystem = nullptr;
 
@@ -102,16 +100,13 @@ CMaterial2** CResourceSystem::PreCache (const char* name) {
 	return org_PreCache(this, &wrapper, "");
 }
 
-typedef void* (__fastcall * UpdateSkyboxMaterial_t)(void* pCSceneSystem, CMaterial2*** pCMaterial, void* pCSceneWorld);
-UpdateSkyboxMaterial_t org_UpdateSkyboxMaterial = nullptr;
-
-void* new_UpdateSkyboxMaterial(void* pCSceneSystem, CMaterial2*** pCMaterial, void* pCSceneWorld) {
+void* new_ForceUpdateSkybox(void* This) {
 	if (g_CustomSky.enabled) {
-		auto mat = g_pCResourceSystem->PreCache(g_CustomSky.currentSkyName.c_str());
-		return org_UpdateSkyboxMaterial(pCSceneSystem, &mat, pCSceneWorld);
+		auto newMat = g_pCResourceSystem->PreCache(g_CustomSky.currentSkyName.c_str());
+		*(CMaterial2***)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_hSkyMaterial) = newMat;
 	}
 
-	return org_UpdateSkyboxMaterial(pCSceneSystem, pCMaterial, pCSceneWorld);
+	return org_ForceUpdateSkybox(This);
 }
 
 void updateSkyboxEntities() {
@@ -126,7 +121,7 @@ void updateSkyboxEntities() {
 			// see dissasembly for the update function
 			// TODO: maybe get this offset from pattern matching
 			*(void**)((u_char*)ent + 0xF10) = nullptr;
-			org_ForceUpdateSkybox(ent);
+			new_ForceUpdateSkybox(ent);
 		}
 	}
 }
@@ -190,18 +185,4 @@ CON_COMMAND(mirv_skybox, "")
 		, arg0
 		, arg0
 	);
-}
-
-void HookSceneSystem(HMODULE sceneSystemDll) {
-	// has 48 89 9f 10 01 00 00
-    // MOV qword ptr [RDI  + 0x110],RBX
-	org_UpdateSkyboxMaterial = (UpdateSkyboxMaterial_t)getVTableFn(sceneSystemDll, 39, ".?AVCSceneSystem@@");
-	if (0 == org_UpdateSkyboxMaterial) ErrorBox(MkErrStr(__FILE__, __LINE__));
-
-	DetourTransactionBegin();
-    DetourUpdateThread(GetCurrentThread());
-
-	DetourAttach(&(PVOID&)org_UpdateSkyboxMaterial, new_UpdateSkyboxMaterial);
-
-	if(NO_ERROR != DetourTransactionCommit()) ErrorBox("Failed to detour SceneSystem functions.");
 }

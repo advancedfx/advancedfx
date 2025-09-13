@@ -2,6 +2,8 @@
 
 #include "../shared/StringTools.h"
 
+#include "SceneSystem.h"
+
 bool g_bHookedMirvCommands = false;
 
 bool g_bNoFlashEnabled = false;
@@ -92,21 +94,28 @@ bool getAddressesFromClient(HMODULE clientDll) {
 	g_Original_flashFunc = (g_Original_flashFunc_t)(g_Original_flashFunc_addr);
 	g_Original_EOM = (g_Original_EOM_t)(g_Original_EOM_addr);
 
-   // has offset to material of skybox, pCSceneSystem and it's function to update skybox
+   // Has offset to material of skybox (other members too), pCSceneSystem and it's function to update skybox.
    //
-   // 1801c02cb 48  8b  0d       MOV        RCX ,qword ptr [DAT_182025518 ]
+   // Could be found if you see callstack for function of vtable for CSceneSystem (currently 39th)
+   // To trigger update just skip demo backwards or load level.
+   //
+   // Also it's referenced in 10th vtable function of C_EnvSky (we are getting it from there)
+   //
+   // 1801c02cb 48  8b  0d       MOV        RCX, qword ptr [DAT_182025518] // CSceneSystem
    //           46  52  e6  01
-   // 1801c02d2 48  8d  55  30   LEA        RDX =>local_res8 ,[RBP  + 0x30 ]
-   // 1801c02d6 48  8b  01       MOV        RAX ,qword ptr [RCX ]
-   // 1801c02d9 4c  8b  88       MOV        R9,qword ptr [RAX  + 0x138 ]
+   // 1801c02d2 48  8d  55  30   LEA        RDX => local_res8, [RBP + 0x30]
+   // 1801c02d6 48  8b  01       MOV        RAX, qword ptr [RCX]
+   // 1801c02d9 4c  8b  88       MOV        R9, qword ptr [RAX + 0x138] // 39th function of CSceneSystem
    //           38  01  00  00
-   // 1801c02e0 48  8b  87       MOV        RAX ,qword ptr [RDI  + 0xec0 ]
+   // 1801c02e0 48  8b  87       MOV        RAX, qword ptr [RDI + 0xec0] // offset to m_hSkyMaterial of C_EnvSky
    //           c0  0e  00  00
-   // 1801c02e7 48  89  45  30   MOV        qword ptr [RBP  + local_res8 ],RAX
+   // 1801c02e7 48  89  45  30   MOV        qword ptr [RBP + local_res8], RAX
    // 1801c02eb 41  ff  d1       CALL       R9
 
-	org_ForceUpdateSkybox = (ForceUpdateSkybox_t)getAddress(clientDll, "48 89 5C 24 ?? 48 89 74 24 ?? 48 89 7C 24 ?? 55 41 54 41 55 41 56 41 57 48 8B EC 48 83 EC ?? 48 83 B9");
-	if (0 == org_ForceUpdateSkybox) ErrorBox(MkErrStr(__FILE__, __LINE__));
+	if (auto addr = getAddress(clientDll, "33 DB 48 8D 05 ?? ?? ?? ?? 48 8B CF 48 89 44 24 ??")) {
+		auto offset = *(int32_t*)(addr + 5);
+		org_ForceUpdateSkybox = (ForceUpdateSkybox_t)(addr + 2 + 7 + offset);
+	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 	return true;
 }
@@ -121,6 +130,7 @@ void HookMirvCommands(HMODULE clientDll) {
 
 	DetourAttach(&(PVOID&)g_Original_flashFunc, new_flashFunc);
 	DetourAttach(&(PVOID&)g_Original_EOM, new_EOM);
+	DetourAttach(&(PVOID&)org_ForceUpdateSkybox, new_ForceUpdateSkybox);
 
 	if(NO_ERROR != DetourTransactionCommit()) {
 		ErrorBox("Failed to detour MirvCommands functions.");

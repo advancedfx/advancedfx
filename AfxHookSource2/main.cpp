@@ -2045,7 +2045,6 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		bFirstSceneSystem = false;
 		g_Import_SceneSystem.Apply(hModule);
 		Hook_SceneSystem(hModule);
-		HookSceneSystem(hModule);
 	}
 	/*else if(bFirstMaterialsystem2 && StringEndsWithW( lpLibFileName, L"materialsystem2.dll"))
 	{

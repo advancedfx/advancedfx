@@ -4,6 +4,8 @@
 
 void HookSceneSystem(HMODULE sceneSystemDll);
 
+void* new_ForceUpdateSkybox(void* This);
+
 class CMaterial2
 {
 public:

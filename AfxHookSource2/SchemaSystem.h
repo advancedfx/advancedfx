@@ -66,6 +66,10 @@ struct ClientDllOffsets_t {
 		ptrdiff_t m_iObserverMode = 0; // uint8                                   
 		ptrdiff_t m_hObserverTarget  = 0; // CHandle< CBaseEntity >
 	} CPlayer_ObserverServices;
+
+	struct C_EnvSky {
+		ptrdiff_t m_hSkyMaterial = 0; // CStrongHandle<InfoForResourceTypeIMaterial2>
+	} C_EnvSky;
 };
 
 extern struct ClientDllOffsets_t g_clientDllOffsets;
