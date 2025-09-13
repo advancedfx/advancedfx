@@ -69,6 +69,8 @@ struct ClientDllOffsets_t {
 
 	struct C_EnvSky {
 		ptrdiff_t m_hSkyMaterial = 0; // CStrongHandle<InfoForResourceTypeIMaterial2>
+		ptrdiff_t m_vTintColor = 0; // Color
+		ptrdiff_t m_flBrightnessScale = 0; // float32
 	} C_EnvSky;
 };
 
