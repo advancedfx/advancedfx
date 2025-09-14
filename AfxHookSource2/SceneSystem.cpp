@@ -21,7 +21,6 @@ struct CustomSkyState {
 
 	MyColor color;
 	float brightness = 1.0f;
-	bool enabled = false;
 } g_CustomSky;
 
 // 64-bit hash for 32-bit platforms
@@ -105,16 +104,14 @@ CMaterial2** CResourceSystem::PreCache (const char* name) {
 }
 
 void* new_ForceUpdateSkybox(void* This) {
-	if (g_CustomSky.enabled) {
-		if (g_CustomSky.currentSkyName.size() != 0) {
-			auto newMat = g_pCResourceSystem->PreCache(g_CustomSky.currentSkyName.c_str());
-			*(CMaterial2***)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_hSkyMaterial) = newMat;
-		}
+	if (g_CustomSky.currentSkyName.size() != 0) {
+		auto newMat = g_pCResourceSystem->PreCache(g_CustomSky.currentSkyName.c_str());
+		*(CMaterial2***)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_hSkyMaterial) = newMat;
+	}
 
-		if (g_CustomSky.color.use) {
-			*(uint32_t*)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_vTintColor) = afxUtils::rgbaToHex(g_CustomSky.color.value);
-			*(float*)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_flBrightnessScale) = g_CustomSky.brightness;
-		}
+	if (g_CustomSky.color.use) {
+		*(uint32_t*)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_vTintColor) = afxUtils::rgbaToHex(g_CustomSky.color.value);
+		*(float*)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_flBrightnessScale) = g_CustomSky.brightness;
 	}
 
 	return org_ForceUpdateSkybox(This);
@@ -137,7 +134,7 @@ void updateSkyboxEntities() {
 	}
 }
 
-CON_COMMAND(mirv_skybox, "")
+CON_COMMAND(mirv_sky, "")
 {
 	auto argc = args->ArgC();
 	auto arg0 = args->ArgV(0);
@@ -153,7 +150,7 @@ CON_COMMAND(mirv_skybox, "")
 
 				if (!_stricmp(arg2, "default")) {
 					g_CustomSky.currentSkyName = "";
-					if (g_CustomSky.enabled) updateSkyboxEntities();
+					updateSkyboxEntities();
 					return;
 				}
 
@@ -162,7 +159,7 @@ CON_COMMAND(mirv_skybox, "")
 					filePath.erase(filePath.size() - 2);
 				}
 				g_CustomSky.currentSkyName = filePath.c_str();
-				if (g_CustomSky.enabled) updateSkyboxEntities();
+				updateSkyboxEntities();
 				return;
 			}
 
@@ -176,30 +173,11 @@ CON_COMMAND(mirv_skybox, "")
 			return;
 		}
 
-		if(!_stricmp(arg1,"enabled"))
-		{
-			if (3 <= argc)
-			{
-				g_CustomSky.enabled = 0 != atoi(args->ArgV(2));
-				updateSkyboxEntities();
-				return;
-			}
-
-			advancedfx::Message(
-				"Usage:\n"
-				"%s %s 0|1 - Enable (1) / disable (0) custom skybox.\n"
-				"Current value: %s\n",
-				arg0, arg1,
-				g_CustomSky.enabled ? "1" : "0"
-			);
-			return;
-		}
-
 		if(!_stricmp(arg1, "color")) {
 			if (3 <= argc && !_stricmp(args->ArgV(2), "default"))
 			{
 				g_CustomSky.color.use = false;
-				if (g_CustomSky.enabled) updateSkyboxEntities();
+				updateSkyboxEntities();
 				return;
 			}
 
@@ -209,7 +187,7 @@ CON_COMMAND(mirv_skybox, "")
 				if (g_CustomSky.color.setColor(&subArgs)) {
 					g_CustomSky.brightness = atoi(args->ArgV(5)) / 255.0;
 					if (g_CustomSky.brightness < 0.000001f) g_CustomSky.brightness = 0.000001f;
-					if (g_CustomSky.enabled) updateSkyboxEntities();
+					updateSkyboxEntities();
 				}
 
 				return;
@@ -230,9 +208,7 @@ CON_COMMAND(mirv_skybox, "")
 		"Usage:\n"
 		"%s color <iR> <iG> <iB> <iA> | default - Set color override. RGBA format, values from 0 to 255.\n"
 		"%s material <sRelativePathToFile> | default - Set skybox material.\n"
-		"%s enabled 0|1 - Enable (1) / disable (0) custom skybox.\n"
 		"Note: see wiki on GitHub for this command for details.\n"
-		, arg0
 		, arg0
 		, arg0
 	);
