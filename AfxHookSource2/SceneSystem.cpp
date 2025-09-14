@@ -1,10 +1,13 @@
 #include "SceneSystem.h"
-#include "ClientEntitySystem.h"
 
-#include "../shared/StringTools.h"
-#include "../deps/release/prop/cs2/sdk_src/public/tier1/bufferstring.h"
+#include "ClientEntitySystem.h"
+#include "Globals.h"
 #include "SchemaSystem.h"
 #include "MirvColors.h"
+
+#include "../shared/StringTools.h"
+#include "../deps/release/Detours/src/detours.h"
+#include "../deps/release/prop/cs2/sdk_src/public/tier1/bufferstring.h"
 
 CResourceSystem* g_pCResourceSystem = nullptr;
 
@@ -20,6 +23,8 @@ struct CustomSkyState {
 	std::string currentSkyName = "";
 
 	MyColor color;
+	MyColor colorClouds;
+	bool drawClouds = true;
 	float brightness = 1.0f;
 } g_CustomSky;
 
@@ -134,6 +139,38 @@ void updateSkyboxEntities() {
 	}
 }
 
+struct CBaseSceneData {
+	char _pad0[0x18];
+	void* sceneObject;
+	CMaterial2* material; 
+	char _pad1[0x28];
+	uint32_t color;
+	char _pad2[0x14];
+};
+
+typedef void (__fastcall * DrawBaseSceneObject_t)(void* This, void* a2, CBaseSceneData* scene_data, int a4, int a5, void* a6, void* a7, void* a8);
+DrawBaseSceneObject_t org_DrawBaseSceneObject = nullptr;
+
+void new_DrawBaseSceneObject(void* This, void* a2, CBaseSceneData* scene_data, int a4, int a5, void* a6, void* a7, void* a8)
+{
+	if (scene_data->material == 0) return org_DrawBaseSceneObject(This, a2, scene_data, a4, a5, a6, a7, a8);
+
+	std::string mat_name = scene_data->material->GetName();
+
+	if (mat_name.find("clouds") != -1) {
+		if (!g_CustomSky.drawClouds) return;
+
+		if (g_CustomSky.colorClouds.use) {
+			for (int i = 0; i < a4; i++) {
+				auto pItem = &scene_data[i];
+				if (pItem) pItem->color = afxUtils::rgbaToHex(g_CustomSky.colorClouds.value);
+			}
+		}
+	}
+
+	return org_DrawBaseSceneObject(This, a2, scene_data, a4, a5, a6, a7, a8); 
+}
+
 CON_COMMAND(mirv_sky, "")
 {
 	auto argc = args->ArgC();
@@ -202,14 +239,88 @@ CON_COMMAND(mirv_sky, "")
 			);
 			return;
 		}
+
+		if(!_stricmp(arg1, "clouds")) {
+			if (3 <= argc)
+			{
+				auto arg2 = args->ArgV(2);
+
+				if (!_stricmp(arg2, "color")) {
+					if (4 <= argc && !_stricmp(args->ArgV(3), "default"))
+					{
+						g_CustomSky.colorClouds.use = false;
+						return;
+					}
+
+					if (6 <= argc)
+					{
+						advancedfx::CSubCommandArgs subArgs(args, 3);
+						if (g_CustomSky.colorClouds.setColor(&subArgs)) return;
+					}
+
+					advancedfx::Message(
+						"Usage:\n"
+						"%s %s %s <iR> <iG> <iB> | default - Set color override. RGB format, values from 0 to 255.\n"
+						"Current value: %s\n"
+						, arg0, arg1, arg2
+						, g_CustomSky.colorClouds.use ? g_CustomSky.colorClouds.userValue.c_str() : "default"
+					);
+					return;
+				}
+
+				if (!_stricmp(arg2, "draw")) {
+					if (4 <= argc)
+					{
+						g_CustomSky.drawClouds = 0 != atoi(args->ArgV(3));
+						return;
+					}
+
+					advancedfx::Message(
+						"Usage:\n"
+						"%s %s %s 0|1 - Enable (1) / disable (0) drawing of clouds.\n"
+						"Current value: %s\n"
+						, arg0, arg1, arg2
+						, g_CustomSky.drawClouds ? "1" : "0"
+					);
+					return;
+				}
+
+			}
+			advancedfx::Message(
+				"Usage:\n"
+				"%s %s color <iR> <iG> <iB> | default - Set color override. RGB format, values from 0 to 255.\n"
+				"%s %s draw 0|1 - Enable (1) / disable (0) drawing of clouds.\n"
+				, arg0, arg1
+				, arg0, arg1
+			);
+			return;
+		}
+
 	}
 
 	advancedfx::Message(
 		"Usage:\n"
 		"%s color <iR> <iG> <iB> <iA> | default - Set color override. RGBA format, values from 0 to 255.\n"
 		"%s material <sRelativePathToFile> | default - Set skybox material.\n"
+		"%s clouds [...] - Control clouds.\n"
 		"Note: see wiki on GitHub for this command for details.\n"
 		, arg0
 		, arg0
+		, arg0
 	);
+}
+
+void HookSceneSystem(HMODULE sceneSystemDll) {
+	org_DrawBaseSceneObject = (DrawBaseSceneObject_t)getVTableFn(sceneSystemDll, 2, ".?AVCBaseSceneObjectDesc@@");
+	if (0 == org_DrawBaseSceneObject) ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+	DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+
+	DetourAttach(&(PVOID&)org_DrawBaseSceneObject, new_DrawBaseSceneObject);
+
+	if(NO_ERROR != DetourTransactionCommit()) {
+		ErrorBox("Failed to detour SceneSystem functions.");
+		return;
+	}
 }
