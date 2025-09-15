@@ -210,9 +210,47 @@ public class CfgLauncherCsgo
     }
 }
 
+public class CfgLauncherCs2
+{
+    public String Cs2Exe;
+    public Boolean MmcfgEnabled;
+    public String Mmcfg;
+    public Boolean GfxEnabled;
+    public UInt16 GfxWidth;
+    public UInt16 GfxHeight;
+    public Boolean GfxFull;
+    public Boolean AvoidVac;
+    public String CustomLaunchOptions;
+    public Boolean RememberChanges;
+
+    public CfgLauncherCs2()
+    {
+        ThisDefault();
+    }
+
+    internal void Default()
+    {
+        ThisDefault();
+    }
+
+    private void ThisDefault()
+    {
+        Cs2Exe = L10n._p("Config (game path)", "please select");
+        MmcfgEnabled = false;
+        Mmcfg = "";
+        GfxEnabled = true;
+        GfxWidth = 1920;
+        GfxHeight = 1080;
+        GfxFull = false;
+        AvoidVac = true;
+        CustomLaunchOptions = "-console +sv_lan 1";
+        RememberChanges = true;
+    }
+}
 
 public class CfgSettings
 {
+	public CfgLauncherCs2 LauncherCs2;
     public CfgLauncherCsgo LauncherCsgo;
     public CfgLauncher Launcher;
     public CfgCustomLoader CustomLoader;
@@ -224,6 +262,7 @@ public class CfgSettings
 
 	public CfgSettings()
 	{
+        LauncherCs2 = new CfgLauncherCs2();
         LauncherCsgo = new CfgLauncherCsgo();
 		Launcher = new CfgLauncher();
 		CustomLoader = new CfgCustomLoader();
@@ -244,6 +283,7 @@ public class CfgSettings
 
     internal void Default()
 	{
+        LauncherCs2.Default();
         LauncherCsgo.Default();
 		Launcher.Default();
 		CustomLoader.Default();
