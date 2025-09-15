@@ -24,10 +24,21 @@ struct ClientDllOffsets_t {
 
 	struct C_BaseEntity {
 		ptrdiff_t m_iTeamNum = 0; // uint8
+		ptrdiff_t m_hOwnerEntity = 0; // CHandle<C_BaseEntity>
+		ptrdiff_t m_pGameSceneNode = 0; // CGameSceneNode*
 	} C_BaseEntity;
 
+	struct C_BaseModelEntity {
+		ptrdiff_t m_Glow = 0; // CGlowProperty
+	} C_BaseModelEntity;
+
+	struct CGameSceneNode {
+	    ptrdiff_t m_pOwner = 0; // CEntityInstance*
+        ptrdiff_t m_pParent = 0; // CGameSceneNode*
+	} CGameSceneNode;
+
 	struct C_BaseCSGrenadeProjectile {
-		ptrdiff_t m_bCanCreateGrenadeTrail = 0x11BD; // bool
+		ptrdiff_t m_bCanCreateGrenadeTrail = 0; // bool
 		ptrdiff_t m_nSnapshotTrajectoryEffectIndex = 0; // ParticleIndex_t
 		ptrdiff_t m_flTrajectoryTrailEffectCreationTime = 0; // float32
 

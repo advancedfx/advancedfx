@@ -2,6 +2,8 @@
 #include "ClientEntitySystem.h"
 #include "SchemaSystem.h"
 #include "MirvTime.h"
+#include "MirvCommands.h"
+#include "../shared/StringTools.h"
 
 bool g_bHookedMirvColors = false;
 extern u_char* g_pHudReticle_WashColor_T;
@@ -235,9 +237,6 @@ typedef void (__fastcall *g_Original_drawStuff_t)(CEntityInstance* param_1, char
 g_Original_drawStuff_t g_Original_drawStuff = nullptr;
 
 void __fastcall new_drawStuff(CEntityInstance* param_1, char param_2) {
-	auto name = param_1->GetClassName();
-	auto team = param_1->GetTeam();
-
 	SOURCESDK::CS2::Cvar_s * handle_show_xray = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("spec_show_xray", false).Get());
 	auto canCreateGrenadeTrail = *(bool*)((u_char*)param_1 + g_clientDllOffsets.C_BaseCSGrenadeProjectile.m_bCanCreateGrenadeTrail);
 
@@ -246,13 +245,12 @@ void __fastcall new_drawStuff(CEntityInstance* param_1, char param_2) {
 		return;
 	}
 
-	if ( 
-		strcmp(name, "smokegrenade_projectile"	) == 0 ||
-		strcmp(name, "hegrenade_projectile"		) == 0 ||
-		strcmp(name, "decoy_projectile"			) == 0 ||
-		strcmp(name, "flashbang_projectile"		) == 0 ||
-		strcmp(name, "molotov_projectile"		) == 0
-	) {
+	auto name = param_1->GetClassName();
+	auto team = param_1->GetTeam();
+
+	if (StringEndsWith(name, "_projectile")) {
+		if (!shouldGlowProjectile(name, team)) return;
+
 		auto CGameParticleManager = g_Original_getParticleManager();
 		bool useColor = false;
 		ParticleData color;
