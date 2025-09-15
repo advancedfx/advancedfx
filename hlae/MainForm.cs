@@ -28,6 +28,7 @@ namespace AfxGui
             this.Text = L10n._p("Window title, args: {0} - version", "Half-Life Advanced Effects {0}", System.Diagnostics.FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).FileVersion);
 
             this.fileToolStripMenuItem.Text = L10n._p("Main window | menu", "File");
+            this.menuLaunchCS2.Text = L10n._p("Main window | menu | File", "Launch CS2");
             this.menuLaunchCSGO.Text = L10n._p("Main window | menu | File", "Launch CS:GO");
             this.launchGoldSrcToolStripMenuItem.Text = L10n._p("Main window | menu | File", "Launch GoldSrc");
             this.menuExit.Text = L10n._p("Main window | menu | File", "Exit");
@@ -365,6 +366,11 @@ namespace AfxGui
         private void MenuNewGuidToClipBoard_Click(object sender, EventArgs e)
         {
             Clipboard.SetText(Guid.NewGuid().ToString());
+        }
+
+        private void MenuLaunchCS2_Click(object sender, EventArgs e)
+        {
+            LaunchCs2.RunLauncherDialog(this);
         }
 
         private void MenuLaunchCSGO_Click(object sender, EventArgs e)
