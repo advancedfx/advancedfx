@@ -130,8 +130,11 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../deps/release/prop/cs2/sdk_src/public/tier1/utlstring.cpp
     ../deps/release/prop/cs2/sdk_src/public/tier1/utlstring.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/utlvector.h
+    ../deps/release/prop/cs2/sdk_src/public/tier1/bufferstring.cpp
+    ../deps/release/prop/cs2/sdk_src/public/tier1/bufferstring.h
     ../deps/release/prop/cs2/sdk_src/public/vstdlib/IKeyValuesSystem.h
     ../deps/release/prop/cs2/sdk_src/public/cdll_int.h    
+    ../deps/release/prop/cs2/sdk_src/public/filesystem.h    
     ../deps/release/prop/cs2/sdk_src/public/const.h    
     ../deps/release/prop/cs2/sdk_src/public/entityhandle.h    
     ../deps/release/prop/cs2/sdk_src/public/icvar.h    
@@ -255,6 +258,9 @@ target_sources(${PROJECT_NAME} PRIVATE
 
 	SchemaSystem.cpp
 	SchemaSystem.h
+
+	SceneSystem.cpp
+	SceneSystem.h
 
     StreamSettings.h
 

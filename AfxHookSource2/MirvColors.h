@@ -12,3 +12,13 @@ struct AfxBasicColor {
 };
 
 extern std::vector<AfxBasicColor> afxBasicColors;
+
+struct MyColor {
+	afxUtils::RGBA value;
+	afxUtils::RGBA defaultValue;
+	std::string userValue = "";
+	bool use = false;
+
+	bool setColor(const char* arg);
+	bool setColor(advancedfx::ICommandArgs* args); 
+};
