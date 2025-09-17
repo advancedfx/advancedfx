@@ -171,6 +171,7 @@ void new_DrawBaseSceneObject(void* This, void* a2, CBaseSceneData* scene_data, i
 	return org_DrawBaseSceneObject(This, a2, scene_data, a4, a5, a6, a7, a8); 
 }
 
+/*
 CON_COMMAND(mirv_sky, "")
 {
 	auto argc = args->ArgC();
@@ -309,8 +310,10 @@ CON_COMMAND(mirv_sky, "")
 		, arg0
 	);
 }
+*/
 
 void HookSceneSystem(HMODULE sceneSystemDll) {
+/*
 	org_DrawBaseSceneObject = (DrawBaseSceneObject_t)getVTableFn(sceneSystemDll, 2, ".?AVCBaseSceneObjectDesc@@");
 	if (0 == org_DrawBaseSceneObject) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
@@ -323,4 +326,5 @@ void HookSceneSystem(HMODULE sceneSystemDll) {
 		ErrorBox("Failed to detour SceneSystem functions.");
 		return;
 	}
+*/
 }

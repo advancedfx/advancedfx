@@ -112,10 +112,10 @@ bool getAddressesFromClient(HMODULE clientDll) {
    // 1801c02e7 48  89  45  30   MOV        qword ptr [RBP + local_res8], RAX
    // 1801c02eb 41  ff  d1       CALL       R9
 
-	if (auto addr = getAddress(clientDll, "33 DB 48 8D 05 ?? ?? ?? ?? 48 8B CF 48 89 44 24 ??")) {
-		auto offset = *(int32_t*)(addr + 5);
-		org_ForceUpdateSkybox = (ForceUpdateSkybox_t)(addr + 2 + 7 + offset);
-	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	// if (auto addr = getAddress(clientDll, "33 DB 48 8D 05 ?? ?? ?? ?? 48 8B CF 48 89 44 24 ??")) {
+	// 	auto offset = *(int32_t*)(addr + 5);
+	// 	org_ForceUpdateSkybox = (ForceUpdateSkybox_t)(addr + 2 + 7 + offset);
+	// } else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 	return true;
 }
@@ -130,7 +130,7 @@ void HookMirvCommands(HMODULE clientDll) {
 
 	DetourAttach(&(PVOID&)g_Original_flashFunc, new_flashFunc);
 	DetourAttach(&(PVOID&)g_Original_EOM, new_EOM);
-	DetourAttach(&(PVOID&)org_ForceUpdateSkybox, new_ForceUpdateSkybox);
+	// DetourAttach(&(PVOID&)org_ForceUpdateSkybox, new_ForceUpdateSkybox);
 
 	if(NO_ERROR != DetourTransactionCommit()) {
 		ErrorBox("Failed to detour MirvCommands functions.");
