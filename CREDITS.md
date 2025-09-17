@@ -4,6 +4,14 @@
 
 ### Current
 
+#### Denis 'ChetdeJong' Karkin
+
+2024-05-08
+
+code, test, doc
+
+https://github.com/ChetdeJong
+
 #### Dominik 'dtugend' Tugend
 
 2007-03-01
@@ -387,14 +395,6 @@ https://github.com/ficcialfaint
 code
 
 https://github.com/cademtz
-
-#### Denis 'ChetdeJong' Karkin
-
-2024-05-08 - 2025-07-31
-
-code, test, doc
-
-https://github.com/ChetdeJong
 
 #### wgez
 
