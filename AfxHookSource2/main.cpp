@@ -1296,9 +1296,17 @@ int new_CCS2_Client_Init(void* This) {
 	HookSchemaSystem(g_H_SchemaSystem);
 
 	if (g_pFileSystem) {
+		// We don't care about non ascii paths here as game would not take it anyway it seems like.
+		// e.g. set USRLOCALCSGO to something and in game do __mirv_print_search_paths, it wont be printed correctly.
 		std::string path(GetHlaeFolder());
 		path.append("resources\\AfxHookSource2\\cs2");
 		g_pFileSystem->AddSearchPath(path.c_str(), "GAME");
+
+		auto USRLOCALCSGO = std::getenv("USRLOCALCSGO");
+		if (nullptr != USRLOCALCSGO) {
+			auto USRLOCALCSGO_copy = std::string(USRLOCALCSGO);
+			if (USRLOCALCSGO_copy.size() > 0) g_pFileSystem->AddSearchPath(USRLOCALCSGO_copy.c_str(), "GAME");
+		}
 	}
 
 	return result;
