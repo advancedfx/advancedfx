@@ -165,6 +165,14 @@ SOURCESDK::CS2::CBaseHandle CEntityInstance::GetObserverTarget() {
 	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int*)((unsigned char*)pObserverServices + g_clientDllOffsets.CPlayer_ObserverServices.m_hObserverTarget));    
 }
 
+SOURCESDK::CS2::CBaseHandle CEntityInstance::GetHandle() {
+	if (auto pEntityIdentity = *(u_char**)((u_char*)this + g_clientDllOffsets.CEntityInstance.m_pEntity)) {
+		return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(uint32_t*)(pEntityIdentity + 0x10));
+	}
+
+	return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
+}
+
 class CAfxEntityInstanceRef {
 public:
     static CAfxEntityInstanceRef * Aquire(CEntityInstance * pInstance) {

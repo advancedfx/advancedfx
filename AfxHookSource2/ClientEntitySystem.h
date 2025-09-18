@@ -56,6 +56,8 @@ public:
 
     uint8_t GetObserverMode();
     SOURCESDK::CS2::CBaseHandle GetObserverTarget();
+
+    SOURCESDK::CS2::CBaseHandle GetHandle();
 };
 
 typedef int (__fastcall * GetHighestEntityIndex_t)(void * pEntityList, bool bUnknown);
