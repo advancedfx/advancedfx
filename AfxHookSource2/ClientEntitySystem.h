@@ -68,6 +68,8 @@ public:
 
     uint8_t GetObserverMode();
     SOURCESDK::CS2::CBaseHandle GetObserverTarget();
+
+    SOURCESDK::CS2::CBaseHandle GetHandle();
 };
 
 typedef EntityListIterator * (__fastcall * GetHighestEntityIterator_t)(void * entityList, EntityListIterator * it);
