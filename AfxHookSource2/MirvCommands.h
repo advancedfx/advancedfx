@@ -10,6 +10,7 @@ bool shouldGlowProjectile(const char* className, int team);
 
 struct MirvGlow {
 	std::map<uint64_t,bool> players;
+	std::map<int32_t,bool> entities;
 
 	std::map<std::string, std::map<std::string, bool>> nades {
 		{ "smokes",     { {"ct", true}, {"t", true} } },
