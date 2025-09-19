@@ -341,11 +341,11 @@ CON_COMMAND(mirv_listentities, "List entities.")
 			"%s help - Print this help.\n"
 			"%s <option1> <option2> ... - Customize printed output with options.\n"
 			"Where <option> is (you don't have to use all):\n"
-			"\t\"isPlayer=1\" - Show only player entities (controllers and pawns). Unless you need handles it's better to use \"mirv_deathmsg help players\"\n"
+			"\t\"isPlayer=1\" - Show only player related entities. Unless you need handles, the \"mirv_deathmsg help players\" might be more useful.\n"
 			"\t\"sort=distance\" - Sort entities by distance relative to current position, from closest to most distant.\n"
 			"\t\"limit=<i>\" - Limit number of printed entries.\n"
 			"Example:\n"
-			"%s \"sort=distance\" \"limit=10\"" 
+			"%s sort=distance limit=10\n" 
 			, arg0, arg0, arg0
 		);
 		return;
