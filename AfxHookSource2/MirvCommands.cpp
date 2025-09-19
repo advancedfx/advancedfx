@@ -398,6 +398,7 @@ CON_COMMAND(mirv_glow, "Manage glow drawing.")
 				"%s %s set <iHandle> 0|1 - Enable (1) / disable (0) glow for given entity.\n"
 				"%s %s remove <iHandle> - Remove entry from list.\n"
 				"%s %s print - Print entries.\n"
+				"Tip: use mirv_listentities to get handles.\n"
 				, arg0, arg1
 				, arg0, arg1
 				, arg0, arg1
