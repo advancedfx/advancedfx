@@ -1,9 +1,5 @@
 # Half-Life Advanced Effects - advancedfx
 
-## Roadmap / Planned End Of Support (October 2025)
-
-https://github.com/advancedfx/advancedfx/issues/896
-
 ## About
 
 Half-Life Advanced Effects (HLAE) is a tool to enrich Source (mainly CS:GO) engine based movie making.
