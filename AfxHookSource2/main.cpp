@@ -48,6 +48,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include <stdlib.h>
 #include <sstream>
 #include <mutex>
 
@@ -60,6 +61,24 @@ HMODULE g_H_FileSystem_stdio = 0;
 SOURCESDK::CS2::IFileSystem* g_pFileSystem = nullptr;
 
 advancedfx::CCommandLine  * g_CommandLine = nullptr;
+
+typedef void (__fastcall * AddSearchPath_t)(void* This, const char *pPath, const char *pathID, int addType, int priority, int unk );
+AddSearchPath_t org_AddSearchPath = nullptr;
+
+void new_AddSearchPath(void* This, const char *pPath, const char *pathID, int addType, int priority, int unk) {
+	if (0 == strcmp(pathID, "USRLOCAL")) {
+		const wchar_t* USRLOCALCSGO = _wgetenv(L"USRLOCALCSGO");
+		if (nullptr != USRLOCALCSGO) {
+			std::string USRLOCALCSGO_copy = "";
+			WideStringToUTF8String(USRLOCALCSGO, USRLOCALCSGO_copy);
+			if (USRLOCALCSGO_copy.size() > 0) {
+				return org_AddSearchPath(This, USRLOCALCSGO_copy.c_str(), pathID, addType, priority, unk);
+			} 
+		}
+	}
+
+	return org_AddSearchPath(This, pPath, pathID, addType, priority, unk);
+}
 
 FovScaling GetDefaultFovScaling() {
 	return FovScaling_AlienSwarm;
@@ -1296,15 +1315,14 @@ int new_CCS2_Client_Init(void* This) {
 	HookSchemaSystem(g_H_SchemaSystem);
 
 	if (g_pFileSystem) {
-		// We don't care about non ascii paths here as game would not take it anyway it seems like.
-		// e.g. set USRLOCALCSGO to something and in game do __mirv_print_search_paths, it wont be printed correctly.
 		std::string path(GetHlaeFolder());
 		path.append("resources\\AfxHookSource2\\cs2");
 		g_pFileSystem->AddSearchPath(path.c_str(), "GAME");
 
-		auto USRLOCALCSGO = std::getenv("USRLOCALCSGO");
+		const wchar_t* USRLOCALCSGO = _wgetenv(L"USRLOCALCSGO");
 		if (nullptr != USRLOCALCSGO) {
-			auto USRLOCALCSGO_copy = std::string(USRLOCALCSGO);
+			std::string USRLOCALCSGO_copy = "";
+			WideStringToUTF8String(USRLOCALCSGO, USRLOCALCSGO_copy);
 			if (USRLOCALCSGO_copy.size() > 0) g_pFileSystem->AddSearchPath(USRLOCALCSGO_copy.c_str(), "GAME");
 		}
 	}
@@ -2023,6 +2041,16 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		bFirstfilesystem_stdio = false;
 
 		g_H_FileSystem_stdio = hModule;
+
+		org_AddSearchPath = (AddSearchPath_t)getVTableFn(hModule, 31, ".?AVCFileSystem_Stdio@@");
+		if (0 == org_AddSearchPath) ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		
+		DetourAttach(&(PVOID&)org_AddSearchPath, new_AddSearchPath);
+		
+		if(NO_ERROR != DetourTransactionCommit()) ErrorBox("Failed to detour filesystem_stdio functions.");
 		
 		// g_Import_filesystem_stdio.Apply(hModule);
 	}
