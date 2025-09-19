@@ -274,6 +274,26 @@ void new_setGlowProps (u_char* glowProperty, int param_2, float param_3) {
 	return g_Original_setGlowProps(glowProperty, param_2, param_3);
 }
 
+typedef bool (__fastcall * org_shouldGlow_t)(u_char* glowProperty);
+org_shouldGlow_t org_shouldGlow = nullptr;
+
+bool new_shouldGlow(u_char* glowProperty) {
+	auto result = org_shouldGlow(glowProperty);
+	// see where this function is called, in the block where result of this fn is true
+	// if (*(longlong **)(param_1 + 0x18) != (longlong *)0x0) {
+    //   lVar7 = (**(code **)(**(longlong **)(param_1 + 0x18) + 0x1a8))();
+    // }
+	if (0 == *(u_char**)(glowProperty + 0x18)) return result;
+
+	auto ent = (CEntityInstance*)(glowProperty - g_clientDllOffsets.C_BaseModelEntity.m_Glow);
+	auto handle = ent->GetHandle();
+
+	if (handle.IsValid() && g_MirvGlow.entities.find(handle.ToInt()) != g_MirvGlow.entities.end()) {
+		result = g_MirvGlow.entities[handle.ToInt()];
+	}
+
+	return result;
+}
 
 CON_COMMAND(mirv_glow, "Manage glow drawing.")
 {
@@ -450,6 +470,13 @@ bool getAddressesFromClient(HMODULE clientDll) {
 	g_Original_EOM = (g_Original_EOM_t)(g_Original_EOM_addr);
 	g_Original_setGlowProps = (g_Original_setGlowProps_t)(g_Original_setGlowProps_addr);
 
+	// C_BaseModelEntity vtable 234th, then go to second function call, there go to first function call
+	// this function should return m_bGlowing of CGlowProperty
+
+	if (auto addr = getAddress(clientDll, "E8 ?? ?? ?? ?? 33 DB 84 C0 0F 84 ?? ?? ?? ?? 48")) {
+		org_shouldGlow = (org_shouldGlow_t)(addr + 5 + *(int32_t*)(addr + 1));
+	} else ErrorBox(MkErrStr(__FILE__, __LINE__)); 
+
    // Has offset to material of skybox (other members too), pCSceneSystem and it's function to update skybox.
    //
    // Could be found if you see callstack for function of vtable for CSceneSystem (currently 39th)
@@ -487,6 +514,7 @@ void HookMirvCommands(HMODULE clientDll) {
 	DetourAttach(&(PVOID&)g_Original_flashFunc, new_flashFunc);
 	DetourAttach(&(PVOID&)g_Original_EOM, new_EOM);
 	DetourAttach(&(PVOID&)g_Original_setGlowProps, new_setGlowProps);
+	DetourAttach(&(PVOID&)org_shouldGlow, new_shouldGlow);
 	// DetourAttach(&(PVOID&)org_ForceUpdateSkybox, new_ForceUpdateSkybox);
 
 	if(NO_ERROR != DetourTransactionCommit()) {
