@@ -332,6 +332,7 @@ CON_COMMAND(mirv_listentities, "List entities.")
 	auto argC = args->ArgC();
 	auto arg0 = args->ArgV(0);
 
+	bool filterPlayers = false;
 	bool sortByDistance = false;
 	int printCount = -1;
 
@@ -340,6 +341,7 @@ CON_COMMAND(mirv_listentities, "List entities.")
 			"%s help - Print this help.\n"
 			"%s <option1> <option2> ... - Customize printed output with options.\n"
 			"Where <option> is (you don't have to use all):\n"
+			"\t\"isPlayer=1\" - Show only player entities (controllers and pawns). Unless you need handles it's better to use \"mirv_deathmsg help players\"\n"
 			"\t\"sort=distance\" - Sort entities by distance relative to current position, from closest to most distant.\n"
 			"\t\"limit=<i>\" - Limit number of printed entries.\n"
 			"Example:\n"
@@ -356,6 +358,9 @@ CON_COMMAND(mirv_listentities, "List entities.")
 			else if (StringIBeginsWith(argI, "sort=")) {
 				if (0 == _stricmp(argI + strlen("sort="), "distance")) sortByDistance = true;
 			}
+			else if (0 == _stricmp(argI, "isPlayer=1")) {
+				filterPlayers = true;
+			}
 		}
 	}
 
@@ -364,6 +369,8 @@ CON_COMMAND(mirv_listentities, "List entities.")
     int highestIndex = GetHighestEntityIndex();
     for(int i = 0; i < highestIndex + 1; i++) {
         if(auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,i)) {
+			if (filterPlayers && !ent->IsPlayerController() && !ent->IsPlayerPawn()) continue;
+			
             float render_origin[3];
             float render_angles[3];
             ent->GetRenderEyeOrigin(render_origin);
