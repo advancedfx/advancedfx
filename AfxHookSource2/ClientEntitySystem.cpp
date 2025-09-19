@@ -1,6 +1,7 @@
 #include "stdafx.h"
 
 #include "ClientEntitySystem.h"
+#include "DeathMsg.h"
 #include "WrpConsole.h"
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
@@ -8,6 +9,7 @@
 #include "../shared/AfxConsole.h"
 //#include "../shared/binutils.h"
 #include "../shared/FFITools.h"
+#include "../shared/StringTools.h"
 
 #include "AfxHookSource2Rs.h"
 #include "SchemaSystem.h"
@@ -16,6 +18,7 @@
 #include "../deps/release/Detours/src/detours.h"
 
 #include <map>
+#include <algorithm>
 
 void ** g_pEntityList = nullptr;
 GetHighestEntityIndex_t  g_GetHighestEntityIndex = nullptr;
@@ -165,6 +168,14 @@ SOURCESDK::CS2::CBaseHandle CEntityInstance::GetObserverTarget() {
 	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int*)((unsigned char*)pObserverServices + g_clientDllOffsets.CPlayer_ObserverServices.m_hObserverTarget));    
 }
 
+SOURCESDK::CS2::CBaseHandle CEntityInstance::GetHandle() {
+	if (auto pEntityIdentity = *(u_char**)((u_char*)this + g_clientDllOffsets.CEntityInstance.m_pEntity)) {
+		return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(uint32_t*)(pEntityIdentity + 0x10));
+	}
+
+	return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
+}
+
 class CAfxEntityInstanceRef {
 public:
     static CAfxEntityInstanceRef * Aquire(CEntityInstance * pInstance) {
@@ -306,21 +317,102 @@ int GetHighestEntityIndex() {
     //return g_pEntityList && g_GetHighestEntityIndex ? g_GetHighestEntityIndex(*g_pEntityList, false) : -1;
 }
 
-CON_COMMAND(__mirv_listentities, "")
+struct MirvEntityEntry {
+	int entryIndex;
+	int handle;
+	std::string debugName;
+	std::string className;
+	std::string clientClassName;
+	SOURCESDK::Vector origin;
+	SOURCESDK::QAngle angles;
+};
+
+CON_COMMAND(mirv_listentities, "List entities.")
 {
+	auto argC = args->ArgC();
+	auto arg0 = args->ArgV(0);
+
+	bool filterPlayers = false;
+	bool sortByDistance = false;
+	int printCount = -1;
+
+	if (2 <= argC && 0 == _stricmp(args->ArgV(1), "help")) {
+		advancedfx::Message(
+			"%s help - Print this help.\n"
+			"%s <option1> <option2> ... - Customize printed output with options.\n"
+			"Where <option> is (you don't have to use all):\n"
+			"\t\"isPlayer=1\" - Show only player related entities. Unless you need handles, the \"mirv_deathmsg help players\" might be more useful.\n"
+			"\t\"sort=distance\" - Sort entities by distance relative to current position, from closest to most distant.\n"
+			"\t\"limit=<i>\" - Limit number of printed entries.\n"
+			"Example:\n"
+			"%s sort=distance limit=10\n" 
+			, arg0, arg0, arg0
+		);
+		return;
+	} else {
+		for (int i = 1; i < argC; i++) {
+			const char * argI = args->ArgV(i);
+			if (StringIBeginsWith(argI, "limit=")) {
+				printCount = atoi(argI + strlen("limit="));
+			} 
+			else if (StringIBeginsWith(argI, "sort=")) {
+				if (0 == _stricmp(argI + strlen("sort="), "distance")) sortByDistance = true;
+			}
+			else if (0 == _stricmp(argI, "isPlayer=1")) {
+				filterPlayers = true;
+			}
+		}
+	}
+
+	std::vector<MirvEntityEntry> entries;
+
     int highestIndex = GetHighestEntityIndex();
     for(int i = 0; i < highestIndex + 1; i++) {
         if(auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,i)) {
-            float origin[3];
+			if (filterPlayers && !ent->IsPlayerController() && !ent->IsPlayerPawn()) continue;
+			
             float render_origin[3];
             float render_angles[3];
             ent->GetRenderEyeOrigin(render_origin);
             ent->GetRenderEyeAngles(render_angles);
-            ent->GetOrigin(origin[0],origin[1],origin[2]);
-            advancedfx::Message("%i: %s / %s / %s [%f,%f,%f / %f,%f,%f] %i HP @ [%f,%f,%f] | %i %i\n", i, ent->GetDebugName(), ent->GetClassName(), ent->GetClientClassName(), render_origin[0], render_origin[1], render_origin[2], render_angles[0], render_angles[1], render_angles[2], ent->GetHealth(), origin[0], origin[1], origin[2], ent->IsPlayerController()?1:0, ent->IsPlayerPawn()?1:0);
+
+			auto debugName = ent->GetDebugName();
+			auto className = ent->GetClassName();
+			auto clientClassName = ent->GetClientClassName();
+
+			entries.emplace_back(
+				MirvEntityEntry {
+					i, ent->GetHandle().ToInt(), 
+					debugName ? debugName : "", className ? className : "", clientClassName ? clientClassName : "",
+					SOURCESDK::Vector {render_origin[0], render_origin[1], render_origin[2]},
+					SOURCESDK::QAngle {render_angles[0], render_angles[1], render_angles[2]} 
+				}
+			);
+
         }
-        else advancedfx::Message("%i:\n",i);
     }
+
+	if (sortByDistance) {
+		SOURCESDK::Vector curPos = {(float)g_CurrentGameCamera.origin[0], (float)g_CurrentGameCamera.origin[1], (float)g_CurrentGameCamera.origin[2]};
+
+		std::sort(entries.begin(), entries.end(), [&](MirvEntityEntry & a, MirvEntityEntry & b) {
+			auto distA = (curPos - a.origin).LengthSqr();
+			auto distB = (curPos - b.origin).LengthSqr();
+			return distA < distB;
+		});
+	}
+
+	advancedfx::Message("entryIndex / handle / debugName / className / clientClassName / [ x , y , z , rX , rY , rZ ]\n");
+	if (printCount == -1) printCount = entries.size();
+	for (int i = 0; i < printCount; i++) {
+		auto e = entries[i];
+		advancedfx::Message("%i / %i / %s / %s / %s / [ %f , %f , %f , %f , %f , %f ]\n"
+			, e.entryIndex, e.handle
+			, e.debugName.c_str(), e.className.c_str(), e.clientClassName.c_str()
+			, e.origin.x, e.origin.y, e.origin.z 
+			, e.angles.x, e.angles.y, e.angles.z
+		);
+	}
 }
 
 extern "C" int afx_hook_source2_get_highest_entity_index() {
