@@ -88,6 +88,7 @@
             this.labelEpilepsy = new System.Windows.Forms.Label();
             this.buttonEpilepsyOk = new System.Windows.Forms.Button();
             this.panelNotifications = new System.Windows.Forms.Panel();
+            this.menuLaunchCS2 = new System.Windows.Forms.ToolStripMenuItem();
             this.mainMenu.SuspendLayout();
             this.statusStrip.SuspendLayout();
             this.stripEnableUpdateCheck.SuspendLayout();
@@ -120,6 +121,7 @@
             // fileToolStripMenuItem
             // 
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.menuLaunchCS2,
             this.menuLaunchCSGO,
             this.launchGoldSrcToolStripMenuItem,
             this.toolStripMenuItem1,
@@ -693,6 +695,13 @@
             this.panelNotifications.Size = new System.Drawing.Size(584, 220);
             this.panelNotifications.TabIndex = 6;
             // 
+            // menuLaunchCS2
+            // 
+            this.menuLaunchCS2.Name = "menuLaunchCS2";
+            this.menuLaunchCS2.Size = new System.Drawing.Size(185, 22);
+            this.menuLaunchCS2.Text = "L10n Launch CS2";
+            this.menuLaunchCS2.Click += new System.EventHandler(this.MenuLaunchCS2_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -794,5 +803,6 @@
         private System.Windows.Forms.PictureBox pictureBoxEpilepsy;
         private System.Windows.Forms.Panel panelNotifications;
         private System.Windows.Forms.ToolStripMenuItem menuFaq;
+        private System.Windows.Forms.ToolStripMenuItem menuLaunchCS2;
     }
 }
