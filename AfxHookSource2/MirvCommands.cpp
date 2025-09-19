@@ -231,8 +231,11 @@ void new_setGlowProps (u_char* glowProperty, int param_2, float param_3) {
 		auto ent = (CEntityInstance*)(glowProperty - g_clientDllOffsets.C_BaseModelEntity.m_Glow);
 		auto name = ent->GetClassName();
 		auto team = ent->GetTeam();
+		auto handle = ent->GetHandle();
 
-		if (StringEndsWith(name, "_projectile") && (team == 2 || team == 3)) {
+		if (handle.IsValid() && g_MirvGlow.entities.find(handle.ToInt()) != g_MirvGlow.entities.end()) {
+			shouldGlow = g_MirvGlow.entities[handle.ToInt()];
+		} else if (StringEndsWith(name, "_projectile") && (team == 2 || team == 3)) {
 			shouldGlow = shouldGlowProjectile(name, team);
 		} else if (ent->IsPlayerPawn()) {
 			resolvedPlayerPawn = ent;
@@ -371,12 +374,43 @@ CON_COMMAND(mirv_glow, "Manage glow drawing.")
 				, arg0, arg1
 			);
             return;
+        } else if (!_stricmp("entities", arg1)) {
+            if (3 <= argC) {
+                const char * arg2 = args->ArgV(2);
+                if (!_stricmp("set", arg2) && 5 <= argC) {
+                    auto arg3 = atoi(args->ArgV(3));
+                    g_MirvGlow.entities[arg3] = 0 != atoi(args->ArgV(4));
+                    return;
+                }
+                else if (!_stricmp("remove", arg2) && 4 <= argC) {
+                    auto arg3 = atoi(args->ArgV(3));
+                    g_MirvGlow.entities.erase(arg3);
+                    return;
+                }
+                else if (!_stricmp("print", arg2)) {
+                    for(auto it = g_MirvGlow.entities.begin(); it != g_MirvGlow.entities.end(); it++) {
+                        advancedfx::Message("%i: %i\n",it->first,it->second ? 1 : 0);
+                    }
+                    return;
+                }                
+            }
+			advancedfx::Message(
+				"%s %s set <iHandle> 0|1 - Enable (1) / disable (0) glow for given entity.\n"
+				"%s %s remove <iHandle> - Remove entry from list.\n"
+				"%s %s print - Print entries.\n"
+				, arg0, arg1
+				, arg0, arg1
+				, arg0, arg1
+			);
+            return;
         }
     }
 
     advancedfx::Message(
         "%s projectiles [...] - Control glow per projectiles.\n"
 		"%s players [...] - Control glow per player.\n"
+		"%s entities [...] - Control glow per entity.\n"
+        , arg0
         , arg0
         , arg0
     );
