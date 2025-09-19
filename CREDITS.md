@@ -10,6 +10,8 @@
 
 code, test, doc
 
+Lead programmer.
+
 https://github.com/ChetdeJong
 
 #### Dominik 'dtugend' Tugend
@@ -18,7 +20,7 @@ https://github.com/ChetdeJong
 
 projectManagement, code, doc, content, maintenance, review, question, bug, translation
 
-Lead programmer.
+Former lead programmer (2007 - 2025).
 
 https://github.com/dtugend, https://youtube.com/advancedfx
 
@@ -78,7 +80,7 @@ https://github.com/Purple-CSGO
 
 projectManagement, code, infra
 
-Creator, former lead programmer, hosting.
+Creator, former lead programmer (2004 - 2007), hosting.
 
 http://www.madabouthats.org/
 
