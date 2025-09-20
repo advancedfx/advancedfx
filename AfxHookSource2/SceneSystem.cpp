@@ -168,17 +168,22 @@ struct CBaseSceneData {
 typedef void (__fastcall * DrawBaseSceneObject_t)(void* This, void* a2, CBaseSceneData* scene_data, int a4, int a5, void* a6, void* a7);
 DrawBaseSceneObject_t org_DrawBaseSceneObject = nullptr;
 
-void new_DrawBaseSceneObject(void* This, void* a2, CBaseSceneData* scene_data, int a4, int a5, void* a6, void* a7)
-{
-	if (scene_data->material == 0) return org_DrawBaseSceneObject(This, a2, scene_data, a4, a5, a6, a7);
+// sceneData is actually array and can be iterated, a4 is count
+// Color and textures can be replace here, but there are some issues with that,
+// so we only "toggle" on/off here for now.
+void new_DrawBaseSceneObject(void* This, void* a2, CBaseSceneData* sceneData, int a4, int a5, void* a6, void* a7) {
+	if (sceneData->material == 0) return org_DrawBaseSceneObject(This, a2, sceneData, a4, a5, a6, a7);
 
-	std::string mat_name = scene_data->material->GetName();
+	std::string matName = sceneData->material->GetName();
 
-	if (mat_name.find("clouds") != -1) {
-		if (!g_CustomSky.drawClouds) return;
+	// There is some z fight going on, when camera is pointed to sun 
+	// e.g. clouds draw regardless, so have to hide some sun materials too
+	// Don't have much time to fix it properly, this does the job 99% of times
+	if (!g_CustomSky.drawClouds && (matName.find("clouds") != -1 || matName.find("sun_disc_glow") != -1)) {
+		 return;
 	}
 
-	return org_DrawBaseSceneObject(This, a2, scene_data, a4, a5, a6, a7); 
+	return org_DrawBaseSceneObject(This, a2, sceneData, a4, a5, a6, a7); 
 }
 
 struct FloatColor {
