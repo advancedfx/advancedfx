@@ -3,6 +3,7 @@
 #include "Globals.h"
 
 void HookSceneSystem(HMODULE sceneSystemDll);
+void HookMaterialSystem(HMODULE materialSystemDll);
 
 void* new_ForceUpdateSkybox(void* This);
 
@@ -13,9 +14,16 @@ public:
 	virtual const char* GetShareName() = 0;
 };
 
+struct GetMaterialsArrayResult {
+	uint64_t count;
+	CMaterial2*** pArrMaterials;
+	uint64_t unk;
+};
+
 class CResourceSystem {
 public:
 	CMaterial2** PreCache(const char* name);
+	void GetMaterials(GetMaterialsArrayResult* out);
 };
 
 extern CResourceSystem* g_pCResourceSystem;

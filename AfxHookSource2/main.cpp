@@ -1400,9 +1400,12 @@ CON_COMMAND(mirv_skip, "for skipping through demos (uses demo_gototick)")
     MirvSkip_ConsoleCommand(args, &g_MirvCampath_Time, &g_MirvSkip_GotoDemoTick);
 }
 
+extern void resetDefaultCloudColors();
+
 typedef void * (* CS2_Client_LevelInitPreEntity_t)(void* This, void * pUnk1, void * pUnk2);
 CS2_Client_LevelInitPreEntity_t old_CS2_Client_LevelInitPreEntity;
 void * new_CS2_Client_LevelInitPreEntity(void* This, void * pUnk1, void * pUnk2) {
+	resetDefaultCloudColors();
 	void * result = old_CS2_Client_LevelInitPreEntity(This, pUnk1, pUnk2);
 	g_CommandSystem.OnLevelInitPreEntity();
 	return result;
@@ -2083,12 +2086,14 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		Hook_SceneSystem(hModule);
 		HookSceneSystem(hModule);
 	}
-	/*else if(bFirstMaterialsystem2 && StringEndsWithW( lpLibFileName, L"materialsystem2.dll"))
+	else if(bFirstMaterialsystem2 && StringEndsWithW( lpLibFileName, L"materialsystem2.dll"))
 	{
 		bFirstMaterialsystem2 = false;
 
-		g_Import_materialsystem2.Apply(hModule);
-	}*/
+		HookMaterialSystem(hModule);
+
+		// g_Import_materialsystem2.Apply(hModule);
+	}
 	else if(bFirstRenderSystemDX11 && StringEndsWithW( lpLibFileName, L"rendersystemdx11.dll"))
 	{
 		bFirstRenderSystemDX11 = false;

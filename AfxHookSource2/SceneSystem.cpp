@@ -9,6 +9,12 @@
 #include "../deps/release/Detours/src/detours.h"
 #include "../deps/release/prop/cs2/sdk_src/public/tier1/bufferstring.h"
 
+typedef u_char* (__fastcall * MaterialFindParam_t)(CMaterial2* This, const char * paramName);
+MaterialFindParam_t org_MaterialFindParam = nullptr;
+
+typedef void (__fastcall * MaterialUpdate_t)(CMaterial2* This);
+MaterialUpdate_t org_MaterialUpdate = nullptr;
+
 CResourceSystem* g_pCResourceSystem = nullptr;
 
 struct CBufferStringWrapper {
@@ -80,6 +86,17 @@ uint64_t MurmurHash64B ( const void * key, int len, uint64_t seed )
   h = (h << 32) | h2;
 
   return h;
+}
+
+void CResourceSystem::GetMaterials(GetMaterialsArrayResult* out) {
+	// In materialsystem2.dll see below in func with 
+	// "NOTE: Use mat_print_materials instead, and then click on the hyperlink for a given material. That will call this concommand with the correctly formatted argument.\n"
+	// (**(code **)(*ResourceSystem + 0x128))(ResourceSystem,0x74616d76,local_198, 7);
+	typedef void (__fastcall * GetMaterials_t)(void* This, uint64_t magic, GetMaterialsArrayResult* out, uint8_t unk);
+	void** vtable = *(void***)(this);
+	auto org_GetMaterials = (GetMaterials_t)vtable[37];
+
+	org_GetMaterials(this, 0x74616d76, out, 7);
 }
 
 CMaterial2** CResourceSystem::PreCache (const char* name) {
@@ -157,19 +174,58 @@ void new_DrawBaseSceneObject(void* This, void* a2, CBaseSceneData* scene_data, i
 
 	std::string mat_name = scene_data->material->GetName();
 
-	// workaround with sun because otherwise it would fight each other when camera is pointed at it
-	if (mat_name.find("clouds") != -1 || mat_name.find("materials/effects/glows/sun_disc") != -1) {
+	if (mat_name.find("clouds") != -1) {
 		if (!g_CustomSky.drawClouds) return;
+	}
 
-		if (g_CustomSky.colorClouds.use) {
-			for (int i = 0; i < a4 + 1; i++) {
-				auto pItem = &scene_data[i];
-				if (pItem) pItem->color = afxUtils::rgbaToHex(g_CustomSky.colorClouds.value);
+	return org_DrawBaseSceneObject(This, a2, scene_data, a4, a5, a6, a7); 
+}
+
+struct FloatColor {
+	float r = 0;
+	float g = 0;
+	float b = 0;
+	float a = 0;
+};
+
+std::map<std::string, FloatColor> defaultCloudColors = {};
+
+void resetDefaultCloudColors() {
+	defaultCloudColors.clear();
+}
+
+void updateCloudMaterials() {
+	GetMaterialsArrayResult materials = {0};
+	g_pCResourceSystem->GetMaterials(&materials);
+
+	for (int i = 0; i < materials.count; i++) {
+		auto pMat = *materials.pArrMaterials[i];
+		std::string matName = pMat->GetName();
+		if (matName.find("clouds") != -1) {
+			auto colorParam = (float*)org_MaterialFindParam(pMat, "g_vColorTint");
+			if (0 != colorParam) {
+				if (defaultCloudColors.find(matName) == defaultCloudColors.end()) {
+					defaultCloudColors[matName] = FloatColor { colorParam[0], colorParam[1], colorParam[2], colorParam[3] };
+				}
+
+				if (g_CustomSky.colorClouds.use) {
+					colorParam[0] = g_CustomSky.colorClouds.value.r / 255.0f;
+					colorParam[1] = g_CustomSky.colorClouds.value.g / 255.0f;
+					colorParam[2] = g_CustomSky.colorClouds.value.b / 255.0f;
+					colorParam[3] = 1.0f; // this doesnt seem to do anything
+				} else if (defaultCloudColors.find(matName) != defaultCloudColors.end()) {
+					auto defaultColor = defaultCloudColors[matName];
+					colorParam[0] = defaultColor.r;
+					colorParam[1] = defaultColor.g;
+					colorParam[2] = defaultColor.b;
+					colorParam[3] = defaultColor.a;
+				}
+
+				org_MaterialUpdate(pMat);
 			}
 		}
 	}
 
-	return org_DrawBaseSceneObject(This, a2, scene_data, a4, a5, a6, a7); 
 }
 
 CON_COMMAND(mirv_sky, "")
@@ -250,18 +306,23 @@ CON_COMMAND(mirv_sky, "")
 					if (4 <= argc && !_stricmp(args->ArgV(3), "default"))
 					{
 						g_CustomSky.colorClouds.use = false;
+						updateCloudMaterials();
 						return;
 					}
 
-					if (6 <= argc)
+					if (6 == argc)
 					{
 						advancedfx::CSubCommandArgs subArgs(args, 3);
-						if (g_CustomSky.colorClouds.setColor(&subArgs)) return;
+						if (g_CustomSky.colorClouds.setColor(&subArgs)) {
+							updateCloudMaterials();
+							return;
+						}
+
 					}
 
 					advancedfx::Message(
 						"Usage:\n"
-						"%s %s %s <iR> <iG> <iB> | default - Set color override. RGB format, values from 0 to 255.\n"
+						"%s %s %s <iR> <iG> <iB> | default - Set color override. RGB format, values from 0 to 255. Currently it has to be re-applied if map changes.\n"
 						"Current value: %s\n"
 						, arg0, arg1, arg2
 						, g_CustomSky.colorClouds.use ? g_CustomSky.colorClouds.userValue.c_str() : "default"
@@ -289,7 +350,7 @@ CON_COMMAND(mirv_sky, "")
 			}
 			advancedfx::Message(
 				"Usage:\n"
-				"%s %s color <iR> <iG> <iB> | default - Set color override. RGB format, values from 0 to 255.\n"
+				"%s %s color <iR> <iG> <iB> | default - Set color override. RGB format, values from 0 to 255. Currently it has to be re-applied if map changes.\n"
 				"%s %s draw 0|1 - Enable (1) / disable (0) drawing of clouds.\n"
 				, arg0, arg1
 				, arg0, arg1
@@ -309,6 +370,19 @@ CON_COMMAND(mirv_sky, "")
 		, arg0
 		, arg0
 	);
+}
+
+void HookMaterialSystem(HMODULE materialSystemDll) {
+	// 1 xref, called in the middle of 23 function of vtable for CMaterialSystem2
+	if (auto addr = getAddress(materialSystemDll, "e8 ?? ?? ?? ?? 4c 8b f8 4c 8b f6 48 85 c0")) {
+		org_MaterialFindParam = (MaterialFindParam_t)(addr + 5 + *(int32_t*)(addr + 1));
+	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	
+	// function call in 30 function of vtable for CMaterial
+	if (auto addr = getAddress(materialSystemDll, "f6 41 ?? 04 ?? ?? e8 ?? ?? ?? ?? 80 63 ?? fb")) {
+		org_MaterialUpdate = (MaterialUpdate_t)(addr + 11 + *(int32_t*)(addr + 7));
+	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
 }
 
 void HookSceneSystem(HMODULE sceneSystemDll) {
