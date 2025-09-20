@@ -148,30 +148,30 @@ struct CBaseSceneData {
 	char _pad2[0x14];
 };
 
-typedef void (__fastcall * DrawBaseSceneObject_t)(void* This, void* a2, CBaseSceneData* scene_data, int a4, int a5, void* a6, void* a7, void* a8);
+typedef void (__fastcall * DrawBaseSceneObject_t)(void* This, void* a2, CBaseSceneData* scene_data, int a4, int a5, void* a6, void* a7);
 DrawBaseSceneObject_t org_DrawBaseSceneObject = nullptr;
 
-void new_DrawBaseSceneObject(void* This, void* a2, CBaseSceneData* scene_data, int a4, int a5, void* a6, void* a7, void* a8)
+void new_DrawBaseSceneObject(void* This, void* a2, CBaseSceneData* scene_data, int a4, int a5, void* a6, void* a7)
 {
-	if (scene_data->material == 0) return org_DrawBaseSceneObject(This, a2, scene_data, a4, a5, a6, a7, a8);
+	if (scene_data->material == 0) return org_DrawBaseSceneObject(This, a2, scene_data, a4, a5, a6, a7);
 
 	std::string mat_name = scene_data->material->GetName();
 
-	if (mat_name.find("clouds") != -1) {
+	// workaround with sun because otherwise it would fight each other when camera is pointed at it
+	if (mat_name.find("clouds") != -1 || mat_name.find("materials/effects/glows/sun_disc") != -1) {
 		if (!g_CustomSky.drawClouds) return;
 
 		if (g_CustomSky.colorClouds.use) {
-			for (int i = 0; i < a4; i++) {
+			for (int i = 0; i < a4 + 1; i++) {
 				auto pItem = &scene_data[i];
 				if (pItem) pItem->color = afxUtils::rgbaToHex(g_CustomSky.colorClouds.value);
 			}
 		}
 	}
 
-	return org_DrawBaseSceneObject(This, a2, scene_data, a4, a5, a6, a7, a8); 
+	return org_DrawBaseSceneObject(This, a2, scene_data, a4, a5, a6, a7); 
 }
 
-/*
 CON_COMMAND(mirv_sky, "")
 {
 	auto argc = args->ArgC();
@@ -310,11 +310,9 @@ CON_COMMAND(mirv_sky, "")
 		, arg0
 	);
 }
-*/
 
 void HookSceneSystem(HMODULE sceneSystemDll) {
-/*
-	org_DrawBaseSceneObject = (DrawBaseSceneObject_t)getVTableFn(sceneSystemDll, 2, ".?AVCBaseSceneObjectDesc@@");
+	org_DrawBaseSceneObject = (DrawBaseSceneObject_t)getVTableFn(sceneSystemDll, 1, ".?AVCBaseSceneObjectDesc@@");
 	if (0 == org_DrawBaseSceneObject) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 	DetourTransactionBegin();
@@ -326,5 +324,4 @@ void HookSceneSystem(HMODULE sceneSystemDll) {
 		ErrorBox("Failed to detour SceneSystem functions.");
 		return;
 	}
-*/
 }
