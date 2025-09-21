@@ -27,4 +27,5 @@ namespace afxUtils {
 	std::string rgbaToHex(std::string str, std::string delim);
 	uint32_t hexStrToInt(std::string str);
 	uint32_t rgbaToHex(RGBA& color);
+	std::string stringToLowerCase(const char* s);
 }

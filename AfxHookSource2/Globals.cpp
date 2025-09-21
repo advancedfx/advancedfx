@@ -162,4 +162,9 @@ namespace afxUtils {
 				 (uint32_t)(color.r);
 	}
 
+	std::string stringToLowerCase(const char* s) {
+		std::string out(s);
+		std::transform(out.begin(), out.end(), out.begin(), [](u_char c) { return (char)(std::tolower(c)); });
+		return out;
+	}
 };
