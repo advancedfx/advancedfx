@@ -6,6 +6,19 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.37.0</version>
+<time>2025-09-21T12:50Z</time>
+<changes>
+<change type="added">Added CS2 launcher.</change>
+<change type="added">Added mirv_sky.</change>
+<change type="added">Added mirv_glow.</change>
+<change type="added">Added mirv_listentities.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.36.15</version>
 <time>2025-09-17T12:44Z</time>
 <changes>
