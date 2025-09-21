@@ -1401,11 +1401,13 @@ CON_COMMAND(mirv_skip, "for skipping through demos (uses demo_gototick)")
 }
 
 extern void resetDefaultCloudColors();
+extern void resetCachedMaterials();
 
 typedef void * (* CS2_Client_LevelInitPreEntity_t)(void* This, void * pUnk1, void * pUnk2);
 CS2_Client_LevelInitPreEntity_t old_CS2_Client_LevelInitPreEntity;
 void * new_CS2_Client_LevelInitPreEntity(void* This, void * pUnk1, void * pUnk2) {
 	resetDefaultCloudColors();
+	resetCachedMaterials();
 	void * result = old_CS2_Client_LevelInitPreEntity(This, pUnk1, pUnk2);
 	g_CommandSystem.OnLevelInitPreEntity();
 	return result;

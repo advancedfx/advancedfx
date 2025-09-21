@@ -8,6 +8,10 @@
 #include "../shared/StringTools.h"
 #include "../deps/release/Detours/src/detours.h"
 #include "../deps/release/prop/cs2/sdk_src/public/tier1/bufferstring.h"
+#include <unordered_map>
+
+typedef void* (__fastcall * FindMaterial_t)(void* This, CMaterial2*** out, const char* materialName);
+FindMaterial_t org_FindMaterial = nullptr;
 
 typedef u_char* (__fastcall * MaterialFindParam_t)(CMaterial2* This, const char * paramName);
 MaterialFindParam_t org_MaterialFindParam = nullptr;
@@ -125,10 +129,34 @@ CMaterial2** CResourceSystem::PreCache (const char* name) {
 	return org_PreCache(this, &wrapper, "");
 }
 
+std::string previousSkybox = "";
+std::unordered_map<std::string, bool> cachedMaterials = {};
+
+void resetCachedMaterials () {
+	previousSkybox = "";
+	g_CustomSky.currentSkyName = "";
+	cachedMaterials.clear();
+}
+
 void* new_ForceUpdateSkybox(void* This) {
 	if (g_CustomSky.currentSkyName.size() != 0) {
-		auto newMat = g_pCResourceSystem->PreCache(g_CustomSky.currentSkyName.c_str());
-		*(CMaterial2***)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_hSkyMaterial) = newMat;
+		if (previousSkybox.size() == 0) {
+			auto curMat = *(CMaterial2***)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_hSkyMaterial);
+			if (0 != curMat) previousSkybox = (*curMat)->GetName();
+		}
+
+		CMaterial2** newMat = nullptr;
+		org_FindMaterial(nullptr, &newMat, g_CustomSky.currentSkyName.c_str());
+
+		if (0 != newMat) {
+			*(CMaterial2***)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_hSkyMaterial) = newMat;
+		}
+	} else if (previousSkybox.size() != 0) {
+		CMaterial2** prevMat = nullptr;
+		org_FindMaterial(nullptr, &prevMat, previousSkybox.c_str());
+		if (0 != prevMat) {
+			*(CMaterial2***)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_hSkyMaterial) = prevMat;
+		}
 	}
 
 	if (g_CustomSky.color.use) {
@@ -140,6 +168,14 @@ void* new_ForceUpdateSkybox(void* This) {
 }
 
 void updateSkyboxEntities() {
+	if (g_CustomSky.currentSkyName.size() != 0) {
+		if (cachedMaterials.find(g_CustomSky.currentSkyName) == cachedMaterials.end()) {
+			if (0 != g_pCResourceSystem->PreCache(g_CustomSky.currentSkyName.c_str())) {
+				cachedMaterials.insert({g_CustomSky.currentSkyName, true});
+			}
+		}
+	}
+
 	int highestIndex = GetHighestEntityIndex();
 	for(int i = 0; i < highestIndex + 1; i++) {
 		if(auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,i)) {
@@ -150,10 +186,15 @@ void updateSkyboxEntities() {
 			// we have to remove pointer to object, so it can update
 			// see dissasembly for the update function
 			// TODO: maybe get this offset from pattern matching
-			*(void**)((u_char*)ent + 0xF10) = nullptr;
+			*(void**)((u_char*)ent + 0xF18) = nullptr;
 			new_ForceUpdateSkybox(ent);
 		}
 	}
+
+	if (g_CustomSky.currentSkyName.size() == 0 && previousSkybox.size() != 0) {
+		previousSkybox = "";
+	}
+
 }
 
 struct CBaseSceneData {
@@ -193,9 +234,10 @@ struct FloatColor {
 	float a = 0;
 };
 
-std::map<std::string, FloatColor> defaultCloudColors = {};
+std::unordered_map<std::string, FloatColor> defaultCloudColors = {};
 
 void resetDefaultCloudColors() {
+	g_CustomSky.colorClouds.use = false;
 	defaultCloudColors.clear();
 }
 
@@ -264,7 +306,7 @@ CON_COMMAND(mirv_sky, "")
 
 			advancedfx::Message(
 				"Usage:\n"
-				"%s %s  <sRelativePathToFile> - Set skybox material.\n"
+				"%s %s  <sRelativePathToFile> - Set skybox material. It has to be re-applied if map changes.\n"
 				"Current value: %s\n",
 				arg0, arg1,
 				g_CustomSky.currentSkyName.size() == 0 ? "default" : g_CustomSky.currentSkyName.c_str()
@@ -327,7 +369,7 @@ CON_COMMAND(mirv_sky, "")
 
 					advancedfx::Message(
 						"Usage:\n"
-						"%s %s %s <iR> <iG> <iB> | default - Set color override. RGB format, values from 0 to 255. Currently it has to be re-applied if map changes.\n"
+						"%s %s %s <iR> <iG> <iB> | default - Set color override. RGB format, values from 0 to 255. It has to be re-applied if map changes.\n"
 						"Current value: %s\n"
 						, arg0, arg1, arg2
 						, g_CustomSky.colorClouds.use ? g_CustomSky.colorClouds.userValue.c_str() : "default"
@@ -355,7 +397,7 @@ CON_COMMAND(mirv_sky, "")
 			}
 			advancedfx::Message(
 				"Usage:\n"
-				"%s %s color <iR> <iG> <iB> | default - Set color override. RGB format, values from 0 to 255. Currently it has to be re-applied if map changes.\n"
+				"%s %s color <iR> <iG> <iB> | default - Set color override. RGB format, values from 0 to 255. It has to be re-applied if map changes.\n"
 				"%s %s draw 0|1 - Enable (1) / disable (0) drawing of clouds.\n"
 				, arg0, arg1
 				, arg0, arg1
@@ -368,7 +410,7 @@ CON_COMMAND(mirv_sky, "")
 	advancedfx::Message(
 		"Usage:\n"
 		"%s color <iR> <iG> <iB> <iA> | default - Set color override. RGBA format, values from 0 to 255.\n"
-		"%s material <sRelativePathToFile> | default - Set skybox material.\n"
+		"%s material <sRelativePathToFile> | default - Set skybox material. It has to be re-applied if map changes.\n"
 		"%s clouds [...] - Control clouds.\n"
 		"Note: see wiki on GitHub for this command for details.\n"
 		, arg0
@@ -388,6 +430,12 @@ void HookMaterialSystem(HMODULE materialSystemDll) {
 		org_MaterialUpdate = (MaterialUpdate_t)(addr + 11 + *(int32_t*)(addr + 7));
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
+	// calls 80th function for CResourceSystem, and has 0x74616d76
+	// The 80th for CResourceSystem has following strings:
+	// "WARNING: %s resource '%s' (%016llX) requested but is not in the system. (Missing from from a manifest?)\n"
+	// "ERROR: %s resource '%s' (%016llX) requested is not loaded and may have been deleted.\n"
+	org_FindMaterial = (FindMaterial_t)getVTableFn(materialSystemDll, 14, ".?AVCMaterialSystem2@@");
+	if (0 == org_FindMaterial) ErrorBox(MkErrStr(__FILE__, __LINE__));
 }
 
 void HookSceneSystem(HMODULE sceneSystemDll) {
