@@ -22,7 +22,7 @@ projectManagement, code, doc, content, maintenance, review, question, bug, trans
 
 Former lead programmer (2007 - 2025).
 
-https://github.com/dtugend, https://youtube.com/advancedfx
+https://github.com/dtugend
 
 #### 'Dec'
 
@@ -33,14 +33,6 @@ doc, question, tutorial, maintenance, code, test
 Helping with HLAE manual, Discord moderator. Past: Forum, IRC, Reddit moderator.
 
 https://youtube.com/@Dechnologic
-
-#### Peter 'psh' P.
-
-2016-01-01
-
-maintenance, question
-
-Technical support, Discord admin. Past: IRC, Reddit moderator.
 
 #### Brett 'xNWP' Anthony
 
@@ -109,6 +101,14 @@ http://www.mst-gaming.de/
 question, test, tutorial
 
 Forum, community relations, testing, tutorials.
+
+#### Peter 'psh' P.
+
+2016-01-01 - 2025-09-22
+
+maintenance, question
+
+Technical support, Discord admin. Past: IRC, Reddit moderator.
 
 #### Perra 'akidos' Anderson
 
