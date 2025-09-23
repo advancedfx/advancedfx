@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.37.1</version>
+<time>2025-09-23T15:25Z</time>
+<changes>
+<change type="fixed">Fixed mirv_sky crashes.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.37.0</version>
 <time>2025-09-21T12:50Z</time>
 <changes>
