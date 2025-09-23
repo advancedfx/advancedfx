@@ -104,11 +104,12 @@ void CResourceSystem::GetMaterials(GetMaterialsArrayResult* out) {
 }
 
 CMaterial2** CResourceSystem::PreCache (const char* name) {
-	// has "Resource \"%s\" was not precached but was loaded by a just in time blocking load.\n"
-	// There are 2 similar ones, this is second one
+	// resourcesystem.dll
+	// "Resource \"%s\" was explicitly loaded with a blocking load.\n"
+	// There are 2 precache functions in vtable next to each other, this is first one
 	typedef CMaterial2** (__fastcall * PreCacheFn_t)(void* This, CBufferStringWrapper* name, const char* unk);
 	void** vtable = *(void***)(this);
-	auto org_PreCache = (PreCacheFn_t)vtable[46];
+	auto org_PreCache = (PreCacheFn_t)vtable[45];
 
 	// client dll
 	// see where func is called with "FixupResourceName: Illegal full path passed in (\"%s\")!\n" 
@@ -149,6 +150,9 @@ void* new_ForceUpdateSkybox(void* This) {
 		org_FindMaterial(nullptr, &newMat, g_CustomSky.currentSkyName.c_str());
 
 		if (0 != newMat) {
+			auto counter = *(int32_t*)((u_char*)newMat + 0x18);
+			counter = counter + 1;
+			*(int*)((u_char*)newMat + 0x18) = counter;
 			*(CMaterial2***)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_hSkyMaterial) = newMat;
 		}
 	} else if (previousSkybox.size() != 0) {
