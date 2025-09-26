@@ -150,6 +150,8 @@ extern "C" {
     fn afx_hook_source2_get_demo_time(outTime: & mut f64) -> bool;
 
     fn afx_hook_source2_get_cur_time(outCurTime: & mut f64);
+
+    fn afx_hook_source2_get_entity_ref_attachment(p_ref: * mut AfxEntityRef, attachment_name: *const c_char, pos: * mut advancedfx::math::Vector3, angs: * mut advancedfx::math::Quaternion) -> bool;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1883,6 +1885,11 @@ impl MirvEntityRef {
                 js_string!("getObserverTargetHandle"),
                 0,
             )
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_attachment),
+                js_string!("getAttachment"),
+                0,
+            )
             .build();
     }
 
@@ -2118,6 +2125,34 @@ impl MirvEntityRef {
             }
         }
         Err(advancedfx::js::errors::error_type(context).into())
+    }
+
+    fn get_attachment(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let object = this.as_object().ok_or(advancedfx::js::errors::error_type(context))?;
+        let mirv = object.downcast_ref::<MirvEntityRef>().ok_or(advancedfx::js::errors::error_type(context))?;
+
+        if 1 != args.len() { return Err(advancedfx::js::errors::error_arguments(context).into()) };
+        let arg0 = args[0].as_string().ok_or(advancedfx::js::errors::error_arguments(context))?;
+
+        let attachment_name = std::ffi::CString::new(arg0.to_std_string().unwrap()).unwrap();
+        let mut position = advancedfx::math::Vector3::new(0.0, 0.0, 0.0);
+        let mut angles = advancedfx::math::Quaternion::new(0.0, 0.0, 0.0, 0.0);
+
+        let result = unsafe { afx_hook_source2_get_entity_ref_attachment(mirv.entity_ref, attachment_name.as_ptr(), &mut position, &mut angles) };
+
+        match result {
+            true => {
+                let pos_js = advancedfx::js::math::Vector3::new(position).to_js_object(context).unwrap();
+                let angs_js = advancedfx::js::math::Quaternion::new(angles).to_js_object(context).unwrap();
+                let out = ObjectInitializer::new(context)
+                    .property(js_string!("position"), pos_js, Attribute::all())
+                    .property(js_string!("angles"), angs_js, Attribute::all())
+                    .build();
+
+                Ok(JsValue::from(out))
+            },
+            false => Ok(JsValue::Null)
+        }
     }
 }
 
