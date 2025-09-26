@@ -2135,6 +2135,7 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 
 		HookFixClient(hModule);
 
+		Hook_ClientEntitySystem3(hModule);
 	} 
 	else if(bFirstPanorama && StringEndsWithW(lpLibFileName, L"panorama.dll"))
 	{
