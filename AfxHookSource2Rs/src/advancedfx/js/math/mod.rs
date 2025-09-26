@@ -43,6 +43,11 @@ impl Vector3 {
         Err(advancedfx::js::errors::make_error!(JsNativeError::typ(), "'this' is not a AdvancedfxMathVector3 object", context).into())
     }    
 
+    pub fn to_js_object(self, ctx: &mut Context) -> JsResult<JsValue> {
+        let obj = Vector3::from_data(self, ctx)?;
+        Ok(obj.into())
+    }
+
     fn get_x(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if let Some(object) = this.as_object() {
             if let Some(object_inner) = object.downcast_ref::<Vector3>() {
@@ -747,6 +752,11 @@ impl Quaternion {
     fn error_typ(context: &Context) -> JsResult<JsValue> {
         Err(advancedfx::js::errors::make_error!(JsNativeError::typ(),"'this' is not a AdvancedfxMathQuaternion object",context)
             .into())
+    }
+
+    pub fn to_js_object(self, ctx: &mut Context) -> JsResult<JsValue> {
+        let obj = Quaternion::from_data(self, ctx)?;
+        Ok(obj.into())
     }
     
     fn get_w(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {

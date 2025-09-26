@@ -663,3 +663,27 @@ extern "C" int afx_hook_source2_get_entity_ref_observer_target_handle(void * pRe
     return SOURCESDK_CS2_INVALID_EHANDLE_INDEX;
 }
 
+extern "C" FFIBool afx_hook_source2_get_entity_ref_attachment(void * pRef, const char* attachmentName, double outPosition[3], double outAngles[4]) {
+    if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+		auto idx = pInstance->LookupAttachment(attachmentName);
+		if (0 == idx) return FFIBOOL_FALSE;
+		
+		SOURCESDK::Vector origin;
+		SOURCESDK::Quaternion angles;
+
+		if (pInstance->GetAttachment(idx, origin, angles)) {
+			outPosition[0] = origin.x;
+			outPosition[1] = origin.y;
+			outPosition[2] = origin.z;
+
+			outAngles[0] = angles.w;
+			outAngles[1] = angles.x;
+			outAngles[2] = angles.y;
+			outAngles[3] = angles.z;
+
+			return FFIBOOL_TRUE;
+		}
+    }
+
+    return FFIBOOL_FALSE;
+}

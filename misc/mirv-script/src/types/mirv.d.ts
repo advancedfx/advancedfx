@@ -401,6 +401,15 @@ declare namespace mirv {
 		 * @remarks makes sense only on PlayerPawn.
 		 */
 		getObserverTargetHandle(): number;
+
+		/**
+		 * @remarks makes sense only on entities that have attachment points e.g player models (Pawns), weapons.
+		 * Attachments names could be found when inspecting models files via Source 2 Viewer.
+		 */
+		getAttachment(name: string): {
+			position: AdvancedfxMathVector3;
+			angles: AdvancedfxMathQuaternion;
+		} | null;
 	}
 
 	type OnEntityEvent = (entity: Entity, handle: number) => void;
