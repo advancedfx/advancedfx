@@ -3,6 +3,7 @@
 #include "ClientEntitySystem.h"
 #include "DeathMsg.h"
 #include "WrpConsole.h"
+#include "Globals.h"
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
 
@@ -176,6 +177,37 @@ SOURCESDK::CS2::CBaseHandle CEntityInstance::GetHandle() {
 	return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
 }
 
+typedef	void (__fastcall * org_LookupAttachment_t)(void* This, uint8_t& outIdx, const char* attachmentName);
+org_LookupAttachment_t org_LookupAttachment = nullptr;
+
+typedef	bool (__fastcall * org_GetAttachment_t)(void* This, uint8_t idx, void* out);
+org_GetAttachment_t org_GetAttachment = nullptr;
+
+uint8_t CEntityInstance::LookupAttachment(const char* attachmentName) {
+	uint8_t idx = 0;
+	org_LookupAttachment(this, idx, attachmentName);
+	return idx;
+}
+
+bool CEntityInstance::GetAttachment(uint8_t idx, SOURCESDK::Vector &origin, SOURCESDK::Quaternion &angles) {
+	alignas(16) float resData[8] = {0};
+
+	if(org_GetAttachment(this, idx, resData)) {
+		origin.x = resData[0];
+		origin.y = resData[1];
+		origin.z = resData[2];
+
+		angles.x = resData[4];
+		angles.y = resData[5];
+		angles.z = resData[6];
+		angles.w = resData[7];
+
+		return true;
+	}
+
+	return false;
+}
+
 class CAfxEntityInstanceRef {
 public:
     static CAfxEntityInstanceRef * Aquire(CEntityInstance * pInstance) {
@@ -310,6 +342,35 @@ bool Hook_ClientEntitySystem2() {
     }
 
     return firstResult;    
+}
+
+void Hook_ClientEntitySystem3(HMODULE clientDll) {
+	// these two called one after each other
+	//
+	// 1808ce654 e8  d7  50       CALL       FUN_180623730
+	//           d5  ff
+	// 1808ce659 80  bd  e0       CMP        byte ptr [RBP + local_res8], 0x0
+	//           04  00  00  00
+	// 1808ce660 0f  84  c5       JZ         LAB_1808cf52b
+	//           0e  00  00
+	// 1808ce666 0f  b6  95       MOVZX      EDX, byte ptr [RBP + local_res10]
+	//           e8  04  00  00
+	// 1808ce66d 84  d2           TEST       DL,DL
+	// 1808ce66f 0f  84  b6       JZ         LAB_1808cf52b
+	//           0e  00  00
+	// 1808ce675 4c  8d  45  40   LEA        R8=>local_498, [RBP + 0x40]
+	// 1808ce679 48  8b  cf       MOV        RCX, RDI
+	// 1808ce67c e8  5f  67       CALL       FUN_180614de0
+	//           d4  ff
+	//
+	// Function where they called has "weapon_hand_R" string
+	// also it's 2th in vtable for ".?AV?$_Func_impl_no_alloc@V<lambda_2>@?8??FrameUpdateBegin@CPlayerPawnFrameUpdateSystem@@QEAAXXZ@X$$V@std@@"
+	// vtable could be find near "AsyncFrameUpdate" where it queues it
+
+	if (auto startAddr = getAddress(clientDll, "E8 ?? ?? ?? ?? 80 BD ?? ?? ?? ?? 00 0F 84 ?? ?? ?? ?? 0F B6 95 ?? ?? ?? ?? 84 D2 0F 84 ?? ?? ?? ?? 4C 8D 45 ?? 48 8B CF E8 ?? ?? ?? ??")) {
+		org_LookupAttachment = (org_LookupAttachment_t)(startAddr + 5 + *(int32_t*)(startAddr + 1));
+		org_GetAttachment = (org_GetAttachment_t)(startAddr + 40 + 5 + *(int32_t*)(startAddr + 40 + 1));
+	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 }
 
 int GetHighestEntityIndex() {

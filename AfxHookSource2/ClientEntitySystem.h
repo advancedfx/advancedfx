@@ -9,6 +9,8 @@ bool Hook_ClientEntitySystem( void* pEntityList, void * pFnGetHighestEntityItera
 
 bool Hook_ClientEntitySystem2();
 
+void Hook_ClientEntitySystem3(HMODULE clientDll);
+
 bool Hook_GetSplitScreenPlayer( void* pAddr);
 
 class CAfxEntityInstanceRef;
@@ -58,6 +60,9 @@ public:
     SOURCESDK::CS2::CBaseHandle GetObserverTarget();
 
     SOURCESDK::CS2::CBaseHandle GetHandle();
+
+    uint8_t LookupAttachment(const char* attachmentName);
+	bool GetAttachment(uint8_t idx, SOURCESDK::Vector &origin, SOURCESDK::Quaternion &angles);
 };
 
 typedef int (__fastcall * GetHighestEntityIndex_t)(void * pEntityList, bool bUnknown);
