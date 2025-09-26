@@ -420,6 +420,14 @@ code
 
 https://github.com/1mpulse
 
+#### paper
+
+2025-09-26 - 2025-09-26
+
+research
+
+https://github.com/papesgit
+
 ## Donors
 
 Thanks to our donors:
