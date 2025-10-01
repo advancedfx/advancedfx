@@ -13,8 +13,10 @@
 #include "../shared/StringTools.h"
 
 #include "WrpConsole.h"
+#include "hlaeFolder.h"
 
 #include <string>
+#include <filesystem>
 
 extern SOURCESDK::CS2::ISource2EngineToClient * g_pEngineToClient;
 
@@ -277,6 +279,17 @@ CON_COMMAND(mirv_script_load, "Load script from file and execute")
     int argC = args->ArgC();
 
     if(2 <= argC) {
+        std::filesystem::path userPath = args->ArgV(1);
+        bool isRel = userPath.is_relative();
+
+        if(isRel) {
+            std::string relPath(GetHlaeFolder());
+            relPath.append("resources\\AfxHookSource2\\snippets\\");
+            relPath.append(userPath.string());
+            AfxHookSourceRs_Engine_Load(relPath.c_str());
+            return;
+        }
+
         AfxHookSourceRs_Engine_Load(args->ArgV(1));
     }
 }
