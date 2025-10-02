@@ -6,6 +6,8 @@ Basically, it allows to run javascript scripts in boajs, which is ECMAScript eng
 
 In game you can use `mirv_script_load` to load a script from a file and `mirv_script_exec` to execute inline.
 
+Since HLAE 2.187.2 `mirv_script_load` supports relative path to HLAE snippets folder located at `path-to-HLAE\resources\AfxHookSource2\snippets`
+
 # Security warning
 
 **It is very unsafe to execute _untrusted_ scripts**.
