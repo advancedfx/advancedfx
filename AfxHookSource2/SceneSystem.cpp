@@ -132,11 +132,15 @@ CMaterial2** CResourceSystem::PreCache (const char* name) {
 
 std::string previousSkybox = "";
 std::unordered_map<std::string, bool> cachedMaterials = {};
+bool didSaveOriginalSkyColor = false;
+uint32_t orgSkyColor = -1;
+float orgSkyBrightness = 0.0f;
 
 void resetCachedMaterials () {
 	previousSkybox = "";
 	g_CustomSky.currentSkyName = "";
 	cachedMaterials.clear();
+	didSaveOriginalSkyColor = false;
 }
 
 void* new_ForceUpdateSkybox(void* This) {
@@ -164,8 +168,16 @@ void* new_ForceUpdateSkybox(void* This) {
 	}
 
 	if (g_CustomSky.color.use) {
+		if (!didSaveOriginalSkyColor) {
+			orgSkyColor = *(uint32_t*)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_vTintColor);
+			orgSkyBrightness = *(float*)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_flBrightnessScale);
+			didSaveOriginalSkyColor = true;
+		}
 		*(uint32_t*)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_vTintColor) = afxUtils::rgbaToHex(g_CustomSky.color.value);
 		*(float*)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_flBrightnessScale) = g_CustomSky.brightness;
+	} else if (didSaveOriginalSkyColor) {
+		*(uint32_t*)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_vTintColor) = orgSkyColor;
+		*(float*)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_flBrightnessScale) = orgSkyBrightness;
 	}
 
 	return org_ForceUpdateSkybox(This);
@@ -197,6 +209,10 @@ void updateSkyboxEntities() {
 
 	if (g_CustomSky.currentSkyName.size() == 0 && previousSkybox.size() != 0) {
 		previousSkybox = "";
+	}
+
+	if (!g_CustomSky.color.use && didSaveOriginalSkyColor) {
+		didSaveOriginalSkyColor = false;
 	}
 
 }
