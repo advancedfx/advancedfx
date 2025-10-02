@@ -442,20 +442,21 @@ typedef void* (__fastcall * ForceUpdateSkybox_t)(void* This);
 extern ForceUpdateSkybox_t org_ForceUpdateSkybox;
 
 bool getAddressesFromClient(HMODULE clientDll) {
+	bool res = true;
 	// can be found with offsets to m_flFlashScreenshotAlpha, m_flFlashDuration, m_flFlashMaxAlpha, etc. 
 	// In this function values being assigned to all these offsets at once
 	size_t g_Original_flashFunc_addr = getAddress(clientDll, "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 0F 29 74 24 ?? 33 C9");
 	if(g_Original_flashFunc_addr == 0) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));
-		return false;
+		res = false;
 	}
 
 	// called in func with 'cs_win_panel_match' in the end in if/else statement
 	// in func itself it starts with 'if (*(char *)(param_1 + 8) == '\0')'
-	size_t g_Original_EOM_addr = getAddress(clientDll, "40 56 41 55 48 83 EC ?? 80 79");
+	size_t g_Original_EOM_addr = getAddress(clientDll, "48 8B C4 41 55 41 56 48 83 EC ?? 80 79");
 	if(g_Original_EOM_addr == 0) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));
-		return false;
+		res = false;
 	}
 
 	// See where spec_show_xray is checked, has offsets to glowProperty
@@ -463,7 +464,7 @@ bool getAddressesFromClient(HMODULE clientDll) {
 	size_t g_Original_setGlowProps_addr = getAddress(clientDll, "48 89 5C 24 ?? 57 48 83 EC ?? 48 8B 05 ?? ?? ?? ?? 48 8B D9 F3 0F 10 41");
 	if (g_Original_setGlowProps_addr == 0) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));
-		return false;
+		res = false;
 	}
 
 	g_Original_flashFunc = (g_Original_flashFunc_t)(g_Original_flashFunc_addr);
@@ -500,7 +501,7 @@ bool getAddressesFromClient(HMODULE clientDll) {
 		org_ForceUpdateSkybox = (ForceUpdateSkybox_t)(addr + 2 + 7 + offset);
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-	return true;
+	return res;
 }
 
 void HookMirvCommands(HMODULE clientDll) {
