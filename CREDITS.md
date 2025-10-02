@@ -422,9 +422,9 @@ https://github.com/1mpulse
 
 #### paper
 
-2025-09-26 - 2025-09-26
+2025-09-26 - 2025-10-01
 
-research
+research, code
 
 https://github.com/papesgit
 
