@@ -6,7 +6,7 @@
         - https://learn.microsoft.com/en-us/windows/win32/msi/productversion
   -->
   <Package
-    Version="2.187.1"
+    Version="2.187.2"
     Name="!(loc.ApplicationName)" Manufacturer="!(loc.Manufacturer)" UpgradeCode="{33FEF63B-4A17-4D59-ABC9-B7A06BD07F07}"
   >
     <MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeErrorMessage)" />
