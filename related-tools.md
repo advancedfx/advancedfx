@@ -8,6 +8,10 @@ These plugins and scripts assist you with importing HLAE camera motion data in v
 
 **After Effects** Import Script: [HLAE CamIO To AE](https://github.com/xNWP/HLAE-CamIO-To-AE/releases) by [xNWP](https://github.com/xNWP)
 
+**Nuke** Import Script: [HLAE CamIO To Nuke](https://github.com/Devostated/HLAE-CamIO-To-Nuke/releases) by [Devostated](https://github.com/Devostated)
+
+**Davinci Resolve** Import Script: [HLAE CamIO to Davinci](https://github.com/ChetdeJong/HLAE_CamIO_To_Davinci/releases) by [ChetdeJong](https://github.com/ChetdeJong)
+
 **Blender** Plugins: [afx-blender-scripts](https://github.com/advancedfx/afx-blender-scripts)
 
 **Cinema4D** Import Script: [HLAE CamIO To Cinema4D](https://github.com/xNWP/HLAE-CamIO-To-C4D/releases) by [xNWP](https://github.com/xNWP)  
@@ -77,4 +81,5 @@ Other plugins and scripts to make your life easier.
   Managed CLR Library for controlling Half-Life Advanced Effects via the mirv_pgl function.
 * [SourceModelFixer](https://github.com/xNWP/SourceModelFixer) by [xNWP](https://github.com/xNWP)  
   Deletes corrupt .vtx files from Source games e.g. CS:GO.
+
 
