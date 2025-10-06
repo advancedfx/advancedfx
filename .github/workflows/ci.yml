@@ -1,12 +1,14 @@
 name: Build Release
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
+  merge_group:
+  pull_request:
+    branches: [main]
 
 jobs:
   build:
-    environment: ci
-  
     runs-on: windows-latest
 
     steps:
