@@ -906,7 +906,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 	// engine_CEngineClient_IsWindowedMode_vtableofs
 	//
 	/*
-		The VTABLE offset can be found in the function referencing "sv_restrict_aspect_ratio_fov" / the CVAR:
+		The VTABLE offset can be found in client.dll in the function referencing "sv_restrict_aspect_ratio_fov" / the CVAR:
 
 		Example is 0x228 for current CSS:
 
@@ -3267,3 +3267,4 @@ push    0
 		} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}		
 }
+
