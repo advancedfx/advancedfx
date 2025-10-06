@@ -150,6 +150,7 @@ AFXADDR_DEF(materialsystem_CMaterialSystem_SwapBuffers)
 AFXADDR_DEF(materialsystem_CMatCallQueue_QueueFunctor)
 AFXADDR_DEF(engine_CVideoMode_Common_WriteMovieFrame)
 AFXADDR_DEF(engine_HostError)
+AFXADDR_DEF(engine_CEngineClient_IsWindowedMode_vtableofs)
 
 void ErrorBox(char const * messageText);
 
@@ -900,6 +901,45 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 				} else ErrorBox(MkErrStr(__FILE__, __LINE__));			
 			} break;
 		}		
+	}
+
+	// engine_CEngineClient_IsWindowedMode_vtableofs
+	//
+	/*
+		The VTABLE offset can be found in the function referencing "sv_restrict_aspect_ratio_fov" / the CVAR:
+
+		Example is 0x228 for current CSS:
+
+		param_1 = (int *)(local_18 + (int)param_1);
+		if ((DAT_1051ed88 & 1) == 0) {
+			DAT_1051ed88 = DAT_1051ed88 | 1;
+			FUN_102acc60("sv_restrict_aspect_ratio_fov");
+		}
+		fVar11 = (float10)(**(code **)(*DAT_104dc478 + 0x17c))();
+		fVar11 = fVar11 * (float10)0.75;
+		local_10 = (float)fVar11;
+		local_1c = (float)fVar11;
+		local_8 = (float)fVar11;
+		if ((((0 < *(int *)(DAT_1051ed84 + 0x30)) &&
+				(cVar2 = (**(code **)(*DAT_104dc478 + 0x228))(), cVar2 != '\0')) &&
+			(1 < *(int *)(PTR_DAT_104a014c + 0x14))) || (*(int *)(DAT_1051ed84 + 0x30) == 2)) {
+			if (1.3875 <= local_1c) {
+			local_8 = 1.3875;
+			}
+			else {
+			local_8 = local_1c;
+			}
+		}	
+	*/	
+	{
+		switch(sourceSdkVer) {
+			case SourceSdkVer_CSSV84:
+				AFXADDR_SET(engine_CEngineClient_IsWindowedMode_vtableofs, 133);
+				break;
+			case SourceSdkVer_CSS:
+				AFXADDR_SET(engine_CEngineClient_IsWindowedMode_vtableofs, 138);
+				break;
+		}
 	}
 }
 
