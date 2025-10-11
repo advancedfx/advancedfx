@@ -24,7 +24,7 @@ declare namespace AdvancedfxCVar {
      * number - Int16, UInt16, Int32, UInt32, Float32, Float64
      * BigInt - Int64, Int64
      * string - String
-     * Color - Vector4(r,g,b,a)
+     * Vector4 - Color(r,g,b,a)
      * Vector2 - Vector2(x,y)
      * Vector3 - Vector3(x,y,z), Qangle(x,y,z)
      * Vector4 - Vector4(x,y,z,w)
