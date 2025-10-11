@@ -11,17 +11,16 @@ typedef SOURCESDK::CS2::Cvar_s CVarRs_t;
 
 extern "C" size_t afx_hook_source2_find_convar_index(const char * psz_name) {
     if(SOURCESDK::CS2::g_pCVar) {
-        return SOURCESDK::CS2::g_pCVar->FindConVar(psz_name, false).Get();
+        SOURCESDK::CS2::ConVarHandle handle = SOURCESDK::CS2::g_pCVar->FindConVar(psz_name, false);
+        return handle.IsValid() ? handle.Get() : -1;
     }
     return -1;
 }
 
-extern "C" FFIBool afx_hook_source2_is_convar_index_valid(size_t index) {
-    return BOOL_TO_FFIBOOL(-1 != index);
-}
-
 extern "C" CVarRs_t * afx_hook_source2_get_convar(size_t index) {
-    if(SOURCESDK::CS2::g_pCVar) {
+    if(SOURCESDK::CS2::g_pCVar
+        && index < SOURCESDK_CS2_MAX_VALID_CVARS // otherwise crash / invalid pointer ... :)
+    ) {
         return SOURCESDK::CS2::g_pCVar->GetCvar(index);
     }
 

@@ -153,8 +153,6 @@ pub struct QAngle {
 
 extern "C" {
     pub(crate) fn afx_hook_source2_find_convar_index(psz_name: *const c_char) -> usize;
-
-    pub(crate) fn afx_hook_source2_is_convar_index_valid(index: usize) -> bool;
     
     pub(crate) fn afx_hook_source2_get_convar(index: usize) -> * mut CVar;
 

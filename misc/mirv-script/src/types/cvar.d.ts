@@ -41,25 +41,17 @@ declare namespace AdvancedfxCVar {
 declare class AdvancedfxCVar {
 
     /**
-     * Determine if there's is a cvar yet with this index.
-     * @param index the index of the cvar, typical values are in [0,65535].
-     */
-    static isValidIndex(index: number): boolean;
-
-    /**
-     * Find a cvar by name.
+     * Find a non-hidden cvar by name.
      * @remarks Hidden cvars can NOT be accessed this way.
-     * @throws Error
-     * If cvar can not be found (yet).
-     */
-    constructor(name: string);
+    */
+    static getIndexFromName(name: string): number | undefined;
 
     /**
      * Find a cvar by index
      * @remarks Hidden cvars CAN be accessed this way.
-     * Use AdvancedfxCVar.isValidIndex to determine if an index is valid in advance.
+     * @param index Hint: currently sane possible values are in [0,8191].
      * @throws Error
-     * If cvar can not be found (yet).
+     * If cvar can not be found for this index (yet).
      */
     constructor(index: number);
 

@@ -50,13 +50,16 @@ impl CVar {
         Err(advancedfx::js::errors::make_error!(JsNativeError::typ(), "'this' is not a AdvancedfxCVar object", context).into())
     }
 
-
-    fn is_valid_index(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+    fn get_index_from_name(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         if 1 == args.len() {
-            if let JsValue::Integer(index) = args[0] {
-                let result = unsafe {advancedfx::cvar::afx_hook_source2_is_convar_index_valid(index as usize)};
-                return Ok(JsValue::Boolean(result));
-            }
+            if let Ok(value) = args[0].to_string(context) {
+                let c_string = std::ffi::CString::new(value.to_std_string_escaped()).unwrap();
+                let index = unsafe {advancedfx::cvar::afx_hook_source2_find_convar_index(c_string.as_ptr())};
+                if usize::MAX == index {
+                    return Ok(JsValue::Undefined);
+                }
+                return Ok(JsValue::Integer(index as i32));
+            }      
         }
         Err(advancedfx::js::errors::error_arguments(context).into())
     }
@@ -417,26 +420,12 @@ impl Class for CVar {
         context: &mut Context,
     ) -> JsResult<Self> {
         if 1 == args.len() {
-            match &args[0] {
-                JsValue::String(js_string) => {
-                    let c_string = std::ffi::CString::new(js_string.to_std_string_escaped()).unwrap();
-                    let index = unsafe { advancedfx::cvar::afx_hook_source2_find_convar_index(c_string.as_ptr()) };
-                    let cvar = unsafe { advancedfx::cvar::afx_hook_source2_get_convar(index) };
-                    if cvar.is_null() {
-                        return Err(advancedfx::js::errors::make_error!(JsNativeError::error(),"not a valid cvar", context).into());
-                    }
-                    return Ok(CVar::new(cvar));
+            if let Ok(index) = args[0].to_i32(context) {
+                let cvar = unsafe { advancedfx::cvar::afx_hook_source2_get_convar(index as usize) };
+                if cvar.is_null() {
+                    return Err(advancedfx::js::errors::make_error!(JsNativeError::error(),"not a valid cvar", context).into());
                 }
-                JsValue::Integer(index) => {
-                    let cvar = unsafe { advancedfx::cvar::afx_hook_source2_get_convar(*index as usize) };
-                    if cvar.is_null() {
-                        return Err(advancedfx::js::errors::make_error!(JsNativeError::error(),"not a valid cvar", context).into());
-                    }
-                    return Ok(CVar::new(cvar));                
-                }
-                _=> {
-
-                }
+                return Ok(CVar::new(cvar));
             }
         }
         Err(advancedfx::js::errors::error_arguments(context).into())
@@ -446,10 +435,10 @@ impl Class for CVar {
         let realm = class.context().realm().clone();
         class
             .static_method(
-                js_string!("isValidIndex"),
+                js_string!("getIndexFromName"),
                 1,
-                NativeFunction::from_fn_ptr(CVar::is_valid_index),
-            )
+                NativeFunction::from_fn_ptr(CVar::get_index_from_name),
+            )        
             .accessor(
                 js_string!("name"),
                 Some(NativeFunction::from_fn_ptr(CVar::get_name).to_js_function(&realm)),
