@@ -28,14 +28,13 @@ declare namespace AdvancedfxCVar {
      * Type mappings (JS - AdvancedfxCVar.TypeEnum):
      * boolean - Bool,
      * number - Int16, UInt16, Int32, UInt32, Float32, Float64
-     * BigInt - Int64, Int64
+     * bigint - Int64, UInt64
      * string - String
-     * Color - Color
-     * Vector2 - Vector2
-     * Vector3 - Vector3, Qangle
-     * Vector4 - Vector4
+     * Vector2 - Vector2(x,y)
+     * Vector3 - Vector3(x,y,z), Qangle(x,y,z)
+     * Vector4 - Vector4(x,y,z,w), Color(r,g,b,a)
      */
-    type Type = boolean | number | bigint | string | Color | Vector2 | Vector3 | Vector4;
+    type Type = boolean | number | bigint | string | Vector2 | Vector3 | Vector4;
 }
 
 declare class AdvancedfxCVar {
