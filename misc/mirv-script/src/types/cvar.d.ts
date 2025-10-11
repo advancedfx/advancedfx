@@ -18,24 +18,18 @@ declare namespace AdvancedfxCVar {
         Qangle = 14
     }
 
-    type Vector2 = number[2];
-
-    type Vector3 = number[3];
-
-    type Vector4 = number[4];
-
     /**
      * Type mappings (JS - AdvancedfxCVar.TypeEnum):
      * boolean - Bool,
      * number - Int16, UInt16, Int32, UInt32, Float32, Float64
      * BigInt - Int64, Int64
      * string - String
-     * Color - Color
-     * Vector2 - Vector2
-     * Vector3 - Vector3, Qangle
-     * Vector4 - Vector4
+     * Color - Vector3(r,g,b,a)
+     * Vector2 - Vector2(x,y)
+     * Vector3 - Vector3(x,y,z), Qangle(x_pitch,y_aw,z_roll)
+     * Vector4 - Vector4(x,y,z,w)
      */
-    type Type = boolean | number | bigint | string | Color | Vector2 | Vector3 | Vector4;
+    type Type = boolean | number | bigint | string | Vector2 | Vector3 | Vector4;
 }
 
 declare class AdvancedfxCVar {
