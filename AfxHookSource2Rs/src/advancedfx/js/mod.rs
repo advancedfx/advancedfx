@@ -1,4 +1,5 @@
 pub mod campath;
+pub mod cvar;
 pub mod errors;
 pub mod math;
 
