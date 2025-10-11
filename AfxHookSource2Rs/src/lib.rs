@@ -2439,6 +2439,8 @@ impl AfxHookSource2Rs {
         advancedfx::js::campath::Iterator::add_to_context(&mut context);
         advancedfx::js::campath::Campath::add_to_context(&mut context);
 
+        advancedfx::js::cvar::CVar::add_to_context(&mut context);
+
         ConCommandsArgs::add_to_context(&mut context);
         ConCommandBox::add_to_context(&mut context);
 
