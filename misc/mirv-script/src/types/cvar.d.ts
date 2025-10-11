@@ -28,7 +28,7 @@ declare namespace AdvancedfxCVar {
      * Type mappings (JS - AdvancedfxCVar.TypeEnum):
      * boolean - Bool,
      * number - Int16, UInt16, Int32, UInt32, Float32, Float64
-     * bigint - Int64, Int64
+     * bigint - Int64, UInt64
      * string - String
      * Vector2 - Vector2(x,y)
      * Vector3 - Vector3(x,y,z), Qangle(x,y,z)
