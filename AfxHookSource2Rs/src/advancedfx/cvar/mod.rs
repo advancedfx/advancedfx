@@ -160,53 +160,57 @@ extern "C" {
 
     pub(crate) fn afx_hook_source2_get_convar_type(p_cvar:  * mut CVar) -> i16;
 
+    pub(crate) fn afx_hook_source2_get_convar_name(p_cvar:  * mut CVar, p_out_value: &mut *const c_char) -> bool;
+
+    pub(crate) fn  afx_hook_source2_get_convar_help_string(p_cvar:  * mut CVar, p_out_value: &mut *const c_char) -> bool;
+
     pub(crate) fn afx_hook_source2_get_convar_bool(p_cvar:  * mut CVar, mode: i8, p_out_value: &mut bool) -> bool;
 
-    // pub(crate) fn afx_hook_source2_set_convar_bool(p_cvar:  * mut CVar, mode: i8, value: bool) -> bool;
+    pub(crate) fn afx_hook_source2_set_convar_bool(p_cvar:  * mut CVar, mode: i8, value: bool) -> bool;
 
     pub(crate) fn afx_hook_source2_get_convar_int(p_cvar:  * mut CVar, mode: i8, p_out_value: &mut i32) -> bool;
 
-    // pub(crate) fn afx_hook_source2_set_convar_int(p_cvar:  * mut CVar, mode: i8, value: i32) -> bool;
+    pub(crate) fn afx_hook_source2_set_convar_int(p_cvar:  * mut CVar, mode: i8, value: i32) -> bool;
 
     pub(crate) fn afx_hook_source2_get_convar_int64(p_cvar:  * mut CVar, mode: i8, p_out_value: &mut i64) -> bool;
 
-    // pub(crate) fn afx_hook_source2_set_convar_int64(p_cvar:  * mut CVar, mode: i8, value: i64) -> bool;
+    pub(crate) fn afx_hook_source2_set_convar_int64(p_cvar:  * mut CVar, mode: i8, value: i64) -> bool;
 
     pub(crate) fn afx_hook_source2_get_convar_uint(p_cvar:  * mut CVar, mode: i8, p_out_value: &mut u32) -> bool;
 
-    // pub(crate) fn afx_hook_source2_set_convar_uint(p_cvar:  * mut CVar, mode: i8, value : u32) -> bool;
+    pub(crate) fn afx_hook_source2_set_convar_uint(p_cvar:  * mut CVar, mode: i8, value : u32) -> bool;
 
     pub(crate) fn afx_hook_source2_get_convar_uint64(p_cvar:  * mut CVar, mode: i8, p_out_value: &mut u64) -> bool;
 
-    // pub(crate) fn afx_hook_source2_set_convar_uint64(p_cvar:  * mut CVar, mode: i8, value : u64) -> bool;
+    pub(crate) fn afx_hook_source2_set_convar_uint64(p_cvar:  * mut CVar, mode: i8, value : u64) -> bool;
 
     pub(crate) fn afx_hook_source2_get_convar_double(p_cvar:  * mut CVar, mode: i8, p_out_value: &mut f64) -> bool;
 
-    // pub(crate) fn afx_hook_source2_set_convar_double(p_cvar:  * mut CVar, mode: i8, value : f64) -> bool;
+    pub(crate) fn afx_hook_source2_set_convar_double(p_cvar:  * mut CVar, mode: i8, value : f64) -> bool;
 
     pub(crate) fn afx_hook_source2_get_convar_string(p_cvar:  * mut CVar, mode: i8, p_out_value: &mut *const c_char) -> bool;
 
-    // pub(crate) fn afx_hook_source2_set_convar_string(p_cvar:  * mut CVar, mode: i8, value : * const c_char) -> bool;
+    pub(crate) fn afx_hook_source2_set_convar_string(p_cvar:  * mut CVar, mode: i8, value : * const c_char) -> bool;
 
     pub(crate) fn afx_hook_source2_get_convar_color(p_cvar:  * mut CVar, mode: i8, p_out_value: &mut Color) -> bool;
 
-    // pub(crate) fn afx_hook_source2_set_convar_color(p_cvar:  * mut CVar, mode: i8, value : * const Color) -> bool;
+    pub(crate) fn afx_hook_source2_set_convar_color(p_cvar:  * mut CVar, mode: i8, value : * const Color) -> bool;
 
     pub(crate) fn afx_hook_source2_get_convar_vec2(p_cvar:  * mut CVar, mode: i8, p_out_value: &mut Vector2) -> bool;
     
-    // pub(crate) fn afx_hook_source2_set_convar_vec2(p_cvar:  * mut CVar, mode: i8, value : * const Vector2) -> bool;
+    pub(crate) fn afx_hook_source2_set_convar_vec2(p_cvar:  * mut CVar, mode: i8, value : * const Vector2) -> bool;
 
     pub(crate) fn afx_hook_source2_get_convar_vec3(p_cvar:  * mut CVar, mode: i8, p_out_value: &mut Vector3) -> bool;
     
-    // pub(crate) fn afx_hook_source2_set_convar_vec3(p_cvar:  * mut CVar, mode: i8, value : * const Vector3) -> bool;
+    pub(crate) fn afx_hook_source2_set_convar_vec3(p_cvar:  * mut CVar, mode: i8, value : * const Vector3) -> bool;
 
     pub(crate) fn afx_hook_source2_get_convar_vec4(p_cvar:  * mut CVar, mode: i8, p_out_value: &mut Vector4) -> bool;
 
-    // pub(crate) fn afx_hook_source2_set_convar_vec4(p_cvar:  * mut CVar, mode: i8, value : * const Vector4) -> bool;
+    pub(crate) fn afx_hook_source2_set_convar_vec4(p_cvar:  * mut CVar, mode: i8, value : * const Vector4) -> bool;
 
     pub(crate) fn afx_hook_source2_get_convar_qangle(p_cvar:  * mut CVar, mode: i8, p_out_value: &mut QAngle) -> bool;
 
-    // pub(crate) fn afx_hook_source2_set_convar_qangle(p_cvar:  * mut CVar, mode: i8, value : * const QAngle) -> bool;
+    pub(crate) fn afx_hook_source2_set_convar_qangle(p_cvar:  * mut CVar, mode: i8, value : * const QAngle) -> bool;
 }
 
 pub(crate) fn afx_get_convar_type(p_cvar:  * mut CVar) -> CVarType {

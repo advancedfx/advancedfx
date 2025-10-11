@@ -47,7 +47,8 @@ declare class AdvancedfxCVar {
     static isValidIndex(index: number): boolean;
 
     /**
-     * Find a cvar by name
+     * Find a cvar by name.
+     * @remarks Hidden cvars can NOT be accessed this way.
      * @throws Error
      * If cvar can not be found (yet).
      */
@@ -55,7 +56,8 @@ declare class AdvancedfxCVar {
 
     /**
      * Find a cvar by index
-     * @remarks Use AdvancedfxCVar.isValidIndex to determine if an index is valid in advance.
+     * @remarks Hidden cvars CAN be accessed this way.
+     * Use AdvancedfxCVar.isValidIndex to determine if an index is valid in advance.
      * @throws Error
      * If cvar can not be found (yet).
      */
@@ -63,11 +65,15 @@ declare class AdvancedfxCVar {
 
     getType(): AdvancedfxCVar.TypeEnum;
 
+    readonly name: string;
+
+    readonly helpString: string | undefined;
+
     /**
-     * get CVar value
+     * get / set CVar value
      * @remarks for type mappings see AdvancedfxCVar.Type.
      */
-    readonly value: AdvancedfxCVar.Type;
+    value: AdvancedfxCVar.Type;
 
     /**
      * get CVar default value

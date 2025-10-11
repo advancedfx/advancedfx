@@ -85,6 +85,22 @@ extern "C" int16_t afx_hook_source2_get_convar_type(CVarRs_t * p_cvar) {
     return static_cast<int16_t>(CVarTypeRs_e::Invalid);
 }
 
+extern "C" FFIBool afx_hook_source2_get_convar_name(CVarRs_t * p_cvar, const char * &outValue) {
+    if(p_cvar) {
+        outValue = p_cvar->m_pszName;
+        return FFIBOOL_TRUE;
+    }
+    return FFIBOOL_FALSE;
+}
+
+extern "C" FFIBool afx_hook_source2_get_convar_help_string(CVarRs_t * p_cvar, const char * &outValue) {
+    if(p_cvar) {
+        outValue = p_cvar->m_pszHelpString;
+        return FFIBOOL_TRUE;
+    }
+    return FFIBOOL_FALSE;
+}
+
 enum class CVarGetMode_e : int8_t {
     Value = 0,
     DefaultValue = 1,
