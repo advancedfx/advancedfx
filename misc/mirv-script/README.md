@@ -18,7 +18,7 @@ The scripting is meant to extend HLAE, as such scripts can have a huge degree of
 
 1. Clone repo
 2. `cd misc/mirv-script`
-3. Install dependencies with `npm i`
+3. Install dependencies with `npm ci`
 4. Run `npm run build` to transpile examples.
 
 # Usage
