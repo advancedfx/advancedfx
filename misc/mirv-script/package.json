@@ -14,20 +14,20 @@
 		"tsc": "tsc"
 	},
 	"devDependencies": {
-		"@eslint/compat": "^1.2.9",
-		"@types/node": "^22.15.29",
-		"@types/ws": "^8.18.1",
-		"eslint": "^9.28.0",
-		"eslint-config-prettier": "^10.1.5",
-		"eslint-plugin-check-file": "^3.2.0",
-		"eslint-plugin-prettier": "^5.4.1",
-		"globals": "^16.2.0",
-		"prettier": "^3.5.3",
-		"typescript": "^5.8.3",
-		"typescript-eslint": "^8.33.0"
+		"@eslint/compat": "1.2.9",
+		"@types/node": "22.15.29",
+		"@types/ws": "8.18.1",
+		"eslint": "9.28.0",
+		"eslint-config-prettier": "10.1.5",
+		"eslint-plugin-check-file": "3.2.0",
+		"eslint-plugin-prettier": "5.4.1",
+		"globals": "16.2.0",
+		"prettier": "3.5.3",
+		"typescript": "5.8.3",
+		"typescript-eslint": "8.33.0"
 	},
 	"dependencies": {
-		"simple-websockets": "^2.0.2",
-		"ws": "^8.18.2"
+		"simple-websockets": "2.0.2",
+		"ws": "8.18.2"
 	}
 }
