@@ -29,6 +29,8 @@ struct CBufferStringWrapper {
 typedef void* (__fastcall * ForceUpdateSkybox_t)(void* This);
 ForceUpdateSkybox_t org_ForceUpdateSkybox = nullptr;
 
+uint32_t g_Skybox_UnkPtr_Offset;
+
 struct CustomSkyState {
 	std::string currentSkyName = "";
 
@@ -98,7 +100,7 @@ void CResourceSystem::GetMaterials(GetMaterialsArrayResult* out) {
 	// (**(code **)(*ResourceSystem + 0x128))(ResourceSystem,0x74616d76,local_198, 7);
 	typedef void (__fastcall * GetMaterials_t)(void* This, uint64_t magic, GetMaterialsArrayResult* out, uint8_t unk);
 	void** vtable = *(void***)(this);
-	auto org_GetMaterials = (GetMaterials_t)vtable[37];
+	auto org_GetMaterials = (GetMaterials_t)vtable[32];
 
 	org_GetMaterials(this, 0x74616d76, out, 7);
 }
@@ -109,7 +111,7 @@ CMaterial2** CResourceSystem::PreCache (const char* name) {
 	// There are 2 precache functions in vtable next to each other, this is first one
 	typedef CMaterial2** (__fastcall * PreCacheFn_t)(void* This, CBufferStringWrapper* name, const char* unk);
 	void** vtable = *(void***)(this);
-	auto org_PreCache = (PreCacheFn_t)vtable[45];
+	auto org_PreCache = (PreCacheFn_t)vtable[40];
 
 	// client dll
 	// see where func is called with "FixupResourceName: Illegal full path passed in (\"%s\")!\n" 
@@ -154,9 +156,9 @@ void* new_ForceUpdateSkybox(void* This) {
 		org_FindMaterial(nullptr, &newMat, g_CustomSky.currentSkyName.c_str());
 
 		if (0 != newMat) {
-			auto counter = *(int32_t*)((u_char*)newMat + 0x18);
+			auto counter = *(uint32_t*)((u_char*)newMat + 0x20);
 			counter = counter + 1;
-			*(int*)((u_char*)newMat + 0x18) = counter;
+			*(uint32_t*)((u_char*)newMat + 0x20) = counter;
 			*(CMaterial2***)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_hSkyMaterial) = newMat;
 		}
 	} else if (previousSkybox.size() != 0) {
@@ -201,8 +203,7 @@ void updateSkyboxEntities() {
 
 			// we have to remove pointer to object, so it can update
 			// see dissasembly for the update function
-			// TODO: maybe get this offset from pattern matching
-			*(void**)((u_char*)ent + 0xF18) = nullptr;
+			*(void**)((u_char*)ent + g_Skybox_UnkPtr_Offset) = nullptr;
 			new_ForceUpdateSkybox(ent);
 		}
 	}

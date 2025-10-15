@@ -2018,8 +2018,31 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
     if(g_bRenderContextDebug) {
         const char * saveFmt = fmt ? fmt : "[nullptr]";
 
+		// rendersystemdx11.dll
+		// vtable for CRenderContextDx11
+		// find fn with "CRenderContextDx11::EndQuery - Bad query or D3D device\n"
+		// then in vtable the one we need is 15 indexes later
+		// it starts like this
+		// 
+		// {
+		// undefined8 *puVar1;
+		// void *pvVar2;
+		// undefined8 uVar3;
+		// undefined4 uStack_24;
+		// undefined4 uStack_14;
+		//
+		// if ((*(int *)(param_1 + 0x428) - *(int *)(param_1 + 0x420)) + -0x10 < 0x10) {
+		//   pvVar2 = CUtlMemoryPoolBase::Alloc((CUtlMemoryPoolBase *)&DAT_180493000);
+		//   if (*(longlong *)(param_1 + 0x418) == 0) {
+		//     uVar3 = FUN_180014600();
+		//     *(undefined8 *)(param_1 + 0x418) = uVar3;
+		//     FUN_180014860(uVar3);
+		//     (**(code **)**(undefined8 **)(param_1 + 0x410))
+		//               (*(undefined8 **)(param_1 + 0x410),*(undefined8 *)(param_1 + 0x418));
+		//   }
+
         if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-            auto fnQueueCallback = (void(__fastcall*)(void* pCRenderConStextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[137];
+            auto fnQueueCallback = (void(__fastcall*)(void* pCRenderConStextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[138];
             va_list args;
             va_start(args, fmt);
             fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CRenderSystemConsolePrint(1, saveFmt,args));
@@ -2035,13 +2058,13 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
         if(pszArg0 && 0 == strcmp("Player 0",pszArg0) && pszArg1) {
             if (0 == strcmp("ClearSmokeTargets (4)", pszArg1)) {
                 if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-                    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[137];
+                    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[138];
                     fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeMaybeDrawSmoke());
                 }
             }
             else if (0 == strcmp("ClearSmokeTargets", pszArg1)) {
                 if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-                    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[137];
+                    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[138];
                     fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackAfterMaybeSmokeDrawn());
                 }
             }
@@ -2054,7 +2077,7 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
         const char * pszArg0 = va_arg(args, const char *);
         if(pszArg0 && 0 == strcmp("CSGOHud",pszArg0)) {
             if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-                auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[137];
+                auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[138];
                 fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeUi());
             }
         }
@@ -2077,7 +2100,7 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr2(unsigned char
         const char* pszArg0 = va_arg(args, const char*);
         if (pszArg0 && 0 == strcmp("Player 0", pszArg0)) {
             if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-                auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[137];
+                auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[138];
                 fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackSetupViewPlayer0());
             }
         }
@@ -2087,7 +2110,7 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr2(unsigned char
         const char * saveFmt = fmt ? fmt : "[nullptr]";
 
         if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-            auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[137];
+            auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[138];
             va_list args;
             va_start(args, fmt);
             fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CRenderSystemConsolePrint(2, saveFmt, args));

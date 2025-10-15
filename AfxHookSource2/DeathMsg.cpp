@@ -1024,19 +1024,17 @@ void __fastcall My_Panorama_CStylePropertyWashColor_Clone(void * This, void * pT
 	}
 }
 
-bool getDeathMsgAddrs(HMODULE clientDll) {
+void getDeathMsgAddrs(HMODULE clientDll) {
 	// can be found with strings like "attacker" and "userid", etc. it basically takes all info from player_death event
-	size_t g_Original_handlePlayerDeath_addr = getAddress(clientDll, "48 89 4C 24 ?? 55 53 57 41 54 41 55 41 57 48 8D AC 24 ?? ?? ?? ?? B8");
-	if (g_Original_handlePlayerDeath_addr == 0) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));
-		return false;
-	};
+	if (auto addr = getAddress(clientDll, "48 89 4C 24 ?? 55 53 57 41 56 41 57 48 8D AC 24 ?? ?? ?? ?? B8 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 2B E0 48 8B 02")) {
+		g_Original_handlePlayerDeath = (g_Original_handlePlayerDeath_t)(addr);
+	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
 	// called in multiple places with strings like "userid", "attacker", etc. as second argument
-	size_t g_Original_hashString_addr = getAddress(clientDll, "48 89 74 24 10 57 48 81 EC C0 00 00 00 33 C0 48 8B FA 89 01 48 8B");
-	if (g_Original_hashString_addr == 0) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));	
-		return false;
-	};
+	// e.g. in function above too
+	if (auto addr = getAddress(clientDll, "4C 8B F2 48 8D 4C 24 ?? 48 8B D7 48 8B 58 ?? E8 ?? ?? ?? ??")) {
+		g_Original_hashString = (g_Original_hashString_t)(addr + 15 + 5 + *(int32_t*)(addr + 15 + 1));
+	} else ErrorBox(MkErrStr(__FILE__, __LINE__));	
 
 	// snippet from function handlePlayerDeath above	
 	//   if (*(char *)(lVar17 + 0xb8) == '\0') {
@@ -1053,14 +1051,9 @@ bool getDeathMsgAddrs(HMODULE clientDll) {
 	size_t g_Original_getLocalSteamId_addr = getAddress(clientDll,"40 53 48 83 EC ?? 8B 91 ?? ?? ?? ?? 48 8B D9 83 FA ?? 0F 84 ?? ?? ?? ?? 4C 8B 0D");
 	if (0 == g_Original_getLocalSteamId_addr) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));	
-		return false;
 	};
 
-	g_Original_handlePlayerDeath = (g_Original_handlePlayerDeath_t)(g_Original_handlePlayerDeath_addr);
-	g_Original_hashString = (g_Original_hashString_t)(g_Original_hashString_addr);
 	g_Original_getLocalSteamId = (g_Original_getLocalSteamId_t)(g_Original_getLocalSteamId_addr);
-
-	return true;
 };
 
 bool getPanoramaAddrsFromClient(HMODULE clientDll) {
@@ -1126,7 +1119,7 @@ LAB_1809a7de1
 
 	// function has "file://{resources}/layout/hud/hud.xml" string and also references CCSGO_Hud vftable
 	// hudpanel is DAT that param_1 assigned to     
-	size_t g_HudPanel_addr = getAddress(clientDll, "48 89 AE ?? ?? ?? ?? 89 AE ?? ?? ?? ?? C6 86 68 ?? ?? ?? 01 48 89 86 ?? ?? ?? ?? 48 89 35 ?? ?? ?? ?? e8 ?? ?? ?? ??");
+	size_t g_HudPanel_addr = getAddress(clientDll, "48 89 AE ?? ?? ?? ?? 89 AE ?? ?? ?? ?? C6 86 ?? ?? ?? ?? 01 48 89 86 ?? ?? ?? ?? 48 89 35 ?? ?? ?? ?? e8 ?? ?? ?? ??");
 	if (g_HudPanel_addr == 0) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));	
 		return false;
@@ -1158,7 +1151,7 @@ LAB_1809a7de1
 bool getPanoramaAddrs(HMODULE panoramaDll) {
 
 	// Refernces "CLayoutFile::LoadFromFile" string.
-	g_Org_Panorama_CLayoutFile_LoadFromFile = (Panorama_CLayoutFile_LoadFromFile_t)getAddress(panoramaDll,"4C 8B DC 53 55 57 41 54 48 83 EC ?? 49 89 73 ?? 48 8D 05 ?? ?? ?? ??");
+	g_Org_Panorama_CLayoutFile_LoadFromFile = (Panorama_CLayoutFile_LoadFromFile_t)getAddress(panoramaDll,"40 55 53 56 57 41 54 48 8B EC");
 	if(nullptr == g_Org_Panorama_CLayoutFile_LoadFromFile) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));	
 		return false;
@@ -1231,7 +1224,7 @@ void HookPanorama(HMODULE panoramaDll)
 void HookDeathMsg(HMODULE clientDll) {
 	if (g_MirvDeathMsgGlobals.hooked) return;
 
-    if (!getDeathMsgAddrs(clientDll)) return;
+    getDeathMsgAddrs(clientDll);
 	if (!getPanoramaAddrsFromClient(clientDll)) return;
 
 	DetourTransactionBegin();

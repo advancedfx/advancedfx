@@ -89,12 +89,14 @@ void initSchemaSystemOffsets()
 	bOk = bOk && getOffset(&g_clientDllOffsets.C_CSGameRules.m_gamePhase, "client.dll", "C_CSGameRules", "m_gamePhase");
 	bOk = bOk && getOffset(&g_clientDllOffsets.C_CSGameRules.m_nOvertimePlaying, "client.dll", "C_CSGameRules", "m_nOvertimePlaying");
 	bOk = bOk && getOffset(&g_clientDllOffsets.CEntityInstance.m_pEntity, "client.dll", "CEntityInstance", "m_pEntity");
-	bOk = bOk && getOffset(&g_clientDllOffsets.C_BaseEntity.m_iTeamNum, "client.dll", "C_BaseEntity", "m_iTeamNum");
-	bOk = bOk && getOffset(&g_clientDllOffsets.C_BaseEntity.m_hOwnerEntity, "client.dll", "C_BaseEntity", "m_hOwnerEntity");
 	bOk = bOk && getOffset(&g_clientDllOffsets.C_BaseEntity.m_pGameSceneNode, "client.dll", "C_BaseEntity", "m_pGameSceneNode");
+	bOk = bOk && getOffset(&g_clientDllOffsets.C_BaseEntity.m_iHealth, "client.dll", "C_BaseEntity", "m_iHealth");
+	bOk = bOk && getOffset(&g_clientDllOffsets.C_BaseEntity.m_hOwnerEntity, "client.dll", "C_BaseEntity", "m_hOwnerEntity");
+	bOk = bOk && getOffset(&g_clientDllOffsets.C_BaseEntity.m_iTeamNum, "client.dll", "C_BaseEntity", "m_iTeamNum");
 	bOk = bOk && getOffset(&g_clientDllOffsets.C_BaseModelEntity.m_Glow, "client.dll", "C_BaseModelEntity", "m_Glow");
 	bOk = bOk && getOffset(&g_clientDllOffsets.CGameSceneNode.m_pOwner, "client.dll", "CGameSceneNode", "m_pOwner");
 	bOk = bOk && getOffset(&g_clientDllOffsets.CGameSceneNode.m_pParent, "client.dll", "CGameSceneNode", "m_pParent");
+	bOk = bOk && getOffset(&g_clientDllOffsets.CGameSceneNode.m_vecAbsOrigin, "client.dll", "CGameSceneNode", "m_vecAbsOrigin");
 	bOk = bOk && getOffset(&g_clientDllOffsets.CBasePlayerController.m_iszPlayerName, "client.dll", "CBasePlayerController", "m_iszPlayerName");
 	bOk = bOk && getOffset(&g_clientDllOffsets.CBasePlayerController.m_steamID, "client.dll", "CBasePlayerController", "m_steamID");
 	bOk = bOk && getOffset(&g_clientDllOffsets.CBasePlayerController.m_hPawn, "client.dll", "CBasePlayerController", "m_hPawn");

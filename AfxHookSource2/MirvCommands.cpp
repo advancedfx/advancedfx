@@ -441,6 +441,8 @@ CON_COMMAND(mirv_glow, "Manage glow drawing.")
 typedef void* (__fastcall * ForceUpdateSkybox_t)(void* This);
 extern ForceUpdateSkybox_t org_ForceUpdateSkybox;
 
+extern uint32_t g_Skybox_UnkPtr_Offset;
+
 bool getAddressesFromClient(HMODULE clientDll) {
 	bool res = true;
 	// can be found with offsets to m_flFlashScreenshotAlpha, m_flFlashDuration, m_flFlashMaxAlpha, etc. 
@@ -499,6 +501,10 @@ bool getAddressesFromClient(HMODULE clientDll) {
 	if (auto addr = getAddress(clientDll, "33 DB 48 8D 05 ?? ?? ?? ?? 48 8B CF 48 89 44 24 ??")) {
 		auto offset = *(int32_t*)(addr + 5);
 		org_ForceUpdateSkybox = (ForceUpdateSkybox_t)(addr + 2 + 7 + offset);
+	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+	if (auto addr = getAddress(clientDll, "48 8b b7 ?? ?? ?? ?? 45 33 f6")) {
+		g_Skybox_UnkPtr_Offset =  *(uint32_t*)(addr + 3);
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 	return res;

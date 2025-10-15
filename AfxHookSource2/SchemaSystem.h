@@ -23,9 +23,10 @@ struct ClientDllOffsets_t {
 	} CEntityInstance;
 
 	struct C_BaseEntity {
+		ptrdiff_t m_pGameSceneNode = 0; // CGameSceneNode*
+		ptrdiff_t m_iHealth = 0; // int32
 		ptrdiff_t m_iTeamNum = 0; // uint8
 		ptrdiff_t m_hOwnerEntity = 0; // CHandle<C_BaseEntity>
-		ptrdiff_t m_pGameSceneNode = 0; // CGameSceneNode*
 	} C_BaseEntity;
 
 	struct C_BaseModelEntity {
@@ -35,6 +36,7 @@ struct ClientDllOffsets_t {
 	struct CGameSceneNode {
 	    ptrdiff_t m_pOwner = 0; // CEntityInstance*
         ptrdiff_t m_pParent = 0; // CGameSceneNode*
+        ptrdiff_t m_vecAbsOrigin = 0; // VectorWS
 	} CGameSceneNode;
 
 	struct C_BaseCSGrenadeProjectile {
