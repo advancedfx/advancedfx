@@ -4,24 +4,15 @@
 
 #include "WrpConsole.h"
 #include "Globals.h"
-#include "SchemaSystem.h"
+#include "ClientEntitySystem.h"
 
 #include "../shared/binutils.h"
-#include "../shared/AfxDetours.h"
 #include "../shared/StringTools.h"
 
-#include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
 #include "../deps/release/prop/cs2/sdk_src/public/igameevents.h"
-#include "../deps/release/prop/cs2/sdk_src/public/tier1/utlstring.h"
 #include "../deps/release/prop/cs2/sdk_src/public/entityhandle.h"
 
 #include "../deps/release/Detours/src/detours.h"
-
-#include <stdlib.h>
-#include <stdint.h>
-#include <string>
-#include <map>
-
 
 bool g_bDebug_GetPlayerName = false;
 bool g_bDebug_GetDecoratedPlayerName = false;
@@ -32,67 +23,61 @@ std::map<uint64_t,std::string> g_SteamId_To_ReplaceName;
 std::map<int,std::string> g_Index_To_DecoratedReplaceName;
 std::map<uint64_t,std::string> g_SteamId_To_DecoratedReplaceName;
 
-
-typedef SOURCESDK::CS2::CEntityHandle * (__fastcall * CEntitityIntance_GetRefEHandle_t)(void * This, SOURCESDK::CS2::CEntityHandle & handle);
-
 typedef const char * (__fastcall * CCSPlayerController_GetPlayerName_t)(void * This);
 CCSPlayerController_GetPlayerName_t g_Org_CCSPlayerController_GetPlayerName = nullptr;
 
-const char * __fastcall New_CCSPlayerController_GetPlayerName(void * This) {
+const char * __fastcall New_CCSPlayerController_GetPlayerName(CEntityInstance * This) {
     const char * result = g_Org_CCSPlayerController_GetPlayerName(This);
 
     if(g_bDebug_GetPlayerName) {
-        if(void * pEntityIndentity = *(void**)((unsigned char*)This + g_clientDllOffsets.CEntityInstance.m_pEntity)) {
-            SOURCESDK::CS2::CEntityHandle * pHandle = (SOURCESDK::CS2::CEntityHandle *)((unsigned char *)pEntityIndentity + 0x10);
-            advancedfx::Message("GetPlayerName: %i -> %s\n",pHandle->GetEntryIndex(),result);
-        }        
+		auto handle = This->GetHandle();
+		advancedfx::Message("GetPlayerName: %i -> %s\n", handle.GetEntryIndex(),result);
     }
 
     if(!g_Index_To_ReplaceName.empty()){
-        if(void * pEntityIndentity = *(void**)((unsigned char*)This + g_clientDllOffsets.CEntityInstance.m_pEntity)) {
-            SOURCESDK::CS2::CEntityHandle * pHandle = (SOURCESDK::CS2::CEntityHandle *)((unsigned char *)pEntityIndentity + 0x10);
-            auto it = g_Index_To_ReplaceName.find(pHandle->GetEntryIndex());
-            if(it != g_Index_To_ReplaceName.end()) {
-                result = it->second.c_str();
-            }
-        }
+		auto handle = This->GetHandle();
+		if (handle.IsValid()) {
+			auto it = g_Index_To_ReplaceName.find(handle.GetEntryIndex());
+			if(it != g_Index_To_ReplaceName.end()) {
+				result = it->second.c_str();
+			}
+		}
     }
 
     if(!g_SteamId_To_ReplaceName.empty()) {
-        uint64_t steamid = *(uint64_t*)((unsigned char*)This + g_clientDllOffsets.CBasePlayerController.m_steamID);
+        uint64_t steamid = This->GetSteamId();
         auto it = g_SteamId_To_ReplaceName.find(steamid);
         if(it!=g_SteamId_To_ReplaceName.end()) {
-                result = it->second.c_str();
+			result = it->second.c_str();
         }
     }
 
     return result;
 }
 
-typedef const char * (__fastcall * GetDecoratedPlayerName_t)(void *This_CCSPlayerController, char * pBuffer , unsigned int bufferSize, unsigned int maybeShortenLength);
+typedef const char * (__fastcall * GetDecoratedPlayerName_t)(CEntityInstance* This_CCSPlayerController, char * pBuffer , unsigned int bufferSize, unsigned int maybeShortenLength);
 GetDecoratedPlayerName_t g_Org_GetDecoratedPlayerName = nullptr;
-const char * __fastcall New_GetDecoratedPlayerName(void *This_CCSPlayerController, char * pBuffer , unsigned int bufferSize, unsigned int maybeShortenLength) {
+
+const char * __fastcall New_GetDecoratedPlayerName(CEntityInstance* This_CCSPlayerController, char * pBuffer , unsigned int bufferSize, unsigned int maybeShortenLength) {
     const char * result = g_Org_GetDecoratedPlayerName(This_CCSPlayerController, pBuffer, bufferSize, maybeShortenLength);
 
     if(g_bDebug_GetDecoratedPlayerName) {
-        if(void * pEntityIndentity = *(void**)((unsigned char*)This_CCSPlayerController + g_clientDllOffsets.CEntityInstance.m_pEntity)) {
-            SOURCESDK::CS2::CEntityHandle * pHandle = (SOURCESDK::CS2::CEntityHandle *)((unsigned char *)pEntityIndentity + 0x10);
-            advancedfx::Message("GetDecoratedPlayerName: %i -> %s\n",pHandle->GetEntryIndex(),result);
-        }        
+		auto handle = This_CCSPlayerController->GetHandle();
+		if (handle.IsValid()) advancedfx::Message("GetDecoratedPlayerName: %i -> %s\n", handle.GetEntryIndex(), result);
     }    
 
     if(!g_Index_To_DecoratedReplaceName.empty()){
-        if(void * pEntityIndentity = *(void**)((unsigned char*)This_CCSPlayerController + g_clientDllOffsets.CEntityInstance.m_pEntity)) {
-            SOURCESDK::CS2::CEntityHandle * pHandle = (SOURCESDK::CS2::CEntityHandle *)((unsigned char *)pEntityIndentity + 0x10);
-            auto it = g_Index_To_DecoratedReplaceName.find(pHandle->GetEntryIndex());
-            if(it != g_Index_To_DecoratedReplaceName.end()) {
-                strncpy(pBuffer,it->second.c_str(),bufferSize);
-            }
-        }
+		auto handle = This_CCSPlayerController->GetHandle();
+		if (handle.IsValid()) {
+			auto it = g_Index_To_DecoratedReplaceName.find(handle.GetEntryIndex());
+			if(it != g_Index_To_DecoratedReplaceName.end()) {
+				strncpy(pBuffer,it->second.c_str(),bufferSize);
+			}
+		}
     }
 
     if(!g_SteamId_To_DecoratedReplaceName.empty()) {
-        uint64_t steamid = *(uint64_t*)((unsigned char*)This_CCSPlayerController + g_clientDllOffsets.CBasePlayerController.m_steamID);
+        uint64_t steamid = This_CCSPlayerController->GetSteamId();
         auto it = g_SteamId_To_DecoratedReplaceName.find(steamid);
         if(it!=g_SteamId_To_DecoratedReplaceName.end()) {
            strncpy(pBuffer,it->second.c_str(),bufferSize);
@@ -110,19 +95,15 @@ void HookReplaceName(HMODULE clientDll)
 
         // GetDecoratedPlayerName
         // references "SFUI_bot_decorated_name"       
-	    {
-            Afx::BinUtils::ImageSectionsReader sections((HMODULE)clientDll);
-            Afx::BinUtils::MemRange textRange = sections.GetMemRange();
-            Afx::BinUtils::MemRange result = FindPatternString(textRange, "44 89 44 24 18 48 89 54 24 10 55 53 56 57 41 54 41 55 41 56 41 57 48 8d ac 24 28 f5 ff ff");
-            if (!result.IsEmpty()) {
-                g_Org_GetDecoratedPlayerName = (GetDecoratedPlayerName_t)result.Start;	
-                DetourTransactionBegin();
-                DetourUpdateThread(GetCurrentThread());
-                DetourAttach(&(PVOID&)g_Org_GetDecoratedPlayerName, New_GetDecoratedPlayerName);
-                if(NO_ERROR != DetourTransactionCommit()) ErrorBox(MkErrStr(__FILE__, __LINE__));
-            }
-            else ErrorBox(MkErrStr(__FILE__, __LINE__));
-	    }
+
+		g_Org_GetDecoratedPlayerName = (GetDecoratedPlayerName_t)getAddress(clientDll, "44 89 44 24 18 48 89 54 24 10 55 53 56 57 41 54 41 55 41 56 41 57 48 8d ac 24 28 f5 ff ff");	
+		if (g_Org_GetDecoratedPlayerName != 0) {
+			DetourTransactionBegin();
+			DetourUpdateThread(GetCurrentThread());
+			DetourAttach(&(PVOID&)g_Org_GetDecoratedPlayerName, New_GetDecoratedPlayerName);
+			if(NO_ERROR != DetourTransactionCommit()) ErrorBox(MkErrStr(__FILE__, __LINE__));
+		} 
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
         /*
             GetDecoratedPlayerName references a function on "?AVCCSPlayerController@@" vtable as follows:
