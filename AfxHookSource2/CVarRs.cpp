@@ -56,7 +56,7 @@ extern "C" int16_t afx_hook_source2_get_convar_type(CVarRs_t * p_cvar) {
         case SOURCESDK::CS2::EConVarType_UInt16:
             return static_cast<int16_t>(CVarTypeRs_e::UInt16);
         case SOURCESDK::CS2::EConVarType_Int32:
-            return static_cast<int16_t>(CVarTypeRs_e::UInt32);
+            return static_cast<int16_t>(CVarTypeRs_e::Int32);
         case SOURCESDK::CS2::EConVarType_UInt32:
             return static_cast<int16_t>(CVarTypeRs_e::UInt32);
         case SOURCESDK::CS2::EConVarType_Int64:
