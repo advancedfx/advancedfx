@@ -65,8 +65,8 @@ impl CVar {
     }
 
     fn get_value_ex(this: &JsValue, context: &mut Context, get_mode: advancedfx::cvar::CVarGetMode) -> JsResult<JsValue> {
-        let object = this.as_object().ok_or(Self::error_typ(context).unwrap_err())?;
-        let object_inner = object.downcast_ref::<CVar>().ok_or(Self::error_typ(context).unwrap_err())?;
+        let object = this.as_object().ok_or_else(|| Self::error_typ(context).unwrap_err())?;
+        let object_inner = object.downcast_ref::<CVar>().ok_or_else(|| Self::error_typ(context).unwrap_err())?;
 
         let p_cvar = object_inner.native;
         let get_mode_i8 = get_mode as i8;
@@ -181,8 +181,8 @@ impl CVar {
     }
 
     fn set_value_ex(this: &JsValue, args: &[JsValue], context: &mut Context, get_mode: advancedfx::cvar::CVarGetMode) -> JsResult<JsValue> {
-        let object = this.as_object().ok_or(Self::error_typ(context).unwrap_err())?;
-        let object_inner = object.downcast_ref::<CVar>().ok_or(Self::error_typ(context).unwrap_err())?;
+        let object = this.as_object().ok_or_else(|| Self::error_typ(context).unwrap_err())?;
+        let object_inner = object.downcast_ref::<CVar>().ok_or_else(|| Self::error_typ(context).unwrap_err())?;
         if 1 != args.len() { return Err(advancedfx::js::errors::error_arguments(context).into()) };
 
         let p_cvar = object_inner.native;
@@ -367,8 +367,8 @@ impl CVar {
     }   
 
     fn get_type(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
-        let object = this.as_object().ok_or(Self::error_typ(context).unwrap_err())?;
-        let object_inner = object.downcast_ref::<CVar>().ok_or(Self::error_typ(context).unwrap_err())?;
+        let object = this.as_object().ok_or_else(|| Self::error_typ(context).unwrap_err())?;
+        let object_inner = object.downcast_ref::<CVar>().ok_or_else(|| Self::error_typ(context).unwrap_err())?;
 
         let p_cvar = object_inner.native;
         let cvar_type = advancedfx::cvar::afx_get_convar_type(p_cvar);
@@ -377,8 +377,8 @@ impl CVar {
     }
 
     fn get_name(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
-        let object = this.as_object().ok_or(Self::error_typ(context).unwrap_err())?;
-        let object_inner = object.downcast_ref::<CVar>().ok_or(Self::error_typ(context).unwrap_err())?;
+        let object = this.as_object().ok_or_else(|| Self::error_typ(context).unwrap_err())?;
+        let object_inner = object.downcast_ref::<CVar>().ok_or_else(|| Self::error_typ(context).unwrap_err())?;
 
         let p_cvar = object_inner.native;
         let mut result: *const c_char = std::ptr::null();
@@ -391,8 +391,8 @@ impl CVar {
         Ok(JsValue::Undefined) // This probably will never happen, just here in case.
     }
     fn get_help_string(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
-        let object = this.as_object().ok_or(Self::error_typ(context).unwrap_err())?;
-        let object_inner = object.downcast_ref::<CVar>().ok_or(Self::error_typ(context).unwrap_err())?;
+        let object = this.as_object().ok_or_else(|| Self::error_typ(context).unwrap_err())?;
+        let object_inner = object.downcast_ref::<CVar>().ok_or_else(|| Self::error_typ(context).unwrap_err())?;
 
         let p_cvar = object_inner.native;
         let mut result: *const c_char = std::ptr::null();
