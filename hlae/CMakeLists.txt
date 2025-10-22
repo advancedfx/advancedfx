@@ -4,7 +4,7 @@ project ("hlae")
 
 set(hlae_VERSION_MAJOR 2)
 set(hlae_VERSION_MINOR 187)
-set(hlae_VERSION_PATCH 3)
+set(hlae_VERSION_PATCH 4)
 set(hlae_VERSION_REVISON 0)
 
 add_custom_target(hlae

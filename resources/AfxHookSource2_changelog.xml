@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.37.4</version>
+<time>2025-10-22T18:54Z</time>"
+<changes>
+<change type="fixed">Fixed mirv_replace_name not behaving</change>
+<change type="updated">mirv-script improvements (added cvars manipulation)</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.37.3</version>
 <time>2025-10-15T15:55Z</time>
 <changes>
