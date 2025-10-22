@@ -133,13 +133,14 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../deps/release/prop/cs2/sdk_src/public/tier1/bufferstring.cpp
     ../deps/release/prop/cs2/sdk_src/public/tier1/bufferstring.h
     ../deps/release/prop/cs2/sdk_src/public/vstdlib/IKeyValuesSystem.h
-    ../deps/release/prop/cs2/sdk_src/public/cdll_int.h    
-    ../deps/release/prop/cs2/sdk_src/public/filesystem.h    
-    ../deps/release/prop/cs2/sdk_src/public/const.h    
-    ../deps/release/prop/cs2/sdk_src/public/entityhandle.h    
-    ../deps/release/prop/cs2/sdk_src/public/icvar.h    
-    ../deps/release/prop/cs2/sdk_src/public/igameevents.h    
-    ../deps/release/prop/cs2/sdk_src/public/igameuiservice.h    
+    ../deps/release/prop/cs2/sdk_src/public/Color.h
+    ../deps/release/prop/cs2/sdk_src/public/cdll_int.h
+    ../deps/release/prop/cs2/sdk_src/public/filesystem.h
+    ../deps/release/prop/cs2/sdk_src/public/const.h
+    ../deps/release/prop/cs2/sdk_src/public/entityhandle.h
+    ../deps/release/prop/cs2/sdk_src/public/icvar.h
+    ../deps/release/prop/cs2/sdk_src/public/igameevents.h
+    ../deps/release/prop/cs2/sdk_src/public/igameuiservice.h
     ../deps/release/prop/cs2/sdk_src/tier1/KeyValues.cpp
     ../deps/release/prop/AfxHookSource/SourceSdkShared.cpp
     ../deps/release/prop/AfxHookSource/SourceSdkShared.h
@@ -214,6 +215,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     ClientEntitySystem.h
 
     ConsoleRs.cpp
+    CVarRs.cpp
 
 	DeathMsg.cpp
 	DeathMsg.h

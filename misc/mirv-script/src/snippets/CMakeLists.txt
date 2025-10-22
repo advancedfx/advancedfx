@@ -9,6 +9,7 @@ set(AFXHOOKSOURCE2SNIPPETS_NAMES
     mirv_script_voice
     observer-test
     attachment-test
+	cvars-test
     quit-when-demo-is-paused
 )
 
