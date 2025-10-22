@@ -25,56 +25,56 @@ pub enum CVarType {
 
 impl std::convert::From<i16> for CVarType {
     fn from(item: i16) -> Self {
-       match item {
-        0 => {
-            CVarType::Bool
-        },
-        1 => {
-            CVarType::Int16
-        },
-        2 => {
-            CVarType::UInt16
-        },
-        3 => {
-            CVarType::Int32
-        },
-        4 => {
-            CVarType::UInt32
-        },
-        5 => {
-            CVarType::Int64
-        },
-        6 => {
-            CVarType::UInt64
-        },
-        7 => {
-            CVarType::Float32
-        },
-        8 => {
-            CVarType::Float64
-        },
-        9 => {
-            CVarType::String
-        },
-        10 => {
-            CVarType::Color
-        },
-        11 => {
-            CVarType::Vector2
-        },
-        12 => {
-            CVarType::Vector3
-        },
-        13 => {
-            CVarType::Vector4
-        },
-        14 => {
-            CVarType::Qangle
-        },
-        _ => {
-            CVarType::Invalid
+        match item {
+            0 => {
+                CVarType::Bool
+            },
+            1 => {
+                CVarType::Int16
+            },
+            2 => {
+               CVarType::UInt16
+            },
+            3 => {
+                CVarType::Int32
+            },
+            4 => {
+                CVarType::UInt32
+            },
+            5 => {
+                CVarType::Int64
+            },
+            6 => {
+                CVarType::UInt64
+            },
+            7 => {
+                CVarType::Float32
+            },
+            8 => {
+                CVarType::Float64
+            },
+            9 => {
+                CVarType::String
+            },
+            10 => {
+                CVarType::Color
+            },
+            11 => {
+                CVarType::Vector2
+            },
+            12 => {
+                CVarType::Vector3
+            },
+            13 => {
+                CVarType::Vector4
+            },
+            14 => {
+                CVarType::Qangle
+            },
+            _ => {
+                CVarType::Invalid
+            }
         }
-       }
     }
 }
 
@@ -88,25 +88,25 @@ pub enum CVarGetMode {
     Value = 0,
     DefaultValue = 1,
     MinValue = 2,
-    MaxValue = 3    
+    MaxValue = 3
 }
 
 impl std::convert::From<i8> for CVarGetMode {
     fn from(item: i8) -> Self {
-       match item {
-        1 => {
-            CVarGetMode::DefaultValue
-        },
-        2 => {
-            CVarGetMode::MinValue
-        },
-        3 => {
-            CVarGetMode::MaxValue
-        },
-        _ => {
-            CVarGetMode::Value
+        match item {
+            1 => {
+                CVarGetMode::DefaultValue
+            },
+            2 => {
+                CVarGetMode::MinValue
+            },
+            3 => {
+                CVarGetMode::MaxValue
+            },
+            _ => {
+                CVarGetMode::Value
+            }
         }
-       }
     }
 }
 
