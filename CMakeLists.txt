@@ -258,8 +258,8 @@ elseif(CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
     )
 
     install(
-        FILES
-            ${AFXHOOKSOURCE2SNIPPETS_OUTPUTS}
+		DIRECTORY
+            "${AfxHookSource2Snippets_BINARY_DIR}/dist/"
         DESTINATION "bin/resources/AfxHookSource2/snippets"
     )
 endif()
