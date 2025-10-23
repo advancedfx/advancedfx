@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.132.2</version>
+<time>2025-10-15T15:55Z</time>
+<changes>
+<change type="fixed">Fixed default fovScaling crashes HLAE in CSS</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.132.1</version>
 <time>2025-08-03T15:00Z</time>
 <changes>
