@@ -7,9 +7,9 @@ set(AFXHOOKSOURCE2SNIPPETS_NAMES
     mirv_script_fov
     mirv_script_point
     mirv_script_voice
-    observer-test
-    attachment-test
-	cvars-test
+    tests/observer-test
+    tests/attachment-test
+	tests/cvars-test
     quit-when-demo-is-paused
 )
 
