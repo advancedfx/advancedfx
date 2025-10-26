@@ -31,8 +31,7 @@ import { handleMessage } from './mirv-handler.js';
 
 	// Make sure this hook doesn't get overwritten elsewhere since currently HLAE doesn't handle such conflicts
 	mirv.onClientFrameStageNotify = (e) => {
-		// FRAME_START - called on host_frame (1 per tick).
-		if (e.curStage == 0 && e.isBefore) {
+		if (e.curStage === SOURCESDK_CS2.ClientFrameStage_t.FRAME_START && e.isBefore) {
 			if (!wsConn.isConnected() && tickCounter % 64 === 0) {
 				isFirstConnect = true;
 
@@ -63,14 +62,11 @@ import { handleMessage } from './mirv-handler.js';
 
 			tickCounter++;
 
-			// We use this to request an extra processing of jobs from HLAE
-			// Currently by default it only proccesses jobs upon after FRAME_RENDER_END == 6
 			mirv.run_jobs();
 			mirv.run_jobs_async();
 		}
 
-		// FRAME_RENDER_PASS - called when a frame is to be rendered by engine thread
-		if (e.curStage === 8 && e.isBefore) {
+		if (e.curStage === SOURCESDK_CS2.ClientFrameStage_t.FRAME_RENDER_PASS && e.isBefore) {
 			if (wsConn.isConnected()) wsConn.flush();
 		}
 	};
