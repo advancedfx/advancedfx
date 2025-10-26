@@ -1,5 +1,5 @@
 declare namespace AdvancedfxCVar {
-	enum TypeEnum {
+	const enum TypeEnum {
 		Invalid = -1,
 		Bool = 0,
 		Int16 = 1,

@@ -28,13 +28,13 @@ declare class AdvancedfxCampathIterator {
 }
 
 declare namespace AdvancedfxCampath {
-	enum DoubleInterp {
+	const enum DoubleInterp {
 		Default = 0,
 		Linear = 1,
 		Cubic = 2
 	}
 
-	enum QuaternionInterp {
+	const enum QuaternionInterp {
 		Default = 0,
 		SLinear = 1,
 		SCubic = 2
