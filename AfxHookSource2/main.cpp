@@ -1029,7 +1029,7 @@ void HookClientDll(HMODULE clientDll) {
        180898120 48 8b 0d        MOV        RCX,qword ptr [DAT_181e2d7a8]
                  81 56 59 01
        180898127 48 8b 01        MOV        RAX,qword ptr [RCX]
-       18089812a ff 90 40        CALL       qword ptr [RAX + 0x140]
+       18089812a ff 90 40        CALL       qword ptr [RAX + 0x148]
                  01 00 00
        180898130 0f 57 f6        XORPS      XMM6,XMM6
        180898133 84 c0           TEST       AL,AL
@@ -1039,7 +1039,7 @@ void HookClientDll(HMODULE clientDll) {
 
 	*/
 	{
-		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8b 0d ?? ?? ?? ?? 48 8b 01 ff 90 ?? ?? ?? ?? 0f 57 f6 84 c0 74 63 ba ff ff ff ff");
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8b 0d ?? ?? ?? ?? 48 8b 01 ff 90 48 01 00 00 0f 57 ff 84 c0 74 63 ba ff ff ff ff");
 																	  
 		if (!result.IsEmpty()) {
 			/*
@@ -1084,16 +1084,17 @@ void HookClientDll(HMODULE clientDll) {
 
 		void FUN_180888120(longlong *param_1,int param_2) { ... }
 	*/
-	{
-		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8B C4 53 55 56 57 41 56 41 57");
-		if (!result.IsEmpty()) {
-			g_Old_Unk_Override_Fov = (Unk_Override_Fov_t)result.Start;
-			DetourTransactionBegin();
-			DetourUpdateThread(GetCurrentThread());
-			DetourAttach((PVOID*)&g_Old_Unk_Override_Fov, New_Unk_Override_Fov);
-			if(NO_ERROR != DetourTransactionCommit()) ErrorBox(MkErrStr(__FILE__, __LINE__));            
-		} else ErrorBox(MkErrStr(__FILE__, __LINE__));
-}
+	// Commenting out this for now since it's now in the same function as above
+	// {
+	// 	Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8B C4 53 55 56 57 41 56 41 57");
+	// 	if (!result.IsEmpty()) {
+	// 		g_Old_Unk_Override_Fov = (Unk_Override_Fov_t)result.Start;
+	// 		DetourTransactionBegin();
+	// 		DetourUpdateThread(GetCurrentThread());
+	// 		DetourAttach((PVOID*)&g_Old_Unk_Override_Fov, New_Unk_Override_Fov);
+	// 		if(NO_ERROR != DetourTransactionCommit()) ErrorBox(MkErrStr(__FILE__, __LINE__));            
+	// 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	// }
 /*
 	if(void ** vtable = (void**)Afx::BinUtils::FindClassVtable(clientDll,".?AVCRenderingPipelineCsgo@@", 0, 0x0)) {
 		g_Old_CViewRender_RenderView = (CViewRender_RenderView_t)vtable[0] ;
@@ -1477,13 +1478,6 @@ void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameSta
 	old_CS2_Client_FrameStageNotify(This, curStage);
 
 	AfxHookSource2Rs_Engine_OnClientFrameStageNotify(curStage, false);
-
-	if (curStage == SOURCESDK::CS2::FRAME_RENDER_PASS) {
-		float time8 = g_MirvTime.curtime_get();
-		g_MirvTime.curtime_set(time8 + 1.0f / 64);
-		UpdateAnimGraph();
-		g_MirvTime.curtime_set(time8);
-	}
 
 	switch(curStage) {
 	case SOURCESDK::CS2::FRAME_RENDER_PASS:
@@ -2121,8 +2115,6 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		HookReplaceName(hModule);
 
 		HookClientDll(hModule);
-
-		HookFixClient(hModule);
 
 		Hook_ClientEntitySystem3(hModule);
 	} 
