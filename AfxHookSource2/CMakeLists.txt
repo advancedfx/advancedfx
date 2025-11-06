@@ -125,6 +125,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../deps/release/prop/cs2/sdk_src/public/tier1/iconvar.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/KeyValues.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/strtools.h
+    ../deps/release/prop/cs2/sdk_src/public/tier1/utlmap.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/utlmemory.cpp
     ../deps/release/prop/cs2/sdk_src/public/tier1/utlmemory.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/utlstring.cpp
