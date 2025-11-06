@@ -21,6 +21,8 @@
 #include "MirvColors.h" 
 
 #include <set>
+#include <algorithm>
+#include <vector>
 
 // TODO: move panorama stuff out after addresses.cpp is done
 // decompose/change myPanoramaWrapper too
@@ -541,8 +543,8 @@ struct myPanoramaWrapper {
 			if (r) {
 				parentPanel = r;
 			} else {
-				auto r2 = findChildInLayoutFileByClassName(parentPanel, parentId);
-				if (r2) parentPanel = r2;
+				auto r2 = findChildrenInLayoutFileByClassName(parentPanel, parentId);
+				if (!r2.empty()) parentPanel = r2[0]; // could be multiple there
 			}
 		} 
 
@@ -576,11 +578,12 @@ struct myPanoramaWrapper {
 
 	}
 
-	u_char* findChildInLayoutFileByClassName(u_char* parentPanel, const char* classNameToFind) {
-		if (!parentPanel) return nullptr;
+	std::vector<u_char*> findChildrenInLayoutFileByClassName(u_char* parentPanel, const char* classNameToFind) {
+		std::vector<u_char*> res;
+		if (!parentPanel) return res;
 
 		const auto children = parentPanel + CS2::PanoramaUIPanel::children;
-		if (!children) return nullptr;
+		if (!children) return res;
 
 		for (int i = 0; i < *(int*)children; ++i) {
 			const auto panel = ((u_char***)children)[1][i];
@@ -590,7 +593,7 @@ struct myPanoramaWrapper {
 			auto panelClassName = panel2D->getClassName();
 
 			if (strcmp(panelClassName, classNameToFind) == 0) {
-				return panel;
+				res.emplace_back(panel);
 			};
 		}
 
@@ -598,13 +601,16 @@ struct myPanoramaWrapper {
 			const auto panel = ((u_char***)children)[1][i];
 			const auto panelFlags = (u_char)(panel + CS2::PanoramaUIPanel::panelFlags);
 			if ((panelFlags & CS2::PanoramaUIPanel::k_EPanelFlag_HasOwnLayoutFile) == 0) {
-				if (const auto found = findChildInLayoutFileByClassName(panel, classNameToFind)) {
-					return found;
+				auto found = findChildrenInLayoutFileByClassName(panel, classNameToFind);
+				if (!found.empty()) {
+					for (auto i : found) {
+						res.emplace_back(i);
+					}
 				}
 			}
 		}
 
-		return nullptr;
+		return res;
 	}
 
 	u_char* findChildInLayoutFile(u_char* parentPanel, const char* idToFind){
@@ -1787,28 +1793,120 @@ CON_COMMAND(mirv_deathmsg, "controls death notification options")
 	mirvDeathMsg_Console(args);
 };
 
+enum panelMatchType {
+	ID = 0,
+	CLASS_NAME
+};
+
+void applyStyleProperty_Console(IWrpCommandArgs * args) {
+	int argc = args->ArgC();
+	const char * arg0 = args->ArgV(0);
+
+	panelMatchType matchType = panelMatchType::ID;
+	std::string panelId = "";
+	// TODO: match by property type, when add new ones
+	bool didMatchProperty = false;
+	float opacity = 0;
+
+	for (int i = 1; i < argc; ++i)
+	{
+		const char * argI = args->ArgV(i);
+		if (StringIBeginsWith(argI, "panelId="))
+		{
+			panelId = argI + strlen("panelId=");
+			matchType = panelMatchType::ID;
+		}
+		else if (StringIBeginsWith(argI, "panelClassName="))
+		{
+			panelId = argI + strlen("panelClassName=");
+			matchType = panelMatchType::CLASS_NAME;
+		}
+		else if (StringIBeginsWith(argI, "opacity="))
+		{
+			opacity = float(atof(argI + strlen("opacity=")));
+			didMatchProperty = true;
+		}
+	}
+
+	if (panelId.empty()) {
+		advancedfx::Warning("PanelId cannot be empty.\n");
+		return;
+	}
+
+	if (!didMatchProperty) {
+		advancedfx::Warning("Did not match any style property.\n");
+		return;
+	}
+
+	auto parentPanel = ((u_char***)g_myPanoramaWrapper.pHudPanel)[0][1];
+	if (!parentPanel) {
+		advancedfx::Warning("Root panel is 0\n");
+		return;
+	}
+
+
+	if (matchType == panelMatchType::ID) {
+		u_char* targetPanel = g_myPanoramaWrapper.findChildInLayoutFile(parentPanel, panelId.c_str());
+
+		if (0 == targetPanel) {
+			advancedfx::Warning("Could not find panel %s\n", panelId.c_str());
+			return;
+		}
+
+		auto res = ((CUIPanel*)targetPanel)->setOpacity(std::clamp(opacity, 0.0f, 1.0f));
+		if (!res) {
+			advancedfx::Warning("Could not set opacity property for %s\n", panelId.c_str());
+		}
+	} else if (matchType == panelMatchType::CLASS_NAME) {
+		auto foundPanels = g_myPanoramaWrapper.findChildrenInLayoutFileByClassName(parentPanel, panelId.c_str());
+		if (foundPanels.empty()) {
+			advancedfx::Warning("Could not find panels with className %s\n", panelId.c_str());
+		} else {
+			for (auto panel : foundPanels) {
+				((CUIPanel*)panel)->setOpacity(std::clamp(opacity, 0.0f, 1.0f));
+			}
+		}
+	}
+}
+
 CON_COMMAND(mirv_panorama, "")
 {
 	const auto arg0 = args->ArgV(0);
 	int argc = args->ArgC();
 
-	if (3 <= argc)
+	if (2 <= argc)
 	{
-		const char * targetPanelId = args->ArgV(1);
-		auto parentPanel = ((u_char***)g_myPanoramaWrapper.pHudPanel)[0][1];
-		if (!parentPanel) return;
+		const char * arg1 = args->ArgV(1);
 
-		if (strlen(targetPanelId) < 0) return;
-
-		auto targetPanel = g_myPanoramaWrapper.findChildInLayoutFile(parentPanel, targetPanelId);
-		if (!targetPanel) {
-			targetPanel = g_myPanoramaWrapper.findChildInLayoutFileByClassName(parentPanel, targetPanelId);
+		if (0 == _stricmp("panelStyle", arg1)) {
+			if (3 <= argc) {
+				CSubWrpCommandArgs subArgs(args, 2);
+				applyStyleProperty_Console(&subArgs);
+			} else {
+				advancedfx::Message(
+					"%s %s panelStyle <option> <option>\n"
+					"Where <option> at least 2 arguments are required: panelId or class and property to set.\n"
+					"%s %s:\n"
+					"\tpanelId=<str>\n"
+					"\tpanelClassName=<str>\n"
+					"\topacity=<fValue>\n"
+					"Example:\n"
+					"%s %s panelId=trueview_row opacity=0\n"
+					"%s %s panelClassName=HudPerfStatsBasics opacity=0\n"
+					"Warning: if matching by className the style would be applied to all instances.\n"
+					, arg0, arg1
+					, arg0, arg1
+					, arg0, arg1
+					, arg0, arg1
+				);
+			}
+			return;
 		}
-
-		if (!targetPanel) return;
-		auto opacityValue = (float)atof(args->ArgV(2));
-		((CUIPanel*)targetPanel)->setOpacity(opacityValue);
-
 	}
+
+	advancedfx::Message(
+		"%s panelStyle [...] - Set style for specific panorama panel.\n"
+		, arg0
+	);
 }
 
