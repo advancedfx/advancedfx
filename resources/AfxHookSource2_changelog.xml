@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.37.6</version>
+<time>2025-11-06T19:03Z</time>
+<changes>
+<change type="added">Added `mirv_panorama` command. Currently it only allows to set opacity property for some panels. Example: `mirv_panorama panelstyle panelId=trueview_row opacity=0` to hide TrueView telemetry text in the top right.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.37.5</version>
 <time>2025-11-05T09:17Z</time>
 <changes>

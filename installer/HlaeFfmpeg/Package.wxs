@@ -9,7 +9,7 @@
     -->
     <Package
         ProductCode="{CA6490CA-3B5A-464E-9B4A-84A2B3014FF4}"
-        Version="1.1.38"
+        Version="1.1.39"
         Name="!(loc.PackageName)"
         Manufacturer="!(loc.Manufacturer)"
         UpgradeCode="{9090AE9A-4E9D-46C5-B595-9F2FBCF96945}"
