@@ -18,10 +18,18 @@ namespace CS2 {
 	namespace PanoramaUIPanel {
 		extern ptrdiff_t getAttributeString;
 		extern ptrdiff_t setAttributeString;
-		constexpr ptrdiff_t children = 0x28;
+
+		// TODO: get these from pattern matching
 		constexpr ptrdiff_t panelId = 0x10;
+		constexpr ptrdiff_t children = 0x28;
+		constexpr ptrdiff_t panelStyle = 0x68;
 		constexpr ptrdiff_t panelFlags = 0x11c;
+
 		constexpr ptrdiff_t k_EPanelFlag_HasOwnLayoutFile = 0x40;
+	}
+
+	namespace PanoramaPanelStyle {
+		extern ptrdiff_t setPanelStyleProperty;
 	}
 
 	namespace PanoramaUIEngine {
