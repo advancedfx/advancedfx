@@ -9,6 +9,12 @@ const wchar_t * AfxStreams_GetTakeDir();
 
 void RenderSystemDX11_EngineThread_Prepare();
 
+bool RenderSystemDX11_EngineThread_HasNextRenderPass();
+
+void RenderSystemDX11_EngineThread_BeginNextRenderPass();
+
+void RenderSystemDX11_EngineThread_BeginMainRenderPass();
+
 void Hook_RenderSystemDX11(void * hModule);
 
 void Hook_SceneSystem(void * hModule);

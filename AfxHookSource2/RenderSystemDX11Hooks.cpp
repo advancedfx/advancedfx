@@ -54,6 +54,10 @@ extern advancedfx::CImageBufferPoolThreadSafe * g_pImageBufferPoolThreadSafe;
 extern SOURCESDK::CS2::ISource2EngineToClient * g_pEngineToClient;
 extern SOURCESDK::CS2::ICvar * SOURCESDK::CS2::g_pCVar;
 
+int g_iRenderContextDebug = 0;
+
+ID3D11DeviceContext * g_pImmediateContext = nullptr;
+
 CRenderCommands g_RenderCommands;
 
 bool g_bEnableReShade = true;
@@ -1109,7 +1113,6 @@ private:
 
 IDXGISwapChain * g_pSwapChain = nullptr;
 ID3D11Device * g_pDevice = nullptr;
-ID3D11DeviceContext * g_pImmediateContext = nullptr;
 ID3D11DeviceContext * g_pOtherContext = nullptr;
 ID3D11RenderTargetView* g_pRTView = nullptr;
 int g_iDraw = 0;
@@ -1285,8 +1288,10 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
                     g_pDevice->Release();
                     g_pDevice = nullptr;
                 }
-                g_DepthCompositor.OnTargetBegin(This, pTexture);
+
                 g_iDraw = 0;
+
+                g_DepthCompositor.OnTargetBegin(This, pTexture);
                 g_pRTView = *ppRTView;
                 g_pMainRenderTargetResource = nullptr;
                 g_pDevice = This;
@@ -1434,14 +1439,42 @@ public:
     virtual void OnCallback(void) abstract = 0;
 };
 
-class CAfxRenderCallbackSetupViewPlayer0 : public IRenderThreadCallback
+class CAfxRenderCallbackUpdateBuffers : public IRenderThreadCallback
 {
 public:
-    CAfxRenderCallbackSetupViewPlayer0()
+    CAfxRenderCallbackUpdateBuffers()
     {
     }
 
     virtual void OnCallback(void) {
+        if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands())
+        {
+            if(!pRenderPassCommands->BeforeNextPassOrBeforePresent.Empty()) {
+
+                ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
+                g_pImmediateContext->OMGetRenderTargets(1, &pRenderTargetViews[0], nullptr);
+                
+                if (pRenderTargetViews[0]) {
+                    ID3D11Resource* pRenderTargetViewResource = nullptr;
+                    pRenderTargetViews[0]->GetResource(&pRenderTargetViewResource);
+                    if(pRenderTargetViewResource) {
+                        ID3D11Texture2D * pTexture = nullptr;
+                        if(SUCCEEDED(pRenderTargetViewResource->QueryInterface(__uuidof(ID3D11Texture2D),(void**)&pTexture))){
+                            if(pTexture) {
+                                pRenderPassCommands->OnBeforeNextPassOrBeforePresent(pTexture);               
+                                pTexture->Release();
+                            }
+                        }
+                        pRenderTargetViewResource->Release();
+                    }
+
+                    pRenderTargetViews[0]->Release();
+                }
+            }
+            
+            pRenderPassCommands->OnBeforeNextPassOrAfterPresent();           
+        }
+
         g_RenderCommands.RenderThread_BeginFrame(g_pImmediateContext);
         delete this;
     }
@@ -1617,6 +1650,17 @@ void STDMETHODCALLTYPE New_PSSetShader(ID3D11DeviceContext* This,
     UINT NumClassInstances) {
 
     if (This == g_pImmediateContext) {
+        if(2 <= g_iRenderContextDebug) {
+            static char temp[1024];
+            UINT dataSize = 1023;
+            if (pPixelShader && SUCCEEDED(pPixelShader->GetPrivateData(WKPDID_D3DDebugObjectName, &dataSize, &temp[0])) && 0 <= dataSize && dataSize < 1024) {
+                temp[dataSize] = '\0';
+            } else {
+                    temp[0] = '\0';
+            }
+            advancedfx::Message("AFXDEBUG: New_PSSetShader(0x%016x \"%s\" [%lu],0x%016x,%u)\n",pPixelShader,temp,dataSize,ppClassInstances,NumClassInstances);
+        }
+
         if (g_bDetectSmoke && pPixelShader && nullptr == ppClassInstances && NumClassInstances == 0) {
             const char* pKey = "write_smoke_depth_water_reflect";
             const size_t keyLen = 31;
@@ -1755,9 +1799,10 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
 
     if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands())
     {
-        if(!pRenderPassCommands->BeforePresent.Empty()) {
+        if(!pRenderPassCommands->BeforeNextPassOrBeforePresent.Empty() || !pRenderPassCommands->BeforePresent.Empty()) {
             ID3D11Texture2D * pTexture = nullptr;
             if(g_pSwapChain) g_pSwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D), (void**)&pTexture);            
+            pRenderPassCommands->OnBeforeNextPassOrBeforePresent(pTexture);
             pRenderPassCommands->OnBeforePresent(pTexture);
             if(pTexture) pTexture->Release();
         }
@@ -1766,6 +1811,7 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
     HRESULT result = g_OldPresent(This, SyncInterval, Flags);
 
     if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands()) {
+        pRenderPassCommands->OnBeforeNextPassOrAfterPresent();
         pRenderPassCommands->OnAfterPresent();
         pRenderPassCommands->OnAfterPresentOrContextLossReliable();
     }
@@ -1958,8 +2004,13 @@ public:
         }
     }
 
+    ~CRenderSystemConsolePrint() {
+        if(m_Print_Memory) free(m_Print_Memory);
+    }
+
     virtual void OnCallback(void) {
         advancedfx::Message("AFXDEBUG CreateRenderContextPtr%i(%s):%s\n", m_Nr, m_Fmt, m_Print_Memory ? m_Print_Memory : "");
+        delete this;
     }
 
     int m_Nr;
@@ -2006,8 +2057,6 @@ AFXDEBUG CreateRenderContextPtr1(#%s/SetupLightsAndViewConstants):#PanoramaEngin
 AFXDEBUG CreateRenderContextPtr2(SubmitAllDisplayLists):SubmitAllDisplayLists
 */
 
-bool g_bRenderContextDebug = false;
-
 unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char * param_1, unsigned char param_2, void* pDevice, void * param_4, const char * fmt, ...) {
 
     // It would be possible to pass vararg on with asm trampoline, but it seems unused?
@@ -2015,7 +2064,7 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
 
     //TODO: string comparison is expensive, consider to check string address instead.
 
-    if(g_bRenderContextDebug) {
+    if(g_iRenderContextDebug) {
         const char * saveFmt = fmt ? fmt : "[nullptr]";
 
 		// rendersystemdx11.dll
@@ -2094,19 +2143,14 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr2(unsigned char
     // It would be possible to pass vararg on with asm trampoline, but it seems unused?
     unsigned char * result = g_Old_SceneSystem_CreateRenderContextPtr2(param_1, param_2,pDevice,"Hooked by HLAE / advancedfx.org, if you happen to actually see this please file a bug report, please!");
 
-    if (fmt && 0 == strcmp(fmt, "#%s/SetupView")) {
-        va_list args;
-        va_start(args, fmt);
-        const char* pszArg0 = va_arg(args, const char*);
-        if (pszArg0 && 0 == strcmp("Player 0", pszArg0)) {
-            if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-                auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[138];
-                fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackSetupViewPlayer0());
-            }
+    if (fmt && 0 == strcmp(fmt, "UpdateBuffers")) {
+        if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
+            auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[138];
+            fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackUpdateBuffers());
         }
     }
 
-    if(g_bRenderContextDebug) {
+    if(g_iRenderContextDebug) {
         const char * saveFmt = fmt ? fmt : "[nullptr]";
 
         if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
@@ -2507,6 +2551,8 @@ public:
     bool GetRecording() { return m_Recording; }
 
     void EngineThread_Prepare() {
+        m_RecordingExtraPassesIterator = m_RecordingExtraPasses.begin();
+
         if (m_Recording) {
             if (m_AutoForceFullReSmoke) {
                 if (!m_Restore_smoke_volume_lod_ratio_change) {
@@ -2532,7 +2578,23 @@ public:
         }
     }
 
-    void EngineThread_BeginFrame() {
+    bool EngineThread_HasNextRenderPass() {
+        return m_RecordingExtraPassesIterator != m_RecordingExtraPasses.end();
+    }
+
+    void EngineThread_BeginNextRenderPass() {
+        while(m_RecordingExtraPassesIterator != m_RecordingExtraPasses.end()) {
+            EngineThread_BeginStream(*m_RecordingExtraPassesIterator);
+            m_RecordingExtraPassesIterator->EngineThread_BeginFrame();
+
+            auto last_it = m_RecordingExtraPassesIterator;
+            m_RecordingExtraPassesIterator++;
+            if(m_RecordingExtraPassesIterator == m_RecordingExtraPasses.end()) break; // done.
+            if(last_it->CompareRenderPass(*m_RecordingExtraPassesIterator) != 0) break; // done for this render pass.
+        }
+    }
+
+    void EngineThread_BeginMainRenderPass() {
         if(m_Recording) {
             auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
 
@@ -2554,25 +2616,9 @@ public:
             }
         }
 
-        for(auto it = m_RecordingStreams.begin(); it != m_RecordingStreams.end(); it++) {
-            it->EngineThread_Finish();
-        }
-
-        if(!m_RecordingStreams.empty()) {
-            // ClearBeforeUI is a globally shared setting currently:
-            auto & settings = *m_RecordingStreams.begin();
-            float clearColor[4];
-            if(settings.WantsClearBeforeUi(clearColor)) {
-                float R = clearColor[0];
-                float G = clearColor[1];
-                float B = clearColor[2];
-                float A = clearColor[3];  
-                auto & renderPassCommands = g_RenderCommands.EngineThread_GetCommands();              
-                renderPassCommands.BeforeUi2.Push([R,G,B,A](IRenderPassCommands* context, ID3D11RenderTargetView * pTarget){
-                    float clearColor[4] = {R,G,B,A};
-                    context->GetContext()->ClearRenderTargetView(pTarget, clearColor);
-                });
-            }
+        for(auto it = m_RecordingMainPass.begin(); it != m_RecordingMainPass.end(); it++) {
+            EngineThread_BeginStream(*it);
+            it->EngineThread_BeginFrame();
         }
     }
 
@@ -2664,7 +2710,7 @@ private:
             return m_Streams->GetFormatBmpNotTga();
         }
 
-        void EngineThread_Finish() {
+        void EngineThread_BeginFrame() const {
             if(nullptr == m_Capture) return;
 
             auto & renderPassCommands = g_RenderCommands.EngineThread_GetCommands();
@@ -2677,7 +2723,7 @@ private:
             CStreamSettings::DepthChannels_e depthChannels = m_Settings.DepthChannels;
             CStreamSettings::DepthMode_e depthMode = m_Settings.DepthMode;
             {
-                auto &queue = m_Settings.Capture == CStreamSettings::Capture_e::BeforeUi ? renderPassCommands.BeforeUi : renderPassCommands.BeforePresent;
+                auto &queue = m_Settings.Capture == CStreamSettings::Capture_e::BeforeUi ? renderPassCommands.BeforeUi : renderPassCommands.BeforeNextPassOrBeforePresent;
                 queue.Push([capture,captureType,depthCompositeSmoke,depth24,depthVal,depthValMax,depthChannels,depthMode](IRenderPassCommands* context, ID3D11Texture2D * pTexture){
                     ID3D11DeviceContext* pDeviceContext = context->GetContext();
                     bool bSkipFrame = context->GetSkipFrame();
@@ -2754,14 +2800,14 @@ private:
                 }); 
             }
             {
-                auto & queue = renderPassCommands.AfterPresent;
+                auto & queue = renderPassCommands.BeforeNextPassOrAfterPresent;
                 queue.Push([capture](IRenderPassCommands* context){
                     if(!context->GetSkipFrame()) capture->OnAfterGpuPresent(context->GetContext());
                 }); 
             }            
         }
 
-        bool WantsClearBeforeUi(float outColor[4]) {
+        bool WantsClearBeforeUi(float outColor[4]) const {
             if(m_Settings.ClearBeforeUi) {
                 outColor[0] = m_Settings.ClearBeforeUiColor.R;
                 outColor[1] = m_Settings.ClearBeforeUiColor.G;
@@ -2772,13 +2818,29 @@ private:
             return false;
         }
 
+        bool CanCaptureInMainPass() const {
+            return m_Settings.CanCaptureInMainPass();                
+        }
+
+        int CompareRenderPass(const CStream & o) const {
+            return m_Settings.CompareRenderPass(o.m_Settings);
+        }
+
     private:
         CAfxStreams * m_Streams;
         CStreamSettings m_Settings;
         CAfxCapture * m_Capture;
 	};
 
-    std::list<CStream> m_RecordingStreams;
+    struct RenderPassCompare {
+          bool operator() (const CStream & lhs, const CStream & rhs) const {
+            return lhs.CompareRenderPass(rhs) < 0;
+        }
+    };
+
+    std::list<CStream> m_RecordingMainPass;
+    std::multiset<CStream,RenderPassCompare> m_RecordingExtraPasses;
+    std::multiset<CStream,RenderPassCompare>::iterator m_RecordingExtraPassesIterator;
 
     std::map<std::string, CStreamSettings> m_Streams;
 
@@ -2857,6 +2919,21 @@ private:
 
         return true;
     }
+
+    void EngineThread_BeginStream(const class CStream & stream) {
+        float clearColor[4];
+        if(stream.WantsClearBeforeUi(clearColor)) {
+            float R = clearColor[0];
+            float G = clearColor[1];
+            float B = clearColor[2];
+            float A = clearColor[3];  
+            auto & renderPassCommands = g_RenderCommands.EngineThread_GetCommands();              
+            renderPassCommands.BeforeUi2.Push([R,G,B,A](IRenderPassCommands* context, ID3D11RenderTargetView * pTarget){
+                float clearColor[4] = {R,G,B,A};
+                context->GetContext()->ClearRenderTargetView(pTarget, clearColor);
+            });
+        }
+    }    
 } g_AfxStreams;
 
 bool g_bEngine_Prepared = false;
@@ -2973,13 +3050,6 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
         auto it = m_Streams.begin();
         if(it != m_Streams.end()) {
             // Copy globally shared settings from first stream:
-
-            settings.ClearBeforeUi = it->second.ClearBeforeUi;
-            settings.ClearBeforeUiColor.R = it->second.ClearBeforeUiColor.R;
-            settings.ClearBeforeUiColor.G = it->second.ClearBeforeUiColor.G;
-            settings.ClearBeforeUiColor.B = it->second.ClearBeforeUiColor.B;
-            settings.ClearBeforeUiColor.A = it->second.ClearBeforeUiColor.A;
-
             settings.AutoForceFullResSmoke = it->second.AutoForceFullResSmoke;
         }
 
@@ -3291,14 +3361,7 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
                 if(4 <= argC) {
                     if(4 == argC) {
                         if(0 == _stricmp("none", args->ArgV(3))) {
-                            bool bChanged = false;
-                            for(auto it2=m_Streams.begin();it2!=m_Streams.end();it2++) {
-                                bChanged = bChanged || it != it2 && it2->second.ClearBeforeUi != false;
-                                it2->second.ClearBeforeUi = false;
-                            }
-                            if(bChanged) {
-                                advancedfx::Warning("AFXWarning: Value is globally shared and has been changed on other streams.\n");
-                            }
+                            it->second.ClearBeforeUi = false;
                             return;
                         }
                     } else if(7 == argC) {
@@ -3307,30 +3370,17 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
                         float g = atof(args->ArgV(4));
                         float b = atof(args->ArgV(5));
                         float a = atof(args->ArgV(6));
-                        for(auto it2=m_Streams.begin();it2!=m_Streams.end();it2++) {
-                            bChanged = bChanged || it != it2 && (
-                                it2->second.ClearBeforeUi != true
-                                || it2->second.ClearBeforeUiColor.R != r
-                                || it2->second.ClearBeforeUiColor.G != g
-                                || it2->second.ClearBeforeUiColor.B != b
-                                || it2->second.ClearBeforeUiColor.A != a
-                            );
-                            it2->second.ClearBeforeUi = true;
-                            it2->second.ClearBeforeUiColor.R = r;
-                            it2->second.ClearBeforeUiColor.G = g;
-                            it2->second.ClearBeforeUiColor.B = b;
-                            it2->second.ClearBeforeUiColor.A = a;
-                        }
-                        if(bChanged) {
-                            advancedfx::Warning("AFXWarning: Value is globally shared and has been changed on other streams.\n");
-                        }
+                        it->second.ClearBeforeUi = true;
+                        it->second.ClearBeforeUiColor.R = r;
+                        it->second.ClearBeforeUiColor.G = g;
+                        it->second.ClearBeforeUiColor.B = b;
+                        it->second.ClearBeforeUiColor.A = a;
                         return;
                     }
                 }
 
                 advancedfx::Message(
-                    "%s %s clearBeforeUI none|(<fRed> <fGreen> <fBlue> <fAlpha>) - Whether not to clear (none, default) or in which color (floating point values in range [0.0, 1.0]).\n"
-                    "\tAttention: This value is _currently_ globally shared, changeing it for one stream changes it also for all others.\n"
+                    "%s %s clearBeforeUI none|(<fRed> <fGreen> <fBlue> <fAlpha>) - Whether or not to clear (none, default) or in which color (floating point values in range [0.0, 1.0]).\n"
                     , arg0, arg1
                 );
                 if(!stream.ClearBeforeUi) advancedfx::Message(
@@ -3404,7 +3454,7 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
             , arg0, arg1
         );
         advancedfx::Message(
-            "%s %s clearBeforeUI  [...] - If and with what color to clear before Panorama UI. (Globally shared!)\n"
+            "%s %s clearBeforeUI  [...] - If and with what color to clear before Panorama UI.\n"
             , arg0, arg1
         );
         advancedfx::Message(
@@ -3596,7 +3646,11 @@ void CAfxStreams::RecordStart()
             if(!it->second.Record) continue;
             m_CompositeSmoke = m_CompositeSmoke || it->second.WantsSmokeComposite();
             m_AutoForceFullReSmoke = m_AutoForceFullReSmoke || it->second.WantsFullResSmoke();
-            m_RecordingStreams.emplace_back(this, it->second);
+
+            if(it->second.CanCaptureInMainPass())
+                m_RecordingMainPass.emplace_back(this, it->second);
+            else
+                m_RecordingExtraPasses.emplace(this, it->second);
         }
 
         if (m_CompositeSmoke) {
@@ -3660,7 +3714,8 @@ void CAfxStreams::RecordEnd()
 			g_S2CamIO.SetCamExport(nullptr);
 		}
 
-        m_RecordingStreams.clear();
+        m_RecordingExtraPasses.clear();
+        m_RecordingMainPass.clear();
 
         if(m_RecordScreen->Enabled) {
             EndCapture();
@@ -3734,9 +3789,19 @@ void RenderSystemDX11_EngineThread_Prepare() {
             g_RenderThread_ProjectionMatrix.Set(projectionMatrix);
         });
     }
+}
 
-    g_AfxStreams.EngineThread_BeginFrame();
+bool RenderSystemDX11_EngineThread_HasNextRenderPass() {
+    return g_AfxStreams.EngineThread_HasNextRenderPass();
+}
 
+void RenderSystemDX11_EngineThread_BeginNextRenderPass() {
+    g_AfxStreams.EngineThread_BeginNextRenderPass();
+    g_RenderCommands.EngineThread_BeginFrame();
+}
+
+void RenderSystemDX11_EngineThread_BeginMainRenderPass() {
+    g_AfxStreams.EngineThread_BeginMainRenderPass();
     g_RenderCommands.EngineThread_BeginFrame();
 }
 
@@ -4097,12 +4162,12 @@ CON_COMMAND(__mirv_debug_scenesystem_rendercontexts, "")
     const char * cmd0 = args->ArgV(0);
 
     if(2 <= argc) {
-        g_bRenderContextDebug = 0 != atoi(args->ArgV(1));
+        g_iRenderContextDebug = atoi(args->ArgV(1));
         return;
     }
 
     advancedfx::Message(
         "%s 0|1\n"
         "Current value: %i\n"
-        , cmd0, g_bRenderContextDebug ? 1 : 0);
+        , cmd0, g_iRenderContextDebug);
 }

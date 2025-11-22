@@ -35,6 +35,25 @@ public:
         Settings->AddRef();
     }
 
+    bool CanCaptureInMainPass() const {
+        return true
+            && false == ClearBeforeUi
+        ;
+    }
+
+    int CompareRenderPass(const CStreamSettings &  o) const {
+        int cmp;
+        if(cmp = CompareBool(ClearBeforeUi, o.ClearBeforeUi)) return cmp;
+        if(ClearBeforeUi) {
+           if(cmp = CompareFloat(ClearBeforeUiColor.R, o.ClearBeforeUiColor.R)) return cmp;
+           if(cmp = CompareFloat(ClearBeforeUiColor.G, o.ClearBeforeUiColor.G)) return cmp;
+           if(cmp = CompareFloat(ClearBeforeUiColor.B, o.ClearBeforeUiColor.B)) return cmp;
+           if(cmp = CompareFloat(ClearBeforeUiColor.A, o.ClearBeforeUiColor.A)) return cmp;
+        }
+
+        return 0;
+    }    
+
     std::wstring Name;
 
     bool Record = true;
@@ -100,4 +119,16 @@ public:
             && AutoForceFullResSmoke
         ;
     }
+
+private:
+    static int CompareBool(bool lhs, bool rhs) {
+        if(lhs != rhs) return lhs ? 1 : -1;
+        return 0;
+    }
+
+    static int CompareFloat(float lhs, float rhs) {
+        if(lhs != rhs) return lhs > rhs ? 1 : -1;
+        return 0;
+    }
+
 };

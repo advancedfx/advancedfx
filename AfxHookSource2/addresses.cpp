@@ -1,0 +1,74 @@
+#include "stdafx.h"
+
+#include "addresses.h"
+
+#include "../shared/binutils.h"
+
+using namespace Afx::BinUtils;
+
+AFXADDR_DEF(cs2_engine_CRenderService_OnClientOutput);
+
+extern void ErrorBox(char const * messageText);
+extern void ErrorBox();
+
+#define STRINGIZE(x) STRINGIZE2(x)
+#define STRINGIZE2(x) #x
+#define MkErrStr(file,line) "Problem in " file ":" STRINGIZE(line)
+
+void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
+{
+    ImageSectionsReader sections((HMODULE)engine2Dll);
+    MemRange textRange = sections.GetMemRange();
+
+    /*  cs2_engine_CRenderService_OnClientOutput
+
+                 24 18
+       1801e5715 55              PUSH       RBP
+       1801e5716 56              PUSH       RSI
+       1801e5717 57              PUSH       RDI
+       1801e5718 41 54           PUSH       R12
+       1801e571a 41 56           PUSH       R14
+       1801e571c 48 83 ec 70     SUB        RSP,0x70
+       1801e5720 48 8d 05        LEA        RAX,[s_C:\buildworker\csgo_rel_win64\bu_18055a   = "C:\\buildworker\\csgo_rel_win
+                 49 53 37 00
+       1801e5727 48 c7 44        MOV        qword ptr [RSP + local_68[8]],0x19d
+                 24 38 9d 
+                 01 00 00
+       1801e5730 48 89 44        MOV        qword ptr [RSP + local_68[0]],RAX=>s_C:\buildw   = "C:\\buildworker\\csgo_rel_win
+                 24 30
+       1801e5735 4c 8d 44        LEA        R8=>local_48,[RSP + 0x50]
+                 24 50
+       1801e573a 0f 10 44        MOVUPS     XMM0,xmmword ptr [RSP + local_68[0]]
+                 24 30
+       1801e573f 48 8d 05        LEA        RAX,[s_OnClientOutput_18055a7c8]                 = "OnClientOutput"
+                 82 50 37 00
+       1801e5746 4c 8b f2        MOV        R14,RDX
+       1801e5749 48 89 44        MOV        qword ptr [RSP + local_58],RAX=>s_OnClientOutp   = "OnClientOutput"
+                 24 40
+       1801e574e 48 8d 15        LEA        RDX,[PTR_s_Client_Rendering_1805f1050]           = 18055aab8
+                 fb b8 40 00
+       1801e5755 f2 0f 10        MOVSD      XMM1,qword ptr [RSP + local_58]
+                 4c 24 40
+       1801e575b 48 8b f1        MOV        RSI,RCX
+       1801e575e 48 8d 0d        LEA        RCX,[s_RenderService::OnClientOutput_18055aa48]  = "RenderService::OnClientOutput"
+                 e3 52 37 00
+       1801e5765 f2 0f 11        MOVSD      qword ptr [RSP + local_38],XMM1=>s_OnClientOut   = "OnClientOutput"
+                 4c 24 60
+       1801e576b 33 ff           XOR        EDI,EDI
+       1801e576d 0f 29 44        MOVAPS     xmmword ptr [RSP + local_48[0]],XMM0=>DAT_1805
+                 24 50
+       1801e5772 ff 15 f8        CALL       qword ptr [->TIER0.DLL::VProfScopeHelper<0,0>:   = 005e0b32
+                 3e 28 00
+       1801e5778 48 8b 96        MOV        RDX,qword ptr [RSI + 0x1c0]
+                 c0 01 00 00
+    */
+	{
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 89 5c 24 18 55 56 57 41 54 41 56 48 83 ec 70 48 8d 05 ?? ?? ?? ?? 48 c7 44 24 38 ?? ?? ?? ?? 48 89 44 24 30 4c 8d 44 24 50 0f 10 44 24 30 48 8d 05 ?? ?? ?? ?? 4c 8b f2 48 89 44 24 40 48 8d 15 ?? ?? ?? ?? f2 0f 10 4c 24 40 48 8b f1 48 8d 0d ?? ?? ?? ?? f2 0f 11 4c 24 60 33 ff 0f 29 44 24 50 ff 15 ?? ?? ?? ?? 48 8b 96 c0 01 00 00");
+																	  
+		if (!result.IsEmpty()) {
+            AFXADDR_SET(cs2_engine_CRenderService_OnClientOutput, result.Start);
+		}
+		else
+			ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
+}

@@ -26,24 +26,30 @@ CRenderCommands::CRenderPassCommands & CRenderCommands::EngineThread_GetCommands
 }
 
 void CRenderCommands::EngineThread_BeginFrame() {
-    if (m_EngineThread_FrameBegun) return;
+
+    // Submit current frame:
+
     m_EngineThread_FrameBegun = true;
 
     CRenderPassCommands* pRenderPassCommands = m_EngineThreadCommands;
     m_EngineThreadCommands = nullptr;
 
-    if (m_SkipFrames) {
-        pRenderPassCommands->SkipFrame = true;
-        m_SkipFrames--;
-    }
-    else {
-        pRenderPassCommands->SkipFrame = false;
-    }
-
     {
         std::unique_lock<std::mutex> lock(m_CommandsQueueMutex);
         m_CommandsQueue.emplace(pRenderPassCommands);
     }
+
+    // Prepare next frame:
+
+    {
+        std::unique_lock<std::mutex> lock(m_ReusableMutex);
+        if (!m_Reusable.empty()) {
+            m_EngineThreadCommands = m_Reusable.front();
+            m_Reusable.pop();
+        }
+    }
+
+    if (m_EngineThreadCommands == nullptr) m_EngineThreadCommands = new CRenderPassCommands();
 }
 
 void CRenderCommands::EngineThread_BeforePresent() {
@@ -54,26 +60,14 @@ void CRenderCommands::EngineThread_BeforePresent() {
 }
 
 void CRenderCommands::EngineThread_AfterPresent(bool presented) {
-    {
-        std::unique_lock<std::mutex> lock(m_ReusableMutex);
-        if (!m_Reusable.empty()) {
-            m_EngineThreadCommands = m_Reusable.front();
-            m_Reusable.pop();
-        }
-    }
-
-    if (m_EngineThreadCommands == nullptr) m_EngineThreadCommands = new CRenderPassCommands();
-
-    if (!presented) {
-        //m_SkipFrames++;
-    }
-
-    m_EngineThread_FrameBegun = false;
-    
+    m_EngineThread_FrameBegun = false;    
 }
 
 void CRenderCommands::RenderThread_BeginFrame(ID3D11DeviceContext* pContext) {
-    if (m_RenderThread_FrameBegun) return;
+    if (m_RenderThread_FrameBegun) {
+        RenderThread_EndFrame(pContext);
+    }
+
     m_RenderThread_FrameBegun = true;
 
     {

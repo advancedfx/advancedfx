@@ -74,7 +74,9 @@ public:
             //AfterSmokeDepth.Clear();
             BeforeUi.Clear();
             BeforeUi2.Clear();
+            BeforeNextPassOrBeforePresent.Clear();
             BeforePresent.Clear();
+            BeforeNextPassOrAfterPresent.Clear();
             AfterPresent.Clear();
         }
 
@@ -102,7 +104,11 @@ public:
         
         CQueue<FnContextTarget> BeforeUi2;
 
+        CQueue<FnContextTexture> BeforeNextPassOrBeforePresent;
+
         CQueue<FnContextTexture> BeforePresent;
+
+        CQueue<FnContext> BeforeNextPassOrAfterPresent;
 
         CQueue<FnContext> AfterPresent;
 
@@ -124,6 +130,13 @@ public:
                 BeforeUi2.Pop();
             }
         }        
+        
+        void OnBeforeNextPassOrBeforePresent(ID3D11Texture2D * pTexture) {
+            while(!BeforeNextPassOrBeforePresent.Empty()) {
+                BeforeNextPassOrBeforePresent.Front()(this, pTexture);
+                BeforeNextPassOrBeforePresent.Pop();
+            }
+        }
 
         void OnBeforePresent(ID3D11Texture2D * pTexture) {
             while(!BeforePresent.Empty()) {
@@ -131,6 +144,13 @@ public:
                 BeforePresent.Pop();
             }
         }
+
+        void OnBeforeNextPassOrAfterPresent() {
+            while(!BeforeNextPassOrAfterPresent.Empty()) {
+                BeforeNextPassOrAfterPresent.Front()(this);
+                BeforeNextPassOrAfterPresent.Pop();
+            }
+        }        
 
         void OnAfterPresent() {
             while(!AfterPresent.Empty()) {
@@ -172,6 +192,5 @@ private:
     CRenderPassCommands * m_RenderThreadCommands = nullptr;
     bool m_EngineThread_FrameBegun = false;
     bool m_RenderThread_FrameBegun = false;
-    int m_SkipFrames = 0;
 };
  

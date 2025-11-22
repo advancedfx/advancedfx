@@ -1,9 +1,11 @@
 #include "stdafx.h"
 
+#include "addresses.h"
 #include "CampathDrawer.h"
 #include "ClientEntitySystem.h"
 #include "GameEvents.h"
 #include "hlaeFolder.h"
+#include "RenderServiceHooks.h"
 #include "RenderSystemDX11Hooks.h"
 #include "WrpConsole.h"
 #include "AfxHookSource2Rs.h"
@@ -946,8 +948,6 @@ void __fastcall New_CViewRender_UnkMakeMatrix(void* This) {
 	g_WorldToScreenMatrix.m[3][3] = proj[4*3+3];
 
 	g_CampathDrawer.OnEngineThread_SetupViewDone();
-
-	RenderSystemDX11_EngineThread_Prepare();
 }
 
 /*
@@ -1177,6 +1177,8 @@ SOURCESDK::CS2::IMemAlloc *SOURCESDK::CS2::g_pMemAlloc = nullptr;
 SOURCESDK::CS2::ICvar * SOURCESDK::CS2::cvar = nullptr;
 SOURCESDK::CS2::ICvar * SOURCESDK::CS2::g_pCVar = nullptr;
 void * g_pSceneSystem = nullptr;
+void * g_pRenderDevice = nullptr;
+void * g_pRenderService = nullptr;
 
 typedef bool (__fastcall * CSceneSystem_WaitForRenderingToComplete_t)(void * This);
 CSceneSystem_WaitForRenderingToComplete_t g_Old_CSceneSystem_WaitForRenderingToComplete = nullptr;
@@ -1209,6 +1211,17 @@ int new_CCS2_Client_Connect(void* This, SOURCESDK::CreateInterfaceFn appSystemFa
 		}
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
+		if (g_pRenderDevice = (SOURCESDK::CS2::IGameUIService*)appSystemFactory("RenderDevice003", NULL)) {
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+		if (g_pRenderService = (SOURCESDK::CS2::IGameUIService*)appSystemFactory("RenderService_001", NULL)) {
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+		if (g_pSceneSystem = (SOURCESDK::CS2::IGameUIService*)appSystemFactory("SceneSystem_002", NULL)) {
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
 
 	return old_CCS2_Client_Connect(This, appSystemFactory);
@@ -2071,9 +2084,13 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 
 		g_h_engine2Dll = hModule;
 
+		Addresses_InitEngine2Dll((AfxAddr)hModule);
+
 		HookEngineDll(hModule);
 
 		g_Import_engine2.Apply(hModule);
+
+		Hook_RenderService();
 	}
 	else if(bFirstSceneSystem && StringEndsWithW( lpLibFileName, L"scenesystem.dll"))
 	{
