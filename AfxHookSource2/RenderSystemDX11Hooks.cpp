@@ -63,6 +63,7 @@ CRenderCommands g_RenderCommands;
 bool g_bEnableReShade = true;
 bool g_bReShadeCompositeSmoke = true;
 bool g_bCompositeSmoke = false;
+ID3D11RenderTargetView* g_BeforeUiRT = nullptr;
 
 class CAfxCpuTexture
 : public advancedfx::CRefCountedThreadSafe
@@ -1020,7 +1021,7 @@ public:
         return nullptr;
     }
 
-    void OnPresent() {
+    void OnEndFrame() {
         m_HasSmokeDepth = false;
         for(int i=0;i<DepthTextureTypeCount;i++) m_HasNormalDepth[i] = false;
     }
@@ -1289,6 +1290,10 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
                     g_pDevice = nullptr;
                 }
 
+                if(g_BeforeUiRT) {
+                    g_BeforeUiRT->Release();
+                    g_BeforeUiRT = nullptr;
+                }
                 g_iDraw = 0;
 
                 g_DepthCompositor.OnTargetBegin(This, pTexture);
@@ -1404,8 +1409,12 @@ void STDMETHODCALLTYPE New_OMSetRenderTargets( ID3D11DeviceContext * This,
             /* [annotation] */ 
             _In_opt_  ID3D11DepthStencilView *pDepthStencilView) {       
     if (!g_bInOwnDraw && This->GetType() == D3D11_DEVICE_CONTEXT_IMMEDIATE) {
-        if (NumViews >= 1) {
+        if (NumViews >= 1) {         
             if (g_iDraw == 0 && pDepthStencilView && ppRenderTargetViews && ppRenderTargetViews[0]) {
+                if(g_BeforeUiRT) {
+                    g_BeforeUiRT->Release();
+                    g_BeforeUiRT = nullptr;
+                }
                 g_iDraw = 2;
                 g_pImmediateContext = This;
                 g_pCurrentDepthStencilView = pDepthStencilView;
@@ -1447,32 +1456,38 @@ public:
     }
 
     virtual void OnCallback(void) {
-        if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands())
-        {
-            if(!pRenderPassCommands->BeforeNextPassOrBeforePresent.Empty()) {
-
-                ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
-                g_pImmediateContext->OMGetRenderTargets(1, &pRenderTargetViews[0], nullptr);
-                
-                if (pRenderTargetViews[0]) {
-                    ID3D11Resource* pRenderTargetViewResource = nullptr;
-                    pRenderTargetViews[0]->GetResource(&pRenderTargetViewResource);
-                    if(pRenderTargetViewResource) {
-                        ID3D11Texture2D * pTexture = nullptr;
-                        if(SUCCEEDED(pRenderTargetViewResource->QueryInterface(__uuidof(ID3D11Texture2D),(void**)&pTexture))){
-                            if(pTexture) {
-                                pRenderPassCommands->OnBeforeNextPassOrBeforePresent(pTexture);               
-                                pTexture->Release();
+        if(g_RenderCommands.RenderThread_FrameBegun()) {
+            if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands())
+            {
+                if(!pRenderPassCommands->BeforeNextPassOrAfterPresent.Empty())
+                {
+                    if(g_BeforeUiRT) {
+                        ID3D11Resource* pRenderTargetViewResource = nullptr;
+                        g_BeforeUiRT->GetResource(&pRenderTargetViewResource);
+                        if(pRenderTargetViewResource) {
+                            ID3D11Texture2D * pTexture = nullptr;
+                            if(SUCCEEDED(pRenderTargetViewResource->QueryInterface(__uuidof(ID3D11Texture2D),(void**)&pTexture))){
+                                if(pTexture) {
+                                    pRenderPassCommands->OnBeforeNextPassOrBeforePresent(pTexture);
+                                    pTexture->Release();
+                                }
                             }
+                            pRenderTargetViewResource->Release();
                         }
-                        pRenderTargetViewResource->Release();
                     }
-
-                    pRenderTargetViews[0]->Release();
                 }
+
+                pRenderPassCommands->OnBeforeNextPassOrAfterPresent();
             }
-            
-            pRenderPassCommands->OnBeforeNextPassOrAfterPresent();           
+
+            g_RenderCommands.RenderThread_EndFrame(g_pImmediateContext);
+
+            g_DepthCompositor.OnEndFrame();
+
+            if(g_BeforeUiRT) {
+                g_BeforeUiRT->Release();
+                g_BeforeUiRT = nullptr;
+            }
         }
 
         g_RenderCommands.RenderThread_BeginFrame(g_pImmediateContext);
@@ -1560,15 +1575,13 @@ public:
                 if (pRenderTargetViews[0]) pRenderTargetViews[0]->Release();
             }
 
-            if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands())
-            {
-                if(!pRenderPassCommands->BeforeUi.Empty() || !pRenderPassCommands->BeforeUi2.Empty()) {
-
-                    ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
-                    g_pImmediateContext->OMGetRenderTargets(1, &pRenderTargetViews[0], nullptr);
-
-                    
-                    if (pRenderTargetViews[0]) {
+            ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
+            g_pImmediateContext->OMGetRenderTargets(1, &pRenderTargetViews[0], nullptr);
+            if (pRenderTargetViews[0]) {
+                if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands())
+                {
+                    if(!pRenderPassCommands->BeforeUi.Empty() || !pRenderPassCommands->BeforeUi2.Empty())
+                    {
                         if(!pRenderPassCommands->BeforeUi.Empty()) {
                             ID3D11Resource* pRenderTargetViewResource = nullptr;
                             pRenderTargetViews[0]->GetResource(&pRenderTargetViewResource);
@@ -1586,11 +1599,11 @@ public:
                         if(!pRenderPassCommands->BeforeUi2.Empty()) {
                             pRenderPassCommands->OnBeforeUi2(pRenderTargetViews[0]); 
                         }
-
-                        pRenderTargetViews[0]->Release();
+        
                     }
-                }
-            }            
+                }            
+                g_BeforeUiRT = pRenderTargetViews[0];
+            }
         }
         g_bDetectSmoke = false;
         g_bDetectSmoke2 = false;
@@ -1816,14 +1829,15 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
         pRenderPassCommands->OnAfterPresentOrContextLossReliable();
     }
 
-    g_RenderCommands.RenderThread_EndFrame(g_pImmediateContext);
+    g_RenderCommands.RenderThread_EndFrame(g_pImmediateContext);    
+    g_DepthCompositor.OnEndFrame();
 
 	g_ReShadeAdvancedfx.ResetHasRendered();
 
-    g_DepthCompositor.OnPresent();
-
     g_bInOwnDraw = false;
 
+    if(g_BeforeUiRT) g_BeforeUiRT->Release();
+    g_BeforeUiRT = nullptr;
     g_iDraw = 0;
 
     return result;
@@ -2943,11 +2957,7 @@ bool __fastcall New_CRenderDeviceBase_Present(
 
     g_CampathDrawer.OnEngineThread_EndFrame();
 
-    g_RenderCommands.EngineThread_BeforePresent();
-
     bool result = g_Old_CRenderDeviceBase_Present(This, Rdx, R8d, R9d, Stack0, Stack1, Stack2, Stack3, Stack4);
-
-    g_RenderCommands.EngineThread_AfterPresent(result);
 
     g_bEngine_Prepared = false;
 
@@ -3025,7 +3035,18 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
         CStreamSettings settings(advancedfx::CRecordingSettings::GetDefault());
 
         if(0 == _stricmp(arg1,"normal")) {
-
+        } else if(0 == _stricmp(arg1,"hudBlack")) {
+            settings.ClearBeforeUiColor.R = 0.0f;
+            settings.ClearBeforeUiColor.G = 0.0f;
+            settings.ClearBeforeUiColor.B = 0.0f;
+            settings.ClearBeforeUiColor.A = 0.0f;
+            settings.ClearBeforeUi = true;
+        } else if(0 == _stricmp(arg1,"hudWhite")) {
+            settings.ClearBeforeUiColor.R = 1.0f;
+            settings.ClearBeforeUiColor.G = 1.0f;
+            settings.ClearBeforeUiColor.B = 1.0f;
+            settings.ClearBeforeUiColor.A = 0.0f;
+            settings.ClearBeforeUi = true;
         } else if(0 == _stricmp(arg1,"depth")) {
             settings.Capture = CStreamSettings::Capture_e::BeforeUi;
             settings.CaptureType = CStreamSettings::CaptureType_e::DepthRgb;
@@ -3058,7 +3079,7 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
 	}
 
 	advancedfx::Message(
-		"%s normal|depth <sUiniqueStreamName> - Adds a stream of given type.\n"
+		"%s normal|depth|hudBlack|hudWhite <sUiniqueStreamName> - Adds a stream of given type.\n"
 		, arg0
 	);
 }
@@ -3770,9 +3791,6 @@ bool g_bEngine_ReShade_Enabled = true;
 bool g_bEngine_ReShade_FoceSmokeFullresPass = true;
 
 void RenderSystemDX11_EngineThread_Prepare() {
-    if (g_bEngine_Prepared) return;
-    g_bEngine_Prepared = true;
-
     if(g_ReShadeAdvancedfx.IsConnected() && g_bEngine_ReShade_Enabled && g_bEngine_ReShade_FoceSmokeFullresPass) {
         Update_smoke_volume_lod_ratio_change(0.0f);
         Update_r_csgo_mboit_force_mixed_resolution(false);

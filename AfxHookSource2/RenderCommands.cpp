@@ -52,22 +52,7 @@ void CRenderCommands::EngineThread_BeginFrame() {
     if (m_EngineThreadCommands == nullptr) m_EngineThreadCommands = new CRenderPassCommands();
 }
 
-void CRenderCommands::EngineThread_BeforePresent() {
-    if (!m_EngineThread_FrameBegun) {
-        // Late to the party on the engine thread.
-        EngineThread_BeginFrame();
-    }
-}
-
-void CRenderCommands::EngineThread_AfterPresent(bool presented) {
-    m_EngineThread_FrameBegun = false;    
-}
-
 void CRenderCommands::RenderThread_BeginFrame(ID3D11DeviceContext* pContext) {
-    if (m_RenderThread_FrameBegun) {
-        RenderThread_EndFrame(pContext);
-    }
-
     m_RenderThread_FrameBegun = true;
 
     {
@@ -95,12 +80,11 @@ CRenderCommands::CRenderPassCommands * CRenderCommands::RenderThread_GetCommands
     return m_RenderThreadCommands;
 }
 
-void CRenderCommands::RenderThread_EndFrame(ID3D11DeviceContext* pContext) {
-    if (!m_RenderThread_FrameBegun) {
-        // Late to the party on the render thread.
-        RenderThread_BeginFrame(pContext);
-    }
+bool CRenderCommands::RenderThread_FrameBegun() {
+    return m_RenderThread_FrameBegun;
+}
 
+void CRenderCommands::RenderThread_EndFrame(ID3D11DeviceContext* pContext) {
     if(m_RenderThreadCommands) {
         m_RenderThreadCommands->Finalize();
         {

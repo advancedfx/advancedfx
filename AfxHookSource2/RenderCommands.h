@@ -85,7 +85,6 @@ public:
             Clear();
             if(Context) {
                 OnAfterPresentOrContextLossReliable();
-                Context = nullptr;
             } else {
                 AfterPresentOrContextLossReliable.Clear();
             }
@@ -173,12 +172,11 @@ public:
 
     void EngineThread_BeginFrame();
 
-    void EngineThread_BeforePresent();
-    void EngineThread_AfterPresent(bool presented);
+    CRenderPassCommands * RenderThread_GetCommands();
+
+    bool RenderThread_FrameBegun();
 
     void RenderThread_BeginFrame(ID3D11DeviceContext* pContext);
-
-    CRenderPassCommands * RenderThread_GetCommands();
 
     void RenderThread_EndFrame(ID3D11DeviceContext* pContext);
 
