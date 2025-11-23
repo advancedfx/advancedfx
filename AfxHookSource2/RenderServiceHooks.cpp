@@ -31,6 +31,8 @@ void __fastcall My_Engine2_RenderService_OnClientOutput(void * pUnk0, void * pUn
 
             g_Engine2_RenderService_OnClientOutput(pUnk0,pUnk1);
 
+            RenderSystemDX11_EngineThread_EndNextRenderPass();
+
             void (__fastcall * WaitForRenderingToComplete)(void *) = (void (__fastcall *)(void *))(vtable[26]);
             WaitForRenderingToComplete(g_pSceneSystem);
         
@@ -57,6 +59,8 @@ void __fastcall My_Engine2_RenderService_OnClientOutput(void * pUnk0, void * pUn
     RenderSystemDX11_EngineThread_BeginMainRenderPass();
 
     g_Engine2_RenderService_OnClientOutput(pUnk0,pUnk1);
+
+    RenderSystemDX11_EngineThread_EndMainRenderPass();
 }
 
 bool Hook_RenderService() {

@@ -34,6 +34,7 @@
 #define _XM_NO_INTRINSICS_
 #include <DirectXMath.h>
 
+#include <cstdlib>
 #include <set>
 #include <map>
 #include <queue>
@@ -53,6 +54,8 @@ extern advancedfx::CImageBufferPoolThreadSafe * g_pImageBufferPoolThreadSafe;
 
 extern SOURCESDK::CS2::ISource2EngineToClient * g_pEngineToClient;
 extern SOURCESDK::CS2::ICvar * SOURCESDK::CS2::g_pCVar;
+
+extern void ExecuteClientCmd(const char * value);
 
 int g_iRenderContextDebug = 0;
 
@@ -2559,6 +2562,8 @@ public:
     void Console_Print();
     void Console_Remove(advancedfx::ICommandArgs* args);
 
+    void Console_Edit_RenderCommands(std::list<std::list<std::string>> & commands, advancedfx::ICommandArgs* args);
+
     void RecordStart();
     void RecordEnd();
 
@@ -2597,18 +2602,33 @@ public:
     }
 
     void EngineThread_BeginNextRenderPass() {
+        auto it = m_RecordingExtraPassesIterator;
+        while(it != m_RecordingExtraPasses.end()) {
+            it->EngineThread_BeginFrame();
+
+            auto last_it = it;
+            it++;
+            if(it == m_RecordingExtraPasses.end()) break; // done.
+            if(last_it->CompareRenderPass(*it) != 0) break; // done for this render pass.
+        }
+    }
+
+    void EngineThread_EndNextRenderPass() {
         while(m_RecordingExtraPassesIterator != m_RecordingExtraPasses.end()) {
-            EngineThread_BeginStream(*m_RecordingExtraPassesIterator);
-            m_RecordingExtraPassesIterator->EngineThread_BeginFrame();
+            m_RecordingExtraPassesIterator->EngineThread_EndFrame();
 
             auto last_it = m_RecordingExtraPassesIterator;
             m_RecordingExtraPassesIterator++;
             if(m_RecordingExtraPassesIterator == m_RecordingExtraPasses.end()) break; // done.
             if(last_it->CompareRenderPass(*m_RecordingExtraPassesIterator) != 0) break; // done for this render pass.
         }
-    }
+    }    
 
     void EngineThread_BeginMainRenderPass() {
+        for(auto it = m_RecordingMainPass.begin(); it != m_RecordingMainPass.end(); it++) {
+            it->EngineThread_BeginFrame();
+        }
+
         if(m_Recording) {
             auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
 
@@ -2629,10 +2649,11 @@ public:
                 }
             }
         }
+    }
 
+    void EngineThread_EndMainRenderPass() {
         for(auto it = m_RecordingMainPass.begin(); it != m_RecordingMainPass.end(); it++) {
-            EngineThread_BeginStream(*it);
-            it->EngineThread_BeginFrame();
+            it->EngineThread_EndFrame();
         }
     }
 
@@ -2725,6 +2746,26 @@ private:
         }
 
         void EngineThread_BeginFrame() const {
+            // Execute before commands:
+            if(!m_Settings.BeforeCommands.empty())
+                ExecuteCommands(m_Settings.BeforeCommands);
+
+            // Setup clear color:
+            float clearColor[4];
+            if(WantsClearBeforeUi(clearColor)) {
+                float R = clearColor[0];
+                float G = clearColor[1];
+                float B = clearColor[2];
+                float A = clearColor[3];  
+                auto & renderPassCommands = g_RenderCommands.EngineThread_GetCommands();              
+                renderPassCommands.BeforeUi2.Push([R,G,B,A](IRenderPassCommands* context, ID3D11RenderTargetView * pTarget){
+                    float clearColor[4] = {R,G,B,A};
+                    context->GetContext()->ClearRenderTargetView(pTarget, clearColor);
+                });
+            }
+
+            // Setup capturing:
+
             if(nullptr == m_Capture) return;
 
             auto & renderPassCommands = g_RenderCommands.EngineThread_GetCommands();
@@ -2821,6 +2862,12 @@ private:
             }            
         }
 
+        void EngineThread_EndFrame() const {
+            // Execute after commands:
+            if(!m_Settings.AfterCommands.empty())
+                ExecuteCommands(m_Settings.AfterCommands);
+        }        
+
         bool WantsClearBeforeUi(float outColor[4]) const {
             if(m_Settings.ClearBeforeUi) {
                 outColor[0] = m_Settings.ClearBeforeUiColor.R;
@@ -2844,6 +2891,210 @@ private:
         CAfxStreams * m_Streams;
         CStreamSettings m_Settings;
         CAfxCapture * m_Capture;
+
+        void ExecuteCommands(const std::list<std::list<std::string>> & commands) const {
+            for(auto it = commands.begin(); it != commands.end(); it++) {
+                auto & command = *it;
+                auto it2 = command.begin();
+                if(it2 == command.end()) continue;
+                const char * pArg0 = it2->c_str();
+                auto cvar_handle = SOURCESDK::CS2::g_pCVar->FindConVar(pArg0, false);
+                if(SOURCESDK::CS2::Cvar_s * p_cvar = SOURCESDK::CS2::g_pCVar->GetCvar(cvar_handle.Get())) {
+                    const char * pszError = nullptr;
+                    const char * pszWrongNumberOfArguments = "Wrong number of arguments";
+                    auto & value = p_cvar->m_Value;
+                    switch(p_cvar->m_eVarType) {
+                    case SOURCESDK::CS2::EConVarType_Bool:
+                        if(command.size() < 2) pszError = pszWrongNumberOfArguments;
+                        else  {
+                            it2++;
+                            SOURCESDK::CS2::CVValue_t oldValue = {};
+                            oldValue.m_bValue = value.m_bValue;
+                            value.m_bValue = 0 == strcmp("true", it2->c_str()) || 0 != std::strtol(it2->c_str(),nullptr,10);
+                            SOURCESDK::CS2::g_pCVar->CallChangeCallback(cvar_handle, 0, &value, &oldValue);
+                        }
+                        break;
+                    case SOURCESDK::CS2::EConVarType_Int16:
+                        if(command.size() < 2) pszError = pszWrongNumberOfArguments;
+                        else  {
+                            it2++;
+                            SOURCESDK::CS2::CVValue_t oldValue = {};
+                            oldValue.m_i16Value = value.m_i16Value;                            
+                            value.m_i16Value = (int16_t)std::strtol(it2->c_str(),nullptr,10);
+                            SOURCESDK::CS2::g_pCVar->CallChangeCallback(cvar_handle, 0, &value, &oldValue);
+                        }
+                        break;
+                    case SOURCESDK::CS2::EConVarType_UInt16:
+                        if(command.size() < 2) pszError = pszWrongNumberOfArguments;
+                        else  {
+                            it2++;
+                            SOURCESDK::CS2::CVValue_t oldValue = {};
+                            oldValue.m_u16Value = value.m_u16Value;                            
+                            value.m_u16Value = (uint16_t)std::strtoul(it2->c_str(),nullptr,10);
+                            SOURCESDK::CS2::g_pCVar->CallChangeCallback(cvar_handle, 0, &value, &oldValue);
+                        }
+                        break;
+                    case SOURCESDK::CS2::EConVarType_Int32:
+                        if(command.size() < 2) pszError = pszWrongNumberOfArguments;
+                        else  {
+                            it2++;
+                            SOURCESDK::CS2::CVValue_t oldValue = {};
+                            oldValue.m_i32Value = value.m_i32Value;                               
+                            value.m_i32Value = (int32_t)std::strtol(it2->c_str(),nullptr,10);
+                            SOURCESDK::CS2::g_pCVar->CallChangeCallback(cvar_handle, 0, &value, &oldValue);
+                        }
+                        break;
+                    case SOURCESDK::CS2::EConVarType_UInt32:
+                        if(command.size() < 2) pszError = pszWrongNumberOfArguments;
+                        else  {
+                            it2++;
+                            SOURCESDK::CS2::CVValue_t oldValue = {};
+                            oldValue.m_u32Value = value.m_u32Value;                               
+                            value.m_u32Value = (uint32_t)std::strtoul(it2->c_str(),nullptr,10);
+                            SOURCESDK::CS2::g_pCVar->CallChangeCallback(cvar_handle, 0, &value, &oldValue);
+                        }
+                        break;
+                    case SOURCESDK::CS2::EConVarType_Int64:
+                        if(command.size() < 2) pszError = pszWrongNumberOfArguments;
+                        else  {
+                            it2++;
+                            SOURCESDK::CS2::CVValue_t oldValue = {};
+                            oldValue.m_i64Value = value.m_i64Value;                               
+                            value.m_i64Value = (int64_t)std::strtoll(it2->c_str(),nullptr,10);
+                            SOURCESDK::CS2::g_pCVar->CallChangeCallback(cvar_handle, 0, &value, &oldValue);
+                        }
+                        break;
+                    case SOURCESDK::CS2::EConVarType_UInt64:
+                        if(command.size() < 2) pszError = pszWrongNumberOfArguments;
+                        else  {
+                            it2++;
+                            SOURCESDK::CS2::CVValue_t oldValue = {};
+                            oldValue.m_u64Value = value.m_u64Value;                               
+                            value.m_u64Value = (uint64_t)std::strtoull(it2->c_str(),nullptr,10);
+                            SOURCESDK::CS2::g_pCVar->CallChangeCallback(cvar_handle, 0, &value, &oldValue);
+                        }
+                        break;
+                    case SOURCESDK::CS2::EConVarType_Float32:
+                        if(command.size() < 2) pszError = pszWrongNumberOfArguments;
+                        else  {
+                            it2++;
+                            SOURCESDK::CS2::CVValue_t oldValue = {};
+                            oldValue.m_flValue = value.m_flValue;                               
+                            value.m_flValue = std::strtof(it2->c_str(),nullptr);
+                            SOURCESDK::CS2::g_pCVar->CallChangeCallback(cvar_handle, 0, &value, &oldValue);
+                        }
+                        break;                    
+                    case SOURCESDK::CS2::EConVarType_Float64:
+                        if(command.size() < 2) pszError = pszWrongNumberOfArguments;
+                        else  {
+                            it2++;
+                            SOURCESDK::CS2::CVValue_t oldValue = {};
+                            oldValue.m_dbValue = value.m_dbValue;                               
+                            value.m_dbValue = std::strtod(it2->c_str(),nullptr);
+                            SOURCESDK::CS2::g_pCVar->CallChangeCallback(cvar_handle, 0, &value, &oldValue);
+                        }    
+                        break;           
+                    case SOURCESDK::CS2::EConVarType_String:
+                        if(command.size() < 2) pszError = pszWrongNumberOfArguments;
+                        else  {
+                            it2++;
+                            SOURCESDK::CS2::CVValue_t oldValue = {};
+                            oldValue.m_szValue.Set(value.m_szValue.Get());
+                            value.m_szValue.Set(it2->c_str());
+                            SOURCESDK::CS2::g_pCVar->CallChangeCallback(cvar_handle, 0, &value, &oldValue);
+                        }    
+                        break;           
+                    case SOURCESDK::CS2::EConVarType_Color:
+                        if(command.size() < 5) pszError = pszWrongNumberOfArguments;
+                        else  {
+                            it2++; float f1 = std::strtof(it2->c_str(),nullptr);
+                            it2++; float f2 = std::strtof(it2->c_str(),nullptr);
+                            it2++; float f3 = std::strtof(it2->c_str(),nullptr);
+                            it2++; float f4 =std::strtof( it2->c_str(),nullptr);
+                            SOURCESDK::CS2::CVValue_t oldValue = {};
+                            oldValue.m_clrValue = value.m_clrValue;
+                            value.m_clrValue.SetColor(f1,f2,f3,f4);
+                            SOURCESDK::CS2::g_pCVar->CallChangeCallback(cvar_handle, 0, &value, &oldValue);
+                        }
+                        break;                    
+                    case SOURCESDK::CS2::EConVarType_Vector2:
+                        if(command.size() < 3) pszError = pszWrongNumberOfArguments;
+                        else  {
+                            it2++; float f1 = std::strtof(it2->c_str(),nullptr);
+                            it2++; float f2 = std::strtof(it2->c_str(),nullptr);
+                            SOURCESDK::CS2::CVValue_t oldValue = {};
+                            oldValue.m_vec2Value = value.m_vec2Value;
+                            value.m_vec2Value.x = f1;
+                            value.m_vec2Value.y = f2;
+                            SOURCESDK::CS2::g_pCVar->CallChangeCallback(cvar_handle, 0, &value, &oldValue);
+                        }
+                        break;
+                    case SOURCESDK::CS2::EConVarType_Vector3:
+                        if(command.size() < 4) pszError = pszWrongNumberOfArguments;
+                        else  {
+                            it2++; float f1 = std::strtof(it2->c_str(),nullptr);
+                            it2++; float f2 = std::strtof(it2->c_str(),nullptr);
+                            it2++; float f3 = std::strtof(it2->c_str(),nullptr);
+                            SOURCESDK::CS2::CVValue_t oldValue = {};
+                            oldValue.m_vec3Value = value.m_vec3Value;
+                            value.m_vec3Value.x = f1;
+                            value.m_vec3Value.y = f2;
+                            value.m_vec3Value.z = f3;
+                            SOURCESDK::CS2::g_pCVar->CallChangeCallback(cvar_handle, 0, &value, &oldValue);
+                        }
+                        break;
+                    case SOURCESDK::CS2::EConVarType_Vector4:
+                        if(command.size() < 5) pszError = pszWrongNumberOfArguments;
+                        else  {
+                            it2++; float f1 = std::strtof(it2->c_str(),nullptr);
+                            it2++; float f2 = std::strtof(it2->c_str(),nullptr);
+                            it2++; float f3 = std::strtof(it2->c_str(),nullptr);
+                            it2++; float f4 =std::strtof( it2->c_str(),nullptr);
+                            SOURCESDK::CS2::CVValue_t oldValue = {};
+                            oldValue.m_vec4Value = value.m_vec4Value;
+                            value.m_vec4Value.x = f1;
+                            value.m_vec4Value.y = f2;
+                            value.m_vec4Value.z = f3;
+                            value.m_vec4Value.w = f4;
+                            SOURCESDK::CS2::g_pCVar->CallChangeCallback(cvar_handle, 0, &value, &oldValue);
+                        }
+                        break;
+                    case SOURCESDK::CS2::EConVarType_Qangle:
+                        if(command.size() < 4) pszError = pszWrongNumberOfArguments;
+                        else  {
+                            it2++; float f1 = std::strtof(it2->c_str(),nullptr);
+                            it2++; float f2 = std::strtof(it2->c_str(),nullptr);
+                            it2++; float f3 = std::strtof(it2->c_str(),nullptr);
+                            SOURCESDK::CS2::CVValue_t oldValue = {};
+                            oldValue.m_angValue = value.m_angValue;
+                            value.m_angValue.x = f1;
+                            value.m_angValue.y = f2;
+                            value.m_angValue.z = f3;
+                            SOURCESDK::CS2::g_pCVar->CallChangeCallback(cvar_handle, 0, &value, &oldValue);
+                        }
+                        break;
+                    default:
+                        pszError = "Unknown cvar type";
+                        break;
+                    }
+                    if(pszError){
+                        advancedfx::Warning("AFXWARNING: \"%s\" cvar to be set has the following problem: %s.", pArg0,pszError);
+                    }
+                } else {
+                   SOURCESDK::CS2::ConCommandHandle cmd_handle = SOURCESDK::CS2::g_pCVar->FindCommand(pArg0, false );
+                    if(cmd_handle.IsValid()) {
+                        std::vector<const char *> vecArgs(command.size());
+                        size_t i = 0;
+                        while(it2 != command.end()) {
+                            vecArgs[i] = it2->c_str();
+                        }
+                        SOURCESDK::CS2::g_pCVar->DispatchConCommand(cmd_handle, SOURCESDK::CS2::CCommandContext(SOURCESDK::CS2::CT_FIRST_SPLITSCREEN_CLIENT,0), SOURCESDK::CS2::CCommand(vecArgs.size(),vecArgs.data()));
+                    } else {
+                        advancedfx::Warning("AFXWARNING: \"%s\" to be set / executed is not a command or cvar.", pArg0);
+                    }
+                }
+            }
+        }
 	};
 
     struct RenderPassCompare {
@@ -2933,21 +3184,6 @@ private:
 
         return true;
     }
-
-    void EngineThread_BeginStream(const class CStream & stream) {
-        float clearColor[4];
-        if(stream.WantsClearBeforeUi(clearColor)) {
-            float R = clearColor[0];
-            float G = clearColor[1];
-            float B = clearColor[2];
-            float A = clearColor[3];  
-            auto & renderPassCommands = g_RenderCommands.EngineThread_GetCommands();              
-            renderPassCommands.BeforeUi2.Push([R,G,B,A](IRenderPassCommands* context, ID3D11RenderTargetView * pTarget){
-                float clearColor[4] = {R,G,B,A};
-                context->GetContext()->ClearRenderTargetView(pTarget, clearColor);
-            });
-        }
-    }    
 } g_AfxStreams;
 
 bool g_bEngine_Prepared = false;
@@ -3080,6 +3316,57 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
 
 	advancedfx::Message(
 		"%s normal|depth|hudBlack|hudWhite <sUiniqueStreamName> - Adds a stream of given type.\n"
+		, arg0
+	);
+}
+
+void CAfxStreams::Console_Edit_RenderCommands(std::list<std::list<std::string>> & commands, advancedfx::ICommandArgs* args) {
+ 	int argC = args->ArgC();
+	char const* arg0 = args->ArgV(0);
+    
+    if(2 <= argC) {
+        char const* arg1 = args->ArgV(1);
+        if(0 == strcmp("add", arg1))
+        {
+            if(3 <= argC) {
+                std::list<std::string> command;
+                for(int i = 2; i < argC; i++) {
+                    command.emplace_back(args->ArgV(i));
+                }
+                commands.emplace_back(command);
+                return;
+            }
+            advancedfx::Message(
+                "%s add <sCommandOrCvar> (<sArgument>)*\n"
+                , arg0
+            );
+            return;
+        }
+        else if(0 == strcmp("print",arg1)) {
+            int index = 0;
+            for(auto it = commands.begin(); it != commands.end(); it++){
+                auto & command = *it;
+                advancedfx::Message("%i:", index);
+                for(auto it2 = command.begin(); it2 != command.end(); it2++){
+                    advancedfx::Message(" \"%s\"", it2->c_str());                    
+                }
+                advancedfx::Message("\n");
+                index++;
+            }
+            return;
+        }
+        else if(0 == strcmp("clear",arg1)) {
+            commands.clear();
+            return;
+        }
+    }
+    
+	advancedfx::Message(
+		"%s add [...] - Adds a command with arguments to the list.\n"
+		"%s print - Prints the command list.\n"
+		"%s clear - Clears the command list.\n"
+		, arg0
+		, arg0
 		, arg0
 	);
 }
@@ -3435,6 +3722,14 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
                     , stream.AutoForceFullResSmoke ? 1 : 0
                 );
                 return;
+            } else if(0 == _stricmp("beforeCommands", arg2)) {
+                advancedfx::CSubCommandArgs subArgs(args, 3);
+                g_AfxStreams.Console_Edit_RenderCommands(stream.BeforeCommands, &subArgs);
+                return;            
+            } else if(0 == _stricmp("afterCommands", arg2)) {
+                advancedfx::CSubCommandArgs subArgs(args, 3);
+                g_AfxStreams.Console_Edit_RenderCommands(stream.AfterCommands, &subArgs);
+                return;
             }
         }
 
@@ -3482,6 +3777,15 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
             "%s %s autoForceFullResSmoke [...] - When capturing smoke depth: If to force the engine into full resolution smoke passes (recommended). (Globally shared!)\n"
             , arg0, arg1
         );
+        /*
+        advancedfx::Message(
+            "%s %s beforeCommands [...] - Commands to execute before the stream is rendered.\n"
+            , arg0, arg1
+        );        
+        advancedfx::Message(
+            "%s %s afterCommands [...] - Commands to execute before the stream is rendered.\n"
+            , arg0, arg1
+        );*/        
         return;
     }
 
@@ -3818,10 +4122,19 @@ void RenderSystemDX11_EngineThread_BeginNextRenderPass() {
     g_RenderCommands.EngineThread_BeginFrame();
 }
 
+void RenderSystemDX11_EngineThread_EndNextRenderPass() {
+    g_AfxStreams.EngineThread_EndNextRenderPass();
+}
+
 void RenderSystemDX11_EngineThread_BeginMainRenderPass() {
     g_AfxStreams.EngineThread_BeginMainRenderPass();
     g_RenderCommands.EngineThread_BeginFrame();
 }
+
+void RenderSystemDX11_EngineThread_EndMainRenderPass() {
+    g_AfxStreams.EngineThread_EndMainRenderPass();
+}
+
 
 void RenderSystemDX11_SupplyProjectionMatrix(const SOURCESDK::VMatrix & projectionMatrix) {
     g_EngineThread_ProjectionMatrix.Set(projectionMatrix);

@@ -12,8 +12,10 @@ void RenderSystemDX11_EngineThread_Prepare();
 bool RenderSystemDX11_EngineThread_HasNextRenderPass();
 
 void RenderSystemDX11_EngineThread_BeginNextRenderPass();
+void RenderSystemDX11_EngineThread_EndNextRenderPass();
 
 void RenderSystemDX11_EngineThread_BeginMainRenderPass();
+void RenderSystemDX11_EngineThread_EndMainRenderPass();
 
 void Hook_RenderSystemDX11(void * hModule);
 
