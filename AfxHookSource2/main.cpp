@@ -1428,7 +1428,9 @@ void * new_CS2_Client_LevelInitPreEntity(void* This, void * pUnk1, void * pUnk2)
 }
 
 typedef void (* CS2_Client_FrameStageNotify_t)(void* This, SOURCESDK::CS2::ClientFrameStage_t curStage);
+
 CS2_Client_FrameStageNotify_t old_CS2_Client_FrameStageNotify;
+
 void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameStage_t curStage) {
 
 	/*
@@ -2090,7 +2092,7 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 
 		g_Import_engine2.Apply(hModule);
 
-		Hook_RenderService();
+		Hook_Engine_RenderService();
 	}
 	else if(bFirstSceneSystem && StringEndsWithW( lpLibFileName, L"scenesystem.dll"))
 	{
@@ -2118,6 +2120,8 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		bFirstClient = false;
 
 		g_H_ClientDll = hModule;
+
+		Addresses_InitClientDll((AfxAddr)hModule);
 
 		//if(!g_Import_client.Apply(hModule)) ErrorBox("client.dll steam_api64 hooks failed.");
 

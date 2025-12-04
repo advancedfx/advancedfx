@@ -72,3 +72,8 @@ void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
 			ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
 }
+
+
+void Addresses_InitClientDll(AfxAddr clientDll) {
+
+}

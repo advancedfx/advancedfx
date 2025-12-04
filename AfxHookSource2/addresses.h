@@ -5,3 +5,4 @@
 AFXADDR_DECL(cs2_engine_CRenderService_OnClientOutput)
 
 void Addresses_InitEngine2Dll(AfxAddr engine2Dll);
+void Addresses_InitClientDll(AfxAddr engine2Dll);

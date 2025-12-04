@@ -146,6 +146,8 @@ private:
         auto itRhs = rhs.begin();
         while(itLhs != lhs.end() && itRhs != rhs.end()) {
             if(int cmp = itLhs->compare(*itRhs)) return cmp;
+            itLhs++;
+            itRhs++;
         }
         if(itLhs != lhs.end()) return 1;
         if(itRhs != rhs.end()) return -1;
@@ -157,6 +159,8 @@ private:
         auto itRhs = rhs.begin();
         while(itLhs != lhs.end() && itRhs != rhs.end()) {
             if(int cmp = CompareCommand(*itLhs, *itRhs)) return cmp;
+            itLhs++;
+            itRhs++;
         }
         if(itLhs != lhs.end()) return 1;
         if(itRhs != rhs.end()) return -1;

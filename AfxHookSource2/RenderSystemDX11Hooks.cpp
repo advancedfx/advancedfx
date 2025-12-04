@@ -1667,7 +1667,7 @@ void STDMETHODCALLTYPE New_PSSetShader(ID3D11DeviceContext* This,
 
     if (This == g_pImmediateContext) {
         if(2 <= g_iRenderContextDebug) {
-            static char temp[1024];
+            char temp[1024];
             UINT dataSize = 1023;
             if (pPixelShader && SUCCEEDED(pPixelShader->GetPrivateData(WKPDID_D3DDebugObjectName, &dataSize, &temp[0])) && 0 <= dataSize && dataSize < 1024) {
                 temp[dataSize] = '\0';
@@ -3087,6 +3087,8 @@ private:
                         size_t i = 0;
                         while(it2 != command.end()) {
                             vecArgs[i] = it2->c_str();
+                            it2++;
+                            i++;
                         }
                         SOURCESDK::CS2::g_pCVar->DispatchConCommand(cmd_handle, SOURCESDK::CS2::CCommandContext(SOURCESDK::CS2::CT_FIRST_SPLITSCREEN_CLIENT,0), SOURCESDK::CS2::CCommand(vecArgs.size(),vecArgs.data()));
                     } else {

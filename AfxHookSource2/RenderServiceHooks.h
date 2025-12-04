@@ -1,3 +1,3 @@
 #pragma once
 
-bool Hook_RenderService();
+bool Hook_Engine_RenderService();
