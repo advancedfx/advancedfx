@@ -74,9 +74,7 @@ public:
             //AfterSmokeDepth.Clear();
             BeforeUi.Clear();
             BeforeUi2.Clear();
-            BeforeNextPassOrBeforePresent.Clear();
             BeforePresent.Clear();
-            BeforeNextPassOrAfterPresent.Clear();
             AfterPresent.Clear();
         }
 
@@ -103,11 +101,7 @@ public:
         
         CQueue<FnContextTarget> BeforeUi2;
 
-        CQueue<FnContextTexture> BeforeNextPassOrBeforePresent;
-
         CQueue<FnContextTexture> BeforePresent;
-
-        CQueue<FnContext> BeforeNextPassOrAfterPresent;
 
         CQueue<FnContext> AfterPresent;
 
@@ -130,26 +124,12 @@ public:
             }
         }        
         
-        void OnBeforeNextPassOrBeforePresent(ID3D11Texture2D * pTexture) {
-            while(!BeforeNextPassOrBeforePresent.Empty()) {
-                BeforeNextPassOrBeforePresent.Front()(this, pTexture);
-                BeforeNextPassOrBeforePresent.Pop();
-            }
-        }
-
         void OnBeforePresent(ID3D11Texture2D * pTexture) {
             while(!BeforePresent.Empty()) {
                 BeforePresent.Front()(this, pTexture);
                 BeforePresent.Pop();
             }
         }
-
-        void OnBeforeNextPassOrAfterPresent() {
-            while(!BeforeNextPassOrAfterPresent.Empty()) {
-                BeforeNextPassOrAfterPresent.Front()(this);
-                BeforeNextPassOrAfterPresent.Pop();
-            }
-        }        
 
         void OnAfterPresent() {
             while(!AfterPresent.Empty()) {

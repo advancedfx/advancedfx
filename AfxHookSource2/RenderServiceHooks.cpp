@@ -20,49 +20,73 @@ typedef void (__fastcall * Tier0_EventListener_t)(void * pUnk0, void * pUnk1);
 
 Tier0_EventListener_t g_Engine2_RenderService_OnClientOutput = nullptr;
 
+bool g_bHad_ClientOutput = false;
+bool g_bLastPassWasExtra = false;
+
+typedef void (__fastcall * SceneSystem_WaitForRenderingToComplete_t)(void * pThis);
+SceneSystem_WaitForRenderingToComplete_t g_Old_SceneSystem_WaitForRenderingToComplete = nullptr;
+void __fastcall My_SceneSystem_WaitForRenderingToComplete(void * pThis) {
+    g_Old_SceneSystem_WaitForRenderingToComplete(pThis);
+
+    if(!g_bHad_ClientOutput) return;
+    g_bHad_ClientOutput = false;
+
+    if(g_bLastPassWasExtra) {
+        g_bLastPassWasExtra = false;
+        RenderSystemDX11_EngineThread_EndNextRenderPass();
+    }
+    else RenderSystemDX11_EngineThread_EndMainRenderPass();
+
+    RenderSystemDX11_EngineThread_Finish();
+}
+
 void __fastcall My_Engine2_RenderService_OnClientOutput(void * pUnk0, void * pUnk1) {
+
+    g_bHad_ClientOutput = true;
 
     RenderSystemDX11_EngineThread_Prepare();
 
-    while(RenderSystemDX11_EngineThread_HasNextRenderPass()) {
-        RenderSystemDX11_EngineThread_BeginNextRenderPass();
-
-        if(g_pSceneSystem) {
-            g_Engine2_RenderService_OnClientOutput(pUnk0,pUnk1);
-
-            void ** vtable = *(void***)g_pSceneSystem;
-
-            void (__fastcall * WaitForRenderingToComplete)(void *) = (void (__fastcall *)(void *))(vtable[26]);
-            WaitForRenderingToComplete(g_pSceneSystem);
-
-            void (__fastcall * FrameUpdate)(void *, const char *) = (void (__fastcall *)(void *, const char *))(vtable[73]);
-            FrameUpdate(g_pSceneSystem, "advancedfx");
-    
-/*
-            0 != *((unsigned char *)g_pSceneSystem +  0x2a72) // Begin has been called. "Begin has already been called without an intervening render"
-*//*
-            void (__fastcall * BeginRendering)(void *, void *)  = (void (__fastcall *)(void *, void *))(vtable[20]);
-            BeginRendering(g_pSceneSystem,g_pRenderDevice);
-
-            void (__fastcall * FinishRenderingViews)(void *)  = (void (__fastcall *)(void *))(vtable[25]);
-            FinishRenderingViews(g_pSceneSystem);
-*//*        
-            void (__fastcall * OnClientPostOutput)(void *, void *)  = (void (__fastcall *)(void *, void *))AFXADDR_GET(cs2_client_CLoopModeGame_OnClientPostOutput);
-            OnClientPostOutput(nullptr,(void*)AFXADDR_GET(cs2_client_CLoopModeGame_OnClientPostOutput_arg1));
-
-            void (__fastcall * OnClientPreOutput)(void *, void *)  = (void (__fastcall *)(void *, void *))AFXADDR_GET(cs2_client_CLoopModeGame_OnClientPreOutput);
-            OnClientPreOutput(nullptr,(void*)AFXADDR_GET(cs2_client_CLoopModeGame_OnClientPreOutput_arg1));
-*/                
-        }
-
-        RenderSystemDX11_EngineThread_EndNextRenderPass();
-    }
+    // We need to do the a normal / main render pass first, since it's used to generate the UI background texture
+    // and it won't be re-generated in subsequent passes.
 
     RenderSystemDX11_EngineThread_BeginMainRenderPass();
 
     g_Engine2_RenderService_OnClientOutput(pUnk0,pUnk1);
 
-    RenderSystemDX11_EngineThread_EndMainRenderPass();
+    if(RenderSystemDX11_EngineThread_HasNextRenderPass()) {
+
+        bool bFirstExtraPass = true;
+        g_bLastPassWasExtra = true;
+
+        while(RenderSystemDX11_EngineThread_HasNextRenderPass()) {
+
+            if(g_pSceneSystem && g_Old_SceneSystem_WaitForRenderingToComplete) {
+                void ** vtable = *(void***)g_pSceneSystem;
+
+                g_Old_SceneSystem_WaitForRenderingToComplete(g_pSceneSystem);
+
+                void (__fastcall * FrameUpdate)(void *, unsigned char) = (void (__fastcall *)(void *, unsigned char))(vtable[73]);
+                FrameUpdate(g_pSceneSystem, 1);
+
+                // Note:
+                // We are wasteful here, since we always wait for the render to finish and begin a new render,
+                // even if not needed after the last pass.
+                // But this way we need less hooks and logic (otherwise we would need to put RenderSystemDX11_EngineThread_EndNextRenderPass elsewhere).
+                // This can be optimized in future I guess.
+            }
+
+            if(bFirstExtraPass){
+                bFirstExtraPass = false;
+                RenderSystemDX11_EngineThread_EndMainRenderPass();
+            } else RenderSystemDX11_EngineThread_EndNextRenderPass();
+
+            RenderSystemDX11_EngineThread_BeginNextRenderPass();
+
+            if(g_pSceneSystem && g_Old_SceneSystem_WaitForRenderingToComplete) {
+                g_Engine2_RenderService_OnClientOutput(pUnk0,pUnk1);
+            }
+        }
+    }
 }
 
 bool Hook_Engine_RenderService() {
@@ -89,3 +113,27 @@ bool Hook_Engine_RenderService() {
     return bFirsResult;
 }
 
+bool Hook_SceneSystem_WaitForRenderingToComplete(void * g_pSceneSystem) {
+    static bool bFistRun = true;
+    static bool bFirsResult = false;
+
+    if(bFistRun) {
+        bFistRun = false;
+
+        if(g_pSceneSystem) {
+            void ** vtable = *(void***)g_pSceneSystem;
+
+            g_Old_SceneSystem_WaitForRenderingToComplete = (SceneSystem_WaitForRenderingToComplete_t)(vtable[26]);
+
+    		DetourTransactionBegin();
+	    	DetourUpdateThread(GetCurrentThread());
+		
+		    DetourAttach(&(PVOID&)g_Old_SceneSystem_WaitForRenderingToComplete, My_SceneSystem_WaitForRenderingToComplete);
+
+            bFirsResult = NO_ERROR == DetourTransactionCommit();
+		
+		    if(!bFirsResult) ErrorBox("Hook_SceneSystem_WaitForRenderingToComplete failed.");            
+        }        
+    }
+    return bFirsResult;
+}

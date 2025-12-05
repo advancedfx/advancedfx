@@ -3,6 +3,7 @@
 #include "RenderSystemDX11Hooks.h"
 
 #include "CampathDrawer.h"
+#include "RenderServiceHooks.h"
 #include "ReShadeAdvancedfx.h"
 #include "WrpConsole.h"
 #include "CamIO.h"
@@ -66,6 +67,7 @@ CRenderCommands g_RenderCommands;
 bool g_bEnableReShade = true;
 bool g_bReShadeCompositeSmoke = true;
 bool g_bCompositeSmoke = false;
+bool g_bExpectPresent = false;
 ID3D11RenderTargetView* g_BeforeUiRT = nullptr;
 
 class CAfxCpuTexture
@@ -1116,6 +1118,10 @@ private:
 
 
 IDXGISwapChain * g_pSwapChain = nullptr;
+UINT g_Present_LastSyncInterval = 0;
+UINT g_Present_LastPresentFlags = DXGI_PRESENT_ALLOW_TEARING;
+bool g_Present_Suppress = false;
+HRESULT g_Present_LastResult = S_OK;
 ID3D11Device * g_pDevice = nullptr;
 ID3D11DeviceContext * g_pOtherContext = nullptr;
 ID3D11RenderTargetView* g_pRTView = nullptr;
@@ -1446,11 +1452,26 @@ void STDMETHODCALLTYPE New_OMSetRenderTargets( ID3D11DeviceContext * This,
     g_Old_OMSetRenderTargets(This, NumViews, ppRenderTargetViews, pDepthStencilView);
 }
 
+
 class IRenderThreadCallback abstract {
 public:
     virtual void OnCallback(void) abstract = 0;
 };
 
+
+typedef HRESULT (STDMETHODCALLTYPE * Present_t)( void * This,
+            /* [in] */ UINT SyncInterval,
+            /* [in] */ UINT Flags);
+
+Present_t g_OldPresent = nullptr;
+
+HRESULT STDMETHODCALLTYPE New_Present( void * This,
+            /* [in] */ UINT SyncInterval,
+            /* [in] */ UINT Flags);
+
+void Before_Present();
+void After_Present();
+            
 class CAfxRenderCallbackUpdateBuffers : public IRenderThreadCallback
 {
 public:
@@ -1460,37 +1481,13 @@ public:
 
     virtual void OnCallback(void) {
         if(g_RenderCommands.RenderThread_FrameBegun()) {
-            if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands())
-            {
-                if(!pRenderPassCommands->BeforeNextPassOrAfterPresent.Empty())
-                {
-                    if(g_BeforeUiRT) {
-                        ID3D11Resource* pRenderTargetViewResource = nullptr;
-                        g_BeforeUiRT->GetResource(&pRenderTargetViewResource);
-                        if(pRenderTargetViewResource) {
-                            ID3D11Texture2D * pTexture = nullptr;
-                            if(SUCCEEDED(pRenderTargetViewResource->QueryInterface(__uuidof(ID3D11Texture2D),(void**)&pTexture))){
-                                if(pTexture) {
-                                    pRenderPassCommands->OnBeforeNextPassOrBeforePresent(pTexture);
-                                    pTexture->Release();
-                                }
-                            }
-                            pRenderTargetViewResource->Release();
-                        }
-                    }
-                }
+            Before_Present();
 
-                pRenderPassCommands->OnBeforeNextPassOrAfterPresent();
+            if(g_bExpectPresent && g_pSwapChain) {
+                g_Present_LastResult = g_OldPresent(g_pSwapChain, g_Present_LastSyncInterval, g_Present_LastPresentFlags);
             }
 
-            g_RenderCommands.RenderThread_EndFrame(g_pImmediateContext);
-
-            g_DepthCompositor.OnEndFrame();
-
-            if(g_BeforeUiRT) {
-                g_BeforeUiRT->Release();
-                g_BeforeUiRT = nullptr;
-            }
+            After_Present();
         }
 
         g_RenderCommands.RenderThread_BeginFrame(g_pImmediateContext);
@@ -1795,16 +1792,7 @@ HRESULT WINAPI New_D3D11CreateDevice(
     return result;
 }
 
-typedef HRESULT (STDMETHODCALLTYPE * Present_t)( void * This,
-            /* [in] */ UINT SyncInterval,
-            /* [in] */ UINT Flags);
-
-Present_t g_OldPresent = nullptr;
-
-HRESULT STDMETHODCALLTYPE New_Present( void * This,
-            /* [in] */ UINT SyncInterval,
-            /* [in] */ UINT Flags) {
- 
+void Before_Present() {
     g_bInOwnDraw = true;
 
     g_CampathDrawer.OnRenderThread_Present();
@@ -1815,19 +1803,17 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
 
     if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands())
     {
-        if(!pRenderPassCommands->BeforeNextPassOrBeforePresent.Empty() || !pRenderPassCommands->BeforePresent.Empty()) {
+        if(!pRenderPassCommands->BeforePresent.Empty()) {
             ID3D11Texture2D * pTexture = nullptr;
             if(g_pSwapChain) g_pSwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D), (void**)&pTexture);            
-            pRenderPassCommands->OnBeforeNextPassOrBeforePresent(pTexture);
             pRenderPassCommands->OnBeforePresent(pTexture);
             if(pTexture) pTexture->Release();
         }
     }
+}
 
-    HRESULT result = g_OldPresent(This, SyncInterval, Flags);
-
+void After_Present() {
     if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands()) {
-        pRenderPassCommands->OnBeforeNextPassOrAfterPresent();
         pRenderPassCommands->OnAfterPresent();
         pRenderPassCommands->OnAfterPresentOrContextLossReliable();
     }
@@ -1842,6 +1828,20 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
     if(g_BeforeUiRT) g_BeforeUiRT->Release();
     g_BeforeUiRT = nullptr;
     g_iDraw = 0;
+}
+
+HRESULT STDMETHODCALLTYPE New_Present( void * This,
+            /* [in] */ UINT SyncInterval,
+            /* [in] */ UINT Flags) {
+
+    g_Present_LastSyncInterval = SyncInterval;
+    g_Present_LastPresentFlags = Flags;
+ 
+    Before_Present();
+
+    HRESULT result = g_Present_Suppress ? g_Present_LastResult : (g_Present_LastResult = g_OldPresent(This, SyncInterval, Flags));
+    
+    After_Present();
 
     return result;
 }
@@ -2622,6 +2622,8 @@ public:
             if(m_RecordingExtraPassesIterator == m_RecordingExtraPasses.end()) break; // done.
             if(last_it->CompareRenderPass(*m_RecordingExtraPassesIterator) != 0) break; // done for this render pass.
         }
+
+        EngineThread_Suppress_Present();
     }    
 
     void EngineThread_BeginMainRenderPass() {
@@ -2655,7 +2657,10 @@ public:
         for(auto it = m_RecordingMainPass.begin(); it != m_RecordingMainPass.end(); it++) {
             it->EngineThread_EndFrame();
         }
+
+        if(EngineThread_HasNextRenderPass()) EngineThread_Expect_Present();
     }
+
 
 private:
     class CStream : public advancedfx::IRecordStreamSettings {
@@ -2778,7 +2783,7 @@ private:
             CStreamSettings::DepthChannels_e depthChannels = m_Settings.DepthChannels;
             CStreamSettings::DepthMode_e depthMode = m_Settings.DepthMode;
             {
-                auto &queue = m_Settings.Capture == CStreamSettings::Capture_e::BeforeUi ? renderPassCommands.BeforeUi : renderPassCommands.BeforeNextPassOrBeforePresent;
+                auto &queue = m_Settings.Capture == CStreamSettings::Capture_e::BeforeUi ? renderPassCommands.BeforeUi : renderPassCommands.BeforePresent;
                 queue.Push([capture,captureType,depthCompositeSmoke,depth24,depthVal,depthValMax,depthChannels,depthMode](IRenderPassCommands* context, ID3D11Texture2D * pTexture){
                     ID3D11DeviceContext* pDeviceContext = context->GetContext();
                     bool bSkipFrame = context->GetSkipFrame();
@@ -2855,7 +2860,7 @@ private:
                 }); 
             }
             {
-                auto & queue = renderPassCommands.BeforeNextPassOrAfterPresent;
+                auto & queue = renderPassCommands.AfterPresent;
                 queue.Push([capture](IRenderPassCommands* context){
                     if(!context->GetSkipFrame()) capture->OnAfterGpuPresent(context->GetContext());
                 }); 
@@ -3186,14 +3191,48 @@ private:
 
         return true;
     }
+
+    void EngineThread_Suppress_Present() {
+        auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
+        {
+            auto & queue = pRenderPassCommands.BeforePresent;
+            CAfxCapture * capture = g_ActiveCapture;
+            queue.Push([capture](IRenderPassCommands* context, ID3D11Texture2D * pTexture){
+                g_Present_Suppress = true;
+            }); 
+        }
+        {
+            auto & queue = pRenderPassCommands.AfterPresent;
+            CAfxCapture * capture = g_ActiveCapture;
+            queue.Push([capture](IRenderPassCommands* context){
+                g_Present_Suppress = false;
+            }); 
+        }
+    }
+
+    void EngineThread_Expect_Present() {
+        auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
+        {
+            auto & queue = pRenderPassCommands.BeforePresent;
+            CAfxCapture * capture = g_ActiveCapture;
+            queue.Push([capture](IRenderPassCommands* context, ID3D11Texture2D * pTexture){
+                g_bExpectPresent = true;
+            }); 
+        }
+        {
+            auto & queue = pRenderPassCommands.AfterPresent;
+            CAfxCapture * capture = g_ActiveCapture;
+            queue.Push([capture](IRenderPassCommands* context){
+                g_bExpectPresent = false;
+            }); 
+        }        
+    }
 } g_AfxStreams;
 
 bool g_bEngine_Prepared = false;
 
 bool __fastcall New_CRenderDeviceBase_Present(
     void * This, void * Rdx, void * R8d, void * R9d, void * Stack0, void * Stack1, void * Stack2, void * Stack3, void * Stack4) {
-
-    g_CampathDrawer.OnEngineThread_EndFrame();
 
     bool result = g_Old_CRenderDeviceBase_Present(This, Rdx, R8d, R9d, Stack0, Stack1, Stack2, Stack3, Stack4);
 
@@ -4113,6 +4152,10 @@ void RenderSystemDX11_EngineThread_Prepare() {
             g_RenderThread_ProjectionMatrix.Set(projectionMatrix);
         });
     }
+}
+
+void RenderSystemDX11_EngineThread_Finish() {
+    g_CampathDrawer.OnEngineThread_EndFrame();
 }
 
 bool RenderSystemDX11_EngineThread_HasNextRenderPass() {

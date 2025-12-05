@@ -1220,6 +1220,7 @@ int new_CCS2_Client_Connect(void* This, SOURCESDK::CreateInterfaceFn appSystemFa
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 		if (g_pSceneSystem = (SOURCESDK::CS2::IGameUIService*)appSystemFactory("SceneSystem_002", NULL)) {
+			Hook_SceneSystem_WaitForRenderingToComplete(g_pSceneSystem);
 		}
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
