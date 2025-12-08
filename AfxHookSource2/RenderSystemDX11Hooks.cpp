@@ -3168,7 +3168,7 @@ private:
     float m_OldValue_host_framerate;
     bool m_OldValue_r_always_render_all_windows;
     int m_OldValue_engine_no_focus_sleep;
-    bool m_OldValue_r_wait_on_present;
+    //bool m_OldValue_r_wait_on_present;
 
     bool m_AutoForceFullReSmoke = false;
 
@@ -3946,7 +3946,7 @@ void CAfxStreams::RecordStart()
         SOURCESDK::CS2::Cvar_s * handle_host_framerate = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("host_framerate", false).Get());
         SOURCESDK::CS2::Cvar_s * handle_engine_no_focus_sleep = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("engine_no_focus_sleep", false).Get());
         SOURCESDK::CS2::Cvar_s * handle_r_always_render_all_windows = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_always_render_all_windows", false).Get());
-        SOURCESDK::CS2::Cvar_s * handle_r_wait_on_present = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_wait_on_present", false).Get());
+        //SOURCESDK::CS2::Cvar_s * handle_r_wait_on_present = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_wait_on_present", false).Get());
         
         m_UsedHostFramerRateValue = GetOverrideFps();
 
@@ -3965,10 +3965,10 @@ void CAfxStreams::RecordStart()
             handle_r_always_render_all_windows->m_Value.m_bValue = true;
         }
 
-        if(handle_r_wait_on_present) {
+        /*if(handle_r_wait_on_present) {
             m_OldValue_r_wait_on_present = handle_r_wait_on_present->m_Value.m_bValue;
             handle_r_wait_on_present->m_Value.m_bValue = true;            
-        }
+        }*/
 
 		float host_framerate = m_OverrideFps ? m_OverrideFpsValue : (handle_host_framerate != nullptr ? handle_host_framerate->m_Value.m_flValue : 0);
 		double frameTime;
@@ -4112,15 +4112,15 @@ void CAfxStreams::RecordEnd()
         SOURCESDK::CS2::Cvar_s * handle_host_framerate = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("host_framerate", false).Get());
         SOURCESDK::CS2::Cvar_s * handle_engine_no_focus_sleep = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("engine_no_focus_sleep", false).Get());
         SOURCESDK::CS2::Cvar_s * handle_r_always_render_all_windows = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_always_render_all_windows", false).Get());
-        SOURCESDK::CS2::Cvar_s * handle_r_wait_on_present = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_wait_on_present", false).Get());
+        //SOURCESDK::CS2::Cvar_s * handle_r_wait_on_present = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_wait_on_present", false).Get());
 
         if(m_UsedHostFramerRateValue && handle_host_framerate) {
             handle_host_framerate->m_Value.m_flValue = m_OldValue_host_framerate;
         }
 
-        if(handle_r_wait_on_present) {
+        /*if(handle_r_wait_on_present) {
             handle_r_wait_on_present->m_Value.m_bValue = m_OldValue_r_wait_on_present;
-        }
+        }*/
 
         if(handle_engine_no_focus_sleep) {
             handle_engine_no_focus_sleep->m_Value.m_i32Value = m_OldValue_engine_no_focus_sleep;
