@@ -25,11 +25,9 @@ CRenderCommands::CRenderPassCommands & CRenderCommands::EngineThread_GetCommands
     return *m_EngineThreadCommands;
 }
 
-void CRenderCommands::EngineThread_BeginFrame() {
+void CRenderCommands::EngineThread_EndFrame() {
 
     // Submit current frame:
-
-    m_EngineThread_FrameBegun = true;
 
     CRenderPassCommands* pRenderPassCommands = m_EngineThreadCommands;
     m_EngineThreadCommands = nullptr;

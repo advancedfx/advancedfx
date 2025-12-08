@@ -149,8 +149,8 @@ public:
     };
 
     CRenderPassCommands & EngineThread_GetCommands();
-
-    void EngineThread_BeginFrame();
+   
+    void EngineThread_EndFrame();
 
     CRenderPassCommands * RenderThread_GetCommands();
 
@@ -168,7 +168,6 @@ private:
     std::queue<CRenderPassCommands *> m_Reusable;
     CRenderPassCommands * m_EngineThreadCommands = nullptr;
     CRenderPassCommands * m_RenderThreadCommands = nullptr;
-    bool m_EngineThread_FrameBegun = false;
     bool m_RenderThread_FrameBegun = false;
 };
  

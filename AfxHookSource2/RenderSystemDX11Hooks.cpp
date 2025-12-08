@@ -1601,7 +1601,8 @@ public:
                         }
         
                     }
-                }            
+                }
+                if(g_BeforeUiRT) g_BeforeUiRT->Release();
                 g_BeforeUiRT = pRenderTargetViews[0];
             }
         }
@@ -1804,10 +1805,20 @@ void Before_Present() {
     if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands())
     {
         if(!pRenderPassCommands->BeforePresent.Empty()) {
-            ID3D11Texture2D * pTexture = nullptr;
-            if(g_pSwapChain) g_pSwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D), (void**)&pTexture);            
-            pRenderPassCommands->OnBeforePresent(pTexture);
-            if(pTexture) pTexture->Release();
+            ID3D11Resource* pRenderTargetViewResource = nullptr;
+            if(g_BeforeUiRT) {
+                g_BeforeUiRT->GetResource(&pRenderTargetViewResource);
+                if(pRenderTargetViewResource) {
+                    ID3D11Texture2D * pTexture = nullptr;
+                    if(SUCCEEDED(pRenderTargetViewResource->QueryInterface(__uuidof(ID3D11Texture2D),(void**)&pTexture))){
+                        if(pTexture) {
+                            pRenderPassCommands->OnBeforePresent(pTexture);
+                            pTexture->Release();
+                        }
+                    }
+                    pRenderTargetViewResource->Release();
+                }
+            }
         }
     }
 }
@@ -4154,7 +4165,8 @@ void RenderSystemDX11_EngineThread_Prepare() {
     }
 }
 
-void RenderSystemDX11_EngineThread_Finish() {
+void RenderSystemDX11_EngineThread_BeforeRender() {
+    g_RenderCommands.EngineThread_EndFrame();
     g_CampathDrawer.OnEngineThread_EndFrame();
 }
 
@@ -4164,7 +4176,6 @@ bool RenderSystemDX11_EngineThread_HasNextRenderPass() {
 
 void RenderSystemDX11_EngineThread_BeginNextRenderPass() {
     g_AfxStreams.EngineThread_BeginNextRenderPass();
-    g_RenderCommands.EngineThread_BeginFrame();
 }
 
 void RenderSystemDX11_EngineThread_EndNextRenderPass() {
@@ -4173,7 +4184,6 @@ void RenderSystemDX11_EngineThread_EndNextRenderPass() {
 
 void RenderSystemDX11_EngineThread_BeginMainRenderPass() {
     g_AfxStreams.EngineThread_BeginMainRenderPass();
-    g_RenderCommands.EngineThread_BeginFrame();
 }
 
 void RenderSystemDX11_EngineThread_EndMainRenderPass() {

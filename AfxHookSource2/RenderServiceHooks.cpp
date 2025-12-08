@@ -26,18 +26,20 @@ bool g_bLastPassWasExtra = false;
 typedef void (__fastcall * SceneSystem_WaitForRenderingToComplete_t)(void * pThis);
 SceneSystem_WaitForRenderingToComplete_t g_Old_SceneSystem_WaitForRenderingToComplete = nullptr;
 void __fastcall My_SceneSystem_WaitForRenderingToComplete(void * pThis) {
-    g_Old_SceneSystem_WaitForRenderingToComplete(pThis);
+    if(g_bHad_ClientOutput) {
+        g_bHad_ClientOutput = false;
 
-    if(!g_bHad_ClientOutput) return;
-    g_bHad_ClientOutput = false;
+        g_Old_SceneSystem_WaitForRenderingToComplete(pThis);
 
-    if(g_bLastPassWasExtra) {
-        g_bLastPassWasExtra = false;
-        RenderSystemDX11_EngineThread_EndNextRenderPass();
+        if(g_bLastPassWasExtra) {
+            g_bLastPassWasExtra = false;
+            RenderSystemDX11_EngineThread_EndNextRenderPass();
+        }
+        else RenderSystemDX11_EngineThread_EndMainRenderPass();
+    } else {
+        g_Old_SceneSystem_WaitForRenderingToComplete(pThis);
     }
-    else RenderSystemDX11_EngineThread_EndMainRenderPass();
-
-    RenderSystemDX11_EngineThread_Finish();
+    
 }
 
 void __fastcall My_Engine2_RenderService_OnClientOutput(void * pUnk0, void * pUnk1) {
@@ -50,6 +52,8 @@ void __fastcall My_Engine2_RenderService_OnClientOutput(void * pUnk0, void * pUn
     // and it won't be re-generated in subsequent passes.
 
     RenderSystemDX11_EngineThread_BeginMainRenderPass();
+
+    RenderSystemDX11_EngineThread_BeforeRender();
 
     g_Engine2_RenderService_OnClientOutput(pUnk0,pUnk1);
 
@@ -64,6 +68,7 @@ void __fastcall My_Engine2_RenderService_OnClientOutput(void * pUnk0, void * pUn
 
             if(bHooksAvailable) {
                 void ** vtable = *(void***)g_pSceneSystem;
+
 
                 g_Old_SceneSystem_WaitForRenderingToComplete(g_pSceneSystem);
 
@@ -85,6 +90,8 @@ void __fastcall My_Engine2_RenderService_OnClientOutput(void * pUnk0, void * pUn
             RenderSystemDX11_EngineThread_BeginNextRenderPass();
 
             if(bHooksAvailable) {
+                RenderSystemDX11_EngineThread_BeforeRender();
+
                 g_Engine2_RenderService_OnClientOutput(pUnk0,pUnk1);
             }
         }
