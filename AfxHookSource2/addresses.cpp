@@ -8,6 +8,9 @@ using namespace Afx::BinUtils;
 
 AFXADDR_DEF(cs2_engine_CRenderService_OnClientOutput);
 
+AFXADDR_DEF(cs2_scenesystem_SceneSystem_WaitForRenderingToComplete_vtableofs);
+AFXADDR_DEF(cs2_scenesystem_SceneSystem_FrameUpdate_vtableofs);
+
 extern void ErrorBox(char const * messageText);
 extern void ErrorBox();
 
@@ -21,6 +24,8 @@ void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
     MemRange textRange = sections.GetMemRange();
 
     /*  cs2_engine_CRenderService_OnClientOutput
+
+        To find search for references to the strings given bellow.
 
                  24 18
        1801e5715 55              PUSH       RBP
@@ -73,6 +78,24 @@ void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
 	}
 }
 
+void Addresses_InitSceneSystemDll(AfxAddr sceneSystemDll) {
+
+    /* cs2_scenesystem_SceneSystem_WaitForRenderingToComplete_vtableofs
+    
+       To find the right function search for references to strings:
+       - "WaitForRenderingToComplete".
+    */
+    AFXADDR_SET(cs2_scenesystem_SceneSystem_WaitForRenderingToComplete_vtableofs, 26);
+
+    /* cs2_scenesystem_SceneSystem_WaitForRenderingToComplete_vtableofs
+    
+       To find the right function search for references to strings:
+       - "FrameUpdate"
+       - "CSceneSystem::FrameUpdate"
+       - "Invalid width/height for ScratchTarget, Size=%i, Width=%i/Height=%i"
+    */
+    AFXADDR_SET(cs2_scenesystem_SceneSystem_FrameUpdate_vtableofs, 73);
+}
 
 void Addresses_InitClientDll(AfxAddr clientDll) {
 

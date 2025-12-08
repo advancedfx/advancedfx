@@ -58,14 +58,16 @@ void __fastcall My_Engine2_RenderService_OnClientOutput(void * pUnk0, void * pUn
         bool bFirstExtraPass = true;
         g_bLastPassWasExtra = true;
 
+        bool bHooksAvailable = g_pSceneSystem && g_Old_SceneSystem_WaitForRenderingToComplete && AFXADDR_GET(cs2_scenesystem_SceneSystem_FrameUpdate_vtableofs);
+
         while(RenderSystemDX11_EngineThread_HasNextRenderPass()) {
 
-            if(g_pSceneSystem && g_Old_SceneSystem_WaitForRenderingToComplete) {
+            if(bHooksAvailable) {
                 void ** vtable = *(void***)g_pSceneSystem;
 
                 g_Old_SceneSystem_WaitForRenderingToComplete(g_pSceneSystem);
 
-                void (__fastcall * FrameUpdate)(void *, unsigned char) = (void (__fastcall *)(void *, unsigned char))(vtable[73]);
+                void (__fastcall * FrameUpdate)(void *, unsigned char) = (void (__fastcall *)(void *, unsigned char))(vtable[AFXADDR_GET(cs2_scenesystem_SceneSystem_FrameUpdate_vtableofs)]);
                 FrameUpdate(g_pSceneSystem, 1);
 
                 // Note:
@@ -82,7 +84,7 @@ void __fastcall My_Engine2_RenderService_OnClientOutput(void * pUnk0, void * pUn
 
             RenderSystemDX11_EngineThread_BeginNextRenderPass();
 
-            if(g_pSceneSystem && g_Old_SceneSystem_WaitForRenderingToComplete) {
+            if(bHooksAvailable) {
                 g_Engine2_RenderService_OnClientOutput(pUnk0,pUnk1);
             }
         }
@@ -120,10 +122,10 @@ bool Hook_SceneSystem_WaitForRenderingToComplete(void * g_pSceneSystem) {
     if(bFistRun) {
         bFistRun = false;
 
-        if(g_pSceneSystem) {
+        if(g_pSceneSystem && AFXADDR_GET(cs2_scenesystem_SceneSystem_WaitForRenderingToComplete_vtableofs)) {
             void ** vtable = *(void***)g_pSceneSystem;
 
-            g_Old_SceneSystem_WaitForRenderingToComplete = (SceneSystem_WaitForRenderingToComplete_t)(vtable[26]);
+            g_Old_SceneSystem_WaitForRenderingToComplete = (SceneSystem_WaitForRenderingToComplete_t)(vtable[AFXADDR_GET(cs2_scenesystem_SceneSystem_WaitForRenderingToComplete_vtableofs)]);
 
     		DetourTransactionBegin();
 	    	DetourUpdateThread(GetCurrentThread());

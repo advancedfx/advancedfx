@@ -2098,6 +2098,9 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 	else if(bFirstSceneSystem && StringEndsWithW( lpLibFileName, L"scenesystem.dll"))
 	{
 		bFirstSceneSystem = false;
+
+		Addresses_InitSceneSystemDll((AfxAddr)hModule);
+
 		g_Import_SceneSystem.Apply(hModule);
 		Hook_SceneSystem(hModule);
 		HookSceneSystem(hModule);
