@@ -11,7 +11,6 @@
 #include <stdint.h>
 
 extern void * g_pSceneSystem;
-extern void * g_pRenderDevice;
 
 extern void ErrorBox(char const * messageText);
 extern void ErrorBox();

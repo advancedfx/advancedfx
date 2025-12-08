@@ -1177,8 +1177,6 @@ SOURCESDK::CS2::IMemAlloc *SOURCESDK::CS2::g_pMemAlloc = nullptr;
 SOURCESDK::CS2::ICvar * SOURCESDK::CS2::cvar = nullptr;
 SOURCESDK::CS2::ICvar * SOURCESDK::CS2::g_pCVar = nullptr;
 void * g_pSceneSystem = nullptr;
-void * g_pRenderDevice = nullptr;
-void * g_pRenderService = nullptr;
 
 typedef bool (__fastcall * CSceneSystem_WaitForRenderingToComplete_t)(void * This);
 CSceneSystem_WaitForRenderingToComplete_t g_Old_CSceneSystem_WaitForRenderingToComplete = nullptr;
@@ -1208,14 +1206,6 @@ int new_CCS2_Client_Connect(void* This, SOURCESDK::CreateInterfaceFn appSystemFa
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 		if (g_pGameUIService = (SOURCESDK::CS2::IGameUIService*)appSystemFactory(SOURCESDK_CS2_GAMEUISERVICE_INTERFACE_VERSION, NULL)) {
-		}
-		else ErrorBox(MkErrStr(__FILE__, __LINE__));
-
-		if (g_pRenderDevice = (SOURCESDK::CS2::IGameUIService*)appSystemFactory("RenderDevice003", NULL)) {
-		}
-		else ErrorBox(MkErrStr(__FILE__, __LINE__));
-
-		if (g_pRenderService = (SOURCESDK::CS2::IGameUIService*)appSystemFactory("RenderService_001", NULL)) {
 		}
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
