@@ -243,6 +243,9 @@ COutFFMPEGVideoStream::COutFFMPEGVideoStream(const CImageFormat& imageFormat, co
 		case ImageFormat::A:
 			pixelFormat = L"gray";
 			break;
+		case ImageFormat::ZFloat:
+			pixelFormat = L"grayf32le"; // needs newer FFMPEG, e.g. 5.1 should work
+			break;
 		default:
 			advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::COutFFMPEGVideoStream: Unsupported image format.");
 			return;
