@@ -3829,7 +3829,6 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
             "%s %s autoForceFullResSmoke [...] - When capturing smoke depth: If to force the engine into full resolution smoke passes (recommended). (Globally shared!)\n"
             , arg0, arg1
         );
-        /*
         advancedfx::Message(
             "%s %s beforeCommands [...] - Commands to execute before the stream is rendered.\n"
             , arg0, arg1
@@ -3837,8 +3836,8 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
         advancedfx::Message(
             "%s %s afterCommands [...] - Commands to execute before the stream is rendered.\n"
             , arg0, arg1
-        );*/        
-        return;
+        );
+		return;
     }
 
 	advancedfx::Message(

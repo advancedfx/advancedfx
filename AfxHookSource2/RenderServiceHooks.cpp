@@ -61,7 +61,7 @@ void __fastcall My_Engine2_RenderService_OnClientOutput(void * pUnk0, void * pUn
         bool bFirstExtraPass = true;
         g_bLastPassWasExtra = true;
 
-        bool bHooksAvailable = g_pSceneSystem && g_Old_SceneSystem_WaitForRenderingToComplete && AFXADDR_GET(cs2_scenesystem_SceneSystem_FrameUpdate_vtableofs);
+        bool bHooksAvailable = g_pSceneSystem && g_Old_SceneSystem_WaitForRenderingToComplete && AFXADDR_GET(cs2_SceneSystem_FrameUpdate_vtable_idx);
 
         while(RenderSystemDX11_EngineThread_HasNextRenderPass()) {
 
@@ -71,7 +71,7 @@ void __fastcall My_Engine2_RenderService_OnClientOutput(void * pUnk0, void * pUn
 
                 g_Old_SceneSystem_WaitForRenderingToComplete(g_pSceneSystem);
 
-                void (__fastcall * FrameUpdate)(void *, unsigned char) = (void (__fastcall *)(void *, unsigned char))(vtable[AFXADDR_GET(cs2_scenesystem_SceneSystem_FrameUpdate_vtableofs)]);
+                void (__fastcall * FrameUpdate)(void *, unsigned char) = (void (__fastcall *)(void *, unsigned char))(vtable[AFXADDR_GET(cs2_SceneSystem_FrameUpdate_vtable_idx)]);
                 FrameUpdate(g_pSceneSystem, 1);
 
                 // Note:
@@ -98,11 +98,11 @@ void __fastcall My_Engine2_RenderService_OnClientOutput(void * pUnk0, void * pUn
 }
 
 bool Hook_Engine_RenderService() {
-    static bool bFistRun = true;
-    static bool bFirsResult = false;
+    static bool bFirstRun = true;
+    static bool bFirstResult = false;
 
-    if(bFistRun) {
-        bFistRun = false;
+    if(bFirstRun) {
+        bFirstRun = false;
 
         if(AFXADDR_GET(cs2_engine_CRenderService_OnClientOutput)) {
 
@@ -113,35 +113,35 @@ bool Hook_Engine_RenderService() {
 		
 		    DetourAttach(&(PVOID&)g_Engine2_RenderService_OnClientOutput, My_Engine2_RenderService_OnClientOutput);
 
-            bFirsResult = NO_ERROR == DetourTransactionCommit();
+            bFirstResult = NO_ERROR == DetourTransactionCommit();
 		
-		    if(!bFirsResult) ErrorBox("Hook_Engine_RenderService failed.");            
+		    if(!bFirstResult) ErrorBox("Hook_Engine_RenderService failed.");            
         }        
     }
-    return bFirsResult;
+    return bFirstResult;
 }
 
 bool Hook_SceneSystem_WaitForRenderingToComplete(void * g_pSceneSystem) {
-    static bool bFistRun = true;
-    static bool bFirsResult = false;
+    static bool bFirstRun = true;
+    static bool bFirstResult = false;
 
-    if(bFistRun) {
-        bFistRun = false;
+    if(bFirstRun) {
+        bFirstRun = false;
 
-        if(g_pSceneSystem && AFXADDR_GET(cs2_scenesystem_SceneSystem_WaitForRenderingToComplete_vtableofs)) {
+        if(g_pSceneSystem && AFXADDR_GET(cs2_SceneSystem_WaitForRenderingToComplete_vtable_idx)) {
             void ** vtable = *(void***)g_pSceneSystem;
 
-            g_Old_SceneSystem_WaitForRenderingToComplete = (SceneSystem_WaitForRenderingToComplete_t)(vtable[AFXADDR_GET(cs2_scenesystem_SceneSystem_WaitForRenderingToComplete_vtableofs)]);
+            g_Old_SceneSystem_WaitForRenderingToComplete = (SceneSystem_WaitForRenderingToComplete_t)(vtable[AFXADDR_GET(cs2_SceneSystem_WaitForRenderingToComplete_vtable_idx)]);
 
     		DetourTransactionBegin();
 	    	DetourUpdateThread(GetCurrentThread());
 		
 		    DetourAttach(&(PVOID&)g_Old_SceneSystem_WaitForRenderingToComplete, My_SceneSystem_WaitForRenderingToComplete);
 
-            bFirsResult = NO_ERROR == DetourTransactionCommit();
+            bFirstResult = NO_ERROR == DetourTransactionCommit();
 		
-		    if(!bFirsResult) ErrorBox("Hook_SceneSystem_WaitForRenderingToComplete failed.");            
+		    if(!bFirstResult) ErrorBox("Hook_SceneSystem_WaitForRenderingToComplete failed.");            
         }        
     }
-    return bFirsResult;
+    return bFirstResult;
 }

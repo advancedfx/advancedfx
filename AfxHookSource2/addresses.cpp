@@ -1,6 +1,7 @@
 #include "stdafx.h"
 
 #include "addresses.h"
+#include "Globals.h"
 
 #include "../shared/binutils.h"
 
@@ -8,15 +9,8 @@ using namespace Afx::BinUtils;
 
 AFXADDR_DEF(cs2_engine_CRenderService_OnClientOutput);
 
-AFXADDR_DEF(cs2_scenesystem_SceneSystem_WaitForRenderingToComplete_vtableofs);
-AFXADDR_DEF(cs2_scenesystem_SceneSystem_FrameUpdate_vtableofs);
-
-extern void ErrorBox(char const * messageText);
-extern void ErrorBox();
-
-#define STRINGIZE(x) STRINGIZE2(x)
-#define STRINGIZE2(x) #x
-#define MkErrStr(file,line) "Problem in " file ":" STRINGIZE(line)
+AFXADDR_DEF(cs2_SceneSystem_WaitForRenderingToComplete_vtable_idx);
+AFXADDR_DEF(cs2_SceneSystem_FrameUpdate_vtable_idx);
 
 void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
 {
@@ -68,7 +62,7 @@ void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
                  c0 01 00 00
     */
 	{
-		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 89 5c 24 18 55 56 57 41 54 41 56 48 83 ec 70 48 8d 05 ?? ?? ?? ?? 48 c7 44 24 38 ?? ?? ?? ?? 48 89 44 24 30 4c 8d 44 24 50 0f 10 44 24 30 48 8d 05 ?? ?? ?? ?? 4c 8b f2 48 89 44 24 40 48 8d 15 ?? ?? ?? ?? f2 0f 10 4c 24 40 48 8b f1 48 8d 0d ?? ?? ?? ?? f2 0f 11 4c 24 60 33 ff 0f 29 44 24 50 ff 15 ?? ?? ?? ?? 48 8b 96 c0 01 00 00");
+		MemRange result = FindPatternString(textRange, "48 89 5c 24 18 55 56 57 41 54 41 56 48 83 ec 70 48 8d 05 ?? ?? ?? ?? 48 c7 44 24 38 ?? ?? ?? ?? 48 89 44 24 30 4c 8d 44 24 50 0f 10 44 24 30 48 8d 05 ?? ?? ?? ?? 4c 8b f2 48 89 44 24 40 48 8d 15 ?? ?? ?? ?? f2 0f 10 4c 24 40 48 8b f1 48 8d 0d ?? ?? ?? ?? f2 0f 11 4c 24 60 33 ff 0f 29 44 24 50 ff 15 ?? ?? ?? ?? 48 8b 96 c0 01 00 00");
 																	  
 		if (!result.IsEmpty()) {
             AFXADDR_SET(cs2_engine_CRenderService_OnClientOutput, result.Start);
@@ -80,21 +74,21 @@ void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
 
 void Addresses_InitSceneSystemDll(AfxAddr sceneSystemDll) {
 
-    /* cs2_scenesystem_SceneSystem_WaitForRenderingToComplete_vtableofs
+    /*cs2_SceneSystem_WaitForRenderingToComplete_vtable_idx 
     
        To find the right function search for references to strings:
        - "WaitForRenderingToComplete".
     */
-    AFXADDR_SET(cs2_scenesystem_SceneSystem_WaitForRenderingToComplete_vtableofs, 26);
+    AFXADDR_SET(cs2_SceneSystem_WaitForRenderingToComplete_vtable_idx, 26);
 
-    /* cs2_scenesystem_SceneSystem_WaitForRenderingToComplete_vtableofs
+    /*cs2_SceneSystem_WaitForRenderingToComplete_vtable_idx 
     
        To find the right function search for references to strings:
        - "FrameUpdate"
        - "CSceneSystem::FrameUpdate"
        - "Invalid width/height for ScratchTarget, Size=%i, Width=%i/Height=%i"
     */
-    AFXADDR_SET(cs2_scenesystem_SceneSystem_FrameUpdate_vtableofs, 73);
+    AFXADDR_SET(cs2_SceneSystem_FrameUpdate_vtable_idx, 73);
 }
 
 void Addresses_InitClientDll(AfxAddr clientDll) {

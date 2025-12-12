@@ -4,8 +4,8 @@
 
 AFXADDR_DECL(cs2_engine_CRenderService_OnClientOutput)
 
-AFXADDR_DECL(cs2_scenesystem_SceneSystem_WaitForRenderingToComplete_vtableofs)
-AFXADDR_DECL(cs2_scenesystem_SceneSystem_FrameUpdate_vtableofs)
+AFXADDR_DECL(cs2_SceneSystem_WaitForRenderingToComplete_vtable_idx)
+AFXADDR_DECL(cs2_SceneSystem_FrameUpdate_vtable_idx)
 
 void Addresses_InitEngine2Dll(AfxAddr engine2Dll);
 
