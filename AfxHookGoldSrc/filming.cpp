@@ -2223,7 +2223,7 @@ void FilmingStream::PrintExr(float const* data)
 
 	if (!m_FfmpegOptions.empty())
 	{
-		advancedfx::ImageFormat format = advancedfx::ImageFormat::ZFLoat;
+		advancedfx::ImageFormat format = advancedfx::ImageFormat::ZFloat;
 
 		advancedfx::CImageFormat imageFormat(
 			format, m_Width, m_Height, m_Pitch);
@@ -2236,7 +2236,7 @@ void FilmingStream::PrintExr(float const* data)
 		
 		advancedfx::CImageBuffer buffer;
 		buffer.Format = imageFormat;
-		buffer.Buffer = const_cast<unsigned char *>(data); //TODO: not nice this cast.
+		buffer.Buffer = const_cast<float *>(data); //TODO: not nice this cast.
 
 		if (!m_FfmpegOutStream->SupplyVideoData(buffer))
 		{
