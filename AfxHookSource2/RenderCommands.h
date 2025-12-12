@@ -83,7 +83,6 @@ public:
             Clear();
             if(Context) {
                 OnAfterPresentOrContextLossReliable();
-                Context = nullptr;
             } else {
                 AfterPresentOrContextLossReliable.Clear();
             }
@@ -124,7 +123,7 @@ public:
                 BeforeUi2.Pop();
             }
         }        
-
+        
         void OnBeforePresent(ID3D11Texture2D * pTexture) {
             while(!BeforePresent.Empty()) {
                 BeforePresent.Front()(this, pTexture);
@@ -150,15 +149,14 @@ public:
     };
 
     CRenderPassCommands & EngineThread_GetCommands();
-
-    void EngineThread_BeginFrame();
-
-    void EngineThread_BeforePresent();
-    void EngineThread_AfterPresent(bool presented);
-
-    void RenderThread_BeginFrame(ID3D11DeviceContext* pContext);
+   
+    void EngineThread_EndFrame();
 
     CRenderPassCommands * RenderThread_GetCommands();
+
+    bool RenderThread_FrameBegun();
+
+    void RenderThread_BeginFrame(ID3D11DeviceContext* pContext);
 
     void RenderThread_EndFrame(ID3D11DeviceContext* pContext);
 
@@ -170,8 +168,6 @@ private:
     std::queue<CRenderPassCommands *> m_Reusable;
     CRenderPassCommands * m_EngineThreadCommands = nullptr;
     CRenderPassCommands * m_RenderThreadCommands = nullptr;
-    bool m_EngineThread_FrameBegun = false;
     bool m_RenderThread_FrameBegun = false;
-    int m_SkipFrames = 0;
 };
  

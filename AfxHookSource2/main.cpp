@@ -1,9 +1,11 @@
 #include "stdafx.h"
 
+#include "addresses.h"
 #include "CampathDrawer.h"
 #include "ClientEntitySystem.h"
 #include "GameEvents.h"
 #include "hlaeFolder.h"
+#include "RenderServiceHooks.h"
 #include "RenderSystemDX11Hooks.h"
 #include "WrpConsole.h"
 #include "AfxHookSource2Rs.h"
@@ -946,8 +948,6 @@ void __fastcall New_CViewRender_UnkMakeMatrix(void* This) {
 	g_WorldToScreenMatrix.m[3][3] = proj[4*3+3];
 
 	g_CampathDrawer.OnEngineThread_SetupViewDone();
-
-	RenderSystemDX11_EngineThread_Prepare();
 }
 
 /*
@@ -1209,6 +1209,10 @@ int new_CCS2_Client_Connect(void* This, SOURCESDK::CreateInterfaceFn appSystemFa
 		}
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
+		if (g_pSceneSystem = (SOURCESDK::CS2::IGameUIService*)appSystemFactory("SceneSystem_002", NULL)) {
+			Hook_SceneSystem_WaitForRenderingToComplete(g_pSceneSystem);
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
 
 	return old_CCS2_Client_Connect(This, appSystemFactory);
@@ -1415,7 +1419,9 @@ void * new_CS2_Client_LevelInitPreEntity(void* This, void * pUnk1, void * pUnk2)
 }
 
 typedef void (* CS2_Client_FrameStageNotify_t)(void* This, SOURCESDK::CS2::ClientFrameStage_t curStage);
+
 CS2_Client_FrameStageNotify_t old_CS2_Client_FrameStageNotify;
+
 void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameStage_t curStage) {
 
 	/*
@@ -2071,13 +2077,20 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 
 		g_h_engine2Dll = hModule;
 
+		Addresses_InitEngine2Dll((AfxAddr)hModule);
+
 		HookEngineDll(hModule);
 
 		g_Import_engine2.Apply(hModule);
+
+		Hook_Engine_RenderService();
 	}
 	else if(bFirstSceneSystem && StringEndsWithW( lpLibFileName, L"scenesystem.dll"))
 	{
 		bFirstSceneSystem = false;
+
+		Addresses_InitSceneSystemDll((AfxAddr)hModule);
+
 		g_Import_SceneSystem.Apply(hModule);
 		Hook_SceneSystem(hModule);
 		HookSceneSystem(hModule);
@@ -2101,6 +2114,8 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		bFirstClient = false;
 
 		g_H_ClientDll = hModule;
+
+		Addresses_InitClientDll((AfxAddr)hModule);
 
 		//if(!g_Import_client.Apply(hModule)) ErrorBox("client.dll steam_api64 hooks failed.");
 

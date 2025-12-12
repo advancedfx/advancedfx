@@ -25,35 +25,20 @@ CRenderCommands::CRenderPassCommands & CRenderCommands::EngineThread_GetCommands
     return *m_EngineThreadCommands;
 }
 
-void CRenderCommands::EngineThread_BeginFrame() {
-    if (m_EngineThread_FrameBegun) return;
-    m_EngineThread_FrameBegun = true;
+void CRenderCommands::EngineThread_EndFrame() {
+
+    // Submit current frame:
 
     CRenderPassCommands* pRenderPassCommands = m_EngineThreadCommands;
     m_EngineThreadCommands = nullptr;
-
-    if (m_SkipFrames) {
-        pRenderPassCommands->SkipFrame = true;
-        m_SkipFrames--;
-    }
-    else {
-        pRenderPassCommands->SkipFrame = false;
-    }
 
     {
         std::unique_lock<std::mutex> lock(m_CommandsQueueMutex);
         m_CommandsQueue.emplace(pRenderPassCommands);
     }
-}
 
-void CRenderCommands::EngineThread_BeforePresent() {
-    if (!m_EngineThread_FrameBegun) {
-        // Late to the party on the engine thread.
-        EngineThread_BeginFrame();
-    }
-}
+    // Prepare next frame:
 
-void CRenderCommands::EngineThread_AfterPresent(bool presented) {
     {
         std::unique_lock<std::mutex> lock(m_ReusableMutex);
         if (!m_Reusable.empty()) {
@@ -63,17 +48,9 @@ void CRenderCommands::EngineThread_AfterPresent(bool presented) {
     }
 
     if (m_EngineThreadCommands == nullptr) m_EngineThreadCommands = new CRenderPassCommands();
-
-    if (!presented) {
-        //m_SkipFrames++;
-    }
-
-    m_EngineThread_FrameBegun = false;
-    
 }
 
 void CRenderCommands::RenderThread_BeginFrame(ID3D11DeviceContext* pContext) {
-    if (m_RenderThread_FrameBegun) return;
     m_RenderThread_FrameBegun = true;
 
     {
@@ -101,12 +78,11 @@ CRenderCommands::CRenderPassCommands * CRenderCommands::RenderThread_GetCommands
     return m_RenderThreadCommands;
 }
 
-void CRenderCommands::RenderThread_EndFrame(ID3D11DeviceContext* pContext) {
-    if (!m_RenderThread_FrameBegun) {
-        // Late to the party on the render thread.
-        RenderThread_BeginFrame(pContext);
-    }
+bool CRenderCommands::RenderThread_FrameBegun() {
+    return m_RenderThread_FrameBegun;
+}
 
+void CRenderCommands::RenderThread_EndFrame(ID3D11DeviceContext* pContext) {
     if(m_RenderThreadCommands) {
         m_RenderThreadCommands->Finalize();
         {

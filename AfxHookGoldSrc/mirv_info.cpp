@@ -84,7 +84,7 @@ REGISTER_DEBUGCMD_FUNC(list_addresses) {
 	unsigned int zcnt = 0;
 	for(unsigned int i=0; i<cnt; i++) {
 		char const * pName;
-		unsigned long addr;
+		AfxAddr addr;
 
 		if(!AfxAddr_Debug_GetAt(i, addr, pName)) {
 			pEngfuncs->Con_Printf("Error.\n");
