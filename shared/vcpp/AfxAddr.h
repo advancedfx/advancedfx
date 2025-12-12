@@ -1,6 +1,6 @@
 #pragma once
 
-typedef unsigned long AfxAddr;
+typedef size_t AfxAddr;
 
 //
 // Macros:

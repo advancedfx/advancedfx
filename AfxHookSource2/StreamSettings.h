@@ -3,6 +3,7 @@
 #include "../shared/RecordingSettings.h"
 
 #include <string>
+#include <list>
 
 class CStreamSettings {
 public:
@@ -31,9 +32,34 @@ public:
         , ClearBeforeUiColor(other.ClearBeforeUiColor)
         , AutoForceFullResSmoke(other.AutoForceFullResSmoke)
         , Settings(other.Settings)
+        , BeforeCommands(other.BeforeCommands)
+        , AfterCommands(other.AfterCommands)
     {
         Settings->AddRef();
     }
+
+    bool CanCaptureInMainPass() const {
+        return true
+            && false == ClearBeforeUi
+            && BeforeCommands.empty()
+            && AfterCommands.empty()
+        ;
+    }
+
+    int CompareRenderPass(const CStreamSettings &  o) const {
+        int cmp;
+        if(cmp = CompareBool(ClearBeforeUi, o.ClearBeforeUi)) return cmp;
+        if(ClearBeforeUi) {
+           if(cmp = CompareFloat(ClearBeforeUiColor.R, o.ClearBeforeUiColor.R)) return cmp;
+           if(cmp = CompareFloat(ClearBeforeUiColor.G, o.ClearBeforeUiColor.G)) return cmp;
+           if(cmp = CompareFloat(ClearBeforeUiColor.B, o.ClearBeforeUiColor.B)) return cmp;
+           if(cmp = CompareFloat(ClearBeforeUiColor.A, o.ClearBeforeUiColor.A)) return cmp;
+        }
+        if(cmp = CompareCommands(BeforeCommands, o.BeforeCommands)) return cmp;
+        if(cmp = CompareCommands(AfterCommands, o.AfterCommands)) return cmp;
+
+        return 0;
+    }    
 
     std::wstring Name;
 
@@ -84,6 +110,9 @@ public:
 
     bool AutoForceFullResSmoke = true;
 
+    std::list<std::list<std::string>> BeforeCommands;
+    std::list<std::list<std::string>> AfterCommands;
+
     advancedfx::CRecordingSettings* Settings;
 
     bool WantsSmokeComposite() {
@@ -100,4 +129,42 @@ public:
             && AutoForceFullResSmoke
         ;
     }
+
+private:
+    static int CompareBool(bool lhs, bool rhs) {
+        if(lhs != rhs) return lhs ? 1 : -1;
+        return 0;
+    }
+
+    static int CompareFloat(float lhs, float rhs) {
+        if(lhs != rhs) return lhs > rhs ? 1 : -1;
+        return 0;
+    }
+
+    static int CompareCommand(const std::list<std::string> & lhs, const std::list<std::string> & rhs) {
+        auto itLhs = lhs.begin();
+        auto itRhs = rhs.begin();
+        while(itLhs != lhs.end() && itRhs != rhs.end()) {
+            if(int cmp = itLhs->compare(*itRhs)) return cmp;
+            itLhs++;
+            itRhs++;
+        }
+        if(itLhs != lhs.end()) return 1;
+        if(itRhs != rhs.end()) return -1;
+        return 0;        
+    }
+
+    static int CompareCommands(const std::list<std::list<std::string>> & lhs, const std::list<std::list<std::string>> & rhs) {        
+        auto itLhs = lhs.begin();
+        auto itRhs = rhs.begin();
+        while(itLhs != lhs.end() && itRhs != rhs.end()) {
+            if(int cmp = CompareCommand(*itLhs, *itRhs)) return cmp;
+            itLhs++;
+            itRhs++;
+        }
+        if(itLhs != lhs.end()) return 1;
+        if(itRhs != rhs.end()) return -1;
+        return 0;
+    }
+
 };
