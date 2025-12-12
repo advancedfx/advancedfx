@@ -1,3 +1,5 @@
+/* Since HLAE 2.187.4 if not mentioned directly. */
+
 declare namespace AdvancedfxCVar {
 	const enum TypeEnum {
 		Invalid = -1,

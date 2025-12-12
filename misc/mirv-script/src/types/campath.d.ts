@@ -1,3 +1,5 @@
+/* Since HLAE 2.169.0 if not mentioned directly. */
+
 declare class AdvancedfxCampathValue {
 	constructor(
 		pos: AdvancedfxMathVector3,

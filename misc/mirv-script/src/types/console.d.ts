@@ -1,3 +1,5 @@
+/* Since HLAE 2.170.0 if not mentioned directly. */
+
 declare class AdvancedfxConCommandArgs {
 	argC(): number;
 	argV(index: number): string;
