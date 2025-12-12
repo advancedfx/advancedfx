@@ -1,6 +1,6 @@
 #pragma once
 
-#include "AfxRefCounted.h"
+#include "RefCounted.h"
 #include "AfxImageBuffer.h"
 #include "EasySampler.h"
 #include <string>

@@ -344,7 +344,6 @@ target_sources(AfxHookSource PRIVATE
     ../shared/AfxMath.h
     ../shared/AfxOutStreams.cpp
     ../shared/AfxOutStreams.h
-    ../shared/AfxRefCounted.h
     ../shared/binutils.cpp
     ../shared/binutils.h
     ../shared/bvhexport.cpp
@@ -384,10 +383,12 @@ target_sources(AfxHookSource PRIVATE
     ../shared/RawOutput.h
     ../shared/RecordingSettings.cpp
     ../shared/RecordingSettings.h
+    ../shared/RefCounted.h
     ../shared/RefCountedThreadSafe.h
     ../shared/StringTools.cpp
     ../shared/StringTools.h
     ../shared/ThreadPool.h
+    ../shared/TRefCounted.h
 )
 
 # This is far form proper, but it will do for now:

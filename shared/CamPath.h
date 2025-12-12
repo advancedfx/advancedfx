@@ -1,6 +1,5 @@
 #pragma once
 
-#include "AfxRefCounted.h"
 #include "AfxMath.h"
 
 #include <list>

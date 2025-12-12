@@ -199,6 +199,9 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/MirvInput.h
     ../shared/MirvSkip.cpp
     ../shared/MirvSkip.h
+    ../shared/RefCounted.h
+    ../shared/RefCountedThreadSafe.h
+    ../shared/TRefCounted.h
 
     AfxHookSource2Rs.cpp
     AfxHookSource2Rs.h
