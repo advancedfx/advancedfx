@@ -31,7 +31,7 @@
 #include <shaders/build/afxHook_vertexlit_and_unlit_generic_ps30.h>
 #endif
 
-#include <shared/AfxRefCounted.h>
+#include <shared/RefCounted.h>
 #include <shared/RefCountedThreadSafe.h>
 #include <shared/AfxImageBuffer.h>
 #include <shared/ImageBufferPoolThreadSafe.h>

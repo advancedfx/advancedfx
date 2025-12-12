@@ -1,11 +1,10 @@
 #pragma once
 
 #include "TRefCounted.h"
-#include <atomic>
 
 namespace advancedfx {
-	
-	template<> class TRefCounted<true>
+
+	template<> class TRefCounted<false>
 	{
 	public:
 		TRefCounted()
@@ -17,7 +16,8 @@ namespace advancedfx {
 		}
 
 		void Release(void) {
-			if(1 == std::atomic_fetch_sub_explicit(&m_RefCount, 1, std::memory_order_relaxed))
+			m_RefCount--;
+			if (0 == m_RefCount)
 				delete this;
 		}
 
@@ -27,8 +27,9 @@ namespace advancedfx {
 		}
 
 	private:
-		std::atomic_int m_RefCount;
+		int m_RefCount;
 	};
 
-	typedef TRefCounted<true> CRefCountedThreadSafe;
-}
+	typedef TRefCounted<false> CRefCounted;
+
+} // namespace advancedfx {

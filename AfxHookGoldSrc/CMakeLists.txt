@@ -209,7 +209,6 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/AfxMath.h
     ../shared/AfxOutStreams.cpp
     ../shared/AfxOutStreams.h
-    ../shared/AfxRefCounted.h
     ../shared/binutils.cpp
     ../shared/binutils.h
     ../shared/bvhexport.cpp
@@ -230,8 +229,10 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/OpenExrOutput.h
     ../shared/RawOutput.cpp
     ../shared/RawOutput.h
+    ../shared/RefCounted.h
     ../shared/StringTools.cpp
     ../shared/StringTools.h
+    ../shared/TRefCounted.h
 )
 
 if (MSVC)
