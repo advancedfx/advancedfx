@@ -2221,19 +2221,47 @@ void FilmingStream::PrintExr(float const* data)
 	if (!m_DirCreated)
 		return;
 
-	std::wostringstream os;
-	os << m_Path << L"\\" << setfill(L'0') << setw(5) << m_FrameCount << setw(0) << L".exr";
+	if (!m_FfmpegOptions.empty())
+	{
+		advancedfx::ImageFormat format = advancedfx::ImageFormat::ZFloat;
 
-	WriteFloatZOpenExr(
-		os.str().c_str(),
-		(unsigned char*)data,
-		m_Width,
-		m_Height,
-		sizeof(float),
-		m_Pitch,
-		2 == depth_exr->value ? WFZOEC_Zip : WFZOEC_None,
-		false
-	);
+		advancedfx::CImageFormat imageFormat(
+			format, m_Width, m_Height, m_Pitch);
+
+		if (nullptr == m_FfmpegOutStream)
+		{
+			m_FfmpegOutStream = new advancedfx::COutFFMPEGVideoStream(imageFormat, m_Path, m_FfmpegOptions, movie_fps->value);
+			m_FfmpegOutStream->AddRef();
+		}
+		
+		advancedfx::CImageBuffer buffer;
+		buffer.Format = imageFormat;
+		buffer.Buffer = const_cast<float *>(data); //TODO: not nice this cast.
+
+		if (!m_FfmpegOutStream->SupplyVideoData(buffer))
+		{
+			std::string path("n/a");
+			WideStringToUTF8String(m_Path.c_str(), path);
+			pEngfuncs->Con_Printf("AFXERROR: Failed writing image to stream for \"%s\".\n", path.c_str());
+		}
+
+		buffer.Buffer = nullptr;
+	}	
+	else {		
+		std::wostringstream os;
+		os << m_Path << L"\\" << setfill(L'0') << setw(5) << m_FrameCount << setw(0) << L".exr";
+
+		WriteFloatZOpenExr(
+			os.str().c_str(),
+			(unsigned char*)data,
+			m_Width,
+			m_Height,
+			sizeof(float),
+			m_Pitch,
+			2 == depth_exr->value ? WFZOEC_Zip : WFZOEC_None,
+			false
+		);
+	}
 
 	m_FrameCount++;
 }
