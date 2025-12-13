@@ -4,30 +4,41 @@
 declare namespace mirv {
 	/**
 	 * Allows to handle client DLL FrameStageNotify events.
+	 * Since HLAE 2.162.0
 	 */
 	let onClientFrameStageNotify: undefined | OnClientFrameStageNotify;
 
+	/*
+	 * Since HLAE 2.171.0
+	 */
 	let onRecordStart: undefined | OnRecordEnd;
 
+	/*
+	 * Since HLAE 2.171.0
+	 */
 	let onRecordEnd: undefined | OnRecordStart;
 
 	/**
 	 * Allows to handle game event system events.
+	 * Since HLAE 2.162.0
 	 */
 	let onGameEvent: undefined | OnGameEvent;
 
 	/**
 	 * Allows to receive the currently calculated game view in client DLL and manipulate it as well.
+	 * Since HLAE 2.162.0
 	 */
 	let onCViewRenderSetupView: undefined | OnCViewRenderSetupView;
 
 	/**
 	 * Called after an entity has been added.
+	 * Since HLAE 2.163.0
 	 */
 	let onAddEntity: undefined | OnEntityEvent;
 
 	/**
 	 * Called before an entity is removed.
+	 * Since HLAE 2.163.0
 	 */
 	let onRemoveEntity: undefined | OnEntityEvent;
 
@@ -42,26 +53,37 @@ declare namespace mirv {
 	 *
 	 * @param address - The address to connect to. Example: ws://localhost:31337/mirv
 	 * @returns Promise that resolves with .in and an .out dictionary to acccess the in and outgoing streams respectively, or rejects with Error if connection fails.
+	 *
+	 * Since HLAE 2.162.0
 	 */
 	function connect_async(address: string): Promise<{ in: WsIn; out: WsOut }>;
 
+	/**
+	 * Since HLAE 2.179.0
+	 */
 	function trace(msg: string): Array<string>;
 
 	/**
 	 * Write a warning to the game console.
 	 * @param msg
+	 *
+	 * Since HLAE 2.162.0
 	 */
 	function warning(msg: string): void;
 
 	/**
 	 * Write a message to the game console.
 	 * @param msg
+	 *
+	 * Since HLAE 2.162.0
 	 */
 	function message(msg: string): void;
 
 	/**
 	 * Execute command(s) in the game console.
 	 * @param command
+	 *
+	 * Since HLAE 2.162.0
 	 */
 	function exec(command: string): void;
 
@@ -72,6 +94,8 @@ declare namespace mirv {
 	 * @remarks
 	 * A promise is returned and the module is usually not resolved instantly,
 	 * if you need instant resolve, you need to call run_jobs to resolve the promise faster.
+	 *
+	 * Since HLAE 2.164.0
 	 */
 	function load(filePath: string): Promise<void>;
 
@@ -80,6 +104,8 @@ declare namespace mirv {
 	 *
 	 * @remarks
 	 * Currently HLAE triggers this automatically upon after FRAME_RENDER_PASS after onClientFrameStageNotify.
+	 *
+	 * Since HLAE 2.162.0
 	 */
 	function run_jobs(): void;
 
@@ -88,27 +114,51 @@ declare namespace mirv {
 	 *
 	 * @remarks
 	 * Currently HLAE triggers this automatically upon after FRAME_RENDER_PASS after onClientFrameStageNotify.
+	 *
+	 * Since HLAE 2.162.0
 	 */
 	function run_jobs_async(): void;
 
+	/**
+	 * Since HLAE 2.163.0
+	 */
 	function makeHandle(entryIndex: number, serialNumber: number): number;
 
+	/**
+	 * Since HLAE 2.163.0
+	 */
 	function isHandleValid(handle: number): boolean;
 
+	/**
+	 * Since HLAE 2.163.0
+	 */
 	function getHandleEntryIndex(handle: number): number;
 
+	/**
+	 * Since HLAE 2.163.0
+	 */
 	function getHandleSerialNumber(handle: number): number;
 
+	/**
+	 * Since HLAE 2.163.0
+	 */
 	function getHighestEntityIndex(): number;
 
+	/**
+	 * Since HLAE 2.163.0
+	 */
 	function getEntityFromIndex(index: number): null | Entity;
 
 	function getEntityFromSplitScreenPlayer(index: number): null | Entity;
 
+	/**
+	 * Since HLAE 2.169.0
+	 */
 	function getMainCampath(): AdvancedfxCampath;
 
 	/**
 	 * Returns current game time.
+	 * Since HLAE 2.183.0
 	 */
 	function getCurTime(): number;
 
@@ -118,6 +168,7 @@ declare namespace mirv {
 	 * @remarks
 	 * Should not be used, when no demo is playing.
 	 * Can return undefined or negative values.
+	 * Since HLAE 2.183.0
 	 */
 	function getDemoTime(): number | undefined;
 
@@ -127,15 +178,23 @@ declare namespace mirv {
 	 * @remarks
 	 * Should not be used, when no demo is playing.
 	 * Can return undefined or negative values.
+	 * Since HLAE 2.183.0
 	 */
 	function getDemoTick(): number | undefined;
 
+	/**
+	 * Since HLAE 2.171.1
+	 */
 	function isPlayingDemo(): boolean;
 
+	/**
+	 * Since HLAE 2.171.1
+	 */
 	function isDemoPaused(): boolean;
 
 	/**
 	 * Represents a binary data message.
+	 * Since HLAE 2.162.0
 	 */
 	class WsBinary {
 		/**
@@ -159,6 +218,7 @@ declare namespace mirv {
 
 	/**
 	 * Incoming websocket stream
+	 * Since HLAE 2.162.0
 	 */
 	class WsIn {
 		/**
@@ -181,6 +241,7 @@ declare namespace mirv {
 
 	/**
 	 * Outgoing websocket stream
+	 * Since HLAE 2.162.0
 	 */
 	class WsOut {
 		/**
@@ -230,6 +291,7 @@ declare namespace mirv {
 
 	/**
 	 * Game event data.
+	 * Since HLAE 2.162.0
 	 */
 	type GameEvent = {
 		/**
@@ -258,15 +320,29 @@ declare namespace mirv {
 	 * There are more values in-between, but their meanings have changed and we did not confirm them yet.
 	 *
 	 * @param e - curStage - current stage, isBefore - if called before (true) or after (false) client DLL for this stage.
+	 *
+	 * Since HLAE 2.162.0
 	 */
 	type OnClientFrameStageNotify = (e: { curStage: number; isBefore: boolean }) => void;
 
+	/*
+	 * Since HLAE 2.171.0
+	 */
 	type OnRecordStart = (e: RecordStart) => void;
 
+	/*
+	 * Since HLAE 2.171.0
+	 */
 	type OnRecordEnd = () => void;
 
+	/*
+	 * Since HLAE 2.162.0
+	 */
 	type OnGameEvent = (e: GameEvent) => void;
 
+	/*
+	 * Since HLAE 2.162.0
+	 */
 	type OnCViewRenderSetupViewArgs = {
 		curTime: number;
 		absTime: number;
@@ -304,6 +380,7 @@ declare namespace mirv {
 
 	/**
 	 * @remarks Unprovided members well remain at their original value.
+	 * Since HLAE 2.162.0
 	 */
 	type OnCViewRenderSetupViewSet = {
 		x?: number;
@@ -317,6 +394,7 @@ declare namespace mirv {
 
 	/**
 	 * @remarks Return nothing (undefined) to not manipulate the current view (return;).
+	 * Since HLAE 2.162.0
 	 */
 	type OnCViewRenderSetupView = (
 		e: OnCViewRenderSetupViewArgs
@@ -324,87 +402,121 @@ declare namespace mirv {
 
 	/**
 	 * An entity reference.
+	 * Since HLAE 2.163.0
 	 */
 	class Entity {
 		/**
 		 * If the refernce is still valid.
+		 * Since HLAE 2.163.0
 		 */
 		isValid(): boolean;
-
+		/**
+		 * Since HLAE 2.163.0
+		 */
 		getName(): string;
-
+		/**
+		 * Since HLAE 2.163.0
+		 */
 		getDebugName(): null | string;
-
+		/**
+		 * Since HLAE 2.163.0
+		 */
 		getClassName(): string;
-
+		/*
+		 * Since HLAE 2.171.0
+		 */
 		getClientClassName(): null | string;
-
+		/**
+		 * Since HLAE 2.163.0
+		 */
 		isPlayerPawn(): boolean;
-
+		/**
+		 * Since HLAE 2.163.0
+		 */
 		getPlayerPawnHandle(): number;
-
+		/**
+		 * Since HLAE 2.163.0
+		 */
 		isPlayerController(): boolean;
-
+		/**
+		 * Since HLAE 2.163.0
+		 */
 		getPlayerControllerHandle(): number;
-
+		/**
+		 * Since HLAE 2.163.0
+		 */
 		getHealth(): number;
 
+		/*
+		 * Since HLAE 2.170.0
+		 */
 		getTeam(): number;
 
 		/**
 		 * @returns Array with x,y,z.
+		 * Since HLAE 2.163.0
 		 */
 		getOrigin(): number[];
 
 		/**
 		 * @returns Array with x,y,z.
+		 * Since HLAE 2.163.0
 		 */
 		getRenderEyeOrigin(): number[];
 
 		/**
 		 * @returns Array with x,y,z.
+		 * Since HLAE 2.163.0
 		 */
 		getRenderEyeAngles(): number[];
 
 		/**
 		 * @remarks makes sense only on PlayerPawn.
+		 * Since HLAE 2.162
 		 */
 		getViewEntityHandle(): number;
 
 		/**
 		 * @remarks makes sense only on PlayerPawn.
+		 * Since HLAE 2.171.0
 		 */
 		getActiveWeaponHandle(): number;
 
 		/**
 		 * @remarks makes sense only on PlayerController.
+		 * Since HLAE 2.171.0
 		 */
 		getPlayerName(): null | string;
 
 		/**
 		 * @remarks makes sense only on PlayerController.
 		 * @returns 64 bit steam id.
+		 * Since HLAE 2.171.0
 		 */
 		getSteamId(): bigint;
 
 		/**
 		 * @remarks makes sense only on PlayerController.
+		 * Since HLAE 2.171.0
 		 */
 		getSanitizedPlayerName(): null | string;
 
 		/**
 		 * @remarks makes sense only on PlayerPawn.
+		 * Since HLAE 2.171.0
 		 */
 		getObserverMode(): number;
 
 		/**
 		 * @remarks makes sense only on PlayerPawn.
+		 * Since HLAE 2.171.0
 		 */
 		getObserverTargetHandle(): number;
 
 		/**
 		 * @remarks makes sense only on entities that have attachment points e.g player models (Pawns), weapons.
 		 * Attachments names could be found when inspecting models files via Source 2 Viewer.
+		 * Since HLAE 2.187.2
 		 */
 		getAttachment(name: string): {
 			position: AdvancedfxMathVector3;
@@ -412,5 +524,8 @@ declare namespace mirv {
 		} | null;
 	}
 
+	/**
+	 * Since HLAE 2.163.0
+	 */
 	type OnEntityEvent = (entity: Entity, handle: number) => void;
 }

@@ -12,6 +12,7 @@ extern void ErrorBox(char const * messageText);
 
 extern void ErrorBox();
 
+// TODO: These two probably should be removed when moving stuff over to addresses.cpp since they don't reuse stuff
 extern size_t getAddress(HMODULE dll, char const* pattern);
 
 extern size_t getVTableFn(HMODULE dll, int index, const char* mangledClass);
