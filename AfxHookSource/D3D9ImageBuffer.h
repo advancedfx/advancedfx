@@ -1,7 +1,7 @@
 #pragma once
 
 #include <d3d9.h>
-#include <shared/AfxImageBuffer.h>
+#include <shared/ImageBufferThreadSafe.h>
 
 
 class IAfxD3D9OnRelease abstract {
@@ -30,6 +30,14 @@ void AfxD3D9OnReleaseLock();
 void AfxD3D9OnReleaseUnock();
 
 /**
+ * Can be called from any thread.
+ */
+class IAfxD3D9CaptureOnCpuFinished abstract {
+public:
+    virtual void OnCpuFinished() = 0;
+};
+
+/**
  * Must be released upon AfxD3D9OnRelease.
  * Must be only called on GPU thread.
  */
@@ -46,13 +54,14 @@ public:
 
     /**
      * Start accessing system memory surface.
+     * @param pOnCpuFinished if not nullptr this is called after last reference ceases to exist.
      */
-    virtual const advancedfx::IImageBuffer * LockCpu() = 0;
+    virtual advancedfx::IImageBufferThreadSafe * LockCpu(class IAfxD3D9CaptureOnCpuFinished * pOnCpuFinished) = 0;
 
     /**
      * End accessing system memory surface.
      */
-    virtual void UnlockCpu() = 0;    
+    virtual void UnlockCpu() = 0;      
 };
 
 IAfxD3D9Capture * AfxD3d9CreateRenderTargetCompatibleCapture();

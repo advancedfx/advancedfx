@@ -339,7 +339,6 @@ target_sources(AfxHookSource PRIVATE
     ../shared/AfxDetours.h
     ../shared/AfxGameRecord.cpp
     ../shared/AfxGameRecord.h
-    ../shared/AfxImageBuffer.h
     ../shared/AfxMath.cpp
     ../shared/AfxMath.h
     ../shared/AfxOutStreams.cpp
@@ -362,7 +361,7 @@ target_sources(AfxHookSource PRIVATE
     ../shared/FileTools.h
     ../shared/FovScaling.cpp
     ../shared/FovScaling.h
-    ../shared/ImageBufferPoolThreadSafe.h
+    ../shared/GrowingBufferPoolThreadSafe.h
     ../shared/ImageTransformer.cpp
     ../shared/ImageTransformer.h
     ../shared/MirvCamIO.cpp
@@ -377,7 +376,6 @@ target_sources(AfxHookSource PRIVATE
 	../shared/MirvSkip.h
     ../shared/OpenExrOutput.cpp
     ../shared/OpenExrOutput.h
-    ../shared/OutVideoStreamCreators.cpp
     ../shared/OutVideoStreamCreators.h
     ../shared/RawOutput.cpp
     ../shared/RawOutput.h

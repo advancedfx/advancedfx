@@ -14,9 +14,9 @@
 
 #include "../shared/AfxDetours.h"
 #include "../shared/binutils.h"
-#include "../shared/Captures.h"
+#include "../shared/ImageBufferThreadSafe.h"
 #include "../shared/FileTools.h"
-#include "../shared/ImageBufferPoolThreadSafe.h"
+#include "../shared/GrowingBufferPoolThreadSafe.h"
 #include "../shared/ImageTransformer.h"
 #include "../shared/RecordingSettings.h"
 #include "../shared/RefCountedThreadSafe.h"
@@ -51,7 +51,7 @@
 #include <dxgi1_4.h>
 
 extern advancedfx::CThreadPool * g_pThreadPool;
-extern advancedfx::CImageBufferPoolThreadSafe * g_pImageBufferPoolThreadSafe;
+extern advancedfx::CGrowingBufferPoolThreadSafe * g_pImageBufferPoolThreadSafe;
 
 extern SOURCESDK::CS2::ISource2EngineToClient * g_pEngineToClient;
 extern SOURCESDK::CS2::ICvar * SOURCESDK::CS2::g_pCVar;
@@ -72,8 +72,7 @@ ID3D11RenderTargetView* g_BeforeUiRT = nullptr;
 
 class CAfxCpuTexture
 : public advancedfx::CRefCountedThreadSafe
-, public advancedfx::ICapture
-, public advancedfx::IImageBuffer
+, public advancedfx::IImageBufferThreadSafe
 {
 public:
     virtual void AddRef() override {
@@ -84,6 +83,12 @@ public:
         advancedfx::CRefCountedThreadSafe::Release();
     }
 
+
+    int GetRefCount() const {
+        return advancedfx::CRefCountedThreadSafe::GetRefCount();
+    }
+
+
     virtual const advancedfx::CImageFormat * GetImageBufferFormat() const {
         return &m_ImageFormat;
     }
@@ -92,16 +97,11 @@ public:
         return m_MappedResource.pData;
     }
 
-	virtual const IImageBuffer* GetBuffer() const {
-        return this;
-    }
-
     CAfxCpuTexture(ID3D11Device * pDevice)
     : m_pDevice(pDevice)
     {
         m_pDevice->AddRef();
         m_MappedResource.pData = nullptr;
-        m_Condition.notify_one();
     }
 
     void GpuCopyResource(ID3D11DeviceContext * pContext, ID3D11Texture2D * pTexture, float depthScale, float depthOffset) {
@@ -116,7 +116,7 @@ public:
             desc.MipLevels = 1;
             desc.SampleDesc.Count = 1;
             desc.SampleDesc.Quality = 0;
-            advancedfx::ImageFormat format = advancedfx::ImageFormat::Unkown;
+            advancedfx::ImageFormat format = advancedfx::ImageFormat::Unknown;
             switch(desc.Format) {
             case DXGI_FORMAT_R32_FLOAT:
                 format = advancedfx::ImageFormat::ZFloat;
@@ -156,13 +156,7 @@ public:
         }
     }
 
-    void CpuSignalDone() {
-        std::unique_lock<std::mutex> lock(m_Mutex);
-        m_bCpuDone = true;
-        m_Condition.notify_one();
-    }     
-
-    class advancedfx::IImageBuffer * CpuBeginAccess(ID3D11DeviceContext * pContext) {
+    advancedfx::IImageBufferThreadSafe * CpuBeginAccess(ID3D11DeviceContext * pContext) {
         m_MappedResource.pData = nullptr;
         if(m_pCpuTexture) {
             if(SUCCEEDED(pContext->Map(m_pCpuTexture, 0, D3D11_MAP_READ , 0, &m_MappedResource))) {
@@ -173,9 +167,8 @@ public:
         return nullptr;
     }
 
-    void IfAcccessedWaitForCpuAndEndAccess(ID3D11DeviceContext * pContext) {        
+    void CpuEndAccess(ID3D11DeviceContext * pContext) {        
         if(m_MappedResource.pData) {
-            WaitForCpu();
             pContext->Unmap(m_pCpuTexture, 0);    
             m_MappedResource.pData = nullptr;        
         }
@@ -205,19 +198,10 @@ private:
     ID3D11Texture2D * m_pCpuTexture = nullptr;
     ID3D11Texture2D * m_pResolveTexture = nullptr;
     DXGI_FORMAT m_Format = DXGI_FORMAT_UNKNOWN;
-    std::mutex m_Mutex;
-    std::condition_variable m_Condition;
-    bool m_bCpuDone = false;
     advancedfx::CImageFormat m_ImageFormat;
     D3D11_MAPPED_SUBRESOURCE m_MappedResource;
     float m_DepthScale = 1.0f;
     float m_DepthOfs = 0.0f;
-
-    void WaitForCpu() {
-        std::unique_lock<std::mutex> lock(m_Mutex);
-        m_Condition.wait(lock, [this] { return m_bCpuDone; });
-        m_bCpuDone = false;
-    }
 };
 
 class CAfxCapture {
@@ -236,187 +220,173 @@ public:
         m_ProcessingThread = std::thread(&CAfxCapture::ProcessingThreadFunc, this);
     }
 
-    void Finish(ID3D11DeviceContext * pDeviceContext) {
-        while(m_CpuTextures[0] || m_CpuTextures[1]) {
-            if(m_CpuTextures[m_Index]) {
-                m_CpuTextures[m_Index]->IfAcccessedWaitForCpuAndEndAccess(pDeviceContext);
-                m_CpuTextures[m_Index]->Release();
-                m_CpuTextures[m_Index] = nullptr;
-            }
-            m_Index = (m_Index + 1) % 2;
-        }
-    }
-
-    ~CAfxCapture() {
+    void ShutDown(ID3D11DeviceContext * pDeviceContext)
+    {
         {
             std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
+            if(m_ShutDown) return; // do not shutdown twice
             m_ShutDown = true;
             m_ProcessingThreadCv.notify_one();
         }
         m_ProcessingThread.join();
-        if(m_CpuTextures[0]) {
-            m_CpuTextures[0]->Release();
+
+        if(pDeviceContext) {
+            // Unmap textures gracefully:
+            while(!m_CpuTexturesDone.empty()) {
+                auto & pTexture = m_CpuTexturesDone.front();
+                pTexture->CpuEndAccess(pDeviceContext);
+                pTexture->Release();
+                m_CpuTexturesDone.pop();
+            }
+        } else {
+            // We can't unmap them right now, just relase them.
+            while(!m_CpuTexturesDone.empty()) {
+                auto & pTexture = m_CpuTexturesDone.front();
+                pTexture->Release();
+                m_CpuTexturesDone.pop();
+            }            
         }
-        if(m_CpuTextures[1]) {
-            m_CpuTextures[1]->Release();
-        }
+    }
+
+    ~CAfxCapture() {
+        ShutDown(nullptr);
     }
 
     void OnBeforeGpuPresent(ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture, float depthScale, float depthOfs) {
-        if(m_CpuTextures[m_Index] == nullptr) {
-            ID3D11Device * pDevice = nullptr;
-            pDeviceContext->GetDevice(&pDevice);
-            if(pDevice) {
-                auto pCpuTexture = new CAfxCpuTexture(pDevice);
-                pCpuTexture->AddRef();
-                m_CpuTextures[m_Index] = pCpuTexture;
-                pDevice->Release();
-            }
-        } else {
-            m_CpuTextures[m_Index]->IfAcccessedWaitForCpuAndEndAccess(pDeviceContext);
+        if(m_CurrentCpuTexture) {
+            m_CurrentCpuTexture->Release();
+            m_CurrentCpuTexture = nullptr;
         }
-        m_CpuTextures[m_Index]->GpuCopyResource(pDeviceContext, pTexture, depthScale, depthOfs);
+        ID3D11Device * pDevice = nullptr;
+        pDeviceContext->GetDevice(&pDevice);
+        if(pDevice) {
+            {
+                std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
+                while(true) {
+                    if(m_CpuTexturesDoing.empty()) break;
+                    auto & pTexture = m_CpuTexturesDoing.front();
+                    if(pTexture->GetRefCount() == 1) {
+                        m_CpuTexturesDone.emplace(pTexture);
+                        m_CpuTexturesDoing.pop();
+                    } else {
+                        break;
+                    }
+                }
+                if(!m_CpuTexturesDone.empty()) {
+                    m_CurrentCpuTexture = m_CpuTexturesDone.front();
+                    m_CpuTexturesDone.pop();
+                }
+            }
+            if(nullptr == m_CurrentCpuTexture) m_CurrentCpuTexture = new CAfxCpuTexture(pDevice); // new
+            else m_CurrentCpuTexture->CpuEndAccess(pDeviceContext); // re-use
+            m_CurrentCpuTexture->AddRef();
+            m_CurrentCpuTexture->GpuCopyResource(pDeviceContext, pTexture, depthScale, depthOfs);
+            pDevice->Release();
+        }
     }
 
     void OnAfterGpuPresent(ID3D11DeviceContext * pDeviceContext) {
-        m_Index = (m_Index + 1) % 2;
-        if(m_CpuTextures[m_Index]) {
-            m_CpuTextures[m_Index]->CpuBeginAccess(pDeviceContext);
-            StartProcess(0,m_CpuTextures[m_Index]);
+        if(m_CurrentCpuTexture) {
+            m_CurrentCpuTexture->CpuBeginAccess(pDeviceContext);
+            StartProcess(m_CurrentCpuTexture);
+            m_CurrentCpuTexture = nullptr;
         }
     }
 
 private:
 
-    void StartProcess(size_t index, CAfxCpuTexture * pCpuTexture) {
+    void StartProcess(CAfxCpuTexture * pCpuTexture) {
         std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
-        if(index == 0) {
-            m_In.push_back(new CBuffers(m_Streams_size));
-        }
-        (*m_In.rbegin())->SetAt(index, pCpuTexture);
-        if (index + 1  >= m_Streams_size) {
-            m_ProcessingThreadCv.notify_one();
-        }
+        m_CpuTexturesTodo.emplace(pCpuTexture);
+        m_ProcessingThreadCv.notify_one();
     }
 
-    size_t m_Index = 0;
-    CAfxCpuTexture * m_CpuTextures[2]={nullptr,nullptr};
+    CAfxCpuTexture * m_CurrentCpuTexture = nullptr;
 
-    const size_t m_Streams_size = 1;
     class advancedfx::COutVideoStreamCreator* m_pOutVideoStreamCreator;
-	advancedfx::COutVideoStream* m_OutVideoStream = nullptr;
+	advancedfx::TIOutVideoStream<true>* m_OutVideoStream = nullptr;
 
     CaptureType_e m_CaptureType;
-
-	class CBuffers {
-	public:
-		CBuffers(size_t size) : m_Buffers(size) {
-		}
-
-		size_t GetSize() const {
-			return m_Buffers.size();
-		}
-
-		class CAfxCpuTexture * GetAt(size_t index) const {
-			return m_Buffers[index];
-		}
-
-		void SetAt(size_t index, class CAfxCpuTexture * value) {
-			m_Buffers[index] = value;
-		}
-
-	private:
-		std::vector<class CAfxCpuTexture *> m_Buffers;
-	};
 
 	std::mutex m_ProcessingThreadMutex;
 	std::condition_variable m_ProcessingThreadCv;
 	std::thread m_ProcessingThread;
 	bool m_ShutDown = false;
 
-	std::list<class CBuffers*> m_In;
+    std::queue<CAfxCpuTexture *> m_CpuTexturesTodo;
+    std::queue<CAfxCpuTexture *> m_CpuTexturesDoing;
+    std::queue<CAfxCpuTexture *> m_CpuTexturesDone;
 
 	void ProcessingThreadFunc() {
 		std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
-		while (!m_ShutDown || !m_In.empty()) {
-			if (!m_In.empty()) {
-				class CBuffers* buffers = m_In.front();
-				if(buffers->GetSize() >= m_Streams_size) {
-					class CBuffers* task = buffers;
-					m_In.pop_front();
-					lock.unlock();
-
-                    size_t taskSize = task->GetSize();
-                    for(size_t i=0; i < taskSize; i++) {
-                        auto pTexture = task->GetAt(i);
-                        if(pTexture) {
-                            advancedfx::ICapture* capture = pTexture;
-                            switch(pTexture->GetImageBufferFormat()->Format) {
-                            case advancedfx::ImageFormat::ZFloat:
-                                capture = advancedfx::ImageTransformer::DepthF(g_pThreadPool, g_pImageBufferPoolThreadSafe, pTexture, pTexture->GetDepthScale(), pTexture->GetDepthOffset());
-                                break;
-                            case advancedfx::ImageFormat::RGBA:
-                                switch(m_CaptureType) {
-                                case CaptureType_Rgba:
-                                    capture = advancedfx::ImageTransformer::RgbaToBgra(g_pThreadPool,g_pImageBufferPoolThreadSafe,pTexture);
-                                    break;
-                                case CaptureType_Depth24:
-                                    {
-                                        capture = advancedfx::ImageTransformer::RgbaToBgr(g_pThreadPool,g_pImageBufferPoolThreadSafe,pTexture);
-                                        advancedfx::ICapture* capture2 = advancedfx::ImageTransformer::Depth24(g_pThreadPool, g_pImageBufferPoolThreadSafe, capture, pTexture->GetDepthScale(), pTexture->GetDepthOffset());
-                                        if(capture) capture->Release();
-                                        capture = capture2;
-                                    }
-                                    break;
-                                default:
-                                    capture = advancedfx::ImageTransformer::RgbaToBgr(g_pThreadPool,g_pImageBufferPoolThreadSafe,pTexture);
-                                    break;
-                                }
-                                break;
-                            default:
-                            pTexture->AddRef();
-                                break;
+		while (!m_ShutDown || !m_CpuTexturesTodo.empty()) {
+			if (!m_CpuTexturesTodo.empty()) {
+                auto pTexture = m_CpuTexturesTodo.front();
+                m_CpuTexturesTodo.pop();
+    			lock.unlock();
+                if(pTexture) {
+                    advancedfx::IImageBufferThreadSafe* buffer = pTexture;
+                    switch(pTexture->GetImageBufferFormat()->Format) {
+                    case advancedfx::ImageFormat::ZFloat:
+                        buffer = advancedfx::ImageTransformer::DepthF(g_pThreadPool, g_pImageBufferPoolThreadSafe, pTexture, pTexture->GetDepthScale(), pTexture->GetDepthOffset());
+                        break;
+                    case advancedfx::ImageFormat::RGBA:
+                        switch(m_CaptureType) {
+                        case CaptureType_Rgba:
+                            buffer = advancedfx::ImageTransformer::RgbaToBgra(g_pThreadPool,g_pImageBufferPoolThreadSafe,pTexture);
+                            break;
+                        case CaptureType_Depth24:
+                            {
+                                buffer = advancedfx::ImageTransformer::RgbaToBgr(g_pThreadPool,g_pImageBufferPoolThreadSafe,pTexture);
+                                advancedfx::IImageBufferThreadSafe* buffer2 = advancedfx::ImageTransformer::Depth24(g_pThreadPool, g_pImageBufferPoolThreadSafe, buffer, pTexture->GetDepthScale(), pTexture->GetDepthOffset());
+                                if(buffer) buffer->Release();
+                                buffer = buffer2;
                             }
-                            if (capture) {
-                                if (const advancedfx::IImageBuffer* buffer = capture->GetBuffer()) {                            
-                                    if (m_OutVideoStream == nullptr) {
-                                        m_OutVideoStream = m_pOutVideoStreamCreator->CreateOutVideoStream(*buffer->GetImageBufferFormat());
-                                        if (nullptr == m_OutVideoStream)
-                                        {
-                                            advancedfx::Warning("AFXERROR: Failed to create image stream for screen recording.\n");
-                                        }
-                                        else
-                                        {
-                                            m_OutVideoStream->AddRef();
-                                        }
-                                    }
-                                    if (nullptr != m_OutVideoStream && !m_OutVideoStream->SupplyImageBuffer(buffer))
-                                    {
-                                        advancedfx::Warning("AFXERROR: Failed writing image for screen recording.\n");
-                                    }
-                                }
-                                else {
-                                   advancedfx::Warning("AFXERROR: Could not get capture buffer for screen recording.\n");
-                                }
-                                capture->Release();
-                                capture = nullptr; 
-                            }                               
-                            pTexture->CpuSignalDone();
+                            break;
+                        default:
+                            buffer = advancedfx::ImageTransformer::RgbaToBgr(g_pThreadPool,g_pImageBufferPoolThreadSafe,pTexture);
+                            break;
                         }
+                        break;
+                    default:
+                        pTexture->AddRef();
+                        break;
                     }
-
-					delete task;
-					task = nullptr;
-					lock.lock();
-				} else {
-					m_ProcessingThreadCv.wait(lock);
-				}
+                    if (buffer) {
+                        if (m_OutVideoStream == nullptr) {
+                            m_OutVideoStream = m_pOutVideoStreamCreator->CreateOutVideoStream(*buffer->GetImageBufferFormat());
+                            if (nullptr == m_OutVideoStream)
+                            {
+                                advancedfx::Warning("AFXERROR: Failed to create image stream for screen recording.\n");
+                            }
+                            else
+                            {
+                                m_OutVideoStream->AddRef();
+                            }
+                        }
+                        if (nullptr != m_OutVideoStream && !m_OutVideoStream->SupplyImageBuffer(this, buffer))
+                        {
+                            advancedfx::Warning("AFXERROR: Failed writing image for screen recording.\n");
+                        }
+                        buffer->Release();
+                        buffer = nullptr; 
+                    }                               
+                }
+				lock.lock();
+                m_CpuTexturesDoing.emplace(pTexture);
 			} else {
 				m_ProcessingThreadCv.wait(lock);
 			}		
         }
         if(m_OutVideoStream) m_OutVideoStream->Release();
         m_pOutVideoStreamCreator->Release();
+        while(!m_CpuTexturesDoing.empty()) {
+            auto & pTexture = m_CpuTexturesDoing.front();
+            if(pTexture->GetRefCount() == 1) {
+                m_CpuTexturesDone.emplace(pTexture);
+                m_CpuTexturesDoing.pop();
+            }
+        }
 	}
 };
 
@@ -2408,7 +2378,7 @@ void EndCapture() {
             auto & queue = pRenderPassCommands.AfterPresentOrContextLossReliable;
             CAfxCapture * capture = g_ActiveCapture;
             queue.Push([capture](IRenderPassCommands* context){
-                capture->Finish(context->GetContext());
+                capture->ShutDown(context->GetContext());
             }); 
         }
         {
@@ -2427,7 +2397,7 @@ void CreateCapture(class advancedfx::COutVideoStreamCreator* pOutVideoStreamCrea
     g_ActiveCapture = new CAfxCapture(pOutVideoStreamCreator, CAfxCapture::CaptureType_Default);
 }
 
-advancedfx::CImageBufferPoolThreadSafe g_ImageBufferPool;
+advancedfx::CGrowingBufferPoolThreadSafe g_ImageBufferPool;
 
 SOURCESDK::CS2::ConVarHandle Unlock_smoke_volume_lod_ratio_change() {
     static SOURCESDK::CS2::ConVarHandle firstResult;
@@ -2554,7 +2524,7 @@ public:
         return m_StreamCaptureType;
     }
 
-    virtual advancedfx::IImageBufferPool * GetImageBufferPool() const {
+    virtual advancedfx::CGrowingBufferPoolThreadSafe * GetImageBufferPool() const {
         return &g_ImageBufferPool;
     }
 
@@ -2706,7 +2676,7 @@ private:
                 auto & queue = pRenderPassCommands.AfterPresentOrContextLossReliable;
                 CAfxCapture * capture = m_Capture;
                 queue.Push([capture](IRenderPassCommands* context){
-                    capture->Finish(context->GetContext());
+                    capture->ShutDown(context->GetContext());
                 }); 
             }
             {
@@ -2753,7 +2723,7 @@ private:
             return advancedfx::StreamCaptureType::Invalid;
         }
 
-        virtual  advancedfx::IImageBufferPool * GetImageBufferPool() const {
+        virtual  advancedfx::CGrowingBufferPoolThreadSafe * GetImageBufferPool() const {
             return &g_ImageBufferPool;
         }
 

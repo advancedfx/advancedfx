@@ -204,7 +204,6 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/AfxDetours.h
     ../shared/AfxGameRecord.cpp
     ../shared/AfxGameRecord.h
-    ../shared/AfxImageBuffer.h
     ../shared/AfxMath.cpp
     ../shared/AfxMath.h
     ../shared/AfxOutStreams.cpp
@@ -221,6 +220,9 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/EasySampler.h
     ../shared/FileTools.cpp
     ../shared/FileTools.h
+    ../shared/GrowingBuffer.h
+    ../shared/GrowingBufferPool.h
+    ../shared/ImageBuffer.h
     ../shared/MirvCampath.cpp
     ../shared/MirvCampath.h
     ../shared/MirvInput.cpp

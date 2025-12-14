@@ -38,7 +38,7 @@
 #include "../shared/StringTools.h"
 #include "../shared/binutils.h"
 #include "../shared/CommandSystem.h"
-#include "../shared/ImageBufferPoolThreadSafe.h"
+#include "../shared/GrowingBufferPoolThreadSafe.h"
 #include "../shared/ThreadPool.h"
 #include "../shared/MirvCamIO.h"
 #include "../shared/MirvCampath.h"
@@ -2189,7 +2189,7 @@ CAfxImportsHook g_Import_PROCESS(CAfxImportsHooks({
 
 
 advancedfx::CThreadPool * g_pThreadPool = nullptr;
-advancedfx::CImageBufferPoolThreadSafe * g_pImageBufferPoolThreadSafe = nullptr;
+advancedfx::CGrowingBufferPoolThreadSafe * g_pImageBufferPoolThreadSafe = nullptr;
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 {
@@ -2233,7 +2233,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 			}
 			g_pThreadPool = new advancedfx::CThreadPool(thread_pool_thread_count);
 
-			g_pImageBufferPoolThreadSafe = new advancedfx::CImageBufferPoolThreadSafe();
+			g_pImageBufferPoolThreadSafe = new advancedfx::CGrowingBufferPoolThreadSafe();
 
 			g_ConsolePrinter = new CConsolePrinter();
 

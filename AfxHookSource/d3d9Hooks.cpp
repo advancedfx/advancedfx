@@ -2398,7 +2398,7 @@ public:
 		return result;
 	}
 
-    virtual const advancedfx::IImageBuffer * LockCpu() {
+    virtual advancedfx::IImageBufferThreadSafe * LockCpu(class IAfxD3D9CaptureOnCpuFinished * pOnCpuFinished) override {
 		D3DSURFACE_DESC desc;
 		D3DLOCKED_RECT lockedRect;
 
@@ -2414,19 +2414,15 @@ public:
 					lockedRect.Pitch
 				);
 				imageFormat.SetOrigin(advancedfx::ImageOrigin::TopLeft);
-				m_ImageBuffer = new CImageBufferWrapper(imageFormat, lockedRect.pBits);
-				return m_ImageBuffer;
+				auto buffer = new CImageBufferWrapper(imageFormat, lockedRect.pBits, pOnCpuFinished);
+				buffer->AddRef();
+				return buffer;
 			}
 		}
 
 		return nullptr;
 	}
     
-	virtual void UnlockCpu() {
-		delete m_ImageBuffer;
-		m_pOffscreenSurface->UnlockRect();
-	}
-
 protected:
 
 private:
@@ -2436,31 +2432,48 @@ private:
 	}
 
 	class CImageBufferWrapper
-		: public advancedfx::IImageBuffer {
+	: public CRefCountedThreadSafe
+	, public advancedfx::IImageBufferThreadSafe {
 	public:
-		CImageBufferWrapper(const advancedfx::CImageFormat & imageFormat, const void * pData)
-			: m_ImageFormat(imageFormat)
-			, m_pData(pData)
-		{
-
+		CImageBufferWrapper(const advancedfx::CImageFormat & imageFormat, const void * pData, class IAfxD3D9CaptureOnCpuFinished * pOnCpuFinished)
+		: m_ImageFormat(imageFormat)
+		, m_pData(pData)
+		, m_pOnCpuFinished(pOnCpuFinished)
+		{		
 		}
 
-		virtual const advancedfx::CImageFormat * GetImageBufferFormat() const {
+		virtual void AddRef() override {
+			TRefCounted<true>::AddRef();
+		}
+
+		virtual void Release() override {
+			TRefCounted<true>::Release();
+		}
+
+		virtual const advancedfx::CImageFormat * GetImageBufferFormat() const override {
 			return &m_ImageFormat;
 		}
-		virtual const void * GetImageBufferData() const {
+		virtual const void * GetImageBufferData() const override {
 			return m_pData;
 		}
+	protected:
+		virtual ~CImageBufferWrapper() {
+			if(m_pOnCpuFinished) m_pOnCpuFinished->OnCpuFinished();
+		}	
 
 	private:
 		advancedfx::CImageFormat m_ImageFormat;
 		const void * m_pData;
+		class IAfxD3D9CaptureOnCpuFinished * m_pOnCpuFinished;
 	};
 
 	int m_RefCount = 0;
 	IDirect3DSurface9 * m_pIntermediateSurface;
 	IDirect3DSurface9 * m_pOffscreenSurface;
-	CImageBufferWrapper * m_ImageBuffer;
+
+	virtual void UnlockCpu() {
+		m_pOffscreenSurface->UnlockRect();
+	}
 };
 
 // NewDirect3DDevice9 //////////////////////////////////////////////////////////

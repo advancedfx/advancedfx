@@ -31,14 +31,13 @@
 #include <shaders/build/afxHook_vertexlit_and_unlit_generic_ps30.h>
 #endif
 
-#include <shared/RefCounted.h>
-#include <shared/RefCountedThreadSafe.h>
-#include <shared/AfxImageBuffer.h>
-#include <shared/ImageBufferPoolThreadSafe.h>
 #include <shared/AfxOutStreams.h>
 #include <shared/bvhexport.h>
 #include <shared/AfxColorLut.h>
-#include "../shared/Captures.h"
+#include "../shared/RefCounted.h"
+#include "../shared/RefCountedThreadSafe.h"
+#include "../shared/GrowingBufferPoolThreadSafe.h"
+#include "../shared/ImageBufferThreadSafe.h"
 #include "../shared/OutVideoStreamCreators.h"
 #include "../shared/RecordingSettings.h"
 
@@ -111,12 +110,13 @@ public:
 	/**
 	 * Called from drawing thread.
 	 */
-	virtual void OnCapture(class advancedfx::ICapture * capture) = 0;
+	virtual void OnCapture(advancedfx::IImageBufferThreadSafe* buffer) = 0;
 };
 
 class CCaptureNode
 	: public CRefCountedThreadSafe
 	, private IAfxD3D9OnRelease
+	, private IAfxD3D9CaptureOnCpuFinished
 {
 public:
 	static void Init() {
@@ -252,40 +252,6 @@ private:
 	
 	} s_GpuReleaseQueue;
 
-	class CCapture
-		: public advancedfx::CRefCountedThreadSafe
-		, public advancedfx::ICapture {
-	public:
-		CCapture(CCaptureNode* captureNode)
-			: advancedfx::CRefCountedThreadSafe()
-			, m_CaptureNode(captureNode)
-		{
-
-		}
-		virtual void AddRef() override {
-			advancedfx::CRefCountedThreadSafe::AddRef();
-		}
-
-		virtual void Release() override {
-			advancedfx::CRefCountedThreadSafe::Release();
-		}
-
-		virtual const advancedfx::IImageBuffer* GetBuffer() const {
-			return m_CaptureNode->m_Buffer;
-		}
-
-	protected:
-		virtual ~CCapture() {
-			std::unique_lock<std::mutex> lock(m_CaptureNode->m_BufferMutex);
-			m_CaptureNode->m_ProcessBuffer = false;
-			m_CaptureNode->m_ProcessedCondition.notify_one();
-		}
-
-	private:
-		CCaptureNode* m_CaptureNode;
-
-	};
-
 	ICaptureInput * m_Input;
 	ICaptureOutput * m_Output;
 	IAfxD3D9Capture * m_D3d9Capture = nullptr;
@@ -294,7 +260,7 @@ private:
 	std::condition_variable m_ProcessCondition;
 	std::condition_variable m_ProcessedCondition;
 	std::mutex m_BufferMutex;
-	const advancedfx::IImageBuffer * m_Buffer = nullptr;
+	advancedfx::IImageBufferThreadSafe * m_Buffer = nullptr;
 	bool m_GpuReleased = false;
 	bool m_CpuReleased = false;
 
@@ -314,12 +280,10 @@ private:
 	void GpuLock() {
 		m_ProcessBuffer = true;
 		if(m_CaptureOK) {
-			m_Buffer = m_D3d9Capture->LockCpu();
+			m_Buffer = m_D3d9Capture->LockCpu(this);
 		}
-		CCapture* capture = new CCapture(this);
-		capture->AddRef();
-		m_Output->OnCapture(capture);
-		capture->Release();
+		m_Output->OnCapture(m_Buffer);
+		if(m_Buffer) m_Buffer->Release();
 	}
 
 	void GpuUnlock() {
@@ -333,6 +297,12 @@ private:
 			m_D3d9Capture->UnlockCpu();
 			m_Buffer = nullptr;
 		}
+	}
+
+	virtual void OnCpuFinished() override {
+		std::unique_lock<std::mutex> lock(m_BufferMutex);
+		m_ProcessBuffer = false;
+		m_ProcessedCondition.notify_one();			
 	}
 };
 
@@ -852,7 +822,7 @@ public:
 		advancedfx::CRefCountedThreadSafe::Release();
 	}
 
-	virtual void OnCapture(class advancedfx::ICapture* capture);
+	virtual void OnCapture(advancedfx::IImageBufferThreadSafe* buffer);
 
 protected:
 	~CAfxStreamsCaptureOutput();
@@ -1048,13 +1018,13 @@ public:
 	void DoCaptureStart(IAfxMatRenderContextOrg* ctx, const AfxViewportData_t& viewport);
 
 	/// <remarks>This is not guaranteed to be called, i.e. not called upon buffer re-allocation error.</remarks>
-	void OnImageBufferCaptured(size_t index, class advancedfx::ICapture* buffer);
+	void OnImageBufferCaptured(size_t index, advancedfx::IImageBufferThreadSafe * buffer);
 
 	bool GetStreamFolder(std::wstring& outFolder) const;
 
 	virtual advancedfx::StreamCaptureType GetCaptureType() const = 0;
 
-	virtual advancedfx::IImageBufferPool * GetImageBufferPool() const;
+	virtual advancedfx::CGrowingBufferPoolThreadSafe * GetImageBufferPool() const;
 
 	virtual bool GetFormatBmpNotTga() const;
 
@@ -1103,16 +1073,16 @@ protected:
 			return m_Buffers.size();
 		}
 
-		class advancedfx::ICapture * GetAt(size_t index) const {
+		advancedfx::IImageBufferThreadSafe * GetAt(size_t index) const {
 			return m_Buffers[index];
 		}
 
-		void SetAt(size_t index, class advancedfx::ICapture * value) {
+		void SetAt(size_t index, advancedfx::IImageBufferThreadSafe * value) {
 			m_Buffers[index] = value;
 		}
 
 	private:
-		std::vector<class advancedfx::ICapture *> m_Buffers;
+		std::vector<advancedfx::IImageBufferThreadSafe *> m_Buffers;
 	};
 
 	std::vector<CAfxRenderViewStream *> m_Streams;
@@ -1133,7 +1103,7 @@ protected:
 	}
 
 	advancedfx::CRecordingSettings * m_Settings;
-	advancedfx::COutVideoStream * m_OutVideoStream;
+	advancedfx::TIOutVideoStream<true> * m_OutVideoStream;
 
 	virtual ~CAfxRecordStream() override;
 
@@ -3361,7 +3331,7 @@ public:
 	}
 };
 
-extern advancedfx::CImageBufferPoolThreadSafe g_ImageBufferPoolThreadSafe;
+extern advancedfx::CGrowingBufferPoolThreadSafe g_ImageBufferPoolThreadSafe;
 
 class CAfxStreams
 : public IAfxBaseClientDllView_Render
@@ -3572,7 +3542,7 @@ public:
 		return advancedfx::StreamCaptureType::Normal;
 	}
 
-	virtual advancedfx::IImageBufferPool * GetImageBufferPool() const {
+	virtual advancedfx::CGrowingBufferPoolThreadSafe * GetImageBufferPool() const {
 		return &g_ImageBufferPoolThreadSafe;
 	}
 
@@ -3799,10 +3769,10 @@ private:
 			advancedfx::CRefCountedThreadSafe::Release();
 		}
 
-		virtual void OnCapture(class advancedfx::ICapture* capture) {
+		virtual void OnCapture(advancedfx::IImageBufferThreadSafe* buffer) {
 			std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
-			if (capture) capture->AddRef();
-			m_Captures.push_back(capture);
+			if (buffer) buffer->AddRef();
+			m_Buffers.push_back(buffer);
 			m_ProcessingThreadCv.notify_one();
 		}
 
@@ -3821,10 +3791,10 @@ private:
 		std::mutex m_ProcessingThreadMutex;
 		std::condition_variable m_ProcessingThreadCv;
 		std::thread m_ProcessingThread;
-		std::list<class advancedfx::ICapture*> m_Captures;
+		std::list<advancedfx::IImageBufferThreadSafe*> m_Buffers;
 		bool m_Shutdown = false;
 		advancedfx::COutVideoStreamCreator* m_OutVideoStreamCreator;
-		advancedfx::COutVideoStream* m_OutVideoStream = nullptr;
+		advancedfx::TIOutVideoStream<true>* m_OutVideoStream = nullptr;
 
 		void ProcessingThreadFunc();
 

@@ -158,7 +158,6 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/AfxDetours.h
     ../shared/AfxMath.cpp
     ../shared/AfxMath.h
-    ../shared/AfxImageBuffer.h    
     ../shared/AfxOutStreams.cpp
     ../shared/AfxOutStreams.h    
     ../shared/CamIO.cpp
@@ -176,10 +175,9 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/FileTools.h
     ../shared/FovScaling.cpp
     ../shared/FovScaling.h
-    ../shared/ImageBufferPoolThreadSafe.h
+    ../shared/GrowingBufferPoolThreadSafe.h
     ../shared/ImageTransformer.cpp
     ../shared/ImageTransformer.h    
-    ../shared/OutVideoStreamCreators.cpp
     ../shared/OutVideoStreamCreators.h
     ../shared/OpenExrOutput.cpp
     ../shared/OpenExrOutput.h    

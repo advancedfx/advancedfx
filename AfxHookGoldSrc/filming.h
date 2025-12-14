@@ -7,13 +7,18 @@
 #include <list>
 #include <string>
 
-#include <shared/EasySampler.h>
 #include "film_sound.h"
 #include "mdt_media.h"
 #include "supportrender.h"
 
 #include <shared/CamPath.h>
 #include <shared/AfxOutStreams.h>
+
+#include "../shared/EasySampler.h"
+#include "../shared/GrowingBufferPool.h"
+#include "../shared/ImageBuffer.h"
+#include "../shared/ImageFormat.h"
+#include "../shared/TImageBuffer.h"
 
 void LinearizeFloatDepthBuffer(GLfloat *pBuffer, unsigned int count, GLdouble zNear, GLdouble zFar);
 void InverseFloatDepthBuffer(GLfloat *pBuffer, unsigned int count, GLdouble zNear, GLdouble zFar);
@@ -33,8 +38,7 @@ enum FILMING_DEPTHFN { FD_INV, FD_LINEAR, FD_LOG };
 
 
 class FilmingStream :
-	private IFramePrinter,
-	private IFloatFramePrinter
+	private IFramePrinter<false>
 {
 public:
 	/// <param name="sampleDuration">&lt;= 0: no sampling, sample duration (1/sps) otherwise</param>
@@ -49,43 +53,36 @@ public:
 	);
 	~FilmingStream();
 
-	void Capture(double time, CMdt_Media_RAWGLPIC * usePic, float spsHint);
+	void Capture(double time, float spsHint);
 
 private:
 	bool m_Bmp;
 	FILMING_BUFFER m_Buffer;
-	unsigned char m_BytesPerPixel;
+	unsigned char m_DepthBytesPP;
 	bool m_DepthDebug;
 	FILMING_DEPTHFN m_DepthFn;
 	float m_DepthSliceLo;
 	float m_DepthSliceHi;
 	bool m_DirCreated;
 	int m_FrameCount;
-	GLenum m_GlBuffer;
-	GLenum m_GlType;
-	int m_Height;
+	advancedfx::CImageFormat m_ImageFormat;
 	std::wstring m_Path;
-	EasyByteSampler * m_Sampler;
-	EasyFloatSampler * m_SamplerFloat;
-	int m_Pitch;
-	int m_Width;
+	EasyByteSampler<false> * m_Sampler;
+	EasyFloatSampler<false> * m_SamplerFloat;
 	int m_X;
 	int m_Y;
 	bool m_TASMode;
-	CMdt_Media_RAWGLPIC m_PreviousFrame;
+	advancedfx::CImageBuffer * m_pPreviousFrame = nullptr;
 	double m_NextFrameIsAt;
-	advancedfx::COutFFMPEGVideoStream* m_FfmpegOutStream = nullptr;
+	advancedfx::COutFFMPEGVideoStream<false>* m_FfmpegOutStream = nullptr;
 	std::wstring m_FfmpegOptions;
 
-	void WriteFrame(CMdt_Media_RAWGLPIC& frame, double time);
+	void WriteFrame(advancedfx::CImageBuffer * pFrame, double time);
 
-	/// <summary>Implements IFramePrinter.</summary>
-	virtual void Print(unsigned char const * data);
+	/// <summary>Implements IFramePrinter for the samplers.</summary>
+	virtual void PrintSampledFrame(advancedfx::TImageBuffer<false> * pFrame);
 
-	/// <summary>Implements IFloatFramePrinter.</summary>
-	virtual void Print(float const * data);
-
-	virtual void PrintExr(float const* data);
+	void OutputFrame(advancedfx::TIImageBuffer<false> * pFrame);
 };
 
 
@@ -100,6 +97,8 @@ public:
 	enum HUD_REQUEST_STATE { HUDRQ_NORMAL,HUDRQ_CAPTURE_COLOR,HUDRQ_CAPTURE_ALPHA };
 	enum MATTE_STAGE { MS_ALL, MS_WORLD, MS_ENTITY };
 	enum MATTE_METHOD { MM_KEY, MM_ALPHA };
+
+	static advancedfx::CGrowingBufferPool ImageBufferPool;
 
 	Filming();
 	~Filming();
@@ -251,8 +250,6 @@ private:
 	bool _bExportingSound = false;
 
 	unsigned int m_nFrames = 0;
-
-	CMdt_Media_RAWGLPIC m_GlRawPic;
 
 	MATTE_STAGE m_iMatteStage = MS_ALL;
 
