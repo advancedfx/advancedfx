@@ -109,7 +109,6 @@ int GetMaterialSystemThread() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class CCaptureNode::CGpuLockQueue CCaptureNode::s_GpuLockQueue;
 class CCaptureNode::CGpuReleaseQueue CCaptureNode::s_GpuReleaseQueue;
 
 std::map<SOURCESDK::matrix3x4_t *, CEntityMetaRef> g_DrawingThread_BonesPtr_To_Meta;
@@ -854,14 +853,14 @@ void CAfxRecordStream::DoCaptureStart(IAfxMatRenderContextOrg * ctx, const AfxVi
 	m_FirstCapture = false;
 }
 
-void CAfxRecordStream::OnImageBufferCaptured(size_t index, advancedfx::IImageBufferThreadSafe* buffer)
+void CAfxRecordStream::OnCapture(size_t index, IAfxD3D9CaptureBuffer* capture)
 {
-	if (buffer) buffer->AddRef();
+	if (capture) capture->AddRef();
 	std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
 	if(index == 0) {
-		m_In.push_back(new CBuffers(m_Streams.size()));
+		m_In.push_back(new CCaptures(m_Streams.size()));
 	}
-	(*m_In.rbegin())->SetAt(index, buffer);
+	(*m_In.rbegin())->SetAt(index, capture);
 	if (index + 1  >= m_Streams.size()) {
 		m_ProcessingThreadCv.notify_one();
 	}
@@ -989,7 +988,7 @@ void CAfxSingleStream::CaptureStart(bool bFirstCapture, const AfxViewportData_t&
 
 void CAfxSingleStream::CaptureEnd()
 {
-	advancedfx::IImageBufferThreadSafe * buffer = m_Task->GetAt(0);
+	advancedfx::IImageBufferThreadSafe * buffer = CaptureToBuffer( m_Task->GetAt(0) );
 	if (buffer)
 	{
 		advancedfx::StreamCaptureType streamCaptureType = m_Streams[0]->StreamCaptureType_get();
@@ -1133,8 +1132,8 @@ void CAfxTwinStream::CaptureStart(bool bFirstCapture, const AfxViewportData_t& v
 
 void CAfxTwinStream::CaptureEnd()
 {
-	advancedfx::IImageBufferThreadSafe * bufferA = m_Task->GetAt(0);
-	IImageBufferThreadSafe * bufferB = m_Task->GetAt(1);
+	advancedfx::IImageBufferThreadSafe * bufferA =CaptureToBuffer( m_Task->GetAt(0) );
+	IImageBufferThreadSafe * bufferB =CaptureToBuffer( m_Task->GetAt(1) );
 
 	advancedfx::IImageBufferThreadSafe* outBuffer = nullptr;
 
@@ -1420,8 +1419,8 @@ void CAfxMatteStream::CaptureStart(bool bFirstCapture, const AfxViewportData_t& 
 
 void CAfxMatteStream::CaptureEnd()
 {
-	advancedfx::IImageBufferThreadSafe * bufferA = m_Task->GetAt(0);
-	advancedfx::IImageBufferThreadSafe * bufferB = m_Task->GetAt(1);
+	advancedfx::IImageBufferThreadSafe * bufferA = CaptureToBuffer( m_Task->GetAt(0) );
+	advancedfx::IImageBufferThreadSafe * bufferB = CaptureToBuffer( m_Task->GetAt(1) );
 
 	advancedfx::IImageBufferThreadSafe* outBuffer = advancedfx::ImageTransformer::Matte(g_pThreadPool,&g_ImageBufferPoolThreadSafe,bufferA, bufferB);
 
@@ -5835,8 +5834,8 @@ CAfxStreamsCaptureOutput::~CAfxStreamsCaptureOutput() {
 	m_Target->Release();
 }
 
-void CAfxStreamsCaptureOutput::OnCapture(advancedfx::IImageBufferThreadSafe* buffer) {
-	m_Target->OnImageBufferCaptured(m_StreamIndex, buffer);
+void CAfxStreamsCaptureOutput::OnCapture(IAfxD3D9CaptureBuffer* capture) {
+	m_Target->OnCapture(m_StreamIndex, capture);
 }
 
 
@@ -6282,24 +6281,6 @@ void CAfxStreams::CalcMainStream()
 	}
 }
 
-class CCaptureNodeGpuQueuesExecution
-	: public CAfxFunctor
-{
-public:
-	virtual void operator()() {
-		CCaptureNode::GpuExecuteLockQueue();
-	}
-};
-
-void QueueCaptureGpuQueuesExecution(bool bShutdown) {
-	if (bShutdown) {
-		CCaptureNode::GpuExecuteLockQueue();
-	}
-	else {
-		QueueOrExecute(GetCurrentContext()->GetOrg(), new CAfxLeafExecute_Functor(new class CCaptureNodeGpuQueuesExecution()));
-	}
-}
-
 class CCaptureNodeGpuQueuesRelease
 	: public CAfxFunctor
 {
@@ -6559,10 +6540,6 @@ void CAfxStreams::OnRenderView(CCSViewRender_RenderView_t fn, void* This, void* 
 		}
 		m_ForceCacheFullSceneState = false;
 		DoRenderView(fn, This, Edx, view, hudViewSetup, nClearFlags, whatToDraw);
-	}
-
-	if(m_Recording) {
-		QueueCaptureGpuQueuesExecution(false);
 	}
 
 	if (m_PresentBlocked)
@@ -9987,11 +9964,6 @@ void CAfxStreams::ShutDown(void)
 
 void CAfxStreams::ShutDown2(void)
 {
-	if ((g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer)
-		&& m_Recording) {
-		QueueCaptureGpuQueuesExecution(true);
-	}
-
 	// We can do this here, because the dedicated drawing thread is shutdown by then (I think.):
 	QueueCaptureGpuQueuesRelease(true);
 	DrawingThread_DeviceLost();
@@ -10151,44 +10123,46 @@ void CAfxStreams::EngineThread_QueueCapture() {
 void CAfxStreams::DrawingThread_Capture() {
 	if (m_DrawingCaptureNode) {
 		m_DrawingCaptureNode->GpuCapture();
-		CCaptureNode::GpuExecuteLockQueue();
 	}
 }
 
 void CAfxStreams::CDrawingRecordScreenOutput::ProcessingThreadFunc() {
 	std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
-	while (!m_Shutdown || !m_Buffers.empty()) {
-		if (!m_Buffers.empty()) {
-			advancedfx::IImageBufferThreadSafe* buffer = m_Buffers.front();
-			m_Buffers.pop_front();
+	while (!m_Shutdown || !m_Captures.empty()) {
+		if (!m_Captures.empty()) {
+			auto * capture = m_Captures.front();
+			m_Captures.pop_front();
 			
 			lock.unlock();
 
-			if (buffer) {
-				advancedfx::IImageBufferThreadSafe* outBuffer = advancedfx::ImageTransformer::StripAlpha(g_pThreadPool,&g_ImageBufferPoolThreadSafe,buffer);
-				buffer->Release();
-				if (outBuffer) {
-					if (m_OutVideoStream == nullptr) {
-						m_OutVideoStream = m_OutVideoStreamCreator->CreateOutVideoStream(*outBuffer->GetImageBufferFormat());
-						if (nullptr == m_OutVideoStream)
-						{
-							Tier0_Warning("AFXERROR: Failed to create image stream for screen recording.\n");
+			if (capture) {
+				if(auto buffer = capture->LockCpu()) {
+					advancedfx::IImageBufferThreadSafe* outBuffer = advancedfx::ImageTransformer::StripAlpha(g_pThreadPool,&g_ImageBufferPoolThreadSafe,buffer);
+					buffer->Release();
+					if (outBuffer) {
+						if (m_OutVideoStream == nullptr) {
+							m_OutVideoStream = m_OutVideoStreamCreator->CreateOutVideoStream(*outBuffer->GetImageBufferFormat());
+							if (nullptr == m_OutVideoStream)
+							{
+								Tier0_Warning("AFXERROR: Failed to create image stream for screen recording.\n");
+							}
+							else
+							{
+								m_OutVideoStream->AddRef();
+							}
 						}
-						else
+						if (nullptr != m_OutVideoStream && !m_OutVideoStream->SupplyImageBuffer(this, outBuffer))
 						{
-							m_OutVideoStream->AddRef();
+							Tier0_Warning("AFXERROR: Failed writing image for screen recording.\n");
 						}
+						outBuffer->Release();
+						outBuffer = nullptr;
 					}
-					if (nullptr != m_OutVideoStream && !m_OutVideoStream->SupplyImageBuffer(this, outBuffer))
-					{
-						Tier0_Warning("AFXERROR: Failed writing image for screen recording.\n");
+					else {
+						Tier0_Warning("AFXERROR: Could not get transform buffer for screen recording.\n");
 					}
-					outBuffer->Release();
-					outBuffer = nullptr;
 				}
-				else {
-					Tier0_Warning("AFXERROR: Could not get transform buffer for screen recording.\n");
-				}
+				capture->Release();
 			}
 			
 			lock.lock();

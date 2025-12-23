@@ -110,13 +110,12 @@ public:
 	/**
 	 * Called from drawing thread.
 	 */
-	virtual void OnCapture(advancedfx::IImageBufferThreadSafe* buffer) = 0;
+	virtual void OnCapture(IAfxD3D9CaptureBuffer * capture) = 0;
 };
 
 class CCaptureNode
 	: public CRefCountedThreadSafe
 	, private IAfxD3D9OnRelease
-	, private IAfxD3D9CaptureOnCpuFinished
 {
 public:
 	static void Init() {
@@ -125,10 +124,6 @@ public:
 
 	static void Shutdown() {
 		s_GpuReleaseQueue.Shutdown();
-	}
-
-	static void GpuExecuteLockQueue() {
-		s_GpuLockQueue.Execute();
 	}
 
 	static void GpuExecuteReleaseQueue() {
@@ -144,17 +139,20 @@ public:
 	}
 
     void GpuCapture() {
-		GpuUnlock();
-
 		if(nullptr == m_D3d9Capture) {
 			m_D3d9Capture = m_Input->GpuCreateCapture();
 			if(m_D3d9Capture)
 				AfxD3D9OnReleaseAdd(this);
 		}
 		
-		m_CaptureOK = nullptr != m_D3d9Capture && m_D3d9Capture->Capture();
-
-		s_GpuLockQueue.Add(this);
+		if(nullptr != m_D3d9Capture){
+			if(auto captureBuffer = m_D3d9Capture->Capture()) {
+				m_Output->OnCapture(captureBuffer);
+				captureBuffer->Release();
+			} else {
+				m_Output->OnCapture(nullptr);
+			}
+		}
 	}
 
 	void CpuQueueGpuRelease() {
@@ -162,7 +160,7 @@ public:
 	}
 
 	/**
-	 * @remarks use only if wanting to release directl vom GPU thread, otherwise use CpuQueueGpuRelease
+	 * @remarks use only if wanting to release directly vom GPU thread, otherwise use CpuQueueGpuRelease
 	 */
 	void GpuRelease() {
 		this->ReleaseD3d9Capture();
@@ -170,46 +168,13 @@ public:
 
 protected:
 	virtual ~CCaptureNode() {
-		Assert(m_ProcessBuffer == false);
 		Assert(m_D3d9Capture == nullptr);
-		Assert(m_Buffer == nullptr);
 
 		m_Output->Release();
 		m_Input->Release();
 	}
 
 private:
-	static class CGpuLockQueue {
-	public:
-		~CGpuLockQueue() {
-			Clear();
-		}
-
-		void Add(CCaptureNode* capture) {
-			capture->AddRef();
-			m_Queue.emplace(capture);
-		}
-
-		void Execute() {
-			while (!m_Queue.empty()) {
-				CCaptureNode* item = m_Queue.front();
-				item->GpuLock();
-				item->Release();
-				m_Queue.pop();
-			}
-		}
-
-		void Clear() {
-			while (!m_Queue.empty()) {
-				m_Queue.front()->Release();
-				m_Queue.pop();
-			}
-		}
-
-	private:
-		std::queue<CCaptureNode*> m_Queue;
-	} s_GpuLockQueue;
-
 	static class CGpuReleaseQueue {
 	public:
 		void Init() {
@@ -255,12 +220,6 @@ private:
 	ICaptureInput * m_Input;
 	ICaptureOutput * m_Output;
 	IAfxD3D9Capture * m_D3d9Capture = nullptr;
-	bool m_CaptureOK = false;
-	bool m_ProcessBuffer = false;
-	std::condition_variable m_ProcessCondition;
-	std::condition_variable m_ProcessedCondition;
-	std::mutex m_BufferMutex;
-	advancedfx::IImageBufferThreadSafe * m_Buffer = nullptr;
 	bool m_GpuReleased = false;
 	bool m_CpuReleased = false;
 
@@ -269,40 +228,11 @@ private:
 	}
 
 	void ReleaseD3d9Capture() {
-		GpuUnlock();
 		if(m_D3d9Capture) {
 			AfxD3D9OnReleaseRemove(this);
 			m_D3d9Capture->Release();
 			m_D3d9Capture = nullptr;
 		}
-	}
-
-	void GpuLock() {
-		m_ProcessBuffer = true;
-		if(m_CaptureOK) {
-			m_Buffer = m_D3d9Capture->LockCpu(this);
-		}
-		m_Output->OnCapture(m_Buffer);
-		if(m_Buffer) m_Buffer->Release();
-	}
-
-	void GpuUnlock() {
-		std::unique_lock<std::mutex> lock(m_BufferMutex);
-		if (m_ProcessBuffer) {
-			m_ProcessedCondition.wait(lock, [this] {
-				return m_ProcessBuffer == false;
-			});
-		}
-		if (m_Buffer) {
-			m_D3d9Capture->UnlockCpu();
-			m_Buffer = nullptr;
-		}
-	}
-
-	virtual void OnCpuFinished() override {
-		std::unique_lock<std::mutex> lock(m_BufferMutex);
-		m_ProcessBuffer = false;
-		m_ProcessedCondition.notify_one();			
 	}
 };
 
@@ -822,7 +752,7 @@ public:
 		advancedfx::CRefCountedThreadSafe::Release();
 	}
 
-	virtual void OnCapture(advancedfx::IImageBufferThreadSafe* buffer);
+	virtual void OnCapture(IAfxD3D9CaptureBuffer* capture);
 
 protected:
 	~CAfxStreamsCaptureOutput();
@@ -1018,7 +948,7 @@ public:
 	void DoCaptureStart(IAfxMatRenderContextOrg* ctx, const AfxViewportData_t& viewport);
 
 	/// <remarks>This is not guaranteed to be called, i.e. not called upon buffer re-allocation error.</remarks>
-	void OnImageBufferCaptured(size_t index, advancedfx::IImageBufferThreadSafe * buffer);
+	void OnCapture(size_t index, IAfxD3D9CaptureBuffer * capture);
 
 	bool GetStreamFolder(std::wstring& outFolder) const;
 
@@ -1064,29 +994,29 @@ public:
 	}
 
 protected:
-	class CBuffers {
+	class CCaptures {
 	public:
-		CBuffers(size_t size) : m_Buffers(size) {
+		CCaptures(size_t size) : m_Buffers(size) {
 		}
 
 		size_t GetSize() const {
 			return m_Buffers.size();
 		}
 
-		advancedfx::IImageBufferThreadSafe * GetAt(size_t index) const {
+		IAfxD3D9CaptureBuffer * GetAt(size_t index) const {
 			return m_Buffers[index];
 		}
 
-		void SetAt(size_t index, advancedfx::IImageBufferThreadSafe * value) {
+		void SetAt(size_t index, IAfxD3D9CaptureBuffer * value) {
 			m_Buffers[index] = value;
 		}
 
 	private:
-		std::vector<advancedfx::IImageBufferThreadSafe *> m_Buffers;
+		std::vector<IAfxD3D9CaptureBuffer *> m_Buffers;
 	};
 
 	std::vector<CAfxRenderViewStream *> m_Streams;
-	class CBuffers* m_Task = nullptr;
+	class CCaptures* m_Task = nullptr;
 	std::vector<class CCaptureNode*> m_CaptureNodes;
 
 	void SetCaptureNode(size_t index, class CCaptureNode* node) {
@@ -1113,6 +1043,16 @@ protected:
 
 	virtual void CaptureEnd();
 
+	advancedfx::IImageBufferThreadSafe * CaptureToBuffer(IAfxD3D9CaptureBuffer * capture) {
+		if(capture) {
+			auto result = capture->LockCpu();
+			capture->Release();
+			return result;
+		}
+
+		return nullptr;
+	}
+
 private:
 	class CCaptureFunctor :
 		public CAfxFunctor
@@ -1138,15 +1078,15 @@ private:
 	bool m_Recording = false;
 	bool m_FirstCapture = false;
 
-	std::list<class CBuffers*> m_In;
+	std::list<class CCaptures*> m_In;
 
 	void ProcessingThreadFunc() {
 		std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
 		while (m_Recording || 0 < m_CapturesLeft || !m_In.empty()) {
 			if (!m_In.empty()) {
-				class CBuffers* buffers = m_In.front();
-				if(buffers->GetSize() >= m_Streams.size()) {
-					m_Task = buffers;
+				class CCaptures* captures = m_In.front();
+				if(captures->GetSize() >= m_Streams.size()) {
+					m_Task = captures;
 					m_In.pop_front();
 					lock.unlock();
 					CaptureEnd();
@@ -3769,10 +3709,10 @@ private:
 			advancedfx::CRefCountedThreadSafe::Release();
 		}
 
-		virtual void OnCapture(advancedfx::IImageBufferThreadSafe* buffer) {
+		virtual void OnCapture(IAfxD3D9CaptureBuffer * capture) {
 			std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
-			if (buffer) buffer->AddRef();
-			m_Buffers.push_back(buffer);
+			if (capture) capture->AddRef();
+			m_Captures.push_back(capture);
 			m_ProcessingThreadCv.notify_one();
 		}
 
@@ -3791,7 +3731,7 @@ private:
 		std::mutex m_ProcessingThreadMutex;
 		std::condition_variable m_ProcessingThreadCv;
 		std::thread m_ProcessingThread;
-		std::list<advancedfx::IImageBufferThreadSafe*> m_Buffers;
+		std::list<IAfxD3D9CaptureBuffer*> m_Captures;
 		bool m_Shutdown = false;
 		advancedfx::COutVideoStreamCreator* m_OutVideoStreamCreator;
 		advancedfx::TIOutVideoStream<true>* m_OutVideoStream = nullptr;
