@@ -2574,7 +2574,7 @@ private:
 
 		virtual void advancedfx::IImageBufferThreadSafe::AddRef() override {
 			TRefCounted<true>::AddRef();
-			if(0 == std::atomic_fetch_sub_explicit(&m_LockedCount, 1, std::memory_order_relaxed)) {
+			if(0 == std::atomic_fetch_add_explicit(&m_LockedCount, 1, std::memory_order_relaxed)) {
 				// Buffer is about to be accessed the first time.
 				if(nullptr != m_pOffscreenSurface) {
 					D3DSURFACE_DESC desc;
