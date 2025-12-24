@@ -2324,6 +2324,7 @@ public:
 			&& (desc.Format == D3DFMT_A8R8G8B8 || desc.Format == D3DFMT_R8G8B8 || desc.Format == D3DFMT_R32F)
 		) {
 			result = new CAfxD3D9Capture(desc);
+			result->AddRef();
 		}
 
 		return result;
@@ -2515,7 +2516,7 @@ private:
 					}
 				}
 		}
-		
+
 		if(pResult) this->AddRef();
 		
 		return pResult;
