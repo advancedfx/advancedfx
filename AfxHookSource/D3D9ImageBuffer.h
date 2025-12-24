@@ -55,13 +55,15 @@ public:
 class IAfxD3D9Capture abstract {
 public:
     /**
-     * @remarks thread-safe
-    */
+     * Capture.
+     * @remarks Must be only called on GPU thread.
+     */
     virtual void AddRef() = 0;
 
     /**
-     * @remarks thread-safe
-    */
+     * Capture.
+     * @remarks Must be only called on GPU thread.
+     */
     virtual void Release() = 0;
 
     /**

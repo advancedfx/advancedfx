@@ -2337,11 +2337,16 @@ public:
 	{
 	}
 
-	virtual void AddRef() override {
+	virtual void IAfxD3D9Capture::AddRef() override {
 		TRefCounted<true>::AddRef();
+		m_GpuRefCount++;
 	}
 
-    virtual void Release() override {
+    virtual void IAfxD3D9Capture::Release() override {
+		if(1 == m_GpuRefCount) {
+			ReleaseIntermediate();
+		}
+		m_GpuRefCount--;
 		TRefCounted<true>::Release();
 	}
 
@@ -2631,6 +2636,7 @@ private:
 
 	IDirect3DSurface9 * m_pIntermediateSurface;
 	D3DSURFACE_DESC m_SurfaceDesc;
+	int m_GpuRefCount = 0;
 
 	virtual void AfxD3D9OnRelease() override {
 		ReleaseIntermediate();
