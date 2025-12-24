@@ -2552,7 +2552,7 @@ private:
 		}
 
 	    virtual advancedfx::IImageBufferThreadSafe * IAfxD3D9CaptureBuffer::LockCpu() override {
-			static_cast<IAfxD3D9CaptureBuffer *>(this)->AddRef();
+			static_cast<advancedfx::IImageBufferThreadSafe *>(this)->AddRef();
 			return this;
 		}
 
