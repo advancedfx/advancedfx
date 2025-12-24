@@ -2512,12 +2512,15 @@ private:
 				))) {
 					pResult = new CImageBufferWrapper(this, pOffscreenSurface);
 					if(pResult) {
-						static_cast<CRefCountedThreadSafe *>(pResult)->AddRef();
+						static_cast<CRefCountedThreadSafe *>(pResult)->AddRef(); // for ourselves
 					}
 				}
 		}
 
-		if(pResult) this->AddRef();
+		if(pResult) {
+			static_cast<CRefCountedThreadSafe *>(pResult)->AddRef(); // for the caller
+			this->AddRef();
+		}
 		
 		return pResult;
 	}
