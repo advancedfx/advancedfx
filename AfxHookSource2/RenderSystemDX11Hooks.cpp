@@ -70,140 +70,6 @@ bool g_bCompositeSmoke = false;
 bool g_bExpectPresent = false;
 ID3D11RenderTargetView* g_BeforeUiRT = nullptr;
 
-class CAfxCpuTexture
-: public advancedfx::CRefCountedThreadSafe
-, public advancedfx::IImageBufferThreadSafe
-{
-public:
-    virtual void AddRef() override {
-        advancedfx::CRefCountedThreadSafe::AddRef();
-    }
-
-    virtual void Release() override {
-        advancedfx::CRefCountedThreadSafe::Release();
-    }
-
-
-    int GetRefCount() const {
-        return advancedfx::CRefCountedThreadSafe::GetRefCount();
-    }
-
-
-    virtual const advancedfx::CImageFormat * GetImageBufferFormat() const {
-        return &m_ImageFormat;
-    }
-
-    virtual const void * GetImageBufferData() const {
-        return m_MappedResource.pData;
-    }
-
-    CAfxCpuTexture(ID3D11Device * pDevice)
-    : m_pDevice(pDevice)
-    {
-        m_pDevice->AddRef();
-        m_MappedResource.pData = nullptr;
-    }
-
-    void GpuCopyResource(ID3D11DeviceContext * pContext, ID3D11Texture2D * pTexture, float depthScale, float depthOffset) {
-        m_DepthScale = depthScale;
-        m_DepthOfs = depthOffset;
-        if(m_pCpuTexture == nullptr && pTexture) {
-            D3D11_TEXTURE2D_DESC desc;
-            pTexture->GetDesc(&desc);
-            bool bMultiSampled = 1 < desc.SampleDesc.Count;
-            desc.BindFlags = 0;
-            desc.MiscFlags = 0;
-            desc.MipLevels = 1;
-            desc.SampleDesc.Count = 1;
-            desc.SampleDesc.Quality = 0;
-            advancedfx::ImageFormat format = advancedfx::ImageFormat::Unknown;
-            switch(desc.Format) {
-            case DXGI_FORMAT_R32_FLOAT:
-                format = advancedfx::ImageFormat::ZFloat;
-                desc.Format = DXGI_FORMAT_R32_FLOAT;
-                break;
-            case DXGI_FORMAT_R8G8B8A8_TYPELESS:
-            case DXGI_FORMAT_R8G8B8A8_UNORM:
-            case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-            case DXGI_FORMAT_R8G8B8A8_UINT:
-            case DXGI_FORMAT_R8G8B8A8_SNORM:
-            case DXGI_FORMAT_R8G8B8A8_SINT:
-               format = advancedfx::ImageFormat::RGBA;
-               desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-               break;
-            default:
-                advancedfx::Warning("AFXERROR: GpuCopyResource - unspported DXGI_FORMAT: %i\n",desc.Format);
-            }
-            if(bMultiSampled) {
-                desc.Usage = D3D11_USAGE_DEFAULT;
-                desc.CPUAccessFlags = 0;
-                m_pDevice->CreateTexture2D(&desc, nullptr, &m_pResolveTexture);
-            }
-            desc.Usage = D3D11_USAGE_STAGING;
-            desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
-            m_ImageFormat = advancedfx::CImageFormat(format, desc.Width, desc.Height);
-            m_Format = desc.Format;
-            m_pDevice->CreateTexture2D(&desc, nullptr, &m_pCpuTexture);
-        }
-
-        if(m_pCpuTexture && pTexture) {
-            if(m_pResolveTexture) {
-                pContext->ResolveSubresource(m_pResolveTexture, 0, pTexture, 0, m_Format);
-                pContext->CopyResource(m_pCpuTexture, m_pResolveTexture);
-            } else {
-                pContext->CopyResource(m_pCpuTexture, pTexture);
-            }
-        }
-    }
-
-    advancedfx::IImageBufferThreadSafe * CpuBeginAccess(ID3D11DeviceContext * pContext) {
-        m_MappedResource.pData = nullptr;
-        if(m_pCpuTexture) {
-            if(SUCCEEDED(pContext->Map(m_pCpuTexture, 0, D3D11_MAP_READ , 0, &m_MappedResource))) {
-                m_ImageFormat = advancedfx::CImageFormat(m_ImageFormat.Format, m_ImageFormat.Width, m_ImageFormat.Height, m_MappedResource.RowPitch);
-                return this;
-            }
-        }
-        return nullptr;
-    }
-
-    void CpuEndAccess(ID3D11DeviceContext * pContext) {        
-        if(m_MappedResource.pData) {
-            pContext->Unmap(m_pCpuTexture, 0);    
-            m_MappedResource.pData = nullptr;        
-        }
-    }
-
-    float GetDepthScale() {
-        return m_DepthScale;
-    }
-
-    float GetDepthOffset() {
-        return m_DepthOfs;
-    }
-
-protected:
-    virtual ~CAfxCpuTexture() {
-        if(m_pCpuTexture) {
-            m_pCpuTexture->Release();
-        }
-        if(m_pResolveTexture){
-            m_pResolveTexture->Release();
-        }
-        m_pDevice->Release();
-    }
-
-private:
-    ID3D11Device * m_pDevice;
-    ID3D11Texture2D * m_pCpuTexture = nullptr;
-    ID3D11Texture2D * m_pResolveTexture = nullptr;
-    DXGI_FORMAT m_Format = DXGI_FORMAT_UNKNOWN;
-    advancedfx::CImageFormat m_ImageFormat;
-    D3D11_MAPPED_SUBRESOURCE m_MappedResource;
-    float m_DepthScale = 1.0f;
-    float m_DepthOfs = 0.0f;
-};
-
 class CAfxCapture {
 public:
     enum CaptureType_e {
@@ -230,22 +96,37 @@ public:
         }
         m_ProcessingThread.join();
 
+        if(m_CurrentCpuTexture) {
+            // remove lingering unused / not mapped CPU texture.
+            delete m_CurrentCpuTexture;
+            m_CurrentCpuTexture = nullptr;
+            m_NumCpuTextures--;
+        }
+
+        while(true) {
+            // busy wait for all cpu textures to be finished.
+            std::unique_lock<std::mutex> lock(m_DoneTexturesMutex);
+            if(m_NumCpuTextures == m_CpuTexturesDone.size()) break;
+        }
+
         if(pDeviceContext) {
             // Unmap textures gracefully:
             while(!m_CpuTexturesDone.empty()) {
                 auto & pTexture = m_CpuTexturesDone.front();
                 pTexture->CpuEndAccess(pDeviceContext);
-                pTexture->Release();
+                delete pTexture;
                 m_CpuTexturesDone.pop();
             }
         } else {
             // We can't unmap them right now, just relase them.
             while(!m_CpuTexturesDone.empty()) {
                 auto & pTexture = m_CpuTexturesDone.front();
-                pTexture->Release();
+                delete pTexture;
                 m_CpuTexturesDone.pop();
             }            
         }
+
+        ReleaseIntermediate();
     }
 
     ~CAfxCapture() {
@@ -253,52 +134,183 @@ public:
     }
 
     void OnBeforeGpuPresent(ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture, float depthScale, float depthOfs) {
-        if(m_CurrentCpuTexture) {
-            m_CurrentCpuTexture->Release();
-            m_CurrentCpuTexture = nullptr;
-        }
-        ID3D11Device * pDevice = nullptr;
-        pDeviceContext->GetDevice(&pDevice);
-        if(pDevice) {
-            {
-                std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
-                while(true) {
-                    if(m_CpuTexturesDoing.empty()) break;
-                    auto & pTexture = m_CpuTexturesDoing.front();
-                    if(pTexture->GetRefCount() == 1) {
-                        m_CpuTexturesDone.emplace(pTexture);
-                        m_CpuTexturesDoing.pop();
-                    } else {
-                        break;
+        if(nullptr == m_CurrentCpuTexture) {            
+            ID3D11Device * pDevice = nullptr;
+            pDeviceContext->GetDevice(&pDevice);
+            if(pDevice) {
+                {
+                    std::unique_lock<std::mutex> lock(m_DoneTexturesMutex);
+                    if(!m_CpuTexturesDone.empty()) {
+                        m_CurrentCpuTexture = m_CpuTexturesDone.front();
+                        m_CpuTexturesDone.pop();
                     }
                 }
-                if(!m_CpuTexturesDone.empty()) {
-                    m_CurrentCpuTexture = m_CpuTexturesDone.front();
-                    m_CpuTexturesDone.pop();
+                if(nullptr == m_CurrentCpuTexture) {
+                    m_NumCpuTextures++;
+                    m_CurrentCpuTexture = new CAfxCpuTexture(this,pDevice); // new
                 }
+                else m_CurrentCpuTexture->CpuEndAccess(pDeviceContext); // re-use
             }
-            if(nullptr == m_CurrentCpuTexture) m_CurrentCpuTexture = new CAfxCpuTexture(pDevice); // new
-            else m_CurrentCpuTexture->CpuEndAccess(pDeviceContext); // re-use
-            m_CurrentCpuTexture->AddRef();
-            m_CurrentCpuTexture->GpuCopyResource(pDeviceContext, pTexture, depthScale, depthOfs);
             pDevice->Release();
+        }
+        if(nullptr != m_CurrentCpuTexture) {
+            m_CurrentCpuTexture->GpuCopyResource(pDeviceContext, pTexture, depthScale, depthOfs);
         }
     }
 
     void OnAfterGpuPresent(ID3D11DeviceContext * pDeviceContext) {
         if(m_CurrentCpuTexture) {
-            m_CurrentCpuTexture->CpuBeginAccess(pDeviceContext);
-            StartProcess(m_CurrentCpuTexture);
-            m_CurrentCpuTexture = nullptr;
+            if(m_CurrentCpuTexture->CpuBeginAccess(pDeviceContext)) {
+                StartProcess(m_CurrentCpuTexture);
+                m_CurrentCpuTexture = nullptr;
+                return;
+            }
         }
+        StartProcess(nullptr);
     }
 
 private:
+
+    class CAfxCpuTexture
+    : public advancedfx::IImageBufferThreadSafe
+    {
+    public:
+        virtual void advancedfx::IImageBufferThreadSafe::AddRef() override {
+           m_RefCount++;
+        }
+
+        virtual void advancedfx::IImageBufferThreadSafe::Release() override {
+            if(1 == std::atomic_fetch_sub_explicit(&m_RefCount, 1, std::memory_order_relaxed)) {
+                m_pCapture->ReturnCpuTexture(this);
+            }
+        }
+
+        virtual const advancedfx::CImageFormat * GetImageBufferFormat() const {
+            return &m_ImageFormat;
+        }
+
+        virtual const void * GetImageBufferData() const {
+            return m_MappedResource.pData;
+        }
+
+        CAfxCpuTexture(CAfxCapture * pCapture, ID3D11Device * pDevice)
+        : m_pCapture(pCapture)
+        , m_pDevice(pDevice)
+        {
+            m_pDevice->AddRef();
+            m_MappedResource.pData = nullptr;
+        }
+
+        ~CAfxCpuTexture() {
+            if(m_pCpuTexture) {
+                m_pCpuTexture->Release();
+            }
+            m_pDevice->Release();
+        }
+
+        void GpuCopyResource(ID3D11DeviceContext * pContext, ID3D11Texture2D * pTexture, float depthScale, float depthOffset) {
+            m_DepthScale = depthScale;
+            m_DepthOfs = depthOffset;
+            if(m_pCpuTexture == nullptr && pTexture) {
+                D3D11_TEXTURE2D_DESC desc;
+                pTexture->GetDesc(&desc);
+                bool bMultiSampled = 1 < desc.SampleDesc.Count;
+                desc.BindFlags = 0;
+                desc.MiscFlags = 0;
+                desc.MipLevels = 1;
+                desc.SampleDesc.Count = 1;
+                desc.SampleDesc.Quality = 0;
+                advancedfx::ImageFormat format = advancedfx::ImageFormat::Unknown;
+                switch(desc.Format) {
+                case DXGI_FORMAT_R32_FLOAT:
+                    format = advancedfx::ImageFormat::ZFloat;
+                    desc.Format = DXGI_FORMAT_R32_FLOAT;
+                    break;
+                case DXGI_FORMAT_R8G8B8A8_TYPELESS:
+                case DXGI_FORMAT_R8G8B8A8_UNORM:
+                case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+                case DXGI_FORMAT_R8G8B8A8_UINT:
+                case DXGI_FORMAT_R8G8B8A8_SNORM:
+                case DXGI_FORMAT_R8G8B8A8_SINT:
+                format = advancedfx::ImageFormat::RGBA;
+                desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+                break;
+                default:
+                    advancedfx::Warning("AFXERROR: GpuCopyResource - unspported DXGI_FORMAT: %i\n",desc.Format);
+                }
+                if(bMultiSampled) {
+                    desc.Usage = D3D11_USAGE_DEFAULT;
+                    desc.CPUAccessFlags = 0;
+                    m_pCapture->AquireIntermediate(m_pDevice, desc);
+                    m_pIntermediateTexture = m_pCapture->m_pIntermediateSurface;
+                }
+                desc.Usage = D3D11_USAGE_STAGING;
+                desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+                m_ImageFormat = advancedfx::CImageFormat(format, desc.Width, desc.Height);
+                m_Format = desc.Format;
+                m_pDevice->CreateTexture2D(&desc, nullptr, &m_pCpuTexture);
+            }
+
+            if(m_pCpuTexture && pTexture) {
+                if(m_pIntermediateTexture) {
+                    pContext->ResolveSubresource(m_pIntermediateTexture, 0, pTexture, 0, m_Format);
+                    pContext->CopyResource(m_pCpuTexture, m_pIntermediateTexture);
+                } else {
+                    pContext->CopyResource(m_pCpuTexture, pTexture);
+                }
+            }
+        }
+
+        advancedfx::IImageBufferThreadSafe * CpuBeginAccess(ID3D11DeviceContext * pContext) {
+            m_MappedResource.pData = nullptr;
+            if(m_pCpuTexture) {
+                if(SUCCEEDED(pContext->Map(m_pCpuTexture, 0, D3D11_MAP_READ , 0, &m_MappedResource))) {
+                    m_ImageFormat = advancedfx::CImageFormat(m_ImageFormat.Format, m_ImageFormat.Width, m_ImageFormat.Height, m_MappedResource.RowPitch);
+                    return this;
+                }
+            }
+            return nullptr;
+        }
+
+        void CpuEndAccess(ID3D11DeviceContext * pContext) {        
+            if(m_MappedResource.pData) {
+                pContext->Unmap(m_pCpuTexture, 0);    
+                m_MappedResource.pData = nullptr;        
+            }
+        }
+
+        float GetDepthScale() {
+            return m_DepthScale;
+        }
+
+        float GetDepthOffset() {
+            return m_DepthOfs;
+        }
+
+    protected:
+
+    private:
+        ID3D11Device * m_pDevice;
+        ID3D11Texture2D * m_pCpuTexture = nullptr;
+        ID3D11Texture2D * m_pIntermediateTexture = nullptr;
+        DXGI_FORMAT m_Format = DXGI_FORMAT_UNKNOWN;
+        advancedfx::CImageFormat m_ImageFormat;
+        D3D11_MAPPED_SUBRESOURCE m_MappedResource;
+        float m_DepthScale = 1.0f;
+        float m_DepthOfs = 0.0f;
+        CAfxCapture * m_pCapture;
+        std::atomic_int m_RefCount = 0;
+    };
 
     void StartProcess(CAfxCpuTexture * pCpuTexture) {
         std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
         m_CpuTexturesTodo.emplace(pCpuTexture);
         m_ProcessingThreadCv.notify_one();
+    }
+
+    void ReturnCpuTexture(CAfxCpuTexture * pCpuTexture) {
+        std::unique_lock<std::mutex> lock(m_DoneTexturesMutex);
+        m_CpuTexturesDone.emplace(pCpuTexture);
     }
 
     CAfxCpuTexture * m_CurrentCpuTexture = nullptr;
@@ -313,9 +325,105 @@ private:
 	std::thread m_ProcessingThread;
 	bool m_ShutDown = false;
 
+    std::atomic_size_t m_NumCpuTextures = 0;
     std::queue<CAfxCpuTexture *> m_CpuTexturesTodo;
-    std::queue<CAfxCpuTexture *> m_CpuTexturesDoing;
+
+    std::mutex m_DoneTexturesMutex;
     std::queue<CAfxCpuTexture *> m_CpuTexturesDone;
+
+    struct D3d11Texture2DDescCmp
+	{
+        bool operator()(const D3D11_TEXTURE2D_DESC& lhs, const D3D11_TEXTURE2D_DESC& rhs) const {
+            return LessThan(lhs,rhs);
+        }
+
+    	static bool LessThan(const D3D11_TEXTURE2D_DESC& lhs, const D3D11_TEXTURE2D_DESC& rhs)
+    	{
+			int cmp = (int32_t)lhs.Width - (int32_t)rhs.Width;
+			if(cmp) return cmp < 0;
+
+			cmp = (int32_t)lhs.Height - (int32_t)rhs.Height;
+			if(cmp) return cmp < 0;
+
+			cmp = (int32_t)lhs.MipLevels - (int32_t)rhs.MipLevels;
+			if(cmp) return cmp < 0;
+
+            cmp = (int32_t)lhs.ArraySize - (int32_t)rhs.ArraySize;
+			if(cmp) return cmp < 0;
+
+            cmp = (int32_t)lhs.Format - (int32_t)rhs.Format;
+			if(cmp) return cmp < 0;
+
+            cmp = (int32_t)lhs.SampleDesc.Count - (int32_t)rhs.SampleDesc.Count;
+			if(cmp) return cmp < 0;
+
+            cmp = (int32_t)lhs.SampleDesc.Quality - (int32_t)rhs.SampleDesc.Quality;
+			if(cmp) return cmp < 0;
+
+            cmp = (int32_t)lhs.Usage - (int32_t)rhs.Usage;
+			if(cmp) return cmp < 0;
+
+            cmp = (int32_t)lhs.BindFlags - (int32_t)rhs.BindFlags;
+			if(cmp) return cmp < 0;
+
+            cmp = (int32_t)lhs.CPUAccessFlags - (int32_t)rhs.CPUAccessFlags;
+			if(cmp) return cmp < 0;
+
+            cmp = (int32_t)lhs.MiscFlags - (int32_t)rhs.MiscFlags;
+			if(cmp) return cmp < 0;
+
+			return false; // equal
+    	}
+	};    
+
+    static std::map<D3D11_TEXTURE2D_DESC, std::pair<size_t, ID3D11Texture2D *>, D3d11Texture2DDescCmp> m_IntermediateSurfaces;
+
+    D3D11_TEXTURE2D_DESC m_SurfaceDesc;
+    ID3D11Texture2D * m_pIntermediateSurface = nullptr;
+
+    bool AquireIntermediate(ID3D11Device * pDevice, const D3D11_TEXTURE2D_DESC & desc) {
+		if (m_pIntermediateSurface) {
+            if(D3d11Texture2DDescCmp::LessThan(m_SurfaceDesc,desc) == 0)
+                return true;
+            // surface changed, need to re-aquire.
+            ReleaseIntermediate();
+        }
+
+        m_SurfaceDesc = desc;
+		auto it = m_IntermediateSurfaces.find(m_SurfaceDesc);
+		if(it != m_IntermediateSurfaces.end()) {
+			// we can reuse existing one.
+			auto & pair = it->second;
+			auto & cnt = std::get<0>(pair);
+			cnt++;
+			m_pIntermediateSurface = std::get<1>(pair);
+			return true;
+		} else {
+			// need to try to create new one.
+            pDevice->CreateTexture2D(&desc, nullptr, &m_pIntermediateSurface);
+			if(m_pIntermediateSurface) {
+				m_IntermediateSurfaces.emplace(std::piecewise_construct, std::forward_as_tuple(m_SurfaceDesc), std::forward_as_tuple(1,m_pIntermediateSurface));
+				return true;
+			}
+		}
+		return false;
+	}
+
+	void ReleaseIntermediate() {
+		if (m_pIntermediateSurface) {
+			auto it = m_IntermediateSurfaces.find(m_SurfaceDesc);
+			auto & pair = it->second;
+			auto & cnt = std::get<0>(pair);
+			if(1 == cnt) {
+				// we are the last usage, remove.
+				m_IntermediateSurfaces.erase(it);
+				m_pIntermediateSurface->Release();
+			} else {
+				cnt--;
+			}
+			m_pIntermediateSurface = nullptr;
+		}
+	}
 
 	void ProcessingThreadFunc() {
 		std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
@@ -325,31 +433,33 @@ private:
                 m_CpuTexturesTodo.pop();
     			lock.unlock();
                 if(pTexture) {
+                    pTexture->AddRef();
+
                     advancedfx::IImageBufferThreadSafe* buffer = pTexture;
-                    switch(pTexture->GetImageBufferFormat()->Format) {
+
+                    switch(buffer->GetImageBufferFormat()->Format) {
                     case advancedfx::ImageFormat::ZFloat:
-                        buffer = advancedfx::ImageTransformer::DepthF(g_pThreadPool, g_pImageBufferPoolThreadSafe, pTexture, pTexture->GetDepthScale(), pTexture->GetDepthOffset());
+                        buffer = advancedfx::ImageTransformer::DepthF(g_pThreadPool, g_pImageBufferPoolThreadSafe, buffer, pTexture->GetDepthScale(), pTexture->GetDepthOffset());
                         break;
                     case advancedfx::ImageFormat::RGBA:
                         switch(m_CaptureType) {
                         case CaptureType_Rgba:
-                            buffer = advancedfx::ImageTransformer::RgbaToBgra(g_pThreadPool,g_pImageBufferPoolThreadSafe,pTexture);
+                            buffer = advancedfx::ImageTransformer::RgbaToBgra(g_pThreadPool,g_pImageBufferPoolThreadSafe,buffer);
                             break;
                         case CaptureType_Depth24:
                             {
-                                buffer = advancedfx::ImageTransformer::RgbaToBgr(g_pThreadPool,g_pImageBufferPoolThreadSafe,pTexture);
+                                buffer = advancedfx::ImageTransformer::RgbaToBgr(g_pThreadPool,g_pImageBufferPoolThreadSafe,buffer);
                                 advancedfx::IImageBufferThreadSafe* buffer2 = advancedfx::ImageTransformer::Depth24(g_pThreadPool, g_pImageBufferPoolThreadSafe, buffer, pTexture->GetDepthScale(), pTexture->GetDepthOffset());
                                 if(buffer) buffer->Release();
                                 buffer = buffer2;
                             }
                             break;
                         default:
-                            buffer = advancedfx::ImageTransformer::RgbaToBgr(g_pThreadPool,g_pImageBufferPoolThreadSafe,pTexture);
+                            buffer = advancedfx::ImageTransformer::RgbaToBgr(g_pThreadPool,g_pImageBufferPoolThreadSafe,buffer);
                             break;
                         }
                         break;
                     default:
-                        pTexture->AddRef();
                         break;
                     }
                     if (buffer) {
@@ -371,24 +481,21 @@ private:
                         buffer->Release();
                         buffer = nullptr; 
                     }                               
+
+                    pTexture->Release();
                 }
+
 				lock.lock();
-                m_CpuTexturesDoing.emplace(pTexture);
 			} else {
 				m_ProcessingThreadCv.wait(lock);
 			}		
         }
         if(m_OutVideoStream) m_OutVideoStream->Release();
         m_pOutVideoStreamCreator->Release();
-        while(!m_CpuTexturesDoing.empty()) {
-            auto & pTexture = m_CpuTexturesDoing.front();
-            if(pTexture->GetRefCount() == 1) {
-                m_CpuTexturesDone.emplace(pTexture);
-                m_CpuTexturesDoing.pop();
-            }
-        }
 	}
 };
+
+std::map<D3D11_TEXTURE2D_DESC, std::pair<size_t, ID3D11Texture2D *>, CAfxCapture::D3d11Texture2DDescCmp> CAfxCapture::m_IntermediateSurfaces;
 
 D3D11_VIEWPORT g_ViewPort;
 
@@ -2472,7 +2579,9 @@ public:
 	void ShutDown(void) {
         if(m_Shutdown) return;
         m_Shutdown = true;
+        RecordEnd();
 		delete m_RecordScreen;
+        m_RecordScreen = nullptr;
     }    
 
     ~CAfxStreams(){
@@ -3209,6 +3318,10 @@ private:
         }        
     }
 } g_AfxStreams;
+
+void AfxStreams_ShutDown() {
+    g_AfxStreams.ShutDown();
+}
 
 bool g_bEngine_Prepared = false;
 
