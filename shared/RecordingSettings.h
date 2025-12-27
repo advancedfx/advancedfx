@@ -23,7 +23,7 @@ class IRecordStreamSettings {
 public:
 	virtual bool GetStreamFolder(std::wstring& outFolder) const = 0;
 	virtual StreamCaptureType GetCaptureType() const = 0;
-    virtual IImageBufferPool * GetImageBufferPool() const = 0;
+    virtual CGrowingBufferPoolThreadSafe * GetImageBufferPool() const = 0;
     virtual bool GetFormatBmpNotTga() const = 0;
 };
 
@@ -276,8 +276,8 @@ private:
 
 		}
 
-		virtual advancedfx::COutVideoStream* CreateOutVideoStream(const advancedfx::CImageFormat& imageFormat) const override {
-			std::list<advancedfx::COutVideoStream*> outVideoStreams;
+		virtual advancedfx::TIOutVideoStream<true>* CreateOutVideoStream(const advancedfx::CImageFormat& imageFormat) const override {
+			std::list<advancedfx::TIOutVideoStream<true>*> outVideoStreams;
 			for (auto it = m_List.begin(); it != m_List.end(); it++) {
 				outVideoStreams.push_back((*it)->CreateOutVideoStream(imageFormat));
 			}

@@ -339,12 +339,10 @@ target_sources(AfxHookSource PRIVATE
     ../shared/AfxDetours.h
     ../shared/AfxGameRecord.cpp
     ../shared/AfxGameRecord.h
-    ../shared/AfxImageBuffer.h
     ../shared/AfxMath.cpp
     ../shared/AfxMath.h
     ../shared/AfxOutStreams.cpp
     ../shared/AfxOutStreams.h
-    ../shared/AfxRefCounted.h
     ../shared/binutils.cpp
     ../shared/binutils.h
     ../shared/bvhexport.cpp
@@ -363,7 +361,7 @@ target_sources(AfxHookSource PRIVATE
     ../shared/FileTools.h
     ../shared/FovScaling.cpp
     ../shared/FovScaling.h
-    ../shared/ImageBufferPoolThreadSafe.h
+    ../shared/GrowingBufferPoolThreadSafe.h
     ../shared/ImageTransformer.cpp
     ../shared/ImageTransformer.h
     ../shared/MirvCamIO.cpp
@@ -378,16 +376,17 @@ target_sources(AfxHookSource PRIVATE
 	../shared/MirvSkip.h
     ../shared/OpenExrOutput.cpp
     ../shared/OpenExrOutput.h
-    ../shared/OutVideoStreamCreators.cpp
     ../shared/OutVideoStreamCreators.h
     ../shared/RawOutput.cpp
     ../shared/RawOutput.h
     ../shared/RecordingSettings.cpp
     ../shared/RecordingSettings.h
+    ../shared/RefCounted.h
     ../shared/RefCountedThreadSafe.h
     ../shared/StringTools.cpp
     ../shared/StringTools.h
     ../shared/ThreadPool.h
+    ../shared/TRefCounted.h
 )
 
 # This is far form proper, but it will do for now:

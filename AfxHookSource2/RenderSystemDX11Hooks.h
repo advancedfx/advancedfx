@@ -7,6 +7,8 @@
 bool AfxStreams_IsRcording();
 const wchar_t * AfxStreams_GetTakeDir();
 
+void AfxStreams_ShutDown();
+
 void RenderSystemDX11_EngineThread_Prepare();
 void RenderSystemDX11_EngineThread_BeforeRender();
 

@@ -104,6 +104,7 @@ REGISTER_CVAR(sample_enable, "0", 0);
 REGISTER_CVAR(sample_exposure, "1.0", 0);
 REGISTER_CVAR(sample_sps, "180", 0);
 
+advancedfx::CGrowingBufferPool Filming::ImageBufferPool;
 
 // Our filming singleton
 Filming g_Filming;
@@ -602,7 +603,7 @@ Filming::~Filming()
 
 void Filming::DoCanDebugCapture()
 {
-	if(isFilming() && g_Filming_Stream[FS_debug]) g_Filming_Stream[FS_debug]->Capture(m_time, &m_GlRawPic, m_fps);
+	if(isFilming() && g_Filming_Stream[FS_debug]) g_Filming_Stream[FS_debug]->Capture(m_time, m_fps);
 }
 
 void Filming::GetCameraOfs(float& right, float& up, float& forward)
@@ -680,7 +681,7 @@ bool Filming::OnHudEndEvent()
 	switch(giveHudRqState())
 	{
 	case HUDRQ_CAPTURE_COLOR:
-		if(g_Filming_Stream[FS_hudcolor]) g_Filming_Stream[FS_hudcolor]->Capture(m_time, &m_GlRawPic, m_fps);
+		if(g_Filming_Stream[FS_hudcolor]) g_Filming_Stream[FS_hudcolor]->Capture(m_time, m_fps);
 		if(g_Filming_Stream[FS_hudalpha])
 		{
 			// we want alpha too in this case
@@ -689,7 +690,7 @@ bool Filming::OnHudEndEvent()
 		}
 		break;
 	case HUDRQ_CAPTURE_ALPHA:
-		if(g_Filming_Stream[FS_hudalpha]) g_Filming_Stream[FS_hudalpha]->Capture(m_time, &m_GlRawPic, m_fps);
+		if(g_Filming_Stream[FS_hudalpha]) g_Filming_Stream[FS_hudalpha]->Capture(m_time, m_fps);
 		g_Cstrike_CrossHair_Block = false; // allow cool-down again.
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); // restore default color mask again!
 		break;
@@ -699,13 +700,13 @@ bool Filming::OnHudEndEvent()
 	{
 		if(MS_ALL == m_iMatteStage)
 		{
-			if(g_Filming_Stream[FS_all]) g_Filming_Stream[FS_all]->Capture(m_time, &m_GlRawPic, m_fps);
-			if(g_Filming_Stream[FS_depthall]) g_Filming_Stream[FS_depthall]->Capture(m_time, &m_GlRawPic, m_fps);
+			if(g_Filming_Stream[FS_all]) g_Filming_Stream[FS_all]->Capture(m_time, m_fps);
+			if(g_Filming_Stream[FS_depthall]) g_Filming_Stream[FS_depthall]->Capture(m_time, m_fps);
 		}
 		else if(MS_WORLD == m_iMatteStage)
 		{
-			if(g_Filming_Stream[FS_world]) g_Filming_Stream[FS_world]->Capture(m_time, &m_GlRawPic, m_fps);
-			if(g_Filming_Stream[FS_depthworld]) g_Filming_Stream[FS_depthworld]->Capture(m_time, &m_GlRawPic, m_fps);
+			if(g_Filming_Stream[FS_world]) g_Filming_Stream[FS_world]->Capture(m_time, m_fps);
+			if(g_Filming_Stream[FS_depthworld]) g_Filming_Stream[FS_depthworld]->Capture(m_time, m_fps);
 		}
 	}
 
@@ -1563,13 +1564,13 @@ bool Filming::recordBuffers(HDC hSwapHDC,BOOL *bSwapRes)
 		{
 			if(_stereo_state == STS_RIGHT)
 			{
-				if(g_Filming_Stream[FS_all_right]) g_Filming_Stream[FS_all_right]->Capture(m_time, &m_GlRawPic, m_fps);
-				if(g_Filming_Stream[FS_depthall_right]) g_Filming_Stream[FS_depthall_right]->Capture(m_time, &m_GlRawPic, m_fps);
+				if(g_Filming_Stream[FS_all_right]) g_Filming_Stream[FS_all_right]->Capture(m_time, m_fps);
+				if(g_Filming_Stream[FS_depthall_right]) g_Filming_Stream[FS_depthall_right]->Capture(m_time, m_fps);
 			}
 			else
 			{
-				if(!m_CaptureEarly && g_Filming_Stream[FS_all]) g_Filming_Stream[FS_all]->Capture(m_time, &m_GlRawPic, m_fps);
-				if(!m_CaptureEarly && g_Filming_Stream[FS_depthall]) g_Filming_Stream[FS_depthall]->Capture(m_time, &m_GlRawPic, m_fps);
+				if(!m_CaptureEarly && g_Filming_Stream[FS_all]) g_Filming_Stream[FS_all]->Capture(m_time, m_fps);
+				if(!m_CaptureEarly && g_Filming_Stream[FS_depthall]) g_Filming_Stream[FS_depthall]->Capture(m_time, m_fps);
 			}
 
 			// Swap:
@@ -1585,13 +1586,13 @@ bool Filming::recordBuffers(HDC hSwapHDC,BOOL *bSwapRes)
 			{
 				if(_stereo_state == STS_RIGHT)
 				{
-					if(g_Filming_Stream[FS_world_right]) g_Filming_Stream[FS_world_right]->Capture(m_time, &m_GlRawPic, m_fps);
-					if(g_Filming_Stream[FS_depthworld_right]) g_Filming_Stream[FS_depthworld_right]->Capture(m_time, &m_GlRawPic, m_fps);
+					if(g_Filming_Stream[FS_world_right]) g_Filming_Stream[FS_world_right]->Capture(m_time, m_fps);
+					if(g_Filming_Stream[FS_depthworld_right]) g_Filming_Stream[FS_depthworld_right]->Capture(m_time, m_fps);
 				}
 				else
 				{
-					if(!m_CaptureEarly && g_Filming_Stream[FS_world]) g_Filming_Stream[FS_world]->Capture(m_time, &m_GlRawPic, m_fps);
-					if(!m_CaptureEarly && g_Filming_Stream[FS_depthworld]) g_Filming_Stream[FS_depthworld]->Capture(m_time, &m_GlRawPic, m_fps);
+					if(!m_CaptureEarly && g_Filming_Stream[FS_world]) g_Filming_Stream[FS_world]->Capture(m_time, m_fps);
+					if(!m_CaptureEarly && g_Filming_Stream[FS_depthworld]) g_Filming_Stream[FS_depthworld]->Capture(m_time, m_fps);
 				}
 
 				// Swap:
@@ -1613,13 +1614,13 @@ bool Filming::recordBuffers(HDC hSwapHDC,BOOL *bSwapRes)
 			{
 				if(_stereo_state == STS_RIGHT)
 				{
-					if(g_Filming_Stream[FS_entity_right]) g_Filming_Stream[FS_entity_right]->Capture(m_time, &m_GlRawPic, m_fps);
-					if(g_Filming_Stream[FS_depthall_right]) g_Filming_Stream[FS_depthall_right]->Capture(m_time, &m_GlRawPic, m_fps);
+					if(g_Filming_Stream[FS_entity_right]) g_Filming_Stream[FS_entity_right]->Capture(m_time, m_fps);
+					if(g_Filming_Stream[FS_depthall_right]) g_Filming_Stream[FS_depthall_right]->Capture(m_time, m_fps);
 				}
 				else
 				{
-					if(g_Filming_Stream[FS_entity]) g_Filming_Stream[FS_entity]->Capture(m_time, &m_GlRawPic, m_fps);
-					if(g_Filming_Stream[FS_depthall]) g_Filming_Stream[FS_depthall]->Capture(m_time, &m_GlRawPic, m_fps);
+					if(g_Filming_Stream[FS_entity]) g_Filming_Stream[FS_entity]->Capture(m_time, m_fps);
+					if(g_Filming_Stream[FS_depthall]) g_Filming_Stream[FS_depthall]->Capture(m_time, m_fps);
 				}
 
 
@@ -1906,8 +1907,6 @@ FilmingStream::FilmingStream(
 	m_DirCreated = false;
 	m_FrameCount = 0;
 	m_Sampler = 0;
-	m_Width = width;
-	m_Height = height;
 	m_X = x;
 	m_Y = y;
 	m_TASMode = TASMode;
@@ -1924,48 +1923,54 @@ FilmingStream::FilmingStream(
 			pEngfuncs->Con_Printf("ERROR: could not create \"%s\"\n", m_Path.c_str());
 	}
 
+	m_DepthBytesPP = 0;
+
+	advancedfx::ImageFormat imageFormat = advancedfx::ImageFormat::Unknown;
+
+	size_t pixelStride;
 	switch(buffer) {
 	case FB_ALPHA:
-		m_GlBuffer = GL_ALPHA;
-		m_GlType = GL_UNSIGNED_BYTE;
-		m_BytesPerPixel = 1;
+		imageFormat = advancedfx::ImageFormat::A;
+		pixelStride = 1;
 		break;
 
 	case FB_DEPTH:
-		m_GlBuffer = GL_DEPTH_COMPONENT;
-		m_GlType = GL_FLOAT;
-		if(0 != depth_exr->value)
-			m_BytesPerPixel = 4;
-		else
+	 	imageFormat = advancedfx::ImageFormat::ZFloat;
+		if(0 == depth_exr->value)
 		{
 			switch ((unsigned char)depth_bpp->value) {
-			case 16:
-				m_BytesPerPixel = 2;
-				break;
 			case 24:
-				m_BytesPerPixel = 3;
+				m_DepthBytesPP = 3;
+				pixelStride = 3;
 				break;
 			default:
-				m_BytesPerPixel = 1;
+				m_DepthBytesPP = 1;
+				pixelStride = 1;
 			}
 		}
 		break;
 
 	case FB_COLOR:
 	default:
-		m_GlBuffer = GL_BGR_EXT;
-		m_GlType = GL_UNSIGNED_BYTE;
-		m_BytesPerPixel = 3;
+	 	imageFormat = advancedfx::ImageFormat::BGR;
+		pixelStride = 3;
+		break;
 	};
 
-	m_Pitch = CalcPitch(m_Width, m_BytesPerPixel, m_Bmp ? 4 : 1);
+	// Half-Life usually always uses GL_PACKALIGNMENT 4 etc.
+	// Our CMdt_Media_RAWGLPIC::DoGlReadPixels relies on that property currently,
+	// also our depth postprocessing code!
+	size_t pitch = width * pixelStride;
+	if(pitch%4) pitch++;
+
+	m_ImageFormat = advancedfx::CImageFormat(imageFormat, width, height, pitch);
 
 	if(0 < samplingFrameDuration && (FB_COLOR == buffer || FB_ALPHA == buffer))
 	{
 		// activate sampling.
 
 		EasySamplerSettings settings(
-			m_BytesPerPixel * width, height,
+			m_ImageFormat,
 			0 == sample_smethod->value ? EasySamplerSettings::ESM_Rectangle : EasySamplerSettings::ESM_Trapezoid,
 			samplingFrameDuration,
 			0,
@@ -1975,12 +1980,12 @@ FilmingStream::FilmingStream(
 
 		m_Sampler = new EasyByteSampler(
 			settings,
-			m_Pitch,
-			static_cast<IFramePrinter *>(this)
+			static_cast<IFramePrinter<false> *>(this),
+			&Filming::ImageBufferPool
 		);
 	}
 	else
-		m_Sampler = 0;
+		m_Sampler = nullptr;
 
 
 	if(0 < samplingFrameDuration && FB_DEPTH == buffer)
@@ -1988,7 +1993,7 @@ FilmingStream::FilmingStream(
 		// activate sampling.
 
 		EasySamplerSettings settings(
-			width, height,
+			m_ImageFormat,
 			0 == sample_smethod->value ? EasySamplerSettings::ESM_Rectangle : EasySamplerSettings::ESM_Trapezoid,
 			samplingFrameDuration,
 			0,
@@ -1998,36 +2003,50 @@ FilmingStream::FilmingStream(
 
 		m_SamplerFloat = new EasyFloatSampler(
 			settings,
-			static_cast<IFloatFramePrinter *>(this)
+			static_cast<IFramePrinter<false> *>(this),
+			&Filming::ImageBufferPool
 		);
 	}
 	else
-		m_SamplerFloat = 0;
+		m_SamplerFloat = nullptr;
 
 }
 
 FilmingStream::~FilmingStream()
 {
+	if(m_SamplerFloat) delete m_SamplerFloat;
 	if(m_Sampler) delete m_Sampler;
 	if (m_FfmpegOutStream) m_FfmpegOutStream->Release();
+	if(m_pPreviousFrame) m_pPreviousFrame->Release();
 }
 
-void FilmingStream::Capture(double time, CMdt_Media_RAWGLPIC * usePic, float spsHint)
+void FilmingStream::Capture(double time, float spsHint)
 {
 	if(m_Sampler && 0 < spsHint && m_Sampler->CanSkipConstant(time, 1.0 / (double)spsHint))
 	{
 		// we can skip the capture safely:
 		m_Sampler->Sample(
-			0,
+			nullptr,
 			time
 		);
 		//pEngfuncs->Con_Printf("skipped at %f\n", time);
 		return;
 	}
 
-	if (!usePic->DoGlReadPixels(m_X, m_Y, m_Width, m_Height, m_GlBuffer, m_GlType, !m_Bmp))
+	advancedfx::CImageBuffer * pImageBuffer = new advancedfx::CImageBuffer(&Filming::ImageBufferPool);
+
+	if(nullptr == pImageBuffer) {
+		pEngfuncs->Con_Printf("MDT ERROR: failed to allocate CImageBuffer from pool.\n");
+		return;
+	}
+
+	pImageBuffer->AddRef();
+
+	CMdt_Media_RAWGLPIC::Error error = CMdt_Media_RAWGLPIC::DoGlReadPixels(m_X, m_Y, m_ImageFormat, pImageBuffer);
+	if (CMdt_Media_RAWGLPIC::Error::None != error)
 	{
-		pEngfuncs->Con_Printf("MDT ERROR: failed to capture a frame (%d).\n", usePic->GetLastUnhandledError());
+		pEngfuncs->Con_Printf("MDT ERROR: failed to capture a frame (%d).\n", (int)error);
+		pImageBuffer->Release();
 		return;
 	}
 
@@ -2039,8 +2058,8 @@ void FilmingStream::Capture(double time, CMdt_Media_RAWGLPIC * usePic, float sps
 	if (FB_DEPTH == m_Buffer)
 	{
 		// user wants depth output, we need to cut off
-		unsigned int uiCount = (unsigned int)m_Width * (unsigned int)m_Height;
-		void * pBuffer = usePic->GetPointer();	// the pointer where we write
+		unsigned int uiCount = (unsigned int)m_ImageFormat.Width * (unsigned int)m_ImageFormat.Height;
+		void * pBuffer = pImageBuffer->GetImageBufferData();	// the pointer where we write
 
 		if(0 != m_SamplerFloat)
 		{
@@ -2060,19 +2079,36 @@ void FilmingStream::Capture(double time, CMdt_Media_RAWGLPIC * usePic, float sps
 			if(0.0f != m_DepthSliceLo || 1.0f != m_DepthSliceHi)
 				SliceDepthBuffer((GLfloat *)pBuffer, uiCount, m_DepthSliceLo, m_DepthSliceHi);
 
-			if(0 == depth_exr->value) GLfloatArrayToXByteArray((GLfloat *)pBuffer, m_Width, m_Height, m_BytesPerPixel);
+			if(m_DepthBytesPP) {
+				GLfloatArrayToXByteArray((GLfloat *)pBuffer, m_ImageFormat.Width, m_ImageFormat.Height, m_DepthBytesPP);
+
+				size_t pitch = m_ImageFormat.Width * m_DepthBytesPP;
+				if(pitch % 4) pitch++;
+
+				if(!pImageBuffer->GrowAlloc(advancedfx::CImageFormat(
+					m_DepthBytesPP == 3 ? advancedfx::ImageFormat::BGR : advancedfx::ImageFormat::A,
+					m_ImageFormat.Width,
+					m_ImageFormat.Height,
+					pitch))) {
+					pEngfuncs->Con_Printf("MDT ERROR: failed to resize image buffer.\n");
+					pImageBuffer->Release();
+					return;
+				}
+			}
 		}	
 	}
 
 	if (!m_TASMode)
 	{
-		WriteFrame(*usePic, time);
+		WriteFrame(pImageBuffer, time);
 	}
 	else
 	{
 		if (m_NextFrameIsAt == 0.0)
 		{
-			m_PreviousFrame = *usePic;
+			if(m_pPreviousFrame) m_pPreviousFrame->Release();
+			m_pPreviousFrame = pImageBuffer;
+			m_pPreviousFrame->AddRef();
 		}
 
 		size_t framesWritten = 0;
@@ -2087,17 +2123,19 @@ void FilmingStream::Capture(double time, CMdt_Media_RAWGLPIC * usePic, float sps
 		 */
 		while (time - m_NextFrameIsAt > (1.0 / (spsHint * 2.0)))
 		{
-			WriteFrame(m_PreviousFrame, m_NextFrameIsAt);
+			WriteFrame(m_pPreviousFrame, m_NextFrameIsAt);
 			m_NextFrameIsAt += (1.0 / spsHint);
 
 			++framesWritten;
 		}
 
-		m_PreviousFrame = *usePic;
+		if(m_pPreviousFrame) m_pPreviousFrame->Release();
+		m_pPreviousFrame = pImageBuffer;
+		m_pPreviousFrame->AddRef();
 
 		if (m_NextFrameIsAt <= time)
 		{
-			WriteFrame(m_PreviousFrame, m_NextFrameIsAt);
+			WriteFrame(m_pPreviousFrame, m_NextFrameIsAt);
 			m_NextFrameIsAt += (1.0 / spsHint);
 
 			++framesWritten;
@@ -2119,25 +2157,27 @@ void FilmingStream::Capture(double time, CMdt_Media_RAWGLPIC * usePic, float sps
 			}
 		}
 	}
+
+	pImageBuffer->Release();
 }
 
-void FilmingStream::WriteFrame(CMdt_Media_RAWGLPIC& frame, double time)
+void FilmingStream::WriteFrame(advancedfx::CImageBuffer * pFrame, double time)
 {
-	if (0 != m_Sampler)
+	if (m_Sampler)
 	{
 		// pass on to sampling system:
 
 		m_Sampler->Sample(
-			(unsigned char const *)frame.GetPointer(),
+			pFrame,
 			time
 		);
 	}
-	else if (0 != m_SamplerFloat)
+	else if (m_SamplerFloat)
 	{
 		// pass on to sampling system:
 
 		m_SamplerFloat->Sample(
-			(float const *)frame.GetPointer(),
+			pFrame,
 			time
 		);
 	}
@@ -2145,175 +2185,122 @@ void FilmingStream::WriteFrame(CMdt_Media_RAWGLPIC& frame, double time)
 	{
 		// write out directly:
 
-		if (FB_DEPTH == m_Buffer && 0 != depth_exr->value)
-		{
-			PrintExr((float*)frame.GetPointer());
-		}
-		else
-		{
-			Print((unsigned char const*)frame.GetPointer());
-		}
+		OutputFrame(pFrame);
 	}
 }
 
-void FilmingStream::Print(unsigned char const * data)
+void FilmingStream::OutputFrame(advancedfx::TIImageBuffer<false> * pFrame)
 {
 	if(!m_DirCreated)
 		return;
 
 	bool bColor = m_Buffer == FB_COLOR;
+	bool bDepth = FB_DEPTH == m_Buffer;
+	bool bDepthExr = bDepth && 0 != depth_exr->value;
 	
 	if (!m_FfmpegOptions.empty())
 	{
-		advancedfx::ImageFormat format = advancedfx::ImageFormat::Unkown;
-
-		switch (m_BytesPerPixel)
-		{
-		case 1:
-			format = advancedfx::ImageFormat::A;
-			break;
-		case 3:
-			format = advancedfx::ImageFormat::BGR;
-			break;
-		case 4:
-			format = advancedfx::ImageFormat::BGRA;
-			break;
-		}
-
-		advancedfx::CImageFormat imageFormat(
-			format, m_Width, m_Height, m_Pitch);
-
 		if (nullptr == m_FfmpegOutStream)
 		{
-			m_FfmpegOutStream = new advancedfx::COutFFMPEGVideoStream(imageFormat, m_Path, m_FfmpegOptions, movie_fps->value);
+			const advancedfx::CImageFormat & imageFormat = *pFrame->GetImageBufferFormat();
+			m_FfmpegOutStream = new advancedfx::COutFFMPEGVideoStream<false>(imageFormat, m_Path, m_FfmpegOptions, movie_fps->value);
 			m_FfmpegOutStream->AddRef();
 		}
-		
-		advancedfx::CImageBuffer buffer;
-		buffer.Format = imageFormat;
-		buffer.Buffer = const_cast<unsigned char *>(data); //TODO: not nice this cast.
 
-		if (!m_FfmpegOutStream->SupplyVideoData(buffer))
+		if (!m_FfmpegOutStream->SupplyImageBuffer(this, pFrame))
 		{
 			std::string path("n/a");
 			WideStringToUTF8String(m_Path.c_str(), path);
 			pEngfuncs->Con_Printf("AFXERROR: Failed writing image to stream for \"%s\".\n", path.c_str());
 		}
-
-		buffer.Buffer = nullptr;
 	}	
 	else
 	{
+		const advancedfx::CImageFormat & imageFormat = *pFrame->GetImageBufferFormat();
 		std::wostringstream os;
-		os << m_Path << L"\\" << setfill(L'0') << setw(5) << m_FrameCount << setw(0) << (m_Bmp ? L".bmp" : L".tga");
-		
-		if (m_Bmp)
-			WriteRawBitmap(data, os.str().c_str(), m_Width, m_Height, m_BytesPerPixel << 3, m_Pitch); // align is still 4 byte probably
-		else
-			WriteRawTarga(data, os.str().c_str(), m_Width, m_Height, m_BytesPerPixel << 3, !bColor, m_Pitch);
+		if(bDepthExr) {
+			os << m_Path << L"\\" << setfill(L'0') << setw(5) << m_FrameCount << setw(0) << L".exr";
+
+			WriteFloatZOpenExr(
+				os.str().c_str(),
+				(unsigned char*)pFrame->GetImageBufferData(),
+				imageFormat.Width,
+				imageFormat.Height,
+				sizeof(float),
+				imageFormat.Pitch,
+				2 == depth_exr->value ? WFZOEC_Zip : WFZOEC_None,
+				false
+			);
+		} else {
+			os << m_Path << L"\\" << setfill(L'0') << setw(5) << m_FrameCount << setw(0) << (m_Bmp ? L".bmp" : L".tga");
+			
+			if (m_Bmp)
+				WriteRawBitmap(
+					(const unsigned char *)pFrame->GetImageBufferData(),
+					os.str().c_str(),
+					imageFormat.Width,
+					imageFormat.Height,
+					imageFormat.GetPixelStride() << 3,
+					imageFormat.Pitch); // align is still 4 byte probably
+			else
+				WriteRawTarga(
+					(const unsigned char *)pFrame->GetImageBufferData(),
+					os.str().c_str(),
+					imageFormat.Width,
+					imageFormat.Height,
+					imageFormat.GetPixelStride() << 3,
+					!bColor,
+					imageFormat.Pitch);
+		}
 	}
 
 	m_FrameCount++;
 }
 
-void FilmingStream::PrintExr(float const* data)
+void FilmingStream::PrintSampledFrame(advancedfx::TImageBuffer<false> * pImageBuffer)
 {
-	if (!m_DirCreated)
+	if(FB_DEPTH != m_Buffer) {
+		OutputFrame(pImageBuffer);
 		return;
-
-	if (!m_FfmpegOptions.empty())
-	{
-		advancedfx::ImageFormat format = advancedfx::ImageFormat::ZFloat;
-
-		advancedfx::CImageFormat imageFormat(
-			format, m_Width, m_Height, m_Pitch);
-
-		if (nullptr == m_FfmpegOutStream)
-		{
-			m_FfmpegOutStream = new advancedfx::COutFFMPEGVideoStream(imageFormat, m_Path, m_FfmpegOptions, movie_fps->value);
-			m_FfmpegOutStream->AddRef();
-		}
-		
-		advancedfx::CImageBuffer buffer;
-		buffer.Format = imageFormat;
-		buffer.Buffer = const_cast<float *>(data); //TODO: not nice this cast.
-
-		if (!m_FfmpegOutStream->SupplyVideoData(buffer))
-		{
-			std::string path("n/a");
-			WideStringToUTF8String(m_Path.c_str(), path);
-			pEngfuncs->Con_Printf("AFXERROR: Failed writing image to stream for \"%s\".\n", path.c_str());
-		}
-
-		buffer.Buffer = nullptr;
-	}	
-	else {		
-		std::wostringstream os;
-		os << m_Path << L"\\" << setfill(L'0') << setw(5) << m_FrameCount << setw(0) << L".exr";
-
-		WriteFloatZOpenExr(
-			os.str().c_str(),
-			(unsigned char*)data,
-			m_Width,
-			m_Height,
-			sizeof(float),
-			m_Pitch,
-			2 == depth_exr->value ? WFZOEC_Zip : WFZOEC_None,
-			false
-		);
 	}
+	
+	void * pBuffer = pImageBuffer->GetImageBufferData();	// the pointer where we write
 
-	m_FrameCount++;
-}
-
-void FilmingStream::Print(float const * data)
-{
 	if(FD_LINEAR != m_DepthFn || m_DepthDebug)
 	{
-		unsigned int uiCount = m_Height * m_Width;
-
-		// (allocation / sharing could be optimized later)
-		GLfloat * fT = new GLfloat[uiCount];
-
-		memcpy(fT, data, uiCount * sizeof(float));
+		unsigned int uiCount = (unsigned int)m_ImageFormat.Width * (unsigned int)m_ImageFormat.Height;
 
 		if(FD_INV == m_DepthFn)
-			InverseFloatDepthBuffer(fT, uiCount, g_Filming.GetZNear(), g_Filming.GetZFar());
+			InverseFloatDepthBuffer((GLfloat *)pBuffer, uiCount, g_Filming.GetZNear(), g_Filming.GetZFar());
 
 		if(FD_LOG == m_DepthFn)
-			LogarithmizeDepthBuffer(fT, uiCount, g_Filming.GetZNear(), g_Filming.GetZFar());
+			LogarithmizeDepthBuffer((GLfloat *)pBuffer, uiCount, g_Filming.GetZNear(), g_Filming.GetZFar());
 
 		if(m_DepthDebug)
-			DebugDepthBuffer(fT, uiCount);
+			DebugDepthBuffer((GLfloat *)pBuffer, uiCount);
 
 		if(0.0f != m_DepthSliceLo || 1.0f != m_DepthSliceHi)
-			SliceDepthBuffer(fT, uiCount, m_DepthSliceLo, m_DepthSliceHi);
-
-		if (0 == depth_exr->value)
-		{
-			GLfloatArrayToXByteArray(fT, m_Width, m_Height, m_BytesPerPixel);
-
-			Print((unsigned char const*)fT);
-		}
-		else
-		{
-			PrintExr(fT);
-		}
-
-		delete fT;
+			SliceDepthBuffer((GLfloat *)pBuffer, uiCount, m_DepthSliceLo, m_DepthSliceHi);
 	}
-	else
+
+	if (m_DepthBytesPP)
 	{
-		if (0 == depth_exr->value)
-		{
-			GLfloatArrayToXByteArray((GLfloat*)data, m_Width, m_Height, m_BytesPerPixel);
-			Print((unsigned char const*)data);
-		}
-		else
-		{
-			PrintExr((float*)data);
+		GLfloatArrayToXByteArray((GLfloat *)pBuffer, m_ImageFormat.Width, m_ImageFormat.Height, m_DepthBytesPP);
+
+		size_t pitch = m_ImageFormat.Width * m_DepthBytesPP;
+		if(pitch % 4) pitch++;
+
+		if(!pImageBuffer->GrowAlloc(advancedfx::CImageFormat(
+			m_DepthBytesPP == 3 ? advancedfx::ImageFormat::BGR : advancedfx::ImageFormat::A,
+			m_ImageFormat.Width,
+			m_ImageFormat.Height,
+			pitch))) {
+			pEngfuncs->Con_Printf("MDT ERROR: failed to resize image buffer.\n");
+			return;
 		}
 	}
+
+	OutputFrame(pImageBuffer);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
