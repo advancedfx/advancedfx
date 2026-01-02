@@ -8,26 +8,17 @@
 // (First it's the new one, then the old one and factors
 // are about the same, this is a waste).
 
+#include "ImageFormat.h"
+#include "TImageBuffer.h"
+#include "TGrowingBufferPool.h"
+
 #include <memory.h>
 
-class __declspec(novtable) IFramePrinter abstract
+template<bool bThreadSafe> class __declspec(novtable) IFramePrinter abstract
 {
 public:
-	virtual void Print(unsigned char const * data) abstract = 0;
+	virtual void PrintSampledFrame(advancedfx::TImageBuffer<bThreadSafe> * pImageBuffer) abstract = 0;
 };
-
-class __declspec(novtable) IFloatFramePrinter abstract
-{
-public:
-	virtual void Print(float const * data) abstract = 0;
-};
-
-class __declspec(novtable) IXAlphaFramePrinter abstract
-{
-public:
-	virtual void Print(unsigned char const * data, unsigned char const * alpha) abstract = 0;
-};
-
 
 class __declspec(novtable) ISampleFns abstract
 {
@@ -125,8 +116,7 @@ public:
 	};
 
 	EasySamplerSettings(
-		int width, 
-		int height,
+		const advancedfx::CImageFormat& imageFormat,
 		Method method,
 		double frameDuration,
 		double startTime,
@@ -136,66 +126,43 @@ public:
 
 	EasySamplerSettings(EasySamplerSettings const & settings);
 
+	const advancedfx::CImageFormat& ImageFormat_get() const;
+
 	double Exposure_get() const;
 	double FrameDuration_get() const;
 	float FrameStrength_get() const;
-	int Height_get() const;
 	Method Method_get() const;
 	double StartTime_get() const;
-	int Width_get() const;
 
 private:
 	double m_Exposure;
 	double m_FrameDuration;
 	float m_FrameStrength;
-	int m_Height;
 	Method m_Method;
 	double m_StartTime;
-	int m_Width;
+	advancedfx::CImageFormat m_ImageFormat;
 };
 
 
 // EasyByteSampler /////////////////////////////////////////////////////////////
 
-class EasyByteSampler : public EasySamplerBase,
-	private ISampleFns
+class EasyByteSamplerImpl : public EasySamplerBase,
+	protected ISampleFns
 {
 public:
-
-
 	/// <param name="pitch">bytes of memory to skip for a row</param>
-	EasyByteSampler(
-		EasySamplerSettings const & settings,
-		int pitch,
-		IFramePrinter * framePrinter
+	EasyByteSamplerImpl(
+		EasySamplerSettings const & settings
 	);
 
-	~EasyByteSampler();
-
-	bool CanSkipConstant(double time, double durationPerSample);
-
-	///	<param name="data">NULLPTR is interpreted as the ideal shutter being closed for the deltaTime that passed.</param>
-	/// <remarks>A closed shutter and a weight of 0 are not the same, because the integral can be different (depends on the method).</remarks>
-	void Sample(unsigned char const * data, double time);
+	~EasyByteSamplerImpl();
 
 protected:
-	virtual void EasySamplerBase::MakeFrame()
-	{
-		PrintFrame();
-		ClearFrame(m_Settings.FrameStrength_get());
-	}
+	EasySamplerSettings m_Settings;
 
-	virtual void EasySamplerBase::SubSample(
-		double timeA,
-		double timeB,
-		double subTimeA,
-		double subTimeB)
-	{
-		Integrator_Fn(this,
-			m_HasLastSample ? m_LastSample : 0, m_CurSample,
-			timeA, timeB, subTimeA, subTimeB
-		);
-	}
+	void ClearFrame(float frameStrength);
+
+	void PrintFrame(unsigned char * data);
 
 private:
 
@@ -219,16 +186,135 @@ private:
 		float WhitePoint;
 	};
 
-	unsigned char const * m_CurSample;
-	EasySamplerSettings m_Settings;
 	Frame * m_Frame;
-	IFramePrinter * m_FramePrinter;
-	bool m_HasLastSample;
-	unsigned char * m_LastSample;
-	int m_Pitch;
-	unsigned char * m_PrintMem;
 
+	/// <summary>Implements ISampleFns.</summary>
+	virtual void Fn_1(void const * sample) override;
+
+	/// <summary>Implements ISampleFns.</summary>
+	virtual void Fn_2(void const * sample, float w) override;
+
+	/// <summary>Implements ISampleFns.</summary>
+	virtual void Fn_4(void const * sampleA, void const * sampleB, float w) override;
+
+	void ScaleFrame(float factor);
+};
+
+template<bool bThreadSafe> class EasyByteSampler
+: public EasyByteSamplerImpl
+{
+public:
+	/// <param name="pitch">bytes of memory to skip for a row</param>
+	EasyByteSampler(
+		EasySamplerSettings const & settings,
+		IFramePrinter<bThreadSafe> * framePrinter,
+		advancedfx::TGrowingBufferPool<bThreadSafe> * pGrowingBufferPool)
+	: EasyByteSamplerImpl(settings)
+	, m_FramePrinter(framePrinter)
+	, m_pGrowingBufferPool(pGrowingBufferPool)
+	{
+	}		
+
+	~EasyByteSampler() {
+		// ? // PrintFrame();
+		if(m_pLastSample) m_pLastSample->Release();
+	}
+
+	bool CanSkipConstant(double time, double durationPerSample)
+	{
+		return EasySamplerBase::CanSkipConstant(time, durationPerSample, m_pLastSample ? 1 : 0);
+	}	
+
+	///	<param name="pImageBuffer">NULLPTR is interpreted as the ideal shutter being closed for the deltaTime that passed.</param>
+	/// <remarks>A closed shutter and a weight of 0 are not the same, because the integral can be different (depends on the method).</remarks>
+	void Sample(class advancedfx::TIImageBuffer<bThreadSafe> * pImageBuffer, double time)
+	{
+		m_pCurSample = pImageBuffer;
+
+		if(pImageBuffer && *pImageBuffer->GetImageBufferFormat() != m_Settings.ImageFormat_get()) throw "Image buffer format mismatch.";
+
+		EasySamplerBase::Sample(time);
+
+		bool twoPoint = EasySamplerSettings::ESM_Trapezoid == m_Settings.Method_get();
+
+		if(twoPoint && pImageBuffer)
+		{
+			if(m_pLastSample)  m_pLastSample->Release();
+			m_pLastSample = m_pCurSample;
+			m_pLastSample->AddRef();
+		}
+		else {
+			if(m_pLastSample) {
+				m_pLastSample->Release();
+				m_pLastSample = nullptr;
+			} 
+		}
+
+		m_pCurSample = nullptr;
+	}
+
+protected:
+	virtual void EasySamplerBase::MakeFrame() override
+	{
+		PrintFrame();
+		ClearFrame(m_Settings.FrameStrength_get());
+	}
+
+	virtual void EasySamplerBase::SubSample(
+		double timeA,
+		double timeB,
+		double subTimeA,
+		double subTimeB
+	) override {
+		Integrator_Fn(this,
+			m_pLastSample ? m_pLastSample->GetImageBufferData() : nullptr, m_pCurSample->GetImageBufferData(),
+			timeA, timeB, subTimeA, subTimeB
+		);
+	}
+
+private:
+	advancedfx::TGrowingBufferPool<bThreadSafe> * m_pGrowingBufferPool;
+	advancedfx::TIImageBuffer<bThreadSafe> * m_pCurSample = nullptr;
+	advancedfx::TIImageBuffer<bThreadSafe> * m_pLastSample = nullptr;
+	IFramePrinter<bThreadSafe> * m_FramePrinter;
+
+	void PrintFrame()
+	{
+		const advancedfx::CImageFormat& imageFormat = m_Settings.ImageFormat_get();
+		advancedfx::TImageBuffer<bThreadSafe> * pImageBuffer = new advancedfx::TImageBuffer<bThreadSafe>(m_pGrowingBufferPool);
+		pImageBuffer->AddRef();
+		if(pImageBuffer->GrowAlloc(imageFormat)) {
+			unsigned char * data = (unsigned char *)pImageBuffer->GetImageBufferData();
+			EasyByteSamplerImpl::PrintFrame(data);
+		}
+		m_FramePrinter->PrintSampledFrame(pImageBuffer);
+		pImageBuffer->Release();
+	}
+};
+
+
+// EasyFloatSampler ////////////////////////////////////////////////////////////
+
+class EasyFloatSamplerImpl : public EasySamplerBase,
+	protected ISampleFns
+{
+public:
+	EasyFloatSamplerImpl(
+		EasySamplerSettings const & settings
+	);
+
+	~EasyFloatSamplerImpl();
+
+protected:
+	EasySamplerSettings m_Settings;
+	
 	void ClearFrame(float frameStrength);
+
+	void PrintFrame(float * data);
+
+private:
+	float * m_FrameData;
+	float m_FrameWhitePoint;
 
 	/// <summary>Implements ISampleFns.</summary>
 	virtual void Fn_1(void const * sample);
@@ -239,30 +325,63 @@ private:
 	/// <summary>Implements ISampleFns.</summary>
 	virtual void Fn_4(void const * sampleA, void const * sampleB, float w);
 
-	void PrintFrame();
-
 	void ScaleFrame(float factor);
 };
 
-
-// EasyFloatSampler ////////////////////////////////////////////////////////////
-
-class EasyFloatSampler : public EasySamplerBase,
-	private ISampleFns
+template<bool bThreadSafe> class EasyFloatSampler
+: public EasyFloatSamplerImpl
 {
 public:
 	EasyFloatSampler(
 		EasySamplerSettings const & settings,
-		IFloatFramePrinter * framePrinter
-	);
+		IFramePrinter<bThreadSafe> * framePrinter,
+		advancedfx::TGrowingBufferPool<bThreadSafe> * pGrowingBufferPool
+	)
+	: EasyFloatSamplerImpl(settings)
+	, m_FramePrinter(framePrinter)
+	, m_pGrowingBufferPool(pGrowingBufferPool)
+	{
+	}	
 
-	~EasyFloatSampler();
+	~EasyFloatSampler()
+	{
+		// ? // PrintFrame();
 
-	bool CanSkipConstant(double time, double durationPerSample);
+		if(m_pLastSample) m_pLastSample->Release();
+	}	
 
-	///	<param name="data">NULLPTR is interpreted as the ideal shutter being closed for the deltaTime that passed.</param>
+	bool CanSkipConstant(double time, double durationPerSample)
+	{
+		return EasySamplerBase::CanSkipConstant(time, durationPerSample, m_pLastSample ? 1 : 0);
+	}
+
+	///	<param name="pImageBuffer">NULLPTR is interpreted as the ideal shutter being closed for the deltaTime that passed.</param>
 	/// <remarks>A closed shutter and a weight of 0 are not the same, because the integral can be different (depends on the method).</remarks>
-	void Sample(float const * data, double time);
+	void Sample(class advancedfx::TIImageBuffer<bThreadSafe> * pImageBuffer, double time)
+	{
+		m_pCurSample = pImageBuffer;
+
+		if(pImageBuffer && *pImageBuffer->GetImageBufferFormat() != m_Settings.ImageFormat_get()) throw "Image buffer format mismatch.";
+
+		EasySamplerBase::Sample(time);
+
+		bool twoPoint = EasySamplerSettings::ESM_Trapezoid == m_Settings.Method_get();
+
+		if(twoPoint && pImageBuffer)
+		{
+			if(m_pLastSample)  m_pLastSample->Release();
+			m_pLastSample = m_pCurSample;
+			m_pLastSample->AddRef();
+		}
+		else {
+			if(m_pLastSample) {
+				m_pLastSample->Release();
+				m_pLastSample = nullptr;
+			} 
+		}
+
+		m_pCurSample = nullptr;
+	}	
 
 protected:
 	virtual void EasySamplerBase::MakeFrame()
@@ -278,33 +397,27 @@ protected:
 		double subTimeB)
 	{
 		Integrator_Fn(this,
-			m_HasLastSample ? m_LastSample : 0, m_CurSample,
+			m_pLastSample ? m_pLastSample->GetImageBufferData() : nullptr, m_pCurSample->GetImageBufferData(),
 			timeA, timeB, subTimeA, subTimeB
 		);
 	}
 
 private:
-	float const * m_CurSample;
-	float * m_FrameData;
-	IFloatFramePrinter * m_FramePrinter;
-	float m_FrameWhitePoint;
-	float * m_PrintMem;
-	EasySamplerSettings m_Settings;
-	bool m_HasLastSample;
-	float * m_LastSample;
+	advancedfx::TGrowingBufferPool<bThreadSafe> * m_pGrowingBufferPool;
+	advancedfx::TIImageBuffer<bThreadSafe> * m_pCurSample = nullptr;
+	advancedfx::TIImageBuffer<bThreadSafe> * m_pLastSample = nullptr;
+	IFramePrinter<bThreadSafe> * m_FramePrinter;
 
-	void ClearFrame(float frameStrength);
-
-	/// <summary>Implements ISampleFns.</summary>
-	virtual void Fn_1(void const * sample);
-
-	/// <summary>Implements ISampleFns.</summary>
-	virtual void Fn_2(void const * sample, float w);
-
-	/// <summary>Implements ISampleFns.</summary>
-	virtual void Fn_4(void const * sampleA, void const * sampleB, float w);
-
-	void PrintFrame();
-
-	void ScaleFrame(float factor);
+	void PrintFrame()
+	{
+		const advancedfx::CImageFormat& imageFormat = m_Settings.ImageFormat_get();
+		advancedfx::TImageBuffer<bThreadSafe> * pImageBuffer = new advancedfx::TImageBuffer<bThreadSafe>(m_pGrowingBufferPool);
+		pImageBuffer->AddRef();
+		if(pImageBuffer->GrowAlloc(imageFormat)) {
+			float * data = (float *)pImageBuffer->GetImageBufferData();
+			EasyFloatSamplerImpl::PrintFrame(data);
+		}
+		m_FramePrinter->PrintSampledFrame(pImageBuffer);
+		pImageBuffer->Release();
+	}
 };

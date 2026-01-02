@@ -26,6 +26,10 @@ namespace advancedfx {
 
 		}
 
+		int GetRefCount() const {
+			return m_RefCount;
+		}
+
 	private:
 		int m_RefCount;
 	};
