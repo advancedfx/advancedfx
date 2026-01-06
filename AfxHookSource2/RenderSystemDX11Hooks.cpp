@@ -88,6 +88,13 @@ public:
 
     void ShutDown(ID3D11DeviceContext * pDeviceContext)
     {
+        if(pDeviceContext) {
+            while(m_CurrentCpuTexture || m_CurrentCpuTexture2) {
+                // Make sure we process the texture from the last roundtrip and the current pass if possible (if there are any):
+                OnAfterGpuPresent(pDeviceContext);
+            }
+        }
+    
         {
             std::unique_lock<std::mutex> lock(m_ProcessingThreadMutex);
             if(m_ShutDown) return; // do not shutdown twice
@@ -96,8 +103,18 @@ public:
         }
         m_ProcessingThread.join();
 
+        if(m_CurrentCpuTexture2) {
+            // remove lingering unused / not mapped CPU texture from last roundtrip.
+            delete m_CurrentCpuTexture2;
+            m_CurrentCpuTexture2 = nullptr;
+            {
+                std::unique_lock<std::mutex> lock(m_DoneTexturesMutex);
+                m_NumCpuTextures--;
+            }
+        }
+
         if(m_CurrentCpuTexture) {
-            // remove lingering unused / not mapped CPU texture.
+            // remove lingering unused / not mapped CPU texture from current roundtrip.
             delete m_CurrentCpuTexture;
             m_CurrentCpuTexture = nullptr;
             {
@@ -168,14 +185,19 @@ public:
     }
 
     void OnAfterGpuPresent(ID3D11DeviceContext * pDeviceContext) {
-        if(m_CurrentCpuTexture) {
-            if(m_CurrentCpuTexture->CpuBeginAccess(pDeviceContext)) {
-                StartProcess(m_CurrentCpuTexture);
-                m_CurrentCpuTexture = nullptr;
-                return;
+        // This trickery is intentional,  thos roundtrip prevents blocking unnecessarily.
+        if(m_CurrentCpuTexture2) {
+            if(m_CurrentCpuTexture2->CpuBeginAccess(pDeviceContext)) {
+                StartProcess(m_CurrentCpuTexture2);
+                m_CurrentCpuTexture2 = nullptr;
+            } else {
+                StartProcess(nullptr);
             }
         }
-        StartProcess(nullptr);
+        if(m_CurrentCpuTexture){
+            m_CurrentCpuTexture2 = m_CurrentCpuTexture;
+            m_CurrentCpuTexture = nullptr;
+        }
     }
 
 private:
@@ -324,6 +346,7 @@ private:
     }
 
     CAfxCpuTexture * m_CurrentCpuTexture = nullptr;
+    CAfxCpuTexture * m_CurrentCpuTexture2 = nullptr;
 
     class advancedfx::COutVideoStreamCreator* m_pOutVideoStreamCreator;
 	advancedfx::TIOutVideoStream<true>* m_OutVideoStream = nullptr;
