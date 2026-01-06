@@ -496,6 +496,9 @@ private:
                     default:
                         break;
                     }
+
+                    pTexture->Release();
+                    
                     if (buffer) {
                         if (m_OutVideoStream == nullptr) {
                             m_OutVideoStream = m_pOutVideoStreamCreator->CreateOutVideoStream(*buffer->GetImageBufferFormat());
@@ -510,9 +513,7 @@ private:
                         }
                         buffer->Release();
                         buffer = nullptr; 
-                    }
-                    
-                    pTexture->Release();
+                    }                    
                 }
 
 				lock.lock();
