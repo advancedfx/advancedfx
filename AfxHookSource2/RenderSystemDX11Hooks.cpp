@@ -192,6 +192,8 @@ public:
                 m_CurrentCpuTexture2 = nullptr;
             } else {
                 StartProcess(nullptr);
+                delete m_CurrentCpuTexture2;
+                m_CurrentCpuTexture2 = nullptr;
             }
         }
         if(m_CurrentCpuTexture){
