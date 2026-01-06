@@ -66,6 +66,5 @@ namespace advancedfx {
 		CImageFormat m_Format;
 		CGrowingBuffer * m_pBuffer;
 		TGrowingBufferPool<bThreadSafe>* m_pPool;
-		size_t m_BufferBytesAllocated;
 	};	
 }
