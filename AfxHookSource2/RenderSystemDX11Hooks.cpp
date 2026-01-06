@@ -159,7 +159,7 @@ public:
             pDeviceContext->GetDevice(&pDevice);
             if(pDevice) {
                 std::unique_lock<std::mutex> lock(m_DoneTexturesMutex);
-                if(2 <= m_NumCpuTextures) {
+                if(3 <= m_NumCpuTextures) {
                     // rate limit to prevent drowning in own produce.
                     m_DoneTexturesCv.wait(lock,[this]{return !m_CpuTexturesDone.empty();});
                     m_CurrentCpuTexture = m_CpuTexturesDone.front();
