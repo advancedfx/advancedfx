@@ -494,6 +494,7 @@ private:
                         }
                         break;
                     default:
+                        buffer->AddRef();
                         break;
                     }
 
