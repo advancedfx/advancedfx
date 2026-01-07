@@ -7,6 +7,7 @@
 
 using namespace Afx::BinUtils;
 
+AFXADDR_DEF(cs2_engine_HostStateRequest_Start)
 AFXADDR_DEF(cs2_engine_CRenderService_OnClientOutput);
 
 AFXADDR_DEF(cs2_SceneSystem_WaitForRenderingToComplete_vtable_idx);
@@ -14,8 +15,53 @@ AFXADDR_DEF(cs2_SceneSystem_FrameUpdate_vtable_idx);
 
 void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
 {
-    ImageSectionsReader sections((HMODULE)engine2Dll);
-    MemRange textRange = sections.GetMemRange();
+	MemRange textRange = MemRange(0, 0);
+	{
+		ImageSectionsReader imageSectionsReader((HMODULE)engine2Dll);
+		if (!imageSectionsReader.Eof())
+		{
+			textRange = imageSectionsReader.GetMemRange();
+		}
+		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
+
+    /*  cs2_engine_HostStateRequest_Start
+        The function in question references this string: "HostStateRequest::Start(HSR_QUIT)\n"
+                                FUN_180217fc0                                   XREF[4]:     FUN_18021a010:18021a18e(c), 
+                                                                                            1805ba12c(*), 1805ba13c(*), 
+                                                                                            18091557c(*)  
+        180217fc0 40 53           PUSH       RBX
+        180217fc2 48 83 ec 40     SUB        RSP,0x40
+        180217fc6 8b 01           MOV        EAX,dword ptr [RCX]
+        180217fc8 48 8b d9        MOV        RBX,RCX
+        180217fcb c6 41 18 01     MOV        byte ptr [RCX + 0x18],0x1
+        180217fcf 83 f8 02        CMP        EAX,0x2
+        180217fd2 74 07           JZ         LAB_180217fdb
+        180217fd4 83 f8 04        CMP        EAX,0x4
+        180217fd7 75 21           JNZ        LAB_180217ffa
+        180217fd9 eb 0d           JMP        LAB_180217fe8
+        [....]
+        180218037 84 c0           TEST       AL,AL
+        180218039 74 18           JZ         LAB_180218053
+        18021803b 8b 0d f7        MOV        ECX,dword ptr [DAT_1808ec238]
+                    41 6d 00
+        180218041 4c 8d 05        LEA        R8,[s_HostStateRequest::Start(HSR_QUIT_1805648   = "HostStateRequest::Start(HSR_Q
+                    d8 c7 34 00
+        180218048 ba 02 00        MOV        EDX,0x2
+                    00 00
+        18021804d ff 15 fd        CALL       qword ptr [->TIER0.DLL::LoggingSystem_Log]       = 005e034a
+                    17 25 00
+        [....]
+    */
+    {
+		MemRange result = FindPatternString(textRange, "40 53 48 83 ec 40 8b 01 48 8b d9 c6 41 18 01 83 f8 02 74 07 83 f8 04 75 21 eb 0d");
+																	  
+		if (!result.IsEmpty()) {
+            AFXADDR_SET(cs2_engine_HostStateRequest_Start, result.Start);
+		}
+		else
+			ErrorBox(MkErrStr(__FILE__, __LINE__));
+    }
 
     /*  cs2_engine_CRenderService_OnClientOutput
 

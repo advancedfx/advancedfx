@@ -1,63 +1,22 @@
 #include "stdafx.h"
 #include "ImageTransformer.h"
+#include "ImageBufferThreadSafe.h"
 #include "RefCountedThreadSafe.h"
 #include "AfxConsole.h"
 
 namespace advancedfx {
 namespace ImageTransformer {
 
-	class CAfxImageBufferCapture
-		: public advancedfx::CRefCountedThreadSafe
-		, public ICapture
-	{
-	public:
-		static class CAfxImageBufferCapture* Create(class IImageBufferPool * imageBufferPool, const class advancedfx::CImageFormat& format) {
-			class CAfxImageBufferCapture* result = new CAfxImageBufferCapture(imageBufferPool);
-			result->AddRef();
-			if (!result->AutoRealloc(format)) {
-				result->Release();
-				advancedfx::Warning("CAfxImageBufferCapture::Create: Failed to reallocate buffer.\n");
-				return nullptr;
-			}
-			return result;
+	static CImageBufferThreadSafe* AquireFormatedImageBuffer(CGrowingBufferPoolThreadSafe * imageBufferPool, const class advancedfx::CImageFormat& format) {
+		auto result = new CImageBufferThreadSafe(imageBufferPool);
+		result->AddRef();
+		if (!result->GrowAlloc(format)) {
+			result->Release();
+			advancedfx::Warning("AquireFormatedImageBuffer: Failed to GrowAlloc buffer.\n");
+			return nullptr;
 		}
-
-		virtual void AddRef() override {
-			advancedfx::CRefCountedThreadSafe::AddRef();
-		}
-
-		virtual void Release() override {
-			advancedfx::CRefCountedThreadSafe::Release();
-		}
-
-		virtual const advancedfx::IImageBuffer* GetBuffer() const {
-			return m_ImageBuffer;
-		}
-
-		void * GetImageBufferDataRw() const {
-			return m_ImageBuffer->Buffer;
-		}
-
-	protected:
-		CAfxImageBufferCapture(class IImageBufferPool * imageBufferPool)
-			: advancedfx::CRefCountedThreadSafe()
-            , m_ImageBufferPool(imageBufferPool)
-		{
-			m_ImageBuffer = m_ImageBufferPool->AquireBuffer();
-		}
-
-		virtual ~CAfxImageBufferCapture() {
-			m_ImageBufferPool->ReleaseBuffer(m_ImageBuffer);
-		}
-
-	private:
-    	advancedfx::CImageBuffer* m_ImageBuffer;
-        class IImageBufferPool * m_ImageBufferPool;
-	
-		bool AutoRealloc(const class advancedfx::CImageFormat& format) {
-			return m_ImageBuffer->AutoRealloc(format);
-		}
-	};
+		return result;
+	}
 
 	class CTranformTask
 		: public advancedfx::CThreadPool::CTask
@@ -81,52 +40,45 @@ namespace ImageTransformer {
 
 	class ITransform {
 	public:
-		virtual CAfxImageBufferCapture* CreateOutput(class IImageBufferPool * imageBufferPool) = 0;
+		virtual IImageBufferThreadSafe* CreateOutput(CGrowingBufferPoolThreadSafe * imageBufferPool) = 0;
 		virtual size_t GetTaskSize() = 0;
 		virtual CTranformTask* CreateTask(std::atomic_int& task_counter, int taskIndex, int taskSize) = 0;
 	};
 	class CTransformAColorBRedAsAlpha
 		: public ITransform {
 	public:
-		CTransformAColorBRedAsAlpha(class ICapture* aColor, class ICapture* bRedAsAlpha)
-			: m_CaptureA(aColor)
-			, m_CaptureB(bRedAsAlpha)
+		CTransformAColorBRedAsAlpha(IImageBufferThreadSafe* aColor, IImageBufferThreadSafe* bRedAsAlpha)
+			: m_BufferA(aColor)
+			, m_BufferB(bRedAsAlpha)
 		{
 		}
 
-		virtual CAfxImageBufferCapture* CreateOutput(class IImageBufferPool * imageBufferPool) {
-			if (nullptr != m_CaptureA && nullptr != m_CaptureB) {
-
-				if (const class advancedfx::IImageBuffer* pBufferA = m_CaptureA->GetBuffer()) {
-					if (const unsigned char* pDataA = static_cast<const unsigned char*>(pBufferA->GetImageBufferData())) {
-						m_pInDataA = pDataA;
-						if (const class advancedfx::CImageFormat* pFormatA = pBufferA->GetImageBufferFormat()) {
-							m_InFormatA = *pFormatA;
-							if (m_InFormatA.Format == advancedfx::ImageFormat::BGRA || m_InFormatA.Format == advancedfx::ImageFormat::BGR) {
-
-								if (const class advancedfx::IImageBuffer* pBufferB = m_CaptureB->GetBuffer()) {
-									if (const unsigned char* pDataB = static_cast<const unsigned char*>(pBufferB->GetImageBufferData())) {
-										m_pInDataB = pDataB;
-										if (const class advancedfx::CImageFormat* pFormatB = pBufferB->GetImageBufferFormat()) {
-											m_InFormatB = *pFormatB;
-											if (
-												(m_InFormatB.Format == advancedfx::ImageFormat::BGRA || m_InFormatB.Format == advancedfx::ImageFormat::BGR)
-												&& m_InFormatB.Width == m_InFormatA.Width
-												&& m_InFormatB.Height == m_InFormatA.Height
-												&& m_InFormatB.Origin == m_InFormatA.Origin)
-											{
-												m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::BGRA, m_InFormatA.Width, m_InFormatA.Height);
-												m_OutFormat.SetOrigin(m_InFormatA.Origin);
-												class CAfxImageBufferCapture* pOutCapture = CAfxImageBufferCapture::Create(imageBufferPool,m_OutFormat);
-												if (pOutCapture) {
-													m_pOutData = static_cast<unsigned char*>(pOutCapture->GetImageBufferDataRw());
-												}
-												return pOutCapture;
-											}
+		virtual IImageBufferThreadSafe* CreateOutput(CGrowingBufferPoolThreadSafe * imageBufferPool) {
+			if (nullptr != m_BufferA && nullptr != m_BufferB) {
+				if (const unsigned char* pDataA = static_cast<const unsigned char*>(m_BufferA->GetImageBufferData())) {
+					m_pInDataA = pDataA;
+					if (const class advancedfx::CImageFormat* pFormatA = m_BufferA->GetImageBufferFormat()) {
+						m_InFormatA = *pFormatA;
+						if (m_InFormatA.Format == advancedfx::ImageFormat::BGRA || m_InFormatA.Format == advancedfx::ImageFormat::BGR) {
+							if (const unsigned char* pDataB = static_cast<const unsigned char*>(m_BufferB->GetImageBufferData())) {
+								m_pInDataB = pDataB;
+								if (const class advancedfx::CImageFormat* pFormatB = m_BufferB->GetImageBufferFormat()) {
+									m_InFormatB = *pFormatB;
+									if (
+										(m_InFormatB.Format == advancedfx::ImageFormat::BGRA || m_InFormatB.Format == advancedfx::ImageFormat::BGR)
+										&& m_InFormatB.Width == m_InFormatA.Width
+										&& m_InFormatB.Height == m_InFormatA.Height
+										&& m_InFormatB.Origin == m_InFormatA.Origin)
+									{
+										m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::BGRA, m_InFormatA.Width, m_InFormatA.Height);
+										m_OutFormat.SetOrigin(m_InFormatA.Origin);
+										CImageBufferThreadSafe* pOutBuffer = AquireFormatedImageBuffer(imageBufferPool,m_OutFormat);
+										if (pOutBuffer) {
+											m_pOutData = static_cast<unsigned char*>(pOutBuffer->GetImageBufferData());
 										}
+										return pOutBuffer;
 									}
 								}
-
 							}
 						}
 					}
@@ -195,8 +147,8 @@ namespace ImageTransformer {
 			size_t height;
 		};
 
-		class ICapture* m_CaptureA;
-		class ICapture* m_CaptureB;
+		IImageBufferThreadSafe* m_BufferA;
+		IImageBufferThreadSafe* m_BufferB;
 		advancedfx::CImageFormat m_InFormatA;
 		advancedfx::CImageFormat m_InFormatB;
 		const unsigned char* m_pInDataA;
@@ -208,45 +160,38 @@ namespace ImageTransformer {
 	class CTransformMatte
 		: public ITransform {
 	public:
-		CTransformMatte(class ICapture* captureEntBlack, class ICapture* captureEntWhite)
-			: m_CaptureEntBlack(captureEntBlack)
-			, m_CaptureEntWhite(captureEntWhite)
+		CTransformMatte(IImageBufferThreadSafe* bufferEntBlack, IImageBufferThreadSafe* bufferEntWhite)
+			: m_BufferEntBlack(bufferEntBlack)
+			, m_BufferEntWhite(bufferEntWhite)
 		{
 		}
 
-		virtual CAfxImageBufferCapture* CreateOutput(class IImageBufferPool * imageBufferPool) {
-			if (nullptr != m_CaptureEntBlack && nullptr != m_CaptureEntWhite) {
-
-				if (const class advancedfx::IImageBuffer* pBufferEntBlack = m_CaptureEntBlack->GetBuffer()) {
-					if (const unsigned char* pDataEntBlack = static_cast<const unsigned char*>(pBufferEntBlack->GetImageBufferData())) {
-						m_pInDataEntBlack = pDataEntBlack;
-						if (const class advancedfx::CImageFormat* pFormatEntBlack = pBufferEntBlack->GetImageBufferFormat()) {
-							m_InFormatEntBlack = *pFormatEntBlack;
-							if (m_InFormatEntBlack.Format == advancedfx::ImageFormat::BGRA || m_InFormatEntBlack.Format == advancedfx::ImageFormat::BGR) {
-
-								if (const class advancedfx::IImageBuffer* pBufferEntWhite = m_CaptureEntWhite->GetBuffer()) {
-									if (const unsigned char* pDataEntWhite = static_cast<const unsigned char*>(pBufferEntWhite->GetImageBufferData())) {
-										m_pInDataEntWhite = pDataEntWhite;
-										if (const class advancedfx::CImageFormat* pFormatEntWhite = pBufferEntWhite->GetImageBufferFormat()) {
-											m_InFormatEntWhite = *pFormatEntWhite;
-											if (
-												(m_InFormatEntWhite.Format == advancedfx::ImageFormat::BGRA || m_InFormatEntWhite.Format == advancedfx::ImageFormat::BGR)
-												&& m_InFormatEntWhite.Width == m_InFormatEntBlack.Width
-												&& m_InFormatEntWhite.Height == m_InFormatEntBlack.Height
-												&& m_InFormatEntWhite.Origin == m_InFormatEntBlack.Origin)
-											{
-												m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::BGRA, m_InFormatEntBlack.Width, m_InFormatEntBlack.Height);
-												m_OutFormat.SetOrigin(m_InFormatEntBlack.Origin);
-												class CAfxImageBufferCapture* pOutCapture = CAfxImageBufferCapture::Create(imageBufferPool, m_OutFormat);
-												if (pOutCapture) {
-													m_pOutData = static_cast<unsigned char*>(pOutCapture->GetImageBufferDataRw());
-												}
-												return pOutCapture;
-											}
+		virtual IImageBufferThreadSafe* CreateOutput(CGrowingBufferPoolThreadSafe * imageBufferPool) {
+			if (nullptr != m_BufferEntBlack && nullptr != m_BufferEntWhite) {
+				if (const unsigned char* pDataEntBlack = static_cast<const unsigned char*>(m_BufferEntBlack->GetImageBufferData())) {
+					m_pInDataEntBlack = pDataEntBlack;
+					if (const class advancedfx::CImageFormat* pFormatEntBlack = m_BufferEntBlack->GetImageBufferFormat()) {
+						m_InFormatEntBlack = *pFormatEntBlack;
+						if (m_InFormatEntBlack.Format == advancedfx::ImageFormat::BGRA || m_InFormatEntBlack.Format == advancedfx::ImageFormat::BGR) {
+							if (const unsigned char* pDataEntWhite = static_cast<const unsigned char*>(m_BufferEntWhite->GetImageBufferData())) {
+								m_pInDataEntWhite = pDataEntWhite;
+								if (const class advancedfx::CImageFormat* pFormatEntWhite = m_BufferEntWhite->GetImageBufferFormat()) {
+									m_InFormatEntWhite = *pFormatEntWhite;
+									if (
+										(m_InFormatEntWhite.Format == advancedfx::ImageFormat::BGRA || m_InFormatEntWhite.Format == advancedfx::ImageFormat::BGR)
+										&& m_InFormatEntWhite.Width == m_InFormatEntBlack.Width
+										&& m_InFormatEntWhite.Height == m_InFormatEntBlack.Height
+										&& m_InFormatEntWhite.Origin == m_InFormatEntBlack.Origin)
+									{
+										m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::BGRA, m_InFormatEntBlack.Width, m_InFormatEntBlack.Height);
+										m_OutFormat.SetOrigin(m_InFormatEntBlack.Origin);
+										CImageBufferThreadSafe* pOutBuffer = AquireFormatedImageBuffer(imageBufferPool, m_OutFormat);
+										if (pOutBuffer) {
+											m_pOutData = static_cast<unsigned char*>(pOutBuffer->GetImageBufferData());
 										}
+										return pOutBuffer;
 									}
 								}
-
 							}
 						}
 					}
@@ -327,8 +272,8 @@ namespace ImageTransformer {
 			size_t height;
 		};
 
-		class ICapture* m_CaptureEntBlack;
-		class ICapture* m_CaptureEntWhite;
+		IImageBufferThreadSafe* m_BufferEntBlack;
+		IImageBufferThreadSafe* m_BufferEntWhite;
 		advancedfx::CImageFormat m_InFormatEntBlack;
 		advancedfx::CImageFormat m_InFormatEntWhite;
 		const unsigned char* m_pInDataEntBlack;
@@ -340,27 +285,25 @@ namespace ImageTransformer {
 	class CTransformStripAlpha
 		: public ITransform {
 	public:
-		CTransformStripAlpha(class ICapture* capture)
-			: m_Capture(capture)
+		CTransformStripAlpha(IImageBufferThreadSafe* buffer)
+			: m_Buffer(buffer)
 		{
 		}
 
-		virtual CAfxImageBufferCapture* CreateOutput(class IImageBufferPool * imageBufferPool) {
-			if (nullptr != m_Capture) {
-				if (const class advancedfx::IImageBuffer* pBuffer = m_Capture->GetBuffer()) {
-					if (const unsigned char* pData = static_cast<const unsigned char*>(pBuffer->GetImageBufferData())) {
-						if (const class advancedfx::CImageFormat* pFormat = pBuffer->GetImageBufferFormat()) {
-							m_InFormat = *pFormat;
-							if (m_InFormat.Format == advancedfx::ImageFormat::BGRA) {
-								m_pInData = pData;
-								m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::BGR, m_InFormat.Width, m_InFormat.Height);
-								m_OutFormat.SetOrigin(m_InFormat.Origin);
-								class CAfxImageBufferCapture* pOutCapture = CAfxImageBufferCapture::Create(imageBufferPool, m_OutFormat);
-								if (pOutCapture) {
-									m_pOutData = static_cast<unsigned char*>(pOutCapture->GetImageBufferDataRw());
-								}
-								return pOutCapture;
+		virtual IImageBufferThreadSafe* CreateOutput(CGrowingBufferPoolThreadSafe * imageBufferPool) {
+			if (nullptr != m_Buffer) {
+				if (const unsigned char* pData = static_cast<const unsigned char*>(m_Buffer->GetImageBufferData())) {
+					if (const class advancedfx::CImageFormat* pFormat = m_Buffer->GetImageBufferFormat()) {
+						m_InFormat = *pFormat;
+						if (m_InFormat.Format == advancedfx::ImageFormat::BGRA) {
+							m_pInData = pData;
+							m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::BGR, m_InFormat.Width, m_InFormat.Height);
+							m_OutFormat.SetOrigin(m_InFormat.Origin);
+							CImageBufferThreadSafe* pOutBuffer = AquireFormatedImageBuffer(imageBufferPool, m_OutFormat);
+							if (pOutBuffer) {
+								m_pOutData = static_cast<unsigned char*>(pOutBuffer->GetImageBufferData());
 							}
+							return pOutBuffer;
 						}
 					}
 				}
@@ -414,7 +357,7 @@ namespace ImageTransformer {
 			size_t height;
 		};
 
-		class ICapture* m_Capture;
+		IImageBufferThreadSafe* m_Buffer;
 		advancedfx::CImageFormat m_InFormat;
 		const unsigned char* m_pInData;
 		advancedfx::CImageFormat m_OutFormat;
@@ -424,27 +367,25 @@ namespace ImageTransformer {
 	class CTransformRgbaToBgr
 		: public ITransform {
 	public:
-		CTransformRgbaToBgr(class ICapture* capture)
-			: m_Capture(capture)
+		CTransformRgbaToBgr(IImageBufferThreadSafe* buffer)
+			: m_Buffer(buffer)
 		{
 		}
 
-		virtual CAfxImageBufferCapture* CreateOutput(class IImageBufferPool * imageBufferPool) {
-			if (nullptr != m_Capture) {
-				if (const class advancedfx::IImageBuffer* pBuffer = m_Capture->GetBuffer()) {
-					if (const unsigned char* pData = static_cast<const unsigned char*>(pBuffer->GetImageBufferData())) {
-						if (const class advancedfx::CImageFormat* pFormat = pBuffer->GetImageBufferFormat()) {
-							m_InFormat = *pFormat;
-							if (m_InFormat.Format == advancedfx::ImageFormat::RGBA) {
-								m_pInData = pData;
-								m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::BGR, m_InFormat.Width, m_InFormat.Height);
-								m_OutFormat.SetOrigin(m_InFormat.Origin);
-								class CAfxImageBufferCapture* pOutCapture = CAfxImageBufferCapture::Create(imageBufferPool, m_OutFormat);
-								if (pOutCapture) {
-									m_pOutData = static_cast<unsigned char*>(pOutCapture->GetImageBufferDataRw());
-								}
-								return pOutCapture;
+		virtual IImageBufferThreadSafe* CreateOutput(CGrowingBufferPoolThreadSafe * imageBufferPool) {
+			if (nullptr != m_Buffer) {
+				if (const unsigned char* pData = static_cast<const unsigned char*>(m_Buffer->GetImageBufferData())) {
+					if (const class advancedfx::CImageFormat* pFormat = m_Buffer->GetImageBufferFormat()) {
+						m_InFormat = *pFormat;
+						if (m_InFormat.Format == advancedfx::ImageFormat::RGBA) {
+							m_pInData = pData;
+							m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::BGR, m_InFormat.Width, m_InFormat.Height);
+							m_OutFormat.SetOrigin(m_InFormat.Origin);
+							CImageBufferThreadSafe* pOutBuffer = AquireFormatedImageBuffer(imageBufferPool, m_OutFormat);
+							if (pOutBuffer) {
+								m_pOutData = static_cast<unsigned char*>(pOutBuffer->GetImageBufferData());
 							}
+							return pOutBuffer;
 						}
 					}
 				}
@@ -498,7 +439,7 @@ namespace ImageTransformer {
 			size_t height;
 		};
 
-		class ICapture* m_Capture;
+		IImageBufferThreadSafe* m_Buffer;
 		advancedfx::CImageFormat m_InFormat;
 		const unsigned char* m_pInData;
 		advancedfx::CImageFormat m_OutFormat;
@@ -508,27 +449,25 @@ namespace ImageTransformer {
 	class CTransformRgbaToBgra
 		: public ITransform {
 	public:
-		CTransformRgbaToBgra(class ICapture* capture)
-			: m_Capture(capture)
+		CTransformRgbaToBgra(IImageBufferThreadSafe* buffer)
+			: m_Buffer(buffer)
 		{
 		}
 
-		virtual CAfxImageBufferCapture* CreateOutput(class IImageBufferPool * imageBufferPool) {
-			if (nullptr != m_Capture) {
-				if (const class advancedfx::IImageBuffer* pBuffer = m_Capture->GetBuffer()) {
-					if (const unsigned char* pData = static_cast<const unsigned char*>(pBuffer->GetImageBufferData())) {
-						if (const class advancedfx::CImageFormat* pFormat = pBuffer->GetImageBufferFormat()) {
-							m_InFormat = *pFormat;
-							if (m_InFormat.Format == advancedfx::ImageFormat::RGBA) {
-								m_pInData = pData;
-								m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::BGRA, m_InFormat.Width, m_InFormat.Height);
-								m_OutFormat.SetOrigin(m_InFormat.Origin);
-								class CAfxImageBufferCapture* pOutCapture = CAfxImageBufferCapture::Create(imageBufferPool, m_OutFormat);
-								if (pOutCapture) {
-									m_pOutData = static_cast<unsigned char*>(pOutCapture->GetImageBufferDataRw());
-								}
-								return pOutCapture;
+		virtual IImageBufferThreadSafe* CreateOutput(CGrowingBufferPoolThreadSafe * imageBufferPool) {
+			if (nullptr != m_Buffer) {
+				if (const unsigned char* pData = static_cast<const unsigned char*>(m_Buffer->GetImageBufferData())) {
+					if (const class advancedfx::CImageFormat* pFormat = m_Buffer->GetImageBufferFormat()) {
+						m_InFormat = *pFormat;
+						if (m_InFormat.Format == advancedfx::ImageFormat::RGBA) {
+							m_pInData = pData;
+							m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::BGRA, m_InFormat.Width, m_InFormat.Height);
+							m_OutFormat.SetOrigin(m_InFormat.Origin);
+							CImageBufferThreadSafe* pOutBuffer = AquireFormatedImageBuffer(imageBufferPool, m_OutFormat);
+							if (pOutBuffer) {
+								m_pOutData = static_cast<unsigned char*>(pOutBuffer->GetImageBufferData());
 							}
+							return pOutBuffer;
 						}
 					}
 				}
@@ -583,7 +522,7 @@ namespace ImageTransformer {
 			size_t height;
 		};
 
-		class ICapture* m_Capture;
+		IImageBufferThreadSafe* m_Buffer;
 		advancedfx::CImageFormat m_InFormat;
 		const unsigned char* m_pInData;
 		advancedfx::CImageFormat m_OutFormat;
@@ -593,43 +532,33 @@ namespace ImageTransformer {
 	class CTransformDepthF 
 		: public ITransform {
 	public:
-		CTransformDepthF(class ICapture* capture, float depthScale, float depthOfs)
-			: m_Capture(capture)
+		CTransformDepthF(IImageBufferThreadSafe* buffer, float depthScale, float depthOfs)
+			: m_Buffer(buffer)
 			, m_DepthScale(depthScale)
 			, m_DepthOfs(depthOfs)
 		{
 		}
 
-		virtual CAfxImageBufferCapture* CreateOutput(class IImageBufferPool * imageBufferPool) {
-			if (nullptr != m_Capture) {
-				if (const class advancedfx::IImageBuffer* pBuffer = m_Capture->GetBuffer()) {
-					if (const unsigned char* pData = static_cast<const unsigned char*>(pBuffer->GetImageBufferData())) {
-						if (const class advancedfx::CImageFormat* pFormat = pBuffer->GetImageBufferFormat()) {
-							m_InFormat = *pFormat;
-							if (m_InFormat.Format == advancedfx::ImageFormat::ZFloat) {
-								m_pInData = pData;
-								m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::ZFloat, m_InFormat.Width, m_InFormat.Height);
-								m_OutFormat.SetOrigin(m_InFormat.Origin);
-								class CAfxImageBufferCapture* pOutCapture = CAfxImageBufferCapture::Create(imageBufferPool, m_OutFormat);
-								if (pOutCapture) {
-									m_pOutData = static_cast<unsigned char*>(pOutCapture->GetImageBufferDataRw());
-								}
-								return pOutCapture;
+		virtual IImageBufferThreadSafe* CreateOutput(CGrowingBufferPoolThreadSafe * imageBufferPool) {
+			if (nullptr != m_Buffer) {
+				if (const unsigned char* pData = static_cast<const unsigned char*>(m_Buffer->GetImageBufferData())) {
+					if (const class advancedfx::CImageFormat* pFormat = m_Buffer->GetImageBufferFormat()) {
+						m_InFormat = *pFormat;
+						if (m_InFormat.Format == advancedfx::ImageFormat::ZFloat) {
+							m_pInData = pData;
+							m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::ZFloat, m_InFormat.Width, m_InFormat.Height);
+							m_OutFormat.SetOrigin(m_InFormat.Origin);
+							CImageBufferThreadSafe* pOutBuffer = AquireFormatedImageBuffer(imageBufferPool, m_OutFormat);
+							if (pOutBuffer) {
+								m_pOutData = static_cast<unsigned char*>(pOutBuffer->GetImageBufferData());
 							}
+							return pOutBuffer;
 						}
 					}
 				}
 			}
 
 			return nullptr;
-		}
-
-		virtual CAfxImageBufferCapture* CreateCapture(class IImageBufferPool * imageBufferPool) {
-			class CAfxImageBufferCapture* pOutCapture = CAfxImageBufferCapture::Create(imageBufferPool, m_OutFormat);
-			if(pOutCapture) {
-				m_pOutData = static_cast<unsigned char*>(pOutCapture->GetImageBufferDataRw());
-			}
-			return pOutCapture;							
 		}
 
 		virtual size_t GetTaskSize() {
@@ -682,7 +611,7 @@ namespace ImageTransformer {
 			float depthOfs;
 		};
 
-		class ICapture* m_Capture;
+		IImageBufferThreadSafe* m_Buffer;
 		advancedfx::CImageFormat m_InFormat;
 		const unsigned char* m_pInData;
 		advancedfx::CImageFormat m_OutFormat;
@@ -694,29 +623,27 @@ namespace ImageTransformer {
 	class CTransformDepth24
 		: public ITransform {
 	public:
-		CTransformDepth24(class ICapture* capture, float depthScale, float depthOfs)
-			: m_Capture(capture)
+		CTransformDepth24(IImageBufferThreadSafe* buffer, float depthScale, float depthOfs)
+			: m_Buffer(buffer)
 			, m_DepthScale(depthScale)
 			, m_DepthOfs(depthOfs)
 		{
 		}
 
-		virtual CAfxImageBufferCapture* CreateOutput(class IImageBufferPool * imageBufferPool) {
-			if (nullptr != m_Capture) {
-				if (const class advancedfx::IImageBuffer* pBuffer = m_Capture->GetBuffer()) {
-					if (const unsigned char* pData = static_cast<const unsigned char*>(pBuffer->GetImageBufferData())) {
-						if (const class advancedfx::CImageFormat* pFormat = pBuffer->GetImageBufferFormat()) {
-							m_InFormat = *pFormat;
-							if (m_InFormat.Format == advancedfx::ImageFormat::BGR || m_InFormat.Format == advancedfx::ImageFormat::BGRA) {
-								m_pInData = pData;
-								m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::ZFloat, m_InFormat.Width, m_InFormat.Height);
-								m_OutFormat.SetOrigin(m_InFormat.Origin);
-								class CAfxImageBufferCapture* pOutCapture = CAfxImageBufferCapture::Create(imageBufferPool, m_OutFormat);
-								if (pOutCapture) {
-									m_pOutData = static_cast<unsigned char*>(pOutCapture->GetImageBufferDataRw());
-								}
-								return pOutCapture;
+		virtual IImageBufferThreadSafe* CreateOutput(CGrowingBufferPoolThreadSafe * imageBufferPool) {
+			if (nullptr != m_Buffer) {
+				if (const unsigned char* pData = static_cast<const unsigned char*>(m_Buffer->GetImageBufferData())) {
+					if (const class advancedfx::CImageFormat* pFormat = m_Buffer->GetImageBufferFormat()) {
+						m_InFormat = *pFormat;
+						if (m_InFormat.Format == advancedfx::ImageFormat::BGR || m_InFormat.Format == advancedfx::ImageFormat::BGRA) {
+							m_pInData = pData;
+							m_OutFormat = advancedfx::CImageFormat(advancedfx::ImageFormat::ZFloat, m_InFormat.Width, m_InFormat.Height);
+							m_OutFormat.SetOrigin(m_InFormat.Origin);
+							CImageBufferThreadSafe* pOutBuffer = AquireFormatedImageBuffer(imageBufferPool, m_OutFormat);
+							if (pOutBuffer) {
+								m_pOutData = static_cast<unsigned char*>(pOutBuffer->GetImageBufferData());
 							}
+							return pOutBuffer;
 						}
 					}
 				}
@@ -782,7 +709,7 @@ namespace ImageTransformer {
 			float depthOfs;
 		};
 
-		class ICapture* m_Capture;
+		IImageBufferThreadSafe* m_Buffer;
 		advancedfx::CImageFormat m_InFormat;
 		const unsigned char* m_pInData;
 		advancedfx::CImageFormat m_OutFormat;
@@ -791,8 +718,8 @@ namespace ImageTransformer {
 		float m_DepthOfs;
 	};
 
-class ICapture* Transform(class CThreadPool * threadPool, class IImageBufferPool * imageBufferPool, class ITransform* transform) {
-    if (class CAfxImageBufferCapture* pOutCapture = transform->CreateOutput(imageBufferPool)) {
+IImageBufferThreadSafe* Transform(class CThreadPool * threadPool, CGrowingBufferPoolThreadSafe * imageBufferPool, class ITransform* transform) {
+    if (IImageBufferThreadSafe* pOutBuffer = transform->CreateOutput(imageBufferPool)) {
         size_t outTaskSize = transform->GetTaskSize();
         size_t thread_count = std::min(threadPool->GetThreadCount() + 1, outTaskSize);
         size_t lines_per_task = outTaskSize / thread_count;
@@ -819,76 +746,66 @@ class ICapture* Transform(class CThreadPool * threadPool, class IImageBufferPool
         }
         while (0 < task_counter) {}
 
-        return pOutCapture;
+        return pOutBuffer;
     }
 
     return nullptr;
 }
 
 /*
-static class ICapture* DummyCapture() {
+static IImageBufferThreadSafe* DummyBuffer() {
     advancedfx::CImageFormat format(advancedfx::ImageFormat::BGRA, 1280, 720);
     format.SetOrigin(advancedfx::ImageOrigin::TopLeft);
-    CAfxImageBufferCapture * result = CAfxImageBufferCapture::Create(format);
+    CImageBufferThreadSafe * result = AquireFormatedImageBuffer(format);
     result->AddRef();
     return result;
 }
 */
 
-class ICapture* StripAlpha(class CThreadPool * threadPool, class IImageBufferPool * imageBufferPool, class ICapture* capture) {
+IImageBufferThreadSafe* StripAlpha(class CThreadPool * threadPool, CGrowingBufferPoolThreadSafe * imageBufferPool, IImageBufferThreadSafe* buffer) {
 
-    if (nullptr == capture) return nullptr;
+    if (nullptr == buffer) return nullptr;
 
-    if (const class advancedfx::IImageBuffer* pBuffer = capture->GetBuffer()) {
-        if (const class advancedfx::CImageFormat* pFormat = pBuffer->GetImageBufferFormat()) {
-            if (pFormat->Format == advancedfx::ImageFormat::BGR) {
-                capture->AddRef();
-                return capture;
-            }
-        }
-    }
+	if (const class advancedfx::CImageFormat* pFormat = buffer->GetImageBufferFormat()) {
+		if (pFormat->Format == advancedfx::ImageFormat::BGR) {
+			buffer->AddRef();
+			return buffer;
+		}
+	}
 
-    CTransformStripAlpha transform(capture);
+	CTransformStripAlpha transform(buffer);
     return Transform(threadPool, imageBufferPool, &transform);
 }
 
-class ICapture* RgbaToBgr(class CThreadPool * threadPool, class IImageBufferPool * imageBufferPool, class ICapture* capture) {
-
-    if (nullptr == capture) return nullptr;
-
-    CTransformRgbaToBgr transform(capture);
+IImageBufferThreadSafe* RgbaToBgr(class CThreadPool * threadPool, CGrowingBufferPoolThreadSafe * imageBufferPool, IImageBufferThreadSafe* buffer) {
+    CTransformRgbaToBgr transform(buffer);
     return Transform(threadPool, imageBufferPool, &transform);
 }
 
-class ICapture* RgbaToBgra(class CThreadPool * threadPool, class IImageBufferPool * imageBufferPool, class ICapture* capture) {
-
-    if (nullptr == capture) return nullptr;
-
-    CTransformRgbaToBgra transform(capture);
+IImageBufferThreadSafe* RgbaToBgra(class CThreadPool * threadPool, CGrowingBufferPoolThreadSafe * imageBufferPool, IImageBufferThreadSafe* buffer) {
+    CTransformRgbaToBgra transform(buffer);
     return Transform(threadPool, imageBufferPool, &transform);
 }
 
-
-class ICapture* DepthF(class CThreadPool * threadPool, class IImageBufferPool * imageBufferPool, class ICapture* capture, float depthScale, float depthOfs) {
-    CTransformDepthF transform(capture, depthScale, depthOfs);
+IImageBufferThreadSafe* DepthF(class CThreadPool * threadPool, CGrowingBufferPoolThreadSafe * imageBufferPool, IImageBufferThreadSafe* buffer, float depthScale, float depthOfs) {
+    CTransformDepthF transform(buffer, depthScale, depthOfs);
     return Transform(threadPool, imageBufferPool, &transform);
 }
 
-class ICapture* Depth24(class CThreadPool * threadPool, class IImageBufferPool * imageBufferPool, class ICapture* capture, float depthScale, float depthOfs) {
-    CTransformDepth24 transform(capture, depthScale, depthOfs);
+IImageBufferThreadSafe* Depth24(class CThreadPool * threadPool, CGrowingBufferPoolThreadSafe * imageBufferPool, IImageBufferThreadSafe* buffer, float depthScale, float depthOfs) {
+    CTransformDepth24 transform(buffer, depthScale, depthOfs);
     return Transform(threadPool, imageBufferPool, &transform);
 }
 
-class ICapture* Matte(class CThreadPool * threadPool, class IImageBufferPool * imageBufferPool, class ICapture* captureEntBlack, class ICapture* captureEntWhite) {
-    CTransformMatte transform(captureEntBlack, captureEntWhite);
+IImageBufferThreadSafe* Matte(class CThreadPool * threadPool, CGrowingBufferPoolThreadSafe * imageBufferPool, IImageBufferThreadSafe* bufferEntBlack, IImageBufferThreadSafe* bufferEntWhite) {
+    CTransformMatte transform(bufferEntBlack, bufferEntWhite);
     return Transform(threadPool, imageBufferPool, &transform);
 }
 
-class ICapture* AColorBRedAsAlpha(class CThreadPool * threadPool, class IImageBufferPool * imageBufferPool, class ICapture* aColor, class ICapture* bRedAsAlpha) {
+IImageBufferThreadSafe* AColorBRedAsAlpha(class CThreadPool * threadPool, CGrowingBufferPoolThreadSafe * imageBufferPool, IImageBufferThreadSafe* aColor, IImageBufferThreadSafe* bRedAsAlpha) {
     CTransformAColorBRedAsAlpha transform(aColor, bRedAsAlpha);
     return Transform(threadPool, imageBufferPool, &transform);
 }
-
 
 } // namespace ImageTransformer {
 } // namespace advancedfx

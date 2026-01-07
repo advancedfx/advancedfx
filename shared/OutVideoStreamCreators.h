@@ -1,20 +1,21 @@
 #pragma once
 
 #include "RefCountedThreadSafe.h"
-#include "AfxImageBuffer.h"
+#include "GrowingBufferPoolThreadSafe.h"
+#include "ImageBufferThreadSafe.h"
 #include "AfxOutStreams.h"
 
 namespace advancedfx {
 
 class COutVideoStreamCreator
-	: public advancedfx::CRefCountedThreadSafe
+	: public CRefCountedThreadSafe
 {
 public:
-	virtual advancedfx::COutVideoStream* CreateOutVideoStream(const advancedfx::CImageFormat& imageFormat) const = 0;
+	virtual TIOutVideoStream<true>* CreateOutVideoStream(const CImageFormat& imageFormat) = 0;
 };
 
 class CClassicRecordingSettingsCreator
-	: public advancedfx::COutVideoStreamCreator
+	: public COutVideoStreamCreator
 {
 public:
 	CClassicRecordingSettingsCreator(const std::wstring & capturePath, bool bIfZip, bool bFormatBmpAndNotga)
@@ -24,8 +25,10 @@ public:
 
 	}
 
-	virtual advancedfx::COutVideoStream* CreateOutVideoStream(const advancedfx::CImageFormat& imageFormat) const override {
-		return new advancedfx::COutImageStream(imageFormat, m_CapturePath, m_bIfZip, m_bFormatBmpAndNotga);
+	virtual TIOutVideoStream<true>* CreateOutVideoStream(const CImageFormat& imageFormat) override {
+		auto result = new COutImageStream<true>(imageFormat, m_CapturePath, m_bIfZip, m_bFormatBmpAndNotga);
+		result->AddRef();
+		return result;
 	}
 
 private:
@@ -36,7 +39,7 @@ private:
 
 
 class CFfmpegRecordingSettingsCreator
-	: public advancedfx::COutVideoStreamCreator
+	: public COutVideoStreamCreator
 {
 public:
 	CFfmpegRecordingSettingsCreator(const std::wstring& capturePath, const std::wstring& ffmpegOptions, float frameRate)
@@ -46,8 +49,10 @@ public:
 
 	}
 
-	virtual advancedfx::COutVideoStream* CreateOutVideoStream(const advancedfx::CImageFormat& imageFormat) const override {
-		return new advancedfx::COutFFMPEGVideoStream(imageFormat, m_CapturePath, m_FfmpegOptions, m_FrameRate);
+	virtual TIOutVideoStream<true>* CreateOutVideoStream(const CImageFormat& imageFormat) override {
+		auto result = new COutFFMPEGVideoStream<true>(imageFormat, m_CapturePath, m_FfmpegOptions, m_FrameRate);;
+		result->AddRef();
+		return result;
 	}
 
 private:
@@ -57,10 +62,10 @@ private:
 };
 
 class CSamplingRecordingSettingsCreator
-	: public advancedfx::COutVideoStreamCreator
+	: public COutVideoStreamCreator
 {
 public:
-	CSamplingRecordingSettingsCreator(class advancedfx::COutVideoStreamCreator * outVideoStreamCreator, float frameRate, EasySamplerSettings::Method method, double frameDuration, double exposure, float frameStrength, IImageBufferPool * pImageBufferPool)
+	CSamplingRecordingSettingsCreator(class COutVideoStreamCreator * outVideoStreamCreator, float frameRate, EasySamplerSettings::Method method, double frameDuration, double exposure, float frameStrength, CGrowingBufferPoolThreadSafe * pImageBufferPool)
 		: m_OutVideoStreamCreator(outVideoStreamCreator)
 		, m_FrameRate(frameRate)
 		, m_Method(method)
@@ -72,8 +77,12 @@ public:
 		outVideoStreamCreator->AddRef();
 	}
 
-	virtual advancedfx::COutVideoStream* CreateOutVideoStream(const advancedfx::CImageFormat& imageFormat) const override {
-		return new advancedfx::COutSamplingStream(imageFormat, m_OutVideoStreamCreator->CreateOutVideoStream(imageFormat), m_FrameRate, m_Method, m_FrameDuration, m_Exposure, m_FrameStrength, m_pImageBufferPool);
+	virtual TIOutVideoStream<true>* CreateOutVideoStream(const CImageFormat& imageFormat) override {
+		auto outVideoStream = m_OutVideoStreamCreator->CreateOutVideoStream(imageFormat);
+		auto result = new COutSamplingStream<true>(imageFormat, outVideoStream, m_FrameRate, m_Method, m_FrameDuration, m_Exposure, m_FrameStrength, m_pImageBufferPool);
+		result->AddRef();
+		if(outVideoStream) outVideoStream->Release();
+		return result;		
 	}
 
 protected:
@@ -82,13 +91,13 @@ protected:
 	}
 
 private:
-	class advancedfx::COutVideoStreamCreator* m_OutVideoStreamCreator;
+	class COutVideoStreamCreator* m_OutVideoStreamCreator;
 	float m_FrameRate;
 	EasySamplerSettings::Method m_Method;
 	double m_FrameDuration;
 	double m_Exposure;
 	float m_FrameStrength;
-    IImageBufferPool * m_pImageBufferPool;
+    CGrowingBufferPoolThreadSafe * m_pImageBufferPool;
 };
 
 } // namespace advancedfx

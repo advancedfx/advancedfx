@@ -2,6 +2,8 @@
 #include "RecordingSettings.h"
 #include "StringTools.h"
 
+#include <set>
+
 namespace advancedfx {
 
 
@@ -193,12 +195,53 @@ void CRecordingSettings::Console(ICommandArgs * args)
 				}
 				return;
 			}
+			else if (4 <= argC && 0 == _stricmp("interleave", args->ArgV(2)))
+			{
+				size_t inputCount = argC - 3;
+
+				std::set<std::string> m_InputNames;
+
+				for(size_t i = 0; i < inputCount; i++) {
+					const char * argI = args->ArgV(3+i);
+					if (StringIBeginsWith(argI, "afx"))
+					{
+						advancedfx::Warning("AFXERROR: Custom presets must not begin with \"afx\".\n");
+						return;
+					}
+					else if (nullptr != GetByName(argI))
+					{
+						advancedfx::Warning("AFXERROR: There is already a setting named %s\n", argI);
+						return;
+					}
+					if(!m_InputNames.emplace(argI).second){
+						advancedfx::Warning("AFXERROR: There is already am input named %s, names must be unique\n", argI);
+						return;
+					}
+				}
+
+				auto it = m_InputNames.begin();
+
+				CInterleaveRecordingSettings * settings = new CInterleaveRecordingSettings(it->c_str(), false, m_Shared.m_DefaultSettings, m_InputNames.size());
+				m_Shared.m_NamedSettings.emplace(it->c_str(), settings);
+				it++;
+
+				size_t index = 0;
+				while(it != m_InputNames.end()) {
+					index++;
+					m_Shared.m_NamedSettings.emplace(it->c_str(), new CInterleaveInputRecordingSettings(it->c_str(), false, settings, index));
+					it++;
+				}
+				
+				return;
+			}
 
 			advancedfx::Message(
 				"%s add ffmpeg <name> \"<yourOptionsHere>\" - Adds an FFMPEG setting, <yourOptionsHere> are output options, use {QUOTE} for \", {AFX_STREAM_PATH} for the folder path of the stream, \\{ for {, \\} for }. For an example see one of the afxFfmpeg* templates (edit them).\n"
 				"%s add ffmpegEx <name> \"<yourOptionsHere>\" - Adds an extended FFMPEG setting, <yourOptionsHere> are output options, use {QUOTE} for \", {AFX_STREAM_PATH} for the folder path of the stream, \\{ for {, \\} for }. Further variables: {FFMPEG_PATH} {PIXEL_FORMAT} {FRAMERATE} {WIDTH} {HEIGHT} - For an example see one of the afxFfmpeg* templates (edit them).\n"
 				"%s add sampler <name> - Adds a sampler with 30 fps and default settings, edit it afterwards to change them.\n"
 				"%s add multi <name> - Adds multi settings, edit it afterwards to add settings to it.\n"
+				"%s add interleave <name> (<nameX>)* - Adds a video interleave setting, named <name>, which is also the first of multiple possible inputs, with optional further inputs with the given names, that are ordered in the order given. You can edit it afterwards to change the default output settings to s.th. else.\n"
+				, arg0
 				, arg0
 				, arg0
 				, arg0
@@ -229,7 +272,7 @@ void CClassicRecordingSettings::Console_Edit(ICommandArgs * args)
 	advancedfx::Warning("The classic settings are controlled through mirv_streams settings and can not be edited.\n");
 }
 
-advancedfx::COutVideoStreamCreator * CClassicRecordingSettings::CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float frameRate, const char * pathSuffix) const
+advancedfx::COutVideoStreamCreator * CClassicRecordingSettings::CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float frameRate, const char * pathSuffix)
 {
 	std::wstring capturePath;
 	if (stream.GetStreamFolder(capturePath)) {
@@ -240,7 +283,9 @@ advancedfx::COutVideoStreamCreator * CClassicRecordingSettings::CreateOutVideoSt
 
 			advancedfx::StreamCaptureType captureType = stream.GetCaptureType();
 
-			return new advancedfx::CClassicRecordingSettingsCreator(capturePath, (captureType == advancedfx::StreamCaptureType::Depth24ZIP || captureType == advancedfx::StreamCaptureType::DepthFZIP), streams.GetFormatBmpNotTga());
+			auto result = new advancedfx::CClassicRecordingSettingsCreator(capturePath, (captureType == advancedfx::StreamCaptureType::Depth24ZIP || captureType == advancedfx::StreamCaptureType::DepthFZIP), streams.GetFormatBmpNotTga());
+			result->AddRef();
+			return result;
 		}
 		else
 		{
@@ -264,7 +309,7 @@ void CFfmpegRecordingSettings::Console_Edit(ICommandArgs * args)
 
 		if (0 == _stricmp("options", arg1))
 		{
-			if (3 == argC)
+			if (3 <= argC)
 			{
 				if (m_Protected)
 				{
@@ -272,7 +317,11 @@ void CFfmpegRecordingSettings::Console_Edit(ICommandArgs * args)
 					return;
 				}
 
-				m_FfmpegOptions = args->ArgV(2);
+				m_FfmpegOptions = "";
+				for(int i = 2; i < argC; i++) {
+					if(2 < i ) m_FfmpegOptions += " ";
+					m_FfmpegOptions += args->ArgV(i);
+				}
 				return;
 			}
 
@@ -284,16 +333,41 @@ void CFfmpegRecordingSettings::Console_Edit(ICommandArgs * args)
 			);
 			return;
 		}
+		else if (0 == _stricmp("options+", arg1))
+		{
+			if (3 <= argC)
+			{
+				if (m_Protected)
+				{
+					advancedfx::Warning("This setting is protected and can not be changed.\n");
+					return;
+				}
+
+				for(int i = 2; i < argC; i++) {
+					if(2 < i ) m_FfmpegOptions += " ";
+					m_FfmpegOptions += args->ArgV(i);
+				}
+				return;
+			}
+
+			advancedfx::Message(
+				"%s options+ \"<yourOptionsHere>\" - Append to options).\n"
+				, arg0
+			);
+			return;
+		}			
 	}
 
 	advancedfx::Message("%s (type ffmpeg) recording setting options:\n", m_Name.c_str());
 	advancedfx::Message(
 		"%s options [...] - FFMPEG options.\n"
+		"%s options+ [...] - Append to FFMPEG options.\n"
+		, arg0
 		, arg0
 	);
 }
 
-advancedfx::COutVideoStreamCreator* CFfmpegRecordingSettings::CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float frameRate, const char * pathSuffix) const
+advancedfx::COutVideoStreamCreator* CFfmpegRecordingSettings::CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float frameRate, const char * pathSuffix)
 {
 	std::wstring widePathSuffix;
 	if (UTF8StringToWideString(pathSuffix, widePathSuffix))
@@ -307,7 +381,9 @@ advancedfx::COutVideoStreamCreator* CFfmpegRecordingSettings::CreateOutVideoStre
 
 				advancedfx::StreamCaptureType captureType = stream.GetCaptureType();
 
-				return new advancedfx::CFfmpegRecordingSettingsCreator(capturePath, std::wstring(L"{QUOTE}{FFMPEG_PATH}{QUOTE} -f rawvideo -pixel_format {PIXEL_FORMAT} -loglevel repeat+level+warning -framerate {FRAMERATE} -video_size {WIDTH}x{HEIGHT} -i pipe:0 -vf setsar=sar=1/1 ").append(wideOptions), frameRate);
+				auto result = new advancedfx::CFfmpegRecordingSettingsCreator(capturePath, std::wstring(L"{QUOTE}{FFMPEG_PATH}{QUOTE} -f rawvideo -pixel_format {PIXEL_FORMAT} -loglevel repeat+level+warning -framerate {FRAMERATE} -video_size {WIDTH}x{HEIGHT} -i pipe:0 -vf setsar=sar=1/1 ").append(wideOptions), frameRate);
+				result->AddRef();
+				return result;
 			}
 		}
 		else
@@ -338,7 +414,7 @@ void CFfmpegExRecordingSettings::Console_Edit(ICommandArgs * args)
 
 		if (0 == _stricmp("options", arg1))
 		{
-			if (3 == argC)
+			if (3 <= argC)
 			{
 				if (m_Protected)
 				{
@@ -346,7 +422,11 @@ void CFfmpegExRecordingSettings::Console_Edit(ICommandArgs * args)
 					return;
 				}
 
-				m_FfmpegOptions = args->ArgV(2);
+				m_FfmpegOptions = "";
+				for(int i = 2; i < argC; i++) {
+					if(2 < i ) m_FfmpegOptions += " ";
+					m_FfmpegOptions += args->ArgV(i);
+				}
 				return;
 			}
 
@@ -358,16 +438,41 @@ void CFfmpegExRecordingSettings::Console_Edit(ICommandArgs * args)
 			);
 			return;
 		}
+		else if (0 == _stricmp("options+", arg1))
+		{
+			if (3 <= argC)
+			{
+				if (m_Protected)
+				{
+					advancedfx::Warning("This setting is protected and can not be changed.\n");
+					return;
+				}
+
+				for(int i = 2; i < argC; i++) {
+					if(2 < i ) m_FfmpegOptions += " ";
+					m_FfmpegOptions += args->ArgV(i);
+				}
+				return;
+			}
+
+			advancedfx::Message(
+				"%s options+ \"<yourOptionsHere>\" - Append to options.\n"
+				, arg0
+			);
+			return;
+		}		
 	}
 
 	advancedfx::Message("%s (type ffmpegEx) recording setting options:\n", m_Name.c_str());
 	advancedfx::Message(
 		"%s options [...] - FFMPEG options.\n"
+		"%s options+ [...] - Append FFMPEG options.\n"
+		, arg0
 		, arg0
 	);
 }
 
-advancedfx::COutVideoStreamCreator* CFfmpegExRecordingSettings::CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float frameRate, const char * pathSuffix) const
+advancedfx::COutVideoStreamCreator* CFfmpegExRecordingSettings::CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float frameRate, const char * pathSuffix)
 {
 	std::wstring widePathSuffix;
 	if (UTF8StringToWideString(pathSuffix, widePathSuffix))
@@ -381,7 +486,9 @@ advancedfx::COutVideoStreamCreator* CFfmpegExRecordingSettings::CreateOutVideoSt
 
 				advancedfx::StreamCaptureType captureType = stream.GetCaptureType();
 
-				return new advancedfx::CFfmpegRecordingSettingsCreator(capturePath, wideOptions, frameRate);
+				auto result = new advancedfx::CFfmpegRecordingSettingsCreator(capturePath, wideOptions, frameRate);
+				result->AddRef();
+				return result;
 			}
 		}
 		else
@@ -552,13 +659,15 @@ void CMultiRecordingSettings::Console_Edit(ICommandArgs * args)
 
 
 
-advancedfx::COutVideoStreamCreator* CSamplingRecordingSettings::CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float frameRate, const char * pathSuffix) const
+advancedfx::COutVideoStreamCreator* CSamplingRecordingSettings::CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float frameRate, const char * pathSuffix)
 {
 	if (m_OutputSettings)
 	{
 		if (advancedfx::COutVideoStreamCreator* outVideoStreamCreator = m_OutputSettings->CreateOutVideoStreamCreator(streams, stream, m_OutFps, pathSuffix))
 		{
-			return new advancedfx::CSamplingRecordingSettingsCreator(outVideoStreamCreator, frameRate, m_Method, m_OutFps ? 1.0 / m_OutFps : 0.0, m_Exposure, m_FrameStrength, streams.GetImageBufferPool());
+			auto result = new advancedfx::CSamplingRecordingSettingsCreator(outVideoStreamCreator, frameRate, m_Method, m_OutFps ? 1.0 / m_OutFps : 0.0, m_Exposure, m_FrameStrength, streams.GetImageBufferPool());
+			result->AddRef();
+			return result;
 		}
 	}
 
@@ -733,6 +842,92 @@ void CSamplingRecordingSettings::Console_Edit(ICommandArgs * args)
 		, arg0
 		, arg0
 		, arg0
+		, arg0
+	);
+}
+
+
+// CInterleaveInputRecordingSettings ///////////////////////////////////////////
+
+CInterleaveInputRecordingSettings::CInterleaveInputRecordingSettings(const char * name, bool bProtected, CInterleaveRecordingSettings * pMainInterleaveInput, int index)
+	: CRecordingSettings(name, bProtected)
+	, m_pMainInterleaveInput(pMainInterleaveInput)
+	, m_Index(index)
+{
+	m_pMainInterleaveInput->AddRef();
+}
+
+void CInterleaveInputRecordingSettings::Console_Edit(ICommandArgs * args) {
+	advancedfx::Message("%s (type interleave-other-input) has no options.\n", m_Name.c_str());
+}
+
+class advancedfx::COutVideoStreamCreator* CInterleaveInputRecordingSettings::CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps, const char * pathSuffix)
+{
+	return m_pMainInterleaveInput->InputCreateOutVideoStreamCreator(streams, stream, fps, pathSuffix, m_Index);
+}
+
+bool CInterleaveInputRecordingSettings::InheritsFrom(CRecordingSettings * setting) const
+{
+	if (CRecordingSettings::InheritsFrom(setting)) return true;
+
+	if (m_pMainInterleaveInput) if (m_pMainInterleaveInput->InheritsFrom(setting)) return true;
+
+	return false;
+}	
+
+CInterleaveInputRecordingSettings::~CInterleaveInputRecordingSettings()
+{
+	m_pMainInterleaveInput->Release();
+}
+
+// CInterleaveRecordingSettings ////////////////////////////////////////////////
+
+void CInterleaveRecordingSettings::Console_Edit(ICommandArgs * args)
+{
+	int argC = args->ArgC();
+	const char * arg0 = args->ArgV(0);
+
+	if (2 <= argC)
+	{
+		const char * arg1 = args->ArgV(1);
+
+		if (0 == _stricmp("settings", arg1))
+		{
+			if (3 == argC)
+			{
+				CRecordingSettings * settings = CRecordingSettings::GetByName(args->ArgV(2));
+
+				if (nullptr == settings)
+				{
+					advancedfx::Warning("AFXERROR: There is no setting named %s.\n", args->ArgV(2));
+				}
+				else if (settings->InheritsFrom(this))
+				{
+					advancedfx::Warning("AFXERROR: Can not assign a setting that depends on this setting.\n");
+				}
+				else
+				{
+					if (m_OutputSettings) m_OutputSettings->Release();
+					m_OutputSettings = settings;
+					if (m_OutputSettings) m_OutputSettings->AddRef();
+				}
+
+				return;
+			}
+
+			advancedfx::Message(
+				"%s settings <settingsName> - Use settings with name <settingsName> as output settings.\n"
+				"Current value: \"%s\"\n"
+				, arg0
+				, m_OutputSettings ? m_OutputSettings->GetName() : "[null]"
+			);
+			return;
+		}
+	}
+
+	advancedfx::Message("%s (type interleave) recording setting options:\n", m_Name.c_str());
+	advancedfx::Message(
+		"%s settings [...] - Output settings.\n"
 		, arg0
 	);
 }

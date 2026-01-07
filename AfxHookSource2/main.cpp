@@ -38,7 +38,7 @@
 #include "../shared/StringTools.h"
 #include "../shared/binutils.h"
 #include "../shared/CommandSystem.h"
-#include "../shared/ImageBufferPoolThreadSafe.h"
+#include "../shared/GrowingBufferPoolThreadSafe.h"
 #include "../shared/ThreadPool.h"
 #include "../shared/MirvCamIO.h"
 #include "../shared/MirvCampath.h"
@@ -148,6 +148,31 @@ void HookEngineDll(HMODULE engineDll) {
 			ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}*/
 }
+
+typedef void (__fastcall * HostStateRequest_Start_t)(void * This);
+HostStateRequest_Start_t g_Old_HostStateRequest_Start = nullptr;
+void __fastcall New_HostStateRequest_Start(void * This) {
+	if(4 == *(int *)This) {
+		// "HostStateRequest::Start(HSR_QUIT)\n"
+		AfxStreams_ShutDown();
+	}
+	g_Old_HostStateRequest_Start(This);
+}
+
+void Hook_Engine__HostStateRequest_Start() {
+	static bool bFirstRun = true;
+	if(bFirstRun) {
+		bFirstRun = false;
+		if(AFXADDR_GET(cs2_engine_HostStateRequest_Start)) {
+			g_Old_HostStateRequest_Start = (HostStateRequest_Start_t)AFXADDR_GET(cs2_engine_HostStateRequest_Start);
+			DetourTransactionBegin();
+			DetourUpdateThread(GetCurrentThread());
+			DetourAttach(&(PVOID&)g_Old_HostStateRequest_Start,New_HostStateRequest_Start);
+			if(NO_ERROR != DetourTransactionCommit()) ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+	}
+}
+
 
 SOURCESDK::CS2::ISource2EngineToClient * g_pEngineToClient = nullptr;
 
@@ -2084,6 +2109,8 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		g_Import_engine2.Apply(hModule);
 
 		Hook_Engine_RenderService();
+
+		Hook_Engine__HostStateRequest_Start();
 	}
 	else if(bFirstSceneSystem && StringEndsWithW( lpLibFileName, L"scenesystem.dll"))
 	{
@@ -2189,7 +2216,7 @@ CAfxImportsHook g_Import_PROCESS(CAfxImportsHooks({
 
 
 advancedfx::CThreadPool * g_pThreadPool = nullptr;
-advancedfx::CImageBufferPoolThreadSafe * g_pImageBufferPoolThreadSafe = nullptr;
+advancedfx::CGrowingBufferPoolThreadSafe * g_pImageBufferPoolThreadSafe = nullptr;
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 {
@@ -2233,7 +2260,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 			}
 			g_pThreadPool = new advancedfx::CThreadPool(thread_pool_thread_count);
 
-			g_pImageBufferPoolThreadSafe = new advancedfx::CImageBufferPoolThreadSafe();
+			g_pImageBufferPoolThreadSafe = new advancedfx::CGrowingBufferPoolThreadSafe();
 
 			g_ConsolePrinter = new CConsolePrinter();
 

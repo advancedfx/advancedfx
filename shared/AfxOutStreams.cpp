@@ -17,7 +17,7 @@
 
 namespace advancedfx {
 
-bool COutImageStream::SupplyImageFrame(double secondsSinceLastFrame, const unsigned char* pBuffer)
+bool COutImageStreamImpl::WriteBuffer(const unsigned char* pBuffer) 
 {
 	std::wstring path;
 
@@ -52,7 +52,7 @@ bool COutImageStream::SupplyImageFrame(double secondsSinceLastFrame, const unsig
 }
 
 
-bool COutImageStream::CreateCapturePath(const char* fileExtension, std::wstring& outPath)
+bool COutImageStreamImpl::CreateCapturePath(const char* fileExtension, std::wstring& outPath)
 {
 	if (!m_TriedCreatePath)
 	{
@@ -177,8 +177,8 @@ BOOL AfxOutFFMPEGVideoStream_CreatePipe(
 	return(TRUE);
 }
 
-COutFFMPEGVideoStream::COutFFMPEGVideoStream(const CImageFormat& imageFormat, const std::wstring& path, const std::wstring& ffmpegOptions, float frameRate)
-	: COutVideoStream(imageFormat)
+COutFFMPEGVideoStreamImpl::COutFFMPEGVideoStreamImpl(const CImageFormat& imageFormat, const std::wstring& path, const std::wstring& ffmpegOptions, float frameRate)
+	: COutVideoStreamImpl(imageFormat)
 {
 	std::wstring myPath(path);
 
@@ -427,7 +427,7 @@ COutFFMPEGVideoStream::COutFFMPEGVideoStream(const CImageFormat& imageFormat, co
 	else m_Okay = FALSE;
 }
 
-void COutFFMPEGVideoStream::Close()
+void COutFFMPEGVideoStreamImpl::Close()
 {
 	if (INVALID_HANDLE_VALUE != m_hChildStd_IN_Wr)
 	{
@@ -498,7 +498,7 @@ void COutFFMPEGVideoStream::Close()
 	*/
 }
 
-bool COutFFMPEGVideoStream::SupplyImageFrame(double secondsSinceLastFrame, const unsigned char* pBuffer)
+bool COutFFMPEGVideoStreamImpl::WriteBuffer(const unsigned char* pBuffer)
 {
 	/*
 	static DWORD frames = 0;
@@ -576,12 +576,12 @@ bool COutFFMPEGVideoStream::SupplyImageFrame(double secondsSinceLastFrame, const
 	return true;
 }
 
-COutFFMPEGVideoStream::~COutFFMPEGVideoStream()
+COutFFMPEGVideoStreamImpl::~COutFFMPEGVideoStreamImpl()
 {
 	Close();
 }
 
-bool COutFFMPEGVideoStream::HandleOutAndErr(DWORD processWaitTimeOut)
+bool COutFFMPEGVideoStreamImpl::HandleOutAndErr(DWORD processWaitTimeOut)
 {
 	if (!m_Okay) return false;
 
@@ -643,128 +643,6 @@ bool COutFFMPEGVideoStream::HandleOutAndErr(DWORD processWaitTimeOut)
 	}
 
 	return true;
-}
-
-// COutSamplingStream ///////////////////////////////////////////////////////
-
-COutSamplingStream::COutSamplingStream(const CImageFormat& imageFormat, COutVideoStream* outVideoStream, float frameRate, EasySamplerSettings::Method method, double frameDuration, double exposure, float frameStrength, IImageBufferPool * imageBufferPool)
-	: COutVideoStream(imageFormat)
-	, m_OutVideoStream(outVideoStream)
-	, m_Time(0.0)
-	, m_InputFrameDuration(frameRate ? 1.0 / frameRate : 0.0)
-	, m_ImageBufferPool(imageBufferPool)
-{
-	if (m_OutVideoStream) m_OutVideoStream->AddRef();
-
-	unsigned int bytesPerPixel = 1;
-
-	switch (imageFormat.Format)
-	{
-	case ImageFormat::BGR:
-		m_EasySampler.Byte = new EasyByteSampler(EasySamplerSettings(
-			imageFormat.Width * 3,
-			imageFormat.Height,
-			method,
-			frameDuration,
-			m_Time,
-			exposure,
-			frameStrength
-		), (int)imageFormat.Pitch, this);
-		break;
-	case ImageFormat::BGRA:
-		m_EasySampler.Byte = new EasyByteSampler(EasySamplerSettings(
-			imageFormat.Width * 4,
-			imageFormat.Height,
-			method,
-			frameDuration,
-			m_Time,
-			exposure,
-			frameStrength
-		), (int)imageFormat.Pitch, this);
-		break;
-	case ImageFormat::A:
-		m_EasySampler.Byte = new EasyByteSampler(EasySamplerSettings(
-			imageFormat.Width * 1,
-			imageFormat.Height,
-			method,
-			frameDuration,
-			m_Time,
-			exposure,
-			frameStrength
-		), (int)imageFormat.Pitch, this);
-		break;
-	case ImageFormat::ZFloat:
-		m_EasySampler.Float = new EasyFloatSampler(EasySamplerSettings(
-			imageFormat.Width,
-			imageFormat.Height,
-			method,
-			frameDuration,
-			m_Time,
-			exposure,
-			frameStrength
-		), this);
-		break;
-	default:
-		advancedfx::Warning("AFXERROR: COutSamplingStream::COutSamplingStream: Unsupported image format.");
-	}
-}
-
-COutSamplingStream::~COutSamplingStream()
-{
-	switch (m_ImageFormat.Format)
-	{
-	case ImageFormat::BGR:
-	case ImageFormat::BGRA:
-	case ImageFormat::A:
-		delete m_EasySampler.Byte;
-		break;
-	case ImageFormat::ZFloat:
-		delete m_EasySampler.Float;
-	};
-
-	if (m_OutVideoStream) m_OutVideoStream->Release();
-}
-
-bool COutSamplingStream::SupplyImageFrame(double secondsSinceLastFrame, const unsigned char* pBuffer)
-{
-	if (nullptr == m_OutVideoStream) return false;
-
-	switch (m_ImageFormat.Format)
-	{
-	case ImageFormat::BGR:
-	case ImageFormat::BGRA:
-	case ImageFormat::A:
-		m_EasySampler.Byte->Sample(pBuffer, m_Time);
-		break;
-	case ImageFormat::ZFloat:
-		m_EasySampler.Float->Sample((const float*)pBuffer, m_Time);
-	};
-
-	m_Time += m_InputFrameDuration;
-
-	return true;
-}
-
-void COutSamplingStream::Print(unsigned char const* data)
-{
-	if (CImageBuffer* buffer = m_ImageBufferPool->AquireBuffer())
-	{
-		buffer->AutoRealloc(m_ImageFormat);
-		memcpy(buffer->Buffer, data, buffer->Format.Bytes);
-		m_OutVideoStream->SupplyVideoData(*buffer);
-		m_ImageBufferPool->ReleaseBuffer(buffer);
-	}
-}
-
-void COutSamplingStream::Print(float const* data)
-{
-	if (CImageBuffer* buffer = m_ImageBufferPool->AquireBuffer())
-	{
-		buffer->AutoRealloc(m_ImageFormat);
-		memcpy(buffer->Buffer, data, buffer->Format.Bytes);
-		m_OutVideoStream->SupplyVideoData(*buffer);
-		m_ImageBufferPool->ReleaseBuffer(buffer);
-	}
 }
 
 } // namespace advancedfx {

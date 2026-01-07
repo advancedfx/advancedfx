@@ -1,24 +1,25 @@
 #pragma once
 
-#include "Captures.h"
+#include "ImageBufferThreadSafe.h"
+#include "GrowingBufferPoolThreadSafe.h"
 #include "ThreadPool.h"
 
 namespace advancedfx {
 namespace ImageTransformer {
 
-	class ICapture* StripAlpha(class CThreadPool * threadPool, class IImageBufferPool * imageBufferPool, class ICapture* capture);
+	IImageBufferThreadSafe* StripAlpha(class CThreadPool * threadPool, CGrowingBufferPoolThreadSafe * imageBufferPool, IImageBufferThreadSafe* buffer);
 
-	class ICapture* RgbaToBgr(class CThreadPool * threadPool, class IImageBufferPool * imageBufferPool, class ICapture* capture);
+	IImageBufferThreadSafe* RgbaToBgr(class CThreadPool * threadPool, CGrowingBufferPoolThreadSafe * imageBufferPool, IImageBufferThreadSafe* buffer);
 
-	class ICapture* RgbaToBgra(class CThreadPool * threadPool, class IImageBufferPool * imageBufferPool, class ICapture* capture);
+	IImageBufferThreadSafe* RgbaToBgra(class CThreadPool * threadPool, CGrowingBufferPoolThreadSafe * imageBufferPool, IImageBufferThreadSafe* buffer);
 
-	class ICapture* DepthF(class CThreadPool * threadPool, class IImageBufferPool * imageBufferPool, class ICapture* capture, float depthScale, float depthOfs);
+	IImageBufferThreadSafe* DepthF(class CThreadPool * threadPool, CGrowingBufferPoolThreadSafe * imageBufferPool, IImageBufferThreadSafe* buffer, float depthScale, float depthOfs);
 
-	class ICapture* Depth24(class CThreadPool * threadPool, class IImageBufferPool * imageBufferPool, class ICapture* capture, float depthScale, float depthOfs);
+	IImageBufferThreadSafe* Depth24(class CThreadPool * threadPool, CGrowingBufferPoolThreadSafe * imageBufferPool, IImageBufferThreadSafe* buffer, float depthScale, float depthOfs);
 
-	class ICapture* Matte(class CThreadPool * threadPool, class IImageBufferPool * imageBufferPool, class ICapture* captureEntBlack, class ICapture* captureEntWhite);
+	IImageBufferThreadSafe* Matte(class CThreadPool * threadPool, CGrowingBufferPoolThreadSafe * imageBufferPool, IImageBufferThreadSafe* bufferEntBlack, IImageBufferThreadSafe* bufferEntWhite);
 
-	class ICapture* AColorBRedAsAlpha(class CThreadPool * threadPool, class IImageBufferPool * imageBufferPool, class ICapture* aColor, class ICapture* bRedAsAlpha);
+	IImageBufferThreadSafe* AColorBRedAsAlpha(class CThreadPool * threadPool, CGrowingBufferPoolThreadSafe * imageBufferPool, IImageBufferThreadSafe* aColor, IImageBufferThreadSafe* bRedAsAlpha);
 
 } // namespace ImageTransformer {
 } // namespace advancedfx

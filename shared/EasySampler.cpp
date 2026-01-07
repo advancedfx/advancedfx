@@ -13,47 +13,42 @@
 #endif
 
 
-// EasyByteSampler /////////////////////////////////////////////////////////////
+// EasyByteSamplerImpl /////////////////////////////////////////////////////////
 
-EasyByteSampler::EasyByteSampler(
-	EasySamplerSettings const & settings,
-	int pitch,
-	IFramePrinter * framePrinter
-)
+EasyByteSamplerImpl::EasyByteSamplerImpl(
+	EasySamplerSettings const & settings)
 : EasySamplerBase(settings.FrameDuration_get(), settings.StartTime_get(), settings.Exposure_get())
 , m_Settings(settings)
 {
-	int height = settings.Height_get();
-	int width = settings.Width_get();
+	const advancedfx::CImageFormat& imageFormat = settings.ImageFormat_get();
+	switch(imageFormat.Format) {
+	case advancedfx::ImageFormat::BGR:
+	case advancedfx::ImageFormat::BGRA:
+	case advancedfx::ImageFormat::A:
+	case advancedfx::ImageFormat::RGBA:
+		break;
+	default:
+		throw "AFXERROR: Unsupported image format.";
+	}
+
+	int height = imageFormat.Height;
+	int width = imageFormat.Width;
+	size_t pitch = imageFormat.Pitch;
+	size_t packedRowSize = width * imageFormat.GetPixelStride();
 	bool twoPoint = EasySamplerSettings::ESM_Trapezoid == settings.Method_get();
 
-	assert(width <= pitch);
+	assert(packedRowSize <= pitch);
 
-	m_Pitch = pitch;
-	m_Frame = new Frame(height * width);
-	m_FramePrinter = framePrinter;
-	m_HasLastSample = false;
-	m_LastSample = twoPoint ? new unsigned char[height * pitch] : 0;
-	m_PrintMem = new unsigned char[height * pitch];
+	m_Frame = new Frame(height * packedRowSize);
 }
 
 
-EasyByteSampler::~EasyByteSampler()
+EasyByteSamplerImpl::~EasyByteSamplerImpl()
 {
-	// ? // PrintFrame();
-
-	delete m_PrintMem;
-	delete m_LastSample;
 	delete m_Frame;
 }
 
-bool EasyByteSampler::CanSkipConstant(double time, double durationPerSample)
-{
-	return EasySamplerBase::CanSkipConstant(time, durationPerSample, m_LastSample ? 1 : 0);
-}
-
-
-void EasyByteSampler::ClearFrame(float frameStrength)
+void EasyByteSamplerImpl::ClearFrame(float frameStrength)
 {
 	float w = 1.0f -frameStrength;
 
@@ -61,11 +56,12 @@ void EasyByteSampler::ClearFrame(float frameStrength)
 }
 
 
-void EasyByteSampler::Fn_1(void const * sample)
+void EasyByteSamplerImpl::Fn_1(void const * sample)
 {
-	int height = m_Settings.Height_get();
-	int width = m_Settings.Width_get();
-	int deltaPitch = m_Pitch -width;
+	const advancedfx::CImageFormat& imageFormat = m_Settings.ImageFormat_get();
+	int height = imageFormat.Height;
+	int width = imageFormat.Width *  imageFormat.GetPixelStride();
+	size_t deltaPitch = imageFormat.Pitch - width;
 	float *fdata = m_Frame->Data;
 	unsigned char const * cdata = (unsigned char const *)sample;
 
@@ -84,11 +80,12 @@ void EasyByteSampler::Fn_1(void const * sample)
 	m_Frame->WhitePoint += 255.0f;
 }
 
-void EasyByteSampler::Fn_2(void const * sample, float w)
+void EasyByteSamplerImpl::Fn_2(void const * sample, float w)
 {
-	int height = m_Settings.Height_get();
-	int width = m_Settings.Width_get();
-	int deltaPitch = m_Pitch -width;
+	const advancedfx::CImageFormat& imageFormat = m_Settings.ImageFormat_get();
+	int height = imageFormat.Height;
+	int width = imageFormat.Width *  imageFormat.GetPixelStride();
+	size_t deltaPitch = imageFormat.Pitch - width;
 	float *fdata = m_Frame->Data;
 	unsigned char const * cdata = (unsigned char const *)sample;
 
@@ -107,11 +104,12 @@ void EasyByteSampler::Fn_2(void const * sample, float w)
 	m_Frame->WhitePoint += w * 255.0f;
 }
 
-void EasyByteSampler::Fn_4(void const * sampleA, void const * sampleB, float w)
+void EasyByteSamplerImpl::Fn_4(void const * sampleA, void const * sampleB, float w)
 {
-	int height = m_Settings.Height_get();
-	int width = m_Settings.Width_get();
-	int deltaPitch = m_Pitch -width;
+	const advancedfx::CImageFormat& imageFormat = m_Settings.ImageFormat_get();
+	int height = imageFormat.Height;
+	int width = imageFormat.Width *  imageFormat.GetPixelStride();
+	size_t deltaPitch = imageFormat.Pitch - width;
 	float *fdata = m_Frame->Data;
 	unsigned char const * cdataA = (unsigned char const *)sampleA;
 	unsigned char const * cdataB = (unsigned char const *)sampleB;
@@ -134,23 +132,23 @@ void EasyByteSampler::Fn_4(void const * sampleA, void const * sampleB, float w)
 }
 
 
-void EasyByteSampler::PrintFrame()
+void EasyByteSamplerImpl::PrintFrame(unsigned char * data)
 {
-	float w = m_Frame->WhitePoint;
+	const advancedfx::CImageFormat& imageFormat = m_Settings.ImageFormat_get();
 
-	unsigned char * data = m_PrintMem;
+	float w = m_Frame->WhitePoint;
 
 	if(0 == w)
 	{
-		memset(data, 0, m_Settings.Height_get() * m_Pitch * sizeof(unsigned char));
+		memset(data, 0, imageFormat.Height * imageFormat.Pitch);
 	}
 	else
 	{
 		float * fdata = m_Frame->Data;
 
-		int height = m_Settings.Height_get();
-		int width = m_Settings.Width_get();
-		int deltaPitch = m_Pitch - width;
+		int height = imageFormat.Height;
+		int width = imageFormat.Width * imageFormat.GetPixelStride();
+		size_t deltaPitch = imageFormat.Pitch - width;
 
 		w = 255.0f / w;
 
@@ -167,28 +165,9 @@ void EasyByteSampler::PrintFrame()
 			data += deltaPitch;
 		}
 	}
-
-	m_FramePrinter->Print(m_PrintMem);
 }
 
-
-void EasyByteSampler::Sample(unsigned char const * data, double time)
-{
-	m_CurSample = data;
-
-	EasySamplerBase::Sample(time);
-
-	if(m_LastSample && data)
-	{
-		memcpy(m_LastSample, data, m_Settings.Height_get() * m_Pitch * sizeof(unsigned char));
-		m_HasLastSample = true;
-	}
-	else
-		m_HasLastSample = false;
-}
-
-
-void EasyByteSampler::ScaleFrame(float factor)
+void EasyByteSamplerImpl::ScaleFrame(float factor)
 {
 	float w = m_Frame->WhitePoint;
 
@@ -202,14 +181,17 @@ void EasyByteSampler::ScaleFrame(float factor)
 	{
 		// Zero.
 		m_Frame->WhitePoint = 0;
-		memset(m_Frame->Data, 0, m_Settings.Height_get() * m_Settings.Width_get() * sizeof(float));
+
+		const advancedfx::CImageFormat& imageFormat = m_Settings.ImageFormat_get();
+		memset(m_Frame->Data, 0, imageFormat.Height * imageFormat.Width * imageFormat.GetPixelStride() * sizeof(float));
 		return;
 	}
 	
 	float * fdata = m_Frame->Data;
 
-	int height = m_Settings.Height_get();
-	int width = m_Settings.Width_get();
+	const advancedfx::CImageFormat& imageFormat = m_Settings.ImageFormat_get();
+	int height = imageFormat.Height;
+	int width =imageFormat.Width * imageFormat.GetPixelStride();
 
 	m_Frame->WhitePoint *= factor;
 
@@ -228,53 +210,51 @@ void EasyByteSampler::ScaleFrame(float factor)
 
 // EasyFloatSampler ////////////////////////////////////////////////////////////
 
-EasyFloatSampler::EasyFloatSampler(
-	EasySamplerSettings const & settings,
-	IFloatFramePrinter * framePrinter
+EasyFloatSamplerImpl::EasyFloatSamplerImpl(
+	EasySamplerSettings const & settings
 )
 : EasySamplerBase(settings.FrameDuration_get(), settings.StartTime_get(), settings.Exposure_get())
 , m_Settings(settings)
 {
-	int height = settings.Height_get();
-	int width = settings.Width_get();
+	const advancedfx::CImageFormat& imageFormat = settings.ImageFormat_get();
+	switch(imageFormat.Format) {
+	case advancedfx::ImageFormat::ZFloat:
+		break;
+	default:
+		throw "AFXERROR: Unsupported image format.";
+	}
+
+	int height = imageFormat.Height;
+	int width = imageFormat.Width;
+	size_t pitch = imageFormat.Pitch;
+	size_t packedRowSize = width * imageFormat.GetPixelStride();
 	bool twoPoint = EasySamplerSettings::ESM_Trapezoid == settings.Method_get();
 
+	assert(packedRowSize <= pitch);
+
 	m_FrameData = new float[height * width];
-	m_FramePrinter = framePrinter;
 	m_FrameWhitePoint = 0;
-	m_HasLastSample = false;
-	m_LastSample = twoPoint ? new float[height * width] : 0;
-	m_PrintMem = new float[height * width];
 }
 
 
-EasyFloatSampler::~EasyFloatSampler()
+EasyFloatSamplerImpl::~EasyFloatSamplerImpl()
 {
-	// ? // PrintFrame();
-
-	delete m_PrintMem;
-	delete m_LastSample;
 	delete m_FrameData;
 }
 
-bool EasyFloatSampler::CanSkipConstant(double time, double durationPerSample)
-{
-	return EasySamplerBase::CanSkipConstant(time, durationPerSample, m_LastSample ? 1 : 0);
-}
-
-
-void EasyFloatSampler::ClearFrame(float frameStrength)
+void EasyFloatSamplerImpl::ClearFrame(float frameStrength)
 {
 	float w = 1.0f -frameStrength;
 
 	ScaleFrame(w);
 }
 
-
-void EasyFloatSampler::Fn_1(void const * sample)
+void EasyFloatSamplerImpl::Fn_1(void const * sample)
 {
-	int height = m_Settings.Height_get();
-	int width = m_Settings.Width_get();
+	const advancedfx::CImageFormat& imageFormat = m_Settings.ImageFormat_get();
+	int height = imageFormat.Height;
+	int width = imageFormat.Width;
+	size_t deltaPitch = imageFormat.Pitch - width *  imageFormat.GetPixelStride();
 	float *fdata = m_FrameData;
 	float const * cdata = (float const *)sample;
 
@@ -287,15 +267,19 @@ void EasyFloatSampler::Fn_1(void const * sample)
 			fdata++;
 			cdata++;
 		}
+
+		cdata = (float const *)((unsigned char const *)cdata + deltaPitch);
 	}
 
 	m_FrameWhitePoint += 1.0f;
 }
 
-void EasyFloatSampler::Fn_2(void const * sample, float w)
+void EasyFloatSamplerImpl::Fn_2(void const * sample, float w)
 {
-	int height = m_Settings.Height_get();
-	int width = m_Settings.Width_get();
+	const advancedfx::CImageFormat& imageFormat = m_Settings.ImageFormat_get();
+	int height = imageFormat.Height;
+	int width = imageFormat.Width;
+	size_t deltaPitch = imageFormat.Pitch - width *  imageFormat.GetPixelStride();
 	float *fdata = m_FrameData;
 	float const * cdata = (float const *)sample;
 
@@ -308,15 +292,19 @@ void EasyFloatSampler::Fn_2(void const * sample, float w)
 			fdata++;
 			cdata++;
 		}
+
+		cdata = (float const *)((unsigned char const *)cdata + deltaPitch);
 	}
 
 	m_FrameWhitePoint += w * 1.0f;
 }
 
-void EasyFloatSampler::Fn_4(void const * sampleA, void const * sampleB, float w)
+void EasyFloatSamplerImpl::Fn_4(void const * sampleA, void const * sampleB, float w)
 {
-	int height = m_Settings.Height_get();
-	int width = m_Settings.Width_get();
+	const advancedfx::CImageFormat& imageFormat = m_Settings.ImageFormat_get();
+	int height = imageFormat.Height;
+	int width = imageFormat.Width;
+	size_t deltaPitch = imageFormat.Pitch - width *  imageFormat.GetPixelStride();
 	float *fdata = m_FrameData;
 	float const * cdataA = (float const *)sampleA;
 	float const * cdataB = (float const *)sampleB;
@@ -331,27 +319,32 @@ void EasyFloatSampler::Fn_4(void const * sampleA, void const * sampleB, float w)
 			cdataA++;
 			cdataB++;
 		}
+
+		cdataA = (float const *)((unsigned char const *)cdataA + deltaPitch);
+		cdataB = (float const *)((unsigned char const *)cdataB + deltaPitch);
 	}
 
 	m_FrameWhitePoint += w * 2.0f * 1.0f;
 }
 
 
-void EasyFloatSampler::PrintFrame()
+void EasyFloatSamplerImpl::PrintFrame(float * data)
 {
+	const advancedfx::CImageFormat& imageFormat = m_Settings.ImageFormat_get();
+
 	float w = m_FrameWhitePoint;
-	float * data = m_PrintMem;
 
 	if(0 == w)
 	{
-		memset(data, 0, m_Settings.Height_get() * m_Settings.Width_get() * sizeof(float));
+		memset(data, 0, imageFormat.Height * imageFormat.Pitch);
 	}
 	else
 	{
 		float * fdata = m_FrameData;
 
-		int height = m_Settings.Height_get();
-		int width = m_Settings.Width_get();
+		int height = imageFormat.Height;
+		int width = imageFormat.Width;
+		size_t deltaPitch = imageFormat.Pitch - width *  imageFormat.GetPixelStride();
 
 		w = 1.0f / w;
 
@@ -364,30 +357,13 @@ void EasyFloatSampler::PrintFrame()
 				fdata++;
 				data++;
 			}
+
+			data = (float *)((unsigned char *)data + deltaPitch);
 		}
 	}
-
-	m_FramePrinter->Print(m_PrintMem);
 }
 
-
-void EasyFloatSampler::Sample(float const * data, double time)
-{
-	m_CurSample = data;
-
-	EasySamplerBase::Sample(time);
-
-	if(m_LastSample && data)
-	{
-		memcpy(m_LastSample, data, m_Settings.Height_get() * m_Settings.Width_get() * sizeof(float));
-		m_HasLastSample = true;
-	}
-	else
-		m_HasLastSample = false;
-}
-
-
-void EasyFloatSampler::ScaleFrame(float factor)
+void EasyFloatSamplerImpl::ScaleFrame(float factor)
 {
 	float w = m_FrameWhitePoint;
 
@@ -401,14 +377,17 @@ void EasyFloatSampler::ScaleFrame(float factor)
 	{
 		// Zero.
 		m_FrameWhitePoint = 0;
-		memset(m_FrameData, 0, m_Settings.Height_get() * m_Settings.Width_get() * sizeof(float));
+
+		const advancedfx::CImageFormat& imageFormat = m_Settings.ImageFormat_get();
+		memset(m_FrameData, 0, imageFormat.Height * imageFormat.Width * sizeof(float));
 		return;
 	}
 	
 	float * fdata = m_FrameData;
 
-	int height = m_Settings.Height_get();
-	int width = m_Settings.Width_get();
+	const advancedfx::CImageFormat& imageFormat = m_Settings.ImageFormat_get();
+	int height = imageFormat.Height;
+	int width = imageFormat.Width;
 
 	m_FrameWhitePoint *= factor;
 
@@ -652,36 +631,36 @@ void EasySamplerBase::Sample(double time)
 // EasySamplerSettings /////////////////////////////////////////////////////////
 
 EasySamplerSettings::EasySamplerSettings(
-	int width, 
-	int height,
+	const advancedfx::CImageFormat& imageFormat,
 	Method method,
 	double frameDuration,
 	double startTime,
 	double exposure,
-	float frameStrength
-)
+	float frameStrength)
+: m_ImageFormat(imageFormat)
 {
-	assert(0 <= height);
-	assert(0 <= width);
+	assert(0 <= imageFormat.Height);
+	assert(0 <= imageFormat.Width);
 
 	m_Exposure = exposure;
 	m_FrameDuration = frameDuration;
 	m_FrameStrength = frameStrength;
-	m_Height = height;
 	m_Method = method;
 	m_StartTime = startTime;
-	m_Width = width;	
 }
 
 EasySamplerSettings::EasySamplerSettings(EasySamplerSettings const & settings)
 {
+	m_ImageFormat = settings.ImageFormat_get();
 	m_Exposure = settings.Exposure_get();
 	m_FrameDuration = settings.FrameDuration_get();
 	m_FrameStrength = settings.FrameStrength_get();
-	m_Height = settings.Height_get();
 	m_Method = settings.Method_get();
 	m_StartTime = settings.StartTime_get();
-	m_Width = settings.Width_get();
+}
+
+const advancedfx::CImageFormat& EasySamplerSettings::ImageFormat_get() const {
+	return m_ImageFormat;
 }
 
 double EasySamplerSettings::Exposure_get() const
@@ -696,10 +675,6 @@ float EasySamplerSettings::FrameStrength_get() const
 {
 	return m_FrameStrength;
 }
-int EasySamplerSettings::Height_get() const
-{
-	return m_Height;	
-}
 EasySamplerSettings::Method EasySamplerSettings::Method_get() const
 {
 	return m_Method;
@@ -707,8 +682,4 @@ EasySamplerSettings::Method EasySamplerSettings::Method_get() const
 double EasySamplerSettings::StartTime_get() const
 {
 	return m_StartTime;
-}
-int EasySamplerSettings::Width_get() const
-{
-	return m_Width;
 }
