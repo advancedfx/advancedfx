@@ -6,6 +6,21 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.38.0</version>
+<time>2026-01-07T14:13Z</time>
+<changes>
+<change type="updated">Added FFMPEG pixfmt grayf32le for ZFloat images (e.g. for depth streams)</change>
+<change type="updated">Updated FFMPEG version to v8.0.1-17 in installer</change>
+<change type="updated">ImageBuffer architectural changes (internal changes, should be mostly transparent)</change>
+<change type="added">Added an interleave setting, that has multiple inputs and interleaves them in given order into output e.g. depth based matte with median filter to filter out speckles.</change>
+<change type="updated">mirv_streams improvements: clearBeforeUi is not globally shared anymore. Added multi-pass (e.g. for proper hud separation), see wiki for examples. Thanks to @IMakeThingsWithCode for some ideas.</change>
+<change type="updated">mirv-script: added notes when features were added in types files.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.37.6</version>
 <time>2025-11-06T19:03Z</time>
 <changes>
