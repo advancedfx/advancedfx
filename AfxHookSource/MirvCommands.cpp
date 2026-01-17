@@ -4,33 +4,51 @@
 
 #include <shared/StringTools.h>
 
+#include <SourceInterfaces.h>
+
 #include "RenderView.h"
 #include "MirvTime.h"
-#include "SourceInterfaces.h"
+
 #include "WrpVEngineClient.h"
 #include "WrpConsole.h"
+
+#ifndef _WIN64
 #include "csgo_CHudDeathNotice.h"
 #include "csgo_SndMixTimeScalePatch.h"
+#endif //#ifndef _WIN64
+
 #include <shared/hooks/gameOverlayRenderer.h>
 #include "AfxStreams.h"
 #include "addresses.h"
 #include "CampathDrawer.h"
+
+#ifndef _WIN64
 #include "csgo_S_StartSound.h"
+#endif //#ifndef _WIN64
+
 #include "d3d9Hooks.h"
 #include "aiming.h"
 #include "../shared/CommandSystem.h"
 #include <shared/binutils.h>
+
+#ifndef _WIN64
 #include "csgo/ClientToolsCSgo.h"
 #include "csgo_CBasePlayer.h"
 #include "csgo_CCSGameMovement.h"
 #include "csgo_vphysics.h"
 #include "csgo_c_baseentity.h"
 #include "csgo_c_baseanimatingoverlay.h"
+#endif //#ifndef _WIN64
+
 #include "../shared/FovScaling.h"
+
+#ifndef _WIN64
 //#include "csgo_CDemoFile.h"
 #include "csgo_Stdshader_dx9_Hooks.h"
 #include "csgo_models_replace.h"
 //#include <csgo/sdk_src/public/tier0/memalloc.h>
+#endif //#ifndef _WIN64
+
 #include <shared/MirvCampath.h>
 #include <shared/AfxDetours.h>
 #include "../shared/MirvSkip.h"
@@ -119,6 +137,9 @@ CON_COMMAND(__mirv_test_msg_parallel, "") {
 	Tier0_Warning("Main: FINISH @ %i\n", GetTickCount());
 }
 
+
+#ifndef _WIN64
+
 CON_COMMAND(__mirv_test6, "")
 {
 	int argc = args->ArgC();
@@ -181,6 +202,8 @@ CON_COMMAND(__mirv_ct, "")
 	}
 }
 
+#endif //#ifndef _WIN64
+
 
 CON_COMMAND(__mirv_addr, "")
 {
@@ -217,8 +240,8 @@ CON_COMMAND(__mirv_addr, "")
 				Tier0_Msg(
 					"%i: [0x%08x,0x%08x)\n",
 					numResults,
-					result.Start - (DWORD)hModule,
-					result.End - (DWORD)hModule
+					result.Start - (size_t)hModule,
+					result.End - (size_t)hModule
 				);
 
 				search = Afx::BinUtils::MemRange(result.End, search.End);
@@ -281,6 +304,7 @@ CON_COMMAND(__mirv_test, "")
 	g_bD3D9DebugPrint = true;
 }
 
+#ifndef _WIN64
 CON_COMMAND(__mirv_skyboxscale, "print skyboxscale in CS:GO")
 {
 	if(AFXADDR_GET(csgo_C_BasePlayer_OFS_m_skybox3d_scale) != (AfxAddr)-1) {
@@ -294,7 +318,9 @@ CON_COMMAND(__mirv_skyboxscale, "print skyboxscale in CS:GO")
 	}
 	Tier0_Msg("skyBoxScale: n/a\n");
 }
+#endif //#ifndef _WIN64
 
+#ifndef _WIN64
 CON_COMMAND(__mirv_show_renderview_count, "") {
 	int argc = args->ArgC();
 
@@ -310,16 +336,21 @@ CON_COMMAND(__mirv_show_renderview_count, "") {
 		g_AfxStreams.Console_ShowRenderViewCountGet() ? 1 : 0
 	);
 }
+#endif //#ifndef _WIN64
+
 
 CON_COMMAND(mirv_streams, "Access to streams system.")
 {
+#ifndef _WIN64
 	bool bIsCsgo = g_SourceSdkVer == SourceSdkVer::SourceSdkVer_CSGO || g_SourceSdkVer == SourceSdkVer_CSCO;
+#endif //#ifndef _WIN64
 	int argc = args->ArgC();
 
 	if(2 <= argc)
 	{
 		char const * cmd1 = args->ArgV(1);
 
+#ifndef _WIN64
 		if(bIsCsgo && 0 == _stricmp(cmd1, "add"))
 		{
 			if(3 <= argc)
@@ -682,6 +713,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			return;
 		}
 		else
+#endif //#ifndef _WIN64
 		if(!_stricmp(cmd1, "record"))
 		{
 			if(3 <= argc)
@@ -733,6 +765,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					);
 					return;
 				}
+#ifndef _WIN64				
 				else
 				if(bIsCsgo && 0 == _stricmp(cmd2, "presentOnScreen"))
 				{
@@ -814,6 +847,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					);
 					return;
 				}
+#endif //#ifndef _WIN64
 				else if (0 == _stricmp(cmd2, "screen"))
 				{
 					CSubWrpCommandArgs subArgs(args, 3);
@@ -838,6 +872,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					);
 					return;
 				}
+#ifndef _WIN64				
 				else if (bIsCsgo && 0 == _stricmp(cmd2, "voices"))
 				{
 					if (4 <= argc)
@@ -854,6 +889,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					);
 					return;
 				}
+#endif //#ifndef _WIN64				
 				else
 				if (0 == _stricmp(cmd2, "bvh"))
 				{
@@ -965,6 +1001,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 				"mirv_streams record format [...] - Set/get file format.\n"
 				"mirv_streams record fps [...] - Allows to override input FPS for games where we can not detect it (not needed for CS:GO).\n"
 			);
+#ifndef _WIN64			
 			if (bIsCsgo) Tier0_Msg(
 				"mirv_streams record presentOnScreen [...] - Controls screen presentation during recording.\n"
 				"mirv_streams record matPostprocessEnable [...] - Control forcing of mat_postprocess_enable.\n"
@@ -972,13 +1009,16 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 				"mirv_streams record matMotionBlurEnabled [...] - Control forcing of mat_motion_blur_enabled.\n"
 				"mirv_streams record matForceTonemapScale [...] - Control forcing of mat_force_tonemap_scale.\n"
 			);
+#endif //#ifndef _WIN64
 			Tier0_Msg(
 				"mirv_streams record screen [...] - Controls capturing the game content drawn to screen right before being presented.\n"
 				"mirv_streams record startMovieWav [...] - Controls WAV audio recording.\n"
 			);
+#ifndef _WIN64
 			if (bIsCsgo) Tier0_Msg(
 				"mirv_streams record voices [...] - Controls voice WAV audio recording.\n"
 			);
+#endif //#ifndef _WIN64
 			Tier0_Msg(
 				"mirv_streams record bvh [...] - Controls the HLAE/BVH camera motion data capture output.\n"
 				"mirv_streams record cam [...] - Controls the camera motion data capture output (can be imported with mirv_camio).\n"
@@ -989,6 +1029,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			);
 			return;
 		}
+#ifndef _WIN64
 		else
 		if(bIsCsgo && 0 == _stricmp(cmd1, "actions"))
 		{
@@ -1064,20 +1105,24 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			);
 			return;
 		}
+#endif //#ifndef _WIN64		
 		else if (0 == _stricmp("settings", cmd1))
 		{
 			CSubWrpCommandArgs subArgs(args, 2);
 			advancedfx::CRecordingSettings::Console(&subArgs);
 			return;
 		}
+#ifndef _WIN64		
 		else if (bIsCsgo && 0 == _stricmp("mainStream", cmd1))
 		{
 			CSubWrpCommandArgs subArgs(args, 2);
 			g_AfxStreams.Console_MainStream(&subArgs);
 			return;
 		}
+#endif //#ifndef _WIN64
 	}
 
+#ifndef _WIN64
 	if (bIsCsgo) Tier0_Msg(
 		"mirv_streams add [...]- Add a stream.\n"
 		"mirv_streams edit [...]- Edit a stream.\n"
@@ -1089,18 +1134,23 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 		"mirv_streams print - Print current streams.\n"
 		"mirv_streams print2 - Print current streams.\n"
 	);
+#endif //#ifndef _WIN64
 	Tier0_Msg(
 		"mirv_streams record [...] - Recording control.\n"
 	);
+#ifndef _WIN64	
 	if (bIsCsgo) Tier0_Msg(
 		"mirv_streams actions [...] - Actions control (for baseFx based streams).\n"
 	);
+#endif //#ifndef _WIN64	
 	Tier0_Msg(
 		"mirv_streams settings [...] - Recording settings.\n"
 	);
+#ifndef _WIN64	
 	if (bIsCsgo) Tier0_Msg(
 		"mirv_streams mainStream [...] - Controls which stream is the main stream for caching full-scene state (default is first).\n"
 	);
+#endif //#ifndef _WIN64
 	return;
 }
 
@@ -1115,6 +1165,7 @@ void ReplaceAll(std::string & str, const std::string & from, const std::string &
 	}
 }
 
+#ifndef _WIN64
 CON_COMMAND(mirv_exec, "command execution")
 {
 	SOURCESDK::CSGO::ICvar * pCvar = WrpConCommands::GetVEngineCvar_CSGO();
@@ -1178,6 +1229,7 @@ CON_COMMAND(mirv_exec, "command execution")
 		, arg0
 	);
 }
+#endif //#ifndef _WIN64
 
 CON_COMMAND(__mirv_exec, "client command execution: __mirv_exec <as you would have typed here>") {
 	unsigned int len=0;
@@ -1501,7 +1553,7 @@ CON_COMMAND(mirv_camimport, "controls camera motion data import") {
 	);
 }
 
-CON_COMMAND(mirv_cvar_unhide_all,"(CS:GO only) removes hidden and development only flags from all cvars.")
+CON_COMMAND(mirv_cvar_unhide_all,"removes hidden and development only flags from all cvars.")
 {
 	SOURCESDK::CSGO::ICvar * pCvar = WrpConCommands::GetVEngineCvar_CSGO();
 	if(!pCvar)
@@ -1527,7 +1579,7 @@ CON_COMMAND(mirv_cvar_unhide_all,"(CS:GO only) removes hidden and development on
 	Tier0_Msg("Removed FCVAR_DEVELOPMENTONLY or FCVAR_HIDDEN from %i ConVars.\n", nUnhidden);
 }
 
-CON_COMMAND(mirv_cvar_hack, "")
+CON_COMMAND(mirv_cvar_hack, "force console variables (including hidden ones)")
 {
 	int argc = args->ArgC();
 
@@ -1550,10 +1602,12 @@ CON_COMMAND(mirv_cvar_hack, "")
 	);
 }
 
+#ifndef _WIN64
 CON_COMMAND(mirv_deathmsg, "controls death notification options")
 {
 	csgo_CHudDeathNotice_Console(args);
 }
+#endif //#ifndef _WIN64
 
 CON_COMMAND(mirv_fov,"allows overriding FOV (Field Of View) of the camera")
 {
@@ -1675,21 +1729,26 @@ CON_COMMAND(mirv_fov,"allows overriding FOV (Field Of View) of the camera")
 	}
 }
 
+#ifndef _WIN64
 CON_COMMAND(mirv_replace_name, "allows replacing player names")
 {
 	csgo_ReplacePlayerName_Console(args);
 }
+#endif //#ifndef _WIN64
 
+#ifndef _WIN64
 CON_COMMAND(mirv_replace_team_name, "allows replacing player team names")
 {
 	csgo_ReplaceTeamName_Console(args);
 }
+#endif //#ifndef _WIN64
 
 CON_COMMAND(mirv_input, "Input mode configuration.")
 {
 	g_Hook_VClient_RenderView.Console_MirvInput(args);
 }
 
+#ifndef _WIN64
 CON_COMMAND(mirv_snd_timescale, "(CS:GO only) allows to override host_timescale value for sound system.")
 {
 	if(!Hook_csgo_SndMixTimeScalePatch())
@@ -1722,6 +1781,7 @@ CON_COMMAND(mirv_snd_timescale, "(CS:GO only) allows to override host_timescale 
 		"mirv_snd_timescale default - don't override.\n"
 	);
 }
+#endif //#ifndef _WIN64
 
 CON_COMMAND(mirv_gameoverlay, "GameOverlayRenderer control.")
 {
@@ -1750,6 +1810,7 @@ CON_COMMAND(mirv_gameoverlay, "GameOverlayRenderer control.")
 	);
 }
 
+#ifndef _WIN64
 CON_COMMAND(mirv_snd_filter, "Sound control (e.g. blocking sounds).")
 {
 	if(!csgo_S_StartSound_Install())
@@ -1823,7 +1884,9 @@ CON_COMMAND(mirv_snd_filter, "Sound control (e.g. blocking sounds).")
 		"<mask> - string to match, where \\* = wildcard and \\\\ = \\\n"
 	);
 }
+#endif //#ifndef _WIN64
 
+#ifndef _WIN64
 typedef struct MirvListEntitiesEntry_s {
 	int idx;
 	double dist;
@@ -2468,6 +2531,9 @@ CON_COMMAND(mirv_aim, "Aiming system control.")
 	);
 }
 
+#endif //#ifndef _WIN64
+
+
 extern class CommandSystem g_CommandSystem;
 
 CON_COMMAND(mirv_cmd, "Command system (for scheduling commands).")
@@ -2508,6 +2574,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 	{
 		char const * cmd1 = args->ArgV(1);
 
+#ifndef _WIN64
 		if (!_stricmp("physicsMaxFps", cmd1))
 		{
 			if (!Hook_csgo_vphsyics_frametime_lowerlimit())
@@ -2735,7 +2802,9 @@ CON_COMMAND(mirv_fix, "Various fixes")
 
 			return;
 		}
-		else if (!_stricmp("panoramaTiming", cmd1))
+		else
+#endif //#ifndef _WIN64		
+		if (!_stricmp("panoramaTiming", cmd1))
 		{
 			if (3 <= argc)
 			{
@@ -2826,7 +2895,8 @@ CON_COMMAND(mirv_fix, "Various fixes")
 		}
 	}
 
-	Tier0_Msg(
+#ifndef _WIN64
+	Tier0_Msg(		
 		"mirv_fix physicsMaxFps [...] - Can raise the FPS limit for physics (e.g. rag dolls, so they don't freeze upon high host_framerate).\n"
 		"mirv_fix blockObserverTarget [...] - Fixes unwanted player switching, e.g. upon bomb plant (blocks C_BasePlayer::RecvProxy_ObserverTarget).\n"
 		"mirv_fix oldDuckFix [...] - Can fix player stuck in duck for old demos.\n"
@@ -2837,6 +2907,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 		"mirv_fix forceDoAnimationEvents 0|1 - Only useful in combination with replacing old models with new ones for forcing animation events to be played, defaut is 0 (off).\n"
 		"mirv_fix suppressFileCRCCheck 0|1 - This is only useful with HLAE special builds and it's on by default.\n"
 	);
+#endif //#ifndef _WIN64	
 	Tier0_Msg(
 		"mirv_fix panoramaTiming [...]\n"
 	);
@@ -2844,6 +2915,9 @@ CON_COMMAND(mirv_fix, "Various fixes")
 		"mirv_fix suppressHostError 0|1"
 	);
 }
+
+
+#ifndef _WIN64
 
 extern SOURCESDK::CSGO::vgui::IPanel * g_pVGuiPanel_csgo;
 extern SOURCESDK::CSGO::vgui::ISurface *g_pVGuiSurface_csgo;
@@ -2883,7 +2957,7 @@ bool MirvVPanelSetVisible(char const * panelName, bool visible)
 
 void MirvVPanelOnCommand(SOURCESDK::CSGO::vgui::Panel * panel, char const * command)
 {
-	int * vtable = *(int**)panel;
+	void ** vtable = *(void***)panel;
 
 	void * onCommand = (void *)vtable[96];
 
@@ -2994,6 +3068,9 @@ CON_COMMAND(mirv_vpanel, "VGUI Panel access")
 	);
 }
 
+#endif //#ifndef _WIN64
+
+
 CON_COMMAND(mirv_camio, "New camera motion data import / export.")
 {
 	g_Hook_VClient_RenderView.Console_CamIO(args);
@@ -3033,6 +3110,7 @@ CON_COMMAND(mirv_loadlibrary, "Load a DLL.")
 	);
 }
 
+#ifndef _WIN64
 CON_COMMAND(mirv_time, "time control")
 {
 	int argc = args->ArgC();
@@ -3126,12 +3204,15 @@ CON_COMMAND(mirv_time, "time control")
 		"mirv_time drive [...]\n"
 	);
 }
+#endif //#ifndef _WIN64
 
+#ifndef _WIN64
 void Mirv_Pov_Interp_CompensateLatencyOn();
 void Mirv_Pov_Interp_CompensateLatencyOff();
 void Mirv_Pov_Interp_Default();
 
 extern bool g_csgo_spectatortools_extend_overviewmap;
+#endif //#ifndef _WIN64
 
 CON_COMMAND(mirv_cfg, "general HLAE configuration")
 {
@@ -3142,6 +3223,7 @@ CON_COMMAND(mirv_cfg, "general HLAE configuration")
 	{
 		const char * arg1 = args->ArgV(1);
 
+#ifndef _WIN64
 		if(0 == _stricmp("mirvForceSpectatorToolsMapOverviewShowAll", arg1))
 		{
 			if (3 <= argC)
@@ -3158,12 +3240,15 @@ CON_COMMAND(mirv_cfg, "general HLAE configuration")
 			);
 			return;
 		}
-		else if (0 == _stricmp("fovScaling", arg1))
+		else
+#endif //#ifndef _WIN64		
+		if (0 == _stricmp("fovScaling", arg1))
 		{
 			CSubWrpCommandArgs subArgs(args, 2);
 			Console_MirvFovScaling(&subArgs);
 			return;
 		}
+#ifndef _WIN64		
 		else if (0 == _stricmp("forceViewOverride", arg1))
 		{
 			if (3 <= argC)
@@ -3301,27 +3386,34 @@ CON_COMMAND(mirv_cfg, "general HLAE configuration")
 			);
 			return;
 		}
+#endif //#ifndef _WIN64
 	}
 
 	Tier0_Msg(
 		"%s fovScaling [...] - Set default fov scaling.\n"
+#ifndef _WIN64		
 		"%s forceViewOverride [...] - If to force the view override onto the local player, can fix a few bugs (CS:GO only).\n"
 		"%s forceViewOverrideHltv [...] - If to force the view override onto the HLTVCamera (e.g. for GOTV). (CS:GO only).\n"
 		"%s viewOverrideReset [...] - If to reset roll to 0 and fov to 90 (unscaled) after ending a view override (CS:GO only).\n"
 		"%s mirvForceSpectatorToolsMapOverviewShowAll [...] - If to extend map overivew in mirv_force_spectatortools.\n"
+#endif //#ifndef _WIN64
+		, arg0
+#ifndef _WIN64
 		, arg0
 		, arg0
 		, arg0
 		, arg0
-		, arg0
+#endif //#ifndef _WIN64
 	);
+#ifndef _WIN64
 	Tier0_Msg(
 		"%s mirvPov [...] - Tampers with the interp to get more accurate POV view on average.\n"
 		, arg0
 	);
-
+#endif //#ifndef _WIN64
 }
 
+#ifndef _WIN64
 CON_COMMAND(mirv_guides, "Draw guides on screen (CS:GO).")
 {
 	int argC = args->ArgC();
@@ -3491,3 +3583,5 @@ CON_COMMAND(mirv_spec_player_key, "Spectate player by spectatorslot index") {
 		, arg0
 	);	
 }
+
+#endif //#ifndef _WIN64

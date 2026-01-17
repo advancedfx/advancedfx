@@ -13,10 +13,22 @@
 #include <Windows.h>
 #include <deps/release/Detours/src/detours.h>
 
-typedef void *  (__fastcall * tf2_C_BaseAnimating_RecordBones_t)(void * This, void* Edx, SOURCESDK::CStudioHdr *hdr, SOURCESDK::matrix3x4_t *pBoneState );
+typedef void *  (__fastcall * tf2_C_BaseAnimating_RecordBones_t)(void * This,
+#ifndef _WIN64
+	void* Edx,
+#endif //#ifndef _WIN64
+	 SOURCESDK::CStudioHdr *hdr, SOURCESDK::matrix3x4_t *pBoneState );
 tf2_C_BaseAnimating_RecordBones_t True_tf2_C_BaseAnimating_RecordBones = nullptr;
-void * __fastcall My_tf2_C_BaseAnimating_RecordBones(void * This, void* Edx, SOURCESDK::CStudioHdr *hdr, SOURCESDK::matrix3x4_t *pBoneState ) {
-	void * result = True_tf2_C_BaseAnimating_RecordBones(This, Edx, hdr, pBoneState);
+void * __fastcall My_tf2_C_BaseAnimating_RecordBones(void * This,
+#ifndef _WIN64
+	void* Edx,
+#endif //#ifndef _WIN64
+	 SOURCESDK::CStudioHdr *hdr, SOURCESDK::matrix3x4_t *pBoneState ) {
+	void * result = True_tf2_C_BaseAnimating_RecordBones(This,
+#ifndef _WIN64
+	Edx,
+#endif //#ifndef _WIN64
+	 hdr, pBoneState);
 
 	if(CClientTools * instance = CClientTools::Instance())
 		instance->CaptureBones(hdr, pBoneState);

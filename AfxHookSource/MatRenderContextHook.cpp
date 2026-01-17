@@ -825,7 +825,7 @@ public:
 	}
 
 private:
-	static std::map<int *, CMatRenderContextDetours> m_VtableMap;
+	static std::map<void **, CMatRenderContextDetours> m_VtableMap;
 
 	SOURCESDK::IMatRenderContext_csgo * m_Ctx;
 	CMatRenderContextDetours * m_Detours;
@@ -939,7 +939,7 @@ private:
 
 std::map<SOURCESDK::IMatRenderContext_csgo *, CMatRenderContextHook *> CMatRenderContextHook::m_Map;
 std::shared_timed_mutex CMatRenderContextHook::m_MapMutex;
-std::map<int *, CMatRenderContextDetours> CMatRenderContextHook::m_VtableMap;
+std::map<void **, CMatRenderContextDetours> CMatRenderContextHook::m_VtableMap;
 
 
 void __fastcall MatRenderContextHook_Bind(
@@ -1051,9 +1051,9 @@ void __fastcall MatRenderContextHook_DrawInstances(
 
 void CMatRenderContextHook::HooKVtable(SOURCESDK::IMatRenderContext_csgo * orgCtx)
 {
-	int * vtable = *(int**)orgCtx;
+	void ** vtable = *(void***)orgCtx;
 
-	std::map<int *, CMatRenderContextDetours>::iterator it = m_VtableMap.find(vtable);
+	std::map<void **, CMatRenderContextDetours>::iterator it = m_VtableMap.find(vtable);
 
 	if (it != m_VtableMap.end())
 	{

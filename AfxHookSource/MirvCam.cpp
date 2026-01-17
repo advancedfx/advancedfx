@@ -14,6 +14,7 @@ bool CMirvCam::ApplySource(float & x, float & y, float & z, float & xRotation, f
 {
 	bool overriden = false;
 
+#ifndef _WIN64
 	if (m_Source)
 	{
 		SOURCESDK::Vector o;
@@ -54,6 +55,7 @@ bool CMirvCam::ApplySource(float & x, float & y, float & z, float & xRotation, f
 			}
 		}
 	}
+#endif //#ifndef _WIN64
 
 	return overriden;
 }
@@ -96,6 +98,7 @@ bool CMirvCam::ApplyFov(float & fov)
 {
 	bool overriden = false;
 
+#ifndef _WIN64
 	if (m_Fov)
 	{
 		float tFov;
@@ -106,10 +109,12 @@ bool CMirvCam::ApplyFov(float & fov)
 			fov = tFov;
 		}
 	}
+#endif //#ifndef _WIN64
 
 	return overriden;
 }
 
+#ifndef _WIN64
 void CMirvCam::RebuildCalc(void)
 {
 	IMirvHandleCalc * handleCalc = g_MirvHandleCalcs.NewValueCalc(0, m_SourceHandle.ToInt());
@@ -133,6 +138,7 @@ void CMirvCam::RebuildCalc(void)
 		handleCalc->Release();
 	}
 }
+#endif //#ifndef _WIN64
 
 CMirvCam g_MirvCam;
 
@@ -150,6 +156,7 @@ CON_COMMAND(mirv_cam, "Control camera source entity and offset.")
 			{
 				char const * arg2 = args->ArgV(2);
 
+#ifndef _WIN64
 				if (0 == _stricmp("calcVecAng", arg2))
 				{
 					if (4 <= argc)
@@ -208,7 +215,8 @@ CON_COMMAND(mirv_cam, "Control camera source entity and offset.")
 
 					return;
 				}
-				else if (0 == _stricmp("origin", arg2))
+				else
+				if (0 == _stricmp("origin", arg2))
 				{
 					if (4<= argc)
 					{
@@ -320,7 +328,9 @@ CON_COMMAND(mirv_cam, "Control camera source entity and offset.")
 
 					return;
 				}
-				else if (0 == _stricmp("originUse", arg2))
+				else
+#endif //#ifndef _WIN64
+				if (0 == _stricmp("originUse", arg2))
 				{
 					if (6 <= argc)
 					{
@@ -361,6 +371,7 @@ CON_COMMAND(mirv_cam, "Control camera source entity and offset.")
 			}
 
 			Tier0_Msg(
+#ifndef _WIN64				
 				"mirv_cam source calcVecAng [...] - Calc to use as source (overrides handle, origin, angles, attachment, attachmentNone).\n"
 				"mirv_cam source calcVecAngClear - Clear source (overrides handle, origin, angles, attachment, attachmentNone).\n"
 				"mirv_cam source handle [...] - Entity handle to use as source.\n"
@@ -368,11 +379,13 @@ CON_COMMAND(mirv_cam, "Control camera source entity and offset.")
 				"mirv_cam source angles [...] - Controls source angles type.\n"
 				"mirv_cam source attachment [...] - Controls if and what attachment to use as source.\n"
 				"mirv_cam source attachmentNone - Use no attachment.\n"
+#endif //#ifndef _WIN64
 				"mirv_cam source originUse [...] - Controls which components of source origin to use.\n"
 				"mirv_cam source anglesUse [...] - Controls which components of source angles to use.\n"
 			);
 			return;
 		}
+#ifndef _WIN64
 		else if (0 == _stricmp("fov", arg1))
 		{
 			if (3 <= argc)
@@ -420,7 +433,9 @@ CON_COMMAND(mirv_cam, "Control camera source entity and offset.")
 			);
 			return;
 		}
-		else if (0 == _stricmp("offset", arg1))
+		else
+#endif //#ifndef _WIN64		
+		if (0 == _stricmp("offset", arg1))
 		{
 			if (5 <= argc)
 			{
@@ -469,7 +484,9 @@ CON_COMMAND(mirv_cam, "Control camera source entity and offset.")
 
 	Tier0_Msg(
 		"mirv_cam source [...] - Control camera location.\n"
+#ifndef _WIN64
 		"mirv_cam fov [...] - Control camera fov.\n"
+#endif //#ifndef _WIN64
 		"mirv_cam offset [...] - Control camera offset (in local space).\n"
 		"mirv_cam order [...] - Control order of camera overrides.\n"
 	);

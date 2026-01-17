@@ -1,7 +1,7 @@
 #pragma once
 
 #include "SourceInterfaces.h"
-#include "AfxInterfaces.h"
+#include "csgo/AfxInterfaces.h"
 
 
 /// <summary>Hooks the given material system render context, if it's not hooked yet. Returns hooked context.</summary>

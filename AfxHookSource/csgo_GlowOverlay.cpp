@@ -22,7 +22,7 @@
 
 struct CCsgoCGlowOverlayMemLayout
 {
-	void * vtable_ptr;
+	void ** vtable_ptr;
 	char _weDontCare_000[
 		3 * 4 //m_vPos
 			+ 4 //m_bDirectional

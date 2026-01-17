@@ -232,6 +232,7 @@ void Addresses_InitShaderApiDll(AfxAddr shaderApiDll, SourceSdkVer sourceSdkVer)
 
 void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 {
+#ifndef _WIN64	
 	if (SourceSdkVer_CSGO == sourceSdkVer || SourceSdkVer_CSCO == sourceSdkVer)
 	{
 		// csgo_snd_mix_timescale_patch: // Last checked CSGO: 2022-10-22. Last checked CSCO: 2024-07-01.
@@ -691,14 +692,20 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 			AFXADDR_SET(csgo_engine_Do_CCLCMsg_FileCRCCheck, addr);
 		}
 	}
+#endif //#ifndef _WIN64
 
-	if (SourceSdkVer_CSGO == sourceSdkVer || SourceSdkVer_CSCO == sourceSdkVer || SourceSdkVer_TF2 == sourceSdkVer)
+	if (
+#ifndef _WIN64		
+		SourceSdkVer_CSGO == sourceSdkVer || SourceSdkVer_CSCO == sourceSdkVer ||
+#endif
+		SourceSdkVer_TF2 == sourceSdkVer
+	)
 	{
 		// csgo_engine_Cmd_ExecuteCommand: // Checked 2019-11-11.
-		// tf2_engine_Cmd_ExecuteCommand: // Checked 2024-21-04.
+		// tf2_engine_Cmd_ExecuteCommand: // Checked x86: 2024-21-04, x64: 20260116.
 		{
-			DWORD addr = 0;
-			DWORD strAddr = 0;
+			size_t addr = 0;
+			size_t strAddr = 0;
 			{
 				ImageSectionsReader sections((HMODULE)engineDll);
 				if (!sections.Eof())
@@ -722,15 +729,24 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 				ImageSectionsReader sections((HMODULE)engineDll);
 
 				MemRange baseRange = sections.GetMemRange();
+#ifndef _WIN64
 				MemRange result = FindBytes(baseRange, (char const *)&strAddr, sizeof(strAddr));
+#else
+				MemRange result = FindAddrInt32OffsetRefInContext(baseRange, strAddr, (int32_t)sizeof(int32_t), "48 8d 0d", nullptr);
+#endif //#ifndef _WIN64
 				if (!result.IsEmpty())
 				{
+#ifndef _WIN64
 					addr = result.Start - ((SourceSdkVer_CSGO == sourceSdkVer || SourceSdkVer_CSCO == sourceSdkVer) ? 0x79 : 0xF1);
-
-					// check for pattern to see if it is the right address:
 					unsigned char pattern[3] = { 0x55, 0x8B, 0xEC};
+#else
+					// x64 TF2
+					addr = result.Start - 0x103;
+					unsigned char pattern[6] = { 0x48, 0x89, 0x5C, 0x24, 0x08, 0x48};
+#endif //#ifndef _WIN64
+					// check for pattern to see if it is the right address:
 
-					DWORD patternSize = sizeof(pattern) / sizeof(pattern[0]);
+					size_t patternSize = sizeof(pattern) / sizeof(pattern[0]);
 					MemRange patternRange(addr, addr + patternSize);
 					MemRange result = FindBytes(patternRange, (char *)pattern, patternSize);
 					if (result.Start != patternRange.Start || result.End != patternRange.End)
@@ -752,6 +768,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		}
 	}
 
+#ifndef _WIN64
 	if (SourceSdkVer_CSGO == sourceSdkVer || SourceSdkVer_CSCO == sourceSdkVer)
 	{
 		// mirv_pov related
@@ -791,6 +808,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		}
 	}
 	else
+#endif //#ifndef _WIN64	
 	{
 		AFXADDR_SET(csgo_S_StartSound_StringConversion, 0x0);
 		AFXADDR_SET(csgo_CClientState_ProcessVoiceData, 0x0);
@@ -830,7 +848,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 			if(vtable) AFXADDR_SET(engine_CVideoMode_Common_WriteMovieFrame, (size_t)(vtable[23]));
 		} break;
 		case SourceSdkVer_TF2: {
-			// Checked 2024-01-05.
+			// Checked x86: 2024-01-05.
 			void **vtable = (void **)FindClassVtable((HMODULE)engineDll, ".?AVCVideoMode_MaterialSystem@@", 0, 0x0);
 			if(vtable) AFXADDR_SET(engine_CVideoMode_Common_WriteMovieFrame, (size_t)(vtable[26]));
 		} break;
@@ -882,10 +900,10 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 					if (!sections.Eof())
 					{
 						MemRange firstDataRange = sections.GetMemRange();
-
 						MemRange result = FindCString(sections.GetMemRange(), "CL_PreserveExistingEntity: missing client entity %d.\n");
 						if (!result.IsEmpty())
 						{
+#ifndef _WIN64	
 							DWORD tmpAddr = result.Start;
 
 							result = FindBytes(textRange, (char const*)&tmpAddr, sizeof(tmpAddr));
@@ -893,10 +911,23 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 							{
 								result = FindPatternString(MemRange(result.Start + 0x4, result.Start + 0x4 + 5).And(textRange), "E8 ?? ?? ?? ??");
 								if (!result.IsEmpty()) {
-									AFXADDR_SET(engine_HostError, result.Start + 5 + *(size_t*)(result.Start + 1));
+									AFXADDR_SET(engine_HostError, result.Start + 5 + *(int32_t*)(result.Start + 1));
 								} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 							} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+#else
+							size_t tmpAddr = result.Start;
+
+							result = FindAddrInt32OffsetRefInContext(textRange, tmpAddr, (int32_t)sizeof(int32_t), "48 8d 0d", nullptr);
+							if (!result.IsEmpty())
+							{
+								result = FindPatternString(MemRange(result.Start + 9, result.Start + 9 + 5).And(textRange), "E9 ?? ?? ?? ??");
+								if (!result.IsEmpty()) {
+									AFXADDR_SET(engine_HostError, result.Start + 5 + *(int32_t*)(result.Start + 1));
+								} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+							} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+#endif //#ifndef _WIN64
 						} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
 					} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 				} else ErrorBox(MkErrStr(__FILE__, __LINE__));			
 			} break;
@@ -945,6 +976,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 
 void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer)
 {
+#ifndef _WIN64
 	if(SourceSdkVer_CSGO == sourceSdkVer || SourceSdkVer_CSCO == sourceSdkVer)
 	{
 		// csgo_panorama_AVCUIPanel_UnkSetFloatProp // Checked 2018-08-03.
@@ -1020,10 +1052,12 @@ void Addresses_InitPanoramaDll(AfxAddr panoramaDll, SourceSdkVer sourceSdkVer)
 			}
 		}			
 	}
+#endif //#ifndef _WIN64
 }
 
 void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 {
+#ifndef _WIN64
 	if(SourceSdkVer_CSGO == sourceSdkVer || SourceSdkVer_CSCO == sourceSdkVer)
 	{
 		// csgo_CCSGO_HudDeathNotice_FireGameEvent // Checked 2018-08-03.
@@ -2749,6 +2783,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 		}		
 	}
 	else
+#endif //#ifndef _WIN64
 	{
 		//AFXADDR_SET(csgo_CPredictionCopy_TransferData, 0x0);
 		//AFXADDR_SET(csgo_C_BaseEntity_IClientEntity_vtable, 0x0);
@@ -2825,12 +2860,17 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 					MemRange result = FindCString(sections.GetMemRange(), "C_BaseAnimating::RecordBones");
 					if (!result.IsEmpty())
 					{
-						DWORD strAddr = result.Start;
+						size_t strAddr = result.Start;
+#ifndef _WIN64
 						result = FindBytes(textRange, (char const *)&strAddr, sizeof(strAddr));
+#else
+						result = FindAddrInt32OffsetRefInContext(textRange, strAddr, (int32_t)sizeof(int32_t), "48 8d 3d", nullptr);
+#endif //#ifndef _WIN64
 						if(!result.IsEmpty()) {
-							DWORD refStrAddr = result.Start;
+							size_t refStrAddr = result.Start;
 
 							switch(sourceSdkVer) {
+#ifndef _WIN64								
 							case SourceSdkVer_CSGO:
 							case SourceSdkVer_CSCO:
 								{
@@ -2867,9 +2907,14 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 									else ErrorBox(MkErrStr(__FILE__, __LINE__));	
 								}
 								break;
+#endif //#ifndef _WIN64
 							case SourceSdkVer_TF2:
 								{
+#ifndef _WIN64
 									MemRange result = FindPatternString(textRange.And(MemRange(refStrAddr - 0x3a, refStrAddr -0x3a + 3)), "55 8B EC");
+#else
+									MemRange result = FindPatternString(textRange.And(MemRange(refStrAddr - 0x59, refStrAddr -0x59 + 6)), "40 53 41 54 41 55");
+#endif //#ifndef _WIN64
 									if(!result.IsEmpty())
 										AFXADDR_SET(tf2_client_C_BaseAnimating_RecordBones, result.Start);
 									else ErrorBox(MkErrStr(__FILE__, __LINE__));	
@@ -3120,21 +3165,24 @@ void Addresses_InitMaterialsystemDll(AfxAddr materialsystemDll, SourceSdkVer sou
 		}
 	}
 
+#ifndef _WIN64	
 	if (sourceSdkVer == SourceSdkVer_CSGO || sourceSdkVer == SourceSdkVer_CSCO) {
 
 		AFXADDR_SET(csgo_materialsystem_Material_InterlockedDecrement_vtable_index, 13);
 	}
+#endif //#ifndef _WIN64
 
 	// Queued rendering related hooks.
 	//
 	// Dependencies:
 	// - materialsystem_CMaterialSystem_SwapBuffers address.
-	// - mirv_campath draw (in future, not yet).
+	// - mirv_campath draw.
 	// - mirv_streams record screen.
 	//
 	int materialsystem_GetRenderCallQueue_vtable_offset = -1;
 	{
 		switch(sourceSdkVer) {
+#ifndef _WIN64			
 		case SourceSdkVer_SWARM:
 			// Checked 2023-09-16.
 			materialsystem_GetRenderCallQueue_vtable_offset = 141;
@@ -3146,11 +3194,13 @@ void Addresses_InitMaterialsystemDll(AfxAddr materialsystemDll, SourceSdkVer sou
 			materialsystem_GetRenderCallQueue_vtable_offset = 179; // 3rd last
 			AFXADDR_SET(materialsystem_CFunctor_vtable_size, 4);
 			break;
+#endif //#ifndef _WIN64			
 		case SourceSdkVer_TF2:
 			// Checked 2024-04-22.
 			materialsystem_GetRenderCallQueue_vtable_offset = 148;
 			AFXADDR_SET(materialsystem_CFunctor_vtable_size, 4);
 			break;
+#ifndef _WIN64			
 		case SourceSdkVer_CSSV34:
 			// Checked 2023-09-16.
 			// this game is non-queued.
@@ -3181,6 +3231,7 @@ void Addresses_InitMaterialsystemDll(AfxAddr materialsystemDll, SourceSdkVer sou
 			materialsystem_GetRenderCallQueue_vtable_offset = 148; // 4th last
 			AFXADDR_SET(materialsystem_CFunctor_vtable_size, 4);
 			break;
+#endif //#ifndef _WIN64
 		}
 
 		if(0 <= materialsystem_GetRenderCallQueue_vtable_offset) {
@@ -3206,11 +3257,13 @@ void Addresses_InitMaterialsystemDll(AfxAddr materialsystemDll, SourceSdkVer sou
 				{
 					AfxAddr tmpAddr = (size_t)*(void**)vtable_addr;
 					switch(sourceSdkVer) {
+#ifndef _WIN64
 					case SourceSdkVer_CSS:
 					case SourceSdkVer_TF2:
 					case SourceSdkVer_HL2MP:
 						AFXADDR_SET(materialsystem_CMatCallQueue_QueueFunctor, tmpAddr); // If this chnanges, then this offset in MaterialSystemHooks.cpp for pQueueFunctorInternal needs to be changed!
 						break;
+#endif //#ifndef _WIN64
 					default:
 						{
 							/* We search the first call inside the function (ignoring interface calls to AddRef / Release):
@@ -3218,8 +3271,8 @@ void Addresses_InitMaterialsystemDll(AfxAddr materialsystemDll, SourceSdkVer sou
 							*/
 							MemRange result = FindPatternString(MemRange(tmpAddr, tmpAddr + 0x40).And(textRange), "E8 ?? ?? ?? ??");
 							if (!result.IsEmpty()) {
-								AfxAddr tmpAddr2 = ((size_t)*(void**)(result.Start + 1)) + result.Start + 5;
-								if(!MemRange::FromSize(tmpAddr2,sizeof(void*)).And(textRange).IsEmpty()) {
+								AfxAddr tmpAddr2 = result.Start + 5 + *(int32_t*)(result.Start + 1);
+								if(!MemRange::FromSize(tmpAddr2,sizeof(int32_t)).And(textRange).IsEmpty()) {
 									AFXADDR_SET(materialsystem_CMatCallQueue_QueueFunctor, tmpAddr2);
 								} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 							} else ErrorBox(MkErrStr(__FILE__, __LINE__));
@@ -3241,9 +3294,14 @@ void Addresses_InitMaterialsystemDll(AfxAddr materialsystemDll, SourceSdkVer sou
 		{
 			AfxAddr tmpAddr = result.Start;
 
+#ifndef _WIN64
 			result = FindBytes(textRange, (char const*)&tmpAddr, sizeof(tmpAddr));
+#else
+			result = FindAddrInt32OffsetRefInContext(textRange, tmpAddr, (int32_t)sizeof(int32_t), "4c 8d 3d", nullptr);
+#endif //#ifndef _WIN64
 			if (!result.IsEmpty())
 			{
+#ifndef _WIN64
 				if( sourceSdkVer == SourceSdkVer_CSSV34 ) {
 					/*
 mov     ecx, ds:g_VProfCurrentProfile
@@ -3260,6 +3318,13 @@ push    0
 					// We have a bigger search range intentionally here, since we want to support several mods.
 					result = FindBytesReverse(MemRange(result.Start - 0x50, result.Start).And(textRange), (char *)pattern, sizeof(pattern));
 				}
+#else
+				{
+					unsigned char pattern[3] = {0x4C, 0x8B, 0xDC};
+					// We have a bigger search range intentionally here, since we want to support several mods.
+					result = FindBytesReverse(MemRange(result.Start - 34, result.Start).And(textRange), (char *)pattern, sizeof(pattern));
+				}
+#endif //#ifndef _WIN64
 				if (!result.IsEmpty()) {
 						AFXADDR_SET(materialsystem_CMaterialSystem_SwapBuffers, result.Start);
 				} else ErrorBox(MkErrStr(__FILE__, __LINE__));

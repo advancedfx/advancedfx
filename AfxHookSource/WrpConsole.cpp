@@ -496,7 +496,7 @@ bool WrpConVarRef::IsValid() {
 }
 
 typedef union {
-	DWORD d;
+	size_t d;
 	float f;
 	int i;
 } xor_helper_t;
@@ -509,7 +509,7 @@ float WrpConVarRef::GetFloat(void) const
 
 		xor_helper_t h;
 		h.f = m_pConVar007->m_Value.m_fValue;
-		h.d ^= (DWORD)m_pConVar007;
+		h.d ^= (size_t)m_pConVar007;
 		return h.f;
 	}
 
@@ -524,7 +524,7 @@ int WrpConVarRef::GetInt(void) const
 
 		xor_helper_t h;
 		h.i = m_pConVar007->m_Value.m_nValue;
-		h.d ^= (DWORD)m_pConVar007;
+		h.d ^= (size_t)m_pConVar007;
 		return h.i;
 	}
 
@@ -551,11 +551,11 @@ void WrpConVarRef::SetDirectHack(float value)
 		xor_helper_t h;
 
 		h.f = value;
-		h.d ^= (DWORD)m_pConVar007;
+		h.d ^= (size_t)m_pConVar007;
 		m_pConVar007->m_Value.m_fValue = h.f;
 
 		h.i = (int)value;
-		h.d ^= (DWORD)m_pConVar007;
+		h.d ^= (size_t)m_pConVar007;
 		m_pConVar007->m_Value.m_nValue = h.i;
 	}
 }

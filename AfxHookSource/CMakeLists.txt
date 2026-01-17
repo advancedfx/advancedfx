@@ -2,66 +2,67 @@ cmake_minimum_required (VERSION 3.24)
 
 project ("AfxHookSource")
 
-set(AFXHOOKSOURCE_SHADERS
-    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_line_vs20.acs"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_line_vs20.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_line_ps20.acs"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_line_ps20.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_pgldraw_vs20.acs"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_pgldraw_vs20.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_pgldraw_ps20.acs"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_pgldraw_ps20.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_depth_ps20.acs"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_depth_ps20.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_drawtexture_ps20.acs"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_drawtexture_ps20.h"
-)
-
-set(AFXHOOKSOURCE_SHADERS_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/afx_line_vs20.fxc"
-	"${CMAKE_CURRENT_SOURCE_DIR}/../shaders/afx_line_ps20.fxc"
-	"${CMAKE_CURRENT_SOURCE_DIR}/../shaders/afx_pgldraw_vs20.fxc"
-	"${CMAKE_CURRENT_SOURCE_DIR}/../shaders/afx_pgldraw_ps20.fxc"
-	"${CMAKE_CURRENT_SOURCE_DIR}/../shaders/afx_depth_ps20.fxc"
-	"${CMAKE_CURRENT_SOURCE_DIR}/../shaders/afx_drawtexture_ps20.fxc"
-)
-
-add_custom_command(
-    WORKING_DIRECTORY ${shaderbuilder_BINARY_DIR}
-    OUTPUT ${AFXHOOKSOURCE_SHADERS}
-    DEPENDS shaderbuilder ${AFXHOOKSOURCE_SHADERS_SOURCES}
-    COMMAND ShaderBuilder.exe --profile vs_2_0 --in "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/afx_line_vs20.fxc" --outPrefix "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_line_vs20"
-	COMMAND ShaderBuilder.exe --profile ps_2_0 --in "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/afx_line_ps20.fxc" --outPrefix "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_line_ps20"
-	COMMAND ShaderBuilder.exe --profile vs_2_0 --in "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/afx_pgldraw_vs20.fxc" --outPrefix "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_pgldraw_vs20"
-	COMMAND ShaderBuilder.exe --profile ps_2_0 --in "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/afx_pgldraw_ps20.fxc" --outPrefix "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_pgldraw_ps20"
-	COMMAND ShaderBuilder.exe --profile ps_2_0 --in "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/afx_depth_ps20.fxc" --outPrefix "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_depth_ps20"
-	COMMAND ShaderBuilder.exe --profile ps_2_0 --in "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/afx_drawtexture_ps20.fxc" --outPrefix "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/afx_drawtexture_ps20"	
-)
+###############################################################################
+## BEGIN Shaders
 
 add_custom_target(AfxHookSourceShaders
-    DEPENDS ${AFXHOOKSOURCE_SHADERS}
 )
 
+macro(add_shader name profile)
+    add_custom_command(
+        WORKING_DIRECTORY "${shaderbuilder_BINARY_DIR}"
+        OUTPUT
+            "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/${name}.acs"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/${name}.h"
+        DEPENDS
+            shaderbuilder
+            "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/${name}.fxc"
+        COMMAND
+            ShaderBuilder.exe --profile "${profile}" --in "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/${name}.fxc" --outPrefix "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/${name}"
+    )
+    target_sources(AfxHookSourceShaders
+        PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/${name}.acs"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/${name}.h"
+    )
+endmacro()
 
+add_shader("afx_line_vs20" "vs_2_0")
+add_shader("afx_line_ps20" "ps_2_0")
+add_shader("afx_drawtexture_ps20" "ps_2_0")
+
+if(CMAKE_GENERATOR_PLATFORM STREQUAL "Win32")
+    add_shader("afx_pgldraw_vs20" "vs_2_0")
+    add_shader("afx_pgldraw_ps20" "ps_2_0")
+    add_shader("afx_depth_ps20" "ps_2_0")
+endif()
+
+## END Shaders
+###############################################################################
+
+###############################################################################
 ## BEGIN protobuf
 
-#find_package(protobuf CONFIG REQUIRED)
-include(${protobuf_SOURCE_DIR}/cmake/protobuf-generate.cmake)
+if(CMAKE_GENERATOR_PLATFORM STREQUAL "Win32")
+    #find_package(protobuf CONFIG REQUIRED)
+    include(${protobuf_SOURCE_DIR}/cmake/protobuf-generate.cmake)
 
-add_library(AfxHookSourceProtobufs OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/../deps/release/prop/protobuf/csgo/netmessages.proto")
+    add_library(AfxHookSourceProtobufs OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/../deps/release/prop/protobuf/csgo/netmessages.proto")
 
-target_link_libraries(AfxHookSourceProtobufs PUBLIC protobuf::libprotobuf)
+    target_link_libraries(AfxHookSourceProtobufs PUBLIC protobuf::libprotobuf)
 
-set(PROTO_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated/csgo")
+    set(PROTO_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated/csgo")
 
-target_include_directories(AfxHookSourceProtobufs PUBLIC "$<BUILD_INTERFACE:${PROTO_BINARY_DIR}>")
+    target_include_directories(AfxHookSourceProtobufs PUBLIC "$<BUILD_INTERFACE:${PROTO_BINARY_DIR}>")
 
-protobuf_generate(
-    TARGET AfxHookSourceProtobufs
-    IMPORT_DIRS "${protobuf_SOURCE_DIR}/src" "${CMAKE_CURRENT_SOURCE_DIR}/../deps/release/prop/protobuf/csgo"
-    PROTOC_OUT_DIR "${PROTO_BINARY_DIR}")
+    protobuf_generate(
+        TARGET AfxHookSourceProtobufs
+        IMPORT_DIRS "${protobuf_SOURCE_DIR}/src" "${CMAKE_CURRENT_SOURCE_DIR}/../deps/release/prop/protobuf/csgo"
+        PROTOC_OUT_DIR "${PROTO_BINARY_DIR}")
+endif()
 
 ## END protobuf
+###############################################################################
 
 
 add_library(AfxHookSource MODULE)
@@ -87,97 +88,36 @@ target_include_directories(AfxHookSource PRIVATE
     ../
     ../deps/release/prop
     "${AFX_OPENEXR_INCLUDE_DIRECTORIES}"
-    "${protobuf_SOURCE_DIR}/src"
     "${CMAKE_CURRENT_BINARY_DIR}"
-    AfxHookSourceProtobufs
 )
 
 target_link_directories(AfxHookSource PRIVATE
     "${AFX_OPENEXR_LINK_DIRECTORIES}"
-    AfxHookSourceProtobufs
 )
 
 target_link_libraries(AfxHookSource PRIVATE
     "${AFX_OPENEXR_LINK_LIBRARIES}"
-    AfxHookSourceProtobufs
 )
 
-target_sources(AfxHookSource PRIVATE
-    csgo/hooks/client/csgo_spectatortools.cpp
+target_sources(AfxHookSource PRIVATE   
+
     csgo/hooks/engine/cmd.cpp
     csgo/hooks/engine/cmd.h
-    csgo/ClientToolsCsgo.cpp
-    csgo/ClientToolsCsgo.h
-    csgo/Panorama.cpp
-    csgo/Panorama.h
-    
-    css/ClientToolsCss.cpp
-    css/ClientToolsCss.h
-    
-    cssV34/ClientToolsCssV34.cpp
-    cssV34/ClientToolsCssV34.h
 
-    garrysmod/ClientToolsGarrysmod.cpp
-    garrysmod/ClientToolsGarrysmod.h
-    
-    momentum/ClientToolsMom.cpp
-    momentum/ClientToolsMom.h
-    
     tf2/ClientToolsTf2.cpp
     tf2/ClientToolsTf2.h
 
     addresses.cpp
     addresses.h
-    AfxClasses.cpp
-    AfxClasses.h
-    AfxInterfaces.h
-    AfxInterop.cpp
-    AfxInterop.h
+
     AfxShaders.cpp
     AfxShaders.h
     AfxStreams.cpp
     AfxStreams.h
-    AfxWriteFileLimiter.cpp
-    AfxWriteFileLimiter.h
-    aiming.cpp
-    aiming.h
-    asmClassTools.h
     CampathDrawer.cpp
     CampathDrawer.h
     ClientTools.cpp
     ClientTools.h
-    csgo_Audio.cpp
-    csgo_Audio.h
-    csgo_c_baseanimatingoverlay.cpp
-    csgo_c_baseanimatingoverlay.h
-    csgo_CBasePlayer.cpp
-    csgo_CBasePlayer.h
-    csgo_CCSGameMovement.cpp
-    csgo_CCSGameMovement.h
-    csgo_CHudDeathNotice.cpp
-    csgo_CHudDeathNotice.h
-    csgo_CRendering3dView.cpp
-    csgo_CRendering3dView.h
-    csgo_CSkyBoxView.cpp
-    csgo_CSkyBoxView.h
-    csgo_CViewRender.cpp
-    csgo_CViewRender.h
-    csgo_GameEvents.cpp
-    csgo_GameEvents.h
-    csgo_models_replace.cpp
-    csgo_models_replace.h
-    csgo_net_chan.cpp
-    csgo_net_chan.h
-    csgo_S_StartSound.cpp
-    csgo_S_StartSound.h
-    csgo_SndMixTimeScalePatch.cpp
-    csgo_SndMixTimeScalePatch.h
-    csgo_Stdshader_dx9_Hooks.cpp
-    csgo_Stdshader_dx9_Hooks.h
-    csgo_view.cpp
-    csgo_view.h
-    csgo_vphysics.cpp
-    csgo_vphysics.h
     d3d9Hooks.cpp
     d3d9Hooks.h
     D3D9ImageBuffer.h
@@ -188,23 +128,13 @@ target_sources(AfxHookSource PRIVATE
     main.cpp
     MaterialSystemHooks.cpp
     MaterialSystemHooks.h
-    MatRenderContextHook.cpp
-    MatRenderContextHook.h
-    mirv_voice.cpp
-    mirv_voice.h
-    MirvCalcs.cpp
-    MirvCalcs.h
     MirvCam.cpp
     MirvCam.h
     MirvCommands.cpp
-    MirvPgl.cpp
-    MirvPgl.h
-    MirvQueueCmd.cpp
-    MirvQueueCmd.h
     MirvTime.cpp
     MirvTime.h
-    MirvWav.cpp
-    MirvWav.h
+    MirvQueueCmd.cpp
+    MirvQueueCmd.h
     RenderView.cpp
     RenderView.h
     ReShadeAdvancedfx.cpp
@@ -272,7 +202,6 @@ target_sources(AfxHookSource PRIVATE
     ../deps/release/prop/AfxHookSource/cssV34/sdk_src/public/ihandleentity.h
     ../deps/release/prop/AfxHookSource/cssV34/sdk_src/tier1/KeyValues.cpp
 
-
     ../deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/engine/ishadowmgr.h
     ../deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/tier1/KeyValues.h
     ../deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/toolframework/itoolentity.h
@@ -329,8 +258,6 @@ target_sources(AfxHookSource PRIVATE
     ../shared/hooks/gameOverlayRenderer.h
     ../shared/vcpp/AfxAddr.cpp
     ../shared/vcpp/AfxAddr.h
-    ../shared/AfxColorLut.cpp
-    ../shared/AfxColorLut.h
     ../shared/AfxCommandLine.cpp
     ../shared/AfxCommandLine.h
     ../shared/AfxConsole.cpp
@@ -368,8 +295,6 @@ target_sources(AfxHookSource PRIVATE
     ../shared/MirvCamIO.h
     ../shared/MirvCampath.cpp
     ../shared/MirvCampath.h
-	../shared/MirvDeathMsgFilter.cpp
-	../shared/MirvDeathMsgFilter.h
     ../shared/MirvInput.cpp
     ../shared/MirvInput.h
 	../shared/MirvSkip.cpp
@@ -391,14 +316,6 @@ target_sources(AfxHookSource PRIVATE
 
 # This is far form proper, but it will do for now:
 source_group("AfxHookSource" REGULAR_EXPRESSION "/AfxHookSource/")
-source_group("AfxHookSource/csgo" REGULAR_EXPRESSION "/AfxHookSource/csgo/")
-source_group("AfxHookSource/csgo/hooks" REGULAR_EXPRESSION "/AfxHookSource/csgo/hooks/")
-source_group("AfxHookSource/csgo/hooks/client" REGULAR_EXPRESSION "/AfxHookSource/csgo/hooks/client/")
-source_group("AfxHookSource/csgo/hooks/engine" REGULAR_EXPRESSION "/AfxHookSource/csgo/hooks/engine/")
-source_group("AfxHookSource/css" REGULAR_EXPRESSION "/AfxHookSource/css/")
-source_group("AfxHookSource/cssV34" REGULAR_EXPRESSION "/AfxHookSource/cssV34/")
-source_group("AfxHookSource/garrysmod" REGULAR_EXPRESSION "/AfxHookSource/garrysmod/")
-source_group("AfxHookSource/momentum" REGULAR_EXPRESSION "/AfxHookSource/momentum/")
 source_group("AfxHookSource/tf2" REGULAR_EXPRESSION "/AfxHookSource/tf2/")
 source_group("deps" REGULAR_EXPRESSION "/deps/")
 source_group("deps/release" REGULAR_EXPRESSION "/deps/release/")
@@ -438,7 +355,6 @@ source_group("deps/release/prop/AfxHookSource/cssV34/sdk_src/public/toolframewor
 source_group("deps/release/prop/AfxHookSource/cssV34/sdk_src/public/tools" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/cssV34/sdk_src/public/tools/")
 source_group("deps/release/prop/AfxHookSource/cssV34/sdk_src/public/vstdlib" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/cssV34/sdk_src/public/vstdlib/")
 source_group("deps/release/prop/AfxHookSource/cssV34/sdk_src/tier1" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/cssV34/sdk_src/tier1/")
-
 source_group("deps/release/prop/AfxHookSource/garrysmod" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/garrysmod/")
 source_group("deps/release/prop/AfxHookSource/garrysmod/sdk_src" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/garrysmod/sdk_src/")
 source_group("deps/release/prop/AfxHookSource/garrysmod/sdk_src/public" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/")
@@ -447,7 +363,6 @@ source_group("deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/tier1" RE
 source_group("deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/toolframework" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/toolframework/")
 source_group("deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/vstdlib" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/garrysmod/sdk_src/public/vstdlib/")
 source_group("deps/release/prop/AfxHookSource/garrysmod/sdk_src/tier1" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/garrysmod/sdk_src/tier1/")
-
 source_group("deps/release/prop/AfxHookSource/insurgency2" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/insurgency2/")
 source_group("deps/release/prop/AfxHookSource/insurgency2/sdk_src" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/insurgency2/sdk_src/")
 source_group("deps/release/prop/AfxHookSource/insurgency2/sdk_src/public" REGULAR_EXPRESSION "/deps/release/prop/AfxHookSource/insurgency2/sdk_src/public/")
@@ -478,3 +393,126 @@ source_group("deps/release/rapidxml" REGULAR_EXPRESSION "/deps/release/rapidxml/
 source_group("shared" REGULAR_EXPRESSION "/shared/")
 source_group("shared/hooks" REGULAR_EXPRESSION "/shared/hooks/")
 source_group("shared/vcpp" REGULAR_EXPRESSION "/shared/vcpp/")
+
+if(CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
+    add_custom_command(
+	    WORKING_DIRECTORY ${AfxHookSource_BINARY_DIR}
+	    OUTPUT "${AfxHookSource_BINARY_DIR}/afx_iface_passthrough_x64.obj"
+	    COMMAND ${nasm_SOURCE_DIR}/nasm.exe -f win64 -o "${AfxHookSource_BINARY_DIR}/afx_iface_passthrough_x64.obj" "${AfxHookSource_SOURCE_DIR}/afx_iface_passthrough_x64.asm"
+	    DEPENDS nasm
+    		"${AfxHookSource_SOURCE_DIR}/afx_iface_passthrough_x64.asm"
+    )
+
+    add_custom_target(AfxHookSourceIfacePassThrough
+        DEPENDS "${AfxHookSource_BINARY_DIR}/afx_iface_passthrough_x64.obj"
+    )
+
+    add_dependencies(AfxHookSource
+        AfxHookSourceIfacePassThrough
+    )
+
+    target_link_libraries(AfxHookSource PRIVATE
+       "${AfxHookSource_BINARY_DIR}/afx_iface_passthrough_x64.obj"
+    )
+endif()
+
+if(CMAKE_GENERATOR_PLATFORM STREQUAL "Win32")
+    target_include_directories(AfxHookSource PRIVATE
+        "${protobuf_SOURCE_DIR}/src"
+        AfxHookSourceProtobufs
+    )
+
+    target_link_directories(AfxHookSource PRIVATE
+        AfxHookSourceProtobufs
+    )
+
+    target_link_libraries(AfxHookSource PRIVATE
+        AfxHookSourceProtobufs
+    )
+
+    target_sources(AfxHookSource PRIVATE
+        csgo/hooks/client/csgo_spectatortools.cpp
+        csgo/AfxInterfaces.h
+        csgo/AfxMaterials.cpp
+        csgo/AfxMaterials.h
+        csgo/ClientToolsCsgo.cpp
+        csgo/ClientToolsCsgo.h
+        csgo/Panorama.cpp
+        csgo/Panorama.h
+        
+        css/ClientToolsCss.cpp
+        css/ClientToolsCss.h
+        
+        cssV34/ClientToolsCssV34.cpp
+        cssV34/ClientToolsCssV34.h
+
+        garrysmod/ClientToolsGarrysmod.cpp
+        garrysmod/ClientToolsGarrysmod.h
+        
+        momentum/ClientToolsMom.cpp
+        momentum/ClientToolsMom.h
+
+        AfxInterop.cpp
+        AfxInterop.h
+        aiming.cpp
+        aiming.h
+        asmClassTools.h
+        csgo_Audio.cpp
+        csgo_Audio.h
+        csgo_c_baseanimatingoverlay.cpp
+        csgo_c_baseanimatingoverlay.h
+        csgo_CBasePlayer.cpp
+        csgo_CBasePlayer.h
+        csgo_CCSGameMovement.cpp
+        csgo_CCSGameMovement.h
+        csgo_CHudDeathNotice.cpp
+        csgo_CHudDeathNotice.h
+        csgo_CRendering3dView.cpp
+        csgo_CRendering3dView.h
+        csgo_CSkyBoxView.cpp
+        csgo_CSkyBoxView.h
+        csgo_CViewRender.cpp
+        csgo_CViewRender.h
+        csgo_GameEvents.cpp
+        csgo_GameEvents.h
+        csgo_models_replace.cpp
+        csgo_models_replace.h
+        csgo_net_chan.cpp
+        csgo_net_chan.h
+        csgo_S_StartSound.cpp
+        csgo_S_StartSound.h
+        csgo_SndMixTimeScalePatch.cpp
+        csgo_SndMixTimeScalePatch.h
+        csgo_Stdshader_dx9_Hooks.cpp
+        csgo_Stdshader_dx9_Hooks.h
+        csgo_view.cpp
+        csgo_view.h
+        csgo_vphysics.cpp
+        csgo_vphysics.h
+        MatRenderContextHook.cpp
+        MatRenderContextHook.h
+        mirv_voice.cpp
+        mirv_voice.h
+        MirvCalcs.cpp
+        MirvCalcs.h
+        MirvPgl.cpp
+        MirvPgl.h
+        MirvWav.cpp
+        MirvWav.h
+
+        ../shared/AfxColorLut.cpp
+        ../shared/AfxColorLut.h
+
+    	../shared/MirvDeathMsgFilter.cpp
+	    ../shared/MirvDeathMsgFilter.h
+    )
+
+    source_group("AfxHookSource/csgo" REGULAR_EXPRESSION "/AfxHookSource/csgo/")
+    source_group("AfxHookSource/csgo/hooks" REGULAR_EXPRESSION "/AfxHookSource/csgo/hooks/")
+    source_group("AfxHookSource/csgo/hooks/client" REGULAR_EXPRESSION "/AfxHookSource/csgo/hooks/client/")
+    source_group("AfxHookSource/csgo/hooks/engine" REGULAR_EXPRESSION "/AfxHookSource/csgo/hooks/engine/")
+    source_group("AfxHookSource/css" REGULAR_EXPRESSION "/AfxHookSource/css/")
+    source_group("AfxHookSource/cssV34" REGULAR_EXPRESSION "/AfxHookSource/cssV34/")
+    source_group("AfxHookSource/garrysmod" REGULAR_EXPRESSION "/AfxHookSource/garrysmod/")
+    source_group("AfxHookSource/momentum" REGULAR_EXPRESSION "/AfxHookSource/momentum/")
+endif()

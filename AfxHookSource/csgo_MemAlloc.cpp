@@ -115,9 +115,9 @@ bool Hook_csgo_MemAlloc(void)
 	{
 		if (SOURCESDK::IMemAlloc_csgo * iface = SOURCESDK::Get_g_pMemAlloc())
 		{
-			int * vtable = *(int**)iface;
+			void ** vtable = *(void***)iface;
 
-			 DetourIfacePtr((DWORD *)&(vtable[5]), touring_Tier0_CMemAlloc_Free, (DetourIfacePtr_fn &)g_Tier0_CMemAlloc_Free);
+			DetourIfacePtr((DWORD *)&(vtable[5]), touring_Tier0_CMemAlloc_Free, (DetourIfacePtr_fn &)g_Tier0_CMemAlloc_Free);
 
 			firstResult = true;
 		}
