@@ -19,10 +19,16 @@
 
 #include "addresses.h"
 #include "WrpVEngineClient.h"
+
+#ifndef _WIN64
 #include "aiming.h"
+#endif //#ifndef _WIN64
+
 #include "MirvCam.h"
 #include "AfxInterop.h"
+#ifndef _WIN64
 #include "csgo/ClientToolsCSgo.h"
+#endif //#ifndef _WIN64
 #include "MirvPgl.h"
 #include "../shared/MirvCamIO.h"
 
@@ -212,6 +218,7 @@ void TrySetView(float Tx, float Ty, float Tz, float Rx, float Ry, float Rz, floa
 	static bool firstRun = true;
 	static SOURCESDK::CSGO::IServerTools * serverTools = nullptr;
 
+#ifndef _WIN64
 	if (firstRun && g_Hook_VClient_RenderView.ForceViewOverride)
 	{
 		firstRun = false;
@@ -287,6 +294,7 @@ void TrySetView(float Tx, float Ty, float Tz, float Rx, float Ry, float Rz, floa
 			serverTools->SetPlayerFOV((int)fov, localPlayer);
 		}
 	}
+#endif //#ifndef _WIN64
 }
 
 void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, float &Rx, float &Ry, float &Rz, float &Fov)
@@ -402,6 +410,7 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 			break;
 
 		case Override_Aim:
+#ifndef _WIN64
 			if (m_Globals)
 			{
 				double dRx = Rx;
@@ -417,6 +426,7 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 					Rz = (float)dRz;
 				}
 			}
+#endif //#ifndef _WIN64
 			break;
 
 		case Override_CamOffset:
@@ -428,13 +438,17 @@ void Hook_VClient_RenderView::OnViewOverride(float &Tx, float &Ty, float &Tz, fl
 			break;
 
 		case Override_MirvPgl:
+#ifndef _WIN64
 			if (MirvPgl::OnViewOverride(Tx, Ty, Tz, Rx, Ry, Rz, Fov)) originOrAnglesOverriden = true;
+#endif //#ifndef _WIN64
 			break;
 
 		case Override_Interop:
+#ifndef _WIN64
 #ifdef AFX_INTEROP
 			if (AfxInterop::OnViewOverride(Tx, Ty, Tz, Rx, Ry, Rz, Fov)) originOrAnglesOverriden = true;
 #endif
+#endif //#ifndef _WIN64
 			break;
 		}
 

@@ -44,7 +44,7 @@ bool Hook_csgo_CViewRender_ShouldForceNoVis(void)
 
 	if (view && AFXADDR_GET(csgo_CViewRender_ShouldForceNoVis_vtable_index))
 	{
-		int * vtable = *(int**)view;
+		void ** vtable = *(void***)view;
 
 		AfxDetourPtr((PVOID *)&(vtable[AFXADDR_GET(csgo_CViewRender_ShouldForceNoVis_vtable_index)]), csgo_CViewRender_ShouldForceNoVis, (PVOID*)&detoured_csgo_CViewRender_ShouldForceNoVis);
 

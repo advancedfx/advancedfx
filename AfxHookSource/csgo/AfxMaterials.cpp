@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
-#include "AfxClasses.h"
-#include "addresses.h"
+#include "AfxMaterials.h"
+#include "../addresses.h"
 #include <shared/AfxDetours.h>
 #include <string.h>
 
@@ -90,7 +90,7 @@ CAfxTrackedMaterial * CAfxTrackedMaterial::TrackMaterial(SOURCESDK::IMaterial_cs
 	return result;
 }
 
-std::map<int *, CAfxTrackedMaterial::CMaterialDetours> CAfxTrackedMaterial::m_VtableMap;
+std::map<void **, CAfxTrackedMaterial::CMaterialDetours> CAfxTrackedMaterial::m_VtableMap;
 std::shared_timed_mutex CAfxTrackedMaterial::m_VtableMapMutex;
 
 void CAfxTrackedMaterial::OnMaterialInterlockedDecrement(SOURCESDK::IMaterial_csgo * material)
@@ -116,11 +116,11 @@ void CAfxTrackedMaterial::OnMaterialInterlockedDecrement(SOURCESDK::IMaterial_cs
 
 void __fastcall CAfxTrackedMaterial::Material_InterlockedDecrement(void* This, void* Edx)
 {
-	int * vtable = *(int**)This;
+	void ** vtable = *(void***)This;
 
 	m_VtableMapMutex.lock_shared();
 
-	std::map<int *, CMaterialDetours>::iterator it = m_VtableMap.find(vtable);
+	std::map<void **, CMaterialDetours>::iterator it = m_VtableMap.find(vtable);
 
 	if (it != m_VtableMap.end())
 	{
@@ -137,11 +137,11 @@ void __fastcall CAfxTrackedMaterial::Material_InterlockedDecrement(void* This, v
 
 void CAfxTrackedMaterial::HooKVtable(SOURCESDK::IMaterial_csgo * orgMaterial)
 {
-	int * vtable = *(int**)orgMaterial;
+	void ** vtable = *(void***)orgMaterial;
 
 	m_VtableMapMutex.lock_shared();
 
-	std::map<int *, CMaterialDetours>::iterator it = m_VtableMap.find(vtable);
+	std::map<void **, CMaterialDetours>::iterator it = m_VtableMap.find(vtable);
 
 	if (it != m_VtableMap.end())
 	{

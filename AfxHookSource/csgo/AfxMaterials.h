@@ -1,7 +1,7 @@
 #pragma once
 
 #include "AfxInterfaces.h"
-#include "SourceInterfaces.h"
+#include <SourceInterfaces.h>
 
 #include <set>
 #include <map>
@@ -113,7 +113,7 @@ private:
 	static std::map<SOURCESDK::IMaterial_csgo *, CAfxTrackedMaterial *> m_Trackeds;
 	static std::shared_timed_mutex m_TrackedsMutex;
 
-	static std::map<int *, CMaterialDetours> m_VtableMap;
+	static std::map<void **, CMaterialDetours> m_VtableMap;
 	static std::shared_timed_mutex m_VtableMapMutex;
 
 	static void HooKVtable(SOURCESDK::IMaterial_csgo * orgMaterial);

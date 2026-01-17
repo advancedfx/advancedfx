@@ -166,7 +166,7 @@ bool csgo_CViewRender_Install(void)
 		&& AFXADDR_GET(csgo_CCSViewRender_RenderSmokeOverlay_OnCompareAlphaBeforeDraw)
 		&& AFXADDR_GET(csgo_client_CCSViewRender_RenderView_vtable_index))
 	{
-		int * vtable = (int*)AFXADDR_GET(csgo_CCSViewRender_vtable);
+		void ** vtable = (void**)AFXADDR_GET(csgo_CCSViewRender_vtable);
 
 		//DetourIfacePtr((DWORD *)&(vtable[AFXADDR_GET(csgo_client_CCSViewRender_RenderView_vtable_index)-1]), touring_CCSViewRender_Render, (DetourIfacePtr_fn &)detoured_CCSViewRender_Render);
 		AfxDetourPtr((PVOID *)&(vtable[AFXADDR_GET(csgo_client_CCSViewRender_RenderView_vtable_index)]), touring_CCSViewRender_RenderView, (PVOID *)&detoured_CCSViewRender_RenderView);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <windows.h>
+#include <stdint.h>
 
 namespace Afx {
 namespace BinUtils {
@@ -67,6 +68,21 @@ MemRange FindWCString(MemRange memRange, wchar_t const * pattern);
 /// can be unexpected.
 /// </param>
 MemRange FindPatternString(MemRange memRange, char const * hexBytePattern);
+
+
+/**
+ * Find a offset reference to an address value.
+ * @remarks The memory specified by memRange must be readable.
+ */
+MemRange FindAddrInt32OffsetRef(MemRange memRange, size_t addr, int32_t extraOffset);
+
+/**
+ * Find a offset reference to an address value with Context
+ * @remarks The memory specified by memRange must be readable.
+ * @param prefixHexBytePattern either nullptr or non-empty pattern in FindPatternString format for the prefix
+ * @param suffixHexBytePattern either nullptr or non-empty pattern in FindPatternString format for the suffix
+ */
+MemRange FindAddrInt32OffsetRefInContext(MemRange memRange, size_t addr, int32_t extraOffset, char const * prefixHexBytePattern, char const * suffixHexBytePattern);
 
 /// <returns>0 if not found, otherwise address of vtable</returns>
 size_t FindClassVtable(HMODULE hModule, const char * name, DWORD rttiBaseClassArrayOffset, DWORD completeObjectLocatorOffset);

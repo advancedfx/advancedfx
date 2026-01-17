@@ -113,6 +113,7 @@ void CMirvTime::OnFrameRenderStart()
 
 			m_DrivingByFps = true;
 
+#ifndef _WIN64
 			if (csgo_SndMixTimeScalePatch_enable)
 			{
 				if (m_FirstDriveMirvSndTimeScale)
@@ -123,6 +124,7 @@ void CMirvTime::OnFrameRenderStart()
 
 				csgo_SndMixTimeScalePatch_value = m_FirstMirvSndTimeScale * m_DriveTimeFactor;
 			}
+#endif //#ifndef _WIN64
 		}
 		else
 		{
@@ -171,10 +173,12 @@ void CMirvTime::SetDriveTimeEnabled(bool value)
 				{
 					m_HostFrameRate->SetValue(m_FirstFps);
 
+#ifndef _WIN64
 					if (csgo_SndMixTimeScalePatch_enable)
 					{
 						if (!m_FirstDriveMirvSndTimeScale) csgo_SndMixTimeScalePatch_value = 1;
 					}
+#endif //#ifndef _WIN64
 				}
 			}
 			else if(m_FirstDriveScale)

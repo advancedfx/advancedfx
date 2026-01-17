@@ -86,13 +86,17 @@ SOURCESDK::CSGO::ConCommandBase* __fastcall  My_csgo_Cmd_ExecuteCommand(int eTar
 	} else {		
 		Log_Command(eTarget, command.Source(), command.GetCommandString(), true);
 
+#ifndef _WIN64		
 		__asm mov edx, command
 		__asm mov ecx, eTarget
 
 		__asm call [g_Org_csgo_Cmd_ExecuteCommand] 
 
 		__asm mov result, eax
-
+#else
+		// untested:
+		result = ((SOURCESDK::CSGO::ConCommandBase* (__fastcall *)(int, const SOURCESDK::CSGO::CCommand&)) g_Org_csgo_Cmd_ExecuteCommand) (eTarget, command);
+#endif //#ifndef _WIN64
 		Log_Command(eTarget, command.Source(), command.GetCommandString(), false);
 	}
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "SourceInterfaces.h"
-#include "csgo_Stdshader_dx9_Hooks.h"
+#include <SourceInterfaces.h>
+#include "../csgo_Stdshader_dx9_Hooks.h"
 
 #include <string>
 

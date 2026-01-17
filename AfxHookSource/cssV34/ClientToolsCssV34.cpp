@@ -15,15 +15,27 @@
 
 using namespace SOURCESDK::CSSV34;
 
-typedef void *  (__fastcall * cssv34_C_BaseAnimating_RecordBones_t)(void* This, void* Edx, SOURCESDK::CStudioHdr *hdr);
+typedef void *  (__fastcall * cssv34_C_BaseAnimating_RecordBones_t)(void* This,
+#ifndef _WIN64
+	void* Edx,
+#endif //#ifndef _WIN64
+	 SOURCESDK::CStudioHdr *hdr);
 cssv34_C_BaseAnimating_RecordBones_t True_cssv34_C_BaseAnimating_RecordBones = nullptr;
-void * __fastcall My_cssv34_C_BaseAnimating_RecordBones(void* This, void* Edx, SOURCESDK::CStudioHdr *hdr) {
+void * __fastcall My_cssv34_C_BaseAnimating_RecordBones(void* This,
+#ifndef _WIN64
+	void* Edx,
+#endif //#ifndef _WIN64
+	 SOURCESDK::CStudioHdr *hdr) {
 	SOURCESDK::matrix3x4_t *pBoneState = *(SOURCESDK::matrix3x4_t **)((unsigned char *)This + AFXADDR_GET(cssv34_client_C_BaseAnimating_m_BoneAccessor_m_pBones));
 
 	if(CClientTools * instance = CClientTools::Instance())
 		instance->CaptureBones(hdr, pBoneState);
 
-	void * result = True_cssv34_C_BaseAnimating_RecordBones(This, Edx, hdr);
+	void * result = True_cssv34_C_BaseAnimating_RecordBones(This,
+#ifndef _WIN64
+	 Edx,
+#endif //#ifndef _WIN64
+	 hdr);
 	return result;
 }
 

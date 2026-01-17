@@ -2,23 +2,25 @@
 
 #define AFXSTREAMS_REFTRACKER 0
 
-#include "SourceInterfaces.h"
-#include "AfxInterfaces.h"
-#include "AfxClasses.h"
+#include <SourceInterfaces.h>
 #include "WrpConsole.h"
 #include "AfxShaders.h"
-#include "csgo_Stdshader_dx9_Hooks.h"
-#include "csgo_Stdshader_dx9_Hooks.h"
 #include "../shared/CamIO.h"
 #include "MaterialSystemHooks.h"
-#include "MatRenderContextHook.h"
-#include "AfxWriteFileLimiter.h"
-#include "MirvCalcs.h"
 #include "d3d9Hooks.h"
 #include "D3D9ImageBuffer.h"
 
-#define AFX_SHADERS_CSGO 0
 
+#ifndef _WIN64
+
+#include "csgo/AfxInterfaces.h"
+#include "csgo/AfxMaterials.h"
+#include "csgo_Stdshader_dx9_Hooks.h"
+#include "csgo_Stdshader_dx9_Hooks.h"
+#include "MatRenderContextHook.h"
+#include "MirvCalcs.h"
+
+#define AFX_SHADERS_CSGO 0
 #if AFX_SHADERS_CSGO
 #include <shaders/build/afxHook_splinerope_ps20.h>
 #include <shaders/build/afxHook_splinerope_ps20b.h>
@@ -31,9 +33,11 @@
 #include <shaders/build/afxHook_vertexlit_and_unlit_generic_ps30.h>
 #endif
 
+#include <shared/AfxColorLut.h>
+#endif
+
 #include <shared/AfxOutStreams.h>
 #include <shared/bvhexport.h>
-#include <shared/AfxColorLut.h>
 #include "../shared/RefCounted.h"
 #include "../shared/RefCountedThreadSafe.h"
 #include "../shared/GrowingBufferPoolThreadSafe.h"
@@ -236,13 +240,14 @@ private:
 	}
 };
 
+class CAfxStreams;
+extern CAfxStreams g_AfxStreams;
+
+
+#ifndef _WIN64
 
 //typedef void(__fastcall * CCSViewRender_Render_t)(void * This, void* Edx, const SOURCESDK::vrect_t_csgo * rect);
 typedef void(__fastcall* CCSViewRender_RenderView_t)(void * This, void* Edx, const SOURCESDK::CViewSetup_csgo &view, const SOURCESDK::CViewSetup_csgo &hudViewSetup, int nClearFlags, int whatToDraw);
-
-class CAfxStreams;
-
-extern CAfxStreams g_AfxStreams;
 
 class IAfxBasefxStreamModifier;
 
@@ -415,6 +420,8 @@ public:
 #endif
 };
 
+#endif //#ifndef _WIN64
+
 #if AFXSTREAMS_REFTRACKER
 void AfxStreams_RefTracker_Inc(void);
 void AfxStreams_RefTracker_Dec(void);
@@ -501,9 +508,11 @@ public:
 	//
 	// Hooks:
 
+#ifndef _WIN64
 	virtual void LevelShutdown(void)
 	{
 	}
+#endif
 
 protected:
 	virtual ~CAfxStream()
@@ -569,6 +578,7 @@ private:
 
 };
 
+#ifndef _WIN64
 class CAfxFunctor abstract
 	: public SOURCESDK::CSGO::CFunctor
 {
@@ -664,6 +674,8 @@ private:
 	bool m_Block;
 };
 
+#endif //#ifndef _WIN64
+
 
 template<typename T> class CAfxOverrideable
 {
@@ -725,6 +737,9 @@ private:
 };
 
 typedef CAfxOverrideable<bool> CAfxBoolOverrideable;
+
+
+#ifndef _WIN64
 
 class CAfxBaseFxStream;
 
@@ -3271,11 +3286,16 @@ public:
 	}
 };
 
+#endif //#ifndef _WIN64
+
+
 extern advancedfx::CGrowingBufferPoolThreadSafe g_ImageBufferPoolThreadSafe;
 
 class CAfxStreams
-: public IAfxBaseClientDllView_Render
-, public IRecordStreamSettings
+: public IRecordStreamSettings
+#ifndef _WIN64
+, public IAfxBaseClientDllView_Render
+#endif //#ifndef _WIN64
 {
 public:
 	typedef SOURCESDK::IMatRenderContext_csgo CMatQueuedRenderContext_csgo;
@@ -3284,7 +3304,6 @@ public:
 
 	CAfxStreams();
 	~CAfxStreams();
-
 	void ShutDown(void);
 	void ShutDown2(void);
 
@@ -3293,11 +3312,18 @@ public:
 
 	static void MainThreadInitialize(void)
 	{
+#ifndef _WIN64
 		CAfxBaseFxStream::MainThreadInitialize();
+#endif //#ifndef _WIN64
 	}
 
-	void OnMaterialSystem(SOURCESDK::IMaterialSystem_csgo * value);
+
+#ifndef _WIN64
+
 	void OnAfxBaseClientDll(IAfxBaseClientDll * value);
+
+	void OnMaterialSystem(SOURCESDK::IMaterialSystem_csgo * value);
+
 	void OnShaderShadow(SOURCESDK::IShaderShadow_csgo * value);
 
 #if AFX_SHADERS_CSGO
@@ -3323,6 +3349,9 @@ public:
 
 	void OnDrawingSkyBoxViewEnd(void);
 
+#endif //#ifndef _WIN64
+
+
 	void Console_RecordName_set(const char * value);
 	const char * Console_RecordName_get();
 
@@ -3335,6 +3364,8 @@ public:
 	void Console_RecordVoices_set(bool value);
 	bool Console_RecordVoices_get();
 
+
+#ifndef _WIN64
 	void Console_MatPostprocessEnable_set(int value);
 	int Console_MatPostprocessEnable_get();
 
@@ -3346,10 +3377,14 @@ public:
 
 	void Console_MatForceTonemapScale_set(float value);
 	float Console_MatForceTonemapScale_get();
+#endif //#ifndef _WIN64
+
 
 	void Console_RecordFormat_set(const char * value);
 	const char * Console_RecordFormat_get();
 
+
+#ifndef _WIN64
 	void Console_PreviewSuspend_set(bool value);
 	bool Console_PreviewSuspend_get();
 
@@ -3359,11 +3394,16 @@ public:
 	bool Console_ShowRenderViewCountGet() {
 		return m_ShowRenderViewCount;
 	}
+#endif //#ifndef _WIN64
+
 
 	void Console_Record_Start();
 	void Console_Record_Start2();
 	void Console_Record_End();
 	void Console_Record_End2();
+
+
+#ifndef _WIN64
 	void Console_AddStream(const char * streamName);
 	void Console_AddBaseFxStream(const char * streamName);
 	void Console_AddDepthStream(const char * streamName, bool tryZDepth);
@@ -3386,10 +3426,12 @@ public:
 	void Console_EditStream(CAfxStream * stream, IWrpCommandArgs * args);
 	bool Console_EditStream(CAfxRenderViewStream * stream, IWrpCommandArgs * args);
 	void Console_ListActions(void);
-	void Console_Bvh(IWrpCommandArgs * args);
 	bool Console_ToStreamCombineType(char const * value, CAfxTwinStream::StreamCombineType & streamCombineType);
 	char const * Console_FromStreamCombineType(CAfxTwinStream::StreamCombineType streamCombineType);
+#endif //#ifndef _WIN64
 
+
+	void Console_Bvh(IWrpCommandArgs * args);
 	void Console_RecordScreen(IWrpCommandArgs* args);
 
 	bool GetCampathAutoSave() { return m_CampathAutoSave; }
@@ -3400,6 +3442,8 @@ public:
 
 	void Console_GameRecording(IWrpCommandArgs * args);
 
+
+#ifndef _WIN64
 	/// <param name="streamName">stream name to preview or empty string if to preview nothing.</param>
 	/// <param name="slot">-1 means all slots if streamName is emtpy.</param>
 	void Console_PreviewStream(const char * streamName, int slot);
@@ -3409,43 +3453,56 @@ public:
 
 	virtual SOURCESDK::IMaterialSystem_csgo * GetMaterialSystem(void);
 	virtual SOURCESDK::IShaderShadow_csgo * GetShaderShadow(void);
+#endif //#ifndef _WIN64
+
 
 	const std::wstring & GetTakeDir(void) const;
 
-	void LevelInitPostEntity(void);
+#ifndef _WIN64
 	void LevelShutdown(void);
 
 	virtual void View_Render(IAfxBaseClientDll * cl, SOURCESDK::vrect_t_csgo *rect);
+#endif //#ifndef _WIN64
+
 
 	float GetStartHostFrameRate()
 	{
 		return m_StartHostFrameRateValue;
 	}
 
+
+#ifndef _WIN64
 	void Console_MainStream(IWrpCommandArgs * args);
+
 
 	bool DrawPhiGrid = false;
 	bool DrawRuleOfThirds = false;
 
-	void BeforeFrameStart()
-	{
-	}
-
 	void OnClientEntityCreated(SOURCESDK::C_BaseEntity_csgo* ent);
 
 	void OnClientEntityDeleted(SOURCESDK::C_BaseEntity_csgo* ent);
+#endif //#ifndef _WIN64
+
 
 	bool IsRecording() {
 		return m_Recording;
 	}
 
+
+#ifndef _WIN64
 	bool IsQueuedThreaded();
 
 	bool IsSingleThreaded();
+#endif //#ifndef _WIN64
+
 
 	bool OnEngineThread();
 
+
+#ifndef _WIN64
 	IAfxStreamContext * FindStreamContext(IAfxMatRenderContext * ctx);
+#endif //#ifndef _WIN64
+
 
 	void DrawingThread_DeviceLost();
 
@@ -3520,6 +3577,8 @@ private:
 	int m_SetRenderTargetNoMsaa = 0;
 	int m_SetIntZTextureSurface = 0;
 
+
+#ifndef _WIN64
 	enum MainStreamMode_e
 	{
 		MainStreamMode_None,
@@ -3530,6 +3589,7 @@ private:
 	CAfxRecordStream * m_MainStream = nullptr;
 
 	bool m_ForceCacheFullSceneState = false;
+
 
 	class CEntityBvhCapture
 	{
@@ -3581,8 +3641,12 @@ private:
 	private:
 		DWORD m_Sleep;
 	};
+#endif //#ifndef _WIN64
 
 	std::string m_RecordName;
+
+
+#ifndef _WIN64
 	bool m_FirstRenderAfterLevelInit = true;
 	bool m_FirstStreamToBeRendered;
 	int m_DoRenderViewCount = 0;
@@ -3590,22 +3654,35 @@ private:
 	bool m_PresentLastStream;
 	bool m_SuspendPreview = false;
 	bool m_PresentRecordOnScreen;
+#endif //#ifndef _WIN64
+
+
 	bool m_StartMovieWav;
 	bool m_StartMovieWavUsed;
 
+
+#ifndef _WIN64
 	bool m_RecordVoices;
 	bool m_RecordVoicesUsed;
 
 	const SOURCESDK::CViewSetup_csgo * m_CurrentView;
 
 	SOURCESDK::IMaterialSystem_csgo * m_MaterialSystem;
+	
 	IAfxBaseClientDll * m_AfxBaseClientDll;
+
 	SOURCESDK::IShaderShadow_csgo * m_ShaderShadow;
 	std::list<CAfxRecordStream *> m_Streams;
 	CAfxRecordStream * m_PreviewStreams[16] = { };
+#endif //#ifndef _WIN64
+
 	bool m_Recording;
 	bool m_CamBvh;
+
+#ifndef _WIN64
 	std::list<CEntityBvhCapture *> m_EntityBvhCaptures;
+#endif //#ifndef _WIN64
+
 	bool m_CampathAutoSave = false;
 	bool m_CamExport = false;
 	bool m_CamExportSet = false;
@@ -3614,6 +3691,7 @@ private:
 	WrpConVarRef * m_HostFrameRate = nullptr;
 	float m_StartHostFrameRateValue = 0.0f;
 
+#ifndef _WIN64
 	WrpConVarRef * m_MatPostProcessEnableRef = nullptr;
 	int m_OldMatPostProcessEnable;
 	int m_NewMatPostProcessEnable = -1;
@@ -3629,15 +3707,19 @@ private:
 	WrpConVarRef * m_MatForceTonemapScale = nullptr;
 	float m_OldMatForceTonemapScale;
 	float m_NewMatForceTonemapScale = -1;
+#endif //#ifndef _WIN64
 
 	WrpConVarRef * m_SndMuteLosefocus = nullptr;
 	int m_OldSndMuteLosefocus;
 
+#ifndef _WIN64
 	WrpConVarRef * m_BuildingCubemaps = nullptr;
 	int m_OldBuildingCubemaps;
 
 	WrpConVarRef * m_PanoramaDisableLayerCache = nullptr;
 	int m_OldPanoramaDisableLayerCache;
+#endif //#ifndef _WIN64
+
 
 	//WrpConVarRef * m_cl_modelfastpath = nullptr;
 	//int m_Old_cl_modelfastpath;
@@ -3646,7 +3728,7 @@ private:
 	//int m_Old_cl_tlucfastpath;
 
 	//WrpConVarRef * m_cl_brushfastpath = nullptr;
-	int m_Old_cl_brushfastpath;
+	//int m_Old_cl_brushfastpath;
 
 	//WrpConVarRef * m_r_drawstaticprops = nullptr;
 	//int m_Old_r_drawstaticprops;
@@ -3656,10 +3738,12 @@ private:
 	//SOURCESDK::ITexture_csgo * m_RenderTargetDepthF;
 	//CAfxMaterial * m_ShowzMaterial;
 	DWORD m_View_Render_ThreadId;
-	bool m_PresentBlocked = false;
-	bool m_ShutDown = false;
 
-	bool m_HudDrawn = false;
+#ifndef _WIN64
+	bool m_PresentBlocked = false;
+#endif //#ifndef _WIN64
+
+	bool m_ShutDown = false;
 
 	class CRecordScreen {
 	public:
@@ -3798,8 +3882,9 @@ private:
 
 	DWORD Get_View_Render_ThreadId();
 
-	void OnAfxBaseClientDll_Free(void);
+//	void OnAfxBaseClientDll_Free(void);
 
+#ifndef _WIN64
 	bool Console_CheckStreamName(char const * value);
 
 	bool Console_ToStreamCaptureType(char const * value, advancedfx::StreamCaptureType & StreamCaptureType);
@@ -3809,6 +3894,7 @@ private:
 
 	void BackUpMatVars();
 	void SetMatVarsForStreams();
+
 	void RestoreMatVars();
 	void EnsureMatVars();
 
@@ -3833,6 +3919,8 @@ private:
 	void UpdateStreamDeps();
 
 	IAfxMatRenderContextOrg* CommitDrawingContext(IAfxMatRenderContextOrg* context, bool blockPresent);
+#endif //#ifndef _WIN64
+
 
 	void AfxStreamsInitGlobal();
 

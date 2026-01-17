@@ -12,20 +12,24 @@ using namespace Afx::BinUtils;
 bool GameOverlay_Enable(bool value)
 {
 	static bool firstRun = true;
-	static DWORD addrPaintEvent = 0;
-	static DWORD oldAddrPaintEvent;
+	static size_t addrPaintEvent = 0;
+	static size_t oldAddrPaintEvent;
 	static bool wasEnabled = true;
 
 	if(firstRun)
 	{
 		firstRun = false;
 
+#ifndef _WIN64
 		HMODULE hGameOverlayRenderer = GetModuleHandleA("GameOverlayRenderer.dll");
+#else
+		HMODULE hGameOverlayRenderer = GetModuleHandleA("GameOverlayRenderer64.dll");
+#endif //#ifndef _WIN64
 
 		if(!hGameOverlayRenderer)
 			return false;
 
-		DWORD addrPaintEventFailedText = 0;
+		size_t addrPaintEventFailedText = 0;
 		{
 			ImageSectionsReader sections(hGameOverlayRenderer);
 			if(sections.Eof())
@@ -51,11 +55,19 @@ bool GameOverlay_Enable(bool value)
 				return false;
 
 			MemRange baseRange = sections.GetMemRange();
+#ifndef _WIN64
 			MemRange result = FindBytes(baseRange, (char const *)&addrPaintEventFailedText, sizeof(addrPaintEventFailedText));
+#else
+			MemRange result = FindAddrInt32OffsetRefInContext(baseRange, addrPaintEventFailedText, (int32_t)sizeof(int32_t), "48 8d 0d", nullptr);
+#endif //#ifndef _WIN64			
 			if(result.IsEmpty())
 				return false;
 
-			addrPaintEvent = *(DWORD *)(result.Start - 0x9);
+#ifndef _WIN64
+			addrPaintEvent = *(size_t *)(result.Start - 0x9);
+#else
+			addrPaintEvent = result.Start - 0xC + 4 + *(int32_t *)(result.Start - 0xC);
+#endif //#ifndef _WIN64			
 		}
 	}
 
@@ -69,12 +81,12 @@ bool GameOverlay_Enable(bool value)
 
 	if(value)
 	{
-		*(DWORD *)addrPaintEvent = oldAddrPaintEvent;
+		*(size_t *)addrPaintEvent = oldAddrPaintEvent;
 	}
 	else
 	{
-		oldAddrPaintEvent = *(DWORD *)addrPaintEvent;
-		*(DWORD *)addrPaintEvent = 0;
+		oldAddrPaintEvent = *(size_t *)addrPaintEvent;
+		*(size_t *)addrPaintEvent = 0;
 	}
 
 	return true;

@@ -16,7 +16,11 @@ void * __fastcall New_CMaterialSystem_GetRenderCallQueue(void * This, void * Edx
     return g_Old_CMaterialSystem_GetRenderCallQueue(This,Edx);
 }
 
+#ifndef _WIN64
 typedef void (__fastcall * CMatCallQueue_QueueFunctor_t)(void * This, void * Edx, void * pFunctor);
+#else
+typedef void (__fastcall * CMatCallQueue_QueueFunctor_t)(void * This, void * pFunctor);
+#endif //#ifndef _WIN64
 
 class IMaterialSystemRefCounted {
 public:
@@ -95,7 +99,11 @@ bool MaterialSystem_ExecuteOnRenderThread(CMaterialSystemFunctor * pFunctor) {
                 CMaterialSystemFunctor3 * pFunctor2 = new CMaterialSystemFunctor3(pFunctor);
                 pFunctor2->AddRef();
                 CMatCallQueue_QueueFunctor_t pQueueFunctorInternal = (CMatCallQueue_QueueFunctor_t)AFXADDR_GET(materialsystem_CMatCallQueue_QueueFunctor);
+#ifndef _WIN64                
                 pQueueFunctorInternal(pCallQueue,0,pFunctor2);
+#else
+                pQueueFunctorInternal(pCallQueue,pFunctor2);
+#endif //#ifndef _WIN64                 
                 pFunctor2->Release();
             } else {
                 pFunctor->operator()();
@@ -115,18 +123,24 @@ bool MaterialSystem_ExecuteOnRenderThread(CMaterialSystemFunctor * pFunctor) {
                     break;
                 }
                 CMatCallQueue_QueueFunctor_t pQueueFunctorInternal = (CMatCallQueue_QueueFunctor_t)AFXADDR_GET(materialsystem_CMatCallQueue_QueueFunctor);
-                size_t this_offset = 4;
+                size_t this_offset = sizeof(size_t);
                 switch(g_SourceSdkVer){
+#ifndef _WIN64
                     case SourceSdkVer_CSS:
                     case SourceSdkVer_TF2:
                     case SourceSdkVer_HL2MP:
                         this_offset = 0xa4;
                         break;
+#endif //#ifndef _WIN64
                     default:
                         this_offset = 0x0;
                         break;
                 }
+#ifndef _WIN64                
                 pQueueFunctorInternal((unsigned char*)pCallQueue+this_offset,0,pFunctor2);
+#else
+                pQueueFunctorInternal((unsigned char*)pCallQueue+this_offset,pFunctor2);
+#endif //#ifndef _WIN64                
                 pFunctor2->Release();
             } else {
                 pFunctor->operator()();
@@ -167,8 +181,6 @@ bool Hook_MaterialSystem_GetRenderCallQueue(void)
         DetourAttach(&(PVOID&)g_Old_CMaterialSystem_GetRenderCallQueue, New_CMaterialSystem_GetRenderCallQueue);
 
         firstResult = NO_ERROR == DetourTransactionCommit();
-
-        firstResult = true;
 	}
 
 	return firstResult;

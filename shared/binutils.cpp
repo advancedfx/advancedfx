@@ -149,6 +149,49 @@ MemRange FindPatternString(MemRange memRange, char const * hexBytePattern)
 	return MemRange(oldMemRangeStart, min(oldMemRangeStart, memRange.End));
 }
 
+MemRange FindAddrInt32OffsetRef(MemRange memRange, size_t addr, int32_t extraOffset)
+{
+	size_t memRangeStart = memRange.Start;
+	while(true) {
+		if(sizeof(int32_t) >  memRange.End - memRangeStart) break;
+
+		int32_t int32Value = *(const int32_t *)memRangeStart;
+		size_t curAddr = memRangeStart + extraOffset + int32Value;
+
+		if(curAddr == addr)
+			return MemRange(memRangeStart, memRangeStart+sizeof(int32_t));
+
+		memRangeStart++;
+	}
+
+	return MemRange(memRange.Start, min(memRange.Start, memRange.End));
+}
+
+MemRange FindAddrInt32OffsetRefInContext(MemRange memRange, size_t addr, int32_t extraOffset, char const * prefixHexBytePattern, char const * suffixHexBytePattern) {
+	while(true) {
+		MemRange memRange2 = prefixHexBytePattern ? FindPatternString(memRange, prefixHexBytePattern) : memRange;
+		if(memRange2.IsEmpty()) break;
+		MemRange memRange3 = FindAddrInt32OffsetRef(memRange.And(MemRange(memRange2.End, memRange.End+sizeof(int32_t))), addr, extraOffset);
+		if(memRange3.IsEmpty()) {
+			if(prefixHexBytePattern) {
+				memRange.Start = memRange2.End;
+				continue;
+			}
+			break;
+		}
+		if(suffixHexBytePattern) {
+			MemRange memRange4 = FindPatternString(MemRange(memRange3.End, memRange.End), suffixHexBytePattern);
+			if(memRange4.IsEmpty()) {
+				memRange.Start = prefixHexBytePattern ? memRange2.End : memRange3.End;
+				continue;
+			}
+		}
+		return memRange3;
+	}
+
+	return MemRange(memRange.Start, min(memRange.Start, memRange.End));
+}
+
 size_t FindClassVtable(HMODULE hModule, const char * name, DWORD rttiBaseClassArrayOffset, DWORD completeObjectLocatorOffset)
 {
 	ImageSectionsReader imageSectionReader(hModule);
