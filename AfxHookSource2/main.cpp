@@ -636,12 +636,12 @@ bool CS2_Client_CSetupView_Trampoline_IsPlayingDemo(void *ThisCViewSetup) {
 	float curTime = g_MirvTime.curtime_get(); //TODO: + m_PausedTime
 	float absTime = g_MirvTime.absoluteframetime_get();
 
-	int *pWidth = (int*)((unsigned char *)ThisCViewSetup + 0x474);
-	int *pHeight = (int*)((unsigned char *)ThisCViewSetup + 0x47c);
+	int *pWidth = (int*)((unsigned char *)ThisCViewSetup + 0x434);
+	int *pHeight = (int*)((unsigned char *)ThisCViewSetup + 0x43C);
 
-	float *pFov = (float*)((unsigned char *)ThisCViewSetup + 0x4d8);
-	float *pViewOrigin = (float*)((unsigned char *)ThisCViewSetup + 0x4e0);
-	float *pViewAngles = (float*)((unsigned char *)ThisCViewSetup + 0x4f8);
+	float *pFov = (float*)((unsigned char *)ThisCViewSetup + 0x498);
+	float *pViewOrigin = (float*)((unsigned char *)ThisCViewSetup + 0x4a0);
+	float *pViewAngles = (float*)((unsigned char *)ThisCViewSetup + 0x4b8);
 
 	int width = *pWidth;
 	int height = *pHeight;
