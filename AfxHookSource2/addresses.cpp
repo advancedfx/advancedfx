@@ -108,7 +108,7 @@ void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
                  c0 01 00 00
     */
 	{
-		MemRange result = FindPatternString(textRange, "48 89 5c 24 18 55 56 57 41 54 41 56 48 83 ec 70 48 8d 05 ?? ?? ?? ?? 48 c7 44 24 38 ?? ?? ?? ?? 48 89 44 24 30 4c 8d 44 24 50 0f 10 44 24 30 48 8d 05 ?? ?? ?? ?? 4c 8b f2 48 89 44 24 40 48 8d 15 ?? ?? ?? ?? f2 0f 10 4c 24 40 48 8b f1 48 8d 0d ?? ?? ?? ?? f2 0f 11 4c 24 60 33 ff 0f 29 44 24 50 ff 15 ?? ?? ?? ?? 48 8b 96 c0 01 00 00");
+		MemRange result = FindPatternString(textRange, "48 89 5C 24 18 55 56 57 41 54 41 56 48 83 EC 70 48 8D 05 19");
 																	  
 		if (!result.IsEmpty()) {
             AFXADDR_SET(cs2_engine_CRenderService_OnClientOutput, result.Start);

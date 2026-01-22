@@ -1208,14 +1208,14 @@ void __fastcall My_Panorama_CStylePropertyWashColor_Clone(void * This, void * pT
 
 void getDeathMsgAddrs(HMODULE clientDll) {
 	// can be found with strings like "attacker" and "userid", etc. it basically takes all info from player_death event
-	if (auto addr = getAddress(clientDll, "48 89 4C 24 ?? 55 53 57 41 56 41 57 48 8D AC 24 ?? ?? ?? ?? B8 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 2B E0 48 8B 02")) {
+	if (auto addr = getAddress(clientDll, "48 89 4C 24 ?? 55 53 57 41 55 41 57")) {
 		g_Original_handlePlayerDeath = (g_Original_handlePlayerDeath_t)(addr);
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 	// called in multiple places with strings like "userid", "attacker", etc. as second argument
 	// e.g. in function above too
-	if (auto addr = getAddress(clientDll, "4C 8B F2 48 8D 4C 24 ?? 48 8B D7 48 8B 58 ?? E8 ?? ?? ?? ??")) {
-		g_Original_hashString = (g_Original_hashString_t)(addr + 15 + 5 + *(int32_t*)(addr + 15 + 1));
+	if (auto addr = getAddress(clientDll, "4C 8B EA 48 8D 4D ?? 48 8B D7 48 8B 58 ?? E8 ?? ?? ?? ??")) {
+		g_Original_hashString = (g_Original_hashString_t)(addr + 14 + 5 + *(int32_t*)(addr + 14 + 1));
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));	
 
 	// snippet from function handlePlayerDeath above	

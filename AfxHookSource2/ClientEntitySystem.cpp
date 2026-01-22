@@ -34,7 +34,7 @@ cl_ent_viewoffset 192
 // CEntityInstance: Root class for all entities
 // Retrieved from script function.
 const char * CEntityInstance::GetName() {
-	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x18);
+	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x20);
 	if(pszName) return pszName;
 	return "";
 }
@@ -42,13 +42,16 @@ const char * CEntityInstance::GetName() {
 // Retrieved from script function.
 // can return nullptr!
 const char * CEntityInstance::GetDebugName() {
-	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x18);
+	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x20);
 	if(pszName) return pszName;
-	return **(const char***)(*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x8)+0x30);
+	return "";
+	// TODO: it does crash currently and im too tired to investigate
+	// return **(const char***)(*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x8)+0x30);
 }
 
 // Retrieved from script function.
 const char * CEntityInstance::GetClassName() {
+	// TODO: double check if needed to by shifted by 8
 	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x20);
 	if(pszName) return pszName;
 	return "";
@@ -61,7 +64,7 @@ const char * CEntityInstance::GetClientClassName() {
     // GetClientClass function.
     // find it by searching for 4th full-ptr ref to "C_PlantedC4" subtract sizeof(void*) (0x8) and search function that references this struct.
     // you need to search for raw bytes, GiHidra doesn't seem to find the reference.
-    void * pClientClass = ((void * (__fastcall *)(void *)) (*(void***)this)[40]) (this);
+    void * pClientClass = ((void * (__fastcall *)(void *)) (*(void***)this)[42]) (this);
 
     if(pClientClass) {
         return *(const char**)((unsigned char*)pClientClass + 0x10);
@@ -74,7 +77,7 @@ const char * CEntityInstance::GetClientClassName() {
 
 bool CEntityInstance::IsPlayerPawn() {
 	// See cl_ent_text drawing function.
-	return ((bool (__fastcall *)(void *)) (*(void***)this)[157]) (this);
+	return ((bool (__fastcall *)(void *)) (*(void***)this)[151]) (this);
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerPawnHandle() {
@@ -85,7 +88,7 @@ SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerPawnHandle() {
 
 bool CEntityInstance::IsPlayerController() {
 	// See cl_ent_text drawing function. Near "Pawn: (%d) Name: %s".
-	return ((bool (__fastcall *)(void *)) (*(void***)this)[158]) (this);    
+	return ((bool (__fastcall *)(void *)) (*(void***)this)[152]) (this);    
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerControllerHandle() {
@@ -118,12 +121,12 @@ void CEntityInstance::GetOrigin(float & x, float & y, float & z) {
 
 void CEntityInstance::GetRenderEyeOrigin(float outOrigin[3]) {
 	// GetRenderEyeAngles vtable offset minus 2
-	((void (__fastcall *)(void *,float outOrigin[3])) (*(void***)this)[172]) (this,outOrigin);
+	((void (__fastcall *)(void *,float outOrigin[3])) (*(void***)this)[166]) (this,outOrigin);
 }
 
 void CEntityInstance::GetRenderEyeAngles(float outAngles[3]) {
 	// See cl_track_render_eye_angles. Near "Render eye angles: %.7f, %.7f, %.7f\n".
-	((void (__fastcall *)(void *,float outAngles[3])) (*(void***)this)[173]) (this,outAngles);
+	((void (__fastcall *)(void *,float outAngles[3])) (*(void***)this)[167]) (this,outAngles);
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetViewEntityHandle() {

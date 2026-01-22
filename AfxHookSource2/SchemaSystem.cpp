@@ -123,14 +123,15 @@ void initSchemaSystemOffsets()
 void HookSchemaSystem(HMODULE schemaSystemDll)
 {
 
-   // 18000ab79 48  89  05       MOV        qword ptr [DAT_18005c710 ],RAX
-   //           90  1b  05  00
-   // 18000ab80 4c  8d  0d       LEA        R9,[s_schema_list_bindings_<substring>_1800449   = "schema_list_bindings <substri
-   //           09  9e  03  00
-   // 18000ab87 0f  b6  45  e8   MOVZX      EAX ,byte ptr [RBP  + local_28[8] ]
-   // 18000ab8b 4c  8d  45  e0   LEA        R8=>local_28 ,[RBP  + -0x20 ]
-   // 18000ab8f 33  f6           XOR        ESI ,ESI
-	size_t instructionAddr = getAddress(schemaSystemDll, "48 89 05 ?? ?? ?? ?? 4C 8D 0D ?? ?? ?? ?? 0F B6 45 E8 4C 8D 45 E0 33 F6");
+   // 18000d8a7 48  89  05       MOV        qword ptr [DAT_180076730 ],RAX
+   //           82  8e  06  00
+   // 18000d8ae 4c  8d  0d       LEA        R9,[s_schema_list_bindings_<substring>_1800548   = "schema_list_bindings <substri
+   //           0b  70  04  00
+   // 18000d8b5 33  c0           XOR        EAX ,EAX
+   // 18000d8b7 48  c7  05       MOV        qword ptr [DAT_18007675c ],0xc80000
+   //           9a  8e  06 
+   //           00  00  00 
+	size_t instructionAddr = getAddress(schemaSystemDll, "48 89 05 ?? ?? ?? ?? 4C 8D 0D ?? ?? ?? ?? 33 C0 48 C7 05");
 	if (0 == instructionAddr) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));	
 		return;
