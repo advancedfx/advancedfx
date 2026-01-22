@@ -315,9 +315,10 @@ declare namespace mirv {
 	 *
 	 * @remarks
 	 * curStage usually has one of the following values in CS2:
-	 * FRAME_UNDEFINED=-1,		// (haven't run any frames yet)
-	 * FRAME_RENDER_PASS = 8	// Render a frame for display
+	 * FRAME_UNDEFINED		// (haven't run any frames yet)
+	 * FRAME_RENDER_PASS	// Render a frame for display
 	 * There are more values in-between, but their meanings have changed and we did not confirm them yet.
+	 * See values in prop.d.ts
 	 *
 	 * @param e - curStage - current stage, isBefore - if called before (true) or after (false) client DLL for this stage.
 	 *
