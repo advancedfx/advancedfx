@@ -690,7 +690,7 @@ CON_COMMAND(__mirv_panorama_print_children, "") {
 	}
 }
 
-typedef SOURCESDK::CS2::CKV3MemberName (__fastcall *g_Original_hashString_t)(const char* string);
+typedef uint32_t* (__fastcall *g_Original_hashString_t)(uint32_t* pResult, const char* string);
 g_Original_hashString_t g_Original_hashString = nullptr;
 
 
@@ -701,7 +701,9 @@ public:
 	: m_Event(event) { }
 
 	SOURCESDK::CS2::CKV3MemberName hashString(const char * string) {
-		return g_Original_hashString(string);
+		uint32_t hash;
+		g_Original_hashString(&hash, string);
+		return SOURCESDK::CS2::CKV3MemberName(hash, -1, string);
 	}
 
 	bool IsHashStringEqual(const char * a, const SOURCESDK::CS2::CKV3MemberName & b) {
