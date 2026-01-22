@@ -690,8 +690,9 @@ CON_COMMAND(__mirv_panorama_print_children, "") {
 	}
 }
 
-typedef u_char* (__fastcall *g_Original_hashString_t)(uint32_t* pResult, const char* string);
+typedef SOURCESDK::CS2::CKV3MemberName (__fastcall *g_Original_hashString_t)(const char* string);
 g_Original_hashString_t g_Original_hashString = nullptr;
+
 
 class MyDeathMsgGameEventWrapper : public SOURCESDK::CS2::IGameEvent, public MyDeathMsgGameEventWrapperBase
 {
@@ -699,10 +700,17 @@ public:
 	MyDeathMsgGameEventWrapper(SOURCESDK::CS2::IGameEvent * event)
 	: m_Event(event) { }
 
-	uint32_t hashString(const char * string) {
-		uint32_t result;
-		g_Original_hashString(&result, string);
-		return result;
+	SOURCESDK::CS2::CKV3MemberName hashString(const char * string) {
+		return g_Original_hashString(string);
+	}
+
+	bool IsHashStringEqual(const char * a, const SOURCESDK::CS2::CKV3MemberName & b) {
+		return IsHashEqual(hashString(a),b);
+	}
+
+private:
+	bool IsHashEqual(const SOURCESDK::CS2::CKV3MemberName & a, const SOURCESDK::CS2::CKV3MemberName & b) {
+		return a.GetHashCode() == b.GetHashCode();
 	}
 
 public:
@@ -719,103 +727,103 @@ public:
 	virtual bool IsLocal() const {
 		return m_Event->IsLocal();
 	}
-	virtual bool IsEmpty( const u_int &keySymbol ) {
+	virtual bool IsEmpty( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol ) {
 		return m_Event->IsEmpty(keySymbol);
 	}
-	virtual bool GetBool( const u_int &keySymbol) {
+	virtual bool GetBool( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol) {
 		return m_Event->GetBool(keySymbol);
 	}
-	virtual int GetInt( const u_int &keySymbol) {
+	virtual int GetInt( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol) {
 
-		if (assistedflash.use && hashString("assistedflash") == keySymbol) return assistedflash.value;
-		if (headshot.use && hashString("headshot") == keySymbol) return headshot.value;
-		if (penetrated.use && hashString("penetrated") == keySymbol) return penetrated.value;
-		if (dominated.use && hashString("dominated") == keySymbol) return dominated.value;
-		if (revenge.use && hashString("revenge") == keySymbol) return revenge.value;
-		if (wipe.use && hashString("wipe") == keySymbol) return wipe.value;
-		if (noscope.use && hashString("noscope") == keySymbol) return noscope.value;
-		if (thrusmoke.use && hashString("thrusmoke") == keySymbol) return thrusmoke.value;
-		if (attackerblind.use && hashString("attackerblind") == keySymbol) return attackerblind.value;
-		if (attackerinair.use && hashString("attackerinair") == keySymbol) return attackerinair.value;
+		if (assistedflash.use && IsHashStringEqual("assistedflash", keySymbol)) return assistedflash.value;
+		if (headshot.use && IsHashStringEqual("headshot", keySymbol)) return headshot.value;
+		if (penetrated.use && IsHashStringEqual("penetrated", keySymbol)) return penetrated.value;
+		if (dominated.use && IsHashStringEqual("dominated", keySymbol)) return dominated.value;
+		if (revenge.use && IsHashStringEqual("revenge", keySymbol)) return revenge.value;
+		if (wipe.use && IsHashStringEqual("wipe", keySymbol)) return wipe.value;
+		if (noscope.use && IsHashStringEqual("noscope", keySymbol)) return noscope.value;
+		if (thrusmoke.use && IsHashStringEqual("thrusmoke", keySymbol)) return thrusmoke.value;
+		if (attackerblind.use && IsHashStringEqual("attackerblind", keySymbol)) return attackerblind.value;
+		if (attackerinair.use && IsHashStringEqual("attackerinair", keySymbol)) return attackerinair.value;
 		
 		return m_Event->GetInt(keySymbol);
 	}
-	virtual uint64_t GetUint64( const u_int &keySymbol) {
+	virtual uint64_t GetUint64( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol) {
 		return m_Event->GetUint64(keySymbol);
 	}
-	virtual float GetFloat( const u_int &keySymbol) {
+	virtual float GetFloat( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol) {
 		return m_Event->GetFloat(keySymbol);
 	}
-	virtual const char *GetString( const u_int &keySymbol) {
-		if (weapon.use && hashString("weapon") == keySymbol) return weapon.value;
+	virtual const char *GetString( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol) {
+		if (weapon.use && IsHashStringEqual("weapon", keySymbol)) return weapon.value;
 		return m_Event->GetString(keySymbol);
 	}
-	virtual void *GetPtr( const u_int &keySymbol ) {
+	virtual void *GetPtr( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol ) {
 		return m_Event->GetPtr(keySymbol);
 	}
-	virtual SOURCESDK::CS2::CEntityHandle GetEHandle( const u_int &keySymbol ) {
+	virtual SOURCESDK::CS2::CEntityHandle GetEHandle( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol ) {
 		return m_Event->GetEHandle(keySymbol);
 	}
-	virtual SOURCESDK::CS2::CEntityInstance *GetEntity( const u_int &keySymbol) {
+	virtual SOURCESDK::CS2::CEntityInstance *GetEntity( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol) {
 		return m_Event->GetEntity(keySymbol);
 	}
-	virtual void* GetEntityIndex( const u_int &keySymbol ) {
+	virtual void* GetEntityIndex( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol ) {
 		return m_Event->GetEntityIndex(keySymbol);
 	}
-	virtual SOURCESDK::CS2::CPlayerSlot GetPlayerSlot( const u_int &keySymbol ) {
+	virtual SOURCESDK::CS2::CPlayerSlot GetPlayerSlot( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol ) {
 
-		if (attacker.newId.use && hashString("attacker") == keySymbol) return SOURCESDK::CS2::CPlayerSlot(attacker.newId.value.ResolveToUserId());
-		if (victim.newId.use && hashString("userid") == keySymbol) return SOURCESDK::CS2::CPlayerSlot(victim.newId.value.ResolveToUserId());
-		if (assister.newId.use && hashString("assister") == keySymbol) return SOURCESDK::CS2::CPlayerSlot(assister.newId.value.ResolveToUserId());
+		if (attacker.newId.use && IsHashStringEqual("attacker", keySymbol)) return SOURCESDK::CS2::CPlayerSlot(attacker.newId.value.ResolveToUserId());
+		if (victim.newId.use && IsHashStringEqual("userid", keySymbol)) return SOURCESDK::CS2::CPlayerSlot(victim.newId.value.ResolveToUserId());
+		if (assister.newId.use && IsHashStringEqual("assister", keySymbol)) return SOURCESDK::CS2::CPlayerSlot(assister.newId.value.ResolveToUserId());
 
 		return m_Event->GetPlayerSlot(keySymbol);
 	}
-	virtual SOURCESDK::CS2::CEntityInstance *GetPlayerController( const u_int &keySymbol ) {
+	virtual SOURCESDK::CS2::CEntityInstance *GetPlayerController( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol ) {
 		return m_Event->GetPlayerController(keySymbol);
 	}
-	virtual SOURCESDK::CS2::CEntityInstance *GetPlayerPawn( const u_int &keySymbol ) {
+	virtual SOURCESDK::CS2::CEntityInstance *GetPlayerPawn( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol ) {
 		return m_Event->GetPlayerPawn(keySymbol);
 	}
-	virtual SOURCESDK::CS2::CEntityHandle GetPawnEHandle( const u_int &keySymbol ) {
+	virtual SOURCESDK::CS2::CEntityHandle GetPawnEHandle( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol ) {
 		return m_Event->GetPawnEHandle(keySymbol);
 	}
-	virtual void* GetPawnEntityIndex( const u_int &keySymbol ) {
+	virtual void* GetPawnEntityIndex( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol ) {
 		return m_Event->GetPawnEntityIndex(keySymbol);
 	}
-	virtual void SetBool( const u_int &keySymbol, bool value ) {
+	virtual void SetBool( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol, bool value ) {
 		m_Event->SetBool(keySymbol,value);
 	}
-	virtual void SetInt( const u_int &keySymbol, int value ) {
+	virtual void SetInt( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol, int value ) {
 		m_Event->SetInt(keySymbol,value);
 	}
-	virtual void SetUint64( const u_int &keySymbol, uint64_t value ) {
+	virtual void SetUint64( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol, uint64_t value ) {
 		m_Event->SetUint64(keySymbol,value);
 	}
-	virtual void SetFloat( const u_int &keySymbol, float value ) {
+	virtual void SetFloat( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol, float value ) {
 		m_Event->SetFloat(keySymbol,value);
 	}
-	virtual void SetString( const u_int &keySymbol, const char *value ) {
+	virtual void SetString( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol, const char *value ) {
 		m_Event->SetString(keySymbol,value);
 	}
-	virtual void SetPtr( const u_int &keySymbol, void *value ) {
+	virtual void SetPtr( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol, void *value ) {
 		m_Event->SetPtr(keySymbol,value);
 	}
-	virtual void SetEntity(const u_int &keySymbol, SOURCESDK::CS2::CEntityInstance *value) {
+	virtual void SetEntity(const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol, SOURCESDK::CS2::CEntityInstance *value) {
 		m_Event->SetEntity(keySymbol,value);
 	}
-	virtual void SetEntity( const u_int &keySymbol, void* value ) {
+	virtual void SetEntity( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol, void* value ) {
 		m_Event->SetEntity(keySymbol,value);
 	}
-	virtual void SetPlayer( const u_int &keySymbol, SOURCESDK::CS2::CEntityInstance *pawn ) {
+	virtual void SetPlayer( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol, SOURCESDK::CS2::CEntityInstance *pawn ) {
 		m_Event->SetPlayer(keySymbol,pawn);
 	}
-	virtual void SetPlayer( const u_int &keySymbol, SOURCESDK::CS2::CPlayerSlot value ) {
+	virtual void SetPlayer( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol, SOURCESDK::CS2::CPlayerSlot value ) {
 		m_Event->SetPlayer(keySymbol,value);
 	}
-	virtual void SetPlayerRaw( const u_int &controllerKeySymbol, const u_int &pawnKeySymbol, SOURCESDK::CS2::CEntityInstance *pawn ) {
+	virtual void SetPlayerRaw( const SOURCESDK::CS2::GameEventKeySymbol_t &controllerKeySymbol, const SOURCESDK::CS2::GameEventKeySymbol_t &pawnKeySymbol, SOURCESDK::CS2::CEntityInstance *pawn ) {
 		m_Event->SetPlayerRaw(controllerKeySymbol,pawnKeySymbol,pawn);
 	}
-	virtual bool HasKey( const u_int &keySymbol ) {
+	virtual bool HasKey( const SOURCESDK::CS2::GameEventKeySymbol_t &keySymbol ) {
 		return m_Event->HasKey(keySymbol);
 	}
 	virtual void CreateVMTable( void* &Table ) {
