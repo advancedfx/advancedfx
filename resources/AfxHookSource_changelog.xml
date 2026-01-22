@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.134.0</version>
+<time>2026-01-22T12:21Z</time>
+<changes>
+<change type="added">Added 64-bit support for TF2</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.133.0</version>
 <time>2026-01-07T14:13Z</time>
 <changes>
