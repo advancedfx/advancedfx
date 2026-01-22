@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.38.2</version>
+<time>2026-01-22T21:51Z</time>
+<changes>
+<change type="updated">Fixed crash when spectated player dies while trueview is enabled</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.38.1</version>
 <time>2026-01-22T12:21Z</time>
 <changes>
