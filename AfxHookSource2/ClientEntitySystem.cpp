@@ -34,7 +34,7 @@ cl_ent_viewoffset 192
 // CEntityInstance: Root class for all entities
 // Retrieved from script function.
 const char * CEntityInstance::GetName() {
-	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x20);
+	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x18);
 	if(pszName) return pszName;
 	return "";
 }
@@ -42,16 +42,13 @@ const char * CEntityInstance::GetName() {
 // Retrieved from script function.
 // can return nullptr!
 const char * CEntityInstance::GetDebugName() {
-	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x20);
+	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x18);
 	if(pszName) return pszName;
-	return "";
-	// TODO: it does crash currently and im too tired to investigate
-	// return **(const char***)(*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x8)+0x30);
+	return **(const char***)(*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x8)+0x78);
 }
 
 // Retrieved from script function.
 const char * CEntityInstance::GetClassName() {
-	// TODO: double check if needed to by shifted by 8
 	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x20);
 	if(pszName) return pszName;
 	return "";
