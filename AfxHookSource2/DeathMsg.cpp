@@ -20,6 +20,8 @@
 #include "SchemaSystem.h"
 #include "MirvColors.h" 
 
+#include "addresses.h"
+
 #include <set>
 #include <algorithm>
 #include <vector>
@@ -920,13 +922,20 @@ g_Original_handlePlayerDeath_t g_Original_handlePlayerDeath = nullptr;
 
 void __fastcall handleDeathnotice(u_char* hudDeathNotice, SOURCESDK::CS2::IGameEvent* gameEvent) {
 
+	if (!AFXADDR_GET(cs2_deathmsg_lifetime_offset) || !AFXADDR_GET(cs2_deathmsg_lifetimemod_offset)) {
+		advancedfx::Warning("AFXERROR: deathmsg offsets not installed.\n");
+		return g_Original_handlePlayerDeath(hudDeathNotice, gameEvent);
+	}
+
+	auto lifetimeOffset = (uint8_t)AFXADDR_GET(cs2_deathmsg_lifetime_offset);
+	auto lifetimeModOffset = (uint8_t)AFXADDR_GET(cs2_deathmsg_lifetimemod_offset);
+
 	float orgDeathNoticeLifetime, orgDeathNoticeLocalPlayerLifetimeMod;
 
 	MyDeathMsgGameEventWrapper myWrapper(gameEvent);
 
-	// TODO: see if can find these with sig, but these rarely change
-	auto pDeathNoticeLifetime = (float*)(hudDeathNotice + 0x6C);
-	auto pDeathNoticeLocalPlayerLifetimeMod = (float*)(hudDeathNotice + 0x70);
+	auto pDeathNoticeLifetime = (float*)(hudDeathNotice + lifetimeOffset);
+	auto pDeathNoticeLocalPlayerLifetimeMod = (float*)(hudDeathNotice + lifetimeModOffset);
 
 	auto uidAttacker = (int)(int16_t)gameEvent->GetInt(myWrapper.hashString("attacker"));
 	auto uidVictim = (int)(int16_t)gameEvent->GetInt(myWrapper.hashString("userid"));
