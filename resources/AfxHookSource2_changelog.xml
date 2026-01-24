@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.38.3</version>
+<time>2026-01-24T10:00Z</time>
+<changes>
+<change type="updated">Adjusted to CS2 update (1.41.3.2) e.g. mirv_deathmsg lifetime not working</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.38.2</version>
 <time>2026-01-22T21:51Z</time>
 <changes>
