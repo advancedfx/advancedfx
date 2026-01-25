@@ -2564,28 +2564,6 @@ BOOL WINAPI new_ReleaseCapture()
 	return ReleaseCapture();
 }
 
-FARPROC WINAPI new_shaderapidx9_GetProcAddress(HMODULE hModule, LPCSTR lpProcName)
-{
-	FARPROC nResult;
-	nResult = GetProcAddress(hModule, lpProcName);
-
-	if (!nResult)
-		return nResult; // This can happen on Windows XP for Direct3DCreateEx9
-
-	if (HIWORD(lpProcName))
-	{
-		if (
-			!lstrcmp(lpProcName, "Direct3DCreate9Ex")
-		) {
-			old_Direct3DCreate9Ex = (Direct3DCreate9Ex_t)nResult;
-			return (FARPROC) &new_Direct3DCreate9Ex;
-		}
-	}
-
-	return nResult;
-}
-
-
 #ifndef _WIN64
 bool g_b_Suppress_csgo_engine_Do_CCLCMsg_FileCRCCheck = true;
 typedef void (__fastcall * csgo_engine_Do_CCLCMsg_FileCRCCheck_t)(void * This, void * Edx);
@@ -3138,7 +3116,31 @@ CAfxImportsHook g_Import_materialsystem(CAfxImportsHooks({
 	&g_Import_materialsystem_KERNEL32 }));
 
 
+FARPROC WINAPI new_shaderapidx9_GetProcAddress(HMODULE hModule, LPCSTR lpProcName);
+
 CAfxImportFuncHook<FARPROC(WINAPI*)(HMODULE, LPCSTR)> g_Import_shaderapidx9_KERNEL32_GetProcAddress("GetProcAddress", &new_shaderapidx9_GetProcAddress);
+
+FARPROC WINAPI new_shaderapidx9_GetProcAddress(HMODULE hModule, LPCSTR lpProcName)
+{
+	FARPROC nResult;
+	nResult = g_Import_shaderapidx9_KERNEL32_GetProcAddress.TrueFunc(hModule, lpProcName);
+
+	if (!nResult)
+		return nResult; // This can happen on Windows XP for Direct3DCreateEx9
+
+	if (HIWORD(lpProcName))
+	{
+		if (
+			!lstrcmp(lpProcName, "Direct3DCreate9Ex")
+		) {
+			old_Direct3DCreate9Ex = (Direct3DCreate9Ex_t)nResult;
+			return (FARPROC) &new_Direct3DCreate9Ex;
+		}
+	}
+
+	return nResult;
+}
+
 
 CAfxImportDllHook g_Import_shaderapidx9_KERNEL32("KERNEL32.dll", CAfxImportDllHooks({
 	&g_Import_shaderapidx9_KERNEL32_GetProcAddress }));

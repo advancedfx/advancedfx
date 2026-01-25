@@ -4709,21 +4709,9 @@ public:
 
 		if(0 == g_NewDirect3DDevice9_RefCount)
 		{
-			TriggerAfxD3D9OnRelease();
+			Afx_Reset_Before(nullptr, nullptr);
 
 			Shared_Direct3DDevice9_Shutdown();
-
-			if (NULL != m_CurrentState)
-			{
-				m_CurrentState->Release();
-				m_CurrentState = NULL;
-			}
-
-			if (NULL != m_InitialState)
-			{
-				m_InitialState->Release();
-				m_InitialState = NULL;
-			}
 
 			if(m_Original_VertexShader)
 			{
