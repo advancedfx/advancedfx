@@ -1363,7 +1363,7 @@ void CAfxBaseClientDll::LevelInitPreEntity(char const* pMapName)
 	MirvCalcs_LevelInitPreEntity();
 }
 
-void CAfxBaseClientDll::LevelInitPostEntity()
+__declspec(naked)  void CAfxBaseClientDll::LevelInitPostEntity()
 { NAKED_JMP_CLASSMEMBERIFACE_FN(CAfxBaseClientDll, m_Parent, 6) }
 
 //__declspec(naked) 
