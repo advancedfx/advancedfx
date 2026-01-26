@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.134.1</version>
+<time>2026-01-26T12:26Z</time>
+<changes>
+<change type="fixed">Fixed csgo crashes when demo playback starts</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.134.0</version>
 <time>2026-01-22T12:21Z</time>
 <changes>
