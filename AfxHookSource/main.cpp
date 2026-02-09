@@ -198,6 +198,7 @@ FovScaling GetDefaultFovScaling() {
 	case SourceSdkVer_CSGO:
 	case SourceSdkVer_CSCO:
 	case SourceSdkVer_TF2:
+	case SourceSdkVer_TF2Classified:
 	case SourceSdkVer_SWARM:
 	case SourceSdkVer_L4D2:
 	case SourceSdkVer_Momentum:
@@ -2193,6 +2194,7 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 					AfxDetourPtr((PVOID*)&(vtable[2]), new_CVClient_Shutdown, (PVOID*)&old_CVClient_Shutdown);
 					AfxDetourPtr((PVOID*)&(vtable[35]), new_CVClient_FrameStageNotify_Garrysmod, (PVOID*)&old_CVClient_FrameStageNotify_Garrysmod);
 					break;
+				case SourceSdkVer_TF2Classified:
 				case SourceSdkVer_TF2:
 					AfxDetourPtr((PVOID*) & (vtable[2]), new_CVClient_Shutdown, (PVOID*)&old_CVClient_Shutdown);
 					AfxDetourPtr((PVOID*) & (vtable[35]), new_CVClient_FrameStageNotify_TF2, (PVOID*)&old_CVClient_FrameStageNotify_TF2);
@@ -2236,7 +2238,7 @@ void* new_Client_CreateInterface(const char *pName, int *pReturnCode)
 				new CClientToolsCsgo(iface);
 		}
 #endif //#ifndef _WIN64		
-		if (SourceSdkVer_TF2 == g_SourceSdkVer) {
+		if (SourceSdkVer_TF2 == g_SourceSdkVer || SourceSdkVer_TF2Classified == g_SourceSdkVer) {
 
 			if (SOURCESDK::TF2::IClientTools * iface = (SOURCESDK::TF2::IClientTools *)old_Client_CreateInterface(SOURCESDK_TF2_VCLIENTTOOLS_INTERFACE_VERSION, NULL))
 				new CClientToolsTf2(iface);
@@ -2660,6 +2662,8 @@ void CommonHooks()
 				const wchar_t* game = g_CommandLine->GetArgV(gameIdx);
 				if (0 == _wcsicmp(L"tf", game))
 					g_SourceSdkVer = SourceSdkVer_TF2;
+				else if (0 == _wcsicmp(L"tf2classified", game))
+					g_SourceSdkVer = SourceSdkVer_TF2Classified;
 				else if (0 == _wcsicmp(L"csgo", game))
 					g_SourceSdkVer = SourceSdkVer_CSGO;
 				else if (0 == _wcsicmp(L"csco", game))
@@ -2728,6 +2732,10 @@ void CommonHooks()
 		{
 			g_SourceSdkVer = SourceSdkVer_TF2;
 		}
+		else if (StringIEndsWith(filePath, "tf2classified_win64.exe"))
+		{
+			g_SourceSdkVer = SourceSdkVer_TF2Classified;
+		}
 		else if (StringIEndsWith(filePath, "hl2mp.exe"))
 		{
 			g_SourceSdkVer = SourceSdkVer_HL2MP;
@@ -2744,6 +2752,8 @@ void CommonHooks()
 				const wchar_t* game = g_CommandLine->GetArgV(gameIdx);
 				if(0 == _wcsicmp(L"tf", game))
 					g_SourceSdkVer = SourceSdkVer_TF2;
+				else if (0 == _wcsicmp(L"tf2classified", game))
+					g_SourceSdkVer = SourceSdkVer_TF2Classified;
 				else if (0 == _wcsicmp(L"cstrike", game))
 					g_SourceSdkVer = SourceSdkVer_CSS;
 				else if (0 == _wcsicmp(L"garrysmod", game))
