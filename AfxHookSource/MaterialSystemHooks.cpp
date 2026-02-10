@@ -118,6 +118,7 @@ bool MaterialSystem_ExecuteOnRenderThread(CMaterialSystemFunctor * pFunctor) {
                 case SourceSdkVer_CSS:
                 case SourceSdkVer_L4D2:
                 case SourceSdkVer_TF2:
+                case SourceSdkVer_TF2Classified:
                 case SourceSdkVer_HL2MP:
                     pFunctor2->AddRef();
                     break;
@@ -128,6 +129,7 @@ bool MaterialSystem_ExecuteOnRenderThread(CMaterialSystemFunctor * pFunctor) {
 #ifndef _WIN64
                     case SourceSdkVer_CSS:
                     case SourceSdkVer_TF2:
+                    case SourceSdkVer_TF2Classified:
                     case SourceSdkVer_HL2MP:
                         this_offset = 0xa4;
                         break;

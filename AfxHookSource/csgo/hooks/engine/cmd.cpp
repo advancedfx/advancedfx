@@ -141,7 +141,7 @@ bool Install_csgo_tf2_Cmd_ExecuteCommand(void)
 		error = DetourTransactionCommit();
 
 		firstResult = NO_ERROR == error;
-	} else if(SourceSdkVer_TF2 == g_SourceSdkVer && AFXADDR_GET(tf2_engine_Cmd_ExecuteCommand)){
+	} else if((SourceSdkVer_TF2 == g_SourceSdkVer || SourceSdkVer_TF2Classified == g_SourceSdkVer) && AFXADDR_GET(tf2_engine_Cmd_ExecuteCommand)){
 		LONG error = NO_ERROR;
 
 		g_tf2_engine_Cmd_ExecuteCommand = (tf2_engine_Cmd_ExecuteCommand_t)AFXADDR_GET(tf2_engine_Cmd_ExecuteCommand);

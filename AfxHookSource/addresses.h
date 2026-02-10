@@ -8,6 +8,7 @@ enum SourceSdkVer
 	SourceSdkVer_CSGO,
 	SourceSdkVer_CSCO,
 	SourceSdkVer_TF2,
+	SourceSdkVer_TF2Classified,
 	SourceSdkVer_CSS,
 	SourceSdkVer_CSSV34,
 	SourceSdkVer_CSSV84,

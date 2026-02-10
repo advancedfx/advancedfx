@@ -698,7 +698,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 #ifndef _WIN64		
 		SourceSdkVer_CSGO == sourceSdkVer || SourceSdkVer_CSCO == sourceSdkVer ||
 #endif
-		SourceSdkVer_TF2 == sourceSdkVer
+		SourceSdkVer_TF2 == sourceSdkVer || SourceSdkVer_TF2Classified == sourceSdkVer
 	)
 	{
 		// csgo_engine_Cmd_ExecuteCommand: // Checked 2019-11-11.
@@ -847,6 +847,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 			void **vtable = (void **)FindClassVtable((HMODULE)engineDll, ".?AVCVideoMode_Common@@", 0, 0x0);
 			if(vtable) AFXADDR_SET(engine_CVideoMode_Common_WriteMovieFrame, (size_t)(vtable[23]));
 		} break;
+		case SourceSdkVer_TF2Classified:
 		case SourceSdkVer_TF2: {
 			// Checked x86: 2024-01-05.
 			void **vtable = (void **)FindClassVtable((HMODULE)engineDll, ".?AVCVideoMode_MaterialSystem@@", 0, 0x0);
@@ -891,6 +892,7 @@ void Addresses_InitEngineDll(AfxAddr engineDll, SourceSdkVer sourceSdkVer)
 		switch(sourceSdkVer) {
 			//case SourceSdkVer_CSSV84:
 			case SourceSdkVer_CSS:
+			case SourceSdkVer_TF2Classified:
 			case SourceSdkVer_TF2: { // Checked 2024-03-22
 				ImageSectionsReader sections((HMODULE)engineDll);
 				if (!sections.Eof())
@@ -2920,7 +2922,15 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 									else ErrorBox(MkErrStr(__FILE__, __LINE__));	
 								}
 								break;
-							}	
+							case SourceSdkVer_TF2Classified:
+								{
+									MemRange result = FindPatternString(textRange.And(MemRange(refStrAddr - 0x84, refStrAddr -0x84 + 6)), "56 41 54 41 57 48");
+									if(!result.IsEmpty())
+										AFXADDR_SET(tf2_client_C_BaseAnimating_RecordBones, result.Start);
+									else ErrorBox(MkErrStr(__FILE__, __LINE__));	
+								}
+								break;
+							}
 						}					
 						else ErrorBox(MkErrStr(__FILE__, __LINE__));	
 					}
@@ -3195,6 +3205,7 @@ void Addresses_InitMaterialsystemDll(AfxAddr materialsystemDll, SourceSdkVer sou
 			AFXADDR_SET(materialsystem_CFunctor_vtable_size, 4);
 			break;
 #endif //#ifndef _WIN64			
+		case SourceSdkVer_TF2Classified:
 		case SourceSdkVer_TF2:
 			// Checked 2024-04-22.
 			materialsystem_GetRenderCallQueue_vtable_offset = 148;
@@ -3260,6 +3271,7 @@ void Addresses_InitMaterialsystemDll(AfxAddr materialsystemDll, SourceSdkVer sou
 #ifndef _WIN64
 					case SourceSdkVer_CSS:
 					case SourceSdkVer_TF2:
+					case SourceSdkVer_TF2Classified:
 					case SourceSdkVer_HL2MP:
 						AFXADDR_SET(materialsystem_CMatCallQueue_QueueFunctor, tmpAddr); // If this chnanges, then this offset in MaterialSystemHooks.cpp for pQueueFunctorInternal needs to be changed!
 						break;
