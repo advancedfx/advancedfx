@@ -1249,7 +1249,7 @@ void getDeathMsgAddrs(HMODULE clientDll) {
 	//       bVar4 = true;
 	//     }
 	//   }
-	size_t g_Original_getLocalSteamId_addr = getAddress(clientDll,"40 53 48 83 EC ?? 8B 91 ?? ?? ?? ?? 48 8B D9 83 FA ?? 0F 84 ?? ?? ?? ?? 4C 8B 0D");
+	size_t g_Original_getLocalSteamId_addr = getAddress(clientDll,"40 53 48 83 EC ?? 8B 51 ?? 48 8B D9 83 FA FF 0F 84 ?? ?? ?? ?? 4C 8B 0D ?? ?? ?? ??");
 	if (0 == g_Original_getLocalSteamId_addr) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));	
 	};
