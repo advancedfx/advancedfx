@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.38.6</version>
+<time>2026-02-24T09:58Z</time>
+<changes>
+<change type="updated">mirv-script: added mirv_script_view snippet</change>
+<change type="fixed">Fixed HLAE recording skipping frames when recording is slow</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.38.5</version>
 <time>2026-02-10T05:54Z</time>
 <changes>

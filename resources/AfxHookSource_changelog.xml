@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.135.0</version>
+<time>2026-02-24T09:58Z</time>
+<changes>
+<change type="added">Added support for TF2 Classified</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.134.2</version>
 <time>2026-01-27T13:16Z</time>
 <changes>
