@@ -10,14 +10,18 @@ authors = ["advancedfx.org <contact@advancedfx.org>"]
 license = "MIT"
 homepage = "https://github.com/advancedfx"
 repository = "https://github.com/advancedfx/advancedfx"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
-boa_engine = "0.20.0"
-boa_gc = "0.20.0"
-boa_runtime = "0.20.0"
-async-tungstenite = { version = "0.28.2", features = ["async-std-runtime"] }
-futures = "0.3.31"
+boa_engine = "0.21.0"
+boa_gc = "0.21.0"
+boa_runtime = "0.21.0"
+async-std = { version = "1.0", features = ["attributes", "unstable"] }
+async-tungstenite = { version = "0.33.0", features = ["async-std-runtime"] }
+futures = "0.3.32"
+futures-lite = "2.6.1"
+futures-concurrency = "7.6.3"
+smol = "2.0.2"
 
 [profile.release]
 strip = true
