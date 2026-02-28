@@ -42,7 +42,7 @@ code, maintenance, review, question, plugin, tutorial
 
 Programming of additional tools, Discord moderator. Past: Reddit Moderator.
 
-https://thatnwp.com, https://www.paypal.me/xNWP
+https://github.com/xNWP
 
 #### 'Devostated.'
 
