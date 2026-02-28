@@ -17,6 +17,7 @@ use boa_engine::{
     JsNativeError,
     JsResult,
     JsValue,
+    js_value,
     NativeFunction,
     object::builtins::{
         JsFloat32Array,
@@ -58,10 +59,10 @@ impl CVar {
         let c_string = std::ffi::CString::new(value.to_std_string_escaped()).unwrap();
         let index = unsafe {advancedfx::cvar::afx_hook_source2_find_convar_index(c_string.as_ptr())};
         if usize::MAX == index {
-            return Ok(JsValue::Undefined);
+            return Ok(JsValue::undefined());
         }
 
-        Ok(JsValue::Integer(index as i32))
+        Ok(js_value!(index as i32))
     }
 
     fn get_value_ex(this: &JsValue, context: &mut Context, get_mode: advancedfx::cvar::CVarGetMode) -> JsResult<JsValue> {
@@ -79,101 +80,101 @@ impl CVar {
             advancedfx::cvar::CVarType::Bool => {
                 let mut result : bool = false;
                 if unsafe {advancedfx::cvar::afx_hook_source2_get_convar_bool(p_cvar,get_mode_i8,&mut result)} {
-                    return Ok(JsValue::Boolean(result));
+                    return Ok(js_value!(result));
                 }
             }
             advancedfx::cvar::CVarType::Int16 => {
                 let mut result : i32 = 0;
                 if unsafe {advancedfx::cvar::afx_hook_source2_get_convar_int(p_cvar,get_mode_i8,&mut result)} {
-                    return Ok(JsValue::Integer(result));
+                    return Ok(js_value!(result));
                 }                        
             }
             advancedfx::cvar::CVarType::UInt16 => {
                 let mut result : u32 = 0;
                 if unsafe {advancedfx::cvar::afx_hook_source2_get_convar_uint(p_cvar,get_mode_i8,&mut result)} {
-                    return Ok(JsValue::Integer(result as i32));
+                    return Ok(js_value!(result as i32));
                 }                        
             }
             advancedfx::cvar::CVarType::Int32 => {
                 let mut result : i32 = 0;
                 if unsafe {advancedfx::cvar::afx_hook_source2_get_convar_int(p_cvar,get_mode_i8,&mut result)} {
-                    return Ok(JsValue::Integer(result));
+                    return Ok(js_value!(result));
                 }                        
             }
             advancedfx::cvar::CVarType::UInt32 => {
                 let mut result : u32 = 0;
                 if unsafe {advancedfx::cvar::afx_hook_source2_get_convar_uint(p_cvar,get_mode_i8,&mut result)} {
-                    return Ok(JsValue::Integer(result as i32));
+                    return Ok(js_value!(result as i32));
                 }                        
             }
             advancedfx::cvar::CVarType::Int64 => {
                 let mut result : i64 = 0;
                 if unsafe {advancedfx::cvar::afx_hook_source2_get_convar_int64(p_cvar,get_mode_i8,&mut result)} {
-                    return Ok(JsValue::BigInt(result.into()));
+                    return Ok(js_value!(result));
                 }                        
             }
             advancedfx::cvar::CVarType::UInt64 => {
                 let mut result : u64 = 0;
                 if unsafe {advancedfx::cvar::afx_hook_source2_get_convar_uint64(p_cvar,get_mode_i8,&mut result)} {
-                    return Ok(JsValue::BigInt(result.into()));
+                    return Ok(js_value!(result));
                 }                        
             }
             advancedfx::cvar::CVarType::Float32 => {
                 let mut result : f64 = 0.0;
                 if unsafe {advancedfx::cvar::afx_hook_source2_get_convar_double(p_cvar,get_mode_i8,&mut result)} {
-                    return Ok(JsValue::Rational(result));
+                    return Ok(js_value!(result));
                 }                      
             }
             advancedfx::cvar::CVarType::Float64 => {
                 let mut result : f64 = 0.0;
                 if unsafe {advancedfx::cvar::afx_hook_source2_get_convar_double(p_cvar,get_mode_i8,&mut result)} {
-                    return Ok(JsValue::Rational(result));
+                    return Ok(js_value!(result));
                 }                        
             }
             advancedfx::cvar::CVarType::String => {
                 let mut result: *const c_char = std::ptr::null();
                 if unsafe {advancedfx::cvar::afx_hook_source2_get_convar_string(p_cvar,get_mode_i8,&mut result)} {
-                    return Ok(JsValue::String(js_string!(unsafe { CStr::from_ptr(result) }.to_str().unwrap().to_string())));
+                    return Ok(js_value!(js_string!(unsafe { CStr::from_ptr(result) }.to_str().unwrap().to_string())));
                 }                        
             }
             advancedfx::cvar::CVarType::Color => {
                 let mut result = advancedfx::cvar::Color{r:0,g:0,b:0,a:0};
                 if unsafe {advancedfx::cvar::afx_hook_source2_get_convar_color(p_cvar,get_mode_i8,&mut result)} {
                     let array = JsUint8Array::from_iter(vec![result.r, result.g, result.b, result.a], context)?;
-                    return Ok(JsValue::Object(array.into()));
+                    return Ok(js_value!(array));
                 }                        
             }
             advancedfx::cvar::CVarType::Vector2 => {
                 let mut result = advancedfx::cvar::Vector2{x:0.0,y:0.0};
                 if unsafe {advancedfx::cvar::afx_hook_source2_get_convar_vec2(p_cvar,get_mode_i8,&mut result)} {
                     let array = JsFloat32Array::from_iter(vec![result.x, result.y], context)?;
-                    return Ok(JsValue::Object(array.into()));
+                    return Ok(js_value!(array));
                 }                        
             }
             advancedfx::cvar::CVarType::Vector3 => {
                 let mut result = advancedfx::cvar::Vector3{x:0.0,y:0.0,z:0.0};
                 if unsafe {advancedfx::cvar::afx_hook_source2_get_convar_vec3(p_cvar,get_mode_i8,&mut result)} {
                     let array = JsFloat32Array::from_iter(vec![result.x, result.y, result.z], context)?;
-                    return Ok(JsValue::Object(array.into()));
+                    return Ok(js_value!(array));
                 }                        
             }
             advancedfx::cvar::CVarType::Vector4 => {
                 let mut result = advancedfx::cvar::Vector4{x:0.0,y:0.0,z:0.0,w:0.0};
                 if unsafe {advancedfx::cvar::afx_hook_source2_get_convar_vec4(p_cvar,get_mode_i8,&mut result)} {
                     let array = JsFloat32Array::from_iter(vec![result.x, result.y, result.z,result.w], context)?;
-                    return Ok(JsValue::Object(array.into()));
+                    return Ok(js_value!(array));
                 }                        
             }
             advancedfx::cvar::CVarType::Qangle => {
                 let mut result = advancedfx::cvar::QAngle{x:0.0,y:0.0,z:0.0};
                 if unsafe {advancedfx::cvar::afx_hook_source2_get_convar_qangle(p_cvar,get_mode_i8,&mut result)} {
                     let array = JsFloat32Array::from_iter(vec![result.x, result.y, result.z], context)?;
-                    return Ok(JsValue::Object(array.into()));
+                    return Ok(js_value!(array));
                 }                        
             }
         }
 
-        Ok(JsValue::Undefined)
+        Ok(JsValue::undefined())
     }
 
     fn set_value_error(context: &mut Context) -> JsError {
@@ -199,14 +200,14 @@ impl CVar {
                if !unsafe{advancedfx::cvar::afx_hook_source2_set_convar_bool(p_cvar, get_mode_i8, value)} {
                    return Err(Self::set_value_error(context));
                }
-               return Ok(JsValue::Undefined);                                
+               return Ok(JsValue::undefined());                                
             }
             advancedfx::cvar::CVarType::Int16 => {
                 if let Ok(value) = arg0.to_int16(context) {
                     if !unsafe{advancedfx::cvar::afx_hook_source2_set_convar_int(p_cvar, get_mode_i8, value as i32)} {
                         return Err(Self::set_value_error(context));
                     }
-                    return Ok(JsValue::Undefined);                                
+                    return Ok(JsValue::undefined());                                
                 }
             }
             advancedfx::cvar::CVarType::UInt16 => {
@@ -214,7 +215,7 @@ impl CVar {
                     if !unsafe{advancedfx::cvar::afx_hook_source2_set_convar_uint(p_cvar, get_mode_i8, value as u32)} {
                         return Err(Self::set_value_error(context));
                     }
-                    return Ok(JsValue::Undefined);                                
+                    return Ok(JsValue::undefined());                                
                 }
             }
             advancedfx::cvar::CVarType::Int32 => {
@@ -222,7 +223,7 @@ impl CVar {
                     if !unsafe{advancedfx::cvar::afx_hook_source2_set_convar_int(p_cvar, get_mode_i8, value)} {
                         return Err(Self::set_value_error(context));
                     }
-                    return Ok(JsValue::Undefined);                                
+                    return Ok(JsValue::undefined());                                
                 }
             }
             advancedfx::cvar::CVarType::UInt32 => {
@@ -230,7 +231,7 @@ impl CVar {
                     if !unsafe{advancedfx::cvar::afx_hook_source2_set_convar_uint(p_cvar, get_mode_i8, value)} {
                         return Err(Self::set_value_error(context));
                     }
-                    return Ok(JsValue::Undefined);                                
+                    return Ok(JsValue::undefined());                                
                 }
             }
             advancedfx::cvar::CVarType::Int64 => {
@@ -238,7 +239,7 @@ impl CVar {
                     if !unsafe{advancedfx::cvar::afx_hook_source2_set_convar_int64(p_cvar, get_mode_i8, value)} {
                         return Err(Self::set_value_error(context));
                     }
-                    return Ok(JsValue::Undefined);                                
+                    return Ok(JsValue::undefined());                                
                 }
             }
             advancedfx::cvar::CVarType::UInt64 => {
@@ -246,7 +247,7 @@ impl CVar {
                     if !unsafe{advancedfx::cvar::afx_hook_source2_set_convar_uint64(p_cvar, get_mode_i8, value)} {
                         return Err(Self::set_value_error(context));
                     }
-                    return Ok(JsValue::Undefined);                                
+                    return Ok(JsValue::undefined());                                
                 }                       
             }
             advancedfx::cvar::CVarType::Float32 => {
@@ -254,7 +255,7 @@ impl CVar {
                     if !unsafe{advancedfx::cvar::afx_hook_source2_set_convar_double(p_cvar, get_mode_i8, value as f64)} {
                         return Err(Self::set_value_error(context));
                     }
-                    return Ok(JsValue::Undefined);                                
+                    return Ok(JsValue::undefined());                                
                 }                        
             }
             advancedfx::cvar::CVarType::Float64 => {
@@ -262,7 +263,7 @@ impl CVar {
                     if !unsafe{advancedfx::cvar::afx_hook_source2_set_convar_double(p_cvar, get_mode_i8, value)} {
                         return Err(Self::set_value_error(context));
                     }
-                    return Ok(JsValue::Undefined);                                
+                    return Ok(JsValue::undefined());                                
                 }                         
             }
             advancedfx::cvar::CVarType::String => {
@@ -271,11 +272,11 @@ impl CVar {
                     if !unsafe {advancedfx::cvar::afx_hook_source2_set_convar_string(p_cvar,get_mode_i8, c_string.as_ptr())} {
                         return Err(Self::set_value_error(context));
                     }
-                    return Ok(JsValue::Undefined);
+                    return Ok(JsValue::undefined());
                 }                                   
             }
             advancedfx::cvar::CVarType::Color => {
-                if let JsValue::Object(value) = arg0 {
+                if let Some(value) = arg0.as_object() {
                     if let Ok(array) = JsUint8Array::from_object(value.clone()) {
                         let vec: Vec<u8> = array.iter(context).collect();
                         if vec.len() == 4 {
@@ -283,13 +284,13 @@ impl CVar {
                             if !unsafe{advancedfx::cvar::afx_hook_source2_set_convar_color(p_cvar, get_mode_i8, &value)} {
                                 return Err(Self::set_value_error(context));
                             }
-                            return Ok(JsValue::Undefined);
+                            return Ok(JsValue::undefined());
                         }
                     }
                 }
             }
             advancedfx::cvar::CVarType::Vector2 => {
-                if let JsValue::Object(value) = arg0 {
+                if let Some(value) = arg0.as_object() {
                     if let Ok(array) = JsFloat32Array::from_object(value.clone()) {
                         let vec: Vec<f32> = array.iter(context).collect();
                         if vec.len() == 2 {
@@ -297,13 +298,13 @@ impl CVar {
                             if !unsafe{advancedfx::cvar::afx_hook_source2_set_convar_vec2(p_cvar, get_mode_i8, &value)} {
                                 return Err(Self::set_value_error(context));
                             }
-                            return Ok(JsValue::Undefined);
+                            return Ok(JsValue::undefined());
                         }
                     }                                
                 }
             }
             advancedfx::cvar::CVarType::Vector3 => {
-                if let JsValue::Object(value) = arg0 {
+                if let Some(value) = arg0.as_object() {
                     if let Ok(array) = JsFloat32Array::from_object(value.clone()) {
                         let vec: Vec<f32> = array.iter(context).collect();
                         if vec.len() == 3 {
@@ -311,13 +312,13 @@ impl CVar {
                             if !unsafe{advancedfx::cvar::afx_hook_source2_set_convar_vec3(p_cvar, get_mode_i8, &value)} {
                                 return Err(Self::set_value_error(context));
                             }
-                            return Ok(JsValue::Undefined);
+                            return Ok(JsValue::undefined());
                         }
                     } 
                 }
             }
             advancedfx::cvar::CVarType::Vector4 => {
-                if let JsValue::Object(value) = arg0 {
+                if let Some(value) = arg0.as_object() {
                     if let Ok(array) = JsFloat32Array::from_object(value.clone()) {
                         let vec: Vec<f32> = array.iter(context).collect();
                         if vec.len() == 4 {
@@ -325,13 +326,13 @@ impl CVar {
                             if !unsafe{advancedfx::cvar::afx_hook_source2_set_convar_vec4(p_cvar, get_mode_i8, &value)} {
                                 return Err(Self::set_value_error(context));
                             }
-                            return Ok(JsValue::Undefined);
+                            return Ok(JsValue::undefined());
                         }
                     } 
                 }
             }
             advancedfx::cvar::CVarType::Qangle => {
-                if let JsValue::Object(value) = arg0 {
+                if let Some(value) = arg0.as_object() {
                     if let Ok(array) = JsFloat32Array::from_object(value.clone()) {
                         let vec: Vec<f32> = array.iter(context).collect();
                         if vec.len() == 3 {
@@ -339,14 +340,14 @@ impl CVar {
                             if !unsafe{advancedfx::cvar::afx_hook_source2_set_convar_qangle(p_cvar, get_mode_i8, &value)} {
                                 return Err(Self::set_value_error(context));
                             }
-                            return Ok(JsValue::Undefined);
+                            return Ok(JsValue::undefined());
                         }
                     }    
                 }
             }
         }
 
-        Ok(JsValue::Undefined)
+        Ok(JsValue::undefined())
     }
 
     fn get_value(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -373,7 +374,7 @@ impl CVar {
         let p_cvar = object_inner.native;
         let cvar_type = advancedfx::cvar::afx_get_convar_type(p_cvar);
 
-        Ok(JsValue::Integer(cvar_type as i32))
+        Ok(js_value!(cvar_type as i32))
     }
 
     fn get_name(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
@@ -384,11 +385,11 @@ impl CVar {
         let mut result: *const c_char = std::ptr::null();
         if unsafe {advancedfx::cvar::afx_hook_source2_get_convar_name(p_cvar,&mut result)} {
             if !result.is_null() {
-                return Ok(JsValue::String(js_string!(unsafe { CStr::from_ptr(result) }.to_str().unwrap().to_string())));
+                return Ok(js_value!(js_string!(unsafe { CStr::from_ptr(result) }.to_str().unwrap().to_string())));
             }
         }
 
-        Ok(JsValue::Undefined) // This probably will never happen, just here in case.
+        Ok(JsValue::undefined()) // This probably will never happen, just here in case.
     }
     fn get_help_string(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
         let object = this.as_object().ok_or_else(|| Self::error_typ(context).unwrap_err())?;
@@ -398,11 +399,11 @@ impl CVar {
         let mut result: *const c_char = std::ptr::null();
         if unsafe {advancedfx::cvar::afx_hook_source2_get_convar_help_string(p_cvar,&mut result)} {
             if !result.is_null() {
-                return Ok(JsValue::String(js_string!(unsafe { CStr::from_ptr(result) }.to_str().unwrap().to_string())));
+                return Ok(js_value!(js_string!(unsafe { CStr::from_ptr(result) }.to_str().unwrap().to_string())));
             }
         }
 
-        Ok(JsValue::Undefined)
+        Ok(JsValue::undefined())
     }
 }
 

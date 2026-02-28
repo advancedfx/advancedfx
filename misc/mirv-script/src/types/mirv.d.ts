@@ -92,15 +92,14 @@ declare namespace mirv {
 	 * @param filePath - Full path to file to load.
 	 *
 	 * @remarks
-	 * A promise is returned and the module is usually not resolved instantly,
-	 * if you need instant resolve, you need to call run_jobs to resolve the promise faster.
+	 * A promise is returned and the module is usually not resolved instantly.
 	 *
 	 * Since HLAE 2.164.0
 	 */
 	function load(filePath: string): Promise<void>;
 
 	/**
-	 * This allows to manually trigger processing of synchronous jobs (Promises).
+	 * This function does nothing currently.
 	 *
 	 * @remarks
 	 * Currently HLAE triggers this automatically upon after FRAME_RENDER_PASS after onClientFrameStageNotify.
@@ -110,7 +109,7 @@ declare namespace mirv {
 	function run_jobs(): void;
 
 	/**
-	 * This allows to manually trigger processing of asynchronous jobs (Futures) that turn into Promises eventually.
+	 * This function does nothing currently.
 	 *
 	 * @remarks
 	 * Currently HLAE triggers this automatically upon after FRAME_RENDER_PASS after onClientFrameStageNotify.

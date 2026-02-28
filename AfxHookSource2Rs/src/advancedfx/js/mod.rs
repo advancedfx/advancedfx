@@ -6,69 +6,55 @@ pub mod math;
 use std::rc::Rc;
 use std::rc::Weak;
 
-use boa_engine::{
-    Context,
-    Finalize,
-    JsData,
-    Trace
-};
+use boa_engine::Context;
+use boa_engine::Finalize;
+use boa_engine::JsData;
+use boa_engine::Trace;
+
+pub struct BoxedContext {
+    ptr: *mut Context
+}
+
+impl Finalize for BoxedContext {
+    fn finalize(&self) {
+        unsafe {
+            drop(Box::from_raw(self.ptr));
+        }
+    }
+}
+
+impl BoxedContext {
+    pub fn new(context: Context) -> Self {
+        Self {
+            ptr: Box::into_raw(Box::new(context))
+        }
+    }
+
+    pub fn get(&self) -> &mut Context {
+        unsafe {&mut *self.ptr}
+    }
+}
 
 #[derive(Trace, Finalize, JsData)]
-pub struct ContextMutRef {
-
+pub struct ContextRef {
     #[unsafe_ignore_trace]
-    context_holder: Weak::<ContextHolder>
+    context: Weak<BoxedContext>
 }
 
-impl ContextMutRef {
-    pub fn new(context_holder: Weak::<ContextHolder>) -> Self {
-        Self {
-            context_holder: context_holder
-        }
-    }  
-    
-    pub fn get<'a>(&self) -> Option<&'a mut Context> {
-        self.context_holder.upgrade().map(|x| unsafe{&mut *x.ptr})        
-    }
-}
+impl ContextRef {
+    pub fn add_to_context(context:  Rc<BoxedContext>) {
+        let context_ref = ContextRef {
+            context: Rc::downgrade(&context)
+        };
 
-impl Clone for ContextMutRef {
-    fn clone(&self) -> Self {
-        Self {
-            context_holder: self.context_holder.clone()
-        }
-    }
-}
-
-pub struct ContextHolder {
-    ptr: * mut Context
-}
-
-impl ContextHolder {
-    pub fn new(context: Context) -> Rc<Self> {
-        let ptr = Box::into_raw(Box::new(context));
-
-        let result = Rc::<ContextHolder>::new(Self {
-            ptr: ptr
-        });
-
-        result.get().insert_data(ContextMutRef::new(Rc::downgrade(&result)));
-
-        result
+        context.get().insert_data(context_ref);
     }
 
-    pub fn get<'a>(&self) -> &'a mut Context {
-        unsafe{&mut *self.ptr}
+    pub fn get_from_context(context: &Context) -> Rc::<BoxedContext> {
+        context.get_data::<ContextRef>().unwrap().context.upgrade().unwrap()
     }
-}
 
-impl Drop for ContextHolder {
-    fn drop(&mut self) {
-        if self.ptr.is_null() {
-            return;
-        }
-        self.get().remove_data::<ContextMutRef>();
-        drop(unsafe{Box::from_raw(self.ptr)});
-        self.ptr = std::ptr::null_mut();
+    pub fn get_from_context_weak(context: &Context) -> Weak::<BoxedContext> {
+        context.get_data::<ContextRef>().unwrap().context.clone()
     }
 }

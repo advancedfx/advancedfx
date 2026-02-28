@@ -1448,6 +1448,8 @@ typedef void (* CS2_Client_FrameStageNotify_t)(void* This, SOURCESDK::CS2::Clien
 CS2_Client_FrameStageNotify_t old_CS2_Client_FrameStageNotify;
 
 void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameStage_t curStage) {
+	
+	AfxHookSource2Rs_Engine_RunJobQueue();
 
 	/*
 	// React to demo being paused / unpaused to work around Valve's new bandaid client time "fix":
@@ -1510,11 +1512,7 @@ void  new_CS2_Client_FrameStageNotify(void* This, SOURCESDK::CS2::ClientFrameSta
 
 	AfxHookSource2Rs_Engine_OnClientFrameStageNotify(curStage, false);
 
-	switch(curStage) {
-	case SOURCESDK::CS2::FRAME_RENDER_PASS:
-		AfxHookSource2Rs_Engine_RunJobQueue();
-		break;
-	}
+	AfxHookSource2Rs_Engine_RunJobQueue();
 }
 
 
