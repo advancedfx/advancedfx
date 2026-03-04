@@ -40,7 +40,6 @@
     <util:ComponentSearch After="HlaeCoreOld" Id="HlaeFfmpegOld" Result="state" Guid="{2D1C78F6-D5B5-499E-B596-47429893F8A8}" Variable="HlaeFfmpegOld" />
     <util:ProductSearch After="HlaeFfmpegOld" Id="HlaeFfmpegNew" Result="version" UpgradeCode="{9090AE9A-4E9D-46C5-B595-9F2FBCF96945}" Variable="HlaeFfmpegNew" />
     <SetVariable After="HlaeFfmpegNew" Id="SetHlaeFfmpeg" Condition="HlaeFfmpegOld = 3 OR HlaeFfmpegNew &gt; v0.0.0.0 OR HlaeCoreOld = v0.0.0.0" Type="numeric" Value="1" Variable="HlaeFfmpeg" />
-    <SetVariable Id="SetLangId" Condition="1" Type="formatted" Value="!(loc.LangId)" Variable="LangId" />
 
     <Chain>
       <PackageGroupRef Id="NetFx472WebAsPrereq" />
