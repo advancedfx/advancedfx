@@ -46,7 +46,7 @@ cd "%~dp0HlaeCoreExtension"
 @echo ==================================================
 @echo Building HlaeFfmpeg ...
 @echo ==================================================
-@FOR %%l IN (en-US de-DE fi-FI hu-HU it-IT ja-JP nl-NL pl-PL pt-BR pt-PT ru-RU tr-TR zh-CN) DO (
+@FOR %%l IN (en-US de-DE fi-FI fr-FR hu-HU it-IT ja-JP nl-NL pl-PL pt-BR pt-PT ru-RU tr-TR zh-CN) DO (
     mkdir "%~1\HlaeFfmpeg\%%l"
     mkdir "%~1\HlaeFfmpeg\%%l\tmp"
     cd "%~1\HlaeFfmpeg\%%l"
@@ -56,7 +56,7 @@ cd "%~dp0HlaeCoreExtension"
     @IF !errorlevel! NEQ 0 EXIT /B 1
 )
 cd "%~1\HlaeFfmpeg"
-@FOR %%l IN (de-DE fi-FI hu-HU it-IT ja-JP nl-NL pl-PL pt-BR pt-PT ru-RU tr-TR zh-CN) DO (
+@FOR %%l IN (de-DE fi-FI fr-FR hu-HU it-IT ja-JP nl-NL pl-PL pt-BR pt-PT ru-RU tr-TR zh-CN) DO (
     wix msi transform -t language -intermediateFolder "%~1\HlaeFfmpeg\%%l\tmp" "%~1\HlaeFfmpeg\en-US\HlaeFfmpeg.msi" "%~1\HlaeFfmpeg\%%l\HlaeFfmpeg.msi" -o "%~1\HlaeFfmpeg\%%l\HlaeFfmpeg.mst"
     @IF !errorlevel! NEQ 0 EXIT /B 1
 )
@@ -64,7 +64,7 @@ cd "%~1\HlaeFfmpeg"
 @echo ==================================================
 @echo Building HlaeCore ...
 @echo ==================================================
-@FOR %%l IN (en-US de-DE fi-FI hu-HU it-IT ja-JP nl-NL pl-PL pt-BR pt-PT ru-RU tr-TR zh-CN) DO (
+@FOR %%l IN (en-US de-DE fi-FI fr-FR hu-HU it-IT ja-JP nl-NL pl-PL pt-BR pt-PT ru-RU tr-TR zh-CN) DO (
     mkdir "%~1\HlaeCore\%%l"
     mkdir "%~1\HlaeCore\%%l\tmp"
     cd "%~1\HlaeCore\%%l"
@@ -74,7 +74,7 @@ cd "%~1\HlaeFfmpeg"
     @IF !errorlevel! NEQ 0 EXIT /B 1
 )
 cd "%~1\HlaeCore"
-@FOR %%l IN (de-DE fi-FI hu-HU it-IT ja-JP nl-NL pl-PL pt-BR pt-PT ru-RU tr-TR zh-CN) DO (
+@FOR %%l IN (de-DE fi-FI fr-FR hu-HU it-IT ja-JP nl-NL pl-PL pt-BR pt-PT ru-RU tr-TR zh-CN) DO (
     wix msi transform -t language -intermediateFolder "%~1\HlaeCore\%%l\tmp" "%~1\HlaeCore\en-US\HlaeCore.msi" "%~1\HlaeCore\%%l\HlaeCore.msi" -o "%~1\HlaeCore\%%l\HlaeCore.mst"
     @IF !errorlevel! NEQ 0 EXIT /B 1
 )
@@ -104,7 +104,7 @@ cd "%~dp0UninstallHlaeWixV3"
 mkdir "%~1\setup\%%l"
 mkdir "%~1\setup\%%l\tmp"
 cd "%~dp0setup"
-wix build -arch x86 -culture en-US -culture de-DE -culture fi-FI -culture hu-HU -culture it-IT -culture ja-JP -culture nl-NL -culture pl-PL -culture pt-BR -culture pt-PT -culture ru-RU -culture zh-CN -ext "%USERPROFILE%\.wix\extensions\WixToolset.Bal.wixext\5.0.2\wixext5\WixToolset.BootstrapperApplications.wixext.dll" -ext "WixToolset.Netfx.wixext/5.0.2" -ext "WixToolset.Util.wixext/5.0.2" -d "var.InstallerBuildDir=%~1" -intermediateFolder "%1\setup\tmp" -outputtype bundle -o "%2\HLAE_Setup.exe" "Bundle.wxs"
+wix build -arch x86 -culture en-US -culture de-DE -culture fi-FI -culture fr-FR -culture hu-HU -culture it-IT -culture ja-JP -culture nl-NL -culture pl-PL -culture pt-BR -culture pt-PT -culture ru-RU -culture zh-CN -ext "%USERPROFILE%\.wix\extensions\WixToolset.Bal.wixext\5.0.2\wixext5\WixToolset.BootstrapperApplications.wixext.dll" -ext "WixToolset.Netfx.wixext/5.0.2" -ext "WixToolset.Util.wixext/5.0.2" -d "var.InstallerBuildDir=%~1" -intermediateFolder "%1\setup\tmp" -outputtype bundle -o "%2\HLAE_Setup.exe" "Bundle.wxs"
 @IF !errorlevel! NEQ 0 EXIT /B 1
 
 cd "%~dp0"

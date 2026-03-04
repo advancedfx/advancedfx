@@ -12,6 +12,7 @@
       <Payload Id="theme_de_de" Compressed="yes" Name="1031\thm.wxl" SourceFile="lang\HyperlinkTheme_de-DE.wxl" />
       <Payload Id="theme_en_us" Compressed="yes" Name="1033\thm.wxl" SourceFile="lang\HyperlinkTheme_en-US.wxl" />
       <Payload Id="theme_fi_fi" Compressed="yes" Name="1035\thm.wxl" SourceFile="lang\HyperlinkTheme_fi-FI.wxl" />
+      <Payload Id="theme_fr_fr" Compressed="yes" Name="1036\thm.wxl" SourceFile="lang\HyperlinkTheme_fr-FR.wxl" />
       <Payload Id="theme_hu_hu" Compressed="yes" Name="1038\thm.wxl" SourceFile="lang\HyperlinkTheme_hu-HU.wxl" />
       <Payload Id="theme_it_it" Compressed="yes" Name="1040\thm.wxl" SourceFile="lang\HyperlinkTheme_it-IT.wxl" />
       <Payload Id="theme_ja_jp" Compressed="yes" Name="1041\thm.wxl" SourceFile="lang\HyperlinkTheme_ja-JP.wxl" />
@@ -54,6 +55,7 @@
         <MsiProperty Name="TRANSFORMS" Value="[LangId]" />
         <Payload Id="HlaeFfmpeg_de_de" Compressed="yes" Name="HlaeFfmpeg\1031" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\de-DE\HlaeFfmpeg.mst" />
         <Payload Id="HlaeFfmpeg_fi_fi" Compressed="yes" Name="HlaeFfmpeg\1035" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\fi-FI\HlaeFfmpeg.mst" />
+        <Payload Id="HlaeFfmpeg_fr_fr" Compressed="yes" Name="HlaeFfmpeg\1036" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\fr-FR\HlaeFfmpeg.mst" />
         <Payload Id="HlaeFfmpeg_hu_hu" Compressed="yes" Name="HlaeFfmpeg\1038" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\hu-HU\HlaeFfmpeg.mst" />
         <Payload Id="HlaeFfmpeg_it_it" Compressed="yes" Name="HlaeFfmpeg\1040" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\it-IT\HlaeFfmpeg.mst" />
         <Payload Id="HlaeFfmpeg_ja_jp" Compressed="yes" Name="HlaeFfmpeg\1041" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\ja-JP\HlaeFfmpeg.mst" />
@@ -72,6 +74,7 @@
         <MsiProperty Name="TRANSFORMS" Value="[LangId]" />
         <Payload Id="HlaeCore_de_de" Compressed="yes" Name="HlaeCore\1031" SourceFile="$(var.InstallerBuildDir)\HlaeCore\de-DE\HlaeCore.mst" />
         <Payload Id="HlaeCore_fi_fi" Compressed="yes" Name="HlaeCore\1035" SourceFile="$(var.InstallerBuildDir)\HlaeCore\fi-FI\HlaeCore.mst" />
+        <Payload Id="HlaeCore_fr_fr" Compressed="yes" Name="HlaeCore\1036" SourceFile="$(var.InstallerBuildDir)\HlaeCore\fr-FR\HlaeCore.mst" />
         <Payload Id="HlaeCore_hu_hu" Compressed="yes" Name="HlaeCore\1038" SourceFile="$(var.InstallerBuildDir)\HlaeCore\hu-HU\HlaeCore.mst" />
         <Payload Id="HlaeCore_it_it" Compressed="yes" Name="HlaeCore\1040" SourceFile="$(var.InstallerBuildDir)\HlaeCore\it-IT\HlaeCore.mst" />
         <Payload Id="HlaeCore_ja_jp" Compressed="yes" Name="HlaeCore\1041" SourceFile="$(var.InstallerBuildDir)\HlaeCore\ja-JP\HlaeCore.mst" />

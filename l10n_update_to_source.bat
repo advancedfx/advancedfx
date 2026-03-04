@@ -10,7 +10,7 @@
 mkdir "%~1\locales"
 cd "%~1\locales"
 
-for %%l in (de fi hu it ja nl pl pt-BR pt-PT ru zh-CN) do (
+for %%l in (de fi fr-FR hu it ja nl pl pt-BR pt-PT ru zh-CN) do (
 	mkdir "%%l\hlae"
 	cd "%%l\hlae"
 	msgfmt --output-file=messages.mo "%~dp0deps\release\l10n\locales\%%l\hlae\messages.po"
@@ -29,6 +29,7 @@ py -3 -m pip install polib
 cd installer\shared\Dependency
 py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 "%~dp0\deps\release\l10n\locales\de\installer\shared\Dependency\messages.po" lang/de-DE.wxl
 py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 "%~dp0\deps\release\l10n\locales\fi\installer\shared\Dependency\messages.po" lang/fi-FI.wxl
+py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 "%~dp0\deps\release\l10n\locales\fr-FR\installer\shared\Dependency\messages.po" lang/fr-FR.wxl
 py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 "%~dp0\deps\release\l10n\locales\hu\installer\shared\Dependency\messages.po" lang/hu-HU.wxl
 py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 "%~dp0\deps\release\l10n\locales\it\installer\shared\Dependency\messages.po" lang/it-IT.wxl
 py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 "%~dp0\deps\release\l10n\locales\ja\installer\shared\Dependency\messages.po" lang/ja-JP.wxl
@@ -47,6 +48,7 @@ cd ..\..\..
 cd installer\HlaeFfmpeg
 py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 -l LangId "%~dp0\deps\release\l10n\locales\de\installer\HlaeFfmpeg\messages.po" lang/de-DE.wxl
 py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 -l LangId "%~dp0\deps\release\l10n\locales\fi\installer\HlaeFfmpeg\messages.po" lang/fi-FI.wxl
+py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 -l LangId "%~dp0\deps\release\l10n\locales\fr-FR\installer\HlaeFfmpeg\messages.po" lang/fr-FR.wxl
 py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 -l LangId "%~dp0\deps\release\l10n\locales\hu\installer\HlaeFfmpeg\messages.po" lang/hu-HU.wxl
 py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 -l LangId "%~dp0\deps\release\l10n\locales\it\installer\HlaeFfmpeg\messages.po" lang/it-IT.wxl
 py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 -l LangId "%~dp0\deps\release\l10n\locales\ja\installer\HlaeFfmpeg\messages.po" lang/ja-JP.wxl
@@ -65,6 +67,7 @@ cd ..\..
 cd installer\HlaeCore
 py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 -l LangId "%~dp0\deps\release\l10n\locales\de\installer\HlaeCore\messages.po" lang/de-DE.wxl
 py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 -l LangId "%~dp0\deps\release\l10n\locales\fi\installer\HlaeCore\messages.po" lang/fi-FI.wxl
+py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 -l LangId "%~dp0\deps\release\l10n\locales\fr-FR\installer\HlaeCore\messages.po" lang/fr-FR.wxl
 py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 -l LangId "%~dp0\deps\release\l10n\locales\hu\installer\HlaeCore\messages.po" lang/hu-HU.wxl
 py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 -l LangId "%~dp0\deps\release\l10n\locales\it\installer\HlaeCore\messages.po" lang/it-IT.wxl
 py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 -l LangId "%~dp0\deps\release\l10n\locales\ja\installer\HlaeCore\messages.po" lang/ja-JP.wxl
@@ -83,6 +86,7 @@ echo "Project : installer\setup"
 cd installer\setup
 py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 -l LangId "%~dp0\deps\release\l10n\locales\de\installer\setup\messages.po" lang/HyperlinkTheme_de-DE.wxl
 py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 -l LangId "%~dp0\deps\release\l10n\locales\fi\installer\setup\messages.po" lang/HyperlinkTheme_fi-FI.wxl
+py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 -l LangId "%~dp0\deps\release\l10n\locales\fr-FR\installer\setup\messages.po" lang/HyperlinkTheme_fr-FR.wxl
 py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 -l LangId "%~dp0\deps\release\l10n\locales\hu\installer\setup\messages.po" lang/HyperlinkTheme_hu-HU.wxl
 py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 -l LangId "%~dp0\deps\release\l10n\locales\it\installer\setup\messages.po" lang/HyperlinkTheme_it-IT.wxl
 py -3 "%~dp0\deps\dev\wxl-po-tools\po2wxl.py" -f -p -1 -l LangId "%~dp0\deps\release\l10n\locales\ja\installer\setup\messages.po" lang/HyperlinkTheme_ja-JP.wxl

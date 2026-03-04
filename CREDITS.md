@@ -428,6 +428,14 @@ research, code
 
 https://github.com/papesgit
 
+#### 'playSURE'
+
+2026-03-01 - 2026-03-04
+
+translation
+
+https://github.com/playsur3-pixel
+
 ## Donors
 
 Thanks to our donors:
