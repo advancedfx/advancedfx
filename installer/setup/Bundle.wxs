@@ -26,7 +26,7 @@
     </BootstrapperApplication>
 
     <Variable Name="InstallFolder" Type="formatted" Value="[ProgramFilesFolder]HLAE" Persisted="yes" bal:Overridable="yes" />
-    <Variable Name="LangId" Type="formatted" Value="" Persisted="no" bal:Overridable="yes" />
+    <Variable Name="LangId" Type="string" Value="" Persisted="no" bal:Overridable="yes" />
     <Variable Name="HlaeRemoveWixV3" Type="numeric" Value="0" Persisted="no" bal:Overridable="yes" />
     <Variable Name="HlaeRemoveAppData" Type="numeric" Value="0" Persisted="no" bal:Overridable="yes" />
     <Variable Name="HlaeFfmpeg" Type="numeric" Value="0" Persisted="no" bal:Overridable="yes" />
@@ -40,6 +40,20 @@
     <util:ComponentSearch After="HlaeCoreOld" Id="HlaeFfmpegOld" Result="state" Guid="{2D1C78F6-D5B5-499E-B596-47429893F8A8}" Variable="HlaeFfmpegOld" />
     <util:ProductSearch After="HlaeFfmpegOld" Id="HlaeFfmpegNew" Result="version" UpgradeCode="{9090AE9A-4E9D-46C5-B595-9F2FBCF96945}" Variable="HlaeFfmpegNew" />
     <SetVariable After="HlaeFfmpegNew" Id="SetHlaeFfmpeg" Condition="HlaeFfmpegOld = 3 OR HlaeFfmpegNew &gt; v0.0.0.0 OR HlaeCoreOld = v0.0.0.0" Type="numeric" Value="1" Variable="HlaeFfmpeg" />
+   
+    <SetVariable Id="SetLangIdDeDe" Condition="UserLanguageID = &quot;1031&quot;" Value="1031" Type="string" Variable="LangId" />
+    <SetVariable Id="SetLangIdFiFi" Condition="UserLanguageID = &quot;1035&quot;" Value="1035" Type="string" Variable="LangId" />
+    <SetVariable Id="SetLangIdFrFr" Condition="UserLanguageID = &quot;1036&quot;" Value="1036" Type="string" Variable="LangId" />
+    <SetVariable Id="SetLangIdHuHU" Condition="UserLanguageID = &quot;1038&quot;" Value="1038" Type="string" Variable="LangId" />
+    <SetVariable Id="SetLangIdItIt" Condition="UserLanguageID = &quot;1040&quot;" Value="1040" Type="string" Variable="LangId" />
+    <SetVariable Id="SetLangIdJaJp" Condition="UserLanguageID = &quot;1041&quot;" Value="1041" Type="string" Variable="LangId" />
+    <SetVariable Id="SetLangIdNlNl" Condition="UserLanguageID = &quot;1043&quot;" Value="1043" Type="string" Variable="LangId" />
+    <SetVariable Id="SetLangIdPlPl" Condition="UserLanguageID = &quot;1045&quot;" Value="1045" Type="string" Variable="LangId" />
+    <SetVariable Id="SetLangIdPtBr" Condition="UserLanguageID = &quot;1046&quot;" Value="1046" Type="string" Variable="LangId" />
+    <SetVariable Id="SetLangIdPtPt" Condition="UserLanguageID = &quot;2070&quot;" Value="2070" Type="string" Variable="LangId" />
+    <SetVariable Id="SetLangIdRuRu" Condition="UserLanguageID = &quot;1049&quot;" Value="1049" Type="string" Variable="LangId" />
+    <SetVariable Id="SetLangIdTrTr" Condition="UserLanguageID = &quot;1055&quot;" Value="1055" Type="string" Variable="LangId" />
+    <SetVariable Id="SetLangIdZhCn" Condition="UserLanguageID = &quot;2052&quot;" Value="2052" Type="string" Variable="LangId" />
 
     <Chain>
       <PackageGroupRef Id="NetFx472WebAsPrereq" />
