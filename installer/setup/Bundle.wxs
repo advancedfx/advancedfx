@@ -40,7 +40,6 @@
     <util:ComponentSearch After="HlaeCoreOld" Id="HlaeFfmpegOld" Result="state" Guid="{2D1C78F6-D5B5-499E-B596-47429893F8A8}" Variable="HlaeFfmpegOld" />
     <util:ProductSearch After="HlaeFfmpegOld" Id="HlaeFfmpegNew" Result="version" UpgradeCode="{9090AE9A-4E9D-46C5-B595-9F2FBCF96945}" Variable="HlaeFfmpegNew" />
     <SetVariable After="HlaeFfmpegNew" Id="SetHlaeFfmpeg" Condition="HlaeFfmpegOld = 3 OR HlaeFfmpegNew &gt; v0.0.0.0 OR HlaeCoreOld = v0.0.0.0" Type="numeric" Value="1" Variable="HlaeFfmpeg" />
-    <SetVariable Id="SetLangId" Condition="1" Type="formatted" Value="!(loc.LangId)" Variable="LangId" />
 
     <Chain>
       <PackageGroupRef Id="NetFx472WebAsPrereq" />
@@ -53,7 +52,7 @@
     <PackageGroup Id="Hlae">
       <MsiPackage Id="HlaeFfmpeg" InstallCondition="HlaeFfmpeg" Name="HlaeFfmpeg\HlaeFfmpeg.msi" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\en-US\HlaeFfmpeg.msi" Compressed="yes" Vital="yes" EnableFeatureSelection="no" Visible="yes" bal:DisplayInternalUICondition="WixBundleCommandLineAction &lt;&gt; 3 AND WixBundleUILevel &gt; 3">
         <MsiProperty Name="APPLICATIONFOLDER" Value="[InstallFolder]" />
-        <MsiProperty Name="TRANSFORMS" Value="[LangId]" />
+        <MsiProperty Name="TRANSFORMS" Value="[ProductLanguage]" />
         <Payload Id="HlaeFfmpeg_de_de" Compressed="yes" Name="HlaeFfmpeg\1031" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\de-DE\HlaeFfmpeg.mst" />
         <Payload Id="HlaeFfmpeg_fi_fi" Compressed="yes" Name="HlaeFfmpeg\1035" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\fi-FI\HlaeFfmpeg.mst" />
         <Payload Id="HlaeFfmpeg_fr_fr" Compressed="yes" Name="HlaeFfmpeg\1036" SourceFile="$(var.InstallerBuildDir)\HlaeFfmpeg\fr-FR\HlaeFfmpeg.mst" />
