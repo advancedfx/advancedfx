@@ -31,7 +31,7 @@ impl Value {
 
 type IteratorType = c_void;
 
-extern "C" {
+unsafe extern "C" {
     fn advancedfx_campath_iterator_delete(ptr: * mut IteratorType);
 
     fn advancedfx_campath_iterator_get_time(ptr: * const IteratorType) -> f64;
@@ -173,9 +173,9 @@ unsafe fn u8_to_quaternion_interp(value: u8) -> QuaternionInterp {
     unsafe { std::mem::transmute(value) }
 }
 
-type CampathChangedFn = extern "C" fn(p_user_data: * mut c_void);
+type CampathChangedFn = unsafe extern "C" fn(p_user_data: * mut c_void);
 
-extern "C" {
+unsafe extern "C" {
     fn advancedfx_campath_new() -> * mut CampathType;
 
     fn advancedfx_campath_delete(ptr: * mut CampathType);
@@ -678,7 +678,7 @@ impl Campath {
     }
 }
 
-extern "C" fn advancedfx_campath_changed_fn_impl(p_user_data: * mut c_void) {
+unsafe extern "C" fn advancedfx_campath_changed_fn_impl(p_user_data: * mut c_void) {
     let changed_event: &mut CampathChangedEvent = unsafe { &mut *(p_user_data as *mut CampathChangedEvent) };
     changed_event.trigger();
 }
