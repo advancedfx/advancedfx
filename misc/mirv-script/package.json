@@ -3,7 +3,10 @@
 	"version": "0.1.0",
 	"description": "",
 	"main": "index.js",
-	"author": "ChetdeJong",
+	"author": "advancedfx.org",
+	"contributors": [
+		"ChetdeJong (https://github.com/ChetdeJong)"
+	],
 	"license": "MIT",
 	"engines": {
 		"node": ">=24.14.0"
