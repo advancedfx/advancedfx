@@ -171,7 +171,7 @@ MemRange FindAddrInt32OffsetRefInContext(MemRange memRange, size_t addr, int32_t
 	while(true) {
 		MemRange memRange2 = prefixHexBytePattern ? FindPatternString(memRange, prefixHexBytePattern) : memRange;
 		if(memRange2.IsEmpty()) break;
-		MemRange memRange3 = FindAddrInt32OffsetRef(memRange.And(MemRange(memRange2.End, memRange.End+sizeof(int32_t))), addr, extraOffset);
+		MemRange memRange3 = FindAddrInt32OffsetRef(memRange.And(MemRange(memRange2.End, memRange2.End+sizeof(int32_t))), addr, extraOffset);
 		if(memRange3.IsEmpty()) {
 			if(prefixHexBytePattern) {
 				memRange.Start = memRange2.End;
