@@ -18,9 +18,4 @@
          <supportedOS Id="{35138b9a-5d96-4fbd-8e2d-a2440225f93a}" />
       </application>
    </compatibility>
-   <configuration>
-    <System.Windows.Forms.ApplicationConfigurationSection>
-      <add key="DpiAwareness" value="PerMonitorV2" />
-    </System.Windows.Forms.ApplicationConfigurationSection>
-  </configuration>
 </assembly>
