@@ -15,7 +15,6 @@
 #include "AfxHookSource2Rs.h"
 #include "SchemaSystem.h"
 
-#define WIN32_LEAN_AND_MEAN
 #include "../deps/release/Detours/src/detours.h"
 
 #include <map>

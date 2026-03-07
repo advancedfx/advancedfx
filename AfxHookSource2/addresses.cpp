@@ -16,6 +16,12 @@ AFXADDR_DEF(cs2_SceneSystem_FrameUpdate_vtable_idx);
 AFXADDR_DEF(cs2_deathmsg_lifetime_offset)
 AFXADDR_DEF(cs2_deathmsg_lifetimemod_offset)
 
+AFXADDR_DEF(cs2_client_CCSGOVScriptGameSystem_GetMode)
+AFXADDR_DEF(cs2_client_ClientScriptVM)
+AFXADDR_DEF(cs2_ScriptVM_CompileString_vtable_offset)
+AFXADDR_DEF(cs2_ScriptVM_RunScript_vtable_offset)
+AFXADDR_DEF(cs2_ScriptVM_FreeScript_vtable_offset)
+
 void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
 {
 	MemRange textRange = MemRange(0, 0);
@@ -142,11 +148,17 @@ void Addresses_InitSceneSystemDll(AfxAddr sceneSystemDll) {
 
 void Addresses_InitClientDll(AfxAddr clientDll) {
 	MemRange textRange = MemRange(0, 0);
+      MemRange dataRange = MemRange(0, 0);
 	{
 		ImageSectionsReader imageSectionsReader((HMODULE)clientDll);
 		if (!imageSectionsReader.Eof())
 		{
 			textRange = imageSectionsReader.GetMemRange();
+                  imageSectionsReader.Next();
+                  if (!imageSectionsReader.Eof()) {
+                        dataRange = imageSectionsReader.GetMemRange();
+                  }
+      		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
@@ -168,4 +180,46 @@ void Addresses_InitClientDll(AfxAddr clientDll) {
 		else
 			ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
+
+      // cs2_client_CCSGOVScriptGameSystem_GetMode
+      //
+      // For more info see DevWarning("VM Did not start!\n");
+      {
+            if(size_t * vtable = (size_t*)Afx::BinUtils::FindClassVtable((HMODULE)clientDll,".?AVCCSGOVScriptGameSystem@@", 0, 0x0)) {
+                  AFXADDR_SET(cs2_client_CCSGOVScriptGameSystem_GetMode, vtable[63]);
+            }
+            else ErrorBox(MkErrStr(__FILE__, __LINE__));
+      }
+
+      // cs2_client_ClientScriptVM
+      // cs2_ScriptVM_CompileString_vtable_offset
+      // see LoggingSystem_Log(DAT_18251b6dc,3,"Error running script named %s\n",param_2);
+      {
+            MemRange result = FindCString(dataRange, "VM Did not start!\n");
+            if (!result.IsEmpty())
+            {
+                  size_t strAddr = result.Start;
+                  MemRange result2 = FindAddrInt32OffsetRefInContext(textRange, strAddr, (int32_t)sizeof(int32_t), "48 8d 0d", nullptr);
+                  if(!result2.IsEmpty()) {
+                        size_t addr = result2.Start - 0xF;
+                        unsigned char pattern[3] = { 0x48, 0x89, 0x05 };
+                        size_t patternSize = sizeof(pattern) / sizeof(pattern[0]);
+                        MemRange patternRange(addr, addr + patternSize);
+                        MemRange result3 = FindBytes(textRange.And(patternRange), (char *)pattern, patternSize);
+                        if (result3.Start != patternRange.Start || result3.End != patternRange.End)
+                        {
+                              addr = 0;
+                              ErrorBox(MkErrStr(__FILE__, __LINE__));
+                        } else {
+                              addr = addr+7+*(int32_t*)(addr+3);
+                              AFXADDR_SET(cs2_client_ClientScriptVM, addr);
+                              AFXADDR_SET(cs2_ScriptVM_CompileString_vtable_offset, 15);
+                              AFXADDR_SET(cs2_ScriptVM_RunScript_vtable_offset, 13);
+                              AFXADDR_SET(cs2_ScriptVM_FreeScript_vtable_offset, 16);
+                        }                 
+                  }
+                  else ErrorBox(MkErrStr(__FILE__, __LINE__));
+            }
+            else ErrorBox(MkErrStr(__FILE__, __LINE__));
+      }
 }

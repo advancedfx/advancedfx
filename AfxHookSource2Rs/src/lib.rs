@@ -85,6 +85,7 @@ unsafe extern "C" {
     fn afx_hook_source2_message(s: *const c_char);
     fn afx_hook_source2_warning(s: *const c_char);
     fn afx_hook_source2_exec(s: *const c_char);
+    fn afx_hook_source2_vscript_exec_client(s: *const c_char) -> bool;
 
     fn afx_hook_source2_enable_on_record_start(value: bool);
     fn afx_hook_source2_enable_on_record_end(value: bool);
@@ -778,6 +779,14 @@ fn afx_exec(s: String) {
     }
 }
 
+fn afx_vscript_exec_client(s: String) -> bool{
+    let c_string = std::ffi::CString::new(s).unwrap();
+    unsafe {
+        afx_hook_source2_vscript_exec_client(c_string.as_ptr())
+    }
+}
+
+
 fn afx_enable_on_record_start(value: bool) {
     unsafe {
         afx_hook_source2_enable_on_record_start(value);        
@@ -1209,6 +1218,21 @@ fn mirv_exec(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResu
         match x.to_string(context) {
             Ok(s) => {
                 afx_exec(s.to_std_string_escaped());
+            }
+            Err(e) => {
+                return Err(e);
+            }
+        }
+    }
+    return Ok(JsValue::undefined())
+}
+
+fn mirv_vscript_exec_client(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+    if 1 == args.len() {
+        match args[0].to_string(context) {
+            Ok(s) => {
+                let result: bool = afx_vscript_exec_client(s.to_std_string_escaped());
+                return Ok(js_value!(result));
             }
             Err(e) => {
                 return Err(e);
@@ -2640,6 +2664,11 @@ impl<'a> AfxHookSource2Rs<'a> {
         .function(
             NativeFunction::from_fn_ptr(mirv_exec),
             js_string!("exec"),
+            0,
+        )
+        .function(
+            NativeFunction::from_fn_ptr(mirv_vscript_exec_client),
+            js_string!("vScriptExecClient"),
             0,
         )
         .function(

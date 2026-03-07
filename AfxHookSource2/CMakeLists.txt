@@ -223,6 +223,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     ClientEntitySystem.h
 
     ConsoleRs.cpp
+
     CVarRs.cpp
 
 	DeathMsg.cpp
@@ -276,6 +277,9 @@ target_sources(${PROJECT_NAME} PRIVATE
 	SceneSystem.h
 
     StreamSettings.h
+
+    VScript.cpp
+    VScript.h
 
     WrpConsole.cpp
     WrpConsole.h

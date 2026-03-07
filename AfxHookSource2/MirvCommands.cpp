@@ -1,10 +1,11 @@
 #include "MirvCommands.h"
-#include "ClientEntitySystem.h"
 
 #include "../shared/StringTools.h"
 
+#include "ClientEntitySystem.h"
 #include "SceneSystem.h"
 #include "SchemaSystem.h"
+#include "VScript.h"
 
 bool g_bHookedMirvCommands = false;
 
@@ -532,3 +533,24 @@ void HookMirvCommands(HMODULE clientDll) {
 	g_bHookedMirvCommands = true;
 };
 
+////////////////////////////////////////////////////////////////////////////////
+
+CON_COMMAND(mirv_vscript_client_exec, "Execute a vscript on the client VM.")
+{
+    int argC = args->ArgC();
+    const char * arg0 = args->ArgV(0);
+
+    if (2 <= argC) {
+        const char * arg1 = args->ArgV(1);
+		if(!ExecuteClientVScript(arg1)) {
+			advancedfx::Warning("Execution of cs_script failed.\n");
+		}
+		return;
+	}	
+
+
+	advancedfx::Message(
+        "%s <sValue> - Execute the given vscript on the client VM. Requires launch paramter \"-afxVScriptModeClient 1\", add \"-dev\" too to get cl_script_help command working.\n"
+        , arg0
+    );
+}

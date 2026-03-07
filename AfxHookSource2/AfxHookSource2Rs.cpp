@@ -14,6 +14,7 @@
 
 #include "WrpConsole.h"
 #include "hlaeFolder.h"
+#include "VScript.h"
 
 #include <string>
 #include <filesystem>
@@ -31,6 +32,11 @@ extern "C" void afx_hook_source2_warning(const char * pszValue) {
 extern "C" void afx_hook_source2_exec(const char * pszValue) {
     if(g_pEngineToClient) g_pEngineToClient->ExecuteClientCmd(0,pszValue,true);
 }
+
+extern "C" bool afx_hook_source2_vscript_exec_client(const char * pszValue) {
+    return BOOL_TO_FFIBOOL(ExecuteClientVScript(pszValue));
+}
+
 
 bool g_b_on_record_start = false;
 
