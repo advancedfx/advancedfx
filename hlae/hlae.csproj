@@ -3,10 +3,9 @@
     <OutputType>WinExe</OutputType>
     <StartupObject></StartupObject>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <TargetFramework>net462</TargetFramework>
+    <TargetFramework>net48</TargetFramework>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <ApplicationIcon>app.ico</ApplicationIcon>
-    <NoWin32Manifest>true</NoWin32Manifest>
     <RootNamespace>AfxGui</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -49,3 +48,4 @@
     </None>
   </ItemGroup>
 </Project>
+
