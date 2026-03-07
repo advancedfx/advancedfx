@@ -88,6 +88,16 @@ declare namespace mirv {
 	function exec(command: string): void;
 
 	/**
+	 * Execute a client.dll VScript.
+	 * @param script The script to execute.
+	 * @remarks Currently will only work if the game was launched with the option "-afxVScriptModeClient 1", add "-dev" to make cl_script_help command work.
+	 * @returns true upon success, otherwise false
+	 *
+	 * Since HLAE 2.162.0
+	 */
+	function vScriptExecClient(script: string): boolean;
+
+	/**
 	 * Load a JavaScript module (.mjs) or execute script (.js).
 	 * @param filePath - Full path to file to load.
 	 *
