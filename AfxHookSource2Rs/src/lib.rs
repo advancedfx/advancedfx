@@ -722,6 +722,13 @@ struct MirvEvents {
     on_client_frame_stage_notify: RefCell<Option<JsObject>>,
     on_add_entity: RefCell<Option<JsObject>>,
     on_remove_entity: RefCell<Option<JsObject>>,
+    listeners_record_start: RefCell<Vec<MirvNamedListener>>,
+    listeners_record_end: RefCell<Vec<MirvNamedListener>>,
+    listeners_game_event: RefCell<Vec<MirvNamedListener>>,
+    listeners_c_view_render_setup_view: RefCell<Vec<MirvNamedListener>>,
+    listeners_client_frame_stage_notify: RefCell<Vec<MirvNamedListener>>,
+    listeners_add_entity: RefCell<Vec<MirvNamedListener>>,
+    listeners_remove_entity: RefCell<Vec<MirvNamedListener>>,
 }
 
 impl MirvEvents {
@@ -734,8 +741,216 @@ impl MirvEvents {
             on_client_frame_stage_notify: RefCell::<Option<JsObject>>::new(None),
             on_add_entity: RefCell::<Option<JsObject>>::new(None),
             on_remove_entity: RefCell::<Option<JsObject>>::new(None),
+            listeners_record_start: RefCell::<Vec<MirvNamedListener>>::new(Vec::new()),
+            listeners_record_end: RefCell::<Vec<MirvNamedListener>>::new(Vec::new()),
+            listeners_game_event: RefCell::<Vec<MirvNamedListener>>::new(Vec::new()),
+            listeners_c_view_render_setup_view: RefCell::<Vec<MirvNamedListener>>::new(Vec::new()),
+            listeners_client_frame_stage_notify: RefCell::<Vec<MirvNamedListener>>::new(Vec::new()),
+            listeners_add_entity: RefCell::<Vec<MirvNamedListener>>::new(Vec::new()),
+            listeners_remove_entity: RefCell::<Vec<MirvNamedListener>>::new(Vec::new()),
         }
-    }    
+    }
+
+    fn callback_slot(&self, kind: MirvEventKind) -> &RefCell<Option<JsObject>> {
+        match kind {
+            MirvEventKind::ClientFrameStageNotify => &self.on_client_frame_stage_notify,
+            MirvEventKind::RecordStart => &self.on_record_start,
+            MirvEventKind::RecordEnd => &self.on_record_end,
+            MirvEventKind::GameEvent => &self.on_game_event,
+            MirvEventKind::CViewRenderSetupView => &self.on_c_view_render_setup_view,
+            MirvEventKind::AddEntity => &self.on_add_entity,
+            MirvEventKind::RemoveEntity => &self.on_remove_entity,
+        }
+    }
+
+    fn listeners_slot(&self, kind: MirvEventKind) -> &RefCell<Vec<MirvNamedListener>> {
+        match kind {
+            MirvEventKind::ClientFrameStageNotify => &self.listeners_client_frame_stage_notify,
+            MirvEventKind::RecordStart => &self.listeners_record_start,
+            MirvEventKind::RecordEnd => &self.listeners_record_end,
+            MirvEventKind::GameEvent => &self.listeners_game_event,
+            MirvEventKind::CViewRenderSetupView => &self.listeners_c_view_render_setup_view,
+            MirvEventKind::AddEntity => &self.listeners_add_entity,
+            MirvEventKind::RemoveEntity => &self.listeners_remove_entity,
+        }
+    }
+
+    fn clone_callback(&self, kind: MirvEventKind) -> Option<JsObject> {
+        self.callback_slot(kind).borrow().clone()
+    }
+
+    fn clone_listeners(&self, kind: MirvEventKind) -> Vec<JsObject> {
+        self.listeners_slot(kind)
+            .borrow()
+            .iter()
+            .map(|listener| listener.callback.clone())
+            .collect()
+    }
+
+    fn set_listener(&self, kind: MirvEventKind, listener_name: String, callback: JsObject) {
+        let listeners = &mut *self.listeners_slot(kind).borrow_mut();
+        if let Some(listener) = listeners.iter_mut().find(|listener| listener.name == listener_name) {
+            listener.callback = callback;
+            return;
+        }
+        listeners.push(MirvNamedListener {
+            name: listener_name,
+            callback,
+        });
+    }
+
+    fn remove_listener(&self, kind: MirvEventKind, listener_name: &str) {
+        let listeners = &mut *self.listeners_slot(kind).borrow_mut();
+        if let Some(index) = listeners
+            .iter()
+            .position(|listener| listener.name == listener_name)
+        {
+            listeners.remove(index);
+        }
+    }
+
+    fn has_callbacks(&self, kind: MirvEventKind) -> bool {
+        self.callback_slot(kind).borrow().is_some() || !self.listeners_slot(kind).borrow().is_empty()
+    }
+
+    fn sync_enabled(&self, kind: MirvEventKind) {
+        let value = self.has_callbacks(kind);
+        match kind {
+            MirvEventKind::ClientFrameStageNotify => afx_enable_on_client_frame_stage_notify(value),
+            MirvEventKind::RecordStart => afx_enable_on_record_start(value),
+            MirvEventKind::RecordEnd => afx_enable_on_record_end(value),
+            MirvEventKind::GameEvent => afx_enable_on_game_event(value),
+            MirvEventKind::CViewRenderSetupView => afx_enable_on_c_view_render_setup_view(value),
+            MirvEventKind::AddEntity => afx_enable_on_add_entity(value),
+            MirvEventKind::RemoveEntity => afx_enable_on_remove_entity(value),
+        }
+    }
+}
+
+#[derive(Clone)]
+struct MirvNamedListener {
+    name: String,
+    callback: JsObject,
+}
+
+#[derive(Clone, Copy)]
+enum MirvEventKind {
+    ClientFrameStageNotify,
+    RecordStart,
+    RecordEnd,
+    GameEvent,
+    CViewRenderSetupView,
+    AddEntity,
+    RemoveEntity,
+}
+
+#[derive(Trace, Finalize, JsData)]
+struct MirvEventDispatcher {
+    #[unsafe_ignore_trace]
+    events: Rc<MirvEvents>,
+    #[unsafe_ignore_trace]
+    kind: MirvEventKind,
+}
+
+impl MirvEventDispatcher {
+    fn new(events: Rc<MirvEvents>, kind: MirvEventKind) -> Self {
+        Self { events, kind }
+    }
+
+    fn create(events: Rc<MirvEvents>, kind: MirvEventKind, context: &mut Context) -> JsObject {
+        ObjectInitializer::with_native_data::<MirvEventDispatcher>(
+            MirvEventDispatcher::new(events, kind),
+            context,
+        )
+        .function(
+            NativeFunction::from_fn_ptr(MirvEventDispatcher::on),
+            js_string!("on"),
+            2,
+        )
+        .function(
+            NativeFunction::from_fn_ptr(MirvEventDispatcher::remove),
+            js_string!("remove"),
+            1,
+        )
+        .build()
+    }
+
+    fn error_typ(context: &Context) -> JsResult<JsValue> {
+        Err(
+            advancedfx::js::errors::make_error!(
+                JsNativeError::typ(),
+                "'this' is not a mirv.events dispatcher object",
+                context
+            )
+            .into(),
+        )
+    }
+
+    fn on(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let object = match this.as_object() {
+            Some(object) => object,
+            None => return Self::error_typ(context),
+        };
+        let dispatcher = match object.downcast_ref::<MirvEventDispatcher>() {
+            Some(dispatcher) => dispatcher,
+            None => return Self::error_typ(context),
+        };
+        if args.len() != 2 {
+            return Err(advancedfx::js::errors::error_arguments(context).into());
+        }
+        let listener_name = match args[0].as_string() {
+            Some(value) => match value.to_std_string() {
+                Ok(value) => value,
+                Err(_) => return Err(advancedfx::js::errors::error_arguments(context).into()),
+            },
+            None => return Err(advancedfx::js::errors::error_arguments(context).into()),
+        };
+        let callback = match args[1].as_object() {
+            Some(object) if object.is_callable() => object.clone(),
+            _ => return Err(advancedfx::js::errors::error_arguments(context).into()),
+        };
+
+        dispatcher
+            .events
+            .set_listener(dispatcher.kind, listener_name, callback);
+        dispatcher.events.sync_enabled(dispatcher.kind);
+        Ok(JsValue::undefined())
+    }
+
+    fn remove(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        let object = match this.as_object() {
+            Some(object) => object,
+            None => return Self::error_typ(context),
+        };
+        let dispatcher = match object.downcast_ref::<MirvEventDispatcher>() {
+            Some(dispatcher) => dispatcher,
+            None => return Self::error_typ(context),
+        };
+        if args.len() != 1 {
+            return Err(advancedfx::js::errors::error_arguments(context).into());
+        }
+        let listener_name = match args[0].as_string() {
+            Some(value) => match value.to_std_string() {
+                Ok(value) => value,
+                Err(_) => return Err(advancedfx::js::errors::error_arguments(context).into()),
+            },
+            None => return Err(advancedfx::js::errors::error_arguments(context).into()),
+        };
+
+        dispatcher
+            .events
+            .remove_listener(dispatcher.kind, listener_name.as_str());
+        dispatcher.events.sync_enabled(dispatcher.kind);
+        Ok(JsValue::undefined())
+    }
+}
+
+fn call_event_listeners(listeners: Vec<JsObject>, args: &[JsValue], context: &mut Context) {
+    for listener in listeners {
+        if let Err(e) = listener.call(&JsValue::undefined(), args, context) {
+            let _ = afx_on_error(&e, context);
+        }
+    }
 }
 
 pub struct AfxHookSource2Rs<'a> {
@@ -1225,13 +1440,13 @@ fn mirv_set_on_record_start(this: &JsValue, args: &[JsValue], context: &mut Cont
                 match &args[0].variant() {
                     JsVariant::Undefined => {
                         mirv.events.on_record_start.replace(None);
-                        afx_enable_on_record_start(false);
+                        mirv.events.sync_enabled(MirvEventKind::RecordStart);
                         return Ok(JsValue::undefined()); 
                     }
                     JsVariant::Object(object) => {
                         if object.is_callable() {
                             mirv.events.on_record_start.replace(Some(object.clone()));
-                            afx_enable_on_record_start(true);
+                            mirv.events.sync_enabled(MirvEventKind::RecordStart);
                             return Ok(JsValue::undefined()); 
                         }
                     }
@@ -1267,13 +1482,13 @@ fn mirv_set_on_record_end(this: &JsValue, args: &[JsValue], context: &mut Contex
                 match &args[0].variant() {
                     JsVariant::Undefined => {
                         mirv.events.on_record_end.replace(None);
-                        afx_enable_on_record_end(false);
+                        mirv.events.sync_enabled(MirvEventKind::RecordEnd);
                         return Ok(JsValue::undefined()); 
                     }
                     JsVariant::Object(object) => {
                         if object.is_callable() {
                             mirv.events.on_record_end.replace(Some(object.clone()));
-                            afx_enable_on_record_end(true);
+                            mirv.events.sync_enabled(MirvEventKind::RecordEnd);
                             return Ok(JsValue::undefined()); 
                         }
                     }
@@ -1309,13 +1524,13 @@ fn mirv_set_on_game_event(this: &JsValue, args: &[JsValue], context: &mut Contex
                 match &args[0].variant() {
                     JsVariant::Undefined => {
                         mirv.events.on_game_event.replace(None);
-                        afx_enable_on_game_event(false);
+                        mirv.events.sync_enabled(MirvEventKind::GameEvent);
                         return Ok(JsValue::undefined()); 
                     }
                     JsVariant::Object(object) => {
                         if object.is_callable() {
                             mirv.events.on_game_event.replace(Some(object.clone()));
-                            afx_enable_on_game_event(true);
+                            mirv.events.sync_enabled(MirvEventKind::GameEvent);
                             return Ok(JsValue::undefined()); 
                         }
                     }
@@ -1351,13 +1566,13 @@ fn mirv_set_on_c_view_render_setup_view(this: &JsValue, args: &[JsValue], contex
                 match &args[0].variant() {
                     JsVariant::Undefined => {
                         mirv.events.on_c_view_render_setup_view.replace(None);
-                        afx_enable_on_c_view_render_setup_view(false);
+                        mirv.events.sync_enabled(MirvEventKind::CViewRenderSetupView);
                         return Ok(JsValue::undefined()); 
                     }
                     JsVariant::Object(object) => {
                         if object.is_callable() {
                             mirv.events.on_c_view_render_setup_view.replace(Some(object.clone()));
-                            afx_enable_on_c_view_render_setup_view(true);
+                            mirv.events.sync_enabled(MirvEventKind::CViewRenderSetupView);
                             return Ok(JsValue::undefined()); 
                         }
                     }
@@ -1393,13 +1608,13 @@ fn mirv_set_on_client_frame_stage_notify(this: &JsValue, args: &[JsValue], conte
                 match &args[0].variant() {
                     JsVariant::Undefined => {
                         mirv.events.on_client_frame_stage_notify.replace(None);
-                        afx_enable_on_client_frame_stage_notify(false);
+                        mirv.events.sync_enabled(MirvEventKind::ClientFrameStageNotify);
                         return Ok(JsValue::undefined()); 
                     }
                     JsVariant::Object(object) => {
                         if object.is_callable() {
                             mirv.events.on_client_frame_stage_notify.replace(Some(object.clone()));
-                            afx_enable_on_client_frame_stage_notify(true);
+                            mirv.events.sync_enabled(MirvEventKind::ClientFrameStageNotify);
                             return Ok(JsValue::undefined()); 
                         }
                     }
@@ -2282,13 +2497,13 @@ fn mirv_set_on_add_entity(this: &JsValue, args: &[JsValue], context: &mut Contex
                 match &args[0].variant() {
                     JsVariant::Undefined => {
                         mirv.events.on_add_entity.replace(None);
-                        afx_enable_on_add_entity(false);
+                        mirv.events.sync_enabled(MirvEventKind::AddEntity);
                         return Ok(JsValue::undefined()); 
                     }
                     JsVariant::Object(object) => {
                         if object.is_callable() {
                             mirv.events.on_add_entity.replace(Some(object.clone()));
-                            afx_enable_on_add_entity(true);
+                            mirv.events.sync_enabled(MirvEventKind::AddEntity);
                             return Ok(JsValue::undefined()); 
                         }
                     }
@@ -2325,13 +2540,13 @@ fn mirv_set_on_remove_entity(this: &JsValue, args: &[JsValue], context: &mut Con
                 match &args[0].variant() {
                     JsVariant::Undefined => {
                         mirv.events.on_remove_entity.replace(None);
-                        afx_enable_on_remove_entity(false);
+                        mirv.events.sync_enabled(MirvEventKind::RemoveEntity);
                         return Ok(JsValue::undefined()); 
                     }
                     JsVariant::Object(object) => {
                         if object.is_callable() {
                             mirv.events.on_remove_entity.replace(Some(object.clone()));
-                            afx_enable_on_remove_entity(true);
+                            mirv.events.sync_enabled(MirvEventKind::RemoveEntity);
                             return Ok(JsValue::undefined()); 
                         }
                     }
@@ -2555,7 +2770,58 @@ impl<'a> AfxHookSource2Rs<'a> {
         let fn_mirv_get_on_add_entity = NativeFunction::from_fn_ptr(mirv_get_on_add_entity).to_js_function(context.realm());
         let fn_mirv_set_on_remove_entity = NativeFunction::from_fn_ptr(mirv_set_on_remove_entity).to_js_function(context.realm());
         let fn_mirv_get_on_remove_entity = NativeFunction::from_fn_ptr(mirv_get_on_remove_entity).to_js_function(context.realm());
-      
+        let event_client_frame_stage_notify =
+            MirvEventDispatcher::create(Rc::clone(&events), MirvEventKind::ClientFrameStageNotify, &mut context);
+        let event_record_start =
+            MirvEventDispatcher::create(Rc::clone(&events), MirvEventKind::RecordStart, &mut context);
+        let event_record_end =
+            MirvEventDispatcher::create(Rc::clone(&events), MirvEventKind::RecordEnd, &mut context);
+        let event_game_event =
+            MirvEventDispatcher::create(Rc::clone(&events), MirvEventKind::GameEvent, &mut context);
+        let event_c_view_render_setup_view =
+            MirvEventDispatcher::create(Rc::clone(&events), MirvEventKind::CViewRenderSetupView, &mut context);
+        let event_add_entity =
+            MirvEventDispatcher::create(Rc::clone(&events), MirvEventKind::AddEntity, &mut context);
+        let event_remove_entity =
+            MirvEventDispatcher::create(Rc::clone(&events), MirvEventKind::RemoveEntity, &mut context);
+        let events_object = ObjectInitializer::new(&mut context)
+        .property(
+            js_string!("ClientFrameStageNotify"),
+            event_client_frame_stage_notify,
+            Attribute::all()
+        )
+        .property(
+            js_string!("RecordStart"),
+            event_record_start,
+            Attribute::all()
+        )
+        .property(
+            js_string!("RecordEnd"),
+            event_record_end,
+            Attribute::all()
+        )
+        .property(
+            js_string!("GameEvent"),
+            event_game_event,
+            Attribute::all()
+        )
+        .property(
+            js_string!("CViewRenderSetupView"),
+            event_c_view_render_setup_view,
+            Attribute::all()
+        )
+        .property(
+            js_string!("AddEntity"),
+            event_add_entity,
+            Attribute::all()
+        )
+        .property(
+            js_string!("RemoveEntity"),
+            event_remove_entity,
+            Attribute::all()
+        )
+        .build();
+
         let object = ObjectInitializer::with_native_data::<MirvStruct>(mirv, &mut context)
         .function(
             NativeFunction::from_fn_ptr(mirv_get_cur_time),
@@ -2703,7 +2969,8 @@ impl<'a> AfxHookSource2Rs<'a> {
             NativeFunction::from_fn_ptr(mirv_trace),
             js_string!("trace"),
             0,
-        )        
+        )
+        .property(js_string!("events"), events_object, Attribute::all())
         .build();
 
         context
@@ -2817,11 +3084,10 @@ pub unsafe extern "C" fn afx_hook_source2_rs_load<'a>(this_ptr: *mut AfxHookSour
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn afx_hook_source2_rs_on_record_start<'a>(this_ptr: *mut AfxHookSource2Rs<'a>, taker_folder_path: *const c_char) {
     let context = (*afx_hooks_source_2_rs_ptr_to_ref(this_ptr).context).get();
-    let borrowed = afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.on_record_start.borrow();
-    let event_option_clone = borrowed.clone();
-    std::mem::drop(borrowed);
-    if let Some(event_clone) = event_option_clone {
-
+    let events = &afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events;
+    let event_option_clone = events.clone_callback(MirvEventKind::RecordStart);
+    let listeners = events.clone_listeners(MirvEventKind::RecordStart);
+    if event_option_clone.is_some() || !listeners.is_empty() {
         let mut js_value_take_folder_path: JsValue = JsValue::null();
         if !taker_folder_path.is_null() {
             let str_take_folder_path = unsafe{CStr::from_ptr(taker_folder_path)}.to_str().unwrap();
@@ -2831,23 +3097,30 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_record_start<'a>(this_ptr: *mut 
         let js_object = ObjectInitializer::new(context)
         .property(js_string!("takeFolder"), js_value_take_folder_path, Attribute::all())
         .build();
+        let args = [js_value!(js_object)];
 
-        if let Err(e) = event_clone.call(&JsValue::undefined(), &[js_value!(js_object)], context) {              
-            let _ = afx_on_error(&e, context);
+        if let Some(event_clone) = event_option_clone {
+            if let Err(e) = event_clone.call(&JsValue::undefined(), &args, context) {
+                let _ = afx_on_error(&e, context);
+            }
         }
+        call_event_listeners(listeners, &args, context);
     }
 }
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn afx_hook_source2_rs_on_record_end<'a>(this_ptr: *mut AfxHookSource2Rs<'a>) {
     let context = (*afx_hooks_source_2_rs_ptr_to_ref(this_ptr).context).get();
-    let borrowed = afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.on_record_end.borrow();
-    let event_option_clone = borrowed.clone();
-    std::mem::drop(borrowed);
-    if let Some(event_clone) = event_option_clone {
-        if let Err(e) = event_clone.call(&JsValue::undefined(), &[], context) {
-            let _ = afx_on_error(&e, context);
+    let events = &afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events;
+    let event_option_clone = events.clone_callback(MirvEventKind::RecordEnd);
+    let listeners = events.clone_listeners(MirvEventKind::RecordEnd);
+    if event_option_clone.is_some() || !listeners.is_empty() {
+        if let Some(event_clone) = event_option_clone {
+            if let Err(e) = event_clone.call(&JsValue::undefined(), &[], context) {
+                let _ = afx_on_error(&e, context);
+            }
         }
+        call_event_listeners(listeners, &[], context);
     }
 }
 
@@ -2855,10 +3128,10 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_record_end<'a>(this_ptr: *mut Af
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn afx_hook_source2_rs_on_game_event<'a>(this_ptr: *mut AfxHookSource2Rs<'a>, event_name: *const c_char, event_id: i32, json: *const c_char) {
     let context = (*afx_hooks_source_2_rs_ptr_to_ref(this_ptr).context).get();
-    let borrowed = afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.on_game_event.borrow();
-    let event_option_clone = borrowed.clone();
-    std::mem::drop(borrowed);
-    if let Some(event_clone) = event_option_clone {
+    let events = &afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events;
+    let event_option_clone = events.clone_callback(MirvEventKind::GameEvent);
+    let listeners = events.clone_listeners(MirvEventKind::GameEvent);
+    if event_option_clone.is_some() || !listeners.is_empty() {
         let str_event_name = unsafe{CStr::from_ptr(event_name)}.to_str().unwrap();
         let str_json = unsafe{CStr::from_ptr(json)}.to_str().unwrap();
 
@@ -2867,10 +3140,14 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_game_event<'a>(this_ptr: *mut Af
         .property(js_string!("id"), js_value!(event_id), Attribute::all())
         .property(js_string!("data"), js_value!(js_string!(str_json)), Attribute::all())
         .build();
+        let args = [js_value!(js_object)];
 
-        if let Err(e) = event_clone.call(&JsValue::undefined(), &[js_value!(js_object)], context) {
-            let _ = afx_on_error(&e, context);
+        if let Some(event_clone) = event_option_clone {
+            if let Err(e) = event_clone.call(&JsValue::undefined(), &args, context) {
+                let _ = afx_on_error(&e, context);
+            }
         }
+        call_event_listeners(listeners, &args, context);
     }
 }
 
@@ -2887,11 +3164,10 @@ pub struct AfxHookSourceRsView {
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn afx_hook_source2_rs_on_c_view_render_setup_view<'a>(this_ptr: *mut AfxHookSource2Rs<'a>, cur_time: c_float, abs_time: c_float, last_abs_time: c_float, current_view: &mut AfxHookSourceRsView , game_view: &AfxHookSourceRsView, last_view: &AfxHookSourceRsView, width: i32, height: i32) -> bool {
     let context = (*afx_hooks_source_2_rs_ptr_to_ref(this_ptr).context).get();
-    let borrowed = afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.on_c_view_render_setup_view.borrow();
-    let event_option_clone = borrowed.clone();
-    std::mem::drop(borrowed);  
-    if let Some(event_clone) = event_option_clone {
-
+    let events = &afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events;
+    let event_option_clone = events.clone_callback(MirvEventKind::CViewRenderSetupView);
+    let listeners = events.clone_listeners(MirvEventKind::CViewRenderSetupView);
+    if event_option_clone.is_some() || !listeners.is_empty() {
         let js_object_current_view = ObjectInitializer::new(context)
         .property(js_string!("x"), js_value!(current_view.x), Attribute::all())
         .property(js_string!("y"), js_value!(current_view.y), Attribute::all())
@@ -2930,52 +3206,58 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_c_view_render_setup_view<'a>(thi
         .property(js_string!("width"), js_value!(width), Attribute::all())
         .property(js_string!("height"), js_value!(height), Attribute::all())
         .build();
+        let args = [js_value!(js_object)];
+        let mut result = false;
 
-        match event_clone.call(&JsValue::undefined(), &[js_value!(js_object)], context) {
-            Ok(js_value) => {
-                if let Some(js_object) = js_value.as_object() {
-                    if let Ok(js_val_x) = js_object.get(js_string!("x"), context) {
-                        if let Some(x) = js_val_x.as_number() {
-                            current_view.x = x as f32;
+        if let Some(event_clone) = event_option_clone {
+            match event_clone.call(&JsValue::undefined(), &args, context) {
+                Ok(js_value) => {
+                    if let Some(js_object) = js_value.as_object() {
+                        if let Ok(js_val_x) = js_object.get(js_string!("x"), context) {
+                            if let Some(x) = js_val_x.as_number() {
+                                current_view.x = x as f32;
+                            }
                         }
-                    }
-                    if let Ok(js_val_y) = js_object.get(js_string!("y"), context) {
-                        if let Some(y) = js_val_y.as_number() {
-                            current_view.y = y as f32;
+                        if let Ok(js_val_y) = js_object.get(js_string!("y"), context) {
+                            if let Some(y) = js_val_y.as_number() {
+                                current_view.y = y as f32;
+                            }
                         }
-                    }
-                    if let Ok(js_val_z) = js_object.get(js_string!("z"), context) {
-                        if let Some(z) = js_val_z.as_number() {
-                            current_view.z = z as f32;
+                        if let Ok(js_val_z) = js_object.get(js_string!("z"), context) {
+                            if let Some(z) = js_val_z.as_number() {
+                                current_view.z = z as f32;
+                            }
                         }
-                    }
-                    if let Ok(js_val_rx) = js_object.get(js_string!("rX"), context) {
-                        if let Some(rx) = js_val_rx.as_number() {
-                            current_view.rx = rx as f32;
+                        if let Ok(js_val_rx) = js_object.get(js_string!("rX"), context) {
+                            if let Some(rx) = js_val_rx.as_number() {
+                                current_view.rx = rx as f32;
+                            }
                         }
-                    }
-                    if let Ok(js_val_ry) = js_object.get(js_string!("rY"), context) {
-                        if let Some(ry) = js_val_ry.as_number() {
-                            current_view.ry = ry as f32;
+                        if let Ok(js_val_ry) = js_object.get(js_string!("rY"), context) {
+                            if let Some(ry) = js_val_ry.as_number() {
+                                current_view.ry = ry as f32;
+                            }
                         }
-                    }
-                    if let Ok(js_val_rz) = js_object.get(js_string!("rZ"), context) {
-                        if let Some(rz) = js_val_rz.as_number() {
-                            current_view.rz = rz as f32;
+                        if let Ok(js_val_rz) = js_object.get(js_string!("rZ"), context) {
+                            if let Some(rz) = js_val_rz.as_number() {
+                                current_view.rz = rz as f32;
+                            }
                         }
-                    }
-                    if let Ok(js_val_fov) = js_object.get(js_string!("fov"), context) {
-                        if let Some(fov) = js_val_fov.as_number() {
-                            current_view.fov = fov as f32;
+                        if let Ok(js_val_fov) = js_object.get(js_string!("fov"), context) {
+                            if let Some(fov) = js_val_fov.as_number() {
+                                current_view.fov = fov as f32;
+                            }
                         }
+                        result = true;
                     }
-                    return true;
+                }
+                Err(e) =>  {
+                    let _ = afx_on_error(&e, context);
                 }
             }
-            Err(e) =>  {
-                let _ = afx_on_error(&e, context);
-            }
         }
+        call_event_listeners(listeners, &args, context);
+        return result;
     }
     return false;
 }
@@ -2983,47 +3265,59 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_c_view_render_setup_view<'a>(thi
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn afx_hook_source2_rs_on_client_frame_stage_notify<'a>(this_ptr: *mut AfxHookSource2Rs<'a>, event_id: i32, is_before: bool) {
     let context = (*afx_hooks_source_2_rs_ptr_to_ref(this_ptr).context).get();
-    let borrowed = afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.on_client_frame_stage_notify.borrow();
-    let event_option_clone = borrowed.clone();
-    std::mem::drop(borrowed);
-    if let Some(event_clone) = event_option_clone {
+    let events = &afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events;
+    let event_option_clone = events.clone_callback(MirvEventKind::ClientFrameStageNotify);
+    let listeners = events.clone_listeners(MirvEventKind::ClientFrameStageNotify);
+    if event_option_clone.is_some() || !listeners.is_empty() {
         let js_object = ObjectInitializer::new(context)
         .property(js_string!("curStage"), js_value!(event_id), Attribute::all())
         .property(js_string!("isBefore"), js_value!(is_before), Attribute::all())
         .build();
+        let args = [js_value!(js_object)];
 
-        if let Err(e) = event_clone.call(&JsValue::undefined(), &[js_value!(js_object)], context) {
-            let _ = afx_on_error(&e, context);
+        if let Some(event_clone) = event_option_clone {
+            if let Err(e) = event_clone.call(&JsValue::undefined(), &args, context) {
+                let _ = afx_on_error(&e, context);
+            }
         }
+        call_event_listeners(listeners, &args, context);
     }
 }
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn afx_hook_source2_rs_on_add_entity<'a>(this_ptr: *mut AfxHookSource2Rs<'a>, p_ref: * mut AfxEntityRef, handle: i32) {
     let context = (*afx_hooks_source_2_rs_ptr_to_ref(this_ptr).context).get();
-    let borrowed = afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.on_add_entity.borrow();
-    let event_option_clone = borrowed.clone();
-    std::mem::drop(borrowed);
-    if let Some(event_clone) = event_option_clone {
+    let events = &afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events;
+    let event_option_clone = events.clone_callback(MirvEventKind::AddEntity);
+    let listeners = events.clone_listeners(MirvEventKind::AddEntity);
+    if event_option_clone.is_some() || !listeners.is_empty() {
         afx_add_ref_entity_ref(p_ref);
         let entity_ref = MirvEntityRef::create(p_ref, context);
-        if let Err(e) = event_clone.call(&JsValue::undefined(), &[js_value!(entity_ref),js_value!(handle)], context) {
-            let _ = afx_on_error(&e, context);
+        let args = [js_value!(entity_ref), js_value!(handle)];
+        if let Some(event_clone) = event_option_clone {
+            if let Err(e) = event_clone.call(&JsValue::undefined(), &args, context) {
+                let _ = afx_on_error(&e, context);
+            }
         }
+        call_event_listeners(listeners, &args, context);
     }
 }
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn afx_hook_source2_rs_on_remove_entity<'a>(this_ptr: *mut AfxHookSource2Rs<'a>, p_ref: * mut AfxEntityRef, handle: i32) {
     let context = (*afx_hooks_source_2_rs_ptr_to_ref(this_ptr).context).get();
-    let borrowed = afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.on_remove_entity.borrow();
-    let event_option_clone = borrowed.clone();
-    std::mem::drop(borrowed);
-    if let Some(event_clone) = event_option_clone {
+    let events = &afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events;
+    let event_option_clone = events.clone_callback(MirvEventKind::RemoveEntity);
+    let listeners = events.clone_listeners(MirvEventKind::RemoveEntity);
+    if event_option_clone.is_some() || !listeners.is_empty() {
         afx_add_ref_entity_ref(p_ref);
         let entity_ref = MirvEntityRef::create(p_ref, context);
-        if let Err(e) = event_clone.call(&JsValue::undefined(), &[js_value!(entity_ref),js_value!(handle)], context) {
-            let _ = afx_on_error(&e, context);
+        let args = [js_value!(entity_ref), js_value!(handle)];
+        if let Some(event_clone) = event_option_clone {
+            if let Err(e) = event_clone.call(&JsValue::undefined(), &args, context) {
+                let _ = afx_on_error(&e, context);
+            }
         }
+        call_event_listeners(listeners, &args, context);
     }
 }

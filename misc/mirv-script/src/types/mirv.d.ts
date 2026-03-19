@@ -11,12 +11,12 @@ declare namespace mirv {
 	/*
 	 * Since HLAE 2.171.0
 	 */
-	let onRecordStart: undefined | OnRecordEnd;
+	let onRecordStart: undefined | OnRecordStart;
 
 	/*
 	 * Since HLAE 2.171.0
 	 */
-	let onRecordEnd: undefined | OnRecordStart;
+	let onRecordEnd: undefined | OnRecordEnd;
 
 	/**
 	 * Allows to handle game event system events.
@@ -41,6 +41,11 @@ declare namespace mirv {
 	 * Since HLAE 2.163.0
 	 */
 	let onRemoveEntity: undefined | OnEntityEvent;
+
+	/**
+	 * Event listeners that can be registered without replacing the original onXxx hooks.
+	 */
+	let events: Events;
 
 	/**
 	 * Opens a websocket connection
@@ -399,6 +404,23 @@ declare namespace mirv {
 	type OnCViewRenderSetupView = (
 		e: OnCViewRenderSetupViewArgs
 	) => undefined | OnCViewRenderSetupViewSet;
+
+	type OnCViewRenderSetupViewEvent = (e: OnCViewRenderSetupViewArgs) => void;
+
+	interface NamedEvent<TListener> {
+		on(listenerName: string, listener: TListener): void;
+		remove(listenerName: string): void;
+	}
+
+	interface Events {
+		ClientFrameStageNotify: NamedEvent<OnClientFrameStageNotify>;
+		RecordStart: NamedEvent<OnRecordStart>;
+		RecordEnd: NamedEvent<OnRecordEnd>;
+		GameEvent: NamedEvent<OnGameEvent>;
+		CViewRenderSetupView: NamedEvent<OnCViewRenderSetupViewEvent>;
+		AddEntity: NamedEvent<OnEntityEvent>;
+		RemoveEntity: NamedEvent<OnEntityEvent>;
+	}
 
 	/**
 	 * An entity reference.
