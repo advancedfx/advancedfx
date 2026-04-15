@@ -2,6 +2,9 @@ mod advancedfx;
 
 use core::ffi::c_char;
 use core::ffi::CStr;
+
+use std::collections::HashMap;
+
 use std::ffi::c_float;
 use std::ffi::c_void;
 
@@ -714,10 +717,20 @@ impl AfxSimpleJobExecutor {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+struct MirvOnGameEventEmptyChanged {
+}
+
+impl advancedfx::js::events::EventSourceEmptyChanged for MirvOnGameEventEmptyChanged {
+    fn notify(&mut self, _source: &mut advancedfx::js::events::EventSource, value: bool) {
+        afx_enable_on_game_event(value);
+    }
+}
+
 struct MirvEvents {
     on_record_start: RefCell<Option<JsObject>>,
     on_record_end: RefCell<Option<JsObject>>,
-    on_game_event: RefCell<Option<JsObject>>,
+    _on_game_event_empty_changed: Rc<RefCell<MirvOnGameEventEmptyChanged>>,
+    on_game_event: advancedfx::js::events::EventSourceContainer,
     on_c_view_render_setup_view: RefCell<Option<JsObject>>,
     on_client_frame_stage_notify: RefCell<Option<JsObject>>,
     on_add_entity: RefCell<Option<JsObject>>,
@@ -725,17 +738,32 @@ struct MirvEvents {
 }
 
 impl MirvEvents {
-    fn new() -> Self {
+    fn new(context: &mut Context) -> Self {
+
+        context.register_global_class::<advancedfx::js::events::EventSource>()
+        .expect("the AdvancedfxEventSource builtin shouldn't exist");
+
+        let on_game_event_empty_changed = Rc::<RefCell<MirvOnGameEventEmptyChanged>>::new(RefCell::<MirvOnGameEventEmptyChanged>::new(MirvOnGameEventEmptyChanged{}));
+        let mut on_game_event = advancedfx::js::events::EventSource::new();
+        on_game_event.set_on_empty_changed(Some(Rc::<RefCell<MirvOnGameEventEmptyChanged>>::downgrade(&on_game_event_empty_changed)));
+
         Self {
             on_record_start: RefCell::<Option<JsObject>>::new(None),
             on_record_end: RefCell::<Option<JsObject>>::new(None),
-            on_game_event: RefCell::<Option<JsObject>>::new(None),
+            _on_game_event_empty_changed: on_game_event_empty_changed,
+            on_game_event: advancedfx::js::events::EventSourceContainer::new(on_game_event, context),
             on_c_view_render_setup_view: RefCell::<Option<JsObject>>::new(None),
             on_client_frame_stage_notify: RefCell::<Option<JsObject>>::new(None),
             on_add_entity: RefCell::<Option<JsObject>>::new(None),
             on_remove_entity: RefCell::<Option<JsObject>>::new(None),
         }
-    }    
+    }
+
+    fn make_object(&self, context: &mut Context) -> JsObject {
+        ObjectInitializer::new(context)
+        .property(js_string!("onGameEvent"), self.on_game_event.outer_clone(), Attribute::all())
+        .build()
+    }
 }
 
 pub struct AfxHookSource2Rs<'a> {
@@ -1302,20 +1330,74 @@ fn mirv_get_on_record_end(this: &JsValue, _args: &[JsValue], context: &mut Conte
     Err(advancedfx::js::errors::error_type(context).into())
 }
 
+
+#[derive(Clone, Trace, Finalize, JsData)]
+struct MirvOnGameEvent {    
+    callback: JsObject
+}
+
+impl MirvOnGameEvent {
+    pub fn new(callback: JsObject) -> Self {
+        Self {
+            callback: callback
+        }
+    }
+}
+
+const MIRV_ON_GAME_EVENT_STR: &'static str = "AdvancedfxMirv.onGameEvent";
+
+fn mirv_on_game_event_fn(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+    if let Some(object) = this.as_object() {
+        if let Some(mirv_on_game_event) = object.downcast_ref::<MirvOnGameEvent>() {
+            if 1 <= args.len() {
+                let arg0 = &args[0];
+                if let Some(object) = arg0.as_object() {
+                    if let Ok(name) = object.get(js_string!("name"), context) {
+                        if let Ok(id) = object.get(js_string!("id"), context) {
+                            if let Ok(data) = object.get(js_string!("data"), context) {
+                                let event_args = ObjectInitializer::new(context)
+                                    .property(js_string!("name"), name, Attribute::all())
+                                    .property(js_string!("id"), id, Attribute::all())
+                                    .property(js_string!("data"), data, Attribute::all())
+                                    .build();
+
+                                if let Err(e) = mirv_on_game_event.callback.call(&js_value!(mirv_on_game_event.callback.clone()), &[js_value!(event_args)], context) {
+                                    return Err(e);
+                                }
+
+                                return Ok(JsValue::undefined());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Err(advancedfx::js::errors::error_type(context).into())
+}
+
 fn mirv_set_on_game_event(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
     if let Some(object) = this.as_object() {
         if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
             if 0 < args.len() {
+                let string_mirv_on_game_event_str = MIRV_ON_GAME_EVENT_STR.to_string();
                 match &args[0].variant() {
                     JsVariant::Undefined => {
-                        mirv.events.on_game_event.replace(None);
-                        afx_enable_on_game_event(false);
+                        mirv.events.on_game_event.inner_mut().off(string_mirv_on_game_event_str, Some(-1.0));
                         return Ok(JsValue::undefined()); 
                     }
                     JsVariant::Object(object) => {
                         if object.is_callable() {
-                            mirv.events.on_game_event.replace(Some(object.clone()));
-                            afx_enable_on_game_event(true);
+                            mirv.events.on_game_event.inner_mut().on(
+                                string_mirv_on_game_event_str,
+                                ObjectInitializer::with_native_data::<MirvOnGameEvent>(MirvOnGameEvent::new(object.clone()), context)
+                                    .function(
+                                        NativeFunction::from_fn_ptr(mirv_on_game_event_fn),
+                                        js_string!("Call"),
+                                        0,
+                                    ).build(),
+                                Some(-1.0)
+                            );
                             return Ok(JsValue::undefined()); 
                         }
                     }
@@ -1331,14 +1413,13 @@ fn mirv_set_on_game_event(this: &JsValue, args: &[JsValue], context: &mut Contex
 fn mirv_get_on_game_event(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
     if let Some(object) = this.as_object() {
         if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
-            match & *mirv.events.on_game_event.borrow() {
-                None => {
-                    return Ok(JsValue::undefined());
-                }
-                Some(js_object) => {
-                    return Ok(js_value!(js_object.clone()));
+            let string_mirv_on_game_event_str = MIRV_ON_GAME_EVENT_STR.to_string();
+            if let Some(js_object) = mirv.events.on_game_event.inner_ref().get(string_mirv_on_game_event_str, -1.0) {
+                if let Some(mirv_on_game_event) = js_object.downcast_ref::<MirvOnGameEvent>() {
+                    return Ok(js_value!(mirv_on_game_event.callback.clone()));
                 }
             }
+            return Ok(JsValue::undefined());
         }
     }
     Err(advancedfx::js::errors::error_type(context).into())
@@ -2534,7 +2615,7 @@ impl<'a> AfxHookSource2Rs<'a> {
         ConCommandsArgs::add_to_context(&mut context);
         ConCommandBox::add_to_context(&mut context);
 
-        let events = Rc::<MirvEvents>::new(MirvEvents::new());
+        let events = Rc::<MirvEvents>::new(MirvEvents::new(&mut context));
 
         let mirv = MirvStruct {
             events: Rc::clone(&events),
@@ -2555,6 +2636,8 @@ impl<'a> AfxHookSource2Rs<'a> {
         let fn_mirv_get_on_add_entity = NativeFunction::from_fn_ptr(mirv_get_on_add_entity).to_js_function(context.realm());
         let fn_mirv_set_on_remove_entity = NativeFunction::from_fn_ptr(mirv_set_on_remove_entity).to_js_function(context.realm());
         let fn_mirv_get_on_remove_entity = NativeFunction::from_fn_ptr(mirv_get_on_remove_entity).to_js_function(context.realm());
+
+        let events_object = events.make_object(&mut context);
       
         let object = ObjectInitializer::with_native_data::<MirvStruct>(mirv, &mut context)
         .function(
@@ -2703,7 +2786,9 @@ impl<'a> AfxHookSource2Rs<'a> {
             NativeFunction::from_fn_ptr(mirv_trace),
             js_string!("trace"),
             0,
-        )        
+        )
+        .property(js_string!("events"), events_object, Attribute::all())
+
         .build();
 
         context
@@ -2855,22 +2940,21 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_record_end<'a>(this_ptr: *mut Af
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn afx_hook_source2_rs_on_game_event<'a>(this_ptr: *mut AfxHookSource2Rs<'a>, event_name: *const c_char, event_id: i32, json: *const c_char) {
     let context = (*afx_hooks_source_2_rs_ptr_to_ref(this_ptr).context).get();
-    let borrowed = afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.on_game_event.borrow();
-    let event_option_clone = borrowed.clone();
-    std::mem::drop(borrowed);
-    if let Some(event_clone) = event_option_clone {
-        let str_event_name = unsafe{CStr::from_ptr(event_name)}.to_str().unwrap();
-        let str_json = unsafe{CStr::from_ptr(json)}.to_str().unwrap();
 
-        let js_object = ObjectInitializer::new(context)
-        .property(js_string!("name"), js_value!(js_string!(str_event_name)), Attribute::all())
-        .property(js_string!("id"), js_value!(event_id), Attribute::all())
-        .property(js_string!("data"), js_value!(js_string!(str_json)), Attribute::all())
-        .build();
+    let str_event_name = unsafe{CStr::from_ptr(event_name)}.to_str().unwrap();
+    let str_json = unsafe{CStr::from_ptr(json)}.to_str().unwrap();
 
-        if let Err(e) = event_clone.call(&JsValue::undefined(), &[js_value!(js_object)], context) {
-            let _ = afx_on_error(&e, context);
-        }
+    if let Err(e) = advancedfx::js::events::EventSource::dispatch(
+        &afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.on_game_event.inner_ref(),
+        context,
+        JsValue::undefined(),
+        HashMap::from([
+            (js_string!("name"), js_value!(js_string!(str_event_name))),
+            (js_string!("id"),  js_value!(event_id)),
+            (js_string!("data"), js_value!(js_string!(str_json)))
+        ])
+    ) {
+        let _ = afx_on_error(&e, context);
     }
 }
 
