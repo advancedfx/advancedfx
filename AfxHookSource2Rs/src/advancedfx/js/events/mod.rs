@@ -10,6 +10,9 @@ use boa_engine::Trace;
 use boa_engine::boa_class;
 use boa_engine::class::Class;
 use boa_engine::js_value;
+use boa_engine::object::builtins::JsArray;
+use boa_engine::object::builtins::JsFunction;
+use boa_engine::object::builtins::JsMap;
 use boa_engine::object::Ref;
 use boa_engine::object::RefMut;
 use boa_engine::property::Attribute;
@@ -19,6 +22,17 @@ use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::rc::Weak;
 use std::vec::Vec;
+
+pub fn register_global_classes(context: &mut Context) {
+        context.register_global_class::<Event>()
+        .expect("the AdvancedfxEvent builtin shouldn't exist");
+
+        context.register_global_class::<EventListener>()
+        .expect("the AdvancedfxEventListener builtin shouldn't exist");
+
+        context.register_global_class::<EventSource>()
+        .expect("the AdvancedfxEventSource builtin shouldn't exist");    
+}
 
 #[derive(Clone, Trace, Finalize, JsData)]
 pub struct Event {
@@ -59,9 +73,32 @@ impl Event {
     }
 }
 
+#[derive(Clone, Trace, Finalize, JsData)]
 pub struct EventListener {
     name: String,
-    callback: JsObject
+    callback: JsFunction
+}
+
+#[boa_class(rename="AdvancedfxEventListener")]
+impl EventListener {
+    #[boa(constructor)]
+    pub fn new(name: String, callback: JsFunction) -> Self {
+        Self {
+            name: name,
+            callback: callback
+        }
+    }
+    #[boa(getter)]
+    #[boa(rename="name")]
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
+    #[boa(getter)]
+    #[boa(rename="callback")]
+    pub fn get_callback(&self) -> JsFunction {
+        self.callback.clone()
+    }
 }
 
 pub trait EventSourceEmptyChanged {
@@ -101,28 +138,7 @@ impl EventSource {
         self.on_empty_changed = value;
     }
 
-
-    pub fn get(&self, name: String, f_priority: f64) -> Option<JsObject> {
-        let priority = EventPriority(f_priority);
-        if let Some(listener_vec) = self.listeners.get(&priority) {
-            if let Some(listener) = listener_vec.iter().find(|&listener| listener.name == name) {
-                    return Some(listener.callback.clone());
-            }
-        }        
-        None 
-    }
-
-    pub fn get_callbacks(&self) -> Vec<JsObject> {
-        let mut result = Vec::<JsObject>::new();
-        for listener_vec in self.listeners.values() {
-            for listener in listener_vec {
-                result.push(listener.callback.clone());
-            }
-        }
-        return result;
-    }
-
-    pub fn dispatch(source: &EventSource, context: &mut boa_engine::Context, default_result: JsValue, properties: HashMap<JsString,JsValue>) -> JsResult<JsValue> {
+    pub fn dispatch(source_ref: Ref<'_, EventSource>, context: &mut boa_engine::Context, default_result: JsValue, properties: HashMap<JsString,JsValue>) -> JsResult<JsValue> {
         match Event::from_data(Event::new(default_result), context) {
             Ok(event) => {
                 let attribute = Attribute::all();
@@ -134,9 +150,10 @@ impl EventSource {
                         .configurable(attribute.configurable());
                     let _ = event.insert_property(k,property);
                 }
-                let callbacks = source.get_callbacks();
+                let callbacks = source_ref.get_callbacks();
+                drop(source_ref);
                 for callback in callbacks {
-                    let result = callback.call(&js_value!(callback.clone()), &[js_value!(event.clone())], context);
+                    let result = callback.call(&JsValue::undefined(), &[js_value!(event.clone())], context);
                     match result {
                         Ok(val) =>{
                             match val.variant() {
@@ -163,7 +180,17 @@ impl EventSource {
                 return Err(e);
             }
         }  
-    }     
+    }
+    
+    pub fn get_callbacks(&self) -> Vec<JsFunction> {
+        let mut result = Vec::<JsFunction>::new();
+        for listener_vec in self.listeners.values() {
+            for listener in listener_vec {
+                result.push(listener.callback.clone());
+            }
+        }
+        return result;
+    }
 }
 
 #[boa_class(rename="AdvancedfxEventSource")]
@@ -177,10 +204,46 @@ impl EventSource {
         }
     }
 
-    pub fn on(&mut self, name: String, callback: JsObject, priority_opt: Option<f64>) -> Option<JsObject> {
+    #[boa(rename="get")]
+    pub fn get(&self, context: &mut Context, name_opt: Option<String>, priority_opt: Option<f64>) -> JsMap {
+        let map = JsMap::new(context);
+        if let Some(f_priority) = priority_opt {
+            let priority = EventPriority(f_priority);
+            let arr = JsArray::new(context);
+            if let Some(listener_vec) = self.listeners.get(&priority) {
+                if let Some(name) = name_opt {
+                    if let Some(listener) = listener_vec.iter().find(|&listener| listener.name == name) {
+                        let _ = arr.push(js_value!(EventListener::from_data(listener.clone(), context).unwrap()), context);
+                    }
+                } else {
+                    for listener in listener_vec {
+                        let _ = arr.push(js_value!(EventListener::from_data(listener.clone(), context).unwrap()), context);
+                    }                    
+                }
+                let _ = map.set(js_value!(priority.0), arr, context);
+            }
+        } else {
+            for (priority,listener_vec) in self.listeners.iter() {
+                let arr = JsArray::new(context);
+                if let Some(ref name) = name_opt {
+                    if let Some(listener) = listener_vec.iter().find(|&listener| listener.name == *name) {
+                        let _ = arr.push(js_value!(EventListener::from_data(listener.clone(), context).unwrap()), context);
+                    }
+                } else {
+                    for listener in listener_vec {
+                        let _ = arr.push(js_value!(EventListener::from_data(listener.clone(), context).unwrap()), context);
+                    }                    
+                }
+                let _ = map.set(js_value!(priority.0), arr, context);
+            }
+        }
+        return map;
+    }
+
+    pub fn on(&mut self, name: String, callback: JsFunction, priority_opt: Option<f64>) -> Option<JsFunction> {
         let priority = EventPriority(priority_opt.unwrap_or(0.0));
         if let Some(listener_vec) = self.listeners.get_mut(&priority) {
-            let mut last: Option<JsObject> = None;
+            let mut last: Option<JsFunction> = None;
             listener_vec.retain(|listener| {
                 if listener.name == name {
                     last = Some(listener.callback.clone());
@@ -197,7 +260,12 @@ impl EventSource {
 
         let was_empty = self.listeners.is_empty();
 
-        self.listeners.insert(priority, Vec::<EventListener>::new());
+        let mut listener_vec = Vec::<EventListener>::new();
+        listener_vec.push(EventListener{
+            name: name,
+            callback: callback
+        });        
+        self.listeners.insert(priority, listener_vec);
 
         if was_empty {
             if let Some(on_empty_changed) = &self.on_empty_changed {
@@ -210,9 +278,9 @@ impl EventSource {
         None
     }
 
-    pub fn off(&mut self, name: String, priority_opt: Option<f64>) -> Option<JsObject> {
+    pub fn off(&mut self, name: String, priority_opt: Option<f64>) -> Option<JsFunction> {
         let priority = EventPriority(priority_opt.unwrap_or(0.0));
-        let mut last: Option<JsObject> = None;
+        let mut last: Option<JsFunction> = None;
         let mut listener_vec_empty = false;
         if let Some(listener_vec) = self.listeners.get_mut(&priority) {
             listener_vec.retain(|listener| {
