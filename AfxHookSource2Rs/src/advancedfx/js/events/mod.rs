@@ -205,39 +205,39 @@ impl EventSource {
     }
 
     #[boa(rename="get")]
-    pub fn get(&self, context: &mut Context, name_opt: Option<String>, priority_opt: Option<f64>) -> JsMap {
+    pub fn get(&self, context: &mut Context, name_opt: Option<String>, priority_opt: Option<f64>) -> JsResult<JsMap> {
         let map = JsMap::new(context);
         if let Some(f_priority) = priority_opt {
             let priority = EventPriority(f_priority);
-            let arr = JsArray::new(context);
+            let arr = JsArray::new(context)?;
             if let Some(listener_vec) = self.listeners.get(&priority) {
                 if let Some(name) = name_opt {
                     if let Some(listener) = listener_vec.iter().find(|&listener| listener.name == name) {
-                        let _ = arr.push(js_value!(EventListener::from_data(listener.clone(), context).unwrap()), context);
+                        arr.push(js_value!(EventListener::from_data(listener.clone(), context).unwrap()), context)?;
                     }
                 } else {
                     for listener in listener_vec {
-                        let _ = arr.push(js_value!(EventListener::from_data(listener.clone(), context).unwrap()), context);
+                        arr.push(js_value!(EventListener::from_data(listener.clone(), context).unwrap()), context)?;
                     }                    
                 }
-                let _ = map.set(js_value!(priority.0), arr, context);
+                map.set(js_value!(priority.0), arr, context)?;
             }
         } else {
             for (priority,listener_vec) in self.listeners.iter() {
-                let arr = JsArray::new(context);
+                let arr = JsArray::new(context)?;
                 if let Some(ref name) = name_opt {
                     if let Some(listener) = listener_vec.iter().find(|&listener| listener.name == *name) {
-                        let _ = arr.push(js_value!(EventListener::from_data(listener.clone(), context).unwrap()), context);
+                        arr.push(js_value!(EventListener::from_data(listener.clone(), context).unwrap()), context)?;
                     }
                 } else {
                     for listener in listener_vec {
-                        let _ = arr.push(js_value!(EventListener::from_data(listener.clone(), context).unwrap()), context);
+                        arr.push(js_value!(EventListener::from_data(listener.clone(), context).unwrap()), context)?;
                     }                    
                 }
-                let _ = map.set(js_value!(priority.0), arr, context);
+                map.set(js_value!(priority.0), arr, context)?;
             }
         }
-        return map;
+        return Ok(map);
     }
 
     pub fn on(&mut self, name: String, callback: JsFunction, priority_opt: Option<f64>) -> Option<JsFunction> {

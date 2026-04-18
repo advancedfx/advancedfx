@@ -2,20 +2,24 @@ mod advancedfx;
 
 use boa_engine::object::builtins::JsFunction;
 
-use core::ffi::c_char;
 use core::ffi::CStr;
+use core::ffi::c_char;
 
+use rustc_hash::FxHashMap;
+
+use std::borrow::Borrow;
+use std::cell::RefCell;
 use std::collections::HashMap;
-
 use std::ffi::c_float;
 use std::ffi::c_void;
-
-use std::cell::RefCell;
 use std::future::Future;
 use std::rc::Rc;
 use std::rc::Weak;
 use std::path::Path;
 use std::path::PathBuf;
+use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
 
 use boa_gc::GcRefCell;
 use boa_engine::{
@@ -47,8 +51,10 @@ use boa_engine::{
         Job
     },
     module::{
+        ImportAttribute,
         ModuleLoader,
         Referrer,
+        ModuleRequest,
         resolve_module_specifier
     },
     Module,
@@ -66,8 +72,6 @@ use boa_runtime::{
     ConsoleState,
     Logger
 };
-
-use std::borrow::Borrow;
 
 use futures::SinkExt;
 use futures::StreamExt;
@@ -438,15 +442,45 @@ impl Class for ConCommandBox {
 
 
 ////////////////////////////////////////////////////////////////////////////////
+//
+// AfxSimpleModuleLoader
+//
+// Based on boad-dev pre-1.0 GitHub: https://github.com/boa-dev/boa/blob/da570fd74bb6cd5b0fc01363451eb710b7ab5a0c/core/engine/src/module/loader/mod.rs
+// Might need updating for newer BoaJS versions!
+//
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+struct AfxModuleCacheKey {
+    path: PathBuf,
+    attributes: Box<[ImportAttribute]>,
+}
+
+impl AfxModuleCacheKey {
+    fn new(path: PathBuf, attributes: &[ImportAttribute]) -> Self {
+        let mut attributes = attributes.to_vec();
+        attributes.sort_unstable_by(|left, right| left.key().cmp(right.key()));
+        Self {
+            path,
+            attributes: attributes.into_boxed_slice(),
+        }
+    }
+}
+
+/// A simple module loader that loads modules relative to a root path.
+///
+/// # Note
+///
+/// This loader only works by using the type methods [`AfxSimpleModuleLoader::insert`] and
+/// [`AfxSimpleModuleLoader::get`]. The utility methods on [`ModuleLoader`] don't work at the moment,
+/// but we'll unify both APIs in the future.
 #[derive(Debug)]
 pub struct AfxSimpleModuleLoader {
-    module_map: GcRefCell<std::collections::HashMap<PathBuf, Module>>,
+    module_map: GcRefCell<FxHashMap<AfxModuleCacheKey, Module>>,
 }
 
 impl AfxSimpleModuleLoader {
-    /// Creates a new `AfxSimpleModuleLoader`
-    pub fn new() -> AfxSimpleModuleLoader {
+    /// Creates a new `AfxSimpleModuleLoader` from a root module path.
+    pub fn new() -> Self {
         Self {
             module_map: GcRefCell::default(),
         }
@@ -455,13 +489,39 @@ impl AfxSimpleModuleLoader {
     /// Inserts a new module onto the module map.
     #[inline]
     pub fn insert(&self, path: PathBuf, module: Module) {
-        self.module_map.borrow_mut().insert(path, module);
+        self.insert_with_attributes(path, &[], module);
+    }
+
+    /// Inserts a new module onto the module map with the given attributes.
+    #[inline]
+    pub fn insert_with_attributes(
+        &self,
+        path: PathBuf,
+        attributes: &[ImportAttribute],
+        module: Module,
+    ) {
+        self.module_map
+            .borrow_mut()
+            .insert(AfxModuleCacheKey::new(path, attributes), module);
     }
 
     /// Gets a module from its original path.
     #[inline]
     pub fn get(&self, path: &Path) -> Option<Module> {
-        self.module_map.borrow().get(path).cloned()
+        self.get_with_attributes(path, &[])
+    }
+
+    /// Gets a module from its original path and attributes.
+    #[inline]
+    pub fn get_with_attributes(
+        &self,
+        path: &Path,
+        attributes: &[ImportAttribute],
+    ) -> Option<Module> {
+        self.module_map
+            .borrow()
+            .get(&AfxModuleCacheKey::new(path.to_path_buf(), attributes))
+            .cloned()
     }
 }
 
@@ -469,28 +529,89 @@ impl ModuleLoader for AfxSimpleModuleLoader {
     fn load_imported_module(
         self: Rc<Self>,
         referrer: Referrer,
-        specifier: JsString,
+        request: ModuleRequest,
         context: &RefCell<&mut Context>,
     ) -> impl Future<Output = JsResult<Module>> {
         let result = (|| {
-            let short_path = specifier.to_std_string_escaped();
-            let path =
-                resolve_module_specifier(None, &specifier, referrer.path(), &mut context.borrow_mut())?;
-            if let Some(module) = self.get(&path) {
+            let short_path = request.specifier().to_std_string_escaped();
+            let path = resolve_module_specifier(
+                None,
+                request.specifier(),
+                referrer.path(),
+                &mut context.borrow_mut(),
+            )?;
+
+            if let Some(module) = self.get_with_attributes(&path, request.attributes()) {
                 return Ok(module);
             }
 
-            let source = Source::from_filepath(&path).map_err(|err| {
-                JsNativeError::typ()
-                    .with_message(format!("could not open file `{short_path}`"))
-                    .with_cause(JsError::from_opaque(js_string!(err.to_string()).into()))
-            })?;
-            let module = Module::parse(source, None, &mut context.borrow_mut()).map_err(|err| {
-                JsNativeError::syntax()
-                    .with_message(format!("could not parse module `{short_path}`"))
-                    .with_cause(err)
-            })?;
-            self.insert(path, module.clone());
+            // Check for import attribute type
+            let mut module_type = None;
+            let type_key = js_string!("type");
+            for attr in request.attributes() {
+                if attr.key() == &type_key {
+                    module_type = Some(attr.value());
+                }
+            }
+
+            if path
+                .extension()
+                .is_some_and(|ext| ext.to_string_lossy() == "json")
+            {
+                let is_json_type = module_type.is_some_and(|t| t == &js_string!("json"));
+                if !is_json_type {
+                    return Err(JsNativeError::typ()
+                        .with_message(format!(
+                            "module `{short_path}` needs an import attribute of type \"json\""
+                        ))
+                        .into());
+                }
+            }
+            let module = if let Some(ty) = module_type {
+                // Handle different module types based on the type attribute
+                match ty.to_std_string_escaped().as_str() {
+                    "json" => {
+                        // Load and parse as JSON module
+                        let json_content = std::fs::read_to_string(&path).map_err(|err| {
+                            JsNativeError::typ()
+                                .with_message(format!("could not open file `{short_path}`"))
+                                .with_cause(JsError::from_rust(err))
+                        })?;
+                        let json_string = js_string!(json_content.as_str());
+                        Module::parse_json(json_string, &mut context.borrow_mut()).map_err(
+                            |err| {
+                                JsNativeError::syntax()
+                                    .with_message(format!(
+                                        "could not parse JSON module `{short_path}`"
+                                    ))
+                                    .with_cause(err)
+                            },
+                        )?
+                    }
+                    other => {
+                        // Unknown module type
+                        return Err(JsNativeError::typ()
+                            .with_message(format!(
+                                "unsupported module type `{other}` for module `{short_path}`"
+                            ))
+                            .into());
+                    }
+                }
+            } else {
+                // No type attribute, load as regular JavaScript module
+                let source = Source::from_filepath(&path).map_err(|err| {
+                    JsNativeError::typ()
+                        .with_message(format!("could not open file `{short_path}`"))
+                        .with_cause(JsError::from_rust(err))
+                })?;
+                Module::parse(source, None, &mut context.borrow_mut()).map_err(|err| {
+                    JsNativeError::syntax()
+                        .with_message(format!("could not parse module `{short_path}`"))
+                        .with_cause(err)
+                })?
+            };
+
+            self.insert_with_attributes(path, request.attributes(), module.clone());
             Ok(module)
         })();
 
@@ -499,6 +620,12 @@ impl ModuleLoader for AfxSimpleModuleLoader {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+//
+// AfxSimpleJobExecutor
+//
+// Based on boad-dev pre-1.0 GitHub: https://github.com/boa-dev/boa/blob/da570fd74bb6cd5b0fc01363451eb710b7ab5a0c/core/engine/src/job.rs
+// Might need updating for newer BoaJS versions!
+//
 
 use boa_engine::job::BoxedFuture;
 use futures_concurrency::future::FutureGroup;
@@ -509,15 +636,15 @@ use futures_concurrency::future::FutureGroup;
 /// for a custom event loop.
 ///
 /// To disable running promise jobs on the engine, see [`IdleJobExecutor`].
-#[allow(clippy::struct_field_names)]
 #[derive(Default)]
 pub struct AfxSimpleJobExecutor {
     promise_jobs: RefCell<VecDeque<PromiseJob>>,
     async_jobs: RefCell<VecDeque<NativeAsyncJob>>,
-    timeout_jobs: RefCell<BTreeMap<JsInstant, TimeoutJob>>,
+    finalization_registry_jobs: RefCell<VecDeque<NativeAsyncJob>>,
+    timeout_jobs: RefCell<BTreeMap<JsInstant, Vec<TimeoutJob>>>,
     generic_jobs: RefCell<VecDeque<GenericJob>>,
+    stop: Arc<AtomicBool>,
 }
-
 
 impl AfxSimpleJobExecutor {
     fn clear(&self) {
@@ -540,6 +667,21 @@ impl AfxSimpleJobExecutor {
     pub fn new() -> Self {
         Self::default()
     }
+
+    /// Gets the cancellation token for this executor.
+    ///
+    /// Setting the signal to `true` will exit the inner event loop and
+    /// stop executing any pending jobs.
+    pub fn get_cancellation_token(&self) -> Arc<AtomicBool> {
+        Arc::clone(&self.stop)
+    }
+
+    pub(crate) fn is_empty(&self) -> bool {
+        self.promise_jobs.borrow().is_empty()
+            && self.async_jobs.borrow().is_empty()
+            && self.generic_jobs.borrow().is_empty()
+            && self.timeout_jobs.borrow().is_empty()
+    }
 }
 
 impl JobExecutor for AfxSimpleJobExecutor {
@@ -549,10 +691,17 @@ impl JobExecutor for AfxSimpleJobExecutor {
             Job::AsyncJob(a) => self.async_jobs.borrow_mut().push_back(a),
             Job::TimeoutJob(t) => {
                 let now = context.clock().now();
-                self.timeout_jobs.borrow_mut().insert(now + t.timeout(), t);
+                self.timeout_jobs
+                    .borrow_mut()
+                    .entry(now + t.timeout())
+                    .or_default()
+                    .push(t);
             }
             Job::GenericJob(g) => self.generic_jobs.borrow_mut().push_back(g),
-            _ => todo!(),
+            Job::FinalizationRegistryCleanupJob(fr) => {
+                self.finalization_registry_jobs.borrow_mut().push_back(fr);
+            },
+            _ => todo!()
         }
     }
 
@@ -565,45 +714,61 @@ impl JobExecutor for AfxSimpleJobExecutor {
         Self: Sized,
     {
         let mut group = FutureGroup::new();
+        let mut fr_group = FutureGroup::new();
         loop {
+            if self.stop.load(Ordering::Relaxed) {
+                self.stop.store(false, Ordering::Relaxed);
+                self.clear();
+                return Ok(());
+            }
+
             for job in mem::take(&mut *self.async_jobs.borrow_mut()) {
                 group.insert(job.call(context));
             }
 
-            // There are no timeout jobs to run IIF there are no jobs to execute right now.
-            let no_timeout_jobs_to_run = {
-                let now = context.borrow().clock().now();
-                !self.timeout_jobs.borrow().iter().any(|(t, _)| &now >= t)
-            };
+            for job in mem::take(&mut *self.finalization_registry_jobs.borrow_mut()) {
+                fr_group.insert(job.call(context));
+            }
 
-            if self.promise_jobs.borrow().is_empty()
-                && self.async_jobs.borrow().is_empty()
-                && self.generic_jobs.borrow().is_empty()
-                && no_timeout_jobs_to_run
-                && group.is_empty()
+            // Dispatch all past-due timeout jobs before the termination check.
             {
-                break;
+                let now = context.borrow().clock().now();
+                let jobs_to_run = {
+                    let mut timeout_jobs = self.timeout_jobs.borrow_mut();
+                    let mut jobs_to_keep = timeout_jobs.split_off(&now);
+                    jobs_to_keep.retain(|_, jobs| {
+                        jobs.retain(|job| !job.cancelled());
+                        !jobs.is_empty()
+                    });
+                    mem::replace(&mut *timeout_jobs, jobs_to_keep)
+                };
+
+                for jobs in jobs_to_run.into_values() {
+                    for job in jobs {
+                        if !job.cancelled()
+                            && let Err(err) = job.call(&mut context.borrow_mut())
+                        {
+                            self.clear();
+                            return Err(err);
+                        }
+                    }
+                }
+            }
+
+            if self.is_empty() && group.is_empty() {
+                match future::poll_once(fr_group.next()).await.flatten() {
+                    Some(Err(err)) => {
+                        self.clear();
+                        return Err(err);
+                    }
+                    _ if !self.is_empty() => {}
+                    _ => break,
+                }
             }
 
             if let Some(Err(err)) = future::poll_once(group.next()).await.flatten() {
                 self.clear();
                 return Err(err);
-            }
-
-            {
-                let now = context.borrow().clock().now();
-                let mut timeouts_borrow = self.timeout_jobs.borrow_mut();
-                let mut jobs_to_keep = timeouts_borrow.split_off(&now);
-                jobs_to_keep.retain(|_, job| !job.is_cancelled());
-                let jobs_to_run = mem::replace(&mut *timeouts_borrow, jobs_to_keep);
-                drop(timeouts_borrow);
-
-                for job in jobs_to_run.into_values() {
-                    if let Err(err) = job.call(&mut context.borrow_mut()) {
-                        self.clear();
-                        return Err(err);
-                    }
-                }
             }
 
             let jobs = mem::take(&mut *self.promise_jobs.borrow_mut());
@@ -630,13 +795,26 @@ impl JobExecutor for AfxSimpleJobExecutor {
 }
 
 impl AfxSimpleJobExecutor {
-    async fn afx_run_jobs_async<'a>(self: Rc<Self>, context: &mut Context, group: &mut FutureGroup<BoxedFuture<'a>>) -> JsResult<()>
+    async fn afx_run_jobs_async<'a>(self: Rc<Self>, context: &RefCell<&mut Context>, group: &mut FutureGroup<BoxedFuture<'a>>, fr_group: &mut FutureGroup<BoxedFuture<'a>>) -> JsResult<()>
     where
         Self: Sized,
     {
+        let mut done = false;
         loop {
+            if self.stop.load(Ordering::Relaxed) {
+                self.stop.store(false, Ordering::Relaxed);
+                self.clear();
+                return Ok(());
+            }
+
+            if done {
+                break;
+            }
+
+            done = true;
+
             for job in mem::take(&mut *self.async_jobs.borrow_mut()) {
-                let context_weak_ref = advancedfx::js::ContextRef::get_from_context_weak(context);
+                let context_weak_ref = advancedfx::js::ContextRef::get_from_context_weak(&context.borrow());
                 let closure = async move || {
                     if let Some(context_ref) = context_weak_ref.upgrade() {
                         let context = (*context_ref).get();
@@ -651,49 +829,76 @@ impl AfxSimpleJobExecutor {
                 group.insert(Box::pin(closure()));
             }
 
-            // There are no timeout jobs to run IIF there are no jobs to execute right now.
-            let no_timeout_jobs_to_run = {
-                let now = context.clock().now();
-                !self.timeout_jobs.borrow().iter().any(|(t, _)| &now >= t)
-            };
-
-            if self.promise_jobs.borrow().is_empty()
-                && self.async_jobs.borrow().is_empty()
-                && self.generic_jobs.borrow().is_empty()
-                && no_timeout_jobs_to_run
-                && group.is_empty()
-            {
-                break;
+            for job in mem::take(&mut *self.finalization_registry_jobs.borrow_mut()) {
+                let context_weak_ref = advancedfx::js::ContextRef::get_from_context_weak(&context.borrow());
+                let closure = async move || {
+                    if let Some(context_ref) = context_weak_ref.upgrade() {
+                        let context = (*context_ref).get();
+                        let result = {
+                            let ref_cell = RefCell::<&mut Context>::new(context);
+                            job.call(&ref_cell).await
+                        };
+                        return result;
+                    }
+                    Err(JsError::from_native(JsNativeError::error().with_message("advancedfx::js::BoxedContext is gone")))
+                };
+                fr_group.insert(Box::pin(closure()));
             }
 
-            let mut done = true;
-            if let Some(result) = future::poll_once(group.next()).await.flatten() {
-                done = false;
-                if let Err(err) = result {
-                    self.clear();
-                    return Err(err);
-                }
-            }
-
+            // Dispatch all past-due timeout jobs before the termination check.
             {
-                let now = context.clock().now();
-                let mut timeouts_borrow = self.timeout_jobs.borrow_mut();
-                let mut jobs_to_keep = timeouts_borrow.split_off(&now);
-                jobs_to_keep.retain(|_, job| !job.is_cancelled());
-                let jobs_to_run = mem::replace(&mut *timeouts_borrow, jobs_to_keep);
-                drop(timeouts_borrow);
+                let now = context.borrow().clock().now();
+                let jobs_to_run = {
+                    let mut timeout_jobs = self.timeout_jobs.borrow_mut();
+                    let mut jobs_to_keep = timeout_jobs.split_off(&now);
+                    jobs_to_keep.retain(|_, jobs| {
+                        jobs.retain(|job| !job.cancelled());
+                        !jobs.is_empty()
+                    });
+                    mem::replace(&mut *timeout_jobs, jobs_to_keep)
+                };
 
-                for job in jobs_to_run.into_values() {
-                    if let Err(err) = job.call(context) {
-                        self.clear();
-                        return Err(err);
+                for jobs in jobs_to_run.into_values() {
+                    for job in jobs {
+                        if !job.cancelled()
+                            && let Err(err) = job.call(&mut context.borrow_mut())
+                        {
+                            self.clear();
+                            return Err(err);
+                        }
                     }
                 }
             }
 
+            if self.is_empty() && group.is_empty() {
+                match future::poll_once(fr_group.next()).await.flatten() {
+                    Some(result) => {
+                        if let Err(err) = result {
+                            self.clear();
+                            return Err(err);
+                        }
+                        if self.is_empty() {
+                            break;
+                        }
+                        done = false;
+                    }
+                    _ if !self.is_empty() => {
+                    }
+                    _ => break,
+                }
+            }
+
+            if let Some(result) = future::poll_once(group.next()).await.flatten() {
+                if let Err(err) = result {
+                    self.clear();
+                    return Err(err);
+                }
+                done = false;
+            }
+
             let jobs = mem::take(&mut *self.promise_jobs.borrow_mut());
             for job in jobs {
-                if let Err(err) = job.call(context) {
+                if let Err(err) = job.call(&mut context.borrow_mut()) {
                     self.clear();
                     return Err(err);
                 }
@@ -701,16 +906,13 @@ impl AfxSimpleJobExecutor {
 
             let jobs = mem::take(&mut *self.generic_jobs.borrow_mut());
             for job in jobs {
-                if let Err(err) = job.call(context) {
+                if let Err(err) = job.call(&mut context.borrow_mut()) {
                     self.clear();
                     return Err(err);
                 }
             }
-            context.clear_kept_objects();
-
-            if done {
-                break;
-            }
+            context.borrow_mut().clear_kept_objects();
+            future::yield_now().await;            
         }
 
         Ok(())
@@ -770,7 +972,8 @@ impl MirvEvents {
 }
 
 pub struct AfxHookSource2Rs<'a> {
-    future_group: RefCell<FutureGroup<BoxedFuture<'a>>>,
+    jobs_group: RefCell<FutureGroup<BoxedFuture<'a>>>,
+    jobs_fr_group: RefCell<FutureGroup<BoxedFuture<'a>>>,
     context: Rc<advancedfx::js::BoxedContext>,
     events: Rc<MirvEvents>
 }
@@ -1164,7 +1367,7 @@ fn afx_print_error(error: &JsError, indent: usize, context: &mut Context) -> JsR
         let mut s = String::new();
         writeln!(&mut s, "{:>indent$}Uncaught error `{}`","",error).map_err(JsError::from_rust)?;
         afx_warning(s);
-        match &native_error.kind {
+        match &native_error.kind() {
             JsNativeErrorKind::Aggregate(errors) => {
                 for sub_error in errors {
                     afx_print_error(&sub_error, indent+1, context)?;
@@ -2427,7 +2630,7 @@ fn mirv_get_on_remove_entity(this: &JsValue, _args: &[JsValue], context: &mut Co
     Err(advancedfx::js::errors::error_type(context).into())
 }
 
-fn afx_load_module(specifier: &JsString, afx_loader: Rc<AfxSimpleModuleLoader>, context: &mut Context) -> Result<JsPromise,JsError> {
+fn afx_load_module(specifier: &JsString, afx_loader: Rc<AfxSimpleModuleLoader>, context: &mut Context) -> JsResult<JsPromise> {
 
     let referrer = Referrer::Realm(context.realm().clone());  
 
@@ -2459,7 +2662,7 @@ fn afx_load_module(specifier: &JsString, afx_loader: Rc<AfxSimpleModuleLoader>, 
     return Err(advancedfx::js::errors::make_error!(JsNativeError::error(), format!("could not resolve path `{err_path}`"), context).into());
 }
 
-fn afx_load(file_path: &JsString, afx_loader: Rc<AfxSimpleModuleLoader>, context: &mut Context) -> Result<JsPromise,JsError> {
+fn afx_load(file_path: &JsString, afx_loader: Rc<AfxSimpleModuleLoader>, context: &mut Context) -> JsResult<JsPromise> {
 
     if file_path.to_std_string_lossy().ends_with("mjs") {
         return afx_load_module(file_path,afx_loader,context);
@@ -2472,7 +2675,7 @@ fn afx_load(file_path: &JsString, afx_loader: Rc<AfxSimpleModuleLoader>, context
             Ok(js_source) => {
                 match context.eval(js_source) {
                     Ok(res) => {
-                        return Ok(JsPromise::resolve(res,context))
+                        return JsPromise::resolve(res,context);
                     }
                     Err(err) => {
                         return Err(advancedfx::js::errors::make_error!(JsNativeError::syntax(),format!("Error evaluating script `{}`",path.display()),context)
@@ -2785,7 +2988,8 @@ impl<'a> AfxHookSource2Rs<'a> {
         advancedfx::js::ContextRef::add_to_context(boxed_context_rc.clone());
 
         Self {
-            future_group:  RefCell::<FutureGroup::<BoxedFuture<'a>>>::new(FutureGroup::<BoxedFuture<'a>>::new()),
+            jobs_group:  RefCell::<FutureGroup::<BoxedFuture<'a>>>::new(FutureGroup::<BoxedFuture<'a>>::new()),
+            jobs_fr_group:  RefCell::<FutureGroup::<BoxedFuture<'a>>>::new(FutureGroup::<BoxedFuture<'a>>::new()),
             context: boxed_context_rc,
             events: Rc::clone(&events)
         }
@@ -2805,13 +3009,20 @@ pub unsafe extern "C" fn afx_hook_source2_rs_new<'a>() -> * mut AfxHookSource2Rs
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn afx_hook_source2_rs_run_jobs<'a>(this_ptr: *mut AfxHookSource2Rs<'a>) {
     let context = (*afx_hooks_source_2_rs_ptr_to_ref(this_ptr).context).get();
-    let future_group = &mut afx_hooks_source_2_rs_ptr_to_ref(this_ptr).future_group;
+    let jobs_group = &afx_hooks_source_2_rs_ptr_to_ref(this_ptr).jobs_group;
+    let jobs_fr_group = &afx_hooks_source_2_rs_ptr_to_ref(this_ptr).jobs_fr_group;
     let result = future::block_on(context
         .downcast_job_executor::<AfxSimpleJobExecutor>()
         .unwrap()
-        .afx_run_jobs_async(context,&mut future_group.borrow_mut()));
+        .afx_run_jobs_async(
+            &RefCell::<&mut Context>::new(context)
+            , &mut jobs_group.borrow_mut()
+            , &mut jobs_fr_group.borrow_mut()
+        )
+    );
     if let Err(err) = result {
-        let _ = future_group.replace(FutureGroup::<BoxedFuture<'a>>::new()); // Empty the future group on error.
+        let _ = jobs_group.replace(FutureGroup::<BoxedFuture<'a>>::new()); // Empty the jobs_group on error.
+        let _ = jobs_fr_group.replace(FutureGroup::<BoxedFuture<'a>>::new()); // Empty the jobs_fr_group on error.
         let _ = afx_on_error(&err, context);
     }
 }
@@ -2842,46 +3053,45 @@ pub unsafe extern "C" fn afx_hook_source2_rs_execute<'a>(this_ptr: *mut AfxHookS
     };
 }
 
+fn afx_load_and_report_promise(file_path: &JsString, afx_loader: Rc<AfxSimpleModuleLoader>, context: &mut Context) -> JsResult<JsPromise> {
+    afx_load(file_path, afx_loader, context)?
+    .then(
+        Some(
+            NativeFunction::from_fn_ptr(|_, args, context| {
+                if 0 < args.len() {
+                    if let Ok(js_str) = args[0].to_string(context) {
+                        let mut str = js_str.to_std_string_escaped();
+                        str.push_str("\n");
+                        afx_message(str);
+                    }
+                }
+                Ok(JsValue::undefined())
+            })
+            .to_js_function(context.realm()),
+        ),
+        None,
+        context,
+    )?
+    .catch(
+        NativeFunction::from_fn_ptr(|_, args, context| {
+            if 0 < args.len() {
+                let _ = afx_on_error(&JsError::from_opaque(args[0].clone()), context);
+            }
+            Ok(JsValue::undefined())
+        })
+        .to_js_function(context.realm()),
+        context,
+    )
+}
+
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn afx_hook_source2_rs_load<'a>(this_ptr: *mut AfxHookSource2Rs<'a>, file_path: *const c_char) {
     let context = (*afx_hooks_source_2_rs_ptr_to_ref(this_ptr).context).get();
     let loader = context.downcast_module_loader::<AfxSimpleModuleLoader>().unwrap().clone();
     let str_file_path = unsafe{CStr::from_ptr(file_path)}.to_str().unwrap();
     let js_str_path = js_string!(str_file_path);
-    match afx_load(&js_str_path, loader, context) {
-        Ok(promise) => {
-            promise.then(
-                Some(
-                    NativeFunction::from_fn_ptr(|_, args, context| {
-                        if 0 < args.len() {
-                            if let Ok(js_str) = args[0].to_string(context) {
-                                let mut str = js_str.to_std_string_escaped();
-                                str.push_str("\n");
-                                afx_message(str);
-                            }
-                        }
-                        Ok(JsValue::undefined())
-                    })
-                    .to_js_function(context.realm()),
-                ),
-                None,
-                context,
-            )
-            .catch(
-                NativeFunction::from_fn_ptr(|_, args, context| {
-                    if 0 < args.len() {
-                        let _ = afx_on_error(&JsError::from_opaque(args[0].clone()), context);
-                    }
-                    Ok(JsValue::undefined())
-                })
-                .to_js_function(context.realm()),
-                context,
-            );
-            return;
-        }
-        Err(e) => {
-            let _ = afx_on_error(&e, context);
-        }                
+    if let Err(err) = afx_load_and_report_promise(&js_str_path, loader, context) {
+        let _ = afx_on_error(&err, context);
     }
 }
 

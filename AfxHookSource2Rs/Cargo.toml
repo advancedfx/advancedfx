@@ -13,15 +13,15 @@ repository = "https://github.com/advancedfx/advancedfx"
 edition = "2024"
 
 [dependencies]
-boa_engine = "0.21.0"
-boa_gc = "0.21.0"
-boa_runtime = "0.21.0"
-async-std = { version = "1.0", features = ["attributes", "unstable"] }
-async-tungstenite = { version = "0.33.0", features = ["async-std-runtime"] }
+boa_engine = { git = "https://github.com/boa-dev/boa.git", rev = "da570fd74bb6cd5b0fc01363451eb710b7ab5a0c" }
+boa_gc = { git = "https://github.com/boa-dev/boa.git", rev = "da570fd74bb6cd5b0fc01363451eb710b7ab5a0c" }
+boa_runtime = { git = "https://github.com/boa-dev/boa.git", rev = "da570fd74bb6cd5b0fc01363451eb710b7ab5a0c" }
+async-std = { version = "1.13.2", features = ["attributes", "unstable"] }
+async-tungstenite = { version = "0.34.0", features = ["async-std-runtime"] }
 futures = "0.3.32"
-futures-lite = "2.6.1"
-futures-concurrency = "7.6.3"
-smol = "2.0.2"
+futures-lite = "2.6.1" # matches current BoaJS version
+futures-concurrency = "7.7.1" # matches current BoaJS version
+rustc-hash = { version = "2.1.2", default-features = false } # matches current BoaJS version
 
 [profile.release]
 strip = true

@@ -930,7 +930,7 @@ impl Quaternion {
                             let (axis,ang) = object_inner.native.get_ang(value_object_inner.native);
                             match Vector3::from_data(Vector3::new(axis), context) {
                                 Ok(result_object) => {
-                                    let array = JsArray::new(context);
+                                    let array = JsArray::new(context)?;
                                     array.push(js_value!(result_object), context)?;
                                     array.push(js_value!(ang), context)?;
                                     return Ok(js_value!(array));
