@@ -1064,7 +1064,7 @@ void HookClientDll(HMODULE clientDll) {
 
 	*/
 	{
-		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8b 0d ?? ?? ?? ?? 48 8b 01 ff 90 48 01 00 00 0f 57 ff 84 c0 74 63 ba ff ff ff ff");
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8b 0d ?? ?? ?? ?? 48 8b 01 ff 90 50 01 00 00 0f 57 ff 84 c0 74 63 ba ff ff ff ff");
 																	  
 		if (!result.IsEmpty()) {
 			/*

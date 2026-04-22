@@ -442,7 +442,28 @@ CON_COMMAND(mirv_sky, "")
 
 void HookMaterialSystem(HMODULE materialSystemDll) {
 	// 1 xref, called in the middle of 23 function of vtable for CMaterialSystem2
-	if (auto addr = getAddress(materialSystemDll, "e8 ?? ?? ?? ?? 4c 8b f8 4c 8b f6 48 85 c0")) {
+	//
+	// LAB_18003d0a1                                   XREF[1]:     18003d077 (j)   
+    // 18003d0a1 49  8b  d4       MOV        RDX ,R12
+    // 18003d0a4 48  8b  cd       MOV        RCX ,RBP
+    // 18003d0a7 e8  84  4d       CALL       FUN_180011e30 <------
+    //           fd  ff
+    // 18003d0ac 4c  8b  e8       MOV        R13 ,RAX
+    // 18003d0af 4c  8b  fd       MOV        R15 ,RBP
+    // 18003d0b2 48  85  c0       TEST       RAX ,RAX
+    // 18003d0b5 0f  84  16       JZ         LAB_18003d1d1
+    //           01  00  00
+    // 18003d0bb 0f  10  44       MOVUPS     XMM0 ,xmmword ptr [RSP  + local_38[0] ]
+    //           24  30
+    // 18003d0c0 c6  40  38  00    MOV        byte ptr [RAX  + 0x38 ],0x0
+    // 18003d0c4 0f  11  00       MOVUPS     xmmword ptr [RAX ],XMM0
+    // 18003d0c7 8b  86  68       MOV        EAX ,dword ptr [RSI  + 0x568 ]
+    //           05  00  00
+    // 18003d0cd 89  44  24  78    MOV        dword ptr [RSP  + local_res10 ],EAX
+    // 18003d0d1 3b  86  78       CMP        EAX ,dword ptr [RSI  + 0x578 ]
+    //           05  00  00
+    //
+	if (auto addr = getAddress(materialSystemDll, "E8 ?? ?? ?? ?? 4C 8B E8 4C 8B FD 48 85 C0")) {
 		org_MaterialFindParam = (MaterialFindParam_t)(addr + 5 + *(int32_t*)(addr + 1));
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 	

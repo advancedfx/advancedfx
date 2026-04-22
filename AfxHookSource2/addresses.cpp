@@ -111,7 +111,7 @@ void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
                  c0 01 00 00
     */
 	{
-		MemRange result = FindPatternString(textRange, "48 89 5C 24 18 55 56 57 41 54 41 56 48 83 EC 70 48 8D 05 ?? ?? ?? ??");
+		MemRange result = FindPatternString(textRange, "48 89 5C 24 18 55 56 57 41 56 41 57 48 83 EC 70 48 8D 05 ?? ?? ?? ??");
 																	  
 		if (!result.IsEmpty()) {
             AFXADDR_SET(cs2_engine_CRenderService_OnClientOutput, result.Start);
@@ -153,17 +153,17 @@ void Addresses_InitClientDll(AfxAddr clientDll) {
 
 	// in the end of g_Original_handlePlayerDeath function
 	{
-		MemRange result = FindPatternString(textRange, "0F B7 15 ?? ?? ?? ?? F3 41 0F 10 54 24 ??");
+		MemRange result = FindPatternString(textRange, "0F B7 15 ?? ?? ?? ?? F3 41 0F 10 55 ??");
 		if (!result.IsEmpty()) {
-            AFXADDR_SET(cs2_deathmsg_lifetime_offset, *(uint8_t*)(result.Start + 13));
+            AFXADDR_SET(cs2_deathmsg_lifetime_offset, *(uint8_t*)(result.Start + 12));
 		}
 		else
 			ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
 	{
-		MemRange result = FindPatternString(textRange, "44 38 7C 24 ?? 74 ?? F3 41 0F 10 74 24 ??");
+		MemRange result = FindPatternString(textRange, "44 38 64 24 ?? 74 ?? F3 41 0F 10 75 ??");
 		if (!result.IsEmpty()) {
-            AFXADDR_SET(cs2_deathmsg_lifetimemod_offset, *(uint8_t*)(result.Start + 13));
+            AFXADDR_SET(cs2_deathmsg_lifetimemod_offset, *(uint8_t*)(result.Start + 12));
 		}
 		else
 			ErrorBox(MkErrStr(__FILE__, __LINE__));

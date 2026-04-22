@@ -309,8 +309,8 @@ bool getAddresses(HMODULE clientDll) {
 		return false;
 	}
 
-	// not very elegant way to get it // can be found close to functions below before calling them
-	size_t g_Original_getParticleManager_addr = getAddress(clientDll, "48 8b 05 ?? ?? ?? ?? c3 cc cc cc cc cc cc cc cc 40 53 48 83 ec 20 90 48 8b d9 80 b9 18 01 00 00 00");
+	// can be found close to functions below before calling them
+	size_t g_Original_getParticleManager_addr = getAddress(clientDll, "48 8B 05 ?? ?? ?? ?? C3 CC CC CC CC CC CC CC CC 48 89 5C 24 10 57");
 	if(g_Original_getParticleManager_addr == 0) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));
 		return false;

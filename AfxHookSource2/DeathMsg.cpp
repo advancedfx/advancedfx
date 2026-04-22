@@ -39,7 +39,8 @@ g_CPanelStyleSetStyleProperty_t g_CPanelStyleSetStyleProperty = nullptr;
 
 struct CPanel2D {
 	const char* getClassName() {
-		void * pClientClass = ((void * (__fastcall *)(void *)) (*(void***)this)[60]) (this);
+		// in case it breaks see nearby functions in vtable, it just returns DAT
+		void * pClientClass = ((void * (__fastcall *)(void *)) (*(void***)this)[61]) (this);
 
 		if(pClientClass) {
 			return *(const char**)((unsigned char*)pClientClass + 0x8);
@@ -1108,6 +1109,8 @@ void __fastcall handleDeathnotice(u_char* hudDeathNotice, SOURCESDK::CS2::IGameE
 	if (myWrapper.lifetime.use) {
 		*pDeathNoticeLifetime = orgDeathNoticeLifetime;
 	}
+
+	g_MirvDeathMsgGlobals.activeWrapper = nullptr;
 };
 
 
@@ -1227,14 +1230,14 @@ void __fastcall My_Panorama_CStylePropertyWashColor_Clone(void * This, void * pT
 
 void getDeathMsgAddrs(HMODULE clientDll) {
 	// can be found with strings like "attacker" and "userid", etc. it basically takes all info from player_death event
-	if (auto addr = getAddress(clientDll, "48 89 4C 24 ?? 55 53 57 41 55 41 57")) {
+	if (auto addr = getAddress(clientDll, "48 89 54 24 10 48 89 4C 24 08 55 53 56 57 41 54 48 8D AC 24 10 E0 FF FF B8 F0 ?? ?? ?? E8 ?? ?? ?? ?? 48 2B")) {
 		g_Original_handlePlayerDeath = (g_Original_handlePlayerDeath_t)(addr);
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 	// called in multiple places with strings like "userid", "attacker", etc. as second argument
 	// e.g. in function above too
-	if (auto addr = getAddress(clientDll, "4C 8B EA 48 8D 4D ?? 48 8B D7 48 8B 58 ?? E8 ?? ?? ?? ??")) {
-		g_Original_hashString = (g_Original_hashString_t)(addr + 14 + 5 + *(int32_t*)(addr + 14 + 1));
+	if (auto addr = getAddress(clientDll, "48 8B 58 ?? 0F 29 B4 24 C0 20 00 00 E8 ?? ?? ?? ??")) {
+		g_Original_hashString = (g_Original_hashString_t)(addr + 12 + 5 + *(int32_t*)(addr + 12 + 1));
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));	
 
 	// snippet from function handlePlayerDeath above	
@@ -1352,7 +1355,7 @@ LAB_1809a7de1
 bool getPanoramaAddrs(HMODULE panoramaDll) {
 
 	// Refernces "CLayoutFile::LoadFromFile" string.
-	g_Org_Panorama_CLayoutFile_LoadFromFile = (Panorama_CLayoutFile_LoadFromFile_t)getAddress(panoramaDll,"40 55 53 56 57 41 54 48 8B EC");
+	g_Org_Panorama_CLayoutFile_LoadFromFile = (Panorama_CLayoutFile_LoadFromFile_t)getAddress(panoramaDll,"48 89 5C 24 08 55 56 57 41 54 41 55 41 56 41 57 48 8B EC 48 83 EC 60 48 8D 05 ?? ?? ?? ?? 48 C7 45 D0 F4 03 00 00 48");
 	if(nullptr == g_Org_Panorama_CLayoutFile_LoadFromFile) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));	
 		return false;
@@ -1404,14 +1407,16 @@ bool getPanoramaAddrs(HMODULE panoramaDll) {
 	}		
 
 	{
-		// near "Need to increase size of static g_StylePropertyRegistrations (MAX_PANORAMA_STYLE_SYMBOLS) before registering more styles, failed on %s"
-		// after utlrbtree init we are looking for DAT in function call FUN_1800be1d0(&DAT_18050c3a8,&local_48,&local_68);
-		auto addr = getAddress(panoramaDll, "48 8D 0D ?? ?? ?? ?? 48 8D 45");
+		// after "Need to increase size of static g_StylePropertyRegistrations (MAX_PANORAMA_STYLE_SYMBOLS) before registering more styles, failed on %s"
+		// lVar11 = FUN_180161290(); <----- we are looking for that it returns
+		// ....
+		// FUN_1800bce60(lVar11 + 8,&local_48,&local_68);
+		auto addr = getAddress(panoramaDll, "7F ?? 48 8D 05 ?? ?? ?? ?? 48 83 C4 ?? C3");
 		if (0 == addr)
 			ErrorBox(MkErrStr(__FILE__, __LINE__));	
 		else {
-			auto out = addr + 7 + *(int32_t*)(addr + 3);
-			g_PanoramaStylePropertySymbols.symbols = (SOURCESDK::CS2::CUtlMap<SOURCESDK::CS2::CUtlString, uint8_t>*)(out);
+			auto out = addr + 7 + *(int32_t*)(addr + 5);
+			g_PanoramaStylePropertySymbols.symbols = (SOURCESDK::CS2::CUtlMap<SOURCESDK::CS2::CUtlString, uint8_t>*)(out + 8 + 2);
 		}
 	}
 

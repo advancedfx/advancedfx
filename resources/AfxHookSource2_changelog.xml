@@ -6,6 +6,28 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.38.9</version>
+<time>2026-04-21T23:46Z</time>
+<changes>
+<change type="fixed">mirv-script: fixed Entity.getAttachment returning wrong values (thanks paper @papesgit for reporting/help)</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
+<version>0.38.8</version>
+<time>2026-04-20T23:50Z</time>
+<changes>
+<change type="fixed">Adjusted to CS2 update (1.41.5.1)</change>
+<change type="fixed">Fixed minor bug in mirv_deathmsg</change>
+<change type="fixed">mirv-script: fixed mirv.onRecordStart, mirv.onRecordEnd types declaration</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.38.7</version>
 <time>2026-03-13T12:46Z</time>
 <changes>

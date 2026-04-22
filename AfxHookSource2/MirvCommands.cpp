@@ -503,7 +503,7 @@ bool getAddressesFromClient(HMODULE clientDll) {
 		org_ForceUpdateSkybox = (ForceUpdateSkybox_t)(addr + 2 + 7 + offset);
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-	if (auto addr = getAddress(clientDll, "48 8b b7 ?? ?? ?? ?? 45 33 f6")) {
+	if (auto addr = getAddress(clientDll, "48 8D B3 ?? ?? ?? ?? 48 8B 0E")) {
 		g_Skybox_UnkPtr_Offset =  *(uint32_t*)(addr + 3);
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 

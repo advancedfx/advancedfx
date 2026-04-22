@@ -128,8 +128,9 @@ void HookReplaceName(HMODULE clientDll)
             So now know the offset of the GetPlayerNameFunction
         */
 
+		// TODO: move to addresses cpp and get index by pattern matching
         if(void ** vtable = (void **)Afx::BinUtils::FindClassVtable(clientDll, ".?AVCCSPlayerController@@", 0, 0)) {
-            g_Org_CCSPlayerController_GetPlayerName = (CCSPlayerController_GetPlayerName_t)vtable[223];
+            g_Org_CCSPlayerController_GetPlayerName = (CCSPlayerController_GetPlayerName_t)vtable[226];
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
             DetourAttach(&(PVOID&)g_Org_CCSPlayerController_GetPlayerName, New_CCSPlayerController_GetPlayerName);

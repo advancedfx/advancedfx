@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.25.2</version>
+<time>2026-04-20T23:50Z</time>
+<changes>
+<change type="fixed">Fixed matte problems in dem_forcehltv 1</change>
+<change type="updated">steam_legacy branch is now supported again</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.25.1</version>
 <time>2026-03-13T12:46Z</time>
 <changes>

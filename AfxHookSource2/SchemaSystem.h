@@ -113,6 +113,7 @@ namespace SDK
 		void* vfptr;
 		const char* m_szName;
 		const char* m_szModuleName;
+		const char* m_szName2;
 		uint32_t m_nSize;
 		uint16_t m_nNumFields;
 
