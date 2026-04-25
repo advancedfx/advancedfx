@@ -921,97 +921,27 @@ impl AfxSimpleJobExecutor {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct MirvOnRecordStartEmptyChanged {
-}
-
-impl advancedfx::js::events::EventSourceEmptyChanged for MirvOnRecordStartEmptyChanged {
-    fn notify(&mut self, _source: &mut advancedfx::js::events::EventSource, value: bool) {
-        afx_enable_on_record_start(!value);
-    }
-}
-
-struct MirvOnRecordEndEmptyChanged {
-}
-
-impl advancedfx::js::events::EventSourceEmptyChanged for MirvOnRecordEndEmptyChanged {
-    fn notify(&mut self, _source: &mut advancedfx::js::events::EventSource, value: bool) {
-        afx_enable_on_record_end(!value);
-    }
-}
-
-struct MirvOnGameEventEmptyChanged {
-}
-
-impl advancedfx::js::events::EventSourceEmptyChanged for MirvOnGameEventEmptyChanged {
-    fn notify(&mut self, _source: &mut advancedfx::js::events::EventSource, value: bool) {
-        afx_enable_on_game_event(!value);
-    }
-}
-
-struct MirvOnCViewRenderSetupViewEmptyChanged {
-}
-
-impl advancedfx::js::events::EventSourceEmptyChanged for MirvOnCViewRenderSetupViewEmptyChanged {
-    fn notify(&mut self, _source: &mut advancedfx::js::events::EventSource, value: bool) {
-        afx_enable_on_c_view_render_setup_view(!value);
-    }
-}
-
-struct MirvOnClientFrameStageNotifyEmptyChanged {
-}
-
-impl advancedfx::js::events::EventSourceEmptyChanged for MirvOnClientFrameStageNotifyEmptyChanged {
-    fn notify(&mut self, _source: &mut advancedfx::js::events::EventSource, value: bool) {
-        afx_enable_on_client_frame_stage_notify(!value);
-    }
-}
-
-struct MirvOnAddEntityEmptyChanged {
-}
-
-impl advancedfx::js::events::EventSourceEmptyChanged for MirvOnAddEntityEmptyChanged {
-    fn notify(&mut self, _source: &mut advancedfx::js::events::EventSource, value: bool) {
-        afx_enable_on_add_entity(!value);
-    }
-}
-
-struct MirvOnRemoveEntityEmptyChanged {
-}
-
-impl advancedfx::js::events::EventSourceEmptyChanged for MirvOnRemoveEntityEmptyChanged {
-    fn notify(&mut self, _source: &mut advancedfx::js::events::EventSource, value: bool) {
-        afx_enable_on_remove_entity(!value);
-    }
-}
-
 struct MirvEvents {
     on_record_start: RefCell<Option<JsFunction>>,
-    record_start: advancedfx::js::events::EventSourceContainer,
-    _record_start_empty_changed: Rc<RefCell<MirvOnRecordStartEmptyChanged>>,
+    record_start: JsObject<advancedfx::js::events::EventSource>,
 
     on_record_end: RefCell<Option<JsFunction>>,
-    record_end: advancedfx::js::events::EventSourceContainer,
-    _record_end_empty_changed: Rc<RefCell<MirvOnRecordEndEmptyChanged>>,
+    record_end: JsObject<advancedfx::js::events::EventSource>,
 
     on_game_event: RefCell<Option<JsFunction>>,
-    game_event: advancedfx::js::events::EventSourceContainer,
-    _game_event_empty_changed: Rc<RefCell<MirvOnGameEventEmptyChanged>>,
+    game_event: JsObject<advancedfx::js::events::EventSource>,
 
     on_c_view_render_setup_view: RefCell<Option<JsFunction>>,
-    c_view_render_setup_view: advancedfx::js::events::EventSourceContainer,
-    _c_view_render_setup_view_empty_changed: Rc<RefCell<MirvOnCViewRenderSetupViewEmptyChanged>>,
+    c_view_render_setup_view: JsObject<advancedfx::js::events::EventSource>,
 
     on_client_frame_stage_notify: RefCell<Option<JsFunction>>,
-    client_frame_stage_notify: advancedfx::js::events::EventSourceContainer,
-    _client_frame_stage_notify_empty_changed: Rc<RefCell<MirvOnClientFrameStageNotifyEmptyChanged>>,
+    client_frame_stage_notify: JsObject<advancedfx::js::events::EventSource>,
 
     on_add_entity: RefCell<Option<JsFunction>>,
-    add_entity: advancedfx::js::events::EventSourceContainer,
-    _add_entity_empty_changed: Rc<RefCell<MirvOnAddEntityEmptyChanged>>,
+    add_entity: JsObject<advancedfx::js::events::EventSource>,
 
     on_remove_entity: RefCell<Option<JsFunction>>,
-    remove_entity: advancedfx::js::events::EventSourceContainer,
-    _remove_entity_empty_changed: Rc<RefCell<MirvOnRemoveEntityEmptyChanged>>,
+    remove_entity: JsObject<advancedfx::js::events::EventSource>,
 }
 
 impl MirvEvents {
@@ -1019,74 +949,81 @@ impl MirvEvents {
 
         advancedfx::js::events::register_global_classes(context);
 
-        let record_start_empty_changed = Rc::<RefCell<MirvOnRecordStartEmptyChanged>>::new(RefCell::<MirvOnRecordStartEmptyChanged>::new(MirvOnRecordStartEmptyChanged{}));
         let mut record_start = advancedfx::js::events::EventSource::new();
-        record_start.set_on_empty_changed(Some(Rc::<RefCell<MirvOnRecordStartEmptyChanged>>::downgrade(&record_start_empty_changed)));
+        record_start.set_on_empty_changed(Some( NativeFunction::from_copy_closure(|_,args,_|{
+            afx_enable_on_record_start(!args[0].as_boolean().unwrap());
+            Ok(JsValue::undefined())
+        }) ));
 
-        let record_end_empty_changed = Rc::<RefCell<MirvOnRecordEndEmptyChanged>>::new(RefCell::<MirvOnRecordEndEmptyChanged>::new(MirvOnRecordEndEmptyChanged{}));
         let mut record_end = advancedfx::js::events::EventSource::new();
-        record_end.set_on_empty_changed(Some(Rc::<RefCell<MirvOnRecordEndEmptyChanged>>::downgrade(&record_end_empty_changed)));
+        record_end.set_on_empty_changed(Some( NativeFunction::from_copy_closure(|_,args,_|{
+            afx_enable_on_record_end(!args[0].as_boolean().unwrap());
+            Ok(JsValue::undefined())
+        }) ));
 
-        let game_event_empty_changed = Rc::<RefCell<MirvOnGameEventEmptyChanged>>::new(RefCell::<MirvOnGameEventEmptyChanged>::new(MirvOnGameEventEmptyChanged{}));
         let mut game_event = advancedfx::js::events::EventSource::new();
-        game_event.set_on_empty_changed(Some(Rc::<RefCell<MirvOnGameEventEmptyChanged>>::downgrade(&game_event_empty_changed)));
+        game_event.set_on_empty_changed(Some( NativeFunction::from_copy_closure(|_,args,_|{
+            afx_enable_on_game_event(!args[0].as_boolean().unwrap());
+            Ok(JsValue::undefined())})
+        ));
 
-        let c_view_render_setup_view_empty_changed = Rc::<RefCell<MirvOnCViewRenderSetupViewEmptyChanged>>::new(RefCell::<MirvOnCViewRenderSetupViewEmptyChanged>::new(MirvOnCViewRenderSetupViewEmptyChanged{}));
         let mut c_view_render_setup_view = advancedfx::js::events::EventSource::new();
-        c_view_render_setup_view.set_on_empty_changed(Some(Rc::<RefCell<MirvOnCViewRenderSetupViewEmptyChanged>>::downgrade(&c_view_render_setup_view_empty_changed)));
+        c_view_render_setup_view.set_on_empty_changed(Some( NativeFunction::from_copy_closure(|_,args,_|{
+            afx_enable_on_c_view_render_setup_view(!args[0].as_boolean().unwrap());
+            Ok(JsValue::undefined())})
+        ));
 
-        let client_frame_stage_notify_empty_changed = Rc::<RefCell<MirvOnClientFrameStageNotifyEmptyChanged>>::new(RefCell::<MirvOnClientFrameStageNotifyEmptyChanged>::new(MirvOnClientFrameStageNotifyEmptyChanged{}));
         let mut client_frame_stage_notify = advancedfx::js::events::EventSource::new();
-        client_frame_stage_notify.set_on_empty_changed(Some(Rc::<RefCell<MirvOnClientFrameStageNotifyEmptyChanged>>::downgrade(&client_frame_stage_notify_empty_changed)));
-
-        let add_entity_empty_changed = Rc::<RefCell<MirvOnAddEntityEmptyChanged>>::new(RefCell::<MirvOnAddEntityEmptyChanged>::new(MirvOnAddEntityEmptyChanged{}));
+        client_frame_stage_notify.set_on_empty_changed(Some( NativeFunction::from_copy_closure(|_,args,_|{
+            afx_enable_on_client_frame_stage_notify(!args[0].as_boolean().unwrap());
+            Ok(JsValue::undefined())
+        }) ));
+        
         let mut add_entity = advancedfx::js::events::EventSource::new();
-        add_entity.set_on_empty_changed(Some(Rc::<RefCell<MirvOnAddEntityEmptyChanged>>::downgrade(&add_entity_empty_changed)));
+        add_entity.set_on_empty_changed(Some( NativeFunction::from_copy_closure(|_,args,_|{
+            afx_enable_on_add_entity(!args[0].as_boolean().unwrap());
+            Ok(JsValue::undefined())
+        }) ));
 
-        let remove_entity_empty_changed = Rc::<RefCell<MirvOnRemoveEntityEmptyChanged>>::new(RefCell::<MirvOnRemoveEntityEmptyChanged>::new(MirvOnRemoveEntityEmptyChanged{}));
         let mut remove_entity = advancedfx::js::events::EventSource::new();
-        remove_entity.set_on_empty_changed(Some(Rc::<RefCell<MirvOnRemoveEntityEmptyChanged>>::downgrade(&remove_entity_empty_changed)));
+        remove_entity.set_on_empty_changed(Some( NativeFunction::from_copy_closure(|_,args,_|{
+            afx_enable_on_remove_entity(!args[0].as_boolean().unwrap());
+            Ok(JsValue::undefined())
+        }) ));
 
         Self {
             on_record_start: RefCell::<Option<JsFunction>>::new(None),
-            _record_start_empty_changed: record_start_empty_changed,
-            record_start: advancedfx::js::events::EventSourceContainer::new(record_start, context),
+            record_start: advancedfx::js::events::EventSource::obj_new(record_start, context),
 
             on_record_end: RefCell::<Option<JsFunction>>::new(None),
-            _record_end_empty_changed:record_end_empty_changed,
-            record_end: advancedfx::js::events::EventSourceContainer::new(record_end, context),
+            record_end: advancedfx::js::events::EventSource::obj_new(record_end, context),
 
             on_game_event: RefCell::<Option<JsFunction>>::new(None),
-            _game_event_empty_changed: game_event_empty_changed,
-            game_event: advancedfx::js::events::EventSourceContainer::new(game_event, context),
+            game_event: advancedfx::js::events::EventSource::obj_new(game_event, context),
 
             on_c_view_render_setup_view: RefCell::<Option<JsFunction>>::new(None),
-            _c_view_render_setup_view_empty_changed: c_view_render_setup_view_empty_changed,
-            c_view_render_setup_view: advancedfx::js::events::EventSourceContainer::new(c_view_render_setup_view, context),
+            c_view_render_setup_view: advancedfx::js::events::EventSource::obj_new(c_view_render_setup_view, context),
 
             on_client_frame_stage_notify: RefCell::<Option<JsFunction>>::new(None),
-            _client_frame_stage_notify_empty_changed: client_frame_stage_notify_empty_changed,
-            client_frame_stage_notify: advancedfx::js::events::EventSourceContainer::new(client_frame_stage_notify, context),
+            client_frame_stage_notify:advancedfx::js::events::EventSource::obj_new(client_frame_stage_notify, context),
 
             on_add_entity: RefCell::<Option<JsFunction>>::new(None),
-            _add_entity_empty_changed: add_entity_empty_changed,
-            add_entity: advancedfx::js::events::EventSourceContainer::new(add_entity, context),
+            add_entity: advancedfx::js::events::EventSource::obj_new(add_entity, context),
 
             on_remove_entity: RefCell::<Option<JsFunction>>::new(None),
-            _remove_entity_empty_changed: remove_entity_empty_changed,
-            remove_entity: advancedfx::js::events::EventSourceContainer::new(remove_entity, context),
+            remove_entity: advancedfx::js::events::EventSource::obj_new(remove_entity, context),
         }
     }
 
     fn make_object(&self, context: &mut Context) -> JsObject {
         ObjectInitializer::new(context)
-        .property(js_string!("recordStart"), self.record_start.outer_clone(), Attribute::all())
-        .property(js_string!("recordEnd"), self.record_end.outer_clone(), Attribute::all())
-        .property(js_string!("gameEvent"), self.game_event.outer_clone(), Attribute::all())
-        .property(js_string!("cViewRenderSetupView"), self.c_view_render_setup_view.outer_clone(), Attribute::all())
-        .property(js_string!("clientFrameStageNotify"), self.client_frame_stage_notify.outer_clone(), Attribute::all())
-        .property(js_string!("addEntity"), self.add_entity.outer_clone(), Attribute::all())
-        .property(js_string!("removeEntity"), self.remove_entity.outer_clone(), Attribute::all())
+        .property(js_string!("recordStart"), self.record_start.clone(), Attribute::all())
+        .property(js_string!("recordEnd"), self.record_end.clone(), Attribute::all())
+        .property(js_string!("gameEvent"), self.game_event.clone(), Attribute::all())
+        .property(js_string!("cViewRenderSetupView"), self.c_view_render_setup_view.clone(), Attribute::all())
+        .property(js_string!("clientFrameStageNotify"), self.client_frame_stage_notify.clone(), Attribute::all())
+        .property(js_string!("addEntity"), self.add_entity.clone(), Attribute::all())
+        .property(js_string!("removeEntity"), self.remove_entity.clone(), Attribute::all())
         .build()
     }
 }
@@ -1581,7 +1518,7 @@ fn mirv_set_on_record_start(this: &JsValue, args: &[JsValue], context: &mut Cont
             if 0 < args.len() {
                 match &args[0].variant() {
                     JsVariant::Undefined => {
-                        mirv.events.record_start.inner_mut().off(MIRV_ON_RECORD_START_STR.to_string(), Some(-1.0));
+                        advancedfx::js::events::EventSource::obj_off(&mirv.events.record_start, context, MIRV_ON_RECORD_START_STR.to_string(), Some(-1.0));
                         mirv.events.on_record_start.replace(None);
                         return Ok(JsValue::undefined()); 
                     }
@@ -1593,9 +1530,9 @@ fn mirv_set_on_record_start(this: &JsValue, args: &[JsValue], context: &mut Cont
                                     if 1 <= args.len() {
                                         let arg0 = &args[0];
                                         if let Some(object) = arg0.as_object() {
-                                            if let Ok(takeFolder) = object.get(js_string!("takeFolder"), context) {
+                                            if let Ok(take_folder) = object.get(js_string!("takeFolder"), context) {
                                                 let event_args = ObjectInitializer::new(context)
-                                                    .property(js_string!("takeFolder"), takeFolder, Attribute::all())
+                                                    .property(js_string!("takeFolder"), take_folder, Attribute::all())
                                                     .build();
 
                                                 if let Err(e) = callback.call(&JsValue::undefined(), &[js_value!(event_args)], context) {
@@ -1611,7 +1548,8 @@ fn mirv_set_on_record_start(this: &JsValue, args: &[JsValue], context: &mut Cont
                                 callback
                             );
 
-                            mirv.events.record_start.inner_mut().on(
+                            advancedfx::js::events::EventSource::obj_on(&mirv.events.record_start,
+                                context,
                                 MIRV_ON_RECORD_START_STR.to_string(),
                                 wrapper.to_js_function(context.realm()),
                                 Some(-1.0)
@@ -1653,7 +1591,7 @@ fn mirv_set_on_record_end(this: &JsValue, args: &[JsValue], context: &mut Contex
             if 0 < args.len() {
                 match &args[0].variant() {
                     JsVariant::Undefined => {
-                        mirv.events.record_end.inner_mut().off(MIRV_ON_RECORD_END_STR.to_string(), Some(-1.0));
+                        advancedfx::js::events::EventSource::obj_off(&mirv.events.record_end, context, MIRV_ON_RECORD_END_STR.to_string(), Some(-1.0));
                         mirv.events.on_record_end.replace(None);
                         return Ok(JsValue::undefined()); 
                     }
@@ -1671,7 +1609,8 @@ fn mirv_set_on_record_end(this: &JsValue, args: &[JsValue], context: &mut Contex
                                 callback
                             );
 
-                            mirv.events.record_end.inner_mut().on(
+                            advancedfx::js::events::EventSource::obj_on(&mirv.events.record_end,
+                                context,
                                 MIRV_ON_RECORD_END_STR.to_string(),
                                 wrapper.to_js_function(context.realm()),
                                 Some(-1.0)
@@ -1713,7 +1652,7 @@ fn mirv_set_on_game_event(this: &JsValue, args: &[JsValue], context: &mut Contex
             if 0 < args.len() {
                 match &args[0].variant() {
                     JsVariant::Undefined => {
-                        mirv.events.game_event.inner_mut().off(MIRV_ON_GAME_EVENT_STR.to_string(), Some(-1.0));
+                        advancedfx::js::events::EventSource::obj_off(&mirv.events.game_event, context, MIRV_ON_GAME_EVENT_STR.to_string(), Some(-1.0));
                         mirv.events.on_game_event.replace(None);
                         return Ok(JsValue::undefined()); 
                     }
@@ -1749,7 +1688,8 @@ fn mirv_set_on_game_event(this: &JsValue, args: &[JsValue], context: &mut Contex
                                 callback
                             );
 
-                            mirv.events.game_event.inner_mut().on(
+                            advancedfx::js::events::EventSource::obj_on(&mirv.events.game_event,
+                                context,
                                 MIRV_ON_GAME_EVENT_STR.to_string(),
                                 wrapper.to_js_function(context.realm()),
                                 Some(-1.0)
@@ -1869,7 +1809,7 @@ fn mirv_set_on_c_view_render_setup_view(this: &JsValue, args: &[JsValue], contex
             if 0 < args.len() {
                 match &args[0].variant() {
                     JsVariant::Undefined => {
-                        mirv.events.c_view_render_setup_view.inner_mut().off(MIRV_ON_C_VIEW_RENDER_SETUP_VIEW_STR.to_string(), Some(-1.0));
+                        advancedfx::js::events::EventSource::obj_off(&mirv.events.c_view_render_setup_view, context, MIRV_ON_C_VIEW_RENDER_SETUP_VIEW_STR.to_string(), Some(-1.0));
                         mirv.events.on_c_view_render_setup_view.replace(None);
                         return Ok(JsValue::undefined()); 
                     }
@@ -1891,7 +1831,8 @@ fn mirv_set_on_c_view_render_setup_view(this: &JsValue, args: &[JsValue], contex
                                 callback
                             );
 
-                            mirv.events.c_view_render_setup_view.inner_mut().on(
+                            advancedfx::js::events::EventSource::obj_on(&mirv.events.c_view_render_setup_view,
+                                context,
                                 MIRV_ON_C_VIEW_RENDER_SETUP_VIEW_STR.to_string(),
                                 wrapper.to_js_function(context.realm()),
                                 Some(-1.0)
@@ -1933,7 +1874,7 @@ fn mirv_set_on_client_frame_stage_notify(this: &JsValue, args: &[JsValue], conte
             if 0 < args.len() {
                 match &args[0].variant() {
                     JsVariant::Undefined => {
-                        mirv.events.client_frame_stage_notify.inner_mut().off(MIRV_ON_CLIENT_FRAME_STAGE_NOTIFY_STR.to_string(), Some(-1.0));
+                        advancedfx::js::events::EventSource::obj_off(&mirv.events.client_frame_stage_notify, context, MIRV_ON_CLIENT_FRAME_STAGE_NOTIFY_STR.to_string(), Some(-1.0));
                         mirv.events.on_client_frame_stage_notify.replace(None);
                         return Ok(JsValue::undefined()); 
                     }
@@ -1966,7 +1907,8 @@ fn mirv_set_on_client_frame_stage_notify(this: &JsValue, args: &[JsValue], conte
                                 callback
                             );
 
-                            mirv.events.client_frame_stage_notify.inner_mut().on(
+                            advancedfx::js::events::EventSource::obj_on(&mirv.events.client_frame_stage_notify,
+                                context,
                                 MIRV_ON_CLIENT_FRAME_STAGE_NOTIFY_STR.to_string(),
                                 wrapper.to_js_function(context.realm()),
                                 Some(-1.0)
@@ -1982,23 +1924,6 @@ fn mirv_set_on_client_frame_stage_notify(this: &JsValue, args: &[JsValue], conte
     }
     Err(advancedfx::js::errors::error_type(context).into())
 }
-
-fn mirv_get_on_client_frame_stage_notif(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
-    if let Some(object) = this.as_object() {
-        if let Some(mirv) = object.downcast_ref::<MirvStruct>() {
-            match & *mirv.events.on_client_frame_stage_notify.borrow() {
-                None => {
-                    return Ok(JsValue::undefined());
-                }
-                Some(callback) => {
-                    return Ok(js_value!(callback.clone()));
-                }
-            }
-        }
-    }
-    Err(advancedfx::js::errors::error_type(context).into())
-}
-
 
 fn mirv_get_on_client_frame_stage_notify(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
     if let Some(object) = this.as_object() {
@@ -2872,7 +2797,7 @@ fn mirv_set_on_add_entity(this: &JsValue, args: &[JsValue], context: &mut Contex
             if 0 < args.len() {
                 match &args[0].variant() {
                     JsVariant::Undefined => {
-                        mirv.events.add_entity.inner_mut().off(MIRV_ON_ADD_ENTITY_STR.to_string(), Some(-1.0));
+                        advancedfx::js::events::EventSource::obj_off(&mirv.events.add_entity, context, MIRV_ON_ADD_ENTITY_STR.to_string(), Some(-1.0));
                         mirv.events.on_add_entity.replace(None);
                         return Ok(JsValue::undefined()); 
                     }
@@ -2901,7 +2826,8 @@ fn mirv_set_on_add_entity(this: &JsValue, args: &[JsValue], context: &mut Contex
                                 callback
                             );
 
-                            mirv.events.add_entity.inner_mut().on(
+                            advancedfx::js::events::EventSource::obj_on(&mirv.events.add_entity,
+                                context,
                                 MIRV_ON_ADD_ENTITY_STR.to_string(),
                                 wrapper.to_js_function(context.realm()),
                                 Some(-1.0)
@@ -2943,7 +2869,7 @@ fn mirv_set_on_remove_entity(this: &JsValue, args: &[JsValue], context: &mut Con
             if 0 < args.len() {
                 match &args[0].variant() {
                     JsVariant::Undefined => {
-                        mirv.events.remove_entity.inner_mut().off(MIRV_ON_REMOVE_ENTITY_STR.to_string(), Some(-1.0));
+                        advancedfx::js::events::EventSource::obj_off(&mirv.events.remove_entity, context, MIRV_ON_REMOVE_ENTITY_STR.to_string(), Some(-1.0));
                         mirv.events.on_remove_entity.replace(None);
                         return Ok(JsValue::undefined()); 
                     }
@@ -2972,7 +2898,8 @@ fn mirv_set_on_remove_entity(this: &JsValue, args: &[JsValue], context: &mut Con
                                 callback
                             );
 
-                            mirv.events.remove_entity.inner_mut().on(
+                            advancedfx::js::events::EventSource::obj_on(&mirv.events.remove_entity,
+                                context,
                                 MIRV_ON_REMOVE_ENTITY_STR.to_string(),
                                 wrapper.to_js_function(context.realm()),
                                 Some(-1.0)
@@ -3103,7 +3030,7 @@ fn mirv_get_main_campath(this: &JsValue, _args: &[JsValue], context: &mut Contex
             } else {
                 match advancedfx::js::campath::Campath::from_data(advancedfx::js::campath::Campath::new(advancedfx::campath::Campath::new_shared(unsafe{
                     afx_hook_source2_get_main_campath()
-                })), context) {
+                }), context), context) {
                     Ok(result_object) => {
                         mirv.main_campath = Some(js_value!(result_object.clone()));
                         return Ok(js_value!(result_object.clone()));
@@ -3480,8 +3407,8 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_record_start<'a>(this_ptr: *mut 
         js_value_take_folder_path = js_value!(js_string!(str_take_folder_path));
     }
 
-    if let Err(e) = advancedfx::js::events::EventSource::dispatch(
-        afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.record_start.inner_ref(),
+    if let Err(e) = advancedfx::js::events::EventSource::obj_dispatch(
+        &afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.record_start,
         context,
         JsValue::undefined(),
         HashMap::from([
@@ -3496,8 +3423,8 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_record_start<'a>(this_ptr: *mut 
 pub unsafe extern "C" fn afx_hook_source2_rs_on_record_end<'a>(this_ptr: *mut AfxHookSource2Rs<'a>) {
     let context = (*afx_hooks_source_2_rs_ptr_to_ref(this_ptr).context).get();
 
-    if let Err(e) = advancedfx::js::events::EventSource::dispatch(
-        afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.record_end.inner_ref(),
+    if let Err(e) = advancedfx::js::events::EventSource::obj_dispatch(
+        &afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.record_end,
         context,
         JsValue::undefined(),
         HashMap::from([])
@@ -3513,8 +3440,8 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_game_event<'a>(this_ptr: *mut Af
     let str_event_name = unsafe{CStr::from_ptr(event_name)}.to_str().unwrap();
     let str_json = unsafe{CStr::from_ptr(json)}.to_str().unwrap();
 
-    if let Err(e) = advancedfx::js::events::EventSource::dispatch(
-        afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.game_event.inner_ref(),
+    if let Err(e) = advancedfx::js::events::EventSource::obj_dispatch(
+        &afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.game_event,
         context,
         JsValue::undefined(),
         HashMap::from([
@@ -3569,8 +3496,8 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_c_view_render_setup_view<'a>(thi
     .property(js_string!("fov"), js_value!(last_view.fov), Attribute::all())
     .build();
 
-    match advancedfx::js::events::EventSource::dispatch(
-        afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.game_event.inner_ref(),
+    match advancedfx::js::events::EventSource::obj_dispatch(
+        &afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.game_event,
         context,
         JsValue::undefined(),
         HashMap::from([
@@ -3635,8 +3562,8 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_c_view_render_setup_view<'a>(thi
 pub unsafe extern "C" fn afx_hook_source2_rs_on_client_frame_stage_notify<'a>(this_ptr: *mut AfxHookSource2Rs<'a>, event_id: i32, is_before: bool) {
     let context = (*afx_hooks_source_2_rs_ptr_to_ref(this_ptr).context).get();
 
-    if let Err(e) = advancedfx::js::events::EventSource::dispatch(
-        afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.client_frame_stage_notify.inner_ref(),
+    if let Err(e) = advancedfx::js::events::EventSource::obj_dispatch(
+        &afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.client_frame_stage_notify,
         context,
         JsValue::undefined(),
         HashMap::from([
@@ -3655,8 +3582,8 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_add_entity<'a>(this_ptr: *mut Af
     afx_add_ref_entity_ref(p_ref);
     let entity_ref = MirvEntityRef::create(p_ref, context);
 
-    if let Err(e) = advancedfx::js::events::EventSource::dispatch(
-        afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.add_entity.inner_ref(),
+    if let Err(e) = advancedfx::js::events::EventSource::obj_dispatch(
+        &afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.add_entity,
         context,
         JsValue::undefined(),
         HashMap::from([
@@ -3675,8 +3602,8 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_remove_entity<'a>(this_ptr: *mut
     afx_add_ref_entity_ref(p_ref);
     let entity_ref = MirvEntityRef::create(p_ref, context);
 
-    if let Err(e) = advancedfx::js::events::EventSource::dispatch(
-        afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.remove_entity.inner_ref(),
+    if let Err(e) = advancedfx::js::events::EventSource::obj_dispatch(
+        &afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.remove_entity,
         context,
         JsValue::undefined(),
         HashMap::from([
