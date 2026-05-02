@@ -3497,7 +3497,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_c_view_render_setup_view<'a>(thi
     .build();
 
     match advancedfx::js::events::EventSource::obj_dispatch(
-        &afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.game_event,
+        &afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.c_view_render_setup_view,
         context,
         JsValue::undefined(),
         HashMap::from([
