@@ -1,4 +1,6 @@
 {
+	const id = 'mirv_script_voice/4d488e58-368c-4029-a305-22ed6075e5b6';
+
 	String.prototype.dedent = function () {
 		return this.split('\n')
 			.map((l) => l.trim())
@@ -9,9 +11,14 @@
 	let value = 'default';
 
 	// @ts-ignore
-	if (mirv._mirv_script_voice !== undefined) mirv._mirv_script_voice.unregister();
-	// @ts-ignore
-	mirv._mirv_script_voice = new AdvancedfxConCommand(function (args) {
+	if (this[id] !== undefined) {
+		// @ts-ignore
+		this[id].unregister();
+		// @ts-ignore
+		delete this[id];
+	}
+
+	const command = new AdvancedfxConCommand(function (args) {
 		const argC = args.argC();
 		const arg0 = args.argV(0);
 		if (2 <= argC) {
@@ -69,7 +76,8 @@
 		);
 	});
 	// @ts-ignore
-	mirv._mirv_script_voice.register(
+	this[id] = command;
+	command.register(
 		'mirv_script_voice',
 		'Easier frontend to tv_listen_voice_indices / tv_listen_voice_indices_h'
 	);

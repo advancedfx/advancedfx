@@ -17,12 +17,14 @@
 
 /* eslint-disable @typescript-eslint/naming-convention */
 {
+	const id = 'examples/2-enrich-game-events/1970f62d-276f-46cc-bf30-9f52f5f72477';
+
 	// Patch the prototype, so it's handled correctly in stringify function
 	BigInt.prototype.toJSON = function () {
 		return this.toString();
 	};
 	// Define hook. We set it later in the end
-	const onGameEvent: mirv.OnGameEvent = (e) => {
+	const onGameEvent = (e: AdvancedfxMirv.Events.GameEventEvent) => {
 		if (e.name === 'player_death') {
 			let attacker_steamid: bigint | null = null;
 			let attacker_name: string | null = null;
@@ -97,5 +99,5 @@
 	//
 	// Make sure this hook doesn't get overwritten elsewhere
 	// since currently HLAE doesn't handle such conflicts
-	mirv.onGameEvent = onGameEvent;
+	mirv.events.gameEvent.on(id, onGameEvent);
 }

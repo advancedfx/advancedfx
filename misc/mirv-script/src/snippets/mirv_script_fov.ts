@@ -1,4 +1,6 @@
 {
+	const id = 'mirv_script_fov/e94e8046-0016-49c4-91e6-83b306cdf96e';
+
 	String.prototype.dedent = function () {
 		return this.split('\n')
 			.map((l) => l.trim())
@@ -10,15 +12,19 @@
 	let handleZoom: boolean | number = 90.0;
 
 	// @ts-ignore
-	if (mirv._mirv_script_fov !== undefined) mirv._mirv_script_fov.unregister();
-	// @ts-ignore
-	mirv._mirv_script_fov = new AdvancedfxConCommand((args) => {
+	if (this[id] !== undefined) {
+		// @ts-ignore
+		this[id].unregister();
+		// @ts-ignore
+		delete this[id];
+	}
+	const command = new AdvancedfxConCommand((args) => {
 		const argC = args.argC();
 		const arg0 = args.argV(0);
 		if (2 <= argC) {
 			const arg1 = args.argV(1).toLowerCase();
 			if ('default' === arg1) {
-				mirv.onCViewRenderSetupView = undefined;
+				mirv.events.cViewRenderSetupView.off(id);
 				return;
 			} else if ('handlezoom' === arg1) {
 				if (3 <= argC) {
@@ -39,13 +45,16 @@
 				return;
 			} else if (arg1.match(re_float)) {
 				fov = parseFloat(arg1);
-				mirv.onCViewRenderSetupView = (e) => {
-					if (
-						handleZoom === false ||
-						(typeof handleZoom === 'number' && e.currentView.fov >= handleZoom)
-					)
-						return { fov: fov };
-				};
+				mirv.events.cViewRenderSetupView.on(
+					id,
+					(e: AdvancedfxMirv.Events.CViewRenderSetupViewEvent) => {
+						if (
+							handleZoom === false ||
+							(typeof handleZoom === 'number' && e.currentView.fov >= handleZoom)
+						)
+							return { fov: fov };
+					}
+				);
 				return;
 			}
 		}
@@ -60,5 +69,6 @@
 		);
 	});
 	// @ts-ignore
-	mirv._mirv_script_fov.register('mirv_script_fov', 'Control fov override');
+	this[id] = command;
+	command.register('mirv_script_fov', 'Control fov override');
 }

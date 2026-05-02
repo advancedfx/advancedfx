@@ -1,4 +1,6 @@
 {
+	const id = 'mirv_script_spec_lock/c4104f7d-cd98-4bf1-9afc-badd777b7a4a';
+
 	String.prototype.dedent = function () {
 		return this.split('\n')
 			.map((l) => l.trim())
@@ -8,9 +10,14 @@
 	let idx: number | null = null;
 
 	// @ts-ignore
-	if (mirv._mirv_script_spec_lock !== undefined) mirv._mirv_script_spec_lock.unregister();
-	// @ts-ignore
-	mirv._mirv_script_spec_lock = new AdvancedfxConCommand((args) => {
+	if (this[id] !== undefined) {
+		// @ts-ignore
+		this[id].unregister();
+		// @ts-ignore
+		delete this[id];
+	}
+
+	const command = new AdvancedfxConCommand((args) => {
 		const argC = args.argC();
 		const arg0 = args.argV(0);
 
@@ -30,11 +37,14 @@
 			idx = parseInt(arg1);
 			if (isNaN(idx) || idx === 0) idx = null;
 
-			mirv.onClientFrameStageNotify = (e) => {
-				if (!e.isBefore && idx) {
-					mirv.exec(`spec_player ${idx}`);
+			mirv.events.clientFrameStageNotify.on(
+				id,
+				(e: AdvancedfxMirv.Events.ClientFrameStageNotifyEvent) => {
+					if (!e.isBefore && idx) {
+						mirv.exec(`spec_player ${idx}`);
+					}
 				}
-			};
+			);
 
 			return;
 		}
@@ -50,5 +60,6 @@
 	});
 
 	// @ts-ignore
-	mirv._mirv_script_spec_lock.register('mirv_script_spec_lock', '');
+	this[id] = command;
+	command.register('mirv_script_spec_lock', '');
 }

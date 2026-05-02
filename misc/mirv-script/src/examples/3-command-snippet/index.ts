@@ -12,6 +12,8 @@
 // 2) Enter mirv_script_example in console
 
 (async () => {
+	const id = 'examples/3-command-snippet/27507cbf-f13e-497a-ac25-1361379b4913';
+
 	// We have to import class this way, so we can avoid using modules,
 	// it allows us to run script again and redefine command
 	const { SubCommand, subCommandsCallback } = await import('./subcommand.js');
@@ -123,11 +125,16 @@
 
 	// Unregister if there's already one.
 	// @ts-ignore
-	if (mirv._mirv_script_example !== undefined) mirv._mirv_script_example.unregister();
+	if (this[id] !== undefined) {
+		// @ts-ignore
+		this[id].unregister();
+		// @ts-ignore
+		delete this[id];
+	}
 	// Store command in object.
+	const command = new AdvancedfxConCommand(fn);
 	// @ts-ignore
-	mirv._mirv_script_example = new AdvancedfxConCommand(fn);
+	this[id] = command;
 	// Register command
-	// @ts-ignore
-	mirv._mirv_script_example.register('mirv_script_example', 'Example command');
+	command.register('mirv_script_example', 'Example command');
 })();

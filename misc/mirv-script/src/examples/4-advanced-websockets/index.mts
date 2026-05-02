@@ -18,11 +18,15 @@
 //
 // 5) Expect commands from client reach the server/HLAE to execute the events.
 
+import { ID } from './id.js';
 import { MirvWsConnection } from '../0-websockets-connection/index.js';
 import { handleMessage } from './mirv-handler.js';
 
 {
-	mirv.onClientFrameStageNotify = undefined;
+	const id = ID + '/main';
+
+	mirv.events.clientFrameStageNotify.off(id);
+
 	const WS_ADDRESS = 'ws://localhost:31337/mirv?hlae=1';
 	const wsConn = new MirvWsConnection((e) => console.error(e));
 
@@ -30,44 +34,47 @@ import { handleMessage } from './mirv-handler.js';
 	let isFirstConnect = true;
 
 	// Make sure this hook doesn't get overwritten elsewhere since currently HLAE doesn't handle such conflicts
-	mirv.onClientFrameStageNotify = (e) => {
-		if (e.curStage === SOURCESDK_CS2.ClientFrameStage_t.FRAME_START && e.isBefore) {
-			if (!wsConn.isConnected() && tickCounter % 64 === 0) {
-				isFirstConnect = true;
+	mirv.events.clientFrameStageNotify.on(
+		id,
+		(e: AdvancedfxMirv.Events.ClientFrameStageNotifyEvent) => {
+			if (e.curStage === SOURCESDK_CS2.ClientFrameStage_t.FRAME_START && e.isBefore) {
+				if (!wsConn.isConnected() && tickCounter % 64 === 0) {
+					isFirstConnect = true;
 
-				if (!wsConn.isConnecting) {
-					console.info(`Trying to connect to ${WS_ADDRESS}`);
-					wsConn.connect(WS_ADDRESS);
-				}
-			} else if (wsConn.isConnected()) {
-				if (isFirstConnect) {
-					isFirstConnect = false;
-					console.log(`Connected to ${WS_ADDRESS}`);
-				}
+					if (!wsConn.isConnecting) {
+						console.info(`Trying to connect to ${WS_ADDRESS}`);
+						wsConn.connect(WS_ADDRESS);
+					}
+				} else if (wsConn.isConnected()) {
+					if (isFirstConnect) {
+						isFirstConnect = false;
+						console.log(`Connected to ${WS_ADDRESS}`);
+					}
 
-				wsConn.flush();
+					wsConn.flush();
 
-				for (let message = wsConn.next(); message !== null; message = wsConn.next()) {
-					try {
-						if (message) handleMessage(wsConn, message);
-					} catch (err) {
-						console.error(
-							'onClientFrameStageNotify: Error while handling incoming message:',
-							err
-						);
-						console.trace();
+					for (let message = wsConn.next(); message !== null; message = wsConn.next()) {
+						try {
+							if (message) handleMessage(wsConn, message);
+						} catch (err) {
+							console.error(
+								'onClientFrameStageNotify: Error while handling incoming message:',
+								err
+							);
+							console.trace();
+						}
 					}
 				}
+
+				tickCounter++;
+
+				mirv.run_jobs();
+				mirv.run_jobs_async();
 			}
 
-			tickCounter++;
-
-			mirv.run_jobs();
-			mirv.run_jobs_async();
+			if (e.curStage === SOURCESDK_CS2.ClientFrameStage_t.FRAME_RENDER_PASS && e.isBefore) {
+				if (wsConn.isConnected()) wsConn.flush();
+			}
 		}
-
-		if (e.curStage === SOURCESDK_CS2.ClientFrameStage_t.FRAME_RENDER_PASS && e.isBefore) {
-			if (wsConn.isConnected()) wsConn.flush();
-		}
-	};
+	);
 }

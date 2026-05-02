@@ -1,11 +1,21 @@
 {
+	const id = 'mirv_script_point/3647a93d-7103-4e8f-b588-217f93fd791d';
+
 	String.prototype.dedent = function () {
 		return this.split('\n')
 			.map((l) => l.trim())
 			.join('\n');
 	};
+
 	// @ts-ignore
-	if (mirv._mirv_script_point !== undefined) mirv._mirv_script_point.unregister();
+	if (this[id] !== undefined) {
+		// @ts-ignore
+		this[id].unregister();
+		// @ts-ignore
+		delete this[id];
+
+		mirv.getMainCampath().events.changed.off(id);
+	}
 
 	const state = {
 		prev: -1,
@@ -15,14 +25,14 @@
 		debug: false
 	};
 
-	mirv.getMainCampath().onChanged = () => {
+	mirv.getMainCampath().events.changed.on(id, () => {
 		if (state.total !== mirv.getMainCampath().size) {
 			state.prev = -1;
 			state.current = 0;
 			state.next = 1;
 			state.total = mirv.getMainCampath().size;
 		}
-	};
+	});
 
 	type Point = { time: number; value: AdvancedfxCampathValue; index: number };
 
@@ -150,8 +160,7 @@
 		return true;
 	};
 
-	// @ts-ignore
-	mirv._mirv_script_point = new AdvancedfxConCommand((args) => {
+	const command = new AdvancedfxConCommand((args) => {
 		const argC = args.argC();
 		const arg0 = args.argV(0);
 		if (2 <= argC) {
@@ -200,8 +209,6 @@
 		);
 	});
 	// @ts-ignore
-	mirv._mirv_script_point.register(
-		'mirv_script_point',
-		'Apply campath point properties to mirv_input'
-	);
+	this[id] = command;
+	command.register('mirv_script_point', 'Apply campath point properties to mirv_input');
 }

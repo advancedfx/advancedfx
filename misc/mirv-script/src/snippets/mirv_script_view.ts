@@ -1,4 +1,6 @@
 {
+	const id = 'mirv_script_view/ac34e44a-7360-48d3-bbf0-50a03d47c9d1';
+
 	String.prototype.dedent = function () {
 		return this.split('\n')
 			.map((l) => l.trim())
@@ -10,9 +12,14 @@
 	const re_int = /^(-)?[0-9]+$/;
 
 	// @ts-ignore
-	if (mirv.mirv_script_view !== undefined) mirv.mirv_script_view.unregister();
-	// @ts-ignore
-	mirv.mirv_script_view = new AdvancedfxConCommand((args) => {
+	if (this[id] !== undefined) {
+		// @ts-ignore
+		this[id].unregister();
+		// @ts-ignore
+		delete this[id];
+	}
+
+	const command = new AdvancedfxConCommand((args) => {
 		const argC = args.argC();
 		const arg0 = args.argV(0);
 		if (2 <= argC) {
@@ -32,53 +39,60 @@
 			} else if (arg1.match(re_int)) {
 				index = parseInt(arg1);
 				if (index === -1) {
-					mirv.onCViewRenderSetupView = undefined;
-					mirv.onClientFrameStageNotify = undefined;
+					mirv.events.clientFrameStageNotify.off(id);
+					mirv.events.cViewRenderSetupView.off(id);
 					return;
 				} else {
 					lastSpecMode = null;
 					lastSpecHandle = null;
-					mirv.onClientFrameStageNotify = (e) => {
-						if (e.curStage == 5 && !e.isBefore) {
-							const entity = mirv.getEntityFromIndex(index);
-							if (null !== entity) {
-								const specMode = entity.getObserverMode();
-								const specHandle = entity.getObserverTargetHandle();
-								if (null === lastSpecMode || lastSpecMode !== specMode)
-									mirv.exec('spec_mode ' + specMode);
-								if (null === lastSpecHandle || lastSpecHandle !== specHandle) {
-									const handleIndex = mirv.getHandleEntryIndex(specHandle);
-									const ent = mirv.getEntityFromIndex(handleIndex);
-									if (null !== ent) {
-										if (ent.isPlayerPawn()) {
-											const playerHandle = ent.getPlayerControllerHandle();
-											const playerIndex =
-												mirv.getHandleEntryIndex(playerHandle);
-											mirv.exec('spec_player ' + playerIndex);
+					mirv.events.clientFrameStageNotify.on(
+						id,
+						(e: AdvancedfxMirv.Events.ClientFrameStageNotifyEvent) => {
+							if (e.curStage == 5 && !e.isBefore) {
+								const entity = mirv.getEntityFromIndex(index);
+								if (null !== entity) {
+									const specMode = entity.getObserverMode();
+									const specHandle = entity.getObserverTargetHandle();
+									if (null === lastSpecMode || lastSpecMode !== specMode)
+										mirv.exec('spec_mode ' + specMode);
+									if (null === lastSpecHandle || lastSpecHandle !== specHandle) {
+										const handleIndex = mirv.getHandleEntryIndex(specHandle);
+										const ent = mirv.getEntityFromIndex(handleIndex);
+										if (null !== ent) {
+											if (ent.isPlayerPawn()) {
+												const playerHandle =
+													ent.getPlayerControllerHandle();
+												const playerIndex =
+													mirv.getHandleEntryIndex(playerHandle);
+												mirv.exec('spec_player ' + playerIndex);
+											}
 										}
 									}
+									lastSpecMode = specMode;
+									lastSpecHandle = specHandle;
 								}
-								lastSpecMode = specMode;
-								lastSpecHandle = specHandle;
 							}
 						}
-					};
-					mirv.onCViewRenderSetupView = (e) => {
-						if (lastSpecMode == 2) return; // don't override in in-eye spec
-						const entity = mirv.getEntityFromIndex(index);
-						if (null !== entity) {
-							const eyeOrigin = entity.getRenderEyeOrigin();
-							const eyeAngles = entity.getRenderEyeAngles();
-							return {
-								x: eyeOrigin[0],
-								y: eyeOrigin[1],
-								z: eyeOrigin[2],
-								rX: eyeAngles[0],
-								rY: eyeAngles[1],
-								rZ: eyeAngles[2]
-							};
+					);
+					mirv.events.cViewRenderSetupView.on(
+						id,
+						(e: AdvancedfxMirv.Events.CViewRenderSetupViewEvent) => {
+							if (lastSpecMode == 2) return; // don't override in in-eye spec
+							const entity = mirv.getEntityFromIndex(index);
+							if (null !== entity) {
+								const eyeOrigin = entity.getRenderEyeOrigin();
+								const eyeAngles = entity.getRenderEyeAngles();
+								return {
+									x: eyeOrigin[0],
+									y: eyeOrigin[1],
+									z: eyeOrigin[2],
+									rX: eyeAngles[0],
+									rY: eyeAngles[1],
+									rZ: eyeAngles[2]
+								};
+							}
 						}
-					};
+					);
 					return;
 				}
 			}
@@ -93,5 +107,6 @@
 		);
 	});
 	// @ts-ignore
-	mirv.mirv_script_view.register('mirv_script_view', "Show entites' view by index");
+	this[id] = command;
+	command.register('mirv_script_view', "Show entites' view by index");
 }

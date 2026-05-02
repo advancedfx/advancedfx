@@ -22,7 +22,10 @@
 import { MirvWsConnection } from '../0-websockets-connection/index.js';
 
 {
-	mirv.onClientFrameStageNotify = undefined;
+	const id = 'examples/1-basic-websockets/8f3430ed-7c0d-4264-804b-d8c97b7462ea';
+
+	mirv.events.clientFrameStageNotify.off(id);
+
 	// We use search params to determine that it is HLAE that is trying to connect.
 	// See also server.ts
 	// This is very basic auth for demonstrating purpose.
@@ -38,64 +41,67 @@ import { MirvWsConnection } from '../0-websockets-connection/index.js';
 	let secsSinceConnectAttempt = 0;
 
 	// Make sure this hook doesn't get overwritten elsewhere since currently HLAE doesn't handle such conflicts
-	mirv.onClientFrameStageNotify = (e) => {
-		// FRAME_START - called on host_frame (1 per tick).
-		if (e.curStage === SOURCESDK_CS2.ClientFrameStage_t.FRAME_START && e.isBefore) {
-			// Every 64 ticks (1 second) we try to restore the connection:
-			if (!wsConn.isConnected() && tickCounter % 64 === 0) {
-				isFirstConnect = true;
-				secsSinceConnectAttempt++;
+	mirv.events.clientFrameStageNotify.on(
+		id,
+		(e: AdvancedfxMirv.Events.ClientFrameStageNotifyEvent) => {
+			// FRAME_START - called on host_frame (1 per tick).
+			if (e.curStage === SOURCESDK_CS2.ClientFrameStage_t.FRAME_START && e.isBefore) {
+				// Every 64 ticks (1 second) we try to restore the connection:
+				if (!wsConn.isConnected() && tickCounter % 64 === 0) {
+					isFirstConnect = true;
+					secsSinceConnectAttempt++;
 
-				// Give up after 10 seconds.
-				// Note:
-				// Since this file is a module, it's evaluated only once,
-				// so it's up to you to implement restart logic or just remove timeout logic completely.
-				// It's here only for demonstrating purpose.
-				if (10 < secsSinceConnectAttempt && !isTimeout && !wsConn.isConnecting) {
-					console.error(`Timeout: failed to connect to ${WS_ADDRESS}`);
-					isTimeout = true;
-				}
+					// Give up after 10 seconds.
+					// Note:
+					// Since this file is a module, it's evaluated only once,
+					// so it's up to you to implement restart logic or just remove timeout logic completely.
+					// It's here only for demonstrating purpose.
+					if (10 < secsSinceConnectAttempt && !isTimeout && !wsConn.isConnecting) {
+						console.error(`Timeout: failed to connect to ${WS_ADDRESS}`);
+						isTimeout = true;
+					}
 
-				if (!isTimeout && !wsConn.isConnecting) {
-					console.info(`Trying to connect to ${WS_ADDRESS}`);
-					wsConn.connect(WS_ADDRESS);
-				}
-			} else if (wsConn.isConnected()) {
-				// Send message to game's console once connected
-				if (isFirstConnect) {
-					isFirstConnect = false;
-					isTimeout = false;
-					secsSinceConnectAttempt = 0;
-					console.log(`Connected to ${WS_ADDRESS}`);
-				}
-				// Flush any messages that are lingering
-				wsConn.flush();
-				// Handle messages that came in meanwhile
-				for (let message = wsConn.next(); message !== null; message = wsConn.next()) {
-					try {
-						// You can handle messages in separate function like we do in advanced example
-						if (message === 'ping') wsConn.send('pong');
-					} catch (err) {
-						console.error(
-							'onClientFrameStageNotify: Error while handling incoming message:',
-							err
-						);
-						console.trace();
+					if (!isTimeout && !wsConn.isConnecting) {
+						console.info(`Trying to connect to ${WS_ADDRESS}`);
+						wsConn.connect(WS_ADDRESS);
+					}
+				} else if (wsConn.isConnected()) {
+					// Send message to game's console once connected
+					if (isFirstConnect) {
+						isFirstConnect = false;
+						isTimeout = false;
+						secsSinceConnectAttempt = 0;
+						console.log(`Connected to ${WS_ADDRESS}`);
+					}
+					// Flush any messages that are lingering
+					wsConn.flush();
+					// Handle messages that came in meanwhile
+					for (let message = wsConn.next(); message !== null; message = wsConn.next()) {
+						try {
+							// You can handle messages in separate function like we do in advanced example
+							if (message === 'ping') wsConn.send('pong');
+						} catch (err) {
+							console.error(
+								'onClientFrameStageNotify: Error while handling incoming message:',
+								err
+							);
+							console.trace();
+						}
 					}
 				}
+
+				tickCounter++;
+
+				// We use this to request an extra processing of jobs from HLAE.
+				// Currently by default it only proccesses jobs upon after FRAME_RENDER_PASS
+				mirv.run_jobs();
+				mirv.run_jobs_async();
 			}
 
-			tickCounter++;
-
-			// We use this to request an extra processing of jobs from HLAE.
-			// Currently by default it only proccesses jobs upon after FRAME_RENDER_PASS
-			mirv.run_jobs();
-			mirv.run_jobs_async();
+			// FRAME_RENDER_PASS - called when a frame is to be rendered by engine thread
+			if (e.curStage === SOURCESDK_CS2.ClientFrameStage_t.FRAME_RENDER_PASS && e.isBefore) {
+				if (wsConn.isConnected()) wsConn.flush();
+			}
 		}
-
-		// FRAME_RENDER_PASS - called when a frame is to be rendered by engine thread
-		if (e.curStage === SOURCESDK_CS2.ClientFrameStage_t.FRAME_RENDER_PASS && e.isBefore) {
-			if (wsConn.isConnected()) wsConn.flush();
-		}
-	};
+	);
 }

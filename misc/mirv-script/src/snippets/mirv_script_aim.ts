@@ -1,11 +1,13 @@
 {
+	const id = 'mirv_script_aim/dd75adbc-b586-4366-a2f2-03d6e2f8b842';
+
 	String.prototype.dedent = function () {
 		return this.split('\n')
 			.map((l) => l.trim())
 			.join('\n');
 	};
 
-	type AimResolver = (e: mirv.OnCViewRenderSetupViewArgs) => number[] | null;
+	type AimResolver = (e: AdvancedfxMirv.Events.CViewRenderSetupViewEvent) => number[] | null;
 
 	const AFX_MATH_EPS = 1.0e-6;
 	const M_PI = 3.141592653589793;
@@ -83,7 +85,7 @@
 		return lastTarget;
 	};
 
-	const aim: mirv.OnCViewRenderSetupView = (e) => {
+	const aim = (e: AdvancedfxMirv.Events.CViewRenderSetupViewEvent) => {
 		let target: number[] | null = null;
 		if (null !== resolver) target = resolver(e);
 		if (null !== target) {
@@ -138,9 +140,9 @@
 				if (3 === argC) {
 					active = 1 === parseInt(args.argV(2));
 					if (active) {
-						mirv.onCViewRenderSetupView = aim;
+						mirv.events.cViewRenderSetupView.on(id, aim);
 					} else {
-						mirv.onCViewRenderSetupView = undefined;
+						mirv.events.cViewRenderSetupView.off(id);
 						// these dont do anything?
 						// lastYPitch = 0.0;
 						// lastZYaw = 0.0;
@@ -252,9 +254,14 @@
 	};
 
 	// @ts-ignore
-	if (mirv._mirv_script_aim !== undefined) mirv._mirv_script_aim.unregister();
+	if (this[id] !== undefined) {
+		// @ts-ignore
+		this[id].unregister();
+		// @ts-ignore
+		delete this[id];
+	}
+	const command = new AdvancedfxConCommand(fn);
 	// @ts-ignore
-	mirv._mirv_script_aim = new AdvancedfxConCommand(fn);
-	// @ts-ignore
-	mirv._mirv_script_aim.register('mirv_script_aim', 'Aiming system control.');
+	this[id] = command;
+	command.register('mirv_script_aim', 'Aiming system control.');
 }

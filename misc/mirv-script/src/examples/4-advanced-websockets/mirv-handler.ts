@@ -4,6 +4,7 @@
 // Purpose:
 // Define function to handle incoming messages from server.
 
+import { ID } from './id.js';
 import { EntityObject, MIRV_EVENTS, MirvEventsMap } from './events.js';
 import { MirvWsConnection } from '../0-websockets-connection/index.js';
 
@@ -51,6 +52,8 @@ const getEntities = (): EntityObject[] => {
 };
 
 export const handleMessage = (wsConn: MirvWsConnection, msg: unknown) => {
+	const id = ID + '/mirv-handle-message';
+
 	const ev = convertMessageToEvent(msg);
 	if (!ev) return;
 	if (!MIRV_EVENTS.includes(ev.eventName as (typeof MIRV_EVENTS)[number])) return;
@@ -90,50 +93,53 @@ export const handleMessage = (wsConn: MirvWsConnection, msg: unknown) => {
 		case 'setOnCViewRenderSetupView': {
 			const [state] = getValue(eventName, ev.values);
 			if (state) {
-				mirv.onCViewRenderSetupView = (e) => {
-					sendMessage('onCViewRenderSetupView', [e]);
-					// If we write additional event and manage the state,
-					// then we can overwrite current view by returning it here
-					return undefined;
-				};
+				mirv.events.cViewRenderSetupView.on(
+					id,
+					(e: AdvancedfxMirv.Events.CViewRenderSetupViewEvent) => {
+						sendMessage('onCViewRenderSetupView', [e]);
+						// If we write additional event and manage the state,
+						// then we can overwrite current view by returning it here
+						return undefined;
+					}
+				);
 			} else {
-				mirv.onClientFrameStageNotify = undefined;
+				mirv.events.cViewRenderSetupView.off(id);
 			}
 			break;
 		}
 		case 'setGameEvent': {
 			const [state] = getValue(eventName, ev.values);
 			if (state) {
-				mirv.onGameEvent = (e) => {
+				mirv.events.gameEvent.on(id, (e: AdvancedfxMirv.Events.GameEventEvent) => {
 					sendMessage('onGameEvent', [e.id, e.name, e.data]);
 					return undefined;
-				};
+				});
 			} else {
-				mirv.onGameEvent = undefined;
+				mirv.events.gameEvent.off(id);
 			}
 			break;
 		}
 		case 'setAddEntity': {
 			const [state] = getValue(eventName, ev.values);
 			if (state) {
-				mirv.onAddEntity = (e, h) => {
-					sendMessage('onAddEntity', [makeEntityObj(e, undefined, h)]);
+				mirv.events.addEntity.on(id, (e: AdvancedfxMirv.Events.EntityEvent) => {
+					sendMessage('onAddEntity', [makeEntityObj(e.entity, undefined, e.handle)]);
 					return undefined;
-				};
+				});
 			} else {
-				mirv.onAddEntity = undefined;
+				mirv.events.addEntity.off(id);
 			}
 			break;
 		}
 		case 'setRemoveEntity': {
 			const [state] = getValue(eventName, ev.values);
 			if (state) {
-				mirv.onRemoveEntity = (e, h) => {
-					sendMessage('onRemoveEntity', [makeEntityObj(e, undefined, h)]);
+				mirv.events.removeEntity.on(id, (e: AdvancedfxMirv.Events.EntityEvent) => {
+					sendMessage('onRemoveEntity', [makeEntityObj(e.entity, undefined, e.handle)]);
 					return undefined;
-				};
+				});
 			} else {
-				mirv.onRemoveEntity = undefined;
+				mirv.events.removeEntity.off(id);
 			}
 			break;
 		}
