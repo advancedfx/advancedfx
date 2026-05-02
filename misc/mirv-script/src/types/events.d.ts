@@ -43,12 +43,12 @@ declare class AdvancedfxEventSource<EventType, ResultType> {
 	/**
 	 * Gets all EventListeners optionall filtered by their priortiy and name.
 	 * @param name optional, if undefined all names are returned.
-	 * @param priortiy optional, if undefined all priorites are returned.
+	 * @param priority optional, if undefined all priorites are returned.
 	 * @returns The result as Map with priorites and an array of event listeners in the order they would be dispatched.
 	 */
 	get(
-		name: string | undefined,
-		priortiy: number | undefined
+		name?: string,
+		priority?: number
 	): Map<number, [AdvancedfxEventListener<EventType, ResultType>]>;
 
 	/**
@@ -61,7 +61,7 @@ declare class AdvancedfxEventSource<EventType, ResultType> {
 	on(
 		name: string,
 		callback: AdvancedfxEventListener.Callback<EventType, ResultType>,
-		priortiy: number | undefined
+		priority?: number
 	): AdvancedfxEventListener.Callback<EventType, ResultType> | undefined;
 
 	/**
@@ -72,6 +72,6 @@ declare class AdvancedfxEventSource<EventType, ResultType> {
 	 */
 	off(
 		name: string,
-		priority: number | undefined
+		priority?: number
 	): AdvancedfxEventListener.Callback<EventType, ResultType> | undefined;
 }

@@ -51,7 +51,8 @@ declare namespace AdvancedfxCampath {
 	 * Since HLAE 2.190.0.
 	 */
 	declare namespace Events {
-		type OnChangedEvent = AdvancedfxEvent<undefined>;
+		type ChangedEvent = AdvancedfxEvent<undefined>;
+		type Changed = AdvancedfxEventSource<ChangedEvent, undefined>;
 	}
 }
 
@@ -238,6 +239,6 @@ declare class AdvancedfxCampath {
 		/**
 		 * @remarks Be careful to avoid infinite recursion e.g. due to changing the campath in onChanged event.
 		 */
-		changed: AdvancedfxCampath.Events.OnChangedEvent;
+		changed: AdvancedfxCampath.Events.Changed;
 	};
 }

@@ -1,6 +1,126 @@
 // Type definitions for AfxHookSource2 mirv-script
 // Project: advancedfx
 
+declare namespace AdvancedfxMirv {
+	/**
+	 * Since HLAE 2.190.0.
+	 */
+	declare namespace Events {
+		type RecordStartEvent = AdvancedfxEvent<undefined> & {
+			takeFolder: string;
+		};
+
+		type RecordEndEvent = AdvancedfxEvent<undefined>;
+
+		type GameEventEvent = AdvancedfxEvent<undefined> & {
+			/**
+			 * Event ID.
+			 */
+			id: number;
+
+			/**
+			 * Event name.
+			 */
+			name: string;
+
+			/**
+			 * Event data as JSON string.
+			 */
+			data: string;
+		};
+
+		type EntityEvent = AdvancedfxEvent<undefined> & {
+			entity: Entity;
+			handle: number;
+		};
+
+		/**
+		 * @remarks Unprovided members well remain at their original value.
+		 */
+		type CViewRenderSetupViewResult =
+			| {
+					x?: number;
+					y?: number;
+					z?: number;
+					rX?: number;
+					rY?: number;
+					rZ?: number;
+					fov?: number;
+			  }
+			| undefined;
+
+		type CViewRenderSetupViewEvent = AdvancedfxEvent<CViewRenderSetupViewResult> & {
+			curTime: number;
+			absTime: number;
+			lastAbsTime: number;
+			currentView: {
+				x: number;
+				y: number;
+				z: number;
+				rX: number;
+				rY: number;
+				rZ: number;
+				fov: number;
+			};
+			gameView: {
+				x: number;
+				y: number;
+				z: number;
+				rX: number;
+				rY: number;
+				rZ: number;
+				fov: number;
+			};
+			lastView: {
+				x: number;
+				y: number;
+				z: number;
+				rX: number;
+				rY: number;
+				rZ: number;
+				fov: number;
+			};
+			width: number;
+			height: number;
+		};
+
+		type ClientFrameStageNotifyEvent = AdvancedfxEvent<CViewRenderSetupViewResult> & {
+			/**
+			 * current stage.
+			 *
+			 * curStage usually has one of the following values in CS2:
+			 * FRAME_UNDEFINED		// (haven't run any frames yet)
+			 * FRAME_RENDER_PASS	// Render a frame for display
+			 * There are more values in-between, but their meanings have changed and we did not confirm them yet.
+			 * See values in prop.d.ts
+			 */
+			curStage: number;
+
+			/**
+			 * if called before (true) or after (false) client DLL for this stage.
+			 */
+			isBefore: boolean;
+		};
+
+		type RecordStart = AdvancedfxEventSource<RecordStartEvent, undefined>;
+
+		type RecordEnd = AdvancedfxEventSource<RecordEndEvent, undefined>;
+
+		type GameEvent = AdvancedfxEventSource<GameEventEvent, undefined>;
+
+		type CViewRenderSetupView = AdvancedfxEventSource<
+			CViewRenderSetupViewEvent,
+			CViewRenderSetupViewResult
+		>;
+
+		type ClientFrameStageNotify = AdvancedfxEventSource<ClientFrameStageNotifyEvent, undefined>;
+
+		type AddEntity = AdvancedfxEventSource<EntityEvent, undefined>;
+
+		type RemoveEntity = AdvancedfxEventSource<EntityEvent, undefined>;
+	}
+}
+
 declare namespace mirv {
 	/**
 	 * Deprecated since HLAE 2.190.0, use mirv.events instead.
@@ -563,109 +683,25 @@ declare namespace mirv {
 	/**
 	 * Since HLAE 2.190.0.
 	 */
-	declare namespace events {
-		type RecordStartEvent = AdvancedfxEvent<undefined> & {
-			takeFolder: string;
-		};
+	const events = {
+		recordStart: AdvancefxMirv.Events.RecordStart,
 
-		type RecordEndEvent = AdvancedfxEvent<undefined>;
+		recordEnd: AdvancedfxMirv.Events.RecordEnd,
 
-		type GameEventEvent = AdvancedfxEvent<undefined> & GameEvent;
+		gameEvent: AdvancedfxMirv.Events.GameEvent,
 
-		type EntityEvent = AdvancedfxEvent<undefined> & {
-			entity: Entity;
-			handle: number;
-		};
+		cViewRenderSetupView: AdvancedfxMirv.Events.CViewRenderSetupView,
 
-		/**
-		 * @remarks Unprovided members well remain at their original value.
-		 */
-		type CViewRenderSetupViewResult =
-			| {
-					x?: number;
-					y?: number;
-					z?: number;
-					rX?: number;
-					rY?: number;
-					rZ?: number;
-					fov?: number;
-			  }
-			| undefined;
-
-		type CViewRenderSetupViewEvent = AdvancedfxEvent<CViewRenderSetupViewResult> & {
-			curTime: number;
-			absTime: number;
-			lastAbsTime: number;
-			currentView: {
-				x: number;
-				y: number;
-				z: number;
-				rX: number;
-				rY: number;
-				rZ: number;
-				fov: number;
-			};
-			gameView: {
-				x: number;
-				y: number;
-				z: number;
-				rX: number;
-				rY: number;
-				rZ: number;
-				fov: number;
-			};
-			lastView: {
-				x: number;
-				y: number;
-				z: number;
-				rX: number;
-				rY: number;
-				rZ: number;
-				fov: number;
-			};
-			width: number;
-			height: number;
-		};
-
-		type ClientFrameStageNotifyEvent = AdvancedfxEvent<CViewRenderSetupViewResult> & {
-			/**
-			 * current stage.
-			 *
-			 * curStage usually has one of the following values in CS2:
-			 * FRAME_UNDEFINED		// (haven't run any frames yet)
-			 * FRAME_RENDER_PASS	// Render a frame for display
-			 * There are more values in-between, but their meanings have changed and we did not confirm them yet.
-			 * See values in prop.d.ts
-			 */
-			curStage: number;
-
-			/**
-			 * if called before (true) or after (false) client DLL for this stage.
-			 */
-			isBefore: boolean;
-		};
-
-		let recordStart: AdvancedfxEventSource<RecordStartEvent, undefined>;
-
-		let recordEnd: AdvancedfxEventSource<RecordEndEvent, undefined>;
-
-		let gameEvent: AdvancedfxEventSource<GameEventEvent, undefined>;
-
-		let cViewRenderSetupView: AdvancedfxEventSource<
-			CViewRenderSetupViewEvent,
-			CViewRenderSetupViewResult
-		>;
-
-		let clientFrameStageNotify: AdvancedfxEventSource<ClientFrameStageNotifyEvent, undefined>;
+		clientFrameStageNotify: AdvancedfxMirv.Events.ClientFrameStageNotify,
 
 		/**
 		 * Called after an entity has been added.
 		 */
-		let addEntity: AdvancedfxEventSource<EntityEvent, undefined>;
+		addEntity: AdvancedfxMirv.Events.AddEntity,
 
 		/**
 		 * Called before an entity is removed.
 		 */
-		let removeEntity: AdvancedfxEventSource<EntityEvent, undefined>;
-	}
+		removeEntity: AdvancedfxMirv.Events.RemoveEntity
+	};
 }
