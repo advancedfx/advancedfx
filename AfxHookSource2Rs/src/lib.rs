@@ -947,8 +947,6 @@ struct MirvEvents {
 impl MirvEvents {
     fn new(context: &mut Context) -> Self {
 
-        advancedfx::js::events::register_global_classes(context);
-
         let mut record_start = advancedfx::js::events::EventSource::new();
         record_start.set_on_empty_changed(Some( NativeFunction::from_copy_closure(|_,args,_|{
             afx_enable_on_record_start(!args[0].as_boolean().unwrap());
@@ -3091,6 +3089,8 @@ impl<'a> AfxHookSource2Rs<'a> {
             .expect("the console builtin shouldn't exist");
 
         interval::register(&mut context).unwrap();
+
+        advancedfx::js::events::register_global_classes(&mut context);
 
         advancedfx::js::math::Vector3::add_to_context(&mut context);
         advancedfx::js::math::QEulerAngles::add_to_context(&mut context);

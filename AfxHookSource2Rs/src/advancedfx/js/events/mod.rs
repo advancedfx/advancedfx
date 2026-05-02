@@ -307,7 +307,7 @@ impl EventSource {
 }
 
 impl Class for EventSource {
-    const NAME: &'static str = "AdvancedfxCampathValue";
+    const NAME: &'static str = "AdvancedfxEventSource";
     const LENGTH: usize = 4;
 
     fn data_constructor(
