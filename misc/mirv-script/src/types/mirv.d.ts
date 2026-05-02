@@ -3,40 +3,53 @@
 
 declare namespace mirv {
 	/**
+	 * Deprecated since HLAE 2.190.0, use mirv.events instead.
+	 *
 	 * Allows to handle client DLL FrameStageNotify events.
-	 * Since HLAE 2.162.0
+	 * Since HLAE 2.162.0.
 	 */
 	let onClientFrameStageNotify: undefined | OnClientFrameStageNotify;
 
 	/*
+	 * Deprecated since HLAE 2.190.0, use mirv.events instead.
+	 *
 	 * Since HLAE 2.171.0
 	 */
 	let onRecordStart: undefined | OnRecordStart;
 
 	/*
+	 * Deprecated since HLAE 2.190.0, use mirv.events instead.
+	 *
 	 * Since HLAE 2.171.0
 	 */
 	let onRecordEnd: undefined | OnRecordEnd;
 
 	/**
+	 * Deprecated since HLAE 2.190.0, use mirv.events instead.
+	 *
 	 * Allows to handle game event system events.
 	 * Since HLAE 2.162.0
 	 */
 	let onGameEvent: undefined | OnGameEvent;
 
 	/**
-	 * Allows to receive the currently calculated game view in client DLL and manipulate it as well.
+	 * Deprecated since HLAE 2.190.0, use mirv.events instead.
+	 *
 	 * Since HLAE 2.162.0
 	 */
 	let onCViewRenderSetupView: undefined | OnCViewRenderSetupView;
 
 	/**
+	 * Deprecated since HLAE 2.190.0, use mirv.events instead.
+	 *
 	 * Called after an entity has been added.
 	 * Since HLAE 2.163.0
 	 */
 	let onAddEntity: undefined | OnEntityEvent;
 
 	/**
+	 * Deprecated since HLAE 2.190.0, use mirv.events instead.
+	 *
 	 * Called before an entity is removed.
 	 * Since HLAE 2.163.0
 	 */
@@ -289,6 +302,8 @@ declare namespace mirv {
 	};
 
 	/**
+	 * Deprecated since HLAE 2.190.0, use mirv.events instead.
+	 *
 	 * Game event data.
 	 * Since HLAE 2.162.0
 	 */
@@ -310,6 +325,8 @@ declare namespace mirv {
 	};
 
 	/**
+	 * Deprecated since HLAE 2.190.0, use mirv.events instead.
+	 *
 	 * Called before and after the client DLL is notified about the current stage.
 	 *
 	 * @remarks
@@ -325,22 +342,30 @@ declare namespace mirv {
 	 */
 	type OnClientFrameStageNotify = (e: { curStage: number; isBefore: boolean }) => void;
 
-	/*
+	/**
+	 * Deprecated since HLAE 2.190.0, use mirv.events instead.
+	 *
 	 * Since HLAE 2.171.0
 	 */
 	type OnRecordStart = (e: RecordStart) => void;
 
-	/*
+	/**
+	 * Deprecated since HLAE 2.190.0, use mirv.events instead.
+	 *
 	 * Since HLAE 2.171.0
 	 */
 	type OnRecordEnd = () => void;
 
-	/*
+	/**
+	 * Deprecated since HLAE 2.190.0, use mirv.events instead.
+	 *
 	 * Since HLAE 2.162.0
 	 */
 	type OnGameEvent = (e: GameEvent) => void;
 
-	/*
+	/**
+	 * Deprecated since HLAE 2.190.0, use mirv.events instead.
+	 *
 	 * Since HLAE 2.162.0
 	 */
 	type OnCViewRenderSetupViewArgs = {
@@ -379,6 +404,8 @@ declare namespace mirv {
 	};
 
 	/**
+	 * Deprecated since HLAE 2.190.0, use mirv.events instead.
+	 *
 	 * @remarks Unprovided members well remain at their original value.
 	 * Since HLAE 2.162.0
 	 */
@@ -393,6 +420,8 @@ declare namespace mirv {
 	};
 
 	/**
+	 * Deprecated since HLAE 2.190.0, use mirv.events instead.
+	 *
 	 * @remarks Return nothing (undefined) to not manipulate the current view (return;).
 	 * Since HLAE 2.162.0
 	 */
@@ -525,7 +554,118 @@ declare namespace mirv {
 	}
 
 	/**
+	 * Deprecated since HLAE 2.190.0, use mirv.events instead.
+	 *
 	 * Since HLAE 2.163.0
 	 */
 	type OnEntityEvent = (entity: Entity, handle: number) => void;
+
+	/**
+	 * Since HLAE 2.190.0.
+	 */
+	declare namespace events {
+		type RecordStartEvent = AdvancedfxEvent<undefined> & {
+			takeFolder: string;
+		};
+
+		type RecordEndEvent = AdvancedfxEvent<undefined>;
+
+		type GameEventEvent = AdvancedfxEvent<undefined> & GameEvent;
+
+		type EntityEvent = AdvancedfxEvent<undefined> & {
+			entity: Entity;
+			handle: number;
+		};
+
+		/**
+		 * @remarks Unprovided members well remain at their original value.
+		 */
+		type CViewRenderSetupViewResult =
+			| {
+					x?: number;
+					y?: number;
+					z?: number;
+					rX?: number;
+					rY?: number;
+					rZ?: number;
+					fov?: number;
+			  }
+			| undefined;
+
+		type CViewRenderSetupViewEvent = AdvancedfxEvent<CViewRenderSetupViewResult> & {
+			curTime: number;
+			absTime: number;
+			lastAbsTime: number;
+			currentView: {
+				x: number;
+				y: number;
+				z: number;
+				rX: number;
+				rY: number;
+				rZ: number;
+				fov: number;
+			};
+			gameView: {
+				x: number;
+				y: number;
+				z: number;
+				rX: number;
+				rY: number;
+				rZ: number;
+				fov: number;
+			};
+			lastView: {
+				x: number;
+				y: number;
+				z: number;
+				rX: number;
+				rY: number;
+				rZ: number;
+				fov: number;
+			};
+			width: number;
+			height: number;
+		};
+
+		type ClientFrameStageNotifyEvent = AdvancedfxEvent<CViewRenderSetupViewResult> & {
+			/**
+			 * current stage.
+			 *
+			 * curStage usually has one of the following values in CS2:
+			 * FRAME_UNDEFINED		// (haven't run any frames yet)
+			 * FRAME_RENDER_PASS	// Render a frame for display
+			 * There are more values in-between, but their meanings have changed and we did not confirm them yet.
+			 * See values in prop.d.ts
+			 */
+			curStage: number;
+
+			/**
+			 * if called before (true) or after (false) client DLL for this stage.
+			 */
+			isBefore: boolean;
+		};
+
+		let recordStart: AdvancedfxEventSource<RecordStartEvent, undefined>;
+
+		let recordEnd: AdvancedfxEventSource<RecordEndEvent, undefined>;
+
+		let gameEvent: AdvancedfxEventSource<GameEventEvent, undefined>;
+
+		let cViewRenderSetupView: AdvancedfxEventSource<
+			CViewRenderSetupViewEvent,
+			CViewRenderSetupViewResult
+		>;
+
+		let clientFrameStageNotify: AdvancedfxEventSource<ClientFrameStageNotifyEvent, undefined>;
+
+		/**
+		 * Called after an entity has been added.
+		 */
+		let addEntity: AdvancedfxEventSource<EntityEvent, undefined>;
+
+		/**
+		 * Called before an entity is removed.
+		 */
+		let removeEntity: AdvancedfxEventSource<EntityEvent, undefined>;
+	}
 }

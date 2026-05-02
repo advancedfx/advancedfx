@@ -42,7 +42,17 @@ declare namespace AdvancedfxCampath {
 		SCubic = 2
 	}
 
+	/**
+	 * Deprecated since HLAE 2.190.0, use .events property instead.
+	 */
 	type OnEvent = () => void;
+
+	/**
+	 * Since HLAE 2.190.0.
+	 */
+	declare namespace Events {
+		type OnChangedEvent = AdvancedfxEvent<undefined>;
+	}
 }
 
 declare class AdvancedfxCampath {
@@ -215,7 +225,19 @@ declare class AdvancedfxCampath {
 	selectAddMinMax(min: number, max: number): number;
 
 	/**
+	 * Deprecated since HLAE 2.190.0, use .events property instead.
+	 *
 	 * @remarks Be careful to avoid infinite recursion e.g. due to changing the campath in onChanged event.
 	 */
 	onChanged: AdvancedfxCampath.OnEvent | undefined;
+
+	/**
+	 * Since HLAE 2.190.0.
+	 */
+	events: {
+		/**
+		 * @remarks Be careful to avoid infinite recursion e.g. due to changing the campath in onChanged event.
+		 */
+		changed: AdvancedfxCampath.Events.OnChangedEvent;
+	};
 }
