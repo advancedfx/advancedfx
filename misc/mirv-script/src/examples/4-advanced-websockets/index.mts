@@ -33,7 +33,6 @@ import { handleMessage } from './mirv-handler.js';
 	let tickCounter = 0;
 	let isFirstConnect = true;
 
-	// Make sure this hook doesn't get overwritten elsewhere since currently HLAE doesn't handle such conflicts
 	mirv.events.clientFrameStageNotify.on(
 		id,
 		(e: AdvancedfxMirv.Events.ClientFrameStageNotifyEvent) => {
