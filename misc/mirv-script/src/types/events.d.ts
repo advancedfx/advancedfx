@@ -56,6 +56,7 @@ declare class AdvancedfxEventSource<EventType, ResultType> {
 	 * @param name Unique name of the callback.
 	 * @param callback The callback to be inserted.
 	 * @param priority optional, if undefined will be set to 0. The value -1.0 is used by us for mapping deprecated legacy events properties.
+	 * @remarks Does not alter the current dispatch queue of an event when used while the event is being dispatched. Use event's abort function to prevent further processing instead.
 	 * @returns the removed old callback with same name and priority, undefined otherwise.
 	 */
 	on(
@@ -68,6 +69,7 @@ declare class AdvancedfxEventSource<EventType, ResultType> {
 	 * Removes the callback with the given name and priority if it exists.
 	 * @param name Unique name of the callback.
 	 * @param priority optional, if undefined will be set to 0. The value -1.0 is used by us for mapping deprecated legacy events properties.
+	 * @remarks Does not alter the current dispatch queue of an event when used while the event is being dispatched. Use event's abort function to prevent further processing instead.
 	 * @returns the removed old callback with same name and priority, undefined otherwise.
 	 */
 	off(
