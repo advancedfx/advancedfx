@@ -12,11 +12,11 @@
 	const re_int = /^(-)?[0-9]+$/;
 
 	// @ts-ignore
-	if (this[id] !== undefined) {
+	if (globalThis[id] !== undefined) {
 		// @ts-ignore
-		this[id].unregister();
+		globalThis[id].unregister();
 		// @ts-ignore
-		delete this[id];
+		delete globalThis[id];
 	}
 
 	const command = new AdvancedfxConCommand((args) => {
@@ -107,6 +107,6 @@
 		);
 	});
 	// @ts-ignore
-	this[id] = command;
+	globalThis[id] = command;
 	command.register('mirv_script_view', "Show entites' view by index");
 }

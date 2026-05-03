@@ -254,14 +254,14 @@
 	};
 
 	// @ts-ignore
-	if (this[id] !== undefined) {
+	if (globalThis[id] !== undefined) {
 		// @ts-ignore
-		this[id].unregister();
+		globalThis[id].unregister();
 		// @ts-ignore
-		delete this[id];
+		delete globalThis[id];
 	}
 	const command = new AdvancedfxConCommand(fn);
 	// @ts-ignore
-	this[id] = command;
+	globalThis[id] = command;
 	command.register('mirv_script_aim', 'Aiming system control.');
 }

@@ -125,16 +125,16 @@
 
 	// Unregister if there's already one.
 	// @ts-ignore
-	if (this[id] !== undefined) {
+	if (globalThis[id] !== undefined) {
 		// @ts-ignore
-		this[id].unregister();
+		globalThis[id].unregister();
 		// @ts-ignore
-		delete this[id];
+		delete globalThis[id];
 	}
 	// Store command in object.
 	const command = new AdvancedfxConCommand(fn);
 	// @ts-ignore
-	this[id] = command;
+	globalThis[id] = command;
 	// Register command
 	command.register('mirv_script_example', 'Example command');
 })();

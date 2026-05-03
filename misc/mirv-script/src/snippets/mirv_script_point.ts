@@ -8,11 +8,11 @@
 	};
 
 	// @ts-ignore
-	if (this[id] !== undefined) {
+	if (globalThis[id] !== undefined) {
 		// @ts-ignore
-		this[id].unregister();
+		globalThis[id].unregister();
 		// @ts-ignore
-		delete this[id];
+		delete globalThis[id];
 
 		mirv.getMainCampath().events.changed.off(id);
 	}
@@ -209,6 +209,6 @@
 		);
 	});
 	// @ts-ignore
-	this[id] = command;
+	globalThis[id] = command;
 	command.register('mirv_script_point', 'Apply campath point properties to mirv_input');
 }

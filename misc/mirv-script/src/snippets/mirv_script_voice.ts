@@ -11,11 +11,11 @@
 	let value = 'default';
 
 	// @ts-ignore
-	if (this[id] !== undefined) {
+	if (globalThis[id] !== undefined) {
 		// @ts-ignore
-		this[id].unregister();
+		globalThis[id].unregister();
 		// @ts-ignore
-		delete this[id];
+		delete globalThis[id];
 	}
 
 	const command = new AdvancedfxConCommand(function (args) {
@@ -76,7 +76,7 @@
 		);
 	});
 	// @ts-ignore
-	this[id] = command;
+	globalThis[id] = command;
 	command.register(
 		'mirv_script_voice',
 		'Easier frontend to tv_listen_voice_indices / tv_listen_voice_indices_h'
