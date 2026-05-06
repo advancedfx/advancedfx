@@ -137,7 +137,7 @@ void Addresses_InitSceneSystemDll(AfxAddr sceneSystemDll) {
        - "CSceneSystem::FrameUpdate"
        - "Invalid width/height for ScratchTarget, Size=%i, Width=%i/Height=%i"
     */
-    AFXADDR_SET(cs2_SceneSystem_FrameUpdate_vtable_idx, 73);
+    AFXADDR_SET(cs2_SceneSystem_FrameUpdate_vtable_idx, 74);
 }
 
 void Addresses_InitClientDll(AfxAddr clientDll) {
