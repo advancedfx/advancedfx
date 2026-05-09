@@ -15,6 +15,16 @@ endif()
 set(VS_CONFIGURATION $<IF:$<CONFIG:Debug>,Debug,Release>)
 
 #
+# Rust / Corrosion related
+#
+
+if (NOT DEFINED AFX_RUST_CARGO_LOCKED)
+    set(AFX_RUST_CARGO_LOCKED TRUE)
+endif()
+
+message(STATUS "AFX_RUST_CARGO_LOCKED=${AFX_RUST_CARGO_LOCKED}")
+
+#
 # Get Microsoft Visual Studio related paths:
 #
 
@@ -51,6 +61,7 @@ if (NOT ${PROJECT_NAME}-MultiBuild)
             -D${PROJECT_NAME}-MultiBuild=ON
             -DPROJECT_NAME_MULTI=${PROJECT_NAME}-${arch}
             "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-${arch}-install"
+            -DAFX_RUST_CARGO_LOCKED=${AFX_RUST_CARGO_LOCKED}
         BUILD_COMMAND
             ${CMAKE_COMMAND} --build . --config $<CONFIG> -- ${BUILD_TOOL_OPTIONS}
         INSTALL_COMMAND
@@ -130,6 +141,12 @@ endif()
 
 # set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}")
 
+if(${AFX_RUST_CARGO_LOCKED})
+    set(AFX_RUST_CARGO_LOCKED "LOCKED")
+else()
+    set(AFX_RUST_CARGO_LOCKED "")
+endif()
+
 #
 # Include dependencies:
 #
@@ -154,7 +171,10 @@ FetchContent_MakeAvailable(Corrosion)
 # Import our main Rust workspace:
 #
 
-corrosion_import_crate(MANIFEST_PATH ${CMAKE_CURRENT_SOURCE_DIR}/Cargo.toml)
+corrosion_import_crate(
+    MANIFEST_PATH ${CMAKE_CURRENT_SOURCE_DIR}/Cargo.toml
+    ${AFX_RUST_CARGO_LOCKED}
+)
 
 endif()
 
