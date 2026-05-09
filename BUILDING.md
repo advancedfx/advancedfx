@@ -86,3 +86,5 @@ If you want to update Rust dependencies / Cargo.lock, then you need to turn this
 ```batch
 cmake -DCMAKE_BUILD_TYPE=Release -DAFX_RUST_CARGO_LOCKED=FALSE -G "Visual Studio 17 2022" -T "v143" -A "Win32" ../..
 ```
+
+This change will last until you delete CMakeCache.txt or until you define it as TRUE again.
