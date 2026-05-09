@@ -55,5 +55,5 @@
     - Increase package version (at least 3rd field) in installer/HlaeFfmpeg/Package.wxs
     - Increase bundle version (e.g. 2nd field (minor), at least 3rd field) in installer/setup/Bundle.wxs
   - In AfxHookSource2Rs run to see if THIRDPARTY.yml needs updating:
-    cargo install cargo-bundle-licenses && cargo bundle-licenses --format yaml --output CI.yaml --previous THIRDPARTY.yml --check-previous && echo DONE: Okay.
+    cargo install cargo-bundle-licenses && cargo bundle-licenses --format yaml --output misc/CI.yml --previous misc/THIRDPARTY.yml --check-previous && echo DONE: Okay.
   - py -3 make_credits.py

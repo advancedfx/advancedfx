@@ -59,11 +59,14 @@ SET(AFXHOOKSOURCE2SNIPPETS_OUTPUTS ${AFXHOOKSOURCE2SNIPPETS_OUTPUTS} PARENT_SCOP
 
 add_definitions(-DGAME_CS2)
 
-corrosion_import_crate(MANIFEST_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../AfxHookSource2Rs/Cargo.toml)
-
 if(${CMAKE_BUILD_TYPE_DEBUG})
     #TODO: Not quite fixed yet: https://corrosion-rs.github.io/corrosion/common_issues.html
-    corrosion_set_env_vars(afx_hook_source2_rs "CFLAGS=-MDd" "CXXFLAGS=-MDd")
+    corrosion_set_env_vars(afx_hook_source2 "CFLAGS=-MDd" "CXXFLAGS=-MDd")
+else()
+    set_target_properties(afx_hook_source2
+        PROPERTIES
+        INTERFACE_CORROSION_CARGO_PROFILE "release-hook"
+    )
 endif()
 
 #set_target_properties(
@@ -98,7 +101,7 @@ target_link_directories(${PROJECT_NAME} PRIVATE
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     ${AFX_OPENEXR_LINK_LIBRARIES}
-    afx_hook_source2_rs
+    afx_hook_source2
 	dxguid.lib
     bcrypt.lib # corrosion fails to detect this
     $<$<CONFIG:Debug>:msvcrtd.lib> # corrision messes this up in latest rust version

@@ -1,16 +1,14 @@
-[workspace]
-
-[lib]
-crate-type = ["staticlib"]
-
 [package]
-name = "afx_hook_source2_rs"
-version = "0.1.0"
+name = "afx_hook_source2"
+version = "0.0.0"
 authors = ["advancedfx.org <contact@advancedfx.org>"]
 license = "MIT"
 homepage = "https://github.com/advancedfx"
 repository = "https://github.com/advancedfx/advancedfx"
 edition = "2024"
+
+[lib]
+crate-type = ["staticlib"]
 
 [dependencies]
 boa_engine = { git = "https://github.com/boa-dev/boa.git", rev = "da570fd74bb6cd5b0fc01363451eb710b7ab5a0c" }
@@ -22,11 +20,3 @@ futures = "0.3.32"
 futures-lite = "2.6.1" # matches current BoaJS version
 futures-concurrency = "7.7.1" # matches current BoaJS version
 rustc-hash = { version = "2.1.2", default-features = false } # matches current BoaJS version
-
-[profile.release]
-strip = true
-opt-level = "z"
-lto = true
-codegen-units = 1
-panic = "abort"
-# debug = true
