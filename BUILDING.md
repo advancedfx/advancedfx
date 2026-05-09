@@ -13,8 +13,8 @@
 - Download and install Microsoft Visual Studio Community 2022, which you can
   obtain for free from https://www.visualstudio.com/downloads/ .
   - Select Workloads - Desktop & Mobile - .NET Desktop Development
-    - Select Workloads - Desktop & Mobile - Desktop development with C++
-	- Select Individual Components - .NET Framework 4.6.2 targeting pack
+  - Select Workloads - Desktop & Mobile - Desktop development with C++
+  - Select Individual Components - .NET Framework 4.6.2 targeting pack
 
 - Obtain Python 3 from https://www.python.org/downloads/windows/ .  
 	We used python-3.13.7-amd64.exe, but any 3.8 or newer 3 should do.  
@@ -40,7 +40,7 @@ We recommend using the GIT Bash to obtain the source code, so you can
 easily fetch and merge updates from the advancedfx repository:
 ```bash
 cd /c/SOURCE-DIR
-  git clone --recurse-submodules https://github.com/advancedfx/advancedfx.git
+git clone --recurse-submodules https://github.com/advancedfx/advancedfx.git
 ```
 
 ### Build source code
