@@ -171,10 +171,35 @@ FetchContent_MakeAvailable(Corrosion)
 # Import our main Rust workspace:
 #
 
+if(${CMAKE_BUILD_TYPE_DEBUG})
+    set(AFX_RUST_CARGO_PROFILE_HOOK)
+    set(AFX_RUST_CARGO_PROFILE_TOOL)
+else()
+    set(AFX_RUST_CARGO_PROFILE_HOOK PROFILE "release-hook")
+    set(AFX_RUST_CARGO_PROFILE_TOOL PROFILE "release-tool")
+endif()
+
 corrosion_import_crate(
     MANIFEST_PATH ${CMAKE_CURRENT_SOURCE_DIR}/Cargo.toml
     ${AFX_RUST_CARGO_LOCKED}
+    ${AFX_RUST_CARGO_PROFILE_HOOK}
+    CRATES
+        afx_hook_source2
 )
+
+#corrosion_import_crate(
+#    MANIFEST_PATH ${CMAKE_CURRENT_SOURCE_DIR}/Cargo.toml
+#    ${AFX_RUST_CARGO_LOCKED}
+#    ${AFX_RUST_CARGO_PROFILE_TOOL}
+#    IMPORTED_CRATES AFX_RUST_TOOL_CRATES
+#    CRATES
+#        file_size_calc
+#)
+
+if(${CMAKE_BUILD_TYPE_DEBUG})
+    #TODO: Not quite fixed yet: https://corrosion-rs.github.io/corrosion/common_issues.html
+    corrosion_set_env_vars(afx_hook_source2 "CFLAGS=-MDd" "CXXFLAGS=-MDd")
+endif()
 
 endif()
 
@@ -289,7 +314,14 @@ elseif(CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
 
             ${AFX_OPENEXR_INSTALL_BINARIES}           
         DESTINATION "bin/x64"
-    )    
+    )
+
+#    corrosion_install(
+#        TARGETS
+#            ${AFX_RUST_TOOL_CRATES}
+#        RUNTIME
+#            DESTINATION "bin/x64"
+#    )
 
     install(
         FILES

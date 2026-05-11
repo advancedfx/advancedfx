@@ -59,16 +59,6 @@ SET(AFXHOOKSOURCE2SNIPPETS_OUTPUTS ${AFXHOOKSOURCE2SNIPPETS_OUTPUTS} PARENT_SCOP
 
 add_definitions(-DGAME_CS2)
 
-if(${CMAKE_BUILD_TYPE_DEBUG})
-    #TODO: Not quite fixed yet: https://corrosion-rs.github.io/corrosion/common_issues.html
-    corrosion_set_env_vars(afx_hook_source2 "CFLAGS=-MDd" "CXXFLAGS=-MDd")
-else()
-    set_target_properties(afx_hook_source2
-        PROPERTIES
-        INTERFACE_CORROSION_CARGO_PROFILE "release-hook"
-    )
-endif()
-
 #set_target_properties(
 #    ${PROJECT_NAME}
 #    PROPERTIES 
