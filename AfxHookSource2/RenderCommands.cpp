@@ -50,8 +50,9 @@ void CRenderCommands::EngineThread_EndFrame() {
     if (m_EngineThreadCommands == nullptr) m_EngineThreadCommands = new CRenderPassCommands();
 }
 
-void CRenderCommands::RenderThread_BeginFrame(ID3D11DeviceContext* pContext) {
+void CRenderCommands::RenderThread_BeginFrame() {
     m_RenderThread_FrameBegun = true;
+    m_CurrentThreadId = GetCurrentThreadId();
 
     {
         std::unique_lock<std::mutex> lock(m_CommandsQueueMutex);
@@ -62,14 +63,10 @@ void CRenderCommands::RenderThread_BeginFrame(ID3D11DeviceContext* pContext) {
         }
     }
     if (m_RenderThreadCommands) {
-        m_RenderThreadCommands->Context = pContext;
-        if (pContext) {
-            pContext->AddRef();
-            auto& beginFrameReliable = m_RenderThreadCommands->BeginReliable;
-            while (!beginFrameReliable.Empty()) {
-                beginFrameReliable.Front()(m_RenderThreadCommands);
-                beginFrameReliable.Pop();
-            }
+        auto& beginFrameReliable = m_RenderThreadCommands->BeginReliable;
+        while (!beginFrameReliable.Empty()) {
+            beginFrameReliable.Front()();
+            beginFrameReliable.Pop();
         }
     }
 }
@@ -82,7 +79,7 @@ bool CRenderCommands::RenderThread_FrameBegun() {
     return m_RenderThread_FrameBegun;
 }
 
-void CRenderCommands::RenderThread_EndFrame(ID3D11DeviceContext* pContext) {
+void CRenderCommands::RenderThread_EndFrame() {
     if(m_RenderThreadCommands) {
         m_RenderThreadCommands->Finalize();
         {
@@ -93,4 +90,8 @@ void CRenderCommands::RenderThread_EndFrame(ID3D11DeviceContext* pContext) {
     }
 
     m_RenderThread_FrameBegun = false;
+}
+
+bool CRenderCommands::CurrentThreadIsRenderThread() const {
+    return m_RenderThread_FrameBegun &&  GetCurrentThreadId() == m_CurrentThreadId;
 }
