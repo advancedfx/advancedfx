@@ -1,5 +1,7 @@
 # Building advancedfx
 
+For an overview over the source code see CONTENTS.md.
+
 ## Standard build
 
 ### Install dependencies
