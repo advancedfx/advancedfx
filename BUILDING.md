@@ -1,6 +1,6 @@
 # Building advancedfx
 
-For an overview over the source code see CONTENTS.md.
+For an overview over the source code see [CONTENTS.md](CONTENTS.md).
 
 ## Standard build
 
