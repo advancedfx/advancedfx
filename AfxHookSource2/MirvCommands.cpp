@@ -476,7 +476,7 @@ bool getAddressesFromClient(HMODULE clientDll) {
 	// C_BaseModelEntity vtable 234th, then go to second function call, there go to first function call
 	// this function should return m_bGlowing of CGlowProperty
 
-	if (auto addr = getAddress(clientDll, "E8 ?? ?? ?? ?? 33 DB 84 C0 0F 84 ?? ?? ?? ?? 48")) {
+	if (auto addr = getAddress(clientDll, "E8 ?? ?? ?? ?? 33 FF 84 C0 0F 84 ?? ?? ?? ?? 48")) {
 		org_shouldGlow = (org_shouldGlow_t)(addr + 5 + *(int32_t*)(addr + 1));
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__)); 
 
