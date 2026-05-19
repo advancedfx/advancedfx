@@ -462,7 +462,7 @@ bool getAddressesFromClient(HMODULE clientDll) {
 	}
 
 	// See where spec_show_xray is checked, has offsets to glowProperty
-	// Also called first in 234th vtable function for C_LightEntity and other 100+ entities
+	// Also called first in 242 vtable function for C_BaseModelEntity and other 100+ entities with m_Glow (CGlowProperty)
 	size_t g_Original_setGlowProps_addr = getAddress(clientDll, "48 89 5C 24 ?? 57 48 83 EC ?? 48 8B 05 ?? ?? ?? ?? 48 8B D9 F3 0F 10 41");
 	if (g_Original_setGlowProps_addr == 0) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));
@@ -473,10 +473,11 @@ bool getAddressesFromClient(HMODULE clientDll) {
 	g_Original_EOM = (g_Original_EOM_t)(g_Original_EOM_addr);
 	g_Original_setGlowProps = (g_Original_setGlowProps_t)(g_Original_setGlowProps_addr);
 
-	// C_BaseModelEntity vtable 234th, then go to second function call, there go to first function call
-	// this function should return m_bGlowing of CGlowProperty
+	// C_BaseModelEntity vtable 242 it should have 2 function calls with m_Glow (CGlowProperty)
+	// go to second function call, there go to first function call
+	// that function should return m_bGlowing of CGlowProperty
 
-	if (auto addr = getAddress(clientDll, "E8 ?? ?? ?? ?? 33 DB 84 C0 0F 84 ?? ?? ?? ?? 48")) {
+	if (auto addr = getAddress(clientDll, "E8 ?? ?? ?? ?? 45 33 F6 84 C0 0F 84")) {
 		org_shouldGlow = (org_shouldGlow_t)(addr + 5 + *(int32_t*)(addr + 1));
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__)); 
 
