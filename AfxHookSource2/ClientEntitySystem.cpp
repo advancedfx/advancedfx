@@ -863,6 +863,68 @@ extern "C" FFIBool afx_hook_source2_get_entity_ref_is_player_controller(void * p
     return FFIBOOL_FALSE;
 }
 
+// Hide spectator player panel (HudSpecplayerRoot--visible always false)
+//   Original: mov sil, 1  (40 B6 01)
+//   Patched:  xor sil, sil (40 32 F6)
+static uint8_t * g_pHudSpecPanelPatchAddr = nullptr;
+static uint8_t g_HudSpecPanelOrigBytes[3] = {0};
+static bool g_bHudSpecPanelPatched = false;
+
+static bool MirvPov_ApplyHudSpecPanelPatch(HMODULE clientDll) {
+	if(g_bHudSpecPanelPatched) return true;
+	if(nullptr == clientDll) {
+		advancedfx::Message("[mirv_pov_hud_patch] No client.dll handle for HUD spec panel\n");
+		return false;
+	}
+
+	size_t match = getAddress(clientDll, "4D 85 F6 74 09 84 DB 75 05 40 B6 01 EB 03 40 32 F6");
+	if(0 == match) {
+		advancedfx::Message("[mirv_pov_hud_patch] HUD spec panel pattern not found\n");
+		return false;
+	}
+
+	uint8_t * patchAddr = (uint8_t *)(match + 9);
+	memcpy(g_HudSpecPanelOrigBytes, patchAddr, 3);
+
+	DWORD oldProtect;
+	if(VirtualProtect(patchAddr, 3, PAGE_EXECUTE_READWRITE, &oldProtect)) {
+		patchAddr[0] = 0x40;
+		patchAddr[1] = 0x32;
+		patchAddr[2] = 0xF6;
+		DWORD dummy;
+		VirtualProtect(patchAddr, 3, oldProtect, &dummy);
+		g_pHudSpecPanelPatchAddr = patchAddr;
+		g_bHudSpecPanelPatched = true;
+		advancedfx::Message("[mirv_pov_hud_patch] Patched HUD spec panel at %p (mov sil,1 -> xor sil,sil)\n", (void*)patchAddr);
+		return true;
+    }
+
+	advancedfx::Message("[mirv_pov_hud_patch] VirtualProtect failed for HUD spec panel patch (error %lu)\n", GetLastError());
+	return false;
+}
+
+static void MirvPov_RemoveHudSpecPanelPatch() {
+	if(g_bHudSpecPanelPatched && g_pHudSpecPanelPatchAddr) {
+		DWORD oldProtect;
+		if(VirtualProtect(g_pHudSpecPanelPatchAddr, 3, PAGE_EXECUTE_READWRITE, &oldProtect)) {
+            memcpy(g_pHudSpecPanelPatchAddr, g_HudSpecPanelOrigBytes, 3);
+            DWORD dummy;
+            VirtualProtect(g_pHudSpecPanelPatchAddr, 3, oldProtect, &dummy);
+        }
+        g_bHudSpecPanelPatched = false;
+        g_pHudSpecPanelPatchAddr = nullptr;
+		advancedfx::Message("[mirv_pov_hud_patch] Restored HUD spec panel\n");
+	}
+}
+
+static bool MirvPov_ApplyPatches(HMODULE clientDll) {
+	return MirvPov_ApplyHudSpecPanelPatch(clientDll);
+}
+
+static void MirvPov_RemovePatches() {
+	MirvPov_RemoveHudSpecPanelPatch();
+}
+
 static void MirvPov_ResetSpottedState() {
     MirvPov_RestoreSavedSpotted();
     g_MirvPovLastObservedTeam = 0;
@@ -870,12 +932,14 @@ static void MirvPov_ResetSpottedState() {
 
 void MirvPov_Enable(HMODULE clientDll) {
     if(g_MirvPovEnabled) return;
+    MirvPov_ApplyPatches(clientDll);
     g_MirvPovEnabled = true;
 }
 
 void MirvPov_Disable() {
     if(!g_MirvPovEnabled) return;
     MirvPov_ResetSpottedState();
+    MirvPov_RemovePatches();
     g_MirvPovEnabled = false;
 }
 
