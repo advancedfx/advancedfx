@@ -5,10 +5,14 @@
 #include "WrpConsole.h"
 #include "Globals.h"
 
+#include "../deps/release/prop/cs2/sdk_src/public/cdll_int.h"
+extern SOURCESDK::CS2::ISource2EngineToClient * g_pEngineToClient;
+
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
 
 #include "../shared/AfxConsole.h"
-//#include "../shared/binutils.h"
+#include "../shared/binutils.h"
+#include "../shared/AfxDetours.h"
 #include "../shared/FFITools.h"
 #include "../shared/StringTools.h"
 
@@ -24,6 +28,23 @@
 void ** g_pEntityList = nullptr;
 GetHighestEntityIndex_t  g_GetHighestEntityIndex = nullptr;
 GetEntityFromIndex_t g_GetEntityFromIndex = nullptr;
+
+typedef CEntityInstance * (__fastcall * ClientDll_GetSplitScreenPlayer_t)(int slot);
+static ClientDll_GetSplitScreenPlayer_t g_ClientDll_GetSplitScreenPlayer = nullptr;
+
+static bool g_MirvPovEnabled = false;
+
+struct MirvPovSpottedRestoreEntry {
+    int handle = SOURCESDK_CS2_INVALID_EHANDLE_INDEX;
+    int team = 0;
+    uint8_t spotted = 0;
+    uint32_t mask[2] = {0, 0};
+};
+
+static constexpr int kMirvPovMaxSpottedRestoreEntries = 64;
+static MirvPovSpottedRestoreEntry g_MirvPovSpottedRestoreEntries[kMirvPovMaxSpottedRestoreEntries];
+static int g_MirvPovSpottedRestoreCount = 0;
+static int g_MirvPovLastObservedTeam = 0;
 
 /*
 cl_track_render_eye_angles 1
@@ -427,6 +448,250 @@ int GetHighestEntityIndex() {
     //return g_pEntityList && g_GetHighestEntityIndex ? g_GetHighestEntityIndex(*g_pEntityList, false) : -1;
 }
 
+static uint8_t * GetTeamFieldPtr(CEntityInstance * entity) {
+    if(nullptr == entity) return nullptr;
+    return (uint8_t *)((unsigned char *)entity + g_clientDllOffsets.C_BaseEntity.m_iTeamNum);
+}
+
+static unsigned int * GetControllerPawnHandleFieldPtr(CEntityInstance * controller) {
+    if(nullptr == controller || !controller->IsPlayerController()) return nullptr;
+    return (unsigned int *)((unsigned char *)controller + g_clientDllOffsets.CBasePlayerController.m_hPawn);
+}
+
+static unsigned int * GetControllerPlayerPawnHandleFieldPtr(CEntityInstance * controller) {
+    if(nullptr == controller || !controller->IsPlayerController()) return nullptr;
+    if(0 == g_clientDllOffsets.CCSPlayerController.m_hPlayerPawn) return nullptr;
+    return (unsigned int *)((unsigned char *)controller + g_clientDllOffsets.CCSPlayerController.m_hPlayerPawn);
+}
+
+static unsigned int * GetControllerObserverPawnHandleFieldPtr(CEntityInstance * controller) {
+	if(nullptr == controller || !controller->IsPlayerController()) return nullptr;
+	if(0 == g_clientDllOffsets.CCSPlayerController.m_hObserverPawn) return nullptr;
+	return (unsigned int *)((unsigned char *)controller + g_clientDllOffsets.CCSPlayerController.m_hObserverPawn);
+}
+
+static SOURCESDK::CS2::CBaseHandle GetControllerPlayerPawnHandle(CEntityInstance * controller) {
+	if(nullptr == controller || !controller->IsPlayerController()) return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
+	if(unsigned int * pPlayerPawn = GetControllerPlayerPawnHandleFieldPtr(controller)) {
+		SOURCESDK::CS2::CBaseHandle result(*pPlayerPawn);
+		if(result.IsValid()) return result;
+	}
+	return controller->GetPlayerPawnHandle();
+}
+
+static CEntityInstance * GetControllerPlayerPawn(CEntityInstance * controller) {
+	auto pawnHandle = GetControllerPlayerPawnHandle(controller);
+	if(!pawnHandle.IsValid()) return nullptr;
+	CEntityInstance * pawn = GetEntityFromIndex(pawnHandle.GetEntryIndex());
+	if(nullptr == pawn || !pawn->IsPlayerPawn()) return nullptr;
+	return pawn;
+}
+
+static void * GetObserverServicesPtr(CEntityInstance * pawn) {
+    if(nullptr == pawn || !pawn->IsPlayerPawn()) return nullptr;
+    return *(void **)((unsigned char *)pawn + g_clientDllOffsets.C_BasePlayerPawn.m_pObserverServices);
+}
+
+static void * GetObserverServicesPtrUnchecked(CEntityInstance * pawn) {
+    if(nullptr == pawn || 0 == g_clientDllOffsets.C_BasePlayerPawn.m_pObserverServices) return nullptr;
+    return *(void **)((unsigned char *)pawn + g_clientDllOffsets.C_BasePlayerPawn.m_pObserverServices);
+}
+
+static void * GetCameraServicesPtr(CEntityInstance * pawn) {
+    if(nullptr == pawn || !pawn->IsPlayerPawn()) return nullptr;
+    return *(void **)((unsigned char *)pawn + g_clientDllOffsets.C_BasePlayerPawn.m_pCameraServices);
+}
+
+static uint8_t * GetObserverModeFieldPtr(CEntityInstance * pawn) {
+    if(void * pObserverServices = GetObserverServicesPtr(pawn)) {
+        return (uint8_t *)((unsigned char *)pObserverServices + g_clientDllOffsets.CPlayer_ObserverServices.m_iObserverMode);
+    }
+    return nullptr;
+}
+
+static unsigned int * GetObserverTargetFieldPtr(CEntityInstance * pawn) {
+    if(void * pObserverServices = GetObserverServicesPtr(pawn)) {
+        return (unsigned int *)((unsigned char *)pObserverServices + g_clientDllOffsets.CPlayer_ObserverServices.m_hObserverTarget);
+    }
+    return nullptr;
+}
+
+static uint8_t * GetObserverModeFieldPtrUnchecked(CEntityInstance * pawn) {
+    if(void * pObserverServices = GetObserverServicesPtrUnchecked(pawn)) {
+        return (uint8_t *)((unsigned char *)pObserverServices + g_clientDllOffsets.CPlayer_ObserverServices.m_iObserverMode);
+    }
+    return nullptr;
+}
+
+static unsigned int * GetObserverTargetFieldPtrUnchecked(CEntityInstance * pawn) {
+    if(void * pObserverServices = GetObserverServicesPtrUnchecked(pawn)) {
+        return (unsigned int *)((unsigned char *)pObserverServices + g_clientDllOffsets.CPlayer_ObserverServices.m_hObserverTarget);
+    }
+    return nullptr;
+}
+
+static unsigned int * GetViewEntityFieldPtr(CEntityInstance * pawn) {
+    if(void * pCameraServices = GetCameraServicesPtr(pawn)) {
+        return (unsigned int *)((unsigned char *)pCameraServices + g_clientDllOffsets.CPlayer_CameraServices.m_hViewEntity);
+    }
+    return nullptr;
+}
+
+CEntityInstance * GetEntityFromIndex(int index) {
+    if(index < 0 || nullptr == g_pEntityList || nullptr == *g_pEntityList || nullptr == g_GetEntityFromIndex) return nullptr;
+    return (CEntityInstance *)g_GetEntityFromIndex(*g_pEntityList, index);
+}
+
+CEntityInstance * GetRealSplitScreenPlayer(int slot) {
+    if(nullptr == g_ClientDll_GetSplitScreenPlayer) return nullptr;
+    return g_ClientDll_GetSplitScreenPlayer(slot);
+}
+
+bool MirvPov_IsEnabled() {
+    return g_MirvPovEnabled;
+}
+
+static CEntityInstance * MirvPov_GetObservedPawn() {
+    CEntityInstance * realController = GetRealSplitScreenPlayer(0);
+    if(nullptr == realController || !realController->IsPlayerController()) return nullptr;
+
+    auto realPawnHandle = realController->GetPlayerPawnHandle();
+    if(!realPawnHandle.IsValid()) return nullptr;
+    CEntityInstance * realPawn = GetEntityFromIndex(realPawnHandle.GetEntryIndex());
+    if(nullptr == realPawn || !realPawn->IsPlayerPawn()) return nullptr;
+
+    auto observerTarget = realPawn->GetObserverTarget();
+    if(observerTarget.IsValid()) {
+        CEntityInstance * targetPawn = GetEntityFromIndex(observerTarget.GetEntryIndex());
+        if(nullptr != targetPawn && targetPawn->IsPlayerPawn()) return targetPawn;
+    }
+
+    return realPawn;
+}
+
+static int MirvPov_GetObservedTeam() {
+    CEntityInstance * observedPawn = MirvPov_GetObservedPawn();
+    if(nullptr == observedPawn) return 0;
+    int team = observedPawn->GetTeam();
+    return team == 2 || team == 3 ? team : 0;
+}
+
+static MirvPovSpottedRestoreEntry * MirvPov_FindSpottedRestoreEntry(int handle) {
+    for(int i = 0; i < g_MirvPovSpottedRestoreCount; ++i) {
+        if(g_MirvPovSpottedRestoreEntries[i].handle == handle) return &g_MirvPovSpottedRestoreEntries[i];
+    }
+    return nullptr;
+}
+
+static bool MirvPov_SaveSpottedRestore(CEntityInstance * pawn, int team) {
+    if(nullptr == pawn || 0 == g_clientDllOffsets.C_CSPlayerPawnBase.m_entitySpottedState) return false;
+
+    auto pawnHandle = pawn->GetHandle();
+    if(!pawnHandle.IsValid()) return false;
+    int handle = pawnHandle.ToInt();
+    if(nullptr != MirvPov_FindSpottedRestoreEntry(handle)) return true;
+    if(g_MirvPovSpottedRestoreCount >= kMirvPovMaxSpottedRestoreEntries) return false;
+
+    auto spottedState = (unsigned char*)pawn + g_clientDllOffsets.C_CSPlayerPawnBase.m_entitySpottedState;
+    uint8_t * pSpotted = (uint8_t*)(spottedState + g_clientDllOffsets.EntitySpottedState_t.m_bSpotted);
+    uint32_t * pMask = 0 != g_clientDllOffsets.EntitySpottedState_t.m_bSpottedByMask
+        ? (uint32_t*)(spottedState + g_clientDllOffsets.EntitySpottedState_t.m_bSpottedByMask)
+        : nullptr;
+
+    MirvPovSpottedRestoreEntry & entry = g_MirvPovSpottedRestoreEntries[g_MirvPovSpottedRestoreCount++];
+    entry.handle = handle;
+    entry.team = team;
+    entry.spotted = *pSpotted;
+    entry.mask[0] = nullptr != pMask ? pMask[0] : 0;
+    entry.mask[1] = nullptr != pMask ? pMask[1] : 0;
+    return true;
+}
+
+static void MirvPov_RestoreSavedSpotted() {
+    if(0 == g_MirvPovSpottedRestoreCount) return;
+    if(0 == g_clientDllOffsets.C_CSPlayerPawnBase.m_entitySpottedState) {
+        g_MirvPovSpottedRestoreCount = 0;
+        return;
+    }
+
+    for(int i = 0; i < g_MirvPovSpottedRestoreCount; ++i) {
+        MirvPovSpottedRestoreEntry & entry = g_MirvPovSpottedRestoreEntries[i];
+        SOURCESDK::CS2::CEntityHandle handle(entry.handle);
+        if(!handle.IsValid()) continue;
+
+        CEntityInstance * pawn = GetEntityFromIndex(handle.GetEntryIndex());
+        if(nullptr == pawn || !pawn->IsPlayerPawn()) continue;
+        if(pawn->GetHandle().ToInt() != entry.handle) continue;
+
+        auto spottedState = (unsigned char*)pawn + g_clientDllOffsets.C_CSPlayerPawnBase.m_entitySpottedState;
+        uint8_t * pSpotted = (uint8_t*)(spottedState + g_clientDllOffsets.EntitySpottedState_t.m_bSpotted);
+        *pSpotted = entry.spotted;
+
+        if(0 != g_clientDllOffsets.EntitySpottedState_t.m_bSpottedByMask) {
+            uint32_t * pMask = (uint32_t*)(spottedState + g_clientDllOffsets.EntitySpottedState_t.m_bSpottedByMask);
+            pMask[0] = entry.mask[0];
+            pMask[1] = entry.mask[1];
+        }
+    }
+
+    g_MirvPovSpottedRestoreCount = 0;
+}
+
+static void MirvPov_ApplyObservedTeamSpotted() {
+    if(!MirvPov_IsEnabled()) return;
+    if(0 == g_clientDllOffsets.C_CSPlayerPawnBase.m_entitySpottedState) return;
+
+    int observedTeam = MirvPov_GetObservedTeam();
+    if(observedTeam != 2 && observedTeam != 3) {
+        MirvPov_RestoreSavedSpotted();
+        g_MirvPovLastObservedTeam = 0;
+        return;
+    }
+    if(g_MirvPovLastObservedTeam != observedTeam) {
+        MirvPov_RestoreSavedSpotted();
+        g_MirvPovLastObservedTeam = observedTeam;
+    }
+
+    int highestIndex = GetHighestEntityIndex();
+    if(highestIndex < 0) return;
+    if(highestIndex > 2048) highestIndex = 2048;
+
+    for(int i = 0; i <= highestIndex; ++i) {
+        CEntityInstance * controller = GetEntityFromIndex(i);
+        if(nullptr == controller || !controller->IsPlayerController()) continue;
+
+        CEntityInstance * pawn = GetControllerPlayerPawn(controller);
+        if(nullptr == pawn) continue;
+
+        int team = pawn->GetTeam();
+        if(team != observedTeam) continue;
+        if(!MirvPov_SaveSpottedRestore(pawn, team)) continue;
+
+        auto spottedState = (unsigned char*)pawn + g_clientDllOffsets.C_CSPlayerPawnBase.m_entitySpottedState;
+        uint8_t * pSpotted = (uint8_t*)(spottedState + g_clientDllOffsets.EntitySpottedState_t.m_bSpotted);
+        *pSpotted = 1;
+        if(0 != g_clientDllOffsets.EntitySpottedState_t.m_bSpottedByMask) {
+            uint32_t * pMask = (uint32_t*)(spottedState + g_clientDllOffsets.EntitySpottedState_t.m_bSpottedByMask);
+            pMask[0] = 0xFFFFFFFF;
+            pMask[1] = 0xFFFFFFFF;
+        }
+    }
+}
+
+void MirvPov_BeginFrame() {
+    if(!MirvPov_IsEnabled()) return;
+    MirvPov_ApplyObservedTeamSpotted();
+}
+
+void MirvPov_ReWriteSpotted() {
+	MirvPov_ApplyObservedTeamSpotted();
+}
+
+void MirvPov_RepairTeamSpotted() {
+	if(!MirvPov_IsEnabled()) return;
+	MirvPov_ApplyObservedTeamSpotted();
+}
+
 struct MirvEntityEntry {
 	int entryIndex;
 	int handle;
@@ -595,7 +860,23 @@ extern "C" FFIBool afx_hook_source2_get_entity_ref_is_player_controller(void * p
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
         return BOOL_TO_FFIBOOL(pInstance->IsPlayerController());
     }
-    return FFIBOOL_FALSE;    
+    return FFIBOOL_FALSE;
+}
+
+static void MirvPov_ResetSpottedState() {
+    MirvPov_RestoreSavedSpotted();
+    g_MirvPovLastObservedTeam = 0;
+}
+
+void MirvPov_Enable(HMODULE clientDll) {
+    if(g_MirvPovEnabled) return;
+    g_MirvPovEnabled = true;
+}
+
+void MirvPov_Disable() {
+    if(!g_MirvPovEnabled) return;
+    MirvPov_ResetSpottedState();
+    g_MirvPovEnabled = false;
 }
 
 extern "C" int afx_hook_source2_get_entity_ref_player_controller_handle(void * pRef) {
@@ -681,21 +962,26 @@ extern "C" const char* afx_hook_source2_get_entity_ref_sanitized_player_name(voi
     return nullptr;
 }
 
-typedef CEntityInstance *  (__fastcall * ClientDll_GetSplitScreenPlayer_t)(int slot);
-ClientDll_GetSplitScreenPlayer_t g_ClientDll_GetSplitScreenPlayer = nullptr;
-
 bool Hook_GetSplitScreenPlayer( void* pAddr) {
     g_ClientDll_GetSplitScreenPlayer = (ClientDll_GetSplitScreenPlayer_t)pAddr;
     return true;
 }
 
 extern "C" void * afx_hook_source2_get_entity_ref_from_split_screen_player(int index) {
-    if(0 == index && g_ClientDll_GetSplitScreenPlayer) {
-        if(CEntityInstance * result = g_ClientDll_GetSplitScreenPlayer(index)) {
+    if(0 == index) {
+        if(CEntityInstance * result = GetRealSplitScreenPlayer(index)) {
             return CAfxEntityInstanceRef::Aquire(result);
         }
     }
     return nullptr;
+}
+
+extern "C" FFIBool afx_hook_source2_is_fake_pov_radar_frame_context_active() {
+	return FFIBOOL_FALSE;
+}
+
+extern "C" FFIBool afx_hook_source2_consume_fake_pov_radar_frame_context_was_active() {
+	return FFIBOOL_FALSE;
 }
 
 extern "C" uint8_t afx_hook_source2_get_entity_ref_observer_mode(void * pRef) {

@@ -5,13 +5,22 @@
 #include <Windows.h>
 #include "../deps/release/prop/cs2/sdk_src/public/entityhandle.h"
 
-bool Hook_ClientEntitySystem( void* pEntityList, void * pFnGetHighestEntityIterator, void * pFnGetEntityFromIndex );
-
+bool Hook_ClientEntitySystem(void * pEntityList, void * pFnGetHighestEntityIterator, void * pFnGetEntityFromIndex);
 bool Hook_ClientEntitySystem2();
-
 void Hook_ClientEntitySystem3(HMODULE clientDll);
+bool Hook_GetSplitScreenPlayer(void * pAddr);
 
-bool Hook_GetSplitScreenPlayer( void* pAddr);
+class CEntityInstance * GetEntityFromIndex(int index);
+class CEntityInstance * GetRealSplitScreenPlayer(int slot);
+// mirv_pov API
+bool MirvPov_IsEnabled();
+void MirvPov_Enable(HMODULE clientDll);
+void MirvPov_Disable();
+
+// Frame context (called from main.cpp render hooks)
+void MirvPov_BeginFrame();
+void MirvPov_ReWriteSpotted();
+void MirvPov_RepairTeamSpotted();
 
 class CAfxEntityInstanceRef;
 
@@ -36,7 +45,7 @@ public:
     unsigned int GetHealth();
 
     int GetTeam();
-	
+
     /**
      * @remarks FLOAT_MAX if invalid
      */
@@ -61,14 +70,14 @@ public:
 
     SOURCESDK::CS2::CBaseHandle GetHandle();
 
-    uint8_t LookupAttachment(const char* attachmentName);
-	bool GetAttachment(uint8_t idx, SOURCESDK::Vector &origin, SOURCESDK::Quaternion &angles);
+    uint8_t LookupAttachment(const char * attachmentName);
+    bool GetAttachment(uint8_t idx, SOURCESDK::Vector & origin, SOURCESDK::Quaternion & angles);
 };
 
 typedef int (__fastcall * GetHighestEntityIndex_t)(void * pEntityList, bool bUnknown);
 typedef void * (__fastcall * GetEntityFromIndex_t)(void * pEntityList, int index);
 
-extern GetHighestEntityIndex_t  g_GetHighestEntityIndex;
+extern GetHighestEntityIndex_t g_GetHighestEntityIndex;
 extern GetEntityFromIndex_t g_GetEntityFromIndex;
 
 extern void ** g_pEntityList;
