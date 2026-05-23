@@ -117,6 +117,9 @@ void initSchemaSystemOffsets()
 	bOk = bOk && getOffset(&g_clientDllOffsets.C_EnvSky.m_vTintColor, "client.dll", "C_EnvSky", "m_vTintColor");
 	bOk = bOk && getOffset(&g_clientDllOffsets.C_EnvSky.m_flBrightnessScale, "client.dll", "C_EnvSky", "m_flBrightnessScale");
 
+	getOffset(&g_clientDllOffsets.C_CSPlayerPawnBase.m_flFlashMaxAlpha, "client.dll", "C_CSPlayerPawnBase", "m_flFlashMaxAlpha");
+	getOffset(&g_clientDllOffsets.C_CSPlayerPawnBase.m_flFlashDuration, "client.dll", "C_CSPlayerPawnBase", "m_flFlashDuration");
+
 	if (!bOk) ErrorBox(MkErrStr(__FILE__, __LINE__));	
 }
 

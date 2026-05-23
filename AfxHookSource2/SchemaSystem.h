@@ -85,6 +85,11 @@ struct ClientDllOffsets_t {
 		ptrdiff_t m_vTintColor = 0; // Color
 		ptrdiff_t m_flBrightnessScale = 0; // float32
 	} C_EnvSky;
+
+	struct C_CSPlayerPawnBase {
+		ptrdiff_t m_flFlashMaxAlpha = 0; // float32
+		ptrdiff_t m_flFlashDuration = 0; // float32
+	} C_CSPlayerPawnBase;
 };
 
 extern struct ClientDllOffsets_t g_clientDllOffsets;

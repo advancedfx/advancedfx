@@ -10,6 +10,9 @@ bool g_bHookedMirvCommands = false;
 
 bool g_bNoFlashEnabled = false;
 
+bool g_bFlashAlphaEnabled = false;
+float g_fFlashAlphaValue = 1.0f;
+
 bool g_bEndOfMatchEnabled = true;
 
 MirvGlow g_MirvGlow;
@@ -47,9 +50,19 @@ CON_COMMAND(mirv_endofmatch, "Disables end of match scene.")
 typedef void (__fastcall *g_Original_flashFunc_t)(u_char* param_1, u_char* param_2, float* param_3);
 g_Original_flashFunc_t g_Original_flashFunc = nullptr;
 
-void __fastcall new_flashFunc(u_char* param_1, u_char* param_2, float* param_3) {	
+void __fastcall new_flashFunc(u_char* param_1, u_char* param_2, float* param_3) {
 	if (g_bNoFlashEnabled) return;
-	else return g_Original_flashFunc(param_1, param_2, param_3);
+
+	g_Original_flashFunc(param_1, param_2, param_3);
+
+	if (g_bFlashAlphaEnabled && param_1 != nullptr) {
+		if (g_clientDllOffsets.C_CSPlayerPawnBase.m_flFlashMaxAlpha != 0) {
+			float* pMaxAlpha = (float*)(param_1 + g_clientDllOffsets.C_CSPlayerPawnBase.m_flFlashMaxAlpha);
+			float originalMaxAlpha = *pMaxAlpha;
+			*pMaxAlpha = g_fFlashAlphaValue * 255.0f;
+			advancedfx::Message("HLAE: Adjusted flash max alpha of pawn %p from %f to %f (original duration: %f)\n", param_1, originalMaxAlpha, *pMaxAlpha, (param_3 != nullptr) ? *param_3 : 0.0f);
+		}
+	}
 }
 
 void mirvNoFlash_Console(advancedfx::ICommandArgs* args) {
@@ -73,6 +86,44 @@ void mirvNoFlash_Console(advancedfx::ICommandArgs* args) {
 CON_COMMAND(mirv_noflash, "Disables flash overlay.")
 {
 	mirvNoFlash_Console(args);
+}
+
+CON_COMMAND(mirv_flashalpha, "Control flash overlay alpha intensity.")
+{
+	int argc = args->ArgC();
+	const auto arg0 = args->ArgV(0);
+
+	if (2 <= argc)
+	{
+		const char * arg1 = args->ArgV(1);
+
+		if (!_stricmp(arg1, "default"))
+		{
+			g_bFlashAlphaEnabled = false;
+			g_fFlashAlphaValue = 1.0f;
+			return;
+		}
+
+		float value = (float)atof(arg1);
+		if (value < 0.0f) value = 0.0f;
+		if (value > 1.0f) value = 1.0f;
+
+		g_bFlashAlphaEnabled = true;
+		g_fFlashAlphaValue = value;
+		return;
+	}
+
+	advancedfx::Message(
+		"%s <fAlpha|default>\n"
+		"  <fAlpha> - Set flash alpha multiplier (0.0 = no flash, 1.0 = full flash).\n"
+		"  default  - Restore game default.\n"
+		, arg0
+	);
+	if (g_bFlashAlphaEnabled) {
+		advancedfx::Message("Current value: %f\n", g_fFlashAlphaValue);
+	} else {
+		advancedfx::Message("Current value: default (game)\n");
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
