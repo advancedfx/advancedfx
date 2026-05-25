@@ -6,9 +6,11 @@
 #include "SceneSystem.h"
 #include "SchemaSystem.h"
 
+#include <algorithm>
+
 bool g_bHookedMirvCommands = false;
 
-bool g_bNoFlashEnabled = false;
+float g_fNoFlashAmount = 0.0f;
 
 bool g_bEndOfMatchEnabled = true;
 
@@ -44,12 +46,16 @@ CON_COMMAND(mirv_endofmatch, "Disables end of match scene.")
 	mirvEndOfMatch_Console(args);
 }
 
-typedef void (__fastcall *g_Original_flashFunc_t)(u_char* param_1, u_char* param_2, float* param_3);
-g_Original_flashFunc_t g_Original_flashFunc = nullptr;
+typedef void (__fastcall *g_Original_OnFlashMaxAlphaChanged_t)(u_char* param_1, u_char* param_2, float* param_3);
+g_Original_OnFlashMaxAlphaChanged_t g_Original_OnFlashMaxAlphaChanged = nullptr;
 
-void __fastcall new_flashFunc(u_char* param_1, u_char* param_2, float* param_3) {	
-	if (g_bNoFlashEnabled) return;
-	else return g_Original_flashFunc(param_1, param_2, param_3);
+void __fastcall new_OnFlashMaxAlphaChanged(u_char* param_1, u_char* param_2, float* param_3) {	
+	if (g_fNoFlashAmount == 0.0f) return g_Original_OnFlashMaxAlphaChanged(param_1, param_2, param_3);
+
+	auto newMaxAlpha = *param_3 * (1.0f - g_fNoFlashAmount);
+	*param_3 = newMaxAlpha;
+
+	return g_Original_OnFlashMaxAlphaChanged(param_1, param_2, param_3);
 }
 
 void mirvNoFlash_Console(advancedfx::ICommandArgs* args) {
@@ -58,14 +64,17 @@ void mirvNoFlash_Console(advancedfx::ICommandArgs* args) {
 
 	if (2 == argc)
 	{
-		g_bNoFlashEnabled = 0 != atoi(args->ArgV(1));
+		g_fNoFlashAmount = std::clamp((float)atof(args->ArgV(1)), 0.0f, 1.0f);
 		return;
 	}
 
 	advancedfx::Message(
-		"%s <0|1> - Enable (1) / disable (0) no flash.\n"
-		"Current value: %d\n"
-		, arg0, g_bNoFlashEnabled 
+		"%s <f> - Set the amount of noflash effect in 0.0 - 1.0 range.\n"
+		"Where 0 means no reduction = default game behaviour.\n"
+		"0.25 = reduce flash by 25%% percent.\n"
+		"1 = remove flash completely.\n"
+		"Current value: %f\n"
+		, arg0, g_fNoFlashAmount 
 	);
 
 }
@@ -445,10 +454,11 @@ extern uint32_t g_Skybox_UnkPtr_Offset;
 
 bool getAddressesFromClient(HMODULE clientDll) {
 	bool res = true;
-	// can be found with offsets to m_flFlashScreenshotAlpha, m_flFlashDuration, m_flFlashMaxAlpha, etc. 
-	// In this function values being assigned to all these offsets at once
-	size_t g_Original_flashFunc_addr = getAddress(clientDll, "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 0F 29 74 24 ?? 33 C9");
-	if(g_Original_flashFunc_addr == 0) {
+
+	// near "OnFlashMaxAlphaChanged"
+	// checks for m_flFlashMaxAlpha in param_2 and sets it to param_3 if it's not the same
+	g_Original_OnFlashMaxAlphaChanged = (g_Original_OnFlashMaxAlphaChanged_t)getAddress(clientDll, "F3 41 0F 10 08 F3 0F 10 82 ?? ?? ?? ?? 0F 2E C1 7A ?? 74 ??");
+	if(g_Original_OnFlashMaxAlphaChanged == 0) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));
 		res = false;
 	}
@@ -469,7 +479,6 @@ bool getAddressesFromClient(HMODULE clientDll) {
 		res = false;
 	}
 
-	g_Original_flashFunc = (g_Original_flashFunc_t)(g_Original_flashFunc_addr);
 	g_Original_EOM = (g_Original_EOM_t)(g_Original_EOM_addr);
 	g_Original_setGlowProps = (g_Original_setGlowProps_t)(g_Original_setGlowProps_addr);
 
@@ -519,7 +528,7 @@ void HookMirvCommands(HMODULE clientDll) {
 	DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
 
-	DetourAttach(&(PVOID&)g_Original_flashFunc, new_flashFunc);
+	DetourAttach(&(PVOID&)g_Original_OnFlashMaxAlphaChanged, new_OnFlashMaxAlphaChanged);
 	DetourAttach(&(PVOID&)g_Original_EOM, new_EOM);
 	DetourAttach(&(PVOID&)g_Original_setGlowProps, new_setGlowProps);
 	DetourAttach(&(PVOID&)org_shouldGlow, new_shouldGlow);
