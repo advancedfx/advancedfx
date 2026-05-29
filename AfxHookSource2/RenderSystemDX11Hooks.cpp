@@ -553,6 +553,63 @@ private:
 } g_EngineThread_ProjectionMatrix,g_RenderThread_ProjectionMatrix;
 
 
+struct CNoDrawBlendState {
+public:
+    void OnTargetBegin(ID3D11Device * pDevice) {
+        if(pDevice) {
+            D3D11_BLEND_DESC blendDesc{
+                FALSE, // AlphaToCoverageEnable
+                FALSE, // IndependentBlendEnable
+                // D3D11_RENDER_TARGET_BLEND_DESC
+                {
+                    {
+                        FALSE, // BlendEnable
+                        D3D11_BLEND_ONE, // SrcBlend,
+                        D3D11_BLEND_ZERO, // DstBlend
+                        D3D11_BLEND_OP_ADD, // BlendOp
+                        D3D11_BLEND_ONE, // SrcBlendAlpha,
+                        D3D11_BLEND_ZERO, // DestBlendAlpha
+                        D3D11_BLEND_OP_ADD, // BlendOpAlpha
+                        0 // RenderTargetWriteMask
+                    }
+                    , { FALSE, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, 0}
+                    , { FALSE, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, 0}
+                    , { FALSE, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, 0}
+                    , { FALSE, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, 0}
+                    , { FALSE, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, 0}
+                    , { FALSE, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, 0}
+                    , { FALSE, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, 0}
+                }
+            };
+            pDevice->CreateBlendState(&blendDesc, &m_BlendState);
+        }
+    }
+
+    void OnTargetEnd() {
+        if (m_BlendState) {
+            m_BlendState->Release();
+            m_BlendState = nullptr;
+        }
+    }
+
+    void Block(ID3D11DeviceContext * pContext){
+        pContext->OMGetBlendState(&m_OrgBlendState,nullptr,&m_SampleMask);
+        pContext->OMSetBlendState(m_BlendState,nullptr,0x0);
+    }
+
+    void Unblock(ID3D11DeviceContext * pContext) {
+        pContext->OMSetBlendState(m_OrgBlendState,nullptr,m_SampleMask);
+        if(m_OrgBlendState) {
+            m_OrgBlendState->Release();
+            m_OrgBlendState = nullptr;
+        }
+    }
+
+private:
+    ID3D11BlendState* m_BlendState = nullptr;
+    ID3D11BlendState* m_OrgBlendState = nullptr;
+    UINT m_SampleMask;
+} g_NoDraw;
 
 class CDepthCompositor {
 public:
@@ -1399,6 +1456,7 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
         if(SUCCEEDED(result2)) {
             if(pResource == pTexture/* && (g_pDevice == nullptr || This != g_pDevice)*/) {
                 if(g_pDevice) {
+                    g_NoDraw.OnTargetEnd();
                     g_DepthCompositor.OnTargetEnd();
                     //CAfxShaderResourceViews::Clear();
                     g_CampathDrawer.EndDevice();
@@ -1407,6 +1465,7 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
                 }
 
                 g_DepthCompositor.OnTargetBegin(This, pTexture);
+                g_NoDraw.OnTargetBegin(This);
                 g_pDevice = This;
                 g_pDevice->AddRef();
                 g_CampathDrawer.BeginDevice(This);
@@ -1692,6 +1751,50 @@ public:
     }
 private:
 };
+
+class CAfxRenderCallbackBlockBuffers : public IRenderThreadCallback
+{
+public:
+    CAfxRenderCallbackBlockBuffers()
+    {
+
+    }
+
+    virtual void OnCallback(void) {
+        if (auto pDeviceContext = g_RenderCommands.RenderThread_GetContext()) {
+            g_NoDraw.Block(pDeviceContext);
+        }
+        delete this;        
+    }
+};
+
+class CAfxRenderCallbackUnblockBuffers : public IRenderThreadCallback
+{
+public:
+    CAfxRenderCallbackUnblockBuffers()
+    {
+
+    }
+
+    virtual void OnCallback(void) {
+        if (auto pDeviceContext = g_RenderCommands.RenderThread_GetContext()) {
+            g_NoDraw.Unblock(pDeviceContext);
+        }
+        delete this;        
+    }
+};
+
+bool ToggleDrawing(void* pCRenderContextDx11_SoftwareCommandList, bool value) {
+    if (pCRenderContextDx11_SoftwareCommandList) {
+        auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[140];
+        if(value)
+            fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBlockBuffers());
+        else
+            fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackUnblockBuffers());
+        return true;
+    }
+    return false;
+}
 
 /*
 typedef void (STDMETHODCALLTYPE * PSSetShaderResources_t)(ID3D11DeviceContext* This,

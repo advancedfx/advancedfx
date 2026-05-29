@@ -2010,6 +2010,8 @@ void My_Console_DevWarning(int level, const char* fmt, ...) {
 	va_end(args);
 }
 
+extern void GetClientDllSceneObjectVtable(HMODULE clientDll);
+
 void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 {
 	static bool bFirstTier0 = true;
@@ -2157,6 +2159,8 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		HookClientDll(hModule);
 
 		Hook_ClientEntitySystem3(hModule);
+
+		GetClientDllSceneObjectVtable(hModule);
 	} 
 	else if(bFirstPanorama && StringEndsWithW(lpLibFileName, L"panorama.dll"))
 	{

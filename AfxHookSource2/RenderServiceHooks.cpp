@@ -38,7 +38,6 @@ void __fastcall My_SceneSystem_WaitForRenderingToComplete(void * pThis) {
     } else {
         g_Old_SceneSystem_WaitForRenderingToComplete(pThis);
     }
-    
 }
 
 void __fastcall My_Engine2_RenderService_OnClientOutput(void * pUnk0, void * pUnk1) {
