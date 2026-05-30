@@ -1,0 +1,93 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 24,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Visual Studio 17 2022",
+      "toolset": "v143",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "AFX_SUPERBUILD": "OFF",
+        "AFX_RUST_CARGO_LOCKED": "TRUE"
+      }
+    },
+    {
+      "name": "win32-debug",
+      "inherits": "base",
+      "architecture": "Win32",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "win32-release",
+      "inherits": "base",
+      "architecture": "Win32",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "x64-debug",
+      "inherits": "base",
+      "architecture": "x64",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "x64-release",
+      "inherits": "base",
+      "architecture": "x64",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "superbuild-release",
+      "generator": "Visual Studio 17 2022",
+      "toolset": "v143",
+      "architecture": "Win32",
+      "binaryDir": "${sourceDir}/build/superbuild-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "AFX_SUPERBUILD": "ON",
+        "AFX_SUPERBUILD_BUILD_ALWAYS": "ON",
+        "AFX_RUST_CARGO_LOCKED": "TRUE"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "win32-debug",
+      "configurePreset": "win32-debug",
+      "configuration": "Debug"
+    },
+    {
+      "name": "win32-release",
+      "configurePreset": "win32-release",
+      "configuration": "Release"
+    },
+    {
+      "name": "x64-debug",
+      "configurePreset": "x64-debug",
+      "configuration": "Debug"
+    },
+    {
+      "name": "x64-release",
+      "configurePreset": "x64-release",
+      "configuration": "Release"
+    },
+    {
+      "name": "superbuild-release",
+      "configurePreset": "superbuild-release",
+      "configuration": "Release"
+    }
+  ]
+}
