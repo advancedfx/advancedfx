@@ -385,9 +385,10 @@ static bool SceneObjectFilterClassIsProjectedDecal(SceneObjectFilterClass filter
 }
 
 static bool SceneObjectFilterClassHasKnownSceneDataLayout(SceneObjectFilterClass filterClass) {
-	return filterClass == SceneObjectFilterClass::Base
+	return true;
+	/*return filterClass == SceneObjectFilterClass::Base
 		|| filterClass == SceneObjectFilterClass::Animatable
-		|| filterClass == SceneObjectFilterClass::Aggregate;
+		|| filterClass == SceneObjectFilterClass::Aggregate;*/
 }
 
 static bool StringContains(const char* value, const char* pattern) {
@@ -457,7 +458,7 @@ static bool SceneLayerContextIsDepthPass(const SceneLayerContext& context) {
 	return false;
 }
 
-static SceneObjectDrawPolicy ApplyLayerAwarePolicy(SceneObjectDrawPolicy policy, const SceneLayerContext & context, const CBaseSceneData& sceneData) {
+static SceneObjectDrawPolicy ApplyLayerAwarePolicy(SceneObjectFilterClass filterClass, const SceneLayerContext & context, const char* materialName, SceneObjectDrawPolicy policy) {
 	if (policy == SceneObjectDrawPolicy::DepthPassesOnly) {
 		return SceneLayerContextIsDepthPass(context)
 			&& !SceneLayerContextIsDepthPassesOnlyExcluded(context)
@@ -465,10 +466,13 @@ static SceneObjectDrawPolicy ApplyLayerAwarePolicy(SceneObjectDrawPolicy policy,
 			: SceneObjectDrawPolicy::Hide;
 	}
 
-	return policy;
+	return nullptr == materialName && filterClass == SceneObjectFilterClass::Unknown
+		? SceneObjectDrawPolicy::Draw // unknown objects without material we always draw
+		: policy
+	;
 }
 
-static bool TryGetSceneSemanticPolicy(SceneObjectFilterClass filterClass, const SceneLayerContext & context, const CBaseSceneData& sceneData, const char* materialName, SceneObjectDrawPolicy& outPolicy) {
+static bool TryGetSceneSemanticPolicy(SceneObjectFilterClass filterClass, const SceneLayerContext & context, const char* materialName, SceneObjectDrawPolicy& outPolicy) {
 	SceneSemanticGroup group = ClassifySceneObject(filterClass, context, materialName);
 	SceneObjectDrawPolicy policy = g_SceneSemanticPolicies[(int)group];
 	// Semantic draw is the default state; descriptor-class policies still apply unless a semantic group is hidden / depth-pass-only.
@@ -481,7 +485,7 @@ static bool TryGetSceneSemanticPolicy(SceneObjectFilterClass filterClass, const 
 		return true;
 	}
 
-	outPolicy = ApplyLayerAwarePolicy(policy, context, sceneData);
+	outPolicy = ApplyLayerAwarePolicy(filterClass, context, materialName, policy);
 	return true;
 }
 
@@ -542,7 +546,7 @@ static SceneObjectDrawPolicy GetSceneDataPolicy(SceneObjectFilterClass filterCla
 	}
 
 	if (SceneObjectFilterClassIsSkyBox(filterClass)) {
-		SceneObjectDrawPolicy policy = ApplyLayerAwarePolicy(g_SceneSemanticPolicies[(int)SceneSemanticGroup::Sky], context, sceneData);
+		SceneObjectDrawPolicy policy = ApplyLayerAwarePolicy(filterClass, context, nullptr, g_SceneSemanticPolicies[(int)SceneSemanticGroup::Sky]);
 		return policy == SceneObjectDrawPolicy::DepthPassesOnly ? SceneObjectDrawPolicy::Hide : policy;
 	}
 
@@ -551,19 +555,17 @@ static SceneObjectDrawPolicy GetSceneDataPolicy(SceneObjectFilterClass filterCla
 		return policy == SceneObjectDrawPolicy::DepthPassesOnly ? SceneObjectDrawPolicy::Hide : policy;
 	}
 
-	if (!SceneObjectFilterClassHasKnownSceneDataLayout(filterClass)) return SceneObjectDrawPolicy::Draw;
-
-	if (sceneData.material == 0) {
+	if (!SceneObjectFilterClassHasKnownSceneDataLayout(filterClass) || sceneData.material == 0) {
 		SceneObjectDrawPolicy semanticPolicy;
-		if (TryGetSceneSemanticPolicy(filterClass, context, sceneData, nullptr, semanticPolicy)) return semanticPolicy;
-		return ApplyLayerAwarePolicy(GetSceneObjectClassPolicy(filterClass), context, sceneData);
+		if (TryGetSceneSemanticPolicy(filterClass, context, nullptr, semanticPolicy)) return semanticPolicy;
+		return ApplyLayerAwarePolicy(filterClass, context, nullptr, GetSceneObjectClassPolicy(filterClass));
 	}
 
 	const char* materialName = sceneData.material->GetName();
 	if (materialName == nullptr) {
 		SceneObjectDrawPolicy semanticPolicy;
-		if (TryGetSceneSemanticPolicy(filterClass, context, sceneData, nullptr, semanticPolicy)) return semanticPolicy;
-		return ApplyLayerAwarePolicy(GetSceneObjectClassPolicy(filterClass), context, sceneData);
+		if (TryGetSceneSemanticPolicy(filterClass, context, nullptr, semanticPolicy)) return semanticPolicy;
+		return ApplyLayerAwarePolicy(filterClass, context, nullptr, GetSceneObjectClassPolicy(filterClass));
 	}
 
 	// Custom Sky related:
@@ -579,10 +581,9 @@ static SceneObjectDrawPolicy GetSceneDataPolicy(SceneObjectFilterClass filterCla
 	}	
 
 	SceneObjectDrawPolicy semanticPolicy;
-	if (TryGetSceneSemanticPolicy(filterClass, context, sceneData, materialName, semanticPolicy)) return semanticPolicy;
+	if (TryGetSceneSemanticPolicy(filterClass, context, materialName, semanticPolicy)) return semanticPolicy;
 
-	SceneObjectDrawPolicy classPolicy = GetSceneObjectClassPolicy(filterClass);
-	return ApplyLayerAwarePolicy(classPolicy, context, sceneData);
+	return ApplyLayerAwarePolicy(filterClass, context, materialName, GetSceneObjectClassPolicy(filterClass));
 }
 
 std::mutex g_RenderParam4ToSceneLayerContextsMutex;
@@ -917,6 +918,17 @@ CON_COMMAND(mirv_scene_filter, "")
 				return;
 			}
 		}
+
+		if (!_stricmp(arg1, "smoke"))
+		{
+			if (TryParseSceneObjectDrawPolicy(arg2, policy))
+			{
+				g_SmokeVolumeObjectsPolicy = policy == SceneObjectDrawPolicy::Hide
+					? SceneObjectDrawPolicy::Hide
+					: SceneObjectDrawPolicy::Draw;
+				return;
+			}
+		}		
 
 		if (TryGetSceneSemanticGroup(arg1, semanticGroup))
 		{
