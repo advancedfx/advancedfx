@@ -604,7 +604,7 @@ typedef void (__fastcall * RenderLayerDrawListPart_t)(void * pSceneSystem, void 
 RenderLayerDrawListPart_t org_RenderLayerDrawListPart = nullptr;
 
 void __fastcall new_RenderLayerDrawListPart(void * pSceneSystem, void * param_2, void * pCSceneLayer, void * param_4, unsigned int count, void *param_6) {
-	if(pCSceneLayer)
+	if(g_bSceneFilterSystemActive && pCSceneLayer)
 	{
 		SceneLayerContext context;
 		void* pCSceneView = *(void**)((unsigned char*)pCSceneLayer + 0x6f0);
@@ -616,8 +616,6 @@ void __fastcall new_RenderLayerDrawListPart(void * pSceneSystem, void * param_2,
 		}
 		context.ViewPass = (const char*)pCSceneLayer + 0x4b8;
 		context.Flags = *(uint32_t*)((unsigned char*)pCSceneLayer + 0x48);
-
-		DWORD threadId = GetCurrentThreadId();
 
 		{
 			std::unique_lock<std::shared_timed_mutex> lock(g_RenderParam4ToSceneLayerContextsMutex);
