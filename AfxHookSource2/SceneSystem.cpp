@@ -11,6 +11,7 @@
 
 #include <cstring>
 #include <mutex>
+#include <shared_mutex>
 #include <unordered_map>
 #include <map>
 
@@ -586,11 +587,11 @@ static SceneObjectDrawPolicy GetSceneDataPolicy(SceneObjectFilterClass filterCla
 	return ApplyLayerAwarePolicy(filterClass, context, materialName, GetSceneObjectClassPolicy(filterClass));
 }
 
-std::mutex g_RenderParam4ToSceneLayerContextsMutex;
+std::shared_timed_mutex g_RenderParam4ToSceneLayerContextsMutex;
 std::map<void *,SceneLayerContext> g_RenderParam4ToSceneLayerContexts;
 
 static bool GetCurrentThreadSceneLayerContext(void * param4, SceneLayerContext& outContext) {
-	std::lock_guard<std::mutex> lock(g_RenderParam4ToSceneLayerContextsMutex);
+	std::shared_lock<std::shared_timed_mutex> lock(g_RenderParam4ToSceneLayerContextsMutex);
 	auto it = g_RenderParam4ToSceneLayerContexts.find(param4);
 	if(it != g_RenderParam4ToSceneLayerContexts.end()) {
 		outContext = it->second;
@@ -619,14 +620,14 @@ void __fastcall new_RenderLayerDrawListPart(void * pSceneSystem, void * param_2,
 		DWORD threadId = GetCurrentThreadId();
 
 		{
-			std::lock_guard<std::mutex> lock(g_RenderParam4ToSceneLayerContextsMutex);
+			std::unique_lock<std::shared_timed_mutex> lock(g_RenderParam4ToSceneLayerContextsMutex);
 			g_RenderParam4ToSceneLayerContexts.emplace(param_4, context);
 		}
 
 		org_RenderLayerDrawListPart(pSceneSystem, param_2, pCSceneLayer, param_4, count, param_6);
 
 		{
-			std::lock_guard<std::mutex> lock(g_RenderParam4ToSceneLayerContextsMutex);
+			std::unique_lock<std::shared_timed_mutex> lock(g_RenderParam4ToSceneLayerContextsMutex);
 			auto it = g_RenderParam4ToSceneLayerContexts.find(param_4);
 			if(it != g_RenderParam4ToSceneLayerContexts.end()) g_RenderParam4ToSceneLayerContexts.erase(it);
 		}
