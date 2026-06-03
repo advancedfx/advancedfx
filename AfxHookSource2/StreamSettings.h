@@ -55,7 +55,7 @@ public:
         if(ClearOverride) {
            if(cmp = CompareFloat(ClearOverrideColor.R, o.ClearOverrideColor.R)) return cmp;
            if(cmp = CompareFloat(ClearOverrideColor.G, o.ClearOverrideColor.G)) return cmp;
-           if(cmp = CompareFloat(ClearOverrideColor.B, o.ClearBeforeUiColor.B)) return cmp;
+           if(cmp = CompareFloat(ClearOverrideColor.B, o.ClearOverrideColor.B)) return cmp;
            if(cmp = CompareFloat(ClearOverrideColor.A, o.ClearOverrideColor.A)) return cmp;
         }
         if(cmp = CompareBool(ClearBeforeUi, o.ClearBeforeUi)) return cmp;
