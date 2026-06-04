@@ -9,6 +9,7 @@
 #include "../deps/release/Detours/src/detours.h"
 #include "../deps/release/prop/cs2/sdk_src/public/tier1/bufferstring.h"
 
+#include <atomic>
 #include <cstring>
 #include <mutex>
 #include <shared_mutex>
@@ -261,19 +262,21 @@ SceneObjectDrawPolicy g_SceneSemanticPolicies[(int)SceneSemanticGroup::Count] = 
 	SceneObjectDrawPolicy::Draw
 };
 
-bool g_bSceneFilterSystemActive = false;
+std::atomic_bool g_bSceneFilterSystemActive = false;
 
 void UpdateSceneFilterSystemActive() {
-	g_bSceneFilterSystemActive =
+	bool bActive =
 		0 < g_iSceneFilterDebug
 		|| g_BaseSceneObjectsPolicy != SceneObjectDrawPolicy::Draw
 		|| g_AnimatableSceneObjectsPolicy != SceneObjectDrawPolicy::Draw
 		|| g_AggregateSceneObjectsPolicy != SceneObjectDrawPolicy::Draw
 		|| g_SmokeVolumeObjectsPolicy !=  SceneObjectDrawPolicy::Draw;
 
-	for(int i = 0; !g_bSceneFilterSystemActive && i < (int)SceneSemanticGroup::Count; i++) {
-		g_bSceneFilterSystemActive = g_SceneSemanticPolicies[i] != SceneObjectDrawPolicy::Draw;
+	for(int i = 0; !bActive && i < (int)SceneSemanticGroup::Count; i++) {
+		bActive = g_SceneSemanticPolicies[i] != SceneObjectDrawPolicy::Draw;
 	}
+
+	g_bSceneFilterSystemActive = bActive;
 }
 
 enum class SceneObjectFilterClass {
@@ -600,6 +603,13 @@ static bool GetCurrentThreadSceneLayerContext(void * param4, SceneLayerContext& 
 	return false;
 }
 
+void ClearThreadSceneLayerContexts(){
+	if(g_bSceneFilterSystemActive) {
+		std::unique_lock<std::shared_timed_mutex> lock(g_RenderParam4ToSceneLayerContextsMutex);
+		g_RenderParam4ToSceneLayerContexts.clear();
+	}
+}
+
 typedef void (__fastcall * RenderLayerDrawListPart_t)(void * pSceneSystem, void * param_2, void * pCSceneLayer, void * param_4, unsigned int count, void *param_6);
 RenderLayerDrawListPart_t org_RenderLayerDrawListPart = nullptr;
 
@@ -619,17 +629,8 @@ void __fastcall new_RenderLayerDrawListPart(void * pSceneSystem, void * param_2,
 
 		{
 			std::unique_lock<std::shared_timed_mutex> lock(g_RenderParam4ToSceneLayerContextsMutex);
-			g_RenderParam4ToSceneLayerContexts.emplace(param_4, context);
+			g_RenderParam4ToSceneLayerContexts.emplace(param_4, context).second;
 		}
-
-		org_RenderLayerDrawListPart(pSceneSystem, param_2, pCSceneLayer, param_4, count, param_6);
-
-		{
-			std::unique_lock<std::shared_timed_mutex> lock(g_RenderParam4ToSceneLayerContextsMutex);
-			auto it = g_RenderParam4ToSceneLayerContexts.find(param_4);
-			if(it != g_RenderParam4ToSceneLayerContexts.end()) g_RenderParam4ToSceneLayerContexts.erase(it);
-		}
-		return;
 	}
 
 	org_RenderLayerDrawListPart(pSceneSystem, param_2, pCSceneLayer, param_4, count, param_6);
