@@ -9,7 +9,7 @@
     -->
     <Package
         ProductCode="{CA6490CA-3B5A-464E-9B4A-84A2B3014FF4}"
-        Version="1.1.54"
+        Version="1.1.55"
         Name="!(loc.PackageName)"
         Manufacturer="!(loc.Manufacturer)"
         UpgradeCode="{9090AE9A-4E9D-46C5-B595-9F2FBCF96945}"
@@ -75,16 +75,16 @@
         </UI>
 
         <Property Id="AFX_FFMPEGURL" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-11-30-12-53/ffmpeg-n8.0.1-17-g27a297f186-win64-gpl-8.0.zip" />
-        <Property Id="AFX_FFMPEGSUM" Value="acdd8759b91f5e4949a8609d3afa3873bf5e10c777a083a0d3099fa191a9ed64f82ea3e3b31e3bea4b48b73b7fb7680954ba7aff69ecb0c37f95eb908d3e8940" />
+        <Property Id="AFX_FFMPEGSUM" Value="36c9dc6a30afa6b46619357d3e8fc4fa3aaee7f1b634ba48c5ceaca3347b8e796b6cc83087bfec4ce6262ff2a5af37daaab3d57f1d69856955f375cfd9fdbd75" />
 
-        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_40" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-11-30-12-53/ffmpeg-n8.0.1-17-g27a297f186-win64-lgpl-shared-8.0.zip" Condition="FFMPEG_VERSION=&quot;latest-win64-shared-lgpl&quot;" />
-        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_40" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="4ffcdaed96e7e398ac9c1aa17b42448f1646e6b042a26a41f1cd18783ef23fb1ba6439c3965b5dedec12892cde9822b56d79fbba48b1a30e43a109cd0a8975f1" Condition="FFMPEG_VERSION=&quot;latest-win64-shared-lgpl&quot;" />
-        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_41" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-11-30-12-53/ffmpeg-n8.0.1-17-g27a297f186-win64-lgpl-8.0.zip" Condition="FFMPEG_VERSION=&quot;latest-win64-static-lgpl&quot;" />
-        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_41" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="4a80ea4d58dc41867f14f3edd85c5e42cfd0738419ff0fadef5497f96cd3925ceafe680cc01077ef6b570a5c6b2777b9d7599bf3dfce2f1bf708bbb5ceb92a21" Condition="FFMPEG_VERSION=&quot;latest-win64-static-lgpl&quot;" />
-        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_42" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-11-30-12-53/ffmpeg-n8.0.1-17-g27a297f186-win64-gpl-shared-8.0.zip" Condition="FFMPEG_VERSION=&quot;latest-win64-shared&quot;" />
-        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_42" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="cd816634fe050d64d8b04aad4a85c47e651ce368d696d3d75ac9865853eedad84a0a44583bee3520d812635e9c6e2bf4d65efaf1f98d3c88e5903f3676fe46e3" Condition="FFMPEG_VERSION=&quot;latest-win64-shared&quot;" />
-        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_43" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-11-30-12-53/ffmpeg-n8.0.1-17-g27a297f186-win64-gpl-8.0.zip" Condition="FFMPEG_VERSION=&quot;latest-win64-static&quot;" />
-        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_43" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="acdd8759b91f5e4949a8609d3afa3873bf5e10c777a083a0d3099fa191a9ed64f82ea3e3b31e3bea4b48b73b7fb7680954ba7aff69ecb0c37f95eb908d3e8940" Condition="FFMPEG_VERSION=&quot;latest-win64-static&quot;" />
+        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_40" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-05-31-13-22/ffmpeg-n8.1.1-9-g58d4114d36-win64-lgpl-shared-8.1.zip" Condition="FFMPEG_VERSION=&quot;latest-win64-shared-lgpl&quot;" />
+        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_40" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="7a75d77596ce24410cc6165ed129df439c1102d21e92915f02d57d04ad77360828fb8e0ec11753f0f8fd7d478aa960c9e04d7267cc74ce1e10de2528c2fc37d2" Condition="FFMPEG_VERSION=&quot;latest-win64-shared-lgpl&quot;" />
+        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_41" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-05-31-13-22/ffmpeg-n8.1.1-9-g58d4114d36-win64-lgpl-8.1.zip" Condition="FFMPEG_VERSION=&quot;latest-win64-static-lgpl&quot;" />
+        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_41" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="647a25137503f7b290dc66564ed54eef209ce3e988e620425bfbad0cff4382d6f66833f4e3223a33bd916b9b5fd2d712dfe425248c6baaf8afb5675350aaa04c" Condition="FFMPEG_VERSION=&quot;latest-win64-static-lgpl&quot;" />
+        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_42" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-05-31-13-22/ffmpeg-n8.1.1-9-g58d4114d36-win64-gpl-shared-8.1.zip" Condition="FFMPEG_VERSION=&quot;latest-win64-shared&quot;" />
+        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_42" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="9f4c86b3100a9d7dcde0c359ba5fed5c83f5cd159597e301239348f28da500bb2138614288818c1d43749f4ba88902aff7c8a21db47bee2957723be8f2d43ab1" Condition="FFMPEG_VERSION=&quot;latest-win64-shared&quot;" />
+        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGURL_43" Id="AFX_FFMPEGURL" Before="SetInstallFfmpegPrepareUrlAction" Value="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-05-31-13-22/ffmpeg-n8.1.1-9-g58d4114d36-win64-gpl-8.1.zip" Condition="FFMPEG_VERSION=&quot;latest-win64-static&quot;" />
+        <SetProperty Sequence="execute" Action="Set_AFX_FFMPEGSUM_43" Id="AFX_FFMPEGSUM" Before="SetInstallFfmpegPrepareUrlAction" Value="36c9dc6a30afa6b46619357d3e8fc4fa3aaee7f1b634ba48c5ceaca3347b8e796b6cc83087bfec4ce6262ff2a5af37daaab3d57f1d69856955f375cfd9fdbd75" Condition="FFMPEG_VERSION=&quot;latest-win64-static&quot;" />
 
         <InstallUISequence>
             <Custom Action="DetectOldFfmpegAction" After="AppSearch" Condition="OLD_HLAE_FFMPEG_FOLDER" />
