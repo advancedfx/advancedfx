@@ -56,14 +56,10 @@ add_custom_command(
     DEPENDS
         "${AfxHookSource2Snippets_SOURCE_DIR}/../../package.json"
         "${AfxHookSource2Snippets_SOURCE_DIR}/../../package-lock.json"
-    COMMAND npm ci
+    COMMAND call npm ci
     COMMAND ${CMAKE_COMMAND} -E touch "${AFXHOOKSOURCE2SNIPPETS_NPM_CI_STAMP}"
     WORKING_DIRECTORY "${AfxHookSource2Snippets_SOURCE_DIR}/../../"
     VERBATIM
-)
-
-add_custom_target(AfxHookSource2SnippetsNpmCI
-    DEPENDS "${AFXHOOKSOURCE2SNIPPETS_NPM_CI_STAMP}"
 )
 
 add_custom_command(
