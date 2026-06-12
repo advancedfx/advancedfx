@@ -48,7 +48,8 @@ git clone --recurse-submodules https://github.com/advancedfx/advancedfx.git
 ### Build source code
 
 A full HLAE release consists of both, Win32 and x64 architecture parts, as such it is required to build both parts.
-The `cmake/PackageRelease.cmake` and `cmake/Stage.cmake` scripts take care of puzzling these parts to gether to a working release.
+
+The `cmake/MultiBuild.cmake` script takes care of puzzling these parts to gether to a working release.
 
 
 Open Visual Studio 2022 Developer Command Prompt and run the following commands from the repository root, for example `C:\SOURCE-DIR\advancedfx`.
@@ -56,7 +57,7 @@ Open Visual Studio 2022 Developer Command Prompt and run the following commands 
 For a regular release package, including `hlae.zip`, `hlae_pdb.zip`, and the WiX installer:
 
 ```batch
-cmake -P cmake/PackageRelease.cmake
+cmake -P cmake/MultiBuild.cmake
 ```
 
 This reuses `build/win32-release` and `build/x64-release` and writes output to:
@@ -68,13 +69,13 @@ build/package-release
 For testing HLAE as an installed release folder without creating zip files or an installer:
 
 ```batch
-cmake -DAFX_STAGE_CONFIG=Release -P cmake/Stage.cmake
+cmake -DAFX_MULTIBUILD_STAGING=ON -P cmake/MultiBuild.cmake
 ```
 
 This writes output to:
 
 ```text
-build/dev-dist/release
+build/staging-release
 ```
 
 For day-to-day development, you can build/install only the architecture you are working on:
@@ -96,29 +97,28 @@ Use `x64-debug` for x64 hooks. Use `win32-debug` for the GUI, injector, and Win3
 To stage a combined debug layout for testing:
 
 ```batch
-cmake -DAFX_STAGE_CONFIG=Debug -P cmake/Stage.cmake
+cmake -DAFX_MULTIBUILD_CONFIG=Debug -DAFX_MULTIBUILD_STAGING=ON -P cmake/MultiBuild.cmake
 ```
 
 This writes output to:
 
 ```text
-build/dev-dist/debug
+build/staging-debug
 ```
 
-Useful options:
+Useful options of `cmake/MultiBuild.cmake`:
 
-| Command | Option | Purpose |
-| --- | --- | --- |
-| `cmake/Stage.cmake` | `-DAFX_STAGE_CONFIG=Debug` / `Release` | Select the staged build configuration. |
-| `cmake/Stage.cmake` | `-DAFX_STAGE_CONFIGURE=ON` | Force reconfigure of existing preset build directories. |
-| `cmake/Stage.cmake` | `-DAFX_STAGE_X64=source1` / `source2` | Stage only one x64 hook family plus the shared x64 runtime. |
-| `cmake/PackageRelease.cmake` | `-DAFX_PACKAGE_CONFIG=Debug` / `Release` | Select package configuration. Default is `Release`. |
-| `cmake/PackageRelease.cmake` | `-DAFX_PACKAGE_INSTALLER=OFF` | Skip WiX and create only the staged package tree plus zip files. |
-| `cmake/PackageRelease.cmake` | `-DAFX_PACKAGE_CONFIGURE=ON` | Force reconfigure of existing preset build directories. |
+| Option | Purpose |
+| --- | --- |
+| `-DAFX_MULTIBUILD_STAGING=ON` | Enable staging folder mode, no ZIP files and no installer is created.
+| `-DAFX_MULTIBUILD_CONFIG=Debug` / `Release` | Select build configuration. |
+| `-DAFX_MULTIBUILD_CONFIGURE=ON` | Force reconfigure of existing preset build directories. |
+| `-DAFX_MULTIBUILD_STAGING_X64=source1` / `source2` | Only valid in staging mode: Build only one x64 hook family plus the shared x64 runtime. |
+| `-DAFX_MULTIBUILD_INSTALLER=OFF` | Only valid in non-staging (default) moed: Skip WiX and create only the staged package tree plus zip files. |
 
 Available configure and build presets are `win32-debug`, `x64-debug`, `win32-release`, `x64-release`.
 
-The intended workflow is to use the separate `win32-*` and `x64-*` preset build directories through `cmake/Stage.cmake` or `cmake/PackageRelease.cmake`.
+The intended workflow is to use the separate `win32-*` and `x64-*` preset build directories through `cmake/MultiBuild.cmake`.
 
 ## Releasing a new version
 
