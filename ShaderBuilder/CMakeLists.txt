@@ -7,7 +7,7 @@ file(GLOB_RECURSE SHADERBUILDER_INPUTS CONFIGURE_DEPENDS
     "${shaderbuilder_SOURCE_DIR}/*.csproj"
     "${shaderbuilder_SOURCE_DIR}/*.config"
 )
-list(FILTER SHADERBUILDER_INPUTS EXCLUDE REGEX "/(bin|obj)/")
+list(FILTER SHADERBUILDER_INPUTS EXCLUDE REGEX "/${shaderbuilder_SOURCE_DIR}\/(bin|obj)/")
 
 add_custom_command(
     OUTPUT "${shaderbuilder_BINARY_DIR}/ShaderBuilder.exe"

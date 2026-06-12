@@ -9,7 +9,7 @@ file(GLOB_RECURSE AFXCPPCLI_INPUTS CONFIGURE_DEPENDS
     "${afxcppcli_SOURCE_DIR}/*.vcxproj"
     "${afxcppcli_SOURCE_DIR}/*.vcxproj.filters"
 )
-list(FILTER AFXCPPCLI_INPUTS EXCLUDE REGEX "/(bin|obj)/")
+list(FILTER AFXCPPCLI_INPUTS EXCLUDE REGEX "/${afxcppcli_SOURCE_DIR}\/(.vs|bin|obj)/")
 
 add_custom_command(
     OUTPUT "${afxcppcli_BINARY_DIR}/AfxCppCli.dll"
