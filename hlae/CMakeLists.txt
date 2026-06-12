@@ -15,7 +15,7 @@ file(GLOB_RECURSE HLAE_INPUTS CONFIGURE_DEPENDS
     "${hlae_SOURCE_DIR}/*.ico"
     "${hlae_SOURCE_DIR}/*.settings"
 )
-list(FILTER HLAE_INPUTS EXCLUDE REGEX "/${hlae_SOURCE_DIR}\/(.vs|bin|obj)/")
+list(FILTER HLAE_INPUTS EXCLUDE REGEX "/${hlae_SOURCE_DIR}\/(\.vs|bin|obj)/")
 
 add_custom_command(
     OUTPUT "${hlae_BINARY_DIR}/HLAE.exe"
