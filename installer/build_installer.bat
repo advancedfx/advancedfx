@@ -68,7 +68,7 @@ cd "%~1\HlaeFfmpeg"
     mkdir "%~1\HlaeCore\%%l"
     mkdir "%~1\HlaeCore\%%l\tmp"
     cd "%~1\HlaeCore\%%l"
-    wix build -arch x86 -defaultcompressionlevel high -culture "%%l" -intermediateFolder "%~1\HlaeCore\%%l\tmp" -o "%~1\HlaeCore\%%l\HlaeCore.msi" -ext WixToolset.UI.wixext/5.0.2 -d "var.HlaeCoreExtension.TargetDir=%~1\HlaeCoreExtension"  -d "var.Configuration=%~4" "%~dp0HlaeCore\Package.wxs" "%~dp0HlaeCore\MyWixUI_Mondo.wxs" "%~dp0HlaeCore\MyBrowseDlg.wxs" "%~dp0HlaeCore\MyCustomizeDlg.wxs" "%~dp0HlaeCore\lang\%%l.wxl" "%~dp0shared\Dependency\lang\%%l.wxl"
+    wix build -arch x86 -defaultcompressionlevel high -culture "%%l" -intermediateFolder "%~1\HlaeCore\%%l\tmp" -o "%~1\HlaeCore\%%l\HlaeCore.msi" -ext WixToolset.UI.wixext/5.0.2 -d "var.InstallerBuildDir=%~1" "%~dp0HlaeCore\Package.wxs" "%~dp0HlaeCore\MyWixUI_Mondo.wxs" "%~dp0HlaeCore\MyBrowseDlg.wxs" "%~dp0HlaeCore\MyCustomizeDlg.wxs" "%~dp0HlaeCore\lang\%%l.wxl" "%~dp0shared\Dependency\lang\%%l.wxl"
     @IF !errorlevel! NEQ 0 EXIT /B 1
     wix msi validate "%~1\HlaeCore\%%l\HlaeCore.msi"
     @IF !errorlevel! NEQ 0 EXIT /B 1
@@ -101,8 +101,8 @@ cd "%~dp0UninstallHlaeWixV3"
 @echo Building Setup ...
 @echo ==================================================
 @IF !errorlevel! NEQ 0 EXIT /B 1
-mkdir "%~1\setup\%%l"
-mkdir "%~1\setup\%%l\tmp"
+mkdir "%~1\setup"
+mkdir "%~1\setup\tmp"
 cd "%~dp0setup"
 wix build -arch x86 -culture en-US -culture de-DE -culture fi-FI -culture fr-FR -culture hu-HU -culture it-IT -culture ja-JP -culture nl-NL -culture pl-PL -culture pt-BR -culture pt-PT -culture ru-RU -culture zh-CN -ext "%USERPROFILE%\.wix\extensions\WixToolset.Bal.wixext\5.0.2\wixext5\WixToolset.BootstrapperApplications.wixext.dll" -ext "WixToolset.Netfx.wixext/5.0.2" -ext "WixToolset.Util.wixext/5.0.2" -d "var.InstallerBuildDir=%~1" -intermediateFolder "%1\setup\tmp" -outputtype bundle -o "%2\HLAE_Setup.exe" "Bundle.wxs"
 @IF !errorlevel! NEQ 0 EXIT /B 1

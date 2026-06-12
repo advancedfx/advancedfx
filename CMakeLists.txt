@@ -1,4 +1,4 @@
-﻿cmake_minimum_required (VERSION 3.24)
+cmake_minimum_required (VERSION 3.24)
 
 project ("advancedfx")
 
@@ -41,101 +41,6 @@ execute_process(
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 string(REPLACE "\\" "/" VS_MSBUILD ${VS_MSBUILD})
-
-################################################################################
-#
-# MultiBuild
-
-if (NOT ${PROJECT_NAME}-MultiBuild)
-    include(ExternalProject)
-
-    macro (setup_arch arch)
-        set(CMAKE_GENERATOR_PLATFORM ${arch})  
-        ExternalProject_Add (${PROJECT_NAME}-${arch}
-        DEPENDS
-        BINARY_DIR "${PROJECT_NAME}-${arch}"
-        SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
-        INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-${arch}-install"
-        CMAKE_ARGS
-            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-            -D${PROJECT_NAME}-MultiBuild=ON
-            -DPROJECT_NAME_MULTI=${PROJECT_NAME}-${arch}
-            "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-${arch}-install"
-            -DAFX_RUST_CARGO_LOCKED=${AFX_RUST_CARGO_LOCKED}
-        BUILD_COMMAND
-            ${CMAKE_COMMAND} --build . --config $<CONFIG> -- ${BUILD_TOOL_OPTIONS}
-        INSTALL_COMMAND
-            ${CMAKE_COMMAND} --install . --config $<CONFIG>
-        BUILD_ALWAYS true
-        )
-    endmacro()
-
-    setup_arch(Win32)
-    setup_arch(x64)
-
-    if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-        set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/dist" CACHE PATH "..." FORCE)
-    endif()
-
-    add_custom_target(advancedfx ALL
-	    DEPENDS advancedfx-Win32 advancedfx-x64
-    )
-
-    install(
-        CODE
-        "
-        # Create directories:
-        execute_process( WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\" COMMAND \"${CMAKE_COMMAND}\" -E make_directory \"${CMAKE_INSTALL_PREFIX}\")
-
-        # Copy Win32 (currrent exception: old injector x64 is in here too):
-        execute_process( WORKING_DIRECTORY \"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-Win32-install\" COMMAND \"${CMAKE_COMMAND}\" -E copy_directory \"bin\" \"${CMAKE_INSTALL_PREFIX}/bin\" )
-        execute_process( WORKING_DIRECTORY \"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-Win32-install\" COMMAND \"${CMAKE_COMMAND}\" -E copy_directory \"pdb\" \"${CMAKE_INSTALL_PREFIX}/pdb\" )
-
-        # Copy x64:
-        execute_process( WORKING_DIRECTORY \"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-x64-install\" COMMAND \"${CMAKE_COMMAND}\" -E copy_directory \"bin\" \"${CMAKE_INSTALL_PREFIX}/bin\" )
-        execute_process( WORKING_DIRECTORY \"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-x64-install\" COMMAND \"${CMAKE_COMMAND}\" -E copy_directory \"pdb\" \"${CMAKE_INSTALL_PREFIX}/pdb\" )
-
-        # Copy resources:        
-        execute_process( WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}\" COMMAND \"${CMAKE_SOURCE_DIR}/copy_resources_release.bat\" \"${CMAKE_INSTALL_PREFIX}/bin\" )
-
-        # Copy additional licenses related to corrosion:
-        execute_process( WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\" COMMAND \"${CMAKE_COMMAND}\" -E make_directory \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/corrosion\")
-        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}/bin\" COMMAND \"${CMAKE_COMMAND}\" -E copy \"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-Win32/_deps/corrosion-src/LICENSE\" -t  \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/corrosion\")
-
-        # Copy additional licenses related to OpenEXR:
-        execute_process( WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\" COMMAND \"${CMAKE_COMMAND}\" -E make_directory \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/deflate\")
-        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}/bin\" COMMAND \"${CMAKE_COMMAND}\" -E copy \"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-Win32/_deps/deflate-src/COPYING\" -t  \"${CMAKE_INSTALL_PREFIX}/bin/deflate/corrosion\")
-        execute_process( WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\" COMMAND \"${CMAKE_COMMAND}\" -E make_directory \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/imath\")
-        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}/bin\" COMMAND \"${CMAKE_COMMAND}\" -E copy \"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-Win32/_deps/imath-src/LICENSE.md\" -t  \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/imath\")
-        execute_process( WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\" COMMAND \"${CMAKE_COMMAND}\" -E make_directory \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/openexr\")
-        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}/bin\" COMMAND \"${CMAKE_COMMAND}\" -E copy \"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-Win32/_deps/openexr-src/LICENSE.md\" -t  \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/openexr\")
-
-        # Copy additional licenses related to protobuf:
-        execute_process( WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\" COMMAND \"${CMAKE_COMMAND}\" -E make_directory \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/absl\")
-        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}/bin\" COMMAND \"${CMAKE_COMMAND}\" -E copy \"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-Win32/_deps/absl-src/LICENSE\" -t  \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/absl\")
-        execute_process( WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\" COMMAND \"${CMAKE_COMMAND}\" -E make_directory \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/protobuf\")
-        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}/bin\" COMMAND \"${CMAKE_COMMAND}\" -E copy \"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-Win32/_deps/protobuf-src/LICENSE\" -t  \"${CMAKE_INSTALL_PREFIX}/bin/LICENSES/protobuf\")
-
-        # Update translations from l10n repo (e.g. required for installer):
-        execute_process( WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}\" COMMAND \"${CMAKE_SOURCE_DIR}/l10n_update_to_source.bat\" \"${CMAKE_INSTALL_PREFIX}/bin\" )
-        
-        # Create ZIP files:
-        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}/bin\" COMMAND \"${CMAKE_COMMAND}\" -E tar cfv  \"${CMAKE_INSTALL_PREFIX}/hlae.zip\" --format=zip -- . )
-        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}/pdb\" COMMAND \"${CMAKE_COMMAND}\" -E tar cfv  \"${CMAKE_INSTALL_PREFIX}/hlae_pdb.zip\" --format=zip -- . )
-
-        # Installer related:
-        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E make_directory installer)
-        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E make_directory installer/hlae)
-        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E copy_directory bin installer/hlae)
-        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -Rf installer/hlae/ffmpeg)
-        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -Rf installer/hlae/locales)
-        execute_process( WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}\" COMMAND \"${CMAKE_COMMAND}\" -E rm -f installer/hlae/HLAE.exe)
-        execute_process( WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}/installer\" COMMAND \"build_installer.bat\" \"${CMAKE_INSTALL_PREFIX}/installer/build\" \"${CMAKE_INSTALL_PREFIX}\" \"${VS_MSBUILD}\" \"${VS_CONFIGURATION}\")
-        "
-    )  
-    
-    return()
-endif()
 
 ################################################################################
 
@@ -237,8 +142,8 @@ elseif(CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
     add_subdirectory("misc/mirv-script/src/snippets")
 
     add_custom_target(advancedfx ALL
-	    DEPENDS AfxHookSource2
-    )    
+	    DEPENDS AfxHookSource AfxHookSource2
+    )
 endif()
 
 #
@@ -308,12 +213,44 @@ elseif(CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
     install(
         PROGRAMS
             ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS}
-
-            "$<TARGET_FILE:AfxHookSource>"
-            "$<TARGET_FILE:AfxHookSource2>"
-
-            ${AFX_OPENEXR_INSTALL_BINARIES}           
+            ${AFX_OPENEXR_INSTALL_BINARIES}
         DESTINATION "bin/x64"
+        COMPONENT x64-runtime
+    )
+
+    install(
+        PROGRAMS
+            "$<TARGET_FILE:AfxHookSource>"
+        DESTINATION "bin/x64"
+        COMPONENT x64-source1
+    )
+
+    install(
+        PROGRAMS
+            "$<TARGET_FILE:AfxHookSource2>"
+        DESTINATION "bin/x64"
+        COMPONENT x64-source2
+    )
+
+    install(
+        FILES
+            "$<TARGET_PDB_FILE:AfxHookSource>"
+        DESTINATION "pdb/x64"
+        COMPONENT x64-source1
+    )
+
+    install(
+        FILES
+            "$<TARGET_PDB_FILE:AfxHookSource2>"
+        DESTINATION "pdb/x64"
+        COMPONENT x64-source2
+    )
+
+    install(
+		DIRECTORY
+            "${AfxHookSource2Snippets_BINARY_DIR}/dist/"
+        DESTINATION "bin/resources/AfxHookSource2/snippets"
+        COMPONENT x64-source2
     )
 
 #    corrosion_install(
@@ -322,17 +259,4 @@ elseif(CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
 #        RUNTIME
 #            DESTINATION "bin/x64"
 #    )
-
-    install(
-        FILES
-            "$<TARGET_PDB_FILE:AfxHookSource>"
-            "$<TARGET_PDB_FILE:AfxHookSource2>"
-        DESTINATION "pdb/x64"
-    )
-
-    install(
-		DIRECTORY
-            "${AfxHookSource2Snippets_BINARY_DIR}/dist/"
-        DESTINATION "bin/resources/AfxHookSource2/snippets"
-    )
 endif()

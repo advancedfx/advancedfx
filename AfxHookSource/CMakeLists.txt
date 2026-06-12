@@ -399,8 +399,9 @@ if(CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
 	    WORKING_DIRECTORY ${AfxHookSource_BINARY_DIR}
 	    OUTPUT "${AfxHookSource_BINARY_DIR}/afx_iface_passthrough_x64.obj"
 	    COMMAND ${nasm_SOURCE_DIR}/nasm.exe -f win64 -o "${AfxHookSource_BINARY_DIR}/afx_iface_passthrough_x64.obj" "${AfxHookSource_SOURCE_DIR}/afx_iface_passthrough_x64.asm"
-	    DEPENDS nasm
-    		"${AfxHookSource_SOURCE_DIR}/afx_iface_passthrough_x64.asm"
+	    DEPENDS "${nasm_SOURCE_DIR}/nasm.exe"
+            "${AfxHookSource_SOURCE_DIR}/afx_iface_passthrough_x64.asm"
+        VERBATIM
     )
 
     add_custom_target(AfxHookSourceIfacePassThrough

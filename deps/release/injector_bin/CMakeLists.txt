@@ -24,16 +24,29 @@ FetchContent_MakeAvailable(injector_zip)
 
 FetchContent_MakeAvailable(injector_pdb)
 
-add_custom_target(injector
-	DEPENDS injector_zip
-	OUTPUT
-		"${injector_BINARY_DIR}/AfxHook.dat"
-		"${injector_BINARY_DIR}/injector.exe"
-		"${injector_BINARY_DIR}/x64/AfxHook.dat"
-		"${injector_BINARY_DIR}/x64/injector.exe"
-		"${injector_BINARY_DIR}/injector.pdb"
-		"${injector_BINARY_DIR}/x64/injector.pdb"
+set(AFX_INJECTOR_OUTPUTS
+	"${injector_BINARY_DIR}/AfxHook.dat"
+	"${injector_BINARY_DIR}/injector.exe"
+	"${injector_BINARY_DIR}/x64/AfxHook.dat"
+	"${injector_BINARY_DIR}/x64/injector.exe"
+	"${injector_BINARY_DIR}/injector.pdb"
+	"${injector_BINARY_DIR}/x64/injector.pdb"
+)
+set(AFX_INJECTOR_STAMP "${injector_BINARY_DIR}/injector-extract.stamp")
+
+add_custom_command(
+	OUTPUT "${AFX_INJECTOR_STAMP}"
+	BYPRODUCTS ${AFX_INJECTOR_OUTPUTS}
 	COMMAND ${CMAKE_COMMAND} -E make_directory bin
 	COMMAND ${CMAKE_COMMAND} -E chdir ${injector_BINARY_DIR} ${CMAKE_COMMAND} -E tar xvf  ${injector_zip_SOURCE_DIR}/HLAE.Injector-${injector_DOWNLOAD_VERSION}-win32.zip --format=zip
 	COMMAND ${CMAKE_COMMAND} -E chdir ${injector_BINARY_DIR} ${CMAKE_COMMAND} -E tar xvf  ${injector_pdb_SOURCE_DIR}/HLAE.Injector-${injector_DOWNLOAD_VERSION}-win32.pdb.zip --format=zip
+	COMMAND ${CMAKE_COMMAND} -E touch "${AFX_INJECTOR_STAMP}"
+	DEPENDS
+		"${injector_zip_SOURCE_DIR}/HLAE.Injector-${injector_DOWNLOAD_VERSION}-win32.zip"
+		"${injector_pdb_SOURCE_DIR}/HLAE.Injector-${injector_DOWNLOAD_VERSION}-win32.pdb.zip"
+	VERBATIM
+)
+
+add_custom_target(injector
+	DEPENDS "${AFX_INJECTOR_STAMP}"
 )
