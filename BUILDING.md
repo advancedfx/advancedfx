@@ -47,6 +47,10 @@ git clone --recurse-submodules https://github.com/advancedfx/advancedfx.git
 
 ### Build source code
 
+A full HLAE release consists of both, Win32 and x64 architecture parts, as such it is required to build both parts.
+The `cmake/PackageRelease.cmake` and `cmake/Stage.cmake` scripts take care of puzzling these parts to gether to a working release.
+
+
 Open Visual Studio 2022 Developer Command Prompt and run the following commands from the repository root, for example `C:\SOURCE-DIR\advancedfx`.
 
 For a regular release package, including `hlae.zip`, `hlae_pdb.zip`, and the WiX installer:
@@ -112,7 +116,9 @@ Useful options:
 | `cmake/PackageRelease.cmake` | `-DAFX_PACKAGE_INSTALLER=OFF` | Skip WiX and create only the staged package tree plus zip files. |
 | `cmake/PackageRelease.cmake` | `-DAFX_PACKAGE_CONFIGURE=ON` | Force reconfigure of existing preset build directories. |
 
-Available configure and build presets are `win32-debug`, `x64-debug`, `win32-release`, `x64-release`, and `superbuild-release`. The `superbuild-release` preset is kept for compatibility with the older two-architecture release flow; the intended workflow is to use the separate `win32-*` and `x64-*` preset build directories through `cmake/Stage.cmake` or `cmake/PackageRelease.cmake`.
+Available configure and build presets are `win32-debug`, `x64-debug`, `win32-release`, `x64-release`.
+
+The intended workflow is to use the separate `win32-*` and `x64-*` preset build directories through `cmake/Stage.cmake` or `cmake/PackageRelease.cmake`.
 
 ## Releasing a new version
 
