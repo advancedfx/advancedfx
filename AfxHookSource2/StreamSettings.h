@@ -28,6 +28,8 @@ public:
         , DepthValMax(other.DepthValMax)
         , DepthChannels(other.DepthChannels)
         , DepthMode(other.DepthMode)
+        , ClearOverride(other.ClearOverride)
+        , ClearOverrideColor(other.ClearOverrideColor)
         , ClearBeforeUi(other.ClearBeforeUi)
         , ClearBeforeUiColor(other.ClearBeforeUiColor)
         , AutoForceFullResSmoke(other.AutoForceFullResSmoke)
@@ -40,6 +42,7 @@ public:
 
     bool CanCaptureInMainPass() const {
         return true
+            && false == ClearOverride
             && false == ClearBeforeUi
             && BeforeCommands.empty()
             && AfterCommands.empty()
@@ -48,6 +51,13 @@ public:
 
     int CompareRenderPass(const CStreamSettings &  o) const {
         int cmp;
+        if(cmp = CompareBool(ClearOverride, o.ClearOverride)) return cmp;
+        if(ClearOverride) {
+           if(cmp = CompareFloat(ClearOverrideColor.R, o.ClearOverrideColor.R)) return cmp;
+           if(cmp = CompareFloat(ClearOverrideColor.G, o.ClearOverrideColor.G)) return cmp;
+           if(cmp = CompareFloat(ClearOverrideColor.B, o.ClearOverrideColor.B)) return cmp;
+           if(cmp = CompareFloat(ClearOverrideColor.A, o.ClearOverrideColor.A)) return cmp;
+        }
         if(cmp = CompareBool(ClearBeforeUi, o.ClearBeforeUi)) return cmp;
         if(ClearBeforeUi) {
            if(cmp = CompareFloat(ClearBeforeUiColor.R, o.ClearBeforeUiColor.R)) return cmp;
@@ -98,6 +108,15 @@ public:
         PyramidalLinear,
         PyramidalLogE
     } DepthMode = DepthMode_e::Inverse;
+
+    bool ClearOverride = false;
+
+    struct {
+        float R = 0.0f;
+        float G = 0.0f;
+        float B = 0.0f;
+        float A = 0.0f;
+    } ClearOverrideColor;
 
     bool ClearBeforeUi = false;
 
