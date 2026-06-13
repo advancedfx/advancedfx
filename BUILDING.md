@@ -83,13 +83,13 @@ For day-to-day development, you can build/install only the architecture you are 
 ```batch
 cmake --preset x64-debug
 cmake --build --preset x64-debug
-cmake --install build/x64-debug --config Debug --prefix build/dev-dist/debug
+cmake --install build/x64-debug --config Debug --prefix build/staging-debug
 ```
 
 ```batch
 cmake --preset win32-debug
 cmake --build --preset win32-debug
-cmake --install build/win32-debug --config Debug --prefix build/dev-dist/debug
+cmake --install build/win32-debug --config Debug --prefix build/staging-debug
 ```
 
 Use `x64-debug` for x64 hooks. Use `win32-debug` for the GUI, injector, and Win32 hooks. These build directories are reused across builds, so changing one source file should only rebuild the affected targets and their dependents.
