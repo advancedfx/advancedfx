@@ -114,7 +114,7 @@ Useful options of `cmake/MultiBuild.cmake`:
 | `-DAFX_MULTIBUILD_CONFIG=Debug` / `Release` | Select build configuration. |
 | `-DAFX_MULTIBUILD_CONFIGURE=ON` | Force reconfigure of existing preset build directories. |
 | `-DAFX_MULTIBUILD_STAGING_X64=source1` / `source2` | Only valid in staging mode: Build only one x64 hook family plus the shared x64 runtime. |
-| `-DAFX_MULTIBUILD_INSTALLER=OFF` | Only valid in non-staging (default) moed: Skip WiX and create only the staged package tree plus zip files. |
+| `-DAFX_MULTIBUILD_INSTALLER=OFF` | Only valid in non-staging (default) mode: Skip WiX installer creation and create only the package tree and ZIP files. |
 
 Available configure and build presets are `win32-debug`, `x64-debug`, `win32-release`, `x64-release`.
 
