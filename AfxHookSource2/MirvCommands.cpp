@@ -6,11 +6,17 @@
 #include "SceneSystem.h"
 #include "SchemaSystem.h"
 
+#include "../deps/release/prop/cs2/sdk_src/public/cdll_int.h"
+
 #include <string>
 
 #include <algorithm>
 
 bool g_bHookedMirvCommands = false;
+
+static const char * MIRV_POV_LOCAL_BUILD = "mirv_pov-local-20260619-voicehud";
+
+extern SOURCESDK::CS2::ISource2EngineToClient * g_pEngineToClient;
 
 float g_fNoFlashAmount = 0.0f;
 
@@ -93,7 +99,9 @@ CON_COMMAND(mirv_pov, "POV HUD with radar showing teammates. Offline demo playba
 		const char * arg1 = args->ArgV(1);
 		if(0 == _stricmp(arg1, "true") || 0 == _stricmp(arg1, "1") || 0 == _stricmp(arg1, "on")) {
 			HMODULE hClient = GetModuleHandleW(L"client.dll");
+			if(g_pEngineToClient) g_pEngineToClient->ExecuteClientCmd(0, "mirv_script_load mirv_script_voice.js", true);
 			MirvPov_Enable(hClient);
+			if(g_pEngineToClient) g_pEngineToClient->ExecuteClientCmd(0, "cl_teammate_colors_show 1", true);
 			advancedfx::Message("mirv_pov enabled. Use mp_forcecamera 0 for cross-team switching.\n");
 			return;
 		}
@@ -105,11 +113,12 @@ CON_COMMAND(mirv_pov, "POV HUD with radar showing teammates. Offline demo playba
 	}
 	advancedfx::Message(
 		"Usage: mirv_pov true|false\n"
-		"  true|1|on    - Enable POV HUD with radar showing teammates (CT=blue, T=yellow)\n"
-		"  false|0|off - Disable and restore original behavior\n"
+		"  true  - Enable POV HUD, teammate competitive radar colors, smoke-visible teammates, red enemies\n"
+		"  false - Disable and restore original behavior\n"
 		"Current: %s\n"
-		"Note: Use mp_forcecamera 0 for cross-team switching. Offline demo only.\n"
-		, MirvPov_IsEnabled() ? "enabled" : "disabled"
+		"Build: %s\n"
+		"Note: Use mp_forcecamera 0 for cross-team switching. Offline demo only. Enables cl_teammate_colors_show 1 once.\n"
+		, MirvPov_IsEnabled() ? "enabled" : "disabled", MIRV_POV_LOCAL_BUILD
 	);
 }
 
