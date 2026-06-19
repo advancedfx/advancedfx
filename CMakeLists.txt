@@ -29,14 +29,14 @@ message(STATUS "AFX_RUST_CARGO_LOCKED=${AFX_RUST_CARGO_LOCKED}")
 #
 
 execute_process(
-    COMMAND "$ENV{ProgramFiles\(x86\)}\\Microsoft Visual Studio\\Installer\\vswhere.exe" "-latest" "-version" "[17.0,18.0)" "-property" "installationPath"
+    COMMAND "$ENV{ProgramFiles\(x86\)}\\Microsoft Visual Studio\\Installer\\vswhere.exe" "-products" "*" "-latest" "-version" "[17.0,18.0)" "-property" "installationPath"
     OUTPUT_VARIABLE VS_INSTALLPATH
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 string(REPLACE "\\" "/" VS_INSTALLPATH ${VS_INSTALLPATH})
 
 execute_process(
-    COMMAND "$ENV{ProgramFiles\(x86\)}\\Microsoft Visual Studio\\Installer\\vswhere.exe" "-latest" "-version" "[17.0,18.0)" "-requires" "Microsoft.Component.MSBuild" "-find" "MSBuild\\**\\**\\Bin\\MSBuild.exe"
+    COMMAND "$ENV{ProgramFiles\(x86\)}\\Microsoft Visual Studio\\Installer\\vswhere.exe" "-products" "*" "-latest" "-version" "[17.0,18.0)" "-requires" "Microsoft.Component.MSBuild" "-find" "MSBuild\\**\\**\\Bin\\MSBuild.exe"
     OUTPUT_VARIABLE VS_MSBUILD
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )

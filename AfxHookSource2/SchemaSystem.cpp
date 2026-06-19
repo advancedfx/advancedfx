@@ -84,40 +84,54 @@ bool getOffset(ptrdiff_t* offset, std::string moduleName, std::string className,
 void initSchemaSystemOffsets()
 {
 	bool bOk = true;
+	const char* failedField = nullptr;
 
-	bOk = bOk && getOffset(&g_clientDllOffsets.C_CSGameRulesProxy.m_pGameRules, "client.dll", "C_CSGameRulesProxy", "m_pGameRules");
-	bOk = bOk && getOffset(&g_clientDllOffsets.C_CSGameRules.m_gamePhase, "client.dll", "C_CSGameRules", "m_gamePhase");
-	bOk = bOk && getOffset(&g_clientDllOffsets.C_CSGameRules.m_nOvertimePlaying, "client.dll", "C_CSGameRules", "m_nOvertimePlaying");
-	bOk = bOk && getOffset(&g_clientDllOffsets.CEntityInstance.m_pEntity, "client.dll", "CEntityInstance", "m_pEntity");
-	bOk = bOk && getOffset(&g_clientDllOffsets.C_BaseEntity.m_pGameSceneNode, "client.dll", "C_BaseEntity", "m_pGameSceneNode");
-	bOk = bOk && getOffset(&g_clientDllOffsets.C_BaseEntity.m_iHealth, "client.dll", "C_BaseEntity", "m_iHealth");
-	bOk = bOk && getOffset(&g_clientDllOffsets.C_BaseEntity.m_hOwnerEntity, "client.dll", "C_BaseEntity", "m_hOwnerEntity");
-	bOk = bOk && getOffset(&g_clientDllOffsets.C_BaseEntity.m_iTeamNum, "client.dll", "C_BaseEntity", "m_iTeamNum");
-	bOk = bOk && getOffset(&g_clientDllOffsets.C_BaseModelEntity.m_Glow, "client.dll", "C_BaseModelEntity", "m_Glow");
-	bOk = bOk && getOffset(&g_clientDllOffsets.CGameSceneNode.m_pOwner, "client.dll", "CGameSceneNode", "m_pOwner");
-	bOk = bOk && getOffset(&g_clientDllOffsets.CGameSceneNode.m_pParent, "client.dll", "CGameSceneNode", "m_pParent");
-	bOk = bOk && getOffset(&g_clientDllOffsets.CGameSceneNode.m_vecAbsOrigin, "client.dll", "CGameSceneNode", "m_vecAbsOrigin");
-	bOk = bOk && getOffset(&g_clientDllOffsets.CBasePlayerController.m_iszPlayerName, "client.dll", "CBasePlayerController", "m_iszPlayerName");
-	bOk = bOk && getOffset(&g_clientDllOffsets.CBasePlayerController.m_steamID, "client.dll", "CBasePlayerController", "m_steamID");
-	bOk = bOk && getOffset(&g_clientDllOffsets.CBasePlayerController.m_hPawn, "client.dll", "CBasePlayerController", "m_hPawn");
-	bOk = bOk && getOffset(&g_clientDllOffsets.CCSPlayerController.m_sSanitizedPlayerName, "client.dll", "CCSPlayerController", "m_sSanitizedPlayerName");
-	bOk = bOk && getOffset(&g_clientDllOffsets.C_BasePlayerPawn.m_hController, "client.dll", "C_BasePlayerPawn", "m_hController");
-	bOk = bOk && getOffset(&g_clientDllOffsets.C_BasePlayerPawn.m_pWeaponServices, "client.dll", "C_BasePlayerPawn", "m_pWeaponServices");
-	bOk = bOk && getOffset(&g_clientDllOffsets.C_BasePlayerPawn.m_pObserverServices, "client.dll", "C_BasePlayerPawn", "m_pObserverServices");
-	bOk = bOk && getOffset(&g_clientDllOffsets.C_BasePlayerPawn.m_pCameraServices, "client.dll", "C_BasePlayerPawn", "m_pCameraServices");
-	bOk = bOk && getOffset(&g_clientDllOffsets.CPlayer_WeaponServices.m_hActiveWeapon, "client.dll", "CPlayer_WeaponServices", "m_hActiveWeapon");
-	bOk = bOk && getOffset(&g_clientDllOffsets.CPlayer_CameraServices.m_hViewEntity, "client.dll", "CPlayer_CameraServices", "m_hViewEntity");
-	bOk = bOk && getOffset(&g_clientDllOffsets.CPlayer_ObserverServices.m_iObserverMode, "client.dll", "CPlayer_ObserverServices", "m_iObserverMode");
-	bOk = bOk && getOffset(&g_clientDllOffsets.CPlayer_ObserverServices.m_hObserverTarget, "client.dll", "CPlayer_ObserverServices", "m_hObserverTarget");
-	bOk = bOk && getOffset(&g_clientDllOffsets.C_BaseCSGrenadeProjectile.m_bCanCreateGrenadeTrail, "client.dll", "C_BaseCSGrenadeProjectile", "m_bCanCreateGrenadeTrail");
-	bOk = bOk && getOffset(&g_clientDllOffsets.C_BaseCSGrenadeProjectile.m_nSnapshotTrajectoryEffectIndex, "client.dll", "C_BaseCSGrenadeProjectile", "m_nSnapshotTrajectoryEffectIndex");
-	bOk = bOk && getOffset(&g_clientDllOffsets.C_BaseCSGrenadeProjectile.m_flTrajectoryTrailEffectCreationTime, "client.dll", "C_BaseCSGrenadeProjectile", "m_flTrajectoryTrailEffectCreationTime");
-	bOk = bOk && getOffset(&g_clientDllOffsets.C_SmokeGrenadeProjectile.m_vSmokeColor, "client.dll", "C_SmokeGrenadeProjectile", "m_vSmokeColor");
-	bOk = bOk && getOffset(&g_clientDllOffsets.C_EnvSky.m_hSkyMaterial, "client.dll", "C_EnvSky", "m_hSkyMaterial");
-	bOk = bOk && getOffset(&g_clientDllOffsets.C_EnvSky.m_vTintColor, "client.dll", "C_EnvSky", "m_vTintColor");
-	bOk = bOk && getOffset(&g_clientDllOffsets.C_EnvSky.m_flBrightnessScale, "client.dll", "C_EnvSky", "m_flBrightnessScale");
+#define GET_OFFSET_CHECK(var, mod, cls, field) \
+	if (bOk && !getOffset(&var, mod, cls, field)) { bOk = false; failedField = cls "." field; }
 
-	if (!bOk) ErrorBox(MkErrStr(__FILE__, __LINE__));	
+	GET_OFFSET_CHECK(g_clientDllOffsets.C_CSGameRulesProxy.m_pGameRules, "client.dll", "C_CSGameRulesProxy", "m_pGameRules");
+	GET_OFFSET_CHECK(g_clientDllOffsets.C_CSGameRules.m_gamePhase, "client.dll", "C_CSGameRules", "m_gamePhase");
+	GET_OFFSET_CHECK(g_clientDllOffsets.C_CSGameRules.m_nOvertimePlaying, "client.dll", "C_CSGameRules", "m_nOvertimePlaying");
+	GET_OFFSET_CHECK(g_clientDllOffsets.CEntityInstance.m_pEntity, "client.dll", "CEntityInstance", "m_pEntity");
+	GET_OFFSET_CHECK(g_clientDllOffsets.C_BaseEntity.m_pGameSceneNode, "client.dll", "C_BaseEntity", "m_pGameSceneNode");
+	GET_OFFSET_CHECK(g_clientDllOffsets.C_BaseEntity.m_iHealth, "client.dll", "C_BaseEntity", "m_iHealth");
+	GET_OFFSET_CHECK(g_clientDllOffsets.C_BaseEntity.m_hOwnerEntity, "client.dll", "C_BaseEntity", "m_hOwnerEntity");
+	GET_OFFSET_CHECK(g_clientDllOffsets.C_BaseEntity.m_iTeamNum, "client.dll", "C_BaseEntity", "m_iTeamNum");
+	GET_OFFSET_CHECK(g_clientDllOffsets.C_BaseModelEntity.m_Glow, "client.dll", "C_BaseModelEntity", "m_Glow");
+	GET_OFFSET_CHECK(g_clientDllOffsets.CGameSceneNode.m_pOwner, "client.dll", "CGameSceneNode", "m_pOwner");
+	GET_OFFSET_CHECK(g_clientDllOffsets.CGameSceneNode.m_pParent, "client.dll", "CGameSceneNode", "m_pParent");
+	GET_OFFSET_CHECK(g_clientDllOffsets.CGameSceneNode.m_vecAbsOrigin, "client.dll", "CGameSceneNode", "m_vecAbsOrigin");
+	GET_OFFSET_CHECK(g_clientDllOffsets.CBasePlayerController.m_iszPlayerName, "client.dll", "CBasePlayerController", "m_iszPlayerName");
+	GET_OFFSET_CHECK(g_clientDllOffsets.CBasePlayerController.m_steamID, "client.dll", "CBasePlayerController", "m_steamID");
+	GET_OFFSET_CHECK(g_clientDllOffsets.CBasePlayerController.m_hPawn, "client.dll", "CBasePlayerController", "m_hPawn");
+	GET_OFFSET_CHECK(g_clientDllOffsets.CCSPlayerController.m_sSanitizedPlayerName, "client.dll", "CCSPlayerController", "m_sSanitizedPlayerName");
+	GET_OFFSET_CHECK(g_clientDllOffsets.CCSPlayerController.m_hPlayerPawn, "client.dll", "CCSPlayerController", "m_hPlayerPawn");
+	GET_OFFSET_CHECK(g_clientDllOffsets.CCSPlayerController.m_hObserverPawn, "client.dll", "CCSPlayerController", "m_hObserverPawn");
+	GET_OFFSET_CHECK(g_clientDllOffsets.C_BasePlayerPawn.m_hController, "client.dll", "C_BasePlayerPawn", "m_hController");
+	GET_OFFSET_CHECK(g_clientDllOffsets.C_BasePlayerPawn.m_pWeaponServices, "client.dll", "C_BasePlayerPawn", "m_pWeaponServices");
+	GET_OFFSET_CHECK(g_clientDllOffsets.C_BasePlayerPawn.m_pObserverServices, "client.dll", "C_BasePlayerPawn", "m_pObserverServices");
+	GET_OFFSET_CHECK(g_clientDllOffsets.C_BasePlayerPawn.m_pCameraServices, "client.dll", "C_BasePlayerPawn", "m_pCameraServices");
+	GET_OFFSET_CHECK(g_clientDllOffsets.CPlayer_WeaponServices.m_hActiveWeapon, "client.dll", "CPlayer_WeaponServices", "m_hActiveWeapon");
+	GET_OFFSET_CHECK(g_clientDllOffsets.CPlayer_CameraServices.m_hViewEntity, "client.dll", "CPlayer_CameraServices", "m_hViewEntity");
+	GET_OFFSET_CHECK(g_clientDllOffsets.CPlayer_ObserverServices.m_iObserverMode, "client.dll", "CPlayer_ObserverServices", "m_iObserverMode");
+	GET_OFFSET_CHECK(g_clientDllOffsets.CPlayer_ObserverServices.m_hObserverTarget, "client.dll", "CPlayer_ObserverServices", "m_hObserverTarget");
+	GET_OFFSET_CHECK(g_clientDllOffsets.C_CSPlayerPawnBase.m_entitySpottedState, "client.dll", "C_CSPlayerPawn", "m_entitySpottedState");
+	GET_OFFSET_CHECK(g_clientDllOffsets.EntitySpottedState_t.m_bSpotted, "client.dll", "EntitySpottedState_t", "m_bSpotted");
+	GET_OFFSET_CHECK(g_clientDllOffsets.EntitySpottedState_t.m_bSpottedByMask, "client.dll", "EntitySpottedState_t", "m_bSpottedByMask");
+	GET_OFFSET_CHECK(g_clientDllOffsets.C_BaseCSGrenadeProjectile.m_bCanCreateGrenadeTrail, "client.dll", "C_BaseCSGrenadeProjectile", "m_bCanCreateGrenadeTrail");
+	GET_OFFSET_CHECK(g_clientDllOffsets.C_BaseCSGrenadeProjectile.m_nSnapshotTrajectoryEffectIndex, "client.dll", "C_BaseCSGrenadeProjectile", "m_nSnapshotTrajectoryEffectIndex");
+	GET_OFFSET_CHECK(g_clientDllOffsets.C_BaseCSGrenadeProjectile.m_flTrajectoryTrailEffectCreationTime, "client.dll", "C_BaseCSGrenadeProjectile", "m_flTrajectoryTrailEffectCreationTime");
+	GET_OFFSET_CHECK(g_clientDllOffsets.C_SmokeGrenadeProjectile.m_vSmokeColor, "client.dll", "C_SmokeGrenadeProjectile", "m_vSmokeColor");
+	GET_OFFSET_CHECK(g_clientDllOffsets.C_EnvSky.m_hSkyMaterial, "client.dll", "C_EnvSky", "m_hSkyMaterial");
+	GET_OFFSET_CHECK(g_clientDllOffsets.C_EnvSky.m_vTintColor, "client.dll", "C_EnvSky", "m_vTintColor");
+	GET_OFFSET_CHECK(g_clientDllOffsets.C_EnvSky.m_flBrightnessScale, "client.dll", "C_EnvSky", "m_flBrightnessScale");
+
+#undef GET_OFFSET_CHECK
+
+	if (!bOk) {
+		std::string errMsg = std::string("SchemaSystem offset lookup failed: ") + (failedField ? failedField : "unknown");
+		ErrorBox(errMsg.c_str());
+	}	
 }
 
 void HookSchemaSystem(HMODULE schemaSystemDll)
