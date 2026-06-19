@@ -16,6 +16,11 @@ AFXADDR_DEF(cs2_SceneSystem_FrameUpdate_vtable_idx);
 AFXADDR_DEF(cs2_deathmsg_lifetime_offset)
 AFXADDR_DEF(cs2_deathmsg_lifetimemod_offset)
 
+AFXADDR_DEF(cs2_client_ShowSpeaker_IsPlayingDemo_RetAddr)
+AFXADDR_DEF(cs2_client_ServerVoiceData)
+AFXADDR_DEF(cs2_client_VoiceStatus_Get)
+AFXADDR_DEF(cs2_client_VoiceStatus_UpdateSpeakerStatus)
+
 void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
 {
 	MemRange textRange = MemRange(0, 0);
@@ -167,5 +172,31 @@ void Addresses_InitClientDll(AfxAddr clientDll) {
 		}
 		else
 			ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
+
+	{
+		MemRange result = FindPatternString(textRange, "48 63 C3 48 8D 0D ?? ?? ?? ?? C6 84 08 ?? ?? ?? ?? 01 48 8B 0D ?? ?? ?? ?? 48 8B 01 FF 90 ?? ?? ?? ?? 84 C0 0F 85");
+		if (!result.IsEmpty()) {
+			AFXADDR_SET(cs2_client_ShowSpeaker_IsPlayingDemo_RetAddr, result.Start + 0x22);
+		}
+	}
+
+	{
+		MemRange result = FindPatternString(textRange, "48 89 4C 24 ?? 53 55 56 57 41 54 41 55 41 57 48 81 EC");
+		if (!result.IsEmpty()) {
+			AFXADDR_SET(cs2_client_ServerVoiceData, result.Start);
+		}
+	}
+	{
+		MemRange result = FindPatternString(textRange, "48 8B 05 ?? ?? ?? ?? C3 CC CC CC CC CC CC CC CC 48 8D 05");
+		if (!result.IsEmpty()) {
+			AFXADDR_SET(cs2_client_VoiceStatus_Get, result.Start);
+		}
+	}
+	{
+		MemRange result = FindPatternString(textRange, "44 88 4C 24 ?? 44 89 44 24 ?? 89 54 24");
+		if (!result.IsEmpty()) {
+			AFXADDR_SET(cs2_client_VoiceStatus_UpdateSpeakerStatus, result.Start);
+		}
 	}
 }
