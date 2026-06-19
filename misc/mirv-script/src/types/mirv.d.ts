@@ -39,14 +39,14 @@ declare namespace AdvancedfxMirv {
 		 */
 		type CViewRenderSetupViewResult =
 			| {
-					x?: number;
-					y?: number;
-					z?: number;
-					rX?: number;
-					rY?: number;
-					rZ?: number;
-					fov?: number;
-			  }
+				x?: number;
+				y?: number;
+				z?: number;
+				rX?: number;
+				rY?: number;
+				rZ?: number;
+				fov?: number;
+			}
 			| undefined;
 
 		type CViewRenderSetupViewEvent = AdvancedfxEvent<CViewRenderSetupViewResult> & {
@@ -323,6 +323,12 @@ declare namespace mirv {
 	 * Since HLAE 2.171.1
 	 */
 	function isDemoPaused(): boolean;
+
+	/**
+	 * Gets the demo file path (if any), relative to csgo folder or an absolute path.
+	 * Since HLAE 2.191.0
+	 */
+	function getDemoFilePath(): string | null;
 
 	/**
 	 * Represents a binary data message.

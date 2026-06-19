@@ -141,6 +141,13 @@ extern "C" FFIBool afx_hook_source2_is_demo_paused() {
     return FFIBOOL_FALSE;
 }
 
+extern "C" const char * afx_hook_source2_get_demo_file_path() {
+    if(g_pEngineToClient) {
+		return g_pEngineToClient->GetDemoFilePath();
+    }
+    return nullptr;
+}
+
 extern CamPath g_CamPath;
 
 extern "C" CamPath * afx_hook_source2_get_main_campath(void) {

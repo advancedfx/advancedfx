@@ -157,6 +157,8 @@ unsafe extern "C" {
 
     fn afx_hook_source2_is_demo_paused() -> bool;
 
+    fn afx_hook_source2_get_demo_file_path() -> *const c_char;
+
     fn afx_hook_source2_get_main_campath() -> * mut advancedfx::campath::CampathType;
 
     // can return nullptr to indicate no debug name.
@@ -1379,6 +1381,18 @@ fn afx_is_demo_paused() -> bool {
     }
     return result;
 }
+
+fn afx_get_demo_file_path() -> Option<String> {
+    let result: *const c_char;
+    unsafe {
+        result = afx_hook_source2_get_demo_file_path();
+    }
+    if result.is_null() {
+         return None;
+    }
+    return Some(unsafe { CStr::from_ptr(result) }.to_str().unwrap().to_string());
+}
+
 
 
 #[derive(Debug, Trace, Finalize)]
@@ -3020,6 +3034,13 @@ fn mirv_is_demo_paused(_this: &JsValue, _args: &[JsValue], _context: &mut Contex
    return Ok(js_value!(afx_is_demo_paused()));
 }
 
+fn mirv_get_demo_file_path(_this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    if let Some(str) = afx_get_demo_file_path() {
+        return Ok(js_value!(js_string!(str)));
+    }
+    return Ok(JsValue::null());
+}
+
 fn mirv_get_main_campath(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
     if let Some(object) = this.as_object() {
         if let Some(mut mirv) = object.downcast_mut::<MirvStruct>() {
@@ -3189,6 +3210,11 @@ impl<'a> AfxHookSource2Rs<'a> {
         .function(
             NativeFunction::from_fn_ptr(mirv_is_demo_paused),
             js_string!("isDemoPaused"),
+            0,
+        )
+        .function(
+            NativeFunction::from_fn_ptr(mirv_get_demo_file_path),
+            js_string!("getDemoFilePath"),
             0,
         )
         .function(
