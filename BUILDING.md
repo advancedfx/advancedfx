@@ -132,7 +132,7 @@ Things you should do before releasing a new version:
   - Increase package version (at least 3rd field) in installer/HlaeFfmpeg/Package.wxs
   - Increase bundle version (e.g. 2nd field (minor), at least 3rd field) in installer/setup/Bundle.wxs
 - If you updated Rust dependencies run to see if misc/THIRDPARTY.yml needs updating:
-  `cargo install cargo-bundle-licenses && cargo bundle-licenses --format yaml --output misc/CI.yml --previous misc/THIRDPARTY.yml --check-previous && echo DONE: Okay.`
+  `cargo install cargo-bundle-licenses && cargo bundle-licenses --prefer MIT --format yaml --output misc/CI.yml --previous misc/THIRDPARTY.yml --check-previous && echo DONE: Okay.`
 - Update credits file with `py -3 make_credits.py`
 
 ## Note on Rust builds and new dependencies
