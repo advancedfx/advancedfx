@@ -75,8 +75,8 @@ use boa_runtime::{
 
 use futures::SinkExt;
 use futures::StreamExt;
-use async_std::net::TcpStream;
 
+use async_net::TcpStream;
 use async_tungstenite::tungstenite::Bytes;
 use async_tungstenite::tungstenite::protocol::Message;
 use async_tungstenite::WebSocketSender;
@@ -2307,7 +2307,7 @@ async fn mirv_connect_async(this: &JsValue, args: &[JsValue], context: &RefCell<
     if 0 < args.len() {
         if let Some(js_string) = args[0].as_string() {
             let connect_addr = js_string.to_std_string_escaped();
-            let result = async_tungstenite::async_std::connect_async(connect_addr).await;
+            let result = async_tungstenite::smol::connect_async(connect_addr).await;
             match result {
                 Ok((ws,_)) => {
                     let (ws_write,ws_read) = ws.split();
