@@ -3098,9 +3098,11 @@ use boa_runtime::interval;
 
 impl<'a> AfxHookSource2Rs<'a> {
     pub fn new() -> Self {
+        let module_loader = Rc::new(AfxSimpleModuleLoader::new());
+
         let mut context = ContextBuilder::default()
             .job_executor(Rc::new(AfxSimpleJobExecutor::new()))
-            .module_loader(Rc::new(AfxSimpleModuleLoader::new()))
+            .module_loader(module_loader.clone())
             .build()
             .unwrap();
 
@@ -3109,7 +3111,7 @@ impl<'a> AfxHookSource2Rs<'a> {
             .register_global_property(Console::NAME, console, Attribute::all())
             .expect("the console builtin shouldn't exist");
 
-        interval::register(&mut context).unwrap();
+        interval::register(&mut context).unwrap();     
 
         advancedfx::js::events::register_global_classes(&mut context);
 
@@ -3150,6 +3152,7 @@ impl<'a> AfxHookSource2Rs<'a> {
         let fn_mirv_get_on_remove_entity = NativeFunction::from_fn_ptr(mirv_get_on_remove_entity).to_js_function(context.realm());
 
         let events_object = events.make_object(&mut context);
+        let fs_object = advancedfx::js::fs::Fs::register(&[],&mut context).expect("could not register AdvancedfxFs");
       
         let object = ObjectInitializer::with_native_data::<MirvStruct>(mirv, &mut context)
         .function(
@@ -3305,7 +3308,7 @@ impl<'a> AfxHookSource2Rs<'a> {
             0,
         )
         .property(js_string!("events"), events_object, Attribute::all())
-
+        .property(js_string!("fs"), fs_object, Attribute::all())
         .build();
 
         context

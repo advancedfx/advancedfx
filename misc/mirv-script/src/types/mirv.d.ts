@@ -710,4 +710,10 @@ declare namespace mirv {
 		 */
 		removeEntity: AdvancedfxMirv.Events.RemoveEntity
 	};
+
+	/**
+	 * File system functions. 
+	 * Since HLAE 2.190.0.
+	 */
+	fs = AdvancedfxFs;
 }

@@ -8,20 +8,20 @@ type SubCommandType = 'int' | 'float' | 'string' | 'boolean' | 'none' | 'multi';
 type SubCommandValue<T extends SubCommandType> = T extends 'string'
 	? string
 	: T extends 'int' | 'float'
-		? number
-		: T extends 'boolean'
-			? boolean
-			: T extends 'multi'
-				? string[]
-				: T extends 'none'
-					? undefined
-					: never;
+	? number
+	: T extends 'boolean'
+	? boolean
+	: T extends 'multi'
+	? string[]
+	: T extends 'none'
+	? undefined
+	: never;
 
 type SubCommandPlaceholder<T extends SubCommandType> = T extends 'multi'
 	? string[]
 	: T extends 'none'
-		? undefined
-		: string;
+	? undefined
+	: string;
 
 interface BaseSubCommandConfig<T extends SubCommandType> {
 	type: T;
@@ -50,10 +50,10 @@ interface MultiValueConfig<T extends 'multi'> extends BaseSubCommandConfig<T> {
 type SubCommandConfig<T extends SubCommandType> = T extends 'int' | 'float' | 'string' | 'boolean'
 	? SingleValueConfig<T>
 	: T extends 'none'
-		? NoArgsConfig<T>
-		: T extends 'multi'
-			? MultiValueConfig<T>
-			: never;
+	? NoArgsConfig<T>
+	: T extends 'multi'
+	? MultiValueConfig<T>
+	: never;
 
 export class SubCommand<T extends SubCommandType> {
 	readonly type: T;
