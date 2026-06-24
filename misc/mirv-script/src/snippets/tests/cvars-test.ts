@@ -22,7 +22,7 @@
 		const idx = AdvancedfxCVar.getIndexFromName(name);
 		if (!idx) return;
 
-		let cvar: AdvancedfxCVar | null = null;
+		let cvar: AdvancedfxCVar | null;
 		try {
 			cvar = new AdvancedfxCVar(idx);
 		} catch {

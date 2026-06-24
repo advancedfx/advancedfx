@@ -39,14 +39,14 @@ declare namespace AdvancedfxMirv {
 		 */
 		type CViewRenderSetupViewResult =
 			| {
-				x?: number;
-				y?: number;
-				z?: number;
-				rX?: number;
-				rY?: number;
-				rZ?: number;
-				fov?: number;
-			}
+					x?: number;
+					y?: number;
+					z?: number;
+					rX?: number;
+					rY?: number;
+					rZ?: number;
+					fov?: number;
+			  }
 			| undefined;
 
 		type CViewRenderSetupViewEvent = AdvancedfxEvent<CViewRenderSetupViewResult> & {
@@ -712,7 +712,7 @@ declare namespace mirv {
 	};
 
 	/**
-	 * File system functions. 
+	 * File system functions.
 	 * Since HLAE 2.190.0.
 	 */
 	fs = AdvancedfxFs;
