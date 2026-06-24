@@ -3126,6 +3126,8 @@ impl<'a> AfxHookSource2Rs<'a> {
 
         advancedfx::js::cvar::CVar::add_to_context(&mut context);
 
+        advancedfx::js::fs::register(&mut context).expect("could not register fs");
+
         ConCommandsArgs::add_to_context(&mut context);
         ConCommandBox::add_to_context(&mut context);
 
@@ -3152,7 +3154,6 @@ impl<'a> AfxHookSource2Rs<'a> {
         let fn_mirv_get_on_remove_entity = NativeFunction::from_fn_ptr(mirv_get_on_remove_entity).to_js_function(context.realm());
 
         let events_object = events.make_object(&mut context);
-        let fs_object = advancedfx::js::fs::Fs::register(&[],&mut context).expect("could not register AdvancedfxFs");
       
         let object = ObjectInitializer::with_native_data::<MirvStruct>(mirv, &mut context)
         .function(
@@ -3308,7 +3309,6 @@ impl<'a> AfxHookSource2Rs<'a> {
             0,
         )
         .property(js_string!("events"), events_object, Attribute::all())
-        .property(js_string!("fs"), fs_object, Attribute::all())
         .build();
 
         context

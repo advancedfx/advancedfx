@@ -1,8 +1,27 @@
 /**
  * Since HLAE 2.191.0.
  */
+declare class AdvancedfxPath {
+	constructor(path: string);
+
+	toString(): string;
+
+	isAbsolute(): boolean;
+
+	isRelative(): boolean;
+
+	isDir(): boolean;
+
+	isFile(): boolean;
+
+	isSymlink(): boolean;
+}
+
+/**
+ * Since HLAE 2.191.0.
+ */
 declare class AdvancedfxFsDirEntry {
-	path(): string;
+	path(): AdvancedfxPath;
 }
 
 /**
@@ -20,4 +39,6 @@ declare class AdvancedfxFsReadDir {
  */
 declare class AdvancedfxFs {
 	readDir(path: string): AdvancedfxFsReadDir;
+
+	static MAIN_SEPARATOR_STR: string;
 }
