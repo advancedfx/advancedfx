@@ -38,7 +38,7 @@ declare class AdvancedfxFsReadDir {
  * Since HLAE 2.191.0.
  */
 declare class AdvancedfxFs {
-	readDir(path: string): AdvancedfxFsReadDir;
+	static readDir(path: string): AdvancedfxFsReadDir;
 
 	static MAIN_SEPARATOR_STR: string;
 }

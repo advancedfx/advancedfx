@@ -152,7 +152,7 @@ impl Class for Fs {
                 1,
                 NativeFunction::from_fn_ptr(Fs::js_read_dir)
             )
-            .property(
+            .static_property(
                 js_string!("MAIN_SEPARATOR_STR"),
                 js_string!(std::path::MAIN_SEPARATOR_STR.to_string()),
                 Attribute::all()
