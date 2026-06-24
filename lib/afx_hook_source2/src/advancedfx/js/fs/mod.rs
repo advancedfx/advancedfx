@@ -83,7 +83,7 @@ impl Path {
 }
 
 impl Class for Path {
-    const NAME: &'static str = "AdvancefxPath";
+    const NAME: &'static str = "AdvancedfxPath";
     const LENGTH: usize = 1;
 
     fn data_constructor(
