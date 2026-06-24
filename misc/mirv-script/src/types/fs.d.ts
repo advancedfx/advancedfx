@@ -15,6 +15,8 @@ declare class AdvancedfxPath {
 	isFile(): boolean;
 
 	isSymlink(): boolean;
+
+	static MAIN_SEPARATOR: string;
 }
 
 /**
@@ -39,6 +41,4 @@ declare class AdvancedfxFsReadDir {
  */
 declare class AdvancedfxFs {
 	static readDir(path: string): AdvancedfxFsReadDir;
-
-	static MAIN_SEPARATOR_STR: string;
 }

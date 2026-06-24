@@ -17,46 +17,126 @@ use boa_engine::native_function::NativeFunction;
 use boa_engine::property::Attribute;
 
 
+
+
 #[derive(Trace, Finalize, JsData)]
 struct Path {
 
     #[unsafe_ignore_trace]
     path: std::path::PathBuf
 }
-
-#[boa_class(rename = "AdvancedfxPath")]
 impl Path {
-    #[boa(constructor)]
-    fn new(path: String) -> JsResult<Self> {
-        let path = std::path::Path::new(&path).to_path_buf();
 
-        Ok(Self{
-            path: path
-        })
+    fn to_string(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(self_) = &object.downcast_ref::<Path>(){
+                return Ok(JsValue::from(js_string!(self_.path.as_path().to_string_lossy().to_string())))
+            }
+        }
+        Err(errors::error_type(context).into())
     }
 
-    fn to_string(&self) -> String {
-        self.path.as_path().to_string_lossy().to_string()
+    fn is_absolute(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(self_) = &object.downcast_ref::<Path>(){
+                return Ok(JsValue::from(self_.path.as_path().is_absolute()))
+            }
+        }
+        Err(errors::error_type(context).into())
     }
 
-    fn is_absolute(&self)-> bool {
-        self.path.as_path().is_absolute()
+    fn is_relative(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(self_) = &object.downcast_ref::<Path>(){
+                return Ok(JsValue::from(self_.path.as_path().is_relative()))
+            }
+        }
+        Err(errors::error_type(context).into())
     }
 
-    fn is_relative(&self)-> bool {
-        self.path.as_path().is_relative()
+    fn is_dir(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(self_) = &object.downcast_ref::<Path>(){
+                return Ok(JsValue::from(self_.path.as_path().is_dir()))
+            }
+        }
+        Err(errors::error_type(context).into())
     }
 
-    fn is_dir(&self)-> bool {
-        self.path.as_path().is_dir()
+    fn is_file(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(self_) = &object.downcast_ref::<Path>(){
+                return Ok(JsValue::from(self_.path.as_path().is_file()))
+            }
+        }
+        Err(errors::error_type(context).into())
     }
 
-    fn is_file(&self)-> bool {
-        self.path.as_path().is_file()
+    fn is_symlink(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(self_) = &object.downcast_ref::<Path>(){
+                return Ok(JsValue::from(self_.path.as_path().is_symlink()))
+            }
+        }
+        Err(errors::error_type(context).into())
+    }
+}
+
+impl Class for Path {
+    const NAME: &'static str = "AdvancefxPath";
+    const LENGTH: usize = 1;
+
+    fn data_constructor(
+        this: &JsValue,
+        args: &[JsValue],
+        context: &mut Context,
+    ) -> JsResult<Self> {
+        let (path_str, _): (String, &[boa_engine::JsValue]) =boa_engine::interop::TryFromJsArgument::try_from_js_argument( this, args, context )?;
+
+        let path = std::path::Path::new(&path_str).to_path_buf();
+
+        Ok(Self{path})
     }
 
-    fn is_symlink(&self)-> bool {
-        self.path.as_path().is_symlink()
+    fn init(class: &mut ClassBuilder<'_>) -> JsResult<()> {
+        class
+            .method(
+                js_string!("toString"),
+                0,
+                NativeFunction::from_fn_ptr(Path::to_string)
+            )
+            .method(
+                js_string!("isAbsolute"),
+                0,
+                NativeFunction::from_fn_ptr(Path::is_absolute)
+            )
+            .method(
+                js_string!("isRelative"),
+                0,
+                NativeFunction::from_fn_ptr(Path::is_relative)
+            )
+            .method(
+                js_string!("isDir"),
+                0,
+                NativeFunction::from_fn_ptr(Path::is_dir)
+            )
+            .method(
+                js_string!("isFile"),
+                0,
+                NativeFunction::from_fn_ptr(Path::is_file)
+            )
+            .method(
+                js_string!("isSymlink"),
+                0,
+                NativeFunction::from_fn_ptr(Path::is_symlink)
+            )
+            .static_property(
+                js_string!("MAIN_SEPARATOR"),
+                js_string!(std::path::MAIN_SEPARATOR_STR.to_string()),
+                Attribute::all()
+            );
+        
+        Ok(())
     }
 }
 
