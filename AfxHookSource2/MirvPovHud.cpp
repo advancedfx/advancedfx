@@ -3,6 +3,7 @@
 #include "MirvPovHud.h"
 
 #include "Globals.h"
+#include "MirvPanorama.h"
 
 #include "../shared/AfxConsole.h"
 #include "../shared/binutils.h"
@@ -12,6 +13,82 @@
 
 #include <stdint.h>
 #include <string.h>
+
+static unsigned char* MirvPovHud_FindPanelById(unsigned char* parentPanel, const char* panelId) {
+    if(!parentPanel) return nullptr;
+
+    const auto currentPanelId = *(char**)(parentPanel + CS2::PanoramaUIPanel::panelId);
+    if(currentPanelId && 0 == strcmp(currentPanelId, panelId)) return parentPanel;
+
+    const auto children = parentPanel + CS2::PanoramaUIPanel::children;
+    const auto childCount = *(int*)children;
+    for(int i = 0; i < childCount; ++i) {
+        if(auto panel = MirvPovHud_FindPanelById(((unsigned char***)children)[1][i], panelId)) return panel;
+    }
+
+    return nullptr;
+}
+
+static bool MirvPovHud_PanelContainsId(unsigned char* parentPanel, const char* panelId) {
+    return nullptr != MirvPovHud_FindPanelById(parentPanel, panelId);
+}
+
+static bool MirvPovHud_SetStrokeSiblingVisibleForAnchor(unsigned char* parentPanel, const char* anchorId) {
+    if(!parentPanel) return false;
+
+    const auto children = parentPanel + CS2::PanoramaUIPanel::children;
+    const auto childCount = *(int*)children;
+
+    if(2 == childCount) {
+        int anchorChild = -1;
+        for(int i = 0; i < childCount; ++i) {
+            if(MirvPovHud_PanelContainsId(((unsigned char***)children)[1][i], anchorId)) {
+                anchorChild = i;
+                break;
+            }
+        }
+
+        if(-1 != anchorChild) {
+            const auto strokePanel = ((unsigned char***)children)[1][1 - anchorChild];
+            if(Panorama_SetPanelVisible(strokePanel, true)) return true;
+        }
+    }
+
+    for(int i = 0; i < childCount; ++i) {
+        if(MirvPovHud_SetStrokeSiblingVisibleForAnchor(((unsigned char***)children)[1][i], anchorId)) return true;
+    }
+
+    return false;
+}
+
+static void MirvPovHud_ShowHealthAmmoCenterStrokes() {
+    if(!CS2::PanoramaUIPanel::hudPanel) return;
+
+    auto hudPanel = ((unsigned char***)CS2::PanoramaUIPanel::hudPanel)[0][1];
+    if(!hudPanel) return;
+
+    MirvPovHud_SetStrokeSiblingVisibleForAnchor(hudPanel, "hud-HA-main");
+    MirvPovHud_SetStrokeSiblingVisibleForAnchor(hudPanel, "hud-WPN-main");
+}
+
+static void MirvPovHud_HideSpecPlayerPanel() {
+    if(!CS2::PanoramaUIPanel::hudPanel) return;
+
+    auto hudPanel = ((unsigned char***)CS2::PanoramaUIPanel::hudPanel)[0][1];
+    if(!hudPanel) return;
+
+    auto specPlayerBg = MirvPovHud_FindPanelById(hudPanel, "jsHudSpecplayer__Bg");
+    if(specPlayerBg) Panorama_SetPanelVisible(specPlayerBg, false);
+
+    auto specPlayerAvatar = MirvPovHud_FindPanelById(hudPanel, "HudSpecplayer__Avatar");
+    if(specPlayerAvatar) Panorama_SetPanelVisible(specPlayerAvatar, false);
+}
+
+void MirvPovHud_OnPanoramaLayoutFileLoaded(const char* filePath) {
+    if(0 != strcmp("panorama\\layout\\hud\\hudhealthammocenter.xml", filePath)) return;
+    MirvPovHud_HideSpecPlayerPanel();
+    MirvPovHud_ShowHealthAmmoCenterStrokes();
+}
 
 static int g_IsLocalPlayerHLTV_SuppressFrames = 0;
 static int g_IsLocalPlayerHLTV_LastDemoTick = -1;
@@ -38,7 +115,7 @@ bool MirvPovHud_ShouldSuppressFrame() {
 // Approach C: Hook GetLocalPlayerController + byte-patch spectator mode
 // ============================================================================
 
-// Hook sub_180AD5580 (GetObserverMode) — returns observer mode for slot 0.
+// Hook sub_180AD5580 (GetObserverMode) - returns observer mode for slot 0.
 // This function calls sub_1808E0E70(0) directly, bypassing our
 // GetLocalPlayerController hook. The radar uses it to decide whether to
 // show spectator-mode behavior. By returning 0 (OBS_MODE_NONE) when our
@@ -51,7 +128,7 @@ static int __fastcall New_GetObserverMode() {
     return g_Org_GetObserverMode();
 }
 
-// Hook sub_180AD55C0 (GetObserverTarget) — returns observer target handle for slot 0.
+// Hook sub_180AD55C0 (GetObserverTarget) - returns observer target handle for slot 0.
 // Like GetObserverMode, this calls sub_1808E0E70(0) directly, bypassing our
 // GetLocalPlayerController hook. By returning INVALID_EHANDLE during frame context,
 // the radar won't try to use a spectator target position.
@@ -63,7 +140,7 @@ static unsigned int __fastcall New_GetObserverTarget_fn(void* thisPtr) {
     return g_Org_GetObserverTarget_fn(thisPtr);
 }
 
-// Hook GameStateAPI::IsLocalPlayerHLTV (sub_180EFF830) — Panorama bridge callback.
+// Hook GameStateAPI::IsLocalPlayerHLTV (sub_180EFF830) - Panorama bridge callback.
 // The radar JS calls this to decide spectator vs player color mode.
 // Return original behavior on the stable baseline.
 typedef bool (__fastcall * IsLocalPlayerHLTV_t)();
@@ -74,7 +151,7 @@ static bool __fastcall New_IsLocalPlayerHLTV() {
     return g_Org_IsLocalPlayerHLTV();
 }
 
-// Hook GameStateAPI::IsDemoOrHltv (sub_180EFEEE0) — Panorama bridge callback.
+// Hook GameStateAPI::IsDemoOrHltv (sub_180EFEEE0) - Panorama bridge callback.
 // Stable baseline keeps original demo/HLTV behavior.
 typedef bool (__fastcall * IsDemoOrHltv_t)();
 static IsDemoOrHltv_t g_Org_IsDemoOrHltv = nullptr;
@@ -84,34 +161,23 @@ static bool __fastcall New_IsDemoOrHltv() {
     return g_Org_IsDemoOrHltv();
 }
 
-// Hook sub_180BD7830 (GetEffectiveLocalPlayer for HUD) — this function is
+// Hook sub_180BD7830 (GetEffectiveLocalPlayer for HUD) - this function is
 // used by the HUD to determine spectator state. It calls sub_1808E0E70(0)
 // directly, bypassing our GetLocalPlayerController hook.
 // Instead of hooking the function (which crashes during demo transitions),
-// we patch the HUD's spectator check: cmp byte ptr [rax+3EBh], 1 → 0xFF
+// keep the spectator CSS state intact for xray/head markers.
 static uint8_t * g_pHudSpectatorCheckPatchAddr = nullptr;
 static uint8_t g_HudSpectatorCheckOrigByte = 0;
 static bool g_bHudSpectatorCheckPatched = false;
 
-// Patch 1: Force [rbx+174F0h] = 0 (not spectating any target)
-//   Original: test al, al / jz short +0A  (84 C0 74 0A)
-//   Patched:  test al, al / jmp short +0A (84 C0 EB 0A)
-// Patch 4: Hide spectator player panel (HudSpecplayerRoot--visible always false)
-//   Original: mov sil, 1  (40 B6 01)
-//   Patched:  xor sil, sil (40 32 F6)
-//   Pattern context: test r14,r14 / jz +9 / test bl,bl / jnz +5 / [PATCH HERE] / jmp +3 / xor sil,sil
-static uint8_t * g_pHudSpecPanelPatchAddr = nullptr;
-static uint8_t g_HudSpecPanelOrigBytes[3] = {0};
-static bool g_bHudSpecPanelPatched = false;
-
 void MirvPovHud_ApplyPatches(HMODULE clientDll) {
-    if(g_bHudSpectatorCheckPatched && g_bHudSpecPanelPatched && g_bGetObserverModeHooked && g_bGetObserverTargetHooked && g_bIsLocalPlayerHLTVHooked && g_bIsDemoOrHltvHooked) return;
+    if(g_bHudSpectatorCheckPatched && g_bGetObserverModeHooked && g_bGetObserverTargetHooked && g_bIsLocalPlayerHLTVHooked && g_bIsDemoOrHltvHooked) return;
     if(nullptr == clientDll) {
         advancedfx::Message("[mirv_pov_radar_patch] No client.dll handle\n");
         return;
     }
 
-    // --- Hook GetObserverMode (sub_180AD5580) — return OBS_MODE_NONE during frame context ---
+    // --- Hook GetObserverMode (sub_180AD5580) - return OBS_MODE_NONE during frame context ---
     if(!g_bGetObserverModeHooked) {
         size_t funcAddr = getAddress(clientDll, "48 83 EC 28 33 C9 E8 ?? ?? ?? ?? 48 85 C0 74 ?? 48 8B 88 F8 11 00 00");
         if(0 == funcAddr) {
@@ -130,7 +196,7 @@ void MirvPovHud_ApplyPatches(HMODULE clientDll) {
         }
     }
 
-    // --- Hook GetObserverTarget (sub_180AD55C0) — return INVALID_EHANDLE during frame context ---
+    // --- Hook GetObserverTarget (sub_180AD55C0) - return INVALID_EHANDLE during frame context ---
     if(!g_bGetObserverTargetHooked) {
         size_t funcAddr = getAddress(clientDll, "40 53 48 83 EC 20 48 8B D9 33 C9 E8 ?? ?? ?? ?? 48 85 C0 74");
         if(0 == funcAddr) {
@@ -248,7 +314,7 @@ void MirvPovHud_ApplyPatches(HMODULE clientDll) {
         }
     }
 
-    // --- Patch 3: HUD spectator check (cmp byte ptr [rax+3EBh], 1 → 0xFF) ---
+    // --- Patch 3: HUD spectator check (cmp byte ptr [rax+3EBh], 1 -> 0xFF) ---
     // DISABLED: this toggles the Panorama "HUD--localplayer--spectator" CSS class,
     // which also drives spectator head markers / xray overlay. Forcing it off removed
     // those. Bottom spectator bar is still hidden separately by Patch 4.
@@ -274,29 +340,8 @@ void MirvPovHud_ApplyPatches(HMODULE clientDll) {
         }
     }
 
-    // --- Patch 4: Hide spectator player panel (mov sil,1 → xor sil,sil) ---
-    if(!g_bHudSpecPanelPatched) {
-        size_t match4 = getAddress(clientDll, "4D 85 F6 74 09 84 DB 75 05 40 B6 01 EB 03 40 32 F6");
-        if(0 == match4) {
-            advancedfx::Message("[mirv_pov_radar_patch] HUD spec panel pattern not found\n");
-        } else {
-            uint8_t * patchAddr = (uint8_t *)(match4 + 9);
-            memcpy(g_HudSpecPanelOrigBytes, patchAddr, 3);
-
-            DWORD oldProtect;
-            if(VirtualProtect(patchAddr, 3, PAGE_EXECUTE_READWRITE, &oldProtect)) {
-                patchAddr[0] = 0x40;
-                patchAddr[1] = 0x32;
-                patchAddr[2] = 0xF6;
-                DWORD dummy;
-                VirtualProtect(patchAddr, 3, oldProtect, &dummy);
-                g_pHudSpecPanelPatchAddr = patchAddr;
-                g_bHudSpecPanelPatched = true;
-            } else {
-                advancedfx::Message("[mirv_pov_radar_patch] VirtualProtect failed for HUD spec panel patch (error %lu)\n", GetLastError());
-            }
-        }
-    }
+    MirvPovHud_HideSpecPlayerPanel();
+    MirvPovHud_ShowHealthAmmoCenterStrokes();
 
     return;
 }
@@ -348,17 +393,6 @@ void MirvPovHud_RemovePatches() {
         g_bHudSpectatorCheckPatched = false;
         g_pHudSpectatorCheckPatchAddr = nullptr;
         advancedfx::Message("[mirv_pov_radar_patch] Restored HUD spectator check\n");
-    }
-
-    if(g_bHudSpecPanelPatched && g_pHudSpecPanelPatchAddr) {
-        DWORD oldProtect;
-        if(VirtualProtect(g_pHudSpecPanelPatchAddr, 3, PAGE_EXECUTE_READWRITE, &oldProtect)) {
-            memcpy(g_pHudSpecPanelPatchAddr, g_HudSpecPanelOrigBytes, 3);
-            DWORD dummy;
-            VirtualProtect(g_pHudSpecPanelPatchAddr, 3, oldProtect, &dummy);
-        }
-        g_bHudSpecPanelPatched = false;
-        g_pHudSpecPanelPatchAddr = nullptr;
     }
 
 }
