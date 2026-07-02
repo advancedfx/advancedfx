@@ -90,6 +90,8 @@ use futures_lite::future;
 
 type AfxEntityRef = c_void;
 
+type AfxCBufferString = c_void;
+
 unsafe extern "C" {
     fn afx_hook_source2_message(s: *const c_char);
     fn afx_hook_source2_warning(s: *const c_char);
@@ -158,6 +160,8 @@ unsafe extern "C" {
     fn afx_hook_source2_is_demo_paused() -> bool;
 
     fn afx_hook_source2_get_demo_file_path() -> *const c_char;
+    
+    fn afx_hook_source2_get_game_directory() -> *const c_char;
 
     fn afx_hook_source2_get_main_campath() -> * mut advancedfx::campath::CampathType;
 
@@ -176,6 +180,14 @@ unsafe extern "C" {
     fn afx_hook_source2_get_cur_time(outCurTime: & mut f64);
 
     fn afx_hook_source2_get_entity_ref_attachment(p_ref: * mut AfxEntityRef, attachment_name: *const c_char, pos: * mut advancedfx::math::Vector3, angs: * mut advancedfx::math::Quaternion) -> bool;
+
+    //
+
+    fn afx_hook_source2_fs_relative_path_to_full_path(p_file_name: *const c_char) -> * mut AfxCBufferString;
+
+    fn afx_hook_source2_fs_cbufferstring_get(p_cbufferstring: * mut AfxCBufferString) -> *const c_char;
+
+    fn afx_hook_source2_fs_cbufferstring_delete(p_cbufferstring: * mut AfxCBufferString);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1170,6 +1182,20 @@ fn afx_release_entity_ref( p_ref: * mut AfxEntityRef) {
     }
 }
 
+fn afx_relative_path_to_full_path(file_name: String) -> Option<String> {
+    let cstr_file_name = std::ffi::CString::new(file_name).unwrap();
+    let full_path: * mut AfxCBufferString = unsafe { afx_hook_source2_fs_relative_path_to_full_path(cstr_file_name.as_ptr()) };
+
+    let mut str_full_path: Option<String> = None;
+
+    if !full_path.is_null() {
+        str_full_path = Some(unsafe { CStr::from_ptr( afx_hook_source2_fs_cbufferstring_get(full_path) ) }.to_str().unwrap().to_string());
+        unsafe { afx_hook_source2_fs_cbufferstring_delete(full_path); }
+    }
+    
+    str_full_path
+}
+
 fn afx_enable_on_add_entity(value: bool) {
     unsafe {
         afx_hook_source2_enable_on_add_entity(value);        
@@ -1393,7 +1419,16 @@ fn afx_get_demo_file_path() -> Option<String> {
     return Some(unsafe { CStr::from_ptr(result) }.to_str().unwrap().to_string());
 }
 
-
+fn afx_get_game_directory() -> Option<String> {
+    let result: *const c_char;
+    unsafe {
+        result = afx_hook_source2_get_game_directory();
+    }
+    if result.is_null() {
+         return None;
+    }
+    return Some(unsafe { CStr::from_ptr(result) }.to_str().unwrap().to_string());
+}
 
 #[derive(Debug, Trace, Finalize)]
 pub struct AfxLogger;
@@ -3041,6 +3076,21 @@ fn mirv_get_demo_file_path(_this: &JsValue, _args: &[JsValue], _context: &mut Co
     return Ok(JsValue::null());
 }
 
+fn mirv_get_game_directory(_this: &JsValue, _args: &[JsValue], _context: &mut Context) -> JsResult<JsValue> {
+    if let Some(str) = afx_get_game_directory() {
+        return Ok(js_value!(js_string!(str)));
+    }
+    return Ok(JsValue::null());
+}
+
+fn mirv_resolve_game_path(this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+    let (file_name, _): (String, &[boa_engine::JsValue]) =boa_engine::interop::TryFromJsArgument::try_from_js_argument( this, args, context )?;
+
+    let full_path = afx_relative_path_to_full_path(file_name);
+
+    Ok(full_path.map_or_else(||JsValue::null(),|s|JsValue::from(js_string!(s))))
+}
+
 fn mirv_get_main_campath(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
     if let Some(object) = this.as_object() {
         if let Some(mut mirv) = object.downcast_mut::<MirvStruct>() {
@@ -3219,6 +3269,16 @@ impl<'a> AfxHookSource2Rs<'a> {
         .function(
             NativeFunction::from_fn_ptr(mirv_get_demo_file_path),
             js_string!("getDemoFilePath"),
+            0,
+        )
+        .function(
+            NativeFunction::from_fn_ptr(mirv_get_game_directory),
+            js_string!("getGameDirectory"),
+            0,
+        )
+        .function(
+            NativeFunction::from_fn_ptr(mirv_resolve_game_path),
+            js_string!("resolveGamePath"),
             0,
         )
         .function(

@@ -325,10 +325,23 @@ declare namespace mirv {
 	function isDemoPaused(): boolean;
 
 	/**
-	 * Gets the demo file path (if any), relative to csgo folder or an absolute path.
+	 * Gets the demo file path (if any).
+	 * @remarks Use resolveGamePath to resolve the reported path.
 	 * Since HLAE 2.191.0
 	 */
 	function getDemoFilePath(): string | null;
+
+	/**
+	 * Gets the game directory path.
+	 * Since HLAE 2.191.0
+	 */
+	function getGameDirectory(): string;
+
+	/**
+	 * Resolve a path (e.g. to a demo file) in the game file system structure.
+	 * Since HLAE 2.191.0
+	 */
+	function resolveGamePath(fileName: string): string;
 
 	/**
 	 * Represents a binary data message.
