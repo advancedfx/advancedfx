@@ -217,6 +217,18 @@ target_sources(${PROJECT_NAME} PRIVATE
     ClientEntitySystem.cpp
     ClientEntitySystem.h
 
+    MirvPovHud.cpp
+    MirvPovHud.h
+
+    MirvPanorama.cpp
+    MirvPanorama.h
+
+    MirvPovRadar.cpp
+    MirvPovRadar.h
+
+    MirvPovVoice.cpp
+    MirvPovVoice.h
+
     ConsoleRs.cpp
     CVarRs.cpp
 

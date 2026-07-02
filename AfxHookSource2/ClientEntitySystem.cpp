@@ -4,11 +4,18 @@
 #include "DeathMsg.h"
 #include "WrpConsole.h"
 #include "Globals.h"
+#include "MirvPovHud.h"
+#include "MirvPovRadar.h"
+#include "MirvPovVoice.h"
+
+#include "../deps/release/prop/cs2/sdk_src/public/cdll_int.h"
+extern SOURCESDK::CS2::ISource2EngineToClient * g_pEngineToClient;
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
 
 #include "../shared/AfxConsole.h"
-//#include "../shared/binutils.h"
+#include "../shared/binutils.h"
+#include "../shared/AfxDetours.h"
 #include "../shared/FFITools.h"
 #include "../shared/StringTools.h"
 
@@ -20,10 +27,28 @@
 
 #include <map>
 #include <algorithm>
+#include <limits.h>
+
 
 void ** g_pEntityList = nullptr;
 GetHighestEntityIndex_t  g_GetHighestEntityIndex = nullptr;
 GetEntityFromIndex_t g_GetEntityFromIndex = nullptr;
+
+typedef CEntityInstance * (__fastcall * ClientDll_GetSplitScreenPlayer_t)(int slot);
+static ClientDll_GetSplitScreenPlayer_t g_ClientDll_GetSplitScreenPlayer = nullptr;
+extern ClientDll_GetSplitScreenPlayer_t g_Org_ClientDll_GetSplitScreenPlayer;
+
+static int g_FakePovRadarControllerIndex = 0;
+static bool g_MirvPovAutoSync = false;
+static bool g_MirvPovEnabled = false;
+
+struct FakePovRadarFrameContextState {
+    bool active = false;
+    CEntityInstance * realController = nullptr;
+};
+
+static FakePovRadarFrameContextState g_FakePovRadarFrameContextState;
+static bool g_FakePovRadarFrameContextWasActive = false;
 
 /*
 cl_track_render_eye_angles 1
@@ -202,6 +227,28 @@ SOURCESDK::CS2::CBaseHandle CEntityInstance::GetObserverTarget() {
     void * pObserverServices = *(void**)((unsigned char*)this + g_clientDllOffsets.C_BasePlayerPawn.m_pObserverServices);
     if(nullptr == pObserverServices) return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
 	return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(unsigned int*)((unsigned char*)pObserverServices + g_clientDllOffsets.CPlayer_ObserverServices.m_hObserverTarget));    
+}
+
+bool CEntityInstance::GetSpottedState(bool & spotted, uint32_t & mask0, uint32_t & mask1) {
+	spotted = false;
+	mask0 = 0;
+	mask1 = 0;
+
+	// Temporarily disabled - requires offsets not yet in Rust code
+	// TODO: Add C_CSPlayerPawnBase.m_entitySpottedState and EntitySpottedState_t offsets
+	return false;
+
+	/*
+	if (!IsPlayerPawn()) return false;
+	if (0 == g_clientDllOffsets.C_CSPlayerPawnBase.m_entitySpottedState) return false;
+
+	auto spottedState = (unsigned char*)this + g_clientDllOffsets.C_CSPlayerPawnBase.m_entitySpottedState;
+	spotted = 0 != *(uint8_t*)(spottedState + g_clientDllOffsets.EntitySpottedState_t.m_bSpotted);
+	auto maskPtr = (uint32_t*)(spottedState + g_clientDllOffsets.EntitySpottedState_t.m_bSpottedByMask);
+	mask0 = maskPtr[0];
+	mask1 = maskPtr[1];
+	return true;
+	*/
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetHandle() {
@@ -427,6 +474,303 @@ int GetHighestEntityIndex() {
     //return g_pEntityList && g_GetHighestEntityIndex ? g_GetHighestEntityIndex(*g_pEntityList, false) : -1;
 }
 
+static uint8_t * GetTeamFieldPtr(CEntityInstance * entity) {
+    if(nullptr == entity) return nullptr;
+    return (uint8_t *)((unsigned char *)entity + g_clientDllOffsets.C_BaseEntity.m_iTeamNum);
+}
+
+static unsigned int * GetControllerPawnHandleFieldPtr(CEntityInstance * controller) {
+    if(nullptr == controller || !controller->IsPlayerController()) return nullptr;
+    return (unsigned int *)((unsigned char *)controller + g_clientDllOffsets.CBasePlayerController.m_hPawn);
+}
+
+static unsigned int * GetControllerPlayerPawnHandleFieldPtr(CEntityInstance * controller) {
+    // Temporarily disabled - requires m_hPlayerPawn offset
+    return nullptr;
+    /*
+    if(nullptr == controller || !controller->IsPlayerController()) return nullptr;
+    if(0 == g_clientDllOffsets.CCSPlayerController.m_hPlayerPawn) return nullptr;
+    return (unsigned int *)((unsigned char *)controller + g_clientDllOffsets.CCSPlayerController.m_hPlayerPawn);
+    */
+}
+
+static unsigned int * GetControllerObserverPawnHandleFieldPtr(CEntityInstance * controller) {
+    // Temporarily disabled - requires m_hObserverPawn offset
+    return nullptr;
+    /*
+    if(nullptr == controller || !controller->IsPlayerController()) return nullptr;
+    if(0 == g_clientDllOffsets.CCSPlayerController.m_hObserverPawn) return nullptr;
+    return (unsigned int *)((unsigned char *)controller + g_clientDllOffsets.CCSPlayerController.m_hObserverPawn);
+    */
+}
+
+static void * GetObserverServicesPtr(CEntityInstance * pawn) {
+    if(nullptr == pawn || !pawn->IsPlayerPawn()) return nullptr;
+    return *(void **)((unsigned char *)pawn + g_clientDllOffsets.C_BasePlayerPawn.m_pObserverServices);
+}
+
+static void * GetObserverServicesPtrUnchecked(CEntityInstance * pawn) {
+    if(nullptr == pawn || 0 == g_clientDllOffsets.C_BasePlayerPawn.m_pObserverServices) return nullptr;
+    return *(void **)((unsigned char *)pawn + g_clientDllOffsets.C_BasePlayerPawn.m_pObserverServices);
+}
+
+static void * GetCameraServicesPtr(CEntityInstance * pawn) {
+    if(nullptr == pawn || !pawn->IsPlayerPawn()) return nullptr;
+    return *(void **)((unsigned char *)pawn + g_clientDllOffsets.C_BasePlayerPawn.m_pCameraServices);
+}
+
+static uint8_t * GetObserverModeFieldPtr(CEntityInstance * pawn) {
+    if(void * pObserverServices = GetObserverServicesPtr(pawn)) {
+        return (uint8_t *)((unsigned char *)pObserverServices + g_clientDllOffsets.CPlayer_ObserverServices.m_iObserverMode);
+    }
+    return nullptr;
+}
+
+static unsigned int * GetObserverTargetFieldPtr(CEntityInstance * pawn) {
+    if(void * pObserverServices = GetObserverServicesPtr(pawn)) {
+        return (unsigned int *)((unsigned char *)pObserverServices + g_clientDllOffsets.CPlayer_ObserverServices.m_hObserverTarget);
+    }
+    return nullptr;
+}
+
+static uint8_t * GetObserverModeFieldPtrUnchecked(CEntityInstance * pawn) {
+    if(void * pObserverServices = GetObserverServicesPtrUnchecked(pawn)) {
+        return (uint8_t *)((unsigned char *)pObserverServices + g_clientDllOffsets.CPlayer_ObserverServices.m_iObserverMode);
+    }
+    return nullptr;
+}
+
+static unsigned int * GetObserverTargetFieldPtrUnchecked(CEntityInstance * pawn) {
+    if(void * pObserverServices = GetObserverServicesPtrUnchecked(pawn)) {
+        return (unsigned int *)((unsigned char *)pObserverServices + g_clientDllOffsets.CPlayer_ObserverServices.m_hObserverTarget);
+    }
+    return nullptr;
+}
+
+static unsigned int * GetViewEntityFieldPtr(CEntityInstance * pawn) {
+    if(void * pCameraServices = GetCameraServicesPtr(pawn)) {
+        return (unsigned int *)((unsigned char *)pCameraServices + g_clientDllOffsets.CPlayer_CameraServices.m_hViewEntity);
+    }
+    return nullptr;
+}
+
+CEntityInstance * GetEntityFromIndex(int index) {
+    if(index < 0 || nullptr == g_pEntityList || nullptr == *g_pEntityList || nullptr == g_GetEntityFromIndex) return nullptr;
+    return (CEntityInstance *)g_GetEntityFromIndex(*g_pEntityList, index);
+}
+
+CEntityInstance * GetRealSplitScreenPlayer(int slot) {
+    if(nullptr != g_Org_ClientDll_GetSplitScreenPlayer) {
+        return g_Org_ClientDll_GetSplitScreenPlayer(slot);
+    }
+
+    if(nullptr == g_ClientDll_GetSplitScreenPlayer) return nullptr;
+    return g_ClientDll_GetSplitScreenPlayer(slot);
+}
+
+static int g_AutoSyncDebugStep = 0; // 0=no debug, set to step# where it fails
+
+CEntityInstance * GetFakePovRadarController() {
+    if(g_MirvPovAutoSync) {
+        CEntityInstance * realController = GetRealSplitScreenPlayer(0);
+        if(nullptr == realController) { g_AutoSyncDebugStep = 1; return nullptr; }
+        auto pawnHandle = realController->GetPlayerPawnHandle();
+        if(!pawnHandle.IsValid()) { g_AutoSyncDebugStep = 2; return nullptr; }
+        CEntityInstance * realPawn = GetEntityFromIndex(pawnHandle.GetEntryIndex());
+        if(nullptr == realPawn) { g_AutoSyncDebugStep = 3; return nullptr; }
+
+        uint8_t * pObsMode = GetObserverModeFieldPtrUnchecked(realPawn);
+        if(nullptr == pObsMode) { g_AutoSyncDebugStep = 4; return nullptr; }
+        if(0 == *pObsMode) { g_AutoSyncDebugStep = 5; return nullptr; }
+
+        unsigned int * pObsTarget = GetObserverTargetFieldPtrUnchecked(realPawn);
+        if(nullptr == pObsTarget) { g_AutoSyncDebugStep = 6; return nullptr; }
+        SOURCESDK::CS2::CBaseHandle targetHandle(*pObsTarget);
+        if(!targetHandle.IsValid()) { g_AutoSyncDebugStep = 7; return nullptr; }
+
+        CEntityInstance * targetPawn = GetEntityFromIndex(targetHandle.GetEntryIndex());
+        if(nullptr == targetPawn) { g_AutoSyncDebugStep = 8; return nullptr; }
+
+        auto controllerHandle = targetPawn->GetPlayerControllerHandle();
+        if(!controllerHandle.IsValid()) { g_AutoSyncDebugStep = 9; return nullptr; }
+        CEntityInstance * targetController = GetEntityFromIndex(controllerHandle.GetEntryIndex());
+        if(nullptr == targetController) { g_AutoSyncDebugStep = 10; return nullptr; }
+        if(!targetController->IsPlayerController()) { g_AutoSyncDebugStep = 11; return nullptr; }
+        g_AutoSyncDebugStep = 0;
+        return targetController;
+    }
+
+    if(g_FakePovRadarControllerIndex <= 0) return nullptr;
+    return GetEntityFromIndex(g_FakePovRadarControllerIndex);
+}
+
+int GetAutoSyncDebugStep() { return g_AutoSyncDebugStep; }
+
+CEntityInstance * GetEffectiveSplitScreenPlayer(int slot) {
+    if(0 == slot) {
+        if(CEntityInstance * fake = GetFakePovRadarController()) {
+            return fake;
+        }
+    }
+    return GetRealSplitScreenPlayer(slot);
+}
+
+bool IsFakePovRadarFrameContextActive() {
+    return g_FakePovRadarFrameContextState.active;
+}
+
+bool ConsumeFakePovRadarFrameContextWasActive() {
+    bool result = g_FakePovRadarFrameContextWasActive;
+    g_FakePovRadarFrameContextWasActive = false;
+    return result;
+}
+
+void SetFakePovRadarControllerIndex(int index) {
+    g_FakePovRadarControllerIndex = 0 < index ? index : 0;
+    g_MirvPovAutoSync = false;
+}
+
+void SetFakePovRadarAutoSync(bool enabled) {
+    g_MirvPovAutoSync = enabled;
+    if(enabled) g_FakePovRadarControllerIndex = -1;
+}
+
+bool GetFakePovRadarAutoSync() {
+    return g_MirvPovAutoSync;
+}
+
+int GetFakePovRadarControllerIndex() {
+    return g_FakePovRadarControllerIndex;
+}
+
+bool MirvPov_IsEnabled() {
+    return g_MirvPovEnabled;
+}
+
+void MirvPov_RestorePersistentIdentity() {
+}
+
+void MirvPov_UpdateSeekDetection() {
+    if(!MirvPov_IsEnabled()) return;
+    MirvPov_UpdateVoiceHud();
+    if(!g_pEngineToClient) return;
+    SOURCESDK::CS2::IDemoFile * pDemoFile = g_pEngineToClient->GetDemoFile();
+    if(!pDemoFile) return;
+    int curTick = pDemoFile->GetDemoTick();
+    MirvPovHud_UpdateSeekDetection(curTick);
+}
+
+void MirvPov_UpdatePersistentIdentity() {
+}
+
+int CEntityInstance_GetCompTeammateColor(CEntityInstance * controller) {
+    return -1;
+}
+
+void MirvPov_BeginFrame() {
+    // Temporarily disabled - requires EntitySpottedState_t offsets
+    return;
+    /*
+    if(IsFakePovRadarFrameContextActive()) return;
+    if(MirvPovHud_ShouldSuppressFrame()) return;
+    if(!MirvPov_IsEnabled()) return;
+
+    CEntityInstance * fakeController = GetFakePovRadarController();
+    CEntityInstance * realController = GetRealSplitScreenPlayer(0);
+    if(nullptr == fakeController || nullptr == realController || fakeController == realController) return;
+
+
+    g_SpottedRestoreCount = 0;
+    int fakeTeam = fakeController->GetTeam();
+    if(fakeTeam == 2 || fakeTeam == 3) {
+        int highestIndex = GetHighestEntityIndex();
+        for(int i = 0; i < highestIndex + 1; ++i) {
+            CEntityInstance * controller = GetEntityFromIndex(i);
+            if(nullptr == controller || !controller->IsPlayerController()) continue;
+            if(controller->GetTeam() != fakeTeam) continue;
+            if(controller == fakeController) continue;
+
+            auto pawnHandle = controller->GetPlayerPawnHandle();
+            if(!pawnHandle.IsValid()) continue;
+            CEntityInstance * pawn = GetEntityFromIndex(pawnHandle.GetEntryIndex());
+            if(nullptr == pawn || !pawn->IsPlayerPawn()) continue;
+            if(0 == g_clientDllOffsets.C_CSPlayerPawnBase.m_entitySpottedState) continue;
+
+            auto spottedState = (unsigned char*)pawn + g_clientDllOffsets.C_CSPlayerPawnBase.m_entitySpottedState;
+            uint8_t * pSpotted = (uint8_t*)(spottedState + g_clientDllOffsets.EntitySpottedState_t.m_bSpotted);
+            uint32_t * pMask = (uint32_t*)(spottedState + g_clientDllOffsets.EntitySpottedState_t.m_bSpottedByMask);
+
+            if(g_SpottedRestoreCount < kMaxSpottedRestoreEntries) {
+                g_SpottedRestoreEntries[g_SpottedRestoreCount].pawnEntryIndex = pawnHandle.GetEntryIndex();
+                g_SpottedRestoreEntries[g_SpottedRestoreCount].originalSpotted = *pSpotted;
+                g_SpottedRestoreEntries[g_SpottedRestoreCount].originalMask[0] = pMask[0];
+                g_SpottedRestoreEntries[g_SpottedRestoreCount].originalMask[1] = pMask[1];
+                g_SpottedRestoreCount++;
+            }
+
+            *pSpotted = 1;
+            pMask[0] = 0xFFFFFFFF;
+            pMask[1] = 0xFFFFFFFF;
+        }
+    }
+    */
+}
+
+void MirvPov_EndFrame() {
+}
+
+void MirvPov_RestoreSpotted() {
+}
+
+void MirvPov_ReWriteSpotted() {
+}
+
+void MirvPov_RepairTeamSpotted() {
+}
+
+void MirvPov_SyncObserverPawnPosition() {
+    if(!MirvPov_IsEnabled()) return;
+
+    CEntityInstance * fakeController = GetFakePovRadarController();
+    if(nullptr == fakeController) return;
+
+    CEntityInstance * realController = GetRealSplitScreenPlayer(0);
+    if(nullptr == realController || realController == fakeController) return;
+
+    auto fakePawnHandle = fakeController->GetPlayerPawnHandle();
+    if(!fakePawnHandle.IsValid()) return;
+    CEntityInstance * fakePawn = GetEntityFromIndex(fakePawnHandle.GetEntryIndex());
+    if(nullptr == fakePawn) return;
+
+    if(0 == g_clientDllOffsets.C_BaseEntity.m_pGameSceneNode || 0 == g_clientDllOffsets.CGameSceneNode.m_vecAbsOrigin) return;
+
+    auto fakeSceneNode = *(u_char**)((u_char*)fakePawn + g_clientDllOffsets.C_BaseEntity.m_pGameSceneNode);
+    if(nullptr == fakeSceneNode) return;
+    float * fakePos = (float*)(fakeSceneNode + g_clientDllOffsets.CGameSceneNode.m_vecAbsOrigin);
+
+    auto realControllerSceneNode = *(u_char**)((u_char*)realController + g_clientDllOffsets.C_BaseEntity.m_pGameSceneNode);
+    if(nullptr != realControllerSceneNode) {
+        float * realControllerPos = (float*)(realControllerSceneNode + g_clientDllOffsets.CGameSceneNode.m_vecAbsOrigin);
+        realControllerPos[0] = fakePos[0];
+        realControllerPos[1] = fakePos[1];
+        realControllerPos[2] = fakePos[2];
+    }
+
+    auto realPawnHandle = realController->GetPlayerPawnHandle();
+    if(realPawnHandle.IsValid()) {
+        CEntityInstance * realPawn = GetEntityFromIndex(realPawnHandle.GetEntryIndex());
+        if(nullptr != realPawn) {
+            auto realPawnSceneNode = *(u_char**)((u_char*)realPawn + g_clientDllOffsets.C_BaseEntity.m_pGameSceneNode);
+            if(nullptr != realPawnSceneNode) {
+                float * realPawnPos = (float*)(realPawnSceneNode + g_clientDllOffsets.CGameSceneNode.m_vecAbsOrigin);
+                realPawnPos[0] = fakePos[0];
+                realPawnPos[1] = fakePos[1];
+                realPawnPos[2] = fakePos[2];
+            }
+        }
+    }
+}
+
 struct MirvEntityEntry {
 	int entryIndex;
 	int handle;
@@ -595,7 +939,28 @@ extern "C" FFIBool afx_hook_source2_get_entity_ref_is_player_controller(void * p
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
         return BOOL_TO_FFIBOOL(pInstance->IsPlayerController());
     }
-    return FFIBOOL_FALSE;    
+    return FFIBOOL_FALSE;
+}
+
+void MirvPov_Enable(HMODULE clientDll) {
+    if(g_MirvPovEnabled) return;
+    g_MirvPovAutoSync = true;
+    MirvPovHud_ApplyPatches(clientDll);
+    MirvPov_ApplyRadarPatches(clientDll);
+    MirvPov_HookVoiceHud(clientDll);
+    MirvPov_ResetVoiceHud();
+    g_MirvPovEnabled = true;
+    MirvPov_UpdateVoiceTeam();
+}
+
+void MirvPov_Disable() {
+    if(!g_MirvPovEnabled) return;
+    g_MirvPovAutoSync = false;
+    MirvPovHud_RemovePatches();
+    MirvPov_RemoveRadarPatches();
+    MirvPov_ClearSyntheticSpeaking();
+    MirvPov_ResetVoiceHud();
+    g_MirvPovEnabled = false;
 }
 
 extern "C" int afx_hook_source2_get_entity_ref_player_controller_handle(void * pRef) {
@@ -681,21 +1046,66 @@ extern "C" const char* afx_hook_source2_get_entity_ref_sanitized_player_name(voi
     return nullptr;
 }
 
-typedef CEntityInstance *  (__fastcall * ClientDll_GetSplitScreenPlayer_t)(int slot);
-ClientDll_GetSplitScreenPlayer_t g_ClientDll_GetSplitScreenPlayer = nullptr;
+ClientDll_GetSplitScreenPlayer_t g_Org_ClientDll_GetSplitScreenPlayer = nullptr;
+
+static CEntityInstance * __fastcall New_ClientDll_GetSplitScreenPlayer(int slot) {
+    if(nullptr == g_Org_ClientDll_GetSplitScreenPlayer) return nullptr;
+    if(0 == slot) {
+        if(MirvPov_IsEnabled() && IsFakePovRadarFrameContextActive()) {
+            if(CEntityInstance * fakeController = GetFakePovRadarController()) {
+                return fakeController;
+            }
+        }
+    }
+    return g_Org_ClientDll_GetSplitScreenPlayer(slot);
+}
 
 bool Hook_GetSplitScreenPlayer( void* pAddr) {
-    g_ClientDll_GetSplitScreenPlayer = (ClientDll_GetSplitScreenPlayer_t)pAddr;
+    g_Org_ClientDll_GetSplitScreenPlayer = (ClientDll_GetSplitScreenPlayer_t)pAddr;
+    g_ClientDll_GetSplitScreenPlayer = g_Org_ClientDll_GetSplitScreenPlayer;
+
+    static bool s_Detoured = false;
+    if(s_Detoured) return true;
+
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach(&(PVOID&)g_Org_ClientDll_GetSplitScreenPlayer, New_ClientDll_GetSplitScreenPlayer);
+
+    if(NO_ERROR != DetourTransactionCommit()) {
+        advancedfx::Message("[mirv_pov_radar_hook] GetSplitScreenPlayer detour failed\n");
+        g_ClientDll_GetSplitScreenPlayer = (ClientDll_GetSplitScreenPlayer_t)pAddr;
+        g_Org_ClientDll_GetSplitScreenPlayer = (ClientDll_GetSplitScreenPlayer_t)pAddr;
+        return false;
+    }
+
+    s_Detoured = true;
     return true;
 }
 
 extern "C" void * afx_hook_source2_get_entity_ref_from_split_screen_player(int index) {
-    if(0 == index && g_ClientDll_GetSplitScreenPlayer) {
-        if(CEntityInstance * result = g_ClientDll_GetSplitScreenPlayer(index)) {
+    if(0 == index) {
+        if(CEntityInstance * result = GetRealSplitScreenPlayer(index)) {
             return CAfxEntityInstanceRef::Aquire(result);
         }
     }
     return nullptr;
+}
+
+extern "C" void * afx_hook_source2_get_entity_ref_from_effective_split_screen_player(int index) {
+    if(0 == index) {
+        if(CEntityInstance * result = GetEffectiveSplitScreenPlayer(index)) {
+            return CAfxEntityInstanceRef::Aquire(result);
+        }
+    }
+    return nullptr;
+}
+
+extern "C" FFIBool afx_hook_source2_is_fake_pov_radar_frame_context_active() {
+    return BOOL_TO_FFIBOOL(IsFakePovRadarFrameContextActive());
+}
+
+extern "C" FFIBool afx_hook_source2_consume_fake_pov_radar_frame_context_was_active() {
+    return BOOL_TO_FFIBOOL(ConsumeFakePovRadarFrameContextWasActive());
 }
 
 extern "C" uint8_t afx_hook_source2_get_entity_ref_observer_mode(void * pRef) {

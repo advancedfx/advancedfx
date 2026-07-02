@@ -13,6 +13,16 @@ void Hook_ClientEntitySystem3(HMODULE clientDll);
 
 bool Hook_GetSplitScreenPlayer( void* pAddr);
 
+class CEntityInstance * GetEntityFromIndex(int index);
+class CEntityInstance * GetRealSplitScreenPlayer(int slot);
+bool MirvPov_IsEnabled();
+void MirvPov_Enable(HMODULE clientDll);
+void MirvPov_Disable();
+void MirvPov_BeginFrame();
+void MirvPov_UpdateSeekDetection();
+void MirvPov_ReWriteSpotted();
+void MirvPov_RepairTeamSpotted();
+
 class CAfxEntityInstanceRef;
 
 class CEntityInstance {
@@ -58,6 +68,8 @@ public:
 
     uint8_t GetObserverMode();
     SOURCESDK::CS2::CBaseHandle GetObserverTarget();
+
+    bool GetSpottedState(bool & spotted, uint32_t & mask0, uint32_t & mask1);
 
     SOURCESDK::CS2::CBaseHandle GetHandle();
 
