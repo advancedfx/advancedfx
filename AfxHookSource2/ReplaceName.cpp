@@ -60,6 +60,12 @@ typedef void (__fastcall * GetDecoratedPlayerName_t)(CEntityInstance* This_CCSPl
 GetDecoratedPlayerName_t g_Org_GetDecoratedPlayerName = nullptr;
 
 void __fastcall New_GetDecoratedPlayerName(CEntityInstance* This_CCSPlayerController, SOURCESDK::CS2::CBufferString * pBufferString, unsigned int flags, bool bUnk3) {
+
+    // flags:
+    //  0x1 - Name (non-death notices usually)
+    //  0x6 - Clan / BOT
+    //  0x10 - Name too (death notices usually)
+
     g_Org_GetDecoratedPlayerName(This_CCSPlayerController, pBufferString, flags, bUnk3);
 
     if(g_bDebug_GetDecoratedPlayerName) {
