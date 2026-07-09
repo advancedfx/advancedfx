@@ -15,7 +15,8 @@
 		11: 'Vector2',
 		12: 'Vector3',
 		13: 'Vector4',
-		14: 'Qangle'
+		14: 'Qangle',
+		15: 'VectorWS'
 	} as const;
 
 	function getCvarByName(name: string) {

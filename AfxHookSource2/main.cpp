@@ -1051,32 +1051,30 @@ void HookClientDll(HMODULE clientDll) {
 		This is where it checks for engine->IsPlayingDemo() (and afterwards for cl_demoviewoverride (float))
 		before under these conditions it is calling CalcDemoViewOverride, so this is in CViewRender::SetUpView:
 
-       180898120 48 8b 0d        MOV        RCX,qword ptr [DAT_181e2d7a8]
-                 81 56 59 01
-       180898127 48 8b 01        MOV        RAX,qword ptr [RCX]
-       18089812a ff 90 40        CALL       qword ptr [RAX + 0x148]
-                 01 00 00
-       180898130 0f 57 f6        XORPS      XMM6,XMM6
-       180898133 84 c0           TEST       AL,AL
-       180898135 74 63           JZ         LAB_18089819a
-       180898137 ba ff ff        MOV        EDX,0xffffffff
+00007ffa`178e34ec 488b0d05b37e01   mov     rcx, qword ptr [7FFA190CE7F8h]
+00007ffa`178e34f3 488b01           mov     rax, qword ptr [rcx]
+00007ffa`178e34f6 ff9050010000     call    qword ptr [rax+150h]
+00007ffa`178e34fc 0f57ff           xorps   xmm7, xmm7
+00007ffa`178e34ff 84c0             test    al, al
+00007ffa`178e3501 7457             je      00007FFA178E355A
+00007ffa`178e3503 baffffffff       mov     edx, 0FFFFFFFFh
                  ff ff
 
 	*/
 	{
-		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8b 0d ?? ?? ?? ?? 48 8b 01 ff 90 50 01 00 00 0f 57 ff 84 c0 74 63 ba ff ff ff ff");
+		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8b 0d ?? ?? ?? ?? 48 8b 01 ff 90 50 01 00 00 0f 57 ff 84 c0 74 57 ba ff ff ff ff");
 																	  
 		if (!result.IsEmpty()) {
 			/*
 				These are the top 16 bytes we change to:
 
-180882cd6	4889f1               mov     rcx, rsi
+180882cd6	4C89f1               mov     rcx, r14
 			48b8???????????????? mov     rax, ???????????????? <-- here we load our hook's address
 			ff10                 call    qword ptr [rax]
 			90                   nop
 			*/
 			unsigned char asmCode[16]={
-				0x48, 0x89, 0xf1,
+				0x4C, 0x89, 0xf1,
 				0x48, 0xb8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
 				0xff, 0x10,
 				0x90

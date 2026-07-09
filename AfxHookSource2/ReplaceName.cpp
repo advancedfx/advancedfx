@@ -9,6 +9,7 @@
 #include "../shared/binutils.h"
 #include "../shared/StringTools.h"
 
+#include "../deps/release/prop/cs2/sdk_src/public/tier1/bufferstring.h"
 #include "../deps/release/prop/cs2/sdk_src/public/igameevents.h"
 #include "../deps/release/prop/cs2/sdk_src/public/entityhandle.h"
 
@@ -55,15 +56,15 @@ const char * __fastcall New_CCSPlayerController_GetPlayerName(CEntityInstance * 
     return result;
 }
 
-typedef const char * (__fastcall * GetDecoratedPlayerName_t)(CEntityInstance* This_CCSPlayerController, char * pBuffer , unsigned int bufferSize, unsigned int maybeShortenLength);
+typedef void (__fastcall * GetDecoratedPlayerName_t)(CEntityInstance* This_CCSPlayerController, SOURCESDK::CS2::CBufferString * pBufferString, unsigned int flags, bool bUnk3);
 GetDecoratedPlayerName_t g_Org_GetDecoratedPlayerName = nullptr;
 
-const char * __fastcall New_GetDecoratedPlayerName(CEntityInstance* This_CCSPlayerController, char * pBuffer , unsigned int bufferSize, unsigned int maybeShortenLength) {
-    const char * result = g_Org_GetDecoratedPlayerName(This_CCSPlayerController, pBuffer, bufferSize, maybeShortenLength);
+void __fastcall New_GetDecoratedPlayerName(CEntityInstance* This_CCSPlayerController, SOURCESDK::CS2::CBufferString * pBufferString, unsigned int flags, bool bUnk3) {
+    g_Org_GetDecoratedPlayerName(This_CCSPlayerController, pBufferString, flags, bUnk3);
 
     if(g_bDebug_GetDecoratedPlayerName) {
 		auto handle = This_CCSPlayerController->GetHandle();
-		if (handle.IsValid()) advancedfx::Message("GetDecoratedPlayerName: %i -> %s\n", handle.GetEntryIndex(), result);
+		if (handle.IsValid()) advancedfx::Message("GetDecoratedPlayerName: %i, %u, %i -> %s\n", handle.GetEntryIndex(), flags, bUnk3?1:0, pBufferString->Get());
     }    
 
     if(!g_Index_To_DecoratedReplaceName.empty()){
@@ -71,7 +72,7 @@ const char * __fastcall New_GetDecoratedPlayerName(CEntityInstance* This_CCSPlay
 		if (handle.IsValid()) {
 			auto it = g_Index_To_DecoratedReplaceName.find(handle.GetEntryIndex());
 			if(it != g_Index_To_DecoratedReplaceName.end()) {
-				strncpy(pBuffer,it->second.c_str(),bufferSize);
+                (*pBufferString) = it->second.c_str();
 			}
 		}
     }
@@ -80,11 +81,9 @@ const char * __fastcall New_GetDecoratedPlayerName(CEntityInstance* This_CCSPlay
         uint64_t steamid = This_CCSPlayerController->GetSteamId();
         auto it = g_SteamId_To_DecoratedReplaceName.find(steamid);
         if(it!=g_SteamId_To_DecoratedReplaceName.end()) {
-           strncpy(pBuffer,it->second.c_str(),bufferSize);
+           (*pBufferString) = it->second.c_str();
         }
     }
-
-    return result;
 }
 
 void HookReplaceName(HMODULE clientDll)
@@ -94,9 +93,8 @@ void HookReplaceName(HMODULE clientDll)
         firstRun = false;
 
         // GetDecoratedPlayerName
-        // references "SFUI_bot_decorated_name"       
-
-		g_Org_GetDecoratedPlayerName = (GetDecoratedPlayerName_t)getAddress(clientDll, "44 89 44 24 18 48 89 54 24 10 55 53 56 57 41 54 41 55 41 56 41 57 48 8d ac 24 28 f5 ff ff");	
+        // references "<failure>"        
+		g_Org_GetDecoratedPlayerName = (GetDecoratedPlayerName_t)getAddress(clientDll, "40 55 53 56 41 54 41 55 41 56 48 8d ac 24 18 fe ff ff 48 81 ec e8 02 00 00 4c 8b ea 4c 8b e1 45 84 c9 75 21 8b 4a 04 f7 c1 ff ff ff 3f");	
 		if (g_Org_GetDecoratedPlayerName != 0) {
 			DetourTransactionBegin();
 			DetourUpdateThread(GetCurrentThread());
@@ -105,30 +103,7 @@ void HookReplaceName(HMODULE clientDll)
 		} 
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-        /*
-            GetDecoratedPlayerName references a function on "?AVCCSPlayerController@@" vtable as follows:
-            ...
-                             LAB_1805b4966                                   XREF[3]:     1805b4934(j), 1805b494b(j), 
-                                                                                          1805b495b(j)  
-       1805b4966 48 8b ce        MOV        RCX,RSI
-                             LAB_1805b4969                                   XREF[1]:     1805b4964(j)  
-       1805b4969 48 85 c9        TEST       RCX,RCX
-       1805b496c 74 03           JZ         LAB_1805b4971
-       1805b496e 48 8b 31        MOV        RSI,qword ptr [RCX]
-                             LAB_1805b4971                                   XREF[2]:     1805b492f(j), 1805b496c(j)  
-       1805b4971 48 8b 06        MOV        RAX,qword ptr [RSI]
-       1805b4974 48 8b ce        MOV        RCX,RSI
-       1805b4977 ff 90 18        CALL       qword ptr [RAX + 0x718]
-                 07 00 00
-       1805b497d 4c 8b 0d        MOV        R9,qword ptr [DAT_18201f238]
-                 b4 a8 a6 01
-       1805b4984 4c 8b e0        MOV        R12,RAX
-
-            ...
-            So now know the offset of the GetPlayerNameFunction
-        */
-
-		// TODO: move to addresses cpp and get index by pattern matching
+        // fn has 3rd reference to string "WWWWWWWWWWWWWWWW"
         if(void ** vtable = (void **)Afx::BinUtils::FindClassVtable(clientDll, ".?AVCCSPlayerController@@", 0, 0)) {
             g_Org_CCSPlayerController_GetPlayerName = (CCSPlayerController_GetPlayerName_t)vtable[226];
             DetourTransactionBegin();
