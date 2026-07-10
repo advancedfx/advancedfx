@@ -6,6 +6,20 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.40.0</version>
+<time>2026-07-10T14:17Z</time>
+<changes>
+<change type="updated">mirv-script: added mirv.getDemoFilePath (pre-work for #1173)</change>
+<change type="updated">mirv-script: Added mirv.fs object with some file system functions (pre-work for #1173)</change>
+<change type="updated">mirv-script: Added mirv.resolveGamePath and mirv.getGameDirectory (pre-work for #1173)</change>
+<change type="updated">mirv-script (internal change should be transparent): switched websocket from async-std-rutime to smol-runtime</change>
+<change type="fixed">Adjusted to CS2 update (1.41.6.8). Thanks for help to @Co1Swet @kaputlog @gammacase</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.39.2</version>
 <time>2026-05-27T11:08Z</time>
 <changes>

@@ -6,6 +6,19 @@
 
 <release>
 <name>HLAE</name>
+<version>2.191.0</version>
+<time>2026-07-10T14:17Z</time>
+<changes>
+<change type="updated">Included AfxHookGoldSrc 2.25.3 (2026-07-10T14:17Z)</change>
+<change type="updated">Included AfxHookSource2 0.40.0 (2026-07-10T14:17Z)</change>
+<change type="updated">HLAE (Installer): Updated installer FFMPEG to 8.1.1-9 (BtbN)</change>
+<change type="updated">HLAE: Customloader Environment Variables are now empty by default for new installs (usually not needed)</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.190.2</version>
 <time>2026-05-27T11:08Z</time>
 <changes>
