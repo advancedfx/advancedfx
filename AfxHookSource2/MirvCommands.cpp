@@ -463,9 +463,9 @@ bool getAddressesFromClient(HMODULE clientDll) {
 		res = false;
 	}
 
-	// called in func with 'cs_win_panel_match' in the end in if/else statement
-	// in func itself it starts with 'if (*(char *)(param_1 + 8) == '\0')'
-	size_t g_Original_EOM_addr = getAddress(clientDll, "48 8B C4 41 55 41 56 48 83 EC ?? 80 79");
+	// called in func with "cs_win_panel_match", "cs_game_disconnected", "cs_match_end_restart","nextlevel_changed","hltv_replay" in the end after if statement
+	// in func itself it starts with 'if (*(char *)(param_1 + 0x38) != '\0')'
+	size_t g_Original_EOM_addr = getAddress(clientDll, "40 56 48 83 ec 40 80 79 38 00 48 8b f1 0f 84 ?? ?? ?? ?? 48 89 5c 24 58 48 89 6c 24 60 4c 89 64 24 30 45 33 e4");
 	if(g_Original_EOM_addr == 0) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));
 		res = false;
