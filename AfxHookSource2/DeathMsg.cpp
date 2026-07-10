@@ -1423,6 +1423,8 @@ bool getPanoramaAddrs(HMODULE panoramaDll) {
 		// Resolve style properties through Panorama's own lookup function. This
 		// avoids depending on the private map layout for normal operation while
 		// retaining the map below for diagnostics and as a fallback.
+		//
+		// fn refernces string "panorama::CStyleSymbol::CStyleSymbol" 4 times
 		auto addr = getAddress(panoramaDll, "40 55 56 57 41 54 48 8D 6C 24 ?? 48 81 EC ?? ?? ?? ?? 44 8B 05 ?? ?? ?? ?? 48 8B F9 65 48 8B 04 25 58 00 00 00 45 33 E4 C6 01 FF 48 8B F2");
 		if (addr) {
 			g_PanoramaStylePropertySymbols.resolve = (StylePropertySymbolMap::Resolve_t)addr;
@@ -1430,6 +1432,7 @@ bool getPanoramaAddrs(HMODULE panoramaDll) {
 	}
 
 	{
+		// (in function of g_PanoramaStylePropertySymbols.resolve)
 		// before it jumps to error branch for "Need to increase size of static g_StylePropertyRegistrations (MAX_PANORAMA_STYLE_SYMBOLS) before registering more styles, failed on %s"
 		/*
       		lVar9 = DAT_180510350;
@@ -1444,7 +1447,7 @@ bool getPanoramaAddrs(HMODULE panoramaDll) {
 			local_70 = local_80;
 			FUN_180099640(&DAT_180510348,iVar5,local_78); <-- DAT_180510348 is what we are after, since might sometimes be the result of a function called before this one, but right now it's inlined.
 			_DAT_18051035c = _DAT_18051035c + 1;
-	  */
+	  	*/
 		auto addr = getAddress(panoramaDll, "0f 10 45 f7 48 8d 0d ?? ?? ?? ?? 41 f7 c0 ff ff ff 7f");
 		if (0 == addr) {
 			if (!g_PanoramaStylePropertySymbols.resolve) {
