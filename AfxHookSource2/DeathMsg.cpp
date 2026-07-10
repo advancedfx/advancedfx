@@ -51,7 +51,15 @@ struct CPanel2D {
 };
 
 struct StylePropertySymbolMap {
+    typedef uint8_t* (__fastcall *Resolve_t)(uint8_t* out, const char* stylePropertyName);
+
     uint8_t findSymbol(const char* stylePropertyName) {
+        if (resolve) {
+            uint8_t result = 0xFF;
+            resolve(&result, stylePropertyName);
+            return result;
+        }
+
         if (!symbols) return 0xFF;
 
 		for (int i = 0; i < symbols->numElements; ++i) {
@@ -62,11 +70,16 @@ struct StylePropertySymbolMap {
         return 0xFF;
     }
 
-    SOURCESDK::CS2::CUtlMap<SOURCESDK::CS2::CUtlString, uint8_t>* symbols;
+    Resolve_t resolve = nullptr;
+    SOURCESDK::CS2::CUtlMap<SOURCESDK::CS2::CUtlString, uint8_t>* symbols = nullptr;
 } g_PanoramaStylePropertySymbols;
 
 CON_COMMAND(__mirv_panorama_dump_style_symbols, "") {
 	auto symbols = g_PanoramaStylePropertySymbols.symbols;
+	if (!symbols) {
+		advancedfx::Warning("AFXWARNING: Panorama style-symbol dumping is unavailable for this CS2 build.\n");
+		return;
+	}
 
 	for (int i = 0; i < symbols->numElements; ++i) {
 		auto node = symbols->memory[i];
@@ -1407,6 +1420,16 @@ bool getPanoramaAddrs(HMODULE panoramaDll) {
 	}		
 
 	{
+		// Resolve style properties through Panorama's own lookup function. This
+		// avoids depending on the private map layout for normal operation while
+		// retaining the map below for diagnostics and as a fallback.
+		auto addr = getAddress(panoramaDll, "40 55 56 57 41 54 48 8D 6C 24 ?? 48 81 EC ?? ?? ?? ?? 44 8B 05 ?? ?? ?? ?? 48 8B F9 65 48 8B 04 25 58 00 00 00 45 33 E4 C6 01 FF 48 8B F2");
+		if (addr) {
+			g_PanoramaStylePropertySymbols.resolve = (StylePropertySymbolMap::Resolve_t)addr;
+		}
+	}
+
+	{
 		// before it jumps to error branch for "Need to increase size of static g_StylePropertyRegistrations (MAX_PANORAMA_STYLE_SYMBOLS) before registering more styles, failed on %s"
 		/*
       		lVar9 = DAT_180510350;
@@ -1423,8 +1446,13 @@ bool getPanoramaAddrs(HMODULE panoramaDll) {
 			_DAT_18051035c = _DAT_18051035c + 1;
 	  */
 		auto addr = getAddress(panoramaDll, "0f 10 45 f7 48 8d 0d ?? ?? ?? ?? 41 f7 c0 ff ff ff 7f");
-		if (0 == addr)
-			ErrorBox(MkErrStr(__FILE__, __LINE__));	
+		if (0 == addr) {
+			if (!g_PanoramaStylePropertySymbols.resolve) {
+				ErrorBox(MkErrStr(__FILE__, __LINE__));
+				return false;
+			}
+			advancedfx::Warning("AFXWARNING: Panorama style-symbol map is unavailable; style lookup will use the resolver.\n");
+		}
 		else {
 			auto out = addr + 11 + *(int32_t*)(addr + 7);
 			g_PanoramaStylePropertySymbols.symbols = (SOURCESDK::CS2::CUtlMap<SOURCESDK::CS2::CUtlString, uint8_t>*)(out);
