@@ -199,7 +199,7 @@ void updateSkyboxEntities() {
 		if(auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,i)) {
 			// Note: there are multiple skybox entities. 
 			// Seems like the other one is used for fog or smth.
-			if (0 != _stricmp("C_EnvSky", ent->GetClientClassName())) continue;
+			if (0 != _stricmp("env_sky", ent->GetClassName())) continue;
 
 			// we have to remove pointer to object, so it can update
 			// see dissasembly for the update function
