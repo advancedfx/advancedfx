@@ -211,7 +211,7 @@ CON_COMMAND(mirv_replace_name, "Replace player names")
                 const char * arg2 = args->ArgV(2);
                 if(0 == stricmp("add", arg2) && 5 <= argC) {
                     auto result = g_Index_To_DecoratedReplaceName.emplace(std::piecewise_construct, std::forward_as_tuple(atoi(args->ArgV(3))+1), std::forward_as_tuple());
-                    unsigned int flags = 5 <= argC ? strtoul(args->ArgV(5),nullptr,10) : 17;
+                    unsigned int flags = 6 <= argC ? strtoul(args->ArgV(5),nullptr,10) : 17;
                     result.first->second.emplace(std::piecewise_construct, std::forward_as_tuple(flags), std::forward_as_tuple(args->ArgV(4)));
                     return;
                 }
@@ -244,7 +244,7 @@ CON_COMMAND(mirv_replace_name, "Replace player names")
                     const char * arg3 = args->ArgV(3);
                     if(StringIBeginsWith(arg3,"x")) arg3++;
                     auto result = g_SteamId_To_DecoratedReplaceName.emplace(std::piecewise_construct, std::forward_as_tuple(strtoull(arg3,nullptr,10)), std::forward_as_tuple());
-                    unsigned int flags = 5 <= argC ? strtoul(args->ArgV(5),nullptr,10) : 17;
+                    unsigned int flags = 6 <= argC ? strtoul(args->ArgV(5),nullptr,10) : 17;
                     result.first->second.emplace(std::piecewise_construct, std::forward_as_tuple(flags), std::forward_as_tuple(args->ArgV(4)));
                     return;
                 }
