@@ -1323,12 +1323,12 @@ LAB_1809a7de1
 
 	// function has "file://{resources}/layout/hud/hud.xml" string and also references CCSGO_Hud vftable
 	// hudpanel is DAT that param_1 assigned to     
-	size_t g_HudPanel_addr = getAddress(clientDll, "48 89 5c 24 08 48 89 6c 24 10 48 89 74 24 18 57 48 83 ec 30 48 8b f1 e8 ?? ?? ?? ?? 48 8d 05 ?? ?? ?? ?? c7 86 c8 00 00 00 ff ff 7f ff 48 89 06");
+	size_t g_HudPanel_addr = getAddress(clientDll, "48 89 86 ?? ?? ?? ?? 48 89 35 ?? ?? ?? ??");
 	if (g_HudPanel_addr == 0) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));	
 		return false;
 	} else {
-		g_HudPanel_addr += 31;
+		g_HudPanel_addr += 10;
 	};
 
 	// function has CreatePanelWithCurrentContext string
