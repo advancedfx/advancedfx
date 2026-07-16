@@ -18,11 +18,51 @@
 bool g_bDebug_GetPlayerName = false;
 bool g_bDebug_GetDecoratedPlayerName = false;
 
-std::map<int,std::string> g_Index_To_ReplaceName;
-std::map<uint64_t,std::string> g_SteamId_To_ReplaceName;
+enum class ReplaceNameFlags : int {
+    None = 0,
+    ClanTag = 1<<0,
+    OriginalController = 1<<1,
+    Puppeteer = 1 << 2,
+    DeathNotification = 4 << 2
+};
 
-std::map<int,std::map<int,std::string>> g_Index_To_DecoratedReplaceName;
-std::map<uint64_t,std::map<int,std::string>> g_SteamId_To_DecoratedReplaceName;
+struct ReplaceName_s {
+    ReplaceName_s(const char* name, const char * tag)
+    : Name(name)
+    , Tag(tag)
+    {
+
+    }
+    std::string Name;
+    std::string Tag;
+};
+
+std::map<int,ReplaceName_s> g_UserId_To_ReplaceName;
+std::map<uint64_t,ReplaceName_s> g_SteamId_To_ReplaceName;;
+
+ReplaceName_s * ResolveReplace(int userId) {
+    if(-1 == userId) return nullptr;
+
+    if(!g_UserId_To_ReplaceName.empty()) {
+        auto it = g_UserId_To_ReplaceName.find(userId);
+        if(it != g_UserId_To_ReplaceName.end()) {
+            return &(it->second);
+        }
+
+    }
+
+    if(!g_SteamId_To_ReplaceName.empty()) {
+        if(auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,userId+1)) {
+            uint64_t steamid = ent->GetSteamId();
+            auto it = g_SteamId_To_ReplaceName.find(steamid);
+            if(it!=g_SteamId_To_ReplaceName.end()) {
+                return &(it->second);
+            }
+        }
+    }
+
+    return nullptr;
+}
 
 typedef const char * (__fastcall * CCSPlayerController_GetPlayerName_t)(void * This);
 CCSPlayerController_GetPlayerName_t g_Org_CCSPlayerController_GetPlayerName = nullptr;
@@ -35,22 +75,13 @@ const char * __fastcall New_CCSPlayerController_GetPlayerName(CEntityInstance * 
 		advancedfx::Message("GetPlayerName: %i -> %s\n", handle.GetEntryIndex(),result);
     }
 
-    if(!g_Index_To_ReplaceName.empty()){
+    if(!g_UserId_To_ReplaceName.empty()){
 		auto handle = This->GetHandle();
 		if (handle.IsValid()) {
-			auto it = g_Index_To_ReplaceName.find(handle.GetEntryIndex());
-			if(it != g_Index_To_ReplaceName.end()) {
-				result = it->second.c_str();
-			}
+            if(auto result2 = ResolveReplace(handle.GetEntryIndex()-1)) {
+                return result2->Name.c_str();
+            }
 		}
-    }
-
-    if(!g_SteamId_To_ReplaceName.empty()) {
-        uint64_t steamid = This->GetSteamId();
-        auto it = g_SteamId_To_ReplaceName.find(steamid);
-        if(it!=g_SteamId_To_ReplaceName.end()) {
-			result = it->second.c_str();
-        }
     }
 
     return result;
@@ -61,43 +92,34 @@ GetDecoratedPlayerName_t g_Org_GetDecoratedPlayerName = nullptr;
 
 void __fastcall New_GetDecoratedPlayerName(void* This, SOURCESDK::CS2::CBufferString * pBufferString, unsigned int flags, bool bUnk3) {
 
-    // flags:
-    //  0x1 - Name (non-death notices usually)
-    //  0x6 - Clan / BOT
-    //  0x10 - Name too (death notices usually)
-
     g_Org_GetDecoratedPlayerName(This, pBufferString, flags, bUnk3);
 
+    int userId = -1;
     void ** vtable = *(void ***)This;
-    unsigned char * class_thunk = (unsigned char *)(vtable[-1]);
-    int32_t vtable_offset = *(int32_t *)(class_thunk + 0x4);
-    if(auto pEntityInstance = (CEntityInstance *)((unsigned char *)This - vtable_offset)) {
-        if(g_bDebug_GetDecoratedPlayerName) {
-            auto handle = pEntityInstance->GetHandle();
-            if (handle.IsValid()) advancedfx::Message("GetDecoratedPlayerName: userId=%i, flags=%u, bUnk3=%i -> name=%s\n", handle.GetEntryIndex()-1, flags, bUnk3?1:0, pBufferString->Get());
-        }    
+    int * (__fastcall * pfnGetUserId)(void * This, int * pHandle) = (int * (__fastcall *)(void *, int *))(vtable[7]);
+    pfnGetUserId(This, &userId);
 
-        if(!g_Index_To_DecoratedReplaceName.empty()){
-            auto handle = pEntityInstance->GetHandle();
-            if (handle.IsValid()) {
-                auto it = g_Index_To_DecoratedReplaceName.find(handle.GetEntryIndex());
-                if(it != g_Index_To_DecoratedReplaceName.end()) {
-                    for(auto it2 = it->second.begin(); it2 != it->second.end(); it2++) {
-                        if(it2->first & flags) (*pBufferString) = it2->second.c_str();
-                    }
-                }
-            }
-        }
+    if(g_bDebug_GetDecoratedPlayerName) {
+        advancedfx::Message("GetDecoratedPlayerName: userId=%i, flags=%u, bUnk3=%i -> name=%s\n", userId, flags, bUnk3?1:0, pBufferString->Get());
+    }
 
-        if(!g_SteamId_To_DecoratedReplaceName.empty()) {
-            uint64_t steamid = pEntityInstance->GetSteamId();
-            auto it = g_SteamId_To_DecoratedReplaceName.find(steamid);
-            if(it!=g_SteamId_To_DecoratedReplaceName.end()) {
-                for(auto it2 = it->second.begin(); it2 != it->second.end();  it2++) {
-                    if(it2->first & flags) (*pBufferString) = it2->second.c_str();
-                }
+    int myFlags = flags;
+
+    // follow the original logic in the function a bit:
+    if(myFlags & (int)ReplaceNameFlags::DeathNotification) myFlags |= (int)ReplaceNameFlags::ClanTag;
+
+    if(myFlags & ((int)ReplaceNameFlags::ClanTag | (int)ReplaceNameFlags::OriginalController)) {
+        if(auto replace = ResolveReplace(userId)) {
+            std::string result;
+            if(myFlags & (int)ReplaceNameFlags::ClanTag) {
+                result += replace->Tag.c_str();
             }
-        }
+            if(myFlags & (int)ReplaceNameFlags::OriginalController) {
+                if(0<result.size()) result += " ";
+                result += replace->Name.c_str();
+            }
+            *pBufferString = result.c_str();
+        }        
     }
 }
 
@@ -132,7 +154,7 @@ void HookReplaceName(HMODULE clientDll)
 
 extern void deathMsgPlayers_PrintHelp_Console();
 
-CON_COMMAND(mirv_replace_name, "Replace player names")
+CON_COMMAND(mirv_replace_name, "Replace player names (and clan tags)")
 {
     int argC = args->ArgC();
     const char * arg0 = args->ArgV(0);
@@ -143,22 +165,29 @@ CON_COMMAND(mirv_replace_name, "Replace player names")
             if(3 <= argC) {
                 const char * arg2 = args->ArgV(2);
                 if(0 == stricmp("add", arg2) && 5 <= argC) {
-                    g_Index_To_ReplaceName[atoi(args->ArgV(3))+1] = args->ArgV(4);
+                    int32_t userId = atoi(args->ArgV(3));
+                    const char * name = args->ArgV(4);
+                    const char * tag = 6 <= argC ? args->ArgV(5) : "";
+                    g_UserId_To_ReplaceName.erase(userId);
+                    g_UserId_To_ReplaceName.emplace(std::piecewise_construct
+                        , std::forward_as_tuple(userId)
+                        , std::forward_as_tuple(name, tag)
+                    );
                     return;
                 }
                 else if(0 == stricmp("remove", arg2) && 4 <= argC) {
-                    g_Index_To_ReplaceName.erase(atoi(args->ArgV(3))+1);
+                    g_UserId_To_ReplaceName.erase(atoi(args->ArgV(3)));
                     return;
                 }
                 else if(0 == stricmp("print", arg2) && 3 <= argC) {
-                    for(auto it = g_Index_To_ReplaceName.begin(); it != g_Index_To_ReplaceName.end(); it++) {
-                        advancedfx::Message("%i: %s\n",it->first-1,it->second.c_str());
+                    for(auto it = g_UserId_To_ReplaceName.begin(); it != g_UserId_To_ReplaceName.end(); it++) {
+                        advancedfx::Message("%i: \"%s\" \"%s\"",it->first,it->second.Name.c_str(),it->second.Tag.c_str());
                     }
                     return;
                 }                
             }
             advancedfx::Message(
-                "%s byUserId add <iUserId> <sValue>\n"
+                "%s byUserId add <iUserId> <sValue> [<sTagValue>]\n"
                 "%s byUserId remove <iUserId>\n"
                 "%s byUserId print\n",
                 arg0,
@@ -172,8 +201,15 @@ CON_COMMAND(mirv_replace_name, "Replace player names")
                 if(0 == stricmp("add", arg2) && 5 <= argC) {
                     const char * arg3 = args->ArgV(3);
                     if(StringIBeginsWith(arg3,"x")) arg3++;
-                    g_SteamId_To_ReplaceName[strtoull(arg3,nullptr,10)] = args->ArgV(4);
-                    return;
+                    uint64_t steamId = strtoull(arg3,nullptr,10);
+                    const char * name = args->ArgV(4);
+                    const char * tag = 6 <= argC ? args->ArgV(5) : "";
+                    g_SteamId_To_ReplaceName.erase(steamId);
+                    g_SteamId_To_ReplaceName.emplace(std::piecewise_construct
+                        , std::forward_as_tuple(steamId)
+                        , std::forward_as_tuple(name, tag)
+                    );
+                    return;                    
                 }
                 else if(0 == stricmp("remove", arg2) && 4 <= argC) {
                     const char * arg3 = args->ArgV(3);
@@ -183,13 +219,13 @@ CON_COMMAND(mirv_replace_name, "Replace player names")
                 }
                 else if(0 == stricmp("print", arg2) && 3 <= argC) {
                     for(auto it = g_SteamId_To_ReplaceName.begin(); it != g_SteamId_To_ReplaceName.end(); it++) {
-                        advancedfx::Message("x%llu: %s\n",it->first,it->second.c_str());
+                        advancedfx::Message("%i: \"%s\" \"%s\"",it->first,it->second.Name.c_str(),it->second.Tag.c_str());
                     }
                     return;
                 }                
             }
             advancedfx::Message(
-                "%s byXuid add x<ullXuid> <sValue>\n"
+                "%s byXuid add x<ullXuid> <sValue> [<sTagValue>]\n"
                 "%s byXuid remove x<ullXuid>\n"
                 "%s byXuid print\n",
                 arg0,
@@ -206,95 +242,28 @@ CON_COMMAND(mirv_replace_name, "Replace player names")
                 }
             }
         }
-        else if(0 == stricmp("decoByUserId", arg1)) {
-            if(3 <= argC) {
-                const char * arg2 = args->ArgV(2);
-                if(0 == stricmp("add", arg2) && 5 <= argC) {
-                    auto result = g_Index_To_DecoratedReplaceName.emplace(std::piecewise_construct, std::forward_as_tuple(atoi(args->ArgV(3))+1), std::forward_as_tuple());
-                    unsigned int flags = 6 <= argC ? strtoul(args->ArgV(5),nullptr,10) : 17;
-                    result.first->second.emplace(std::piecewise_construct, std::forward_as_tuple(flags), std::forward_as_tuple(args->ArgV(4)));
-                    return;
-                }
-                else if(0 == stricmp("remove", arg2) && 4 <= argC) {
-                    g_Index_To_DecoratedReplaceName.erase(atoi(args->ArgV(3))+1);
-                    return;
-                }
-                else if(0 == stricmp("print", arg2) && 3 <= argC) {
-                    for(auto it = g_Index_To_DecoratedReplaceName.begin(); it != g_Index_To_DecoratedReplaceName.end(); it++) {
-                        for(auto it2 = it->second.begin(); it2 != it->second.end(); it2++) {
-                            advancedfx::Message("%i: %s %u\n",it->first-1,it2->second.c_str(),it2->first);
-                        }                        
-                    }
-                    return;
-                }                
-            }
-            advancedfx::Message(
-                "%s decoByUserId add <iUserId> <sValue> [<iFlags>=17] - If any bit of iFlags matches the value is applied, order is not guaranteed.\n"
-                "%s decoByUserId remove <iUserId>\n"
-                "%s decoByUserId print\n",
-                arg0,
-                arg0,
-                arg0
-            );
-            return;
-        } else if(0 == stricmp("decoByXuid", arg1)) {
-            if(3 <= argC) {
-                const char * arg2 = args->ArgV(2);
-                if(0 == stricmp("add", arg2) && 5 <= argC) {
-                    const char * arg3 = args->ArgV(3);
-                    if(StringIBeginsWith(arg3,"x")) arg3++;
-                    auto result = g_SteamId_To_DecoratedReplaceName.emplace(std::piecewise_construct, std::forward_as_tuple(strtoull(arg3,nullptr,10)), std::forward_as_tuple());
-                    unsigned int flags = 6 <= argC ? strtoul(args->ArgV(5),nullptr,10) : 17;
-                    result.first->second.emplace(std::piecewise_construct, std::forward_as_tuple(flags), std::forward_as_tuple(args->ArgV(4)));
-                    return;
-                }
-                else if(0 == stricmp("remove", arg2) && 4 <= argC) {
-                    const char * arg3 = args->ArgV(3);
-                    if(StringIBeginsWith(arg3,"x")) arg3++;                    
-                    g_SteamId_To_DecoratedReplaceName.erase(strtoull(arg3,nullptr,10));
-                    return;
-                }
-                else if(0 == stricmp("print", arg2) && 3 <= argC) {
-                    for(auto it = g_SteamId_To_DecoratedReplaceName.begin(); it != g_SteamId_To_DecoratedReplaceName.end(); it++) {
-                        for(auto it2 = it->second.begin(); it2 != it->second.end(); it2++) {
-                            advancedfx::Message("x%llu: %s %u\n",it->first,it2->second.c_str(),it2->first);
-                        }                        
-                    }
-                    return;
-                }                
-            }
-            advancedfx::Message(
-                "%s decoByXuid add x<ullXuid> <sValue> [<iFlags>=17] - If any bit of iFlags matches the value is applied, order is not guaranteed.\n"
-                "%s decoByXuid remove x<ullXuid>\n"
-                "%s decoByXuid print\n",
-                arg0,
-                arg0,
-                arg0
-            );
-            return;
-        }
-        else if(0==stricmp("debug",arg1)) {
+        else if(0==stricmp("oldDebug",arg1)) {
             if(3 <= argC) {
                 g_bDebug_GetPlayerName = 0 != atoi(args->ArgV(2));
                 return;
             }
 
             advancedfx::Message(
-                "%s debug 0|1\n"
+                "%s oldDebug 0|1\n"
                 "Current Value: %i\n",
                 arg0,
                 g_bDebug_GetPlayerName?1:0
             );
             return;
         }
-        else if(0==stricmp("decoDebug",arg1)) {
+        else if(0==stricmp("debug",arg1)) {
             if(3 <= argC) {
                 g_bDebug_GetDecoratedPlayerName = 0 != atoi(args->ArgV(2));
                 return;
             }
 
             advancedfx::Message(
-                "%s decoDebug 0|1\n"
+                "%s debug 0|1\n"
                 "Current Value: %i\n",
                 arg0,
                 g_bDebug_GetDecoratedPlayerName?1:0
@@ -304,13 +273,11 @@ CON_COMMAND(mirv_replace_name, "Replace player names")
     }
 
     advancedfx::Message(
-        "%s byUserId [...] - Replace player name by UserID\n"
-        "%s byXuid [...] - Replace player name by SteamID\n"
+        "%s byUserId [...] - Replace player name and tag by UserID\n"
+        "%s byXuid [...] - Replace player name and tag by SteamID\n"
         "%s help players - Print player info in console\n"
-        "%s decoByUserId [...] - Replace decorated player name by UserID (and flags)\n"
-        "%s decoByXuid [...] - Replace decorated player name by SteamID (and flags)\n"
         "%s debug 0|1\n"
-        "%s decoDebug 0|1\n",
+        "%s oldDebug 0|1\n",
         arg0,
         arg0,
         arg0,
@@ -320,3 +287,24 @@ CON_COMMAND(mirv_replace_name, "Replace player names")
         arg0
     );
 }
+
+#ifdef _DEBUG
+CON_COMMAND(__mirv_get_decorated_player_name, "")
+{
+    int argC = args->ArgC();
+    const char * arg0 = args->ArgV(0);
+
+    if(5 <= argC) {
+        const char * arg1 = args->ArgV(1);
+        const char * arg2 = args->ArgV(2);
+        const char * arg3 = args->ArgV(3);
+        const char * arg4 = args->ArgV(4);
+
+        if(auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,atoi(arg1))) {
+            SOURCESDK::CS2::CBufferString str;
+            g_Org_GetDecoratedPlayerName((unsigned char *)ent + atoi(arg2), &str, atoi(arg3), atoi(arg4));
+            advancedfx::Message("Result: %s\n",str.Get());
+        }
+    }
+}
+#endif
