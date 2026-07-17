@@ -2,6 +2,7 @@ pub mod campath;
 pub mod cvar;
 pub mod errors;
 pub mod events;
+pub mod fs;
 pub mod math;
 
 use std::rc::Rc;

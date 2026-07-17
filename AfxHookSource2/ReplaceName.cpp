@@ -9,6 +9,7 @@
 #include "../shared/binutils.h"
 #include "../shared/StringTools.h"
 
+#include "../deps/release/prop/cs2/sdk_src/public/tier1/bufferstring.h"
 #include "../deps/release/prop/cs2/sdk_src/public/igameevents.h"
 #include "../deps/release/prop/cs2/sdk_src/public/entityhandle.h"
 
@@ -17,11 +18,51 @@
 bool g_bDebug_GetPlayerName = false;
 bool g_bDebug_GetDecoratedPlayerName = false;
 
-std::map<int,std::string> g_Index_To_ReplaceName;
-std::map<uint64_t,std::string> g_SteamId_To_ReplaceName;
+enum class ReplaceNameFlags : int {
+    None = 0,
+    ClanTag = 1<<0,
+    OriginalController = 1<<1,
+    Puppeteer = 1 << 2,
+    DeathNotification = 4 << 2
+};
 
-std::map<int,std::string> g_Index_To_DecoratedReplaceName;
-std::map<uint64_t,std::string> g_SteamId_To_DecoratedReplaceName;
+struct ReplaceName_s {
+    ReplaceName_s(const char* name, const char * tag)
+    : Name(name)
+    , Tag(tag)
+    {
+
+    }
+    std::string Name;
+    std::string Tag;
+};
+
+std::map<int,ReplaceName_s> g_UserId_To_ReplaceName;
+std::map<uint64_t,ReplaceName_s> g_SteamId_To_ReplaceName;;
+
+ReplaceName_s * ResolveReplace(int userId) {
+    if(-1 == userId) return nullptr;
+
+    if(!g_UserId_To_ReplaceName.empty()) {
+        auto it = g_UserId_To_ReplaceName.find(userId);
+        if(it != g_UserId_To_ReplaceName.end()) {
+            return &(it->second);
+        }
+
+    }
+
+    if(!g_SteamId_To_ReplaceName.empty()) {
+        if(auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,userId+1)) {
+            uint64_t steamid = ent->GetSteamId();
+            auto it = g_SteamId_To_ReplaceName.find(steamid);
+            if(it!=g_SteamId_To_ReplaceName.end()) {
+                return &(it->second);
+            }
+        }
+    }
+
+    return nullptr;
+}
 
 typedef const char * (__fastcall * CCSPlayerController_GetPlayerName_t)(void * This);
 CCSPlayerController_GetPlayerName_t g_Org_CCSPlayerController_GetPlayerName = nullptr;
@@ -34,57 +75,52 @@ const char * __fastcall New_CCSPlayerController_GetPlayerName(CEntityInstance * 
 		advancedfx::Message("GetPlayerName: %i -> %s\n", handle.GetEntryIndex(),result);
     }
 
-    if(!g_Index_To_ReplaceName.empty()){
+    if(!g_UserId_To_ReplaceName.empty()){
 		auto handle = This->GetHandle();
 		if (handle.IsValid()) {
-			auto it = g_Index_To_ReplaceName.find(handle.GetEntryIndex());
-			if(it != g_Index_To_ReplaceName.end()) {
-				result = it->second.c_str();
-			}
+            if(auto result2 = ResolveReplace(handle.GetEntryIndex()-1)) {
+                return result2->Name.c_str();
+            }
 		}
-    }
-
-    if(!g_SteamId_To_ReplaceName.empty()) {
-        uint64_t steamid = This->GetSteamId();
-        auto it = g_SteamId_To_ReplaceName.find(steamid);
-        if(it!=g_SteamId_To_ReplaceName.end()) {
-			result = it->second.c_str();
-        }
     }
 
     return result;
 }
 
-typedef const char * (__fastcall * GetDecoratedPlayerName_t)(CEntityInstance* This_CCSPlayerController, char * pBuffer , unsigned int bufferSize, unsigned int maybeShortenLength);
+typedef void (__fastcall * GetDecoratedPlayerName_t)(void* This, SOURCESDK::CS2::CBufferString * pBufferString, unsigned int flags, bool bUnk3);
 GetDecoratedPlayerName_t g_Org_GetDecoratedPlayerName = nullptr;
 
-const char * __fastcall New_GetDecoratedPlayerName(CEntityInstance* This_CCSPlayerController, char * pBuffer , unsigned int bufferSize, unsigned int maybeShortenLength) {
-    const char * result = g_Org_GetDecoratedPlayerName(This_CCSPlayerController, pBuffer, bufferSize, maybeShortenLength);
+void __fastcall New_GetDecoratedPlayerName(void* This, SOURCESDK::CS2::CBufferString * pBufferString, unsigned int flags, bool bUnk3) {
+
+    g_Org_GetDecoratedPlayerName(This, pBufferString, flags, bUnk3);
+
+    int userId = -1;
+    void ** vtable = *(void ***)This;
+    int * (__fastcall * pfnGetUserId)(void * This, int * pHandle) = (int * (__fastcall *)(void *, int *))(vtable[7]);
+    pfnGetUserId(This, &userId);
 
     if(g_bDebug_GetDecoratedPlayerName) {
-		auto handle = This_CCSPlayerController->GetHandle();
-		if (handle.IsValid()) advancedfx::Message("GetDecoratedPlayerName: %i -> %s\n", handle.GetEntryIndex(), result);
-    }    
-
-    if(!g_Index_To_DecoratedReplaceName.empty()){
-		auto handle = This_CCSPlayerController->GetHandle();
-		if (handle.IsValid()) {
-			auto it = g_Index_To_DecoratedReplaceName.find(handle.GetEntryIndex());
-			if(it != g_Index_To_DecoratedReplaceName.end()) {
-				strncpy(pBuffer,it->second.c_str(),bufferSize);
-			}
-		}
+        advancedfx::Message("GetDecoratedPlayerName: userId=%i, flags=%u, bUnk3=%i -> name=%s\n", userId, flags, bUnk3?1:0, pBufferString->Get());
     }
 
-    if(!g_SteamId_To_DecoratedReplaceName.empty()) {
-        uint64_t steamid = This_CCSPlayerController->GetSteamId();
-        auto it = g_SteamId_To_DecoratedReplaceName.find(steamid);
-        if(it!=g_SteamId_To_DecoratedReplaceName.end()) {
-           strncpy(pBuffer,it->second.c_str(),bufferSize);
-        }
-    }
+    int myFlags = flags;
 
-    return result;
+    // follow the original logic in the function a bit:
+    if(myFlags & (int)ReplaceNameFlags::DeathNotification) myFlags |= (int)ReplaceNameFlags::ClanTag;
+
+    if(myFlags & ((int)ReplaceNameFlags::ClanTag | (int)ReplaceNameFlags::OriginalController)) {
+        if(auto replace = ResolveReplace(userId)) {
+            std::string result;
+            if(myFlags & (int)ReplaceNameFlags::ClanTag) {
+                result += replace->Tag.c_str();
+            }
+            if(myFlags & (int)ReplaceNameFlags::OriginalController) {
+                if(0<result.size()) result += " ";
+                result += replace->Name.c_str();
+            }
+            *pBufferString = result.c_str();
+        }        
+    }
 }
 
 void HookReplaceName(HMODULE clientDll)
@@ -94,41 +130,17 @@ void HookReplaceName(HMODULE clientDll)
         firstRun = false;
 
         // GetDecoratedPlayerName
-        // references "SFUI_bot_decorated_name"       
-
-		g_Org_GetDecoratedPlayerName = (GetDecoratedPlayerName_t)getAddress(clientDll, "44 89 44 24 18 48 89 54 24 10 55 53 56 57 41 54 41 55 41 56 41 57 48 8d ac 24 28 f5 ff ff");	
+        // references "<failure>"        
+		g_Org_GetDecoratedPlayerName = (GetDecoratedPlayerName_t)getAddress(clientDll, "40 55 53 56 41 54 41 55 41 56 48 8d ac 24 18 fe ff ff 48 81 ec e8 02 00 00 4c 8b ea 4c 8b e1 45 84 c9 75 21 8b 4a 04 f7 c1 ff ff ff 3f");	
 		if (g_Org_GetDecoratedPlayerName != 0) {
 			DetourTransactionBegin();
 			DetourUpdateThread(GetCurrentThread());
 			DetourAttach(&(PVOID&)g_Org_GetDecoratedPlayerName, New_GetDecoratedPlayerName);
 			if(NO_ERROR != DetourTransactionCommit()) ErrorBox(MkErrStr(__FILE__, __LINE__));
-		} 
-		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		}
+		else advancedfx::Warning("AFXWARNING: decorated player-name replacement is unavailable for this CS2 build.\n");
 
-        /*
-            GetDecoratedPlayerName references a function on "?AVCCSPlayerController@@" vtable as follows:
-            ...
-                             LAB_1805b4966                                   XREF[3]:     1805b4934(j), 1805b494b(j), 
-                                                                                          1805b495b(j)  
-       1805b4966 48 8b ce        MOV        RCX,RSI
-                             LAB_1805b4969                                   XREF[1]:     1805b4964(j)  
-       1805b4969 48 85 c9        TEST       RCX,RCX
-       1805b496c 74 03           JZ         LAB_1805b4971
-       1805b496e 48 8b 31        MOV        RSI,qword ptr [RCX]
-                             LAB_1805b4971                                   XREF[2]:     1805b492f(j), 1805b496c(j)  
-       1805b4971 48 8b 06        MOV        RAX,qword ptr [RSI]
-       1805b4974 48 8b ce        MOV        RCX,RSI
-       1805b4977 ff 90 18        CALL       qword ptr [RAX + 0x718]
-                 07 00 00
-       1805b497d 4c 8b 0d        MOV        R9,qword ptr [DAT_18201f238]
-                 b4 a8 a6 01
-       1805b4984 4c 8b e0        MOV        R12,RAX
-
-            ...
-            So now know the offset of the GetPlayerNameFunction
-        */
-
-		// TODO: move to addresses cpp and get index by pattern matching
+        // fn has 3rd reference to string "WWWWWWWWWWWWWWWW"
         if(void ** vtable = (void **)Afx::BinUtils::FindClassVtable(clientDll, ".?AVCCSPlayerController@@", 0, 0)) {
             g_Org_CCSPlayerController_GetPlayerName = (CCSPlayerController_GetPlayerName_t)vtable[226];
             DetourTransactionBegin();
@@ -142,7 +154,7 @@ void HookReplaceName(HMODULE clientDll)
 
 extern void deathMsgPlayers_PrintHelp_Console();
 
-CON_COMMAND(mirv_replace_name, "Replace player names")
+CON_COMMAND(mirv_replace_name, "Replace player names (and clan tags)")
 {
     int argC = args->ArgC();
     const char * arg0 = args->ArgV(0);
@@ -153,22 +165,29 @@ CON_COMMAND(mirv_replace_name, "Replace player names")
             if(3 <= argC) {
                 const char * arg2 = args->ArgV(2);
                 if(0 == stricmp("add", arg2) && 5 <= argC) {
-                    g_Index_To_ReplaceName[atoi(args->ArgV(3))+1] = args->ArgV(4);
+                    int32_t userId = atoi(args->ArgV(3));
+                    const char * name = args->ArgV(4);
+                    const char * tag = 6 <= argC ? args->ArgV(5) : "";
+                    g_UserId_To_ReplaceName.erase(userId);
+                    g_UserId_To_ReplaceName.emplace(std::piecewise_construct
+                        , std::forward_as_tuple(userId)
+                        , std::forward_as_tuple(name, tag)
+                    );
                     return;
                 }
                 else if(0 == stricmp("remove", arg2) && 4 <= argC) {
-                    g_Index_To_ReplaceName.erase(atoi(args->ArgV(3))+1);
+                    g_UserId_To_ReplaceName.erase(atoi(args->ArgV(3)));
                     return;
                 }
                 else if(0 == stricmp("print", arg2) && 3 <= argC) {
-                    for(auto it = g_Index_To_ReplaceName.begin(); it != g_Index_To_ReplaceName.end(); it++) {
-                        advancedfx::Message("%i: %s\n",it->first-1,it->second.c_str());
+                    for(auto it = g_UserId_To_ReplaceName.begin(); it != g_UserId_To_ReplaceName.end(); it++) {
+                        advancedfx::Message("%i: \"%s\" \"%s\"",it->first,it->second.Name.c_str(),it->second.Tag.c_str());
                     }
                     return;
                 }                
             }
             advancedfx::Message(
-                "%s byUserId add <iUserId> <sValue>\n"
+                "%s byUserId add <iUserId> <sValue> [<sTagValue>]\n"
                 "%s byUserId remove <iUserId>\n"
                 "%s byUserId print\n",
                 arg0,
@@ -182,8 +201,15 @@ CON_COMMAND(mirv_replace_name, "Replace player names")
                 if(0 == stricmp("add", arg2) && 5 <= argC) {
                     const char * arg3 = args->ArgV(3);
                     if(StringIBeginsWith(arg3,"x")) arg3++;
-                    g_SteamId_To_ReplaceName[strtoull(arg3,nullptr,10)] = args->ArgV(4);
-                    return;
+                    uint64_t steamId = strtoull(arg3,nullptr,10);
+                    const char * name = args->ArgV(4);
+                    const char * tag = 6 <= argC ? args->ArgV(5) : "";
+                    g_SteamId_To_ReplaceName.erase(steamId);
+                    g_SteamId_To_ReplaceName.emplace(std::piecewise_construct
+                        , std::forward_as_tuple(steamId)
+                        , std::forward_as_tuple(name, tag)
+                    );
+                    return;                    
                 }
                 else if(0 == stricmp("remove", arg2) && 4 <= argC) {
                     const char * arg3 = args->ArgV(3);
@@ -193,13 +219,13 @@ CON_COMMAND(mirv_replace_name, "Replace player names")
                 }
                 else if(0 == stricmp("print", arg2) && 3 <= argC) {
                     for(auto it = g_SteamId_To_ReplaceName.begin(); it != g_SteamId_To_ReplaceName.end(); it++) {
-                        advancedfx::Message("x%llu: %s\n",it->first,it->second.c_str());
+                        advancedfx::Message("%i: \"%s\" \"%s\"",it->first,it->second.Name.c_str(),it->second.Tag.c_str());
                     }
                     return;
                 }                
             }
             advancedfx::Message(
-                "%s byXuid add x<ullXuid> <sValue>\n"
+                "%s byXuid add x<ullXuid> <sValue> [<sTagValue>]\n"
                 "%s byXuid remove x<ullXuid>\n"
                 "%s byXuid print\n",
                 arg0,
@@ -216,87 +242,28 @@ CON_COMMAND(mirv_replace_name, "Replace player names")
                 }
             }
         }
-        else if(0 == stricmp("decoByUserId", arg1)) {
-            if(3 <= argC) {
-                const char * arg2 = args->ArgV(2);
-                if(0 == stricmp("add", arg2) && 5 <= argC) {
-                    g_Index_To_DecoratedReplaceName[atoi(args->ArgV(3))+1] = args->ArgV(4);
-                    return;
-                }
-                else if(0 == stricmp("remove", arg2) && 4 <= argC) {
-                    g_Index_To_DecoratedReplaceName.erase(atoi(args->ArgV(3))+1);
-                    return;
-                }
-                else if(0 == stricmp("print", arg2) && 3 <= argC) {
-                    for(auto it = g_Index_To_DecoratedReplaceName.begin(); it != g_Index_To_DecoratedReplaceName.end(); it++) {
-                        advancedfx::Message("%i: %s\n",it->first-1,it->second.c_str());
-                    }
-                    return;
-                }                
-            }
-            advancedfx::Message(
-                "%s decoByUserId add <iUserId> <sValue>\n"
-                "%s decoByUserId remove <iUserId>\n"
-                "%s decoByUserId print\n",
-                arg0,
-                arg0,
-                arg0
-            );
-            return;
-        } else if(0 == stricmp("decoByXuid", arg1)) {
-            if(3 <= argC) {
-                const char * arg2 = args->ArgV(2);
-                if(0 == stricmp("add", arg2) && 5 <= argC) {
-                    const char * arg3 = args->ArgV(3);
-                    if(StringIBeginsWith(arg3,"x")) arg3++;
-                    g_SteamId_To_DecoratedReplaceName[strtoull(arg3,nullptr,10)] = args->ArgV(4);
-                    return;
-                }
-                else if(0 == stricmp("remove", arg2) && 4 <= argC) {
-                    const char * arg3 = args->ArgV(3);
-                    if(StringIBeginsWith(arg3,"x")) arg3++;                    
-                    g_SteamId_To_DecoratedReplaceName.erase(strtoull(arg3,nullptr,10));
-                    return;
-                }
-                else if(0 == stricmp("print", arg2) && 3 <= argC) {
-                    for(auto it = g_SteamId_To_DecoratedReplaceName.begin(); it != g_SteamId_To_DecoratedReplaceName.end(); it++) {
-                        advancedfx::Message("x%llu: %s\n",it->first,it->second.c_str());
-                    }
-                    return;
-                }                
-            }
-            advancedfx::Message(
-                "%s decoByXuid add x<ullXuid> <sValue>\n"
-                "%s decoByXuid remove x<ullXuid>\n"
-                "%s decoByXuid print\n",
-                arg0,
-                arg0,
-                arg0
-            );
-            return;
-        }
-        else if(0==stricmp("debug",arg1)) {
+        else if(0==stricmp("oldDebug",arg1)) {
             if(3 <= argC) {
                 g_bDebug_GetPlayerName = 0 != atoi(args->ArgV(2));
                 return;
             }
 
             advancedfx::Message(
-                "%s debug 0|1\n"
+                "%s oldDebug 0|1\n"
                 "Current Value: %i\n",
                 arg0,
                 g_bDebug_GetPlayerName?1:0
             );
             return;
         }
-        else if(0==stricmp("decoDebug",arg1)) {
+        else if(0==stricmp("debug",arg1)) {
             if(3 <= argC) {
                 g_bDebug_GetDecoratedPlayerName = 0 != atoi(args->ArgV(2));
                 return;
             }
 
             advancedfx::Message(
-                "%s decoDebug 0|1\n"
+                "%s debug 0|1\n"
                 "Current Value: %i\n",
                 arg0,
                 g_bDebug_GetDecoratedPlayerName?1:0
@@ -306,13 +273,11 @@ CON_COMMAND(mirv_replace_name, "Replace player names")
     }
 
     advancedfx::Message(
-        "%s byUserId [...] - Replace player name by UserID\n"
-        "%s byXuid [...] - Replace player name by SteamID\n"
+        "%s byUserId [...] - Replace player name and tag by UserID\n"
+        "%s byXuid [...] - Replace player name and tag by SteamID\n"
         "%s help players - Print player info in console\n"
-        "%s decoByUserId [...] - Replace decorated player name by UserID\n"
-        "%s decoByXuid [...] - Replace decorated player name by SteamID\n"
         "%s debug 0|1\n"
-        "%s decoDebug 0|1\n",
+        "%s oldDebug 0|1\n",
         arg0,
         arg0,
         arg0,
@@ -322,3 +287,24 @@ CON_COMMAND(mirv_replace_name, "Replace player names")
         arg0
     );
 }
+
+#ifdef _DEBUG
+CON_COMMAND(__mirv_get_decorated_player_name, "")
+{
+    int argC = args->ArgC();
+    const char * arg0 = args->ArgV(0);
+
+    if(5 <= argC) {
+        const char * arg1 = args->ArgV(1);
+        const char * arg2 = args->ArgV(2);
+        const char * arg3 = args->ArgV(3);
+        const char * arg4 = args->ArgV(4);
+
+        if(auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,atoi(arg1))) {
+            SOURCESDK::CS2::CBufferString str;
+            g_Org_GetDecoratedPlayerName((unsigned char *)ent + atoi(arg2), &str, atoi(arg3), atoi(arg4));
+            advancedfx::Message("Result: %s\n",str.Get());
+        }
+    }
+}
+#endif

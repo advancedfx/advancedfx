@@ -27,6 +27,7 @@
 			for (let i = 1; i < argC; i++) {
 				const arg = args.argV(i).toLowerCase();
 				if ('default' === arg || 'none' === arg) {
+					continue;
 				} else if ('all' === arg) {
 					for (let j = 0; j < 64; j++) {
 						userIds.push(j);

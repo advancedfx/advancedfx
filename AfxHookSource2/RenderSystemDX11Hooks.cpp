@@ -2287,6 +2287,9 @@ public:
     char* m_Print_Memory = nullptr;
 
 };
+
+const size_t g_SoftwareCommandList_QueueCallback_Offset = 142;
+
 /* Typical print on de_mirage:
 AFXDEBUG CreateRenderContextPtr2(#%s/SetupView):#Player 0/SetupView
 AFXDEBUG CreateRenderContextPtr1(#%s/SetupLightsAndViewConstants):#ParticleSunShadow0/SetupLightsAndViewConstants
@@ -2360,7 +2363,7 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
 		//   }
 
         if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-            auto fnQueueCallback = (void(__fastcall*)(void* pCRenderConStextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[140];
+            auto fnQueueCallback = (void(__fastcall*)(void* pCRenderConStextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
             va_list args;
             va_start(args, fmt);
             fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CRenderSystemConsolePrint(1, saveFmt,args));
@@ -2382,13 +2385,13 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
             }
             else if (0 == strcmp("ClearSmokeTargets (4)", pszArg1)) {
                 if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-                    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[140];
+                    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
                     fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeMaybeDrawSmoke());
                 }
             }
             else if (0 == strcmp("ClearSmokeTargets", pszArg1)) {
                 if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-                    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[140];
+                    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
                     fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackAfterMaybeSmokeDrawn());
                 }
             }
@@ -2401,7 +2404,7 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
         const char * pszArg0 = va_arg(args, const char *);
         if(pszArg0 && 0 == strcmp("CSGOHud",pszArg0)) {
             if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-                auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[140];
+                auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
                 fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeUi());
             }
         }
@@ -2420,7 +2423,7 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr2(unsigned char
 
     if (fmt && 0 == strcmp(fmt, "UpdateBuffers")) {
         if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-            auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[140];
+            auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
             fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackUpdateBuffers());
         }
     }
@@ -2429,7 +2432,7 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr2(unsigned char
         const char * saveFmt = fmt ? fmt : "[nullptr]";
 
         if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-            auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[140];
+            auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
             va_list args;
             va_start(args, fmt);
             fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CRenderSystemConsolePrint(2, saveFmt, args));
@@ -2548,9 +2551,9 @@ void Hook_SceneSystem(void * hModule) {
                 ErrorBox(MkErrStr(__FILE__, __LINE__));
         }*/
 
-        // First reference to "WARNING: Trying to create a CRenderContextPtr without a valid context.\n"
+        // Second reference to "WARNING: Trying to create a CRenderContextPtr without a valid context.\n" (fn with 4+1 params)
         {
-            Afx::BinUtils::MemRange result = FindPatternString(textRange, "40 53 56 57 48 83 ec 20 49 8b 00 49 8b d8 48 8b f9 45 33 c0 48 8b cb 49 8b f1 ff 90 e0 01 00 00");
+            Afx::BinUtils::MemRange result = FindPatternString(textRange, "40 53 56 57 48 83 ec 20 49 8b 00 49 8b d8 48 8b f9 45 33 c0 48 8b cb 49 8b f1 ff 90 e8 01 00 00");
             if (!result.IsEmpty()) {
                 g_Old_SceneSystem_CreateRenderContextPtr1 = (SceneSystem_CreateRenderContextPtr1_t)result.Start;	
                 DetourTransactionBegin();
@@ -2564,7 +2567,7 @@ void Hook_SceneSystem(void * hModule) {
         }
 
         // See FUN_18004aff0 doc/notes_cs2/sc_dump_lists.txt.
-        // Second reference to "WARNING: Trying to create a CRenderContextPtr without a valid context.\n"
+        // First reference to "WARNING: Trying to create a CRenderContextPtr without a valid context.\n" (fn with 3+1 params)
         {
             Afx::BinUtils::MemRange result = FindPatternString(textRange, "40 55 53 57 48 8D 6C 24 ?? 48 81 EC ?? ?? ?? ?? 80 65 ?? ?? 33 C0");
             if (!result.IsEmpty()) {
@@ -3354,6 +3357,20 @@ private:
                             SOURCESDK::CS2::g_pCVar->CallChangeCallback(cvar_handle, 0, &value, &oldValue);
                         }
                         break;
+                    case SOURCESDK::CS2::EConVarType_VectorWS:
+                        if(command.size() < 4) pszError = pszWrongNumberOfArguments;
+                        else  {
+                            it2++; float f1 = std::strtof(it2->c_str(),nullptr);
+                            it2++; float f2 = std::strtof(it2->c_str(),nullptr);
+                            it2++; float f3 = std::strtof(it2->c_str(),nullptr);
+                            SOURCESDK::CS2::CVValue_t oldValue = {};
+                            oldValue.m_vecwsValue = value.m_vecwsValue;
+                            value.m_vecwsValue.x = f1;
+                            value.m_vecwsValue.y = f2;
+                            value.m_vecwsValue.z = f3;
+                            SOURCESDK::CS2::g_pCVar->CallChangeCallback(cvar_handle, 0, &value, &oldValue);
+                        }
+                        break;                        
                     default:
                         pszError = "Unknown cvar type";
                         break;

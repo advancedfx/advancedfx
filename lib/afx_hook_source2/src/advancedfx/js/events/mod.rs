@@ -308,7 +308,7 @@ impl EventSource {
 
 impl Class for EventSource {
     const NAME: &'static str = "AdvancedfxEventSource";
-    const LENGTH: usize = 4;
+    const LENGTH: usize = 0;
 
     fn data_constructor(
         _this: &JsValue,

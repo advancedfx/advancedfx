@@ -4,8 +4,11 @@
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
 #include "../deps/release/prop/AfxHookSource/SourceInterfaces.h"
+#include "../deps/release/prop/cs2/sdk_src/public/tier0/platform.h"
+#include "../deps/release/prop/cs2/sdk_src/public/tier1/bufferstring.h"
 #include "../deps/release/prop/cs2/sdk_src/public/cdll_int.h"
 #include "../deps/release/prop/cs2/sdk_src/public/entityhandle.h"
+#include "../deps/release/prop/cs2/sdk_src/public/filesystem.h"
 
 #include "../shared/AfxConsole.h"
 #include "../shared/CamPath.h"
@@ -139,6 +142,36 @@ extern "C" FFIBool afx_hook_source2_is_demo_paused() {
         }
     }
     return FFIBOOL_FALSE;
+}
+
+extern "C" const char * afx_hook_source2_get_demo_file_path() {
+    if(g_pEngineToClient) {
+		return g_pEngineToClient->GetDemoFilePath();
+    }
+    return nullptr;
+}
+
+extern "C" const char * afx_hook_source2_get_game_directory() {
+    return SOURCESDK::CS2::Plat_GetGameDirectory(0);
+}
+
+extern SOURCESDK::CS2::IFileSystem* g_pFileSystem;
+
+extern "C" SOURCESDK::CS2::CBufferString * afx_hook_source2_fs_relative_path_to_full_path(const char * pFileName){
+    if(g_pFileSystem) {
+        SOURCESDK::CS2::CBufferString * pFullPath = new SOURCESDK::CS2::CBufferString();
+        g_pFileSystem->RelativePathToFullPath(pFileName, nullptr, *pFullPath);
+        return pFullPath;
+    }
+    return nullptr;
+}
+
+extern "C" const char * afx_hook_source2_fs_cbufferstring_get(SOURCESDK::CS2::CBufferString * pBufferString) {
+    return pBufferString->Get();
+}
+
+extern "C" void afx_hook_source2_fs_cbufferstring_delete(SOURCESDK::CS2::CBufferString * pBufferString) {
+    delete pBufferString;
 }
 
 extern CamPath g_CamPath;

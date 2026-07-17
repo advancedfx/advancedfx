@@ -113,6 +113,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../deps/release/prop/cs2/sdk_src/public/appframework/IAppSystem.h
     ../deps/release/prop/cs2/sdk_src/public/interfaces/interfaces.h
     ../deps/release/prop/cs2/sdk_src/public/tier0/memalloc.h
+    ../deps/release/prop/cs2/sdk_src/public/tier0/platform.cpp
+    ../deps/release/prop/cs2/sdk_src/public/tier0/platform.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/convar.cpp
     ../deps/release/prop/cs2/sdk_src/public/tier1/convar.h
     ../deps/release/prop/cs2/sdk_src/public/tier1/iconvar.h

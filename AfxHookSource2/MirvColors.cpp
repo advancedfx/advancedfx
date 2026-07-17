@@ -296,7 +296,7 @@ void __fastcall new_drawStuff(CEntityInstance* param_1, char param_2) {
 
 bool getAddresses(HMODULE clientDll) {
 	// called with offset to m_Glow of C_BaseModelEntity as first argument
-	size_t g_Original_setGlowColor_addr = getAddress(clientDll, "40 53 48 83 EC 20 48 8B D9 48 83 C1 40 39 11 ?? ?? 89 11 ?? ?? ?? ?? ?? 48 8B 4B 18 48 85 C9 ?? ?? 48 83");
+	size_t g_Original_setGlowColor_addr = getAddress(clientDll, "40 53 48 83 EC 20 48 8B D9 48 83 C1 40 38 11 75 1E 8B C2 C1 E8 08 38 41 01 75 14 8B C2 C1 E8 10 38 41 02 75 0A 8B C2 C1 E8 18 38 41 03 74 02 89 11 E8 ?? ?? ?? ?? 48 8B 4B 18 48 85 C9");
 	if(g_Original_setGlowColor_addr == 0) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));
 		return false;

@@ -101,7 +101,7 @@ export class SubCommand<T extends SubCommandType> {
 	}
 
 	setValue(args: string[]): boolean {
-		let parsed: SubCommandValue<T> | null = null;
+		let parsed: SubCommandValue<T> | null;
 
 		switch (this.type) {
 			case 'none':

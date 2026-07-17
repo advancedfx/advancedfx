@@ -172,6 +172,13 @@ impl CVar {
                     return Ok(js_value!(array));
                 }                        
             }
+            advancedfx::cvar::CVarType::VectorWS => {
+                let mut result = advancedfx::cvar::VectorWS{x:0.0,y:0.0,z:0.0};
+                if unsafe {advancedfx::cvar::afx_hook_source2_get_convar_vecws(p_cvar,get_mode_i8,&mut result)} {
+                    let array = JsFloat32Array::from_iter(vec![result.x, result.y, result.z], context)?;
+                    return Ok(js_value!(array));
+                }                        
+            }
         }
 
         Ok(JsValue::undefined())
@@ -343,6 +350,20 @@ impl CVar {
                             return Ok(JsValue::undefined());
                         }
                     }    
+                }
+            }
+            advancedfx::cvar::CVarType::VectorWS => {
+                if let Some(value) = arg0.as_object() {
+                    if let Ok(array) = JsFloat32Array::from_object(value.clone()) {
+                        let vec: Vec<f32> = array.iter(context).collect();
+                        if vec.len() == 3 {
+                            let value = advancedfx::cvar::VectorWS{x:vec[0],y:vec[1],z:vec[2]};
+                            if !unsafe{advancedfx::cvar::afx_hook_source2_set_convar_vecws(p_cvar, get_mode_i8, &value)} {
+                                return Err(Self::set_value_error(context));
+                            }
+                            return Ok(JsValue::undefined());
+                        }
+                    } 
                 }
             }
         }

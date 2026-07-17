@@ -20,7 +20,8 @@ pub enum CVarType {
 	Vector2 = 11,
 	Vector3 = 12,
 	Vector4 = 13,
-	Qangle = 14    
+	Qangle = 14,
+    VectorWS = 15
 }
 
 impl std::convert::From<i16> for CVarType {
@@ -70,6 +71,9 @@ impl std::convert::From<i16> for CVarType {
             },
             14 => {
                 CVarType::Qangle
+            },
+            15 => {
+                CVarType::VectorWS
             },
             _ => {
                 CVarType::Invalid
@@ -151,6 +155,14 @@ pub struct QAngle {
     pub z: f32,
 }
 
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct VectorWS {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+}
+
 unsafe extern "C" {
     pub(crate) fn afx_hook_source2_find_convar_index(psz_name: *const c_char) -> usize;
     
@@ -209,6 +221,10 @@ unsafe extern "C" {
     pub(crate) fn afx_hook_source2_get_convar_qangle(p_cvar:  * mut CVar, mode: i8, p_out_value: &mut QAngle) -> bool;
 
     pub(crate) fn afx_hook_source2_set_convar_qangle(p_cvar:  * mut CVar, mode: i8, value : * const QAngle) -> bool;
+
+    pub(crate) fn afx_hook_source2_get_convar_vecws(p_cvar:  * mut CVar, mode: i8, p_out_value: &mut VectorWS) -> bool;
+    
+    pub(crate) fn afx_hook_source2_set_convar_vecws(p_cvar:  * mut CVar, mode: i8, value : * const VectorWS) -> bool;
 }
 
 pub(crate) fn afx_get_convar_type(p_cvar:  * mut CVar) -> CVarType {

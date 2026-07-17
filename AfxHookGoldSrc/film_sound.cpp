@@ -334,7 +334,7 @@ bool CFilmSound::Start(wchar_t const * fileName, double dTargetTime, float fUseV
 		// init time:
 		g_TargetTime = dTargetTime;
 		g_CurrentTime = 0.0;
-		g_Last_paintedtime = 0;
+		g_Last_paintedtime = *(int *)HL_ADDR_GET(paintedtime);
 
 		// set volume:
 		g_Volume = fUseVolume;

@@ -43,7 +43,8 @@ enum class CVarTypeRs_e : int16_t {
 	Vector2 = 11,
 	Vector3 = 12,
 	Vector4 = 13,
-	Qangle = 14
+	Qangle = 14,
+    VectorWS = 15
 };
 
 extern "C" int16_t afx_hook_source2_get_convar_type(CVarRs_t * p_cvar) {
@@ -79,6 +80,8 @@ extern "C" int16_t afx_hook_source2_get_convar_type(CVarRs_t * p_cvar) {
             return static_cast<int16_t>(CVarTypeRs_e::Vector4);
         case SOURCESDK::CS2::EConVarType_Qangle:
             return static_cast<int16_t>(CVarTypeRs_e::Qangle);
+        case SOURCESDK::CS2::EConVarType_VectorWS:
+            return static_cast<int16_t>(CVarTypeRs_e::VectorWS);
         }
     }
     return static_cast<int16_t>(CVarTypeRs_e::Invalid);
@@ -165,6 +168,8 @@ extern "C" FFIBool afx_hook_source2_get_convar_bool(CVarRs_t * p_cvar, CVarGetMo
             break; // undefined
         case SOURCESDK::CS2::EConVarType_Qangle:
             break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
+            break; // undefined
         }
     }
     return FFIBOOL_FALSE;
@@ -211,6 +216,8 @@ extern "C" FFIBool afx_hook_source2_set_convar_bool(CVarRs_t * p_cvar, CVarGetMo
         case SOURCESDK::CS2::EConVarType_Vector4:
             break; // undefined
         case SOURCESDK::CS2::EConVarType_Qangle:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
             break; // undefined
         }
     }
@@ -259,6 +266,8 @@ extern "C" FFIBool afx_hook_source2_get_convar_int(CVarRs_t * p_cvar, CVarGetMod
             break; // undefined
         case SOURCESDK::CS2::EConVarType_Qangle:
             break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
+            break; // undefined
         }
     }
     return FFIBOOL_FALSE;
@@ -305,6 +314,8 @@ extern "C" FFIBool afx_hook_source2_set_convar_int(CVarRs_t * p_cvar, CVarGetMod
         case SOURCESDK::CS2::EConVarType_Vector4:
             break; // undefined
         case SOURCESDK::CS2::EConVarType_Qangle:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
             break; // undefined
         }
     }
@@ -353,6 +364,8 @@ extern "C" FFIBool afx_hook_source2_get_convar_int64(CVarRs_t * p_cvar, CVarGetM
             break; // undefined
         case SOURCESDK::CS2::EConVarType_Qangle:
             break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
+            break; // undefined
         }
     }
     return FFIBOOL_FALSE;
@@ -399,6 +412,8 @@ extern "C" FFIBool afx_hook_source2_set_convar_int64(CVarRs_t * p_cvar, CVarGetM
         case SOURCESDK::CS2::EConVarType_Vector4:
             break; // undefined
         case SOURCESDK::CS2::EConVarType_Qangle:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
             break; // undefined
         }
     }
@@ -447,6 +462,8 @@ extern "C" FFIBool afx_hook_source2_get_convar_uint(CVarRs_t * p_cvar, CVarGetMo
             break; // undefined
         case SOURCESDK::CS2::EConVarType_Qangle:
             break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
+            break; // undefined
         }
     }
     return FFIBOOL_FALSE;
@@ -493,6 +510,8 @@ extern "C" FFIBool afx_hook_source2_set_convar_uint(CVarRs_t * p_cvar, CVarGetMo
         case SOURCESDK::CS2::EConVarType_Vector4:
             break; // undefined
         case SOURCESDK::CS2::EConVarType_Qangle:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
             break; // undefined
         }
     }
@@ -541,6 +560,8 @@ extern "C" FFIBool afx_hook_source2_get_convar_uint64(CVarRs_t * p_cvar, CVarGet
             break; // undefined
         case SOURCESDK::CS2::EConVarType_Qangle:
             break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
+            break; // undefined
         }
     }
     return FFIBOOL_FALSE;
@@ -587,6 +608,8 @@ extern "C" FFIBool afx_hook_source2_set_convar_uint64(CVarRs_t * p_cvar, CVarGet
         case SOURCESDK::CS2::EConVarType_Vector4:
             break; // undefined
         case SOURCESDK::CS2::EConVarType_Qangle:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
             break; // undefined
         }
     }
@@ -635,6 +658,8 @@ extern "C" FFIBool afx_hook_source2_get_convar_double(CVarRs_t * p_cvar, CVarGet
             break; // undefined
         case SOURCESDK::CS2::EConVarType_Qangle:
             break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
+            break; // undefined
         }
     }
     return FFIBOOL_FALSE;
@@ -682,6 +707,8 @@ extern "C" FFIBool afx_hook_source2_set_convar_double(CVarRs_t * p_cvar, CVarGet
             break; // undefined
         case SOURCESDK::CS2::EConVarType_Qangle:
             break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
+            break; // undefined
         }
     }
     return FFIBOOL_FALSE;
@@ -721,6 +748,8 @@ extern "C" FFIBool afx_hook_source2_get_convar_string(CVarRs_t * p_cvar, CVarGet
             break; // undefined
         case SOURCESDK::CS2::EConVarType_Qangle:
             break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
+            break; // undefined
         }
     }
     return FFIBOOL_FALSE;
@@ -759,6 +788,8 @@ extern "C" FFIBool afx_hook_source2_set_convar_string(CVarRs_t * p_cvar, CVarGet
         case SOURCESDK::CS2::EConVarType_Vector4:
             break; // undefined
         case SOURCESDK::CS2::EConVarType_Qangle:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
             break; // undefined
         }
     }
@@ -810,6 +841,8 @@ extern "C" FFIBool afx_hook_source2_get_convar_color(CVarRs_t * p_cvar, CVarGetM
             break; // undefined
         case SOURCESDK::CS2::EConVarType_Qangle:
             break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
+            break; // undefined
         }
     }
     return FFIBOOL_FALSE;
@@ -848,6 +881,8 @@ extern "C" FFIBool afx_hook_source2_set_convar_color(CVarRs_t * p_cvar, CVarGetM
         case SOURCESDK::CS2::EConVarType_Vector4:
             break; // undefined
         case SOURCESDK::CS2::EConVarType_Qangle:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
             break; // undefined
         }
     }
@@ -894,6 +929,8 @@ extern "C" FFIBool afx_hook_source2_get_convar_vec2(CVarRs_t * p_cvar, CVarGetMo
             break; // undefined
         case SOURCESDK::CS2::EConVarType_Qangle:
             break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
+            break; // undefined
         }
     }
     return FFIBOOL_FALSE;
@@ -933,6 +970,8 @@ extern "C" FFIBool afx_hook_source2_set_convar_vec2(CVarRs_t * p_cvar, CVarGetMo
         case SOURCESDK::CS2::EConVarType_Vector4:
             break; // undefined
         case SOURCESDK::CS2::EConVarType_Qangle:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
             break; // undefined
         }
     }
@@ -981,6 +1020,8 @@ extern "C" FFIBool afx_hook_source2_get_convar_vec3(CVarRs_t * p_cvar, CVarGetMo
             break; // undefined
         case SOURCESDK::CS2::EConVarType_Qangle:
             break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
+            break; // undefined
         }
     }
     return FFIBOOL_FALSE;
@@ -1021,6 +1062,8 @@ extern "C" FFIBool afx_hook_source2_set_convar_vec3(CVarRs_t * p_cvar, CVarGetMo
         case SOURCESDK::CS2::EConVarType_Vector4:
             break; // undefined
         case SOURCESDK::CS2::EConVarType_Qangle:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
             break; // undefined
         }
     }
@@ -1071,6 +1114,8 @@ extern "C" FFIBool afx_hook_source2_get_convar_vec4(CVarRs_t * p_cvar, CVarGetMo
             return FFIBOOL_TRUE;
         case SOURCESDK::CS2::EConVarType_Qangle:
             break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
+            break; // undefined
         }
     }
     return FFIBOOL_FALSE;
@@ -1112,6 +1157,8 @@ extern "C" FFIBool afx_hook_source2_set_convar_vec4(CVarRs_t * p_cvar, CVarGetMo
             p_value->m_vec4Value.w = value.w;
             return FFIBOOL_TRUE;
         case SOURCESDK::CS2::EConVarType_Qangle:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
             break; // undefined
         }
     }
@@ -1160,6 +1207,8 @@ extern "C" FFIBool afx_hook_source2_get_convar_qangle(CVarRs_t * p_cvar, CVarGet
             outValue.y = p_value->m_angValue.y;
             outValue.z = p_value->m_angValue.z;
             return FFIBOOL_TRUE;
+        case SOURCESDK::CS2::EConVarType_VectorWS:
+            break; // undefined
         }
     }
     return FFIBOOL_FALSE;
@@ -1200,6 +1249,98 @@ extern "C" FFIBool afx_hook_source2_set_convar_qangle(CVarRs_t * p_cvar, CVarGet
             p_value->m_angValue.x = value.x;
             p_value->m_angValue.y = value.y;
             p_value->m_angValue.z = value.z;
+            return FFIBOOL_TRUE;
+        case SOURCESDK::CS2::EConVarType_VectorWS:
+            break; // undefined
+        }
+    }
+    return FFIBOOL_FALSE;
+}
+
+struct AfxHookSource2RsVecWS {
+    float x;
+    float y;
+    float z;
+};
+
+extern "C" FFIBool afx_hook_source2_get_convar_vecws(CVarRs_t * p_cvar, CVarGetMode_e mode, AfxHookSource2RsVecWS & outValue) {
+    if(SOURCESDK::CS2::CVValue_t *p_value = GetCvarValue(p_cvar, mode)) {
+        switch(p_cvar->m_eVarType) {
+        case SOURCESDK::CS2::EConVarType_Bool:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_Int16:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_UInt16:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_Int32:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_UInt32:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_Int64:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_UInt64:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_Float32:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_Float64:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_String:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_Color:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_Vector2:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_Vector3:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_Vector4:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_Qangle:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
+            outValue.x = p_value->m_vecwsValue.x;
+            outValue.y = p_value->m_vecwsValue.y;
+            outValue.z = p_value->m_vecwsValue.z;
+            return FFIBOOL_TRUE;
+        }
+    }
+    return FFIBOOL_FALSE;
+}
+
+extern "C" FFIBool afx_hook_source2_set_convar_vecws(CVarRs_t * p_cvar, CVarGetMode_e mode, const AfxHookSource2RsVecWS & value) {
+    if(SOURCESDK::CS2::CVValue_t *p_value = GetCvarValue(p_cvar, mode)) {
+        switch(p_cvar->m_eVarType) {
+        case SOURCESDK::CS2::EConVarType_Bool:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_Int16:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_UInt16:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_Int32:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_UInt32:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_Int64:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_UInt64:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_Float32:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_Float64:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_String:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_Color:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_Vector2:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_Vector4:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_Qangle:
+            break; // undefined
+        case SOURCESDK::CS2::EConVarType_VectorWS:
+            p_value->m_vecwsValue.x = value.x;
+            p_value->m_vecwsValue.y = value.y;
+            p_value->m_vecwsValue.z = value.z;
             return FFIBOOL_TRUE;
         }
     }

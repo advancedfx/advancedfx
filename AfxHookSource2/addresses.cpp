@@ -111,7 +111,7 @@ void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
                  c0 01 00 00
     */
 	{
-		MemRange result = FindPatternString(textRange, "48 89 5C 24 18 55 56 57 41 56 41 57 48 83 EC 70 48 8D 05 ?? ?? ?? ??");
+		MemRange result = FindPatternString(textRange, "4c 8b dc 49 89 5b 10 49 89 6b 18 49 89 73 20 57 41 56 41 57 48 83 ec 70 49 c7 43 b0 b5 01 00 00");
 																	  
 		if (!result.IsEmpty()) {
             AFXADDR_SET(cs2_engine_CRenderService_OnClientOutput, result.Start);
@@ -151,19 +151,24 @@ void Addresses_InitClientDll(AfxAddr clientDll) {
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
 
-	// in the end of g_Original_handlePlayerDeath function
+	// in the end of g_Original_handlePlayerDeath function (see DeatMsg.cpp)
+      /*
+            FUN_180e05690(lVar11,DAT_182413994,*(undefined4 *)(PTR_DAT_18208ed60 + 0x30));
+            FUN_180e05690(lVar11,DAT_18241399c,*(undefined4 *)(param_1 + 0x78));
+            if ((cVar4 == '\0') && ((char)uVar19 == '\0')) {
+            uVar5 = 0x3f800000;
+            }
+            else {
+            uVar5 = *(undefined4 *)(param_1 + 0x7c);
+            }
+            FUN_180e05690(lVar11,DAT_1824139a4,uVar5);
+            return;      
+      */
 	{
-		MemRange result = FindPatternString(textRange, "0F B7 15 ?? ?? ?? ?? F3 41 0F 10 55 ??");
+		MemRange result = FindPatternString(textRange, "f3 0f 10 53 ?? e8 ?? ?? ?? ?? 45 84 e4 75 0f 45 84 ff 75 ?? f3 0f 10 15 ?? ?? ?? ?? eb 05 f3 0f 10 53 ??");
 		if (!result.IsEmpty()) {
-            AFXADDR_SET(cs2_deathmsg_lifetime_offset, *(uint8_t*)(result.Start + 12));
-		}
-		else
-			ErrorBox(MkErrStr(__FILE__, __LINE__));
-	}
-	{
-		MemRange result = FindPatternString(textRange, "44 38 64 24 ?? 74 ?? F3 41 0F 10 75 ??");
-		if (!result.IsEmpty()) {
-            AFXADDR_SET(cs2_deathmsg_lifetimemod_offset, *(uint8_t*)(result.Start + 12));
+                  AFXADDR_SET(cs2_deathmsg_lifetime_offset, *(uint8_t*)(result.Start + 4));
+                  AFXADDR_SET(cs2_deathmsg_lifetimemod_offset, *(uint8_t*)(result.Start + 34));
 		}
 		else
 			ErrorBox(MkErrStr(__FILE__, __LINE__));

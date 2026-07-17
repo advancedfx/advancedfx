@@ -17,7 +17,8 @@ declare namespace AdvancedfxCVar {
 		Vector2 = 11,
 		Vector3 = 12,
 		Vector4 = 13,
-		Qangle = 14
+		Qangle = 14,
+		VectorWS = 15
 	}
 
 	type Vector2 = number[2];
@@ -33,7 +34,7 @@ declare namespace AdvancedfxCVar {
 	 * bigint - Int64, UInt64
 	 * string - String
 	 * Vector2 - Vector2(x,y)
-	 * Vector3 - Vector3(x,y,z), Qangle(x,y,z)
+	 * Vector3 - Vector3(x,y,z), Qangle(x,y,z), VectorWS(x,y,z)
 	 * Vector4 - Vector4(x,y,z,w), Color(r,g,b,a)
 	 */
 	type Type = boolean | number | bigint | string | Vector2 | Vector3 | Vector4;

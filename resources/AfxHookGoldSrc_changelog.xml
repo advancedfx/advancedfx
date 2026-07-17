@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.25.3</version>
+<time>2026-07-10T14:17Z</time>
+<changes>
+<change type="fixed">Fixed #1181 GoldSrc: audio bugged in steam + steam_legacy in latest HLAE version</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.25.2</version>
 <time>2026-04-20T23:50Z</time>
 <changes>

@@ -27,6 +27,10 @@ pub fn error_async_conflict(context: &Context) -> JsNativeError {
     make_error!(JsNativeError::error(),"async conflict!",context)
 }
 
+pub fn error_not_implemented() -> JsNativeError {
+    JsNativeError::error().with_message("Not implemented.")
+}
+
 pub fn get_stack_dump(context: &Context) -> String {
     return context
     .stack_trace()

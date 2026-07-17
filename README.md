@@ -19,6 +19,11 @@ Compatible with latest Steam version.
 
 https://github.com/advancedfx/advancedfx/releases
 
+* **HLAE 2.153.1** (2024-01-05T19:45Z)  
+  https://github.com/advancedfx/advancedfx/releases/tag/v2.153.1  
+  Release with AfxHookGoldSrc and related tools compatible with Steam version "steam_legacy - Pre-25th Anniversary Build.
+  The latest HLAE release should also work with steam_legacy.
+
 * **HLAE 2.34.5** (2017-07-08T14:48Z)  
   https://github.com/ripieces/advancedfx/releases/tag/v2.34.5  
   Last release with AfxHookGoldSrc and related tools compatible with Steam version before 10th of July 2017.
