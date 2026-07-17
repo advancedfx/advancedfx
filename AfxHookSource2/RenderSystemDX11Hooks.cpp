@@ -1830,9 +1830,11 @@ public:
     }
 };
 
+const size_t g_SoftwareCommandList_QueueCallback_Offset = 142;
+
 bool ToggleDrawing(void* pCRenderContextDx11_SoftwareCommandList, bool value) {
     if (pCRenderContextDx11_SoftwareCommandList) {
-        auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[140];
+        auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
         if(value)
             fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBlockBuffers());
         else
@@ -2288,8 +2290,6 @@ public:
 
 };
 
-const size_t g_SoftwareCommandList_QueueCallback_Offset = 142;
-
 /* Typical print on de_mirage:
 AFXDEBUG CreateRenderContextPtr2(#%s/SetupView):#Player 0/SetupView
 AFXDEBUG CreateRenderContextPtr1(#%s/SetupLightsAndViewConstants):#ParticleSunShadow0/SetupLightsAndViewConstants
@@ -2379,7 +2379,7 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
         if(pszArg0 && 0 == strcmp("Player 0",pszArg0) && pszArg1) {
             if (0 == strcmp("Clear Color Depth Stencil", pszArg1)) {
                 if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-                    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[140];
+                    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
                     fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeClear());
                 }
             }
