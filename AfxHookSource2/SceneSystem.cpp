@@ -1212,13 +1212,13 @@ void FUN_1800971c0(longlong param_1,longlong param_2)
 ...
 }
 */
-	org_RenderLayerDrawListPart = (RenderLayerDrawListPart_t)getAddress(sceneSystemDll, "4c 89 4c 24 20 4c 89 44 24 18 48 89 54 24 10 48 89 4c 24 08 55 53 56 57 41 56 48 8d 6c 24 e0 48 81 ec 20 01 00 00");
+	org_RenderLayerDrawListPart = (RenderLayerDrawListPart_t)getAddress(sceneSystemDll, "4c 89 4c 24 20 4c 89 44 24 18 48 89 54 24 10 48 89 4c 24 08 55 53 56 57 41 57 48 8d 6c 24 e0 48 81 ec 20 01 00 00");
 	if (0 == org_RenderLayerDrawListPart) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-	org_DrawSceneData = (DrawSceneData_t)getAddress(sceneSystemDll, "48 89 5c 24 20 55 48 83 ec 30 f6 81 10 02 00 00 40 48 8b ea 48 8b d9");
+	org_DrawSceneData = (DrawSceneData_t)getAddress(sceneSystemDll, "48 89 5c 24 20 55 48 83 ec 30 f6 81 30 02 00 00 40");
 	if (0 == org_DrawSceneData) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-	org_NoDrawSceneData = (NoDrawSceneData_t)getAddress(sceneSystemDll, "4c 8b dc 53 48 81 ec d0 00 00 00 83 79 30 01 48 8b d9 0f 8c 95 02 00 00 48 8b 49 20 48 8d 15 ?? ?? ?? ??");
+	org_NoDrawSceneData = (NoDrawSceneData_t)getAddress(sceneSystemDll, "4c 8b dc 53 48 81 ec d0 00 00 00 83 79 30 01 48 8b d9 0f 8c a0 02 00 00 48 8b 49 20 48 8d 15 ?? ?? ?? ??");
 	if (0 == org_NoDrawSceneData) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 	if(org_RenderLayerDrawListPart && org_DrawSceneData && org_NoDrawSceneData) {
