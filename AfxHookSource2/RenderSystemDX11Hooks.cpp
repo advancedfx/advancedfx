@@ -3019,6 +3019,9 @@ private:
         }
 
         void EngineThread_BeginFrame() const {
+            // Setup SceneSystem policies:
+            SetupSceneFilterPolicies(m_Settings);
+
             // Execute before commands:
             if(!m_Settings.BeforeCommands.empty())
                 ExecuteCommands(m_Settings.BeforeCommands);
@@ -3147,18 +3150,15 @@ private:
                     capture->OnAfterGpuPresent(pDeviceContext);
                 }); 
             }
-            
-            // Setup SceneSystem policies:
-            SetupSceneFilterPolicies(m_Settings);
         }
 
         void EngineThread_EndFrame() const {
-            // Clear SceneSystem policies:
-            ClearSceneFliterSystemPolicies();
-
             // Execute after commands:
             if(!m_Settings.AfterCommands.empty())
                 ExecuteCommands(m_Settings.AfterCommands);
+
+            // Clear SceneSystem policies:
+            ClearSceneFliterSystemPolicies();
         } 
 
         bool WantsClearBeforeUi(float outColor[4]) const {
@@ -3638,6 +3638,208 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
             settings.DepthValMax = 0;
             settings.DepthChannels = CStreamSettings::DepthChannels_e::Dithered;
             settings.DepthMode = CStreamSettings::DepthMode_e::PyramidalLinear;
+        } else if(0 == _stricmp(arg1,"world")) {
+            settings.Capture = CStreamSettings::Capture_e::BeforeUi;
+            settings.ViewModelAction = CStreamSettings::Action::NoDraw;
+            settings.FirstPersonLegsAction = CStreamSettings::Action::NoDraw;
+            settings.SmokeAction = CStreamSettings::Action::NoDraw;
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_drawparticles");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_drawparticles");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+        } else if(0 == _stricmp(arg1,"playersMatte")) {
+            settings.Capture = CStreamSettings::Capture_e::BeforeUi;
+            settings.CaptureType = CStreamSettings::CaptureType_e::Rgba;
+            settings.ViewModelAction = CStreamSettings::Action::NoDraw;
+            settings.WorldAction = CStreamSettings::Action::ZOnly;
+            settings.SkyAction = CStreamSettings::Action::ZOnly;
+            settings.SmokeAction = CStreamSettings::Action::NoDraw;
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_drawparticles");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_overlays");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_decals");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_drawparticles");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_overlays");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_decals");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+        } else if(0 == _stricmp(arg1,"viewModelMatte")) {
+            settings.Capture = CStreamSettings::Capture_e::BeforeUi;
+            settings.CaptureType = CStreamSettings::CaptureType_e::Rgba;
+            settings.FirstPersonLegsAction = CStreamSettings::Action::NoDraw;
+            settings.PlayersAction = CStreamSettings::Action::NoDraw;
+            settings.WorldAction = CStreamSettings::Action::NoDraw;
+            settings.SkyAction = CStreamSettings::Action::NoDraw;
+            settings.SmokeAction = CStreamSettings::Action::NoDraw;
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_drawparticles");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_overlays");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_decals");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_drawparticles");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_overlays");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_decals");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+        } else if(0 == _stricmp(arg1,"particlesBlack")) {
+            settings.ClearBeforeUiColor.R = 0.0f;
+            settings.ClearBeforeUiColor.G = 0.0f;
+            settings.ClearBeforeUiColor.B = 0.0f;
+            settings.ClearBeforeUiColor.A = 1.0f;
+            settings.ClearBeforeUi = true;
+            settings.Capture = CStreamSettings::Capture_e::BeforeUi;
+            settings.CaptureType = CStreamSettings::CaptureType_e::Rgba;
+            settings.ViewModelAction = CStreamSettings::Action::NoDraw;
+            settings.FirstPersonLegsAction = CStreamSettings::Action::NoDraw;
+            settings.PlayersAction = CStreamSettings::Action::ZOnly;
+            settings.WorldAction = CStreamSettings::Action::ZOnly;
+            settings.SkyAction = CStreamSettings::Action::ZOnly;
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_postprocess_enable");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_overlays");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_decals");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_postprocess_enable");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_overlays");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_decals");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+        } else if(0 == _stricmp(arg1,"particlesWhite")) {
+            settings.ClearBeforeUiColor.R = 1.0f;
+            settings.ClearBeforeUiColor.G = 1.0f;
+            settings.ClearBeforeUiColor.B = 1.0f;
+            settings.ClearBeforeUiColor.A = 1.0f;
+            settings.ClearBeforeUi = true;
+            settings.Capture = CStreamSettings::Capture_e::BeforeUi;
+            settings.CaptureType = CStreamSettings::CaptureType_e::Rgba;
+            settings.ViewModelAction = CStreamSettings::Action::NoDraw;
+            settings.FirstPersonLegsAction = CStreamSettings::Action::NoDraw;
+            settings.PlayersAction = CStreamSettings::Action::ZOnly;
+            settings.WorldAction = CStreamSettings::Action::ZOnly;
+            settings.SkyAction = CStreamSettings::Action::ZOnly;
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_postprocess_enable");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_overlays");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_decals");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_postprocess_enable");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_overlays");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_decals");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
         } else {
             advancedfx::Warning("AFXERROR: \"%s\" is not a valid stream template.\n", arg1);
             return;
