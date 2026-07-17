@@ -1137,7 +1137,7 @@ void GetSceneObjectVtable(HMODULE dll, const char * mangledClass, SceneObjectFil
 }
 
 void GetClientDllSceneObjectVtable(HMODULE clientDll) {
-	GetSceneObjectVtable(clientDll, ".?AVCSmokeVolumeSceneObjectDesc@@", SceneObjectFilterClass::Base);
+	GetSceneObjectVtable(clientDll, ".?AVCSmokeVolumeSceneObjectDesc@@", SceneObjectFilterClass::SmokeVolume);
 }
 
 void HookSceneSystem(HMODULE sceneSystemDll) {
