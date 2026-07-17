@@ -298,71 +298,71 @@ void ClearSceneFliterSystemPolicies() {
 void SetupSceneFilterPolicies(const class CStreamSettings & settings) {
 	switch(settings.ViewModelAction) {
 	case CStreamSettings::Action::NoDraw:
-		g_SceneSemanticPolicies[(int)SceneSemanticGroup::ViewModel] =  SceneObjectDrawPolicy::Hide;
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::ViewModel] = SceneObjectDrawPolicy::Hide;
 		break;
 	case CStreamSettings::Action::ZOnly:
-		g_SceneSemanticPolicies[(int)SceneSemanticGroup::ViewModel] =  SceneObjectDrawPolicy::DepthPassesOnly;
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::ViewModel] = SceneObjectDrawPolicy::DepthPassesOnly;
 		break;
 	default:
-		g_SceneSemanticPolicies[(int)SceneSemanticGroup::ViewModel] =  SceneObjectDrawPolicy::Draw;
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::ViewModel] = SceneObjectDrawPolicy::Draw;
 		break;
 	}
 	switch(settings.FirstPersonLegsAction) {
 	case CStreamSettings::Action::NoDraw:
-		g_SceneSemanticPolicies[(int)SceneSemanticGroup::FirstPersonLegs] =  SceneObjectDrawPolicy::Hide;
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::FirstPersonLegs] = SceneObjectDrawPolicy::Hide;
 		break;
 	case CStreamSettings::Action::ZOnly:
-		g_SceneSemanticPolicies[(int)SceneSemanticGroup::FirstPersonLegs] =  SceneObjectDrawPolicy::DepthPassesOnly;
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::FirstPersonLegs] = SceneObjectDrawPolicy::DepthPassesOnly;
 		break;
 	default:
-		g_SceneSemanticPolicies[(int)SceneSemanticGroup::FirstPersonLegs] =  SceneObjectDrawPolicy::Draw;
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::FirstPersonLegs] = SceneObjectDrawPolicy::Draw;
 		break;
 	}
 	switch(settings.PlayersAction) {
 	case CStreamSettings::Action::NoDraw:
-		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Players] =  SceneObjectDrawPolicy::Hide;
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Players] = SceneObjectDrawPolicy::Hide;
 		break;
 	case CStreamSettings::Action::ZOnly:
-		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Players] =  SceneObjectDrawPolicy::DepthPassesOnly;
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Players] = SceneObjectDrawPolicy::DepthPassesOnly;
 		break;
 	default:
-		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Players] =  SceneObjectDrawPolicy::Draw;
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Players] = SceneObjectDrawPolicy::Draw;
 		break;
 	}
 	switch(settings.WorldAction) {
 	case CStreamSettings::Action::NoDraw:
 		g_AggregateSceneObjectsPolicy = SceneObjectDrawPolicy::Hide;
-		g_SceneSemanticPolicies[(int)SceneSemanticGroup::World] =  SceneObjectDrawPolicy::Hide;
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::World] = SceneObjectDrawPolicy::Hide;
 		break;
 	case CStreamSettings::Action::ZOnly:
 		g_AggregateSceneObjectsPolicy = SceneObjectDrawPolicy::DepthPassesOnly;
-		g_SceneSemanticPolicies[(int)SceneSemanticGroup::World] =  SceneObjectDrawPolicy::DepthPassesOnly;
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::World] = SceneObjectDrawPolicy::DepthPassesOnly;
 		break;
 	default:
 		g_AggregateSceneObjectsPolicy = SceneObjectDrawPolicy::Draw;
-		g_SceneSemanticPolicies[(int)SceneSemanticGroup::World] =  SceneObjectDrawPolicy::Draw;
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::World] = SceneObjectDrawPolicy::Draw;
 		break;
 	}
 	switch(settings.SkyAction) {
 	case CStreamSettings::Action::NoDraw:
-		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Sky] =  SceneObjectDrawPolicy::Hide;
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Sky] = SceneObjectDrawPolicy::Hide;
 		break;
 	case CStreamSettings::Action::ZOnly:
-		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Sky] =  SceneObjectDrawPolicy::DepthPassesOnly;
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Sky] = SceneObjectDrawPolicy::DepthPassesOnly;
 		break;
 	default:
-		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Sky] =  SceneObjectDrawPolicy::Draw;
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Sky] = SceneObjectDrawPolicy::Draw;
 		break;
 	}
 	switch(settings.SmokeAction) {
 	case CStreamSettings::Action::NoDraw:
-		g_SmokeVolumeObjectsPolicy =  SceneObjectDrawPolicy::Hide;
+		g_SmokeVolumeObjectsPolicy = SceneObjectDrawPolicy::Hide;
 		break;
 	case CStreamSettings::Action::ZOnly:
-		g_SmokeVolumeObjectsPolicy =  SceneObjectDrawPolicy::DepthPassesOnly;
+		g_SmokeVolumeObjectsPolicy = SceneObjectDrawPolicy::DepthPassesOnly;
 		break;
 	default:
-		g_SmokeVolumeObjectsPolicy =  SceneObjectDrawPolicy::Draw;
+		g_SmokeVolumeObjectsPolicy = SceneObjectDrawPolicy::Draw;
 		break;
 	}
 
@@ -1025,6 +1025,7 @@ CON_COMMAND(__mirv_scene_filter, "")
 				g_SmokeVolumeObjectsPolicy = policy == SceneObjectDrawPolicy::Hide
 					? SceneObjectDrawPolicy::Hide
 					: SceneObjectDrawPolicy::Draw;
+				UpdateSceneFilterSystemActive();
 				return;
 			}
 		}		
