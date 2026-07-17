@@ -36,6 +36,12 @@ public:
         , Settings(other.Settings)
         , BeforeCommands(other.BeforeCommands)
         , AfterCommands(other.AfterCommands)
+        , ViewModelAction(other.ViewModelAction)
+        , FirstPersonLegsAction(other.FirstPersonLegsAction)
+        , PlayersAction(PlayersAction)
+        , WorldAction(WorldAction)
+        , SkyAction(other.SkyAction)
+        , SmokeAction(other.SmokeAction)
     {
         Settings->AddRef();
     }
@@ -46,6 +52,12 @@ public:
             && false == ClearBeforeUi
             && BeforeCommands.empty()
             && AfterCommands.empty()
+            && Action::Draw == ViewModelAction
+            && Action::Draw == FirstPersonLegsAction
+            && Action::Draw == PlayersAction
+            && Action::Draw == WorldAction
+            && Action::Draw == SkyAction
+            && Action::Draw == SmokeAction
         ;
     }
 
@@ -67,6 +79,12 @@ public:
         }
         if(cmp = CompareCommands(BeforeCommands, o.BeforeCommands)) return cmp;
         if(cmp = CompareCommands(AfterCommands, o.AfterCommands)) return cmp;
+        if(cmp = CompareAction(ViewModelAction, o.ViewModelAction)) return cmp;
+        if(cmp = CompareAction(FirstPersonLegsAction, o.FirstPersonLegsAction)) return cmp;
+        if(cmp = CompareAction(PlayersAction, o.PlayersAction)) return cmp;
+        if(cmp = CompareAction(WorldAction, o.WorldAction)) return cmp;
+        if(cmp = CompareAction(SkyAction, o.SkyAction)) return cmp;
+        if(cmp = CompareAction(SmokeAction, o.SmokeAction)) return cmp;
 
         return 0;
     }    
@@ -149,6 +167,19 @@ public:
         ;
     }
 
+    enum class Action : int {
+        Draw = 0,
+        NoDraw,
+        ZOnly
+    };
+
+    Action ViewModelAction = Action::Draw;
+    Action FirstPersonLegsAction = Action::Draw;
+    Action PlayersAction = Action::Draw;
+    Action WorldAction = Action::Draw;
+    Action SkyAction = Action::Draw;
+    Action SmokeAction = Action::Draw;
+
 private:
     static int CompareBool(bool lhs, bool rhs) {
         if(lhs != rhs) return lhs ? 1 : -1;
@@ -183,6 +214,12 @@ private:
         }
         if(itLhs != lhs.end()) return 1;
         if(itRhs != rhs.end()) return -1;
+        return 0;
+    }
+
+    static int CompareAction(Action lhs, Action rhs) {
+        int cmp = (int)lhs - (int)rhs;
+        if(cmp) return 0 < cmp ? 1 : -1;
         return 0;
     }
 

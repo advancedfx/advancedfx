@@ -2733,6 +2733,10 @@ bool Update_r_csgo_mboit_force_mixed_resolution(bool value) {
     return oldValue.m_bValue;
 }
 
+void ClearSceneFliterSystemPolicies();
+
+void SetupSceneFilterPolicies(const class CStreamSettings & settings);
+
 class CAfxStreams : public advancedfx::IRecordStreamSettings {
 public:
     bool m_CampathAutoSave = false;
@@ -2923,7 +2927,6 @@ public:
 
         if(EngineThread_HasNextRenderPass()) EngineThread_Expect_Present();
     }
-
 
 private:
     class CStream : public advancedfx::IRecordStreamSettings {
@@ -3143,10 +3146,16 @@ private:
                 queue.Push([capture](ID3D11DeviceContext * pDeviceContext){
                     capture->OnAfterGpuPresent(pDeviceContext);
                 }); 
-            }            
+            }
+            
+            // Setup SceneSystem policies:
+            SetupSceneFilterPolicies(m_Settings);
         }
 
         void EngineThread_EndFrame() const {
+            // Clear SceneSystem policies:
+            ClearSceneFliterSystemPolicies();
+
             // Execute after commands:
             if(!m_Settings.AfterCommands.empty())
                 ExecuteCommands(m_Settings.AfterCommands);
@@ -3709,6 +3718,50 @@ void CAfxStreams::Console_Edit_RenderCommands(std::list<std::list<std::string>> 
 	);
 }
 
+const char * StreamSettingsActionToString(CStreamSettings::Action value) {
+    switch(value) {
+    case CStreamSettings::Action::Draw:
+        return "draw";
+    case CStreamSettings::Action::NoDraw:
+        return "noDraw";
+    case CStreamSettings::Action::ZOnly:
+        return "zOnly";
+    }
+    return "(unkown)";
+}
+
+bool AssignStreamSettingsAction(CStreamSettings::Action &action, const char * value) {
+    if(0 == _stricmp(value,"draw")) {
+        action = CStreamSettings::Action::Draw;
+        return true;
+    }
+    if(0 == _stricmp(value,"noDraw")) {
+        action = CStreamSettings::Action::NoDraw;
+        return true;
+    }
+    if(0 == _stricmp(value,"zOnly")) {
+        action = CStreamSettings::Action::ZOnly;
+        return true;
+    }
+    return false;
+}
+
+void StreamSettingsActionSubCommand(CStreamSettings::Action &action, advancedfx::ICommandArgs * args) {
+    int argC = args->ArgC();
+    const char * cmd0 = args->ArgV(0);
+    
+    if(2 <= argC) {
+        const char * cmd1 = args->ArgV(1);
+        if(AssignStreamSettingsAction(action, cmd1))
+            return;
+    }
+    
+    advancedfx::Message(
+        "%s draw|noDraw|zOnly\n"
+        "Current value: %s\n"
+        , cmd0, StreamSettingsActionToString(action));    
+}
+
 void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
 	int argC = args->ArgC();
 	char const* arg0 = args->ArgV(0);
@@ -4105,6 +4158,36 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
                 g_AfxStreams.Console_Edit_RenderCommands(stream.AfterCommands, &subArgs);
                 return;
             }
+            else if(0 == _stricmp("viewmodelAction", arg2)) {
+                advancedfx::CSubCommandArgs subArgs(args, 3);
+                StreamSettingsActionSubCommand(stream.ViewModelAction, &subArgs);
+                return;
+            }
+            else if(0 == _stricmp("firstPersonLegsAction", arg2)) {
+                advancedfx::CSubCommandArgs subArgs(args, 3);
+                StreamSettingsActionSubCommand(stream.FirstPersonLegsAction, &subArgs);
+                return;
+            }
+            else if(0 == _stricmp("playersAction", arg2)) {
+                advancedfx::CSubCommandArgs subArgs(args, 3);
+                StreamSettingsActionSubCommand(stream.PlayersAction, &subArgs);
+                return;
+            }
+            else if(0 == _stricmp("worldAction", arg2)) {
+                advancedfx::CSubCommandArgs subArgs(args, 3);
+                StreamSettingsActionSubCommand(stream.WorldAction, &subArgs);
+                return;
+            }
+            else if(0 == _stricmp("skyAction", arg2)) {
+                advancedfx::CSubCommandArgs subArgs(args, 3);
+                StreamSettingsActionSubCommand(stream.SkyAction, &subArgs);
+                return;
+            }
+            else if(0 == _stricmp("smokeAction", arg2)) {
+                advancedfx::CSubCommandArgs subArgs(args, 3);
+                StreamSettingsActionSubCommand(stream.SmokeAction, &subArgs);
+                return;
+            }
         }
 
         advancedfx::Message(
@@ -4161,6 +4244,30 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
         );        
         advancedfx::Message(
             "%s %s afterCommands [...] - Commands to execute before the stream is rendered.\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s viewmodelAction [...].\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s firstPersonLegsAction [...].\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s playersAction [...].\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s worldAction [...].\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s skyAction [...].\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s smokeAction [...].\n"
             , arg0, arg1
         );
 		return;
@@ -4518,6 +4625,7 @@ void RenderSystemDX11_EngineThread_EndMainRenderPass() {
 void RenderSystemDX11_SupplyProjectionMatrix(const SOURCESDK::VMatrix & projectionMatrix) {
     g_EngineThread_ProjectionMatrix.Set(projectionMatrix);
 }
+
 
 CON_COMMAND(mirv_streams, "Access to streams system.")
 {

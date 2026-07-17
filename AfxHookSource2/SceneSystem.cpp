@@ -4,6 +4,7 @@
 #include "Globals.h"
 #include "SchemaSystem.h"
 #include "MirvColors.h"
+#include "StreamSettings.h"
 
 #include "../shared/StringTools.h"
 #include "../deps/release/Detours/src/detours.h"
@@ -248,14 +249,16 @@ SceneObjectDrawPolicy g_SmokeVolumeObjectsPolicy = SceneObjectDrawPolicy::Draw;
 int g_iSceneFilterDebug = 0;
 
 enum class SceneSemanticGroup : int {
-	FirstPerson = 0,
-	Players = 1,
-	World = 2,
-	Sky = 3,
-	Count = 4
+	ViewModel = 0,
+	FirstPersonLegs = 1,
+	Players = 2,
+	World = 3,
+	Sky = 4,
+	Count = 5
 };
 
 SceneObjectDrawPolicy g_SceneSemanticPolicies[(int)SceneSemanticGroup::Count] = {
+	SceneObjectDrawPolicy::Draw,
 	SceneObjectDrawPolicy::Draw,
 	SceneObjectDrawPolicy::Draw,
 	SceneObjectDrawPolicy::Draw,
@@ -277,6 +280,90 @@ void UpdateSceneFilterSystemActive() {
 	}
 
 	g_bSceneFilterSystemActive = bActive;
+}
+
+void ClearSceneFliterSystemPolicies() {
+	g_BaseSceneObjectsPolicy = SceneObjectDrawPolicy::Draw;
+	g_AnimatableSceneObjectsPolicy = SceneObjectDrawPolicy::Draw;
+	g_AggregateSceneObjectsPolicy = SceneObjectDrawPolicy::Draw;
+	g_SmokeVolumeObjectsPolicy =  SceneObjectDrawPolicy::Draw;
+
+	for(int i = 0; i < (int)SceneSemanticGroup::Count; i++) {
+		g_SceneSemanticPolicies[i] = SceneObjectDrawPolicy::Draw;
+	}
+
+	UpdateSceneFilterSystemActive();
+}
+
+void SetupSceneFilterPolicies(const class CStreamSettings & settings) {
+	switch(settings.ViewModelAction) {
+	case CStreamSettings::Action::NoDraw:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::ViewModel] =  SceneObjectDrawPolicy::Hide;
+		break;
+	case CStreamSettings::Action::ZOnly:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::ViewModel] =  SceneObjectDrawPolicy::DepthPassesOnly;
+		break;
+	default:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::ViewModel] =  SceneObjectDrawPolicy::Draw;
+		break;
+	}
+	switch(settings.FirstPersonLegsAction) {
+	case CStreamSettings::Action::NoDraw:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::FirstPersonLegs] =  SceneObjectDrawPolicy::Hide;
+		break;
+	case CStreamSettings::Action::ZOnly:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::FirstPersonLegs] =  SceneObjectDrawPolicy::DepthPassesOnly;
+		break;
+	default:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::FirstPersonLegs] =  SceneObjectDrawPolicy::Draw;
+		break;
+	}
+	switch(settings.PlayersAction) {
+	case CStreamSettings::Action::NoDraw:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Players] =  SceneObjectDrawPolicy::Hide;
+		break;
+	case CStreamSettings::Action::ZOnly:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Players] =  SceneObjectDrawPolicy::DepthPassesOnly;
+		break;
+	default:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Players] =  SceneObjectDrawPolicy::Draw;
+		break;
+	}
+	switch(settings.WorldAction) {
+	case CStreamSettings::Action::NoDraw:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::World] =  SceneObjectDrawPolicy::Hide;
+		break;
+	case CStreamSettings::Action::ZOnly:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::World] =  SceneObjectDrawPolicy::DepthPassesOnly;
+		break;
+	default:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::World] =  SceneObjectDrawPolicy::Draw;
+		break;
+	}
+	switch(settings.SkyAction) {
+	case CStreamSettings::Action::NoDraw:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Sky] =  SceneObjectDrawPolicy::Hide;
+		break;
+	case CStreamSettings::Action::ZOnly:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Sky] =  SceneObjectDrawPolicy::DepthPassesOnly;
+		break;
+	default:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Sky] =  SceneObjectDrawPolicy::Draw;
+		break;
+	}
+	switch(settings.SmokeAction) {
+	case CStreamSettings::Action::NoDraw:
+		g_SmokeVolumeObjectsPolicy =  SceneObjectDrawPolicy::Hide;
+		break;
+	case CStreamSettings::Action::ZOnly:
+		g_SmokeVolumeObjectsPolicy =  SceneObjectDrawPolicy::DepthPassesOnly;
+		break;
+	default:
+		g_SmokeVolumeObjectsPolicy =  SceneObjectDrawPolicy::Draw;
+		break;
+	}
+
+	UpdateSceneFilterSystemActive();
 }
 
 enum class SceneObjectFilterClass {
@@ -338,7 +425,8 @@ static bool TryParseSceneObjectDrawPolicy(const char* value, SceneObjectDrawPoli
 
 static const char* SceneSemanticGroupToString(SceneSemanticGroup group) {
 	switch (group) {
-	case SceneSemanticGroup::FirstPerson: return "firstperson";
+	case SceneSemanticGroup::ViewModel: return "viewModel";
+	case SceneSemanticGroup::FirstPersonLegs: return "firstPersonLegs";
 	case SceneSemanticGroup::Players: return "players";
 	case SceneSemanticGroup::World: return "world";
 	case SceneSemanticGroup::Sky: return "sky";
@@ -347,8 +435,12 @@ static const char* SceneSemanticGroupToString(SceneSemanticGroup group) {
 }
 
 static bool TryGetSceneSemanticGroup(const char* value, SceneSemanticGroup& outGroup) {
-	if (0 == _stricmp(value, "firstperson") || 0 == _stricmp(value, "viewmodel")) {
-		outGroup = SceneSemanticGroup::FirstPerson;
+	if (0 == _stricmp(value, "viewmodel")) {
+		outGroup = SceneSemanticGroup::ViewModel;
+		return true;
+	}
+	if (0 == _stricmp(value, "firstPersonLegs")) {
+		outGroup = SceneSemanticGroup::FirstPersonLegs;
 		return true;
 	}
 	if (0 == _stricmp(value, "players") || 0 == _stricmp(value, "player")) {
@@ -399,9 +491,12 @@ static bool StringContains(const char* value, const char* pattern) {
 	return value && pattern && nullptr != strstr(value, pattern);
 }
 
-static bool SceneLayerContextIsFirstPerson(const SceneLayerContext& context) {
-	return StringContains(context.ViewPass, "FirstpersonLegs")
-		|| StringContains(context.ViewPass, "ViewModel");
+static bool SceneLayerContextIsViewModel(const SceneLayerContext& context) {
+	return StringContains(context.ViewPass, "ViewModel");
+}
+
+static bool SceneLayerContextIsFirstPersonLegs(const SceneLayerContext& context) {
+	return StringContains(context.ViewPass, "FirstpersonLegs");
 }
 
 static bool SceneLayerContextIsSky(const SceneLayerContext& context) {
@@ -446,7 +541,8 @@ static bool SceneDataMaterialIsPlayer(SceneObjectFilterClass filterClass, const 
 
 static SceneSemanticGroup ClassifySceneObject(SceneObjectFilterClass filterClass, const SceneLayerContext& context, const char* materialName) {
 	// Precedence is intentional: first-person layers contain weapon/player materials that should stay separate from world/player mattes.
-	if (SceneLayerContextIsFirstPerson(context)) return SceneSemanticGroup::FirstPerson;
+	if (SceneLayerContextIsViewModel(context)) return SceneSemanticGroup::ViewModel;
+	if (SceneLayerContextIsFirstPersonLegs(context)) return SceneSemanticGroup::FirstPersonLegs;
 	if (SceneDataMaterialIsPlayer(filterClass, materialName)) return SceneSemanticGroup::Players;
 	if (SceneLayerContextIsSky(context)) return SceneSemanticGroup::Sky;
 	if (SceneLayerContextIsPlayers(context)) return SceneSemanticGroup::Players;
@@ -877,7 +973,7 @@ CON_COMMAND(mirv_sky, "")
 	);
 }
 
-CON_COMMAND(mirv_scene_filter, "")
+CON_COMMAND(__mirv_scene_filter, "")
 {
 	auto argc = args->ArgC();
 	auto arg0 = args->ArgV(0);
@@ -955,12 +1051,14 @@ CON_COMMAND(mirv_scene_filter, "")
 		"%s animatable draw|hide|zonly|0|1 - Controls CAnimatableSceneObjectDesc entries in the hooked scene draw path.\n"
 		"%s aggregate draw|hide|zonly|0|1 - Controls CAggregateSceneObjectDesc entries in the hooked scene draw path.\n"
 		"%s smoke draw|hide|0|1 - Controls CSmokeVolumeObjectDesc by patching its vtable while hidden.\n"
-		"%s firstperson draw|hide|zonly - Controls viewmodel / first-person legs layers.\n"
+		"%s viewModel draw|hide|zonly - Controls viewmodel layers.\n"
+		"%s firstPersonLegs draw|hide|zonly - Controls first person legs layers.\n"
 		"%s players draw|hide|zonly - Controls player character layers.\n"
 		"%s world draw|hide|zonly - Controls layers not matched by another semantic group.\n"
 		"%s sky draw|hide|zonly - Controls 3D skybox layers matched in the scene draw path.\n"
 		"%s debug <iCount> - Print up to iCount entries for each hooked scene draw call. Use 0 to disable.\n"
-		"Current values: base=%s animatable=%s aggregate=%s smoke=%s firstperson=%s players=%s world=%s sky=%s debug=%i\n"
+		"Current values: base=%s animatable=%s aggregate=%s smoke=%s viewModel=%s firstPersonLegs=%s players=%s world=%s sky=%s debug=%i\n"
+		, arg0
 		, arg0
 		, arg0
 		, arg0
@@ -974,7 +1072,8 @@ CON_COMMAND(mirv_scene_filter, "")
 		, SceneObjectDrawPolicyToString(g_AnimatableSceneObjectsPolicy)
 		, SceneObjectDrawPolicyToString(g_AggregateSceneObjectsPolicy)
 		, SceneObjectDrawPolicyToString(g_SmokeVolumeObjectsPolicy)
-		, SceneObjectDrawPolicyToString(g_SceneSemanticPolicies[(int)SceneSemanticGroup::FirstPerson])
+		, SceneObjectDrawPolicyToString(g_SceneSemanticPolicies[(int)SceneSemanticGroup::ViewModel])
+		, SceneObjectDrawPolicyToString(g_SceneSemanticPolicies[(int)SceneSemanticGroup::FirstPersonLegs])
 		, SceneObjectDrawPolicyToString(g_SceneSemanticPolicies[(int)SceneSemanticGroup::Players])
 		, SceneObjectDrawPolicyToString(g_SceneSemanticPolicies[(int)SceneSemanticGroup::World])
 		, SceneObjectDrawPolicyToString(g_SceneSemanticPolicies[(int)SceneSemanticGroup::Sky])
