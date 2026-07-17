@@ -298,15 +298,12 @@ void ClearSceneFliterSystemPolicies() {
 void SetupSceneFilterPolicies(const class CStreamSettings & settings) {
 	switch(settings.ViewModelAction) {
 	case CStreamSettings::Action::NoDraw:
-		g_AggregateSceneObjectsPolicy = SceneObjectDrawPolicy::Hide;
 		g_SceneSemanticPolicies[(int)SceneSemanticGroup::ViewModel] =  SceneObjectDrawPolicy::Hide;
 		break;
 	case CStreamSettings::Action::ZOnly:
-		g_AggregateSceneObjectsPolicy = SceneObjectDrawPolicy::DepthPassesOnly;
 		g_SceneSemanticPolicies[(int)SceneSemanticGroup::ViewModel] =  SceneObjectDrawPolicy::DepthPassesOnly;
 		break;
 	default:
-		g_AggregateSceneObjectsPolicy = SceneObjectDrawPolicy::Draw;
 		g_SceneSemanticPolicies[(int)SceneSemanticGroup::ViewModel] =  SceneObjectDrawPolicy::Draw;
 		break;
 	}
@@ -334,12 +331,15 @@ void SetupSceneFilterPolicies(const class CStreamSettings & settings) {
 	}
 	switch(settings.WorldAction) {
 	case CStreamSettings::Action::NoDraw:
+		g_AggregateSceneObjectsPolicy = SceneObjectDrawPolicy::Hide;
 		g_SceneSemanticPolicies[(int)SceneSemanticGroup::World] =  SceneObjectDrawPolicy::Hide;
 		break;
 	case CStreamSettings::Action::ZOnly:
+		g_AggregateSceneObjectsPolicy = SceneObjectDrawPolicy::DepthPassesOnly;
 		g_SceneSemanticPolicies[(int)SceneSemanticGroup::World] =  SceneObjectDrawPolicy::DepthPassesOnly;
 		break;
 	default:
+		g_AggregateSceneObjectsPolicy = SceneObjectDrawPolicy::Draw;
 		g_SceneSemanticPolicies[(int)SceneSemanticGroup::World] =  SceneObjectDrawPolicy::Draw;
 		break;
 	}
