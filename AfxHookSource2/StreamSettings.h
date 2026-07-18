@@ -38,8 +38,8 @@ public:
         , AfterCommands(other.AfterCommands)
         , ViewModelAction(other.ViewModelAction)
         , FirstPersonLegsAction(other.FirstPersonLegsAction)
-        , PlayersAction(PlayersAction)
-        , WorldAction(WorldAction)
+        , PlayersAction(other.PlayersAction)
+        , WorldAction(other.WorldAction)
         , SkyAction(other.SkyAction)
         , SmokeAction(other.SmokeAction)
     {
