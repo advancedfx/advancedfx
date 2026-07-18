@@ -3642,6 +3642,7 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
             settings.Capture = CStreamSettings::Capture_e::BeforeUi;
             settings.ViewModelAction = CStreamSettings::Action::NoDraw;
             settings.FirstPersonLegsAction = CStreamSettings::Action::NoDraw;
+            settings.PlayersAction = CStreamSettings::Action::NoDraw;
             settings.SmokeAction = CStreamSettings::Action::NoDraw;
             {
                 std::list<std::string> command;
