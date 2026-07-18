@@ -570,7 +570,8 @@ static SceneObjectDrawPolicy ApplyLayerAwarePolicy(SceneObjectFilterClass filter
 	}
 
 	return nullptr == materialName && filterClass == SceneObjectFilterClass::Unknown
-		? SceneObjectDrawPolicy::Draw // unknown objects without material we always draw
+		&& SceneLayerContextIsDepthPassesOnlyExcluded(context)
+		? SceneObjectDrawPolicy::Draw // unknown objects without material we always draw if it's not a depth pass
 		: policy
 	;
 }
