@@ -3743,11 +3743,11 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
                 settings.AfterCommands.emplace_back(command);
             }
         } else if(0 == _stricmp(arg1,"particlesBlack")) {
-            settings.ClearBeforeUiColor.R = 0.0f;
-            settings.ClearBeforeUiColor.G = 0.0f;
-            settings.ClearBeforeUiColor.B = 0.0f;
-            settings.ClearBeforeUiColor.A = 1.0f;
-            settings.ClearBeforeUi = true;
+            settings.ClearOverrideColor.R = 0.0f;
+            settings.ClearOverrideColor.G = 0.0f;
+            settings.ClearOverrideColor.B = 0.0f;
+            settings.ClearOverrideColor.A = 1.0f;
+            settings.ClearOverride = true;
             settings.Capture = CStreamSettings::Capture_e::BeforeUi;
             settings.CaptureType = CStreamSettings::CaptureType_e::Rgba;
             settings.ViewModelAction = CStreamSettings::Action::NoDraw;
@@ -3792,11 +3792,11 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
                 settings.AfterCommands.emplace_back(command);
             }
         } else if(0 == _stricmp(arg1,"particlesWhite")) {
-            settings.ClearBeforeUiColor.R = 1.0f;
-            settings.ClearBeforeUiColor.G = 1.0f;
-            settings.ClearBeforeUiColor.B = 1.0f;
-            settings.ClearBeforeUiColor.A = 1.0f;
-            settings.ClearBeforeUi = true;
+            settings.ClearOverrideColor.R = 1.0f;
+            settings.ClearOverrideColor.G = 1.0f;
+            settings.ClearOverrideColor.B = 1.0f;
+            settings.ClearOverrideColor.A = 1.0f;
+            settings.ClearOverride = true;
             settings.Capture = CStreamSettings::Capture_e::BeforeUi;
             settings.CaptureType = CStreamSettings::CaptureType_e::Rgba;
             settings.ViewModelAction = CStreamSettings::Action::NoDraw;
