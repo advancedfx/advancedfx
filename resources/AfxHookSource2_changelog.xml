@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.40.1</version>
+<time>2026-07-16T14:23Z</time>
+<changes>
+<change type="updated">Fixed mirv_replace_name. There are breaking changes: renamed subcommands debug to oldDebug, decoDebug to debug; removed deco subcommands; added optional clan tag parameter to he add* sub commmands. See in-game help for command.</change>
+<change type="fixed">Fixed mirv_deathmsg lifeTimeMod not working correctly.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.40.0</version>
 <time>2026-07-10T14:17Z</time>
 <changes>
