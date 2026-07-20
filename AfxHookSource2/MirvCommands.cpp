@@ -270,10 +270,11 @@ void new_setGlowProps (u_char* glowProperty, int param_2, float param_3) {
 		if (0 != resolvedPlayerPawn) {
 			auto controllerHandle = resolvedPlayerPawn->GetPlayerControllerHandle();
 			if (controllerHandle.IsValid()) {
-				auto controller = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,controllerHandle.GetEntryIndex());
-				auto steamId = controller->GetSteamId();
+				if(auto controller = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,controllerHandle.GetEntryIndex())) {
+					auto steamId = controller->GetSteamId();
 
-				if (g_MirvGlow.players.find(steamId) != g_MirvGlow.players.end()) shouldGlow = g_MirvGlow.players[steamId];
+					if (g_MirvGlow.players.find(steamId) != g_MirvGlow.players.end()) shouldGlow = g_MirvGlow.players[steamId];
+				}
 			}
 		}
 
