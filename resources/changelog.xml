@@ -6,6 +6,16 @@
 
 <release>
 <name>HLAE</name>
+<version>2.192.0</version>
+<time>2026-07-21T07:47Z</time>
+<changes>
+<change type="updated">Included AfxHookSource2 0.41.0 (2026-07-21T07:47Z)</change>
+</changes>
+</release>
+
+
+<release>
+<name>HLAE</name>
 <version>2.191.1</version>
 <time>2026-07-16T14:23Z</time>
 <changes>
