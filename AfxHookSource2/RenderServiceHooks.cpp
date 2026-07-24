@@ -22,6 +22,8 @@ Tier0_EventListener_t g_Engine2_RenderService_OnClientOutput = nullptr;
 bool g_bHad_ClientOutput = false;
 bool g_bLastPassWasExtra = false;
 
+extern void ClearThreadSceneLayerContexts();
+
 typedef void (__fastcall * SceneSystem_WaitForRenderingToComplete_t)(void * pThis);
 SceneSystem_WaitForRenderingToComplete_t g_Old_SceneSystem_WaitForRenderingToComplete = nullptr;
 void __fastcall My_SceneSystem_WaitForRenderingToComplete(void * pThis) {
@@ -38,7 +40,8 @@ void __fastcall My_SceneSystem_WaitForRenderingToComplete(void * pThis) {
     } else {
         g_Old_SceneSystem_WaitForRenderingToComplete(pThis);
     }
-    
+
+    ClearThreadSceneLayerContexts();
 }
 
 void __fastcall My_Engine2_RenderService_OnClientOutput(void * pUnk0, void * pUnk1) {
@@ -70,6 +73,8 @@ void __fastcall My_Engine2_RenderService_OnClientOutput(void * pUnk0, void * pUn
 
 
                 g_Old_SceneSystem_WaitForRenderingToComplete(g_pSceneSystem);
+
+                ClearThreadSceneLayerContexts();
 
                 void (__fastcall * FrameUpdate)(void *, unsigned char) = (void (__fastcall *)(void *, unsigned char))(vtable[AFXADDR_GET(cs2_SceneSystem_FrameUpdate_vtable_idx)]);
                 FrameUpdate(g_pSceneSystem, 1);

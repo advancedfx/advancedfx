@@ -4,11 +4,18 @@
 #include "Globals.h"
 #include "SchemaSystem.h"
 #include "MirvColors.h"
+#include "StreamSettings.h"
 
 #include "../shared/StringTools.h"
 #include "../deps/release/Detours/src/detours.h"
 #include "../deps/release/prop/cs2/sdk_src/public/tier1/bufferstring.h"
+
+#include <atomic>
+#include <cstring>
+#include <mutex>
+#include <shared_mutex>
 #include <unordered_map>
+#include <map>
 
 typedef void* (__fastcall * FindMaterial_t)(void* This, CMaterial2*** out, const char* materialName);
 FindMaterial_t org_FindMaterial = nullptr;
@@ -39,6 +46,66 @@ struct CustomSkyState {
 	bool drawClouds = true;
 	float brightness = 1.0f;
 } g_CustomSky;
+
+std::map<void *, size_t> g_PickerEntities;
+
+bool g_PickerActive =  false;
+bool g_PickerCollecting = false;
+bool g_PickerPrint = false;
+
+void Picker_Pick(bool wasVisible)
+{
+	if (!g_PickerActive)
+	{
+		g_PickerActive = true;
+		g_PickerCollecting = true;
+		g_PickerPrint = true;
+	}
+	else
+	{
+		if (g_PickerCollecting)
+			g_PickerCollecting = false;
+
+		size_t index = 0;
+
+		for (auto it = g_PickerEntities.begin(); it != g_PickerEntities.end(); )
+		{
+			size_t oldIndex = it->second;
+
+			if ((1 == (oldIndex & 0x1)) == wasVisible)
+			{
+				it = g_PickerEntities.erase(it);
+			}
+			else
+			{
+				it->second = index;
+				++index;
+				++it;
+			}
+		}
+	}
+
+	g_PickerPrint = true;
+}
+
+void Picker_Stop(void)
+{
+	if(g_PickerActive)
+	{
+		g_PickerEntities.clear();
+		g_PickerActive = false;
+		advancedfx::Message("==== Picker stopped. ====\n");
+	}
+}
+
+void PickerPrintReset(){
+	if(g_PickerPrint) {
+		g_PickerPrint = false;
+
+		bool determinedEntities = g_PickerEntities.size() <= 1;
+		if (determinedEntities) Picker_Stop();
+	}
+}
 
 // 64-bit hash for 32-bit platforms
 // Credit
@@ -221,31 +288,600 @@ void updateSkyboxEntities() {
 struct CBaseSceneData {
 	char _pad0[0x18];
 	void* sceneObject;
-	CMaterial2* material; 
+	CMaterial2* material;
 	char _pad1[0x28];
 	uint32_t color;
 	char _pad2[0x14];
 };
 
-typedef void (__fastcall * DrawBaseSceneObject_t)(void* This, void* a2, CBaseSceneData* scene_data, int a4, int a5, void* a6, void* a7);
-DrawBaseSceneObject_t org_DrawBaseSceneObject = nullptr;
+static_assert(sizeof(CBaseSceneData) == 0x68, "Unexpected CBaseSceneData size.");
 
-// sceneData is actually array and can be iterated, a4 is count
-// Color and textures can be replace here, but there are some issues with that,
-// so we only "toggle" on/off here for now.
-void new_DrawBaseSceneObject(void* This, void* a2, CBaseSceneData* sceneData, int a4, int a5, void* a6, void* a7) {
-	if (sceneData->material == 0) return org_DrawBaseSceneObject(This, a2, sceneData, a4, a5, a6, a7);
+enum class SceneObjectDrawPolicy {
+	Draw,
+	Hide,
+	DepthPassesOnly
+};
 
-	std::string matName = sceneData->material->GetName();
+SceneObjectDrawPolicy g_BaseSceneObjectsPolicy = SceneObjectDrawPolicy::Draw;
+SceneObjectDrawPolicy g_AnimatableSceneObjectsPolicy = SceneObjectDrawPolicy::Draw;
+SceneObjectDrawPolicy g_AggregateSceneObjectsPolicy = SceneObjectDrawPolicy::Draw;
+SceneObjectDrawPolicy g_SmokeVolumeObjectsPolicy = SceneObjectDrawPolicy::Draw;
+int g_iSceneFilterDebug = 0;
 
-	// There is some z fight going on, when camera is pointed to sun 
-	// e.g. clouds draw regardless, so have to hide some sun materials too
-	// Don't have much time to fix it properly, this does the job 99% of times
-	if (!g_CustomSky.drawClouds && (matName.find("clouds") != -1 || matName.find("sun_disc_glow") != -1)) {
-		 return;
+enum class SceneSemanticGroup : int {
+	ViewModel = 0,
+	FirstPersonLegs = 1,
+	Players = 2,
+	World = 3,
+	Sky = 4,
+	Count = 5
+};
+
+SceneObjectDrawPolicy g_SceneSemanticPolicies[(int)SceneSemanticGroup::Count] = {
+	SceneObjectDrawPolicy::Draw,
+	SceneObjectDrawPolicy::Draw,
+	SceneObjectDrawPolicy::Draw,
+	SceneObjectDrawPolicy::Draw,
+	SceneObjectDrawPolicy::Draw
+};
+
+std::atomic_bool g_bSceneFilterSystemActive = false;
+
+void UpdateSceneFilterSystemActive() {
+	bool bActive =
+		0 < g_iSceneFilterDebug
+		|| g_BaseSceneObjectsPolicy != SceneObjectDrawPolicy::Draw
+		|| g_AnimatableSceneObjectsPolicy != SceneObjectDrawPolicy::Draw
+		|| g_AggregateSceneObjectsPolicy != SceneObjectDrawPolicy::Draw
+		|| g_SmokeVolumeObjectsPolicy !=  SceneObjectDrawPolicy::Draw
+		|| g_PickerActive;
+
+	for(int i = 0; !bActive && i < (int)SceneSemanticGroup::Count; i++) {
+		bActive = g_SceneSemanticPolicies[i] != SceneObjectDrawPolicy::Draw;
 	}
 
-	return org_DrawBaseSceneObject(This, a2, sceneData, a4, a5, a6, a7); 
+	g_bSceneFilterSystemActive = bActive;
+}
+
+void ClearSceneFliterSystemPolicies() {
+	g_BaseSceneObjectsPolicy = SceneObjectDrawPolicy::Draw;
+	g_AnimatableSceneObjectsPolicy = SceneObjectDrawPolicy::Draw;
+	g_AggregateSceneObjectsPolicy = SceneObjectDrawPolicy::Draw;
+	g_SmokeVolumeObjectsPolicy =  SceneObjectDrawPolicy::Draw;
+
+	for(int i = 0; i < (int)SceneSemanticGroup::Count; i++) {
+		g_SceneSemanticPolicies[i] = SceneObjectDrawPolicy::Draw;
+	}
+
+	UpdateSceneFilterSystemActive();
+}
+
+void SetupSceneFilterPolicies(const class CStreamSettings & settings) {
+	switch(settings.ViewModelAction) {
+	case CStreamSettings::Action::NoDraw:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::ViewModel] = SceneObjectDrawPolicy::Hide;
+		break;
+	case CStreamSettings::Action::ZOnly:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::ViewModel] = SceneObjectDrawPolicy::DepthPassesOnly;
+		break;
+	default:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::ViewModel] = SceneObjectDrawPolicy::Draw;
+		break;
+	}
+	switch(settings.FirstPersonLegsAction) {
+	case CStreamSettings::Action::NoDraw:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::FirstPersonLegs] = SceneObjectDrawPolicy::Hide;
+		break;
+	case CStreamSettings::Action::ZOnly:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::FirstPersonLegs] = SceneObjectDrawPolicy::DepthPassesOnly;
+		break;
+	default:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::FirstPersonLegs] = SceneObjectDrawPolicy::Draw;
+		break;
+	}
+	switch(settings.PlayersAction) {
+	case CStreamSettings::Action::NoDraw:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Players] = SceneObjectDrawPolicy::Hide;
+		break;
+	case CStreamSettings::Action::ZOnly:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Players] = SceneObjectDrawPolicy::DepthPassesOnly;
+		break;
+	default:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Players] = SceneObjectDrawPolicy::Draw;
+		break;
+	}
+	switch(settings.WorldAction) {
+	case CStreamSettings::Action::NoDraw:
+		g_AggregateSceneObjectsPolicy = SceneObjectDrawPolicy::Hide;
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::World] = SceneObjectDrawPolicy::Hide;
+		break;
+	case CStreamSettings::Action::ZOnly:
+		g_AggregateSceneObjectsPolicy = SceneObjectDrawPolicy::DepthPassesOnly;
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::World] = SceneObjectDrawPolicy::DepthPassesOnly;
+		break;
+	default:
+		g_AggregateSceneObjectsPolicy = SceneObjectDrawPolicy::Draw;
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::World] = SceneObjectDrawPolicy::Draw;
+		break;
+	}
+	switch(settings.SkyAction) {
+	case CStreamSettings::Action::NoDraw:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Sky] = SceneObjectDrawPolicy::Hide;
+		break;
+	case CStreamSettings::Action::ZOnly:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Sky] = SceneObjectDrawPolicy::DepthPassesOnly;
+		break;
+	default:
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Sky] = SceneObjectDrawPolicy::Draw;
+		break;
+	}
+	switch(settings.SmokeAction) {
+	case CStreamSettings::Action::NoDraw:
+		g_SmokeVolumeObjectsPolicy = SceneObjectDrawPolicy::Hide;
+		break;
+	case CStreamSettings::Action::ZOnly:
+		g_SmokeVolumeObjectsPolicy = SceneObjectDrawPolicy::DepthPassesOnly;
+		break;
+	default:
+		g_SmokeVolumeObjectsPolicy = SceneObjectDrawPolicy::Draw;
+		break;
+	}
+
+	UpdateSceneFilterSystemActive();
+}
+
+enum class SceneObjectFilterClass {
+	Base,
+	Animatable,
+	Aggregate,
+	SkyBox,
+	SkyBox6Face,
+	ProjectedDecal,
+	SmokeVolume,
+	Unknown
+};
+
+std::map<void**,SceneObjectFilterClass> g_VtableToSceneObjectFilterClass;
+
+struct SceneLayerContext {
+	const char* ViewName = nullptr;
+	const char* ViewPass = nullptr;
+	uint32_t Flags = 0;
+};
+
+static const char* SceneObjectFilterClassToString(SceneObjectFilterClass filterClass) {
+	switch (filterClass) {
+	case SceneObjectFilterClass::Base: return "base";
+	case SceneObjectFilterClass::Animatable: return "animatable";
+	case SceneObjectFilterClass::Aggregate: return "aggregate";
+	case SceneObjectFilterClass::SkyBox: return "skybox";
+	case SceneObjectFilterClass::SkyBox6Face: return "skybox6face";
+	case SceneObjectFilterClass::ProjectedDecal: return "projecteddecal";
+	case SceneObjectFilterClass::SmokeVolume: return "smokevolume";
+	default: return "unknown";
+	}
+}
+
+static const char* SceneObjectDrawPolicyToString(SceneObjectDrawPolicy policy) {
+	switch (policy) {
+	case SceneObjectDrawPolicy::Draw: return "draw";
+	case SceneObjectDrawPolicy::Hide: return "hide";
+	case SceneObjectDrawPolicy::DepthPassesOnly: return "zonly";
+	default: return "unknown";
+	}
+}
+
+static bool TryParseSceneObjectDrawPolicy(const char* value, SceneObjectDrawPolicy& outPolicy) {
+	if (0 == _stricmp(value, "1") || 0 == _stricmp(value, "draw")) {
+		outPolicy = SceneObjectDrawPolicy::Draw;
+		return true;
+	}
+	if (0 == _stricmp(value, "0") || 0 == _stricmp(value, "hide")) {
+		outPolicy = SceneObjectDrawPolicy::Hide;
+		return true;
+	}
+	if (0 == _stricmp(value, "zonly")) {
+		outPolicy = SceneObjectDrawPolicy::DepthPassesOnly;
+		return true;
+	}
+	return false;
+}
+
+static const char* SceneSemanticGroupToString(SceneSemanticGroup group) {
+	switch (group) {
+	case SceneSemanticGroup::ViewModel: return "viewModel";
+	case SceneSemanticGroup::FirstPersonLegs: return "firstPersonLegs";
+	case SceneSemanticGroup::Players: return "players";
+	case SceneSemanticGroup::World: return "world";
+	case SceneSemanticGroup::Sky: return "sky";
+	default: return "unknown";
+	}
+}
+
+static bool TryGetSceneSemanticGroup(const char* value, SceneSemanticGroup& outGroup) {
+	if (0 == _stricmp(value, "viewmodel")) {
+		outGroup = SceneSemanticGroup::ViewModel;
+		return true;
+	}
+	if (0 == _stricmp(value, "firstPersonLegs")) {
+		outGroup = SceneSemanticGroup::FirstPersonLegs;
+		return true;
+	}
+	if (0 == _stricmp(value, "players") || 0 == _stricmp(value, "player")) {
+		outGroup = SceneSemanticGroup::Players;
+		return true;
+	}
+	if (0 == _stricmp(value, "world")) {
+		outGroup = SceneSemanticGroup::World;
+		return true;
+	}
+	if (0 == _stricmp(value, "sky") || 0 == _stricmp(value, "skybox")) {
+		outGroup = SceneSemanticGroup::Sky;
+		return true;
+	}
+	return false;
+}
+
+static SceneObjectDrawPolicy GetSceneObjectClassPolicy(SceneObjectFilterClass filterClass) {
+	switch (filterClass) {
+	case SceneObjectFilterClass::Base: return g_BaseSceneObjectsPolicy;
+	case SceneObjectFilterClass::Animatable: return g_AnimatableSceneObjectsPolicy;
+	case SceneObjectFilterClass::Aggregate: return g_AggregateSceneObjectsPolicy;
+	case SceneObjectFilterClass::SkyBox: return SceneObjectDrawPolicy::Draw;
+	case SceneObjectFilterClass::SkyBox6Face: return SceneObjectDrawPolicy::Draw;
+	case SceneObjectFilterClass::ProjectedDecal: return SceneObjectDrawPolicy::Draw;
+	case SceneObjectFilterClass::Unknown:
+	default: return SceneObjectDrawPolicy::Draw;
+	}
+}
+
+static bool SceneObjectFilterClassIsSkyBox(SceneObjectFilterClass filterClass) {
+	return filterClass == SceneObjectFilterClass::SkyBox
+		|| filterClass == SceneObjectFilterClass::SkyBox6Face;
+}
+
+static bool SceneObjectFilterClassIsProjectedDecal(SceneObjectFilterClass filterClass) {
+	return filterClass == SceneObjectFilterClass::ProjectedDecal;
+}
+
+static bool SceneObjectFilterClassHasKnownSceneDataLayout(SceneObjectFilterClass filterClass) {
+	return true;
+	/*return filterClass == SceneObjectFilterClass::Base
+		|| filterClass == SceneObjectFilterClass::Animatable
+		|| filterClass == SceneObjectFilterClass::Aggregate;*/
+}
+
+static bool StringContains(const char* value, const char* pattern) {
+	return value && pattern && nullptr != strstr(value, pattern);
+}
+
+static bool SceneLayerContextIsViewModel(const SceneLayerContext& context) {
+	return StringContains(context.ViewPass, "ViewModel");
+}
+
+static bool SceneLayerContextIsFirstPersonLegs(const SceneLayerContext& context) {
+	return StringContains(context.ViewPass, "FirstpersonLegs");
+}
+
+static bool SceneLayerContextIsSky(const SceneLayerContext& context) {
+	return StringContains(context.ViewName, "Csgo3DSkyboxView")
+		|| StringContains(context.ViewPass, "3DSkybox")
+		|| StringContains(context.ViewPass, "Skybox")
+		|| StringContains(context.ViewPass, "Sky");
+}
+
+static bool SceneLayerContextIsPlayers(const SceneLayerContext& context) {
+	return StringContains(context.ViewPass, "Characters")
+		|| StringContains(context.ViewPass, "PlayerVisibilityDataColor");
+}
+
+static bool SceneLayerContextIsShadowPass(const SceneLayerContext& context) {
+	return StringContains(context.ViewName, "CSM")
+		|| StringContains(context.ViewName, "DrawShadowMapsForLight")
+		|| StringContains(context.ViewPass, "DrawShadowMapsForLight");
+}
+
+static bool SceneLayerContextIsDecals(const SceneLayerContext& context) {
+	return StringContains(context.ViewPass, "Decals");
+}
+
+static bool SceneLayerContextIsDepthPassesOnlyExcluded(const SceneLayerContext& context) {
+	return SceneLayerContextIsDecals(context)
+		|| StringContains(context.ViewPass, "Translucent")
+		|| StringContains(context.ViewPass, "Stencil")
+		|| StringContains(context.ViewPass, "Overlay");
+}
+
+static bool SceneDataMaterialIsPlayer(SceneObjectFilterClass filterClass, const char* materialName) {
+	if (materialName == nullptr) return false;
+
+	return StringContains(materialName, "characters/models/")
+		|| StringContains(materialName, "agents/models/")
+		|| StringContains(materialName, "weapons/models/")
+		|| StringContains(materialName, "models/weapons/")
+		|| StringContains(materialName, "models/player/")
+		|| (filterClass == SceneObjectFilterClass::Animatable && StringContains(materialName, "compmat_")); // skinned weapons/gloves
+}
+
+static SceneSemanticGroup ClassifySceneObject(SceneObjectFilterClass filterClass, const SceneLayerContext& context, const char* materialName) {
+	// Precedence is intentional: first-person layers contain weapon/player materials that should stay separate from world/player mattes.
+	if (SceneLayerContextIsViewModel(context)) return SceneSemanticGroup::ViewModel;
+	if (SceneLayerContextIsFirstPersonLegs(context)) return SceneSemanticGroup::FirstPersonLegs;
+	if (SceneDataMaterialIsPlayer(filterClass, materialName)) return SceneSemanticGroup::Players;
+	if (SceneLayerContextIsSky(context)) return SceneSemanticGroup::Sky;
+	if (SceneLayerContextIsPlayers(context)) return SceneSemanticGroup::Players;
+	return SceneSemanticGroup::World;
+}
+
+static bool SceneLayerContextIsDepthPass(const SceneLayerContext& context) {
+	if (StringContains(context.ViewName, "CSM")) return true;
+	if (StringContains(context.ViewPass, "DrawDepthOpaque")) return true;
+	if (StringContains(context.ViewPass, "Depth Prepass")) return true;
+	if (StringContains(context.ViewPass, "Depth prepass")) return true;
+
+	return false;
+}
+
+static SceneObjectDrawPolicy ApplyLayerAwarePolicy(SceneObjectFilterClass filterClass, const SceneLayerContext & context, const char* materialName, SceneObjectDrawPolicy policy) {
+	if (policy == SceneObjectDrawPolicy::DepthPassesOnly) {
+		return SceneLayerContextIsDepthPass(context)
+			&& !SceneLayerContextIsDepthPassesOnlyExcluded(context)
+			? SceneObjectDrawPolicy::Draw
+			: SceneObjectDrawPolicy::Hide;
+	}
+
+	return nullptr == materialName && filterClass == SceneObjectFilterClass::Unknown
+		&& SceneLayerContextIsDepthPassesOnlyExcluded(context)
+		? SceneObjectDrawPolicy::Draw // unknown objects without material we always draw if it's not a depth pass
+		: policy
+	;
+}
+
+static bool TryGetSceneSemanticPolicy(SceneObjectFilterClass filterClass, const SceneLayerContext & context, const char* materialName, SceneObjectDrawPolicy& outPolicy) {
+	SceneSemanticGroup group = ClassifySceneObject(filterClass, context, materialName);
+	SceneObjectDrawPolicy policy = g_SceneSemanticPolicies[(int)group];
+	// Semantic draw is the default state; descriptor-class policies still apply unless a semantic group is hidden / depth-pass-only.
+	if (policy == SceneObjectDrawPolicy::Draw) return false;
+
+	if (group == SceneSemanticGroup::Players
+		&& policy == SceneObjectDrawPolicy::Hide
+		&& SceneLayerContextIsShadowPass(context)) {
+		outPolicy = SceneObjectDrawPolicy::Draw;
+		return true;
+	}
+
+	outPolicy = ApplyLayerAwarePolicy(filterClass, context, materialName, policy);
+	return true;
+}
+
+static const char* GetSceneObjectDescName(const CBaseSceneData& sceneData) {
+	if (sceneData.sceneObject == nullptr) return nullptr;
+
+	void* desc = *(void**)((unsigned char*)sceneData.sceneObject + 0x18);
+	if (desc == nullptr) return nullptr;
+
+	void** vtable = *(void***)desc;
+	if (vtable == nullptr || vtable[0] == nullptr) return nullptr;
+
+	return ((const char* (__fastcall*)(void*))vtable[0])(desc);
+}
+
+static uint32_t GetSceneDataSort(const CBaseSceneData& sceneData) {
+	return *(uint32_t*)((const unsigned char*)&sceneData + 0x58);
+}
+
+static uint16_t GetSceneDataFlags(const CBaseSceneData& sceneData) {
+	return *(uint16_t*)((const unsigned char*)&sceneData + 0x62);
+}
+
+static bool DebugPrintSceneData(SceneObjectFilterClass filterClass, const SceneLayerContext & context, const CBaseSceneData* sceneData, int count) {
+	if (g_iSceneFilterDebug <= 0 && !g_PickerActive || sceneData == nullptr || count <= 0) return true;
+
+	bool canReadSceneDataFields = SceneObjectFilterClassHasKnownSceneDataLayout(filterClass);
+
+	bool hidden = false;
+
+	for (int i = 0; i < count; ++i) {
+		const char* materialName = canReadSceneDataFields ? (sceneData[i].material ? sceneData[i].material->GetName() : nullptr) : nullptr;
+		const char* descName = canReadSceneDataFields ? GetSceneObjectDescName(sceneData[i]) : nullptr;
+		void* sceneObject = canReadSceneDataFields ? sceneData[i].sceneObject : nullptr;
+		uint32_t sort = canReadSceneDataFields ? GetSceneDataSort(sceneData[i]) : 0;
+		uint16_t flags = canReadSceneDataFields ? GetSceneDataFlags(sceneData[i]) : 0;
+
+		bool bInList = false;
+		bool bIHidden = false;
+
+		if(g_PickerActive && sceneObject) {
+			if (!g_PickerCollecting)
+			{
+				auto itEnt = g_PickerEntities.find(sceneObject);
+				bInList = g_PickerEntities.end() != itEnt;
+				if(bInList){
+					bIHidden = bInList && ((itEnt->second) & 0x1) == 1;
+				}
+			}
+			else
+			{
+				auto itEnt = g_PickerEntities.lower_bound(sceneObject);
+				if (itEnt == g_PickerEntities.end() || (sceneObject < itEnt->first))
+				{
+					itEnt = g_PickerEntities.emplace_hint(itEnt, std::piecewise_construct, std::forward_as_tuple(sceneObject), std::forward_as_tuple(g_PickerEntities.size()));
+				}
+
+				bInList = true;
+				bIHidden = ((itEnt->second) & 0x1) == 1;
+			}
+		}
+
+		hidden = hidden || bIHidden;
+
+		if((!bInList || bIHidden || !g_PickerPrint) && g_iSceneFilterDebug <= 0) continue;
+
+		advancedfx::Message(
+			"AFXDEBUG: mirv_scene_filter %s[%i/%i] layer=%s:%s group=%s desc=%s material=%s sceneObject=0x%p sort=0x%08x flags=0x%04x\n",
+			SceneObjectFilterClassToString(filterClass),
+			i,
+			count,
+			context.ViewName ? context.ViewName : "?",
+			context.ViewPass ? context.ViewPass : "?",
+			SceneSemanticGroupToString(ClassifySceneObject(filterClass, context, materialName)),
+			descName ? descName : "?",
+			materialName ? materialName : "?",
+			sceneObject,
+			sort,
+			flags
+		);
+	}
+
+	return !hidden;
+}
+
+static SceneObjectDrawPolicy GetSceneDataPolicy(SceneObjectFilterClass filterClass, const SceneLayerContext & context, const CBaseSceneData& sceneData) {
+
+	if(filterClass == SceneObjectFilterClass::SmokeVolume) {
+		return g_SmokeVolumeObjectsPolicy != SceneObjectDrawPolicy::Hide ? SceneObjectDrawPolicy::Draw : SceneObjectDrawPolicy::Hide;
+	}
+
+	if (SceneObjectFilterClassIsSkyBox(filterClass)) {
+		SceneObjectDrawPolicy policy = ApplyLayerAwarePolicy(filterClass, context, nullptr, g_SceneSemanticPolicies[(int)SceneSemanticGroup::Sky]);
+		return policy == SceneObjectDrawPolicy::DepthPassesOnly ? SceneObjectDrawPolicy::Hide : policy;
+	}
+
+	if (SceneObjectFilterClassIsProjectedDecal(filterClass)) {
+		SceneObjectDrawPolicy policy = g_SceneSemanticPolicies[(int)SceneSemanticGroup::World];
+		return policy == SceneObjectDrawPolicy::DepthPassesOnly ? SceneObjectDrawPolicy::Hide : policy;
+	}
+
+	if (!SceneObjectFilterClassHasKnownSceneDataLayout(filterClass) || sceneData.material == 0) {
+		SceneObjectDrawPolicy semanticPolicy;
+		if (TryGetSceneSemanticPolicy(filterClass, context, nullptr, semanticPolicy)) return semanticPolicy;
+		return ApplyLayerAwarePolicy(filterClass, context, nullptr, GetSceneObjectClassPolicy(filterClass));
+	}
+
+	const char* materialName = sceneData.material->GetName();
+	if (materialName == nullptr) {
+		SceneObjectDrawPolicy semanticPolicy;
+		if (TryGetSceneSemanticPolicy(filterClass, context, nullptr, semanticPolicy)) return semanticPolicy;
+		return ApplyLayerAwarePolicy(filterClass, context, nullptr, GetSceneObjectClassPolicy(filterClass));
+	}
+
+	// Custom Sky related:
+	//
+	// There is some z fight going on, when camera is pointed to sun
+	// e.g. clouds draw regardless, so have to hide some sun materials too
+	// Don't have much time to fix it properly, this does the job 99% of times
+	if (!g_CustomSky.drawClouds) {
+		std::string matName = materialName;
+		if (matName.find("clouds") != std::string::npos || matName.find("sun_disc_glow") != std::string::npos) {
+			return SceneObjectDrawPolicy::Hide;
+		}
+	}	
+
+	SceneObjectDrawPolicy semanticPolicy;
+	if (TryGetSceneSemanticPolicy(filterClass, context, materialName, semanticPolicy)) return semanticPolicy;
+
+	return ApplyLayerAwarePolicy(filterClass, context, materialName, GetSceneObjectClassPolicy(filterClass));
+}
+
+std::shared_timed_mutex g_RenderParam4ToSceneLayerContextsMutex;
+std::map<void *,SceneLayerContext> g_RenderParam4ToSceneLayerContexts;
+
+static bool GetCurrentThreadSceneLayerContext(void * param4, SceneLayerContext& outContext) {
+	std::shared_lock<std::shared_timed_mutex> lock(g_RenderParam4ToSceneLayerContextsMutex);
+	auto it = g_RenderParam4ToSceneLayerContexts.find(param4);
+	if(it != g_RenderParam4ToSceneLayerContexts.end()) {
+		outContext = it->second;
+		return true;
+	}
+	return false;
+}
+
+void ClearThreadSceneLayerContexts(){
+	if(g_bSceneFilterSystemActive) {
+		{
+			std::unique_lock<std::shared_timed_mutex> lock(g_RenderParam4ToSceneLayerContextsMutex);
+			g_RenderParam4ToSceneLayerContexts.clear();
+		}
+		g_PickerPrint = false;
+	}
+}
+
+typedef void (__fastcall * RenderLayerDrawListPart_t)(void * pSceneSystem, void * param_2, void * pCSceneLayer, void * param_4, unsigned int count, void *param_6);
+RenderLayerDrawListPart_t org_RenderLayerDrawListPart = nullptr;
+
+void __fastcall new_RenderLayerDrawListPart(void * pSceneSystem, void * param_2, void * pCSceneLayer, void * param_4, unsigned int count, void *param_6) {
+	if(g_bSceneFilterSystemActive && pCSceneLayer)
+	{
+		SceneLayerContext context;
+		void* pCSceneView = *(void**)((unsigned char*)pCSceneLayer + 0x6f0);
+		if (pCSceneView) {
+			void** vtable = *(void***)pCSceneView;
+			if (vtable && vtable[0]) {
+				context.ViewName = ((const char* (__fastcall*)(void*))vtable[0])(pCSceneView);
+			}
+		}
+		context.ViewPass = (const char*)pCSceneLayer + 0x4b8;
+		context.Flags = *(uint32_t*)((unsigned char*)pCSceneLayer + 0x48);
+
+		{
+			std::unique_lock<std::shared_timed_mutex> lock(g_RenderParam4ToSceneLayerContextsMutex);
+			g_RenderParam4ToSceneLayerContexts.emplace(param_4, context).second;
+		}
+	}
+
+	org_RenderLayerDrawListPart(pSceneSystem, param_2, pCSceneLayer, param_4, count, param_6);
+}
+
+typedef void (__fastcall * DrawSceneData_t)(void * pDrawingData, CBaseSceneData * pSceneData);
+DrawSceneData_t org_DrawSceneData = nullptr;
+
+typedef void (__fastcall * NoDrawSceneData_t)(void * pDrawingData);
+NoDrawSceneData_t org_NoDrawSceneData = nullptr;
+
+extern bool ToggleDrawing(void * param_1, bool value);
+
+void __fastcall new_DrawSceneData(void * pDrawingData, CBaseSceneData* pSceneData) {
+	if(g_bSceneFilterSystemActive && nullptr != pSceneData && nullptr != pDrawingData) {
+		SceneLayerContext context;
+		if(GetCurrentThreadSceneLayerContext(pDrawingData, context)){
+
+			SceneObjectFilterClass filterClass = SceneObjectFilterClass::Unknown;
+			if(pSceneData->sceneObject) {
+				if(void* desc = *(void**)((unsigned char*)pSceneData->sceneObject + 0x18)) {
+					if(void** vtable = *(void***)desc) {
+						auto it = g_VtableToSceneObjectFilterClass.find(vtable);
+						if(it != g_VtableToSceneObjectFilterClass.end())
+							filterClass = it->second;
+					}
+				}
+			}
+			
+			SceneObjectDrawPolicy policy;
+			if(DebugPrintSceneData(filterClass, context, pSceneData, 1)) {
+				policy = GetSceneDataPolicy(filterClass, context, *pSceneData);
+			} else {
+				policy = SceneObjectDrawPolicy::Hide;
+			}			 
+			switch (policy) {
+			case SceneObjectDrawPolicy::Draw:
+				break;
+			case SceneObjectDrawPolicy::DepthPassesOnly:
+			case SceneObjectDrawPolicy::Hide:
+			default:
+				/*{
+					void * pContext = ((void **)pDrawingData)[4];
+					if(ToggleDrawing(pContext,true)) {
+						org_DrawSceneData(pDrawingData,pSceneData);
+						ToggleDrawing(pContext,false);
+						return;
+					}
+				}*/
+				org_NoDrawSceneData(pDrawingData);
+				return;
+			}			
+		}
+	}
+	org_DrawSceneData(pDrawingData,pSceneData);
 }
 
 struct FloatColor {
@@ -440,6 +1076,139 @@ CON_COMMAND(mirv_sky, "")
 	);
 }
 
+CON_COMMAND(__mirv_scene_filter, "")
+{
+	auto argc = args->ArgC();
+	auto arg0 = args->ArgV(0);
+
+	if (3 <= argc)
+	{
+		auto arg1 = args->ArgV(1);
+		auto arg2 = args->ArgV(2);
+		SceneObjectDrawPolicy policy;
+		SceneSemanticGroup semanticGroup;
+
+		if (!_stricmp(arg1, "base"))
+		{
+			if (TryParseSceneObjectDrawPolicy(arg2, policy))
+			{
+				g_BaseSceneObjectsPolicy = policy;
+				UpdateSceneFilterSystemActive();
+				return;
+			}
+		}
+
+		if (!_stricmp(arg1, "animatable"))
+		{
+			if (TryParseSceneObjectDrawPolicy(arg2, policy))
+			{
+				g_AnimatableSceneObjectsPolicy = policy;
+				UpdateSceneFilterSystemActive();
+				return;
+			}
+		}
+
+		if (!_stricmp(arg1, "aggregate"))
+		{
+			if (TryParseSceneObjectDrawPolicy(arg2, policy))
+			{
+				g_AggregateSceneObjectsPolicy = policy;
+				UpdateSceneFilterSystemActive();
+				return;
+			}
+		}
+
+		if (!_stricmp(arg1, "smoke"))
+		{
+			if (TryParseSceneObjectDrawPolicy(arg2, policy))
+			{
+				g_SmokeVolumeObjectsPolicy = policy == SceneObjectDrawPolicy::Hide
+					? SceneObjectDrawPolicy::Hide
+					: SceneObjectDrawPolicy::Draw;
+				UpdateSceneFilterSystemActive();
+				return;
+			}
+		}		
+
+		if (TryGetSceneSemanticGroup(arg1, semanticGroup))
+		{
+			if (TryParseSceneObjectDrawPolicy(arg2, policy))
+			{
+				g_SceneSemanticPolicies[(int)semanticGroup] = policy;
+				UpdateSceneFilterSystemActive();
+				return;
+			}
+		}
+
+		if (!_stricmp(arg1, "debug"))
+		{
+			g_iSceneFilterDebug = atoi(arg2);
+			if (g_iSceneFilterDebug < 0) g_iSceneFilterDebug = 0;
+			UpdateSceneFilterSystemActive();
+			return;
+		}
+
+		if (!_stricmp(arg1, "picker"))
+		{
+			if (!_stricmp(arg2, "ent") && 4 <= argc)
+			{
+				//curBaseFx->Console_DisableFastPathRequired();
+
+				bool value = 0 != atoi(args->ArgV(3));
+				Picker_Pick(value);
+				UpdateSceneFilterSystemActive();
+				return;
+			}
+			else
+			if (!_stricmp(arg2, "stop"))
+			{
+				Picker_Stop();
+				UpdateSceneFilterSystemActive();
+				return;
+			}
+		}		
+	}
+
+	advancedfx::Message(
+		"Usage:\n"
+		"%s base draw|hide|zonly|0|1 - Controls CBaseSceneObjectDesc entries in the hooked scene draw path.\n"
+		"%s animatable draw|hide|zonly|0|1 - Controls CAnimatableSceneObjectDesc entries in the hooked scene draw path.\n"
+		"%s aggregate draw|hide|zonly|0|1 - Controls CAggregateSceneObjectDesc entries in the hooked scene draw path.\n"
+		"%s smoke draw|hide|0|1 - Controls CSmokeVolumeObjectDesc by patching its vtable while hidden.\n"
+		"%s viewModel draw|hide|zonly - Controls viewmodel layers.\n"
+		"%s firstPersonLegs draw|hide|zonly - Controls first person legs layers.\n"
+		"%s players draw|hide|zonly - Controls player character layers.\n"
+		"%s world draw|hide|zonly - Controls layers not matched by another semantic group.\n"
+		"%s sky draw|hide|zonly - Controls 3D skybox layers matched in the scene draw path.\n"
+		"%s debug <iCount> - Print up to iCount entries for each hooked scene draw call. Use 0 to disable.\n"
+		"%s picker ent 0|1 - Tell picker if entity is visible (1) or not (0). (Or start picking with 1.)\n"
+		"%s picker stop - Stop picking.\n"
+		"Current values: base=%s animatable=%s aggregate=%s smoke=%s viewModel=%s firstPersonLegs=%s players=%s world=%s sky=%s debug=%i\n"
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+		, arg0
+		, SceneObjectDrawPolicyToString(g_BaseSceneObjectsPolicy)
+		, SceneObjectDrawPolicyToString(g_AnimatableSceneObjectsPolicy)
+		, SceneObjectDrawPolicyToString(g_AggregateSceneObjectsPolicy)
+		, SceneObjectDrawPolicyToString(g_SmokeVolumeObjectsPolicy)
+		, SceneObjectDrawPolicyToString(g_SceneSemanticPolicies[(int)SceneSemanticGroup::ViewModel])
+		, SceneObjectDrawPolicyToString(g_SceneSemanticPolicies[(int)SceneSemanticGroup::FirstPersonLegs])
+		, SceneObjectDrawPolicyToString(g_SceneSemanticPolicies[(int)SceneSemanticGroup::Players])
+		, SceneObjectDrawPolicyToString(g_SceneSemanticPolicies[(int)SceneSemanticGroup::World])
+		, SceneObjectDrawPolicyToString(g_SceneSemanticPolicies[(int)SceneSemanticGroup::Sky])
+		, g_iSceneFilterDebug
+	);
+}
+
 void HookMaterialSystem(HMODULE materialSystemDll) {
 	// 1 xref, called in the middle of 23 function of vtable for CMaterialSystem2
 	//
@@ -480,17 +1249,116 @@ void HookMaterialSystem(HMODULE materialSystemDll) {
 	if (0 == org_FindMaterial) ErrorBox(MkErrStr(__FILE__, __LINE__));
 }
 
+void GetSceneObjectVtable(HMODULE dll, const char * mangledClass, SceneObjectFilterClass filterClass) {
+	if (void ** vtable = (void **)Afx::BinUtils::FindClassVtable(dll, mangledClass, 0, 0)) {
+		// vtable[0] - GetDesc()
+		// vtable[1] - DrawArray()
+		// vtable[3] - DrawSingle()
+		g_VtableToSceneObjectFilterClass[vtable] = filterClass;
+	} else {
+		ErrorBox(MkErrStr(__FILE__, __LINE__));
+		ErrorBox(mangledClass);
+	}
+}
+
+void GetClientDllSceneObjectVtable(HMODULE clientDll) {
+	GetSceneObjectVtable(clientDll, ".?AVCSmokeVolumeSceneObjectDesc@@", SceneObjectFilterClass::SmokeVolume);
+}
+
 void HookSceneSystem(HMODULE sceneSystemDll) {
-	org_DrawBaseSceneObject = (DrawBaseSceneObject_t)getVTableFn(sceneSystemDll, 1, ".?AVCBaseSceneObjectDesc@@");
-	if (0 == org_DrawBaseSceneObject) ErrorBox(MkErrStr(__FILE__, __LINE__));
+	GetSceneObjectVtable(sceneSystemDll, ".?AVCBaseSceneObjectDesc@@", SceneObjectFilterClass::Base);
+	GetSceneObjectVtable(sceneSystemDll, ".?AVCAnimatableSceneObjectDesc@@", SceneObjectFilterClass::Animatable);
+	GetSceneObjectVtable(sceneSystemDll, ".?AVCAggregateSceneObjectDesc@@", SceneObjectFilterClass::Aggregate);
+	GetSceneObjectVtable(sceneSystemDll, ".?AVCSkyBoxObjectDesc@@", SceneObjectFilterClass::SkyBox);
+	GetSceneObjectVtable(sceneSystemDll,  ".?AVC6FaceSkyboxObjectDesc@@", SceneObjectFilterClass::SkyBox6Face);
+	GetSceneObjectVtable(sceneSystemDll, ".?AVCProjectedDecalSceneObjectDesc@@", SceneObjectFilterClass::ProjectedDecal);
 
-	DetourTransactionBegin();
-    DetourUpdateThread(GetCurrentThread());
+/*
+// References "RenderLayerDrawListPart"
+void FUN_1800ea9e0(longlong pSceneSystem,longlong *param_2,uint *pCSceneLayer,ulonglong param_4,
+                  uint count,int *param_6)
 
-	DetourAttach(&(PVOID&)org_DrawBaseSceneObject, new_DrawBaseSceneObject);
+{
+    FUN_180096ed0(param_4,uVar4,pCSceneLayer,count); SceneSystemSortLayer, references strings such as
+- "Batchsort"
+- "Fullsort"
+- "shaded pass"
+- "depth pass"
+- "%s:%s after sort (%s %s)\n" (recommended)
+- "null material"
+- "C:\\buildworker\\csgo_rel_win64\\build\\src\\scenesystem\\scenesystem.cpp"
 
-	if(NO_ERROR != DetourTransactionCommit()) {
-		ErrorBox("Failed to detour SceneSystem functions.");
-		return;
+    local_118 = 0;
+    if (0 < *param_6) {
+        ...
+        uVar26 = *puVar22;
+        uVar21 = (ulonglong)uVar26;
+        if ((pCSceneLayer[0x12] & 8) == 0) {
+          if (uVar26 != 0) {
+            do {
+              uVar26 = puVar20[0x18];
+              bVar9 = (byte)uVar26 & 3;
+              bVar14 = *(byte *)(*(longlong *)(puVar20 + 6) + 0x9a) & 3;
+              if (bVar14 < bVar9) {
+                bVar14 = bVar9;
+              }
+              if (bVar14 != 0) {
+                plVar7 = *(longlong **)(*(longlong *)(puVar20 + 6) + 0x18);
+                (**(code **)(*plVar7 + 0x18))
+                          (plVar7,*(undefined8 *)(param_4 + 0x20),puVar20,uVar4,pCSceneLayer,bVar14)
+                ;
+              }
+              if (((byte)uVar26 & 8) == 0) {
+                FUN_1800971c0(param_4,puVar20); // <--- This is the Draw function we are after, it's also called in a deeper tree further bellow from FUN_180096ed0
+              }
+              else {
+                FUN_1800975e0(param_4); // <-- This is NoDraw function we are after
+              }
+              puVar20 = puVar20 + 0x1a;
+              uVar21 = uVar21 - 1;
+              puVar22 = viewDrawList;
+            } while (uVar21 != 0);
+          }
+        }
+        else if (uVar26 != 0) { ... }
+		...
+    }
+...
+CTSListBase::Push((CTSListBase *)(pSceneSystem + 0xed0),(TSLNodeBase_t *)(puVar22 + -2));
+...
+CTSListBase::Push((CTSListBase *)(pSceneSystem + 0xed0),(TSLNodeBase_t *)(piVar5 + -2));
+...
+}
+
+void FUN_1800971c0(longlong param_1,longlong param_2)
+{
+...
+  cVar2 = FUN_1800978a0(param_1);
+  if (cVar2 == '\0') {
+    FUN_1800975e0(param_1);
+  }
+...
+}
+*/
+	org_RenderLayerDrawListPart = (RenderLayerDrawListPart_t)getAddress(sceneSystemDll, "4c 89 4c 24 20 4c 89 44 24 18 48 89 54 24 10 48 89 4c 24 08 55 53 56 57 41 57 48 8d 6c 24 e0 48 81 ec 20 01 00 00");
+	if (0 == org_RenderLayerDrawListPart) ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+	org_DrawSceneData = (DrawSceneData_t)getAddress(sceneSystemDll, "48 89 5c 24 20 55 48 83 ec 30 f6 81 30 02 00 00 40");
+	if (0 == org_DrawSceneData) ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+	org_NoDrawSceneData = (NoDrawSceneData_t)getAddress(sceneSystemDll, "4c 8b dc 53 48 81 ec d0 00 00 00 83 79 30 01 48 8b d9 0f 8c a0 02 00 00 48 8b 49 20 48 8d 15 ?? ?? ?? ??");
+	if (0 == org_NoDrawSceneData) ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+	if(org_RenderLayerDrawListPart && org_DrawSceneData && org_NoDrawSceneData) {
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+
+		DetourAttach(&(PVOID&)org_RenderLayerDrawListPart, new_RenderLayerDrawListPart);
+		DetourAttach(&(PVOID&)org_DrawSceneData, new_DrawSceneData);
+
+		if(NO_ERROR != DetourTransactionCommit()) {
+			ErrorBox("Failed to detour SceneSystem functions.");
+			return;
+		}
 	}
 }

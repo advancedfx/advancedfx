@@ -553,6 +553,63 @@ private:
 } g_EngineThread_ProjectionMatrix,g_RenderThread_ProjectionMatrix;
 
 
+struct CNoDrawBlendState {
+public:
+    void OnTargetBegin(ID3D11Device * pDevice) {
+        if(pDevice) {
+            D3D11_BLEND_DESC blendDesc{
+                FALSE, // AlphaToCoverageEnable
+                FALSE, // IndependentBlendEnable
+                // D3D11_RENDER_TARGET_BLEND_DESC
+                {
+                    {
+                        FALSE, // BlendEnable
+                        D3D11_BLEND_ONE, // SrcBlend,
+                        D3D11_BLEND_ZERO, // DstBlend
+                        D3D11_BLEND_OP_ADD, // BlendOp
+                        D3D11_BLEND_ONE, // SrcBlendAlpha,
+                        D3D11_BLEND_ZERO, // DestBlendAlpha
+                        D3D11_BLEND_OP_ADD, // BlendOpAlpha
+                        0 // RenderTargetWriteMask
+                    }
+                    , { FALSE, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, 0}
+                    , { FALSE, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, 0}
+                    , { FALSE, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, 0}
+                    , { FALSE, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, 0}
+                    , { FALSE, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, 0}
+                    , { FALSE, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, 0}
+                    , { FALSE, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD, 0}
+                }
+            };
+            pDevice->CreateBlendState(&blendDesc, &m_BlendState);
+        }
+    }
+
+    void OnTargetEnd() {
+        if (m_BlendState) {
+            m_BlendState->Release();
+            m_BlendState = nullptr;
+        }
+    }
+
+    void Block(ID3D11DeviceContext * pContext){
+        pContext->OMGetBlendState(&m_OrgBlendState,nullptr,&m_SampleMask);
+        pContext->OMSetBlendState(m_BlendState,nullptr,0x0);
+    }
+
+    void Unblock(ID3D11DeviceContext * pContext) {
+        pContext->OMSetBlendState(m_OrgBlendState,nullptr,m_SampleMask);
+        if(m_OrgBlendState) {
+            m_OrgBlendState->Release();
+            m_OrgBlendState = nullptr;
+        }
+    }
+
+private:
+    ID3D11BlendState* m_BlendState = nullptr;
+    ID3D11BlendState* m_OrgBlendState = nullptr;
+    UINT m_SampleMask;
+} g_NoDraw;
 
 class CDepthCompositor {
 public:
@@ -1233,7 +1290,7 @@ bool g_Present_Suppress = false;
 HRESULT g_Present_LastResult = S_OK;
 ID3D11Device * g_pDevice = nullptr;
 ID3D11DeviceContext * g_pOtherContext = nullptr;
-int g_iDraw = 0;
+int g_iDraw = -1;
 bool g_bInOwnDraw = false;
 bool g_bDetectSmoke = false;
 bool g_bDetectSmoke2 = false;
@@ -1399,6 +1456,7 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
         if(SUCCEEDED(result2)) {
             if(pResource == pTexture/* && (g_pDevice == nullptr || This != g_pDevice)*/) {
                 if(g_pDevice) {
+                    g_NoDraw.OnTargetEnd();
                     g_DepthCompositor.OnTargetEnd();
                     //CAfxShaderResourceViews::Clear();
                     g_CampathDrawer.EndDevice();
@@ -1407,6 +1465,7 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
                 }
 
                 g_DepthCompositor.OnTargetBegin(This, pTexture);
+                g_NoDraw.OnTargetBegin(This);
                 g_pDevice = This;
                 g_pDevice->AddRef();
                 g_CampathDrawer.BeginDevice(This);
@@ -1416,6 +1475,40 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
     }
 
     return result;
+}
+
+typedef void (STDMETHODCALLTYPE * ClearRenderTargetView_t)( ID3D11DeviceContext * This,
+    /* [annotation] */ 
+    _In_  ID3D11RenderTargetView *pRenderTargetView,
+    /* [annotation] */ 
+    _In_  const FLOAT ColorRGBA[ 4 ]);
+
+ClearRenderTargetView_t g_Old_ClearRenderTargetView = nullptr;
+
+bool g_ClearRenderTargetView_ClearOverride = false;
+float g_ClearRenderTargetView_ClearOverrideColor[4]={0.0f,0.0f,0.0f,0.0f};
+
+void STDMETHODCALLTYPE New_ClearRenderTargetView( ID3D11DeviceContext * This,
+    /* [annotation] */ 
+    _In_  ID3D11RenderTargetView *pRenderTargetView,
+    /* [annotation] */ 
+    _In_  const FLOAT ColorRGBA[ 4 ]) {
+
+    if(g_iDraw == 0) {
+        if(g_BeforeUiRT) {
+            g_BeforeUiRT->Release();
+            g_BeforeUiRT = nullptr;
+        }
+        g_RenderCommands.RenderThread_SetContext(This);
+        g_iDraw = 1;
+    }
+
+    if(g_ClearRenderTargetView_ClearOverride) {
+        g_ClearRenderTargetView_ClearOverride = false;
+        g_Old_ClearRenderTargetView(This, pRenderTargetView, g_ClearRenderTargetView_ClearOverrideColor);
+        return;
+    }
+    g_Old_ClearRenderTargetView(This, pRenderTargetView, ColorRGBA);
 }
 
 typedef void (STDMETHODCALLTYPE * ClearDepthStencilView_t)( ID3D11DeviceContext * This, 
@@ -1498,13 +1591,8 @@ void STDMETHODCALLTYPE New_OMSetRenderTargets( ID3D11DeviceContext * This,
         && !g_bInOwnDraw
     ) {
         if (NumViews >= 1) {         
-            if (g_iDraw == 0 && pDepthStencilView && ppRenderTargetViews && ppRenderTargetViews[0]) {
-                if(g_BeforeUiRT) {
-                    g_BeforeUiRT->Release();
-                    g_BeforeUiRT = nullptr;
-                }
+            if (g_iDraw == 1 && pDepthStencilView && ppRenderTargetViews && ppRenderTargetViews[0]) {
                 g_iDraw = 2;
-                g_RenderCommands.RenderThread_SetContext(This);
                 g_pCurrentDepthStencilView = pDepthStencilView;
                 g_pCurrentRenderTargetView = ppRenderTargetViews[0];
             }
@@ -1607,6 +1695,23 @@ public:
 private:
 };
 
+class CAfxRenderCallbackBeforeClear : public IRenderThreadCallback {
+public:
+    CAfxRenderCallbackBeforeClear()
+    {
+
+    }
+
+    virtual void OnCallback(void) {
+        g_iDraw = 0;
+        if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands()) {
+            pRenderPassCommands->OnBeforeClear(); 
+        }
+        delete this;
+    }
+private:
+};
+
 class CAfxRenderCallbackBeforeUi : public IRenderThreadCallback
 {
 public:
@@ -1692,6 +1797,52 @@ public:
     }
 private:
 };
+
+class CAfxRenderCallbackBlockBuffers : public IRenderThreadCallback
+{
+public:
+    CAfxRenderCallbackBlockBuffers()
+    {
+
+    }
+
+    virtual void OnCallback(void) {
+        if (auto pDeviceContext = g_RenderCommands.RenderThread_GetContext()) {
+            g_NoDraw.Block(pDeviceContext);
+        }
+        delete this;        
+    }
+};
+
+class CAfxRenderCallbackUnblockBuffers : public IRenderThreadCallback
+{
+public:
+    CAfxRenderCallbackUnblockBuffers()
+    {
+
+    }
+
+    virtual void OnCallback(void) {
+        if (auto pDeviceContext = g_RenderCommands.RenderThread_GetContext()) {
+            g_NoDraw.Unblock(pDeviceContext);
+        }
+        delete this;        
+    }
+};
+
+const size_t g_SoftwareCommandList_QueueCallback_Offset = 142;
+
+bool ToggleDrawing(void* pCRenderContextDx11_SoftwareCommandList, bool value) {
+    if (pCRenderContextDx11_SoftwareCommandList) {
+        auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
+        if(value)
+            fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBlockBuffers());
+        else
+            fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackUnblockBuffers());
+        return true;
+    }
+    return false;
+}
 
 /*
 typedef void (STDMETHODCALLTYPE * PSSetShaderResources_t)(ID3D11DeviceContext* This,
@@ -1793,6 +1944,7 @@ void Hook_Context(ID3D11DeviceContext * pDeviceContext) {
         //DetourDetach(&(PVOID&)g_Old_PSSetShaderResources, New_PSSetShaderResources);
         DetourDetach(&(PVOID&)g_Old_PSSetShader, New_PSSetShader);
         DetourDetach(&(PVOID&)g_Old_OMSetRenderTargets, New_OMSetRenderTargets);
+        DetourDetach(&(PVOID&)g_Old_ClearRenderTargetView, New_ClearRenderTargetView);
         DetourDetach(&(PVOID&)g_Old_ClearDepthStencilView, New_ClearDepthStencilView);
         //DetourDetach(&(PVOID&)g_Old_ResolveSubresource, New_ResolveSubresource);
         if(NO_ERROR != DetourTransactionCommit()) {
@@ -1804,11 +1956,13 @@ void Hook_Context(ID3D11DeviceContext * pDeviceContext) {
     //g_Old_PSSetShaderResources = (PSSetShaderResources_t)vtable[8];
     g_Old_PSSetShader = (PSSetShader_t)vtable[9];
     g_Old_OMSetRenderTargets = (OMSetRenderTargets_t)vtable[33];
+    g_Old_ClearRenderTargetView = (ClearRenderTargetView_t)vtable[50];
     g_Old_ClearDepthStencilView = (ClearDepthStencilView_t)vtable[53];
     //g_Old_ResolveSubresource = (ResolveSubresource_t)vtable[57];
     //DetourAttach(&(PVOID&)g_Old_PSSetShaderResources, New_PSSetShaderResources);
     DetourAttach(&(PVOID&)g_Old_PSSetShader, New_PSSetShader);
     DetourAttach(&(PVOID&)g_Old_OMSetRenderTargets, New_OMSetRenderTargets);
+    DetourAttach(&(PVOID&)g_Old_ClearRenderTargetView, New_ClearRenderTargetView);
     DetourAttach(&(PVOID&)g_Old_ClearDepthStencilView, New_ClearDepthStencilView);
     //DetourAttach(&(PVOID&)g_Old_ResolveSubresource, New_ResolveSubresource);
     if(NO_ERROR != DetourTransactionCommit()) {
@@ -1920,7 +2074,7 @@ void After_Present() {
 
     if(g_BeforeUiRT) g_BeforeUiRT->Release();
     g_BeforeUiRT = nullptr;
-    g_iDraw = 0;
+    g_iDraw = -1;    
 }
 
 HRESULT STDMETHODCALLTYPE New_Present( void * This,
@@ -2136,8 +2290,6 @@ public:
 
 };
 
-const size_t g_SoftwareCommandList_QueueCallback_Offset = 142;
-
 /* Typical print on de_mirage:
 AFXDEBUG CreateRenderContextPtr2(#%s/SetupView):#Player 0/SetupView
 AFXDEBUG CreateRenderContextPtr1(#%s/SetupLightsAndViewConstants):#ParticleSunShadow0/SetupLightsAndViewConstants
@@ -2225,7 +2377,13 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
         const char * pszArg0 = va_arg(args, const char *);
         const char * pszArg1 = va_arg(args, const char *);
         if(pszArg0 && 0 == strcmp("Player 0",pszArg0) && pszArg1) {
-            if (0 == strcmp("ClearSmokeTargets (4)", pszArg1)) {
+            if (0 == strcmp("Clear Color Depth Stencil", pszArg1)) {
+                if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
+                    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
+                    fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeClear());
+                }
+            }
+            else if (0 == strcmp("ClearSmokeTargets (4)", pszArg1)) {
                 if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
                     auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
                     fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeMaybeDrawSmoke());
@@ -2575,6 +2733,10 @@ bool Update_r_csgo_mboit_force_mixed_resolution(bool value) {
     return oldValue.m_bValue;
 }
 
+void ClearSceneFliterSystemPolicies();
+
+void SetupSceneFilterPolicies(const class CStreamSettings & settings);
+
 class CAfxStreams : public advancedfx::IRecordStreamSettings {
 public:
     bool m_CampathAutoSave = false;
@@ -2766,7 +2928,6 @@ public:
         if(EngineThread_HasNextRenderPass()) EngineThread_Expect_Present();
     }
 
-
 private:
     class CStream : public advancedfx::IRecordStreamSettings {
 	public:
@@ -2858,11 +3019,30 @@ private:
         }
 
         void EngineThread_BeginFrame() const {
+            // Setup SceneSystem policies:
+            SetupSceneFilterPolicies(m_Settings);
+
             // Execute before commands:
             if(!m_Settings.BeforeCommands.empty())
                 ExecuteCommands(m_Settings.BeforeCommands);
 
-            // Setup clear color:
+            // Setup main clear color override:
+            if(m_Settings.ClearOverride) {
+                float R = m_Settings.ClearOverrideColor.R;
+                float G = m_Settings.ClearOverrideColor.G;
+                float B = m_Settings.ClearOverrideColor.B;
+                float A = m_Settings.ClearOverrideColor.A;  
+                auto & renderPassCommands = g_RenderCommands.EngineThread_GetCommands();              
+                renderPassCommands.BeforeClear.Push([R,G,B,A](){
+                    g_ClearRenderTargetView_ClearOverride = true;
+                    g_ClearRenderTargetView_ClearOverrideColor[0] = R;
+                    g_ClearRenderTargetView_ClearOverrideColor[1] = G;
+                    g_ClearRenderTargetView_ClearOverrideColor[2] = B;
+                    g_ClearRenderTargetView_ClearOverrideColor[3] = A;
+                });                
+            }
+
+            // Setup beforeUi clear and color:
             float clearColor[4];
             if(WantsClearBeforeUi(clearColor)) {
                 float R = clearColor[0];
@@ -2969,14 +3149,17 @@ private:
                 queue.Push([capture](ID3D11DeviceContext * pDeviceContext){
                     capture->OnAfterGpuPresent(pDeviceContext);
                 }); 
-            }            
+            }
         }
 
         void EngineThread_EndFrame() const {
             // Execute after commands:
             if(!m_Settings.AfterCommands.empty())
                 ExecuteCommands(m_Settings.AfterCommands);
-        }        
+
+            // Clear SceneSystem policies:
+            ClearSceneFliterSystemPolicies();
+        } 
 
         bool WantsClearBeforeUi(float outColor[4]) const {
             if(m_Settings.ClearBeforeUi) {
@@ -3455,6 +3638,209 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
             settings.DepthValMax = 0;
             settings.DepthChannels = CStreamSettings::DepthChannels_e::Dithered;
             settings.DepthMode = CStreamSettings::DepthMode_e::PyramidalLinear;
+        } else if(0 == _stricmp(arg1,"world")) {
+            settings.Capture = CStreamSettings::Capture_e::BeforeUi;
+            settings.ViewModelAction = CStreamSettings::Action::NoDraw;
+            settings.FirstPersonLegsAction = CStreamSettings::Action::NoDraw;
+            settings.PlayersAction = CStreamSettings::Action::NoDraw;
+            settings.SmokeAction = CStreamSettings::Action::NoDraw;
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_drawparticles");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_drawparticles");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+        } else if(0 == _stricmp(arg1,"playersMatte")) {
+            settings.Capture = CStreamSettings::Capture_e::BeforeUi;
+            settings.CaptureType = CStreamSettings::CaptureType_e::Rgba;
+            settings.ViewModelAction = CStreamSettings::Action::NoDraw;
+            settings.WorldAction = CStreamSettings::Action::ZOnly;
+            settings.SkyAction = CStreamSettings::Action::ZOnly;
+            settings.SmokeAction = CStreamSettings::Action::NoDraw;
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_drawparticles");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_overlays");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_decals");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_drawparticles");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_overlays");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_decals");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+        } else if(0 == _stricmp(arg1,"viewModelMatte")) {
+            settings.Capture = CStreamSettings::Capture_e::BeforeUi;
+            settings.CaptureType = CStreamSettings::CaptureType_e::Rgba;
+            settings.FirstPersonLegsAction = CStreamSettings::Action::NoDraw;
+            settings.PlayersAction = CStreamSettings::Action::NoDraw;
+            settings.WorldAction = CStreamSettings::Action::NoDraw;
+            settings.SkyAction = CStreamSettings::Action::NoDraw;
+            settings.SmokeAction = CStreamSettings::Action::NoDraw;
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_drawparticles");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_overlays");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_decals");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_drawparticles");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_overlays");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_decals");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+        } else if(0 == _stricmp(arg1,"particlesBlack")) {
+            settings.ClearOverrideColor.R = 0.0f;
+            settings.ClearOverrideColor.G = 0.0f;
+            settings.ClearOverrideColor.B = 0.0f;
+            settings.ClearOverrideColor.A = 1.0f;
+            settings.ClearOverride = true;
+            settings.Capture = CStreamSettings::Capture_e::BeforeUi;
+            settings.CaptureType = CStreamSettings::CaptureType_e::Rgba;
+            settings.ViewModelAction = CStreamSettings::Action::NoDraw;
+            settings.FirstPersonLegsAction = CStreamSettings::Action::NoDraw;
+            settings.PlayersAction = CStreamSettings::Action::ZOnly;
+            settings.WorldAction = CStreamSettings::Action::ZOnly;
+            settings.SkyAction = CStreamSettings::Action::ZOnly;
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_postprocess_enable");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_overlays");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_decals");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_postprocess_enable");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_overlays");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_decals");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+        } else if(0 == _stricmp(arg1,"particlesWhite")) {
+            settings.ClearOverrideColor.R = 1.0f;
+            settings.ClearOverrideColor.G = 1.0f;
+            settings.ClearOverrideColor.B = 1.0f;
+            settings.ClearOverrideColor.A = 1.0f;
+            settings.ClearOverride = true;
+            settings.Capture = CStreamSettings::Capture_e::BeforeUi;
+            settings.CaptureType = CStreamSettings::CaptureType_e::Rgba;
+            settings.ViewModelAction = CStreamSettings::Action::NoDraw;
+            settings.FirstPersonLegsAction = CStreamSettings::Action::NoDraw;
+            settings.PlayersAction = CStreamSettings::Action::ZOnly;
+            settings.WorldAction = CStreamSettings::Action::ZOnly;
+            settings.SkyAction = CStreamSettings::Action::ZOnly;
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_postprocess_enable");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_overlays");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_decals");
+                command.emplace_back("0");
+                settings.BeforeCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_postprocess_enable");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_overlays");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
+            {
+                std::list<std::string> command;
+                command.emplace_back("r_csgo_render_decals");
+                command.emplace_back("1");
+                settings.AfterCommands.emplace_back(command);
+            }
         } else {
             advancedfx::Warning("AFXERROR: \"%s\" is not a valid stream template.\n", arg1);
             return;
@@ -3533,6 +3919,50 @@ void CAfxStreams::Console_Edit_RenderCommands(std::list<std::list<std::string>> 
 		, arg0
 		, arg0
 	);
+}
+
+const char * StreamSettingsActionToString(CStreamSettings::Action value) {
+    switch(value) {
+    case CStreamSettings::Action::Draw:
+        return "draw";
+    case CStreamSettings::Action::NoDraw:
+        return "noDraw";
+    case CStreamSettings::Action::ZOnly:
+        return "zOnly";
+    }
+    return "(unkown)";
+}
+
+bool AssignStreamSettingsAction(CStreamSettings::Action &action, const char * value) {
+    if(0 == _stricmp(value,"draw")) {
+        action = CStreamSettings::Action::Draw;
+        return true;
+    }
+    if(0 == _stricmp(value,"noDraw")) {
+        action = CStreamSettings::Action::NoDraw;
+        return true;
+    }
+    if(0 == _stricmp(value,"zOnly")) {
+        action = CStreamSettings::Action::ZOnly;
+        return true;
+    }
+    return false;
+}
+
+void StreamSettingsActionSubCommand(CStreamSettings::Action &action, advancedfx::ICommandArgs * args) {
+    int argC = args->ArgC();
+    const char * cmd0 = args->ArgV(0);
+    
+    if(2 <= argC) {
+        const char * cmd1 = args->ArgV(1);
+        if(AssignStreamSettingsAction(action, cmd1))
+            return;
+    }
+    
+    advancedfx::Message(
+        "%s draw|noDraw|zOnly\n"
+        "Current value: %s\n"
+        , cmd0, StreamSettingsActionToString(action));    
 }
 
 void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
@@ -3829,6 +4259,42 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
                     , currentValue
                 ); 
                 return;
+            } else if(0 == _stricmp("clear", arg2)) {
+                if(4 <= argC) {
+                    if(4 == argC) {
+                        if(0 == _stricmp("default", args->ArgV(3))) {
+                            it->second.ClearOverride = false;
+                            return;
+                        }
+                    } else if(7 == argC) {
+                        bool bChanged = false;
+                        float r = atof(args->ArgV(3));
+                        float g = atof(args->ArgV(4));
+                        float b = atof(args->ArgV(5));
+                        float a = atof(args->ArgV(6));
+                        it->second.ClearOverride = true;
+                        it->second.ClearOverrideColor.R = r;
+                        it->second.ClearOverrideColor.G = g;
+                        it->second.ClearOverrideColor.B = b;
+                        it->second.ClearOverrideColor.A = a;
+                        return;
+                    }
+                }
+
+                advancedfx::Message(
+                    "%s %s clear default|(<fRed> <fGreen> <fBlue> <fAlpha>) - If to override main clear and in which color (floating point values in range [0.0, 1.0]).\n"
+                    , arg0, arg1
+                );
+                if(!stream.ClearOverride) advancedfx::Message(
+                    "Current value: none\n"
+                ); else advancedfx::Message(
+                        "Current value: %f %f %f %f\n"
+                        , stream.ClearOverrideColor.R
+                        , stream.ClearOverrideColor.G
+                        , stream.ClearOverrideColor.B
+                        , stream.ClearOverrideColor.A
+                );
+                return;
             } else if(0 == _stricmp("clearBeforeUI", arg2)) {
                 if(4 <= argC) {
                     if(4 == argC) {
@@ -3895,6 +4361,36 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
                 g_AfxStreams.Console_Edit_RenderCommands(stream.AfterCommands, &subArgs);
                 return;
             }
+            else if(0 == _stricmp("viewmodelAction", arg2)) {
+                advancedfx::CSubCommandArgs subArgs(args, 3);
+                StreamSettingsActionSubCommand(stream.ViewModelAction, &subArgs);
+                return;
+            }
+            else if(0 == _stricmp("firstPersonLegsAction", arg2)) {
+                advancedfx::CSubCommandArgs subArgs(args, 3);
+                StreamSettingsActionSubCommand(stream.FirstPersonLegsAction, &subArgs);
+                return;
+            }
+            else if(0 == _stricmp("playersAction", arg2)) {
+                advancedfx::CSubCommandArgs subArgs(args, 3);
+                StreamSettingsActionSubCommand(stream.PlayersAction, &subArgs);
+                return;
+            }
+            else if(0 == _stricmp("worldAction", arg2)) {
+                advancedfx::CSubCommandArgs subArgs(args, 3);
+                StreamSettingsActionSubCommand(stream.WorldAction, &subArgs);
+                return;
+            }
+            else if(0 == _stricmp("skyAction", arg2)) {
+                advancedfx::CSubCommandArgs subArgs(args, 3);
+                StreamSettingsActionSubCommand(stream.SkyAction, &subArgs);
+                return;
+            }
+            else if(0 == _stricmp("smokeAction", arg2)) {
+                advancedfx::CSubCommandArgs subArgs(args, 3);
+                StreamSettingsActionSubCommand(stream.SmokeAction, &subArgs);
+                return;
+            }
         }
 
         advancedfx::Message(
@@ -3934,6 +4430,10 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
             , arg0, arg1
         );
         advancedfx::Message(
+            "%s %s clear  [...] - If and with what color to override the main render target clear (stream background).\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
             "%s %s clearBeforeUI  [...] - If and with what color to clear before Panorama UI.\n"
             , arg0, arg1
         );
@@ -3947,6 +4447,30 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
         );        
         advancedfx::Message(
             "%s %s afterCommands [...] - Commands to execute before the stream is rendered.\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s viewmodelAction [...].\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s firstPersonLegsAction [...].\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s playersAction [...].\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s worldAction [...].\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s skyAction [...].\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s smokeAction [...].\n"
             , arg0, arg1
         );
 		return;
@@ -4304,6 +4828,7 @@ void RenderSystemDX11_EngineThread_EndMainRenderPass() {
 void RenderSystemDX11_SupplyProjectionMatrix(const SOURCESDK::VMatrix & projectionMatrix) {
     g_EngineThread_ProjectionMatrix.Set(projectionMatrix);
 }
+
 
 CON_COMMAND(mirv_streams, "Access to streams system.")
 {

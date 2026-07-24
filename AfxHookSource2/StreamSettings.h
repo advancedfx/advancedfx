@@ -28,26 +28,48 @@ public:
         , DepthValMax(other.DepthValMax)
         , DepthChannels(other.DepthChannels)
         , DepthMode(other.DepthMode)
+        , ClearOverride(other.ClearOverride)
+        , ClearOverrideColor(other.ClearOverrideColor)
         , ClearBeforeUi(other.ClearBeforeUi)
         , ClearBeforeUiColor(other.ClearBeforeUiColor)
         , AutoForceFullResSmoke(other.AutoForceFullResSmoke)
         , Settings(other.Settings)
         , BeforeCommands(other.BeforeCommands)
         , AfterCommands(other.AfterCommands)
+        , ViewModelAction(other.ViewModelAction)
+        , FirstPersonLegsAction(other.FirstPersonLegsAction)
+        , PlayersAction(other.PlayersAction)
+        , WorldAction(other.WorldAction)
+        , SkyAction(other.SkyAction)
+        , SmokeAction(other.SmokeAction)
     {
         Settings->AddRef();
     }
 
     bool CanCaptureInMainPass() const {
         return true
+            && false == ClearOverride
             && false == ClearBeforeUi
             && BeforeCommands.empty()
             && AfterCommands.empty()
+            && Action::Draw == ViewModelAction
+            && Action::Draw == FirstPersonLegsAction
+            && Action::Draw == PlayersAction
+            && Action::Draw == WorldAction
+            && Action::Draw == SkyAction
+            && Action::Draw == SmokeAction
         ;
     }
 
     int CompareRenderPass(const CStreamSettings &  o) const {
         int cmp;
+        if(cmp = CompareBool(ClearOverride, o.ClearOverride)) return cmp;
+        if(ClearOverride) {
+           if(cmp = CompareFloat(ClearOverrideColor.R, o.ClearOverrideColor.R)) return cmp;
+           if(cmp = CompareFloat(ClearOverrideColor.G, o.ClearOverrideColor.G)) return cmp;
+           if(cmp = CompareFloat(ClearOverrideColor.B, o.ClearOverrideColor.B)) return cmp;
+           if(cmp = CompareFloat(ClearOverrideColor.A, o.ClearOverrideColor.A)) return cmp;
+        }
         if(cmp = CompareBool(ClearBeforeUi, o.ClearBeforeUi)) return cmp;
         if(ClearBeforeUi) {
            if(cmp = CompareFloat(ClearBeforeUiColor.R, o.ClearBeforeUiColor.R)) return cmp;
@@ -57,6 +79,12 @@ public:
         }
         if(cmp = CompareCommands(BeforeCommands, o.BeforeCommands)) return cmp;
         if(cmp = CompareCommands(AfterCommands, o.AfterCommands)) return cmp;
+        if(cmp = CompareAction(ViewModelAction, o.ViewModelAction)) return cmp;
+        if(cmp = CompareAction(FirstPersonLegsAction, o.FirstPersonLegsAction)) return cmp;
+        if(cmp = CompareAction(PlayersAction, o.PlayersAction)) return cmp;
+        if(cmp = CompareAction(WorldAction, o.WorldAction)) return cmp;
+        if(cmp = CompareAction(SkyAction, o.SkyAction)) return cmp;
+        if(cmp = CompareAction(SmokeAction, o.SmokeAction)) return cmp;
 
         return 0;
     }    
@@ -99,6 +127,15 @@ public:
         PyramidalLogE
     } DepthMode = DepthMode_e::Inverse;
 
+    bool ClearOverride = false;
+
+    struct {
+        float R = 0.0f;
+        float G = 0.0f;
+        float B = 0.0f;
+        float A = 0.0f;
+    } ClearOverrideColor;
+
     bool ClearBeforeUi = false;
 
     struct {
@@ -129,6 +166,19 @@ public:
             && AutoForceFullResSmoke
         ;
     }
+
+    enum class Action : int {
+        Draw = 0,
+        NoDraw,
+        ZOnly
+    };
+
+    Action ViewModelAction = Action::Draw;
+    Action FirstPersonLegsAction = Action::Draw;
+    Action PlayersAction = Action::Draw;
+    Action WorldAction = Action::Draw;
+    Action SkyAction = Action::Draw;
+    Action SmokeAction = Action::Draw;
 
 private:
     static int CompareBool(bool lhs, bool rhs) {
@@ -164,6 +214,12 @@ private:
         }
         if(itLhs != lhs.end()) return 1;
         if(itRhs != rhs.end()) return -1;
+        return 0;
+    }
+
+    static int CompareAction(Action lhs, Action rhs) {
+        int cmp = (int)lhs - (int)rhs;
+        if(cmp) return 0 < cmp ? 1 : -1;
         return 0;
     }
 

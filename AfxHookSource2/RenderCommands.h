@@ -75,6 +75,8 @@ public:
         }
 
         CQueue<Fn> BeginReliable;
+        
+        CQueue<Fn> BeforeClear;
 
         CQueue<FnContextTexture> BeforeUi;
         
@@ -87,6 +89,13 @@ public:
         CQueue<FnContext> AfterPresentOrContextLossReliable;
 
         CQueue<Fn> FinalizeReliable;
+
+        void OnBeforeClear() {
+            while(!BeforeClear.Empty()) {
+                BeforeClear.Front()();
+                BeforeClear.Pop();
+            }
+        }
 
         void OnBeforeUi(ID3D11Texture2D * pTexture) {
             if(Context && pTexture) {
