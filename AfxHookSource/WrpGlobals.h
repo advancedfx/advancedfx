@@ -13,6 +13,10 @@ public:
 	virtual float curtime_get(void) abstract = 0;
 	virtual float interval_per_tick_get(void) abstract = 0;
 	virtual float interpolation_amount_get(void) abstract = 0;
+
+	virtual void * GetRaw() {
+		return nullptr;
+	}
 };
 
 class WrpGlobalsCsGo : public WrpGlobals
@@ -31,6 +35,10 @@ public:
 	virtual float interval_per_tick_get(void);
 	virtual float interpolation_amount_get(void);
 
+	virtual void * GetRaw() {
+		return m_pGlobals;
+	}
+
 private:
 	void * m_pGlobals;
 };
@@ -46,6 +54,10 @@ public:
 	virtual float interval_per_tick_get(void);
 	virtual float interpolation_amount_get(void);
 
+	virtual void * GetRaw() {
+		return m_pGlobals;
+	}
+
 protected:
 	void * m_pGlobals;
 };
@@ -56,4 +68,23 @@ public:
 	WrpGlobalsCss(void * pGlobals);
 
 	virtual int maxclients_get(void);
+};
+
+class WrpGlobalsGarrysmod : public WrpGlobals
+{
+public:
+	WrpGlobalsGarrysmod(void * pGlobals);
+
+	virtual int framecount_get(void);
+	virtual float absoluteframetime_get(void);
+	virtual float curtime_get(void);
+	virtual float interval_per_tick_get(void);
+	virtual float interpolation_amount_get(void);
+
+	virtual void * GetRaw() {
+		return m_pGlobals;
+	}
+
+protected:
+	void * m_pGlobals;
 };

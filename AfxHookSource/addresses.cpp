@@ -60,10 +60,10 @@ AFXADDR_DEF(csgo_gpGlobals_OFS_interval_per_tick)
 AFXADDR_DEF(csgo_snd_mix_timescale_patch)
 AFXADDR_DEF(csgo_snd_mix_timescale_patch_DSZ)
 AFXADDR_DEF(csgo_view)
-AFXADDR_DEF(cstrike_gpGlobals_OFS_absoluteframetime)
-AFXADDR_DEF(cstrike_gpGlobals_OFS_curtime)
-AFXADDR_DEF(cstrike_gpGlobals_OFS_interpolation_amount)
-AFXADDR_DEF(cstrike_gpGlobals_OFS_interval_per_tick)
+AFXADDR_DEF(other_gpGlobals_OFS_absoluteframetime)
+AFXADDR_DEF(other_gpGlobals_OFS_curtime)
+AFXADDR_DEF(other_gpGlobals_OFS_interpolation_amount)
+AFXADDR_DEF(other_gpGlobals_OFS_interval_per_tick)
 AFXADDR_DEF(csgo_CClientState_ProcessVoiceData)
 AFXADDR_DEF(csgo_CClientState_ProcessVoiceData_DSZ)
 AFXADDR_DEF(csgo_CVoiceWriter_AddDecompressedData)
@@ -2842,10 +2842,22 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 	AFXADDR_SET(csgo_gpGlobals_OFS_interpolation_amount, 9*4);
 	AFXADDR_SET(csgo_gpGlobals_OFS_interval_per_tick, 8*4);
 	//AFXADDR_SET(csgo_CViewRender_Render_DSZ, 0x0c);
-	AFXADDR_SET(cstrike_gpGlobals_OFS_curtime, 3*4);
-	AFXADDR_SET(cstrike_gpGlobals_OFS_absoluteframetime, 2*4);
-	AFXADDR_SET(cstrike_gpGlobals_OFS_interpolation_amount, 8*4);
-	AFXADDR_SET(cstrike_gpGlobals_OFS_interval_per_tick, 7*4);
+
+	switch(sourceSdkVer) {
+	case SourceSdkVer_Garrysmod:
+		AFXADDR_SET(other_gpGlobals_OFS_absoluteframetime, 2*4); // float
+		AFXADDR_SET(other_gpGlobals_OFS_curtime, 4*4); // double
+		AFXADDR_SET(other_gpGlobals_OFS_interval_per_tick, 10*4); // double
+		AFXADDR_SET(other_gpGlobals_OFS_interpolation_amount, 12*4); // float
+		break;
+	default:
+		AFXADDR_SET(other_gpGlobals_OFS_curtime, 3*4); // float
+		AFXADDR_SET(other_gpGlobals_OFS_absoluteframetime, 2*4); // float
+		AFXADDR_SET(other_gpGlobals_OFS_interval_per_tick, 7*4); // float
+		AFXADDR_SET(other_gpGlobals_OFS_interpolation_amount, 8*4); // float
+		break;
+	}
+
 
 	// C_BaseAnimating_RecordBones
 	//
@@ -2903,7 +2915,7 @@ void Addresses_InitClientDll(AfxAddr clientDll, SourceSdkVer sourceSdkVer)
 								break;
 							case SourceSdkVer_Garrysmod:
 								{
-									MemRange result = FindPatternString(textRange.And(MemRange(refStrAddr - 0x15C, refStrAddr - 0x15C + 6)), "55 8B EC");
+									MemRange result = FindPatternString(textRange.And(MemRange(refStrAddr - 0x3d, refStrAddr - 0x3d + 3)), "55 8B EC");
 									if(!result.IsEmpty())
 										AFXADDR_SET(garrysmod_client_C_BaseAnimating_RecordBones, result.Start);
 									else ErrorBox(MkErrStr(__FILE__, __LINE__));	

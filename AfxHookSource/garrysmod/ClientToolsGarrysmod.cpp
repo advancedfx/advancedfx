@@ -14,16 +14,25 @@
 
 using namespace SOURCESDK::GARRYSMOD;
 
-typedef void* (__fastcall* garrysmod_C_BaseAnimating_RecordBones_t)(void* This, void* unk1, void* unk2);
+typedef void *  (__fastcall * garrysmod_C_BaseAnimating_RecordBones_t)(void * This,
+#ifndef _WIN64
+	void* Edx,
+#endif //#ifndef _WIN64
+	 SOURCESDK::CStudioHdr *hdr, SOURCESDK::matrix3x4_t *pBoneState );
 garrysmod_C_BaseAnimating_RecordBones_t True_garrysmod_C_BaseAnimating_RecordBones = nullptr;
-void* __fastcall My_garrysmod_C_BaseAnimating_RecordBones(void* This, void* unk1, void* unk2) {
-	void* result = True_garrysmod_C_BaseAnimating_RecordBones(This, unk1, unk2);
+void * __fastcall My_garrysmod_C_BaseAnimating_RecordBones(void * This,
+#ifndef _WIN64
+	void* Edx,
+#endif //#ifndef _WIN64
+	 SOURCESDK::CStudioHdr *hdr, SOURCESDK::matrix3x4_t *pBoneState ) {
+	void * result = True_garrysmod_C_BaseAnimating_RecordBones(This,
+#ifndef _WIN64
+	Edx,
+#endif //#ifndef _WIN64
+	 hdr, pBoneState);
 
-	auto pHdr = (SOURCESDK::CStudioHdr*)(*(u_char**)((u_char*)This + 0x16d8));
-	auto pMatrix = *(SOURCESDK::matrix3x4_t**)((u_char*)This + 0x13F0);
-	
-	if (CClientTools* instance = CClientTools::Instance())
-		instance->CaptureBones(pHdr, pMatrix);
+	if(CClientTools * instance = CClientTools::Instance())
+		instance->CaptureBones(hdr, pBoneState);
 
 	return result;
 }

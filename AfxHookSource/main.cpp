@@ -814,7 +814,7 @@ int __fastcall new_CVClient_Init_Garrysmod(void* This,
 	if (bFirstCall) {
 		bFirstCall = false;
 
-		MySetup(appSystemFactory, new WrpGlobalsOther(pGlobals));
+		MySetup(appSystemFactory, new WrpGlobalsGarrysmod(pGlobals));
 	}
 
 	return old_CVClient_Init_Garrysmod(This,

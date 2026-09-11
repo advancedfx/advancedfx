@@ -260,6 +260,17 @@ CON_COMMAND(__mirv_addr, "")
 		Tier0_Msg("__mirv_addr <moduleName> <hexPatternString>\n");
 }
 
+CON_COMMAND(__mirv_test3,"") {
+	static int offset = 13;
+
+	if(2 <= args->ArgC()) offset = atoi(args->ArgV(1));
+
+	if(g_Hook_VClient_RenderView.GetGlobals()) {
+		void * pGlobals = g_Hook_VClient_RenderView.GetGlobals()->GetRaw();
+		advancedfx::Message("g_pGlobals[%i]: int: %i , float: %f\n",offset,(pGlobals ? *(int *)((unsigned char *)pGlobals +offset*sizeof(int)) : 0),(pGlobals ? *(float *)((unsigned char *)pGlobals +offset*sizeof(float)) : 0));
+	}
+}
+
 CON_COMMAND(__mirv_test2, "")
 {
 	WrpVEngineClientDemoInfoEx * di = g_VEngineClient->GetDemoInfoEx();

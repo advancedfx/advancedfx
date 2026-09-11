@@ -33,7 +33,7 @@ int WrpGlobalsCsGo::framecount_get(void)
 
 float WrpGlobalsCsGo::absoluteframetime_get(void)
 {
-	return *(float *)((unsigned char *)m_pGlobals +AFXADDR_GET(cstrike_gpGlobals_OFS_absoluteframetime));
+	return *(float *)((unsigned char *)m_pGlobals +AFXADDR_GET(other_gpGlobals_OFS_absoluteframetime));
 }
 
 void WrpGlobalsCsGo::curtime_set(float value)
@@ -72,22 +72,54 @@ int WrpGlobalsOther::framecount_get(void)
 
 float WrpGlobalsOther::absoluteframetime_get(void)
 {
-	return *(float *)((unsigned char *)m_pGlobals +AFXADDR_GET(cstrike_gpGlobals_OFS_absoluteframetime));
+	return *(float *)((unsigned char *)m_pGlobals +AFXADDR_GET(other_gpGlobals_OFS_absoluteframetime));
 }
 
 float WrpGlobalsOther::curtime_get(void)
 {
-	return *(float *)((unsigned char *)m_pGlobals +AFXADDR_GET(cstrike_gpGlobals_OFS_curtime));
+	return *(float *)((unsigned char *)m_pGlobals +AFXADDR_GET(other_gpGlobals_OFS_curtime));
 }
 
 float WrpGlobalsOther::interval_per_tick_get(void)
 {
-	return *(float *)((unsigned char *)m_pGlobals +AFXADDR_GET(cstrike_gpGlobals_OFS_interval_per_tick));
+	return *(float *)((unsigned char *)m_pGlobals +AFXADDR_GET(other_gpGlobals_OFS_interval_per_tick));
 }
 
 float WrpGlobalsOther::interpolation_amount_get(void)
 {
-	return *(float *)((unsigned char *)m_pGlobals +AFXADDR_GET(cstrike_gpGlobals_OFS_interpolation_amount));
+	return *(float *)((unsigned char *)m_pGlobals +AFXADDR_GET(other_gpGlobals_OFS_interpolation_amount));
+}
+
+// WrpGlobalsGarrymod /////////////////////////////////////////////////////////////
+
+WrpGlobalsGarrysmod::WrpGlobalsGarrysmod(void * pGlobals)
+{
+	m_pGlobals = pGlobals;
+}
+
+int WrpGlobalsGarrysmod::framecount_get(void)
+{
+	return *(int *)((unsigned char *)m_pGlobals + 0x4);
+}
+
+float WrpGlobalsGarrysmod::absoluteframetime_get(void)
+{
+	return *(float *)((unsigned char *)m_pGlobals +AFXADDR_GET(other_gpGlobals_OFS_absoluteframetime));
+}
+
+float WrpGlobalsGarrysmod::curtime_get(void)
+{
+	return (float)*(double *)((unsigned char *)m_pGlobals +AFXADDR_GET(other_gpGlobals_OFS_curtime));
+}
+
+float WrpGlobalsGarrysmod::interval_per_tick_get(void)
+{
+	return (float)*(double *)((unsigned char *)m_pGlobals +AFXADDR_GET(other_gpGlobals_OFS_interval_per_tick));
+}
+
+float WrpGlobalsGarrysmod::interpolation_amount_get(void)
+{
+	return *(float *)((unsigned char *)m_pGlobals +AFXADDR_GET(other_gpGlobals_OFS_interpolation_amount));
 }
 
 // WrpGlobalsCss ///////////////////////////////////////////////////////////////
