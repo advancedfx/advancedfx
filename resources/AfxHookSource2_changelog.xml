@@ -6,6 +6,28 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.41.1</version>
+<time>2026-07-29T08:07Z</time>
+<changes>
+<change type="fixed">Small mirv_streams improvements with regards to world / matte / viewmodel streams.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
+<version>0.41.0</version>
+<time>2026-07-21T07:47Z</time>
+<changes>
+<change type="fixed">Fixed #1199 spec_show_xray 1 make the game crash when using demo_goto with xplay.gg demos.</change>
+<change type="added">Added mirv_streams settings presets afxFfmpegProres, afxFfmpegProresAlpha.</change>
+<change type="added">Added mirv_streams features mostly based on contributions by @papesgit. Examples will be added to HLAE Manual / Wiki later, currently see the related pull request for more information: https://github.com/advancedfx/advancedfx/pull/1176</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.40.1</version>
 <time>2026-07-16T14:23Z</time>
 <changes>

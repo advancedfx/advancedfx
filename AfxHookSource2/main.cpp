@@ -2027,6 +2027,9 @@ void My_Console_DevWarning(int level, const char* fmt, ...) {
 	va_end(args);
 }
 
+extern void GetClientDllSceneObjectVtable(HMODULE clientDll);
+extern void  GetParticlesDllSceneObjectVtable(HMODULE particlesDll);
+
 void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 {
 	static bool bFirstTier0 = true;
@@ -2041,6 +2044,7 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 	static bool bFirstSchemaSystem = true;
 	static bool bFirstSceneSystem = true;
 	static bool bFirstResourceSystem = true;
+	static bool bFirstParticles = true;
 	
 	CommonHooks();
 
@@ -2174,6 +2178,8 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		HookClientDll(hModule);
 
 		Hook_ClientEntitySystem3(hModule);
+
+		GetClientDllSceneObjectVtable(hModule);
 	} 
 	else if(bFirstPanorama && StringEndsWithW(lpLibFileName, L"panorama.dll"))
 	{
@@ -2190,6 +2196,11 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 	{
 		bFirstResourceSystem = false;
 		g_H_ResourceSystemDll = hModule;
+	}
+	else if(bFirstParticles && StringEndsWithW(lpLibFileName, L"particles.dll"))
+	{
+		bFirstParticles = false;
+		GetParticlesDllSceneObjectVtable(hModule);
 	}
 }
 
