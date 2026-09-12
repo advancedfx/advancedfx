@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.41.2</version>
+<time>2026-09-12T14:47Z</time>
+<changes>
+<change type="added">Merged latest version of alpha matte mirv_streams, see wiki for example. Thanks @papesgit for initial research/code and @dtugend for implementation.</change>
+<change type="fixed">Fixed low FPS player animations / stuttering in recordings by adding mirv_fix forceClInterpRatio, which is enabled by default.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.41.1</version>
 <time>2026-07-29T08:07Z</time>
 <changes>

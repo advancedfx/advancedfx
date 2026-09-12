@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.135.2</version>
+<time>2026-09-12T14:47Z</time>
+<changes>
+<change type="fixed">Adjusted to be compatible with latest gmod update. Thanks @Devostated</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.135.1</version>
 <time>2026-03-13T12:46Z</time>
 <changes>
