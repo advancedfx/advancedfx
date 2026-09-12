@@ -652,9 +652,15 @@ static bool SceneLayerContextIsSky(const SceneLayerContext& context) {
 		|| StringContains(context.ViewPass, "Sky");
 }
 
+static bool SceneLayerContextIsVisiblity(const SceneLayerContext& context) {
+	return StringContains(context.ViewPass, "Visibility") // e.g. PlayerVisibility...
+		|| StringContains(context.ViewPass, "Occlusion") // e.g. PlayerOcclusion...
+	;
+}
+
 static bool SceneLayerContextIsPlayers(const SceneLayerContext& context) {
 	return StringContains(context.ViewPass, "Characters")
-		|| StringContains(context.ViewPass, "PlayerVisibilityDataColor");
+		|| StringContains(context.ViewPass, "Player");
 }
 
 static bool SceneLayerContextIsShadowPass(const SceneLayerContext& context) {
@@ -782,10 +788,10 @@ static SceneObjectDrawPolicy ApplyLayerAwarePolicy(SceneObjectFilterClass filter
 	}
 
 	if (policy == SceneObjectDrawPolicy::DepthPassesOnly) {
-		return SceneLayerContextIsDepthPass(context)
-			&& !SceneLayerContextIsDepthPassesOnlyExcluded(context)
-			? SceneObjectDrawPolicy::Draw
-			: SceneObjectDrawPolicy::Hide;
+		if(SceneLayerContextIsDepthPass(context) && !SceneLayerContextIsDepthPassesOnlyExcluded(context)
+			|| SceneLayerContextIsVisiblity(context)) {
+			return SceneObjectDrawPolicy::Draw;
+		}
 	}
 
 	return nullptr == materialName && filterClass == SceneObjectFilterClass::Unknown
@@ -946,7 +952,7 @@ void ClearThreadSceneLayerContexts(){
 	}
 }
 
-extern bool ToggleDrawing(void * param_1, bool value);
+extern bool BlockColorDepth(void * pCRenderContextDx11_SoftwareCommandList, bool bColor, bool bDepth);
 
 typedef void (__fastcall * RenderLayerDrawListPart_t)(void * pSceneSystem, void * param_2, void * pCSceneLayer, unsigned char * pDrawingData, unsigned int count, void *param_6);
 RenderLayerDrawListPart_t org_RenderLayerDrawListPart = nullptr;
@@ -975,16 +981,16 @@ void __fastcall new_RenderLayerDrawListPart(void * pSceneSystem, void * param_2,
 }
 */
 
-void BlockDrawing(void * pThisSoftwareCommandList){
+void BlockColorDepth(void * pThisSoftwareCommandList){
 	bool blocked = false;
 	{
 		std::unique_lock<std::shared_timed_mutex> lock(g_BlockedSoftwareCommandListsMutex);
 		blocked = !g_BlockedSoftwareCommandLists.emplace(pThisSoftwareCommandList).second;
 	}
-	if(!blocked) ToggleDrawing(pThisSoftwareCommandList,true);
+	if(!blocked) BlockColorDepth(pThisSoftwareCommandList,true,true);
 }
 
-void CheckAndDo_Untoggle_Drawing(void * pThisSoftwareCommandList) {
+void CheckAndDo_Untoggle_BlockColorDepth(void * pThisSoftwareCommandList) {
 	if(g_bSceneFilterSystemActive) {
 		bool blocked;
 		{
@@ -998,7 +1004,7 @@ void CheckAndDo_Untoggle_Drawing(void * pThisSoftwareCommandList) {
 			if(blocked) g_BlockedSoftwareCommandLists.erase(it);
 		}
 		if(blocked) {
-			ToggleDrawing(pThisSoftwareCommandList,false);
+			BlockColorDepth(pThisSoftwareCommandList,false,false);
 		}
 	}
 }
@@ -1006,7 +1012,7 @@ void CheckAndDo_Untoggle_Drawing(void * pThisSoftwareCommandList) {
 typedef void * (__fastcall * SoftwareCommandList_Commit_t)(void * pThisSoftwareCommandList);
 SoftwareCommandList_Commit_t org_SoftwareCommandList_Commit = nullptr;
 void * __fastcall new_SoftwareCommandList_Commit(void * pThisSoftwareCommandList) {
-	CheckAndDo_Untoggle_Drawing(pThisSoftwareCommandList);
+	CheckAndDo_Untoggle_BlockColorDepth(pThisSoftwareCommandList);
 	return org_SoftwareCommandList_Commit(pThisSoftwareCommandList);
 }
 
@@ -1029,7 +1035,7 @@ void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneVie
 
 	if(g_bSceneFilterSystemActive && pDrawingData) {
 		void * pCRenderContextDx11_SoftwareCommandList = ((void **)pDrawingData)[4];
-		CheckAndDo_Untoggle_Drawing(pCRenderContextDx11_SoftwareCommandList);
+		CheckAndDo_Untoggle_BlockColorDepth(pCRenderContextDx11_SoftwareCommandList);
 		if(org_SoftwareCommandList_Commit == nullptr) {
 			void** vtable = *(void***)pCRenderContextDx11_SoftwareCommandList;
 			org_SoftwareCommandList_Commit = (SoftwareCommandList_Commit_t)vtable[11];
@@ -1074,7 +1080,7 @@ void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneVie
 			|| StringContains(context.ViewPass,"Fade To Black")
 			)
 		) {	
-			BlockDrawing(pCRenderContextDx11_SoftwareCommandList);
+			BlockColorDepth(pCRenderContextDx11_SoftwareCommandList);
 		}
 	}
 }
@@ -1114,8 +1120,10 @@ void __fastcall new_DrawSceneData(void * pDrawingData, CBaseSceneData* pSceneDat
 		case SceneObjectDrawPolicy::Draw:
 			break;
 		case SceneObjectDrawPolicy::DepthPassesOnly:
+			BlockColorDepth(pCRenderContextDx11_SoftwareCommandList, true, false);
+			break;
 		case SceneObjectDrawPolicy::Hide:
-			ToggleDrawing(pCRenderContextDx11_SoftwareCommandList, true);
+			BlockColorDepth(pCRenderContextDx11_SoftwareCommandList, true, true);
 			break;
 		}
 		org_DrawSceneData(pDrawingData, pSceneData);
@@ -1126,7 +1134,7 @@ void __fastcall new_DrawSceneData(void * pDrawingData, CBaseSceneData* pSceneDat
 			break;
 		case SceneObjectDrawPolicy::DepthPassesOnly:
 		case SceneObjectDrawPolicy::Hide:
-			ToggleDrawing(pCRenderContextDx11_SoftwareCommandList, false);
+			BlockColorDepth(pCRenderContextDx11_SoftwareCommandList, false, false);
 			break;
 		}
 		return;
@@ -1135,6 +1143,7 @@ void __fastcall new_DrawSceneData(void * pDrawingData, CBaseSceneData* pSceneDat
 	org_DrawSceneData(pDrawingData, pSceneData);
 }
 
+/*
 void __fastcall new_DrawCurrentPrimitives(void * pDrawingData) {
 	if(g_bSceneFilterSystemActive && nullptr != pDrawingData) {
 		SceneLayerContext context;
@@ -1167,6 +1176,7 @@ void __fastcall new_DrawCurrentPrimitives(void * pDrawingData) {
 
 	org_DrawCurrentPrimitives(pDrawingData);
 }
+*/
 
 struct FloatColor {
 	float r = 0;

@@ -631,35 +631,13 @@ public:
             m_OrgBlendState->Release();
             m_OrgBlendState = nullptr;
         }
-        m_Block = false;        
+        m_BlockColor = false;
+        m_BlockDepth = false;
     }
 
-    void Block(ID3D11DeviceContext * pContext){
-        if(m_Block || nullptr == g_Old_OMSetBlendState || nullptr == g_Old_OMSetDepthStencilState) return;
-        m_Block = true;
-
-        pContext->OMGetBlendState(&m_OrgBlendState,m_OrgBlendFactor,&m_OrgSampleMask);
-        g_Old_OMSetBlendState(pContext, m_BlendState,nullptr,m_OrgSampleMask);
-
-        pContext->OMGetDepthStencilState(&m_OrgDsState, &m_OrgStencilRef);
-        g_Old_OMSetDepthStencilState(pContext, m_DsState, 0);
-    }
-
-    void Unblock(ID3D11DeviceContext * pContext) {
-        if(!m_Block) return;
-        m_Block = false;
-
-        g_Old_OMSetDepthStencilState(pContext, m_OrgDsState,m_OrgStencilRef);
-        if(m_OrgDsState) {
-            m_OrgDsState->Release();
-            m_OrgDsState = nullptr;
-        }
-
-        g_Old_OMSetBlendState(pContext, m_OrgBlendState,m_OrgBlendFactor,m_OrgSampleMask);
-        if(m_OrgBlendState) {
-            m_OrgBlendState->Release();
-            m_OrgBlendState = nullptr;
-        }
+    void Block(ID3D11DeviceContext * pContext, bool bColor, bool bDepth){
+        if(bDepth) BlockDepth(pContext); else UnblockDepth(pContext);
+        if(bColor) BlockColor(pContext); else UnblockColor(pContext);
     }
 
     bool OnOMSetBlendState(ID3D11DeviceContext * pContext,
@@ -669,7 +647,7 @@ public:
     _In_opt_  const FLOAT BlendFactor[ 4 ],
     /* [annotation] */ 
     _In_  UINT SampleMask) {
-        if(!m_Block) return true;
+        if(!m_BlockColor) return true;
 
         if(pBlendState) {
             pBlendState->AddRef();
@@ -702,7 +680,7 @@ public:
     _In_opt_  ID3D11DepthStencilState *pDepthStencilState,
     /* [annotation] */ 
     _In_  UINT StencilRef) {
-        if(!m_Block) return true;
+        if(!m_BlockDepth) return true;
 
         if(pDepthStencilState) {
             pDepthStencilState->AddRef();
@@ -718,7 +696,8 @@ public:
     }
 
 private:
-    bool m_Block = false;
+    bool m_BlockColor = false;
+    bool m_BlockDepth = false;
     ID3D11DepthStencilState* m_DsState = nullptr;
     ID3D11DepthStencilState* m_OrgDsState = nullptr;
     ID3D11BlendState* m_BlendState = nullptr;
@@ -726,6 +705,44 @@ private:
     ID3D11BlendState* m_OrgBlendState = nullptr;
     UINT m_OrgSampleMask;
     UINT m_OrgStencilRef;
+
+    void BlockColor(ID3D11DeviceContext * pContext){
+        if(m_BlockColor || nullptr == g_Old_OMSetBlendState) return;
+        m_BlockColor = true;
+
+        pContext->OMGetBlendState(&m_OrgBlendState,m_OrgBlendFactor,&m_OrgSampleMask);
+        g_Old_OMSetBlendState(pContext, m_BlendState,nullptr,m_OrgSampleMask);
+    }
+
+    void UnblockColor(ID3D11DeviceContext * pContext) {
+        if(!m_BlockColor) return;
+        m_BlockColor = false;
+
+        g_Old_OMSetBlendState(pContext, m_OrgBlendState,m_OrgBlendFactor,m_OrgSampleMask);
+        if(m_OrgBlendState) {
+            m_OrgBlendState->Release();
+            m_OrgBlendState = nullptr;
+        }
+    }
+
+    void BlockDepth(ID3D11DeviceContext * pContext){
+        if(m_BlockDepth || nullptr == g_Old_OMSetDepthStencilState) return;
+        m_BlockDepth = true;
+        
+        pContext->OMGetDepthStencilState(&m_OrgDsState, &m_OrgStencilRef);
+        g_Old_OMSetDepthStencilState(pContext, m_DsState, 0);
+    }
+
+    void UnblockDepth(ID3D11DeviceContext * pContext) {
+        if(!m_BlockDepth) return;
+        m_BlockDepth = false;
+
+        g_Old_OMSetDepthStencilState(pContext, m_OrgDsState,m_OrgStencilRef);
+        if(m_OrgDsState) {
+            m_OrgDsState->Release();
+            m_OrgDsState = nullptr;
+        }
+    }
 } g_NoDraw;
 
 class CDepthCompositor {
@@ -1939,44 +1956,31 @@ private:
 class CAfxRenderCallbackBlockBuffers : public IRenderThreadCallback
 {
 public:
-    CAfxRenderCallbackBlockBuffers()
+    CAfxRenderCallbackBlockBuffers(bool bColor, bool bDepth)
+    : m_Color(bColor)
+    , m_Depth(bDepth)
     {
 
     }
 
     virtual void OnCallback(void) {
         if (auto pDeviceContext = g_RenderCommands.RenderThread_GetContext()) {
-            g_NoDraw.Block(pDeviceContext);
+            g_NoDraw.Block(pDeviceContext, m_Color, m_Depth);
         }
         delete this;        
     }
-};
 
-class CAfxRenderCallbackUnblockBuffers : public IRenderThreadCallback
-{
-public:
-    CAfxRenderCallbackUnblockBuffers()
-    {
-
-    }
-
-    virtual void OnCallback(void) {
-        if (auto pDeviceContext = g_RenderCommands.RenderThread_GetContext()) {
-            g_NoDraw.Unblock(pDeviceContext);
-        }
-        delete this;        
-    }
+private:
+    bool m_Color;
+    bool m_Depth;
 };
 
 const size_t g_SoftwareCommandList_QueueCallback_Offset = 142;
 
-bool ToggleDrawing(void* pCRenderContextDx11_SoftwareCommandList, bool value) {
+bool BlockColorDepth(void* pCRenderContextDx11_SoftwareCommandList, bool bColor, bool bDepth) {
     if (pCRenderContextDx11_SoftwareCommandList) {
         auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
-        if(value)
-            fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBlockBuffers());
-        else
-            fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackUnblockBuffers());
+        fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBlockBuffers(bColor, bDepth));
         return true;
     }
     return false;
