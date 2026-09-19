@@ -2363,9 +2363,9 @@ async fn mirv_connect_async(this: &JsValue, args: &[JsValue], context: &RefCell<
 
 fn mirv_make_handle(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
     if args.len() == 2 {
-        if let Some(entry_index) = args[0].as_number() {
-            if let Some(serial_number) = args[1].as_number() {
-                return Ok(js_value!(afx_make_handle(entry_index as i32,serial_number as i32)));
+        if let Ok(entry_index) = args[0].to_i32(context){
+            if let Ok(serial_number) = args[1].to_i32(context) {
+                return Ok(js_value!(afx_make_handle(entry_index,serial_number)));
             }
         }
     }
@@ -2374,8 +2374,8 @@ fn mirv_make_handle(_this: &JsValue, args: &[JsValue], context: &mut Context) ->
 
 fn mirv_is_handle_valid(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
     if args.len() == 1 {
-        if let Some(handle) = args[0].as_number() {
-            return Ok(js_value!(afx_is_handle_valid(handle as i32)));
+        if let Ok(handle) = args[0].to_i32(context) {
+            return Ok(js_value!(afx_is_handle_valid(handle)));
         }
     }
     return Err(advancedfx::js::errors::error_arguments(context).into());
@@ -2383,8 +2383,8 @@ fn mirv_is_handle_valid(_this: &JsValue, args: &[JsValue], context: &mut Context
 
 fn mirv_get_handle_entry_index(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
     if args.len() == 1 {
-        if let Some(handle) = args[0].as_number() {
-            return Ok(js_value!(afx_get_handle_entry_index(handle as i32)));
+        if let Ok(handle) = args[0].to_i32(context) {
+            return Ok(js_value!(afx_get_handle_entry_index(handle)));
         }
     }
     return Err(advancedfx::js::errors::error_arguments(context).into());
@@ -2392,8 +2392,8 @@ fn mirv_get_handle_entry_index(_this: &JsValue, args: &[JsValue], context: &mut 
 
 fn mirv_get_handle_serial_number(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
     if args.len() == 1 {
-        if let Some(handle) = args[0].as_number() {
-            return Ok(js_value!(afx_get_handle_serial_number(handle as i32)));
+        if let Ok(handle) = args[0].to_i32(context) {
+            return Ok(js_value!(afx_get_handle_serial_number(handle)));
         }
     }
     return Err(advancedfx::js::errors::error_arguments(context).into());
@@ -2808,9 +2808,9 @@ impl MirvEntityRef {
 
 fn mirv_get_entity_ref_from_index(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
     if 1 == args.len() {
-        if let Some(index) = args[0].as_number() {
+        if let Ok(index) = args[0].to_i32(context) {
             let entity_ref: * mut AfxEntityRef;
-            entity_ref = afx_get_entity_ref_from_index(index as i32);
+            entity_ref = afx_get_entity_ref_from_index(index);
             if entity_ref.is_null() {
                 return Ok(JsValue::null());
             }
@@ -2823,9 +2823,9 @@ fn mirv_get_entity_ref_from_index(_this: &JsValue, args: &[JsValue], context: &m
 
 fn mirv_get_entity_ref_from_split_screen_player(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
     if 1 == args.len() {
-        if let Some(index) = args[0].as_number() {
+        if let Ok(index) = args[0].to_i32(context) {
             let entity_ref: * mut AfxEntityRef;
-            entity_ref = afx_get_entity_ref_from_split_screen_player(index as i32);
+            entity_ref = afx_get_entity_ref_from_split_screen_player(index);
             if entity_ref.is_null() {
                 return Ok(JsValue::null());
             }
