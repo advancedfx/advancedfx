@@ -19,7 +19,6 @@ typedef void (__fastcall * Tier0_EventListener_t)(void * pUnk0, void * pUnk1);
 
 Tier0_EventListener_t g_Engine2_RenderService_OnClientOutput = nullptr;
 
-bool g_bUpdateFrame = true;
 bool g_bHad_ClientOutput = false;
 bool g_bLastPassWasExtra = false;
 
@@ -39,7 +38,6 @@ void __fastcall My_SceneSystem_WaitForRenderingToComplete(void * pThis) {
         }
         else RenderSystemDX11_EngineThread_EndMainRenderPass();
     } else {
-        g_bUpdateFrame = true;
         g_Old_SceneSystem_WaitForRenderingToComplete(pThis);
     }
 
@@ -48,9 +46,6 @@ void __fastcall My_SceneSystem_WaitForRenderingToComplete(void * pThis) {
 
 typedef void (__fastcall * FrameUpdate_t)(void *, unsigned char);
 FrameUpdate_t g_Old_FrameUpdate = nullptr;
-void __fastcall New_FrameUpdate(void *pThisCSceneSystem, unsigned char ucUnk2) {
-    if(g_bUpdateFrame) g_Old_FrameUpdate(pThisCSceneSystem, 1);
-}
 
 void __fastcall My_Engine2_RenderService_OnClientOutput(void * pUnk0, void * pUnk1) {
 
@@ -61,42 +56,34 @@ void __fastcall My_Engine2_RenderService_OnClientOutput(void * pUnk0, void * pUn
         return;
     }
 
-    g_bHad_ClientOutput = true;
-
     RenderSystemDX11_EngineThread_Prepare();
 
     // We need to do the a normal / main render pass first, since it's used to generate the UI background texture
     // and it won't be re-generated in subsequent passes.
 
-    g_bUpdateFrame = RenderSystemDX11_EngineThread_BeginMainRenderPass();
+    RenderSystemDX11_EngineThread_BeginMainRenderPass();
 
     RenderSystemDX11_EngineThread_BeforeRender();
 
     g_Engine2_RenderService_OnClientOutput(pUnk0,pUnk1);
+    g_bHad_ClientOutput = true;
 
     bool bFirstExtraPass = true;
 
     while(RenderSystemDX11_EngineThread_HasNextRenderPass()) {
 
-        g_Old_SceneSystem_WaitForRenderingToComplete(g_pSceneSystem);
-        New_FrameUpdate(g_pSceneSystem, 1);
+        My_SceneSystem_WaitForRenderingToComplete(g_pSceneSystem);
 
-        if(bFirstExtraPass) {
-            bFirstExtraPass = false;
-            RenderSystemDX11_EngineThread_EndMainRenderPass();
-        } else {
-            RenderSystemDX11_EngineThread_EndNextRenderPass();
-        }
-
-        ClearThreadSceneLayerContexts();
+        g_Old_FrameUpdate(g_pSceneSystem, 1);
 
         g_bLastPassWasExtra = true;
 
-        g_bUpdateFrame = RenderSystemDX11_EngineThread_BeginNextRenderPass();
+        RenderSystemDX11_EngineThread_BeginNextRenderPass();
 
         RenderSystemDX11_EngineThread_BeforeRender();
 
         g_Engine2_RenderService_OnClientOutput(pUnk0,pUnk1);
+        g_bHad_ClientOutput = true;
     }
 }
 
@@ -140,7 +127,7 @@ bool Hook_SceneSystem_WaitForRenderingToComplete(void * g_pSceneSystem) {
     		DetourTransactionBegin();
 	    	DetourUpdateThread(GetCurrentThread());
 		
-		    DetourAttach(&(PVOID&)g_Old_FrameUpdate, New_FrameUpdate);
+		   // DetourAttach(&(PVOID&)g_Old_FrameUpdate, New_FrameUpdate);
 		    DetourAttach(&(PVOID&)g_Old_SceneSystem_WaitForRenderingToComplete, My_SceneSystem_WaitForRenderingToComplete);
 
             bFirstResult = NO_ERROR == DetourTransactionCommit();

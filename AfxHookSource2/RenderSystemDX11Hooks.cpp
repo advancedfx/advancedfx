@@ -65,6 +65,7 @@ CRenderCommands g_RenderCommands;
 bool g_bEnableReShade = true;
 bool g_bReShadeCompositeSmoke = true;
 bool g_bCompositeSmoke = false;
+bool g_bExpectPresent = false;
 ID3D11RenderTargetView* g_BeforeUiRT = nullptr;
 
 class CAfxCapture {
@@ -1417,6 +1418,10 @@ private:
 
 
 IDXGISwapChain * g_pSwapChain = nullptr;
+UINT g_Present_LastSyncInterval = 0;
+UINT g_Present_LastPresentFlags = DXGI_PRESENT_ALLOW_TEARING;
+bool g_Present_Suppress = false;
+HRESULT g_Present_LastResult = S_OK;
 ID3D11Device * g_pDevice = nullptr;
 ID3D11DeviceContext * g_pOtherContext = nullptr;
 int g_iDraw = -1;
@@ -1789,6 +1794,72 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
 void Before_Present();
 void After_Present();
             
+// CS2 renders extra passes into a temporary buffer (g_BeforeUiRT) and does not
+// resolve it onto the swap chain's back buffer, so we have to do it before presenting.
+// Maps a format to its typeless family, CopyResource permits formats of the same family.
+static DXGI_FORMAT GetFormatFamily(DXGI_FORMAT format) {
+    switch(format) {
+    case DXGI_FORMAT_R8G8B8A8_TYPELESS:
+    case DXGI_FORMAT_R8G8B8A8_UNORM:
+    case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+    case DXGI_FORMAT_R8G8B8A8_UINT:
+    case DXGI_FORMAT_R8G8B8A8_SNORM:
+    case DXGI_FORMAT_R8G8B8A8_SINT:
+        return DXGI_FORMAT_R8G8B8A8_TYPELESS;
+    case DXGI_FORMAT_B8G8R8A8_TYPELESS:
+    case DXGI_FORMAT_B8G8R8A8_UNORM:
+    case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+        return DXGI_FORMAT_B8G8R8A8_TYPELESS;
+    case DXGI_FORMAT_R10G10B10A2_TYPELESS:
+    case DXGI_FORMAT_R10G10B10A2_UNORM:
+    case DXGI_FORMAT_R10G10B10A2_UINT:
+        return DXGI_FORMAT_R10G10B10A2_TYPELESS;
+    case DXGI_FORMAT_R16G16B16A16_TYPELESS:
+    case DXGI_FORMAT_R16G16B16A16_FLOAT:
+    case DXGI_FORMAT_R16G16B16A16_UNORM:
+    case DXGI_FORMAT_R16G16B16A16_UINT:
+    case DXGI_FORMAT_R16G16B16A16_SNORM:
+    case DXGI_FORMAT_R16G16B16A16_SINT:
+        return DXGI_FORMAT_R16G16B16A16_TYPELESS;
+    }
+    return format;
+}
+
+static void CopyBeforeUiRTToBackBuffer(ID3D11DeviceContext * pDeviceContext) {
+    if(!pDeviceContext || !g_pSwapChain || !g_BeforeUiRT) return;
+
+    ID3D11Texture2D * pBackBuffer = nullptr;
+    if(FAILED(g_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&pBackBuffer)) || !pBackBuffer) return;
+
+    ID3D11Resource * pSrcResource = nullptr;
+    g_BeforeUiRT->GetResource(&pSrcResource);
+    if(pSrcResource) {
+        ID3D11Texture2D * pSrc = nullptr;
+        if(SUCCEEDED(pSrcResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&pSrc)) && pSrc) {
+            if(pSrc != pBackBuffer) {
+                D3D11_TEXTURE2D_DESC srcDesc, dstDesc;
+                pSrc->GetDesc(&srcDesc);
+                pBackBuffer->GetDesc(&dstDesc);
+
+                if(srcDesc.Width == dstDesc.Width && srcDesc.Height == dstDesc.Height) {
+                    if(srcDesc.SampleDesc.Count > 1) {
+                        pDeviceContext->ResolveSubresource(pBackBuffer, 0, pSrc, 0, dstDesc.Format);
+                    } else if(GetFormatFamily(srcDesc.Format) == GetFormatFamily(dstDesc.Format)) {
+                        pDeviceContext->CopyResource(pBackBuffer, pSrc);
+                    } else {
+                        advancedfx::Warning("AFXERROR: Preview format mismatch (%i vs. %i), cannot copy to back buffer.\n", (int)srcDesc.Format, (int)dstDesc.Format);
+                    }
+                } else {
+                    advancedfx::Warning("AFXERROR: Preview size mismatch, cannot copy to back buffer.\n");
+                }
+            }
+            pSrc->Release();
+        }
+        pSrcResource->Release();
+    }
+    pBackBuffer->Release();
+}
+
 class CAfxRenderCallbackUpdateBuffers : public IRenderThreadCallback
 {
 public:
@@ -1800,8 +1871,11 @@ public:
         if(g_RenderCommands.RenderThread_FrameBegun()) {
             Before_Present();
 
-            // Just don't present it :-/
-
+            if(g_bExpectPresent && g_pSwapChain) {
+                CopyBeforeUiRTToBackBuffer(g_RenderCommands.RenderThread_GetContext());
+                g_Present_LastResult = g_OldPresent(g_pSwapChain, g_Present_LastSyncInterval, g_Present_LastPresentFlags);
+            }
+            
             After_Present();
         }
 
@@ -2226,9 +2300,12 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
         g_RenderCommands.CurrentThreadIsRenderThread()
         && !g_bInOwnDraw
     ) {
+        g_Present_LastSyncInterval = SyncInterval;
+        g_Present_LastPresentFlags = Flags;
+    
         Before_Present();
 
-        HRESULT result = g_OldPresent(This, SyncInterval, Flags);
+        HRESULT result = g_Present_Suppress && !g_bExpectPresent ? g_Present_LastResult : (g_Present_LastResult = g_OldPresent(This, SyncInterval, Flags));
         
         After_Present();
 
@@ -2310,17 +2387,7 @@ HRESULT WINAPI New_CreateDXGIFactory1(REFIID riid, _COM_Outptr_ void **ppFactory
     return result;
 }
 
-typedef bool (__fastcall * CRenderDeviceBase_Present_t)(
-    void * This, void * Rdx, void * R8d, void * R9d, void * Stack0, void * Stack1, void * Stack2, void * Stack3, void * Stack4);
-
-CRenderDeviceBase_Present_t g_Old_CRenderDeviceBase_Present = nullptr;
-
-
 CAfxCapture * g_ActiveCapture = nullptr;
-
-
-bool __fastcall New_CRenderDeviceBase_Present(
-    void * This, void * Rdx, void * R8d, void * R9d, void * Stack0, void * Stack1, void * Stack2, void * Stack3, void * Stack4);
 
 /*
 std::string g_ViewName("Player 0");
@@ -2638,13 +2705,6 @@ void Hook_RenderSystemDX11(void * hModule) {
                 }
             }
         }
-
-        // CRenderDeviceBase::Present
-        //
-        // Function jmps into a function that references string "CRenderDeviceBase::Present(640):".
-        if(void ** vtable = (void**)Afx::BinUtils::FindClassVtable((HMODULE)hModule,".?AVCRenderDeviceDx11@@", 0, 0x0)) {
-            AfxDetourPtr(&(vtable[16]),New_CRenderDeviceBase_Present,(PVOID*)&g_Old_CRenderDeviceBase_Present);
-        } else ErrorBox(MkErrStr(__FILE__, __LINE__));
     }
 
 }
@@ -3008,7 +3068,7 @@ public:
         return m_ExtraPassesIterator != m_ExtraPasses.end();
     }
 
-    bool EngineThread_BeginNextRenderPass() {
+    void EngineThread_BeginNextRenderPass() {
         m_LastExtraPassesIterator = m_ExtraPassesIterator;
 
         bool bPreview = false;        
@@ -3030,7 +3090,8 @@ public:
             if(last_it->CompareRenderPass(*m_ExtraPassesIterator) != 0) break; // done for this render pass.
         }        
 
-        return 0 != m_Preview.size() && bPreview;
+        if(0 != m_Preview.size() && bPreview) EngineThread_Expect_Present();
+        else EngineThread_Suppress_Present();
     }
 
     void EngineThread_EndNextRenderPass() {
@@ -3040,7 +3101,7 @@ public:
         }
     }    
 
-    bool EngineThread_BeginMainRenderPass() {
+    void EngineThread_BeginMainRenderPass() {
         bool bPreview = false;
         for(auto it = m_MainPass.begin(); it != m_MainPass.end(); it++) {
             bPreview = bPreview || it->GetPreview();
@@ -3068,7 +3129,8 @@ public:
             }
         }
         
-        return 0 == m_Preview.size() || bPreview;
+        if(0 == m_Preview.size() || bPreview) EngineThread_Expect_Present();
+        else EngineThread_Suppress_Present();
     }
 
     void EngineThread_EndMainRenderPass() {
@@ -3663,22 +3725,46 @@ private:
 
         return true;
     }
+
+    void EngineThread_Suppress_Present() {
+        auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
+        {
+            auto & queue = pRenderPassCommands.BeforePresent;
+            CAfxCapture * capture = g_ActiveCapture;
+            queue.Push([capture](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
+                g_Present_Suppress = true;
+            }); 
+        }
+        {
+            auto & queue = pRenderPassCommands.AfterPresent;
+            CAfxCapture * capture = g_ActiveCapture;
+            queue.Push([capture](ID3D11DeviceContext * pDeviceContext){
+                g_Present_Suppress = false;
+            }); 
+        }
+    }
+
+    void EngineThread_Expect_Present() {
+        auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
+        {
+            auto & queue = pRenderPassCommands.BeforePresent;
+            CAfxCapture * capture = g_ActiveCapture;
+            queue.Push([capture](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
+                g_bExpectPresent = true;
+            }); 
+        }
+        {
+            auto & queue = pRenderPassCommands.AfterPresent;
+            CAfxCapture * capture = g_ActiveCapture;
+            queue.Push([capture](ID3D11DeviceContext * pDeviceContext){
+                g_bExpectPresent = false;
+            }); 
+        }
+    }
 } g_AfxStreams;
 
 void AfxStreams_ShutDown() {
     g_AfxStreams.ShutDown();
-}
-
-bool g_bEngine_Prepared = false;
-
-bool __fastcall New_CRenderDeviceBase_Present(
-    void * This, void * Rdx, void * R8d, void * R9d, void * Stack0, void * Stack1, void * Stack2, void * Stack3, void * Stack4) {
-
-    bool result = g_Old_CRenderDeviceBase_Present(This, Rdx, R8d, R9d, Stack0, Stack1, Stack2, Stack3, Stack4);
-
-    g_bEngine_Prepared = false;
-
-    return result;
 }
 
 void CAfxStreams::Console_RecordScreen(advancedfx::ICommandArgs* args) {
@@ -5063,16 +5149,16 @@ bool RenderSystemDX11_EngineThread_HasNextRenderPass() {
     return g_AfxStreams.EngineThread_HasNextRenderPass();
 }
 
-bool RenderSystemDX11_EngineThread_BeginNextRenderPass() {
-    return g_AfxStreams.EngineThread_BeginNextRenderPass();
+void RenderSystemDX11_EngineThread_BeginNextRenderPass() {
+    g_AfxStreams.EngineThread_BeginNextRenderPass();
 }
 
 void RenderSystemDX11_EngineThread_EndNextRenderPass() {
     g_AfxStreams.EngineThread_EndNextRenderPass();
 }
 
-bool RenderSystemDX11_EngineThread_BeginMainRenderPass() {
-    return g_AfxStreams.EngineThread_BeginMainRenderPass();
+void RenderSystemDX11_EngineThread_BeginMainRenderPass() {
+    g_AfxStreams.EngineThread_BeginMainRenderPass();
 }
 
 void RenderSystemDX11_EngineThread_EndMainRenderPass() {
