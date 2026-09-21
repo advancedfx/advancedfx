@@ -3,11 +3,13 @@
 #include "ClientEntitySystem.h"
 #include "Globals.h"
 #include "SchemaSystem.h"
+#include "SceneActionFilter.h"
 #include "MirvColors.h"
 #include "StreamSettings.h"
 
 #include "../shared/StringTools.h"
 #include "../deps/release/Detours/src/detours.h"
+#include "../deps/release/prop/cs2/sdk_src/public/const.h"
 #include "../deps/release/prop/cs2/sdk_src/public/tier0/memalloc.h"
 #include "../deps/release/prop/cs2/sdk_src/public/tier1/bufferstring.h"
 
@@ -301,6 +303,7 @@ struct CBaseSceneData {
 };
 
 size_t g_SceneObject_pSceneObjectDesc_Offset = -1;
+size_t g_SceneObject_pCBaseHandle_Offset = -1;
 
 static_assert(sizeof(CBaseSceneData) == 0x68, "Unexpected CBaseSceneData size.");
 
@@ -343,9 +346,13 @@ SceneObjectDrawPolicy g_SceneSemanticPolicies[(int)SceneSemanticGroup::Count] = 
 
 std::atomic_bool g_bSceneFilterSystemActive = false;
 
+// Filter of the stream that is currently rendered, applied before all other policies:
+CActiveSceneActionFilter g_ActiveActionFilter;
+
 void UpdateSceneFilterSystemActive() {
 	bool bActive =
 		0 < g_iSceneFilterDebug
+		|| g_ActiveActionFilter.IsActive()
 		|| g_BaseSceneObjectsPolicy != SceneObjectDrawPolicy::Draw
 		|| g_AnimatableSceneObjectsPolicy != SceneObjectDrawPolicy::Draw
 		|| g_AggregateSceneObjectsPolicy != SceneObjectDrawPolicy::Draw
@@ -369,10 +376,14 @@ void ClearSceneFliterSystemPolicies() {
 		g_SceneSemanticPolicies[i] = SceneObjectDrawPolicy::Draw;
 	}
 
+	g_ActiveActionFilter.Clear();
+
 	UpdateSceneFilterSystemActive();
 }
 
 void SetupSceneFilterPolicies(const class CStreamSettings & settings) {
+	g_ActiveActionFilter.Set(settings.ActionFilter);
+
 	switch(settings.ViewModelAction) {
 	case CStreamSettings::Action::NoDraw:
 		g_SceneSemanticPolicies[(int)SceneSemanticGroup::ViewModel] = SceneObjectDrawPolicy::Hide;
@@ -939,6 +950,48 @@ static SceneObjectDrawPolicy GetSceneDataPolicy(SceneObjectFilterClass filterCla
 	return ApplyLayerAwarePolicy(filterClass, context, materialName, GetSceneObjectClassPolicy(filterClass));
 }
 
+// Action filter of the stream (mirv_streams edit <name> actionFilter ...), takes precedence over everything else.
+static bool TryGetActionFilterPolicy(const SceneLayerContext& context, const CBaseSceneData* pSceneData, SceneObjectDrawPolicy& outPolicy) {
+	if (!g_ActiveActionFilter.IsActive()) return false;
+
+	std::string materialName;
+	std::string viewName;
+	std::string viewPass;
+
+	SceneActionFilterQuery query;
+
+	if (pSceneData) {
+		if (pSceneData->material) {
+			if (const char* name = pSceneData->material->GetName()) {
+				materialName = name;
+				query.MaterialName = &materialName;
+			}
+		}
+		if (pSceneData->sceneObject) {
+			uint32_t handle = *(uint32_t*)((unsigned char*)pSceneData->sceneObject + g_SceneObject_pCBaseHandle_Offset);
+			if (handle != SOURCESDK_CS2_INVALID_EHANDLE_INDEX) query.EntityHandle = handle;
+		}
+	}
+	if (context.ViewName) {
+		viewName = context.ViewName;
+		query.ViewName = &viewName;
+	}
+	if (context.ViewPass) {
+		viewPass = context.ViewPass;
+		query.ViewPass = &viewPass;
+	}
+
+	SceneActionFilterAction action;
+	if (!g_ActiveActionFilter.Match(query, action)) return false;
+
+	switch (action) {
+	case SceneActionFilterAction::Hide: outPolicy = SceneObjectDrawPolicy::Hide; break;
+	case SceneActionFilterAction::DepthPassesOnly: outPolicy = SceneObjectDrawPolicy::DepthPassesOnly; break;
+	default: outPolicy = SceneObjectDrawPolicy::Draw; break;
+	}
+	return true;
+}
+
 std::shared_timed_mutex g_BlockedSoftwareCommandListsMutex;
 std::set<void *> g_BlockedSoftwareCommandLists;
 
@@ -1109,7 +1162,9 @@ void __fastcall new_DrawSceneData(void * pDrawingData, CBaseSceneData* pSceneDat
 		
 		SceneObjectDrawPolicy policy;
 		if(DebugPrintSceneData("DrawSceneData", filterClass, context, pSceneData, 1)) {
-			policy = GetSceneDataPolicy(filterClass, context, pSceneData);
+			// Action filter is applied first, only if it falls through the general logic is used:
+			if(!TryGetActionFilterPolicy(context, pSceneData, policy))
+				policy = GetSceneDataPolicy(filterClass, context, pSceneData);
 		} else {
 			policy = SceneObjectDrawPolicy::Hide;
 		}
@@ -1758,6 +1813,9 @@ void FUN_18009c880(longlong param_1,longlong param_2)
 
 	// See notes in HookSceneSystem about DrawSceneData above:
 	//g_SceneData_Flags_Offset = 0x62;
+
+	// Found by looking for known index values (e.g. of C4 model) in the lower 15 bit or the full handle would work too (32 bit):
+	g_SceneObject_pCBaseHandle_Offset = 0xC0;
 
 	if(//org_RenderLayerDrawListPart &&
 		org_InitDrawingData && org_DrawSceneData && org_DrawCurrentPrimitives) {

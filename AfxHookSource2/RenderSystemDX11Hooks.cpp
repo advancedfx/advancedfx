@@ -4593,6 +4593,16 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
                 if(bUpdatePreview) RecordStart(true);
                 return;
             }
+            else if(0 == _stricmp("actionFilter", arg2)) {
+                advancedfx::CSubCommandArgs subArgs(args, 3);
+                // Copy-on-write, a running capture stream may still share the current list.
+                auto newFilter = std::make_shared<CSceneActionFilterList>(*stream.ActionFilter);
+                if(newFilter->Console(&subArgs)) {
+                    stream.ActionFilter = std::move(newFilter);
+                    if(bUpdatePreview) RecordStart(true);
+                }
+                return;
+            }
             else if(0 == _stricmp("viewModelAction", arg2)) {
                 advancedfx::CSubCommandArgs subArgs(args, 3);
                 StreamSettingsActionSubCommand(stream.ViewModelAction, &subArgs);
@@ -4709,6 +4719,10 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
         );        
         advancedfx::Message(
             "%s %s afterCommands [...] - Commands to execute before the stream is rendered.\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s actionFilter [...] - Filters applied first (by material name / entity handle / view), only what falls through uses the actions below.\n"
             , arg0, arg1
         );
         advancedfx::Message(

@@ -267,6 +267,9 @@ target_sources(${PROJECT_NAME} PRIVATE
 	SchemaSystem.cpp
 	SchemaSystem.h
 
+	SceneActionFilter.cpp
+	SceneActionFilter.h
+
 	SceneSystem.cpp
 	SceneSystem.h
 
