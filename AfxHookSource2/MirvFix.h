@@ -2,11 +2,14 @@
 
 #include "Globals.h"
 #include "../shared/AfxDetours.h"
+#include <functional>
 
 extern CAfxImportsHook g_Import_SceneSystem;
 extern CAfxImportsHook g_Import_panorama;
 
 void MirvFix_InitEngine2();
+bool MirvFix_QueueRecordStart(float hostFramerate, std::function<void()> start);
+void MirvFix_OnRecordEnd();
 
 struct MirvFix {
     struct Time {

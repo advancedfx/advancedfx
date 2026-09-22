@@ -44,8 +44,15 @@ void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
 			// Clock modes 0 and 3 use the validated simulation branch.
 			MemRange mode = FindPatternString(body,
 				"8b 8f 60 01 00 00 85 c9 0f 84 ?? ?? ?? ?? 41 2b cf 74 09 41 3b cf 0f 85");
-			if (!remainder.IsEmpty() && !mode.IsEmpty())
-				AFXADDR_SET(cs2_engine_AdvanceTime, result.Start);
+			// The frame-time helper reads cached host_framerate at 0x14c.
+			MemRange frameTimeCall = FindPatternString(body,
+				"0f 28 cb e8 ?? ?? ?? ?? f2 41 0f 10 06");
+			if (!remainder.IsEmpty() && !mode.IsEmpty() && !frameTimeCall.IsEmpty()) {
+				AfxAddr frameTime = frameTimeCall.Start + 8 + *reinterpret_cast<const int32_t *>(frameTimeCall.Start + 4);
+				if (textRange.Start <= frameTime && frameTime <= textRange.End - 0x180
+					&& !FindPatternString(MemRange(frameTime, frameTime + 0x180), "f3 0f 10 8f 4c 01 00 00").IsEmpty())
+					AFXADDR_SET(cs2_engine_AdvanceTime, result.Start);
+			}
 		}
 	}
 

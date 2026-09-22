@@ -4733,6 +4733,9 @@ extern CamPath g_CamPath;
 void CAfxStreams::RecordStart()
 {
 	RecordEnd();
+	SOURCESDK::CS2::Cvar_s * handle_host_framerate = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("host_framerate", false).Get());
+	float host_framerate = m_OverrideFps ? m_OverrideFpsValue : (handle_host_framerate != nullptr ? handle_host_framerate->m_Value.m_flValue : 0);
+	if (MirvFix_QueueRecordStart(host_framerate, [this]() { RecordStart(); })) return;
 
 	advancedfx::Message("Starting recording ... ");
 	
@@ -4746,7 +4749,6 @@ void CAfxStreams::RecordStart()
 
 		std::string utf8TakeDir;
 		bool utf8TakeDirOk = WideStringToUTF8String(m_TakeDir.c_str(), utf8TakeDir);
-        SOURCESDK::CS2::Cvar_s * handle_host_framerate = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("host_framerate", false).Get());
         SOURCESDK::CS2::Cvar_s * handle_engine_no_focus_sleep = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("engine_no_focus_sleep", false).Get());
         SOURCESDK::CS2::Cvar_s * handle_r_always_render_all_windows = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_always_render_all_windows", false).Get());
         SOURCESDK::CS2::Cvar_s * handle_r_wait_on_present = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_wait_on_present", false).Get());
@@ -4773,7 +4775,6 @@ void CAfxStreams::RecordStart()
             handle_r_wait_on_present->m_Value.m_bValue = true;            
         }
 
-		float host_framerate = m_OverrideFps ? m_OverrideFpsValue : (handle_host_framerate != nullptr ? handle_host_framerate->m_Value.m_flValue : 0);
 		double frameTime;
 		if (1.0 <= host_framerate) {
 			m_StartHostFrameRateValue = host_framerate;
@@ -4873,6 +4874,7 @@ void AfxHookSourceRs_Engine_OnRecordEnd();
 
 void CAfxStreams::RecordEnd()
 {
+	MirvFix_OnRecordEnd();
 	if(m_Recording)
 	{
         AfxHookSourceRs_Engine_OnRecordEnd();

@@ -17,19 +17,37 @@ namespace {
 	using AdvanceTime_t = void (__fastcall *)(void *, double, double, double, void *);
 	AdvanceTime_t g_OriginalAdvanceTime = nullptr;
 	bool g_DemoClockEnabled = false;
+	float g_DemoClockRecordStart = 0.0f;
+	std::function<void()> g_DemoClockPendingStart;
+	bool g_DemoClockStarting = false;
 
 	void __fastcall New_AdvanceTime(void * self, double now, double elapsed, double delta, void * output) {
-		if (g_DemoClockEnabled && !AfxStreams_IsRcording()) {
+		if (g_DemoClockPendingStart) {
+			// Open all recording outputs before advancing the first capture frame.
+			auto start = std::move(g_DemoClockPendingStart);
+			g_DemoClockPendingStart = nullptr;
+			g_DemoClockStarting = true;
+			start();
+			g_DemoClockStarting = false;
+		}
+		const bool recording = AfxStreams_IsRcording();
+		const float recordStart = g_DemoClockRecordStart;
+		g_DemoClockRecordStart = 0.0f;
+		if (g_DemoClockEnabled) {
 			auto demo = g_pEngineToClient ? g_pEngineToClient->GetDemoFile() : nullptr;
-			if (demo && demo->IsPlayingDemo() && demo->IsDemoPaused()) {
-				// Paused seeks retain this fraction. Normalize before playback resumes,
-				// including preroll; recording and running playback remain untouched.
+			if (demo && demo->IsPlayingDemo() && ((!recording && demo->IsDemoPaused()) || (recording && recordStart > 0.0f))) {
+				// Normalize paused seeks and the first recording frame, not subsequent
+				// playback or recording frames.
 				auto data = static_cast<unsigned char *>(self);
 				auto & remainder = *reinterpret_cast<double *>(data + 0xf0);
 				const float interval = *reinterpret_cast<float *>(data + 0x140);
 				const int mode = *reinterpret_cast<int *>(data + 0x160);
 				if (interval == 1.0f / 64.0f && (mode == 0 || mode == 3)
-					&& std::isfinite(remainder) && 0.0 < remainder && remainder < interval) {
+					&& std::isfinite(remainder) && 0.0 <= remainder && remainder < interval) {
+					if (recording) {
+						// RecordStart changed host_framerate after the engine cached it.
+						*reinterpret_cast<float *>(data + 0x14c) = recordStart;
+					}
 					remainder = 0.0;
 				}
 			}
@@ -64,6 +82,25 @@ namespace {
 
 void MirvFix_InitEngine2() {
 	SetDemoClockEnabled(true);
+}
+
+bool MirvFix_QueueRecordStart(float hostFramerate, std::function<void()> start) {
+	if (!g_DemoClockEnabled || !std::isfinite(hostFramerate) || hostFramerate <= 0.0f) return false;
+	if (g_DemoClockStarting) {
+		// The queued callback re-enters RecordStart with its current settings.
+		g_DemoClockRecordStart = hostFramerate;
+		return false;
+	}
+	if (!g_OriginalAdvanceTime) return false;
+	auto demo = g_pEngineToClient ? g_pEngineToClient->GetDemoFile() : nullptr;
+	if (!demo || !demo->IsPlayingDemo() || demo->IsDemoPaused()) return false;
+	g_DemoClockPendingStart = std::move(start);
+	return true;
+}
+
+void MirvFix_OnRecordEnd() {
+	g_DemoClockPendingStart = nullptr;
+	g_DemoClockRecordStart = 0.0f;
 }
 
 MirvFix g_MirvFix;
@@ -152,7 +189,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 		if (0 == _stricmp("demoClock", arg1)) {
 			if (3 == argc && (!strcmp("0", args->ArgV(2)) || !strcmp("1", args->ArgV(2))))
 				SetDemoClockEnabled(!strcmp("1", args->ArgV(2)));
-			else advancedfx::Message("%s demoClock 0|1 - Normalize the paused demo clock before playback (default: 1).\n", arg0);
+			else advancedfx::Message("%s demoClock 0|1 - Normalize the demo clock on pause and recording start (default: 1).\n", arg0);
 			advancedfx::Message("mirv_fix demoClock: %d\n", g_DemoClockEnabled ? 1 : 0);
 			return;
 		}
@@ -240,7 +277,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 		"%s time [...] - Apply various time fixes (panorama and scene system).\n"
 		, arg0
 	);
-	advancedfx::Message("%s demoClock [...] - Enable or disable automatic paused demo clock normalization.\n", arg0);
+	advancedfx::Message("%s demoClock [...] - Enable or disable automatic demo clock normalization.\n", arg0);
 	advancedfx::Message(
 		"%s forceClInterpRatio [...] - Whether to force cl_interp_ratio to 1 if it is 0 during demo playback for smooth animations during recording.\n"
 		, arg0
