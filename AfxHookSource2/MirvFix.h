@@ -6,6 +6,8 @@
 extern CAfxImportsHook g_Import_SceneSystem;
 extern CAfxImportsHook g_Import_panorama;
 
+void MirvFix_InitEngine2();
+
 struct MirvFix {
     struct Time {
         bool enabled = true;

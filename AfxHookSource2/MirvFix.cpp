@@ -1,12 +1,70 @@
 #include "MirvFix.h"
 #include "MirvTime.h"
 #include "RenderSystemDX11Hooks.h"
+#include "addresses.h"
+#include "../deps/release/prop/cs2/sdk_src/public/cdll_int.h"
 
 #undef min
 #undef max
 
 #include <mutex>
 #include <algorithm>
+#include <cmath>
+
+extern SOURCESDK::CS2::ISource2EngineToClient * g_pEngineToClient;
+
+namespace {
+	using AdvanceTime_t = void (__fastcall *)(void *, double, double, double, void *);
+	AdvanceTime_t g_OriginalAdvanceTime = nullptr;
+	bool g_DemoClockEnabled = false;
+
+	void __fastcall New_AdvanceTime(void * self, double now, double elapsed, double delta, void * output) {
+		if (g_DemoClockEnabled && !AfxStreams_IsRcording()) {
+			auto demo = g_pEngineToClient ? g_pEngineToClient->GetDemoFile() : nullptr;
+			if (demo && demo->IsPlayingDemo() && demo->IsDemoPaused()) {
+				// Paused seeks retain this fraction. Normalize before playback resumes,
+				// including preroll; recording and running playback remain untouched.
+				auto data = static_cast<unsigned char *>(self);
+				auto & remainder = *reinterpret_cast<double *>(data + 0xf0);
+				const float interval = *reinterpret_cast<float *>(data + 0x140);
+				const int mode = *reinterpret_cast<int *>(data + 0x160);
+				if (interval == 1.0f / 64.0f && (mode == 0 || mode == 3)
+					&& std::isfinite(remainder) && 0.0 < remainder && remainder < interval) {
+					remainder = 0.0;
+				}
+			}
+		}
+		g_OriginalAdvanceTime(self, now, elapsed, delta, output);
+	}
+
+	bool InstallDemoClockHook() {
+		if (g_OriginalAdvanceTime) return true;
+		if (!AFXADDR_GET(cs2_engine_AdvanceTime)) return false;
+		g_OriginalAdvanceTime = reinterpret_cast<AdvanceTime_t>(AFXADDR_GET(cs2_engine_AdvanceTime));
+		LONG error = DetourTransactionBegin();
+		if (NO_ERROR == error) {
+			error = DetourUpdateThread(GetCurrentThread());
+			if (NO_ERROR == error) error = DetourAttach(&(PVOID&)g_OriginalAdvanceTime, New_AdvanceTime);
+			if (NO_ERROR == error) error = DetourTransactionCommit();
+			else DetourTransactionAbort();
+		}
+		if (NO_ERROR != error) g_OriginalAdvanceTime = nullptr;
+		return NO_ERROR == error;
+	}
+
+	void SetDemoClockEnabled(bool enabled) {
+		if (enabled && !InstallDemoClockHook()) {
+			g_DemoClockEnabled = false;
+			advancedfx::Warning("mirv_fix demoClock: clock hook unavailable; not enabled.\n");
+			return;
+		}
+		g_DemoClockEnabled = enabled;
+	}
+}
+
+void MirvFix_InitEngine2() {
+	SetDemoClockEnabled(true);
+}
 
 MirvFix g_MirvFix;
 
@@ -91,6 +149,13 @@ CON_COMMAND(mirv_fix, "Various fixes")
 	if (2 <= argc)
 	{
 		auto arg1 = args->ArgV(1);
+		if (0 == _stricmp("demoClock", arg1)) {
+			if (3 == argc && (!strcmp("0", args->ArgV(2)) || !strcmp("1", args->ArgV(2))))
+				SetDemoClockEnabled(!strcmp("1", args->ArgV(2)));
+			else advancedfx::Message("%s demoClock 0|1 - Normalize the paused demo clock before playback (default: 1).\n", arg0);
+			advancedfx::Message("mirv_fix demoClock: %d\n", g_DemoClockEnabled ? 1 : 0);
+			return;
+		}
 		if (0 == _stricmp("time", arg1))
 		{
 			auto arg2 = args->ArgV(2);
@@ -175,6 +240,7 @@ CON_COMMAND(mirv_fix, "Various fixes")
 		"%s time [...] - Apply various time fixes (panorama and scene system).\n"
 		, arg0
 	);
+	advancedfx::Message("%s demoClock [...] - Enable or disable automatic paused demo clock normalization.\n", arg0);
 	advancedfx::Message(
 		"%s forceClInterpRatio [...] - Whether to force cl_interp_ratio to 1 if it is 0 during demo playback for smooth animations during recording.\n"
 		, arg0

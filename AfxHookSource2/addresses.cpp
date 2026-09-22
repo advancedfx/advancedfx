@@ -9,6 +9,7 @@ using namespace Afx::BinUtils;
 
 AFXADDR_DEF(cs2_engine_HostStateRequest_Start)
 AFXADDR_DEF(cs2_engine_CRenderService_OnClientOutput);
+AFXADDR_DEF(cs2_engine_AdvanceTime);
 
 AFXADDR_DEF(cs2_SceneSystem_WaitForRenderingToComplete_vtable_idx);
 AFXADDR_DEF(cs2_SceneSystem_FrameUpdate_vtable_idx);
@@ -26,6 +27,26 @@ void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
 			textRange = imageSectionsReader.GetMemRange();
 		}
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
+
+	// Optional demo clock fix. Besides the entry point, verify the field layout
+	// used by MirvFix.cpp. The function references "AdvanceTime ticks this frame".
+	// Leave unavailable on a missing/ambiguous signature; do not interrupt startup.
+	{
+		const char * signature = "48 8b c4 f2 0f 11 50 18 f2 0f 11 48 10 55 57 41 56 41 57 48 8d a8 18 ff ff ff 48 81 ec c8 01 00 00";
+		MemRange result = FindPatternString(textRange, signature);
+		if (!result.IsEmpty() && result.Start + 0x250 <= textRange.End
+			&& FindPatternString(MemRange(result.End, textRange.End), signature).IsEmpty()) {
+			MemRange body(result.Start, result.Start + 0x250);
+			// tick interval at 0x140; double simulation remainder at 0xf0.
+			MemRange remainder = FindPatternString(body,
+				"f3 0f 10 9f 40 01 00 00 48 8d 9f f0 00 00 00 f2 0f 10 13 f2 41 0f 58 16 0f 5a cb 89 73 08 f2 0f 11 13");
+			// Clock modes 0 and 3 use the validated simulation branch.
+			MemRange mode = FindPatternString(body,
+				"8b 8f 60 01 00 00 85 c9 0f 84 ?? ?? ?? ?? 41 2b cf 74 09 41 3b cf 0f 85");
+			if (!remainder.IsEmpty() && !mode.IsEmpty())
+				AFXADDR_SET(cs2_engine_AdvanceTime, result.Start);
+		}
 	}
 
     /*  cs2_engine_HostStateRequest_Start
