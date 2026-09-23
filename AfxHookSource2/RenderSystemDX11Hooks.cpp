@@ -242,54 +242,70 @@ private:
         void GpuCopyResource(ID3D11DeviceContext * pContext, ID3D11Texture2D * pTexture, float depthScale, float depthOffset) {
             m_DepthScale = depthScale;
             m_DepthOfs = depthOffset;
-            if(m_pCpuTexture == nullptr && pTexture) {
-                D3D11_TEXTURE2D_DESC desc;
-                pTexture->GetDesc(&desc);
-                bool bMultiSampled = 1 < desc.SampleDesc.Count;
+            if(nullptr == pTexture) return;
+
+            D3D11_TEXTURE2D_DESC desc;
+            pTexture->GetDesc(&desc);
+            // Check per copy, sample count can change mid recording (e.g. scoping in CS2).
+            bool bMultiSampled = 1 < desc.SampleDesc.Count;
+            advancedfx::ImageFormat format;
+            DXGI_FORMAT cpuFormat = GetCpuFormat(desc.Format, format);
+
+            if(m_pCpuTexture == nullptr) {
+                if(advancedfx::ImageFormat::Unknown == format) advancedfx::Warning("AFXERROR: GpuCopyResource - unspported DXGI_FORMAT: %i\n",desc.Format);
                 desc.BindFlags = 0;
                 desc.MiscFlags = 0;
                 desc.MipLevels = 1;
                 desc.SampleDesc.Count = 1;
                 desc.SampleDesc.Quality = 0;
-                advancedfx::ImageFormat format = advancedfx::ImageFormat::Unknown;
-                switch(desc.Format) {
-                case DXGI_FORMAT_R32_FLOAT:
-                    format = advancedfx::ImageFormat::ZFloat;
-                    desc.Format = DXGI_FORMAT_R32_FLOAT;
-                    break;
-                case DXGI_FORMAT_R8G8B8A8_TYPELESS:
-                case DXGI_FORMAT_R8G8B8A8_UNORM:
-                case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-                case DXGI_FORMAT_R8G8B8A8_UINT:
-                case DXGI_FORMAT_R8G8B8A8_SNORM:
-                case DXGI_FORMAT_R8G8B8A8_SINT:
-                format = advancedfx::ImageFormat::RGBA;
-                desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-                break;
-                default:
-                    advancedfx::Warning("AFXERROR: GpuCopyResource - unspported DXGI_FORMAT: %i\n",desc.Format);
-                }
-                if(bMultiSampled) {
-                    desc.Usage = D3D11_USAGE_DEFAULT;
-                    desc.CPUAccessFlags = 0;
-                    m_pCapture->AquireIntermediate(m_pDevice, desc);
-                    m_pIntermediateTexture = m_pCapture->m_pIntermediateSurface;
-                }
+                desc.Format = cpuFormat;
                 desc.Usage = D3D11_USAGE_STAGING;
                 desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
                 m_ImageFormat = advancedfx::CImageFormat(format, desc.Width, desc.Height);
                 m_Format = desc.Format;
                 m_pDevice->CreateTexture2D(&desc, nullptr, &m_pCpuTexture);
             }
-
-            if(m_pCpuTexture && pTexture) {
-                if(m_pIntermediateTexture) {
-                    pContext->ResolveSubresource(m_pIntermediateTexture, 0, pTexture, 0, m_Format);
-                    pContext->CopyResource(m_pCpuTexture, m_pIntermediateTexture);
-                } else {
-                    pContext->CopyResource(m_pCpuTexture, pTexture);
+            else if((int)desc.Width != m_ImageFormat.Width || (int)desc.Height != m_ImageFormat.Height || cpuFormat != m_Format) {
+                if(!m_pCapture->m_WarnedSourceChanged) {
+                    m_pCapture->m_WarnedSourceChanged = true;
+                    advancedfx::Warning("AFXERROR: GpuCopyResource - capture source changed from %ix%i (DXGI_FORMAT %i) to %ux%u (DXGI_FORMAT %i), skipping frames.\n",
+                        m_ImageFormat.Width, m_ImageFormat.Height, m_Format, desc.Width, desc.Height, desc.Format);
                 }
+                return;
             }
+
+            if(nullptr == m_pCpuTexture) return;
+
+            if(bMultiSampled) {
+                D3D11_TEXTURE2D_DESC intermediateDesc;
+                m_pCpuTexture->GetDesc(&intermediateDesc);
+                intermediateDesc.Usage = D3D11_USAGE_DEFAULT;
+                intermediateDesc.CPUAccessFlags = 0;
+                if(m_pCapture->AquireIntermediate(m_pDevice, intermediateDesc)) {
+                    pContext->ResolveSubresource(m_pCapture->m_pIntermediateSurface, 0, pTexture, 0, m_Format);
+                    pContext->CopyResource(m_pCpuTexture, m_pCapture->m_pIntermediateSurface);
+                }
+            } else {
+                pContext->CopyResource(m_pCpuTexture, pTexture);
+            }
+        }
+
+        static DXGI_FORMAT GetCpuFormat(DXGI_FORMAT format, advancedfx::ImageFormat & outImageFormat) {
+            switch(format) {
+            case DXGI_FORMAT_R32_FLOAT:
+                outImageFormat = advancedfx::ImageFormat::ZFloat;
+                return DXGI_FORMAT_R32_FLOAT;
+            case DXGI_FORMAT_R8G8B8A8_TYPELESS:
+            case DXGI_FORMAT_R8G8B8A8_UNORM:
+            case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+            case DXGI_FORMAT_R8G8B8A8_UINT:
+            case DXGI_FORMAT_R8G8B8A8_SNORM:
+            case DXGI_FORMAT_R8G8B8A8_SINT:
+                outImageFormat = advancedfx::ImageFormat::RGBA;
+                return DXGI_FORMAT_R8G8B8A8_UNORM;
+            }
+            outImageFormat = advancedfx::ImageFormat::Unknown;
+            return format;
         }
 
         advancedfx::IImageBufferThreadSafe * CpuBeginAccess(ID3D11DeviceContext * pContext) {
@@ -323,7 +339,6 @@ private:
     private:
         ID3D11Device * m_pDevice;
         ID3D11Texture2D * m_pCpuTexture = nullptr;
-        ID3D11Texture2D * m_pIntermediateTexture = nullptr;
         DXGI_FORMAT m_Format = DXGI_FORMAT_UNKNOWN;
         advancedfx::CImageFormat m_ImageFormat;
         D3D11_MAPPED_SUBRESOURCE m_MappedResource;
@@ -414,6 +429,8 @@ private:
 
     D3D11_TEXTURE2D_DESC m_SurfaceDesc;
     ID3D11Texture2D * m_pIntermediateSurface = nullptr;
+
+    bool m_WarnedSourceChanged = false;
 
     bool AquireIntermediate(ID3D11Device * pDevice, const D3D11_TEXTURE2D_DESC & desc) {
 		if (m_pIntermediateSurface) {
@@ -2186,6 +2203,16 @@ HRESULT WINAPI New_D3D11CreateDevice(
 void Before_Present() {
     g_bInOwnDraw = true;
 
+    // Capture what's bound now (final image incl. scope / HUD), g_BeforeUiRT can be pre-scope.
+    ID3D11RenderTargetView * pPresentRenderTargetView = nullptr;
+    if (auto pDeviceContext = g_RenderCommands.RenderThread_GetContext()) {
+        pDeviceContext->OMGetRenderTargets(1, &pPresentRenderTargetView, nullptr);
+    }
+    if(nullptr == pPresentRenderTargetView && g_BeforeUiRT) {
+        pPresentRenderTargetView = g_BeforeUiRT;
+        pPresentRenderTargetView->AddRef();
+    }
+
     g_CampathDrawer.OnRenderThread_Present();
 
     if (g_ReShadeAdvancedfx.IsConnected() && !g_ReShadeAdvancedfx.HasRendered()) {
@@ -2196,8 +2223,8 @@ void Before_Present() {
     {
         if(!pRenderPassCommands->BeforePresent.Empty()) {
             ID3D11Resource* pRenderTargetViewResource = nullptr;
-            if(g_BeforeUiRT) {
-                g_BeforeUiRT->GetResource(&pRenderTargetViewResource);
+            if(pPresentRenderTargetView) {
+                pPresentRenderTargetView->GetResource(&pRenderTargetViewResource);
                 if(pRenderTargetViewResource) {
                     ID3D11Texture2D * pTexture = nullptr;
                     if(SUCCEEDED(pRenderTargetViewResource->QueryInterface(__uuidof(ID3D11Texture2D),(void**)&pTexture))){
@@ -2211,6 +2238,8 @@ void Before_Present() {
             }
         }
     }
+
+    if(pPresentRenderTargetView) pPresentRenderTargetView->Release();
 }
 
 void After_Present() {
