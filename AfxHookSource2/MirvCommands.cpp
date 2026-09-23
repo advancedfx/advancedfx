@@ -468,7 +468,8 @@ bool getAddressesFromClient(HMODULE clientDll) {
 	// in func itself it starts with 'if (*(char *)(param_1 + 0x38) != '\0')'
 	size_t g_Original_EOM_addr = getAddress(clientDll, "40 56 48 83 ec ?? 80 79 38 00 48 8b f1 0f 84 ?? ?? ?? ?? 48 89 5c 24 ?? 48 89 6c 24 ?? 48 89 7c 24");
 	if(g_Original_EOM_addr == 0) {
-		advancedfx::Warning("AFXWARNING: mirv_endofmatch is unavailable for this CS2 build.\n");
+		ErrorBox(MkErrStr(__FILE__, __LINE__));
+		res = false;
 	}
 
 	// See where spec_show_xray is checked, has offsets to glowProperty
@@ -531,7 +532,7 @@ void HookMirvCommands(HMODULE clientDll) {
     DetourUpdateThread(GetCurrentThread());
 
 	DetourAttach(&(PVOID&)g_Original_OnFlashMaxAlphaChanged, new_OnFlashMaxAlphaChanged);
-	if (g_Original_EOM) DetourAttach(&(PVOID&)g_Original_EOM, new_EOM);
+	DetourAttach(&(PVOID&)g_Original_EOM, new_EOM);
 	DetourAttach(&(PVOID&)g_Original_setGlowProps, new_setGlowProps);
 	DetourAttach(&(PVOID&)org_shouldGlow, new_shouldGlow);
 	DetourAttach(&(PVOID&)org_ForceUpdateSkybox, new_ForceUpdateSkybox);

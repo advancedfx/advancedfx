@@ -138,7 +138,7 @@ void HookReplaceName(HMODULE clientDll)
 			DetourAttach(&(PVOID&)g_Org_GetDecoratedPlayerName, New_GetDecoratedPlayerName);
 			if(NO_ERROR != DetourTransactionCommit()) ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
-		else advancedfx::Warning("AFXWARNING: decorated player-name replacement is unavailable for this CS2 build.\n");
+        else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
         // fn has 3rd reference to string "WWWWWWWWWWWWWWWW"
         if(void ** vtable = (void **)Afx::BinUtils::FindClassVtable(clientDll, ".?AVCCSPlayerController@@", 0, 0)) {
