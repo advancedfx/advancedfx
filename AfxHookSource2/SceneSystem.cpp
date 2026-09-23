@@ -1028,10 +1028,12 @@ void SetContextFromDrawingData(SceneLayerContext & context, void * pDrawingData)
 	context.Flags = *(uint32_t*)((unsigned char*)pSceneLayer + g_SceneLayer_Flags_Offset);	
 }
 
-typedef void (__fastcall * InitDrawingData_t)(unsigned char * pDrawingData,void *pSceneView,void *pSceneLayer,uint32_t unkFlags4);
+// Since the 2026-09-23 build there is a 5th (stack) argument: optional name suffix, formatted as "/%s" when not null.
+// It must be forwarded, otherwise the original formats garbage from our stack frame and crashes in tier0.
+typedef void (__fastcall * InitDrawingData_t)(unsigned char * pDrawingData,void *pSceneView,void *pSceneLayer,uint32_t unkFlags4,const char *pszNameSuffix);
 InitDrawingData_t org_InitDrawingData = nullptr;
-void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneView,void *pSceneLayer,uint32_t unkFlags4) {
-	org_InitDrawingData(pDrawingData,pSceneView,pSceneLayer,unkFlags4);
+void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneView,void *pSceneLayer,uint32_t unkFlags4,const char *pszNameSuffix) {
+	org_InitDrawingData(pDrawingData,pSceneView,pSceneLayer,unkFlags4,pszNameSuffix);
 
 	if(g_bSceneFilterSystemActive && pDrawingData) {
 		void * pCRenderContextDx11_SoftwareCommandList = ((void **)pDrawingData)[4];
@@ -1742,13 +1744,14 @@ void FUN_18009c880(longlong param_1,longlong param_2)
 	//org_RenderLayerDrawListPart = (RenderLayerDrawListPart_t)getAddress(sceneSystemDll, "4c 89 4c 24 20 4c 89 44 24 18 48 89 54 24 10 48 89 4c 24 08 55 53 56 57 41 57 48 8d 6c 24 e0 48 81 ec 20 01 00 00");
 	//if (0 == org_RenderLayerDrawListPart) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-	org_InitDrawingData = (InitDrawingData_t)getAddress(sceneSystemDll, "48 89 5c 24 08 48 89 6c 24 10 48 89 74 24 18 57 41 54 41 55 41 56 41 57 48 83 ec 30 0f b6 81 30 02 00 00");
+	// The drawing data flags byte moved (0x230 -> 0x250 in 2026-09-23 build), so it's wildcarded in the patterns below.
+	org_InitDrawingData = (InitDrawingData_t)getAddress(sceneSystemDll, "48 89 5c 24 08 48 89 6c 24 10 48 89 74 24 18 57 41 54 41 55 41 56 41 57 48 81 ec ?? ?? 00 00 0f b6 81 ?? ?? 00 00 48 8b d9 4c 8b fa");
 	if (0 == org_InitDrawingData) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-	org_DrawSceneData = (DrawSceneData_t)getAddress(sceneSystemDll, "48 89 5c 24 20 55 48 83 ec 30 f6 81 30 02 00 00 40");
+	org_DrawSceneData = (DrawSceneData_t)getAddress(sceneSystemDll, "48 89 5c 24 20 55 48 83 ec 30 f6 81 ?? ?? 00 00 40");
 	if (0 == org_DrawSceneData) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-	org_DrawCurrentPrimitives = (DrawCurrentPrimitives_t)getAddress(sceneSystemDll, "4c 8b dc 53 48 81 ec d0 00 00 00 83 79 30 01 48 8b d9 0f 8c a0 02 00 00 48 8b 49 20 48 8d 15 ?? ?? ?? ??");
+	org_DrawCurrentPrimitives = (DrawCurrentPrimitives_t)getAddress(sceneSystemDll, "4c 8b dc 53 48 81 ec d0 00 00 00 83 79 30 01 48 8b d9 0f 8c ?? ?? ?? ?? 48 8b 49 20 48 8d 15 ?? ?? ?? ??");
 	if (0 == org_DrawCurrentPrimitives) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 	// See notes in HookSceneSystem about DebugSceneData above:

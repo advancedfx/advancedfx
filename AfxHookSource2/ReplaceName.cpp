@@ -131,7 +131,7 @@ void HookReplaceName(HMODULE clientDll)
 
         // GetDecoratedPlayerName
         // references "<failure>"        
-		g_Org_GetDecoratedPlayerName = (GetDecoratedPlayerName_t)getAddress(clientDll, "40 55 53 56 41 54 41 55 41 56 48 8d ac 24 18 fe ff ff 48 81 ec e8 02 00 00 4c 8b ea 4c 8b e1 45 84 c9 75 21 8b 4a 04 f7 c1 ff ff ff 3f");	
+		g_Org_GetDecoratedPlayerName = (GetDecoratedPlayerName_t)getAddress(clientDll, "48 89 54 24 10 55 53 41 54 41 55 41 56 41 57 48 8d ac 24 ?? ?? ff ff 48 81 ec ?? ?? 00 00 4c 8b ea 4c 8b e1 45 84 c9 75 ?? 44 8b 4a 04 41 f7 c1 ff ff ff 3f");
 		if (g_Org_GetDecoratedPlayerName != 0) {
 			DetourTransactionBegin();
 			DetourUpdateThread(GetCurrentThread());
@@ -142,7 +142,7 @@ void HookReplaceName(HMODULE clientDll)
 
         // fn has 3rd reference to string "WWWWWWWWWWWWWWWW"
         if(void ** vtable = (void **)Afx::BinUtils::FindClassVtable(clientDll, ".?AVCCSPlayerController@@", 0, 0)) {
-            g_Org_CCSPlayerController_GetPlayerName = (CCSPlayerController_GetPlayerName_t)vtable[226];
+            g_Org_CCSPlayerController_GetPlayerName = (CCSPlayerController_GetPlayerName_t)vtable[230]; // was 226 before 2026-09-23 build
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
             DetourAttach(&(PVOID&)g_Org_CCSPlayerController_GetPlayerName, New_CCSPlayerController_GetPlayerName);

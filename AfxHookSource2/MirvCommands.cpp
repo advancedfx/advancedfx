@@ -466,7 +466,7 @@ bool getAddressesFromClient(HMODULE clientDll) {
 
 	// called in func with "cs_win_panel_match", "cs_game_disconnected", "cs_match_end_restart","nextlevel_changed","hltv_replay" in the end after if statement
 	// in func itself it starts with 'if (*(char *)(param_1 + 0x38) != '\0')'
-	size_t g_Original_EOM_addr = getAddress(clientDll, "40 56 48 83 ec 40 80 79 38 00 48 8b f1 0f 84 ?? ?? ?? ?? 48 89 5c 24 58 48 89 6c 24 60 4c 89 64 24 30 45 33 e4");
+	size_t g_Original_EOM_addr = getAddress(clientDll, "40 56 48 83 ec ?? 80 79 38 00 48 8b f1 0f 84 ?? ?? ?? ?? 48 89 5c 24 ?? 48 89 6c 24 ?? 48 89 7c 24");
 	if(g_Original_EOM_addr == 0) {
 		advancedfx::Warning("AFXWARNING: mirv_endofmatch is unavailable for this CS2 build.\n");
 	}
@@ -513,7 +513,9 @@ bool getAddressesFromClient(HMODULE clientDll) {
 		org_ForceUpdateSkybox = (ForceUpdateSkybox_t)(addr + 2 + 7 + offset);
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-	if (auto addr = getAddress(clientDll, "48 8D B3 ?? ?? ?? ?? 48 8B 0E")) {
+	// Must hit the lea inside ForceUpdateSkybox (C_EnvSky pointer field, 0x10E8 in 2026-09-23 build).
+	// The shorter "48 8D B3 ?? ?? ?? ?? 48 8B 0E" first matches an unrelated function there (offset 0x118).
+	if (auto addr = getAddress(clientDll, "48 8D B3 ?? ?? ?? ?? 48 8B 0E 48 85 C9")) {
 		g_Skybox_UnkPtr_Offset =  *(uint32_t*)(addr + 3);
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
