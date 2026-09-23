@@ -38,6 +38,7 @@ namespace {
 			if (demo && demo->IsPlayingDemo() && ((!recording && demo->IsDemoPaused()) || (recording && recordStart > 0.0f))) {
 				// Normalize paused seeks and the first recording frame, not subsequent
 				// playback or recording frames.
+				// Field provenance and layout checks are in Addresses_InitEngine2Dll.
 				auto data = static_cast<unsigned char *>(self);
 				auto & remainder = *reinterpret_cast<double *>(data + 0xf0);
 				const float interval = *reinterpret_cast<float *>(data + 0x140);
