@@ -464,11 +464,12 @@ bool getAddressesFromClient(HMODULE clientDll) {
 		res = false;
 	}
 
-	// called in func with "cs_win_panel_match", "cs_game_disconnected", "cs_match_end_restart","nextlevel_changed","hltv_replay" in the end after if statement
-	// in func itself it starts with 'if (*(char *)(param_1 + 0x38) != '\0')'
-	size_t g_Original_EOM_addr = getAddress(clientDll, "40 56 48 83 ec 40 80 79 38 00 48 8b f1 0f 84 ?? ?? ?? ?? 48 89 5c 24 58 48 89 6c 24 60 4c 89 64 24 30 45 33 e4");
+	// called in func with "cs_win_panel_match", "cs_game_disconnected", "cs_match_end_restart","nextlevel_changed","hltv_replay" in the end inside if statement
+	// has strings "team_intro_end", "hide_deathpanel"
+	size_t g_Original_EOM_addr = getAddress(clientDll, "48 8B C4 88 50 ?? 55 41 56 48 8B EC 48 83 EC ?? 80 79 ?? 00 4C 8B F1");
 	if(g_Original_EOM_addr == 0) {
-		advancedfx::Warning("AFXWARNING: mirv_endofmatch is unavailable for this CS2 build.\n");
+		ErrorBox(MkErrStr(__FILE__, __LINE__));
+		res = false;
 	}
 
 	// See where spec_show_xray is checked, has offsets to glowProperty
@@ -513,7 +514,9 @@ bool getAddressesFromClient(HMODULE clientDll) {
 		org_ForceUpdateSkybox = (ForceUpdateSkybox_t)(addr + 2 + 7 + offset);
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-	if (auto addr = getAddress(clientDll, "48 8D B3 ?? ?? ?? ?? 48 8B 0E")) {
+	// Must hit the lea inside ForceUpdateSkybox (C_EnvSky pointer field, 0x10E8 in 2026-09-23 build).
+	// The shorter "48 8D B3 ?? ?? ?? ?? 48 8B 0E" first matches an unrelated function there (offset 0x118).
+	if (auto addr = getAddress(clientDll, "48 8D B3 ?? ?? ?? ?? 48 8B 0E 48 85 C9")) {
 		g_Skybox_UnkPtr_Offset =  *(uint32_t*)(addr + 3);
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
@@ -529,7 +532,7 @@ void HookMirvCommands(HMODULE clientDll) {
     DetourUpdateThread(GetCurrentThread());
 
 	DetourAttach(&(PVOID&)g_Original_OnFlashMaxAlphaChanged, new_OnFlashMaxAlphaChanged);
-	if (g_Original_EOM) DetourAttach(&(PVOID&)g_Original_EOM, new_EOM);
+	DetourAttach(&(PVOID&)g_Original_EOM, new_EOM);
 	DetourAttach(&(PVOID&)g_Original_setGlowProps, new_setGlowProps);
 	DetourAttach(&(PVOID&)org_shouldGlow, new_shouldGlow);
 	DetourAttach(&(PVOID&)org_ForceUpdateSkybox, new_ForceUpdateSkybox);

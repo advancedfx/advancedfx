@@ -95,7 +95,7 @@ const char * CEntityInstance::GetClientClassName() {
     // GetClientClass function.
     // find it by searching for 4th full-ptr ref to "C_PlantedC4" subtract sizeof(void*) (0x8) and search function that references this struct.
     // you need to search for raw bytes, GiHidra doesn't seem to find the reference.
-    void * pClientClass = ((void * (__fastcall *)(void *)) (*(void***)this)[48]) (this);
+    void * pClientClass = ((void * (__fastcall *)(void *)) (*(void***)this)[49]) (this); // was 48 before 2026-09-23 build
 
     if(pClientClass) {
         return *(const char**)((unsigned char*)pClientClass + 0x10);
@@ -108,7 +108,7 @@ const char * CEntityInstance::GetClientClassName() {
 
 bool CEntityInstance::IsPlayerPawn() {
 	// See cl_ent_text drawing function.
-	return ((bool (__fastcall *)(void *)) (*(void***)this)[155]) (this);
+	return ((bool (__fastcall *)(void *)) (*(void***)this)[158]) (this); // was 155 before 2026-09-23 build
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerPawnHandle() {
@@ -119,7 +119,7 @@ SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerPawnHandle() {
 
 bool CEntityInstance::IsPlayerController() {
 	// See cl_ent_text drawing function. Near "Pawn: (%d) Name: %s".
-	return ((bool (__fastcall *)(void *)) (*(void***)this)[156]) (this);    
+	return ((bool (__fastcall *)(void *)) (*(void***)this)[159]) (this); // was 156 before 2026-09-23 build
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerControllerHandle() {
@@ -152,12 +152,12 @@ void CEntityInstance::GetOrigin(float & x, float & y, float & z) {
 
 void CEntityInstance::GetRenderEyeOrigin(float outOrigin[3]) {
 	// GetRenderEyeAngles vtable offset minus 1
-	((void (__fastcall *)(void *,float outOrigin[3])) (*(void***)this)[170]) (this,outOrigin);
+	((void (__fastcall *)(void *,float outOrigin[3])) (*(void***)this)[173]) (this,outOrigin); // was 170 before 2026-09-23 build
 }
 
 void CEntityInstance::GetRenderEyeAngles(float outAngles[3]) {
 	// See cl_track_render_eye_angles. Near "Render eye angles: %.7f, %.7f, %.7f\n".
-	((void (__fastcall *)(void *,float outAngles[3])) (*(void***)this)[171]) (this,outAngles);
+	((void (__fastcall *)(void *,float outAngles[3])) (*(void***)this)[174]) (this,outAngles); // was 171 before 2026-09-23 build
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetViewEntityHandle() {
@@ -416,9 +416,10 @@ void Hook_ClientEntitySystem3(HMODULE clientDll) {
 	// first function can be found near "attachment_point" or called with "muzzle_flash" as last arg
 	// second function in some places can be found with offset to m_nAttachmentIndex of CEffectData as 2nd arg
 
-	if (auto startAddr = getAddress(clientDll, "E8 ?? ?? ?? ?? 0F B6 95 ?? ?? ?? ?? 84 D2 74 29 4C 8D 45 B0 48 8B CE E8 ?? ?? ?? ??")) {
+	// Since 2026-09-23 the je between the calls is near (0F 84 rel32) instead of short, so the second call is at +27.
+	if (auto startAddr = getAddress(clientDll, "E8 ?? ?? ?? ?? 0F B6 95 ?? ?? ?? ?? 84 D2 0F 84 ?? ?? ?? ?? 4C 8D 45 B0 48 8B CE E8 ?? ?? ?? ??")) {
 		org_LookupAttachment = (org_LookupAttachment_t)(startAddr + 5 + *(int32_t*)(startAddr + 1));
-		org_GetAttachment = (org_GetAttachment_t)(startAddr + 23 + 5 + *(int32_t*)(startAddr + 23 + 1));
+		org_GetAttachment = (org_GetAttachment_t)(startAddr + 27 + 5 + *(int32_t*)(startAddr + 27 + 1));
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 }
 
