@@ -1986,6 +1986,12 @@ bool BlockColorDepth(void* pCRenderContextDx11_SoftwareCommandList, bool bColor,
     return false;
 }
 
+void QueueCallbackBeforeUi(void* pCRenderContextDx11_SoftwareCommandList) {
+    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
+    fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeUi());
+}
+
+
 /*
 typedef void (STDMETHODCALLTYPE * PSSetShaderResources_t)(ID3D11DeviceContext* This,
     _In_range_(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT - 1)  UINT StartSlot,
@@ -2545,18 +2551,6 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
             }
         }
     }  
-    else if(fmt && 0 == strcmp("#%s/SetupLightsAndViewConstants",fmt)) {
-        va_list args;
-        va_start(args, fmt);
-        const char * pszArg0 = va_arg(args, const char *);
-        if(pszArg0 && 0 == strcmp("CSGOHud",pszArg0)) {
-            if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-                auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
-                fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeUi());
-            }
-        }
-    }
-
 
     return result;
 }
