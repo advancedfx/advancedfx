@@ -46,8 +46,9 @@ void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
 				"f3 0f 10 9f 40 01 00 00 48 8d 9f f0 00 00 00 f2 0f 10 13 f2 41 0f 58 ?? 0f 5a cb 89 73 08 f2 0f 11 13");
 			// The adjacent mode dispatch reads this+0x160. Find its setup function
 			// via the "CQ disabled, re-syncing" log string: it writes 0 when CQ is
-			// disabled, 1/2 for CQ send modes, and 3 in a special demo-file branch.
-			// Modes 0 and 3 share this simulation path; mode 3's enum name is unknown.
+			// disabled, 1/2 for CQ send modes, and 3 when the global demo file is
+			// the CDemoPlayer instance and its IsPlayingDemo flag is set. Modes 0
+			// and 3 share this simulation path; the original enum name is unknown.
 			MemRange mode = FindPatternString(body,
 				"8b 8f 60 01 00 00 85 c9 0f 84 ?? ?? ?? ?? 41 2b ?? 74 09 41 3b ?? 0f 85");
 			// The frame-time helper reads cached host_framerate at 0x14c.
