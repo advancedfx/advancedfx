@@ -326,10 +326,12 @@ enum class SceneSemanticGroup : int {
 	World = 6,
 	Sky = 7,
 	Smoke = 8,
-	Count = 9
+	Xhair = 9,
+	Count = 10
 };
 
 SceneObjectDrawPolicy g_SceneSemanticPolicies[(int)SceneSemanticGroup::Count] = {
+	SceneObjectDrawPolicy::Draw,
 	SceneObjectDrawPolicy::Draw,
 	SceneObjectDrawPolicy::Draw,
 	SceneObjectDrawPolicy::Draw,
@@ -373,6 +375,10 @@ void ClearSceneFliterSystemPolicies() {
 }
 
 void SetupSceneFilterPolicies(const class CStreamSettings & settings) {
+	if (settings.Capture == CStreamSettings::Capture_e::BeforeUi) {
+		g_SceneSemanticPolicies[(int)SceneSemanticGroup::Xhair] = SceneObjectDrawPolicy::Hide;
+	}
+
 	switch(settings.ViewModelAction) {
 	case CStreamSettings::Action::NoDraw:
 		g_SceneSemanticPolicies[(int)SceneSemanticGroup::ViewModel] = SceneObjectDrawPolicy::Hide;
@@ -1074,6 +1080,13 @@ void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneVie
 				context.Flags,
 				unkFlags4
 			);
+		}
+
+		if (0 == strcmp(context.ViewPass, "CSGOCrosshair")) {
+			SceneObjectDrawPolicy policy = g_SceneSemanticPolicies[(int)SceneSemanticGroup::Xhair];
+			if (policy == SceneObjectDrawPolicy::Hide) {
+				BlockColorDepth(pCRenderContextDx11_SoftwareCommandList);
+			}
 		}
 
 		if(g_OverlaysPolicy != SceneObjectDrawPolicy::Draw && context.ViewPass && (
