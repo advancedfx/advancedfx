@@ -1135,9 +1135,6 @@ public:
 
                     if (m_pNormalDepthTexture)
                     {
-                        UINT numViewPorts = 1;
-                        pContext->RSGetViewports(&numViewPorts, &m_NormalViewPort);
-
                         ID3D11DepthStencilView* pCurrentDepthStencilView = nullptr;
                         ID3D11DepthStencilView* pNullDepthStencilView = nullptr;
                         pContext->OMGetRenderTargets(0, nullptr, &pCurrentDepthStencilView);
@@ -1160,7 +1157,8 @@ public:
                         m_DeviceContext->OMSetRenderTargets(1, &m_pDepthTextureRtv[depthTextureType], nullptr);
                         m_DeviceContext->OMSetBlendState(m_BlendState, NULL, 0xffffffff);                        
 
-                        m_DeviceContext->RSSetViewports(1, &m_NormalViewPort);
+                        D3D11_VIEWPORT viewPort = {0.0f,0.0f,(FLOAT)m_DeviceTextureDesc.Width,(FLOAT)m_DeviceTextureDesc.Height,0.0f,1.0f};
+                        m_DeviceContext->RSSetViewports(1, &viewPort);
 
                         SOURCESDK::VMatrix projectionMatrix;
                         g_RenderThread_ProjectionMatrix.Get(projectionMatrix);
@@ -1793,11 +1791,84 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
 
 void Before_Present();
 void After_Present();
-            
-class CAfxRenderCallbackUpdateBuffers : public IRenderThreadCallback
+
+// CS2 renders extra passes into a temporary buffer (g_BeforeUiRT) and does not
+// resolve it onto the swap chain's back buffer, so we have to do it before presenting.
+// Maps a format to its typeless family, CopyResource permits formats of the same family.
+static DXGI_FORMAT GetFormatFamily(DXGI_FORMAT format) {
+    switch(format) {
+    case DXGI_FORMAT_R8G8B8A8_TYPELESS:
+    case DXGI_FORMAT_R8G8B8A8_UNORM:
+    case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+    case DXGI_FORMAT_R8G8B8A8_UINT:
+    case DXGI_FORMAT_R8G8B8A8_SNORM:
+    case DXGI_FORMAT_R8G8B8A8_SINT:
+        return DXGI_FORMAT_R8G8B8A8_TYPELESS;
+    case DXGI_FORMAT_B8G8R8A8_TYPELESS:
+    case DXGI_FORMAT_B8G8R8A8_UNORM:
+    case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+        return DXGI_FORMAT_B8G8R8A8_TYPELESS;
+    case DXGI_FORMAT_R10G10B10A2_TYPELESS:
+    case DXGI_FORMAT_R10G10B10A2_UNORM:
+    case DXGI_FORMAT_R10G10B10A2_UINT:
+        return DXGI_FORMAT_R10G10B10A2_TYPELESS;
+    case DXGI_FORMAT_R16G16B16A16_TYPELESS:
+    case DXGI_FORMAT_R16G16B16A16_FLOAT:
+    case DXGI_FORMAT_R16G16B16A16_UNORM:
+    case DXGI_FORMAT_R16G16B16A16_UINT:
+    case DXGI_FORMAT_R16G16B16A16_SNORM:
+    case DXGI_FORMAT_R16G16B16A16_SINT:
+        return DXGI_FORMAT_R16G16B16A16_TYPELESS;
+    }
+    return format;
+}
+
+static void CopyRTToBackBuffer(ID3D11DeviceContext * pDeviceContext) {
+    if(!pDeviceContext || !g_pSwapChain) return;
+
+    ID3D11Texture2D * pBackBuffer = nullptr;
+    if(FAILED(g_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&pBackBuffer)) || !pBackBuffer) return;
+
+    ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
+    pDeviceContext->OMGetRenderTargets(1, &pRenderTargetViews[0], nullptr);
+    if(auto pRenderTargetView = pRenderTargetViews[0]) {
+
+        ID3D11Resource * pSrcResource = nullptr;
+        pRenderTargetView->GetResource(&pSrcResource);
+        if(pSrcResource) {
+            ID3D11Texture2D * pSrc = nullptr;
+            if(SUCCEEDED(pSrcResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&pSrc)) && pSrc) {
+                if(pSrc != pBackBuffer) {
+                    D3D11_TEXTURE2D_DESC srcDesc, dstDesc;
+                    pSrc->GetDesc(&srcDesc);
+                    pBackBuffer->GetDesc(&dstDesc);
+
+                    if(srcDesc.Width == dstDesc.Width && srcDesc.Height == dstDesc.Height) {
+                        if(srcDesc.SampleDesc.Count > 1) {
+                            pDeviceContext->ResolveSubresource(pBackBuffer, 0, pSrc, 0, dstDesc.Format);
+                        } else if(GetFormatFamily(srcDesc.Format) == GetFormatFamily(dstDesc.Format)) {
+                            pDeviceContext->CopyResource(pBackBuffer, pSrc);
+                        } else {
+                            advancedfx::Warning("AFXERROR: Preview format mismatch (%i vs. %i), cannot copy to back buffer.\n", (int)srcDesc.Format, (int)dstDesc.Format);
+                        }
+                    } else {
+                        advancedfx::Warning("AFXERROR: Preview size mismatch, cannot copy to back buffer.\n");
+                    }
+                }
+                pSrc->Release();
+            }
+            pSrcResource->Release();
+        }
+        pBackBuffer->Release();
+
+        pRenderTargetView->Release();
+    }
+}
+
+class CAfxRenderCallbackOnBeginSubmitDisplayLists : public IRenderThreadCallback
 {
 public:
-    CAfxRenderCallbackUpdateBuffers()
+    CAfxRenderCallbackOnBeginSubmitDisplayLists()
     {
     }
 
@@ -1806,6 +1877,7 @@ public:
             Before_Present();
 
             if(g_bExpectPresent && g_pSwapChain) {
+                CopyRTToBackBuffer(g_RenderCommands.RenderThread_GetContext());
                 g_Present_LastResult = g_OldPresent(g_pSwapChain, g_Present_LastSyncInterval, g_Present_LastPresentFlags);
             }
 
@@ -1817,7 +1889,7 @@ public:
     }
 private:
 };
-
+            
 class CAfxRenderCallbackBeforeMaybeDrawSmoke : public IRenderThreadCallback
 {
 public:
@@ -1990,7 +2062,6 @@ void QueueCallbackBeforeUi(void* pCRenderContextDx11_SoftwareCommandList) {
     auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
     fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeUi());
 }
-
 
 /*
 typedef void (STDMETHODCALLTYPE * PSSetShaderResources_t)(ID3D11DeviceContext* This,
@@ -2195,18 +2266,23 @@ void Before_Present() {
     if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands())
     {
         if(!pRenderPassCommands->BeforePresent.Empty()) {
-            ID3D11Resource* pRenderTargetViewResource = nullptr;
-            if(g_BeforeUiRT) {
-                g_BeforeUiRT->GetResource(&pRenderTargetViewResource);
-                if(pRenderTargetViewResource) {
-                    ID3D11Texture2D * pTexture = nullptr;
-                    if(SUCCEEDED(pRenderTargetViewResource->QueryInterface(__uuidof(ID3D11Texture2D),(void**)&pTexture))){
-                        if(pTexture) {
-                            pRenderPassCommands->OnBeforePresent(pTexture);
-                            pTexture->Release();
+            if(auto pDeviceContext = g_RenderCommands.RenderThread_GetContext()) {
+                ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
+                pDeviceContext->OMGetRenderTargets(1, &pRenderTargetViews[0], nullptr);
+                if(auto pRenderTargetView = pRenderTargetViews[0]) {
+                    ID3D11Resource* pRenderTargetViewResource = nullptr;
+                    pRenderTargetView->GetResource(&pRenderTargetViewResource);
+                    if(pRenderTargetViewResource) {
+                        ID3D11Texture2D * pTexture = nullptr;
+                        if(SUCCEEDED(pRenderTargetViewResource->QueryInterface(__uuidof(ID3D11Texture2D),(void**)&pTexture))){
+                            if(pTexture) {
+                                pRenderPassCommands->OnBeforePresent(pTexture);
+                                pTexture->Release();
+                            }
                         }
+                        pRenderTargetViewResource->Release();
                     }
-                    pRenderTargetViewResource->Release();
+                    pRenderTargetView->Release();
                 }
             }
         }
@@ -2241,13 +2317,13 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
     ) {
         g_Present_LastSyncInterval = SyncInterval;
         g_Present_LastPresentFlags = Flags;
-    
-        Before_Present();
 
-        HRESULT result = g_Present_Suppress ? g_Present_LastResult : (g_Present_LastResult = g_OldPresent(This, SyncInterval, Flags));
+        Before_Present();
+    
+        HRESULT result = g_Present_Suppress && !g_bExpectPresent ? g_Present_LastResult : (g_Present_LastResult = g_OldPresent(This, SyncInterval, Flags));
         
         After_Present();
-
+        
         return result;
     }
 
@@ -2562,10 +2638,10 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr2(unsigned char
     // It would be possible to pass vararg on with asm trampoline, but it seems unused?
     unsigned char * result = g_Old_SceneSystem_CreateRenderContextPtr2(param_1, param_2,pDevice,"Hooked by HLAE / advancedfx.org, if you happen to actually see this please file a bug report, please!");
 
-    if (fmt && 0 == strcmp(fmt, "UpdateBuffers")) {
+    if (fmt && 0 == strcmp(fmt, "OnBeginSubmitDisplayLists")) {
         if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
             auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
-            fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackUpdateBuffers());
+            fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackOnBeginSubmitDisplayLists());
         }
     }
 
@@ -3010,6 +3086,8 @@ public:
     }
 
     void EngineThread_BeginNextRenderPass() {
+        m_LastExtraPassesIterator = m_RecordingExtraPassesIterator;
+
         auto it = m_RecordingExtraPassesIterator;
         while(it != m_RecordingExtraPasses.end()) {
             it->EngineThread_BeginFrame();
@@ -3019,19 +3097,22 @@ public:
             if(it == m_RecordingExtraPasses.end()) break; // done.
             if(last_it->CompareRenderPass(*it) != 0) break; // done for this render pass.
         }
-    }
 
-    void EngineThread_EndNextRenderPass() {
         while(m_RecordingExtraPassesIterator != m_RecordingExtraPasses.end()) {
-            m_RecordingExtraPassesIterator->EngineThread_EndFrame();
-
             auto last_it = m_RecordingExtraPassesIterator;
             m_RecordingExtraPassesIterator++;
             if(m_RecordingExtraPassesIterator == m_RecordingExtraPasses.end()) break; // done.
             if(last_it->CompareRenderPass(*m_RecordingExtraPassesIterator) != 0) break; // done for this render pass.
-        }
+        }      
 
         EngineThread_Suppress_Present();
+    }
+
+    void EngineThread_EndNextRenderPass() {
+        while(m_LastExtraPassesIterator != m_RecordingExtraPassesIterator) {
+            m_LastExtraPassesIterator->EngineThread_EndFrame();
+            m_LastExtraPassesIterator++;
+        }
     }    
 
     void EngineThread_BeginMainRenderPass() {
@@ -3059,14 +3140,17 @@ public:
                 }
             }
         }
+
+        if(EngineThread_HasNextRenderPass()) {
+            EngineThread_Expect_Present();
+            EngineThread_Suppress_Present();
+        }
     }
 
     void EngineThread_EndMainRenderPass() {
         for(auto it = m_RecordingMainPass.begin(); it != m_RecordingMainPass.end(); it++) {
             it->EngineThread_EndFrame();
         }
-
-        if(EngineThread_HasNextRenderPass()) EngineThread_Expect_Present();
     }
 
 private:
@@ -3556,6 +3640,7 @@ private:
     std::list<CStream> m_RecordingMainPass;
     std::multiset<CStream,RenderPassCompare> m_RecordingExtraPasses;
     std::multiset<CStream,RenderPassCompare>::iterator m_RecordingExtraPassesIterator;
+    std::multiset<CStream,RenderPassCompare>::iterator m_LastExtraPassesIterator;    
 
     std::map<std::string, CStreamSettings> m_Streams;
 

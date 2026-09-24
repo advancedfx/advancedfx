@@ -1017,11 +1017,14 @@ extern void QueueCallbackBeforeUi(void* pCRenderContextDx11_SoftwareCommandList)
 typedef void * (__fastcall * SoftwareCommandList_Commit_t)(void * pThisSoftwareCommandList);
 SoftwareCommandList_Commit_t org_SoftwareCommandList_Commit = nullptr;
 void * __fastcall new_SoftwareCommandList_Commit(void * pThisSoftwareCommandList) {
+
 	CheckAndDo_Untoggle_BlockColorDepth(pThisSoftwareCommandList);
+
 	if(pThisSoftwareCommandList == g_pPostProcessing_CommandList) {
 		g_pPostProcessing_CommandList = nullptr;
 		QueueCallbackBeforeUi(pThisSoftwareCommandList);
 	}
+
 	return org_SoftwareCommandList_Commit(pThisSoftwareCommandList);
 }
 
@@ -1064,10 +1067,7 @@ void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneVie
 		}				
 	}
 
-	if(0 == strcmp(context.ViewPass, "PostProcessing")
-	) {
-		g_pPostProcessing_CommandList = pCRenderContextDx11_SoftwareCommandList;
-	}
+	if(0 == strcmp(context.ViewPass, "PostProcessing")) g_pPostProcessing_CommandList = pCRenderContextDx11_SoftwareCommandList; 
 
 	if(g_bSceneFilterSystemActive && pDrawingData) {
 		CheckAndDo_Untoggle_BlockColorDepth(pCRenderContextDx11_SoftwareCommandList);
