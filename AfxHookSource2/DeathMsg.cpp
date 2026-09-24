@@ -1243,7 +1243,7 @@ void __fastcall My_Panorama_CStylePropertyWashColor_Clone(void * This, void * pT
 
 void getDeathMsgAddrs(HMODULE clientDll) {
 	// can be found with strings like "attacker" and "userid", etc. it basically takes all info from player_death event, called by rbanch in a function that references "player_death", "realtime_passthrough"
-	if (auto addr = getAddress(clientDll, "48 89 4c 24 08 55 53 41 54 41 55 41 56 48 8d ac 24 60 f7 ff ff")) {
+	if (auto addr = getAddress(clientDll, "48 89 4C 24 ?? 55 53 41 55 41 56 48 8D AC 24 ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 02")) {
 		g_Original_handlePlayerDeath = (g_Original_handlePlayerDeath_t)(addr);
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
