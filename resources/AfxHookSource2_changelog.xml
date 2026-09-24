@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.41.4</version>
+<time>2026-09-24T11:58Z</time>
+<changes>
+<change type="fixed">Adjusted to CS2 update (1.41.8.3)</change>
+<change type="fixed">Fixed mirv_streams issue with sniper scopes introduced in HLAE 2.192.3, thanks @Markxy for reporting</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.41.3</version>
 <time>2026-09-23T14:38Z</time>
 <changes>
