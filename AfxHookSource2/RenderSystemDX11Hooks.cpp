@@ -4751,16 +4751,21 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
 }
 
 void CAfxStreams::Console_Preview(advancedfx::ICommandArgs* args) {
-    if(m_Recording) {
-        advancedfx::Warning("AFXERROR: can not be changed during recording.");
-        return;
-    }
-
 	int argC = args->ArgC();
 	char const* arg0 = args->ArgV(0);
 
     if(2 <= argC) {
         char const* arg1 = args->ArgV(1);
+
+        if(0 == strcmp("",arg1)) {
+            Console_PreviewEnd();
+            return;
+        }
+
+        if(m_Recording) {
+            advancedfx::Warning("AFXERROR: can not be changed during recording.");
+            return;
+        }
 
         auto it = m_Streams.find(arg1);
 
@@ -4776,7 +4781,7 @@ void CAfxStreams::Console_Preview(advancedfx::ICommandArgs* args) {
     }
 
 	advancedfx::Message(
-		"%s <sUniqueStreamName> - Preview stream with given name.\n"
+		"%s <sUniqueStreamName> - Preview stream with given name or \"\" to end preview.\n"
 		, arg0
 	);
 }
