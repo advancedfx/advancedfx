@@ -941,6 +941,7 @@ static SceneObjectDrawPolicy GetSceneDataPolicy(SceneObjectFilterClass filterCla
 
 std::shared_timed_mutex g_BlockedSoftwareCommandListsMutex;
 std::set<void *> g_BlockedSoftwareCommandLists;
+std::atomic<void *> g_BeforeUi_SoftwareCommandLists;
 
 void ClearThreadSceneLayerContexts(){
 	if(g_bSceneFilterSystemActive) {
@@ -1009,10 +1010,16 @@ void CheckAndDo_Untoggle_BlockColorDepth(void * pThisSoftwareCommandList) {
 	}
 }
 
+void QueueCallbackBeforeUi(void* pCRenderContextDx11_SoftwareCommandList);
+
 typedef void * (__fastcall * SoftwareCommandList_Commit_t)(void * pThisSoftwareCommandList);
 SoftwareCommandList_Commit_t org_SoftwareCommandList_Commit = nullptr;
 void * __fastcall new_SoftwareCommandList_Commit(void * pThisSoftwareCommandList) {
 	CheckAndDo_Untoggle_BlockColorDepth(pThisSoftwareCommandList);
+	if(pThisSoftwareCommandList == g_BeforeUi_SoftwareCommandLists) {
+		g_BeforeUi_SoftwareCommandLists = nullptr;
+		QueueCallbackBeforeUi(pThisSoftwareCommandList);
+	}
 	return org_SoftwareCommandList_Commit(pThisSoftwareCommandList);
 }
 
@@ -1035,23 +1042,30 @@ InitDrawingData_t org_InitDrawingData = nullptr;
 void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneView,void *pSceneLayer,uint32_t unkFlags4,const char *pszNameSuffix) {
 	org_InitDrawingData(pDrawingData,pSceneView,pSceneLayer,unkFlags4,pszNameSuffix);
 
+	void * pCRenderContextDx11_SoftwareCommandList = ((void **)pDrawingData)[4];
+	
+	if(org_SoftwareCommandList_Commit == nullptr) {
+		void** vtable = *(void***)pCRenderContextDx11_SoftwareCommandList;
+		org_SoftwareCommandList_Commit = (SoftwareCommandList_Commit_t)vtable[11];
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+
+		DetourAttach(&(PVOID&)org_SoftwareCommandList_Commit, new_SoftwareCommandList_Commit);
+
+		if(NO_ERROR != DetourTransactionCommit()) {
+			ErrorBox("Failed to detour SoftwareCommandList::Commit.");
+			return;
+		}				
+	}
+
+	SceneLayerContext context;
+	SetContextFromDrawingData(context, pDrawingData);
+
+	if(0 == strcmp("PostProcessing", context.ViewPass)) g_BeforeUi_SoftwareCommandLists = pCRenderContextDx11_SoftwareCommandList;
+
 	if(g_bSceneFilterSystemActive && pDrawingData) {
-		void * pCRenderContextDx11_SoftwareCommandList = ((void **)pDrawingData)[4];
 		CheckAndDo_Untoggle_BlockColorDepth(pCRenderContextDx11_SoftwareCommandList);
-		if(org_SoftwareCommandList_Commit == nullptr) {
-			void** vtable = *(void***)pCRenderContextDx11_SoftwareCommandList;
-			org_SoftwareCommandList_Commit = (SoftwareCommandList_Commit_t)vtable[11];
-
-			DetourTransactionBegin();
-			DetourUpdateThread(GetCurrentThread());
-
-			DetourAttach(&(PVOID&)org_SoftwareCommandList_Commit, new_SoftwareCommandList_Commit);
-
-			if(NO_ERROR != DetourTransactionCommit()) {
-				ErrorBox("Failed to detour SoftwareCommandList::Commit.");
-				return;
-			}				
-		}
 
 		/*void** pSceneViewVtable = *(void***)pSceneView;
 		SceneLayerContext context;
@@ -1063,9 +1077,6 @@ void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneVie
 			auto result = g_RenderParam4ToSceneLayerContexts.emplace(pDrawingData, context);
 			if(!result.second) result.first->second = context;
 		}*/
-
-		SceneLayerContext context;
-		SetContextFromDrawingData(context, pDrawingData);
 
 		if(0 < g_iSceneFilterDebug) {
 			advancedfx::Message("AFXDEBUG: InitDrawingData layer=%s:%s flags=0x%08x unkFlags4=0x%08x\n",
