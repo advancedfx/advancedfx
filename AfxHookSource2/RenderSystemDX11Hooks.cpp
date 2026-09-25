@@ -4897,6 +4897,10 @@ void CAfxStreams::RecordStart(bool bPreview)
 {
 	RecordEnd(bPreview);
 
+	SOURCESDK::CS2::Cvar_s * handle_host_framerate = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("host_framerate", false).Get());
+	float host_framerate = m_OverrideFps ? m_OverrideFpsValue : (handle_host_framerate != nullptr ? handle_host_framerate->m_Value.m_flValue : 0);
+	if (!bPreview && MirvFix_QueueRecordStart(host_framerate, [this]() { RecordStart(false); })) return;
+
     m_AutoForceFullReSmoke = false;
     m_CompositeSmoke = false;
     
@@ -4913,7 +4917,6 @@ void CAfxStreams::RecordStart(bool bPreview)
 
             std::string utf8TakeDir;
             bool utf8TakeDirOk = WideStringToUTF8String(m_TakeDir.c_str(), utf8TakeDir);
-            SOURCESDK::CS2::Cvar_s * handle_host_framerate = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("host_framerate", false).Get());
             SOURCESDK::CS2::Cvar_s * handle_engine_no_focus_sleep = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("engine_no_focus_sleep", false).Get());
             SOURCESDK::CS2::Cvar_s * handle_r_always_render_all_windows = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_always_render_all_windows", false).Get());
             SOURCESDK::CS2::Cvar_s * handle_r_wait_on_present = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_wait_on_present", false).Get());
@@ -5054,6 +5057,7 @@ void AfxHookSourceRs_Engine_OnRecordEnd();
 void CAfxStreams::RecordEnd(bool bPreview)
 {
     if(!bPreview) {
+    	MirvFix_OnRecordEnd();
         if(m_Recording)
         {
             AfxHookSourceRs_Engine_OnRecordEnd();
