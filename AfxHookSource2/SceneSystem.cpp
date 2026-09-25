@@ -994,6 +994,7 @@ static bool TryGetActionFilterPolicy(const SceneLayerContext& context, const CBa
 
 std::shared_timed_mutex g_BlockedSoftwareCommandListsMutex;
 std::set<void *> g_BlockedSoftwareCommandLists;
+std::atomic<void *> g_BeforeUi_SoftwareCommandLists;
 
 void ClearThreadSceneLayerContexts(){
 	if(g_bSceneFilterSystemActive) {
@@ -1062,10 +1063,16 @@ void CheckAndDo_Untoggle_BlockColorDepth(void * pThisSoftwareCommandList) {
 	}
 }
 
+void QueueCallbackBeforeUi(void* pCRenderContextDx11_SoftwareCommandList);
+
 typedef void * (__fastcall * SoftwareCommandList_Commit_t)(void * pThisSoftwareCommandList);
 SoftwareCommandList_Commit_t org_SoftwareCommandList_Commit = nullptr;
 void * __fastcall new_SoftwareCommandList_Commit(void * pThisSoftwareCommandList) {
 	CheckAndDo_Untoggle_BlockColorDepth(pThisSoftwareCommandList);
+	if(pThisSoftwareCommandList == g_BeforeUi_SoftwareCommandLists) {
+		g_BeforeUi_SoftwareCommandLists = nullptr;
+		QueueCallbackBeforeUi(pThisSoftwareCommandList);
+	}
 	return org_SoftwareCommandList_Commit(pThisSoftwareCommandList);
 }
 
@@ -1081,28 +1088,37 @@ void SetContextFromDrawingData(SceneLayerContext & context, void * pDrawingData)
 	context.Flags = *(uint32_t*)((unsigned char*)pSceneLayer + g_SceneLayer_Flags_Offset);	
 }
 
-typedef void (__fastcall * InitDrawingData_t)(unsigned char * pDrawingData,void *pSceneView,void *pSceneLayer,uint32_t unkFlags4);
+// Since the 2026-09-23 build there is a 5th (stack) argument: optional name suffix, formatted as "/%s" when not null.
+// It must be forwarded, otherwise the original formats garbage from our stack frame and crashes in tier0.
+typedef void (__fastcall * InitDrawingData_t)(unsigned char * pDrawingData,void *pSceneView,void *pSceneLayer,uint32_t unkFlags4,const char *pszNameSuffix);
 InitDrawingData_t org_InitDrawingData = nullptr;
-void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneView,void *pSceneLayer,uint32_t unkFlags4) {
-	org_InitDrawingData(pDrawingData,pSceneView,pSceneLayer,unkFlags4);
+void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneView,void *pSceneLayer,uint32_t unkFlags4,const char *pszNameSuffix) {
+	org_InitDrawingData(pDrawingData,pSceneView,pSceneLayer,unkFlags4,pszNameSuffix);
+
+	void * pCRenderContextDx11_SoftwareCommandList = ((void **)pDrawingData)[4];
+	
+	if(org_SoftwareCommandList_Commit == nullptr) {
+		void** vtable = *(void***)pCRenderContextDx11_SoftwareCommandList;
+		org_SoftwareCommandList_Commit = (SoftwareCommandList_Commit_t)vtable[11];
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+
+		DetourAttach(&(PVOID&)org_SoftwareCommandList_Commit, new_SoftwareCommandList_Commit);
+
+		if(NO_ERROR != DetourTransactionCommit()) {
+			ErrorBox("Failed to detour SoftwareCommandList::Commit.");
+			return;
+		}				
+	}
+
+	SceneLayerContext context;
+	SetContextFromDrawingData(context, pDrawingData);
+
+	if(0 == strcmp("PostProcessing", context.ViewPass)) g_BeforeUi_SoftwareCommandLists = pCRenderContextDx11_SoftwareCommandList;
 
 	if(g_bSceneFilterSystemActive && pDrawingData) {
-		void * pCRenderContextDx11_SoftwareCommandList = ((void **)pDrawingData)[4];
 		CheckAndDo_Untoggle_BlockColorDepth(pCRenderContextDx11_SoftwareCommandList);
-		if(org_SoftwareCommandList_Commit == nullptr) {
-			void** vtable = *(void***)pCRenderContextDx11_SoftwareCommandList;
-			org_SoftwareCommandList_Commit = (SoftwareCommandList_Commit_t)vtable[11];
-
-			DetourTransactionBegin();
-			DetourUpdateThread(GetCurrentThread());
-
-			DetourAttach(&(PVOID&)org_SoftwareCommandList_Commit, new_SoftwareCommandList_Commit);
-
-			if(NO_ERROR != DetourTransactionCommit()) {
-				ErrorBox("Failed to detour SoftwareCommandList::Commit.");
-				return;
-			}				
-		}
 
 		/*void** pSceneViewVtable = *(void***)pSceneView;
 		SceneLayerContext context;
@@ -1114,9 +1130,6 @@ void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneVie
 			auto result = g_RenderParam4ToSceneLayerContexts.emplace(pDrawingData, context);
 			if(!result.second) result.first->second = context;
 		}*/
-
-		SceneLayerContext context;
-		SetContextFromDrawingData(context, pDrawingData);
 
 		if(0 < g_iSceneFilterDebug) {
 			advancedfx::Message("AFXDEBUG: InitDrawingData layer=%s:%s flags=0x%08x unkFlags4=0x%08x\n",
@@ -1797,13 +1810,14 @@ void FUN_18009c880(longlong param_1,longlong param_2)
 	//org_RenderLayerDrawListPart = (RenderLayerDrawListPart_t)getAddress(sceneSystemDll, "4c 89 4c 24 20 4c 89 44 24 18 48 89 54 24 10 48 89 4c 24 08 55 53 56 57 41 57 48 8d 6c 24 e0 48 81 ec 20 01 00 00");
 	//if (0 == org_RenderLayerDrawListPart) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-	org_InitDrawingData = (InitDrawingData_t)getAddress(sceneSystemDll, "48 89 5c 24 08 48 89 6c 24 10 48 89 74 24 18 57 41 54 41 55 41 56 41 57 48 83 ec 30 0f b6 81 30 02 00 00");
+	// The drawing data flags byte moved (0x230 -> 0x250 in 2026-09-23 build), so it's wildcarded in the patterns below.
+	org_InitDrawingData = (InitDrawingData_t)getAddress(sceneSystemDll, "48 89 5c 24 08 48 89 6c 24 10 48 89 74 24 18 57 41 54 41 55 41 56 41 57 48 81 ec ?? ?? 00 00 0f b6 81 ?? ?? 00 00 48 8b d9 4c 8b fa");
 	if (0 == org_InitDrawingData) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-	org_DrawSceneData = (DrawSceneData_t)getAddress(sceneSystemDll, "48 89 5c 24 20 55 48 83 ec 30 f6 81 30 02 00 00 40");
+	org_DrawSceneData = (DrawSceneData_t)getAddress(sceneSystemDll, "48 89 5c 24 20 55 48 83 ec 30 f6 81 ?? ?? 00 00 40");
 	if (0 == org_DrawSceneData) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-	org_DrawCurrentPrimitives = (DrawCurrentPrimitives_t)getAddress(sceneSystemDll, "4c 8b dc 53 48 81 ec d0 00 00 00 83 79 30 01 48 8b d9 0f 8c a0 02 00 00 48 8b 49 20 48 8d 15 ?? ?? ?? ??");
+	org_DrawCurrentPrimitives = (DrawCurrentPrimitives_t)getAddress(sceneSystemDll, "4c 8b dc 53 48 81 ec d0 00 00 00 83 79 30 01 48 8b d9 0f 8c ?? ?? ?? ?? 48 8b 49 20 48 8d 15 ?? ?? ?? ??");
 	if (0 == org_DrawCurrentPrimitives) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 	// See notes in HookSceneSystem about DebugSceneData above:

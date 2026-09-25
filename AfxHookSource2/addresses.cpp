@@ -111,7 +111,8 @@ void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
                  c0 01 00 00
     */
 	{
-		MemRange result = FindPatternString(textRange, "4c 8b dc 49 89 5b 10 49 89 6b 18 49 89 73 20 57 41 56 41 57 48 83 ec 70 49 c7 43 b0 b5 01 00 00");
+		// 49 c7 43 b0 xx xx 00 00 is a source line number (VProf scope), it changes with engine updates.
+		MemRange result = FindPatternString(textRange, "4c 8b dc 49 89 5b 10 49 89 6b 18 49 89 73 20 57 41 56 41 57 48 83 ec 70 49 c7 43 b0 ?? ?? 00 00");
 																	  
 		if (!result.IsEmpty()) {
             AFXADDR_SET(cs2_engine_CRenderService_OnClientOutput, result.Start);
