@@ -1135,9 +1135,6 @@ public:
 
                     if (m_pNormalDepthTexture)
                     {
-                        UINT numViewPorts = 1;
-                        pContext->RSGetViewports(&numViewPorts, &m_NormalViewPort);
-
                         ID3D11DepthStencilView* pCurrentDepthStencilView = nullptr;
                         ID3D11DepthStencilView* pNullDepthStencilView = nullptr;
                         pContext->OMGetRenderTargets(0, nullptr, &pCurrentDepthStencilView);
@@ -1160,7 +1157,8 @@ public:
                         m_DeviceContext->OMSetRenderTargets(1, &m_pDepthTextureRtv[depthTextureType], nullptr);
                         m_DeviceContext->OMSetBlendState(m_BlendState, NULL, 0xffffffff);                        
 
-                        m_DeviceContext->RSSetViewports(1, &m_NormalViewPort);
+                        D3D11_VIEWPORT viewPort = {0.0f,0.0f,(FLOAT)m_DeviceTextureDesc.Width,(FLOAT)m_DeviceTextureDesc.Height,0.0f,1.0f};
+                        m_DeviceContext->RSSetViewports(1, &viewPort);                        
 
                         SOURCESDK::VMatrix projectionMatrix;
                         g_RenderThread_ProjectionMatrix.Get(projectionMatrix);
@@ -1344,7 +1342,6 @@ private:
 
     ID3D11Texture2D* m_pDepthTexture[2] = {nullptr,nullptr};
     ID3D11RenderTargetView* m_pDepthTextureRtv[2] = {nullptr,nullptr};
-    D3D11_VIEWPORT m_NormalViewPort = {};
     bool m_HasNormalDepth[2] = {false,false};
 
     ID3D11DeviceContext* m_DeviceContext = nullptr;
