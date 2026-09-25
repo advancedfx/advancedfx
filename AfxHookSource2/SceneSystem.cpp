@@ -4,6 +4,7 @@
 #include "Globals.h"
 #include "SchemaSystem.h"
 #include "SceneActionFilter.h"
+#include "EntMatPicker.h"
 #include "MirvColors.h"
 #include "StreamSettings.h"
 
@@ -52,65 +53,8 @@ struct CustomSkyState {
 	float brightness = 1.0f;
 } g_CustomSky;
 
-std::map<void *, size_t> g_PickerEntities;
-
-bool g_PickerActive =  false;
-bool g_PickerCollecting = false;
-bool g_PickerPrint = false;
-
-void Picker_Pick(bool wasVisible)
-{
-	if (!g_PickerActive)
-	{
-		g_PickerActive = true;
-		g_PickerCollecting = true;
-		g_PickerPrint = true;
-	}
-	else
-	{
-		if (g_PickerCollecting)
-			g_PickerCollecting = false;
-
-		size_t index = 0;
-
-		for (auto it = g_PickerEntities.begin(); it != g_PickerEntities.end(); )
-		{
-			size_t oldIndex = it->second;
-
-			if ((1 == (oldIndex & 0x1)) == wasVisible)
-			{
-				it = g_PickerEntities.erase(it);
-			}
-			else
-			{
-				it->second = index;
-				++index;
-				++it;
-			}
-		}
-	}
-
-	g_PickerPrint = true;
-}
-
-void Picker_Stop(void)
-{
-	if(g_PickerActive)
-	{
-		g_PickerEntities.clear();
-		g_PickerActive = false;
-		advancedfx::Message("==== Picker stopped. ====\n");
-	}
-}
-
-void PickerPrintReset(){
-	if(g_PickerPrint) {
-		g_PickerPrint = false;
-
-		bool determinedEntities = g_PickerEntities.size() <= 1;
-		if (determinedEntities) Picker_Stop();
-	}
-}
+// mirv_streams picker, applied before everything else (including the action filter of the stream):
+CEntMatPicker g_ScenePicker;
 
 // 64-bit hash for 32-bit platforms
 // Credit
@@ -357,7 +301,7 @@ void UpdateSceneFilterSystemActive() {
 		|| g_AnimatableSceneObjectsPolicy != SceneObjectDrawPolicy::Draw
 		|| g_AggregateSceneObjectsPolicy != SceneObjectDrawPolicy::Draw
 		|| g_OverlaysPolicy != SceneObjectDrawPolicy::Draw
-		|| g_PickerActive;
+		|| g_ScenePicker.IsActive();
 
 	for(int i = 0; !bActive && i < (int)SceneSemanticGroup::Count; i++) {
 		bActive = g_SceneSemanticPolicies[i] != SceneObjectDrawPolicy::Draw;
@@ -843,46 +787,15 @@ static uint16_t GetSceneDataFlags(const CBaseSceneData& sceneData) {
 	return *(uint16_t*)((const unsigned char*)&sceneData + g_SceneData_Flags_Offset);
 }*/
 
-static bool DebugPrintSceneData(const char * pContextTitle, SceneObjectFilterClass filterClass, const SceneLayerContext & context, const CBaseSceneData* sceneData, int count) {
-	if (g_iSceneFilterDebug <= 0 && !g_PickerActive || count <= 0) return true;
+static void DebugPrintSceneData(const char * pContextTitle, SceneObjectFilterClass filterClass, const SceneLayerContext & context, const CBaseSceneData* sceneData, int count) {
+	if (g_iSceneFilterDebug <= 0 || count <= 0) return;
 
 	bool canReadSceneDataFields = sceneData && SceneObjectFilterClassHasKnownSceneDataLayout(filterClass);
-
-	bool hidden = false;
 
 	for (int i = 0; i < count; ++i) {
 		const char* materialName = canReadSceneDataFields ? (sceneData[i].material ? sceneData[i].material->GetName() : nullptr) : nullptr;
 		const char* descName = canReadSceneDataFields ? GetSceneObjectDescName(sceneData[i]) : nullptr;
 		void* sceneObject = canReadSceneDataFields ? sceneData[i].sceneObject : nullptr;
-
-		bool bInList = false;
-		bool bIHidden = false;
-
-		if(g_PickerActive && sceneObject) {
-			if (!g_PickerCollecting)
-			{
-				auto itEnt = g_PickerEntities.find(sceneObject);
-				bInList = g_PickerEntities.end() != itEnt;
-				if(bInList){
-					bIHidden = bInList && ((itEnt->second) & 0x1) == 1;
-				}
-			}
-			else
-			{
-				auto itEnt = g_PickerEntities.lower_bound(sceneObject);
-				if (itEnt == g_PickerEntities.end() || (sceneObject < itEnt->first))
-				{
-					itEnt = g_PickerEntities.emplace_hint(itEnt, std::piecewise_construct, std::forward_as_tuple(sceneObject), std::forward_as_tuple(g_PickerEntities.size()));
-				}
-
-				bInList = true;
-				bIHidden = ((itEnt->second) & 0x1) == 1;
-			}
-		}
-
-		hidden = hidden || bIHidden;
-
-		if((!bInList || bIHidden || !g_PickerPrint) && g_iSceneFilterDebug <= 0) continue;
 
 		advancedfx::Message(
 			"AFXDEBUG: mirv_scene_filter [%s] %s[%i/%i] layer=%s:%s group=%s desc=%s material=%s sceneObject=0x%p, flags=0x%08x\n",
@@ -899,8 +812,6 @@ static bool DebugPrintSceneData(const char * pContextTitle, SceneObjectFilterCla
 			context.Flags
 		);
 	}
-
-	return !hidden;
 }
 
 static SceneObjectDrawPolicy GetSceneDataPolicy(SceneObjectFilterClass filterClass, const SceneLayerContext & context, const CBaseSceneData * pSceneData) {
@@ -950,7 +861,20 @@ static SceneObjectDrawPolicy GetSceneDataPolicy(SceneObjectFilterClass filterCla
 	return ApplyLayerAwarePolicy(filterClass, context, materialName, GetSceneObjectClassPolicy(filterClass));
 }
 
-// Action filter of the stream (mirv_streams edit <name> actionFilter ...), takes precedence over everything else.
+static uint32_t GetSceneDataEntityHandle(const CBaseSceneData* pSceneData) {
+	if (nullptr == pSceneData || nullptr == pSceneData->sceneObject) return SOURCESDK_CS2_INVALID_EHANDLE_INDEX;
+	return *(uint32_t*)((unsigned char*)pSceneData->sceneObject + g_SceneObject_pCBaseHandle_Offset);
+}
+
+// Picker (mirv_streams picker ...), takes precedence over everything else.
+static bool GetPickerHidden(const CBaseSceneData* pSceneData) {
+	if (!g_ScenePicker.IsActive()) return false;
+
+	const char* materialName = pSceneData && pSceneData->material ? pSceneData->material->GetName() : nullptr;
+	return g_ScenePicker.GetHidden(materialName, GetSceneDataEntityHandle(pSceneData));
+}
+
+// Action filter of the stream (mirv_streams edit <name> actionFilter ...), takes precedence over everything else except the picker.
 static bool TryGetActionFilterPolicy(const SceneLayerContext& context, const CBaseSceneData* pSceneData, SceneObjectDrawPolicy& outPolicy) {
 	if (!g_ActiveActionFilter.IsActive()) return false;
 
@@ -967,10 +891,8 @@ static bool TryGetActionFilterPolicy(const SceneLayerContext& context, const CBa
 				query.MaterialName = &materialName;
 			}
 		}
-		if (pSceneData->sceneObject) {
-			uint32_t handle = *(uint32_t*)((unsigned char*)pSceneData->sceneObject + g_SceneObject_pCBaseHandle_Offset);
-			if (handle != SOURCESDK_CS2_INVALID_EHANDLE_INDEX) query.EntityHandle = handle;
-		}
+		uint32_t handle = GetSceneDataEntityHandle(pSceneData);
+		if (handle != SOURCESDK_CS2_INVALID_EHANDLE_INDEX) query.EntityHandle = handle;
 	}
 	if (context.ViewName) {
 		viewName = context.ViewName;
@@ -998,7 +920,6 @@ std::atomic<void *> g_BeforeUi_SoftwareCommandLists;
 
 void ClearThreadSceneLayerContexts(){
 	if(g_bSceneFilterSystemActive) {
-		g_PickerPrint = false;
 		{
 			std::unique_lock<std::shared_timed_mutex> lock(g_BlockedSoftwareCommandListsMutex);
 			g_BlockedSoftwareCommandLists.clear();
@@ -1173,13 +1094,15 @@ void __fastcall new_DrawSceneData(void * pDrawingData, CBaseSceneData* pSceneDat
 			}
 		}
 		
+		DebugPrintSceneData("DrawSceneData", filterClass, context, pSceneData, 1);
+
 		SceneObjectDrawPolicy policy;
-		if(DebugPrintSceneData("DrawSceneData", filterClass, context, pSceneData, 1)) {
-			// Action filter is applied first, only if it falls through the general logic is used:
-			if(!TryGetActionFilterPolicy(context, pSceneData, policy))
-				policy = GetSceneDataPolicy(filterClass, context, pSceneData);
-		} else {
+		if(GetPickerHidden(pSceneData)) {
 			policy = SceneObjectDrawPolicy::Hide;
+		}
+		// Action filter is applied next, only if it falls through the general logic is used:
+		else if(!TryGetActionFilterPolicy(context, pSceneData, policy)) {
+			policy = GetSceneDataPolicy(filterClass, context, pSceneData);
 		}
 
 		void * pCRenderContextDx11_SoftwareCommandList = ((void **)pDrawingData)[4];
@@ -1509,26 +1432,6 @@ CON_COMMAND(__mirv_scene_filter, "")
 			UpdateSceneFilterSystemActive();
 			return;
 		}
-
-		if (!_stricmp(arg1, "picker"))
-		{
-			if (!_stricmp(arg2, "ent") && 4 <= argc)
-			{
-				//curBaseFx->Console_DisableFastPathRequired();
-
-				bool value = 0 != atoi(args->ArgV(3));
-				Picker_Pick(value);
-				UpdateSceneFilterSystemActive();
-				return;
-			}
-			else
-			if (!_stricmp(arg2, "stop"))
-			{
-				Picker_Stop();
-				UpdateSceneFilterSystemActive();
-				return;
-			}
-		}		
 	}
 
 	advancedfx::Message(
@@ -1546,11 +1449,7 @@ CON_COMMAND(__mirv_scene_filter, "")
 		"%s world draw|hide|zonly - Controls layers not matched by another semantic group.\n"
 		"%s sky draw|hide|zonly - Controls 3D skybox layers matched in the scene draw path.\n"
 		"%s debug <iCount> - Print up to iCount entries for each hooked scene draw call. Use 0 to disable.\n"
-		"%s picker ent 0|1 - Tell picker if entity is visible (1) or not (0). (Or start picking with 1.)\n"
-		"%s picker stop - Stop picking.\n"
 		"Current values: base=%s animatable=%s aggregate=%s smoke=%s overlays=%s viewModel=%s particles=%s firstPersonLegs=%s players=%s world=%s sky=%s debug=%i\n"
-		, arg0
-		, arg0
 		, arg0
 		, arg0
 		, arg0
@@ -1576,6 +1475,71 @@ CON_COMMAND(__mirv_scene_filter, "")
 		, SceneObjectDrawPolicyToString(g_SceneSemanticPolicies[(int)SceneSemanticGroup::World])
 		, SceneObjectDrawPolicyToString(g_SceneSemanticPolicies[(int)SceneSemanticGroup::Sky])
 		, g_iSceneFilterDebug
+	);
+}
+
+static std::string DescribeEntityHandle(uint32_t handle) {
+	SOURCESDK::CS2::CBaseHandle entityHandle(handle);
+	if (!entityHandle.IsValid() || nullptr == g_pEntityList || nullptr == g_GetEntityFromIndex) return std::string();
+
+	auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList, entityHandle.GetEntryIndex());
+	if (nullptr == ent || ent->GetHandle().ToInt() != entityHandle.ToInt()) return std::string();
+
+	const char* className = ent->GetClassName();
+	std::string result = "(className=";
+	result += className ? className : "?";
+	result += ")";
+	return result;
+}
+
+extern void OpenConsoleIfNotVisible();
+
+void ScenePicker_Stop() {
+	if (g_ScenePicker.Stop()) {
+		UpdateSceneFilterSystemActive();
+		advancedfx::Message("Picker stopped.\n");
+	}
+}
+
+// Called with args->ArgV(0) being the command prefix (e.g. "mirv_streams picker").
+void ScenePicker_Console(advancedfx::ICommandArgs* args) {
+	int argc = args->ArgC();
+	const char* arg0 = args->ArgV(0);
+
+	if (2 <= argc) {
+		const char* arg1 = args->ArgV(1);
+		bool isEnt = !_stricmp(arg1, "ent");
+
+		if ((isEnt || !_stricmp(arg1, "mat")) && 3 <= argc) {
+			bool wasVisible = 0 != atoi(args->ArgV(2));
+			if (g_ScenePicker.Pick(isEnt, wasVisible, DescribeEntityHandle)) {
+				OpenConsoleIfNotVisible();
+			}
+			UpdateSceneFilterSystemActive();
+			return;
+		}
+		else if (!_stricmp(arg1, "print")) {
+			g_ScenePicker.Print(DescribeEntityHandle);
+			return;
+		}
+		else if (!_stricmp(arg1, "stop")) {
+			ScenePicker_Stop();
+			return;
+		}
+	}
+
+	advancedfx::Message(
+		"%s ent 0|1 - Tell picker if entity is visible (1) or not (0). (Or start picking with 1.)\n"
+		"%s mat 0|1 - Tell picker if material is visible (1) or not (0). (Or start picking with 1.)\n"
+		"%s print - Prints currently picked result set (entities / materials).\n"
+		"%s stop - Stop picking.\n"
+		"The picker affects whatever is rendered (main view and stream previews / recordings), it is applied before the actionFilter of streams.\n"
+		"The printed result can be used with mirv_streams edit <streamName> actionFilter addEx.\n"
+		"ATTENTION: Do not forget to stop the picker, otherwise you might have some surprises ;)\n"
+		, arg0
+		, arg0
+		, arg0
+		, arg0
 	);
 }
 

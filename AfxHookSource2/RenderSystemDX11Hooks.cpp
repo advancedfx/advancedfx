@@ -57,6 +57,7 @@ extern SOURCESDK::CS2::ISource2EngineToClient * g_pEngineToClient;
 extern SOURCESDK::CS2::ICvar * SOURCESDK::CS2::g_pCVar;
 
 extern void ExecuteClientCmd(const char * value);
+extern void ScenePicker_Console(advancedfx::ICommandArgs* args);
 
 int g_iRenderContextDebug = 0;
 
@@ -5220,6 +5221,11 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
             g_AfxStreams.Console_PreviewEnd();
             return;
         }
+        else if(0 == _stricmp(cmd1, "picker")) {
+            advancedfx::CSubCommandArgs subArgs(args, 2);
+            ScenePicker_Console(&subArgs);
+            return;
+        }
         else if(0 == _stricmp(cmd1, "record"))
 		{
 			if(3 <= argC)
@@ -5420,6 +5426,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 		"mirv_streams print - Print current streams.\n"
 		"mirv_streams preview [...] - Preview a stream.\n"
 		"mirv_streams previewEnd - End stream preview.\n"
+		"mirv_streams picker [...] - Helps picking a visible material / entity.\n"
 	);
 
 
