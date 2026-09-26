@@ -1436,14 +1436,20 @@ CON_COMMAND(mirv_skip, "for skipping through demos (uses demo_gototick)")
     MirvSkip_ConsoleCommand(args, &g_MirvCampath_Time, &g_MirvSkip_GotoDemoTick);
 }
 
+void OpenConsoleIfNotVisible() {
+	if (g_pGameUIService && !g_pGameUIService->Con_IsVisible() && g_pEngineToClient) g_pEngineToClient->ExecuteClientCmd(0, "toggleconsole", true);
+}
+
 extern void resetDefaultCloudColors();
 extern void resetCachedMaterials();
+extern void ScenePicker_Stop();
 
 typedef void * (* CS2_Client_LevelInitPreEntity_t)(void* This, void * pUnk1, void * pUnk2);
 CS2_Client_LevelInitPreEntity_t old_CS2_Client_LevelInitPreEntity;
 void * new_CS2_Client_LevelInitPreEntity(void* This, void * pUnk1, void * pUnk2) {
 	resetDefaultCloudColors();
 	resetCachedMaterials();
+	ScenePicker_Stop(); // Entity handles are meaningless on a new level.
 	void * result = old_CS2_Client_LevelInitPreEntity(This, pUnk1, pUnk2);
 	g_CommandSystem.OnLevelInitPreEntity();
 	return result;
@@ -2124,6 +2130,7 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		g_h_engine2Dll = hModule;
 
 		Addresses_InitEngine2Dll((AfxAddr)hModule);
+		MirvFix_InitEngine2();
 
 		HookEngineDll(hModule);
 
