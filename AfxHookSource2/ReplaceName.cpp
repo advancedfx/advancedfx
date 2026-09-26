@@ -131,7 +131,7 @@ void HookReplaceName(HMODULE clientDll)
 
         // GetDecoratedPlayerName
         // references "<failure>"        
-		g_Org_GetDecoratedPlayerName = (GetDecoratedPlayerName_t)getAddress(clientDll, "48 89 54 24 10 55 53 41 54 41 55 41 56 41 57 48 8d ac 24 ?? ?? ff ff 48 81 ec ?? ?? 00 00 4c 8b ea 4c 8b e1 45 84 c9 75 ?? 44 8b 4a 04 41 f7 c1 ff ff ff 3f");
+		g_Org_GetDecoratedPlayerName = (GetDecoratedPlayerName_t)getAddress(clientDll, "40 55 53 41 54 41 55 41 56 41 57 48 8d ac 24 ?? ?? ?? ?? 48 81 ec ?? ?? ?? ?? 4c 8b ea 4c 8b e1 45 84 c9 75 24 44 8b 4a 04 41 f7 c1 ff ff ff 3f");
 		if (g_Org_GetDecoratedPlayerName != 0) {
 			DetourTransactionBegin();
 			DetourUpdateThread(GetCurrentThread());
