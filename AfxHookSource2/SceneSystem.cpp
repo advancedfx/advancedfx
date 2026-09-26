@@ -1010,7 +1010,7 @@ void CheckAndDo_Untoggle_BlockColorDepth(void * pThisSoftwareCommandList) {
 	}
 }
 
-void QueueCallbackBeforeUi(void* pCRenderContextDx11_SoftwareCommandList);
+void QueueCallbackBeforeUi(void* pCRenderContextDx11_SoftwareCommandList, int value);
 
 typedef void * (__fastcall * SoftwareCommandList_Commit_t)(void * pThisSoftwareCommandList);
 SoftwareCommandList_Commit_t org_SoftwareCommandList_Commit = nullptr;
@@ -1018,7 +1018,7 @@ void * __fastcall new_SoftwareCommandList_Commit(void * pThisSoftwareCommandList
 	CheckAndDo_Untoggle_BlockColorDepth(pThisSoftwareCommandList);
 	if(pThisSoftwareCommandList == g_BeforeUi_SoftwareCommandLists) {
 		g_BeforeUi_SoftwareCommandLists = nullptr;
-		QueueCallbackBeforeUi(pThisSoftwareCommandList);
+		QueueCallbackBeforeUi(pThisSoftwareCommandList, 0);
 	}
 	return org_SoftwareCommandList_Commit(pThisSoftwareCommandList);
 }
@@ -1062,7 +1062,13 @@ void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneVie
 	SceneLayerContext context;
 	SetContextFromDrawingData(context, pDrawingData);
 
-	if(0 == strcmp("PostProcessing", context.ViewPass)) g_BeforeUi_SoftwareCommandLists = pCRenderContextDx11_SoftwareCommandList;
+	if(0 == strcmp("Player 0", context.ViewName)) {
+		if(0 == strcmp("PostProcessing", context.ViewPass)) g_BeforeUi_SoftwareCommandLists = pCRenderContextDx11_SoftwareCommandList;
+		else if(0 == strcmp("Legacy Sniper Scope", context.ViewPass)) {
+			QueueCallbackBeforeUi(pCRenderContextDx11_SoftwareCommandList, -1); // abort, let render scope first.
+			g_BeforeUi_SoftwareCommandLists = pCRenderContextDx11_SoftwareCommandList;
+		}
+	}
 
 	if(g_bSceneFilterSystemActive && pDrawingData) {
 		CheckAndDo_Untoggle_BlockColorDepth(pCRenderContextDx11_SoftwareCommandList);

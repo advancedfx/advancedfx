@@ -1422,6 +1422,7 @@ HRESULT g_Present_LastResult = S_OK;
 ID3D11Device * g_pDevice = nullptr;
 ID3D11DeviceContext * g_pOtherContext = nullptr;
 int g_iDraw = -1;
+int g_iBeforeUi = -1;
 bool g_bInOwnDraw = false;
 bool g_bDetectSmoke = false;
 bool g_bDetectSmoke2 = false;
@@ -1699,6 +1700,8 @@ void STDMETHODCALLTYPE New_ClearDepthStencilView( ID3D11DeviceContext * This,
     g_Old_ClearDepthStencilView(This, pDepthStencilView, ClearFlags, Depth, Stencil);
 }
 
+void BeforeUi(ID3D11DeviceContext * pDeviceContext);
+
 typedef void (STDMETHODCALLTYPE * OMSetRenderTargets_t)( ID3D11DeviceContext * This,
             /* [annotation] */ 
             _In_range_( 0, D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT )  UINT NumViews,
@@ -1744,6 +1747,11 @@ void STDMETHODCALLTYPE New_OMSetRenderTargets( ID3D11DeviceContext * This,
             g_bDetectSmoke2 = false;
             g_bDetectedSmoke = true;
             g_pSmokeDepthStencilView = pDepthStencilView;
+        }
+
+        if(g_iBeforeUi == 0) {
+            g_iBeforeUi = 1;
+            BeforeUi(This);
         }
     }
 
@@ -1867,88 +1875,91 @@ private:
 class CAfxRenderCallbackBeforeUi : public IRenderThreadCallback
 {
 public:
-    CAfxRenderCallbackBeforeUi()
+    CAfxRenderCallbackBeforeUi(int value)
+    : m_Value(value)
     {
 
     }
 
     virtual void OnCallback(void) {
-        if (auto pDeviceContext = g_RenderCommands.RenderThread_GetContext()) {
-            
-            if (g_ReShadeAdvancedfx.IsConnected() && g_bEnableReShade) {
-                float zNear = 0.0f;
-                float zFar = 0.0f;
-                g_DepthCompositor.CaptureNormalDepth(pDeviceContext, g_pCurrentDepthStencilView,
-                    g_bReShadeCompositeSmoke,
-                    CDepthCompositor::DepthTextureType_R32F,
-                    ShaderCombo_afx_depth_ps_5_0::AFXDEPTHMODE_0,
-                    ShaderCombo_afx_depth_ps_5_0::AFXD24_0,
-                    zNear,
-                    zFar
-                );
-
-                ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
-                ID3D11DepthStencilView* pDepthStencilView = nullptr;
-                pDeviceContext->OMGetRenderTargets(1, &pRenderTargetViews[0], &pDepthStencilView);
-
-                ID3D11Resource* pRenderTargetViewResource = nullptr;
-                //ID3D11Resource* pDepthStencilResource = nullptr;
-                if (pRenderTargetViews[0]) pRenderTargetViews[0]->GetResource(&pRenderTargetViewResource);
-                //if (g_pCurrentDepthStencilView) g_pCurrentDepthStencilView->GetResource(&pDepthStencilResource);
-
-                if (ID3D11Resource* pResource = g_DepthCompositor.GetDepthTexture(CDepthCompositor::DepthTextureType_R32F)) {
-                    g_bInOwnDraw = true;
-                    g_ReShadeAdvancedfx.AdvancedfxRenderEffects(pRenderTargetViewResource, pResource);
-                    g_bInOwnDraw = false;
-                    pResource->Release();
-                }
-
-                //if (pDepthStencilResource) pDepthStencilResource->Release();
-                if (pRenderTargetViewResource) pRenderTargetViewResource->Release();
-
-                if (pDepthStencilView) pDepthStencilView->Release();
-                if (pRenderTargetViews[0]) pRenderTargetViews[0]->Release();
-            }
-
-            ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
-            pDeviceContext->OMGetRenderTargets(1, &pRenderTargetViews[0], nullptr);
-            if (pRenderTargetViews[0]) {
-                if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands())
-                {
-                    if(!pRenderPassCommands->BeforeUi.Empty() || !pRenderPassCommands->BeforeUi2.Empty())
-                    {
-                        if(!pRenderPassCommands->BeforeUi.Empty()) {
-                            ID3D11Resource* pRenderTargetViewResource = nullptr;
-                            pRenderTargetViews[0]->GetResource(&pRenderTargetViewResource);
-                            if(pRenderTargetViewResource) {
-                                ID3D11Texture2D * pTexture = nullptr;
-                                if(SUCCEEDED(pRenderTargetViewResource->QueryInterface(__uuidof(ID3D11Texture2D),(void**)&pTexture))){
-                                    if(pTexture) {
-                                        pRenderPassCommands->OnBeforeUi(pTexture);               
-                                        pTexture->Release();
-                                    }
-                                }
-                                pRenderTargetViewResource->Release();
-                            }
-                        }
-                        if(!pRenderPassCommands->BeforeUi2.Empty()) {
-                            pRenderPassCommands->OnBeforeUi2(pRenderTargetViews[0]); 
-                        }
-        
-                    }
-                }
-                if(g_BeforeUiRT) g_BeforeUiRT->Release();
-                g_BeforeUiRT = pRenderTargetViews[0];
-            }
-        }
-        g_bDetectSmoke = false;
-        g_bDetectSmoke2 = false;
-        g_bDetectedSmoke = false;
-        g_pSmokeDepthStencilView = nullptr;
+        g_iBeforeUi = m_Value;
         delete this;
     }
 private:
+    int m_Value;
 };
+
+void BeforeUi(ID3D11DeviceContext * pDeviceContext) {
+    if (g_ReShadeAdvancedfx.IsConnected() && g_bEnableReShade) {
+        float zNear = 0.0f;
+        float zFar = 0.0f;
+        g_DepthCompositor.CaptureNormalDepth(pDeviceContext, g_pCurrentDepthStencilView,
+            g_bReShadeCompositeSmoke,
+            CDepthCompositor::DepthTextureType_R32F,
+            ShaderCombo_afx_depth_ps_5_0::AFXDEPTHMODE_0,
+            ShaderCombo_afx_depth_ps_5_0::AFXD24_0,
+            zNear,
+            zFar
+        );
+
+        ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
+        ID3D11DepthStencilView* pDepthStencilView = nullptr;
+        pDeviceContext->OMGetRenderTargets(1, &pRenderTargetViews[0], &pDepthStencilView);
+
+        ID3D11Resource* pRenderTargetViewResource = nullptr;
+        //ID3D11Resource* pDepthStencilResource = nullptr;
+        if (pRenderTargetViews[0]) pRenderTargetViews[0]->GetResource(&pRenderTargetViewResource);
+        //if (g_pCurrentDepthStencilView) g_pCurrentDepthStencilView->GetResource(&pDepthStencilResource);
+
+        if (ID3D11Resource* pResource = g_DepthCompositor.GetDepthTexture(CDepthCompositor::DepthTextureType_R32F)) {
+            g_bInOwnDraw = true;
+            g_ReShadeAdvancedfx.AdvancedfxRenderEffects(pRenderTargetViewResource, pResource);
+            g_bInOwnDraw = false;
+            pResource->Release();
+        }
+
+        //if (pDepthStencilResource) pDepthStencilResource->Release();
+        if (pRenderTargetViewResource) pRenderTargetViewResource->Release();
+
+        if (pDepthStencilView) pDepthStencilView->Release();
+        if (pRenderTargetViews[0]) pRenderTargetViews[0]->Release();
+    }
+
+    ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
+    pDeviceContext->OMGetRenderTargets(1, &pRenderTargetViews[0], nullptr);
+    if (pRenderTargetViews[0]) {
+        if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands())
+        {
+            if(!pRenderPassCommands->BeforeUi.Empty() || !pRenderPassCommands->BeforeUi2.Empty())
+            {
+                if(!pRenderPassCommands->BeforeUi.Empty()) {
+                    ID3D11Resource* pRenderTargetViewResource = nullptr;
+                    pRenderTargetViews[0]->GetResource(&pRenderTargetViewResource);
+                    if(pRenderTargetViewResource) {
+                        ID3D11Texture2D * pTexture = nullptr;
+                        if(SUCCEEDED(pRenderTargetViewResource->QueryInterface(__uuidof(ID3D11Texture2D),(void**)&pTexture))){
+                            if(pTexture) {
+                                pRenderPassCommands->OnBeforeUi(pTexture);               
+                                pTexture->Release();
+                            }
+                        }
+                        pRenderTargetViewResource->Release();
+                    }
+                }
+                if(!pRenderPassCommands->BeforeUi2.Empty()) {
+                    pRenderPassCommands->OnBeforeUi2(pRenderTargetViews[0]); 
+                }
+
+            }
+        }
+        if(g_BeforeUiRT) g_BeforeUiRT->Release();
+        g_BeforeUiRT = pRenderTargetViews[0];
+    }
+    g_bDetectSmoke = false;
+    g_bDetectSmoke2 = false;
+    g_bDetectedSmoke = false;
+    g_pSmokeDepthStencilView = nullptr;    
+}
 
 class CAfxRenderCallbackBlockBuffers : public IRenderThreadCallback
 {
@@ -2219,7 +2230,8 @@ void After_Present() {
 
     if(g_BeforeUiRT) g_BeforeUiRT->Release();
     g_BeforeUiRT = nullptr;
-    g_iDraw = -1;    
+    g_iDraw = -1;
+    g_iBeforeUi = -1;
 }
 
 HRESULT STDMETHODCALLTYPE New_Present( void * This,
@@ -2474,9 +2486,9 @@ AFXDEBUG CreateRenderContextPtr1(#%s/SetupLightsAndViewConstants):#PanoramaEngin
 AFXDEBUG CreateRenderContextPtr2(SubmitAllDisplayLists):SubmitAllDisplayLists
 */
 
-void QueueCallbackBeforeUi(void* pCRenderContextDx11_SoftwareCommandList) {
+void QueueCallbackBeforeUi(void* pCRenderContextDx11_SoftwareCommandList, int value) {
     auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
-    fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeUi());
+    fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeUi(value));
 }
 
 unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char * param_1, unsigned char param_2, void* pDevice, void * param_4, const char * fmt, ...) {
