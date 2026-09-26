@@ -1135,9 +1135,6 @@ public:
 
                     if (m_pNormalDepthTexture)
                     {
-                        UINT numViewPorts = 1;
-                        pContext->RSGetViewports(&numViewPorts, &m_NormalViewPort);
-
                         ID3D11DepthStencilView* pCurrentDepthStencilView = nullptr;
                         ID3D11DepthStencilView* pNullDepthStencilView = nullptr;
                         pContext->OMGetRenderTargets(0, nullptr, &pCurrentDepthStencilView);
@@ -1160,7 +1157,8 @@ public:
                         m_DeviceContext->OMSetRenderTargets(1, &m_pDepthTextureRtv[depthTextureType], nullptr);
                         m_DeviceContext->OMSetBlendState(m_BlendState, NULL, 0xffffffff);                        
 
-                        m_DeviceContext->RSSetViewports(1, &m_NormalViewPort);
+                        D3D11_VIEWPORT viewPort = {0.0f,0.0f,(FLOAT)m_DeviceTextureDesc.Width,(FLOAT)m_DeviceTextureDesc.Height,0.0f,1.0f};
+                        m_DeviceContext->RSSetViewports(1, &viewPort);                        
 
                         SOURCESDK::VMatrix projectionMatrix;
                         g_RenderThread_ProjectionMatrix.Get(projectionMatrix);
@@ -1344,7 +1342,6 @@ private:
 
     ID3D11Texture2D* m_pDepthTexture[2] = {nullptr,nullptr};
     ID3D11RenderTargetView* m_pDepthTextureRtv[2] = {nullptr,nullptr};
-    D3D11_VIEWPORT m_NormalViewPort = {};
     bool m_HasNormalDepth[2] = {false,false};
 
     ID3D11DeviceContext* m_DeviceContext = nullptr;
@@ -2477,6 +2474,11 @@ AFXDEBUG CreateRenderContextPtr1(#%s/SetupLightsAndViewConstants):#PanoramaEngin
 AFXDEBUG CreateRenderContextPtr2(SubmitAllDisplayLists):SubmitAllDisplayLists
 */
 
+void QueueCallbackBeforeUi(void* pCRenderContextDx11_SoftwareCommandList) {
+    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
+    fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeUi());
+}
+
 unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char * param_1, unsigned char param_2, void* pDevice, void * param_4, const char * fmt, ...) {
 
     // It would be possible to pass vararg on with asm trampoline, but it seems unused?
@@ -2545,18 +2547,6 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
             }
         }
     }  
-    else if(fmt && 0 == strcmp("#%s/SetupLightsAndViewConstants",fmt)) {
-        va_list args;
-        va_start(args, fmt);
-        const char * pszArg0 = va_arg(args, const char *);
-        if(pszArg0 && 0 == strcmp("CSGOHud",pszArg0)) {
-            if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-                auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
-                fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeUi());
-            }
-        }
-    }
-
 
     return result;
 }
