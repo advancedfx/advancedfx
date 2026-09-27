@@ -19,8 +19,8 @@ Compatible with latest Steam version.
 
 https://github.com/advancedfx/advancedfx/releases
 
-* **CS2: Old HLAE versions for breaking changes**  
-  https://github.com/advancedfx/advancedfx/wiki/CS2%3A-Old-versions-for-breaking-changes
+* **Old HLAE versions for specific CS2 versions**  
+  https://github.com/advancedfx/advancedfx/wiki/Old-HLAE-versions-for-specific-CS2-versions
 
 * **HLAE 2.153.1** (2024-01-05T19:45Z)  
   https://github.com/advancedfx/advancedfx/releases/tag/v2.153.1  
