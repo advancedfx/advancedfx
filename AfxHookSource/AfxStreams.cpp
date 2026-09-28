@@ -973,7 +973,7 @@ void CAfxRecordStream::QueueCapture(IAfxMatRenderContextOrg* ctx, size_t index)
 }
 
 void CAfxRecordStream::GetOutputPathValues(advancedfx::COutputPathValues& outValues) const {
-	outValues = g_AfxStreams.GetRecordOutputPathValues();
+	g_AfxStreams.GetRecordOutputPathValues(outValues);
 
 	std::wstring wideStreamName;
 	if (UTF8StringToWideString(StreamName_get(), wideStreamName))
@@ -6935,9 +6935,9 @@ bool CAfxStreams::InitOutputPathValues()
 	// Avoid double separators in the default templates (keep root "C:\" though):
 	while(3 < recordPath.size() && (L'\\' == recordPath.back() || L'/' == recordPath.back())) recordPath.pop_back();
 
-	m_OutputPathValues = advancedfx::COutputPathValues();
-	m_OutputPathValues.SetString(advancedfx::OutputPathVariable_RecordPath, recordPath);
-	m_OutputPathValues.SetString(advancedfx::OutputPathVariable_Take, take);
+	advancedfx::COutputPathValues values;
+	values.SetString(advancedfx::OutputPathVariable_RecordPath, recordPath);
+	values.SetString(advancedfx::OutputPathVariable_Take, take);
 
 	WrpGlobals * globals = g_Hook_VClient_RenderView.GetGlobals();
 	float curTime = globals ? globals->curtime_get() : 0.0f;
@@ -6949,11 +6949,14 @@ bool CAfxStreams::InitOutputPathValues()
 		// Not in a demo, derive it from the client time instead.
 		tick = (int)(curTime / globals->interval_per_tick_get());
 	}
-	m_OutputPathValues.SetNumber(advancedfx::OutputPathVariable_Tick, tick);
+	values.SetNumber(advancedfx::OutputPathVariable_Tick, tick);
 
 	wchar_t time[64];
 	swprintf_s(time, L"%.3f", curTime);
-	m_OutputPathValues.SetString(advancedfx::OutputPathVariable_Time, time);
+	values.SetString(advancedfx::OutputPathVariable_Time, time);
+
+	// Publish without {TAKE_NUMBER} first, the streams read it when collecting their templates:
+	SetRecordOutputPathValues(values);
 
 	// Determine {TAKE_NUMBER} from all outputs that will be written:
 
@@ -6991,7 +6994,8 @@ bool CAfxStreams::InitOutputPathValues()
 		if(maxTakeNumber < takeNumber) maxTakeNumber = takeNumber;
 	}
 
-	m_OutputPathValues.SetNumber(advancedfx::OutputPathVariable_TakeNumber, maxTakeNumber + 1);
+	values.SetNumber(advancedfx::OutputPathVariable_TakeNumber, maxTakeNumber + 1);
+	SetRecordOutputPathValues(values);
 
 	if(!templates.empty() && !usesTakeNumber) {
 		Tier0_Warning("AFXWARNING: No output path uses {TAKE_NUMBER}, files of previous recordings might get overwritten.\n");

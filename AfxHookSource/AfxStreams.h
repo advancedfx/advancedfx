@@ -3375,8 +3375,11 @@ public:
 	advancedfx::COutputPathSetting & GetStartMovieWavPath() { return m_StartMovieWavPath; }
 	advancedfx::COutputPathSetting & GetVoicesPath() { return m_VoicesPath; }
 
-	/// Values of the current recording (only valid while recording).
-	const advancedfx::COutputPathValues & GetRecordOutputPathValues() const { return m_OutputPathValues; }
+	/// Values of the current recording (only valid while recording), thread-safe.
+	void GetRecordOutputPathValues(advancedfx::COutputPathValues & outValues) const {
+		std::shared_lock<std::shared_mutex> lock(m_OutputPathValuesMutex);
+		outValues = m_OutputPathValues;
+	}
 
 
 #ifndef _WIN64
@@ -3544,7 +3547,7 @@ public:
 
 	// For the screen recording.
 	virtual void GetOutputPathValues(advancedfx::COutputPathValues& outValues) const override {
-		outValues = m_OutputPathValues;
+		GetRecordOutputPathValues(outValues);
 		outValues.SetTemplate(advancedfx::OutputPathVariable_StreamPath, AFX_TAKE_PATH_TEMPLATE);
 	}
 
@@ -3668,7 +3671,15 @@ private:
 	advancedfx::COutputPathSetting m_EntityBvhPath = advancedfx::COutputPathSetting(AFX_TAKE_PATH_TEMPLATE_A "\\cam_ent_{ENTITY_INDEX}.bvh", advancedfx::OutputPathVariables_Record | advancedfx::OutputPathVariable_EntityIndex, advancedfx::OutputPathVariable_EntityIndex);
 
 	/// Values of the current recording (only valid while recording).
+	/// Only written on the engine thread (through SetRecordOutputPathValues), so the engine thread can read it directly,
+	/// other threads (e.g. the drawing thread creating stream outputs) must use GetRecordOutputPathValues.
 	advancedfx::COutputPathValues m_OutputPathValues;
+	mutable std::shared_mutex m_OutputPathValuesMutex;
+
+	void SetRecordOutputPathValues(const advancedfx::COutputPathValues & values) {
+		std::unique_lock<std::shared_mutex> lock(m_OutputPathValuesMutex);
+		m_OutputPathValues = values;
+	}
 
 	bool InitOutputPathValues();
 
