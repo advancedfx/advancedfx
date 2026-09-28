@@ -13,6 +13,7 @@
 <change type="added">mirv_streams ffmpeg / ffmpegEx options: {AFX_OUTPUT_FILE} for the output file set with path, the afxFfmpeg* presets use it now. {AFX_STREAM_PATH} is now the folder of the output file (same as before with the default path).</change>
 <change type="changed">mirv_streams record: Folders are now only created when something is written to them, so the take folder no longer exists right at record start.</change>
 <change type="changed">mirv_streams record bvh cam and mirv_streams record voices now only accept a number as value, other input shows the help instead of disabling.</change>
+<change type="changed">Breaking change: mirv_streams ffmpeg / ffmpegEx options now use {{ for { and }} for } (was \{ and \}), \\ is no longer turned into \ (use a single \ now).</change>
 <change type="fixed">mirv_voice record start without folder now records into the current folder as documented.</change>
 <change type="fixed">Fixed possible race condition in mirv_streams record startMovieWav when determining the WAV file path (non CS:GO games).</change>
 </changes>

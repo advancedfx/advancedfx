@@ -246,8 +246,8 @@ void CRecordingSettings::Console(ICommandArgs * args)
 			}
 
 			advancedfx::Message(
-				"%s add ffmpeg <name> \"<yourOptionsHere>\" - Adds an FFMPEG setting, <yourOptionsHere> are output options, use {QUOTE} for \", {AFX_OUTPUT_FILE} for the output file (edit path to change it), {AFX_STREAM_PATH} for the folder of the output file, \\{ for {, \\} for }. For an example see one of the afxFfmpeg* templates (edit them).\n"
-				"%s add ffmpegEx <name> \"<yourOptionsHere>\" - Adds an extended FFMPEG setting, <yourOptionsHere> are output options, use {QUOTE} for \", {AFX_OUTPUT_FILE} for the output file (edit path to change it), {AFX_STREAM_PATH} for the folder of the output file, \\{ for {, \\} for }. Further variables: {FFMPEG_PATH} {PIXEL_FORMAT} {FRAMERATE} {WIDTH} {HEIGHT} - For an example see one of the afxFfmpeg* templates (edit them).\n"
+				"%s add ffmpeg <name> \"<yourOptionsHere>\" - Adds an FFMPEG setting, <yourOptionsHere> are output options, use {QUOTE} for \", {AFX_OUTPUT_FILE} for the output file (edit path to change it), {AFX_STREAM_PATH} for the folder of the output file, {{ for {, }} for }. For an example see one of the afxFfmpeg* templates (edit them).\n"
+				"%s add ffmpegEx <name> \"<yourOptionsHere>\" - Adds an extended FFMPEG setting, <yourOptionsHere> are output options, use {QUOTE} for \", {AFX_OUTPUT_FILE} for the output file (edit path to change it), {AFX_STREAM_PATH} for the folder of the output file, {{ for {, }} for }. Further variables: {FFMPEG_PATH} {PIXEL_FORMAT} {FRAMERATE} {WIDTH} {HEIGHT} - For an example see one of the afxFfmpeg* templates (edit them).\n"
 				"%s add sampler <name> - Adds a sampler with 30 fps and default settings, edit it afterwards to change them.\n"
 				"%s add multi <name> - Adds multi settings, edit it afterwards to add settings to it.\n"
 				"%s add interleave <name> (<nameX>)* - Adds a video interleave setting, named <name>, which is also the first of multiple possible inputs, with optional further inputs with the given names, that are ordered in the order given. You can edit it afterwards to change the default output settings to s.th. else.\n"
@@ -388,7 +388,7 @@ void CFfmpegRecordingSettings::Console_Edit(ICommandArgs * args)
 			}
 
 			advancedfx::Message(
-				"%s options \"<yourOptionsHere>\" - Set output options, use {QUOTE} for \", {AFX_OUTPUT_FILE} for the output file (see path), {AFX_STREAM_PATH} for the folder of the output file, \\{ for {, \\} for }.\n"
+				"%s options \"<yourOptionsHere>\" - Set output options, use {QUOTE} for \", {AFX_OUTPUT_FILE} for the output file (see path), {AFX_STREAM_PATH} for the folder of the output file, {{ for {, }} for }.\n"
 				"Current value: \"%s\"\n"
 				, arg0
 				, m_FfmpegOptions.c_str()
@@ -494,7 +494,7 @@ void CFfmpegExRecordingSettings::Console_Edit(ICommandArgs * args)
 			}
 
 			advancedfx::Message(
-				"%s options \"<yourOptionsHere>\" - Set output options use {QUOTE} for \", {AFX_OUTPUT_FILE} for the output file (see path), {AFX_STREAM_PATH} for the folder of the output file, \\{ for {, \\} for }. Further variables: {FFMPEG_PATH} {PIXEL_FORMAT} {FRAMERATE} {WIDTH} {HEIGHT}\n"
+				"%s options \"<yourOptionsHere>\" - Set output options use {QUOTE} for \", {AFX_OUTPUT_FILE} for the output file (see path), {AFX_STREAM_PATH} for the folder of the output file, {{ for {, }} for }. Further variables: {FFMPEG_PATH} {PIXEL_FORMAT} {FRAMERATE} {WIDTH} {HEIGHT}\n"
 				"Current value: \"%s\"\n"
 				, arg0
 				, m_FfmpegOptions.c_str()

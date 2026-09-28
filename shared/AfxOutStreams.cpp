@@ -269,9 +269,8 @@ COutFFMPEGVideoStreamImpl::COutFFMPEGVideoStreamImpl(const CImageFormat& imageFo
 		replacements[L"{PIXEL_FORMAT}"] = pixelFormat;
 		replacements[L"{FRAMERATE}"] = std::to_wstring(frameRate);
 		replacements[L"{QUOTE}"] = L"\"";
-		replacements[L"\\{"] = L"{";
-		replacements[L"\\}"] = L"}";
-		replacements[L"\\\\"] = L"\\";
+		replacements[L"{{"] = L"{";
+		replacements[L"}}"] = L"}";
 
 		ReplaceAllW(myFFMPEGOptions, replacements);
 

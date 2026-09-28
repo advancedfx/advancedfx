@@ -11,6 +11,7 @@
 <change type="added">#1173 mirv_streams output path templates: mirv_streams record take, mirv_streams record cam path, mirv_streams record campath path, mirv_streams record startMovieWavPath and mirv_streams settings edit &lt;name&gt; path (classic, ffmpeg, ffmpegEx and multi settings, including the built-in afx* ones). Variables: {RECORD_PATH} {TAKE} {TAKE_NUMBER} {TICK} {TIME} and, for stream settings, {STREAM_NAME} {STREAM_PATH}, classic images also {SEQUENCE_NR} {EXT}, multi settings also {SETTING_NAME}. Numeric variables take an optional width, e.g. {TAKE_NUMBER:4}. See wiki.</change>
 <change type="added">mirv_streams ffmpeg / ffmpegEx options: {AFX_OUTPUT_FILE} for the output file set with path, the afxFfmpeg* presets use it now. {AFX_STREAM_PATH} is now the folder of the output file (same as before with the default path).</change>
 <change type="changed">mirv_streams record: Folders are now only created when something is written to them, so the take folder no longer exists right at record start (mirv-script onRecordStart takeFolder might not exist yet).</change>
+<change type="changed">Breaking change: mirv_streams ffmpeg / ffmpegEx options now use {{ for { and }} for } (was \{ and \}), \\ is no longer turned into \ (use a single \ now).</change>
 <change type="fixed">Fixed possible race condition in mirv_streams record startMovieWav when determining the WAV file path.</change>
 </changes>
 </release>
