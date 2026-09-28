@@ -1082,7 +1082,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			Tier0_Msg(
 				"mirv_streams record bvh [...] - Controls the HLAE/BVH camera motion data capture output.\n"
 				"mirv_streams record cam [...] - Controls the camera motion data capture output (can be imported with mirv_camio).\n"
-				"mirv_streams record campath [...] - Save current campath into take folder (if not empty).\n"
+				"mirv_streams record campath [...] - Save current campath (if not empty).\n"
 			);
 			Tier0_Msg(
 				"mirv_streams record agr [...] - Controls afxGameRecord (.agr) game state recording.\n"

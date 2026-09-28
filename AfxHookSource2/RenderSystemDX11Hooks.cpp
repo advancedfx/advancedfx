@@ -5390,7 +5390,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			);
 			advancedfx::Message(
 				"mirv_streams record cam [...] - Controls the camera motion data capture output (can be imported with mirv_camio).\n"
-                "mirv_streams record campath [...] - Save current campath into take folder (if not empty).\n"
+                "mirv_streams record campath [...] - Save current campath (if not empty).\n"
 			);
 			return;
 		}
