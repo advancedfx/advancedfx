@@ -1068,7 +1068,7 @@ void CAfxSingleStream::CaptureEnd()
 			if (nullptr == m_OutVideoStream)
 			{
 				//TODO: This is currently safe due to mutexes and locks elsewhere, but not nice:
-				m_OutVideoStream = m_Settings->CreateOutVideoStreamCreator(g_AfxStreams, *this, g_AfxStreams.GetStartHostFrameRate(), "")->CreateOutVideoStream(*buffer->GetImageBufferFormat());
+				m_OutVideoStream = m_Settings->CreateOutVideoStreamCreator(g_AfxStreams, *this, g_AfxStreams.GetStartHostFrameRate())->CreateOutVideoStream(*buffer->GetImageBufferFormat());
 				if (nullptr == m_OutVideoStream)
 				{
 					Tier0_Warning("AFXERROR: Failed to create image stream for %s.\n", this->StreamName_get());
@@ -1188,7 +1188,7 @@ void CAfxTwinStream::CaptureEnd()
 		if (nullptr == m_OutVideoStream)
 		{
 			//TODO: This is currently safe due to mutexes and locks elsewhere, but not nice:
-			m_OutVideoStream = m_Settings->CreateOutVideoStreamCreator(g_AfxStreams, *this, g_AfxStreams.GetStartHostFrameRate(), "")->CreateOutVideoStream(*outBuffer->GetImageBufferFormat());
+			m_OutVideoStream = m_Settings->CreateOutVideoStreamCreator(g_AfxStreams, *this, g_AfxStreams.GetStartHostFrameRate())->CreateOutVideoStream(*outBuffer->GetImageBufferFormat());
 			if (nullptr == m_OutVideoStream)
 			{
 				Tier0_Warning("AFXERROR: Failed to create image stream for %s.\n", this->StreamName_get());
@@ -1462,7 +1462,7 @@ void CAfxMatteStream::CaptureEnd()
 		if (nullptr == m_OutVideoStream)
 		{
 			//TODO: This is currently safe due to mutexes and locks elsewhere, but not nice:
-			m_OutVideoStream = m_Settings->CreateOutVideoStreamCreator(g_AfxStreams, *this, g_AfxStreams.GetStartHostFrameRate(), "")->CreateOutVideoStream(*outBuffer->GetImageBufferFormat());
+			m_OutVideoStream = m_Settings->CreateOutVideoStreamCreator(g_AfxStreams, *this, g_AfxStreams.GetStartHostFrameRate())->CreateOutVideoStream(*outBuffer->GetImageBufferFormat());
 			if (nullptr == m_OutVideoStream)
 			{
 				Tier0_Warning("AFXERROR: Failed to create image stream for %s.\n", this->StreamName_get());
@@ -6945,8 +6945,7 @@ void CAfxStreams::Console_Record_Start2()
 			auto videoStreamCreator = m_RecordScreen->Settings->CreateOutVideoStreamCreator(
 				*this,
 				*this,
-				GetStartHostFrameRate(),
-				""
+				GetStartHostFrameRate()
 			);
 			m_DrawingRecordScreen = new CDrawingRecordScreen(
 				videoStreamCreator, advancedfx::StreamCaptureType::Normal

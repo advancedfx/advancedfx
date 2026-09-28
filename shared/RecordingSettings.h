@@ -2,8 +2,10 @@
 
 #include "AfxConsole.h"
 #include "OutVideoStreamCreators.h"
+#include "OutputPathTemplate.h"
 
 #include <string>
+#include <list>
 #include <map>
 #include <algorithm>
 
@@ -21,7 +23,19 @@ enum class StreamCaptureType
 
 class IRecordStreamSettings {
 public:
-	virtual bool GetStreamFolder(std::wstring& outFolder) const = 0;
+	/// Folder of the stream, only used by the default implementation of GetOutputPathValues.
+	virtual bool GetStreamFolder(std::wstring& outFolder) const {
+		return false;
+	}
+
+	/// Sets outValues to the values for output path templates of the stream.
+	/// The default implementation only provides {STREAM_PATH} from GetStreamFolder.
+	virtual void GetOutputPathValues(COutputPathValues& outValues) const {
+		outValues = COutputPathValues();
+		std::wstring folder;
+		if (GetStreamFolder(folder)) outValues.SetString(OutputPathVariable_StreamPath, folder);
+	}
+
 	virtual StreamCaptureType GetCaptureType() const = 0;
     virtual CGrowingBufferPoolThreadSafe * GetImageBufferPool() const = 0;
     virtual bool GetFormatBmpNotTga() const = 0;
@@ -79,7 +93,12 @@ public:
 
 	virtual void Console_Edit(ICommandArgs * args) = 0;
 
-	virtual class advancedfx::COutVideoStreamCreator* CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps, const char * pathSuffix) = 0;
+	virtual class advancedfx::COutVideoStreamCreator* CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps) = 0;
+
+	/// Appends the output path templates this setting writes to for the stream, expanded as far as possible.
+	/// Used to determine {TAKE_NUMBER} before any output is created.
+	virtual void GetOutputPathTemplates(const IRecordStreamSettings& stream, std::list<std::wstring>& outTemplates) const {
+	}
 
 	virtual bool InheritsFrom(CRecordingSettings * setting) const
 	{
@@ -182,12 +201,18 @@ public:
 
 	virtual void Console_Edit(ICommandArgs * args) override;
 
-	virtual class advancedfx::COutVideoStreamCreator* CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps, const char * pathSuffix) override
+	virtual class advancedfx::COutVideoStreamCreator* CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps) override
 	{
 		if (m_DefaultSettings)
-			return m_DefaultSettings->CreateOutVideoStreamCreator(streams, stream, fps, pathSuffix);
+			return m_DefaultSettings->CreateOutVideoStreamCreator(streams, stream, fps);
 
 		return nullptr;
+	}
+
+	virtual void GetOutputPathTemplates(const IRecordStreamSettings& stream, std::list<std::wstring>& outTemplates) const override
+	{
+		if (m_DefaultSettings)
+			m_DefaultSettings->GetOutputPathTemplates(stream, outTemplates);
 	}
 
 	virtual bool InheritsFrom(CRecordingSettings * setting) const override
@@ -217,32 +242,15 @@ class CMultiRecordingSettings : public CRecordingSettings
 public:
 	CMultiRecordingSettings(const char * name, bool bProtected)
 		: CRecordingSettings(name, bProtected)
+		, m_Path("{STREAM_PATH}\\{SETTING_NAME}", OutputPathVariables_Stream | OutputPathVariable_SettingName)
 	{
 	}
 
 	virtual void Console_Edit(ICommandArgs * args) override;
 
-	virtual class advancedfx::COutVideoStreamCreator* CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps, const char * pathSuffix) override
-	{
-		std::list<advancedfx::COutVideoStreamCreator*> outVideoStreams;
+	virtual class advancedfx::COutVideoStreamCreator* CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps) override;
 
-		for (auto it = m_Settings.begin(); it != m_Settings.end(); ++it)
-		{
-			if (CRecordingSettings * setting = *it)
-			{
-				std::string mySuffix(pathSuffix);
-				mySuffix.append("\\");
-				mySuffix.append(setting->GetName());
-
-				advancedfx::COutVideoStreamCreator* item = setting->CreateOutVideoStreamCreator(streams, stream, fps, mySuffix.c_str());
-				outVideoStreams.push_back(item);
-			}
-		}
-
-		auto result = new CMyOutVideoStreamCreator(std::move(outVideoStreams));
-		result->AddRef();
-		return result;
-	}
+	virtual void GetOutputPathTemplates(const IRecordStreamSettings& stream, std::list<std::wstring>& outTemplates) const override;
 
 	virtual bool InheritsFrom(CRecordingSettings * setting) const override
 	{
@@ -268,6 +276,42 @@ protected:
 private:
 	std::list<CRecordingSettings *> m_Settings;
 
+	/// Template for {STREAM_PATH} of the child settings.
+	COutputPathSetting m_Path;
+
+	/// Passes on the stream, but with {STREAM_PATH} for a child setting.
+	class CChildStreamSettings : public IRecordStreamSettings {
+	public:
+		CChildStreamSettings(const IRecordStreamSettings& stream, const std::wstring& streamPathTemplate)
+			: m_Stream(stream)
+			, m_StreamPathTemplate(streamPathTemplate)
+		{
+		}
+
+		virtual void GetOutputPathValues(COutputPathValues& outValues) const override {
+			m_Stream.GetOutputPathValues(outValues);
+			outValues.SetTemplate(OutputPathVariable_StreamPath, m_StreamPathTemplate);
+		}
+
+		virtual StreamCaptureType GetCaptureType() const override {
+			return m_Stream.GetCaptureType();
+		}
+
+		virtual CGrowingBufferPoolThreadSafe * GetImageBufferPool() const override {
+			return m_Stream.GetImageBufferPool();
+		}
+
+		virtual bool GetFormatBmpNotTga() const override {
+			return m_Stream.GetFormatBmpNotTga();
+		}
+
+	private:
+		const IRecordStreamSettings& m_Stream;
+		std::wstring m_StreamPathTemplate;
+	};
+
+	std::wstring GetChildStreamPathTemplate(const IRecordStreamSettings& stream, const CRecordingSettings * child) const;
+
 	class CMyOutVideoStreamCreator
 		: public advancedfx::COutVideoStreamCreator {
 	public:
@@ -280,6 +324,7 @@ private:
 		virtual advancedfx::TIOutVideoStream<true>* CreateOutVideoStream(const advancedfx::CImageFormat& imageFormat) override {
 			std::list<advancedfx::TIOutVideoStream<true>*> outVideoStreams;
 			for (auto it = m_List.begin(); it != m_List.end(); it++) {
+				if (nullptr == *it) continue; // creating failed.
 				outVideoStreams.push_back((*it)->CreateOutVideoStream(imageFormat));
 			}
 			auto result = new advancedfx::COutMultiVideoStream(imageFormat, std::move(outVideoStreams));
@@ -305,48 +350,64 @@ class CClassicRecordingSettings : public CRecordingSettings
 public:
 	CClassicRecordingSettings()
 		: CRecordingSettings("afxClassic", true)
+		, m_Path("{STREAM_PATH}\\{SEQUENCE_NR}.{EXT}", OutputPathVariables_Stream | OutputPathVariable_SequenceNr | OutputPathVariable_Ext, OutputPathVariable_SequenceNr)
 	{
 	}
 
 	virtual void Console_Edit(ICommandArgs * args) override;
 
-	virtual class advancedfx::COutVideoStreamCreator* CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps, const char * pathSuffix) override;
+	virtual class advancedfx::COutVideoStreamCreator* CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps) override;
+
+	virtual void GetOutputPathTemplates(const IRecordStreamSettings& stream, std::list<std::wstring>& outTemplates) const override;
+
+private:
+	COutputPathSetting m_Path;
 };
+
+#define ADVANCEDFX_FFMPEG_DEFAULT_PATH "{STREAM_PATH}\\video.mp4"
 
 class CFfmpegRecordingSettings : public CRecordingSettings
 {
 public:
-	CFfmpegRecordingSettings(const char * name, bool bProtected, const char * szFfmpegOptions)
+	CFfmpegRecordingSettings(const char * name, bool bProtected, const char * szFfmpegOptions, const char * szDefaultPath = ADVANCEDFX_FFMPEG_DEFAULT_PATH)
 		: CRecordingSettings(name, bProtected)
 		, m_FfmpegOptions(szFfmpegOptions)
+		, m_Path(szDefaultPath, OutputPathVariables_Stream)
 	{
 
 	}
 
 	virtual void Console_Edit(ICommandArgs * args) override;
 
-	virtual class advancedfx::COutVideoStreamCreator* CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps, const char * pathSuffix) override;
+	virtual class advancedfx::COutVideoStreamCreator* CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps) override;
+
+	virtual void GetOutputPathTemplates(const IRecordStreamSettings& stream, std::list<std::wstring>& outTemplates) const override;
 
 private:
 	std::string m_FfmpegOptions;
+	COutputPathSetting m_Path;
 };
 
 class CFfmpegExRecordingSettings : public CRecordingSettings
 {
 public:
-	CFfmpegExRecordingSettings(const char * name, bool bProtected, const char * szFfmpegOptions)
+	CFfmpegExRecordingSettings(const char * name, bool bProtected, const char * szFfmpegOptions, const char * szDefaultPath = ADVANCEDFX_FFMPEG_DEFAULT_PATH)
 		: CRecordingSettings(name, bProtected)
 		, m_FfmpegOptions(szFfmpegOptions)
+		, m_Path(szDefaultPath, OutputPathVariables_Stream)
 	{
 
 	}
 
 	virtual void Console_Edit(ICommandArgs * args) override;
 
-	virtual class advancedfx::COutVideoStreamCreator* CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps, const char * pathSuffix) override;
+	virtual class advancedfx::COutVideoStreamCreator* CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps) override;
+
+	virtual void GetOutputPathTemplates(const IRecordStreamSettings& stream, std::list<std::wstring>& outTemplates) const override;
 
 private:
 	std::string m_FfmpegOptions;
+	COutputPathSetting m_Path;
 };
 
 class CSamplingRecordingSettings : public CRecordingSettings
@@ -365,7 +426,12 @@ public:
 
 	virtual void Console_Edit(ICommandArgs * args) override;
 
-	virtual class advancedfx::COutVideoStreamCreator* CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps, const char * pathSuffix) override;
+	virtual class advancedfx::COutVideoStreamCreator* CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps) override;
+
+	virtual void GetOutputPathTemplates(const IRecordStreamSettings& stream, std::list<std::wstring>& outTemplates) const override
+	{
+		if (m_OutputSettings) m_OutputSettings->GetOutputPathTemplates(stream, outTemplates);
+	}
 
 	virtual bool InheritsFrom(CRecordingSettings * setting) const override
 	{
@@ -402,7 +468,9 @@ public:
 
 	virtual void Console_Edit(ICommandArgs * args) override;
 
-	virtual class advancedfx::COutVideoStreamCreator* CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps, const char * pathSuffix) override;
+	virtual class advancedfx::COutVideoStreamCreator* CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps) override;
+
+	// GetOutputPathTemplates: Output is created by the main input.
 
 	virtual bool InheritsFrom(CRecordingSettings * setting) const override;
 
@@ -427,9 +495,15 @@ public:
 
 	virtual void Console_Edit(ICommandArgs * args) override;
 
-	virtual class advancedfx::COutVideoStreamCreator* CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps, const char * pathSuffix) override
+	virtual class advancedfx::COutVideoStreamCreator* CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps) override
 	{
-		return InputCreateOutVideoStreamCreator(streams, stream, fps, pathSuffix, 0);
+		return InputCreateOutVideoStreamCreator(streams, stream, fps, 0);
+	}
+
+	/// The output uses the stream of the main input (index 0), e.g. for {STREAM_NAME}.
+	virtual void GetOutputPathTemplates(const IRecordStreamSettings& stream, std::list<std::wstring>& outTemplates) const override
+	{
+		if (m_OutputSettings) m_OutputSettings->GetOutputPathTemplates(stream, outTemplates);
 	}
 
 	virtual bool InheritsFrom(CRecordingSettings * setting) const override
@@ -441,7 +515,7 @@ public:
 		return false;
 	}	
 
-	class advancedfx::COutVideoStreamCreator* InputCreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps, const char * pathSuffix, size_t index)
+	class advancedfx::COutVideoStreamCreator* InputCreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps, size_t index)
 	{
 		advancedfx::COutVideoStreamCreator* result = nullptr;
 		if(nullptr == m_OutVideoStreamCreator) {
@@ -449,7 +523,7 @@ public:
 			m_OutVideoStreamCreator->AddRef();
 		}
 		if(0 == index) {
-			auto outputSettingsCreator = m_OutputSettings ? m_OutputSettings->CreateOutVideoStreamCreator(streams, stream, fps, pathSuffix) : nullptr;
+			auto outputSettingsCreator = m_OutputSettings ? m_OutputSettings->CreateOutVideoStreamCreator(streams, stream, fps) : nullptr;
 			m_OutVideoStreamCreator->SetOutVideoStreamCreator(outputSettingsCreator);
 			if(outputSettingsCreator) outputSettingsCreator->Release();
 			result = m_OutVideoStreamCreator;

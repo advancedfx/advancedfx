@@ -120,7 +120,8 @@ bool CreatePath(wchar_t const * path, std::wstring & outPath, bool noErrorIfExit
 				buf[wcslen(buf)] = '\\';
 				numstacked--;
 
-				bCreated = 0 != CreateDirectoryW(buf, NULL);
+				// Another thread might create the same directory concurrently.
+				bCreated = 0 != CreateDirectoryW(buf, NULL) || noErrorIfExits && GetLastError() == ERROR_ALREADY_EXISTS;
 			}
 		}
 
@@ -135,4 +136,34 @@ bool CreatePath(wchar_t const * path, std::wstring & outPath, bool noErrorIfExit
 	free(buf);
 
 	return bOk;
+}
+
+bool GetFullPath(wchar_t const * path, std::wstring & outPath)
+{
+	DWORD length = GetFullPathNameW(path, 0, NULL, NULL);
+	if(0 == length) return false;
+
+	std::wstring buf(length, L'\0');
+	DWORD written = GetFullPathNameW(path, length, &buf[0], NULL);
+	if(0 == written || length <= written) return false;
+
+	buf.resize(written);
+	outPath = std::move(buf);
+	return true;
+}
+
+bool CreateParentPath(wchar_t const * filePath)
+{
+	std::wstring parent(filePath);
+	size_t pos = parent.find_last_of(L"\\/");
+	if(std::wstring::npos == pos) return true; // current directory.
+
+	parent.resize(pos);
+	if(parent.empty() || L':' == parent.back()) return true; // root.
+
+	DWORD attributes = GetFileAttributesW(parent.c_str());
+	if(INVALID_FILE_ATTRIBUTES != attributes && (attributes & FILE_ATTRIBUTE_DIRECTORY)) return true;
+
+	std::wstring createdPath;
+	return CreatePath(parent.c_str(), createdPath, true);
 }

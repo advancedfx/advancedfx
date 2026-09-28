@@ -21,42 +21,42 @@ CRecordingSettings::CShared::CShared()
 	m_NamedSettings.emplace(m_DefaultSettings->GetName(), m_DefaultSettings);
 
 	{
-		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpeg", true, "-c:v libx264 -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}");
+		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpeg", true, "-c:v libx264 -preset slow -crf 22 {QUOTE}{AFX_OUTPUT_FILE}{QUOTE}", "{STREAM_PATH}\\video.mp4");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 
 	{
-		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegYuv420p", true, "-c:v libx264 -pix_fmt yuv420p -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}");
+		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegYuv420p", true, "-c:v libx264 -pix_fmt yuv420p -preset slow -crf 22 {QUOTE}{AFX_OUTPUT_FILE}{QUOTE}", "{STREAM_PATH}\\video.mp4");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 
 	{
-		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegLosslessFast", true, "-c:v libx264rgb -preset ultrafast -crf 0 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}");
+		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegLosslessFast", true, "-c:v libx264rgb -preset ultrafast -crf 0 {QUOTE}{AFX_OUTPUT_FILE}{QUOTE}", "{STREAM_PATH}\\video.mp4");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 
 	{
-		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegLosslessBest", true, "-c:v libx264rgb -preset veryslow -crf 0 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}");
+		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegLosslessBest", true, "-c:v libx264rgb -preset veryslow -crf 0 {QUOTE}{AFX_OUTPUT_FILE}{QUOTE}", "{STREAM_PATH}\\video.mp4");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 
 	{
-		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegRaw", true, "-c:v rawvideo {QUOTE}{AFX_STREAM_PATH}\\\\video.avi{QUOTE}");
+		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegRaw", true, "-c:v rawvideo {QUOTE}{AFX_OUTPUT_FILE}{QUOTE}", "{STREAM_PATH}\\video.avi");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 
 	{
-		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegHuffyuv", true, "-c:v huffyuv {QUOTE}{AFX_STREAM_PATH}\\\\video.avi{QUOTE}");
+		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegHuffyuv", true, "-c:v huffyuv {QUOTE}{AFX_OUTPUT_FILE}{QUOTE}", "{STREAM_PATH}\\video.avi");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 
 	{
-		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegProres", true, "-c:v prores_ks -profile:v 4 -pix_fmt yuv444p10le {QUOTE}{AFX_STREAM_PATH}\\video.mov{QUOTE}");
+		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegProres", true, "-c:v prores_ks -profile:v 4 -pix_fmt yuv444p10le {QUOTE}{AFX_OUTPUT_FILE}{QUOTE}", "{STREAM_PATH}\\video.mov");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 
 	{
-		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegProresAlpha", true, "-c:v prores_ks -profile:v 4 -pix_fmt yuva444p10le {QUOTE}{AFX_STREAM_PATH}\\video.mov{QUOTE}");
+		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegProresAlpha", true, "-c:v prores_ks -profile:v 4 -pix_fmt yuva444p10le {QUOTE}{AFX_OUTPUT_FILE}{QUOTE}", "{STREAM_PATH}\\video.mov");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 
@@ -246,8 +246,8 @@ void CRecordingSettings::Console(ICommandArgs * args)
 			}
 
 			advancedfx::Message(
-				"%s add ffmpeg <name> \"<yourOptionsHere>\" - Adds an FFMPEG setting, <yourOptionsHere> are output options, use {QUOTE} for \", {AFX_STREAM_PATH} for the folder path of the stream, \\{ for {, \\} for }. For an example see one of the afxFfmpeg* templates (edit them).\n"
-				"%s add ffmpegEx <name> \"<yourOptionsHere>\" - Adds an extended FFMPEG setting, <yourOptionsHere> are output options, use {QUOTE} for \", {AFX_STREAM_PATH} for the folder path of the stream, \\{ for {, \\} for }. Further variables: {FFMPEG_PATH} {PIXEL_FORMAT} {FRAMERATE} {WIDTH} {HEIGHT} - For an example see one of the afxFfmpeg* templates (edit them).\n"
+				"%s add ffmpeg <name> \"<yourOptionsHere>\" - Adds an FFMPEG setting, <yourOptionsHere> are output options, use {QUOTE} for \", {AFX_OUTPUT_FILE} for the output file (edit path to change it), {AFX_STREAM_PATH} for the folder of the output file, \\{ for {, \\} for }. For an example see one of the afxFfmpeg* templates (edit them).\n"
+				"%s add ffmpegEx <name> \"<yourOptionsHere>\" - Adds an extended FFMPEG setting, <yourOptionsHere> are output options, use {QUOTE} for \", {AFX_OUTPUT_FILE} for the output file (edit path to change it), {AFX_STREAM_PATH} for the folder of the output file, \\{ for {, \\} for }. Further variables: {FFMPEG_PATH} {PIXEL_FORMAT} {FRAMERATE} {WIDTH} {HEIGHT} - For an example see one of the afxFfmpeg* templates (edit them).\n"
 				"%s add sampler <name> - Adds a sampler with 30 fps and default settings, edit it afterwards to change them.\n"
 				"%s add multi <name> - Adds multi settings, edit it afterwards to add settings to it.\n"
 				"%s add interleave <name> (<nameX>)* - Adds a video interleave setting, named <name>, which is also the first of multiple possible inputs, with optional further inputs with the given names, that are ordered in the order given. You can edit it afterwards to change the default output settings to s.th. else.\n"
@@ -274,36 +274,88 @@ void CRecordingSettings::Console(ICommandArgs * args)
 }
 
 
+// Output path helpers //////////////////////////////////////////////////////
+
+/// Expands path for the stream, except runtimeVariables, which are left for the output stream to expand.
+static bool ExpandStreamOutputPath(const char * settingName, const IRecordStreamSettings & stream, const COutputPathSetting & path, unsigned runtimeVariables, std::wstring & outPath)
+{
+	std::wstring pathTemplate;
+	if (!path.GetWide(pathTemplate))
+	{
+		advancedfx::Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", path.Get().c_str());
+		return false;
+	}
+
+	COutputPathValues values;
+	stream.GetOutputPathValues(values);
+
+	unsigned unset = 0;
+	outPath = values.Expand(pathTemplate, runtimeVariables, &unset);
+
+	if (unsigned missing = unset & ~runtimeVariables)
+	{
+		advancedfx::Warning("AFXWARNING: Recording setting %s: %s not available, using empty value instead.\n", settingName, OutputPathTemplate_GetVariableNames(missing).c_str());
+	}
+
+	return true;
+}
+
+static void AppendStreamOutputPathTemplate(const IRecordStreamSettings & stream, const COutputPathSetting & path, std::list<std::wstring>& outTemplates)
+{
+	std::wstring pathTemplate;
+	if (!path.GetWide(pathTemplate)) return;
+
+	COutputPathValues values;
+	stream.GetOutputPathValues(values);
+
+	outTemplates.push_back(values.Expand(pathTemplate, OutputPathVariable_All));
+}
+
 // CClassicRecordingSettings ////////////////////////////////////////////////
 
 void CClassicRecordingSettings::Console_Edit(ICommandArgs * args)
 {
-	advancedfx::Message("%s (type classic) recording setting options:\n", m_Name.c_str());
-	advancedfx::Warning("The classic settings are controlled through mirv_streams settings and can not be edited.\n");
-}
+	int argC = args->ArgC();
+	const char * arg0 = args->ArgV(0);
 
-advancedfx::COutVideoStreamCreator * CClassicRecordingSettings::CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float frameRate, const char * pathSuffix)
-{
-	std::wstring capturePath;
-	if (stream.GetStreamFolder(capturePath)) {
-		std::wstring widePathSuffix;
-		if (UTF8StringToWideString(pathSuffix, widePathSuffix))
+	if (2 <= argC)
+	{
+		const char * arg1 = args->ArgV(1);
+
+		if (0 == _stricmp("path", arg1))
 		{
-			capturePath.append(widePathSuffix);
-
-			advancedfx::StreamCaptureType captureType = stream.GetCaptureType();
-
-			auto result = new advancedfx::CClassicRecordingSettingsCreator(capturePath, (captureType == advancedfx::StreamCaptureType::Depth24ZIP || captureType == advancedfx::StreamCaptureType::DepthFZIP), streams.GetFormatBmpNotTga());
-			result->AddRef();
-			return result;
-		}
-		else
-		{
-			advancedfx::Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", pathSuffix);
+			CSubCommandArgs subArgs(args, 2);
+			m_Path.Console(&subArgs, "Output path of the images.");
+			return;
 		}
 	}
 
+	advancedfx::Message("%s (type classic) recording setting options:\n", m_Name.c_str());
+	advancedfx::Message(
+		"%s path [...] - Output path of the images.\n"
+		, arg0
+	);
+	advancedfx::Message("The other classic settings are controlled through mirv_streams settings.\n");
+}
+
+advancedfx::COutVideoStreamCreator * CClassicRecordingSettings::CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float frameRate)
+{
+	std::wstring capturePathTemplate;
+	if (ExpandStreamOutputPath(m_Name.c_str(), stream, m_Path, OutputPathVariable_SequenceNr | OutputPathVariable_Ext, capturePathTemplate))
+	{
+		advancedfx::StreamCaptureType captureType = stream.GetCaptureType();
+
+		auto result = new advancedfx::CClassicRecordingSettingsCreator(capturePathTemplate, (captureType == advancedfx::StreamCaptureType::Depth24ZIP || captureType == advancedfx::StreamCaptureType::DepthFZIP), streams.GetFormatBmpNotTga());
+		result->AddRef();
+		return result;
+	}
+
 	return nullptr;
+}
+
+void CClassicRecordingSettings::GetOutputPathTemplates(const IRecordStreamSettings& stream, std::list<std::wstring>& outTemplates) const
+{
+	AppendStreamOutputPathTemplate(stream, m_Path, outTemplates);
 }
 
 // CFfmpegRecordingSettings ////////////////////////////////////////////////
@@ -336,7 +388,7 @@ void CFfmpegRecordingSettings::Console_Edit(ICommandArgs * args)
 			}
 
 			advancedfx::Message(
-				"%s options \"<yourOptionsHere>\" - Set output options, use {QUOTE} for \", {AFX_STREAM_PATH} for the folder path of the stream, \\{ for {, \\} for }.\n"
+				"%s options \"<yourOptionsHere>\" - Set output options, use {QUOTE} for \", {AFX_OUTPUT_FILE} for the output file (see path), {AFX_STREAM_PATH} for the folder of the output file, \\{ for {, \\} for }.\n"
 				"Current value: \"%s\"\n"
 				, arg0
 				, m_FfmpegOptions.c_str()
@@ -365,48 +417,49 @@ void CFfmpegRecordingSettings::Console_Edit(ICommandArgs * args)
 				, arg0
 			);
 			return;
-		}			
+		}
+		else if (0 == _stricmp("path", arg1))
+		{
+			CSubCommandArgs subArgs(args, 2);
+			m_Path.Console(&subArgs, "Output file ({AFX_OUTPUT_FILE} in options).");
+			return;
+		}
 	}
 
 	advancedfx::Message("%s (type ffmpeg) recording setting options:\n", m_Name.c_str());
 	advancedfx::Message(
 		"%s options [...] - FFMPEG options.\n"
 		"%s options+ [...] - Append to FFMPEG options.\n"
+		"%s path [...] - Output file.\n"
+		, arg0
 		, arg0
 		, arg0
 	);
 }
 
-advancedfx::COutVideoStreamCreator* CFfmpegRecordingSettings::CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float frameRate, const char * pathSuffix)
+advancedfx::COutVideoStreamCreator* CFfmpegRecordingSettings::CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float frameRate)
 {
-	std::wstring widePathSuffix;
-	if (UTF8StringToWideString(pathSuffix, widePathSuffix))
+	std::wstring wideOptions;
+	if (UTF8StringToWideString(m_FfmpegOptions.c_str(), wideOptions))
 	{
-		std::wstring wideOptions;
-		if (UTF8StringToWideString(m_FfmpegOptions.c_str(), wideOptions))
-		{
-			std::wstring capturePath;
-			if (stream.GetStreamFolder(capturePath)) {
-				capturePath.append(widePathSuffix);
-
-				advancedfx::StreamCaptureType captureType = stream.GetCaptureType();
-
-				auto result = new advancedfx::CFfmpegRecordingSettingsCreator(capturePath, std::wstring(L"{QUOTE}{FFMPEG_PATH}{QUOTE} -f rawvideo -pixel_format {PIXEL_FORMAT} -loglevel repeat+level+warning -framerate {FRAMERATE} -video_size {WIDTH}x{HEIGHT} -i pipe:0 -vf setsar=sar=1/1 ").append(wideOptions), frameRate);
-				result->AddRef();
-				return result;
-			}
-		}
-		else
-		{
-			advancedfx::Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", m_FfmpegOptions.c_str());
+		std::wstring outputFile;
+		if (ExpandStreamOutputPath(m_Name.c_str(), stream, m_Path, OutputPathVariable_None, outputFile)) {
+			auto result = new advancedfx::CFfmpegRecordingSettingsCreator(outputFile, std::wstring(L"{QUOTE}{FFMPEG_PATH}{QUOTE} -f rawvideo -pixel_format {PIXEL_FORMAT} -loglevel repeat+level+warning -framerate {FRAMERATE} -video_size {WIDTH}x{HEIGHT} -i pipe:0 -vf setsar=sar=1/1 ").append(wideOptions), frameRate);
+			result->AddRef();
+			return result;
 		}
 	}
 	else
 	{
-		advancedfx::Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", pathSuffix);
+		advancedfx::Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", m_FfmpegOptions.c_str());
 	}
 
 	return nullptr;
+}
+
+void CFfmpegRecordingSettings::GetOutputPathTemplates(const IRecordStreamSettings& stream, std::list<std::wstring>& outTemplates) const
+{
+	AppendStreamOutputPathTemplate(stream, m_Path, outTemplates);
 }
 
 
@@ -441,7 +494,7 @@ void CFfmpegExRecordingSettings::Console_Edit(ICommandArgs * args)
 			}
 
 			advancedfx::Message(
-				"%s options \"<yourOptionsHere>\" - Set output options use {QUOTE} for \", {AFX_STREAM_PATH} for the folder path of the stream, \\{ for {, \\} for }. Further variables: {FFMPEG_PATH} {PIXEL_FORMAT} {FRAMERATE} {WIDTH} {HEIGHT}\n"
+				"%s options \"<yourOptionsHere>\" - Set output options use {QUOTE} for \", {AFX_OUTPUT_FILE} for the output file (see path), {AFX_STREAM_PATH} for the folder of the output file, \\{ for {, \\} for }. Further variables: {FFMPEG_PATH} {PIXEL_FORMAT} {FRAMERATE} {WIDTH} {HEIGHT}\n"
 				"Current value: \"%s\"\n"
 				, arg0
 				, m_FfmpegOptions.c_str()
@@ -470,48 +523,49 @@ void CFfmpegExRecordingSettings::Console_Edit(ICommandArgs * args)
 				, arg0
 			);
 			return;
-		}		
+		}
+		else if (0 == _stricmp("path", arg1))
+		{
+			CSubCommandArgs subArgs(args, 2);
+			m_Path.Console(&subArgs, "Output file ({AFX_OUTPUT_FILE} in options).");
+			return;
+		}
 	}
 
 	advancedfx::Message("%s (type ffmpegEx) recording setting options:\n", m_Name.c_str());
 	advancedfx::Message(
 		"%s options [...] - FFMPEG options.\n"
 		"%s options+ [...] - Append FFMPEG options.\n"
+		"%s path [...] - Output file.\n"
+		, arg0
 		, arg0
 		, arg0
 	);
 }
 
-advancedfx::COutVideoStreamCreator* CFfmpegExRecordingSettings::CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float frameRate, const char * pathSuffix)
+advancedfx::COutVideoStreamCreator* CFfmpegExRecordingSettings::CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float frameRate)
 {
-	std::wstring widePathSuffix;
-	if (UTF8StringToWideString(pathSuffix, widePathSuffix))
+	std::wstring wideOptions;
+	if (UTF8StringToWideString(m_FfmpegOptions.c_str(), wideOptions))
 	{
-		std::wstring wideOptions;
-		if (UTF8StringToWideString(m_FfmpegOptions.c_str(), wideOptions))
-		{
-			std::wstring capturePath;
-			if (stream.GetStreamFolder(capturePath)) {
-				capturePath.append(widePathSuffix);
-
-				advancedfx::StreamCaptureType captureType = stream.GetCaptureType();
-
-				auto result = new advancedfx::CFfmpegRecordingSettingsCreator(capturePath, wideOptions, frameRate);
-				result->AddRef();
-				return result;
-			}
-		}
-		else
-		{
-			advancedfx::Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", m_FfmpegOptions.c_str());
+		std::wstring outputFile;
+		if (ExpandStreamOutputPath(m_Name.c_str(), stream, m_Path, OutputPathVariable_None, outputFile)) {
+			auto result = new advancedfx::CFfmpegRecordingSettingsCreator(outputFile, wideOptions, frameRate);
+			result->AddRef();
+			return result;
 		}
 	}
 	else
 	{
-		advancedfx::Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", pathSuffix);
+		advancedfx::Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", m_FfmpegOptions.c_str());
 	}
 
 	return nullptr;
+}
+
+void CFfmpegExRecordingSettings::GetOutputPathTemplates(const IRecordStreamSettings& stream, std::list<std::wstring>& outTemplates) const
+{
+	AppendStreamOutputPathTemplate(stream, m_Path, outTemplates);
 }
 
 
@@ -652,6 +706,12 @@ void CMultiRecordingSettings::Console_Edit(ICommandArgs * args)
 			if (0 == idx) advancedfx::Message("[empty]\n");
 			return;
 		}
+		else if (0 == _stricmp("path", arg1))
+		{
+			CSubCommandArgs subArgs(args, 2);
+			m_Path.Console(&subArgs, "Output folder for each of the settings, this is {STREAM_PATH} for them.");
+			return;
+		}
 	}
 
 	advancedfx::Message("%s (type multi) recording setting options:\n", m_Name.c_str());
@@ -659,21 +719,74 @@ void CMultiRecordingSettings::Console_Edit(ICommandArgs * args)
 		"%s add <settingsName> - Add settings.\n"
 		"%s remove <settingsName> - Remove settings.\n"
 		"%s print <settingsName> - List settings.\n"
+		"%s path [...] - Output folder ({STREAM_PATH}) for each of the settings.\n"
+		, arg0
 		, arg0
 		, arg0
 		, arg0
 	);
 }
 
+std::wstring CMultiRecordingSettings::GetChildStreamPathTemplate(const IRecordStreamSettings& stream, const CRecordingSettings * child) const
+{
+	std::wstring pathTemplate;
+	std::wstring childName;
+	if (!m_Path.GetWide(pathTemplate) || !UTF8StringToWideString(child->GetName(), childName))
+	{
+		advancedfx::Warning("AFXERROR: Could not convert \"%s\" or \"%s\" from UTF8 to wide string.\n", m_Path.Get().c_str(), child->GetName());
+		return std::wstring();
+	}
+
+	COutputPathValues values;
+	stream.GetOutputPathValues(values);
+	values.SetString(OutputPathVariable_SettingName, childName);
+
+	// Keep what is not known yet, the child setting will expand it.
+	return values.Expand(pathTemplate, OutputPathVariable_All);
+}
+
+advancedfx::COutVideoStreamCreator* CMultiRecordingSettings::CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps)
+{
+	std::list<advancedfx::COutVideoStreamCreator*> outVideoStreams;
+
+	for (auto it = m_Settings.begin(); it != m_Settings.end(); ++it)
+	{
+		if (CRecordingSettings * setting = *it)
+		{
+			CChildStreamSettings childStream(stream, GetChildStreamPathTemplate(stream, setting));
+
+			advancedfx::COutVideoStreamCreator* item = setting->CreateOutVideoStreamCreator(streams, childStream, fps);
+			outVideoStreams.push_back(item);
+		}
+	}
+
+	auto result = new CMyOutVideoStreamCreator(std::move(outVideoStreams));
+	result->AddRef();
+	return result;
+}
+
+void CMultiRecordingSettings::GetOutputPathTemplates(const IRecordStreamSettings& stream, std::list<std::wstring>& outTemplates) const
+{
+	for (auto it = m_Settings.begin(); it != m_Settings.end(); ++it)
+	{
+		if (CRecordingSettings * setting = *it)
+		{
+			CChildStreamSettings childStream(stream, GetChildStreamPathTemplate(stream, setting));
+
+			setting->GetOutputPathTemplates(childStream, outTemplates);
+		}
+	}
+}
+
 // CSamplingRecordingSettings ///////////////////////////////////////////////
 
 
 
-advancedfx::COutVideoStreamCreator* CSamplingRecordingSettings::CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float frameRate, const char * pathSuffix)
+advancedfx::COutVideoStreamCreator* CSamplingRecordingSettings::CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float frameRate)
 {
 	if (m_OutputSettings)
 	{
-		if (advancedfx::COutVideoStreamCreator* outVideoStreamCreator = m_OutputSettings->CreateOutVideoStreamCreator(streams, stream, m_OutFps, pathSuffix))
+		if (advancedfx::COutVideoStreamCreator* outVideoStreamCreator = m_OutputSettings->CreateOutVideoStreamCreator(streams, stream, m_OutFps))
 		{
 			auto result = new advancedfx::CSamplingRecordingSettingsCreator(outVideoStreamCreator, frameRate, m_Method, m_OutFps ? 1.0 / m_OutFps : 0.0, m_Exposure, m_FrameStrength, streams.GetImageBufferPool());
 			result->AddRef();
@@ -871,9 +984,9 @@ void CInterleaveInputRecordingSettings::Console_Edit(ICommandArgs * args) {
 	advancedfx::Message("%s (type interleave-other-input) has no options.\n", m_Name.c_str());
 }
 
-class advancedfx::COutVideoStreamCreator* CInterleaveInputRecordingSettings::CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps, const char * pathSuffix)
+class advancedfx::COutVideoStreamCreator* CInterleaveInputRecordingSettings::CreateOutVideoStreamCreator(const IRecordStreamSettings & streams, const IRecordStreamSettings& stream, float fps)
 {
-	return m_pMainInterleaveInput->InputCreateOutVideoStreamCreator(streams, stream, fps, pathSuffix, m_Index);
+	return m_pMainInterleaveInput->InputCreateOutVideoStreamCreator(streams, stream, fps, m_Index);
 }
 
 bool CInterleaveInputRecordingSettings::InheritsFrom(CRecordingSettings * setting) const

@@ -7,6 +7,7 @@
 #include "OpenExrOutput.h"
 #include "StringTools.h"
 #include "FileTools.h"
+#include "OutputPathTemplate.h"
 
 #include <map>
 #include <string>
@@ -23,7 +24,7 @@ bool COutImageStreamImpl::WriteBuffer(const unsigned char* pBuffer)
 
 	if (ImageFormat::ZFloat == m_ImageFormat.Format)
 	{
-		return CreateCapturePath(".exr", path) && WriteFloatZOpenExr(
+		return CreateCapturePath(L"exr", path) && WriteFloatZOpenExr(
 			path.c_str(),
 			pBuffer,
 			m_ImageFormat.Width,
@@ -38,51 +39,50 @@ bool COutImageStreamImpl::WriteBuffer(const unsigned char* pBuffer)
 	if (ImageFormat::A == m_ImageFormat.Format)
 	{
 		return m_IfBmpNotTga
-			? CreateCapturePath(".bmp", path) && WriteRawBitmap(pBuffer, path.c_str(), m_ImageFormat.Width, m_ImageFormat.Height, 8, m_ImageFormat.Pitch, m_ImageFormat.Origin == ImageOrigin::TopLeft)
-			: CreateCapturePath(".tga", path) && WriteRawTarga(pBuffer, path.c_str(), m_ImageFormat.Width, m_ImageFormat.Height, 8, true, m_ImageFormat.Pitch, 0, m_ImageFormat.Origin == ImageOrigin::TopLeft)
+			? CreateCapturePath(L"bmp", path) && WriteRawBitmap(pBuffer, path.c_str(), m_ImageFormat.Width, m_ImageFormat.Height, 8, m_ImageFormat.Pitch, m_ImageFormat.Origin == ImageOrigin::TopLeft)
+			: CreateCapturePath(L"tga", path) && WriteRawTarga(pBuffer, path.c_str(), m_ImageFormat.Width, m_ImageFormat.Height, 8, true, m_ImageFormat.Pitch, 0, m_ImageFormat.Origin == ImageOrigin::TopLeft)
 			;
 	}
 
 	bool isBgra = ImageFormat::BGRA == m_ImageFormat.Format;
 
 	return m_IfBmpNotTga && !isBgra
-		? CreateCapturePath(".bmp", path) && WriteRawBitmap(pBuffer, path.c_str(), m_ImageFormat.Width, m_ImageFormat.Height, 24, m_ImageFormat.Pitch, m_ImageFormat.Origin == ImageOrigin::TopLeft)
-		: CreateCapturePath(".tga", path) && WriteRawTarga(pBuffer, path.c_str(), m_ImageFormat.Width, m_ImageFormat.Height, isBgra ? 32 : 24, false, m_ImageFormat.Pitch, isBgra ? 8 : 0, m_ImageFormat.Origin == ImageOrigin::TopLeft)
+		? CreateCapturePath(L"bmp", path) && WriteRawBitmap(pBuffer, path.c_str(), m_ImageFormat.Width, m_ImageFormat.Height, 24, m_ImageFormat.Pitch, m_ImageFormat.Origin == ImageOrigin::TopLeft)
+		: CreateCapturePath(L"tga", path) && WriteRawTarga(pBuffer, path.c_str(), m_ImageFormat.Width, m_ImageFormat.Height, isBgra ? 32 : 24, false, m_ImageFormat.Pitch, isBgra ? 8 : 0, m_ImageFormat.Origin == ImageOrigin::TopLeft)
 		;
 }
 
 
-bool COutImageStreamImpl::CreateCapturePath(const char* fileExtension, std::wstring& outPath)
+bool COutImageStreamImpl::CreateCapturePath(const wchar_t* fileExtension, std::wstring& outPath)
 {
-	if (!m_TriedCreatePath)
+	COutputPathValues values;
+	values.SetNumber(OutputPathVariable_SequenceNr, (long long)m_FrameNumber);
+	values.SetString(OutputPathVariable_Ext, fileExtension);
+
+	outPath = values.Expand(m_PathTemplate, OutputPathVariable_None);
+
+	++m_FrameNumber;
+
+	// The folder can depend on the sequence number, so check if it changed:
+	size_t separatorPos = outPath.find_last_of(L"\\/");
+	std::wstring parentPath = std::wstring::npos == separatorPos ? std::wstring() : outPath.substr(0, separatorPos);
+
+	if (!m_TriedCreatePath || parentPath != m_LastParentPath)
 	{
 		m_TriedCreatePath = true;
+		m_LastParentPath = parentPath;
 
-		bool dirCreated = CreatePath(m_Path.c_str(), m_Path, true);
-		if (dirCreated)
-		{
-			m_SucceededCreatePath = true;
-		}
-		else
+		m_SucceededCreatePath = CreateParentPath(outPath.c_str());
+		if (!m_SucceededCreatePath)
 		{
 			std::string ansiString;
-			if (!WideStringToUTF8String(m_Path.c_str(), ansiString)) ansiString = "[n/a]";
+			if (!WideStringToUTF8String(parentPath.c_str(), ansiString)) ansiString = "[n/a]";
 
 			advancedfx::Warning("ERROR: could not create \"%s\"\n", ansiString.c_str());
 		}
 	}
 
-	if (!m_SucceededCreatePath)
-		return false;
-
-	std::wostringstream os;
-	os << m_Path << L"\\" << std::setfill(L'0') << std::setw(5) << m_FrameNumber << std::setw(0) << fileExtension;
-
-	outPath = os.str();
-
-	++m_FrameNumber;
-
-	return true;
+	return m_SucceededCreatePath;
 }
 
 
@@ -177,10 +177,11 @@ BOOL AfxOutFFMPEGVideoStream_CreatePipe(
 	return(TRUE);
 }
 
-COutFFMPEGVideoStreamImpl::COutFFMPEGVideoStreamImpl(const CImageFormat& imageFormat, const std::wstring& path, const std::wstring& ffmpegOptions, float frameRate)
+COutFFMPEGVideoStreamImpl::COutFFMPEGVideoStreamImpl(const CImageFormat& imageFormat, const std::wstring& outputFile, const std::wstring& ffmpegOptions, float frameRate)
 	: COutVideoStreamImpl(imageFormat)
 {
-	std::wstring myPath(path);
+	std::wstring myOutputFile;
+	std::wstring myPath;
 
 	if (frameRate < 1)
 	{
@@ -190,17 +191,19 @@ COutFFMPEGVideoStreamImpl::COutFFMPEGVideoStreamImpl(const CImageFormat& imageFo
 	{
 		m_TriedCreatePath = true;
 
-		bool dirCreated = CreatePath(myPath.c_str(), myPath, true);
-		if (dirCreated)
+		if (GetFullPath(outputFile.c_str(), myOutputFile) && CreateParentPath(myOutputFile.c_str()))
 		{
 			m_SucceededCreatePath = true;
+
+			size_t separatorPos = myOutputFile.find_last_of(L"\\/");
+			if (std::wstring::npos != separatorPos) myPath = myOutputFile.substr(0, separatorPos);
 		}
 		else
 		{
 			std::string ansiString;
-			if (!WideStringToUTF8String(myPath.c_str(), ansiString)) ansiString = "[n/a]";
+			if (!WideStringToUTF8String(outputFile.c_str(), ansiString)) ansiString = "[n/a]";
 
-			advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::COutFFMPEGVideoStream: could not create path \"%s\"\n", ansiString.c_str());
+			advancedfx::Warning("AFXERROR: COutFFMPEGVideoStream::COutFFMPEGVideoStream: could not create path for \"%s\"\n", ansiString.c_str());
 		}
 	}
 
@@ -259,6 +262,7 @@ COutFFMPEGVideoStreamImpl::COutFFMPEGVideoStreamImpl(const CImageFormat& imageFo
 
 		std::map<std::wstring, std::wstring> replacements;
 		replacements[L"{FFMPEG_PATH}"] = ffmpegExe;
+		replacements[L"{AFX_OUTPUT_FILE}"] = myOutputFile;
 		replacements[L"{AFX_STREAM_PATH}"] = myPath;
 		replacements[L"{WIDTH}"] = std::to_wstring(imageFormat.Width);
 		replacements[L"{HEIGHT}"] = std::to_wstring(imageFormat.Height);
