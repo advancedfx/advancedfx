@@ -972,20 +972,20 @@ void CAfxRecordStream::QueueCapture(IAfxMatRenderContextOrg* ctx, size_t index)
 	QueueOrExecute(ctx, new CAfxLeafExecute_Functor(new CCaptureFunctor(*this, index)));
 }
 
-bool CAfxRecordStream::GetStreamFolder(std::wstring& outFolder) const {
+void CAfxRecordStream::GetOutputPathValues(advancedfx::COutputPathValues& outValues) const {
+	outValues = g_AfxStreams.GetRecordOutputPathValues();
+
 	std::wstring wideStreamName;
 	if (UTF8StringToWideString(StreamName_get(), wideStreamName))
 	{
-		outFolder = g_AfxStreams.GetTakeDir();
-		outFolder.append(L"\\");
-		outFolder.append(wideStreamName);
-		return true;
+		outValues.SetString(advancedfx::OutputPathVariable_StreamName, wideStreamName);
 	}
 	else
 	{
 		Tier0_Warning("AFXERROR: Could not convert \"%s\" from UTF8 to wide string.\n", StreamName_get());
-		return false;
 	}
+
+	outValues.SetTemplate(advancedfx::OutputPathVariable_StreamPath, AFX_TAKE_PATH_TEMPLATE L"\\{STREAM_NAME}");
 }
 
 advancedfx::CGrowingBufferPoolThreadSafe * CAfxRecordStream::GetImageBufferPool() const {
@@ -6900,12 +6900,111 @@ void CAfxStreams::Console_Record_Start()
 	}
 }
 
+std::mutex g_StartMovieWavPathMutex;
+std::wstring g_StartMovieWavPath;
+
+bool AfxStreams_GetStartMovieWavPath(std::wstring & outPath) {
+	std::unique_lock<std::mutex> lock(g_StartMovieWavPathMutex);
+	outPath = g_StartMovieWavPath;
+	return !outPath.empty();
+}
+
+static void AfxStreams_SetStartMovieWavPath(const std::wstring & value) {
+	std::unique_lock<std::mutex> lock(g_StartMovieWavPathMutex);
+	g_StartMovieWavPath = value;
+}
+
+bool CAfxStreams::ExpandRecordOutputPath(const advancedfx::COutputPathSetting & setting, std::wstring & outPath) const
+{
+	std::wstring value;
+	if(!setting.GetWide(value)) return false;
+	outPath = m_OutputPathValues.Expand(value, advancedfx::OutputPathVariable_None);
+	return true;
+}
+
+bool CAfxStreams::InitOutputPathValues()
+{
+	std::wstring recordName;
+	std::wstring recordPath;
+	std::wstring take;
+	if(!UTF8StringToWideString(m_RecordName.c_str(), recordName)
+		|| !GetFullPath(recordName.c_str(), recordPath)
+		|| !UTF8StringToWideString(m_Take.c_str(), take))
+		return false;
+
+	// Avoid double separators in the default templates (keep root "C:\" though):
+	while(3 < recordPath.size() && (L'\\' == recordPath.back() || L'/' == recordPath.back())) recordPath.pop_back();
+
+	m_OutputPathValues = advancedfx::COutputPathValues();
+	m_OutputPathValues.SetString(advancedfx::OutputPathVariable_RecordPath, recordPath);
+	m_OutputPathValues.SetString(advancedfx::OutputPathVariable_Take, take);
+
+	WrpGlobals * globals = g_Hook_VClient_RenderView.GetGlobals();
+	float curTime = globals ? globals->curtime_get() : 0.0f;
+
+	int tick = 0;
+	if(WrpVEngineClientDemoInfoEx * demoInfo = g_VEngineClient->GetDemoInfoEx()) {
+		tick = demoInfo->GetDemoPlaybackTick();
+	} else if(globals && 0 < globals->interval_per_tick_get()) {
+		// Not in a demo, derive it from the client time instead.
+		tick = (int)(curTime / globals->interval_per_tick_get());
+	}
+	m_OutputPathValues.SetNumber(advancedfx::OutputPathVariable_Tick, tick);
+
+	wchar_t time[64];
+	swprintf_s(time, L"%.3f", curTime);
+	m_OutputPathValues.SetString(advancedfx::OutputPathVariable_Time, time);
+
+	// Determine {TAKE_NUMBER} from all outputs that will be written:
+
+	std::list<std::wstring> templates;
+
+	auto addTemplate = [&](const advancedfx::COutputPathSetting & setting) {
+		std::wstring value;
+		if(setting.GetWide(value)) templates.push_back(m_OutputPathValues.Expand(value, advancedfx::OutputPathVariable_All));
+	};
+
+	if(m_CampathAutoSave && 0 < g_Hook_VClient_RenderView.m_CamPath.GetSize()) addTemplate(m_CampathPath);
+	if(m_CamExport) addTemplate(m_CamPath);
+	if(m_StartMovieWav) addTemplate(m_StartMovieWavPath);
+	if(m_GameRecording && CClientTools::Instance()) addTemplate(m_GameRecordingPath);
+	if(m_CamBvh) addTemplate(m_CamBvhPath);
+
+	if(m_RecordScreen->Enabled) m_RecordScreen->Settings->GetOutputPathTemplates(*this, templates);
+
+#ifndef _WIN64
+	if(m_RecordVoices) addTemplate(m_VoicesPath);
+	if(!m_EntityBvhCaptures.empty()) addTemplate(m_EntityBvhPath);
+
+	for(std::list<CAfxRecordStream *>::iterator it = m_Streams.begin(); it != m_Streams.end(); it++)
+	{
+		if((*it)->Record_get()) (*it)->GetSettings()->GetOutputPathTemplates(**it, templates);
+	}
+#endif //#ifndef _WIN64
+
+	long long maxTakeNumber = -1;
+	bool usesTakeNumber = false;
+	for(auto it = templates.begin(); it != templates.end(); it++) {
+		if(0 == (advancedfx::OutputPathTemplate_GetVariables(*it) & advancedfx::OutputPathVariable_TakeNumber)) continue;
+		usesTakeNumber = true;
+		long long takeNumber = advancedfx::OutputPathTemplate_FindMaxTakeNumber(*it);
+		if(maxTakeNumber < takeNumber) maxTakeNumber = takeNumber;
+	}
+
+	m_OutputPathValues.SetNumber(advancedfx::OutputPathVariable_TakeNumber, maxTakeNumber + 1);
+
+	if(!templates.empty() && !usesTakeNumber) {
+		Tier0_Warning("AFXWARNING: No output path uses {TAKE_NUMBER}, files of previous recordings might get overwritten.\n");
+	}
+
+	m_TakeDir = m_OutputPathValues.Expand(AFX_TAKE_PATH_TEMPLATE, advancedfx::OutputPathVariable_None);
+
+	return true;
+}
+
 void CAfxStreams::Console_Record_Start2()
 {
-	if(UTF8StringToWideString(m_RecordName.c_str(), m_TakeDir)
-		&& (m_TakeDir.append(L"\\take"), SuggestTakePath(m_TakeDir.c_str(), 4, m_TakeDir))
-		&& CreatePath(m_TakeDir.c_str(), m_TakeDir)
-	)
+	if(InitOutputPathValues())
 	{
 		m_Recording = true;
 		m_StartMovieWavUsed = false;
@@ -6965,42 +7064,61 @@ void CAfxStreams::Console_Record_Start2()
 
 		if (m_GameRecording)
 		{
-			std::wstring fileName(m_TakeDir);
-			fileName.append(L"\\afxGameRecord.agr");
-
-			if(CClientTools * instance = CClientTools::Instance()) instance->StartRecording(fileName.c_str());
+			std::wstring fileName;
+			if (ExpandRecordOutputPath(m_GameRecordingPath, fileName) && CreateParentPath(fileName.c_str()))
+			{
+				if(CClientTools * instance = CClientTools::Instance()) instance->StartRecording(fileName.c_str());
+			}
+			else Tier0_Warning("Error: Failed to create folder for AGR \"%s\".\n", m_GameRecordingPath.Get().c_str());
 		}
 
 		if (m_CamBvh)
 		{
-			std::wstring camFileName(m_TakeDir);
-			camFileName.append(L"\\cam_main.bvh");
-
-			g_Hook_VClient_RenderView.ExportBegin(camFileName.c_str(), frameTime);
+			std::wstring camFileName;
+			if (ExpandRecordOutputPath(m_CamBvhPath, camFileName) && CreateParentPath(camFileName.c_str()))
+			{
+				g_Hook_VClient_RenderView.ExportBegin(camFileName.c_str(), frameTime);
+			}
+			else Tier0_Warning("Error: Failed to create folder for BVH camera \"%s\".\n", m_CamBvhPath.Get().c_str());
 		}
 
 #ifndef _WIN64
-		for (std::list<CEntityBvhCapture *>::iterator it = m_EntityBvhCaptures.begin(); it != m_EntityBvhCaptures.end(); ++it)
+		if (!m_EntityBvhCaptures.empty())
 		{
-			(*it)->StartCapture(m_TakeDir, frameTime);
+			std::wstring entityBvhPath;
+			if (m_EntityBvhPath.GetWide(entityBvhPath))
+			{
+				for (std::list<CEntityBvhCapture *>::iterator it = m_EntityBvhCaptures.begin(); it != m_EntityBvhCaptures.end(); ++it)
+				{
+					advancedfx::COutputPathValues values(m_OutputPathValues);
+					values.SetNumber(advancedfx::OutputPathVariable_EntityIndex, (*it)->EntityIndex_get());
+					std::wstring fileName = values.Expand(entityBvhPath, advancedfx::OutputPathVariable_None);
+
+					if (CreateParentPath(fileName.c_str())) (*it)->StartCapture(fileName, frameTime);
+					else Tier0_Warning("Error: Failed to create folder for BVH entity %i.\n", (*it)->EntityIndex_get());
+				}
+			}
 		}
-#endif //#ifndef _WIN64	
+#endif //#ifndef _WIN64
 
 		if(m_CampathAutoSave && 0 < g_Hook_VClient_RenderView.m_CamPath.GetSize())
 		{
-			std::wstring campathFileName(m_TakeDir);
-			campathFileName.append(L"\\campath.xml");
-			if(!g_Hook_VClient_RenderView.m_CamPath.Save(campathFileName.c_str()))
-				advancedfx::Warning("Error: Failed saving campath.xml to take folder.\n");
+			std::wstring campathFileName;
+			if(!(ExpandRecordOutputPath(m_CampathPath, campathFileName)
+				&& CreateParentPath(campathFileName.c_str())
+				&& g_Hook_VClient_RenderView.m_CamPath.Save(campathFileName.c_str())))
+				advancedfx::Warning("Error: Failed saving campath to \"%s\".\n", m_CampathPath.Get().c_str());
 		}
 
 		if (m_CamExport)
 		{
-			std::wstring camFileName(m_TakeDir);
-			camFileName.append(L"\\cam_main.cam");
-
-			m_CamExportSet = true;
-			g_Hook_VClient_RenderView.SetCamExport(new CamExport(camFileName.c_str()));
+			std::wstring camFileName;
+			if (ExpandRecordOutputPath(m_CamPath, camFileName) && CreateParentPath(camFileName.c_str()))
+			{
+				m_CamExportSet = true;
+				g_Hook_VClient_RenderView.SetCamExport(new CamExport(camFileName.c_str()));
+			}
+			else Tier0_Warning("Error: Failed to create folder for cam export \"%s\".\n", m_CamPath.Get().c_str());
 		}
 
 		Tier0_Msg("done.\n");
@@ -7011,33 +7129,40 @@ void CAfxStreams::Console_Record_Start2()
 
 		if (m_StartMovieWavUsed)
 		{
-#ifndef _WIN64	
+			std::wstring startMovieWavPath;
+			ExpandRecordOutputPath(m_StartMovieWavPath, startMovieWavPath);
+#ifndef _WIN64
 			if (g_SourceSdkVer == SourceSdkVer_CSGO || SourceSdkVer_CSCO == g_SourceSdkVer) {
-				if (!csgo_Audio_StartRecording(m_TakeDir.c_str()))
+				if (!csgo_Audio_StartRecording(startMovieWavPath.c_str()))
 					Tier0_Warning("Error: Could not start WAV audio recording!\n");
 			}
 			else
-#endif //#ifndef _WIN64				
+#endif //#ifndef _WIN64
 			{
+				// Picked up by the file hooks on the filesystem thread:
+				AfxStreams_SetStartMovieWavPath(startMovieWavPath);
 				g_VEngineClient->ExecuteClientCmd("startmovie " ADVANCEDFX_STARTMOVIE_WAV_KEY " wav");
 			}
 		}
 
-#ifndef _WIN64	
+#ifndef _WIN64
 		m_RecordVoicesUsed = m_RecordVoices;
 
 		if (m_RecordVoicesUsed)
 		{
-			if(!Mirv_Voice_StartRecording(m_TakeDir.c_str()))
+			// Keep {ENTITY_INDEX}, it's filled in when an entity starts talking:
+			std::wstring voicesPath;
+			if(!(m_VoicesPath.GetWide(voicesPath)
+				&& Mirv_Voice_StartRecording(m_OutputPathValues.Expand(voicesPath, advancedfx::OutputPathVariable_EntityIndex).c_str())))
 				Tier0_Warning("Error: Could not start voice recording!\n");
 
 		}
-#endif //#ifndef _WIN64	
+#endif //#ifndef _WIN64
 	}
 	else
 	{
 		Tier0_Msg("FAILED");
-		Tier0_Warning("Error: Failed to create directories for \"%s\".\n", m_RecordName.c_str());
+		Tier0_Warning("Error: Failed to determine output paths for record name \"%s\" and take \"%s\".\n", m_RecordName.c_str(), m_Take.c_str());
 	}
 
 #ifndef _WIN64	
@@ -9137,15 +9262,26 @@ void CAfxStreams::Console_Bvh(IWrpCommandArgs * args)
 			{
 				char const * cmd2 = args->ArgV(2);
 
-				m_CamBvh = 0 != atoi(cmd2);
-				return;
+				if (!_stricmp(cmd2, "path"))
+				{
+					CSubWrpCommandArgs subArgs(args, 3);
+					m_CamBvhPath.Console(&subArgs, "Main camera BVH output file.");
+					return;
+				}
+				else if (StringIsDigits(cmd2))
+				{
+					m_CamBvh = 0 != atoi(cmd2);
+					return;
+				}
 			}
 
 			Tier0_Msg(
 				"%s cam 0|1 - Enable (1) / Disable (0) main camera export (overrides/uses mirv_camexport actually).\n"
 				"Current value: %i.\n"
+				"%s cam path [...] - Main camera BVH output file.\n"
 				, prefix
 				, m_CamBvh ? 1 : 0
+				, prefix
 			);
 			return;
 		}
@@ -9288,6 +9424,13 @@ void CAfxStreams::Console_Bvh(IWrpCommandArgs * args)
 					Tier0_Msg("List cleared.\n");
 					return;
 				}
+				else
+				if (!_stricmp(cmd2, "path"))
+				{
+					CSubWrpCommandArgs subArgs(args, 3);
+					m_EntityBvhPath.Console(&subArgs, "Entity BVH output file.");
+					return;
+				}
 			}
 
 			Tier0_Msg(
@@ -9295,6 +9438,8 @@ void CAfxStreams::Console_Bvh(IWrpCommandArgs * args)
 				"%s ent del [...] - Remove an entity from the export list.\n"
 				"%s ent list - List current entities being exported.\n"
 				"%s ent clear - Remove all from list.\n"
+				"%s ent path [...] - Entity BVH output file.\n"
+				, prefix
 				, prefix
 				, prefix
 				, prefix
@@ -9359,6 +9504,12 @@ void CAfxStreams::Console_GameRecording(IWrpCommandArgs * args)
 			);
 			return;
 		}
+		else if (!_stricmp(cmd1, "path"))
+		{
+			CSubWrpCommandArgs subArgs(args, 2);
+			m_GameRecordingPath.Console(&subArgs, "AGR output file.");
+			return;
+		}
 	}
 
 	if (ClientTools_Console_Cfg(args))
@@ -9366,6 +9517,8 @@ void CAfxStreams::Console_GameRecording(IWrpCommandArgs * args)
 
 	Tier0_Msg(
 		"%s enabled [...]\n"
+		"%s path [...]\n"
+		, prefix
 		, prefix
 	);
 }
@@ -9385,11 +9538,6 @@ SOURCESDK::IShaderShadow_csgo * CAfxStreams::GetShaderShadow(void)
 
 #endif //#ifndef _WIN64
 
-
-const std::wstring & CAfxStreams::GetTakeDir(void) const
-{
-	return m_TakeDir;
-}
 
 #ifndef _WIN64
 
@@ -9960,15 +10108,12 @@ CAfxStreams::CEntityBvhCapture::~CEntityBvhCapture()
 	EndCapture();
 }
 
-void CAfxStreams::CEntityBvhCapture::StartCapture(std::wstring const & takePath, double frameTime)
+void CAfxStreams::CEntityBvhCapture::StartCapture(std::wstring const & fileName, double frameTime)
 {
 	EndCapture();
 
-	std::wostringstream os;
-	os << takePath << L"\\cam_ent_" << m_EntityIndex << L".bvh";
-
 	m_BvhExport = new BvhExport(
-		os.str().c_str(),
+		fileName.c_str(),
 		"MdtCam",
 		frameTime
 	);

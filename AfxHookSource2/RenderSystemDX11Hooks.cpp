@@ -2888,10 +2888,6 @@ void ClearSceneFliterSystemPolicies();
 
 void SetupSceneFilterPolicies(const class CStreamSettings & settings);
 
-// The take folder, this is also {STREAM_PATH} for the screen recording.
-#define AFX_TAKE_PATH_TEMPLATE_A "{RECORD_PATH}\\{TAKE}{TAKE_NUMBER}"
-#define AFX_TAKE_PATH_TEMPLATE L"" AFX_TAKE_PATH_TEMPLATE_A
-
 std::mutex g_StartMovieWavPathMutex;
 std::wstring g_StartMovieWavPath;
 

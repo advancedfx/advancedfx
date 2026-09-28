@@ -31,6 +31,7 @@ const VariableInfo g_Variables[] = {
 	{OutputPathVariable_SettingName, L"SETTING_NAME", -1},
 	{OutputPathVariable_SequenceNr, L"SEQUENCE_NR", 5},
 	{OutputPathVariable_Ext, L"EXT", -1},
+	{OutputPathVariable_EntityIndex, L"ENTITY_INDEX", 0},
 };
 
 const size_t MaxWidthDigits = 2;
@@ -253,6 +254,12 @@ bool OutputPathTemplate_Validate(const char * value, unsigned allowedVariables, 
 	}
 
 	return true;
+}
+
+std::wstring OutputPathTemplate_Escape(const std::wstring & value) {
+	std::wstring result;
+	AppendEscaped(result, value);
+	return result;
 }
 
 unsigned OutputPathTemplate_GetVariables(const std::wstring & value) {

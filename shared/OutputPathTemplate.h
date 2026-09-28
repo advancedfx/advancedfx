@@ -22,8 +22,13 @@ enum OutputPathVariable : unsigned {
 	OutputPathVariable_SettingName = 1u << 7, // {SETTING_NAME} - name of the child setting (multi settings only).
 	OutputPathVariable_SequenceNr = 1u << 8,  // {SEQUENCE_NR} - numeric, default width 5, image number.
 	OutputPathVariable_Ext = 1u << 9,         // {EXT} - image file extension (without dot).
+	OutputPathVariable_EntityIndex = 1u << 10, // {ENTITY_INDEX} - numeric, entity index for per entity outputs.
 	OutputPathVariable_All = ~0u
 };
+
+/// The take folder, also {STREAM_PATH} for the screen recording.
+#define AFX_TAKE_PATH_TEMPLATE_A "{RECORD_PATH}\\{TAKE}{TAKE_NUMBER}"
+#define AFX_TAKE_PATH_TEMPLATE L"" AFX_TAKE_PATH_TEMPLATE_A
 
 /// Variables that are known at start of recording.
 const unsigned OutputPathVariables_Record =
@@ -72,6 +77,9 @@ private:
 
 /// Checks value (UTF-8) for syntax errors, disallowed and missing required variables.
 bool OutputPathTemplate_Validate(const char * value, unsigned allowedVariables, unsigned requiredVariables, std::string & outError);
+
+/// Escapes { and } in a literal value, so it can be used in a template.
+std::wstring OutputPathTemplate_Escape(const std::wstring & value);
 
 /// Returns the variables used in the template value.
 unsigned OutputPathTemplate_GetVariables(const std::wstring & value);

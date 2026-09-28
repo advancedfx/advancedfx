@@ -243,6 +243,9 @@ private:
 class CAfxStreams;
 extern CAfxStreams g_AfxStreams;
 
+/// Thread-safe, returns false if not set.
+bool AfxStreams_GetStartMovieWavPath(std::wstring & outPath);
+
 
 #ifndef _WIN64
 
@@ -965,7 +968,7 @@ public:
 	/// <remarks>This is not guaranteed to be called, i.e. not called upon buffer re-allocation error.</remarks>
 	void OnCapture(size_t index, IAfxD3D9CaptureBuffer * capture);
 
-	bool GetStreamFolder(std::wstring& outFolder) const;
+	virtual void GetOutputPathValues(advancedfx::COutputPathValues& outValues) const override;
 
 	virtual advancedfx::StreamCaptureType GetCaptureType() const = 0;
 
@@ -3364,6 +3367,17 @@ public:
 	void Console_RecordVoices_set(bool value);
 	bool Console_RecordVoices_get();
 
+	const char * GetTake() { return m_Take.c_str(); }
+	void SetTake(const char * value) { m_Take = value; }
+
+	advancedfx::COutputPathSetting & GetCamPath() { return m_CamPath; }
+	advancedfx::COutputPathSetting & GetCampathPath() { return m_CampathPath; }
+	advancedfx::COutputPathSetting & GetStartMovieWavPath() { return m_StartMovieWavPath; }
+	advancedfx::COutputPathSetting & GetVoicesPath() { return m_VoicesPath; }
+
+	/// Values of the current recording (only valid while recording).
+	const advancedfx::COutputPathValues & GetRecordOutputPathValues() const { return m_OutputPathValues; }
+
 
 #ifndef _WIN64
 	void Console_MatPostprocessEnable_set(int value);
@@ -3456,8 +3470,6 @@ public:
 #endif //#ifndef _WIN64
 
 
-	const std::wstring & GetTakeDir(void) const;
-
 #ifndef _WIN64
 	void LevelShutdown(void);
 
@@ -3530,9 +3542,10 @@ public:
 
 	void EngineThread_QueueCapture();
 
-	virtual bool GetStreamFolder(std::wstring& outFolder) const {
-		outFolder = g_AfxStreams.GetTakeDir();
-		return true;
+	// For the screen recording.
+	virtual void GetOutputPathValues(advancedfx::COutputPathValues& outValues) const override {
+		outValues = m_OutputPathValues;
+		outValues.SetTemplate(advancedfx::OutputPathVariable_StreamPath, AFX_TAKE_PATH_TEMPLATE);
 	}
 
 	virtual advancedfx::StreamCaptureType GetCaptureType() const {
@@ -3607,7 +3620,7 @@ private:
 		CEntityBvhCapture(int entityIndex, Origin_e origin, Angles_e angles);
 		~CEntityBvhCapture();
 
-		void StartCapture(std::wstring const & takePath, double frameTime);
+		void StartCapture(std::wstring const & fileName, double frameTime);
 		void EndCapture(void);
 
 		void CaptureFrame(void);
@@ -3644,6 +3657,22 @@ private:
 #endif //#ifndef _WIN64
 
 	std::string m_RecordName;
+	std::string m_Take = "take";
+
+	advancedfx::COutputPathSetting m_CamPath = advancedfx::COutputPathSetting(AFX_TAKE_PATH_TEMPLATE_A "\\cam_main.cam", advancedfx::OutputPathVariables_Record);
+	advancedfx::COutputPathSetting m_CampathPath = advancedfx::COutputPathSetting(AFX_TAKE_PATH_TEMPLATE_A "\\campath.xml", advancedfx::OutputPathVariables_Record);
+	advancedfx::COutputPathSetting m_StartMovieWavPath = advancedfx::COutputPathSetting(AFX_TAKE_PATH_TEMPLATE_A "\\audio.wav", advancedfx::OutputPathVariables_Record);
+	advancedfx::COutputPathSetting m_VoicesPath = advancedfx::COutputPathSetting(AFX_TAKE_PATH_TEMPLATE_A "\\entity_{ENTITY_INDEX}.wav", advancedfx::OutputPathVariables_Record | advancedfx::OutputPathVariable_EntityIndex, advancedfx::OutputPathVariable_EntityIndex);
+	advancedfx::COutputPathSetting m_GameRecordingPath = advancedfx::COutputPathSetting(AFX_TAKE_PATH_TEMPLATE_A "\\afxGameRecord.agr", advancedfx::OutputPathVariables_Record);
+	advancedfx::COutputPathSetting m_CamBvhPath = advancedfx::COutputPathSetting(AFX_TAKE_PATH_TEMPLATE_A "\\cam_main.bvh", advancedfx::OutputPathVariables_Record);
+	advancedfx::COutputPathSetting m_EntityBvhPath = advancedfx::COutputPathSetting(AFX_TAKE_PATH_TEMPLATE_A "\\cam_ent_{ENTITY_INDEX}.bvh", advancedfx::OutputPathVariables_Record | advancedfx::OutputPathVariable_EntityIndex, advancedfx::OutputPathVariable_EntityIndex);
+
+	/// Values of the current recording (only valid while recording).
+	advancedfx::COutputPathValues m_OutputPathValues;
+
+	bool InitOutputPathValues();
+
+	bool ExpandRecordOutputPath(const advancedfx::COutputPathSetting & setting, std::wstring & outPath) const;
 
 
 #ifndef _WIN64
@@ -3733,7 +3762,7 @@ private:
 	//WrpConVarRef * m_r_drawstaticprops = nullptr;
 	//int m_Old_r_drawstaticprops;
 
-	std::wstring m_TakeDir;
+	std::wstring m_TakeDir; // Expanded AFX_TAKE_PATH_TEMPLATE, for messages only.
 	//SOURCESDK::ITexture_csgo * m_RgbaRenderTarget;
 	//SOURCESDK::ITexture_csgo * m_RenderTargetDepthF;
 	//CAfxMaterial * m_ShowzMaterial;
