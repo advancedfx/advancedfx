@@ -176,7 +176,7 @@ SOURCESDK::CS2::CBaseHandle CEntityInstance::GetActiveWeaponHandle() {
 
 const char * CEntityInstance::GetPlayerName(){
     if (!IsPlayerController()) return nullptr;
-    return *(const char **)((u_char*)(this) + g_clientDllOffsets.CBasePlayerController.m_iszPlayerName);
+    return (const char *)((u_char*)(this) + g_clientDllOffsets.CBasePlayerController.m_iszPlayerName);
 }
 
 uint64_t CEntityInstance::GetSteamId(){
