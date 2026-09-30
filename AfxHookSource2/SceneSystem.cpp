@@ -941,7 +941,10 @@ static SceneObjectDrawPolicy GetSceneDataPolicy(SceneObjectFilterClass filterCla
 
 std::shared_timed_mutex g_BlockedSoftwareCommandListsMutex;
 std::set<void *> g_BlockedSoftwareCommandLists;
-std::atomic<void *> g_BeforeUi_SoftwareCommandLists;
+// Player 0 PostProcessing / Legacy Sniper Scope lists waiting for their Commit. One slot each: they are
+// recorded on different job threads in no fixed order, so with a shared slot the scope list can lose it.
+std::atomic<void *> g_BeforeUi_PostProcessingList;
+std::atomic<void *> g_BeforeUi_ScopeList;
 
 void ClearThreadSceneLayerContexts(){
 	if(g_bSceneFilterSystemActive) {
@@ -1012,12 +1015,19 @@ void CheckAndDo_Untoggle_BlockColorDepth(void * pThisSoftwareCommandList) {
 
 void QueueCallbackBeforeUi(void* pCRenderContextDx11_SoftwareCommandList, int value);
 
+static bool TakeBeforeUiList(std::atomic<void *> & list, void * pList) {
+	return pList == list.load() && list.compare_exchange_strong(pList, nullptr);
+}
+
 typedef void * (__fastcall * SoftwareCommandList_Commit_t)(void * pThisSoftwareCommandList);
 SoftwareCommandList_Commit_t org_SoftwareCommandList_Commit = nullptr;
 void * __fastcall new_SoftwareCommandList_Commit(void * pThisSoftwareCommandList) {
 	CheckAndDo_Untoggle_BlockColorDepth(pThisSoftwareCommandList);
-	if(pThisSoftwareCommandList == g_BeforeUi_SoftwareCommandLists) {
-		g_BeforeUi_SoftwareCommandLists = nullptr;
+	// Both lists get BeforeUi at their end: the render thread plays PostProcessing before the scope list,
+	// which starts with BeforeUi(-1), so when scoped BeforeUi happens after the scope, whichever list was recorded first.
+	bool bPostProcessing = TakeBeforeUiList(g_BeforeUi_PostProcessingList, pThisSoftwareCommandList);
+	bool bScope = TakeBeforeUiList(g_BeforeUi_ScopeList, pThisSoftwareCommandList);
+	if(bPostProcessing || bScope) {
 		QueueCallbackBeforeUi(pThisSoftwareCommandList, 0);
 	}
 	return org_SoftwareCommandList_Commit(pThisSoftwareCommandList);
@@ -1063,10 +1073,10 @@ void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneVie
 	SetContextFromDrawingData(context, pDrawingData);
 
 	if(0 == strcmp("Player 0", context.ViewName)) {
-		if(0 == strcmp("PostProcessing", context.ViewPass)) g_BeforeUi_SoftwareCommandLists = pCRenderContextDx11_SoftwareCommandList;
+		if(0 == strcmp("PostProcessing", context.ViewPass)) g_BeforeUi_PostProcessingList = pCRenderContextDx11_SoftwareCommandList;
 		else if(0 == strcmp("Legacy Sniper Scope", context.ViewPass)) {
 			QueueCallbackBeforeUi(pCRenderContextDx11_SoftwareCommandList, -1); // abort, let render scope first.
-			g_BeforeUi_SoftwareCommandLists = pCRenderContextDx11_SoftwareCommandList;
+			g_BeforeUi_ScopeList = pCRenderContextDx11_SoftwareCommandList;
 		}
 	}
 
