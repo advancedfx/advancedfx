@@ -197,7 +197,7 @@ bool Aiming::getValidTarget(Vector &outTarget)
 
 		// This entity was active within the last few frames
 		// m_EntityStates[i] == ES_DEAD means that the entity has died since it has been tracked
-		if (m_EntityStates[i] != ES_DEAD && (m_LastMsgNums[i] != msg || m_ActiveTimes[i] > 0))
+		if (them && m_EntityStates[i] != ES_DEAD && (m_LastMsgNums[i] != msg || m_ActiveTimes[i] > 0))
 		{
 			if (m_LastMsgNums[i] != msg)
 				m_ActiveTimes[i] = 5; //WARNING note: actuall this might have to be s.th. like c*(FPS/updaterate)
