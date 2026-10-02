@@ -3531,7 +3531,7 @@ public:
             if(last_it->CompareRenderPass(*m_ExtraPassesIterator) != 0) break; // done for this render pass.
         }
 
-        EngineThread_Expect_Present(false);
+        EngineThread_SetupPresent(false, true);
     }
 
     void EngineThread_EndNextRenderPass() {
@@ -3567,7 +3567,7 @@ public:
             }
         }
         
-        EngineThread_Expect_Present(true);
+        EngineThread_SetupPresent(m_Recording,false);
     }
 
     void EngineThread_EndMainRenderPass() {
@@ -4141,14 +4141,14 @@ private:
         return true;
     }
 
-    void EngineThread_Expect_Present(bool value) {
+    void EngineThread_SetupPresent(bool bForcePresent, bool bSuppressPresent) {
         auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
         {
             auto & queue = pRenderPassCommands.BeforePresent;
             CAfxCapture * capture = g_ActiveCapture;
-            queue.Push([capture,value](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
-                g_bExpectPresent = value;
-                g_Present_Suppress = !value;
+            queue.Push([capture,bForcePresent,bSuppressPresent](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
+                g_bExpectPresent = bForcePresent;
+                g_Present_Suppress = bSuppressPresent;
             }); 
         }
         {
