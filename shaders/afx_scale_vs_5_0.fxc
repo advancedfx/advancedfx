@@ -1,0 +1,24 @@
+cbuffer CONSTANT_BUFFER : register(b0)
+{
+	float2 cUvScale; // source area size / source texture size
+	float2 cUvMax; // unused
+};
+
+struct VS_OUTPUT
+{
+	float4 xyzw : SV_POSITION;
+	float2 t0 : TEXCOORD0;
+};
+
+// Draws a full screen triangle (3 vertices, no vertex buffer).
+VS_OUTPUT main( uint id : SV_VertexID )
+{
+	VS_OUTPUT o;
+
+	float2 uv = float2((id << 1) & 2, id & 2);
+
+	o.xyzw = float4(uv * float2(2, -2) + float2(-1, 1), 0, 1);
+	o.t0 = uv * cUvScale;
+
+	return o;
+}
