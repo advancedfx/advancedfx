@@ -61,8 +61,9 @@ public:
 
         void Finalize(){
             BeginReliable.Clear();
+            AfterPostProcessing.Clear();
+            BeforeUiTexture.Clear();
             BeforeUi.Clear();
-            BeforeUi2.Clear();
             BeforePresent.Clear();
             AfterPresent.Clear();
 
@@ -78,9 +79,11 @@ public:
         
         CQueue<Fn> BeforeClear;
 
-        CQueue<FnContextTexture> BeforeUi;
+        CQueue<FnContextTexture> AfterPostProcessing;
+
+        CQueue<FnContextTexture> BeforeUiTexture;
         
-        CQueue<FnContextTarget> BeforeUi2;
+        CQueue<FnContextTarget> BeforeUi;
 
         CQueue<FnContextTexture> BeforePresent;
 
@@ -97,27 +100,38 @@ public:
             }
         }
 
-        void OnBeforeUi(ID3D11Texture2D * pTexture) {
+        void OnAfterPostProcessing(ID3D11Texture2D * pTexture) {
             if(Context && pTexture) {
+                while(!AfterPostProcessing.Empty()) {
+                    AfterPostProcessing.Front()(Context, pTexture);
+                    AfterPostProcessing.Pop();
+                }
+            } else {
+                AfterPostProcessing.Clear();
+            }
+        }
+       
+        void OnBeforeUiTexture(ID3D11Texture2D * pTexture) {
+            if(Context && pTexture) {
+                while(!BeforeUiTexture.Empty()) {
+                    BeforeUiTexture.Front()(Context, pTexture);
+                    BeforeUiTexture.Pop();
+                }
+            } else {
+                BeforeUiTexture.Clear();
+            }
+        }        
+
+        void OnBeforeUi(ID3D11RenderTargetView * pTarget) {
+            if(Context && pTarget) {
                 while(!BeforeUi.Empty()) {
-                    BeforeUi.Front()(Context, pTexture);
+                    BeforeUi.Front()(Context, pTarget);
                     BeforeUi.Pop();
                 }
             } else {
                 BeforeUi.Clear();
             }
         }
-
-        void OnBeforeUi2(ID3D11RenderTargetView * pTarget) {
-            if(Context && pTarget) {
-                while(!BeforeUi2.Empty()) {
-                    BeforeUi2.Front()(Context, pTarget);
-                    BeforeUi2.Pop();
-                }
-            } else {
-                BeforeUi2.Clear();
-            }
-        }        
         
         void OnBeforePresent(ID3D11Texture2D * pTexture) {
             if(Context && pTexture) {
