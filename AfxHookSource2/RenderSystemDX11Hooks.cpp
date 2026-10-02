@@ -2115,6 +2115,25 @@ public:
     virtual void OnCallback(void) abstract = 0;
 };
 
+class CAfxRenderCallbackBeforeHud : public IRenderThreadCallback
+{
+public:
+    CAfxRenderCallbackBeforeHud()
+    {
+    }
+
+    virtual void OnCallback(void) {
+        if(auto pDeviceContext = g_RenderCommands.RenderThread_GetContext()) {
+            ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
+            pDeviceContext->OMGetRenderTargets(1, &pRenderTargetViews[0], nullptr);
+            if (pRenderTargetViews[0]) {            
+                if(g_BeforeUiRT) g_BeforeUiRT->Release();
+                g_BeforeUiRT = pRenderTargetViews[0];
+            }
+        }
+        delete this;
+    }
+};
 
 typedef HRESULT (STDMETHODCALLTYPE * Present_t)( void * This,
             /* [in] */ UINT SyncInterval,
@@ -2141,6 +2160,7 @@ public:
             Before_Present();
 
             if(g_bExpectPresent && g_pSwapChain) {
+                BlitToSwapChain();
                 g_Present_LastResult = g_OldPresent(g_pSwapChain, g_Present_LastSyncInterval, g_Present_LastPresentFlags);
             }
 
@@ -2151,6 +2171,51 @@ public:
         delete this;
     }
 private:
+    // Copies the currently bound render target onto the swapchain back buffer.
+    // The render target is expected to be non-HDR and copy-compatible with the back buffer.
+    static void BlitToSwapChain() {
+        if(nullptr == g_pSwapChain) return;
+        if(nullptr == g_BeforeUiRT) return;
+
+        ID3D11DeviceContext * pContext = g_RenderCommands.RenderThread_GetContext();
+        if(nullptr == pContext) return;
+
+        ID3D11Resource * pSrcResource = nullptr;
+        g_BeforeUiRT->GetResource(&pSrcResource);
+        if(nullptr == pSrcResource) return;
+
+        ID3D11Texture2D * pSrcTexture = nullptr;
+        pSrcResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&pSrcTexture);
+        pSrcResource->Release();
+        if(nullptr == pSrcTexture) return;
+
+        ID3D11Texture2D * pDstTexture = nullptr;
+        g_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&pDstTexture);
+
+        if(pDstTexture && pDstTexture != pSrcTexture) {
+            D3D11_TEXTURE2D_DESC srcDesc;
+            D3D11_TEXTURE2D_DESC dstDesc;
+            pSrcTexture->GetDesc(&srcDesc);
+            pDstTexture->GetDesc(&dstDesc);
+
+            if(srcDesc.Width == dstDesc.Width
+                && srcDesc.Height == dstDesc.Height
+                && srcDesc.ArraySize == dstDesc.ArraySize
+                && srcDesc.MipLevels == dstDesc.MipLevels
+            ) {
+                g_bInOwnDraw = true;
+                if(srcDesc.SampleDesc.Count == dstDesc.SampleDesc.Count) {
+                    pContext->CopyResource(pDstTexture, pSrcTexture);
+                } else if(1 < srcDesc.SampleDesc.Count && 1 == dstDesc.SampleDesc.Count) {
+                    pContext->ResolveSubresource(pDstTexture, 0, pSrcTexture, 0, dstDesc.Format);
+                }
+                g_bInOwnDraw = false;
+            }
+        }
+
+        if(pDstTexture) pDstTexture->Release();
+        pSrcTexture->Release();
+    }
 };
 
 class CAfxRenderCallbackBeforeMaybeDrawSmoke : public IRenderThreadCallback
@@ -2226,8 +2291,7 @@ void BeforeUi(ID3D11DeviceContext * pDeviceContext) {
                 if(!pRenderPassCommands->BeforeUi.Empty()) {
                     pRenderPassCommands->OnBeforeUi(pRenderTargetViews[0]); 
                 }
-                if(g_BeforeUiRT) g_BeforeUiRT->Release();
-                g_BeforeUiRT = pRenderTargetViews[0];
+                pRenderTargetViews[0]->Release();
             }
         }
     }
@@ -2969,17 +3033,17 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
             }
         }
     }  
-    /*else if(fmt && 0 == strcmp("#%s/SetupLightsAndViewConstants",fmt)) {
+    else if(fmt && 0 == strcmp("#%s/SetupLightsAndViewConstants",fmt)) {
         va_list args;
         va_start(args, fmt);
         const char * pszArg0 = va_arg(args, const char *);
         if(pszArg0 && 0 == strcmp("CSGOHud",pszArg0)) {
             if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
                 auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
-                fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeUi());
+                fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeHud());
             }
         }
-    }*/
+    }
     return result;
 }
 
