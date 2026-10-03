@@ -123,7 +123,7 @@ enum FilmingStreamSlot {
 
 #define MIRV_GOLDSRC_DEFAULT_OPTIONS_PREFIX_WSZ "{QUOTE}{FFMPEG_PATH}{QUOTE} -f rawvideo -pixel_format {PIXEL_FORMAT} -loglevel repeat+level+warning -framerate {FRAMERATE} -video_size {WIDTH}x{HEIGHT} -i pipe:0 -vf setsar=sar=1/1,vflip "
 
-const wchar_t* g_DefaultFfmpegOptionsColor = L"" MIRV_GOLDSRC_DEFAULT_OPTIONS_PREFIX_WSZ "-c:v libx264 -pix_fmt yuv420p -preset slow -crf 22 {QUOTE}{AFX_STREAM_PATH}\\\\video.mp4{QUOTE}";
+const wchar_t* g_DefaultFfmpegOptionsColor = L"" MIRV_GOLDSRC_DEFAULT_OPTIONS_PREFIX_WSZ "-c:v libx264 -pix_fmt yuv420p -preset slow -crf 22 {QUOTE}{AFX_OUTPUT_FILE}{QUOTE}";
 
 std::wstring g_FilmingStream_FfmpegOptions[13] = {
 	g_DefaultFfmpegOptionsColor, g_DefaultFfmpegOptionsColor,
@@ -2198,7 +2198,8 @@ void FilmingStream::OutputFrame(advancedfx::TIImageBuffer<false> * pFrame)
 		if (nullptr == m_FfmpegOutStream)
 		{
 			const advancedfx::CImageFormat & imageFormat = *pFrame->GetImageBufferFormat();
-			m_FfmpegOutStream = new advancedfx::COutFFMPEGVideoStream<false>(imageFormat, m_Path, m_FfmpegOptions, movie_fps->value);
+			// {AFX_OUTPUT_FILE} is m_Path\video.mp4, its folder m_Path is {AFX_STREAM_PATH}.
+			m_FfmpegOutStream = new advancedfx::COutFFMPEGVideoStream<false>(imageFormat, std::wstring(m_Path).append(L"\\video.mp4"), m_FfmpegOptions, movie_fps->value);
 			m_FfmpegOutStream->AddRef();
 		}
 

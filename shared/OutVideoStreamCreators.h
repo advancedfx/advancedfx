@@ -18,8 +18,9 @@ class CClassicRecordingSettingsCreator
 	: public COutVideoStreamCreator
 {
 public:
-	CClassicRecordingSettingsCreator(const std::wstring & capturePath, bool bIfZip, bool bFormatBmpAndNotga)
-	: m_CapturePath(capturePath)
+	/// <param name="capturePathTemplate">Output path template where only {SEQUENCE_NR} and {EXT} are left to expand.</param>
+	CClassicRecordingSettingsCreator(const std::wstring & capturePathTemplate, bool bIfZip, bool bFormatBmpAndNotga)
+	: m_CapturePath(capturePathTemplate)
 	, m_bIfZip(bIfZip)
 	, m_bFormatBmpAndNotga(bFormatBmpAndNotga) {
 
@@ -42,8 +43,8 @@ class CFfmpegRecordingSettingsCreator
 	: public COutVideoStreamCreator
 {
 public:
-	CFfmpegRecordingSettingsCreator(const std::wstring& capturePath, const std::wstring& ffmpegOptions, float frameRate)
-		: m_CapturePath(capturePath)
+	CFfmpegRecordingSettingsCreator(const std::wstring& outputFile, const std::wstring& ffmpegOptions, float frameRate)
+		: m_CapturePath(outputFile)
 		, m_FfmpegOptions(ffmpegOptions)
 		, m_FrameRate(frameRate) {
 

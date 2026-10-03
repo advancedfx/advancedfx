@@ -222,6 +222,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/EasySampler.h
     ../shared/FileTools.cpp
     ../shared/FileTools.h
+    ../shared/OutputPathTemplate.cpp
+    ../shared/OutputPathTemplate.h
     ../shared/GrowingBuffer.h
     ../shared/GrowingBufferPool.h
     ../shared/ImageBuffer.h
