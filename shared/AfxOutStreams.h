@@ -322,7 +322,7 @@ template<bool bThreadSafe> class COutMultiVideoStream
 , public TIOutVideoStream<bThreadSafe>
 {
 public:
-	COutMultiVideoStream(const CImageFormat& imageFormat, std::list<TIOutVideoStream<bThreadSafe>*>&& outStreams)
+	COutMultiVideoStream(const CImageFormat& imageFormat, const std::list<TIOutVideoStream<bThreadSafe>*>& outStreams)
 		: COutVideoStreamImpl(imageFormat)
 		, m_OutStreams(outStreams)
 	{

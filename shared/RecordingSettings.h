@@ -282,8 +282,12 @@ private:
 			for (auto it = m_List.begin(); it != m_List.end(); it++) {
 				outVideoStreams.push_back((*it)->CreateOutVideoStream(imageFormat));
 			}
-			auto result = new advancedfx::COutMultiVideoStream(imageFormat, std::move(outVideoStreams));
+			auto result = new advancedfx::COutMultiVideoStream(imageFormat, outVideoStreams);
 			result->AddRef();
+			// COutMultiVideoStream holds its own references now.
+			for (auto it = outVideoStreams.begin(); it != outVideoStreams.end(); it++) {
+				if (auto stream = *it) stream->Release();
+			}
 			return result;
 		}
 

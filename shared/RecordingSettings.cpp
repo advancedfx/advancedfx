@@ -620,13 +620,17 @@ void CMultiRecordingSettings::Console_Edit(ICommandArgs * args)
 				}
 				else
 				{
-					for (auto it = m_Settings.begin(); it != m_Settings.end(); ++it)
+					for (auto it = m_Settings.begin(); it != m_Settings.end(); )
 					{
 						CRecordingSettings * itSettings = *it;
 						if (itSettings == settings)
 						{
 							it = m_Settings.erase(it);
 							itSettings->Release();
+						}
+						else
+						{
+							++it;
 						}
 					}
 				}
