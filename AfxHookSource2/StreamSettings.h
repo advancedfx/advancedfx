@@ -2,6 +2,9 @@
 
 #include "../shared/RecordingSettings.h"
 
+#include "SceneActionFilter.h"
+
+#include <memory>
 #include <string>
 #include <list>
 
@@ -46,6 +49,7 @@ public:
         , SkyAction(other.SkyAction)
         , SmokeAction(other.SmokeAction)
         , OverlaysAction(other.OverlaysAction)
+        , ActionFilter(other.ActionFilter)
     {
         Settings->AddRef();
     }
@@ -66,6 +70,7 @@ public:
             && Action::Draw == SkyAction
             && Action::Draw == SmokeAction
             && Action::Draw == OverlaysAction
+            && ActionFilter->Empty()
         ;
     }
 
@@ -97,6 +102,7 @@ public:
         if(cmp = CompareAction(SkyAction, o.SkyAction)) return cmp;
         if(cmp = CompareAction(SmokeAction, o.SmokeAction)) return cmp;
         if(cmp = CompareAction(OverlaysAction, o.OverlaysAction)) return cmp;
+        if(cmp = ActionFilter->Compare(*o.ActionFilter)) return cmp;
 
         return 0;
     }    
@@ -195,6 +201,10 @@ public:
     Action SkyAction = Action::Draw;
     Action SmokeAction = Action::Draw;
     Action OverlaysAction = Action::Draw;
+
+    // Applied first in the scene system, only what falls through uses the actions above.
+    // Immutable once shared (copies of CStreamSettings share it), edit via copy-on-write.
+    std::shared_ptr<const CSceneActionFilterList> ActionFilter = std::make_shared<const CSceneActionFilterList>();
 
 private:
     static int CompareBool(bool lhs, bool rhs) {
