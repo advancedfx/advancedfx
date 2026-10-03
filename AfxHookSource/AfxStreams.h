@@ -3546,10 +3546,7 @@ public:
 	void EngineThread_QueueCapture();
 
 	// For the screen recording.
-	virtual void GetOutputPathValues(advancedfx::COutputPathValues& outValues) const override {
-		GetRecordOutputPathValues(outValues);
-		outValues.SetTemplate(advancedfx::OutputPathVariable_StreamPath, AFX_TAKE_PATH_TEMPLATE);
-	}
+	virtual void GetOutputPathValues(advancedfx::COutputPathValues& outValues) const override;
 
 	virtual advancedfx::StreamCaptureType GetCaptureType() const {
 		return advancedfx::StreamCaptureType::Normal;
@@ -3808,6 +3805,7 @@ private:
 		}
 	};
 	CRecordScreen* m_RecordScreen;
+	std::string m_RecordScreenName = "screen"; // {STREAM_NAME} of the screen recording.
 
 	enum class ERecordScreenFrameCommand{
 		Nop = 0,

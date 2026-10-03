@@ -6914,6 +6914,16 @@ static void AfxStreams_SetStartMovieWavPath(const std::wstring & value) {
 	g_StartMovieWavPath = value;
 }
 
+void CAfxStreams::GetOutputPathValues(advancedfx::COutputPathValues& outValues) const
+{
+	GetRecordOutputPathValues(outValues);
+
+	std::wstring screenName;
+	if (UTF8StringToWideString(m_RecordScreenName.c_str(), screenName)) outValues.SetString(advancedfx::OutputPathVariable_StreamName, screenName);
+
+	outValues.SetTemplate(advancedfx::OutputPathVariable_StreamPath, AFX_TAKE_PATH_TEMPLATE);
+}
+
 bool CAfxStreams::ExpandRecordOutputPath(const advancedfx::COutputPathSetting & setting, std::wstring & outPath) const
 {
 	std::wstring value;
@@ -7599,13 +7609,29 @@ void CAfxStreams::Console_RecordScreen(IWrpCommandArgs* args) {
 			);
 
 			return;
-		}		
+		}
+		if (0 == _stricmp(arg1, "name")) {
+			if (3 <= argC) {
+				m_RecordScreenName = args->ArgV(2);
+				return;
+			}
+
+			Tier0_Msg(
+				"%s name <name> - Set the name used for {STREAM_NAME} in the output path of the screen recording (default: screen).\n"
+				"Current value: %s\n"
+				, arg0
+				, m_RecordScreenName.c_str()
+			);
+			return;
+		}
 	}
 
 	Tier0_Msg(
 		"%s enabled [...] - Enables / disables screen recording.\n"
 		"%s settings [...] - Controls recording settings.\n"
 		"%s afterSwap [...] - If to record after swapping buffers or before (can help with ReShade).\n"
+		"%s name [...] - Name used for {STREAM_NAME}.\n"
+		, arg0
 		, arg0
 		, arg0
 		, arg0

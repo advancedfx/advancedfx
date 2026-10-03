@@ -2985,6 +2985,8 @@ public:
     // For the screen recording.
     virtual void GetOutputPathValues(advancedfx::COutputPathValues& outValues) const {
         outValues = m_OutputPathValues;
+        std::wstring screenName;
+        if (UTF8StringToWideString(m_RecordScreenName.c_str(), screenName)) outValues.SetString(advancedfx::OutputPathVariable_StreamName, screenName);
         outValues.SetTemplate(advancedfx::OutputPathVariable_StreamPath, AFX_TAKE_PATH_TEMPLATE);
     }
 
@@ -3661,6 +3663,7 @@ private:
 		}
 	};
 	CRecordScreen* m_RecordScreen;
+	std::string m_RecordScreenName = "screen"; // {STREAM_NAME} of the screen recording.
 
     bool m_Recording = false;
     std::wstring m_TakeDir;
@@ -3808,11 +3811,27 @@ void CAfxStreams::Console_RecordScreen(advancedfx::ICommandArgs* args) {
 
 			return;
 		}
+		if (0 == _stricmp(arg1, "name")) {
+			if (3 <= argC) {
+				m_RecordScreenName = args->ArgV(2);
+				return;
+			}
+
+			advancedfx::Message(
+				"%s name <name> - Set the name used for {STREAM_NAME} in the output path of the screen recording (default: screen).\n"
+				"Current value: %s\n"
+				, arg0
+				, m_RecordScreenName.c_str()
+			);
+			return;
+		}
 	}
 
 	advancedfx::Message(
 		"%s enabled [...] - Enables / disables screen recording.\n"
 		"%s settings [...] - Controls recording settings.\n"
+		"%s name [...] - Name used for {STREAM_NAME}.\n"
+		, arg0
 		, arg0
 		, arg0
 	);
