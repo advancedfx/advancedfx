@@ -50,66 +50,6 @@ struct CustomSkyState {
 	float brightness = 1.0f;
 } g_CustomSky;
 
-std::map<void *, size_t> g_PickerEntities;
-
-bool g_PickerActive =  false;
-bool g_PickerCollecting = false;
-bool g_PickerPrint = false;
-
-void Picker_Pick(bool wasVisible)
-{
-	if (!g_PickerActive)
-	{
-		g_PickerActive = true;
-		g_PickerCollecting = true;
-		g_PickerPrint = true;
-	}
-	else
-	{
-		if (g_PickerCollecting)
-			g_PickerCollecting = false;
-
-		size_t index = 0;
-
-		for (auto it = g_PickerEntities.begin(); it != g_PickerEntities.end(); )
-		{
-			size_t oldIndex = it->second;
-
-			if ((1 == (oldIndex & 0x1)) == wasVisible)
-			{
-				it = g_PickerEntities.erase(it);
-			}
-			else
-			{
-				it->second = index;
-				++index;
-				++it;
-			}
-		}
-	}
-
-	g_PickerPrint = true;
-}
-
-void Picker_Stop(void)
-{
-	if(g_PickerActive)
-	{
-		g_PickerEntities.clear();
-		g_PickerActive = false;
-		advancedfx::Message("==== Picker stopped. ====\n");
-	}
-}
-
-void PickerPrintReset(){
-	if(g_PickerPrint) {
-		g_PickerPrint = false;
-
-		bool determinedEntities = g_PickerEntities.size() <= 1;
-		if (determinedEntities) Picker_Stop();
-	}
-}
-
 // 64-bit hash for 32-bit platforms
 // Credit
 // https://www.ncbi.nlm.nih.gov/IEB/ToolBox/CPP_DOC/lxr/source/src/util/checksum/murmurhash/MurmurHash2.cxx#0140
@@ -342,6 +282,7 @@ SceneObjectDrawPolicy g_SceneSemanticPolicies[(int)SceneSemanticGroup::Count] = 
 };
 
 std::atomic_bool g_bSceneFilterSystemActive = false;
+std::shared_mutex g_bSceneSystemMutex;
 
 void UpdateSceneFilterSystemActive() {
 	bool bActive =
@@ -349,8 +290,7 @@ void UpdateSceneFilterSystemActive() {
 		|| g_BaseSceneObjectsPolicy != SceneObjectDrawPolicy::Draw
 		|| g_AnimatableSceneObjectsPolicy != SceneObjectDrawPolicy::Draw
 		|| g_AggregateSceneObjectsPolicy != SceneObjectDrawPolicy::Draw
-		|| g_OverlaysPolicy != SceneObjectDrawPolicy::Draw
-		|| g_PickerActive;
+		|| g_OverlaysPolicy != SceneObjectDrawPolicy::Draw;
 
 	for(int i = 0; !bActive && i < (int)SceneSemanticGroup::Count; i++) {
 		bActive = g_SceneSemanticPolicies[i] != SceneObjectDrawPolicy::Draw;
@@ -360,6 +300,8 @@ void UpdateSceneFilterSystemActive() {
 }
 
 void ClearSceneFliterSystemPolicies() {
+	std::unique_lock<std::shared_mutex> lock(g_bSceneSystemMutex);
+
 	g_BaseSceneObjectsPolicy = SceneObjectDrawPolicy::Draw;
 	g_AnimatableSceneObjectsPolicy = SceneObjectDrawPolicy::Draw;
 	g_AggregateSceneObjectsPolicy = SceneObjectDrawPolicy::Draw;
@@ -373,6 +315,8 @@ void ClearSceneFliterSystemPolicies() {
 }
 
 void SetupSceneFilterPolicies(const class CStreamSettings & settings) {
+	std::unique_lock<std::shared_mutex> lock(g_bSceneSystemMutex);
+
 	switch(settings.ViewModelAction) {
 	case CStreamSettings::Action::NoDraw:
 		g_SceneSemanticPolicies[(int)SceneSemanticGroup::ViewModel] = SceneObjectDrawPolicy::Hide;
@@ -832,46 +776,17 @@ static uint16_t GetSceneDataFlags(const CBaseSceneData& sceneData) {
 	return *(uint16_t*)((const unsigned char*)&sceneData + g_SceneData_Flags_Offset);
 }*/
 
-static bool DebugPrintSceneData(const char * pContextTitle, SceneObjectFilterClass filterClass, const SceneLayerContext & context, const CBaseSceneData* sceneData, int count) {
-	if (g_iSceneFilterDebug <= 0 && !g_PickerActive || count <= 0) return true;
+static void DebugPrintSceneData(const char * pContextTitle, SceneObjectFilterClass filterClass, const SceneLayerContext & context, const CBaseSceneData* sceneData, int count) {
+	if (g_iSceneFilterDebug <= 0 || count <= 0) return;
 
 	bool canReadSceneDataFields = sceneData && SceneObjectFilterClassHasKnownSceneDataLayout(filterClass);
-
-	bool hidden = false;
 
 	for (int i = 0; i < count; ++i) {
 		const char* materialName = canReadSceneDataFields ? (sceneData[i].material ? sceneData[i].material->GetName() : nullptr) : nullptr;
 		const char* descName = canReadSceneDataFields ? GetSceneObjectDescName(sceneData[i]) : nullptr;
 		void* sceneObject = canReadSceneDataFields ? sceneData[i].sceneObject : nullptr;
 
-		bool bInList = false;
-		bool bIHidden = false;
-
-		if(g_PickerActive && sceneObject) {
-			if (!g_PickerCollecting)
-			{
-				auto itEnt = g_PickerEntities.find(sceneObject);
-				bInList = g_PickerEntities.end() != itEnt;
-				if(bInList){
-					bIHidden = bInList && ((itEnt->second) & 0x1) == 1;
-				}
-			}
-			else
-			{
-				auto itEnt = g_PickerEntities.lower_bound(sceneObject);
-				if (itEnt == g_PickerEntities.end() || (sceneObject < itEnt->first))
-				{
-					itEnt = g_PickerEntities.emplace_hint(itEnt, std::piecewise_construct, std::forward_as_tuple(sceneObject), std::forward_as_tuple(g_PickerEntities.size()));
-				}
-
-				bInList = true;
-				bIHidden = ((itEnt->second) & 0x1) == 1;
-			}
-		}
-
-		hidden = hidden || bIHidden;
-
-		if((!bInList || bIHidden || !g_PickerPrint) && g_iSceneFilterDebug <= 0) continue;
+		if(g_iSceneFilterDebug <= 0) continue;
 
 		advancedfx::Message(
 			"AFXDEBUG: mirv_scene_filter [%s] %s[%i/%i] layer=%s:%s group=%s desc=%s material=%s sceneObject=0x%p, flags=0x%08x\n",
@@ -888,11 +803,11 @@ static bool DebugPrintSceneData(const char * pContextTitle, SceneObjectFilterCla
 			context.Flags
 		);
 	}
-
-	return !hidden;
 }
 
 static SceneObjectDrawPolicy GetSceneDataPolicy(SceneObjectFilterClass filterClass, const SceneLayerContext & context, const CBaseSceneData * pSceneData) {
+	
+	std::unique_lock<std::shared_mutex> lock(g_bSceneSystemMutex);
 
 	if (SceneObjectFilterClassIsSkyBox(filterClass)) {
 		SceneObjectDrawPolicy policy = ApplyLayerAwarePolicy(filterClass, context, nullptr, g_SceneSemanticPolicies[(int)SceneSemanticGroup::Sky]);
@@ -941,15 +856,15 @@ static SceneObjectDrawPolicy GetSceneDataPolicy(SceneObjectFilterClass filterCla
 
 std::shared_timed_mutex g_BlockedSoftwareCommandListsMutex;
 std::set<void *> g_BlockedSoftwareCommandLists;
-std::atomic<void *> g_BeforeUi_SoftwareCommandLists;
+std::atomic<void *> g_pPostProcessingCommandList = nullptr;
 
 void ClearThreadSceneLayerContexts(){
 	if(g_bSceneFilterSystemActive) {
-		g_PickerPrint = false;
 		{
 			std::unique_lock<std::shared_timed_mutex> lock(g_BlockedSoftwareCommandListsMutex);
 			g_BlockedSoftwareCommandLists.clear();
 		}
+		g_pPostProcessingCommandList = nullptr;
 	}
 }
 
@@ -991,34 +906,36 @@ void BlockColorDepth(void * pThisSoftwareCommandList){
 	if(!blocked) BlockColorDepth(pThisSoftwareCommandList,true,true);
 }
 
+bool IsBlocked(void * pThisSoftwareCommandList) {
+	std::shared_lock<std::shared_timed_mutex> lock(g_BlockedSoftwareCommandListsMutex);
+	return g_BlockedSoftwareCommandLists.find(pThisSoftwareCommandList) != g_BlockedSoftwareCommandLists.end();
+}
+
 void CheckAndDo_Untoggle_BlockColorDepth(void * pThisSoftwareCommandList) {
 	if(g_bSceneFilterSystemActive) {
-		bool blocked;
-		{
-			std::shared_lock<std::shared_timed_mutex> lock(g_BlockedSoftwareCommandListsMutex);
-			blocked = g_BlockedSoftwareCommandLists.find(pThisSoftwareCommandList) != g_BlockedSoftwareCommandLists.end();
-		}
-		if(blocked) {
-			std::unique_lock<std::shared_timed_mutex> lock(g_BlockedSoftwareCommandListsMutex);
-			auto it = g_BlockedSoftwareCommandLists.find(pThisSoftwareCommandList);
-			blocked = it != g_BlockedSoftwareCommandLists.end();
-			if(blocked) g_BlockedSoftwareCommandLists.erase(it);
-		}
-		if(blocked) {
+		if(IsBlocked(pThisSoftwareCommandList)) {
+			bool blocked;
+			{
+				std::unique_lock<std::shared_timed_mutex> lock(g_BlockedSoftwareCommandListsMutex);
+				auto it = g_BlockedSoftwareCommandLists.find(pThisSoftwareCommandList);
+				blocked = it != g_BlockedSoftwareCommandLists.end();
+				if(blocked) g_BlockedSoftwareCommandLists.erase(it);
+			}
 			BlockColorDepth(pThisSoftwareCommandList,false,false);
 		}
 	}
 }
 
-void QueueCallbackBeforeUi(void* pCRenderContextDx11_SoftwareCommandList, int value);
+void QueueCallbackBeforePostProcessing(void* pCRenderContextDx11_SoftwareCommandList);
+void QueueCallbackAfterPostProcessing(void* pCRenderContextDx11_SoftwareCommandList);
 
 typedef void * (__fastcall * SoftwareCommandList_Commit_t)(void * pThisSoftwareCommandList);
 SoftwareCommandList_Commit_t org_SoftwareCommandList_Commit = nullptr;
 void * __fastcall new_SoftwareCommandList_Commit(void * pThisSoftwareCommandList) {
 	CheckAndDo_Untoggle_BlockColorDepth(pThisSoftwareCommandList);
-	if(pThisSoftwareCommandList == g_BeforeUi_SoftwareCommandLists) {
-		g_BeforeUi_SoftwareCommandLists = nullptr;
-		QueueCallbackBeforeUi(pThisSoftwareCommandList, 0);
+	if(g_pPostProcessingCommandList == pThisSoftwareCommandList) {
+		g_pPostProcessingCommandList = nullptr;
+		QueueCallbackAfterPostProcessing(pThisSoftwareCommandList);
 	}
 	return org_SoftwareCommandList_Commit(pThisSoftwareCommandList);
 }
@@ -1035,6 +952,9 @@ void SetContextFromDrawingData(SceneLayerContext & context, void * pDrawingData)
 	context.Flags = *(uint32_t*)((unsigned char*)pSceneLayer + g_SceneLayer_Flags_Offset);	
 }
 
+typedef void (__fastcall * DrawCurrentPrimitives_t)(void * pDrawingData);
+DrawCurrentPrimitives_t org_DrawCurrentPrimitives = nullptr;
+
 // Since the 2026-09-23 build there is a 5th (stack) argument: optional name suffix, formatted as "/%s" when not null.
 // It must be forwarded, otherwise the original formats garbage from our stack frame and crashes in tier0.
 typedef void (__fastcall * InitDrawingData_t)(unsigned char * pDrawingData,void *pSceneView,void *pSceneLayer,uint32_t unkFlags4,const char *pszNameSuffix);
@@ -1042,8 +962,11 @@ InitDrawingData_t org_InitDrawingData = nullptr;
 void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneView,void *pSceneLayer,uint32_t unkFlags4,const char *pszNameSuffix) {
 	org_InitDrawingData(pDrawingData,pSceneView,pSceneLayer,unkFlags4,pszNameSuffix);
 
+	SceneLayerContext context;
+	SetContextFromDrawingData(context, pDrawingData);
+
 	void * pCRenderContextDx11_SoftwareCommandList = ((void **)pDrawingData)[4];
-	
+
 	if(org_SoftwareCommandList_Commit == nullptr) {
 		void** vtable = *(void***)pCRenderContextDx11_SoftwareCommandList;
 		org_SoftwareCommandList_Commit = (SoftwareCommandList_Commit_t)vtable[11];
@@ -1059,20 +982,12 @@ void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneVie
 		}				
 	}
 
-	SceneLayerContext context;
-	SetContextFromDrawingData(context, pDrawingData);
-
-	if(0 == strcmp("Player 0", context.ViewName)) {
-		if(0 == strcmp("PostProcessing", context.ViewPass)) g_BeforeUi_SoftwareCommandLists = pCRenderContextDx11_SoftwareCommandList;
-		else if(0 == strcmp("Legacy Sniper Scope", context.ViewPass)) {
-			QueueCallbackBeforeUi(pCRenderContextDx11_SoftwareCommandList, -1); // abort, let render scope first.
-			g_BeforeUi_SoftwareCommandLists = pCRenderContextDx11_SoftwareCommandList;
-		}
+	if(0 == strcmp(context.ViewPass,"PostProcessing")) {
+		QueueCallbackBeforePostProcessing(pCRenderContextDx11_SoftwareCommandList);
+		g_pPostProcessingCommandList = pCRenderContextDx11_SoftwareCommandList;
 	}
 
 	if(g_bSceneFilterSystemActive && pDrawingData) {
-		CheckAndDo_Untoggle_BlockColorDepth(pCRenderContextDx11_SoftwareCommandList);
-
 		/*void** pSceneViewVtable = *(void***)pSceneView;
 		SceneLayerContext context;
 		context.ViewName = ((const char* (__fastcall*)(void*))pSceneViewVtable[0])(pSceneView); // see DebugSceneData function for how to know it's fist function in vtable.
@@ -1083,6 +998,8 @@ void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneVie
 			auto result = g_RenderParam4ToSceneLayerContexts.emplace(pDrawingData, context);
 			if(!result.second) result.first->second = context;
 		}*/
+
+		std::unique_lock<std::shared_mutex> lock(g_bSceneSystemMutex);
 
 		if(0 < g_iSceneFilterDebug) {
 			advancedfx::Message("AFXDEBUG: InitDrawingData layer=%s:%s flags=0x%08x unkFlags4=0x%08x\n",
@@ -1107,12 +1024,17 @@ void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneVie
 typedef void (__fastcall * DrawSceneData_t)(void * pDrawingData, CBaseSceneData * pSceneData);
 DrawSceneData_t org_DrawSceneData = nullptr;
 
-typedef void (__fastcall * DrawCurrentPrimitives_t)(void * pDrawingData);
-DrawCurrentPrimitives_t org_DrawCurrentPrimitives = nullptr;
-
 void __fastcall new_DrawSceneData(void * pDrawingData, CBaseSceneData* pSceneData) {
 
 	if(g_bSceneFilterSystemActive && nullptr != pDrawingData) {
+
+		void * pCRenderContextDx11_SoftwareCommandList = ((void **)pDrawingData)[4];
+
+		if(IsBlocked(pCRenderContextDx11_SoftwareCommandList)) {
+			org_DrawSceneData(pDrawingData, pSceneData);
+			return;
+		}
+
 		SceneLayerContext context;
 		SetContextFromDrawingData(context, pDrawingData);
 
@@ -1126,14 +1048,10 @@ void __fastcall new_DrawSceneData(void * pDrawingData, CBaseSceneData* pSceneDat
 			}
 		}
 		
-		SceneObjectDrawPolicy policy;
-		if(DebugPrintSceneData("DrawSceneData", filterClass, context, pSceneData, 1)) {
-			policy = GetSceneDataPolicy(filterClass, context, pSceneData);
-		} else {
-			policy = SceneObjectDrawPolicy::Hide;
-		}
+		
+		DebugPrintSceneData("DrawSceneData", filterClass, context, pSceneData, 1);
+		SceneObjectDrawPolicy policy = GetSceneDataPolicy(filterClass, context, pSceneData);
 
-		void * pCRenderContextDx11_SoftwareCommandList = ((void **)pDrawingData)[4];
 		switch (policy) {
 		default:
 		case SceneObjectDrawPolicy::Draw:
@@ -1405,6 +1323,7 @@ CON_COMMAND(__mirv_scene_filter, "")
 		{
 			if (TryParseSceneObjectDrawPolicy(arg2, policy))
 			{
+				std::unique_lock<std::shared_mutex> lock(g_bSceneSystemMutex);
 				g_BaseSceneObjectsPolicy = policy;
 				UpdateSceneFilterSystemActive();
 				return;
@@ -1415,6 +1334,7 @@ CON_COMMAND(__mirv_scene_filter, "")
 		{
 			if (TryParseSceneObjectDrawPolicy(arg2, policy))
 			{
+				std::unique_lock<std::shared_mutex> lock(g_bSceneSystemMutex);
 				g_AnimatableSceneObjectsPolicy = policy;
 				UpdateSceneFilterSystemActive();
 				return;
@@ -1425,6 +1345,7 @@ CON_COMMAND(__mirv_scene_filter, "")
 		{
 			if (TryParseSceneObjectDrawPolicy(arg2, policy))
 			{
+				std::unique_lock<std::shared_mutex> lock(g_bSceneSystemMutex);
 				g_AggregateSceneObjectsPolicy = policy;
 				UpdateSceneFilterSystemActive();
 				return;
@@ -1435,6 +1356,7 @@ CON_COMMAND(__mirv_scene_filter, "")
 		{
 			if (TryParseSceneObjectDrawPolicy(arg2, policy))
 			{
+				std::unique_lock<std::shared_mutex> lock(g_bSceneSystemMutex);
 				g_OverlaysPolicy = policy == SceneObjectDrawPolicy::Hide
 					? SceneObjectDrawPolicy::Hide
 					: SceneObjectDrawPolicy::Draw;
@@ -1447,6 +1369,7 @@ CON_COMMAND(__mirv_scene_filter, "")
 		{
 			if (TryParseSceneObjectDrawPolicy(arg2, policy))
 			{
+				std::unique_lock<std::shared_mutex> lock(g_bSceneSystemMutex);
 				g_SceneSemanticPolicies[(int)semanticGroup] = policy;
 				UpdateSceneFilterSystemActive();
 				return;
@@ -1455,33 +1378,15 @@ CON_COMMAND(__mirv_scene_filter, "")
 
 		if (!_stricmp(arg1, "debug"))
 		{
+			std::unique_lock<std::shared_mutex> lock(g_bSceneSystemMutex);
 			g_iSceneFilterDebug = atoi(arg2);
 			if (g_iSceneFilterDebug < 0) g_iSceneFilterDebug = 0;
 			UpdateSceneFilterSystemActive();
 			return;
 		}
-
-		if (!_stricmp(arg1, "picker"))
-		{
-			if (!_stricmp(arg2, "ent") && 4 <= argc)
-			{
-				//curBaseFx->Console_DisableFastPathRequired();
-
-				bool value = 0 != atoi(args->ArgV(3));
-				Picker_Pick(value);
-				UpdateSceneFilterSystemActive();
-				return;
-			}
-			else
-			if (!_stricmp(arg2, "stop"))
-			{
-				Picker_Stop();
-				UpdateSceneFilterSystemActive();
-				return;
-			}
-		}		
 	}
 
+	std::shared_lock<std::shared_mutex> lock(g_bSceneSystemMutex);
 	advancedfx::Message(
 		"Usage:\n"
 		"%s base draw|hide|zonly|0|1 - Controls CBaseSceneObjectDesc entries in the hooked scene draw path.\n"
@@ -1497,11 +1402,7 @@ CON_COMMAND(__mirv_scene_filter, "")
 		"%s world draw|hide|zonly - Controls layers not matched by another semantic group.\n"
 		"%s sky draw|hide|zonly - Controls 3D skybox layers matched in the scene draw path.\n"
 		"%s debug <iCount> - Print up to iCount entries for each hooked scene draw call. Use 0 to disable.\n"
-		"%s picker ent 0|1 - Tell picker if entity is visible (1) or not (0). (Or start picking with 1.)\n"
-		"%s picker stop - Stop picking.\n"
 		"Current values: base=%s animatable=%s aggregate=%s smoke=%s overlays=%s viewModel=%s particles=%s firstPersonLegs=%s players=%s world=%s sky=%s debug=%i\n"
-		, arg0
-		, arg0
 		, arg0
 		, arg0
 		, arg0
