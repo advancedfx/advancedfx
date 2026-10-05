@@ -2,8 +2,9 @@
 name: Feature request
 about: Submit and idea or suggestion
 title: ''
-labels: enhancement
+labels: ''
 assignees: ''
+type: Feature
 
 ---
 

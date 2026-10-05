@@ -1,6 +1,6 @@
 ---
 name: Question
-about: Please use Discussions > Q&A instead
+about: Submit a question
 title: ''
 labels: question
 assignees: ''
