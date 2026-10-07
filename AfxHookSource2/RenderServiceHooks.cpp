@@ -74,7 +74,7 @@ void __fastcall My_Engine2_RenderService_OnClientOutput(void * pUnk0, void * pUn
 
         My_SceneSystem_WaitForRenderingToComplete(g_pSceneSystem);
 
-        g_Old_FrameUpdate(g_pSceneSystem, 1);
+        //g_Old_FrameUpdate(g_pSceneSystem, 1);
 
         g_bLastPassWasExtra = true;
 

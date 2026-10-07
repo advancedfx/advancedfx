@@ -2018,6 +2018,8 @@ void MaybeCaptureSmokeDepth() {
     }
 }
 
+void OnBeforeHud(ID3D11DeviceContext * pDeviceContext);
+
 void STDMETHODCALLTYPE New_ClearDepthStencilView( ID3D11DeviceContext * This, 
     _In_  ID3D11DepthStencilView *pDepthStencilView,
     _In_  UINT ClearFlags,
@@ -2030,12 +2032,15 @@ void STDMETHODCALLTYPE New_ClearDepthStencilView( ID3D11DeviceContext * This,
         && !g_bInOwnDraw
     ) {
         MaybeCaptureSmokeDepth();
+
+        if(g_iBeforeUi == 2) {
+            g_iBeforeUi = 3;
+            OnBeforeHud(This);
+        }
     }
 
     g_Old_ClearDepthStencilView(This, pDepthStencilView, ClearFlags, Depth, Stencil);
 }
-
-void BeforeUi(ID3D11DeviceContext * pDeviceContext);
 
 typedef void (STDMETHODCALLTYPE * OMSetRenderTargets_t)( ID3D11DeviceContext * This,
             /* [annotation] */ 
@@ -2115,25 +2120,20 @@ public:
     virtual void OnCallback(void) abstract = 0;
 };
 
-class CAfxRenderCallbackBeforeHud : public IRenderThreadCallback
-{
-public:
-    CAfxRenderCallbackBeforeHud()
-    {
-    }
 
-    virtual void OnCallback(void) {
-        if(auto pDeviceContext = g_RenderCommands.RenderThread_GetContext()) {
-            ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
-            pDeviceContext->OMGetRenderTargets(1, &pRenderTargetViews[0], nullptr);
-            if (pRenderTargetViews[0]) {            
-                if(g_BeforeUiRT) g_BeforeUiRT->Release();
-                g_BeforeUiRT = pRenderTargetViews[0];
+void OnBeforeHud(ID3D11DeviceContext * pDeviceContext) {
+    ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
+    pDeviceContext->OMGetRenderTargets(1, &pRenderTargetViews[0], nullptr);
+    if (pRenderTargetViews[0]) {   
+        if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands()) {
+            if(!pRenderPassCommands->BeforeUi.Empty()) {
+                pRenderPassCommands->OnBeforeUi(pRenderTargetViews[0]); 
             }
         }
-        delete this;
+        if(g_BeforeUiRT) g_BeforeUiRT->Release();
+        g_BeforeUiRT = pRenderTargetViews[0];
     }
-};
+}
 
 typedef HRESULT (STDMETHODCALLTYPE * Present_t)( void * This,
             /* [in] */ UINT SyncInterval,
@@ -2269,27 +2269,22 @@ private:
 
 void BeforeUi(ID3D11DeviceContext * pDeviceContext) {
     if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands()) {
-        if(!pRenderPassCommands->BeforeUiTexture.Empty() || !pRenderPassCommands->BeforeUi.Empty() || !pRenderPassCommands->BeforePresent.Empty())
+        if(!pRenderPassCommands->BeforeUiTexture.Empty())
         {
             ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
             pDeviceContext->OMGetRenderTargets(1, &pRenderTargetViews[0], nullptr);
             if (pRenderTargetViews[0]) {
-                if(!pRenderPassCommands->BeforeUiTexture.Empty()) {
-                    ID3D11Resource* pRenderTargetViewResource = nullptr;
-                    pRenderTargetViews[0]->GetResource(&pRenderTargetViewResource);
-                    if(pRenderTargetViewResource) {
-                        ID3D11Texture2D * pTexture = nullptr;
-                        if(SUCCEEDED(pRenderTargetViewResource->QueryInterface(__uuidof(ID3D11Texture2D),(void**)&pTexture))){
-                            if(pTexture) {
-                                pRenderPassCommands->OnBeforeUiTexture(pTexture);               
-                                pTexture->Release();
-                            }
+                ID3D11Resource* pRenderTargetViewResource = nullptr;
+                pRenderTargetViews[0]->GetResource(&pRenderTargetViewResource);
+                if(pRenderTargetViewResource) {
+                    ID3D11Texture2D * pTexture = nullptr;
+                    if(SUCCEEDED(pRenderTargetViewResource->QueryInterface(__uuidof(ID3D11Texture2D),(void**)&pTexture))){
+                        if(pTexture) {
+                            pRenderPassCommands->OnBeforeUiTexture(pTexture);               
+                            pTexture->Release();
                         }
-                        pRenderTargetViewResource->Release();
                     }
-                }
-                if(!pRenderPassCommands->BeforeUi.Empty()) {
-                    pRenderPassCommands->OnBeforeUi(pRenderTargetViews[0]); 
+                    pRenderTargetViewResource->Release();
                 }
                 pRenderTargetViews[0]->Release();
             }
@@ -2564,7 +2559,6 @@ void STDMETHODCALLTYPE New_DrawInstanced(ID3D11DeviceContext* This,
     }
 }
 
-
 void Hook_Context(ID3D11DeviceContext * pDeviceContext) {
     static void **last_vtable = nullptr;
     void **vtable = *(void***)pDeviceContext;
@@ -2683,11 +2677,18 @@ void Before_Present() {
     if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands())
     {
         if(!pRenderPassCommands->BeforePresent.Empty()) {
-            ID3D11Texture2D * pTexture = nullptr;
-            g_pSwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D), (void**)&pTexture);
-            if(pTexture) {
-                pRenderPassCommands->OnBeforePresent(pTexture);
-                pTexture->Release();
+            if(g_BeforeUiRT) {
+                ID3D11Resource * pSrcResource = nullptr;
+                g_BeforeUiRT->GetResource(&pSrcResource);
+                if(pSrcResource) {
+                    ID3D11Texture2D * pSrcTexture = nullptr;
+                    pSrcResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&pSrcTexture);
+                    if(pSrcTexture) {
+                        pRenderPassCommands->OnBeforePresent(pSrcTexture);
+                        pSrcTexture->Release();
+                    }
+                    pSrcResource->Release();
+                }
             }
         }
     }
@@ -3033,7 +3034,7 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
             }
         }
     }  
-    else if(fmt && 0 == strcmp("#%s/SetupLightsAndViewConstants",fmt)) {
+    /*else if(fmt && 0 == strcmp("#%s/SetupLightsAndViewConstants",fmt)) {
         va_list args;
         va_start(args, fmt);
         const char * pszArg0 = va_arg(args, const char *);
@@ -3043,7 +3044,7 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
                 fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeHud());
             }
         }
-    }
+    }*/
     return result;
 }
 
@@ -3781,13 +3782,19 @@ private:
                     });
                 } break;
             default:
+                if(m_Settings.Capture == CStreamSettings::Capture_e::BeforeUi)
                 {
                     auto &queue = renderPassCommands.BeforeUiTexture;
                     queue.Push([capture](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
                         UINT viewportWidth, viewportHeight;
                         GetViewportSize(pDeviceContext, viewportWidth, viewportHeight);
                         capture->OnBeforeGpuPresent(pDeviceContext, pTexture, &viewportWidth, &viewportHeight, 1, 0, true);
-                    });            
+                    });
+                } else {
+                    auto & queue = renderPassCommands.BeforePresent;
+                    queue.Push([capture](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
+                        capture->OnBeforeGpuPresent(pDeviceContext, pTexture, nullptr, nullptr, 1.0f, 0.0f, true);
+                    });
                 } break;
             }            
             {
