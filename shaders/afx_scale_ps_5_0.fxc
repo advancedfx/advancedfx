@@ -1,0 +1,20 @@
+cbuffer CONSTANT_BUFFER : register(b0)
+{
+	float2 cUvScale; // unused
+	float2 cUvMax; // center of last texel inside source area
+};
+
+Texture2D texture0 : register(t0);
+SamplerState sampler0 : register(s0);
+
+struct PS_INPUT
+{
+	float4 xyzw : SV_POSITION;
+	float2 t0 : TEXCOORD0;
+};
+
+float4 main( PS_INPUT i ) : SV_TARGET
+{
+	// Clamp so filtering does not pull in texels from outside the source area.
+	return texture0.Sample(sampler0, min(i.t0, cUvMax));
+}
