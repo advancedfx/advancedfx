@@ -9,6 +9,7 @@
 <version>0.41.7</version>
 <time>2026-10-08T13:56Z</time>
 <changes>
+<change type="fixed">Fixed crash in mirv.entity.getPlayerName()</change>
 <change type="fixed">Fixed more HUD/Sniper Scopes, and some other issues in mirv_streams.</change>
 </changes>
 </release>

@@ -9,6 +9,8 @@
 <version>2.192.7</version>
 <time>2026-10-08T13:56Z</time>
 <changes>
+<change type="updated">Installer: updated ffmpeg to 9.0.2-17</change>
+<change type="updated">Included AfxHookGoldSrc 2.25.4 (2026-10-08T13:56Z)</change>
 <change type="updated">Included AfxHookSource2 0.41.7 (2026-10-08T13:56Z)</change>
 </changes>
 </release>
