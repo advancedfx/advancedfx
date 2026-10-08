@@ -2018,7 +2018,7 @@ void MaybeCaptureSmokeDepth() {
     }
 }
 
-void OnBeforeUi(ID3D11DeviceContext * pDeviceContext);
+void OnBeforeCsgoHud(ID3D11DeviceContext * pDeviceContext);
 
 void STDMETHODCALLTYPE New_ClearDepthStencilView( ID3D11DeviceContext * This, 
     _In_  ID3D11DepthStencilView *pDepthStencilView,
@@ -2033,9 +2033,9 @@ void STDMETHODCALLTYPE New_ClearDepthStencilView( ID3D11DeviceContext * This,
     ) {
         MaybeCaptureSmokeDepth();
 
-        if(g_iBeforeUi == 1) {
+        if(g_iBeforeUi >= 1) {
             g_iBeforeUi = 3;
-            OnBeforeUi(This);
+            OnBeforeCsgoHud(This);
         }
     }
 
@@ -2275,6 +2275,16 @@ void OnBeforeUi(ID3D11DeviceContext * pDeviceContext) {
                 if(!pRenderPassCommands->BeforeUi.Empty()) {
                     pRenderPassCommands->OnBeforeUi(pRenderTargetViews[0]); 
                 }
+                pRenderTargetViews[0]->Release();
+            }
+    }
+}
+
+void OnBeforeCsgoHud(ID3D11DeviceContext * pDeviceContext) {
+    if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands()) {
+            ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
+            pDeviceContext->OMGetRenderTargets(1, &pRenderTargetViews[0], nullptr);
+            if (pRenderTargetViews[0]) {
                 if(g_BeforeUiRT) g_BeforeUiRT->Release();
                 g_BeforeUiRT = pRenderTargetViews[0];
             }
@@ -2512,6 +2522,42 @@ void STDMETHODCALLTYPE New_PSSetShader(ID3D11DeviceContext* This,
     g_Old_PSSetShader(This, pPixelShader, ppClassInstances, NumClassInstances);
 }
 
+typedef void (STDMETHODCALLTYPE * DrawInstanced_t)(ID3D11DeviceContext* This,
+    /* [annotation] */ 
+    _In_  UINT VertexCountPerInstance,
+    /* [annotation] */ 
+    _In_  UINT InstanceCount,
+    /* [annotation] */ 
+    _In_  UINT StartVertexLocation,
+    /* [annotation] */ 
+    _In_  UINT StartInstanceLocation);
+
+DrawInstanced_t g_Old_DrawInstanced = nullptr;
+
+void STDMETHODCALLTYPE New_DrawInstanced(ID3D11DeviceContext* This,
+    /* [annotation] */ 
+    _In_  UINT VertexCountPerInstance,
+    /* [annotation] */ 
+    _In_  UINT InstanceCount,
+    /* [annotation] */ 
+    _In_  UINT StartVertexLocation,
+    /* [annotation] */ 
+    _In_  UINT StartInstanceLocation)
+{
+    g_Old_DrawInstanced(This, VertexCountPerInstance, InstanceCount, StartVertexLocation, StartInstanceLocation);
+
+    if (
+        This->GetType() == D3D11_DEVICE_CONTEXT_IMMEDIATE
+        && g_RenderCommands.CurrentThreadIsRenderThread()
+        && !g_bInOwnDraw        
+    ) {    
+        if(g_iBeforeUi == 1) {
+            g_iBeforeUi = 2;
+            OnBeforeUi(This);
+        }
+    }
+}
+
 void Hook_Context(ID3D11DeviceContext * pDeviceContext) {
     static void **last_vtable = nullptr;
     void **vtable = *(void***)pDeviceContext;
@@ -2523,6 +2569,7 @@ void Hook_Context(ID3D11DeviceContext * pDeviceContext) {
     if(last_vtable) {
         //DetourDetach(&(PVOID&)g_Old_PSSetShaderResources, New_PSSetShaderResources);
         DetourDetach(&(PVOID&)g_Old_PSSetShader, New_PSSetShader);
+        DetourDetach(&(PVOID&)g_Old_DrawInstanced, New_DrawInstanced);
         DetourDetach(&(PVOID&)g_Old_OMSetRenderTargets, New_OMSetRenderTargets);
         DetourDetach(&(PVOID&)g_Old_OMSetBlendState, New_OMSetBlendState);
         DetourDetach(&(PVOID&)g_Old_OMSetDepthStencilState, New_OMSetDepthStencilState);
@@ -2537,6 +2584,7 @@ void Hook_Context(ID3D11DeviceContext * pDeviceContext) {
     }
     //g_Old_PSSetShaderResources = (PSSetShaderResources_t)vtable[8];
     g_Old_PSSetShader = (PSSetShader_t)vtable[9];
+    g_Old_DrawInstanced = (DrawInstanced_t)vtable[21];
     g_Old_OMSetRenderTargets = (OMSetRenderTargets_t)vtable[33];
     g_Old_OMSetBlendState = (OMSetBlendState_t)vtable[35];
     g_Old_OMSetDepthStencilState = (OMSetDepthStencilState_t)vtable[36];
@@ -2545,6 +2593,7 @@ void Hook_Context(ID3D11DeviceContext * pDeviceContext) {
     //g_Old_ResolveSubresource = (ResolveSubresource_t)vtable[57];
     //DetourAttach(&(PVOID&)g_Old_PSSetShaderResources, New_PSSetShaderResources);
     DetourAttach(&(PVOID&)g_Old_PSSetShader, New_PSSetShader);
+    DetourAttach(&(PVOID&)g_Old_DrawInstanced, New_DrawInstanced);
     DetourAttach(&(PVOID&)g_Old_OMSetRenderTargets, New_OMSetRenderTargets);
     DetourAttach(&(PVOID&)g_Old_OMSetBlendState, New_OMSetBlendState);
     DetourAttach(&(PVOID&)g_Old_OMSetDepthStencilState, New_OMSetDepthStencilState);
@@ -4386,7 +4435,7 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
             settings.ClearOverrideColor.B = 1.0f;
             settings.ClearOverrideColor.A = 1.0f;
             settings.ClearOverride = true;
-            settings.Capture = CStreamSettings::Capture_e::BeforeUi;
+            settings.Capture = CStreamSettings::Capture_e::BeforeUi;            
             settings.CaptureType = CStreamSettings::CaptureType_e::Rgba;
             settings.ViewModelAction = CStreamSettings::Action::ZOnly;
             settings.FirstPersonLegsAction = CStreamSettings::Action::ZOnly;
