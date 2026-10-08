@@ -1323,7 +1323,7 @@ bool getPanoramaAddrs(HMODULE panoramaDll) {
 	{
 		// near "Need to increase size of static g_StylePropertyRegistrations (MAX_PANORAMA_STYLE_SYMBOLS) before registering more styles, failed on %s"
 		// after utlrbtree init we are looking for DAT in function call FUN_1800be1d0(&DAT_18050c3a8,&local_48,&local_68);
-		auto addr = getAddress(panoramaDll, "48 8D 0D ?? ?? ?? ?? 48 8D 45");
+		auto addr = getAddress(panoramaDll, "48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 63 D0");
 		if (0 == addr)
 			ErrorBox(MkErrStr(__FILE__, __LINE__));	
 		else {
@@ -1335,7 +1335,7 @@ bool getPanoramaAddrs(HMODULE panoramaDll) {
 	{
 		// Can be found in constructor for any CStyleProperty
 		// e.g. see 44th fn in vtable for CPanelStyle
-		auto addr = getAddress(panoramaDll, "E8 ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 45 ?? EB");
+		auto addr = getAddress(panoramaDll, "E8 ?? ?? ?? ?? 48 8B 5C 24 ?? 48 8B 6C 24 ?? 48 83 C4 ?? 41 5E 5F 5E C3 44 0F");
 		if (addr) {
 			g_CPanelStyleSetStyleProperty = (g_CPanelStyleSetStyleProperty_t)(addr + 5 + *(int32_t*)(addr + 1));
 		} else 

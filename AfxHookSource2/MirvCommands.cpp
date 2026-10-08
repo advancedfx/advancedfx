@@ -455,7 +455,7 @@ bool getAddressesFromClient(HMODULE clientDll) {
 
 	// See where spec_show_xray is checked, has offsets to glowProperty
 	// Also called first in 234th vtable function for C_LightEntity and other 100+ entities
-	size_t g_Original_setGlowProps_addr = getAddress(clientDll, "48 89 5C 24 ?? 57 48 83 EC ?? 48 8B 05 ?? ?? ?? ?? 48 8B D9 F3 0F 10 41");
+	size_t g_Original_setGlowProps_addr = getAddress(clientDll, "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC 30 48 8B 3D ?? ?? ?? ?? 8B F2 0F 29 74 24 20");
 	if (g_Original_setGlowProps_addr == 0) {
 		ErrorBox(MkErrStr(__FILE__, __LINE__));
 		return false;

@@ -2061,7 +2061,8 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 
 		g_H_FileSystem_stdio = hModule;
 
-		org_AddSearchPath = (AddSearchPath_t)getVTableFn(hModule, 31, ".?AVCFileSystem_Stdio@@");
+		auto vtable = (void**)Afx::BinUtils::FindClassVtable(hModule, ".?AVCFileSystem_Stdio@@", 0, 0);
+		org_AddSearchPath = (AddSearchPath_t)vtable[31];
 		if (0 == org_AddSearchPath) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
 		DetourTransactionBegin();
