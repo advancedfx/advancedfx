@@ -280,6 +280,9 @@ target_sources(${PROJECT_NAME} PRIVATE
 	SceneActionFilter.cpp
 	SceneActionFilter.h
 
+	EntMatPicker.cpp
+	EntMatPicker.h
+
 	SceneSystem.cpp
 	SceneSystem.h
 

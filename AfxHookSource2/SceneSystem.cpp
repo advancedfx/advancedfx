@@ -4,6 +4,7 @@
 #include "Globals.h"
 #include "SchemaSystem.h"
 #include "SceneActionFilter.h"
+#include "EntMatPicker.h"
 #include "MirvColors.h"
 #include "StreamSettings.h"
 
@@ -51,6 +52,9 @@ struct CustomSkyState {
 	bool drawClouds = true;
 	float brightness = 1.0f;
 } g_CustomSky;
+
+// mirv_streams picker, applied before everything else (including the action filter of the stream):
+CEntMatPicker g_ScenePicker;
 
 // 64-bit hash for 32-bit platforms
 // Credit
@@ -297,7 +301,8 @@ void UpdateSceneFilterSystemActive() {
 		|| g_BaseSceneObjectsPolicy != SceneObjectDrawPolicy::Draw
 		|| g_AnimatableSceneObjectsPolicy != SceneObjectDrawPolicy::Draw
 		|| g_AggregateSceneObjectsPolicy != SceneObjectDrawPolicy::Draw
-		|| g_OverlaysPolicy != SceneObjectDrawPolicy::Draw;
+		|| g_OverlaysPolicy != SceneObjectDrawPolicy::Draw
+		|| g_ScenePicker.IsActive();
 
 	for(int i = 0; !bActive && i < (int)SceneSemanticGroup::Count; i++) {
 		bActive = g_SceneSemanticPolicies[i] != SceneObjectDrawPolicy::Draw;
@@ -863,7 +868,20 @@ static SceneObjectDrawPolicy GetSceneDataPolicy(SceneObjectFilterClass filterCla
 	return ApplyLayerAwarePolicy(filterClass, context, materialName, GetSceneObjectClassPolicy(filterClass));
 }
 
-// Action filter of the stream (mirv_streams edit <name> actionFilter ...), takes precedence over everything else.
+static uint32_t GetSceneDataEntityHandle(const CBaseSceneData* pSceneData) {
+	if (nullptr == pSceneData || nullptr == pSceneData->sceneObject) return SOURCESDK_CS2_INVALID_EHANDLE_INDEX;
+	return *(uint32_t*)((unsigned char*)pSceneData->sceneObject + g_SceneObject_pCBaseHandle_Offset);
+}
+
+// Picker (mirv_streams picker ...), takes precedence over everything else.
+static bool GetPickerHidden(const CBaseSceneData* pSceneData) {
+	if (!g_ScenePicker.IsActive()) return false;
+
+	const char* materialName = pSceneData && pSceneData->material ? pSceneData->material->GetName() : nullptr;
+	return g_ScenePicker.GetHidden(materialName, GetSceneDataEntityHandle(pSceneData));
+}
+
+// Action filter of the stream (mirv_streams edit <name> actionFilter ...), takes precedence over everything else except the picker.
 static bool TryGetActionFilterPolicy(const SceneLayerContext& context, const CBaseSceneData* pSceneData, SceneObjectDrawPolicy& outPolicy) {
 	if (!g_ActiveActionFilter.IsActive()) return false;
 
@@ -880,10 +898,8 @@ static bool TryGetActionFilterPolicy(const SceneLayerContext& context, const CBa
 				query.MaterialName = &materialName;
 			}
 		}
-		if (pSceneData->sceneObject) {
-			uint32_t handle = *(uint32_t*)((unsigned char*)pSceneData->sceneObject + g_SceneObject_pCBaseHandle_Offset);
-			if (handle != SOURCESDK_CS2_INVALID_EHANDLE_INDEX) query.EntityHandle = handle;
-		}
+		uint32_t handle = GetSceneDataEntityHandle(pSceneData);
+		if (handle != SOURCESDK_CS2_INVALID_EHANDLE_INDEX) query.EntityHandle = handle;
 	}
 	if (context.ViewName) {
 		viewName = context.ViewName;
@@ -1099,12 +1115,16 @@ void __fastcall new_DrawSceneData(void * pDrawingData, CBaseSceneData* pSceneDat
 			}
 		}
 		
-		
 		DebugPrintSceneData("DrawSceneData", filterClass, context, pSceneData, 1);
+
 		SceneObjectDrawPolicy policy;
-		if(!TryGetActionFilterPolicy(context, pSceneData, policy)) {
+		if(GetPickerHidden(pSceneData)) {
+			policy = SceneObjectDrawPolicy::Hide;
+		}
+		// Action filter is applied next, only if it falls through the general logic is used:
+		else if(!TryGetActionFilterPolicy(context, pSceneData, policy)) {
 			policy = GetSceneDataPolicy(filterClass, context, pSceneData);
-		}		
+		}
 
 		switch (policy) {
 		default:
@@ -1482,6 +1502,71 @@ CON_COMMAND(__mirv_scene_filter, "")
 		, SceneObjectDrawPolicyToString(g_SceneSemanticPolicies[(int)SceneSemanticGroup::World])
 		, SceneObjectDrawPolicyToString(g_SceneSemanticPolicies[(int)SceneSemanticGroup::Sky])
 		, g_iSceneFilterDebug
+	);
+}
+
+static std::string DescribeEntityHandle(uint32_t handle) {
+	SOURCESDK::CS2::CBaseHandle entityHandle(handle);
+	if (!entityHandle.IsValid() || nullptr == g_pEntityList || nullptr == g_GetEntityFromIndex) return std::string();
+
+	auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList, entityHandle.GetEntryIndex());
+	if (nullptr == ent || ent->GetHandle().ToInt() != entityHandle.ToInt()) return std::string();
+
+	const char* className = ent->GetClassName();
+	std::string result = "(className=";
+	result += className ? className : "?";
+	result += ")";
+	return result;
+}
+
+extern void OpenConsoleIfNotVisible();
+
+void ScenePicker_Stop() {
+	if (g_ScenePicker.Stop()) {
+		UpdateSceneFilterSystemActive();
+		advancedfx::Message("Picker stopped.\n");
+	}
+}
+
+// Called with args->ArgV(0) being the command prefix (e.g. "mirv_streams picker").
+void ScenePicker_Console(advancedfx::ICommandArgs* args) {
+	int argc = args->ArgC();
+	const char* arg0 = args->ArgV(0);
+
+	if (2 <= argc) {
+		const char* arg1 = args->ArgV(1);
+		bool isEnt = !_stricmp(arg1, "ent");
+
+		if ((isEnt || !_stricmp(arg1, "mat")) && 3 <= argc) {
+			bool wasVisible = 0 != atoi(args->ArgV(2));
+			if (g_ScenePicker.Pick(isEnt, wasVisible, DescribeEntityHandle)) {
+				OpenConsoleIfNotVisible();
+			}
+			UpdateSceneFilterSystemActive();
+			return;
+		}
+		else if (!_stricmp(arg1, "print")) {
+			g_ScenePicker.Print(DescribeEntityHandle);
+			return;
+		}
+		else if (!_stricmp(arg1, "stop")) {
+			ScenePicker_Stop();
+			return;
+		}
+	}
+
+	advancedfx::Message(
+		"%s ent 0|1 - Tell picker if entity is visible (1) or not (0). (Or start picking with 1.)\n"
+		"%s mat 0|1 - Tell picker if material is visible (1) or not (0). (Or start picking with 1.)\n"
+		"%s print - Prints currently picked result set (entities / materials).\n"
+		"%s stop - Stop picking.\n"
+		"The picker affects whatever is rendered (main view and stream previews / recordings), it is applied before the actionFilter of streams.\n"
+		"The printed result can be used with mirv_streams edit <streamName> actionFilter addEx.\n"
+		"ATTENTION: Do not forget to stop the picker, otherwise you might have some surprises ;)\n"
+		, arg0
+		, arg0
+		, arg0
+		, arg0
 	);
 }
 
