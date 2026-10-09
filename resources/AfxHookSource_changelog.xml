@@ -6,6 +6,23 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.136.0</version>
+<time>TODO</time>
+<changes>
+<change type="added">#1173 mirv_streams output path templates: mirv_streams record take, mirv_streams record cam path, mirv_streams record campath path, mirv_streams record startMovieWavPath, mirv_streams record agr path, mirv_streams record bvh cam path, mirv_streams record bvh ent path, mirv_streams record voices path (CS:GO) and mirv_streams settings edit &lt;name&gt; path (classic, ffmpeg, ffmpegEx and multi settings, including the built-in afx* ones). Variables: {RECORD_PATH} {TAKE} {TAKE_NUMBER} {TICK} {TIME} and, for stream settings, {STREAM_NAME} {STREAM_PATH}, classic images also {SEQUENCE_NR} {EXT}, multi settings also {SETTING_NAME}, entity BVH and voices {ENTITY_INDEX} (required). Numeric variables take an optional width, e.g. {TAKE_NUMBER:4}. See wiki.</change>
+<change type="added">mirv_streams ffmpeg / ffmpegEx options: {AFX_OUTPUT_FILE} for the output file set with path, the afxFfmpeg* presets use it now. {AFX_STREAM_PATH} is now the folder of the output file (same as before with the default path).</change>
+<change type="added">mirv_streams record screen name: Name used for {STREAM_NAME} of the screen recording (default: screen).</change>
+<change type="changed">mirv_streams record: Folders are now only created when something is written to them, so the take folder no longer exists right at record start.</change>
+<change type="changed">mirv_streams record bvh cam and mirv_streams record voices now only accept a number as value, other input shows the help instead of disabling.</change>
+<change type="changed">Breaking change: mirv_streams ffmpeg / ffmpegEx options now use {{ for { and }} for } (was \{ and \}), \\ is no longer turned into \ (use a single \ now).</change>
+<change type="fixed">mirv_voice record start without folder now records into the current folder as documented.</change>
+<change type="fixed">Fixed possible race condition in mirv_streams record startMovieWav when determining the WAV file path (non CS:GO games).</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.135.2</version>
 <time>2026-09-12T14:47Z</time>
 <changes>

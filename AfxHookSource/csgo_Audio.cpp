@@ -10,6 +10,7 @@
 #include "WrpConsole.h"
 
 #include <shared/AfxDetours.h>
+#include <shared/FileTools.h>
 
 #include <string>
 #include <mutex>
@@ -35,7 +36,7 @@ CEngineVgui_ConIsVisible_t detoured_CEngineVgui_ConIsVisible;
 
 DWORD g_csgo_Audio_EngineThreadId = 0;
 bool g_csgo_Audio_Record = false;
-std::wstring g_CAudioXAudio2_RecordAudio_Dir;
+std::wstring g_CAudioXAudio2_RecordAudio_FilePath;
 CMirvWav* g_CAudioXAudio2_RecordAudio_File = nullptr;;
 
 std::vector<WORD> g_CAudioXAudio2_ChannelData;
@@ -52,11 +53,8 @@ bool __cdecl My_WaveAppendTmpFile(void* buffer, int sampleBits, int numSamples)
 
 		if (nullptr == g_CAudioXAudio2_RecordAudio_File)
 		{
-			std::wostringstream os;
-			os << g_CAudioXAudio2_RecordAudio_Dir << L"\\audio.wav";
-			std::wstring fileName = os.str();
-
-			g_CAudioXAudio2_RecordAudio_File = new CMirvWav(fileName.c_str(), numChannels, 44100);
+			CreateParentPath(g_CAudioXAudio2_RecordAudio_FilePath.c_str());
+			g_CAudioXAudio2_RecordAudio_File = new CMirvWav(g_CAudioXAudio2_RecordAudio_FilePath.c_str(), numChannels, 44100);
 		}
 
 		if ((int)g_CAudioXAudio2_ChannelData.size() < numChannels)
@@ -192,14 +190,14 @@ __declspec(naked) void __fastcall call_CL_StartMovie(const char * filename, int 
 	__asm ret
 }
 
-bool csgo_Audio_StartRecording(const wchar_t * ansiTakeDir)
+bool csgo_Audio_StartRecording(const wchar_t * filePath)
 {
 	if (!csgo_Audio_Install())
 		return false;
 
 	csgo_Audio_EndRecording();
 
-	g_CAudioXAudio2_RecordAudio_Dir = ansiTakeDir;
+	g_CAudioXAudio2_RecordAudio_FilePath = filePath;
 	g_csgo_Audio_EngineThreadId = GetCurrentThreadId();
 	g_csgo_Audio_Record = true;
 
