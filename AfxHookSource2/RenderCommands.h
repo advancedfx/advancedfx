@@ -62,6 +62,8 @@ public:
         void Finalize(){
             BeginReliable.Clear();
             AfterPostProcessing.Clear();
+            BeforeOverlaysTexture.Clear();
+            BeforeOverlays.Clear();
             BeforeUiTexture.Clear();
             BeforeUi.Clear();
             BeforePresent.Clear();
@@ -80,6 +82,10 @@ public:
         CQueue<Fn> BeforeClear;
 
         CQueue<FnContextTexture> AfterPostProcessing;
+
+        CQueue<FnContextTexture> BeforeOverlaysTexture;
+        
+        CQueue<FnContextTarget> BeforeOverlays;
 
         CQueue<FnContextTexture> BeforeUiTexture;
         
@@ -111,6 +117,28 @@ public:
             }
         }
        
+        void OnBeforeOverlaysTexture(ID3D11Texture2D * pTexture) {
+            if(Context && pTexture) {
+                while(!BeforeOverlaysTexture.Empty()) {
+                    BeforeOverlaysTexture.Front()(Context, pTexture);
+                    BeforeOverlaysTexture.Pop();
+                }
+            } else {
+                BeforeOverlaysTexture.Clear();
+            }
+        }        
+
+        void OnBeforeOverlays(ID3D11RenderTargetView * pTarget) {
+            if(Context && pTarget) {
+                while(!BeforeOverlays.Empty()) {
+                    BeforeOverlays.Front()(Context, pTarget);
+                    BeforeOverlays.Pop();
+                }
+            } else {
+                BeforeOverlays.Clear();
+            }
+        }
+
         void OnBeforeUiTexture(ID3D11Texture2D * pTexture) {
             if(Context && pTexture) {
                 while(!BeforeUiTexture.Empty()) {

@@ -2248,12 +2248,12 @@ public:
 private:
 };
 
-void OnBeforeUi(ID3D11DeviceContext * pDeviceContext) {
+void OnBeforeOverlays(ID3D11DeviceContext * pDeviceContext) {
     if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands()) {
             ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
             pDeviceContext->OMGetRenderTargets(1, &pRenderTargetViews[0], nullptr);
             if (pRenderTargetViews[0]) {
-                if(!pRenderPassCommands->BeforeUiTexture.Empty())
+                if(!pRenderPassCommands->BeforeOverlaysTexture.Empty())
                 {
                     ID3D11Resource* pRenderTargetViewResource = nullptr;
                     pRenderTargetViews[0]->GetResource(&pRenderTargetViewResource);
@@ -2261,15 +2261,15 @@ void OnBeforeUi(ID3D11DeviceContext * pDeviceContext) {
                         ID3D11Texture2D * pTexture = nullptr;
                         if(SUCCEEDED(pRenderTargetViewResource->QueryInterface(__uuidof(ID3D11Texture2D),(void**)&pTexture))){
                             if(pTexture) {
-                                pRenderPassCommands->OnBeforeUiTexture(pTexture);               
+                                pRenderPassCommands->OnBeforeOverlaysTexture(pTexture);               
                                 pTexture->Release();
                             }
                         }
                         pRenderTargetViewResource->Release();
                     }
                 }
-                if(!pRenderPassCommands->BeforeUi.Empty()) {
-                    pRenderPassCommands->OnBeforeUi(pRenderTargetViews[0]); 
+                if(!pRenderPassCommands->BeforeOverlays.Empty()) {
+                    pRenderPassCommands->OnBeforeOverlays(pRenderTargetViews[0]); 
                 }
                 pRenderTargetViews[0]->Release();
             }
@@ -2289,6 +2289,24 @@ public:
                     ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
                     pDeviceContext->OMGetRenderTargets(1, &pRenderTargetViews[0], nullptr);
                     if (pRenderTargetViews[0]) {
+                        if(!pRenderPassCommands->BeforeUiTexture.Empty())
+                        {
+                            ID3D11Resource* pRenderTargetViewResource = nullptr;
+                            pRenderTargetViews[0]->GetResource(&pRenderTargetViewResource);
+                            if(pRenderTargetViewResource) {
+                                ID3D11Texture2D * pTexture = nullptr;
+                                if(SUCCEEDED(pRenderTargetViewResource->QueryInterface(__uuidof(ID3D11Texture2D),(void**)&pTexture))){
+                                    if(pTexture) {
+                                        pRenderPassCommands->OnBeforeUiTexture(pTexture);
+                                        pTexture->Release();
+                                    }
+                                }
+                                pRenderTargetViewResource->Release();
+                            }
+                        }
+                        if(!pRenderPassCommands->BeforeUi.Empty()) {
+                            pRenderPassCommands->OnBeforeUi(pRenderTargetViews[0]); 
+                        }                        
                         if(g_BeforeUiRT) g_BeforeUiRT->Release();
                         g_BeforeUiRT = pRenderTargetViews[0];
                     }
@@ -2561,7 +2579,7 @@ void STDMETHODCALLTYPE New_DrawInstanced(ID3D11DeviceContext* This,
     ) {    
         if(g_iBeforeUi == 1) {
             g_iBeforeUi = 2;
-            OnBeforeUi(This);
+            OnBeforeOverlays(This);
         }
     }
 }
@@ -3744,8 +3762,20 @@ private:
                 });                
             }
 
-            // Setup beforeUi clear and color:
             float clearColor[4];
+            // Setup beforeOverlays clear and color:
+            if(WantsClearBeforeOverlays(clearColor)) {
+                float R = clearColor[0];
+                float G = clearColor[1];
+                float B = clearColor[2];
+                float A = clearColor[3];  
+                auto & renderPassCommands = g_RenderCommands.EngineThread_GetCommands();              
+                renderPassCommands.BeforeOverlays.Push([R,G,B,A](ID3D11DeviceContext * pDeviceContext, ID3D11RenderTargetView * pTarget){
+                    float clearColor[4] = {R,G,B,A};
+                    pDeviceContext->ClearRenderTargetView(pTarget, clearColor);
+                });
+            }
+            // Setup beforeUi clear and color:
             if(WantsClearBeforeUi(clearColor)) {
                 float R = clearColor[0];
                 float G = clearColor[1];
@@ -3835,20 +3865,34 @@ private:
                     });
                 } break;
             default:
-                if(m_Settings.Capture == CStreamSettings::Capture_e::BeforeUi)
-                {
-                    auto &queue = renderPassCommands.BeforeUiTexture;
-                    queue.Push([capture](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
-                        UINT viewportWidth, viewportHeight;
-                        GetViewportSize(pDeviceContext, viewportWidth, viewportHeight);
-                        capture->OnBeforeGpuPresent(pDeviceContext, pTexture, &viewportWidth, &viewportHeight, 1, 0, true);
-                    });
-                } else {
-                    auto & queue = renderPassCommands.BeforePresent;
-                    queue.Push([capture](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
-                        capture->OnBeforeGpuPresent(pDeviceContext, pTexture, nullptr, nullptr, 1.0f, 0.0f, true);
-                    });
-                } break;
+                switch(m_Settings.Capture) {
+                case CStreamSettings::Capture_e::BeforeOverlays:
+                    {
+                        auto &queue = renderPassCommands.BeforeOverlaysTexture;
+                        queue.Push([capture](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
+                            UINT viewportWidth, viewportHeight;
+                            GetViewportSize(pDeviceContext, viewportWidth, viewportHeight);
+                            capture->OnBeforeGpuPresent(pDeviceContext, pTexture, &viewportWidth, &viewportHeight, 1, 0, true);
+                        });
+                    }
+                    break;
+                case CStreamSettings::Capture_e::BeforeUi:
+                    {
+                        auto & queue = renderPassCommands.BeforeUiTexture;
+                        queue.Push([capture](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
+                            capture->OnBeforeGpuPresent(pDeviceContext, pTexture, nullptr, nullptr, 1.0f, 0.0f, true);
+                        });
+                    }
+                    break;
+                default:    
+                    {
+                        auto & queue = renderPassCommands.BeforePresent;
+                        queue.Push([capture](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
+                            capture->OnBeforeGpuPresent(pDeviceContext, pTexture, nullptr, nullptr, 1.0f, 0.0f, true);
+                        });
+                    }
+                    break;
+                }
             }            
             {
                 auto & queue = renderPassCommands.AfterPresent;
@@ -3866,6 +3910,17 @@ private:
             // Clear SceneSystem policies:
             ClearSceneFliterSystemPolicies();
         } 
+
+        bool WantsClearBeforeOverlays(float outColor[4]) const {
+            if(m_Settings.ClearBeforeOverlays) {
+                outColor[0] = m_Settings.ClearBeforeOverlaysColor.R;
+                outColor[1] = m_Settings.ClearBeforeOverlaysColor.G;
+                outColor[2] = m_Settings.ClearBeforeOverlaysColor.B;
+                outColor[3] = m_Settings.ClearBeforeOverlaysColor.A;
+                return true;
+            }
+            return false;
+        }
 
         bool WantsClearBeforeUi(float outColor[4]) const {
             if(m_Settings.ClearBeforeUi) {
@@ -4348,8 +4403,20 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
             settings.ClearBeforeUiColor.B = 1.0f;
             settings.ClearBeforeUiColor.A = 0.0f;
             settings.ClearBeforeUi = true;
+        } else if(0 == _stricmp(arg1,"overlaysBlack")) {
+            settings.ClearBeforeOverlaysColor.R = 0.0f;
+            settings.ClearBeforeOverlaysColor.G = 0.0f;
+            settings.ClearBeforeOverlaysColor.B = 0.0f;
+            settings.ClearBeforeOverlaysColor.A = 0.0f;
+            settings.ClearBeforeOverlays = true;
+        } else if(0 == _stricmp(arg1,"overlaysWhite")) {
+            settings.ClearBeforeOverlaysColor.R = 1.0f;
+            settings.ClearBeforeOverlaysColor.G = 1.0f;
+            settings.ClearBeforeOverlaysColor.B = 1.0f;
+            settings.ClearBeforeOverlaysColor.A = 0.0f;
+            settings.ClearBeforeOverlays = true;
         } else if(0 == _stricmp(arg1,"depth")) {
-            settings.Capture = CStreamSettings::Capture_e::BeforeUi;
+            settings.Capture = CStreamSettings::Capture_e::BeforeOverlays;
             settings.CaptureType = CStreamSettings::CaptureType_e::DepthRgb;
             // Suggested defaults by Riki:
             settings.DepthVal = 4096;
@@ -4357,7 +4424,7 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
             settings.DepthChannels = CStreamSettings::DepthChannels_e::Dithered;
             settings.DepthMode = CStreamSettings::DepthMode_e::PyramidalLinear;
         } else if(0 == _stricmp(arg1,"world")) {
-            settings.Capture = CStreamSettings::Capture_e::BeforeUi;
+            settings.Capture = CStreamSettings::Capture_e::BeforeOverlays;
             settings.ViewModelAction = CStreamSettings::Action::NoDraw;
             settings.ParticlesAction = CStreamSettings::Action::NoDraw;
             settings.FirstPersonLegsAction = CStreamSettings::Action::NoDraw;
@@ -4367,7 +4434,7 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
             settings.SmokeAction = CStreamSettings::Action::NoDraw;
             settings.OverlaysAction = CStreamSettings::Action::NoDraw;          
         } else if(0 == _stricmp(arg1,"playersMatte")) {
-            settings.Capture = CStreamSettings::Capture_e::BeforeUi;
+            settings.Capture = CStreamSettings::Capture_e::BeforeOverlays;
             settings.CaptureType = CStreamSettings::CaptureType_e::Rgba;
             settings.ViewModelAction = CStreamSettings::Action::NoDraw;
             settings.ParticlesAction = CStreamSettings::Action::NoDraw;
@@ -4402,7 +4469,7 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
                 settings.AfterCommands.emplace_back(command);
             }
         } else if(0 == _stricmp(arg1,"weaponsMatte")) {
-            settings.Capture = CStreamSettings::Capture_e::BeforeUi;
+            settings.Capture = CStreamSettings::Capture_e::BeforeOverlays;
             settings.CaptureType = CStreamSettings::CaptureType_e::Rgba;
             settings.ViewModelAction = CStreamSettings::Action::NoDraw;
             settings.ParticlesAction = CStreamSettings::Action::NoDraw;
@@ -4438,7 +4505,7 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
                 settings.AfterCommands.emplace_back(command);
             }
         } else if(0 == _stricmp(arg1,"viewModelMatte")) {
-            settings.Capture = CStreamSettings::Capture_e::BeforeUi;
+            settings.Capture = CStreamSettings::Capture_e::BeforeOverlays;
             settings.CaptureType = CStreamSettings::CaptureType_e::Rgba;
             settings.ParticlesAction = CStreamSettings::Action::NoDraw;
             settings.FirstPersonLegsAction = CStreamSettings::Action::NoDraw;
@@ -4478,7 +4545,7 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
             settings.ClearOverrideColor.B = 0.0f;
             settings.ClearOverrideColor.A = 1.0f;
             settings.ClearOverride = true;
-            settings.Capture = CStreamSettings::Capture_e::BeforeUi;
+            settings.Capture = CStreamSettings::Capture_e::BeforeOverlays;
             settings.CaptureType = CStreamSettings::CaptureType_e::Rgba;
             settings.ViewModelAction = CStreamSettings::Action::ZOnly;
             settings.FirstPersonLegsAction = CStreamSettings::Action::ZOnly;
@@ -4517,7 +4584,7 @@ void CAfxStreams::Console_Add(advancedfx::ICommandArgs* args) {
             settings.ClearOverrideColor.B = 1.0f;
             settings.ClearOverrideColor.A = 1.0f;
             settings.ClearOverride = true;
-            settings.Capture = CStreamSettings::Capture_e::BeforeUi;            
+            settings.Capture = CStreamSettings::Capture_e::BeforeOverlays;            
             settings.CaptureType = CStreamSettings::CaptureType_e::Rgba;
             settings.ViewModelAction = CStreamSettings::Action::ZOnly;
             settings.FirstPersonLegsAction = CStreamSettings::Action::ZOnly;
@@ -5020,6 +5087,44 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
                         , stream.ClearOverrideColor.A
                 );
                 return;
+             } else if(0 == _stricmp("clearBeforeOverlays", arg2)) {
+                if(4 <= argC) {
+                    if(4 == argC) {
+                        if(0 == _stricmp("none", args->ArgV(3))) {
+                            it->second.ClearBeforeOverlays = false;
+                            if(bUpdatePreview) RecordStart(true);
+                            return;
+                        }
+                    } else if(7 == argC) {
+                        bool bChanged = false;
+                        float r = atof(args->ArgV(3));
+                        float g = atof(args->ArgV(4));
+                        float b = atof(args->ArgV(5));
+                        float a = atof(args->ArgV(6));
+                        it->second.ClearBeforeOverlays = true;
+                        it->second.ClearBeforeOverlaysColor.R = r;
+                        it->second.ClearBeforeOverlaysColor.G = g;
+                        it->second.ClearBeforeOverlaysColor.B = b;
+                        it->second.ClearBeforeOverlaysColor.A = a;
+                        if(bUpdatePreview) RecordStart(true);
+                        return;
+                    }
+                }
+
+                advancedfx::Message(
+                    "%s %s clearBeforeOverlays none|(<fRed> <fGreen> <fBlue> <fAlpha>) - Whether or not to clear (none, default) or in which color (floating point values in range [0.0, 1.0]).\n"
+                    , arg0, arg1
+                );
+                if(!stream.ClearBeforeOverlays) advancedfx::Message(
+                    "Current value: none\n"
+                ); else advancedfx::Message(
+                        "Current value: %f %f %f %f\n"
+                        , stream.ClearBeforeOverlaysColor.R
+                        , stream.ClearBeforeOverlaysColor.G
+                        , stream.ClearBeforeOverlaysColor.B
+                        , stream.ClearBeforeOverlaysColor.A
+                );
+                return;
             } else if(0 == _stricmp("clearBeforeUI", arg2)) {
                 if(4 <= argC) {
                     if(4 == argC) {
@@ -5201,6 +5306,10 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
         );
         advancedfx::Message(
             "%s %s clear  [...] - If and with what color to override the main render target clear (stream background).\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s clearBeforeOverlays  [...] - If and with what color to clear before overlays.\n"
             , arg0, arg1
         );
         advancedfx::Message(
