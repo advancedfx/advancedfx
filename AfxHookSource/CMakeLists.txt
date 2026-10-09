@@ -302,6 +302,8 @@ target_sources(AfxHookSource PRIVATE
     ../shared/OpenExrOutput.cpp
     ../shared/OpenExrOutput.h
     ../shared/OutVideoStreamCreators.h
+    ../shared/OutputPathTemplate.cpp
+    ../shared/OutputPathTemplate.h
     ../shared/RawOutput.cpp
     ../shared/RawOutput.h
     ../shared/RecordingSettings.cpp
