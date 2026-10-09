@@ -2018,8 +2018,6 @@ void MaybeCaptureSmokeDepth() {
     }
 }
 
-void OnBeforeCsgoHud(ID3D11DeviceContext * pDeviceContext);
-
 void STDMETHODCALLTYPE New_ClearDepthStencilView( ID3D11DeviceContext * This, 
     _In_  ID3D11DepthStencilView *pDepthStencilView,
     _In_  UINT ClearFlags,
@@ -2032,11 +2030,6 @@ void STDMETHODCALLTYPE New_ClearDepthStencilView( ID3D11DeviceContext * This,
         && !g_bInOwnDraw
     ) {
         MaybeCaptureSmokeDepth();
-
-        if(g_iBeforeUi >= 1) {
-            g_iBeforeUi = 3;
-            OnBeforeCsgoHud(This);
-        }
     }
 
     g_Old_ClearDepthStencilView(This, pDepthStencilView, ClearFlags, Depth, Stencil);
@@ -2280,16 +2273,28 @@ void OnBeforeUi(ID3D11DeviceContext * pDeviceContext) {
     }
 }
 
-void OnBeforeCsgoHud(ID3D11DeviceContext * pDeviceContext) {
-    if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands()) {
-            ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
-            pDeviceContext->OMGetRenderTargets(1, &pRenderTargetViews[0], nullptr);
-            if (pRenderTargetViews[0]) {
-                if(g_BeforeUiRT) g_BeforeUiRT->Release();
-                g_BeforeUiRT = pRenderTargetViews[0];
-            }
+class CAfxRenderCallbackBeforeCSGOHud : public IRenderThreadCallback {
+public:
+    CAfxRenderCallbackBeforeCSGOHud()
+    {
+
     }
-}
+
+    virtual void OnCallback(void) {
+        if (auto pDeviceContext = g_RenderCommands.RenderThread_GetContext()) {
+            if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands()) {
+                    ID3D11RenderTargetView* pRenderTargetViews[1] = {nullptr};
+                    pDeviceContext->OMGetRenderTargets(1, &pRenderTargetViews[0], nullptr);
+                    if (pRenderTargetViews[0]) {
+                        if(g_BeforeUiRT) g_BeforeUiRT->Release();
+                        g_BeforeUiRT = pRenderTargetViews[0];
+                    }
+            }
+        }
+        delete this;
+    }
+private:
+};
 
 class CAfxRenderCallbackBeforePostProcessing : public IRenderThreadCallback
 {
@@ -3033,17 +3038,17 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
             }
         }
     }  
-    /*else if(fmt && 0 == strcmp("#%s/SetupLightsAndViewConstants",fmt)) {
+    else if(fmt && 0 == strcmp("#%s/SetupLightsAndViewConstants",fmt)) {
         va_list args;
         va_start(args, fmt);
         const char * pszArg0 = va_arg(args, const char *);
         if(pszArg0 && 0 == strcmp("CSGOHud",pszArg0)) {
             if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
                 auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
-                fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeHud());
+                fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeCSGOHud());
             }
         }
-    }*/
+    }
     return result;
 }
 
