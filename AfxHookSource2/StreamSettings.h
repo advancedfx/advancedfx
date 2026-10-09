@@ -33,6 +33,8 @@ public:
         , DepthMode(other.DepthMode)
         , ClearOverride(other.ClearOverride)
         , ClearOverrideColor(other.ClearOverrideColor)
+        , ClearBeforeOverlays(other.ClearBeforeOverlays)
+        , ClearBeforeOverlaysColor(other.ClearBeforeOverlaysColor)
         , ClearBeforeUi(other.ClearBeforeUi)
         , ClearBeforeUiColor(other.ClearBeforeUiColor)
         , AutoForceFullResSmoke(other.AutoForceFullResSmoke)
@@ -57,6 +59,7 @@ public:
     bool CanCaptureInMainPass() const {
         return true
             && false == ClearOverride
+            && false == ClearBeforeOverlays
             && false == ClearBeforeUi
             && BeforeCommands.empty()
             && AfterCommands.empty()
@@ -82,6 +85,13 @@ public:
            if(cmp = CompareFloat(ClearOverrideColor.G, o.ClearOverrideColor.G)) return cmp;
            if(cmp = CompareFloat(ClearOverrideColor.B, o.ClearOverrideColor.B)) return cmp;
            if(cmp = CompareFloat(ClearOverrideColor.A, o.ClearOverrideColor.A)) return cmp;
+        }
+        if(cmp = CompareBool(ClearBeforeOverlays, o.ClearBeforeOverlays)) return cmp;
+        if(ClearBeforeOverlays) {
+           if(cmp = CompareFloat(ClearBeforeOverlaysColor.R, o.ClearBeforeOverlaysColor.R)) return cmp;
+           if(cmp = CompareFloat(ClearBeforeOverlaysColor.G, o.ClearBeforeOverlaysColor.G)) return cmp;
+           if(cmp = CompareFloat(ClearBeforeOverlaysColor.B, o.ClearBeforeOverlaysColor.B)) return cmp;
+           if(cmp = CompareFloat(ClearBeforeOverlaysColor.A, o.ClearBeforeOverlaysColor.A)) return cmp;
         }
         if(cmp = CompareBool(ClearBeforeUi, o.ClearBeforeUi)) return cmp;
         if(ClearBeforeUi) {
@@ -113,6 +123,7 @@ public:
 
     enum class Capture_e {
         BeforePresent,
+        BeforeOverlays,
         BeforeUi
     } Capture = Capture_e::BeforePresent;
 
@@ -153,6 +164,16 @@ public:
         float B = 0.0f;
         float A = 0.0f;
     } ClearOverrideColor;
+
+    bool ClearBeforeOverlays = false;
+
+    struct {
+        float R = 0.0f;
+        float G = 0.0f;
+        float B = 0.0f;
+        float A = 0.0f;
+    } ClearBeforeOverlaysColor;
+
 
     bool ClearBeforeUi = false;
 
