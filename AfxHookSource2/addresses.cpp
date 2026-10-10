@@ -9,6 +9,7 @@ using namespace Afx::BinUtils;
 
 AFXADDR_DEF(cs2_engine_HostStateRequest_Start)
 AFXADDR_DEF(cs2_engine_CRenderService_OnClientOutput);
+AFXADDR_DEF(cs2_engine_AdvanceTime);
 
 AFXADDR_DEF(cs2_SceneSystem_WaitForRenderingToComplete_vtable_idx);
 AFXADDR_DEF(cs2_SceneSystem_FrameUpdate_vtable_idx);
@@ -26,6 +27,40 @@ void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
 			textRange = imageSectionsReader.GetMemRange();
 		}
 		else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
+
+	// Optional demo clock fix. Besides the entry point, verify the field layout
+	// used by MirvFix.cpp. The function references "AdvanceTime ticks this frame".
+	// Leave unavailable on a missing/ambiguous signature; do not interrupt startup.
+	{
+		const char * signature = "48 8b c4 f2 0f 11 50 18 f2 0f 11 48 10 55 57 41 ?? 41 57 48 8d a8 18 ff ff ff 48 81 ec c8 01 00 00";
+		MemRange result = FindPatternString(textRange, signature);
+		if (!result.IsEmpty() && result.Start + 0x250 <= textRange.End
+			&& FindPatternString(MemRange(result.End, textRange.End), signature).IsEmpty()) {
+			MemRange body(result.Start, result.Start + 0x250);
+			// In AdvanceTime, look for the simulation clock calculation:
+			// double remainder (this+0xf0) += elapsed; divide by float tick interval
+			// (this+0x140), consume whole ticks, then store the fractional remainder.
+			// These are engine2.dll object fields, not schema offsets.
+			MemRange remainder = FindPatternString(body,
+				"f3 0f 10 9f 40 01 00 00 48 8d 9f f0 00 00 00 f2 0f 10 13 f2 41 0f 58 ?? 0f 5a cb 89 73 08 f2 0f 11 13");
+			// The adjacent mode dispatch reads this+0x160. Find its setup function
+			// via the "CQ disabled, re-syncing" log string: it writes 0 when CQ is
+			// disabled, 1/2 for CQ send modes, and 3 when the global demo file is
+			// the CDemoPlayer instance and its IsPlayingDemo flag is set. Modes 0
+			// and 3 share this simulation path; the original enum name is unknown.
+			MemRange mode = FindPatternString(body,
+				"8b 8f 60 01 00 00 85 c9 0f 84 ?? ?? ?? ?? 41 2b ?? 74 09 41 3b ?? 0f 85");
+			// The frame-time helper reads cached host_framerate at 0x14c.
+			MemRange frameTimeCall = FindPatternString(body,
+				"0f 28 cb e8 ?? ?? ?? ?? f2 41 0f 10 ??");
+			if (!remainder.IsEmpty() && !mode.IsEmpty() && !frameTimeCall.IsEmpty()) {
+				AfxAddr frameTime = frameTimeCall.Start + 8 + *reinterpret_cast<const int32_t *>(frameTimeCall.Start + 4);
+				if (textRange.Start <= frameTime && frameTime <= textRange.End - 0x180
+					&& !FindPatternString(MemRange(frameTime, frameTime + 0x180), "f3 0f 10 8f 4c 01 00 00").IsEmpty())
+					AFXADDR_SET(cs2_engine_AdvanceTime, result.Start);
+			}
+		}
 	}
 
     /*  cs2_engine_HostStateRequest_Start

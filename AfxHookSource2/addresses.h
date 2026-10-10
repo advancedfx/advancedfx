@@ -4,6 +4,7 @@
 
 AFXADDR_DECL(cs2_engine_HostStateRequest_Start)
 AFXADDR_DECL(cs2_engine_CRenderService_OnClientOutput)
+AFXADDR_DECL(cs2_engine_AdvanceTime)
 
 AFXADDR_DECL(cs2_SceneSystem_WaitForRenderingToComplete_vtable_idx)
 AFXADDR_DECL(cs2_SceneSystem_FrameUpdate_vtable_idx)
