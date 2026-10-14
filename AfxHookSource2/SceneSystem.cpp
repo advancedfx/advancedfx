@@ -290,7 +290,8 @@ void UpdateSceneFilterSystemActive() {
 		|| g_BaseSceneObjectsPolicy != SceneObjectDrawPolicy::Draw
 		|| g_AnimatableSceneObjectsPolicy != SceneObjectDrawPolicy::Draw
 		|| g_AggregateSceneObjectsPolicy != SceneObjectDrawPolicy::Draw
-		|| g_OverlaysPolicy != SceneObjectDrawPolicy::Draw;
+		|| g_OverlaysPolicy != SceneObjectDrawPolicy::Draw
+		|| g_CustomSky.drawClouds != true;
 
 	for(int i = 0; !bActive && i < (int)SceneSemanticGroup::Count; i++) {
 		bActive = g_SceneSemanticPolicies[i] != SceneObjectDrawPolicy::Draw;
@@ -306,6 +307,7 @@ void ClearSceneFliterSystemPolicies() {
 	g_AnimatableSceneObjectsPolicy = SceneObjectDrawPolicy::Draw;
 	g_AggregateSceneObjectsPolicy = SceneObjectDrawPolicy::Draw;
 	g_OverlaysPolicy = SceneObjectDrawPolicy::Draw;
+	g_CustomSky.drawClouds = true;
 
 	for(int i = 0; i < (int)SceneSemanticGroup::Count; i++) {
 		g_SceneSemanticPolicies[i] = SceneObjectDrawPolicy::Draw;
@@ -1269,6 +1271,7 @@ CON_COMMAND(mirv_sky, "")
 					if (4 <= argc)
 					{
 						g_CustomSky.drawClouds = 0 != atoi(args->ArgV(3));
+						UpdateSceneFilterSystemActive();
 						return;
 					}
 
