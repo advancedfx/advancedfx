@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.41.8</version>
+<time>2026-10-14T15:26Z</time>
+<changes>
+<change type="fixed">Fixed end of round/end of match being frozen in recordings.</change>
+<change type="fixed">Fixed `mirv_sky clouds draw` not working</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.41.7</version>
 <time>2026-10-08T13:56Z</time>
 <changes>
