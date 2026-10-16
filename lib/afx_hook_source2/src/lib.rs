@@ -3527,7 +3527,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_game_event<'a>(this_ptr: *mut Af
     let context = (*afx_hooks_source_2_rs_ptr_to_ref(this_ptr).context).get();
 
     let str_event_name = unsafe{CStr::from_ptr(event_name)}.to_str().unwrap();
-    let str_json = unsafe{CStr::from_ptr(json)}.to_str().unwrap();
+    let str_json = unsafe{CStr::from_ptr(json)}.to_string_lossy(); // event can contain garbled network / demo data, that's why we use to_string_lossy
 
     if let Err(e) = advancedfx::js::events::EventSource::obj_dispatch(
         &afx_hooks_source_2_rs_ptr_to_ref(this_ptr).events.game_event,
