@@ -182,6 +182,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     ../shared/ImageTransformer.cpp
     ../shared/ImageTransformer.h    
     ../shared/OutVideoStreamCreators.h
+    ../shared/OutputPathTemplate.cpp
+    ../shared/OutputPathTemplate.h
     ../shared/OpenExrOutput.cpp
     ../shared/OpenExrOutput.h    
     ../shared/RawOutput.cpp
