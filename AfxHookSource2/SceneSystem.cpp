@@ -957,6 +957,8 @@ void SetContextFromDrawingData(SceneLayerContext & context, void * pDrawingData)
 typedef void (__fastcall * DrawCurrentPrimitives_t)(void * pDrawingData);
 DrawCurrentPrimitives_t org_DrawCurrentPrimitives = nullptr;
 
+static std::once_flag g_SoftwareCommandListCommitDetourOnce;
+
 // Since the 2026-09-23 build there is a 5th (stack) argument: optional name suffix, formatted as "/%s" when not null.
 // It must be forwarded, otherwise the original formats garbage from our stack frame and crashes in tier0.
 typedef void (__fastcall * InitDrawingData_t)(unsigned char * pDrawingData,void *pSceneView,void *pSceneLayer,uint32_t unkFlags4,const char *pszNameSuffix);
@@ -969,7 +971,7 @@ void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneVie
 
 	void * pCRenderContextDx11_SoftwareCommandList = ((void **)pDrawingData)[4];
 
-	if(org_SoftwareCommandList_Commit == nullptr) {
+	std::call_once(g_SoftwareCommandListCommitDetourOnce, [pCRenderContextDx11_SoftwareCommandList]() {
 		void** vtable = *(void***)pCRenderContextDx11_SoftwareCommandList;
 		org_SoftwareCommandList_Commit = (SoftwareCommandList_Commit_t)vtable[11];
 
@@ -980,9 +982,8 @@ void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneVie
 
 		if(NO_ERROR != DetourTransactionCommit()) {
 			ErrorBox("Failed to detour SoftwareCommandList::Commit.");
-			return;
 		}				
-	}
+	});
 
 	if(0 == strcmp(context.ViewPass,"PostProcessing")) {
 		QueueCallbackBeforePostProcessing(pCRenderContextDx11_SoftwareCommandList);
