@@ -20,14 +20,23 @@ pub const ZSTD_WINDOW_LOG: u32 = 27;
 ///
 /// A top-level `ffmpeg/` dir is skipped (FFMPEG is installed separately, NOTES.md 6.8).
 /// Output is deterministic: sorted paths, no timestamps / owners in the tar headers.
-pub fn pack_dir<W: Write>(src_dir: &Path, hlae_version: &str, level: i32, out: W) -> Result<Manifest> {
+pub fn pack_dir<W: Write>(
+    src_dir: &Path,
+    hlae_version: &str,
+    level: i32,
+    out: W,
+) -> Result<Manifest> {
     let mut sources = Vec::new();
     collect(src_dir, None, &mut sources)?;
     sources.sort_by(|a, b| a.0.as_str().cmp(b.0.as_str()));
 
     let mut encoder = zstd::Encoder::new(out, level).ctx("compress", src_dir)?;
-    encoder.long_distance_matching(true).ctx("compress", src_dir)?;
-    encoder.window_log(ZSTD_WINDOW_LOG).ctx("compress", src_dir)?;
+    encoder
+        .long_distance_matching(true)
+        .ctx("compress", src_dir)?;
+    encoder
+        .window_log(ZSTD_WINDOW_LOG)
+        .ctx("compress", src_dir)?;
     encoder.include_checksum(true).ctx("compress", src_dir)?;
     let mut tar = tar::Builder::new(encoder);
 
@@ -40,7 +49,8 @@ pub fn pack_dir<W: Write>(src_dir: &Path, hlae_version: &str, level: i32, out: W
         header.set_mode(0o644);
         header.set_mtime(0);
         let file = File::open(&full).ctx("open", &full)?;
-        tar.append_data(&mut header, path.as_str(), file).ctx("pack", &full)?;
+        tar.append_data(&mut header, path.as_str(), file)
+            .ctx("pack", &full)?;
         files.push(ManifestFile {
             feature: Manifest::feature_of(&path),
             path,
@@ -50,7 +60,11 @@ pub fn pack_dir<W: Write>(src_dir: &Path, hlae_version: &str, level: i32, out: W
     }
 
     let encoder = tar.into_inner().ctx("pack", src_dir)?;
-    encoder.finish().ctx("compress", src_dir)?.flush().ctx("write", src_dir)?;
+    encoder
+        .finish()
+        .ctx("compress", src_dir)?
+        .flush()
+        .ctx("write", src_dir)?;
 
     let manifest = Manifest {
         format: FORMAT,

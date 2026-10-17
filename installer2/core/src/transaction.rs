@@ -99,10 +99,10 @@ impl Transaction {
         old_files: &[FileRecord],
     ) -> Result<Applied> {
         let result = self.apply_inner(staged, managed, old_files);
-        if result.is_err() {
-            if let Err(e) = self.rollback_inner() {
-                log::error!("rollback failed: {e}");
-            }
+        if result.is_err()
+            && let Err(e) = self.rollback_inner()
+        {
+            log::error!("rollback failed: {e}");
         }
         result
     }
@@ -137,7 +137,9 @@ impl Transaction {
                         self.place(&file.staged, target)?;
                     }
                 }
-                Err(e) if e.kind() == io::ErrorKind::NotFound => self.place(&file.staged, target)?,
+                Err(e) if e.kind() == io::ErrorKind::NotFound => {
+                    self.place(&file.staged, target)?
+                }
                 Err(e) => return Err(e).ctx("stat", &target),
             }
             applied.files.push(FileRecord {
@@ -214,8 +216,12 @@ impl Transaction {
         let mut created_dirs = Vec::new();
         while let Some(undo) = self.undo.pop() {
             let result = match undo {
-                Undo::Placed { target } => fsutil::remove_file_force(&target).ctx("rollback remove", &target),
-                Undo::MovedToBackup { target, backup } => fs::rename(&backup, &target).ctx("rollback restore", &target),
+                Undo::Placed { target } => {
+                    fsutil::remove_file_force(&target).ctx("rollback remove", &target)
+                }
+                Undo::MovedToBackup { target, backup } => {
+                    fs::rename(&backup, &target).ctx("rollback restore", &target)
+                }
                 Undo::CreatedDir(dir) => {
                     created_dirs.push(dir);
                     Ok(())
@@ -226,10 +232,10 @@ impl Transaction {
                 first_error.get_or_insert(e);
             }
         }
-        if first_error.is_none() {
-            if let Err(e) = fs::remove_dir_all(&self.work_dir) {
-                log::warn!("could not remove {}: {e}", self.work_dir.display());
-            }
+        if first_error.is_none()
+            && let Err(e) = fs::remove_dir_all(&self.work_dir)
+        {
+            log::warn!("could not remove {}: {e}", self.work_dir.display());
         }
         // `created_dirs` is deepest first already (undo popped in reverse).
         for dir in created_dirs {

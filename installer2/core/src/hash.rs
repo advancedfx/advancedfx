@@ -72,7 +72,10 @@ mod tests {
         let mut writer = HashingWriter::new(Vec::new());
         writer.write_all(b"abc").unwrap();
         let (hash, len, inner) = writer.finish().unwrap();
-        assert_eq!(hash, "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+        assert_eq!(
+            hash,
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
         assert_eq!(len, 3);
         assert_eq!(inner, b"abc");
         assert!(is_sha256_hex(&hash));

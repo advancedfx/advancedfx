@@ -42,7 +42,11 @@ fn main() {
             if let Err(e) = logging::init(&log_file) {
                 eprintln!("could not create log file {}: {e}", log_file.display());
             }
-            log::info!("{} started: {:?}", cli::written_by(), std::env::args().collect::<Vec<_>>());
+            log::info!(
+                "{} started: {:?}",
+                cli::written_by(),
+                std::env::args().collect::<Vec<_>>()
+            );
             log::info!("log file: {}", log_file.display());
             let code = cli::run(args);
             log::info!("exit code {code}");

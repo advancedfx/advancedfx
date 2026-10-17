@@ -96,7 +96,12 @@ fn temp_install_dir() -> (TempDir, PathBuf) {
 #[test]
 fn pack_assigns_features_and_skips_ffmpeg() {
     let build = v1();
-    let features: Vec<_> = build.manifest.files.iter().map(|f| (f.path.as_str(), f.feature)).collect();
+    let features: Vec<_> = build
+        .manifest
+        .files
+        .iter()
+        .map(|f| (f.path.as_str(), f.feature))
+        .collect();
     assert_eq!(
         features,
         [
@@ -116,8 +121,14 @@ fn fresh_install_and_uninstall() {
     let (_tmp, dir) = temp_install_dir();
     let state = install(&dir, &v1(), ALL, None);
 
-    assert_eq!(read(&dir, "x64/AfxHookSource2.dll").as_deref(), Some("hook v1"));
-    assert_eq!(read(&dir, "locales/de/hlae/messages.mo").as_deref(), Some("de v1"));
+    assert_eq!(
+        read(&dir, "x64/AfxHookSource2.dll").as_deref(),
+        Some("hook v1")
+    );
+    assert_eq!(
+        read(&dir, "locales/de/hlae/messages.mo").as_deref(),
+        Some("de v1")
+    );
     assert!(!dir.join("ffmpeg").exists());
     assert!(!dir.join(WORK_DIR_NAME).exists());
     assert_eq!(state.history.last().unwrap().action, "install");
@@ -160,12 +171,23 @@ fn upgrade_overwrites_removes_obsolete_and_keeps_modified_obsolete() {
 
     assert_eq!(read(&dir, "HLAE.exe").as_deref(), Some("hlae v2"));
     assert_eq!(read(&dir, "new/new.txt").as_deref(), Some("new in v2"));
-    assert_eq!(read(&dir, "locales/de/hlae/messages.mo").as_deref(), Some("de v2"));
+    assert_eq!(
+        read(&dir, "locales/de/hlae/messages.mo").as_deref(),
+        Some("de v2")
+    );
     assert!(!dir.join("old.txt").exists());
-    assert_eq!(read(&dir, "oldmod.txt").as_deref(), Some("modified by user"));
+    assert_eq!(
+        read(&dir, "oldmod.txt").as_deref(),
+        Some("modified by user")
+    );
     assert_eq!(
         paths(&state),
-        ["HLAE.exe", "locales/de/hlae/messages.mo", "new/new.txt", "x64/AfxHookSource2.dll"]
+        [
+            "HLAE.exe",
+            "locales/de/hlae/messages.mo",
+            "new/new.txt",
+            "x64/AfxHookSource2.dll"
+        ]
     );
     assert_eq!(state.hlae_version, "2.192.9");
     assert_eq!(state.history.last().unwrap().detail, "2.192.8 -> 2.192.9");
@@ -200,12 +222,17 @@ fn hlae_upgrade_keeps_files_of_other_components() {
     write(&dir, "ffmpeg/bin/ffmpeg.exe", "ffmpeg");
     state.files.push(hlae_installer_core::state::FileRecord {
         path: RelPath::new("ffmpeg/bin/ffmpeg.exe").unwrap(),
-        sha256: hlae_installer_core::hash::sha256_file(&dir.join("ffmpeg/bin/ffmpeg.exe")).unwrap().0,
+        sha256: hlae_installer_core::hash::sha256_file(&dir.join("ffmpeg/bin/ffmpeg.exe"))
+            .unwrap()
+            .0,
         component: Component::Ffmpeg,
     });
 
     let state = install(&dir, &v2(), ALL, Some(&state));
-    assert_eq!(read(&dir, "ffmpeg/bin/ffmpeg.exe").as_deref(), Some("ffmpeg"));
+    assert_eq!(
+        read(&dir, "ffmpeg/bin/ffmpeg.exe").as_deref(),
+        Some("ffmpeg")
+    );
     assert!(paths(&state).contains(&"ffmpeg/bin/ffmpeg.exe"));
 }
 
@@ -236,8 +263,15 @@ fn failed_apply_rolls_back() {
 
     let result = install_hlae(&request(&dir, &v2(), ALL), Some(&old));
     assert!(result.is_err(), "{:?}", result.err());
-    assert_eq!(read(&dir, "HLAE.exe").as_deref(), Some("hlae v1"), "already replaced file restored");
-    assert_eq!(read(&dir, "locales/de/hlae/messages.mo").as_deref(), Some("de v1"));
+    assert_eq!(
+        read(&dir, "HLAE.exe").as_deref(),
+        Some("hlae v1"),
+        "already replaced file restored"
+    );
+    assert_eq!(
+        read(&dir, "locales/de/hlae/messages.mo").as_deref(),
+        Some("de v1")
+    );
     assert_eq!(read(&dir, "old.txt").as_deref(), Some("obsolete in v2"));
     assert!(!dir.join(WORK_DIR_NAME).exists());
 }
@@ -262,12 +296,18 @@ fn tampered_payload_is_rejected() {
     let (_tmp, dir) = temp_install_dir();
     let mut build = v1();
     build.manifest.files[0].sha256 = "0".repeat(64);
-    assert!(matches!(install_hlae(&request(&dir, &build, ALL), None), Err(Error::Verify { .. })));
+    assert!(matches!(
+        install_hlae(&request(&dir, &build, ALL), None),
+        Err(Error::Verify { .. })
+    ));
     assert!(!dir.exists(), "nothing left behind");
 
     let mut build = v1();
     build.manifest.files.remove(0);
-    assert!(matches!(install_hlae(&request(&dir, &build, ALL), None), Err(Error::Payload(_))));
+    assert!(matches!(
+        install_hlae(&request(&dir, &build, ALL), None),
+        Err(Error::Payload(_))
+    ));
 }
 
 fn junction(link: &Path, target: &Path) {
@@ -297,7 +337,11 @@ fn junctions_inside_install_dir_are_not_followed() {
     ));
     let report = uninstall(&state);
     assert_eq!(report.failed.len(), 1);
-    assert_eq!(read(&outside, "AfxHookSource2.dll").as_deref(), Some("hook v1"), "outside file untouched");
+    assert_eq!(
+        read(&outside, "AfxHookSource2.dll").as_deref(),
+        Some("hook v1"),
+        "outside file untouched"
+    );
 }
 
 /// Packs and installs a real HLAE build:

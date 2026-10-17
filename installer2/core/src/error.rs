@@ -38,7 +38,10 @@ pub enum Error {
     #[error("invalid install dir {}: {reason}", .dir.display())]
     InvalidInstallDir { dir: PathBuf, reason: &'static str },
     #[error("install dir {} differs from the installed location {}", .requested.display(), .installed.display())]
-    InstallDirMismatch { installed: PathBuf, requested: PathBuf },
+    InstallDirMismatch {
+        installed: PathBuf,
+        requested: PathBuf,
+    },
     #[error("JSON: {0}")]
     Json(#[from] serde_json::Error),
 }

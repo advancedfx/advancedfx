@@ -7,16 +7,21 @@ use std::path::PathBuf;
 use std::ptr::null_mut;
 
 use windows_sys::Win32::Foundation::{CloseHandle, HANDLE};
-use windows_sys::Win32::Security::{GetTokenInformation, TOKEN_ELEVATION, TOKEN_QUERY, TokenElevation};
+use windows_sys::Win32::Security::{
+    GetTokenInformation, TOKEN_ELEVATION, TOKEN_QUERY, TokenElevation,
+};
 use windows_sys::Win32::System::Com::CoTaskMemFree;
 use windows_sys::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
 use windows_sys::Win32::UI::Shell::{
-    FOLDERID_ProgramData, FOLDERID_ProgramFilesX86, FOLDERID_RoamingAppData, SHGetKnownFolderPath,
+    FOLDERID_CommonPrograms, FOLDERID_ProgramData, FOLDERID_ProgramFilesX86,
+    FOLDERID_RoamingAppData, SHGetKnownFolderPath,
 };
 use windows_sys::core::{GUID, PWSTR};
 
 #[derive(Clone, Copy, Debug)]
 pub enum KnownFolder {
+    /// `C:\ProgramData\Microsoft\Windows\Start Menu\Programs` (all users)
+    CommonPrograms,
     /// `C:\ProgramData`
     ProgramData,
     /// `C:\Program Files (x86)`
@@ -28,6 +33,7 @@ pub enum KnownFolder {
 /// Resolves a known folder via the shell API (not via environment variables, which the caller controls).
 pub fn known_folder(folder: KnownFolder) -> io::Result<PathBuf> {
     let id: &GUID = match folder {
+        KnownFolder::CommonPrograms => &FOLDERID_CommonPrograms,
         KnownFolder::ProgramData => &FOLDERID_ProgramData,
         KnownFolder::ProgramFilesX86 => &FOLDERID_ProgramFilesX86,
         KnownFolder::RoamingAppData => &FOLDERID_RoamingAppData,
@@ -82,9 +88,18 @@ mod tests {
 
     #[test]
     fn resolves_known_folders() {
-        for folder in [KnownFolder::ProgramData, KnownFolder::ProgramFilesX86, KnownFolder::RoamingAppData] {
+        for folder in [
+            KnownFolder::CommonPrograms,
+            KnownFolder::ProgramData,
+            KnownFolder::ProgramFilesX86,
+            KnownFolder::RoamingAppData,
+        ] {
             let path = known_folder(folder).unwrap();
-            assert!(path.is_absolute() && path.is_dir(), "{folder:?}: {}", path.display());
+            assert!(
+                path.is_absolute() && path.is_dir(),
+                "{folder:?}: {}",
+                path.display()
+            );
         }
     }
 

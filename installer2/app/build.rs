@@ -40,8 +40,9 @@ fn pack_payload() {
     };
     let payload_path = out_dir.join("payload.tar.zst");
     let file = File::create(&payload_path).expect("create payload");
-    let manifest = hlae_installer_core::pack::pack_dir(&src_dir, &version, level, BufWriter::new(file))
-        .unwrap_or_else(|e| panic!("packing {}: {e}", src_dir.display()));
+    let manifest =
+        hlae_installer_core::pack::pack_dir(&src_dir, &version, level, BufWriter::new(file))
+            .unwrap_or_else(|e| panic!("packing {}: {e}", src_dir.display()));
     let json = manifest.to_json().expect("serialize manifest");
     fs::write(out_dir.join("manifest.json"), json).expect("write manifest");
 }

@@ -6,7 +6,10 @@ use crate::error::{Error, Result};
 pub fn parse(version: &str) -> Result<Vec<u64>> {
     version
         .split('.')
-        .map(|part| part.parse::<u64>().map_err(|_| Error::InvalidVersion(version.to_owned())))
+        .map(|part| {
+            part.parse::<u64>()
+                .map_err(|_| Error::InvalidVersion(version.to_owned()))
+        })
         .collect()
 }
 
@@ -14,7 +17,10 @@ pub fn parse(version: &str) -> Result<Vec<u64>> {
 pub fn compare(a: &str, b: &str) -> Result<Ordering> {
     let (a, b) = (parse(a)?, parse(b)?);
     for i in 0..a.len().max(b.len()) {
-        let (x, y) = (a.get(i).copied().unwrap_or(0), b.get(i).copied().unwrap_or(0));
+        let (x, y) = (
+            a.get(i).copied().unwrap_or(0),
+            b.get(i).copied().unwrap_or(0),
+        );
         if x != y {
             return Ok(x.cmp(&y));
         }

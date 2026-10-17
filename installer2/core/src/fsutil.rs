@@ -62,7 +62,9 @@ pub fn remove_empty_dirs<'a>(root: &Path, removed: impl IntoIterator<Item = &'a 
         }
     }
     for (_, dir) in dirs.into_iter().rev() {
-        let Ok(rel) = RelPath::new(&dir) else { continue };
+        let Ok(rel) = RelPath::new(&dir) else {
+            continue;
+        };
         if check_no_reparse(root, &rel).is_ok() {
             // Fails if not empty, which is fine.
             let _ = fs::remove_dir(rel.to_path(root));

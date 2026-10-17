@@ -75,8 +75,14 @@ impl Manifest {
             if path.is_below(FFMPEG_DIR) || path.key() == FFMPEG_DIR {
                 return invalid(format!("{path}: '{FFMPEG_DIR}/' is reserved for FFMPEG"));
             }
-            if path.components().next().is_some_and(|c| c.eq_ignore_ascii_case(WORK_DIR_NAME)) {
-                return invalid(format!("{path}: '{WORK_DIR_NAME}' is reserved for the installer"));
+            if path
+                .components()
+                .next()
+                .is_some_and(|c| c.eq_ignore_ascii_case(WORK_DIR_NAME))
+            {
+                return invalid(format!(
+                    "{path}: '{WORK_DIR_NAME}' is reserved for the installer"
+                ));
             }
             if file.feature != Self::feature_of(path) {
                 return invalid(format!("{path}: wrong feature {:?}", file.feature));
@@ -115,7 +121,10 @@ mod tests {
 
     #[test]
     fn json_roundtrip() {
-        let m = manifest(vec![file("HLAE.exe", Component::Core), file("locales/de/x.mo", Component::Locales)]);
+        let m = manifest(vec![
+            file("HLAE.exe", Component::Core),
+            file("locales/de/x.mo", Component::Locales),
+        ]);
         assert_eq!(Manifest::from_json(&m.to_json().unwrap()).unwrap(), m);
     }
 
@@ -126,7 +135,10 @@ mod tests {
             vec![file(".hlae-setup-tmp/x", Component::Core)],
             vec![file("locales/de/x.mo", Component::Core)],
             vec![file("HLAE.exe", Component::Locales)],
-            vec![file("a.dll", Component::Core), file("A.DLL", Component::Core)],
+            vec![
+                file("a.dll", Component::Core),
+                file("A.DLL", Component::Core),
+            ],
         ] {
             assert!(manifest(files).validate().is_err());
         }

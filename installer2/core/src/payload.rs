@@ -37,7 +37,9 @@ pub fn stage(
         manifest.files.iter().map(|f| (f.path.key(), f)).collect();
 
     let mut decoder = zstd::Decoder::with_buffer(payload).ctx("decompress", staging_dir)?;
-    decoder.window_log_max(ZSTD_WINDOW_LOG).ctx("decompress", staging_dir)?;
+    decoder
+        .window_log_max(ZSTD_WINDOW_LOG)
+        .ctx("decompress", staging_dir)?;
     let mut archive = tar::Archive::new(decoder);
 
     let mut seen = HashSet::new();

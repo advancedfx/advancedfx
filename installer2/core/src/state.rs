@@ -50,6 +50,8 @@ pub struct Integration {
     pub arp_key: Option<String>,
     pub shortcut: Option<PathBuf>,
     pub app_folder_reg: bool,
+    /// Cached copy of the installer, used as uninstaller (NOTES.md 6.5).
+    pub setup_cache: Option<PathBuf>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -73,7 +75,12 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(written_by: &str, install_dir: &Path, hlae_version: &str, features: Features) -> Self {
+    pub fn new(
+        written_by: &str,
+        install_dir: &Path,
+        hlae_version: &str,
+        features: Features,
+    ) -> Self {
         Self {
             format: FORMAT,
             written_by: written_by.to_owned(),
@@ -149,7 +156,8 @@ impl State {
     pub fn replace_files(&mut self, components: &[Component], files: Vec<FileRecord>) {
         self.files.retain(|f| !components.contains(&f.component));
         self.files.extend(files);
-        self.files.sort_by(|a, b| a.path.as_str().cmp(b.path.as_str()));
+        self.files
+            .sort_by(|a, b| a.path.as_str().cmp(b.path.as_str()));
     }
 }
 
@@ -158,7 +166,12 @@ mod tests {
     use super::*;
 
     fn state() -> State {
-        let mut state = State::new("test", Path::new("C:\\HLAE"), "2.192.8", Features { locales: true });
+        let mut state = State::new(
+            "test",
+            Path::new("C:\\HLAE"),
+            "2.192.8",
+            Features { locales: true },
+        );
         state.files.push(FileRecord {
             path: RelPath::new("HLAE.exe").unwrap(),
             sha256: "0".repeat(64),
@@ -181,8 +194,14 @@ mod tests {
 
     #[test]
     fn refuses_newer_format() {
-        let json = state().to_json().unwrap().replace("\"format\": 1", "\"format\": 2");
-        assert!(matches!(State::from_json(&json), Err(Error::UnsupportedFormat { found: 2, .. })));
+        let json = state()
+            .to_json()
+            .unwrap()
+            .replace("\"format\": 1", "\"format\": 2");
+        assert!(matches!(
+            State::from_json(&json),
+            Err(Error::UnsupportedFormat { found: 2, .. })
+        ));
     }
 
     #[test]

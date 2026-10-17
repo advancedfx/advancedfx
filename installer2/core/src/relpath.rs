@@ -105,7 +105,12 @@ mod tests {
 
     #[test]
     fn accepts_normal_paths() {
-        for path in ["HLAE.exe", "x64/AfxHookSource2.dll", "locales/pt-BR/hlae/messages.mo", "a b/c.d.e"] {
+        for path in [
+            "HLAE.exe",
+            "x64/AfxHookSource2.dll",
+            "locales/pt-BR/hlae/messages.mo",
+            "a b/c.d.e",
+        ] {
             assert!(RelPath::new(path).is_ok(), "{path}");
         }
     }
@@ -113,8 +118,26 @@ mod tests {
     #[test]
     fn rejects_dangerous_paths() {
         for path in [
-            "", "/abs", "C:/x", "C:", "a//b", "a/", "../x", "a/../b", "./a", "a\\b", "\\\\server\\share",
-            "file.txt:stream", "a.", "a ", "CON", "nul.txt", "x/COM1.dll", "lpt9", "a\u{1}b", "a*b",
+            "",
+            "/abs",
+            "C:/x",
+            "C:",
+            "a//b",
+            "a/",
+            "../x",
+            "a/../b",
+            "./a",
+            "a\\b",
+            "\\\\server\\share",
+            "file.txt:stream",
+            "a.",
+            "a ",
+            "CON",
+            "nul.txt",
+            "x/COM1.dll",
+            "lpt9",
+            "a\u{1}b",
+            "a*b",
         ] {
             assert!(RelPath::new(path).is_err(), "{path:?}");
         }
@@ -131,6 +154,9 @@ mod tests {
     #[test]
     fn to_path_uses_native_separators() {
         let path = RelPath::new("x64/a.dll").unwrap();
-        assert_eq!(path.to_path(Path::new("C:\\HLAE")), PathBuf::from("C:\\HLAE\\x64\\a.dll"));
+        assert_eq!(
+            path.to_path(Path::new("C:\\HLAE")),
+            PathBuf::from("C:\\HLAE\\x64\\a.dll")
+        );
     }
 }

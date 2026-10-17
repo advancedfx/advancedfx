@@ -3,15 +3,20 @@
 #[cfg(not(windows))]
 compile_error!("hlae-installer-core only supports Windows.");
 
+pub mod acl;
+pub mod dotnet;
 pub mod error;
 pub mod fsutil;
 pub mod hash;
 pub mod install;
+pub mod integration;
 pub mod manifest;
 pub mod pack;
 pub mod payload;
+pub mod registry;
 pub mod relpath;
 pub mod session;
+pub mod shortcut;
 pub mod state;
 pub mod time;
 pub mod transaction;

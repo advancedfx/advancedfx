@@ -75,10 +75,17 @@ pub fn install_hlae(req: &InstallRequest, old: Option<&State>) -> Result<Outcome
 
     let mut state = match old {
         Some(old) => old.clone(),
-        None => State::new(req.written_by, req.install_dir, &req.manifest.hlae_version, req.features),
+        None => State::new(
+            req.written_by,
+            req.install_dir,
+            &req.manifest.hlae_version,
+            req.features,
+        ),
     };
     let detail = match old {
-        Some(old) if action == "upgrade" => format!("{} -> {}", old.hlae_version, req.manifest.hlae_version),
+        Some(old) if action == "upgrade" => {
+            format!("{} -> {}", old.hlae_version, req.manifest.hlae_version)
+        }
         _ => req.manifest.hlae_version.clone(),
     };
     state.written_by = req.written_by.to_owned();
@@ -157,6 +164,10 @@ fn remove_tracked(install_dir: &Path, file: &FileRecord) -> Result<Removal> {
 }
 
 fn same_dir(a: &Path, b: &Path) -> bool {
-    let normalize = |p: &Path| p.to_string_lossy().trim_end_matches(['\\', '/']).to_lowercase();
+    let normalize = |p: &Path| {
+        p.to_string_lossy()
+            .trim_end_matches(['\\', '/'])
+            .to_lowercase()
+    };
     normalize(a) == normalize(b)
 }

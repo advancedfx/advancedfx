@@ -22,18 +22,18 @@ impl log::Log for Logger {
         }
         let line = format!("{} {:5} {}", time::utc_now(), record.level(), record.args());
         eprintln!("{line}");
-        if let Ok(mut file) = self.file.lock() {
-            if let Some(file) = file.as_mut() {
-                let _ = writeln!(file, "{line}");
-            }
+        if let Ok(mut file) = self.file.lock()
+            && let Some(file) = file.as_mut()
+        {
+            let _ = writeln!(file, "{line}");
         }
     }
 
     fn flush(&self) {
-        if let Ok(mut file) = self.file.lock() {
-            if let Some(file) = file.as_mut() {
-                let _ = file.flush();
-            }
+        if let Ok(mut file) = self.file.lock()
+            && let Some(file) = file.as_mut()
+        {
+            let _ = file.flush();
         }
     }
 }
@@ -47,7 +47,10 @@ pub fn default_log_file() -> PathBuf {
 /// Installs the logger; returns an error if the log file can't be created (logging to the console then).
 pub fn init(path: &Path) -> io::Result<()> {
     let file = File::create(path);
-    let opened = file.as_ref().map(|_| ()).map_err(|e| io::Error::new(e.kind(), e.to_string()));
+    let opened = file
+        .as_ref()
+        .map(|_| ())
+        .map_err(|e| io::Error::new(e.kind(), e.to_string()));
     let logger = Box::leak(Box::new(Logger {
         file: Mutex::new(file.ok()),
     }));

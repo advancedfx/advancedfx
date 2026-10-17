@@ -264,8 +264,13 @@ See also [`resources/ffmpeg/readme.advancedfx.txt`](../resources/ffmpeg/readme.a
 ### 6.5 Uninstaller / cache
 - Copy full `HLAE_Setup.exe` to `%ProgramData%\advancedfx\HLAE\setup\HLAE_Setup.exe` (like Burn's Package Cache)
   → offline repair / modify; ARP `UninstallString` / `ModifyPath` point there (`--uninstall`, `--modify`).
-- Self-delete on uninstall: copy self to `%TEMP%`, relaunch from there, delete cached copy,
-  `MoveFileEx(..., MOVEFILE_DELAY_UNTIL_REBOOT)` for the temp copy.
+- Self-delete on uninstall (implemented in M3, [`core/src/integration.rs`](core/src/integration.rs)): if the running exe *is*
+  the cached copy (uninstall from Apps & features), rename it to a unique `HLAE_Setup.<pid>.<time>.delete` (renaming a
+  running exe is allowed) and schedule it plus the then empty `setup`, `HLAE`, `advancedfx` dirs for deletion at the next
+  reboot (`MoveFileExW` + `MOVEFILE_DELAY_UNTIL_REBOOT`; dirs are only deleted if empty, files always → unique name, so a
+  reinstall before the reboot isn't affected). Otherwise the cache is deleted directly.
+  Rejected: "copy self to `%TEMP%` and relaunch" – an elevated process starting an exe from a user-writable dir is a
+  privilege escalation hole (the user can swap the exe in between).
 
 ### 6.6 Code layout
 ```
@@ -513,7 +518,24 @@ All questions so far are decided; details live in 4–6.
     old `HLAE_Setup.exe` 8.2 MB), release-installer rebuild after code change ~3.5 min.
   - Not yet: start menu, ARP, `APPLICATIONFOLDER`, state dir ACL (M3), self-elevation (M4),
     **detection of the old WiX installer** (M7) – until then never install into the old `Program Files (x86)\HLAE`.
-- [ ] **M3 – Windows integration**: ARP entry, `APPLICATIONFOLDER`, shortcut, setup cache, self-delete, .NET check.
+- [x] **M3 – Windows integration**: ARP entry, `APPLICATIONFOLDER`, shortcut, setup cache, self-delete, .NET check.
+  - State dir: `advancedfx` + `advancedfx\HLAE` get owner Administrators + protected DACL
+    `SYSTEM:F, Administrators:F, Users:RX` ([`core/src/acl.rs`](core/src/acl.rs)); a pre-existing `advancedfx` not owned by
+    SYSTEM / Administrators → refuse. Checked before the state is loaded on every run.
+  - ARP: `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\HLAE` (64-bit view), `UninstallString` /
+    `QuietUninstallString` / `ModifyPath` (`--uninstall`, `--quiet --uninstall`, `--modify`) → cached setup,
+    `EstimatedSize` from the installed files, `NoRepair=1` (repair is part of Modify) ([`core/src/registry.rs`](core/src/registry.rs)).
+  - `APPLICATIONFOLDER` with trailing `\` like the old MSI; on uninstall the value and then empty keys are removed.
+  - Shortcut via `IShellLinkW` ([`core/src/shortcut.rs`](core/src/shortcut.rs)), `windows` crate 0.62 (same as Tauri).
+  - .NET check ([`core/src/dotnet.rs`](core/src/dotnet.rs)): `Release >= 394802` (4.6.2), CLI only warns.
+  - Order: install: files → state → commit → integration → state again (records what was done, also on error).
+    Uninstall: files first; if some can't be removed, integration + state stay so the uninstall can be retried.
+  - `Session` ([`core/src/session.rs`](core/src/session.rs)) bundles state file + integration on/off
+    (debug override `HLAE_SETUP_STATE_FILE` = no integration, no admin needed).
+  - `cargo clippy` clean, `cargo fmt` (default style, no `rustfmt.toml` in the repo).
+  - Tested as admin (2026-10-17, script installs into `C:\HLAE-test`, uninstalls via `QuietUninstallString`, backs up and
+    restores the old WiX `APPLICATIONFOLDER`): all as expected. **Still to confirm after a reboot:** `C:\ProgramData\advancedfx` gone.
+  - Note: ARP `--uninstall` / `--modify` without `--quiet` still end with 1639 and need admin (wizard M6, elevation M4).
 - [ ] **M4 – Elevated worker** + named pipe (incl. security measures, 6.4).
   - [ ] DLL planting: `SetDefaultDllDirectories` in `main()` is too late for the exe's *static* imports (resolved by the
         loader before `main`) → also link with `/DEPENDENTLOADFLAG:0x800` (`LOAD_LIBRARY_SEARCH_SYSTEM32`) and check

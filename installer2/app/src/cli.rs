@@ -3,7 +3,8 @@
 use std::ffi::OsString;
 use std::path::PathBuf;
 
-use hlae_installer_core::session::{self, InstallOptions};
+use hlae_installer_core::dotnet;
+use hlae_installer_core::session::{self, InstallOptions, Session};
 use hlae_installer_core::win;
 
 use crate::payload;
@@ -29,6 +30,7 @@ Without options the setup wizard is shown.
 
   --quiet                 Unattended, no user interface.
   --install               Install, upgrade or repair HLAE (default action).
+  --modify                Change the installed features (with --quiet: like --install).
   --uninstall             Uninstall HLAE.
   --install-dir <dir>     Install location (default: installed location, else
                           \"C:\\Program Files (x86)\\HLAE\"). Basic latin (ASCII) only.
@@ -44,6 +46,7 @@ Options may also be written as /option. Exit codes: 0 ok, 1603 error,
 #[derive(Debug, PartialEq, Eq)]
 pub enum Action {
     Install,
+    Modify,
     Uninstall,
 }
 
@@ -69,7 +72,10 @@ pub fn parse(args: impl IntoIterator<Item = OsString>) -> Result<Args, String> {
     let mut parsed = Args::default();
     let mut args = args.into_iter();
     while let Some(arg) = args.next() {
-        let arg = arg.to_str().ok_or("invalid characters in command line")?.to_owned();
+        let arg = arg
+            .to_str()
+            .ok_or("invalid characters in command line")?
+            .to_owned();
         let Some(option) = arg.strip_prefix("--").or_else(|| arg.strip_prefix('/')) else {
             return Err(format!("unexpected argument {arg:?}"));
         };
@@ -87,7 +93,9 @@ pub fn parse(args: impl IntoIterator<Item = OsString>) -> Result<Args, String> {
             }
         };
         let set_action = |parsed: &mut Args, action| match &parsed.action {
-            Some(previous) if *previous != action => Err("--install and --uninstall exclude each other".to_owned()),
+            Some(previous) if *previous != action => {
+                Err("--install, --modify and --uninstall exclude each other".to_owned())
+            }
             _ => {
                 parsed.action = Some(action);
                 Ok(())
@@ -97,6 +105,7 @@ pub fn parse(args: impl IntoIterator<Item = OsString>) -> Result<Args, String> {
             "quiet" => parsed.quiet = true,
             "help" | "?" => parsed.help = true,
             "install" => set_action(&mut parsed, Action::Install)?,
+            "modify" => set_action(&mut parsed, Action::Modify)?,
             "uninstall" => set_action(&mut parsed, Action::Uninstall)?,
             "install-dir" => parsed.install_dir = Some(PathBuf::from(value()?)),
             "locales" => parsed.locales = Some(true),
@@ -134,27 +143,44 @@ pub fn run(args: Args) -> i32 {
 }
 
 fn run_quiet(args: &Args) -> hlae_installer_core::Result<i32> {
-    let state_file = state_file()?;
-    if !state_file.1 && !win::is_elevated().unwrap_or(false) {
+    let session = session()?;
+    if session.integrate && !win::is_elevated().unwrap_or(false) {
         // TODO(M4): self-elevate via the worker process.
         log::error!("HLAE Setup must be run as administrator");
         return Ok(exit_code::FATAL);
     }
-    let state_file = state_file.0;
-    log::info!("state file: {}", state_file.display());
+    log::info!(
+        "state file: {}{}",
+        session.state_file.display(),
+        if session.integrate {
+            ""
+        } else {
+            " (test mode: no Windows integration)"
+        }
+    );
 
     match args.action.as_ref().unwrap_or(&Action::Install) {
-        Action::Install => {
+        Action::Install | Action::Modify => {
+            if !dotnet::framework_ok() {
+                log::warn!(
+                    "HLAE needs .NET Framework {} or newer, please install it (found release {:?})",
+                    dotnet::MIN_VERSION,
+                    dotnet::framework_release()
+                );
+            }
             let manifest = payload::manifest()?;
             if manifest.files.is_empty() {
-                log::error!("this build of HLAE Setup contains no HLAE files (built without HLAE_PAYLOAD_DIR)");
+                log::error!(
+                    "this build of HLAE Setup contains no HLAE files (built without HLAE_PAYLOAD_DIR)"
+                );
                 return Ok(exit_code::FATAL);
             }
             let options = InstallOptions {
                 install_dir: args.install_dir.clone(),
                 locales: args.locales,
             };
-            let summary = session::install(&state_file, &manifest, payload::payload(), &options, &written_by())?;
+            let summary =
+                session.install(&manifest, payload::payload(), &options, &written_by())?;
             match &summary.previous_version {
                 Some(previous) if summary.action == "upgrade" => {
                     log::info!("upgrade: HLAE {previous} -> {}", summary.version)
@@ -168,10 +194,11 @@ fn run_quiet(args: &Args) -> hlae_installer_core::Result<i32> {
             Ok(exit_code::SUCCESS)
         }
         Action::Uninstall => {
-            let Some(report) = session::uninstall(&state_file)? else {
+            let Some(summary) = session.uninstall()? else {
                 log::warn!("HLAE is not installed");
                 return Ok(exit_code::NOT_INSTALLED);
             };
+            let report = &summary.files;
             for path in &report.kept {
                 log::warn!("kept modified file: {path}");
             }
@@ -186,6 +213,12 @@ fn run_quiet(args: &Args) -> hlae_installer_core::Result<i32> {
                 for (path, error) in &report.failed {
                     log::error!("could not remove {path}: {error}");
                 }
+                log::error!(
+                    "uninstall incomplete, close HLAE / games using it and run the uninstall again"
+                );
+                return Ok(exit_code::FATAL);
+            }
+            if !summary.integration_errors.is_empty() {
                 return Ok(exit_code::FATAL);
             }
             log::info!("done: removed {} files", report.removed.len());
@@ -194,14 +227,18 @@ fn run_quiet(args: &Args) -> hlae_installer_core::Result<i32> {
     }
 }
 
-/// State file, and whether it was overridden for testing (debug builds only: `HLAE_SETUP_STATE_FILE`,
-/// which also skips the administrator check, so the CLI can be tested without admin rights).
-fn state_file() -> hlae_installer_core::Result<(PathBuf, bool)> {
+/// The system session; debug builds only: `HLAE_SETUP_STATE_FILE` overrides the state file and turns
+/// off the Windows integration (and with it the administrator check), so the CLI can be tested without
+/// admin rights.
+fn session() -> hlae_installer_core::Result<Session> {
     #[cfg(debug_assertions)]
     if let Some(path) = std::env::var_os("HLAE_SETUP_STATE_FILE") {
-        return Ok((PathBuf::from(path), true));
+        return Ok(Session {
+            state_file: PathBuf::from(path),
+            integrate: false,
+        });
     }
-    Ok((session::default_state_file()?, false))
+    Session::system()
 }
 
 pub fn written_by() -> String {
@@ -224,7 +261,14 @@ mod tests {
 
     #[test]
     fn parses_options() {
-        let args = parse_str(&["/quiet", "--install-dir", "D:\\HLAE", "--NO-LOCALES", "--log=C:\\x.log"]).unwrap();
+        let args = parse_str(&[
+            "/quiet",
+            "--install-dir",
+            "D:\\HLAE",
+            "--NO-LOCALES",
+            "--log=C:\\x.log",
+        ])
+        .unwrap();
         assert!(args.quiet);
         assert_eq!(args.install_dir, Some(PathBuf::from("D:\\HLAE")));
         assert_eq!(args.locales, Some(false));
