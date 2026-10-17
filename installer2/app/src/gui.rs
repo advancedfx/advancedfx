@@ -336,6 +336,18 @@ fn open_log(gui: State<'_, Gui>) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
+/// Writes the license notices to `%TEMP%` and opens them in Notepad (like the log).
+#[tauri::command]
+fn open_licenses() -> Result<(), String> {
+    let file = std::env::temp_dir().join("HLAE_Setup_licenses.txt");
+    std::fs::write(&file, payload::licenses()).map_err(|e| e.to_string())?;
+    std::process::Command::new("notepad.exe")
+        .arg(&file)
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 fn quit(app: AppHandle, gui: State<'_, Gui>) {
     if !gui.busy.load(Ordering::SeqCst) {
@@ -386,6 +398,7 @@ pub fn run(mode: GuiMode) -> i32 {
             cancel,
             launch_hlae,
             open_log,
+            open_licenses,
             quit,
         ])
         .setup(move |app| {

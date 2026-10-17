@@ -14,6 +14,9 @@ How to use this file:
 
 ## 1. Old installer – architecture overview
 
+`installer/` (the WiX sources) was removed in M8 (2026-10-17); the links in 1–3 point to files that are only in
+the git history now, last in commit `277889a1`.
+
 `HLAE_Setup.exe` is a WiX v5 **Burn bundle** (x86) that chains several packages. Built by
 [`build_installer.bat`](../installer/build_installer.bat), invoked from
 [`cmake/MultiBuild.cmake`](../cmake/MultiBuild.cmake) (`AFX_MULTIBUILD_INSTALLER`, default ON).
@@ -366,9 +369,9 @@ Keep all install logic in `core` (testable without GUI, usable by silent mode an
 - New `installer2` project in the l10n repo ([`deps/release/l10n`](../deps/release/l10n), github.com/advancedfx/l10n, translated via Pontoon).
 - Source of truth: hand-maintained `locales/en-US/installer2/messages.pot`;
   translations `locales/<lang>/installer2/messages.po` via the usual `update_from_en-US.py` + Pontoon workflow.
-  **For now** (while the GUI texts still change a lot) the `.pot` lives in `installer2/l10n/messages.pot` and moves
-  to the l10n repo once the GUI is stable (decided 2026-10-17); `build.rs` already reads translations from
-  `deps/release/l10n/locales/<lang>/installer2/messages.po` if present.
+  Moved there in M8 (2026-10-17, was `installer2/l10n/messages.pot`); `build.rs` reads the `.pot` and the
+  `.po` files from the submodule. New / changed texts: edit the `.pot` in the l10n repo (not generated from code,
+  unlike `hlae`'s), then bump the submodule here.
 - Testing a translation without touching the l10n repo: `HLAE_SETUP_L10N_DIR=<dir>` at build time (same layout
   `<dir>/<lang>/installer2/messages.po`), `HLAE_SETUP_LANG=<lang>` at runtime.
 - Parsing: `polib` 0.3 (pure Rust, MIT, deps `linereader` + `concat-string`) in `build-support` (build time only).
@@ -690,8 +693,8 @@ All questions so far are decided; details live in 4–6.
     [`actions.rs`](app/src/actions.rs) (shared with the CLI), [`events.rs`](app/src/events.rs) (log / phase / download →
     UI), [`dialog.rs`](app/src/dialog.rs) (`IFileOpenDialog`), [`l10n.rs`](app/src/l10n.rs) (catalogs, UI language via
     `GetUserPreferredUILanguages`, override `HLAE_SETUP_LANG`).
-  - Translations: [`l10n/messages.pot`](l10n/messages.pot) (all GUI texts), catalogs built by `build.rs` with
-    `build-support` (6.9); only English so far.
+  - Translations: `messages.pot` (all GUI texts; since M8 in the l10n repo, 6.9), catalogs built by `build.rs`
+    with `build-support` (6.9); only English so far.
   - Debug only: `HLAE_SETUP_THEME=light|dark` to check both color schemes.
   - Tested 2026-10-17 (debug, test worker): install / maintenance / uninstall pages in dark + light, repair through the
     GUI (keyboard) → done page, WebView2 data dir cleanup.
@@ -799,9 +802,35 @@ Things that exist but haven't been tested yet, or small TODOs outside the milest
       release notes: "to install an older HLAE, uninstall HLAE first".
 
 - [ ] **M8 – Build integration** in `cmake/MultiBuild.cmake`, retire `installer/`.
-  - [ ] Third-party licenses: the installer's Rust deps (Tauri etc.) are now in the root `Cargo.lock` →
-        `misc/THIRDPARTY.yml` / `cargo bundle-licenses` check from [`BUILDING.md`](../BUILDING.md) must cover them.
-  - [ ] Update the release steps in `BUILDING.md` (no more 3 WiX versions to bump).
+  - [x] [`cmake/MultiBuild.cmake`](../cmake/MultiBuild.cmake): after staging + ZIPs, `cargo build [--locked]
+        --profile release-installer -p hlae-installer --target-dir build/cargo-installer` with `HLAE_PAYLOAD_DIR` =
+        `<package>/bin` (the packer skips `ffmpeg/`, no staging copy needed any more) and `HLAE_VERSION` =
+        `MAJOR.MINOR.PATCH[.REVISON]` read from `hlae/CMakeLists.txt` → `<package>/HLAE_Setup.exe`.
+        Decided 2026-10-17: cargo directly, not Corrosion – the payload only exists after both architectures
+        are staged (Corrosion builds inside the x64 CMake project); nothing to share anyway (cargo's download
+        cache is global, build artifacts are per profile). Always the release profile (debug builds have the
+        test switches). `AFX_MULTIBUILD_INSTALLER=OFF` skips it as before.
+  - [x] Third-party licenses (decided 2026-10-17: one file, also in the setup): `misc/THIRDPARTY.yml` regenerated
+        for the whole workspace (500 crates instead of 215; 43 `text: NOT FOUND`, left as is – 39 of them aren't
+        built on Windows, the others: `webview2-com`, `webview2-com-sys`, `brotli`'s BSD part, `alloc-stdlib`).
+        Embedded in `HLAE_Setup.exe` together with `LICENSE` (zstd, 29 KB): `--licenses <file>` and a "Licenses"
+        link in the wizard's header (opens it in Notepad via `%TEMP%`). Still shipped with HLAE in
+        `LICENSES\advancedfx\` as before.
+  - [x] `installer/` removed (git history keeps it, see 1), WiX parts of `l10n_update_from_source.bat` /
+        `l10n_update_to_source.bat` removed (incl. the Python `polib` install they needed).
+  - [x] Release steps in `BUILDING.md`: no more 3 WiX versions to bump, the installer's version comes from
+        `hlae/CMakeLists.txt`; `ffmpeg.json` / `THIRDPARTY.yml` notes.
+  - [x] Full `cmake -P cmake/MultiBuild.cmake` run (2026-10-17, existing win32 / x64 build dirs): exit 0 after
+        14 min, of which 9 min the first installer build into the new `build/cargo-installer`; "installer version:
+        2.192.8" from `hlae/CMakeLists.txt`, `--locked`, payload 208 files, `build/package-release/HLAE_Setup.exe`
+        9.6 MB; `--licenses` writes the 843 KB notices. (`HLAE_Setup.wixpdb` in that dir is a leftover of the last
+        WiX build, not produced any more.)
+  - [x] `deps/dev/wxl-po-tools` submodule removed (only used by the WiX l10n steps), also its credits entry in
+        `misc/readme_head.txt`. The old `installer/` translations stay in the l10n repo (decided 2026-10-17), the
+        scripts here just don't use them any more.
+  - [x] `messages.pot` moved to the l10n repo: `locales/en-US/installer2/messages.pot` (local branch
+        `installer2` in the submodule, needs a commit + PR there, then the submodule bump here). The `.po` files
+        for the languages come from the l10n repo's usual `update_from_en-US.py` / Pontoon workflow.
 
 ## 9. Reference data
 | What | Value |

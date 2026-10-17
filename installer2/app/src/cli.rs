@@ -46,6 +46,7 @@ Without options the setup wizard is shown.
                           this setup's archives, it's checked) instead of downloading.
   --remove-app-data       With --uninstall: also delete %APPDATA%\\HLAE (settings).
   --log <file>            Log file (default: %TEMP%\\HLAE_Setup_<time>.log).
+  --licenses <file>       Write the license notices (HLAE and third-party) to <file>.
   --help                  Show this help.
 
 Without administrator rights a UAC prompt asks for them.
@@ -72,6 +73,8 @@ pub struct Args {
     pub ffmpeg: Option<String>,
     pub ffmpeg_custom: Option<PathBuf>,
     pub ffmpeg_archive: Option<PathBuf>,
+    /// `--licenses <file>`: write the license notices there, nothing else.
+    pub licenses: Option<PathBuf>,
 }
 
 /// Start page of the wizard.
@@ -150,6 +153,7 @@ pub fn parse(args: impl IntoIterator<Item = OsString>) -> Result<Args, String> {
             "ffmpeg" => parsed.ffmpeg = Some(value()?.to_ascii_lowercase()),
             "ffmpeg-custom" => parsed.ffmpeg_custom = Some(PathBuf::from(value()?)),
             "ffmpeg-archive" => parsed.ffmpeg_archive = Some(PathBuf::from(value()?)),
+            "licenses" => parsed.licenses = Some(PathBuf::from(value()?)),
             _ => return Err(format!("unknown option {arg:?}")),
         }
     }
@@ -180,6 +184,18 @@ pub fn run(args: Args) -> i32 {
     if args.help {
         println!("{USAGE}");
         return exit_code::SUCCESS;
+    }
+    if let Some(file) = &args.licenses {
+        return match std::fs::write(file, payload::licenses()) {
+            Ok(()) => {
+                log::info!("license notices written to {}", file.display());
+                exit_code::SUCCESS
+            }
+            Err(e) => {
+                log::error!("writing {}: {e}", file.display());
+                exit_code::FATAL
+            }
+        };
     }
     if !args.quiet {
         eprintln!("Options other than --install / --modify / --uninstall need --quiet.\n\n{USAGE}");
@@ -257,6 +273,16 @@ mod tests {
         );
         assert_eq!(parse_str(&["--no-locales"]).unwrap().gui_mode(), None);
         assert_eq!(parse_str(&["--help"]).unwrap().gui_mode(), None);
+        let args = parse_str(&["--licenses", "C:\\l.txt"]).unwrap();
+        assert_eq!(args.licenses, Some(PathBuf::from("C:\\l.txt")));
+        assert_eq!(args.gui_mode(), None);
+    }
+
+    #[test]
+    fn embedded_licenses() {
+        let text = payload::licenses();
+        assert!(text.contains("MIT License") && text.contains("advancedfx.org"));
+        assert!(text.contains("package_name: tauri"), "third-party part");
     }
 
     #[test]

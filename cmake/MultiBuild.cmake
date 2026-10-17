@@ -84,24 +84,34 @@ if(NOT AFX_MULTIBUILD_STAGING)
     afx_script_run_in("${AFX_MULTIBUILD_PREFIX}/pdb" "${CMAKE_COMMAND}" -E tar cfv "${AFX_MULTIBUILD_PREFIX}/hlae_pdb.zip" --format=zip -- .)
 
     if(AFX_MULTIBUILD_INSTALLER)
-        execute_process(
-            COMMAND "$ENV{ProgramFiles\(x86\)}\\Microsoft Visual Studio\\Installer\\vswhere.exe" "-latest" "-version" "[17.0,18.0)" "-requires" "Microsoft.Component.MSBuild" "-find" "MSBuild\\**\\**\\Bin\\MSBuild.exe"
-            OUTPUT_VARIABLE AFX_MULTIBUILD_VS_MSBUILD
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
-        string(REPLACE "\\" "/" AFX_MULTIBUILD_VS_MSBUILD "${AFX_MULTIBUILD_VS_MSBUILD}")
+        # HLAE_Setup.exe (installer2, see installer2/NOTES.md 6.1): embeds bin/ as its payload (the
+        # packer skips ffmpeg/), version from hlae/CMakeLists.txt. Built with cargo directly, not via
+        # Corrosion: the payload only exists now, after both architectures are staged.
+        file(STRINGS "${AFX_SCRIPT_SOURCE_DIR}/hlae/CMakeLists.txt" AFX_MULTIBUILD_HLAE_VERSION_LINES REGEX "^set\\(hlae_VERSION_")
+        foreach(AFX_MULTIBUILD_PART MAJOR MINOR PATCH REVISON)
+            if(NOT AFX_MULTIBUILD_HLAE_VERSION_LINES MATCHES "set\\(hlae_VERSION_${AFX_MULTIBUILD_PART} ([0-9]+)\\)")
+                message(FATAL_ERROR "hlae_VERSION_${AFX_MULTIBUILD_PART} not found in hlae/CMakeLists.txt")
+            endif()
+            set(AFX_MULTIBUILD_HLAE_VERSION_${AFX_MULTIBUILD_PART} "${CMAKE_MATCH_1}")
+        endforeach()
+        set(AFX_MULTIBUILD_HLAE_VERSION "${AFX_MULTIBUILD_HLAE_VERSION_MAJOR}.${AFX_MULTIBUILD_HLAE_VERSION_MINOR}.${AFX_MULTIBUILD_HLAE_VERSION_PATCH}")
+        if(NOT AFX_MULTIBUILD_HLAE_VERSION_REVISON STREQUAL "0")
+            string(APPEND AFX_MULTIBUILD_HLAE_VERSION ".${AFX_MULTIBUILD_HLAE_VERSION_REVISON}")
+        endif()
+        message(STATUS "${AFX_MULTIBUILD_LABEL} installer version: ${AFX_MULTIBUILD_HLAE_VERSION}")
 
-        afx_script_run("${CMAKE_COMMAND}" -E make_directory "${AFX_MULTIBUILD_PREFIX}/installer")
-        afx_script_run("${CMAKE_COMMAND}" -E make_directory "${AFX_MULTIBUILD_PREFIX}/installer/hlae")
-        afx_script_run("${CMAKE_COMMAND}" -E copy_directory "${AFX_MULTIBUILD_PREFIX}/bin" "${AFX_MULTIBUILD_PREFIX}/installer/hlae")
-        afx_script_run("${CMAKE_COMMAND}" -E rm -Rf "${AFX_MULTIBUILD_PREFIX}/installer/hlae/ffmpeg")
-        afx_script_run("${CMAKE_COMMAND}" -E rm -Rf "${AFX_MULTIBUILD_PREFIX}/installer/hlae-opt")
-        afx_script_run("${CMAKE_COMMAND}" -E make_directory "${AFX_MULTIBUILD_PREFIX}/installer/hlae-opt")
-        afx_script_run("${CMAKE_COMMAND}" -E rename "${AFX_MULTIBUILD_PREFIX}/installer/hlae/locales" "${AFX_MULTIBUILD_PREFIX}/installer/hlae-opt/locales")
-        afx_script_run("${CMAKE_COMMAND}" -E rename "${AFX_MULTIBUILD_PREFIX}/installer/hlae/HLAE.exe" "${AFX_MULTIBUILD_PREFIX}/installer/hlae-opt/HLAE.exe")
-
-        set(AFX_SCRIPT_SOURCE_DIR "${AFX_SCRIPT_SOURCE_DIR}/installer")
-        afx_script_run("build_installer.bat" "${AFX_MULTIBUILD_PREFIX}/installer/build" "${AFX_MULTIBUILD_PREFIX}" "${AFX_MULTIBUILD_VS_MSBUILD}" "${AFX_MULTIBUILD_CONFIG}")
+        if(NOT DEFINED AFX_RUST_CARGO_LOCKED OR AFX_RUST_CARGO_LOCKED)
+            set(AFX_MULTIBUILD_CARGO_LOCKED --locked)
+        else()
+            set(AFX_MULTIBUILD_CARGO_LOCKED)
+        endif()
+        # Kept between builds: later builds only redo what changed (payload, our crates, LTO).
+        set(AFX_MULTIBUILD_INSTALLER_TARGET_DIR "${AFX_SCRIPT_SOURCE_DIR}/build/cargo-installer")
+        set(ENV{HLAE_PAYLOAD_DIR} "${AFX_MULTIBUILD_PREFIX}/bin")
+        set(ENV{HLAE_VERSION} "${AFX_MULTIBUILD_HLAE_VERSION}")
+        # Always the release profile, also for a Debug package: debug builds have test-only switches.
+        afx_script_run(cargo build ${AFX_MULTIBUILD_CARGO_LOCKED} --profile release-installer -p hlae-installer --target-dir "${AFX_MULTIBUILD_INSTALLER_TARGET_DIR}")
+        afx_script_run("${CMAKE_COMMAND}" -E copy "${AFX_MULTIBUILD_INSTALLER_TARGET_DIR}/release-installer/HLAE_Setup.exe" "${AFX_MULTIBUILD_PREFIX}/HLAE_Setup.exe")
     endif()
 endif()
 

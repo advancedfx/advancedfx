@@ -1,4 +1,5 @@
-// HLAE Setup wizard. All texts come from the translation catalog (installer2/l10n/messages.pot).
+// HLAE Setup wizard. All texts come from the translation catalog (l10n repo:
+// deps/release/l10n/locales/en-US/installer2/messages.pot).
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 const $ = (id) => document.getElementById(id);
@@ -298,6 +299,7 @@ function wire() {
   for (const id of ['install-cancel', 'maintenance-close', 'uninstall-cancel', 'done-close']) $(id).addEventListener('click', quit);
   $('progress-cancel').addEventListener('click', () => invoke('cancel'));
   $('done-log').addEventListener('click', () => invoke('open_log'));
+  $('licenses').addEventListener('click', () => invoke('open_licenses'));
   $('done-launch').addEventListener('click', async () => {
     await invoke('launch_hlae').catch((e) => appendLog('ERROR', String(e)));
     quit();

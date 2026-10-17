@@ -15,6 +15,11 @@ use hlae_installer_core::relpath::RelPath;
 /// Compression level for release builds; debug builds may use a faster one.
 pub const ZSTD_LEVEL: i32 = 19;
 
+/// zstd at [`ZSTD_LEVEL`], for small embedded data (e.g. the license notices).
+pub fn compress(data: &[u8]) -> std::io::Result<Vec<u8>> {
+    zstd::bulk::compress(data, ZSTD_LEVEL)
+}
+
 /// Packs all files below `src_dir` into a tar.zst written to `out` and returns the manifest.
 ///
 /// A top-level `ffmpeg/` dir is skipped (FFMPEG is installed separately, NOTES.md 6.8).

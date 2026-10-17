@@ -9,11 +9,37 @@ fn main() {
     println!("cargo:rustc-link-arg-bins=/DEPENDENTLOADFLAG:0x800");
     pack_payload();
     build_catalogs();
+    embed_licenses();
     tauri_build::build()
 }
 
-/// Translation catalogs for `src/l10n.rs` (NOTES.md 6.9): English from `installer2/l10n/messages.pot`,
-/// translations from `deps/release/l10n/locales/<lang>/installer2/messages.po` (if present).
+/// The setup exe is distributed on its own, so it carries the license notices itself (NOTES.md M8):
+/// the project's `LICENSE` + `misc/THIRDPARTY.yml` (all crates of the workspace), zstd-compressed
+/// into `$OUT_DIR/licenses.txt.zst` for `src/payload.rs` (`--licenses`, "Licenses" in the wizard).
+fn embed_licenses() {
+    let manifest_dir = PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").expect("manifest dir"));
+    let root = manifest_dir.join("../..");
+    let (license, third_party) = (root.join("LICENSE"), root.join("misc/THIRDPARTY.yml"));
+    println!("cargo:rerun-if-changed={}", license.display());
+    println!("cargo:rerun-if-changed={}", third_party.display());
+    let read = |path: &PathBuf| {
+        fs::read_to_string(path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()))
+    };
+    let text = format!(
+        "HLAE Setup – license notices\n\n{}\n\n\
+         Third-party libraries (misc/THIRDPARTY.yml):\n\n{}",
+        read(&license).trim_end(),
+        read(&third_party)
+    );
+    let compressed =
+        hlae_installer_build_support::pack::compress(text.as_bytes()).expect("compress licenses");
+    let out_dir = PathBuf::from(std::env::var_os("OUT_DIR").expect("OUT_DIR"));
+    fs::write(out_dir.join("licenses.txt.zst"), compressed).expect("write licenses");
+}
+
+/// Translation catalogs for `src/l10n.rs` (NOTES.md 6.9), all from the l10n repo (submodule
+/// `deps/release/l10n`): English from `locales/en-US/installer2/messages.pot`, translations from
+/// `locales/<lang>/installer2/messages.po` (if present).
 /// Writes `$OUT_DIR/l10n/<lang>.json` and `$OUT_DIR/l10n_index.rs`.
 fn build_catalogs() {
     use hlae_installer_build_support::l10n;
@@ -23,7 +49,7 @@ fn build_catalogs() {
     let out_dir = PathBuf::from(std::env::var_os("OUT_DIR").expect("OUT_DIR")).join("l10n");
     fs::create_dir_all(&out_dir).expect("create l10n out dir");
 
-    let pot = manifest_dir.join("../l10n/messages.pot");
+    let pot = manifest_dir.join("../../deps/release/l10n/locales/en-US/installer2/messages.pot");
     println!("cargo:rerun-if-changed={}", pot.display());
     let source = l10n::source_catalog(File::open(&pot).expect("open messages.pot"))
         .unwrap_or_else(|e| panic!("{}: {e}", pot.display()));
