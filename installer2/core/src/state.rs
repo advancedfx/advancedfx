@@ -52,6 +52,10 @@ pub struct Integration {
     pub app_folder_reg: bool,
     /// Cached copy of the installer, used as uninstaller (NOTES.md 6.5).
     pub setup_cache: Option<PathBuf>,
+    /// The guard entry against the old WiX v5 setup ([`crate::registry::write_legacy_guard`]).
+    /// `default`: states written before it existed.
+    #[serde(default)]
+    pub legacy_guard: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

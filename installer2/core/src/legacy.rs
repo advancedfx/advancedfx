@@ -134,7 +134,12 @@ fn find_bundle() -> Option<Bundle> {
     let uninstall = RegKey::predef(HKEY_LOCAL_MACHINE)
         .open_subkey_with_flags(UNINSTALL_KEY, KEY_READ | KEY_WOW64_32KEY)
         .ok()?;
-    for name in uninstall.enum_keys().filter_map(|k| k.ok()) {
+    // Our own guard entry looks like a bundle on purpose (`registry::write_legacy_guard`).
+    let names = uninstall
+        .enum_keys()
+        .filter_map(|k| k.ok())
+        .filter(|name| !name.eq_ignore_ascii_case(crate::registry::LEGACY_GUARD_KEY_NAME));
+    for name in names {
         let Ok(key) = uninstall.open_subkey_with_flags(&name, KEY_READ | KEY_WOW64_32KEY) else {
             continue;
         };

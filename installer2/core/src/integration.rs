@@ -49,6 +49,19 @@ pub fn apply(state: &mut State, setup_exe: &Path, cache_dir: &Path) -> Result<()
         .ctx("write APPLICATIONFOLDER", Path::new(APP_KEY))?;
     state.integration.app_folder_reg = true;
 
+    registry::write_legacy_guard(
+        &registry::hklm(),
+        UNINSTALL_BASE,
+        crate::legacy::BUNDLE_UPGRADE_CODE,
+        &state.hlae_version,
+        &cached_exe,
+    )
+    .ctx(
+        "write the guard against the old setup",
+        Path::new(registry::LEGACY_GUARD_KEY_NAME),
+    )?;
+    state.integration.legacy_guard = true;
+
     let lnk = known_folder(KnownFolder::CommonPrograms)
         .ctx("resolve", Path::new("CommonPrograms"))?
         .join(SHORTCUT_NAME);
@@ -80,6 +93,14 @@ pub fn remove(state: &State) -> Vec<String> {
         && let Err(e) = registry::remove_app_folder(&registry::hklm(), APP_KEY)
     {
         errors.push(format!("{APP_KEY}: {e}"));
+    }
+    if integration.legacy_guard
+        && let Err(e) = registry::remove_legacy_guard(&registry::hklm(), UNINSTALL_BASE)
+    {
+        errors.push(format!(
+            "guard entry {}: {e}",
+            registry::LEGACY_GUARD_KEY_NAME
+        ));
     }
     if let Some(key) = &integration.arp_key
         && let Err(e) = registry::remove_arp(&registry::hklm(), UNINSTALL_BASE, key)

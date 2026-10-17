@@ -65,6 +65,45 @@ pub fn remove_arp(root: &RegKey, base: &str, key_name: &str) -> io::Result<()> {
     ignore_not_found(base.delete_subkey_all(key_name))
 }
 
+/// Key name of the guard against the old setup (fixed, like a bundle id).
+pub const LEGACY_GUARD_KEY_NAME: &str = "{25B334F6-90B9-45C4-ADB4-CCE2BC677FC4}";
+
+/// Guard against installing the old WiX v5 setup over ours (decided 2026-10-17): a hidden Uninstall
+/// entry that looks like a *newer* related bundle to it – its `BundleUpgradeCode` plus our version as
+/// `BundleVersion` – so Burn refuses with "A newer version of HLAE is already installed" instead of
+/// installing its MSIs into our folder. 32-bit view: where that (x86) bundle registered itself and
+/// looks. `SystemComponent` keeps it out of Apps & features.
+///
+/// Burn (5.0.2) skips a related bundle without `BundleCachePath` ("Failed to read cache path"), so
+/// it gets our cached setup: Burn would only run it to update / remove an *older* related bundle.
+pub fn write_legacy_guard(
+    root: &RegKey,
+    base: &str,
+    bundle_upgrade_code: &str,
+    version: &str,
+    cache_path: &Path,
+) -> io::Result<()> {
+    let (key, _) = root.create_subkey_with_flags(
+        format!(r"{base}\{LEGACY_GUARD_KEY_NAME}"),
+        KEY_ALL_ACCESS | KEY_WOW64_32KEY,
+    )?;
+    // REG_MULTI_SZ, as Burn writes it.
+    key.set_value("BundleUpgradeCode", &vec![bundle_upgrade_code.to_owned()])?;
+    key.set_value("BundleVersion", &version)?;
+    key.set_value("BundleCachePath", &cache_path.display().to_string())?;
+    key.set_value("DisplayName", &"HLAE")?;
+    key.set_value("DisplayVersion", &version)?;
+    key.set_value("SystemComponent", &1u32)
+}
+
+pub fn remove_legacy_guard(root: &RegKey, base: &str) -> io::Result<()> {
+    let base = match root.open_subkey_with_flags(base, KEY_ALL_ACCESS | KEY_WOW64_32KEY) {
+        Ok(base) => base,
+        Err(e) => return ignore_not_found(Err(e)),
+    };
+    ignore_not_found(base.delete_subkey_all(LEGACY_GUARD_KEY_NAME))
+}
+
 /// Writes `APPLICATIONFOLDER` with a trailing `\`, exactly like the old MSI (`[APPLICATIONFOLDER]`).
 pub fn write_app_folder(root: &RegKey, key_path: &str, install_dir: &Path) -> io::Result<()> {
     let (key, _) = root.create_subkey_with_flags(key_path, KEY_ALL_ACCESS | KEY_WOW64_32KEY)?;
@@ -170,6 +209,41 @@ mod tests {
         remove_arp(&root, &base, ARP_KEY_NAME).unwrap(); // idempotent
         assert!(root.open_subkey(format!(r"{base}\{ARP_KEY_NAME}")).is_err());
         root.delete_subkey_all(test_base()).unwrap();
+    }
+
+    #[test]
+    fn legacy_guard_roundtrip() {
+        let root = RegKey::predef(HKEY_CURRENT_USER);
+        let base = format!(r"{}-guard\Uninstall", test_base());
+        write_legacy_guard(
+            &root,
+            &base,
+            "{35C8D990-6C4F-4639-ADF7-D259B06E070B}",
+            "2.193.0",
+            Path::new(r"C:\ProgramData\advancedfx\HLAE\setup\HLAE_Setup.exe"),
+        )
+        .unwrap();
+        let key = root
+            .open_subkey_with_flags(
+                format!(r"{base}\{LEGACY_GUARD_KEY_NAME}"),
+                KEY_READ | KEY_WOW64_32KEY,
+            )
+            .unwrap();
+        assert_eq!(
+            key.get_value::<Vec<String>, _>("BundleUpgradeCode")
+                .unwrap(),
+            ["{35C8D990-6C4F-4639-ADF7-D259B06E070B}"]
+        );
+        assert_eq!(
+            key.get_value::<String, _>("BundleVersion").unwrap(),
+            "2.193.0"
+        );
+        assert_eq!(key.get_value::<u32, _>("SystemComponent").unwrap(), 1);
+        drop(key);
+        remove_legacy_guard(&root, &base).unwrap();
+        remove_legacy_guard(&root, &base).unwrap(); // idempotent
+        root.delete_subkey_all(format!("{}-guard", test_base()))
+            .unwrap();
     }
 
     #[test]

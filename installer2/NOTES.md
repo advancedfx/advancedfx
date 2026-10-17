@@ -543,6 +543,7 @@ All questions so far are decided; details live in 4–6.
   committed, no downloads during builds. `history` kept in the state.
 - Payload stays `include_bytes!` for now, behind one `payload()` function; revisit (post-build resource) if
   payload growth makes build times hurt (6.1).
+- Old setup over ours: hidden fake "newer bundle" entry as a guard, works for WiX v5 (8, Untested / open TODOs).
 - Files in use: Restart Manager, list + Retry only, no auto-close, quiet mode 1603 (M7); Restart Manager only for
   `*.exe`, `AfxHook*.dll` + files a quick share-mode probe flags (speed).
 - Rollback journal: in the state dir, no flush, commit point = state save (6.10 d). Rejected: no rollback at all
@@ -781,6 +782,21 @@ Things that exist but haven't been tested yet, or small TODOs outside the milest
       (`margin-inline-start`, `border-inline-start`, `text-align: start`), paths / log / path inputs always LTR,
       bidi isolation (FSI / PDI) around inserted placeholder values, `MB_RTLREADING` for the native message box.
       Verify with someone who reads the language.
+- [x] **Guard against the old setup** (decided 2026-10-17, "better than nothing"; tested for WiX v5 below): the old
+      WiX v5 / v3 setups don't see our install (it's neither their bundle nor their MSI) and would install their
+      MSIs into the same default folder without any warning (MSI never warns about an existing folder) → mixed
+      files, two Apps & features entries. Most likely when someone deliberately wants an older HLAE version.
+      Integration now writes a hidden Uninstall entry `{25B334F6-90B9-45C4-ADB4-CCE2BC677FC4}` (32-bit view,
+      `SystemComponent=1`) with the old bundle's `BundleUpgradeCode` and our version as `BundleVersion`, so a v5
+      bundle should see a *newer* related bundle and refuse ("A newer version of HLAE is already installed").
+      Removed on uninstall (`state.integration.legacy_guard`), skipped by our own legacy detection.
+      Tested 2026-10-17 with the old WiX v5 setup 2.192.8 (Burn 5.0.2) against our 2.192.9: first Burn skipped the
+      entry ("Failed to read cache path from registry") → `BundleCachePath` (= our cached setup) added. Then:
+      "Detected related bundle … is a downgrade", the wizard still shows its normal Install page, but clicking
+      Install → "Plan skipped due to related bundle of plan type Downgrade", apply 0x80070666, exit 1638, never
+      elevated (no UAC prompt), nothing installed. Needs our version > the old setup's (true for every real
+      release). WiX v3 setups: not tested, likely another bundle upgrade code → no effect there. Also say in the
+      release notes: "to install an older HLAE, uninstall HLAE first".
 
 - [ ] **M8 – Build integration** in `cmake/MultiBuild.cmake`, retire `installer/`.
   - [ ] Third-party licenses: the installer's Rust deps (Tauri etc.) are now in the root `Cargo.lock` →
