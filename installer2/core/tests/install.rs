@@ -8,7 +8,7 @@ use hlae_installer_core::install::{InstallRequest, install_hlae, uninstall};
 use hlae_installer_core::manifest::{Component, Manifest};
 use hlae_installer_core::relpath::RelPath;
 use hlae_installer_core::state::{Features, State};
-use hlae_installer_core::transaction::WORK_DIR_NAME;
+use hlae_installer_core::transaction::{WORK_DIR_NAME, journal_path, recover};
 use tempfile::TempDir;
 
 const ALL: Features = Features { locales: true };
@@ -40,6 +40,11 @@ fn build(version: &str, files: &[(&str, &str)]) -> Build {
     Build { manifest, payload }
 }
 
+/// Next to the install dir (the journal goes next to it).
+fn state_file(dir: &Path) -> PathBuf {
+    dir.parent().unwrap().join("state").join("state.json")
+}
+
 fn request<'a>(dir: &'a Path, build: &'a Build, features: Features) -> InstallRequest<'a> {
     InstallRequest {
         install_dir: dir,
@@ -47,6 +52,7 @@ fn request<'a>(dir: &'a Path, build: &'a Build, features: Features) -> InstallRe
         payload: &build.payload,
         features,
         written_by: "test",
+        state_file: state_file(dir),
     }
 }
 
@@ -289,6 +295,93 @@ fn dropping_without_commit_rolls_back() {
     let (_tmp, fresh) = temp_install_dir();
     drop(install_hlae(&request(&fresh, &v1(), ALL), None).unwrap());
     assert!(!fresh.exists(), "fresh install fully undone");
+}
+
+fn assert_v1(dir: &Path) {
+    assert_eq!(read(dir, "HLAE.exe").as_deref(), Some("hlae v1"));
+    assert_eq!(read(dir, "old.txt").as_deref(), Some("obsolete in v2"));
+    assert_eq!(
+        read(dir, "locales/de/hlae/messages.mo").as_deref(),
+        Some("de v1")
+    );
+    assert!(!dir.join("new").exists());
+}
+
+fn assert_cleaned_up(dir: &Path) {
+    assert!(!dir.join(WORK_DIR_NAME).exists());
+    assert!(!journal_path(&state_file(dir)).exists());
+}
+
+#[test]
+fn crash_before_saving_the_state_rolls_back() {
+    let (_tmp, dir) = temp_install_dir();
+    let old = install(&dir, &v1(), ALL, None);
+    let outcome = install_hlae(&request(&dir, &v2(), ALL), Some(&old)).unwrap();
+    outcome.tx.simulate_crash();
+    assert_eq!(read(&dir, "HLAE.exe").as_deref(), Some("hlae v2"));
+
+    recover(&state_file(&dir)).unwrap();
+    assert_v1(&dir);
+    assert_cleaned_up(&dir);
+    recover(&state_file(&dir)).unwrap(); // nothing left to do
+
+    // Same for a fresh install: everything goes, including the created install dir.
+    let (_tmp, fresh) = temp_install_dir();
+    install_hlae(&request(&fresh, &v1(), ALL), None)
+        .unwrap()
+        .tx
+        .simulate_crash();
+    recover(&state_file(&fresh)).unwrap();
+    assert!(!fresh.exists());
+}
+
+#[test]
+fn crash_after_saving_the_state_keeps_the_new_files() {
+    let (_tmp, dir) = temp_install_dir();
+    let old = install(&dir, &v1(), ALL, None);
+    let outcome = install_hlae(&request(&dir, &v2(), ALL), Some(&old)).unwrap();
+    let state_file = state_file(&dir);
+    fs::create_dir_all(state_file.parent().unwrap()).unwrap();
+    outcome.state.save(&state_file).unwrap();
+    outcome.tx.simulate_crash();
+
+    // Also via the next transaction's begin (here: a repair of v2).
+    let state = State::load(&state_file).unwrap().unwrap();
+    install_hlae(&request(&dir, &v2(), ALL), Some(&state))
+        .unwrap()
+        .tx
+        .commit()
+        .unwrap();
+    assert_eq!(read(&dir, "HLAE.exe").as_deref(), Some("hlae v2"));
+    assert_eq!(read(&dir, "new/new.txt").as_deref(), Some("new in v2"));
+    assert!(!dir.join("old.txt").exists());
+    assert_cleaned_up(&dir);
+}
+
+#[test]
+fn recovery_skips_steps_that_never_happened() {
+    let (_tmp, dir) = temp_install_dir();
+    let old = install(&dir, &v1(), ALL, None);
+    let outcome = install_hlae(&request(&dir, &v2(), ALL), Some(&old)).unwrap();
+    outcome.tx.simulate_crash();
+    // Journaled, but the setup "crashed" before doing them; then a line cut off by the crash.
+    let journal = journal_path(&state_file(&dir));
+    let mut text = fs::read_to_string(&journal).unwrap();
+    text.push_str(r#"{"op":"backup","path":"x64/AfxHookSource2.dll","backup":"000099"}"#);
+    text.push('\n');
+    text.push_str(r#"{"op":"placed","path":"never.txt","sha256":""#);
+    text.push_str(&"0".repeat(64));
+    text.push_str("\"}\n");
+    text.push_str(r#"{"op":"placed","path":"cut"#);
+    fs::write(&journal, text).unwrap();
+
+    recover(&state_file(&dir)).unwrap();
+    assert_v1(&dir);
+    assert_eq!(
+        read(&dir, "x64/AfxHookSource2.dll").as_deref(),
+        Some("hook v1")
+    );
+    assert_cleaned_up(&dir);
 }
 
 #[test]

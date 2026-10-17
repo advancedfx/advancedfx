@@ -2,19 +2,20 @@
 //! thread (same flow as the command line, `actions`) and report through events.
 
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use hlae_installer_core::ffmpeg_install::{self, FfmpegSelection, MAX_CUSTOM_PATH};
 use hlae_installer_core::in_use::Holder;
 use hlae_installer_core::state::FfmpegChoice;
-use hlae_installer_core::{Error, dotnet, session, version};
+use hlae_installer_core::{Error, dotnet, protect, session, version};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
 use crate::actions::{self, InstallChoice};
 use crate::cli::{GuiMode, exit_code};
 use crate::ffmpeg_client::FfmpegArgs;
-use crate::{dialog, events, l10n, logging, payload};
+use crate::{dialog, events, l10n, logging, ops, payload};
 
 struct Gui {
     mode: GuiMode,
@@ -173,9 +174,37 @@ fn check_install_dir(path: String) -> Option<&'static str> {
         Some("InstallDirNotAscii")
     } else if session::validate_install_dir(dir).is_err() {
         Some("InstallDirInvalid")
+    } else if !new_install_dir_ok(dir) {
+        Some("InstallDirNotEmpty")
     } else {
         None
     }
+}
+
+/// Like the worker decides it (`protect::prepare`): outside `Program Files` a new install needs a new
+/// or empty folder, except the old setup's folder (migration).
+fn new_install_dir_ok(dir: &Path) -> bool {
+    static LEGACY_DIR: OnceLock<Option<PathBuf>> = OnceLock::new();
+    let protects = ops::session().is_ok_and(|s| s.protect);
+    if !protects || protect::is_under_program_files(dir) {
+        return true;
+    }
+    let legacy_dir = LEGACY_DIR.get_or_init(|| actions::legacy().and_then(|l| l.install_dir));
+    let same = |a: &Path, b: &Path| {
+        let normalize = |p: &Path| {
+            p.to_string_lossy()
+                .trim_end_matches(['\\', '/'])
+                .to_lowercase()
+        };
+        normalize(a) == normalize(b)
+    };
+    if legacy_dir
+        .as_deref()
+        .is_some_and(|legacy| same(legacy, dir))
+    {
+        return true;
+    }
+    protect::is_missing_or_empty(dir).unwrap_or(true)
 }
 
 /// `None` if fine, else the message key.

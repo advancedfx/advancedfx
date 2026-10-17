@@ -160,7 +160,8 @@ See also [`resources/ffmpeg/readme.advancedfx.txt`](../resources/ffmpeg/readme.a
 - [ ] "Launch HLAE" on finish (unelevated).
 - [x] Files-in-use check before touching files (HLAE.exe, AfxHook*.dll loaded in game processes) → ask to close / retry
       (M7: Restart Manager; wizard Retry / Back, quiet mode 1603, no automatic closing).
-- [ ] Rollback on failure: stage new files, swap, restore on error (never leave a half-installed state).
+- [x] Rollback on failure: stage new files, swap, restore on error (never leave a half-installed state)
+      (M1; crash-safe journal M7, not power-loss-safe by decision, 6.10 d).
 - [ ] Silent / unattended mode via command line (install dir, features, FFMPEG variant, remove app data, log file), exit codes (6.4).
 - [ ] Log file.
 - [ ] Localised UI in the 14 languages via the `.po` l10n pipeline (6.9).
@@ -308,6 +309,29 @@ Keep all install logic in `core` (testable without GUI, usable by silent mode an
 - Registry is **output only** (written, never read back as our state):
   ARP Uninstall key, `APPLICATIONFOLDER`. Only exception: reading the old WiX installer's keys for detection/migration (5).
 - Worker only acts on paths inside the install dir: reject `..`, absolute paths, and don't follow reparse points (junctions/symlinks).
+- **Install dir protection** (decided 2026-10-17, M7, [`core/src/protect.rs`](core/src/protect.rs)). The worker
+  writes / renames / deletes there as admin, by path. In a folder normal users can change (custom location, e.g.
+  `C:\Games\HLAE` – Authenticated Users get "Modify" below `C:\`), a user could swap a folder for a junction between
+  our checks and the rename (e.g. `x64\` → `C:\Windows\System32`) → our elevated rename / delete lands there =
+  local privilege escalation. Checking for reparse points alone can't prevent that race. Hence:
+  - **Protected**: outside `Program Files` / `Program Files (x86)` the install dir gets owner Administrators +
+    protected `SYSTEM:F, Administrators:F, Users:RX` (like the state dir), everything below reset to owner
+    Administrators + inherited entries only (set per handle with `SetKernelObjectSecurity`, top-down, no
+    propagation by path; junctions and hard-linked files are skipped). Under `Program Files` Windows' inherited
+    permissions are left alone (already admin-only).
+  - **Pinned**: for the whole install / uninstall a handle to the install dir is held open without
+    `FILE_SHARE_DELETE` (with `FILE_LIST_DIRECTORY` – share modes are only enforced against handles with data
+    access): the dir and every dir above it can't be renamed / deleted meanwhile (a user with full control over a
+    parent could otherwise swap the whole dir). The path must lead to the dir directly: the deepest existing part
+    is checked before anything is created, then the dir itself (`GetFinalPathNameByHandleW` = the given path, no
+    junction / symbolic link / short name; network folders refused).
+  - New install into an existing folder: outside `Program Files` it must be empty (taken over), else refused
+    (`InstallDirNotEmpty`, also shown in the wizard while typing); the old setup's folder (migration) is taken
+    over with its leftovers. Our own install (state) is re-protected on every install / repair / upgrade / modify.
+  - Consequence: in a custom folder normal users can't change HLAE's files without admin rights (accepted: users
+    grant themselves admin when needed; HLAE's settings are in `%APPDATA%`).
+  - Not done on purpose: deleting leftovers at reboot (`MoveFileExW`) in the install dir – between the setup's end
+    and the reboot nothing pins it. Leftovers are removed by the next setup run instead.
 
 ### 6.8 FFMPEG location
 - Downloaded variants are unpacked into `<HLAE>\ffmpeg\` (archive root dir stripped) → `<HLAE>\ffmpeg\bin\ffmpeg.exe`,
@@ -463,17 +487,33 @@ Common rules for all three:
   Directories are not stored: after removing files, parent dirs are removed bottom-up if empty.
 - `integration` = what we registered, so uninstall removes exactly that (and nothing we didn't create).
 - `history`: short log for support / debugging (kept, capped, e.g. last 20 entries).
-- Rollback journal for an operation in progress is a **separate** file (M7), not part of the state.
+- Rollback journal for an operation in progress is a **separate** file (M7, see d), not part of the state.
 
-#### d) Transaction / work dir (implemented in M1, [`core/src/transaction.rs`](core/src/transaction.rs))
-- Work dir `<install dir>\.hlae-setup-tmp\` (reserved name, never in a manifest): `staging\` = verified new files,
-  `backup\` = replaced / removed old files. Same volume as the install dir → renames only, cheap and atomic.
-- Order: stage + verify everything → move old aside + move new into place → caller saves state → `commit()` deletes backups.
-  Any error, or dropping the transaction without `commit()`, restores the previous files and removes created dirs.
+#### d) Transaction / work dir (implemented in M1, journal in M7, [`core/src/transaction.rs`](core/src/transaction.rs))
+- Work dir `<install dir>\.hlae-setup-tmp\<id>\` (reserved name, never in a manifest; `<id>` = `<pid>-<time>-<n>`,
+  new per transaction): `staging\` = verified new files, `backup\` = replaced / removed old files. Same volume as
+  the install dir → renames only, cheap and atomic. (`%ProgramData%` isn't on the same volume for e.g. `D:\…`.)
+- Order: stage + verify everything → move old aside + move new into place → caller saves state → `commit()` deletes
+  journal + backups. Any error, or dropping the transaction without `commit()`, restores the previous files and
+  removes created dirs.
 - Identical files (same SHA-256) are left untouched on upgrade / repair.
 - Old files are never written in place, only renamed → works for in-use DLLs (rename is allowed) and never writes through hard links.
-- Known limitation: with a custom install dir outside `Program Files` (user-writable), a normal user could tamper with
-  the work dir during the operation. Mitigated by the reparse point checks; same trust level as the installed files themselves.
+- **Crash-safe journal** (decided 2026-10-17): `journal.jsonl` next to `state.json` (admin-only state dir, so it
+  can't be tampered with, and recovery always knows where to look). One JSON line is appended *before* each step
+  (`begin` with the state file's SHA-256, `created-dir`, `backup`, `placed` with the file's SHA-256).
+  - **No flush** to disk (decided): safe against the setup crashing / being killed. After a power loss / bluescreen
+    the journal may miss steps → mixed install, `state.json` still consistent; running the setup again (repair /
+    update) fixes it. Accepted.
+  - Commit point = the state save: [`recover`] compares the state file's hash with the one in `begin` – unchanged →
+    roll back from the journal, changed → the new state was saved, only remove the backups. Runs at the start of
+    every install / uninstall and every `Transaction::begin`. Idempotent: steps that never happened are skipped
+    (`placed` only removed if its hash still matches, `backup` only restored if the backup exists). A cut-off last
+    line is ignored. If restoring hits an I/O error, the journal is kept and the operation fails (retry later).
+  - Work dir leftovers that can't be removed now (e.g. a replaced DLL still loaded) stay until the next setup run
+    removes them – no deletion at reboot (see 6.7 install dir protection).
+- The former known limitation (a normal user tampering with a user-writable install dir during the operation) is
+  solved by the install dir protection (6.7); the old note "mitigated by the reparse point checks" was wrong:
+  checks before a rename can't prevent a junction swapped in after them.
 
 ## 7. Decision log
 All questions so far are decided; details live in 4–6.
@@ -503,6 +543,12 @@ All questions so far are decided; details live in 4–6.
   committed, no downloads during builds. `history` kept in the state.
 - Payload stays `include_bytes!` for now, behind one `payload()` function; revisit (post-build resource) if
   payload growth makes build times hurt (6.1).
+- Files in use: Restart Manager, list + Retry only, no auto-close, quiet mode 1603 (M7).
+- Rollback journal: in the state dir, no flush, commit point = state save (6.10 d). Rejected: no rollback at all
+  (NSIS style) – kept since done and tested.
+- Install dir protection: owner Administrators + admin-only ACL outside `Program Files`, pinned handle; new installs
+  need a new / empty folder (except migration); no reboot deletion in the install dir (6.7). Rejected: only allowing
+  install dirs below `Program Files`.
 - FFMPEG download: WinHTTP synchronous + automatic system proxy, TLS 1.2+, download in the unelevated client,
   verify in the worker; `--ffmpeg-archive` manual fallback; Wine: silent mode is enough for now (6.8a).
 
@@ -695,7 +741,20 @@ All questions so far are decided; details live in 4–6.
         PowerShell): quiet repair / uninstall → 1603 with the program listed, nothing changed; wizard page, Retry while
         still held ("Still in use"), Retry after closing → repair done. Tests: `in_use` unit tests,
         `core/tests/session.rs`.
-  - [ ] Crash-safe rollback journal, faster repair (compare before staging).
+  - [x] Crash-safe rollback journal (6.10 d). Tests: crash before / after the state save (`simulate_crash`),
+        journaled steps that never happened + cut-off line; smoke test in debug test mode: install / repair /
+        uninstall leave no journal / work dir.
+  - [x] Install dir protection + pinning (6.7, prompted by the journal design: reboot deletion in a user-writable
+        install dir would be unsafe → the whole dir has to be safe). Unit tests: pin blocks renaming the dir and its
+        parent, junction in / below the path refused before creating anything, children get exactly the inherited
+        entries. Debug switch `HLAE_SETUP_TEST_PROTECT=1` (with `HLAE_SETUP_STATE_FILE`, admin shell) protects in
+        the test mode too.
+  - [x] Admin test of the protection (2026-10-17, debug exe, test mode + `HLAE_SETUP_TEST_PROTECT=1`, admin shell,
+        below `C:\HLAE-protect-test`): new folder → owner Administrators, protected, SYSTEM / Administrators full +
+        Users read & execute, files / dirs inside only inherited entries; repair keeps it; uninstall removes the
+        folder; existing non-empty folder → 1603 "isn't empty", file + permissions untouched; existing empty folder →
+        taken over + protected; path through a junction → 1603 before anything is created.
+  - [ ] Faster repair (compare before staging).
   - Test machine has the new installer's HLAE again (after the GUI migration test); old v5 / v3 setups can be
     reinstalled from public releases for further migration tests.
 ### Untested / open TODOs

@@ -69,6 +69,7 @@ fn install_and_uninstall_refuse_while_files_are_in_use() {
     let session = Session {
         state_file: tmp.path().join("state").join("state.json"),
         integrate: false,
+        protect: false,
     };
     let install_dir = tmp.path().join("HLAE");
     let options = InstallOptions {

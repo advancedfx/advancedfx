@@ -3,7 +3,7 @@
 use std::cmp::Ordering;
 use std::fs;
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::error::{Error, IoContext, Result};
 use crate::fsutil;
@@ -25,6 +25,8 @@ pub struct InstallRequest<'a> {
     pub features: Features,
     /// E.g. `HLAE_Setup 2.192.9`, stored in the state.
     pub written_by: &'a str,
+    /// Where the state is saved; the transaction journal goes next to it.
+    pub state_file: PathBuf,
 }
 
 /// Result of [`install_hlae`]. The files are in place, but not committed yet:
@@ -68,7 +70,7 @@ pub fn install_hlae(req: &InstallRequest, old: Option<&State>) -> Result<Outcome
         components.push(Component::Locales);
     }
 
-    let mut tx = Transaction::begin(req.install_dir)?;
+    let mut tx = Transaction::begin(req.install_dir, &req.state_file)?;
     let staged = payload::stage(req.payload, req.manifest, &components, &tx.staging_dir())?;
     let old_files = old.map(|s| s.files.as_slice()).unwrap_or_default();
     let applied = tx.apply(staged, &HLAE_COMPONENTS, old_files)?;
@@ -132,15 +134,20 @@ pub fn uninstall_files(install_dir: &Path, files: &[FileRecord]) -> UninstallRep
 
 /// Uninstalls everything tracked in `state` and removes the install dir if it ended up empty.
 pub fn uninstall(state: &State) -> UninstallReport {
+    let report = uninstall_files_and_work_dir(state);
+    // Fails if not empty (user files, kept modified files), which is fine.
+    let _ = fs::remove_dir(&state.install_dir);
+    report
+}
+
+/// [`uninstall`] without removing the install dir itself (the caller has it pinned, NOTES.md 6.7).
+pub fn uninstall_files_and_work_dir(state: &State) -> UninstallReport {
     let install_dir = &state.install_dir;
     let work_dir = install_dir.join(WORK_DIR_NAME);
     if matches!(fsutil::is_reparse_point(&work_dir), Ok(false)) && work_dir.exists() {
         let _ = fs::remove_dir_all(&work_dir);
     }
-    let report = uninstall_files(install_dir, &state.files);
-    // Fails if not empty (user files, kept modified files), which is fine.
-    let _ = fs::remove_dir(install_dir);
-    report
+    uninstall_files(install_dir, &state.files)
 }
 
 enum Removal {

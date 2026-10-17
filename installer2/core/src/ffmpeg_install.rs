@@ -136,11 +136,13 @@ pub struct FfmpegOutcome {
 
 /// Applies `plan` to the installed HLAE in `state`. `Keep` → `None` (nothing to do).
 /// `download_dir` must be admin-only: the archive is copied there before it's verified and extracted.
+/// `state_file` = where `state` is saved (the transaction journal goes next to it).
 pub fn apply(
     state: &State,
     data: &FfmpegData,
     plan: &FfmpegPlan,
     download_dir: &Path,
+    state_file: &Path,
 ) -> Result<Option<FfmpegOutcome>> {
     let install_dir = &state.install_dir;
     let nothing_installed = state.ffmpeg.choice == FfmpegChoice::None
@@ -176,7 +178,7 @@ pub fn apply(
         }
     };
 
-    let mut tx = Transaction::begin(install_dir)?;
+    let mut tx = Transaction::begin(install_dir, state_file)?;
     let staged = match plan {
         FfmpegPlan::Keep | FfmpegPlan::None => Vec::new(),
         FfmpegPlan::Download { variant, archive } => {

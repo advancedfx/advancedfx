@@ -2,23 +2,36 @@
 
 use std::io;
 use std::os::windows::ffi::OsStrExt;
+use std::os::windows::io::{AsRawHandle, BorrowedHandle};
 use std::path::Path;
 use std::ptr::null_mut;
 
-use windows_sys::Win32::Foundation::{ERROR_SUCCESS, LocalFree};
+use windows_sys::Win32::Foundation::{ERROR_SUCCESS, HANDLE, LocalFree};
 use windows_sys::Win32::Security::Authorization::{
+    ConvertSecurityDescriptorToStringSecurityDescriptorW,
     ConvertStringSecurityDescriptorToSecurityDescriptorW, GetNamedSecurityInfoW, SDDL_REVISION_1,
     SE_FILE_OBJECT, SetNamedSecurityInfoW,
 };
 use windows_sys::Win32::Security::{
-    ACL, DACL_SECURITY_INFORMATION, GetSecurityDescriptorDacl, GetSecurityDescriptorOwner,
-    IsWellKnownSid, OWNER_SECURITY_INFORMATION, PROTECTED_DACL_SECURITY_INFORMATION,
-    PSECURITY_DESCRIPTOR, PSID, WinBuiltinAdministratorsSid, WinLocalSystemSid,
+    ACL, DACL_SECURITY_INFORMATION, GetKernelObjectSecurity, GetSecurityDescriptorDacl,
+    GetSecurityDescriptorOwner, IsWellKnownSid, OWNER_SECURITY_INFORMATION,
+    PROTECTED_DACL_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR, PSID, SetKernelObjectSecurity,
+    WinBuiltinAdministratorsSid, WinLocalSystemSid,
 };
+use windows_sys::core::PWSTR;
 
 /// SYSTEM + Administrators full control, Users read & execute (the cached setup must be startable
 /// from Apps & features), inherited by everything below, nothing inherited from the parent.
-const ADMIN_ONLY_DACL: &str = "D:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)";
+pub const ADMIN_ONLY_DACL: &str = "D:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)";
+/// What a dir below an [`ADMIN_ONLY_DACL`] dir inherits (no own entries).
+pub const INHERITED_DIR_DACL: &str =
+    "D:AI(A;OICIID;FA;;;SY)(A;OICIID;FA;;;BA)(A;OICIID;0x1200a9;;;BU)";
+/// What a file below an [`ADMIN_ONLY_DACL`] dir inherits (no own entries).
+pub const INHERITED_FILE_DACL: &str = "D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;BU)";
+
+fn raw(handle: BorrowedHandle<'_>) -> HANDLE {
+    handle.as_raw_handle() as HANDLE
+}
 
 fn wide(s: &std::ffi::OsStr) -> Vec<u16> {
     s.encode_wide().chain(Some(0)).collect()
@@ -75,6 +88,84 @@ pub fn secure_dir(dir: &Path, set_owner: bool) -> io::Result<()> {
         })();
         LocalFree(descriptor);
         result
+    }
+}
+
+/// Sets the DACL `dacl` (SDDL, see the constants above) on the object `handle` was opened for
+/// (needs `WRITE_DAC`, with `set_owner` also `WRITE_OWNER` + admin rights: owner Administrators).
+///
+/// Unlike `SetNamedSecurityInfoW` this doesn't walk the dirs below to update what they inherit, so
+/// it can't be led anywhere by a junction; callers set the children themselves.
+pub fn set_handle_security(
+    handle: BorrowedHandle<'_>,
+    dacl: &str,
+    set_owner: bool,
+) -> io::Result<()> {
+    let sddl = if set_owner {
+        format!("O:BA{dacl}")
+    } else {
+        dacl.to_owned()
+    };
+    let sddl = wide(sddl.as_ref());
+    let mut descriptor: PSECURITY_DESCRIPTOR = null_mut();
+    // SAFETY: valid NUL-terminated string and out pointer; `descriptor` is freed with LocalFree.
+    unsafe {
+        if ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            sddl.as_ptr(),
+            SDDL_REVISION_1,
+            &mut descriptor,
+            null_mut(),
+        ) == 0
+        {
+            return Err(io::Error::last_os_error());
+        }
+        let mut info = DACL_SECURITY_INFORMATION;
+        if set_owner {
+            info |= OWNER_SECURITY_INFORMATION;
+        }
+        let result = if SetKernelObjectSecurity(raw(handle), info, descriptor) == 0 {
+            Err(io::Error::last_os_error())
+        } else {
+            Ok(())
+        };
+        LocalFree(descriptor);
+        result
+    }
+}
+
+/// The owner + DACL of the object `handle` was opened for as SDDL (needs `READ_CONTROL`).
+pub fn handle_sddl(handle: BorrowedHandle<'_>) -> io::Result<String> {
+    let info = OWNER_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION;
+    let mut needed = 0u32;
+    // SAFETY: size query, then a buffer of that size; the string is freed with LocalFree.
+    unsafe {
+        GetKernelObjectSecurity(raw(handle), info, null_mut(), 0, &mut needed);
+        let mut buffer = vec![0u8; needed as usize];
+        if GetKernelObjectSecurity(
+            raw(handle),
+            info,
+            buffer.as_mut_ptr().cast(),
+            needed,
+            &mut needed,
+        ) == 0
+        {
+            return Err(io::Error::last_os_error());
+        }
+        let mut text: PWSTR = null_mut();
+        let mut len = 0u32;
+        if ConvertSecurityDescriptorToStringSecurityDescriptorW(
+            buffer.as_mut_ptr().cast(),
+            SDDL_REVISION_1,
+            info,
+            &mut text,
+            &mut len,
+        ) == 0
+        {
+            return Err(io::Error::last_os_error());
+        }
+        let sddl = String::from_utf16_lossy(std::slice::from_raw_parts(text, len as usize));
+        LocalFree(text.cast());
+        Ok(sddl.trim_end_matches('\0').to_owned())
     }
 }
 

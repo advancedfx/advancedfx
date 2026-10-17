@@ -46,6 +46,7 @@ struct Setup {
     _tmp: TempDir,
     install_dir: PathBuf,
     download_dir: PathBuf,
+    state_file: PathBuf,
     data: FfmpegData,
     gpl: PathBuf,
     shared: PathBuf,
@@ -68,6 +69,7 @@ fn setup() -> Setup {
             payload: &payload,
             features: Features { locales: true },
             written_by: "test",
+            state_file: tmp.path().join("state").join("state.json"),
         },
         None,
     )
@@ -97,6 +99,7 @@ fn setup() -> Setup {
     data.validate().unwrap();
     Setup {
         download_dir: tmp.path().join("admin-only-download"),
+        state_file: tmp.path().join("state").join("state.json"),
         install_dir,
         data,
         gpl: gpl_archive,
@@ -107,7 +110,7 @@ fn setup() -> Setup {
 }
 
 fn run(s: &Setup, state: &State, plan: FfmpegPlan) -> State {
-    let outcome = apply(state, &s.data, &plan, &s.download_dir)
+    let outcome = apply(state, &s.data, &plan, &s.download_dir, &s.state_file)
         .unwrap()
         .expect("something to do");
     outcome.tx.commit().unwrap();
@@ -236,7 +239,7 @@ fn keep_and_none_without_ffmpeg_do_nothing() {
     let s = setup();
     for plan in [FfmpegPlan::Keep, FfmpegPlan::None] {
         assert!(
-            apply(&s.state, &s.data, &plan, &s.download_dir)
+            apply(&s.state, &s.data, &plan, &s.download_dir, &s.state_file)
                 .unwrap()
                 .is_none(),
             "{plan:?}"
@@ -255,6 +258,7 @@ fn wrong_or_tampered_archive_is_rejected() {
         &s.data,
         &download("win64-gpl", &s.shared),
         &s.download_dir,
+        &s.state_file,
     );
     assert!(
         matches!(result, Err(Error::Verify { .. })),
@@ -269,6 +273,7 @@ fn wrong_or_tampered_archive_is_rejected() {
         &data,
         &download("win64-gpl", &s.gpl),
         &s.download_dir,
+        &s.state_file,
     );
     assert!(
         matches!(result, Err(Error::Verify { .. })),
@@ -288,6 +293,7 @@ fn wrong_or_tampered_archive_is_rejected() {
         &s.data,
         &download("win32-nope", &s.gpl),
         &s.download_dir,
+        &s.state_file,
     );
     assert!(unknown.is_err());
     let missing = apply(
@@ -297,6 +303,7 @@ fn wrong_or_tampered_archive_is_rejected() {
             exe: "C:\\does\\not\\exist\\ffmpeg.exe".into(),
         },
         &s.download_dir,
+        &s.state_file,
     );
     assert!(matches!(missing, Err(Error::InvalidCustomFfmpeg { .. })));
 }

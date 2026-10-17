@@ -18,6 +18,7 @@ pub mod legacy;
 pub mod manifest;
 pub mod payload;
 pub mod pipe;
+pub mod protect;
 pub mod registry;
 pub mod relpath;
 pub mod session;

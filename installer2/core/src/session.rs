@@ -15,8 +15,10 @@ use crate::install::{self, InstallRequest, UninstallReport, install_hlae};
 use crate::integration;
 use crate::legacy::{self, LegacyInstall};
 use crate::manifest::Manifest;
+use crate::protect::{self, Prepare};
 use crate::relpath::RelPath;
 use crate::state::{Features, State};
+use crate::transaction;
 use crate::win::{KnownFolder, known_folder};
 
 /// `C:\Program Files (x86)\HLAE` (same as the old installer).
@@ -57,6 +59,9 @@ pub struct Session {
     /// Admin-only state dir, setup cache, Apps & features, `APPLICATIONFOLDER`, shortcut.
     /// Off only for tests without admin rights.
     pub integrate: bool,
+    /// Protect the install dir outside `Program Files` (owner + permissions, NOTES.md 6.7); needs
+    /// admin rights. Off only for tests.
+    pub protect: bool,
 }
 
 pub struct InstallOptions {
@@ -98,6 +103,7 @@ impl Session {
                 .join("HLAE")
                 .join("state.json"),
             integrate: true,
+            protect: true,
         })
     }
 
@@ -142,6 +148,8 @@ impl Session {
         written_by: &str,
     ) -> Result<InstallSummary> {
         self.secure_state_dir()?;
+        // An earlier run that crashed half way: finish it before anything else (NOTES.md 6.10 d).
+        transaction::recover(&self.state_file)?;
         let old = State::load(&self.state_file)?;
         // The old WiX based setup (NOTES.md 5), only relevant before our first install.
         let legacy = (self.integrate && old.is_none())
@@ -162,8 +170,17 @@ impl Session {
         // The client checked already (before elevating); this catches programs started since.
         in_use::ensure_not_in_use(&in_use::files_to_check(old.as_ref(), legacy.as_ref()))?;
         if let Some(legacy) = &legacy {
+            // Refuse an unusable path before the old setup is gone, not after.
+            protect::check(&install_dir)?;
             legacy::uninstall(legacy)?;
         }
+        // Protected + pinned until the end of the whole operation (NOTES.md 6.7).
+        let how = match (&old, &legacy) {
+            (Some(_), _) => Prepare::Ours,
+            (None, Some(_)) => Prepare::Migration,
+            (None, None) => Prepare::Fresh,
+        };
+        let pinned = protect::prepare(&install_dir, how, self.protect)?;
         let features = Features {
             locales: options
                 .locales
@@ -188,10 +205,16 @@ impl Session {
             payload,
             features,
             written_by,
+            state_file: self.state_file.clone(),
         };
-        let outcome = install_hlae(&request, old.as_ref())?;
         // Until `commit()` everything can still be undone: dropping `outcome` on error rolls back.
-        let mut outcome = outcome;
+        let mut outcome = match install_hlae(&request, old.as_ref()) {
+            Ok(outcome) => outcome,
+            Err(e) => {
+                pinned.remove_created_if_empty();
+                return Err(e);
+            }
+        };
         if let Some(legacy) = &legacy {
             let history = std::mem::take(&mut outcome.state.history);
             outcome.state.push_history(
@@ -218,7 +241,13 @@ impl Session {
         // FFMPEG after HLAE (separate transaction): if it fails, HLAE stays installed and a retry
         // only has to redo FFMPEG.
         let download_dir = self.state_dir().join("download");
-        let ffmpeg = ffmpeg_install::apply(&state, ffmpeg_data, &options.ffmpeg, &download_dir);
+        let ffmpeg = ffmpeg_install::apply(
+            &state,
+            ffmpeg_data,
+            &options.ffmpeg,
+            &download_dir,
+            &self.state_file,
+        );
         let _ = fs::remove_dir(&download_dir);
         let ffmpeg_error = match ffmpeg {
             Ok(Some(FfmpegOutcome {
@@ -247,6 +276,7 @@ impl Session {
             state.save(&self.state_file)?;
             result?;
         }
+        drop(pinned);
         match ffmpeg_error {
             Some(e) => Err(e),
             None => Ok(summary),
@@ -259,6 +289,7 @@ impl Session {
     /// integration (Apps & features entry, …) stays, so a retry can finish.
     pub fn uninstall(&self) -> Result<Option<UninstallSummary>> {
         self.secure_state_dir()?;
+        transaction::recover(&self.state_file)?;
         let Some(mut state) = State::load(&self.state_file)? else {
             return Ok(None);
         };
@@ -268,7 +299,12 @@ impl Session {
             state.install_dir.display()
         );
         in_use::ensure_not_in_use(&in_use::files_to_check(Some(&state), None))?;
-        let files = install::uninstall(&state);
+        let pinned = protect::pin(&state.install_dir)?;
+        let files = install::uninstall_files_and_work_dir(&state);
+        // Unpinned first: our own handle would keep the (now empty) dir from being removed.
+        drop(pinned);
+        // Fails if not empty (user files, kept modified files), which is fine.
+        let _ = fs::remove_dir(&state.install_dir);
         if !files.failed.is_empty() {
             let failed: Vec<&RelPath> = files.failed.iter().map(|(path, _)| path).collect();
             state.files.retain(|f| failed.contains(&&f.path));

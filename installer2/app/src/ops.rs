@@ -37,12 +37,15 @@ pub fn test_worker() -> bool {
     test_mode() && std::env::var("HLAE_SETUP_TEST_WORKER").as_deref() == Ok("1")
 }
 
+/// Debug builds only, with [`test_mode`]: `HLAE_SETUP_TEST_PROTECT=1` → protect the install dir as
+/// a real install does (needs an admin shell), to test that without touching the real install.
 pub fn session() -> hlae_installer_core::Result<Session> {
     #[cfg(debug_assertions)]
     if let Some(path) = std::env::var_os("HLAE_SETUP_STATE_FILE") {
         return Ok(Session {
             state_file: PathBuf::from(path),
             integrate: false,
+            protect: std::env::var("HLAE_SETUP_TEST_PROTECT").as_deref() == Ok("1"),
         });
     }
     Session::system()

@@ -55,6 +55,11 @@ msgctxt "InstallDirInvalid"
 msgid "The path contains characters that aren't allowed."
 msgstr ""
 
+#. The install folder is made admin-only (like Program Files), so it must be new or empty
+msgctxt "InstallDirNotEmpty"
+msgid "This folder already exists and isn't empty. Please choose a new or empty folder."
+msgstr ""
+
 msgctxt "LocalesLabel"
 msgid "Install the translations of the HLAE user interface"
 msgstr ""

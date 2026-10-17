@@ -13,7 +13,7 @@ use windows_sys::Win32::Security::{
 use windows_sys::Win32::System::Com::CoTaskMemFree;
 use windows_sys::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
 use windows_sys::Win32::UI::Shell::{
-    FOLDERID_CommonPrograms, FOLDERID_ProgramData, FOLDERID_ProgramFilesX86,
+    FOLDERID_CommonPrograms, FOLDERID_ProgramData, FOLDERID_ProgramFiles, FOLDERID_ProgramFilesX86,
     FOLDERID_RoamingAppData, FOLDERID_System, SHGetKnownFolderPath,
 };
 use windows_sys::core::{GUID, PWSTR};
@@ -24,6 +24,8 @@ pub enum KnownFolder {
     CommonPrograms,
     /// `C:\ProgramData`
     ProgramData,
+    /// `C:\Program Files` (64-bit, we're a 64-bit process)
+    ProgramFiles,
     /// `C:\Program Files (x86)`
     ProgramFilesX86,
     /// `%APPDATA%` of the current user.
@@ -37,6 +39,7 @@ pub fn known_folder(folder: KnownFolder) -> io::Result<PathBuf> {
     let id: &GUID = match folder {
         KnownFolder::CommonPrograms => &FOLDERID_CommonPrograms,
         KnownFolder::ProgramData => &FOLDERID_ProgramData,
+        KnownFolder::ProgramFiles => &FOLDERID_ProgramFiles,
         KnownFolder::ProgramFilesX86 => &FOLDERID_ProgramFilesX86,
         KnownFolder::RoamingAppData => &FOLDERID_RoamingAppData,
         KnownFolder::System => &FOLDERID_System,

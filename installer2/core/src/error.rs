@@ -37,6 +37,8 @@ pub enum Error {
     Downgrade { installed: String, new: String },
     #[error("invalid install dir {}: {reason}", .dir.display())]
     InvalidInstallDir { dir: PathBuf, reason: &'static str },
+    #[error("{} already exists and isn't empty – please choose a new or empty folder", .dir.display())]
+    InstallDirNotEmpty { dir: PathBuf },
     #[error("install dir {} differs from the installed location {}", .requested.display(), .installed.display())]
     InstallDirMismatch {
         installed: PathBuf,
