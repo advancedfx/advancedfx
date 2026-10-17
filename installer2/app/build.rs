@@ -3,6 +3,10 @@ use std::io::BufWriter;
 use std::path::PathBuf;
 
 fn main() {
+    // DLL planting protection (NOTES.md 6.4): the loader resolves the exe's static imports only from
+    // System32 (LOAD_LIBRARY_SEARCH_SYSTEM32), never from the dir the exe was started from.
+    // Safe: all static imports are Windows system DLLs (checked with `dumpbin /dependents`).
+    println!("cargo:rustc-link-arg-bins=/DEPENDENTLOADFLAG:0x800");
     pack_payload();
     tauri_build::build()
 }

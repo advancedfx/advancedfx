@@ -56,6 +56,11 @@ pub fn known_folder(folder: KnownFolder) -> io::Result<PathBuf> {
     result
 }
 
+/// Whether the current process runs as LocalSystem (e.g. deployment tools like Intune / SCCM).
+pub fn is_local_system() -> io::Result<bool> {
+    Ok(crate::pipe::process_user_sid(std::process::id())? == "S-1-5-18")
+}
+
 /// Whether the current process runs elevated (as administrator).
 pub fn is_elevated() -> io::Result<bool> {
     // SAFETY: plain Win32 calls with valid out pointers, the token handle is closed.

@@ -535,11 +535,27 @@ All questions so far are decided; details live in 4–6.
   - `cargo clippy` clean, `cargo fmt` (default style, no `rustfmt.toml` in the repo).
   - Tested as admin (2026-10-17, script installs into `C:\HLAE-test`, uninstalls via `QuietUninstallString`, backs up and
     restores the old WiX `APPLICATIONFOLDER`): all as expected. **Still to confirm after a reboot:** `C:\ProgramData\advancedfx` gone.
-  - Note: ARP `--uninstall` / `--modify` without `--quiet` still end with 1639 and need admin (wizard M6, elevation M4).
-- [ ] **M4 – Elevated worker** + named pipe (incl. security measures, 6.4).
-  - [ ] DLL planting: `SetDefaultDllDirectories` in `main()` is too late for the exe's *static* imports (resolved by the
-        loader before `main`) → also link with `/DEPENDENTLOADFLAG:0x800` (`LOAD_LIBRARY_SEARCH_SYSTEM32`) and check
-        that WebView2 still loads.
+  - Note: ARP `--uninstall` / `--modify` without `--quiet` still end with 1639 (wizard M6); elevation works since M4.
+- [x] **M4 – Elevated worker** + named pipe (incl. security measures, 6.4).
+  - [`core/src/pipe.rs`](core/src/pipe.rs): random pipe name (`BCryptGenRandom`, 128 bit), worker creates it with
+    `FILE_FLAG_FIRST_PIPE_INSTANCE` + `PIPE_REJECT_REMOTE_CLIENTS`, DACL = read/write for the *client's user SID* only,
+    checks `GetNamedPipeClientProcessId`; client connects with `SECURITY_IDENTIFICATION` (no impersonation) and checks
+    `GetNamedPipeServerProcessId` == the worker it started. `CONNECT_TIMEOUT` 90 s (worker exits if nobody connects).
+    `spawn_elevated` = `ShellExecuteExW` verb `runas`, hidden.
+  - [`app/src/worker.rs`](app/src/worker.rs): `HLAE_Setup.exe --worker <pipe> <client pid>` (internal, not in `--help`).
+    Protocol: one JSON `Request` line (max 64 KiB) → JSON lines `log` … `done {exit_code}`. Worker validates the request
+    itself and only installs its own embedded payload. Client forwards the worker's log into its console + log file.
+  - [`app/src/ops.rs`](app/src/ops.rs): the elevated operations (moved out of the CLI). CLI: already elevated → in-process,
+    else worker. `--remove-app-data` runs in the unelevated client after the uninstall (right user), ignored as SYSTEM.
+  - DLL planting: `/DEPENDENTLOADFLAG:0x800` link flag (static imports from System32 only; all static imports are system
+    DLLs incl. the UCRT, no `vcruntime140.dll`), plus `SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32)` in the
+    worker and CLI mode. Not in the GUI (WebView2 loads its own DLLs) – the GUI runs unelevated anyway. GUI still works.
+  - Debug builds: `HLAE_SETUP_STATE_FILE` + `HLAE_SETUP_TEST_WORKER=1` → real worker process + pipe, but started
+    unelevated → whole path testable without UAC.
+  - Tested 2026-10-17 from a non-elevated shell: UAC declined → 1223; install via worker; uninstall via cached setup's
+    `QuietUninstallString` (client + worker both run from the cached exe, self-delete still works).
+  - Known limitation: started already elevated by a *different* admin account (over-the-shoulder UAC), "remove app data"
+    hits that account's `%APPDATA%`.
 - [ ] **M5 – FFMPEG**: variants, download, default rules, custom `ffmpeg.ini`;
       dev tool `installer2/tools` generating `data/ffmpeg.json` (6.10 b).
 - [ ] **M6 – GUI wizard + translations** (incl. WebView2 check, launch HLAE).

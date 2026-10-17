@@ -13,6 +13,7 @@ pub mod integration;
 pub mod manifest;
 pub mod pack;
 pub mod payload;
+pub mod pipe;
 pub mod registry;
 pub mod relpath;
 pub mod session;

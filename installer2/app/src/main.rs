@@ -3,7 +3,9 @@
 
 mod cli;
 mod logging;
+mod ops;
 mod payload;
+mod worker;
 
 use tauri::{WebviewUrl, WebviewWindowBuilder};
 
@@ -28,13 +30,21 @@ fn payload_info() -> Result<String, String> {
 }
 
 fn main() {
+    // Elevated worker (internal, NOTES.md 6.4): no webview, no console, no log file.
+    let raw_args: Vec<_> = std::env::args_os().skip(1).collect();
+    if raw_args.first().is_some_and(|a| a == worker::WORKER_ARG) {
+        harden_dll_search();
+        std::process::exit(worker::main(&raw_args[1..]));
+    }
+
     // Arguments first: the command line mode never creates a webview (NOTES.md 6.3).
-    let args = cli::parse(std::env::args_os().skip(1));
+    let args = cli::parse(raw_args);
     if matches!(&args, Ok(args) if args.is_gui()) {
         run_gui();
         return;
     }
 
+    harden_dll_search();
     attach_parent_console();
     let code = match args {
         Ok(args) => {
@@ -59,6 +69,18 @@ fn main() {
         }
     };
     std::process::exit(code);
+}
+
+/// DLL planting protection (NOTES.md 6.4): later `LoadLibrary` calls only search System32, never the
+/// directory HLAE_Setup.exe was started from (e.g. Downloads). Static imports are covered by the
+/// `/DEPENDENTLOADFLAG` link flag (`build.rs`), which also applies before `main`.
+/// Not (yet) for the GUI: WebView2 loads its own DLLs and may rely on the default search order.
+fn harden_dll_search() {
+    use windows_sys::Win32::System::LibraryLoader::{
+        LOAD_LIBRARY_SEARCH_SYSTEM32, SetDefaultDllDirectories,
+    };
+    // SAFETY: plain Win32 call.
+    unsafe { SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32) };
 }
 
 /// Release builds are GUI subsystem apps: attach to the console we were started from (if any) for output.
