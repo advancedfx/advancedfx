@@ -14,7 +14,7 @@ use windows_sys::Win32::System::Com::CoTaskMemFree;
 use windows_sys::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
 use windows_sys::Win32::UI::Shell::{
     FOLDERID_CommonPrograms, FOLDERID_ProgramData, FOLDERID_ProgramFilesX86,
-    FOLDERID_RoamingAppData, SHGetKnownFolderPath,
+    FOLDERID_RoamingAppData, FOLDERID_System, SHGetKnownFolderPath,
 };
 use windows_sys::core::{GUID, PWSTR};
 
@@ -28,6 +28,8 @@ pub enum KnownFolder {
     ProgramFilesX86,
     /// `%APPDATA%` of the current user.
     RoamingAppData,
+    /// `C:\Windows\System32`
+    System,
 }
 
 /// Resolves a known folder via the shell API (not via environment variables, which the caller controls).
@@ -37,6 +39,7 @@ pub fn known_folder(folder: KnownFolder) -> io::Result<PathBuf> {
         KnownFolder::ProgramData => &FOLDERID_ProgramData,
         KnownFolder::ProgramFilesX86 => &FOLDERID_ProgramFilesX86,
         KnownFolder::RoamingAppData => &FOLDERID_RoamingAppData,
+        KnownFolder::System => &FOLDERID_System,
     };
     let mut path: PWSTR = null_mut();
     // SAFETY: valid GUID pointer and out pointer; `path` is freed with CoTaskMemFree in any case.

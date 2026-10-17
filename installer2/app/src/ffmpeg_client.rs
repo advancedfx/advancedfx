@@ -7,7 +7,8 @@ use std::sync::atomic::AtomicBool;
 
 use hlae_installer_core::download::download;
 use hlae_installer_core::ffmpeg::{self, FfmpegData};
-use hlae_installer_core::ffmpeg_install::{FfmpegPlan, FfmpegSelection, default_selection};
+use hlae_installer_core::ffmpeg_install::{self, FfmpegPlan, FfmpegSelection, default_selection};
+use hlae_installer_core::legacy::LegacyInstall;
 use hlae_installer_core::state::State;
 use hlae_installer_core::{Error, Result, hash};
 
@@ -31,6 +32,7 @@ pub fn resolve(
     args: &FfmpegArgs,
     data: &FfmpegData,
     state_file: &Path,
+    legacy: Option<&LegacyInstall>,
     cancel: &AtomicBool,
 ) -> Result<(FfmpegPlan, Option<PathBuf>)> {
     // Readable for users (NOTES.md 6.7); if it can't be read, behave like a fresh install.
@@ -43,7 +45,11 @@ pub fn resolve(
         (Some(selection), _) => selection.clone(),
         // An archive without --ffmpeg: install whatever variant it is.
         (None, Some(archive)) => FfmpegSelection::Variant(variant_of_archive(data, archive)?),
-        (None, None) => default_selection(data, state.as_ref()),
+        (None, None) => match (&state, legacy) {
+            // Migrating from the old WiX setup: take over its FFMPEG.
+            (None, Some(legacy)) => ffmpeg_install::legacy_selection(data, legacy),
+            _ => default_selection(data, state.as_ref()),
+        },
     };
     log::info!("FFMPEG: {}", describe(&selection));
 

@@ -119,6 +119,16 @@ msgctxt "FfmpegRemove"
 msgid "Remove FFMPEG"
 msgstr ""
 
+#. Migration from the previous (WiX based) HLAE Setup. {installed} = installed HLAE version
+msgctxt "LegacyReplace"
+msgid "HLAE {installed} from the previous HLAE Setup is installed. It will be replaced by HLAE {version}; your HLAE settings are kept."
+msgstr ""
+
+#. {installed} = installed HLAE version (older than 2.181.0)
+msgctxt "LegacyWixV3"
+msgid "HLAE {installed} was installed by an old HLAE Setup that can't be updated automatically. Please uninstall it in Apps & features first, then start this setup again."
+msgstr ""
+
 #. {version} = .NET Framework version, e.g. 4.6.2
 msgctxt "DotnetMissing"
 msgid "HLAE needs the Microsoft .NET Framework {version} or newer. Please install it."

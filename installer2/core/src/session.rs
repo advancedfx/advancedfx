@@ -12,6 +12,7 @@ use crate::ffmpeg_install::{self, FfmpegOutcome, FfmpegPlan};
 use crate::fsutil;
 use crate::install::{self, InstallRequest, UninstallReport, install_hlae};
 use crate::integration;
+use crate::legacy::{self, LegacyInstall};
 use crate::manifest::Manifest;
 use crate::relpath::RelPath;
 use crate::state::{Features, State};
@@ -141,12 +142,25 @@ impl Session {
     ) -> Result<InstallSummary> {
         self.secure_state_dir()?;
         let old = State::load(&self.state_file)?;
-        let install_dir = match (&options.install_dir, &old) {
-            (Some(dir), _) => dir.clone(),
-            (None, Some(old)) => old.install_dir.clone(),
-            (None, None) => default_install_dir()?,
+        // The old WiX based setup (NOTES.md 5), only relevant before our first install.
+        let legacy = (self.integrate && old.is_none())
+            .then(legacy::detect)
+            .flatten();
+        if let Some(legacy) = legacy.as_ref().filter(|l| l.is_wix_v3()) {
+            return Err(Error::Legacy(legacy_v3_message(legacy)));
+        }
+        let install_dir = match (&options.install_dir, &old, &legacy) {
+            (Some(dir), _, _) => dir.clone(),
+            (None, Some(old), _) => old.install_dir.clone(),
+            (None, None, Some(legacy)) if legacy.install_dir.is_some() => {
+                legacy.install_dir.clone().expect("checked")
+            }
+            (None, None, _) => default_install_dir()?,
         };
         validate_install_dir(&install_dir)?;
+        if let Some(legacy) = &legacy {
+            legacy::uninstall(legacy)?;
+        }
         let features = Features {
             locales: options
                 .locales
@@ -174,6 +188,15 @@ impl Session {
         };
         let outcome = install_hlae(&request, old.as_ref())?;
         // Until `commit()` everything can still be undone: dropping `outcome` on error rolls back.
+        let mut outcome = outcome;
+        if let Some(legacy) = &legacy {
+            let history = std::mem::take(&mut outcome.state.history);
+            outcome.state.push_history(
+                "migrate",
+                format!("WiX v5 HLAE Setup {}", legacy.version().unwrap_or_default()),
+            );
+            outcome.state.history.extend(history);
+        }
         fs::create_dir_all(self.state_dir()).ctx("create", self.state_dir())?;
         outcome.state.save(&self.state_file)?;
         let mut state = outcome.state;
@@ -274,6 +297,16 @@ impl Session {
             integration_errors,
         }))
     }
+}
+
+/// HLAE installed by the WiX v3 setup isn't migrated (NOTES.md 5): the user uninstalls it first.
+pub fn legacy_v3_message(legacy: &LegacyInstall) -> String {
+    format!(
+        "HLAE {} was installed by an old HLAE Setup (before {}) that can't be updated automatically. \
+         Please uninstall it in Apps & features first, then run this setup again.",
+        legacy.version().unwrap_or_default(),
+        legacy::WIX_V5_FIRST
+    )
 }
 
 /// Deletes `%APPDATA%\HLAE` of the current user (uninstall option, NOTES.md 4.1).

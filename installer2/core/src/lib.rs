@@ -13,6 +13,7 @@ pub mod fsutil;
 pub mod hash;
 pub mod install;
 pub mod integration;
+pub mod legacy;
 pub mod manifest;
 pub mod payload;
 pub mod pipe;

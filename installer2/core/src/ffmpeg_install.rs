@@ -75,6 +75,26 @@ pub fn default_selection(data: &FfmpegData, state: Option<&State>) -> FfmpegSele
     }
 }
 
+/// Default choice when migrating from the old WiX setup (NOTES.md 4.2): take over its FFMPEG
+/// (same variant / custom path, downloaded again), none if it had none.
+pub fn legacy_selection(
+    data: &FfmpegData,
+    legacy: &crate::legacy::LegacyInstall,
+) -> FfmpegSelection {
+    use crate::legacy::LegacyFfmpeg;
+    match &legacy.ffmpeg {
+        LegacyFfmpeg::None => FfmpegSelection::None,
+        LegacyFfmpeg::Custom(exe) if validate_custom_exe(exe).is_ok() => {
+            FfmpegSelection::Custom(exe.clone())
+        }
+        LegacyFfmpeg::Custom(_) => FfmpegSelection::Variant(data.default_variant.clone()),
+        LegacyFfmpeg::Variant(id) if data.variant(id).is_some() => {
+            FfmpegSelection::Variant(id.clone())
+        }
+        LegacyFfmpeg::Variant(_) => FfmpegSelection::Variant(data.default_variant.clone()),
+    }
+}
+
 /// Checks a custom `ffmpeg.exe` path (absolute, existing file, short enough for HLAE).
 pub fn validate_custom_exe(exe: &Path) -> Result<()> {
     use std::os::windows::ffi::OsStrExt;

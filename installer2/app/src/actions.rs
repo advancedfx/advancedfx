@@ -5,6 +5,8 @@
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 
+use hlae_installer_core::legacy::{self, LegacyInstall};
+use hlae_installer_core::state::State;
 use hlae_installer_core::{Error, session, win};
 
 use crate::cli::exit_code;
@@ -20,9 +22,20 @@ pub struct InstallChoice {
 
 /// Returns the exit code; `cancel` aborts the FFMPEG download (exit code 1602).
 pub fn install(choice: &InstallChoice, cancel: &AtomicBool) -> i32 {
+    let legacy = legacy();
+    if let Some(legacy) = legacy.as_ref().filter(|l| l.is_wix_v3()) {
+        log::error!("{}", session::legacy_v3_message(legacy));
+        return exit_code::FATAL;
+    }
     let resolved = payload::ffmpeg_data().and_then(|data| {
         let session = ops::session()?;
-        ffmpeg_client::resolve(&choice.ffmpeg, &data, &session.state_file, cancel)
+        ffmpeg_client::resolve(
+            &choice.ffmpeg,
+            &data,
+            &session.state_file,
+            legacy.as_ref(),
+            cancel,
+        )
     });
     let (plan, download) = match resolved {
         Ok(resolved) => resolved,
@@ -54,6 +67,19 @@ pub fn uninstall(remove_app_data: bool) -> i32 {
         remove_hlae_app_data();
     }
     code
+}
+
+/// The old WiX setup's installation if it matters: only before our first install, never in the
+/// debug test mode (the worker doesn't migrate there either).
+pub fn legacy() -> Option<LegacyInstall> {
+    if ops::test_mode() {
+        return None;
+    }
+    let installed = ops::session()
+        .ok()
+        .and_then(|s| State::load(&s.state_file).ok().flatten())
+        .is_some();
+    if installed { None } else { legacy::detect() }
 }
 
 /// Elevated already (admin shell, deployment tool) → in-process, else via the elevated worker.

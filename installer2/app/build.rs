@@ -29,7 +29,13 @@ fn build_catalogs() {
         .unwrap_or_else(|e| panic!("{}: {e}", pot.display()));
     let mut catalogs = vec![("en-US".to_owned(), source.clone())];
 
-    let locales = manifest_dir.join("../../deps/release/l10n/locales");
+    // `HLAE_SETUP_L10N_DIR` (same layout: `<dir>/<lang>/installer2/messages.po`) to test translations
+    // without touching the l10n repo.
+    println!("cargo:rerun-if-env-changed=HLAE_SETUP_L10N_DIR");
+    let locales = match std::env::var_os("HLAE_SETUP_L10N_DIR") {
+        Some(dir) => PathBuf::from(dir),
+        None => manifest_dir.join("../../deps/release/l10n/locales"),
+    };
     if locales.is_dir() {
         let mut langs: Vec<_> = fs::read_dir(&locales)
             .expect("list locales")

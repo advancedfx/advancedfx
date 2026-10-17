@@ -59,7 +59,7 @@ async function validate() {
   if (run !== validation) return false; // a newer validation is running
   setError('install-dir', dirError);
   setError('ffmpeg-exe', exeError);
-  const ok = !dirError && !exeError && info.hasPayload;
+  const ok = !dirError && !exeError && info.hasPayload && !info.legacy?.wixV3;
   $('install-go').disabled = !ok;
   return ok;
 }
@@ -93,6 +93,11 @@ function openInstall(modify) {
   document.querySelector(`input[name="ffmpeg"][value="${kind}"]`).checked = true;
 
   $('no-payload').hidden = info.hasPayload;
+  const legacy = installed ? null : info.legacy;
+  $('legacy-notice').hidden = !legacy;
+  if (legacy) {
+    $('legacy-notice').textContent = t(legacy.wixV3 ? 'LegacyWixV3' : 'LegacyReplace', { installed: legacy.version, version: info.version });
+  }
   $('dotnet-missing').hidden = info.dotnetOk;
   $('dotnet-missing').textContent = t('DotnetMissing', { version: info.dotnetVersion });
   $('install-go').textContent = t(modify ? 'ApplyButton' : 'InstallButton');

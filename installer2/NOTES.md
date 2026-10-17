@@ -344,6 +344,8 @@ Keep all install logic in `core` (testable without GUI, usable by silent mode an
   **For now** (while the GUI texts still change a lot) the `.pot` lives in `installer2/l10n/messages.pot` and moves
   to the l10n repo once the GUI is stable (decided 2026-10-17); `build.rs` already reads translations from
   `deps/release/l10n/locales/<lang>/installer2/messages.po` if present.
+- Testing a translation without touching the l10n repo: `HLAE_SETUP_L10N_DIR=<dir>` at build time (same layout
+  `<dir>/<lang>/installer2/messages.po`), `HLAE_SETUP_LANG=<lang>` at runtime.
 - Parsing: `polib` 0.3 (pure Rust, MIT, deps `linereader` + `concat-string`) in `build-support` (build time only).
   Translations whose `{placeholders}` differ from the English text are skipped (→ English) with a build warning.
 - Keys: `msgctxt` = stable ID (like the old installer, e.g. `msgctxt "InstallButton"`), `msgid` = English text.
@@ -625,7 +627,7 @@ All questions so far are decided; details live in 4–6.
   - Observation: a repair with unchanged files took ~14 s (stages all 208 HLAE files first, then compares) –
     could compare installed files against the manifest *before* staging and only extract what differs (later, M7).
   - Note for the GUI (M6): the download happens before the UAC prompt (unelevated); show progress there.
-- [ ] **M6 – GUI wizard + translations** (incl. WebView2 check, launch HLAE).
+- [x] **M6 – GUI wizard + translations** (incl. WebView2 check, launch HLAE). Open points moved to "Untested / open TODOs".
   - Design (decided 2026-10-17): black / white / gray, accent maroon `#990000` (HLAE logo `misc/icon/logo2009.svg`, inlined);
     light + dark following Windows (dark: lighter maroon `#ff9e9e` for text / focus). Color-blind friendly: accent differs
     by brightness, states / errors always also by icon (✓ ✕ ! ⚠) and text, radios by shape; contrast ≥ 4.5:1.
@@ -647,13 +649,42 @@ All questions so far are decided; details live in 4–6.
   - [x] Real run as normal user with the release exe (2026-10-17): install into `C:\HLAE-test` with FFMPEG download
         (progress page, UAC), Change → Remove FFMPEG, uninstall from the cached setup (`--uninstall` → uninstall page),
         `%APPDATA%\HLAE` kept. Found + fixed: WebView2 data dir left over after the uninstall from the cached setup (6.2).
-  - [ ] Still open: a first translation to check the whole l10n path (e.g. a test `de` .po).
+  - [x] Test translation (2026-10-17, German, deliberately incomplete; kept outside the repo): via
+        `HLAE_SETUP_L10N_DIR=<dir>` (`<dir>/<lang>/installer2/messages.po`, overrides the l10n repo path in `build.rs`)
+        + `HLAE_SETUP_LANG=de`. Checked: translated texts incl. window title, fuzzy → English, wrong placeholder →
+        build warning + English, untranslated → English, longer German texts fit. Auto detection picked `en-US`
+        (first of the user's Windows UI languages `en-US, en-DE, en-GB, de-DE, fr-FR`) – correct.
 - [ ] **M7 – Migration** from WiX v5, files-in-use check, rollback hardening.
+  - [x] Detection ([`core/src/legacy.rs`](core/src/legacy.rs), read-only): bundle via `BundleUpgradeCode` in the 32-bit
+        Uninstall keys (+ `QuietUninstallString`), MSIs via `MsiEnumRelatedProductsW` + `MsiGetProductInfoW`,
+        `APPLICATIONFOLDER`, old FFMPEG `version` / `custom` → mapped to the new variant ids. Verified on the test
+        machine (2026-10-17): bundle 2.192.8, HlaeCore 2.192.8, HlaeFfmpeg 1.1.67 `{CA6490CA-…}`,
+        `C:\Program Files (x86)\HLAE`, `win64-gpl`.
+  - [x] Migration wiring (not tested for real yet): only before our first install (no state) and never in the debug test
+        mode. Worker: WiX v3 (< 2.181.0) → refuse with message; WiX v5 → take over the install dir, run the bundle's
+        quiet uninstall, then `msiexec /x /qn /norestart` for any MSI still there, error if anything is left, clean the
+        leftovers (5), then install; history entry `migrate`. Client / GUI: FFMPEG preselected from the old setup
+        (variant / custom path / none), install dir preset, GUI notice ("will be replaced, settings kept"),
+        WiX v3 → blocking notice, Install disabled.
+  - [x] Real migration test (2026-10-17, release exe, `--quiet` from a normal shell, 1 UAC prompt, ~2 min incl. the
+        194 MB download): old bundle uninstalled silently (exit 0, the `msiexec` fallback wasn't needed), all 3 old ARP
+        entries gone, old `HLAE FFMPEG` key + folder and `Programs\HLAE\` removed; new HLAE in
+        `C:\Program Files (x86)\HLAE` with FFMPEG `win64-gpl` taken over, `Programs\HLAE.lnk`, `APPLICATIONFOLDER`
+        written again, history `migrate` → `install` → `ffmpeg`. The test machine now has the new installer's HLAE
+        (old setup can be reinstalled from the public release for further migration tests).
+  - [ ] Not tested: migration via the GUI (same code path as `--quiet`); WiX v3 refusal (no v3 install at hand);
+        `msiexec /x` fallback (bundle missing / broken).
+  - [ ] Files-in-use check (Restart Manager), crash-safe rollback journal, faster repair (compare before staging).
   - Test machine has the old WiX HLAE installed (from a public release build) – keep it for the migration tests.
 ### Untested / open TODOs
 Things that exist but haven't been tested yet, or small TODOs outside the milestones.
 - [ ] **WebView2 missing** (6.2, `gui.rs` `webview2::ensure_installed`): message box → opens Microsoft's download page →
       setup ends. Not tested – needs a machine / VM without WebView2. Left open on purpose (2026-10-17).
+- [ ] **RTL (right-to-left) languages** in the wizard: not supported yet (no RTL language in the l10n repo so far,
+      moved here 2026-10-17). Would need: `dir="rtl"` from the language, logical CSS properties
+      (`margin-inline-start`, `border-inline-start`, `text-align: start`), paths / log / path inputs always LTR,
+      bidi isolation (FSI / PDI) around inserted placeholder values, `MB_RTLREADING` for the native message box.
+      Verify with someone who reads the language.
 
 - [ ] **M8 – Build integration** in `cmake/MultiBuild.cmake`, retire `installer/`.
   - [ ] Third-party licenses: the installer's Rust deps (Tauri etc.) are now in the root `Cargo.lock` →

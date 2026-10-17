@@ -67,6 +67,16 @@ struct Info {
     default_ffmpeg: Selection,
     dotnet_ok: bool,
     dotnet_version: &'static str,
+    /// HLAE installed by the old WiX setup (only before our first install, NOTES.md 5).
+    legacy: Option<Legacy>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct Legacy {
+    version: String,
+    /// Installed by the WiX v3 setup → not migrated, the user has to uninstall it first.
+    wix_v3: bool,
 }
 
 #[tauri::command]
@@ -81,7 +91,16 @@ fn info_inner(gui: &Gui) -> hlae_installer_core::Result<Info> {
     let newer_installed = state.as_ref().is_some_and(|s| {
         version::compare(&s.hlae_version, &manifest.hlae_version).is_ok_and(|o| o.is_gt())
     });
-    let default_ffmpeg = match ffmpeg_install::default_selection(&data, state.as_ref()) {
+    let legacy = actions::legacy();
+    let selection = match (&state, &legacy) {
+        (None, Some(legacy)) => ffmpeg_install::legacy_selection(&data, legacy),
+        _ => ffmpeg_install::default_selection(&data, state.as_ref()),
+    };
+    let default_install_dir = match legacy.as_ref().and_then(|l| l.install_dir.clone()) {
+        Some(dir) => dir,
+        None => session::default_install_dir()?,
+    };
+    let default_ffmpeg = match selection {
         FfmpegSelection::Keep => Selection::Keep,
         FfmpegSelection::None => Selection::None,
         FfmpegSelection::Variant(variant) => Selection::Download { variant },
@@ -107,7 +126,7 @@ fn info_inner(gui: &Gui) -> hlae_installer_core::Result<Info> {
             ffmpeg_custom: s.ffmpeg.custom_path,
         }),
         newer_installed,
-        default_install_dir: session::default_install_dir()?.display().to_string(),
+        default_install_dir: default_install_dir.display().to_string(),
         variants: data
             .variants
             .iter()
@@ -121,6 +140,10 @@ fn info_inner(gui: &Gui) -> hlae_installer_core::Result<Info> {
         default_ffmpeg,
         dotnet_ok: dotnet::framework_ok(),
         dotnet_version: dotnet::MIN_VERSION,
+        legacy: legacy.map(|l| Legacy {
+            version: l.version().unwrap_or_default(),
+            wix_v3: l.is_wix_v3(),
+        }),
     })
 }
 

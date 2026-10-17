@@ -44,6 +44,8 @@ pub enum Error {
     },
     #[error("invalid custom ffmpeg.exe {}: {reason}", .exe.display())]
     InvalidCustomFfmpeg { exe: PathBuf, reason: &'static str },
+    #[error("{0}")]
+    Legacy(String),
     #[error("download of {url} failed: {reason}")]
     Download { url: String, reason: String },
     #[error("cancelled")]
