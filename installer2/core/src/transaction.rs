@@ -22,7 +22,7 @@ use serde::{Deserialize, Serialize};
 use crate::error::{Error, IoContext, Result};
 use crate::fsutil;
 use crate::hash;
-use crate::manifest::Component;
+use crate::manifest::{Component, ManifestFile};
 use crate::payload::StagedFile;
 use crate::relpath::RelPath;
 use crate::state::FileRecord;
@@ -155,19 +155,22 @@ impl Transaction {
     }
 
     /// Moves `staged` into place and moves obsolete files of the `managed` components aside.
+    /// `unchanged` = files of the new set that are installed exactly like this already (not staged,
+    /// see [`unchanged_files`]); they're kept and recorded.
     ///
     /// - Tracked files are overwritten even if modified (NOTES.md 4.1); identical files are left untouched.
-    /// - Files in `old_files` of a `managed` component that aren't in `staged` are removed if their
-    ///   checksum still matches, else kept.
+    /// - Files in `old_files` of a `managed` component that aren't in `staged` / `unchanged` are
+    ///   removed if their checksum still matches, else kept.
     ///
     /// On error everything done so far is rolled back.
     pub fn apply(
         &mut self,
         staged: Vec<StagedFile>,
+        unchanged: Vec<FileRecord>,
         managed: &[Component],
         old_files: &[FileRecord],
     ) -> Result<Applied> {
-        let result = self.apply_inner(staged, managed, old_files);
+        let result = self.apply_inner(staged, unchanged, managed, old_files);
         if result.is_err()
             && let Err(e) = self.rollback_inner()
         {
@@ -179,11 +182,13 @@ impl Transaction {
     fn apply_inner(
         &mut self,
         staged: Vec<StagedFile>,
+        unchanged: Vec<FileRecord>,
         managed: &[Component],
         old_files: &[FileRecord],
     ) -> Result<Applied> {
         let mut applied = Applied::default();
-        let mut new_keys = HashSet::new();
+        let mut new_keys: HashSet<String> = unchanged.iter().map(|f| f.path.key()).collect();
+        applied.files.extend(unchanged);
 
         for file in staged {
             new_keys.insert(file.path.key());
@@ -339,6 +344,33 @@ impl Drop for Transaction {
             }
         }
     }
+}
+
+/// The files of `wanted` that are installed in `install_dir` exactly like this already (same size and
+/// SHA-256, no junction in the path): they needn't be staged (fast repair / upgrade). A file that
+/// can't be read counts as changed.
+pub fn unchanged_files<'a>(
+    install_dir: &Path,
+    wanted: impl IntoIterator<Item = &'a ManifestFile>,
+) -> Vec<FileRecord> {
+    wanted
+        .into_iter()
+        .filter(|file| {
+            if fsutil::check_no_reparse(install_dir, &file.path).is_err() {
+                return false;
+            }
+            let target = file.path.to_path(install_dir);
+            // Size first: cheap, and most changed files differ in size.
+            fs::symlink_metadata(&target)
+                .is_ok_and(|meta| meta.is_file() && meta.len() == file.size)
+                && hash::sha256_file(&target).is_ok_and(|(sha256, _)| sha256 == file.sha256)
+        })
+        .map(|file| FileRecord {
+            path: file.path.clone(),
+            sha256: file.sha256.clone(),
+            component: file.feature,
+        })
+        .collect()
 }
 
 /// Finishes a transaction that was interrupted (setup crashed / killed): if the state file is still

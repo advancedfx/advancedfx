@@ -92,14 +92,49 @@ fn collect_files(dir: &Path, files: &mut Vec<PathBuf>) {
 /// Programs that have one of `files` open, without this process. If the Restart Manager itself
 /// fails (e.g. not implemented under Wine), that's logged and treated as "nothing in use" – a broken
 /// check shouldn't block installing; renaming in-use files works anyway (NOTES.md 6.10 d).
+///
+/// The Restart Manager costs ~18 ms per file with ~200 running processes (~4 s for HLAE), so it only
+/// gets the candidates (decided 2026-10-17): [`is_key_file`]s – a loaded runtime DLL is found via the
+/// HLAE.exe / hook DLL that loaded it – and the files [`is_open`] flags. A missed file only costs
+/// convenience: renaming works anyway, an uninstall keeps what it couldn't delete tracked.
 pub fn programs_using(files: &[PathBuf]) -> Vec<Holder> {
-    match holders(files) {
+    let candidates: Vec<PathBuf> = files
+        .iter()
+        .filter(|file| is_key_file(file) || is_open(file))
+        .cloned()
+        .collect();
+    match holders(&candidates) {
         Ok(holders) => holders,
         Err(e) => {
             log::warn!("files-in-use check failed, continuing without it: {e}");
             Vec::new()
         }
     }
+}
+
+/// What runs as a program or gets loaded into one on its own: `*.exe` (HLAE.exe, the injectors,
+/// ffmpeg.exe) and the hook DLLs `AfxHook*.dll` (loaded into games).
+fn is_key_file(path: &Path) -> bool {
+    let name = path
+        .file_name()
+        .map(|n| n.to_string_lossy().to_lowercase())
+        .unwrap_or_default();
+    name.ends_with(".exe") || (name.starts_with("afxhook") && name.ends_with(".dll"))
+}
+
+/// Quick probe (~0.1 ms): opening without sharing fails with a sharing violation if anyone has the
+/// file open with data access. Doesn't see loaded program images (Windows doesn't apply share modes
+/// to them) – those are the key files.
+fn is_open(path: &Path) -> bool {
+    use std::os::windows::fs::OpenOptionsExt;
+    const ERROR_SHARING_VIOLATION: i32 = 32;
+    const FILE_FLAG_OPEN_REPARSE_POINT: u32 = 0x0020_0000;
+    fs::OpenOptions::new()
+        .read(true)
+        .share_mode(0)
+        .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT)
+        .open(path)
+        .is_err_and(|e| e.raw_os_error() == Some(ERROR_SHARING_VIOLATION))
 }
 
 /// Fails with [`Error::FilesInUse`] if a program has one of `files` open.
@@ -266,6 +301,44 @@ mod tests {
         assert_eq!(found[0].pid, child.id());
         assert_eq!(found[0].exe.as_deref(), Some("powershell.exe"));
         assert!(holders(&[file]).unwrap().is_empty());
+    }
+
+    #[test]
+    fn key_files() {
+        for key in [
+            "HLAE.exe",
+            "x64/injector.exe",
+            "x64/AfxHookSource2.dll",
+            "AFXHOOKGOLDSRC.DLL",
+        ] {
+            assert!(is_key_file(Path::new(key)), "{key}");
+        }
+        for other in [
+            "x64/vcruntime140.dll",
+            "AfxHook.dat",
+            "locales/de/hlae.mo",
+            "exe",
+        ] {
+            assert!(!is_key_file(Path::new(other)), "{other}");
+        }
+    }
+
+    /// A running exe isn't seen by the probe (no share modes on program images) but as a key file.
+    #[test]
+    fn finds_a_running_exe() {
+        let dir = tempfile::tempdir().unwrap();
+        let exe = dir.path().join("HLAE.exe");
+        fs::copy(r"C:\Windows\System32\PING.EXE", &exe).unwrap();
+        let mut child = std::process::Command::new(&exe)
+            .args(["-n", "30", "127.0.0.1"])
+            .stdout(std::process::Stdio::null())
+            .spawn()
+            .unwrap();
+        assert!(!is_open(&exe), "the probe doesn't see program images");
+        let found = programs_using(std::slice::from_ref(&exe));
+        let _ = child.kill();
+        let _ = child.wait();
+        assert!(found.iter().any(|h| h.pid == child.id()), "{found:?}");
     }
 
     #[test]

@@ -24,20 +24,28 @@ pub struct StagedFile {
     pub staged: PathBuf,
 }
 
-/// Extracts the files of `components` from `payload` into `staging_dir`.
+/// Extracts the files of `components` from `payload` into `staging_dir`, except those in `skip`
+/// ([`RelPath::key`]s of files already installed exactly like this).
 ///
 /// Streams the archive (never holds it in memory) and verifies every file against `manifest`:
 /// entries not in the manifest, non-regular entries, duplicates, size / hash mismatches and
-/// missing files are errors.
+/// missing files are errors. If every file is skipped, the payload isn't read at all.
 pub fn stage(
     payload: &[u8],
     manifest: &Manifest,
     components: &[Component],
     staging_dir: &Path,
+    skip: &HashSet<String>,
 ) -> Result<Vec<StagedFile>> {
     let invalid = |msg: String| Error::Payload(msg);
     let expected: HashMap<String, &ManifestFile> =
         manifest.files.iter().map(|f| (f.path.key(), f)).collect();
+    let wanted = |file: &ManifestFile| {
+        components.contains(&file.feature) && !skip.contains(&file.path.key())
+    };
+    if !manifest.files.iter().any(wanted) {
+        return Ok(Vec::new());
+    }
 
     let mut decoder = zstd::Decoder::with_buffer(payload).ctx("decompress", staging_dir)?;
     decoder
@@ -61,7 +69,7 @@ pub fn stage(
         if !seen.insert(path.key()) {
             return Err(invalid(format!("{name}: duplicate entry")));
         }
-        if !components.contains(&file.feature) {
+        if !wanted(file) {
             continue;
         }
 

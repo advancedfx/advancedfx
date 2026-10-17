@@ -194,7 +194,7 @@ pub fn apply(
         }
         FfmpegPlan::Custom { exe } => vec![stage_ini(&tx.staging_dir(), exe)?],
     };
-    let applied = tx.apply(staged, &FFMPEG_COMPONENTS, &state.files)?;
+    let applied = tx.apply(staged, Vec::new(), &FFMPEG_COMPONENTS, &state.files)?;
 
     let mut state = state.clone();
     state.ffmpeg = new_ffmpeg;

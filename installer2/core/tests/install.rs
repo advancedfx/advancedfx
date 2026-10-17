@@ -222,6 +222,34 @@ fn modify_removes_deselected_locales_and_repair_restores_files() {
 }
 
 #[test]
+fn repair_only_unpacks_what_differs() {
+    let (_tmp, dir) = temp_install_dir();
+    let state = install(&dir, &v1(), ALL, None);
+    // Same manifest, but a payload that can't be unpacked: fine as long as nothing differs,
+    // because then the payload isn't read at all.
+    let garbage = Build {
+        manifest: v1().manifest,
+        payload: b"not a payload".to_vec(),
+    };
+    let outcome = install_hlae(&request(&dir, &garbage, ALL), Some(&state)).unwrap();
+    assert_eq!(outcome.action, "repair");
+    assert_eq!(
+        paths(&outcome.state),
+        paths(&state),
+        "unchanged files recorded"
+    );
+    let state = outcome.state;
+    outcome.tx.commit().unwrap();
+
+    write(&dir, "HLAE.exe", "corrupted");
+    assert!(install_hlae(&request(&dir, &garbage, ALL), Some(&state)).is_err());
+    assert_eq!(read(&dir, "HLAE.exe").as_deref(), Some("corrupted"));
+    let state = install(&dir, &v1(), ALL, Some(&state));
+    assert_eq!(read(&dir, "HLAE.exe").as_deref(), Some("hlae v1"));
+    assert_eq!(state.files.len(), 5);
+}
+
+#[test]
 fn hlae_upgrade_keeps_files_of_other_components() {
     let (_tmp, dir) = temp_install_dir();
     let mut state = install(&dir, &v1(), ALL, None);

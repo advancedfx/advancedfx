@@ -543,7 +543,8 @@ All questions so far are decided; details live in 4–6.
   committed, no downloads during builds. `history` kept in the state.
 - Payload stays `include_bytes!` for now, behind one `payload()` function; revisit (post-build resource) if
   payload growth makes build times hurt (6.1).
-- Files in use: Restart Manager, list + Retry only, no auto-close, quiet mode 1603 (M7).
+- Files in use: Restart Manager, list + Retry only, no auto-close, quiet mode 1603 (M7); Restart Manager only for
+  `*.exe`, `AfxHook*.dll` + files a quick share-mode probe flags (speed).
 - Rollback journal: in the state dir, no flush, commit point = state save (6.10 d). Rejected: no rollback at all
   (NSIS style) – kept since done and tested.
 - Install dir protection: owner Administrators + admin-only ACL outside `Program Files`, pinned handle; new installs
@@ -701,7 +702,8 @@ All questions so far are decided; details live in 4–6.
         + `HLAE_SETUP_LANG=de`. Checked: translated texts incl. window title, fuzzy → English, wrong placeholder →
         build warning + English, untranslated → English, longer German texts fit. Auto detection picked `en-US`
         (first of the user's Windows UI languages `en-US, en-DE, en-GB, de-DE, fr-FR`) – correct.
-- [ ] **M7 – Migration** from WiX v5, files-in-use check, rollback hardening.
+- [x] **M7 – Migration** from WiX v5, files-in-use check, rollback hardening (done 2026-10-17; the `msiexec`
+      fallback test skipped on purpose, see below).
   - [x] Detection ([`core/src/legacy.rs`](core/src/legacy.rs), read-only): bundle via `BundleUpgradeCode` in the 32-bit
         Uninstall keys (+ `QuietUninstallString`), MSIs via `MsiEnumRelatedProductsW` + `MsiGetProductInfoW`,
         `APPLICATIONFOLDER`, old FFMPEG `version` / `custom` → mapped to the new variant ids. Verified on the test
@@ -754,7 +756,20 @@ All questions so far are decided; details live in 4–6.
         Users read & execute, files / dirs inside only inherited entries; repair keeps it; uninstall removes the
         folder; existing non-empty folder → 1603 "isn't empty", file + permissions untouched; existing empty folder →
         taken over + protected; path through a junction → 1603 before anything is created.
-  - [ ] Faster repair (compare before staging).
+  - [x] Faster repair: before staging, the installed files are compared with the manifest (size, then SHA-256);
+        identical ones aren't unpacked, only recorded; if nothing differs the payload isn't read at all
+        ([`transaction::unchanged_files`](core/src/transaction.rs), `payload::stage` with `skip`). Real test
+        (2026-10-17, release exe, intact install in `Program Files (x86)`): worker part < 1 s (was ~14 s),
+        "208 files unchanged, 0 to install", no journal / work dir left. Test: repair of an intact install with an
+        unreadable payload succeeds, with one broken file it needs the payload again.
+  - [x] Files-in-use check made fast (found in that test: 5 s before the UAC prompt). The Restart Manager costs
+        ~18 ms per registered file with ~200 running processes (~4 s for 208 files, twice per operation). Decided
+        2026-10-17: quick probe of all files (open without sharing → sharing violation = open as data, ~0.1 ms per
+        file; doesn't see loaded program images) + Restart Manager only for the candidates: `*.exe`, `AfxHook*.dll`
+        and what the probe flagged. Loaded runtime DLLs are found via the HLAE.exe / hook DLL that loaded them. A
+        missed file only costs convenience (rename works anyway; uninstall keeps it tracked for a retry).
+        Measured on the install: ~0.3 s (in PowerShell) instead of ~4 s. Rejected: all files (slow), all files but
+        only checked once before the UAC prompt (still ~4 s).
   - Test machine has the new installer's HLAE again (after the GUI migration test); old v5 / v3 setups can be
     reinstalled from public releases for further migration tests.
 ### Untested / open TODOs

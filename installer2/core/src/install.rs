@@ -1,6 +1,7 @@
 //! Install / upgrade / repair / modify / uninstall of the HLAE payload.
 
 use std::cmp::Ordering;
+use std::collections::HashSet;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -12,7 +13,7 @@ use crate::manifest::{Component, Manifest};
 use crate::payload;
 use crate::relpath::RelPath;
 use crate::state::{Features, FileRecord, State};
-use crate::transaction::{Applied, Transaction, WORK_DIR_NAME};
+use crate::transaction::{self, Applied, Transaction, WORK_DIR_NAME};
 use crate::version;
 
 /// Components the HLAE payload operation manages; files of other components (FFMPEG) are left alone.
@@ -71,9 +72,29 @@ pub fn install_hlae(req: &InstallRequest, old: Option<&State>) -> Result<Outcome
     }
 
     let mut tx = Transaction::begin(req.install_dir, &req.state_file)?;
-    let staged = payload::stage(req.payload, req.manifest, &components, &tx.staging_dir())?;
+    // Only what differs is unpacked: a repair of an intact install writes nothing.
+    let unchanged = transaction::unchanged_files(
+        req.install_dir,
+        req.manifest
+            .files
+            .iter()
+            .filter(|f| components.contains(&f.feature)),
+    );
+    let skip: HashSet<String> = unchanged.iter().map(|f| f.path.key()).collect();
+    let staged = payload::stage(
+        req.payload,
+        req.manifest,
+        &components,
+        &tx.staging_dir(),
+        &skip,
+    )?;
+    log::info!(
+        "{} files unchanged, {} to install",
+        unchanged.len(),
+        staged.len()
+    );
     let old_files = old.map(|s| s.files.as_slice()).unwrap_or_default();
-    let applied = tx.apply(staged, &HLAE_COMPONENTS, old_files)?;
+    let applied = tx.apply(staged, unchanged, &HLAE_COMPONENTS, old_files)?;
 
     let mut state = match old {
         Some(old) => old.clone(),
