@@ -10,6 +10,7 @@ use crate::error::{Error, IoContext, Result};
 use crate::ffmpeg::FfmpegData;
 use crate::ffmpeg_install::{self, FfmpegOutcome, FfmpegPlan};
 use crate::fsutil;
+use crate::in_use;
 use crate::install::{self, InstallRequest, UninstallReport, install_hlae};
 use crate::integration;
 use crate::legacy::{self, LegacyInstall};
@@ -158,6 +159,8 @@ impl Session {
             (None, None, _) => default_install_dir()?,
         };
         validate_install_dir(&install_dir)?;
+        // The client checked already (before elevating); this catches programs started since.
+        in_use::ensure_not_in_use(&in_use::files_to_check(old.as_ref(), legacy.as_ref()))?;
         if let Some(legacy) = &legacy {
             legacy::uninstall(legacy)?;
         }
@@ -264,6 +267,7 @@ impl Session {
             state.hlae_version,
             state.install_dir.display()
         );
+        in_use::ensure_not_in_use(&in_use::files_to_check(Some(&state), None))?;
         let files = install::uninstall(&state);
         if !files.failed.is_empty() {
             let failed: Vec<&RelPath> = files.failed.iter().map(|(path, _)| path).collect();

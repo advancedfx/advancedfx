@@ -50,6 +50,11 @@ pub enum Error {
     Download { url: String, reason: String },
     #[error("cancelled")]
     Cancelled,
+    #[error(
+        "HLAE files are in use by: {}. Please close these programs and try again.",
+        .0.iter().map(|h| h.to_string()).collect::<Vec<_>>().join(", ")
+    )]
+    FilesInUse(Vec<crate::in_use::Holder>),
     #[error("JSON: {0}")]
     Json(#[from] serde_json::Error),
 }

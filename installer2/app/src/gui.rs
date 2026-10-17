@@ -5,15 +5,16 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use hlae_installer_core::ffmpeg_install::{self, FfmpegSelection, MAX_CUSTOM_PATH};
-use hlae_installer_core::state::{FfmpegChoice, State as InstallState};
-use hlae_installer_core::{dotnet, session, version};
+use hlae_installer_core::in_use::Holder;
+use hlae_installer_core::state::FfmpegChoice;
+use hlae_installer_core::{Error, dotnet, session, version};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
 use crate::actions::{self, InstallChoice};
 use crate::cli::{GuiMode, exit_code};
 use crate::ffmpeg_client::FfmpegArgs;
-use crate::{dialog, events, l10n, logging, ops, payload};
+use crate::{dialog, events, l10n, logging, payload};
 
 struct Gui {
     mode: GuiMode,
@@ -87,7 +88,7 @@ fn info(gui: State<'_, Gui>) -> Result<Info, String> {
 fn info_inner(gui: &Gui) -> hlae_installer_core::Result<Info> {
     let manifest = payload::manifest()?;
     let data = payload::ffmpeg_data()?;
-    let state = load_state();
+    let state = actions::installed_state();
     let newer_installed = state.as_ref().is_some_and(|s| {
         version::compare(&s.hlae_version, &manifest.hlae_version).is_ok_and(|o| o.is_gt())
     });
@@ -147,13 +148,14 @@ fn info_inner(gui: &Gui) -> hlae_installer_core::Result<Info> {
     })
 }
 
-/// The installed state (readable for users), `None` if not installed or unreadable.
-fn load_state() -> Option<InstallState> {
-    let session = ops::session().ok()?;
-    InstallState::load(&session.state_file).unwrap_or_else(|e| {
-        log::warn!("could not read the install state: {e}");
-        None
-    })
+/// Programs to close before the install (`true`) / uninstall can start; the page offers Retry.
+#[tauri::command]
+async fn programs_in_use(install: bool) -> Vec<Holder> {
+    let holders = actions::programs_in_use(install);
+    if !holders.is_empty() {
+        log::warn!("{}", Error::FilesInUse(holders.clone()));
+    }
+    holders
 }
 
 #[tauri::command]
@@ -288,7 +290,7 @@ fn cancel(gui: State<'_, Gui>) {
 /// Starts the installed HLAE (unelevated, like the wizard itself).
 #[tauri::command]
 fn launch_hlae() -> Result<(), String> {
-    let state = load_state().ok_or("HLAE is not installed")?;
+    let state = actions::installed_state().ok_or("HLAE is not installed")?;
     std::process::Command::new(state.install_dir.join("HLAE.exe"))
         .current_dir(&state.install_dir)
         .spawn()
@@ -347,6 +349,7 @@ pub fn run(mode: GuiMode) -> i32 {
             l10n_catalog,
             check_install_dir,
             check_ffmpeg_exe,
+            programs_in_use,
             browse_folder,
             browse_ffmpeg_exe,
             start_install,

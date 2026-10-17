@@ -211,6 +211,24 @@ msgctxt "RemoveAppDataLabel"
 msgid "Also remove my HLAE settings (%APPDATA%\\HLAE) – not recommended"
 msgstr ""
 
+#. Page shown when programs use HLAE files, before installing / uninstalling
+msgctxt "InUseHeading"
+msgid "Please close these programs"
+msgstr ""
+
+msgctxt "InUseText"
+msgid "They are using HLAE files that HLAE Setup needs to replace or remove. Save your work, close them, then click Retry."
+msgstr ""
+
+#. Shown after Retry when programs still use HLAE files
+msgctxt "InUseStill"
+msgid "Still in use – please close the programs above."
+msgstr ""
+
+msgctxt "RetryButton"
+msgid "Retry"
+msgstr ""
+
 msgctxt "ProgressInstalling"
 msgid "Installing HLAE…"
 msgstr ""

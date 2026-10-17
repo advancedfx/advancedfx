@@ -270,6 +270,13 @@ pub fn uninstall(legacy: &LegacyInstall) -> Result<()> {
     Ok(())
 }
 
+/// `C:\Program Files (x86)\HLAE FFMPEG`, where the old setup put FFMPEG.
+pub fn old_ffmpeg_dir() -> Option<PathBuf> {
+    crate::win::known_folder(crate::win::KnownFolder::ProgramFilesX86)
+        .ok()
+        .map(|dir| dir.join("HLAE FFMPEG"))
+}
+
 /// Leftovers of the old setup (NOTES.md 5), best effort.
 fn cleanup_leftovers() {
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
@@ -286,8 +293,7 @@ fn cleanup_leftovers() {
     ) {
         let _ = key.delete_value("scut");
     }
-    if let Ok(program_files) = crate::win::known_folder(crate::win::KnownFolder::ProgramFilesX86) {
-        let dir = program_files.join("HLAE FFMPEG");
+    if let Some(dir) = old_ffmpeg_dir() {
         let _ = std::fs::remove_dir(dir.join("ffmpeg"));
         let _ = std::fs::remove_dir(&dir);
     }

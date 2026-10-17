@@ -23,7 +23,11 @@ function applyCatalog() {
   $('header-version').textContent = t('HeaderVersion', { version: info.version });
 }
 
+/** id of the visible page */
+let currentPage = 'page-loading';
+
 function show(id) {
+  currentPage = id;
   for (const page of document.querySelectorAll('.page')) page.hidden = page.id !== id;
   $(id).querySelector('h1')?.focus();
 }
@@ -136,6 +140,44 @@ function openUninstall() {
   show('page-uninstall');
 }
 
+// ---- files in use ----
+
+/** What to run once no program uses the files any more, and where Back goes. */
+let inUse = null;
+/** A check is running (Retry isn't disabled for that: it would lose the keyboard focus). */
+let checkingInUse = false;
+
+/** Runs `run` if no program uses files the operation touches, else lists them with Retry. */
+async function whenNotInUse(kind, run) {
+  if (checkingInUse) return;
+  const retry = inUse !== null && currentPage === 'page-in-use';
+  if (!retry) inUse = { kind, run, from: currentPage };
+  checkingInUse = true;
+  let programs = [];
+  try {
+    programs = await invoke('programs_in_use', { install: kind === 'install' });
+  } finally {
+    checkingInUse = false;
+  }
+  if (programs.length === 0) {
+    inUse = null;
+    return run();
+  }
+  $('in-use-list').replaceChildren(...programs.map((p) => {
+    const item = document.createElement('li');
+    item.textContent = p.name;
+    if (p.exe && p.exe.toLowerCase() !== p.name.toLowerCase()) {
+      const exe = document.createElement('span');
+      exe.className = 'exe';
+      exe.textContent = ` – ${p.exe}`;
+      item.append(exe);
+    }
+    return item;
+  }));
+  $('in-use-still').hidden = !retry;
+  if (!retry) show('page-in-use');
+}
+
 // ---- running ----
 
 function startProgress(kind) {
@@ -146,7 +188,7 @@ function startProgress(kind) {
   show('page-progress');
 }
 
-async function startInstall(installDir, locales, ffmpeg) {
+const startInstall = (installDir, locales, ffmpeg) => whenNotInUse('install', async () => {
   startProgress('install');
   try {
     await invoke('start_install', { installDir, locales, ffmpeg });
@@ -154,9 +196,9 @@ async function startInstall(installDir, locales, ffmpeg) {
     appendLog('ERROR', String(e));
     finish(1603);
   }
-}
+});
 
-async function startUninstall() {
+const startUninstall = () => whenNotInUse('uninstall', async () => {
   startProgress('uninstall');
   try {
     await invoke('start_uninstall', { removeAppData: $('remove-app-data').checked });
@@ -164,7 +206,7 @@ async function startUninstall() {
     appendLog('ERROR', String(e));
     finish(1603);
   }
-}
+});
 
 const mb = (bytes) => Math.round(bytes / 1_000_000);
 
@@ -247,6 +289,12 @@ function wire() {
   });
   $('uninstall-go').addEventListener('click', startUninstall);
   for (const id of ['install-back', 'uninstall-back']) $(id).addEventListener('click', () => show(backPage));
+  $('in-use-retry').addEventListener('click', () => whenNotInUse(inUse.kind, inUse.run));
+  $('in-use-back').addEventListener('click', () => {
+    const from = inUse.from;
+    inUse = null;
+    show(from);
+  });
   for (const id of ['install-cancel', 'maintenance-close', 'uninstall-cancel', 'done-close']) $(id).addEventListener('click', quit);
   $('progress-cancel').addEventListener('click', () => invoke('cancel'));
   $('done-log').addEventListener('click', () => invoke('open_log'));

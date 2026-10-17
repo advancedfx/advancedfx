@@ -158,7 +158,8 @@ See also [`resources/ffmpeg/readme.advancedfx.txt`](../resources/ffmpeg/readme.a
       created/updated on install, removed on uninstall.
 - [ ] Option to delete HLAE app data (`%APPDATA%\HLAE`) on uninstall – for the **logged-in** user (done by the unelevated GUI, 6.4).
 - [ ] "Launch HLAE" on finish (unelevated).
-- [ ] Files-in-use check before touching files (HLAE.exe, AfxHook*.dll loaded in game processes) → ask to close / retry.
+- [x] Files-in-use check before touching files (HLAE.exe, AfxHook*.dll loaded in game processes) → ask to close / retry
+      (M7: Restart Manager; wizard Retry / Back, quiet mode 1603, no automatic closing).
 - [ ] Rollback on failure: stage new files, swap, restore on error (never leave a half-installed state).
 - [ ] Silent / unattended mode via command line (install dir, features, FFMPEG variant, remove app data, log file), exit codes (6.4).
 - [ ] Log file.
@@ -672,10 +673,31 @@ All questions so far are decided; details live in 4–6.
         `C:\Program Files (x86)\HLAE` with FFMPEG `win64-gpl` taken over, `Programs\HLAE.lnk`, `APPLICATIONFOLDER`
         written again, history `migrate` → `install` → `ffmpeg`. The test machine now has the new installer's HLAE
         (old setup can be reinstalled from the public release for further migration tests).
-  - [ ] Not tested: migration via the GUI (same code path as `--quiet`); WiX v3 refusal (no v3 install at hand);
-        `msiexec /x` fallback (bundle missing / broken).
-  - [ ] Files-in-use check (Restart Manager), crash-safe rollback journal, faster repair (compare before staging).
-  - Test machine has the old WiX HLAE installed (from a public release build) – keep it for the migration tests.
+  - [x] WiX v3 refusal test (2026-10-17, release exe, normal shell, old HLAE 2.180.1 installed, 0 UAC prompts):
+        detected via the HlaeCore UpgradeCode (product `{E6278F97-…}` 2.180.1); `--quiet` → exit 1603 with the
+        message, nothing written (no ARP entry, state, shortcut); wizard shows the v3 notice with Install disabled.
+        The v3 bundle ("HLAE Installer",
+        `{aa80f90d-…}`) has another bundle UpgradeCode and isn't found as a bundle – fine, HlaeCore is enough.
+  - [x] Migration via the GUI (2026-10-17, release exe, normal shell, old v5 2.192.8 without FFMPEG, 1 UAC prompt,
+        ~10 s): notice shown, location preset, "Don't install FFMPEG" preselected; bundle
+        `{5FF3867E-…}` uninstalled silently (exit 0), both old ARP entries + `Programs\HLAE\` gone, new install with
+        FFMPEG `none`, history `migrate` → `install`.
+  - Not tested, skipped on purpose (rare): `msiexec /x` fallback (bundle missing / broken). Known gap: the orphaned
+    bundle ARP entry (+ its `Package Cache` folder) would stay after the fallback.
+  - [x] Files-in-use check ([`core/src/in_use.rs`](core/src/in_use.rs), Restart Manager via `windows-sys`
+        `Win32_System_RestartManager`, works unelevated). Decided 2026-10-17: wizard offers only Retry (+ Back), no
+        "continue anyway"; no automatic closing (`RmShutdown`); quiet mode → 1603; checked files = what the operation
+        touches: tracked files of the state (HLAE + FFMPEG) and, for a migration, all files in the old setup's folders
+        (`APPLICATIONFOLDER`, `HLAE FFMPEG`). Checked in the client before the download / UAC prompt (wizard: page
+        listing the programs, display name + exe; command `programs_in_use`) and again in the session right before
+        anything is touched (programs started meanwhile → `Error::FilesInUse`, nothing changed). If the Restart Manager
+        itself fails (e.g. Wine): warning, continue. Tested (2026-10-17, debug test mode, `HLAE.exe` held open by a
+        PowerShell): quiet repair / uninstall → 1603 with the program listed, nothing changed; wizard page, Retry while
+        still held ("Still in use"), Retry after closing → repair done. Tests: `in_use` unit tests,
+        `core/tests/session.rs`.
+  - [ ] Crash-safe rollback journal, faster repair (compare before staging).
+  - Test machine has the new installer's HLAE again (after the GUI migration test); old v5 / v3 setups can be
+    reinstalled from public releases for further migration tests.
 ### Untested / open TODOs
 Things that exist but haven't been tested yet, or small TODOs outside the milestones.
 - [ ] **WebView2 missing** (6.2, `gui.rs` `webview2::ensure_installed`): message box → opens Microsoft's download page →

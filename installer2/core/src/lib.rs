@@ -11,6 +11,7 @@ pub mod ffmpeg;
 pub mod ffmpeg_install;
 pub mod fsutil;
 pub mod hash;
+pub mod in_use;
 pub mod install;
 pub mod integration;
 pub mod legacy;

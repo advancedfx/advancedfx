@@ -5,6 +5,7 @@
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 
+use hlae_installer_core::in_use::{self, Holder};
 use hlae_installer_core::legacy::{self, LegacyInstall};
 use hlae_installer_core::state::State;
 use hlae_installer_core::{Error, session, win};
@@ -25,6 +26,13 @@ pub fn install(choice: &InstallChoice, cancel: &AtomicBool) -> i32 {
     let legacy = legacy();
     if let Some(legacy) = legacy.as_ref().filter(|l| l.is_wix_v3()) {
         log::error!("{}", session::legacy_v3_message(legacy));
+        return exit_code::FATAL;
+    }
+    // Before downloading and elevating; the worker checks again before touching files.
+    if !in_use_ok(&in_use::files_to_check(
+        installed_state().as_ref(),
+        legacy.as_ref(),
+    )) {
         return exit_code::FATAL;
     }
     let resolved = payload::ffmpeg_data().and_then(|data| {
@@ -61,6 +69,9 @@ pub fn install(choice: &InstallChoice, cancel: &AtomicBool) -> i32 {
 }
 
 pub fn uninstall(remove_app_data: bool) -> i32 {
+    if !in_use_ok(&in_use::files_to_check(installed_state().as_ref(), None)) {
+        return exit_code::FATAL;
+    }
     let code = dispatch(&Request::Uninstall);
     // Done here, unelevated, so it's the logged-in user's %APPDATA% (NOTES.md 6.4).
     if remove_app_data && code == exit_code::SUCCESS {
@@ -69,17 +80,42 @@ pub fn uninstall(remove_app_data: bool) -> i32 {
     code
 }
 
+/// Logs the programs using `files`, `false` if there are any (NOTES.md 4.1).
+fn in_use_ok(files: &[PathBuf]) -> bool {
+    let holders = in_use::programs_using(files);
+    if holders.is_empty() {
+        return true;
+    }
+    log::error!("{}", Error::FilesInUse(holders));
+    false
+}
+
+/// Programs using files that an install (`true`) / uninstall would replace or remove, for the
+/// wizard to show before it starts.
+pub fn programs_in_use(install: bool) -> Vec<Holder> {
+    let legacy = if install { legacy() } else { None };
+    in_use::programs_using(&in_use::files_to_check(
+        installed_state().as_ref(),
+        legacy.as_ref(),
+    ))
+}
+
+/// The installed state (readable for users), `None` if not installed or unreadable.
+pub fn installed_state() -> Option<State> {
+    let session = ops::session().ok()?;
+    State::load(&session.state_file).unwrap_or_else(|e| {
+        log::warn!("could not read the install state: {e}");
+        None
+    })
+}
+
 /// The old WiX setup's installation if it matters: only before our first install, never in the
 /// debug test mode (the worker doesn't migrate there either).
 pub fn legacy() -> Option<LegacyInstall> {
-    if ops::test_mode() {
+    if ops::test_mode() || installed_state().is_some() {
         return None;
     }
-    let installed = ops::session()
-        .ok()
-        .and_then(|s| State::load(&s.state_file).ok().flatten())
-        .is_some();
-    if installed { None } else { legacy::detect() }
+    legacy::detect()
 }
 
 /// Elevated already (admin shell, deployment tool) → in-process, else via the elevated worker.
