@@ -70,6 +70,8 @@ struct Info {
     default_ffmpeg: Selection,
     dotnet_ok: bool,
     dotnet_version: &'static str,
+    /// Started elevated on purpose (from Apps & features): no "Start HLAE" then.
+    elevated: bool,
     /// HLAE installed by the old WiX setup (only before our first install, NOTES.md 5).
     legacy: Option<Legacy>,
 }
@@ -143,6 +145,7 @@ fn info_inner(gui: &Gui) -> hlae_installer_core::Result<Info> {
         default_ffmpeg,
         dotnet_ok: dotnet::framework_ok(),
         dotnet_version: dotnet::MIN_VERSION,
+        elevated: explicitly_elevated(),
         legacy: legacy.map(|l| Legacy {
             version: l.version().unwrap_or_default(),
             wix_v3: l.is_wix_v3(),
@@ -320,6 +323,10 @@ fn cancel(gui: State<'_, Gui>) {
 /// Starts the installed HLAE (unelevated, like the wizard itself).
 #[tauri::command]
 fn launch_hlae() -> Result<(), String> {
+    // HLAE (and the game it starts) must not run as administrator (button hidden then too).
+    if explicitly_elevated() {
+        return Err("not starting HLAE as administrator".into());
+    }
     let state = actions::installed_state().ok_or("HLAE is not installed")?;
     std::process::Command::new(state.install_dir.join("HLAE.exe"))
         .current_dir(&state.install_dir)
@@ -369,11 +376,12 @@ pub fn run(mode: GuiMode) -> i32 {
     let (log_file, _) = logging::init(None);
     log::info!("{} started (wizard, {mode:?})", crate::cli::written_by());
 
-    // Started "as administrator" (NOTES.md M8 audit): the wizard and what it starts (HLAE,
-    // Notepad, WebView2 and the DLLs it loads) would all run elevated, from wherever the setup was
-    // started (e.g. Downloads). It asks for administrator rights itself (the worker), so refuse.
-    // With UAC off every process is elevated anyway (not "explicitly"), that's left alone.
-    if win::is_explicitly_elevated().unwrap_or(false) {
+    // Started "as administrator" (NOTES.md M8 audit): the wizard and what it loads (WebView2 and
+    // the DLLs it pulls in) would run elevated from wherever the setup was started (e.g. Downloads),
+    // where others may have planted files. It asks for administrator rights itself (the worker), so
+    // refuse – except from the admin-only setup copy, which Apps & features starts elevated for
+    // Uninstall / Modify. With UAC off every process is elevated anyway (not "explicitly").
+    if explicitly_elevated() && !running_from_setup_cache() {
         log::error!("the wizard was started as administrator, refusing (use --quiet for that)");
         webview2::message_box(&l10n::t("ElevatedWizard", &[]), MB_OK | MB_ICONWARNING);
         return exit_code::FATAL;
@@ -450,6 +458,25 @@ pub fn run(mode: GuiMode) -> i32 {
     log::info!("wizard closed, exit code {code}");
     log::logger().flush();
     code
+}
+
+fn explicitly_elevated() -> bool {
+    win::is_explicitly_elevated().unwrap_or(false)
+}
+
+/// Whether this exe is the cached setup copy in the admin-only state dir (nobody but admins can
+/// put files next to it).
+fn running_from_setup_cache() -> bool {
+    let (Ok(session), Ok(exe)) = (ops::session(), std::env::current_exe()) else {
+        return false;
+    };
+    match (
+        std::fs::canonicalize(&exe),
+        std::fs::canonicalize(session.setup_cache_exe()),
+    ) {
+        (Ok(exe), Ok(cached)) => exe == cached,
+        _ => false,
+    }
 }
 
 /// Turns off what makes WebView2 a browser: the context menu (back, reload, print, inspect …) and

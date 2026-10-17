@@ -787,6 +787,10 @@ All questions so far are decided; details live in 4–6.
   - [x] Wizard started "as administrator" (it would run HLAE, Notepad and WebView2's DLLs elevated from the start
         folder, e.g. Downloads): refused with a message box (`ElevatedWizard`, exit 1603). Only when *explicitly*
         elevated (`TokenElevationTypeFull`); with UAC off every process is elevated, that's left alone.
+        **Except from the setup copy** (found in testing: Settings → Apps starts Uninstall / Modify of an HKLM
+        entry elevated, so it was refused): from `%ProgramData%\advancedfx\HLAE\setup\HLAE_Setup.exe` (admin-only,
+        nothing can be planted next to it) the elevated wizard runs; "Start HLAE" is hidden there and
+        `launch_hlae` refuses, so HLAE never starts as admin.
         Notepad (log, licenses) by full path (`System32\notepad.exe`): Rust's `Command` looks next to the exe first.
   - [x] Recovery pinned: `transaction::recover` pins the journal's install dir while it renames / deletes there
         (it ran before the session's pin); created dirs are removed after unpinning.

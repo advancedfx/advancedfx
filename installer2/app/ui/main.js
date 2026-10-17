@@ -243,7 +243,8 @@ function finish(code) {
   $('done-icon').dataset.result = code === 0 ? 'ok' : code in known ? 'info' : 'error';
   $('done-heading').textContent = heading;
   $('done-text').textContent = code in known ? '' : t('DoneFailedText');
-  $('done-launch').hidden = !(code === 0 && operation === 'install');
+  // Not from an elevated wizard (Apps & features): HLAE would run as administrator.
+  $('done-launch').hidden = !(code === 0 && operation === 'install') || info.elevated;
   show('page-done');
 }
 

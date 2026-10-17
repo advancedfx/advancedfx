@@ -111,6 +111,16 @@ impl Session {
         self.state_file.parent().expect("state file has a parent")
     }
 
+    /// The cached copy of the setup that Apps & features starts (NOTES.md 6.5), in the admin-only
+    /// state dir.
+    pub fn setup_cache_exe(&self) -> PathBuf {
+        self.setup_cache_dir().join(integration::SETUP_EXE_NAME)
+    }
+
+    fn setup_cache_dir(&self) -> PathBuf {
+        self.state_dir().join("setup")
+    }
+
     /// Makes sure `advancedfx\HLAE` (state dir) is admin-only before anything in it is trusted
     /// (NOTES.md 6.7). Refuses if `advancedfx` was pre-created by a normal user.
     fn secure_state_dir(&self) -> Result<()> {
@@ -270,8 +280,7 @@ impl Session {
         // Also after an FFMPEG error: HLAE is installed and needs its Apps & features entry etc.
         if self.integrate {
             let setup_exe = std::env::current_exe().ctx("locate", Path::new("HLAE_Setup.exe"))?;
-            let result =
-                integration::apply(&mut state, &setup_exe, &self.state_dir().join("setup"));
+            let result = integration::apply(&mut state, &setup_exe, &self.setup_cache_dir());
             // Record what was done, also if it failed half way (a repair fixes the rest).
             state.save(&self.state_file)?;
             result?;
