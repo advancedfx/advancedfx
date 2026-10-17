@@ -1,0 +1,13 @@
+//! The embedded HLAE payload, packed by `build.rs` (see NOTES.md 6.1).
+//! All access goes through here, so the embedding can be swapped (e.g. for a resource) later.
+
+use hlae_installer_core::manifest::Manifest;
+
+/// `payload.tar.zst`; memory-mapped as part of the exe, stream from it, never copy it.
+pub fn payload() -> &'static [u8] {
+    include_bytes!(concat!(env!("OUT_DIR"), "/payload.tar.zst"))
+}
+
+pub fn manifest() -> hlae_installer_core::Result<Manifest> {
+    Manifest::from_json(include_str!(concat!(env!("OUT_DIR"), "/manifest.json")))
+}

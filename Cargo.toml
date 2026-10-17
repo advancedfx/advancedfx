@@ -1,5 +1,5 @@
 [workspace]
-members = ["lib/*"]
+members = ["lib/*", "installer2/core", "installer2/app"]
 resolver = "3"
 
 [profile.release-tool]
@@ -9,6 +9,18 @@ opt-level = "z"
 lto = true
 codegen-units = 1
 panic = "abort"
+
+[profile.release-installer]
+inherits = "release"
+strip = true
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+
+# build.rs of the installer packs the HLAE payload with zstd level 19 → needs an optimized build script.
+[profile.release-installer.build-override]
+opt-level = 3
 
 [profile.release-hook]
 inherits = "release"
