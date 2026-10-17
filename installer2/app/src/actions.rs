@@ -61,9 +61,8 @@ pub fn install(choice: &InstallChoice, cancel: &AtomicBool) -> i32 {
         locales: choice.locales,
         ffmpeg: plan,
     });
-    // Keep the download on failure, a retry can reuse it.
-    if let Some(download) = download.filter(|_| code == exit_code::SUCCESS) {
-        let _ = std::fs::remove_file(&download);
+    if let Some(download) = download {
+        download.clean_up(code == exit_code::SUCCESS);
     }
     code
 }

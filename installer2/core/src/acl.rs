@@ -15,9 +15,10 @@ use windows_sys::Win32::Security::Authorization::{
 use windows_sys::Win32::Security::{
     ACL, DACL_SECURITY_INFORMATION, GetKernelObjectSecurity, GetSecurityDescriptorDacl,
     GetSecurityDescriptorOwner, IsWellKnownSid, OWNER_SECURITY_INFORMATION,
-    PROTECTED_DACL_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR, PSID, SetKernelObjectSecurity,
-    WinBuiltinAdministratorsSid, WinLocalSystemSid,
+    PROTECTED_DACL_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR, PSID, SECURITY_ATTRIBUTES,
+    SetKernelObjectSecurity, WinBuiltinAdministratorsSid, WinLocalSystemSid,
 };
+use windows_sys::Win32::Storage::FileSystem::CreateDirectoryW;
 use windows_sys::core::PWSTR;
 
 /// SYSTEM + Administrators full control, Users read & execute (the cached setup must be startable
@@ -169,6 +170,42 @@ pub fn handle_sddl(handle: BorrowedHandle<'_>) -> io::Result<String> {
     }
 }
 
+/// SYSTEM + Administrators only, for working dirs of an elevated process in a shared place.
+const PRIVATE_DACL: &str = "D:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)";
+
+/// Creates the *new* dir `dir`, accessible for SYSTEM + Administrators only, in one step (the
+/// permissions are set by the creation itself, no window without them). Fails if anything exists
+/// there already – also a junction someone planted – so pick an unguessable name.
+pub fn create_private_dir(dir: &Path) -> io::Result<()> {
+    let sddl = wide(PRIVATE_DACL.as_ref());
+    let path = wide(dir.as_os_str());
+    let mut descriptor: PSECURITY_DESCRIPTOR = null_mut();
+    // SAFETY: valid NUL-terminated strings and out pointer; `descriptor` is freed with LocalFree.
+    unsafe {
+        if ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            sddl.as_ptr(),
+            SDDL_REVISION_1,
+            &mut descriptor,
+            null_mut(),
+        ) == 0
+        {
+            return Err(io::Error::last_os_error());
+        }
+        let attributes = SECURITY_ATTRIBUTES {
+            nLength: size_of::<SECURITY_ATTRIBUTES>() as u32,
+            lpSecurityDescriptor: descriptor,
+            bInheritHandle: 0,
+        };
+        let result = if CreateDirectoryW(path.as_ptr(), &attributes) == 0 {
+            Err(io::Error::last_os_error())
+        } else {
+            Ok(())
+        };
+        LocalFree(descriptor);
+        result
+    }
+}
+
 /// Whether `path` is owned by SYSTEM or Administrators, i.e. not pre-created ("squatted") by a normal user.
 pub fn owner_is_trusted(path: &Path) -> io::Result<bool> {
     let path = wide(path.as_os_str());
@@ -209,6 +246,26 @@ mod tests {
         if !crate::win::is_elevated().unwrap() {
             assert!(!owner_is_trusted(dir.path()).unwrap());
         }
+    }
+
+    #[test]
+    fn private_dir_is_new_and_closed() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().join("private");
+        create_private_dir(&dir).unwrap();
+        let again = create_private_dir(&dir).unwrap_err();
+        assert_eq!(again.kind(), io::ErrorKind::AlreadyExists);
+        if !crate::win::is_elevated().unwrap() {
+            // Normal users (also the creator) can't put anything in.
+            assert!(std::fs::write(dir.join("x"), b"x").is_err());
+        }
+        // The owner may always change the DACL back, so the temp dir can be removed.
+        let status = std::process::Command::new("icacls")
+            .arg(&dir)
+            .args(["/reset", "/Q"])
+            .status()
+            .unwrap();
+        assert!(status.success());
     }
 
     #[test]

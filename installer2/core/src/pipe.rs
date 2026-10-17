@@ -20,9 +20,6 @@ use windows_sys::Win32::Foundation::{
 use windows_sys::Win32::Security::Authorization::{
     ConvertSidToStringSidW, ConvertStringSecurityDescriptorToSecurityDescriptorW, SDDL_REVISION_1,
 };
-use windows_sys::Win32::Security::Cryptography::{
-    BCRYPT_USE_SYSTEM_PREFERRED_RNG, BCryptGenRandom,
-};
 use windows_sys::Win32::Security::{
     GetTokenInformation, PSECURITY_DESCRIPTOR, SECURITY_ATTRIBUTES, TOKEN_QUERY, TOKEN_USER,
     TokenUser,
@@ -59,22 +56,7 @@ fn wide(s: &OsStr) -> Vec<u16> {
 
 /// `\\.\pipe\hlae-setup-<128 random bits as hex>`
 pub fn random_pipe_name() -> io::Result<String> {
-    let mut bytes = [0u8; 16];
-    // SAFETY: valid buffer of the given length; NULL algorithm handle with the system RNG flag.
-    let status = unsafe {
-        BCryptGenRandom(
-            null_mut(),
-            bytes.as_mut_ptr(),
-            bytes.len() as u32,
-            BCRYPT_USE_SYSTEM_PREFERRED_RNG,
-        )
-    };
-    if status != 0 {
-        return Err(io::Error::other(format!(
-            "BCryptGenRandom failed: {status:#x}"
-        )));
-    }
-    Ok(format!("{PIPE_PREFIX}{}", crate::hash::to_hex(&bytes)))
+    Ok(format!("{PIPE_PREFIX}{}", crate::win::random_hex()?))
 }
 
 /// Whether `name` looks like one of ours (the worker refuses anything else).

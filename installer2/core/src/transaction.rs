@@ -319,7 +319,8 @@ impl Transaction {
     fn rollback_inner(&mut self) -> Result<()> {
         self.finished = true;
         let undo = std::mem::take(&mut self.undo);
-        undo_all(&self.install_dir, &self.work_dir, undo)?;
+        // A pin the caller holds keeps the install dir itself; the caller removes it then.
+        remove_if_empty(&undo_all(&self.install_dir, &self.work_dir, undo)?);
         self.remove_journal();
         Ok(())
     }
@@ -415,22 +416,31 @@ pub fn recover(state_file: &Path) -> Result<()> {
         log::warn!("removing journal {} with invalid id {id:?}", path.display());
         return fs::remove_file(&path).ctx("remove", &path);
     }
+    // Pinned while we rename / delete in it, like every other operation there (NOTES.md 6.7);
+    // refuses (and keeps the journal) if the path doesn't lead to the dir directly any more.
+    let pinned = crate::protect::pin(&install_dir)?;
     let work_dir = install_dir.join(WORK_DIR_NAME).join(&id);
     if state_hash(state_file)? == state_sha256 {
         log::warn!(
             "an earlier operation in {} was interrupted, restoring the previous files",
             install_dir.display()
         );
-        if let Err(e) = undo_all(
+        match undo_all(
             &install_dir,
             &work_dir,
             entries.into_iter().skip(1).collect(),
         ) {
-            log::error!(
-                "could not restore everything, will try again next time (journal {} kept)",
-                path.display()
-            );
-            return Err(e);
+            Ok(created_dirs) => {
+                drop(pinned);
+                remove_if_empty(&created_dirs);
+            }
+            Err(e) => {
+                log::error!(
+                    "could not restore everything, will try again next time (journal {} kept)",
+                    path.display()
+                );
+                return Err(e);
+            }
         }
     } else {
         log::info!("an earlier operation was interrupted after saving its result, cleaning up");
@@ -442,7 +452,9 @@ pub fn recover(state_file: &Path) -> Result<()> {
 /// Undoes `steps` (oldest first, undone newest first), then removes the work dir and created dirs.
 /// Works for steps that never happened or were undone already (after a crash): those are skipped.
 /// On I/O errors the work dir is kept (it still holds backups) and the first error is returned.
-fn undo_all(install_dir: &Path, work_dir: &Path, steps: Vec<Entry>) -> Result<()> {
+/// Returns the dirs the transaction created (deepest first), to remove with [`remove_if_empty`]
+/// once the install dir isn't pinned any more (our own pin keeps it from being removed).
+fn undo_all(install_dir: &Path, work_dir: &Path, steps: Vec<Entry>) -> Result<Vec<PathBuf>> {
     let mut first_error = None;
     let mut created_dirs = Vec::new();
     for step in steps.into_iter().rev() {
@@ -464,11 +476,15 @@ fn undo_all(install_dir: &Path, work_dir: &Path, steps: Vec<Entry>) -> Result<()
         return Err(e);
     }
     remove_work_dir(work_dir);
-    // Deepest first already (undone in reverse); `remove_dir` only removes empty dirs.
-    for dir in created_dirs {
-        let _ = fs::remove_dir(&dir);
+    // Deepest first already (undone in reverse).
+    Ok(created_dirs)
+}
+
+/// `remove_dir` only removes empty dirs.
+fn remove_if_empty(dirs: &[PathBuf]) {
+    for dir in dirs {
+        let _ = fs::remove_dir(dir);
     }
-    Ok(())
 }
 
 /// Removes a file we placed – only if it's still exactly that file.

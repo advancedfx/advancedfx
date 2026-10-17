@@ -7,8 +7,12 @@ use std::path::PathBuf;
 use std::ptr::null_mut;
 
 use windows_sys::Win32::Foundation::{CloseHandle, HANDLE};
+use windows_sys::Win32::Security::Cryptography::{
+    BCRYPT_USE_SYSTEM_PREFERRED_RNG, BCryptGenRandom,
+};
 use windows_sys::Win32::Security::{
-    GetTokenInformation, TOKEN_ELEVATION, TOKEN_QUERY, TokenElevation,
+    GetTokenInformation, TOKEN_ELEVATION, TOKEN_INFORMATION_CLASS, TOKEN_QUERY, TokenElevation,
+    TokenElevationType, TokenElevationTypeFull,
 };
 use windows_sys::Win32::System::Com::CoTaskMemFree;
 use windows_sys::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
@@ -67,21 +71,20 @@ pub fn is_local_system() -> io::Result<bool> {
     Ok(crate::pipe::process_user_sid(std::process::id())? == "S-1-5-18")
 }
 
-/// Whether the current process runs elevated (as administrator).
-pub fn is_elevated() -> io::Result<bool> {
-    // SAFETY: plain Win32 calls with valid out pointers, the token handle is closed.
+/// One fixed-size `GetTokenInformation` value of the current process's token.
+fn token_info<T: Copy>(class: TOKEN_INFORMATION_CLASS, mut value: T) -> io::Result<T> {
+    // SAFETY: plain Win32 calls with valid out pointers of the passed size, the token handle is closed.
     unsafe {
         let mut token: HANDLE = null_mut();
         if OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut token) == 0 {
             return Err(io::Error::last_os_error());
         }
-        let mut elevation = TOKEN_ELEVATION { TokenIsElevated: 0 };
         let mut len = 0u32;
         let ok = GetTokenInformation(
             token,
-            TokenElevation,
-            &mut elevation as *mut TOKEN_ELEVATION as *mut c_void,
-            size_of::<TOKEN_ELEVATION>() as u32,
+            class,
+            &mut value as *mut T as *mut c_void,
+            size_of::<T>() as u32,
             &mut len,
         );
         let error = io::Error::last_os_error();
@@ -89,8 +92,40 @@ pub fn is_elevated() -> io::Result<bool> {
         if ok == 0 {
             return Err(error);
         }
-        Ok(elevation.TokenIsElevated != 0)
+        Ok(value)
     }
+}
+
+/// Whether the current process runs elevated (as administrator).
+pub fn is_elevated() -> io::Result<bool> {
+    let elevation = token_info(TokenElevation, TOKEN_ELEVATION { TokenIsElevated: 0 })?;
+    Ok(elevation.TokenIsElevated != 0)
+}
+
+/// Elevated *on purpose* ("Run as administrator", an elevated shell): there is a normal user
+/// token we could run as instead. Not with UAC off, where every process gets the full token.
+pub fn is_explicitly_elevated() -> io::Result<bool> {
+    Ok(token_info(TokenElevationType, 0)? == TokenElevationTypeFull)
+}
+
+/// 128 random bits as hex (system RNG), e.g. for names nobody can guess or pre-create.
+pub fn random_hex() -> io::Result<String> {
+    let mut bytes = [0u8; 16];
+    // SAFETY: valid buffer of the given length; NULL algorithm handle with the system RNG flag.
+    let status = unsafe {
+        BCryptGenRandom(
+            null_mut(),
+            bytes.as_mut_ptr(),
+            bytes.len() as u32,
+            BCRYPT_USE_SYSTEM_PREFERRED_RNG,
+        )
+    };
+    if status != 0 {
+        return Err(io::Error::other(format!(
+            "BCryptGenRandom failed: {status:#x}"
+        )));
+    }
+    Ok(crate::hash::to_hex(&bytes))
 }
 
 #[cfg(test)]

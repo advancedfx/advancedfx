@@ -36,8 +36,8 @@ fn main() {
     attach_parent_console();
     let code = match args {
         Ok(args) => {
-            let log_file = args.log.clone().unwrap_or_else(logging::default_log_file);
-            if let Err(e) = logging::init(&log_file) {
+            let (log_file, opened) = logging::init(args.log.as_deref());
+            if let Err(e) = opened {
                 eprintln!("could not create log file {}: {e}", log_file.display());
             }
             log::info!(

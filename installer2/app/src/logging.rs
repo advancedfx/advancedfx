@@ -5,7 +5,7 @@ use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-use hlae_installer_core::time;
+use hlae_installer_core::{time, win};
 
 struct Logger {
     file: Mutex<Option<File>>,
@@ -43,15 +43,33 @@ impl log::Log for Logger {
     }
 }
 
-/// `%TEMP%\HLAE_Setup_<time>.log`
-pub fn default_log_file() -> PathBuf {
+/// The default log `%TEMP%\HLAE_Setup_<time>.log`, only ever created new: as SYSTEM `%TEMP%` is the
+/// shared `C:\Windows\Temp`, where someone could have created that name already, e.g. to read along
+/// (NOTES.md M8 audit). Then a name with a random part instead.
+fn create_default_log() -> (PathBuf, io::Result<File>) {
     let stamp = time::utc_now().replace([':', '-'], "");
-    std::env::temp_dir().join(format!("HLAE_Setup_{stamp}.log"))
+    let path = std::env::temp_dir().join(format!("HLAE_Setup_{stamp}.log"));
+    match File::create_new(&path) {
+        Err(e) if e.kind() == io::ErrorKind::AlreadyExists => match win::random_hex() {
+            Ok(random) => {
+                let path =
+                    std::env::temp_dir().join(format!("HLAE_Setup_{stamp}-{}.log", &random[..8]));
+                let file = File::create_new(&path);
+                (path, file)
+            }
+            Err(e) => (path, Err(e)),
+        },
+        file => (path, file),
+    }
 }
 
-/// Installs the logger; returns an error if the log file can't be created (logging to the console then).
-pub fn init(path: &Path) -> io::Result<()> {
-    let file = File::create(path);
+/// Installs the logger, logging to `explicit` (`--log`, created or overwritten) or the default log.
+/// Returns the log file and an error if it couldn't be created (logging to the console then).
+pub fn init(explicit: Option<&Path>) -> (PathBuf, io::Result<()>) {
+    let (path, file) = match explicit {
+        Some(path) => (path.to_path_buf(), File::create(path)),
+        None => create_default_log(),
+    };
     let opened = file
         .as_ref()
         .map(|_| ())
@@ -61,5 +79,5 @@ pub fn init(path: &Path) -> io::Result<()> {
     }));
     let _ = log::set_logger(logger);
     log::set_max_level(log::LevelFilter::Info);
-    opened
+    (path, opened)
 }

@@ -8,9 +8,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use hlae_installer_core::ffmpeg_install::{self, FfmpegSelection, MAX_CUSTOM_PATH};
 use hlae_installer_core::in_use::Holder;
 use hlae_installer_core::state::FfmpegChoice;
-use hlae_installer_core::{Error, dotnet, protect, session, version};
+use hlae_installer_core::{Error, dotnet, protect, session, version, win};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder, WindowEvent};
+use windows_sys::Win32::UI::WindowsAndMessaging::{MB_ICONWARNING, MB_OK};
 
 use crate::actions::{self, InstallChoice};
 use crate::cli::{GuiMode, exit_code};
@@ -327,13 +328,22 @@ fn launch_hlae() -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
-#[tauri::command]
-fn open_log(gui: State<'_, Gui>) -> Result<(), String> {
-    std::process::Command::new("notepad.exe")
-        .arg(&gui.log_file)
+/// Opens `file` in Notepad – by its full path: a bare `notepad.exe` would first be looked for next
+/// to HLAE_Setup.exe (e.g. in Downloads, NOTES.md M8 audit).
+fn notepad(file: &Path) -> Result<(), String> {
+    let notepad = win::known_folder(win::KnownFolder::System)
+        .map_err(|e| e.to_string())?
+        .join("notepad.exe");
+    std::process::Command::new(notepad)
+        .arg(file)
         .spawn()
         .map(|_| ())
         .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn open_log(gui: State<'_, Gui>) -> Result<(), String> {
+    notepad(&gui.log_file)
 }
 
 /// Writes the license notices to `%TEMP%` and opens them in Notepad (like the log).
@@ -341,11 +351,7 @@ fn open_log(gui: State<'_, Gui>) -> Result<(), String> {
 fn open_licenses() -> Result<(), String> {
     let file = std::env::temp_dir().join("HLAE_Setup_licenses.txt");
     std::fs::write(&file, payload::licenses()).map_err(|e| e.to_string())?;
-    std::process::Command::new("notepad.exe")
-        .arg(&file)
-        .spawn()
-        .map(|_| ())
-        .map_err(|e| e.to_string())
+    notepad(&file)
 }
 
 #[tauri::command]
@@ -360,10 +366,18 @@ const WEBVIEW_CLEANUP_TIMEOUT: std::time::Duration = std::time::Duration::from_s
 
 /// Runs the wizard, returns the exit code.
 pub fn run(mode: GuiMode) -> i32 {
-    let log_file = logging::default_log_file();
-    let _ = logging::init(&log_file);
+    let (log_file, _) = logging::init(None);
     log::info!("{} started (wizard, {mode:?})", crate::cli::written_by());
 
+    // Started "as administrator" (NOTES.md M8 audit): the wizard and what it starts (HLAE,
+    // Notepad, WebView2 and the DLLs it loads) would all run elevated, from wherever the setup was
+    // started (e.g. Downloads). It asks for administrator rights itself (the worker), so refuse.
+    // With UAC off every process is elevated anyway (not "explicitly"), that's left alone.
+    if win::is_explicitly_elevated().unwrap_or(false) {
+        log::error!("the wizard was started as administrator, refusing (use --quiet for that)");
+        webview2::message_box(&l10n::t("ElevatedWizard", &[]), MB_OK | MB_ICONWARNING);
+        return exit_code::FATAL;
+    }
     if !webview2::ensure_installed() {
         return exit_code::USER_CANCEL;
     }
@@ -544,7 +558,7 @@ mod webview2 {
         has_version(HKEY_LOCAL_MACHINE, KEY_WOW64_32KEY) || has_version(HKEY_CURRENT_USER, 0)
     }
 
-    fn message_box(text: &str, flags: u32) -> i32 {
+    pub(super) fn message_box(text: &str, flags: u32) -> i32 {
         let text: Vec<u16> = text.encode_utf16().chain(Some(0)).collect();
         let title: Vec<u16> = t("WindowTitle", &[])
             .encode_utf16()

@@ -776,6 +776,32 @@ All questions so far are decided; details live in 4–6.
         only checked once before the UAC prompt (still ~4 s).
   - Test machine has the new installer's HLAE again (after the GUI migration test); old v5 / v3 setups can be
     reinstalled from public releases for further migration tests.
+- [x] **Security audit** (2026-10-17, checklist from VLC's NSIS installer: junction / TEMP / planting attacks by a
+      standard local user). Fixed:
+  - [x] FFMPEG download as SYSTEM (`--quiet` from deployment tools, client part in-process): it went to
+        `C:\Windows\Temp\HLAE_Setup_ffmpeg` (shared, `create_dir_all` + `File::create` + `remove_file` follow a
+        planted junction → file overwrite / delete as SYSTEM). Elevated now: a new private dir
+        `%TEMP%\HLAE_Setup_ffmpeg-<128 random bits>`, created in one step with SYSTEM / Administrators-only
+        permissions, failing if anything is there (`acl::create_private_dir`), removed afterwards in any case.
+        Unelevated unchanged (the user's own `%TEMP%`, a download is reused after a failure).
+  - [x] Wizard started "as administrator" (it would run HLAE, Notepad and WebView2's DLLs elevated from the start
+        folder, e.g. Downloads): refused with a message box (`ElevatedWizard`, exit 1603). Only when *explicitly*
+        elevated (`TokenElevationTypeFull`); with UAC off every process is elevated, that's left alone.
+        Notepad (log, licenses) by full path (`System32\notepad.exe`): Rust's `Command` looks next to the exe first.
+  - [x] Recovery pinned: `transaction::recover` pins the journal's install dir while it renames / deletes there
+        (it ran before the session's pin); created dirs are removed after unpinning.
+  - [x] Default log file only created new (`create_new`), else a name with a random part – as SYSTEM `%TEMP%` is
+        shared (someone could pre-create the name to read along). Explicit `--log` overwrites as before.
+  - Not fixed (decided): the ACL of an install dir below `Program Files` isn't checked – only an admin could have
+    weakened it.
+  - [x] Tested as admin (2026-10-17, debug exe, test mode): elevated wizard → message box, exit 1603; elevated
+        quiet install with FFMPEG download (194 MB) → exit 0, FFMPEG installed, no private dir left behind (the
+        unelevated `HLAE_Setup_ffmpeg` dir untouched, not reused). Log name fallback tested unelevated: 7 planted
+        names untouched, log written to `HLAE_Setup_<time>-<random>.log`. SYSTEM itself not tested (no PsExec here).
+- Rest of the audit: addressed (state / journal in the admin-only state dir, `RelPath` validation, junction-safe
+  `remove_dir_all` (Rust 1.95), FFMPEG copy + pinned SHA-256 + zip-slip-safe extraction, `msiexec` by full path,
+  HKLM only, app data deleted unelevated, DLL search restricted in worker / CLI).
+
 ### Untested / open TODOs
 Things that exist but haven't been tested yet, or small TODOs outside the milestones.
 - [ ] **WebView2 missing** (6.2, `gui.rs` `webview2::ensure_installed`): message box → opens Microsoft's download page →
