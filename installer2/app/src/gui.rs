@@ -420,14 +420,20 @@ pub fn run(mode: GuiMode) -> i32 {
             events::set_sink(move |event| {
                 let _ = handle.emit("setup-event", event);
             });
-            WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
-                .title(&title)
-                .inner_size(640.0, 580.0)
-                .resizable(false)
-                .maximizable(false)
-                .theme(debug_theme())
-                .data_directory(data_dir.clone())
-                .build()?;
+            static LOADED: AtomicBool = AtomicBool::new(false);
+            let window =
+                WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
+                    .title(&title)
+                    .inner_size(640.0, 580.0)
+                    .resizable(false)
+                    .maximizable(false)
+                    .theme(debug_theme())
+                    .data_directory(data_dir.clone())
+                    // A wizard, not a browser: only the first load of index.html. Reload, back /
+                    // forward (also the mouse buttons) etc. would restart it in the middle.
+                    .on_navigation(|_| !LOADED.swap(true, Ordering::SeqCst))
+                    .build()?;
+            no_browser_features(&window);
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -444,6 +450,35 @@ pub fn run(mode: GuiMode) -> i32 {
     log::info!("wizard closed, exit code {code}");
     log::logger().flush();
     code
+}
+
+/// Turns off what makes WebView2 a browser: the context menu (back, reload, print, inspect …) and
+/// the browser shortcuts (F5, Ctrl+R, Ctrl+P, Ctrl+F, Alt+←, F12 …). Editing keys like Ctrl+C / V
+/// still work. Tauri doesn't offer these two, so set them on the WebView2 settings directly.
+fn no_browser_features(window: &tauri::WebviewWindow) {
+    let result = window.with_webview(|webview| {
+        use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Settings3;
+        use windows::core::Interface;
+        // SAFETY: COM calls on this webview's WebView2 objects, on its UI thread (with_webview).
+        let result = unsafe {
+            webview
+                .controller()
+                .CoreWebView2()
+                .and_then(|core| core.Settings())
+                .and_then(|settings| {
+                    settings.SetAreDefaultContextMenusEnabled(false)?;
+                    settings
+                        .cast::<ICoreWebView2Settings3>()?
+                        .SetAreBrowserAcceleratorKeysEnabled(false)
+                })
+        };
+        if let Err(e) = result {
+            log::warn!("could not turn off the WebView2 browser features: {e}");
+        }
+    });
+    if let Err(e) = result {
+        log::warn!("could not reach the WebView2 settings: {e}");
+    }
 }
 
 pub const CLEANUP_ARG: &str = "--cleanup-webview-data";

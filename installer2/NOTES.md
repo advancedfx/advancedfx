@@ -802,6 +802,20 @@ All questions so far are decided; details live in 4–6.
   `remove_dir_all` (Rust 1.95), FFMPEG copy + pinned SHA-256 + zip-slip-safe extraction, `msiexec` by full path,
   HKLM only, app data deleted unelevated, DLL search restricted in worker / CLI).
 
+- [x] **Wizard fixes from testing the full package build** (2026-10-17):
+  - Webview behaved like a browser (context menu, F5 / Ctrl+R reload, back navigation): WebView2's default context
+    menu and browser shortcuts switched off on its settings (`no_browser_features` in `gui.rs`, via
+    `with_webview`; Tauri doesn't offer them, `webview2-com` = the version Tauri uses), plus `on_navigation` allows
+    only the first load (also catches the mouse's back button). Editing keys (Ctrl+C / V) still work; the
+    right-click menu in input fields is gone too. Tested: text typed in the install dir field survives F5, Ctrl+R,
+    Alt+←; right-click opens nothing.
+  - Buttons could be clicked twice (double install start shown as "failed", HLAE started twice, …): one action
+    at a time in `main.js` (`onClick` guard; buttons aren't disabled for it, that loses the keyboard focus), and
+    the worker's "busy" answer isn't shown as a failure any more.
+  - Fresh full build failed at the shaders in a shell with `NoDefaultCurrentDirectoryInExePath=1`
+    (`ShaderBuilder.exe` called by bare name): now by full path in `AfxHookSource*/CMakeLists.txt`. Full build from
+    empty `build/`: 30 min (installer 9.5 min), `HLAE_Setup.exe` 9.6 MB, payload 208 files.
+
 ### Untested / open TODOs
 Things that exist but haven't been tested yet, or small TODOs outside the milestones.
 - [ ] **WebView2 missing** (6.2, `gui.rs` `webview2::ensure_installed`): message box → opens Microsoft's download page →

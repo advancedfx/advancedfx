@@ -189,24 +189,21 @@ function startProgress(kind) {
   show('page-progress');
 }
 
+/** `start_install` / `start_uninstall` failed. "busy" = one is running already (it reports itself). */
+function notStarted(e) {
+  if (String(e) === 'busy') return;
+  appendLog('ERROR', String(e));
+  finish(1603);
+}
+
 const startInstall = (installDir, locales, ffmpeg) => whenNotInUse('install', async () => {
   startProgress('install');
-  try {
-    await invoke('start_install', { installDir, locales, ffmpeg });
-  } catch (e) {
-    appendLog('ERROR', String(e));
-    finish(1603);
-  }
+  await invoke('start_install', { installDir, locales, ffmpeg }).catch(notStarted);
 });
 
 const startUninstall = () => whenNotInUse('uninstall', async () => {
   startProgress('uninstall');
-  try {
-    await invoke('start_uninstall', { removeAppData: $('remove-app-data').checked });
-  } catch (e) {
-    appendLog('ERROR', String(e));
-    finish(1603);
-  }
+  await invoke('start_uninstall', { removeAppData: $('remove-app-data').checked }).catch(notStarted);
 });
 
 const mb = (bytes) => Math.round(bytes / 1_000_000);
@@ -252,12 +249,29 @@ function finish(code) {
 
 // ---- wiring ----
 
+/** An action (click) is running: a second click meanwhile – also on another button – is ignored. */
+let acting = false;
+
+/** `handler` for clicks on `id`, one action at a time (no double installs, two HLAE starts, …).
+    The button isn't disabled for that: it would lose the keyboard focus. */
+function onClick(id, handler) {
+  $(id).addEventListener('click', async (event) => {
+    if (acting) return;
+    acting = true;
+    try {
+      await handler(event);
+    } finally {
+      acting = false;
+    }
+  });
+}
+
 function wire() {
   $('install-dir').addEventListener('input', validate);
   $('ffmpeg-exe').addEventListener('input', validate);
   for (const radio of document.querySelectorAll('input[name="ffmpeg"]')) radio.addEventListener('change', updateFfmpegOptions);
 
-  $('browse-dir').addEventListener('click', async () => {
+  onClick('browse-dir', async () => {
     let dir = await invoke('browse_folder', { initial: $('install-dir').value });
     if (!dir) return;
     // Like most setups: install into an "HLAE" subfolder of what was picked.
@@ -265,7 +279,7 @@ function wire() {
     $('install-dir').value = dir;
     validate();
   });
-  $('browse-exe').addEventListener('click', async () => {
+  onClick('browse-exe', async () => {
     const exe = await invoke('browse_ffmpeg_exe', { initial: $('ffmpeg-exe').value });
     if (exe) {
       $('ffmpeg-exe').value = exe;
@@ -273,34 +287,34 @@ function wire() {
     }
   });
 
-  $('install-go').addEventListener('click', async () => {
-    if (await validate()) startInstall($('install-dir').value.trim(), $('locales').checked, selectedFfmpeg());
+  onClick('install-go', async () => {
+    if (await validate()) await startInstall($('install-dir').value.trim(), $('locales').checked, selectedFfmpeg());
   });
-  $('maintenance-update').addEventListener('click', () => {
+  onClick('maintenance-update', () => {
     const installed = info.installed;
-    startInstall(installed.installDir, installed.locales, info.defaultFfmpeg);
+    return startInstall(installed.installDir, installed.locales, info.defaultFfmpeg);
   });
-  $('maintenance-modify').addEventListener('click', () => {
+  onClick('maintenance-modify', () => {
     backPage = 'page-maintenance';
     openInstall(true);
   });
-  $('maintenance-uninstall').addEventListener('click', () => {
+  onClick('maintenance-uninstall', () => {
     backPage = 'page-maintenance';
     openUninstall();
   });
-  $('uninstall-go').addEventListener('click', startUninstall);
-  for (const id of ['install-back', 'uninstall-back']) $(id).addEventListener('click', () => show(backPage));
-  $('in-use-retry').addEventListener('click', () => whenNotInUse(inUse.kind, inUse.run));
-  $('in-use-back').addEventListener('click', () => {
+  onClick('uninstall-go', startUninstall);
+  for (const id of ['install-back', 'uninstall-back']) onClick(id, () => show(backPage));
+  onClick('in-use-retry', () => whenNotInUse(inUse.kind, inUse.run));
+  onClick('in-use-back', () => {
     const from = inUse.from;
     inUse = null;
     show(from);
   });
-  for (const id of ['install-cancel', 'maintenance-close', 'uninstall-cancel', 'done-close']) $(id).addEventListener('click', quit);
-  $('progress-cancel').addEventListener('click', () => invoke('cancel'));
-  $('done-log').addEventListener('click', () => invoke('open_log'));
-  $('licenses').addEventListener('click', () => invoke('open_licenses'));
-  $('done-launch').addEventListener('click', async () => {
+  for (const id of ['install-cancel', 'maintenance-close', 'uninstall-cancel', 'done-close']) onClick(id, quit);
+  onClick('progress-cancel', () => invoke('cancel'));
+  onClick('done-log', () => invoke('open_log'));
+  onClick('licenses', () => invoke('open_licenses'));
+  onClick('done-launch', async () => {
     await invoke('launch_hlae').catch((e) => appendLog('ERROR', String(e)));
     quit();
   });
