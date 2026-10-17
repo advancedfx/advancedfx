@@ -8,8 +8,11 @@ use std::path::{Path, PathBuf};
 use crate::error::{Error, IoContext, Result};
 use crate::hash::HashingWriter;
 use crate::manifest::{Component, Manifest, ManifestFile};
-use crate::pack::ZSTD_WINDOW_LOG;
 use crate::relpath::RelPath;
+
+/// zstd window of the payload (2^27 = 128 MiB): the packer (build-support) compresses with it,
+/// the decoder here must allow at least this.
+pub const ZSTD_WINDOW_LOG: u32 = 27;
 
 /// A verified file waiting in the staging dir to be moved into place.
 #[derive(Debug)]

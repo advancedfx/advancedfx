@@ -2,13 +2,13 @@ use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+use hlae_installer_build_support::pack::{ZSTD_LEVEL, pack_dir};
 use hlae_installer_core::Error;
 use hlae_installer_core::ffmpeg::{self, FfmpegData, Variant};
 use hlae_installer_core::ffmpeg_install::{
     FfmpegPlan, FfmpegSelection, INI_PATH, apply, default_selection, ini_content, warnings,
 };
 use hlae_installer_core::install::{InstallRequest, install_hlae, uninstall};
-use hlae_installer_core::pack::{ZSTD_LEVEL, pack_dir};
 use hlae_installer_core::state::{Features, FfmpegChoice, State};
 use tempfile::TempDir;
 

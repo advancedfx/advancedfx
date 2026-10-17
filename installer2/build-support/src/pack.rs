@@ -5,16 +5,15 @@ use std::io::Write;
 use std::os::windows::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 
-use crate::error::{Error, IoContext, Result};
-use crate::fsutil::FILE_ATTRIBUTE_REPARSE_POINT;
-use crate::hash;
-use crate::manifest::{FFMPEG_DIR, FORMAT, Manifest, ManifestFile};
-use crate::relpath::RelPath;
+use hlae_installer_core::error::{Error, IoContext, Result};
+use hlae_installer_core::fsutil::FILE_ATTRIBUTE_REPARSE_POINT;
+use hlae_installer_core::hash;
+use hlae_installer_core::manifest::{FFMPEG_DIR, FORMAT, Manifest, ManifestFile};
+use hlae_installer_core::payload::ZSTD_WINDOW_LOG;
+use hlae_installer_core::relpath::RelPath;
 
 /// Compression level for release builds; debug builds may use a faster one.
 pub const ZSTD_LEVEL: i32 = 19;
-/// zstd window (2^27 = 128 MiB), the decoder must allow at least this.
-pub const ZSTD_WINDOW_LOG: u32 = 27;
 
 /// Packs all files below `src_dir` into a tar.zst written to `out` and returns the manifest.
 ///

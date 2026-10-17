@@ -5,12 +5,11 @@ use std::path::PathBuf;
 
 use std::sync::atomic::AtomicBool;
 
-use hlae_installer_core::ffmpeg_install::{FfmpegPlan, FfmpegSelection};
-use hlae_installer_core::{session, win};
+use hlae_installer_core::ffmpeg_install::FfmpegSelection;
 
+use crate::actions::{self, InstallChoice};
 use crate::ffmpeg_client::{self, FfmpegArgs};
-use crate::ops::{self, Request};
-use crate::{payload, worker};
+use crate::payload;
 
 /// MSI-compatible exit codes (NOTES.md 6.4), deployment tools understand them.
 #[allow(dead_code)] // cancel / reboot are used from M6 / M7 on.
@@ -53,14 +52,14 @@ Without administrator rights a UAC prompt asks for them.
 Options may also be written as /option. Exit codes: 0 ok, 1223 UAC prompt
 declined, 1603 error, 1605 not installed (uninstall), 1639 invalid command line.";
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Action {
     Install,
     Modify,
     Uninstall,
 }
 
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Args {
     pub quiet: bool,
     pub help: bool,
@@ -75,10 +74,32 @@ pub struct Args {
     pub ffmpeg_archive: Option<PathBuf>,
 }
 
+/// Start page of the wizard.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum GuiMode {
+    /// Normal start: install, or maintenance if installed.
+    Start,
+    Modify,
+    Uninstall,
+}
+
 impl Args {
-    /// No options → GUI.
-    pub fn is_gui(&self) -> bool {
-        *self == Args::default()
+    /// No options, or only `--install` / `--modify` / `--uninstall` without `--quiet`
+    /// (e.g. from Apps & features) → wizard.
+    pub fn gui_mode(&self) -> Option<GuiMode> {
+        let without_action = Args {
+            action: None,
+            ..self.clone()
+        };
+        if without_action != Args::default() {
+            return None;
+        }
+        Some(match self.action {
+            None | Some(Action::Install) => GuiMode::Start,
+            Some(Action::Modify) => GuiMode::Modify,
+            Some(Action::Uninstall) => GuiMode::Uninstall,
+        })
     }
 }
 
@@ -161,61 +182,36 @@ pub fn run(args: Args) -> i32 {
         return exit_code::SUCCESS;
     }
     if !args.quiet {
-        // TODO(M6): pass the options to the wizard instead.
-        eprintln!("Options without --quiet are not supported yet (wizard: M6).\n\n{USAGE}");
+        eprintln!("Options other than --install / --modify / --uninstall need --quiet.\n\n{USAGE}");
         return exit_code::INVALID_COMMAND_LINE;
     }
 
-    let mut ffmpeg_download = None;
-    let request = match args.action {
-        Some(Action::Uninstall) => Request::Uninstall,
-        Some(Action::Install | Action::Modify) | None => {
-            // FFMPEG first, unelevated: defaults need the installed state, the download needs the
-            // logged-in user's proxy settings (NOTES.md 6.8a).
-            let (plan, download) = match resolve_ffmpeg(&args) {
-                Ok(resolved) => resolved,
-                Err(code) => return code,
-            };
-            ffmpeg_download = download;
-            Request::Install {
-                install_dir: args.install_dir.clone(),
-                locales: args.locales,
-                ffmpeg: plan,
+    match args.action {
+        Some(Action::Uninstall) => actions::uninstall(args.remove_app_data),
+        Some(Action::Install | Action::Modify) | None => match ffmpeg_args(&args) {
+            Ok(ffmpeg) => {
+                let choice = InstallChoice {
+                    install_dir: args.install_dir.clone(),
+                    locales: args.locales,
+                    ffmpeg,
+                };
+                actions::install(&choice, &AtomicBool::new(false))
             }
-        }
-    };
-
-    // Elevated already (admin shell, deployment tool) → in-process, else via the elevated worker.
-    let in_process = if ops::test_mode() {
-        !ops::test_worker()
-    } else {
-        win::is_elevated().unwrap_or(false)
-    };
-    let code = if in_process {
-        ops::run(&request)
-    } else {
-        worker::run_elevated(&request)
-    };
-
-    // Done here, unelevated, so it's the logged-in user's %APPDATA% (NOTES.md 6.4).
-    if request == Request::Uninstall && args.remove_app_data && code == exit_code::SUCCESS {
-        remove_app_data();
+            Err(code) => code,
+        },
     }
-    // Keep the download on failure, a retry can reuse it.
-    if let Some(download) = ffmpeg_download.filter(|_| code == exit_code::SUCCESS) {
-        let _ = std::fs::remove_file(&download);
-    }
-    code
 }
 
-fn resolve_ffmpeg(args: &Args) -> Result<(FfmpegPlan, Option<PathBuf>), i32> {
-    let fail = |e: &dyn std::fmt::Display| {
+fn ffmpeg_args(args: &Args) -> Result<FfmpegArgs, i32> {
+    let data = payload::ffmpeg_data().map_err(|e| {
         log::error!("{e}");
         exit_code::FATAL
-    };
-    let data = payload::ffmpeg_data().map_err(|e| fail(&e))?;
+    })?;
     if let Some(exe) = &args.ffmpeg_custom {
-        hlae_installer_core::ffmpeg_install::validate_custom_exe(exe).map_err(|e| fail(&e))?;
+        hlae_installer_core::ffmpeg_install::validate_custom_exe(exe).map_err(|e| {
+            log::error!("{e}");
+            exit_code::INVALID_COMMAND_LINE
+        })?;
     }
     let selection = match (&args.ffmpeg_custom, &args.ffmpeg) {
         (Some(exe), _) => Some(FfmpegSelection::Custom(exe.clone())),
@@ -225,25 +221,10 @@ fn resolve_ffmpeg(args: &Args) -> Result<(FfmpegPlan, Option<PathBuf>), i32> {
         })?),
         (None, None) => None,
     };
-    let ffmpeg_args = FfmpegArgs {
+    Ok(FfmpegArgs {
         selection,
         archive: args.ffmpeg_archive.clone(),
-    };
-    let session = ops::session().map_err(|e| fail(&e))?;
-    let cancel = AtomicBool::new(false);
-    ffmpeg_client::resolve(&ffmpeg_args, &data, &session.state_file, &cancel).map_err(|e| fail(&e))
-}
-
-fn remove_app_data() {
-    if win::is_local_system().unwrap_or(false) {
-        log::warn!("--remove-app-data is ignored when running as SYSTEM (no logged-in user)");
-        return;
-    }
-    match session::remove_app_data() {
-        Ok(true) => log::info!("removed %APPDATA%\\HLAE"),
-        Ok(false) => log::info!("no %APPDATA%\\HLAE to remove"),
-        Err(e) => log::error!("removing %APPDATA%\\HLAE: {e}"),
-    }
+    })
 }
 
 pub fn written_by() -> String {
@@ -259,9 +240,23 @@ mod tests {
     }
 
     #[test]
-    fn no_args_is_gui() {
-        assert!(parse_str(&[]).unwrap().is_gui());
-        assert!(!parse_str(&["--quiet"]).unwrap().is_gui());
+    fn gui_modes() {
+        assert_eq!(parse_str(&[]).unwrap().gui_mode(), Some(GuiMode::Start));
+        assert_eq!(
+            parse_str(&["--uninstall"]).unwrap().gui_mode(),
+            Some(GuiMode::Uninstall)
+        );
+        assert_eq!(
+            parse_str(&["/modify"]).unwrap().gui_mode(),
+            Some(GuiMode::Modify)
+        );
+        assert_eq!(parse_str(&["--quiet"]).unwrap().gui_mode(), None);
+        assert_eq!(
+            parse_str(&["--uninstall", "--quiet"]).unwrap().gui_mode(),
+            None
+        );
+        assert_eq!(parse_str(&["--no-locales"]).unwrap().gui_mode(), None);
+        assert_eq!(parse_str(&["--help"]).unwrap().gui_mode(), None);
     }
 
     #[test]

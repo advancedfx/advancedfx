@@ -1,0 +1,287 @@
+# English source texts of the HLAE Setup wizard (installer2), see installer2/NOTES.md 6.9.
+# msgctxt = stable key used by the code; {name} = placeholder, keep it unchanged in translations.
+# Temporary location; moves to the l10n repo (locales/en-US/installer2/messages.pot) later.
+msgid ""
+msgstr ""
+"Project-Id-Version: HLAE Setup\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Window title and title in the header
+msgctxt "WindowTitle"
+msgid "HLAE Setup"
+msgstr ""
+
+#. Small text in the header, {version} = HLAE version in this setup
+msgctxt "HeaderVersion"
+msgid "HLAE {version}"
+msgstr ""
+
+msgctxt "InstallHeading"
+msgid "Install HLAE {version}"
+msgstr ""
+
+msgctxt "ModifyHeading"
+msgid "Change the installed HLAE"
+msgstr ""
+
+msgctxt "InstallDirLabel"
+msgid "Install location"
+msgstr ""
+
+msgctxt "BrowseButton"
+msgid "Browse…"
+msgstr ""
+
+#. Title of the folder picker
+msgctxt "BrowseInstallDirTitle"
+msgid "Select the HLAE install location"
+msgstr ""
+
+msgctxt "InstallDirFixed"
+msgid "To install to a different location, uninstall HLAE first."
+msgstr ""
+
+msgctxt "InstallDirNotAbsolute"
+msgid "Please enter a full path, e.g. C:\\Program Files (x86)\\HLAE."
+msgstr ""
+
+msgctxt "InstallDirNotAscii"
+msgid "The path may only contain basic latin characters (A–Z, 0–9 and common symbols). HLAE can't work from other paths."
+msgstr ""
+
+msgctxt "InstallDirInvalid"
+msgid "The path contains characters that aren't allowed."
+msgstr ""
+
+msgctxt "LocalesLabel"
+msgid "Install the translations of the HLAE user interface"
+msgstr ""
+
+#. Heading of the FFMPEG options; mirv_streams is an HLAE command, don't translate it
+msgctxt "FfmpegLegend"
+msgid "FFMPEG – needed to record videos with mirv_streams"
+msgstr ""
+
+msgctxt "FfmpegDownload"
+msgid "Download and install FFMPEG"
+msgstr ""
+
+#. FFMPEG build variant, {size} = download size in MB
+msgctxt "FfmpegVariant_static_gpl"
+msgid "Static, GPL – recommended ({size} MB download)"
+msgstr ""
+
+msgctxt "FfmpegVariant_shared_gpl"
+msgid "Shared, GPL ({size} MB download)"
+msgstr ""
+
+msgctxt "FfmpegVariant_static_lgpl"
+msgid "Static, LGPL – fewer features, more permissive license ({size} MB download)"
+msgstr ""
+
+msgctxt "FfmpegVariant_shared_lgpl"
+msgid "Shared, LGPL – fewer features, more permissive license ({size} MB download)"
+msgstr ""
+
+msgctxt "FfmpegDownloadNote"
+msgid "Downloaded from GitHub (BtbN's FFmpeg builds) using your internet connection and proxy settings."
+msgstr ""
+
+msgctxt "FfmpegCustom"
+msgid "Use an existing ffmpeg.exe"
+msgstr ""
+
+#. Title of the file picker
+msgctxt "BrowseFfmpegTitle"
+msgid "Select ffmpeg.exe"
+msgstr ""
+
+msgctxt "FfmpegCustomMissing"
+msgid "Please select an existing ffmpeg.exe."
+msgstr ""
+
+msgctxt "FfmpegCustomTooLong"
+msgid "The path is too long (at most 260 characters)."
+msgstr ""
+
+#. {what} = description of the installed FFMPEG, e.g. a variant name or a path
+msgctxt "FfmpegKeep"
+msgid "Keep the installed FFMPEG ({what})"
+msgstr ""
+
+msgctxt "FfmpegNone"
+msgid "Don't install FFMPEG"
+msgstr ""
+
+msgctxt "FfmpegRemove"
+msgid "Remove FFMPEG"
+msgstr ""
+
+#. {version} = .NET Framework version, e.g. 4.6.2
+msgctxt "DotnetMissing"
+msgid "HLAE needs the Microsoft .NET Framework {version} or newer. Please install it."
+msgstr ""
+
+#. Only shown in developer builds
+msgctxt "NoPayload"
+msgid "This developer build of HLAE Setup contains no HLAE files and can't install."
+msgstr ""
+
+msgctxt "InstallButton"
+msgid "Install"
+msgstr ""
+
+msgctxt "ApplyButton"
+msgid "Apply"
+msgstr ""
+
+msgctxt "CancelButton"
+msgid "Cancel"
+msgstr ""
+
+msgctxt "CloseButton"
+msgid "Close"
+msgstr ""
+
+msgctxt "BackButton"
+msgid "Back"
+msgstr ""
+
+#. {version} = installed HLAE version
+msgctxt "MaintenanceHeading"
+msgid "HLAE {version} is installed"
+msgstr ""
+
+#. {dir} = install location
+msgctxt "MaintenanceLocation"
+msgid "Location: {dir}"
+msgstr ""
+
+#. {version} = HLAE version in this setup
+msgctxt "MaintenanceSetup"
+msgid "This setup contains HLAE {version}."
+msgstr ""
+
+msgctxt "UpgradeButton"
+msgid "Update to {version}"
+msgstr ""
+
+msgctxt "RepairButton"
+msgid "Repair"
+msgstr ""
+
+msgctxt "ModifyButton"
+msgid "Change…"
+msgstr ""
+
+msgctxt "UninstallButton"
+msgid "Uninstall"
+msgstr ""
+
+msgctxt "UninstallMoreButton"
+msgid "Uninstall…"
+msgstr ""
+
+#. {installed} = installed (newer) version, {version} = version in this setup
+msgctxt "NewerInstalled"
+msgid "A newer HLAE ({installed}) is installed. To install HLAE {version} instead, uninstall the newer one first."
+msgstr ""
+
+msgctxt "UninstallHeading"
+msgid "Uninstall HLAE {version}"
+msgstr ""
+
+msgctxt "UninstallText"
+msgid "Removes HLAE, the FFMPEG installed by this setup, the start menu entry and the entry in Apps & features. Files you changed or added in the HLAE folder are kept."
+msgstr ""
+
+msgctxt "RemoveAppDataLabel"
+msgid "Also remove my HLAE settings (%APPDATA%\\HLAE) – not recommended"
+msgstr ""
+
+msgctxt "ProgressInstalling"
+msgid "Installing HLAE…"
+msgstr ""
+
+msgctxt "ProgressUninstalling"
+msgid "Uninstalling HLAE…"
+msgstr ""
+
+msgctxt "PhaseDownload"
+msgid "Downloading FFMPEG…"
+msgstr ""
+
+#. {done} and {total} = megabytes
+msgctxt "PhaseDownloadProgress"
+msgid "{done} of {total} MB"
+msgstr ""
+
+msgctxt "PhaseElevate"
+msgid "Waiting for administrator permission – please confirm the Windows prompt."
+msgstr ""
+
+msgctxt "PhaseWorkInstall"
+msgid "Installing files…"
+msgstr ""
+
+msgctxt "PhaseWorkUninstall"
+msgid "Removing files…"
+msgstr ""
+
+msgctxt "DetailsLabel"
+msgid "Details"
+msgstr ""
+
+#. {version} = HLAE version
+msgctxt "DoneInstalled"
+msgid "HLAE {version} is installed."
+msgstr ""
+
+msgctxt "DoneUninstalled"
+msgid "HLAE was uninstalled."
+msgstr ""
+
+msgctxt "DoneCancelled"
+msgid "Cancelled. Nothing was changed."
+msgstr ""
+
+msgctxt "DoneDeclined"
+msgid "Administrator permission was declined. Nothing was changed."
+msgstr ""
+
+msgctxt "DoneNotInstalled"
+msgid "HLAE is not installed."
+msgstr ""
+
+msgctxt "DoneFailed"
+msgid "Something went wrong."
+msgstr ""
+
+msgctxt "DoneFailedText"
+msgid "You can find the details in the log file. If HLAE was installed before, run this setup again and choose Repair."
+msgstr ""
+
+msgctxt "LaunchButton"
+msgid "Start HLAE"
+msgstr ""
+
+msgctxt "OpenLogButton"
+msgid "Open log file"
+msgstr ""
+
+#. Native message box before the wizard opens
+msgctxt "WebView2Missing"
+msgid ""
+"HLAE Setup needs the Microsoft Edge WebView2 Runtime to show its window.\n"
+"\n"
+"Download and install it from Microsoft now?\n"
+"\n"
+"Without it, HLAE Setup can still install unattended: HLAE_Setup.exe --quiet"
+msgstr ""
+
+#. {error} = error message (English)
+msgctxt "WebView2Failed"
+msgid "The WebView2 Runtime could not be installed: {error}"
+msgstr ""

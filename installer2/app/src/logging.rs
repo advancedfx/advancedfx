@@ -20,8 +20,13 @@ impl log::Log for Logger {
         if !self.enabled(record.metadata()) {
             return;
         }
-        let line = format!("{} {:5} {}", time::utc_now(), record.level(), record.args());
+        let message = record.args().to_string();
+        let line = format!("{} {:5} {message}", time::utc_now(), record.level());
         eprintln!("{line}");
+        crate::events::emit(crate::events::Event::Log {
+            level: record.level().to_string(),
+            message,
+        });
         if let Ok(mut file) = self.file.lock()
             && let Some(file) = file.as_mut()
         {

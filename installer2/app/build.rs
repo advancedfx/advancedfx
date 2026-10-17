@@ -8,7 +8,63 @@ fn main() {
     // Safe: all static imports are Windows system DLLs (checked with `dumpbin /dependents`).
     println!("cargo:rustc-link-arg-bins=/DEPENDENTLOADFLAG:0x800");
     pack_payload();
+    build_catalogs();
     tauri_build::build()
+}
+
+/// Translation catalogs for `src/l10n.rs` (NOTES.md 6.9): English from `installer2/l10n/messages.pot`,
+/// translations from `deps/release/l10n/locales/<lang>/installer2/messages.po` (if present).
+/// Writes `$OUT_DIR/l10n/<lang>.json` and `$OUT_DIR/l10n_index.rs`.
+fn build_catalogs() {
+    use hlae_installer_build_support::l10n;
+
+    let manifest_dir =
+        PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
+    let out_dir = PathBuf::from(std::env::var_os("OUT_DIR").expect("OUT_DIR")).join("l10n");
+    fs::create_dir_all(&out_dir).expect("create l10n out dir");
+
+    let pot = manifest_dir.join("../l10n/messages.pot");
+    println!("cargo:rerun-if-changed={}", pot.display());
+    let source = l10n::source_catalog(File::open(&pot).expect("open messages.pot"))
+        .unwrap_or_else(|e| panic!("{}: {e}", pot.display()));
+    let mut catalogs = vec![("en-US".to_owned(), source.clone())];
+
+    let locales = manifest_dir.join("../../deps/release/l10n/locales");
+    if locales.is_dir() {
+        let mut langs: Vec<_> = fs::read_dir(&locales)
+            .expect("list locales")
+            .filter_map(|e| e.ok())
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .filter(|lang| lang != "en-US")
+            .collect();
+        langs.sort();
+        for lang in langs {
+            let po = locales.join(&lang).join("installer2").join("messages.po");
+            println!("cargo:rerun-if-changed={}", po.display());
+            let Ok(file) = File::open(&po) else {
+                continue;
+            };
+            let (catalog, warnings) = l10n::translated_catalog(file, &source)
+                .unwrap_or_else(|e| panic!("{}: {e}", po.display()));
+            for warning in warnings {
+                println!("cargo:warning={lang}: {warning}");
+            }
+            if !catalog.is_empty() {
+                catalogs.push((lang, catalog));
+            }
+        }
+    }
+
+    let mut index = String::from("pub static CATALOGS: &[(&str, &str)] = &[\n");
+    for (lang, catalog) in &catalogs {
+        let json = serde_json::to_string(catalog).expect("serialize catalog");
+        fs::write(out_dir.join(format!("{lang}.json")), json).expect("write catalog");
+        index.push_str(&format!(
+            "    ({lang:?}, include_str!(concat!(env!(\"OUT_DIR\"), \"/l10n/{lang}.json\"))),\n"
+        ));
+    }
+    index.push_str("];\n");
+    fs::write(out_dir.parent().unwrap().join("l10n_index.rs"), index).expect("write l10n index");
 }
 
 /// Packs the staged HLAE build (`HLAE_PAYLOAD_DIR`, version `HLAE_VERSION`) into `$OUT_DIR`
@@ -40,13 +96,17 @@ fn pack_payload() {
     // Unoptimized (debug) builds: fast compression instead of the small one.
     let level = match std::env::var("OPT_LEVEL").as_deref() {
         Ok("0") => 3,
-        _ => hlae_installer_core::pack::ZSTD_LEVEL,
+        _ => hlae_installer_build_support::pack::ZSTD_LEVEL,
     };
     let payload_path = out_dir.join("payload.tar.zst");
     let file = File::create(&payload_path).expect("create payload");
-    let manifest =
-        hlae_installer_core::pack::pack_dir(&src_dir, &version, level, BufWriter::new(file))
-            .unwrap_or_else(|e| panic!("packing {}: {e}", src_dir.display()));
+    let manifest = hlae_installer_build_support::pack::pack_dir(
+        &src_dir,
+        &version,
+        level,
+        BufWriter::new(file),
+    )
+    .unwrap_or_else(|e| panic!("packing {}: {e}", src_dir.display()));
     let json = manifest.to_json().expect("serialize manifest");
     fs::write(out_dir.join("manifest.json"), json).expect("write manifest");
 }

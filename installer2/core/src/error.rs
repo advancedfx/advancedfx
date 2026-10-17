@@ -55,7 +55,7 @@ pub enum Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// Attaches the operation and path to an `io::Error`.
-pub(crate) trait IoContext<T> {
+pub trait IoContext<T> {
     fn ctx(self, op: &'static str, path: &Path) -> Result<T>;
 }
 

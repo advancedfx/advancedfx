@@ -655,6 +655,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "concat-string"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7439becb5fafc780b6f4de382b1a7a3e70234afe783854a4702ee8adbb838609"
+
+[[package]]
 name = "concurrent-queue"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1774,19 +1780,34 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 name = "hlae-installer"
 version = "0.1.0"
 dependencies = [
+ "hlae-installer-build-support",
  "hlae-installer-core",
  "log",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
+ "windows",
  "windows-sys 0.61.2",
+ "winreg",
+]
+
+[[package]]
+name = "hlae-installer-build-support"
+version = "0.1.0"
+dependencies = [
+ "hlae-installer-core",
+ "polib",
+ "tar",
+ "tempfile",
+ "zstd",
 ]
 
 [[package]]
 name = "hlae-installer-core"
 version = "0.1.0"
 dependencies = [
+ "hlae-installer-build-support",
  "log",
  "serde",
  "serde_json",
@@ -2408,6 +2429,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61ff90caf6077a803a240f62fdbe88645a890bbca49ef8174c3cb0404362171d"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "linereader"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d921fea6860357575519aca014c6e22470585accdd543b370c404a8a72d0dd1d"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]
@@ -3048,6 +3078,16 @@ dependencies = [
  "fdeflate",
  "flate2",
  "miniz_oxide 0.8.9",
+]
+
+[[package]]
+name = "polib"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee83e5a284d919e51b071969bbf2d12d6943857aab02d84c5cc449373c9f3b7b"
+dependencies = [
+ "concat-string",
+ "linereader",
 ]
 
 [[package]]

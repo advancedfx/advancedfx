@@ -1,34 +1,17 @@
 // No console window in release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod actions;
 mod cli;
+mod dialog;
+mod events;
 mod ffmpeg_client;
+mod gui;
+mod l10n;
 mod logging;
 mod ops;
 mod payload;
 mod worker;
-
-use tauri::{WebviewUrl, WebviewWindowBuilder};
-
-#[tauri::command]
-fn core_version() -> String {
-    format!(
-        "{} ({})",
-        hlae_installer_core::version(),
-        if tauri::is_dev() { "dev" } else { "production" }
-    )
-}
-
-#[tauri::command]
-fn payload_info() -> Result<String, String> {
-    let manifest = payload::manifest().map_err(|e| e.to_string())?;
-    Ok(format!(
-        "HLAE {}, {} files, {} bytes compressed",
-        manifest.hlae_version,
-        manifest.files.len(),
-        payload::payload().len()
-    ))
-}
 
 fn main() {
     // Elevated worker (internal, NOTES.md 6.4): no webview, no console, no log file.
@@ -37,12 +20,16 @@ fn main() {
         harden_dll_search();
         std::process::exit(worker::main(&raw_args[1..]));
     }
+    // Hidden helper removing the wizard's WebView2 data dir after it exited (internal).
+    if raw_args.first().is_some_and(|a| a == gui::CLEANUP_ARG) {
+        harden_dll_search();
+        std::process::exit(gui::cleanup_main(&raw_args[1..]));
+    }
 
     // Arguments first: the command line mode never creates a webview (NOTES.md 6.3).
     let args = cli::parse(raw_args);
-    if matches!(&args, Ok(args) if args.is_gui()) {
-        run_gui();
-        return;
+    if let Some(mode) = args.as_ref().ok().and_then(cli::Args::gui_mode) {
+        std::process::exit(gui::run(mode));
     }
 
     harden_dll_search();
@@ -92,25 +79,4 @@ fn attach_parent_console() {
         // SAFETY: plain Win32 call; failure (no parent console) is fine.
         unsafe { AttachConsole(ATTACH_PARENT_PROCESS) };
     }
-}
-
-fn run_gui() {
-    // Keep WebView2 user data out of %LOCALAPPDATA% (see NOTES.md 6.2).
-    let webview_data_dir =
-        std::env::temp_dir().join(format!("hlae-setup-webview-{}", std::process::id()));
-
-    tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![core_version, payload_info])
-        .setup(move |app| {
-            WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
-                .title("HLAE Setup")
-                .inner_size(600.0, 450.0)
-                .resizable(false)
-                .maximizable(false)
-                .data_directory(webview_data_dir.clone())
-                .build()?;
-            Ok(())
-        })
-        .run(tauri::generate_context!())
-        .expect("error while running HLAE Setup");
 }

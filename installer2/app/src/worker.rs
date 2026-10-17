@@ -45,6 +45,7 @@ pub fn run_elevated(request: &Request) -> i32 {
 
 fn run_elevated_inner(request: &Request) -> io::Result<i32> {
     let name = pipe::random_pipe_name()?;
+    crate::events::phase("elevate");
     let process = match spawn_worker(&name) {
         Err(e) if e.raw_os_error() == Some(ERROR_CANCELLED) => {
             log::error!("administrator rights were declined (UAC prompt)");
@@ -58,6 +59,7 @@ fn run_elevated_inner(request: &Request) -> io::Result<i32> {
         pipe::CONNECT_TIMEOUT,
         || pipe::exit_code(&process).is_none(),
     )?;
+    crate::events::phase("work");
 
     let mut line = serde_json::to_string(request).map_err(io::Error::other)?;
     line.push('\n');

@@ -12,7 +12,8 @@ name = "HLAE_Setup"
 path = "src/main.rs"
 
 [build-dependencies]
-hlae-installer-core = { path = "../core" }
+hlae-installer-build-support = { path = "../build-support" }
+serde_json = "1"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
@@ -23,4 +24,16 @@ tauri = { version = "2", features = ["custom-protocol"] }
 log = "0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-windows-sys = { version = "0.61", features = ["Win32_System_Console", "Win32_System_LibraryLoader"] }
+winreg = "0.56"
+# Same versions as Tauri uses, see Cargo.lock.
+windows = { version = "0.62", features = [
+    "Win32_System_Com",
+    "Win32_UI_Shell",
+    "Win32_UI_Shell_Common",
+] }
+windows-sys = { version = "0.61", features = [
+    "Win32_Globalization",
+    "Win32_System_Console",
+    "Win32_System_LibraryLoader",
+    "Win32_UI_WindowsAndMessaging",
+] }

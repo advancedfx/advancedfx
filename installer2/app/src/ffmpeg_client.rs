@@ -81,9 +81,11 @@ pub fn resolve(
                     variant.archive_size / 1_000_000,
                     variant.url
                 );
+                crate::events::phase("download");
                 let mut last = None;
                 download(&variant.url, &archive, cancel, |done, total| {
                     let total = total.unwrap_or(variant.archive_size).max(1);
+                    crate::events::emit(crate::events::Event::Download { done, total });
                     let step = done * 10 / total;
                     if last != Some(step) {
                         last = Some(step);

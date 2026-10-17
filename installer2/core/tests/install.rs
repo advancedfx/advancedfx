@@ -2,10 +2,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use hlae_installer_build_support::pack::{ZSTD_LEVEL, pack_dir};
 use hlae_installer_core::Error;
 use hlae_installer_core::install::{InstallRequest, install_hlae, uninstall};
 use hlae_installer_core::manifest::{Component, Manifest};
-use hlae_installer_core::pack::{ZSTD_LEVEL, pack_dir};
 use hlae_installer_core::relpath::RelPath;
 use hlae_installer_core::state::{Features, State};
 use hlae_installer_core::transaction::WORK_DIR_NAME;

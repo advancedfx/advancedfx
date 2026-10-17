@@ -235,6 +235,9 @@ See also [`resources/ffmpeg/readme.advancedfx.txt`](../resources/ffmpeg/readme.a
   (`HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}` `pv`, also HKCU).
   If missing: native `MessageBox` → download Microsoft's Evergreen bootstrapper on demand and run it, or abort.
 - Set the WebView data directory to a temp folder and delete it on exit (otherwise leaves `EBWebView` in `%LOCALAPPDATA%`).
+  Implemented (M6): `%TEMP%\hlae-setup-webview-<pid>`. The WebView2 processes only end when HLAE_Setup.exe ends, so the
+  wizard can't delete it itself: on exit it starts a hidden helper (`HLAE_Setup.exe --cleanup-webview-data <dir>`, internal)
+  that retries for up to 90 s and only accepts `%TEMP%\hlae-setup-webview-*`. Measured: wizard gone after 0.2 s, dir after 0.8 s.
 
 ### 6.3 Command line / silent mode
 - Parse args first; `--quiet` / `--uninstall --quiet` etc. never create a webview → silent mode works without WebView2.
@@ -275,10 +278,15 @@ See also [`resources/ffmpeg/readme.advancedfx.txt`](../resources/ffmpeg/readme.a
 ### 6.6 Code layout
 ```
 installer2/
-  core/   Rust lib: manifest, hashing, payload extraction, file transactions/rollback, install state,
-          ARP registration, shortcut, legacy WiX detection/uninstall, FFMPEG download
-  app/    Tauri app: thin GUI + CLI/silent mode + elevated worker, all calling core
-  data/   FFMPEG variant data files
+  core/           Rust lib, runs on the user's machine: manifest, hashing, payload extraction, file
+                  transactions/rollback, install state, ARP registration, shortcut, legacy WiX
+                  detection/uninstall, FFMPEG download + install
+  build-support/  Rust lib, build time only (app/build.rs, core's tests): payload packing, translation
+                  catalogs (.pot / .po via `polib`) – nothing of it ends up in HLAE_Setup.exe
+  app/            Tauri app: thin GUI + CLI/silent mode + elevated worker, all calling core
+  tools/          Developer tools, not shipped (generates data/ffmpeg.json)
+  data/           FFMPEG variant data files
+  l10n/           messages.pot (English source of the GUI texts, moves to the l10n repo later, 6.9)
 ```
 Keep all install logic in `core` (testable without GUI, usable by silent mode and the worker).
 
@@ -327,8 +335,13 @@ Keep all install logic in `core` (testable without GUI, usable by silent mode an
 - New `installer2` project in the l10n repo ([`deps/release/l10n`](../deps/release/l10n), github.com/advancedfx/l10n, translated via Pontoon).
 - Source of truth: hand-maintained `locales/en-US/installer2/messages.pot`;
   translations `locales/<lang>/installer2/messages.po` via the usual `update_from_en-US.py` + Pontoon workflow.
+  **For now** (while the GUI texts still change a lot) the `.pot` lives in `installer2/l10n/messages.pot` and moves
+  to the l10n repo once the GUI is stable (decided 2026-10-17); `build.rs` already reads translations from
+  `deps/release/l10n/locales/<lang>/installer2/messages.po` if present.
+- Parsing: `polib` 0.3 (pure Rust, MIT, deps `linereader` + `concat-string`) in `build-support` (build time only).
+  Translations whose `{placeholders}` differ from the English text are skipped (→ English) with a build warning.
 - Keys: `msgctxt` = stable ID (like the old installer, e.g. `msgctxt "InstallButton"`), `msgid` = English text.
-- Build time (`build.rs`): parse all `.po` (e.g. `polib` crate), keep `msgctxt → msgstr` (skip empty/fuzzy),
+- Build time (`build.rs`): parse all `.po` (`polib`), keep `msgctxt → msgstr` (skip empty/fuzzy),
   en-US from the `.pot` (`msgctxt → msgid`); write `$OUT_DIR/l10n/<lang>.json` + generated
   `l10n_index.rs` with `include_str!` per language → all catalogs embedded in the exe, no gettext at runtime.
 - Runtime Rust (`l10n` module): `init(ui_lang)` first thing in `main()` – language from OS UI language (`sys-locale`),
@@ -598,8 +611,35 @@ All questions so far are decided; details live in 4–6.
         CLI: `--ffmpeg <variant|none|keep>`, `--ffmpeg-custom <exe>`, `--ffmpeg-archive <zip>` (variant detected by hash).
   - Tested 2026-10-17 (debug, test worker, real archives): install gpl (44 files, `ffmpeg.exe -version` works) →
     custom (only ini, BOM `FF FE`) → archive shared (224 files, ini removed) → none → default (no-op) → uninstall.
+  - Tested 2026-10-17 with the **release exe as unelevated client** (real download, system proxy settings): fresh install
+    into `C:\HLAE-test` with defaults → downloaded win64-gpl (194 MB, ~95 s here), worker verified + installed HLAE +
+    FFMPEG in ~10 s, `ffmpeg.exe -version` works, temp download deleted, ARP `EstimatedSize` incl. FFMPEG (~509 MB);
+    rerun with defaults → "keep as installed", no download; uninstall via cached setup → 252 files removed.
+  - Observation: a repair with unchanged files took ~14 s (stages all 208 HLAE files first, then compares) –
+    could compare installed files against the manifest *before* staging and only extract what differs (later, M7).
   - Note for the GUI (M6): the download happens before the UAC prompt (unelevated); show progress there.
 - [ ] **M6 – GUI wizard + translations** (incl. WebView2 check, launch HLAE).
+  - Design (decided 2026-10-17): black / white / gray, accent maroon `#990000` (HLAE logo `misc/icon/logo2009.svg`, inlined);
+    light + dark following Windows (dark: lighter maroon `#ff9e9e` for text / focus). Color-blind friendly: accent differs
+    by brightness, states / errors always also by icon (✓ ✕ ! ⚠) and text, radios by shape; contrast ≥ 4.5:1.
+    Design refinement is a separate task later.
+  - Pages ([`app/ui/`](app/ui/)): install (location + browse + ASCII check, translations, FFMPEG: download variant /
+    existing ffmpeg.exe / keep / none, preselected by 4.2), maintenance (update or repair / change / uninstall; newer
+    installed → only uninstall), uninstall (+ remove app data), progress (download bar, "waiting for admin", log),
+    done (✓ / ✕ / !, start HLAE, open log). `--uninstall` / `--modify` without `--quiet` (Apps & features) open the
+    right page. Window close is blocked while working.
+  - Backend: [`app/src/gui.rs`](app/src/gui.rs) (commands, background thread, WebView2 check + bootstrapper download),
+    [`actions.rs`](app/src/actions.rs) (shared with the CLI), [`events.rs`](app/src/events.rs) (log / phase / download →
+    UI), [`dialog.rs`](app/src/dialog.rs) (`IFileOpenDialog`), [`l10n.rs`](app/src/l10n.rs) (catalogs, UI language via
+    `GetUserPreferredUILanguages`, override `HLAE_SETUP_LANG`).
+  - Translations: [`l10n/messages.pot`](l10n/messages.pot) (all GUI texts), catalogs built by `build.rs` with
+    `build-support` (6.9); only English so far.
+  - Debug only: `HLAE_SETUP_THEME=light|dark` to check both color schemes.
+  - Tested 2026-10-17 (debug, test worker): install / maintenance / uninstall pages in dark + light, repair through the
+    GUI (keyboard) → done page, WebView2 data dir cleanup.
+  - [ ] Still open: real run as normal user (UAC) incl. download progress page; WebView2-missing path (can't easily be
+        tested here); verify the WebView2 bootstrapper's signature before running it (TODO in `gui.rs`, M7);
+        a first translation to check the whole l10n path (e.g. a test `de` .po).
 - [ ] **M7 – Migration** from WiX v5, files-in-use check, rollback hardening.
   - Test machine has the old WiX HLAE installed (from a public release build) – keep it for the migration tests.
 - [ ] **M8 – Build integration** in `cmake/MultiBuild.cmake`, retire `installer/`.

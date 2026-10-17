@@ -41,4 +41,6 @@ zip = { version = "9.0.4", default-features = false, features = ["deflate-flate2
 zstd = "0.13"
 
 [dev-dependencies]
+# The integration tests (tests/) pack test payloads with it.
+hlae-installer-build-support = { path = "../build-support" }
 tempfile = "3"
