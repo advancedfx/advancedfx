@@ -302,9 +302,13 @@ pub fn run(mode: GuiMode) -> i32 {
         return exit_code::USER_CANCEL;
     }
 
-    // Keep WebView2 user data out of %LOCALAPPDATA% (see NOTES.md 6.2), removed again on exit.
+    // Keep WebView2 user data out of %LOCALAPPDATA% (see NOTES.md 6.2). The WebView2 processes
+    // only end when this process ends, so the dir can't be removed from here: a hidden helper
+    // (same exe) waits for us to exit and removes it then. Started now, while our exe still has its
+    // name – an uninstall from the cached setup renames it (self-delete, NOTES.md 6.5).
     let webview_data_dir =
         std::env::temp_dir().join(format!("{WEBVIEW_DIR_PREFIX}{}", std::process::id()));
+    spawn_cleanup(&webview_data_dir);
     let title = l10n::t("WindowTitle", &[]);
     let data_dir = webview_data_dir.clone();
 
@@ -355,21 +359,15 @@ pub fn run(mode: GuiMode) -> i32 {
         .build(tauri::generate_context!())
         .expect("error while building HLAE Setup");
     let code = app.run_return(|_, _| {});
-
-    // The WebView2 processes only end when this process ends, so the data dir can't be removed
-    // from here: leave it to a hidden helper (same exe) that retries after we're gone.
-    log::info!(
-        "wizard closed, cleaning up {} after exit",
-        webview_data_dir.display()
-    );
+    log::info!("wizard closed, exit code {code}");
     log::logger().flush();
-    spawn_cleanup(&webview_data_dir);
     code
 }
 
 pub const CLEANUP_ARG: &str = "--cleanup-webview-data";
 const WEBVIEW_DIR_PREFIX: &str = "hlae-setup-webview-";
 
+/// Starts the hidden `--cleanup-webview-data <dir> <our pid>` helper.
 fn spawn_cleanup(dir: &Path) {
     use std::os::windows::process::CommandExt;
     const CREATE_NO_WINDOW: u32 = 0x0800_0000;
@@ -377,6 +375,7 @@ fn spawn_cleanup(dir: &Path) {
         std::process::Command::new(exe)
             .arg(CLEANUP_ARG)
             .arg(dir)
+            .arg(std::process::id().to_string())
             .stdin(std::process::Stdio::null())
             .stdout(std::process::Stdio::null())
             .stderr(std::process::Stdio::null())
@@ -388,11 +387,12 @@ fn spawn_cleanup(dir: &Path) {
     }
 }
 
-/// `--cleanup-webview-data <dir>` (internal): removes the wizard's WebView2 data dir once the
-/// wizard's WebView2 processes are gone, retrying for up to [`WEBVIEW_CLEANUP_TIMEOUT`] (slow PCs).
+/// `--cleanup-webview-data <dir> <wizard pid>` (internal): waits until the wizard process has
+/// ended (also if it crashed), then removes its WebView2 data dir, retrying for up to
+/// [`WEBVIEW_CLEANUP_TIMEOUT`] while the WebView2 processes shut down (slow PCs).
 /// Only accepts `%TEMP%\hlae-setup-webview-*`, so it can't be used to delete anything else.
 pub fn cleanup_main(args: &[std::ffi::OsString]) -> i32 {
-    let [dir] = args else {
+    let [dir, pid] = args else {
         return exit_code::INVALID_COMMAND_LINE;
     };
     let dir = Path::new(dir);
@@ -401,9 +401,14 @@ pub fn cleanup_main(args: &[std::ffi::OsString]) -> i32 {
             .file_name()
             .and_then(|n| n.to_str())
             .is_some_and(|n| n.starts_with(WEBVIEW_DIR_PREFIX));
-    if !ours {
+    let Some(pid) = pid
+        .to_str()
+        .and_then(|p| p.parse::<u32>().ok())
+        .filter(|_| ours)
+    else {
         return exit_code::INVALID_COMMAND_LINE;
-    }
+    };
+    wait_for_exit(pid);
     let deadline = std::time::Instant::now() + WEBVIEW_CLEANUP_TIMEOUT;
     while std::time::Instant::now() < deadline {
         if std::fs::remove_dir_all(dir).is_ok() || !dir.exists() {
@@ -412,6 +417,22 @@ pub fn cleanup_main(args: &[std::ffi::OsString]) -> i32 {
         std::thread::sleep(std::time::Duration::from_millis(250));
     }
     exit_code::FATAL
+}
+
+/// Blocks until process `pid` has ended (returns at once if it's gone already).
+fn wait_for_exit(pid: u32) {
+    use windows_sys::Win32::Foundation::CloseHandle;
+    use windows_sys::Win32::System::Threading::{
+        INFINITE, OpenProcess, PROCESS_SYNCHRONIZE, WaitForSingleObject,
+    };
+    // SAFETY: plain Win32 calls; the handle is closed.
+    unsafe {
+        let process = OpenProcess(PROCESS_SYNCHRONIZE, 0, pid);
+        if !process.is_null() {
+            WaitForSingleObject(process, INFINITE);
+            CloseHandle(process);
+        }
+    }
 }
 
 /// Debug builds only: `HLAE_SETUP_THEME=light|dark` overrides the Windows theme (to check both
@@ -427,12 +448,13 @@ fn debug_theme() -> Option<tauri::Theme> {
     }
 }
 
-/// WebView2 Evergreen runtime check before any window is created (NOTES.md 6.2).
+/// WebView2 Evergreen runtime check before any window is created (NOTES.md 6.2). If it's missing,
+/// we only open Microsoft's download page – no automatic download / run (decided 2026-10-17: keeps
+/// working when Microsoft changes the bootstrapper or its link, and we never run downloaded code).
 mod webview2 {
-    use std::sync::atomic::AtomicBool;
-
+    use windows_sys::Win32::UI::Shell::ShellExecuteW;
     use windows_sys::Win32::UI::WindowsAndMessaging::{
-        IDYES, MB_ICONERROR, MB_ICONQUESTION, MB_OK, MB_YESNO, MessageBoxW,
+        IDYES, MB_ICONQUESTION, MB_YESNO, MessageBoxW, SW_SHOWNORMAL,
     };
     use winreg::RegKey;
     use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_READ, KEY_WOW64_32KEY};
@@ -441,7 +463,8 @@ mod webview2 {
 
     const CLIENT_KEY: &str =
         r"SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}";
-    const BOOTSTRAPPER_URL: &str = "https://go.microsoft.com/fwlink/p/?LinkId=2124703";
+    /// Microsoft's WebView2 page ("Get the Runtime"); redirects to the user's language.
+    const DOWNLOAD_PAGE: &str = "https://developer.microsoft.com/microsoft-edge/webview2/";
 
     fn installed() -> bool {
         let has_version = |root, flags| {
@@ -463,43 +486,29 @@ mod webview2 {
         unsafe { MessageBoxW(std::ptr::null_mut(), text.as_ptr(), title.as_ptr(), flags) }
     }
 
-    /// `true` if the wizard can run; else the user declined or the install failed (told already).
+    /// `true` if the wizard can run. Else tells the user, optionally opens the download page, and
+    /// the setup ends (they start it again after installing the runtime).
     pub fn ensure_installed() -> bool {
         if installed() {
             return true;
         }
         log::warn!("WebView2 runtime not found");
-        if message_box(&t("WebView2Missing", &[]), MB_YESNO | MB_ICONQUESTION) != IDYES {
-            return false;
+        let text = t("WebView2Missing", &[("url", DOWNLOAD_PAGE)]);
+        if message_box(&text, MB_YESNO | MB_ICONQUESTION) == IDYES {
+            let verb: Vec<u16> = "open".encode_utf16().chain(Some(0)).collect();
+            let url: Vec<u16> = DOWNLOAD_PAGE.encode_utf16().chain(Some(0)).collect();
+            // SAFETY: valid NUL-terminated strings; opens the URL in the default browser.
+            unsafe {
+                ShellExecuteW(
+                    std::ptr::null_mut(),
+                    verb.as_ptr(),
+                    url.as_ptr(),
+                    std::ptr::null(),
+                    std::ptr::null(),
+                    SW_SHOWNORMAL,
+                )
+            };
         }
-        let setup = std::env::temp_dir().join("MicrosoftEdgeWebview2Setup.exe");
-        let result = hlae_installer_core::download::download(
-            BOOTSTRAPPER_URL,
-            &setup,
-            &AtomicBool::new(false),
-            |_, _| {},
-        )
-        .map_err(|e| e.to_string())
-        .and_then(|_| {
-            // TODO(M7): verify the Authenticode signature (Microsoft) before running it.
-            let status = std::process::Command::new(&setup)
-                .status()
-                .map_err(|e| e.to_string())?;
-            log::info!("WebView2 bootstrapper exit status {status}");
-            Ok(())
-        });
-        let _ = std::fs::remove_file(&setup);
-        if let Err(e) = &result {
-            log::error!("WebView2 install: {e}");
-        }
-        if installed() {
-            return true;
-        }
-        let error = result.err().unwrap_or_else(|| "?".into());
-        message_box(
-            &t("WebView2Failed", &[("error", &error)]),
-            MB_OK | MB_ICONERROR,
-        );
         false
     }
 }

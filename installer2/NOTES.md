@@ -190,7 +190,7 @@ See also [`resources/ffmpeg/readme.advancedfx.txt`](../resources/ffmpeg/readme.a
 - Code signing (would be a `signtool sign` step at the end of the build).
 - Installer self-update / "newer installer available" – HLAE.exe has its own update check (`hlae/MainForm.cs`, `UpdateCheck`).
 - Migration from WiX v3 installs (< 2.181.0) – only detected, see 5.
-- Installing .NET Framework or WebView2 offline (WebView2 is downloaded on demand, 6.2).
+- Installing .NET Framework or WebView2 (WebView2 missing → we open Microsoft's download page, 6.2).
 - Downgrades.
 
 ## 5. Migration from old installers
@@ -233,11 +233,17 @@ See also [`resources/ffmpeg/readme.advancedfx.txt`](../resources/ffmpeg/readme.a
 ### 6.2 WebView2 dependency
 - In `main()`, **before** building the Tauri app: check WebView2 Evergreen runtime
   (`HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}` `pv`, also HKCU).
-  If missing: native `MessageBox` → download Microsoft's Evergreen bootstrapper on demand and run it, or abort.
+  If missing: native `MessageBox` → **decided (2026-10-17, revised):** offer to open Microsoft's WebView2 download page
+  (`https://developer.microsoft.com/microsoft-edge/webview2/`) in the browser, the user installs the runtime and starts
+  HLAE Setup again; the message also points to `--quiet`. No automatic download / run of the bootstrapper: that would
+  break when Microsoft changes the bootstrapper or its link, and would need a signature check before running it.
 - Set the WebView data directory to a temp folder and delete it on exit (otherwise leaves `EBWebView` in `%LOCALAPPDATA%`).
   Implemented (M6): `%TEMP%\hlae-setup-webview-<pid>`. The WebView2 processes only end when HLAE_Setup.exe ends, so the
-  wizard can't delete it itself: on exit it starts a hidden helper (`HLAE_Setup.exe --cleanup-webview-data <dir>`, internal)
-  that retries for up to 90 s and only accepts `%TEMP%\hlae-setup-webview-*`. Measured: wizard gone after 0.2 s, dir after 0.8 s.
+  wizard can't delete it itself. At **start** it launches a hidden helper (`HLAE_Setup.exe --cleanup-webview-data <dir>
+  <pid>`, internal) that waits for the wizard process to end (also a crash), then removes the dir, retrying for up to
+  90 s; only accepts `%TEMP%\hlae-setup-webview-*`. Started at the beginning on purpose: an uninstall from the cached
+  setup renames the running exe (6.5), so starting "our exe" at the end failed (found in the M6 GUI test).
+  Measured: dir gone ~0.5 s after the wizard closed / was killed.
 
 ### 6.3 Command line / silent mode
 - Parse args first; `--quiet` / `--uninstall --quiet` etc. never create a webview → silent mode works without WebView2.
@@ -470,7 +476,8 @@ Common rules for all three:
 All questions so far are decided; details live in 4–6.
 - Packaging: Tauri 2 GUI, single self-contained exe, no NSIS / 7-Zip SFX (6.1).
 - Payload embedding: `include_bytes!` (rejected: RT_RCDATA resource injected post-build, appended overlay) (6.1).
-- WebView2 missing: download bootstrapper on demand (6.2).
+- WebView2 missing: open Microsoft's download page, no automatic download / run (6.2; revised 2026-10-17,
+  was "download bootstrapper on demand").
 - Frontend: vanilla, no framework.
 - Elevation: elevated worker process (6.4).
 - Silent mode exit codes: MSI-compatible (6.4).
@@ -637,11 +644,17 @@ All questions so far are decided; details live in 4–6.
   - Debug only: `HLAE_SETUP_THEME=light|dark` to check both color schemes.
   - Tested 2026-10-17 (debug, test worker): install / maintenance / uninstall pages in dark + light, repair through the
     GUI (keyboard) → done page, WebView2 data dir cleanup.
-  - [ ] Still open: real run as normal user (UAC) incl. download progress page; WebView2-missing path (can't easily be
-        tested here); verify the WebView2 bootstrapper's signature before running it (TODO in `gui.rs`, M7);
-        a first translation to check the whole l10n path (e.g. a test `de` .po).
+  - [x] Real run as normal user with the release exe (2026-10-17): install into `C:\HLAE-test` with FFMPEG download
+        (progress page, UAC), Change → Remove FFMPEG, uninstall from the cached setup (`--uninstall` → uninstall page),
+        `%APPDATA%\HLAE` kept. Found + fixed: WebView2 data dir left over after the uninstall from the cached setup (6.2).
+  - [ ] Still open: a first translation to check the whole l10n path (e.g. a test `de` .po).
 - [ ] **M7 – Migration** from WiX v5, files-in-use check, rollback hardening.
   - Test machine has the old WiX HLAE installed (from a public release build) – keep it for the migration tests.
+### Untested / open TODOs
+Things that exist but haven't been tested yet, or small TODOs outside the milestones.
+- [ ] **WebView2 missing** (6.2, `gui.rs` `webview2::ensure_installed`): message box → opens Microsoft's download page →
+      setup ends. Not tested – needs a machine / VM without WebView2. Left open on purpose (2026-10-17).
+
 - [ ] **M8 – Build integration** in `cmake/MultiBuild.cmake`, retire `installer/`.
   - [ ] Third-party licenses: the installer's Rust deps (Tauri etc.) are now in the root `Cargo.lock` →
         `misc/THIRDPARTY.yml` / `cargo bundle-licenses` check from [`BUILDING.md`](../BUILDING.md) must cover them.

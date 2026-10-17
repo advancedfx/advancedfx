@@ -271,17 +271,15 @@ msgctxt "OpenLogButton"
 msgid "Open log file"
 msgstr ""
 
-#. Native message box before the wizard opens
+#. Native message box before the wizard opens; {url} = Microsoft's WebView2 page.
+#. "Evergreen Bootstrapper" is the name of the download on Microsoft's page, keep it.
 msgctxt "WebView2Missing"
 msgid ""
 "HLAE Setup needs the Microsoft Edge WebView2 Runtime to show its window.\n"
 "\n"
-"Download and install it from Microsoft now?\n"
+"Open Microsoft's download page now? Install the runtime there (\"Evergreen Bootstrapper\"), then start HLAE Setup again.\n"
+"\n"
+"{url}\n"
 "\n"
 "Without it, HLAE Setup can still install unattended: HLAE_Setup.exe --quiet"
-msgstr ""
-
-#. {error} = error message (English)
-msgctxt "WebView2Failed"
-msgid "The WebView2 Runtime could not be installed: {error}"
 msgstr ""
