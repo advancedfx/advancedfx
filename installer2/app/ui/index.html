@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="color-scheme" content="light dark">
+  <title>HLAE Setup</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="header">
+    <!-- misc/icon/logo2009.svg, reduced to its three paths -->
+    <svg class="logo" viewBox="0 0 48 48" aria-hidden="true">
+      <g transform="matrix(0.085714312,0,0,0.085713789,-7.2851994,-18.462051)">
+        <path transform="matrix(0.9783872,0,0,1.0059247,-4.1365304,100.17349)" fill="#990000"
+          d="M 653.24896,392.89182 A 275.96436,268.40976 0 1 1 101.32025,392.89182 A 275.96436,268.40976 0 1 1 653.24896,392.89182 z"/>
+        <path fill="#ffffff" fill-rule="evenodd"
+          d="M 327.25097,281.05391 C 322.15162,281.03122 317.26319,282.15353 312.93847,284.67891 L 331.12597,337.71016 L 287.68847,358.92891 L 262.43847,305.36641 C 235.66943,313.616 235.66467,353.69185 244.25097,370.02266 C 254.68921,397.80186 271.1901,396.29376 290.71972,397.30391 C 305.87201,399.32422 311.94004,407.91449 318.00097,412.46016 L 330.12597,454.86641 C 330.12597,454.86641 224.05173,671.04533 219.00097,678.11641 L 285.65722,677.11641 L 356.37597,522.55391 L 403.84472,613.99141 C 404.68651,625.43981 399.99119,634.86487 395.78222,642.27266 C 383.82875,648.50194 382.47602,669.38286 393.25097,679.14766 C 410.59192,704.73819 434.48156,714.66832 466.46972,707.42891 C 494.58563,695.6438 516.13647,672.74906 509.90722,635.71016 C 503.00451,614.3286 495.59659,614.14373 469.50097,612.46016 C 458.22093,611.45001 454.02671,607.91131 446.28222,600.33516 L 360.40722,395.27266 C 360.9123,380.45709 363.44006,371.20896 369.50097,359.92891 C 377.24548,352.52113 388.01265,341.56243 379.59472,321.02266 C 375.62776,302.41903 349.34814,281.15223 327.25097,281.05391 z M 430.12597,626.61641 L 469.00097,628.11641 L 487.18847,655.89766 L 470.03222,687.21016 L 430.62597,686.21016 L 408.90722,658.42891 L 430.12597,626.61641 z"/>
+        <path transform="matrix(0.9817182,0,0,1.0093494,-5.3932654,98.827957)" fill="none" stroke="#ffffff" stroke-width="18.24475288"
+          d="M 653.24896,392.89182 A 275.96436,268.40976 0 1 1 101.32025,392.89182 A 275.96436,268.40976 0 1 1 653.24896,392.89182 z"/>
+      </g>
+    </svg>
+    <div>
+      <div class="title" data-l10n="WindowTitle"></div>
+      <div class="subtitle" id="header-version"></div>
+    </div>
+    <span class="spacer"></span>
+    <button type="button" class="link" id="licenses" data-l10n="LicensesButton"></button>
+  </header>
+
+  <main>
+    <section class="page" id="page-loading"></section>
+
+    <section class="page" id="page-install" hidden>
+      <h1 id="install-heading" tabindex="-1"></h1>
+      <p class="notice" id="no-payload" hidden><span data-l10n="NoPayload"></span></p>
+      <p class="notice" id="legacy-notice" hidden></p>
+
+      <div class="field">
+        <label for="install-dir" data-l10n="InstallDirLabel"></label>
+        <div class="row">
+          <input id="install-dir" type="text" spellcheck="false" autocomplete="off" aria-describedby="install-dir-error install-dir-fixed">
+          <button type="button" id="browse-dir" data-l10n="BrowseButton"></button>
+        </div>
+        <p class="hint" id="install-dir-fixed" data-l10n="InstallDirFixed" hidden></p>
+        <p class="error" id="install-dir-error" role="alert" hidden></p>
+      </div>
+
+      <label class="check"><input type="checkbox" id="locales"><span data-l10n="LocalesLabel"></span></label>
+
+      <fieldset class="ffmpeg">
+        <legend data-l10n="FfmpegLegend"></legend>
+        <label class="check"><input type="radio" name="ffmpeg" value="download"><span data-l10n="FfmpegDownload"></span></label>
+        <div class="sub" data-for="download">
+          <select id="ffmpeg-variant" aria-label="FFMPEG"></select>
+          <p class="hint" data-l10n="FfmpegDownloadNote"></p>
+        </div>
+        <label class="check"><input type="radio" name="ffmpeg" value="custom"><span data-l10n="FfmpegCustom"></span></label>
+        <div class="sub" data-for="custom">
+          <div class="row">
+            <input id="ffmpeg-exe" type="text" spellcheck="false" autocomplete="off" aria-label="ffmpeg.exe" aria-describedby="ffmpeg-exe-error">
+            <button type="button" id="browse-exe" data-l10n="BrowseButton"></button>
+          </div>
+          <p class="error" id="ffmpeg-exe-error" role="alert" hidden></p>
+        </div>
+        <label class="check" id="ffmpeg-keep-option" hidden><input type="radio" name="ffmpeg" value="keep"><span id="ffmpeg-keep-label"></span></label>
+        <label class="check"><input type="radio" name="ffmpeg" value="none"><span id="ffmpeg-none-label"></span></label>
+      </fieldset>
+
+      <p class="notice" id="dotnet-missing" hidden></p>
+
+      <footer class="buttons">
+        <button type="button" id="install-back" data-l10n="BackButton" hidden></button>
+        <span class="spacer"></span>
+        <button type="button" id="install-cancel" data-l10n="CancelButton"></button>
+        <button type="button" class="primary" id="install-go"></button>
+      </footer>
+    </section>
+
+    <section class="page" id="page-maintenance" hidden>
+      <h1 id="maintenance-heading" tabindex="-1"></h1>
+      <p id="maintenance-location" class="path"></p>
+      <p id="maintenance-setup"></p>
+      <p class="notice" id="maintenance-newer" hidden></p>
+      <div class="actions">
+        <button type="button" class="primary" id="maintenance-update"></button>
+        <button type="button" id="maintenance-modify" data-l10n="ModifyButton"></button>
+        <button type="button" id="maintenance-uninstall" data-l10n="UninstallMoreButton"></button>
+      </div>
+      <footer class="buttons">
+        <span class="spacer"></span>
+        <button type="button" id="maintenance-close" data-l10n="CloseButton"></button>
+      </footer>
+    </section>
+
+    <section class="page" id="page-uninstall" hidden>
+      <h1 id="uninstall-heading" tabindex="-1"></h1>
+      <p data-l10n="UninstallText"></p>
+      <label class="check"><input type="checkbox" id="remove-app-data"><span data-l10n="RemoveAppDataLabel"></span></label>
+      <footer class="buttons">
+        <button type="button" id="uninstall-back" data-l10n="BackButton" hidden></button>
+        <span class="spacer"></span>
+        <button type="button" id="uninstall-cancel" data-l10n="CancelButton"></button>
+        <button type="button" class="primary" id="uninstall-go" data-l10n="UninstallButton"></button>
+      </footer>
+    </section>
+
+    <section class="page" id="page-in-use" hidden>
+      <h1 id="in-use-heading" tabindex="-1" data-l10n="InUseHeading"></h1>
+      <p data-l10n="InUseText"></p>
+      <ul class="programs" id="in-use-list" aria-labelledby="in-use-heading"></ul>
+      <p class="hint" id="in-use-still" role="status" hidden><span data-l10n="InUseStill"></span></p>
+      <footer class="buttons">
+        <button type="button" id="in-use-back" data-l10n="BackButton"></button>
+        <span class="spacer"></span>
+        <button type="button" class="primary" id="in-use-retry" data-l10n="RetryButton"></button>
+      </footer>
+    </section>
+
+    <section class="page" id="page-progress" hidden>
+      <h1 id="progress-heading" tabindex="-1"></h1>
+      <p id="progress-status" aria-live="polite"></p>
+      <progress id="progress-bar" max="1"></progress>
+      <p class="hint" id="progress-detail"></p>
+      <details>
+        <summary data-l10n="DetailsLabel"></summary>
+        <pre id="log" tabindex="0"></pre>
+      </details>
+      <footer class="buttons">
+        <span class="spacer"></span>
+        <button type="button" id="progress-cancel" data-l10n="CancelButton" hidden></button>
+      </footer>
+    </section>
+
+    <section class="page" id="page-done" hidden>
+      <div class="result">
+        <span class="result-icon" id="done-icon" aria-hidden="true"></span>
+        <h1 id="done-heading" tabindex="-1"></h1>
+      </div>
+      <p id="done-text"></p>
+      <footer class="buttons">
+        <button type="button" id="done-log" data-l10n="OpenLogButton"></button>
+        <span class="spacer"></span>
+        <button type="button" id="done-launch" data-l10n="LaunchButton" hidden></button>
+        <button type="button" class="primary" id="done-close" data-l10n="CloseButton"></button>
+      </footer>
+    </section>
+  </main>
+
+  <script src="main.js"></script>
+</body>
+</html>

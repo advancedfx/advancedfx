@@ -1,0 +1,18 @@
+[package]
+name = "hlae-installer-build-support"
+version = "0.1.0"
+authors = ["advancedfx.org <contact@advancedfx.org>"]
+license = "MIT"
+homepage = "https://github.com/advancedfx"
+repository = "https://github.com/advancedfx/advancedfx"
+edition = "2024"
+description = "Build-time code of the HLAE installer (payload packing, .po reading), used by app/build.rs"
+
+[dependencies]
+hlae-installer-core = { path = "../core" }
+polib = "0.3"
+tar = { version = "0.4", default-features = false }
+zstd = "0.13"
+
+[dev-dependencies]
+tempfile = "3"
