@@ -18,7 +18,7 @@ macro(add_shader name profile)
             shaderbuilder
             "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/${name}.fxc"
         COMMAND
-            ShaderBuilder.exe --profile "${profile}" --in "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/${name}.fxc" --outPrefix "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/${name}"
+            "${shaderbuilder_BINARY_DIR}/ShaderBuilder.exe" --profile "${profile}" --in "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/${name}.fxc" --outPrefix "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/build/${name}"
     )
     target_sources(AfxHookSourceShaders
         PRIVATE
