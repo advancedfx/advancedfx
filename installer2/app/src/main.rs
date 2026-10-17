@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod cli;
+mod ffmpeg_client;
 mod logging;
 mod ops;
 mod payload;

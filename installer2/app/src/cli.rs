@@ -3,10 +3,14 @@
 use std::ffi::OsString;
 use std::path::PathBuf;
 
+use std::sync::atomic::AtomicBool;
+
+use hlae_installer_core::ffmpeg_install::{FfmpegPlan, FfmpegSelection};
 use hlae_installer_core::{session, win};
 
+use crate::ffmpeg_client::{self, FfmpegArgs};
 use crate::ops::{self, Request};
-use crate::worker;
+use crate::{payload, worker};
 
 /// MSI-compatible exit codes (NOTES.md 6.4), deployment tools understand them.
 #[allow(dead_code)] // cancel / reboot are used from M6 / M7 on.
@@ -35,6 +39,12 @@ Without options the setup wizard is shown.
                           \"C:\\Program Files (x86)\\HLAE\"). Basic latin (ASCII) only.
   --locales               Install the translations (default: as installed, else on).
   --no-locales            Don't install the translations.
+  --ffmpeg <choice>       FFMPEG: win64-gpl (static, default), win64-gpl-shared,
+                          win64-lgpl, win64-lgpl-shared, none or keep. Default: install
+                          on a fresh install, update a downloaded one, else keep.
+  --ffmpeg-custom <exe>   Use an existing ffmpeg.exe instead (writes ffmpeg\\ffmpeg.ini).
+  --ffmpeg-archive <zip>  Use an already downloaded FFMPEG archive (must be one of
+                          this setup's archives, it's checked) instead of downloading.
   --remove-app-data       With --uninstall: also delete %APPDATA%\\HLAE (settings).
   --log <file>            Log file (default: %TEMP%\\HLAE_Setup_<time>.log).
   --help                  Show this help.
@@ -59,6 +69,10 @@ pub struct Args {
     pub locales: Option<bool>,
     pub remove_app_data: bool,
     pub log: Option<PathBuf>,
+    /// `--ffmpeg` value, checked against the embedded variants in [`run`].
+    pub ffmpeg: Option<String>,
+    pub ffmpeg_custom: Option<PathBuf>,
+    pub ffmpeg_archive: Option<PathBuf>,
 }
 
 impl Args {
@@ -112,11 +126,30 @@ pub fn parse(args: impl IntoIterator<Item = OsString>) -> Result<Args, String> {
             "no-locales" => parsed.locales = Some(false),
             "remove-app-data" => parsed.remove_app_data = true,
             "log" => parsed.log = Some(PathBuf::from(value()?)),
+            "ffmpeg" => parsed.ffmpeg = Some(value()?.to_ascii_lowercase()),
+            "ffmpeg-custom" => parsed.ffmpeg_custom = Some(PathBuf::from(value()?)),
+            "ffmpeg-archive" => parsed.ffmpeg_archive = Some(PathBuf::from(value()?)),
             _ => return Err(format!("unknown option {arg:?}")),
         }
     }
-    if parsed.remove_app_data && parsed.action != Some(Action::Uninstall) {
+    let uninstall = parsed.action == Some(Action::Uninstall);
+    if parsed.remove_app_data && !uninstall {
         return Err("--remove-app-data only works with --uninstall".into());
+    }
+    let any_ffmpeg = parsed.ffmpeg.is_some()
+        || parsed.ffmpeg_custom.is_some()
+        || parsed.ffmpeg_archive.is_some();
+    if uninstall && any_ffmpeg {
+        return Err("--ffmpeg… options don't work with --uninstall".into());
+    }
+    if parsed.ffmpeg_custom.is_some()
+        && (parsed.ffmpeg.is_some() || parsed.ffmpeg_archive.is_some())
+    {
+        return Err("--ffmpeg-custom excludes --ffmpeg and --ffmpeg-archive".into());
+    }
+    if parsed.ffmpeg_archive.is_some() && matches!(parsed.ffmpeg.as_deref(), Some("none" | "keep"))
+    {
+        return Err("--ffmpeg-archive needs an FFMPEG variant, not --ffmpeg none / keep".into());
     }
     Ok(parsed)
 }
@@ -133,12 +166,23 @@ pub fn run(args: Args) -> i32 {
         return exit_code::INVALID_COMMAND_LINE;
     }
 
+    let mut ffmpeg_download = None;
     let request = match args.action {
         Some(Action::Uninstall) => Request::Uninstall,
-        Some(Action::Install | Action::Modify) | None => Request::Install {
-            install_dir: args.install_dir.clone(),
-            locales: args.locales,
-        },
+        Some(Action::Install | Action::Modify) | None => {
+            // FFMPEG first, unelevated: defaults need the installed state, the download needs the
+            // logged-in user's proxy settings (NOTES.md 6.8a).
+            let (plan, download) = match resolve_ffmpeg(&args) {
+                Ok(resolved) => resolved,
+                Err(code) => return code,
+            };
+            ffmpeg_download = download;
+            Request::Install {
+                install_dir: args.install_dir.clone(),
+                locales: args.locales,
+                ffmpeg: plan,
+            }
+        }
     };
 
     // Elevated already (admin shell, deployment tool) → in-process, else via the elevated worker.
@@ -157,7 +201,37 @@ pub fn run(args: Args) -> i32 {
     if request == Request::Uninstall && args.remove_app_data && code == exit_code::SUCCESS {
         remove_app_data();
     }
+    // Keep the download on failure, a retry can reuse it.
+    if let Some(download) = ffmpeg_download.filter(|_| code == exit_code::SUCCESS) {
+        let _ = std::fs::remove_file(&download);
+    }
     code
+}
+
+fn resolve_ffmpeg(args: &Args) -> Result<(FfmpegPlan, Option<PathBuf>), i32> {
+    let fail = |e: &dyn std::fmt::Display| {
+        log::error!("{e}");
+        exit_code::FATAL
+    };
+    let data = payload::ffmpeg_data().map_err(|e| fail(&e))?;
+    if let Some(exe) = &args.ffmpeg_custom {
+        hlae_installer_core::ffmpeg_install::validate_custom_exe(exe).map_err(|e| fail(&e))?;
+    }
+    let selection = match (&args.ffmpeg_custom, &args.ffmpeg) {
+        (Some(exe), _) => Some(FfmpegSelection::Custom(exe.clone())),
+        (None, Some(value)) => Some(ffmpeg_client::parse_selection(value, &data).map_err(|e| {
+            log::error!("{e}");
+            exit_code::INVALID_COMMAND_LINE
+        })?),
+        (None, None) => None,
+    };
+    let ffmpeg_args = FfmpegArgs {
+        selection,
+        archive: args.ffmpeg_archive.clone(),
+    };
+    let session = ops::session().map_err(|e| fail(&e))?;
+    let cancel = AtomicBool::new(false);
+    ffmpeg_client::resolve(&ffmpeg_args, &data, &session.state_file, &cancel).map_err(|e| fail(&e))
 }
 
 fn remove_app_data() {
@@ -217,8 +291,31 @@ mod tests {
             &["--install-dir"],
             &["--install", "--uninstall"],
             &["--remove-app-data"],
+            &["--uninstall", "--ffmpeg", "none"],
+            &["--ffmpeg-custom", "C:\\f.exe", "--ffmpeg", "win64-gpl"],
+            &[
+                "--ffmpeg-custom",
+                "C:\\f.exe",
+                "--ffmpeg-archive",
+                "C:\\f.zip",
+            ],
+            &["--ffmpeg", "keep", "--ffmpeg-archive", "C:\\f.zip"],
         ] {
             assert!(parse_str(args).is_err(), "{args:?}");
         }
+    }
+
+    #[test]
+    fn parses_ffmpeg_options() {
+        let args = parse_str(&["--quiet", "--ffmpeg", "Win64-GPL-Shared"]).unwrap();
+        assert_eq!(args.ffmpeg.as_deref(), Some("win64-gpl-shared"));
+        let args = parse_str(&["--ffmpeg-archive=D:\\dl\\ffmpeg.zip"]).unwrap();
+        assert_eq!(
+            args.ffmpeg_archive,
+            Some(PathBuf::from("D:\\dl\\ffmpeg.zip"))
+        );
+        let data = payload::ffmpeg_data().unwrap();
+        assert!(ffmpeg_client::parse_selection("win64-lgpl", &data).is_ok());
+        assert!(ffmpeg_client::parse_selection("win32-gpl", &data).is_err());
     }
 }

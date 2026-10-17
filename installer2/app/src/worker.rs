@@ -88,7 +88,10 @@ fn spawn_worker(pipe_name: &str) -> io::Result<OwnedHandle> {
         let child = Command::new(&exe)
             .args([WORKER_ARG, pipe_name, &pid])
             .spawn()?;
-        log::info!("started the worker unelevated (test mode), pid {}", child.id());
+        log::info!(
+            "started the worker unelevated (test mode), pid {}",
+            child.id()
+        );
         return Ok(child.into());
     }
     log::info!("starting the elevated worker (UAC prompt)");

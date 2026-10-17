@@ -1,5 +1,5 @@
 [workspace]
-members = ["lib/*", "installer2/core", "installer2/app"]
+members = ["lib/*", "installer2/core", "installer2/app", "installer2/tools"]
 resolver = "3"
 
 [profile.release-tool]

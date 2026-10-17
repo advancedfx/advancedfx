@@ -7,6 +7,8 @@ use std::path::{Path, PathBuf};
 
 use crate::acl;
 use crate::error::{Error, IoContext, Result};
+use crate::ffmpeg::FfmpegData;
+use crate::ffmpeg_install::{self, FfmpegOutcome, FfmpegPlan};
 use crate::fsutil;
 use crate::install::{self, InstallRequest, UninstallReport, install_hlae};
 use crate::integration;
@@ -60,6 +62,8 @@ pub struct InstallOptions {
     pub install_dir: Option<PathBuf>,
     /// `None` → as installed, else on.
     pub locales: Option<bool>,
+    /// Already resolved by the client (defaults, download), see [`crate::ffmpeg_install`].
+    pub ffmpeg: FfmpegPlan,
 }
 
 #[derive(Debug)]
@@ -70,6 +74,9 @@ pub struct InstallSummary {
     pub install_dir: PathBuf,
     pub removed: Vec<RelPath>,
     pub kept: Vec<RelPath>,
+    /// E.g. "install win64-gpl (…)", `None` = FFMPEG kept as it was.
+    pub ffmpeg_action: Option<String>,
+    pub ffmpeg_warnings: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -122,11 +129,13 @@ impl Session {
         acl::secure_dir(dir, true).ctx("secure", dir)
     }
 
-    /// Installs / upgrades / repairs / modifies HLAE, saves the state and integrates it into Windows.
+    /// Installs / upgrades / repairs / modifies HLAE and FFMPEG, saves the state and integrates it
+    /// into Windows.
     pub fn install(
         &self,
         manifest: &Manifest,
         payload: &[u8],
+        ffmpeg_data: &FfmpegData,
         options: &InstallOptions,
         written_by: &str,
     ) -> Result<InstallSummary> {
@@ -168,16 +177,42 @@ impl Session {
         fs::create_dir_all(self.state_dir()).ctx("create", self.state_dir())?;
         outcome.state.save(&self.state_file)?;
         let mut state = outcome.state;
-        let summary = InstallSummary {
+        let mut summary = InstallSummary {
             action: outcome.action,
             previous_version: old.map(|s| s.hlae_version),
             version: state.hlae_version.clone(),
             install_dir,
             removed: outcome.applied.removed,
             kept: outcome.applied.kept,
+            ffmpeg_action: None,
+            ffmpeg_warnings: Vec::new(),
         };
         outcome.tx.commit()?;
 
+        // FFMPEG after HLAE (separate transaction): if it fails, HLAE stays installed and a retry
+        // only has to redo FFMPEG.
+        let download_dir = self.state_dir().join("download");
+        let ffmpeg = ffmpeg_install::apply(&state, ffmpeg_data, &options.ffmpeg, &download_dir);
+        let _ = fs::remove_dir(&download_dir);
+        let ffmpeg_error = match ffmpeg {
+            Ok(Some(FfmpegOutcome {
+                state: new_state,
+                tx,
+                action,
+                ..
+            })) => {
+                new_state.save(&self.state_file)?;
+                tx.commit()?;
+                state = new_state;
+                summary.ffmpeg_action = Some(action);
+                None
+            }
+            Ok(None) => None,
+            Err(e) => Some(e),
+        };
+        summary.ffmpeg_warnings = ffmpeg_install::warnings(&state);
+
+        // Also after an FFMPEG error: HLAE is installed and needs its Apps & features entry etc.
         if self.integrate {
             let setup_exe = std::env::current_exe().ctx("locate", Path::new("HLAE_Setup.exe"))?;
             let result =
@@ -186,7 +221,10 @@ impl Session {
             state.save(&self.state_file)?;
             result?;
         }
-        Ok(summary)
+        match ffmpeg_error {
+            Some(e) => Err(e),
+            None => Ok(summary),
+        }
     }
 
     /// Uninstalls HLAE; `None` if not installed (no state).

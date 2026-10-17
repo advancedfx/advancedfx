@@ -4,6 +4,7 @@
 use std::path::PathBuf;
 
 use hlae_installer_core::dotnet;
+use hlae_installer_core::ffmpeg_install::FfmpegPlan;
 use hlae_installer_core::session::{InstallOptions, Session};
 use hlae_installer_core::win;
 use serde::{Deserialize, Serialize};
@@ -19,6 +20,7 @@ pub enum Request {
     Install {
         install_dir: Option<PathBuf>,
         locales: Option<bool>,
+        ffmpeg: FfmpegPlan,
     },
     Uninstall,
 }
@@ -35,7 +37,7 @@ pub fn test_worker() -> bool {
     test_mode() && std::env::var("HLAE_SETUP_TEST_WORKER").as_deref() == Ok("1")
 }
 
-fn session() -> hlae_installer_core::Result<Session> {
+pub fn session() -> hlae_installer_core::Result<Session> {
     #[cfg(debug_assertions)]
     if let Some(path) = std::env::var_os("HLAE_SETUP_STATE_FILE") {
         return Ok(Session {
@@ -77,6 +79,7 @@ fn run_inner(request: &Request) -> hlae_installer_core::Result<i32> {
         Request::Install {
             install_dir,
             locales,
+            ffmpeg,
         } => {
             if !dotnet::framework_ok() {
                 log::warn!(
@@ -95,13 +98,22 @@ fn run_inner(request: &Request) -> hlae_installer_core::Result<i32> {
             let options = InstallOptions {
                 install_dir: install_dir.clone(),
                 locales: *locales,
+                ffmpeg: ffmpeg.clone(),
             };
             let summary = session.install(
                 &manifest,
                 payload::payload(),
+                &payload::ffmpeg_data()?,
                 &options,
                 &crate::cli::written_by(),
             )?;
+            match &summary.ffmpeg_action {
+                Some(action) => log::info!("FFMPEG: {action}"),
+                None => log::info!("FFMPEG: unchanged"),
+            }
+            for warning in &summary.ffmpeg_warnings {
+                log::warn!("{warning}");
+            }
             match &summary.previous_version {
                 Some(previous) if summary.action == "upgrade" => {
                     log::info!("upgrade: HLAE {previous} -> {}", summary.version)

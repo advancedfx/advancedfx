@@ -42,6 +42,12 @@ pub enum Error {
         installed: PathBuf,
         requested: PathBuf,
     },
+    #[error("invalid custom ffmpeg.exe {}: {reason}", .exe.display())]
+    InvalidCustomFfmpeg { exe: PathBuf, reason: &'static str },
+    #[error("download of {url} failed: {reason}")]
+    Download { url: String, reason: String },
+    #[error("cancelled")]
+    Cancelled,
     #[error("JSON: {0}")]
     Json(#[from] serde_json::Error),
 }

@@ -307,6 +307,22 @@ Keep all install logic in `core` (testable without GUI, usable by silent mode an
 - Untracked `ffmpeg.ini` (e.g. hand-written per [`readme.advancedfx.txt`](../resources/ffmpeg/readme.advancedfx.txt))
   is never deleted (checksum rule), but would silently override a downloaded FFMPEG → detect and warn / ask.
 
+### 6.8a FFMPEG download (decided)
+- **WinHTTP**, synchronous, `WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY` (Windows 8.1+): system + per-user proxy settings
+  incl. PAC / WPAD, failover, proxy auth with Windows credentials (autologon) – same coverage as the old installer's
+  `GetSystemWebProxy()` + `DefaultNetworkCredentials`. TLS via Schannel + Windows certificate store
+  (company root CAs work). Rust HTTP crates (`ureq`, `reqwest`) can't do PAC / WPAD / NTLM proxy auth.
+  - Fallback if `AUTOMATIC_PROXY` isn't supported (e.g. Wine): `WinHttpGetIEProxyConfigForCurrentUser` + `WinHttpGetProxyForUrl`.
+  - TLS: `WINHTTP_OPTION_SECURE_PROTOCOLS` = TLS 1.2 + 1.3 (retry TLS 1.2 only if 1.3 is unknown, older Windows 10).
+    Not `WINHTTP_FLAG_SECURE_DEFAULTS` (forces async mode, no security gain here). Integrity comes from the SHA-256 anyway.
+  - Cancel: check a flag between `WinHttpReadData` chunks.
+- Download runs in the **unelevated** client (the logged-in user's proxy settings + credentials) into `%TEMP%`;
+  the worker copies it into its admin-only temp dir, **then** verifies SHA-256 and extracts from that copy
+  (tampering with the `%TEMP%` file can only make the check fail). As SYSTEM (Intune / SCCM) the worker downloads itself.
+- Manual fallback: `--ffmpeg-archive <zip>` = use an already downloaded archive (same verification path, no download).
+  GUI file picker: decide in M6. Otherwise users can still use the HLAE zip + install FFMPEG by hand.
+- Wine / Proton: nice to have; for now the **silent mode** is the target there (WebView2 under Wine is unreliable).
+
 ### 6.9 Translations (gettext `.po`)
 - New `installer2` project in the l10n repo ([`deps/release/l10n`](../deps/release/l10n), github.com/advancedfx/l10n, translated via Pontoon).
 - Source of truth: hand-maintained `locales/en-US/installer2/messages.pot`;
@@ -464,6 +480,8 @@ All questions so far are decided; details live in 4–6.
   committed, no downloads during builds. `history` kept in the state.
 - Payload stays `include_bytes!` for now, behind one `payload()` function; revisit (post-build resource) if
   payload growth makes build times hurt (6.1).
+- FFMPEG download: WinHTTP synchronous + automatic system proxy, TLS 1.2+, download in the unelevated client,
+  verify in the worker; `--ffmpeg-archive` manual fallback; Wine: silent mode is enough for now (6.8a).
 
 ## 8. Plan / milestones
 - [ ] **M0 – Setup & quick checks**
@@ -556,8 +574,31 @@ All questions so far are decided; details live in 4–6.
     `QuietUninstallString` (client + worker both run from the cached exe, self-delete still works).
   - Known limitation: started already elevated by a *different* admin account (over-the-shoulder UAC), "remove app data"
     hits that account's `%APPDATA%`.
-- [ ] **M5 – FFMPEG**: variants, download, default rules, custom `ffmpeg.ini`;
+- [x] **M5 – FFMPEG**: variants, download, default rules, custom `ffmpeg.ini`;
       dev tool `installer2/tools` generating `data/ffmpeg.json` (6.10 b).
+  - [x] [`core/src/download.rs`](core/src/download.rs): WinHTTP download as in 6.8a (tested: GitHub incl. redirect, 404).
+        Note: status code must be queried with `WINHTTP_QUERY_FLAG_NUMBER` (32 bit), `NUMBER64` returns nothing for it.
+  - [x] [`core/src/ffmpeg.rs`](core/src/ffmpeg.rs): data model + validation, archive prefix + file listing (`zip` 9,
+        feature `deflate-flate2-zlib-rs` only – the default `deflate` pulls `zopfli`, which would bump `log` in the shared
+        `Cargo.lock` and thereby change the hook build).
+  - [x] [`tools`](tools/src/main.rs) + generated [`data/ffmpeg.json`](data/ffmpeg.json) (2026-10-17, autobuild-2026-09-30-13-08):
+        all 4 archives match BtbN's `checksums.sha256` **and** the SHA-512 from the old `HlaeFfmpeg/Package.wxs`.
+        Sizes: gpl 194 MB / 44 files, gpl-shared 86 MB / 224 files, lgpl 172 MB / 44 files, lgpl-shared 77 MB / 224 files
+        (the old dialog texts "100 MB" / "50 MB" are outdated). Cache: `target/ffmpeg-cache` (≈ 530 MB).
+        Regenerate: see the doc comment in `tools/src/main.rs` (pass the new tag / build / branch).
+  - [x] [`core/src/ffmpeg_install.rs`](core/src/ffmpeg_install.rs): `FfmpegPlan` (keep / none / download / custom),
+        default rules (4.2; "deliberately none" = keep it that way, no-op), one transaction for components `ffmpeg` +
+        `ffmpeg-ini` (switching removes what's no longer wanted, custom → download removes our ini), ini UTF-16LE + BOM,
+        custom path checks (absolute, exists, ≤ 260 UTF-16 units), warning for a foreign `ffmpeg.ini`.
+        Archive: worker copies it into `<state dir>\download\`, verifies size + SHA-256 there, extracts verifying every file.
+  - [x] Session: HLAE transaction → FFMPEG transaction → integration (also after an FFMPEG error, so a fresh HLAE still
+        gets its ARP entry; then exit 1603).
+  - [x] Client ([`app/src/ffmpeg_client.rs`](app/src/ffmpeg_client.rs)): resolves the plan unelevated (reads the state),
+        downloads to `%TEMP%\HLAE_Setup_ffmpeg\` (reused if already verified, deleted after success, kept for a retry).
+        CLI: `--ffmpeg <variant|none|keep>`, `--ffmpeg-custom <exe>`, `--ffmpeg-archive <zip>` (variant detected by hash).
+  - Tested 2026-10-17 (debug, test worker, real archives): install gpl (44 files, `ffmpeg.exe -version` works) →
+    custom (only ini, BOM `FF FE`) → archive shared (224 files, ini removed) → none → default (no-op) → uninstall.
+  - Note for the GUI (M6): the download happens before the UAC prompt (unelevated); show progress there.
 - [ ] **M6 – GUI wizard + translations** (incl. WebView2 check, launch HLAE).
 - [ ] **M7 – Migration** from WiX v5, files-in-use check, rollback hardening.
   - Test machine has the old WiX HLAE installed (from a public release build) – keep it for the migration tests.

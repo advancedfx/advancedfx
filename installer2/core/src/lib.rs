@@ -5,7 +5,10 @@ compile_error!("hlae-installer-core only supports Windows.");
 
 pub mod acl;
 pub mod dotnet;
+pub mod download;
 pub mod error;
+pub mod ffmpeg;
+pub mod ffmpeg_install;
 pub mod fsutil;
 pub mod hash;
 pub mod install;
