@@ -28,16 +28,17 @@
 // decompose/change myPanoramaWrapper too
 // doing it messy way here for now because lazy
 
-// credit https://github.com/danielkrupinski/Osiris
-
-void* g_CStylePropertyOpacity_vtable = 0;
-
-typedef void(__fastcall *g_CPanelStyleSetStyleProperty_t)(void* This, void* property, bool transition);
-g_CPanelStyleSetStyleProperty_t g_CPanelStyleSetStyleProperty = nullptr;
+typedef void* (__fastcall *g_CreateStyleProperty_t)(const uint8_t* symbol);
+typedef void (__fastcall *g_DeleteStyleProperty_t)(void* property);
+typedef bool (__fastcall *g_CStylePropertyParse_t)(void* This, const uint8_t* symbol, const char* value);
+typedef void (__fastcall *g_CPanelStyleSetPropertyOwned_t)(void* This, void* property, bool transition);
+g_CreateStyleProperty_t g_CreateStyleProperty = nullptr;
+g_DeleteStyleProperty_t g_DeleteStyleProperty = nullptr;
+g_CPanelStyleSetPropertyOwned_t g_CPanelStyleSetPropertyOwned = nullptr;
 
 struct CPanel2D {
 	const char* getClassName() {
-		void * pClientClass = ((void * (__fastcall *)(void *)) (*(void***)this)[60]) (this);
+		void * pClientClass = ((void * (__fastcall *)(void *)) (*(void***)this)[56]) (this);
 
 		if(pClientClass) {
 			return *(const char**)((unsigned char*)pClientClass + 0x8);
@@ -71,38 +72,28 @@ CON_COMMAND(__mirv_panorama_dump_style_symbols, "") {
 	}
 }
 
-struct StylePropertyOpacity {
-	void* vtable;
-	uint8_t id;
-	bool disallowTransition = false;
-	u_char pad[0x6];
-	float value;
-
-	StylePropertyOpacity() {} 
-
-	StylePropertyOpacity(void* vt, uint8_t i, float v) 
-		: vtable(vt), id(i), value(v) {}
-
-};
-
-bool makeOpacityProperty(StylePropertyOpacity* out, float value) {
-	auto id = g_PanoramaStylePropertySymbols.findSymbol("opacity");
-	if (g_CStylePropertyOpacity_vtable == nullptr || id == 0xFF) return false;
-
-	*out = StylePropertyOpacity { g_CStylePropertyOpacity_vtable, id, value};
-
-	return true;
-}
-
 struct CUIPanel {
-	bool setOpacity(float value) {
-		auto style = (u_char*)(this + CS2::PanoramaUIPanel::panelStyle);
+	bool setStyle(const char* name, const char* value) {
+		if (!g_CreateStyleProperty || !g_DeleteStyleProperty || !g_CPanelStyleSetPropertyOwned) {
+			ErrorBox("Setting Panorama styles is unavailable for this CS2 build.\n");
+			return false;
+		}
 
-		StylePropertyOpacity styleProp;
-		if (!makeOpacityProperty(&styleProp, value)) return false;
+		auto symbol = g_PanoramaStylePropertySymbols.findSymbol(name);
+		void* property = symbol == 0xFF ? nullptr : g_CreateStyleProperty(&symbol);
+		if (!property) {
+			advancedfx::Warning("Unknown style property '%s'.\n", name);
+			return false;
+		}
 
-		g_CPanelStyleSetStyleProperty(style, &styleProp, true);
+		auto parse = (g_CStylePropertyParse_t)(*(void***)property)[6]; // see next to one of g_DeleteStyleProperty
+		if (!parse(property, &symbol, value)) {
+			g_DeleteStyleProperty(property);
+			advancedfx::Warning("Invalid value for style property '%s': %s\n", name, value);
+			return false;
+		}
 
+		g_CPanelStyleSetPropertyOwned((u_char*)(this + CS2::PanoramaUIPanel::panelStyle), property, true);
 		return true;
 	}
 };
@@ -603,7 +594,7 @@ struct myPanoramaWrapper {
 
 		for (int i = 0; i < *(int*)children; ++i) {
 			const auto panel = ((u_char***)children)[1][i];
-			const auto panelFlags = (u_char)(panel + CS2::PanoramaUIPanel::panelFlags);
+			const auto panelFlags = *(u_char*)(panel + CS2::PanoramaUIPanel::panelFlags);
 			if ((panelFlags & CS2::PanoramaUIPanel::k_EPanelFlag_HasOwnLayoutFile) == 0) {
 				auto found = findChildrenInLayoutFileByClassName(panel, classNameToFind);
 				if (!found.empty()) {
@@ -634,7 +625,7 @@ struct myPanoramaWrapper {
 
 		for (int i = 0; i < *(int*)children; ++i) {
 			const auto panel = ((u_char***)children)[1][i];
-			const auto panelFlags = (u_char)(panel + CS2::PanoramaUIPanel::panelFlags);
+			const auto panelFlags = *(u_char*)(panel + CS2::PanoramaUIPanel::panelFlags);
 			if ((panelFlags & CS2::PanoramaUIPanel::k_EPanelFlag_HasOwnLayoutFile) == 0) {
 				if (const auto found = findChildInLayoutFile(panel, idToFind)) {
 					return found;
@@ -1313,12 +1304,15 @@ bool getPanoramaAddrs(HMODULE panoramaDll) {
 	}		
 
 	{
-		g_CStylePropertyOpacity_vtable = (void**)Afx::BinUtils::FindClassVtable(panoramaDll,".?AVCStylePropertyOpacity@panorama@@",0,0);
-		if(nullptr == g_CStylePropertyOpacity_vtable) {
-			ErrorBox(MkErrStr(__FILE__, __LINE__));	
-			return false;
-		}
-	}		
+		// All three are called in the same function
+		// CreateStyleProperty right after the symbol lookup, DeleteStyleProperty on parse errors, SetPropertyOwned at the end.
+		//
+		// near "Property setter for CPanelStyle called with invalid css property name (%s)"
+		g_CreateStyleProperty = (g_CreateStyleProperty_t)getAddress(panoramaDll, "0F B6 01 3C FF 74 23 48 69 C0 08 01 00 00 48 8D 0D ?? ?? ?? ?? 48 8B 04 08 48 85 C0 74 0C 48 8B 40 08");
+		// near "Failed to parse style value for %s"
+		g_DeleteStyleProperty = (g_DeleteStyleProperty_t)getAddress(panoramaDll, "0F B6 41 08 48 69 D0 08 01 00 00 48 8D 05 ?? ?? ?? ?? 48 8B 04 02 48 85 C0 74 0C 48 8B 40 18");
+		g_CPanelStyleSetPropertyOwned = (g_CPanelStyleSetPropertyOwned_t)getAddress(panoramaDll, "48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 20 44 88 44 24 18 57 41 54 41 55 41 56 41 57 48 83 EC 30 48 8B 79 70 33 ED");
+	}
 
 	{
 		// near "Need to increase size of static g_StylePropertyRegistrations (MAX_PANORAMA_STYLE_SYMBOLS) before registering more styles, failed on %s"
@@ -1330,16 +1324,6 @@ bool getPanoramaAddrs(HMODULE panoramaDll) {
 			auto out = addr + 7 + *(int32_t*)(addr + 3);
 			g_PanoramaStylePropertySymbols.symbols = (SOURCESDK::CS2::CUtlMap<SOURCESDK::CS2::CUtlString, uint8_t>*)(out);
 		}
-	}
-
-	{
-		// Can be found in constructor for any CStyleProperty
-		// e.g. see 44th fn in vtable for CPanelStyle
-		auto addr = getAddress(panoramaDll, "E8 ?? ?? ?? ?? 48 8B 5C 24 ?? 48 8B 6C 24 ?? 48 83 C4 ?? 41 5E 5F 5E C3 44 0F");
-		if (addr) {
-			g_CPanelStyleSetStyleProperty = (g_CPanelStyleSetStyleProperty_t)(addr + 5 + *(int32_t*)(addr + 1));
-		} else 
-			ErrorBox(MkErrStr(__FILE__, __LINE__));	
 	}
 
 	return true;
@@ -1742,7 +1726,7 @@ void applyStyleProperty_Console(IWrpCommandArgs * args) {
 	std::string panelId = "";
 	// TODO: match by property type, when add new ones
 	bool didMatchProperty = false;
-	float opacity = 0;
+	std::string opacity = "";
 
 	for (int i = 1; i < argc; ++i)
 	{
@@ -1759,7 +1743,7 @@ void applyStyleProperty_Console(IWrpCommandArgs * args) {
 		}
 		else if (StringIBeginsWith(argI, "opacity="))
 		{
-			opacity = float(atof(argI + strlen("opacity=")));
+			opacity = argI + strlen("opacity=");
 			didMatchProperty = true;
 		}
 	}
@@ -1789,7 +1773,7 @@ void applyStyleProperty_Console(IWrpCommandArgs * args) {
 			return;
 		}
 
-		auto res = ((CUIPanel*)targetPanel)->setOpacity(std::clamp(opacity, 0.0f, 1.0f));
+		auto res = ((CUIPanel*)targetPanel)->setStyle("opacity",opacity.c_str());
 		if (!res) {
 			advancedfx::Warning("Could not set opacity property for %s\n", panelId.c_str());
 		}
@@ -1799,7 +1783,7 @@ void applyStyleProperty_Console(IWrpCommandArgs * args) {
 			advancedfx::Warning("Could not find panels with className %s\n", panelId.c_str());
 		} else {
 			for (auto panel : foundPanels) {
-				((CUIPanel*)panel)->setOpacity(std::clamp(opacity, 0.0f, 1.0f));
+				((CUIPanel*)panel)->setStyle("opacity",opacity.c_str());
 			}
 		}
 	}

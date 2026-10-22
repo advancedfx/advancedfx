@@ -23,7 +23,7 @@ namespace CS2 {
 		constexpr ptrdiff_t panelId = 0x10;
 		constexpr ptrdiff_t children = 0x28;
 		constexpr ptrdiff_t panelStyle = 0x70;
-		constexpr ptrdiff_t panelFlags = 0x11D;
+		constexpr ptrdiff_t panelFlags = 0x11C;
 
 		constexpr ptrdiff_t k_EPanelFlag_HasOwnLayoutFile = 0x40;
 	}
