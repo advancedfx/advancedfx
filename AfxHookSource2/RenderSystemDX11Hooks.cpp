@@ -8,6 +8,7 @@
 #include "WrpConsole.h"
 #include "CamIO.h"
 #include "MirvFix.h"
+#include "MirvTime.h"
 
 #include "RenderCommands.h"
 #include "StreamSettings.h"
@@ -18,6 +19,7 @@
 #include "../shared/FileTools.h"
 #include "../shared/GrowingBufferPoolThreadSafe.h"
 #include "../shared/ImageTransformer.h"
+#include "../shared/OutputPathTemplate.h"
 #include "../shared/RecordingSettings.h"
 #include "../shared/RefCountedThreadSafe.h"
 #include "../shared/StringTools.h"
@@ -3385,6 +3387,20 @@ void ClearSceneFliterSystemPolicies();
 
 void SetupSceneFilterPolicies(const class CStreamSettings & settings);
 
+std::mutex g_StartMovieWavPathMutex;
+std::wstring g_StartMovieWavPath;
+
+bool AfxStreams_GetStartMovieWavPath(std::wstring & outPath) {
+    std::unique_lock<std::mutex> lock(g_StartMovieWavPathMutex);
+    outPath = g_StartMovieWavPath;
+    return !outPath.empty();
+}
+
+void AfxStreams_SetStartMovieWavPath(const std::wstring & value) {
+    std::unique_lock<std::mutex> lock(g_StartMovieWavPathMutex);
+    g_StartMovieWavPath = value;
+}
+
 class CAfxStreams : public advancedfx::IRecordStreamSettings {
 public:
     bool m_CampathAutoSave = false;
@@ -3421,6 +3437,26 @@ public:
         m_RecordName = value;
     }
 
+    const char* GetTake() {
+        return m_Take.c_str();
+    }
+
+    void SetTake(const char * value) {
+        m_Take = value;
+    }
+
+    advancedfx::COutputPathSetting & GetCamPath() {
+        return m_CamPath;
+    }
+
+    advancedfx::COutputPathSetting & GetCampathPath() {
+        return m_CampathPath;
+    }
+
+    advancedfx::COutputPathSetting & GetStartMovieWavPath() {
+        return m_StartMovieWavPath;
+    }
+
     bool GetStartMovieWav() {
         return m_StartMovieWav;
     }
@@ -3445,13 +3481,12 @@ public:
         m_OverrideFpsValue = value;
     }
 
-	virtual bool GetStreamFolder(std::wstring& outFolder) const {
-        outFolder = m_TakeDir;
-        return true;
-    }
-
-    const wchar_t * GetTakeDir(void) const {
-        return m_TakeDir.c_str();
+    // For the screen recording.
+    virtual void GetOutputPathValues(advancedfx::COutputPathValues& outValues) const {
+        outValues = m_OutputPathValues;
+        std::wstring screenName;
+        if (UTF8StringToWideString(m_RecordScreenName.c_str(), screenName)) outValues.SetString(advancedfx::OutputPathVariable_StreamName, screenName);
+        outValues.SetTemplate(advancedfx::OutputPathVariable_StreamPath, AFX_TAKE_PATH_TEMPLATE);
     }
 
 	virtual advancedfx::StreamCaptureType GetCaptureType() const {
@@ -3582,59 +3617,20 @@ public:
     }
 
 private:
-    class CStream : public advancedfx::IRecordStreamSettings {
-	public:
-		CStream(CAfxStreams * streams, const CStreamSettings & settings)
-			: m_Streams(streams)
+    /// Output related settings of a stream.
+    class CStreamOutput : public advancedfx::IRecordStreamSettings {
+    public:
+        CStreamOutput(CAfxStreams * streams, const CStreamSettings & settings)
+            : m_Streams(streams)
             , m_Settings(settings) {
-
-            CAfxCapture::CaptureType_e captureType;
-            switch(m_Settings.CaptureType) {
-            case CStreamSettings::CaptureType_e::Rgba:
-                captureType = CAfxCapture::CaptureType_Rgba;
-                break;
-            case CStreamSettings::CaptureType_e::DepthRgb:
-                captureType = m_Settings.Depth24 ? CAfxCapture::CaptureType_Depth24 : CAfxCapture::CaptureType_Rgba;
-                break;
-            default:
-                captureType = CAfxCapture::CaptureType_Default;
-            };
-
-            auto videoStreamCreator = m_Settings.Settings->CreateOutVideoStreamCreator(
-                *this,
-                *this,
-                m_Streams->m_StartHostFrameRateValue,
-                ""
-            );
-            m_Capture = new CAfxCapture(videoStreamCreator, captureType);
-            videoStreamCreator->Release();
-		}
-
-		~CStream() {
-            auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
-            {
-                auto & queue = pRenderPassCommands.AfterPresentOrContextLossReliable;
-                CAfxCapture * capture = m_Capture;
-                queue.Push([capture](ID3D11DeviceContext * pDeviceContext){
-                    capture->ShutDown(pDeviceContext);
-                }); 
-            }
-            {
-                auto & queue = pRenderPassCommands.FinalizeReliable;
-                CAfxCapture * capture = m_Capture;
-                queue.Push([capture](){
-                    delete capture;
-                }); 
-            }            
         }
 
-        virtual bool GetStreamFolder(std::wstring& outFolder) const {
-            outFolder = m_Streams->GetTakeDir();
-            outFolder.append(L"\\");
-            outFolder.append(m_Settings.Name);
-            return true;
+        virtual void GetOutputPathValues(advancedfx::COutputPathValues& outValues) const {
+            outValues = m_Streams->m_OutputPathValues;
+            outValues.SetString(advancedfx::OutputPathVariable_StreamName, m_Settings.Name);
+            outValues.SetTemplate(advancedfx::OutputPathVariable_StreamPath, AFX_TAKE_PATH_TEMPLATE L"\\{STREAM_NAME}");
         }
-        
+
         virtual advancedfx::StreamCaptureType GetCaptureType() const {
             switch(m_Settings.CaptureType) {
             case CStreamSettings::CaptureType_e::Rgb:
@@ -3657,8 +3653,8 @@ private:
                     return advancedfx::StreamCaptureType::DepthFZIP;
                 } else {
                     return advancedfx::StreamCaptureType::DepthF;
-                }                
-                break;            
+                }
+                break;
             }
             return advancedfx::StreamCaptureType::Invalid;
         }
@@ -3669,6 +3665,60 @@ private:
 
         virtual bool GetFormatBmpNotTga() const {
             return m_Streams->GetFormatBmpNotTga();
+        }
+
+    protected:
+        CAfxStreams * m_Streams;
+        CStreamSettings m_Settings;
+    };
+
+    class CStream : public CStreamOutput {
+	public:
+		CStream(CAfxStreams * streams, const CStreamSettings & settings)
+			: CStreamOutput(streams, settings) {
+
+            CAfxCapture::CaptureType_e captureType;
+            switch(m_Settings.CaptureType) {
+            case CStreamSettings::CaptureType_e::Rgba:
+                captureType = CAfxCapture::CaptureType_Rgba;
+                break;
+            case CStreamSettings::CaptureType_e::DepthRgb:
+                captureType = m_Settings.Depth24 ? CAfxCapture::CaptureType_Depth24 : CAfxCapture::CaptureType_Rgba;
+                break;
+            default:
+                captureType = CAfxCapture::CaptureType_Default;
+            };
+
+            auto videoStreamCreator = m_Settings.Settings->CreateOutVideoStreamCreator(
+                *this,
+                *this,
+                m_Streams->m_StartHostFrameRateValue
+            );
+            if(videoStreamCreator) {
+                m_Capture = new CAfxCapture(videoStreamCreator, captureType);
+                videoStreamCreator->Release();
+            } else {
+                advancedfx::Warning("AFXERROR: Failed to create output with recording setting \"%s\".\n", m_Settings.Settings->GetName());
+            }
+		}
+
+		~CStream() {
+            if(nullptr == m_Capture) return;
+            auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
+            {
+                auto & queue = pRenderPassCommands.AfterPresentOrContextLossReliable;
+                CAfxCapture * capture = m_Capture;
+                queue.Push([capture](ID3D11DeviceContext * pDeviceContext){
+                    capture->ShutDown(pDeviceContext);
+                }); 
+            }
+            {
+                auto & queue = pRenderPassCommands.FinalizeReliable;
+                CAfxCapture * capture = m_Capture;
+                queue.Push([capture](){
+                    delete capture;
+                }); 
+            }            
         }
 
         void EngineThread_BeginFrame() const {
@@ -3838,9 +3888,7 @@ private:
         }
 
     private:
-        CAfxStreams * m_Streams;
-        CStreamSettings m_Settings;
-        CAfxCapture * m_Capture;
+        CAfxCapture * m_Capture = nullptr;
 
         void ExecuteCommands(const std::list<std::list<std::string>> & commands) const {
             for(auto it = commands.begin(); it != commands.end(); it++) {
@@ -4083,7 +4131,24 @@ private:
     bool m_OverrideFps = false;
     float m_OverrideFpsValue = 60.0;
     std::string m_RecordName = "untitled_rec";
-    
+    std::string m_Take = "take";
+
+    advancedfx::COutputPathSetting m_CamPath = advancedfx::COutputPathSetting(AFX_TAKE_PATH_TEMPLATE_A "\\cam_main.cam", advancedfx::OutputPathVariables_Record);
+    advancedfx::COutputPathSetting m_CampathPath = advancedfx::COutputPathSetting(AFX_TAKE_PATH_TEMPLATE_A "\\campath.xml", advancedfx::OutputPathVariables_Record);
+    advancedfx::COutputPathSetting m_StartMovieWavPath = advancedfx::COutputPathSetting(AFX_TAKE_PATH_TEMPLATE_A "\\audio.wav", advancedfx::OutputPathVariables_Record);
+
+    // Values of the current recording (only valid while recording).
+    advancedfx::COutputPathValues m_OutputPathValues;
+
+    bool InitOutputPathValues();
+
+    bool ExpandRecordOutputPath(const advancedfx::COutputPathSetting & setting, std::wstring & outPath) const {
+        std::wstring value;
+        if(!setting.GetWide(value)) return false;
+        outPath = m_OutputPathValues.Expand(value, advancedfx::OutputPathVariable_None);
+        return true;
+    }
+
 	class CRecordScreen {
 	public:
 		bool Enabled;
@@ -4107,6 +4172,7 @@ private:
 		}
 	};
 	CRecordScreen* m_RecordScreen;
+	std::string m_RecordScreenName = "screen"; // {STREAM_NAME} of the screen recording.
 
     bool m_Recording = false;
     std::wstring m_TakeDir;
@@ -4237,11 +4303,27 @@ void CAfxStreams::Console_RecordScreen(advancedfx::ICommandArgs* args) {
 
 			return;
 		}
+		if (0 == _stricmp(arg1, "name")) {
+			if (3 <= argC) {
+				m_RecordScreenName = args->ArgV(2);
+				return;
+			}
+
+			advancedfx::Message(
+				"%s name <name> - Set the name used for {STREAM_NAME} in the output path of the screen recording (default: screen).\n"
+				"Current value: %s\n"
+				, arg0
+				, m_RecordScreenName.c_str()
+			);
+			return;
+		}
 	}
 
 	advancedfx::Message(
 		"%s enabled [...] - Enables / disables screen recording.\n"
 		"%s settings [...] - Controls recording settings.\n"
+		"%s name [...] - Name used for {STREAM_NAME}.\n"
+		, arg0
 		, arg0
 		, arg0
 	);
@@ -5230,16 +5312,82 @@ void AfxHookSourceRs_Engine_OnRecordStart(const char * take_folder_path);
 
 extern CamPath g_CamPath;
 
+bool CAfxStreams::InitOutputPathValues()
+{
+	std::wstring recordName;
+	std::wstring recordPath;
+	std::wstring take;
+	if(!UTF8StringToWideString(m_RecordName.c_str(), recordName)
+		|| !GetFullPath(recordName.c_str(), recordPath)
+		|| !UTF8StringToWideString(m_Take.c_str(), take))
+		return false;
+
+	// Avoid double separators in the default templates (keep root "C:\" though):
+	while(3 < recordPath.size() && (L'\\' == recordPath.back() || L'/' == recordPath.back())) recordPath.pop_back();
+
+	m_OutputPathValues = advancedfx::COutputPathValues();
+	m_OutputPathValues.SetString(advancedfx::OutputPathVariable_RecordPath, recordPath);
+	m_OutputPathValues.SetString(advancedfx::OutputPathVariable_Take, take);
+
+	int tick;
+	if(!g_MirvTime.GetCurrentDemoTick(tick)) {
+		// Not in a demo, derive it from the client time instead.
+		tick = (int)(g_MirvTime.curtime_get() / g_MirvTime.interval_per_tick_get());
+	}
+	m_OutputPathValues.SetNumber(advancedfx::OutputPathVariable_Tick, tick);
+
+	wchar_t time[64];
+	swprintf_s(time, L"%.3f", g_MirvTime.curtime_get());
+	m_OutputPathValues.SetString(advancedfx::OutputPathVariable_Time, time);
+
+	// Determine {TAKE_NUMBER} from all outputs that will be written:
+
+	std::list<std::wstring> templates;
+
+	auto addTemplate = [&](const advancedfx::COutputPathSetting & setting) {
+		std::wstring value;
+		if(setting.GetWide(value)) templates.push_back(m_OutputPathValues.Expand(value, advancedfx::OutputPathVariable_All));
+	};
+
+	if(m_CampathAutoSave && 0 < g_CamPath.GetSize()) addTemplate(m_CampathPath);
+	if(m_CamExport) addTemplate(m_CamPath);
+	if(m_StartMovieWav) addTemplate(m_StartMovieWavPath);
+
+	if(m_RecordScreen->Enabled) m_RecordScreen->Settings->GetOutputPathTemplates(*this, templates);
+
+	for(auto it = m_Streams.begin(); it != m_Streams.end(); it++) {
+		if(!it->second.Record) continue;
+		CStreamOutput streamOutput(this, it->second);
+		it->second.Settings->GetOutputPathTemplates(streamOutput, templates);
+	}
+
+	long long maxTakeNumber = -1;
+	bool usesTakeNumber = false;
+	for(auto it = templates.begin(); it != templates.end(); it++) {
+		if(0 == (advancedfx::OutputPathTemplate_GetVariables(*it) & advancedfx::OutputPathVariable_TakeNumber)) continue;
+		usesTakeNumber = true;
+		long long takeNumber = advancedfx::OutputPathTemplate_FindMaxTakeNumber(*it);
+		if(maxTakeNumber < takeNumber) maxTakeNumber = takeNumber;
+	}
+
+	m_OutputPathValues.SetNumber(advancedfx::OutputPathVariable_TakeNumber, maxTakeNumber + 1);
+
+	if(!templates.empty() && !usesTakeNumber) {
+		advancedfx::Warning("AFXWARNING: No output path uses {TAKE_NUMBER}, files of previous recordings might get overwritten.\n");
+	}
+
+	m_TakeDir = m_OutputPathValues.Expand(AFX_TAKE_PATH_TEMPLATE, advancedfx::OutputPathVariable_None);
+
+	return true;
+}
+
 void CAfxStreams::RecordStart()
 {
 	RecordEnd();
 
 	advancedfx::Message("Starting recording ... ");
-	
-	if(UTF8StringToWideString(m_RecordName.c_str(), m_TakeDir)
-		&& (m_TakeDir.append(L"\\take"), SuggestTakePath(m_TakeDir.c_str(), 4, m_TakeDir))
-		&& CreatePath(m_TakeDir.c_str(), m_TakeDir)
-	)
+
+	if(InitOutputPathValues())
 	{
 		m_Recording = true;
 		m_StartMovieWavUsed = false;
@@ -5293,30 +5441,34 @@ void CAfxStreams::RecordStart()
 
 		if(m_CampathAutoSave && 0 < g_CamPath.GetSize())
 		{
-			std::wstring campathFileName(m_TakeDir);
-			campathFileName.append(L"\\campath.xml");
-			if(!g_CamPath.Save(campathFileName.c_str()))
-				advancedfx::Warning("Error: Failed saving campath.xml to take folder.\n");
-		}        
+			std::wstring campathFileName;
+			if(!(ExpandRecordOutputPath(m_CampathPath, campathFileName)
+				&& CreateParentPath(campathFileName.c_str())
+				&& g_CamPath.Save(campathFileName.c_str())))
+				advancedfx::Warning("Error: Failed saving campath to \"%s\".\n", m_CampathPath.Get().c_str());
+		}
 
 		if (m_CamExport)
 		{
-			std::wstring camFileName(m_TakeDir);
-			camFileName.append(L"\\cam_main.cam");
-
-			m_CamExportSet = true;
-			g_S2CamIO.SetCamExport(new CamExport(camFileName.c_str()));
+			std::wstring camFileName;
+			if(ExpandRecordOutputPath(m_CamPath, camFileName) && CreateParentPath(camFileName.c_str())) {
+				m_CamExportSet = true;
+				g_S2CamIO.SetCamExport(new CamExport(camFileName.c_str()));
+			}
+			else advancedfx::Warning("Error: Failed to create folder for cam export \"%s\".\n", m_CamPath.Get().c_str());
 		}
 
 		if(m_RecordScreen->Enabled) {
             auto videoStreamCreator = m_RecordScreen->Settings->CreateOutVideoStreamCreator(
                 *this,
                 *this,
-                m_StartHostFrameRateValue,
-                ""
+                m_StartHostFrameRateValue
             );
-			CreateCapture(videoStreamCreator);
-            videoStreamCreator->Release();
+			if(videoStreamCreator) {
+				CreateCapture(videoStreamCreator);
+				videoStreamCreator->Release();
+			}
+			else advancedfx::Warning("AFXERROR: Failed to create output for screen recording.\n");
 		}
 
         m_AutoForceFullReSmoke = false;
@@ -5351,6 +5503,10 @@ void CAfxStreams::RecordStart()
 
 		if (m_StartMovieWavUsed)
 		{
+			// Picked up by the file hooks on the engine's audio thread:
+			std::wstring startMovieWavPath;
+			if(ExpandRecordOutputPath(m_StartMovieWavPath, startMovieWavPath)) AfxStreams_SetStartMovieWavPath(startMovieWavPath);
+
             SOURCESDK::CS2::ConCommandHandle handle_startmovie = SOURCESDK::CS2::g_pCVar->FindCommand( "startmovie", false );
             if(handle_startmovie.IsValid()) {
                 const char * pszArgs[3] = {"startmovie",ADVANCEDFX_STARTMOVIE_WAV_KEY,"wav"};
@@ -5363,7 +5519,7 @@ void CAfxStreams::RecordStart()
 	else
 	{
 		advancedfx::Message("FAILED");
-		advancedfx::Warning("Error: Failed to create directories for \"%s\".\n", m_RecordName.c_str());
+		advancedfx::Warning("Error: Failed to determine output paths for record name \"%s\" and take \"%s\".\n", m_RecordName.c_str(), m_Take.c_str());
 	}
 
 }
@@ -5440,9 +5596,6 @@ void CAfxStreams::RecordEnd()
 
 bool AfxStreams_IsRcording() {
     return g_AfxStreams.GetRecording();
-}
-const wchar_t * AfxStreams_GetTakeDir() {
-    return g_AfxStreams.GetTakeDir();
 }
 
 bool g_bEngine_ReShade_Enabled = true;
@@ -5545,9 +5698,25 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					}
 
 					advancedfx::Message(
-						"mirv_streams record name <name> - Set record name to <name>.\n"
+						"mirv_streams record name <name> - Set record name to <name>, the full path of it is {RECORD_PATH}.\n"
 						"Current value: %s.\n",
 						g_AfxStreams.GetRecordName()
+					);
+					return;
+				}
+				else if(!_stricmp(cmd2, "take"))
+				{
+					if(4 <= argC)
+					{
+						char const * cmd3 = args->ArgV(3);
+						g_AfxStreams.SetTake(cmd3);
+						return;
+					}
+
+					advancedfx::Message(
+						"mirv_streams record take <name> - Set take name ({TAKE}) to <name>.\n"
+						"Current value: %s.\n",
+						g_AfxStreams.GetTake()
 					);
 					return;
 				}
@@ -5608,6 +5777,13 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					);
 					return;
 				}
+				else
+				if (!_stricmp(cmd2, "startMovieWavPath"))
+				{
+					advancedfx::CSubCommandArgs subArgs(args, 3);
+					g_AfxStreams.GetStartMovieWavPath().Console(&subArgs, "WAV audio output file.");
+					return;
+				}
 				else if (!_stricmp(cmd2, "fps")) {
 					if (4 <= argC)
 					{
@@ -5659,10 +5835,17 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
               				);
 
               				return;
-            			} 
-       				}		
+            			}
+						else if (!_stricmp("path", cmd3))
+						{
+							advancedfx::CSubCommandArgs subArgs(args, 4);
+							g_AfxStreams.GetCampathPath().Console(&subArgs, "Campath output file.");
+							return;
+						}
+       				}
           			advancedfx::Message(
            				"mirv_streams record campath enabled [...]\n"
+           				"mirv_streams record campath path [...]\n"
           			);
           			return;
 				}
@@ -5687,10 +5870,17 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
               				);
 
               				return;
-            			} 
-       				}		
+            			}
+						else if (!_stricmp("path", cmd3))
+						{
+							advancedfx::CSubCommandArgs subArgs(args, 4);
+							g_AfxStreams.GetCamPath().Console(&subArgs, "Camera motion data output file.");
+							return;
+						}
+       				}
           			advancedfx::Message(
            				"mirv_streams record cam enabled [...]\n"
+           				"mirv_streams record cam path [...]\n"
           			);
           			return;
 				}
@@ -5698,6 +5888,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 
 			advancedfx::Message(
 				"mirv_streams record name [...] - Set/get record name.\n"
+				"mirv_streams record take [...] - Set/get take name.\n"
 				"mirv_streams record start - Begin recording.\n"
 				"mirv_streams record end - End recording.\n"
 				"mirv_streams record format [...] - Set/get file format.\n"
@@ -5706,10 +5897,11 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			advancedfx::Message(
 				"mirv_streams record screen [...] - Controls capturing the game content drawn to screen right before being presented.\n"
 				"mirv_streams record startMovieWav [...] - Controls WAV audio recording.\n"
+				"mirv_streams record startMovieWavPath [...] - WAV audio output file.\n"
 			);
 			advancedfx::Message(
 				"mirv_streams record cam [...] - Controls the camera motion data capture output (can be imported with mirv_camio).\n"
-                "mirv_streams record campath [...] - Save current campath into take folder (if not empty).\n"
+                "mirv_streams record campath [...] - Save current campath (if not empty).\n"
 			);
 			return;
 		}

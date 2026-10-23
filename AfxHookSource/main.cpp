@@ -6,6 +6,7 @@
 #include <windows.h>
 
 #include <shared/StringTools.h>
+#include <shared/FileTools.h>
 
 #include <shared/AfxDetours.h>
 
@@ -2907,9 +2908,9 @@ HANDLE WINAPI new_CreateFileW(
 		&& g_AfxStreams.IsRecording()) {
 		std::wstring strFileName(lpFileName);
 		for (auto& c : strFileName) c = std::tolower(c);
-		if (StringEndsWithW(strFileName.c_str(), L"" ADVANCEDFX_STARTMOVIE_WAV_KEY ".wav")) {
-			std::wstring newPath(g_AfxStreams.GetTakeDir());
-			newPath.append(L"\\audio.wav");
+		std::wstring newPath;
+		if (StringEndsWithW(strFileName.c_str(), L"" ADVANCEDFX_STARTMOVIE_WAV_KEY ".wav") && AfxStreams_GetStartMovieWavPath(newPath)) {
+			if (OPEN_EXISTING != dwCreationDisposition && TRUNCATE_EXISTING != dwCreationDisposition) CreateParentPath(newPath.c_str());
 			return g_Import_filesystem_stdio_KERNEL32_CreateFileW.TrueFunc(newPath.c_str(), dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 		}
 	}
@@ -2929,9 +2930,9 @@ HANDLE WINAPI new_CreateFileA(
 		&& g_AfxStreams.IsRecording()) {
 		std::string strFileName(lpFileName);
 		for (auto& c : strFileName) c = std::tolower(c);
-		if (StringEndsWith(strFileName.c_str(),"" ADVANCEDFX_STARTMOVIE_WAV_KEY ".wav")) {
-			std::wstring newPath(g_AfxStreams.GetTakeDir());
-			newPath.append(L"\\audio.wav");
+		std::wstring newPath;
+		if (StringEndsWith(strFileName.c_str(),"" ADVANCEDFX_STARTMOVIE_WAV_KEY ".wav") && AfxStreams_GetStartMovieWavPath(newPath)) {
+			if (OPEN_EXISTING != dwCreationDisposition && TRUNCATE_EXISTING != dwCreationDisposition) CreateParentPath(newPath.c_str());
 			return CreateFileW(newPath.c_str(), dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 		}
 	}

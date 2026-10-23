@@ -86,9 +86,10 @@ class COutImageStreamImpl
 : public COutVideoStreamImpl
 {
 protected:
-	COutImageStreamImpl(const CImageFormat& imageFormat, const std::wstring& path, bool ifZip, bool ifBmpNotTga)
+	/// <param name="pathTemplate">Output path template where only {SEQUENCE_NR} and {EXT} are left to expand.</param>
+	COutImageStreamImpl(const CImageFormat& imageFormat, const std::wstring& pathTemplate, bool ifZip, bool ifBmpNotTga)
 		: COutVideoStreamImpl(imageFormat)
-		, m_Path(path)
+		, m_PathTemplate(pathTemplate)
 		, m_IfZip(ifZip)
 		, m_IfBmpNotTga(ifBmpNotTga)
 	{
@@ -98,16 +99,17 @@ protected:
 	bool WriteBuffer(const unsigned char* pBuffer);
 
 private:
-	std::wstring m_Path;
+	std::wstring m_PathTemplate;
 	bool m_IfZip;
 	bool m_IfBmpNotTga;
 
 	bool m_TriedCreatePath = false;
 	bool m_SucceededCreatePath = false;
+	std::wstring m_LastParentPath;
 
 	size_t m_FrameNumber = 0;
 
-	bool CreateCapturePath(const char* fileExtension, std::wstring& outPath);
+	bool CreateCapturePath(const wchar_t* fileExtension, std::wstring& outPath);
 };
 
 template<bool bThreadSafe> class COutImageStream
@@ -116,8 +118,8 @@ template<bool bThreadSafe> class COutImageStream
 , public TIOutVideoStream<bThreadSafe>
 {
 public:
-	COutImageStream(const CImageFormat& imageFormat, const std::wstring& path, bool ifZip, bool ifBmpNotTga)
-	: COutImageStreamImpl(imageFormat, path, ifZip, ifBmpNotTga) {
+	COutImageStream(const CImageFormat& imageFormat, const std::wstring& pathTemplate, bool ifZip, bool ifBmpNotTga)
+	: COutImageStreamImpl(imageFormat, pathTemplate, ifZip, ifBmpNotTga) {
 	}
 
 	virtual void AddRef() override {
@@ -139,7 +141,8 @@ public:
 class COutFFMPEGVideoStreamImpl : public COutVideoStreamImpl
 {
 protected:
-	COutFFMPEGVideoStreamImpl(const CImageFormat& imageFormat, const std::wstring& path, const std::wstring& ffmpegOptions, float frameRate);
+	/// <param name="outputFile">Output file path ({AFX_OUTPUT_FILE}), its folder is {AFX_STREAM_PATH}.</param>
+	COutFFMPEGVideoStreamImpl(const CImageFormat& imageFormat, const std::wstring& outputFile, const std::wstring& ffmpegOptions, float frameRate);
 
 	virtual ~COutFFMPEGVideoStreamImpl();
 
@@ -171,8 +174,8 @@ template<bool bThreadSafe> class COutFFMPEGVideoStream
 , public TIOutVideoStream<bThreadSafe>
 {
 public:
-	COutFFMPEGVideoStream(const CImageFormat& imageFormat, const std::wstring& path, const std::wstring& ffmpegOptions, float frameRate)
-	: COutFFMPEGVideoStreamImpl(imageFormat, path, ffmpegOptions, frameRate)
+	COutFFMPEGVideoStream(const CImageFormat& imageFormat, const std::wstring& outputFile, const std::wstring& ffmpegOptions, float frameRate)
+	: COutFFMPEGVideoStreamImpl(imageFormat, outputFile, ffmpegOptions, frameRate)
 	{
 
 	}
