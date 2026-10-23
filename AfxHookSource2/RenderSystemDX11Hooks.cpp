@@ -2361,7 +2361,7 @@ public:
             if (pRenderTargetViews[0]) {
                 if(auto pRenderPassCommands = g_RenderCommands.RenderThread_GetCommands())
                 {
-                    if(!pRenderPassCommands->AfterPresent.Empty())
+                    if(!pRenderPassCommands->AfterPostProcessing.Empty())
                     {
                         ID3D11Resource* pRenderTargetViewResource = nullptr;
                         pRenderTargetViews[0]->GetResource(&pRenderTargetViewResource);
