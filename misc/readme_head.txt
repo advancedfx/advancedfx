@@ -78,15 +78,15 @@ RapidXml
 	http://rapidxml.sourceforge.net/
 	License: ./LICENSES/rapidxml/license.txt
 	
-Sebastien BLAISOT
-	For wxl-po-tools.
-	(Used by developers to build installer translations.
-	https://github.com/sblaisot/wxl-po-tools
-
 SharpDX
 	For the SharpDX SDK
 	(Used by HLAE developers to build the AfxHookSource shaders.)
 	http://sharpdx.org/
+
+Tauri
+	For the installer's user interface.
+	https://tauri.app/
+	License: ./LICENSES/advancedfx/THIRDPARTY.yml
 
 Valve
 	For various SDKs.
@@ -95,10 +95,6 @@ Valve
 Vitalii Tsilnyk
 	For NGettext.
 	https://github.com/VitaliiTsilnyk/NGettext
-
-WiX Toolset
-	For installer authoring software.
-	https://wixtoolset.org/
 
 advancedfx
 	https://github.com/advancedfx/advancedfx

@@ -1,0 +1,188 @@
+/* Black / white / gray with maroon (#990000, from the HLAE logo) as accent.
+   Color-blind friendly: the accent differs by brightness, not only hue; states and errors are always
+   also shown by shape / icon / text, never by color alone. Contrast ≥ 4.5:1 for text (WCAG AA). */
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --surface: #f2f2f2;
+  --surface-hover: #e4e4e4;
+  --text: #1a1a1a;
+  --muted: #555555;          /* 7.5:1 on white */
+  --border: #767676;         /* 4.5:1 on white, also for input borders */
+  --border-soft: #d4d4d4;
+  --accent: #990000;         /* white text on it: 8.6:1 */
+  --accent-hover: #7a0000;
+  --on-accent: #ffffff;
+  --accent-text: #990000;    /* 8.6:1 on white */
+  --focus: #990000;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e1e1e;
+    --surface: #2c2c2c;
+    --surface-hover: #3a3a3a;
+    --text: #f0f0f0;
+    --muted: #b8b8b8;        /* 9:1 on #1e1e1e */
+    --border: #8c8c8c;
+    --border-soft: #444444;
+    --accent: #990000;       /* buttons keep white text on maroon */
+    --accent-hover: #b30000;
+    --on-accent: #ffffff;
+    --accent-text: #ff9e9e;  /* maroon text would be too dark here: 7.7:1 */
+    --focus: #ff9e9e;
+  }
+}
+
+* { box-sizing: border-box; }
+
+/* `hidden` must always win over the display rules below. */
+[hidden] { display: none !important; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.45 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  user-select: none;
+  cursor: default;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.logo { width: 40px; height: 40px; flex: none; }
+.title { font-size: 18px; font-weight: 600; }
+.subtitle { color: var(--muted); font-size: 12px; }
+
+main { flex: 1; min-height: 0; padding: 16px 20px 16px; }
+
+.page { display: flex; flex-direction: column; gap: 12px; height: 100%; }
+.page[hidden] { display: none; }
+
+h1 { margin: 0; font-size: 20px; font-weight: 600; outline: none; }
+p { margin: 0; }
+
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field > label { font-weight: 600; }
+.row { display: flex; gap: 8px; }
+.row > input { flex: 1; min-width: 0; }
+.hint { color: var(--muted); font-size: 12px; }
+.path { word-break: break-all; }
+
+/* Errors: icon + bold text, not only color. */
+.error { color: var(--accent-text); font-weight: 600; }
+.error::before { content: "✕ "; }
+.notice { border-left: 4px solid var(--accent); padding: 6px 10px; background: var(--surface); }
+.notice::before { content: "⚠ "; font-weight: 600; }
+
+input[type="text"], select {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 5px 8px;
+  min-height: 32px;
+  user-select: text;
+}
+input[type="text"][aria-invalid="true"] { border: 2px solid var(--accent-text); padding: 4px 7px; }
+input:disabled, select:disabled { color: var(--muted); background: var(--surface); }
+
+.check { display: flex; align-items: flex-start; gap: 8px; }
+.check input { margin: 3px 0 0; flex: none; width: 16px; height: 16px; accent-color: var(--accent); }
+
+fieldset {
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  margin: 0;
+  padding: 8px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+legend { font-weight: 600; padding: 0 4px; }
+.sub { display: flex; flex-direction: column; gap: 4px; margin-left: 24px; }
+.sub[hidden] { display: none; }
+
+button {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 5px 16px;
+  min-height: 32px;
+  min-width: 88px;
+}
+button:hover:not(:disabled) { background: var(--surface-hover); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+button.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+button:disabled { opacity: 0.45; }
+button[hidden] { display: none; }
+/* Text-only button (header "Licenses"): underlined, so it doesn't rely on color. */
+button.link {
+  background: none;
+  border: none;
+  min-width: 0;
+  min-height: 0;
+  padding: 2px 4px;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: underline;
+}
+button.link:hover:not(:disabled) { background: none; color: var(--text); }
+
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* Headings only get focus programmatically (screen readers announce the new page), no visible ring. */
+h1[tabindex="-1"]:focus { outline: none; }
+
+.buttons { margin-top: auto; display: flex; gap: 8px; align-items: center; }
+.spacer { flex: 1; }
+.actions { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; margin-top: 8px; }
+.actions button { min-width: 200px; text-align: left; }
+
+/* Programs to close: a plain list with a marker, the exe name as secondary text. */
+.programs { margin: 0; padding: 8px 12px 8px 28px; background: var(--surface); border-radius: 4px; max-height: 220px; overflow: auto; }
+.programs li { padding: 2px 0; }
+.programs .exe { color: var(--muted); }
+
+progress { width: 100%; height: 8px; accent-color: var(--accent); }
+
+details summary { cursor: pointer; color: var(--muted); }
+pre#log {
+  margin: 6px 0 0;
+  max-height: 170px;
+  overflow: auto;
+  padding: 8px;
+  background: var(--surface);
+  border-radius: 4px;
+  font: 12px/1.4 Consolas, "Cascadia Mono", monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+  user-select: text;
+}
+
+/* Result: the glyph tells the result (✓ / ✕ / !), the heading says it in words. */
+.result { display: flex; align-items: center; gap: 12px; }
+.result-icon {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  font-weight: 700;
+  border: 2px solid var(--text);
+  color: var(--text);
+}
+.result-icon[data-result="ok"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }

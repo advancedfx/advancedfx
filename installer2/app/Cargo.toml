@@ -1,0 +1,46 @@
+[package]
+name = "hlae-installer"
+version = "0.1.0"
+authors = ["advancedfx.org <contact@advancedfx.org>"]
+license = "MIT"
+homepage = "https://github.com/advancedfx"
+repository = "https://github.com/advancedfx/advancedfx"
+edition = "2024"
+
+[[bin]]
+name = "HLAE_Setup"
+path = "src/main.rs"
+
+[build-dependencies]
+hlae-installer-build-support = { path = "../build-support" }
+serde_json = "1"
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+hlae-installer-core = { path = "../core" }
+# custom-protocol = production build also with plain `cargo build` (tauri-cli would add it itself).
+# We have no devUrl, so Tauri's dev mode gives us nothing.
+tauri = { version = "2", features = ["custom-protocol"] }
+log = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Same version as Tauri uses: switch off WebView2's browser features (gui.rs).
+webview2-com = "0.39"
+winreg = "0.56"
+# Same as core uses; unpacks the embedded license notices.
+zstd = "0.13"
+# Same versions as Tauri uses, see Cargo.lock.
+windows = { version = "0.62", features = [
+    "Win32_System_Com",
+    "Win32_UI_Shell",
+    "Win32_UI_Shell_Common",
+] }
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_Globalization",
+    "Win32_System_Console",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Threading",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }

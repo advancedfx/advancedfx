@@ -1,0 +1,13 @@
+[package]
+name = "hlae-installer-tools"
+version = "0.1.0"
+authors = ["advancedfx.org <contact@advancedfx.org>"]
+license = "MIT"
+homepage = "https://github.com/advancedfx"
+repository = "https://github.com/advancedfx/advancedfx"
+edition = "2024"
+description = "Developer tools for the HLAE installer (not shipped), see installer2/NOTES.md"
+
+[dependencies]
+hlae-installer-core = { path = "../core" }
+sha2 = "0.10"

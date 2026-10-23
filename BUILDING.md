@@ -54,7 +54,7 @@ The `cmake/MultiBuild.cmake` script takes care of puzzling these parts to gether
 
 Open Visual Studio 2022 Developer Command Prompt and run the following commands from the repository root, for example `C:\SOURCE-DIR\advancedfx`.
 
-For a regular release package, including `hlae.zip`, `hlae_pdb.zip`, and the WiX installer:
+For a regular release package, including `hlae.zip`, `hlae_pdb.zip`, and the installer `HLAE_Setup.exe`:
 
 ```batch
 cmake -P cmake/MultiBuild.cmake
@@ -114,7 +114,7 @@ Useful options of `cmake/MultiBuild.cmake`:
 | `-DAFX_MULTIBUILD_CONFIG=Debug` / `Release` | Select build configuration. |
 | `-DAFX_MULTIBUILD_CONFIGURE=ON` | Force reconfigure of existing preset build directories. |
 | `-DAFX_MULTIBUILD_STAGING_X64=source1` / `source2` | Only valid in staging mode: Build only one x64 hook family plus the shared x64 runtime. |
-| `-DAFX_MULTIBUILD_INSTALLER=OFF` | Only valid in non-staging (default) mode: Skip WiX installer creation and create only the package tree and ZIP files. |
+| `-DAFX_MULTIBUILD_INSTALLER=OFF` | Only valid in non-staging (default) mode: Skip building `HLAE_Setup.exe` and create only the package tree and ZIP files. |
 
 Available configure and build presets are `win32-debug`, `x64-debug`, `win32-release`, `x64-release`.
 
@@ -124,14 +124,14 @@ The intended workflow is to use the separate `win32-*` and `x64-*` preset build 
 
 Things you should do before releasing a new version:
 
-- Update version in hlae/CMakeLists.txt
+- Update version in hlae/CMakeLists.txt (the installer takes its version from there; it must be higher than the
+  installed one, the installer doesn't downgrade)
 - Update GUIDs in hlae/UpdateCheck.cs
-- If releasing installer, all these need to be updated, because otherwise users can end up with hash collisions if you
-  don't manage to provide the exact same package binary again for same version number:
-  - Increase package version (e.g. 2nd field (minor), at least 3rd field) in installer/HlaeCore/Package.wxs
-  - Increase package version (at least 3rd field) in installer/HlaeFfmpeg/Package.wxs
-  - Increase bundle version (e.g. 2nd field (minor), at least 3rd field) in installer/setup/Bundle.wxs
-- If you updated Rust dependencies run to see if misc/THIRDPARTY.yml needs updating:
+- If the FFMPEG builds offered by the installer should change, regenerate `installer2/data/ffmpeg.json` from a
+  https://github.com/BtbN/FFmpeg-Builds release (tag, build and branch as in its file names):  
+  `cargo run -p hlae-installer-tools --release -- ffmpeg --tag autobuild-2026-09-30-13-08 --build n9.0.2-17-g2a571b6068 --branch 9.0`
+- If you updated Rust dependencies (incl. the installer's) run to see if misc/THIRDPARTY.yml needs updating
+  (it covers the whole Cargo workspace and is also embedded in `HLAE_Setup.exe`):
   `cargo install cargo-bundle-licenses && cargo bundle-licenses --prefer MIT --format yaml --output misc/CI.yml --previous misc/THIRDPARTY.yml --check-previous && echo DONE: Okay.`
 - Update credits file with `py -3 make_credits.py`
 
