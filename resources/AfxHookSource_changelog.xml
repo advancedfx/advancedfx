@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource</name>
+<version>1.135.3</version>
+<time>2026-10-24T14:12Z</time>
+<changes>
+<change type="fixed">Fixed mirv_agr recording crash in 32bit tf.exe</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource</name>
 <version>1.135.2</version>
 <time>2026-09-12T14:47Z</time>
 <changes>

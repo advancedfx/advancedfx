@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.41.9</version>
+<time>2026-10-24T14:12Z</time>
+<changes>
+<change type="fixed">Fixed crash on invalid utf-8 in mirv.onGameEvent</change>
+<change type="fixed">Fixed threading issue in software command list commit hooking</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.41.8</version>
 <time>2026-10-14T15:26Z</time>
 <changes>
