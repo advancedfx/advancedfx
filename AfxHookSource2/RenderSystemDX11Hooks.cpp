@@ -8,6 +8,7 @@
 #include "WrpConsole.h"
 #include "CamIO.h"
 #include "MirvFix.h"
+#include "MirvColors.h"
 
 #include "RenderCommands.h"
 #include "StreamSettings.h"
@@ -3118,6 +3119,23 @@ CAfxImportsHook g_Import_rendersystemdx11(CAfxImportsHooks({
 #define STRINGIZE2(x) #x
 #define MkErrStr(file,line) "Problem in " file ":" STRINGIZE(line)
 
+typedef void* (__fastcall * RenderContext_LockDynamicConstantBuffer_t)(void* This, uint64_t size, void** outData, void* param_4);
+typedef void* (__fastcall * RenderContext_UnlockDynamicConstantBuffer_t)(void* This, void* handle, uint64_t size, void* param_4);
+
+RenderContext_LockDynamicConstantBuffer_t g_Old_CRenderContextDx11_SoftwareCommandLists_LockDynamicConstantBuffer = nullptr;
+RenderContext_UnlockDynamicConstantBuffer_t g_Old_CRenderContextDx11_SoftwareCommandLists_UnlockDynamicConstantBuffer = nullptr;
+
+void * __fastcall New_CRenderContextDx11_SoftwareCommandLists_LockDynamicConstantBuffer(void * This, uint64_t size, void ** outData, void* param_4) {
+	void* handle = g_Old_CRenderContextDx11_SoftwareCommandLists_LockDynamicConstantBuffer(This, size, outData, param_4);
+	MirvColors_OnLockDynamicConstantBuffer(handle, outData, (uint32_t)size);
+	return handle;
+}
+
+void* __fastcall New_CRenderContextDx11_SoftwareCommandLists_UnlockDynamicConstantBuffer(void* This, void* handle, uint64_t size, void* param_4) {
+	MirvColors_OnUnlockDynamicConstantBuffer(handle, (uint32_t)size);
+	return g_Old_CRenderContextDx11_SoftwareCommandLists_UnlockDynamicConstantBuffer(This, handle, size, param_4);
+}
+
 void Hook_RenderSystemDX11(void * hModule) {
     static bool firstRun = true;
 
@@ -3156,6 +3174,15 @@ void Hook_RenderSystemDX11(void * hModule) {
         if(void ** vtable = (void**)Afx::BinUtils::FindClassVtable((HMODULE)hModule,".?AVCRenderDeviceDx11@@", 0, 0x0)) {
             AfxDetourPtr(&(vtable[16]),New_CRenderDeviceBase_Present,(PVOID*)&g_Old_CRenderDeviceBase_Present);
         } else ErrorBox(MkErrStr(__FILE__, __LINE__));
+
+		// See MirvColors.cpp "g_Original_renderSmokes"
+		//     buf = (**(code **)(*param_2 + 0x100))(param_2, 0x9c0, &data);   // Lock, returns a handle
+		//     ... loop
+		//     (**(code **)(*param_2 + 0x108))(param_2, buf, 0x9c0);           // Unlock, gets the handle
+		if(void ** vtable = (void**)Afx::BinUtils::FindClassVtable((HMODULE)hModule,".?AVCRenderContextDx11_SoftwareCommandLists@@", 0, 0x0)) {
+			AfxDetourPtr(&(vtable[32]),New_CRenderContextDx11_SoftwareCommandLists_LockDynamicConstantBuffer,(PVOID*)&g_Old_CRenderContextDx11_SoftwareCommandLists_LockDynamicConstantBuffer);
+			AfxDetourPtr(&(vtable[33]),New_CRenderContextDx11_SoftwareCommandLists_UnlockDynamicConstantBuffer,(PVOID*)&g_Old_CRenderContextDx11_SoftwareCommandLists_UnlockDynamicConstantBuffer);
+		} else ErrorBox(MkErrStr(__FILE__, __LINE__));
     }
 
 }

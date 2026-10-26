@@ -5,6 +5,8 @@
 #include "../deps/release/Detours/src/detours.h"
 
 void HookMirvColors(HMODULE clientDll);
+void MirvColors_OnLockDynamicConstantBuffer(void *handle, void **data, uint32_t size);
+void MirvColors_OnUnlockDynamicConstantBuffer(void *handle, uint32_t size);
 
 struct AfxBasicColor {
 	const char* name;

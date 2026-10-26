@@ -224,6 +224,57 @@ void __fastcall new_setSmokeProps(CEntityInstance* param_1) {
 	g_Original_setSmokeProps(param_1);
 }
 
+// both 0x100 and 0x108 are called with this value in g_Original_renderSmokes
+const uint32_t g_SmokeCbSize = 0x9c0;
+
+thread_local bool g_bInSmokeRender = false;
+thread_local void* g_SmokeCbHandle = nullptr;
+thread_local void* g_SmokeCbData = nullptr;
+
+void MirvColors_OnLockDynamicConstantBuffer(void *handle, void **data, uint32_t size) {
+	if (!g_bInSmokeRender || size != g_SmokeCbSize || handle == nullptr || data == nullptr) return;
+	g_SmokeCbHandle = handle;
+	g_SmokeCbData = *data;
+}
+
+void MirvColors_OnUnlockDynamicConstantBuffer(void *handle, uint32_t size) {
+	if (!g_bInSmokeRender || size != g_SmokeCbSize || handle == nullptr || handle != g_SmokeCbHandle) return;
+
+	u_char* cb = (u_char*)g_SmokeCbData;
+	g_SmokeCbHandle = nullptr;
+	g_SmokeCbData = nullptr;
+
+	// See g_Original_renderSmokes
+	// *(uint *)(uVar19 + 0x9b0) = uVar20;
+	// before calling 0x108 fn
+	int count = *(int*)(cb + 0x9b0);
+	// See near "Unable to render more than %d smokes.\n"
+	if (count < 0 || count > 0x10) count = 0;
+
+	for (int i = 0; i < count; i++) {
+		*(float*)(cb + 0x508 + i * 0x10) = 0.0f;
+		// in the middle of loop
+		// *(float *)(uVar22 + 0x504 + uVar19) = (3.0 - (fVar35 + fVar35)) * fVar35 * fVar35;
+		// *(float *)(uVar22 + 0x508 + uVar19) = (3.0 - (fVar26 + fVar26)) * fVar26 * fVar26;
+		// *(float *)(uVar22 + 0x50c + uVar19) = (3.0 - (fVar36 + fVar36)) * fVar36 * fVar36;
+	}
+}
+
+typedef void (__fastcall * g_Original_renderSmokes_t)(void * param_1, void * param_2, void * param_3, void * param_4, void* param_5, void * param_6);
+g_Original_renderSmokes_t g_Original_renderSmokes = nullptr;
+
+void __fastcall new_renderSmokes(void* param_1, void* param_2, void* param_3, void* param_4, void* param_5, void* param_6) {
+	if (!(g_MirvColors.smokes.Tcolor.use || g_MirvColors.smokes.CTcolor.use)) {
+		return g_Original_renderSmokes(param_1, param_2, param_3, param_4, param_5, param_6);
+	}
+
+	g_SmokeCbHandle = nullptr;
+	g_SmokeCbData = nullptr;
+	g_bInSmokeRender = true;
+	g_Original_renderSmokes(param_1, param_2, param_3, param_4, param_5, param_6);
+	g_bInSmokeRender = false;
+}
+
 typedef u_char* (__fastcall *g_Original_getParticleManager_t)(void);
 g_Original_getParticleManager_t g_Original_getParticleManager = nullptr;
 
@@ -310,6 +361,14 @@ bool getAddresses(HMODULE clientDll) {
 		return false;
 	}
 
+	//   has "SmokeRenderer", "LockDynamicConstantBuffer failed in %s", "Unable to render more than %d smokes.\n"
+	//   see also 1 fn in ".?AVCSmokeVolumeSceneObjectDesc@@" vtable, it's in the last else block
+	size_t g_Original_renderSmokes_addr = getAddress(clientDll, "48 89 54 24 ?? 55 57 41 54 48 8D AC 24 ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ??");
+	if(g_Original_renderSmokes_addr == 0) {
+		ErrorBox(MkErrStr(__FILE__, __LINE__));
+		return false;
+	}
+
 	// can be found close to functions below before calling them
 	size_t g_Original_getParticleManager_addr = getAddress(clientDll, "48 8B 05 ?? ?? ?? ?? C3 CC CC CC CC CC CC CC CC 48 89 5C 24 10 57");
 	if(g_Original_getParticleManager_addr == 0) {
@@ -338,6 +397,7 @@ bool getAddresses(HMODULE clientDll) {
 
 	g_Original_setGlowColor = (g_Original_setGlowColor_t)(g_Original_setGlowColor_addr);
 	g_Original_setSmokeProps = (g_Original_setSmokeProps_t)(g_Original_applySmokeProps_addr);
+	g_Original_renderSmokes = (g_Original_renderSmokes_t)(g_Original_renderSmokes_addr);
 	g_Original_getParticleManager = (g_Original_getParticleManager_t)(g_Original_getParticleManager_addr);
 	g_Original_drawStuff = (g_Original_drawStuff_t)(g_Original_drawStuff_addr);
 	g_Original_createParticle = (g_Original_createParticle_t)(g_Original_createParticle_addr);
@@ -356,6 +416,7 @@ void HookMirvColors(HMODULE clientDll) {
 
 	DetourAttach(&(PVOID&)g_Original_setGlowColor, new_setGlowColor);
 	DetourAttach(&(PVOID&)g_Original_setSmokeProps, new_setSmokeProps);
+	DetourAttach(&(PVOID&)g_Original_renderSmokes, new_renderSmokes);
 	DetourAttach(&(PVOID&)g_Original_drawStuff, new_drawStuff);
 
 	if(NO_ERROR != DetourTransactionCommit()) {
