@@ -46,6 +46,7 @@ public:
         , SkyAction(other.SkyAction)
         , SmokeAction(other.SmokeAction)
         , OverlaysAction(other.OverlaysAction)
+        , ScopeAction(other.ScopeAction)
     {
         Settings->AddRef();
     }
@@ -66,6 +67,7 @@ public:
             && Action::Draw == SkyAction
             && Action::Draw == SmokeAction
             && Action::Draw == OverlaysAction
+            && Action::Draw == ScopeAction
         ;
     }
 
@@ -97,6 +99,7 @@ public:
         if(cmp = CompareAction(SkyAction, o.SkyAction)) return cmp;
         if(cmp = CompareAction(SmokeAction, o.SmokeAction)) return cmp;
         if(cmp = CompareAction(OverlaysAction, o.OverlaysAction)) return cmp;
+        if(cmp = CompareAction(ScopeAction, o.ScopeAction)) return cmp;
 
         return 0;
     }    
@@ -195,6 +198,7 @@ public:
     Action SkyAction = Action::Draw;
     Action SmokeAction = Action::Draw;
     Action OverlaysAction = Action::Draw;
+    Action ScopeAction = Action::Draw;
 
 private:
     static int CompareBool(bool lhs, bool rhs) {

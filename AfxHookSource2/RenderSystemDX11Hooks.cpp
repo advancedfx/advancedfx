@@ -9,6 +9,7 @@
 #include "CamIO.h"
 #include "MirvFix.h"
 #include "MirvColors.h"
+#include "ClientRenderScopeOverlay.h"
 
 #include "RenderCommands.h"
 #include "StreamSettings.h"
@@ -3699,6 +3700,9 @@ private:
         }
 
         void EngineThread_BeginFrame() const {
+            // Setup ScopeOverlay:
+            SetRenderScopeOverlay(m_Settings.ScopeAction == CStreamSettings::Action::Draw);
+
             // Setup SceneSystem policies:
             SetupSceneFilterPolicies(m_Settings);
 
@@ -3843,6 +3847,9 @@ private:
 
             // Clear SceneSystem policies:
             ClearSceneFliterSystemPolicies();
+
+            // Restore Scope overlay:
+            SetRenderScopeOverlay(true);            
         } 
 
         bool WantsClearBeforeUi(float outColor[4]) const {
@@ -5070,6 +5077,11 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
                 StreamSettingsActionSubCommand(stream.OverlaysAction, &subArgs);
                 return;
             }
+            else if(0 == _stricmp("scopeAction", arg2)) {
+                advancedfx::CSubCommandArgs subArgs(args, 3);
+                StreamSettingsActionSubCommand(stream.ScopeAction, &subArgs);
+                return;
+            }
         }
 
         advancedfx::Message(
@@ -5166,6 +5178,10 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
         );
         advancedfx::Message(
             "%s %s overlaysAction [...]\n"
+            , arg0, arg1
+        );
+        advancedfx::Message(
+            "%s %s scopeAction [...]\n"
             , arg0, arg1
         );
 		return;

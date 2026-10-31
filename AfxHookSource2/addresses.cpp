@@ -16,6 +16,8 @@ AFXADDR_DEF(cs2_SceneSystem_FrameUpdate_vtable_idx);
 AFXADDR_DEF(cs2_deathmsg_lifetime_offset)
 AFXADDR_DEF(cs2_deathmsg_lifetimemod_offset)
 
+AFXADDR_DEF(cs2_client_RenderInitScopeOverlay)
+
 void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
 {
 	MemRange textRange = MemRange(0, 0);
@@ -174,4 +176,38 @@ void Addresses_InitClientDll(AfxAddr clientDll) {
 		else
 			ErrorBox(MkErrStr(__FILE__, __LINE__));
 	}
+
+      /*    cs2_client_RenderScopeOverlay
+
+            The function is called in the render pipleline function that refrences strings such as "Create PerViewConstantBufferCsgo_t",
+            "intermediate_depth_rt", "intermediate_color_rt", somewhat after the string ref "Engine2/RenderingPipeline/AmbientOcclusionProxies"
+            in a pattern that looks like this:
+
+            _local_1ed8 = ZEXT816(0);
+            pfVar23 = (float *)FUN_18036dc30(local_1e60,local_e98,0x978903ad,local_1ed8);
+            fVar2 = *pfVar23;
+            FUN_1811d0100(local_14d8);
+            if ((local_1ce7 == '\0') && (lVar24 = FUN_180c7d0d0(), lVar24 != 0)) {
+                  FUN_1808e2410(lVar24,local_14d8); // This is the RenderScopeOverlay function we want to hook.
+            }
+            ppcVar22 = (code **)0x0
+
+
+            void FUN_1808e2410(longlong *param_1,undefined4 *param_2)
+            {
+                  // ...
+                  local_res10[0] = 0x3f800000;
+                  local_res18[0] = 0;
+                  FUN_18075e050(local_res8,*(undefined4 *)(param_1[2] + 0x38));                  
+                  // ...
+            }
+      */
+      {
+		MemRange result = FindPatternString(textRange, "48 8b c4 53 57 48 83 ec 68 48 8b fa 44 0f 29 40 b8");
+		if (!result.IsEmpty()) {
+                  AFXADDR_SET(cs2_client_RenderInitScopeOverlay, result.Start);
+		}
+		else
+			ErrorBox(MkErrStr(__FILE__, __LINE__));
+      }
 }

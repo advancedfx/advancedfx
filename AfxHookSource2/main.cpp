@@ -3,6 +3,7 @@
 #include "addresses.h"
 #include "CampathDrawer.h"
 #include "ClientEntitySystem.h"
+#include "ClientRenderScopeOverlay.h"
 #include "GameEvents.h"
 #include "hlaeFolder.h"
 #include "RenderServiceHooks.h"
@@ -2182,6 +2183,8 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		Hook_ClientEntitySystem3(hModule);
 
 		GetClientDllSceneObjectVtable(hModule);
+
+		Hook_Client_RenderScopeOverlay();
 	} 
 	else if(bFirstPanorama && StringEndsWithW(lpLibFileName, L"panorama.dll"))
 	{
