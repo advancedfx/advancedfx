@@ -900,8 +900,8 @@ static bool TryGetActionFilterPolicy(const SceneLayerContext& context, const CBa
 	if (!g_ActiveActionFilter.Match(query, action)) return false;
 
 	switch (action) {
-	case SceneActionFilterAction::Hide: outPolicy = SceneObjectDrawPolicy::Hide; break;
-	case SceneActionFilterAction::DepthPassesOnly: outPolicy = SceneObjectDrawPolicy::DepthPassesOnly; break;
+	case SceneActionFilterAction::NoDraw: outPolicy = SceneObjectDrawPolicy::Hide; break;
+	case SceneActionFilterAction::ZOnly: outPolicy = SceneObjectDrawPolicy::DepthPassesOnly; break;
 	default: outPolicy = SceneObjectDrawPolicy::Draw; break;
 	}
 	return true;

@@ -54,16 +54,16 @@ int CSceneActionFilterList::Compare(const CSceneActionFilterList& other) const {
 const char* CSceneActionFilterList::ActionToString(SceneActionFilterAction action) {
 	switch (action) {
 	case SceneActionFilterAction::Draw: return "draw";
-	case SceneActionFilterAction::Hide: return "hide";
-	case SceneActionFilterAction::DepthPassesOnly: return "zonly";
+	case SceneActionFilterAction::NoDraw: return "noDraw";
+	case SceneActionFilterAction::ZOnly: return "zOnly";
 	default: return "unknown";
 	}
 }
 
 bool CSceneActionFilterList::TryParseAction(const char* value, SceneActionFilterAction& outAction) {
 	if (0 == _stricmp(value, "draw") || 0 == _stricmp(value, "1")) { outAction = SceneActionFilterAction::Draw; return true; }
-	if (0 == _stricmp(value, "hide") || 0 == _stricmp(value, "0")) { outAction = SceneActionFilterAction::Hide; return true; }
-	if (0 == _stricmp(value, "zonly")) { outAction = SceneActionFilterAction::DepthPassesOnly; return true; }
+	if (0 == _stricmp(value, "noDraw") || 0 == _stricmp(value, "0")) { outAction = SceneActionFilterAction::NoDraw; return true; }
+	if (0 == _stricmp(value, "zOnly")) { outAction = SceneActionFilterAction::ZOnly; return true; }
 	return false;
 }
 
@@ -80,7 +80,7 @@ bool CSceneActionFilterList::ParseEx(advancedfx::ICommandArgs* args, Entry& outE
 			"\"name=<wildCardString>\" (of material)\n"
 			"\"viewName=<wildCardString>\" (of scene layer context)\n"
 			"\"viewPass=<wildCardString>\" (of scene layer context)\n"
-			"\"action=draw|hide|zonly\"\n"
+			"\"action=draw|noDraw|zOnly\"\n"
 			"\n"
 			"- The action option must be given!\n"
 			"- <wildCardString> is a string without quotes, where \\* is the wildcard and \\\\ is \\\n"
@@ -121,7 +121,7 @@ bool CSceneActionFilterList::ParseEx(advancedfx::ICommandArgs* args, Entry& outE
 		}
 		else if (!_stricmp("action", key)) {
 			if (!TryParseAction(sValue.c_str(), entry.Action)) {
-				advancedfx::Warning("Error: \"%s\" is not a valid action (draw|hide|zonly)!\n", sValue.c_str());
+				advancedfx::Warning("Error: \"%s\" is not a valid action (draw|noDraw|zOnly)!\n", sValue.c_str());
 				return false;
 			}
 			hasAction = true;

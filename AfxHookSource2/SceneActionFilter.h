@@ -24,8 +24,8 @@
 
 enum class SceneActionFilterAction {
 	Draw,
-	Hide,
-	DepthPassesOnly
+	NoDraw,
+	ZOnly
 };
 
 /// <summary>Data of the current draw call. Everything is optional, absent data can never satisfy a criterion.</summary>
