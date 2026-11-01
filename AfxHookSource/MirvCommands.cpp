@@ -741,9 +741,25 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					}
 
 					Tier0_Msg(
-						"mirv_streams record name <name> - Set record name to <name>.\n"
+						"mirv_streams record name <name> - Set record name to <name>, the full path of it is {RECORD_PATH}.\n"
 						"Current value: %s.\n",
 						g_AfxStreams.Console_RecordName_get()
+					);
+					return;
+				}
+				else if(!_stricmp(cmd2, "take"))
+				{
+					if(4 <= argc)
+					{
+						char const * cmd3 = args->ArgV(3);
+						g_AfxStreams.SetTake(cmd3);
+						return;
+					}
+
+					Tier0_Msg(
+						"mirv_streams record take <name> - Set take name ({TAKE}) to <name>.\n"
+						"Current value: %s.\n",
+						g_AfxStreams.GetTake()
 					);
 					return;
 				}
@@ -883,19 +899,36 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 					);
 					return;
 				}
-#ifndef _WIN64				
+				else
+				if (!_stricmp(cmd2, "startMovieWavPath"))
+				{
+					CSubWrpCommandArgs subArgs(args, 3);
+					g_AfxStreams.GetStartMovieWavPath().Console(&subArgs, "WAV audio output file.");
+					return;
+				}
+#ifndef _WIN64
 				else if (bIsCsgo && 0 == _stricmp(cmd2, "voices"))
 				{
 					if (4 <= argc)
 					{
 						char const * cmd3 = args->ArgV(3);
-						g_AfxStreams.Console_RecordVoices_set(0 != atoi(cmd3));
-						return;
+						if (!_stricmp(cmd3, "path"))
+						{
+							CSubWrpCommandArgs subArgs(args, 4);
+							g_AfxStreams.GetVoicesPath().Console(&subArgs, "Voice WAV audio output file for each entity.");
+							return;
+						}
+						else if (StringIsDigits(cmd3))
+						{
+							g_AfxStreams.Console_RecordVoices_set(0 != atoi(cmd3));
+							return;
+						}
 					}
 
 					Tier0_Msg(
 						"mirv_streams record voices 0|1 - Whether to record voice WAV audio into separate files (1) or not (0).\n"
-						"Current value: %s.\n",
+						"Current value: %s.\n"
+						"mirv_streams record voices path [...] - Voice WAV audio output file for each entity.\n",
 						g_AfxStreams.Console_RecordVoices_get() ? "1" : "0"
 					);
 					return;
@@ -929,12 +962,19 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 							);
 							return;
 						}
+						else if (!_stricmp("path", cmd3))
+						{
+							CSubWrpCommandArgs subArgs(args, 4);
+							g_AfxStreams.GetCampathPath().Console(&subArgs, "Campath output file.");
+							return;
+						}
 					}
 
 					Tier0_Msg(
 						"mirv_streams record campath enabled [...]\n"
+						"mirv_streams record campath path [...]\n"
 					);
-					return;					
+					return;
 				}
 				else
 				if (0 == _stricmp(cmd2, "cam"))
@@ -958,10 +998,17 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 							);
 							return;
 						}
+						else if (!_stricmp("path", cmd3))
+						{
+							CSubWrpCommandArgs subArgs(args, 4);
+							g_AfxStreams.GetCamPath().Console(&subArgs, "Camera motion data output file.");
+							return;
+						}
 					}
 
 					Tier0_Msg(
 						"mirv_streams record cam enabled [...]\n"
+						"mirv_streams record cam path [...]\n"
 					);
 					return;
 				}
@@ -1007,6 +1054,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 
 			Tier0_Msg(
 				"mirv_streams record name [...] - Set/get record name.\n"
+				"mirv_streams record take [...] - Set/get take name.\n"
 				"mirv_streams record start - Begin recording.\n"
 				"mirv_streams record end - End recording.\n"
 				"mirv_streams record format [...] - Set/get file format.\n"
@@ -1024,6 +1072,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			Tier0_Msg(
 				"mirv_streams record screen [...] - Controls capturing the game content drawn to screen right before being presented.\n"
 				"mirv_streams record startMovieWav [...] - Controls WAV audio recording.\n"
+				"mirv_streams record startMovieWavPath [...] - WAV audio output file.\n"
 			);
 #ifndef _WIN64
 			if (bIsCsgo) Tier0_Msg(
@@ -1033,7 +1082,7 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 			Tier0_Msg(
 				"mirv_streams record bvh [...] - Controls the HLAE/BVH camera motion data capture output.\n"
 				"mirv_streams record cam [...] - Controls the camera motion data capture output (can be imported with mirv_camio).\n"
-				"mirv_streams record campath [...] - Save current campath into take folder (if not empty).\n"
+				"mirv_streams record campath [...] - Save current campath (if not empty).\n"
 			);
 			Tier0_Msg(
 				"mirv_streams record agr [...] - Controls afxGameRecord (.agr) game state recording.\n"

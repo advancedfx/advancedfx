@@ -4,8 +4,12 @@
 
 #define ADVANCEDFX_STARTMOVIE_WAV_KEY "advancedfx-802bb089-972b-4841-bdf3-5108175ab59d"
 
+#include <string>
+
 bool AfxStreams_IsRcording();
-const wchar_t * AfxStreams_GetTakeDir();
+
+/// Thread-safe, returns false if not set.
+bool AfxStreams_GetStartMovieWavPath(std::wstring & outPath);
 
 void AfxStreams_ShutDown();
 
